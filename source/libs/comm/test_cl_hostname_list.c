@@ -54,7 +54,7 @@ main(int argc, char** argv)
   struct in_addr addr;
   struct in_addr addr2;
   char* rhost = NULL;
-  int loops = -1;
+  int loops = INT_MAX;
 
 
   if (argc < 3) {

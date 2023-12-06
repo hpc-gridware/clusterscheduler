@@ -916,7 +916,9 @@ int psRetrieveSystemData(void)
    static int clk_tck;
 #endif
    time_t time_stamp = get_gmt();
+#if defined(IRIX)
    time_t prev_time_stamp;
+#endif
    static time_t next;
 
    if (time_stamp <= next) {
@@ -924,7 +926,9 @@ int psRetrieveSystemData(void)
    }
    next = time_stamp + ps_config.sys_collection_interval;
 
+#if defined(IRIX)
    prev_time_stamp = sysdata.sys_tstamp;
+#endif
 
    /* Time of last snap */
    sysdata.sys_tstamp = time_stamp;
@@ -2387,11 +2391,11 @@ static int psRetrieveOSJobData(void) {
 
 #elif defined(ALPHA) || defined(FREEBSD) || defined(LINUX) || defined(SOLARIS) || defined(HP1164) || defined(DARWIN)
       {
-         int proccount;
+         //int proccount;
          lnk_link_t *currp, *nextp;
 
          /* sum up usage of each processes for this job */
-         proccount = job->jd_proccount;
+         //proccount = job->jd_proccount;
          job->jd_utime_a = job->jd_stime_a = 0;
          job->jd_vmem = 0;
          job->jd_rss = 0;

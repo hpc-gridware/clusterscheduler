@@ -1185,7 +1185,7 @@ calculate_reserved_usage(const char* qualified_hostname, const lListElem *ja_tas
     */
    jr = get_job_report(job_id, ja_task_id, pe_task_id);
    if (lGetSubStr(jr, UA_name, USAGE_ATTR_CPU_ACCT, JR_usage) == NULL) {
-      double cpu, mem, io, iow, maxvmem;
+      double cpu = 0, mem = 0, io = 0, iow = 0, maxvmem = 0;
       double wall_clock_time;
 
       build_reserved_usage(now, ja_task, pe_task, &wall_clock_time, &cpu, &mem, &maxvmem);

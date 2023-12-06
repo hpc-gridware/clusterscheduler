@@ -147,11 +147,11 @@ int main(int argc, char *argv[]) {
          sge_strip_slash_at_eol(argv[1]);
 
          while (fgets(buffer, sizeof(buffer), fd) != NULL) {
-            char* export = NULL; /* where is the nfs exported*/
+            //char* export = NULL; /* where is the nfs exported*/
             char* mountpoint = NULL; /*where is it mounted to */
             char* fstype = NULL; /*type of exported file system */
 
-            export = sge_strtok(buffer, " \t");
+            /* export = */sge_strtok(buffer, " \t");
             mountpoint = sge_strtok(NULL, " \t");
             fstype = sge_strtok(NULL, " \t");
 

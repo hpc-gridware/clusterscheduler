@@ -204,7 +204,7 @@ static void touch_time_stamp(const char *d_name, int time_stamp, lnk_link_t *job
 
 void procfs_kill_addgrpid(gid_t add_grp_id, int sig, tShepherd_trace shepherd_trace)
 {
-   char procnam[128];
+   char procnam[1024];
    int i;
    int groups=0;
    u_long32 max_groups;
@@ -395,7 +395,7 @@ lnk_link_t *job_list,
 int time_stamp,
 time_t last_time
 ) {
-   char procnam[128];
+   char procnam[1024];
    int fd = -1;
 #if defined(LINUX)
    char buffer[BIGLINE];
@@ -568,7 +568,7 @@ time_t last_time
        * get list of supplementary groups 
        */
       {
-         char procnam[256];
+         char procnam[1024];
          lList *groupTable = lGetPosList(pr, pos_groups);
 
          sprintf(procnam, PROC_DIR "/%s/status", dent->d_name);
@@ -777,7 +777,7 @@ time_t last_time
     */
    proc_elem->delta_chars    = 0UL;
    {
-      char procnam[256];
+      char procnam[1024];
       uint64 new_iochars = 0UL;
 
       sprintf(procnam, PROC_DIR "/%s/io", dent->d_name);

@@ -302,16 +302,18 @@ int main(int argc, char *argv[])
       if (!(kmp = malloc(1024*malloc_kb))) {
          printf("failed getting %d kb mem via malloc\n", malloc_kb); fflush(stdout);
          return 1;
-      } else
+      } else {
          printf("got %d kb mem via malloc\n", malloc_kb); fflush(stdout);
+      }
    }
    if (malloc_mb) { 
       printf("going to alloce %d mb via malloc\n", malloc_mb); fflush(stdout);
       if (!(mmp = malloc(1024*1024*malloc_mb))) {
          printf("failed getting %d mb mem via malloc\n", malloc_mb); fflush(stdout);
          return 1;
-      } else 
+      } else {
          printf("got %d mb mem via malloc\n", malloc_mb); fflush(stdout);
+      }
    }
 
    if (stack_kb) {
