@@ -63,7 +63,7 @@
 #include "msg_common.h"
 
 static lList *remote_task_list = 0;
-static char lasterror[1024];
+static char lasterror[4096];
 
 /* option flags for rcv_from_execd() */
 #define OPT_SYNCHRON 1

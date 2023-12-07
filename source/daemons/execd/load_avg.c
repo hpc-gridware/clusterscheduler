@@ -1192,7 +1192,7 @@ calculate_reserved_usage(const char* qualified_hostname, const lListElem *ja_tas
 
       io = iow = 0.0;
 
-   #ifdef COMPILE_DC
+#ifdef COMPILE_DC
       {
          /* use PDC actual I/O if available */
          lList *jul;

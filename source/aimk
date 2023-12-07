@@ -2736,6 +2736,9 @@ endif
 if ( "$QMON" == 1 ) then
    echo _________Q_M_O_N__________________________
 
+   # includes of freetype2 have changed compared to older OS versions
+   set CFLAGS = "$CFLAGS -I/usr/include/freetype2"
+
    cd $SOURCE/3rdparty/qmon
 
    if (! -d $COMPILE_ARCH) then
