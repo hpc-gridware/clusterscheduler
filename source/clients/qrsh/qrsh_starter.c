@@ -31,9 +31,6 @@
 /*___INFO__MARK_END__*/
 #include <stdio.h>
 #include <stdarg.h>
-#if defined(LINUX)
-#include <termios.h>
-#endif
 
 #include <sys/types.h>
 #include <sys/stat.h>
@@ -356,7 +353,7 @@ static int changeDirectory(void)
    cwd = get_conf_val("cwd");
 
    if(cwd == NULL) {
-      qrsh_error("MSG_QRSH_STARTER_NOCWDINCONFIG");
+      qrsh_error(MSG_QRSH_STARTER_NOCWDINCONFIG);
       return 0;
    }
 

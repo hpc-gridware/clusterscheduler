@@ -37,7 +37,7 @@
 
 #define MSG_QSUB_WARNING_S    _MESSAGE(21000, _("qsub: warning: "))
 #define MSG_QSUB_WAITINGFORIMMEDIATEJOBTOBESCHEDULED    _MESSAGE(21001, _("Waiting for immediate job to be scheduled."))
-#define MSG_QSUB_YOURQSUBREQUESTCOULDNOTBESCHEDULEDDTRYLATER    _MESSAGE(21003, _("Your qsub request could not be scheduled, try again later."))
+#define MSG_QSUB_YOURQSUBREQUESTCOULDNOTBESCHEDULEDDTRYLATER    _MESSAGE(21003, _("Your qsub request could not be scheduled; try again later."))
 #define MSG_QSUB_YOURIMMEDIATEJOBXHASBEENSUCCESSFULLYSCHEDULED_S    _MESSAGE(21004, _("Your immediate job "SFN" has been successfully scheduled."))
 #define MSG_QSUB_COULDNOTINITIALIZEENV_S    _MESSAGE(21005, _("Unable to initialize environment because of error: "SFN"\nExiting."))
 #define MSG_QSUB_COULDNOTRUNJOB_S    _MESSAGE(21006, _("Unable to run job: "SN_UNLIMITED".\nExiting."))

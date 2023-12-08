@@ -1748,7 +1748,7 @@ static int handle_error_jobs(qstat_env_t *qstat_env, qstat_handler_t* handler, l
 
             if (!lGetNumberOfElem(qstat_env->user_list) || (lGetNumberOfElem(qstat_env->user_list) && 
                   (lGetUlong(jatep, JAT_suitable)&TAG_SELECT_IT))) {
-               sge_dstring_sprintf(&dyn_task_str, "sge_u32", lGetUlong(jatep, JAT_task_number));
+               sge_dstring_sprintf(&dyn_task_str, sge_u32, lGetUlong(jatep, JAT_task_number));
                
                if (count == 0) {
                    if (handler->report_error_jobs_started && (ret=handler->report_error_jobs_started(handler, alpp))) {

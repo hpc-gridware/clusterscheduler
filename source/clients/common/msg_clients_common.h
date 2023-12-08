@@ -45,7 +45,7 @@
 #define MSG_SEC_SETJOBCRED                               _MESSAGE(1007, _("\nCannot set job credentials."))
 
 #define MSG_COMMON_help_OPT_USAGE                        _MESSAGE(1015, _("print this help"))
-#define MSG_COMMON_xml_OPT_USAGE                         _MESSAGE(1016, _("display the information in XML-Format"))
+#define MSG_COMMON_xml_OPT_USAGE                         _MESSAGE(1016, _("display the information in XML format"))
 
 /*
  * qstat_printing.c

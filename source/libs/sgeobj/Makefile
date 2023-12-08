@@ -113,7 +113,8 @@ SGEOBJLIB_TEST_PROGS = \
               test_sge_schedd_conf \
               test_sge_utility \
               test_sge_resource_quota \
-              test_eval_expression
+              test_eval_expression \
+              dump_cull_schema
 
 SGEOBJLIB_TEST_PROGS_OBJS = \
               test_sge_object.o \
@@ -121,7 +122,8 @@ SGEOBJLIB_TEST_PROGS_OBJS = \
               test_sge_schedd_conf.o \
               test_sge_utility.o \
               test_sge_resource_quota.o\
-              test_eval_expression.o
+              test_eval_expression.o \
+              dump_cull_schema.o
 
 ###############################################################################
 # global rules: all, clean, depend, messages
@@ -395,5 +397,12 @@ test_sge_utility.o: $(SGEOBJLIB_DIR)/test_sge_utility.c
 test_sge_resource_quota.o: $(SGEOBJLIB_DIR)/test_sge_resource_quota.c
 	$(CC) $(CFLAGS) -c $(SGEOBJLIB_DIR)/test_sge_resource_quota.c
 
-test_eval_expression.o: $(SGEOBJLIB_DIR)/test_eval_expression.c 
+test_eval_expression.o: $(SGEOBJLIB_DIR)/test_eval_expression.c
 		$(CC) $(CFLAGS) $(SHARED_CFLAGS) -c $(SGEOBJLIB_DIR)/test_eval_expression.c
+
+dump_cull_schema.o: $(SGEOBJLIB_DIR)/dump_cull_schema.c
+	$(CC) $(CFLAGS) -c $(SGEOBJLIB_DIR)/dump_cull_schema.c
+
+dump_cull_schema: dump_cull_schema.o $(SGEOBJLIB) $(SGEOBJDLIB) $(CULLLIB) $(COMMLIB) $(COMMLISTSLIB) $(UTILIB)  $(CJSONLIB_STATIC)
+	$(LD_WRAPPER) $(CC) $(CFLAGS) -o dump_cull_schema $(LFLAGS) dump_cull_schema.o $(SGEOBJLIB) $(SGEOBJDLIB) \
+		           $(CULLLIB) $(UTILIB) $(COMMLIB) $(COMMLISTSLIB) $(DLLIB) $(SECLIB) $(CJSONLIB_STATIC) $(LIBS)

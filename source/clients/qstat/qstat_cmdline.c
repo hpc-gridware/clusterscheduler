@@ -272,7 +272,7 @@ qstat_usage(int qselect_mode, FILE *fp, char *what)
       }
       fprintf(fp, "        [-help]                           %s\n",MSG_COMMON_help_OPT_USAGE);
       if (!qselect_mode)
-         fprintf(fp, "        [-j job_identifier_list ]         %s\n",MSG_QSTAT_USAGE_SHOWSCHEDULERJOBINFO);
+         fprintf(fp, "        [-j [job_identifier_list]]         %s\n",MSG_QSTAT_USAGE_SHOWSCHEDULERJOBINFO);
       fprintf(fp, "        [-l resource_list]                %s\n",MSG_QSTAT_USAGE_REQUESTTHEGIVENRESOURCES);
       if (!qselect_mode) 
          fprintf(fp, "        [-ne]                             %s\n",MSG_QSTAT_USAGE_HIDEEMPTYQUEUES);
@@ -305,7 +305,7 @@ qstat_usage(int qselect_mode, FILE *fp, char *what)
       }   
       
       if (getenv("MORE_INFO")) {
-         fprintf(fp, SFNMAX, MSG_QSTAT_USAGE_ADDITIONALDEBUGGINGOPTIONS);
+         fprintf(fp, SFNMAX"\n", MSG_QSTAT_USAGE_ADDITIONALDEBUGGINGOPTIONS);
          fprintf(fp, "        [-dj]                             %s\n",MSG_QSTAT_USAGE_DUMPCOMPLETEJOBLISTTOSTDOUT);
          fprintf(fp, "        [-dq]                             %s\n",MSG_QSTAT_USAGE_DUMPCOMPLETEQUEUELISTTOSTDOUT);
       }

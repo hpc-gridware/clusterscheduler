@@ -198,7 +198,6 @@ usage:
    echo "-only-core           -> build only the core system"
    echo "-only-depend         -> only compile 3rdparty/sge_depend"
    echo "-only-java           -> only compile Java[TM] class files"
-   echo "-only-jemalloc       -> build only the jemalloc library"
    echo "-only-qmake          -> build only qmake"
    echo "-only-64             -> build only 64 bit shared libraries for SOLARIS64, don't build 32 bit shared libraries"
    echo "-parallel n          -> spawn multiple make processes by passing option -j n to make"
@@ -268,7 +267,6 @@ set CFLAGS           = "-D$TARGET_BITS $INP_CFLAGS"
 set CORE_INCLUDE     = "-I../common -I../libs -I../libs/uti -I../libs/gdi -I../libs/japi -I../libs/sgeobj -I../libs/cull -I../libs/comm -I../libs/comm/lists -I../libs/sched -I../libs/evc -I../libs/evm -I../libs/mir -I../libs/lck -I../daemons/common -I../daemons/qmaster -I../daemons/execd -I../daemons/schedd -I../clients/common -I."
 set DEBUG_FLAG       = ""
 set INSURE_FLAG      = ""
-set JEMALLOC_CFLAGS  = ""
 set NOERR_CFLAG      = ""
 set NOERR_PROTO      = ""
 set NOERR_SSH        = ""
@@ -387,6 +385,12 @@ endif
 set CFLAGS            = "-I$BERKELEYDB_HOME/include/${BDB_INCLUDE_SUBDIR} $CFLAGS"
 set LFLAGS            = "-L$BERKELEYDB_HOME/lib/${BDB_LIB_SUBDIR} $LFLAGS"
 set SHARED_LFLAGS    = "$SHARED_LFLAGS -L$BERKELEYDB_HOME/lib/${BDB_LIB_SUBDIR}"
+
+# we need the cjson lib, add it to include and lib path
+set CFLAGS            = "-I$LIBCJSON_HOME/include $CFLAGS"
+set LFLAGS            = "-L$LIBCJSON_HOME/lib $LFLAGS"
+set SHARED_LFLAGS    = "$SHARED_LFLAGS -L$LIBCJSON_HOME/lib"
+set CJSONLIB_STATIC   = "$LIBCJSON_HOME/lib/libcjson.a"
 
 set LOADCHECK_ALL = loadcheck
 set LOADCHECK_OBJ = loadcheck.o
@@ -618,18 +622,6 @@ while ($#argv >= 1 && $?found)
       breaksw
    case  "-only-java"
       set JAVA = 2
-      set ONLY_PARAM_SPEC = 1
-      breaksw
-   case "-only-jemalloc":
-      set CORE   = 0
-      set JAVA   = 0
-      set QMAKE  = 0
-      set PLPA   = 0
-      set QMON   = 0
-      set REMOTE = 0
-      set MAKEJEMALLOCLIB  = 1
-      set MAKEWINGRIDAPP = 0
-      set MAKEWINGRIDLIB = 0
       set ONLY_PARAM_SPEC = 1
       breaksw
    case "-only-qmake":
@@ -1357,9 +1349,10 @@ case LINUXSPARC64:
    endif
 
    if ( $MAKEJEMALLOCLIB == 1 ) then
+      # LIBRARY_LIBS is used for linking shared libs
+      # we may not link shared libs against a memory allocator, copy LIBS before adding jemalloc
       set LIBRARY_LIBS = "$LIBS"
-      set JEMALLOC_CFLAGS  = "-Wno-error -DMOZ_MEMORY_LINUX"
-      set LIBS = "-ljemalloc $LIBS"
+      set LIBS = "$LIBS -L$JEMALLOC_HOME/lib -Wl,-Bstatic -ljemalloc_pic -Wl,-Bdynamic -lpthread $DLLIB"
    endif
 
    breaksw
@@ -1705,23 +1698,14 @@ case SOLARISAMD64:
    set LFLAGS        = "$LFLAGS $RUNPATH"
    set SHARED_LFLAGS = "$SHARED_LFLAGS $RUNPATH"
 
-#   if ( $BUILDARCH == "SOLARISAMD64" ) then
-#      set MAKEJEMALLOCLIB = 1
-#   endif
-
    if ( $COMPILE_ARCH == "USOLARIS64" ) then
       set MAKEMTMALLOCLIB = 0
    endif
 
    set LFLAGS   = "$LFLAGS $DEBUG_FLAG"
    set LIBRARY_LIBS = "$LIBS"
-   if ( $MAKEJEMALLOCLIB == 1 ) then
-      set JEMALLOC_CFLAGS  = "-DMOZ_MEMORY_SOLARIS -xc99"
-      set LIBS = "-ljemalloc $LIBS"
-   else
-      if ( $MAKEMTMALLOCLIB == 1 ) then
-         set LIBS = "-lmtmalloc $LIBS"
-      endif
+   if ( $MAKEMTMALLOCLIB == 1 ) then
+      set LIBS = "-lmtmalloc $LIBS"
    endif
 
    breaksw
@@ -1996,8 +1980,10 @@ if ( "$SGE_DEPEND" == 1 ) then
       mkdir $COMPILE_ARCH
    endif
 
+   set DEPEND_CFLAGS = "$CFLAGS -Wno-error"
+
    cd $COMPILE_ARCH
-   $MAKE $MAKEOPT -f ../Makefile "CC=$CC" "CFLAGS=$CFLAGS -U_GNU_SOURCE $NO_XDEPEND" "LFLAGS=$LFLAGS" "COMPILE_ARCH=$COMPILE_ARCH" $*
+   $MAKE $MAKEOPT -f ../Makefile "CC=$CC" "CFLAGS=$DEPEND_CFLAGS -U_GNU_SOURCE $NO_XDEPEND" "LFLAGS=$LFLAGS" "COMPILE_ARCH=$COMPILE_ARCH" $*
 
    if ( $status != 0 ) then
       echo not done
@@ -2091,50 +2077,6 @@ if ( "$MAKEWINGRIDLIB" == 1 ) then
    cd $SOURCE
 endif
 
-if ( "$MAKEJEMALLOCLIB" == 1 ) then
-   echo _________3_r_d_p_a_r_t_y__J_E_M_A_L_L_O_C_
-
-   cd $COMPILE_ARCH
-
-   switch ( "$argv" )
-      case clean:
-         set param = clean
-      breaksw
-
-      case depend:
-         set param = depend
-      breaksw
-
-      case messages:
-         set param = messages
-      breaksw
-
-      case libjemalloc.so:
-         set param = libjemalloc.so
-      breaksw
-
-      default:
-         set param = ""
-      breaksw
-   endsw
-
-   $MAKE $MAKEOPT -f $SOURCE/3rdparty/jemalloc/Makefile "MAKE=$MAKE" "CC=$CC" \
-      "COMPILE_ARCH=$COMPILE_ARCH" "JEMALLOC_CFLAGS=$JEMALLOC_CFLAGS" \
-      "CC=$CC" "CFLAGS=$CFLAGS" "SOURCE=$SOURCE" "SDIR=$SDIR" \
-      "LFLAGS=$LFLAGS" "STRIP=$STRIP" "RANLIB=$RANLIB" \
-      "AR=$AR" "ARFLAGS=$ARFLAGS" \
-      "SHARED_CFLAGS=$SHARED_CFLAGS" "SHARED_LFLAGS=$SHARED_LFLAGS" \
-      "DEPEND_FLAGS=$DEPEND_FLAGS" \
-      "SHAREDLD=$SHAREDLD" "SHAREDEXT=$SHAREDEXT" "LIBEXT=$LIBEXT" $param
-
-   if ( $status != 0 ) then
-      echo not done
-      exit 1
-   endif
-
-   cd $SOURCE
-endif
-
 if ( "$ADD_COPYRIGHT" == 1 ) then
    set CFLAGS = "-DADD_COPYRIGHT -I$COPYRIGHT_DIR $CFLAGS"
 else if ( "$ADD_UNIVA_COPYRIGHT" == 1 ) then
@@ -2196,6 +2138,7 @@ if ( "$CORE" == 1 && "$JAVA" != 2 ) then
          "LIBS_DIR=$LIBS_DIR" \
          "SECLIB=$SECLIB" \
          "SECLIBS_STATIC=$SECLIBS_STATIC" \
+         "CJSONLIB_STATIC=$CJSONLIB_STATIC" \
          "WINGRIDLIB=$WINGRIDLIB" "WINGRIDLIB_DEP=$WINGRIDLIB_DEP" \
          "WINGRIDLIB_STATIC=$WINGRIDLIB_A" "WINGRIDLIB_STATIC_DEP=$WINGRIDLIB_A_DEP" \
          "KRBTARGETS=$KRBTARGETS" "KRBDEPEND=$KRBDEPEND" "KRBCLEAN=$KRBCLEAN"\

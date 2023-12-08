@@ -77,8 +77,6 @@ int verify = 0;
 
 extern char **environ;
 
-int main(int argc, char *argv[]);
-
 /************************************************************************/
 int main(int argc, char **argv) {
    int ret = STATUS_OK;
@@ -295,7 +293,7 @@ static lList *qalter_parse_job_parameter(u_long32 me_who, lList *cmdline, lList 
    if ((ep = lGetElemStr(cmdline, SPA_switch, "-help"))) {
       lRemoveElem(cmdline, &ep);
       answer_list_add_sprintf(&answer, STATUS_ENOIMP, ANSWER_QUALITY_ERROR,
-                              MSG_ANSWER_HELPNOTALLOWEDINCONTEXT);
+                              SFNMAX, MSG_ANSWER_HELPNOTALLOWEDINCONTEXT);
       lFreeElem(&job);
       DRETURN(answer);
    }
@@ -835,7 +833,7 @@ static lList *qalter_parse_job_parameter(u_long32 me_who, lList *cmdline, lList 
       }
       if ((lGetPosViaElem(rep, JB_ja_tasks, SGE_NO_ABORT) == -1) && (lGetNumberOfElem(task_list))){
          answer_list_add_sprintf(&answer, STATUS_EUNKNOWN, ANSWER_QUALITY_ERROR,
-                                 MSG_OPTIONWORKSONLYONJOB);
+                                 SFNMAX, MSG_OPTIONWORKSONLYONJOB);
          lFreeElem(&job);
          sge_free(&rdp);
          DRETURN(answer);

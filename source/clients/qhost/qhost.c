@@ -662,7 +662,7 @@ static int sge_parse_qhost(lList **ppcmdline,
 
    }
    if (lGetNumberOfElem(*ppcmdline)) {
-     answer_list_add_sprintf(alpp, STATUS_ESEMANTIC, ANSWER_QUALITY_ERROR, MSG_PARSE_TOOMANYOPTIONS);
+     answer_list_add_sprintf(alpp, STATUS_ESEMANTIC, ANSWER_QUALITY_ERROR, SFNMAX, MSG_PARSE_TOOMANYOPTIONS);
      goto error;
    }
 

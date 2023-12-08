@@ -793,7 +793,7 @@ cleanup:
    ret = terminal_leave_raw_mode();
    DPRINTF(("terminal_leave_raw_mode() returned %s (%d)\n", strerror(ret), ret));
    if (ret != 0) {
-      sge_dstring_sprintf(p_err_msg, "error resetting terminal mode: %s (%d)", strerror(ret));
+      sge_dstring_sprintf(p_err_msg, "error resetting terminal mode: %s (%d)", strerror(ret), ret);
       ret_val = 7; 
    }
 

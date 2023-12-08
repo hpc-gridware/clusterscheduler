@@ -243,7 +243,7 @@ bool sge_parse_qrsub(sge_gdi_ctx_class_t *ctx, lList *pcmdline, lList **alpp, lL
                               lGetString(ep,SPA_switch)); 
       } else {
          answer_list_add_sprintf(alpp, STATUS_ESEMANTIC, ANSWER_QUALITY_ERROR,
-                              MSG_PARSE_INVALIDOPTIONARGUMENT);
+                                 SFNMAX, MSG_PARSE_INVALIDOPTIONARGUMENT);
        }
       DRETURN(false);
    }

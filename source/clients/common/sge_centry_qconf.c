@@ -476,13 +476,13 @@ centry_list_add_del_mod_via_gdi(sge_gdi_ctx_class_t *ctx, lList **this_list, lLi
             if (name1 == NULL) {
                answer_list_add_sprintf(answer_list, STATUS_EUNKNOWN,
                                        ANSWER_QUALITY_ERROR,
-                                       MSG_CENTRY_NULL_NAME);
+                                       SFNMAX, MSG_CENTRY_NULL_NAME);
                DRETURN(false);
             }                  
             else if (name2 == NULL) {
                answer_list_add_sprintf(answer_list, STATUS_EUNKNOWN,
                                        ANSWER_QUALITY_ERROR,
-                                       MSG_CENTRY_NULL_NAME);
+                                       SFNMAX, MSG_CENTRY_NULL_NAME);
                DRETURN(false);
             }                  
             else if (shortcut1 == NULL) {
@@ -517,13 +517,13 @@ centry_list_add_del_mod_via_gdi(sge_gdi_ctx_class_t *ctx, lList **this_list, lLi
             if (urgency1 == NULL) {
                answer_list_add_sprintf(answer_list, STATUS_EUNKNOWN,
                                              ANSWER_QUALITY_ERROR,
-                                             MSG_CENTRY_NULL_URGENCY);
+                                             SFNMAX, MSG_CENTRY_NULL_URGENCY);
                DRETURN(false);
             }
             else if (urgency2 == NULL) {
                answer_list_add_sprintf(answer_list, STATUS_EUNKNOWN,
                                               ANSWER_QUALITY_ERROR,
-                                              MSG_CENTRY_NULL_URGENCY);
+                                              SFNMAX, MSG_CENTRY_NULL_URGENCY);
                  DRETURN(false);
             }
 
@@ -677,7 +677,7 @@ centry_list_add_del_mod_via_gdi(sge_gdi_ctx_class_t *ctx, lList **this_list, lLi
          if (lGetNumberOfElem(*answer_list) == 0) {
             answer_list_add_sprintf(answer_list, STATUS_OK, 
                                     ANSWER_QUALITY_INFO, 
-                                    MSG_CENTRY_NOTCHANGED);
+                                    SFNMAX, MSG_CENTRY_NOTCHANGED);
          }
 
          lFreeList(&gdi_answer_list);

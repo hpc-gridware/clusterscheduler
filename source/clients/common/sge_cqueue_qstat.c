@@ -122,7 +122,6 @@ bool cqueue_calculate_summary(const lListElem *cqueue,
                                    qinstance, exechost_list, centry_list, 
                                    &has_value_from_object)) {
             if (has_value_from_object) {
-               *is_load_available = true;
                load_slots += slots;
                *load += host_load_avg * slots;
             } 
@@ -183,7 +182,10 @@ bool cqueue_calculate_summary(const lListElem *cqueue,
             *error += slots;
          }
       }  
-      *load /= load_slots;
+      if (load_slots > 0) {
+         *is_load_available = true;
+         *load /= load_slots;
+      }
       *available -= used_available;
    }
    DEXIT;
@@ -738,7 +740,7 @@ bool is_cqueue_selected(lList *queue_list)
 *     int qinstance_slots_reserved_now(const lListElem *this_elem) 
 *
 *  FUNCTION
-*     rturns the current amount of reserved slots
+*     returns the current number of reserved slots
 *
 *  INPUTS
 *     const lListElem *this_elem - queue elem (QU_Type)

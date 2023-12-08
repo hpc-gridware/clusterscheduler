@@ -76,8 +76,6 @@ static void *sig_thread(void *dummy);
 static int report_exit_status(int stat, const char *jobid);
 static void error_handler(const char *message);
 
-int main(int argc, char **argv);
-
 /************************************************************************/
 int 
 main(int argc, char **argv) 
@@ -198,7 +196,7 @@ main(int argc, char **argv)
    }
 
    /*
-    * Merge all commandline options and interprete them
+    * Merge all commandline options and interpret them
     */
    opt_list_merge_command_lines(&opts_all, &opts_defaults, 
                                 &opts_scriptfile, &opts_cmdline);
@@ -519,7 +517,7 @@ Error:
 *******************************************************************************/
 static char *get_bulk_jobid_string(long job_id, int start, int end, int step)
 {
-   char *jobid_str = (char *)malloc(sizeof(char) * 1024);
+   char *jobid_str = sge_malloc(sizeof(char) * 1024);
    char *ret_str = NULL;
    
    sprintf(jobid_str, "%ld.%d-%d:%d", job_id, start, end, step);

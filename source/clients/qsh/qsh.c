@@ -149,8 +149,6 @@ static void remove_unknown_opts(lList *lp, u_long32 jb_now, int tightly_integrat
 static void delete_job(sge_gdi_ctx_class_t *ctx, u_long32 job_id, lList *lp);
 static void set_builtin_ijs_signals_and_handlers(void);
 
-int main(int argc, char **argv);
-
 #define VERBOSE_LOG(x) if (log_state_get_log_verbose()) { fprintf x; fflush(stderr); }
 
 /****** Interactive/qsh/--Interactive ***************************************

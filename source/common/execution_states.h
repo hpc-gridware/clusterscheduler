@@ -42,7 +42,7 @@
 #define SSTATE_FAILURE_BEFORE_JOB   1
 
 /* these error conditions are recovered by the execd
- * they are shepherd errors to an the numbers must be distinct from
+ * they are shepherd errors too and the numbers must be distinct from
  * SSTATE_*
  */
 #define ESSTATE_NO_SHEPHERD         2  /* not used at the moment */

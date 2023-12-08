@@ -46,5 +46,6 @@
 #define MSG_QRSH_STARTER_EMPTY_WRAPPER       _MESSAGE(15010, _("qrsh_starter: environment variable QRSH_WRAPPER has no value"))
 #define MSG_QRSH_STARTER_EXECCHILDFAILED_S   _MESSAGE(15011, _("qrsh_starter: executing child process "SFN" failed: "SFN))
 #define MSG_QRSH_STARTER_INVALIDCOMMAND      _MESSAGE(15012, _("qrsh_starter: received invalid command to execute"))
+#define MSG_QRSH_STARTER_NOCWDINCONFIG       _MESSAGE(15013, _("qrsh_starter: can't get cwd from config"))
 
 #endif /* __MSG_QRSH_H */

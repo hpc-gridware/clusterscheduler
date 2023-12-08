@@ -229,7 +229,7 @@ static char *get_cwd_defaults_file_path(lList **answer_list)
       answer_list_add(answer_list, str, STATUS_EDISK, ANSWER_QUALITY_ERROR);
    }
    
-   file = (char *)malloc(strlen(cwd) + strlen(SGE_HOME_DEF_REQ_FILE) + 2);
+   file = sge_malloc(strlen(cwd) + strlen(SGE_HOME_DEF_REQ_FILE) + 2);
    
    strcpy(file, cwd);
    if (*file && (file[strlen(file) - 1] != '/')) {
@@ -533,7 +533,7 @@ void opt_list_append_opts_from_script_path(u_long32 prog_number,
           (strncmp (scriptfile, "$HOME/", 6) != 0) &&
           (strcmp (scriptfile, "$HOME") != 0)) {
          /* Malloc space for the path, the filename, the \0, and perhaps a / */
-         scriptpath = (char *)malloc(sizeof(char) * (strlen(path) + strlen(scriptfile) + 2));
+         scriptpath = sge_malloc(sizeof(char) * (strlen(path) + strlen(scriptfile) + 2));
          strcpy (scriptpath, path);
          
          /* If the last character is not a slash, add one. */
@@ -542,7 +542,7 @@ void opt_list_append_opts_from_script_path(u_long32 prog_number,
          }
          
          strcat (scriptpath, scriptfile);
-      } else {
+      } else if (scriptfile) {
          scriptpath = strdup (scriptfile);
       }
    }
@@ -627,7 +627,7 @@ void opt_list_merge_command_lines(lList **opts_all,
       *opts_cmdline = NULL;
    }
 
-   /* If -ar was requested add -w if it was not explicit set */
+   /* If -ar was requested add -w if it was not explicitly set */
    if (lGetElemStr(*opts_all, SPA_switch, "-ar") != NULL) {
       if (lGetElemStr(*opts_all, SPA_switch, "-w") == NULL) {
          lListElem *ep_opt = sge_add_arg(opts_all, r_OPT, lIntT, "-w", "e");
@@ -638,7 +638,7 @@ void opt_list_merge_command_lines(lList **opts_all,
 
 /****** sge/opt/opt_list_has_X() **********************************************
 *  NAME
-*     opt_list_has_X() -- is a certail option contained in list 
+*     opt_list_has_X() -- is a certain option contained in list?
 *
 *  SYNOPSIS
 *     bool opt_list_has_X(lList *opts, const char *option) 

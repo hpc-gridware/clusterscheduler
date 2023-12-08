@@ -32,14 +32,6 @@ Boston, MA 02111-1307, USA.  */
 #include <limits.h>   /* PATH_MAX */
 #include <signal.h>   /* kill */
 
-#ifdef LINUX
-#include <rpc/types.h> /* MAXHOSTNAMELEN */
-#endif
-
-#if defined(AIX43) || defined(sgi)
-#include <sys/param.h> /* MAXHOSTNAMELEN */
-#endif
-
 /****** Interactive/qmake/--Introduction ***************************************
 *
 *  NAME
@@ -157,7 +149,6 @@ struct finished_job {
 
 #define LOCK_SLEEP_TIME 500 /* [ms] */
 #define WAIT_SLOT_TIME    5 /* [s]  */
-
 
 /****** Interactive/qmake/-Global_Variables ************************************
 *
@@ -332,7 +323,7 @@ static void remote_exit(int code, const char *message, const char *reason)
    }
 
    if(message) {
-      fprintf(stderr, message);
+      fprintf(stderr, "%s", message);
    }
 
    if(reason) {
@@ -640,14 +631,12 @@ static void init_remote()
       }
       
       /* lockfile_name */
-      sprintf(buffer, "%s/qmake_lockfile", tmpdir);
-      lockfile_name = (char *)malloc(strlen(buffer) + 1);
-      strcpy(lockfile_name, buffer);
+      snprintf(buffer, sizeof buffer, "%s/qmake_lockfile", tmpdir);
+      lockfile_name = strdup(buffer);
       
       /* hostfile_name */
-      sprintf(buffer, "%s/qmake_hostfile", tmpdir);
-      hostfile_name = (char *)malloc(strlen(buffer) + 1);
-      strcpy(hostfile_name, buffer);
+      snprintf(buffer, sizeof buffer, "%s/qmake_hostfile", tmpdir);
+      hostfile_name = strdup(buffer);
       
       /* sge_hostfile_name */
       c = getenv("PE_HOSTFILE");
@@ -656,8 +645,7 @@ static void init_remote()
                      "PE_HOSTFILE", strerror(errno));
       }
 
-      sge_hostfile_name = (char *)malloc(strlen(c) + 1);
-      strcpy(sge_hostfile_name, c);
+      sge_hostfile_name = strdup(c);
      
       if(be_verbose) {
          fprintf(stdout, "sge hostfile = %s\n", sge_hostfile_name);
@@ -1261,7 +1249,7 @@ void set_default_options()
 
       /* append architecture */
       if(insert_resource_request) {
-         sprintf(buffer, "arch=%s", architecture);
+         snprintf(buffer, sizeof buffer, "arch=%s", architecture);
    
          if(be_verbose) {
             fprintf(stdout, "setting default options: -l %s\n", buffer);
@@ -1431,7 +1419,7 @@ static void equalize_pe_j()
    }
 
    /* append pe */
-   sprintf(buffer, "1-%d", nslots);
+   snprintf(buffer, sizeof buffer, "1-%d", nslots);
    sge_argv[sge_argc++] = "-pe";
    sge_argv[sge_argc++] = "make";
    sge_argv[sge_argc++] = buffer;
@@ -1539,7 +1527,8 @@ static void submit_qmake()
 
             if(WIFSIGNALED(status)) {
                char buffer[1024];
-               sprintf(buffer, "qrsh exited on signal %d", WTERMSIG(status));
+               snprintf(buffer, sizeof buffer, "qrsh exited on signal %d",
+                        WTERMSIG(status));
                remote_exit(EXIT_FAILURE, buffer, NULL);
             }
          }   
@@ -1589,11 +1578,10 @@ void remote_options(int *p_argc, char **p_argv[])
    makelevel = getenv("MAKELEVEL");
 
    /* store program name to detect recursive make calls */
-   program_name = (char *)malloc(strlen((*p_argv)[0]) + 1);
+   program_name = strdup((*p_argv)[0]);
    if(program_name == 0) {
       remote_exit(EXIT_FAILURE, "malloc failed", strerror(errno));
    }
-   strcpy(program_name, (*p_argv)[0]);
  
    /* split sge and gmake options */
    if(!parse_options(p_argc, p_argv)) {
@@ -1661,14 +1649,14 @@ void remote_options(int *p_argc, char **p_argv[])
 
 void remote_setup ()
 {
-   static char hostbuffer[1024];
+   static char hostbuffer[MAXHOSTNAMELEN];
    struct hostent *hostinfo;
    
    /* if remote enabled, initialize filenames, hostfile, filehandles, number of hosts  */
    if(remote_enabled) {
       init_remote();
 
-      if(gethostname(hostbuffer, 1023) != 0) {
+      if(gethostname(hostbuffer, sizeof hostbuffer) != 0) {
          remote_exit(EXIT_FAILURE, "gethostname failed", strerror(errno));
       }
    
@@ -1677,12 +1665,10 @@ void remote_setup ()
          remote_exit(EXIT_FAILURE, "gethostbyname failed", strerror(errno));
       }
 
-      localhost = (char *)malloc(strlen(hostinfo->h_name) + 1);
+      localhost = strdup(hostinfo->h_name);
       if(localhost == NULL) {
          remote_exit(EXIT_FAILURE, "malloc failed", strerror(errno));
       }
-
-      strcpy(localhost, hostinfo->h_name);
    }
 }
 
@@ -2187,7 +2173,7 @@ int start_remote_job (char **argv, char **envp,
       /* set PAREND env var */
       if(getenv("JOB_ID")) {
          static char buffer[1024];
-         sprintf(buffer, "PARENT=%s", getenv("JOB_ID"));
+         snprintf(buffer, sizeof buffer, "PARENT=%s", getenv("JOB_ID"));
          putenv(buffer);
       }
   

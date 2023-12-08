@@ -868,11 +868,11 @@ static int job_stdout_job(job_handler_t* handler, u_long32 jid, job_summary_t *s
    if (!ctx->job_header_printed) {
       int i;
       int line_length = qstat_env->longest_queue_length-10+1;
-      char * seperator = malloc(line_length);		   
+      char * seperator = sge_malloc(line_length);
       const char *part1 = "%s%-7.7s %s %s%s%s%s%s %-10.10s %-12.12s %s%-5.5s %s%s%s%s%s%s%s%s%s%-";
       const char *part3 = ".";
 	   const char *part5 = "s %s %s%s%s%s%s%s";
-		char *part6 = malloc(strlen(part1) + strlen(part3) + strlen(part5) + 20);
+		char *part6 = sge_malloc(strlen(part1) + strlen(part3) + strlen(part5) + 20);
       
       ctx->job_header_printed = true;
       
@@ -2018,7 +2018,7 @@ qstat_show_job(sge_gdi_ctx_class_t *ctx, lList *jid_list, u_long32 isXML, qstat_
 
    if (isXML) {
       /* filter the message list to contain only jobs that have been requested.
-         First remove all enteries in the job_number_list that are not in the 
+         First remove all entries in the job_number_list that are not in the
          jbList. Then remove all entries (job_number_list, message_number and 
          message) from the message_list that have no jobs in them. 
       */

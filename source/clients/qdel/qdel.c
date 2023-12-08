@@ -66,8 +66,6 @@ static bool sge_parse_qdel(lList **ppcmdline, lList **ppreflist, u_long32 *pforc
 
 extern char **environ;
 
-int main(int argc, char *argv[]);
-
 /************************************************************************/
 int main(int argc, char **argv) {
    /* lListElem *rep, *nxt_rep, *jep, *aep, *jrep, *idep; */
@@ -335,7 +333,7 @@ lList **alpp
          sp++;
          if (*sp == NULL) {
              answer_list_add_sprintf(alpp, STATUS_ESEMANTIC, ANSWER_QUALITY_ERROR,
-                                     MSG_PARSE_TOPTIONMUSTHAVEALISTOFTASKIDRANGES);
+                                     SFNMAX, MSG_PARSE_TOPTIONMUSTHAVEALISTOFTASKIDRANGES);
              goto error;
          }
 

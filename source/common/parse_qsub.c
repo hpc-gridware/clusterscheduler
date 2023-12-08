@@ -274,7 +274,7 @@ u_long32 flags
          sp++;
          if (!*sp) {
              answer_list_add_sprintf(&answer, STATUS_ESEMANTIC, ANSWER_QUALITY_ERROR,
-                                     MSG_PARSE_ACOPTIONMUSTHAVECONTEXTLISTLISTARGUMENT);
+                                     SFNMAX, MSG_PARSE_ACOPTIONMUSTHAVECONTEXTLISTLISTARGUMENT);
              DRETURN(answer);
          }
 
@@ -396,7 +396,7 @@ u_long32 flags
             interval = sge_parse_checkpoint_interval(*sp);
             if (!interval) {
                answer_list_add_sprintf(&answer, STATUS_ESEMANTIC, ANSWER_QUALITY_ERROR, 
-                                       MSG_PARSE_CARGUMENTINVALID);
+                                       SFNMAX, MSG_PARSE_CARGUMENTINVALID);
                DRETURN(answer);
             }
             ep_opt = sge_add_arg(pcmdline, c_OPT, lLongT, *(sp - 1), *sp);
@@ -404,7 +404,7 @@ u_long32 flags
          }
          else if (attr == -1) {
             answer_list_add_sprintf(&answer, STATUS_ESEMANTIC, ANSWER_QUALITY_ERROR,
-                                    MSG_PARSE_CSPECIFIERINVALID);
+                                    SFNMAX, MSG_PARSE_CSPECIFIERINVALID);
             DRETURN(answer);
          }
          else {
@@ -564,7 +564,7 @@ u_long32 flags
          sp++;
          if (!*sp) {
              answer_list_add_sprintf(&answer, STATUS_ESEMANTIC, ANSWER_QUALITY_ERROR,
-                                     MSG_PARSE_DCOPTIONMUSTHAVESIMPLECONTEXTLISTARGUMENT);
+                                     SFNMAX, MSG_PARSE_DCOPTIONMUSTHAVESIMPLECONTEXTLISTARGUMENT);
              DRETURN(answer);
          }
 
@@ -600,7 +600,7 @@ u_long32 flags
          sp++;
          if (!*sp) {
              answer_list_add_sprintf(&answer, STATUS_ESEMANTIC, ANSWER_QUALITY_ERROR,
-                                     MSG_PARSE_DISPLAYOPTIONMUSTHAVEARGUMENT);
+                                     SFNMAX, MSG_PARSE_DISPLAYOPTIONMUSTHAVEARGUMENT);
              DRETURN(answer);
          }
 
@@ -976,7 +976,7 @@ u_long32 flags
                lSetList(ep_opt, SPA_argval_lListT, path_list);
             } else {
                answer_list_add_sprintf(&answer, STATUS_ESEMANTIC, ANSWER_QUALITY_ERROR,
-                                       MSG_SGETEXT_NOMEM);
+                                       SFNMAX, MSG_SGETEXT_NOMEM);
                DRETURN(answer);
             }
          } else {
@@ -1126,13 +1126,13 @@ u_long32 flags
          }
          if (strchr(*sp, '/')) {
              answer_list_add_sprintf(&answer, STATUS_ESEMANTIC, ANSWER_QUALITY_ERROR,
-                 MSG_PARSE_ARGUMENTTONOPTIONMUSTNOTCONTAINBSL );
+                 SFNMAX, MSG_PARSE_ARGUMENTTONOPTIONMUSTNOTCONTAINBSL );
              DRETURN(answer);
          }
 
          if (**sp == '\0') {
              answer_list_add_sprintf(&answer, STATUS_ESEMANTIC, ANSWER_QUALITY_ERROR,
-                    MSG_PARSE_EMPTYSTRINGARGUMENTTONOPTIONINVALID );
+                    SFNMAX, MSG_PARSE_EMPTYSTRINGARGUMENTTONOPTIONINVALID);
              DRETURN(answer);
          }
 
@@ -1313,7 +1313,7 @@ DTRACE;
          sp++;
          if (!*sp) {
              answer_list_add_sprintf(&answer, STATUS_ESEMANTIC, ANSWER_QUALITY_ERROR,
-                    MSG_PARSE_PEOPTIONMUSTHAVEPENAMEARGUMENT );
+                    SFNMAX, MSG_PARSE_PEOPTIONMUSTHAVEPENAMEARGUMENT );
              sge_dstring_free(&d_arg);
              DRETURN(answer);
          }

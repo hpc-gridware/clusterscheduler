@@ -55,6 +55,16 @@ endsw
 #
 setenv TMPDIR /tmp
 
+#
+# LIBCJSON_HOME
+#
+set LIBCJSON_HOME = /tools/PKG/cjson-1.7.15/$buildarch
+
+#
+# JEMALLOC_HOME
+#
+set JEMALLOC_HOME = /tools/PKG/jemalloc-5.3.0/$buildarch
+
 # 
 # OPENSSL_HOME the directory where the include and lib directory of openssl
 # is installed

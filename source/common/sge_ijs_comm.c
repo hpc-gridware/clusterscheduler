@@ -1287,7 +1287,7 @@ int comm_flush_write_messages(COMM_HANDLE *handle, dstring *err_msg)
        * We just tried to send the messages and it wasn't possible to send
        * all messages - give the network some time to recover.
        */
-      /* TODO (NEW): make this working correctly by calling check_client_alive */
+      /* TODO (NEW): make this work correctly by calling check_client_alive */
       if (elems > 0) {
          usleep(10000);
          retries--;

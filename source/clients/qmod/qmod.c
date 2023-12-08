@@ -41,7 +41,7 @@
 
 #include "sgeobj/sge_str.h"
 #include "sgeobj/msg_sgeobjlib.h"
-#include "sgeobj//sge_range.h"
+#include "sgeobj/sge_range.h"
 #include "sgeobj/parse.h"
 #include "sgeobj/sge_all_listsL.h"
 #include "sgeobj/sge_feature.h"
@@ -69,9 +69,6 @@ static int qmod_usage(FILE *fp, char *what);
 static bool answer_list_has_exit_code_error(lList **answer_list);
 
 extern char **environ;
-
-int main(int argc, char *argv[]);
-
 
 int main(
 int argc,
@@ -235,7 +232,7 @@ lList *alp = NULL;
    if (*rp == NULL) {
       /* no command line argument: print help on error */
       qmod_usage(stderr, NULL);
-      answer_list_add_sprintf(&alp, STATUS_ESEMANTIC, ANSWER_QUALITY_ERROR, MSG_PARSE_NOOPTIONARGUMENT);
+      answer_list_add_sprintf(&alp, STATUS_ESEMANTIC, ANSWER_QUALITY_ERROR, SFNMAX, MSG_PARSE_NOOPTIONARGUMENT);
    }
 
    while(*(sp=rp)) {
@@ -477,7 +474,7 @@ static lList *sge_parse_qmod(lList **ppcmdline, lList **ppreflist, u_long32 *pfo
          qmod_usage(stderr, NULL);
       }
       answer_list_add_sprintf(&alp, STATUS_ESEMANTIC, ANSWER_QUALITY_ERROR,
-                              MSG_PARSE_TOOMANYOPTIONS);
+                              SFNMAX, MSG_PARSE_TOOMANYOPTIONS);
    }
 
    DRETURN(alp);

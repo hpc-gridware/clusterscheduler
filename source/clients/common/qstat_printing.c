@@ -186,6 +186,7 @@ int indent
 /*-------------------------------------------------------------------------*/
 /* print jobs per queue                                                    */
 /*-------------------------------------------------------------------------*/
+/* actually just called by qhost */
 int sge_print_jobs_queue(
 lListElem *qep,
 lList *job_list,
@@ -473,11 +474,11 @@ lList **alpp
          first_time = 0;
          if (!(full_listing & QSTAT_DISPLAY_FULL)) {
             int line_length = queue_name_length-10+1;
-            char * seperator = malloc(line_length);		   
+            char * seperator = sge_malloc(line_length);
             const char *part1 = "%s%-7.7s %s %s%s%s%s%s %-10.10s %-12.12s %s%-5.5s %s%s%s%s%s%s%s%s%s%-";
             const char *part3 = ".";
             const char *part5 = "s %s %s%s%s%s%s%s";
-            char *part6 = malloc(strlen(part1) + strlen(part3) + strlen(part5) + 20);
+            char *part6 = sge_malloc(strlen(part1) + strlen(part3) + strlen(part5) + 20);
             {
                int i;
                for(i=0; i<line_length; i++){

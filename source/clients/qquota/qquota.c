@@ -457,7 +457,7 @@ static bool sge_parse_cmdline_qquota(char **argv, lList **ppcmdline, lList **alp
    DENTER(TOP_LAYER, "sge_parse_cmdline_qquota");
 
    if (argv == NULL) {
-      answer_list_add_sprintf(alpp, STATUS_ESEMANTIC, ANSWER_QUALITY_ERROR, MSG_NULLPOINTER);
+      answer_list_add_sprintf(alpp, STATUS_ESEMANTIC, ANSWER_QUALITY_ERROR, SFNMAX, MSG_NULLPOINTER);
       DRETURN(false);
    }
 
@@ -593,7 +593,7 @@ sge_parse_qquota(lList **ppcmdline, lList **host_list, lList **resource_list,
 
    if (lGetNumberOfElem(*ppcmdline)) {
      qquota_usage(stderr);
-     answer_list_add_sprintf(alpp, STATUS_ESEMANTIC, ANSWER_QUALITY_ERROR, MSG_PARSE_TOOMANYOPTIONS);
+     answer_list_add_sprintf(alpp, STATUS_ESEMANTIC, ANSWER_QUALITY_ERROR, SFNMAX, MSG_PARSE_TOOMANYOPTIONS);
      ret = false;
    }
 
