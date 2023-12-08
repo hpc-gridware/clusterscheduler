@@ -275,6 +275,7 @@ struct _lNameSpace {
    int lower;
    int size;
    char **namev;
+   lDescr *descr;
 };
 
 struct _lDescr {

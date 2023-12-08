@@ -127,7 +127,6 @@
 #include "sgeobj/sge_pe_task_PET_L.h"
 #include "sgeobj/sge_pe_task_PETR_L.h"
 #include "sgeobj/sge_permission_PERM_L.h"
-#include "sgeobj/sge_pref_PREF_L.h"
 #include "sgeobj/sge_ptf_JL_L.h"
 #include "sgeobj/sge_ptf_JO_L.h"
 #include "sgeobj/sge_ptf_JP_L.h"
@@ -187,184 +186,190 @@ extern "C" {
 extern "C" {
 #endif
 
-   lNameSpace nmv[] = {
+lNameSpace nmv[] = {
 
 /*  
    1. unique keq of the first element in the descriptor 
    2. number of elements in the descriptor 
    3. array with names describing the fields of the descriptor
-          1.        2.           3.
+   4. pointer to the descriptor
+   1.              2.   3.   4.
 */
-      {JB_LOWERBOUND, JBS, JBN},        /* job */
-      {QU_LOWERBOUND, QUS, QUN},        /* Queue Instance list */
-      {EH_LOWERBOUND, EHS, EHN},        /* exec host */
-      {AH_LOWERBOUND, AHS, AHN},        /* admin host */
-      {SH_LOWERBOUND, SHS, SHN},        /* submit host */
-      {AN_LOWERBOUND, ANS, ANN},        /* gdi acknowledge format */
-      {HL_LOWERBOUND, HLS, HLN},        /* load of an exec host */
-      {HS_LOWERBOUND, HSS, HSN},        /* scaling of and exec host */
-      {EV_LOWERBOUND, EVS, EVN},        /* event client */
-      {ET_LOWERBOUND, ETS, ETN},        /* event */
-      {CE_LOWERBOUND, CES, CEN},        /* complex entity */
-      {LR_LOWERBOUND, LRS, LRN},        /* load report */
-      {OR_LOWERBOUND, ORS, ORN},        /* ?? */
-      {OQ_LOWERBOUND, OQS, OQN},        /* ?? */
-      {US_LOWERBOUND, USES, USEN},      /* user set */
-      {UE_LOWERBOUND, UES, UEN},        /* user set entry */
-      {RN_LOWERBOUND, RNS, RNN},        /* range list */
-      {PN_LOWERBOUND, PNS, PNN},        /* path name list */
-      {AT_LOWERBOUND, ATS, ATN},        /* account list */
-      {VA_LOWERBOUND, VAS, VAN},        /* variable list */
-      {MR_LOWERBOUND, MRS, MRN},        /* mail recipiants list */
-      {UM_LOWERBOUND, UMS, UMN},        /* manager list */
-      {UO_LOWERBOUND, UOS, UON},        /* operator list */
-      {PE_LOWERBOUND, PES, PEN},        /* parallel environment object */
-      {QR_LOWERBOUND, QRS, QRN},        /* queue reference used in PE object */
-      {JC_LOWERBOUND, JCS, JCN},        /* job couter used in schedd */
-      {CONF_LOWERBOUND, CONFS, CONFN},  /* config */
-      {CF_LOWERBOUND, CFS, CFN},        /* config list */
-      {ST_LOWERBOUND, STS, STN},        /* string list */
-      {STU_LOWERBOUND, STUS, STUN},     /* unique string list */
-      {JG_LOWERBOUND, JGS, JGN},        /* jobs sublist of granted destinatin 
-                                         * identifiers */
-      {SO_LOWERBOUND, SOS, SON},        /* subordinate configuration list */
-      {QAJ_LOWERBOUND, QAJS, QAJN},     /* list for qacct special purpose */
-      {SPA_LOWERBOUND, SPAS, SPAN},     /* option parse struct */
-      {REP_LOWERBOUND, REPS, REPN},     /* report list */
-      {UA_LOWERBOUND, UAS, UAN},        /* usage list */
-      {PR_LOWERBOUND, PRS, PRN},        /* SGEEE - project */
-      {UU_LOWERBOUND, UUS, UUN},        /* SGEEE - user */
-      {STN_LOWERBOUND, STNS, STNN},     /* SGEEE - share tree node */
-      {SC_LOWERBOUND, SCS, SCN},        /* scheduler config */
-      {PET_LOWERBOUND, PETS, PETN},     /* PE Task object */
-      {PETR_LOWERBOUND, PETRS, PETRN},  /* PE Task request object */
-      {FPET_LOWERBOUND, FPETS, FPETN},  /* finished PE Task reference */
-      {JR_LOWERBOUND, JRS, JRN},        /* Job report */
-      {LIC_LOWERBOUND, LICS, LICN},     /* structure of license report */
-      {CK_LOWERBOUND, CKS, CKN},        /* checkpointing object */
-      {UPU_LOWERBOUND, UPUS, UPUN},     /* SGEEE - sublist of user/project for
-                                         * storing jobs old usage */
-      {KRB_LOWERBOUND, KRBS, KRBN},     /* Kerberos connection list */
-      {PA_LOWERBOUND, PAS, PAN},        /* Path alias list */
-      {JRE_LOWERBOUND, JRES, JREN},     /* job reference */
-      {ID_LOWERBOUND, IDS, IDN},        /* id struct used for qmod requests */
-      {MA_LOWERBOUND, MAS, MAN},        /* ma struct used for multi gdi
-                                         * requests */
+   {JB_LOWERBOUND, JBS, JBN, JB_Type},        /* job */
+   {QU_LOWERBOUND, QUS, QUN, QU_Type},        /* Queue Instance list */
+   {EH_LOWERBOUND, EHS, EHN, EH_Type},        /* exec host */
+   {AH_LOWERBOUND, AHS, AHN, AH_Type},        /* admin host */
+   {SH_LOWERBOUND, SHS, SHN, SH_Type},        /* submit host */
+   {AN_LOWERBOUND, ANS, ANN, AN_Type},        /* gdi acknowledge format */
+   {HL_LOWERBOUND, HLS, HLN, HL_Type},        /* load of an exec host */
+   {HS_LOWERBOUND, HSS, HSN, HS_Type},        /* scaling of and exec host */
+   {ET_LOWERBOUND, ETS, ETN, ET_Type},        /* event */
+   {EV_LOWERBOUND, EVS, EVN, EV_Type},        /* event client */
+   {EVS_LOWERBOUND, EVSS, EVSN, EVS_Type},    /* subscribed event list */
+   {CE_LOWERBOUND, CES, CEN, CE_Type},        /* complex entity */
+   {LR_LOWERBOUND, LRS, LRN, LR_Type},        /* load report */
+   {OR_LOWERBOUND, ORS, ORN, OR_Type},        /* ?? */
+   {OQ_LOWERBOUND, OQS, OQN, OQ_Type},        /* ?? */
+   {US_LOWERBOUND, USES, USEN, US_Type},      /* user set */
+   {UE_LOWERBOUND, UES, UEN, UE_Type},        /* user set entry */
+   {RN_LOWERBOUND, RNS, RNN, RN_Type},        /* range list */
+   {PN_LOWERBOUND, PNS, PNN, PN_Type},        /* path name list */
+   {AT_LOWERBOUND, ATS, ATN, AT_Type},        /* account list */
+   {VA_LOWERBOUND, VAS, VAN, VA_Type},        /* variable list */
+   {MR_LOWERBOUND, MRS, MRN, MR_Type},        /* mail recipiants list */
+   {UM_LOWERBOUND, UMS, UMN, UM_Type},        /* manager list */
+   {UO_LOWERBOUND, UOS, UON, UO_Type},        /* operator list */
+   {PE_LOWERBOUND, PES, PEN, PE_Type},        /* parallel environment object */
+   {QR_LOWERBOUND, QRS, QRN, QR_Type},        /* queue reference used in PE object */
+   {JC_LOWERBOUND, JCS, JCN, JC_Type},        /* job couter used in schedd */
+   {CONF_LOWERBOUND, CONFS, CONFN, CONF_Type},  /* config */
+   {CF_LOWERBOUND, CFS, CFN, CF_Type},        /* config list */
+   {ST_LOWERBOUND, STS, STN, ST_Type},        /* string list */
+   {STU_LOWERBOUND, STUS, STUN, STU_Type},     /* unique string list */
+   {JG_LOWERBOUND, JGS, JGN, JG_Type},        /* jobs sublist of granted destinatin 
+                                      * identifiers */
+   {SO_LOWERBOUND, SOS, SON, SO_Type},        /* subordinate configuration list */
+   {QAJ_LOWERBOUND, QAJS, QAJN, QAJ_Type},     /* list for qacct special purpose */
+   {SPA_LOWERBOUND, SPAS, SPAN, SPA_Type},     /* option parse struct */
+   {REP_LOWERBOUND, REPS, REPN, REP_Type},     /* report list */
+   {UA_LOWERBOUND, UAS, UAN, UA_Type},        /* usage list */
+   {PR_LOWERBOUND, PRS, PRN, PR_Type},        /* SGEEE - project */
+   {UU_LOWERBOUND, UUS, UUN, UU_Type},        /* SGEEE - user */
+   {STN_LOWERBOUND, STNS, STNN, STN_Type},     /* SGEEE - share tree node */
+   {SC_LOWERBOUND, SCS, SCN, SC_Type},        /* scheduler config */
+   {PET_LOWERBOUND, PETS, PETN, PET_Type},     /* PE Task object */
+   {PETR_LOWERBOUND, PETRS, PETRN, PETR_Type},  /* PE Task request object */
+   {FPET_LOWERBOUND, FPETS, FPETN, FPET_Type},  /* finished PE Task reference */
+   {JR_LOWERBOUND, JRS, JRN, JR_Type},        /* Job report */
+   {LIC_LOWERBOUND, LICS, LICN, LIC_Type},     /* structure of license report */
 
-      {TE_LOWERBOUND, TES, TEN},        /* time event struct used for timer
-                                         * in qmaster */
-      {CAL_LOWERBOUND, CALS, CALN},     /* calendar week/year */
-      {CA_LOWERBOUND, CAS, CAN},        /* calendar week/year */
-      {TMR_LOWERBOUND, TMRS, TMRN},     /* time range */
-      {TM_LOWERBOUND, TMS, TMN},        /* cullified struct tm */
+   {JL_LOWERBOUND, JLS, JLN, JL_Type},        /* ptf job list */
+   {JP_LOWERBOUND, JPS, JPN, JP_Type},        /* ptf pid list */
+   {JO_LOWERBOUND, JOS, JON, JO_Type},        /* ptf O.S. job list */
 
-      {RT_LOWERBOUND, RTS, RTN},        /* remote task (qrexec) */
-      {UPP_LOWERBOUND, UPPS, UPPN},     /* SGEEE - sublist of user/project for
-                                         * storing project usage */
-      {KTGT_LOWERBOUND, KTGTS, KTGTN},  /* Kerberos TGT list */
-      {SME_LOWERBOUND, SMES, SMEN},     /* scheduler message structure */
-      {MES_LOWERBOUND, MESS, MESN},     /* scheduler job info */
-      {JAT_LOWERBOUND, JATS, JATN},     /* JobArray task structure contains
-                                         * the dynamic elements of a Job */
-      {CT_LOWERBOUND, CTS, CTN},        /* scheduler job category */
+   {UPU_LOWERBOUND, UPUS, UPUN, UPU_Type},     /* SGEEE - sublist of user/project for
+                                      * storing jobs old usage */
+   {CK_LOWERBOUND, CKS, CKN, CK_Type},        /* checkpointing object */
+   {KRB_LOWERBOUND, KRBS, KRBN, KRB_Type},     /* Kerberos connection list */
+   {PA_LOWERBOUND, PAS, PAN, PA_Type},        /* Path alias list */
+   {JRE_LOWERBOUND, JRES, JREN, JRE_Type},     /* job reference */
+   {ID_LOWERBOUND, IDS, IDN, ID_Type},        /* id struct used for qmod requests */
+   {MA_LOWERBOUND, MAS, MAN, MA_Type},        /* ma struct used for multi gdi
+                                      * requests */
 
-      {PGR_LOWERBOUND, PGRS, PGRN},     /* scheduler access tree: priority
-                                         * group */
-      {USR_LOWERBOUND, USRS, USRN},     /* scheduler access tree: user */
-      {JRL_LOWERBOUND, JRLS, JRLN},     /* scheduler access tree: job
-                                         * reference */
-      {JL_LOWERBOUND, JLS, JLN},        /* ptf job list */
-      {JO_LOWERBOUND, JOS, JON},        /* ptf O.S. job list */
+   {TE_LOWERBOUND, TES, TEN, TE_Type},        /* time event struct used for timer
+                                      * in qmaster */
+   {CAL_LOWERBOUND, CALS, CALN, CAL_Type},     /* calendar week/year */
+   {CA_LOWERBOUND, CAS, CAN, CA_Type},        /* calendar week/year */
+   {TMR_LOWERBOUND, TMRS, TMRN, TMR_Type},     /* time range */
+   {TM_LOWERBOUND, TMS, TMN, TM_Type},        /* cullified struct tm */
 
-      {HGRP_LOWERBOUND, HGRPS, HGRPN},  /* hostgroup list */
-      {HR_LOWERBOUND, HRS, HRN},        /* host/group reference list */
-      {PERM_LOWERBOUND, PERMS, PERMN},  /* permission list */
-      {CU_LOWERBOUND, CUS, CUN},        /* usermap entry list for
-                                         * administrator mapping */
-      {LS_LOWERBOUND, LSS, LSN},        /* load sensor list */
+   {RT_LOWERBOUND, RTS, RTN, RT_Type},        /* remote task (qrexec) */
+   {UPP_LOWERBOUND, UPPS, UPPN, UPP_Type},     /* SGEEE - sublist of user/project for
+                                      * storing project usage */
+   {KTGT_LOWERBOUND, KTGTS, KTGTN, KTGT_Type},  /* Kerberos TGT list */
+   {SME_LOWERBOUND, SMES, SMEN, SME_Type},     /* scheduler message structure */
+   {MES_LOWERBOUND, MESS, MESN, MES_Type},     /* scheduler job info */
+   {JAT_LOWERBOUND, JATS, JATN, JAT_Type},     /* JobArray task structure contains
+                                      * the dynamic elements of a Job */
+   {CT_LOWERBOUND, CTS, CTN, CT_Type},        /* scheduler job category */
 
-      {RU_LOWERBOUND, RUS, RUN},        /* user unknown list */
-      {FES_LOWERBOUND, FESS, FESN},
-      
-      {SU_LOWERBOUND, SUS, SUN},        /* submit user */
-      {SEC_LOWERBOUND, SECS, SECN},    /* Certificate security */
+   {PGR_LOWERBOUND, PGRS, PGRN, PGR_Type},     /* scheduler access tree: priority
+                                      * group */
+   {USR_LOWERBOUND, USRS, USRN, USR_Type},     /* scheduler access tree: user */
+   {JRL_LOWERBOUND, JRLS, JRLN, JRL_Type},     /* scheduler access tree: job
+                                      * reference */
+   {SGEJ_LOWERBOUND, SGEJS, SGEJN, SGEJ_Type},     /* scheduler sge job sort element */
+   {ULNG_LOWERBOUND, ULNGS, ULNGN, ULNG_Type},          /* ???? info-messages ??? */
 
-      {SPC_LOWERBOUND, SPCS, SPCN},     /* Spooling context */
-      {SPR_LOWERBOUND, SPRS, SPRN},     /* Spooling rule */
-      {SPT_LOWERBOUND, SPTS, SPTN},     /* Spooling object type */
-      {SPTR_LOWERBOUND, SPTRS, SPTRN},  /* Spooling rules for object type */
-      {SPM_LOWERBOUND, SPMS, SPMN},     /* Mapping object->id */
+   {HGRP_LOWERBOUND, HGRPS, HGRPN, HGRP_Type},  /* hostgroup list */
+   {HR_LOWERBOUND, HRS, HRN, HR_Type},        /* host/group reference list */
+   {PERM_LOWERBOUND, PERMS, PERMN, PERM_Type},  /* permission list */
+   {CU_LOWERBOUND, CUS, CUN, CU_Type},        /* usermap entry list for
+                                      * administrator mapping */
+   {LS_LOWERBOUND, LSS, LSN, LS_Type},        /* load sensor list */
 
-      {JJ_LOWERBOUND, JJS, JJN},        /* JAPI job */
-      {JJAT_LOWERBOUND, JJATS, JJATN},  /* JAPI array task */
+   {RU_LOWERBOUND, RUS, RUN, RU_Type},        /* user unknown list */
+   {FES_LOWERBOUND, FESS, FESN, FES_Type},
+   
+   {SU_LOWERBOUND, SUS, SUN, SU_Type},        /* submit user */
+   {SEC_LOWERBOUND, SECS, SECN, SEC_Type},    /* Certificate security */
 
-      {ASTR_LOWERBOUND, ASTRS, ASTRN},          /* CQ string sublist */
-      {AULNG_LOWERBOUND, AULNGS, AULNGN},       /* CQ u_long32 sublist */
-      {ABOOL_LOWERBOUND, ABOOLS, ABOOLN},       /* CQ bool sublist */
-      {ATIME_LOWERBOUND, ATIMES, ATIMEN},       /* CQ time limit sublist */
-      {AMEM_LOWERBOUND, AMEMS, AMEMN},          /* CQ memory limit sublist */
-      {AINTER_LOWERBOUND, AINTERS, AINTERN},    /* CQ interval sublist */
-      {ASTRING_LOWERBOUND, ASTRINGS, ASTRINGN},
-      {ASTRLIST_LOWERBOUND, ASTRLISTS, ASTRLISTN}, /* CQ ST_Type-list sublist */
-      {AUSRLIST_LOWERBOUND, AUSRLISTS, AUSRLISTN}, /* CQ US_Type-list sublist */
-      {APRJLIST_LOWERBOUND, APRJLISTS, APRJLISTN}, /* CQ PR_Type-list sublist */
-      {ACELIST_LOWERBOUND, ACELISTS, ACELISTN},    /* CQ CE_Type-list sublist */
-      {ASOLIST_LOWERBOUND, ASOLISTS, ASOLISTN},    /* CQ SO_Type-list sublist */
-      {AQTLIST_LOWERBOUND, AQTLISTS, AQTLISTN},    /* CQ qtype sublist */
-      {CQ_LOWERBOUND, CQS, CQN},                /* Cluster Queue list */
-      {QIM_LOWERBOUND, QIMS, QIMN},                /* Queue Instance Messege list */
-      {FCAT_LOWERBOUND, FCATS, FCATN},          /* Functional category */
-      {CTI_LOWERBOUND, CTIS, CTIN},             /* ignore host/queue list in a job category */
-      {PARA_LOWERBOUND, PARAS, PARAN},          /* store the configuration "params" parameters in a list */
-      {ULNG_LOWERBOUND, ULNGS, ULNGN},          /* ???? info-messages ??? */
-      {EVS_LOWERBOUND, EVSS, EVSN},              /* subscribed event list */
+   {SPC_LOWERBOUND, SPCS, SPCN, SPC_Type},     /* Spooling context */
+   {SPR_LOWERBOUND, SPRS, SPRN, SPR_Type},     /* Spooling rule */
+   {SPT_LOWERBOUND, SPTS, SPTN, SPT_Type},     /* Spooling object type */
+   {SPTR_LOWERBOUND, SPTRS, SPTRN, SPTR_Type},  /* Spooling rules for object type */
+   {SPM_LOWERBOUND, SPMS, SPMN, SPM_Type},     /* Mapping object->id */
+
+   {JJ_LOWERBOUND, JJS, JJN, JJ_Type},        /* JAPI job */
+   {JJAT_LOWERBOUND, JJATS, JJATN, JJAT_Type},  /* JAPI array task */
+   {NSV_LOWERBOUND, NSVS, NSVN, NSV_Type},  /* JAPI ??? */
+
+   {ASTR_LOWERBOUND, ASTRS, ASTRN, ASTR_Type},          /* CQ string sublist */
+   {AULNG_LOWERBOUND, AULNGS, AULNGN, AULNG_Type},       /* CQ u_long32 sublist */
+   {ABOOL_LOWERBOUND, ABOOLS, ABOOLN, ABOOL_Type},       /* CQ bool sublist */
+   {ATIME_LOWERBOUND, ATIMES, ATIMEN, ATIME_Type},       /* CQ time limit sublist */
+   {AMEM_LOWERBOUND, AMEMS, AMEMN, AMEM_Type},          /* CQ memory limit sublist */
+   {AINTER_LOWERBOUND, AINTERS, AINTERN, AINTER_Type},    /* CQ interval sublist */
+   {ASTRING_LOWERBOUND, ASTRINGS, ASTRINGN, ASTRING_Type},
+   {ASTRLIST_LOWERBOUND, ASTRLISTS, ASTRLISTN, ASTRLIST_Type}, /* CQ ST_Type-list sublist */
+   {AUSRLIST_LOWERBOUND, AUSRLISTS, AUSRLISTN, AUSRLIST_Type}, /* CQ US_Type-list sublist */
+   {APRJLIST_LOWERBOUND, APRJLISTS, APRJLISTN, APRJLIST_Type}, /* CQ PR_Type-list sublist */
+   {ACELIST_LOWERBOUND, ACELISTS, ACELISTN, ACELIST_Type},    /* CQ CE_Type-list sublist */
+   {ASOLIST_LOWERBOUND, ASOLISTS, ASOLISTN, ASOLIST_Type},    /* CQ SO_Type-list sublist */
+   {AQTLIST_LOWERBOUND, AQTLISTS, AQTLISTN, AQTLIST_Type},    /* CQ qtype sublist */
+   {CQ_LOWERBOUND, CQS, CQN, CQ_Type},                /* Cluster Queue list */
+   {QIM_LOWERBOUND, QIMS, QIMN, QIM_Type},                /* Queue Instance Messege list */
+   {FCAT_LOWERBOUND, FCATS, FCATN, FCAT_Type},          /* Functional category */
+   {CTI_LOWERBOUND, CTIS, CTIN, CTI_Type},             /* ignore host/queue list in a job category */
+   {PARA_LOWERBOUND, PARAS, PARAN, PARA_Type},          /* store the configuration "params" parameters in a list */
 
 /* this would generate a cycle in the dependencies between lib cull and lib obj. Therefor
    we ignore the names here and live with the fact, that lWriteList or lWriteElem will
    not print the CULL_names for the PACK structure. */
-/*      {PACK_LOWERBOUND, PACKS, PACKN},   */       /* a cull version of the pack buffer */
+/*      {PACK_LOWERBOUND, PACKS, PACKN, PACK_Type},   */       /* a cull version of the pack buffer */
 
-      {XMLA_LOWERBOUND, XMLAS, XMLAN},          /* XML-Attribute */
-      {XMLS_LOWERBOUND, XMLSS, XMLSN},          /* XML-Stype-Sheet */
-      {XMLH_LOWERBOUND, XMLHS, XMLHN},          /* XML-Header*/
-      {XMLE_LOWERBOUND, XMLES, XMLEN},          /* XML-Element*/
+   {XMLA_LOWERBOUND, XMLAS, XMLAN, XMLA_Type},          /* XML-Attribute */
+   {XMLH_LOWERBOUND, XMLHS, XMLHN, XMLH_Type},          /* XML-Header*/
+   {XMLS_LOWERBOUND, XMLSS, XMLSN, XMLS_Type},          /* XML-Stype-Sheet */
+   {XMLE_LOWERBOUND, XMLES, XMLEN, XMLE_Type},          /* XML-Element*/
 
-      {RDE_LOWERBOUND, RDES, RDEN},             /* resource diagram */
-      {RUE_LOWERBOUND, RUES, RUEN},             /* resource utilization */
-      {QETI_LOWERBOUND, QETIS, QETIN},          /* queue end time iterator (scheduler) */
+   {RDE_LOWERBOUND, RDES, RDEN, RDE_Type},             /* resource diagram */
+   {RUE_LOWERBOUND, RUES, RUEN, RUE_Type},             /* resource utilization */
+   {QETI_LOWERBOUND, QETIS, QETIN, QETI_Type},          /* queue end time iterator (scheduler) */
 
-      {LDR_LOWERBOUND, LDRS, LDRN},             /* queue consumables load alarm structure */
-      {QRL_LOWERBOUND, QRL_S, QRL_N},           /* queue consumables load alarm structure */
+   {LDR_LOWERBOUND, LDRS, LDRN, LDR_Type},             /* queue consumables load alarm structure */
+   {QRL_LOWERBOUND, QRL_S, QRL_N, QRL_Type},           /* queue consumables load alarm structure */
 
-      {CCT_LOWERBOUND, CCTS, CCTN},
+   {CCT_LOWERBOUND, CCTS, CCTN, CCT_Type},
 
-      {CQU_LOWERBOUND, CQUS, CQUN},             /* queue state changes structure */
-      
-      {SCT_LOWERBOUND, SCTS, SCTN},             /* scheduler categories */
+   {CQU_LOWERBOUND, CQUS, CQUN, CQU_Type},             /* queue state changes structure */
+   
+   {SCT_LOWERBOUND, SCTS, SCTN, SCT_Type},             /* scheduler categories */
 
-      {REF_LOWERBOUND, REFS, REFN},             /* a simple ref object */
+   {REF_LOWERBOUND, REFS, REFN, REF_Type},             /* a simple ref object */
 
-      {RQS_LOWERBOUND, RQSS, RQSN},             /* resource quota set */
-      {RQR_LOWERBOUND, RQRS, RQRN},             /* resource quota rule */
-      {RQRF_LOWERBOUND, RQRFS, RQRFN},          /* resource quota rule filter */
-      {RQRL_LOWERBOUND, RQRLS, RQRLN},          /* resource quota rule limit */
-      {RQL_LOWERBOUND, RQLS, RQLN},             /* resource quota limit (scheduler) */
-     
-      {AR_LOWERBOUND, ARS, ARN},                /* advance reservation */ 
-      {ARA_LOWERBOUND, ARAS, ARAN},             /* advance reservation acl*/ 
-      
-      {ACK_LOWERBOUND, ACKS, ACKN},             /* acknowledge */
+   {RQS_LOWERBOUND, RQSS, RQSN, RQS_Type},             /* resource quota set */
+   {RQR_LOWERBOUND, RQRS, RQRN, RQR_Type},             /* resource quota rule */
+   {RQRF_LOWERBOUND, RQRFS, RQRFN, RQRF_Type},          /* resource quota rule filter */
+   {RQRL_LOWERBOUND, RQRLS, RQRLN, RQRL_Type},          /* resource quota rule limit */
+   {RQL_LOWERBOUND, RQLS, RQLN, RQL_Type},             /* resource quota limit (scheduler) */
+  
+   {AR_LOWERBOUND, ARS, ARN, AR_Type},                /* advance reservation */ 
+   {ARA_LOWERBOUND, ARAS, ARAN, ARA_Type},             /* advance reservation acl*/ 
+   
+   {ACK_LOWERBOUND, ACKS, ACKN, ACK_Type},             /* acknowledge */
 
-      {EVR_LOWERBOUND, EVRS, EVRN},             /* event master requests */
-      {JSV_LOWERBOUND, JSVS, JSVN},             /* job submission verifier */
-      {RTIC_LOWERBOUND, RTICS, RTICN},          /* internal list for reprioritzie tickets to distribute */
-      {PRO_LOWERBOUND, PROS, PRON},             /* list for all running processes under Linux */
-      {GR_LOWERBOUND, GRS, GRN},                /* list of all process groups of Linux process */
+   {EVR_LOWERBOUND, EVRS, EVRN, EVR_Type},             /* event master requests */
+   {JSV_LOWERBOUND, JSVS, JSVN, JSV_Type},             /* job submission verifier */
+   {RTIC_LOWERBOUND, RTICS, RTICN, RTIC_Type},          /* internal list for reprioritzie tickets to distribute */
+   {PRO_LOWERBOUND, PROS, PRON, PRO_Type},             /* list for all running processes under Linux */
+   {GR_LOWERBOUND, GRS, GRN, GR_Type},                /* list of all process groups of Linux process */
 
-      {BN_LOWERBOUND, BNS, BNN},                /* list of binding information */
+   {BN_LOWERBOUND, BNS, BNN, BN_Type},                /* list of binding information */
 
-      {0, 0, NULL}
-   };
+   {0, 0, NULL, NULL}
+};
 
 #ifdef  __cplusplus
 }

@@ -51,7 +51,7 @@ extern "C" {
  */
 
 enum {
-   JO_OS_job_ID,
+   JO_OS_job_ID = JO_LOWERBOUND,
    JO_OS_job_ID2,
    JO_ja_task_ID,
    JO_task_id_str,

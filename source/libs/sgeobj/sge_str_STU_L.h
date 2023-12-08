@@ -47,7 +47,7 @@ extern "C" {
  * String list with unique strings
  */
 enum {
-   STU_name = ST_LOWERBOUND
+   STU_name = STU_LOWERBOUND
 };
 
 LISTDEF(STU_Type)

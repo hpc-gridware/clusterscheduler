@@ -86,48 +86,43 @@ enum NameSpaceBoundaries {
    AN_LOWERBOUND = SH_UPPERBOUND + 1,
    AN_UPPERBOUND = AN_LOWERBOUND + 1*BASIC_UNIT - 1,
 
-   /* host aliases list */
-   HA_LOWERBOUND = AN_UPPERBOUND + 1,
-   HA_UPPERBOUND = HA_LOWERBOUND + 1*BASIC_UNIT - 1,
-
-   /* host load list */
-   HL_LOWERBOUND = HA_UPPERBOUND + 1,
+   HL_LOWERBOUND = AN_UPPERBOUND + 1,
    HL_UPPERBOUND = HL_LOWERBOUND + 1*BASIC_UNIT - 1,
 
    /* host scaling list */
    HS_LOWERBOUND = HL_UPPERBOUND + 1,
    HS_UPPERBOUND = HS_LOWERBOUND + 1*BASIC_UNIT - 1,
 
-   /* host scaling list */
-   HT_LOWERBOUND = HS_UPPERBOUND + 1,
-   HT_UPPERBOUND = HT_LOWERBOUND + 1*BASIC_UNIT - 1,
+   /* the event itself */
+   ET_LOWERBOUND = HS_UPPERBOUND + 1,
+   ET_UPPERBOUND = ET_LOWERBOUND + 1*BASIC_UNIT - 1,
 
    /* clients getting events sent */
-   EV_LOWERBOUND = HT_UPPERBOUND + 1,
+   EV_LOWERBOUND = ET_UPPERBOUND + 1,
    EV_UPPERBOUND = EV_LOWERBOUND + 1*BASIC_UNIT - 1,
 
+   /* subscribed event list */
+   EVS_LOWERBOUND = EV_UPPERBOUND + 1,
+   EVS_UPPERBOUND = EVS_LOWERBOUND + 1*BASIC_UNIT - 1,
+
    /* a certain entry of the complex-list */
-   CE_LOWERBOUND = EV_UPPERBOUND + 1,
+   CE_LOWERBOUND = EVS_UPPERBOUND + 1,
    CE_UPPERBOUND = CE_LOWERBOUND + 1*BASIC_UNIT - 1,
 
+   /* structure of a load report */
+   LR_LOWERBOUND = CE_UPPERBOUND + 1,
+   LR_UPPERBOUND = LR_LOWERBOUND + 1*BASIC_UNIT - 1,
+
    /* order list */ 
-   OR_LOWERBOUND = CE_UPPERBOUND + 1,
+   OR_LOWERBOUND = LR_UPPERBOUND + 1,
    OR_UPPERBOUND = OR_LOWERBOUND + 1*BASIC_UNIT - 1,
 
    /* entries for OR_queuelist-field */
    OQ_LOWERBOUND = OR_UPPERBOUND + 1,
    OQ_UPPERBOUND = OQ_LOWERBOUND + 1*BASIC_UNIT - 1,
 
-   /* a list for the to handle the range */
-   RR_LOWERBOUND = OQ_UPPERBOUND + 1,
-   RR_UPPERBOUND = RR_LOWERBOUND + 1*BASIC_UNIT - 1,
-
-   /* structure of a load report */
-   LR_LOWERBOUND = RR_UPPERBOUND + 1,
-   LR_UPPERBOUND = LR_LOWERBOUND + 1*BASIC_UNIT - 1,
-
    /* (x)access-lists for the queues */
-   US_LOWERBOUND = LR_UPPERBOUND + 1,
+   US_LOWERBOUND = OQ_UPPERBOUND + 1,
    US_UPPERBOUND = US_LOWERBOUND + 1*BASIC_UNIT - 1,
 
    /* (x)access-lists entries for the queues */
@@ -162,28 +157,8 @@ enum NameSpaceBoundaries {
    UO_LOWERBOUND = UM_UPPERBOUND + 1,
    UO_UPPERBOUND = UO_LOWERBOUND + 1*BASIC_UNIT - 1,
    
-   /* the event itself */
-   ET_LOWERBOUND = UO_UPPERBOUND + 1,
-   ET_UPPERBOUND = ET_LOWERBOUND + 1*BASIC_UNIT - 1,
-
-   /* subscribed event list */
-   EVS_LOWERBOUND = ET_UPPERBOUND + 1,
-   EVS_UPPERBOUND = EVS_LOWERBOUND + 1*BASIC_UNIT - 1,
-
-   /* config list */
-   CONF_LOWERBOUND = EVS_UPPERBOUND + 1,
-   CONF_UPPERBOUND = CONF_LOWERBOUND + 1*BASIC_UNIT - 1,
-
-   /* scheduler configuration list */
-   CFSCHED_LOWERBOUND = CONF_UPPERBOUND + 1,
-   CFSCHED_UPPERBOUND = CFSCHED_LOWERBOUND + 1*BASIC_UNIT - 1,
-
-   /* the configuration itself */
-   CF_LOWERBOUND = CFSCHED_UPPERBOUND + 1,
-   CF_UPPERBOUND = CF_LOWERBOUND + 1*BASIC_UNIT - 1,
-
    /* the parallel environmet */
-   PE_LOWERBOUND = CF_UPPERBOUND + 1,
+   PE_LOWERBOUND = UO_UPPERBOUND + 1,
    PE_UPPERBOUND = PE_LOWERBOUND + 1*BASIC_UNIT - 1,
    
    /* queue references - a sublist containing qnames (used in the pe object) */
@@ -194,8 +169,16 @@ enum NameSpaceBoundaries {
    JC_LOWERBOUND = QR_UPPERBOUND + 1,
    JC_UPPERBOUND = JC_LOWERBOUND + 1*BASIC_UNIT - 1,
 
+   /* config list */
+   CONF_LOWERBOUND = JC_UPPERBOUND + 1,
+   CONF_UPPERBOUND = CONF_LOWERBOUND + 1*BASIC_UNIT - 1,
+
+   /* the configuration itself */
+   CF_LOWERBOUND = CONF_UPPERBOUND + 1,
+   CF_UPPERBOUND = CF_LOWERBOUND + 1*BASIC_UNIT - 1,
+
    /* string list */
-   ST_LOWERBOUND = JC_UPPERBOUND + 1,
+   ST_LOWERBOUND = CF_UPPERBOUND + 1,
    ST_UPPERBOUND = ST_LOWERBOUND + 1*BASIC_UNIT - 1,
 
    /* string list */
@@ -206,16 +189,12 @@ enum NameSpaceBoundaries {
    JG_LOWERBOUND = STU_UPPERBOUND + 1,
    JG_UPPERBOUND = JG_LOWERBOUND + 1*BASIC_UNIT - 1,
 
-   /* history directory list */
-   HD_LOWERBOUND = JG_UPPERBOUND + 1,
-   HD_UPPERBOUND = HD_LOWERBOUND + 1*BASIC_UNIT - 1,
-
-   /* history file list */
-   HF_LOWERBOUND = HD_UPPERBOUND + 1,
-   HF_UPPERBOUND = HF_LOWERBOUND + 1*BASIC_UNIT - 1,
+   /* list of subordinated queues */
+   SO_LOWERBOUND = JG_UPPERBOUND + 1,
+   SO_UPPERBOUND = SO_LOWERBOUND + 1*BASIC_UNIT - 1,
 
    /* list for sorted output of job sums with QACCT */
-   QAJ_LOWERBOUND = HF_UPPERBOUND + 1,
+   QAJ_LOWERBOUND = SO_UPPERBOUND + 1,
    QAJ_UPPERBOUND = QAJ_LOWERBOUND + 1*BASIC_UNIT - 1,
 
    /* argument list for limited parser */
@@ -226,12 +205,8 @@ enum NameSpaceBoundaries {
    REP_LOWERBOUND = SPA_UPPERBOUND + 1,
    REP_UPPERBOUND = REP_LOWERBOUND + 1*BASIC_UNIT - 1,
 
-   /* list of subordinated queues */
-   SO_LOWERBOUND = REP_UPPERBOUND + 1,
-   SO_UPPERBOUND = SO_LOWERBOUND + 1*BASIC_UNIT - 1,
-
    /* usage list */
-   UA_LOWERBOUND = SO_UPPERBOUND + 1,
+   UA_LOWERBOUND = REP_UPPERBOUND + 1,
    UA_UPPERBOUND = UA_LOWERBOUND + 1*BASIC_UNIT - 1,
 
    /* list of projects */
@@ -260,7 +235,7 @@ enum NameSpaceBoundaries {
 
    /* finished pe task reference */
    FPET_LOWERBOUND = PETR_UPPERBOUND + 1,
-   FPET_UPPERBOUND = FPET_LOWERBOUND * 1*BASIC_UNIT - 1,
+   FPET_UPPERBOUND = FPET_LOWERBOUND + 1*BASIC_UNIT - 1,
 
    /* job report */
    JR_LOWERBOUND = FPET_UPPERBOUND + 1,
@@ -270,20 +245,20 @@ enum NameSpaceBoundaries {
    LIC_LOWERBOUND = JR_UPPERBOUND + 1,
    LIC_UPPERBOUND = LIC_LOWERBOUND + 1*BASIC_UNIT - 1,
 
-   /* deadline structure */
-   DL_LOWERBOUND = LIC_UPPERBOUND + 1,
-   DL_UPPERBOUND = DL_LOWERBOUND + 1*BASIC_UNIT - 1,
-
    /* ptf job list */
-   JL_LOWERBOUND = DL_UPPERBOUND + 1,
+   JL_LOWERBOUND = LIC_UPPERBOUND + 1,
    JL_UPPERBOUND = JL_LOWERBOUND + 1*BASIC_UNIT - 1,
 
    /* ptf pid list */
    JP_LOWERBOUND = JL_UPPERBOUND + 1,
    JP_UPPERBOUND = JP_LOWERBOUND + 1*BASIC_UNIT - 1,
 
+   /* ptf osjobid sublist */
+   JO_LOWERBOUND = JP_UPPERBOUND + 1,
+   JO_UPPERBOUND = JO_LOWERBOUND + 1*BASIC_UNIT - 1,
+
    /* user/project sublist job usage */
-   UPU_LOWERBOUND = JP_UPPERBOUND + 1,
+   UPU_LOWERBOUND = JO_UPPERBOUND + 1,
    UPU_UPPERBOUND = UPU_LOWERBOUND + 1*BASIC_UNIT - 1,
 
    /* checkpointing object */
@@ -339,12 +314,8 @@ enum NameSpaceBoundaries {
    UPP_LOWERBOUND = RT_UPPERBOUND + 1,
    UPP_UPPERBOUND = UPP_LOWERBOUND + 1*BASIC_UNIT - 1,
 
-   /* ptf osjobid sublist */
-   JO_LOWERBOUND = UPP_UPPERBOUND + 1,
-   JO_UPPERBOUND = JO_LOWERBOUND + 1*BASIC_UNIT - 1,
-
    /* Kerberos TGT sublist */
-   KTGT_LOWERBOUND = JO_UPPERBOUND + 1,
+   KTGT_LOWERBOUND = UPP_UPPERBOUND + 1,
    KTGT_UPPERBOUND = KTGT_LOWERBOUND + 1*BASIC_UNIT - 1,
 
    /* scheduler information messages */
@@ -382,11 +353,8 @@ enum NameSpaceBoundaries {
    ULNG_LOWERBOUND = SGEJ_UPPERBOUND + 1,
    ULNG_UPPERBOUND = ULNG_LOWERBOUND + 1*BASIC_UNIT - 1,
 
-   PREF_LOWERBOUND = ULNG_UPPERBOUND + 1,
-   PREF_UPPERBOUND = PREF_LOWERBOUND + 1*BASIC_UNIT - 1,
-
    /* hostgroup */
-   HGRP_LOWERBOUND = PREF_UPPERBOUND + 1,
+   HGRP_LOWERBOUND = ULNG_UPPERBOUND + 1,
    HGRP_UPPERBOUND = HGRP_LOWERBOUND + 1*BASIC_UNIT - 1,
 
    /* host/hostgroup reference list */
@@ -413,12 +381,8 @@ enum NameSpaceBoundaries {
    FES_LOWERBOUND = RU_UPPERBOUND + 1,
    FES_UPPERBOUND = FES_LOWERBOUND + 1*BASIC_UNIT - 1,
 
-   /* feature list */
-   FE_LOWERBOUND = FES_UPPERBOUND + 1,
-   FE_UPPERBOUND = FE_LOWERBOUND + 1*BASIC_UNIT - 1,
-
    /* submit user */
-   SU_LOWERBOUND = FE_UPPERBOUND + 1,
+   SU_LOWERBOUND = FES_UPPERBOUND + 1,
    SU_UPPERBOUND = SU_LOWERBOUND + 1*BASIC_UNIT - 1,
 
    /* security connection list  */
@@ -502,17 +466,11 @@ enum NameSpaceBoundaries {
    CTI_LOWERBOUND = FCAT_UPPERBOUND + 1,
    CTI_UPPERBOUND = CTI_LOWERBOUND + 1 * BASIC_UNIT - 1,
 
-   CTQV_LOWERBOUND = CTI_UPPERBOUND + 1,                    /* CTQV_LOWERBOUND is not used anymore */
-   CTQV_UPPERBOUND = CTQV_LOWERBOUND + 1 * BASIC_UNIT - 1,
-
-   PARA_LOWERBOUND = CTQV_UPPERBOUND + 1,
+   PARA_LOWERBOUND = CTI_UPPERBOUND + 1,
    PARA_UPPERBOUND = PARA_LOWERBOUND + 1 * BASIC_UNIT - 1,
 
-   PACK_LOWERBOUND = PARA_UPPERBOUND + 1,
-   PACK_UPPERBOUND = PACK_LOWERBOUND + 1 * BASIC_UNIT - 1,
-
    /* XML control structures */
-   XMLA_LOWERBOUND= PACK_UPPERBOUND + 1,
+   XMLA_LOWERBOUND= PARA_UPPERBOUND + 1,
    XMLA_UPPERBOUND = XMLA_LOWERBOUND + 1 * BASIC_UNIT - 1, 
 
    /* XML control structures */
@@ -571,16 +529,16 @@ enum NameSpaceBoundaries {
    RQRL_LOWERBOUND = RQRF_UPPERBOUND + 1,
    RQRL_UPPERBOUND = RQRL_LOWERBOUND + 1 * BASIC_UNIT - 1,
 
-   AR_LOWERBOUND = RQRL_UPPERBOUND + 1,
+   RQL_LOWERBOUND = RQRL_UPPERBOUND + 1,
+   RQL_UPPERBOUND = RQL_LOWERBOUND + 1 * BASIC_UNIT - 1,
+
+   AR_LOWERBOUND = RQL_UPPERBOUND + 1,
    AR_UPPERBOUND = AR_LOWERBOUND + 1 * BASIC_UNIT - 1,
 
    ARA_LOWERBOUND = AR_UPPERBOUND + 1,
    ARA_UPPERBOUND = ARA_LOWERBOUND + 1 * BASIC_UNIT - 1,
       
-   RQL_LOWERBOUND = ARA_UPPERBOUND + 1,
-   RQL_UPPERBOUND = RQL_LOWERBOUND + 1 * BASIC_UNIT - 1,
-
-   ACK_LOWERBOUND = RQL_UPPERBOUND + 1,
+   ACK_LOWERBOUND = ARA_UPPERBOUND + 1,
    ACK_UPPERBOUND = ACK_LOWERBOUND + 1 * BASIC_UNIT - 1,
 
    EVR_LOWERBOUND = ACK_UPPERBOUND + 1,
@@ -602,9 +560,12 @@ enum NameSpaceBoundaries {
 
    /* list with information about processor binding */ 
    BN_LOWERBOUND = GR_UPPERBOUND + 1, 
-   BN_UPPERBOUND = BN_LOWERBOUND + 1 * BASIC_UNIT - 1
+   BN_UPPERBOUND = BN_LOWERBOUND + 1 * BASIC_UNIT - 1,
 
-#  define LAST_UPPERBOUND BN_UPPERBOUND
+   PACK_LOWERBOUND = BN_UPPERBOUND + 1,
+   PACK_UPPERBOUND = PACK_LOWERBOUND + 1 * BASIC_UNIT - 1
+
+#  define LAST_UPPERBOUND PACK_UPPERBOUND
 
 };
 
