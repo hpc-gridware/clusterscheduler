@@ -112,10 +112,6 @@
 #  include <sys/cred.h>
 #  include <sys/proc.h>
 #  include <sys/user.h>         
-#elif defined(NECSX4) || defined(NECSX5)
-#  include <sys/rsg.h>
-#  include <sys/types.h>
-#  include <fcntl.h>    
 #elif defined(DARWIN)
 # include <mach/host_info.h>
 # include <mach/mach_host.h>
@@ -1122,82 +1118,6 @@ int nelem
       loadv[2] = ((double)avenrun3)/highest;
    return 0;
 }
-
-#elif defined(NECSX4) || defined(NECSX5)
-
-int getloadavg_necsx_rsg(
-int rsg_id,
-double loadv[] 
-) {
-   int fd;
-   rsgavg_t avg;
-   char fsg_dev_string[256];
-   int avg_count;
-   int avg_id;
-
-   sprintf(fsg_dev_string, "/dev/rsg/%d", rsg_id);
-   fd = open(fsg_dev_string, O_RDONLY);
-   if (fd > 0) {
-      if (ioctl(fd, RSG_AVG, &avg) == -1) {
-         close(fd);
-         return -1;
-      }
-      close(fd);
-
-      if (avg.avgrun.fscale > 0) {
-         for(avg_id=0; avg_id<3; avg_id++) {
-            loadv[avg_id] += (double)avg.avgrun.average[avg_id]/
-             avg.avgrun.fscale;
-         }
-      } else
-         return -1;
-   }
-   return 0;
-}       
-
-static int get_load_avg(
-double loadv[],
-int nelem 
-) {
-   int fd;
-   int fsg_id;
-   rsgavg_t avg;
-   char fsg_dev_string[256];
-   int avg_count;
-   int avg_id;
-
-   avg_count = 0;
-   for(avg_id=0; avg_id<3; avg_id++)
-      loadv[avg_id] = 0.0;
-
-   for (fsg_id=0; fsg_id<32; fsg_id++) {
-      sprintf(fsg_dev_string, "/dev/rsg/%d", fsg_id);
-      fd = open(fsg_dev_string, O_RDONLY);
-      if (fd > 0) {
-         if (ioctl(fd, RSG_AVG, &avg) == -1) {
-            close(fd);
-            continue;
-         }
-         close(fd);
-
-         if (avg.avgrun.fscale > 0) {
-            for(avg_id=0; avg_id<3; avg_id++) {
-               loadv[avg_id] += (double)avg.avgrun.average[avg_id]/
-                avg.avgrun.fscale;
-            }
-            avg_count++;
-         }
-      }
-   }
-   if (avg_count > 0) {
-      for(avg_id=0; avg_id<3; avg_id++) {
-         loadv[avg_id] /= avg_count;
-      }
-   } else {
-      return -1;
-   }
-   return 0;
-}
 #endif 
 
 
@@ -1220,7 +1140,7 @@ int sge_getloadavg(double loadavg[], int nelem)
 
 #if defined(SOLARIS) || defined(FREEBSD) || defined(NETBSD) || defined(DARWIN)
    elem = getloadavg(loadavg, nelem); /* <== library function */
-#elif defined(ALPHA4) || defined(ALPHA5) || defined(IRIX) || defined(HPUX) || defined(CRAY) || defined(NECSX4) || defined(NECSX5) || defined(LINUX) || defined(HAS_AIX5_PERFLIB)
+#elif defined(ALPHA4) || defined(ALPHA5) || defined(IRIX) || defined(HPUX) || defined(CRAY) || defined(LINUX) || defined(HAS_AIX5_PERFLIB)
    elem = get_load_avg(loadavg, nelem); 
 #else
    elem = -2;

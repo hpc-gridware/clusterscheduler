@@ -31,13 +31,8 @@
 /*___INFO__MARK_END__*/
 #include "sge_sl.h"
 
-#if defined(__TCSH_SOURCE_CODE)
-int sge_quick_count_num_args __P((const char* args));
-int sge_parse_args __P((const char *args, char pargs));
-#else
 int sge_quick_count_num_args(const char* args);
 int sge_parse_args(const char* args, char **pargs);
-#endif
 
 int parse_quoted_command_line(char *command, sge_sl_list_t *sl_args);
 int convert_arg_list_to_vector(sge_sl_list_t *sl_args, char ***pargs);

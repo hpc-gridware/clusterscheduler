@@ -70,7 +70,6 @@ QMASTER_SRC = sge_qmaster_threads.c \
               sge_sharetree_qmaster.c \
               sge_calendar_qmaster.c \
               sge_userprj_qmaster.c \
-              sge_cuser_qmaster.c \
               sge_hgroup_qmaster.c \
               sge_userset_qmaster.c \
               sge_centry_qmaster.c \
@@ -262,9 +261,6 @@ sge_rusage.o:	$(QMASTER_DIR)/sge_rusage.c
 
 sge_userprj_qmaster.o:	$(QMASTER_DIR)/sge_userprj_qmaster.c
 		$(CC) $(CFLAGS) -c $(QMASTER_DIR)/sge_userprj_qmaster.c
-
-sge_cuser_qmaster.o:	$(QMASTER_DIR)/sge_cuser_qmaster.c
-		$(CC) $(CFLAGS) -c $(QMASTER_DIR)/sge_cuser_qmaster.c
 
 sge_hgroup_qmaster.o:	$(QMASTER_DIR)/sge_hgroup_qmaster.c
 		$(CC) $(CFLAGS) -c $(QMASTER_DIR)/sge_hgroup_qmaster.c

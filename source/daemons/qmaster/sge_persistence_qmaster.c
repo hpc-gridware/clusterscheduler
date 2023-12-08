@@ -470,16 +470,6 @@ sge_event_spool(sge_gdi_ctx_class_t *ctx,
          element = object;
          object_type = SGE_TYPE_RQS;
          break;
-#ifndef __SGE_NO_USERMAPPING__
-      case sgeE_CUSER_LIST:
-      case sgeE_CUSER_ADD:
-      case sgeE_CUSER_DEL:
-      case sgeE_CUSER_MOD:
-         key = strkey;
-         element = object;
-         object_type = SGE_TYPE_CUSER;
-         break;
-#endif
       case sgeE_HGROUP_LIST:
       case sgeE_HGROUP_ADD:
       case sgeE_HGROUP_DEL:
@@ -527,9 +517,6 @@ sge_event_spool(sge_gdi_ctx_class_t *ctx,
          case sgeE_USER_DEL:
          case sgeE_USERSET_DEL:
          case sgeE_RQS_DEL:
-#ifndef __SGE_NO_USERMAPPING__
-         case sgeE_CUSER_DEL:
-#endif
          case sgeE_HGROUP_DEL:
          case sgeE_AR_DEL:
             delete = true;

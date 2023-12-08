@@ -244,17 +244,6 @@ enum {
    sobjl_OPT,     /* show object list which matches conf value */
    purge_OPT,     /* delete element which value matches given string */
       
-#ifndef __SGE_NO_USERMAPPING__
-   /* added for user mapping */
-   aumap_OPT,    /* add new user mapping entry */
-   Aumap_OPT,    /* add new user mapping entry from file */
-   dumap_OPT,    /* delete user mapping entry  */
-   mumap_OPT,    /* modify user mapping entry  */
-   sumap_OPT,    /* show user mapping entry    */
-   sumapl_OPT,   /* show user mapping entry list */
-   Mumap_OPT,    /* modify user mapping entry from file */ 
-#endif
-
    /* added for host groups */
    ahgrp_OPT,    /* add new host group entry */
    Ahgrp_OPT,    /* add new host group entry from file */

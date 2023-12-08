@@ -32,7 +32,7 @@
  ************************************************************************/
 /*___INFO__MARK_END__*/
 
-#if defined(LINUX) || defined(SOLARIS) || defined(SOLARIS64) || defined(CRAY) || defined(NEXSX4) || defined(NECSX5) || defined(ALPHA4) || defined(ALPHA5) || defined(IRIX) || defined(DARWIN) || defined(FREEBSD) || defined(NETBSD) || defined(HAS_AIX5_PERFLIB) || defined(INTERIX)
+#if defined(LINUX) || defined(SOLARIS) || defined(SOLARIS64) || defined(CRAY) || defined(ALPHA4) || defined(ALPHA5) || defined(IRIX) || defined(DARWIN) || defined(FREEBSD) || defined(NETBSD) || defined(HAS_AIX5_PERFLIB) || defined(INTERIX)
 #  define SGE_LOADAVG
 #endif
 
@@ -58,12 +58,6 @@ int sge_getcpuload(double *cpu_load);
 
 int get_channel_fd(void);  
 
-#if defined(NECSX4) || defined(NECSX5)
-
-int getloadavg_necsx_rsg(int rsg_id, double loadv[]);
-
-#endif
- 
 #endif /* __SGE_GETLOADAVG_H */
 
 

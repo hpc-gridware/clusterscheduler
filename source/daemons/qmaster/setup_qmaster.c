@@ -1017,12 +1017,6 @@ static int setup_qmaster(sge_gdi_ctx_class_t *ctx)
    spool_read_list(&answer_list, spooling_context, object_base[SGE_TYPE_RQS].list, SGE_TYPE_RQS);
    answer_list_output(&answer_list);
 
-#ifndef __SGE_NO_USERMAPPING__
-   DPRINTF(("administrator user mapping-----------\n"));
-   spool_read_list(&answer_list, spooling_context, object_base[SGE_TYPE_CUSER].list, SGE_TYPE_CUSER);
-   answer_list_output(&answer_list);
-#endif
-
    DPRINTF(("cluster_queue_list---------------------------------\n"));
    spool_read_list(&answer_list, spooling_context, object_base[SGE_TYPE_CQUEUE].list, SGE_TYPE_CQUEUE);
    answer_list_output(&answer_list);

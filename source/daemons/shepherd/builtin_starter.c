@@ -72,14 +72,6 @@ struct rusage {
 #   include <sys/times.h>
 #endif
 
-#if defined(NECSX4) || defined(NECSX5)
-#  include <sys/types.h>
-#  include <sys/disp.h>
-#  include <sys/rsg.h> 
-
-#  define NEC_UNDEF_VALUE (-999)
-#endif 
-
 #if defined(INTERIX)
 #  include "wingrid.h"
 #  include "windows_gui.h"
@@ -270,9 +262,6 @@ void son(const char *childname, char *script_file, int truncate_stderr_out)
 
 #ifdef SOLARIS
    if(!is_qlogin_starter || is_rsh)
-#endif
-#ifdef NECSX5
-   if (!is_qlogin_starter)
 #endif
    /* 
     * g_newpgrp is != -1 if setsid() was already called in pty.c, fork_pty(),
@@ -975,12 +964,10 @@ int sge_set_environment()
    FILE *fp;
    char buf[10000], *name, *value, err_str[10000];
    int line=0;
-#if defined(IRIX) || defined(CRAY) || defined(NECSX4) || defined(NECSX5)
+#if defined(IRIX) || defined(CRAY) 
    char help_str[100] = "";
 #if (IRIX)
    ash_t jobid;
-#elif defined(NECSX4) || defined(NECSX5)
-   id_t jobid;
 #elif defined(CRAY)
    int jobid;
 #endif
@@ -993,14 +980,12 @@ int sge_set_environment()
       shepherd_error(1, "can't open environment file: %s", strerror(errno));
    }
 
-#if defined(IRIX) || defined(CRAY) || defined(NECSX4) || defined(NECSX5)
+#if defined(IRIX) || defined(CRAY)
    if (shepherd_read_osjobid_file(&jobid, false)) {
 #  if defined(IRIX)
       snprintf(help_str, 100, "%lld", jobid);
 #  elif defined(CRAY)
       snprintf(help_str, 100, "%d", jobid);
-#  elif defined(NECSX4) || defined(NECSX5)
-      snprintf(help_str, 100, "%ld", jobid);
 #  endif
       sge_set_env_value("OSJOBID", help_str);
    }

@@ -65,13 +65,11 @@ bool
 shepherd_write_sig_info_file(const char *filename, const char *task_id,
                              u_long32 exit_status);
 
-#if defined(IRIX) || defined(CRAY) || defined(NECSX4) || defined(NECSX5)
+#if defined(IRIX) || defined(CRAY) 
 bool
 shepherd_read_osjobid_file(
 #if (IRIX)
    ash_t *return_code,
-#elif defined(NECSX4) || defined(NECSX5)
-   id_t *return_code,
 #elif defined(CRAY)
    int *return_code,
 #endif

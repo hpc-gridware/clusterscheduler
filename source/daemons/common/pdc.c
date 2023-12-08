@@ -93,14 +93,6 @@ int main(int argc,char *argv[])
 #   include <paths.h>
 #endif
 
-#if defined(NECSX4) || defined(NECSX5)
-#  include <nlist.h>
-#  include <sys/var.h>
-#  include <sys/types.h>
-#  include <sys/time.h>
-#  include <sys/resource.h>
-#endif
-
 #if defined(CRAY)
 #include <sys/param.h>
 #include <sys/table.h>
@@ -335,16 +327,6 @@ lnk_link_t * find_job(JobID_t jid) {
    }
    return NULL;
 }
-
-#if defined(NECSX4) || defined(NECSX5)
-long
-getpagesize(void)
-{
-   return sysconf(_SC_PAGESIZE);
-}
-
-#  define MICROSEC2SECS(msecs) ((double)(msecs)/(double)1000000)
-#endif   
 
 #if defined(IRIX)
 
@@ -1846,66 +1828,6 @@ static int psRetrieveOSJobData(void) {
       }
       sge_free(&procs_begin);
    }
-#elif defined(NECSX4) || defined(NECSX5)
-   {
-      for (curr=job_list.next; curr != &job_list; curr=curr->next) {
-         job_elem_t *job_elem = LNK_DATA(curr, job_elem_t, link);
-         psJob_t *job = &job_elem->job;
-         id_t jid = (id_t) job->jd_jid;
-         struct jresourcecpu resourcecpu;
-         struct jresourcemem resourcemem;
-         struct jresourcetmpf resourcetmpf;
-         struct jresourceproc resourceproc;
-         int error;
-         u_long32 delta_t = 0;
-
-         /* skip precreated jobs */
-         if (job_elem->precreated)
-            continue;
-
-         /* try to get resource information */
-         error = 0;
-         if (getresourcej(jid, CURR_ALL,  &resourcecpu) == -1) {
-            error = 1;
-         } else {
-            delta_t = MICROSEC2SECS(resourcecpu.jr_ucpu)
-               + MICROSEC2SECS(resourcecpu.jr_scpu)
-               - job_elem->utime - job_elem->stime;
-
-            job->jd_utime_a = MICROSEC2SECS(resourcecpu.jr_ucpu);
-            job->jd_stime_a = MICROSEC2SECS(resourcecpu.jr_scpu);
-            job->jd_utime_c = 0;
-            job->jd_stime_c = 0;
-
-            job_elem->utime = job->jd_utime_a;
-            job_elem->stime = job->jd_stime_a;
-         }
-
-         if (getresourcej(jid, CURR_UMEM, &resourcemem) == -1) {
-            error = 1;
-         } else {
-            job->jd_mem += resourcemem.jr_umem.mv_used * delta_t;
-         }
-
-         if (getresourcej(jid, CURR_PROC, &resourceproc) == -1) {
-            error = 1;
-         } else {
-            job->jd_refcnt = resourceproc.jr_proc;
-         }
-
-         if (!error) {
-            if (job->jd_tstamp == 0) {
-               job->jd_gid = -1;
-               job->jd_uid = -1;
-            }
-            job->jd_tstamp = time_stamp;
-            job->jd_etime = time_stamp - job_elem->starttime;
-            job->jd_vmem = job->jd_mem;
-            job->jd_rss = job->jd_vmem;
-         }
-      }
-   }           
-
 #elif defined(CRAY)
 
    if (clk_tck == 0)

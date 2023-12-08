@@ -258,13 +258,6 @@ typedef enum {
    sgeE_USERSET_DEL,                /*83 + event userset delete */
    sgeE_USERSET_MOD,                /*84 + event userset modify */
 
-#ifndef __SGE_NO_USERMAPPING__
-   sgeE_CUSER_LIST,
-   sgeE_CUSER_ADD,
-   sgeE_CUSER_DEL,
-   sgeE_CUSER_MOD,
-#endif
-
    sgeE_HGROUP_LIST,
    sgeE_HGROUP_ADD,
    sgeE_HGROUP_DEL,

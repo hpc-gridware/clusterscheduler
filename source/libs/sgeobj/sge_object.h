@@ -162,9 +162,6 @@ typedef enum {
     *    '_sge_mirror_subscribe' libs/mir/sge_mirror.c
     * if something is changed here!
     */
-#ifndef __SGE_NO_USERMAPPING__
-   SGE_TYPE_CUSER,
-#endif
 
    SGE_TYPE_ALL,            /* must be the second to the last entry */
    SGE_TYPE_NONE            /* this must the last entry */

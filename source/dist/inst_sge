@@ -70,7 +70,6 @@ DOWNGRADE=false
 BACKUP=false
 RESTORE=false
 AUTO=false
-AUTOGUI=false
 RESCHEDULE=true
 RESPORT=false
 CSP=false
@@ -150,10 +149,6 @@ while [ $ARGC != 0 ]; do
      #Stdout2Log
      CheckPath
      ;;
-   -autogui)
-      AUTO=true
-      AUTOGUI=true; export AUTOGUI;
-      ;;
    -m)
      QMASTER="install"
      . ./util/install_modules/inst_qmaster.sh
@@ -392,7 +387,7 @@ fi
 #checking the autoinstall configuration file at this point of installation,
 #because the commandline switches are completely parsed and we know the selected options.
 #This will influence the configfile parsing and checking mechanism.
-if [ $AUTO = "true" -a  $AUTOGUI != "true" ]; then
+if [ $AUTO = "true" ]; then
    SGE_JVM_LIB_PATH="undef"
    GetConfigFromFile
    #Now we check if we want to enable JMX or not based on SGE_JVM_LIB_PATH and/or SGE_JMX_PORT
@@ -407,8 +402,6 @@ if [ $AUTO = "true" -a  $AUTOGUI != "true" ]; then
       SGE_ENABLE_JMX="false"
    fi
    CheckConfigFile $FILE
-elif [ $AUTOGUI = true -a x"`echo $SGE_JVM_LIB_PATH | tr \"[A-Z]\" \"[a-z]\"`" = "xnone" ]; then
-   SGE_ENABLE_JMX="false"
 fi
 
 CheckForSMF
@@ -919,10 +912,8 @@ if [ "$QMASTER" = "install" -a "$UPDATE" != "true" ]; then
  AddWindowsAdmin
  AddHosts
  MakeUserKs $ADMINUSER
- if [ "$AUTOGUI" != "true" ]; then
-    CopyCA execd
-    CopyCA submit
- fi
+ CopyCA execd
+ CopyCA submit
  
  SetScheddConfig
  GiveHints
@@ -1590,10 +1581,6 @@ fi
 if [ "$COPY_CA" = "true" ]; then
    #In standalone -copycert auto mode we don't have SGE_CELL
    if [ -z "$SGE_CELL" -a "$AUTO" = "true" ]; then
-      SGE_CELL="$CELL_NAME"
-   fi
-   # GUI mode must set the SGE_CELL to CELL_NAME always!
-   if [ "$AUTOGUI" = "true" ]; then
       SGE_CELL="$CELL_NAME"
    fi
    if [ "$SGE_ROOT" = "" -o "$SGE_CELL" = "" ]; then

@@ -185,9 +185,6 @@ spool_classic_create_context(lList **answer_list, const char *args)
                   field_info[i].instr  = &qconf_param_sfi;
                   break;
                /* standard case of spooling */
-#ifndef __SGE_NO_USERMAPPING__ 
-               case SGE_TYPE_CUSER:
-#endif
                case SGE_TYPE_SCHEDD_CONF:
                   field_info[i].fields = spool_get_fields_to_spool(answer_list, 
                                               object_type_get_descr(i), 
@@ -373,9 +370,6 @@ spool_classic_default_startup_func(lList **answer_list,
          sge_mkdir2(url, USERSET_DIR, 0755, true);
          sge_mkdir2(url, CAL_DIR, 0755, true);
          sge_mkdir2(url, HGROUP_DIR, 0755, true);
-   #ifndef  __SGE_NO_USERMAPPING__
-         sge_mkdir2(url, UME_DIR, 0755, true);
-   #endif
          sge_mkdir2(url, USER_DIR, 0755, true);
          sge_mkdir2(url, PROJECT_DIR, 0755, true);
          sge_mkdir2(url, RESOURCEQUOTAS_DIR, 0755, true);
@@ -597,11 +591,6 @@ spool_classic_default_list_func(lList **answer_list,
          case SGE_TYPE_HGROUP:
             directory = HGROUP_DIR;
             break;
-#ifndef __SGE_NO_USERMAPPING__
-         case SGE_TYPE_CUSER:
-            directory = UME_DIR;
-            break;
-#endif
          case SGE_TYPE_PROJECT:
             directory = PROJECT_DIR;
             break;
@@ -843,12 +832,6 @@ spool_classic_default_read_func(lList **answer_list,
          directory = HGROUP_DIR;
          filename  = key;
          break;
-#ifndef __SGE_NO_USERMAPPING__
-      case SGE_TYPE_CUSER:
-         directory = UME_DIR;
-         filename  = key;
-         break;
-#endif
       case SGE_TYPE_PROJECT:
          directory = PROJECT_DIR;
          filename  = key;
@@ -1047,12 +1030,6 @@ spool_classic_default_write_func(lList **answer_list,
          directory = HGROUP_DIR;
          filename  = key;
          break;
-#ifndef __SGE_NO_USERMAPPING__
-      case SGE_TYPE_CUSER:
-         directory = UME_DIR;
-         filename  = key;
-         break;
-#endif
       case SGE_TYPE_PROJECT:
          directory = PROJECT_DIR;
          filename  = key;
@@ -1327,11 +1304,6 @@ spool_classic_default_delete_func(lList **answer_list,
       case SGE_TYPE_USERSET:
          ret = sge_unlink(USERSET_DIR, key);
          break;
-#ifndef __SGE_NO_USERMAPPING__
-      case SGE_TYPE_CUSER:
-         ret = sge_unlink(UME_DIR, key);
-         break;
-#endif
       case SGE_TYPE_HGROUP:
          ret = sge_unlink(HGROUP_DIR, key);
          break;

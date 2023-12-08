@@ -426,16 +426,6 @@ void sge_usage(u_long32 prog_number, FILE *fp) {
       PRINTITD(MSG_GDI_USAGE_Au_OPT_LISTNAME_LIST , MSG_GDI_UTEXT_Au_OPT_LISTNAME_LIST );
    }
 
-#ifndef __SGE_NO_USERMAPPING__
-   if (VALID_OPT(aumap_OPT, prog_number)) {
-      PRINTITD(MSG_GDI_USAGE_aumap_OPT, MSG_GDI_UTEXT_aumap_OPT );
-   }
-
-   if (VALID_OPT(Aumap_OPT, prog_number)) {
-      PRINTITD(MSG_GDI_USAGE_Aumap_OPT, MSG_GDI_UTEXT_Aumap_OPT );
-   }
-#endif 
- 
    if (VALID_OPT(aus_OPT, prog_number)) {
       PRINTITD(MSG_GDI_USAGE_AUSER , MSG_GDI_UTEXT_AUSER );
    }
@@ -612,11 +602,6 @@ void sge_usage(u_long32 prog_number, FILE *fp) {
       MARK(OA_LISTNAME_LIST);
    }
    
-#ifndef __SGE_NO_USERMAPPING__
-   if (VALID_OPT(dumap_OPT, prog_number)) {
-      PRINTITD(MSG_GDI_USAGE_dumap_OPT, MSG_GDI_UTEXT_dumap_OPT );
-   }
-#endif
    if (VALID_OPT(dus_OPT, prog_number)) {
       PRINTITD(MSG_GDI_USAGE_DUSER_USER, MSG_GDI_UTEXT_DUSER_USER );
       MARK(OA_USER_LIST);
@@ -889,15 +874,6 @@ void sge_usage(u_long32 prog_number, FILE *fp) {
          MSG_GDI_UTEXT_Mu_OPT_LISTNAME_LIST);
    }
 
-#ifndef __SGE_NO_USERMAPPING__
-   if (VALID_OPT(Mumap_OPT, prog_number)) {
-      PRINTITD(MSG_GDI_USAGE_Mumap_OPT, MSG_GDI_UTEXT_Mumap_OPT);
-   }
-
-   if (VALID_OPT(mumap_OPT, prog_number)) {
-      PRINTITD(MSG_GDI_USAGE_mumap_OPT, MSG_GDI_UTEXT_mumap_OPT);
-   }
-#endif
    if (VALID_OPT(mus_OPT, prog_number)) {
       PRINTITD(MSG_GDI_USAGE_muser_OPT_USER, MSG_GDI_UTEXT_muser_OPT_USER);
    }
@@ -1207,15 +1183,6 @@ void sge_usage(u_long32 prog_number, FILE *fp) {
          MSG_GDI_UTEXT_su_OPT_LISTNAME_LIST);
       MARK(OA_LISTNAME_LIST);
    }
-#ifndef __SGE_NO_USERMAPPING__
-   if (VALID_OPT(sumap_OPT, prog_number)) {
-      PRINTITD(MSG_GDI_USAGE_sumap_OPT, MSG_GDI_UTEXT_sumap_OPT);
-   }
-
-   if (VALID_OPT(sumapl_OPT, prog_number)) {
-      PRINTITD(MSG_GDI_USAGE_sumapl_OPT, MSG_GDI_UTEXT_sumapl_OPT);
-   }
-#endif
    if (VALID_OPT(sus_OPT, prog_number)) {
       PRINTITD(MSG_GDI_USAGE_suser_OPT_USER, MSG_GDI_UTEXT_suser_OPT_USER);
       MARK(OA_USER_LIST);

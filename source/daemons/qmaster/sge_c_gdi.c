@@ -184,9 +184,6 @@ static gdi_object_t gdi_object[] = {
    { SGE_SME_LIST,          0,         NULL,      "schedd info",             SGE_TYPE_JOB_SCHEDD_INFO, NULL,         NULL,           NULL },
    { SGE_ZOMBIE_LIST,       0,         NULL,      "job zombie list",         SGE_TYPE_ZOMBIE,          NULL,         NULL,           NULL },
    { SGE_RQS_LIST,          RQS_name,  RQS_Type,  "resource quota set",      SGE_TYPE_RQS,             rqs_mod,      rqs_spool,      rqs_success },
-#ifndef __SGE_NO_USERMAPPING__
-   { SGE_USER_MAPPING_LIST, CU_name,   CU_Type,   "user mapping entry",      SGE_TYPE_CUSER,           cuser_mod,    cuser_spool,    cuser_success },
-#endif
    { SGE_HGRP_LIST,         HGRP_name, HGRP_Type, "host group",              SGE_TYPE_HGROUP,          hgroup_mod,   hgroup_spool,   hgroup_success },
    { SGE_AR_LIST,           AR_id,     AR_Type,   "advance reservation",     SGE_TYPE_AR,              ar_mod,       ar_spool,       ar_success },
    { SGE_DUMMY_LIST,        0,         NULL,      "general request",         SGE_TYPE_NONE,            NULL,         NULL,           NULL },
@@ -713,11 +710,6 @@ sge_c_gdi_del(sge_gdi_ctx_class_t *ctx,
             case SGE_CAL_LIST:
                sge_del_calendar(ctx, ep, &(task->answer_list), packet->user, packet->host);
                break;
-#ifndef __SGE_NO_USERMAPPING__
-            case SGE_USER_MAPPING_LIST:
-               cuser_del(ctx, ep, &(task->answer_list), packet->user, packet->host);
-               break;
-#endif
             case SGE_HGRP_LIST:
                hgroup_del(ctx, ep, &(task->answer_list), packet->user, packet->host);
                break;
@@ -826,11 +818,6 @@ static void sge_gdi_do_permcheck(sge_gdi_packet_class_t *packet, sge_gdi_task_cl
          tmp_lp = task->data_list;
          tmp_ep = tmp_lp->first;
          requested_host = lGetHost(tmp_ep, PERM_req_host);
-#ifndef __SGE_NO_USERMAPPING__
-         cuser_list_map_user(*(cuser_list_get_master_list()), NULL,
-                             packet->user, requested_host, &mapped_user);
-         did_mapping = true;
-#endif
       }
 
       if (requested_host != NULL) {

@@ -161,11 +161,6 @@ void setrlimits(int trace_rlimit) {
    sge_rlim_t s_locks;
    sge_rlim_t h_locks;
 
-#if defined(NECSX4) || defined(NECSX5)
-   sge_rlim_t s_tmpf, h_tmpf, s_mtdev, h_mtdev, s_nofile, h_nofile,
-      s_proc, h_proc, s_rlg0, h_rlg0, s_rlg1, h_rlg1, s_rlg2, h_rlg2,
-      s_rlg3, h_rlg3, s_cpurestm, h_cpurestm;
-#endif  
 #ifndef SINIX
    sge_rlim_t s_rss; 
    sge_rlim_t h_rss; 
@@ -234,26 +229,6 @@ void setrlimits(int trace_rlimit) {
    PARSE_IT_UNDEF(&h_memorylocked, "h_memorylocked");
    PARSE_IT_UNDEF(&s_locks,        "s_locks");
    PARSE_IT_UNDEF(&h_locks,        "h_locks");
-#if defined(NECSX4) || defined(NECSX5)
-   PARSE_IT(&s_tmpf, "s_tmpf");
-   PARSE_IT(&h_tmpf, "h_tmpf");
-   PARSE_IT(&s_mtdev, "s_mtdev");
-   PARSE_IT(&h_mtdev, "h_mtdev");
-   PARSE_IT(&s_nofile, "s_nofile");
-   PARSE_IT(&h_nofile, "h_nofile");
-   PARSE_IT(&s_proc, "s_proc");
-   PARSE_IT(&h_proc, "h_proc");
-   PARSE_IT(&s_rlg0, "s_rlg0");
-   PARSE_IT(&h_rlg0, "h_rlg0");
-   PARSE_IT(&s_rlg1, "s_rlg1");
-   PARSE_IT(&h_rlg1, "h_rlg1");
-   PARSE_IT(&s_rlg2, "s_rlg2");
-   PARSE_IT(&h_rlg2, "h_rlg2");
-   PARSE_IT(&s_rlg3, "s_rlg3");
-   PARSE_IT(&h_rlg3, "h_rlg3");
-   PARSE_IT(&s_cpurestm, "s_cpurestm");
-   PARSE_IT(&h_cpurestm, "h_cpurestm");
-#endif
 
 #define RL_MAX(r1, r2) ((rlimcmp((r1), (r2))>0)?(r1):(r2))
 #define RL_MIN(r1, r2) ((rlimcmp((r1), (r2))<0)?(r1):(r2))
@@ -484,36 +459,6 @@ void setrlimits(int trace_rlimit) {
    pushlimit(RLIMIT_RSS, &rlp, trace_rlimit);
 #  endif
 
-#if defined(NECSX4) || defined(NECSX5)
-   rlp.rlim_cur = s_tmpf;
-   rlp.rlim_max = h_tmpf;
-   pushlimit(RLIMIT_TMPF, &rlp, trace_rlimit);
-   rlp.rlim_cur = s_mtdev;
-   rlp.rlim_max = h_mtdev;
-   pushlimit(RLIMIT_MTDEV, &rlp, trace_rlimit);
-   rlp.rlim_cur = s_nofile;
-   rlp.rlim_max = h_nofile;
-   pushlimit(RLIMIT_NOFILE, &rlp, trace_rlimit);
-   rlp.rlim_cur = s_proc;
-   rlp.rlim_max = h_proc;
-   pushlimit(RLIMIT_PROC, &rlp, trace_rlimit);
-   rlp.rlim_cur = s_rlg0;
-   rlp.rlim_max = h_rlg0;
-   pushlimit(RLIMIT_RLG0, &rlp, trace_rlimit);
-   rlp.rlim_cur = s_rlg1;
-   rlp.rlim_max = h_rlg1;
-   pushlimit(RLIMIT_RLG1, &rlp, trace_rlimit);
-   rlp.rlim_cur = s_rlg2;
-   rlp.rlim_max = h_rlg2;
-   pushlimit(RLIMIT_RLG2, &rlp, trace_rlimit);
-   rlp.rlim_cur = s_rlg3;
-   rlp.rlim_max = h_rlg3;
-   pushlimit(RLIMIT_RLG3, &rlp, trace_rlimit);
-   rlp.rlim_cur = s_cpurestm;
-   rlp.rlim_max = h_cpurestm;
-   pushlimit(RLIMIT_CPURESTM, &rlp, trace_rlimit);
-#endif 
-
 #endif
 }
 
@@ -549,16 +494,6 @@ const struct resource_table_entry resource_table[] = {
 #elif defined(RLIMIT_AS)
    {RLIMIT_AS,        "RLIMIT_VMEM/RLIMIT_AS",   {RES_PROC, RES_PROC}},
 #endif
-#if defined(NECSX4) || defined(NECSX5)
-   {RLIMIT_TMPF,      "RLIMIT_TMPF",             {RES_JOB,  RES_PROC}},
-   {RLIMIT_MTDEV,     "RLIMIT_MTDEV",            {RES_JOB,  RES_PROC}},
-   {RLIMIT_PROC,      "RLIMIT_PROC",             {RES_JOB,  RES_PROC}},
-   {RLIMIT_RLG0,      "RLIMIT_RLG0",             {RES_JOB,  RES_PROC}},
-   {RLIMIT_RLG1,      "RLIMIT_RLG1",             {RES_JOB,  RES_PROC}},
-   {RLIMIT_RLG2,      "RLIMIT_RLG2",             {RES_JOB,  RES_PROC}},
-   {RLIMIT_RLG3,      "RLIMIT_RLG3",             {RES_JOB,  RES_PROC}},
-   {RLIMIT_CPURESTM,  "RLIMIT_CPURESTM",         {RES_JOB,  RES_PROC}},
-#endif
    {0,                NULL,                      {0, 0}}
 };
 const char *unknown_string = "unknown";
@@ -570,11 +505,7 @@ static int get_resource_info(u_long32 resource, const char **name,
    int is_job_resource_column;
    int row;
 
-#if defined(NECSX4) || defined(NECSX5)
-   is_job_resource_column = 0;
-#else
    is_job_resource_column = 1;
-#endif
 
    row = 0;
    while (resource_table[row].resource_name) {
@@ -637,7 +568,7 @@ static void pushlimit(int resource, struct RLIMIT_STRUCT_TAG *rlp,
       if (rlp->rlim_max < rlp->rlim_cur)
          rlp->rlim_cur = rlp->rlim_max;
 
-#if defined(NECSX4) || defined(NECSX5) || defined(NETBSD_ALPHA) || defined(NETBSD_X86_64) || defined(NETBSD_SPARC64)
+#if defined(NETBSD_ALPHA) || defined(NETBSD_X86_64) || defined(NETBSD_SPARC64)
 #  define limit_fmt "%ld%s"
 #elif defined(IRIX) || defined(HPUX) || defined(DARWIN) || defined(FREEBSD) || defined(NETBSD) || defined(INTERIX)
 #  define limit_fmt "%lld%s"
@@ -683,31 +614,9 @@ static void pushlimit(int resource, struct RLIMIT_STRUCT_TAG *rlp,
 
    /* Job limit */
    if (get_rlimits_os_job_id() && (resource_type & RES_JOB)) {
-#if defined(NECSX4) || defined(NECSX5)
-      getrlimitj(get_rlimits_os_job_id(), resource,&dlp);
-#endif
-
       /* hard limit must be greater or equal to soft limit */
       if (rlp->rlim_max < rlp->rlim_cur)
          rlp->rlim_cur = rlp->rlim_max;
-
-#if defined(NECSX4) || defined(NECSX5)
-      /*
-       * SUPER-UX only allows uid==euid==0 (superuser) to set
-       * job limits thus the switch2start_user() and
-       * switch2admin_user() calls
-       */
-      sge_switch2start_user();
-      if (setrlimitj(get_rlimits_os_job_id(), resource, rlp)) {
-         /* exit or not exit ? */
-         sprintf(trace_str, "setrlimitj(%s, {"limit_fmt", "limit_fmt"}) "
-            "failed: %s", limit_str, FORMAT_LIMIT(rlp->rlim_cur), FORMAT_LIMIT(rlp->rlim_max),
-            strerror(errno));
-      } else {
-         getrlimitj(get_rlimits_os_job_id(), resource,&dlp);
-      }
-      sge_switch2admin_user();
-#endif
 
       if (trace_rlimit) {
          sprintf(trace_str, "Job %s setting: (soft "limit_fmt" hard "limit_fmt

@@ -104,7 +104,6 @@ Content
       % aimk -only-java   compile Java[TM] class files only
       % aimk -only-qmon   compile qmon only
       % aimk -only-qmake  compile qmake only
-      % aimk -only-qtcsh  compile qtcsh only
 
    To compile Grid Engine without one or more default targets use the flags:
 
@@ -113,7 +112,6 @@ Content
       -no-jni
       -no-qmake 
       -no-qmon
-      -no-qtcsh
       -no-remote  (rsh, rshd, rlogin targets)
 
    For creating the SGE qmaster daemon you only would enter:

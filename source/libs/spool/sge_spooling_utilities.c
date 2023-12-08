@@ -526,9 +526,6 @@ bool spool_default_validate_func(lList **answer_list,
       case SGE_TYPE_MANAGER:
       case SGE_TYPE_OPERATOR:
       case SGE_TYPE_HGROUP:
-#ifndef __SGE_NO_USERMAPPING__
-      case SGE_TYPE_CUSER:
-#endif
       case SGE_TYPE_CALENDAR:
       case SGE_TYPE_PROJECT:
       case SGE_TYPE_SHARETREE:
@@ -569,9 +566,6 @@ spool_default_validate_list_func(lList **answer_list,
       case SGE_TYPE_MANAGER:
       case SGE_TYPE_OPERATOR:
       case SGE_TYPE_HGROUP:
-#ifndef __SGE_NO_USERMAPPING__
-      case SGE_TYPE_CUSER:
-#endif
       case SGE_TYPE_CALENDAR:
       case SGE_TYPE_PROJECT:
       case SGE_TYPE_USER:

@@ -32,10 +32,6 @@ Boston, MA 02111-1307, USA.  */
 #include <limits.h>   /* PATH_MAX */
 #include <signal.h>   /* kill */
 
-#ifdef NECSX5
-#  include <sys/param.h>
-#endif 
-
 #ifdef LINUX
 #include <rpc/types.h> /* MAXHOSTNAMELEN */
 #endif
@@ -159,13 +155,7 @@ struct finished_job {
 ****************************************************************************
 */
 
-#ifdef NECSX5
-#  define LOCK_SLEEP_TIME 1
-#  define usleep sleep
-#else  
-#  define LOCK_SLEEP_TIME 500 /* [ms] */
-#endif
-
+#define LOCK_SLEEP_TIME 500 /* [ms] */
 #define WAIT_SLOT_TIME    5 /* [s]  */
 
 

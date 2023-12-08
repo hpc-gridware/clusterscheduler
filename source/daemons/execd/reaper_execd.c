@@ -1671,39 +1671,6 @@ read_dusage(lListElem *jr, const char *jobdir, u_long32 jobid, u_long32 jataskid
          convert_attribute(&cflp, jr, "ru_nvcsw",      0);
          convert_attribute(&cflp, jr, "ru_nivcsw",     0);
 
-
-#ifdef NEC_ACCOUNTING_ENTRIES
-         /* Additional accounting information for NEC SX-4 SX-5 */
-#if defined(NECSX4) || defined(NECSX5)
-#if defined(NECSX4)
-         convert_attribute(&cflp, jr, "necsx_necsx4", 0);
-#elif defined(NECSX5)
-         convert_attribute(&cflp, jr, "necsx_necsx5", 0);
-#endif
-         convert_attribute(&cflp, jr, "necsx_base_prty", 0);
-         convert_attribute(&cflp, jr, "necsx_time_slice", 0);
-         convert_attribute(&cflp, jr, "necsx_num_procs", 0);
-         convert_attribute(&cflp, jr, "necsx_kcore_min", 0);
-         convert_attribute(&cflp, jr, "necsx_mean_size", 0);
-         convert_attribute(&cflp, jr, "necsx_maxmem_size", 0);
-         convert_attribute(&cflp, jr, "necsx_chars_trnsfd", 0);
-         convert_attribute(&cflp, jr, "necsx_blocks_rw", 0);
-         convert_attribute(&cflp, jr, "necsx_inst", 0);
-         convert_attribute(&cflp, jr, "necsx_vector_inst", 0);
-         convert_attribute(&cflp, jr, "necsx_vector_elmt", 0);
-         convert_attribute(&cflp, jr, "necsx_vec_exe", 0);
-         convert_attribute(&cflp, jr, "necsx_flops", 0);
-         convert_attribute(&cflp, jr, "necsx_conc_flops", 0);
-         convert_attribute(&cflp, jr, "necsx_fpec", 0);
-         convert_attribute(&cflp, jr, "necsx_cmcc", 0);
-         convert_attribute(&cflp, jr, "necsx_bccc", 0);
-         convert_attribute(&cflp, jr, "necsx_mt_open", 0);
-         convert_attribute(&cflp, jr, "necsx_io_blocks", 0);
-         convert_attribute(&cflp, jr, "necsx_multi_single", 0);
-         convert_attribute(&cflp, jr, "necsx_max_nproc", 0);
-#endif
-#endif   
-
          build_derived_final_usage(jr, jobid, jataskid, pe_task_id);
          lFreeList(&cflp);
       } else {

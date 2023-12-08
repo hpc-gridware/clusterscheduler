@@ -93,8 +93,7 @@ const char *prognames[] =
    "sgepasswd" ,       /* 32  */
    "qquota"    ,       /* 33  */
    "jgdi"      ,       /* 34  */
-   "qtcsh"     ,       /* 35  */
-   "sge_share_mon"     /* 36  */
+   "sge_share_mon"     /* 35  */
 };
 
 const char *threadnames[] = {

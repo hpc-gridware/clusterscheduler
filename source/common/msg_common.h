@@ -773,27 +773,6 @@
 #define MSG_GDI_USAGE_sstree_OPT                         "[-sstree]"
 #define MSG_GDI_UTEXT_sstree_OPT                         _MESSAGE(23433, _("show the sharetree"))
 
-#define MSG_GDI_USAGE_aumap_OPT                          "[-aumap user]"
-#define MSG_GDI_UTEXT_aumap_OPT                          _MESSAGE(23434, _("add new user mapping entry") ) 
-
-#define MSG_GDI_USAGE_Aumap_OPT                          "[-Aumap mapfile]"
-#define MSG_GDI_UTEXT_Aumap_OPT                          _MESSAGE(23435, _("add new user mapping entry from file") ) 
-
-#define MSG_GDI_USAGE_dumap_OPT                          "[-dumap user]"
-#define MSG_GDI_UTEXT_dumap_OPT                          _MESSAGE(23436, _("delete user mapping entry") ) 
-
-#define MSG_GDI_USAGE_mumap_OPT                          "[-mumap user]"
-#define MSG_GDI_UTEXT_mumap_OPT                          _MESSAGE(23437, _("modify user mapping entries") ) 
-
-#define MSG_GDI_USAGE_sumap_OPT                          "[-sumap user]"
-#define MSG_GDI_UTEXT_sumap_OPT                          _MESSAGE(23438, _("show user mapping entry") ) 
-
-#define MSG_GDI_USAGE_sumapl_OPT                         "[-sumapl]"
-#define MSG_GDI_UTEXT_sumapl_OPT                         _MESSAGE(23439, _("show user mapping entry list") ) 
-
-#define MSG_GDI_USAGE_Mumap_OPT                          "[-Mumap mapfile]"
-#define MSG_GDI_UTEXT_Mumap_OPT                          _MESSAGE(23440, _("modify user mapping entry from file"))
-
 #define MSG_GDI_USAGE_shgrp_OPT                          "[-shgrp group]"
 #define MSG_GDI_UTEXT_shgrp_OPT                          _MESSAGE(23441, _("show host group") )  
 

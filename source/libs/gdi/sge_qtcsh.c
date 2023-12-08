@@ -64,48 +64,8 @@
 static pthread_mutex_t qtask_mutex = PTHREAD_MUTEX_INITIALIZER;
 static lList *task_config = NULL;
 static int mode_verbose = 0;
-static int mode_remote = 1;
-static int force_remote = 0;
-static int mode_immediate = 1;
 
-static int init_qtask_config(sge_gdi_ctx_class_t *ctx, lList **alpp, print_func_t ostream);
-
-/****** sge_qtcsh/init_qtask_config() ******************************************
-*  NAME
-*     init_qtask_config() -- ??? 
-*
-*  SYNOPSIS
-*     static int init_qtask_config(lList **alpp, print_func_t ostream) 
-*
-*  FUNCTION
-*     ??? 
-*
-*  INPUTS
-*     sge_gdi_ctx_class_t *ctx        - ???
-*     lList **alpp         - ??? 
-*     print_func_t ostream - ??? 
-*
-*  RESULT
-*     static int - 0 - success
-*                 -1 - failed
-*
-*  EXAMPLE
-*     ??? 
-*
-*  NOTES
-*     MT-NOTES: init_qtask_config() is not MT safe as it uses global variables
-*
-*  BUGS
-*     ??? 
-*
-*  SEE ALSO
-*     ???/???
-*******************************************************************************/
-static int init_qtask_config(
-sge_gdi_ctx_class_t *ctx,
-lList **alpp,
-print_func_t ostream 
-) {
+static int init_qtask_config(sge_gdi_ctx_class_t *ctx, lList **alpp, print_func_t ostream) {
    struct passwd *pwd;
    char fname[SGE_PATH_MAX + 1];
    char buffer[10000];
@@ -190,15 +150,6 @@ print_func_t ostream
          lRemoveElem(clp_user, &cep);
    }
 
-#if 0
-   if (clp_user)
-      for_each (cep, clp_user) {
-         (*ostream) ("info: user: command %s request %s\n", lGetString(cep, CF_name), (s=lGetString(cep, CF_value))?s:"");
-      }
-   else 
-      (*ostream) ("info: empty user task list\n");
-#endif
-
    /* merge contents of user list into cluster list */
    next = lFirst(clp_user);
    while ((cep=next)) {
@@ -246,16 +197,6 @@ print_func_t ostream
       }
    }
 
-
-#if 0
-   if (task_config)
-      for_each (cep, task_config) {
-         (*ostream) ("info: session: command %s request %s\n", lGetString(cep, CF_name), (s=lGetString(cep, CF_value))?s:"");
-      }
-   else 
-      (*ostream) ("info: empty task list\n");
-#endif
-
    sge_free(&pw_buffer);
    return 0;
 
@@ -265,97 +206,6 @@ Error:
    lFreeList(&clp_user);
    sge_free(&pw_buffer);
    return -1;
-}
-
-int sge_execv(
-char *path,    /* this is how tcsh tries to start the command */
-char *argv[],
-char *expath,  /* this is how user typed in the command */
-int close_stdin /* use of qrsh's -nostdin option */
-) {
-   const char *value; 
-   char *taskname = NULL;
-   lListElem *task = NULL;
-   int i = 0;
-   int narg_resreq = 0;
-   int narg_argv = 0;
-   int newargv_size = 0;
-   char **argv_iter = NULL;
-   char **newargv = NULL;
-   /* TODO: This should be SGE_PATH_MAX. */
-   char qrsh_path[2048];
-
-   /* remote execution only for commands without any path information */
-   if (!strchr(expath, '/')) {
-      taskname = expath;
-   }
-
-   if (mode_verbose) {
-      fprintf(stderr, "sge_execv(path = %s, taskname = %s, expath = %s, close_stdin = %d)\n", 
-         path, taskname?taskname:"<no remote execution>", expath, close_stdin);
-   }
-
-   if (!mode_remote || 
-         !taskname ||
-         !(task=lGetElemStr(task_config, CF_name, taskname))) {
-      if (mode_verbose)
-         fprintf(stderr, "local execution of "SFQ"\n", expath);
-      return execv(path, argv);
-   }
-  
-   if ((value = lGetString(task, CF_value))) {
-      narg_resreq = sge_quick_count_num_args (value);
-   }
-
-   for (argv_iter=argv; argv_iter[0] != NULL; argv_iter++) {
-      narg_argv++; 
-   }
-   
-   newargv_size =
-      1 +                                /* qrsh */
-      (close_stdin?1:0) +                /* -nostdin */
-      (mode_verbose?1:0) +               /* -verbose */
-      2 +                                /* -now [y|n] */
-      narg_resreq +                      /* resource requests to qrsh */
-      narg_argv +                        /* argv of command to be started */
-      1;                                 /* NULL */
-   newargv = (char **)malloc(sizeof(char *) * newargv_size);
-   memset(newargv, 0, newargv_size);
-
-   /* build argv for qrsh */
-   i = 0;
-   newargv[i++] = strdup("qrsh");
-
-   if (close_stdin) 
-      newargv[i++] = strdup("-nostdin");
-
-   if (mode_verbose) 
-      newargv[i++] = strdup("-verbose");
-
-   if (mode_immediate) {
-      newargv[i++] = strdup("-now");
-      newargv[i++] = strdup("y");
-   } else {
-      newargv[i++] = strdup("-now");
-      newargv[i++] = strdup("n");
-   }
-
-   /* add optional qrsh arguments from qtask file */
-   if (value) {
-      sge_parse_args (value, &newargv[i]);
-      i += narg_resreq;
-   }
-	 
-   /* add command's arguments */
-   for (argv_iter=argv; argv_iter[0] != NULL; argv_iter++) {
-      newargv[i++] = argv_iter[0];
-   }
-
-   newargv[i] = NULL;
-      
-   sprintf(qrsh_path, "%s/bin/%s/qrsh", sge_get_root_dir(1, NULL, 0, 1), sge_get_arch());
-
-   return execvp(qrsh_path, newargv);
 }
 
 /****** QTCSH/sge_get_qtask_args() *********************************************
@@ -383,7 +233,7 @@ int close_stdin /* use of qrsh's -nostdin option */
 *  NOTES
 *     MT-NOTE: sge_get_qtask_args() is MT safe with respect to itself, but it is
 *              not thread safe to use this function in conjuction with the
-*              init_qtask_config() or sge_init() functions or accessing the
+*              init_qtask_config() function or accessing the
 *              task_config global variable.
 *
 *******************************************************************************/
@@ -402,7 +252,7 @@ char **sge_get_qtask_args(void *context, char *taskname, lList **answer_list)
    }
 
    /* If the task_config has not been filled yet, fill it.  We call
-    * init_qtask_config() instead of sge_init() because we don't need to setup
+    * init_qtask_config() because we don't need to setup
     * the GDI.  We just need the qtask arguments. */
    /* We lock this part because multi-threaded DRMAA apps can have problems
     * here.  Once we're past this part, qtask_config's read-only, so we don't
@@ -442,83 +292,3 @@ char **sge_get_qtask_args(void *context, char *taskname, lList **answer_list)
    return args;
 }
 
-void sge_init(
-print_func_t ostream 
-) {
-   lList *alp = NULL;
-   sge_gdi_ctx_class_t *ctx = NULL;
-
-   /* TODO:
-    *  sge_gdi_param(SET_EXIT_ON_ERROR, 0, NULL);
-    */
-   if (sge_gdi2_setup(&ctx, QTCSH, MAIN_THREAD, NULL) == AE_OK) {
-      if (init_qtask_config(ctx, &alp, ostream) != 0 ) {
-         mode_remote = 0;          
-      } else {
-         /* Remote execution is default.
-
-            Turn off remote execution only in case we were 
-            started in the context of an already running job.
-            This is done to prevent recursive 
-
-              qrsh -> qtcsh -> qrsh -> qtcsh -> ...
-
-            submission via SGE/SGE in case qtcsh
-            is the login shell at the execution server.
-          */
-         if ( mode_remote != 0 ) {
-            mode_remote = force_remote?mode_remote:!getenv("JOB_ID");          
-         }
-/*          (*ostream) ("mode_remote = %d\n", mode_remote); */
-      }
-      lFreeList(&alp);
-   } else {
-      mode_remote = 0;          
-/*       (*ostream) ("no $SGE_ROOT, running as normal tcsh\n"); */
-   }
-
-   return;
-}
-
-void set_sgemode(
-int addr,
-int value 
-) {
-   switch (addr) {
-   case CATCH_EXEC_MODE_REMOTE:
-      mode_remote = value;
-      break;
-   case CATCH_EXEC_MODE_VERBOSE:
-      mode_verbose = value;
-      break;
-   case CATCH_EXEC_MODE_IMMEDIATE:
-      mode_immediate = value;
-      break;
-   case CATCH_EXEC_MODE_FORCE_REMOTE:
-      force_remote = value;
-      break;
-   default:
-      break;
-  }      
-  return;
-}
-
-int get_sgemode(
-int addr 
-) {
-   int value = -1;
-
-   switch (addr) {
-   case CATCH_EXEC_MODE_REMOTE:
-      value = mode_remote;
-      break;
-   case CATCH_EXEC_MODE_VERBOSE:
-      value = mode_verbose;
-      break;
-   case CATCH_EXEC_MODE_IMMEDIATE:
-      value = mode_immediate;
-   default:
-      break;
-  }      
-  return value;
-}

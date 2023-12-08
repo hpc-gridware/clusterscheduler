@@ -84,8 +84,7 @@ enum {
    SGE_PASSWD      ,       /* 32 */
    QQUOTA          ,       /* 33 */
    JGDI            ,       /* 34 */
-   QTCSH           ,       /* 35 */
-   SGE_SHARE_MON           /* 36 */
+   SGE_SHARE_MON           /* 35 */
 };
 
 enum {

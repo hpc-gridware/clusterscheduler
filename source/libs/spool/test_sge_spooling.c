@@ -237,14 +237,6 @@ static bool read_spooled_data(sge_gdi_ctx_class_t *ctx)
    answer_list_output(&answer_list);
    DPRINTF(("read %d entries to Master_Calendar_List\n", lGetNumberOfElem(master_list)));
 
-#ifndef __SGE_NO_USERMAPPING__
-   /* user mapping */
-   master_list = *object_type_get_master_list(SGE_TYPE_CUSER);
-   spool_read_list(&answer_list, context, &master_list, SGE_TYPE_CUSER);
-   answer_list_output(&answer_list);
-   DPRINTF(("read %d entries to Master_Cuser_List\n", lGetNumberOfElem(master_list)));
-#endif
-
    /* queues */
    master_list = *object_type_get_master_list(SGE_TYPE_CQUEUE);
    spool_read_list(&answer_list, context, &master_list, SGE_TYPE_CQUEUE);
@@ -350,9 +342,6 @@ sge_callback_result spool_event_before(sge_evc_class_t *evc, object_description 
          case SGE_TYPE_CQUEUE:
          case SGE_TYPE_USER:
          case SGE_TYPE_USERSET:
-#ifndef __SGE_NO_USERMAPPING__
-         case SGE_TYPE_CUSER:
-#endif
             for_each(ep, *master_list) {
                lListElem *new_ep;
 
@@ -539,9 +528,6 @@ sge_callback_result spool_event_after(sge_evc_class_t *evc, object_description *
             case SGE_TYPE_CQUEUE:
             case SGE_TYPE_USER:
             case SGE_TYPE_USERSET:
-#ifndef __SGE_NO_USERMAPPING__
-            case SGE_TYPE_CUSER:
-#endif   
             case SGE_TYPE_HGROUP:
                key = lGetString(event, ET_strkey);
                spool_delete_object(&answer_list, context, type, key, false);
@@ -581,9 +567,6 @@ sge_callback_result spool_event_after(sge_evc_class_t *evc, object_description *
             case SGE_TYPE_CQUEUE:
             case SGE_TYPE_USER:
             case SGE_TYPE_USERSET:
-#ifndef __SGE_NO_USERMAPPING__
-            case SGE_TYPE_CUSER:
-#endif
             case SGE_TYPE_HGROUP:
                key = lGetString(event, ET_strkey);
                ep = lGetElemStr(*master_list, key_nm, lGetString(event, ET_strkey));

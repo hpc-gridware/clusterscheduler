@@ -54,6 +54,8 @@ set MANMODE = $2
 set MANASC  = $3
 set MANHTML = $4
 set KVMAN   = $5
+set TARGET  = $6
+
 
 if ( $#argv > 5 ) then
   set CVS_MODULE = $6
@@ -68,6 +70,10 @@ endif
 echo "Removing old manpages in $MANBUILDDIR"
 \rm -rf $MANBUILDDIR
 mkdir -p $MANBUILDDIR
+
+if ( $TARGET == "clean" ) then
+  exit 0
+endif
 
 # Take CVSROOT from current CVS direcotry
 #

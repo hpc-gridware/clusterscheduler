@@ -77,33 +77,9 @@ static int CQ_test(void);
 static int SC_test(void);
 static int QU_test(void);
 static int HGRP_test(void);
-#ifndef __SGE_NO_USERMAPPING__
-static int CU_test(void);
-#endif
 static int CONF_test(void);
 static int RQS_test(void);
 static int AR_test(void);
-
-#ifndef __SGE_NO_USERMAPPING__
-const spool_flatfile_instr qconf_comma_braced_sfi = 
-{
-   NULL,
-   true,
-   false,
-   false,
-   true,
-   false,
-   false,
-   true,
-   ' ',
-   '\n',
-   '\0',
-   '\0',
-   '\0',
-   &qconf_sub_name_value_comma_braced_sfi,
-   { NoName, NoName, NoName }
-};
-#endif
 
 typedef int (*func)(void);
 
@@ -130,9 +106,6 @@ int main(int argc, char** argv)
                                CONF_test,                               
                                AR_test,
                                RQS_test,
-#ifndef __SGE_NO_USERMAPPING__
-                               CU_test,
-#endif
                                NULL };
 
    DENTER_MAIN(TOP_LAYER, "test_ff_cl");   
@@ -2429,143 +2402,6 @@ static int HGRP_test(void)
    
    return ret;
 }
-
-#ifndef __SGE_NO_USERMAPPING__
-static int CU_test(void)
-{
-   int ret = 0;
-   lListElem *ep = NULL;
-   lListElem *ep2 = NULL;
-   lList * lp = NULL;
-   lList * alp = NULL;
-   const char *file1 = NULL, *file2 = NULL;
-   
-   ep = lCreateElem(CU_Type);
-   lSetString(ep, CU_name, "Test_Name");
-   
-   lp = lCreateList("Remote User List", ASTR_Type);
-   
-   ep2 = lCreateElem(ASTR_Type);
-   lSetHost(ep2, ASTR_href, "Test_Name2");
-   lSetString(ep2, ASTR_value, "value");
-   lAppendElem(lp, ep2);
-   
-   ep2 = lCreateElem(ASTR_Type);
-   lSetHost(ep2, ASTR_href, "Test_Name3");
-   lSetString(ep2, ASTR_value, "value");
-   lAppendElem(lp, ep2);
-   
-   lSetList(ep, CU_ruser_list, lp);
-   
-   lp = lCreateList("Ulong32 List", AULNG_Type);
-   
-   ep2 = lCreateElem(AULNG_Type);
-   lSetHost(ep2, AULNG_href, "Test_Name4");
-   lSetUlong(ep2, AULNG_value, 13);
-   lAppendElem(lp, ep2);
-   
-   ep2 = lCreateElem(AULNG_Type);
-   lSetHost(ep2, AULNG_href, "Test_Name5");
-   lSetUlong(ep2, AULNG_value, 14);
-   lAppendElem(lp, ep2);
-   
-   lSetList(ep, CU_ulong32, lp);
-   
-   lp = lCreateList("Boolean List", ABOOL_Type);
-   
-   ep2 = lCreateElem(ABOOL_Type);
-   lSetHost(ep2, ABOOL_href, "Test_Name6");
-   lSetBool(ep2, ABOOL_value, true);
-   lAppendElem(lp, ep2);
-   
-   ep2 = lCreateElem(ABOOL_Type);
-   lSetHost(ep2, ABOOL_href, "Test_Name7");
-   lSetBool(ep2, ABOOL_value, false);
-   lAppendElem(lp, ep2);
-   
-   lSetList(ep, CU_bool, lp);
-   
-   lp = lCreateList("Time List", ATIME_Type);
-   
-   ep2 = lCreateElem(ATIME_Type);
-   lSetHost(ep2, ATIME_href, "Test_Name8");
-   lSetString(ep2, ATIME_value, "6");
-   lAppendElem(lp, ep2);
-   
-   ep2 = lCreateElem(ATIME_Type);
-   lSetHost(ep2, ATIME_href, "Test_Name9");
-   lSetString(ep2, ATIME_value, "5");
-   lAppendElem(lp, ep2);
-   
-   lSetList(ep, CU_time, lp);
-   
-   lp = lCreateList("Memory List", AMEM_Type);
-   
-   ep2 = lCreateElem(AMEM_Type);
-   lSetHost(ep2, AMEM_href, "Test_Name10");
-   lSetString(ep2, AMEM_value, "4");
-   lAppendElem(lp, ep2);
-   
-   ep2 = lCreateElem(AMEM_Type);
-   lSetHost(ep2, AMEM_href, "Test_Name11");
-   lSetString(ep2, AMEM_value, "3");
-   lAppendElem(lp, ep2);
-   
-   lSetList(ep, CU_mem, lp);
-   
-   lp = lCreateList("Inter List", AINTER_Type);
-   
-   ep2 = lCreateElem(AINTER_Type);
-   lSetHost(ep2, AINTER_href, "Test_Name10");
-   lSetString(ep2, AINTER_value, "2");
-   lAppendElem(lp, ep2);
-   
-   ep2 = lCreateElem(AINTER_Type);
-   lSetHost(ep2, AINTER_href, "Test_Name11");
-   lSetString(ep2, AINTER_value, "1");
-   lAppendElem(lp, ep2);
-   
-   lSetList(ep, CU_inter, lp);
-   
-   printf("CU: No Args\n");   
-   
-   /* Write a CU file using classic spooling */
-   file1 = spool_flatfile_write_object(&alp, ep, false,
-                                       CU_fields,
-                                       &qconf_comma_braced_sfi,
-                                       SP_DEST_TMP,
-                                       SP_FORM_ASCII, 
-                                       file1, false);
-   
-   /* Read a CU file using flatfile spooling */
-   lFreeElem(&ep);
-   ep = spool_flatfile_read_object(&alp, CU_Type, NULL,
-                                   CU_fields, NULL, true, &qconf_comma_braced_sfi,
-                                   SP_FORM_ASCII, NULL, file1);
-   
-   /* Write a CU file using flatfile spooling */
-   file2 = spool_flatfile_write_object(&alp, ep, false,
-                                       CU_fields,
-                                       &qconf_comma_braced_sfi,
-                                       SP_DEST_TMP,
-                                       SP_FORM_ASCII, 
-                                       file2, false);
-   
-   lFreeElem(&ep);
-   
-   ret = diff(file1, file2);
-   
-   sge_unlink(NULL, file1);
-   sge_unlink(NULL, file2);
-   sge_free(&file1);
-   sge_free(&file2);
-   
-   
-   answer_list_output(&alp);   
-   
-   return ret;
-}
-#endif
 
 static int CONF_test(void) {
    int ret = 0;

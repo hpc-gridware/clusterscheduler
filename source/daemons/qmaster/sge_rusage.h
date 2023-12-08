@@ -133,9 +133,7 @@ struct drusage {
    u_long32 ar;
    sge_all_rusage_type *arch_dep_usage;/* pointer to a structure with
                                           architecture dependend usage
-                                          information
-                                           for NECSX4/5:
-                                            pointer to sge_necsx_rusage_type */
+                                          information */
                                               
 };
 

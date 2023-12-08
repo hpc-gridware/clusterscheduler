@@ -38,13 +38,13 @@
 umask 022
 
 TOPFILES="3rd_party bin catman ckpt doc examples include inst_sge \
-          install_execd install_qmaster lib man mpi pvm hadoop qmon util utilbin"
+          install_execd install_qmaster lib man mpi pvm hadoop util utilbin"
 
 HASARCHDIR="bin lib examples/jobsbin utilbin"
 
 DEFAULTPROG="sge_qmaster sge_execd sge_shadowd \
              sge_shepherd sge_coshepherd qstat qsub qalter qconf qdel \
-             qacct qmod qsh utilbin jobs qmon qhost qmake qtcsh qping \
+             qacct qmod qsh utilbin jobs qhost qmake qping \
              qloadsensor.exe sgepasswd qquota qrsub qrstat qrdel"
 
 UTILITYBINARIES="uidgid gethostname gethostbyname gethostbyaddr \
@@ -57,8 +57,6 @@ BDBUTILITYBINARIES="db_deadlock db_dump db_load db_printlog db_recover db_stat d
 
 SSLUTILITYBINARIES="openssl"
 
-REMOTEBINARIES="rsh rshd rlogin"
-
 JOBBINARIES="work showq"
 
 SHARED_LIBRARIES="libcom libcull libgdi librmon libsched libsge libuti \
@@ -67,8 +65,6 @@ SHARED_LIBRARIES="libcom libcull libgdi librmon libsched libsge libuti \
                   libevc libevm libmir \
                   libjuti libjgdi"
 
-QMON_SHARED_LIBRARIES="libXbae libXicon libXmt libXspin libXtab"
-QMON_NEED_SHARED_LIBRARIES="libXltree"
 OPENSSL_SHARED_LIBRARIES="libcrypto libssl"
 
 BERKELEYDB_SHARED_LIBRARIES="libdb-4.4"
@@ -83,8 +79,7 @@ JNI_SHARED_LIBRARIES="libdrmaa libjuti libjgdi"
 
 JUTIJ_FILES="CLASSES/juti/juti"
 JGDIJ_FILES="libs/jgdi/build/jgdi"
-JJSV_FILES="CLASSES/jjsv/JSV"
-JAVA_LIBRARIES="${DRMAAJ_FILES} ${JUTIJ_FILES} ${JGDIJ_FILES} ${JJSV_FILES}"
+JAVA_LIBRARIES="${DRMAAJ_FILES} ${JUTIJ_FILES} ${JGDIJ_FILES}"
 
 PVMSOURCES="start_pvm.c stop_pvm.c slave.c master.c spmd.c Makefile"
 PVMSRCSCRIPTS="install.sh aimk"
@@ -119,8 +114,6 @@ SECFILES="security/gss/get_cred.c security/gss/put_cred.c \
 
 SECURITYBINARIES="get_cred put_cred delete_cred renew_cred \
                   starter_cred get_cred.sh put_cred.sh k5dcelogin"
-
-EXCLUDE_MANPAGE="usermapping.5"
 
 GE_SOURCEDIR=`pwd`
 
@@ -165,7 +158,6 @@ ErrUsage()
    echo "       \"mpi\"        = MPI scripts"
    echo "       \"pvm\"        = PVM source files and scripts"
    echo "       \"hadoop\"        = Hadoop scripts and libraries"
-   echo "       \"qmontree\"   = PIXMAPS, resource-, help-, copyright files"
    echo "       \"sec\"        = DCE/Kerberos security modules"
    echo "       \"secbin\"     = DCE/Kerberos security binaries"
    echo "       \"sgeinspect\" = SGE Inspect binaries"
@@ -423,7 +415,6 @@ instjavadoc=false
 instpvm=false
 instmpi=false
 insthadoop=false
-instqmon=false
 instcommon=false
 instutilbin=false
 instsec=false
@@ -434,7 +425,6 @@ instopenssl=true
 instbdb=true
 instbdbdoc=false
 instarco=false
-instguiinst=true
 instsgeinspect=false
 enforce_shlibpath=false
 
@@ -722,7 +712,6 @@ for prog in $PROG; do
          instmpi=true
          instpvm=true
          insthadoop=true
-         instqmon=true
          instutiltree=true
          case $prog in
          distcommon)
@@ -776,10 +765,6 @@ for prog in $PROG; do
          ;;
       hadoop)
          insthadoop=true
-         ;;
-      qmontree)
-         instqmon=true
-         instcommon=true
          ;;
       sec)
          instsec=true
@@ -855,14 +840,6 @@ if [ $instcommon = true ]; then
          Execute cp dist/DetectJvmLibrary/build/jar/DetectJvmLibrary.jar $DEST_SGE_ROOT/util
       fi
 
-      # JSV Java language binding
-      if [ -f libs/jjsv/java/com/sun/grid/jsv/examples/SimpleJsv.java ]; then
-         Execute cp libs/jjsv/java/com/sun/grid/jsv/examples/SimpleJsv.java $DEST_SGE_ROOT/util/resources/jsv
-      elif [ $exit_on_error = true ]; then
-         echo "\"libs/jjsv/java/com/sun/grid/jsv/examples/SimpleJsv.java\" not found. Installation failed."
-         exit 1
-      fi
-
       Cleanup util
 
       # Not available in Beta
@@ -907,7 +884,6 @@ if [ $instcommon = true ]; then
                         $DEST_SGE_ROOT/util/resources/usersets/*
 
       Execute chmod 755 $DEST_SGE_ROOT/util/resources/jsv/jsv.sh \
-                        $DEST_SGE_ROOT/util/resources/jsv/jjsv.sh \
                         $DEST_SGE_ROOT/util/resources/jsv/jsv.pl \
                         $DEST_SGE_ROOT/util/resources/jsv/jsv.tcl
    fi
@@ -924,35 +900,6 @@ if [ $instcommon = true ]; then
       Execute cp libs/japi/howto/*.c $DEST_SGE_ROOT/examples/drmaa
       Cleanup examples
    fi
-
-   if [ $instqmon = true ]; then
-      echo Copying Pixmaps and Qmon resource file
-      Execute rm -rf $DEST_SGE_ROOT/qmon
-      MakeDir qmon
-      MakeDir qmon/PIXMAPS
-      MakeDir qmon/PIXMAPS/big
-
-      Execute cp dist/qmon/PIXMAPS/small/*.xpm $DEST_SGE_ROOT/qmon/PIXMAPS
-      Execute cp dist/qmon/PIXMAPS/big/toolbar*.xpm $DEST_SGE_ROOT/qmon/PIXMAPS/big
-
-      Execute chmod 644 $DEST_SGE_ROOT/qmon/PIXMAPS/*.xpm
-      Execute chmod 644 $DEST_SGE_ROOT/qmon/PIXMAPS/big/*.xpm
-
-      Execute cp dist/qmon/Qmon $DEST_SGE_ROOT/qmon
-      Execute chmod 644 $DEST_SGE_ROOT/qmon/Qmon
-   
-      Execute cp dist/qmon/qmon_help.ad $DEST_SGE_ROOT/qmon
-      Execute chmod 644 $DEST_SGE_ROOT/qmon/qmon_help.ad
-
-      ( echo changing to $DEST_SGE_ROOT/qmon/PIXMAPS ; \
-        cd $DEST_SGE_ROOT/qmon/PIXMAPS; \
-        echo ln -s intro-sge.xpm intro.xpm; \
-        ln -s intro-sge.xpm intro.xpm; \
-        echo ln -s logo-sge.xpm logo.xpm; \
-        ln -s logo-sge.xpm logo.xpm \
-      )
-      Cleanup qmon
-   fi 
 
    if [ $instpvm = true ]; then
       echo Installing \"pvm\"
@@ -1084,13 +1031,6 @@ if [ $instcommon = true ]; then
          Execute cp dist/hadoop/$f $DEST_SGE_ROOT/hadoop/$f
          Execute chmod 755 $DEST_SGE_ROOT/hadoop/$f
       done
-
-      if [ -f CLASSES/herd/herd.jar ]; then
-         Execute cp CLASSES/herd/herd.jar $DEST_SGE_ROOT/lib/herd.jar
-      elif [ $exit_on_error = true ]; then
-         echo "\"CLASSES/herd/herd.jar\" not found. Installation failed."
-         exit 1
-      fi
    fi
 
    if [ $instman = true ]; then
@@ -1116,12 +1056,6 @@ if [ $instcommon = true ]; then
             done
          done
       fi
-
-      for excluded_file in $EXCLUDE_MANPAGE; do
-         dir_num=`echo $excluded_file | cut -d"." -f2`
-         Execute rm -f $DEST_SGE_ROOT/catman/cat/cat$dir_num/$excluded_file
-         Execute rm -f $DEST_SGE_ROOT/man/man$dir_num/$excluded_file
-      done
 
       Execute find $DEST_SGE_ROOT/man -type d | xargs chmod 755
       Execute find $DEST_SGE_ROOT/man -type f | xargs chmod 644
@@ -1233,26 +1167,6 @@ if [ $instarco = true ]; then
    fi
 fi
 
-if [ $instguiinst = true ]; then
-   GUI_DIR=`pwd`/clients/gui-installer
-   if [ -d "$GUI_DIR" ]; then 
-      rm -rf $DEST_SGE_ROOT/start_gui_installer $DEST_SGE_ROOT/util/gui-installer 
-      echo "Installing \"start_gui_installer\" and \"/util/gui-installer\""
-      Execute mkdir -p $DEST_SGE_ROOT/util/gui-installer/html/en/help
-      Execute mkdir -p $DEST_SGE_ROOT/util/gui-installer/templates
-      Execute cp $GUI_DIR/dist/installer.jar $DEST_SGE_ROOT/util/gui-installer
-      Execute cp $GUI_DIR/templates/start_gui_installer.sh $DEST_SGE_ROOT/start_gui_installer
-      Execute cp -r $GUI_DIR/html $DEST_SGE_ROOT/util/gui-installer
-      Execute cp $GUI_DIR/templates/install_component $GUI_DIR/templates/gui_inst_template.conf $GUI_DIR/templates/readme_template.html $GUI_DIR/templates/check_host $DEST_SGE_ROOT/util/gui-installer/templates
-      Execute chmod 755 $DEST_SGE_ROOT/start_gui_installer
-      Cleanup util/gui-installer
-      echo GUI installer part done
-      echo
-   else
-      echo "GUI Installer dir \"$GUI_DIR\" does not exist"
-   fi
-fi
-
 if [ $instsgeinspect = true ]; then
    if [ -d "$SGE_INSPECT_SRC_DIR" ]; then
       if [ `echo $SGE_INSPECT_SRC_DIR | cut -c 1` = "/" ]; then
@@ -1307,16 +1221,12 @@ for i in $ARCH; do
 
       for prog in $PROG; do
          case $prog in
-            jobs|ckpt|doc|inst_sge|utiltree|examples|man|mpi|pvm|hadoop|qmontree|common|distcommon|utilbin|arco)
+            jobs|ckpt|doc|inst_sge|utiltree|examples|man|mpi|pvm|common|distcommon|utilbin|arco)
                : 
                ;;
             qmake)
                echo Installing qmake
                Install 0.0 755 ../3rdparty/qmake/$ARCHBIN/make $DEST_SGE_ROOT/${UTILPREFIX}/$DSTARCH/qmake
-               ;;
-            qtcsh)
-               echo Installing qtcsh
-               Install 0.0 755 ../3rdparty/qtcsh/$ARCHBIN/tcsh $DEST_SGE_ROOT/${UTILPREFIX}/$DSTARCH/qtcsh
                ;;
             sgepasswd)
                if [ "$DSTARCH" != "win32-x86" ]; then
@@ -1342,14 +1252,8 @@ for i in $ARCH; do
                   fi
                fi
                ;;
-            sge_shadowd|qmon|spooledit)
+            sge_shadowd|spooledit)
                if [ "$DSTARCH" != "win32-x86" ]; then
-                  InstallProg $prog
-               fi
-               ;;
-            qloadsensor.exe)
-               if [ "$DSTARCH" = "win32-x86" ]; then
-                  # Currently qloadsensor.exe is needed only for win32-x86
                   InstallProg $prog
                fi
                ;;
@@ -1454,13 +1358,6 @@ for i in $ARCH; do
                InstallProg $prog
             fi
          done
-         for prog in $REMOTEBINARIES; do
-            if [ $prog = "rsh" ] || [ $prog = "rlogin" ]; then
-               InstallProgSUID ../3rdparty/remote/$ARCHBIN/$prog
-            else   
-               InstallProg ../3rdparty/remote/$ARCHBIN/$prog
-            fi
-         done
       fi 
 
       if [ $instsecbin = true ]; then
@@ -1523,27 +1420,6 @@ for i in $ARCH; do
                         SetArchBin $DSTARCH
                      fi
                   fi
-               fi
-            fi
-         done
-
-         for lib in $QMON_SHARED_LIBRARIES; do
-            if [ "$DSTARCH" != "win32-x86" ]; then
-               libname="../3rdparty/qmon/$ARCHBIN/$lib.$shlibext"
-               if [ -f $libname ]; then
-                  InstallProg $libname
-               fi
-            fi
-         done
-
-         for lib in $QMON_NEED_SHARED_LIBRARIES; do
-            if [ "$DSTARCH" != "win32-x86" ]; then
-               libname="../3rdparty/qmon/$ARCHBIN/$lib.$shlibext"
-               if [ -f $libname ]; then
-                  InstallProg $libname
-               elif [ $exit_on_error = true ]; then
-                  echo "\"$libname\" not found. Installation failed."
-                  exit 1
                fi
             fi
          done

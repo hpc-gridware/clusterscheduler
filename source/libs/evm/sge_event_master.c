@@ -75,7 +75,6 @@
 #include "sgeobj/sge_calendar.h"
 #include "sgeobj/sge_sharetree.h"
 #include "sgeobj/sge_hgroup.h"
-#include "sgeobj/sge_cuser.h"
 #include "sgeobj/sge_centry.h"
 #include "sgeobj/sge_cqueue.h"
 #include "sgeobj/sge_object.h"
@@ -252,11 +251,7 @@ const int SOURCE_LIST[LIST_MAX][3] = {
  *****************************************************
  */
 
-#ifndef __SGE_NO_USERMAPPING__
-#define total_update_eventsMAX 22
-#else
 #define total_update_eventsMAX 21
-#endif
 
 const int total_update_events[total_update_eventsMAX + 1] = {sgeE_ADMINHOST_LIST,
                                        sgeE_CALENDAR_LIST,
@@ -279,9 +274,6 @@ const int total_update_events[total_update_eventsMAX + 1] = {sgeE_ADMINHOST_LIST
                                        sgeE_HGROUP_LIST,
                                        sgeE_RQS_LIST,
                                        sgeE_AR_LIST,
-#ifndef __SGE_NO_USERMAPPING__
-                                       sgeE_CUSER_LIST,
-#endif
                                        -1};
 
 const int block_events[total_update_eventsMAX][9] = {
@@ -306,9 +298,6 @@ const int block_events[total_update_eventsMAX][9] = {
    {sgeE_HGROUP_ADD,          sgeE_HGROUP_DEL,          sgeE_HGROUP_MOD,          -1, -1, -1, -1, -1, -1},
    {sgeE_RQS_ADD,             sgeE_RQS_DEL,             sgeE_RQS_MOD,             -1, -1, -1, -1, -1, -1},
    {sgeE_AR_ADD,              sgeE_AR_DEL,              sgeE_AR_MOD,              -1, -1, -1, -1, -1, -1}
-#ifndef __SGE_NO_USERMAPPING__
-   ,{sgeE_CUSER_ADD,           sgeE_CUSER_DEL,           sgeE_CUSER_MOD,           -1, -1, -1, -1, -1, -1}
-#endif
 };
 
 
@@ -777,9 +766,6 @@ sge_event_master_process_mod_event_client(lListElem *request, monitoring_t *moni
       check_send_new_subscribed_list(old_sub, new_sub, event_client, sgeE_HGROUP_LIST, master_table);
       check_send_new_subscribed_list(old_sub, new_sub, event_client, sgeE_RQS_LIST, master_table);
       check_send_new_subscribed_list(old_sub, new_sub, event_client, sgeE_AR_LIST, master_table);
-#ifndef __SGE_NO_USERMAPPING__
-      check_send_new_subscribed_list(old_sub, new_sub, event_client, sgeE_CUSER_LIST, master_table);
-#endif      
 
 #if 0
 /* JG: TODO: better use lXchgList? */
@@ -1935,9 +1921,6 @@ static void init_send_events(void)
    SEND_EVENTS[sgeE_HGROUP_LIST] = true;
    SEND_EVENTS[sgeE_RQS_LIST] = true;
    SEND_EVENTS[sgeE_AR_LIST] = true;
-#ifndef __SGE_NO_USERMAPPING__
-   SEND_EVENTS[sgeE_CUSER_LIST] = true;
-#endif
 
    DRETURN_VOID;
 } /* init_send_events() */
@@ -2348,9 +2331,6 @@ static void total_update(lListElem *event_client, monitoring_t *monitor)
    total_update_event(event_client, sgeE_HGROUP_LIST, master_table, false);
    total_update_event(event_client, sgeE_RQS_LIST, master_table, false);
    total_update_event(event_client, sgeE_AR_LIST, master_table, false);
-#ifndef __SGE_NO_USERMAPPING__
-   total_update_event(event_client, sgeE_CUSER_LIST, master_table, false);
-#endif
 
    sge_commit();
 
@@ -2877,11 +2857,6 @@ static void total_update_event(lListElem *event_client, ev_event type, object_de
          case sgeE_AR_LIST:
             lp = *object_base[SGE_TYPE_AR].list;
             break;
-#ifndef __SGE_NO_USERMAPPING__
-         case sgeE_CUSER_LIST:
-            lp = *object_base[SGE_TYPE_CUSER].list;
-            break;
-#endif
          default:
             WARNING((SGE_EVENT, MSG_EVE_TOTALUPDATENOTHANDLINGEVENT_I, type));
             DRETURN_VOID;

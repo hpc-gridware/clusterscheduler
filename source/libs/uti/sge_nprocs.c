@@ -31,13 +31,6 @@
 /*___INFO__MARK_END__*/
 #include "msg_utilib.h"
 
-#if defined(NECSX4) || defined(NECSX5)
-#   include <sys/rsg.h>
-#   include <sys/types.h>
-#   include <fcntl.h>
-#   include <sys/syssx.h>
-#endif
-
 #if defined(DARWIN)
 #   include <mach/host_info.h>
 #   include <mach/mach_host.h>
@@ -92,29 +85,6 @@ void main(int, char**);
 int sge_nprocs (void);
 #endif
 
-#if defined(NECSX4) || defined(NECSX5)
-int sge_nprocs_rsg(rsg_id) {
-   int nprocs;
-   int fd;
-   rsg_info_t info;
-   char fsg_dev_string[256];
-
-   nprocs = 0;
-   sprintf(fsg_dev_string, "/dev/rsg/%d", rsg_id);
-   fd = open(fsg_dev_string, O_RDONLY);
-   if (fd > 0) {
-      if (ioctl(fd, RSG_INFO, &info) == -1) {
-         close(fd);
-         return 0;
-      }
-      close(fd);
-
-      nprocs += info.cprb.init_cpu;
-   }
-   return nprocs;
-}
-#endif
-
 /****** uti/os/sge_nprocs() ***************************************************
 *  NAME
 *     sge_nprocs() -- Number of processors in this machine 
@@ -135,86 +105,6 @@ int sge_nprocs_rsg(rsg_id) {
 int sge_nprocs()
 {
    int nprocs=1; /* default */
-#if defined(NECSX4) || defined(NECSX5)
-   int fd;
-   int fsg_id;
-   rsg_info_t info;
-   char fsg_dev_string[256];
-#endif
- 
-/* NEC SX 4/16, NEC SX 4/32 */
-#if defined(NECSX4) || defined(NECSX5)
-/*
- * Using RSG values alone is unreliable.
- */
-#if 0
-   nprocs = 0;
-   for (fsg_id=0; fsg_id<32; fsg_id++) {
-      sprintf(fsg_dev_string, "/dev/rsg/%d", fsg_id);
-      fd = open(fsg_dev_string, O_RDONLY);
-      if (fd > 0) {
-         if (ioctl(fd, RSG_INFO, &info) == -1) {
-            close(fd);
-            continue;
-         }
-         close(fd);
-
-         nprocs += info.cprb.init_cpu;
-      }
-   }
-   if (nprocs == 0) {
-      nprocs=1;
-   }
-#elif 1
-#if defined(CNFGAPNUM)
-   /*
-    * SUPER-UX >= 11.x provides a function.
-    */
-   nprocs = syssx(CNFGAPNUM);
-#else
-   {
-      /*
-       * As with sge_loadmem(), get RB info and tally
-       * it up.
-       */
-      char       fsg_dev_string[256];
-      int        fd, fsg_id;
-      rsg_id_t   id;
-      rsg_info_t info;
-      cpurb_t    cpurbs[MAXRBNUM];
-      int        i;
-
-      /* initialize */
-      for (i = 0; i < MAXRBNUM; i++) {
-         memset(&cpurbs[i], 0, sizeof(cpurb_t));
-      }
-
-      /* read in RB info (don't be fooled by RSG names) */
-      for (fsg_id = 0; fsg_id < MAXRSGNUM; fsg_id++) {
-         sprintf(fsg_dev_string, "/dev/rsg/%d", fsg_id);
-         fd = open(fsg_dev_string, O_RDONLY);
-         if (fd >= 0) {
-            if ((ioctl(fd, RSG_ID, &id) == -1) ||
-                  (ioctl(fd, RSG_INFO, &info) == -1)) {
-               close(fd);
-               continue;
-            }
-            close(fd);
-
-            /* copy for later use */
-            memcpy(&cpurbs[id.cprbid], &info.cprb, sizeof(cpurb_t));
-         }
-      }
-
-      nprocs = 0;
-      for (i = 0; i < MAXRBNUM; i++) {
-         nprocs += cpurbs[i].init_cpu;
-      }
-   }
-#endif /* CNFGAPNUM */
-#endif
-
-#endif
 
 #if defined(DARWIN)
   struct host_basic_info cpu_load_data;

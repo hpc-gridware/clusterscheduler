@@ -52,24 +52,11 @@
 #include "sge_rusage.h"
 #include "msg_qmaster.h"
 
-#ifdef NEC_ACCOUNTING_ENTRIES
-#define ARCH_COLUMN "%c%s"
-#else
-#define ARCH_COLUMN ""
-#endif
-
 #define ACTFILE_FPRINTF_FORMAT \
 "%s%c%s%c%s%c%s%c%s%c"sge_u32"%c%s%c"sge_u32"%c"sge_u32"%c"sge_u32"%c"sge_u32"%c"sge_u32"%c"sge_u32"%c" \
 sge_u32"%c%f%c%f%c%f%c"sge_u32"%c"sge_u32"%c"sge_u32"%c"sge_u32"%c"sge_u32"%c"sge_u32"%c"sge_u32"%c%f%c" \
 sge_u32"%c"sge_u32"%c"sge_u32"%c"sge_u32"%c"sge_u32"%c"sge_u32"%c%s%c%s%c%s%c%d%c"sge_u32"%c%f%c%f%c%f%c%s%c%f%c%s%c%f%c"sge_u32"%c"sge_u32"" \
-ARCH_COLUMN \
 "\n"
-
-#ifdef NEC_ACCOUNTING_ENTRIES
-#define NECSX_ACTFILE_FPRINTF_FORMAT \
-"%s,"sge_u32","sge_u32","sge_u32","sge_u32","sge_u32","sge_u32","sge_u32","sge_u32","sge_u32","sge_u32","sge_u32"," \
-sge_u32","sge_u32","sge_u32","sge_u32","sge_u32","sge_u32","sge_u32","sge_u32","sge_u32","sge_u32"\n"
-#endif 
 
 #define SET_STR_DEFAULT(jr, nm, s) if (!lGetString(jr, nm)) \
                                       lSetString(jr, nm, s);
@@ -384,11 +371,6 @@ sge_write_rusage(dstring *buffer,
    lList *reported_list     = NULL; /* already reported usage of ja_task or pe_task */
 
    const char *pe_task_id;
-#ifdef NEC_ACCOUNTING_ENTRIES
-   char arch_dep_usage_buffer[MAX_STRING_SIZE];
-   dstring arch_dep_usage_dstring;
-   char *arch_dep_usage_string;
-#endif
    const char *ret = NULL;
    char *qname = NULL;
    char *hostname = NULL;
@@ -408,11 +390,6 @@ sge_write_rusage(dstring *buffer,
    if (buffer == NULL) {
       DRETURN(ret);
    }
-
-#ifdef NEC_ACCOUNTING_ENTRIES
-   sge_dstring_init(&arch_dep_usage_dstring, arch_dep_usage_buffer, 
-                    sizeof(arch_dep_usage_buffer));
-#endif
 
    /* 
     * Figure out if it is a parallel job,
@@ -487,50 +464,6 @@ sge_write_rusage(dstring *buffer,
    if (lGetString(job, JB_account) == NULL) {
       lSetString(job, JB_account, "UNKNOWN");
    }   
-
-#ifdef NEC_ACCOUNTING_ENTRIES
-#if defined(NECSX4) || defined(NECSX5)
-   /* values which will be written for a special architecture */
-   {
-      char *arch_string = "";
-
-      ep = lGetElemStr(usage_list, UA_name, "necsx_necsx4");
-      if (ep != NULL) {
-         arch_string = "necsx4";
-      }   
-      ep = lGetElemStr(usage_list, UA_name, "necsx_necsx5");
-      if (ep != NULL) {
-         arch_string = "necsx5";
-      }   
-
-      arch_dep_usage_string = sge_dstring_sprintf(&arch_dep_usage_dstring, 
-         NECSX_ACTFILE_FPRINTF_FORMAT,
-         arch_string,    
-         usage_list_get_ulong_usage(usage_list, "necsx_base_prty", 0),
-         usage_list_get_ulong_usage(usage_list, "necsx_time_slice", 0),
-         usage_list_get_ulong_usage(usage_list, "necsx_num_procs", 0),
-         usage_list_get_ulong_usage(usage_list, "necsx_kcore_min", 0),
-         usage_list_get_ulong_usage(usage_list, "necsx_mean_size", 0),
-         usage_list_get_ulong_usage(usage_list, "necsx_maxmem_size", 0),
-         usage_list_get_ulong_usage(usage_list, "necsx_chars_trnsfd", 0),
-         usage_list_get_ulong_usage(usage_list, "necsx_blocks_rw", 0),
-         usage_list_get_ulong_usage(usage_list, "necsx_inst", 0),
-         usage_list_get_ulong_usage(usage_list, "necsx_vector_inst", 0),
-         usage_list_get_ulong_usage(usage_list, "necsx_vector_elmt", 0),
-         usage_list_get_ulong_usage(usage_list, "necsx_vec_exe", 0),
-         usage_list_get_ulong_usage(usage_list, "necsx_flops", 0),
-         usage_list_get_ulong_usage(usage_list, "necsx_conc_flops", 0),
-         usage_list_get_ulong_usage(usage_list, "necsx_fpec", 0),
-         usage_list_get_ulong_usage(usage_list, "necsx_cmcc", 0),
-         usage_list_get_ulong_usage(usage_list, "necsx_bccc", 0),
-         usage_list_get_ulong_usage(usage_list, "necsx_mt_open", 0),
-         usage_list_get_ulong_usage(usage_list, "necsx_io_blocks", 0),
-         usage_list_get_ulong_usage(usage_list, "necsx_multi_single", 0),
-         usage_list_get_ulong_usage(usage_list, "necsx_max_nproc", 0)
-      );
-   }
-#endif
-#endif
 
    /* figure out queue name and host name */
    {
@@ -655,9 +588,6 @@ sge_write_rusage(dstring *buffer,
                                          intermediate ? USAGE_ATTR_MAXVMEM : USAGE_ATTR_MAXVMEM_ACCT, USAGE_ATTR_MAXVMEM, 0), delimiter,
           lGetUlong(job, JB_ar), delimiter,
           (ar != NULL) ? lGetUlong(ar, AR_submission_time): 0
-#ifdef NEC_ACCOUNTING_ENTRIES
-          , delimiter, arch_dep_usage_string
-#endif 
              );
 
    sge_free(&qname);

@@ -73,10 +73,6 @@ struct rusage {
 #   include <sys/times.h>
 #endif
 
-#if defined(NECSX4) || defined(NECSX5)
-#   include <sys/times.h>
-#endif
-
 #include "uti/config_file.h"
 #include "uti/sge_dstring.h"
 #include "uti/sge_stdlib.h"
@@ -1121,8 +1117,6 @@ int ckpt_type
    ckpt_info_t ckpt_info = {0, 0, 0};
 #if defined(IRIX)
    ash_t ash = 0;
-#elif defined(NECSX4) || defined(NECSX5)
-	id_t jobid = 0;
 #elif defined(CRAY)
    int jobid = 0;
 #endif
@@ -1163,16 +1157,13 @@ int ckpt_type
                                rest_command, sizeof(rest_command) -1);
       shepherd_trace("restarting job from checkpoint arena");
 
-#if defined(IRIX) || defined(CRAY) || defined(NECSX4) || defined(NECSX5)
+#if defined(IRIX) || defined(CRAY) 
       /* reuse old osjobid for the migrated job and forward this one to ptf */
       shepherd_write_osjobid_file(get_conf_val("ckpt_osjobid"));
 
 #if defined(IRIX)
       sscanf(get_conf_val("ckpt_osjobid"), "%lld", &ash);
       shepherd_trace("reusing old array session handle %lld", ash);
-#elif defined(NECSX4) || defined(NECSX5)
-		sscanf(get_conf_val("ckpt_osjobid"), "%ld", &jobid);
-		shepherd_trace("reusing old super-ux jobid %lld", jobid); 
 #elif defined(CRAY)
       sscanf(get_conf_val("ckpt_osjobid"),  "%d", &jobid);
       shepherd_trace("reusing old unicos jobid %d", jobid);
@@ -2447,7 +2438,7 @@ int fd_std_err             /* fd of stderr. -1 if not set */
 #if defined(HPUX) || defined(INTERIX)
    struct rusage rusage_hp10;
 #endif
-#if defined(CRAY) || defined(NECSX4) || defined(NECSX5)
+#if defined(CRAY) 
    struct tms t1, t2;
 #endif
 
@@ -2530,7 +2521,7 @@ int fd_std_err             /* fd of stderr. -1 if not set */
       inArena = 0;
    }
 
-#if defined(CRAY) || defined(NECSX4) || defined(NECSX5)
+#if defined(CRAY) 
    times(&t1);
 #endif
    
@@ -2539,7 +2530,7 @@ int fd_std_err             /* fd of stderr. -1 if not set */
          alarm(rest_ckpt_interval);
       }
 
-#if defined(CRAY) || defined(NECSX4) || defined(NECSX5) || defined(INTERIX)
+#if defined(CRAY) || defined(INTERIX)
       npid = waitpid(-1, &status, wait_options);
 #else
       npid = wait3(&status, wait_options, rusage);
@@ -2752,7 +2743,7 @@ int fd_std_err             /* fd of stderr. -1 if not set */
    } while ((job_pid > 0) || (migr_cmd_pid > 0) || (ckpt_cmd_pid > 0) ||
             (ctrl_pid[0] > 0) || (ctrl_pid[1] > 0) || (ctrl_pid[2] > 0));
 
-#if defined(CRAY) || defined(NECSX4) || defined(NECSX5)
+#if defined(CRAY) 
    times(&t2);
    {
       /* compute utime and stime (seconds and micro seconds) */
@@ -3035,19 +3026,16 @@ static void start_clean_command(char *cmd)
  ****************************************************************/
 void 
 shepherd_signal_job(pid_t pid, int sig) {
-#if defined(IRIX) || defined(CRAY) || defined(NECSX4) || defined(NECSX5)
+#if defined(IRIX) || defined(CRAY) 
    static int first = 1;
 #  if defined(IRIX)
    static ash_t osjobid = 0;
-#	elif defined(NECSX4) || defined(NECSX5)
-   char err_str[512];
-	static id_t osjobid = 0;
 #  elif defined(CRAY)
    static int osjobid = 0;
 #  endif
 # endif
 
-#if defined(CRAY) || defined(NECSX4) || defined(NECSX5)
+#if defined(CRAY)
    /* 980708 SVD - I moved the normal kill code below the special job
       killing code for the Cray and NEC because killing the process first
       may cause the job to be removed which can cause the job kill code
@@ -3066,29 +3054,6 @@ shepherd_signal_job(pid_t pid, int sig) {
         sge_switch2start_user();
 #     if defined(CRAY)
         killm(C_JOB, osjobid, sig);
-#     elif defined(NECSX4) || defined(NECSX5)
-        if (sig == SIGSTOP) {
-            if (suspendj(osjobid) == -1) {
-                shepherd_trace("ERROR(%d): suspendj(%d): %s", errno,
-                               osjobid, strerror(errno));
-             } else {
-                shepherd_trace("suspendj(%d)", osjobid);
-             }
-         } else if (sig == SIGCONT) {
-             if (resumej(osjobid) == -1) {
-                shepherd_trace("ERROR(%d): resumej(%d): %s", errno,
-                               osjobid, strerror(errno));
-             } else {
-                shepherd_trace("resumej(%d)", osjobid);
-             }
-         } else {
-             if (killj(osjobid, sig) == -1) {
-                shepherd_trace("ERROR(%d): killj(%d, %d): %s", errno,
-                               osjobid, sig, strerror(errno));
-             } else {
-                shepherd_trace("killj(%d, %d)", osjobid, sig);
-             }
-         }                   
 #     endif
          sge_switch2admin_user();
       }

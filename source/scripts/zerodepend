@@ -40,7 +40,6 @@ files=" \
        clients/qhost/qhost_dependencies  \
        clients/qquota/qquota_dependencies  \
        clients/qmod/qmod_dependencies  \
-       clients/qmon/qmon_dependencies  \
        clients/qsh/qsh_dependencies  \
        clients/qrsh/qrsh_dependencies  \
        clients/qstat/qstat_dependencies  \
@@ -72,42 +71,15 @@ files=" \
        libs/cull/cull_dependencies  \
        libs/sched/sched_dependencies  \
        libs/uti/uti_dependencies  \
-       libs/juti/juti_dependencies  \
        libs/comm/commlib_dependencies  \
        libs/comm/lists/commlistslib_dependencies \
        libs/comm/examples/commexamples_dependencies \
-       libs/juti/juti_dependencies  \
        utilbin/utilbin_dependencies \
        security/coshepherd/coshepherd_dependencies \
        security/krb/krb_dependencies \
        security/gss/gss_dependencies \
-       3rdparty/strptime/strptime_dependencies \
-       3rdparty/fnmatch/fnmatch_dependencies
 "
 echo deleting and truncating: $files
 
 rm -f $files
 touch $files
-
-if [ -d libs/wingrid ]; then
-   rm -f libs/wingrid/wingrid_dependencies
-   touch libs/wingrid/wingrid_dependencies
-fi
-
-if [ -d experimental/wingrid ]; then
-   rm -f experimental/wingrid/qloadsensor/exp_wingrid_dependencies
-   touch experimental/wingrid/qloadsensor/exp_wingrid_dependencies
-fi
-
-if [ -d experimental/culltrans ]; then
-   rm -f experimental/culltrans/culltrans_dependencies
-   touch experimental/culltrans/culltrans_dependencies
-fi
-
-if [ -d utilbin/windows ]; then
-   rm -f utilbin/windows/qloadsensor/qloadsensor_dependencies
-   touch utilbin/windows/qloadsensor/qloadsensor_dependencies
-   
-   rm -f utilbin/windows/worker/worker_dependencies
-   touch utilbin/windows/worker/worker_dependencies
-fi

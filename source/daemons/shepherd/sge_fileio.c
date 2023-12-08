@@ -141,38 +141,6 @@ shepherd_write_usage_file(u_long32 wait_status, int exit_status,
       FPRINTF((fp, "start_time=%d\n", (int) start_time));
       FPRINTF((fp, "end_time=%d\n", (int) end_time));
       FPRINTF((fp, "ru_wallclock="sge_u32"\n", (u_long32) end_time-start_time));
-#if defined(NEC_ACCOUNTING_ENTRIES)
-      /* Additional accounting information for NEC SX-4 SX-5 */
-#if defined(NECSX4) || defined(NECSX5)
-#if defined(NECSX4)
-      FPRINTF((fp, "necsx_necsx4="sge_u32"\n", 1));
-#elif defined(NECSX5)
-      FPRINTF((fp, "necsx_necsx5="sge_u32"\n", 1));
-#endif
-      FPRINTF((fp, "necsx_base_prty="sge_u32"\n", 0));
-      FPRINTF((fp, "necsx_time_slice="sge_u32"\n", 0));
-      FPRINTF((fp, "necsx_num_procs="sge_u32"\n", 0));
-      FPRINTF((fp, "necsx_kcore_min="sge_u32"\n", 0));
-      FPRINTF((fp, "necsx_mean_size="sge_u32"\n", 0));
-      FPRINTF((fp, "necsx_maxmem_size="sge_u32"\n", 0));
-      FPRINTF((fp, "necsx_chars_trnsfd="sge_u32"\n", 0));
-      FPRINTF((fp, "necsx_blocks_rw="sge_u32"\n", 0));
-      FPRINTF((fp, "necsx_inst="sge_u32"\n", 0));
-      FPRINTF((fp, "necsx_vector_inst="sge_u32"\n", 0));
-      FPRINTF((fp, "necsx_vector_elmt="sge_u32"\n", 0));
-      FPRINTF((fp, "necsx_vec_exe="sge_u32"\n", 0));
-      FPRINTF((fp, "necsx_flops="sge_u32"\n", 0));
-      FPRINTF((fp, "necsx_conc_flops="sge_u32"\n", 0));
-      FPRINTF((fp, "necsx_fpec="sge_u32"\n", 0));
-      FPRINTF((fp, "necsx_cmcc="sge_u32"\n", 0));
-      FPRINTF((fp, "necsx_bccc="sge_u32"\n", 0));
-      FPRINTF((fp, "necsx_mt_open="sge_u32"\n", 0));
-      FPRINTF((fp, "necsx_io_blocks="sge_u32"\n", 0));
-      FPRINTF((fp, "necsx_multi_single="sge_u32"\n", 0));
-      FPRINTF((fp, "necsx_max_nproc="sge_u32"\n", 0));
-#endif
-#endif
-
       FPRINTF((fp, "ru_utime=%f\n", (double)rusage->ru_utime.tv_sec + (double)rusage->ru_utime.tv_usec / 1000000.0));
       FPRINTF((fp, "ru_stime=%f\n", (double)rusage->ru_stime.tv_sec + (double)rusage->ru_stime.tv_usec / 1000000.0));
       FPRINTF((fp, "ru_maxrss=%ld\n", rusage->ru_maxrss));
@@ -404,13 +372,11 @@ FCLOSE_ERROR:
    return false;
 }
 
-#if defined(IRIX) || defined(CRAY) || defined(NECSX4) || defined(NECSX5)
+#if defined(IRIX) || defined(CRAY)
 bool 
 shepherd_read_osjobid_file(
 #if (IRIX)
    ash_t *return_code,
-#elif defined(NECSX4) || defined(NECSX5)
-   id_t *return_code,
 #elif defined(CRAY)
    int *return_code,
 #endif

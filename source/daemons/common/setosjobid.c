@@ -59,18 +59,6 @@ struct rusage {
 #   include <sys/times.h>
 #endif
 
-#if defined(NECSX4) || defined(NECSX5)
-#  include <string.h> 
-#  include <sys/stat.h>
-#  include <fcntl.h>
-#  include <errno.h>
-#  include <sys/types.h>
-#  include <sys/disp.h>
-#  include <sys/rsg.h> 
-
-#  define NEC_UNDEF_VALUE (-999)
-#endif 
-
 #include "uti/config_file.h"
 #include "uti/sge_uidgid.h"
 #include "uti/sge_stdio.h"
@@ -78,31 +66,6 @@ struct rusage {
 #include "basis_types.h"
 #include "err_trace.h"
 #include "setosjobid.h"
-
-#if defined(NECSX4) || defined(NECSX5)
-static void print_scheduling_parameters(dispset2_t attr);
-#endif
-
-#if defined(NECSX4) || defined(NECSX5)
-
-static void print_scheduling_parameters(dispset2_t attr) 
-{
-   shepherd_trace("basepr     %d", attr.basepri);
-   shepherd_trace("modcpu     %d", attr.modcpu);
-   shepherd_trace("tickcnt    %d", attr.tickcnt);
-   shepherd_trace("dcyfctr    %d", attr.dcyfctr);
-   shepherd_trace("dcyintvl   %d", attr.dcyintvl);
-   shepherd_trace("tmslice    %d", attr.tmslice);
-   shepherd_trace("mempri     %d", attr.mempri);
-   shepherd_trace("szefctmrt  %d", attr.szefctmrt);
-   shepherd_trace("priefctmrt %d", attr.priefctmrt);
-   shepherd_trace("minmrt     %d", attr.minmrt);
-   shepherd_trace("agrange    %d", attr.agrange);
-   shepherd_trace("spinherit  %d", attr.spinherit);
-   shepherd_trace("concpu     %d", attr.concpu);
-}
-
-#endif 
 
 void setosjobid(pid_t sid, gid_t *add_grp_id_ptr, struct passwd *pw)
 {
@@ -216,90 +179,6 @@ void setosjobid(pid_t sid, gid_t *add_grp_id_ptr, struct passwd *pw)
 	         shepherd_trace("can't get configuration entry for projects");
          }
       }
-#     elif defined(NECSX4) || defined(NECSX5)
-      {
-         id_t jobid = 0;
-		 	dispset2_t attr;	
-			int value;
-
-         /*
-          * Create new Super-UX job
-          */
-         if (setjid() == -1) {
-            shepherd_trace("ERROR: can't set jobid: %s[%d]", strerror(errno), errno);
-         } else {
-            jobid = getjid(0);
-            shepherd_trace("Created job with id: "sge_u32, (u_long32) jobid);
-         }  
-         sprintf(osjobid, sge_u32, (u_long32) jobid); 
-
-         /*
-          * We will use limits for the whole job
-          */
-         set_rlimits_os_job_id(jobid);
-
-         /*
-          * The job will use the resources of the configured 
-          * Resource Sharing Group (rsg)
-          */ 
-         {
-            char *rsg_id_string;
-            int rsg_id;
-            char fsg_dev_string[256];
-
-            rsg_id_string  = get_conf_val("processors");
-            rsg_id = atoi(rsg_id_string);
-            if (rsg_id) {
-               int fd;
-
-               sprintf(fsg_dev_string, "/dev/rsg/%d", rsg_id);
-               fd = open(fsg_dev_string, O_RDONLY);
-               if (fd <= 0) {
-                  shepherd_trace("ERROR: can't switch to rsg%d because can't open"
-                                 "device: %s[%d]", rsg_id, strerror(errno), errno);
-               } else {
-                  if (ioctl(fd, RSG_JUMP, NULL) == -1) {
-                     close(fd);
-                     shepherd_trace("ERROR: can't switch to rsg%d: %s[%d]", 
-                                    rsg_id, strerror(errno), errno);
-                     return;
-                  } else {
-                     close(fd);
-                     shepherd_trace("switched to rsg%d", rsg_id);
-                  }
-               }
-            } else {
-               shepherd_trace("using default rsg", rsg_id);
-            }
-         } 
-
-         /*
-          * Set scheduling parameter for job
-          */
-         if (((attr.basepri = atoi(get_conf_val("nec_basepriority"))) != NEC_UNDEF_VALUE)
-            && ((attr.modcpu = atoi(get_conf_val("nec_modcpu"))) != NEC_UNDEF_VALUE)
-            && ((attr.tickcnt = atoi(get_conf_val("nec_tickcnt"))) != NEC_UNDEF_VALUE)
-            && ((attr.dcyfctr = atoi(get_conf_val("nec_dcyfctr"))) != NEC_UNDEF_VALUE)
-            && ((attr.dcyintvl = atoi(get_conf_val("nec_dcyintvl"))) != NEC_UNDEF_VALUE)
-            && ((attr.tmslice = atoi(get_conf_val("nec_timeslice"))) != NEC_UNDEF_VALUE)
-            && ((attr.mempri = atoi(get_conf_val("nec_memorypriority"))) != NEC_UNDEF_VALUE)
-            && ((attr.szefctmrt = atoi(get_conf_val("nec_mrt_size_effct"))) != NEC_UNDEF_VALUE)
-            && ((attr.priefctmrt = atoi(get_conf_val("nec_mrt_pri_effct"))) != NEC_UNDEF_VALUE)
-            && ((attr.minmrt = atoi(get_conf_val("nec_mrt_minimum"))) != NEC_UNDEF_VALUE)
-            && ((attr.agrange = atoi(get_conf_val("nec_aging_range"))) != NEC_UNDEF_VALUE)
-            && ((attr.spinherit = atoi(get_conf_val("nec_slavepriority"))) != NEC_UNDEF_VALUE)
-            && ((attr.concpu = atoi(get_conf_val("nec_cpu_count"))) != NEC_UNDEF_VALUE)) {
-            if (dispcntl(SG_JID, getjid(0), DCNTL_SET2, &attr) == -1) {
-               shepherd_trace("ERROR: can't set scheduling parameter: %s[%d]",
-                              strerror(errno), errno);
-            } else {
-               shepherd_trace("control parameters for active process scheduling modified");
-               print_scheduling_parameters(attr);
-            }
-         } else {
-            shepherd_trace("we do not control active process scheduling");
-         }
-      }               
 #     else
          /* write a default os-jobid to file */
          sprintf(osjobid, pid_t_fmt, sid);

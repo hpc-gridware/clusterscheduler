@@ -92,7 +92,7 @@ const sig_mapT sig_map[] =
 #ifndef CRAY
    {SGE_SIGXFSZ, SIGXFSZ, "XFSZ"},
 #endif
-#if !(defined(CRAY) || defined(NECSX4) || defined(NECSX5))
+#if !defined(CRAY) 
    {SGE_SIGVTALRM, SIGVTALRM, "VTALRM"},
    {SGE_SIGPROF, SIGPROF, "PROF"},
 #endif

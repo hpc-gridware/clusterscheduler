@@ -615,7 +615,6 @@ appropriate flag. (see
 Interactive jobs (see
 .M qsh 1 ,
 .M qrsh 1 ,
-.M qtcsh 1 )
 are not rescheduled.
 .PP
 The default for
@@ -1337,14 +1336,11 @@ file is used.
 The feature is only available for jobs submitted via
 .M qsub 1 ,
 .M qrsh 1 ,
-.M qmake 1
 and 
-.M qtcsh 1 .
+.M qmake 1
 Also, it only works for
 .M qrsh 1
-jobs (and thus also for
-.M qtcsh 1
-and
+jobs and
 .M qmake 1 )
 if rsh and rshd components are used which are provided with xxQS_NAMExx
 (i.e., the \fBrsh_daemon\fP and \fBrsh_command\fP parameters may

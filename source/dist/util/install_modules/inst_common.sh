@@ -376,16 +376,16 @@ CheckBinaries()
              sge_execd sge_qmaster  \
              sge_shadowd \
              sge_shepherd qacct qalter qconf qdel qhold \
-             qhost qlogin qmake qmod qmon qresub qrls qrsh qselect qsh \
-             qstat qsub qtcsh qping qquota sgepasswd"
+             qhost qlogin qmake qmod qresub qrls qrsh qselect qsh \
+             qstat qsub qping qquota sgepasswd"
 
    WINBINFILES="sge_coshepherd sge_execd sge_shepherd  \
                 qacct qalter qconf qdel qhold qhost qlogin \
                 qmake qmod qresub qrls qrsh qselect qsh \
-                qstat qsub qtcsh qping qquota qloadsensor.exe"
+                qstat qsub qping qquota qloadsensor.exe"
 
    UTILFILES="adminrun checkprog checkuser filestat gethostbyaddr gethostbyname \
-              gethostname getservbyname loadcheck now qrsh_starter rlogin rsh rshd \
+              gethostname getservbyname loadcheck now qrsh_starter \
               testsuidroot uidgid infotext"
 
    WINUTILFILES="SGE_Helper_Service.exe adminrun checkprog checkuser filestat \
@@ -438,14 +438,14 @@ CheckBinaries()
          "qacct           qlogin          qrsh            sge_shepherd\n" \
          "qalter          qmake           qselect         sge_coshepherd\n" \
          "qconf           qmod            qsh             sge_execd\n" \
-         "qdel            qmon            qstat           qhold\n" \
+         "qdel            qstat           qhold           qquota\n" \
          "qresub          qsub            qhost           qrls\n" \
-         "qtcsh           qping           qquotai         sgepasswd\n" \
+         "qping           qquota          sgepasswd\n" \
          "qloadsensor.exe\n\n" \
          "and the binaries in >%s< should be:\n\n" \
-         "adminrun        gethostbyaddr  loadcheck.exe  rlogin         uidgid\n" \
-         "testsuidroot    checkprog      gethostbyname  now            rsh\n" \
-         "infotext        checkuser      gethostname    openssl        rshd\n" \
+         "adminrun        gethostbyaddr  loadcheck.exe  uidgid\n" \
+         "testsuidroot    checkprog      gethostbyname  now\n" \
+         "infotext        checkuser      gethostname    openssl\n" \
          "filestat        getservbyname  qrsh_starter   SGE_Helper_Service.exe\n" \
          "SGE_Starter.exe\n\n" \
          "Installation failed. Exit.\n" $SGE_BIN $SGE_UTILBIN
@@ -457,7 +457,7 @@ CheckBinaries()
          "qconf           qmod            qsh             sge_execd\n" \
          "qdel            qmon            qstat           sge_qmaster\n" \
          "qhold           qresub          qsub            qhost\n" \
-         "qrls            qtcsh           sge_shadowd     qping\n" \
+         "qrls            sge_shadowd     qping\n" \
          "qquota\n\n" \
          "and the binaries in >%s< should be:\n\n" \
          "adminrun       gethostbyaddr  loadcheck      rlogin         uidgid\n" \
@@ -474,7 +474,7 @@ CheckBinaries()
       "qconf           qmod            qsh             sge_execd\n" \
       "qdel            qmon            qstat           sge_qmaster\n" \
       "qhold           qresub          qsub            qhost\n" \
-      "qrls            qtcsh           sge_shadowd     qping\n" \
+      "qrls            sge_shadowd     qping\n" \
       "qquota\n\n" \
       "and the binaries in >%s< should be:\n\n" \
       "adminrun       gethostbyaddr  loadcheck      rlogin         uidgid\n" \

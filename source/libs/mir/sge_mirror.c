@@ -59,7 +59,6 @@
 #include "sgeobj/sge_pe.h"
 #include "sgeobj/sge_schedd_conf.h"
 #include "sgeobj/sge_sharetree.h"
-#include "sgeobj/sge_cuser.h"
 #include "sgeobj/sge_userprj.h"
 #include "sgeobj/sge_userset.h"
 #include "sgeobj/sge_answer.h"
@@ -187,9 +186,6 @@ static const mirror_description dev_mirror_base[SGE_TYPE_ALL] = {
    { NULL, generic_update_master_list,             NULL, NULL }, /*rqs*/
    { NULL, ar_update_master_list,                  NULL, NULL }, /*advance reservation*/
    { NULL, NULL,                                   NULL, NULL }, /*jobscripts*/
-#ifndef __SGE_NO_USERMAPPING__
-   { NULL, NULL,                                   NULL, NULL },
-#endif
 };
 
 /*-------------------------*/
@@ -728,20 +724,6 @@ _sge_mirror_subscribe(sge_evc_class_t *evc,
             evc->ec_mod_subscription_where(evc, sgeE_RQS_MOD, what_el, where_el);
          }
          break;
-#ifndef __SGE_NO_USERMAPPING__
-      case SGE_TYPE_CUSER:
-         evc->ec_subscribe(evc, sgeE_CUSER_LIST);
-         evc->ec_subscribe(evc, sgeE_CUSER_ADD);
-         evc->ec_subscribe(evc, sgeE_CUSER_DEL);
-         evc->ec_subscribe(evc, sgeE_CUSER_MOD);
-         if (what_el && where_el) {
-            evc->ec_mod_subscription_where(evc, sgeE_CUSER_LIST, what_el, where_el);
-            evc->ec_mod_subscription_where(evc, sgeE_CUSER_ADD, what_el, where_el);
-            evc->ec_mod_subscription_where(evc, sgeE_CUSER_DEL, what_el, where_el);
-            evc->ec_mod_subscription_where(evc, sgeE_CUSER_MOD, what_el, where_el);
-         }
-         break;
-#endif
       case SGE_TYPE_ZOMBIE:
             return SGE_EM_NOT_INITIALIZED;
 
@@ -986,14 +968,6 @@ static sge_mirror_error _sge_mirror_unsubscribe(sge_evc_class_t *evc, sge_object
          evc->ec_unsubscribe(evc, sgeE_RQS_DEL);
          evc->ec_unsubscribe(evc, sgeE_RQS_MOD);
          break;
-#ifndef __SGE_NO_USERMAPPING__
-      case SGE_TYPE_CUSER:
-         evc->ec_unsubscribe(evc, sgeE_CUSER_LIST);
-         evc->ec_unsubscribe(evc, sgeE_CUSER_ADD);
-         evc->ec_unsubscribe(evc, sgeE_CUSER_DEL);
-         evc->ec_unsubscribe(evc, sgeE_CUSER_MOD);
-         break;
-#endif
       case SGE_TYPE_ZOMBIE:
             DRETURN(SGE_EM_NOT_INITIALIZED);
       case SGE_TYPE_SUSER:
@@ -1450,21 +1424,6 @@ sge_mirror_process_event_list_(sge_evc_class_t *evc, lList *event_list)
             ret = sge_mirror_process_event(evc, mirror_base, object_base, SGE_TYPE_RQS, SGE_EMA_MOD, event);
             break;
    
-#ifndef __SGE_NO_USERMAPPING__
-         case sgeE_CUSER_LIST:
-            ret = sge_mirror_process_event(evc, mirror_base, object_base, SGE_TYPE_CUSER, SGE_EMA_LIST, event);
-            break;
-         case sgeE_CUSER_ADD:
-            ret = sge_mirror_process_event(evc, mirror_base, object_base, SGE_TYPE_CUSER, SGE_EMA_ADD, event);
-            break;
-         case sgeE_CUSER_DEL:
-            ret = sge_mirror_process_event(evc, mirror_base, object_base, SGE_TYPE_CUSER, SGE_EMA_DEL, event);
-            break;
-         case sgeE_CUSER_MOD:
-            ret = sge_mirror_process_event(evc, mirror_base, object_base, SGE_TYPE_CUSER, SGE_EMA_MOD, event);
-            break;
-#endif
-
          case sgeE_HGROUP_LIST:
             ret = sge_mirror_process_event(evc, mirror_base, object_base, SGE_TYPE_HGROUP, SGE_EMA_LIST, event);
             break;

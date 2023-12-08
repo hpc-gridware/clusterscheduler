@@ -434,11 +434,6 @@ lList *sge_build_load_report(const char* qualified_hostname, const char* binary_
    double load;
    const void *iterator = NULL;
 
-#if defined(NECSX4) || defined(NECSX5)
-   char lv_name[256];
-   int rsg_id;
-#endif
- 
    DENTER(TOP_LAYER, "sge_build_load_report");
 
    /* 
@@ -512,43 +507,6 @@ lList *sge_build_load_report(const char* qualified_hostname, const char* binary_
          }
       }
 
-   #if defined(NECSX4) || defined(NECSX5)
-      /* make derived load values for NEC*/
-
-      for (rsg_id = 0; rsg_id < 32; rsg_id++) {
-         sprintf(lv_name, "rsg%d_%s", rsg_id, LOAD_ATTR_NUM_PROC);
-         if ((strcmp(name, lv_name) == 0) && value)
-            nprocs = MAX(1, atoi(value));
-
-         sprintf(lv_name, "rsg%d_%s", rsg_id, LOAD_ATTR_LOAD_AVG);
-         if ((strcmp(name, lv_name) == 0) && value) {
-            load = strtod(s, NULL);
-            sprintf(lv_name, "rsg%d_%s", rsg_id, LOAD_ATTR_NP_LOAD_AVG);
-            sge_add_double2load_report(&lp, lv_name, (load/nprocs), qualified_hostname, NULL);
-         }
-
-         sprintf(lv_name, "rsg%d_%s", rsg_id, LOAD_ATTR_LOAD_SHORT);
-         if ((strcmp(name, lv_name) == 0) && value) {
-            load = strtod(value, NULL);
-            sprintf(lv_name, "rsg%d_%s", rsg_id, LOAD_ATTR_NP_LOAD_SHORT);
-            sge_add_double2load_report(&lp, lv_name, (load/nprocs), qualified_hostname, NULL);
-         }
-
-         sprintf(lv_name, "rsg%d_%s", rsg_id, LOAD_ATTR_LOAD_MEDIUM);
-         if ((strcmp(name, lv_name) == 0) && value) {
-            load = strtod(value, NULL);
-            sprintf(lv_name, "rsg%d_%s", rsg_id, LOAD_ATTR_NP_LOAD_MEDIUM);
-            sge_add_double2load_report(&lp, lv_name, (load/nprocs), qualified_hostname, NULL);
-         }
-
-         sprintf(lv_name, "rsg%d_%s", rsg_id, LOAD_ATTR_LOAD_LONG);
-         if ((strcmp(name, lv_name) == 0) && value) {
-            load = strtod(value, NULL);
-            sprintf(lv_name, "rsg%d_%s", rsg_id, LOAD_ATTR_NP_LOAD_LONG);
-            sge_add_double2load_report(&lp, lv_name, (load/nprocs), qualified_hostname, NULL);
-         }
-      }
-#endif
       ep = lGetElemHostNext(lp, LR_host, qualified_hostname, &iterator);
    }
 
@@ -733,9 +691,6 @@ static int sge_get_loadavg(const char* qualified_hostname, lList **lpp)
    int loads;
    int nprocs; 
 #ifdef SGE_LOADMEM
-#  if NECSX4 || NECSX5
-   int rsg_id;
-#  endif
    sge_mem_info_t mem_info;
 #endif
 
@@ -776,29 +731,6 @@ static int sge_get_loadavg(const char* qualified_hostname, lList **lpp)
    sge_add_str2load_report(lpp, LOAD_ATTR_ARCH, sge_get_arch(), qualified_hostname);
    sge_add_int2load_report(lpp, LOAD_ATTR_NUM_PROC, nprocs, qualified_hostname);
 
-#if defined(NECSX4) || defined(NECSX5)
-   /* Write load values for each resource sharing group */
-   for (rsg_id=0; rsg_id<32; rsg_id++) {
-      double loadv[3];
-      char lv_name[256];
-
-      memset(loadv, 0, 3*sizeof(double));
-      if (getloadavg_necsx_rsg(rsg_id, loadv) != -1) {
-         sprintf(lv_name, "rsg%d_%s", rsg_id, LOAD_ATTR_LOAD_AVG);
-         sge_add_double2load_report(lpp, lv_name, loadv[1], qualified_hostname, NULL);
-         sprintf(lv_name, "rsg%d_%s", rsg_id, LOAD_ATTR_LOAD_SHORT);
-         sge_add_double2load_report(lpp, lv_name, loadv[0], qualified_hostname, NULL);
-         sprintf(lv_name, "rsg%d_%s", rsg_id, LOAD_ATTR_LOAD_MEDIUM);
-         sge_add_double2load_report(lpp, lv_name, loadv[1], qualified_hostname, NULL);
-         sprintf(lv_name, "rsg%d_%s", rsg_id, LOAD_ATTR_LOAD_LONG);
-         sge_add_double2load_report(lpp, lv_name, loadv[2], qualified_hostname, NULL);
-         sprintf(lv_name, "rsg%d_%s", rsg_id, LOAD_ATTR_NUM_PROC);
-         sge_add_int2load_report(lpp, lv_name, sge_nprocs_rsg(rsg_id), qualified_hostname);
-      }
-   }
-#endif
-
-
 #ifdef SGE_LOADMEM
    /* memory load report */
    memset(&mem_info, 0, sizeof(sge_mem_info_t));
@@ -830,89 +762,6 @@ static int sge_get_loadavg(const char* qualified_hostname, lList **lpp)
 #ifdef IRIX
    sge_add_double2load_report(lpp, LOAD_ATTR_SWAP_RSVD,        mem_info.swap_rsvd, qualified_hostname, "M");
 #endif
-
-#if defined(NECSX4) || defined(NECSX5)
-   for (rsg_id=0; rsg_id<32; rsg_id++) {
-      sge_mem_info_t mem_i_l, mem_i_s;
-      int num_proc;
-      char lv_name[256];
-
-      memset(&mem_i_l, 0, sizeof(sge_mem_info_t));
-      memset(&mem_i_s, 0, sizeof(sge_mem_info_t));
-      if (loadmem_rsg(rsg_id, &mem_i_l, &mem_i_s) != -1) {
-         sprintf(lv_name, "rsg%d_l_mem_free", rsg_id);
-         sge_add_double2load_report(lpp, lv_name, mem_i_l.mem_free, qualified_hostname, "M");
-         sprintf(lv_name, "rsg%d_l_swap_free", rsg_id);
-         sge_add_double2load_report(lpp, lv_name, mem_i_l.swap_free, qualified_hostname, "M");
-         sprintf(lv_name, "rsg%d_l_virtual_free", rsg_id);
-         sge_add_double2load_report(lpp, lv_name, mem_i_l.mem_free + mem_i_l.swap_free, qualified_hostname, "M");
-         sprintf(lv_name, "rsg%d_l_mem_total", rsg_id);
-         sge_add_double2load_report(lpp, lv_name, mem_i_l.mem_total, qualified_hostname, "M");
-         sprintf(lv_name, "rsg%d_l_swap_total", rsg_id);
-         sge_add_double2load_report(lpp, lv_name, mem_i_l.swap_total, qualified_hostname, "M");
-         sprintf(lv_name, "rsg%d_l_virtual_total", rsg_id);
-         sge_add_double2load_report(lpp, lv_name, mem_i_l.mem_total + mem_i_l.swap_total, qualified_hostname, "M");
-         sprintf(lv_name, "rsg%d_l_mem_used", rsg_id);
-         sge_add_double2load_report(lpp, lv_name, mem_i_l.mem_total - mem_i_l.mem_free, qualified_hostname, "M");
-         sprintf(lv_name, "rsg%d_l_swap_used", rsg_id);
-         sge_add_double2load_report(lpp, lv_name, mem_i_l.swap_total - mem_i_l.swap_free, qualified_hostname, "M");
-         sprintf(lv_name, "rsg%d_l_virtual_used", rsg_id);
-         sge_add_double2load_report(lpp, lv_name, (mem_i_l.mem_total + mem_i_l.swap_total)-
-            (mem_i_l.mem_free + mem_i_l.swap_free), qualified_hostname, "M");
-
-         sprintf(lv_name, "rsg%d_s_mem_free", rsg_id);
-         sge_add_double2load_report(lpp, lv_name, mem_i_s.mem_free, qualified_hostname, "M");
-         sprintf(lv_name, "rsg%d_s_swap_free", rsg_id);
-         sge_add_double2load_report(lpp, lv_name, mem_i_s.swap_free, qualified_hostname, "M");
-         sprintf(lv_name, "rsg%d_s_virtual_free", rsg_id);
-         sge_add_double2load_report(lpp, lv_name, mem_i_s.mem_free + mem_i_s.swap_free, qualified_hostname, "M");
-         sprintf(lv_name, "rsg%d_s_mem_total", rsg_id);
-         sge_add_double2load_report(lpp, lv_name, mem_i_s.mem_total, qualified_hostname, "M");
-         sprintf(lv_name, "rsg%d_s_swap_total", rsg_id);
-         sge_add_double2load_report(lpp, lv_name, mem_i_s.swap_total, qualified_hostname, "M");
-         sprintf(lv_name, "rsg%d_s_virtual_total", rsg_id);
-         sge_add_double2load_report(lpp, lv_name, mem_i_s.mem_total + mem_i_s.swap_total, qualified_hostname, "M");
-         sprintf(lv_name, "rsg%d_s_mem_used", rsg_id);
-         sge_add_double2load_report(lpp, lv_name, mem_i_s.mem_total - mem_i_s.mem_free, qualified_hostname, "M");
-         sprintf(lv_name, "rsg%d_s_swap_used", rsg_id);
-         sge_add_double2load_report(lpp, lv_name, mem_i_s.swap_total - mem_i_s.swap_free, qualified_hostname, "M");
-         sprintf(lv_name, "rsg%d_s_virtual_used", rsg_id);
-         sge_add_double2load_report(lpp, lv_name, (mem_i_s.mem_total + mem_i_s.swap_total)-
-            (mem_i_s.mem_free + mem_i_s.swap_free), qualified_hostname, "M");
-
-         sprintf(lv_name, "rsg%d_mem_free", rsg_id);
-         sge_add_double2load_report(lpp, lv_name, mem_i_s.mem_free + mem_i_l.mem_free, qualified_hostname, "M");
-         sprintf(lv_name, "rsg%d_swap_free", rsg_id);
-         sge_add_double2load_report(lpp, lv_name, mem_i_s.swap_free + mem_i_l.swap_free, qualified_hostname, "M");
-         sprintf(lv_name, "rsg%d_virtual_free", rsg_id);
-         sge_add_double2load_report(lpp, lv_name, mem_i_s.mem_free + mem_i_s.swap_free +
-            mem_i_l.mem_free + mem_i_l.swap_free, qualified_hostname, "M");
-         sprintf(lv_name, "rsg%d_mem_total", rsg_id);
-         sge_add_double2load_report(lpp, lv_name, mem_i_s.mem_total + mem_i_l.mem_total, qualified_hostname, "M");
-         sprintf(lv_name, "rsg%d_swap_total", rsg_id);
-         sge_add_double2load_report(lpp, lv_name, mem_i_s.swap_total + mem_i_l.swap_total, qualified_hostname, "M");
-         sprintf(lv_name, "rsg%d_virtual_total", rsg_id);
-         sge_add_double2load_report(lpp, lv_name, mem_i_s.mem_total + mem_i_s.swap_total +
-            mem_i_l.mem_total + mem_i_l.swap_total, qualified_hostname, "M");
-         sprintf(lv_name, "rsg%d_mem_used", rsg_id);
-         sge_add_double2load_report(lpp, lv_name, (mem_i_s.mem_total - mem_i_s.mem_free) +
-            (mem_i_l.mem_total - mem_i_l.mem_free), qualified_hostname, "M");
-         sprintf(lv_name, "rsg%d_swap_used", rsg_id);
-         sge_add_double2load_report(lpp, lv_name, (mem_i_s.swap_total - mem_i_s.swap_free) +
-            (mem_i_l.swap_total - mem_i_l.swap_free), qualified_hostname, "M");
-         sprintf(lv_name, "rsg%d_virtual_used", rsg_id);
-         sge_add_double2load_report(lpp, lv_name, ((mem_i_s.mem_total + mem_i_s.swap_total)-
-            (mem_i_s.mem_free + mem_i_s.swap_free)) + ((mem_i_l.mem_total + mem_i_l.swap_total)-
-            (mem_i_l.mem_free + mem_i_l.swap_free)), qualified_hostname, "M");
-
-      }
-      if ((num_proc = sge_nprocs_rsg(rsg_id))) {
-         sprintf(lv_name, "rsg%d_num_proc", rsg_id);
-         sge_add_int2load_report(lpp, lv_name, num_proc, qualified_hostname);
-      }
-   }
-#endif
-
 
 #if 0
    /* identical to "virtual_free" */

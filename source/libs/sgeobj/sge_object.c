@@ -92,11 +92,6 @@ static lList *Master_SchedulerConfig_List = NULL;
 
 static lList *Master_Config_List = NULL;
 
-#ifndef __SGE_NO_USERMAPPING__
-static lList *Master_Cuser_List = NULL;
-#endif
-
-
 /* One entry per event type */
 static object_description object_base[SGE_TYPE_ALL] = {
    /* master list                  set function              name                 descr      key               */
@@ -131,9 +126,6 @@ static object_description object_base[SGE_TYPE_ALL] = {
    { &Master_RQS_List,             NULL,                   "RQS",               RQS_Type,  RQS_name          },
    { &Master_AR_List,              NULL,                   "AR",                AR_Type,   AR_id             },
    { NULL,                         NULL,                   "JOBSCRIPT",         STU_Type,  STU_name          },
-#ifndef __SGE_NO_USERMAPPING__
-   { &Master_Cuser_List,           NULL,                   "USERMAPPING",       CU_Type,  CU_name            }
-#endif
 };
 
 /*-------------------------*/

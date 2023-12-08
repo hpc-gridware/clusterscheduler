@@ -390,9 +390,6 @@ send_slave_jobs_wc(sge_gdi_ctx_class_t *ctx, lListElem *jep,
    lListElem *jatep = lFirst(lGetList(jep, JB_ja_tasks));
    int ret = 0;
    int failed = CL_RETVAL_OK;
-#ifndef __SGE_NO_USERMAPPING__    
-   const char *old_mapped_user = NULL;
-#endif   
 
    object_description *object_base = object_type_get_object_description();
    const char *sge_root = ctx->get_sge_root(ctx);
@@ -441,25 +438,6 @@ send_slave_jobs_wc(sge_gdi_ctx_class_t *ctx, lListElem *jep,
          cache_sec_cred(sge_root, jep, hostname);
       }
   
-#ifndef __SGE_NO_USERMAPPING__ 
-      /* 
-      ** This is for administrator user mapping 
-      */
-      {
-         const char *owner = lGetString(jep, JB_owner);
-         const char *mapped_user;
-
-         DPRINTF(("send_job(): Starting job of %s\n", owner));
-         cuser_list_map_user(*(cuser_list_get_master_list()), NULL,
-                             owner, hostname, &mapped_user);
-         if (strcmp(mapped_user, owner)) {
-            DPRINTF(("execution mapping: user %s mapped to %s on host %s\n", 
-                     owner, mapped_user, hostname));
-            lSetString(jep, JB_owner, mapped_user);
-         }
-      }
-#endif
-
       lDechainElem(saved_gdil, gdil_ep);
       lAppendElem(gdil, gdil_ep);
 
@@ -623,25 +601,6 @@ send_job(sge_gdi_ctx_class_t *ctx,
       cache_sec_cred(sge_root, tmpjep, rhost);
    }
   
-#ifndef __SGE_NO_USERMAPPING__ 
-   /* 
-   ** This is for administrator user mapping 
-   */
-   {
-      const char *owner = lGetString(tmpjep, JB_owner);
-      const char *mapped_user;
-
-      DPRINTF(("send_job(): Starting job of %s\n", owner));
-      cuser_list_map_user(*(cuser_list_get_master_list()), NULL,
-                          owner, rhost, &mapped_user);
-      if (strcmp(mapped_user, owner)) {
-         DPRINTF(("execution mapping: user %s mapped to %s on host %s\n", 
-                  owner, mapped_user, rhost));
-         lSetString(tmpjep, JB_owner, mapped_user);
-      }
-   }
-#endif
-
    /*
    ** remove some data not used at execd side
    */

@@ -176,7 +176,6 @@ Content
 
       -no-qmon  	don't compile qmon
       -no-qmake         don't compile qmake
-      -no-qtcsh         don't compile qtcsh
       -no-remote        don't compile remote modules rsh, rshd, rlogin
 
    To compile the core system (daemons, command line clients, no interactive

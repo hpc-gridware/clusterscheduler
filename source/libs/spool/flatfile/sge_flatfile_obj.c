@@ -46,7 +46,6 @@
 #include "sgeobj/sge_ckpt.h"
 #include "sgeobj/sge_conf.h"
 #include "sgeobj/sge_cqueue.h"
-#include "sgeobj/sge_cuser.h"
 #include "sgeobj/sge_feature.h"
 #include "sgeobj/sge_href.h"
 #include "sgeobj/sge_host.h"
@@ -484,17 +483,6 @@ spooling_field CQ_fields[] = {
    {  CQ_s_vmem,                 21, "s_vmem",             AMEM_sub_fields,     &qconf_sub_name_value_comma_braced_sfi, read_CQ_mem_attr_list,     write_CQ_mem_attr_list},
    {  CQ_h_vmem,                 21, "h_vmem",             AMEM_sub_fields,     &qconf_sub_name_value_comma_braced_sfi, read_CQ_mem_attr_list,     write_CQ_mem_attr_list},
    {  NoName,                    21, NULL,                 NULL,                NULL,                                   NULL,                      NULL}
-};
-
-spooling_field CU_fields[] = {
-   {  CU_name,           0, "cluster user",         NULL},
-   {  CU_ruser_list,     0, "remote user",          ASTR_sub_fields},
-   {  CU_ulong32,        0, "ulong32",              AULNG_sub_fields},
-   {  CU_bool,           0, "bool",                 ABOOL_sub_fields},
-   {  CU_time,           0, "time",                 ATIME_sub_fields},
-   {  CU_mem,            0, "mem",                  AMEM_sub_fields},
-   {  CU_inter,          0, "inter",                AINTER_sub_fields},
-   {  NoName,            0, NULL,                   NULL}
 };
 
 spooling_field SH_fields[] = {

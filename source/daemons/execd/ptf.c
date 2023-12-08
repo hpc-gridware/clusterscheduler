@@ -35,16 +35,11 @@
 #  include <sys/param.h>        /* for MAX() macro */
 #endif
 
-#if defined(NECSX4) || defined(NECSX5)
-#  include <sys/types.h>
-#  include <sys/disp.h>
-#endif
-
 #include <sys/types.h>
 
 #if defined(COMPILE_DC) || defined(MODULE_TEST)
 
-#if defined(IRIX) || defined(ALPHA) || defined(LINUX) || defined(SOLARIS) || defined(NECSX4) || defined(NECSX5) || !defined(MODULE_TEST) || defined(HP1164) || defined(HP1164) || defined(FREEBSD) || defined(DARWIN)
+#if defined(IRIX) || defined(ALPHA) || defined(LINUX) || defined(SOLARIS) || !defined(MODULE_TEST) || defined(HP1164) || defined(HP1164) || defined(FREEBSD) || defined(DARWIN)
 #   define USE_DC
 #endif
 
@@ -209,7 +204,7 @@ static lListElem *ptf_get_job(u_long job_id);
 
 static void ptf_setpriority_ash(lListElem *job, lListElem *osjob, long pri);
 
-#elif defined(CRAY) || defined(NECSX4) || defined(NECSX5)
+#elif defined(CRAY) 
 
 static void ptf_setpriority_jobid(lListElem *job, lListElem *osjob, long pri);
 
@@ -252,7 +247,7 @@ static osjobid_t ptf_get_osjobid(lListElem *osjob)
 {
    osjobid_t osjobid;
 
-#if !defined(LINUX) && !defined(SOLARIS) && !defined(ALPHA5) && !defined(NECSX4) && !defined(NECSX5) && !defined(DARWIN) && !defined(FREEBSD) && !defined(NETBSD) && !defined(INTERIX) && !defined(HP1164) && !defined(AIX)
+#if !defined(LINUX) && !defined(SOLARIS) && !defined(ALPHA5) && !defined(DARWIN) && !defined(FREEBSD) && !defined(NETBSD) && !defined(INTERIX) && !defined(HP1164) && !defined(AIX)
 
    osjobid = lGetUlong(osjob, JO_OS_job_ID2);
    osjobid = (osjobid << 32) + lGetUlong(osjob, JO_OS_job_ID);
@@ -282,7 +277,7 @@ static osjobid_t ptf_get_osjobid(lListElem *osjob)
 ******************************************************************************/
 static void ptf_set_osjobid(lListElem *osjob, osjobid_t osjobid)
 {
-#if !defined(LINUX) && !defined(SOLARIS) && !defined(ALPHA5) && !defined(NECSX4) && !defined(NECSX5) && !defined(DARWIN) && !defined(FREEBSD) && !defined(NETBSD) && !defined(INTERIX) && !defined(HP1164) && !defined(AIX)
+#if !defined(LINUX) && !defined(SOLARIS) && !defined(ALPHA5) && !defined(DARWIN) && !defined(FREEBSD) && !defined(NETBSD) && !defined(INTERIX) && !defined(HP1164) && !defined(AIX)
 
    lSetUlong(osjob, JO_OS_job_ID2, ((u_osjobid_t) osjobid) >> 32);
    lSetUlong(osjob, JO_OS_job_ID, osjobid & 0xffffffff);
@@ -474,7 +469,7 @@ static void ptf_set_native_job_priority(lListElem *job, lListElem *osjob,
 {
 #if defined(__sgi)
    ptf_setpriority_ash(job, osjob, pri);
-#elif defined(CRAY) || defined(NECSX4) || defined(NECSX5)
+#elif defined(CRAY) 
    ptf_setpriority_jobid(job, osjob, pri);
 #elif defined(ALPHA) || defined(SOLARIS) || defined(LINUX) || defined(FREEBSD) || defined(DARWIN)
    ptf_setpriority_addgrpid(job, osjob, pri);
@@ -589,7 +584,7 @@ static void ptf_setpriority_ash(lListElem *job, lListElem *osjob, long pri)
    DEXIT;
 }
 
-#elif defined(CRAY) || defined(NECSX4) || defined(NECSX5)
+#elif defined(CRAY)
 
 /****** execd/ptf/ptf_setpriority_jobid() *************************************
 *  NAME
@@ -600,7 +595,7 @@ static void ptf_setpriority_ash(lListElem *job, lListElem *osjob, long pri)
 *                                       long *pri) 
 *
 *  FUNCTION
-*     This function is only available for the architecture CRAY and NECSX 4/5.
+*     This function is only available for the architecture CRAY.
 *     All processes belonging to "job" and "osjob" will get a new priority.
 *
 *  INPUTS
@@ -631,67 +626,6 @@ static void ptf_setpriority_jobid(lListElem *job, lListElem *osjob, long pri)
    }
 #  endif
 
-#  if defined(NECSX4) || defined(NECSX5)
-
-   {
-      int timesliced = 0;
-
-      /*
-       * If the timeslice value is set then set the timeslice
-       * scheduling parameter. This gives nice proportional
-       * scheduling for SX jobs. PTF_MIN_PRIORITY and
-       * PTF_MAX_PRIORITY define the time slice range to use.
-       * Values are in 1/HZ seconds, where HZ is 200.
-       *
-       *      1000 = 5 seconds
-       *	    200 = 1 seconds
-       */
-
-      if (lGetDouble(job, JL_timeslice) > 0 && lGetUlong(job, JL_interactive) == 0) {
-	 dispset2_t attr;
-	 int timeslice;
-	 osjobid_t jobid = ptf_get_osjobid(osjob);
-
-	 if (dispcntl(SG_JID, jobid, DCNTL_GET2, &attr) != -1) {
-	    attr.tmslice = (int) lGetDouble(job, JL_timeslice);
-	    if (dispcntl(SG_JID, jobid, DCNTL_SET2, &attr) == -1) {
-	       ERROR((SGE_EVENT, MSG_PRIO_JOBXNICEJFAILURE_S,
-		      sge_u32c(lGetUlong(job, JL_job_ID)), strerror(errno)));
-	    } else {
-               timesliced = 1;
-            }
-
-	 }
-      }
-
-      /*
-       * NEC nice values range from 0 to 39.
-       * According to the nicej(2) man page, nicej returns the new
-       * nice value minus 20, so -1 is a valid return code. Errno
-       * is not set upon a successful call, so we can't tell the
-       * difference between success and failure if we are setting
-       * the nice value to 19. We don't generate an error message
-       * if the nicej(2) call fails and we are trying to set the
-       * nice value to 19 (no big deal).
-       */ 
-
-      if (!timesliced) {
-	 nice = nicej(ptf_get_osjobid(osjob), 0);
-	 if (nice != -1 || pri == 19) {
-	    if (nicej(ptf_get_osjobid(osjob), pri - (nice+20)) == -1 && pri != 19) {
-	       if (errno != ESRCH) {
-		  ERROR((SGE_EVENT, MSG_PRIO_JOBXNICEJFAILURE_S,
-			 sge_u32c(lGetUlong(job, JL_job_ID)), strerror(errno)));
-	       }
-	    } else {
-	       DPRINTF(("NICEJ(" sge_u32 ", " sge_u32 ")\n",
-			(u_long32) ptf_get_osjobid(osjob), (u_long32) pri));
-	    }
-	 }
-      }
-   }
-
-#  endif
    DEXIT;
 }
 
@@ -821,7 +755,7 @@ static lListElem *ptf_get_job_os(lList *job_list, osjobid_t os_job_id,
 
    DENTER(TOP_LAYER, "ptf_get_job_os");
 
-#if defined(LINUX) || defined(SOLARIS) || defined(ALPHA5) || defined(NECSX4) || defined(NECSX5) || defined(DARWIN) || defined(FREEBSD) || defined(NETBSD) || defined(INTERIX) || defined(HP1164) || defined(AIX)
+#if defined(LINUX) || defined(SOLARIS) || defined(ALPHA5) || defined(DARWIN) || defined(FREEBSD) || defined(NETBSD) || defined(INTERIX) || defined(HP1164) || defined(AIX)
    where = lWhere("%T(%I == %u)", JO_Type, JO_OS_job_ID, (u_long32) os_job_id);
 #else
    where = lWhere("%T(%I == %u && %I == %u)", JO_Type,
@@ -1885,14 +1819,6 @@ int ptf_init(void)
          }
       }
    }
-#elif defined(NECSX5) || defined(NECSX6)
-
-   if (getuid() == 0) {
-      if (nicex(0, -10) == -1) {
-	 ERROR((SGE_EVENT, MSG_PRIO_NICEMFAILED_S, strerror(errno)));
-      }
-   }
-
 #elif defined(ALPHA) || defined(SOLARIS) || defined(LINUX) || defined(FREEBSD) || defined(DARWIN)
    if (getuid() == 0) {
       if (setpriority(PRIO_PROCESS, getpid(), PTF_MAX_PRIORITY) < 0) {

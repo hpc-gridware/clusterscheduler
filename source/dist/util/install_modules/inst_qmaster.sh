@@ -1033,11 +1033,9 @@ AddDefaultComplexes()
 #
 AddCommonFiles()
 {
-   for f in sge_aliases qtask sge_request; do
+   for f in sge_aliases sge_request; do
       if [ $f = sge_aliases ]; then
          $INFOTEXT "Adding >%s< path aliases file" $f
-      elif [ $f = qtask ]; then
-         $INFOTEXT "Adding >%s< qtcsh sample default request file" $f
       else
          $INFOTEXT "Adding >%s< default submit options file" $f
       fi

@@ -37,7 +37,6 @@
 ./source/3rdparty/qmon/tab 3rdpartylibs/tab
 ./source/3rdparty/qmon/Xmt310 3rdpartylibs/Xmt310
 ./source/3rdparty/qmon/Xmt310/Xmt 3rdpartylibs/Xmt310
-./source/3rdparty/qtcsh Interactive/qtcsh
 ./source/3rdparty/remote Interactive/remotecommands
 ./source/3rdparty/sge_depend Utilities/sge_depend
 ./source/3rdparty/zlib 3rdpartylibs/zlib

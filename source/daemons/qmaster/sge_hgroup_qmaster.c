@@ -48,7 +48,6 @@
 #include "sgeobj/sge_str.h"
 #include "sgeobj/sge_answer.h"
 #include "sgeobj/sge_utility.h"
-#include "sgeobj/sge_cuser.h"
 #include "sgeobj/sge_cqueue.h"
 #include "sgeobj/sge_qinstance.h"
 #include "sgeobj/sge_hgroup.h"
@@ -466,9 +465,6 @@ hgroup_del(sge_gdi_ctx_class_t *ctx,
       if (name != NULL) {
          lList *master_hgroup_list = *(hgroup_list_get_master_list());
          lList *master_cqueue_list = *(object_type_get_master_list(SGE_TYPE_CQUEUE));
-#ifndef __SGE_NO_USERMAPPING__
-         lList *master_cuser_list = *(cuser_list_get_master_list());
-#endif
          lListElem *hgroup;
 
          /*
@@ -478,9 +474,6 @@ hgroup_del(sge_gdi_ctx_class_t *ctx,
          if (hgroup != NULL) {
             lList *href_list = NULL;
             lList *qref_list = NULL;
-#ifndef __SGE_NO_USERMAPPING__
-            lList *string_list = NULL;
-#endif
 
             /*
              * Is it still referenced in another hostgroup or cqueue?
@@ -517,29 +510,6 @@ hgroup_del(sge_gdi_ctx_class_t *ctx,
             lFreeList(&href_list);
             lFreeList(&qref_list);
 
-
-#ifndef __SGE_NO_USERMAPPING__
-            /*
-             * Is it still referenced in a cluster user object (user mapping)
-             */ 
-            ret &= cuser_list_find_hgroup_references(master_cuser_list,
-                                                    answer_list, hgroup,
-                                                    &string_list);
-            if (ret) {
-               if (string_list != NULL) {
-                  dstring string = DSTRING_INIT;
-
-                  str_list_append_to_dstring(string_list, &string, ','); 
-                  ERROR((SGE_EVENT, MSG_HGROUP_REFINCUSER_SS, name,
-                         sge_dstring_get_string(&string)));
-                  answer_list_add(answer_list, SGE_EVENT, STATUS_EEXIST,
-                                  ANSWER_QUALITY_ERROR);
-                  sge_dstring_free(&string);
-                  ret = false;
-               }
-            }
-            lFreeList(&string_list);
-#endif
             /*
              * Try to unlink the concerned spoolfile
              */

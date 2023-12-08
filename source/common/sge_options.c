@@ -429,23 +429,6 @@ unsigned short sge_options[][ALL_OPT + 1] =
 /* purge_OPT */ 
  {0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0},
 
-#ifndef __SGE_NO_USERMAPPING__
-/*  aumap_OPT  -  add new user mapping entry */
- {0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1}, 
-/*  Aumap_OPT  -  add new user mapping entry from file */
- {0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1},
-/*  dumap_OPT  -  delete user mapping entry  */
- {0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1},
-/*  mumap_OPT  -  modify user mapping entry  */
- {0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1},
-/*  sumap_OPT  -  show user mapping entry    */
- {0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1},
-/*  sumapl_OPT -  show user mapping entry list */
- {0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1},
-/*  Mumap_OPT  -  modify user mapping entry from file */
- {0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1},
-#endif
-
 /*  ahgrp_OPT  -  add new host group entry */
  {0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1}, 
 /*  Ahgrp_OPT  -  add new host group entry from file */
