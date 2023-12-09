@@ -433,6 +433,10 @@ void sge_htable_delete(htable table, const void* key)
     }
 }
 
+long sge_htable_get_size(htable ht) {
+   return ht ? ht->numentries : 0; 
+}
+
 /****** uti/htable/sge_htable_statistics() ************************************
 *  NAME
 *     sge_htable_statistics() -- Get some statistics for a hash table

@@ -45,7 +45,7 @@
 #include "mir/sge_queue_mirror.h"
 
 sge_callback_result
-cqueue_update_master_list(sge_evc_class_t *evc, object_description *object_base, sge_object_type type, 
+cqueue_update_master_list(sge_evc_class_t *evc, sge_object_type type, 
                           sge_event_action action, lListElem *event, void *clientdata)
 {
    sge_callback_result ret = SGE_EMA_OK;
@@ -57,7 +57,7 @@ cqueue_update_master_list(sge_evc_class_t *evc, object_description *object_base,
 
    DENTER(TOP_LAYER, "cqueue_update_master_list");
    name = lGetString(event, ET_strkey);
-   list = sge_master_list(object_base, SGE_TYPE_CQUEUE); 
+   list = object_type_get_master_list(SGE_TYPE_CQUEUE); 
    list_descr = lGetListDescr(lGetList(event, ET_new_version));
    cqueue = cqueue_list_locate(*list, name);
 
@@ -88,7 +88,7 @@ cqueue_update_master_list(sge_evc_class_t *evc, object_description *object_base,
 }
 
 sge_callback_result
-qinstance_update_cqueue_list(sge_evc_class_t *evc, object_description *object_base, sge_object_type type, 
+qinstance_update_cqueue_list(sge_evc_class_t *evc, sge_object_type type, 
                              sge_event_action action, lListElem *event, void *clientdata)
 {
    sge_callback_result ret = SGE_EMA_OK;
@@ -100,7 +100,7 @@ qinstance_update_cqueue_list(sge_evc_class_t *evc, object_description *object_ba
    name = lGetString(event, ET_strkey);
    hostname = lGetString(event, ET_strkey2);
 
-   cqueue = cqueue_list_locate( *(sge_master_list(object_base, SGE_TYPE_CQUEUE)), name);
+   cqueue = cqueue_list_locate(*object_type_get_master_list(SGE_TYPE_CQUEUE), name);
                         
    if (cqueue != NULL) {
       dstring key_buffer = DSTRING_INIT;

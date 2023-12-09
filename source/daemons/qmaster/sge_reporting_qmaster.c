@@ -1032,13 +1032,12 @@ static bool
 reporting_create_sharelog_record(lList **answer_list, monitoring_t *monitor)
 {
    bool ret = true;
-   object_description *object_base = object_type_get_object_description();
 
    DENTER(TOP_LAYER, "reporting_create_sharelog_record");
 
    if (mconf_get_do_reporting() && mconf_get_sharelog_time() > 0) {
       /* only create sharelog entries if we have a sharetree */
-      if (lGetNumberOfElem(*object_base[SGE_TYPE_SHARETREE].list) > 0) {
+      if (lGetNumberOfElem(*object_type_get_master_list(SGE_TYPE_SHARETREE)) > 0) {
          rep_buf_t *buf;
          dstring prefix_dstring = DSTRING_INIT;
          dstring data_dstring   = DSTRING_INIT;
@@ -1065,10 +1064,10 @@ reporting_create_sharelog_record(lList **answer_list, monitoring_t *monitor)
          /* dump the sharetree data */
          MONITOR_WAIT_TIME(SGE_LOCK(LOCK_GLOBAL, LOCK_READ), monitor);
 
-         sge_sharetree_print(&data_dstring, *object_base[SGE_TYPE_SHARETREE].list, 
-                             *object_base[SGE_TYPE_USER].list,
-                             *object_base[SGE_TYPE_PROJECT].list,
-                             *object_base[SGE_TYPE_USERSET].list,
+         sge_sharetree_print(&data_dstring, *object_type_get_master_list(SGE_TYPE_SHARETREE), 
+                             *object_type_get_master_list(SGE_TYPE_USER),
+                             *object_type_get_master_list(SGE_TYPE_PROJECT),
+                             *object_type_get_master_list(SGE_TYPE_USERSET),
                              true,
                              false,
                              NULL,

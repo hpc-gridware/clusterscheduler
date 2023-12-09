@@ -143,7 +143,6 @@ typedef enum {
 } sge_callback_result;
 
 typedef sge_callback_result (*sge_mirror_callback)(sge_evc_class_t *evc,
-                                                   object_description *object_base, 
                                                    sge_object_type type, 
                                                    sge_event_action action, 
                                                    lListElem *event, 
@@ -176,8 +175,7 @@ sge_mirror_initialize(sge_evc_class_t *evc, ev_registration_id id, const char *n
 sge_mirror_error sge_mirror_shutdown(sge_evc_class_t *evc);
 
 /* Subscription */
-sge_mirror_error sge_mirror_subscribe(sge_evc_class_t *evc, 
-                                      sge_object_type type, 
+sge_mirror_error sge_mirror_subscribe(sge_evc_class_t *evc, sge_object_type type,
                                       sge_mirror_callback callback_before, 
                                       sge_mirror_callback callback_after, 
                                       void *clientdata,

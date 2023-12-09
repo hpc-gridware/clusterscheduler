@@ -310,7 +310,6 @@ int user        /* =1 user, =0 project */
    const char *name;
    lListElem *ep;
    lList* projects;
-   object_description *object_base = object_type_get_object_description();
    
    DENTER(TOP_LAYER, "sge_del_userprj");
 
@@ -340,7 +339,7 @@ int user        /* =1 user, =0 project */
    }
 
    /* ensure this u/p object is not referenced in actual share tree */
-   if (getNode(*object_base[SGE_TYPE_SHARETREE].list, name, user ? STT_USER : STT_PROJECT, 0)) {
+   if (getNode(*object_type_get_master_list(SGE_TYPE_SHARETREE), name, user ? STT_USER : STT_PROJECT, 0)) {
       ERROR((SGE_EVENT, MSG_SGETEXT_CANT_DELETE_UP_IN_SHARE_TREE_SS, user?MSG_OBJ_USER:MSG_OBJ_PRJ, name));
       answer_list_add(alpp, SGE_EVENT, STATUS_EEXIST, ANSWER_QUALITY_ERROR);
       DEXIT;
@@ -380,7 +379,7 @@ int user        /* =1 user, =0 project */
       }
 
       /* check hosts */
-      for_each(host, *object_base[SGE_TYPE_EXECHOST].list) {
+      for_each(host, *object_type_get_master_list(SGE_TYPE_EXECHOST)) {
          if (prj_list_locate(lGetList(host, EH_prj), name)) {
             ERROR((SGE_EVENT, MSG_SGETEXT_PROJECTSTILLREFERENCED_SSSS, name, 
                   MSG_OBJ_PRJS, MSG_OBJ_EH, lGetHost(host, EH_name)));
@@ -420,7 +419,7 @@ int user        /* =1 user, =0 project */
       lFreeList(&projects);
 
       /* check user list for reference */
-      if ((prj = lGetElemStr(*object_base[SGE_TYPE_USER].list, UU_default_project, name))) {
+      if ((prj = lGetElemStr(*object_type_get_master_list(SGE_TYPE_USER), UU_default_project, name))) {
          ERROR((SGE_EVENT, MSG_USERPRJ_PRJXSTILLREFERENCEDINENTRYX_SS, name, lGetString(prj, UU_name)));
          answer_list_add(alpp, SGE_EVENT, STATUS_EUNKNOWN, ANSWER_QUALITY_ERROR);
          DEXIT;
@@ -490,13 +489,12 @@ sge_automatic_user_cleanup_handler(sge_gdi_ctx_class_t *ctx, te_event_t anEvent,
    /* shall auto users be deleted again? */
    if (auto_user_delete_time > 0) {
       lListElem *user, *next;
-      object_description *object_base = object_type_get_object_description();
       lList **master_user_list;
       u_long32 now = sge_get_gmt();
       u_long32 next_delete = now + auto_user_delete_time;
 
       MONITOR_WAIT_TIME(SGE_LOCK(LOCK_GLOBAL, LOCK_WRITE), monitor);
-      master_user_list = object_base[SGE_TYPE_USER].list;
+      master_user_list = object_type_get_master_list(SGE_TYPE_USER);
 
       /*
        * Check each user for deletion time. We don't use for_each()
@@ -514,7 +512,7 @@ sge_automatic_user_cleanup_handler(sge_gdi_ctx_class_t *ctx, te_event_t anEvent,
             const char *name = lGetString(user, UU_name);
 
             /* if the user has jobs, we increment the delete time */
-            if (suser_get_job_counter(suser_list_find(*object_base[SGE_TYPE_SUSER].list, name)) > 0) {
+            if (suser_get_job_counter(suser_list_find(*object_type_get_master_list(SGE_TYPE_SUSER), name)) > 0) {
                lSetUlong(user, UU_delete_time, next_delete);
             } else {
                /* if the delete time has expired, delete user */
@@ -681,20 +679,19 @@ void sge_userprj_spool(sge_gdi_ctx_class_t *ctx) {
    lList *answer_list = NULL;
    const char *name = NULL;
    u_long32 now = sge_get_gmt();
-   object_description *object_base = object_type_get_object_description();
 
    DENTER(TOP_LAYER, "sge_userprj_spool");
 
    /* this function is used on qmaster shutdown, no need to monitor this lock */
    SGE_LOCK(LOCK_GLOBAL, LOCK_READ);
 
-   for_each(elem, *object_base[SGE_TYPE_USER].list) {
+   for_each(elem, *object_type_get_master_list(SGE_TYPE_USER)) {
       name = lGetString(elem, UU_name);
       sge_event_spool(ctx, &answer_list, now, sgeE_USER_MOD, 0, 0, name, NULL, NULL,
                       elem, NULL, NULL, false, true);
    }
 
-   for_each(elem, *object_base[SGE_TYPE_PROJECT].list) {
+   for_each(elem, *object_type_get_master_list(SGE_TYPE_PROJECT)) {
       name = lGetString(elem, PR_name);
       sge_event_spool(ctx, &answer_list, now, sgeE_PROJECT_MOD, 0, 0, name, NULL, NULL,
                       elem, NULL, NULL, false, true);   

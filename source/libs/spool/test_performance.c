@@ -268,7 +268,6 @@ int main(int argc, char *argv[])
    sge_gdi_ctx_class_t *ctx = NULL;
    lListElem *spooling_context;
    lList *answer_list = NULL;
-   object_description *object_base;
 
    DENTER_MAIN(TOP_LAYER, "test_performance");
 
@@ -293,8 +292,7 @@ int main(int argc, char *argv[])
       SGE_EXIT((void**)&ctx, 1);
    }
 
-   object_base = object_type_get_object_description();
-   *(object_base[SGE_TYPE_JOB].list) = lCreateList("job list", JB_Type);
+   *object_type_get_master_list(SGE_TYPE_JOB) = lCreateList("job list", JB_Type);
 
 #define defstring(str) #str
 
@@ -363,8 +361,8 @@ int main(int argc, char *argv[])
    prof_reset(SGE_PROF_SPOOLINGIO, NULL);
 
    clear_caches();
-   lFreeList(object_base[SGE_TYPE_JOB].list);
-   *(object_base[SGE_TYPE_JOB].list) = lCreateList("job list", JB_Type);
+   lFreeList(object_type_get_master_list(SGE_TYPE_JOB));
+   *object_type_get_master_list(SGE_TYPE_JOB) = lCreateList("job list", JB_Type);
    PROF_START_MEASUREMENT(SGE_PROF_CUSTOM1);
    read_spooled_data();
    PROF_STOP_MEASUREMENT(SGE_PROF_CUSTOM1);
@@ -383,7 +381,7 @@ int main(int argc, char *argv[])
    spool_shutdown_context(&answer_list, spooling_context);
    spool_startup_context(&answer_list, spooling_context, true);
 
-   lFreeList(object_base[SGE_TYPE_JOB].list);
+   lFreeList(object_type_get_master_list(SGE_TYPE_JOB));
 
    spool_shutdown_context(&answer_list, spooling_context);
    answer_list_output(&answer_list);

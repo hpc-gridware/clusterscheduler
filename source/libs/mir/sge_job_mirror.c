@@ -137,7 +137,7 @@ static bool job_update_master_list_usage(lList *job_list, lListElem *event)
 *     Eventmirror/job/job_update_master_list_usage()
 *******************************************************************************/
 sge_callback_result
-job_update_master_list(sge_evc_class_t *evc, object_description *object_base, sge_object_type type, 
+job_update_master_list(sge_evc_class_t *evc, sge_object_type type, 
                        sge_event_action action, lListElem *event, void *clientdata)
 {
    lList **list;
@@ -153,7 +153,7 @@ job_update_master_list(sge_evc_class_t *evc, object_description *object_base, sg
 
    sge_dstring_init(&id_dstring, id_buffer, MAX_STRING_SIZE);
 
-   list = sge_master_list(object_base, SGE_TYPE_JOB);
+   list = object_type_get_master_list(SGE_TYPE_JOB);
    list_descr = lGetListDescr(lGetList(event, ET_new_version)); 
    job_id = lGetUlong(event, ET_intkey);
    job = job_list_locate(*list, job_id);
@@ -222,7 +222,7 @@ job_update_master_list(sge_evc_class_t *evc, object_description *object_base, sg
 }
 
 sge_callback_result
-job_schedd_info_update_master_list(sge_evc_class_t *evc, object_description *object_base, sge_object_type type, 
+job_schedd_info_update_master_list(sge_evc_class_t *evc, sge_object_type type, 
                                    sge_event_action action, lListElem *event, void *clientdata)
 {
    lList **list = NULL;
@@ -233,7 +233,7 @@ job_schedd_info_update_master_list(sge_evc_class_t *evc, object_description *obj
    
    DENTER(TOP_LAYER, "job_schedd_info_update_master_list");
 
-   list = sge_master_list(object_base, type); 
+   list = object_type_get_master_list(type); 
    list_descr = lGetListDescr(lGetList(event, ET_new_version));
 
    /* We always update the whole list (consisting of one list element) */

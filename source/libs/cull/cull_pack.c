@@ -54,6 +54,9 @@
 #include "cull/cull_pack.h"
 #include "cull/cull_parse.h"
 #include "cull/cull_what_print.h"
+#ifdef OBSERVE
+#  include "cull/cull_observe.h"
+#endif
 
 /* =========== implementation ================================= */
 
@@ -828,6 +831,10 @@ int cull_unpack_elem_partial(sge_pack_buffer *pb, lListElem **epp, const lDescr 
       return ret;
    }
 
+#ifdef OBSERVE
+   lObserveAdd(ep, NULL, false);
+#endif
+
    *epp = ep;
 
    PROF_STOP_MEASUREMENT(SGE_PROF_PACKING);
@@ -1139,6 +1146,10 @@ int cull_unpack_list_partial(sge_pack_buffer *pb, lList **lpp, int flags)
       return ret;
    }
 
+#ifdef OBSERVE
+   lObserveAdd(lp, NULL, true);
+#endif
+
    /* unpack each list element */
    for(i = 0; i < n; i++) {
       if((ret = cull_unpack_elem_partial(pb, &ep, lp->descr, flags)) != PACK_SUCCESS) {
@@ -1209,6 +1220,11 @@ int flags
    }
 
    ep->status = OBJECT_ELEM;
+
+#ifdef OBSERVE
+   lObserveAdd(ep, NULL, false);
+#endif
+
    *epp = ep;
 
    DEXIT;

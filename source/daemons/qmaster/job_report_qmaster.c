@@ -175,7 +175,6 @@ void process_job_report(sge_gdi_ctx_class_t *ctx, lListElem *report,
 {
    lList* jrl = lGetList(report, REP_list); /* JR_Type */
    lListElem *jep, *jr, *ep, *jatep = NULL; 
-   object_description *object_base = object_type_get_object_description();
 
    char job_id_buffer[MAX_STRING_SIZE];
    dstring job_id_dstring;
@@ -219,7 +218,7 @@ void process_job_report(sge_gdi_ctx_class_t *ctx, lListElem *report,
       jataskid = lGetUlong(jr, JR_ja_task_number);
       rstate = lGetUlong(jr, JR_state);
 
-      jep = job_list_locate(*object_base[SGE_TYPE_JOB].list, jobid);
+      jep = job_list_locate(*object_type_get_master_list(SGE_TYPE_JOB), jobid);
       if (jep != NULL) {
          jatep = lGetElemUlong(lGetList(jep, JB_ja_tasks), JAT_task_number, jataskid);
 
@@ -526,7 +525,7 @@ void process_job_report(sge_gdi_ctx_class_t *ctx, lListElem *report,
                 */
                lListElem *host;
 
-               host = host_list_locate(*object_base[SGE_TYPE_EXECHOST].list, rhost);
+               host = host_list_locate(*object_type_get_master_list(SGE_TYPE_EXECHOST), rhost);
                update_reschedule_unknown_list_for_job(host, jobid, jataskid);
 
                DPRINTF(("RU: CLEANUP FOR SLAVE JOB "SFN" on host "SFN"\n", job_id_string, rhost));

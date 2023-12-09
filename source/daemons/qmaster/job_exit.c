@@ -89,7 +89,6 @@ void sge_job_exit(sge_gdi_ctx_class_t *ctx, lListElem *jr, lListElem *jep, lList
    u_long32 jobid, jataskid;
    lListElem *hep = NULL;
    u_long32 timestamp;
-   object_description *object_base = object_type_get_object_description();
 
    u_long32 failed, general_failure;
    lList *saved_gdil;
@@ -124,7 +123,7 @@ void sge_job_exit(sge_gdi_ctx_class_t *ctx, lListElem *jr, lListElem *jep, lList
    DPRINTF(("reaping job "sge_u32"."sge_u32" in queue >%s< job_pid %d\n", 
       jobid, jataskid, qname, (int) lGetUlong(jatep, JAT_pvm_ckpt_pid)));
 
-   queueep = cqueue_list_locate_qinstance(*object_base[SGE_TYPE_CQUEUE].list, qname);
+   queueep = cqueue_list_locate_qinstance(*object_type_get_master_list(SGE_TYPE_CQUEUE), qname);
    if (queueep == NULL) {
       ERROR((SGE_EVENT, MSG_JOB_WRITEJFINISH_S, qname));
    }
@@ -174,7 +173,7 @@ void sge_job_exit(sge_gdi_ctx_class_t *ctx, lListElem *jr, lListElem *jep, lList
 
       if (lGetUlong(jep, JB_ar) != 0 && (lGetUlong(jatep, JAT_state) & JDELETED) == JDELETED) {
          /* get AR and remove it if no other jobs are debited */
-         lList *master_ar_list = *object_base[SGE_TYPE_AR].list;
+         lList *master_ar_list = *object_type_get_master_list(SGE_TYPE_AR);
          lListElem *ar = ar_list_locate(master_ar_list, lGetUlong(jep, JB_ar));
 
          if (ar != NULL && lGetUlong(ar, AR_state) == AR_DELETED) {
@@ -306,7 +305,7 @@ void sge_job_exit(sge_gdi_ctx_class_t *ctx, lListElem *jr, lListElem *jep, lList
       ** in this case we have to halt all queues on this host
       */
       if (general_failure && general_failure == GFSTATE_HOST) {
-         hep = host_list_locate(*object_base[SGE_TYPE_EXECHOST].list, 
+         hep = host_list_locate(*object_type_get_master_list(SGE_TYPE_EXECHOST), 
                                 lGetHost(queueep, QU_qhostname));
          if (hep != NULL) {
             lListElem *cqueue = NULL;
@@ -315,7 +314,7 @@ void sge_job_exit(sge_gdi_ctx_class_t *ctx, lListElem *jr, lListElem *jep, lList
 
             found_host = true;
 
-            for_each(cqueue, *object_base[SGE_TYPE_CQUEUE].list) {
+            for_each(cqueue, *object_type_get_master_list(SGE_TYPE_CQUEUE)) {
                lList *qinstance_list = lGetList(cqueue, CQ_qinstances);
                lListElem *qinstance = NULL;
 

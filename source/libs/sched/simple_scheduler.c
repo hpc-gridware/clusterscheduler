@@ -73,7 +73,6 @@ static void get_policy_info(void);
 
 /* implementation of a simple job scheduler */
 static sge_callback_result remove_finished_job(sge_evc_class_t *evc, 
-                                object_description *object_base, 
                                 sge_object_type type, 
                                 sge_event_action action, 
                                 lListElem *event, 
@@ -84,7 +83,7 @@ static void simple_scheduler(sge_evc_class_t *evc);
 /* static void delete_some_jobs(sge_gdi_ctx_class_t *ctx); */
 
 
-static sge_callback_result remove_finished_job(sge_evc_class_t *evc, object_description *object_base, 
+static sge_callback_result remove_finished_job(sge_evc_class_t *evc,  
                                 sge_object_type type, sge_event_action action, 
                                 lListElem *event, void *clientdata)
 {

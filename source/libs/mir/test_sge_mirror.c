@@ -56,7 +56,7 @@ int events;
 u_long32 events_size;
 
 static sge_callback_result
-print_event(sge_evc_class_t *evc, object_description *object_base, sge_object_type type, 
+print_event(sge_evc_class_t *evc, sge_object_type type, 
             sge_event_action action, lListElem *event, void *clientdata)
 {
    char buffer[1024];

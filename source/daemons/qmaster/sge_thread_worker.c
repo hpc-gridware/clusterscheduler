@@ -51,6 +51,11 @@
 #include "uti/sge_time.h"
 #include "uti/sge_spool.h"
 #include "uti/sge_thread_ctrl.h"
+#include "uti/sge_string.h"
+
+#ifdef OBSERVE
+#  include "cull/cull_observe.h"
+#endif
 
 #include "sgeobj/sge_jsv.h"
 #include "sgeobj/sge_manop.h"
@@ -294,6 +299,11 @@ sge_worker_main(void *arg)
             MONITOR_WAIT_TIME(SGE_LOCK(LOCK_GLOBAL, LOCK_WRITE), &monitor);
          }
 
+#ifdef OBSERVE
+         lObserveStart();
+         INFO((SGE_EVENT, "======================"));
+#endif
+
          if (packet->is_gdi_request == true) {
             /*
              * do the GDI request
@@ -309,6 +319,22 @@ sge_worker_main(void *arg)
             sge_c_report(ctx, packet->host, packet->commproc, packet->commproc_id, 
                          task->data_list, &monitor);
          }
+
+#ifdef OBSERVE
+         dstring observ = DSTRING_INIT;
+         lObserveGetInfoString(&observ);
+         {
+            struct saved_vars_s *context = NULL;
+            const char *line = sge_strtok_r(sge_dstring_get_string(&observ), "\n", &context);
+            while (line) {
+               INFO((SGE_EVENT, "%s", line));
+               line = sge_strtok_r(NULL, "\n", &context);
+            }
+            sge_free_saved_vars(context);
+         }
+         sge_dstring_free(&observ);
+         lObserveEnd();
+#endif
 
          /*
           * do unlock

@@ -380,7 +380,6 @@ int sge_del_centry(sge_gdi_ctx_class_t *ctx, lListElem *centry, lList **answer_l
                    char *remote_user, char *remote_host) 
 {
    bool ret = true;
-   object_description *object_base = object_type_get_object_description();
 
    DENTER(TOP_LAYER, "sge_del_centry");
 
@@ -403,9 +402,9 @@ int sge_del_centry(sge_gdi_ctx_class_t *ctx, lListElem *centry, lList **answer_l
          if (ret) {
             if (tmp_centry != NULL) {
                if (!centry_is_referenced(tmp_centry, &local_answer_list, 
-                        *object_base[SGE_TYPE_CQUEUE].list,
-                        *object_base[SGE_TYPE_EXECHOST].list,
-                        *object_base[SGE_TYPE_RQS].list)) {
+                        *object_type_get_master_list(SGE_TYPE_CQUEUE),
+                        *object_type_get_master_list(SGE_TYPE_EXECHOST),
+                        *object_type_get_master_list(SGE_TYPE_RQS))) {
                   if (sge_event_spool(ctx, answer_list, 0, sgeE_CENTRY_DEL, 
                                       0, 0, name, NULL, NULL,
                                       NULL, NULL, NULL, true, true)) {
@@ -464,11 +463,10 @@ sge_change_queue_version_centry(sge_gdi_ctx_class_t *ctx)
    lListElem *ep;
    lListElem *cqueue;
    lList *answer_list = NULL;
-   object_description *object_base = object_type_get_object_description();
 
    DENTER(TOP_LAYER, "sge_change_queue_version_centry");
 
-   for_each(cqueue, *object_base[SGE_TYPE_CQUEUE].list) {
+   for_each(cqueue, *object_type_get_master_list(SGE_TYPE_CQUEUE)) {
       lList *qinstance_list = lGetList(cqueue, CQ_qinstances);
       lListElem *qinstance = NULL;
 
@@ -481,7 +479,7 @@ sge_change_queue_version_centry(sge_gdi_ctx_class_t *ctx)
                          qinstance, NULL, NULL, true, false);
       }
    }
-   for_each(ep, *object_base[SGE_TYPE_EXECHOST].list) {
+   for_each(ep, *object_type_get_master_list(SGE_TYPE_EXECHOST)) {
       sge_event_spool(ctx, &answer_list, 0, sgeE_EXECHOST_MOD,
                       0, 0, lGetHost(ep, EH_name), NULL, NULL,
                       ep, NULL, NULL, true, false);
@@ -523,8 +521,7 @@ void centry_redebit_consumables(sge_gdi_ctx_class_t *ctx, const lList *centries)
    lListElem *cqueue = NULL;
    lListElem *hep = NULL;
    lListElem *jep = NULL;
-   object_description *object_base = object_type_get_object_description();
-   lList *master_centry_list = *object_base[SGE_TYPE_CENTRY].list;
+   lList *master_centry_list = *object_type_get_master_list(SGE_TYPE_CENTRY);
 
    /* throw away all old actual values lists and rebuild them from scratch */
    for_each(cqueue, *(object_type_get_master_list(SGE_TYPE_CQUEUE))) {
@@ -536,7 +533,7 @@ void centry_redebit_consumables(sge_gdi_ctx_class_t *ctx, const lList *centries)
          qinstance_debit_consumable(qinstance, NULL, master_centry_list, 0, true, NULL);
       }
    }
-   for_each (hep, *object_base[SGE_TYPE_EXECHOST].list) {
+   for_each (hep, *object_type_get_master_list(SGE_TYPE_EXECHOST)) {
       lSetList(hep, EH_resource_utilization, NULL);
       debit_host_consumable(NULL, hep, master_centry_list, 0, true, NULL);
    }
@@ -566,13 +563,13 @@ void centry_redebit_consumables(sge_gdi_ctx_class_t *ctx, const lList *centries)
             }   
 
             qslots = lGetUlong(gdil, JG_slots);
-            debit_host_consumable(jep, host_list_locate(*object_base[SGE_TYPE_EXECHOST].list,
+            debit_host_consumable(jep, host_list_locate(*object_type_get_master_list(SGE_TYPE_EXECHOST),
                                   lGetHost(qep, QU_qhostname)), master_centry_list, qslots, master_task, NULL);
             qinstance_debit_consumable(qep, jep, master_centry_list, qslots, master_task, NULL);
             slots += qslots;
             master_task = false;
          }
-         debit_host_consumable(jep, host_list_locate(*object_base[SGE_TYPE_EXECHOST].list,
+         debit_host_consumable(jep, host_list_locate(*object_type_get_master_list(SGE_TYPE_EXECHOST),
                                "global"), master_centry_list, slots, true, NULL);
       }
    }
@@ -593,13 +590,13 @@ void centry_redebit_consumables(sge_gdi_ctx_class_t *ctx, const lList *centries)
 
          for_each(qinstance, qinstance_list) {
             const char *hostname = lGetHost(qinstance, QU_qhostname);
-            const lListElem *host = lGetElemHost(*object_base[SGE_TYPE_EXECHOST].list, EH_name, hostname);
+            const lListElem *host = lGetElemHost(*object_type_get_master_list(SGE_TYPE_EXECHOST), EH_name, hostname);
             reporting_create_queue_consumable_record(&answer_list, host, qinstance, NULL, now);
          }
       }
       answer_list_output(&answer_list);
       /* dump all host consumables */
-      for_each (hep, *object_base[SGE_TYPE_EXECHOST].list) {
+      for_each (hep, *object_type_get_master_list(SGE_TYPE_EXECHOST)) {
          reporting_create_host_consumable_record(&answer_list, hep, NULL, now);
       }
       answer_list_output(&answer_list);

@@ -131,7 +131,7 @@ static void   qmaster_lock_and_shutdown(void **ctx_ref, int);
 static int    setup_qmaster(sge_gdi_ctx_class_t *ctx);
 
 static int    
-remove_invalid_job_references(bool job_spooling, int user, object_description *object_base);
+remove_invalid_job_references(bool job_spooling, int user);
 
 static int    debit_all_jobs_from_qs(void);
 static void   init_categories(void);
@@ -289,11 +289,10 @@ sge_qmaster_thread_init(sge_gdi_ctx_class_t **ctx_ref, u_long32 prog_id,
 void sge_setup_job_resend(void)
 {
    lListElem *job = NULL;
-   object_description *object_base = object_type_get_object_description();
 
    DENTER(TOP_LAYER, "sge_setup_job_resend");
 
-   job = lFirst(*object_base[SGE_TYPE_JOB].list);
+   job = lFirst(*object_type_get_master_list(SGE_TYPE_JOB));
 
    while (NULL != job)
    {
@@ -319,9 +318,9 @@ void sge_setup_job_resend(void)
 
             qname = lGetString(granted_queue, JG_qname);
 
-            qinstance = cqueue_list_locate_qinstance(*object_base[SGE_TYPE_CQUEUE].list, qname);
+            qinstance = cqueue_list_locate_qinstance(*object_type_get_master_list(SGE_TYPE_CQUEUE), qname);
 
-            host = host_list_locate(*object_base[SGE_TYPE_EXECHOST].list, lGetHost(qinstance, QU_qhostname)); 
+            host = host_list_locate(*object_type_get_master_list(SGE_TYPE_EXECHOST), lGetHost(qinstance, QU_qhostname)); 
 
             when = lGetUlong(task, JAT_start_time);
 
@@ -749,8 +748,7 @@ static bool is_qmaster_already_running(const char *qmaster_spool_dir)
 } /* is_qmaster_already_running() */
 
 
-static void sge_propagate_queue_suspension(object_description *object_base, lListElem *jep,
-                                           dstring *cqueue_name, dstring *host_domain)
+static void sge_propagate_queue_suspension(lListElem *jep, dstring *cqueue_name, dstring *host_domain)
 {
    const lListElem *gdil_ep, *cq, *qi;
    lListElem *jatep;
@@ -765,7 +763,7 @@ static void sge_propagate_queue_suspension(object_description *object_base, lLis
             continue;
          } 
 
-         if (!(cq = lGetElemStr(*object_base[SGE_TYPE_CQUEUE].list, CQ_name, sge_dstring_get_string(cqueue_name))) ||
+         if (!(cq = lGetElemStr(*object_type_get_master_list(SGE_TYPE_CQUEUE), CQ_name, sge_dstring_get_string(cqueue_name))) ||
              !(qi = lGetElemHost(lGetList(cq, CQ_qinstances), QU_qhostname, sge_dstring_get_string(host_domain)))) 
             continue;
 
@@ -834,7 +832,6 @@ static int setup_qmaster(sge_gdi_ctx_class_t *ctx)
    lList *answer_list = NULL;
    time_t time_start, time_end;
    monitoring_t monitor;
-   object_description *object_base = object_type_get_object_description();
    const char *qualified_hostname = NULL;
 
    bool job_spooling = ctx->get_job_spooling(ctx);
@@ -863,10 +860,10 @@ static int setup_qmaster(sge_gdi_ctx_class_t *ctx)
   * with only a view owners is solved.
   */
 #if 0
-    if (*(object_base[SGE_TYPE_JOB].list) == NULL) {
-       *(object_base[SGE_TYPE_JOB].list) = lCreateList("Master_Job_List", JB_Type);
+    if (*(object_type_get_master_list(SGE_TYPE_JOB)) == NULL) {
+       *(object_type_get_master_list(SGE_TYPE_JOB)) = lCreateList("Master_Job_List", JB_Type);
     }
-    cull_hash_new(*(object_base[SGE_TYPE_JOB].list), JB_owner, 0);
+    cull_hash_new(*(object_type_get_master_list(SGE_TYPE_JOB)), JB_owner, 0);
 #endif
 
    if (!sge_initialize_persistence(ctx, &answer_list)) {
@@ -877,7 +874,7 @@ static int setup_qmaster(sge_gdi_ctx_class_t *ctx)
       spooling_context = spool_get_default_context();
    }
 
-   if (sge_read_configuration(ctx, spooling_context, object_base[SGE_TYPE_CONFIG].list, answer_list) != 0) {
+   if (sge_read_configuration(ctx, spooling_context, object_type_get_master_list(SGE_TYPE_CONFIG), answer_list) != 0) {
       DRETURN(-1);
    }
    
@@ -892,7 +889,7 @@ static int setup_qmaster(sge_gdi_ctx_class_t *ctx)
    ** read in all objects and check for correctness
    */
    DPRINTF(("Complex Attributes----------------------\n"));
-   spool_read_list(&answer_list, spooling_context, object_base[SGE_TYPE_CENTRY].list, SGE_TYPE_CENTRY);
+   spool_read_list(&answer_list, spooling_context, object_type_get_master_list(SGE_TYPE_CENTRY), SGE_TYPE_CENTRY);
    answer_list_output(&answer_list);
 
    /*
@@ -916,7 +913,7 @@ static int setup_qmaster(sge_gdi_ctx_class_t *ctx)
       int i;
 
       for (i = 0; new_complexes[i].name != NULL; i++) {
-         lList *centry_list = *(object_base[SGE_TYPE_CENTRY].list);
+         lList *centry_list = *(object_type_get_master_list(SGE_TYPE_CENTRY));
          lListElem *entry_long = lGetElemStr(centry_list, CE_name, new_complexes[i].name);
          lListElem *entry_short = lGetElemStr(centry_list, CE_shortcut, new_complexes[i].shortcut);
 
@@ -942,36 +939,36 @@ static int setup_qmaster(sge_gdi_ctx_class_t *ctx)
    }
 
    DPRINTF(("host_list----------------------------\n"));
-   spool_read_list(&answer_list, spooling_context, object_base[SGE_TYPE_EXECHOST].list, SGE_TYPE_EXECHOST);
-   spool_read_list(&answer_list, spooling_context, object_base[SGE_TYPE_ADMINHOST].list, SGE_TYPE_ADMINHOST);
-   spool_read_list(&answer_list, spooling_context, object_base[SGE_TYPE_SUBMITHOST].list, SGE_TYPE_SUBMITHOST);
+   spool_read_list(&answer_list, spooling_context, object_type_get_master_list(SGE_TYPE_EXECHOST), SGE_TYPE_EXECHOST);
+   spool_read_list(&answer_list, spooling_context, object_type_get_master_list(SGE_TYPE_ADMINHOST), SGE_TYPE_ADMINHOST);
+   spool_read_list(&answer_list, spooling_context, object_type_get_master_list(SGE_TYPE_SUBMITHOST), SGE_TYPE_SUBMITHOST);
    answer_list_output(&answer_list);
 
-   if (!host_list_locate(*object_base[SGE_TYPE_EXECHOST].list, SGE_TEMPLATE_NAME)) {
+   if (!host_list_locate(*object_type_get_master_list(SGE_TYPE_EXECHOST), SGE_TEMPLATE_NAME)) {
       /* add an exec host "template" */
       if (sge_add_host_of_type(ctx, SGE_TEMPLATE_NAME, SGE_EH_LIST, &monitor))
          ERROR((SGE_EVENT, SFNMAX, MSG_CONFIG_ADDINGHOSTTEMPLATETOEXECHOSTLIST));
    }
 
    /* add host "global" to Master_Exechost_List as an exec host */
-   if (!host_list_locate(*object_base[SGE_TYPE_EXECHOST].list, SGE_GLOBAL_NAME)) {
+   if (!host_list_locate(*object_type_get_master_list(SGE_TYPE_EXECHOST), SGE_GLOBAL_NAME)) {
       /* add an exec host "global" */
       if (sge_add_host_of_type(ctx, SGE_GLOBAL_NAME, SGE_EH_LIST, &monitor))
          ERROR((SGE_EVENT, SFNMAX, MSG_CONFIG_ADDINGHOSTGLOBALTOEXECHOSTLIST));
    }
 
    /* add qmaster host to Master_Adminhost_List as an administrativ host */
-   if (!host_list_locate(*object_base[SGE_TYPE_ADMINHOST].list, qualified_hostname)) {
+   if (!host_list_locate(*object_type_get_master_list(SGE_TYPE_ADMINHOST), qualified_hostname)) {
       if (sge_add_host_of_type(ctx, qualified_hostname, SGE_AH_LIST, &monitor)) {
          DRETURN(-1);
       }
    }
 
    DPRINTF(("manager_list----------------------------\n"));
-   spool_read_list(&answer_list, spooling_context, object_base[SGE_TYPE_MANAGER].list, SGE_TYPE_MANAGER);
+   spool_read_list(&answer_list, spooling_context, object_type_get_master_list(SGE_TYPE_MANAGER), SGE_TYPE_MANAGER);
    answer_list_output(&answer_list);
    if (!manop_is_manager("root")) {
-      ep = lAddElemStr(object_base[SGE_TYPE_MANAGER].list, UM_name, "root", UM_Type);
+      ep = lAddElemStr(object_type_get_master_list(SGE_TYPE_MANAGER), UM_name, "root", UM_Type);
 
       if (!spool_write_object(&answer_list, spooling_context, ep, "root", SGE_TYPE_MANAGER, job_spooling)) {
          answer_list_output(&answer_list);
@@ -979,19 +976,19 @@ static int setup_qmaster(sge_gdi_ctx_class_t *ctx)
          DRETURN(-1);
       }
    }
-   for_each(ep, *object_base[SGE_TYPE_MANAGER].list) {
+   for_each(ep, *object_type_get_master_list(SGE_TYPE_MANAGER)) {
       DPRINTF(("%s\n", lGetString(ep, UM_name)));
    }   
 
    DPRINTF(("host group definitions-----------\n"));
-   spool_read_list(&answer_list, spooling_context, object_base[SGE_TYPE_HGROUP].list, SGE_TYPE_HGROUP);
+   spool_read_list(&answer_list, spooling_context, object_type_get_master_list(SGE_TYPE_HGROUP), SGE_TYPE_HGROUP);
    answer_list_output(&answer_list);
 
    DPRINTF(("operator_list----------------------------\n"));
-   spool_read_list(&answer_list, spooling_context, object_base[SGE_TYPE_OPERATOR].list, SGE_TYPE_OPERATOR);
+   spool_read_list(&answer_list, spooling_context, object_type_get_master_list(SGE_TYPE_OPERATOR), SGE_TYPE_OPERATOR);
    answer_list_output(&answer_list);
    if (!manop_is_operator("root")) {
-      ep = lAddElemStr(object_base[SGE_TYPE_OPERATOR].list, UO_name, "root", UO_Type);
+      ep = lAddElemStr(object_type_get_master_list(SGE_TYPE_OPERATOR), UO_name, "root", UO_Type);
 
       if (!spool_write_object(&answer_list, spooling_context, ep, "root", SGE_TYPE_OPERATOR, job_spooling)) {
          answer_list_output(&answer_list);
@@ -1000,27 +997,27 @@ static int setup_qmaster(sge_gdi_ctx_class_t *ctx)
          return -1;
       }
    }
-   for_each(ep, *object_base[SGE_TYPE_OPERATOR].list) {
+   for_each(ep, *object_type_get_master_list(SGE_TYPE_OPERATOR)) {
       DPRINTF(("%s\n", lGetString(ep, UO_name)));
    }   
 
 
    DPRINTF(("userset_list------------------------------\n"));
-   spool_read_list(&answer_list, spooling_context, object_base[SGE_TYPE_USERSET].list, SGE_TYPE_USERSET);
+   spool_read_list(&answer_list, spooling_context, object_type_get_master_list(SGE_TYPE_USERSET), SGE_TYPE_USERSET);
    answer_list_output(&answer_list);
 
    DPRINTF(("calendar list ------------------------------\n"));
-   spool_read_list(&answer_list, spooling_context, object_base[SGE_TYPE_CALENDAR].list, SGE_TYPE_CALENDAR);
+   spool_read_list(&answer_list, spooling_context, object_type_get_master_list(SGE_TYPE_CALENDAR), SGE_TYPE_CALENDAR);
    answer_list_output(&answer_list);
 
    DPRINTF(("resource quota list -----------------------\n"));
-   spool_read_list(&answer_list, spooling_context, object_base[SGE_TYPE_RQS].list, SGE_TYPE_RQS);
+   spool_read_list(&answer_list, spooling_context, object_type_get_master_list(SGE_TYPE_RQS), SGE_TYPE_RQS);
    answer_list_output(&answer_list);
 
    DPRINTF(("cluster_queue_list---------------------------------\n"));
-   spool_read_list(&answer_list, spooling_context, object_base[SGE_TYPE_CQUEUE].list, SGE_TYPE_CQUEUE);
+   spool_read_list(&answer_list, spooling_context, object_type_get_master_list(SGE_TYPE_CQUEUE), SGE_TYPE_CQUEUE);
    answer_list_output(&answer_list);
-   cqueue_list_set_unknown_state(*(object_base[SGE_TYPE_CQUEUE].list), NULL, false, true);
+   cqueue_list_set_unknown_state(*(object_type_get_master_list(SGE_TYPE_CQUEUE)), NULL, false, true);
 
    /*
     * Initialize cached values for each qinstance:
@@ -1093,21 +1090,21 @@ static int setup_qmaster(sge_gdi_ctx_class_t *ctx)
    }
 
    DPRINTF(("pe_list---------------------------------\n"));
-   spool_read_list(&answer_list, spooling_context, object_base[SGE_TYPE_PE].list, SGE_TYPE_PE);
+   spool_read_list(&answer_list, spooling_context, object_type_get_master_list(SGE_TYPE_PE), SGE_TYPE_PE);
    answer_list_output(&answer_list);
 
    DPRINTF(("ckpt_list---------------------------------\n"));
-   spool_read_list(&answer_list, spooling_context, object_base[SGE_TYPE_CKPT].list, SGE_TYPE_CKPT);
+   spool_read_list(&answer_list, spooling_context, object_type_get_master_list(SGE_TYPE_CKPT), SGE_TYPE_CKPT);
    answer_list_output(&answer_list);
 
    DPRINTF(("advance reservation list -----------------------\n"));
-   spool_read_list(&answer_list, spooling_context, object_base[SGE_TYPE_AR].list, SGE_TYPE_AR);
+   spool_read_list(&answer_list, spooling_context, object_type_get_master_list(SGE_TYPE_AR), SGE_TYPE_AR);
    answer_list_output(&answer_list);
 
    /* initialize cached advance reservations structures */
    {
       lListElem *ar;
-      for_each(ar, *object_base[SGE_TYPE_AR].list) {
+      for_each(ar, *object_type_get_master_list(SGE_TYPE_AR)) {
          ar_initialize_reserved_queue_list(ar);
       }
    }
@@ -1115,7 +1112,7 @@ static int setup_qmaster(sge_gdi_ctx_class_t *ctx)
    DPRINTF(("job_list-----------------------------------\n"));
    /* measure time needed to read job database */
    time_start = time(0);
-   spool_read_list(&answer_list, spooling_context, object_base[SGE_TYPE_JOB].list, SGE_TYPE_JOB);
+   spool_read_list(&answer_list, spooling_context, object_type_get_master_list(SGE_TYPE_JOB), SGE_TYPE_JOB);
    time_end = time(0);
    answer_list_output(&answer_list);
 
@@ -1123,7 +1120,7 @@ static int setup_qmaster(sge_gdi_ctx_class_t *ctx)
       u_long32 saved_logginglevel = log_state_get_log_level();
       log_state_set_log_level(LOG_INFO);
       INFO((SGE_EVENT, MSG_QMASTER_READ_JDB_WITH_X_ENTR_IN_Y_SECS_UU,
-            sge_u32c(lGetNumberOfElem(*object_base[SGE_TYPE_JOB].list)), 
+            sge_u32c(lGetNumberOfElem(*object_type_get_master_list(SGE_TYPE_JOB))), 
             sge_u32c(time_end - time_start)));
       log_state_set_log_level(saved_logginglevel);
    }
@@ -1132,7 +1129,7 @@ static int setup_qmaster(sge_gdi_ctx_class_t *ctx)
       dstring cqueue_name = DSTRING_INIT;
       dstring host_domain = DSTRING_INIT;
 
-      for_each(jep, *(object_base[SGE_TYPE_JOB].list)) {
+      for_each(jep, *(object_type_get_master_list(SGE_TYPE_JOB))) {
 
          DPRINTF(("JOB "sge_u32" PRIORITY %d\n", lGetUlong(jep, JB_job_number), 
                (int)lGetUlong(jep, JB_priority) - BASE_PRIORITY));
@@ -1148,11 +1145,11 @@ static int setup_qmaster(sge_gdi_ctx_class_t *ctx)
          sge_task_depend_init(jep, &answer_list);
 
          centry_list_fill_request(lGetList(jep, JB_hard_resource_list), 
-                     NULL, *object_base[SGE_TYPE_CENTRY].list, false, true, false);
+                     NULL, *object_type_get_master_list(SGE_TYPE_CENTRY), false, true, false);
 
          /* need to update JSUSPENDED_ON_SUBORDINATE since task spooling is not 
             triggered upon queue un/-suspension */
-         sge_propagate_queue_suspension(object_base, jep, &cqueue_name, &host_domain);
+         sge_propagate_queue_suspension(jep, &cqueue_name, &host_domain);
       }
       sge_dstring_free(&cqueue_name);
       sge_dstring_free(&host_domain);
@@ -1166,7 +1163,7 @@ static int setup_qmaster(sge_gdi_ctx_class_t *ctx)
 
       ctx->set_job_spooling(ctx, true);
       
-      for_each(jep, *object_base[SGE_TYPE_JOB].list) {
+      for_each(jep, *object_type_get_master_list(SGE_TYPE_JOB)) {
          u_long32 job_id = lGetUlong(jep, JB_job_number);
          sge_dstring_clear(&buffer);
 
@@ -1196,7 +1193,7 @@ static int setup_qmaster(sge_gdi_ctx_class_t *ctx)
       parallel one
    */
    debit_all_jobs_from_qs(); 
-   debit_all_jobs_from_pes(*object_base[SGE_TYPE_PE].list); 
+   debit_all_jobs_from_pes(*object_type_get_master_list(SGE_TYPE_PE)); 
 
    /*
     * Initialize cached values for each qinstance:
@@ -1212,16 +1209,16 @@ static int setup_qmaster(sge_gdi_ctx_class_t *ctx)
 
 
    DPRINTF(("user list-----------------------------------\n"));
-   spool_read_list(&answer_list, spooling_context, object_base[SGE_TYPE_USER].list, SGE_TYPE_USER);
+   spool_read_list(&answer_list, spooling_context, object_type_get_master_list(SGE_TYPE_USER), SGE_TYPE_USER);
    answer_list_output(&answer_list);
 
-   remove_invalid_job_references(job_spooling, 1, object_base);
+   remove_invalid_job_references(job_spooling, 1);
 
    DPRINTF(("project list-----------------------------------\n"));
-   spool_read_list(&answer_list, spooling_context, object_base[SGE_TYPE_PROJECT].list, SGE_TYPE_PROJECT);
+   spool_read_list(&answer_list, spooling_context, object_type_get_master_list(SGE_TYPE_PROJECT), SGE_TYPE_PROJECT);
    answer_list_output(&answer_list);
 
-   remove_invalid_job_references(job_spooling, 0, object_base);
+   remove_invalid_job_references(job_spooling, 0);
    
    DPRINTF(("scheduler config -----------------------------------\n"));
    
@@ -1229,14 +1226,14 @@ static int setup_qmaster(sge_gdi_ctx_class_t *ctx)
    answer_list_output(&answer_list);
 
    DPRINTF(("share tree list-----------------------------------\n"));
-   spool_read_list(&answer_list, spooling_context, object_base[SGE_TYPE_SHARETREE].list, SGE_TYPE_SHARETREE);
+   spool_read_list(&answer_list, spooling_context, object_type_get_master_list(SGE_TYPE_SHARETREE), SGE_TYPE_SHARETREE);
    answer_list_output(&answer_list);
-   ep = lFirst(*object_base[SGE_TYPE_SHARETREE].list);
+   ep = lFirst(*object_type_get_master_list(SGE_TYPE_SHARETREE));
    if (ep) {
       lList *alp = NULL;
       lList *found = NULL;
-      check_sharetree(&alp, ep, *object_base[SGE_TYPE_USER].list, 
-                      *object_base[SGE_TYPE_PROJECT].list, NULL, &found);
+      check_sharetree(&alp, ep, *object_type_get_master_list(SGE_TYPE_USER), 
+                      *object_type_get_master_list(SGE_TYPE_PROJECT), NULL, &found);
       lFreeList(&found);
       lFreeList(&alp); 
    }
@@ -1252,16 +1249,15 @@ static int setup_qmaster(sge_gdi_ctx_class_t *ctx)
 *     remove_invalid_job_references() -- ??? 
 *
 *  SYNOPSIS
-*     static int remove_invalid_job_references(int user, object_description 
-*     *object_base) 
+*     static int remove_invalid_job_references(bool job_spooling, int user
 *
 *  FUNCTION
 *   get rid of still debited per job usage contained 
 *   in user or project object if the job is no longer existing
 *
 *  INPUTS
+*     bool job_spooling
 *     int user                        - work on users
-*     object_description *object_base - master list table
 *
 *  RESULT
 *     static int -  always 0
@@ -1271,12 +1267,12 @@ static int setup_qmaster(sge_gdi_ctx_class_t *ctx)
 *
 *******************************************************************************/
 static int 
-remove_invalid_job_references(bool job_spooling, int user, object_description *object_base) 
+remove_invalid_job_references(bool job_spooling, int user) 
 {
    lListElem *up, *upu, *next;
    u_long32 jobid;
    int object_key = user ? UU_name : PR_name;
-   lList *object_list = user ? *object_base[SGE_TYPE_USER].list : *object_base[SGE_TYPE_PROJECT].list;
+   lList *object_list = user ? *object_type_get_master_list(SGE_TYPE_USER) : *object_type_get_master_list(SGE_TYPE_PROJECT);
    sge_object_type object_type = user ? SGE_TYPE_USER : SGE_TYPE_PROJECT;
    const char *object_name = user ? MSG_OBJ_USER : MSG_OBJ_PRJ;
    int debited_job_usage_key = user ? UU_debited_job_usage : PR_debited_job_usage;
@@ -1321,11 +1317,10 @@ static int debit_all_jobs_from_qs()
    lListElem *next_jatep = NULL;
    lListElem *jatep = NULL;
    int ret = 0;
-   object_description *object_base = object_type_get_object_description();
-   lList *master_centry_list = *object_base[SGE_TYPE_CENTRY].list;
-   lList *master_cqueue_list = *object_base[SGE_TYPE_CQUEUE].list;
-   lList *master_ar_list = *object_base[SGE_TYPE_AR].list;
-   lList *master_rqs_list = *object_base[SGE_TYPE_RQS].list;
+   lList *master_centry_list = *object_type_get_master_list(SGE_TYPE_CENTRY);
+   lList *master_cqueue_list = *object_type_get_master_list(SGE_TYPE_CQUEUE);
+   lList *master_ar_list = *object_type_get_master_list(SGE_TYPE_AR);
+   lList *master_rqs_list = *object_type_get_master_list(SGE_TYPE_RQS);
 
    DENTER(TOP_LAYER, "debit_all_jobs_from_qs");
 
@@ -1361,15 +1356,15 @@ static int debit_all_jobs_from_qs()
             } else {
                /* debit in all layers */
                lListElem *rqs = NULL;
-               debit_host_consumable(jep, host_list_locate(*object_base[SGE_TYPE_EXECHOST].list,
+               debit_host_consumable(jep, host_list_locate(*object_type_get_master_list(SGE_TYPE_EXECHOST),
                                      "global"), master_centry_list, slots, master_task, NULL);
                debit_host_consumable(jep, host_list_locate(
-                        *object_base[SGE_TYPE_EXECHOST].list, lGetHost(qep, QU_qhostname)),
+                        *object_type_get_master_list(SGE_TYPE_EXECHOST), lGetHost(qep, QU_qhostname)),
                         master_centry_list, slots, master_task, NULL);
                qinstance_debit_consumable(qep, jep, master_centry_list, slots, master_task, NULL);
                for_each (rqs, master_rqs_list) {
                   rqs_debit_consumable(rqs, jep, gdi, lGetString(jatep, JAT_granted_pe), master_centry_list, 
-                                        *object_base[SGE_TYPE_USERSET].list, *object_base[SGE_TYPE_HGROUP].list, slots, master_task);
+                                        *object_type_get_master_list(SGE_TYPE_USERSET), *object_type_get_master_list(SGE_TYPE_HGROUP), slots, master_task);
                }
                if (ar != NULL) {
                   lListElem *queue = lGetSubStr(ar, QU_full_name, lGetString(gdi, JG_qname), AR_reserved_queues);

@@ -37,6 +37,8 @@
 #include <pthread.h>
 
 #include "uti/sge_stdlib.h"
+#include "uti/sge_htable.h"
+#include "uti/sge_dstring.h"
 
 #include "cull/pack.h"
 
@@ -47,6 +49,10 @@ typedef struct {
    char              noinit[50];        /* cull error buffer        */
    const lSortOrder* global_sort_order; /* qsort() by-pass argument */
    const lNameSpace* name_space;        /* name vector              */
+#ifdef OBSERVE
+   dstring observe_dstring;
+   bool observe_started;
+#endif
 } cull_state_t;
 
 static pthread_once_t cull_once = PTHREAD_ONCE_INIT;
@@ -169,6 +175,43 @@ void cull_state_set_name_space(const lNameSpace  *ns)
 
    return;
 }
+
+#ifdef OBSERVE
+void cull_state_set_observe_started(bool started)
+{
+   cull_state_t *cull_state = NULL;
+
+   pthread_once(&cull_once, cull_once_init);
+ 
+   cull_state = cull_state_getspecific(cull_state_key);
+
+   cull_state->observe_started = started;
+
+   return;
+}
+
+dstring *cull_state_get_observe_dstring(void)
+{
+   cull_state_t *cull_state = NULL;
+
+   pthread_once(&cull_once, cull_once_init);
+
+   cull_state = cull_state_getspecific(cull_state_key);
+
+   return &cull_state->observe_dstring;
+}
+
+bool cull_state_get_observe_started(void)
+{
+   cull_state_t *cull_state = NULL;
+
+   pthread_once(&cull_once, cull_once_init);
+
+   cull_state = cull_state_getspecific(cull_state_key);
+
+   return cull_state->observe_started;
+}
+#endif
 
 /****** cull_state/cull_once_init() ********************************************
 *  NAME
@@ -293,4 +336,8 @@ static void cull_state_init(cull_state_t *theState)
    theState->noinit[0] = '\0';
    theState->global_sort_order = NULL;
    theState->name_space = NULL;
+#ifdef OBSERVE
+   sge_dstring_init_dynamic(&theState->observe_dstring, 10000);
+   theState->observe_started = false;
+#endif
 }

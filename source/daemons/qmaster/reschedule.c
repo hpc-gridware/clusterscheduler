@@ -116,8 +116,7 @@ void reschedule_unknown_event(sge_gdi_ctx_class_t *ctx, te_event_t anEvent, moni
    lListElem *qep;            /* QU_Type */
    lList *answer_list = NULL; /* AN_Type */
    lListElem *hep;            /* EH_Type */
-   object_description *object_base = object_type_get_object_description();
-   lList *master_list = *object_base[SGE_TYPE_CQUEUE].list;
+   lList *master_list = *object_type_get_master_list(SGE_TYPE_CQUEUE);
    u_long32 new_timeout = 0;
    u_long32 timeout = te_get_first_numeric_key(anEvent);
    char* hostname = te_get_alphanumeric_key(anEvent);
@@ -138,7 +137,7 @@ void reschedule_unknown_event(sge_gdi_ctx_class_t *ctx, te_event_t anEvent, moni
    /*
     * locate the host object which went in unknown-state
     */
-   if (!(hep = host_list_locate(*object_base[SGE_TYPE_EXECHOST].list, hostname))) {
+   if (!(hep = host_list_locate(*object_type_get_master_list(SGE_TYPE_EXECHOST), hostname))) {
       DTRACE;
       goto Error;
    }
@@ -299,7 +298,6 @@ int reschedule_job(sge_gdi_ctx_class_t *ctx, lListElem *jep, lListElem *jatep, l
    u_long32 job_now;
    const char *hostname;
    int ret = 0;
-   object_description *object_base = object_type_get_object_description();
 
    DENTER(TOP_LAYER, "reschedule_job");
  
@@ -360,7 +358,7 @@ int reschedule_job(sge_gdi_ctx_class_t *ctx, lListElem *jep, lListElem *jatep, l
       } else if (ep && object_has_type(ep, QU_Type)) {
          qep = ep;
          hostname = lGetHost(qep, QU_qhostname);
-         hep = host_list_locate(*object_base[SGE_TYPE_EXECHOST].list, hostname);
+         hep = host_list_locate(*object_type_get_master_list(SGE_TYPE_EXECHOST), hostname);
       } else {
          qep = NULL;
          hep = NULL;
@@ -447,7 +445,7 @@ int reschedule_job(sge_gdi_ctx_class_t *ctx, lListElem *jep, lListElem *jatep, l
       if (!force && lGetString(jep, JB_checkpoint_name)) {
          lListElem *ckpt_ep; /* CK_Type */
     
-         ckpt_ep = ckpt_list_locate(*object_base[SGE_TYPE_CKPT].list, 
+         ckpt_ep = ckpt_list_locate(*object_type_get_master_list(SGE_TYPE_CKPT), 
                                     lGetString(jep, JB_checkpoint_name));
          if (ckpt_ep) {
             u_long32 flags;
@@ -526,7 +524,7 @@ int reschedule_job(sge_gdi_ctx_class_t *ctx, lListElem *jep, lListElem *jatep, l
           lGetHost(hep, EH_name))) {
          host = hep;
       } else {
-         host = host_list_locate(*object_base[SGE_TYPE_EXECHOST].list, 
+         host = host_list_locate(*object_type_get_master_list(SGE_TYPE_EXECHOST), 
                   lGetHost(first_granted_queue, JG_qhostname));
          hostname = lGetHost(first_granted_queue, JG_qhostname);
       }

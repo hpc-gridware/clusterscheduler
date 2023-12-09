@@ -51,16 +51,17 @@ CULLLIB_SRC 	= cull_list.c \
                 cull_tree.c \
                 cull_file.c \
                 cull_state.c \
+					 cull_observe.c \
                 pack.c
 
 CULLTEST_SRC   = example1.c example2.c \
-                 test_cull_list.c test_cull_pack.c test_cull_hash.c test_enumeration.c
+                 test_cull_list.c test_cull_pack.c test_cull_hash.c test_enumeration.c test_cull_observe.c
 
 CULLLIB_OBJS = $(CULLLIB_SRC:.c=.o)
 
 CULLTEST_OBJS = $(CULLTEST_SRC:.c=.o)
 
-CULL_ALL 	= example1 example2 test_cull_list test_cull_pack test_cull_hash test_enumeration
+CULL_ALL 	= example1 example2 test_cull_list test_cull_pack test_cull_hash test_enumeration test_cull_observe
 
 ###############################################################################
 # global rules: all, clean, depend, messages
@@ -143,6 +144,9 @@ cull_file.o:   $(CULLLIB_DIR)/cull_file.c
 
 cull_state.o:   $(CULLLIB_DIR)/cull_state.c
 	$(CC) $(CFLAGS) $(MEMCFLAG) $(SHARED_CFLAGS) -c $(CULLLIB_DIR)/cull_state.c
+
+cull_observe.o:   $(CULLLIB_DIR)/cull_observe.c
+	$(CC) $(CFLAGS) $(MEMCFLAG) $(SHARED_CFLAGS) -c $(CULLLIB_DIR)/cull_observe.c
    
 pack.o:		$(CULLLIB_DIR)/pack.c
 		$(CC) $(CFLAGS) $(SHARED_CFLAGS) -c $(CULLLIB_DIR)/pack.c
@@ -173,6 +177,13 @@ example2.o: $(CULLLIB_DIR)/example2.c
 
 #---------------------------------------------------------------------
 # test programs
+test_cull_observe: test_cull_observe.o $(CULLLIB) $(WINGRIDLIB_DEP) $(UTILIB) $(COMMLISTSLIB) 
+	$(LD_WRAPPER) $(CC) $(CFLAGS) -o test_cull_observe $(LFLAGS) test_cull_observe.o $(CULLLIB) $(WINGRIDLIB) $(UTILIB) $(COMMLISTSLIB) $(LIBS)
+
+test_cull_observe.o: $(CULLLIB_DIR)/test_cull_observe.c
+	$(CC) $(CFLAGS) -c $(CULLLIB_DIR)/test_cull_observe.c
+
+#---
 test_cull_list: test_cull_list.o $(CULLLIB) $(WINGRIDLIB_DEP) $(UTILIB) $(COMMLISTSLIB) 
 	$(LD_WRAPPER) $(CC) $(CFLAGS) -o test_cull_list $(LFLAGS) test_cull_list.o $(CULLLIB) $(WINGRIDLIB) $(UTILIB) $(COMMLISTSLIB) $(LIBS)
 

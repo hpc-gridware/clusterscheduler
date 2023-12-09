@@ -59,6 +59,10 @@
 #include "cull/cull_state.h"
 #include "cull/pack.h"
 #include "cull/cull_pack.h"
+#include "cull/cull_observe.h"
+#ifdef OBSERVE
+#  include "cull/cull_observe.h"
+#endif
 
 #define CULL_BASIS_LAYER CULL_LAYER
 
@@ -939,6 +943,10 @@ lListElem *lCreateElem(const lDescr *dp)
       DRETURN(NULL);
    }
 
+#ifdef OBSERVE
+   lObserveAdd(ep, NULL, false);
+#endif
+
    DRETURN(ep);
 }
 
@@ -1042,6 +1050,10 @@ lList *lCreateListHash(const char *listname, const lDescr *descr, bool hash)
    }
 
    lp->changed = false;
+
+#ifdef OBSERVE
+   lObserveAdd(lp, NULL, true);
+#endif
 
    DRETURN(lp);
 }
@@ -1187,6 +1199,10 @@ void lFreeElem(lListElem **ep1)
 
    sge_bitfield_free_data(&(ep->changed));
 
+#ifdef OBSERVE
+   lObserveRemove(*ep1);
+#endif
+
    sge_free(ep1);
    DRETURN_VOID;
 }
@@ -1238,6 +1254,11 @@ void lFreeList(lList **lp)
    if ((*lp)->listname) {
       sge_free(&((*lp)->listname));
    }
+
+#ifdef OBSERVE
+   lObserveRemove(*lp);
+#endif
+
    sge_free(lp);
    DRETURN_VOID;
 }
@@ -1671,6 +1692,10 @@ int lInsertElem(lList *lp, lListElem *ep, lListElem *new)
    lp->nelem++;
    lp->changed = true;
 
+#ifdef OBSERVE
+   lObserveChangeOwner(ep, lp, NULL, NoName);
+#endif
+
    DRETURN(0);
 }
 
@@ -1737,6 +1762,10 @@ int lAppendElem(lList *lp, lListElem *ep)
    lp->nelem++;
    lp->changed = true;
 
+#ifdef OBSERVE
+   lObserveChangeOwner(ep, lp, NULL, NoName);
+#endif
+
    DRETURN(0);
 }
 
@@ -1797,6 +1826,10 @@ int lRemoveElem(lList *lp, lListElem **ep1)
 
    lp->nelem--;
    lp->changed = true;
+
+#ifdef OBSERVE
+   lObserveChangeOwner(ep, NULL, lp, NoName);
+#endif
 
    lFreeElem(ep1);
    DRETURN(0);
@@ -1891,7 +1924,13 @@ lDechainList(lList *source, lList **target, lListElem *ep)
  
    cull_hash_create_hashtables(source);
    cull_hash_create_hashtables(*target);
-   
+
+#ifdef OBSERVE
+   lListElem *elem;
+   for_each(elem, *target) {
+      lObserveChangeOwner(elem, *target, source, NoName);
+   }
+#endif
    
    DRETURN_VOID; 
 }
@@ -1964,6 +2003,10 @@ lListElem *lDechainElem(lList *lp, lListElem *ep)
    lp->nelem--;
    lp->changed = true;
 
+#ifdef OBSERVE 
+   lObserveChangeOwner(ep, NULL, lp, NoName);
+#endif
+
    DRETURN(ep);
 }
 
@@ -2013,6 +2056,10 @@ lListElem *lDechainObject(lListElem *parent, int name)
       /* remember that field changed */
       sge_bitfield_set(&(parent->changed), pos);
    }
+
+#ifdef OBSERVE
+   lObserveChangeOwner(dep, NULL, parent, NoName);
+#endif
 
    DRETURN(dep);
 }

@@ -149,6 +149,17 @@ sge_dstring_allocate(dstring *sb, size_t request)
    }
 }
 
+dstring *sge_dstring_init_dynamic(dstring *sb, size_t size)
+{
+   memset(sb, 0, sizeof(dstring));
+   if (sb != NULL && size > 0) {
+      sge_dstring_allocate(sb, size);
+      return sb;
+   }
+   return NULL;
+}
+
+
 /****** uti/dstring/sge_dstring_append() **************************************
 *  NAME
 *     sge_dstring_append() -- strcat() for dstring's 

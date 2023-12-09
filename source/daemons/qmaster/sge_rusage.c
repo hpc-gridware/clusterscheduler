@@ -396,8 +396,7 @@ sge_write_rusage(dstring *buffer,
     * and if we shall write individual accounting entries or a summary.
     */
    if (lGetString(ja_task, JAT_granted_pe) != NULL) {
-      object_description *object_base = object_type_get_object_description();
-      const lListElem *pe = pe_list_locate(*object_base[SGE_TYPE_PE].list, 
+      const lListElem *pe = pe_list_locate(*object_type_get_master_list(SGE_TYPE_PE), 
                             lGetString(ja_task, JAT_granted_pe));
       do_accounting_summary = pe_do_accounting_summary(pe);
    }
@@ -524,8 +523,7 @@ sge_write_rusage(dstring *buffer,
 
    ar_id = lGetUlong(job, JB_ar);
    if (ar_id != 0) {
-      object_description *object_base = object_type_get_object_description();
-      ar = ar_list_locate(*object_base[SGE_TYPE_AR].list, ar_id);
+      ar = ar_list_locate(*object_type_get_master_list(SGE_TYPE_AR), ar_id);
    }
    
    /*

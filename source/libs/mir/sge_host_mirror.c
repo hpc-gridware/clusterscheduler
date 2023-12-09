@@ -47,7 +47,7 @@
 *
 *  SYNOPSIS
 *     sge_callback_result rqs_update_master_list(object_description 
-*     *object_base, sge_object_type type, sge_event_action action, lListElem 
+*     sge_object_type type, sge_event_action action, lListElem 
 *     *event, void *clientdata) 
 *
 *  FUNCTION
@@ -58,7 +58,6 @@
 *     on the event received.
 *
 *  INPUTS
-*     object_description *object_base - base object
 *     sge_object_type type     - event type
 *     sge_event_action action - action to perform
 *     lListElem *event        - the raw event
@@ -76,7 +75,7 @@
 *     Eventmirror/sge_mirror_update_master_list_host_key()
 *******************************************************************************/
 sge_callback_result
-host_update_master_list(sge_evc_class_t *evc, object_description *object_base, sge_object_type type, 
+host_update_master_list(sge_evc_class_t *evc, sge_object_type type, 
                         sge_event_action action, lListElem *event, void *clientdata)
 {
    lList **list;
@@ -86,7 +85,7 @@ host_update_master_list(sge_evc_class_t *evc, object_description *object_base, s
    const char *key;
 
    DENTER(TOP_LAYER, "host_update_master_list");
-   list = sge_master_list(object_base, type);
+   list = object_type_get_master_list(type);
    list_descr = lGetListDescr(lGetList(event, ET_new_version));
    key_nm = object_type_get_key_nm(type); 
 

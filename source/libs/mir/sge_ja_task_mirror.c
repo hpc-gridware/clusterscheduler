@@ -141,7 +141,7 @@ ja_task_update_master_list_usage(lList *job_list, lListElem *event)
 *     Eventmirror/sge_mirror_update_master_list()
 *******************************************************************************/
 sge_callback_result
-ja_task_update_master_list(sge_evc_class_t *evc, object_description *object_base, sge_object_type type, 
+ja_task_update_master_list(sge_evc_class_t *evc, sge_object_type type, 
                            sge_event_action action, lListElem *event, void *clientdata)
 {
    u_long32 job_id = 0; 
@@ -163,7 +163,7 @@ ja_task_update_master_list(sge_evc_class_t *evc, object_description *object_base
 
    sge_dstring_init(&id_dstring, id_buffer, MAX_STRING_SIZE);
 
-   list = sge_master_list(object_base, SGE_TYPE_JOB); 
+   list = object_type_get_master_list(SGE_TYPE_JOB); 
    
    job_id = lGetUlong(event, ET_intkey);
    ja_task_id = lGetUlong(event, ET_intkey2);

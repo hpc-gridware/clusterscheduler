@@ -43,6 +43,10 @@
 #include "uti/sge_hostname.h"
 #include "uti/sge_parse_num_par.h"
 
+#ifdef OBSERVE
+#   include "cull/cull_observe.h"
+#endif
+
 #include "gdi/sge_gdi.h"
 
 #include "sgeobj/sge_all_listsL.h"
@@ -1249,6 +1253,13 @@ lList **object_type_get_master_list(const sge_object_type type)
       
       if (obj_state->object_base[type].list != NULL) {
          ret = obj_state->object_base[type].list;
+
+#ifdef OBSERVE
+         if (*obj_state->object_base[type].list) {
+            lObserveChangeListType(*obj_state->object_base[type].list, true, obj_state->object_base[type].type_name);
+         }
+#endif
+
       } else {
          ERROR((SGE_EVENT, MSG_OBJECT_NO_LIST_TO_MOD_TYPE_SI, SGE_FUNC, type));
       }
@@ -1258,127 +1269,6 @@ lList **object_type_get_master_list(const sge_object_type type)
    
    DRETURN(ret);
 }
-
-/****** sgeobj/object/sge_master_list() **************************
-*  NAME
-*     sge_master_list() -- get master list for object type
-*
-*  SYNOPSIS
-*     lList** sge_master_list(const object_description *object_base,
-*                             const sge_object_type type) 
-*
-*  FUNCTION
-*     Returns a pointer to the master list holding objects of the 
-*     given type.
-*
-*  INPUTS
-*     const sge_object_type type - the object type 
-*
-*  RESULT
-*     lList** - the corresponding master list, or NULL, if the object 
-*               type has no associated master list
-*
-*  EXAMPLE
-*     object_type_get_master_list(SGE_TYPE_JOB) will return a pointer 
-*     to the Master_Job_List.
-*
-*     object_type_get_master_list(SGE_TYPE_SHUTDOWN) will return NULL,
-*     as this object type has no associated master list.
-*
-*  NOTES
-*
-*  SEE ALSO
-*     sgeobj/object/object_type_get_master_list()
-*     sgeobj/object/object_type_get_name()
-*     sgeobj/object/object_type_get_descr()
-*     sgeobj/object/object_type_get_key_nm()
-*******************************************************************************/
-lList **sge_master_list(const object_description *object_base, const sge_object_type type)
-{
-   lList **ret = NULL;
-
-   DENTER(OBJECT_LAYER, "sge_master_list");
-
-   if (type >= 0 && type < SGE_TYPE_ALL) {
-      
-      if (object_base[type].list != NULL) {
-         ret = object_base[type].list;
-      } else {
-         ERROR((SGE_EVENT, MSG_OBJECT_NO_LIST_TO_MOD_TYPE_SI, SGE_FUNC, type));
-      }
-   } else {
-      ERROR((SGE_EVENT, MSG_OBJECT_INVALID_OBJECT_TYPE_SI, SGE_FUNC, type));
-   }
-   
-   DRETURN(ret);
-}
-
-
-/****** sge_object/object_type_get_object_description() ************************
-*  NAME
-*     object_type_get_object_description() -- gets the master list table
-*
-*  SYNOPSIS
-*     object_description* object_type_get_object_description() 
-*
-*  FUNCTION
-*     ??? 
-*
-*  RESULT
-*     object_description* - the table with all master lists and its information
-*
-*  NOTES
-*     MT-NOTE: object_type_get_object_description() is MT safe 
-*
-*  SEE ALSO
-*     sgeobj/object/object_type_get_master_list()
-*     sgeobj/object/object_type_get_name()
-*     sgeobj/object/object_type_get_descr()
-*     sgeobj/object/object_type_get_key_nm()
-*******************************************************************************/
-object_description *object_type_get_object_description(void)
-{
-   object_description *ret = NULL;
-
-   DENTER(OBJECT_LAYER, "object_type_get_object_description");
-   {
-      GET_SPECIFIC(obj_state_t, obj_state, obj_state_global_init, obj_state_key, 
-                   "object_type_get_object_description");
-
-      ret = obj_state->object_base;
-   } 
-   DRETURN(ret);
-}
-
-/****** sge_object/object_type_get_global_object_description() *****************
-*  NAME
-*     object_type_get_global_object_description() -- grands access to the global 
-*                                                    master lists
-*
-*  SYNOPSIS
-*     object_description* object_type_get_global_object_description(void) 
-*
-*  RESULT
-*     object_description* - the global object description / master lists
-*
-*  NOTES
-*     MT-NOTE: object_type_get_global_object_description() is MT safe 
-*
-*  SEE ALSO
-*     sge_object/object_type_get_global_object_description()
-*
-*******************************************************************************/
-object_description *object_type_get_global_object_description(void)
-{
-   object_description *ret = NULL;
-
-   DENTER(OBJECT_LAYER, "object_type_get_object_description");
-  
-   ret = object_base;
- 
-   DRETURN(ret);
-}
-
 
 bool object_type_commit_master_list(const sge_object_type type, lList **answer_list) 
 {

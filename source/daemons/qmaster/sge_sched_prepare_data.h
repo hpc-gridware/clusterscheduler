@@ -63,43 +63,43 @@ void
 ensure_valid_what_and_where(sge_where_what_t *where_what);
 
 sge_callback_result
-sge_process_project_event_before(sge_evc_class_t *evc, object_description *object_base, sge_object_type type,
+sge_process_project_event_before(sge_evc_class_t *evc, sge_object_type type,
                                  sge_event_action action, lListElem *event, void *clientdata);
 
 sge_callback_result
-sge_process_schedd_conf_event_before(sge_evc_class_t *evc, object_description *object_base, sge_object_type type,
+sge_process_schedd_conf_event_before(sge_evc_class_t *evc, sge_object_type type,
                                      sge_event_action action, lListElem *event, void *clientdata);
 
 sge_callback_result
-sge_process_schedd_conf_event_after(sge_evc_class_t *evc, object_description *object_base, sge_object_type type,
+sge_process_schedd_conf_event_after(sge_evc_class_t *evc, sge_object_type type,
                                     sge_event_action action, lListElem *event, void *clientdata);
 
 sge_callback_result
-sge_process_job_event_before(sge_evc_class_t *evc, object_description *object_base, sge_object_type type,
+sge_process_job_event_before(sge_evc_class_t *evc, sge_object_type type,
                              sge_event_action action, lListElem *event, void *clientdata);
 
 sge_callback_result
-sge_process_job_event_after(sge_evc_class_t *evc, object_description *object_base, sge_object_type type,
+sge_process_job_event_after(sge_evc_class_t *evc, sge_object_type type,
                             sge_event_action action, lListElem *event, void *clientdata);
 
 sge_callback_result
-sge_process_ja_task_event_before(sge_evc_class_t *evc, object_description *object_base, sge_object_type type,
+sge_process_ja_task_event_before(sge_evc_class_t *evc, sge_object_type type,
                                  sge_event_action action, lListElem *event, void *clientdata);
 
 sge_callback_result
-sge_process_ja_task_event_after(sge_evc_class_t *evc, object_description *object_base, sge_object_type type,
+sge_process_ja_task_event_after(sge_evc_class_t *evc, sge_object_type type,
                                 sge_event_action action, lListElem *event, void *clientdata);
 
 sge_callback_result
-sge_process_global_config_event(sge_evc_class_t *evc, object_description *object_base, sge_object_type type,
+sge_process_global_config_event(sge_evc_class_t *evc, sge_object_type type,
                                 sge_event_action action, lListElem *event, void *clientdata);
 
 sge_callback_result
-sge_process_schedd_monitor_event(sge_evc_class_t *evc, object_description *object_base, sge_object_type type,
+sge_process_schedd_monitor_event(sge_evc_class_t *evc, sge_object_type type,
                                  sge_event_action action, lListElem *event, void *clientdata);
 
 sge_callback_result
-sge_process_userset_event_before(sge_evc_class_t *evc, object_description *object_base,
+sge_process_userset_event_before(sge_evc_class_t *evc, 
                                  sge_object_type type, sge_event_action action, 
                                  lListElem *event, void *clientdata);
 

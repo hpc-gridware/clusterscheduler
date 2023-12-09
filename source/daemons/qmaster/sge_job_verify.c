@@ -89,7 +89,6 @@ sge_job_verify_adjust(sge_gdi_ctx_class_t *ctx, lListElem *jep, lList **alpp,
                       sge_gdi_packet_class_t *packet, sge_gdi_task_class_t *task,
                       monitoring_t *monitor)
 {
-   object_description *object_base = object_type_get_object_description();
    int ret = STATUS_OK;
 
    DENTER(TOP_LAYER, "sge_job_verify_adjust");
@@ -279,7 +278,7 @@ sge_job_verify_adjust(sge_gdi_ctx_class_t *ctx, lListElem *jep, lList **alpp,
 
       do {
          jid = sge_get_job_number(ctx, monitor);
-      } while (job_list_locate(*object_base[SGE_TYPE_JOB].list, jid));      
+      } while (job_list_locate(*object_type_get_master_list(SGE_TYPE_JOB), jid));      
       lSetUlong(jep, JB_job_number, jid);
       lSetUlong(jep, JB_submission_time, sge_get_gmt());
    }
@@ -295,7 +294,7 @@ sge_job_verify_adjust(sge_gdi_ctx_class_t *ctx, lListElem *jep, lList **alpp,
    }
 
    /* check max_jobs */
-   if (job_list_register_new_job(*object_base[SGE_TYPE_JOB].list, mconf_get_max_jobs(), 0)) {
+   if (job_list_register_new_job(*object_type_get_master_list(SGE_TYPE_JOB), mconf_get_max_jobs(), 0)) {
       INFO((SGE_EVENT, MSG_JOB_ALLOWEDJOBSPERCLUSTER, sge_u32c(mconf_get_max_jobs())));
       answer_list_add(alpp, SGE_EVENT, STATUS_NOTOK_DOAGAIN, ANSWER_QUALITY_ERROR);
       DRETURN(STATUS_NOTOK_DOAGAIN);      
@@ -316,7 +315,7 @@ sge_job_verify_adjust(sge_gdi_ctx_class_t *ctx, lListElem *jep, lList **alpp,
       lList *xuser_lists = mconf_get_xuser_lists();
 
       if (!sge_has_access_(ruser, lGetString(jep, JB_group), /* read */
-            user_lists, xuser_lists, *object_base[SGE_TYPE_USERSET].list)) {
+            user_lists, xuser_lists, *object_type_get_master_list(SGE_TYPE_USERSET))) {
          ERROR((SGE_EVENT, MSG_JOB_NOPERMS_SS, ruser, rhost));
          answer_list_add(alpp, SGE_EVENT, STATUS_EUNKNOWN, ANSWER_QUALITY_ERROR);
          lFreeList(&user_lists);
@@ -334,7 +333,7 @@ sge_job_verify_adjust(sge_gdi_ctx_class_t *ctx, lListElem *jep, lList **alpp,
     * JB_hard/soft_resource_list points to a CE_Type list
     */
    {
-      lList *master_centry_list = *object_base[SGE_TYPE_CENTRY].list;
+      lList *master_centry_list = *object_type_get_master_list(SGE_TYPE_CENTRY);
 
       if (centry_list_fill_request(lGetList(jep, JB_hard_resource_list),
                                    alpp, master_centry_list, false, true,
@@ -386,7 +385,7 @@ sge_job_verify_adjust(sge_gdi_ctx_class_t *ctx, lListElem *jep, lList **alpp,
       if (pe_name) {
          const lListElem *pep;
 
-         pep = pe_list_find_matching(*object_base[SGE_TYPE_PE].list, pe_name);
+         pep = pe_list_find_matching(*object_type_get_master_list(SGE_TYPE_PE), pe_name);
          if (!pep) {
             ERROR((SGE_EVENT, MSG_JOB_PEUNKNOWN_S, pe_name));
             answer_list_add(alpp, SGE_EVENT, STATUS_EUNKNOWN, ANSWER_QUALITY_ERROR);
@@ -430,7 +429,7 @@ sge_job_verify_adjust(sge_gdi_ctx_class_t *ctx, lListElem *jep, lList **alpp,
 
       /* request for non existing ckpt object will be refused */
       if ((ckpt_name != NULL)) {
-         if (!(ckpt_ep = ckpt_list_locate(*object_base[SGE_TYPE_CKPT].list, ckpt_name)))
+         if (!(ckpt_ep = ckpt_list_locate(*object_type_get_master_list(SGE_TYPE_CKPT), ckpt_name)))
             ckpt_err = 1;
          else if (!ckpt_attr) {
             ckpt_attr = sge_parse_checkpoint_attr(lGetString(ckpt_ep, CK_when));
@@ -480,10 +479,10 @@ sge_job_verify_adjust(sge_gdi_ctx_class_t *ctx, lListElem *jep, lList **alpp,
       lListElem *cqueue = NULL;
       int has_permissions = 0;
 
-      for_each (cqueue, *object_base[SGE_TYPE_CQUEUE].list) {
+      for_each (cqueue, *object_type_get_master_list(SGE_TYPE_CQUEUE)) {
          lList *qinstance_list = lGetList(cqueue, CQ_qinstances);
          lListElem *qinstance = NULL;
-         lList *master_userset_list = *object_base[SGE_TYPE_USERSET].list;
+         lList *master_userset_list = *object_type_get_master_list(SGE_TYPE_USERSET);
 
          for_each(qinstance, qinstance_list) {
             if (sge_has_access(ruser, lGetString(jep, JB_group),
@@ -518,7 +517,7 @@ sge_job_verify_adjust(sge_gdi_ctx_class_t *ctx, lListElem *jep, lList **alpp,
 
       /* ensure user exists if enforce_user flag is set */
       if (enforce_user && !strcasecmp(enforce_user, "true") &&
-               !user_list_locate(*object_base[SGE_TYPE_USER].list, ruser)) {
+               !user_list_locate(*object_type_get_master_list(SGE_TYPE_USER), ruser)) {
          ERROR((SGE_EVENT, MSG_JOB_USRUNKNOWN_S, ruser));
          answer_list_add(alpp, SGE_EVENT, STATUS_EUNKNOWN, ANSWER_QUALITY_ERROR);
          sge_free(&enforce_user);
@@ -528,9 +527,9 @@ sge_job_verify_adjust(sge_gdi_ctx_class_t *ctx, lListElem *jep, lList **alpp,
    }
 
    /* set default project */
-   if (!lGetString(jep, JB_project) && ruser && *object_base[SGE_TYPE_USER].list) {
+   if (!lGetString(jep, JB_project) && ruser && *object_type_get_master_list(SGE_TYPE_USER)) {
       lListElem *uep = NULL;
-      if ((uep = user_list_locate(*object_base[SGE_TYPE_USER].list, ruser))) {
+      if ((uep = user_list_locate(*object_type_get_master_list(SGE_TYPE_USER), ruser))) {
          lSetString(jep, JB_project, lGetString(uep, UU_default_project));
       }
    }
@@ -544,7 +543,7 @@ sge_job_verify_adjust(sge_gdi_ctx_class_t *ctx, lListElem *jep, lList **alpp,
    }
 
    /* try to dispatch a department to the job */
-   if (set_department(alpp, jep, *object_base[SGE_TYPE_USERSET].list) != 1) {
+   if (set_department(alpp, jep, *object_type_get_master_list(SGE_TYPE_USERSET)) != 1) {
       /* alpp gets filled by set_department */
       DRETURN(STATUS_EUNKNOWN);
    }
@@ -553,7 +552,7 @@ sge_job_verify_adjust(sge_gdi_ctx_class_t *ctx, lListElem *jep, lList **alpp,
     * If it is a deadline job the user has to be a deadline user
     */
    if (lGetUlong(jep, JB_deadline)) {
-      if (!userset_is_deadline_user(*object_base[SGE_TYPE_USERSET].list, ruser)) {
+      if (!userset_is_deadline_user(*object_type_get_master_list(SGE_TYPE_USERSET), ruser)) {
          ERROR((SGE_EVENT, MSG_JOB_NODEADLINEUSER_S, ruser));
          answer_list_add(alpp, SGE_EVENT, STATUS_EUNKNOWN, ANSWER_QUALITY_ERROR);
          DRETURN(STATUS_EUNKNOWN);
@@ -570,7 +569,7 @@ sge_job_verify_adjust(sge_gdi_ctx_class_t *ctx, lListElem *jep, lList **alpp,
 
          DPRINTF(("job -ar "sge_u32"\n", sge_u32c(ar_id)));
 
-         ar=ar_list_locate(*object_base[SGE_TYPE_AR].list, ar_id);
+         ar=ar_list_locate(*object_type_get_master_list(SGE_TYPE_AR), ar_id);
          if (ar == NULL) {
             ERROR((SGE_EVENT, MSG_JOB_NOAREXISTS_U, sge_u32c(ar_id)));
             answer_list_add(alpp, SGE_EVENT, STATUS_EUNKNOWN, ANSWER_QUALITY_ERROR);

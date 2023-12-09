@@ -282,8 +282,7 @@ static bool read_spooled_data(sge_gdi_ctx_class_t *ctx)
    DRETURN(true);
 }
 
-sge_callback_result spool_event_before(sge_evc_class_t *evc, object_description *object_base, sge_object_type type, sge_event_action action, 
-                       lListElem *event, void *clientdata)
+sge_callback_result spool_event_before(sge_evc_class_t *evc, sge_object_type type, sge_event_action action, lListElem *event, void *clientdata)
 {
    lList *answer_list = NULL;
    lListElem *context, *ep;
@@ -462,7 +461,7 @@ sge_callback_result spool_event_before(sge_evc_class_t *evc, object_description 
    DRETURN(SGE_EMA_OK);
 }
 
-sge_callback_result spool_event_after(sge_evc_class_t *evc, object_description *object_base, sge_object_type type, sge_event_action action, 
+sge_callback_result spool_event_after(sge_evc_class_t *evc, sge_object_type type, sge_event_action action, 
                       lListElem *event, void *clientdata)
 {
    sge_callback_result ret = SGE_EMA_OK;

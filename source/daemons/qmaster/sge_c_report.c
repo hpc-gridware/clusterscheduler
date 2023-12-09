@@ -109,6 +109,36 @@ void sge_c_report(sge_gdi_ctx_class_t *ctx, char *rhost, char *commproc, int id,
       DRETURN_VOID;
    }
 
+#ifdef OBSERVE
+   dstring rep_str = DSTRING_INIT;
+   for_each(report, report_list) {
+      rep_type = lGetUlong(report, REP_type);
+
+      switch (rep_type) {
+      case NUM_REP_REPORT_LOAD:
+         sge_dstring_sprintf_append(&rep_str, " NUM_REP_REPORT_LOAD");
+         break;
+      case NUM_REP_FULL_REPORT_LOAD:
+         sge_dstring_sprintf_append(&rep_str, " NUM_REP_FULL_REPORT_LOAD");
+         break;
+      case NUM_REP_REPORT_CONF: 
+         sge_dstring_sprintf_append(&rep_str, " NUM_REP_REPORT_CONF");
+         break;
+      case NUM_REP_REPORT_PROCESSORS:
+         sge_dstring_sprintf_append(&rep_str, " NUM_REP_REPORT_PROCESSORS");
+         break;
+      case NUM_REP_REPORT_JOB:
+         sge_dstring_sprintf_append(&rep_str, " NUM_REP_REPORT_JOB");
+         break;
+      default:
+         sge_dstring_sprintf_append(&rep_str, " UNKNOWN");
+         break;
+      }
+   }
+   INFO((SGE_EVENT, "REPORT %s (%s)", sge_dstring_get_string(&rep_str), rhost));
+   sge_dstring_free(&rep_str);
+#endif
+
    /* accept reports only from execd's */
    if (strcmp(prognames[EXECD], commproc)) {
       ERROR((SGE_EVENT, MSG_GOTSTATUSREPORTOFUNKNOWNCOMMPROC_S, commproc));

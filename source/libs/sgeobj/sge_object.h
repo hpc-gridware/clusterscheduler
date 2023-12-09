@@ -185,14 +185,8 @@ void obj_init(bool is_global);
 lList **
 object_type_get_master_list(const sge_object_type type);
 
-lList **
-sge_master_list(const object_description *object_base, const sge_object_type type);
-
 bool 
 object_type_commit_master_list(const sge_object_type type, lList **answer_list); 
-
-
-object_description *object_type_get_object_description(void);
 
 bool
 object_type_free_master_list(const sge_object_type type);
@@ -208,9 +202,6 @@ object_type_get_descr(const sge_object_type type);
 
 int
 object_type_get_key_nm(const sge_object_type type);
-
-object_description *
-object_type_get_global_object_description(void);
 
 /* JG: TODO: rename to object_has_descr, make function object_has_type 
              and call this function where possible */

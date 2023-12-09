@@ -51,6 +51,9 @@
 #include "cull/cull_whatP.h"
 #include "cull/cull_lerrnoP.h"
 #include "cull/cull_hash.h"
+#ifdef OBSERVE
+#  include "cull/cull_observe.h"
+#endif
 
 #define CULL_BASIS_LAYER CULL_LAYER
 
@@ -360,6 +363,9 @@ static int _lStr2Nm(const lNameSpace *nsp, const char *str)
 void lInit(const lNameSpace *namev) 
 {
    cull_state_set_name_space(namev);
+#ifdef OBSERVE
+   lObserveInit();
+#endif
 }
 
 /****** cull/multitype/lCountDescr() ****************************************
@@ -1174,6 +1180,7 @@ lList* lGetList(const lListElem *ep, int name)
       incompatibleType2(MSG_CULL_GETLIST_WRONGTYPEFORFIELDXY_SS ,
                         lNm2Str(name), multitypes[mt_get_type(ep->descr[pos].mt)]);
    }
+  
    DRETURN((lList *) ep->cont[pos].glp);
 }
 
@@ -1602,6 +1609,10 @@ int lSetPosInt(lListElem *ep, int pos, int value)
       return -1;
    }
 
+#ifdef OBSERVE
+   lObserveChangeValue(ep, false, lGetPosName(ep->descr, pos));
+#endif
+
    if(ep->cont[pos].i != value) {
       ep->cont[pos].i = value;
 
@@ -1658,6 +1669,10 @@ int lSetInt(lListElem *ep, int name, int value)
       return -1;
    }
 
+#ifdef OBSERVE
+   lObserveChangeValue(ep, false, name);
+#endif
+
    if(value != ep->cont[pos].i) {
       ep->cont[pos].i = value;
 
@@ -1710,7 +1725,11 @@ int lSetPosUlong(lListElem *ep, int pos, lUlong value)
       return -1;
    }
 
-   if(value != ep->cont[pos].ul) {
+#ifdef OBSERVE
+   lObserveChangeValue(ep, ep->descr[pos].ht != NULL, lGetPosName(ep->descr, pos));
+#endif
+
+   if (value != ep->cont[pos].ul) {
       /* remove old hash entry */
       if(ep->descr[pos].ht != NULL) {
          cull_hash_remove(ep, pos);
@@ -1778,12 +1797,16 @@ int lSetUlong(lListElem *ep, int name, lUlong value)
       return -1;
    }
 
-   if(value != ep->cont[pos].ul) {
+#ifdef OBSERVE
+   lObserveChangeValue(ep, ep->descr[pos].ht != NULL, name);
+#endif
+
+   if (value != ep->cont[pos].ul) {
       /* remove old hash entry */
       if(ep->descr[pos].ht != NULL) {
          cull_hash_remove(ep, pos);
       }
-      
+
       ep->cont[pos].ul = value;
 
       /* create entry in hash table */
@@ -1849,6 +1872,10 @@ int lAddUlong(lListElem *ep, int name, lUlong offset)
       DEXIT;
       return -1;
    }
+
+#ifdef OBSERVE
+   lObserveChangeValue(ep, ep->descr[pos].ht != NULL, name);
+#endif
 
    if (offset != 0) {
       /* remove old hash entry */
@@ -1918,7 +1945,11 @@ int lSetUlong64(lListElem *ep, int name, lUlong64 value)
       return -1;
    }
 
-   if(value != ep->cont[pos].ul64) {
+#ifdef OBSERVE
+   lObserveChangeValue(ep, ep->descr[pos].ht != NULL, name);
+#endif
+
+   if (value != ep->cont[pos].ul64) {
       /* remove old hash entry */
       if(ep->descr[pos].ht != NULL) {
          cull_hash_remove(ep, pos);
@@ -1989,6 +2020,10 @@ int lAddUlong64(lListElem *ep, int name, lUlong64 offset)
       DEXIT;
       return -1;
    }
+ 
+#ifdef OBSERVE 
+   lObserveChangeValue(ep, ep->descr[pos].ht != NULL, name);
+#endif
 
    if (offset != 0) {
       /* remove old hash entry */
@@ -2053,7 +2088,11 @@ int lSetPosUlong64(lListElem *ep, int pos, lUlong64 value)
       return -1;
    }
 
-   if(value != ep->cont[pos].ul64) {
+#ifdef OBSERVE
+   lObserveChangeValue(ep, ep->descr[pos].ht != NULL, lGetPosName(ep->descr, pos));
+#endif
+
+   if (value != ep->cont[pos].ul64) {
       /* remove old hash entry */
       if(ep->descr[pos].ht != NULL) {
          cull_hash_remove(ep, pos);
@@ -2136,7 +2175,11 @@ int lSetPosString(lListElem *ep, int pos, const char *value)
       }
    }
 
-   if(changed) {
+#ifdef OBSERVE
+   lObserveChangeValue(ep, ep->descr[pos].ht != NULL, lGetPosName(ep->descr, pos));
+#endif
+
+   if (changed) {
       /* remove old hash entry */
       if(ep->descr[pos].ht != NULL) {
          cull_hash_remove(ep, pos);
@@ -2233,7 +2276,11 @@ int lSetPosHost(lListElem *ep, int pos, const char *value)
       }
    }
 
-   if(changed) {
+#ifdef OBSERVE
+   lObserveChangeValue(ep, ep->descr[pos].ht != NULL, lGetPosName(ep->descr, pos));
+#endif
+
+   if (changed) {
       /* remove old hash entry */
       if(ep->descr[pos].ht != NULL) {
          cull_hash_remove(ep, pos);
@@ -2332,6 +2379,10 @@ int lSetString(lListElem *ep, int name, const char *value)
          changed = strcmp(value, str);
       }
    }
+
+#ifdef OBSERVE
+   lObserveChangeValue(ep, ep->descr[pos].ht != NULL, name);
+#endif
 
    if (changed) {
       /* remove old hash entry */
@@ -2436,7 +2487,12 @@ int lSetHost(lListElem *ep, int name, const char *value)
          changed = strcmp(value, str);
       }
    }
-   if(changed) {
+
+#ifdef OBSERVE
+   lObserveChangeValue(ep, ep->descr[pos].ht != NULL, name);
+#endif
+
+   if (changed) {
       /* remove old hash entry */
       if(ep->descr[pos].ht != NULL) {
          cull_hash_remove(ep, pos);
@@ -2516,8 +2572,13 @@ int lSetPosObject(lListElem *ep, int pos, lListElem *value)
       DEXIT;
       return -1;
    }
-   
-   if(value != ep->cont[pos].obj) {
+ 
+#ifdef OBSERVE 
+   lObserveChangeOwner(ep->cont[pos].obj, NULL, ep, lGetPosName(ep->descr, pos));
+   lObserveChangeOwner(value, ep, NULL, lGetPosName(ep->descr, pos));
+#endif
+
+   if (value != ep->cont[pos].obj) {
       /* free old element */
       if (ep->cont[pos].obj != NULL) {
          lFreeElem(&(ep->cont[pos].obj));
@@ -2578,8 +2639,13 @@ int lSetPosList(lListElem *ep, int pos, lList *value)
       DEXIT;
       return -1;
    }
-   
-   if(value != ep->cont[pos].glp) {
+ 
+#ifdef OBSERVE 
+   lObserveChangeOwner(ep->cont[pos].glp, NULL, ep, lGetPosName(ep->descr, pos));
+   lObserveChangeOwner(value, ep, NULL, lGetPosName(ep->descr, pos));
+#endif
+
+   if (value != ep->cont[pos].glp) {
       /* free old list */
       if (ep->cont[pos].glp) {
          lFreeList(&(ep->cont[pos].glp));
@@ -2642,7 +2708,11 @@ int lXchgString(lListElem *ep, int name, char **str)
       return -1;
    }
 
-   if(*str != ep->cont[pos].str) {
+#ifdef OBSERVE
+   lObserveChangeValue(ep, false, name);
+#endif
+
+   if (*str != ep->cont[pos].str) {
       tmp = ep->cont[pos].str;
       ep->cont[pos].str = *str;
       *str = tmp;
@@ -2702,7 +2772,11 @@ int lXchgList(lListElem *ep, int name, lList **lpp)
       return -1;
    }
 
-   if(*lpp != ep->cont[pos].glp) {
+#ifdef OBSERVE
+   lObserveSwitchOwner(ep->cont[pos].glp, *lpp, ep, NULL, name);
+#endif
+
+   if (*lpp != ep->cont[pos].glp) {
       tmp = ep->cont[pos].glp;
       ep->cont[pos].glp = *lpp;
       *lpp = tmp;
@@ -2755,6 +2829,7 @@ int lSwapList(lListElem *to, int nm_to, lListElem *from, int nm_from)
       DEXIT;
       return -1;
    }
+
 
    DEXIT;
    return 0;
@@ -2811,8 +2886,13 @@ int lSetObject(lListElem *ep, int name, lListElem *value)
       DEXIT;
       return -1;
    }
+
+#ifdef OBSERVE
+   lObserveChangeOwner(ep->cont[pos].obj, NULL, ep, name);
+   lObserveChangeOwner(value, ep, NULL, name);
+#endif
    
-   if(value != ep->cont[pos].obj) {
+   if (value != ep->cont[pos].obj) {
       /* free old element */
       if (ep->cont[pos].obj) {
          lFreeElem(&(ep->cont[pos].obj));
@@ -2880,6 +2960,11 @@ int lSetList(lListElem *ep, int name, lList *value)
       return -1;
    }
 
+#ifdef OBSERVE 
+   lObserveChangeOwner(ep->cont[pos].glp, ep, NULL, name);
+   lObserveChangeOwner(value, ep, NULL, name);
+#endif
+
    if (value != ep->cont[pos].glp) {
       /* free old list */
       lFreeList(&(ep->cont[pos].glp));
@@ -2936,7 +3021,11 @@ int lSetPosFloat(lListElem * ep, int pos, lFloat value)
       return -1;
    }
 
-   if(value != ep->cont[pos].fl) {
+#ifdef OBSERVE
+   lObserveChangeValue(ep, false, lGetPosName(ep->descr, pos));
+#endif
+
+   if (value != ep->cont[pos].fl) {
       ep->cont[pos].fl = value;
 
       /* remember that field changed */
@@ -2991,6 +3080,10 @@ int lSetFloat(lListElem * ep, int name, lFloat value)
       return -1;
    }
 
+#ifdef OBSERVE
+   lObserveChangeValue(ep, false, name);
+#endif
+
    if(value != ep->cont[pos].fl) {
       ep->cont[pos].fl = value;
 
@@ -3043,7 +3136,11 @@ int lSetPosDouble(lListElem *ep, int pos, lDouble value)
       return -1;
    }
 
-   if(value != ep->cont[pos].db) {
+#ifdef OBSERVE
+   lObserveChangeValue(ep, false, lGetPosName(ep->descr, pos));
+#endif
+
+   if (value != ep->cont[pos].db) {
       ep->cont[pos].db = value;
 
       /* remember that field changed */
@@ -3099,7 +3196,11 @@ int lSetDouble(lListElem *ep, int name, lDouble value)
       return -1;
    }
 
-   if(value != ep->cont[pos].db) {
+#ifdef OBSERVE
+   lObserveChangeValue(ep, false, name);
+#endif
+
+   if (value != ep->cont[pos].db) {
       ep->cont[pos].db = value;
 
       /* remember that field changed */
@@ -3155,6 +3256,10 @@ int lAddDouble(lListElem *ep, int name, lDouble value)
       return -1;
    }
 
+#ifdef OBSERVE
+   lObserveChangeValue(ep, false, name);
+#endif
+
    if (value != 0.0) {
       ep->cont[pos].db += value;
       /* remember that field changed */
@@ -3206,8 +3311,12 @@ int lSetPosLong(lListElem *ep, int pos, lLong value)
       DEXIT;
       return -1;
    }
-   
-   if(value != ep->cont[pos].l) {
+  
+#ifdef OBSERVE 
+   lObserveChangeValue(ep, false, lGetPosName(ep->descr, pos));
+#endif
+
+   if (value != ep->cont[pos].l) {
       ep->cont[pos].l = value;
 
       /* remember that field changed */
@@ -3261,8 +3370,12 @@ int lSetLong(lListElem *ep, int name, lLong value)
       DEXIT;
       return -1;
    }
-   
-   if(value != ep->cont[pos].l) {
+  
+#ifdef OBSERVE 
+   lObserveChangeValue(ep, false, name);
+#endif
+
+   if (value != ep->cont[pos].l) {
       ep->cont[pos].l = value;
 
       /* remember that field changed */
@@ -3314,7 +3427,11 @@ int lSetPosBool(lListElem *ep, int pos, lBool value)
       return -1;
    }
 
-   if(value != ep->cont[pos].b) {
+#ifdef OBSERVE
+   lObserveChangeValue(ep, false, lGetPosName(ep->descr, pos));
+#endif
+
+   if (value != ep->cont[pos].b) {
       ep->cont[pos].b = value;
 
       /* remember that field changed */
@@ -3369,7 +3486,11 @@ int lSetBool(lListElem * ep, int name, lBool value)
       return -1;
    }
 
-   if(value != ep->cont[pos].b) {
+#ifdef OBSERVE
+   lObserveChangeValue(ep, false, name);
+#endif
+
+   if (value != ep->cont[pos].b) {
       ep->cont[pos].b = value;
 
       /* remember that field changed */
@@ -3421,7 +3542,11 @@ int lSetPosChar(lListElem *ep, int pos, lChar value)
       return -1;
    }
 
-   if(value != ep->cont[pos].c) {
+#ifdef OBSERVE
+   lObserveChangeValue(ep, false, lGetPosName(ep->descr, pos));
+#endif
+
+   if (value != ep->cont[pos].c) {
       ep->cont[pos].c = value;
 
       /* remember that field changed */
@@ -3476,7 +3601,11 @@ int lSetChar(lListElem * ep, int name, lChar value)
       return -1;
    }
 
-   if(value != ep->cont[pos].c) {
+#ifdef OBSERVE
+   lObserveChangeValue(ep, false, name);
+#endif
+
+   if (value != ep->cont[pos].c) {
       ep->cont[pos].c = value;
 
       /* remember that field changed */
@@ -3528,7 +3657,11 @@ int lSetPosRef(lListElem * ep, int pos, lRef value)
       return -1;
    }
 
-   if(value != ep->cont[pos].ref) {
+#ifdef OBSERVE
+   lObserveChangeValue(ep, false, lGetPosName(ep->descr, pos));
+#endif
+
+   if (value != ep->cont[pos].ref) {
       ep->cont[pos].ref = value;
 
       /* remember that field changed */
@@ -3583,7 +3716,11 @@ int lSetRef(lListElem * ep, int name, lRef value)
       return -1;
    }
 
-   if(value != ep->cont[pos].ref) {
+#ifdef OBSERVE
+   lObserveChangeValue(ep, false, name);
+#endif
+
+   if (value != ep->cont[pos].ref) {
       ep->cont[pos].ref = value;
 
       /* remember that field changed */
@@ -5737,6 +5874,5 @@ int lGetPosName(const lDescr *dp, int pos) {
       return (int) NoName;
    } 
    return dp[pos].nm;
-   
 }
 

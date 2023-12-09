@@ -152,7 +152,7 @@ pe_task_update_master_list_usage(lList *job_list, lListElem *event)
 *     Eventmirror/sge_mirror_update_master_list()
 *******************************************************************************/
 sge_callback_result
-pe_task_update_master_list(sge_evc_class_t *evc, object_description *object_base, sge_object_type type, 
+pe_task_update_master_list(sge_evc_class_t *evc, sge_object_type type, 
                            sge_event_action action, lListElem *event, void *clientdata)
 {
    u_long32 job_id; 
@@ -179,7 +179,7 @@ pe_task_update_master_list(sge_evc_class_t *evc, object_description *object_base
    ja_task_id = lGetUlong(event, ET_intkey2);
    pe_task_id = lGetString(event, ET_strkey);
    
-   job = job_list_locate(*sge_master_list(object_base, SGE_TYPE_JOB), job_id);
+   job = job_list_locate(*object_type_get_master_list(SGE_TYPE_JOB), job_id);
    if (job == NULL) {
       ERROR((SGE_EVENT, MSG_JOB_CANTFINDJOBFORUPDATEIN_SS, 
              job_get_id_string(job_id, 0, NULL, &id_dstring), SGE_FUNC));

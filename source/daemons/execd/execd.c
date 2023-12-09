@@ -167,6 +167,8 @@ int main(int argc, char **argv)
 
    DENTER_MAIN(TOP_LAYER, "execd");
 
+   lInit(nmv);
+
 #if defined(LINUX)
    gen_procList ();
 #endif
@@ -221,8 +223,6 @@ int main(int argc, char **argv)
       CRITICAL((SGE_EVENT, MSG_FILE_REDIRECTFD_I, ret));
       SGE_EXIT((void**)&ctx, 1);
    }
-
-   lInit(nmv);
 
    /* unset XAUTHORITY if set */
    if (getenv("XAUTHORITY") != NULL) {

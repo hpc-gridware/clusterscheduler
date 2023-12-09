@@ -73,7 +73,7 @@
 *     Eventmirror/--Eventmirror
 *******************************************************************************/
 sge_callback_result
-sharetree_update_master_list(sge_evc_class_t *evc, object_description *object_base, sge_object_type type, sge_event_action action,
+sharetree_update_master_list(sge_evc_class_t *evc, sge_object_type type, sge_event_action action,
                              lListElem *event, void *clientdata)
 {
    lList **list = NULL;
@@ -82,7 +82,7 @@ sharetree_update_master_list(sge_evc_class_t *evc, object_description *object_ba
    DENTER(TOP_LAYER, "sharetree_update_master_list");
 
    /* remove old share tree */
-   list = sge_master_list(object_base, type); /*<== need update */
+   list = object_type_get_master_list(type); 
    lFreeList(list);
    
 

@@ -103,7 +103,7 @@ static void qevent_dump_pid_file(void) {
 }
 
 static sge_callback_result 
-print_event(sge_evc_class_t *evc, object_description *object_base, sge_object_type type, 
+print_event(sge_evc_class_t *evc, sge_object_type type, 
             sge_event_action action, lListElem *event, void *clientdata)
 {
    char buffer[1024];
@@ -127,7 +127,7 @@ print_event(sge_evc_class_t *evc, object_description *object_base, sge_object_ty
 
 #ifndef QEVENT_SHOW_ALL
 static sge_callback_result
-print_jatask_event(sge_evc_class_t *evc, object_description *object_base, sge_object_type type, 
+print_jatask_event(sge_evc_class_t *evc, sge_object_type type, 
                    sge_event_action action, lListElem *event, void *clientdata)
 {
    char buffer[1024];
@@ -200,7 +200,7 @@ print_jatask_event(sge_evc_class_t *evc, object_description *object_base, sge_ob
 #endif
 
 static sge_callback_result
-analyze_jatask_event(sge_evc_class_t *evc, object_description *object_base,sge_object_type type, 
+analyze_jatask_event(sge_evc_class_t *evc, sge_object_type type, 
                      sge_event_action action, lListElem *event, void *clientdata)
 {
    char buffer[1024];

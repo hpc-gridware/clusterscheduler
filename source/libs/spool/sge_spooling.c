@@ -45,7 +45,7 @@
 #include "spool/msg_spoollib.h"
 #include "spool/sge_spooling.h"
 
-static lListElem *Default_Spool_Context;
+static lList *Default_Spool_Context_List;
 
 /****** spool/spool_create_context() ************************************
 *  NAME
@@ -560,7 +560,10 @@ bool spool_transaction(lList **answer_list, lListElem *context,
 *******************************************************************************/
 void spool_set_default_context(lListElem *context)
 {
-   Default_Spool_Context = context;
+   if (Default_Spool_Context_List == NULL) {
+      Default_Spool_Context_List = lCreateList(NULL, SPC_Type);
+   }
+   lAppendElem(Default_Spool_Context_List, context);
 }
 
 /****** spool/spool_get_default_context() *******************************
@@ -586,7 +589,7 @@ void spool_set_default_context(lListElem *context)
 lListElem *
 spool_get_default_context(void)
 {
-   return Default_Spool_Context;
+   return lFirst(Default_Spool_Context_List);
 }
 
 /****** spool/spool_context_search_rule() *******************************

@@ -216,7 +216,6 @@ int sge_gdi_add_job(sge_gdi_ctx_class_t *ctx,
    u_long32 end;
    u_long32 step;
    bool job_spooling = ctx->get_job_spooling(ctx);
-   object_description *object_base = object_type_get_object_description();
    cl_thread_settings_t *tc = cl_thread_get_thread_config();
 
    DENTER(TOP_LAYER, "sge_gdi_add_job");
@@ -301,13 +300,13 @@ int sge_gdi_add_job(sge_gdi_ctx_class_t *ctx,
    }
 
    /* add into job list */
-   if (job_list_add_job(object_base[SGE_TYPE_JOB].list, "Master_Job_List", lCopyElem(*jep), 0)) {
+   if (job_list_add_job(object_type_get_master_list(SGE_TYPE_JOB), "Master_Job_List", lCopyElem(*jep), 0)) {
       answer_list_add(alpp, SGE_EVENT, STATUS_EDISK, ANSWER_QUALITY_ERROR);
       DRETURN(STATUS_EUNKNOWN);
    }
 
    /** increase user counter */
-   suser_increase_job_counter(suser_list_add(object_base[SGE_TYPE_SUSER].list, NULL, ruser));
+   suser_increase_job_counter(suser_list_add(object_type_get_master_list(SGE_TYPE_SUSER), NULL, ruser));
 
    /* JG: TODO: error handling:
     * if job can't be spooled, no event is sent (in sge_event_spool)
@@ -3308,7 +3307,6 @@ int verify_suitable_queues(lList **alpp, lListElem *jep, int *trigger, bool is_m
       const char *ckpt_name;
       lList *job_hard_queue_list = lGetList(jep, JB_hard_queue_list);
       const char *pe_name = lGetString(jep, JB_pe);
-      object_description *object_base = object_type_get_object_description();
 
       sge_assignment_t a = SGE_ASSIGNMENT_INIT;
 
@@ -3318,7 +3316,7 @@ int verify_suitable_queues(lList **alpp, lListElem *jep, int *trigger, bool is_m
 
       /* checkpointing */
       if ((ckpt_name=lGetString(jep, JB_checkpoint_name)))
-         if (!(a.ckpt = ckpt_list_locate(*object_base[SGE_TYPE_CKPT].list, ckpt_name)))
+         if (!(a.ckpt = ckpt_list_locate(*object_type_get_master_list(SGE_TYPE_CKPT), ckpt_name)))
             try_it = 0;
 
       /* parallel */
@@ -3328,22 +3326,22 @@ int verify_suitable_queues(lList **alpp, lListElem *jep, int *trigger, bool is_m
 
          if (ar_id != 0) {
             lListElem *ar = NULL; 
-            ar = ar_list_locate(*object_base[SGE_TYPE_AR].list, ar_id);
+            ar = ar_list_locate(*object_type_get_master_list(SGE_TYPE_AR), ar_id);
             if (ar != NULL) {
                ar_granted_slots = lGetList(ar, AR_granted_slots);
             }
          }
 
-         a.host_list        = *object_base[SGE_TYPE_EXECHOST].list;
-         a.centry_list      = *object_base[SGE_TYPE_CENTRY].list;
-         a.acl_list         = *object_base[SGE_TYPE_USERSET].list;
-         a.hgrp_list        = *object_base[SGE_TYPE_HGROUP].list;
+         a.host_list        = *object_type_get_master_list(SGE_TYPE_EXECHOST);
+         a.centry_list      = *object_type_get_master_list(SGE_TYPE_CENTRY);
+         a.acl_list         = *object_type_get_master_list(SGE_TYPE_USERSET);
+         a.hgrp_list        = *object_type_get_master_list(SGE_TYPE_HGROUP);
          if (lGetUlong(jep, JB_ar) == 0) {
-            a.rqs_list         = *object_base[SGE_TYPE_RQS].list;
+            a.rqs_list         = *object_type_get_master_list(SGE_TYPE_RQS);
          } else {
-            a.ar_list         = *object_base[SGE_TYPE_AR].list;
+            a.ar_list         = *object_type_get_master_list(SGE_TYPE_AR);
          }
-         a.gep              = host_list_locate(*object_base[SGE_TYPE_EXECHOST].list, SGE_GLOBAL_NAME);
+         a.gep              = host_list_locate(*object_type_get_master_list(SGE_TYPE_EXECHOST), SGE_GLOBAL_NAME);
          a.start            = DISPATCH_TIME_NOW;
          /* in reservation scheduling mode a non-zero duration always must be defined */
          job_get_duration(&a.duration, jep);
@@ -3369,7 +3367,7 @@ int verify_suitable_queues(lList **alpp, lListElem *jep, int *trigger, bool is_m
             sconf_set_qs_state(QS_STATE_EMPTY);
          }
 
-         for_each(cqueue, *object_base[SGE_TYPE_CQUEUE].list) {
+         for_each(cqueue, *object_type_get_master_list(SGE_TYPE_CQUEUE)) {
             const char *cqname = lGetString(cqueue, CQ_name);
             lList *qinstance_list = lGetList(cqueue, CQ_qinstances);
             lListElem *qinstance;
@@ -3444,7 +3442,7 @@ int verify_suitable_queues(lList **alpp, lListElem *jep, int *trigger, bool is_m
 
          /* check if this job can be actually scheduled */
          if (pe_name) {
-            sge_select_parallel_environment(&a, *object_base[SGE_TYPE_PE].list);
+            sge_select_parallel_environment(&a, *object_type_get_master_list(SGE_TYPE_PE));
          } else {
             sge_sequential_assignment(&a);
          }
@@ -4216,14 +4214,13 @@ job_verify_project(const lListElem *job, lList **alpp,
    int ret = STATUS_OK;
    const char *project = lGetString(job, JB_project);
    lList* projects = mconf_get_projects();
-   object_description *object_base = object_type_get_object_description();
 
    DENTER(TOP_LAYER, "job_verify_project");
 
    /* job requests a project, verify existance, access rights, ... */
    if (project != NULL) {
       /* make sure the requested project exists at all */
-      lListElem *pep = prj_list_locate(*object_base[SGE_TYPE_PROJECT].list, project);
+      lListElem *pep = prj_list_locate(*object_type_get_master_list(SGE_TYPE_PROJECT), project);
       if (pep == NULL) {
          ERROR((SGE_EVENT, MSG_JOB_PRJUNKNOWN_S, project));
          answer_list_add(alpp, SGE_EVENT, STATUS_EUNKNOWN, ANSWER_QUALITY_ERROR);
@@ -4235,7 +4232,7 @@ job_verify_project(const lListElem *job, lList **alpp,
          if (!sge_has_access_(user, group, 
                               lGetList(pep, PR_acl), 
                               lGetList(pep, PR_xacl), 
-                              *object_base[SGE_TYPE_USERSET].list)) {
+                              *object_type_get_master_list(SGE_TYPE_USERSET))) {
             ERROR((SGE_EVENT, MSG_SGETEXT_NO_ACCESS2PRJ4USER_SS,
                      project, user));
             answer_list_add(alpp, SGE_EVENT, STATUS_EUNKNOWN, ANSWER_QUALITY_ERROR);

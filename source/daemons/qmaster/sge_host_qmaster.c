@@ -107,25 +107,21 @@ static int attr_mod_threshold(sge_gdi_ctx_class_t *ctx, lList **alpp, lListElem 
 void 
 host_initalitze_timer(void)
 {
-   object_description *object_base = NULL;
-
    DENTER(TOP_LAYER, "host_initalitze_timer");
 
-   object_base = object_type_get_object_description();
-
    /* initiate timer for all hosts because they start in 'unknown' state */
-   if (*object_base[SGE_TYPE_EXECHOST].list) {
+   if (*object_type_get_master_list(SGE_TYPE_EXECHOST)) {
       lListElem *host               = NULL;
       lListElem *global_host_elem   = NULL;
       lListElem *template_host_elem = NULL;
 
       /* get "global" element pointer */
-      global_host_elem   = host_list_locate(*object_base[SGE_TYPE_EXECHOST].list, SGE_GLOBAL_NAME);
+      global_host_elem   = host_list_locate(*object_type_get_master_list(SGE_TYPE_EXECHOST), SGE_GLOBAL_NAME);
 
       /* get "template" element pointer */
-      template_host_elem = host_list_locate(*object_base[SGE_TYPE_EXECHOST].list, SGE_TEMPLATE_NAME);
+      template_host_elem = host_list_locate(*object_type_get_master_list(SGE_TYPE_EXECHOST), SGE_TEMPLATE_NAME);
       
-      for_each(host, *object_base[SGE_TYPE_EXECHOST].list) {
+      for_each(host, *object_type_get_master_list(SGE_TYPE_EXECHOST)) {
          if ((host != global_host_elem) && (host != template_host_elem)) {
             reschedule_add_additional_time(load_report_interval(host));
             reschedule_unknown_trigger(host);
@@ -425,8 +421,6 @@ int host_mod(sge_gdi_ctx_class_t *ctx, lList **alpp, lListElem *new_host, lListE
    bool changed = false;
    bool update_qversion = false;
 
-   object_description *object_base = object_type_get_object_description();
-
    DENTER(TOP_LAYER, "host_mod");
 
    nm = object->key_nm;
@@ -503,7 +497,7 @@ int host_mod(sge_gdi_ctx_class_t *ctx, lList **alpp, lListElem *new_host, lListE
          DPRINTF(("got new EH_prj\n"));
          /* check prj list */
          if (verify_project_list(alpp, lGetList(ep, EH_prj),
-                  *object_base[SGE_TYPE_PROJECT].list, "projects",
+                  *object_type_get_master_list(SGE_TYPE_PROJECT), "projects",
                   object->object_name, host)!=STATUS_OK) {
             goto ERROR;
          }
@@ -520,7 +514,7 @@ int host_mod(sge_gdi_ctx_class_t *ctx, lList **alpp, lListElem *new_host, lListE
          DPRINTF(("got new EH_xprj\n"));
          /* check xprj list */
          if (verify_project_list(alpp, lGetList(ep, EH_xprj),
-                  *object_base[SGE_TYPE_PROJECT].list, "xprojects",
+                  *object_type_get_master_list(SGE_TYPE_PROJECT), "xprojects",
                   object->object_name, host)!=STATUS_OK) {
             goto ERROR;
          }
@@ -551,7 +545,7 @@ int host_mod(sge_gdi_ctx_class_t *ctx, lList **alpp, lListElem *new_host, lListE
          /* check if all report_variables are valid complex variables */
          for_each(var, lGetList(ep, EH_report_variables)) {
             const char *name = lGetString(var, STU_name);
-            if (centry_list_locate(*object_base[SGE_TYPE_CENTRY].list, name) == NULL) {
+            if (centry_list_locate(*object_type_get_master_list(SGE_TYPE_CENTRY), name) == NULL) {
                ERROR((SGE_EVENT, MSG_SGETEXT_UNKNOWN_RESOURCE_S, name));
                answer_list_add(alpp, SGE_EVENT, STATUS_EUNKNOWN, ANSWER_QUALITY_ERROR);
                goto ERROR;

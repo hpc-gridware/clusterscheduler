@@ -97,7 +97,6 @@ int sge_mod_sharetree(sge_gdi_ctx_class_t *ctx,
    int prev_version;
    int adding; 
    lList *found = NULL;
-   object_description *object_base = object_type_get_object_description();
 
    DENTER(TOP_LAYER, "sge_mod_sharetree");
 
@@ -109,8 +108,8 @@ int sge_mod_sharetree(sge_gdi_ctx_class_t *ctx,
       return STATUS_EUNKNOWN;
    }
 
-   ret = check_sharetree(alpp, ep, *object_base[SGE_TYPE_USER].list, 
-                         *object_base[SGE_TYPE_PROJECT].list, 
+   ret = check_sharetree(alpp, ep, *object_type_get_master_list(SGE_TYPE_USER), 
+                         *object_type_get_master_list(SGE_TYPE_PROJECT), 
                          NULL, &found);
    lFreeList(&found);
    if (ret) {

@@ -391,7 +391,6 @@ send_slave_jobs_wc(sge_gdi_ctx_class_t *ctx, lListElem *jep,
    int ret = 0;
    int failed = CL_RETVAL_OK;
 
-   object_description *object_base = object_type_get_object_description();
    const char *sge_root = ctx->get_sge_root(ctx);
    bool simulate_execd = mconf_get_simulate_execds();
 
@@ -412,7 +411,7 @@ send_slave_jobs_wc(sge_gdi_ctx_class_t *ctx, lListElem *jep,
          continue;
       }
 
-      if (!(hep = host_list_locate(*object_base[SGE_TYPE_EXECHOST].list, lGetHost(gdil_ep, JG_qhostname)))) {
+      if (!(hep = host_list_locate(*object_type_get_master_list(SGE_TYPE_EXECHOST), lGetHost(gdil_ep, JG_qhostname)))) {
          ret = -1;   
          break;
       }
@@ -661,7 +660,6 @@ void sge_job_resend_event_handler(sge_gdi_ctx_class_t *ctx, te_event_t anEvent, 
    time_t now;
    u_long32 jobid = te_get_first_numeric_key(anEvent);
    u_long32 jataskid = te_get_second_numeric_key(anEvent);
-   object_description *object_base = object_type_get_object_description();
 
    DENTER(TOP_LAYER, "sge_job_resend_event_handler");
    
@@ -750,7 +748,7 @@ void sge_job_resend_event_handler(sge_gdi_ctx_class_t *ctx, te_event_t anEvent, 
          return;
       }
 
-      if (!(hnm=lGetHost(mqep, QU_qhostname)) || !(hep = host_list_locate(*object_base[SGE_TYPE_EXECHOST].list, hnm)))
+      if (!(hnm=lGetHost(mqep, QU_qhostname)) || !(hep = host_list_locate(*object_type_get_master_list(SGE_TYPE_EXECHOST), hnm)))
       {
          ERROR((SGE_EVENT, MSG_JOB_NOHOST4TJ_SUU, hnm, sge_u32c(jobid), sge_u32c(jataskid)));
          lDelElemUlong(&jatasks, JAT_task_number, jataskid);
@@ -768,7 +766,7 @@ void sge_job_resend_event_handler(sge_gdi_ctx_class_t *ctx, te_event_t anEvent, 
       }
 
       if (lGetString(jatep, JAT_granted_pe)) {
-         if (!(pe = pe_list_locate(*object_base[SGE_TYPE_PE].list, lGetString(jatep, JAT_granted_pe)))) {
+         if (!(pe = pe_list_locate(*object_type_get_master_list(SGE_TYPE_PE), lGetString(jatep, JAT_granted_pe)))) {
             ERROR((SGE_EVENT, MSG_JOB_NOPE4TJ_SUU, lGetString(jep, JB_pe), sge_u32c(jobid), sge_u32c(jataskid)));
             lDelElemUlong(object_type_get_master_list(SGE_TYPE_JOB), JB_job_number, jobid);
             SGE_UNLOCK(LOCK_GLOBAL, LOCK_WRITE);
@@ -918,13 +916,12 @@ void sge_commit_job(sge_gdi_ctx_class_t *ctx,
    u_long32 now = 0;
    const char *session;
    lList *answer_list = NULL;
-   object_description *object_base = object_type_get_object_description();
-   lList *master_cqueue_list = *object_base[SGE_TYPE_CQUEUE].list;
-   lList *master_exechost_list = *object_base[SGE_TYPE_EXECHOST].list;
-   lList *master_centry_list = *object_base[SGE_TYPE_CENTRY].list;
-   lList *master_userset_list = *object_base[SGE_TYPE_USERSET].list;
-   lList *master_hgroup_list = *object_base[SGE_TYPE_HGROUP].list;
-   lList *master_rqs_list = *object_base[SGE_TYPE_RQS].list;
+   lList *master_cqueue_list = *object_type_get_master_list(SGE_TYPE_CQUEUE);
+   lList *master_exechost_list = *object_type_get_master_list(SGE_TYPE_EXECHOST);
+   lList *master_centry_list = *object_type_get_master_list(SGE_TYPE_CENTRY);
+   lList *master_userset_list = *object_type_get_master_list(SGE_TYPE_USERSET);
+   lList *master_hgroup_list = *object_type_get_master_list(SGE_TYPE_HGROUP);
+   lList *master_rqs_list = *object_type_get_master_list(SGE_TYPE_RQS);
    lList *gdil = lGetList(jatep, JAT_granted_destin_identifier_list);
    lListElem *rqs = NULL;
    lListElem *ep = NULL;
@@ -949,7 +946,7 @@ void sge_commit_job(sge_gdi_ctx_class_t *ctx,
    case COMMIT_ST_SENT:
    {
       bool master_task = true;
-      lList *master_ar_list = *object_base[SGE_TYPE_AR].list;
+      lList *master_ar_list = *object_type_get_master_list(SGE_TYPE_AR);
 
       lSetUlong(jatep, JAT_state, JRUNNING);
       lSetUlong(jatep, JAT_status, JTRANSFERING);
@@ -1095,7 +1092,7 @@ void sge_commit_job(sge_gdi_ctx_class_t *ctx,
          const char *pe_name = lGetString(jep, JB_pe);      
 
          if (pe_name) {
-            lListElem *pe = pe_list_locate(*object_base[SGE_TYPE_PE].list, pe_name);
+            lListElem *pe = pe_list_locate(*object_type_get_master_list(SGE_TYPE_PE), pe_name);
             lListElem *granted_queue;
 
             if (pe && lGetBool(pe, PE_control_slaves)) { 
@@ -1513,14 +1510,13 @@ static void sge_clear_granted_resources(sge_gdi_ctx_class_t *ctx,
    lListElem *ep;
    lList *answer_list = NULL;
    u_long32 now;
-   object_description *object_base = object_type_get_object_description();
-   lList *master_cqueue_list = *object_base[SGE_TYPE_CQUEUE].list;
-   lList *master_centry_list = *object_base[SGE_TYPE_CENTRY].list;
-   lList *master_userset_list = *object_base[SGE_TYPE_USERSET].list;
-   lList *master_hgroup_list = *object_base[SGE_TYPE_HGROUP].list;
-   lList *master_exechost_list = *object_base[SGE_TYPE_EXECHOST].list;
-   lList *master_rqs_list = *object_base[SGE_TYPE_RQS].list;
-   lList *master_ar_list = *object_base[SGE_TYPE_AR].list;
+   lList *master_cqueue_list = *object_type_get_master_list(SGE_TYPE_CQUEUE);
+   lList *master_centry_list = *object_type_get_master_list(SGE_TYPE_CENTRY);
+   lList *master_userset_list = *object_type_get_master_list(SGE_TYPE_USERSET);
+   lList *master_hgroup_list = *object_type_get_master_list(SGE_TYPE_HGROUP);
+   lList *master_exechost_list = *object_type_get_master_list(SGE_TYPE_EXECHOST);
+   lList *master_rqs_list = *object_type_get_master_list(SGE_TYPE_RQS);
+   lList *master_ar_list = *object_type_get_master_list(SGE_TYPE_AR);
    lListElem *rqs = NULL;
    lListElem *global_host_ep = NULL;
    bool master_task = true;
@@ -1622,7 +1618,7 @@ static void sge_clear_granted_resources(sge_gdi_ctx_class_t *ctx,
    /* free granted resources of the parallel environment */
    if (lGetString(ja_task, JAT_granted_pe)) {
       if (incslots) {
-         lListElem *pe = pe_list_locate(*object_base[SGE_TYPE_PE].list, 
+         lListElem *pe = pe_list_locate(*object_type_get_master_list(SGE_TYPE_PE), 
                                         lGetString(ja_task, JAT_granted_pe));
 
          if (!pe) {
@@ -1661,7 +1657,6 @@ static void reduce_queue_limit(const lList* master_centry_list, lListElem *qep,
 {
    const char *s = NULL;
    lListElem *res = NULL;
-   object_description *object_base = object_type_get_object_description();
 
    DENTER(BASIS_LAYER, "reduce_queue_limit");
 
@@ -1674,9 +1669,9 @@ static void reduce_queue_limit(const lList* master_centry_list, lListElem *qep,
       if ((dcep=centry_list_locate(master_centry_list, rlimit_name))
                && lGetUlong(dcep, CE_consumable))
          if ( lGetSubStr(qep, CE_name, rlimit_name, QU_consumable_config_list) ||
-              lGetSubStr(host_list_locate(*object_base[SGE_TYPE_EXECHOST].list, lGetHost(qep, QU_qhostname)),
+              lGetSubStr(host_list_locate(*object_type_get_master_list(SGE_TYPE_EXECHOST), lGetHost(qep, QU_qhostname)),
                      CE_name, rlimit_name, EH_consumable_config_list) ||
-              lGetSubStr(host_list_locate(*object_base[SGE_TYPE_EXECHOST].list, SGE_GLOBAL_NAME),
+              lGetSubStr(host_list_locate(*object_type_get_master_list(SGE_TYPE_EXECHOST), SGE_GLOBAL_NAME),
                      CE_name, rlimit_name, EH_consumable_config_list))
 
             /* managed at queue level, managed at host level or managed at global level */

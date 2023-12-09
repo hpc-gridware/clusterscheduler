@@ -126,7 +126,6 @@ bool ar_validate(lListElem *ar, lList **alpp, bool in_master, bool is_spool)
    u_long32 end_time;
    u_long32 duration;
    u_long32 now = sge_get_gmt();
-   object_description *object_base = object_type_get_object_description();
    
    DENTER(TOP_LAYER, "ar_validate");
 
@@ -201,7 +200,7 @@ bool ar_validate(lListElem *ar, lList **alpp, bool in_master, bool is_spool)
 
          ckpt_name = lGetString(ar, AR_checkpoint_name);
          if (ckpt_name != NULL) {
-            lList *master_ckpt_list = *object_base[SGE_TYPE_CKPT].list;
+            lList *master_ckpt_list = *object_type_get_master_list(SGE_TYPE_CKPT);
             lListElem *ckpt_ep = ckpt_list_locate(master_ckpt_list, ckpt_name);
             if (!ckpt_ep) {
                ERROR((SGE_EVENT, MSG_JOB_CKPTUNKNOWN_S, ckpt_name));
@@ -212,7 +211,7 @@ bool ar_validate(lListElem *ar, lList **alpp, bool in_master, bool is_spool)
       }
       /*   AR_resource_list, SGE_LIST */
       {
-         lList *master_centry_list = *object_base[SGE_TYPE_CENTRY].list;
+         lList *master_centry_list = *object_type_get_master_list(SGE_TYPE_CENTRY);
 
          if (centry_list_fill_request(lGetList(ar, AR_resource_list),
                                       alpp, master_centry_list, false, true,
@@ -249,7 +248,7 @@ bool ar_validate(lListElem *ar, lList **alpp, bool in_master, bool is_spool)
          pe_name = lGetString(ar, AR_pe);
          if (pe_name) {
             const lListElem *pep;
-            pep = pe_list_find_matching(*object_base[SGE_TYPE_PE].list, pe_name);
+            pep = pe_list_find_matching(*object_type_get_master_list(SGE_TYPE_PE), pe_name);
             if (!pep) {
                ERROR((SGE_EVENT, MSG_JOB_PEUNKNOWN_S, pe_name));
                answer_list_add(alpp, SGE_EVENT, STATUS_EUNKNOWN, ANSWER_QUALITY_ERROR);

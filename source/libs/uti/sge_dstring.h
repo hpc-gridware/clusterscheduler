@@ -70,6 +70,7 @@ typedef struct {
 
 /* DSTRING_INIT counterpart when static buffers are wrapped with dstring */
 void sge_dstring_init(dstring *sb, char *buffer, size_t size);
+dstring *sge_dstring_init_dynamic(dstring *sb, size_t size);
 
 const char* sge_dstring_append(dstring *sb, const char *a);
 const char* sge_dstring_append_dstring(dstring *sb, const dstring *a);
