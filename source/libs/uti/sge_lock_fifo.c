@@ -40,7 +40,7 @@
 #include "uti/msg_lcklib.h"
 #include "uti/sge_rmon.h"
 
-#define FIFO_LOCK_QUEUE_LENGTH 64 
+#define FIFO_LOCK_QUEUE_LENGTH 128 
 
 /****** lib/lock/sge_fifo_lock_init() *****************************************
 *  NAME

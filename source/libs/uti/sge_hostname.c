@@ -290,7 +290,6 @@ static int matches_addr(struct hostent *he, char *addr);
 static host *sge_host_search_pred_alias(host *h);
 
 static int matches_name(struct hostent *he, const char *name);    
-static void sge_host_delete(host *h);
 
 /* this globals are used for profiling */
 unsigned long gethostbyname_calls = 0;
@@ -855,49 +854,6 @@ struct hostent *sge_gethostbyaddr(const struct in_addr *addr, int* system_error_
 
    DEXIT;
    return he;
-}
-
-
-/****** uti/hostname/sge_host_delete() *****************************************
-*  NAME
-*     sge_host_delete() -- delete host in host list with all aliases 
-*
-*  SYNOPSIS
-*     static void sge_host_delete(host *h) 
-*
-*  INPUTS
-*     host *h - host to be deleted
-*
-*  NOTES
-*     MT-NOTE: sge_host_delete() is not MT safe due to access to global variable
-*
-*******************************************************************************/
-static void sge_host_delete(host *h) 
-{
-   host *last = NULL, *hl = hostlist;
-   host *predalias, *nextalias;
-
-   if (!h)
-      return;
-
-   predalias = sge_host_search_pred_alias(h);
-   nextalias = h->alias;
-
-   while (hl && hl != h) {
-      last = hl;
-      hl = hl->next;
-   }
-   if (hl) {
-      if (last)
-         last->next = hl->next;
-      else
-         hostlist = hostlist->next;
-   }
-   sge_strafree(&(h->he.h_aliases));
-   sge_strafree(&(h->he.h_addr_list));
-   sge_free(&h);
-   sge_host_delete(predalias);
-   sge_host_delete(nextalias);
 }
 
 /****** uti/hostname/sge_host_search_pred_alias() ******************************

@@ -69,6 +69,7 @@
 #include "uti/sge_lock.h"
 #include "uti/sge_rmon.h"
 #include "uti/sge_hostname.h"
+#include "uti/sge_fgl.h"
 #include "uti/sge_log.h"
 #include "uti/sge_stdlib.h"
 #include "uti/sge_string.h"
@@ -598,6 +599,7 @@ sge_gdi_ctx_setup(sge_gdi_ctx_class_t *thiz, int prog_number, const char* compon
    bootstrap_mt_init();
    sc_mt_init();
    uidgid_mt_init();
+   fgl_mt_init();
    path_mt_init();
    
 
