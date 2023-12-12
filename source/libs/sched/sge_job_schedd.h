@@ -100,15 +100,15 @@ lList *filter_max_running_1step(lList *pending_jobs, lList *running_jobs, lList 
 
 lList *filter_max_running(lList *pending_jobs, lList *jct_list, int max_jobs, int elem);
 
-int nslots_granted(lList *granted, const char *qhostname);
+int nslots_granted(const lList *granted, const char *qhostname);
 
 int active_subtasks(lListElem *job, const char *qname);
 
-int active_nslots_granted(lListElem *job, lList *granted, const char *qhostname);
+int active_nslots_granted(lListElem *job, const lList *granted, const char *qhostname);
 
 lListElem *explicit_job_request(lListElem *jep, const char *name);
 
-int sge_granted_slots(lList *gdil);
+int sge_granted_slots(const lList *gdil);
 
 const char *get_name_of_split_value(int value);
 

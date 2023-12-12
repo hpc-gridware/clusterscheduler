@@ -84,10 +84,10 @@ static char *Static_Conf_Entries[] = { "execd_spool_dir", NULL };
 
 static int check_config(lList **alpp, lListElem *conf);
 static int do_mod_config(sge_gdi_ctx_class_t *ctx, char *aConfName, lListElem *anOldConf, lListElem *aNewConf, lList**anAnswer);
-static lListElem* is_reprioritize_missing(lList *theOldConfEntries, lList *theNewConfEntries);
-static int check_static_conf_entries(lList *theOldConfEntries, lList *theNewConfEntries, lList **anAnswer);
+static lListElem* is_reprioritize_missing(const lList *theOldConfEntries, const lList *theNewConfEntries);
+static int check_static_conf_entries(const lList *theOldConfEntries, const lList *theNewConfEntries, lList **anAnswer);
 static int exchange_conf_by_name(sge_gdi_ctx_class_t *ctx, char *aConfName, lListElem *anOldConf, lListElem *aNewConf, lList**anAnswer);
-static bool has_reschedule_unknown_change(lList *theOldConfEntries, lList *theNewConfEntries);
+static bool has_reschedule_unknown_change(const lList *theOldConfEntries, const lList *theNewConfEntries);
 static int do_add_config(sge_gdi_ctx_class_t *ctx, char *aConfName, lListElem *aConf, lList**anAnswer);
 static int remove_conf_by_name(char *aConfName);
 static lListElem *get_entry_from_conf(lListElem *aConf, const char *anEntryName);
@@ -98,7 +98,7 @@ static u_long32 sge_get_config_version_for_host(const char* aName);
  * This is the bootstrap function for the configuration module. It does populate
  * the list with the cluster configuration.
  */
-int sge_read_configuration(sge_gdi_ctx_class_t *ctx, lListElem *aSpoolContext, lList **config_list, lList *anAnswer)
+int sge_read_configuration(sge_gdi_ctx_class_t *ctx, const lListElem *aSpoolContext, lList **config_list, lList *anAnswer)
 {
    lListElem *local = NULL;
    lListElem *global = NULL;
@@ -121,11 +121,11 @@ int sge_read_configuration(sge_gdi_ctx_class_t *ctx, lListElem *aSpoolContext, l
     *       for the first release after Urubu.
     */
    {
-      lListElem *global = lGetElemHost(*config_list, CONF_name, "global");
+      lListElem *global = lGetElemHostRW(*config_list, CONF_name, "global");
 
       if (global != NULL) {
-         lList *entries = lGetList(global, CONF_entries);
-         lListElem *jsv_url = lGetElemStr(entries, CF_name, "jsv_url");
+         const lList *entries = lGetList(global, CONF_entries);
+         lListElem *jsv_url = lGetElemStrRW(entries, CF_name, "jsv_url");
 
          if (jsv_url == NULL) {
             jsv_url = lAddSubStr(global, CF_name, "jsv_url", CONF_entries, CF_Type);
@@ -143,11 +143,11 @@ int sge_read_configuration(sge_gdi_ctx_class_t *ctx, lListElem *aSpoolContext, l
     *       script for the first release after Urubu.
     */
    {
-      lListElem *global = lGetElemHost(*config_list, CONF_name, "global");
+      lListElem *global = lGetElemHostRW(*config_list, CONF_name, "global");
 
       if (global != NULL) {
-         lList *entries = lGetList(global, CONF_entries);
-         lListElem *jsv_url = lGetElemStr(entries, CF_name, "jsv_allowed_mod");
+         const lList *entries = lGetList(global, CONF_entries);
+         lListElem *jsv_url = lGetElemStrRW(entries, CF_name, "jsv_allowed_mod");
 
          if (jsv_url == NULL) {
             jsv_url = lAddSubStr(global, CF_name, "jsv_allowed_mod", CONF_entries, CF_Type);
@@ -636,7 +636,7 @@ static int check_config(lList **alpp, lListElem *conf)
  *
  * 'aHost' is of type 'EH_Type', 'aConf' is of type 'CONF_Type'.
  */
-int sge_compare_configuration(lListElem *aHost, lList *aConf)
+int sge_compare_configuration(const lListElem *aHost, const lList *aConf)
 {
    lListElem *conf_entry = NULL;
 
@@ -698,13 +698,8 @@ lListElem *sge_get_configuration_entry_by_name(const char *aHost, const char *an
 
 static lListElem *get_entry_from_conf(lListElem *aConf, const char *anEntryName)
 {
-   lList *entries = NULL;
-   lListElem *elem = NULL;
-   
-   entries = lGetList(aConf, CONF_entries);
-   
-   elem = lGetElemStr(entries, CF_name, anEntryName);
-   
+   const lList *entries = lGetList(aConf, CONF_entries);
+   const lListElem *elem = lGetElemStr(entries, CF_name, anEntryName);
    return lCopyElem(elem);
 }
 
@@ -729,7 +724,7 @@ lList* sge_get_configuration(const lCondition *condition, const lEnumeration *en
 
 static u_long32 sge_get_config_version_for_host(const char* aName)
 {
-   lListElem *conf = NULL;
+   const lListElem *conf = NULL;
    u_long32 version = 0;
    char unique_name[CL_MAXHOSTLEN];
    int ret = -1;
@@ -814,9 +809,9 @@ void sge_set_conf_reprioritize(lListElem *aConf, bool aFlag)
 
    SGE_ASSERT((NULL != aConf));
 
-   entries = lGetList(aConf, CONF_entries);
+   entries = lGetListRW(aConf, CONF_entries);
 
-   ep = lGetElemStr(entries, CF_name, REPRIORITIZE);
+   ep = lGetElemStrRW(entries, CF_name, REPRIORITIZE);
 
    if (NULL == ep) {
       ep = lCreateElem(CF_Type);
@@ -839,14 +834,14 @@ void sge_set_conf_reprioritize(lListElem *aConf, bool aFlag)
  */
 static int do_mod_config(sge_gdi_ctx_class_t *ctx, char *aConfName, lListElem *anOldConf, lListElem *aNewConf, lList**anAnswer)
 {
-   lList *old_entries = NULL;
+   const lList *old_entries = NULL;
    lList *new_entries = NULL;
    lListElem* reprio = NULL;
    
    DENTER(TOP_LAYER, "do_mod_config");
    
    old_entries = lGetList(anOldConf, CONF_entries); 
-   new_entries = lGetList(aNewConf, CONF_entries);
+   new_entries = lGetListRW(aNewConf, CONF_entries);
    
    if ((reprio = is_reprioritize_missing(old_entries, new_entries)) != NULL) {
       lAppendElem(new_entries, reprio);
@@ -868,14 +863,14 @@ static int do_mod_config(sge_gdi_ctx_class_t *ctx, char *aConfName, lListElem *a
 /*
  * Static configuration entries may be changed at runtime with a warning.
  */
-static int check_static_conf_entries(lList *theOldConfEntries, lList *theNewConfEntries, lList **anAnswer)
+static int check_static_conf_entries(const lList *theOldConfEntries, const lList *theNewConfEntries, lList **anAnswer)
 {
    int entry_idx = 0;
    
    DENTER(TOP_LAYER, "check_static_conf_entries");
 
    while (NULL != Static_Conf_Entries[entry_idx]) {
-      lListElem *old_entry, *new_entry = NULL;
+      const lListElem *old_entry, *new_entry = NULL;
       const char *old_value, *new_value = NULL;
       const char *entry_name = Static_Conf_Entries[entry_idx];
       
@@ -909,10 +904,10 @@ static int check_static_conf_entries(lList *theOldConfEntries, lList *theNewConf
  * If 'theOldConfEntries' do contain a reprioritize element and 'theNewConfEntries'
  * do not, return a *COPY* of 'theNewConfEntries' reprioritize element.
  */
-static lListElem* is_reprioritize_missing(lList *theOldConfEntries, lList *theNewConfEntries)
+static lListElem* is_reprioritize_missing(const lList *theOldConfEntries, const lList *theNewConfEntries)
 {
-   lListElem *old_reprio = NULL;
-   lListElem *new_reprio = NULL;
+   const lListElem *old_reprio = NULL;
+   const lListElem *new_reprio = NULL;
    lListElem *res = NULL;
 
    DENTER(TOP_LAYER, "is_reprioritize_missing");
@@ -952,7 +947,7 @@ static int exchange_conf_by_name(sge_gdi_ctx_class_t *ctx, char *aConfName, lLis
 
    SGE_LOCK(LOCK_MASTER_CONF, LOCK_WRITE);
    
-   elem = lGetElemHost(config_list, CONF_name, old_conf_name);
+   elem = lGetElemHostRW(config_list, CONF_name, old_conf_name);
 
    lRemoveElem(config_list, &elem);
    
@@ -967,10 +962,10 @@ static int exchange_conf_by_name(sge_gdi_ctx_class_t *ctx, char *aConfName, lLis
    DRETURN(0);
 }
 
-static bool has_reschedule_unknown_change(lList *theOldConfEntries, lList *theNewConfEntries)
+static bool has_reschedule_unknown_change(const lList *theOldConfEntries, const lList *theNewConfEntries)
 {
-   lListElem *old_elem = NULL;
-   lListElem *new_elem = NULL;
+   const lListElem *old_elem = NULL;
+   const lListElem *new_elem = NULL;
    const char *old_value = NULL;
    const char *new_value = NULL;
    bool res = false;
@@ -1025,7 +1020,7 @@ static int remove_conf_by_name(char *aConfName)
 
    SGE_LOCK(LOCK_MASTER_CONF, LOCK_WRITE);
 
-   elem = lGetElemHost(config_list, CONF_name, aConfName);
+   elem = lGetElemHostRW(config_list, CONF_name, aConfName);
 
    lRemoveElem(config_list, &elem);
 

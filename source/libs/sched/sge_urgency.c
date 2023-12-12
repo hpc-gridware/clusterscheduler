@@ -290,7 +290,7 @@ int sge_job_slot_request(const lListElem *job, const lList *pe_list)
 {
    const char *pe_name;
    const char *urgency_slot_setting; 
-   lList* range_list;
+   const lList* range_list;
    const lListElem *pep;
    int n;
   

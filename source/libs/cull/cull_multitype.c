@@ -1169,7 +1169,7 @@ lListElem *lGetObject(const lListElem *ep, int name)
 *  RESULT
 *     lList* - CULL list pointer 
 ******************************************************************************/
-lList* lGetList(const lListElem *ep, int name) 
+lList* lGetListRW(const lListElem *ep, int name) 
 {
    int pos;
    DENTER(CULL_BASIS_LAYER, "lGetList");
@@ -1182,6 +1182,10 @@ lList* lGetList(const lListElem *ep, int name)
    }
   
    DRETURN((lList *) ep->cont[pos].glp);
+}
+
+const lList* lGetList(const lListElem *ep, int nm) {
+   return lGetListRW(ep, nm);
 }
 
 /****** cull/multitype/lGetOrCreateList() **************************************
@@ -1219,7 +1223,7 @@ lList* lGetOrCreateList(lListElem *ep, int name,
    lList *list = NULL;
 
    if (ep != NULL) {
-      list = lGetList(ep, name);
+      list = lGetListRW(ep, name);
       if (list == NULL) {
          list = lCreateList(list_name, descr);
          lSetList(ep, name, list);
@@ -4155,7 +4159,7 @@ int lDelElemStr(lList **lpp, int nm, const char *str)
    }
 
    /* seek element */
-   ep = lGetElemStr(*lpp, nm, str);
+   ep = lGetElemStrRW(*lpp, nm, str);
    if (ep) {
       lRemoveElem(*lpp, &ep);
       if (lGetNumberOfElem(*lpp) == 0) {
@@ -4204,7 +4208,7 @@ lListElem *lGetSubStr(const lListElem *ep, int nm, const char *str, int snm)
       /* get position of sublist in ep */
       sublist_pos = lGetPosViaElem(ep, snm, SGE_DO_ABORT);
 
-      ret = lGetElemStr(ep->cont[sublist_pos].glp, nm, str);
+      ret = lGetElemStrRW(ep->cont[sublist_pos].glp, nm, str);
    }
 
    DEXIT;
@@ -4230,15 +4234,20 @@ lListElem *lGetSubStr(const lListElem *ep, int nm, const char *str, int snm)
 *     NULL when element was not found or if an error occured
 *     otherwise pointer to element 
 ******************************************************************************/
-lListElem *lGetElemStr(const lList *lp, int nm, const char *str) 
+lListElem *lGetElemStrRW(const lList *lp, int nm, const char *str) 
 {
    const void *iterator = NULL;
    lListElem *ret = NULL;
    DENTER(CULL_LAYER, "lGetElemStr");
    
-   ret = lGetElemStrFirst(lp, nm, str, &iterator);
+   ret = lGetElemStrFirstRW(lp, nm, str, &iterator);
    DRETURN(ret);
 }
+
+const lListElem *lGetElemStr(const lList *lp, int nm, const char *str) {
+   return lGetElemStrRW(lp, nm, str);
+}
+
 
 /****** cull/multitype/lGetElemStrFirst() *************************************
 *  NAME
@@ -4265,8 +4274,7 @@ lListElem *lGetElemStr(const lList *lp, int nm, const char *str)
 *  RESULT
 *     lListElem* - first element or NULL 
 ******************************************************************************/
-lListElem *lGetElemStrFirst(const lList *lp, int nm, const char *str, 
-                            const void **iterator)
+lListElem *lGetElemStrFirstRW(const lList *lp, int nm, const char *str, const void **iterator)
 {
    lListElem *ep;
    int pos; 
@@ -4328,6 +4336,10 @@ lListElem *lGetElemStrFirst(const lList *lp, int nm, const char *str,
    return NULL;
 }
 
+const lListElem *lGetElemStrFirst(const lList *lp, int nm, const char *str, const void **iterator) {
+   return lGetElemStrFirstRW(lp, nm, str, iterator);
+}
+
 /****** cull/multitype/lGetElemStrNext() **************************************
 *  NAME
 *     lGetElemStrNext() -- Get next element with a certain string 
@@ -4354,8 +4366,7 @@ lListElem *lGetElemStrFirst(const lList *lp, int nm, const char *str,
 *  RESULT
 *     lListElem* - next element or NULL
 ******************************************************************************/
-lListElem *lGetElemStrNext(const lList *lp, int nm, const char *str, 
-                           const void **iterator)
+lListElem *lGetElemStrNextRW(const lList *lp, int nm, const char *str, const void **iterator)
 {
    lListElem *ep;
    int pos, data_type;
@@ -4419,6 +4430,10 @@ lListElem *lGetElemStrNext(const lList *lp, int nm, const char *str,
    return NULL;
 }
 
+const lListElem *lGetElemStrNext(const lList *lp, int nm, const char *str, const void **iterator) {
+   return lGetElemStrNextRW(lp, nm, str, iterator);
+}
+
 /****** cull/multitype/lGetElemStrLike() **************************************
 *  NAME
 *     lGetElemStrLike() -- returns element specified by a wildcard 
@@ -4441,7 +4456,7 @@ lListElem *lGetElemStrNext(const lList *lp, int nm, const char *str,
 *     NULL if element was not found or in case of error
 *     otherwise pointer to element 
 ******************************************************************************/
-lListElem *lGetElemStrLike(const lList *lp, int nm, const char *str) 
+lListElem *lGetElemStrLikeRW(const lList *lp, int nm, const char *str) 
 {
    lListElem *ep;
    int pos;
@@ -4494,6 +4509,10 @@ lListElem *lGetElemStrLike(const lList *lp, int nm, const char *str)
 
    DEXIT;
    return NULL;
+}
+
+const lListElem *lGetElemStrLike(const lList *lp, int nm, const char *str) {
+   return lGetElemStrLikeRW(lp, nm, str);
 }
 
 /****** cull/multitype/lAddSubUlong() *****************************************
@@ -4701,7 +4720,7 @@ int lDelElemUlong(lList **lpp, int nm, lUlong val)
    }
 
    /* seek element */
-   ep = lGetElemUlong(*lpp, nm, val);
+   ep = lGetElemUlongRW(*lpp, nm, val);
    if (ep) {
       lRemoveElem(*lpp, &ep);
       if (lGetNumberOfElem(*lpp) == 0) {
@@ -4746,7 +4765,7 @@ lListElem *lGetSubUlong(const lListElem *ep, int nm, lUlong val, int snm)
    /* get position of sublist in ep */
    sublist_pos = lGetPosViaElem(ep, snm, SGE_DO_ABORT);
 
-   ret = lGetElemUlong(ep->cont[sublist_pos].glp, nm, val);
+   ret = lGetElemUlongRW(ep->cont[sublist_pos].glp, nm, val);
 
    DEXIT;
    return ret;
@@ -4772,10 +4791,14 @@ lListElem *lGetSubUlong(const lListElem *ep, int nm, lUlong val, int snm)
 *    NULL if element was not found or an error occured
 *    otherwise pointer to element 
 ******************************************************************************/
-lListElem *lGetElemUlong(const lList *lp, int nm, lUlong val) 
+lListElem *lGetElemUlongRW(const lList *lp, int nm, lUlong val) 
 {
    const void *iterator = NULL;
-   return lGetElemUlongFirst(lp, nm, val, &iterator);
+   return lGetElemUlongFirstRW(lp, nm, val, &iterator);
+}
+
+const lListElem *lGetElemUlong(const lList *lp, int nm, lUlong val) {
+   return lGetElemUlongRW(lp, nm, val);
 }
 
 /****** cull/multitype/lGetElemUlongFirst() ***********************************
@@ -4803,9 +4826,7 @@ lListElem *lGetElemUlong(const lList *lp, int nm, lUlong val)
 *  RESULT
 *     lListElem* - element or NULL 
 ******************************************************************************/
-lListElem *lGetElemUlongFirst(const lList *lp, int nm, lUlong val, 
-                              const void **iterator)
-{
+lListElem *lGetElemUlongFirstRW(const lList *lp, int nm, lUlong val, const void **iterator) {
    lListElem *ep = NULL;
    int pos;
 
@@ -4851,6 +4872,10 @@ lListElem *lGetElemUlongFirst(const lList *lp, int nm, lUlong val,
    return NULL;
 }
 
+const lListElem *lGetElemUlongFirst(const lList *lp, int nm, lUlong val, const void **iterator) {
+   return lGetElemUlongFirstRW(lp, nm, val, iterator);
+}
+
 /****** cull/multitype/lGetElemUlongNext() ************************************
 *  NAME
 *     lGetElemUlongNext() -- Find next ulong element within a list 
@@ -4877,9 +4902,7 @@ lListElem *lGetElemUlongFirst(const lList *lp, int nm, lUlong val,
 *  RESULT
 *     lListElem* - next element or NULL 
 ******************************************************************************/
-lListElem *lGetElemUlongNext(const lList *lp, int nm, lUlong val, 
-                             const void **iterator)
-{
+lListElem *lGetElemUlongNextRW(const lList *lp, int nm, lUlong val, const void **iterator) {
    lListElem *ep;
    int pos;
 
@@ -4919,6 +4942,10 @@ lListElem *lGetElemUlongNext(const lList *lp, int nm, lUlong val,
    *iterator = NULL;
    DEXIT;
    return NULL;
+}
+
+const lListElem *lGetElemUlongNext(const lList *lp, int nm, lUlong val, const void **iterator) {
+   return lGetElemUlongNextRW(lp, nm, val, iterator);
 }
 
 /****** cull/multitype/lAddSubUlong64() ***************************************
@@ -5578,10 +5605,14 @@ lListElem *lGetElemCaseStr(const lList *lp, int nm, const char *str)
 *     NULL when the list does not contain the element or in case of 
 *     error otherwise pointer to an element
 ******************************************************************************/
-lListElem *lGetElemHost( const lList *lp, int nm, const char *str ) 
+lListElem *lGetElemHostRW(const lList *lp, int nm, const char *str) 
 {
    const void *iterator = NULL;
-   return lGetElemHostFirst(lp, nm, str, &iterator);
+   return lGetElemHostFirstRW(lp, nm, str, &iterator);
+}
+
+const lListElem *lGetElemHost(const lList *lp, int nm, const char *str) {
+   return lGetElemHostRW(lp, nm, str);
 }
 
 /****** cull/multitype/lGetElemHostFirst() ************************************
@@ -5604,9 +5635,7 @@ lListElem *lGetElemHost( const lList *lp, int nm, const char *str )
 *  RESULT
 *     lListElem* - element or NULL 
 ******************************************************************************/
-lListElem *lGetElemHostFirst(const lList *lp, int nm, const char *str, 
-                             const void **iterator) {
-
+lListElem *lGetElemHostFirstRW(const lList *lp, int nm, const char *str, const void **iterator) {
    int pos;
    int data_type;
    lListElem *ep = NULL;
@@ -5671,6 +5700,10 @@ lListElem *lGetElemHostFirst(const lList *lp, int nm, const char *str,
    return NULL;
 } 
 
+const lListElem *lGetElemHostFirst(const lList *lp, int nm, const char *str, const void **iterator) {
+   return lGetElemHostFirstRW(lp, nm, str, iterator);
+}
+
 /****** cull/multitype/lGetElemHostNext() *************************************
 *  NAME
 *     lGetElemHostNext() -- lGetElemHostNext() for hostnames 
@@ -5693,10 +5726,7 @@ lListElem *lGetElemHostFirst(const lList *lp, int nm, const char *str,
 *  RESULT
 *     lListElem* - element or NULL 
 ******************************************************************************/
-lListElem *lGetElemHostNext(const lList *lp, int nm, const char *str, 
-                            const void **iterator) 
-{
-   
+lListElem *lGetElemHostNextRW(const lList *lp, int nm, const char *str, const void **iterator) {
    int pos;
    lListElem *ep = NULL;
    const lDescr *listDescriptor = NULL;
@@ -5753,6 +5783,10 @@ lListElem *lGetElemHostNext(const lList *lp, int nm, const char *str,
    return NULL;
 }
 
+const lListElem *lGetElemHostNext(const lList *lp, int nm, const char *str, const void **iterator) {
+   return lGetElemHostNextRW(lp, nm, str, iterator);
+}
+
 /****** cull/multitype/lGetSubHost() ******************************************
 *  NAME
 *     lGetSubHost() -- returns elem specified by a string field nm 
@@ -5775,7 +5809,7 @@ lListElem *lGetElemHostNext(const lList *lp, int nm, const char *str,
 *     NULL if element was not found or in case of error
 *     otherwise pointer to element 
 ******************************************************************************/
-lListElem *lGetSubHost(const lListElem *ep, int nm, const char *str, int snm) 
+lListElem *lGetSubHostRW(const lListElem *ep, int nm, const char *str, int snm) 
 {
    int sublist_pos;
    lListElem *ret;
@@ -5785,9 +5819,13 @@ lListElem *lGetSubHost(const lListElem *ep, int nm, const char *str, int snm)
    /* get position of sublist in ep */
    sublist_pos = lGetPosViaElem(ep, snm, SGE_DO_ABORT);
 
-   ret = lGetElemHost(ep->cont[sublist_pos].glp, nm, str);
+   ret = lGetElemHostRW(ep->cont[sublist_pos].glp, nm, str);
 
    DRETURN(ret);
+}
+
+const lListElem *lGetSubHost(const lListElem *ep, int nm, const char *str, int snm) {
+   return lGetSubHostRW(ep, nm, str, snm);
 }
 
 /****** cull/multitype/lDelElemHost() ****************************************
@@ -5831,7 +5869,7 @@ int lDelElemHost(lList **lpp, int nm, const char *str)
    }
 
    /* seek elemtent */
-   ep = lGetElemHost(*lpp, nm, str);
+   ep = lGetElemHostRW(*lpp, nm, str);
    if (ep) {
       lRemoveElem(*lpp, &ep);
       if (lGetNumberOfElem(*lpp) == 0) {

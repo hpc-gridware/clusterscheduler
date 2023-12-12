@@ -121,13 +121,14 @@ struct sge_qeti_s {
 *  NOTES
 *     MT-NOTE: sge_qeti_list_add() is not MT safe 
 *******************************************************************************/
-static int sge_qeti_list_add(lList **lpp, const char *name, lList* rue_lp, double total, bool must_exist)
+static int sge_qeti_list_add(lList **lpp, const char *name, const lList* rue_lp, double total, bool must_exist)
 {
-   lListElem *tmp_cr_ref, *ep;
+   lListElem *tmp_cr_ref;
+   lListElem *ep;
 
    DENTER(TOP_LAYER, "sge_qeti_list_add");
 
-   if (!(tmp_cr_ref = lGetElemStr(rue_lp, RUE_name, name))) {
+   if (!(tmp_cr_ref = lGetElemStrRW(rue_lp, RUE_name, name))) {
       DRETURN(must_exist?-1:0);
    }
 
@@ -147,12 +148,15 @@ static int sge_qeti_list_add(lList **lpp, const char *name, lList* rue_lp, doubl
    DRETURN(0);
 }
 
-static int sge_add_qeti_resource_container(lList **qeti_to_add, lList* rue_list, 
-      lList* total_list, const lList* centry_list, lList* requests, bool force_slots) 
+static int 
+sge_add_qeti_resource_container(lList **qeti_to_add, const lList* rue_list, 
+      const lList* total_list, const lList* centry_list, const lList* requests, bool force_slots) 
 {
-   lListElem *req, *actual, *tep;
+   lListElem *req;
+   const lListElem *actual;
+   const lListElem *tep;
    const char *name;
-   lListElem *centry_config = NULL;
+   const lListElem *centry_config = NULL;
 
    DENTER(TOP_LAYER, "sge_add_qeti_resource_container");
 
@@ -218,7 +222,7 @@ sge_qeti_t *sge_qeti_allocate(sge_assignment_t *a)
    int ar_id = lGetUlong(a->job, JB_ar);
    sge_qeti_t *iter = NULL;
    lListElem *next_queue, *qep, *hep;
-   lList *requests = lGetList(a->job, JB_hard_resource_list);
+   const lList *requests = lGetList(a->job, JB_hard_resource_list);
 
    DENTER(TOP_LAYER, "sge_qeti_allocate");
 
@@ -268,9 +272,9 @@ sge_qeti_t *sge_qeti_allocate(sge_assignment_t *a)
          environment that resides at this host. And secondly we only 
          consider those hosts that match this job (statically) */
       is_relevant = false;
-      for (next_queue = lGetElemHostFirst(a->queue_list, QU_qhostname, eh_name, &queue_iterator); 
+      for (next_queue = lGetElemHostFirstRW(a->queue_list, QU_qhostname, eh_name, &queue_iterator); 
           (qep = next_queue);
-           next_queue = lGetElemHostNext(a->queue_list, QU_qhostname, eh_name, &queue_iterator)) {
+           next_queue = lGetElemHostNextRW(a->queue_list, QU_qhostname, eh_name, &queue_iterator)) {
 
          if (!qinstance_is_pe_referenced(qep, a->pe)) {
             continue;
@@ -291,12 +295,13 @@ sge_qeti_t *sge_qeti_allocate(sge_assignment_t *a)
          } else {
             const char *qname = lGetString(qep, QU_full_name);
             lListElem *ar_queue;
-            lListElem *ar_ep = lGetElemUlong(a->ar_list, AR_id, ar_id);
+            const lListElem *ar_ep = lGetElemUlong(a->ar_list, AR_id, ar_id);
 
             ar_queue = lGetSubStr(ar_ep, QU_full_name, qname, AR_reserved_queues);
             if (sge_add_qeti_resource_container(&iter->cr_refs_queue, 
-                     lGetList(ar_queue, QU_resource_utilization), lGetList(ar_queue, QU_consumable_config_list), 
-                           a->centry_list, requests, false)!=0) {
+                     lGetList(ar_queue, QU_resource_utilization), 
+                     lGetList(ar_queue, QU_consumable_config_list), 
+                     a->centry_list, requests, false)!=0) {
                sge_qeti_release(&iter);
                DRETURN(NULL);
             }
@@ -331,8 +336,8 @@ sge_qeti_t *sge_qeti_allocate(sge_assignment_t *a)
 static void sge_qeti_init_refs(lList *cref_lp)
 {
    lListElem *cr_ep;
-   lList *utilization_diagram;
-   lListElem *rue_ep;
+   const lList *utilization_diagram;
+   const lListElem *rue_ep;
 
    DENTER(TOP_LAYER, "sge_qeti_init_refs");
 
@@ -342,7 +347,7 @@ static void sge_qeti_init_refs(lList *cref_lp)
       DPRINTF(("   QETI INIT: %s %p\n", lGetString(rue_ep, RUE_name), utilization_diagram));
       /* lLast() correctly returns a NULL reference 
          in case of an empty resource utilization diagram */
-      lSetRef(cr_ep, QETI_queue_end_next, lLast(utilization_diagram));
+      lSetRef(cr_ep, QETI_queue_end_next, lLastRW(utilization_diagram));
    }
 
    DEXIT;
@@ -393,7 +398,7 @@ static void sge_qeti_switch_to_next(u_long32 time, lList *cref_lp)
       }
 
       while (ref && time < lGetUlong(ref, RDE_time)) {
-         ref = lPrev(ref);
+         ref = lPrevRW(ref);
       }
 
       DPRINTF(("   QETI NEXT: %s set to "sge_U32CFormat" (%p)\n", 

@@ -565,7 +565,7 @@ static drmaa_attr_names_t *drmaa_fill_string_vector(const char *name[])
    }
 
    /* initialize iterator */
-   vector->it.si.next_pos = lFirst(vector->it.si.strings);
+   vector->it.si.next_pos = lFirstRW(vector->it.si.strings);
 
    DRETURN(vector);
 }
@@ -715,7 +715,7 @@ int drmaa_set_attribute(drmaa_job_template_t *jt, const char *name, const char *
       }
       
       /* add or replace attribute */ 
-      if ((ep = lGetElemStr(jt->strings, VA_variable, name))) {
+      if ((ep = lGetElemStrRW(jt->strings, VA_variable, name))) {
          lSetString(ep, VA_value, value);
       } else {
          ep = lAddElemStr(&(jt->strings), VA_variable, name, VA_Type);
@@ -761,7 +761,7 @@ int drmaa_get_attribute(drmaa_job_template_t *jt, const char *name, char *value,
    size_t value_len, char *error_diagnosis, size_t error_diag_len)
 {
    dstring val, diag, *diagp = NULL;
-   lListElem *va = NULL;
+   const lListElem *va = NULL;
    int ret = DRMAA_ERRNO_SUCCESS;
 
    DENTER(TOP_LAYER, "drmaa_get_attribute");
@@ -858,7 +858,7 @@ int drmaa_set_vector_attribute(drmaa_job_template_t *jt, const char *name,
       DRETURN(DRMAA_ERRNO_INVALID_ARGUMENT);
    }
 
-   if ((ep = lGetElemStr(jt->string_vectors, NSV_name, name)) != NULL) {
+   if ((ep = lGetElemStrRW(jt->string_vectors, NSV_name, name)) != NULL) {
       lSetList(ep, NSV_strings, NULL);
    }
    else {
@@ -909,7 +909,7 @@ int drmaa_set_vector_attribute(drmaa_job_template_t *jt, const char *name,
 int drmaa_get_vector_attribute(drmaa_job_template_t *jt, const char *name, 
          drmaa_attr_values_t **values, char *error_diagnosis, size_t error_diag_len)
 {
-   lListElem *nsv = NULL;
+   const lListElem *nsv = NULL;
    drmaa_attr_values_t *iter = NULL;
    dstring diag, *diagp = NULL;
    int ret = DRMAA_ERRNO_SUCCESS;
@@ -953,7 +953,7 @@ int drmaa_get_vector_attribute(drmaa_job_template_t *jt, const char *name,
    }
 
    /* initialize iterator */
-   iter->it.si.next_pos = lFirst(iter->it.si.strings);
+   iter->it.si.next_pos = lFirstRW(iter->it.si.strings);
 
    *values = iter;
 
@@ -2266,7 +2266,7 @@ static int drmaa_path2wd_opt(const lList *attrs, lList **args, int is_bulk,
                                            DRMAA_WD, 0, &new_path,
                                            diag)) == DRMAA_ERRNO_SUCCESS) {
       if (new_path != NULL) {
-         lListElem *ep = lGetElemStr(attrs, VA_variable, DRMAA_WD);
+         lListElem *ep = lGetElemStrRW(attrs, VA_variable, DRMAA_WD);
          const char *value = lGetString(ep, VA_value);
 
          DPRINTF(("-wd = \"%s\"\n", new_path));
@@ -2340,7 +2340,7 @@ static int drmaa_path2path_opt(const lList *attrs, lList **args, int is_bulk,
                                            attribute_key, 1, &new_path,
                                            diag)) == DRMAA_ERRNO_SUCCESS) {
       if (new_path) {
-         lListElem *ep = lGetElemStr(attrs, VA_variable, attribute_key);
+         lListElem *ep = lGetElemStrRW(attrs, VA_variable, attribute_key);
          const char *value = lGetString(ep, VA_value);
          char *cell = NULL;
          char *path = NULL;
@@ -2369,7 +2369,7 @@ static int drmaa_path2path_opt(const lList *attrs, lList **args, int is_bulk,
          lAppendElem(path_list, ep);
          DPRINTF(("PN_path = \"%s\"\n", path));
          if( strlen( path )>0 ) {
-            lSetString( ep, PN_path, path );
+            lSetString(ep, PN_path, path);
          } else if( !strcmp( sw, "-i" ) && bFileStaging==true ) {
             /* No default stdin_path for file staging! */
             sge_dstring_sprintf(diag, MSG_DRMAA_NEEDS_INPUT_PATH);
@@ -2446,7 +2446,7 @@ static int drmaa_path2sge_path(const lList *attrs, int is_bulk,
                                const char *attribute_key, int do_wd,
                                const char **new_path, dstring *diag)
 {
-   lListElem *ep = NULL;
+   const lListElem *ep = NULL;
 
    DENTER(TOP_LAYER, "drmaa_path2sge_path");
 
@@ -2555,7 +2555,8 @@ static int drmaa_job2sge_job(lListElem **jtp, const drmaa_job_template_t *drmaa_
                              int is_bulk, int start, int end, int step,
                              dstring *diag)
 {
-   lListElem *jt, *ep;
+   lListElem *jt;
+   const lListElem *ep;
    int drmaa_errno;
    lList *alp = NULL;
    lList *opts_drmaa = NULL;
@@ -2778,19 +2779,19 @@ static int drmaa_job2sge_job(lListElem **jtp, const drmaa_job_template_t *drmaa_
        * only one that can contain -cat.  However, I expect that at some point
        * -cat will be added as a normal switch to qsub et al, at which point
        * this long series of ifs becomes necessary. */
-      if ((ep = lGetElemStr(opts_drmaa, SPA_switch, "-cat")) != NULL) {
+      if ((ep = lGetElemStrRW(opts_drmaa, SPA_switch, "-cat")) != NULL) {
          job_cat = strdup(lGetString(ep, SPA_argval_lStringT));
          lRemoveElem(opts_drmaa, &ep);
-      } else if ((ep = lGetElemStr(opts_scriptfile, SPA_switch, "-cat")) != NULL) {
+      } else if ((ep = lGetElemStrRW(opts_scriptfile, SPA_switch, "-cat")) != NULL) {
          job_cat = strdup(lGetString(ep, SPA_argval_lStringT));
          lRemoveElem(opts_scriptfile, &ep);
-      } else if ((ep = lGetElemStr(opts_native, SPA_switch, "-cat")) != NULL) {
+      } else if ((ep = lGetElemStrRW(opts_native, SPA_switch, "-cat")) != NULL) {
          job_cat = strdup(lGetString(ep, SPA_argval_lStringT));
          lRemoveElem(opts_native, &ep);
-      } else if ((ep = lGetElemStr(opts_defaults, SPA_switch, "-cat")) != NULL) {
+      } else if ((ep = lGetElemStrRW(opts_defaults, SPA_switch, "-cat")) != NULL) {
          job_cat = strdup(lGetString(ep, SPA_argval_lStringT));
          lRemoveElem(opts_defaults, &ep);
-      } else if ((ep = lGetElemStr(opts_default, SPA_switch, "-cat")) != NULL) {
+      } else if ((ep = lGetElemStrRW(opts_default, SPA_switch, "-cat")) != NULL) {
          job_cat = strdup(lGetString(ep, SPA_argval_lStringT));
          lRemoveElem(opts_default, &ep);
       } else {
@@ -2976,7 +2977,7 @@ static int opt_list_append_opts_from_drmaa_attr(lList **args, const lList *attrs
                                                 dstring *diag)
 {
    int drmaa_errno;
-   lListElem *ep = NULL;
+   const lListElem *ep = NULL;
    lListElem *ep_opt = NULL;
    const char *scriptname = NULL;
    /* Turn each DRMAA attribute into a list entry. */
@@ -3070,7 +3071,7 @@ static int opt_list_append_opts_from_drmaa_attr(lList **args, const lList *attrs
       char *variable = NULL;
       char *value = NULL;
       lListElem *oep = NULL;
-      lList *olp = lGetList(ep, NSV_strings);
+      const lList *olp = lGetList(ep, NSV_strings);
       lListElem *nep = NULL;
       lList *nlp = lCreateList("variable list", VA_Type);
       int first_time = 1;
@@ -3118,10 +3119,10 @@ static int opt_list_append_opts_from_drmaa_attr(lList **args, const lList *attrs
       char *user = NULL;
       char *host = NULL;
       lListElem *oep = NULL;
-      lList *olp = lGetList(ep, NSV_strings);
+      const lList *olp = lGetList(ep, NSV_strings);
       lListElem *nep = NULL;
       lList *nlp = lCreateList("mail list", MR_Type);
-      lListElem *tmp = NULL;
+      const lListElem *tmp = NULL;
       int first_time = 1;
       
       DPRINTF(("processing %s = ", DRMAA_V_EMAIL));
@@ -3228,8 +3229,8 @@ static int opt_list_append_opts_from_drmaa_attr(lList **args, const lList *attrs
 
       /* job arguments -- last thing on the command line */
       if ((ep=lGetElemStr(vattrs, NSV_name, DRMAA_V_ARGV))) {
-         lList *lp = lGetList(ep, NSV_strings);
-         lListElem *aep = NULL;
+         const lList *lp = lGetList(ep, NSV_strings);
+         const lListElem *aep = NULL;
 
          DPRINTF(("processing %s\n", DRMAA_V_ARGV));
 
@@ -3496,21 +3497,21 @@ o   -V                                     export all environment variables
    DENTER(TOP_LAYER, "prune_arg_list");
    
    /* skip arguments that aren't supported */
-   while ((element = lGetElemStr(args, SPA_switch, "-help"))) {
+   while ((element = lGetElemStrRW(args, SPA_switch, "-help"))) {
       lRemoveElem(args, &element);
    }
    
    /* This one isn't supported because bulk jobs are handled through the
     * drmaa_run_bulk_jobs() method. */
-   while ((element = lGetElemStr(args, SPA_switch, "-t"))) {
+   while ((element = lGetElemStrRW(args, SPA_switch, "-t"))) {
       lRemoveElem(args, &element);
    }
    
-   while ((element = lGetElemStr(args, SPA_switch, "-verify"))) {
+   while ((element = lGetElemStrRW(args, SPA_switch, "-verify"))) {
       lRemoveElem(args, &element);
    }
    
-   while ((element = lGetElemStrNext(args, SPA_switch, "-w", &i))) {
+   while ((element = lGetElemStrNextRW(args, SPA_switch, "-w", &i))) {
       int argval = lGetInt(element, SPA_argval_lIntT);
       
       if ((argval == JUST_VERIFY) || (argval == POKE_VERIFY) || (argval == WARNING_VERIFY)) {      
@@ -3519,12 +3520,12 @@ o   -V                                     export all environment variables
    }
   
    if (sge_getenv(ENABLE_CWD_ENV) == NULL) {
-      while ((element = lGetElemStr(args, SPA_switch, "-cwd"))) {
+      while ((element = lGetElemStrRW(args, SPA_switch, "-cwd"))) {
          lRemoveElem(args, &element);
       }
    }
 
-   while ((element = lGetElemStr(args, SPA_switch, "-sync"))) {
+   while ((element = lGetElemStrRW(args, SPA_switch, "-sync"))) {
       lRemoveElem(args, &element);
    }
    

@@ -138,7 +138,7 @@ static int handle_jobs_not_enrolled(lListElem *job, bool print_jobid, char *mast
                                     int slots, int slot, int *count,
                                     qstat_env_t *qstat_env, qstat_handler_t *handler, lList **alpp);
                        
-static int job_handle_resources(lList* cel, lList* centry_list, int slots,
+static int job_handle_resources(const lList* cel, lList* centry_list, int slots,
                                 job_handler_t *handler,
                                 int(*start_func)(job_handler_t* handler, lList **alpp),
                                 int(*resource_func)(job_handler_t *handler, const char* name, const char* value, double uc, lList **alpp),
@@ -170,7 +170,7 @@ int qselect(qstat_env_t* qstat_env, qselect_handler_t* handler, lList **alpp) {
       handler->report_started(handler, alpp);
    }
    for_each(cqueue, qstat_env->queue_list) {
-      lList *qinstance_list = lGetList(cqueue, CQ_qinstances);
+      const lList *qinstance_list = lGetList(cqueue, CQ_qinstances);
 
       for_each(qep, qinstance_list) {
          if ((lGetUlong(qep, QU_tag) & TAG_SHOW_IT)!=0) {
@@ -449,18 +449,18 @@ static int qstat_env_prepare(qstat_env_t* qstat_env, bool need_job_list, lList *
 
 static void remove_tagged_jobs(lList *job_list) {
    
-   lListElem *jep = lFirst(job_list);
+   lListElem *jep = lFirstRW(job_list);
    lListElem *tmp = NULL;
    
    while (jep) {
       lList *task_list;
       lListElem *jatep, *tmp_jatep;
 
-      tmp = lNext(jep);
-      task_list = lGetList(jep, JB_ja_tasks);
-      jatep = lFirst(task_list);
+      tmp = lNextRW(jep);
+      task_list = lGetListRW(jep, JB_ja_tasks);
+      jatep = lFirstRW(task_list);
       while (jatep) {
-         tmp_jatep = lNext(jatep);
+         tmp_jatep = lNextRW(jatep);
          if ((lGetUlong(jatep, JAT_suitable) & TAG_FOUND_IT)) {
             lRemoveElem(task_list, &jatep);
          }
@@ -769,7 +769,7 @@ static int filter_jobs(qstat_env_t *qstat_env, lList **alpp) {
                host = host_list_locate(qstat_env->exechost_list, lGetHost(qep, QU_qhostname));
                
                if (host != NULL) {
-                  ret = sge_select_queue(lGetList(jep, JB_hard_resource_list), qep, 
+                  ret = sge_select_queue(lGetListRW(jep, JB_hard_resource_list), qep, 
                                          host, qstat_env->exechost_list, qstat_env->centry_list, 
                                          true, 1, qstat_env->queue_user_list, qstat_env->acl_list, jep);
 
@@ -943,8 +943,8 @@ int filter_queues(lList **filtered_queue_list,
    if (rmon_mlgetl(&RMON_DEBUG_ON, GDI_LAYER) & INFOPRINT) {
       lListElem *cqueue;
       for_each(cqueue, queue_list) {
-         lListElem *qep;
-         lList *qinstance_list = lGetList(cqueue, CQ_qinstances);
+         const lListElem *qep;
+         const lList *qinstance_list = lGetList(cqueue, CQ_qinstances);
 
          for_each(qep, qinstance_list) {
             if ((lGetUlong(qep, QU_tag) & TAG_SHOW_IT)!=0) {
@@ -1344,7 +1344,7 @@ static int qstat_env_get_all_lists(qstat_env_t* qstat_env, bool need_job_list, l
 
    if (lFirst(conf_l)) {
       lListElem *local = NULL;
-      merge_configuration(NULL, progid, cell_root, lFirst(conf_l), local, NULL);
+      merge_configuration(NULL, progid, cell_root, lFirstRW(conf_l), local, NULL);
    }
    lFreeList(&conf_l);
    lFreeList(&mal);
@@ -1395,7 +1395,7 @@ static int handle_queue(lListElem *q, qstat_env_t *qstat_env, qstat_handler_t *h
 
    if (sge_load_alarm(NULL, q, lGetList(q, QU_load_thresholds), qstat_env->exechost_list, qstat_env->centry_list, NULL, true)) {
       qinstance_state_set_alarm(q, true);
-      sge_load_alarm_reason(q, lGetList(q, QU_load_thresholds), qstat_env->exechost_list, 
+      sge_load_alarm_reason(q, lGetListRW(q, QU_load_thresholds), qstat_env->exechost_list, 
                             qstat_env->centry_list, load_alarm_reason, 
                             MAX_STRING_SIZE - 1, "load");
    }
@@ -1406,7 +1406,7 @@ static int handle_queue(lListElem *q, qstat_env_t *qstat_env, qstat_handler_t *h
        interval != 0 &&
        sge_load_alarm(NULL, q, lGetList(q, QU_suspend_thresholds), qstat_env->exechost_list, qstat_env->centry_list, NULL, false)) {
       qinstance_state_set_suspend_alarm(q, true);
-      sge_load_alarm_reason(q, lGetList(q, QU_suspend_thresholds), 
+      sge_load_alarm_reason(q, lGetListRW(q, QU_suspend_thresholds), 
                             qstat_env->exechost_list, qstat_env->centry_list, suspend_alarm_reason, 
                             MAX_STRING_SIZE - 1, "suspend");
    }
@@ -1474,7 +1474,7 @@ static int handle_queue(lListElem *q, qstat_env_t *qstat_env, qstat_handler_t *h
       }
    }
    if (qstat_env->explain_bits != QI_DEFAULT && handler->report_queue_message) {
-      lList *qim_list = lGetList(q, QU_message_list);
+      const lList *qim_list = lGetList(q, QU_message_list);
       lListElem *qim = NULL;
 
       for_each(qim, qim_list) {
@@ -1510,7 +1510,7 @@ static int handle_queue(lListElem *q, qstat_env_t *qstat_env, qstat_handler_t *h
 
          /* we had a -F request */
          if (qstat_env->qresource_list) {
-            lListElem *qres;
+            const lListElem *qres;
 
             qres = lGetElemStr(qstat_env->qresource_list, CE_name, 
                                lGetString(rep, CE_name));
@@ -1559,10 +1559,10 @@ static int handle_pending_jobs(qstat_env_t *qstat_env, qstat_handler_t *handler,
    
    DENTER(TOP_LAYER, "handle_pending_jobs");
 
-   nxt = lFirst(qstat_env->job_list);
+   nxt = lFirstRW(qstat_env->job_list);
    while ((jep=nxt)) {
-      nxt = lNext(jep);
-      nxt_jatep = lFirst(lGetList(jep, JB_ja_tasks));
+      nxt = lNextRW(jep);
+      nxt_jatep = lFirstRW(lGetList(jep, JB_ja_tasks));
       FoundTasks = 0;
 
       while ((jatep = nxt_jatep)) { 
@@ -1570,7 +1570,7 @@ static int handle_pending_jobs(qstat_env_t *qstat_env, qstat_handler_t *handler,
             DPRINTF(("shut_me_down\n"));
             break;
          }   
-         nxt_jatep = lNext(jatep);
+         nxt_jatep = lNextRW(jatep);
 
          if (!(((qstat_env->full_listing & QSTAT_DISPLAY_OPERATORHOLD) && (lGetUlong(jatep, JAT_hold)&MINUS_H_TGT_OPERATOR))  
                ||
@@ -1643,7 +1643,7 @@ static int handle_pending_jobs(qstat_env_t *qstat_env, qstat_handler_t *handler,
                DPRINTF(("report_pending_jobs_started failed\n"));
                goto error;
             }
-            ret = sge_handle_job(jep, lFirst(task_group), NULL, NULL, true, NULL, &dyn_task_str,
+            ret = sge_handle_job(jep, lFirstRW(task_group), NULL, NULL, true, NULL, &dyn_task_str,
                                  0, 0, 0,
                                  qstat_env, &(handler->job_handler), alpp);
             
@@ -1794,8 +1794,7 @@ static int handle_zombie_jobs(qstat_env_t *qstat_env, qstat_handler_t *handler, 
    }
 
    for_each (jep, qstat_env->zombie_list) { 
-      lList *z_ids = NULL;
-      z_ids = lGetList(jep, JB_ja_z_ids);
+      const lList *z_ids = lGetList(jep, JB_ja_z_ids);
       if (z_ids != NULL) {
          lListElem *ja_task = NULL;
          u_long32 first_task_id = range_list_get_first_id(z_ids, NULL);
@@ -1938,7 +1937,7 @@ static int sge_handle_job(lListElem *job, lListElem *jatep, lListElem *qep, lLis
 {
    u_long32 jstate;
    int sge_ext, tsk_ext, sge_urg, sge_pri, sge_time;
-   lList *ql = NULL;
+   const lList *ql = NULL;
    lListElem *qrep;
    
    job_summary_t summary;
@@ -2020,7 +2019,7 @@ static int sge_handle_job(lListElem *job, lListElem *jatep, lListElem *qep, lLis
    }
    
    if (sge_ext) {
-      lListElem *up, *pe, *task;
+      const lListElem *up, *pe, *task;
       lList *job_usage_list;
       const char *pe_name;
       bool sum_pe_tasks = false;
@@ -2038,7 +2037,9 @@ static int sge_handle_job(lListElem *job, lListElem *jatep, lListElem *qep, lLis
       if (job_usage_list) {
          int subtask_ndx=1;
          for_each(task, lGetList(jatep, JAT_task_list)) {
-            lListElem *dst, *src, *ep;
+            lListElem *dst;
+            const lListElem *src;
+            const lListElem *ep;
             const char *qname;
 
             if (sum_pe_tasks ||
@@ -2047,7 +2048,7 @@ static int sge_handle_job(lListElem *job, lListElem *jatep, lListElem *qep, lLis
                  ((qname=lGetString(ep, JG_qname))) &&
                  !strcmp(qname, summary.queue) && ((subtask_ndx++%slots)==slot))) {
                for_each(src, lGetList(task, PET_scaled_usage)) {
-                  if ((dst=lGetElemStr(job_usage_list, UA_name, lGetString(src, UA_name))))
+                  if ((dst=lGetElemStrRW(job_usage_list, UA_name, lGetString(src, UA_name))))
                      lSetDouble(dst, UA_value, lGetDouble(dst, UA_value) + lGetDouble(src, UA_value));
                   else
                      lAppendElem(job_usage_list, lCopyElem(src));
@@ -2146,8 +2147,9 @@ static int sge_handle_job(lListElem *job, lListElem *jatep, lListElem *qep, lLis
    }
 
    if (tsk_ext) {
-      lList *task_list = lGetList(jatep, JAT_task_list);
-      lListElem *task, *ep;
+      const lList *task_list = lGetList(jatep, JAT_task_list);
+      lListElem *task;
+      const lListElem *ep;
       const char *qname;
       int subtask_ndx=1;
       
@@ -2462,10 +2464,10 @@ static int sge_handle_job(lListElem *job, lListElem *jatep, lListElem *qep, lLis
          }
       }
       if (handler->report_binding && (qstat_env->full_listing & QSTAT_DISPLAY_BINDING) != 0) {
-         lList *binding_list = lGetList(job, JB_binding);
+         const lList *binding_list = lGetList(job, JB_binding);
 
          if (binding_list != NULL) {
-            lListElem *binding_elem = lFirst(binding_list);
+            const lListElem *binding_elem = lFirst(binding_list);
             dstring binding_param = DSTRING_INIT;
 
             binding_print_to_string(binding_elem, &binding_param);
@@ -2501,7 +2503,7 @@ error:
 }
 
 
-static int job_handle_resources(lList* cel, lList* centry_list, int slots,
+static int job_handle_resources(const lList* cel, lList* centry_list, int slots,
                                 job_handler_t *handler,
                                 int(*start_func)(job_handler_t* handler, lList **alpp),
                                 int(*resource_func)(job_handler_t* handler, const char* name, const char* value, double uc, lList **alpp),
@@ -2545,9 +2547,9 @@ static int job_handle_subtask(lListElem *job, lListElem *ja_task, lListElem *pe_
                               job_handler_t *handler, lList **alpp ) {
    char task_state_string[8];
    u_long32 tstate, tstatus;
-   lListElem *ep;
-   lList *usage_list;
-   lList *scaled_usage_list;
+   const lListElem *ep;
+   const lList *usage_list;
+   const lList *scaled_usage_list;
    
    task_summary_t summary;
    int ret = 0;
@@ -2598,7 +2600,7 @@ static int job_handle_subtask(lListElem *job, lListElem *ja_task, lListElem *pe_
    summary.state = task_state_string;
 
    {
-      lListElem *up;
+      const lListElem *up;
 
       /* scaled cpu usage */
       if (!(up = lGetElemStr(scaled_usage_list, UA_name, USAGE_ATTR_CPU))) {

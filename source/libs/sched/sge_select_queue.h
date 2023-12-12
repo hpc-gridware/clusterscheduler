@@ -49,7 +49,7 @@ sge_select_queue(lList *requested_attr, lListElem *queue, lListElem *host, lList
 
 /* --- is there a load alarm on this queue ---------------------------- */
 
-int sge_load_alarm(char *reason, lListElem *queue, lList *threshold, 
+int sge_load_alarm(char *reason, const lListElem *queue, const lList *threshold, 
                    const lList *exechost_list, const lList *complex_list, 
                    const lList *load_adjustments, bool is_check_consumable);
 
@@ -178,19 +178,19 @@ sge_select_parallel_environment(sge_assignment_t *best, const lList *pe_list);
 
 /* -------------------------------------------------------------------------------- */
 
-bool is_requested(lList *req, const char *attr);
+bool is_requested(const lList *req, const char *attr);
 
 dispatch_t sge_queue_match_static(const sge_assignment_t *a, lListElem *queue);
 
 dispatch_t
-sge_host_match_static(const sge_assignment_t *a, lListElem *host);
+sge_host_match_static(const sge_assignment_t *a, const lListElem *host);
 
 /* ------ DEBUG / output methods --------------------------------------------------- */
 
 /* not used */
 /* int sge_get_ulong_qattr(u_long32 *uvalp, char *attrname, lListElem *q, lList *exechost_list, lList *complex_list); */
 
-int sge_get_double_qattr(double *dvalp, char *attrname, lListElem *q, 
+int sge_get_double_qattr(double *dvalp, char *attrname, const lListElem *q, 
                          const lList *exechost_list, const lList *complex_list,
                          bool *has_value_from_object);
 
@@ -198,12 +198,12 @@ int sge_get_string_qattr(char *dst, int dst_len, char *attrname, lListElem *q, c
 
 dispatch_t
 parallel_rc_slots_by_time(const sge_assignment_t *a, lList *requests, 
-                 int *slots, int *slots_qend, lList *total_list, lList *rue_list, lList *load_attr, 
+                 int *slots, int *slots_qend, const lList *total_list, const lList *rue_list, const lList *load_attr, 
                  bool force_slots, lListElem *queue, u_long32 layer, double lc_factor, u_long32 tag,
                  bool allow_non_requestable, const char *object_name, bool isRQ);
 
 dispatch_t
-ri_time_by_slots(const sge_assignment_t *a, lListElem *request, lList *load_attr, lList *config_attr, lList *actual_attr, 
+ri_time_by_slots(const sge_assignment_t *a, lListElem *request, const lList *load_attr, const lList *config_attr, const lList *actual_attr, 
                 lListElem *queue, dstring *reason, bool allow_non_requestable, 
                 int slots, u_long32 layer, double lc_factor, u_long32 *start_time, const char *object_name); 
 

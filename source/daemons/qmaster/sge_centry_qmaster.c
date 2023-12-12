@@ -422,7 +422,7 @@ int sge_del_centry(sge_gdi_ctx_class_t *ctx, lListElem *centry, lList **answer_l
                      ret = false;
                   }
                } else {
-                  lListElem *answer = lFirst(local_answer_list);
+                  const lListElem *answer = lFirst(local_answer_list);
 
                   ERROR((SGE_EVENT, "denied: %s", lGetString(answer, AN_text)));
                   answer_list_add(answer_list, SGE_EVENT, STATUS_EUNKNOWN,
@@ -469,7 +469,7 @@ sge_change_queue_version_centry(sge_gdi_ctx_class_t *ctx)
    DENTER(TOP_LAYER, "sge_change_queue_version_centry");
 
    for_each(cqueue, master_cqueue_list) {
-      lList *qinstance_list = lGetList(cqueue, CQ_qinstances);
+      const lList *qinstance_list = lGetList(cqueue, CQ_qinstances);
       lListElem *qinstance = NULL;
 
       for_each(qinstance, qinstance_list) {
@@ -530,7 +530,7 @@ void centry_redebit_consumables(sge_gdi_ctx_class_t *ctx, const lList *centries)
 
    /* throw away all old actual values lists and rebuild them from scratch */
    for_each(cqueue, master_cqueue_list) {
-      lList *qinstance_list = lGetList(cqueue, CQ_qinstances);
+      const lList *qinstance_list = lGetList(cqueue, CQ_qinstances);
       lListElem *qinstance = NULL;
 
       for_each(qinstance, qinstance_list) {
@@ -588,7 +588,7 @@ void centry_redebit_consumables(sge_gdi_ctx_class_t *ctx, const lList *centries)
       
       /* dump all queue consumables */
       for_each(cqueue, master_cqueue_list) {
-         lList *qinstance_list = lGetList(cqueue, CQ_qinstances);
+         const lList *qinstance_list = lGetList(cqueue, CQ_qinstances);
          lListElem *qinstance = NULL;
 
          for_each(qinstance, qinstance_list) {

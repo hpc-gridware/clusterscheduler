@@ -286,7 +286,7 @@ bool
 spool_startup_context(lList **answer_list, lListElem *context, bool check);
 
 bool 
-spool_shutdown_context(lList **answer_list, lListElem *context);
+spool_shutdown_context(lList **answer_list, const lListElem *context);
 
 bool
 spool_maintain_context(lList **answer_list, lListElem *context, 
@@ -294,10 +294,10 @@ spool_maintain_context(lList **answer_list, lListElem *context,
                        const char *args);
 
 bool
-spool_trigger_context(lList **answer_list, lListElem *context, 
+spool_trigger_context(lList **answer_list, const lListElem *context, 
                       time_t trigger, time_t *next_trigger);
 
-bool spool_transaction(lList **answer_list, lListElem *context, 
+bool spool_transaction(lList **answer_list, const lListElem *context, 
                        spooling_transaction_command cmd);
 
 /* reading */

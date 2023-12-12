@@ -204,7 +204,7 @@ main(int argc, char **argv)
    /* If "-sync y" is set, wait for the job to end. */   
    /* Remove all -sync switches since cull_parse_job_parameter()
     * doesn't know what to do with them. */
-   while ((ep = lGetElemStr(opts_all, SPA_switch, "-sync"))) {
+   while ((ep = lGetElemStrRW(opts_all, SPA_switch, "-sync"))) {
       if (lGetInt(ep, SPA_argval_lIntT) == TRUE) {
          wait_for_job = 1;
       }

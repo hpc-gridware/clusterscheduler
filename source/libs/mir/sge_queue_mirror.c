@@ -104,7 +104,7 @@ qinstance_update_cqueue_list(sge_evc_class_t *evc, sge_object_type type,
                         
    if (cqueue != NULL) {
       dstring key_buffer = DSTRING_INIT;
-      lList *list = lGetList(cqueue, CQ_qinstances);
+      lList *list = lGetListRW(cqueue, CQ_qinstances);
       const lDescr *list_descr = lGetListDescr(lGetList(event, ET_new_version));
       
       lListElem *qinstance = qinstance_list_locate(list, hostname, NULL);

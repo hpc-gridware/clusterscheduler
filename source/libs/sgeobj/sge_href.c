@@ -374,7 +374,7 @@ href_list_locate(const lList *this_list, const char *name)
 
    DENTER(HOSTREF_LAYER, "href_list_locate");
    if (this_list != NULL && name != NULL) {
-      ret = lGetElemHost(this_list, HR_name, name);
+      ret = lGetElemHostRW(this_list, HR_name, name);
    }
    DEXIT;
    return ret;
@@ -443,7 +443,7 @@ href_list_find_references(const lList *this_list, lList **answer_list,
          }
 
          if (hgroup != NULL) {
-            lList *href_list2 = lGetList(hgroup, HGRP_host_list);
+            const lList *href_list2 = lGetList(hgroup, HGRP_host_list);
             lListElem *href2;    /* HR_Type */
 
             /* 
@@ -611,7 +611,7 @@ href_list_find_referencees(const lList *this_list, lList **answer_list,
             lListElem *hgroup;   /* HGRP_Type */
 
             for_each(hgroup, master_list) {
-               lList *href_list = lGetList(hgroup, HGRP_host_list);
+               const lList *href_list = lGetList(hgroup, HGRP_host_list);
                lListElem *href = href_list_locate(href_list, name);
 
                if (href != NULL) {
@@ -845,10 +845,9 @@ href_list_remove_existing(lList **this_list, lList **answer_list,
 
       for_each(href, list) {
          const char *hostname = lGetHost(href, HR_name);
-         lListElem *existing_href = lGetElemHost(*this_list, HR_name, hostname);
+         lListElem *existing_href = lGetElemHostRW(*this_list, HR_name, hostname);
 
          if (existing_href != NULL) {
-            DTRACE;
             lRemoveElem(*this_list, &existing_href);
          }
       }
@@ -929,14 +928,13 @@ href_list_make_uniq(lList *this_list, lList **answer_list)
    lListElem *next_elem = NULL;
 
    DENTER(TOP_LAYER, "href_list_make_uniq");
-   next_elem = lFirst(this_list);
+   next_elem = lFirstRW(this_list);
    while((elem = next_elem) != NULL) {
       lListElem *elem2 = NULL;
       const void *iterator = NULL;
 
-      next_elem = lNext(elem);
-      elem2 = lGetElemHostFirst(this_list, HR_name, 
-                                lGetHost(elem, HR_name), &iterator); 
+      next_elem = lNextRW(elem);
+      elem2 = lGetElemHostFirstRW(this_list, HR_name, lGetHost(elem, HR_name), &iterator); 
       if (elem2 != NULL && elem != elem2) {
          lRemoveElem(this_list, &elem);
       }

@@ -295,14 +295,15 @@ void sge_setup_job_resend(void)
    job = lFirst(*object_type_get_master_list(SGE_TYPE_JOB));
 
    while (NULL != job) {
-      lListElem *task;
+      const lListElem *task;
       u_long32 job_num;
 
       job_num = lGetUlong(job, JB_job_number);
       task = lFirst(lGetList(job, JB_ja_tasks));
       while (NULL != task) {
          if (lGetUlong(task, JAT_status) == JTRANSFERING) {
-            lListElem *granted_queue, *qinstance, *host;
+            const lListElem *granted_queue, *qinstance;
+            lListElem *host;
             const char *qname;
             u_long32 task_num, when;
             te_event_t ev;
@@ -816,7 +817,7 @@ static int setup_qmaster(sge_gdi_ctx_class_t *ctx)
 {
    lListElem *jep, *ep, *tmpqep;
    static bool first = true;
-   lListElem *spooling_context = NULL;
+   const lListElem *spooling_context = NULL;
    lList *answer_list = NULL;
    time_t time_start, time_end;
    monitoring_t monitor;
@@ -904,8 +905,8 @@ static int setup_qmaster(sge_gdi_ctx_class_t *ctx)
 
       for (i = 0; new_complexes[i].name != NULL; i++) {
          lList *centry_list = *object_type_get_master_list_rw(SGE_TYPE_CENTRY);
-         lListElem *entry_long = lGetElemStr(centry_list, CE_name, new_complexes[i].name);
-         lListElem *entry_short = lGetElemStr(centry_list, CE_shortcut, new_complexes[i].shortcut);
+         const lListElem *entry_long = lGetElemStr(centry_list, CE_name, new_complexes[i].name);
+         const lListElem *entry_short = lGetElemStr(centry_list, CE_shortcut, new_complexes[i].shortcut);
 
          if (entry_long == NULL && entry_short == NULL) {
             lListElem *new_centry = lCreateElem(CE_Type);
@@ -1017,9 +1018,9 @@ static int setup_qmaster(sge_gdi_ctx_class_t *ctx)
     *    - suspend_on_subordinate
     */
    for_each(tmpqep, *(object_type_get_master_list(SGE_TYPE_CQUEUE))) {
-      lList     *qinstance_list = lGetList(tmpqep, CQ_qinstances);
+      const lList *qinstance_list = lGetList(tmpqep, CQ_qinstances);
       lListElem *qinstance = NULL;
-      lList     *aso_list = NULL;
+      const lList *aso_list = NULL;
       lListElem *aso = NULL;
 
       /*
@@ -1032,9 +1033,9 @@ static int setup_qmaster(sge_gdi_ctx_class_t *ctx)
          /* This cluster queue has a list of subordinate lists (possibly one
           * for each host).*/
          for_each (aso, aso_list) {
-            lListElem *elem;
+            const lListElem *elem;
             int   pos;
-            lList *so_list = lGetList(aso, ASOLIST_value);
+            const lList *so_list = lGetList(aso, ASOLIST_value);
             
             /* Every element of the ASOLIST should have a SOLIST, but we
              * check it to be sure.
@@ -1136,7 +1137,7 @@ static int setup_qmaster(sge_gdi_ctx_class_t *ctx)
             do nothing spectacular if the AD reqest list for this job is empty. */
          sge_task_depend_init(jep, &answer_list);
 
-         centry_list_fill_request(lGetList(jep, JB_hard_resource_list), 
+         centry_list_fill_request(lGetListRW(jep, JB_hard_resource_list), 
                      NULL, *object_type_get_master_list(SGE_TYPE_CENTRY), false, true, false);
 
          /* need to update JSUSPENDED_ON_SUBORDINATE since task spooling is not 
@@ -1222,7 +1223,7 @@ static int setup_qmaster(sge_gdi_ctx_class_t *ctx)
    DPRINTF(("share tree list-----------------------------------\n"));
    spool_read_list(&answer_list, spooling_context, object_type_get_master_list_rw(SGE_TYPE_SHARETREE), SGE_TYPE_SHARETREE);
    answer_list_output(&answer_list);
-   ep = lFirst(*object_type_get_master_list(SGE_TYPE_SHARETREE));
+   ep = lFirstRW(*object_type_get_master_list(SGE_TYPE_SHARETREE));
    if (ep) {
       lList *alp = NULL;
       lList *found = NULL;
@@ -1275,13 +1276,13 @@ remove_invalid_job_references(bool job_spooling, int user)
 
    for_each(up, object_list) {
       int spool_me = 0;
-      next = lFirst(lGetList(up, debited_job_usage_key));
+      next = lFirstRW(lGetList(up, debited_job_usage_key));
       while ((upu=next)) {
-         next = lNext(upu);
+         next = lNextRW(upu);
 
          jobid = lGetUlong(upu, UPU_job_number);
          if (!lGetElemUlong(*object_type_get_master_list(SGE_TYPE_JOB), JB_job_number, jobid)) {
-            lRemoveElem(lGetList(up, debited_job_usage_key), &upu);
+            lRemoveElem(lGetListRW(up, debited_job_usage_key), &upu);
             WARNING((SGE_EVENT, "removing reference to no longer existing job "sge_u32" of %s "SFQ"\n",
                            jobid, object_name, lGetString(up, object_key)));
             spool_me = 1;
@@ -1318,23 +1319,23 @@ static int debit_all_jobs_from_qs()
 
    DENTER(TOP_LAYER, "debit_all_jobs_from_qs");
 
-   next_jep = lFirst(*object_type_get_master_list(SGE_TYPE_JOB));
+   next_jep = lFirstRW(*object_type_get_master_list(SGE_TYPE_JOB));
    while ((jep=next_jep)) {
    
       /* may be we have to delete this job */   
-      next_jep = lNext(jep);
+      next_jep = lNextRW(jep);
       
-      next_jatep = lFirst(lGetList(jep, JB_ja_tasks));
+      next_jatep = lFirstRW(lGetList(jep, JB_ja_tasks));
       while ((jatep = next_jatep)) {
          bool master_task = true;
-         next_jatep = lNext(jatep);
+         next_jatep = lNextRW(jatep);
 
          /* don't look at states - we only trust in 
             "granted destin. ident. list" */
 
          for_each (gdi, lGetList(jatep, JAT_granted_destin_identifier_list)) {
             u_long32 ar_id = lGetUlong(jep, JB_ar);
-            lListElem *ar   = NULL;
+            const lListElem *ar   = NULL;
 
             queue_name = lGetString(gdi, JG_qname);
             slots = lGetUlong(gdi, JG_slots);
@@ -1342,11 +1343,11 @@ static int debit_all_jobs_from_qs()
             if (!(qep = cqueue_list_locate_qinstance(master_cqueue_list, queue_name))) {
                ERROR((SGE_EVENT, MSG_CONFIG_CANTFINDQUEUEXREFERENCEDINJOBY_SU,  
                       queue_name, sge_u32c(lGetUlong(jep, JB_job_number))));
-               lRemoveElem(lGetList(jep, JB_ja_tasks), &jatep);
+               lRemoveElem(lGetListRW(jep, JB_ja_tasks), &jatep);
             } else if (ar_id != 0 && (ar = lGetElemUlong(master_ar_list, AR_id, ar_id)) == NULL) {
                ERROR((SGE_EVENT, MSG_CONFIG_CANTFINDARXREFERENCEDINJOBY_UU,  
                       sge_u32c(ar_id), sge_u32c(lGetUlong(jep, JB_job_number))));
-               lRemoveElem(lGetList(jep, JB_ja_tasks), &jatep);
+               lRemoveElem(lGetListRW(jep, JB_ja_tasks), &jatep);
             } else {
                /* debit in all layers */
                lListElem *rqs = NULL;

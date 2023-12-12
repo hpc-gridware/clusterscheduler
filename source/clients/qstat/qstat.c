@@ -2026,19 +2026,19 @@ qstat_show_job(sge_gdi_ctx_class_t *ctx, lList *jid_list, u_long32 isXML, qstat_
          lList *msgList = NULL;
          lListElem *msgElem = NULL;
          lListElem *tmp_msgElem = NULL;
-         msgList = lGetList(tmpElem, SME_message_list);
-         msgElem = lFirst(msgList);
+         msgList = lGetListRW(tmpElem, SME_message_list);
+         msgElem = lFirstRW(msgList);
          while (msgElem) {            
             lList *jbList = NULL;
             lListElem *jbElem = NULL;
             lListElem *tmp_jbElem = NULL;
             
-            tmp_msgElem = lNext(msgElem);
-            jbList = lGetList(msgElem, MES_job_number_list);
-            jbElem = lFirst(jbList);
+            tmp_msgElem = lNextRW(msgElem);
+            jbList = lGetListRW(msgElem, MES_job_number_list);
+            jbElem = lFirstRW(jbList);
             
             while (jbElem) {
-               tmp_jbElem = lNext(jbElem);
+               tmp_jbElem = lNextRW(jbElem);
                if (lGetElemUlong(jlp, JB_job_number, lGetUlong(jbElem, ULNG_value)) == NULL) {
                   lRemoveElem(jbList, &jbElem);
                }
@@ -2079,7 +2079,7 @@ qstat_show_job(sge_gdi_ctx_class_t *ctx, lList *jid_list, u_long32 isXML, qstat_
          char buffer[256];
  
          sprintf(buffer, sge_U32CFormat, sge_u32c(lGetUlong(elem1, JB_job_number)));   
-         elem2 = lGetElemStr(jid_list, ST_name, buffer);     
+         elem2 = lGetElemStrRW(jid_list, ST_name, buffer);     
          
          if (elem2) {
             lDechainElem(jid_list, elem2);
@@ -2102,7 +2102,7 @@ qstat_show_job(sge_gdi_ctx_class_t *ctx, lList *jid_list, u_long32 isXML, qstat_
    /* print scheduler job information and global scheduler info */
    for_each (j_elem, jlp) {
       u_long32 jid = lGetUlong(j_elem, JB_job_number);
-      lListElem *sme;
+      const lListElem *sme;
 
       printf("==============================================================\n");
       /* print job information */
@@ -2151,7 +2151,8 @@ qstat_show_job(sge_gdi_ctx_class_t *ctx, lList *jid_list, u_long32 isXML, qstat_
 
 static int qstat_show_job_info(sge_gdi_ctx_class_t *ctx, u_long32 isXML, qstat_env_t *qstat_env)
 {
-   lList *ilp = NULL, *mlp = NULL;
+   lList *ilp = NULL;
+   lList *mlp = NULL;
    lListElem* aep = NULL;
    lEnumeration* what = NULL;
    lList* alp = NULL;
@@ -2189,7 +2190,7 @@ static int qstat_show_job_info(sge_gdi_ctx_class_t *ctx, u_long32 isXML, qstat_e
          return 1;
       }
 
-      sme = lFirst(ilp);
+      sme = lFirstRW(ilp);
       if (sme) {
          /* print global schduling info */
          first_run = 1;
@@ -2207,8 +2208,8 @@ static int qstat_show_job_info(sge_gdi_ctx_class_t *ctx, u_long32 isXML, qstat_e
 
          first_run = 1;
 
-         mlp = lGetList(sme, SME_message_list);
-         lPSortList (mlp, "I+", MES_message_number);
+         mlp = lGetListRW(sme, SME_message_list);
+         lPSortList(mlp, "I+", MES_message_number);
 
          /* 
           * Remove all jids which have more than one entry for a MES_message_number
@@ -2222,33 +2223,33 @@ static int qstat_show_job_info(sge_gdi_ctx_class_t *ctx, u_long32 isXML, qstat_e
 
             new_list = lCreateList("filtered message list", MES_Type);
 
-            flt_nxt_msg = lFirst(mlp);
+            flt_nxt_msg = lFirstRW(mlp);
             while ((flt_msg = flt_nxt_msg)) {
                lListElem *flt_jid, * flt_nxt_jid;
                int found_msg, found_jid;
 
-               flt_nxt_msg = lNext(flt_msg);
+               flt_nxt_msg = lNextRW(flt_msg);
                found_msg = 0;
                for_each(ref_msg, new_list) {
                   if (lGetUlong(ref_msg, MES_message_number) == 
                       lGetUlong(flt_msg, MES_message_number)) {
                  
-                  flt_nxt_jid = lFirst(lGetList(flt_msg, MES_job_number_list));
+                  flt_nxt_jid = lFirstRW(lGetList(flt_msg, MES_job_number_list));
                   while ((flt_jid = flt_nxt_jid)) {
-                     flt_nxt_jid = lNext(flt_jid);
+                     flt_nxt_jid = lNextRW(flt_jid);
                     
                      found_jid = 0; 
                      for_each(ref_jid, lGetList(ref_msg, MES_job_number_list)) {
                         if (lGetUlong(ref_jid, ULNG_value) == 
                             lGetUlong(flt_jid, ULNG_value)) {
-                           lRemoveElem(lGetList(flt_msg, MES_job_number_list), &flt_jid);
+                           lRemoveElem(lGetListRW(flt_msg, MES_job_number_list), &flt_jid);
                            found_jid = 1;
                            break;
                         }
                      }
                      if (!found_jid) { 
-                        lDechainElem(lGetList(flt_msg, MES_job_number_list), flt_jid);
-                        lAppendElem(lGetList(ref_msg, MES_job_number_list), flt_jid);
+                        lDechainElem(lGetListRW(flt_msg, MES_job_number_list), flt_jid);
+                        lAppendElem(lGetListRW(ref_msg, MES_job_number_list), flt_jid);
                      } 
                   }
                   found_msg = 1;
@@ -2265,7 +2266,7 @@ static int qstat_show_job_info(sge_gdi_ctx_class_t *ctx, u_long32 isXML, qstat_e
 
       text[0]=0;
       for_each(mes, mlp) {
-         lPSortList (lGetList(mes, MES_job_number_list), "I+", ULNG_value);
+         lPSortList(lGetListRW(mes, MES_job_number_list), "I+", ULNG_value);
 
          for_each(jid_ulng, lGetList(mes, MES_job_number_list)) {
             u_long32 mid;

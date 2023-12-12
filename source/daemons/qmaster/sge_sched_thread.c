@@ -398,7 +398,8 @@ static int dispatch_jobs(sge_evc_class_t *evc, scheduler_all_data_t *lists, orde
                          lList **splitted_job_lists[])
 {
    lList *user_list=NULL, *group_list=NULL;
-   lListElem *orig_job, *cat=NULL;
+   lListElem *orig_job;
+   lListElem *cat=NULL;
    lList *none_avail_queues = NULL;
    lList *consumable_load_list = NULL;
    sched_prof_t pi;
@@ -465,7 +466,7 @@ static int dispatch_jobs(sge_evc_class_t *evc, scheduler_all_data_t *lists, orde
    sconf_set_global_load_correction((global_lc != 0) ? true : false);
 
    if (max_reserve != 0 || lGetNumberOfElem(lists->ar_list) > 0) {
-      lListElem *dis_queue_elem = lFirst(lists->dis_queue_list);
+      lListElem *dis_queue_elem = lFirstRW(lists->dis_queue_list);
       /*----------------------------------------------------------------------
        * ENSURE RUNNING JOBS ARE REFLECTED IN PER RESOURCE SCHEDULE
        *---------------------------------------------------------------------*/
@@ -700,7 +701,7 @@ static int dispatch_jobs(sge_evc_class_t *evc, scheduler_all_data_t *lists, orde
 
       memset(&pi, 0, sizeof(sched_prof_t));
 
-      while ( (orig_job = lFirst(*(splitted_job_lists[SPLIT_PENDING]))) != NULL) {
+      while ((orig_job = lFirstRW(*(splitted_job_lists[SPLIT_PENDING]))) != NULL) {
          dispatch_t result = DISPATCH_NEVER_CAT;
          u_long32 job_id;
          bool is_pjob_resort = false;

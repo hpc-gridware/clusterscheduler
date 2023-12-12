@@ -73,7 +73,7 @@ static int string_cmp(u_long32 type, u_long32 relop, const char *request,
 static lList *get_attribute_list_by_names(lListElem *global, lListElem *host, lListElem *queue, 
                                           const lList *centry_list, lList *attrnames);
 
-static void build_name_filter(lList *filter, lList *list, int t_name);
+static void build_name_filter(lList *filter, const lList *list, int t_name);
 
 static bool is_attr_prior2(lListElem *upper_el, double lower_value, int t_value, int t_dominant);
 
@@ -154,19 +154,19 @@ void monitor_dominance(char *str, u_long32 mask) {
 *     static lListElem* - the element one was looking for or NULL
 *
 *******************************************************************************/
-lListElem* get_attribute(const char *attrname, lList *config_attr, lList *actual_attr, lList *load_attr, 
-   const lList *centry_list, lListElem *queue, u_long32 layer, double lc_factor, dstring *reason,
+lListElem* get_attribute(const char *attrname, const lList *config_attr, const lList *actual_attr, const lList *load_attr, 
+   const lList *centry_list, const lListElem *queue, u_long32 layer, double lc_factor, dstring *reason,
    bool zero_utilization, u_long32 start_time, u_long32 duration)
 {
-   lListElem *actual_el=NULL;
-   lListElem *load_el=NULL;
+   const lListElem *actual_el=NULL;
+   const lListElem *load_el=NULL;
    lListElem *cplx_el=NULL;
 
    DENTER(BASIS_LAYER, "get_attribute");
 
    /* resource_attr is a complex_entry (CE_Type) */
    if (config_attr) {
-      lListElem *temp = lGetElemStr(config_attr, CE_name, attrname);
+      const lListElem *temp = lGetElemStr(config_attr, CE_name, attrname);
 
       if (temp){ 
 
@@ -221,12 +221,9 @@ lListElem* get_attribute(const char *attrname, lList *config_attr, lList *actual
    }
 
    /** check for a load value */
-   if (load_attr && 
-       (load_el = lGetElemStr(load_attr, HL_name, attrname)) &&
-       (sconf_get_qs_state()==QS_STATE_FULL || lGetBool(load_el, HL_static)) &&
-        (!is_attr_prior(cplx_el, cplx_el)))
-   {
-         lListElem *ep_nproc=NULL;
+   if (load_attr && (load_el = lGetElemStr(load_attr, HL_name, attrname)) &&
+       (sconf_get_qs_state()==QS_STATE_FULL || lGetBool(load_el, HL_static)) && (!is_attr_prior(cplx_el, cplx_el))) {
+         const lListElem *ep_nproc=NULL;
          int nproc=1;
 
          if (!cplx_el){
@@ -257,7 +254,7 @@ lListElem* get_attribute(const char *attrname, lList *config_attr, lList *actual
                lSetString(cplx_el, CE_stringval, load_value);
                lSetUlong(cplx_el, CE_dominant, layer | DOMINANT_TYPE_LOAD);
             } else { /* working on numerical values */
-               lListElem *job_load;
+               const lListElem *job_load;
                char err_str[256];
                char sval[100];
                u_long32 dom_type = DOMINANT_TYPE_LOAD;
@@ -753,7 +750,7 @@ static lList *get_attribute_list(lListElem *global, lListElem *host, lListElem *
 *     ??? 
 *
 *******************************************************************************/
-static void build_name_filter(lList *filter, lList *list, int t_name){
+static void build_name_filter(lList *filter, const lList *list, int t_name){
    lListElem *current = NULL;
    
    if (!list) {
@@ -1148,16 +1145,16 @@ int compare_complexes(int slots, lListElem *req_cplx, lListElem *src_cplx, char 
 *     void lListElem* - the element one is looking for (a copy) or NULL.
 *
 *******************************************************************************/
-lListElem *get_attribute_by_name(lListElem* global, lListElem *host, lListElem *queue, 
+lListElem *get_attribute_by_name(const lListElem* global, const lListElem *host, const lListElem *queue, 
     const char* attrname, const lList *centry_list, u_long32 start_time, u_long32 duration)
 {
    lListElem *global_el=NULL;
    lListElem *host_el=NULL;
    lListElem *queue_el=NULL;
    lListElem *ret_el = NULL;
-   lList *load_attr = NULL;
-   lList *config_attr = NULL;
-   lList *actual_attr = NULL; 
+   const lList *load_attr = NULL;
+   const lList *config_attr = NULL;
+   const lList *actual_attr = NULL; 
 
    DENTER(BASIS_LAYER, "get_attribute_by_name");
 

@@ -75,7 +75,7 @@ cqueue_verify_calendar(lListElem *cqueue, lList **answer_list, lListElem *attr_e
       const char *name = lGetString(attr_elem, ASTR_value);
 
       if (name != NULL && strcasecmp("none", name)) {
-         const lListElem *calendar = calendar_list_locate(master_calendar_list, name);
+         const lListElem *calendar = lGetElemStr(master_calendar_list, CAL_name, name);
          if (calendar == NULL) {
             sprintf(SGE_EVENT, MSG_CQUEUE_UNKNOWNCALENDAR_S, name);
             answer_list_add(answer_list, SGE_EVENT, STATUS_EUNKNOWN, ANSWER_QUALITY_ERROR);
@@ -94,7 +94,7 @@ cqueue_verify_ckpt_list(lListElem *cqueue, lList **answer_list, lListElem *attr_
 
    DENTER(CQUEUE_VERIFY_LAYER, "cqueue_verify_ckpt_list");
    if (cqueue != NULL && attr_elem != NULL) {
-      lList *ckpt_list = lGetList(attr_elem, ASTRLIST_value);
+      const lList *ckpt_list = lGetList(attr_elem, ASTRLIST_value);
 
       if (ckpt_list != NULL) {
          if (!ckpt_list_do_all_exist(master_ckpt_list, answer_list, ckpt_list)) {
@@ -113,7 +113,7 @@ cqueue_verify_consumable_config_list(lListElem *cqueue, lList **answer_list, lLi
 
    DENTER(CQUEUE_VERIFY_LAYER, "cqueue_verify_project_list");
    if (cqueue != NULL && attr_elem != NULL) {
-      lList *centry_list = lGetList(attr_elem, ACELIST_value);
+      const lList *centry_list = lGetList(attr_elem, ACELIST_value);
 
       if (centry_list != NULL) {
          if (!centry_list_do_all_exists(master_centry_list, answer_list, centry_list)) {
@@ -161,7 +161,7 @@ cqueue_verify_pe_list(lListElem *cqueue, lList **answer_list, lListElem *attr_el
 
    DENTER(CQUEUE_VERIFY_LAYER, "cqueue_verify_pe_list");
    if (cqueue != NULL && attr_elem != NULL) {
-      lList *pe_list = lGetList(attr_elem, ASTRLIST_value);
+      const lList *pe_list = lGetList(attr_elem, ASTRLIST_value);
 
       if (pe_list != NULL) {
          if (!pe_list_do_all_exist(master_pe_list, answer_list, pe_list, true)) {
@@ -227,7 +227,7 @@ cqueue_verify_project_list(lListElem *cqueue, lList **answer_list, lListElem *at
 
    DENTER(CQUEUE_VERIFY_LAYER, "cqueue_verify_project_list");
    if (cqueue != NULL && attr_elem != NULL) {
-      lList *project_list = lGetList(attr_elem, APRJLIST_value);
+      const lList *project_list = lGetList(attr_elem, APRJLIST_value);
 
       if (project_list != NULL) {
          if (!prj_list_do_all_exist(master_project_list, answer_list, project_list)) {
@@ -302,7 +302,7 @@ cqueue_verify_subordinate_list(lListElem *cqueue, lList **answer_list, lListElem
    DENTER(CQUEUE_VERIFY_LAYER, "cqueue_verify_subordinate_list");
    if (cqueue != NULL && attr_elem != NULL) {
       const char *cqueue_name = lGetString(cqueue, CQ_name);
-      lList *so_list = lGetList(attr_elem, ASOLIST_value);
+      const lList *so_list = lGetList(attr_elem, ASOLIST_value);
       lListElem *so;
 
       for_each(so, so_list) {
@@ -349,7 +349,7 @@ cqueue_verify_user_list(lListElem *cqueue, lList **answer_list, lListElem *attr_
 
    DENTER(CQUEUE_VERIFY_LAYER, "cqueue_verify_user_list");
    if (cqueue != NULL && attr_elem != NULL) {
-      lList *user_list = lGetList(attr_elem, AUSRLIST_value);
+      const lList *user_list = lGetList(attr_elem, AUSRLIST_value);
 
       if (user_list != NULL) {
          if (userset_list_validate_acl_list(user_list, answer_list, master_userset_list) == STATUS_EUNKNOWN) {

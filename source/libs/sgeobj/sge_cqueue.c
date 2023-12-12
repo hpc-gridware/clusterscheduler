@@ -387,8 +387,8 @@ cqueue_is_href_referenced(const lListElem *this_elem,
       const char *href_name = lGetHost(href, HR_name);
       
       if (href_name != NULL) {
-         lList *href_list = lGetList(this_elem, CQ_hostlist);
-         lListElem *tmp_href = lGetElemHost(href_list, HR_name, href_name);
+         const lList *href_list = lGetList(this_elem, CQ_hostlist);
+         const lListElem *tmp_href = lGetElemHost(href_list, HR_name, href_name);
 
          /*
           * Is the host group part of the hostlist definition ...
@@ -404,10 +404,8 @@ cqueue_is_href_referenced(const lListElem *this_elem,
             int index = 0;
 
             while (cqueue_attribute_array[index].cqueue_attr != NoName && !ret) {
-               lList *attr_list = lGetList(this_elem,
-                                       cqueue_attribute_array[index].cqueue_attr);
-               lListElem *attr_elem = lGetElemHost(attr_list,
-                              cqueue_attribute_array[index].href_attr, href_name);
+               const lList *attr_list = lGetList(this_elem, cqueue_attribute_array[index].cqueue_attr);
+               const lListElem *attr_elem = lGetElemHost(attr_list, cqueue_attribute_array[index].href_attr, href_name);
                                                                                    
                if (attr_elem != NULL) {
                   ret = true;
@@ -449,8 +447,8 @@ cqueue_is_hgroup_referenced(const lListElem *this_elem, const lListElem *hgroup)
       const char *name = lGetHost(hgroup, HGRP_name);
       
       if (name != NULL) {
-         lList *href_list = lGetList(this_elem, CQ_hostlist);
-         lListElem *tmp_href = lGetElemHost(href_list, HR_name, name);
+         const lList *href_list = lGetList(this_elem, CQ_hostlist);
+         const lListElem *tmp_href = lGetElemHost(href_list, HR_name, name);
 
          /*
           * Is the host group part of the hostlist definition ...
@@ -463,10 +461,8 @@ cqueue_is_hgroup_referenced(const lListElem *this_elem, const lListElem *hgroup)
              */
             int index = 0;
             while (cqueue_attribute_array[index].cqueue_attr != NoName) {
-               lList *attr_list = lGetList(this_elem,
-                                       cqueue_attribute_array[index].cqueue_attr);
-               lListElem *attr_elem = lGetElemHost(attr_list,
-                              cqueue_attribute_array[index].href_attr, name);
+               const lList *attr_list = lGetList(this_elem, cqueue_attribute_array[index].cqueue_attr);
+               const lListElem *attr_elem = lGetElemHost(attr_list, cqueue_attribute_array[index].href_attr, name);
 
                if (attr_elem != NULL) {
                   ret = true;
@@ -928,7 +924,7 @@ cqueue_list_add_cqueue(lList *this_list, lListElem *queue)
 lListElem *
 cqueue_list_locate(const lList *this_list, const char *name)
 {
-   return lGetElemStr(this_list, CQ_name, name);
+   return lGetElemStrRW(this_list, CQ_name, name);
 }
 
 /****** sgeobj/cqueue/cqueue_locate_qinstance() *******************************
@@ -954,7 +950,7 @@ cqueue_list_locate(const lList *this_list, const char *name)
 lListElem *
 cqueue_locate_qinstance(const lListElem *this_elem, const char *hostname)
 {
-   lList *qinstance_list = lGetList(this_elem, CQ_qinstances);
+   const lList *qinstance_list = lGetList(this_elem, CQ_qinstances);
 
    return qinstance_list_locate(qinstance_list, hostname, NULL);
 }
@@ -1009,24 +1005,17 @@ cqueue_verify_attributes(lListElem *cqueue, lList **answer_list,
                                   cqueue_attribute_array[index].cqueue_attr, SGE_NO_ABORT);
 
          if (pos >= 0) {
-            lList *list = NULL;
-
-            list = lGetList(cqueue,
-                            cqueue_attribute_array[index].cqueue_attr);
+            const lList *list = lGetList(cqueue, cqueue_attribute_array[index].cqueue_attr);
 
             /*
              * Configurations without default setting are rejected
              */
             if (ret) {
-               lListElem *elem = lGetElemHost(list, 
-                   cqueue_attribute_array[index].href_attr, HOSTREF_DEFAULT);
+               const lListElem *elem = lGetElemHost(list, cqueue_attribute_array[index].href_attr, HOSTREF_DEFAULT);
 
                if (elem == NULL) {
-                  SGE_ADD_MSG_ID(sprintf(SGE_EVENT,
-                                 MSG_CQUEUE_NODEFVALUE_S, 
-                                 cqueue_attribute_array[index].name));
-                  answer_list_add(answer_list, SGE_EVENT,
-                                  STATUS_EUNKNOWN, ANSWER_QUALITY_ERROR);
+                  SGE_ADD_MSG_ID(sprintf(SGE_EVENT, MSG_CQUEUE_NODEFVALUE_S, cqueue_attribute_array[index].name));
+                  answer_list_add(answer_list, SGE_EVENT, STATUS_EUNKNOWN, ANSWER_QUALITY_ERROR);
                   ret = false;
                } 
             }
@@ -1042,19 +1031,14 @@ cqueue_verify_attributes(lListElem *cqueue, lList **answer_list,
                for_each(elem, list) {
                   const char *hostname = NULL;
                   const void *iterator = NULL;
-                  lListElem *first_elem = NULL;
+                  const lListElem *first_elem = NULL;
 
-                  hostname = lGetHost(elem, 
-                        cqueue_attribute_array[index].href_attr);
-                  first_elem = lGetElemHostFirst(list,
-                        cqueue_attribute_array[index].href_attr,
-                        hostname, &iterator);
+                  hostname = lGetHost(elem, cqueue_attribute_array[index].href_attr);
+                  first_elem = lGetElemHostFirst(list, cqueue_attribute_array[index].href_attr, hostname, &iterator);
 
                   if (elem != first_elem) {
-                     SGE_ADD_MSG_ID(sprintf(SGE_EVENT,
-                                   MSG_CQUEUE_MULVALNOTALLOWED_S, hostname));
-                     answer_list_add(answer_list, SGE_EVENT,
-                                     STATUS_EUNKNOWN, ANSWER_QUALITY_ERROR);
+                     SGE_ADD_MSG_ID(sprintf(SGE_EVENT, MSG_CQUEUE_MULVALNOTALLOWED_S, hostname));
+                     answer_list_add(answer_list, SGE_EVENT, STATUS_EUNKNOWN, ANSWER_QUALITY_ERROR);
                      ret = false;
                      break;
                   }
@@ -1063,11 +1047,8 @@ cqueue_verify_attributes(lListElem *cqueue, lList **answer_list,
                         const lListElem *hgroup = hgroup_list_locate(master_hgroup_list, hostname);
 
                         if (hgroup == NULL) {
-                           ERROR((SGE_EVENT, MSG_CQUEUE_INVALIDDOMSETTING_SS, 
-                                  cqueue_attribute_array[index].name,
-                                  hostname));
-                           answer_list_add(answer_list, SGE_EVENT,
-                                         STATUS_ESYNTAX, ANSWER_QUALITY_ERROR);
+                           ERROR((SGE_EVENT, MSG_CQUEUE_INVALIDDOMSETTING_SS, cqueue_attribute_array[index].name, hostname));
+                           answer_list_add(answer_list, SGE_EVENT, STATUS_ESYNTAX, ANSWER_QUALITY_ERROR);
                            ret = false;
                            break;
                         } 
@@ -1077,9 +1058,7 @@ cqueue_verify_attributes(lListElem *cqueue, lList **answer_list,
                      int back = getuniquehostname(hostname, resolved_name, 0);
 
                      if (back == CL_RETVAL_OK) {
-                        lSetHost(elem, 
-                                 cqueue_attribute_array[index].href_attr, 
-                                 resolved_name);
+                        lSetHost(elem, cqueue_attribute_array[index].href_attr, resolved_name);
                      } else {
                         /*
                          * Due to CR 6319231, IZ 1760 this is allowed
@@ -1429,7 +1408,7 @@ cqueue_list_set_tag(lList *this_list, u_long32 tag_value, bool tag_qinstances)
       for_each(cqueue, this_list) {
          lSetUlong(cqueue, CQ_tag, tag_value);
          if (tag_qinstances) {
-            lList *qinstance_list = lGetList(cqueue, CQ_qinstances);
+            lList *qinstance_list = lGetListRW(cqueue, CQ_qinstances);
 
             qinstance_list_set_tag(qinstance_list, tag_value);
          }
@@ -1497,29 +1476,23 @@ cqueue_list_locate_qinstance_msg(const lList *cqueue_list, const char *full_name
 
    DENTER(TOP_LAYER, "cqueue_list_locate_qinstance");
    if (full_name != NULL) {
-      lListElem *cqueue = NULL;
       dstring cqueue_name_buffer = DSTRING_INIT;
       dstring host_domain_buffer = DSTRING_INIT;
-      const char *cqueue_name = NULL;
-      const char *hostname = NULL;
       bool has_hostname = false;
       bool has_domain = false;
 
-      cqueue_name_split(full_name, &cqueue_name_buffer, 
-                        &host_domain_buffer, &has_hostname, &has_domain);
-      cqueue_name = sge_dstring_get_string(&cqueue_name_buffer);
-      hostname = sge_dstring_get_string(&host_domain_buffer);
-      cqueue = lGetElemStr(cqueue_list, CQ_name, cqueue_name);
+      cqueue_name_split(full_name, &cqueue_name_buffer, &host_domain_buffer, &has_hostname, &has_domain);
+      const char *cqueue_name = sge_dstring_get_string(&cqueue_name_buffer);
+      const char *hostname = sge_dstring_get_string(&host_domain_buffer);
+      const lListElem *cqueue = lGetElemStr(cqueue_list, CQ_name, cqueue_name);
       if (cqueue != NULL) {
-         lList *qinstance_list = lGetList(cqueue, CQ_qinstances);
+         lList *qinstance_list = lGetListRW(cqueue, CQ_qinstances);
 
-         ret = lGetElemHost(qinstance_list, QU_qhostname, hostname);
+         ret = lGetElemHostRW(qinstance_list, QU_qhostname, hostname);
       } else {
          if (raise_error) {
-            ERROR((SGE_EVENT, MSG_CQUEUE_CQUEUEISNULL_SSSII, full_name, 
-                    cqueue_name != NULL ? cqueue_name : "<null>", 
-                    hostname != NULL ? hostname: "<null>", 
-                    (int)has_hostname, (int)has_domain));
+            ERROR((SGE_EVENT, MSG_CQUEUE_CQUEUEISNULL_SSSII, full_name, cqueue_name != NULL ? cqueue_name : "<null>", 
+                    hostname != NULL ? hostname: "<null>", (int)has_hostname, (int)has_domain));
          }
       }
       sge_dstring_free(&cqueue_name_buffer);
@@ -1639,12 +1612,12 @@ cqueue_trash_used_href_setting(lListElem *this_elem, lList **answer_list,
             lListElem *elem = NULL;
             lListElem *next_elem = NULL;
 
-            next_elem = lFirst(list);
+            next_elem = lFirstRW(list);
             while ((elem = next_elem) != NULL) {
                const char *attr_hostname = lGetHost(elem, 
                                  cqueue_attribute_array[index].href_attr);
 
-               next_elem = lNext(elem);
+               next_elem = lNextRW(elem);
                if (!sge_hostcmp(hgroup_or_hostname, attr_hostname)) {
                   lRemoveElem(list, &elem);
                }
@@ -1721,12 +1694,9 @@ cqueue_purge_host(lListElem *this_elem, lList **answer_list,
 
             /* Does the given attr_wildcard match with the actual attr_name */         
             if (!sge_eval_expression(TYPE_STR, attr_name, cqueue_attribute_array[index].name, NULL)) {
-               sublist = lGetList(this_elem, 
-                                  cqueue_attribute_array[index].cqueue_attr );
+               sublist = lGetListRW(this_elem, cqueue_attribute_array[index].cqueue_attr );
 
-               if (lDelElemHost(&sublist, 
-                                cqueue_attribute_array[index].href_attr, 
-                                hgroup_or_hostname) == 1) {
+               if (lDelElemHost(&sublist, cqueue_attribute_array[index].href_attr, hgroup_or_hostname) == 1) {
                   DPRINTF((SFQ" deleted in "SFQ"\n", hgroup_or_hostname, 
                            cqueue_attribute_array[index].name ));
                   ret = true;
@@ -1773,9 +1743,8 @@ cqueue_sick(lListElem *cqueue, lList **answer_list,
          /*
           * Skip geee attributes in ge mode
           */
-         lList *attr_list = lGetList(cqueue,
-                                 cqueue_attribute_array[index].cqueue_attr);
-         lListElem *next_attr = lFirst(attr_list);
+         lList *attr_list = lGetListRW(cqueue, cqueue_attribute_array[index].cqueue_attr);
+         lListElem *next_attr = lFirstRW(attr_list);
          lListElem *attr = NULL;
 
          /*
@@ -1783,10 +1752,9 @@ cqueue_sick(lListElem *cqueue, lList **answer_list,
           * current configuration
           */
          while((attr = next_attr) != NULL) { 
-            const char *name = lGetHost(attr, 
-                                   cqueue_attribute_array[index].href_attr);
+            const char *name = lGetHost(attr, cqueue_attribute_array[index].href_attr);
 
-            next_attr = lNext(attr);
+            next_attr = lNextRW(attr);
             if (is_hgroup_name(name)) {
                if (strcmp(name, HOSTREF_DEFAULT)) {
                   lListElem *hgroup = NULL;

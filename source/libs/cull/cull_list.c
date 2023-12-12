@@ -1291,12 +1291,12 @@ lList *lAddSubList(lListElem *ep, int nm, lList *to_add)
 {
    lList *tmp;
    if (lGetNumberOfElem(to_add)) {
-      if ((tmp=lGetList(ep, nm)))
+      if ((tmp=lGetListRW(ep, nm)))
          lAddList(tmp, &to_add);
       else 
          lSetList(ep, nm, to_add);
    }
-   return lGetList(ep, nm);
+   return lGetListRW(ep, nm);
 }
 
 /****** cull/list/lAddList() **************************************************
@@ -1449,8 +1449,8 @@ int lOverrideStrList(lList *lp0, lList *lp1, int nm, const char *str)
        * remove all occurencies of the str in lp0
        */
       if (sge_strnullcmp(lGetString(ep, nm), str) == 0 && !overridden) {
-         lListElem *tmp;
-         while ((tmp = lGetElemStr(lp0, nm, str)) != NULL) {
+         lListElem *tmp = lGetElemStrRW(lp0, nm, str);
+         while (tmp != NULL) {
             lRemoveElem(lp0, &tmp);
          }
          overridden = true;
@@ -2080,10 +2080,14 @@ lListElem *lDechainObject(lListElem *parent, int name)
 *  RESULT
 *     lListElem* - first element or NULL 
 ******************************************************************************/
-lListElem *lFirst(const lList *slp) 
+lListElem *lFirstRW(const lList *slp) 
 {
    DENTER(CULL_LAYER, "lFirst");
    DRETURN(slp ? slp->first : NULL);
+}
+
+const lListElem *lFirst(const lList *slp) {
+   return lFirstRW(slp);
 }
 
 /****** cull/list/lLast() *****************************************************
@@ -2102,10 +2106,14 @@ lListElem *lFirst(const lList *slp)
 *  RESULT
 *     lListElem* - last element or NULL 
 ******************************************************************************/
-lListElem *lLast(const lList *slp) 
+lListElem *lLastRW(const lList *slp) 
 {
    DENTER(CULL_LAYER, "lLast");
    DRETURN(slp ? slp->last : NULL);
+}
+
+const lListElem *lLast(const lList *slp) {
+   return lLastRW(slp);
 }
 
 /****** cull/list/lNext() *****************************************************
@@ -2124,10 +2132,14 @@ lListElem *lLast(const lList *slp)
 *  RESULT
 *     lListElem* - next element or NULL 
 *******************************************************************************/
-lListElem *lNext(const lListElem *sep) 
+lListElem *lNextRW(const lListElem *sep) 
 {
    DENTER(CULL_LAYER, "lNext");
    DRETURN(sep ? sep->next : NULL);
+}
+
+const lListElem *lNext(const lListElem *sep) {
+   return lNextRW(sep);
 }
 
 /****** cull/list/lPrev() *****************************************************
@@ -2146,10 +2158,14 @@ lListElem *lNext(const lListElem *sep)
 *  RESULT
 *     lListElem* - previous element 
 ******************************************************************************/
-lListElem *lPrev(const lListElem *sep) 
+lListElem *lPrevRW(const lListElem *sep) 
 {
    DENTER(CULL_LAYER, "lPrev");
    DRETURN(sep ? sep->prev : NULL);
+}
+
+const lListElem *lPrev(const lListElem *sep) {
+   return lPrevRW(sep);
 }
 
 /****** cull/list/lFindFirst() ************************************************
@@ -2392,7 +2408,7 @@ int lSortList(lList *lp, const lSortOrder *sp)
 
 #ifdef RANDOMIZE_QSORT_ELEMENTS
 
-   for (i = 0, ep = lFirst(lp); ep; i++, ep = lNext(ep)) {
+   for (i = 0, ep = lFirstRW(lp); ep; i++, ep = lNextRW(ep)) {
       int j = (int)((double)i*rand()/(RAND_MAX+1.0));
       pointer[i] = pointer[j];
       pointer[j] = ep;
@@ -2400,7 +2416,7 @@ int lSortList(lList *lp, const lSortOrder *sp)
 
 #else
 
-   for (i = 0, ep = lFirst(lp); ep; i++, ep = lNext(ep))
+   for (i = 0, ep = lFirstRW(lp); ep; i++, ep = lNextRW(ep))
       pointer[i] = ep;
 
 #endif
@@ -2477,15 +2493,14 @@ int lUniqStr(lList *lp, int keyfield)
    /*
     * go over all elements and remove following elements
     */
-   ep = lFirst(lp);
+   ep = lFirstRW(lp);
    while (ep) {
-      rep = lNext(ep);
-      while (rep &&
-          !strcmp(lGetString(rep, keyfield), lGetString(ep, keyfield))) {
+      rep = lNextRW(ep);
+      while (rep && !strcmp(lGetString(rep, keyfield), lGetString(ep, keyfield))) {
          lRemoveElem(lp, &rep);
-         rep = lNext(ep);
+         rep = lNextRW(ep);
       }
-      ep = lNext(ep);
+      ep = lNextRW(ep);
    }
 
    DRETURN(0);
@@ -2527,15 +2542,14 @@ int lUniqHost(lList *lp, int keyfield)
    /*
     * go over all elements and remove following elements
     */
-   ep = lFirst(lp);
+   ep = lFirstRW(lp);
    while (ep) {
-      rep = lNext(ep);
-      while (rep &&
-          !strcmp(lGetHost(rep, keyfield), lGetHost(ep, keyfield))) {
+      rep = lNextRW(ep);
+      while (rep && !strcmp(lGetHost(rep, keyfield), lGetHost(ep, keyfield))) {
          lRemoveElem(lp, &rep);
-         rep = lNext(ep);
+         rep = lNextRW(ep);
       }
-      ep = lNext(ep);
+      ep = lNextRW(ep);
    }
 
    DRETURN(0);

@@ -78,7 +78,8 @@ int mailrec_parse(lList **lpp, const char *mail_str)
    const char *host;
    char **str_str;
    char **pstr;
-   lListElem *ep, *tmp;
+   lListElem *ep;
+   const lListElem *tmp;
    char *mail;
    struct saved_vars_s *context;
 
@@ -165,7 +166,7 @@ int mailrec_parse(lList **lpp, const char *mail_str)
 *  SEE ALSO
 *     sgeobj/mailrec/mailrec_parse() 
 *******************************************************************************/
-int mailrec_unparse(lList *head, char *mail_str, unsigned int mail_str_len)
+int mailrec_unparse(const lList *head, char *mail_str, unsigned int mail_str_len)
 {
    int len=0;
    int comma_needed = 0; /* whether we need to insert a comma */

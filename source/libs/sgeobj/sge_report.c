@@ -113,7 +113,7 @@ void job_report_init_from_job(lListElem *job_report,
 {
    u_long32 job_id = lGetUlong(job, JB_job_number);
    u_long32 ja_task_id = lGetUlong(ja_task, JAT_task_number);
-   lListElem *queue = NULL;   /* QU_Type */
+   const lListElem *queue;
 
    DENTER(TOP_LAYER, "job_report_init_from_job");
 
@@ -145,7 +145,7 @@ void job_report_init_from_job(lListElem *job_report,
 }
 
 void job_report_init_from_job_with_usage(lListElem *job_report,
-                                         lListElem *job,
+                                         const lListElem *job,
                                          lListElem *ja_task,
                                          lListElem *pe_task,
                                          u_long32 time_stamp)

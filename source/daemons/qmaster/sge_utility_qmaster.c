@@ -507,7 +507,7 @@ int attr_mod_time_str(lList **alpp, lListElem *qep, lListElem *new_ep, int nm, c
 *
 *******************************************************************************/
 bool attr_mod_sub_list(lList **alpp, lListElem *this_elem, int this_elem_name,
-                  int this_elem_primary_key, lListElem *delta_elem,
+                  int this_elem_primary_key, const lListElem *delta_elem,
                   int sub_command, const char *sub_list_name,
                   const char *object_name,
                   int no_info, bool *changed)
@@ -525,9 +525,9 @@ bool attr_mod_sub_list(lList **alpp, lListElem *this_elem, int this_elem_name,
          lListElem *reduced_element, *next_reduced_element;
          lListElem *full_element, *next_full_element;
 
-         reduced_sublist = lGetList(delta_elem, this_elem_name);
-         full_sublist = lGetList(this_elem, this_elem_name);
-         next_reduced_element = lFirst(reduced_sublist);
+         reduced_sublist = lGetListRW(delta_elem, this_elem_name);
+         full_sublist = lGetListRW(this_elem, this_elem_name);
+         next_reduced_element = lFirstRW(reduced_sublist);
          /*
          ** we try to find each element of the delta_elem
          ** in the sublist if this_elem. Elements which can be found
@@ -536,13 +536,13 @@ bool attr_mod_sub_list(lList **alpp, lListElem *this_elem, int this_elem_name,
          while ((reduced_element = next_reduced_element)) {
             int restart_loop = 0;
 
-            next_reduced_element = lNext(reduced_element);
-            next_full_element = lFirst(full_sublist);
+            next_reduced_element = lNextRW(reduced_element);
+            next_full_element = lFirstRW(full_sublist);
             while ((full_element = next_full_element)) {
                int pos, type;
                const char *rstring = NULL, *fstring = NULL;
 
-               next_full_element = lNext(full_element);
+               next_full_element = lNextRW(full_element);
 
                pos = lGetPosViaElem(reduced_element, this_elem_primary_key, SGE_NO_ABORT);
                type = lGetPosType(lGetElemDescr(reduced_element), pos);
@@ -567,7 +567,7 @@ bool attr_mod_sub_list(lList **alpp, lListElem *this_elem, int this_elem_name,
                   lListElem *old_sub_elem;
 
                   /* element already exists */
-                  next_reduced_element = lNext(reduced_element);
+                  next_reduced_element = lNextRW(reduced_element);
                   if (SGE_GDI_IS_SUBCOMMAND_SET(sub_command, SGE_GDI_CHANGE)) {
                      if (object_has_differences(reduced_element, NULL, full_element, false)) {
                         /* new object differs from old one - exchange them */
@@ -612,7 +612,7 @@ bool attr_mod_sub_list(lList **alpp, lListElem *this_elem, int this_elem_name,
                break;
             }
             if (restart_loop) {
-               next_reduced_element = lFirst(reduced_sublist);
+               next_reduced_element = lFirstRW(reduced_sublist);
             }
          }
 
@@ -620,14 +620,14 @@ bool attr_mod_sub_list(lList **alpp, lListElem *this_elem, int this_elem_name,
          if (ret && (SGE_GDI_IS_SUBCOMMAND_SET(sub_command, SGE_GDI_CHANGE) ||
              SGE_GDI_IS_SUBCOMMAND_SET(sub_command, SGE_GDI_APPEND) ||
              SGE_GDI_IS_SUBCOMMAND_SET(sub_command, SGE_GDI_REMOVE))) {
-             next_reduced_element = lFirst(reduced_sublist);
+             next_reduced_element = lFirstRW(reduced_sublist);
 
             while ((reduced_element = next_reduced_element)) {
                int pos, type;
                const char *rstring = NULL;
                lListElem *new_sub_elem;
 
-               next_reduced_element = lNext(reduced_element);
+               next_reduced_element = lNextRW(reduced_element);
 
                pos = lGetPosViaElem(reduced_element, this_elem_primary_key, SGE_NO_ABORT);
                type = lGetPosType(lGetElemDescr(reduced_element), pos);
@@ -657,7 +657,7 @@ bool attr_mod_sub_list(lList **alpp, lListElem *this_elem, int this_elem_name,
                            answer_list_add(alpp, SGE_EVENT, STATUS_OK, ANSWER_QUALITY_INFO);
                         }
                         lSetList(this_elem, this_elem_name, lCopyList("", lGetList(delta_elem, this_elem_name)));
-                        full_sublist = lGetList(this_elem, this_elem_name);
+                        full_sublist = lGetListRW(this_elem, this_elem_name);
 
                         did_changes = true;
                         break;
@@ -766,7 +766,7 @@ cqueue_mod_sublist(lListElem *this_elem, lList **answer_list,
    pos = lGetPosViaElem(reduced_elem, attribute_name, SGE_NO_ABORT);
    if (pos >= 0) {
       lList *mod_list = lGetPosList(reduced_elem, pos);
-      lList *org_list = lGetList(this_elem, attribute_name);
+      lList *org_list = lGetListRW(this_elem, attribute_name);
       lListElem *mod_elem;
 
       /* 
@@ -776,12 +776,12 @@ cqueue_mod_sublist(lListElem *this_elem, lList **answer_list,
       if (SGE_GDI_IS_SUBCOMMAND_SET(sub_command, SGE_GDI_SET_ALL)) {
          lListElem *elem, *next_elem;
 
-         next_elem = lFirst(org_list);
+         next_elem = lFirstRW(org_list);
          while ((elem = next_elem)) {
             const char *name = lGetHost(elem, sublist_host_name);
 
-            next_elem = lNext(elem); 
-            mod_elem = lGetElemHost(mod_list, sublist_host_name, name);
+            next_elem = lNextRW(elem); 
+            mod_elem = lGetElemHostRW(mod_list, sublist_host_name, name);
             if (mod_elem == NULL) {
                DPRINTF(("Removing attribute list for "SFQ"\n", name));
                lRemoveElem(org_list, &elem);
@@ -824,7 +824,7 @@ cqueue_mod_sublist(lListElem *this_elem, lList **answer_list,
             }
          }
          
-         org_elem = lGetElemHost(org_list, sublist_host_name, name);
+         org_elem = lGetElemHostRW(org_list, sublist_host_name, name);
 
          /*
           * Create element if it does not exist
@@ -844,8 +844,7 @@ cqueue_mod_sublist(lListElem *this_elem, lList **answer_list,
           */
          if (org_elem != NULL) {
             if (subsub_key != NoName) {
-               attr_mod_sub_list(answer_list, org_elem, sublist_value_name,
-                                 subsub_key, mod_elem, sub_command,
+               attr_mod_sub_list(answer_list, org_elem, sublist_value_name, subsub_key, mod_elem, sub_command,
                                  attribute_name_str, object_name_str, 0, NULL);
             } else {
                object_replace_any_type(org_elem, sublist_value_name, mod_elem);
@@ -859,8 +858,8 @@ cqueue_mod_sublist(lListElem *this_elem, lList **answer_list,
 
 int multiple_occurances(
 lList **alpp,
-lList *lp1,
-lList *lp2,
+const lList *lp1,
+const lList *lp2,
 int nm,
 const char *name,
 const char *obj_name 
@@ -894,7 +893,7 @@ void normalize_sublist(
 lListElem *ep,
 int nm 
 ) {
-   lList *lp;
+   const lList *lp;
 
    if ((lp=lGetList(ep, nm)) && lGetNumberOfElem(lp)==0)
       lSetList(ep, nm, NULL);

@@ -35,12 +35,12 @@
 #include "sgeobj/cull/sge_boundaries.h"
 #include "cull/cull.h"
 
-void cull_show_job(lListElem *job, int flags, bool show_binding);
+void cull_show_job(const lListElem *job, int flags, bool show_binding);
 
-void sge_show_ce_type_list(lList *reqlist);
+void sge_show_ce_type_list(const lList *reqlist);
 
-void sge_show_ce_type_list_line_by_line(const char *label, const char *indent, lList *reqlist,
-      bool display_resource_contribution, lList *centry_list, int slot); 
+void sge_show_ce_type_list_line_by_line(const char *label, const char *indent, const lList *reqlist,
+      bool display_resource_contribution, const lList *centry_list, int slot); 
 
 #endif /* SHOW_JOB_H */
 

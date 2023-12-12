@@ -233,7 +233,7 @@ lList *lJoinSublist(const char *name, int nm0, const lList *lp,
 
    for_each_where(ep, lp, cp0) {
       /* is there a sublist for the join */
-      if ((sublist = lGetList(ep, nm0)) != NULL) {
+      if ((sublist = lGetListRW(ep, nm0)) != NULL) {
 
          /* put each element in the tlp to be used by lJoin */
          if (lAppendElem(tlp, lCopyElem(ep)) == -1) {
@@ -488,7 +488,7 @@ int lSplit(lList **slp, lList **ulp, const char *ulp_name,
       return -1;
    }
 
-   for (ep = lFirst(*slp); ep; ep = next) {
+   for (ep = lFirstRW(*slp); ep; ep = next) {
       next = ep->next;          /* this is important, cause the elem is dechained */
 
       if (!lCompare(ep, cp)) {
@@ -1331,7 +1331,7 @@ int lString2ListNone(const char *s, lList **lpp, const lDescr *dp,
 int lDiffListStr(int nm, lList **lpp1, lList **lpp2) 
 {
    const char *key;
-   lListElem *ep, *to_check;
+   const lListElem *ep, *to_check;
 
    DENTER(CULL_LAYER, "lDiffListStr");
 
@@ -1362,7 +1362,7 @@ int lDiffListStr(int nm, lList **lpp1, lList **lpp2)
 int lDiffListUlong(int nm, lList **lpp1, lList **lpp2)
 {
    u_long32 key;
-   lListElem *ep, *to_check;
+   const lListElem *ep, *to_check;
 
    DENTER(CULL_LAYER, "lDiffListUlong");
 

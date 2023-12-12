@@ -158,7 +158,7 @@ lList *sge_add_schedd_info(lList *or_list, int *global_mes_count, int *job_mes_c
 *******************************************************************************/
 lList 
 *sge_create_orders(lList *or_list, u_long32 type, lListElem *job, lListElem *ja_task,
-                   lList *granted , bool update_execd) 
+                   const lList *granted , bool update_execd) 
 {
    lList *ql = NULL;
    lListElem *gel, *ep, *ep2;

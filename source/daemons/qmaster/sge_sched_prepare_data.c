@@ -424,7 +424,7 @@ sge_process_schedd_conf_event_before(sge_evc_class_t *evc, sge_object_type type,
 
    DPRINTF(("callback processing schedd config event\n"));
 
-   new = lFirst(lGetList(event, ET_new_version));
+   new = lFirstRW(lGetList(event, ET_new_version));
 
    if (new == NULL) {
       ERROR((SGE_EVENT, "> > > > > no scheduler configuration available < < < < <\n"));
@@ -564,11 +564,10 @@ sge_process_job_event_before(sge_evc_class_t *evc, sge_object_type type,
 
    if (action == SGE_EMA_DEL || action == SGE_EMA_MOD) {
       job_id = lGetUlong(event, ET_intkey);
-      job = lGetElemUlong(*object_type_get_master_list(SGE_TYPE_JOB), JB_job_number, job_id);
+      job = lGetElemUlongRW(*object_type_get_master_list(SGE_TYPE_JOB), JB_job_number, job_id);
       if (job == NULL) {
          dstring id_dstring = DSTRING_INIT;
-         ERROR((SGE_EVENT, MSG_CANTFINDJOBINMASTERLIST_S,
-                job_get_id_string(job_id, 0, NULL, &id_dstring)));
+         ERROR((SGE_EVENT, MSG_CANTFINDJOBINMASTERLIST_S, job_get_id_string(job_id, 0, NULL, &id_dstring)));
          sge_dstring_free(&id_dstring);
          DRETURN(SGE_EMA_FAILURE);
       }
@@ -612,11 +611,10 @@ sge_process_job_event_after(sge_evc_class_t *evc, sge_object_type type,
 
    if (action == SGE_EMA_ADD || action == SGE_EMA_MOD) {
       job_id = lGetUlong(event, ET_intkey);
-      job = lGetElemUlong(*object_type_get_master_list(SGE_TYPE_JOB), JB_job_number, job_id);
+      job = lGetElemUlongRW(*object_type_get_master_list(SGE_TYPE_JOB), JB_job_number, job_id);
       if (job == NULL) {
          dstring id_dstring = DSTRING_INIT;
-         ERROR((SGE_EVENT, MSG_CANTFINDJOBINMASTERLIST_S,
-                job_get_id_string(job_id, 0, NULL, &id_dstring)));
+         ERROR((SGE_EVENT, MSG_CANTFINDJOBINMASTERLIST_S, job_get_id_string(job_id, 0, NULL, &id_dstring)));
          sge_dstring_free(&id_dstring);
          DEXIT;
          return SGE_EMA_FAILURE;
@@ -719,7 +717,7 @@ sge_process_ja_task_event_after(sge_evc_class_t *evc, sge_object_type type,
    DENTER(GDI_LAYER, "sge_process_ja_task_event_after");
 
    if (action == SGE_EMA_DEL) {
-      lListElem *job;
+      const lListElem *job;
       u_long32 job_id;
       DPRINTF(("callback processing ja_task event after default rule SGE_EMA_DEL\n"));
 
@@ -727,8 +725,7 @@ sge_process_ja_task_event_after(sge_evc_class_t *evc, sge_object_type type,
       job = lGetElemUlong(*object_type_get_master_list(SGE_TYPE_JOB), JB_job_number, job_id);
       if (job == NULL) {
          dstring id_dstring = DSTRING_INIT;
-         ERROR((SGE_EVENT, MSG_CANTFINDJOBINMASTERLIST_S,
-                job_get_id_string(job_id, 0, NULL, &id_dstring)));
+         ERROR((SGE_EVENT, MSG_CANTFINDJOBINMASTERLIST_S, job_get_id_string(job_id, 0, NULL, &id_dstring)));
          sge_dstring_free(&id_dstring);
          DEXIT;
          return SGE_EMA_FAILURE;

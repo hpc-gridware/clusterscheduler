@@ -54,8 +54,6 @@ calendar_is_referenced(const lListElem *calendar, lList **answer_list,
                        const lList *master_cqueue_list);
 /* */
 
-lListElem *calendar_list_locate(const lList *this_list, const char *cal_name);
-
 lListElem* sge_generic_cal(char *cal_name);
 
 void cullify_tm(lListElem *tm_ep, struct tm *tm_now);

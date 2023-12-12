@@ -54,7 +54,7 @@ typedef struct {
 lList *sge_add_schedd_info(lList *or_list, int *global_mes_count, int *job_mes_count);
 
 lList *sge_create_orders(lList *or_list, u_long32 type, lListElem *job, lListElem *ja_task, 
-                         lList *queue_list, bool update_execd);
+                         const lList *queue_list, bool update_execd);
 
 lList *create_delete_job_orders(lList *finished_jobs, lList *order_list);
 

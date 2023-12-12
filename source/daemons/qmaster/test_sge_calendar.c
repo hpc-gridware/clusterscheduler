@@ -391,10 +391,10 @@ static int test_state_change_list(date_entry_t *test, lList *state_changes)
          ret = 1;
       }
       else {
-         lListElem *state = lFirst(state_changes);
+         lListElem *state = lFirstRW(state_changes);
          ret |= test_state_change(state, test->state1, &(test->result1), 1);
 
-         state = lNext(state);
+         state = lNextRW(state);
          ret |= test_state_change(state, test->state2, &(test->result2), 2);
       }      
       
@@ -405,7 +405,7 @@ static int test_state_change_list(date_entry_t *test, lList *state_changes)
          ret = 1;
       }
       else {
-         lListElem *state = lFirst(state_changes);
+         lListElem *state = lFirstRW(state_changes);
          ret |= test_state_change(state, test->state1, &(test->result1), 1);
       }
    }

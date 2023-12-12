@@ -114,9 +114,9 @@ so_list_append_to_dstring(const lList *this_list, dstring *string)
 
    DENTER(BASIS_LAYER, "so_list_append_to_dstring");
    if (string != NULL) {
-      lListElem *elem = NULL;
+      const lListElem *elem = NULL;
       bool printed = false;
-      lListElem *so = NULL;
+      const lListElem *so = NULL;
       u_long32 slots_sum = 0;
 
       if (this_list != NULL && (so = lFirst(this_list)) != NULL) {
@@ -183,7 +183,7 @@ so_list_add(lList **this_list, lList **answer_list, const char *so_name,
    DENTER(TOP_LAYER, "so_list_add");
 
    if (this_list != NULL && so_name != NULL) {
-      lListElem *elem = lGetElemStr(*this_list, SO_name, so_name);
+      lListElem *elem = lGetElemStrRW(*this_list, SO_name, so_name);
    
       if (elem != NULL) {
          u_long32 current_threshold = lGetUlong(elem, SO_threshold);

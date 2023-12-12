@@ -100,7 +100,7 @@ static lListElem* sge_get_configuration_for_host(const char* aName)
    DRETURN(conf);
 }
 
-static int sge_read_configuration(sge_gdi_ctx_class_t *ctx, lListElem *aSpoolContext, lList *anAnswer)
+static int sge_read_configuration(sge_gdi_ctx_class_t *ctx, const lListElem *aSpoolContext, lList *anAnswer)
 {
    lListElem *local = NULL;
    lListElem *global = NULL;
@@ -161,7 +161,7 @@ static int sge_read_configuration(sge_gdi_ctx_class_t *ctx, lListElem *aSpoolCon
 static bool read_spooled_data(sge_gdi_ctx_class_t *ctx)
 {  
    lList *answer_list = NULL;
-   lListElem *context;
+   const lListElem *context;
    lList *master_list = NULL;
    lList **cluster_configuration = object_type_get_master_list_rw(SGE_TYPE_CONFIG);
 
@@ -285,9 +285,9 @@ static bool read_spooled_data(sge_gdi_ctx_class_t *ctx)
 sge_callback_result spool_event_before(sge_evc_class_t *evc, sge_object_type type, sge_event_action action, lListElem *event, void *clientdata)
 {
    lList *answer_list = NULL;
-   lListElem *context, *ep;
+   const lListElem *context, *ep;
    const lList **master_list;
-   lList *new_list;
+   const lList *new_list;
    int key_nm;
    dstring buffer = DSTRING_INIT;
 
@@ -307,9 +307,8 @@ sge_callback_result spool_event_before(sge_evc_class_t *evc, sge_object_type typ
          case SGE_TYPE_CONFIG:
          case SGE_TYPE_HGROUP:
             for_each(ep, *master_list) {
-               lListElem *new_ep;
+               const lListElem *new_ep = lGetElemHost(new_list, key_nm, lGetHost(ep, key_nm));
 
-               new_ep = lGetElemHost(new_list, key_nm, lGetHost(ep, key_nm));
                if (new_ep == NULL) {
                   /* object not contained in new list, delete it */
                   spool_delete_object(&answer_list, context, type, lGetHost(ep, key_nm), false);
@@ -318,10 +317,8 @@ sge_callback_result spool_event_before(sge_evc_class_t *evc, sge_object_type typ
             }   
 
             for_each(ep, new_list) {
-               lListElem *old_ep;
                const char *key = lGetHost(ep, key_nm);
-
-               old_ep = lGetElemHost(*master_list, key_nm, key);
+               const lListElem *old_ep = lGetElemHost(*master_list, key_nm, key);
 
                /* check if spooling relevant attributes have changed,
                 * if yes, spool the object.
@@ -343,10 +340,8 @@ sge_callback_result spool_event_before(sge_evc_class_t *evc, sge_object_type typ
          case SGE_TYPE_USER:
          case SGE_TYPE_USERSET:
             for_each(ep, *master_list) {
-               lListElem *new_ep;
-
-               new_ep = lGetElemStr(new_list, key_nm, lGetString(ep, key_nm));
-               if(new_ep == NULL) {
+               const lListElem *new_ep = lGetElemStr(new_list, key_nm, lGetString(ep, key_nm));
+               if (new_ep == NULL) {
                   /* object not contained in new list, delete it */
                   spool_delete_object(&answer_list, context, type, lGetString(ep, key_nm), false);
                   answer_list_output(&answer_list);
@@ -354,10 +349,8 @@ sge_callback_result spool_event_before(sge_evc_class_t *evc, sge_object_type typ
             }
 
             for_each(ep, new_list) {
-               lListElem *old_ep;
                const char *key = lGetString(ep, key_nm);
-
-               old_ep = lGetElemStr(*master_list, key_nm, key);
+               const lListElem *old_ep = lGetElemStr(*master_list, key_nm, key);
 
                /* check if spooling relevant attributes have changed,
                 * if yes, spool the object.
@@ -372,10 +365,8 @@ sge_callback_result spool_event_before(sge_evc_class_t *evc, sge_object_type typ
 
          case SGE_TYPE_JOB:
             for_each(ep, *master_list) {
-               lListElem *new_ep;
-
-               new_ep = lGetElemUlong(new_list, key_nm, lGetUlong(ep, key_nm));
-               if(new_ep == NULL) {
+               const lListElem *new_ep = lGetElemUlong(new_list, key_nm, lGetUlong(ep, key_nm));
+               if (new_ep == NULL) {
                   const char *job_key;
                   job_key = job_get_key(lGetUlong(ep, key_nm), 0, NULL, &buffer);
                   /* object not contained in new list, delete it */
@@ -385,10 +376,8 @@ sge_callback_result spool_event_before(sge_evc_class_t *evc, sge_object_type typ
             }
 
             for_each(ep, new_list) {
-               lListElem *old_ep;
                u_long32 key = lGetUlong(ep, key_nm);
-
-               old_ep = lGetElemUlong(*master_list, key_nm, key);
+               const lListElem *old_ep = lGetElemUlong(*master_list, key_nm, key);
 
                /* check if spooling relevant attributes have changed,
                 * if yes, spool the object.
@@ -467,7 +456,7 @@ sge_callback_result spool_event_after(sge_evc_class_t *evc, sge_object_type type
 {
    sge_callback_result ret = SGE_EMA_OK;
    lList *answer_list = NULL;
-   lListElem *context, *ep;
+   const lListElem *context, *ep;
    const lList **master_list;
    const lList *master_job_list;
    int key_nm;

@@ -117,7 +117,7 @@ extern event_control_t Event_Control;
 
 void       te_check_time(time_t time);
 void       te_wait_empty(void);
-te_event_t te_event_from_list_elem(lListElem* aListElem);
+te_event_t te_event_from_list_elem(const lListElem* aListElem);
 void       te_wait_next(te_event_t te, time_t now);
 void       te_scan_table_and_deliver(sge_gdi_ctx_class_t *ctx, te_event_t anEvent, monitoring_t *monitor);
 void       te_init(void);

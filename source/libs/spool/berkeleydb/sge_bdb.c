@@ -1121,9 +1121,7 @@ spool_berkeleydb_write_job(lList **answer_list, bdb_info info,
    lXchgList((lListElem *)object, JB_ja_tasks, &tmp_list);
 
    if (ret && !only_job) {
-      lListElem *ja_task;
-
-      ja_task = lGetElemUlong(lGetList(object, JB_ja_tasks), JAT_task_number, ja_task_id);
+      const lListElem *ja_task = lGetElemUlong(lGetList(object, JB_ja_tasks), JAT_task_number, ja_task_id);
       if (ja_task != NULL) {
          ret = spool_berkeleydb_write_ja_task(answer_list, info, ja_task, job_id, ja_task_id);
       }

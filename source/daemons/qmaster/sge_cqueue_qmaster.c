@@ -217,8 +217,8 @@ cqueue_add_qinstances(sge_gdi_ctx_class_t *ctx, lListElem *cqueue, lList **answe
 
       for_each(href, add_hosts) {
          const char *hostname = lGetHost(href, HR_name);
-         lList *list = lGetList(cqueue, CQ_qinstances);
-         lListElem* qinstance = lGetElemHost(list, QU_qhostname, hostname);
+         lList *list = lGetListRW(cqueue, CQ_qinstances);
+         lListElem* qinstance = lGetElemHostRW(list, QU_qhostname, hostname);
 
          if (qinstance != NULL) {
             if (qinstance_state_is_orphaned(qinstance)) {
@@ -262,12 +262,12 @@ cqueue_mark_qinstances(lListElem *cqueue, lList **answer_list, lList *del_hosts)
 
    DENTER(TOP_LAYER, "cqueue_mark_qinstances");
    if (cqueue != NULL) {
-      lList *qinstance_list = lGetList(cqueue, CQ_qinstances);
+      const lList *qinstance_list = lGetList(cqueue, CQ_qinstances);
       lListElem *qinstance = NULL;
 
       for_each(qinstance, qinstance_list) {
          const char *hostname = lGetHost(qinstance, QU_qhostname);
-         lListElem *href = lGetElemHost(del_hosts, HR_name, hostname);
+         const lListElem *href = lGetElemHost(del_hosts, HR_name, hostname);
 
          if (href != NULL) {
             if (qinstance_slots_used(qinstance) > 0 || qinstance_slots_reserved(qinstance) > 0) {
@@ -336,7 +336,7 @@ cqueue_mod_hostlist(lListElem *cqueue, lList **answer_list,
          const char *cqueue_name = lGetString(cqueue, CQ_name);
          lList *list = lGetPosList(reduced_elem, pos);
          lList *old_href_list = lCopyList("", lGetList(cqueue, CQ_hostlist));
-         lList *href_list = NULL;
+         const lList *href_list = NULL;
          lList *add_groups = NULL;
          lList *rem_groups = NULL;
 
@@ -416,7 +416,7 @@ cqueue_mod_qinstances(sge_gdi_ctx_class_t *ctx,
    DENTER(TOP_LAYER, "cqueue_mod_qinstances");
 
    if (cqueue != NULL && reduced_elem != NULL) {
-      lList *qinstance_list = lGetList(cqueue, CQ_qinstances);
+      const lList *qinstance_list = lGetList(cqueue, CQ_qinstances);
       lListElem *qinstance = NULL;
 
       /*
@@ -725,7 +725,7 @@ int cqueue_success(sge_gdi_ctx_class_t *ctx,
                    lListElem *cqueue, lListElem *old_cqueue, 
                    gdi_object_t *object, lList **ppList, monitoring_t *monitor) 
 {
-   lList *qinstances;
+   const lList *qinstances;
    lListElem *qinstance; 
    DENTER(TOP_LAYER, "cqueue_success");
    const lList *master_job_list = *object_type_get_master_list(SGE_TYPE_JOB);
@@ -765,7 +765,7 @@ int cqueue_success(sge_gdi_ctx_class_t *ctx,
             just changed, the scheduler can easily deal with it.*/
          if (lGetList(qinstance, QU_suspend_thresholds) == NULL) {
             for_each(job, master_job_list) {
-               lList *ja_tasks = lGetList(job, JB_ja_tasks);
+               const lList *ja_tasks = lGetList(job, JB_ja_tasks);
                lListElem *ja_task;
 
                for_each(ja_task, ja_tasks) {
@@ -815,7 +815,7 @@ int cqueue_success(sge_gdi_ctx_class_t *ctx,
 
 void cqueue_commit(sge_gdi_ctx_class_t *ctx, lListElem *cqueue) 
 {
-   lList *qinstances = lGetList(cqueue, CQ_qinstances);
+   lList *qinstances = lGetListRW(cqueue, CQ_qinstances);
    lListElem *next_qinstance = NULL;
    lListElem *qinstance = NULL;
 
@@ -824,13 +824,13 @@ void cqueue_commit(sge_gdi_ctx_class_t *ctx, lListElem *cqueue)
    /*
     * QI modify, add or delete event
     */
-   next_qinstance = lFirst(qinstances);
+   next_qinstance = lFirstRW(qinstances);
    while ((qinstance = next_qinstance)) {
       u_long32 tag = lGetUlong(qinstance, QU_tag);
       const char *name = lGetString(qinstance, QU_qname);
       const char *hostname = lGetHost(qinstance, QU_qhostname);
 
-      next_qinstance = lNext(qinstance);
+      next_qinstance = lNextRW(qinstance);
 
       /*
        * Reset QI tag
@@ -929,7 +929,7 @@ int cqueue_del(sge_gdi_ctx_class_t *ctx, lListElem *this_elem, lList **answer_li
          lListElem *cqueue = cqueue_list_locate(master_cqueue_list, name);
 
          if (cqueue != NULL) {
-            lList *qinstances = lGetList(cqueue, CQ_qinstances);
+            const lList *qinstances = lGetList(cqueue, CQ_qinstances);
             lListElem *qinstance = NULL;
             const char *cq_name = lGetString(cqueue, CQ_name);
             dstring dir = DSTRING_INIT;
@@ -1052,11 +1052,11 @@ cqueue_del_all_orphaned(sge_gdi_ctx_class_t *ctx, lListElem *this_elem, lList **
    if (this_elem != NULL) {
       dstring dir = DSTRING_INIT;
       const char* cq_name = lGetString(this_elem, CQ_name);
-      lList *qinstance_list = lGetList(this_elem, CQ_qinstances);
+      lList *qinstance_list = lGetListRW(this_elem, CQ_qinstances);
       lListElem *qinstance = NULL;
 
       if (ehname) {
-         if ((qinstance = lGetElemHost(qinstance_list, QU_qhostname, ehname)) &&
+         if ((qinstance = lGetElemHostRW(qinstance_list, QU_qhostname, ehname)) &&
              qinstance_state_is_orphaned(qinstance) &&
              qinstance_slots_used(qinstance) == 0 && 
              qinstance_slots_reserved(qinstance) == 0) {
@@ -1078,9 +1078,9 @@ cqueue_del_all_orphaned(sge_gdi_ctx_class_t *ctx, lListElem *this_elem, lList **
       } else {
          lListElem *next_qinstance = NULL;
 
-         next_qinstance = lFirst(qinstance_list);
+         next_qinstance = lFirstRW(qinstance_list);
          while ((qinstance = next_qinstance) != NULL) {
-            next_qinstance = lNext(qinstance);
+            next_qinstance = lNextRW(qinstance);
 
             if (qinstance_state_is_orphaned(qinstance) &&
                 qinstance_slots_used(qinstance) == 0 && 
@@ -1118,7 +1118,7 @@ cqueue_list_del_all_orphaned(sge_gdi_ctx_class_t *ctx, lList *this_list, lList *
    DENTER(TOP_LAYER, "cqueue_list_del_all_orphaned");
 
    if (cqname) {
-      cqueue = lGetElemStr(this_list, CQ_name, cqname);
+      cqueue = lGetElemStrRW(this_list, CQ_name, cqname);
       ret &= cqueue_del_all_orphaned(ctx, cqueue, answer_list, ehname);
    } else {
       for_each(cqueue, this_list) {
@@ -1141,11 +1141,10 @@ cqueue_list_set_unknown_state(lList *this_list, const char *hostname,
 
    for_each(cqueue, this_list) {
       if (hostname != NULL) {
-         lList *qinstance_list = lGetList(cqueue, CQ_qinstances);
-         lListElem *qinstance = lGetElemHost(qinstance_list, QU_qhostname,
-                                             hostname);
-         if (qinstance != NULL &&
-             qinstance_state_is_unknown(qinstance) != is_unknown) {
+         const lList *qinstance_list = lGetList(cqueue, CQ_qinstances);
+         lListElem *qinstance = lGetElemHostRW(qinstance_list, QU_qhostname, hostname);
+
+         if (qinstance != NULL && qinstance_state_is_unknown(qinstance) != is_unknown) {
             sge_qmaster_qinstance_state_set_unknown(qinstance, is_unknown);
             if (send_events) {
                qinstance_add_event(qinstance, sgeE_QINSTANCE_MOD);

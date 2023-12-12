@@ -71,7 +71,7 @@
 static void utilization_normalize(lList *diagram);
 static u_long32 utilization_endtime(u_long32 start, u_long32 duration);
 
-static void utilization_find_time_or_prevstart_or_prev(lList *diagram, 
+static void utilization_find_time_or_prevstart_or_prev(const lList *diagram, 
       u_long32 time, lListElem **hit, lListElem **before);
 
 static int 
@@ -287,7 +287,7 @@ int utilization_add(lListElem *cr, u_long32 start_time, u_long32 duration, doubl
    } else {
       nm = RUE_utilized;
    }
-   resource_diagram=lGetList(cr, nm);
+   resource_diagram = lGetListRW(cr, nm);
 
    /* A reservation is only neccessary in one of the following cases:
       - for_job is true (this means no advance reservation request) 
@@ -333,7 +333,7 @@ int utilization_add(lListElem *cr, u_long32 start_time, u_long32 duration, doubl
 
    end = NULL;
    prev = start;
-   this = lNext(start);
+   this = lNextRW(start);
 
    /* find existing end element or the element before */
    while (this) {
@@ -347,7 +347,7 @@ int utilization_add(lListElem *cr, u_long32 start_time, u_long32 duration, doubl
       /* increment amount of elements in-between */
       lAddDouble(this, RDE_amount, utilization);
       prev = this;
-      this = lNext(this);
+      this = lNextRW(this);
    }
 
    if (!end) {
@@ -374,12 +374,12 @@ int utilization_add(lListElem *cr, u_long32 start_time, u_long32 duration, doubl
    the element before it is returned or NULL if no such exists.
 
 */
-static void utilization_find_time_or_prevstart_or_prev(lList *diagram, u_long32 time, lListElem **hit, lListElem **before)
+static void utilization_find_time_or_prevstart_or_prev(const lList *diagram, u_long32 time, lListElem **hit, lListElem **before)
 { 
    lListElem *start, *this, *prev;
 
    start = NULL;
-   this = lFirst(diagram); 
+   this = lFirstRW(diagram); 
    prev = NULL;
 
    while (this) {
@@ -391,7 +391,7 @@ static void utilization_find_time_or_prevstart_or_prev(lList *diagram, u_long32 
          break;
       }
       prev = this;
-      this = lNext(this);
+      this = lNextRW(this);
    }
 
    *hit    = start;
@@ -408,25 +408,25 @@ static void utilization_normalize(lList *diagram)
    lListElem *this, *next;
    double util_prev;
 
-   this = lFirst(diagram);
+   this = lFirstRW(diagram);
 
    while (this && lGetDouble(this, RDE_amount) == 0.0) {
       lRemoveElem(diagram, &this);
-      this = lFirst(diagram);
+      this = lFirstRW(diagram);
    }
 
    if (this == NULL) {
       return;
    }
    
-   if ((next = lNext(this)) == NULL) {
+   if ((next = lNextRW(this)) == NULL) {
       return;
    }
 
    util_prev = lGetDouble(this, RDE_amount);
 
    while ((this=next)) {
-      next = lNext(this);
+      next = lNextRW(this);
       if (util_prev == lGetDouble(this, RDE_amount))
          lRemoveElem(diagram, &this);
       else
@@ -547,8 +547,7 @@ double utilization_max(const lListElem *cr, u_long32 start_time, u_long32 durati
    utilization_print(cr, "the object");
 #endif
 
-   utilization_find_time_or_prevstart_or_prev(lGetList(cr, RUE_utilized), start_time, 
-         &start, &prev);
+   utilization_find_time_or_prevstart_or_prev(lGetList(cr, RUE_utilized), start_time, &start, &prev);
 
    if (start) {
       max = lGetDouble(start, RDE_amount);
@@ -637,7 +636,7 @@ u_long32 utilization_below(const lListElem *cr, double max_util, const char *obj
    for_each_rev (rde, lGetList(cr, RUE_utilized)) {
       util = lGetDouble(rde, RDE_amount);
       if (util <= max_util) {
-         lListElem *p = lPrev(rde);
+         const lListElem *p = lPrev(rde);
          if (p && lGetDouble(p, RDE_amount) > max_util) {
             when = lGetUlong(rde, RDE_time);
             break;
@@ -649,7 +648,7 @@ u_long32 utilization_below(const lListElem *cr, double max_util, const char *obj
       for_each_rev (rde, lGetList(cr, RUE_utilized_nonexclusive)) {
          util = lGetDouble(rde, RDE_amount);
          if (util <= max_util) {
-            lListElem *p = lPrev(rde);
+            const lListElem *p = lPrev(rde);
             if (p && lGetDouble(p, RDE_amount) > max_util) {
                when_nonexclusive = lGetUlong(rde, RDE_time);
                break;
@@ -662,8 +661,7 @@ u_long32 utilization_below(const lListElem *cr, double max_util, const char *obj
    if (when == DISPATCH_TIME_NOW) {
       DPRINTF(("no utilization\n"));
    } else {
-      DPRINTF(("utilization below %f (%f) starting at "sge_U32CFormat"\n", 
-         max_util, util, when));
+      DPRINTF(("utilization below %f (%f) starting at "sge_U32CFormat"\n", max_util, util, when));
    }
 
    DRETURN(when); 
@@ -709,7 +707,7 @@ int add_job_utilization(const sge_assignment_t *a, const char *type, bool for_jo
       dstring rue_name = DSTRING_INIT;
       /* parallel environment  */
       if (a->pe) {
-         utilization_add(lFirst(lGetList(a->pe, PE_resource_utilization)), a->start, a->duration, a->slots,
+         utilization_add(lFirstRW(lGetList(a->pe, PE_resource_utilization)), a->start, a->duration, a->slots,
                a->job_id, a->ja_task_id, PE_TAG, lGetString(a->pe, PE_name), type, for_job_scheduling, false);
       }
 
@@ -780,7 +778,7 @@ int add_job_utilization(const sge_assignment_t *a, const char *type, bool for_jo
       bool is_master_task = true;
       /* debit AR-job */
       for_each(gel, a->gdil) {
-         lListElem *ar = NULL;
+         const lListElem *ar = NULL;
          int slots = lGetUlong(gel, JG_slots);
          const char *qname = lGetString(gel, JG_qname);
          
@@ -919,7 +917,7 @@ rqs_add_job_utilization(lListElem *jep, u_long32 task_id, const char *type,
    lListElem *rule, dstring rue_name, const lList *centry_list, int slots, const char *obj_name,
    u_long32 start_time, u_long32 end_time, bool is_master_task)
 {
-   lList *limit_list;
+   const lList *limit_list;
    lListElem *limit;
    const char *centry_name;
    int mods = 0;
@@ -1035,7 +1033,7 @@ add_job_list_to_schedule(const lList *job_list, bool suspended, lList *pe_list,
             a.duration = (now - a.start) + interval;
          }
 
-         a.gdil = lGetList(ja_task, JAT_granted_destin_identifier_list);
+         a.gdil = lGetListRW(ja_task, JAT_granted_destin_identifier_list);
          a.slots = nslots_granted(a.gdil, NULL);
          if ((pe_name = lGetString(ja_task, JAT_granted_pe)) && 
              !(a.pe = pe_list_locate(pe_list, pe_name))) {
@@ -1151,18 +1149,18 @@ add_calendar_to_schedule(lList *queue_list, u_long32 now)
    DENTER(TOP_LAYER, "add_calendar_to_schedule");
 
    for_each(queue, queue_list) {
-      lList *queue_states = lGetList(queue, QU_state_changes);
+      const lList *queue_states = lGetList(queue, QU_state_changes);
       u_long32 from       = now;
 
       if (queue_states != NULL) {
       
-         lList *consumable_list = lGetList(queue, QU_consumable_config_list);
-         lListElem *slot_elem   = lGetElemStr(consumable_list, CE_name, "slots"); 
-         double slot_count      = lGetDouble(slot_elem, CE_doubleval); 
+         const lList *consumable_list = lGetList(queue, QU_consumable_config_list);
+         const lListElem *slot_elem = lGetElemStr(consumable_list, CE_name, "slots"); 
+         double slot_count = lGetDouble(slot_elem, CE_doubleval); 
 
-         lList *queue_uti_list = lGetList(queue, QU_resource_utilization);
-         lListElem *slot_uti   = lGetElemStr(queue_uti_list, RUE_name, "slots");
-         lList *slot_uti_list  = lGetList(slot_uti, RUE_utilized);
+         const lList *queue_uti_list = lGetList(queue, QU_resource_utilization);
+         lListElem *slot_uti = lGetElemStrRW(queue_uti_list, RUE_name, "slots");
+         lList *slot_uti_list = lGetListRW(slot_uti, RUE_utilized);
          
          lListElem *queue_state = NULL;     
 
@@ -1236,12 +1234,12 @@ set_utilization(lList *uti_list, u_long32 from, u_long32 till, double uti)
 
       DPRINTF(("queue cal. schedule entry time %d till %d util: %f\n", from, till, uti));
 
-      uti_elem_next = lFirst(uti_list);
+      uti_elem_next = lFirstRW(uti_list);
      
       /* search for the starting point */
       while (uti_elem_next != NULL) {
          if (lGetUlong(uti_elem_next, RDE_time) > from) { /*insert before this elem */
-            lInsertElem(uti_list, lPrev(uti_elem_next), newResourceElem(from, uti));
+            lInsertElem(uti_list, lPrevRW(uti_elem_next), newResourceElem(from, uti));
             past_uti = lGetDouble(uti_elem_next, RDE_amount);
             is_from_added = true; 
             break;
@@ -1254,14 +1252,14 @@ set_utilization(lList *uti_list, u_long32 from, u_long32 till, double uti)
             break;
          }
          else { /* did not find it, continue */
-            uti_elem_next = lNext(uti_elem_next);
+            uti_elem_next = lNextRW(uti_elem_next);
          }
       }
 
       if (is_from_added) { /* searc for the endpoint */
           while (uti_elem_next != NULL) {
             if (lGetUlong(uti_elem_next, RDE_time) > till) { /*insert before this elem */
-               lInsertElem(uti_list, lPrev(uti_elem_next), newResourceElem(till, past_uti));
+               lInsertElem(uti_list, lPrevRW(uti_elem_next), newResourceElem(till, past_uti));
                is_till_added = true; 
                break;
             }
@@ -1270,7 +1268,7 @@ set_utilization(lList *uti_list, u_long32 from, u_long32 till, double uti)
                break;
             }
             else { /* did not find it, remove the current elem and continue*/
-               lListElem *next = lNext(uti_elem_next);
+               lListElem *next = lNextRW(uti_elem_next);
                past_uti = lGetDouble(uti_elem_next, RDE_amount);
                lRemoveElem(uti_list, &uti_elem_next);
                uti_elem_next = next;

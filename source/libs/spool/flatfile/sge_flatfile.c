@@ -1399,7 +1399,7 @@ spool_flatfile_write_object_fields(lList **answer_list, const lListElem *object,
                continue;
             }
          } else {
-            lList *sub_list = lGetList(object, nm);      
+            const lList *sub_list = lGetList(object, nm);      
 
             /* Bugfix: Issuezilla #1137
              * If a list field has no name and no value, it should be ignored

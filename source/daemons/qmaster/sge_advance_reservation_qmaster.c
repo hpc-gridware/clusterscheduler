@@ -127,12 +127,12 @@ ar_initialize_timer(sge_gdi_ctx_class_t *ctx, lList **answer_list, monitoring_t 
 
    lList *ar_master_list = *object_type_get_master_list_rw(SGE_TYPE_AR);
 
-   next_ar = lFirst(ar_master_list);
+   next_ar = lFirstRW(ar_master_list);
 
    while((ar = next_ar)) {
       te_event_t ev = NULL;
 
-      next_ar = lNext(ar);
+      next_ar = lNextRW(ar);
 
       if (now < lGetUlong(ar, AR_start_time)) {
          sge_ar_state_set_waiting(ar);
@@ -489,7 +489,7 @@ int ar_del(sge_gdi_ctx_class_t *ctx, lListElem *ep, lList **alpp, lList **master
            const char *ruser, const char *rhost, monitoring_t *monitor)
 {
    const char *id_str = NULL;
-   lList *user_list = NULL;
+   const lList *user_list = NULL;
    lListElem *ar, *nxt;
    bool removed_one = false;
    bool has_manager_privileges = false;
@@ -524,8 +524,7 @@ int ar_del(sge_gdi_ctx_class_t *ctx, lListElem *ep, lList **alpp, lList **master
 
       for_each(user, user_list) {
          if (sge_is_pattern(lGetString(user, ST_name)) && !manop_is_manager(ruser, master_manager_list)) {
-            ERROR((SGE_EVENT, MSG_SGETEXT_MUST_BE_MGR_TO_SS,
-                  ruser, "modify all advance reservations"));
+            ERROR((SGE_EVENT, MSG_SGETEXT_MUST_BE_MGR_TO_SS, ruser, "modify all advance reservations"));
             answer_list_add(alpp, SGE_EVENT, STATUS_EUNKNOWN, ANSWER_QUALITY_ERROR);
             sge_dstring_free(&buffer);
             lFreeWhere(&ar_where);
@@ -601,12 +600,12 @@ int ar_del(sge_gdi_ctx_class_t *ctx, lListElem *ep, lList **alpp, lList **master
    }
 
    now = sge_get_gmt();
-   nxt = lFirst(*master_ar_list);
+   nxt = lFirstRW(*master_ar_list);
    while ((ar=nxt)) {
       u_long32 ar_id = lGetUlong(ar, AR_id);
       sge_dstring_sprintf(&buffer, sge_U32CFormat, sge_u32c(ar_id));
 
-      nxt = lNext(ar);
+      nxt = lNextRW(ar);
 
       if ((ar_where != NULL) && !lCompare(ar, ar_where)) {
          continue;
@@ -871,7 +870,7 @@ FCLOSE_ERROR:
 *******************************************************************************/
 static u_long32 guess_highest_ar_id(void)
 {
-   lListElem *ar;
+   const lListElem *ar;
    u_long32 maxid = 0;
    const lList *master_ar_list = *object_type_get_master_list(SGE_TYPE_AR); 
 
@@ -1034,7 +1033,7 @@ static bool ar_reserve_queues(lList **alpp, lListElem *ar)
 
    int verify_mode = lGetUlong(ar, AR_verify);
    lList *talp = NULL;
-   lList *ar_queue_request = lGetList(ar, AR_queue_list);
+   const lList *ar_queue_request = lGetList(ar, AR_queue_list);
    const char *ar_pe_request = lGetString(ar, AR_pe);
    const char *ar_ckpt_request = lGetString(ar, AR_checkpoint_name);
 
@@ -1097,8 +1096,8 @@ static bool ar_reserve_queues(lList **alpp, lListElem *ar)
 
    for_each(cqueue, master_cqueue_list) {
       const char *cqname = lGetString(cqueue, CQ_name);
-      lList *qinstance_list = lGetList(cqueue, CQ_qinstances);
-      lListElem *qinstance;
+      const lList *qinstance_list = lGetList(cqueue, CQ_qinstances);
+      const lListElem *qinstance;
 
       if (cqueue_match_static(cqname, &a) != DISPATCH_OK) {
          continue;
@@ -1146,7 +1145,7 @@ static bool ar_reserve_queues(lList **alpp, lListElem *ar)
 
          /* sort out queue that are calendar disabled in requested time frame */
          if ((cal_name = lGetString(qinstance, QU_calendar)) != NULL) {
-            lListElem *cal_ep = calendar_list_locate(master_cal_list, cal_name); 
+            const lListElem *cal_ep = lGetElemStrRW(master_cal_list, CAL_name, cal_name); 
 
             if (!calendar_open_in_time_frame(cal_ep, lGetUlong(ar, AR_start_time), lGetUlong(ar, AR_duration))) {
                /* skip queue */
@@ -1372,7 +1371,7 @@ int ar_do_reservation(lListElem *ar, bool incslots)
       if (!pe) {
          ERROR((SGE_EVENT, MSG_OBJ_UNABLE2FINDPE_S, granted_pe));
       } else {
-         utilization_add(lFirst(lGetList(pe, PE_resource_utilization)), start_time,
+         utilization_add(lFirstRW(lGetList(pe, PE_resource_utilization)), start_time,
                                 duration, pe_slots, 0, 0, PE_TAG, granted_pe,
                                 SCHEDULING_RECORD_ENTRY_TYPE_RESERVING, false, false);
          sge_add_event(0, sgeE_PE_MOD, 0, 0, granted_pe, NULL, NULL, pe);
@@ -1600,7 +1599,7 @@ ar_list_has_reservation_for_pe_with_slots(const lList *ar_master_list,
 void ar_initialize_reserved_queue_list(lListElem *ar)
 {
    lListElem *gep;
-   lList *gdil = lGetList(ar, AR_granted_slots);
+   const lList *gdil = lGetList(ar, AR_granted_slots);
    const lList *master_centry_list = *object_type_get_master_list(SGE_TYPE_CENTRY);
    const lList *master_cqueue_list = *object_type_get_master_list(SGE_TYPE_CQUEUE);
    dstring buffer = DSTRING_INIT;
@@ -1719,8 +1718,8 @@ void ar_initialize_reserved_queue_list(lListElem *ar)
 
       /* initialize QU_state */
       {
-         lListElem *master_cqueue;
-         lListElem *master_queue;
+         const lListElem *master_cqueue;
+         const lListElem *master_queue;
 
          master_cqueue = lGetElemStr(master_cqueue_list, CQ_name, cqueue_name);
          if (master_cqueue != NULL) {
@@ -1805,13 +1804,13 @@ bool sge_ar_remove_all_jobs(sge_gdi_ctx_class_t *ctx, u_long32 ar_id, int forced
 
    DENTER(TOP_LAYER, "sge_ar_remove_all_jobs");
 
-   nextjep = lFirst(*object_type_get_master_list(SGE_TYPE_JOB));
+   nextjep = lFirstRW(*object_type_get_master_list(SGE_TYPE_JOB));
    while ((jep=nextjep)) {
       u_long32 task_number;
       u_long32 start = MIN(job_get_smallest_unenrolled_task_id(jep), job_get_smallest_enrolled_task_id(jep));
       u_long32 end = MAX(job_get_biggest_unenrolled_task_id(jep), job_get_biggest_enrolled_task_id(jep));
 
-      nextjep = lNext(jep);
+      nextjep = lNextRW(jep);
       if (lGetUlong(jep, JB_ar) != ar_id) {
          continue;
       }
@@ -1891,7 +1890,7 @@ bool sge_ar_remove_all_jobs(sge_gdi_ctx_class_t *ctx, u_long32 ar_id, int forced
 *******************************************************************************/
 bool
 sge_ar_list_conflicts_with_calendar(lList **answer_list, const char *qinstance_name,
-                                    lListElem *cal_ep, const lList *master_ar_list)
+                                    const lListElem *cal_ep, const lList *master_ar_list)
 {
    lListElem *ar;
 
@@ -2092,9 +2091,9 @@ void sge_ar_list_set_error_state(lList *ar_list, const char *qname, u_long32 err
 
    for_each(ar, ar_list) {
       lListElem *qinstance;
-      lList *granted_slots = lGetList(ar, AR_reserved_queues);
+      const lList *granted_slots = lGetList(ar, AR_reserved_queues);
 
-      if ((qinstance =lGetElemStr(granted_slots, QU_full_name, qname)) != NULL) {
+      if ((qinstance =lGetElemStrRW(granted_slots, QU_full_name, qname)) != NULL) {
          u_long32 old_errors = lGetUlong(ar, AR_qi_errors);
          u_long32 new_errors;
 
@@ -2264,7 +2263,7 @@ ar_list_has_reservation_due_to_qinstance_complex_attr(const lList *ar_master_lis
                                                       const lList *ce_master_list)
 {  
    lListElem *ar = NULL;
-   lListElem *gs;
+   const lListElem *gs;
 
    DENTER(TOP_LAYER, "ar_list_has_reservation_due_to_qinstance_complex_attr");
 
@@ -2275,11 +2274,11 @@ ar_list_has_reservation_due_to_qinstance_complex_attr(const lList *ar_master_lis
 
          lListElem *rue = NULL;
          lListElem *request = NULL;
-         lList *rue_list;
+         const lList *rue_list;
 
          for_each(request, lGetList(ar, AR_resource_list)) {
             const char *ce_name = lGetString(request, CE_name);
-            lListElem *ce = lGetElemStr(ce_master_list, CE_name, ce_name);
+            const lListElem *ce = lGetElemStr(ce_master_list, CE_name, ce_name);
             bool is_consumable = (lGetUlong(ce, CE_consumable) > 0) ? true : false;
 
             if (!is_consumable) {
@@ -2313,12 +2312,12 @@ ar_list_has_reservation_due_to_qinstance_complex_attr(const lList *ar_master_lis
 
          for_each(rue, rue_list) {
             const char *ce_name = lGetString(rue, RUE_name);
-            lListElem *ce = lGetElemStr(ce_master_list, CE_name, ce_name);
+            const lListElem *ce = lGetElemStr(ce_master_list, CE_name, ce_name);
             bool is_consumable = (lGetUlong(ce, CE_consumable) > 0) ? true : false;
 
             if (is_consumable) {
                lListElem *rde = NULL;
-               lList * rde_list = lGetList(rue, RUE_utilized);
+               const lList * rde_list = lGetList(rue, RUE_utilized);
                lListElem *cv = lGetSubStr(qinstance, CE_name, ce_name, QU_consumable_config_list);
 
                if (cv == NULL) {
@@ -2398,11 +2397,11 @@ ar_list_has_reservation_due_to_host_complex_attr(const lList *ar_master_list, lL
          if (!sge_hostcmp(gh, hostname)) {
             lListElem *rue = NULL;
             lListElem *request = NULL;
-            lList *rue_list = lGetList(host, EH_resource_utilization);
+            const lList *rue_list = lGetList(host, EH_resource_utilization);
 
             for_each(request, lGetList(ar, AR_resource_list)) {
                const char *ce_name = lGetString(request, CE_name);
-               lListElem *ce = lGetElemStr(ce_master_list, CE_name, ce_name);
+               const lListElem *ce = lGetElemStr(ce_master_list, CE_name, ce_name);
                bool is_consumable = (lGetUlong(ce, CE_consumable) > 0) ? true : false;
   
                if (!is_consumable) {
@@ -2430,12 +2429,12 @@ ar_list_has_reservation_due_to_host_complex_attr(const lList *ar_master_list, lL
             }
             for_each(rue, rue_list) {
                const char *ce_name = lGetString(rue, RUE_name);
-               lListElem *ce = lGetElemStr(ce_master_list, CE_name, ce_name);
+               const lListElem *ce = lGetElemStr(ce_master_list, CE_name, ce_name);
                bool is_consumable = (lGetUlong(ce, CE_consumable) > 0) ? true : false;
 
                if (is_consumable) {
-                  lListElem *rde = NULL;
-                  lList *rde_list = lGetList(rue, RUE_utilized);
+                  const lListElem *rde = NULL;
+                  const lList *rde_list = lGetList(rue, RUE_utilized);
                   lListElem *cv = lGetSubStr(host, CE_name, ce_name, EH_consumable_config_list);
 
                   if (cv == NULL) {

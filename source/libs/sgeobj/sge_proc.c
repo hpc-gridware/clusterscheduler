@@ -58,7 +58,7 @@ lListElem *get_pr (int pid)
       return NULL;
    }
 
-   return lGetElemUlong(procList, PRO_pid, pid);
+   return lGetElemUlongRW(procList, PRO_pid, pid);
 }
 
 void append_pr (lListElem *pr)

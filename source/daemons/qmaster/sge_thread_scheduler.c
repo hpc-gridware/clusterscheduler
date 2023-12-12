@@ -750,7 +750,7 @@ sge_scheduler_main(void *arg)
                lEnumeration *what_queue3 = NULL;
 
                for_each(cqueue, master_cqueue_list) {
-                  lList *qinstance_list = lGetList(cqueue, CQ_qinstances);
+                  const lList *qinstance_list = lGetList(cqueue, CQ_qinstances);
                   lList *t;
 
                   if (!qinstance_list) {

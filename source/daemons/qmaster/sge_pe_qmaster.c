@@ -142,8 +142,7 @@ int pe_mod(sge_gdi_ctx_class_t *ctx, lList **alpp, lListElem *new_pe, lListElem 
 
    if (lGetPosViaElem(pe, PE_xuser_list, SGE_NO_ABORT) >= 0 ||
        lGetPosViaElem(pe, PE_user_list, SGE_NO_ABORT) >= 0) {
-      if (multiple_occurances(alpp, lGetList(new_pe, PE_user_list), lGetList(new_pe, PE_xuser_list),
-                              US_name, pe_name, object_name)) {
+      if (multiple_occurances(alpp, lGetList(new_pe, PE_user_list), lGetList(new_pe, PE_xuser_list), US_name, pe_name, object_name)) {
          goto ERROR;
       }
    }
@@ -318,7 +317,7 @@ int sge_del_pe(sge_gdi_ctx_class_t *ctx, lListElem *pep, lList **alpp, char *rus
       lList *local_answer_list = NULL;
 
       if (pe_is_referenced(ep, &local_answer_list, master_job_list, master_cqueue_list)) {
-         lListElem *answer = lFirst(local_answer_list);
+         const lListElem *answer = lFirst(local_answer_list);
 
          ERROR((SGE_EVENT, "denied: %s", lGetString(answer, AN_text)));
          answer_list_add(alpp, SGE_EVENT, STATUS_EUNKNOWN, 

@@ -56,7 +56,7 @@ const char *event_text(const lListElem *event, dstring *buffer)
    u_long32 type, intkey, number, intkey2;
    int n=0;
    const char *strkey, *strkey2;
-   lList *lp;
+   const lList *lp;
    dstring id_dstring = DSTRING_INIT;
 
    number = lGetUlong(event, ET_number);

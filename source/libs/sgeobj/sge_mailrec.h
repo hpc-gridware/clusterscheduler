@@ -36,7 +36,7 @@
 
 int mailrec_parse(lList **lpp, const char *mail_str);
 
-int mailrec_unparse(lList *head, char *mail_str, unsigned int mail_str_len);
+int mailrec_unparse(const lList *head, char *mail_str, unsigned int mail_str_len);
 
 bool
 sge_mailopt_to_dstring(u_long32 opt, dstring *string);

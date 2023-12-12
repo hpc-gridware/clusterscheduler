@@ -75,26 +75,17 @@ static void decay_usage(lList *usage_list, const lList *decay_list, double inter
 
    if (usage_list) {
       double decay = 0;
-      double default_decay = 0;
-
-      default_decay = pow(sconf_get_decay_constant(),
-                  interval /
-                  (double)sge_usage_interval);
+      double default_decay = pow(sconf_get_decay_constant(), interval / (double)sge_usage_interval);
 
       for_each(usage, usage_list) {
-         lListElem *decay_elem;
-         if (decay_list &&
-             ((decay_elem = lGetElemStr(decay_list, UA_name,
-                   lGetPosString(usage, UA_name_POS))))) {
+         const lListElem *decay_elem;
+         if (decay_list && ((decay_elem = lGetElemStr(decay_list, UA_name, lGetPosString(usage, UA_name_POS))))) {
 
-            decay = pow(lGetPosDouble(decay_elem, UA_value_POS),
-                  interval /
-                  (double)sge_usage_interval);
+            decay = pow(lGetPosDouble(decay_elem, UA_value_POS), interval / (double)sge_usage_interval);
          } else {
             decay = default_decay;
          }
-         lSetPosDouble(usage, UA_value_POS,
-                       lGetPosDouble(usage, UA_value_POS) * decay);
+         lSetPosDouble(usage, UA_value_POS, lGetPosDouble(usage, UA_value_POS) * decay);
       }
    }
    return;
@@ -280,8 +271,8 @@ sge_calc_node_usage( lListElem *node,
    lListElem *child_node;
    lList *children;
    lListElem *userprj = NULL;
-   lList *usage_list=NULL;
-   lListElem *usage_weight, *usage_elem;
+   const lList *usage_list=NULL;
+   const lListElem *usage_weight, *usage_elem;
    double sum_of_usage_weights = 0;
    const char *usage_name;
    bool is_user = false;
@@ -290,8 +281,6 @@ sge_calc_node_usage( lListElem *node,
 
    children = lGetPosList(node, STN_children_POS);
    if (!children) {
-      
-
       if (projname) {
 
          /*-------------------------------------------------------------
@@ -299,10 +288,9 @@ sge_calc_node_usage( lListElem *node,
           *-------------------------------------------------------------*/
 
 
-         if ((userprj = user_list_locate(user_list, 
-                                      lGetPosString(node, STN_name_POS)))) {
-            lList *projects = lGetList(userprj, UU_project);
-            lListElem *upp;
+         if ((userprj = user_list_locate(user_list, lGetPosString(node, STN_name_POS)))) {
+            const lList *projects = lGetList(userprj, UU_project);
+            const lListElem *upp;
 
             is_user = true;
             if (projects) {
@@ -318,18 +306,12 @@ sge_calc_node_usage( lListElem *node,
           * Get usage directly from corresponding user or project object
           *-------------------------------------------------------------*/
 
-         if ((userprj = user_list_locate(user_list, 
-                                            lGetPosString(node, STN_name_POS)))) {
-
+         if ((userprj = user_list_locate(user_list, lGetPosString(node, STN_name_POS)))) {
             is_user = true;
             usage_list = lGetList(userprj, UU_usage);
-
-         } else if ((userprj = prj_list_locate(project_list, 
-                                                   lGetPosString(node, STN_name_POS)))) {
-
+         } else if ((userprj = prj_list_locate(project_list, lGetPosString(node, STN_name_POS)))) {
             is_user = false;
             usage_list = lGetList(userprj, PR_usage);
-
          }
       }
    } else {
@@ -381,12 +363,9 @@ sge_calc_node_usage( lListElem *node,
       if (usage_weight_list) {
          for_each(usage_elem, usage_list) {
             usage_name = lGetPosString(usage_elem, UA_name_POS);
-            usage_weight = lGetElemStr(usage_weight_list, UA_name,
-                                       usage_name);
+            usage_weight = lGetElemStr(usage_weight_list, UA_name, usage_name);
             if (usage_weight && sum_of_usage_weights>0) {
-               usage_value += lGetPosDouble(usage_elem, UA_value_POS) *
-                  (lGetPosDouble(usage_weight, UA_value_POS) /
-                   sum_of_usage_weights);
+               usage_value += lGetPosDouble(usage_elem, UA_value_POS) * (lGetPosDouble(usage_weight, UA_value_POS) / sum_of_usage_weights);
             }
          }
       }
@@ -403,12 +382,9 @@ sge_calc_node_usage( lListElem *node,
          if (strcmp(nm, USAGE_ATTR_CPU) != 0 &&
              strcmp(nm, USAGE_ATTR_MEM) != 0 &&
              strcmp(nm, USAGE_ATTR_IO) != 0) {
-            if (((u=lGetElemStr(lGetPosList(node, STN_usage_list_POS),
-                                UA_name, nm))) ||
+            if (((u=lGetElemStrRW(lGetPosList(node, STN_usage_list_POS), UA_name, nm))) ||
                 ((u = lAddSubStr(node, UA_name, nm, STN_usage_list, UA_Type))))
-               lSetPosDouble(u, UA_value_POS,
-                             lGetPosDouble(u, UA_value_POS) +
-                             lGetPosDouble(usage_elem, UA_value_POS));
+               lSetPosDouble(u, UA_value_POS, lGetPosDouble(u, UA_value_POS) + lGetPosDouble(usage_elem, UA_value_POS));
          }
       }
    }
@@ -434,7 +410,7 @@ sge_calc_node_usage( lListElem *node,
             for_each(nu, lGetPosList(child_node, STN_usage_list_POS)) {
                const char *nm = lGetPosString(nu, UA_name_POS);
                lListElem *u;
-               if (((u=lGetElemStr(lGetPosList(node, STN_usage_list_POS),
+               if (((u=lGetElemStrRW(lGetPosList(node, STN_usage_list_POS),
                                    UA_name, nm))) ||
                    ((u=lAddSubStr(node, UA_name, nm, STN_usage_list, UA_Type))))
                   lSetPosDouble(u, UA_value_POS,
@@ -551,7 +527,7 @@ _sge_calc_share_tree_proportions(const lList *share_tree,
 
    DENTER(TOP_LAYER, "sge_calc_share_tree_proportions");
 
-   if (!share_tree || !((root=lFirst(share_tree)))) {
+   if (!share_tree || !((root=lFirstRW(share_tree)))) {
       DEXIT;
       return;
    }
@@ -594,7 +570,7 @@ void
 set_share_tree_project_flags( const lList *project_list,
                               lListElem *node )
 {
-   lList *children;
+   const lList *children;
    lListElem *child;
 
    if (!project_list || !node)
@@ -643,8 +619,8 @@ sge_add_default_user_nodes( lListElem *root_node,
       ** check acl and xacl of project for the temp users
       ** only users that are allowed for the project are shown
       */
-      lList *xacl = lGetList(project, PR_xacl);
-      lList *acl = lGetList(project, PR_acl);
+      const lList *xacl = lGetList(project, PR_xacl);
+      const lList *acl = lGetList(project, PR_acl);
 
       proj_name = lGetString(project, PR_name);
 
@@ -672,7 +648,7 @@ sge_add_default_user_nodes( lListElem *root_node,
                   lList *children = lCreateList("display", STN_Type);
                   lSetList(dnode, STN_children, children);
                }   
-               lAppendElem(lGetList(dnode,STN_children), node);
+               lAppendElem(lGetListRW(dnode,STN_children), node);
             }
          }
       }
@@ -692,7 +668,7 @@ sge_add_default_user_nodes( lListElem *root_node,
                lList *children = lCreateList("display", STN_Type);
                lSetList(dnode, STN_children, children);
             }   
-            lAppendElem(lGetList(dnode,STN_children), node);
+            lAppendElem(lGetListRW(dnode,STN_children), node);
          }
       }
    }
@@ -852,21 +828,19 @@ void sgeee_sort_jobs_by( lList **job_list , int by_SGEJ_field, int field_sort_di
     *-----------------------------------------------------------------*/
    tmp_list = lCreateList("tmp list", SGEJ_Type);
 
-   nxt_job = lFirst(*job_list); 
+   nxt_job = lFirstRW(*job_list); 
    while((job=nxt_job)) {
       lListElem *tmp_sge_job = NULL;   /* SGEJ_Type */
       
-      nxt_job = lNext(nxt_job);
+      nxt_job = lNextRW(nxt_job);
       tmp_sge_job = lCreateElem(SGEJ_Type);
 
       {
-         lListElem *tmp_task; /* JAT_Type */
-
          /* 
           * First try to find an enrolled task 
           * It will have the highest priority
           */
-         tmp_task = lFirst(lGetList(job, JB_ja_tasks));
+         const lListElem *tmp_task = lFirst(lGetList(job, JB_ja_tasks));
 
          /* 
           * If there is no enrolled task than take the template element 
@@ -875,13 +849,10 @@ void sgeee_sort_jobs_by( lList **job_list , int by_SGEJ_field, int field_sort_di
             tmp_task = lFirst(lGetList(job, JB_ja_template));
          }
 
-         lSetDouble(tmp_sge_job, SGEJ_priority,
-                    lGetDouble(tmp_task, JAT_prio));
+         lSetDouble(tmp_sge_job, SGEJ_priority, lGetDouble(tmp_task, JAT_prio));
          if (by_SGEJ_field != SGEJ_priority) { 
-            lSetUlong(tmp_sge_job, SGEJ_state,
-                       lGetUlong(tmp_task, JAT_state));
-            lSetString(tmp_sge_job, SGEJ_master_queue,
-                       lGetString(tmp_task, JAT_master_queue));
+            lSetUlong(tmp_sge_job, SGEJ_state, lGetUlong(tmp_task, JAT_state));
+            lSetString(tmp_sge_job, SGEJ_master_queue, lGetString(tmp_task, JAT_master_queue));
          }           
       }
 

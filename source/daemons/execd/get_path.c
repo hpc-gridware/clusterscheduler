@@ -54,12 +54,12 @@
 
 static int getHomeDir(char *exp_path, const char *user);
 
-int sge_get_path(const char *qualified_hostname, lList *lp, const char *cwd, const char *owner, 
+int sge_get_path(const char *qualified_hostname, const lList *lp, const char *cwd, const char *owner, 
                  const char *job_name, u_long32 job_number, 
                  u_long32 ja_task_number, int type,
                  char *pathstr, size_t pathstr_len) 
 {
-   lListElem *ep = NULL;
+   const lListElem *ep = NULL;
    const char *path = NULL, *host = NULL;
 
    DENTER(TOP_LAYER, "sge_get_path");
@@ -71,17 +71,14 @@ int sge_get_path(const char *qualified_hostname, lList *lp, const char *cwd, con
     */
    ep = lGetElemHost(lp, PN_host, qualified_hostname);
    if (ep != NULL) {
-      path = expand_path(lGetString(ep, PN_path), job_number, 
-         ja_task_number, job_name, owner, qualified_hostname);
+      path = expand_path(lGetString(ep, PN_path), job_number, ja_task_number, job_name, owner, qualified_hostname);
       host = lGetHost(ep, PN_host);
    } else {
       /* 
        * hostname: wasn't set, look for a default 
        */
       for_each(ep, lp) {
-         path = expand_path(lGetString(ep, PN_path), job_number, 
-                            ja_task_number, job_name, owner, 
-                            qualified_hostname);
+         path = expand_path(lGetString(ep, PN_path), job_number, ja_task_number, job_name, owner, qualified_hostname);
          host = lGetHost(ep, PN_host);
          if (host == NULL) {
             break;
@@ -135,15 +132,14 @@ int sge_get_path(const char *qualified_hostname, lList *lp, const char *cwd, con
 *
 *  SEE ALSO
 *******************************************************************************/
-bool sge_get_fs_path( lList* lp, char* fs_host, size_t fs_host_len, 
-                                 char* fs_path, size_t fs_path_len)
+bool sge_get_fs_path(const lList* lp, char* fs_host, size_t fs_host_len, char* fs_path, size_t fs_path_len)
 {
-   lListElem* ep;
+   const lListElem* ep;
    bool       bFileStaging=false;
 
    DENTER(TOP_LAYER, "sge_get_fs_path");
 
-   if( lp && (ep=lFirst(lp))) {
+   if(lp && (ep=lFirst(lp))) {
       bFileStaging = (bool)lGetBool(ep, PN_file_staging);
  
       if( bFileStaging ) {

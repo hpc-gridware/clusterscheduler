@@ -35,7 +35,7 @@
 #include "basis_types.h"
 #include "gdi/sge_gdi_ctx.h"
 
-int sge_read_configuration(sge_gdi_ctx_class_t *ctx, lListElem *aSpoolContext, lList** config_list, lList *anAnswer);
+int sge_read_configuration(sge_gdi_ctx_class_t *ctx, const lListElem *aSpoolContext, lList** config_list, lList *anAnswer);
 
 lList*     sge_get_configuration(const lCondition *condition, const lEnumeration *enumeration);
 lListElem* sge_get_configuration_for_host(const char* aName);
@@ -43,7 +43,7 @@ lListElem* sge_get_configuration_entry_by_name(const char *aHost, const char *an
 
 int sge_del_configuration(sge_gdi_ctx_class_t *ctx, lListElem *cxp, lList **alpp, char *ruser, char *rhost);
 int sge_mod_configuration(sge_gdi_ctx_class_t *ctx, lListElem *aConf, lList **anAnswer, char *aUser, char *aHost);
-int sge_compare_configuration(lListElem *aHost, lList *aConf);
+int sge_compare_configuration(const lListElem *aHost, const lList *aConf);
 
 void sge_set_conf_reprioritize(lListElem *aConf, bool aFlag);
 

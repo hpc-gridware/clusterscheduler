@@ -63,7 +63,7 @@ static void schedd_mes_find_others(lListElem *tmp_sme, lList *job_list, int igno
       lListElem *message_elem = NULL;  /* MES_Type */
       lRef category = NULL;            /* Category pointer (void*) */
       lList *jid_cat_list = NULL;      /* ULNG */
-      lList *message_list = lGetList(tmp_sme, SME_message_list);
+      const lList *message_list = lGetList(tmp_sme, SME_message_list);
 
       /*
        * Here we have a list of message elements where each 
@@ -71,7 +71,7 @@ static void schedd_mes_find_others(lListElem *tmp_sme, lList *job_list, int igno
        * We have to find the other jobs (jids) which have the same category.
        */
       for_each(message_elem, message_list) {
-         lList *jid_list = lGetList(message_elem, MES_job_number_list);
+         const lList *jid_list = lGetList(message_elem, MES_job_number_list);
          u_long32 jid;
          lRef jid_category; 
          jid = lGetUlong(lFirst(jid_list), ULNG_value);
@@ -97,7 +97,7 @@ static void schedd_mes_find_others(lListElem *tmp_sme, lList *job_list, int igno
 
 static lRef schedd_mes_get_category(u_long32 job_id, lList *job_list)
 {
-   lListElem *job = NULL;  /* JB_Type */
+   const lListElem *job = NULL;  /* JB_Type */
    lRef ret = NULL;        /* Category pointer (void*) */
 
    DENTER(TOP_LAYER, "schedd_mes_get_category");
@@ -223,7 +223,7 @@ void schedd_mes_commit(lList *job_list, int ignore_category, lRef jid_category) 
       /*
        * Tranfer all messages from tmp_sme to sme
        */
-      sme_mes_list = lGetList(sme, SME_message_list);
+      sme_mes_list = lGetListRW(sme, SME_message_list);
       lXchgList(tmp_sme, SME_message_list, &tmp_sme_list);
       lAddList(sme_mes_list, &tmp_sme_list);
       tmp_sme_list = lCreateList("job info messages", MES_Type);
@@ -412,7 +412,7 @@ void schedd_mes_add(lList **monitor_alpp, bool monitor_next_run, u_long32 job_id
                lSetList(mes, MES_job_number_list, jobs_ulng);
                lSetUlong(mes, MES_message_number, message_number);
                lSetString(mes, MES_message, msg_str);
-               lAppendElem(lGetList(tmp_sme, SME_message_list), mes);
+               lAppendElem(lGetListRW(tmp_sme, SME_message_list), mes);
 
                jid_ulng = lCreateElem(ULNG_Type);
                lSetUlong(jid_ulng, ULNG_value, job_id);
@@ -494,7 +494,7 @@ void schedd_mes_add_join(bool monitor_next_run, u_long32 job_number, u_long32 me
                }
             }
 
-            mes = lGetElemUlong(lGetList(tmp_sme, SME_message_list), MES_message_number, message_number);
+            mes = lGetElemUlongRW(lGetList(tmp_sme, SME_message_list), MES_message_number, message_number);
             if (mes == NULL) {
                mes = lCreateElem(MES_Type);
                jobs_ulng = lCreateList("job ids", ULNG_Type);
@@ -502,9 +502,9 @@ void schedd_mes_add_join(bool monitor_next_run, u_long32 job_number, u_long32 me
                lSetUlong(mes, MES_message_number, message_number);
                lSetString(mes, MES_message, msg_str);
 
-               lAppendElem(lGetList(tmp_sme, SME_message_list), mes);
+               lAppendElem(lGetListRW(tmp_sme, SME_message_list), mes);
             } else {
-               jobs_ulng = lGetList(mes, MES_job_number_list);
+               jobs_ulng = lGetListRW(mes, MES_job_number_list);
             }
 
             jid_ulng = lCreateElem(ULNG_Type);
@@ -579,7 +579,7 @@ void schedd_mes_add_global(lList **monitor_alpp, bool monitor_next_run, u_long32
             lListElem *mes = lCreateElem(MES_Type);
             lSetUlong(mes, MES_message_number, message_number);
             lSetString(mes, MES_message, msg_str);
-            lAppendElem(lGetList(sme, SME_global_message_list), mes);
+            lAppendElem(lGetListRW(sme, SME_global_message_list), mes);
          }
       }
 
@@ -607,12 +607,12 @@ void schedd_mes_add_global(lList **monitor_alpp, bool monitor_next_run, u_long32
 *******************************************************************************/
 lList *schedd_mes_get_tmp_list(){
    lList *ret = NULL;
-   lListElem *tmp_sme = sconf_get_tmp_sme();
+   const lListElem *tmp_sme = sconf_get_tmp_sme();
    
    DENTER(TOP_LAYER, "schedd_mes_get_tmp_list");
 
    if (tmp_sme) {
-     ret =  lGetList(tmp_sme, SME_message_list);  
+     ret = lGetListRW(tmp_sme, SME_message_list);  
    }
    DRETURN(ret);
 }

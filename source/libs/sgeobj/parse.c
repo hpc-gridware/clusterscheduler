@@ -323,12 +323,12 @@ char* actual_opt;
 
    DENTER(BASIS_LAYER, "parse_flag");
 
-   if((ep = lGetElemStrLike(*ppcmdline, SPA_switch, opt))) {
+   if((ep = lGetElemStrLikeRW(*ppcmdline, SPA_switch, opt))) {
       actual_opt = sge_strdup(NULL, lGetString(ep, SPA_switch));
       while(ep) {
          /* remove _all_ flags of same type */
          lRemoveElem(*ppcmdline, &ep);
-         ep = lGetElemStrLike(*ppcmdline, SPA_switch, actual_opt);
+         ep = lGetElemStrLikeRW(*ppcmdline, SPA_switch, actual_opt);
       }
       sge_free(&actual_opt);
       *pflag = 1;
@@ -364,14 +364,14 @@ int field
 
    DENTER(TOP_LAYER, "parse_multi_stringlist");
 
-   if((ep = lGetElemStr(*ppcmdline, SPA_switch, opt))) {
+   if((ep = lGetElemStrRW(*ppcmdline, SPA_switch, opt))) {
       while(ep) {
          /* collect all opts of same type, this is what 'multi' means in funcname!  */
          for_each(sep, lGetList(ep, SPA_argval_lListT)) {
             sge_parse_string_list(ppdestlist, lGetString(sep, ST_name), field, type);
          }
          lRemoveElem(*ppcmdline, &ep);
-         ep = lGetElemStr(*ppcmdline, SPA_switch, opt);
+         ep = lGetElemStrRW(*ppcmdline, SPA_switch, opt);
       }
       DRETURN(true);
    } else {
@@ -392,9 +392,9 @@ u_long32 action
    bool is_run_once = false;
 
    DENTER(TOP_LAYER, "parse_multi_jobtaskslist");
-   while ((ep = lGetElemStr(*ppcmdline, SPA_switch, opt))) {
-      lListElem *arrayDef = lNext(ep);
-      lList *arrayDefList = NULL;
+   while ((ep = lGetElemStrRW(*ppcmdline, SPA_switch, opt))) {
+      lListElem *arrayDef = lNextRW(ep);
+      const lList *arrayDefList = NULL;
 
       ret = true;
       is_run_once = true;
@@ -402,7 +402,7 @@ u_long32 action
          arrayDefList = lGetList(arrayDef, SPA_argval_lListT);
       }
       for_each(sep, lGetList(ep, SPA_argval_lListT)) {
-         lList *tempArrayList = NULL;
+         const lList *tempArrayList = NULL;
      
          if ((arrayDefList != NULL) && (lNext(sep) == NULL)) {
             tempArrayList = arrayDefList;
@@ -425,10 +425,10 @@ u_long32 action
       lRemoveElem(*ppcmdline, &ep);
    }
    
-   if (is_run_once && (ep = lGetElemUlong(*ppcmdline, SPA_number, t_OPT )) != NULL) {
+   if (is_run_once && (ep = lGetElemUlongRW(*ppcmdline, SPA_number, t_OPT )) != NULL) {
       answer_list_add_sprintf(alpp, STATUS_ESEMANTIC, ANSWER_QUALITY_ERROR,
                               MSG_JOB_LONELY_TOPTION_S, lGetString(ep, SPA_switch_arg));
-      while ((ep = lGetElemUlong(*ppcmdline, SPA_number, t_OPT )) != NULL) {
+      while ((ep = lGetElemUlongRW(*ppcmdline, SPA_number, t_OPT )) != NULL) {
          lRemoveElem(*ppcmdline, &ep);
       }  
       
@@ -448,19 +448,19 @@ char **str
 
    DENTER(TOP_LAYER, "parse_string");
 
-   if((ep = lGetElemStr(*ppcmdline, SPA_switch, opt))) {
-      ep2 = lFirst(lGetList(ep, SPA_argval_lListT));
+   if((ep = lGetElemStrRW(*ppcmdline, SPA_switch, opt))) {
+      ep2 = lFirstRW(lGetList(ep, SPA_argval_lListT));
       if (ep2)
          *str = sge_strdup(NULL, lGetString(ep2, ST_name));
       else
          *str = NULL;   
       
-      if(lGetNumberOfElem(lGetList(ep, SPA_argval_lListT)) > 1) {
-         lRemoveElem(lGetList(ep, SPA_argval_lListT), &ep2);
+      if (lGetNumberOfElem(lGetList(ep, SPA_argval_lListT)) > 1) {
+         lRemoveElem(lGetListRW(ep, SPA_argval_lListT), &ep2);
       } else {
          lRemoveElem(*ppcmdline, &ep);
       }
-      
+     
       DEXIT;
       return true;
    } else {
@@ -476,7 +476,7 @@ parse_u_long32(lList **ppcmdline, const char *opt, lList **ppal, u_long32 *value
    lListElem *ep = NULL;
 
    DENTER(TOP_LAYER, "parse_u_long32");
-   ep = lGetElemStr(*ppcmdline, SPA_switch, opt);
+   ep = lGetElemStrRW(*ppcmdline, SPA_switch, opt);
    if(ep != NULL) {
       *value = lGetUlong(ep, SPA_argval_lUlongT); 
 
@@ -493,7 +493,7 @@ parse_u_longlist(lList **ppcmdline, const char *opt, lList **ppal, lList **value
    lListElem *ep = NULL;
 
    DENTER(TOP_LAYER, "parse_u_longlist");
-   ep = lGetElemStr(*ppcmdline, SPA_switch, opt);
+   ep = lGetElemStrRW(*ppcmdline, SPA_switch, opt);
    if(ep != NULL) {
       *value = NULL;
       lXchgList(ep, SPA_argval_lListT, value);

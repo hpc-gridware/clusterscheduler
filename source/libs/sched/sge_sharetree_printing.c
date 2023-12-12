@@ -133,7 +133,7 @@ calculate_share_percents(lListElem *node, double parent_percent, double sibling_
 static double
 get_usage_value(const lList *usage, const char *name)
 {
-   lListElem *ue;
+   const lListElem *ue;
    double value = 0;
 
    if ((ue = lGetElemStr(usage, UA_name, name))) {
@@ -194,7 +194,7 @@ print_node(dstring *out, const lListElem *node,
            const lListElem *parent, const char *parent_node_names)
 {
    if (node != NULL) {
-      lList *usage=NULL, *ltusage=NULL;
+      const lList *usage=NULL, *ltusage=NULL;
       int i, fields_printed=0;
       dstring node_name_dstring = DSTRING_INIT;
 
@@ -224,8 +224,8 @@ print_node(dstring *out, const lListElem *node,
       combined_usage = lGetDouble(node, STN_combined_usage);
 
       if (lGetList(node, STN_children) == NULL && user && project) {
-         lList *projl = lGetList(user, UU_project);
-         lListElem *upp;
+         const lList *projl = lGetList(user, UU_project);
+         const lListElem *upp;
          if (projl) {
             if ((upp=lGetElemStr(projl, UPP_name,
                                  lGetString(project, PR_name)))) {
@@ -469,7 +469,7 @@ sge_sharetree_print(dstring *out, const lList *sharetree_in, const lList *users,
    sharetree = lCopyList("copy of sharetree", sharetree_in);
    
    /* Resolve the default users */
-   sge_add_default_user_nodes(lFirst(sharetree), users, projects, usersets);
+   sge_add_default_user_nodes(lFirstRW(sharetree), users, projects, usersets);
 
    /* 
     * The sharetree calculation and output uses lots of global variables
@@ -477,7 +477,7 @@ sge_sharetree_print(dstring *out, const lList *sharetree_in, const lList *users,
     */
    sge_mutex_lock("sharetree_printing", SGE_FUNC, __LINE__, &mtx);
 
-   root = lFirst(sharetree);
+   root = lFirstRW(sharetree);
 
    calculate_share_percents(root, 1.0, lGetUlong(root, STN_shares));
 

@@ -558,7 +558,7 @@ static int qstat_xml_sub_task(job_handler_t* handler, task_summary_t *summary, l
    }   
    
    /* add the sub task to the current job element */
-   attribute_list = lGetList(ctx->job_elem, XMLE_Attribute);
+   attribute_list = lGetListRW(ctx->job_elem, XMLE_Attribute);
    lAppendElem(attribute_list, xml_elem);
    
    DEXIT;
@@ -586,7 +586,7 @@ static int qstat_xml_job_additional_info(job_handler_t* handler, job_additional_
          {
             qstat_xml_ctx_t *ctx = (qstat_xml_ctx_t*)handler->ctx;
             /*lListElem *xml_elem = NULL;*/
-            lList *attribute_list = lGetList(ctx->job_elem, XMLE_List);
+            lList *attribute_list = lGetListRW(ctx->job_elem, XMLE_List);
             
             DPRINTF(("Add additional info %s(%d) = %s\n", ADDITIONAL_TAG_NAMES[name], name, value));
             xml_append_Attr_S(attribute_list, ADDITIONAL_TAG_NAMES[name], value);
@@ -601,7 +601,7 @@ static int qstat_xml_job_additional_info(job_handler_t* handler, job_additional_
 static int qstat_xml_job_requested_pe(job_handler_t *handler, const char* pe_name, const char* pe_range, lList **alpp) {
    qstat_xml_ctx_t *ctx = (qstat_xml_ctx_t*)handler->ctx;
    lListElem *xml_elem = NULL;
-   lList *attribute_list = lGetList(ctx->job_elem, XMLE_List);
+   lList *attribute_list = lGetListRW(ctx->job_elem, XMLE_List);
 
    DENTER(TOP_LAYER, "qstat_xml_job_requested_pe");
    
@@ -615,7 +615,7 @@ static int qstat_xml_job_requested_pe(job_handler_t *handler, const char* pe_nam
 static int qstat_xml_job_granted_pe(job_handler_t *handler, const char* pe_name, int pe_slots, lList **alpp) {
    qstat_xml_ctx_t *ctx = (qstat_xml_ctx_t*)handler->ctx;
    lListElem *xml_elem = NULL;
-   lList *attribute_list = lGetList(ctx->job_elem, XMLE_List);
+   lList *attribute_list = lGetListRW(ctx->job_elem, XMLE_List);
 
    DENTER(TOP_LAYER, "qstat_xml_job_granted_pe");
    
@@ -629,7 +629,7 @@ static int qstat_xml_job_granted_pe(job_handler_t *handler, const char* pe_name,
 static int qstat_xml_job_request(job_handler_t* handler, const char* name, const char* value, lList **alpp) {
    qstat_xml_ctx_t *ctx = (qstat_xml_ctx_t*)handler->ctx;
    lListElem *xml_elem = NULL;
-   lList *attribute_list = lGetList(ctx->job_elem, XMLE_List);
+   lList *attribute_list = lGetListRW(ctx->job_elem, XMLE_List);
    
    DENTER(TOP_LAYER,"qstat_xml_job_request");
    
@@ -643,7 +643,7 @@ static int qstat_xml_job_request(job_handler_t* handler, const char* name, const
 static int qstat_xml_job_report_hard_resource(job_handler_t *handler, const char* name, const char* value, double uc, lList **alpp) {
    qstat_xml_ctx_t *ctx = (qstat_xml_ctx_t*)handler->ctx;
    lListElem *xml_elem = NULL;
-   lList *attribute_list = lGetList(ctx->job_elem, XMLE_List);
+   lList *attribute_list = lGetListRW(ctx->job_elem, XMLE_List);
    
    DENTER(TOP_LAYER,"qstat_xml_job_report_hard_resource");
 
@@ -658,7 +658,7 @@ static int qstat_xml_job_report_hard_resource(job_handler_t *handler, const char
 static int qstat_xml_job_soft_resource(job_handler_t *handler, const char* name, const char* value, double uc, lList **alpp) {
    qstat_xml_ctx_t *ctx = (qstat_xml_ctx_t*)handler->ctx;
    lListElem *xml_elem = NULL;
-   lList *attribute_list = lGetList(ctx->job_elem, XMLE_List);
+   lList *attribute_list = lGetListRW(ctx->job_elem, XMLE_List);
    
    DENTER(TOP_LAYER, "qstat_xml_job_soft_resource");
 
@@ -671,7 +671,7 @@ static int qstat_xml_job_soft_resource(job_handler_t *handler, const char* name,
 
 static int qstat_xml_job_hard_requested_queue(job_handler_t *handler, const char* name, lList **alpp) {
    qstat_xml_ctx_t *ctx = (qstat_xml_ctx_t*)handler->ctx;
-   lList *attribute_list = lGetList(ctx->job_elem, XMLE_List);
+   lList *attribute_list = lGetListRW(ctx->job_elem, XMLE_List);
 
    DENTER(TOP_LAYER, "qstat_xml_job_hard_requested_queue");
 
@@ -683,7 +683,7 @@ static int qstat_xml_job_hard_requested_queue(job_handler_t *handler, const char
 
 static int qstat_xml_job_soft_requested_queue(job_handler_t *handler, const char* name, lList **alpp) {
    qstat_xml_ctx_t *ctx = (qstat_xml_ctx_t*)handler->ctx;
-   lList *attribute_list = lGetList(ctx->job_elem, XMLE_List);
+   lList *attribute_list = lGetListRW(ctx->job_elem, XMLE_List);
 
    DENTER(TOP_LAYER, "qstat_xml_job_soft_requested_queue");
 
@@ -695,7 +695,7 @@ static int qstat_xml_job_soft_requested_queue(job_handler_t *handler, const char
 
 static int qstat_xml_job_master_hard_requested_queue(job_handler_t* handler, const char* name, lList **alpp) {
    qstat_xml_ctx_t *ctx = (qstat_xml_ctx_t*)handler->ctx;
-   lList *attribute_list = lGetList(ctx->job_elem, XMLE_List);
+   lList *attribute_list = lGetListRW(ctx->job_elem, XMLE_List);
 
    DENTER(TOP_LAYER, "qstat_xml_job_master_hard_requested_queue");
 
@@ -707,7 +707,7 @@ static int qstat_xml_job_master_hard_requested_queue(job_handler_t* handler, con
 
 static int qstat_xml_job_predecessor_requested(job_handler_t* handler, const char* name, lList **alpp) {
    qstat_xml_ctx_t *ctx = (qstat_xml_ctx_t*)handler->ctx;
-   lList *attribute_list = lGetList(ctx->job_elem, XMLE_List);
+   lList *attribute_list = lGetListRW(ctx->job_elem, XMLE_List);
 
    DENTER(TOP_LAYER, "qstat_xml_job_predecessor_requested");
 
@@ -719,7 +719,7 @@ static int qstat_xml_job_predecessor_requested(job_handler_t* handler, const cha
 
 static int qstat_xml_job_predecessor(job_handler_t* handler, u_long32 jid, lList **alpp) {
    qstat_xml_ctx_t *ctx = (qstat_xml_ctx_t*)handler->ctx;
-   lList *attribute_list = lGetList(ctx->job_elem, XMLE_List);
+   lList *attribute_list = lGetListRW(ctx->job_elem, XMLE_List);
 
    DENTER(TOP_LAYER, "qstat_xml_job_predecessor");
 
@@ -731,7 +731,7 @@ static int qstat_xml_job_predecessor(job_handler_t* handler, u_long32 jid, lList
 
 static int qstat_xml_job_ad_predecessor_requested(job_handler_t* handler, const char* name, lList **alpp) {
    qstat_xml_ctx_t *ctx = (qstat_xml_ctx_t*)handler->ctx;
-   lList *attribute_list = lGetList(ctx->job_elem, XMLE_List);
+   lList *attribute_list = lGetListRW(ctx->job_elem, XMLE_List);
 
    DENTER(TOP_LAYER, "qstat_xml_job_ad_predecessor_requested");
 
@@ -743,7 +743,7 @@ static int qstat_xml_job_ad_predecessor_requested(job_handler_t* handler, const 
 
 static int qstat_xml_job_ad_predecessor(job_handler_t* handler, u_long32 jid, lList **alpp) {
    qstat_xml_ctx_t *ctx = (qstat_xml_ctx_t*)handler->ctx;
-   lList *attribute_list = lGetList(ctx->job_elem, XMLE_List);
+   lList *attribute_list = lGetListRW(ctx->job_elem, XMLE_List);
 
    DENTER(TOP_LAYER, "qstat_xml_job_ad_predecessor");
 
@@ -755,7 +755,7 @@ static int qstat_xml_job_ad_predecessor(job_handler_t* handler, u_long32 jid, lL
 
 static int qstat_xml_job_binding(job_handler_t* handler, const char *binding, lList **alpp) {
    qstat_xml_ctx_t *ctx = (qstat_xml_ctx_t*)handler->ctx;
-   lList *attribute_list = lGetList(ctx->job_elem, XMLE_List);
+   lList *attribute_list = lGetListRW(ctx->job_elem, XMLE_List);
 
    DENTER(TOP_LAYER, "qstat_xml_job_binding");
 
@@ -798,7 +798,7 @@ static int qstat_xml_finish_job_list(qstat_handler_t *handler, const char* state
    DENTER(TOP_LAYER, "qstat_xml_finish_job_list");
    
    for_each(job_elem, ctx->job_list) {
-      attributes = lGetList(job_elem, XMLE_Attribute);
+      attributes = lGetListRW(job_elem, XMLE_Attribute);
       if (!attributes){
          attributes = lCreateList("attributes", XMLA_Type);
          lSetList(job_elem, XMLE_Attribute, attributes);
@@ -836,13 +836,13 @@ static int qstat_xml_queue_jobs_finished(qstat_handler_t *handler, const char* q
    if (lFirst(ctx->job_list)) {
       lList *job_list = NULL;
       if (qstat_env->full_listing & QSTAT_DISPLAY_FULL ) {
-         job_list = lGetList(ctx->queue_elem, XMLE_List);
+         job_list = lGetListRW(ctx->queue_elem, XMLE_List);
          if(job_list == NULL) {
             job_list = lCreateList("job_list", XMLE_Type);
             lSetList(ctx->queue_elem, XMLE_List, job_list);
          }
       } else {
-        job_list = lGetList(ctx->queue_list_elem, XMLE_List);
+        job_list = lGetListRW(ctx->queue_list_elem, XMLE_List);
          if(job_list == NULL) {
             job_list = lCreateList("job_list", XMLE_Type);
             lSetList(ctx->queue_list_elem, XMLE_List, job_list);
@@ -873,7 +873,7 @@ static int qstat_xml_pending_jobs_finished(qstat_handler_t *handler, lList **alp
 
    DENTER(TOP_LAYER, "qstat_xml_pending_jobs_finished");
    
-   target_list = lGetList(ctx->job_list_elem, XMLE_List);
+   target_list = lGetListRW(ctx->job_list_elem, XMLE_List);
    ret = qstat_xml_finish_job_list(handler, "pending", target_list, alpp);
 
    DEXIT;
@@ -898,7 +898,7 @@ static int qstat_xml_finished_jobs_finished(qstat_handler_t *handler, lList **al
 
    DENTER(TOP_LAYER, "qstat_xml_finished_jobs_finished");
    
-   target_list = lGetList(ctx->job_list_elem, XMLE_List);
+   target_list = lGetListRW(ctx->job_list_elem, XMLE_List);
    ret = qstat_xml_finish_job_list(handler, "finished", target_list, alpp);
    
    DEXIT;
@@ -922,7 +922,7 @@ static int qstat_xml_error_jobs_finished(qstat_handler_t *handler, lList **alpp)
 
    DENTER(TOP_LAYER, "qstat_xml_error_jobs_finished");
    
-   target_list = lGetList(ctx->job_list_elem, XMLE_List);
+   target_list = lGetListRW(ctx->job_list_elem, XMLE_List);
    ret = qstat_xml_finish_job_list(handler, "error", target_list, alpp);
    
    DEXIT;
@@ -947,7 +947,7 @@ static int qstat_xml_zombie_jobs_finished(qstat_handler_t *handler, lList **alpp
    
    DENTER(TOP_LAYER, "qstat_xml_zombie_jobs_finished");
    
-   target_list = lGetList(ctx->job_list_elem, XMLE_List);
+   target_list = lGetListRW(ctx->job_list_elem, XMLE_List);
    ret = qstat_xml_finish_job_list(handler, "zombie", target_list, alpp);
    
    DEXIT;
@@ -968,7 +968,7 @@ static int qstat_xml_queue_finished(qstat_handler_t* handler, const char* qname,
       }
       DPRINTF(("add queue_info for queue %s to queue_list\n", qname ));
       
-      queue_list = lGetList(ctx->queue_list_elem, XMLE_List);
+      queue_list = lGetListRW(ctx->queue_list_elem, XMLE_List);
       if (queue_list == NULL) {
          DPRINTF(("Had empty queue list, create new one\n"));
          queue_list = lCreateList("Queue-List", XMLE_Type);
@@ -1024,7 +1024,7 @@ static int qstat_xml_queue_summary(qstat_handler_t* handler, const char* qname, 
       abort();
    }
    xml_elem = lGetObject(ctx->queue_elem, XMLE_Element);
-   attribute_list = lGetList(xml_elem, XMLE_List);
+   attribute_list = lGetListRW(xml_elem, XMLE_List);
    
    xml_append_Attr_S(attribute_list, "name", qname);        
    xml_append_Attr_S(attribute_list, "qtype", summary->queue_type); 
@@ -1058,7 +1058,7 @@ static int qstat_xml_queue_load_alarm(qstat_handler_t* handler, const char* qnam
    DENTER(TOP_LAYER,"qstat_xml_queue_load_alarm");
    
    xml_elem = lGetObject(ctx->queue_elem, XMLE_Element);
-   attribute_list = lGetList(xml_elem, XMLE_List);
+   attribute_list = lGetListRW(xml_elem, XMLE_List);
    
    xml_append_Attr_S(attribute_list, "load-alarm-reason", reason);
    
@@ -1073,7 +1073,7 @@ static int qstat_xml_queue_suspend_alarm(qstat_handler_t* handler, const char* q
    DENTER(TOP_LAYER,"qstat_xml_queue_suspend_alarm");
    
    xml_elem = lGetObject(ctx->queue_elem, XMLE_Element);
-   attribute_list = lGetList(xml_elem, XMLE_List);
+   attribute_list = lGetListRW(xml_elem, XMLE_List);
    
    xml_append_Attr_S(attribute_list, "suspend-alarm-reason", reason);
    
@@ -1088,7 +1088,7 @@ static int qstat_xml_queue_message(qstat_handler_t* handler, const char* qname, 
    DENTER(TOP_LAYER,"qstat_xml_queue_message");
 
    xml_elem = lGetObject(ctx->queue_elem, XMLE_Element);
-   attribute_list = lGetList(xml_elem, XMLE_List);
+   attribute_list = lGetListRW(xml_elem, XMLE_List);
    
    xml_append_Attr_S(attribute_list, "message", message);
    
@@ -1104,7 +1104,7 @@ static int qstat_xml_queue_resource(qstat_handler_t* handler, const char* dom, c
    DENTER(TOP_LAYER,"qstat_xml_queue_resource");
    
    xml_elem = lGetObject(ctx->queue_elem, XMLE_Element);
-   attribute_list = lGetList(xml_elem, XMLE_List);
+   attribute_list = lGetListRW(xml_elem, XMLE_List);
    
    DPRINTF(("queue resource: %s, %s, %s\n", dom, name, value));
    xml_elem = xml_append_Attr_S(attribute_list, "resource", value);
@@ -1122,7 +1122,7 @@ void xml_qstat_show_job_info(lList **list, lList **answer_list, qstat_env_t *qst
    lListElem *xml_elem = NULL;
    bool error = false;
    lListElem* mes;
-   lListElem *sme;
+   const lListElem *sme;
    lList *mlp = NULL;
    lListElem *jid_ulng = NULL; 
    DENTER(TOP_LAYER, "xml_qstat_show_job");
@@ -1145,10 +1145,10 @@ void xml_qstat_show_job_info(lList **list, lList **answer_list, qstat_env_t *qst
       
       sme = lFirst(*list);
       if (sme) {
-         mlp = lGetList(sme, SME_message_list);         
+         mlp = lGetListRW(sme, SME_message_list);         
       }      
       for_each(mes, mlp) {
-         lPSortList (lGetList(mes, MES_job_number_list), "I+", ULNG_value);
+         lPSortList (lGetListRW(mes, MES_job_number_list), "I+", ULNG_value);
 
          for_each(jid_ulng, lGetList(mes, MES_job_number_list)) {
             u_long32 mid;            

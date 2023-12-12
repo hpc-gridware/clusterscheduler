@@ -511,9 +511,9 @@ sge_c_gdi_add(sge_gdi_ctx_class_t *ctx, sge_gdi_packet_class_t *packet, sge_gdi_
       if (task->target == SGE_EV_LIST) {
          lListElem *next;
 
-         next = lFirst(task->data_list);
+         next = lFirstRW(task->data_list);
          while ((ep = next) != NULL) {/* is thread save. the global lock is used, when needed */
-            next = lNext(ep);
+            next = lNextRW(ep);
 
             /* fill address infos from request into event client that must be added */
             lSetHost(ep, EV_host, packet->host);
@@ -536,9 +536,9 @@ sge_c_gdi_add(sge_gdi_ctx_class_t *ctx, sge_gdi_packet_class_t *packet, sge_gdi_
       } else if (task->target == SGE_JB_LIST) {
          lListElem *next;
 
-         next = lFirst(task->data_list);
+         next = lFirstRW(task->data_list);
          while ((ep = next) != NULL) { /* is thread save. the global lock is used, when needed */
-            next = lNext(ep);
+            next = lNextRW(ep);
 
             lDechainElem(task->data_list, ep);
 
@@ -560,9 +560,9 @@ sge_c_gdi_add(sge_gdi_ctx_class_t *ctx, sge_gdi_packet_class_t *packet, sge_gdi_
       } else if (task->target == SGE_SC_LIST ) {
          lListElem *next;
 
-         next = lFirst(task->data_list);
+         next = lFirstRW(task->data_list);
          while ((ep = next) != NULL) {
-            next = lNext(ep);
+            next = lNextRW(ep);
 
             sge_mod_sched_configuration(ctx, ep, &(task->answer_list), packet->user, packet->host);
          }
@@ -575,9 +575,9 @@ sge_c_gdi_add(sge_gdi_ctx_class_t *ctx, sge_gdi_packet_class_t *packet, sge_gdi_
              sge_set_commit_required();
          }
 
-         next = lFirst(task->data_list);
+         next = lFirstRW(task->data_list);
          while ((ep = next) != NULL) {
-            next = lNext(ep);
+            next = lNextRW(ep);
 
             /* add each element */
             switch (task->target) {
@@ -956,10 +956,10 @@ void sge_c_gdi_replace(sge_gdi_ctx_class_t *ctx, gdi_object_t *ao,
                DRETURN_VOID;
             }
             /* delete all currently defined rule sets */
-            ep = lFirst(*object_type_get_master_list(SGE_TYPE_RQS));
+            ep = lFirstRW(*object_type_get_master_list(SGE_TYPE_RQS));
             while (ep != NULL) {
                rqs_del(ctx, ep, &(task->answer_list), object_type_get_master_list_rw(SGE_TYPE_RQS), packet->user, packet->host);
-               ep = lFirst(*object_type_get_master_list(SGE_TYPE_RQS));
+               ep = lFirstRW(*object_type_get_master_list(SGE_TYPE_RQS));
             }
 
             for_each(ep, task->data_list) {
@@ -1655,8 +1655,8 @@ monitoring_t *monitor
    int dataType;
    const char *name;
    lList *tmp_alp = NULL;
-   lListElem *new_obj = NULL,
-             *old_obj;
+   lListElem *new_obj = NULL;
+   lListElem *old_obj;
 
    dstring buffer;
    char ds_buffer[256];
@@ -1703,14 +1703,13 @@ monitoring_t *monitor
       sge_dstring_sprintf(&buffer, sge_u32, id);
       name = sge_dstring_get_string(&buffer);
 
-      old_obj = lGetElemUlong(*object_type_get_master_list(object->list_type), object->key_nm, id);
+      old_obj = lGetElemUlongRW(*object_type_get_master_list(object->list_type), object->key_nm, id);
    } else if (dataType == lHostT) {
       name = lGetHost(instructions, object->key_nm);
-      old_obj = lGetElemHost(*object_type_get_master_list(object->list_type), object->key_nm, name);
-
+      old_obj = lGetElemHostRW(*object_type_get_master_list(object->list_type), object->key_nm, name);
    } else {
       name = lGetString(instructions, object->key_nm);
-      old_obj = lGetElemStr(*object_type_get_master_list(object->list_type), object->key_nm, name);
+      old_obj = lGetElemStrRW(*object_type_get_master_list(object->list_type), object->key_nm, name);
    }
 
    if (name == NULL) {
@@ -1720,10 +1719,8 @@ monitoring_t *monitor
    }
 
    /* prevent duplicates / modifying non existing objects */
-   if ((old_obj && add) ||
-      (!old_obj && !add)) {
-      ERROR((SGE_EVENT, add?
-            MSG_SGETEXT_ALREADYEXISTS_SS:MSG_SGETEXT_DOESNOTEXIST_SS,
+   if ((old_obj && add) || (!old_obj && !add)) {
+      ERROR((SGE_EVENT, add?MSG_SGETEXT_ALREADYEXISTS_SS:MSG_SGETEXT_DOESNOTEXIST_SS,
             object->object_name, name));
       answer_list_add(alpp, SGE_EVENT, STATUS_EEXIST, ANSWER_QUALITY_ERROR);
       DRETURN(STATUS_EEXIST);
@@ -1739,8 +1736,7 @@ monitoring_t *monitor
    }
 
    /* modify the new object base on information in the request */
-   if (object->modifier(ctx, &tmp_alp, new_obj, instructions, add, ruser, rhost,
-         object, sub_command, monitor) != 0) {
+   if (object->modifier(ctx, &tmp_alp, new_obj, instructions, add, ruser, rhost, object, sub_command, monitor) != 0) {
 
       if (alpp) {
          /* ON ERROR: DISPOSE NEW OBJECT */
@@ -1755,7 +1751,7 @@ monitoring_t *monitor
                lAppendList(*alpp, tmp_alp);
                lFreeList(&tmp_alp);
             } else {
-               lListElem *failure = lLast(tmp_alp);
+               lListElem *failure = lLastRW(tmp_alp);
 
                lDechainElem(tmp_alp, failure);
                lAppendElem(*alpp, failure);

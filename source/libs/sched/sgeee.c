@@ -521,14 +521,14 @@ static void task_ref_copy_to_ja_task(sge_task_ref_t *tref, lListElem *ja_task)
 *******************************************************************************/
 void sgeee_resort_pending_jobs(lList **job_list)
 {
-   lListElem *next_job = lFirst(*job_list);
+   lListElem *next_job = lFirstRW(*job_list);
 
    DENTER(TOP_LAYER, "sgeee_resort_pending_jobs");
 
    if (next_job) {
       u_long32 job_id = lGetUlong(next_job, JB_job_number);
       u_long32 start_time_of_job1 = lGetUlong(next_job, JB_submission_time);
-      lListElem *tmp_task = lFirst(lGetList(next_job, JB_ja_tasks));
+      const lListElem *tmp_task = lFirst(lGetList(next_job, JB_ja_tasks));
       lListElem *jep = NULL;
       lListElem *insert_jep = NULL;
       double prio = 0.0;
@@ -537,11 +537,10 @@ void sgeee_resort_pending_jobs(lList **job_list)
          double nurg = 0.5;
          double npri = 0.5;
 
-         lList *range_list = lGetList(next_job, JB_ja_n_h_ids);
+         const lList *range_list = lGetList(next_job, JB_ja_n_h_ids);
          u_long32 ja_task_id = range_list_get_first_id(range_list, NULL);
          sge_task_ref_t *tref = task_ref_get_first(job_id, ja_task_id);
-         lListElem *ja_task_template = lFirst(
-                                       lGetList(next_job, JB_ja_template));
+         lListElem *ja_task_template = lFirstRW(lGetList(next_job, JB_ja_template));
 
          /* 
           * If no further sge_task_ref_t element was prepared during 
@@ -593,7 +592,7 @@ void sgeee_resort_pending_jobs(lList **job_list)
          for_each(jep, *job_list) {
             u_long32 start_time_of_job2 = lGetUlong(jep, JB_submission_time);
             u_long32 job_id2 = lGetUlong(jep, JB_job_number);
-            lListElem *tmp_task2 = lFirst(lGetList(jep, JB_ja_tasks));
+            const lListElem *tmp_task2 = lFirst(lGetList(jep, JB_ja_tasks));
             double prio2;
 
             if (tmp_task2 == NULL) {
@@ -712,7 +711,7 @@ locate_department( lList *dept_list,
     * Look up the department object by name
     *-------------------------------------------------------------*/
 
-   return lGetElemStr(dept_list, US_name, name);
+   return lGetElemStrRW(dept_list, US_name, name);
 }
 
 
@@ -786,7 +785,7 @@ sge_set_job_refs( lListElem *job,
     * locate share tree node and save off reference
     *-------------------------------------------------------------*/
 
-   if ((root = lFirst(lists->share_tree))) {
+   if ((root = lFirstRW(lists->share_tree))) {
       lListElem *pnode = NULL;
        
       ref->share_tree_type = lGetUlong(root, STN_type);
@@ -808,7 +807,7 @@ sge_set_job_refs( lListElem *job,
             ref->node = lCopyElem(ref->node);
             lSetString(ref->node, STN_name, lGetString(ref->user, UU_name));
             lSetUlong(ref->node, STN_temp, 1);
-            lAppendElem(lGetList(pnode, STN_children), ref->node);
+            lAppendElem(lGetListRW(pnode, STN_children), ref->node);
          }
       } else
          ref->node = NULL;
@@ -894,7 +893,7 @@ calculate_m_shares( lListElem *parent_node )
 {
    u_long sum_of_child_shares = 0;
    lListElem *child_node;
-   lList *children;
+   const lList *children;
    double parent_m_share;
 
    DENTER(TOP_LAYER, "calculate_m_shares");
@@ -947,7 +946,7 @@ u_long
 update_job_ref_count( lListElem *node )
 {
    int job_count=0;
-   lList *children;
+   const lList *children;
    lListElem *child;
 
    children = lGetList(node, STN_children);
@@ -969,7 +968,7 @@ static u_long
 update_active_job_ref_count( lListElem *node )
 {
    int active_job_count=0;
-   lList *children;
+   const lList *children;
    lListElem *child;
 
    children = lGetList(node, STN_children);
@@ -1059,7 +1058,7 @@ static lListElem *
 get_usage( lList *usage_list,
            const char *name )
 {
-   return lGetElemStr(usage_list, UA_name, name);
+   return lGetElemStrRW(usage_list, UA_name, name);
 }
 
 
@@ -1130,7 +1129,7 @@ delete_debited_job_usage( sge_ref_t *ref,
    lListElem *job=ref->job,
              *user=ref->user,
              *project=ref->project;
-   lList *upu_list;
+   const lList *upu_list;
    lListElem *upu;
    
    DENTER(TOP_LAYER, "delete_debited_job_usage");
@@ -1147,8 +1146,7 @@ delete_debited_job_usage( sge_ref_t *ref,
             for this job in the UU_debited_job_usage list */
          DPRINTF(("DDJU (3) "sge_u32"\n", lGetUlong(job, JB_job_number))); 
 
-         if ((upu = lGetElemUlong(upu_list, UPU_job_number,
-                             lGetUlong(job, JB_job_number)))) {
+         if ((upu = lGetElemUlongRW(upu_list, UPU_job_number, lGetUlong(job, JB_job_number)))) {
             DPRINTF(("DDJU (4) "sge_u32"\n", lGetUlong(job, JB_job_number)));
             lSetList(upu, UPU_old_usage_list, NULL);
             lSetUlong(user, UU_usage_seqno, seqno);
@@ -1164,8 +1162,7 @@ delete_debited_job_usage( sge_ref_t *ref,
             usage for this job, we zero out UPU_old_usage_list
             for this job in the PR_debited_job_usage list */
 
-         if ((upu = lGetElemUlong(upu_list, UPU_job_number,
-                             lGetUlong(job, JB_job_number)))) {
+         if ((upu = lGetElemUlongRW(upu_list, UPU_job_number, lGetUlong(job, JB_job_number)))) {
             lSetList(upu, UPU_old_usage_list, NULL);
             lSetUlong(project, PR_usage_seqno, seqno);
          }
@@ -1192,8 +1189,8 @@ combine_usage( sge_ref_t *ref )
     *-------------------------------------------------------------*/
    if (ref->node) {
       lList *usage_weight_list = NULL;
-      lList *usage_list=NULL;
-      lListElem *usage_weight, *usage_elem;
+      const lList *usage_list=NULL;
+      const lListElem *usage_weight, *usage_elem;
       double sum_of_usage_weights = 0;
       const char *usage_name;
 
@@ -1215,11 +1212,9 @@ combine_usage( sge_ref_t *ref )
 
          if (ref->user) {
             if (ref->project) {
-               lList *upp_list = lGetList(ref->user, UU_project);
-               lListElem *upp;
-               if (upp_list &&
-                   ((upp = lGetElemStr(upp_list, UPP_name,
-                                       lGetString(ref->project, PR_name)))))
+               const lList *upp_list = lGetList(ref->user, UU_project);
+               const lListElem *upp;
+               if (upp_list && ((upp = lGetElemStr(upp_list, UPP_name, lGetString(ref->project, PR_name)))))
                   usage_list = lGetList(upp, UPP_usage);
             } 
             else {
@@ -1232,12 +1227,9 @@ combine_usage( sge_ref_t *ref )
 
          for_each(usage_elem, usage_list) {
             usage_name = lGetString(usage_elem, UA_name);
-            usage_weight = lGetElemStr(usage_weight_list, UA_name,
-                                       usage_name);
+            usage_weight = lGetElemStr(usage_weight_list, UA_name, usage_name);
             if (usage_weight && sum_of_usage_weights>0) {
-               usage_value += lGetDouble(usage_elem, UA_value) *
-                  (lGetDouble(usage_weight, UA_value) /
-                   sum_of_usage_weights);
+               usage_value += lGetDouble(usage_elem, UA_value) * (lGetDouble(usage_weight, UA_value) / sum_of_usage_weights);
             }
          }
       }
@@ -1321,7 +1313,7 @@ decay_and_sum_usage( sge_ref_t *ref,
          for_each(petask, lGetList(ja_task, JAT_task_list)) {
             lListElem *dst, *src;
             for_each(src, lGetList(petask, PET_scaled_usage)) {
-               if ((dst=lGetElemStr(job_usage_list, UA_name, lGetString(src, UA_name)))) {
+               if ((dst=lGetElemStrRW(job_usage_list, UA_name, lGetString(src, UA_name)))) {
                   lSetDouble(dst, UA_value, lGetDouble(dst, UA_value) + lGetDouble(src, UA_value));
                } else {
                   lAppendElem(job_usage_list, lCopyElem(src));
@@ -1332,12 +1324,11 @@ decay_and_sum_usage( sge_ref_t *ref,
    }
 
    if (userprj) {
-      lListElem *upu;
-      lList *upu_list = lGetList(userprj, obj_debited_job_usage);
+      const lListElem *upu;
+      const lList *upu_list = lGetList(userprj, obj_debited_job_usage);
       if (upu_list) {
-         if ((upu = lGetElemUlong(upu_list, UPU_job_number,
-                                  lGetUlong(job, JB_job_number)))) {
-            if ((old_usage_list = lGetList(upu, UPU_old_usage_list))) {
+         if ((upu = lGetElemUlong(upu_list, UPU_job_number, lGetUlong(job, JB_job_number)))) {
+            if ((old_usage_list = lGetListRW(upu, UPU_old_usage_list))) {
                old_usage_list = lCopyList("", old_usage_list);
             }
          }
@@ -1353,7 +1344,7 @@ decay_and_sum_usage( sge_ref_t *ref,
       /* if there is a user & project, usage is kept in the project sub-list */
 
       if (project) {
-         lList *upp_list = lGetList(user, UU_project);
+         lList *upp_list = lGetListRW(user, UU_project);
          lListElem *upp;
          const char *project_name = lGetString(project, PR_name);
 
@@ -1361,28 +1352,26 @@ decay_and_sum_usage( sge_ref_t *ref,
             upp_list = lCreateList("", UPP_Type);
             lSetList(user, UU_project, upp_list);
          }
-         if (!((upp = lGetElemStr(upp_list, UPP_name, project_name))))
+         if (!((upp = lGetElemStrRW(upp_list, UPP_name, project_name))))
             upp = lAddElemStr(&upp_list, UPP_name, project_name, UPP_Type);
-         user_long_term_usage_list = lGetList(upp, UPP_long_term_usage);
+         user_long_term_usage_list = lGetListRW(upp, UPP_long_term_usage);
          if (!user_long_term_usage_list) {
-            user_long_term_usage_list = 
-                  build_usage_list("upp_long_term_usage_list", NULL);
+            user_long_term_usage_list = build_usage_list("upp_long_term_usage_list", NULL);
             lSetList(upp, UPP_long_term_usage, user_long_term_usage_list);
          }
-         user_usage_list = lGetList(upp, UPP_usage);
+         user_usage_list = lGetListRW(upp, UPP_usage);
          if (!user_usage_list) {
             user_usage_list = build_usage_list("upp_usage_list", NULL);
             lSetList(upp, UPP_usage, user_usage_list);
          }
 
       } else {
-         user_long_term_usage_list = lGetList(user, UU_long_term_usage);
+         user_long_term_usage_list = lGetListRW(user, UU_long_term_usage);
          if (!user_long_term_usage_list) {
-            user_long_term_usage_list = 
-                  build_usage_list("user_long_term_usage_list", NULL);
+            user_long_term_usage_list = build_usage_list("user_long_term_usage_list", NULL);
             lSetList(user, UU_long_term_usage, user_long_term_usage_list);
          }
-         user_usage_list = lGetList(user, UU_usage);
+         user_usage_list = lGetListRW(user, UU_usage);
          if (!user_usage_list) {
             user_usage_list = build_usage_list("user_usage_list", NULL);
             lSetList(user, UU_usage, user_usage_list);
@@ -1391,16 +1380,14 @@ decay_and_sum_usage( sge_ref_t *ref,
    }
 
    if (project) {
-      project_long_term_usage_list = lGetList(project, PR_long_term_usage);
+      project_long_term_usage_list = lGetListRW(project, PR_long_term_usage);
       if (!project_long_term_usage_list) {
-         project_long_term_usage_list =
-              build_usage_list("project_long_term_usage_list", NULL);
+         project_long_term_usage_list = build_usage_list("project_long_term_usage_list", NULL);
          lSetList(project, PR_long_term_usage, project_long_term_usage_list);
       }
-      project_usage_list = lGetList(project, PR_usage);
+      project_usage_list = lGetListRW(project, PR_usage);
       if (!project_usage_list) {
-         project_usage_list = build_usage_list("project_usage_list", 
-                                                NULL);
+         project_usage_list = build_usage_list("project_usage_list", NULL);
          lSetList(project, PR_usage, project_usage_list);
       }
    }
@@ -1530,19 +1517,17 @@ decay_and_sum_usage( sge_ref_t *ref,
       if (userprj) {
          lListElem *upu;
          u_long jobnum = lGetUlong(job, JB_job_number);
-         lList *upu_list = lGetList(userprj, obj_debited_job_usage);
+         lList *upu_list = lGetListRW(userprj, obj_debited_job_usage);
          if (!upu_list) {
             upu_list = lCreateList("", UPU_Type);
             lSetList(userprj, obj_debited_job_usage, upu_list);
          }
-         if ((upu = lGetElemUlong(upu_list, UPU_job_number, jobnum))) {
-            lSetList(upu, UPU_old_usage_list,
-                     lCopyList(lGetListName(job_usage_list), job_usage_list));
+         if ((upu = lGetElemUlongRW(upu_list, UPU_job_number, jobnum))) {
+            lSetList(upu, UPU_old_usage_list, lCopyList(lGetListName(job_usage_list), job_usage_list));
          } else {
             upu = lCreateElem(UPU_Type);
             lSetUlong(upu, UPU_job_number, jobnum);
-            lSetList(upu, UPU_old_usage_list,
-                     lCopyList(lGetListName(job_usage_list), job_usage_list));
+            lSetList(upu, UPU_old_usage_list, lCopyList(lGetListName(job_usage_list), job_usage_list));
             lAppendElem(upu_list, upu);
          }
       }
@@ -2249,7 +2234,7 @@ static double calc_pjob_override_tickets_shared( sge_ref_t *ref) {
 static double
 calc_job_tickets ( sge_ref_t *ref )
 {
-   lList *granted;
+   const lList *granted;
    lListElem *job = ref->job,
              *ja_task = ref->ja_task;
    double job_tickets;
@@ -2639,7 +2624,7 @@ sge_calc_tickets( scheduler_all_data_t *lists,
     *-------------------------------------------------------------*/
 
    if ((lists->share_tree)) {
-      if ((root = lFirst(lists->share_tree))) {
+      if ((root = lFirstRW(lists->share_tree))) {
          sge_init_share_tree_nodes(root);
          set_share_tree_project_flags(lists->project_list, root);
       }
@@ -2735,7 +2720,7 @@ sge_calc_tickets( scheduler_all_data_t *lists,
       for_each(job, queued_jobs) {
          lListElem *ja_task = NULL;
          lListElem *range = NULL;
-         lList *range_list = NULL;  
+         const lList *range_list = NULL;  
          u_long32 id;
          int task_cnt = 0;
 
@@ -3357,12 +3342,10 @@ sge_calc_tickets( scheduler_all_data_t *lists,
       sge_task_ref_t *tref = task_ref_get_first_job_entry();
 
       while (tref != NULL) {
-         lListElem *job = lGetElemUlong(queued_jobs, JB_job_number, tref->job_number); 
+         lListElem *job = lGetElemUlongRW(queued_jobs, JB_job_number, tref->job_number); 
 
          if (job) {
-            lListElem *ja_task_template;
-
-            ja_task_template = lFirst(lGetList(job, JB_ja_template));
+            lListElem *ja_task_template = lFirstRW(lGetList(job, JB_ja_template));
 
             task_ref_copy_to_ja_task(tref, ja_task_template);
          } 
@@ -3446,7 +3429,7 @@ sge_sort_pending_job_nodes(lListElem *root,
 
    /* sort the job nodes based on the calculated pending priority */
    if (root != node || job_nodes) { 
-      lListElem *u;
+      const lListElem *u;
 
       if (job_node_list && lGetNumberOfElem(job_node_list)>1)
          lPSortList(job_node_list, "%I- %I+ %I+", STN_sort, STN_jobid, STN_taskid);
@@ -3459,8 +3442,7 @@ sge_sort_pending_job_nodes(lListElem *root,
          the tickets from those policies. */
 
       job_count = lGetUlong(node, STN_active_job_ref_count);
-      if ((u=lGetElemStr(lGetList(node, STN_usage_list), UA_name,
-                         "finished_jobs")))
+      if ((u=lGetElemStr(lGetList(node, STN_usage_list), UA_name, "finished_jobs")))
          job_count += lGetDouble(u, UA_value);
       node_stt = lGetDouble(node, STN_stt);
       for_each(job_node, job_node_list) {
@@ -3522,7 +3504,7 @@ sge_calc_node_targets( lListElem *root,
                        lListElem *node,
                        scheduler_all_data_t *lists )
 {
-   lList *children;
+   const lList *children;
    lListElem *child;
    double sum_shares, sum, compensation_factor;
    /* char *node_name = lGetString(node, STN_name); */
@@ -3548,8 +3530,7 @@ sge_calc_node_targets( lListElem *root,
     * if this node has no children, there's nothing to do
     *---------------------------------------------------------------*/
 
-   if ((!(children = lGetList(node, STN_children))) ||
-       lGetNumberOfElem(children) == 0) {
+   if ((!(children = lGetList(node, STN_children))) || lGetNumberOfElem(children) == 0) {
       DEXIT;
       return 0;
    }
@@ -3725,7 +3706,7 @@ get_mod_share_tree( lListElem *node,
                     int seqno )
 {
    lListElem *new_node=NULL;
-   lList *children;
+   const lList *children;
    lListElem *child;
 
    if (((children = lGetList(node, STN_children))) &&
@@ -3857,7 +3838,7 @@ sge_build_sgeee_orders(scheduler_all_data_t *lists, lList *running_jobs, lList *
 
       for_each(job, running_jobs) {
          const char *pe_str = NULL;
-         lList *granted = NULL;
+         const lList *granted = NULL;
          lListElem *pe = NULL;
          lListElem *ja_task = NULL;
 
@@ -3912,9 +3893,7 @@ sge_build_sgeee_orders(scheduler_all_data_t *lists, lList *running_jobs, lList *
             }
 
             if (job_get_not_enrolled_ja_tasks(job) > 0) {
-               lListElem *task_template = NULL;
-
-               task_template = lFirst(lGetList(job, JB_ja_template));
+               lListElem *task_template = lFirstRW(lGetList(job, JB_ja_template));
                if (task_template) {
                   order_list = sge_create_orders(order_list, ORT_ptickets, job, task_template, NULL, false);
                }
@@ -3988,7 +3967,7 @@ sge_build_sgeee_orders(scheduler_all_data_t *lists, lList *running_jobs, lList *
        * build update share tree order
        *-----------------------------------------------------------------*/
 
-      if (lists->share_tree && ((root = lFirst(lists->share_tree)))) {
+      if (lists->share_tree && ((root = lFirstRW(lists->share_tree)))) {
          lListElem *node = NULL;
          norders = lGetNumberOfElem(order_list);
 
@@ -4275,7 +4254,7 @@ static void sge_do_sgeee_priority(lList *job_list, double min_tix, double max_ti
       }
 
       if (!enrolled) {
-         task = lFirst(lGetList(job, JB_ja_template));
+         task = lFirstRW(lGetList(job, JB_ja_template));
          sgeee_priority(task, jobid, nsu, npri, min_tix, max_tix);
       }
    }

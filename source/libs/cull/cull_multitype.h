@@ -108,7 +108,8 @@ lUlong      lGetUlong(const lListElem *ep, int name);
 lUlong64    lGetUlong64(const lListElem *ep, int name);
 const char *lGetString(const lListElem *ep, int name);
 const char *lGetHost(const lListElem *ep, int name);
-lList      *lGetList(const lListElem *ep, int name);
+lList      *lGetListRW(const lListElem *ep, int name);
+const lList *lGetList(const lListElem *ep, int name);
 lList      *lGetOrCreateList(lListElem *ep, int name, const char *list_name, const lDescr *descr);
 lFloat      lGetFloat(const lListElem *ep, int name);
 lDouble     lGetDouble(const lListElem *ep, int name);
@@ -164,10 +165,14 @@ lListElem* lAddElemHost(lList **lpp, int nm, const char *str, const lDescr *dp);
 int lDelElemStr(lList **lpp, int nm, const char *str); 
 
 
-lListElem *lGetElemStr(const lList *lp, int nm, const char *str);
-lListElem *lGetElemStrFirst(const lList *lp, int nm, const char *str, const void **iterator);
-lListElem *lGetElemStrNext(const lList *lp, int nm, const char *str, const void **iterator);
-lListElem *lGetElemStrLike(const lList *lp, int nm, const char *str);
+lListElem *lGetElemStrRW(const lList *lp, int nm, const char *str);
+const lListElem *lGetElemStr(const lList *lp, int nm, const char *str);
+lListElem *lGetElemStrFirstRW(const lList *lp, int nm, const char *str, const void **iterator);
+const lListElem *lGetElemStrFirst(const lList *lp, int nm, const char *str, const void **iterator);
+lListElem *lGetElemStrNextRW(const lList *lp, int nm, const char *str, const void **iterator);
+const lListElem *lGetElemStrNext(const lList *lp, int nm, const char *str, const void **iterator);
+lListElem *lGetElemStrLikeRW(const lList *lp, int nm, const char *str);
+const lListElem *lGetElemStrLike(const lList *lp, int nm, const char *str);
 
 
 
@@ -187,9 +192,12 @@ lListElem *lGetSubStr(const lListElem *ep, int nm, const char *str, int snm);
 */
 lListElem* lAddElemUlong(lList **lpp, int nm, lUlong val, const lDescr *dp);
 int lDelElemUlong(lList **lpp, int nm, lUlong val); 
-lListElem *lGetElemUlong(const lList *lp, int nm, lUlong val);
-lListElem *lGetElemUlongFirst(const lList *lp, int nm, lUlong val, const void **iterator);
-lListElem *lGetElemUlongNext(const lList *lp, int nm, lUlong val, const void **iterator);
+lListElem *lGetElemUlongRW(const lList *lp, int nm, lUlong val);
+const lListElem *lGetElemUlong(const lList *lp, int nm, lUlong val);
+lListElem *lGetElemUlongFirstRW(const lList *lp, int nm, lUlong val, const void **iterator);
+const lListElem *lGetElemUlongFirst(const lList *lp, int nm, lUlong val, const void **iterator);
+lListElem *lGetElemUlongNextRW(const lList *lp, int nm, lUlong val, const void **iterator);
+const lListElem *lGetElemUlongNext(const lList *lp, int nm, lUlong val, const void **iterator);
 
 /* - -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- - 
 
@@ -243,10 +251,14 @@ lListElem *lGetSubCaseStr(const lListElem *ep, int nm, const char *str, int snm)
 */
 lListElem* lAddSubHost(lListElem *ep, int nm, const char *str, int snm, const lDescr *dp); 
 int lDelElemHost(lList **lpp, int nm, const char *str);
-lListElem *lGetSubHost(const lListElem *ep, int nm, const char *str, int snm);
-lListElem *lGetElemHost(const lList *lp, int nm, const char *str);
-lListElem *lGetElemHostFirst(const lList *lp, int nm, const char *str, const void **iterator);
-lListElem *lGetElemHostNext(const lList *lp, int nm, const char *str, const void **iterator);
+lListElem *lGetSubHostRW(const lListElem *ep, int nm, const char *str, int snm);
+const lListElem *lGetSubHost(const lListElem *ep, int nm, const char *str, int snm);
+lListElem *lGetElemHostRW(const lList *lp, int nm, const char *str);
+const lListElem *lGetElemHost(const lList *lp, int nm, const char *str);
+lListElem *lGetElemHostFirstRW(const lList *lp, int nm, const char *str, const void **iterator);
+const lListElem *lGetElemHostFirst(const lList *lp, int nm, const char *str, const void **iterator);
+lListElem *lGetElemHostNextRW(const lList *lp, int nm, const char *str, const void **iterator);
+const lListElem *lGetElemHostNext(const lList *lp, int nm, const char *str, const void **iterator);
 
 #ifdef  __cplusplus
 }

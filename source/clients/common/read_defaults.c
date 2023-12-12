@@ -458,8 +458,8 @@ void opt_list_append_opts_from_script(u_long32 prog_number,
                                       const lList *opts_cmdline,
                                       char **envp) 
 { 
-   lListElem *script_option = NULL;
-   lListElem *c_option = NULL;
+   const lListElem *script_option = NULL;
+   const lListElem *c_option = NULL;
    const char *scriptfile = NULL;
    const char *prefix = NULL;
  
@@ -515,14 +515,13 @@ void opt_list_append_opts_from_script_path(u_long32 prog_number,
                                            const lList *opts_cmdline,
                                            char **envp)
 { 
-   lListElem *script_option = NULL;
-   lListElem *c_option = NULL;
+   const lListElem *script_option = NULL;
+   const lListElem *c_option = NULL;
    const char *scriptfile = NULL;
    char *scriptpath = NULL;
    const char *prefix = NULL;
  
    script_option = lGetElemStr(opts_cmdline, SPA_switch, STR_PSEUDO_SCRIPT);
-   
    if (script_option != NULL) {
       scriptfile = lGetString(script_option, SPA_argval_lStringT);
       
@@ -661,7 +660,7 @@ void opt_list_merge_command_lines(lList **opts_all,
 *******************************************************************************/
 bool opt_list_has_X(lList *opts, const char *option) 
 {
-   lListElem *opt;
+   const lListElem *opt;
    bool ret = false;
 
    opt = lGetElemStr(opts, SPA_switch, option);
@@ -698,7 +697,7 @@ bool opt_list_has_X(lList *opts, const char *option)
 ******************************************************************************/
 bool opt_list_is_X_true(lList *opts, const char *option) 
 {
-   lListElem *opt;
+   const lListElem *opt;
    bool ret = false;
 
    opt = lGetElemStr(opts, SPA_switch, option);

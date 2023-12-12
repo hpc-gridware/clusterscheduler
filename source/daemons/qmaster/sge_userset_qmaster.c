@@ -155,14 +155,14 @@ sge_change_queue_version_acl(sge_gdi_ctx_class_t *ctx, const char *acl_name)
    DENTER(TOP_LAYER, "sge_change_queue_version_acl");
 
    for_each(cqueue, master_cqueue_list) {
-      lList *qinstance_list = lGetList(cqueue, CQ_qinstances);
+      const lList *qinstance_list = lGetList(cqueue, CQ_qinstances);
       lListElem *qinstance = NULL;
 
       for_each(qinstance, qinstance_list) {
-         lList *acl_list = lGetList(qinstance, QU_acl);
-         lList *xacl_list = lGetList(qinstance, QU_xacl);
-         lListElem *acl = lGetElemStr(acl_list, US_name, acl_name);
-         lListElem *xacl = lGetElemStr(xacl_list, US_name, acl_name);
+         const lList *acl_list = lGetList(qinstance, QU_acl);
+         const lList *xacl_list = lGetList(qinstance, QU_xacl);
+         const lListElem *acl = lGetElemStr(acl_list, US_name, acl_name);
+         const lListElem *xacl = lGetElemStr(xacl_list, US_name, acl_name);
          bool is_used = ((acl != NULL) || (xacl != NULL)) ? true : false;
 
          if (is_used) {
@@ -343,8 +343,8 @@ static int acl_is_valid_acl(lListElem *acl,
 
 static lList* do_depts_conflict(lListElem *new, lListElem *old)
 {
-   lList *new_users = NULL;
-   lList *old_users = NULL; 
+   const lList *new_users = NULL;
+   const lList *old_users = NULL; 
    lListElem *np;
    lList *alp = NULL;
    const char *nname;
@@ -646,7 +646,7 @@ void userset_update_categories(const lList *added, const lList *removed)
    for_each (ep, added) {
       u = lGetString(ep, US_name);
       DPRINTF(("added userset: \"%s\"\n", u));
-      acl = lGetElemStr(master_userset_list, US_name, u);
+      acl = lGetElemStrRW(master_userset_list, US_name, u);
       if (acl && lGetBool(acl, US_consider_with_categories)==false) {
          lSetBool(acl, US_consider_with_categories, true);
          sge_add_event(0, sgeE_USERSET_MOD, 0, 0, u, NULL, NULL, acl);
@@ -656,7 +656,7 @@ void userset_update_categories(const lList *added, const lList *removed)
    for_each (ep, removed) {
       u = lGetString(ep, US_name);
       DPRINTF(("removed userset: \"%s\"\n", u));
-      acl = lGetElemStr(master_userset_list, US_name, u);
+      acl = lGetElemStrRW(master_userset_list, US_name, u);
 
       if (acl && !userset_still_used(u)) {
          lSetBool(acl, US_consider_with_categories, false);
@@ -768,7 +768,7 @@ int userset_mod(sge_gdi_ctx_class_t *ctx, lList **alpp, lListElem *new_userset,
       lList *new_master_userset_list = NULL;
 
       for_each(cqueue, master_cqueue_list) {
-         lList *qinstance_list = lGetList(cqueue, CQ_qinstances);
+         const lList *qinstance_list = lGetList(cqueue, CQ_qinstances);
          lListElem *qinstance = NULL;
 
          for_each(qinstance, qinstance_list) {
@@ -791,7 +791,7 @@ int userset_mod(sge_gdi_ctx_class_t *ctx, lList **alpp, lListElem *new_userset,
                   if (new_master_userset_list == NULL) {
                      lListElem *old_userset;
                      new_master_userset_list = lCopyList("", master_userset_list);
-                     old_userset = lGetElemStr(new_master_userset_list, US_name, userset_name);
+                     old_userset = lGetElemStrRW(new_master_userset_list, US_name, userset_name);
                      lRemoveElem(new_master_userset_list, &old_userset);
                      lAppendElem(new_master_userset_list, lCopyElem(new_userset));
                   }

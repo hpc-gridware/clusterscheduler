@@ -506,7 +506,7 @@ static void sge_c_job_ack(sge_gdi_ctx_class_t *ctx, const char *host, const char
 
          DPRINTF(("TAG_SIGJOB\n"));
          /* ack_ulong is the jobid */
-         if (!(jep = lGetElemUlong(master_job_list, JB_job_number, ack_ulong))) {
+         if (!(jep = lGetElemUlongRW(master_job_list, JB_job_number, ack_ulong))) {
             ERROR((SGE_EVENT, MSG_COM_ACKEVENTFORUNKOWNJOB_U, sge_u32c(ack_ulong) ));
             DRETURN_VOID;
          }
@@ -533,7 +533,7 @@ static void sge_c_job_ack(sge_gdi_ctx_class_t *ctx, const char *host, const char
    case ACK_SIGQUEUE:
       {
          lListElem *qinstance = NULL;
-         lListElem *cqueue = NULL;
+         const lListElem *cqueue = NULL;
          dstring cqueue_name = DSTRING_INIT;
          dstring host_domain = DSTRING_INIT;
          const lList *master_cqueue_list = *object_type_get_master_list(SGE_TYPE_CQUEUE);
@@ -545,9 +545,9 @@ static void sge_c_job_ack(sge_gdi_ctx_class_t *ctx, const char *host, const char
          sge_dstring_free(&cqueue_name);
 
          if (cqueue != NULL) {
-            lList *qinstance_list = lGetList(cqueue, CQ_qinstances);
+            const lList *qinstance_list = lGetList(cqueue, CQ_qinstances);
 
-            qinstance = lGetElemHost(qinstance_list, QU_qhostname, sge_dstring_get_string(&host_domain));
+            qinstance = lGetElemHostRW(qinstance_list, QU_qhostname, sge_dstring_get_string(&host_domain));
          }
          sge_dstring_free(&host_domain);
 

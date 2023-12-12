@@ -105,7 +105,7 @@ qinstance_list_locate(const lList *this_list, const char *hostname,
    lListElem *ret = NULL;
 
    if (cqueue_name == NULL) {
-      ret = lGetElemHost(this_list, QU_qhostname, hostname);
+      ret = lGetElemHostRW(this_list, QU_qhostname, hostname);
    } else {
       for_each(ret, this_list) {
          const char *qname = lGetString(ret, QU_qname);
@@ -147,7 +147,7 @@ qinstance_list_locate(const lList *this_list, const char *hostname,
 lListElem *
 qinstance_list_locate2(const lList *queue_list, const char *full_name)
 {
-   return lGetElemStr(queue_list, QU_full_name, full_name);
+   return lGetElemStrRW(queue_list, QU_full_name, full_name);
 }
 
 /****** sgeobj/qinstance/qinstance_get_name() *********************************
@@ -277,7 +277,7 @@ qinstance_check_owner(const lListElem *this_elem, const char *user_name, const l
    } else if (manop_is_operator(user_name, master_manager_list, master_operator_list)) {
       ret = true;
    } else {
-      lList *owner_list = lGetList(this_elem, QU_owner_list);
+      const lList *owner_list = lGetList(this_elem, QU_owner_list);
       if (lGetElemStr(owner_list, US_name, user_name) != NULL) {
          ret = true;
       }
@@ -430,7 +430,7 @@ bool
 qinstance_is_ckpt_referenced(const lListElem *this_elem, const lListElem *ckpt)
 {
    bool ret = false;
-   lList *ckpt_list = lGetList(this_elem, QU_ckpt_list);
+   const lList *ckpt_list = lGetList(this_elem, QU_ckpt_list);
 
    DENTER(TOP_LAYER, "qinstance_is_ckpt_referenced");
    if (lGetElemStr(ckpt_list, ST_name, lGetString(ckpt, CK_name)) != NULL) {
@@ -504,8 +504,8 @@ qinstance_is_centry_a_complex_value(const lListElem *this_elem,
    DENTER(TOP_LAYER, "qinstance_is_centry_a_complex_value");
    if (this_elem != NULL) {
       const char *name = lGetString(centry, CE_name);
-      lList *centry_list = lGetList(this_elem, QU_consumable_config_list);
-      lListElem *centry_ref = lGetElemStr(centry_list, CE_name, name);
+      const lList *centry_list = lGetList(this_elem, QU_consumable_config_list);
+      const lListElem *centry_ref = lGetElemStr(centry_list, CE_name, name);
 
       if (centry_ref != NULL || get_rsrc(name, true, NULL, NULL, NULL, NULL)==0) {
          ret = true;
@@ -887,8 +887,7 @@ qinstance_validate(lListElem *this_elem, lList **answer_list, const lList *maste
    qinstance_debit_consumable(this_elem, NULL, master_centry_list, 0, true, NULL);
 
    /* init double values of consumable configuration */
-   if (centry_list_fill_request(lGetList(this_elem, QU_consumable_config_list), 
-                     answer_list, master_centry_list, true, false, true) != 0) {
+   if (centry_list_fill_request(lGetListRW(this_elem, QU_consumable_config_list), answer_list, master_centry_list, true, false, true) != 0) {
         ret = false; 
    }
 

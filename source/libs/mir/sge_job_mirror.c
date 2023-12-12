@@ -156,7 +156,7 @@ job_update_master_list(sge_evc_class_t *evc, sge_object_type type,
    list = object_type_get_master_list_rw(SGE_TYPE_JOB);
    list_descr = lGetListDescr(lGetList(event, ET_new_version)); 
    job_id = lGetUlong(event, ET_intkey);
-   job = lGetElemUlong(*list, JB_job_number, job_id);
+   job = lGetElemUlongRW(*list, JB_job_number, job_id);
 
    if (action == SGE_EMA_MOD) {
       u_long32 event_type = lGetUlong(event, ET_type);
@@ -188,7 +188,7 @@ job_update_master_list(sge_evc_class_t *evc, sge_object_type type,
 
           lListElem *modified_job;
 
-          modified_job = lFirst(lGetList(event, ET_new_version));
+          modified_job = lFirstRW(lGetList(event, ET_new_version));
           if(job != NULL && modified_job != NULL) {
             /* we want to preserve the old ja_tasks, since job update events to not contain them */
             lXchgList(job, JB_ja_tasks, &ja_tasks);
@@ -206,8 +206,8 @@ job_update_master_list(sge_evc_class_t *evc, sge_object_type type,
    /* restore ja_task list after modify event */
    if (action == SGE_EMA_MOD && ja_tasks != NULL) {
       /* we have to search the replaced job */
-      job = lGetElemUlong(*list, JB_job_number, job_id);
-      if(job == NULL) {
+      job = lGetElemUlongRW(*list, JB_job_number, job_id);
+      if (job == NULL) {
          ERROR((SGE_EVENT, MSG_JOB_CANTFINDJOBFORUPDATEIN_SS,
                 job_get_id_string(job_id, 0, NULL, &id_dstring), "job_update_master_list"));
          lFreeList(&ja_tasks);
@@ -239,8 +239,8 @@ job_schedd_info_update_master_list(sge_evc_class_t *evc, sge_object_type type,
    /* We always update the whole list (consisting of one list element) */
    lFreeList(list);
 
-   if((data_list = lGetList(event, ET_new_version)) != NULL) {
-      if((ep = lFirst(data_list)) != NULL) {
+   if((data_list = lGetListRW(event, ET_new_version)) != NULL) {
+      if((ep = lFirstRW(data_list)) != NULL) {
          ep = lDechainElem(data_list, ep);
       }
    }

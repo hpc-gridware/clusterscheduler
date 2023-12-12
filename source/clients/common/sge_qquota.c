@@ -173,11 +173,11 @@ bool qquota_output(sge_gdi_ctx_class_t *ctx, lList *host_list, lList *resource_m
          }
 
          for_each(rule, lGetList(rqs, RQS_rule)) { 
-            lListElem *user_ep = lFirst(user_list);
-            lListElem *project_ep = lFirst(project_list);
-            lListElem *pe_ep = lFirst(pe_list);
-            lListElem *queue_ep = lFirst(cqueue_list);
-            lListElem *host_ep = lFirst(host_list);
+            const lListElem *user_ep = lFirst(user_list);
+            const lListElem *project_ep = lFirst(project_list);
+            const lListElem *pe_ep = lFirst(pe_list);
+            const lListElem *queue_ep = lFirst(cqueue_list);
+            const lListElem *host_ep = lFirst(host_list);
             do {
                if (user_ep != NULL) {
                   qquota_filter.user = lGetString(user_ep, ST_name);
@@ -206,7 +206,7 @@ bool qquota_output(sge_gdi_ctx_class_t *ctx, lList *host_list, lList *resource_m
 
                               for_each(limit, lGetList(rule, RQR_limit)) {
                                  const char *limit_name = lGetString(limit, RQRL_name);
-                                 lList *rue_list = lGetList(limit, RQRL_usage);
+                                 const lList *rue_list = lGetList(limit, RQRL_usage);
                                  lListElem *raw_centry = centry_list_locate(centry_list, limit_name);
                                  lListElem *rue_elem = NULL;
 

@@ -81,7 +81,7 @@
 #include "msg_qmaster.h"
 #include "msg_daemons_common.h"
 
-static bool check_binding_param_consistency(lListElem* binding_elem);
+static bool check_binding_param_consistency(const lListElem* binding_elem);
 
 int
 sge_job_verify_adjust(sge_gdi_ctx_class_t *ctx, lListElem *jep, lList **alpp, 
@@ -212,7 +212,7 @@ sge_job_verify_adjust(sge_gdi_ctx_class_t *ctx, lListElem *jep, lList **alpp,
    } 
 
    if (ret == STATUS_OK) {
-      lListElem *binding_elem = lFirst(lGetList(jep, JB_binding));
+      const lListElem *binding_elem = lFirst(lGetList(jep, JB_binding));
                
       if (binding_elem == NULL) {
          bool lret = job_init_binding_elem(jep);
@@ -254,7 +254,7 @@ sge_job_verify_adjust(sge_gdi_ctx_class_t *ctx, lListElem *jep, lList **alpp,
       u_long32 max_aj_tasks = mconf_get_max_aj_tasks();
 
       if (max_aj_tasks > 0) {
-         lList *range_list = lGetList(jep, JB_ja_structure);
+         const lList *range_list = lGetList(jep, JB_ja_structure);
          u_long32 submit_size = range_list_get_number_of_ids(range_list);
       
          if (submit_size > max_aj_tasks) {
@@ -346,30 +346,30 @@ sge_job_verify_adjust(sge_gdi_ctx_class_t *ctx, lListElem *jep, lList **alpp,
     * JB_hard/soft_resource_list points to a CE_Type list
     */
    {
-      if (centry_list_fill_request(lGetList(jep, JB_hard_resource_list),
+      if (centry_list_fill_request(lGetListRW(jep, JB_hard_resource_list),
                                    alpp, master_centry_list, false, true,
                                    false)) {
          DRETURN(STATUS_EUNKNOWN);
       }
-      if (compress_ressources(alpp, lGetList(jep, JB_hard_resource_list), SGE_OBJ_JOB)) {
+      if (compress_ressources(alpp, lGetListRW(jep, JB_hard_resource_list), SGE_OBJ_JOB)) {
          DRETURN(STATUS_EUNKNOWN);
       }
 
-      if (centry_list_fill_request(lGetList(jep, JB_soft_resource_list),
+      if (centry_list_fill_request(lGetListRW(jep, JB_soft_resource_list),
                                    alpp, master_centry_list, false, true,
                                    false)) {
          DRETURN(STATUS_EUNKNOWN);
       }
-      if (compress_ressources(alpp, lGetList(jep, JB_soft_resource_list), SGE_OBJ_JOB)) {
+      if (compress_ressources(alpp, lGetListRW(jep, JB_soft_resource_list), SGE_OBJ_JOB)) {
          DRETURN(STATUS_EUNKNOWN);
       }
-      if (deny_soft_consumables(alpp, lGetList(jep, JB_soft_resource_list), master_centry_list)) {
+      if (deny_soft_consumables(alpp, lGetListRW(jep, JB_soft_resource_list), master_centry_list)) {
          DRETURN(STATUS_EUNKNOWN);
       }
-      if (!centry_list_is_correct(lGetList(jep, JB_hard_resource_list), alpp)) {
+      if (!centry_list_is_correct(lGetListRW(jep, JB_hard_resource_list), alpp)) {
          DRETURN(STATUS_EUNKNOWN);
       }
-      if (!centry_list_is_correct(lGetList(jep, JB_soft_resource_list), alpp)) {
+      if (!centry_list_is_correct(lGetListRW(jep, JB_soft_resource_list), alpp)) {
          DRETURN(STATUS_EUNKNOWN);
       }
    }
@@ -403,7 +403,7 @@ sge_job_verify_adjust(sge_gdi_ctx_class_t *ctx, lListElem *jep, lList **alpp,
             DRETURN(STATUS_EUNKNOWN);
          }
          /* check pe_range */
-         pe_range = lGetList(jep, JB_pe_range);
+         pe_range = lGetListRW(jep, JB_pe_range);
          if (object_verify_pe_range(alpp, pe_name, pe_range, SGE_OBJ_JOB)!=STATUS_OK) {
             DRETURN(STATUS_EUNKNOWN);
          }
@@ -491,12 +491,11 @@ sge_job_verify_adjust(sge_gdi_ctx_class_t *ctx, lListElem *jep, lList **alpp,
       int has_permissions = 0;
 
       for_each (cqueue, master_cqueue_list) {
-         lList *qinstance_list = lGetList(cqueue, CQ_qinstances);
+         const lList *qinstance_list = lGetList(cqueue, CQ_qinstances);
          lListElem *qinstance = NULL;
 
          for_each(qinstance, qinstance_list) {
-            if (sge_has_access(ruser, lGetString(jep, JB_group),
-                  qinstance, master_userset_list)) {
+            if (sge_has_access(ruser, lGetString(jep, JB_group), qinstance, master_userset_list)) {
                DPRINTF(("job has access to queue "SFQ"\n", lGetString(qinstance, QU_qname)));
                has_permissions = 1;
                break;
@@ -703,7 +702,7 @@ sge_job_verify_adjust(sge_gdi_ctx_class_t *ctx, lListElem *jep, lList **alpp,
 *     MT-NOTE: check_binding_param_consistency() is MT safe 
 *
 *******************************************************************************/
-static bool check_binding_param_consistency(lListElem* binding_elem)
+static bool check_binding_param_consistency(const lListElem* binding_elem)
 {
    const char* strategy;
    

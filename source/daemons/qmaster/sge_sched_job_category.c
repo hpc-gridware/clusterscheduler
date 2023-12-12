@@ -171,7 +171,7 @@ int sge_add_job_category(lListElem *job, const lList *acl_list, const lList *prj
    if (CATEGORY_LIST == NULL) {
       CATEGORY_LIST = lCreateList("new category list", CT_Type);
    } else {
-      cat = lGetElemStr(CATEGORY_LIST, CT_str, cstr);
+      cat = lGetElemStrRW(CATEGORY_LIST, CT_str, cstr);
    }
 
    if (cat == NULL) {
@@ -207,7 +207,7 @@ int sge_add_job_category(lListElem *job, const lList *acl_list, const lList *prj
       if (CS_CATEGORY_LIST == NULL) {
          CS_CATEGORY_LIST = lCreateList("category_list", SCT_Type);
       } else {
-         cat = lGetElemStr(CS_CATEGORY_LIST, SCT_str, cstr);
+         cat = lGetElemStrRW(CS_CATEGORY_LIST, SCT_str, cstr);
       }
 
       if (cat == NULL) {
@@ -217,9 +217,9 @@ int sge_add_job_category(lListElem *job, const lList *acl_list, const lList *prj
       }
 
       if (is_job_pending(job))  {
-         job_ref_list = lGetList(cat, SCT_job_pending_ref);
+         job_ref_list = lGetListRW(cat, SCT_job_pending_ref);
       } else {
-         job_ref_list = lGetList(cat, SCT_job_ref);
+         job_ref_list = lGetListRW(cat, SCT_job_ref);
       }
 
       job_ref = lCreateElem(REF_Type);
@@ -254,7 +254,7 @@ int sge_delete_job_category(lListElem *job)
          lSetUlong(cat, CT_refcount, --rc);
       } else {
          lListElem *cache = NULL;
-         lList *cache_list = lGetList(cat, CT_cache);
+         const lList *cache_list = lGetList(cat, CT_cache);
 
          DPRINTF(("############## Removing %s from category list (refcount: " sge_u32 ")\n", 
                   lGetString(cat, CT_str), lGetUlong(cat, CT_refcount)));
@@ -281,11 +281,11 @@ int sge_delete_job_category(lListElem *job)
       
       for_each(cat, CS_CATEGORY_LIST) {
          if (is_job_pending_) {
-            refs[0] = lGetList(cat, SCT_job_pending_ref);
-            refs[1] = lGetList(cat, SCT_job_ref);
+            refs[0] = lGetListRW(cat, SCT_job_pending_ref);
+            refs[1] = lGetListRW(cat, SCT_job_ref);
          } else {
-            refs[0] = lGetList(cat, SCT_job_ref);
-            refs[1] = lGetList(cat, SCT_job_pending_ref);
+            refs[0] = lGetListRW(cat, SCT_job_ref);
+            refs[1] = lGetListRW(cat, SCT_job_pending_ref);
          }
 
          for(i=0; (i < max && !found); i++) {
@@ -338,7 +338,7 @@ is_job_pending(lListElem *job)
 
 /*-------------------------------------------------------------------------*/
 int 
-sge_is_job_category_rejected(lListElem *job) 
+sge_is_job_category_rejected(const lListElem *job) 
 {
    int ret;
    lListElem *cat = NULL;
@@ -351,7 +351,7 @@ sge_is_job_category_rejected(lListElem *job)
 
 /*-------------------------------------------------------------------------*/
 int 
-sge_is_job_category_reservation_rejected(lListElem *job) 
+sge_is_job_category_reservation_rejected(const lListElem *job) 
 {
    int ret;
    lListElem *cat = NULL;
@@ -560,9 +560,9 @@ lList *sge_category_job_copy(lList *queue_list, lList **orders, bool monitor_nex
          /* only copy, if we have free slots left, or the jobs needs a reservation */
          if ((copy_counter < jobPerCategory)  || (lGetBool(job, JB_reserve))) {   
             
-            lListElem *ja_structure = lFirst(lGetList(job, JB_ja_structure)); /* get array job size */
+            lListElem *ja_structure = lFirstRW(lGetList(job, JB_ja_structure)); /* get array job size */
             int amount = lGetUlong(ja_structure, RN_max); 
-            lList *pe_range = lGetList(job, JB_pe_range); /* get pe requests */
+            const lList *pe_range = lGetList(job, JB_pe_range); /* get pe requests */
 
             if (jobListCopy == NULL) {
                jobListCopy = lCreateListHash("copy_job_list", lGetElemDescr(job), false);
@@ -575,7 +575,7 @@ lList *sge_category_job_copy(lList *queue_list, lList **orders, bool monitor_nex
          
             /* compute pe job size (puting the array size into account) */
             if (pe_range != NULL) {
-               lListElem *pe = lFirst(pe_range);
+               const lListElem *pe = lFirst(pe_range);
                amount *= lGetUlong(pe, RN_min); 
             }
              

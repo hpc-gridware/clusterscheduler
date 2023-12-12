@@ -92,10 +92,10 @@ void event_update_func(u_long32 ec_id, lList **alpp, lList *event_list)
    
    if (Scheduler_Control.new_events != NULL) {
       lList *events = NULL;
-      lXchgList(lFirst(event_list), REP_list, &(events));
+      lXchgList(lFirstRW(event_list), REP_list, &(events));
       lAddList(Scheduler_Control.new_events, &events);
    } else {
-      lXchgList(lFirst(event_list), REP_list, &(Scheduler_Control.new_events));
+      lXchgList(lFirstRW(event_list), REP_list, &(Scheduler_Control.new_events));
    }   
    
    Scheduler_Control.triggered = true;

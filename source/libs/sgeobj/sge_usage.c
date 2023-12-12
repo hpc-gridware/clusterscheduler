@@ -67,7 +67,7 @@ u_long32
 usage_list_get_ulong_usage(const lList *usage_list, const char *name,
                            u_long32 def)
 {
-   lListElem *ep = lGetElemStr(usage_list, UA_name, name);
+   const lListElem *ep = lGetElemStr(usage_list, UA_name, name);
    if (ep != NULL) {
       return (u_long32)lGetDouble(ep, UA_value);
    } else {
@@ -105,7 +105,7 @@ double
 usage_list_get_double_usage(const lList *usage_list, const char *name,
                             double def)
 {
-   lListElem *ep = lGetElemStr(usage_list, UA_name, name);
+   const lListElem *ep = lGetElemStr(usage_list, UA_name, name);
    if(ep != NULL) {
       return lGetDouble(ep, UA_value);
    } else {
@@ -174,7 +174,7 @@ usage_list_set_ulong_usage(lList *usage_list, const char *name, u_long32 value)
 void
 usage_list_set_double_usage(lList *usage_list, const char *name, double value)
 {
-   lListElem *ep = lGetElemStr(usage_list, UA_name, name);
+   lListElem *ep = lGetElemStrRW(usage_list, UA_name, name);
    if (ep == NULL) {
       ep = lAddElemStr(&usage_list, UA_name, name, UA_Type);
    }
@@ -223,7 +223,7 @@ usage_list_sum(lList *usage_list, const lList *add_usage_list)
           strcmp(name, USAGE_ATTR_MEM) == 0 || 
           strncmp(name, "acct_", 5) == 0 ||
           strncmp(name, "ru_", 3) == 0) {
-         lListElem *sum = lGetElemStr(usage_list, UA_name, name);
+         lListElem *sum = lGetElemStrRW(usage_list, UA_name, name);
          if (sum == NULL) {
             lAppendElem(usage_list, lCopyElem(usage));
          } else {
@@ -235,11 +235,13 @@ usage_list_sum(lList *usage_list, const lList *add_usage_list)
 
 /* if the scaled usage list does not yet exist, it is created and returned */
 lList *scale_usage(
-lList *scaling,     /* HS_Type */
-lList *prev_usage,  /* HS_Type */
+const lList *scaling,     /* HS_Type */
+const lList *prev_usage,  /* HS_Type */
 lList *scaled_usage /* UA_Type */
 ) {
-   lListElem *sep, *ep, *prev;
+   const lListElem *sep;
+   lListElem *ep;
+   const lListElem *prev;
 
    if (!scaling) {
       return NULL;
@@ -256,42 +258,42 @@ lList *scaled_usage /* UA_Type */
    }
 
    if ((prev = lGetElemStr(prev_usage, UA_name, USAGE_ATTR_CPU)) != NULL) {
-      if ((ep=lGetElemStr(scaled_usage, UA_name, USAGE_ATTR_CPU))) {
+      if ((ep=lGetElemStrRW(scaled_usage, UA_name, USAGE_ATTR_CPU))) {
          lAddDouble(ep, UA_value, lGetDouble(prev, UA_value));
       } else {
          lAppendElem(scaled_usage, lCopyElem(prev));
       }
    }
    if ((prev = lGetElemStr(prev_usage, UA_name, USAGE_ATTR_IO)) != NULL) {
-      if ((ep=lGetElemStr(scaled_usage, UA_name, USAGE_ATTR_IO))) {
+      if ((ep=lGetElemStrRW(scaled_usage, UA_name, USAGE_ATTR_IO))) {
          lAddDouble(ep, UA_value, lGetDouble(prev, UA_value));
       } else {
          lAppendElem(scaled_usage, lCopyElem(prev));
       }
    }
    if ((prev = lGetElemStr(prev_usage, UA_name, USAGE_ATTR_IOW)) != NULL) {
-      if ((ep=lGetElemStr(scaled_usage, UA_name, USAGE_ATTR_IOW))) {
+      if ((ep=lGetElemStrRW(scaled_usage, UA_name, USAGE_ATTR_IOW))) {
          lAddDouble(ep, UA_value, lGetDouble(prev, UA_value));
       } else {
          lAppendElem(scaled_usage, lCopyElem(prev));
       }
    }
    if ((prev = lGetElemStr(prev_usage, UA_name, USAGE_ATTR_VMEM)) != NULL) {
-      if ((ep=lGetElemStr(scaled_usage, UA_name, USAGE_ATTR_VMEM))) {
+      if ((ep=lGetElemStrRW(scaled_usage, UA_name, USAGE_ATTR_VMEM))) {
          lAddDouble(ep, UA_value, lGetDouble(prev, UA_value));
       } else {
          lAppendElem(scaled_usage, lCopyElem(prev));
       }
    }
    if ((prev = lGetElemStr(prev_usage, UA_name, USAGE_ATTR_MAXVMEM)) != NULL) {
-      if ((ep=lGetElemStr(scaled_usage, UA_name, USAGE_ATTR_MAXVMEM))) {
+      if ((ep=lGetElemStrRW(scaled_usage, UA_name, USAGE_ATTR_MAXVMEM))) {
          lAddDouble(ep, UA_value, lGetDouble(prev, UA_value));
       } else {
          lAppendElem(scaled_usage, lCopyElem(prev));
       }
    }
    if ((prev = lGetElemStr(prev_usage, UA_name, USAGE_ATTR_MEM)) != NULL) {
-      if ((ep=lGetElemStr(scaled_usage, UA_name, USAGE_ATTR_MEM))) {
+      if ((ep=lGetElemStrRW(scaled_usage, UA_name, USAGE_ATTR_MEM))) {
          lAddDouble(ep, UA_value, lGetDouble(prev, UA_value));
       } else {
          lAppendElem(scaled_usage, lCopyElem(prev));

@@ -80,10 +80,10 @@ lListElem *ja_task_search_pe_task(const lListElem *ja_task,
                                   const char *pe_task_id)
 {
    if(ja_task != NULL) {
-      lList *pe_tasks = lGetList(ja_task, JAT_task_list);
+      const lList *pe_tasks = lGetList(ja_task, JAT_task_list);
 
-      if(pe_tasks != NULL) {
-         return lGetElemStr(pe_tasks, PET_id, pe_task_id);
+      if (pe_tasks != NULL) {
+         return lGetElemStrRW(pe_tasks, PET_id, pe_task_id);
       }
    }
 
@@ -150,7 +150,7 @@ lList* ja_task_list_split_group(lList **ja_task_list)
    lList *ret_list = NULL;
 
    if (ja_task_list && *ja_task_list) {
-      lListElem *first_task = lFirst(*ja_task_list);
+      lListElem *first_task = lFirstRW(*ja_task_list);
 
       if (first_task) {
          u_long32 status = lGetUlong(first_task, JAT_status); 
@@ -251,23 +251,21 @@ bool ja_task_add_finished_pe_task(lListElem *ja_task, const char *pe_task_id)
 *******************************************************************************/
 bool ja_task_clear_finished_pe_tasks(lListElem *ja_task)
 {
-   lList *pe_task_list;
+   const lList *pe_task_list;
 
    DENTER(TOP_LAYER, "ja_task_clear_finished_pe_tasks");
 
    /* get list of finished pe tasks */
    pe_task_list = lGetList(ja_task, JAT_finished_task_list);
    if (pe_task_list == NULL) {
-      DPRINTF(("no finished pe task list to clear in ja_task "sge_U32CFormat"\n",
-               lGetUlong(ja_task, JAT_task_number)));
+      DPRINTF(("no finished pe task list to clear in ja_task "sge_U32CFormat"\n", lGetUlong(ja_task, JAT_task_number)));
       DRETURN(false);
    }
 
    /* if we have such a list, delete it (lSetList will free the list) */
    lSetList(ja_task, JAT_finished_task_list, NULL);
 
-   DPRINTF(("cleared finished pe task list in ja_task "sge_U32CFormat"\n",
-            lGetUlong(ja_task, JAT_task_number)));
+   DPRINTF(("cleared finished pe task list in ja_task "sge_U32CFormat"\n", lGetUlong(ja_task, JAT_task_number)));
 
    DRETURN(true);
 }
@@ -308,7 +306,7 @@ bool ja_task_clear_finished_pe_tasks(lListElem *ja_task)
 *
 *******************************************************************************/
 int sge_parse_jobtasks(lList **ipp, lListElem **idp, const char *str_jobtask,   
-                       lList **alpp, bool include_names, lList *arrayDefList) {
+                       lList **alpp, bool include_names, const lList *arrayDefList) {
    char *token;
    char *job_str;
    lList *task_id_range_list = NULL;

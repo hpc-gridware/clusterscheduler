@@ -246,7 +246,7 @@ int sge_del_manop(sge_gdi_ctx_class_t *ctx, lListElem *ep, lList **alpp, char *r
       DRETURN(STATUS_EEXIST);
    }
 
-   found = lGetElemStr(*lpp, key, manop_name);
+   found = lGetElemStrRW(*lpp, key, manop_name);
    if (!found) {
       ERROR((SGE_EVENT, MSG_SGETEXT_DOESNOTEXIST_SS, object_name, manop_name));
       answer_list_add(alpp, SGE_EVENT, STATUS_EEXIST, ANSWER_QUALITY_ERROR);

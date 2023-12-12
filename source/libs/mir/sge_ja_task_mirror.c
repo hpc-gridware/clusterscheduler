@@ -77,7 +77,7 @@ ja_task_update_master_list_usage(lList *job_list, lListElem *event)
    job_id = lGetUlong(event, ET_intkey);
    ja_task_id = lGetUlong(event, ET_intkey2);
 
-   job = lGetElemUlong(job_list, JB_job_number, job_id);
+   job = lGetElemUlongRW(job_list, JB_job_number, job_id);
 
    if (job == NULL) {
       dstring id_dstring = DSTRING_INIT;
@@ -168,7 +168,7 @@ ja_task_update_master_list(sge_evc_class_t *evc, sge_object_type type,
    job_id = lGetUlong(event, ET_intkey);
    ja_task_id = lGetUlong(event, ET_intkey2);
 
-   job = lGetElemUlong(*list, JB_job_number, job_id);
+   job = lGetElemUlongRW(*list, JB_job_number, job_id);
    if (job == NULL) {
       ERROR((SGE_EVENT, MSG_JOB_CANTFINDJOBFORUPDATEIN_SS,
              job_get_id_string(job_id, 0, NULL, &id_dstring), SGE_FUNC));
@@ -177,8 +177,7 @@ ja_task_update_master_list(sge_evc_class_t *evc, sge_object_type type,
    }
 
    ja_task = job_search_task(job, NULL, ja_task_id);
-
-   ja_task_list = lGetList(job, JB_ja_tasks);
+   ja_task_list = lGetListRW(job, JB_ja_tasks);
    ja_task_descr = lGetListDescr(lGetList(event, ET_new_version));
 
    if (action == SGE_EMA_MOD) {

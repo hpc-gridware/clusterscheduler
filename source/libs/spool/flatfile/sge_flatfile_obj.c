@@ -1301,7 +1301,7 @@ static int read_CQ_solist_attr_list(lListElem *ep, int nm, const char *buffer,
 static int write_CQ_solist_attr_list(const lListElem *ep, int nm,
                                    dstring *buffer, lList **alp)
 {
-   lList *lp = lGetList(ep, nm);
+   const lList *lp = lGetList(ep, nm);
    
    solist_attr_list_append_to_dstring(lp, buffer);
    
@@ -1411,7 +1411,7 @@ static int read_CQ_hostlist(lListElem *ep, int nm, const char *buffer,
 static int write_CQ_hostlist(const lListElem *ep, int nm,
                              dstring *buffer, lList **alp)
 {
-   lList *lp = lGetList(ep, nm);
+   const lList *lp = lGetList(ep, nm);
    
    if (lp != NULL) {
       href_list_append_to_dstring(lp, buffer);

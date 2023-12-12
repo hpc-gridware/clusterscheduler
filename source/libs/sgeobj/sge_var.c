@@ -163,7 +163,7 @@ void var_list_set_string(lList **varl, const char *name, const char *value)
       DEXIT;
       return;
    }
-   elem = lGetElemStr(*varl, VA_variable, name);
+   elem = lGetElemStrRW(*varl, VA_variable, name);
    if (elem == NULL) {
       elem = lAddElemStr(varl, VA_variable, name, VA_Type);
    }
@@ -197,7 +197,7 @@ void var_list_delete_string(lList **varl, const char *name)
    if (varl == NULL || name == NULL) {
       DRETURN_VOID;
    }
-   elem = lGetElemStr(*varl, VA_variable, name);
+   elem = lGetElemStrRW(*varl, VA_variable, name);
    if (elem != NULL) {
       lRemoveElem(*varl, &elem);
    }
@@ -310,7 +310,7 @@ void var_list_set_sharedlib_path(lList **varl)
    sprintf(sge_sharedlib_path, "%s/lib/%s", sge_root, sge_get_arch());
 
    /* if already in environment: extend by SGE sharedlib path, else set */
-   sharedlib_elem = lGetElemStr(*varl, VA_variable, sharedlib_path_name);
+   sharedlib_elem = lGetElemStrRW(*varl, VA_variable, sharedlib_path_name);
    if(sharedlib_elem != NULL) {
       const char *old_value = lGetString(sharedlib_elem, VA_value);
 
@@ -409,12 +409,11 @@ void var_list_dump_to_file(const lList *varl, FILE *file)
 *     sgeobj/var/var_list_set_sge_u32() 
 *     sgeobj/var/var_list_set_sharedlib_path()
 ******************************************************************************/
-const char* var_list_get_string(lList *varl, const char *variable)
+const char* var_list_get_string(const lList *varl, const char *variable)
 {
-   lListElem *var = NULL;     /* VA_Type */
    const char *ret = NULL;
+   const lListElem *var = lGetElemStr(varl, VA_variable, variable);
 
-   var = lGetElemStr(varl, VA_variable, variable);
    if (var != NULL) {
       ret = lGetString(var, VA_value);
    }
@@ -523,7 +522,7 @@ void var_list_copy_prefix_vars_undef(lList **varl,
          char name[MAX_STRING_SIZE];
          const char *value = lGetString(var_elem, VA_value);
          const char *name_without_prefix = &prefix_name[prefix_len];
-         lListElem *existing_variable;
+         const lListElem *existing_variable;
 
          sprintf(name, "%s%s", new_prefix, name_without_prefix);
          existing_variable = lGetElemStr(*varl, VA_variable, name);
@@ -601,10 +600,10 @@ void var_list_remove_prefix_vars(lList **varl, const char *prefix)
    lListElem *next_var_elem = NULL;
 
    DENTER(TOP_LAYER, "var_list_remove_prefix_vars");
-   next_var_elem = lFirst(*varl);
+   next_var_elem = lFirstRW(*varl);
    while((var_elem = next_var_elem)) {
       const char *prefix_name = lGetString(var_elem, VA_variable);
-      next_var_elem = lNext(var_elem);
+      next_var_elem = lNextRW(var_elem);
 
       if (!strncmp(prefix_name, prefix, prefix_len)) {
          lRemoveElem(*varl, &var_elem);
@@ -648,10 +647,10 @@ void var_list_split_prefix_vars(lList **varl,
    lListElem *next_var_elem = NULL;
 
    DENTER(TOP_LAYER, "var_list_remove_prefix_vars");
-   next_var_elem = lFirst(*varl);
+   next_var_elem = lFirstRW(*varl);
    while((var_elem = next_var_elem)) {
       const char *prefix_name = lGetString(var_elem, VA_variable);
-      next_var_elem = lNext(var_elem);
+      next_var_elem = lNextRW(var_elem);
 
       if (!strncmp(prefix_name, prefix, prefix_len)) {
          lListElem *dechained_elem = lDechainElem(*varl, var_elem);
@@ -718,7 +717,7 @@ int var_list_add_as_set(lList *lp0, lList *lp1)
       /* Get it's name, and use the name to look for a matching element in the
        * first list. */
       name = lGetString(ep1, VA_variable);
-      ep0 = lGetElemStr(lp0, VA_variable, name);
+      ep0 = lGetElemStrRW(lp0, VA_variable, name);
 
       /* If there is a matching element in the first list, set it's value to the
        * value of the element from the second list. */
@@ -998,7 +997,7 @@ void var_list_filter_env_list(lList *env_list, lList **answer_list)
    lListElem *ep;
 
    /* LD_PRELOAD */
-   ep = lGetElemStr(env_list, VA_variable, "LD_PRELOAD");
+   ep = lGetElemStrRW(env_list, VA_variable, "LD_PRELOAD");
    if (ep != NULL) {
       lRemoveElem(env_list, &ep);
       answer_list_add_sprintf(answer_list, STATUS_ESYNTAX, ANSWER_QUALITY_INFO,
@@ -1021,7 +1020,7 @@ void var_list_filter_env_list(lList *env_list, lList **answer_list)
       const char *var_name;
       int i;
       for (i = 0; (var_name = lib_path_names[i]) != NULL; i++) {
-         ep = lGetElemStr(env_list, VA_variable, var_name);
+         ep = lGetElemStrRW(env_list, VA_variable, var_name);
          if (ep != NULL) {
             lRemoveElem(env_list, &ep);
             answer_list_add_sprintf(answer_list, STATUS_ESYNTAX, ANSWER_QUALITY_INFO,

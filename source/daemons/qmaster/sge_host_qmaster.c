@@ -152,14 +152,12 @@ host_initalitze_timer(void)
 *******************************************************************************/
 static void host_trash_nonstatic_load_values(lListElem *host) 
 {
-   lList *load_attr_list;
-   lListElem *next_load_attr;
    lListElem *load_attr;
 
-   load_attr_list = lGetList(host, EH_load_list);
-   next_load_attr = lFirst(load_attr_list);
+   lList *load_attr_list = lGetListRW(host, EH_load_list);
+   lListElem *next_load_attr = lFirstRW(load_attr_list);
    while ((load_attr = next_load_attr)) {
-      next_load_attr = lNext(load_attr);
+      next_load_attr = lNextRW(load_attr);
       if (!lGetBool(load_attr, HL_static)) {
          lRemoveElem(load_attr_list, &load_attr);
       }
@@ -724,7 +722,7 @@ void sge_update_load_values(sge_gdi_ctx_class_t *ctx, const char *rhost, lList *
     */
    now = sge_get_gmt();
 
-   host_ep = lGetElemHost(master_ehost_list, EH_name, rhost);
+   host_ep = lGetElemHostRW(master_ehost_list, EH_name, rhost);
    if (host_ep == NULL) {
       /* report from unknown host arrived, ignore it */
       DRETURN_VOID;
@@ -776,7 +774,7 @@ void sge_update_load_values(sge_gdi_ctx_class_t *ctx, const char *rhost, lList *
          }
 
          /* get the new host */
-         *hepp = lGetElemHost(master_ehost_list, EH_name, host);
+         *hepp = lGetElemHostRW(master_ehost_list, EH_name, host);
          if (*hepp == NULL) {
             INFO((SGE_EVENT, MSG_CANT_ASSOCIATE_LOAD_SS, rhost, host));
             continue;
@@ -787,7 +785,7 @@ void sge_update_load_values(sge_gdi_ctx_class_t *ctx, const char *rhost, lList *
          /* remove old load value */
          lep = lGetSubStr(*hepp, HL_name, name, EH_load_list);  
 
-         lRemoveElem(lGetList(*hepp, EH_load_list), &lep);
+         lRemoveElem(lGetListRW(*hepp, EH_load_list), &lep);
       } else {
          /* add a new load value */
          lep = lGetSubStr(*hepp, HL_name, name, EH_load_list);  
@@ -963,27 +961,25 @@ static void exec_host_change_queue_version(sge_gdi_ctx_class_t *ctx, const char 
    DENTER(TOP_LAYER, "exec_host_change_queue_version");
 
    for_each(cqueue, master_cqueue_list) {
-      lList *qinstance_list = lGetList(cqueue, CQ_qinstances);
+      const lList *qinstance_list = lGetList(cqueue, CQ_qinstances);
       lListElem *qinstance = NULL;
       lListElem *next_qinstance = NULL;
       const void *iterator = NULL;
 
       if (change_all) {
-         next_qinstance = lFirst(qinstance_list);
+         next_qinstance = lFirstRW(qinstance_list);
       } else {
-         next_qinstance = lGetElemHostFirst(qinstance_list, QU_qhostname,
-                                            exechost_name, &iterator);
+         next_qinstance = lGetElemHostFirstRW(qinstance_list, QU_qhostname, exechost_name, &iterator);
       }
       while ((qinstance = next_qinstance)) {
          const char *name = NULL;
          lList *answer_list = NULL;
 
          if (change_all) {
-            next_qinstance = lNext(qinstance);
+            next_qinstance = lNextRW(qinstance);
             name = SGE_GLOBAL_NAME;
          } else {
-            next_qinstance = lGetElemHostNext(qinstance_list, QU_qhostname,
-                                              exechost_name, &iterator);
+            next_qinstance = lGetElemHostNextRW(qinstance_list, QU_qhostname, exechost_name, &iterator);
             name = exechost_name;
          }
          DPRINTF((SFQ" has changed. Increasing qversion of"SFQ"\n",
@@ -1112,7 +1108,8 @@ notify(sge_gdi_ctx_class_t *ctx, lListElem *lel, sge_gdi_packet_class_t *packet,
    const char *action_str;
    u_long32 state;
    lListElem *jep;
-   lList *mail_users, *gdil;
+   const lList *mail_users;
+   const lList *gdil;
    int mail_options;
    unsigned long last_heard_from;
    bool job_spooling = ctx->get_job_spooling(ctx);
@@ -1159,7 +1156,7 @@ notify(sge_gdi_ctx_class_t *ctx, lListElem *lel, sge_gdi_packet_class_t *packet,
 
          for_each(jatep, lGetList(jep, JB_ja_tasks)) {
             gdil = lGetList(jatep, JAT_granted_destin_identifier_list);
-            if(gdil) {
+            if (gdil) {
                if(!(sge_hostcmp(lGetHost(lFirst(gdil), JG_qhostname), hostname))) {
                   /*   send mail to users if requested                  */
                   if (mail_users == NULL) {
@@ -1269,19 +1266,16 @@ sge_execd_startedup(sge_gdi_ctx_class_t *ctx, lListElem *host, lList **alpp,
     */
    if (!is_restart) {
       for_each (cqueue, master_cqueue_list) {
-         lList *qinstance_list = lGetList(cqueue, CQ_qinstances);
-         lListElem *qinstance = NULL;
+         const lList *qinstance_list = lGetList(cqueue, CQ_qinstances);
+         lListElem *qinstance = lGetElemHostRW(qinstance_list, QU_qhostname, rhost);
 
-         qinstance = lGetElemHost(qinstance_list, QU_qhostname, rhost);
          if (qinstance != NULL) {
             if (sge_qmaster_qinstance_set_initial_state(qinstance)) {
                lList *answer_list = NULL;
 
                qinstance_increase_qversion(qinstance);
-               sge_event_spool(ctx, &answer_list, 0, sgeE_QINSTANCE_MOD, 
-                               0, 0, lGetString(qinstance, QU_qname), 
-                               rhost, NULL,
-                               qinstance, NULL, NULL, true, true);
+               sge_event_spool(ctx, &answer_list, 0, sgeE_QINSTANCE_MOD, 0, 0, lGetString(qinstance, QU_qname), 
+                               rhost, NULL, qinstance, NULL, NULL, true, true);
                answer_list_output(&answer_list); 
             }
          }
@@ -1540,7 +1534,7 @@ static int attr_mod_threshold(sge_gdi_ctx_class_t *ctx, lList **alpp, lListElem 
       }
 
       /* the centry_list_fill_request returns 0 if success */
-      if (centry_list_fill_request(lGetList(tmp_elem, EH_consumable_config_list), alpp, master_centry_list, true, false, false)) {
+      if (centry_list_fill_request(lGetListRW(tmp_elem, EH_consumable_config_list), alpp, master_centry_list, true, false, false)) {
          lFreeElem(&tmp_elem);
          DRETURN(STATUS_EUNKNOWN);
       }
@@ -1556,7 +1550,7 @@ static int attr_mod_threshold(sge_gdi_ctx_class_t *ctx, lList **alpp, lListElem 
             lListElem *jatep = NULL;
 
             for_each (jatep, lGetList(jep, JB_ja_tasks)) {
-               lList *gdil = lGetList(jatep, JAT_granted_destin_identifier_list);
+               const lList *gdil = lGetList(jatep, JAT_granted_destin_identifier_list);
                int slots;
                bool is_master_task = false;
                const void *iterator = NULL;
@@ -1575,8 +1569,8 @@ static int attr_mod_threshold(sge_gdi_ctx_class_t *ctx, lList **alpp, lListElem 
          }
 
          for_each(ar_ep, master_ar_list) {
-            lList *gdil = lGetList(ar_ep, AR_granted_slots);
-            lListElem *gdil_ep = lGetElemHost(gdil, JG_qhostname, host);
+            const lList *gdil = lGetList(ar_ep, AR_granted_slots);
+            const lListElem *gdil_ep = lGetElemHost(gdil, JG_qhostname, host);
             bool is_master_task = false;
 
             if (gdil_ep == lFirst(gdil)) {

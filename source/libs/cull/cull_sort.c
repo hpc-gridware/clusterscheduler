@@ -69,7 +69,7 @@ int lInsertSorted(const lSortOrder * so, lListElem * ep, lList * lp)
 
    if (tmp) {
       /* insert before tmp */
-      tmp = lPrev(tmp);
+      tmp = lPrevRW(tmp);
       lInsertElem(lp, tmp, ep);
 
    } else {

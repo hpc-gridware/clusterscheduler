@@ -878,7 +878,7 @@ void remove_acked_job_exit(sge_gdi_ctx_class_t *ctx, u_long32 job_id, u_long32 j
    
       DPRINTF(("REMOVING WITH jep && jatep\n"));
       if (pe_task_id_str) {
-         petep = lGetElemStr(lGetList(jatep, JAT_task_list), PET_id, pe_task_id_str);
+         petep = lGetElemStrRW(lGetList(jatep, JAT_task_list), PET_id, pe_task_id_str);
 
          if (petep == NULL) {
             ERROR((SGE_EVENT, MSG_JOB_XYHASNOTASKZ_UUS, 
@@ -991,7 +991,7 @@ void remove_acked_job_exit(sge_gdi_ctx_class_t *ctx, u_long32 job_id, u_long32 j
           */
 
          /* unchain pe task element from task list */
-         lRemoveElem(lGetList(jatep, JAT_task_list), &petep);
+         lRemoveElem(lGetListRW(jatep, JAT_task_list), &petep);
 
          /*
           * if this was the last pe_task of an exiting slave job
@@ -1132,7 +1132,8 @@ int general
 static lListElem *execd_job_failure(lListElem *jep, lListElem *jatep, lListElem *petep,
                                     const char *error_string, int general, int failed)
 {
-   lListElem *jr, *ep = NULL;
+   lListElem *jr;
+   const lListElem *ep = NULL;
    u_long32 jobid, jataskid = 0;
    const char *petaskid = NULL;
 
@@ -1707,7 +1708,7 @@ FCLOSE_ERROR:
 
 static void build_derived_final_usage(lListElem *jr, u_long32 job_id, u_long32 ja_task_id, const char *pe_task_id)
 {
-   lList *usage_list;
+   const lList *usage_list;
    double ru_cpu, pdc_cpu;
    double cpu, r_cpu,
           mem, r_mem,
@@ -1868,7 +1869,7 @@ sge_gdi_ctx_class_t *ctx,
 lListElem *jep,
 lListElem *jr 
 ) {
-   lList *mail_users; 
+   const lList *mail_users; 
    u_long32 mail_options; 
    char sge_mail_subj[1024];
    char sge_mail_body[10*2048];
@@ -2274,7 +2275,7 @@ int count_master_tasks(const lList *lp, u_long32 job_id)
 
    jep = lGetElemUlongFirst(lp, JB_job_number, job_id, &iterator);
    while (jep != NULL) {
-      lListElem *jatep = lFirst(lGetList(jep, JB_ja_tasks));
+      const lListElem *jatep = lFirst(lGetList(jep, JB_ja_tasks));
       while (jatep != NULL) {
          if (lGetUlong(jatep, JAT_status) != JSLAVE) {
             master_jobs++;

@@ -65,7 +65,7 @@ static void
 hgroup_list_show_elem(lList *hgroup_list, const char *name, int indent)
 {
    const char *const indent_string = "   ";
-   lListElem *hgroup = NULL;
+   const lListElem *hgroup = NULL;
    int i;
 
    DENTER(TOP_LAYER, "hgroup_list_show_elem");
@@ -77,8 +77,8 @@ hgroup_list_show_elem(lList *hgroup_list, const char *name, int indent)
 
    hgroup = lGetElemHost(hgroup_list, HGRP_name, name);   
    if (hgroup != NULL) {
-      lList *sub_list = lGetList(hgroup, HGRP_host_list);
-      lListElem *href = NULL;
+      const lList *sub_list = lGetList(hgroup, HGRP_host_list);
+      const lListElem *href = NULL;
 
       for_each(href, sub_list) {
          const char *href_name = lGetHost(href, HR_name);
@@ -134,7 +134,7 @@ lListElem *hgroup_get_via_gdi(sge_gdi_ctx_class_t *ctx,
       lFreeWhere(&where);
 
       if (!answer_list_has_error(&gdi_answer_list)) {
-         ret = lDechainElem(hostgroup_list, lFirst(hostgroup_list));
+         ret = lDechainElem(hostgroup_list, lFirstRW(hostgroup_list));
       } else {
          answer_list_replace(answer_list, &gdi_answer_list);
       }
@@ -430,10 +430,10 @@ bool hgroup_show_structure(sge_gdi_ctx_class_t *ctx, lList **answer_list, const 
    DENTER(TOP_LAYER, "hgroup_show_tree");
    if (name != NULL) {
       lList *hgroup_list = NULL;
-      lListElem *hgroup = NULL;
+      const lListElem *hgroup = NULL;
       lEnumeration *what = NULL;
       lList *alp = NULL;
-      lListElem *alep = NULL;
+      const lListElem *alep = NULL;
 
       what = lWhat("%T(ALL)", HGRP_Type);
       alp = ctx->gdi(ctx, SGE_HGRP_LIST, SGE_GDI_GET, &hgroup_list, NULL, what);

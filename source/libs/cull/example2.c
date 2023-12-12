@@ -46,7 +46,7 @@
 #include "cull/example2.h"
 
 lList *readComplexFile(char *complexname);
-int matchRequest(lList *complexnamelist, lList *requestlist);
+int matchRequest(const lList *complexnamelist, const lList *requestlist);
 lList *buildComplexNameListA(void);
 lList *buildComplexNameListB(void);
 lList *buildComplexNameListC(void);
@@ -616,10 +616,7 @@ int main(int argc, char *argv[])
    return 0;
 }
 
-int matchRequest(
-lList *complexnamelist,
-lList *requestlist 
-) {
+int matchRequest(const lList *complexnamelist, const lList *requestlist) {
    lCondition *cs = NULL;       /* complexSelector */
    lCondition *match = NULL;
    lListElem *request, *cnep, *cep, *caep;

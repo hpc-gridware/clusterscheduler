@@ -236,7 +236,7 @@ int extract_dj_lists(lList *job_list, lList **active_jobs, lList **waiting_jobs,
    u_long32        job_state;
    lListElem      *tmp_dj_job = NULL;
    const char     *qname = NULL;
-   lList          *req_queue_list = NULL;
+   const lList          *req_queue_list = NULL;
    u_long32        ultime;
    u_long32        time_limit = 0;
    int             remaining_time;
@@ -249,7 +249,7 @@ int extract_dj_lists(lList *job_list, lList **active_jobs, lList **waiting_jobs,
    int             jdep;
    u_long32        unf_task_start, unf_task_end, unf_task_step;
    lListElem      *range_spec;
-   lListElem      *pe_range = NULL;        /* RN_Type */
+   const lListElem      *pe_range = NULL;        /* RN_Type */
    /*
     * lList *active_jobs; lList *waiting_jobs; lList *dep_waiting_jobs; lList
     * *unsched_jobs;
@@ -271,10 +271,10 @@ int extract_dj_lists(lList *job_list, lList **active_jobs, lList **waiting_jobs,
       printf("NULL active_jobs\n");
    }
 
-   nxt_job = lFirst(job_list);
+   nxt_job = lFirstRW(job_list);
    while ((job = nxt_job)) {
       int             unf_tasks = 0;
-      lListElem      *tmp_task;        /* JAT_Type */
+      const lListElem      *tmp_task;        /* JAT_Type */
       /*
        * alright, scan this gnarly bugger of a job for running/waiting DJ
        * data
@@ -284,7 +284,7 @@ int extract_dj_lists(lList *job_list, lList **active_jobs, lList **waiting_jobs,
                                          * active/xfering */
 
       /* printf("processing a job\n"); */
-      nxt_job = lNext(nxt_job);
+      nxt_job = lNextRW(nxt_job);
       /* tmp_dj_job = lCreateElem(TACCDJ_Type); */
 
       /* if any tasks are running, they'll be in JB_ja_tasks */

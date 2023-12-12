@@ -68,7 +68,7 @@ PREFIX##_create(lList **answer_list, const char *href, TYPE value)            \
 lListElem *                                                                   \
 PREFIX##_list_find(const lList *this_list, const char *href)                  \
 {                                                                             \
-   return lGetElemHost(this_list, HREF_NM, href);                             \
+   return lGetElemHostRW(this_list, HREF_NM, href);                             \
 }                                                                             \
                                                                               \
 bool                                                                          \
@@ -922,7 +922,7 @@ attr_list_locate(const lList *this_list, const char *host_or_group, int href_nm)
 
    DENTER(HOSTATTR_LAYER, "attr_list_locate");
    if (this_list != NULL && host_or_group != NULL) {
-      ret = lGetElemHost(this_list, href_nm, host_or_group);
+      ret = lGetElemHostRW(this_list, href_nm, host_or_group);
    }
    DEXIT;
    return ret; 

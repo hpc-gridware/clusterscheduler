@@ -687,13 +687,13 @@ qref_list_trash_some_elemts(lList **this_list, const char *full_name)
          cqueue1 = sge_dstring_get_string(&cqueue_buffer1); 
          host1 = sge_dstring_get_string(&host_or_hgroup_buffer1);
 
-         next_qref = lFirst(*this_list);
+         next_qref = lFirstRW(*this_list);
          while ((qref = next_qref) != NULL) {
             const char *name = NULL;
             const char *cqueue = NULL;
             const char *host = NULL;
 
-            next_qref = lNext(qref);
+            next_qref = lNextRW(qref);
 
             name = lGetString(qref, QR_name);
             if (!cqueue_name_split(name, &cqueue_buffer, &host_or_hgroup_buffer, NULL,

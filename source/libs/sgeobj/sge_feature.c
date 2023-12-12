@@ -275,9 +275,9 @@ void feature_activate(feature_id_t id)
    }
 
    /* get the feature we want to activate */
-   inactive_set = lGetElemUlong(feature_list, FES_id, id);
+   inactive_set = lGetElemUlongRW(feature_list, FES_id, id);
    /* get the feature that is currently activated */
-   active_set = lGetElemUlong(feature_list, FES_active, 1L);
+   active_set = lGetElemUlongRW(feature_list, FES_active, 1L);
 
    /* if both exist, we have to deactivate the former active, activate the new active */
    if (inactive_set && active_set) {
@@ -433,7 +433,7 @@ static feature_id_t feature_get_featureset_id(const char *name)
 ******************************************************************************/
 bool feature_is_enabled(feature_id_t id) 
 {
-   lListElem *active_set;
+   const lListElem *active_set;
    bool ret = false;
 
    DENTER(BASIS_LAYER, "feature_is_enabled");

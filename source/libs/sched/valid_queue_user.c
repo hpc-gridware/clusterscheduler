@@ -59,7 +59,7 @@
       0 for false
 
 */
-int sge_has_access(const char *user, const char *group, lListElem *q,
+int sge_has_access(const char *user, const char *group, const lListElem *q,
                    const lList *acl_list) 
 {
    return sge_has_access_(user, group, 
@@ -109,20 +109,18 @@ int sge_has_access_(const char *user, const char *group, const lList *q_acl,
 int sge_contained_in_access_list_(const char *user, const char *group,
                                          const lList *acl, const lList *acl_list) 
 {
-   lListElem *acl_search, *acl_found;
+   const lListElem *acl_search, *acl_found;
 
    DENTER(TOP_LAYER,"sge_contained_in_access_list_");
 
    for_each (acl_search, acl) {
-      if ((acl_found=lGetElemStr(acl_list, US_name,
-            lGetString(acl_search, US_name)))) {
+      if ((acl_found=lGetElemStr(acl_list, US_name, lGetString(acl_search, US_name)))) {
          /* ok - there is such an access list */
          if (sge_contained_in_access_list(user, group, acl_found, NULL)) {
             DRETURN(1);
          } 
       } else {
-      	DPRINTF(("cannot find userset list entry \"%s\"\n", 
-		          lGetString(acl_search, US_name)));
+      	DPRINTF(("cannot find userset list entry \"%s\"\n", lGetString(acl_search, US_name)));
       }
    }
    DRETURN(0);

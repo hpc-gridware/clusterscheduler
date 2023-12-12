@@ -126,7 +126,7 @@ int sge_mod_sharetree(sge_gdi_ctx_class_t *ctx,
       prev_version = 0;
       adding = 1;
    } else {
-      lListElem *first = lFirst(*lpp);
+      lListElem *first = lFirstRW(*lpp);
       /* real action: change user or project
          We simply replace the old element with the new one. If there is no
          old we simle add the new. */
@@ -227,8 +227,9 @@ const lList *project_list,
 lListElem *project,
 lList **found  /* tmp list that contains one entry for each found u/p */
 ) {
-   lList *children;
-   lListElem *child, *remaining;
+   const lList *children;
+   lListElem *child;
+   const lListElem *remaining;
    lList *save_found = NULL;
    const char *name = lGetString(node, STN_name);
    lListElem *pep;
@@ -416,10 +417,11 @@ lList **found  /* tmp list that contains one entry for each found u/p */
 
    Returns 0 on success, -1 on error.
 */
-int update_sharetree(lList *dst, lList *src)
+int update_sharetree(lList *dst, const lList *src)
 {
    static int depth = 0;
-   lListElem *dnode, *snode;
+   lListElem *dnode;
+   const lListElem *snode;
 #ifdef notdef
    const char *d_name;
 #endif
@@ -427,7 +429,7 @@ int update_sharetree(lList *dst, lList *src)
 
    DENTER(TOP_LAYER, "update_sharetree");
 
-   dnode = lFirst(dst);
+   dnode = lFirstRW(dst);
    snode = lFirst(src);
    if ((dnode!=NULL) != (snode!=NULL)) {
       ERROR((SGE_EVENT, MSG_STREE_QMASTERSORCETREE_SS,
@@ -457,7 +459,7 @@ int update_sharetree(lList *dst, lList *src)
 #endif
    for_each (snode, src) {
       s_name = lGetString(snode, STN_name);
-      if (!(dnode = lGetElemStr(dst, STN_name, s_name))) {
+      if (!(dnode = lGetElemStrRW(dst, STN_name, s_name))) {
          ERROR((SGE_EVENT, MSG_STREE_MISSINGNODE_S, s_name));
          depth = 0;
          DRETURN(-1);
@@ -465,14 +467,12 @@ int update_sharetree(lList *dst, lList *src)
 
       /* update fields */
       lSetDouble(dnode, STN_m_share, lGetDouble(snode, STN_m_share));
-      lSetDouble(dnode, STN_last_actual_proportion,
-         lGetDouble(snode, STN_last_actual_proportion));
-      lSetDouble(dnode, STN_adjusted_current_proportion,
-         lGetDouble(snode, STN_adjusted_current_proportion));
+      lSetDouble(dnode, STN_last_actual_proportion, lGetDouble(snode, STN_last_actual_proportion));
+      lSetDouble(dnode, STN_adjusted_current_proportion, lGetDouble(snode, STN_adjusted_current_proportion));
       lSetUlong(dnode, STN_job_ref_count, lGetUlong(snode, STN_job_ref_count));
 
       /* enter recursion */
-      if (update_sharetree(lGetList(dnode, STN_children), lGetList(snode, STN_children)) != 0) {
+      if (update_sharetree(lGetListRW(dnode, STN_children), lGetList(snode, STN_children)) != 0) {
          DRETURN(-1);
       }
    }

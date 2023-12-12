@@ -371,7 +371,7 @@ sge_timer_main(void *arg)
       MONITOR_TET_COUNT((&monitor));
       MONITOR_TET_EVENT((&monitor), lGetNumberOfElem(Event_Control.list));
 
-      le = lFirst(Event_Control.list);
+      le = lFirstRW(Event_Control.list);
       te = te_event_from_list_elem(le);
       now = Event_Control.next = time(NULL);
 

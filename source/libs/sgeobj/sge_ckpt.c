@@ -145,7 +145,7 @@ bool ckpt_is_referenced(const lListElem *ckpt, lList **answer_list,
 ******************************************************************************/
 lListElem *ckpt_list_locate(const lList *ckpt_list, const char *ckpt_name)
 {
-   return lGetElemStr(ckpt_list, CK_name, ckpt_name);
+   return lGetElemStrRW(ckpt_list, CK_name, ckpt_name);
 }
 
 /****** sgeobj/ckpt/sge_parse_checkpoint_attr() *******************************

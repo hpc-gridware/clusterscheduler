@@ -205,7 +205,7 @@ debit_job_from_queues(lListElem *job, lList *granted, lList *global_queue_list,
       if (tagged) {
          /* find queue */
          qname = lGetString(gel, JG_qname);
-         if ((qep = lGetElemStr(global_queue_list, QU_full_name, qname)) == NULL) {
+         if ((qep = lGetElemStrRW(global_queue_list, QU_full_name, qname)) == NULL) {
             master_task = false;
             continue;
          }
@@ -410,7 +410,7 @@ debit_job_from_ar(lListElem *job, lList *granted, lList *ar_list, const lList *c
    DENTER(TOP_LAYER, "debit_job_from_ar");
 
    for_each(gel, granted) {
-      lListElem *ar = NULL;
+      const lListElem *ar = NULL;
       int slots = lGetUlong(gel, JG_slots);
       
       if ((ar = lGetElemUlong(ar_list, AR_id, lGetUlong(job, JB_ar))) != NULL) {

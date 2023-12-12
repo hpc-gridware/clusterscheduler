@@ -597,9 +597,9 @@ centry_list_locate(const lList *this_list, const char *name)
 
    DENTER(CENTRY_LAYER, "centry_list_locate");
    if (this_list != NULL && name != NULL) {
-      ret = lGetElemStr(this_list, CE_name, name);
+      ret = lGetElemStrRW(this_list, CE_name, name);
       if (ret == NULL) {
-         ret = lGetElemStr(this_list, CE_shortcut, name);
+         ret = lGetElemStrRW(this_list, CE_shortcut, name);
       }
    }
    DRETURN(ret);
@@ -820,8 +820,7 @@ centry_list_append_to_dstring(const lList *this_list, dstring *string)
 
 /* CLEANUP: should be replaced by centry_list_append_to_dstring() */
 int
-centry_list_append_to_string(lList *this_list, char *buff, 
-                             u_long32 max_len)
+centry_list_append_to_string(lList *this_list, char *buff, u_long32 max_len)
 {
    int attr_fields[] = { CE_name, CE_stringval, 0 };
    const char *attr_delis[] = {"=", ",", "\n"};
@@ -899,18 +898,12 @@ centry_list_parse_from_string(lList *complex_attributes,
          DRETURN(NULL);
       }
 
-   /* create new element, fill in the values and append it */
-      if ( (complex_attribute= lGetElemStr(complex_attributes, CE_name, attr)) == NULL) {
-         if ((complex_attribute = lCreateElem(CE_Type)) == NULL) {
-            ERROR((SGE_EVENT, SFNMAX, MSG_PARSE_NOALLOCATTRELEM));
-            lFreeList(&complex_attributes);
-            sge_free_saved_vars(context);
-            DRETURN(NULL);
-         }
-         else {
-            lSetString(complex_attribute, CE_name, attr);
-            lAppendElem(complex_attributes, complex_attribute);
-         }
+      /* create new element, fill in the values and append it */
+      complex_attribute = lGetElemStrRW(complex_attributes, CE_name, attr);
+      if (complex_attribute == NULL) {
+         complex_attribute = lCreateElem(CE_Type);
+         lSetString(complex_attribute, CE_name, attr);
+         lAppendElem(complex_attributes, complex_attribute);
       }
       
       lSetString(complex_attribute, CE_stringval, value);
@@ -1313,7 +1306,7 @@ centry_list_is_correct(lList *this_list, lList **answer_list)
 
    DENTER(TOP_LAYER, "centry_list_has_error");
    if (this_list != NULL) {
-      lListElem *centry = lGetElemStr(this_list, CE_name, "qname");
+      const lListElem *centry = lGetElemStr(this_list, CE_name, "qname");
 
       if (centry != NULL) {
          const char *value = lGetString(centry, CE_stringval);

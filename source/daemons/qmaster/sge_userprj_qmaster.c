@@ -340,7 +340,8 @@ int user        /* =1 user, =0 project */
    }
 
    if (!user) { /* ensure this project is not referenced in any queue */
-      lListElem *cqueue, *prj, *host;
+      lListElem *cqueue, *host;
+      const lListElem *prj;
 
       /*
        * fix for bug 6422335
@@ -441,7 +442,7 @@ int user        /* =1 user, =0 project */
 
 int verify_project_list(
 lList **alpp,
-lList *name_list,
+const lList *name_list,
 const lList *prj_list,
 const char *attr_name, /* e.g. "xprojects" */
 const char *obj_descr, /* e.g. "host"      */
@@ -492,9 +493,9 @@ sge_automatic_user_cleanup_handler(sge_gdi_ctx_class_t *ctx, te_event_t anEvent,
        * Check each user for deletion time. We don't use for_each()
        * because we are deleting entries.
        */
-      for (user=lFirst(*master_user_list); user; user=next) {
+      for (user=lFirstRW(*master_user_list); user; user=next) {
          u_long32 delete_time = lGetUlong(user, UU_delete_time);
-         next = lNext(user);
+         next = lNextRW(user);
 
          /* 
           * For non auto users, delete_time = 0.
@@ -633,7 +634,7 @@ static int do_add_auto_user(sge_gdi_ctx_class_t *ctx, lListElem* anUser, lList**
    lFreeList(&ppList);
    if ((STATUS_OK != res) && (NULL != tmpAnswer))
    {
-      lListElem *err   = lFirst(tmpAnswer);
+      const lListElem *err   = lFirst(tmpAnswer);
       const char *text = lGetString(err, AN_text);
       u_long32 status  = lGetUlong(err, AN_status);
       answer_quality_t quality = (answer_quality_t)lGetUlong(err, AN_quality);
@@ -779,7 +780,7 @@ void project_update_categories(const lList *added, const lList *removed)
    for_each (ep, added) {
       p = lGetString(ep, PR_name);
       DPRINTF(("added project: \"%s\"\n", p));
-      prj = lGetElemStr(*object_type_get_master_list(SGE_TYPE_PROJECT), PR_name, p);
+      prj = lGetElemStrRW(*object_type_get_master_list(SGE_TYPE_PROJECT), PR_name, p);
       if (prj && lGetBool(prj, PR_consider_with_categories)==false) {
          lSetBool(prj, PR_consider_with_categories, true);
          sge_add_event(0, sgeE_PROJECT_MOD, 0, 0, p, NULL, NULL, prj);
@@ -789,7 +790,7 @@ void project_update_categories(const lList *added, const lList *removed)
    for_each (ep, removed) {
       p = lGetString(ep, PR_name);
       DPRINTF(("removed project: \"%s\"\n", p));
-      prj = lGetElemStr(*object_type_get_master_list(SGE_TYPE_PROJECT), PR_name, p);
+      prj = lGetElemStrRW(*object_type_get_master_list(SGE_TYPE_PROJECT), PR_name, p);
 
       if (prj && !project_still_used(p)) {
          lSetBool(prj, PR_consider_with_categories, false);

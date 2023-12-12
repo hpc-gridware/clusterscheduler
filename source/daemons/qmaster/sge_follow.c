@@ -172,7 +172,8 @@ sge_follow_order(sge_gdi_ctx_class_t *ctx,
    u_long32 job_number, task_number;
    const char *or_pe, *q_name=NULL;
    u_long32 or_type;
-   lListElem *jep, *qep, *oep, *hep, *jatp = NULL;
+   lListElem *jep, *qep, *hep, *jatp = NULL;
+   const lListElem *oep;
    u_long32 state;
    u_long32 pe_slots = 0, q_slots = 0, q_version;
    lListElem *pe = NULL;
@@ -215,8 +216,8 @@ sge_follow_order(sge_gdi_ctx_class_t *ctx,
          DRETURN(-2);
       }
 
-      jep = lGetElemUlong(master_job_list, JB_job_number, job_number);
-      if(jep == NULL) {
+      jep = lGetElemUlongRW(master_job_list, JB_job_number, job_number);
+      if (jep == NULL) {
          WARNING((SGE_EVENT, MSG_JOB_FINDJOB_U, sge_u32c(job_number)));
          DRETURN(-1);
       }
@@ -438,10 +439,9 @@ sge_follow_order(sge_gdi_ctx_class_t *ctx,
                /* ensure each host gets tagged only one time
                 * we tag the first entry for a host in the existing gdil
                 */
-               first_at_host = lGetElemHost(gdil, JG_qhostname, lGetHost(hep, EH_name));
+               first_at_host = lGetElemHostRW(gdil, JG_qhostname, lGetHost(hep, EH_name));
                if (!first_at_host) {
-                  ERROR((SGE_EVENT, MSG_JOB_HOSTNAMERESOLVE_US,
-                         sge_u32c(lGetUlong(jep, JB_job_number)), lGetHost(hep, EH_name)));
+                  ERROR((SGE_EVENT, MSG_JOB_HOSTNAMERESOLVE_US, sge_u32c(lGetUlong(jep, JB_job_number)), lGetHost(hep, EH_name)));
                } else {
                   lSetUlong(first_at_host, JG_tag_slave_job, 1);
                }
@@ -474,7 +474,7 @@ sge_follow_order(sge_gdi_ctx_class_t *ctx,
          int total_slots = 0;
          const char *host_name = NULL;
          lListElem *gdil_ep;
-         lListElem *next_gdil_ep = lFirst(gdil);
+         lListElem *next_gdil_ep = lFirstRW(gdil);
 
          /* loop over gdil */
          host_name = lGetHost(next_gdil_ep, JG_qhostname);
@@ -485,7 +485,7 @@ sge_follow_order(sge_gdi_ctx_class_t *ctx,
             total_slots += slots;
 
             /* gdil end or switch to next host: check booking on the current host */
-            next_gdil_ep = lNext(gdil_ep);
+            next_gdil_ep = lNextRW(gdil_ep);
             if (next_gdil_ep == NULL || strcmp(host_name, lGetHost(next_gdil_ep, JG_qhostname)) != 0) {
                hep = host_list_locate(exec_host_list, host_name);
                debit_host_consumable(jep, hep, master_centry_list, host_slots, is_master, &consumables_ok);
@@ -598,13 +598,13 @@ sge_follow_order(sge_gdi_ctx_class_t *ctx,
 
          DPRINTF(("ORDER : job("sge_u32")->pri/tickets reset"));
 
-         jep = lGetElemUlong(master_job_list, JB_job_number, job_number);
+         jep = lGetElemUlongRW(master_job_list, JB_job_number, job_number);
          if (jep == NULL) {
             WARNING((SGE_EVENT, MSG_JOB_UNABLE2FINDJOBORD_U, sge_u32c(job_number)));
             DRETURN(0); /* it's ok - job has exited - forget about him */
          }
 
-         next_ja_task = lFirst(lGetList(jep, JB_ja_tasks));
+         next_ja_task = lFirstRW(lGetList(jep, JB_ja_tasks));
 
          /* we have to iterate over the ja-tasks and the template */
          jatp = job_get_ja_task_template_pending(jep, 0);
@@ -629,7 +629,7 @@ sge_follow_order(sge_gdi_ctx_class_t *ctx,
                lSetPosDouble(jatp, ja_pos->JAT_ntix_pos,    0);
                if (task_number != 0) { /* if task_number == 0, we only change the */
                   jatp = next_ja_task; /* pending tickets, otherwise all */
-                  next_ja_task = lNext(next_ja_task);
+                  next_ja_task = lNextRW(next_ja_task);
                } else {
                   jatp = NULL;
                }
@@ -652,7 +652,7 @@ sge_follow_order(sge_gdi_ctx_class_t *ctx,
                lSetDouble(jatp, JAT_ntix,    0);
                if (task_number != 0) {   /* if task_number == 0, we only change the */
                   jatp = next_ja_task;   /* pending tickets, otherwise all */
-                  next_ja_task = lNext(next_ja_task);
+                  next_ja_task = lNextRW(next_ja_task);
                } else {
                   jatp = NULL;
                }
@@ -686,7 +686,7 @@ sge_follow_order(sge_gdi_ctx_class_t *ctx,
          ja_task_pos_t *order_ja_pos;
          job_pos_t   *job_pos;
          job_pos_t   *order_job_pos;
-         lListElem *joker;
+         const lListElem *joker;
          const lList *master_job_list = *object_type_get_master_list(SGE_TYPE_JOB);
 
          job_number = lGetUlong(ep, OR_job_number);
@@ -698,7 +698,7 @@ sge_follow_order(sge_gdi_ctx_class_t *ctx,
          DPRINTF(("ORDER : job("sge_u32")->ticket = "sge_u32"\n",
             job_number, (u_long32)lGetDouble(ep, OR_ticket)));
 
-         jep = lGetElemUlong(master_job_list, JB_job_number, job_number);
+         jep = lGetElemUlongRW(master_job_list, JB_job_number, job_number);
          if (jep == NULL) {
             WARNING((SGE_EVENT, MSG_JOB_UNABLE2FINDJOBORD_U, sge_u32c(job_number)));
             DRETURN(0); /* it's ok - job has exited - forget about him */
@@ -725,7 +725,7 @@ sge_follow_order(sge_gdi_ctx_class_t *ctx,
          sge_mutex_lock("follow_last_update_mutex", SGE_FUNC, __LINE__, &Follow_Control.last_update_mutex);
 
          if (Follow_Control.cull_order_pos == NULL) {
-            lListElem *joker_task;
+            const lListElem *joker_task;
 
             joker = lFirst(lGetList(ep, OR_joker));
             joker_task = lFirst(lGetList(joker, JB_ja_tasks));
@@ -751,7 +751,7 @@ sge_follow_order(sge_gdi_ctx_class_t *ctx,
 
          /* check several fields to be updated */
          if ((joker = lFirst(lGetList(ep, OR_joker)))) {
-            lListElem *joker_task;
+            const lListElem *joker_task;
 
             joker_task = lFirst(lGetList(joker, JB_ja_tasks));
 
@@ -801,7 +801,7 @@ sge_follow_order(sge_gdi_ctx_class_t *ctx,
    case ORT_tickets:
       DPRINTF(("ORDER ORT_tickets\n"));
       {
-         lListElem *joker;
+         const lListElem *joker;
          const lList *master_job_list = *object_type_get_master_list(SGE_TYPE_JOB);
 
          job_number = lGetUlong(ep, OR_job_number);
@@ -813,7 +813,7 @@ sge_follow_order(sge_gdi_ctx_class_t *ctx,
          DPRINTF(("ORDER: job("sge_u32")->ticket = "sge_u32"\n",
             job_number, (u_long32)lGetDouble(ep, OR_ticket)));
 
-         jep = lGetElemUlong(master_job_list, JB_job_number, job_number);
+         jep = lGetElemUlongRW(master_job_list, JB_job_number, job_number);
          if(jep == NULL) {
             ERROR((SGE_EVENT, MSG_JOB_UNABLE2FINDJOBORD_U, sge_u32c(job_number)));
             DRETURN(0); /* it's ok - job has exited - forget about him */
@@ -856,7 +856,7 @@ sge_follow_order(sge_gdi_ctx_class_t *ctx,
 
             /* check several fields to be updated */
             if ((joker = lFirst(lGetList(ep, OR_joker)))) {
-               lListElem *joker_task;
+               const lListElem *joker_task;
                ja_task_pos_t *ja_pos;
                ja_task_pos_t *order_ja_pos;
                job_pos_t   *job_pos;
@@ -868,7 +868,7 @@ sge_follow_order(sge_gdi_ctx_class_t *ctx,
                sge_mutex_lock("follow_last_update_mutex", SGE_FUNC, __LINE__, &Follow_Control.last_update_mutex);
 
                if (Follow_Control.cull_order_pos == NULL) {
-                  lListElem *joker_task;
+                  const lListElem *joker_task;
 
                   joker=lFirst(lGetList(ep, OR_joker));
                   joker_task = lFirst(lGetList(joker, JB_ja_tasks));
@@ -928,7 +928,7 @@ sge_follow_order(sge_gdi_ctx_class_t *ctx,
                         lSetDouble(gdil_ep, JG_fticket, lGetDouble(oep, OQ_fticket));
                         lSetDouble(gdil_ep, JG_sticket, lGetDouble(oep, OQ_sticket));
 
-                        chost_ep = lGetElemStr(host_tickets_cache, UA_name, hostname);
+                        chost_ep = lGetElemStrRW(host_tickets_cache, UA_name, hostname);
                         if (chost_ep == NULL) {
                            chost_ep = lAddElemStr(&host_tickets_cache, UA_name, hostname, UA_Type);
                         }
@@ -940,16 +940,16 @@ sge_follow_order(sge_gdi_ctx_class_t *ctx,
                   for_each(oep, host_tickets_cache) {
                      const char *hostname = lGetString(oep, UA_name);
                      lListElem *rtic_ep;
-                     lList* host_tickets;
+                     lList *host_tickets;
 
                      lListElem *newep = lSelectElemDPack(ep, NULL, rdp, what, false, NULL, NULL);
                      lSetDouble(newep, OR_ticket, lGetDouble(oep, UA_value));
 
-                     rtic_ep = lGetElemHost(*topp, RTIC_host, hostname);
+                     rtic_ep = lGetElemHostRW(*topp, RTIC_host, hostname);
                      if (rtic_ep == NULL) {
                         rtic_ep = lAddElemHost(topp, RTIC_host, hostname, RTIC_Type);
                      }
-                     host_tickets = lGetList(rtic_ep, RTIC_tickets);
+                     host_tickets = lGetListRW(rtic_ep, RTIC_tickets);
                      if (host_tickets == NULL) {
                         host_tickets = lCreateList("ticket orders", rdp);
                         lSetList(rtic_ep, RTIC_tickets, host_tickets);
@@ -958,16 +958,16 @@ sge_follow_order(sge_gdi_ctx_class_t *ctx,
                   }
                   lFreeList(&host_tickets_cache);
                } else {
-                  lList *gdil = lGetList(jatp, JAT_granted_destin_identifier_list);
+                  const lList *gdil = lGetList(jatp, JAT_granted_destin_identifier_list);
                   if (gdil != NULL) {
                      lListElem *newep = lSelectElemDPack(ep, NULL, rdp, what, false, NULL, NULL);
                      lList* host_tickets;
                      const char *hostname = lGetHost(lFirst(gdil), JG_qhostname);
-                     lListElem *rtic_ep = lGetElemHost(*topp, RTIC_host, hostname);
+                     lListElem *rtic_ep = lGetElemHostRW(*topp, RTIC_host, hostname);
                      if (rtic_ep == NULL) {
                         rtic_ep = lAddElemHost(topp, RTIC_host, hostname, RTIC_Type);
                      }
-                     host_tickets = lGetList(rtic_ep, RTIC_tickets);
+                     host_tickets = lGetListRW(rtic_ep, RTIC_tickets);
                      if (host_tickets == NULL) {
                         host_tickets = lCreateList("ticket orders", rdp);
                         lSetList(rtic_ep, RTIC_tickets, host_tickets);
@@ -1016,7 +1016,7 @@ sge_follow_order(sge_gdi_ctx_class_t *ctx,
          DPRINTF(("ORDER: remove %sjob "sge_u32"."sge_u32"\n",
             or_type==ORT_remove_immediate_job?"immediate ":"" ,
             job_number, task_number));
-         jep = lGetElemUlong(master_job_list, JB_job_number, job_number);
+         jep = lGetElemUlongRW(master_job_list, JB_job_number, job_number);
          if (jep == NULL) {
             if (or_type == ORT_remove_job) {
                ERROR((SGE_EVENT, MSG_JOB_FINDJOB_U, sge_u32c(job_number)));
@@ -1174,9 +1174,9 @@ sge_follow_order(sge_gdi_ctx_class_t *ctx,
 
             /* update old usage in up for each job appearing in
                PR_debited_job_usage of 'up_order' */
-            next = lFirst(lGetList(up_order, PR_debited_job_usage));
+            next = lFirstRW(lGetList(up_order, PR_debited_job_usage));
             while ((ju = next)) {
-               next = lNext(ju);
+               next = lNextRW(ju);
 
                job_number = lGetUlong(ju, UPU_job_number);
 
@@ -1185,12 +1185,9 @@ sge_follow_order(sge_gdi_ctx_class_t *ctx,
 
                   /* if passed old usage list is NULL, delete existing usage */
                   if (lGetList(ju, UPU_old_usage_list) == NULL) {
-
-                     lRemoveElem(lGetList(up_order, PR_debited_job_usage), &ju);
-                     lRemoveElem(lGetList(up, PR_debited_job_usage), &up_ju);
-
+                     lRemoveElem(lGetListRW(up_order, PR_debited_job_usage), &ju);
+                     lRemoveElem(lGetListRW(up, PR_debited_job_usage), &up_ju);
                   } else {
-
                      /* still exists - replace old usage with new one */
                      DPRINTF(("updating debited usage for job "sge_u32"\n", job_number));
                      lSwapList(ju, UPU_old_usage_list, up_ju, UPU_old_usage_list);
@@ -1199,11 +1196,11 @@ sge_follow_order(sge_gdi_ctx_class_t *ctx,
                } else {
                   /* unchain ju element and chain it into our user/prj object */
                   DPRINTF(("adding debited usage for job "sge_u32"\n", job_number));
-                  lDechainElem(lGetList(up_order, PR_debited_job_usage), ju);
+                  lDechainElem(lGetListRW(up_order, PR_debited_job_usage), ju);
 
                   if (lGetList(ju, UPU_old_usage_list) != NULL) {
                      /* unchain ju element and chain it into our user/prj object */
-                     if (!(tlp=lGetList(up, PR_debited_job_usage))) {
+                     if (!(tlp=lGetListRW(up, PR_debited_job_usage))) {
                         tlp = lCreateList(up_name, UPU_Type);
                         lSetList(up, PR_debited_job_usage, tlp);
                      }
@@ -1314,9 +1311,9 @@ sge_follow_order(sge_gdi_ctx_class_t *ctx,
 
             /* update old usage in up for each job appearing in
                UU_debited_job_usage of 'up_order' */
-            next = lFirst(lGetList(up_order, UU_debited_job_usage));
+            next = lFirstRW(lGetList(up_order, UU_debited_job_usage));
             while ((ju = next)) {
-               next = lNext(ju);
+               next = lNextRW(ju);
 
                job_number = lGetUlong(ju, UPU_job_number);
 
@@ -1327,8 +1324,8 @@ sge_follow_order(sge_gdi_ctx_class_t *ctx,
                   /* if passed old usage list is NULL, delete existing usage */
                   if (lGetList(ju, UPU_old_usage_list) == NULL) {
 
-                     lRemoveElem(lGetList(up_order, UU_debited_job_usage), &ju);
-                     lRemoveElem(lGetList(up, UU_debited_job_usage), &up_ju);
+                     lRemoveElem(lGetListRW(up_order, UU_debited_job_usage), &ju);
+                     lRemoveElem(lGetListRW(up, UU_debited_job_usage), &up_ju);
 
                   } else {
 
@@ -1340,11 +1337,11 @@ sge_follow_order(sge_gdi_ctx_class_t *ctx,
                } else {
                   /* unchain ju element and chain it into our user/prj object */
                   DPRINTF(("adding debited usage for job "sge_u32"\n", job_number));
-                  lDechainElem(lGetList(up_order, UU_debited_job_usage), ju);
+                  lDechainElem(lGetListRW(up_order, UU_debited_job_usage), ju);
 
                   if (lGetList(ju, UPU_old_usage_list) != NULL) {
                      /* unchain ju element and chain it into our user/prj object */
-                     if (!(tlp=lGetList(up, UU_debited_job_usage))) {
+                     if (!(tlp=lGetListRW(up, UU_debited_job_usage))) {
                         tlp = lCreateList(up_name, UPU_Type);
                         lSetList(up, UU_debited_job_usage, tlp);
                      }
@@ -1378,8 +1375,8 @@ sge_follow_order(sge_gdi_ctx_class_t *ctx,
          lList *master_stree_list = *object_type_get_master_list_rw(SGE_TYPE_SHARETREE);
 
          DPRINTF(("ORDER: ORT_share_tree\n"));
-         sge_init_node_fields(lFirst(master_stree_list));
-         if (update_sharetree(master_stree_list, lGetList(ep, OR_joker)) != 0) {
+         sge_init_node_fields(lFirstRW(master_stree_list));
+         if (update_sharetree(master_stree_list, lGetListRW(ep, OR_joker)) != 0) {
             DPRINTF(("ORDER: ORT_share_tree failed\n" ));
             DRETURN(-1);
          }
@@ -1392,7 +1389,7 @@ sge_follow_order(sge_gdi_ctx_class_t *ctx,
    case ORT_sched_conf:
       if (sconf_is()) {
          int pos;
-         lListElem *joker = lFirst(lGetList(ep, OR_joker));;
+         const lListElem *joker = lFirst(lGetList(ep, OR_joker));;
 
          DPRINTF(("ORDER: ORT_sched_conf\n" ));
 
@@ -1418,7 +1415,7 @@ sge_follow_order(sge_gdi_ctx_class_t *ctx,
          jobid = lGetUlong(ep, OR_job_number);
          task_number = lGetUlong(ep, OR_ja_task_number);
 
-         if (!(jep = lGetElemUlong(master_job_list, JB_job_number, jobid))
+         if (!(jep = lGetElemUlongRW(master_job_list, JB_job_number, jobid))
             || !(jatp = job_search_task(jep, NULL, task_number))
             || !lGetList(jatp, JAT_granted_destin_identifier_list)) {
             /* don't panic - it is probably an exiting job */
@@ -1471,7 +1468,7 @@ sge_follow_order(sge_gdi_ctx_class_t *ctx,
          jobid = lGetUlong(ep, OR_job_number);
          task_number = lGetUlong(ep, OR_ja_task_number);
 
-         if (!(jep = lGetElemUlong(master_job_list, JB_job_number, jobid))
+         if (!(jep = lGetElemUlongRW(master_job_list, JB_job_number, jobid))
             || !(jatp = job_search_task(jep, NULL,task_number))
             || !lGetList(jatp, JAT_granted_destin_identifier_list)) {
             /* don't panic - it is probably an exiting job */
@@ -1512,20 +1509,20 @@ sge_follow_order(sge_gdi_ctx_class_t *ctx,
 
    case ORT_job_schedd_info:
       {
-         lList *sub_order_list = lGetList(ep, OR_joker);
+         lList *sub_order_list = lGetListRW(ep, OR_joker);
          lList **master_job_schedd_info_list = object_type_get_master_list_rw(SGE_TYPE_JOB_SCHEDD_INFO);
 
          DPRINTF(("ORDER: ORT_job_schedd_info\n"));
 
          if (sub_order_list != NULL) {
-            lListElem *sme  = lFirst(sub_order_list);
+            lListElem *sme = lFirstRW(sub_order_list);
 
             if (sme != NULL) {
                lListElem *first;
 
                DPRINTF(("ORDER: got %d schedd infos\n", lGetNumberOfElem(lGetList(sme, SME_message_list))));
 
-               while ((first = lFirst(*master_job_schedd_info_list))) {
+               while ((first = lFirstRW(*master_job_schedd_info_list))) {
                   lRemoveElem(*master_job_schedd_info_list, &first);
                }
                if (*master_job_schedd_info_list == NULL) {
@@ -1562,7 +1559,7 @@ int distribute_ticket_orders(sge_gdi_ctx_class_t *ctx, lList *ticket_orders, mon
    DENTER(TOP_LAYER, "distribute_ticket_orders");
    
    for_each(ep, ticket_orders) {
-      lList *to_send = lGetList(ep, RTIC_tickets);
+      const lList *to_send = lGetList(ep, RTIC_tickets);
       const char *host_name = lGetHost(ep, RTIC_host);
       const lListElem *hep = host_list_locate(master_ehost_list, host_name);
 

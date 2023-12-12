@@ -545,14 +545,15 @@ int nm_var,
 int nm_value,
 int double_keys 
 ) {
-   lListElem *ep_one, *ep_other;
+   lListElem *ep_one;
+   lListElem *ep_other;
    int is_there;
    int type;
 
    DENTER(BASIS_LAYER, "cull_compress_definition_list");
 
    for_each(ep_one, lp) {
-      for (ep_other = lFirst(lp); ep_other; ) {
+      for (ep_other = lFirstRW(lp); ep_other; ) {
          if (ep_one == ep_other) {
             break;
          }
@@ -625,9 +626,9 @@ int double_keys
             return -5;
          } /* end switch */
          
-         ep_other = lNext(ep_other);
+         ep_other = lNextRW(ep_other);
          if (is_there) {
-            lListElem *prev = lPrev(ep_other);
+            lListElem *prev = lPrevRW(ep_other);
             /*
             ** ep_other must always point to a valid element, 
             ** or next "increase" fails, the element that comes later on
@@ -1229,7 +1230,7 @@ int soft_field
       soft_list = lCopyList("job_soft_sublist", lGetList(job, soft_field));
    }
 
-   while ((ep = lGetElemStr(cmdline, SPA_switch, option))) {
+   while ((ep = lGetElemStrRW(cmdline, SPA_switch, option))) {
       lp = NULL;
       lXchgList(ep, SPA_argval_lListT, &lp);
       if (lp) {
@@ -1270,7 +1271,7 @@ parse_list_simple(lList *cmdline, char *option, lListElem *job, int field,
 
    destlist = lCopyList("job_sublist", lGetList(job, field));
 
-   while ((ep = lGetElemStr(cmdline, SPA_switch, option))) {
+   while ((ep = lGetElemStrRW(cmdline, SPA_switch, option))) {
       DPRINTF(("OPTION: %s\n", option));
       lp = NULL;
       lXchgList(ep, SPA_argval_lListT, &lp);

@@ -196,7 +196,7 @@ int main(int argc, char **argv) {
                part_ref_list = lCreateList("part_del_jobs", ID_Type);
                for (i = 0; i < max; i++){
                   const char* job = NULL;
-                  temp_ref = lFirst(cp_ref_list);
+                  temp_ref = lFirstRW(cp_ref_list);
                   job = lGetString(temp_ref, ID_str);
                   /* break if we got job ids first and hit a job name now */
                   if (!isdigit(job[0]) && (i > 0)) {
@@ -427,7 +427,7 @@ lList **alpp
       if(parse_flag(ppcmdline, "-f", alpp, pforce)) 
          continue;
 
-      while ((ep = lGetElemStr(*ppcmdline, SPA_switch, "-u"))) {
+      while ((ep = lGetElemStrRW(*ppcmdline, SPA_switch, "-u"))) {
          lXchgList(ep, SPA_argval_lListT, ppuserlist);
          lRemoveElem(*ppcmdline, &ep);
       } 
@@ -441,7 +441,7 @@ lList **alpp
       }
 
        /* we get to this point, than there are -t options without job names. We have to write an error message */
-      if ((ep = lGetElemStr(*ppcmdline, SPA_switch, "-t")) != NULL) {
+      if ((ep = lGetElemStrRW(*ppcmdline, SPA_switch, "-t")) != NULL) {
          answer_list_add_sprintf(alpp, STATUS_ESEMANTIC, ANSWER_QUALITY_ERROR, MSG_JOB_LONELY_TOPTION_S, lGetString(ep, SPA_switch_arg));
          break;
       }

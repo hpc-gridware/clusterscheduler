@@ -146,7 +146,7 @@ lListElem *pe_list_find_matching(const lList *pe_list, const char *wildcard)
 ******************************************************************************/
 lListElem *pe_list_locate(const lList *pe_list, const char *pe_name) 
 {
-   return lGetElemStr(pe_list, PE_name, pe_name);
+   return lGetElemStrRW(pe_list, PE_name, pe_name);
 }
 
 /****** sgeobj/pe/pe_is_referenced() ******************************************

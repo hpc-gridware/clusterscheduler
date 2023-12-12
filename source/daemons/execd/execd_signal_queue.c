@@ -340,8 +340,7 @@ void sge_send_suspend_mail(u_long32 signal, lListElem *master_q, lListElem *jep,
 
    /* only if mail at suspendsion is enabled */
    if (VALID(MAIL_AT_SUSPENSION, mail_options)) {
-
-       lList *mail_users      = NULL; 
+       const lList *mail_users      = NULL; 
 
        u_long32 jobid         = 0;
        u_long32 taskid        = 0;

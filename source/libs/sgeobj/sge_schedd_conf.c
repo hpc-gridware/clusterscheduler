@@ -611,7 +611,7 @@ bool sconf_set_config(lList **config, lList **answer_list)
 bool sconf_is_valid_load_formula(lList **answer_list, const lList *centry_list)
 {
    bool is_valid = false;
-   lListElem *schedd_conf = NULL;
+   const lListElem *schedd_conf = NULL;
    const char *load_formula = NULL;
 
    DENTER(TOP_LAYER, "sconf_is_valid_load_formula");
@@ -739,8 +739,8 @@ bool sconf_is_centry_referenced(const lListElem *centry)
    
    if (sc_ep != NULL) {
       const char *name = lGetString(centry, CE_name);
-      lList *centry_list = lGetList(sc_ep, SC_job_load_adjustments);
-      lListElem *centry_ref = lGetElemStr(centry_list, CE_name, name);
+      const lList *centry_list = lGetList(sc_ep, SC_job_load_adjustments);
+      const lListElem *centry_ref = lGetElemStr(centry_list, CE_name, name);
 
       ret = ((centry_ref != NULL)? true : false);
 
@@ -1788,7 +1788,7 @@ void sconf_set_weight_tickets_override(u_long32 active)
 
    sge_mutex_lock("Sched_Conf_Lock", "", __LINE__, &pos.mutex);   
 
-   sc_ep = lFirst(*object_type_get_master_list_rw(SGE_TYPE_SCHEDD_CONF));
+   sc_ep = lFirstRW(*object_type_get_master_list_rw(SGE_TYPE_SCHEDD_CONF));
    
    if (pos.weight_tickets_override!= -1) {
       lSetPosUlong(sc_ep, pos.weight_tickets_override, active);
@@ -1821,7 +1821,7 @@ u_long32 sconf_get_weight_tickets_override()
    sge_mutex_lock("Sched_Conf_Lock", "", __LINE__, &pos.mutex);   
 
    if (pos.weight_tickets_override!= -1) {
-      lListElem *sc_ep = lFirst(*object_type_get_master_list(SGE_TYPE_SCHEDD_CONF));
+      const lListElem *sc_ep = lFirst(*object_type_get_master_list(SGE_TYPE_SCHEDD_CONF));
       tickets = lGetPosUlong(sc_ep, pos.weight_tickets_override);
    }
 
@@ -2039,7 +2039,7 @@ u_long32 sconf_get_max_reservations(void) {
    sge_mutex_lock("Sched_Conf_Lock", "", __LINE__, &pos.mutex);
    
    if (!pos.empty && (pos.max_reservation != -1)) {
-      lListElem *sc_ep = lFirst(*object_type_get_master_list(SGE_TYPE_SCHEDD_CONF));
+      const lListElem *sc_ep = lFirst(*object_type_get_master_list(SGE_TYPE_SCHEDD_CONF));
       max_res = lGetPosUlong(sc_ep, pos.max_reservation);
    }
 
@@ -2858,7 +2858,7 @@ bool sconf_validate_config_(lList **answer_list)
          }
          sge_free_saved_vars(context);
       } else {
-         lSetString(lFirst(*object_type_get_master_list(SGE_TYPE_SCHEDD_CONF)), SC_params, "none");
+         lSetString(lFirstRW(*object_type_get_master_list_rw(SGE_TYPE_SCHEDD_CONF)), SC_params, "none");
       }
    }
    
@@ -3015,8 +3015,7 @@ bool sconf_validate_config_(lList **answer_list)
             answer_list_add(answer_list, MSG_GDI_INVALIDPOLICYSTRING, STATUS_ESYNTAX, 
                             ANSWER_QUALITY_ERROR);  
             ret = false;
-            lSetString(lFirst(*object_type_get_master_list(SGE_TYPE_SCHEDD_CONF)), SC_policy_hierarchy, 
-                       policy_hierarchy_chars);
+            lSetString(lFirstRW(*object_type_get_master_list_rw(SGE_TYPE_SCHEDD_CONF)), SC_policy_hierarchy, policy_hierarchy_chars);
          }
       } 
       else {

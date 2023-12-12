@@ -432,7 +432,7 @@ bool spool_default_validate_func(lList **answer_list,
                }
 
                /* necessary to init double values of consumable configuration */
-               centry_list_fill_request(lGetList(object, EH_consumable_config_list), NULL, master_centry_list, true, false, true);
+               centry_list_fill_request(lGetListRW(object, EH_consumable_config_list), NULL, master_centry_list, true, false, true);
                /* necessary to setup actual list of exechost */
                debit_host_consumable(NULL, object, master_centry_list, 0, true, NULL);
 
@@ -446,7 +446,7 @@ bool spool_default_validate_func(lList **answer_list,
          ret = qinstance_validate(object, answer_list, master_ehost_list, master_centry_list);
          break;
       case SGE_TYPE_CQUEUE:
-         ret = qinstance_list_validate(lGetList(object, CQ_qinstances), answer_list, master_ehost_list, master_centry_list);
+         ret = qinstance_list_validate(lGetListRW(object, CQ_qinstances), answer_list, master_ehost_list, master_centry_list);
          break;
       case SGE_TYPE_CONFIG:
          {

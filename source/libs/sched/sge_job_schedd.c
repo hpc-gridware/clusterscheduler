@@ -243,8 +243,8 @@ job_move_first_pending_to_running(lListElem **pending_job, lList **splitted_jobs
    DENTER(TOP_LAYER, "job_move_first_pending_to_running");
 
    job_id = lGetUlong(*pending_job, JB_job_number);
-   ja_task_list = lGetList(*pending_job, JB_ja_tasks);
-   ja_task = lFirst(ja_task_list);
+   ja_task_list = lGetListRW(*pending_job, JB_ja_tasks);
+   ja_task = lFirstRW(ja_task_list);
    
    /*
     * Create list for running jobs
@@ -253,8 +253,7 @@ job_move_first_pending_to_running(lListElem **pending_job, lList **splitted_jobs
       const lDescr *descriptor = lGetElemDescr(*pending_job);
       *(splitted_jobs[SPLIT_RUNNING]) = lCreateList("", descriptor);
    } else {
-      running_job = lGetElemUlong(*(splitted_jobs[SPLIT_RUNNING]), 
-                               JB_job_number, job_id);
+      running_job = lGetElemUlongRW(*(splitted_jobs[SPLIT_RUNNING]), JB_job_number, job_id);
    }
    /*
     * Create a running job if it does not exist aleady 
@@ -288,9 +287,8 @@ job_move_first_pending_to_running(lListElem **pending_job, lList **splitted_jobs
     * or move the existing array task into the running job 
     */
    if (ja_task == NULL) {
-      lList *n_h_ids = NULL;        /* RN_Type */
+      const lList *n_h_ids = lGetList(*pending_job, JB_ja_n_h_ids);
 
-      n_h_ids = lGetList(*pending_job, JB_ja_n_h_ids);
       ja_task_id = range_list_get_first_id(n_h_ids, NULL);
       ja_task = job_search_task(*pending_job, NULL, ja_task_id);
       /* JG: TODO: do we need the ja_task instance here or can we
@@ -299,17 +297,16 @@ job_move_first_pending_to_running(lListElem **pending_job, lList **splitted_jobs
        *           The event from qmaster has effect on the mirrored lists.
        *           So the code should be ok.
        */
-      if(ja_task == NULL) {
+      if (ja_task == NULL) {
          ja_task = job_create_task(*pending_job, NULL, ja_task_id);
-         
       }
-      ja_task_list = lGetList(*pending_job, JB_ja_tasks);
+      ja_task_list = lGetListRW(*pending_job, JB_ja_tasks);
    }
   
    /*
     * Create an array task list if necessary
     */
-   r_ja_task_list = lGetList(running_job, JB_ja_tasks); 
+   r_ja_task_list = lGetListRW(running_job, JB_ja_tasks); 
    if (r_ja_task_list == NULL) {
       r_ja_task_list = lCreateList("", lGetElemDescr(ja_task));
       lSetList(running_job, JB_ja_tasks, r_ja_task_list);
@@ -342,7 +339,7 @@ int job_get_next_task(lListElem *job, lListElem **task_ret, u_long32 *id_ret)
 
    DENTER(TOP_LAYER, "job_get_next_task");
 
-   ja_task = lFirst(lGetList(job, JB_ja_tasks));
+   ja_task = lFirstRW(lGetList(job, JB_ja_tasks));
    if (ja_task == NULL) {
       lList *answer_list = NULL;
 
@@ -456,16 +453,16 @@ void job_lists_split_with_reference_to_max_running(bool monitor_next_run, lList 
 #endif      
 
       if (user_name == NULL) {
-         next_user = lFirst(*user_list);
+         next_user = lFirstRW(*user_list);
       } else {
-         next_user = lGetElemStr(*user_list, JC_name, user_name);
+         next_user = lGetElemStrRW(*user_list, JC_name, user_name);
       }
       while ((user = next_user) != NULL) {
          u_long32 jobs_for_user = lGetUlong(user, JC_jobs);
          const char *jc_user_name = lGetString(user, JC_name);
 
          if (user_name == NULL) {
-            next_user = lNext(user);
+            next_user = lNextRW(user);
          } else {
             next_user = NULL;
          }
@@ -476,11 +473,11 @@ void job_lists_split_with_reference_to_max_running(bool monitor_next_run, lList 
 
             DPRINTF(("USER %s reached limit of %d jobs\n", jc_user_name, 
                      max_jobs_per_user));
-            next_user_job = lGetElemStrFirst(*(job_lists[SPLIT_PENDING]), 
+            next_user_job = lGetElemStrFirstRW(*(job_lists[SPLIT_PENDING]), 
                                              JB_owner, jc_user_name, 
                                              &user_iterator);
             while ((user_job = next_user_job)) {
-               next_user_job = lGetElemStrNext(*(job_lists[SPLIT_PENDING]), 
+               next_user_job = lGetElemStrNextRW(*(job_lists[SPLIT_PENDING]), 
                                                JB_owner, jc_user_name, 
                                                &user_iterator);
                schedd_mes_add(NULL, monitor_next_run,
@@ -569,7 +566,7 @@ void split_jobs(lList **job_list, u_long32 max_aj_instances,
    lListElem *previous_job = NULL;
    DENTER(TOP_LAYER, "split_jobs");
 
-   next_job = lFirst(*job_list);
+   next_job = lFirstRW(*job_list);
    while ((job = next_job)) {
       lList *ja_task_list = NULL;
       lList *n_h_ids = NULL;
@@ -590,8 +587,8 @@ void split_jobs(lList **job_list, u_long32 max_aj_instances,
       u_long32 job_id = lGetUlong(job, JB_job_number);
 #endif
 
-      previous_job = lPrev(job);
-      next_job = lNext(job);
+      previous_job = lPrevRW(job);
+      next_job = lNextRW(job);
 
       /*
        * Initialize
@@ -618,7 +615,7 @@ void split_jobs(lList **job_list, u_long32 max_aj_instances,
 #ifdef JOB_SPLIT_DEBUG
       DPRINTF(("Split enrolled tasks for job "sge_u32":\n", job_id));
 #endif
-      next_ja_task = lFirst(ja_task_list);
+      next_ja_task = lFirstRW(ja_task_list);
       while ((ja_task = next_ja_task)) {
          u_long32 ja_task_status = lGetUlong(ja_task, JAT_status);
          u_long32 ja_task_state = lGetUlong(ja_task, JAT_state);
@@ -627,7 +624,7 @@ void split_jobs(lList **job_list, u_long32 max_aj_instances,
 #ifdef JOB_SPLIT_DEBUG
          u_long32 ja_task_id = lGetUlong(ja_task, JAT_task_number);
 #endif
-         next_ja_task = lNext(ja_task);
+         next_ja_task = lNextRW(ja_task);
 
 #ifdef JOB_SPLIT_DEBUG
          DPRINTF(("Task "sge_u32": status="sge_u32" state="sge_u32"\n", ja_task_id,
@@ -1058,7 +1055,7 @@ void sge_dec_jc(lList **jcpp, const char *name, int slots)
 
    DENTER(TOP_LAYER, "sge_dec_jc");
 
-   ep = lGetElemStr(*jcpp, JC_name, name);
+   ep = lGetElemStrRW(*jcpp, JC_name, name);
    if (ep) {
       n = lGetUlong(ep, JC_jobs) - slots;
       if (n <= 0)
@@ -1079,7 +1076,7 @@ void sge_inc_jc(lList **jcpp, const char *name, int slots)
 
    DENTER(TOP_LAYER, "sge_inc_jc");
 
-   ep = lGetElemStr(*jcpp, JC_name, name);
+   ep = lGetElemStrRW(*jcpp, JC_name, name);
    if (ep) 
       n = lGetUlong(ep, JC_jobs);
    else 
@@ -1095,7 +1092,7 @@ void sge_inc_jc(lList **jcpp, const char *name, int slots)
 
 
 /*---------------------------------------------------------*/
-int nslots_granted(lList *granted, const char *qhostname)
+int nslots_granted(const lList *granted, const char *qhostname)
 {
    lListElem *gdil_ep;
    int nslots = 0;
@@ -1106,10 +1103,10 @@ int nslots_granted(lList *granted, const char *qhostname)
          nslots += lGetUlong(gdil_ep, JG_slots);
       }
    } else {
-      gdil_ep = lGetElemHostFirst(granted, JG_qhostname, qhostname, &iterator); 
+      gdil_ep = lGetElemHostFirstRW(granted, JG_qhostname, qhostname, &iterator); 
       while (gdil_ep != NULL) {
          nslots += lGetUlong(gdil_ep, JG_slots);
-         gdil_ep = lGetElemHostNext(granted, JG_qhostname , qhostname, &iterator); 
+         gdil_ep = lGetElemHostNextRW(granted, JG_qhostname , qhostname, &iterator); 
       }
    }
 
@@ -1125,7 +1122,7 @@ int active_subtasks(
 lListElem *job,
 const char *qname 
 ) {
-   lListElem *petask, *ep, *jatask;
+   const lListElem *petask, *ep, *jatask;
    const char *task_qname;
    const char *master_qname;
 
@@ -1150,12 +1147,9 @@ const char *qname
 }
 
 
-int active_nslots_granted(
-lListElem *job,
-lList *granted,
-const char *qhostname 
-) {
-   lList *task_list;
+int 
+active_nslots_granted(lListElem *job, const lList *granted, const char *qhostname) {
+   const lList *task_list;
    lListElem *gdil_ep, *jatask;
    int nslots = 0;
    const void *iterator = NULL;
@@ -1171,14 +1165,14 @@ const char *qhostname
       }
    } else {
       /* only for qhostname */
-      gdil_ep = lGetElemHostFirst(granted, JG_qhostname, qhostname, &iterator);
+      gdil_ep = lGetElemHostFirstRW(granted, JG_qhostname, qhostname, &iterator);
       while (gdil_ep != NULL) {
          for_each (jatask, lGetList(job, JB_ja_tasks)) {
             task_list = lGetList(jatask, JAT_task_list);
             if (task_list == NULL || active_subtasks(job, lGetString(gdil_ep, JG_qname)))
                nslots += lGetUlong(gdil_ep, JG_slots);
          }
-         gdil_ep = lGetElemHostNext(granted, JG_qhostname , qhostname, &iterator); 
+         gdil_ep = lGetElemHostNextRW(granted, JG_qhostname , qhostname, &iterator); 
       }
    }
 
@@ -1191,7 +1185,7 @@ const char *qhostname
  * return number of granted slots for a (parallel(
  *---------------------------------------------------*/
 int sge_granted_slots(
-lList *gdil 
+const lList *gdil 
 ) {
    lListElem *ep;
    int slots = 0;

@@ -979,7 +979,7 @@ get_client_name(sge_gdi_ctx_class_t *ctx, int is_rsh, int is_rlogin, int inherit
    lList     *conf_list       = NULL;
    lListElem *global          = NULL; 
    lListElem *local           = NULL;
-   lListElem *qlogin_cmd_elem = NULL;
+   const lListElem *qlogin_cmd_elem = NULL;
 
    /* session type and config entry name */
    const char *session_type;
@@ -1180,7 +1180,7 @@ static void set_command_to_env(lList *envlp, lList *opts_qrsh)
    dstring buffer = DSTRING_INIT;
 
    if (opts_qrsh) {
-      lListElem *ep;
+      const lListElem *ep;
      
       ep = lFirst(opts_qrsh);
       if (ep) {
@@ -1281,16 +1281,15 @@ lListElem *job,
 lList *opts_qrsh)
 {
    dstring connection_params = DSTRING_INIT;
-   lList   *envlp            = NULL;
+   lList *envlp = NULL;
 
-   sge_dstring_sprintf(&connection_params, "%s:%d",
-                       qualified_hostname, port); 
+   sge_dstring_sprintf(&connection_params, "%s:%d", qualified_hostname, port); 
 
    /*
     * Get environment from job object. If there is no environment yet,
     * create one.
     */
-   envlp = lGetList(job, JB_env_list);
+   envlp = lGetListRW(job, JB_env_list);
    if (envlp == NULL) {
       envlp = lCreateList("environment list", VA_Type);
       lSetList(job, JB_env_list, envlp);
@@ -1531,13 +1530,13 @@ int main(int argc, char **argv)
    }
 
    /* set verbosity */
-   while ((ep = lGetElemStr(opts_cmdline, SPA_switch, "-verbose"))) {
+   while ((ep = lGetElemStrRW(opts_cmdline, SPA_switch, "-verbose"))) {
       lRemoveElem(opts_cmdline, &ep);
       log_state_set_log_verbose(1);
    }
 
    /* parse -noshell */
-   while ((ep = lGetElemStr(opts_cmdline, SPA_switch, "-noshell"))) {
+   while ((ep = lGetElemStrRW(opts_cmdline, SPA_switch, "-noshell"))) {
       lRemoveElem(opts_cmdline, &ep);
       noshell = 1;
    }
@@ -1547,7 +1546,7 @@ int main(int argc, char **argv)
       suspend_remote_option = (ternary_t)opt_list_is_X_true(opts_cmdline, "-suspend_remote");
    }
    /* remove the suspend_remote option from commandline before proceeding */
-   while ((ep = lGetElemStr(opts_cmdline, SPA_switch, "-suspend_remote"))) {
+   while ((ep = lGetElemStrRW(opts_cmdline, SPA_switch, "-suspend_remote"))) {
       lRemoveElem(opts_cmdline, &ep);
    }
 
@@ -1557,7 +1556,7 @@ int main(int argc, char **argv)
    }
    lSetUlong(job, JB_pty, pty_option);
    /* remove the pty option from commandline before proceeding */
-   while ((ep = lGetElemStr(opts_cmdline, SPA_switch, "-pty"))) {
+   while ((ep = lGetElemStrRW(opts_cmdline, SPA_switch, "-pty"))) {
       lRemoveElem(opts_cmdline, &ep);
    }
 
@@ -1565,12 +1564,12 @@ int main(int argc, char **argv)
    ** if qrsh, parse command to call
    */
    if (is_rsh) {
-      while ((ep = lGetElemStr(opts_cmdline, SPA_switch, "-nostdin"))) {
+      while ((ep = lGetElemStrRW(opts_cmdline, SPA_switch, "-nostdin"))) {
          lRemoveElem(opts_cmdline, &ep);
          nostdin = 1;
       }
 
-      while ((ep = lGetElemStr(opts_cmdline, SPA_switch, "-inherit"))) {
+      while ((ep = lGetElemStrRW(opts_cmdline, SPA_switch, "-inherit"))) {
          lRemoveElem(opts_cmdline, &ep);
          inherit_job = 1;
       }
@@ -1597,18 +1596,17 @@ int main(int argc, char **argv)
 
       opts_qrsh = lCreateList("opts_qrsh", lGetListDescr(opts_cmdline));
 
-      if ((ep = lGetElemStr(opts_cmdline, SPA_switch, "script"))) {
+      if ((ep = lGetElemStrRW(opts_cmdline, SPA_switch, "script"))) {
          if (existing_job) {
             host = strdup(lGetString(ep, SPA_argval_lStringT));
             lRemoveElem(opts_cmdline, &ep);
-            ep = lGetElemStr(opts_cmdline, SPA_switch, "jobarg");
+            ep = lGetElemStrRW(opts_cmdline, SPA_switch, "jobarg");
          }
 
          if (ep != NULL) {
             const char *new_name = NULL;
 
-            lSetString(job, JB_script_file, 
-                       lGetString(ep, SPA_argval_lStringT));
+            lSetString(job, JB_script_file, lGetString(ep, SPA_argval_lStringT));
             lDechainElem(opts_cmdline, ep);
             lAppendElem(opts_qrsh, ep);
            
@@ -1617,7 +1615,7 @@ int main(int argc, char **argv)
                sge_strlcpy(name, new_name, MAX_JOB_NAME); 
             }
 
-            while ((ep = lGetElemStr(opts_cmdline, SPA_switch, "jobarg"))) {
+            while ((ep = lGetElemStrRW(opts_cmdline, SPA_switch, "jobarg"))) {
                lDechainElem(opts_cmdline, ep);
                lAppendElem(opts_qrsh, ep);
             }   
@@ -1651,10 +1649,10 @@ int main(int argc, char **argv)
       }
 
       /* remove the binary option from commandline before proceeding */
-      while ((ep = lGetElemStr(opts_defaults, SPA_switch, "-b"))) {
+      while ((ep = lGetElemStrRW(opts_defaults, SPA_switch, "-b"))) {
          lRemoveElem(opts_defaults, &ep);
       }
-      while ((ep = lGetElemStr(opts_cmdline, SPA_switch, "-b"))) {
+      while ((ep = lGetElemStrRW(opts_cmdline, SPA_switch, "-b"))) {
          lRemoveElem(opts_cmdline, &ep);
       }
 
@@ -1670,19 +1668,17 @@ int main(int argc, char **argv)
          /* move -C directives into opts_qrsh - we need them for parsing 
           * the script 
           */
-         while ((ep = lGetElemStr(opts_defaults, SPA_switch, "-C"))) {
+         while ((ep = lGetElemStrRW(opts_defaults, SPA_switch, "-C"))) {
             lDechainElem(opts_defaults, ep);
             lAppendElem(opts_qrsh, ep);
          }
-         while ((ep = lGetElemStr(opts_cmdline, SPA_switch, "-C"))) {
+         while ((ep = lGetElemStrRW(opts_cmdline, SPA_switch, "-C"))) {
             lDechainElem(opts_cmdline, ep);
             lAppendElem(opts_qrsh, ep);
          }
     
          /* read scriptfile and parse script options */
-         opt_list_append_opts_from_script(my_who, 
-                                          &opts_scriptfile, &alp, 
-                                          opts_qrsh, environ);
+         opt_list_append_opts_from_script(my_who, &opts_scriptfile, &alp, opts_qrsh, environ);
          do_exit = parse_result_list(alp, &alp_error);
          lFreeList(&alp);
 
@@ -1692,11 +1688,11 @@ int main(int argc, char **argv)
          }
 
          /* set length and script contents in job */
-         if ((ep = lGetElemStr(opts_scriptfile, SPA_switch, STR_PSEUDO_SCRIPTLEN))) {
+         if ((ep = lGetElemStrRW(opts_scriptfile, SPA_switch, STR_PSEUDO_SCRIPTLEN))) {
             lSetUlong(job, JB_script_size, lGetUlong(ep, SPA_argval_lUlongT));
             lRemoveElem(opts_scriptfile, &ep);
          }
-         if ((ep = lGetElemStr(opts_scriptfile, SPA_switch, STR_PSEUDO_SCRIPTPTR))) {
+         if ((ep = lGetElemStrRW(opts_scriptfile, SPA_switch, STR_PSEUDO_SCRIPTPTR))) {
             lSetString(job, JB_script_ptr, lGetString(ep, SPA_argval_lStringT));
             lRemoveElem(opts_scriptfile, &ep);
          }
@@ -1775,7 +1771,7 @@ int main(int argc, char **argv)
       sock = open_qrsh_socket(&my_port);
       sprintf(buffer, "%s:%d", qualified_hostname, my_port);
 
-      if ((envlp = lGetList(job, JB_env_list)) == NULL) {
+      if ((envlp = lGetListRW(job, JB_env_list)) == NULL) {
          envlp = lCreateList("environment list", VA_Type);
          lSetList(job, JB_env_list, envlp);
       }   
@@ -1816,7 +1812,7 @@ int main(int argc, char **argv)
       char  *wrapper = getenv("QRSH_WRAPPER");
 
       if (wrapper != NULL) {
-         lList *envlp = lGetList(job, JB_env_list);
+         lList *envlp = lGetListRW(job, JB_env_list);
          var_list_set_string(&envlp, "QRSH_WRAPPER", wrapper);
       }
    }
@@ -1971,7 +1967,7 @@ int main(int argc, char **argv)
                      &lp_jobs, NULL, NULL);
 
       /* reinitialize 'job' with pointer to new version from qmaster */
-      job = lFirst(lp_jobs);
+      job = lFirstRW(lp_jobs);
       if (job) {
         job_id = lGetUlong(job, JB_job_number );
       } else {
@@ -2216,7 +2212,7 @@ int main(int argc, char **argv)
             continue;
          }
   
-         if ((lp_poll == NULL || lGetNumberOfElem(lp_poll) == 0 ) || !(jep = lFirst(lp_poll))) {
+         if ((lp_poll == NULL || lGetNumberOfElem(lp_poll) == 0 ) || !(jep = lFirstRW(lp_poll))) {
             WARNING((SGE_EVENT, "\n"));
             log_state_set_log_verbose(1);
             WARNING((SGE_EVENT, MSG_QSH_REQUESTCANTBESCHEDULEDTRYLATER_S, progname));
@@ -2226,7 +2222,7 @@ int main(int argc, char **argv)
             continue;
          }
          
-         ja_task = lFirst(lGetList(jep, JB_ja_tasks)); 
+         ja_task = lFirstRW(lGetList(jep, JB_ja_tasks)); 
          if (ja_task) {
             job_status = lGetUlong(ja_task, JAT_status);
             DPRINTF(("Job Status is: %lx\n", job_status));
@@ -2318,7 +2314,7 @@ int main(int argc, char **argv)
 
 static void delete_job(sge_gdi_ctx_class_t *ctx, u_long32 job_id, lList *jlp) 
 {
-   lListElem *jep;
+   const lListElem *jep;
    lList *idlp = NULL;
    lList *alp;
    char job_str[128];
@@ -2355,11 +2351,11 @@ static void remove_unknown_opts(lList *lp, u_long32 jb_now, int tightly_integrat
    }
 
    /* loop over all options and remove the ones that are not allowed */
-   next = lFirst(lp);
+   next = lFirstRW(lp);
    while ((ep = next) != NULL) {
       const char *cp;
       
-      next = lNext(ep);
+      next = lNextRW(ep);
       cp = lGetString(ep, SPA_switch);
 
       if (cp != NULL) {

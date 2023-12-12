@@ -76,7 +76,7 @@ int correct_load(lList *running_jobs, lList *queue_list, lList *host_list,
          u_long32 ja_task_id = lGetUlong(ja_task, JAT_task_number); 
          u_long32 running_time = now - lGetUlong(ja_task, JAT_start_time);
          lListElem *granted_queue = NULL;
-         lList *granted_list = NULL;
+         const lList *granted_list = NULL;
          double host_lcf = 0.0;
 
 #if 1
@@ -105,7 +105,7 @@ int correct_load(lList *running_jobs, lList *queue_list, lList *host_list,
             }
            
             hnm=lGetHost(granted_queue, JG_qhostname); 
-            hep = lGetElemHost(host_list, EH_name, hnm);
+            hep = lGetElemHostRW(host_list, EH_name, hnm);
             if (hep == NULL) {
                DPRINTF(("Unable to find host \"%s\" from gdil "
                         "list of job "sge_u32"."sge_u32"\n", hnm, job_id, ja_task_id));
@@ -172,7 +172,8 @@ int
 correct_capacities(lList *host_list, const lList *centry_list) 
 {
    lListElem *hep, *ep, *cep; 
-   lListElem *job_load, *scaling, *total, *inuse_rms;
+   const lListElem *job_load;
+   lListElem *scaling, *total, *inuse_rms;
    u_long32 type, relop;
    double dval, inuse_ext, full_capacity, sc_factor;
    double load_correction;

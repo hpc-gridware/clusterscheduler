@@ -65,7 +65,8 @@ static bool range_is_overlapping(const lListElem *range1,
 static void expand_range_list(lListElem *r, lList **rl)
 {
    u_long32 rmin, rmax, rstep;
-   lListElem *ep, *rr;
+   lListElem *ep;
+   lListElem *rr;
 
    DENTER(TOP_LAYER, "expand_range_list");
 
@@ -79,11 +80,10 @@ static void expand_range_list(lListElem *r, lList **rl)
    }
 
    if (lGetNumberOfElem(*rl) != 0) {
-      ep = lFirst(*rl);
+      ep = lFirstRW(*rl);
       while (ep) {
 
-         if (rstep != lGetUlong(ep, RN_step) || rstep > 1 ||
-             lGetUlong(ep, RN_step) > 1) {
+         if (rstep != lGetUlong(ep, RN_step) || rstep > 1 || lGetUlong(ep, RN_step) > 1) {
             lInsertElem(*rl, NULL, r);
             break;
          } else if (rmin > lGetUlong(ep, RN_max)) {
@@ -100,7 +100,7 @@ static void expand_range_list(lListElem *r, lList **rl)
              ** r and ep are non-overlapping and r is to be
              ** sorted after ep ==> go for the next iteration
              */
-            ep = lNext(ep);
+            ep = lNextRW(ep);
             if (!ep) {
                /* We are at the end of the list ==> append r */
                lAppendElem(*rl, r);
@@ -134,13 +134,13 @@ static void expand_range_list(lListElem *r, lList **rl)
             /* we're already sure we can free r */
             lFreeElem(&r);
             rr = ep;
-            ep = lNext(ep);
+            ep = lNextRW(ep);
             while (ep) {
                if (rmin < lGetUlong(ep, RN_min)) {
 
                   /* it also contains this one */
                   r = ep;
-                  ep = lNext(ep);
+                  ep = lNextRW(ep);
                   lRemoveElem(*rl, &r);
 
                } else if (rmin <= lGetUlong(ep, RN_max)) {
@@ -149,7 +149,7 @@ static void expand_range_list(lListElem *r, lList **rl)
                   lSetUlong(rr, RN_min, lGetUlong(ep, RN_min));
 
                   r = ep;
-                  ep = lNext(ep);
+                  ep = lNextRW(ep);
                   lRemoveElem(*rl, &r);
                   break;
 
@@ -157,7 +157,7 @@ static void expand_range_list(lListElem *r, lList **rl)
                   /* they are non overlapping */
                   break;
 
-               ep = lNext(ep);
+               ep = lNextRW(ep);
             }
 
             /* we're now sure we inserted it */
@@ -310,9 +310,9 @@ void range_list_initialize(lList **this_list, lList **answer_list)
           * EB: CLEANUP: implement a new CULL function lEmptyList(lList *list)
           */
 
-         next_range = lFirst(*this_list);
+         next_range = lFirstRW(*this_list);
          while ((range = next_range)) {
-            next_range = lNext(range);
+            next_range = lNextRW(range);
 
             lRemoveElem(*this_list, &range);
          }
@@ -482,7 +482,7 @@ range_list_print_to_string(const lList *this_list,
 u_long32 range_list_get_first_id(const lList *range_list, lList **answer_list)
 {
    u_long32 start = 0;
-   lListElem *range = NULL;
+   const lListElem *range = NULL;
 
    DENTER(RANGE_LAYER, "range_list_get_first_id");
    range = lFirst(range_list);
@@ -525,7 +525,7 @@ u_long32 range_list_get_first_id(const lList *range_list, lList **answer_list)
 u_long32 range_list_get_last_id(const lList *range_list, lList **answer_list)
 {
    u_long32 end = 0;
-   lListElem *range = NULL;
+   const lListElem *range = NULL;
 
    DENTER(RANGE_LAYER, "range_list_get_last_id");
    range = lLast(range_list);
@@ -630,12 +630,12 @@ void range_list_sort_uniq_compress(lList *range_list, lList **answer_list, bool 
        */
       tmp_list = lCreateList("", RN_Type);
       if (tmp_list) {
-         for (next_range1 = lFirst(range_list); (range1 = next_range1); next_range1 = lNext(range1)) {
-            next_range2 = lNext(next_range1);
+         for (next_range1 = lFirstRW(range_list); (range1 = next_range1); next_range1 = lNextRW(range1)) {
+            next_range2 = lNextRW(next_range1);
             if (correct_end)
                range_correct_end(range1);
             while ((range2 = next_range2)) {
-               next_range2 = lNext(range2);
+               next_range2 = lNextRW(range2);
                if (correct_end)
                   range_correct_end(range2);
                if (range_is_overlapping(range1, range2)) {
@@ -709,8 +709,8 @@ void range_list_compress(lList *range_list)
    if (range_list != NULL) {
       lListElem *range1 = NULL;
       lListElem *range2 = NULL;
-      lListElem *next_range1 = lFirst(range_list);
-      lListElem *next_range2 = lNext(next_range1);
+      lListElem *next_range1 = lFirstRW(range_list);
+      lListElem *next_range2 = lNextRW(next_range1);
 
       while ((range1 = next_range1) && (range2 = next_range2)) {
          u_long32 start1, end1, step1;
@@ -747,9 +747,9 @@ void range_list_compress(lList *range_list)
             range2 = NULL;
             next_range1 = range1;
          } else {
-            next_range1 = lNext(range1);
+            next_range1 = lNextRW(range1);
          }
-         next_range2 = lNext(next_range1);
+         next_range2 = lNextRW(next_range1);
       }
    }
    DRETURN_VOID;
@@ -955,12 +955,12 @@ void range_list_remove_id(lList **range_list, lList **answer_list, u_long32 id)
 
    DENTER(RANGE_LAYER, "range_list_remove_id");
    if (range_list != NULL && *range_list != NULL) {
-      lListElem *next_range = lFirst(*range_list);
+      lListElem *next_range = lFirstRW(*range_list);
 
       while ((range = next_range) != NULL) {
          u_long32 start, end, step;
 
-         next_range = lNext(range);
+         next_range = lNextRW(range);
          range_get_all_ids(range, &start, &end, &step);
          if (id >= start && id <= end && ((id - start) % step) == 0) {
             if ((id == start) && ((id == end) || (id + step > end))) {
@@ -1102,13 +1102,13 @@ void range_list_insert_id(lList **range_list, lList **answer_list, u_long32 id)
                          STATUS_ERROR1, ANSWER_QUALITY_ERROR);
       }
    }
-   prev_range = lLast(*range_list);
+   prev_range = lLastRW(*range_list);
    while ((next_range = range, range = prev_range)) {
       u_long32 start, end, step;
       u_long32 prev_start, prev_end, prev_step;
       u_long32 next_start, next_end, next_step;
 
-      prev_range = lPrev(range);
+      prev_range = lPrevRW(range);
       range_get_all_ids(range, &start, &end, &step);
 
       /* 1 */

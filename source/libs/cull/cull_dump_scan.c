@@ -472,7 +472,7 @@ int lDumpObject(FILE *fp, const lListElem *ep, int indent)
 *******************************************************************************/
 int lDumpList(FILE *fp, const lList *lp, int indent) 
 {
-   lListElem *ep;
+   const lListElem *ep;
    int i, ret = ~EOF;
 
    char space[256];

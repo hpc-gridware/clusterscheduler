@@ -416,7 +416,7 @@ sge_event_master_init_transaction_store(event_master_transaction_t *t_store)
 *              internal ones.
 *
 *******************************************************************************/
-static void sge_event_master_process_add_event_client(lListElem *request, monitoring_t *monitor)
+static void sge_event_master_process_add_event_client(const lListElem *request, monitoring_t *monitor)
 {
    /* to be implemented later on - handling the internal event clients could become a little bit tricky */
 }
@@ -675,8 +675,8 @@ sge_mod_event_client(lListElem *clio, lList **alpp, char *ruser, char *rhost)
 *     MT-NOTE: sge_mod_event_client() is NOT MT safe.
 *
 *******************************************************************************/
-void
-sge_event_master_process_mod_event_client(lListElem *request, monitoring_t *monitor)
+static void
+sge_event_master_process_mod_event_client(const lListElem *request, monitoring_t *monitor)
 {
    lListElem *event_client = NULL;
    u_long32 id;
@@ -1578,7 +1578,7 @@ static bool add_list_event_for_client(u_long32    event_client_id,
 }
 
 /* add an event from the request list to the event clients which subscribed it */
-static void sge_event_master_process_send(lListElem *request, monitoring_t *monitor)
+static void sge_event_master_process_send(const lListElem *request, monitoring_t *monitor)
 {
    lListElem *event_client = NULL;
    lListElem *event = NULL;
@@ -1591,14 +1591,14 @@ static void sge_event_master_process_send(lListElem *request, monitoring_t *moni
 
    ec_id = lGetUlong(request, EVR_event_client_id);
    session = lGetString(request, EVR_session);
-   event_list = lGetList(request, EVR_event_list);
+   event_list = lGetListRW(request, EVR_event_list);
 
    MONITOR_EDT_NEW(monitor);
 
    if (ec_id == EV_ID_ANY) {
       DPRINTF(("Processing event for all clients\n"));
 
-      event = lFirst(event_list);
+      event = lFirstRW(event_list);
       while (event != NULL) {
          bool added = false;
          event = lDechainElem(event_list, event);
@@ -1622,7 +1622,7 @@ static void sge_event_master_process_send(lListElem *request, monitoring_t *moni
             MONITOR_EDT_SKIP(monitor);
          }
          lFreeElem(&event);
-         event = lFirst(event_list);
+         event = lFirstRW(event_list);
       } /* while */
    } else {
       DPRINTF(("Processing event for client %d.\n", ec_id));
@@ -1634,7 +1634,7 @@ static void sge_event_master_process_send(lListElem *request, monitoring_t *moni
       /* Skip bad client ids.  Events with bad client ids will be freed
        * when send is freed since we don't dechain them. */
       if (event_client != NULL) {
-         event = lFirst(event_list);
+         event = lFirstRW(event_list);
 
          while (event != NULL) {
             event = lDechainElem(event_list, event);
@@ -1649,7 +1649,7 @@ static void sge_event_master_process_send(lListElem *request, monitoring_t *moni
                MONITOR_EDT_SKIP(monitor);
                lFreeElem(&event);
             }
-            event = lFirst(event_list);
+            event = lFirstRW(event_list);
          } /* while */
       } /* if */
 
@@ -1708,7 +1708,7 @@ bool sge_handle_event_ack(u_long32 event_client_id, u_long32 event_number)
    DRETURN(true);
 }
 
-static void sge_event_master_process_ack(lListElem *request, monitoring_t *monitor)
+static void sge_event_master_process_ack(const lListElem *request, monitoring_t *monitor)
 {
    lListElem *client;
    u_long32 event_client_id;
@@ -1726,10 +1726,8 @@ static void sge_event_master_process_ack(lListElem *request, monitoring_t *monit
    } else {
       u_long32 event_number = lGetUlong(request, EVR_event_number);
       u_long32 timestamp = lGetUlong(request, EVR_timestamp);
-      int res = 0;
-      lList *list = lGetList(client, EV_events);
-
-      res = purge_event_list(list, event_number);
+      lList *list = lGetListRW(client, EV_events);
+      int res = purge_event_list(list, event_number);
 
       MONITOR_EDT_ACK(monitor);
       if (res > 0) {
@@ -2080,13 +2078,13 @@ void sge_event_master_send_events(sge_gdi_ctx_class_t *ctx, lListElem *report, l
    sge_mutex_lock("event_master_mutex", SGE_FUNC, __LINE__, &Event_Master_Control.mutex);
 
    now = sge_get_gmt();
-   event_client = lFirst(Event_Master_Control.clients);
+   event_client = lFirstRW(Event_Master_Control.clients);
    while (event_client != NULL) {
       const char *host = NULL;
       const char *commproc = NULL;
       bool do_remove = false;
 
-      next_event_client = lNext(event_client);
+      next_event_client = lNextRW(event_client);
 
       ec_id = lGetUlong(event_client, EV_id);
 
@@ -2154,7 +2152,7 @@ void sge_event_master_send_events(sge_gdi_ctx_class_t *ctx, lListElem *report, l
          /* Create new ACK_TIMEOUT event and add it directly to the client event list */
          tmp_cur_event_nr = lGetUlong(event_client, EV_next_number);
          new_event = sge_create_event(ec_id, tmp_cur_event_nr, now, sgeE_ACK_TIMEOUT, 0, 0, NULL, NULL, NULL, NULL);
-         tmp_event_list = lGetList(event_client, EV_events);
+         tmp_event_list = lGetListRW(event_client, EV_events);
 
          if (tmp_event_list != NULL) {
             lAppendElem(tmp_event_list, new_event);
@@ -2357,7 +2355,7 @@ static void total_update(lListElem *event_client, monitoring_t *monitor)
 *******************************************************************************/
 static void build_subscription(lListElem *event_el)
 {
-   lList *subscription = lGetList(event_el, EV_subscribed);
+   const lList *subscription = lGetList(event_el, EV_subscribed);
    lListElem *sub_el = NULL;
    subscription_t *sub_array = NULL;
    subscription_t *old_sub_array = NULL;
@@ -2569,12 +2567,12 @@ static int purge_event_list(lList *event_list, u_long32 event_number)
    }
 
    pos = lGetPosInDescr(ET_Type, ET_number);
-   ev = lFirst(event_list);
+   ev = lFirstRW(event_list);
 
    while (ev != NULL) {
       lListElem *tmp = ev;
 
-      ev = lNext(ev); /* fetch next event, before the old one will be deleted */
+      ev = lNextRW(ev);
 
       if (lGetPosUlong(tmp, pos) > event_number) {
          break;
@@ -2714,7 +2712,7 @@ static void add_list_event_direct(lListElem *event_client, lListElem *event,
    lSetUlong(ep, ET_number, i);
 
    /* build a new event list if not exists */
-   lp = lGetList(event_client, EV_events);
+   lp = lGetListRW(event_client, EV_events);
 
    if (lp == NULL) {
       lp=lCreateListHash("Events", ET_Type, false);
@@ -3180,11 +3178,7 @@ static const lDescr* getDescriptorL(subscription_t *subscription,
 *******************************************************************************/
 static lListElem *get_event_client(u_long32 id)
 {
-   lListElem *client = NULL;
-
-   client = lGetElemUlong(Event_Master_Control.clients, EV_id, id);
-
-   return client;
+   return lGetElemUlongRW(Event_Master_Control.clients, EV_id, id);
 }
 
 /****** sge_event_master/allocate_new_dynamic_id() *******************************
@@ -3419,7 +3413,7 @@ void sge_event_master_process_requests(monitoring_t *monitor)
    if (requests != NULL) {
       lListElem *request = NULL;
 
-      while ((request = lFirst(requests)) != NULL) {
+      while ((request = lFirstRW(requests)) != NULL) {
          DPRINTF(("processing event master request: %d\n", lGetUlong(request, EVR_operation)));
          switch (lGetUlong(request, EVR_operation)) {
             case EVR_ADD_EVC:

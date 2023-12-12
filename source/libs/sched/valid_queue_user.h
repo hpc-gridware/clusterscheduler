@@ -35,8 +35,7 @@
 int sge_contained_in_access_list_(const char *user, const char *group, 
                                          const lList *acl, const lList *acl_list);
 
-int sge_has_access(const char *user, const char *group, lListElem *q, 
-                   const lList *acl_list);
+int sge_has_access(const char *user, const char *group, const lListElem *q, const lList *acl_list);
 
 int sge_has_access_(const char *user, const char *group, const lList *q_acl, 
                     const lList *q_xacl, const lList *acl_list);

@@ -203,7 +203,7 @@ pe_task_sum_past_usage_list(lList *pe_task_list, const lListElem *pe_task)
    }
 
    /* get container - if it does not yet exist, create it as first element in pe task list */
-   container = lGetElemStr(pe_task_list, PET_id, PE_TASK_PAST_USAGE_CONTAINER);
+   container = lGetElemStrRW(pe_task_list, PET_id, PE_TASK_PAST_USAGE_CONTAINER);
    if (container == NULL) {
       container = lCreateElem(PET_Type);
       lSetString(container, PET_id, PE_TASK_PAST_USAGE_CONTAINER);

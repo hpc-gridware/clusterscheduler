@@ -275,7 +275,7 @@ lListElem *job_enroll(lListElem *job, lList **answer_list,
 void job_delete_not_enrolled_ja_task(lListElem *job, lList **answer_list,
                                      u_long32 ja_task_number);
 
-int job_count_pending_tasks(lListElem *job, bool count_all);
+int job_count_pending_tasks(const lListElem *job, bool count_all);
 
 bool job_has_soft_requests(lListElem *job);
 

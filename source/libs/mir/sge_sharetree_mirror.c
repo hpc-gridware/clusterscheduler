@@ -86,11 +86,11 @@ sharetree_update_master_list(sge_evc_class_t *evc, sge_object_type type, sge_eve
    lFreeList(list);
    
 
-   if ((src = lGetList(event, ET_new_version))) {
+   if ((src = lGetListRW(event, ET_new_version))) {
       
       /* install new one */
       *list = lCreateList("share tree", lGetElemDescr(lFirst(lGetList(event, ET_new_version))));
-      lAppendElem(*list, lDechainElem(src, lFirst(src)));
+      lAppendElem(*list, lDechainElem(src, lFirstRW(src)));
    }
 
    DEXIT;

@@ -158,7 +158,7 @@ int sge_add_int2load_report(lList **lpp, const char *name, int value,
 */
 int sge_add_str2load_report(lList **lpp, const char *name, const char *value, const char *host)
 {
-   lListElem *ep = NULL, *search_ep = NULL;
+   lListElem *ep = NULL;
    const void *iterator = NULL;
 
    DENTER(BASIS_LAYER, "sge_add_str2load_report");
@@ -168,14 +168,15 @@ int sge_add_str2load_report(lList **lpp, const char *name, const char *value, co
    }
 
    if (*lpp != NULL) {
-      search_ep = lGetElemHostFirst(*lpp, LR_host, host, &iterator);
+      lListElem *search_ep = lGetElemHostFirstRW(*lpp, LR_host, host, &iterator);
+
       while (search_ep != NULL) {
          DPRINTF(("---> %s\n", lGetString(search_ep, LR_name)));
          if (strcmp(lGetString(search_ep, LR_name), name) == 0) {
             ep = search_ep;
             break;
          }
-         search_ep = lGetElemHostNext(*lpp, LR_host, host, &iterator);
+         search_ep = lGetElemHostNextRW(*lpp, LR_host, host, &iterator);
       }
    }
    

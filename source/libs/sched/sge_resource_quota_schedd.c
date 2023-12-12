@@ -840,8 +840,9 @@ bool sge_user_is_referenced_in_rqs(const lList *rqs, const char *user, const cha
    lListElem *ep;
 
    for_each(ep, rqs) {
-      lList *rule_list = lGetList(ep, RQS_rule);
+      const lList *rule_list = lGetList(ep, RQS_rule);
       lListElem *rule;
+
       for_each(rule, rule_list) {
          /* there may be no per-user limitation and also not limitation that is special for this user */
          if ((is_expand(rule, RQR_filter_users) || !is_global(rule, RQR_filter_users)) &&
@@ -907,7 +908,7 @@ void parallel_check_and_debit_rqs_slots(sge_assignment_t *a, const char *host, c
       sge_dstring_clear(rule_name);
       rule = rqs_get_matching_rule(rqs, user, group, project, pe, host, queue, a->acl_list, a->hgrp_list, rule_name);
       if (rule != NULL) {
-         lListElem *rql;
+         const lListElem *rql;
          rqs_get_rue_string(rue_name, rule, user, project, host, queue, pe);
          sge_dstring_sprintf(limit_name, "%s=%s", sge_dstring_get_string(rule_name), sge_dstring_get_string(rue_name));
          if ((rql = lGetElemStr(a->limit_list, RQL_name, sge_dstring_get_string(limit_name)))) {
@@ -937,7 +938,7 @@ void parallel_check_and_debit_rqs_slots(sge_assignment_t *a, const char *host, c
             lListElem *rql;
             rqs_get_rue_string(rue_name, rule, user, project, host, queue, pe);
             sge_dstring_sprintf(limit_name, "%s=%s", sge_dstring_get_string(rule_name), sge_dstring_get_string(rue_name));
-            rql = lGetElemStr(a->limit_list, RQL_name, sge_dstring_get_string(limit_name));
+            rql = lGetElemStrRW(a->limit_list, RQL_name, sge_dstring_get_string(limit_name));
             lSetInt(rql, RQL_slots,      lGetInt(rql, RQL_slots) - *slots);
             lSetInt(rql, RQL_slots_qend, lGetInt(rql, RQL_slots_qend) - *slots_qend);
          }
@@ -972,7 +973,7 @@ void parallel_revert_rqs_slot_debitation(sge_assignment_t *a, const char *host, 
          lListElem *rql;
          rqs_get_rue_string(rue_name, rule, user, project, host, queue, pe);
          sge_dstring_sprintf(limit_name, "%s=%s", sge_dstring_get_string(rule_name), sge_dstring_get_string(rue_name));
-         rql = lGetElemStr(a->limit_list, RQL_name, sge_dstring_get_string(limit_name));
+         rql = lGetElemStrRW(a->limit_list, RQL_name, sge_dstring_get_string(limit_name));
          DPRINTF(("limit: %s %d <--- %d\n", sge_dstring_get_string(limit_name), 
                lGetInt(rql, RQL_slots), lGetInt(rql, RQL_slots)+slots));
          lSetInt(rql, RQL_slots,      lGetInt(rql, RQL_slots) + slots);
@@ -1024,7 +1025,7 @@ parallel_limit_slots_by_time(const sge_assignment_t *a, lList *requests,
    lList *tmp_rue_list = lCreateList("", RUE_Type);
    lListElem *tmp_centry_elem = NULL;
    lListElem *tmp_rue_elem = NULL;
-   lList *rue_list = lGetList(limit, RQRL_usage);
+   const lList *rue_list = lGetList(limit, RQRL_usage);
    dispatch_t result = DISPATCH_NEVER_CAT;
 
    DENTER(TOP_LAYER, "parallel_limit_slots_by_time");
@@ -1146,7 +1147,7 @@ parallel_rqs_slots_by_time(sge_assignment_t *a, int *slots, int *slots_qend, lLi
             limit_s = sge_dstring_get_string(&limit_name);
 
             /* reuse earlier result */
-            if ((rql=lGetElemStr(a->limit_list, RQL_name, limit_s))) {
+            if ((rql=lGetElemStrRW(a->limit_list, RQL_name, limit_s))) {
               u_long32 tagged4schedule = lGetUlong(rql, RQL_tagged4schedule); 
                result = (dispatch_t)lGetInt(rql, RQL_result);
                tslots = MIN(tslots, lGetInt(rql, RQL_slots));
@@ -1167,7 +1168,7 @@ parallel_rqs_slots_by_time(sge_assignment_t *a, int *slots, int *slots_qend, lLi
                   const char *limit_name = lGetString(limit, RQRL_name);
 
                   lListElem *raw_centry = centry_list_locate(a->centry_list, limit_name);
-                  lList *job_centry_list = lGetList(a->job, JB_hard_resource_list);
+                  lList *job_centry_list = lGetListRW(a->job, JB_hard_resource_list);
                   lListElem *job_centry = centry_list_locate(job_centry_list, limit_name);
                   if (raw_centry == NULL) {
                      DPRINTF(("ignoring limit %s because not defined", limit_name));
@@ -1285,7 +1286,7 @@ parallel_rqs_slots_by_time(sge_assignment_t *a, int *slots, int *slots_qend, lLi
 static dispatch_t rqs_limitation_reached(sge_assignment_t *a, const lListElem *rule, const char* host, const char* queue, u_long32 *start) 
 {
    dispatch_t ret = DISPATCH_MISSING_ATTR;
-   lList *limit_list = NULL;
+   const lList *limit_list = NULL;
    lListElem * limit = NULL;
    static lListElem *implicit_slots_request = NULL;
    lListElem *exec_host = host_list_locate(a->host_list, host);
@@ -1304,7 +1305,7 @@ static dispatch_t rqs_limitation_reached(sge_assignment_t *a, const lListElem *r
    limit_list = lGetList(rule, RQR_limit);
    for_each(limit, limit_list) {
       bool       is_forced = false;
-      lList      *job_centry_list = NULL;
+      const lList      *job_centry_list = NULL;
       lListElem  *job_centry = NULL;
       const char *limit_name = lGetString(limit, RQRL_name);
       lListElem  *raw_centry = centry_list_locate(a->centry_list, limit_name);
@@ -1355,7 +1356,7 @@ static dispatch_t rqs_limitation_reached(sge_assignment_t *a, const lListElem *r
          lListElem *tmp_rue_elem = NULL;
             
          if (rqs_set_dynamical_limit(limit, a->gep, exec_host, a->centry_list)) {
-            lList *rue_list = lGetList(limit, RQRL_usage);
+            const lList *rue_list = lGetList(limit, RQRL_usage);
             u_long32 tmp_time = a->start;
 
             /* create tmp_centry_list */
@@ -1472,7 +1473,7 @@ dispatch_t rqs_by_slots(sge_assignment_t *a, const char *queue, const char *host
          limit = sge_dstring_get_string(limit_name);
 
          /* check limit or reuse earlier results */
-         if ((rql=lGetElemStr(a->limit_list, RQL_name, limit))) {
+         if ((rql=lGetElemStrRW(a->limit_list, RQL_name, limit))) {
             tt_rqs = lGetUlong(rql, RQL_time);
             result = (dispatch_t)lGetInt(rql, RQL_result);
          } else {

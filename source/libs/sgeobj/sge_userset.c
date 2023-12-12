@@ -105,14 +105,13 @@ bool userset_is_deadline_user(const lList *lp, const char *username)
 *******************************************************************************/
 bool userset_is_ar_user(const lList *lp, const char *username)
 {
-   lListElem *ar_users;
+   const lListElem *ar_users;
 
    DENTER(TOP_LAYER, "userset_is_ar_user");
 
    ar_users = lGetElemStr(lp, US_name, AR_USERS);
 
-   if (ar_users && lGetSubStr(ar_users, UE_name, username, 
-         US_entries)) {
+   if (ar_users && lGetSubStr(ar_users, UE_name, username, US_entries)) {
       DRETURN(true); /* found user in ar user list */
    }
 
@@ -142,7 +141,7 @@ lListElem *userset_list_locate(const lList *lp, const char *name)
 
    DENTER(TOP_LAYER, "userset_list_locate");
 
-   ep = lGetElemStr(lp, US_name, name);
+   ep = lGetElemStrRW(lp, US_name, name);
 
    DRETURN(ep);
 }
@@ -167,7 +166,7 @@ lListElem *userset_list_locate(const lList *lp, const char *name)
 *     int - STATUS_OK, if everything is OK
 *******************************************************************************/
 int 
-userset_list_validate_acl_list(lList *acl_list, lList **alpp, const lList *master_userset_list)
+userset_list_validate_acl_list(const lList *acl_list, lList **alpp, const lList *master_userset_list)
 {
    lListElem *usp;
 
@@ -208,7 +207,7 @@ userset_list_validate_acl_list(lList *acl_list, lList **alpp, const lList *maste
 *     MT-NOTE: userset_list_validate_access() is not MT safe 
 *
 *******************************************************************************/
-int userset_list_validate_access(lList *acl_list, int nm, lList **alpp, const lList *master_userset_list)
+int userset_list_validate_access(const lList *acl_list, int nm, lList **alpp, const lList *master_userset_list)
 {
    lListElem *usp;
    char *user;
@@ -420,7 +419,7 @@ int sge_contained_in_access_list(const char *user, const char *group,
                                  const lListElem *acl, lList **alpp) 
 {
    bool found = false;
-   lList *user_list = lGetList(acl, US_entries);
+   const lList *user_list = lGetList(acl, US_entries);
 
    DENTER(TOP_LAYER, "sge_contained_in_access_list");
    if (group != NULL) {

@@ -77,11 +77,11 @@ qim_list_trash_all_of_type_X(lList **this_list, u_long32 type)
       lListElem *elem = NULL;
       lListElem *next_elem = NULL;
 
-      next_elem = lFirst(*this_list);
+      next_elem = lFirstRW(*this_list);
       while ((elem = next_elem) != NULL) {
          u_long32 elem_type = lGetUlong(elem, QIM_type);
 
-         next_elem = lNext(elem);
+         next_elem = lNextRW(elem);
          if ((elem_type & type) != 0) {
             lRemoveElem(*this_list, &elem);
          }

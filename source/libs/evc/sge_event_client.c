@@ -1385,7 +1385,7 @@ ec2_register_local(sge_evc_class_t *thiz, bool exit_on_qmaster_down, lList** alp
       ret = false;
    } else {
       lList *alp = NULL;
-      lListElem *aep = NULL;
+      const lListElem *aep = NULL;
       local_t *evc_local = &(thiz->ec_local); 
 
       lSetUlong(sge_evc->ec, EV_id, sge_evc->ec_reg_id);
@@ -1487,7 +1487,7 @@ static bool ec2_register(sge_evc_class_t *thiz, bool exit_on_qmaster_down, lList
       WARNING((SGE_EVENT, SFNMAX, MSG_EVENT_UNINITIALIZED_EC));
    } else {
       lList *lp, *alp;
-      lListElem *aep;
+      const lListElem *aep;
       /*
        *   EV_host, EV_commproc and EV_commid get filled
        *  at qmaster side with more secure commd    
@@ -1549,7 +1549,7 @@ static bool ec2_register(sge_evc_class_t *thiz, bool exit_on_qmaster_down, lList
       ret = (lGetUlong(aep, AN_status) == STATUS_OK) ? true : false;
 
       if (ret) { 
-         lListElem *new_ec;
+         const lListElem *new_ec;
          u_long32 new_id = 0;
 
          new_ec = lFirst(lp);
@@ -1754,13 +1754,13 @@ static void ec2_add_subscriptionElement(sge_evc_class_t *thiz, ev_event event, b
       WARNING((SGE_EVENT, MSG_EVENT_ILLEGALEVENTID_I, event));
    } else {
       lListElem *sub_el = NULL;
-      lList *subscribed = lGetList(sge_evc->ec, EV_subscribed);
+      lList *subscribed = lGetListRW(sge_evc->ec, EV_subscribed);
       if (event != sgeE_ALL_EVENTS){
          if (!subscribed) {
             subscribed = lCreateList("subscription list", EVS_Type);
             lSetList(sge_evc->ec, EV_subscribed, subscribed);
          } else {
-            sub_el = lGetElemUlong(subscribed, EVS_id, event);
+            sub_el = lGetElemUlongRW(subscribed, EVS_id, event);
          }
          
          if (!sub_el) {
@@ -1780,7 +1780,7 @@ static void ec2_add_subscriptionElement(sge_evc_class_t *thiz, ev_event event, b
 
 static void ec2_mod_subscription_flush(sge_evc_class_t *thiz, ev_event event, bool flush, int intervall) 
 {
-   lList *subscribed = NULL;
+   const lList *subscribed = NULL;
    lListElem *sub_el = NULL; 
    sge_evc_t *sge_evc = (sge_evc_t *) thiz->sge_evc_handle;
 
@@ -1794,7 +1794,7 @@ static void ec2_mod_subscription_flush(sge_evc_class_t *thiz, ev_event event, bo
       subscribed = lGetList(sge_evc->ec, EV_subscribed);
       if (event != sgeE_ALL_EVENTS){
          if (subscribed) {
-            sub_el = lGetElemUlong(subscribed, EVS_id, event);
+            sub_el = lGetElemUlongRW(subscribed, EVS_id, event);
             if (sub_el) {
                lSetBool(sub_el, EVS_flush, flush);
                lSetUlong(sub_el, EVS_interval, intervall);
@@ -1834,7 +1834,7 @@ static void ec2_mod_subscription_flush(sge_evc_class_t *thiz, ev_event event, bo
 *     cull/cull_where/lWhereFromElem()
 *******************************************************************************/
 static bool ec2_mod_subscription_where(sge_evc_class_t *thiz, ev_event event, const lListElem *what, const lListElem *where) {
-   lList *subscribed = NULL;
+   const lList *subscribed = NULL;
    lListElem *sub_el = NULL;
    bool ret = false;
    sge_evc_t *sge_evc = (sge_evc_t *) thiz->sge_evc_handle;
@@ -1849,7 +1849,7 @@ static bool ec2_mod_subscription_where(sge_evc_class_t *thiz, ev_event event, co
       subscribed = lGetList(sge_evc->ec, EV_subscribed);
       if (event != sgeE_ALL_EVENTS){
          if (subscribed) {
-            sub_el = lGetElemUlong(subscribed, EVS_id, event);
+            sub_el = lGetElemUlongRW(subscribed, EVS_id, event);
             if (sub_el) {
                lSetObject(sub_el, EVS_what, lCopyElem(what));
                lSetObject(sub_el, EVS_where, lCopyElem(where));
@@ -1877,10 +1877,10 @@ static void ec2_remove_subscriptionElement(sge_evc_class_t *thiz, ev_event event
    } else if (event < sgeE_ALL_EVENTS || event >= sgeE_EVENTSIZE) {
       WARNING((SGE_EVENT, MSG_EVENT_ILLEGALEVENTID_I, event));
    } else {
-      subscribed = lGetList(sge_evc->ec, EV_subscribed);
+      subscribed = lGetListRW(sge_evc->ec, EV_subscribed);
       if (event != sgeE_ALL_EVENTS){
          if (subscribed) {
-            sub_el = lGetElemUlong(subscribed, EVS_id, event);
+            sub_el = lGetElemUlongRW(subscribed, EVS_id, event);
             if (sub_el) {
                if (lRemoveElem(subscribed, &sub_el) == 0) {
                   lSetBool(sge_evc->ec, EV_changed, true);
@@ -2078,7 +2078,7 @@ static int ec2_get_flush(sge_evc_class_t *thiz, ev_event event)
    } else if (event < sgeE_ALL_EVENTS || event >= sgeE_EVENTSIZE) {
       WARNING((SGE_EVENT, MSG_EVENT_ILLEGALEVENTID_I, event ));
    } else {
-      lListElem *sub_event = lGetElemUlong(lGetList(sge_evc->ec, EV_subscribed), EVS_id, event);
+      const lListElem *sub_event = lGetElemUlong(lGetList(sge_evc->ec, EV_subscribed), EVS_id, event);
 
       if (sub_event == NULL) {
          ERROR((SGE_EVENT, SFNMAX, MSG_EVENT_UNINITIALIZED_EC));
@@ -2147,7 +2147,7 @@ static bool ec2_set_flush(sge_evc_class_t *thiz, ev_event event, bool flush, int
 /*      } else if (interval < 0 || interval > EV_MAX_FLUSH) {
          WARNING((SGE_EVENT, MSG_EVENT_ILLEGALFLUSHTIME_I, interval)); */
       } else {
-         lListElem *sub_event = lGetElemUlong(lGetList(sge_evc->ec, EV_subscribed), EVS_id, event);
+         const lListElem *sub_event = lGetElemUlong(lGetList(sge_evc->ec, EV_subscribed), EVS_id, event);
 
          if (sub_event == NULL) {
             ERROR((SGE_EVENT, SFNMAX, MSG_EVENT_UNINITIALIZED_EC));
@@ -2206,7 +2206,7 @@ static bool ec2_unset_flush(sge_evc_class_t *thiz, ev_event event)
    } else if (event < sgeE_ALL_EVENTS || event >= sgeE_EVENTSIZE) {
       WARNING((SGE_EVENT, MSG_EVENT_ILLEGALEVENTID_I, event));
    } else {
-      lListElem *sub_event = lGetElemUlong(lGetList(sge_evc->ec, EV_subscribed), EVS_id, event);
+      const lListElem *sub_event = lGetElemUlong(lGetList(sge_evc->ec, EV_subscribed), EVS_id, event);
 
       if (sub_event == NULL) {
          ERROR((SGE_EVENT, SFNMAX, MSG_EVENT_UNINITIALIZED_EC));
@@ -2605,7 +2605,7 @@ static bool ec2_commit(sge_evc_class_t *thiz, lList **alpp)
       lp = lCreateList("change configuration", EV_Type);
       lAppendElem(lp, lCopyElem(sge_evc->ec));
       if (!lGetBool(sge_evc->ec, EV_changed)) {
-         lSetList(lFirst(lp), EV_subscribed, NULL);
+         lSetList(lFirstRW(lp), EV_subscribed, NULL);
       }
 
       /*
@@ -2692,7 +2692,7 @@ static bool ec2_commit_multi(sge_evc_class_t *thiz, lList **malpp, state_gdi_mul
       lp = lCreateList("change configuration", EV_Type);
       lAppendElem(lp, lCopyElem(sge_evc->ec));
       if (!lGetBool(sge_evc->ec, EV_changed)) {
-         lSetList(lFirst(lp), EV_subscribed, NULL);
+         lSetList(lFirstRW(lp), EV_subscribed, NULL);
       }
 
       /*
@@ -2848,7 +2848,7 @@ static bool ec2_get(sge_evc_class_t *thiz, lList **event_list, bool exit_on_qmas
          }
          if ((fetch_ok = get_event_list(thiz, sync, &report_list, &commlib_error))) {
             lList *new_events = NULL;
-            lXchgList(lFirst(report_list), REP_list, &new_events);
+            lXchgList(lFirstRW(report_list), REP_list, &new_events);
             lFreeList(&report_list);
             if (!ck_event_number(new_events, &(sge_evc->next_event), &wrong_number)) {
                /*
@@ -3043,9 +3043,9 @@ static bool ck_event_number(lList *lp, u_long32 *waiting_for, u_long32 *wrong_nu
          /* skip leading events till event number is "waiting_for"
             or there are no more events */ 
          skipped = 0;
-         ep = lFirst(lp);
+         ep = lFirstRW(lp);
          while (ep && lGetUlong(ep, ET_number) < i) {
-            tmp = lNext(ep);
+            tmp = lNextRW(ep);
             lRemoveElem(lp, &ep);
             ep = tmp;
             skipped++;
@@ -3290,11 +3290,11 @@ static int ec2_signal_local(sge_evc_class_t *thiz, lList **alpp, lList *event_li
       sge_mutex_lock("event_control_mutex", SGE_FUNC, __LINE__, &(evco->mutex));  
       if (evco->new_events != NULL) {
          lList *events = NULL;
-         lXchgList(lFirst(event_list), REP_list, &(events));
+         lXchgList(lFirstRW(event_list), REP_list, &(events));
          lAddList(evco->new_events, &events);
          events = NULL;
       } else {
-         lXchgList(lFirst(event_list), REP_list, &(evco->new_events));
+         lXchgList(lFirstRW(event_list), REP_list, &(evco->new_events));
       }   
       
       evco->triggered = true;

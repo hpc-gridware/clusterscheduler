@@ -259,7 +259,8 @@ search_by_path( lListElem *ep,  /* root of the [sub]tree */
                 int depth )
 {
    lList *children;
-   lListElem *ret = NULL, *child;
+   lListElem *ret = NULL;
+   lListElem *child;
    char *buf=NULL, *bufp;
 
    if (name == NULL)
@@ -292,8 +293,8 @@ search_by_path( lListElem *ep,  /* root of the [sub]tree */
    } else if (delim == '/')
       return NULL;
 
-   if ((children = lGetList(ep, STN_children)))
-      for(child=lFirst(children); child && !ret; child = child->next)
+   if ((children = lGetListRW(ep, STN_children)))
+      for (child=lFirstRW(children); child && !ret; child = child->next)
          ret = search_by_path(child, name, path, delim, ancestors, depth+1);
 
    if (ret && ancestors && ancestors->nodes && depth > 0)

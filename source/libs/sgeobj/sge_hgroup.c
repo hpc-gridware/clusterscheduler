@@ -131,7 +131,7 @@ hgroup_list_locate(const lList *this_list, const char *group)
    lListElem *ret = NULL;
    
    DENTER(HGROUP_LAYER, "hgroup_list_locate");
-   ret = lGetElemHost(this_list, HGRP_name, group);
+   ret = lGetElemHostRW(this_list, HGRP_name, group);
    DEXIT;
    return ret;
 }

@@ -371,7 +371,7 @@ int sge_del_ckpt(sge_gdi_ctx_class_t *ctx, lListElem *ep, lList **alpp, char *ru
 
       if (ckpt_is_referenced(found, &local_answer_list, *object_type_get_master_list(SGE_TYPE_JOB),
                              *object_type_get_master_list(SGE_TYPE_CQUEUE))) {
-         lListElem *answer = lFirst(local_answer_list);
+         const lListElem *answer = lFirst(local_answer_list);
 
          ERROR((SGE_EVENT, "denied: %s", lGetString(answer, AN_text)));
          answer_list_add(alpp, SGE_EVENT, STATUS_EUNKNOWN,

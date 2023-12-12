@@ -66,11 +66,11 @@
 
 static void sge_show_checkpoint(int how, int op);
 static void sge_show_y_n(int op, int how);
-static void show_ce_type_list(lList *cel, const char *indent, const char *separator, 
-   bool display_resource_contribution, lList *centry_list, int slots);
+static void show_ce_type_list(const lList *cel, const char *indent, const char *separator, 
+   bool display_resource_contribution, const lList *centry_list, int slots);
 
 
-void cull_show_job(lListElem *job, int flags, bool show_binding) 
+void cull_show_job(const lListElem *job, int flags, bool show_binding) 
 {
    const char *delis[] = {NULL, ",", "\n"};
    time_t ultime;   /* used to be u_long32, but problem w/ 64 bit times */
@@ -356,10 +356,9 @@ void cull_show_job(lListElem *job, int flags, bool show_binding)
          delis[0] = "=";
          printf("env_list:                   ");
 
-         print = lGetList(job, JB_env_list);
+         print = lGetListRW(job, JB_env_list);
          var_list_split_prefix_vars(&print, &do_not_print, VAR_PREFIX);
-         uni_print_list(stdout, NULL, 0, print, 
-            fields, delis, FLG_NO_DELIS_STRINGS);
+         uni_print_list(stdout, NULL, 0, print, fields, delis, FLG_NO_DELIS_STRINGS);
          if (lGetNumberOfElem(print) > 0) {
             print_new_line = 0;
          }
@@ -558,10 +557,10 @@ void cull_show_job(lListElem *job, int flags, bool show_binding)
       }
 
    if (show_binding) {
-      lList *binding_list = lGetList(job, JB_binding);
+      const lList *binding_list = lGetList(job, JB_binding);
 
       if (binding_list != NULL) {
-         lListElem *binding_elem = lFirst(binding_list);
+         const lListElem *binding_elem = lFirst(binding_list);
          dstring binding_param = DSTRING_INIT;
 
          binding_print_to_string(binding_elem, &binding_param);
@@ -732,7 +731,7 @@ static void sge_show_y_n(int op, int how)
    return;
 }         
 
-void sge_show_ce_type_list(lList *rel)
+void sge_show_ce_type_list(const lList *rel)
 {
    DENTER(TOP_LAYER, "sge_show_ce_type_list");
 
@@ -746,9 +745,9 @@ void sge_show_ce_type_list(lList *rel)
 /* cel CE_Type List */
 
 /* TODO: EB: this function should be replaced by centry_list_append_to_dstring() */
-static void show_ce_type_list(lList *cel, const char *indent,
+static void show_ce_type_list(const lList *cel, const char *indent,
                       const char *separator, 
-                      bool display_resource_contribution, lList *centry_list, int slots)
+                      bool display_resource_contribution, const lList *centry_list, int slots)
 {
    bool first = true;
    const lListElem *ce, *centry;
@@ -767,10 +766,9 @@ static void show_ce_type_list(lList *cel, const char *indent,
       }
  
       name = lGetString(ce, CE_name);
-      if (display_resource_contribution && 
-            (centry = centry_list_locate(centry_list, name)))
+      if (display_resource_contribution && (centry = centry_list_locate(centry_list, name))) {
          uc = centry_urgency_contribution(slots, name, lGetDouble(ce, CE_doubleval), centry);
-
+      }
       s = lGetString(ce, CE_stringval);
       if(s) {
          if (!display_resource_contribution)
@@ -793,9 +791,9 @@ static void show_ce_type_list(lList *cel, const char *indent,
 /* rel CE_Type List */
 void sge_show_ce_type_list_line_by_line(const char *label,
                                         const char *indent,
-                                        lList *rel, 
+                                        const lList *rel, 
                                         bool display_resource_contribution, 
-                                        lList *centry_list,
+                                        const lList *centry_list,
                                         int slots)
 {
    DENTER(TOP_LAYER, "sge_show_ce_type_list_line_by_line");

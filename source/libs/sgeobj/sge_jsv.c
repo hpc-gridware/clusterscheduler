@@ -695,12 +695,11 @@ jsv_list_remove(const char *name, const char *context)
       lListElem *jsv;
 
       sge_mutex_lock("jsv_list", SGE_FUNC, __LINE__, &jsv_mutex);
-      jsv_next = lGetElemStrFirst(jsv_list, JSV_context, context, &iterator);
+      jsv_next = lGetElemStrFirstRW(jsv_list, JSV_context, context, &iterator);
       while ((jsv = jsv_next) != NULL) {
-         jsv_next = lGetElemStrNext(jsv_list, JSV_context, context, &iterator);
+         jsv_next = lGetElemStrNextRW(jsv_list, JSV_context, context, &iterator);
 
-         if ((strcmp(lGetString(jsv, JSV_name), name) == 0) &&
-             (strcmp(lGetString(jsv, JSV_context), context) == 0)) {
+         if ((strcmp(lGetString(jsv, JSV_name), name) == 0) && (strcmp(lGetString(jsv, JSV_context), context) == 0)) {
             lRemoveElem(jsv_list, &jsv);
          }
       }
@@ -778,9 +777,9 @@ jsv_list_remove_all(void)
 
    DENTER(TOP_LAYER, "jsv_list_remove_all");
    sge_mutex_lock("jsv_list", SGE_FUNC, __LINE__, &jsv_mutex);
-   jsv_next = lFirst(jsv_list);
+   jsv_next = lFirstRW(jsv_list);
    while ((jsv = jsv_next) != NULL) {
-      jsv_next = lNext(jsv);
+      jsv_next = lNextRW(jsv);
       jsv_stop(jsv, NULL, true);
       lRemoveElem(jsv_list, &jsv);
    }
@@ -854,7 +853,7 @@ jsv_list_update(const char *name, const char *context,
          sge_mutex_lock("jsv_list", SGE_FUNC, __LINE__, &jsv_mutex);
 
          ret = true;
-         jsv_next = lGetElemStrFirst(jsv_list, JSV_context, context, &iterator);
+         jsv_next = lGetElemStrFirstRW(jsv_list, JSV_context, context, &iterator);
          while ((ret == true) && ((jsv = jsv_next) != NULL)) {
             dstring input = DSTRING_INIT;
             dstring type = DSTRING_INIT;
@@ -864,7 +863,7 @@ jsv_list_update(const char *name, const char *context,
             bool in_client = false;
 
             /* position pointer to the next element */
-            jsv_next = lGetElemStrNext(jsv_list, JSV_context, context, &iterator);
+            jsv_next = lGetElemStrNextRW(jsv_list, JSV_context, context, &iterator);
 
             old_jsv_url = lGetString(jsv, JSV_url);
             if (use_old_url) {
@@ -1047,9 +1046,9 @@ jsv_do_verify(sge_gdi_ctx_class_t* ctx, const char *context, lListElem **job,
       /*
        * execute JSV scripts for this thread
        */
-      jsv_next = lGetElemStrFirst(jsv_list, JSV_context, context, &iterator);
+      jsv_next = lGetElemStrFirstRW(jsv_list, JSV_context, context, &iterator);
       while ((ret == true) && ((jsv = jsv_next) != NULL)) {
-         jsv_next = lGetElemStrNext(jsv_list, JSV_context, context, &iterator);
+         jsv_next = lGetElemStrNextRW(jsv_list, JSV_context, context, &iterator);
 
          if (jsv_is_started(jsv) == false) {
             DPRINTF(("JSV is not started\n"));

@@ -132,7 +132,7 @@ lListElem *suser_list_find(const lList *suser_list, const char *suser_name)
    lListElem *ret = NULL;
 
    if (suser_list != NULL && suser_name != NULL) {
-      ret = lGetElemStr(suser_list, SU_name, suser_name);
+      ret = lGetElemStrRW(suser_list, SU_name, suser_name);
    }
    return ret;
 }

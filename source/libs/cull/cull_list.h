@@ -340,10 +340,14 @@ int lSortList(lList *lp, const lSortOrder *sp);
 int lUniqStr(lList *lp, int keyfield);
 int lUniqHost(lList *lp, int keyfield);
 
-lListElem *lFirst(const lList *lp);
-lListElem *lLast(const lList *lp);
-lListElem *lNext(const lListElem *ep);
-lListElem *lPrev(const lListElem *ep);
+lListElem *lFirstRW(const lList *lp);
+const lListElem *lFirst(const lList *lp);
+lListElem *lLastRW(const lList *lp);
+const lListElem *lLast(const lList *lp);
+lListElem *lNextRW(const lListElem *ep);
+const lListElem *lNext(const lListElem *ep);
+lListElem *lPrevRW(const lListElem *ep);
+const lListElem *lPrev(const lListElem *ep);
 
 lListElem *lFindNext(const lListElem *ep, const lCondition *cp);
 lListElem *lFindPrev(const lListElem *ep, const lCondition *cp);

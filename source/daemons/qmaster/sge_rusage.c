@@ -183,15 +183,15 @@ reporting_get_ulong_usage_sum(const lList *usage_list, lList *reported_list,
    /* when we do an accounting summary, we also have to sum up the pe task usage */
    if (accounting_summary) {
       lListElem *pe_task = NULL;
-      lList *pe_tasks = lGetList(ja_task, JAT_task_list);
+      const lList *pe_tasks = lGetList(ja_task, JAT_task_list);
 
       for_each (pe_task, pe_tasks) {
-         lList *pe_usage_list = lGetList(pe_task, PET_scaled_usage);
+         const lList *pe_usage_list = lGetList(pe_task, PET_scaled_usage);
+
          if (pe_usage_list != NULL) {
             lList *pe_reported_list = NULL;
             if (reported_list != NULL) {
-               pe_reported_list = lGetOrCreateList(pe_task, PET_reported_usage,
-                                                   "reported_usage", UA_Type);
+               pe_reported_list = lGetOrCreateList(pe_task, PET_reported_usage, "reported_usage", UA_Type);
             }
             usage += reporting_get_ulong_usage(pe_usage_list, pe_reported_list, name, rname, def);
          }
@@ -321,15 +321,15 @@ reporting_get_double_usage_sum(const lList *usage_list, lList *reported_list,
    /* when we do an accounting summary, we also have to sum up the pe task usage */
    if (accounting_summary) {
       lListElem *pe_task = NULL;
-      lList *pe_tasks = lGetList(ja_task, JAT_task_list);
+      const lList *pe_tasks = lGetList(ja_task, JAT_task_list);
 
       for_each (pe_task, pe_tasks) {
-         lList *pe_usage_list = lGetList(pe_task, PET_scaled_usage);
+         const lList *pe_usage_list = lGetList(pe_task, PET_scaled_usage);
+
          if (pe_usage_list != NULL) {
             lList *pe_reported_list = NULL;
             if (reported_list != NULL) {
-               pe_reported_list = lGetOrCreateList(pe_task, PET_reported_usage,
-                                                   "reported_usage", UA_Type);
+               pe_reported_list = lGetOrCreateList(pe_task, PET_reported_usage, "reported_usage", UA_Type);
             }
             usage += reporting_get_double_usage(pe_usage_list, pe_reported_list, name, rname, def);
          }
@@ -367,7 +367,7 @@ sge_write_rusage(dstring *buffer,
                  const char *category_str, const char delimiter, 
                  bool intermediate)
 {
-   lList *usage_list        = NULL; /* usage list of ja_task or pe_task */
+   const lList *usage_list        = NULL; /* usage list of ja_task or pe_task */
    lList *reported_list     = NULL; /* already reported usage of ja_task or pe_task */
    const char *pe_task_id;
    const char *ret = NULL;
@@ -413,7 +413,7 @@ sge_write_rusage(dstring *buffer,
       }
 
       /* try to find the pe_task */
-      pe_task = lGetElemStr(lGetList(ja_task, JAT_task_list), PET_id, pe_task_id);
+      pe_task = lGetElemStrRW(lGetList(ja_task, JAT_task_list), PET_id, pe_task_id);
       if (pe_task == NULL) {
          dstring err_buffer = DSTRING_INIT;
          ERROR((SGE_EVENT, MSG_GOTUSAGEREPORTFORUNKNOWNPETASK_S,

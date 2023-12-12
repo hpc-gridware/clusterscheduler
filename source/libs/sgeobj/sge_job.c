@@ -118,7 +118,7 @@ lListElem *job_get_ja_task_template_pending(const lListElem *job,
 
    DENTER(BASIS_LAYER, "job_get_ja_task_template");
 
-   template_task = lFirst(lGetList(job, JB_ja_template));
+   template_task = lFirstRW(lGetList(job, JB_ja_template));
 
    if (!template_task) {
       ERROR((SGE_EVENT, "unable to retrieve template task\n"));
@@ -522,7 +522,7 @@ bool job_is_enrolled(const lListElem *job, u_long32 task_number)
 ******************************************************************************/
 bool job_is_ja_task_defined(const lListElem *job, u_long32 ja_task_number) 
 {
-   lList *range_list = lGetList(job, JB_ja_structure);
+   const lList *range_list = lGetList(job, JB_ja_structure);
 
    return range_list_is_id_within(range_list, ja_task_number);
 }
@@ -706,10 +706,8 @@ lListElem *job_enroll(lListElem *job, lList **answer_list,
 
    ja_task = lGetSubUlong(job, JAT_task_number, ja_task_number, JB_ja_tasks);
    if (ja_task == NULL) {
-      lListElem *template_task = NULL;
-      lList *ja_task_list = lGetList(job, JB_ja_tasks);
-
-      template_task = job_get_ja_task_template_pending(job, ja_task_number); 
+      lList *ja_task_list = lGetListRW(job, JB_ja_tasks);
+      lListElem *template_task = job_get_ja_task_template_pending(job, ja_task_number); 
 
       if (ja_task_list == NULL) {
          ja_task_list = lCreateList("ulong_sublist", lGetElemDescr(template_task) );
@@ -744,7 +742,7 @@ lListElem *job_enroll(lListElem *job, lList **answer_list,
 *  NOTES
 *     MT-NOTE: job_count_rescheduled_ja_tasks() is MT safe
 *******************************************************************************/
-static int job_count_rescheduled_ja_tasks(lListElem *job, bool count_all)
+static int job_count_rescheduled_ja_tasks(const lListElem *job, bool count_all)
 {
    lListElem *ja_task;
    u_long32 state;
@@ -752,12 +750,10 @@ static int job_count_rescheduled_ja_tasks(lListElem *job, bool count_all)
 
    for_each(ja_task, lGetList(job, JB_ja_tasks)) {
       state = lGetUlong(ja_task, JAT_state);
-      if ((lGetUlong(ja_task, JAT_status) == JIDLE) &&
-          ((state & JQUEUED) != 0) &&
-          ((state & JWAITING) != 0)) {
-            n++;
-            if (!count_all)
-               break;
+      if ((lGetUlong(ja_task, JAT_status) == JIDLE) && ((state & JQUEUED) != 0) && ((state & JWAITING) != 0)) {
+         n++;
+         if (!count_all)
+            break;
       }
    }
    return n;
@@ -780,7 +776,7 @@ static int job_count_rescheduled_ja_tasks(lListElem *job, bool count_all)
 *  RESULT
 *     int - number of tasks or simply 0/1 if count_all is 'false'
 ******************************************************************************/
-int job_count_pending_tasks(lListElem *job, bool count_all)
+int job_count_pending_tasks(const lListElem *job, bool count_all)
 {
    int n = 0;
 
@@ -950,7 +946,7 @@ void job_set_hold_state(lListElem *job, lList **answer_list,
             else_function[i](&range_list, answer_list, ja_task_id);
             lXchgList(job, attribute[i], &range_list);
          }
-         range_list_compress(lGetList(job, attribute[i]));
+         range_list_compress(lGetListRW(job, attribute[i]));
       }
    } else {
       lListElem *ja_task = job_search_task(job, NULL, ja_task_id);
@@ -958,11 +954,9 @@ void job_set_hold_state(lListElem *job, lList **answer_list,
       if (ja_task != NULL) {
          lSetUlong(ja_task, JAT_hold, new_hold_state); 
          if (new_hold_state) {
-            lSetUlong(ja_task, JAT_state, 
-                      lGetUlong(ja_task, JAT_state) | JHELD);
+            lSetUlong(ja_task, JAT_state, lGetUlong(ja_task, JAT_state) | JHELD);
          } else {
-            lSetUlong(ja_task, JAT_state, 
-                      lGetUlong(ja_task, JAT_state) & ~JHELD);
+            lSetUlong(ja_task, JAT_state, lGetUlong(ja_task, JAT_state) & ~JHELD);
          }
       }
    }
@@ -1007,7 +1001,7 @@ u_long32 job_get_hold_state(lListElem *job, u_long32 ja_task_id)
       int i;
 
       for (i = 0; i < 4; i++) {
-         lList *hold_list = lGetList(job, attribute[i]);
+         const lList *hold_list = lGetList(job, attribute[i]);
 
          if (range_list_is_id_within(hold_list, ja_task_id)) {
             ret |= hold_flag[i];
@@ -1368,9 +1362,7 @@ bool job_might_be_tight_parallel(const lListElem *job, const lList *pe_list)
 void job_get_submit_task_ids(const lListElem *job, u_long32 *start, 
                              u_long32 *end, u_long32 *step)
 {
-   lListElem *range_elem = NULL; /* RN_Type */
- 
-   range_elem = lFirst(lGetList(job, JB_ja_structure));
+   const lListElem *range_elem = lFirst(lGetList(job, JB_ja_structure));
    if (range_elem) {
       u_long32 tmp_step;
  
@@ -1487,8 +1479,8 @@ u_long32 job_get_smallest_unenrolled_task_id(const lListElem *job)
 ******************************************************************************/
 u_long32 job_get_smallest_enrolled_task_id(const lListElem *job)
 {
-   lListElem *ja_task;        /* JAT_Type */
-   lListElem *nxt_ja_task;    /* JAT_Type */
+   const lListElem *ja_task;        /* JAT_Type */
+   const lListElem *nxt_ja_task;    /* JAT_Type */
    u_long32 ret = 0; 
 
    /*
@@ -1583,8 +1575,8 @@ u_long32 job_get_biggest_unenrolled_task_id(const lListElem *job)
 ******************************************************************************/
 u_long32 job_get_biggest_enrolled_task_id(const lListElem *job)
 {
-   lListElem *ja_task;        /* JAT_Type */
-   lListElem *nxt_ja_task;    /* JAT_Type */
+   const lListElem *ja_task;        /* JAT_Type */
+   const lListElem *nxt_ja_task;    /* JAT_Type */
    u_long32 ret = 0; 
 
    /*
@@ -1901,7 +1893,7 @@ void job_check_correct_id_sublists(lListElem *job, lList **answer_list)
       int i = -1;
 
       while (field[++i] != -1) {
-         lList *range_list = lGetList(job, field[i]);
+         const lList *range_list = lGetList(job, field[i]);
          lListElem *range = NULL;
 
          for_each(range, range_list) {
@@ -1909,8 +1901,7 @@ void job_check_correct_id_sublists(lListElem *job, lList **answer_list)
                range_correct_end(range);
             if (range_is_id_within(range, 0)) {
                ERROR((SGE_EVENT, SFNMAX, MSG_JOB_NULLNOTALLOWEDT));
-               answer_list_add(answer_list, SGE_EVENT, STATUS_EUNKNOWN,
-                               ANSWER_QUALITY_ERROR);
+               answer_list_add(answer_list, SGE_EVENT, STATUS_EUNKNOWN, ANSWER_QUALITY_ERROR);
                DRETURN_VOID;
             }
          }
@@ -1935,7 +1926,7 @@ void job_check_correct_id_sublists(lListElem *job, lList **answer_list)
       int i = -1;
 
       while (field[++i] != -1) {
-         lList *range_list = lGetList(job, field[i]);
+         const lList *range_list = lGetList(job, field[i]);
 
          if (!range_list_is_empty(range_list)) {
             has_x_ids = 1;
@@ -2297,7 +2288,7 @@ int job_check_qsh_display(const lListElem *job, lList **answer_list,
 ******************************************************************************/
 int job_check_owner(const char *user_name, u_long32 job_id, lList *master_job_list, const lList *master_manager_list, const lList *master_operator_list) 
 {
-   lListElem *job;
+   const lListElem *job;
 
    DENTER(TOP_LAYER, "job_check_owner");
 
@@ -2591,9 +2582,9 @@ int job_resolve_host_for_path_list(const lListElem *job, lList **answer_list,
       /* ensure, that each hostname is only specified once */
       if( !ret_error ){
          const char *hostname = lGetHost(ep, PN_host);       
-         lListElem *temp;         
+         const lListElem *temp;         
 
-         for(temp= lPrev(ep); temp; temp =lPrev(temp)){
+         for (temp= lPrev(ep); temp; temp =lPrev(temp)){
             const char *temp_hostname = lGetHost(temp, PN_host);
 
             if(hostname == NULL){
@@ -2650,16 +2641,15 @@ int job_resolve_host_for_path_list(const lListElem *job, lList **answer_list,
 lListElem *
 job_get_request(const lListElem *this_elem, const char *centry_name) 
 {
-   lList *hard_centry_list = NULL;
    lListElem *ret = NULL; 
 
    DENTER(TOP_LAYER, "job_get_request");
-   hard_centry_list = lGetList(this_elem, JB_hard_resource_list);
-   ret = lGetElemStr(hard_centry_list, CE_name, centry_name);
+   const lList *hard_centry_list = lGetList(this_elem, JB_hard_resource_list);
+   ret = lGetElemStrRW(hard_centry_list, CE_name, centry_name);
    if (ret == NULL) {
-      lList *soft_centry_list = lGetList(this_elem, JB_soft_resource_list);
+      const lList *soft_centry_list = lGetList(this_elem, JB_soft_resource_list);
 
-      ret = lGetElemStr(soft_centry_list, CE_name, centry_name);
+      ret = lGetElemStrRW(soft_centry_list, CE_name, centry_name);
    }
    DRETURN(ret);
 }
@@ -3464,7 +3454,7 @@ job_verify_submitted_job(const lListElem *job, lList **answer_list)
     * Filter potentially dangerous environment variables, see also Issue GE-3761.
     */
    if (ret) {
-      lList *env_list = lGetList(job, JB_env_list);
+      lList *env_list = lGetListRW(job, JB_env_list);
       if (env_list != NULL) {
          var_list_filter_env_list(env_list, answer_list);
       }
@@ -3497,7 +3487,7 @@ job_verify_submitted_job(const lListElem *job, lList **answer_list)
 *
 *******************************************************************************/
 bool job_get_wallclock_limit(u_long32 *limit, const lListElem *jep) {
-   lListElem *ep;
+   const lListElem *ep;
    double d_ret = 0, d_tmp;
    const char *s;
    bool got_duration = false;
@@ -3506,8 +3496,7 @@ bool job_get_wallclock_limit(u_long32 *limit, const lListElem *jep) {
    DENTER(TOP_LAYER, "job_get_wallclock_limit");
 
    if ((ep=lGetElemStr(lGetList(jep, JB_hard_resource_list), CE_name, SGE_ATTR_H_RT))) {
-      if (parse_ulong_val(&d_tmp, NULL, TYPE_TIM, (s=lGetString(ep, CE_stringval)),
-               error_str, sizeof(error_str)-1)==0) {
+      if (parse_ulong_val(&d_tmp, NULL, TYPE_TIM, (s=lGetString(ep, CE_stringval)), error_str, sizeof(error_str)-1)==0) {
          ERROR((SGE_EVENT, MSG_CPLX_WRONGTYPE_SSS, SGE_ATTR_H_RT, s, error_str));
          DRETURN(false);
       }
@@ -3516,8 +3505,7 @@ bool job_get_wallclock_limit(u_long32 *limit, const lListElem *jep) {
    }
    
    if ((ep=lGetElemStr(lGetList(jep, JB_hard_resource_list), CE_name, SGE_ATTR_S_RT))) {
-      if (parse_ulong_val(&d_tmp, NULL, TYPE_TIM, (s=lGetString(ep, CE_stringval)),
-               error_str, sizeof(error_str)-1)==0) {
+      if (parse_ulong_val(&d_tmp, NULL, TYPE_TIM, (s=lGetString(ep, CE_stringval)), error_str, sizeof(error_str)-1)==0) {
          ERROR((SGE_EVENT, MSG_CPLX_WRONGTYPE_SSS, SGE_ATTR_H_RT, s, error_str));
          DRETURN(false);
       }
@@ -3641,7 +3629,7 @@ set_context(lList *jbctx, lListElem *job)
    lListElem* temp;
    char   mode = '+';
    
-   newjbctx = lGetList(job, JB_context);
+   newjbctx = lGetListRW(job, JB_context);
 
    /* if the incoming list is empty, then simply clear the context */
    if (!jbctx || !lGetNumberOfElem(jbctx)) {
@@ -3680,7 +3668,7 @@ set_context(lList *jbctx, lListElem *job)
                case '+':
                   if (!newjbctx)
                      lSetList(job, JB_context, newjbctx = lCreateList("context_list", VA_Type));
-                  if ((temp = lGetElemStr(newjbctx, VA_variable, lGetString(jbctxep, VA_variable))))
+                  if ((temp = lGetElemStrRW(newjbctx, VA_variable, lGetString(jbctxep, VA_variable))))
                      lSetString(temp, VA_value, lGetString(jbctxep, VA_value));
                   else
                      lAppendElem(newjbctx, lCopyElem(jbctxep));
@@ -3811,12 +3799,9 @@ job_parse_validation_level(int *level, const char *input, int prog_number, lList
 bool
 job_is_requesting_consumable(lListElem *jep, const char *resource_name)
 {
-   lList *request_list;
    lListElem *cep = NULL;
    u_long32 consumable;
-
-
-   request_list = lGetList(jep, JB_hard_resource_list);
+   const lList *request_list = lGetList(jep, JB_hard_resource_list);
 
    if (request_list != NULL) {
       cep = centry_list_locate(request_list, resource_name);

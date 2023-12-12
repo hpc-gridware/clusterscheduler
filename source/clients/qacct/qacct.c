@@ -130,7 +130,7 @@ typedef struct {
 static void qacct_usage(sge_gdi_ctx_class_t **ctx, FILE *fp);
 static void print_full(int length, const char* string);
 static void print_full_ulong(int length, u_long32 value); 
-static void calc_column_sizes(lListElem* ep, sge_qacct_columns* column_size_data );
+static void calc_column_sizes(const lListElem* ep, sge_qacct_columns* column_size_data );
 static void showjob(sge_rusage_type *dusage);
 static bool get_qacct_lists(sge_gdi_ctx_class_t *ctx, lList **alpp,
                             lList **ppcomplex, lList **ppqeues, lList **ppexechosts,
@@ -768,9 +768,7 @@ int main(int argc, char **argv)
       ** collect information for sorted output and sums
       */
       if (summary_view) {
-         lListElem *ep = NULL;
-
-         ep = lFirst(sorted_list);
+         lListElem *ep = lFirstRW(sorted_list);
 
          /*
          ** find either the correct place to insert the next element
@@ -787,7 +785,7 @@ int main(int argc, char **argv)
                 (options.groupflag && (sge_strnullcmp(lGetString(ep, QAJ_group) , dusage.group))) ||
                 (options.arflag && (lGetUlong(ep, QAJ_arid) != dusage.ar))
                 )){
-             ep = lNext(ep);
+             ep = lNextRW(ep);
          }
          /*
          ** is this now the element that we want
@@ -923,7 +921,7 @@ int main(int argc, char **argv)
  
    calc_column_sizes(lFirst(sorted_list), &column_sizes);
    {
-      lListElem *ep = NULL;
+      const lListElem *ep = NULL;
       int dashcnt = 0;
       char title_array[500];
 
@@ -1151,8 +1149,8 @@ static void print_full(int full_length, const char* string) {
    DRETURN_VOID;
 }
 
-static void calc_column_sizes(lListElem* ep, sge_qacct_columns* column_size_data) {
-   lListElem* lep = NULL;
+static void calc_column_sizes(const lListElem* ep, sge_qacct_columns* column_size_data) {
+   const lListElem* lep = NULL;
    DENTER(TOP_LAYER, "calc_column_sizes");
    
    if (column_size_data == NULL) {

@@ -143,7 +143,7 @@ get_job_report(u_long32 job_id, u_long32 ja_task_id, const char *pe_task_id)
 
    DENTER(TOP_LAYER, "get_job_report");
 
-   jr = lGetElemUlongFirst(jr_list, JR_job_number, job_id, &iterator);
+   jr = lGetElemUlongFirstRW(jr_list, JR_job_number, job_id, &iterator);
    while (jr != NULL) {
       if (lGetUlong(jr, JR_ja_task_number) == ja_task_id) {
          if (pe_task_id == NULL) {
@@ -155,7 +155,7 @@ get_job_report(u_long32 job_id, u_long32 ja_task_id, const char *pe_task_id)
             }
          }
       }
-      jr = lGetElemUlongNext(jr_list, JR_job_number, job_id, &iterator);
+      jr = lGetElemUlongNextRW(jr_list, JR_job_number, job_id, &iterator);
    }
 
    DRETURN(jr);
@@ -174,14 +174,13 @@ void cleanup_job_report(u_long32 jobid, u_long32 jataskid)
    DENTER(TOP_LAYER, "cleanup_job_report");
 
    /* get rid of job reports for all slave tasks */
-   jr_next = lGetElemUlongFirst(jr_list, JR_job_number, jobid, &iterator);
+   jr_next = lGetElemUlongFirstRW(jr_list, JR_job_number, jobid, &iterator);
    while ((jr = jr_next)) {
-      jr_next = lGetElemUlongNext(jr_list, JR_job_number, jobid, &iterator);
+      jr_next = lGetElemUlongNextRW(jr_list, JR_job_number, jobid, &iterator);
       if (lGetUlong(jr, JR_ja_task_number) == jataskid) {
          const char *s = lGetString(jr, JR_pe_task_id_str);
 
-         DPRINTF(("!!!! removing jobreport for "sge_u32"."sge_u32" task %s !!!!\n",
-            jobid, jataskid, s?s:"master"));
+         DPRINTF(("!!!! removing jobreport for "sge_u32"."sge_u32" task %s !!!!\n", jobid, jataskid, s?s:"master"));
          lRemoveElem(jr_list, &jr);
       }
    }

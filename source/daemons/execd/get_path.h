@@ -45,11 +45,11 @@
 #define SGE_PAR_STDOUT      0x20000000
 #define SGE_PAR_STDERR      0x40000000
 
-int sge_get_path(const char * qualified_hostname, lList *lp, const char *cwd, const char *owner, 
+int sge_get_path(const char *qualified_hostname, const lList *lp, const char *cwd, const char *owner, 
                  const char *job_name, u_long32 job_number, 
                  u_long32 task_number, int type, char *path, size_t path_len);
                  
-bool sge_get_fs_path(lList* lp, char* fs_host, size_t fs_host_len,
+bool sge_get_fs_path(const lList* lp, char* fs_host, size_t fs_host_len,
                                 char* fs_path, size_t fs_path_len);
 
 const char *sge_make_ja_task_active_dir(const lListElem *job, const lListElem *ja_task, dstring *err_str);

@@ -491,7 +491,7 @@ static int read_ls(void)
             if (wl_handle_ls_results(name, value, host, error_buffer)) 
 #endif
             {
-               lList *tmp_list = lGetList(ls_elem, LS_incomplete);
+               lList *tmp_list = lGetListRW(ls_elem, LS_incomplete);
                sge_add_str2load_report(&tmp_list, name, value, host);
             }
 #ifdef INTERIX
@@ -680,7 +680,7 @@ static int sge_ls_start(const char *qualified_hostname, const char *binary_path,
        * contained in 'scriptfiles' */
       scriptfile = strtok(scriptfiles_buffer, ",\n");
       while (scriptfile) {
-         ls_elem = lGetElemStr(ls_list, LS_command, scriptfile);
+         ls_elem = lGetElemStrRW(ls_list, LS_command, scriptfile);
 
          if (ls_elem == NULL) {
             INFO((SGE_EVENT, MSG_LS_STARTLS_S, scriptfile));
@@ -709,7 +709,7 @@ static int sge_ls_start(const char *qualified_hostname, const char *binary_path,
                   binary_path, IDLE_LOADSENSOR_NAME);
       }
       
-      ls_elem = lGetElemStr(ls_list, LS_command, scriptfiles_buffer);
+      ls_elem = lGetElemStrRW(ls_list, LS_command, scriptfiles_buffer);
       if (ls_elem == NULL) {
          ls_elem = sge_ls_create_ls(qualified_hostname, IDLE_LOADSENSOR_NAME, scriptfiles_buffer);
 
@@ -734,7 +734,7 @@ static int sge_ls_start(const char *qualified_hostname, const char *binary_path,
                   binary_path, GNU_LOADSENSOR_NAME);
       }
       
-      ls_elem = lGetElemStr(ls_list, LS_command, scriptfiles_buffer);
+      ls_elem = lGetElemStrRW(ls_list, LS_command, scriptfiles_buffer);
       if (ls_elem == NULL) {
          ls_elem = sge_ls_create_ls(qualified_hostname, GNU_LOADSENSOR_NAME, scriptfiles_buffer);
 
@@ -750,9 +750,9 @@ static int sge_ls_start(const char *qualified_hostname, const char *binary_path,
 
    /* tagged elements are not contained in 'scriptfiles'
     * => we will remove them */
-   nxt_ls_elem = lFirst(ls_list);
+   nxt_ls_elem = lFirstRW(ls_list);
    while ((ls_elem = nxt_ls_elem)) {
-      nxt_ls_elem = lNext(ls_elem);
+      nxt_ls_elem = lNextRW(ls_elem);
       if (lGetUlong(ls_elem, LS_tag) == 1) {
          INFO((SGE_EVENT, MSG_LS_STOPLS_S, lGetString(ls_elem, LS_command)));
          sge_ls_stop_ls(ls_elem, 0);

@@ -78,16 +78,16 @@ order_remove_order_and_immediate(lListElem *job, lListElem *ja_task,
 *******************************************************************************/
 int remove_immediate_jobs(lList *pending_job_list, lList *running_job_list, order_t *orders) 
 {
-   lListElem *next_job, *job, *ep; 
-   lList* lp;
+   lListElem *next_job, *job;
+   const lListElem *ep; 
+   const lList* lp;
 
    DENTER (TOP_LAYER, "remove_immediate_jobs");
 
-   next_job = lFirst (pending_job_list);
-   
+   next_job = lFirstRW(pending_job_list);
    while ((job = next_job)) {
       lCondition *where = NULL;
-      next_job = lNext(job);
+      next_job = lNextRW(job);
       
       /* skip non immediate .. */
       if (!JOB_TYPE_IS_IMMEDIATE(lGetUlong(job, JB_type))) {
@@ -95,9 +95,7 @@ int remove_immediate_jobs(lList *pending_job_list, lList *running_job_list, orde
       }
 
       /* .. and non idle jobs */
-      if ((lp = lGetList(job, JB_ja_tasks)) && 
-            (ep = lFirst(lp)) && 
-            lGetUlong(ep, JAT_status)==JIDLE) {
+      if ((lp = lGetList(job, JB_ja_tasks)) && (ep = lFirst(lp)) && lGetUlong(ep, JAT_status)==JIDLE) {
          continue;    
       }
 
@@ -152,7 +150,7 @@ remove_immediate_job(lList *job_list, lListElem *job, order_t *orders, int remov
 {
    lListElem *ja_task; 
    lListElem *range = NULL;
-   lList *range_list = NULL;
+   const lList *range_list = NULL;
    u_long32 ja_task_id;
 
    DENTER (TOP_LAYER, "remove_immediate_job");

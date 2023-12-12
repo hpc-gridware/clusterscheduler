@@ -193,7 +193,7 @@ static void do_test(bool unique_hash, bool non_unique_hash,
    /* TEST: random access by unique attrib */
    start = times(&tms_buffer);
    for (i = 0; i < num_objects; i++) {
-      ep = lGetElemUlong(lp, NM_ULONG, rand() % num_objects);
+      ep = lGetElemUlongRW(lp, NM_ULONG, rand() % num_objects);
    }
 
    /* measure time */
@@ -206,9 +206,9 @@ static void do_test(bool unique_hash, bool non_unique_hash,
       const void *iterator = NULL;
       lListElem *next_ep;
 
-      next_ep = lGetElemStrFirst(lp, NM_STRING, names[i], &iterator);
+      next_ep = lGetElemStrFirstRW(lp, NM_STRING, names[i], &iterator);
       while ((ep = next_ep) != NULL) {
-         next_ep = lGetElemStrNext(lp, NM_STRING, names[i], &iterator);
+         next_ep = lGetElemStrNextRW(lp, NM_STRING, names[i], &iterator);
       }
    }
 
@@ -226,7 +226,7 @@ static void do_test(bool unique_hash, bool non_unique_hash,
       int newval = unique + num_objects;
 
       /* search object */
-      ep = lGetElemUlong(lp, NM_ULONG, unique);
+      ep = lGetElemUlongRW(lp, NM_ULONG, unique);
 
       /* set a new value */
       lSetUlong(ep, NM_ULONG, newval);
@@ -242,7 +242,7 @@ static void do_test(bool unique_hash, bool non_unique_hash,
    /* TEST: change non unique attribute of random object */
    for (i = 0; i < num_objects; i++) {
       /* search object */
-      ep = lGetElemUlong(lp, NM_ULONG, rand() % num_objects);
+      ep = lGetElemUlongRW(lp, NM_ULONG, rand() % num_objects);
 
       /* set a new value */
       lSetString(ep, NM_STRING, names[rand() % num_names]);
@@ -256,7 +256,7 @@ static void do_test(bool unique_hash, bool non_unique_hash,
    objs_dru = 0;
    for (i = 0; i < num_objects / 2; i++) {
       /* search object */
-      ep = lGetElemUlong(lp, NM_ULONG, rand() % num_objects);
+      ep = lGetElemUlongRW(lp, NM_ULONG, rand() % num_objects);
       /* if same rand showed up earlier, object does no longer exist! */
       if (ep != NULL) {
          lRemoveElem(lp, &ep);
@@ -274,9 +274,9 @@ static void do_test(bool unique_hash, bool non_unique_hash,
       const void *iterator = NULL;
       lListElem *next_ep;
 
-      next_ep = lGetElemStrFirst(lp, NM_STRING, names[i], &iterator);
+      next_ep = lGetElemStrFirstRW(lp, NM_STRING, names[i], &iterator);
       while ((ep = next_ep) != NULL) {
-         next_ep = lGetElemStrNext(lp, NM_STRING, names[i], &iterator);
+         next_ep = lGetElemStrNextRW(lp, NM_STRING, names[i], &iterator);
          lRemoveElem(lp, &ep);
          objs_dinu++;
       }

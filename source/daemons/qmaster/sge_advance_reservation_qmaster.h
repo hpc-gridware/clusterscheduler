@@ -82,7 +82,7 @@ bool
 sge_ar_remove_all_jobs(sge_gdi_ctx_class_t *ctx, u_long32 ar_id, int forced, monitoring_t *monitor);
 
 bool
-sge_ar_list_conflicts_with_calendar(lList **answer_list, const char *qinstance_name, lListElem *cal_ep,
+sge_ar_list_conflicts_with_calendar(lList **answer_list, const char *qinstance_name, const lListElem *cal_ep,
                                     const lList *master_ar_list);
 
 void sge_ar_state_set_running(lListElem *ar);

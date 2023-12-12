@@ -1183,7 +1183,7 @@ object_set_range_id(lListElem *object, int rnm, u_long32 start, u_long32 end,
    lListElem *range_elem;  /* RN_Type */
    int ret = 0;
  
-   range_elem = lFirst(lGetList(object, rnm));
+   range_elem = lFirstRW(lGetList(object, rnm));
    if (range_elem == NULL) {
       lList *range_list;
  
@@ -1276,8 +1276,7 @@ const lList **object_type_get_master_list(const sge_object_type type) {
 
 lListElem *object_type_get_master_str_elem_rw(const sge_object_type type, int key_nm, const char *key) {
    lList **master_list = object_type_get_master_list_rw(type);
-   const void *iterator = NULL;
-   return lGetElemStrFirst(*master_list, key_nm, key, &iterator);
+   return lGetElemStrRW(*master_list, key_nm, key);
 }
 
 const lListElem *object_type_get_master_str_elem(const sge_object_type type, int key_nm, const char *key) {
@@ -1620,7 +1619,7 @@ object_parse_list_from_string(lListElem *this_elem, lList **answer_list,
 
       lString2List(string, &tmp_list, descr, nm, "\t \v\r,");
       if (tmp_list != NULL) {
-         lListElem *first_elem = lFirst(tmp_list);
+         const lListElem *first_elem = lFirst(tmp_list);
          const char *first_string = lGetString(first_elem, nm);
 
          if (strcasecmp(NONE_STR, first_string)) {
@@ -2402,8 +2401,8 @@ object_list_has_differences(const lList *this_list, lList **answer_list,
    if (this_list == NULL && old_list == NULL) {
       ret = false;
    } else if (lGetNumberOfElem(this_list) == lGetNumberOfElem(old_list)) {
-      lListElem *new_elem;
-      lListElem *old_elem;
+      const lListElem *new_elem;
+      const lListElem *old_elem;
 
       for(new_elem = lFirst(this_list), old_elem = lFirst(old_list);
           new_elem != NULL && old_elem != NULL;
@@ -2550,7 +2549,7 @@ object_verify_cull(const lListElem *ep, const lDescr *descr)
       while (ep->descr[i].nm != NoName) {
          int type = mt_get_type(ep->descr[i].mt);
          if (type == lListT) {
-            lList *lp = lGetList(ep, ep->descr[i].nm);
+            const lList *lp = lGetList(ep, ep->descr[i].nm);
             if (lp != NULL) {
                const lDescr *subdescr = object_get_subtype(ep->descr[i].nm);
                if (!object_list_verify_cull(lp, subdescr)) {
@@ -2946,9 +2945,9 @@ int compress_ressources(lList **alpp, lList *rl, const char *object_descr) {
       }
 
       /* remove all previous requests with the same name */
-      prev =  lPrev(ep);
+      prev =  lPrevRW(ep);
       while ((rm_ep=prev)) {
-         prev = lPrev(rm_ep);
+         prev = lPrevRW(rm_ep);
          if (!strcmp(lGetString(rm_ep, CE_name), attr_name)) {
             DPRINTF(("resource request -l "SFN"="SFN" overrides previous -l "SFN"="SFN"\n",
                attr_name, lGetString(ep, CE_stringval), 

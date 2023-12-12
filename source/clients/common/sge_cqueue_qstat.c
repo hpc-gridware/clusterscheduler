@@ -92,8 +92,8 @@ bool cqueue_calculate_summary(const lListElem *cqueue,
    
    DENTER(TOP_LAYER, "cqueue_calculate_summary");
    if (cqueue != NULL) {
-      lList *qinstance_list = lGetList(cqueue, CQ_qinstances);
-      lListElem *qinstance = NULL;
+      const lList *qinstance_list = lGetList(cqueue, CQ_qinstances);
+      const lListElem *qinstance = NULL;
       double host_load_avg = 0.0;
       u_long32 load_slots = 0;
       u_long32 used_available = 0;
@@ -236,9 +236,9 @@ select_by_qref_list(lList *cqueue_list, const lList *hgrp_list, const lList *qre
                            NULL)) {
             const char *cqueue_name = sge_dstring_get_string(&cqueue_buffer);
             const char *hostname = sge_dstring_get_string(&hostname_buffer);
-            lListElem *cqueue = lGetElemStr(cqueue_list, CQ_name, cqueue_name);
-            lList *qinstance_list = lGetList(cqueue, CQ_qinstances);
-            lListElem *qinstance = lGetElemHost(qinstance_list, QU_qhostname, hostname);
+            const lListElem *cqueue = lGetElemStr(cqueue_list, CQ_name, cqueue_name);
+            const lList *qinstance_list = lGetList(cqueue, CQ_qinstances);
+            lListElem *qinstance = lGetElemHostRW(qinstance_list, QU_qhostname, hostname);
 
             u_long32 tag = lGetUlong(qinstance, QU_tag);
             lSetUlong(qinstance, QU_tag, tag | TAG_SELECT_IT);
@@ -249,10 +249,9 @@ select_by_qref_list(lList *cqueue_list, const lList *hgrp_list, const lList *qre
       } 
 
       for_each(cqueue, cqueue_list) {
+         const lList *qinstance_list = lGetList(cqueue, CQ_qinstances);
          lListElem *qinstance = NULL;
-         lList *qinstance_list = NULL;
 
-         qinstance_list = lGetList(cqueue, CQ_qinstances);
          for_each(qinstance, qinstance_list) {
             u_long32 tag = lGetUlong(qinstance, QU_tag);
             bool selected = ((tag & TAG_SELECT_IT) != 0) ? true : false;
@@ -319,7 +318,7 @@ lList *pe_list
     * by a pe in the selected pe list entry of a queue 
     */
    for_each(cqueue, queue_list) {
-      lList *qinstance_list = lGetList(cqueue, CQ_qinstances);
+      const lList *qinstance_list = lGetList(cqueue, CQ_qinstances);
 
       for_each(qep, qinstance_list) { 
          lListElem* found = NULL;
@@ -371,18 +370,18 @@ lList *project_list
    lListElem *qep = NULL;
    lListElem *cqueue = NULL;
    lListElem *ehep = NULL;
-   lList *h_acl = NULL;
-   lList *h_xacl = NULL;
-   lList *global_acl = NULL;
-   lList *global_xacl = NULL;
+   const lList *h_acl = NULL;
+   const lList *h_xacl = NULL;
+   const lList *global_acl = NULL;
+   const lList *global_xacl = NULL;
    lList *config_acl = NULL;
    lList *config_xacl = NULL;
-   lList *prj = NULL;
-   lList *xprj = NULL;
-   lList *h_prj = NULL;
-   lList *h_xprj = NULL;
-   lList *global_prj = NULL;
-   lList *global_xprj = NULL;
+   const lList *prj = NULL;
+   const lList *xprj = NULL;
+   const lList *h_prj = NULL;
+   const lList *h_xprj = NULL;
+   const lList *global_prj = NULL;
+   const lList *global_xprj = NULL;
 
    DENTER(TOP_LAYER, "select_by_queue_user_list");
 
@@ -398,7 +397,7 @@ lList *project_list
    config_xacl = mconf_get_xuser_lists();
 
    for_each(cqueue, cqueue_list) {
-      lList *qinstance_list = lGetList(cqueue, CQ_qinstances);
+      const lList *qinstance_list = lGetList(cqueue, CQ_qinstances);
 
       for_each(qep, qinstance_list) {
          int access = 0;
@@ -623,7 +622,7 @@ lList *centry_list
       load_avg_str = LOAD_ATTR_LOAD_AVG;
 
    for_each(cqueue, queue_list){
-      lList *qinstance_list = lGetList(cqueue, CQ_qinstances);
+      const lList *qinstance_list = lGetList(cqueue, CQ_qinstances);
       lListElem *qep = NULL;
       for_each(qep, qinstance_list) { 
 
@@ -682,7 +681,7 @@ u_long32 empty_qs
    for_each(cqueue, queue_list) {
       lListElem *qep;
       bool selected;
-      lList *qinstance_list = lGetList(cqueue, CQ_qinstances);
+      const lList *qinstance_list = lGetList(cqueue, CQ_qinstances);
 
       for_each(qep, qinstance_list) {
          if (empty_qs)
@@ -710,8 +709,8 @@ bool is_cqueue_selected(lList *queue_list)
    DENTER(TOP_LAYER, "is_cqueue_selected");
    
    for_each(cqueue, queue_list) {
-      lListElem *qep;
-      lList *qinstance_list = lGetList(cqueue, CQ_qinstances);
+      const lListElem *qep;
+      const lList *qinstance_list = lGetList(cqueue, CQ_qinstances);
       bool tmp_a_qinstance_is_selected = false;
 
       for_each(qep, qinstance_list) {

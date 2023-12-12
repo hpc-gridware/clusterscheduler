@@ -1645,7 +1645,7 @@ sge_mirror_update_master_list_str_key(lList **list, const lDescr *list_descr,
 #else
    /* TODO: is the code above correct, do we always have list != NULL ??? */
    if (list != NULL) {
-      ep = lGetElemStr(*list, key_nm, key);
+      ep = lGetElemStrRW(*list, key_nm, key);
       ret = sge_mirror_update_master_list(list, list_descr, ep, key, action, event);
    } else {
       ret = SGE_EM_NOT_INITIALIZED;
@@ -1694,7 +1694,7 @@ sge_mirror_error sge_mirror_update_master_list_host_key(lList **list, const lDes
 
    DENTER(TOP_LAYER, "sge_mirror_update_master_list_host_key");
 
-   ep = lGetElemHost(*list, key_nm, key);
+   ep = lGetElemHostRW(*list, key_nm, key);
    ret = sge_mirror_update_master_list(list, list_descr, ep, key, action, event);
 
    DRETURN(ret);
@@ -1763,8 +1763,8 @@ sge_mirror_update_master_list(lList **list, const lDescr *list_descr,
          }
 
          /* insert element */
-         data_list = lGetList(event, ET_new_version);
-         lAppendElem(*list, lDechainElem(data_list, lFirst(data_list)));
+         data_list = lGetListRW(event, ET_new_version);
+         lAppendElem(*list, lDechainElem(data_list, lFirstRW(data_list)));
          break;
 
       case SGE_EMA_DEL:
@@ -1785,8 +1785,8 @@ sge_mirror_update_master_list(lList **list, const lDescr *list_descr,
             DRETURN(SGE_EM_KEY_NOT_FOUND);
          }
          lRemoveElem(*list, &ep);
-         data_list = lGetList(event, ET_new_version);
-         lAppendElem(*list, lDechainElem(data_list, lFirst(data_list)));
+         data_list = lGetListRW(event, ET_new_version);
+         lAppendElem(*list, lDechainElem(data_list, lFirstRW(data_list)));
          break;
       default:
          DRETURN(SGE_EM_BAD_ARG);
@@ -1885,7 +1885,7 @@ static sge_mirror_error sge_mirror_update_master_list_ar_key(lList **list, const
 
    if (list != NULL) {
       if (key != NULL) {
-         ep = lGetElemUlong(*list, key_nm, atoi(key));
+         ep = lGetElemUlongRW(*list, key_nm, atoi(key));
       }
       ret = sge_mirror_update_master_list(list, list_descr, ep, key, action, event);
    } else {

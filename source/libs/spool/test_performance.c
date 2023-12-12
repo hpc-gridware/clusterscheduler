@@ -151,7 +151,8 @@ static bool update_jobs(void)
 static bool spool_data(void)
 {
    lList *answer_list = NULL;
-   lListElem *context, *job;
+   const lListElem *context;
+   lListElem *job;
    dstring key_ds = DSTRING_INIT;
    const char *key;
    int num_total = 0;
@@ -161,7 +162,7 @@ static bool spool_data(void)
    fprintf(stdout, "spooling %d jobs\n", lGetNumberOfElem(*object_type_get_master_list(SGE_TYPE_JOB)));
 
    for_each(job, *object_type_get_master_list(SGE_TYPE_JOB)) {
-      lList *ja_tasks = lGetList(job, JB_ja_tasks);
+      const lList *ja_tasks = lGetList(job, JB_ja_tasks);
       if (ja_tasks == NULL || lGetNumberOfElem(ja_tasks) == 0) {
          key = job_get_key(lGetUlong(job, JB_job_number), 0, NULL, &key_ds);
          spool_write_object(&answer_list, context, job, key, SGE_TYPE_JOB, true);
@@ -187,7 +188,7 @@ static bool spool_data(void)
 static bool read_spooled_data(void)
 {
    lList *answer_list = NULL;
-   lListElem *context;
+   const lListElem *context;
 
    context = spool_get_default_context();
 
@@ -203,7 +204,7 @@ static bool delete_spooled_data(void)
 {
    lList *answer_list = NULL;
    lListElem *job;
-   lListElem *context;
+   const lListElem *context;
    char key[100];
    int num_total = 0;
 

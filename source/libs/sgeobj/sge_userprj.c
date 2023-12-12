@@ -64,7 +64,7 @@ lListElem *prj_list_locate(const lList *lp, const char *name)
 
    DENTER(BASIS_LAYER, "prj_list_locate");
 
-   ep = lGetElemStr(lp, PR_name, name);
+   ep = lGetElemStrRW(lp, PR_name, name);
 
    DRETURN(ep);
 }
@@ -92,7 +92,7 @@ lListElem *user_list_locate(const lList *lp, const char *name)
 
    DENTER(BASIS_LAYER, "user_list_locate");
 
-   ep = lGetElemStr(lp, UU_name, name);
+   ep = lGetElemStrRW(lp, UU_name, name);
 
    DRETURN(ep);
 }

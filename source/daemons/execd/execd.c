@@ -514,7 +514,7 @@ int sge_execd_register_at_qmaster(sge_gdi_ctx_class_t *ctx, bool is_restart) {
       }
       return_value = 1;
    } else {
-      lListElem *aep = lFirst(alp);
+      const lListElem *aep = lFirst(alp);
       if (lGetUlong(aep, AN_status) != STATUS_OK) {
          if (sge_last_register_error_flag == 0) {
             WARNING((SGE_EVENT, MSG_COM_CANTREGISTER_SS, master_host?master_host:"", lGetString(aep, AN_text)));
@@ -695,7 +695,7 @@ bool execd_get_job_ja_task(u_long32 job_id, u_long32 ja_task_id, lListElem **job
 
    DENTER(TOP_LAYER, "execd_get_job_ja_task");
 
-   *job = lGetElemUlongFirst(*object_type_get_master_list_rw(SGE_TYPE_JOB), JB_job_number, job_id, &iterator);
+   *job = lGetElemUlongFirstRW(*object_type_get_master_list_rw(SGE_TYPE_JOB), JB_job_number, job_id, &iterator);
    while (*job != NULL) {
       *ja_task = job_search_task(*job, NULL, ja_task_id);
       if (*ja_task != NULL) {
@@ -705,7 +705,7 @@ bool execd_get_job_ja_task(u_long32 job_id, u_long32 ja_task_id, lListElem **job
       /* in execd, we have exactly one ja_task per job,
        * therefore we can have multiple jobs with the same job_id
        */
-      *job = lGetElemUlongNext(*object_type_get_master_list(SGE_TYPE_JOB), JB_job_number, job_id, &iterator);
+      *job = lGetElemUlongNextRW(*object_type_get_master_list(SGE_TYPE_JOB), JB_job_number, job_id, &iterator);
    }
    
    if (*job == NULL) {

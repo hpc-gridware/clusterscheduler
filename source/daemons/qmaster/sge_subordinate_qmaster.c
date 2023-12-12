@@ -90,8 +90,8 @@ static u_long32
 get_slotwise_sos_threshold(const lListElem *qinstance)
 {
    u_long32  slots_sum = 0;
-   lList     *so_list = NULL;
-   lListElem *so = NULL;
+   const lList     *so_list = NULL;
+   const lListElem *so = NULL;
 
    if (qinstance != NULL) {
       so_list = lGetList(qinstance, QU_subordinate_list);
@@ -152,7 +152,7 @@ slotwise_x_on_subordinate(sge_gdi_ctx_class_t *ctx,
 
    DENTER(TOP_LAYER, "slotwise_x_on_subordinate");
 
-   jep = lGetElemUlong(master_job_list, JB_job_number, job_id);
+   jep = lGetElemUlongRW(master_job_list, JB_job_number, job_id);
    if (jep != NULL) {
       jatep = lGetSubUlong(jep, JAT_task_number, task_id, JB_ja_tasks);
       if (jatep != NULL) {
@@ -797,7 +797,7 @@ static void
 get_slotwise_sos_sub_tree_qinstances(lListElem *qinstance,
       sge_sl_list_t **tree_qinstances, u_long32 depth)
 {
-   lList *so_list = NULL;
+   const lList *so_list = NULL;
    lListElem *so = NULL;
    lListElem *sub_qinstance = NULL;
    const lList *master_cqueue_list = *object_type_get_master_list(SGE_TYPE_CQUEUE);
@@ -887,14 +887,14 @@ count_running_jobs_in_slotwise_sos_tree(sge_sl_list_t *qinstances_in_slotwise_so
       host_name = lGetHost(first_qinstance->qinstance, QU_qhostname);
 
       for_each(job, master_job_list) {
-         lList     *task_list = NULL;
+         const lList     *task_list = NULL;
          lListElem *task = NULL;
 
          task_list = lGetList(job, JB_ja_tasks);
          for_each(task, task_list) {
             u_long32   state = 0;
-            lListElem  *task_gdi = NULL;
-            lList      *task_gdi_list = NULL;
+            const lListElem  *task_gdi = NULL;
+            const lList *task_gdi_list = NULL;
             const void *iterator = NULL;
 
             task_gdi_list = lGetList(task, JAT_granted_destin_identifier_list);
@@ -1273,9 +1273,9 @@ do_slotwise_x_on_subordinate_check(sge_gdi_ctx_class_t *ctx, lListElem *qinstanc
 *******************************************************************************/
 bool do_slotwise_subordinate_lists_differ(const lList* old_so_list, const lList *new_so_list)
 {
-   bool      ret = false;
-   lListElem *old_so = NULL; /* SO_Type */
-   lListElem *new_so = NULL; /* SO_Type */
+   bool ret = false;
+   const lListElem *old_so = NULL; /* SO_Type */
+   const lListElem *new_so = NULL; /* SO_Type */
 
    for_each(old_so, old_so_list) {
       new_so = lGetElemStr(new_so_list, SO_name, lGetString(old_so, SO_name));
@@ -1336,7 +1336,7 @@ cqueue_list_x_on_subordinate_gdil(sge_gdi_ctx_class_t *ctx,
       lListElem *qinstance = cqueue_list_locate_qinstance(master_cqueue_list, full_name);
 
       if (qinstance != NULL) {
-         lList *so_list = lGetList(qinstance, QU_subordinate_list);
+         const lList *so_list = lGetList(qinstance, QU_subordinate_list);
          lList *resolved_so_list = NULL;
          lListElem *so = NULL;
          u_long32 slots = lGetUlong(qinstance, QU_job_slots);
@@ -1520,7 +1520,7 @@ qinstance_find_suspended_subordinates(const lListElem *this_elem, lList **answer
    
    if (this_elem != NULL && resolved_so_list != NULL) {
       /* Temporary storage for subordinates */
-      lList *so_list = NULL;
+      const lList *so_list = NULL;
       lListElem *so = NULL;
       lListElem *next_so = NULL;
       const char *hostname = NULL;
@@ -1546,9 +1546,9 @@ qinstance_find_suspended_subordinates(const lListElem *this_elem, lList **answer
           * are not actually suspended by "this_elem" 
           */
          DTRACE;
-         next_so = lFirst(*resolved_so_list);
+         next_so = lFirstRW(*resolved_so_list);
          while ((so = next_so) != NULL) {
-            next_so = lNext(so);
+            next_so = lNextRW(so);
             if (!tst_sos(slots_used, slots, so)) {
                DPRINTF (("Removing %s because it's not suspended\n",
                          lGetString (so, SO_name)));
@@ -1577,17 +1577,17 @@ qinstance_initialize_sos_attr(sge_gdi_ctx_class_t *ctx, lListElem *this_elem, mo
    hostname = lGetHost(this_elem, QU_qhostname);
    
    for_each(cqueue, master_cqueue_list) {
-      lListElem *qinstance = lGetSubHost(cqueue, QU_qhostname, hostname, CQ_qinstances);
+      const lListElem *qinstance = lGetSubHost(cqueue, QU_qhostname, hostname, CQ_qinstances);
 
       if (qinstance != NULL) {
          if (get_slotwise_sos_threshold(qinstance) > 0) {
             do_slotwise_x_on_subordinate_check(ctx, this_elem, true, false, monitor);
          } else {
-            u_long32  slots = 0;
-            u_long32  slots_used = 0;
+            u_long32 slots = 0;
+            u_long32 slots_used = 0;
             lListElem *so = NULL;
-            lList     *resolved_so_list = NULL;
-            lList     *so_list = lGetList(qinstance, QU_subordinate_list);
+            lList *resolved_so_list = NULL;
+            const lList *so_list = lGetList(qinstance, QU_subordinate_list);
 
             /* queue instance-wise suspend on subordinate */
             slots = lGetUlong(qinstance, QU_job_slots);

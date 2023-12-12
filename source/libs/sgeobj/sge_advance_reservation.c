@@ -93,7 +93,7 @@ lListElem *ar_list_locate(const lList *ar_list, u_long32 ar_id)
 
    DENTER(TOP_LAYER, "ar_list_locate");
 
-   ep = lGetElemUlong(ar_list, AR_id, ar_id);
+   ep = lGetElemUlongRW(ar_list, AR_id, ar_id);
 
    DRETURN(ep);
 }
@@ -212,15 +212,15 @@ bool ar_validate(lListElem *ar, lList **alpp, bool in_master, bool is_spool, con
       }
       /*   AR_resource_list, SGE_LIST */
       {
-         if (centry_list_fill_request(lGetList(ar, AR_resource_list),
+         if (centry_list_fill_request(lGetListRW(ar, AR_resource_list),
                                       alpp, master_centry_list, false, true, false)) {
             goto ERROR;
          }
-         if (compress_ressources(alpp, lGetList(ar, AR_resource_list), SGE_OBJ_AR)) {
+         if (compress_ressources(alpp, lGetListRW(ar, AR_resource_list), SGE_OBJ_AR)) {
             goto ERROR;
          }
          
-         if (!centry_list_is_correct(lGetList(ar, AR_resource_list), alpp)) {
+         if (!centry_list_is_correct(lGetListRW(ar, AR_resource_list), alpp)) {
             goto ERROR;
          }
       }
@@ -252,7 +252,7 @@ bool ar_validate(lListElem *ar, lList **alpp, bool in_master, bool is_spool, con
                goto ERROR;
             }
             /* check pe_range */
-            pe_range = lGetList(ar, AR_pe_range);
+            pe_range = lGetListRW(ar, AR_pe_range);
             if (object_verify_pe_range(alpp, pe_name, pe_range, SGE_OBJ_AR)!=STATUS_OK) {
                goto ERROR;
             }

@@ -117,7 +117,7 @@ cqueue_get_via_gdi(sge_gdi_ctx_class_t *ctx, lList **answer_list, const char *na
       lFreeWhere(&where);
 
       if (!answer_list_has_error(&gdi_answer_list)) {
-         ret = lDechainElem(cqueue_list, lFirst(cqueue_list));
+         ret = lDechainElem(cqueue_list, lFirstRW(cqueue_list));
       } else {
          answer_list_replace(answer_list, &gdi_answer_list);
       }
@@ -207,7 +207,7 @@ static bool cqueue_hgroup_get_via_gdi(sge_gdi_ctx_class_t *ctx, lList **answer_l
          sge_gdi_extract_answer(&local_answer_list, SGE_GDI_GET, 
                       SGE_HGRP_LIST, hgrp_id, multi_answer_list, hgrp_list);
          if (local_answer_list != NULL) {
-            lListElem *answer = lFirst(local_answer_list);
+            lListElem *answer = lFirstRW(local_answer_list);
 
             if (lGetUlong(answer, AN_status) != STATUS_OK) {
                lDechainElem(local_answer_list, answer);
@@ -223,7 +223,7 @@ static bool cqueue_hgroup_get_via_gdi(sge_gdi_ctx_class_t *ctx, lList **answer_l
          sge_gdi_extract_answer(&local_answer_list, SGE_GDI_GET, 
                       SGE_CQ_LIST, cq_id, multi_answer_list, cq_list);
          if (local_answer_list != NULL) {
-            lListElem *answer = lFirst(local_answer_list);
+            lListElem *answer = lFirstRW(local_answer_list);
 
             if (lGetUlong(answer, AN_status) != STATUS_OK) {
                lDechainElem(local_answer_list, answer);
@@ -273,7 +273,7 @@ cqueue_hgroup_get_all_via_gdi(sge_gdi_ctx_class_t *ctx, lList **answer_list,
       sge_gdi_extract_answer(&local_answer_list, SGE_GDI_GET,
                       SGE_HGRP_LIST, hgrp_id, multi_answer_list, hgrp_list);
       if (local_answer_list != NULL) {
-         lListElem *answer = lFirst(local_answer_list);
+         lListElem *answer = lFirstRW(local_answer_list);
 
          if (lGetUlong(answer, AN_status) != STATUS_OK) {
             lDechainElem(local_answer_list, answer);
@@ -287,7 +287,7 @@ cqueue_hgroup_get_all_via_gdi(sge_gdi_ctx_class_t *ctx, lList **answer_list,
       sge_gdi_extract_answer(&local_answer_list, SGE_GDI_GET, 
                    SGE_CQ_LIST, cq_id, multi_answer_list, cq_list);
       if (local_answer_list != NULL) {
-         lListElem *answer = lFirst(local_answer_list);
+         lListElem *answer = lFirstRW(local_answer_list);
 
          if (lGetUlong(answer, AN_status) != STATUS_OK) {
             lDechainElem(local_answer_list, answer);
@@ -705,9 +705,8 @@ cqueue_show(sge_gdi_ctx_class_t *ctx, lList **answer_list, const lList *qref_pat
 
                for_each(qref, qref_list) {
                   const char *cqueue_name = lGetString(qref, QR_name);
-                  lListElem *cqueue = NULL;
+                  const lListElem *cqueue = lGetElemStr(cqueue_list, CQ_name, cqueue_name);
 
-                  cqueue = lGetElemStr(cqueue_list, CQ_name, cqueue_name);
                   if (cqueue != NULL) {
                      const char *outname;
 
@@ -860,8 +859,8 @@ static void insert_custom_complex_values_writer(spooling_field *fields)
 static int write_QU_consumable_config_list(const lListElem *ep, int nm,
                                            dstring *buffer, lList **alp)
 {
-   lList *lp = lGetList (ep, nm);
-   lListElem *vep = NULL;
+   const lList *lp = lGetList (ep, nm);
+   const lListElem *vep = NULL;
    bool first = true, has_elems = false;
    
    DENTER(TOP_LAYER, "write_QU_consumable_config_list");

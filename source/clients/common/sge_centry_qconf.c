@@ -107,7 +107,7 @@ centry_get_via_gdi(sge_gdi_ctx_class_t *ctx, lList **answer_list, const char *na
       lFreeWhere(&where);
 
       if (!answer_list_has_error(&gdi_answer_list)) {
-         ret = lFirst(centry_list);
+         ret = lFirstRW(centry_list);
       } else {
          answer_list_replace(answer_list, &gdi_answer_list);
       }
@@ -443,9 +443,9 @@ centry_list_add_del_mod_via_gdi(sge_gdi_ctx_class_t *ctx, lList **this_list, lLi
       bool cont = true;
 
       /* check for duplicate names */
-      next_centry_elem = lFirst(*this_list);
+      next_centry_elem = lFirstRW(*this_list);
       while ((centry_elem = next_centry_elem)) {
-         lListElem *cmp_elem = lFirst(*this_list);
+         lListElem *cmp_elem = lFirstRW(*this_list);
             
          while((centry_elem != cmp_elem)){
             const char *name1 = NULL;
@@ -535,14 +535,14 @@ centry_list_add_del_mod_via_gdi(sge_gdi_ctx_class_t *ctx, lList **this_list, lLi
                    DRETURN(false);
               }
 
-            cmp_elem = lNext(cmp_elem);
+            cmp_elem = lNextRW(cmp_elem);
          }
          
          if (!centry_elem_validate(centry_elem, NULL, answer_list)){
             cont = false;
          }
 
-         next_centry_elem = lNext(centry_elem);
+         next_centry_elem = lNextRW(centry_elem);
       }
      
       if (!cont) {
@@ -551,12 +551,12 @@ centry_list_add_del_mod_via_gdi(sge_gdi_ctx_class_t *ctx, lList **this_list, lLi
 
       modify_list = lCreateList("", CE_Type);
       add_list = lCreateList("", CE_Type);
-      next_centry_elem = lFirst(*this_list);
+      next_centry_elem = lFirstRW(*this_list);
       while ((centry_elem = next_centry_elem)) {
          const char *name = lGetString(centry_elem, CE_name);
          lListElem *tmp_elem = centry_list_locate(*old_list, name);
 
-         next_centry_elem = lNext(centry_elem);
+         next_centry_elem = lNextRW(centry_elem);
          if (tmp_elem != NULL) {
             lDechainElem(*this_list, centry_elem);
             if (object_has_differences(centry_elem, NULL, tmp_elem, false)) {

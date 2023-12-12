@@ -140,7 +140,7 @@ static int tm_wday_cmp(const lListElem *t1, const lListElem *t2);
 
 static int normalize_range_list(lList *rl, cmp_func_t cmp_func);
 
-static bool in_range_list(lListElem *tm, lList *rl, cmp_func_t cmp_func); 
+static bool in_range_list(const lListElem *tm, const lList *rl, cmp_func_t cmp_func); 
 
 static int in_range(const lListElem *tm, const lListElem *r, cmp_func_t cmp_func);
 
@@ -186,11 +186,6 @@ static void split_wday_range(lList *wdrl, lListElem *tmr);
 static int week_day(lListElem **tm);
 
 static u_long32 calendar_get_current_state_and_end(const lListElem *this_elem, time_t *then, time_t *now);
-
-lListElem *calendar_list_locate(const lList *calendar_list, const char *cal_name) 
-{
-   return lGetElemStr(calendar_list, CAL_name, cal_name);
-}
 
 /*
 
@@ -780,7 +775,7 @@ static time_t compute_limit(bool today, bool active, const lList *year_time, con
    time_t limit;
    bool is_full_day = false;
    bool is_new_cal_entry = true;
-   lListElem *time;   
+   const lListElem *time;   
    lListElem *new_now = (lListElem *) now; /* this is a dirty hack to get rid of the const. new_now will not be modified, 
                                               but might be overriden with a temp object, which needs to be freed within 
                                               the function. But a const lListElem cannot be freed. */
@@ -806,8 +801,8 @@ static time_t compute_limit(bool today, bool active, const lList *year_time, con
    time = lFirst(day_time);
 
    { /* should only be one entry in case that the calendar is valid for whole days*/
-      lListElem *end = lFirst(lGetList(time, TMR_end));
-      lListElem *begin = lFirst(lGetList(time, TMR_begin));
+      const lListElem *end = lFirst(lGetList(time, TMR_end));
+      const lListElem *begin = lFirst(lGetList(time, TMR_begin));
       
       if ( (lGetUlong(end, TM_sec) == 0)   &&
            (lGetUlong(end, TM_min) == 0)   &&
@@ -838,12 +833,10 @@ static time_t compute_limit(bool today, bool active, const lList *year_time, con
             bool is_allways_inactive = true;
             
             for_each(time, week_time) {
-               lList *endList = lGetList(time, TMR_end);
-               lList *beginList = lGetList(time, TMR_begin);
-               if ( is_full_day &&
-                    (endList != NULL) && (beginList != NULL) &&
-                    (lGetUlong(lFirst(endList), TM_wday) - lGetUlong(lFirst(beginList), TM_wday) == 6)
-                   ) {
+               const lList *endList = lGetList(time, TMR_end);
+               const lList *beginList = lGetList(time, TMR_begin);
+               if (is_full_day && (endList != NULL) && (beginList != NULL) 
+                   && (lGetUlong(lFirst(endList), TM_wday) - lGetUlong(lFirst(beginList), TM_wday) == 6)) {
                    is_allways_inactive &= true; /* the calendar is disabled for the whole week. */
                }
                else {
@@ -851,7 +844,7 @@ static time_t compute_limit(bool today, bool active, const lList *year_time, con
                }
             
                if (in_range(now, time, tm_wday_cmp)) {
-                  lListElem *end = lFirst(endList);
+                  const lListElem *end = lFirst(endList);
                   u_long32 day;
                   
                   if (end == NULL) { /* we might only have one day specified. If so, the beginList contains the end */
@@ -881,7 +874,8 @@ static time_t compute_limit(bool today, bool active, const lList *year_time, con
          end_of_day=true;
       }
       else { /* a calendar is inactive */
-         lListElem *begin = NULL;
+         const lListElem *begin = NULL;
+
          if (year_time != NULL) {   /* year calenar */
             for_each(time, year_time) {
                begin = lFirst(lGetList(time, TMR_begin));
@@ -964,7 +958,7 @@ static time_t compute_limit(bool today, bool active, const lList *year_time, con
             }
          }
       } else {
-         lListElem *begin;
+         const lListElem *begin;
          /* outside of range - seek nearest begin of range */
          for_each (time, day_time) {
             begin = lFirst(lGetList(time, TMR_begin));
@@ -1048,8 +1042,10 @@ static time_t compute_limit(bool today, bool active, const lList *year_time, con
 }
 
 static int normalize_range_list(lList *rl, cmp_func_t cmp_func) {
-   lListElem *r1, *r2, *r;
-   lListElem *q1, *q2, *q;
+   const lListElem *r1, *r2;
+   lListElem *r;
+   const lListElem *q1, *q2;
+   lListElem *q;
 /*    lListElem *t1, *t2, *t3, *t4; */
 /*    int i1, i2, i3, i4; */
 
@@ -1062,7 +1058,7 @@ static int normalize_range_list(lList *rl, cmp_func_t cmp_func) {
       r1 = lFirst(lGetList(r, TMR_begin));
       r2 = lFirst(lGetList(r, TMR_end));
 
-      for (q = lNext(r); q; q = lNext(q)) {
+      for (q = lNextRW(r); q; q = lNextRW(q)) {
 
          q1 = lFirst(lGetList(q, TMR_begin));
          q2 = lFirst(lGetList(q, TMR_end));
@@ -1138,7 +1134,7 @@ static int normalize_range_list(lList *rl, cmp_func_t cmp_func) {
 /*
 lListElem *tm, TM_Type 
 */
-static bool in_range_list(lListElem *tm, lList *rl, cmp_func_t cmp_func) {
+static bool in_range_list(const lListElem *tm, const lList *rl, cmp_func_t cmp_func) {
    lListElem *r;
 
    DENTER(TOP_LAYER, "in_range_list");
@@ -1160,7 +1156,7 @@ static bool in_range_list(lListElem *tm, lList *rl, cmp_func_t cmp_func) {
 lListElem *tm, TM_Type
 */
 static int in_range(const lListElem *tm, const lListElem *r, cmp_func_t cmp_func) {
-   lListElem *t1, *t2;
+   const lListElem *t1, *t2;
 
    DENTER(TOP_LAYER, "in_range");
 
@@ -1573,7 +1569,8 @@ static int daytime_range_list(lList **dtrl) {
 }
 
 static void split_daytime_range(lList *dtrl, lListElem *tmr) {
-   lListElem *t2, *t1, *t3, *t4, *tmr2;
+   const lListElem *t2, *t1, *t3, *t4;
+   lListElem *tmr2;
 
    DENTER(TOP_LAYER, "split_daytime_range");
 
@@ -1943,19 +1940,17 @@ static void join_wday_range(lList *week_day)
 {
    lListElem *day_range1;
    lListElem *day_range2;
-   lListElem *next1;
    lListElem *next2;
-
-   next1 = lFirst(week_day);
+   lListElem *next1 = lFirstRW(week_day);
 
    /* join ranges, which overlap or touch */
    while ((day_range1 = next1) != NULL) {
       u_long32 begin1;
       u_long32 end1;
-      lList *beginList1;
-      lList *endList1;     
+      const lList *beginList1;
+      const lList *endList1;     
       
-      next1 = lNext(next1);
+      next1 = lNextRW(next1);
 
       beginList1 = lGetList(day_range1, TMR_begin);
       endList1 = lGetList(day_range1, TMR_end);
@@ -1967,14 +1962,14 @@ static void join_wday_range(lList *week_day)
       else {
          end1 = begin1;
       }
-      next2 = lFirst(week_day);
+      next2 = lFirstRW(week_day);
       while((day_range2 = next2) != NULL) {
          u_long32 begin2;
          u_long32 end2;
-         lList *beginList2;
-         lList *endList2;
+         const lList *beginList2;
+         const lList *endList2;
       
-         next2 = lNext(next2);
+         next2 = lNextRW(next2);
 
          if (day_range2 == day_range1) {
             continue;
@@ -1994,7 +1989,7 @@ static void join_wday_range(lList *week_day)
          if (begin2 <= (end1 +1) && (begin1 <= begin2)) {
             if (end1 < end2) {
                if (endList1) {
-                  lSetUlong(lFirst(endList1), TM_wday, end2);
+                  lSetUlong(lFirstRW(endList1), TM_wday, end2);
                }
                else {
                   lSetList(day_range1, TMR_end, lCopyList("", endList2));
@@ -2038,17 +2033,17 @@ static void extend_wday_range(lList *week_day)
    lListElem *next1;
    lListElem *next2;
 
-   next1 = lFirst(week_day);
+   next1 = lFirstRW(week_day);
    while ((day_range1 = next1) != NULL) {
       u_long32 begin1;
       u_long32 end1;
-      lList *beginList1;
+      const lList *beginList1;
       lList *endList1;     
       
-      next1 = lNext(next1);
+      next1 = lNextRW(next1);
 
       beginList1 = lGetList(day_range1, TMR_begin);
-      endList1 = lGetList(day_range1, TMR_end);
+      endList1 = lGetListRW(day_range1, TMR_end);
 
       begin1 = lGetUlong(lFirst(beginList1), TM_wday);
       if (endList1 != NULL) {
@@ -2058,14 +2053,14 @@ static void extend_wday_range(lList *week_day)
          end1 = begin1;
       }
 
-      next2 = lFirst(week_day);
+      next2 = lFirstRW(week_day);
       while((day_range2 = next2) != NULL) {
          u_long32 begin2;
          u_long32 end2;
-         lList *beginList2;
-         lList *endList2;
+         const lList *beginList2;
+         const lList *endList2;
       
-         next2 = lNext(next2);
+         next2 = lNextRW(next2);
 
          if (day_range2 == day_range1) {
             continue;
@@ -2088,7 +2083,7 @@ static void extend_wday_range(lList *week_day)
                endList1 = lCopyList("",beginList1);
                lSetList(day_range1, TMR_end, endList1);
             }
-            lSetUlong(lFirst(endList1), TM_wday, tempEnd);
+            lSetUlong(lFirstRW(endList1), TM_wday, tempEnd);
          }
       }
    }
@@ -2098,7 +2093,8 @@ static void extend_wday_range(lList *week_day)
    
 
 static void split_wday_range(lList *wdrl, lListElem *tmr) {
-   lListElem *t2, *t1, /* *t3, *t4, */ *tmr2;
+   const lListElem *t2, *t1; /* *t3, *t4, */ 
+   lListElem *tmr2;
 
    DENTER(TOP_LAYER, "split_wday_range");
 
@@ -2486,8 +2482,8 @@ bool calendar_parse_week(lListElem *cal, lList **answer_list) {
 *******************************************************************************/
 static u_long32 calendar_get_current_state_and_end(const lListElem *cep, time_t *then, time_t *now) {
    u_long32 new_state;
-   lList *year_list = NULL;
-   lList *week_list = NULL;
+   const lList *year_list = NULL;
+   const lList *week_list = NULL;
    
    DENTER(TOP_LAYER, "calendar_get_current_state_and_end");
 
@@ -2599,8 +2595,8 @@ bool calendar_open_in_time_frame(const lListElem *cep, u_long32 start_time, u_lo
 {
    bool ret = true;
    u_long32 state;
-   lList *year_list = NULL;
-   lList *week_list = NULL;
+   const lList *year_list = NULL;
+   const lList *week_list = NULL;
    time_t next_change;
    time_t start = (time_t)start_time;
    time_t end = (time_t)duration_add_offset(start_time, duration);

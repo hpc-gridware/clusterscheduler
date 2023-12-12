@@ -73,7 +73,7 @@ host_list_locate(const lList *host_list, const char *hostname)
             } else if (object_has_type(element, SH_Type)) {
                nm = object_get_primary_key(SH_Type);
             }
-            ret = lGetElemHost(host_list, nm, hostname);
+            ret = lGetElemHostRW(host_list, nm, hostname);
          }
       } else {
          CRITICAL((SGE_EVENT, MSG_SGETEXT_NULLPTRPASSED_S, SGE_FUNC));
@@ -123,8 +123,8 @@ bool host_is_referenced(const lListElem *host,
    bool ret = false;
 
    if (host != NULL) {
-      lListElem *cqueue = NULL;
-      lListElem *queue = NULL;
+      const lListElem *cqueue = NULL;
+      const lListElem *queue = NULL;
       const char *hostname = NULL;
       int nm = NoName;
 
@@ -408,10 +408,9 @@ host_list_merge(lList *this_list)
    DENTER(TOP_LAYER, "host_list_merge");
    
    if (this_list != NULL) {
-      lListElem *global_host;
+      lListElem *global_host = lGetElemHostRW(this_list, EH_name, SGE_GLOBAL_NAME);
 
       /* we merge global settings into host settings */
-      global_host = lGetElemHost(this_list, EH_name, SGE_GLOBAL_NAME);
       if (global_host != NULL) {
          lListElem *host;
 

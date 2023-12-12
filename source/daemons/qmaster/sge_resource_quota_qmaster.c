@@ -160,11 +160,11 @@ int rqs_mod(sge_gdi_ctx_class_t *ctx,
                            SGE_ATTR_RQSRULES, SGE_OBJ_RQS, 0, NULL);
       } else {
          /* *attr cases */
-         lList *rule_list = lGetList(rqs, RQS_rule);
-         lListElem *rule = NULL;
+         const lList *rule_list = lGetList(rqs, RQS_rule);
+         const lListElem *rule = NULL;
 
          for_each(rule, rule_list) {
-            lList *new_rule_list = lGetList(new_rqs, RQS_rule);
+            lList *new_rule_list = lGetListRW(new_rqs, RQS_rule);
             lListElem *new_rule = NULL;
 
             new_rule = rqs_rule_locate(new_rule_list, lGetString(rule, RQR_name));
@@ -429,12 +429,12 @@ rqs_reinit_consumable_actual_list(lListElem *rqs, lList **answer_list) {
       }
 
       for_each(job, master_job_list) {
-         lListElem *ja_task = NULL;
-         lList *ja_task_list = lGetList(job, JB_ja_tasks);
+         const lList *ja_task_list = lGetList(job, JB_ja_tasks);
+         const lListElem *ja_task = NULL;
 
          for_each(ja_task, ja_task_list) {
-            lListElem *granted = NULL;
-            lList *gdi_list = lGetList(ja_task, JAT_granted_destin_identifier_list);
+            const lListElem *granted = NULL;
+            const lList *gdi_list = lGetList(ja_task, JAT_granted_destin_identifier_list);
             bool is_master_task = true;
 
             for_each(granted, gdi_list) {
@@ -588,10 +588,8 @@ static bool filter_diff_usersets_or_projects(const lListElem *rule, int filter_n
       DRETURN(ret);
    }
 
-   if ((ret = filter_diff_usersets_or_projects_scope(lGetList(filter, RQRF_scope),
-                                    filter_nm, scope_l, nm, dp, master_list))) {
-      ret = filter_diff_usersets_or_projects_scope(lGetList(filter, RQRF_xscope),
-                                    filter_nm, scope_l, nm, dp, master_list); 
+   if ((ret = filter_diff_usersets_or_projects_scope(lGetListRW(filter, RQRF_scope), filter_nm, scope_l, nm, dp, master_list))) {
+      ret = filter_diff_usersets_or_projects_scope(lGetListRW(filter, RQRF_xscope), filter_nm, scope_l, nm, dp, master_list); 
    }
 
    DRETURN(ret);

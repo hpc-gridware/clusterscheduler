@@ -464,9 +464,9 @@ sge_gdi_packet_execute_external(sge_gdi_ctx_class_t* ctx, lList **answer_list,
            (SGE_GDI_GET_OPERATION(task->command) == SGE_GDI_COPY))) {
           lListElem *job, *next_job;
 
-          next_job = lLast(task->data_list);
+          next_job = lLastRW(task->data_list);
           while (ret && ((job = next_job) != NULL)) {
-             next_job = lNext(job);
+             next_job = lNextRW(job);
 
              lDechainElem(task->data_list, job);
              ret &= jsv_do_verify(ctx, JSV_CONTEXT_CLIENT, &job, answer_list, false);

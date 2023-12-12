@@ -83,9 +83,10 @@ void xml_addStylesheet(lListElem *xml_head, const char* name, const char *url, c
       lSetString(stylesheet_elem, XMLS_Name, name);
       lSetString(stylesheet_elem, XMLS_Value, url);
       lSetString(stylesheet_elem, XMLS_Version, version);
-      stylesheet_list = lGetList(xml_head, XMLH_Stylesheet);
-      if (!stylesheet_list)
+      stylesheet_list = lGetListRW(xml_head, XMLH_Stylesheet);
+      if (!stylesheet_list) {
          lSetList(xml_head, XMLH_Stylesheet, (stylesheet_list = lCreateList("Stylesheet", XMLS_Type)));
+      }
       
       lAppendElem(stylesheet_list, stylesheet_elem);
    }   
@@ -112,12 +113,12 @@ void xml_addAttribute(lListElem *xml_elem, const char *name, const char *value){
       lSetString(attr_elem, XMLA_Name, name);
       lSetString(attr_elem, XMLA_Value, (is_mod_value?sge_dstring_get_string(&mod_value):""));
       if (lGetPosViaElem(xml_elem, XMLH_Attribute, SGE_NO_ABORT) != -1) {   
-         attr_list = lGetList(xml_elem, XMLH_Attribute);
+         attr_list = lGetListRW(xml_elem, XMLH_Attribute);
          if (!attr_list)
             lSetList(xml_elem, XMLH_Attribute, (attr_list = lCreateList("Attributes", XMLA_Type)));
       }
       else if (lGetPosViaElem(xml_elem, XMLE_Attribute, SGE_NO_ABORT) != -1) {
-         attr_list = lGetList(xml_elem, XMLE_Attribute);
+         attr_list = lGetListRW(xml_elem, XMLE_Attribute);
          if (!attr_list)
             lSetList(xml_elem, XMLE_Attribute, (attr_list = lCreateList("Attributes", XMLA_Type)));
       }

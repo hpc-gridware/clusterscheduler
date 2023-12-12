@@ -111,7 +111,7 @@
 #define CONFIG_FILE "config"
 
 static int ck_login_sh(char *shell);
-static int get_nhosts(lList *gdil_list);
+static int get_nhosts(const lList *gdil_list);
 
 /* from execd.c import the working dir of the execd */
 extern char execd_spool_dir[SGE_PATH_MAX];
@@ -123,15 +123,13 @@ static bool create_binding_strategy_string_linux(dstring* result,
                                                  char** rankfileinput);
 
 /* generates the config file string (binding elem) for shepherd */
-static bool linear_linux(dstring* result, lListElem* binding_elem, 
-                                    const bool automatic);
+static bool linear_linux(dstring* result, const lListElem* binding_elem, const bool automatic);
 
 /* generates the config file string (binding elem) for shepherd */
-static bool striding_linux(dstring* result, lListElem* binding_elem, 
-                                    const bool automatic); 
+static bool striding_linux(dstring* result, const lListElem* binding_elem, const bool automatic); 
 
 /* generates the config file string (binding elem) for shepherd */
-static bool explicit_linux(dstring* result, lListElem* binding_elem); 
+static bool explicit_linux(dstring* result, const lListElem* binding_elem); 
 #endif 
 
 #if defined(BINDING_SOLARIS)
@@ -183,7 +181,7 @@ lListElem* responsible_queue(lListElem *jep, lListElem *jatep, lListElem *petep)
    if (petep == NULL) {
       master_q = lGetObject(lFirst(lGetList(jatep, JAT_granted_destin_identifier_list)), JG_queue);
    } else {
-      lListElem *pe_queue = lFirst(lGetList(petep, PET_granted_destin_identifier_list));
+      const lListElem *pe_queue = lFirst(lGetList(petep, PET_granted_destin_identifier_list));
       master_q = lGetObject(lGetElemStr(lGetList(jatep, JAT_granted_destin_identifier_list),
                             JG_qname, lGetString(pe_queue, JG_qname)), JG_queue);
       
@@ -196,7 +194,7 @@ lListElem* responsible_queue(lListElem *jep, lListElem *jatep, lListElem *petep)
 #if defined(SOLARIS) || defined(ALPHA) || defined(LINUX) || defined(FREEBSD) || defined(DARWIN)
 static long get_next_addgrpid(lList *rlp, long last_addgrpid)
 {
-   lListElem *rep;
+   const lListElem *rep;
    int take_next = 0;
    
    /* uninitialized => return first number in list */
@@ -315,10 +313,10 @@ int sge_exec_job(sge_gdi_ctx_class_t *ctx, lListElem *jep, lListElem *jatep,
         fs_stderr_path[SGE_PATH_MAX] ="";
 
    char mail_str[1024], *shepherd_name;
-   lList *gdil;
+   const lList *gdil;
    lListElem *gdil_ep, *master_q;
    lListElem *ep;
-   lListElem *env;
+   const lListElem *env;
    lList *environmentList = NULL;
    const char *arch = sge_get_arch();
    const char *sge_root = ctx->get_sge_root(ctx);
@@ -604,8 +602,9 @@ int sge_exec_job(sge_gdi_ctx_class_t *ctx, lListElem *jep, lListElem *jatep,
       }
      
       {
-         lListElem *user_path;
+         const lListElem *user_path;
          dstring buffer = DSTRING_INIT;
+
          if ((user_path=lGetElemStr(environmentList, VA_variable, "PATH"))) {
             sge_dstring_sprintf(&buffer, "%s:%s", tmpdir, lGetString(user_path, VA_value));
          } else {
@@ -1346,8 +1345,7 @@ int sge_exec_job(sge_gdi_ctx_class_t *ctx, lListElem *jep, lListElem *jatep,
    fprintf(fp, "use_login_shell=%d\n", ck_login_sh(shell) ? 1 : 0);
 
    /* the following values are needed by the reaper */
-   if (mailrec_unparse(lGetList(jep, JB_mail_list), 
-            mail_str, sizeof(mail_str))) {
+   if (mailrec_unparse(lGetList(jep, JB_mail_list), mail_str, sizeof(mail_str))) {
       ERROR((SGE_EVENT, MSG_MAIL_MAILLISTTOOLONG_U, sge_u32c(job_id)));
    }
    fprintf(fp, "mail_list=%s\n", mail_str);
@@ -1441,7 +1439,7 @@ int sge_exec_job(sge_gdi_ctx_class_t *ctx, lListElem *jep, lListElem *jatep,
          
 
    {
-      lList *args;
+      const lList *args;
       lListElem *se;
 
       int nargs=1;
@@ -1561,7 +1559,7 @@ int sge_exec_job(sge_gdi_ctx_class_t *ctx, lListElem *jep, lListElem *jatep,
 
       if(JOB_TYPE_IS_QLOGIN(jb_now) || JOB_TYPE_IS_QRSH(jb_now) 
          || JOB_TYPE_IS_QRLOGIN(jb_now)) {
-         lListElem *elem;
+         const lListElem *elem;
          char daemon[SGE_PATH_MAX];
 
          fprintf(fp, "master_host=%s\n", masterhost);
@@ -2040,9 +2038,8 @@ char *shell
 }
 
    
-static int get_nhosts(
-lList *gdil_orig  /* JG_Type */
-) {
+static int 
+get_nhosts(const lList *gdil_orig) {
    int nhosts = 0;
    lListElem *ep;
    lList *cache = lCreateList("", STU_Type);
@@ -2100,8 +2097,8 @@ static bool create_binding_strategy_string_linux(dstring* result, lListElem *jep
    bool retval;
    
    /* binding strategy */
-   lListElem *binding_elem = NULL;
-   lList *binding = lGetList(jep, JB_binding);
+   const lListElem *binding_elem = NULL;
+   const lList *binding = lGetList(jep, JB_binding);
 
    DENTER(TOP_LAYER, "create_binding_strategy_string_linux");
 
@@ -2220,8 +2217,7 @@ static bool create_binding_strategy_string_linux(dstring* result, lListElem *jep
 *     MT-NOTE: linear_linux() is not MT safe 
 *
 *******************************************************************************/
-static bool linear_linux(dstring* result, lListElem* binding_elem, 
-                           const bool automatic)
+static bool linear_linux(dstring* result, const lListElem* binding_elem, const bool automatic)
 {
    int first_socket       = 0;
    int first_core         = 0;
@@ -2356,8 +2352,7 @@ static bool linear_linux(dstring* result, lListElem* binding_elem,
 *     MT-NOTE: striding_linux() is not MT safe 
 *
 *******************************************************************************/
-static bool striding_linux(dstring* result, lListElem* binding_elem, 
-                                    const bool automatic) 
+static bool striding_linux(dstring* result, const lListElem* binding_elem, const bool automatic) 
 {
    int first_socket        = 0;
    int first_core          = 0;
@@ -2449,7 +2444,7 @@ static bool striding_linux(dstring* result, lListElem* binding_elem,
 *     MT-NOTE: explicit_linux() is not MT safe 
 *
 *******************************************************************************/
-static bool explicit_linux(dstring* result, lListElem* binding_elem) 
+static bool explicit_linux(dstring* result, const lListElem* binding_elem) 
 {
    /* pointer to string which contains the <socket>,<core> pairs */
    const char* request = NULL;

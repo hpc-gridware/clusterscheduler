@@ -416,7 +416,7 @@ char **cpp,
 u_long32 *val,
 int type 
 ) {
-   lListElem *ep;
+   const lListElem *ep;
    const char *s;
 
 #ifndef NO_SGE_COMPILE_DEBUG
@@ -463,7 +463,7 @@ int type
 static void setConfFromCull(
 lList *lpCfg 
 ) {
-   lListElem *ep;
+   const lListElem *ep;
 
    DENTER(BASIS_LAYER, "setConfFromCull");
 
@@ -602,7 +602,7 @@ tConfEntry conf[]
 *
 *******************************************************************************/
 int merge_configuration(lList **answer_list, u_long32 progid, const char *cell_root, lListElem *global, lListElem *local, lList **lpp) {
-   lList *cl;
+   const lList *cl;
    lListElem *elem, *ep2;
    lList *mlist = NULL;
    

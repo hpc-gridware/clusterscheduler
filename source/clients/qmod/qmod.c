@@ -460,7 +460,7 @@ static lList *sge_parse_qmod(lList **ppcmdline, lList **ppreflist, u_long32 *pfo
       }
 
       /* we get to this point, than there are -t options without job names. We have to write an error message */
-      if ((ep = lGetElemStr(*ppcmdline, SPA_switch, "-t")) != NULL) {
+      if ((ep = lGetElemStrRW(*ppcmdline, SPA_switch, "-t")) != NULL) {
          answer_list_add_sprintf(&alp, STATUS_ESEMANTIC, ANSWER_QUALITY_ERROR,
                                  MSG_JOB_LONELY_TOPTION_S, lGetString(ep, SPA_switch_arg));
 

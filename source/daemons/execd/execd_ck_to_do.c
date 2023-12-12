@@ -199,7 +199,7 @@ static void force_job_rlimit(const char* qualified_hostname)
       const lListElem *jatep;
 
       for_each (jatep, lGetList(jep, JB_ja_tasks)) {
-         lListElem *q=NULL, *cpu_ep, *vmem_ep, *gdil_ep;
+         const lListElem *q=NULL, *cpu_ep, *vmem_ep, *gdil_ep;
          double cpu_val, vmem_val;
          double s_cpu, h_cpu;
          double s_vmem, h_vmem;
@@ -306,7 +306,7 @@ static void force_job_rlimit(const char* qualified_hostname)
 #endif
 
 static u_long32 
-execd_get_wallclock_limit(const char *qualified_hostname, lList *gdil_list, int limit_nm, u_long32 now) 
+execd_get_wallclock_limit(const char *qualified_hostname, const lList *gdil_list, int limit_nm, u_long32 now) 
 {
    u_long32 ret = U_LONG32_MAX;
    const lListElem *gdil;
@@ -439,8 +439,7 @@ int do_ck_to_do(sge_gdi_ctx_class_t *ctx, bool is_qmaster_down) {
 
             if (!lGetUlong(jep, JB_hard_wallclock_gmt)) {
                u_long32 task_wallclock_limit = lGetUlong(jatep, JAT_wallclock_limit);
-               lList *gdil_list = lGetList(jatep,
-                                           JAT_granted_destin_identifier_list);
+               const lList *gdil_list = lGetList(jatep, JAT_granted_destin_identifier_list);
 
                lSetUlong(jep, JB_soft_wallclock_gmt, 
                          execd_get_wallclock_limit(qualified_hostname, gdil_list, QU_s_rt, now));
@@ -726,11 +725,10 @@ static int exec_job_or_task(sge_gdi_ctx_class_t *ctx, lListElem *jep, lListElem 
 
    /* JG: TODO: make a function simulate_start_job_or_task() */
    if (mconf_get_simulate_jobs()) {
-      lList *job_args;
+      const lList *job_args;
       u_long32 duration = 60;
 
-      DPRINTF(("Simulating job "sge_u32"."sge_u32"\n", 
-               job_id, ja_task_id));
+      DPRINTF(("Simulating job "sge_u32"."sge_u32"\n", job_id, ja_task_id));
       lSetUlong(jatep, JAT_start_time, now);
       lSetUlong(jatep, JAT_status, JRUNNING);
 

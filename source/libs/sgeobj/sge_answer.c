@@ -541,12 +541,12 @@ bool answer_list_has_quality(lList **answer_list, answer_quality_t quality)
 *******************************************************************************/
 void answer_list_remove_quality(lList *answer_list, answer_quality_t quality)
 {
-   lListElem *aep, *nxt = lFirst(answer_list);
+   lListElem *aep, *nxt = lFirstRW(answer_list);
 
    DENTER(ANSWER_LAYER, "answer_list_remove_quality");
 
    while ((aep=nxt)) {
-      nxt=lNext(aep);
+      nxt=lNextRW(aep);
       if (lGetUlong(aep, AN_quality) == quality) {
          lRemoveElem(answer_list, &aep);
       }
@@ -1070,7 +1070,7 @@ bool answer_list_output(lList **answer_list) {
 
 int show_answer(lList *alp) 
 {
-   lListElem *aep = NULL;
+   const lListElem *aep = NULL;
    int ret = 0;
    
    DENTER(TOP_LAYER, "show_answer");

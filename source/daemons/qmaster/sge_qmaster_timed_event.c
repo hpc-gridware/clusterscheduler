@@ -954,7 +954,7 @@ void te_check_time(time_t aTime)
 *     MT-NOTE: te_event_from_list_elem() is MT safe. 
 *
 *******************************************************************************/
-te_event_t te_event_from_list_elem(lListElem* aListElem)
+te_event_t te_event_from_list_elem(const lListElem* aListElem)
 {
    te_event_t ev = NULL;
    const char* str = NULL;

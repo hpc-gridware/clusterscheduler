@@ -67,15 +67,12 @@ static int sge_print_job(lListElem *job, lListElem *jatep, lListElem *qep, int p
                          qhost_report_handler_t *report_handler,
                          lList **alpp);
 
-static int sge_print_subtask(lListElem *job, lListElem *ja_task, lListElem *task, int print_hdr, int indent);
-
-
 static char hashes[] = "##############################################################################################################";
 
 static int sge_print_subtask(
-lListElem *job,
-lListElem *ja_task,
-lListElem *pe_task,  /* NULL, if master task shall be printed */
+const lListElem *job,
+const lListElem *ja_task,
+const lListElem *pe_task,  /* NULL, if master task shall be printed */
 int print_hdr,
 int indent 
 ) {
@@ -83,9 +80,9 @@ int indent
    u_long32 tstate, tstatus;
    int task_running;
    const char *str;
-   lListElem *ep;
-   lList *usage_list;
-   lList *scaled_usage_list;
+   const lListElem *ep;
+   const lList *usage_list;
+   const lList *scaled_usage_list;
 
    DENTER(TOP_LAYER, "sge_print_subtask");
 
@@ -145,7 +142,7 @@ int indent
    printf("%-5.5s ", task_state_string); 
 
    {
-      lListElem *up;
+      const lListElem *up;
 
       /* scaled cpu usage */
       if (!(up = lGetElemStr(scaled_usage_list, UA_name, USAGE_ATTR_CPU))) {
@@ -204,7 +201,7 @@ lList **alpp
 ) {
    lListElem *jlep;
    lListElem *jatep;
-   lListElem *gdilep;
+   const lListElem *gdilep;
    u_long32 job_tag;
    u_long32 jid = 0, old_jid;
    u_long32 jataskid = 0, old_jataskid;
@@ -436,7 +433,7 @@ lList **alpp
    static int first_time = 1;
    u_long32 jstate;
    int sge_urg, sge_pri, sge_ext, sge_time;
-   lList *ql = NULL;
+   const lList *ql = NULL;
    lListElem *qrep, *gdil_ep=NULL;
    int running;
    const char *queue_name = NULL;
@@ -729,7 +726,7 @@ lList **alpp
    }
 
    if (sge_ext) {
-      lListElem *up, *pe, *task;
+      const lListElem *up, *pe, *task;
       lList *job_usage_list;
       const char *pe_name;
       
@@ -742,7 +739,8 @@ lList **alpp
       if (job_usage_list) {
          int subtask_ndx=1;
          for_each(task, lGetList(jatep, JAT_task_list)) {
-            lListElem *dst, *src, *ep;
+            const lListElem *src, *ep;
+            lListElem *dst;
             const char *qname;
 
             if (!slots ||
@@ -751,7 +749,7 @@ lList **alpp
                  ((qname=lGetString(ep, JG_qname))) &&
                  !strcmp(qname, queue_name) && ((subtask_ndx++%slots)==slot))) {
                for_each(src, lGetList(task, PET_scaled_usage)) {
-                  if ((dst=lGetElemStr(job_usage_list, UA_name, lGetString(src, UA_name))))
+                  if ((dst=lGetElemStrRW(job_usage_list, UA_name, lGetString(src, UA_name))))
                      lSetDouble(dst, UA_value, lGetDouble(dst, UA_value) + lGetDouble(src, UA_value));
                   else
                      lAppendElem(job_usage_list, lCopyElem(src));
@@ -904,8 +902,8 @@ lList **alpp
    }
    
    if (tsk_ext) {
-      lList *task_list = lGetList(jatep, JAT_task_list);
-      lListElem *task, *ep;
+      const lList *task_list = lGetList(jatep, JAT_task_list);
+      const lListElem *task, *ep;
       const char *qname;
       int indent=0;
       int subtask_ndx=1;

@@ -199,7 +199,7 @@ void sge_c_report(sge_gdi_ctx_class_t *ctx, char *rhost, char *commproc, int id,
                is_pb_used = true;
                init_packbuffer(&pb, 1024, 0);
             }
-            sge_update_load_values(ctx, rhost, lGetList(report, REP_list));
+            sge_update_load_values(ctx, rhost, lGetListRW(report, REP_list));
 
             if (mconf_get_simulate_execds()) {
                const lList *master_exechost_list = *object_type_get_master_list(SGE_TYPE_EXECHOST);
@@ -222,7 +222,7 @@ void sge_c_report(sge_gdi_ctx_class_t *ctx, char *rhost, char *commproc, int id,
                               lSetHost(clp, LR_host, sim_host);
                            }
                         }
-                        sge_update_load_values(ctx, sim_host, lGetList(report, REP_list));
+                        sge_update_load_values(ctx, sim_host, lGetListRW(report, REP_list));
                      }
                   }
                }
@@ -244,7 +244,7 @@ void sge_c_report(sge_gdi_ctx_class_t *ctx, char *rhost, char *commproc, int id,
          ** save number of processors
          */
          MONITOR_EPROC(monitor);
-         ret = update_license_data(ctx, hep, lGetList(report, REP_list)); 
+         ret = update_license_data(ctx, hep, lGetListRW(report, REP_list)); 
          if (ret) {
             ERROR((SGE_EVENT, MSG_LICENCE_ERRORXUPDATINGLICENSEDATA_I, ret));
          }

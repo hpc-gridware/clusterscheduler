@@ -143,10 +143,10 @@ print_jatask_event(sge_evc_class_t *evc, sge_object_type type,
       u_long32 timestamp = lGetUlong(event, ET_timestamp);
       
       if (type == sgeE_JATASK_MOD) { 
-         lList *jat = lGetList(event,ET_new_version);
+         lList *jat = lGetListRW(event,ET_new_version);
          u_long job_id  = lGetUlong(event, ET_intkey);
          u_long task_id = lGetUlong(event, ET_intkey2);
-         lListElem *ep = lFirst(jat);
+         const lListElem *ep = lFirst(jat);
          u_long job_status = lGetUlong(ep, JAT_status);
          int task_running = (job_status==JRUNNING || job_status==JTRANSFERING);
 
@@ -167,10 +167,10 @@ print_jatask_event(sge_evc_class_t *evc, sge_object_type type,
          fflush(stdout);  
       }
       if (type == sgeE_JOB_ADD) { 
-         lList *jat = lGetList(event,ET_new_version);
+         const lList *jat = lGetListRW(event,ET_new_version);
          u_long job_id  = lGetUlong(event, ET_intkey);
          u_long task_id = lGetUlong(event, ET_intkey2);
-         lListElem *ep = lFirst(jat);
+         const lListElem *ep = lFirst(jat);
          const char* job_project = lGetString(ep, JB_project);
          if (job_project == NULL) {
             job_project = "NONE";
@@ -212,8 +212,8 @@ analyze_jatask_event(sge_evc_class_t *evc, sge_object_type type,
       u_long32 type = lGetUlong(event, ET_type);
 
       if (type == sgeE_JATASK_MOD) { 
-         lList *jat = lGetList(event,ET_new_version);
-         lListElem *ep = lFirst(jat);
+         const lList *jat = lGetList(event,ET_new_version);
+         const lListElem *ep = lFirst(jat);
          u_long job_status = lGetUlong(ep, JAT_status);
          int task_running = (job_status==JRUNNING || job_status==JTRANSFERING);
          if (task_running) {

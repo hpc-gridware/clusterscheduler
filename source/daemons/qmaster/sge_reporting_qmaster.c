@@ -728,7 +728,7 @@ reporting_write_consumables(lList **answer_list, dstring *buffer,
 
       /* now do the logging, if requested */
       if (log_variable == true) {
-         lListElem *tep = lGetElemStr(total, CE_name, name);
+         const lListElem *tep = lGetElemStr(total, CE_name, name);
          if (tep != NULL) {
             sge_dstring_append(buffer, name);
             sge_dstring_append_char(buffer, '=');

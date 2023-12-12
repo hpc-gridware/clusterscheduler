@@ -334,7 +334,7 @@ jsv_handle_param_command(sge_gdi_ctx_class_t *ctx, lListElem *jsv, lList **answe
       /* CMDARG<id> */
       {         
          if (ret && strncmp("CMDARG", param, 6) == 0) {
-            lList *arg_list = lGetList(new_job, JB_job_args);
+            lList *arg_list = lGetListRW(new_job, JB_job_args);
             lListElem *elem;
             u_long32 id = 0;
             u_long32 length;
@@ -357,7 +357,7 @@ jsv_handle_param_command(sge_gdi_ctx_class_t *ctx, lListElem *jsv, lList **answe
                      } else {
                         to_remove = length - id;
                         while (to_remove > 0) {
-                           lListElem *tmp = lLast(arg_list);
+                           lListElem *tmp = lLastRW(arg_list);
                            lRemoveElem(arg_list, &tmp);
                            to_remove--;
                         }
@@ -378,13 +378,13 @@ jsv_handle_param_command(sge_gdi_ctx_class_t *ctx, lListElem *jsv, lList **answe
                }
 
                length = lGetNumberOfElem(arg_list);
-               elem = lFirst(arg_list);
+               elem = lFirstRW(arg_list);
                for (i = 0; i <= length - 1; i++) {
                   if (i == id) {
                      lSetString(elem, ST_name, (value != NULL) ? value : "");
                      break;
                   }
-                  elem = lNext(elem);
+                  elem = lNextRW(elem);
                }
             }
          } 
@@ -438,7 +438,7 @@ jsv_handle_param_command(sge_gdi_ctx_class_t *ctx, lListElem *jsv, lList **answe
                lList *ar_id_list = NULL;
                ret &= ulong_list_parse_from_string(&ar_id_list, &local_answer_list, value, ",");
                if (ret) {
-                  lListElem *first = lFirst(ar_id_list);
+                  const lListElem *first = lFirst(ar_id_list);
 
                   if (first != NULL) {
                      id = lGetUlong(first, ULNG_value);
@@ -485,8 +485,8 @@ jsv_handle_param_command(sge_gdi_ctx_class_t *ctx, lListElem *jsv, lList **answe
       /* -display */
       {
          if (ret && strcmp("display", param) == 0) {
-            lList *env_list = lGetList(new_job, JB_env_list);
-            lListElem *display = lGetElemStr(env_list, VA_variable, "DISPLAY"); 
+            lList *env_list = lGetListRW(new_job, JB_env_list);
+            lListElem *display = lGetElemStrRW(env_list, VA_variable, "DISPLAY"); 
 
             if (value != NULL) {
                if (display == NULL) {
@@ -523,9 +523,9 @@ jsv_handle_param_command(sge_gdi_ctx_class_t *ctx, lListElem *jsv, lList **answe
       {
          if (ret && strcmp("h", param) == 0) {
             int hold_state = MINUS_H_TGT_NONE;  
-            lList *n_hold = lGetList(new_job, JB_ja_u_h_ids);
-            lList *u_hold = lGetList(new_job, JB_ja_n_h_ids);
-            lList *id_list = (n_hold != NULL) ? n_hold : u_hold;
+            const lList *n_hold = lGetList(new_job, JB_ja_u_h_ids);
+            const lList *u_hold = lGetList(new_job, JB_ja_n_h_ids);
+            const lList *id_list = (n_hold != NULL) ? n_hold : u_hold;
 
             if (value != NULL) {
                hold_state = sge_parse_hold_list(value, QSUB);
@@ -781,8 +781,8 @@ jsv_handle_param_command(sge_gdi_ctx_class_t *ctx, lListElem *jsv, lList **answe
        * <socket_core_list> := <socket>,<core>[:<socket>,<core>]
        */
       {
-         lList *binding_list = lGetList(new_job, JB_binding);
-         lListElem *binding_elem = lFirst(binding_list);
+         const lList *binding_list = lGetList(new_job, JB_binding);
+         lListElem *binding_elem = lFirstRW(binding_list);
   
          /* 
           * initialize binding CULL structure as if there was no binding
@@ -796,7 +796,7 @@ jsv_handle_param_command(sge_gdi_ctx_class_t *ctx, lListElem *jsv, lList **answe
                ret = false;
             }
             binding_list = lGetList(new_job, JB_binding);
-            binding_elem = lFirst(binding_list);
+            binding_elem = lFirstRW(binding_list);
          }
          /* 
           * parse JSV binding parameter and overwite previous setting
@@ -1045,8 +1045,8 @@ jsv_handle_param_command(sge_gdi_ctx_class_t *ctx, lListElem *jsv, lList **answe
                }
             }
             if (ret) {
-               lList *range_list = lGetList(new_job, JB_pe_range);
-               lListElem *range = lFirst(range_list);
+               const lList *range_list = lGetList(new_job, JB_pe_range);
+               lListElem *range = lFirstRW(range_list);
 
                if (range == NULL) {
                   range = lAddSubUlong(new_job, RN_min, min, JB_pe_range, RN_Type);
@@ -1067,8 +1067,8 @@ jsv_handle_param_command(sge_gdi_ctx_class_t *ctx, lListElem *jsv, lList **answe
                }
             }
             if (ret) {
-               lList *range_list = lGetList(new_job, JB_pe_range);
-               lListElem *range = lFirst(range_list);
+               const lList *range_list = lGetList(new_job, JB_pe_range);
+               lListElem *range = lFirstRW(range_list);
 
                if (range == NULL) {
                   range = lAddSubUlong(new_job, RN_max, max, JB_pe_range, RN_Type);
@@ -1092,8 +1092,8 @@ jsv_handle_param_command(sge_gdi_ctx_class_t *ctx, lListElem *jsv, lList **answe
                                           "invalid t_min "SFQ" was passed by JSV", value);
                   ret = false;
                } else {
-                  lList *range_list = lGetList(new_job, JB_ja_structure);
-                  lListElem *range = lFirst(range_list);
+                  const lList *range_list = lGetList(new_job, JB_ja_structure);
+                  lListElem *range = lFirstRW(range_list);
 
                   if (range == NULL) {
                      range = lAddSubUlong(new_job, RN_min, min, JB_ja_structure, RN_Type);
@@ -1112,8 +1112,8 @@ jsv_handle_param_command(sge_gdi_ctx_class_t *ctx, lListElem *jsv, lList **answe
                                           MSG_JSV_PARSE_VAL_SS, param, value);
                   ret = false;
                } else {
-                  lList *range_list = lGetList(new_job, JB_ja_structure);
-                  lListElem *range = lFirst(range_list);
+                  const lList *range_list = lGetList(new_job, JB_ja_structure);
+                  lListElem *range = lFirstRW(range_list);
 
                   if (range == NULL) {
                      range = lAddSubUlong(new_job, RN_max, max, JB_ja_structure, RN_Type);
@@ -1132,8 +1132,8 @@ jsv_handle_param_command(sge_gdi_ctx_class_t *ctx, lListElem *jsv, lList **answe
                                           MSG_JSV_PARSE_VAL_SS, param, value);
                   ret = false;
                } else {
-                  lList *range_list = lGetList(new_job, JB_ja_structure);
-                  lListElem *range = lFirst(range_list);
+                  const lList *range_list = lGetList(new_job, JB_ja_structure);
+                  lListElem *range = lFirstRW(range_list);
 
                   if (range == NULL) {
                      range = lAddSubUlong(new_job, RN_step, step, JB_ja_structure, RN_Type);
@@ -1378,7 +1378,7 @@ jsv_handle_started_command(sge_gdi_ctx_class_t *ctx, lListElem *jsv, lList **ans
     * JSV SCRIPT_ARGS 
     */
    {
-      lList *list = lGetList(old_job, JB_job_args);
+      const lList *list = lGetList(old_job, JB_job_args);
       lListElem *elem;
       int i = 0;
 
@@ -1418,7 +1418,7 @@ jsv_handle_started_command(sge_gdi_ctx_class_t *ctx, lListElem *jsv, lList **ans
     * -ac variable[=value],... (optional; also contains result of -dc and -sc options) 
     */
    {
-      lList *context_list = lGetList(old_job, JB_context);
+      const lList *context_list = lGetList(old_job, JB_context);
 
       if (context_list != NULL) {
          lListElem *tmp_job = lCopyElem(old_job);
@@ -1576,7 +1576,7 @@ jsv_handle_started_command(sge_gdi_ctx_class_t *ctx, lListElem *jsv, lList **ans
     * -e <output_path>
     */
    {
-      lList *shell_list = lGetList(old_job, JB_stderr_path_list);
+      const lList *shell_list = lGetList(old_job, JB_stderr_path_list);
 
       if (shell_list != NULL) {
          lListElem *shell;
@@ -1610,7 +1610,7 @@ jsv_handle_started_command(sge_gdi_ctx_class_t *ctx, lListElem *jsv, lList **ans
     * optional
     */
    {
-      lList *hold_jid_list = lGetList(old_job, JB_jid_request_list);
+      const lList *hold_jid_list = lGetList(old_job, JB_jid_request_list);
      
       if (hold_jid_list != NULL) {
          lListElem *hold_jid;
@@ -1639,7 +1639,7 @@ jsv_handle_started_command(sge_gdi_ctx_class_t *ctx, lListElem *jsv, lList **ans
     * optional 
     */
    {
-      lList *hold_jid_list = lGetList(old_job, JB_ja_ad_request_list);
+      const lList *hold_jid_list = lGetList(old_job, JB_ja_ad_request_list);
     
       if (hold_jid_list != NULL) {
          lListElem *hold_jid;
@@ -1674,7 +1674,7 @@ jsv_handle_started_command(sge_gdi_ctx_class_t *ctx, lListElem *jsv, lList **ans
     * and 'n' whould mean "no hold"
     */
    {
-      lList *hold_list = lGetList(old_job, JB_ja_u_h_ids);
+      const lList *hold_list = lGetList(old_job, JB_ja_u_h_ids);
 
       if (hold_list != NULL) {
          sge_dstring_clear(&buffer);
@@ -1687,7 +1687,7 @@ jsv_handle_started_command(sge_gdi_ctx_class_t *ctx, lListElem *jsv, lList **ans
     * -i <input_path> (optional) 
     */
    {
-      lList *shell_list = lGetList(old_job, JB_stdin_path_list);
+      const lList *shell_list = lGetList(old_job, JB_stdin_path_list);
 
       if (shell_list != NULL) {
          lListElem *shell;
@@ -1699,7 +1699,6 @@ jsv_handle_started_command(sge_gdi_ctx_class_t *ctx, lListElem *jsv, lList **ans
             const char *hostname = lGetHost(shell, PN_host);
             const char *path = lGetString(shell, PN_path);
            
-             
             sge_dstring_append_char(&buffer, first ? ' ' : ',');
             if (hostname != NULL) {
                sge_dstring_append(&buffer, hostname); 
@@ -1750,7 +1749,7 @@ jsv_handle_started_command(sge_gdi_ctx_class_t *ctx, lListElem *jsv, lList **ans
     * PARAM l_hard <centry_list>
     */
    {
-      lList *l_hard_list = lGetList(old_job, JB_hard_resource_list);
+      const lList *l_hard_list = lGetList(old_job, JB_hard_resource_list);
 
       if (l_hard_list != NULL) {
          sge_dstring_clear(&buffer);
@@ -1760,7 +1759,7 @@ jsv_handle_started_command(sge_gdi_ctx_class_t *ctx, lListElem *jsv, lList **ans
       }
    }
    {
-      lList *l_soft_list = lGetList(old_job, JB_soft_resource_list);
+      const lList *l_soft_list = lGetList(old_job, JB_soft_resource_list);
 
       if (l_soft_list != NULL) {
          sge_dstring_clear(&buffer);
@@ -1789,8 +1788,8 @@ jsv_handle_started_command(sge_gdi_ctx_class_t *ctx, lListElem *jsv, lList **ans
     * optional
     */
    {
-      lList *mail_list = lGetList(old_job, JB_mail_list);
-      lListElem *mail;
+      const lList *mail_list = lGetList(old_job, JB_mail_list);
+      const lListElem *mail;
       bool first = true;
       
       sge_dstring_clear(&buffer);
@@ -1813,10 +1812,10 @@ jsv_handle_started_command(sge_gdi_ctx_class_t *ctx, lListElem *jsv, lList **ans
     * -masterq wc_queue_list (optional) 
     */
    {
-      lList *master_hard_queue_list = lGetList(old_job, JB_master_hard_queue_list);
+      const lList *master_hard_queue_list = lGetList(old_job, JB_master_hard_queue_list);
 
       if (master_hard_queue_list != NULL) {
-         lListElem *queue;
+         const lListElem *queue;
          bool first = true;
 
          sge_dstring_clear(&buffer);
@@ -1866,7 +1865,7 @@ jsv_handle_started_command(sge_gdi_ctx_class_t *ctx, lListElem *jsv, lList **ans
     * TODO: EB: summarize with -S -e -i 
     */
    {
-      lList *shell_list = lGetList(old_job, JB_stdout_path_list);
+      const lList *shell_list = lGetList(old_job, JB_stdout_path_list);
 
       if (shell_list != NULL) {
          lListElem *shell;
@@ -1944,8 +1943,8 @@ jsv_handle_started_command(sge_gdi_ctx_class_t *ctx, lListElem *jsv, lList **ans
     * <socket_core_list> := <socket>,<core>[:<socket>,<core>]
     */
    {
-      lList *list = lGetList(old_job, JB_binding);
-      lListElem *binding = ((list != NULL) ? lFirst(list) : NULL);
+      const lList *list = lGetList(old_job, JB_binding);
+      const lListElem *binding = ((list != NULL) ? lFirst(list) : NULL);
       const char *strategy = ((binding != NULL) ? lGetString(binding, BN_strategy) : NULL);
 
       if (strategy != NULL && strcmp(strategy, "no_job_binding") != 0) {
@@ -2053,8 +2052,8 @@ jsv_handle_started_command(sge_gdi_ctx_class_t *ctx, lListElem *jsv, lList **ans
     */
    {
       const char *pe_name = lGetString(old_job, JB_pe);
-      lList *range_list = lGetList(old_job, JB_pe_range);
-      lListElem *range = lFirst(range_list);
+      const lList *range_list = lGetList(old_job, JB_pe_range);
+      const lListElem *range = lFirst(range_list);
 
       if (pe_name != NULL) {
          sge_dstring_clear(&buffer);
@@ -2088,7 +2087,7 @@ jsv_handle_started_command(sge_gdi_ctx_class_t *ctx, lListElem *jsv, lList **ans
     * TODO: EB: CLEANUP: make a function for the code blocks of -soft -q, -hard -q and -masterq
     */
    {
-      lList *hard_queue_list = lGetList(old_job, JB_hard_queue_list);
+      const lList *hard_queue_list = lGetList(old_job, JB_hard_queue_list);
 
       if (hard_queue_list != NULL) {
          lListElem *queue;
@@ -2107,7 +2106,7 @@ jsv_handle_started_command(sge_gdi_ctx_class_t *ctx, lListElem *jsv, lList **ans
       }
    }
    {
-      lList *soft_queue_list = lGetList(old_job, JB_soft_queue_list);
+      const lList *soft_queue_list = lGetList(old_job, JB_soft_queue_list);
 
       if (soft_queue_list != NULL) {
          lListElem *queue;
@@ -2179,10 +2178,10 @@ jsv_handle_started_command(sge_gdi_ctx_class_t *ctx, lListElem *jsv, lList **ans
     * PARAM S [hostname:]path,...
     */
    {
-      lList *shell_list = lGetList(old_job, JB_shell_list);
+      const lList *shell_list = lGetList(old_job, JB_shell_list);
 
       if (shell_list != NULL) {
-         lListElem *shell;
+         const lListElem *shell;
          bool first = true;
  
          sge_dstring_clear(&buffer);
@@ -2214,8 +2213,8 @@ jsv_handle_started_command(sge_gdi_ctx_class_t *ctx, lListElem *jsv, lList **ans
     * PARAM t_step <number>
     */
    {
-      lList *ja_structure_list = lGetList(old_job, JB_ja_structure); 
-      lListElem *ja_structure = lFirst(ja_structure_list);
+      const lList *ja_structure_list = lGetList(old_job, JB_ja_structure); 
+      const lListElem *ja_structure = lFirst(ja_structure_list);
 
       if (ja_structure != NULL) {
          u_long32 min, max, step;
@@ -2272,7 +2271,7 @@ jsv_handle_started_command(sge_gdi_ctx_class_t *ctx, lListElem *jsv, lList **ans
    {
       lList *env_list = NULL;
       lListElem *env = NULL;
-      lListElem *display = NULL;
+      const lListElem *display = NULL;
 
       /* make a copy of the environment */
       var_list_copy_env_vars_and_value(&env_list, lGetList(old_job, JB_env_list));
@@ -2411,11 +2410,11 @@ jsv_handle_env_command(sge_gdi_ctx_class_t *ctx, lListElem *jsv, lList **answer_
       if (mod != NULL && var != NULL &&
           (((strcmp(mod, "MOD") == 0 || strcmp(mod, "ADD") == 0) && val != NULL) ||
             (strcmp(mod, "DEL") == 0 && val == NULL))) {
-         lList *env_list = lGetList(new_job, JB_env_list);
+         lList *env_list = lGetListRW(new_job, JB_env_list);
          lListElem *env_variable = NULL;
 
          if (var != NULL) {
-            env_variable = lGetElemStr(env_list, VA_variable, var); 
+            env_variable = lGetElemStrRW(env_list, VA_variable, var); 
          }
          if (strcmp("ADD", mod) == 0 || strcmp("MOD", mod) == 0) {
             if (env_variable == NULL) {
@@ -2809,7 +2808,7 @@ jsv_is_modify_rejected(sge_gdi_ctx_class_t *context, lList **answer_list, lListE
             const lDescr *pointer = NULL;
             lList *allowed_switches = NULL;
             lList *got_switches = NULL;
-            lListElem *allowed = NULL;
+            const lListElem *allowed = NULL;
 
             /*
              * Transform the cull fields into a list of corresponding 
@@ -2856,11 +2855,10 @@ jsv_is_modify_rejected(sge_gdi_ctx_class_t *context, lList **answer_list, lListE
                const char *name = lGetString(allowed, ST_name);
                const void *iterator = NULL;
                lListElem *got;
-               lListElem *got_next;
 
-               got_next = lGetElemStrFirst(got_switches, ST_name, name, &iterator);
+               lListElem *got_next = lGetElemStrFirstRW(got_switches, ST_name, name, &iterator);
                while ((got = got_next) != NULL) {
-                  got_next = lGetElemStrNext(got_switches, ST_name, name, &iterator);
+                  got_next = lGetElemStrNextRW(got_switches, ST_name, name, &iterator);
 
                   lRemoveElem(got_switches, &got);
                }

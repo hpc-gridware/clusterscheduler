@@ -166,9 +166,9 @@ void execd_merge_load_report(u_long32 seqno)
          lListElem *lr, *lr_next;
          bool found = false;
 
-         lr_next = lGetElemStrFirst(lr_list, LR_name, name, &iterator);
+         lr_next = lGetElemStrFirstRW(lr_list, LR_name, name, &iterator);
          while ((lr = lr_next)) {
-            lr_next = lGetElemStrNext(lr_list, LR_name, name, &iterator);
+            lr_next = lGetElemStrNextRW(lr_list, LR_name, name, &iterator);
 
             if (sge_hostcmp(lGetHost(lr, LR_host), hostname) == 0) {
                found = true;
@@ -242,9 +242,9 @@ execd_add_load_report(sge_gdi_ctx_class_t *ctx, lList *report_list, u_long32 now
             lListElem *ep, *next_ep;
             bool found = false;
          
-            next_ep = lGetElemStrFirst(tmp_lr_list, LR_name, name, &iterator);
+            next_ep = lGetElemStrFirstRW(tmp_lr_list, LR_name, name, &iterator);
             while ((ep = next_ep)) {
-               next_ep = lGetElemStrNext(tmp_lr_list, LR_name, name, &iterator);
+               next_ep = lGetElemStrNextRW(tmp_lr_list, LR_name, name, &iterator);
 
                DPRINTF(("handling %s in execd_add_load_report\n", name));
                if (sge_hostcmp(lGetHost(ep, LR_host), hostname) == 0) {
@@ -429,7 +429,7 @@ execd_add_job_report(sge_gdi_ctx_class_t *ctx, lList *report_list, u_long32 now,
 lList *sge_build_load_report(const char* qualified_hostname, const char* binary_path)
 {
    lList *lp = NULL;
-   lListElem *ep;
+   const lListElem *ep;
    int nprocs = 1;
    double load;
    const void *iterator = NULL;
@@ -1045,7 +1045,7 @@ calculate_reserved_usage(const char* qualified_hostname, const lListElem *ja_tas
       {
          /* use PDC actual I/O if available */
          lList *jul;
-         lListElem *uep;
+         const lListElem *uep;
          if ((jul=ptf_get_job_usage(job_id, ja_task_id, pe_task_id))) {
             io = ((uep=lGetElemStr(jul, UA_name, USAGE_ATTR_IO))) ?
                      lGetDouble(uep, UA_value) : 0;
@@ -1121,20 +1121,16 @@ calculate_reserved_usage_pe_task(const char* qualified_hostname,
       lSetUlong(new_job, JB_job_number, job_id);
    }
 
-   new_ja_task = lGetElemUlong(lGetList(new_job, JB_ja_tasks), 
-                               JAT_task_number, ja_task_id);
+   new_ja_task = lGetElemUlongRW(lGetList(new_job, JB_ja_tasks), JAT_task_number, ja_task_id);
    
    if (new_ja_task == NULL) {
-      new_ja_task = lAddSubUlong(new_job, JAT_task_number, ja_task_id, 
-                                 JB_ja_tasks, JAT_Type); 
+      new_ja_task = lAddSubUlong(new_job, JAT_task_number, ja_task_id, JB_ja_tasks, JAT_Type); 
    }
 
-   new_pe_task = lAddSubStr(new_ja_task, PET_id, pe_task_id, JAT_task_list, 
-                            PET_Type);
+   new_pe_task = lAddSubStr(new_ja_task, PET_id, pe_task_id, JAT_task_list, PET_Type);
    
    usage_list = calculate_reserved_usage(qualified_hostname, ja_task, pe_task, 
-                                         job_id, ja_task_id, pe_task_id,
-                                         pe, now);
+                                         job_id, ja_task_id, pe_task_id, pe, now);
   
    lSetList(new_pe_task, PET_usage, usage_list);
 

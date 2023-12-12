@@ -99,9 +99,9 @@ static int init_qtask_config(sge_gdi_ctx_class_t *ctx, lList **alpp, print_func_
    }
 
    /* skip tasknames containing '/' */
-   nxt = lFirst(clp_cluster);
+   nxt = lFirstRW(clp_cluster);
    while ((cep=nxt)) {
-      nxt = lNext(cep);
+      nxt = lNextRW(cep);
       if (strrchr(lGetString(cep, CF_name), '/')) 
          lRemoveElem(clp_cluster, &cep);
 
@@ -143,18 +143,18 @@ static int init_qtask_config(sge_gdi_ctx_class_t *ctx, lList **alpp, print_func_
    }
 
    /* skip tasknames containing '/' */
-   nxt = lFirst(clp_user);
+   nxt = lFirstRW(clp_user);
    while ((cep=nxt)) {
-      nxt = lNext(cep);
+      nxt = lNextRW(cep);
       if (strrchr(lGetString(cep, CF_name), '/')) 
          lRemoveElem(clp_user, &cep);
    }
 
    /* merge contents of user list into cluster list */
-   next = lFirst(clp_user);
+   next = lFirstRW(clp_user);
    while ((cep=next)) {
       char *ro_task_name;
-      next = lNext(cep);
+      next = lNextRW(cep);
       task_name = lGetString(cep, CF_name);
    
       /* build task name with leading '!' for search operation */
@@ -162,10 +162,10 @@ static int init_qtask_config(sge_gdi_ctx_class_t *ctx, lList **alpp, print_func_
       ro_task_name[0] = '!';
       strcpy(&ro_task_name[1], task_name);
 
-      if ((cep_dest=lGetElemStr(clp_cluster, CF_name, ro_task_name))) {
+      if ((cep_dest=lGetElemStrRW(clp_cluster, CF_name, ro_task_name))) {
          /* do not override cluster global task entry */
          lRemoveElem(clp_user, &cep);
-      } else if ((cep_dest=lGetElemStr(clp_cluster, CF_name, task_name))) {
+      } else if ((cep_dest=lGetElemStrRW(clp_cluster, CF_name, task_name))) {
          /* override cluster global task entry */
          lSetString(cep_dest, CF_value, lGetString(cep, CF_value));
          lRemoveElem(clp_user, &cep);
@@ -241,7 +241,7 @@ char **sge_get_qtask_args(void *context, char *taskname, lList **answer_list)
 {
    const char *value = NULL; 
    int num_args = 0;
-   lListElem *task = NULL;
+   const lListElem *task = NULL;
    char** args = NULL;
    sge_gdi_ctx_class_t *ctx = (sge_gdi_ctx_class_t *)context;
    

@@ -204,11 +204,11 @@ lList *get_conf_sublist(lList **alpp, lList *lp, int name_nm, int value_nm,
                         const char *key) 
 {
    lList *value;
-   lListElem *ep;
 
    DENTER(CULL_LAYER, "get_conf_sublist");
    
-   if (!(ep=lGetElemStr(lp, name_nm, key))) {
+   const lListElem *ep = lGetElemStr(lp, name_nm, key);
+   if (ep == NULL) {
       if (alpp) {
          char error[1000];
          sprintf(error, MSG_GDI_CONFIGMISSINGARGUMENT_S , key);
@@ -218,8 +218,7 @@ lList *get_conf_sublist(lList **alpp, lList *lp, int name_nm, int value_nm,
       return NULL;
    }
 
-   value = lGetList(ep, value_nm);
-   /* DPRINTF(("%s = %s\n", key, value?value:"<null ptr>")); */
+   value = lGetListRW(ep, value_nm);
 
    DEXIT;
    return value;
@@ -243,11 +242,11 @@ lList *get_conf_sublist(lList **alpp, lList *lp, int name_nm, int value_nm,
 char *get_conf_value(lList **alpp, lList *lp, int name_nm, int value_nm,
                            const char *key) {
    char *value;
-   lListElem *ep;
 
    DENTER(CULL_LAYER, "get_conf_value");
    
-   if (!(ep=lGetElemStr(lp, name_nm, key))) {
+   const lListElem *ep = lGetElemStr(lp, name_nm, key);
+   if (ep == NULL) {
       if (alpp) {
          char error[1000];
          sprintf(error, MSG_GDI_CONFIGMISSINGARGUMENT_S , key);
@@ -826,7 +825,7 @@ bool set_conf_list(lList **alpp, lList **clpp, int fields[], const char *key,
 
    if (tmplp != NULL) {
       int pos, dataType;
-      lListElem *lep = lFirst(tmplp);
+      const lListElem *lep = lFirst(tmplp);
 
       pos = lGetPosViaElem(lep, sub_name_nm, SGE_NO_ABORT);
       dataType = lGetPosType(lGetElemDescr(lep),pos);

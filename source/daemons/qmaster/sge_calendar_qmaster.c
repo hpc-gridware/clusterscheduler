@@ -187,17 +187,15 @@ sge_del_calendar(sge_gdi_ctx_class_t *ctx, lListElem *cep, lList **alpp, char *r
 
    /* ep is no calendar element, if cep has no CAL_name */
    if (lGetPosViaElem(cep, CAL_name, SGE_NO_ABORT)<0) {
-      CRITICAL((SGE_EVENT, MSG_SGETEXT_MISSINGCULLFIELD_SS,
-            lNm2Str(QU_qname), SGE_FUNC));
+      CRITICAL((SGE_EVENT, MSG_SGETEXT_MISSINGCULLFIELD_SS, lNm2Str(QU_qname), SGE_FUNC));
       answer_list_add(alpp, SGE_EVENT, STATUS_EUNKNOWN, ANSWER_QUALITY_ERROR);
       DEXIT;
       return STATUS_EUNKNOWN;
    }
    cal_name = lGetString(cep, CAL_name);
 
-   if (!calendar_list_locate(*master_calendar_list, cal_name)) {
-      ERROR((SGE_EVENT, MSG_SGETEXT_DOESNOTEXIST_SS, 
-             MSG_OBJ_CALENDAR, cal_name));
+   if (!lGetElemStrRW(*master_calendar_list, CAL_name, cal_name)) {
+      ERROR((SGE_EVENT, MSG_SGETEXT_DOESNOTEXIST_SS, MSG_OBJ_CALENDAR, cal_name));
       answer_list_add(alpp, SGE_EVENT, STATUS_EEXIST, ANSWER_QUALITY_ERROR);
       DEXIT;
       return STATUS_EEXIST;
@@ -208,7 +206,7 @@ sge_del_calendar(sge_gdi_ctx_class_t *ctx, lListElem *cep, lList **alpp, char *r
       lList *local_answer_list = NULL;
 
       if (calendar_is_referenced(cep, &local_answer_list, master_cqueue_list)) {
-         lListElem *answer = lFirst(local_answer_list);
+         const lListElem *answer = lFirst(local_answer_list);
 
          ERROR((SGE_EVENT, "denied: %s", lGetString(answer, AN_text)));
          answer_list_add(alpp, SGE_EVENT, STATUS_ESEMANTIC,
@@ -266,7 +264,7 @@ void sge_calendar_event_handler(sge_gdi_ctx_class_t *ctx, te_event_t anEvent, mo
 
    MONITOR_WAIT_TIME(SGE_LOCK(LOCK_GLOBAL, LOCK_WRITE), monitor);
 
-   if (!(cep = calendar_list_locate(master_calendar_list, cal_name))) {
+   if (!(cep = lGetElemStrRW(master_calendar_list, CAL_name, cal_name))) {
       ERROR((SGE_EVENT, MSG_EVE_TE4CAL_S, cal_name));   
       SGE_UNLOCK(LOCK_GLOBAL, LOCK_WRITE);      
       DRETURN_VOID;

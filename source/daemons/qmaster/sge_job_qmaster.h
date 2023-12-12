@@ -95,7 +95,7 @@ bool spool_read_script(lList **answer_list, u_long32 jobid, lListElem *jep);
 
 u_long32 sge_get_job_number(sge_gdi_ctx_class_t *ctx, monitoring_t *monitor);
 
-int deny_soft_consumables(lList **alpp, lList *srl, const lList *master_centry_list);
+int deny_soft_consumables(lList **alpp, const lList *srl, const lList *master_centry_list);
 
 int
 job_verify_project(const lListElem *job, lList **alpp,

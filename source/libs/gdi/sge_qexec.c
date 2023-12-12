@@ -68,7 +68,7 @@ static char lasterror[4096];
 /* option flags for rcv_from_execd() */
 #define OPT_SYNCHRON 1
 
-#define LOCATE_RTASK(tid) lGetElemStr(remote_task_list, RT_tid, tid)
+#define LOCATE_RTASK(tid) lGetElemStrRW(remote_task_list, RT_tid, tid)
 
 static int rcv_from_execd(sge_gdi_ctx_class_t *ctx, int options, int tag); 
 
@@ -337,8 +337,7 @@ static int rcv_from_execd(sge_gdi_ctx_class_t *ctx, int options, int tag)
    switch (tag) {
    case TAG_TASK_EXIT:
       /* change state in exited task */
-      if (!(rt_rcv = lGetElemStr(remote_task_list, RT_tid, 
-            tid))) {
+      if (!(rt_rcv = lGetElemStrRW(remote_task_list, RT_tid, tid))) {
          sprintf(lasterror, MSG_GDI_TASKNOTFOUND_S, tid);
          sge_free(&tid);
          DEXIT;
@@ -351,7 +350,7 @@ static int rcv_from_execd(sge_gdi_ctx_class_t *ctx, int options, int tag)
 
    case TAG_JOB_EXECUTION:
       /* search task without taskid */
-      if (!(rt_rcv = lGetElemStr(remote_task_list, RT_tid, "none"))) {
+      if (!(rt_rcv = lGetElemStrRW(remote_task_list, RT_tid, "none"))) {
          sprintf(lasterror, MSG_GDI_TASKNOTFOUNDNOIDGIVEN_S , tid);
          DEXIT;
          return -1;

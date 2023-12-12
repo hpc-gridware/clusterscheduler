@@ -89,8 +89,8 @@ schedd_conf_update_master_list(sge_evc_class_t *evc, sge_object_type type,
 
    list_descr = SC_Type;
 
-   if ((data_list = lGetList(event, ET_new_version)) != NULL) {
-      if ((ep = lFirst(data_list)) != NULL) {
+   if ((data_list = lGetListRW(event, ET_new_version)) != NULL) {
+      if ((ep = lFirstRW(data_list)) != NULL) {
          ep = lDechainElem(data_list, ep);
       }
    }

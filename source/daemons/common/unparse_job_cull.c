@@ -81,7 +81,7 @@ lList *cull_unparse_job_parameter(sge_gdi_ctx_class_t *ctx, lList **pcmdline, lL
    u_long32 ul;
    lList *answer = NULL;
    char str[MAX_STRING_SIZE];
-   lList *lp;
+   const lList *lp;
    int ret;
    lListElem *ep_opt;
    const char *username = ctx->get_username(ctx);
@@ -680,7 +680,7 @@ static int sge_unparse_resource_list(lListElem *job, int nm, lList **pcmdline, l
 
    DENTER(TOP_LAYER, "sge_unparse_resource_list");
 
-   if ((lp = lGetList(job, nm))) {
+   if ((lp = lGetListRW(job, nm))) {
       lListElem *ep_opt;
       int hard = (nm == JB_hard_resource_list);
 
@@ -724,7 +724,7 @@ lList **pcmdline,
 lList **alpp 
 ) {
    const char *cp;
-   lList *lp = NULL;
+   const lList *lp = NULL;
    lListElem *ep_opt;
    dstring string_buffer = DSTRING_INIT;
    int ret = 0;
@@ -746,8 +746,7 @@ lList **alpp
          dstring range_string = DSTRING_INIT;
 
          range_list_print_to_string(lp, &range_string, true, false, false);
-         sge_dstring_append(&string_buffer, 
-                            sge_dstring_get_string(&range_string));
+         sge_dstring_append(&string_buffer, sge_dstring_get_string(&range_string));
          sge_dstring_free(&range_string);
       }
       if (ret) {
@@ -771,7 +770,7 @@ lList **alpp
 /*-------------------------------------------------------------------------*/
 static int sge_unparse_path_list(lListElem *job, int nm, char *option, lList **pcmdline, lList **alpp)
 {
-   lList *lp = NULL;
+   const lList *lp = NULL;
    int ret = 0;
    char str[MAX_STRING_SIZE];
    lListElem *ep_opt;

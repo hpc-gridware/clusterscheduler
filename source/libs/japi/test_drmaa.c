@@ -2773,7 +2773,7 @@ static int test(sge_gdi_ctx_class_t *ctx, int *argc, char **argv[], int parse_ar
          char jobid[1024], new_jobid[1024];
          char buffer[100];
          lList *alp, *job_lp;
-         lListElem *job_ep;
+         const lListElem *job_ep;
          FILE *fp;
          const char *mirror_text = "thefoxjumps...";
          mirror_job = "/bin/cat";

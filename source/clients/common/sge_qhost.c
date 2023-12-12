@@ -159,9 +159,8 @@ int do_qhost(void *ctx, lList *host_list, lList *user_list, lList *resource_matc
       }
 
       /* prepare request */
-      global = lGetElemHost(ehl, EH_name, "global");
-      selected = sge_select_queue(resource_match_list, NULL, global, ehl, cl,
-                                  true, -1, NULL, NULL, NULL);
+      global = lGetElemHostRW(ehl, EH_name, "global");
+      selected = sge_select_queue(resource_match_list, NULL, global, ehl, cl, true, -1, NULL, NULL, NULL);
       if (selected) {
          for_each(ep, ehl) {
             lSetUlong(ep, EH_tagged, 1);
@@ -172,8 +171,8 @@ int do_qhost(void *ctx, lList *host_list, lList *user_list, lList *resource_matc
          * sge_select_queue
          * we'll process this tmp_resource_list separately!!
          */
-         if ((tmp_resource_list = lGetElemStr(resource_match_list, CE_name, "hostname"))) {
-            lDechainElem( resource_match_list, tmp_resource_list);
+         if ((tmp_resource_list = lGetElemStrRW(resource_match_list, CE_name, "hostname"))) {
+            lDechainElem(resource_match_list, tmp_resource_list);
          }
          for_each(ep, ehl) {
             /* prepare complex attributes */
@@ -521,8 +520,9 @@ u_long32 show,
 qhost_report_handler_t *report_handler,
 lList **alpp
 ) {
-   lList *load_thresholds, *suspend_thresholds;
-   lListElem *qep, *cqueue;
+   const lList *load_thresholds, *suspend_thresholds;
+   lListElem *qep;
+   lListElem *cqueue;
    u_long32 interval;
    int ret = QHOST_SUCCESS;
    const char *ehname = lGetHost(host, EH_name);
@@ -535,9 +535,9 @@ lList **alpp
    }
 
    for_each(cqueue, qlp) {
-      lList *qinstance_list = lGetList(cqueue, CQ_qinstances);
+      const lList *qinstance_list = lGetList(cqueue, CQ_qinstances);
 
-      if ((qep=lGetElemHost(qinstance_list, QU_qhostname, ehname))) {
+      if ((qep=lGetElemHostRW(qinstance_list, QU_qhostname, ehname))) {
          char buf[80];
          const char *qname = lGetString(qep, QU_qname);
          
@@ -623,11 +623,8 @@ lList **alpp
             if (sge_load_alarm(NULL, qep, load_thresholds, ehl, cl, NULL, true)) {
                qinstance_state_set_alarm(qep, true);
             }
-            parse_ulong_val(NULL, &interval, TYPE_TIM,
-                            lGetString(qep, QU_suspend_interval), NULL, 0);
-            if (lGetUlong(qep, QU_nsuspend) != 0 &&
-                interval != 0 &&
-                sge_load_alarm(NULL, qep, suspend_thresholds, ehl, cl, NULL, false)) {
+            parse_ulong_val(NULL, &interval, TYPE_TIM, lGetString(qep, QU_suspend_interval), NULL, 0);
+            if (lGetUlong(qep, QU_nsuspend) != 0 && interval != 0 && sge_load_alarm(NULL, qep, suspend_thresholds, ehl, cl, NULL, false)) {
                qinstance_state_set_suspend_alarm(qep, true);
             }
             {
@@ -1121,7 +1118,7 @@ u_long32 show
    }
    if (lFirst(conf_l)) {
       lListElem *local = NULL;
-      merge_configuration(NULL, progid, cell_root, lFirst(conf_l), local, NULL);
+      merge_configuration(NULL, progid, cell_root, lFirstRW(conf_l), local, NULL);
    }
    
    lFreeList(&conf_l);

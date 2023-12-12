@@ -263,7 +263,7 @@ sge_gdi_extract_answer(lList **alpp, u_long32 cmd, u_long32 target, int id,
       DRETURN(false);
    }
 
-   map = lGetElemUlong(mal, MA_id, id);
+   map = lGetElemUlongRW(mal, MA_id, id);
    if (!map) {
       sprintf(SGE_EVENT, MSG_GDI_SGEGDIFAILED_S, target2string(target));
       SGE_ADD_MSG_ID(SGE_EVENT);
@@ -1490,7 +1490,7 @@ int gdi2_get_configuration(sge_gdi_ctx_class_t *ctx, const char *config_name,
    }
 
    /* we did not get the global configuration? */
-   if (!(*gepp = lGetElemHost(lp, CONF_name, SGE_GLOBAL_NAME))) {
+   if (!(*gepp = lGetElemHostRW(lp, CONF_name, SGE_GLOBAL_NAME))) {
       ERROR((SGE_EVENT, SFNMAX, MSG_CONF_NOGLOBAL));
       lFreeList(&lp);
       lFreeElem(&hep);
@@ -1502,7 +1502,7 @@ int gdi2_get_configuration(sge_gdi_ctx_class_t *ctx, const char *config_name,
     * print a warning
     */
    if (!is_global_requested) {
-      if (!(*lepp = lGetElemHost(lp, CONF_name, lGetHost(hep, EH_name)))) {
+      if (!(*lepp = lGetElemHostRW(lp, CONF_name, lGetHost(hep, EH_name)))) {
          if (*gepp) {
             INFO((SGE_EVENT, MSG_CONF_NOLOCAL_S, lGetHost(hep, EH_name)));
          }

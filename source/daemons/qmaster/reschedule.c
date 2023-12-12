@@ -167,10 +167,8 @@ void reschedule_unknown_event(sge_gdi_ctx_class_t *ctx, te_event_t anEvent, moni
     * Check if host is still in unknown state
     */
    for_each(qep, master_list) {
-      lListElem *qinstance = NULL;
+      const lListElem *qinstance = lGetElemHost(lGetList(qep, CQ_qinstances), QU_qhostname, hostname); 
 
-      qinstance = lGetElemHost(lGetList(qep, CQ_qinstances), QU_qhostname, 
-                                         hostname); 
       if (qinstance != NULL) {
          if (!qinstance_state_is_unknown(qinstance)) {
            DTRACE;
@@ -308,20 +306,20 @@ int reschedule_job(sge_gdi_ctx_class_t *ctx, lListElem *jep, lListElem *jatep, l
    if (jatep) {
       next_jatep = jatep;
    } else {
-      next_jatep = lFirst(lGetList(jep, JB_ja_tasks));
+      next_jatep = lFirstRW(lGetList(jep, JB_ja_tasks));
    }
 
    while ((this_jatep = next_jatep)) {
-      lListElem *first_granted_queue;  /* JG_Type */
+      const lListElem *first_granted_queue;  /* JG_Type */
       lListElem *host;                 /* EH_Type */
-      lList *granted_qs;
+      const lList *granted_qs;
       u_long32 task_number;
       u_long32 found;
 
       if (jatep) {
          next_jatep = NULL;
       } else {
-         next_jatep = lNext(this_jatep);
+         next_jatep = lNextRW(this_jatep);
       }
 
       granted_qs = lGetList(this_jatep, JAT_granted_destin_identifier_list);
@@ -532,7 +530,7 @@ int reschedule_job(sge_gdi_ctx_class_t *ctx, lListElem *jep, lListElem *jatep, l
             sge_strlcpy(mail_action, MSG_RU_PUSHEDR, sizeof(mail_action));
          }
          if (VALID(MAIL_AT_ABORT, mail_options)) {
-            lList *mail_users;
+            const lList *mail_users;
             char mail_subject[1024];
             char mail_body[1024];
 
@@ -696,15 +694,15 @@ void delete_from_reschedule_unknown_list(sge_gdi_ctx_class_t *ctx, lListElem *ho
    bool changed = false;
    DENTER(TOP_LAYER, "delete_from_reschedule_unknown_list");
  
-   rulp = lGetList(host, EH_reschedule_unknown_list);
+   rulp = lGetListRW(host, EH_reschedule_unknown_list);
    if (rulp) {
       lListElem *this, *next;
  
-      next = lFirst(rulp);
+      next = lFirstRW(rulp);
       while((this = next)) {
          u_long32 state = lGetUlong(this, RU_state);
    
-         next = lNext(this);
+         next = lNextRW(this);
 
          if (state == RESCHEDULE_SKIP_JR_REMOVE
              || state == RESCHEDULE_HANDLE_JR_REMOVE) {
@@ -1109,7 +1107,7 @@ remove_from_reschedule_unknown_list(sge_gdi_ctx_class_t *ctx,
 {
    DENTER(TOP_LAYER, "remove_from_reschedule_unknown_list");
    if (host) {
-      lList *unknown_list = lGetList(host, EH_reschedule_unknown_list);
+      lList *unknown_list = lGetListRW(host, EH_reschedule_unknown_list);
       lListElem *elem;
 
       for_each(elem, unknown_list) {

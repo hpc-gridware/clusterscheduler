@@ -98,5 +98,5 @@ sge_free_cull_order_pos(order_pos_t **cull_order_pos);
 
 void 
 sge_create_cull_order_pos(order_pos_t **cull_order_pos, lListElem *jep, lListElem *jatp,
-                          lListElem *joker, lListElem *joker_task); 
+                          const lListElem *joker, const lListElem *joker_task); 
 #endif /* __SGE_ORDER_H */

@@ -665,7 +665,7 @@ spool_classic_default_list_func(lList **answer_list,
          case SGE_TYPE_CQUEUE:
             {
                lListElem *queue;
-               lListElem *context = spool_get_default_context();
+               const lListElem *context = spool_get_default_context();
                lListElem *type = spool_context_search_type(context, SGE_TYPE_QINSTANCE);
                lListElem *rule = spool_type_search_default_rule(type);
                const char *url = lGetString(rule, SPR_url);
@@ -1055,7 +1055,7 @@ spool_classic_default_write_func(lList **answer_list,
             char *dup = strdup(key);
             bool only_job;
             sge_spool_flags_t flags = SPOOL_DEFAULT;
-            lListElem *job;
+            const lListElem *job;
             
             job_parse_key(dup, &job_id, &ja_task_id, &pe_task_id, &only_job);
 

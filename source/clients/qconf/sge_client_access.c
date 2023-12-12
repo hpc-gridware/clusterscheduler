@@ -91,7 +91,7 @@ lList *acl_args
 
          if (acl && lGetNumberOfElem(acl) > 0) {
             if (!lGetSubStr(lFirst(acl), UE_name, user_name, US_entries)) {
-               lAddSubStr(lFirst(acl), UE_name, user_name, US_entries, UE_Type);
+               lAddSubStr(lFirstRW(acl), UE_name, user_name, US_entries, UE_Type);
 
                /* mod the acl */
                answers = ctx->gdi(ctx, SGE_US_LIST, SGE_GDI_MOD, &acl, 
@@ -102,7 +102,7 @@ lList *acl_args
          } else {
             /* build new list */
             lAddElemStr(&acl, US_name, acl_name, US_Type);
-            lAddSubStr(lFirst(acl), UE_name, user_name, US_entries, UE_Type);
+            lAddSubStr(lFirstRW(acl), UE_name, user_name, US_entries, UE_Type);
             
             /* add the acl */
             answers = ctx->gdi(ctx, SGE_US_LIST, SGE_GDI_ADD, &acl, 
@@ -183,7 +183,7 @@ lList *acl_args
          if (acl && lGetNumberOfElem(acl) > 0) {
             sge_free(&cp);
             if (lGetSubStr(lFirst(acl), UE_name, user_name, US_entries)) {
-               lDelSubStr(lFirst(acl), UE_name, user_name, US_entries);
+               lDelSubStr(lFirstRW(acl), UE_name, user_name, US_entries);
                answers = ctx->gdi(ctx, SGE_US_LIST, SGE_GDI_MOD, &acl, NULL, NULL);
                cp = sge_strdup(cp, lGetString(lFirst(answers), AN_text));
                status = lGetUlong(lFirst(answers), AN_status);

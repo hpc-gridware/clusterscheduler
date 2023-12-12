@@ -301,10 +301,9 @@ void sge_job_exit(sge_gdi_ctx_class_t *ctx, lListElem *jr, lListElem *jep, lList
             found_host = true;
 
             for_each(cqueue, *object_type_get_master_list(SGE_TYPE_CQUEUE)) {
-               lList *qinstance_list = lGetList(cqueue, CQ_qinstances);
-               lListElem *qinstance = NULL;
+               const lList *qinstance_list = lGetList(cqueue, CQ_qinstances);
+               lListElem *qinstance = lGetElemHostRW(qinstance_list, QU_qhostname, host);
 
-               qinstance = lGetElemHost(qinstance_list, QU_qhostname, host);
                if (qinstance != NULL) {
 
                   sge_qmaster_qinstance_state_set_error(qinstance, true);

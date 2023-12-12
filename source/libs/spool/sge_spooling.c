@@ -420,7 +420,7 @@ spool_maintain_context(lList **answer_list, lListElem *context,
 *     spool/spool_startup_context()
 *******************************************************************************/
 bool 
-spool_shutdown_context(lList **answer_list, lListElem *context)
+spool_shutdown_context(lList **answer_list, const lListElem *context)
 {
    bool ret = true;
 
@@ -457,7 +457,7 @@ spool_shutdown_context(lList **answer_list, lListElem *context)
 }
 
 bool
-spool_trigger_context(lList **answer_list, lListElem *context,
+spool_trigger_context(lList **answer_list, const lListElem *context,
                       time_t trigger, time_t *next_trigger)
 {
    bool ret = true;
@@ -494,7 +494,7 @@ spool_trigger_context(lList **answer_list, lListElem *context,
    DRETURN(ret);
 }
 
-bool spool_transaction(lList **answer_list, lListElem *context, 
+bool spool_transaction(lList **answer_list, const lListElem *context, 
                        spooling_transaction_command cmd)
 {
    bool ret = true;
@@ -584,7 +584,7 @@ void spool_set_default_context(lListElem *context)
 lListElem *
 spool_get_default_context(void)
 {
-   return lFirst(Default_Spool_Context_List);
+   return lFirstRW(Default_Spool_Context_List);
 }
 
 /****** spool/spool_context_search_rule() *******************************
@@ -611,7 +611,7 @@ spool_get_default_context(void)
 lListElem *
 spool_context_search_rule(const lListElem *context, const char *name)
 {
-   return lGetElemStr(lGetList(context, SPC_rules), SPR_name, name);
+   return lGetElemStrRW(lGetList(context, SPC_rules), SPR_name, name);
 }
 
 /****** spool/spool_context_create_rule() *******************************
@@ -716,7 +716,7 @@ spool_context_create_rule(lList **answer_list, lListElem *context,
       lSetRef(ep, SPR_validate_list_func, (void *)validate_list_func);
 
       /* append rule to rule list */
-      lp = lGetList(context, SPC_rules);
+      lp = lGetListRW(context, SPC_rules);
       if (lp == NULL) {
          lp = lCreateList("spooling rules", SPR_Type);
          lSetList(context, SPC_rules, lp);
@@ -762,11 +762,11 @@ spool_context_search_type(const lListElem *context,
    lListElem *ep;
 
    /* search fitting rule */
-   ep = lGetElemUlong(lGetList(context, SPC_types), SPT_type, object_type);
+   ep = lGetElemUlongRW(lGetList(context, SPC_types), SPT_type, object_type);
 
    /* if no specific rule is found, return default rule */
    if (ep == NULL) {
-      ep = lGetElemUlong(lGetList(context, SPC_types), SPT_type, SGE_TYPE_ALL);
+      ep = lGetElemUlongRW(lGetList(context, SPC_types), SPT_type, SGE_TYPE_ALL);
    }
    
    return ep;
@@ -823,7 +823,7 @@ spool_context_create_type(lList **answer_list, lListElem *context,
       lSetString(ep, SPT_name, object_type_get_name(object_type));
     
       /* append it to the types list of the context */
-      lp = lGetList(context, SPC_types);
+      lp = lGetListRW(context, SPC_types);
       if (lp == NULL) {
          lp = lCreateList("spooling object types", SPT_Type);
          lSetList(context, SPC_types, lp);
@@ -859,11 +859,10 @@ spool_context_create_type(lList **answer_list, lListElem *context,
 lListElem *
 spool_type_search_default_rule(const lListElem *spool_type)
 {  
-   lList *lp;
-   lListElem *ep;
    lListElem *rule = NULL;
 
-   lp = lGetList(spool_type, SPT_rules);
+   const lList *lp = lGetList(spool_type, SPT_rules);
+   const lListElem *ep;
    for_each (ep, lp) {
       if (lGetBool(ep, SPTR_default)) {
          rule = (lListElem *)lGetRef(ep, SPTR_rule);
@@ -934,7 +933,7 @@ spool_type_add_rule(lList **answer_list, lListElem *spool_type,
       lSetRef(ep, SPTR_rule, (void *)rule);
 
       /* append it to the list of mapping for this type */
-      lp = lGetList(spool_type, SPT_rules);
+      lp = lGetListRW(spool_type, SPT_rules);
       if (lp == NULL) {
          lp = lCreateList("spooling object type rules", SPTR_Type);
          lSetList(spool_type, SPT_rules, lp);
@@ -1190,10 +1189,8 @@ spool_write_object(lList **answer_list, const lListElem *context,
                                  object_type_get_name(object_type), 
                                  lGetString(context, SPC_name));
       } else {
-         lList *type_rules;
-
          /* loop over all rules and call the writing callbacks */
-         type_rules = lGetList(type, SPT_rules);
+         const lList *type_rules = lGetList(type, SPT_rules);
          if (type_rules == NULL || lGetNumberOfElem(type_rules) == 0) {
             answer_list_add_sprintf(answer_list, STATUS_EUNKNOWN, 
                                     ANSWER_QUALITY_ERROR, 
@@ -1308,10 +1305,8 @@ spool_delete_object(lList **answer_list, const lListElem *context,
                                  object_type_get_name(object_type), 
                                  lGetString(context, SPC_name));
       } else {
-         lList *type_rules;
-
          /* loop over all rules and call the deleting callbacks */
-         type_rules = lGetList(type, SPT_rules);
+         const lList *type_rules = lGetList(type, SPT_rules);
          if (type_rules == NULL || lGetNumberOfElem(type_rules) == 0) {
             answer_list_add_sprintf(answer_list, STATUS_EUNKNOWN, 
                                     ANSWER_QUALITY_ERROR, 
