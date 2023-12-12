@@ -1073,7 +1073,7 @@ spool_classic_default_write_func(lList **answer_list,
                /* job_write_spool_file takes a job, even if we only want
                 * to spool a ja_task or pe_task
                 */
-               job = job_list_locate(*(object_type_get_master_list(SGE_TYPE_JOB)), job_id);
+               job = lGetElemUlong(*object_type_get_master_list(SGE_TYPE_JOB), JB_job_number, job_id);
 
                /* additional flags for job_write_spool_file
                 * to avoid spooling too many files
@@ -1328,7 +1328,7 @@ spool_classic_default_delete_func(lList **answer_list,
 static bool write_manop(int spool, int target) {
    FILE *fp;
    lListElem *ep;
-   lList *lp;
+   const lList *lp;
    char filename[255], real_filename[255];
    dstring ds = DSTRING_INIT;
    int key = NoName;
@@ -1401,14 +1401,14 @@ static bool read_manop(int target) {
 
    switch (target) {
    case SGE_UM_LIST:
-      lpp = object_type_get_master_list(SGE_TYPE_MANAGER);      
+      lpp = object_type_get_master_list_rw(SGE_TYPE_MANAGER);      
       strcpy(filename, MAN_FILE);
       key = UM_name;
       descr = UM_Type;
       break;
       
    case SGE_UO_LIST:
-      lpp = object_type_get_master_list(SGE_TYPE_OPERATOR);      
+      lpp = object_type_get_master_list_rw(SGE_TYPE_OPERATOR);      
       strcpy(filename, OP_FILE);
       key = UO_name;
       descr = UO_Type;

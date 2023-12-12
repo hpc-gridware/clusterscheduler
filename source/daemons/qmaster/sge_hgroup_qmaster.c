@@ -88,6 +88,7 @@ hgroup_mod_hostlist(lListElem *hgroup, lList **answer_list,
                     lList **occupant_groups)
 {
    bool ret = true;
+   const lList *master_hgroup_list = *object_type_get_master_list(SGE_TYPE_HGROUP);
 
    DENTER(TOP_LAYER, "hgroup_mod_hostlist");
    if (hgroup != NULL && reduced_elem != NULL) {
@@ -96,7 +97,6 @@ hgroup_mod_hostlist(lListElem *hgroup, lList **answer_list,
       if (pos >= 0) {
          lList *list = lGetPosList(reduced_elem, pos);
          lList *old_href_list = lCopyList("", lGetList(hgroup, HGRP_host_list));
-         lList *master_list = *(hgroup_list_get_master_list());
          lList *href_list = NULL;
          lList *add_groups = NULL;
          lList *rem_groups = NULL;
@@ -116,11 +116,11 @@ hgroup_mod_hostlist(lListElem *hgroup, lList **answer_list,
                                        &rem_groups);
          }
          if (ret && add_groups != NULL) {
-            ret &= hgroup_list_exists(master_list, answer_list, add_groups);
+            ret &= hgroup_list_exists(master_hgroup_list, answer_list, add_groups);
          }
          if (ret) {
             ret &= href_list_find_effective_diff(answer_list, add_groups,
-                                                 rem_groups, master_list,
+                                                 rem_groups, master_hgroup_list,
                                                  add_hosts, rem_hosts);
          }
          if (ret) {
@@ -132,7 +132,7 @@ hgroup_mod_hostlist(lListElem *hgroup, lList **answer_list,
           */
          if (ret) {
             ret &= hgroup_find_all_referencees(hgroup, answer_list,
-                                               master_list, occupant_groups);
+                                               master_hgroup_list, occupant_groups);
             ret &= href_list_add(occupant_groups, answer_list,
                                  lGetHost(hgroup, HGRP_name));
             if (ret) {
@@ -172,12 +172,12 @@ hgroup_mod_hostlist(lListElem *hgroup, lList **answer_list,
             lList *tmp_hosts = NULL;
 
             ret &= href_list_find_all_references(old_href_list, answer_list,
-                                                 master_list, &tmp_hosts, NULL);
+                                                 master_hgroup_list, &tmp_hosts, NULL);
             ret &= href_list_remove_existing(add_hosts, answer_list, tmp_hosts);
             lFreeList(&tmp_hosts);
 
             ret &= href_list_find_all_references(href_list, answer_list,
-                                                 master_list, &tmp_hosts, NULL);
+                                                 master_hgroup_list, &tmp_hosts, NULL);
             ret &= href_list_remove_existing(rem_hosts, answer_list, tmp_hosts);
             lFreeList(&tmp_hosts);
          }
@@ -204,7 +204,7 @@ hgroup_mod_hostlist(lListElem *hgroup, lList **answer_list,
 static void 
 hgroup_commit(sge_gdi_ctx_class_t *ctx, lListElem *hgroup) 
 {
-   lList *cqueue_master_list = *(object_type_get_master_list(SGE_TYPE_CQUEUE));
+   lList *master_cqueue_list = *object_type_get_master_list_rw(SGE_TYPE_CQUEUE);
    lList *cqueue_list = lGetList(hgroup, HGRP_cqueue_list);
    lListElem *next_cqueue = NULL;
    lListElem *cqueue = NULL;
@@ -213,13 +213,13 @@ hgroup_commit(sge_gdi_ctx_class_t *ctx, lListElem *hgroup)
    next_cqueue = lFirst(cqueue_list);
    while ((cqueue = next_cqueue)) {
       const char *name = lGetString(cqueue, CQ_name);
-      lListElem *org_queue = lGetElemStr(cqueue_master_list, CQ_name, name);
+      lListElem *org_queue = lGetElemStr(master_cqueue_list, CQ_name, name);
 
       next_cqueue = lNext(cqueue);
       cqueue_commit(ctx, cqueue);
       lDechainElem(cqueue_list, cqueue);
-      lRemoveElem(cqueue_master_list, &org_queue);
-      lAppendElem(cqueue_master_list, cqueue);
+      lRemoveElem(master_cqueue_list, &org_queue);
+      lAppendElem(master_cqueue_list, cqueue);
    }
    lSetList(hgroup, HGRP_cqueue_list, NULL);
    DEXIT;
@@ -241,6 +241,9 @@ hgroup_mod(sge_gdi_ctx_class_t *ctx,
 {
    bool ret = true;
    int pos;
+   lList *master_hgroup_list = *object_type_get_master_list_rw(SGE_TYPE_HGROUP);
+   lList *master_cqueue_list = *object_type_get_master_list_rw(SGE_TYPE_CQUEUE);
+   const lList *master_ehost_list = *object_type_get_master_list(SGE_TYPE_EXECHOST);
 
    DENTER(TOP_LAYER, "hgroup_mod");
 
@@ -298,11 +301,9 @@ hgroup_mod(sge_gdi_ctx_class_t *ctx,
                                        &occupant_groups);
          }
          if (ret) {
-            lList *cqueue_master_list = 
-                               *(object_type_get_master_list(SGE_TYPE_CQUEUE));
             lListElem *cqueue;
 
-            for_each (cqueue, cqueue_master_list) {
+            for_each (cqueue, master_cqueue_list) {
                if (cqueue_is_a_href_referenced(cqueue, occupant_groups, true)) {
                   lListElem *new_cqueue = NULL;
                   lList *real_add_hosts = NULL;
@@ -312,7 +313,6 @@ hgroup_mod(sge_gdi_ctx_class_t *ctx,
                   const lList *href_list = NULL;
                   const char *name = NULL;
                   lListElem *org_hgroup = NULL;
-                  lList *master_list = NULL;
 
                   /*
                    * Find CQs lists of referenced hosts before and after
@@ -321,12 +321,11 @@ hgroup_mod(sge_gdi_ctx_class_t *ctx,
 
                   href_list = lGetList(cqueue, CQ_hostlist);
                   name = lGetHost(hgroup, HGRP_name);
-                  master_list = *(hgroup_list_get_master_list());
-                  org_hgroup = lGetElemHost(master_list, HGRP_name, name);
+                  org_hgroup = lGetElemHost(master_hgroup_list, HGRP_name, name);
 
                   ret &= href_list_find_all_references(href_list, 
                                                        answer_list,
-                                                       master_list, 
+                                                       master_hgroup_list, 
                                                        &before_mod_list,
                                                        NULL);
 
@@ -335,12 +334,12 @@ hgroup_mod(sge_gdi_ctx_class_t *ctx,
                    *     (find rollback below)
                    */
                   if (org_hgroup != NULL) {
-                     lDechainElem(master_list, org_hgroup);
+                     lDechainElem(master_hgroup_list, org_hgroup);
                   }
-                  lAppendElem(master_list, hgroup);
+                  lAppendElem(master_hgroup_list, hgroup);
                   ret &= href_list_find_all_references(href_list, 
                                                        answer_list,
-                                                       master_list, 
+                                                       master_hgroup_list, 
                                                        &after_mod_list,
                                                        NULL);
 
@@ -388,7 +387,7 @@ hgroup_mod(sge_gdi_ctx_class_t *ctx,
                                                      reduced_elem,
                                                      real_add_hosts, 
                                                      real_rem_hosts,
-                                                     refresh_all_values, monitor);
+                                                     refresh_all_values, monitor, master_hgroup_list, master_cqueue_list);
                   }
 
                   /*
@@ -402,9 +401,9 @@ hgroup_mod(sge_gdi_ctx_class_t *ctx,
                   /*
                    * !!! Rollback of masterlist modification
                    */
-                  lDechainElem(master_list, hgroup);
+                  lDechainElem(master_hgroup_list, hgroup);
                   if (org_hgroup != NULL) {
-                     lAppendElem(master_list, org_hgroup);
+                     lAppendElem(master_hgroup_list, org_hgroup);
                   }
 
                   /*
@@ -426,9 +425,7 @@ hgroup_mod(sge_gdi_ctx_class_t *ctx,
           * to create all not existing EH_Type elements.
           */
          if (ret) {
-            lList *list = *(object_type_get_master_list(SGE_TYPE_EXECHOST));
-
-            ret &= host_list_add_missing_href(ctx, list, answer_list, add_hosts, monitor);
+            ret &= host_list_add_missing_href(ctx, master_ehost_list, answer_list, add_hosts, monitor);
          }
 
          lFreeList(&add_hosts);
@@ -451,6 +448,8 @@ hgroup_del(sge_gdi_ctx_class_t *ctx,
            char *remote_user, char *remote_host) 
 {
    int ret = true;
+   lList *master_hgroup_list = *object_type_get_master_list_rw(SGE_TYPE_HGROUP);
+   const lList *master_cqueue_list = *object_type_get_master_list(SGE_TYPE_CQUEUE);
 
    DENTER(TOP_LAYER, "hgroup_del");
    /*
@@ -463,8 +462,6 @@ hgroup_del(sge_gdi_ctx_class_t *ctx,
        * What is the name ob the hostgroup which should be removed?
        */
       if (name != NULL) {
-         lList *master_hgroup_list = *(hgroup_list_get_master_list());
-         lList *master_cqueue_list = *(object_type_get_master_list(SGE_TYPE_CQUEUE));
          lListElem *hgroup;
 
          /*
@@ -478,20 +475,15 @@ hgroup_del(sge_gdi_ctx_class_t *ctx,
             /*
              * Is it still referenced in another hostgroup or cqueue?
              */
-            ret &= hgroup_find_referencees(hgroup, answer_list, 
-                                           master_hgroup_list, 
-                                           master_cqueue_list,
-                                           &href_list,
-                                           &qref_list);
+            ret &= hgroup_find_referencees(hgroup, answer_list, master_hgroup_list, 
+                                           master_cqueue_list, &href_list, &qref_list);
             if (ret) {
                if (href_list != NULL) {
                   dstring string = DSTRING_INIT;
 
                   href_list_append_to_dstring(href_list, &string);
-                  ERROR((SGE_EVENT, MSG_HGROUP_REFINHGOUP_SS, name,
-                         sge_dstring_get_string(&string)));
-                  answer_list_add(answer_list, SGE_EVENT, STATUS_EEXIST,
-                                  ANSWER_QUALITY_ERROR);
+                  ERROR((SGE_EVENT, MSG_HGROUP_REFINHGOUP_SS, name, sge_dstring_get_string(&string)));
+                  answer_list_add(answer_list, SGE_EVENT, STATUS_EEXIST, ANSWER_QUALITY_ERROR);
                   sge_dstring_free(&string);
                   ret = false;
                }
@@ -499,10 +491,8 @@ hgroup_del(sge_gdi_ctx_class_t *ctx,
                   dstring string = DSTRING_INIT;
 
                   str_list_append_to_dstring(qref_list, &string, ' ');
-                  ERROR((SGE_EVENT, MSG_CQUEUE_REFINHGOUP_SS, name,
-                         sge_dstring_get_string(&string)));
-                  answer_list_add(answer_list, SGE_EVENT, STATUS_EEXIST,
-                                  ANSWER_QUALITY_ERROR);
+                  ERROR((SGE_EVENT, MSG_CQUEUE_REFINHGOUP_SS, name, sge_dstring_get_string(&string)));
+                  answer_list_add(answer_list, SGE_EVENT, STATUS_EEXIST, ANSWER_QUALITY_ERROR);
                   sge_dstring_free(&string);
                   ret = false;
                }
@@ -515,44 +505,34 @@ hgroup_del(sge_gdi_ctx_class_t *ctx,
              */
             if (ret) {
                if (sge_event_spool(ctx, answer_list, 0, sgeE_HGROUP_DEL, 
-                                   0, 0, name, NULL, NULL,
-                                   NULL, NULL, NULL, true, true)) {
+                                   0, 0, name, NULL, NULL, NULL, NULL, NULL, true, true)) {
                   /*
                    * Let's remove the object => Success!
                    */
 
-                  lRemoveElem(*object_type_get_master_list(SGE_TYPE_HGROUP), &hgroup);
+                  lRemoveElem(master_hgroup_list, &hgroup);
 
-                  INFO((SGE_EVENT, MSG_SGETEXT_REMOVEDFROMLIST_SSSS, 
-                        remote_user, remote_host, name , "host group entry"));
-                  answer_list_add(answer_list, SGE_EVENT, STATUS_OK, 
-                                  ANSWER_QUALITY_INFO);
+                  INFO((SGE_EVENT, MSG_SGETEXT_REMOVEDFROMLIST_SSSS, remote_user, remote_host, name , "host group entry"));
+                  answer_list_add(answer_list, SGE_EVENT, STATUS_OK, ANSWER_QUALITY_INFO);
                } else {
-                  ERROR((SGE_EVENT, MSG_CANTSPOOL_SS,"host group entry",
-                         name ));
-                  answer_list_add(answer_list, SGE_EVENT, STATUS_EEXIST, 
-                                  ANSWER_QUALITY_ERROR);
+                  ERROR((SGE_EVENT, MSG_CANTSPOOL_SS,"host group entry", name ));
+                  answer_list_add(answer_list, SGE_EVENT, STATUS_EEXIST, ANSWER_QUALITY_ERROR);
                   ret = false;
                }
             }
          } else {
-            ERROR((SGE_EVENT, MSG_SGETEXT_DOESNOTEXIST_SS, 
-                   "host group", name));
-            answer_list_add(answer_list, SGE_EVENT, STATUS_EEXIST, 
-                            ANSWER_QUALITY_ERROR);
+            ERROR((SGE_EVENT, MSG_SGETEXT_DOESNOTEXIST_SS, "host group", name));
+            answer_list_add(answer_list, SGE_EVENT, STATUS_EEXIST, ANSWER_QUALITY_ERROR);
             ret = false;
          }
       } else {
-         ERROR((SGE_EVENT, MSG_SGETEXT_MISSINGCULLFIELD_SS, 
-                lNm2Str(HGRP_name), SGE_FUNC));
-         answer_list_add(answer_list, SGE_EVENT, STATUS_EUNKNOWN, 
-                         ANSWER_QUALITY_ERROR);
+         ERROR((SGE_EVENT, MSG_SGETEXT_MISSINGCULLFIELD_SS, lNm2Str(HGRP_name), SGE_FUNC));
+         answer_list_add(answer_list, SGE_EVENT, STATUS_EUNKNOWN, ANSWER_QUALITY_ERROR);
          ret = false;
       } 
    } else {
       CRITICAL((SGE_EVENT, MSG_SGETEXT_NULLPTRPASSED_S, SGE_FUNC));
-      answer_list_add(answer_list, SGE_EVENT, STATUS_EUNKNOWN, 
-                      ANSWER_QUALITY_ERROR);
+      answer_list_add(answer_list, SGE_EVENT, STATUS_EUNKNOWN, ANSWER_QUALITY_ERROR);
       ret = false;        
    }
 

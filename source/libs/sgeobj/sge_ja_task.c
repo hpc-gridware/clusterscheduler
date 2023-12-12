@@ -707,14 +707,14 @@ ja_task_verify_granted_destin_identifier(const lListElem *ep, lList **answer_lis
 *     MT-NOTE: ja_task_is_tightly_integrated() is MT safe, the caller must
 *              hold a read lock on the SGE_TYPE_PE list.
 *******************************************************************************/
-bool ja_task_is_tightly_integrated(const lListElem *ja_task)
+bool ja_task_is_tightly_integrated(const lListElem *ja_task, const lList *master_pe_list)
 {
    bool ret = false;
 
    if (ja_task != NULL) {
       const char *pe_name = lGetString(ja_task, JAT_granted_pe);
       if (pe_name != NULL) {
-         const lListElem *pe = pe_list_locate(*object_type_get_master_list(SGE_TYPE_PE), pe_name);
+         const lListElem *pe = pe_list_locate(master_pe_list, pe_name);
          if (pe != NULL) {
             if (lGetBool(pe, PE_control_slaves)) {
                ret = true;

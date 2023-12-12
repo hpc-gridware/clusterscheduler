@@ -800,7 +800,7 @@ int sge_parse_qconf(sge_gdi_ctx_class_t *ctx, char *argv[])
                sge_parse_return = 1;
             }
 
-            if ((ep != NULL) && (pe_validate(ep, &alp, 0) != STATUS_OK)) {
+            if ((ep != NULL) && (pe_validate(ep, &alp, 0, NULL) != STATUS_OK)) {
                lFreeElem(&ep);
                answer_list_output(&alp);
                sge_parse_return = 1;
@@ -833,7 +833,7 @@ int sge_parse_qconf(sge_gdi_ctx_class_t *ctx, char *argv[])
                sge_parse_return = 1;
             }
 
-            if ((ep != NULL) && (pe_validate(ep, &alp, 0) != STATUS_OK)) {
+            if ((ep != NULL) && (pe_validate(ep, &alp, 0, NULL) != STATUS_OK)) {
                lFreeElem(&ep);
                answer_list_output(&alp);
                sge_parse_return = 1;
@@ -2499,7 +2499,7 @@ int sge_parse_qconf(sge_gdi_ctx_class_t *ctx, char *argv[])
                sge_parse_return = 1;
             }
 
-            if ((ep != NULL) && (pe_validate(ep, &alp, 0) != STATUS_OK)) {
+            if ((ep != NULL) && (pe_validate(ep, &alp, 0, NULL) != STATUS_OK)) {
                lFreeElem(&ep);
                answer_list_output(&alp);
                sge_parse_return = 1;
@@ -2532,7 +2532,7 @@ int sge_parse_qconf(sge_gdi_ctx_class_t *ctx, char *argv[])
                sge_parse_return = 1;
             }
 
-            if ((ep != NULL) && (pe_validate(ep, &alp, 0) != STATUS_OK)) {
+            if ((ep != NULL) && (pe_validate(ep, &alp, 0, NULL) != STATUS_OK)) {
                lFreeElem(&ep);
                answer_list_output(&alp);
                sge_parse_return = 1;

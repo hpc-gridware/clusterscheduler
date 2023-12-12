@@ -122,10 +122,10 @@ static int dispatch_jobs(sge_evc_class_t *evc, scheduler_all_data_t *lists, orde
 
 static dispatch_t
 select_assign_debit(lList **queue_list, lList **dis_queue_list, lListElem *job, lListElem *ja_task,
-                    lList *pe_list, lList *ckpt_list, lList *centry_list, lList *host_list,
+                    lList *pe_list, const lList *ckpt_list, const lList *centry_list, lList *host_list,
                     lList *acl_list, lList **user_list, lList **group_list, order_t *orders,
                     double *total_running_job_tickets, int *sort_hostlist, bool is_start,
-                    bool is_reserve, bool is_schedule_based, lList **load_list, lList *hgrp_list, lList *rqs_list,
+                    bool is_reserve, bool is_schedule_based, lList **load_list, const lList *hgrp_list, lList *rqs_list,
                     lList *ar_list, sched_prof_t *pi, bool monitor_next_run, u_long32 now);
 
 void st_set_flag_new_global_conf(bool new_value)
@@ -1010,9 +1010,9 @@ static int dispatch_jobs(sge_evc_class_t *evc, scheduler_all_data_t *lists, orde
 ******************************************************************************/
 static dispatch_t
 select_assign_debit(lList **queue_list, lList **dis_queue_list, lListElem *job, lListElem *ja_task,
-                    lList *pe_list, lList *ckpt_list, lList *centry_list, lList *host_list, lList *acl_list,
+                    lList *pe_list, const lList *ckpt_list, const lList *centry_list, lList *host_list, lList *acl_list,
                     lList **user_list, lList **group_list, order_t *orders, double *total_running_job_tickets,
-                    int *sort_hostlist, bool is_start,  bool is_reserve, bool is_schedule_based, lList **load_list, lList *hgrp_list,
+                    int *sort_hostlist, bool is_start,  bool is_reserve, bool is_schedule_based, lList **load_list, const lList *hgrp_list,
                     lList *rqs_list, lList *ar_list, sched_prof_t *pi, bool monitor_next_run, u_long32 now)
 {
    lListElem *granted_el;

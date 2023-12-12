@@ -77,10 +77,12 @@ typedef enum {
 } ar_state_event_t;
 
 lListElem *
-ar_list_locate(lList *ar_list, u_long32 job_id);
+ar_list_locate(const lList *ar_list, u_long32 job_id);
 
 bool 
-ar_validate(lListElem *ar, lList **alpp, bool in_master, bool is_spool);
+ar_validate(lListElem *ar, lList **alpp, bool in_master, bool is_spool, const lList *master_cqueue_list, 
+            const lList *master_hgroup_list, const lList *master_centry_list, const lList *master_ckpt_list,
+            const lList *master_pe_list, const lList *master_userset_list);
 
 ar_state_event_t 
 ar_get_event_from_string(const char *string);

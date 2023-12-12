@@ -416,8 +416,7 @@ host_list_merge(lList *this_list)
          lListElem *host;
 
          /* for the global host, merged_report_variables == report_variables */
-         lSetList(global_host, EH_merged_report_variables,
-                  lCopyList("", lGetList(global_host, EH_report_variables)));
+         lSetList(global_host, EH_merged_report_variables, lCopyList("", lGetList(global_host, EH_report_variables)));
 
          /* do merge for all hosts except global */
          for_each (host, this_list) {
@@ -479,8 +478,7 @@ host_merge(lListElem *host, const lListElem *global_host)
          global_list = lGetList(global_host, EH_report_variables);
          /* if we have no local list, but a global one, use this one */
          if (global_list != NULL && lGetNumberOfElem(global_list) != 0) {
-            lSetList(host, EH_merged_report_variables, 
-                     lCopyList("", global_list));
+            lSetList(host, EH_merged_report_variables, lCopyList("", global_list));
          } else {
             /* if no report variables are configured in local and global object,
              * delete the merged list.

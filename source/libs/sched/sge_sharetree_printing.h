@@ -53,7 +53,7 @@ void
 print_hdr(dstring *out, const format_t *format);
 
 void
-sge_sharetree_print(dstring *out, lList *sharetree, const lList *users, 
+sge_sharetree_print(dstring *out, const lList *sharetree, const lList *users, 
                     const lList *projects, const lList *usersets,
                     bool group_nodes, bool decay_usage, 
                     const char **names, const format_t *format);

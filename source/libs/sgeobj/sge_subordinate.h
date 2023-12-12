@@ -53,6 +53,6 @@ so_list_add(lList **this_list, lList **answer_list, const char *so_name,
 bool
 so_list_resolve(const lList *so_list, lList **answer_list,
                 lList **resolved_so_list, const char *qinstance_name,
-                const char *hostname);
+                const char *hostname, const lList *master_cqueue_list);
 
 #endif /* __SGE_SUBORDINATE_H */

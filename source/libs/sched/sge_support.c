@@ -540,11 +540,11 @@ sge_calc_node_proportion( lListElem *node,
  *--------------------------------------------------------------------*/
 
 void
-_sge_calc_share_tree_proportions( lList *share_tree,
-                                  const lList *user_list,
-                                  const lList *project_list,
-                                  const lList *decay_list,
-                                  u_long curr_time )
+_sge_calc_share_tree_proportions(const lList *share_tree,
+                                 const lList *user_list,
+                                 const lList *project_list,
+                                 const lList *decay_list,
+                                 u_long curr_time )
 {
    lListElem *root;
    double total_usage;

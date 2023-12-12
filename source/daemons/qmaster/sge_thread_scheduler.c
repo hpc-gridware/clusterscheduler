@@ -670,19 +670,19 @@ sge_scheduler_main(void *arg)
          if (handled_events == true) {
             lList *answer_list = NULL;
             scheduler_all_data_t copy;
-            lList *master_cqueue_list = *(object_type_get_master_list(SGE_TYPE_CQUEUE));
-            lList *master_job_list = *object_type_get_master_list(SGE_TYPE_JOB);
-            lList *master_userset_list = *object_type_get_master_list(SGE_TYPE_USERSET);
-            lList *master_project_list = *object_type_get_master_list(SGE_TYPE_PROJECT);
-            lList *master_exechost_list= *object_type_get_master_list(SGE_TYPE_EXECHOST);
-            lList *master_rqs_list= *object_type_get_master_list(SGE_TYPE_RQS);
-            lList *master_centry_list = *object_type_get_master_list(SGE_TYPE_CENTRY);
-            lList *master_ckpt_list = *object_type_get_master_list(SGE_TYPE_CKPT);
-            lList *master_user_list = *object_type_get_master_list(SGE_TYPE_USER);
-            lList *master_ar_list = *object_type_get_master_list(SGE_TYPE_AR);
-            lList *master_pe_list = *object_type_get_master_list(SGE_TYPE_PE);
-            lList *master_hgrp_list = *object_type_get_master_list(SGE_TYPE_HGROUP);
-            lList *master_sharetree_list = *object_type_get_master_list(SGE_TYPE_SHARETREE);
+            const lList *master_cqueue_list = *object_type_get_master_list(SGE_TYPE_CQUEUE);
+            const lList *master_job_list = *object_type_get_master_list(SGE_TYPE_JOB);
+            const lList *master_userset_list = *object_type_get_master_list(SGE_TYPE_USERSET);
+            const lList *master_project_list = *object_type_get_master_list(SGE_TYPE_PROJECT);
+            const lList *master_exechost_list= *object_type_get_master_list(SGE_TYPE_EXECHOST);
+            const lList *master_rqs_list= *object_type_get_master_list(SGE_TYPE_RQS);
+            const lList *master_centry_list = *object_type_get_master_list(SGE_TYPE_CENTRY);
+            const lList *master_ckpt_list = *object_type_get_master_list(SGE_TYPE_CKPT);
+            const lList *master_user_list = *object_type_get_master_list(SGE_TYPE_USER);
+            const lList *master_ar_list = *object_type_get_master_list(SGE_TYPE_AR);
+            const lList *master_pe_list = *object_type_get_master_list(SGE_TYPE_PE);
+            const lList *master_hgrp_list = *object_type_get_master_list(SGE_TYPE_HGROUP);
+            const lList *master_sharetree_list = *object_type_get_master_list(SGE_TYPE_SHARETREE);
 
             /* delay scheduling for test purposes, see issue GE-3306 */
             if (SGE_TEST_DELAY_SCHEDULING > 0) {

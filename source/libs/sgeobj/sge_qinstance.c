@@ -55,6 +55,7 @@
 #include "sgeobj/sge_qinstance.h"
 #include "sgeobj/sge_qinstance_state.h"
 #include "sgeobj/sge_mesobj.h"
+#include "sgeobj/sge_object.h"
 #include "sgeobj/sge_pe.h"
 #include "sgeobj/sge_qref.h"
 #include "sgeobj/sge_str.h"
@@ -264,7 +265,7 @@ qinstance_increase_qversion(lListElem *this_elem)
 *     bool - true, if the user is owner, else false
 ******************************************************************************/
 bool 
-qinstance_check_owner(const lListElem *this_elem, const char *user_name)
+qinstance_check_owner(const lListElem *this_elem, const char *user_name, const lList *master_manager_list, const lList *master_operator_list)
 {
    bool ret = false;
 
@@ -273,7 +274,7 @@ qinstance_check_owner(const lListElem *this_elem, const char *user_name)
       ret = false;
    } else if (user_name == NULL) {
       ret = false;
-   } else if (manop_is_operator(user_name)) {
+   } else if (manop_is_operator(user_name, master_manager_list, master_operator_list)) {
       ret = true;
    } else {
       lList *owner_list = lGetList(this_elem, QU_owner_list);
@@ -727,7 +728,7 @@ qinstance_set_slots_used(lListElem *this_elem, int new_slots)
 *     MT-NOTE: qinstance_debit_consumable() is MT safe 
 *******************************************************************************/
 int 
-qinstance_debit_consumable(lListElem *qep, lListElem *jep, lList *centry_list, 
+qinstance_debit_consumable(lListElem *qep, lListElem *jep, const lList *centry_list, 
                            int slots, bool is_master_task, bool *just_check)
 {
    return rc_debit_consumable(jep, qep, centry_list, slots,
@@ -864,10 +865,9 @@ qinstance_set_full_name(lListElem *this_elem)
 *     MT-NOTE: qinstance_validate() is MT safe 
 *******************************************************************************/
 bool
-qinstance_validate(lListElem *this_elem, lList **answer_list, lList *master_exechost_list)
+qinstance_validate(lListElem *this_elem, lList **answer_list, const lList *master_exechost_list, const lList *master_centry_list)
 {
    bool ret = true;
-   lList *centry_master_list = *(centry_list_get_master_list());
 
    DENTER(TOP_LAYER, "qinstance_validate");
 
@@ -884,21 +884,18 @@ qinstance_validate(lListElem *this_elem, lList **answer_list, lList *master_exec
    qinstance_message_trash_all_of_type_X(this_elem, ~QI_ERROR);   
 
    /* setup actual list of queue */
-   qinstance_debit_consumable(this_elem, NULL, centry_master_list, 0, true, NULL);
+   qinstance_debit_consumable(this_elem, NULL, master_centry_list, 0, true, NULL);
 
    /* init double values of consumable configuration */
    if (centry_list_fill_request(lGetList(this_elem, QU_consumable_config_list), 
-                     answer_list, centry_master_list, true, false, true) != 0) {
+                     answer_list, master_centry_list, true, false, true) != 0) {
         ret = false; 
    }
 
    if (ret) {
-      if (ensure_attrib_available(NULL, this_elem, 
-                                  QU_load_thresholds) ||
-          ensure_attrib_available(NULL, this_elem, 
-                                  QU_suspend_thresholds) ||
-          ensure_attrib_available(NULL, this_elem, 
-                                  QU_consumable_config_list)) {
+      if (ensure_attrib_available(NULL, this_elem, QU_load_thresholds, master_centry_list) ||
+          ensure_attrib_available(NULL, this_elem, QU_suspend_thresholds, master_centry_list) ||
+          ensure_attrib_available(NULL, this_elem, QU_consumable_config_list, master_centry_list)) {
          ret = false;
       }
    } 
@@ -948,7 +945,7 @@ qinstance_validate(lListElem *this_elem, lList **answer_list, lList *master_exec
 *     MT-NOTE: qinstance_list_validate() is MT safe 
 *******************************************************************************/
 bool
-qinstance_list_validate(lList *this_list, lList **answer_list, lList *master_exechost_list)
+qinstance_list_validate(lList *this_list, lList **answer_list, const lList *master_exechost_list, const lList *master_centry_list)
 {
    bool ret = true;
    lListElem *qinstance;
@@ -956,7 +953,7 @@ qinstance_list_validate(lList *this_list, lList **answer_list, lList *master_exe
    DENTER(TOP_LAYER, "qinstance_list_validate");
 
    for_each(qinstance, this_list) {
-      if (!qinstance_validate(qinstance, answer_list, master_exechost_list)) {
+      if (!qinstance_validate(qinstance, answer_list, master_exechost_list, master_centry_list)) {
          ret = false;
          break;
       }
@@ -1014,7 +1011,7 @@ qinstance_list_validate(lList *this_list, lList **answer_list, lList *master_exe
 *     consumable resources of the 'ep' object has not changed.
 ******************************************************************************/
 int
-rc_debit_consumable(lListElem *jep, lListElem *ep, lList *centry_list,
+rc_debit_consumable(lListElem *jep, lListElem *ep, const lList *centry_list,
                     int slots, int config_nm, int actual_nm,
                     const char *obj_name, bool is_master_task,
                     bool *just_check)

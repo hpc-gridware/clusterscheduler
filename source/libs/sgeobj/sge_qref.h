@@ -49,7 +49,7 @@ bool
 qref_list_trash_some_elemts(lList **this_list, const char *full_name);
 
 bool
-qref_list_is_valid(const lList *this_list, lList **answer_list);
+qref_list_is_valid(const lList *this_list, lList **answer_list, const lList *master_cqueue_list, const lList *master_hgroup_list, const lList *master_centry_list);
 
 void
 qref_resolve_hostname(lListElem *this_elem);

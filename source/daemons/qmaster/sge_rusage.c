@@ -369,7 +369,6 @@ sge_write_rusage(dstring *buffer,
 {
    lList *usage_list        = NULL; /* usage list of ja_task or pe_task */
    lList *reported_list     = NULL; /* already reported usage of ja_task or pe_task */
-
    const char *pe_task_id;
    const char *ret = NULL;
    char *qname = NULL;
@@ -383,6 +382,8 @@ sge_write_rusage(dstring *buffer,
    lListElem *ar = NULL;
    u_long32 exit_status     = 0;
    bool do_accounting_summary = false;
+   const lList *master_pe_list = *object_type_get_master_list(SGE_TYPE_PE);
+   const lList *master_ar_list = *object_type_get_master_list(SGE_TYPE_AR);
 
    DENTER(TOP_LAYER, "sge_write_rusage");
 
@@ -396,8 +397,7 @@ sge_write_rusage(dstring *buffer,
     * and if we shall write individual accounting entries or a summary.
     */
    if (lGetString(ja_task, JAT_granted_pe) != NULL) {
-      const lListElem *pe = pe_list_locate(*object_type_get_master_list(SGE_TYPE_PE), 
-                            lGetString(ja_task, JAT_granted_pe));
+      const lListElem *pe = pe_list_locate(master_pe_list, lGetString(ja_task, JAT_granted_pe));
       do_accounting_summary = pe_do_accounting_summary(pe);
    }
 
@@ -523,7 +523,7 @@ sge_write_rusage(dstring *buffer,
 
    ar_id = lGetUlong(job, JB_ar);
    if (ar_id != 0) {
-      ar = ar_list_locate(*object_type_get_master_list(SGE_TYPE_AR), ar_id);
+      ar = ar_list_locate(master_ar_list, ar_id);
    }
    
    /*

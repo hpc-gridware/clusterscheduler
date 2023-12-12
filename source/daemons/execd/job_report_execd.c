@@ -98,7 +98,7 @@ void trace_jr()
    DEXIT;
 }
 
-lListElem *add_job_report(u_long32 jobid, u_long32 jataskid, const char *petaskid, lListElem *jep)
+lListElem *add_job_report(u_long32 jobid, u_long32 jataskid, const char *petaskid, const lListElem *jep)
 {
    lListElem *jr, *jatep = NULL;
  

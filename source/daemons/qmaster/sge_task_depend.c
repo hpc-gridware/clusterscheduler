@@ -229,6 +229,7 @@ bool sge_task_depend_update(lListElem *jep, lList **alpp, u_long32 task_id)
    const lListElem *pre = NULL;  /* JRE_Type */
    u_long32 hold_state, new_state;
    int Depend = 0;
+   const lList *master_job_list = *object_type_get_master_list(SGE_TYPE_JOB);
 
    DENTER(TOP_LAYER, "sge_task_depend_update");
 
@@ -251,8 +252,7 @@ bool sge_task_depend_update(lListElem *jep, lList **alpp, u_long32 task_id)
       lListElem *dep_range = NULL;      /* RN_Type */
 
       /* locate the job id in the master list, if not found we can't do much */
-      pred_jep = job_list_locate(*(object_type_get_master_list(SGE_TYPE_JOB)),
-                                 lGetUlong(pre, JRE_job_number));
+      pred_jep = lGetElemUlong(master_job_list, JB_job_number, lGetUlong(pre, JRE_job_number));
       if (!pred_jep) continue;
 
       /* use the RSP functions to determine dependent predecessor task range */

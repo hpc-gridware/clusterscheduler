@@ -137,6 +137,7 @@ sge_host_add_remove_enforce_limit_trigger(const char *hostname, bool add)
 {
    lListElem *job;
    lListElem *ja_task;
+   const lList *master_job_list = *object_type_get_master_list(SGE_TYPE_JOB);
 
    DENTER(TOP_LAYER, "sge_host_add_remove_enforce_limit_trigger");
 
@@ -150,7 +151,7 @@ sge_host_add_remove_enforce_limit_trigger(const char *hostname, bool add)
        * and remove a flag which prevents the qmaster<->execd protocol from waiting
        * for a certain pe task waiting on that host
        */ 
-      for_each (job, *(object_type_get_master_list(SGE_TYPE_JOB))) {
+      for_each (job, master_job_list) {
          for_each (ja_task, lGetList(job, JB_ja_tasks)) {
             bool do_action = false;
             lList *gdil = lGetList(ja_task, JAT_granted_destin_identifier_list);
@@ -191,7 +192,7 @@ sge_host_add_remove_enforce_limit_trigger(const char *hostname, bool add)
                      }
                   }
                } else {
-                  lList *master_cqueue_list = *(object_type_get_master_list(SGE_TYPE_CQUEUE));
+                  const lList *master_cqueue_list = *object_type_get_master_list(SGE_TYPE_CQUEUE);
                   lListElem *qinstance = cqueue_list_locate_qinstance(master_cqueue_list,
                                                                       lGetString(gdil_ep, JG_qname));
            
@@ -275,7 +276,7 @@ sge_host_add_remove_enforce_limit_trigger(const char *hostname, bool add)
 void
 sge_add_check_limit_trigger(void)
 {
-   lList *master_host_list = *(object_type_get_master_list(SGE_TYPE_EXECHOST));
+   const lList *master_host_list = *object_type_get_master_list(SGE_TYPE_EXECHOST);
    u_long32 now = sge_get_gmt();
    u_long32 max_time = 0;
    u_long32 reconnect_timeout = EXECD_MAX_RECONNECT_TIMEOUT;
@@ -358,8 +359,8 @@ sge_job_enfoce_limit_handler(sge_gdi_ctx_class_t *ctx, te_event_t event, monitor
       if (job_id == 0 && ja_task_id == 0) {
          sge_host_add_enforce_limit_trigger(NULL);
       } else {
-         lList *master_job_list = *(object_type_get_master_list(SGE_TYPE_JOB));
-         lListElem *job = job_list_locate(master_job_list, job_id);
+         const lList *master_job_list = *object_type_get_master_list(SGE_TYPE_JOB);
+         lListElem *job = lGetElemUlong(master_job_list, JB_job_number, job_id);
          lListElem *ja_task = job_search_task(job, NULL, ja_task_id);
 
          /*
@@ -375,8 +376,8 @@ sge_job_enfoce_limit_handler(sge_gdi_ctx_class_t *ctx, te_event_t event, monitor
             if (gdil_ep != NULL) {
                bool do_action = false;
                u_long32 now = sge_get_gmt();
-               lList *master_cqueue_list = *(object_type_get_master_list(SGE_TYPE_CQUEUE));
-               lList *master_pe_list = *(object_type_get_master_list(SGE_TYPE_PE));
+               const lList *master_cqueue_list = *object_type_get_master_list(SGE_TYPE_CQUEUE);
+               const lList *master_pe_list = *object_type_get_master_list(SGE_TYPE_PE);
                lListElem *qinstance = cqueue_list_locate_qinstance(master_cqueue_list,
                                                                    lGetString(gdil_ep, JG_qname));
 
@@ -590,8 +591,8 @@ sge_job_add_enforce_limit_trigger(lListElem *job, lListElem *ja_task)
        * and add a new timer which will trigger enforcement of limit
        */
       if (job != NULL && ja_task != NULL) {
-         lList *master_cqueue_list = *(object_type_get_master_list(SGE_TYPE_CQUEUE));
-         lList *master_pe_list = *(object_type_get_master_list(SGE_TYPE_PE));
+         const lList *master_cqueue_list = *object_type_get_master_list(SGE_TYPE_CQUEUE);
+         const lList *master_pe_list = *object_type_get_master_list(SGE_TYPE_PE);
 
          /*
           * If the job is a tightly integrated parallel job than we have to take care
@@ -737,10 +738,10 @@ sge_job_add_enforce_limit_trigger(lListElem *job, lListElem *ja_task)
 void 
 sge_job_remove_enforce_limit_trigger(u_long32 job_id, u_long32 ja_task_id)
 {
-   lList *master_cqueue_list = *(object_type_get_master_list(SGE_TYPE_CQUEUE));
-   lList *master_job_list = *(object_type_get_master_list(SGE_TYPE_JOB));
-   lList *master_pe_list = *(object_type_get_master_list(SGE_TYPE_PE));
-   lListElem *job = job_list_locate(master_job_list, job_id);
+   const lList *master_cqueue_list = *object_type_get_master_list(SGE_TYPE_CQUEUE);
+   const lList *master_job_list = *object_type_get_master_list(SGE_TYPE_JOB);
+   const lList *master_pe_list = *object_type_get_master_list(SGE_TYPE_PE);
+   lListElem *job = lGetElemUlong(master_job_list, JB_job_number, job_id);
    lListElem *ja_task = job_search_task(job, NULL, ja_task_id);
    bool delete_trigger = false;
 

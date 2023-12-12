@@ -154,7 +154,7 @@ centry_list_locate(const lList *this_list,
                    const char *name);
 
 bool
-centry_elem_validate(lListElem *centry, lList *centry_list, lList **answer_list);
+centry_elem_validate(lListElem *centry, const lList *centry_list, lList **answer_list);
 
 
 bool
@@ -164,7 +164,7 @@ bool
 centry_list_init_double(lList *this_list);
 
 int
-centry_list_fill_request(lList *centry_list, lList **answer_list, lList *master_centry_list,
+centry_list_fill_request(lList *centry_list, lList **answer_list, const lList *master_centry_list,
                          bool allow_non_requestable, bool allow_empty_boolean,
                          bool allow_neg_consumable);
 
@@ -195,10 +195,10 @@ centry_list_do_all_exists(const lList *this_list, lList **answer_list,
 bool
 centry_list_is_correct(lList *this_list, lList **answer_list);
 
-int ensure_attrib_available(lList **alpp, lListElem *ep, int nm);
+int ensure_attrib_available(lList **alpp, lListElem *ep, int nm, const lList *master_centry_list);
 
 bool
-validate_load_formula(const char *formula, lList **answer_list, lList *centry_list, const char *name);
+validate_load_formula(const char *formula, lList **answer_list, const lList *centry_list, const char *name);
 
 bool load_formula_is_centry_referenced(const char *load_formula, const lListElem *centry);
 

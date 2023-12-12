@@ -67,15 +67,15 @@ void sge_ar_event_handler(sge_gdi_ctx_class_t *ctx, te_event_t anEvent,
                           monitoring_t *monitor);
 
 bool
-ar_list_has_reservation_due_to_ckpt(lList *ar_master_list, lList **answer_list,
+ar_list_has_reservation_due_to_ckpt(const lList *ar_master_list, lList **answer_list,
                                     const char *qinstance_name, lList *ckpt_string_list);
 
 bool
-ar_list_has_reservation_due_to_pe(lList *ar_master_list, lList **answer_list,
+ar_list_has_reservation_due_to_pe(const lList *ar_master_list, lList **answer_list,
                                   const char *qinstance_name, lList *pe_string_list);
 
 bool
-ar_list_has_reservation_for_pe_with_slots(lList *ar_master_list, lList **answer_list,
+ar_list_has_reservation_for_pe_with_slots(const lList *ar_master_list, lList **answer_list,
                                           const char *pe_name, u_long32 new_slots);
 
 bool
@@ -83,7 +83,7 @@ sge_ar_remove_all_jobs(sge_gdi_ctx_class_t *ctx, u_long32 ar_id, int forced, mon
 
 bool
 sge_ar_list_conflicts_with_calendar(lList **answer_list, const char *qinstance_name, lListElem *cal_ep,
-                                lList *master_ar_list);
+                                    const lList *master_ar_list);
 
 void sge_ar_state_set_running(lListElem *ar);
 void sge_ar_state_set_waiting(lListElem *ar);
@@ -93,16 +93,16 @@ void sge_ar_state_set_exited(lListElem *ar);
 void sge_ar_list_set_error_state(lList *ar_list, const char *qname, u_long32 error_type, bool set_error);
 
 bool 
-ar_list_has_reservation_due_to_qinstance_complex_attr(lList *ar_master_list, 
+ar_list_has_reservation_due_to_qinstance_complex_attr(const lList *ar_master_list, 
                                                       lList **answer_list,
                                                       lListElem *qinstance, 
-                                                      lList *ce_master_list);
+                                                      const lList *ce_master_list);
 
 bool 
-ar_list_has_reservation_due_to_host_complex_attr(lList *ar_master_list,
+ar_list_has_reservation_due_to_host_complex_attr(const lList *ar_master_list,
                                                  lList **answer_list,
                                                  lListElem *host, 
-                                                 lList *ce_master_list);
+                                                 const lList *ce_master_list);
 
 void
 ar_initialize_timer(sge_gdi_ctx_class_t *ctx, lList **answer_list, monitoring_t *monitor);

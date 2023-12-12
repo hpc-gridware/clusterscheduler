@@ -76,6 +76,8 @@ int pe_mod(sge_gdi_ctx_class_t *ctx, lList **alpp, lListElem *new_pe, lListElem 
 {
    int ret;
    const char *s, *pe_name;
+   const lList *master_userset_list = *object_type_get_master_list(SGE_TYPE_USERSET);
+   const lList *master_ar_list = *object_type_get_master_list(SGE_TYPE_AR);
 
    DENTER(TOP_LAYER, "pe_mod");
 
@@ -101,9 +103,7 @@ int pe_mod(sge_gdi_ctx_class_t *ctx, lList **alpp, lListElem *new_pe, lListElem 
          goto ERROR;
       }
 
-      if (ar_list_has_reservation_for_pe_with_slots(
-               *(object_type_get_master_list(SGE_TYPE_AR)),
-               alpp, pe_name, pe_slots)) {
+      if (ar_list_has_reservation_for_pe_with_slots(master_ar_list, alpp, pe_name, pe_slots)) {
          goto ERROR;
       }
    }
@@ -120,7 +120,7 @@ int pe_mod(sge_gdi_ctx_class_t *ctx, lList **alpp, lListElem *new_pe, lListElem 
       DPRINTF(("got new PE_user_list\n"));
       /* check user_lists */
       normalize_sublist(pe, PE_user_list);
-      if (userset_list_validate_acl_list(lGetList(pe, PE_user_list), alpp) != STATUS_OK) {
+      if (userset_list_validate_acl_list(lGetList(pe, PE_user_list), alpp, master_userset_list) != STATUS_OK) {
          goto ERROR;
       }
 
@@ -133,7 +133,7 @@ int pe_mod(sge_gdi_ctx_class_t *ctx, lList **alpp, lListElem *new_pe, lListElem 
       DPRINTF(("got new QU_axcl\n"));
       /* check xuser_lists */
       normalize_sublist(pe, PE_xuser_list);
-      if (userset_list_validate_acl_list(lGetList(pe, PE_xuser_list), alpp) != STATUS_OK) {
+      if (userset_list_validate_acl_list(lGetList(pe, PE_xuser_list), alpp, master_userset_list) != STATUS_OK) {
          goto ERROR;
       }
       attr_mod_sub_list(alpp, new_pe, PE_xuser_list, US_name, pe, sub_command,
@@ -275,7 +275,9 @@ int sge_del_pe(sge_gdi_ctx_class_t *ctx, lListElem *pep, lList **alpp, char *rus
    int pos;
    lListElem *ep = NULL;
    const char *pe = NULL;
-   lList *master_pe_list = *object_type_get_master_list(SGE_TYPE_PE);
+   const lList *master_job_list = *object_type_get_master_list(SGE_TYPE_JOB);
+   const lList *master_cqueue_list = *object_type_get_master_list(SGE_TYPE_CQUEUE);
+   lList *master_pe_list = *object_type_get_master_list_rw(SGE_TYPE_PE);
 
    DENTER(TOP_LAYER, "sge_del_pe");
 
@@ -315,8 +317,7 @@ int sge_del_pe(sge_gdi_ctx_class_t *ctx, lListElem *pep, lList **alpp, char *rus
    {
       lList *local_answer_list = NULL;
 
-      if (pe_is_referenced(ep, &local_answer_list, *(object_type_get_master_list(SGE_TYPE_JOB)),
-                           *(object_type_get_master_list(SGE_TYPE_CQUEUE)))) {
+      if (pe_is_referenced(ep, &local_answer_list, master_job_list, master_cqueue_list)) {
          lListElem *answer = lFirst(local_answer_list);
 
          ERROR((SGE_EVENT, "denied: %s", lGetString(answer, AN_text)));
@@ -353,6 +354,7 @@ void debit_all_jobs_from_pes(lList *pe_list) {
    const char *pe_name;
    lListElem *jep, *pep;
    int slots;
+   const lList *master_job_list = *object_type_get_master_list(SGE_TYPE_JOB);
 
    DENTER(TOP_LAYER, "debit_all_jobs_from_pes");
 
@@ -362,7 +364,7 @@ void debit_all_jobs_from_pes(lList *pe_list) {
       pe_name = lGetString(pep, PE_name);
       DPRINTF(("debiting from pe %s:\n", pe_name));
 
-      for_each(jep, *(object_type_get_master_list(SGE_TYPE_JOB))) {
+      for_each(jep, master_job_list) {
          lListElem *jatep;
 
          if (lGetString(jep, JB_pe) != NULL) { /* is job  parallel */

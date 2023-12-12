@@ -1160,7 +1160,7 @@ static void get_reserved_usage(const char *qualified_hostname, lList **job_usage
 
    temp_job_usage_list = lCreateList("JobResUsageList", JB_Type);
 
-   for_each (job, *(object_type_get_master_list(SGE_TYPE_JOB))) {
+   for_each (job, *object_type_get_master_list(SGE_TYPE_JOB)) {
       u_long32 job_id;
       const lListElem *pe, *ja_task;
       lListElem *new_job = NULL;

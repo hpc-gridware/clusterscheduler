@@ -202,7 +202,7 @@ void sge_c_report(sge_gdi_ctx_class_t *ctx, char *rhost, char *commproc, int id,
             sge_update_load_values(ctx, rhost, lGetList(report, REP_list));
 
             if (mconf_get_simulate_execds()) {
-               lList *master_exechost_list = *object_type_get_master_list(SGE_TYPE_EXECHOST);
+               const lList *master_exechost_list = *object_type_get_master_list(SGE_TYPE_EXECHOST);
                lListElem *shep;
                lListElem *simhostElem=NULL; 
 

@@ -105,27 +105,28 @@ cqueue_mark_qinstances(lListElem *cqueue, lList **answer_list,
                        lList *del_hosts);
 
 static bool
-cqueue_add_qinstances(sge_gdi_ctx_class_t *ctx, lListElem *cqueue, lList **answer_list, lList *add_hosts, monitoring_t *monitor);
+cqueue_add_qinstances(sge_gdi_ctx_class_t *ctx, lListElem *cqueue, lList **answer_list, lList *add_hosts, monitoring_t *monitor, const lList *master_hgroup_list, lList *master_cqueue_list);
 
 static lListElem * 
 qinstance_create(sge_gdi_ctx_class_t *ctx,
                  const lListElem *cqueue, lList **answer_list,
-                 const char *hostname, bool *is_ambiguous, monitoring_t *monitor);
+                 const char *hostname, bool *is_ambiguous, monitoring_t *monitor, const lList *master_hgroup_list, lList *master_cqueue_list);
 
 static void
 cqueue_update_categories(const lListElem *new_cq, const lListElem *old_cq);
 
 static void
-qinstance_check_unknown_state(lListElem *this_elem, lList *master_exechost_list);
+qinstance_check_unknown_state(lListElem *this_elem, const lList *master_exechost_list);
 
 static lListElem * 
 qinstance_create(sge_gdi_ctx_class_t *ctx,
                  const lListElem *cqueue, lList **answer_list,
-                 const char *hostname, bool *is_ambiguous, monitoring_t *monitor) 
+                 const char *hostname, bool *is_ambiguous, monitoring_t *monitor, const lList *master_hgroup_list, lList *master_cqueue_list) 
 {
    dstring buffer = DSTRING_INIT;
    const char *cqueue_name = lGetString(cqueue, CQ_name);
-   lList *centry_list = *(object_type_get_master_list(SGE_TYPE_CENTRY));
+   const lList *centry_list = *object_type_get_master_list(SGE_TYPE_CENTRY);
+   const lList *master_ehost_list = *object_type_get_master_list(SGE_TYPE_EXECHOST);
    lListElem *ret = NULL;
    int index;
 
@@ -166,7 +167,7 @@ qinstance_create(sge_gdi_ctx_class_t *ctx,
                        &tmp_is_ambiguous, 
                        &tmp_has_changed_conf_attr,
                        &tmp_has_changed_state_attr,
-                       true, NULL, monitor);
+                       true, NULL, monitor, master_hgroup_list, master_cqueue_list);
 
       *is_ambiguous |= tmp_is_ambiguous;
 
@@ -195,9 +196,9 @@ qinstance_create(sge_gdi_ctx_class_t *ctx,
     *    - qversion
     */
    sge_qmaster_qinstance_state_set_unknown(ret, true);
-   qinstance_check_unknown_state(ret, *object_type_get_master_list(SGE_TYPE_EXECHOST));
+   qinstance_check_unknown_state(ret, master_ehost_list);
    sge_qmaster_qinstance_set_initial_state(ret);
-   qinstance_initialize_sos_attr(ctx, ret, monitor);
+   qinstance_initialize_sos_attr(ctx, ret, monitor, master_cqueue_list);
 
    qinstance_increase_qversion(ret);
 
@@ -205,7 +206,8 @@ qinstance_create(sge_gdi_ctx_class_t *ctx,
 }
 
 static bool
-cqueue_add_qinstances(sge_gdi_ctx_class_t *ctx, lListElem *cqueue, lList **answer_list, lList *add_hosts, monitoring_t *monitor)
+cqueue_add_qinstances(sge_gdi_ctx_class_t *ctx, lListElem *cqueue, lList **answer_list, lList *add_hosts, 
+      monitoring_t *monitor, const lList *master_hgroup_list, lList *master_cqueue_list)
 {
    bool ret = true;
 
@@ -240,7 +242,7 @@ cqueue_add_qinstances(sge_gdi_ctx_class_t *ctx, lListElem *cqueue, lList **answe
             }
             qinstance = qinstance_create(ctx,
                                          cqueue, answer_list,
-                                         hostname, &is_ambiguous, monitor);
+                                         hostname, &is_ambiguous, monitor, master_hgroup_list, master_cqueue_list);
             if (is_ambiguous) {
                DPRINTF(("qinstance %s has ambiguous conf\n", hostname));
             }
@@ -324,6 +326,7 @@ cqueue_mod_hostlist(lListElem *cqueue, lList **answer_list,
                     lList **add_hosts, lList **rem_hosts)
 {
    bool ret = true;
+   const lList *master_hgroup_list = *object_type_get_master_list(SGE_TYPE_HGROUP);
 
    DENTER(TOP_LAYER, "cqueue_mod_hostlist");
    if (cqueue != NULL && reduced_elem != NULL) {
@@ -333,7 +336,6 @@ cqueue_mod_hostlist(lListElem *cqueue, lList **answer_list,
          const char *cqueue_name = lGetString(cqueue, CQ_name);
          lList *list = lGetPosList(reduced_elem, pos);
          lList *old_href_list = lCopyList("", lGetList(cqueue, CQ_hostlist));
-         lList *master_list = *(hgroup_list_get_master_list());
          lList *href_list = NULL;
          lList *add_groups = NULL;
          lList *rem_groups = NULL;
@@ -354,11 +356,11 @@ cqueue_mod_hostlist(lListElem *cqueue, lList **answer_list,
                                        &rem_groups);
          }
          if (ret && add_groups != NULL) {
-            ret &= hgroup_list_exists(master_list, answer_list, add_groups);
+            ret &= hgroup_list_exists(master_hgroup_list, answer_list, add_groups);
          }
          if (ret) {
             ret &= href_list_find_effective_diff(answer_list, add_groups, 
-                                                 rem_groups, master_list, 
+                                                 rem_groups, master_hgroup_list, 
                                                  add_hosts, rem_hosts);
          }
          if (ret) {
@@ -374,12 +376,12 @@ cqueue_mod_hostlist(lListElem *cqueue, lList **answer_list,
             lList *tmp_hosts = NULL;
 
             ret &= href_list_find_all_references(old_href_list, answer_list,
-                                                 master_list, &tmp_hosts, NULL);
+                                                 master_hgroup_list, &tmp_hosts, NULL);
             ret &= href_list_remove_existing(add_hosts, answer_list, tmp_hosts);
             lFreeList(&tmp_hosts);
 
             ret &= href_list_find_all_references(href_list, answer_list,
-                                                 master_list, &tmp_hosts, NULL);
+                                                 master_hgroup_list, &tmp_hosts, NULL);
             ret &= href_list_remove_existing(rem_hosts, answer_list, tmp_hosts);
             lFreeList(&tmp_hosts);
          }
@@ -404,10 +406,12 @@ bool
 cqueue_mod_qinstances(sge_gdi_ctx_class_t *ctx,
                       lListElem *cqueue, lList **answer_list,
                       lListElem *reduced_elem, bool refresh_all_values,
-                      bool is_startup, monitoring_t *monitor)
+                      bool is_startup, monitoring_t *monitor, const lList *master_hgroup_list, lList *master_cqueue_list)
 {
    dstring buffer = DSTRING_INIT;
    bool ret = true;
+   const lList *master_userset_list = *object_type_get_master_list(SGE_TYPE_USERSET);
+   const lList *master_ar_list = *object_type_get_master_list(SGE_TYPE_AR);
    
    DENTER(TOP_LAYER, "cqueue_mod_qinstances");
 
@@ -495,7 +499,7 @@ cqueue_mod_qinstances(sge_gdi_ctx_class_t *ctx,
                           &tmp_has_changed_state_attr,
                           is_startup,
                           &need_reinitialize,
-                          monitor);
+                          monitor, master_hgroup_list, master_cqueue_list);
 
                if (tmp_is_ambiguous) {
                   /*
@@ -554,18 +558,12 @@ cqueue_mod_qinstances(sge_gdi_ctx_class_t *ctx,
 
          if (ret && !is_startup) {
             lListElem *ar;
-            lList *master_userset_list = *(object_type_get_master_list(SGE_TYPE_USERSET));
-
-            for_each(ar, *(object_type_get_master_list(SGE_TYPE_AR))) {
+            for_each(ar, master_ar_list) {
                if (lGetElemStr(lGetList(ar, AR_granted_slots), JG_qname, qinstance_name)) {
                   if (!sge_ar_have_users_access(NULL, ar, lGetString(qinstance, QU_full_name), 
-                                                lGetList(qinstance, QU_acl),
-                                                lGetList(qinstance, QU_xacl),
-                                                master_userset_list)) {
-                     ERROR((SGE_EVENT, MSG_PARSE_MOD3_REJECTED_DUE_TO_AR_SU, 
-                            SGE_ATTR_USER_LISTS, sge_u32c(lGetUlong(ar, AR_id))));
-                     answer_list_add(answer_list, SGE_EVENT, 
-                                     STATUS_ESYNTAX, ANSWER_QUALITY_ERROR);
+                                                lGetList(qinstance, QU_acl), lGetList(qinstance, QU_xacl), master_userset_list)) {
+                     ERROR((SGE_EVENT, MSG_PARSE_MOD3_REJECTED_DUE_TO_AR_SU, SGE_ATTR_USER_LISTS, sge_u32c(lGetUlong(ar, AR_id))));
+                     answer_list_add(answer_list, SGE_EVENT, STATUS_ESYNTAX, ANSWER_QUALITY_ERROR);
                      ret = false;
                      break;
                   }
@@ -591,7 +589,7 @@ cqueue_handle_qinstances(sge_gdi_ctx_class_t *ctx,
                          lListElem *cqueue, lList **answer_list,
                          lListElem *reduced_elem, lList *add_hosts,
                          lList *rem_hosts, bool refresh_all_values,
-                         monitoring_t *monitor) 
+                         monitoring_t *monitor, const lList *master_hgroup_list, lList *master_cqueue_list) 
 {
    bool ret = true;
 
@@ -602,10 +600,10 @@ cqueue_handle_qinstances(sge_gdi_ctx_class_t *ctx,
    }
    if (ret) {
       ret = cqueue_mod_qinstances(ctx, cqueue, answer_list, reduced_elem, 
-                                   refresh_all_values, false, monitor);
+                                   refresh_all_values, false, monitor, master_hgroup_list, master_cqueue_list);
    }
    if (ret) {
-      ret = cqueue_add_qinstances(ctx, cqueue, answer_list, add_hosts, monitor);
+      ret = cqueue_add_qinstances(ctx, cqueue, answer_list, add_hosts, monitor, master_hgroup_list, master_cqueue_list);
    }
    DRETURN(ret);
 }
@@ -618,7 +616,15 @@ int cqueue_mod(sge_gdi_ctx_class_t *ctx,
    bool ret = true;
    lList *add_hosts = NULL;
    lList *rem_hosts = NULL;
-
+   const lList *master_calendar_list = *object_type_get_master_list(SGE_TYPE_CALENDAR);
+   const lList *master_ckpt_list = *object_type_get_master_list(SGE_TYPE_CKPT);
+   const lList *master_pe_list = *object_type_get_master_list(SGE_TYPE_PE);
+   const lList *master_userset_list = *object_type_get_master_list(SGE_TYPE_USERSET);
+   const lList *master_project_list = *object_type_get_master_list(SGE_TYPE_PROJECT);
+   const lList *master_centry_list = *object_type_get_master_list(SGE_TYPE_CENTRY);
+   const lList *master_hgroup_list = *object_type_get_master_list(SGE_TYPE_HGROUP);
+   const lList *master_ehost_list = *object_type_get_master_list(SGE_TYPE_EXECHOST);
+   lList *master_cqueue_list = *object_type_get_master_list_rw(SGE_TYPE_CQUEUE);
 
    DENTER(TOP_LAYER, "cqueue_mod");
 
@@ -677,7 +683,9 @@ int cqueue_mod(sge_gdi_ctx_class_t *ctx,
    }
    if (ret) {
       ret &= cqueue_verify_attributes(cqueue, answer_list, 
-                                      reduced_elem, true);
+                                      reduced_elem, true, master_calendar_list, master_ckpt_list, 
+                                      master_pe_list, master_userset_list, master_project_list, 
+                                      master_centry_list, master_cqueue_list, master_hgroup_list);
    }
 
    /*
@@ -688,7 +696,7 @@ int cqueue_mod(sge_gdi_ctx_class_t *ctx,
 
       ret &= cqueue_handle_qinstances(ctx, 
                                       cqueue, answer_list, reduced_elem, 
-                                      add_hosts, rem_hosts, refresh_all_values, monitor);
+                                      add_hosts, rem_hosts, refresh_all_values, monitor, master_hgroup_list, master_cqueue_list);
    }
 
    /*
@@ -697,9 +705,7 @@ int cqueue_mod(sge_gdi_ctx_class_t *ctx,
     * to create all not existing EH_Type elements.
     */
    if (ret) {
-      lList *list = *(object_type_get_master_list(SGE_TYPE_EXECHOST));
-
-      ret &= host_list_add_missing_href(ctx, list, answer_list, add_hosts, monitor);
+      ret &= host_list_add_missing_href(ctx, master_ehost_list, answer_list, add_hosts, monitor);
    }
 
    /*
@@ -722,6 +728,7 @@ int cqueue_success(sge_gdi_ctx_class_t *ctx,
    lList *qinstances;
    lListElem *qinstance; 
    DENTER(TOP_LAYER, "cqueue_success");
+   const lList *master_job_list = *object_type_get_master_list(SGE_TYPE_JOB);
 
    cqueue_update_categories(cqueue, old_cqueue);
 
@@ -749,7 +756,6 @@ int cqueue_success(sge_gdi_ctx_class_t *ctx,
       if (lGetUlong(qinstance, QU_gdi_do_later) == GDI_DO_LATER) {
          bool is_qinstance_mod = false;
          const char *full_name = lGetString(qinstance, QU_full_name);
-         lList *master_job_list = *(object_type_get_master_list(SGE_TYPE_JOB));
          lListElem *job;
 
          lSetUlong(qinstance, QU_gdi_do_later, 0);
@@ -912,6 +918,7 @@ int cqueue_del(sge_gdi_ctx_class_t *ctx, lListElem *this_elem, lList **answer_li
                char *remote_user, char *remote_host) 
 {
    bool ret = true;
+   lList *master_cqueue_list = *object_type_get_master_list_rw(SGE_TYPE_CQUEUE);
 
    DENTER(TOP_LAYER, "cqueue_del");
 
@@ -919,8 +926,7 @@ int cqueue_del(sge_gdi_ctx_class_t *ctx, lListElem *this_elem, lList **answer_li
       const char* name = lGetString(this_elem, CQ_name);
 
       if (name != NULL) {
-         lList *master_list = *(object_type_get_master_list(SGE_TYPE_CQUEUE));
-         lListElem *cqueue = cqueue_list_locate(master_list, name);
+         lListElem *cqueue = cqueue_list_locate(master_cqueue_list, name);
 
          if (cqueue != NULL) {
             lList *qinstances = lGetList(cqueue, CQ_qinstances);
@@ -950,7 +956,7 @@ int cqueue_del(sge_gdi_ctx_class_t *ctx, lListElem *this_elem, lList **answer_li
             if (do_del) {
                lListElem *tmp_cqueue;
                
-               for_each(tmp_cqueue, master_list) {
+               for_each(tmp_cqueue, master_cqueue_list) {
                
                   if (cqueue_is_used_in_subordinate(name, tmp_cqueue)) {
                      ERROR((SGE_EVENT, MSG_CQUEUE_DEL_ISREFASSUBORDINATE_SS, 
@@ -991,7 +997,7 @@ int cqueue_del(sge_gdi_ctx_class_t *ctx, lListElem *this_elem, lList **answer_li
                                    0, 0, name, NULL, NULL,
                                    NULL, NULL, NULL, true, true)) {
                   cqueue_update_categories(NULL, cqueue);
-                  lRemoveElem(*(object_type_get_master_list(SGE_TYPE_CQUEUE)), &cqueue);
+                  lRemoveElem(master_cqueue_list, &cqueue);
 
                   INFO((SGE_EVENT, MSG_SGETEXT_REMOVEDFROMLIST_SSSS,
                         remote_user, remote_host, name , "cluster queue"));
@@ -1352,7 +1358,7 @@ static void cqueue_update_categories(const lListElem *new_cq, const lListElem *o
 *     MT-NOTE: qinstance_check_unknown_state() is MT safe 
 *******************************************************************************/
 static void
-qinstance_check_unknown_state(lListElem *this_elem, lList *master_exechost_list)
+qinstance_check_unknown_state(lListElem *this_elem, const lList *master_exechost_list)
 {
    const char *hostname = NULL;
    lListElem *host = NULL;

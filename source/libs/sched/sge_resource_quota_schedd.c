@@ -103,7 +103,7 @@ static void rqs_excluded_cqueues(const lListElem *rule, sge_assignment_t *a);
 *
 *******************************************************************************/
 bool
-rqs_set_dynamical_limit(lListElem *limit, lListElem *global_host, lListElem *exec_host, lList *centry) {
+rqs_set_dynamical_limit(lListElem *limit, lListElem *global_host, lListElem *exec_host, const lList *centry) {
 
    DENTER(TOP_LAYER, "rqs_set_dynamical_limit");
 
@@ -370,7 +370,7 @@ static void rqs_excluded_cqueues(const lListElem *rule, sge_assignment_t *a)
 
    DENTER(TOP_LAYER, "rqs_excluded_cqueues");
 
-   for_each (cq, *(object_type_get_master_list(SGE_TYPE_CQUEUE))) {
+   for_each (cq, *object_type_get_master_list(SGE_TYPE_CQUEUE)) {
       const char *cqname = lGetString(cq, CQ_name);
       bool exclude = true;
 
@@ -488,7 +488,7 @@ static void rqs_expand_cqueues(const lListElem *rule, sge_assignment_t *a)
 
    DENTER(TOP_LAYER, "rqs_expand_cqueues");
 
-   for_each (cq, *(object_type_get_master_list(SGE_TYPE_CQUEUE))) {
+   for_each (cq, *object_type_get_master_list(SGE_TYPE_CQUEUE)) {
       cqname = lGetString(cq, CQ_name);
       if (lGetElemStr(a->skip_cqueue_list, CTI_name, cqname))
          continue;
@@ -834,7 +834,7 @@ static void rqs_exceeded_sort_out_par(sge_assignment_t *a, const lListElem *rule
 *     MT-NOTE: sge_user_is_referenced_in_rqs() is MT safe 
 *
 *******************************************************************************/
-bool sge_user_is_referenced_in_rqs(const lList *rqs, const char *user, const char *group, lList *acl_list)
+bool sge_user_is_referenced_in_rqs(const lList *rqs, const char *user, const char *group, const lList *acl_list)
 {
    bool ret = false;
    lListElem *ep;
@@ -845,8 +845,7 @@ bool sge_user_is_referenced_in_rqs(const lList *rqs, const char *user, const cha
       for_each(rule, rule_list) {
          /* there may be no per-user limitation and also not limitation that is special for this user */
          if ((is_expand(rule, RQR_filter_users) || !is_global(rule, RQR_filter_users)) &&
-             rqs_filter_match(lGetObject(rule, RQR_filter_users), FILTER_USERS, user,
-             acl_list, NULL, group)) {
+             rqs_filter_match(lGetObject(rule, RQR_filter_users), FILTER_USERS, user, acl_list, NULL, group)) {
             ret = true;
             break;
          }

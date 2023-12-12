@@ -113,7 +113,7 @@ int do_signal_queue(sge_gdi_ctx_class_t *ctx, struct_msg_t *aMsg, sge_pack_buffe
    } else {            /* signal a queue */
       pack_ack(apb, ACK_SIGQUEUE, jobid, jataskid, qname);
 
-      for_each(jep, *(object_type_get_master_list(SGE_TYPE_JOB))) {
+      for_each(jep, *object_type_get_master_list(SGE_TYPE_JOB)) {
          lListElem *gdil_ep, *master_q, *jatep;
          const char *qnm;
 
@@ -222,7 +222,7 @@ int do_signal_queue(sge_gdi_ctx_class_t *ctx, struct_msg_t *aMsg, sge_pack_buffe
    1 if job is supposed to be not in a healthy state and thus
      should be removed by the calling context
  *************************************************************************/
-int sge_execd_deliver_signal(u_long32 sig, lListElem *jep, lListElem *jatep)
+int sge_execd_deliver_signal(u_long32 sig, const lListElem *jep, lListElem *jatep)
 {
    int queue_already_suspended;
    int getridofjob = 0;

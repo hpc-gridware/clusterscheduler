@@ -42,16 +42,16 @@ typedef struct {
    lList *dis_queue_list;   /* QU_Type  contains the queues only for the reservation*/
    lList *all_queue_list;   /* QU_Type */
    lList *job_list;         /* JB_Type */
-   lList *centry_list;      /* CE_Type */
+   const lList *centry_list;      /* CE_Type */
    lList *acl_list;         /* US_Type */
    lList *pe_list;          /* PE_Type */
    lList *user_list;        /* UP_Type */
    lList *dept_list;        /* US_Type */
    lList *project_list;     /* UP_Type */
    lList *share_tree;       /* STN_Type */
-   lList *ckpt_list;        /* CK_Type */
+   const lList *ckpt_list;        /* CK_Type */
    lList *running_per_user; /* JC_Type */
-   lList *hgrp_list;        /* HGRP_Type */
+   const lList *hgrp_list;        /* HGRP_Type */
    lList *rqs_list;         /* RQS_Type */
    lList *ar_list;          /* AR_Type */
    bool monitor_next_run;

@@ -70,11 +70,11 @@ rqs_update_categories(const lListElem *new_rqs, const lListElem *old_rqs);
 
 static bool
 filter_diff_usersets_or_projects(const lListElem *rule, int filter_nm, lList **scope_l,
-                              int nm, const lDescr *dp, lList *master_list);
+                              int nm, const lDescr *dp, const lList *master_list);
 
 static bool
 filter_diff_usersets_or_projects_scope(lList *filter_scope, int filter_nm, 
-            lList **scope_ref, int nm, const lDescr *dp, lList *master_list);
+            lList **scope_ref, int nm, const lDescr *dp, const lList *master_list);
 
 /****** sge_resource_quota_qmaster/rqs_mod() **************************************
 *  NAME
@@ -128,6 +128,7 @@ int rqs_mod(sge_gdi_ctx_class_t *ctx,
    const char *rqs_name = NULL; 
    bool rules_changed = false;
    bool previous_enabled = (bool)lGetBool(new_rqs, RQS_enabled);
+   const lList *master_centry_list = *object_type_get_master_list(SGE_TYPE_CENTRY);
 
    DENTER(TOP_LAYER, "rqs_mod");
 
@@ -181,7 +182,7 @@ int rqs_mod(sge_gdi_ctx_class_t *ctx,
       }
    }
 
-   if (!rqs_verify_attributes(new_rqs, alpp, true)) {
+   if (!rqs_verify_attributes(new_rqs, alpp, true, master_centry_list)) {
       goto ERROR;
    }
    if (rules_changed || (lGetBool(new_rqs, RQS_enabled) != previous_enabled)) {
@@ -403,15 +404,15 @@ int rqs_del(sge_gdi_ctx_class_t *ctx,
 static bool
 rqs_reinit_consumable_actual_list(lListElem *rqs, lList **answer_list) {
    bool ret = true;
-   lList *master_centry_list = *(object_type_get_master_list(SGE_TYPE_CENTRY));
-   lList *master_userset_list = *(object_type_get_master_list(SGE_TYPE_USERSET));
-   lList *master_hgroup_list = *(object_type_get_master_list(SGE_TYPE_HGROUP));
+   const lList *master_centry_list = *object_type_get_master_list(SGE_TYPE_CENTRY);
+   const lList *master_userset_list = *object_type_get_master_list(SGE_TYPE_USERSET);
+   const lList *master_hgroup_list = *object_type_get_master_list(SGE_TYPE_HGROUP);
+   const lList *master_job_list = *object_type_get_master_list(SGE_TYPE_JOB);
 
    DENTER(TOP_LAYER, "rqs_reinit_consumable_actual_list");
 
    if (rqs != NULL) {
       lListElem *job;
-      lList *job_list = *(object_type_get_master_list(SGE_TYPE_JOB));
       lListElem * rule = NULL;
 
       for_each(rule, lGetList(rqs, RQS_rule)) {
@@ -427,7 +428,7 @@ rqs_reinit_consumable_actual_list(lListElem *rqs, lList **answer_list) {
          DRETURN(ret);
       }
 
-      for_each(job, job_list) {
+      for_each(job, master_job_list) {
          lListElem *ja_task = NULL;
          lList *ja_task_list = lGetList(job, JB_ja_tasks);
 
@@ -484,7 +485,7 @@ rqs_reinit_consumable_actual_list(lListElem *rqs, lList **answer_list) {
 *     sge_resource_quota_qmaster/filter_diff_usersets_or_projects()
 *******************************************************************************/
 static bool filter_diff_usersets_or_projects_scope(lList *filter_scope, int filter_nm, 
-            lList **scope_ref, int nm, const lDescr *dp, lList *master_list) {
+            lList **scope_ref, int nm, const lDescr *dp, const lList *master_list) {
    lListElem *scope_ep;
    const char *scope;
    bool ret = true;
@@ -568,7 +569,7 @@ static bool filter_diff_usersets_or_projects_scope(lList *filter_scope, int filt
 *     MT-NOTE: filter_diff_usersets_or_projects() is MT safe 
 *
 *******************************************************************************/
-static bool filter_diff_usersets_or_projects(const lListElem *rule, int filter_nm, lList **scope_l, int nm, const lDescr *dp, lList* master_list)
+static bool filter_diff_usersets_or_projects(const lListElem *rule, int filter_nm, lList **scope_l, int nm, const lDescr *dp, const lList* master_list)
 {
    lListElem *filter;
    bool ret = true;
@@ -626,7 +627,7 @@ static bool filter_diff_usersets_or_projects(const lListElem *rule, int filter_n
 *     sge_resource_quota_qmaster/rqs_diff_projects()
 *******************************************************************************/
 bool rqs_diff_usersets(const lListElem *new_rqs, const lListElem *old_rqs, lList **new_list,
-                        lList **old_list, lList *master_userset_list)
+                        lList **old_list, const lList *master_userset_list)
 {
    const lListElem *rule;
    bool ret = true;
@@ -686,7 +687,7 @@ bool rqs_diff_usersets(const lListElem *new_rqs, const lListElem *old_rqs, lList
 *     sge_resource_quota_qmaster/rqs_diff_usersets()
 *******************************************************************************/
 bool rqs_diff_projects(const lListElem *new_rqs, const lListElem *old_rqs, lList **new_list,
-                        lList **old_list, lList *master_project_list)
+                        lList **old_list, const lList *master_project_list)
 {
    bool ret = true;
 
@@ -742,15 +743,17 @@ bool rqs_diff_projects(const lListElem *new_rqs, const lListElem *old_rqs, lList
 static void rqs_update_categories(const lListElem *new_rqs, const lListElem *old_rqs)
 {
    lList *old = NULL, *new = NULL;
+   const lList *master_userset_list = *object_type_get_master_list(SGE_TYPE_USERSET);
+   const lList *master_project_list = *object_type_get_master_list(SGE_TYPE_PROJECT);
 
    DENTER(TOP_LAYER, "rqs_update_categories");
 
-   rqs_diff_projects(new_rqs, old_rqs, &new, &old, (*object_type_get_master_list(SGE_TYPE_PROJECT)));
+   rqs_diff_projects(new_rqs, old_rqs, &new, &old, master_project_list);
    project_update_categories(new, old);
    lFreeList(&old);
    lFreeList(&new);
 
-   rqs_diff_usersets(new_rqs, old_rqs, &new, &old, (*object_type_get_master_list(SGE_TYPE_USERSET)));
+   rqs_diff_usersets(new_rqs, old_rqs, &new, &old, master_userset_list);
    userset_update_categories(new, old);
    lFreeList(&old);
    lFreeList(&new);

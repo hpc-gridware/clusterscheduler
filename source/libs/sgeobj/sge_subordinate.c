@@ -259,14 +259,13 @@ so_list_add(lList **this_list, lList **answer_list, const char *so_name,
 bool
 so_list_resolve(const lList *so_list, lList **answer_list,
                 lList **resolved_so_list, const char *cq_name,
-                const char *hostname)
+                const char *hostname, const lList *master_cqueue_list)
 {
    bool ret = true;
 
    DENTER(TOP_LAYER, "so_list_resolve");
    if ((so_list != NULL) && (hostname != NULL)) {
       lListElem *so;
-      lList *cqueue_list = *(object_type_get_master_list(SGE_TYPE_CQUEUE));
 
       if (cq_name != NULL) {
          DPRINTF(("Finding subordinates for %s on %s\n", cq_name, hostname));
@@ -279,7 +278,7 @@ so_list_resolve(const lList *so_list, lList **answer_list,
          const char *qinstance_name = NULL;
          const char *cq_name_str = lGetString (so, SO_name);
 
-         lListElem *cqueue = cqueue_list_locate(cqueue_list, cq_name_str);
+         lListElem *cqueue = cqueue_list_locate(master_cqueue_list, cq_name_str);
 
          if (cqueue != NULL) {
             lListElem *qinstance = cqueue_locate_qinstance(cqueue, hostname);

@@ -64,7 +64,9 @@ qinstance_modify_attribute(sge_gdi_ctx_class_t *ctx,
                            bool *has_changed_state_attr,
                            const bool initial_modify,
                            bool *need_reinitialize,
-                           monitoring_t *monitor);
+                           monitoring_t *monitor, 
+                           const lList *master_hgroup_list,
+                           lList *master_cqueue_list);
 
 bool
 qinstance_change_state_on_calendar_all(sge_gdi_ctx_class_t *ctx,

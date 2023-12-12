@@ -502,10 +502,11 @@ static void sge_c_job_ack(sge_gdi_ctx_class_t *ctx, const char *host, const char
       {
          lListElem *jep = NULL;
          lListElem *jatep = NULL;
+         const lList *master_job_list = *object_type_get_master_list(SGE_TYPE_JOB);
 
          DPRINTF(("TAG_SIGJOB\n"));
          /* ack_ulong is the jobid */
-         if (!(jep = job_list_locate(*(object_type_get_master_list(SGE_TYPE_JOB)), ack_ulong))) {
+         if (!(jep = lGetElemUlong(master_job_list, JB_job_number, ack_ulong))) {
             ERROR((SGE_EVENT, MSG_COM_ACKEVENTFORUNKOWNJOB_U, sge_u32c(ack_ulong) ));
             DRETURN_VOID;
          }
@@ -520,10 +521,8 @@ static void sge_c_job_ack(sge_gdi_ctx_class_t *ctx, const char *host, const char
          te_delete_one_time_event(TYPE_SIGNAL_RESEND_EVENT, ack_ulong, ack_ulong2, NULL);
          {
             dstring buffer = DSTRING_INIT;
-            spool_write_object(&answer_list, spool_get_default_context(), jep, 
-                               job_get_key(lGetUlong(jep, JB_job_number), 
-                                           ack_ulong2, NULL, &buffer), 
-                               SGE_TYPE_JOB, job_spooling);
+            spool_write_object(&answer_list, spool_get_default_context(), jep, job_get_key(lGetUlong(jep, JB_job_number), 
+                               ack_ulong2, NULL, &buffer), SGE_TYPE_JOB, job_spooling);
             sge_dstring_free(&buffer);
          }
          answer_list_output(&answer_list);
@@ -537,20 +536,18 @@ static void sge_c_job_ack(sge_gdi_ctx_class_t *ctx, const char *host, const char
          lListElem *cqueue = NULL;
          dstring cqueue_name = DSTRING_INIT;
          dstring host_domain = DSTRING_INIT;
+         const lList *master_cqueue_list = *object_type_get_master_list(SGE_TYPE_CQUEUE);
 
-         cqueue_name_split(ack_str, &cqueue_name, &host_domain, NULL,  
-                          NULL);
+         cqueue_name_split(ack_str, &cqueue_name, &host_domain, NULL, NULL);
             
-         cqueue = lGetElemStr(*(object_type_get_master_list(SGE_TYPE_CQUEUE)),
-                              CQ_name, sge_dstring_get_string(&cqueue_name));
+         cqueue = lGetElemStr(master_cqueue_list, CQ_name, sge_dstring_get_string(&cqueue_name));
 
          sge_dstring_free(&cqueue_name);
 
          if (cqueue != NULL) {
             lList *qinstance_list = lGetList(cqueue, CQ_qinstances);
 
-            qinstance = lGetElemHost(qinstance_list, QU_qhostname, 
-               sge_dstring_get_string(&host_domain));
+            qinstance = lGetElemHost(qinstance_list, QU_qhostname, sge_dstring_get_string(&host_domain));
          }
          sge_dstring_free(&host_domain);
 

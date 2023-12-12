@@ -416,6 +416,7 @@ static int check_config(lList **alpp, lListElem *conf)
    lListElem *ep;
    const char *name, *value;
    const char *conf_name;
+   const lList *master_userset_list = *object_type_get_master_list(SGE_TYPE_USERSET);
  
    DENTER(TOP_LAYER, "check_config");
  
@@ -518,7 +519,7 @@ static int check_config(lList **alpp, lListElem *conf)
          }
 
          /* .. checking userset names */
-         ok = (userset_list_validate_acl_list(tmp, alpp) == STATUS_OK);
+         ok = (userset_list_validate_acl_list(tmp, alpp, master_userset_list) == STATUS_OK);
          lFreeList(&tmp);
          if (!ok) {
             DRETURN(STATUS_EEXIST);
@@ -535,8 +536,7 @@ static int check_config(lList **alpp, lListElem *conf)
          }
 
          /* .. checking project names */
-         ok = (verify_project_list(alpp, tmp, *object_type_get_master_list(SGE_TYPE_PROJECT),
-                    name, "configuration", conf_name)==STATUS_OK);
+         ok = (verify_project_list(alpp, tmp, *object_type_get_master_list(SGE_TYPE_PROJECT), name, "configuration", conf_name)==STATUS_OK);
          lFreeList(&tmp);
          if (!ok) {
             DRETURN(STATUS_EEXIST);
@@ -714,7 +714,7 @@ static lListElem *get_entry_from_conf(lListElem *aConf, const char *anEntryName)
 lList* sge_get_configuration(const lCondition *condition, const lEnumeration *enumeration)
 {
    lList *conf = NULL;
-   lList *config_list = *object_type_get_master_list(SGE_TYPE_CONFIG);
+   const lList *config_list = *object_type_get_master_list(SGE_TYPE_CONFIG);
    
    DENTER(TOP_LAYER, "sge_get_configuration");
 
@@ -733,7 +733,7 @@ static u_long32 sge_get_config_version_for_host(const char* aName)
    u_long32 version = 0;
    char unique_name[CL_MAXHOSTLEN];
    int ret = -1;
-   lList *config_list = *object_type_get_master_list(SGE_TYPE_CONFIG);
+   const lList *config_list = *object_type_get_master_list(SGE_TYPE_CONFIG);
 
    DENTER(TOP_LAYER, "sge_get_configuration_for_host");
 
@@ -776,7 +776,7 @@ lListElem* sge_get_configuration_for_host(const char* aName)
    lListElem *conf = NULL;
    char unique_name[CL_MAXHOSTLEN];
    int ret = -1;
-   lList *config_list = *object_type_get_master_list(SGE_TYPE_CONFIG);
+   const lList *config_list = *object_type_get_master_list(SGE_TYPE_CONFIG);
 
    DENTER(TOP_LAYER, "sge_get_configuration_for_host");
 
@@ -937,8 +937,8 @@ static int exchange_conf_by_name(sge_gdi_ctx_class_t *ctx, char *aConfName, lLis
    lListElem *elem = NULL;
    u_long32 old_version, new_version = 0;
    const char *old_conf_name = lGetHost(anOldConf, CONF_name);
-   lList *config_list = *object_type_get_master_list(SGE_TYPE_CONFIG);
-   
+   lList *config_list = *object_type_get_master_list_rw(SGE_TYPE_CONFIG);
+  
    DENTER(TOP_LAYER, "exchange_conf_by_name");
 
    old_version = lGetUlong(anOldConf, CONF_version);
@@ -999,7 +999,7 @@ static bool has_reschedule_unknown_change(lList *theOldConfEntries, lList *theNe
 static int do_add_config(sge_gdi_ctx_class_t *ctx, char *aConfName, lListElem *aConf, lList**anAnswer)
 {
    lListElem *elem = NULL;
-   lList *config_list = *object_type_get_master_list(SGE_TYPE_CONFIG);
+   lList *config_list = *object_type_get_master_list_rw(SGE_TYPE_CONFIG);
 
    DENTER(TOP_LAYER, "do_add_config");
 
@@ -1019,7 +1019,7 @@ static int do_add_config(sge_gdi_ctx_class_t *ctx, char *aConfName, lListElem *a
 static int remove_conf_by_name(char *aConfName)
 {
    lListElem *elem = NULL;
-   lList *config_list = *object_type_get_master_list(SGE_TYPE_CONFIG);
+   lList *config_list = *object_type_get_master_list_rw(SGE_TYPE_CONFIG);
    
    DENTER(TOP_LAYER, "remove_conf_by_name");
 

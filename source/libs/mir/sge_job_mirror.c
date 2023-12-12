@@ -153,10 +153,10 @@ job_update_master_list(sge_evc_class_t *evc, sge_object_type type,
 
    sge_dstring_init(&id_dstring, id_buffer, MAX_STRING_SIZE);
 
-   list = object_type_get_master_list(SGE_TYPE_JOB);
+   list = object_type_get_master_list_rw(SGE_TYPE_JOB);
    list_descr = lGetListDescr(lGetList(event, ET_new_version)); 
    job_id = lGetUlong(event, ET_intkey);
-   job = job_list_locate(*list, job_id);
+   job = lGetElemUlong(*list, JB_job_number, job_id);
 
    if (action == SGE_EMA_MOD) {
       u_long32 event_type = lGetUlong(event, ET_type);
@@ -206,7 +206,7 @@ job_update_master_list(sge_evc_class_t *evc, sge_object_type type,
    /* restore ja_task list after modify event */
    if (action == SGE_EMA_MOD && ja_tasks != NULL) {
       /* we have to search the replaced job */
-      job = job_list_locate(*list, job_id);
+      job = lGetElemUlong(*list, JB_job_number, job_id);
       if(job == NULL) {
          ERROR((SGE_EVENT, MSG_JOB_CANTFINDJOBFORUPDATEIN_SS,
                 job_get_id_string(job_id, 0, NULL, &id_dstring), "job_update_master_list"));
@@ -233,7 +233,7 @@ job_schedd_info_update_master_list(sge_evc_class_t *evc, sge_object_type type,
    
    DENTER(TOP_LAYER, "job_schedd_info_update_master_list");
 
-   list = object_type_get_master_list(type); 
+   list = object_type_get_master_list_rw(type); 
    list_descr = lGetListDescr(lGetList(event, ET_new_version));
 
    /* We always update the whole list (consisting of one list element) */

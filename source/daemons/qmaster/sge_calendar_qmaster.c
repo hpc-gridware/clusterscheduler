@@ -69,10 +69,11 @@ calendar_initalize_timer(sge_gdi_ctx_class_t *ctx, monitoring_t *monitor)
    lListElem *cep;
    lList *ppList = NULL;
    lList *answer_list = NULL;
+   const lList *master_calendar_list = *object_type_get_master_list(SGE_TYPE_CALENDAR);
 
    DENTER(TOP_LAYER, "calendar_initalize_timer");
 
-   for_each (cep, *object_type_get_master_list(SGE_TYPE_CALENDAR)) {
+   for_each (cep, master_calendar_list) {
       calendar_parse_year(cep, &answer_list);
       calendar_parse_week(cep, &answer_list);         
       answer_list_output(&answer_list);
@@ -91,8 +92,8 @@ calendar_mod(sge_gdi_ctx_class_t *ctx, lList **alpp, lListElem *new_cal, lListEl
              const char *ruser, const char *rhost, gdi_object_t *object, 
              int sub_command, monitoring_t *monitor) 
 {
-   lList *master_ar_list = *object_type_get_master_list(SGE_TYPE_AR);
-   lList *master_cqueue_list = *object_type_get_master_list(SGE_TYPE_CQUEUE);
+   const lList *master_ar_list = *object_type_get_master_list(SGE_TYPE_AR);
+   const lList *master_cqueue_list = *object_type_get_master_list(SGE_TYPE_CQUEUE);
    lListElem *cqueue;
    const char *cal_name;
 
@@ -172,7 +173,8 @@ int
 sge_del_calendar(sge_gdi_ctx_class_t *ctx, lListElem *cep, lList **alpp, char *ruser, char *rhost) 
 {
    const char *cal_name;
-   lList **master_calendar_list = object_type_get_master_list(SGE_TYPE_CALENDAR);
+   lList **master_calendar_list = object_type_get_master_list_rw(SGE_TYPE_CALENDAR);
+   const lList *master_cqueue_list = *object_type_get_master_list(SGE_TYPE_CQUEUE);
 
    DENTER(TOP_LAYER, "sge_del_calendar");
 
@@ -205,8 +207,7 @@ sge_del_calendar(sge_gdi_ctx_class_t *ctx, lListElem *cep, lList **alpp, char *r
    {
       lList *local_answer_list = NULL;
 
-      if (calendar_is_referenced(cep, &local_answer_list, 
-                            *(object_type_get_master_list(SGE_TYPE_CQUEUE)))) {
+      if (calendar_is_referenced(cep, &local_answer_list, master_cqueue_list)) {
          lListElem *answer = lFirst(local_answer_list);
 
          ERROR((SGE_EVENT, "denied: %s", lGetString(answer, AN_text)));
@@ -259,12 +260,13 @@ void sge_calendar_event_handler(sge_gdi_ctx_class_t *ctx, te_event_t anEvent, mo
    lListElem *cep;
    const char* cal_name = te_get_alphanumeric_key(anEvent);
    lList *ppList = NULL;
+   const lList *master_calendar_list = *object_type_get_master_list(SGE_TYPE_CALENDAR);
 
    DENTER(TOP_LAYER, "sge_calendar_event_handler");
 
    MONITOR_WAIT_TIME(SGE_LOCK(LOCK_GLOBAL, LOCK_WRITE), monitor);
 
-   if (!(cep = calendar_list_locate(*object_type_get_master_list(SGE_TYPE_CALENDAR), cal_name))) {
+   if (!(cep = calendar_list_locate(master_calendar_list, cal_name))) {
       ERROR((SGE_EVENT, MSG_EVE_TE4CAL_S, cal_name));   
       SGE_UNLOCK(LOCK_GLOBAL, LOCK_WRITE);      
       DRETURN_VOID;

@@ -40,10 +40,10 @@ int sge_del_userset(sge_gdi_ctx_class_t *ctx,
                     lListElem *ep, lList **alpp, lList **userset_list, 
                     char *ruser, char *rhost);
 
-int sge_verify_department_entries(lList *userset_list, lListElem *new_userset, 
+int sge_verify_department_entries(const lList *userset_list, lListElem *new_userset, 
                                   lList **alpp);
 
-int set_department(lList **alpp, lListElem *job, lList *userset_list);
+int set_department(lList **alpp, lListElem *job, const lList *userset_list);
 
 void userset_update_categories(const lList *added, const lList *removed);
 

@@ -64,7 +64,7 @@ int do_kill_execd(sge_gdi_ctx_class_t *ctx, struct_msg_t *aMsg)
 
    DPRINTF(("===>KILL EXECD%s\n", kill_jobs?" and jobs":""));
    if (kill_jobs) {
-      for_each(jep, *(object_type_get_master_list(SGE_TYPE_JOB))) {
+      for_each(jep, *object_type_get_master_list_rw(SGE_TYPE_JOB)) {
          for_each (jatep, lGetList(jep, JB_ja_tasks)) {
             if (lGetUlong(jep, JB_checkpoint_attr) & CHECKPOINT_AT_SHUTDOWN) {
                WARNING((SGE_EVENT, MSG_JOB_INITCKPTSHUTDOWN_U, sge_u32c(lGetUlong(jep, JB_job_number))));

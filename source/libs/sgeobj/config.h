@@ -78,51 +78,51 @@ bool set_conf_subordlist(lList **alpp, lList **clpp, int fields[], const char *k
 
 bool set_conf_str_attr_list(lList **alpp, lList **clpp, int fields[],
                             const char *key, lListElem *ep, int name_nm,
-                            lDescr *descr, int sub_name_nm);
+                            lDescr *descr, int sub_name_nm, const lList *master_hgroup_list);
 
 bool set_conf_ulng_attr_list(lList **alpp, lList **clpp, int fields[],
                              const char *key, lListElem *ep, int name_nm,
-                             lDescr *descr, int sub_name_nm);
+                             lDescr *descr, int sub_name_nm, const lList *master_hgroup_list);
 
 bool set_conf_bool_attr_list(lList **alpp, lList **clpp, int fields[],
                              const char *key, lListElem *ep, int name_nm,
-                             lDescr *descr, int sub_name_nm);
+                             lDescr *descr, int sub_name_nm, const lList *master_hgroup_list);
 
 bool set_conf_time_attr_list(lList **alpp, lList **clpp, int fields[],
                              const char *key, lListElem *ep, int name_nm,
-                             lDescr *descr, int sub_name_nm);
+                             lDescr *descr, int sub_name_nm, const lList *master_hgroup_list);
 
 bool set_conf_mem_attr_list(lList **alpp, lList **clpp, int fields[],
                              const char *key, lListElem *ep, int name_nm,
-                             lDescr *descr, int sub_name_nm);
+                             lDescr *descr, int sub_name_nm, const lList *master_hgroup_list);
 
 bool set_conf_inter_attr_list(lList **alpp, lList **clpp, int fields[],
                               const char *key, lListElem *ep, int name_nm,
-                              lDescr *descr, int sub_name_nm);
+                              lDescr *descr, int sub_name_nm, const lList *master_hgroup_list);
 
 bool set_conf_strlist_attr_list(lList **alpp, lList **clpp, int fields[],
                                 const char *key, lListElem *ep, int name_nm,
-                                lDescr *descr, int sub_name_nm);
+                                lDescr *descr, int sub_name_nm, const lList *master_hgroup_list);
 
 bool set_conf_usrlist_attr_list(lList **alpp, lList **clpp, int fields[],
                                 const char *key, lListElem *ep, int name_nm,
-                                lDescr *descr, int sub_name_nm);
+                                lDescr *descr, int sub_name_nm, const lList *master_hgroup_list);
 
 bool set_conf_prjlist_attr_list(lList **alpp, lList **clpp, int fields[],
                                 const char *key, lListElem *ep, int name_nm,
-                                lDescr *descr, int sub_name_nm);
+                                lDescr *descr, int sub_name_nm, const lList *master_hgroup_list);
 
 bool set_conf_celist_attr_list(lList **alpp, lList **clpp, int fields[],
                                const char *key, lListElem *ep, int name_nm,
-                               lDescr *descr, int sub_name_nm);
+                               lDescr *descr, int sub_name_nm, const lList *master_hgroup_list);
 
 bool set_conf_solist_attr_list(lList **alpp, lList **clpp, int fields[],
                                const char *key, lListElem *ep, int name_nm,
-                               lDescr *descr, int sub_name_nm);
+                               lDescr *descr, int sub_name_nm, const lList *master_hgroup_list);
 
 bool set_conf_qtlist_attr_list(lList **alpp, lList **clpp, int fields[],
                                const char *key, lListElem *ep, int name_nm,
-                               lDescr *descr, int sub_name_nm);
+                               lDescr *descr, int sub_name_nm, const lList *master_hgroup_list);
 
 bool set_conf_centry_type(lList **alpp, lList **clpp, int fields[], 
                           const char *key, lListElem *ep, int name_nm);

@@ -196,8 +196,7 @@ void sge_clean_lists(void)
 
    for(;gdi_object[i].target != 0 ; i++) {
       if (gdi_object[i].list_type != SGE_TYPE_NONE) {
-         lList **master_list = object_type_get_master_list(gdi_object[i].list_type);
-   /*          fprintf(stderr, "---> freeing list %s, it has %d elems\n", gdi_object[i].object_name, lGetNumberOfElem(*master_list)); */
+         lList **master_list = object_type_get_master_list_rw(gdi_object[i].list_type);
          lFreeList(master_list);
       }
    }
@@ -454,7 +453,7 @@ sge_c_gdi_get(gdi_object_t *ao, sge_gdi_packet_class_t *packet, sge_gdi_task_cla
             SGE_ADD_MSG_ID(sprintf(SGE_EVENT, SFNMAX, MSG_SGETEXT_OPNOIMPFORTARGET));
             answer_list_add(&(task->answer_list), SGE_EVENT, STATUS_ENOIMP, ANSWER_QUALITY_ERROR);
          } else {
-            lList *data_source = *object_type_get_master_list(ao->list_type);
+            lList *data_source = *object_type_get_master_list_rw(ao->list_type);
 
             if (packet->is_intern_request) {
                /* intern requests need no pb so it is not necessary to postpone the operation */
@@ -606,7 +605,7 @@ sge_c_gdi_add(sge_gdi_ctx_class_t *ctx, sge_gdi_packet_class_t *packet, sge_gdi_
                   break;
 
                case SGE_STN_LIST:
-                  sge_add_sharetree(ctx, ep, object_type_get_master_list(SGE_TYPE_SHARETREE), &(task->answer_list), packet->user, packet->host);
+                  sge_add_sharetree(ctx, ep, object_type_get_master_list_rw(SGE_TYPE_SHARETREE), &(task->answer_list), packet->user, packet->host);
                   break;
 
                default:
@@ -695,7 +694,7 @@ sge_c_gdi_del(sge_gdi_ctx_class_t *ctx,
       switch (task->target)
       {
          case SGE_STN_LIST:
-            sge_del_sharetree(ctx, object_type_get_master_list(SGE_TYPE_SHARETREE), &(task->answer_list),
+            sge_del_sharetree(ctx, object_type_get_master_list_rw(SGE_TYPE_SHARETREE), &(task->answer_list),
                               packet->user, packet->host);
             break;
          default:
@@ -713,7 +712,7 @@ sge_c_gdi_del(sge_gdi_ctx_class_t *ctx,
             case SGE_AH_LIST:
             case SGE_SH_LIST:
             case SGE_EH_LIST:
-               sge_del_host(ctx, ep, &(task->answer_list), packet->user, packet->host, task->target, *object_type_get_master_list(SGE_TYPE_HGROUP));
+               sge_del_host(ctx, ep, &(task->answer_list), packet->user, packet->host, task->target, *object_type_get_master_list_rw(SGE_TYPE_HGROUP));
                break;
 
             case SGE_CQ_LIST:
@@ -742,19 +741,19 @@ sge_c_gdi_del(sge_gdi_ctx_class_t *ctx,
                break;
 
             case SGE_UU_LIST:
-               sge_del_userprj(ctx, ep, &(task->answer_list), object_type_get_master_list(SGE_TYPE_USER), packet->user, packet->host, 1);
+               sge_del_userprj(ctx, ep, &(task->answer_list), object_type_get_master_list_rw(SGE_TYPE_USER), packet->user, packet->host, 1);
                break;
 
             case SGE_US_LIST:
-               sge_del_userset(ctx, ep, &(task->answer_list), object_type_get_master_list(SGE_TYPE_USERSET), packet->user, packet->host);
+               sge_del_userset(ctx, ep, &(task->answer_list), object_type_get_master_list_rw(SGE_TYPE_USERSET), packet->user, packet->host);
                break;
 
             case SGE_PR_LIST:
-               sge_del_userprj(ctx, ep, &(task->answer_list), object_type_get_master_list(SGE_TYPE_PROJECT), packet->user, packet->host, 0);
+               sge_del_userprj(ctx, ep, &(task->answer_list), object_type_get_master_list_rw(SGE_TYPE_PROJECT), packet->user, packet->host, 0);
                break;
 
             case SGE_RQS_LIST:
-               rqs_del(ctx, ep, &(task->answer_list), object_type_get_master_list(SGE_TYPE_RQS), packet->user, packet->host);
+               rqs_del(ctx, ep, &(task->answer_list), object_type_get_master_list_rw(SGE_TYPE_RQS), packet->user, packet->host);
                break;
 
             case SGE_CK_LIST:
@@ -768,7 +767,7 @@ sge_c_gdi_del(sge_gdi_ctx_class_t *ctx,
                hgroup_del(ctx, ep, &(task->answer_list), packet->user, packet->host);
                break;
             case SGE_AR_LIST:
-               ar_del(ctx, ep, &(task->answer_list), object_type_get_master_list(SGE_TYPE_AR), packet->user, packet->host, monitor);
+               ar_del(ctx, ep, &(task->answer_list), object_type_get_master_list_rw(SGE_TYPE_AR), packet->user, packet->host, monitor);
                break;
             default:
                SGE_ADD_MSG_ID( sprintf(SGE_EVENT, SFNMAX, MSG_SGETEXT_OPNOIMPFORTARGET));
@@ -841,11 +840,10 @@ static void sge_gdi_do_permcheck(sge_gdi_packet_class_t *packet, sge_gdi_task_cl
 {
    lList *lp = NULL;
    lListElem *ep = NULL;
+   const lList *master_manager_list = *object_type_get_master_list(SGE_TYPE_MANAGER);
+   const lList *master_operator_list = *object_type_get_master_list(SGE_TYPE_OPERATOR);
 
    DENTER(GDI_LAYER, "sge_gdi_do_permcheck");
-
-
-   DPRINTF(("User: %s\n", packet->user ));
 
    if (task->answer_list == NULL) {
       const char *mapped_user = NULL;
@@ -889,14 +887,14 @@ static void sge_gdi_do_permcheck(sge_gdi_packet_class_t *packet, sge_gdi_task_cl
 
       /* check for manager permission */
       value = 0;
-      if (manop_is_manager(packet->user)) {
+      if (manop_is_manager(packet->user, master_manager_list)) {
          value = 1;
       }
       lSetUlong(ep, PERM_manager, value);
 
       /* check for operator permission */
       value = 0;
-      if (manop_is_operator(packet->user)) {
+      if (manop_is_operator(packet->user, master_manager_list, master_operator_list)) {
          value = 1;
       }
       lSetUlong(ep, PERM_operator, value);
@@ -960,7 +958,7 @@ void sge_c_gdi_replace(sge_gdi_ctx_class_t *ctx, gdi_object_t *ao,
             /* delete all currently defined rule sets */
             ep = lFirst(*object_type_get_master_list(SGE_TYPE_RQS));
             while (ep != NULL) {
-               rqs_del(ctx, ep, &(task->answer_list), object_type_get_master_list(SGE_TYPE_RQS), packet->user, packet->host);
+               rqs_del(ctx, ep, &(task->answer_list), object_type_get_master_list_rw(SGE_TYPE_RQS), packet->user, packet->host);
                ep = lFirst(*object_type_get_master_list(SGE_TYPE_RQS));
             }
 
@@ -1254,10 +1252,11 @@ static void
 trigger_scheduler_monitoring(sge_gdi_packet_class_t *packet, sge_gdi_task_class_t *task,
                              monitoring_t *monitor)
 {
+   const lList *master_manager_list = *object_type_get_master_list(SGE_TYPE_MANAGER);
 
    DENTER(GDI_LAYER, "trigger_scheduler_monitoring");
 
-   if (!manop_is_manager(packet->user)) {
+   if (!manop_is_manager(packet->user, master_manager_list)) {
       WARNING((SGE_EVENT, SFNMAX, MSG_COM_NOSCHEDMONPERMS));
       answer_list_add(&(task->answer_list), SGE_EVENT, STATUS_ENOMGR, ANSWER_QUALITY_WARNING);
       DEXIT;
@@ -1331,7 +1330,7 @@ static void sge_c_gdi_mod(sge_gdi_ctx_class_t *ctx, gdi_object_t *ao,
                break;
 
             case SGE_STN_LIST:
-               sge_mod_sharetree(ctx, ep, object_type_get_master_list(SGE_TYPE_SHARETREE),
+               sge_mod_sharetree(ctx, ep, object_type_get_master_list_rw(SGE_TYPE_SHARETREE),
                                  &(task->answer_list), packet->user, packet->host);
                break;
             default:
@@ -1371,9 +1370,10 @@ static void sge_c_gdi_mod(sge_gdi_ctx_class_t *ctx, gdi_object_t *ao,
  */
 static int sge_chck_mod_perm_user(lList **alpp, u_long32 target, char *user, monitoring_t *monitor)
 {
+   const lList *master_manager_list = *object_type_get_master_list(SGE_TYPE_MANAGER);
+   const lList *master_operator_list = *object_type_get_master_list(SGE_TYPE_OPERATOR);
 
    DENTER(TOP_LAYER, "sge_chck_mod_perm_user");
-
 
    /* check permissions of user */
    switch (target) {
@@ -1398,7 +1398,7 @@ static int sge_chck_mod_perm_user(lList **alpp, u_long32 target, char *user, mon
    case SGE_HGRP_LIST:
    case SGE_RQS_LIST:
       /* user must be a manager */
-      if (!manop_is_manager(user)) {
+      if (!manop_is_manager(user, master_manager_list)) {
          ERROR((SGE_EVENT, MSG_SGETEXT_MUSTBEMANAGER_S, user));
          answer_list_add(alpp, SGE_EVENT, STATUS_ENOMGR, ANSWER_QUALITY_ERROR);
          DRETURN(1);
@@ -1407,7 +1407,7 @@ static int sge_chck_mod_perm_user(lList **alpp, u_long32 target, char *user, mon
 
    case SGE_US_LIST:
       /* user must be a operator */
-      if (!manop_is_operator(user)) {
+      if (!manop_is_operator(user, master_manager_list, master_operator_list)) {
          ERROR((SGE_EVENT, MSG_SGETEXT_MUSTBEOPERATOR_S, user));
          answer_list_add(alpp, SGE_EVENT, STATUS_ENOMGR, ANSWER_QUALITY_ERROR);
          DEXIT;
@@ -1440,7 +1440,7 @@ static int sge_chck_mod_perm_user(lList **alpp, u_long32 target, char *user, mon
       /*
          Advance reservation can be submitted by a manager or any user in the aruser access list.
       */
-      if (!manop_is_manager(user) && !userset_is_ar_user(*userset_list_get_master_list(), user) ) {
+      if (!manop_is_manager(user, master_manager_list) && !userset_is_ar_user(*object_type_get_master_list(SGE_TYPE_USERSET), user) ) {
          ERROR((SGE_EVENT, MSG_SGETEXT_MUSTBEMANAGERORUSER_SS, user, AR_USERS));
          answer_list_add(alpp, SGE_EVENT, STATUS_ENOMGR, ANSWER_QUALITY_ERROR);
          DRETURN(1);
@@ -1786,9 +1786,7 @@ monitoring_t *monitor
    lFreeList(&tmp_alp);
 
    {
-      lList **master_list = NULL;
-
-      master_list = object_type_get_master_list(object->list_type);
+      lList **master_list = object_type_get_master_list_rw(object->list_type);
 
       /* chain out the old object */
       if (old_obj) {

@@ -68,7 +68,7 @@ char *sge_load_alarm_reason(lListElem *queue, lList *threshold, const lList *exe
                             const char *type); 
 
 int sge_split_queue_load(bool monitor_next_run, lList **unloaded, lList **overloaded, lList *exechost_list, 
-                         lList *complex_list, const lList *load_adjustments, 
+                         const lList *complex_list, const lList *load_adjustments, 
                          lList *granted, bool is_consumable_load_alarm, bool is_comprehensive,
                          u_long32 ttype);
 
@@ -121,9 +121,9 @@ typedef struct {
    lList      *load_adjustments;  /* shall load adjustmend be considered (CE_Type)  */
    lList      *host_list;         /* the hosts (EH_Type)                            */
    lList      *queue_list;        /* the queues (QU_Type)                           */
-   lList      *centry_list;       /* the complex entries (CE_Type)                  */
-   lList      *acl_list;          /* the user sets (US_Type)                        */
-   lList      *hgrp_list;         /* the host group list (HGRP_Type)                */
+   const lList *centry_list;      /* the complex entries (CE_Type)                  */
+   const lList *acl_list;         /* the user sets (US_Type)                        */
+   const lList *hgrp_list;        /* the host group list (HGRP_Type)                */
    lList      *rqs_list;          /* the resource quota set list (RQS_Type)         */ 
    lList      *ar_list;           /* the advance reservation list (AR_Type)         */ 
    bool       is_reservation;     /* true, if a reservation for this job should be done */
@@ -174,7 +174,7 @@ dispatch_t
 sge_sequential_assignment(sge_assignment_t *a);
 
 dispatch_t
-sge_select_parallel_environment(sge_assignment_t *best, lList *pe_list);
+sge_select_parallel_environment(sge_assignment_t *best, const lList *pe_list);
 
 /* -------------------------------------------------------------------------------- */
 

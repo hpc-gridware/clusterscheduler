@@ -432,6 +432,7 @@ int sge_add_event_client(lListElem *clio, lList **alpp, lList **eclpp, char *rus
    const char *host;
    const char *commproc;
    u_long32 commproc_id;
+   const lList *master_manager_list = *object_type_get_master_list(SGE_TYPE_MANAGER);
 
    DENTER(TOP_LAYER, "sge_add_event_client");
 
@@ -515,7 +516,7 @@ int sge_add_event_client(lListElem *clio, lList **alpp, lList **eclpp, char *rus
       ** for internal clients (==> update_func != NULL)
       ** and manager/operator
       */
-      if (update_func == NULL && !manop_is_manager(ruser)) {
+      if (update_func == NULL && !manop_is_manager(ruser, master_manager_list)) {
          sge_mutex_unlock("event_master_mutex", SGE_FUNC, __LINE__, &Event_Master_Control.mutex);
          ERROR((SGE_EVENT, SFNMAX, MSG_WRONG_USER_FORFIXEDID));
          answer_list_add(alpp, SGE_EVENT, STATUS_ESEMANTIC, ANSWER_QUALITY_ERROR);
@@ -1106,6 +1107,7 @@ int sge_shutdown_event_client(u_long32 event_client_id, const char* anUser,
 {
    lListElem *client = NULL;
    int ret = 0;
+   const lList *master_manager_list = *object_type_get_master_list(SGE_TYPE_MANAGER);
 
    DENTER(TOP_LAYER, "sge_shutdown_event_client");
 
@@ -1119,7 +1121,7 @@ int sge_shutdown_event_client(u_long32 event_client_id, const char* anUser,
    client = get_event_client(event_client_id);
 
    if (client != NULL) {
-      if (!manop_is_manager(anUser) && (anUID != lGetUlong(client, EV_uid))) {
+      if (!manop_is_manager(anUser, master_manager_list) && (anUID != lGetUlong(client, EV_uid))) {
          sge_mutex_unlock("event_master_mutex", SGE_FUNC, __LINE__, &Event_Master_Control.mutex);
          answer_list_add(alpp, MSG_COM_NOSHUTDOWNPERMS, STATUS_DENIED,
                          ANSWER_QUALITY_ERROR);
@@ -1184,10 +1186,11 @@ int sge_shutdown_dynamic_event_clients(const char *anUser, lList **alpp, monitor
 {
    lListElem *client; 
    int id = 0;
+   const lList *master_manager_list = *object_type_get_master_list(SGE_TYPE_MANAGER);
 
    DENTER(TOP_LAYER, "sge_shutdown_dynamic_event_clients");
 
-   if (!manop_is_manager(anUser)) {
+   if (!manop_is_manager(anUser, master_manager_list)) {
       answer_list_add(alpp, MSG_COM_NOSHUTDOWNPERMS, STATUS_DENIED, ANSWER_QUALITY_ERROR);
       DRETURN(EPERM);
    }
@@ -2765,7 +2768,7 @@ static void add_list_event_direct(lListElem *event_client, lListElem *event,
 static void total_update_event(lListElem *event_client, ev_event type, 
                                bool new_subscription) 
 {
-   lList *lp = NULL; /* lp should be set, if we have to make a copy */
+   const lList *lp = NULL; /* lp should be set, if we have to make a copy */
    lList *copy_lp = NULL; /* copy_lp should be used for a copy of the org. list */
    char buffer[1024];
    dstring buffer_wrapper;

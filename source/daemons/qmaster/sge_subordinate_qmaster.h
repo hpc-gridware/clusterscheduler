@@ -37,7 +37,7 @@
 
 bool
 cqueue_list_x_on_subordinate_gdil(sge_gdi_ctx_class_t *ctx,
-                                  lList *this_list, bool suspend,
+                                  const lList *this_list, bool suspend,
                                   const lList *gdil, monitoring_t *monitor);
 
 bool
@@ -49,10 +49,10 @@ cqueue_list_x_on_subordinate_so(sge_gdi_ctx_class_t *ctx,
 void
 qinstance_find_suspended_subordinates(const lListElem *this_elem,
                                       lList **answer_list,
-                                      lList **resolved_so_list);
+                                      lList **resolved_so_list, const lList *master_cqueue_list);
 
 bool
-qinstance_initialize_sos_attr(sge_gdi_ctx_class_t *ctx, lListElem *this_elem, monitoring_t *monitor);
+qinstance_initialize_sos_attr(sge_gdi_ctx_class_t *ctx, lListElem *this_elem, monitoring_t *monitor, const lList *master_cqueue_list);
 
 bool
 do_slotwise_x_on_subordinate_check(sge_gdi_ctx_class_t *ctx, lListElem *queue_instance,

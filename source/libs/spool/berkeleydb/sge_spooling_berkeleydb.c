@@ -551,8 +551,8 @@ spool_berkeleydb_default_list_func(lList **answer_list,
 
    const lDescr *descr;
    const char *table_name;
-
    bdb_info info;
+   lList *master_suser_list = *object_type_get_master_list_rw(SGE_TYPE_SUSER);
 
    DENTER(BDB_LAYER, "spool_berkeleydb_default_list_func");
 
@@ -638,10 +638,7 @@ spool_berkeleydb_default_list_func(lList **answer_list,
                break;
             case SGE_TYPE_JOB:
                /* read all jobs */
-               ret = spool_berkeleydb_read_list(answer_list, info, 
-                                                BDB_JOB_DB,
-                                                list, descr,
-                                                key);
+               ret = spool_berkeleydb_read_list(answer_list, info, BDB_JOB_DB, list, descr, key);
                if (ret) {
                   lListElem *job;
                   const char *ja_task_table;
@@ -651,13 +648,8 @@ spool_berkeleydb_default_list_func(lList **answer_list,
                      lList *task_list = NULL;
                      u_long32 job_id = lGetUlong(job, JB_job_number);
 
-                     key = sge_dstring_sprintf(&key_dstring, "%s:%8d.",
-                                               ja_task_table,
-                                               job_id);
-                     ret = spool_berkeleydb_read_list(answer_list, info,
-                                                      BDB_JOB_DB,
-                                                      &task_list, JAT_Type,
-                                                      key);
+                     key = sge_dstring_sprintf(&key_dstring, "%s:%8d.", ja_task_table, job_id);
+                     ret = spool_berkeleydb_read_list(answer_list, info, BDB_JOB_DB, &task_list, JAT_Type, key);
                      /* reading ja_tasks succeeded */
                      if (ret) {
                         /* we actually found ja_tasks for this job */
@@ -670,16 +662,10 @@ spool_berkeleydb_default_list_func(lList **answer_list,
 
                            for_each(ja_task, task_list) {
                               lList *pe_task_list = NULL;
-                              u_long32 ja_task_id = lGetUlong(ja_task, 
-                                                              JAT_task_number);
-                              key = sge_dstring_sprintf(&key_dstring, "%s:%8d.%8d.",
-                                                        pe_task_table,
-                                                        job_id, ja_task_id);
+                              u_long32 ja_task_id = lGetUlong(ja_task, JAT_task_number);
+                              key = sge_dstring_sprintf(&key_dstring, "%s:%8d.%8d.", pe_task_table, job_id, ja_task_id);
                               
-                              ret = spool_berkeleydb_read_list(answer_list, 
-                                                      info, BDB_JOB_DB,
-                                                      &pe_task_list, PET_Type,
-                                                      key);
+                              ret = spool_berkeleydb_read_list(answer_list, info, BDB_JOB_DB, &pe_task_list, PET_Type, key);
                               if (ret) {
                                  if (pe_task_list != NULL) {
                                     lSetList(ja_task, JAT_task_list, pe_task_list);
@@ -690,8 +676,8 @@ spool_berkeleydb_default_list_func(lList **answer_list,
                            }
                         }
                      }
-                     job_list_register_new_job(*(object_type_get_master_list(SGE_TYPE_JOB)), mconf_get_max_jobs(), 1);
-                     suser_register_new_job(job, mconf_get_max_u_jobs(), 1);
+                     job_list_register_new_job(*object_type_get_master_list(SGE_TYPE_JOB), mconf_get_max_jobs(), 1);
+                     suser_register_new_job(job, mconf_get_max_u_jobs(), 1, master_suser_list);
                      if (!ret) {
                         break;
                      }
@@ -699,10 +685,7 @@ spool_berkeleydb_default_list_func(lList **answer_list,
                }
                break;
             default:
-               ret = spool_berkeleydb_read_list(answer_list, info, 
-                                                BDB_CONFIG_DB,
-                                                list, descr,
-                                                key);
+               ret = spool_berkeleydb_read_list(answer_list, info, BDB_CONFIG_DB, list, descr, key);
                break;
          }
 #if 0

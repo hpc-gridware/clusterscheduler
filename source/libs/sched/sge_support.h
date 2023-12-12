@@ -56,7 +56,7 @@ double sge_calc_node_usage(lListElem *node,
                            const char *projname,
                            u_long seqno );
 
-void _sge_calc_share_tree_proportions(lList *share_tree,
+void _sge_calc_share_tree_proportions(const lList *share_tree,
                                       const lList *user_list,
                                       const lList *project_list,
                                       const lList *decay_list,

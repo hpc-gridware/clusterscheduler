@@ -68,7 +68,7 @@ typedef struct _list_attribute_struct {
    const char *name;
    bool is_sgeee_attribute;
    bool verify_client;
-   bool (*verify_function)(lListElem *attr_elem, lList **answer_list, lListElem *cqueue);
+   bool (*verify_function)(lListElem *attr_elem, lList **answer_list, lListElem *cqueue, const lList *master_list);
 } list_attribute_struct;
 
 extern list_attribute_struct cqueue_attribute_array[];
@@ -106,7 +106,7 @@ lListElem *
 cqueue_locate_qinstance(const lListElem *this_elem, const char *hostname);
 
 lListElem *
-cqueue_list_locate_qinstance_msg(lList *cqueue_list, const char *full_name, bool raise_error);
+cqueue_list_locate_qinstance_msg(const lList *cqueue_list, const char *full_name, bool raise_error);
 
 bool
 cqueue_list_find_all_matching_references(const lList *this_list,
@@ -124,8 +124,10 @@ bool
 cqueue_xattr_pre_gdi(lList *this_list, lList **answer_list);
 
 bool
-cqueue_verify_attributes(lListElem *cqueue, lList **answer_list,
-                         lListElem *reduced_elem, bool in_master);
+cqueue_verify_attributes(lListElem *cqueue, lList **answer_list, lListElem *reduced_elem, bool in_master, 
+      const lList *master_calendar_list, const lList *master_ckpt_list, const lList *master_pe_list, 
+      const lList *master_userset_list, const lList *master_project_list, const lList *master_centry_list, 
+      const lList *master_cqueue_list, const lList *master_hgroup_list);
 
 bool
 cqueue_is_used_in_subordinate(const char *cqueue_name, const lListElem *cqueue);
@@ -134,7 +136,7 @@ void
 cqueue_list_set_tag(lList *this_list, u_long32 tag_value, bool tag_qinstances);
 
 lListElem *
-cqueue_list_locate_qinstance(lList *cqueue_list, const char *full_name);
+cqueue_list_locate_qinstance(const lList *cqueue_list, const char *full_name);
 
 bool
 cqueue_find_used_href(lListElem *this_elem, lList **answer_list, 

@@ -94,7 +94,6 @@ UTILIB_TEST_OBJS = \
          test_sge_profiling.o \
          test_sge_bitfield.o \
          test_sge_dstring.o \
-			test_sge_fgl.o \
          test_sge_string.o \
          test_sge_uidgid.o \
          test_thread_local.o \
@@ -116,7 +115,6 @@ UTILIB_TEST_PROGS = \
          test_sge_profiling \
          test_sge_bitfield \
          test_sge_dstring \
-			test_sge_fgl \
          test_sge_string \
          test_sge_uidgid \
          test_thread_local \
@@ -372,12 +370,6 @@ test_sge_tq: test_sge_tq.o $(UTILIB) $(COMMLISTSBIN)
 
 test_sge_tq.o: $(UTILIB_DIR)/test_sge_tq.c
 	$(CC) $(CFLAGS) -c $(UTILIB_DIR)/test_sge_tq.c
-
-test_sge_fgl: test_sge_fgl.o $(SGEOBJLIB) $(SGEOBJDLIB) $(CULLLIB) $(COMMLIB) $(COMMLISTSLIB) $(UTILIB) 
-	$(LD_WRAPPER) $(CC) $(CFLAGS) -o test_sge_fgl $(LFLAGS) test_sge_fgl.o $(SGEOBJLIB) $(SGEOBJDLIB) $(CULLLIB) $(COMMLIB) $(COMMLISTSLIB) $(UTILIB) $(LIBS)
-
-test_sge_fgl.o: $(UTILIB_DIR)/test_sge_fgl.c
-	$(CC) $(CFLAGS) -c $(UTILIB_DIR)/test_sge_fgl.c
 
 test_sge_err: test_sge_err.o $(UTILIB) $(COMMLISTSBIN)  
 	$(LD_WRAPPER) $(CC) $(CFLAGS) -o test_sge_err $(LFLAGS) test_sge_err.o $(UTILIB) $(COMMLISTSLIB) $(LIBS)

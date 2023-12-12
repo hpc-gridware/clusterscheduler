@@ -88,14 +88,14 @@ u_long32 target  /* may be SGE_UM_LIST or SGE_UO_LIST */
 
    switch (target) {
    case SGE_UM_LIST:
-      lpp = object_type_get_master_list(SGE_TYPE_MANAGER);
+      lpp = object_type_get_master_list_rw(SGE_TYPE_MANAGER);
       object_name = MSG_OBJ_MANAGER;
       key = UM_name;
       descr = UM_Type;
       eve = sgeE_MANAGER_ADD;
       break;
    case SGE_UO_LIST:
-      lpp = object_type_get_master_list(SGE_TYPE_OPERATOR);
+      lpp = object_type_get_master_list_rw(SGE_TYPE_OPERATOR);
       object_name = MSG_OBJ_OPERATOR;
       key = UO_name;
       descr = UO_Type;
@@ -201,13 +201,13 @@ int sge_del_manop(sge_gdi_ctx_class_t *ctx, lListElem *ep, lList **alpp, char *r
 
    switch (target) {
       case SGE_UM_LIST:
-         lpp = object_type_get_master_list(SGE_TYPE_MANAGER);
+         lpp = object_type_get_master_list_rw(SGE_TYPE_MANAGER);
          object_name = MSG_OBJ_MANAGER;
          key = UM_name;
          eve = sgeE_MANAGER_DEL;
          break;
       case SGE_UO_LIST:
-         lpp = object_type_get_master_list(SGE_TYPE_OPERATOR);
+         lpp = object_type_get_master_list_rw(SGE_TYPE_OPERATOR);
          object_name = MSG_OBJ_OPERATOR;
          key = UO_name;
          eve = sgeE_OPERATOR_DEL;

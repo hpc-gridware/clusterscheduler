@@ -351,8 +351,7 @@ int job_write_spool_file(lListElem *job, u_long32 ja_taskid,
       start = sge_get_gmt();
    }
 
-   if (job_has_to_spool_one_file(job, *object_type_get_master_list(SGE_TYPE_PE), 
-                                        flags)) {
+   if (job_has_to_spool_one_file(job, *object_type_get_master_list(SGE_TYPE_PE), flags)) {
       ret = job_write_as_single_file(job, ja_taskid, flags); 
    } else {
       if (!(flags & SPOOL_ONLY_JATASK) && !(flags & SPOOL_ONLY_PETASK)) {
@@ -385,8 +384,7 @@ static int job_has_to_spool_one_file(const lListElem *job,
       DRETURN(1);
    } 
    
-   if (job_might_be_tight_parallel(job, pe_list)
-               || (job_get_submit_ja_tasks(job) > sge_get_ja_tasks_per_file())) {
+   if (job_might_be_tight_parallel(job, pe_list) || (job_get_submit_ja_tasks(job) > sge_get_ja_tasks_per_file())) {
       DRETURN(0);
    }
 
@@ -629,10 +627,10 @@ int job_remove_spool_file(u_long32 jobid, u_long32 ja_taskid,
    int within_execd = flags & SPOOL_WITHIN_EXECD;
    int handle_as_zombie = flags & SPOOL_HANDLE_AS_ZOMBIE;
    int one_file;
-   lList *master_list = handle_as_zombie ? 
-                        *(object_type_get_master_list(SGE_TYPE_ZOMBIE)) : 
-                        *(object_type_get_master_list(SGE_TYPE_JOB));
-   lListElem *job = job_list_locate(master_list, jobid);
+   const lList *master_list = handle_as_zombie ? 
+                        *object_type_get_master_list(SGE_TYPE_ZOMBIE) : 
+                        *object_type_get_master_list(SGE_TYPE_JOB);
+   lListElem *job = lGetElemUlong(master_list, JB_job_number, jobid);
    int try_to_remove_sub_dirs = 0;
    dstring error_msg;
    char error_msg_buffer[SGE_PATH_MAX];
@@ -641,8 +639,7 @@ int job_remove_spool_file(u_long32 jobid, u_long32 ja_taskid,
 
    sge_dstring_init(&error_msg, error_msg_buffer, sizeof(error_msg_buffer));
 
-   one_file = job_has_to_spool_one_file(job, *object_type_get_master_list(SGE_TYPE_PE), 
-                                         flags);
+   one_file = job_has_to_spool_one_file(job, *object_type_get_master_list(SGE_TYPE_PE), flags);
    if (ja_taskid != 0 && pe_task_id != NULL && !one_file) {
        char pe_task_spool_file[SGE_PATH_MAX];
 
@@ -777,18 +774,17 @@ static int job_remove_script_file(u_long32 job_id)
 }
 
 int job_list_read_from_disk(lList **job_list, char *list_name, int check,
-                                sge_spool_flags_t flags, 
-                                int (*init_function)(lListElem*)) 
+                            sge_spool_flags_t flags, int (*init_function)(lListElem*)) 
 {
    char first_dir[SGE_PATH_MAX] = ""; 
    lList *first_direnties; 
    lListElem *first_direntry;
    char path[SGE_PATH_MAX];
    int handle_as_zombie = (flags & SPOOL_HANDLE_AS_ZOMBIE) > 0;
+   lList *master_suser_list = *object_type_get_master_list_rw(SGE_TYPE_SUSER);
 
    DENTER(TOP_LAYER, "job_read_job_list_from_disk"); 
-   sge_get_file_path(first_dir, JOBS_SPOOL_DIR, FORMAT_FIRST_PART, 
-                     flags, 0, 0, NULL);  
+   sge_get_file_path(first_dir, JOBS_SPOOL_DIR, FORMAT_FIRST_PART, flags, 0, 0, NULL);  
    first_direnties = sge_get_dirents(first_dir);
 
    if (first_direnties && !sge_silent_get()) {
@@ -889,22 +885,19 @@ int job_list_read_from_disk(lList **job_list, char *list_name, int check,
                char script_file[SGE_PATH_MAX];
                SGE_STRUCT_STAT stat_buffer;
 
-               sge_get_file_path(script_file, JOB_SCRIPT_FILE, FORMAT_DEFAULT,
-                                 flags, job_id, 0, NULL);
+               sge_get_file_path(script_file, JOB_SCRIPT_FILE, FORMAT_DEFAULT, flags, job_id, 0, NULL);
                if (SGE_STAT(script_file, &stat_buffer)) {
-                  ERROR((SGE_EVENT, MSG_CONFIG_CANTFINDSCRIPTFILE_U,
-                         sge_u32c(lGetUlong(job, JB_job_number))));
-                  job_list_add_job(object_type_get_master_list(SGE_TYPE_JOB), "job list", job, 0);
+                  ERROR((SGE_EVENT, MSG_CONFIG_CANTFINDSCRIPTFILE_U, sge_u32c(lGetUlong(job, JB_job_number))));
+                  job_list_add_job(object_type_get_master_list_rw(SGE_TYPE_JOB), "job list", job, 0);
                   job_remove_spool_file(job_id, 0, NULL, SPOOL_DEFAULT);
-                  lRemoveElem( *(object_type_get_master_list(SGE_TYPE_JOB)), &job);
+                  lRemoveElem(*object_type_get_master_list_rw(SGE_TYPE_JOB), &job);
                   continue;
                }
             }  
  
             /* check if filename has same name which is stored job id */
             if (lGetUlong(job, JB_job_number) != job_id) {
-               ERROR((SGE_EVENT, MSG_CONFIG_JOBFILEXHASWRONGFILENAMEDELETING_U,
-                     sge_u32c(job_id)));
+               ERROR((SGE_EVENT, MSG_CONFIG_JOBFILEXHASWRONGFILENAMEDELETING_U, sge_u32c(job_id)));
                job_remove_spool_file(job_id, 0, NULL, flags);
                /* 
                 * script is not deleted here, 
@@ -920,8 +913,8 @@ int job_list_read_from_disk(lList **job_list, char *list_name, int check,
             job_list_add_job(job_list, list_name, job, 0);
             
             if (!handle_as_zombie) {
-               job_list_register_new_job(*(object_type_get_master_list(SGE_TYPE_JOB)), mconf_get_max_jobs(), 1);
-               suser_register_new_job(job, mconf_get_max_u_jobs(), 1);
+               job_list_register_new_job(*object_type_get_master_list(SGE_TYPE_JOB), mconf_get_max_jobs(), 1);
+               suser_register_new_job(job, mconf_get_max_u_jobs(), 1, master_suser_list);
             }
          }
          lFreeList(&third_direnties);

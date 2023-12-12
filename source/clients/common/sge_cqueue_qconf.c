@@ -79,7 +79,7 @@ cqueue_add_del_mod_via_gdi(sge_gdi_ctx_class_t *ctx, lListElem *this_elem, lList
 
       if (do_verify) {
          ret &= cqueue_verify_attributes(this_elem, answer_list,
-                                         this_elem, false);
+                                         this_elem, false, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL);
       }
       if (ret) {
          lList *cqueue_list = NULL;

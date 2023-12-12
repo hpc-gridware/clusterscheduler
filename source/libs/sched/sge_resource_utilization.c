@@ -76,7 +76,7 @@ static void utilization_find_time_or_prevstart_or_prev(lList *diagram,
 
 static int 
 rqs_add_job_utilization(lListElem *jep, u_long32 task_id, const char *type, 
-                        lListElem *rule, dstring rue_name, lList *centry_list,
+                        lListElem *rule, dstring rue_name, const lList *centry_list,
                         int slots, const char *obj_name, u_long32 start_time,
                         u_long32 end_time, bool is_master_task);
 
@@ -799,7 +799,7 @@ int add_job_utilization(const sge_assignment_t *a, const char *type, bool for_jo
 }
 
 int rc_add_job_utilization(lListElem *jep, u_long32 task_id, const char *type, 
-   lListElem *ep, lList *centry_list, int slots, int config_nm, int actual_nm, 
+   lListElem *ep, const lList *centry_list, int slots, int config_nm, int actual_nm, 
    const char *obj_name, u_long32 start_time, u_long32 duration, u_long32 tag,
    bool for_job_scheduling, bool is_master_task) 
 {
@@ -916,7 +916,7 @@ int rc_add_job_utilization(lListElem *jep, u_long32 task_id, const char *type,
 *******************************************************************************/
 static int 
 rqs_add_job_utilization(lListElem *jep, u_long32 task_id, const char *type, 
-   lListElem *rule, dstring rue_name, lList *centry_list, int slots, const char *obj_name,
+   lListElem *rule, dstring rue_name, const lList *centry_list, int slots, const char *obj_name,
    u_long32 start_time, u_long32 end_time, bool is_master_task)
 {
    lList *limit_list;
@@ -987,7 +987,7 @@ rqs_add_job_utilization(lListElem *jep, u_long32 task_id, const char *type,
 static int 
 add_job_list_to_schedule(const lList *job_list, bool suspended, lList *pe_list, 
                          lList *host_list, lList *queue_list, lList *rqs_list,
-                         lList *centry_list, lList *acl_list, lList *hgroup_list,
+                         const lList *centry_list, const lList *acl_list, const lList *hgroup_list,
                          lList *ar_list, bool for_job_scheduling, u_long32 now)
 {
    lListElem *jep, *ja_task;
@@ -1099,8 +1099,8 @@ add_job_list_to_schedule(const lList *job_list, bool suspended, lList *pe_list,
 *     MT-NOTE: prepare_resource_schedules() is not MT safe 
 *******************************************************************************/
 void prepare_resource_schedules(const lList *running_jobs, const lList *suspended_jobs, 
-   lList *pe_list, lList *host_list, lList *queue_list, lList *rqs_list, lList *centry_list,
-   lList *acl_list, lList *hgroup_list, lList *ar_list, bool for_job_scheduling, u_long32 now)
+   lList *pe_list, lList *host_list, lList *queue_list, lList *rqs_list, const lList *centry_list,
+   const lList *acl_list, const lList *hgroup_list, lList *ar_list, bool for_job_scheduling, u_long32 now)
 {
    DENTER(TOP_LAYER, "prepare_resource_schedules");
 

@@ -355,12 +355,9 @@ int main(int argc, char **argv)
    INFO((SGE_EVENT, SFNMAX, MSG_EXECD_STARTPDCANDPTF));
 #endif
 
-   master_job_list = object_type_get_master_list(SGE_TYPE_JOB);
+   master_job_list = object_type_get_master_list_rw(SGE_TYPE_JOB);
    *master_job_list = lCreateList("Master_Job_List", JB_Type);
-   job_list_read_from_disk(master_job_list, "Master_Job_List",
-                           0, SPOOL_WITHIN_EXECD, 
-                          job_initialize_job);
-   
+   job_list_read_from_disk(master_job_list, "Master_Job_List", 0, SPOOL_WITHIN_EXECD, job_initialize_job);
 
    /* clean up jobs hanging around (look in active_dir) */
    clean_up_old_jobs(ctx, 1);
@@ -698,8 +695,7 @@ bool execd_get_job_ja_task(u_long32 job_id, u_long32 ja_task_id, lListElem **job
 
    DENTER(TOP_LAYER, "execd_get_job_ja_task");
 
-   *job = lGetElemUlongFirst(*(object_type_get_master_list(SGE_TYPE_JOB)),
-                            JB_job_number, job_id, &iterator);
+   *job = lGetElemUlongFirst(*object_type_get_master_list_rw(SGE_TYPE_JOB), JB_job_number, job_id, &iterator);
    while (*job != NULL) {
       *ja_task = job_search_task(*job, NULL, ja_task_id);
       if (*ja_task != NULL) {
@@ -709,8 +705,7 @@ bool execd_get_job_ja_task(u_long32 job_id, u_long32 ja_task_id, lListElem **job
       /* in execd, we have exactly one ja_task per job,
        * therefore we can have multiple jobs with the same job_id
        */
-      *job = lGetElemUlongNext(*(object_type_get_master_list(SGE_TYPE_JOB)),
-                               JB_job_number, job_id, &iterator);
+      *job = lGetElemUlongNext(*object_type_get_master_list(SGE_TYPE_JOB), JB_job_number, job_id, &iterator);
    }
    
    if (*job == NULL) {

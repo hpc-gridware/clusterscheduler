@@ -117,7 +117,7 @@ static bool generate_jobs(int num)
       lSetString(job, JB_group, random_string(10));
       lSetString(job, JB_account, random_string(20));
       lSetString(job, JB_cwd, random_string(100));
-      lAppendElem(*object_type_get_master_list(SGE_TYPE_JOB), job);
+      lAppendElem(*object_type_get_master_list_rw(SGE_TYPE_JOB), job);
 
       if ((i % 10) == 0) {
          int j;
@@ -138,7 +138,7 @@ static bool update_jobs(void)
    lListElem *job;
    int num_total = 0;
 
-   for_each(job, *object_type_get_master_list(SGE_TYPE_JOB)) {
+   for_each(job, *object_type_get_master_list_rw(SGE_TYPE_JOB)) {
       lSetString(job, JB_project, random_string(20));
       num_total++;
    }
@@ -192,7 +192,7 @@ static bool read_spooled_data(void)
    context = spool_get_default_context();
 
    /* jobs */
-   spool_read_list(&answer_list, context, object_type_get_master_list(SGE_TYPE_JOB), SGE_TYPE_JOB);
+   spool_read_list(&answer_list, context, object_type_get_master_list_rw(SGE_TYPE_JOB), SGE_TYPE_JOB);
    answer_list_output(&answer_list);
 /*    DPRINTF(("read %d entries to Master_Job_List\n", lGetNumberOfElem(*object_type_get_master_list(SGE_TYPE_JOB)))); */
 
@@ -292,7 +292,7 @@ int main(int argc, char *argv[])
       SGE_EXIT((void**)&ctx, 1);
    }
 
-   *object_type_get_master_list(SGE_TYPE_JOB) = lCreateList("job list", JB_Type);
+   *object_type_get_master_list_rw(SGE_TYPE_JOB) = lCreateList("job list", JB_Type);
 
 #define defstring(str) #str
 
@@ -361,8 +361,8 @@ int main(int argc, char *argv[])
    prof_reset(SGE_PROF_SPOOLINGIO, NULL);
 
    clear_caches();
-   lFreeList(object_type_get_master_list(SGE_TYPE_JOB));
-   *object_type_get_master_list(SGE_TYPE_JOB) = lCreateList("job list", JB_Type);
+   lFreeList(object_type_get_master_list_rw(SGE_TYPE_JOB));
+   *object_type_get_master_list_rw(SGE_TYPE_JOB) = lCreateList("job list", JB_Type);
    PROF_START_MEASUREMENT(SGE_PROF_CUSTOM1);
    read_spooled_data();
    PROF_STOP_MEASUREMENT(SGE_PROF_CUSTOM1);
@@ -381,7 +381,7 @@ int main(int argc, char *argv[])
    spool_shutdown_context(&answer_list, spooling_context);
    spool_startup_context(&answer_list, spooling_context, true);
 
-   lFreeList(object_type_get_master_list(SGE_TYPE_JOB));
+   lFreeList(object_type_get_master_list_rw(SGE_TYPE_JOB));
 
    spool_shutdown_context(&answer_list, spooling_context);
    answer_list_output(&answer_list);

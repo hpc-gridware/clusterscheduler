@@ -1752,7 +1752,7 @@ int ptf_get_usage(lList **job_usage_list)
             continue;
          }
 
-         tmp_job = job_list_locate(temp_usage_list, job_id);
+         tmp_job = lGetElemUlong(temp_usage_list, JB_job_number, job_id);
          if (tmp_job == NULL) {
             tmp_job = lCreateElem(JB_Type);
             lSetUlong(tmp_job, JB_job_number, job_id);

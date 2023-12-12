@@ -248,7 +248,7 @@ bool pe_is_referenced(const lListElem *pe, lList **answer_list,
 *  NOTES
 *     MT-NOTE: pe_validate() is not MT safe
 *******************************************************************************/
-int pe_validate(lListElem *pep, lList **alpp, int startup)
+int pe_validate(lListElem *pep, lList **alpp, int startup, const lList *master_userset_list)
 {
    const char *s;
    const char *pe_name;
@@ -333,13 +333,13 @@ int pe_validate(lListElem *pep, lList **alpp, int startup)
    /* do this only in qmaster. we don't have the usersets in qconf */
    if (startup) {
       /* -------- PE_user_list */
-      if ((ret=userset_list_validate_acl_list(lGetList(pep, PE_user_list), alpp))!=STATUS_OK) {
+      if ((ret=userset_list_validate_acl_list(lGetList(pep, PE_user_list), alpp, master_userset_list))!=STATUS_OK) {
          DEXIT;
          return ret;
       }
 
       /* -------- PE_xuser_list */
-      if ((ret=userset_list_validate_acl_list(lGetList(pep, PE_xuser_list), alpp))!=STATUS_OK) {
+      if ((ret=userset_list_validate_acl_list(lGetList(pep, PE_xuser_list), alpp, master_userset_list))!=STATUS_OK) {
          DEXIT;
          return ret;
       }

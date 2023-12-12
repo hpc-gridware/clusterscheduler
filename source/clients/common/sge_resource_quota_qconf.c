@@ -486,6 +486,7 @@ bool rqs_add_del_mod_via_gdi(sge_gdi_ctx_class_t *ctx, lList *rqs_list, lList **
                                         u_long32 gdi_command) 
 {
    bool ret = false;
+   const lList *master_centry_list = *object_type_get_master_list(SGE_TYPE_CENTRY);
    
    DENTER(TOP_LAYER, "rqs_add_del_mod_via_gdi");
 
@@ -495,7 +496,7 @@ bool rqs_add_del_mod_via_gdi(sge_gdi_ctx_class_t *ctx, lList *rqs_list, lList **
                         || (operation == SGE_GDI_REPLACE)) ? true : false;
 
       if (do_verify) {
-         ret = rqs_list_verify_attributes(rqs_list, answer_list, false);
+         ret = rqs_list_verify_attributes(rqs_list, answer_list, false, master_centry_list);
       }
       if (ret) {
          lList *my_answer_list = ctx->gdi(ctx, SGE_RQS_LIST, gdi_command, &rqs_list, NULL, NULL);

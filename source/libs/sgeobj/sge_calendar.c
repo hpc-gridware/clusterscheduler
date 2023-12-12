@@ -187,7 +187,7 @@ static int week_day(lListElem **tm);
 
 static u_long32 calendar_get_current_state_and_end(const lListElem *this_elem, time_t *then, time_t *now);
 
-lListElem *calendar_list_locate(lList *calendar_list, const char *cal_name) 
+lListElem *calendar_list_locate(const lList *calendar_list, const char *cal_name) 
 {
    return lGetElemStr(calendar_list, CAL_name, cal_name);
 }

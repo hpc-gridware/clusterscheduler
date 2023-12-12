@@ -148,7 +148,7 @@ static int sge_qeti_list_add(lList **lpp, const char *name, lList* rue_lp, doubl
 }
 
 static int sge_add_qeti_resource_container(lList **qeti_to_add, lList* rue_list, 
-      lList* total_list, lList* centry_list, lList* requests, bool force_slots) 
+      lList* total_list, const lList* centry_list, lList* requests, bool force_slots) 
 {
    lListElem *req, *actual, *tep;
    const char *name;

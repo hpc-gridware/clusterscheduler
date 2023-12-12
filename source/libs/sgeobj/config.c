@@ -858,7 +858,7 @@ bool set_conf_list(lList **alpp, lList **clpp, int fields[], const char *key,
 
 bool set_conf_str_attr_list(lList **alpp, lList **clpp, int fields[], 
                             const char *key, lListElem *ep, int name_nm, 
-                            lDescr *descr, int sub_name_nm) 
+                            lDescr *descr, int sub_name_nm, const lList *master_hgroup_list) 
 {
    bool ret;
    lList *tmplp = NULL;
@@ -872,7 +872,7 @@ bool set_conf_str_attr_list(lList **alpp, lList **clpp, int fields[],
       return fields?true:false;
    }
    ret = str_attr_list_parse_from_string(&tmplp, &lanswer_list, str,
-                                         HOSTATTR_ALLOW_AMBIGUITY);
+                                         HOSTATTR_ALLOW_AMBIGUITY, master_hgroup_list);
    if (!ret) {
       const char *text = lGetString(lFirst(lanswer_list), AN_text);
 
@@ -895,7 +895,7 @@ bool set_conf_str_attr_list(lList **alpp, lList **clpp, int fields[],
 
 bool set_conf_strlist_attr_list(lList **alpp, lList **clpp, int fields[], 
                                 const char *key, lListElem *ep, int name_nm, 
-                                lDescr *descr, int sub_name_nm) 
+                                lDescr *descr, int sub_name_nm, const lList *master_hgroup_list) 
 {
    bool ret;
    lList *tmplp = NULL;
@@ -910,7 +910,7 @@ bool set_conf_strlist_attr_list(lList **alpp, lList **clpp, int fields[],
    }
 
    ret = strlist_attr_list_parse_from_string(&tmplp, &lanswer_list, str,
-                                             HOSTATTR_ALLOW_AMBIGUITY);
+                                             HOSTATTR_ALLOW_AMBIGUITY, master_hgroup_list);
    if (!ret) {
       const char *text = lGetString(lFirst(lanswer_list), AN_text);
 
@@ -933,7 +933,7 @@ bool set_conf_strlist_attr_list(lList **alpp, lList **clpp, int fields[],
 
 bool set_conf_usrlist_attr_list(lList **alpp, lList **clpp, int fields[], 
                                 const char *key, lListElem *ep, int name_nm, 
-                                lDescr *descr, int sub_name_nm) 
+                                lDescr *descr, int sub_name_nm, const lList *master_hgroup_list) 
 {
    bool ret;
    lList *tmplp = NULL;
@@ -948,7 +948,7 @@ bool set_conf_usrlist_attr_list(lList **alpp, lList **clpp, int fields[],
    }
 
    ret = usrlist_attr_list_parse_from_string(&tmplp, &lanswer_list, str,
-                                             HOSTATTR_ALLOW_AMBIGUITY);
+                                             HOSTATTR_ALLOW_AMBIGUITY, master_hgroup_list);
    if (!ret) {
       const char *text = lGetString(lFirst(lanswer_list), AN_text);
 
@@ -971,7 +971,7 @@ bool set_conf_usrlist_attr_list(lList **alpp, lList **clpp, int fields[],
 
 bool set_conf_prjlist_attr_list(lList **alpp, lList **clpp, int fields[], 
                                 const char *key, lListElem *ep, int name_nm, 
-                                lDescr *descr, int sub_name_nm) 
+                                lDescr *descr, int sub_name_nm, const lList *master_hgroup_list) 
 {
    bool ret;
    lList *tmplp = NULL;
@@ -986,7 +986,7 @@ bool set_conf_prjlist_attr_list(lList **alpp, lList **clpp, int fields[],
    }
 
    ret = prjlist_attr_list_parse_from_string(&tmplp, &lanswer_list, str,
-                                             HOSTATTR_ALLOW_AMBIGUITY);
+                                             HOSTATTR_ALLOW_AMBIGUITY, master_hgroup_list);
    if (!ret) {
       const char *text = lGetString(lFirst(lanswer_list), AN_text);
 
@@ -1009,7 +1009,7 @@ bool set_conf_prjlist_attr_list(lList **alpp, lList **clpp, int fields[],
 
 bool set_conf_celist_attr_list(lList **alpp, lList **clpp, int fields[], 
                                const char *key, lListElem *ep, int name_nm, 
-                               lDescr *descr, int sub_name_nm) 
+                               lDescr *descr, int sub_name_nm, const lList *master_hgroup_list) 
 {
    bool ret;
    lList *tmplp = NULL;
@@ -1024,7 +1024,7 @@ bool set_conf_celist_attr_list(lList **alpp, lList **clpp, int fields[],
    }
 
    ret = celist_attr_list_parse_from_string(&tmplp, &lanswer_list, str,
-                                            HOSTATTR_ALLOW_AMBIGUITY);
+                                            HOSTATTR_ALLOW_AMBIGUITY, master_hgroup_list);
    if (!ret) {
       const char *text = lGetString(lFirst(lanswer_list), AN_text);
 
@@ -1047,7 +1047,7 @@ bool set_conf_celist_attr_list(lList **alpp, lList **clpp, int fields[],
 
 bool set_conf_solist_attr_list(lList **alpp, lList **clpp, int fields[], 
                                const char *key, lListElem *ep, int name_nm, 
-                               lDescr *descr, int sub_name_nm) 
+                               lDescr *descr, int sub_name_nm, const lList *master_hgroup_list) 
 {
    bool ret;
    lList *tmplp = NULL;
@@ -1062,7 +1062,7 @@ bool set_conf_solist_attr_list(lList **alpp, lList **clpp, int fields[],
    }
 
    ret = solist_attr_list_parse_from_string(&tmplp, &lanswer_list, str,
-                                            HOSTATTR_ALLOW_AMBIGUITY);
+                                            HOSTATTR_ALLOW_AMBIGUITY, master_hgroup_list);
    if (!ret) {
       const char *text = lGetString(lFirst(lanswer_list), AN_text);
 
@@ -1085,7 +1085,7 @@ bool set_conf_solist_attr_list(lList **alpp, lList **clpp, int fields[],
 
 bool set_conf_qtlist_attr_list(lList **alpp, lList **clpp, int fields[], 
                                const char *key, lListElem *ep, int name_nm, 
-                               lDescr *descr, int sub_name_nm) 
+                               lDescr *descr, int sub_name_nm, const lList *master_hgroup_list) 
 {
    bool ret;
    lList *tmplp = NULL;
@@ -1100,7 +1100,7 @@ bool set_conf_qtlist_attr_list(lList **alpp, lList **clpp, int fields[],
    }
 
    ret = qtlist_attr_list_parse_from_string(&tmplp, &lanswer_list, str,
-                                            HOSTATTR_ALLOW_AMBIGUITY);
+                                            HOSTATTR_ALLOW_AMBIGUITY, master_hgroup_list);
    if (!ret) {
       const char *text = lGetString(lFirst(lanswer_list), AN_text);
 
@@ -1123,7 +1123,7 @@ bool set_conf_qtlist_attr_list(lList **alpp, lList **clpp, int fields[],
 
 bool set_conf_ulng_attr_list(lList **alpp, lList **clpp, int fields[], 
                              const char *key, lListElem *ep, int name_nm, 
-                             lDescr *descr, int sub_name_nm) 
+                             lDescr *descr, int sub_name_nm, const lList *master_hgroup_list) 
 {
    bool ret;
    lList *tmplp = NULL;
@@ -1137,7 +1137,7 @@ bool set_conf_ulng_attr_list(lList **alpp, lList **clpp, int fields[],
       return fields?true:false;
    }
    ret = ulng_attr_list_parse_from_string(&tmplp, &lanswer_list, str,
-                                          HOSTATTR_ALLOW_AMBIGUITY);
+                                          HOSTATTR_ALLOW_AMBIGUITY, master_hgroup_list);
    if (!ret) {
       const char *text = lGetString(lFirst(lanswer_list), AN_text);
 
@@ -1160,7 +1160,7 @@ bool set_conf_ulng_attr_list(lList **alpp, lList **clpp, int fields[],
 
 bool set_conf_bool_attr_list(lList **alpp, lList **clpp, int fields[], 
                              const char *key, lListElem *ep, int name_nm, 
-                             lDescr *descr, int sub_name_nm) 
+                             lDescr *descr, int sub_name_nm, const lList *master_hgroup_list) 
 {
    bool ret;
    lList *tmplp = NULL;
@@ -1174,7 +1174,7 @@ bool set_conf_bool_attr_list(lList **alpp, lList **clpp, int fields[],
       return fields?true:false;
    }
    ret = bool_attr_list_parse_from_string(&tmplp, &lanswer_list, str,
-                                          HOSTATTR_ALLOW_AMBIGUITY);
+                                          HOSTATTR_ALLOW_AMBIGUITY, master_hgroup_list);
    if (!ret) {
       const char *text = lGetString(lFirst(lanswer_list), AN_text);
 
@@ -1197,7 +1197,7 @@ bool set_conf_bool_attr_list(lList **alpp, lList **clpp, int fields[],
 
 bool set_conf_time_attr_list(lList **alpp, lList **clpp, int fields[], 
                              const char *key, lListElem *ep, int name_nm, 
-                             lDescr *descr, int sub_name_nm) 
+                             lDescr *descr, int sub_name_nm, const lList *master_hgroup_list) 
 {
    bool ret;
    lList *tmplp = NULL;
@@ -1211,7 +1211,7 @@ bool set_conf_time_attr_list(lList **alpp, lList **clpp, int fields[],
       return fields?true:false;
    }
    ret = time_attr_list_parse_from_string(&tmplp, &lanswer_list, str,
-                                          HOSTATTR_ALLOW_AMBIGUITY);
+                                          HOSTATTR_ALLOW_AMBIGUITY, master_hgroup_list);
    if (!ret) {
       const char *text = lGetString(lFirst(lanswer_list), AN_text);
 
@@ -1234,7 +1234,7 @@ bool set_conf_time_attr_list(lList **alpp, lList **clpp, int fields[],
 
 bool set_conf_mem_attr_list(lList **alpp, lList **clpp, int fields[], 
                              const char *key, lListElem *ep, int name_nm, 
-                             lDescr *descr, int sub_name_nm) 
+                             lDescr *descr, int sub_name_nm, const lList *master_hgroup_list) 
 {
    bool ret;
    lList *tmplp = NULL;
@@ -1248,7 +1248,7 @@ bool set_conf_mem_attr_list(lList **alpp, lList **clpp, int fields[],
       return fields?true:false;
    }
    ret = mem_attr_list_parse_from_string(&tmplp, &lanswer_list, str,
-                                          HOSTATTR_ALLOW_AMBIGUITY);
+                                          HOSTATTR_ALLOW_AMBIGUITY, master_hgroup_list);
    if (!ret) {
       const char *text = lGetString(lFirst(lanswer_list), AN_text);
 
@@ -1271,7 +1271,7 @@ bool set_conf_mem_attr_list(lList **alpp, lList **clpp, int fields[],
 
 bool set_conf_inter_attr_list(lList **alpp, lList **clpp, int fields[], 
                               const char *key, lListElem *ep, int name_nm, 
-                              lDescr *descr, int sub_name_nm) 
+                              lDescr *descr, int sub_name_nm, const lList *master_hgroup_list) 
 {
    bool ret;
    lList *tmplp = NULL;
@@ -1285,7 +1285,7 @@ bool set_conf_inter_attr_list(lList **alpp, lList **clpp, int fields[],
       return fields?true:false;
    }
    ret = inter_attr_list_parse_from_string(&tmplp, &lanswer_list, str,
-                                           HOSTATTR_ALLOW_AMBIGUITY);
+                                           HOSTATTR_ALLOW_AMBIGUITY, master_hgroup_list);
 
    if (!ret) {
       const char *text = lGetString(lFirst(lanswer_list), AN_text);

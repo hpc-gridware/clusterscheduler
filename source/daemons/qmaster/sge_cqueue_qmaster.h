@@ -40,14 +40,14 @@ bool
 cqueue_mod_qinstances(sge_gdi_ctx_class_t *ctx,
                       lListElem *cqueue, lList **answer_list,
                       lListElem *reduced_elem, bool refresh_all_values, 
-                      bool is_startup, monitoring_t *monitor);
+                      bool is_startup, monitoring_t *monitor, const lList *master_hgroup_list, lList *master_cqueue_list);
 
 bool
 cqueue_handle_qinstances(sge_gdi_ctx_class_t *ctx,
                          lListElem *cqueue, lList **answer_list,
                          lListElem *reduced_elem, lList *add_hosts,
                          lList *rem_hosts, bool refresh_all_values,
-                         monitoring_t *monitor);
+                         monitoring_t *monitor, const lList *master_hgroup_list, lList *master_cqueue_list);
 
 void 
 cqueue_commit(sge_gdi_ctx_class_t *ctx, lListElem *cqueue);

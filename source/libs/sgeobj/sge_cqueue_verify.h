@@ -37,61 +37,61 @@
 
 bool
 cqueue_verify_calendar(lListElem *cqueue, lList **answer_list,
-                       lListElem *attr_elem);
+                       lListElem *attr_elem, const lList *master_list);
 
 bool
 cqueue_verify_ckpt_list(lListElem *cqueue, lList **answer_list,
-                        lListElem *attr_elem);
+                        lListElem *attr_elem, const lList *master_list);
 
 bool
 cqueue_verify_consumable_config_list(lListElem *cqueue, lList **answer_list,
-                                     lListElem *attr_elem);
+                                     lListElem *attr_elem, const lList *master_list);
 
 bool
 cqueue_verify_initial_state(lListElem *cqueue, lList **answer_list,
-                            lListElem *attr_elem);
+                            lListElem *attr_elem, const lList *master_list);
 
 bool
 cqueue_verify_pe_list(lListElem *cqueue, lList **answer_list,
-                       lListElem *attr_elem);
+                       lListElem *attr_elem, const lList *master_list);
 
 bool
 cqueue_verify_priority(lListElem *cqueue, lList **answer_list,
-                       lListElem *attr_elem);
+                       lListElem *attr_elem, const lList *master_list);
 
 bool
 cqueue_verify_processors(lListElem *cqueue, lList **answer_list,
-                         lListElem *attr_elem);
+                         lListElem *attr_elem, const lList *master_list);
 
 bool
 cqueue_verify_project_list(lListElem *cqueue, lList **answer_list,
-                           lListElem *attr_elem);
+                           lListElem *attr_elem, const lList *master_list);
 
 bool
 cqueue_verify_shell_start_mode(lListElem *cqueue, lList **answer_list,
-                               lListElem *attr_elem);
+                               lListElem *attr_elem, const lList *master_list);
 
 bool
 cqueue_verify_shell(lListElem *cqueue, lList **answer_list,
-                               lListElem *attr_elem);
+                               lListElem *attr_elem, const lList *master_list);
 
 bool
 cqueue_verify_subordinate_list(lListElem *cqueue, lList **answer_list,
-                               lListElem *attr_elem);
+                               lListElem *attr_elem, const lList *master_list);
 
 bool
 cqueue_verify_user_list(lListElem *cqueue, lList **answer_list,
-                        lListElem *attr_elem);
+                        lListElem *attr_elem, const lList *master_list);
 
 bool
 cqueue_verify_job_slots(lListElem *cqueue, lList **answer_list,
-                        lListElem *attr_elem);
+                        lListElem *attr_elem, const lList *master_list);
 
 bool
 cqueue_verify_memory_value(lListElem *cqueue, lList **answer_list,
-                        lListElem *attr_elem);
+                        lListElem *attr_elem, const lList *master_list);
 
 bool
 cqueue_verify_time_value(lListElem *cqueue, lList **answer_list,
-                        lListElem *attr_elem);
+                        lListElem *attr_elem, const lList *master_list);
 #endif

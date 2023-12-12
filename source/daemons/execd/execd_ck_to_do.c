@@ -124,7 +124,7 @@ static void notify_ptf()
    if (waiting4osjid) {
       waiting4osjid = 0;
 
-      for_each(jep, *(object_type_get_master_list(SGE_TYPE_JOB))) {
+      for_each(jep, *object_type_get_master_list_rw(SGE_TYPE_JOB)) {
          lListElem* jatep;
          
          for_each (jatep, lGetList(jep, JB_ja_tasks)) {
@@ -191,12 +191,12 @@ static void notify_ptf()
 /* force job resource limits */
 static void force_job_rlimit(const char* qualified_hostname)
 {
-   lListElem *jep;
+   const lListElem *jep;
 
    DENTER(TOP_LAYER, "force_job_rlimit");
 
-   for_each (jep, *(object_type_get_master_list(SGE_TYPE_JOB))) {
-      lListElem *jatep;
+   for_each (jep, *object_type_get_master_list(SGE_TYPE_JOB)) {
+      const lListElem *jatep;
 
       for_each (jatep, lGetList(jep, JB_ja_tasks)) {
          lListElem *q=NULL, *cpu_ep, *vmem_ep, *gdil_ep;
@@ -399,7 +399,7 @@ int do_ck_to_do(sge_gdi_ctx_class_t *ctx, bool is_qmaster_down) {
     * disabled by the execd_param PDC_INTERVAL set to NEVER. 
     */
    pdc_interval = mconf_get_pdc_interval();
-   if (lGetNumberOfElem(*(object_type_get_master_list(SGE_TYPE_JOB))) > 0 &&
+   if (lGetNumberOfElem(*object_type_get_master_list(SGE_TYPE_JOB)) > 0 &&
        pdc_interval != U_LONG32_MAX &&
        next_pdc <= now ) {
       next_pdc = now + pdc_interval;
@@ -429,7 +429,7 @@ int do_ck_to_do(sge_gdi_ctx_class_t *ctx, bool is_qmaster_down) {
    if (next_signal <= now) {
       next_signal = now + SIGNAL_RESEND_INTERVAL;
       /* resend signals to shepherds */
-      for_each(jep, *(object_type_get_master_list(SGE_TYPE_JOB))) {
+      for_each(jep, *object_type_get_master_list_rw(SGE_TYPE_JOB)) {
          for_each(jatep, lGetList(jep, JB_ja_tasks)) {
 
             /* don't start wallclock before job acutally started */
@@ -505,9 +505,9 @@ int do_ck_to_do(sge_gdi_ctx_class_t *ctx, bool is_qmaster_down) {
 
    /* check for end of simulated jobs */
    if (mconf_get_simulate_jobs()) {
-      for_each(jep, *(object_type_get_master_list(SGE_TYPE_JOB))) {
+      for_each(jep, *object_type_get_master_list_rw(SGE_TYPE_JOB)) {
          for_each (jatep, lGetList(jep, JB_ja_tasks)) {
-            if(lGetUlong(jatep, JAT_end_time) <= now) {
+            if (lGetUlong(jatep, JAT_end_time) <= now) {
                lListElem *jr = NULL;
                u_long32 jobid, jataskid;
                u_long32 wallclock;
@@ -659,12 +659,12 @@ static int sge_start_jobs(sge_gdi_ctx_class_t *ctx)
 
    DENTER(TOP_LAYER, "sge_start_jobs");
 
-   if (lGetNumberOfElem(*(object_type_get_master_list(SGE_TYPE_JOB))) == 0) {
+   if (lGetNumberOfElem(*object_type_get_master_list(SGE_TYPE_JOB)) == 0) {
       DPRINTF(("No jobs to start\n"));
       DRETURN(0);
    }
 
-   for_each(jep, *(object_type_get_master_list(SGE_TYPE_JOB))) {
+   for_each(jep, *object_type_get_master_list_rw(SGE_TYPE_JOB)) {
       for_each(jatep, lGetList(jep, JB_ja_tasks)) {
          state_changed = exec_job_or_task(ctx, jep, jatep, NULL);
 
@@ -676,8 +676,7 @@ static int sge_start_jobs(sge_gdi_ctx_class_t *ctx)
          /* now save this job so we are up to date on restart */
          if (state_changed) {
             if (!mconf_get_simulate_jobs()) {
-               job_write_spool_file(jep, lGetUlong(jatep, JAT_task_number), 
-                                    NULL, SPOOL_WITHIN_EXECD);
+               job_write_spool_file(jep, lGetUlong(jatep, JAT_task_number), NULL, SPOOL_WITHIN_EXECD);
             }
             jobs_started++;
          }

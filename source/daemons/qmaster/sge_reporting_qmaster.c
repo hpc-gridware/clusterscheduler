@@ -589,6 +589,9 @@ reporting_create_acct_record(sge_gdi_ctx_class_t *ctx,
    bool do_reporting  = mconf_get_do_reporting();
    bool do_accounting = mconf_get_do_accounting();
    const char *acct_file = ctx->get_acct_file(ctx);
+   const lList *master_userset_list = *object_type_get_master_list(SGE_TYPE_USERSET);
+   const lList *master_project_list = *object_type_get_master_list(SGE_TYPE_PROJECT);
+   const lList *master_rqs_list = *object_type_get_master_list(SGE_TYPE_RQS);
 
    DENTER(TOP_LAYER, "reporting_create_acct_record");
 
@@ -598,9 +601,7 @@ reporting_create_acct_record(sge_gdi_ctx_class_t *ctx,
       sge_dstring_init(&category_dstring, category_buffer, 
                        sizeof(category_buffer));
 
-      sge_build_job_category_dstring(&category_dstring, job, 
-                                     *(userset_list_get_master_list()), *object_type_get_master_list(SGE_TYPE_PROJECT), NULL,
-                                     *object_type_get_master_list(SGE_TYPE_RQS));
+      sge_build_job_category_dstring(&category_dstring, job, master_userset_list, master_project_list, NULL, master_rqs_list);
       category_string = sge_dstring_get_string(&category_dstring);                                          
 
       /* accounting records will only be written at job end, not for intermediate
@@ -1032,12 +1033,16 @@ static bool
 reporting_create_sharelog_record(lList **answer_list, monitoring_t *monitor)
 {
    bool ret = true;
+   const lList *master_stree_list = *object_type_get_master_list(SGE_TYPE_SHARETREE);
+   const lList *master_user_list = *object_type_get_master_list(SGE_TYPE_USER);
+   const lList *master_userset_list = *object_type_get_master_list(SGE_TYPE_USERSET);
+   const lList *master_project_list = *object_type_get_master_list(SGE_TYPE_PROJECT);
 
    DENTER(TOP_LAYER, "reporting_create_sharelog_record");
 
    if (mconf_get_do_reporting() && mconf_get_sharelog_time() > 0) {
       /* only create sharelog entries if we have a sharetree */
-      if (lGetNumberOfElem(*object_type_get_master_list(SGE_TYPE_SHARETREE)) > 0) {
+      if (lGetNumberOfElem(master_stree_list) > 0) {
          rep_buf_t *buf;
          dstring prefix_dstring = DSTRING_INIT;
          dstring data_dstring   = DSTRING_INIT;
@@ -1048,8 +1053,7 @@ reporting_create_sharelog_record(lList **answer_list, monitoring_t *monitor)
 
          /* we need a prefix containing the reporting file std fields */
          sge_dstring_sprintf(&prefix_dstring, sge_U32CFormat"%csharelog%c",
-                             sge_u32c(sge_get_gmt()),
-                             REPORTING_DELIMITER, REPORTING_DELIMITER);
+                             sge_u32c(sge_get_gmt()), REPORTING_DELIMITER, REPORTING_DELIMITER);
 
          /* define output format */
          format.name_format  = false;
@@ -1064,22 +1068,15 @@ reporting_create_sharelog_record(lList **answer_list, monitoring_t *monitor)
          /* dump the sharetree data */
          MONITOR_WAIT_TIME(SGE_LOCK(LOCK_GLOBAL, LOCK_READ), monitor);
 
-         sge_sharetree_print(&data_dstring, *object_type_get_master_list(SGE_TYPE_SHARETREE), 
-                             *object_type_get_master_list(SGE_TYPE_USER),
-                             *object_type_get_master_list(SGE_TYPE_PROJECT),
-                             *object_type_get_master_list(SGE_TYPE_USERSET),
-                             true,
-                             false,
-                             NULL,
-                             &format);
+         sge_sharetree_print(&data_dstring, master_stree_list, master_user_list, master_project_list, master_userset_list,
+                             true, false, NULL, &format);
 
          SGE_UNLOCK(LOCK_GLOBAL, LOCK_READ);
 
          /* write data to reporting buffer */
          buf = &reporting_buffer[REPORTING_BUFFER];
          sge_mutex_lock(buf->mtx_name, SGE_FUNC, __LINE__, &(buf->mtx));
-         sge_dstring_append(&(buf->buffer),
-                            sge_dstring_get_string(&data_dstring));
+         sge_dstring_append(&(buf->buffer), sge_dstring_get_string(&data_dstring));
          sge_mutex_unlock(buf->mtx_name, SGE_FUNC, __LINE__, &(buf->mtx));
 
          /* cleanup */

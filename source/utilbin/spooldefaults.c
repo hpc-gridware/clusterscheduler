@@ -138,7 +138,7 @@ static int spool_manops(sge_object_type type, int argc, char *argv[])
    int ret = EXIT_SUCCESS;
    int i;
    lList *answer_list = NULL;
-   lList **lpp = object_type_get_master_list(type);
+   lList **lpp = object_type_get_master_list_rw(type);
    int key = object_type_get_key_nm(type);
    const lDescr *descr = object_type_get_descr(type);
 
@@ -273,11 +273,9 @@ static int spool_cqueues(int argc, char *argv[])
 {
    lList *answer_list = NULL;
    spool_read_list(&answer_list, spool_get_default_context(), 
-                   object_type_get_master_list(SGE_TYPE_CENTRY), 
-                   SGE_TYPE_CENTRY);
+                   object_type_get_master_list_rw(SGE_TYPE_CENTRY), SGE_TYPE_CENTRY);
    spool_read_list(&answer_list, spool_get_default_context(), 
-                   object_type_get_master_list(SGE_TYPE_EXECHOST), 
-                   SGE_TYPE_EXECHOST);
+                   object_type_get_master_list_rw(SGE_TYPE_EXECHOST), SGE_TYPE_EXECHOST);
    answer_list_output(&answer_list);
 
    return spool_object_list(argv[2], CQ_fields, &qconf_sfi, CQ_Type, SGE_TYPE_CQUEUE);
@@ -290,7 +288,7 @@ static int spool_exechosts(int argc, char *argv[])
    int ret; 
 
    spool_read_list(&answer_list, spool_get_default_context(), 
-                   object_type_get_master_list(SGE_TYPE_CENTRY), 
+                   object_type_get_master_list_rw(SGE_TYPE_CENTRY), 
                    SGE_TYPE_CENTRY);
    answer_list_output(&answer_list);
 

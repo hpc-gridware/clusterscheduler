@@ -76,7 +76,7 @@ static lListElem* sge_get_configuration_for_host(const char* aName)
    lListElem *conf = NULL;
    char unique_name[CL_MAXHOSTLEN];
    int ret = -1;
-   lList *cluster_config = *object_type_get_master_list(SGE_TYPE_CONFIG);
+   const lList *cluster_config = *object_type_get_master_list(SGE_TYPE_CONFIG);
 
    DENTER(TOP_LAYER, "sge_get_configuration_for_host");
 
@@ -108,7 +108,7 @@ static int sge_read_configuration(sge_gdi_ctx_class_t *ctx, lListElem *aSpoolCon
    const char *cell_root = ctx->get_cell_root(ctx);
    const char *qualified_hostname = ctx->get_qualified_hostname(ctx);
    u_long32 progid = ctx->get_who(ctx);
-   lList *cluster_config = *object_type_get_master_list(SGE_TYPE_CONFIG);
+   lList *cluster_config = *object_type_get_master_list_rw(SGE_TYPE_CONFIG);
 
    DENTER(TOP_LAYER, "sge_read_configuration");
    
@@ -163,7 +163,7 @@ static bool read_spooled_data(sge_gdi_ctx_class_t *ctx)
    lList *answer_list = NULL;
    lListElem *context;
    lList *master_list = NULL;
-   lList **cluster_configuration = object_type_get_master_list(SGE_TYPE_CONFIG);
+   lList **cluster_configuration = object_type_get_master_list_rw(SGE_TYPE_CONFIG);
 
    DENTER(TOP_LAYER, "read_spooled_data");
 
@@ -185,96 +185,96 @@ static bool read_spooled_data(sge_gdi_ctx_class_t *ctx)
       DPRINTF(("read %d entries to Master_Sched_Config_List\n", lGetNumberOfElem(sconf_get_config_list())));
    }
    /* complexes */
-   master_list = *object_type_get_master_list(SGE_TYPE_CENTRY);
+   master_list = *object_type_get_master_list_rw(SGE_TYPE_CENTRY);
    spool_read_list(&answer_list, context, &master_list, SGE_TYPE_CENTRY);
    answer_list_output(&answer_list);
    DPRINTF(("read %d entries to Master_CEntry_List\n", lGetNumberOfElem(master_list)));
 
    /* hosts */
-   master_list = *object_type_get_master_list(SGE_TYPE_EXECHOST);
+   master_list = *object_type_get_master_list_rw(SGE_TYPE_EXECHOST);
    spool_read_list(&answer_list, context, &master_list, SGE_TYPE_EXECHOST);
    answer_list_output(&answer_list);
    DPRINTF(("read %d entries to Master_Exechost_List\n", lGetNumberOfElem(master_list)));
 
-   master_list = *object_type_get_master_list(SGE_TYPE_ADMINHOST);
+   master_list = *object_type_get_master_list_rw(SGE_TYPE_ADMINHOST);
    spool_read_list(&answer_list, context, &master_list, SGE_TYPE_ADMINHOST);
    answer_list_output(&answer_list);
    DPRINTF(("read %d entries to Master_Adminhost_List\n", lGetNumberOfElem(master_list)));
 
-   master_list = *object_type_get_master_list(SGE_TYPE_SUBMITHOST);
+   master_list = *object_type_get_master_list_rw(SGE_TYPE_SUBMITHOST);
    spool_read_list(&answer_list, context, &master_list, SGE_TYPE_SUBMITHOST);
    answer_list_output(&answer_list);
    DPRINTF(("read %d entries to Master_Submithost_List\n", lGetNumberOfElem(master_list)));
 
    /* managers */
-   master_list = *object_type_get_master_list(SGE_TYPE_MANAGER);
+   master_list = *object_type_get_master_list_rw(SGE_TYPE_MANAGER);
    spool_read_list(&answer_list, context, &master_list, SGE_TYPE_MANAGER);
    answer_list_output(&answer_list);
    DPRINTF(("read %d entries to Master_Manager_List\n", lGetNumberOfElem(master_list)));
 
    /* host groups */
-   master_list = *object_type_get_master_list(SGE_TYPE_HGROUP);
+   master_list = *object_type_get_master_list_rw(SGE_TYPE_HGROUP);
    spool_read_list(&answer_list, context, &master_list, SGE_TYPE_HGROUP);
    answer_list_output(&answer_list);
    DPRINTF(("read %d entries to Master_Hostgroup_List\n", 
             lGetNumberOfElem(master_list)));
 
    /* operators */
-   master_list = *object_type_get_master_list(SGE_TYPE_OPERATOR);
+   master_list = *object_type_get_master_list_rw(SGE_TYPE_OPERATOR);
    spool_read_list(&answer_list, context, &master_list, SGE_TYPE_OPERATOR);
    answer_list_output(&answer_list);
    DPRINTF(("read %d entries to Master_Operator_List\n", lGetNumberOfElem(master_list)));
 
    /* usersets */
-   master_list = *object_type_get_master_list(SGE_TYPE_USERSET);
+   master_list = *object_type_get_master_list_rw(SGE_TYPE_USERSET);
    spool_read_list(&answer_list, context, &master_list, SGE_TYPE_USERSET);
    answer_list_output(&answer_list);
    DPRINTF(("read %d entries to Master_Userset_List\n", lGetNumberOfElem(master_list)));
 
    /* calendars */
-   master_list = *object_type_get_master_list(SGE_TYPE_CALENDAR);
+   master_list = *object_type_get_master_list_rw(SGE_TYPE_CALENDAR);
    spool_read_list(&answer_list, context, &master_list, SGE_TYPE_CALENDAR);
    answer_list_output(&answer_list);
    DPRINTF(("read %d entries to Master_Calendar_List\n", lGetNumberOfElem(master_list)));
 
    /* queues */
-   master_list = *object_type_get_master_list(SGE_TYPE_CQUEUE);
+   master_list = *object_type_get_master_list_rw(SGE_TYPE_CQUEUE);
    spool_read_list(&answer_list, context, &master_list, SGE_TYPE_CQUEUE);
    answer_list_output(&answer_list);
    DPRINTF(("read %d entries to Master_CQueue_List\n", lGetNumberOfElem(master_list)));
 
    /* pes */
-   master_list = *object_type_get_master_list(SGE_TYPE_PE);
+   master_list = *object_type_get_master_list_rw(SGE_TYPE_PE);
    spool_read_list(&answer_list, context, &master_list, SGE_TYPE_PE);
    answer_list_output(&answer_list);
    DPRINTF(("read %d entries to Master_Pe_List\n", lGetNumberOfElem(master_list)));
 
    /* ckpt */
-   master_list = *object_type_get_master_list(SGE_TYPE_CKPT);
+   master_list = *object_type_get_master_list_rw(SGE_TYPE_CKPT);
    spool_read_list(&answer_list, context, &master_list, SGE_TYPE_CKPT);
    answer_list_output(&answer_list);
    DPRINTF(("read %d entries to Master_Ckpt_List\n", lGetNumberOfElem(master_list)));
 
    /* jobs */
-   master_list = *object_type_get_master_list(SGE_TYPE_JOB);
+   master_list = *object_type_get_master_list_rw(SGE_TYPE_JOB);
    spool_read_list(&answer_list, context, &master_list, SGE_TYPE_JOB);
    answer_list_output(&answer_list);
    DPRINTF(("read %d entries to Master_Job_List\n", lGetNumberOfElem(master_list)));
 
    /* user list */
-   master_list = *object_type_get_master_list(SGE_TYPE_USER);
+   master_list = *object_type_get_master_list_rw(SGE_TYPE_USER);
    spool_read_list(&answer_list, context, &master_list, SGE_TYPE_USER);
    answer_list_output(&answer_list);
    DPRINTF(("read %d entries to Master_User_List\n", lGetNumberOfElem(master_list)));
 
    /* project list */
-   master_list = *object_type_get_master_list(SGE_TYPE_PROJECT);
+   master_list = *object_type_get_master_list_rw(SGE_TYPE_PROJECT);
    spool_read_list(&answer_list, context, &master_list, SGE_TYPE_PROJECT);
    answer_list_output(&answer_list);
    DPRINTF(("read %d entries to Master_Project_List\n", lGetNumberOfElem(master_list)));
 
    /* sharetree */
-   master_list = *object_type_get_master_list(SGE_TYPE_SHARETREE);
+   master_list = *object_type_get_master_list_rw(SGE_TYPE_SHARETREE);
    spool_read_list(&answer_list, context, &master_list, SGE_TYPE_SHARETREE);
    answer_list_output(&answer_list);
    DPRINTF(("read %d entries to Master_Sharetree_List\n", lGetNumberOfElem(master_list)));
@@ -286,7 +286,8 @@ sge_callback_result spool_event_before(sge_evc_class_t *evc, sge_object_type typ
 {
    lList *answer_list = NULL;
    lListElem *context, *ep;
-   lList **master_list, *new_list;
+   const lList **master_list;
+   lList *new_list;
    int key_nm;
    dstring buffer = DSTRING_INIT;
 
@@ -309,7 +310,7 @@ sge_callback_result spool_event_before(sge_evc_class_t *evc, sge_object_type typ
                lListElem *new_ep;
 
                new_ep = lGetElemHost(new_list, key_nm, lGetHost(ep, key_nm));
-               if(new_ep == NULL) {
+               if (new_ep == NULL) {
                   /* object not contained in new list, delete it */
                   spool_delete_object(&answer_list, context, type, lGetHost(ep, key_nm), false);
                   answer_list_output(&answer_list);
@@ -467,8 +468,8 @@ sge_callback_result spool_event_after(sge_evc_class_t *evc, sge_object_type type
    sge_callback_result ret = SGE_EMA_OK;
    lList *answer_list = NULL;
    lListElem *context, *ep;
-   lList **master_list;
-   lList *master_job_list;
+   const lList **master_list;
+   const lList *master_job_list;
    int key_nm;
    const char *key;
    dstring buffer = DSTRING_INIT;

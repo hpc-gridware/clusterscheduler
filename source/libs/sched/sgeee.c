@@ -3357,7 +3357,7 @@ sge_calc_tickets( scheduler_all_data_t *lists,
       sge_task_ref_t *tref = task_ref_get_first_job_entry();
 
       while (tref != NULL) {
-         lListElem *job = job_list_locate(queued_jobs, tref->job_number); 
+         lListElem *job = lGetElemUlong(queued_jobs, JB_job_number, tref->job_number); 
 
          if (job) {
             lListElem *ja_task_template;

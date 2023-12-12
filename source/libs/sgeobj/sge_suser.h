@@ -41,7 +41,7 @@
 lListElem *suser_list_add(lList **suser_list, lList **answer_list,
                           const char *suser_name);
 
-lListElem *suser_list_find(lList *suser_list, const char *suser_name);
+lListElem *suser_list_find(const lList *suser_list, const char *suser_name);
 
 void suser_increase_job_counter(lListElem *suser);
 
@@ -49,13 +49,12 @@ void suser_decrease_job_counter(lListElem *suser);
 
 u_long32 suser_get_job_counter(lListElem *suser);
 
-int suser_check_new_job(const lListElem *job, u_long32 max_u_jobs);
+int suser_check_new_job(const lListElem *job, u_long32 max_u_jobs, lList *master_suser_list);
 
-int suser_job_count(const lListElem *job);
+int suser_job_count(const lListElem *job, const lList *master_suser_list);
 
-int suser_register_new_job(const lListElem *job, u_long32 max_u_jobs,
-                           int force_registration);
+int suser_register_new_job(const lListElem *job, u_long32 max_u_jobs, int force_registration, lList *master_suser_list);
 
-void suser_unregister_job(const lListElem *job);
+void suser_unregister_job(const lListElem *job, const lList *master_suser_list);
 
 #endif /* __SGE_SUSER_H */

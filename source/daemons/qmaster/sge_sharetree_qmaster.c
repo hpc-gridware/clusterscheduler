@@ -97,6 +97,8 @@ int sge_mod_sharetree(sge_gdi_ctx_class_t *ctx,
    int prev_version;
    int adding; 
    lList *found = NULL;
+   const lList *master_user_list = *object_type_get_master_list(SGE_TYPE_USER);
+   const lList *master_project_list = *object_type_get_master_list(SGE_TYPE_PROJECT);
 
    DENTER(TOP_LAYER, "sge_mod_sharetree");
 
@@ -108,9 +110,7 @@ int sge_mod_sharetree(sge_gdi_ctx_class_t *ctx,
       return STATUS_EUNKNOWN;
    }
 
-   ret = check_sharetree(alpp, ep, *object_type_get_master_list(SGE_TYPE_USER), 
-                         *object_type_get_master_list(SGE_TYPE_PROJECT), 
-                         NULL, &found);
+   ret = check_sharetree(alpp, ep, master_user_list, master_project_list, NULL, &found);
    lFreeList(&found);
    if (ret) {
       /* alpp gets filled by check_sharetree() */
@@ -222,8 +222,8 @@ char *rhost
 int check_sharetree(
 lList **alpp,
 lListElem *node,
-lList *user_list,
-lList *project_list,
+const lList *user_list,
+const lList *project_list,
 lListElem *project,
 lList **found  /* tmp list that contains one entry for each found u/p */
 ) {
@@ -366,21 +366,6 @@ lList **found  /* tmp list that contains one entry for each found u/p */
             DEXIT;
             return -1;
          }
-
-#if 0  /* commented out because user may have access based on group ID */
-
-         /* make sure this user has access to the project */
-
-         if (strcmp(name, "default") &&
-             !sge_has_access_(name, NULL, lGetList(project, PR_acl),
-                  lGetList(project, PR_xacl), *object_type_get_master_list(SGE_TYPE_USERSET))) {
-            ERROR((SGE_EVENT, MSG_STREE_USERTNOACCESS2PRJ_SS, name, lGetString(project, PR_name)));
-            answer_list_add(alpp, SGE_EVENT, STATUS_EUNKNOWN, ANSWER_QUALITY_ERROR);
-            DEXIT;
-            return -1;
-         }
-#endif
-
       } else {
          const char *objname = MSG_OBJ_USER;
 
@@ -498,7 +483,7 @@ int update_sharetree(lList *dst, lList *src)
 
 /* seek user/prj node (depends on node_type STT_USER|STT_PROJECT) in actual share tree */
 lListElem *getNode(
-lList *share_tree,
+const lList *share_tree,
 const char *name,
 int node_type,
 int recurse 

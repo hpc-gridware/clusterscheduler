@@ -107,8 +107,7 @@ lListElem *sconf_create_default(void);
 
 bool sconf_set_config(lList **config, lList **answer_list);
 
-bool sconf_is_valid_load_formula(lList **answer_list,
-                                       lList *cmplx_list);
+bool sconf_is_valid_load_formula(lList **answer_list, const lList *cmplx_list);
 
 bool
 sconf_is_centry_referenced(const lListElem *centry);

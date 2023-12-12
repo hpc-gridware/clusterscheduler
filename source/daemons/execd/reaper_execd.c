@@ -154,7 +154,8 @@ int sge_reap_children_execd(int max_count, bool is_qmaster_down)
    int pid = 999;
    int exit_status, child_signal, core_dumped, failed;
    u_long32 jobid, jataskid;
-   lListElem *jep, *petep = NULL, *jatep = NULL;
+   const lListElem *jep;
+   lListElem *petep = NULL, *jatep = NULL;
 
    int status;
    int reap_count = 0;
@@ -221,7 +222,7 @@ int sge_reap_children_execd(int max_count, bool is_qmaster_down)
       reap_count++;
 
       /* search whether it was a job or one of its tasks */
-      for_each(jep, *(object_type_get_master_list(SGE_TYPE_JOB))) {
+      for_each (jep, *object_type_get_master_list(SGE_TYPE_JOB)) {
          int Break = 0;
    
          petep = NULL;
@@ -974,7 +975,7 @@ void remove_acked_job_exit(sge_gdi_ctx_class_t *ctx, u_long32 job_id, u_long32 j
                 * Unlink job_script if there are no other master tasks
                 * (e.g. task arrays) for this job present on execd
                 */
-               if (count_master_tasks(*(object_type_get_master_list(SGE_TYPE_JOB)), job_id) <= 1) {
+               if (count_master_tasks(*object_type_get_master_list(SGE_TYPE_JOB), job_id) <= 1) {
                   DPRINTF(("unlinking script file %s\n", lGetString(jep, JB_exec_file)));
                   unlink(lGetString(jep, JB_exec_file));
                }
@@ -1009,7 +1010,7 @@ void remove_acked_job_exit(sge_gdi_ctx_class_t *ctx, u_long32 job_id, u_long32 j
 
          if (used_slots == 0 || mconf_get_simulate_jobs()) {
             /* remove the jep element only if all slave tasks are gone, we need to job object to remove the tmpdir */
-            lRemoveElem(*(object_type_get_master_list(SGE_TYPE_JOB)), &jep);
+            lRemoveElem(*object_type_get_master_list_rw(SGE_TYPE_JOB), &jep);
          }
       }
 
@@ -1249,9 +1250,7 @@ int clean_up_old_jobs(sge_gdi_ctx_class_t *ctx, int startup)
       exited and there is no need for ps-commands.
 
    */
-   if (mconf_get_simulate_jobs() ||
-       lGetNumberOfElem(*(object_type_get_master_list(SGE_TYPE_JOB))) == 0 ||
-       !lost_children) {
+   if (mconf_get_simulate_jobs() || lGetNumberOfElem(*object_type_get_master_list(SGE_TYPE_JOB)) == 0 || !lost_children) {
       if (lost_children) {
          if (startup) {
             INFO((SGE_EVENT, SFNMAX, MSG_SHEPHERD_NOOLDJOBSATSTARTUP));

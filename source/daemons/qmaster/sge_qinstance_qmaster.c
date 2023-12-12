@@ -107,12 +107,17 @@ qinstance_modify_attribute(sge_gdi_ctx_class_t *ctx,
                            bool *has_changed_state_attr,
                            const bool initial_modify,
                            bool *need_reinitialize,
-                           monitoring_t *monitor)
+                           monitoring_t *monitor,
+                           const lList *master_hgroup_list,
+                           lList *master_cqueue_list)
 {
 #if 0 /* EB: DEBUG: enable debugging for qinstance_modify_attribute() */
 #define QINSTANCE_MODIFY_DEBUG
 #endif
    bool ret = true;
+   const lList *master_calendar_list = *object_type_get_master_list(SGE_TYPE_CALENDAR); 
+   const lList *master_ar_list = *object_type_get_master_list(SGE_TYPE_AR);
+   const lList *master_centry_list = *object_type_get_master_list(SGE_TYPE_CENTRY);
   
 #ifdef QINSTANCE_MODIFY_DEBUG
    DENTER(TOP_LAYER, "qinstance_modify_attribute");
@@ -138,13 +143,10 @@ qinstance_modify_attribute(sge_gdi_ctx_class_t *ctx,
                str_attr_list_find_value(attr_list, answer_list,
                                         hostname, &new_value, 
                                         matching_host_or_group,
-                                        matching_group, is_ambiguous);
+                                        matching_group, is_ambiguous, master_hgroup_list);
                if (old_value == NULL || new_value == NULL ||
                    strcmp(old_value, new_value)) {
-                  lList *master_calendar_list = 
-                             *(object_type_get_master_list(SGE_TYPE_CALENDAR)); 
-                  lListElem *calendar = 
-                         calendar_list_locate(master_calendar_list, new_value);
+                  lListElem *calendar = calendar_list_locate(master_calendar_list, new_value);
   
 #ifdef QINSTANCE_MODIFY_DEBUG
                   DPRINTF(("Changed "SFQ" from "SFQ" to "SFQ"\n",
@@ -156,7 +158,7 @@ qinstance_modify_attribute(sge_gdi_ctx_class_t *ctx,
                    * an existing AR would be violated by the modification
                    */
                   if (!initial_modify && sge_ar_list_conflicts_with_calendar(answer_list, lGetString(this_elem, QU_full_name),
-                                                      calendar, *object_type_get_master_list(SGE_TYPE_AR))) {
+                                                      calendar, master_ar_list)) {
                      ret = false;
                      break;
                   }
@@ -182,7 +184,7 @@ qinstance_modify_attribute(sge_gdi_ctx_class_t *ctx,
                                            hostname, &new_value,
                                            matching_host_or_group,
                                            matching_group,
-                                           is_ambiguous);
+                                           is_ambiguous, master_hgroup_list);
                if (old_value != new_value) {
 #ifdef QINSTANCE_MODIFY_DEBUG
                   DPRINTF(("Changed "SFQ" from "sge_u32" to "sge_u32"\n",
@@ -212,7 +214,7 @@ qinstance_modify_attribute(sge_gdi_ctx_class_t *ctx,
                mem_attr_list_find_value(attr_list, answer_list, 
                                         hostname, &new_value, 
                                         matching_host_or_group,
-                                        matching_group, is_ambiguous);
+                                        matching_group, is_ambiguous, master_hgroup_list);
                if (old_value == NULL || new_value == NULL ||
                    strcmp(old_value, new_value)) {
 #ifdef QINSTANCE_MODIFY_DEBUG
@@ -238,7 +240,7 @@ qinstance_modify_attribute(sge_gdi_ctx_class_t *ctx,
                                          hostname, &new_value, 
                                          matching_host_or_group,
                                          matching_group,
-                                         is_ambiguous);
+                                         is_ambiguous, master_hgroup_list);
 
                if (old_value == NULL || new_value == NULL ||
                    strcmp(old_value, new_value)) {
@@ -263,7 +265,7 @@ qinstance_modify_attribute(sge_gdi_ctx_class_t *ctx,
                inter_attr_list_find_value(attr_list, answer_list, 
                                           hostname, &new_value, 
                                           matching_host_or_group,
-                                          matching_group, is_ambiguous);
+                                          matching_group, is_ambiguous, master_hgroup_list);
                if (old_value == NULL || new_value == NULL ||
                    strcmp(old_value, new_value)) {
 #ifdef QINSTANCE_MODIFY_DEBUG
@@ -300,7 +302,7 @@ qinstance_modify_attribute(sge_gdi_ctx_class_t *ctx,
                strlist_attr_list_find_value(attr_list, answer_list,
                                             hostname, &new_value, 
                                             matching_host_or_group,
-                                            matching_group, is_ambiguous);
+                                            matching_group, is_ambiguous, master_hgroup_list);
                if (object_list_has_differences(old_value, answer_list, 
                                                new_value, false)) {
 #ifdef QINSTANCE_MODIFY_DEBUG
@@ -311,14 +313,12 @@ qinstance_modify_attribute(sge_gdi_ctx_class_t *ctx,
                    * an existing AR violates that modification
                    */
                   if (cqueue_attibute_name == CQ_ckpt_list &&
-                      ar_list_has_reservation_due_to_ckpt(
-                           *object_type_get_master_list(SGE_TYPE_AR), answer_list, 
+                      ar_list_has_reservation_due_to_ckpt(master_ar_list, answer_list, 
                            lGetString(this_elem, QU_full_name), new_value)) {
                      ret = false;
                      break;
                   } else if (!initial_modify && cqueue_attibute_name == CQ_pe_list &&
-                             ar_list_has_reservation_due_to_pe(
-                                 *object_type_get_master_list(SGE_TYPE_AR), answer_list,
+                             ar_list_has_reservation_due_to_pe(master_ar_list, answer_list,
                                  lGetString(this_elem, QU_full_name), new_value)) {
                      ret = false;
                      break;
@@ -339,7 +339,7 @@ qinstance_modify_attribute(sge_gdi_ctx_class_t *ctx,
                usrlist_attr_list_find_value(attr_list, answer_list,
                                             hostname, &new_value, 
                                             matching_host_or_group,
-                                            matching_group, is_ambiguous);
+                                            matching_group, is_ambiguous, master_hgroup_list);
                if (object_list_has_differences(old_value, answer_list,
                                                new_value, false)) {
 #ifdef QINSTANCE_MODIFY_DEBUG
@@ -359,7 +359,7 @@ qinstance_modify_attribute(sge_gdi_ctx_class_t *ctx,
                prjlist_attr_list_find_value(attr_list, answer_list,
                                             hostname, &new_value, 
                                             matching_host_or_group,
-                                            matching_group, is_ambiguous);
+                                            matching_group, is_ambiguous, master_hgroup_list);
                if (object_list_has_differences(old_value, answer_list,
                                                new_value, false)) {
 #ifdef QINSTANCE_MODIFY_DEBUG
@@ -378,7 +378,7 @@ qinstance_modify_attribute(sge_gdi_ctx_class_t *ctx,
                ulng_attr_list_find_value(attr_list, answer_list, hostname, 
                                          &new_value, 
                                          matching_host_or_group,
-                                         matching_group, is_ambiguous);
+                                         matching_group, is_ambiguous, master_hgroup_list);
                if (old_value != new_value) {
                   int slots_reserved = qinstance_slots_reserved(this_elem);
                   DPRINTF(("reserved slots %d\n", slots_reserved));
@@ -407,12 +407,11 @@ qinstance_modify_attribute(sge_gdi_ctx_class_t *ctx,
                lList *old_value = lGetList(this_elem, attribute_name);
                lList *new_value = NULL;
                bool created_new_value = false;
-               lList *master_centry_list = *object_type_get_master_list(SGE_TYPE_CENTRY);
 
                celist_attr_list_find_value(attr_list, answer_list,
                                            hostname, &new_value, 
                                            matching_host_or_group,
-                                           matching_group, is_ambiguous);
+                                           matching_group, is_ambiguous, master_hgroup_list);
 
                if (centry_list_fill_request(new_value, answer_list, master_centry_list, 
                                         true, true, false) == 0) {
@@ -427,7 +426,7 @@ qinstance_modify_attribute(sge_gdi_ctx_class_t *ctx,
                      ulng_attr_list_find_value(cq_slots_attr, answer_list, hostname, 
                                                &slots_value, 
                                                matching_host_or_group,
-                                               matching_group, is_ambiguous);
+                                               matching_group, is_ambiguous, master_hgroup_list);
                      sge_dstring_sprintf(&buffer, sge_u32, slots_value);
 
                      if (new_value == NULL) {
@@ -444,8 +443,8 @@ qinstance_modify_attribute(sge_gdi_ctx_class_t *ctx,
 #ifdef QINSTANCE_MODIFY_DEBUG
                      DPRINTF(("Changed "SFQ"\n", lNm2Str(attribute_name)));
 #endif
-                     if (!initial_modify && ar_list_has_reservation_due_to_qinstance_complex_attr(*object_type_get_master_list(SGE_TYPE_AR), answer_list, 
-                                                                                this_elem, *object_type_get_master_list(SGE_TYPE_CENTRY))) {
+                     if (!initial_modify && ar_list_has_reservation_due_to_qinstance_complex_attr(master_ar_list, answer_list, 
+                                                                                this_elem, master_centry_list)) {
                         ret = false;
                      } else {
                         if (need_reinitialize != NULL) {
@@ -474,7 +473,7 @@ qinstance_modify_attribute(sge_gdi_ctx_class_t *ctx,
                celist_attr_list_find_value(attr_list, answer_list,
                                            hostname, &new_value, 
                                            matching_host_or_group,
-                                           matching_group, is_ambiguous);
+                                           matching_group, is_ambiguous, master_hgroup_list);
                if (object_list_has_differences(old_value, answer_list,
                                                new_value, false)) {
 #ifdef QINSTANCE_MODIFY_DEBUG
@@ -501,9 +500,8 @@ qinstance_modify_attribute(sge_gdi_ctx_class_t *ctx,
                solist_attr_list_find_value(attr_list, answer_list,
                                            hostname, &new_value, 
                                            matching_host_or_group,
-                                           matching_group, is_ambiguous);
+                                           matching_group, is_ambiguous, master_hgroup_list);
                if (object_list_has_differences(old_value, answer_list, new_value, false)) {
-                  lList *master_list = *(object_type_get_master_list(SGE_TYPE_CQUEUE));
                   lList *unsuspended_so = NULL;  /* SO_Type list */
                   lList *suspended_so = NULL;    /* SO_Type list */
                   lListElem *first_old_elem = NULL;
@@ -592,9 +590,7 @@ qinstance_modify_attribute(sge_gdi_ctx_class_t *ctx,
                    * subordinate anything if the queue was freshly added
                    */
                   if (initial_modify == false) {
-                     qinstance_find_suspended_subordinates(this_elem,
-                                                           answer_list,
-                                                           &unsuspended_so);
+                     qinstance_find_suspended_subordinates(this_elem, answer_list, &unsuspended_so, master_cqueue_list);
                   }
 
                   /*
@@ -608,9 +604,7 @@ qinstance_modify_attribute(sge_gdi_ctx_class_t *ctx,
                       * Find list of subordinates that have to be suspended after
                       * the modification of CQ_subordinate_list-sublist 
                       */
-                     qinstance_find_suspended_subordinates(this_elem,
-                                                                  answer_list,
-                                                                  &suspended_so);
+                     qinstance_find_suspended_subordinates(this_elem, answer_list, &suspended_so, master_cqueue_list);
 
                      /* 
                       * Remove equal entries in both lists 
@@ -621,10 +615,10 @@ qinstance_modify_attribute(sge_gdi_ctx_class_t *ctx,
                       * (Un)suspend subordinated queue instances
                       */
                      cqueue_list_x_on_subordinate_so(ctx,
-                                                     master_list, answer_list, 
+                                                     master_cqueue_list, answer_list, 
                                                      false, unsuspended_so, monitor);
                      cqueue_list_x_on_subordinate_so(ctx,
-                                                     master_list, answer_list, 
+                                                     master_cqueue_list, answer_list, 
                                                      true, suspended_so, monitor);
                   }
 
@@ -651,7 +645,7 @@ qinstance_modify_attribute(sge_gdi_ctx_class_t *ctx,
                   str_attr_list_find_value(attr_list, answer_list,
                                            hostname, &new_value, 
                                            matching_host_or_group,
-                                           matching_group, is_ambiguous);
+                                           matching_group, is_ambiguous, master_hgroup_list);
                   if (old_value == NULL || new_value == NULL ||
                       strcmp(old_value, new_value)) {
 #ifdef QINSTANCE_MODIFY_DEBUG
@@ -673,7 +667,7 @@ qinstance_modify_attribute(sge_gdi_ctx_class_t *ctx,
                   ulng_attr_list_find_value(attr_list, answer_list, hostname, 
                                             &new_value, 
                                             matching_host_or_group,
-                                            matching_group, is_ambiguous);
+                                            matching_group, is_ambiguous, master_hgroup_list);
                   if (old_value != new_value) {
 #ifdef QINSTANCE_MODIFY_DEBUG
                      DPRINTF(("Changed "SFQ" from "sge_u32" to "sge_u32"\n",
@@ -701,7 +695,7 @@ qinstance_modify_attribute(sge_gdi_ctx_class_t *ctx,
                   bool_attr_list_find_value(attr_list, answer_list,
                                             hostname, &new_value, 
                                             matching_host_or_group,
-                                            matching_group, is_ambiguous);
+                                            matching_group, is_ambiguous, master_hgroup_list);
                   if (old_value != new_value) {
 #ifdef QINSTANCE_MODIFY_DEBUG
                      DPRINTF(("Changed "SFQ" from "SFQ" to "SFQ"\n",
@@ -939,7 +933,7 @@ bool qinstance_change_state_on_calendar_all(sge_gdi_ctx_class_t *ctx,
 
    DENTER(TOP_LAYER, "qinstance_signal_on_calendar_all");
 
-   for_each (cqueue, *(object_type_get_master_list(SGE_TYPE_CQUEUE))) {
+   for_each (cqueue, *object_type_get_master_list(SGE_TYPE_CQUEUE)) {
       lList *qinstance_list = lGetList(cqueue, CQ_qinstances);
       lListElem *qinstance = NULL;
 
@@ -1059,10 +1053,8 @@ sge_qmaster_qinstance_state_set_manual_disabled(lListElem *this_elem, bool set_s
    changed = qinstance_state_set_manual_disabled(this_elem, set_state);
    if (changed) {
       reporting_create_queue_record(NULL, this_elem, sge_get_gmt());
-      sge_ar_list_set_error_state(*object_type_get_master_list(SGE_TYPE_AR),
-                                  lGetString(this_elem, QU_full_name), 
-                                  QI_DISABLED,
-                                  set_state);
+      sge_ar_list_set_error_state(*object_type_get_master_list_rw(SGE_TYPE_AR),
+                                  lGetString(this_elem, QU_full_name), QI_DISABLED, set_state);
    }
 
 
@@ -1076,10 +1068,8 @@ sge_qmaster_qinstance_state_set_manual_suspended(lListElem *this_elem, bool set_
    changed = qinstance_state_set_manual_suspended(this_elem, set_state);
    if (changed) {
       reporting_create_queue_record(NULL, this_elem, sge_get_gmt());
-      sge_ar_list_set_error_state(*object_type_get_master_list(SGE_TYPE_AR),
-                                  lGetString(this_elem, QU_full_name), 
-                                  QI_SUSPENDED,
-                                  set_state);
+      sge_ar_list_set_error_state(*object_type_get_master_list_rw(SGE_TYPE_AR),
+                                  lGetString(this_elem, QU_full_name), QI_SUSPENDED, set_state);
    }
 
 
@@ -1094,15 +1084,11 @@ sge_qmaster_qinstance_state_set_unknown(lListElem *this_elem, bool set_state)
    if (changed) {
       reporting_create_queue_record(NULL, this_elem, sge_get_gmt());
       if (mconf_get_simulate_execds()) {
-         sge_ar_list_set_error_state(*object_type_get_master_list(SGE_TYPE_AR),
-                                        lGetString(this_elem, QU_full_name), 
-                                        QI_UNKNOWN,
-                                        false);
+         sge_ar_list_set_error_state(*object_type_get_master_list_rw(SGE_TYPE_AR),
+                                     lGetString(this_elem, QU_full_name), QI_UNKNOWN, false);
       } else {
-         sge_ar_list_set_error_state(*object_type_get_master_list(SGE_TYPE_AR),
-                                        lGetString(this_elem, QU_full_name), 
-                                        QI_UNKNOWN,
-                                        set_state);
+         sge_ar_list_set_error_state(*object_type_get_master_list_rw(SGE_TYPE_AR),
+                                        lGetString(this_elem, QU_full_name), QI_UNKNOWN, set_state);
       }
    }
 
@@ -1117,10 +1103,8 @@ sge_qmaster_qinstance_state_set_error(lListElem *this_elem, bool set_state)
    changed = qinstance_state_set_error(this_elem, set_state);
    if (changed) {
       reporting_create_queue_record(NULL, this_elem, sge_get_gmt());
-      sge_ar_list_set_error_state(*object_type_get_master_list(SGE_TYPE_AR),
-                                  lGetString(this_elem, QU_full_name), 
-                                  QI_ERROR,
-                                  set_state);
+      sge_ar_list_set_error_state(*object_type_get_master_list_rw(SGE_TYPE_AR),
+                                  lGetString(this_elem, QU_full_name), QI_ERROR, set_state);
    }
 
 
@@ -1182,10 +1166,8 @@ sge_qmaster_qinstance_state_set_ambiguous(lListElem *this_elem, bool set_state)
    changed = qinstance_state_set_ambiguous(this_elem, set_state);
    if (changed) {
       reporting_create_queue_record(NULL, this_elem, sge_get_gmt());
-      sge_ar_list_set_error_state(*object_type_get_master_list(SGE_TYPE_AR),
-                                  lGetString(this_elem, QU_full_name), 
-                                  QI_AMBIGUOUS,
-                                  set_state);
+      sge_ar_list_set_error_state(*object_type_get_master_list_rw(SGE_TYPE_AR),
+                                  lGetString(this_elem, QU_full_name), QI_AMBIGUOUS, set_state);
    }
 
 
@@ -1250,9 +1232,9 @@ qinstance_reinit_consumable_actual_list(lListElem *this_elem,
 
    if (this_elem != NULL) {
       const char *name = lGetString(this_elem, QU_full_name);
-      lList *job_list = *(object_type_get_master_list(SGE_TYPE_JOB));
-      lList *centry_list = *(object_type_get_master_list(SGE_TYPE_CENTRY));
-      lList *ar_list = *(object_type_get_master_list(SGE_TYPE_AR));
+      const lList *job_list = *object_type_get_master_list(SGE_TYPE_JOB);
+      const lList *centry_list = *object_type_get_master_list(SGE_TYPE_CENTRY);
+      const lList *ar_list = *object_type_get_master_list(SGE_TYPE_AR);
       lListElem *ep = NULL;
 
       lSetList(this_elem, QU_resource_utilization, NULL);

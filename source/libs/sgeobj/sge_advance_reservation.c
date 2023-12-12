@@ -87,7 +87,7 @@
 *  NOTES
 *     MT-NOTE: ar_list_locate() is MT safe 
 *******************************************************************************/
-lListElem *ar_list_locate(lList *ar_list, u_long32 ar_id)
+lListElem *ar_list_locate(const lList *ar_list, u_long32 ar_id)
 {
    lListElem *ep = NULL;
 
@@ -120,13 +120,15 @@ lListElem *ar_list_locate(lList *ar_list, u_long32 ar_id)
 *  NOTES
 *     MT-NOTE: ar_validate() is MT safe
 *******************************************************************************/
-bool ar_validate(lListElem *ar, lList **alpp, bool in_master, bool is_spool)
+bool ar_validate(lListElem *ar, lList **alpp, bool in_master, bool is_spool, const lList *master_cqueue_list, 
+                 const lList *master_hgroup_list, const lList *master_centry_list, const lList *master_ckpt_list,
+                 const lList *master_pe_list, const lList *master_userset_list)
 {
    u_long32 start_time;
    u_long32 end_time;
    u_long32 duration;
    u_long32 now = sge_get_gmt();
-   
+
    DENTER(TOP_LAYER, "ar_validate");
 
    /*   AR_start_time, SGE_ULONG        */
@@ -200,7 +202,6 @@ bool ar_validate(lListElem *ar, lList **alpp, bool in_master, bool is_spool)
 
          ckpt_name = lGetString(ar, AR_checkpoint_name);
          if (ckpt_name != NULL) {
-            lList *master_ckpt_list = *object_type_get_master_list(SGE_TYPE_CKPT);
             lListElem *ckpt_ep = ckpt_list_locate(master_ckpt_list, ckpt_name);
             if (!ckpt_ep) {
                ERROR((SGE_EVENT, MSG_JOB_CKPTUNKNOWN_S, ckpt_name));
@@ -211,11 +212,8 @@ bool ar_validate(lListElem *ar, lList **alpp, bool in_master, bool is_spool)
       }
       /*   AR_resource_list, SGE_LIST */
       {
-         lList *master_centry_list = *object_type_get_master_list(SGE_TYPE_CENTRY);
-
          if (centry_list_fill_request(lGetList(ar, AR_resource_list),
-                                      alpp, master_centry_list, false, true,
-                                      false)) {
+                                      alpp, master_centry_list, false, true, false)) {
             goto ERROR;
          }
          if (compress_ressources(alpp, lGetList(ar, AR_resource_list), SGE_OBJ_AR)) {
@@ -227,14 +225,14 @@ bool ar_validate(lListElem *ar, lList **alpp, bool in_master, bool is_spool)
          }
       }
       /*   AR_queue_list, SGE_LIST */
-      if (!qref_list_is_valid(lGetList(ar, AR_queue_list), alpp)) {
+      if (!qref_list_is_valid(lGetList(ar, AR_queue_list), alpp, master_cqueue_list, master_hgroup_list, master_centry_list)) {
          goto ERROR;
       }
       /*   AR_mail_options, SGE_ULONG   */
       /*   AR_mail_list, SGE_LIST */
       
       /*   AR_master_queue_list  -masterq wc_queue_list, SGE_LIST bind master task to queue(s) */
-      if (!qref_list_is_valid(lGetList(ar, AR_master_queue_list), alpp)) {
+      if (!qref_list_is_valid(lGetList(ar, AR_master_queue_list), alpp, master_cqueue_list, master_hgroup_list, master_centry_list)) {
          goto ERROR;
       }
        
@@ -247,8 +245,7 @@ bool ar_validate(lListElem *ar, lList **alpp, bool in_master, bool is_spool)
          
          pe_name = lGetString(ar, AR_pe);
          if (pe_name) {
-            const lListElem *pep;
-            pep = pe_list_find_matching(*object_type_get_master_list(SGE_TYPE_PE), pe_name);
+            const lListElem *pep = pe_list_find_matching(master_pe_list, pe_name);
             if (!pep) {
                ERROR((SGE_EVENT, MSG_JOB_PEUNKNOWN_S, pe_name));
                answer_list_add(alpp, SGE_EVENT, STATUS_EUNKNOWN, ANSWER_QUALITY_ERROR);
@@ -263,12 +260,12 @@ bool ar_validate(lListElem *ar, lList **alpp, bool in_master, bool is_spool)
       }
 
       /*   AR_acl_list, SGE_LIST */
-      if (userset_list_validate_access(lGetList(ar, AR_acl_list), ARA_name, alpp) != STATUS_OK) {
+      if (userset_list_validate_access(lGetList(ar, AR_acl_list), ARA_name, alpp, master_userset_list) != STATUS_OK) {
          goto ERROR;
       }
       
       /*   AR_xacl_list, SGE_LIST */
-      if (userset_list_validate_access(lGetList(ar, AR_xacl_list), ARA_name, alpp) != STATUS_OK) {
+      if (userset_list_validate_access(lGetList(ar, AR_xacl_list), ARA_name, alpp, master_userset_list) != STATUS_OK) {
          goto ERROR;
       }
 

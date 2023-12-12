@@ -121,7 +121,7 @@ static sge_category_t Category_Control = {PTHREAD_MUTEX_INITIALIZER, {-1, -1, -1
 *     MT-NOTE: sge_build_job_category_dstring() is MT safe as long as the caller is
 *
 *******************************************************************************/
-void sge_build_job_category_dstring(dstring *category_str, lListElem *job, lList *acl_list, const lList *prj_list, bool *did_project, const lList *rqs_list) 
+void sge_build_job_category_dstring(dstring *category_str, lListElem *job, const lList *acl_list, const lList *prj_list, bool *did_project, const lList *rqs_list) 
 {
 
    const char *owner = NULL;

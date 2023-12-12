@@ -60,7 +60,7 @@
 #include "sge.h"
 #include "msg_common.h"
 
-static bool rqs_match_user_host_scope(lList *scope, int filter_type, const char *value, lList *master_userset_list, lList *master_hgroup_list, const char *group, bool is_xscope);
+static bool rqs_match_user_host_scope(lList *scope, int filter_type, const char *value, const lList *master_userset_list, const lList *master_hgroup_list, const char *group, bool is_xscope);
 
 /****** sge_resource_quota/rqs_parse_filter_from_string() *************************
 *  NAME
@@ -352,7 +352,7 @@ rqs_verify_filter(const lListElem *rule, lList **answer_list, int nm, const char
 *  NOTES
 *     MT-NOTE: rqs_verify_attributes() is MT safe
 *******************************************************************************/
-bool rqs_verify_attributes(lListElem *rqs, lList **answer_list, bool in_master)
+bool rqs_verify_attributes(lListElem *rqs, lList **answer_list, bool in_master, const lList *master_centry_list)
 {
    bool ret = true;
    lList *rules = NULL;
@@ -373,8 +373,6 @@ bool rqs_verify_attributes(lListElem *rqs, lList **answer_list, bool in_master)
    }
   
    if (ret && in_master) {
-      lList *master_centry_list = (*centry_list_get_master_list());
-
       lListElem *rule = NULL;
       for_each(rule, rules) {
          bool host_expand = false;
@@ -517,7 +515,7 @@ bool rqs_verify_attributes(lListElem *rqs, lList **answer_list, bool in_master)
 *  SEE ALSO
 *     sge_resource_quota/rqs_verify_attributes()
 *******************************************************************************/
-bool rqs_list_verify_attributes(lList *rqs_list, lList **answer_list, bool in_master)
+bool rqs_list_verify_attributes(lList *rqs_list, lList **answer_list, bool in_master, const lList *master_centry_list)
 {
    bool ret = true;
    
@@ -526,7 +524,7 @@ bool rqs_list_verify_attributes(lList *rqs_list, lList **answer_list, bool in_ma
       lListElem *rqs = NULL;
 
       for_each(rqs, rqs_list) {
-         ret = rqs_verify_attributes(rqs, answer_list, in_master);
+         ret = rqs_verify_attributes(rqs, answer_list, in_master, master_centry_list);
          if (!ret) {
             break;
          }
@@ -798,8 +796,8 @@ rqs_get_rue_string(dstring *name, const lListElem *rule, const char *user,
 *
 *******************************************************************************/
 int
-rqs_debit_consumable(lListElem *rqs, lListElem *job, lListElem *granted, const char *pename, lList *centry_list, 
-                      lList *acl_list, lList *hgrp_list, int slots, bool is_master_task)
+rqs_debit_consumable(lListElem *rqs, lListElem *job, lListElem *granted, const char *pename, const lList *centry_list, 
+                     const lList *acl_list, const lList *hgrp_list, int slots, bool is_master_task)
 {
    lListElem *rule = NULL;
    int mods = 0;
@@ -871,7 +869,7 @@ rqs_debit_consumable(lListElem *rqs, lListElem *job, lListElem *granted, const c
 lListElem *
 rqs_get_matching_rule(const lListElem *rqs, const char *user, const char *group, const char *project,
                                   const char* pe, const char *host, const char *queue,
-                                  lList *userset_list, lList* hgroup_list, dstring *rule_name)
+                                  const lList *userset_list, const lList* hgroup_list, dstring *rule_name)
 {
    lListElem *rule = NULL;
    lList *rule_list = lGetList(rqs, RQS_rule);
@@ -924,7 +922,7 @@ rqs_get_matching_rule(const lListElem *rqs, const char *user, const char *group,
 *     MT-NOTE: rqs_debit_rule_usage() is MT safe 
 *******************************************************************************/
 int
-rqs_debit_rule_usage(lListElem *job, lListElem *rule, dstring *rue_name, int slots, lList *centry_list, const char *obj_name, bool is_master_task) 
+rqs_debit_rule_usage(lListElem *job, lListElem *rule, dstring *rue_name, int slots, const lList *centry_list, const char *obj_name, bool is_master_task) 
 {
    lList *limit_list;
    lListElem *limit;
@@ -1029,7 +1027,7 @@ rqs_debit_rule_usage(lListElem *job, lListElem *rule, dstring *rue_name, int slo
 *  SEE ALSO
 *     sge_resource_quota/rqs_match_user_host_scope()
 *******************************************************************************/
-static bool rqs_match_user_host_scope(lList *scope, int filter_type, const char *value, lList *master_userset_list, lList *master_hgroup_list, const char *group, bool is_xscope) {
+static bool rqs_match_user_host_scope(lList *scope, int filter_type, const char *value, const lList *master_userset_list, const lList *master_hgroup_list, const char *group, bool is_xscope) {
 
    bool found = false;
    lListElem *ep;
@@ -1253,7 +1251,7 @@ static bool rqs_match_user_host_scope(lList *scope, int filter_type, const char 
 *
 *******************************************************************************/
 bool
-rqs_is_matching_rule(lListElem *rule, const char *user, const char *group, const char *project, const char *pe, const char *host, const char *queue, lList *master_userset_list, lList *master_hgroup_list)
+rqs_is_matching_rule(lListElem *rule, const char *user, const char *group, const char *project, const char *pe, const char *host, const char *queue, const lList *master_userset_list, const lList *master_hgroup_list)
 {
       DENTER(TOP_LAYER, "rqs_is_matching_rule");
 
@@ -1308,7 +1306,7 @@ rqs_is_matching_rule(lListElem *rule, const char *user, const char *group, const
 *  NOTES
 *     MT-NOTE: rqs_match_host_scope() is MT safe 
 *******************************************************************************/
-static bool rqs_match_host_scope(lList *scope, const char *name, lList *master_hgroup_list, bool is_xscope) 
+static bool rqs_match_host_scope(lList *scope, const char *name, const lList *master_hgroup_list, bool is_xscope) 
 {
    lListElem *ep;
 
@@ -1362,7 +1360,7 @@ static bool rqs_match_host_scope(lList *scope, const char *name, lList *master_h
 *
 *******************************************************************************/
 bool 
-rqs_filter_match(lListElem *filter, int filter_type, const char *value, lList *master_userset_list, lList *master_hgroup_list, const char *group) {
+rqs_filter_match(lListElem *filter, int filter_type, const char *value, const lList *master_userset_list, const lList *master_hgroup_list, const char *group) {
    bool ret = true;
    lListElem* ep; 
 

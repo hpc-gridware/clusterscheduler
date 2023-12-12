@@ -60,15 +60,14 @@
 *  SEE ALSO
 *     gdi/manop/manop_is_operator()
 ******************************************************************************/
-bool manop_is_manager(const char *user_name) 
+bool manop_is_manager(const char *user_name, const lList *master_manager_list) 
 {
    bool ret = false;
 
    DENTER(TOP_LAYER, "manop_is_manager");
    if (user_name == NULL) {
       ret = false;
-   } else if (lGetElemStr(*object_type_get_master_list(SGE_TYPE_MANAGER), 
-                          UM_name, user_name) != NULL) {
+   } else if (lGetElemStr(master_manager_list, UM_name, user_name) != NULL) {
       ret = true;
    }
    DEXIT;
@@ -100,18 +99,16 @@ bool manop_is_manager(const char *user_name)
 *  SEE ALSO
 *     gdi/manop/manop_is_manager()
 ******************************************************************************/
-bool manop_is_operator(const char *user_name) 
+bool manop_is_operator(const char *user_name, const lList *master_manager_list, const lList *master_operator_list) 
 {
    bool ret = false;
 
    DENTER(TOP_LAYER, "manop_is_operator");
    if (user_name == NULL) {
       ret = false;
-   } else if(lGetElemStr(*object_type_get_master_list(SGE_TYPE_OPERATOR), 
-                         UO_name, user_name) != NULL) {
+   } else if(lGetElemStr(master_operator_list, UO_name, user_name) != NULL) {
       ret = true;
-   } else if (lGetElemStr(*object_type_get_master_list(SGE_TYPE_MANAGER), 
-                          UM_name, user_name) != NULL) {
+   } else if (lGetElemStr(master_manager_list, UM_name, user_name) != NULL) {
       ret = true;
    }
    DRETURN(ret);

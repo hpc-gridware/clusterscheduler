@@ -375,7 +375,7 @@ const char *job_get_job_key(u_long32 job_id, dstring *buffer);
 const char *job_get_key(u_long32 job_id, u_long32 ja_task_id, 
                         const char *pe_task_id, dstring *buffer);
 
-const char *jobscript_get_key(lListElem *jep, dstring *buffer);
+const char *jobscript_get_key(const lListElem *jep, dstring *buffer);
 
 char *jobscript_parse_key(char *key,const char **exec_file);
 
@@ -388,15 +388,13 @@ bool job_is_ckpt_referenced(const lListElem *job, const lListElem *ckpt);
 
 void job_get_state_string(char *str, u_long32 op);
 
-lListElem *job_list_locate(lList *job_list, u_long32 job_id);
-
 void job_add_parent_id_to_context(lListElem *job);
 
 int job_check_qsh_display(const lListElem *job, 
                           lList **answer_list, 
                           bool output_warning);
 
-int job_check_owner(const char *user_name, u_long32 job_id, lList *master_job_list);
+int job_check_owner(const char *user_name, u_long32 job_id, lList *master_job_list, const lList *master_manager_list, const lList *master_operator_list);
 
 int job_resolve_host_for_path_list(const lListElem *job, lList **answer_list, int name);
 

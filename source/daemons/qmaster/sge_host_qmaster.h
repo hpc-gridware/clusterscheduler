@@ -73,7 +73,7 @@ int sge_execd_startedup(sge_gdi_ctx_class_t *context,
 u_long32 load_report_interval(lListElem *hep); 
 
 bool host_list_add_missing_href(sge_gdi_ctx_class_t *context,
-                                lList *this_list, 
+                                const lList *this_list, 
                                 lList **answer_list, 
                                 const lList *href_list, 
                                 monitoring_t *monitor);

@@ -1180,8 +1180,7 @@ int job_list_add_job(lList **job_list, const char *name, lListElem *job,
       *job_list = lCreateList(name, JB_Type);
    }
 
-   if (check && *job_list &&
-       job_list_locate(*job_list, lGetUlong(job, JB_job_number))) {
+   if (check && *job_list && lGetElemUlong(*job_list, JB_job_number, lGetUlong(job, JB_job_number))) {
       dstring id_dstring = DSTRING_INIT;
       ERROR((SGE_EVENT, MSG_JOB_JOBALREADYEXISTS_S, 
              job_get_id_string(lGetUlong(job, JB_job_number), 0, NULL, &id_dstring)));
@@ -1638,14 +1637,12 @@ u_long32 job_get_biggest_enrolled_task_id(const lListElem *job)
 *  SEE ALSO
 *     sgeobj/suser/suser_register_new_job()
 ******************************************************************************/
-int job_list_register_new_job(const lList *job_list, u_long32 max_jobs,
-                              int force_registration)
+int job_list_register_new_job(const lList *job_list, u_long32 max_jobs, int force_registration)
 {
    int ret = 1;
  
    DENTER(TOP_LAYER, "job_list_register_new_job");
-   if (max_jobs > 0 && !force_registration &&
-       max_jobs <= lGetNumberOfElem(job_list)) {
+   if (max_jobs > 0 && !force_registration && max_jobs <= lGetNumberOfElem(job_list)) {
       ret = 1;
    } else {
       ret = 0;
@@ -2154,34 +2151,6 @@ void job_get_state_string(char *str, u_long32 op)
    return;
 }
 
-/****** sgeobj/job/job_list_locate() ******************************************
-*  NAME
-*     job_list_locate() -- find job in a list 
-*
-*  SYNOPSIS
-*     lListElem* job_list_locate(lList *job_list, u_long32 job_id) 
-*
-*  FUNCTION
-*     Returns the job element within "job_list" having "job_id" as
-*     primary key. 
-*
-*  INPUTS
-*     lList *job_list - JB_Type list 
-*     u_long32 job_id - job id 
-*
-*  RESULT
-*     lListElem* - JB_Type element
-******************************************************************************/
-lListElem *job_list_locate(lList *job_list, u_long32 job_id) 
-{
-   lListElem *job = NULL;
-   DENTER(BASIS_LAYER, "job_list_locate");
-
-   job = lGetElemUlong(job_list, JB_job_number, job_id);
-
-   DRETURN(job);
-}
-
 /****** sgeobj/job/job_add_parent_id_to_context() *****************************
 *  NAME
 *     job_add_parent_id_to_context() -- add parent jobid to job context  
@@ -2326,7 +2295,7 @@ int job_check_qsh_display(const lListElem *job, lList **answer_list,
 *            0, if the user is the job owner
 *            1, if the user is not the job owner
 ******************************************************************************/
-int job_check_owner(const char *user_name, u_long32 job_id, lList *master_job_list) 
+int job_check_owner(const char *user_name, u_long32 job_id, lList *master_job_list, const lList *master_manager_list, const lList *master_operator_list) 
 {
    lListElem *job;
 
@@ -2336,11 +2305,11 @@ int job_check_owner(const char *user_name, u_long32 job_id, lList *master_job_li
       DRETURN(-1);
    }
 
-   if (manop_is_operator(user_name)) {
+   if (manop_is_operator(user_name, master_manager_list, master_operator_list)) {
       DRETURN(0);
    }
 
-   job = job_list_locate(master_job_list, job_id);
+   job = lGetElemUlong(master_job_list, JB_job_number, job_id);
    if (job == NULL) {
       DRETURN(-1);
    }
@@ -2524,7 +2493,7 @@ bool job_parse_key(char *key, u_long32 *job_id, u_long32 *ja_task_id,
 *     sgeobj/job/jobscript_parse_key()
 *
 ******************************************************************************/
-const char *jobscript_get_key(lListElem *jep, dstring *buffer)
+const char *jobscript_get_key(const lListElem *jep, dstring *buffer)
 {
    const char *ret = NULL;
    int job_id = lGetUlong(jep, JB_job_number);

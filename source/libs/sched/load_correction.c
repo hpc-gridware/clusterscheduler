@@ -169,7 +169,7 @@ int correct_load(lList *running_jobs, lList *queue_list, lList *host_list,
  *
  */
 int 
-correct_capacities(lList *host_list, lList *centry_list) 
+correct_capacities(lList *host_list, const lList *centry_list) 
 {
    lListElem *hep, *ep, *cep; 
    lListElem *job_load, *scaling, *total, *inuse_rms;

@@ -52,7 +52,7 @@ pe_is_referenced(const lListElem *pe, lList **answer_list,
                  const lList *master_queue_list);
 
 int 
-pe_validate(lListElem *pep, lList **alpp, int startup);
+pe_validate(lListElem *pep, lList **alpp, int startup, const lList *master_userset_list);
 
 int 
 pe_validate_slots(lList **alpp, u_long32 slots);

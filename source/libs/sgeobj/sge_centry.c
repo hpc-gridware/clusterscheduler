@@ -573,28 +573,6 @@ centry_print_resource_to_dstring(const lListElem *this_elem, dstring *string)
    DRETURN(ret);
 }
 
-/****** sgeobj/centry/centry_list_get_master_list() ***************************
-*  NAME
-*     centry_list_get_master_list() -- return master list 
-*
-*  SYNOPSIS
-*     lList ** centry_list_get_master_list(void) 
-*
-*  FUNCTION
-*     Return master list. 
-*
-*  INPUTS
-*     void - NONE 
-*
-*  RESULT
-*     lList ** - CE_Type master list
-*******************************************************************************/
-lList **
-centry_list_get_master_list(void)
-{
-   return object_type_get_master_list(SGE_TYPE_CENTRY);
-}
-
 /****** sgeobj/centry/centry_list_locate() ************************************
 *  NAME
 *     centry_list_locate() -- Find Centry element 
@@ -738,7 +716,7 @@ centry_list_init_double(lList *this_list)
 *        an error message will be written into SGE_EVENT
 *******************************************************************************/
 int
-centry_list_fill_request(lList *this_list, lList **answer_list, lList *master_centry_list,
+centry_list_fill_request(lList *this_list, lList **answer_list, const lList *master_centry_list,
                          bool allow_non_requestable, bool allow_empty_boolean,
                          bool allow_neg_consumable)
 {
@@ -996,7 +974,7 @@ centry_list_remove_duplicates(lList *this_list)
 *           true - okay
 *
 *******************************************************************************/
-bool centry_elem_validate(lListElem *centry, lList *centry_list, 
+bool centry_elem_validate(lListElem *centry, const lList *centry_list, 
                           lList **answer_list) 
 {
    u_long32 relop = lGetUlong(centry, CE_relop);
@@ -1360,7 +1338,7 @@ centry_list_is_correct(lList *this_list, lList **answer_list)
    DRETURN(ret);
 }
 
-int ensure_attrib_available(lList **alpp, lListElem *ep, int nm) 
+int ensure_attrib_available(lList **alpp, lListElem *ep, int nm, const lList *master_centry_list) 
 {
    int ret = 0;
    lListElem *attr = NULL;
@@ -1369,7 +1347,7 @@ int ensure_attrib_available(lList **alpp, lListElem *ep, int nm)
    if (ep != NULL) {
       for_each (attr, lGetList(ep, nm)) {
          const char *name = lGetString(attr, CE_name);
-         lListElem *centry = centry_list_locate(*object_type_get_master_list(SGE_TYPE_CENTRY), name);
+         lListElem *centry = centry_list_locate(master_centry_list, name);
 
          if (centry == NULL) {
             ERROR((SGE_EVENT, MSG_GDI_NO_ATTRIBUTE_S, 
@@ -1417,7 +1395,7 @@ int ensure_attrib_available(lList **alpp, lListElem *ep, int nm)
 * MT-NOTE: is MT-safe, works only on the passed in data
 *
 *******************************************************************************/
-bool validate_load_formula(const char *load_formula, lList **answer_list, lList *centry_list, const char *name) {
+bool validate_load_formula(const char *load_formula, lList **answer_list, const lList *centry_list, const char *name) {
    bool ret = true;
 
    DENTER(TOP_LAYER, "validate_load_formual");
@@ -1440,7 +1418,7 @@ bool validate_load_formula(const char *load_formula, lList **answer_list, lList 
       while ((term = next_term) && ret == true) {
          const char *fact_delim = "*";
          const char *fact, *next_fact, *end;
-         lListElem *cmplx_attr = NULL;
+         const lListElem *cmplx_attr = NULL;
          struct saved_vars_s *fact_context = NULL;
          
          next_term = sge_strtok_r(NULL, term_delim, &term_context);

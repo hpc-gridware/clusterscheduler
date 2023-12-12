@@ -60,8 +60,8 @@ bool rqs_append_filter_to_dstring(const lListElem *filter, dstring *buffer, lLis
 
 lListElem* rqs_set_defaults(lListElem* rqs);
 
-bool rqs_verify_attributes(lListElem *rqs, lList **answer_list, bool in_master);
-bool rqs_list_verify_attributes(lList *rqs_list, lList **answer_list, bool in_master);
+bool rqs_verify_attributes(lListElem *rqs, lList **answer_list, bool in_master, const lList *master_centry_list);
+bool rqs_list_verify_attributes(lList *rqs_list, lList **answer_list, bool in_master, const lList *master_centry_list);
 
 lListElem *rqs_list_locate(lList *lp, const char *name);
 lListElem *rqs_rule_locate(lList *lp, const char *name);
@@ -71,19 +71,19 @@ bool rqs_xattr_pre_gdi(lList *this_list, lList **answer_list);
 bool rqs_get_rue_string(dstring *name, const lListElem *rule, const char *user, const char *project, const char *host, const char *queue, const char* pe);
 
 int
-rqs_debit_rule_usage(lListElem *job, lListElem *rule, dstring *rue_name, int slots, lList *centry_list, const char *obj_name, bool is_master_task);
+rqs_debit_rule_usage(lListElem *job, lListElem *rule, dstring *rue_name, int slots, const lList *centry_list, const char *obj_name, bool is_master_task);
 
 int
-rqs_debit_consumable(lListElem *rqs, lListElem *job, lListElem *granted, const char *pename, lList *centry_list, lList *acl_list, lList *hgrp_list, int slots, bool is_master_task);
+rqs_debit_consumable(lListElem *rqs, lListElem *job, lListElem *granted, const char *pename, const lList *centry_list, const lList *acl_list, const lList *hgrp_list, int slots, bool is_master_task);
 
-lListElem *rqs_get_matching_rule(const lListElem *rqs, const char *user, const char *group, const char *project, const char *pe, const char *host, const char *queue, lList *userset_list, lList* hgroup_list, dstring *rule_name);
+lListElem *rqs_get_matching_rule(const lListElem *rqs, const char *user, const char *group, const char *project, const char *pe, const char *host, const char *queue, const lList *userset_list, const lList* hgroup_list, dstring *rule_name);
 
-bool rqs_is_matching_rule(lListElem *rule, const char *user, const char *group, const char *project, const char *pe, const char *host, const char *queue, lList *master_userset_list, lList *master_hgroup_list);
+bool rqs_is_matching_rule(lListElem *rule, const char *user, const char *group, const char *project, const char *pe, const char *host, const char *queue, const lList *master_userset_list, const lList *master_hgroup_list);
 
 bool sge_centry_referenced_in_rqs(const lListElem *rqs, const lListElem *centry);
 
 bool rqs_replace_request_verify(lList **answer_list, const lList *request);
 
-bool rqs_filter_match(lListElem *filter, int filter_type, const char *value, lList *master_userset_list, lList *master_hgroup_list, const char *group);
+bool rqs_filter_match(lListElem *filter, int filter_type, const char *value, const lList *master_userset_list, const lList *master_hgroup_list, const char *group);
 
 #endif /* __SGE_RESOURCE_QUOTA_H */

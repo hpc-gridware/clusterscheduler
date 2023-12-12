@@ -55,10 +55,10 @@ enum {
 #define QU_tag_qend QU_available_at
 
 bool
-qinstance_validate(lListElem *this_elem, lList **answer_list, lList *master_exechost_list);
+qinstance_validate(lListElem *this_elem, lList **answer_list, const lList *master_exechost_list, const lList *centry_master_list);
 
 bool
-qinstance_list_validate(lList *this_list, lList **answer_list, lList *master_exechost_list);
+qinstance_list_validate(lList *this_list, lList **answer_list, const lList *master_exechost_list, const lList *centry_master_list);
 
 void
 qinstance_set_full_name(lListElem *this_elem);
@@ -80,7 +80,7 @@ void
 qinstance_increase_qversion(lListElem *this_elem);
 
 bool 
-qinstance_check_owner(const lListElem *queue, const char *user_name);
+qinstance_check_owner(const lListElem *queue, const char *user_name, const lList *master_manager_list, const lList *master_operator_list);
 
 bool
 qinstance_is_pe_referenced(const lListElem *this_elem, 
@@ -118,7 +118,7 @@ qinstance_is_calendar_referenced(const lListElem *this_elem,
 
 int
 qinstance_debit_consumable(lListElem *this_elem, lListElem *job, 
-                           lList *centry_list, int slots, bool is_master_task, bool *just_check);
+                           const lList *centry_list, int slots, bool is_master_task, bool *just_check);
 
 bool
 qinstance_message_add(lListElem *this_elem, u_long32 type, const char *message);
@@ -133,7 +133,7 @@ int queue_reference_list_validate(lList **alpp, lList *qr_list,
                                   const char *obj_name);
 
 int
-rc_debit_consumable(lListElem *jep, lListElem *ep, lList *centry_list, int slots,
+rc_debit_consumable(lListElem *jep, lListElem *ep, const lList *centry_list, int slots,
                  int config_nm, int actual_nm, const char *obj_name, bool is_master_task, bool *just_check);
 
 lListElem *

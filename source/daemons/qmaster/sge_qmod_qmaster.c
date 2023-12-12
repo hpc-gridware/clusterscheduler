@@ -139,10 +139,11 @@ sge_gdi_qmod(sge_gdi_ctx_class_t *ctx, sge_gdi_packet_class_t *packet, sge_gdi_t
    u_long32 jobid;
    u_long32 start = 0, end = 0, step = 0;
    int alltasks;
-   lList *master_hgroup_list = *(object_type_get_master_list(SGE_TYPE_HGROUP));
-   lList *cqueue_list = *(object_type_get_master_list(SGE_TYPE_CQUEUE));
    dstring cqueue_buffer = DSTRING_INIT;
    dstring hostname_buffer = DSTRING_INIT;
+   const lList *master_hgroup_list = *object_type_get_master_list(SGE_TYPE_HGROUP);
+   const lList *master_cqueue_list = *object_type_get_master_list(SGE_TYPE_CQUEUE);
+   const lList *master_job_list = *object_type_get_master_list(SGE_TYPE_JOB);
 
    DENTER(TOP_LAYER, "sge_gdi_qmod");
 
@@ -178,7 +179,7 @@ sge_gdi_qmod(sge_gdi_ctx_class_t *ctx, sge_gdi_packet_class_t *packet, sge_gdi_t
          qref_list_add(&qref_list, NULL, lGetString(dep, ID_str));
          qref_list_resolve_hostname(qref_list);
          qref_list_resolve(qref_list, NULL, &tmp_list,
-                           &found_something, cqueue_list,
+                           &found_something, master_cqueue_list,
                            master_hgroup_list,
                            true, true);
          if (found_something) {
@@ -201,7 +202,7 @@ sge_gdi_qmod(sge_gdi_ctx_class_t *ctx, sge_gdi_packet_class_t *packet, sge_gdi_t
                }                  
                cqueue_name = sge_dstring_get_string(&cqueue_buffer);
                hostname = sge_dstring_get_string(&hostname_buffer);
-               cqueue = lGetElemStr(cqueue_list, CQ_name, cqueue_name);
+               cqueue = lGetElemStr(master_cqueue_list, CQ_name, cqueue_name);
                qinstance_list = lGetList(cqueue, CQ_qinstances);
                qinstance = lGetElemHost(qinstance_list, QU_qhostname, hostname);
 
@@ -256,7 +257,7 @@ sge_gdi_qmod(sge_gdi_ctx_class_t *ctx, sge_gdi_packet_class_t *packet, sge_gdi_t
                alltasks = 1;
             }
 
-            job = job_list_locate(*(object_type_get_master_list(SGE_TYPE_JOB)), jobid);
+            job = lGetElemUlong(master_job_list, JB_job_number, jobid);
             if (job) {
                jatask = lFirst(lGetList(job, JB_ja_tasks));
 
@@ -372,7 +373,7 @@ sge_gdi_qmod(sge_gdi_ctx_class_t *ctx, sge_gdi_packet_class_t *packet, sge_gdi_t
             const char *job_name = lGetString(dep, ID_str);
             const lListElem *job;
             lListElem *mod = NULL;
-            for_each(job, *(object_type_get_master_list(SGE_TYPE_JOB))) {
+            for_each(job, master_job_list) {
                if (!fnmatch(job_name, lGetString(job, JB_job_name), 0)) {
                   char job_id[40];
                   mod = lCopyElem(dep);
@@ -431,11 +432,14 @@ sge_change_queue_state(sge_gdi_ctx_class_t *ctx,
    bool isowner;
    int result = 0;
    const char *ehname = lGetHost(qep, QU_qhostname);
+   const lList *master_manager_list = *object_type_get_master_list(SGE_TYPE_MANAGER);
+   const lList *master_operator_list = *object_type_get_master_list(SGE_TYPE_OPERATOR);
+   lList *master_cqueue_list = *object_type_get_master_list_rw(SGE_TYPE_CQUEUE);
 
    DENTER(TOP_LAYER, "sge_change_queue_state");
 
-   isowner = qinstance_check_owner(qep, user);
-   isoperator = manop_is_operator(user);
+   isowner = qinstance_check_owner(qep, user, master_manager_list, master_operator_list);
+   isoperator = manop_is_operator(user, master_manager_list, master_operator_list);
 
    if (!isowner) {
       ERROR((SGE_EVENT, MSG_QUEUE_NOCHANGEQPERMS_SS, user, lGetString(qep, QU_full_name)));
@@ -496,8 +500,7 @@ sge_change_queue_state(sge_gdi_ctx_class_t *ctx,
          break;
       case QI_DO_CLEAN:
       case QI_DO_RESCHEDULE:
-         cqueue_list_del_all_orphaned(ctx, *(object_type_get_master_list(SGE_TYPE_CQUEUE)), answer,
-               lGetString(qep, QU_qname), ehname);
+         cqueue_list_del_all_orphaned(ctx, master_cqueue_list, answer, lGetString(qep, QU_qname), ehname);
          break;
       default:
          break;
@@ -523,11 +526,14 @@ monitoring_t *monitor
    u_long32 job_id;
 
    DENTER(TOP_LAYER, "sge_change_job_state");
+   const lList *master_manager_list = *object_type_get_master_list(SGE_TYPE_MANAGER);
+   const lList *master_operator_list = *object_type_get_master_list(SGE_TYPE_OPERATOR);
+   const lList *master_cqueue_list = *object_type_get_master_list(SGE_TYPE_CQUEUE);
 
    job_id = lGetUlong(jep, JB_job_number);
 
    /* check the modifying users permissions */
-   if (strcmp(user, lGetString(jep, JB_owner)) && !manop_is_operator(user)) {
+   if (strcmp(user, lGetString(jep, JB_owner)) && !manop_is_operator(user, master_manager_list, master_operator_list)) {
       ERROR((SGE_EVENT, MSG_JOB_NOMODJOBPERMS_SU, user, sge_u32c(job_id)));
       answer_list_add(answer, SGE_EVENT, STATUS_ENOTOWNER, ANSWER_QUALITY_ERROR);
       DEXIT;
@@ -549,9 +555,7 @@ monitoring_t *monitor
    task_id = lGetUlong(jatep, JAT_task_number);
 
    if (lGetString(jatep, JAT_master_queue)) {
-      queueep = cqueue_list_locate_qinstance(
-                              *(object_type_get_master_list(SGE_TYPE_CQUEUE)),
-                              lGetString(jatep, JAT_master_queue));
+      queueep = cqueue_list_locate_qinstance(master_cqueue_list, lGetString(jatep, JAT_master_queue));
    } else {
       queueep = NULL;
    }
@@ -658,13 +662,16 @@ monitoring_t *monitor
 ) {
    lListElem *nextjep, *jep;
    const char *qname = NULL;
+   const lList *master_manager_list = *object_type_get_master_list(SGE_TYPE_MANAGER);
+   const lList *master_job_list = *object_type_get_master_list(SGE_TYPE_JOB);
+
    DENTER(TOP_LAYER, "qmod_queue_clean");
 
    qname = lGetString(qep, QU_full_name);
 
    DPRINTF(("cleaning queue >%s<\n", qname ));
 
-   if (!manop_is_manager(user)) {
+   if (!manop_is_manager(user, master_manager_list)) {
       ERROR((SGE_EVENT, SFNMAX, MSG_QUEUE_NOCLEANQPERMS));
       answer_list_add(answer, SGE_EVENT, STATUS_ESEMANTIC, ANSWER_QUALITY_ERROR);
       DEXIT;
@@ -673,7 +680,7 @@ monitoring_t *monitor
 
    /* using sge_commit_job(j, COMMIT_ST_FINISHED_FAILED) q->job_list
       could get modified so we have to be careful when iterating through the job list */
-   nextjep = lFirst(*(object_type_get_master_list(SGE_TYPE_JOB)));
+   nextjep = lFirst(master_job_list);
    while ((jep=nextjep)) {
       lListElem *jatep, *nexttep;
       nextjep = lNext(jep);
@@ -1015,11 +1022,13 @@ monitoring_t *monitor
 void rebuild_signal_events()
 {
    lListElem *cqueue, *jep, *jatep;
+   const lList *master_job_list = *object_type_get_master_list(SGE_TYPE_JOB);
+   const lList *master_cqueue_list = *object_type_get_master_list(SGE_TYPE_CQUEUE);
 
    DENTER(TOP_LAYER, "rebuild_signal_events");
 
    /* J O B */
-   for_each(jep, *(object_type_get_master_list(SGE_TYPE_JOB)))
+   for_each(jep, master_job_list)
    {
       for_each (jatep, lGetList(jep, JB_ja_tasks))
       {
@@ -1039,7 +1048,7 @@ void rebuild_signal_events()
    }
 
    /* Q U E U E */
-   for_each(cqueue, *(object_type_get_master_list(SGE_TYPE_CQUEUE)))
+   for_each(cqueue, master_cqueue_list)
    {
       lList *qinstance_list = lGetList(cqueue, CQ_qinstances);
       lListElem *qinstance;
@@ -1071,13 +1080,15 @@ void resend_signal_event(sge_gdi_ctx_class_t *ctx, te_event_t anEvent, monitorin
    u_long32 jobid = te_get_first_numeric_key(anEvent);
    u_long32 jataskid = te_get_second_numeric_key(anEvent);
    const char* queue = te_get_alphanumeric_key(anEvent);
+   const lList *master_job_list = *object_type_get_master_list(SGE_TYPE_JOB);
+   const lList *master_cqueue_list = *object_type_get_master_list(SGE_TYPE_CQUEUE);
 
    DENTER(TOP_LAYER, "resend_signal_event");
 
    MONITOR_WAIT_TIME(SGE_LOCK(LOCK_GLOBAL, LOCK_WRITE), monitor);
 
    if (queue == NULL) {
-      if (!(jep = job_list_locate(*(object_type_get_master_list(SGE_TYPE_JOB)), jobid)) || !(jatep=job_search_task(jep, NULL, jataskid)))
+      if (!(jep = lGetElemUlong(master_job_list, JB_job_number, jobid)) || !(jatep=job_search_task(jep, NULL, jataskid)))
       {
          ERROR((SGE_EVENT, MSG_EVE_RESENTSIGNALTASK_UU, sge_u32c(jobid), sge_u32c(jataskid)));
          SGE_UNLOCK(LOCK_GLOBAL, LOCK_WRITE);
@@ -1085,11 +1096,11 @@ void resend_signal_event(sge_gdi_ctx_class_t *ctx, te_event_t anEvent, monitorin
          return;
       }
 
-      if ((qep = cqueue_list_locate_qinstance(*(object_type_get_master_list(SGE_TYPE_CQUEUE)), lGetString(jatep, JAT_master_queue)))) {
+      if ((qep = cqueue_list_locate_qinstance(master_cqueue_list, lGetString(jatep, JAT_master_queue)))) {
          sge_signal_queue(ctx, lGetUlong(jatep, JAT_pending_signal), qep, jep, jatep, monitor);
       }
    } else {
-      if (!(qep = cqueue_list_locate_qinstance(*(object_type_get_master_list(SGE_TYPE_CQUEUE)), queue))) {
+      if (!(qep = cqueue_list_locate_qinstance(master_cqueue_list, queue))) {
          ERROR((SGE_EVENT, MSG_EVE_RESENTSIGNALQ_S, queue));
          SGE_UNLOCK(LOCK_GLOBAL, LOCK_WRITE);
          sge_free(&queue);
@@ -1111,11 +1122,12 @@ void resend_signal_event(sge_gdi_ctx_class_t *ctx, te_event_t anEvent, monitorin
 static void sge_propagate_queue_suspension(const char *qnm, int how)
 {
    lListElem *jep, *jatep;
+   const lList *master_job_list = *object_type_get_master_list(SGE_TYPE_JOB);
 
    DENTER(TOP_LAYER, "sge_propagate_queue_suspension");
 
    DPRINTF(("searching for all jobs in queue %s due to %s\n", qnm, sge_sig2str(how)));
-   for_each (jep, *object_type_get_master_list(SGE_TYPE_JOB)) {
+   for_each (jep, master_job_list) {
       for_each (jatep, lGetList(jep, JB_ja_tasks)) {
          if (lGetElemStr(lGetList(jatep, JAT_granted_destin_identifier_list), JG_qname, qnm)) {
             u_long32 jstate;
@@ -1291,6 +1303,9 @@ monitoring_t *monitor
    lList *gdil_lp;
    lListElem *mq, *jep, *jatep;
    const char *qname, *mqname, *pe_name;
+   const lList *master_job_list = *object_type_get_master_list(SGE_TYPE_JOB);
+   const lList *master_cqueue_list = *object_type_get_master_list(SGE_TYPE_CQUEUE);
+   const lList *master_pe_list = *object_type_get_master_list(SGE_TYPE_PE);
 
    DENTER(TOP_LAYER, "signal_slave_jobs_in_queue");
 
@@ -1298,7 +1313,7 @@ monitoring_t *monitor
    /* test whether there are parallel jobs
       with a slave slot in this queue
       if so then signal this job */
-   for_each (jep, *(object_type_get_master_list(SGE_TYPE_JOB))) {
+   for_each (jep, master_job_list) {
       for_each (jatep, lGetList(jep, JB_ja_tasks)) {
 
          /* skip sequential and not running jobs */
@@ -1309,17 +1324,14 @@ monitoring_t *monitor
          /* signalling of not "slave controlled" parallel jobs will not work
             since they are not known to the apropriate execd - we should
             omit signalling in this case to prevent waste of communication bandwith */
-         if (!(pe_name=lGetString(jatep, JAT_granted_pe)) ||
-             !pe_list_locate(*object_type_get_master_list(SGE_TYPE_PE), pe_name))
+         if (!(pe_name=lGetString(jatep, JAT_granted_pe)) || !pe_list_locate(master_pe_list, pe_name))
             continue;
 
          if (lGetElemStr(gdil_lp, JG_qname, qname) != NULL) {
 
             /* search master queue - needed for signalling of a job */
-            if ((mq = cqueue_list_locate_qinstance(*(object_type_get_master_list(SGE_TYPE_CQUEUE)), mqname = lGetString(
-                  lFirst(gdil_lp), JG_qname)))) {
-               DPRINTF(("found slave job "sge_u32" in queue %s master queue is %s\n",
-                  lGetUlong(jep, JB_job_number), qname, mqname));
+            if ((mq = cqueue_list_locate_qinstance(master_cqueue_list, mqname = lGetString(lFirst(gdil_lp), JG_qname)))) {
+               DPRINTF(("found slave job "sge_u32" in queue %s master queue is %s\n", lGetUlong(jep, JB_job_number), qname, mqname));
                sge_signal_queue(ctx, how, mq, jep, jatep, monitor);
             } else {
                ERROR((SGE_EVENT, MSG_JOB_UNABLE2FINDMQ_SU, mqname, sge_u32c(lGetUlong(jep, JB_job_number))));
@@ -1337,6 +1349,8 @@ static void signal_slave_tasks_of_job(sge_gdi_ctx_class_t *ctx, int how,
    lList *gdil_lp;
    lListElem *mq, *pe, *gdil_ep;
    const char *qname, *pe_name;
+   const lList *master_pe_list = *object_type_get_master_list(SGE_TYPE_PE);
+   const lList *master_cqueue_list = *object_type_get_master_list(SGE_TYPE_CQUEUE);
 
    DENTER(TOP_LAYER, "signal_slave_tasks_of_job");
 
@@ -1351,13 +1365,10 @@ static void signal_slave_tasks_of_job(sge_gdi_ctx_class_t *ctx, int how,
    /* forward signal to slave exec hosts
       in case of slave controlled jobs */
    if ( !((lGetNumberOfElem(gdil_lp=lGetList(jatep, JAT_granted_destin_identifier_list)))<=1 ||
-         !(pe_name=lGetString(jatep, JAT_granted_pe)) ||
-         !(pe=pe_list_locate(*object_type_get_master_list(SGE_TYPE_PE), pe_name)) ||
-         !lGetBool(pe, PE_control_slaves)))
+         !(pe_name=lGetString(jatep, JAT_granted_pe)) || !(pe=pe_list_locate(master_pe_list, pe_name)) || !lGetBool(pe, PE_control_slaves)))
       for (gdil_ep=lNext(lFirst(gdil_lp)); gdil_ep; gdil_ep=lNext(gdil_ep))
-         if ((mq = cqueue_list_locate_qinstance(*(object_type_get_master_list(SGE_TYPE_CQUEUE)), qname = lGetString(gdil_ep, JG_qname)))) {
-            DPRINTF(("found slave job "sge_u32" in queue %s\n",
-               lGetUlong(jep, JB_job_number), qname));
+         if ((mq = cqueue_list_locate_qinstance(master_cqueue_list, qname = lGetString(gdil_ep, JG_qname)))) {
+            DPRINTF(("found slave job "sge_u32" in queue %s\n", lGetUlong(jep, JB_job_number), qname));
             sge_signal_queue(ctx, how, mq, jep, jatep, monitor);
          }
 

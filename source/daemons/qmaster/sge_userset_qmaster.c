@@ -150,10 +150,11 @@ static void
 sge_change_queue_version_acl(sge_gdi_ctx_class_t *ctx, const char *acl_name) 
 {
    lListElem *cqueue = NULL;
+   const lList *master_cqueue_list = *object_type_get_master_list(SGE_TYPE_CQUEUE);
 
    DENTER(TOP_LAYER, "sge_change_queue_version_acl");
 
-   for_each(cqueue, *(object_type_get_master_list(SGE_TYPE_CQUEUE))) {
+   for_each(cqueue, master_cqueue_list) {
       lList *qinstance_list = lGetList(cqueue, CQ_qinstances);
       lListElem *qinstance = NULL;
 
@@ -168,13 +169,10 @@ sge_change_queue_version_acl(sge_gdi_ctx_class_t *ctx, const char *acl_name)
             lList *answer_list = NULL;
 
             DPRINTF(("increasing version of queue "SFQ" because acl "SFQ
-                     " changed\n", lGetString(qinstance, QU_full_name), 
-                     acl_name));
+                     " changed\n", lGetString(qinstance, QU_full_name), acl_name));
             qinstance_increase_qversion(qinstance);
-            sge_event_spool(ctx, &answer_list, 0, sgeE_QINSTANCE_MOD, 
-                            0, 0, lGetString(qinstance, QU_qname), 
-                            lGetHost(qinstance, QU_qhostname), NULL,
-                            qinstance, NULL, NULL, true, false);
+            sge_event_spool(ctx, &answer_list, 0, sgeE_QINSTANCE_MOD, 0, 0, lGetString(qinstance, QU_qname), 
+                            lGetHost(qinstance, QU_qhostname), NULL, qinstance, NULL, NULL, true, false);
             answer_list_output(&answer_list);
          }
       }
@@ -201,7 +199,7 @@ sge_change_queue_version_acl(sge_gdi_ctx_class_t *ctx, const char *acl_name)
       STATUS_ESEMANTIC  - on error
  ******************************************************/
 int sge_verify_department_entries(
-lList *userset_list,
+const lList *userset_list,
 lListElem *new_userset,
 lList **alpp 
 ) {
@@ -385,7 +383,7 @@ static lList* do_depts_conflict(lListElem *new, lListElem *old)
       0   no matching department found
       1   set department
 */
-int set_department(lList **alpp, lListElem *job, lList *userset_list)
+int set_department(lList **alpp, lListElem *job, const lList *userset_list)
 {
    lListElem *dep;
    const char *owner, *group; 
@@ -451,6 +449,10 @@ const char *userset_name
    lListElem *cqueue = NULL;
    lList* user_lists = NULL;
    const lListElem *cl;
+   const lList *master_cqueue_list = *object_type_get_master_list(SGE_TYPE_CQUEUE);
+   const lList *master_pe_list = *object_type_get_master_list(SGE_TYPE_PE);
+   const lList *master_project_list = *object_type_get_master_list(SGE_TYPE_PROJECT);
+   const lList *master_ehost_list = *object_type_get_master_list(SGE_TYPE_EXECHOST);
 
    DENTER(TOP_LAYER, "verify_userset_deletion");
 
@@ -458,7 +460,7 @@ const char *userset_name
     * fix for bug 6422335
     * check the cq configuration for userset references instead of qinstances
     */
-   for_each (cqueue, *object_type_get_master_list(SGE_TYPE_CQUEUE)) {
+   for_each (cqueue, master_cqueue_list) {
       for_each (cl, lGetList(cqueue, CQ_acl)) {
          if (lGetSubStr(cl, US_name, userset_name, AUSRLIST_value))  {
             ERROR((SGE_EVENT, MSG_SGETEXT_USERSETSTILLREFERENCED_SSSS, 
@@ -481,7 +483,7 @@ const char *userset_name
       }
    }
 
-   for_each (ep, *object_type_get_master_list(SGE_TYPE_PE)) {
+   for_each (ep, master_pe_list) {
       if (lGetElemStr(lGetList(ep, PE_user_list), US_name, userset_name)) {
          ERROR((SGE_EVENT, MSG_SGETEXT_USERSETSTILLREFERENCED_SSSS, userset_name, 
                MSG_OBJ_USERLIST, MSG_OBJ_PE, lGetString(ep, PE_name)));
@@ -496,7 +498,7 @@ const char *userset_name
       }
    }
 
-   for_each (ep, *object_type_get_master_list(SGE_TYPE_PROJECT)) {
+   for_each (ep, master_project_list) {
       if (lGetElemStr(lGetList(ep, PR_acl), US_name, userset_name)) {
          ERROR((SGE_EVENT, MSG_SGETEXT_USERSETSTILLREFERENCED_SSSS, userset_name, 
                MSG_OBJ_USERLIST, MSG_OBJ_PRJ, lGetString(ep, PR_name)));
@@ -512,7 +514,7 @@ const char *userset_name
    }
 
    /* hosts */
-   for_each (ep, *object_type_get_master_list(SGE_TYPE_EXECHOST)) {
+   for_each (ep, master_ehost_list) {
       if (lGetElemStr(lGetList(ep, EH_acl), US_name, userset_name)) {
          ERROR((SGE_EVENT, MSG_SGETEXT_USERSETSTILLREFERENCED_SSSS, userset_name,
                MSG_OBJ_USERLIST, MSG_OBJ_EH, lGetHost(ep, EH_name)));
@@ -577,10 +579,14 @@ static bool userset_still_used(const char *u)
 {
    const lListElem *qc, *cq, *hep, *rqs;
    dstring ds = DSTRING_INIT;
+   const lList *master_rqs_list = *object_type_get_master_list(SGE_TYPE_RQS);
+   const lList *master_pe_list = *object_type_get_master_list(SGE_TYPE_PE);
+   const lList *master_ehost_list = *object_type_get_master_list(SGE_TYPE_EXECHOST);
+   const lList *master_cqueue_list = *object_type_get_master_list(SGE_TYPE_CQUEUE);
 
    sge_dstring_sprintf(&ds, "@%s", u);
 
-   for_each (rqs, *object_type_get_master_list(SGE_TYPE_RQS)) {
+   for_each (rqs, master_rqs_list) {
       if (scope_is_referenced_rqs(rqs, RQR_filter_users, sge_dstring_get_string(&ds))) {
          sge_dstring_free(&ds);
          return true;
@@ -588,17 +594,15 @@ static bool userset_still_used(const char *u)
    }
    sge_dstring_free(&ds);
 
-   for_each (hep, *object_type_get_master_list(SGE_TYPE_PE)) 
-      if (lGetSubStr(hep, US_name, u, PE_user_list) ||
-          lGetSubStr(hep, US_name, u, PE_xuser_list))
+   for_each (hep, master_pe_list) 
+      if (lGetSubStr(hep, US_name, u, PE_user_list) || lGetSubStr(hep, US_name, u, PE_xuser_list))
          return true;
 
-   for_each (hep, *object_type_get_master_list(SGE_TYPE_EXECHOST))
-      if (lGetSubStr(hep, US_name, u, EH_acl) ||
-          lGetSubStr(hep, US_name, u, EH_xacl))
+   for_each (hep, master_ehost_list)
+      if (lGetSubStr(hep, US_name, u, EH_acl) || lGetSubStr(hep, US_name, u, EH_xacl))
          return true;
 
-   for_each (cq, *object_type_get_master_list(SGE_TYPE_CQUEUE)) {
+   for_each (cq, master_cqueue_list) {
       for_each (qc, lGetList(cq, CQ_acl))
          if (lGetSubStr(qc, US_name, u, AUSRLIST_value))
             return true;
@@ -635,13 +639,14 @@ void userset_update_categories(const lList *added, const lList *removed)
    const lListElem *ep;
    const char *u;
    lListElem *acl;
+   const lList *master_userset_list = *object_type_get_master_list(SGE_TYPE_USERSET);
 
    DENTER(TOP_LAYER, "userset_update_categories");
 
    for_each (ep, added) {
       u = lGetString(ep, US_name);
       DPRINTF(("added userset: \"%s\"\n", u));
-      acl = lGetElemStr(*object_type_get_master_list(SGE_TYPE_USERSET), US_name, u);
+      acl = lGetElemStr(master_userset_list, US_name, u);
       if (acl && lGetBool(acl, US_consider_with_categories)==false) {
          lSetBool(acl, US_consider_with_categories, true);
          sge_add_event(0, sgeE_USERSET_MOD, 0, 0, u, NULL, NULL, acl);
@@ -651,8 +656,7 @@ void userset_update_categories(const lList *added, const lList *removed)
    for_each (ep, removed) {
       u = lGetString(ep, US_name);
       DPRINTF(("removed userset: \"%s\"\n", u));
-      acl = lGetElemStr(*object_type_get_master_list(SGE_TYPE_USERSET), US_name, u);
-
+      acl = lGetElemStr(master_userset_list, US_name, u);
 
       if (acl && !userset_still_used(u)) {
          lSetBool(acl, US_consider_with_categories, false);
@@ -703,7 +707,9 @@ int userset_mod(sge_gdi_ctx_class_t *ctx, lList **alpp, lListElem *new_userset,
            monitoring_t *monitor)
 {
    const char* userset_name;
-   lList *master_userset_list = *object_type_get_master_list(SGE_TYPE_USERSET);
+   const lList *master_userset_list = *object_type_get_master_list(SGE_TYPE_USERSET);
+   const lList *master_cqueue_list = *object_type_get_master_list(SGE_TYPE_CQUEUE);
+   const lList *master_ar_list = *object_type_get_master_list(SGE_TYPE_AR);
    
    DENTER(TOP_LAYER, "userset_mod");
 
@@ -761,7 +767,7 @@ int userset_mod(sge_gdi_ctx_class_t *ctx, lList **alpp, lListElem *new_userset,
       lListElem *cqueue;
       lList *new_master_userset_list = NULL;
 
-      for_each(cqueue, *(object_type_get_master_list(SGE_TYPE_CQUEUE))) {
+      for_each(cqueue, master_cqueue_list) {
          lList *qinstance_list = lGetList(cqueue, CQ_qinstances);
          lListElem *qinstance = NULL;
 
@@ -780,11 +786,11 @@ int userset_mod(sge_gdi_ctx_class_t *ctx, lList **alpp, lListElem *new_userset,
                continue;
             }
 
-            for_each(ar, *(object_type_get_master_list(SGE_TYPE_AR))) {
+            for_each(ar, master_ar_list) {
                if (lGetElemStr(lGetList(ar, AR_granted_slots), JG_qname, queue_name)) {
                   if (new_master_userset_list == NULL) {
                      lListElem *old_userset;
-                     new_master_userset_list = lCopyList("", *(object_type_get_master_list(SGE_TYPE_USERSET)));
+                     new_master_userset_list = lCopyList("", master_userset_list);
                      old_userset = lGetElemStr(new_master_userset_list, US_name, userset_name);
                      lRemoveElem(new_master_userset_list, &old_userset);
                      lAppendElem(new_master_userset_list, lCopyElem(new_userset));
@@ -896,6 +902,7 @@ int userset_success(sge_gdi_ctx_class_t *ctx, lListElem *ep, lListElem *old_ep, 
    const char *userset_name;
    dstring ds = DSTRING_INIT;
    lListElem *rqs;
+   const lList *master_rqs_list = *object_type_get_master_list(SGE_TYPE_RQS);
 
    DENTER(TOP_LAYER, "userset_success");
 
@@ -903,7 +910,7 @@ int userset_success(sge_gdi_ctx_class_t *ctx, lListElem *ep, lListElem *old_ep, 
 
    /* set consider with categories */
    sge_dstring_sprintf(&ds, "@%s", userset_name);
-   for_each(rqs, *(object_type_get_master_list(SGE_TYPE_RQS))) {
+   for_each(rqs, master_rqs_list) {
       if (scope_is_referenced_rqs(rqs, RQR_filter_users, sge_dstring_get_string(&ds))) {
          lSetBool(ep, US_consider_with_categories, true);
          break;

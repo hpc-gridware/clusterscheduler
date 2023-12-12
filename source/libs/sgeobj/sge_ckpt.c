@@ -320,25 +320,6 @@ int ckpt_validate(const lListElem *this_elem, lList **alpp)
    return STATUS_OK;
 }
 
-/****** sgeobj/ckpt/ckpt_list_get_master_list() *******************************
-*  NAME
-*     ckpt_list_get_master_list() -- Return pointer to master ckpt list 
-*
-*  SYNOPSIS
-*     lList ** ckpt_list_get_master_list(void) 
-*
-*  FUNCTION
-*     Return pointer to master ckpt list 
-*
-*  RESULT
-*     lList ** - master ckpt list
-*******************************************************************************/
-lList **
-ckpt_list_get_master_list(void)
-{
-   return object_type_get_master_list(SGE_TYPE_CKPT);
-}
-
 /****** sgeobj/ckpt/ckpt_list_do_all_exist() **********************************
 *  NAME
 *     ckpt_list_do_all_exist() -- Do all ckpt's exist? 

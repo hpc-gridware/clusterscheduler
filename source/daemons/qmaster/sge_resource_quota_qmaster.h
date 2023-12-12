@@ -50,10 +50,10 @@ int rqs_del(sge_gdi_ctx_class_t *ctx, lListElem *ep, lList **alpp, lList **rqs_l
                 char *ruser, char *rhost);
 
 bool rqs_diff_usersets(const lListElem *new_rqs, const lListElem *old_rqs, lList **new_acl,
-                       lList **old_acl, lList *master_userset_list);
+                       lList **old_acl, const lList *master_userset_list);
 
 bool rqs_diff_projects(const lListElem *new_rqs, const lListElem *old_rqs, lList **new_acl,
-                       lList **old_acl, lList *master_project_list);
+                       lList **old_acl, const lList *master_project_list);
 
 bool scope_is_referenced_rqs(const lListElem *rqs, int filter_type, const char *name);
 

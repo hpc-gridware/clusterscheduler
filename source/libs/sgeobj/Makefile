@@ -114,6 +114,7 @@ SGEOBJLIB_TEST_PROGS = \
               test_sge_utility \
               test_sge_resource_quota \
               test_eval_expression \
+              test_sge_fgl \
               dump_cull_schema \
               gen_types_from_json
 
@@ -124,6 +125,7 @@ SGEOBJLIB_TEST_PROGS_OBJS = \
               test_sge_utility.o \
               test_sge_resource_quota.o\
               test_eval_expression.o \
+              test_sge_fgl.o \
               dump_cull_schema.o \
               gen_types_from_json.o
 
@@ -381,6 +383,9 @@ test_sge_resource_quota: test_sge_resource_quota.o $(SGEOBJLIB) $(SGEOBJDLIB) $(
 test_eval_expression: test_eval_expression.o $(SGEOBJLIB) $(SGEOBJDLIB) $(CULLLIB) $(UTILIB) $(WINGRIDLIB_DEP) $(COMMLIB) $(COMMLISTSLIB) 
 	$(LD_WRAPPER) $(CC) $(CFLAGS) -o test_eval_expression $(LFLAGS) test_eval_expression.o $(SGEOBJLIB) $(SGEOBJDLIB) $(CULLLIB) $(COMMLIB) $(COMMLISTSLIB) $(UTILIB) $(WINGRIDLIB) $(DLLIB) $(SECLIB) $(LIBS)
 
+test_sge_fgl: test_sge_fgl.o $(SGEOBJLIB) $(SGEOBJDLIB) $(CULLLIB) $(UTILIB) $(COMMLIB) $(COMMLISTSLIB) 
+	$(LD_WRAPPER) $(CC) $(CFLAGS) -o test_sge_fgl $(LFLAGS) test_sge_fgl.o $(SGEOBJLIB) $(SGEOBJDLIB) $(CULLLIB) $(COMMLIB) $(COMMLISTSLIB) $(UTILIB) $(DLLIB) $(SECLIB) $(LIBS)
+
 test_sge_object.o: $(SGEOBJLIB_DIR)/test_sge_object.c
 	$(CC) $(CFLAGS) -c $(SGEOBJLIB_DIR)/test_sge_object.c
 
@@ -401,6 +406,9 @@ test_sge_resource_quota.o: $(SGEOBJLIB_DIR)/test_sge_resource_quota.c
 
 test_eval_expression.o: $(SGEOBJLIB_DIR)/test_eval_expression.c
 		$(CC) $(CFLAGS) $(SHARED_CFLAGS) -c $(SGEOBJLIB_DIR)/test_eval_expression.c
+
+test_sge_fgl.o: $(SGEOBJLIB_DIR)/test_sge_fgl.c
+		$(CC) $(CFLAGS) $(SHARED_CFLAGS) -c $(SGEOBJLIB_DIR)/test_sge_fgl.c
 
 dump_cull_schema.o: $(SGEOBJLIB_DIR)/dump_cull_schema.c
 	$(CC) $(CFLAGS) -c $(SGEOBJLIB_DIR)/dump_cull_schema.c

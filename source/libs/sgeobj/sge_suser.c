@@ -127,7 +127,7 @@ lListElem *suser_list_add(lList **suser_list, lList **answer_list,
 *     sgeobj/suser/SU_Type
 *     sgeobj/suser/Master_SUser_List  
 ******************************************************************************/
-lListElem *suser_list_find(lList *suser_list, const char *suser_name)
+lListElem *suser_list_find(const lList *suser_list, const char *suser_name)
 {
    lListElem *ret = NULL;
 
@@ -255,7 +255,7 @@ u_long32 suser_get_job_counter(lListElem *suser)
 *     int - 1 => limit would be exceeded
 *           0 => otherwise
 ******************************************************************************/
-int suser_check_new_job(const lListElem *job, u_long32 max_u_jobs)
+int suser_check_new_job(const lListElem *job, u_long32 max_u_jobs, lList *master_suser_list)
 {
    const char *submit_user = NULL;
    lListElem *suser = NULL;
@@ -263,10 +263,9 @@ int suser_check_new_job(const lListElem *job, u_long32 max_u_jobs)
 
    DENTER(TOP_LAYER, "suser_check_new_job");
    submit_user = lGetString(job, JB_owner);
-   suser = suser_list_add(object_type_get_master_list(SGE_TYPE_SUSER), NULL, submit_user);
+   suser = suser_list_add(&master_suser_list, NULL, submit_user);
    if (suser != NULL) {
-      if(max_u_jobs == 0 ||  
-         max_u_jobs > suser_get_job_counter(suser))
+      if (max_u_jobs == 0 || max_u_jobs > suser_get_job_counter(suser))
          ret = 0;
       else
          ret = 1;
@@ -309,7 +308,7 @@ int suser_check_new_job(const lListElem *job, u_long32 max_u_jobs)
 *     qmaster/job/job_list_register_new_job()
 ******************************************************************************/
 int suser_register_new_job(const lListElem *job, u_long32 max_u_jobs,
-                           int force_registration)
+                           int force_registration, lList *master_suser_list)
 {
    const char *submit_user = NULL;
    lListElem *suser = NULL;
@@ -317,12 +316,12 @@ int suser_register_new_job(const lListElem *job, u_long32 max_u_jobs,
 
    DENTER(TOP_LAYER, "suser_register_new_job");
 
-   if(!force_registration){
-      ret = suser_check_new_job(job, max_u_jobs);
+   if (!force_registration){
+      ret = suser_check_new_job(job, max_u_jobs, master_suser_list);
    }
-   if( ret == 0){    
+   if (ret == 0){    
       submit_user = lGetString(job, JB_owner);
-      suser = suser_list_add(object_type_get_master_list(SGE_TYPE_SUSER), NULL, submit_user);
+      suser = suser_list_add(&master_suser_list, NULL, submit_user);
       suser_increase_job_counter(suser);
    }
 
@@ -346,7 +345,7 @@ int suser_register_new_job(const lListElem *job, u_long32 max_u_jobs,
 *  RESULT
 *     number of jobs in the system
 ******************************************************************************/
-int suser_job_count(const lListElem *job)
+int suser_job_count(const lListElem *job, const lList *master_suser_list)
 {
    const char *submit_user = NULL;
    lListElem *suser = NULL;
@@ -354,7 +353,7 @@ int suser_job_count(const lListElem *job)
 
    DENTER(TOP_LAYER, "suser_job_job");
    submit_user = lGetString(job, JB_owner);  
-   suser = suser_list_find(*object_type_get_master_list(SGE_TYPE_SUSER), submit_user);
+   suser = suser_list_find(master_suser_list, submit_user);
    if (suser != NULL) {
       ret = suser_get_job_counter(suser);
    }
@@ -382,14 +381,14 @@ int suser_job_count(const lListElem *job)
 *     sgeobj/suser/SU_Type
 *     sgeobj/suser/Master_SUser_List  
 ******************************************************************************/
-void suser_unregister_job(const lListElem *job)
+void suser_unregister_job(const lListElem *job, const lList *master_suser_list)
 {
    const char *submit_user = NULL;
    lListElem *suser = NULL;    
 
    DENTER(TOP_LAYER, "suser_unregister_job");
    submit_user = lGetString(job, JB_owner);  
-   suser = suser_list_find(*object_type_get_master_list(SGE_TYPE_SUSER), submit_user);
+   suser = suser_list_find(master_suser_list, submit_user);
    if (suser != NULL) {
       suser_decrease_job_counter(suser);
    }

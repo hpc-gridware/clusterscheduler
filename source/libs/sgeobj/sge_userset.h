@@ -53,30 +53,24 @@
 
 extern const char *userset_types[];
 
-lList **
-userset_list_get_master_list(void);
+bool userset_is_deadline_user(const lList *lp, const char *username);
 
-bool userset_is_deadline_user(lList *lp, const char *username);
+bool userset_is_ar_user(const lList *lp, const char *username);
 
-bool userset_is_ar_user(lList *lp, const char *username);
-
-lListElem *
-userset_list_locate(lList *lp, const char *name);
+lListElem *userset_list_locate(const lList *lp, const char *name);
 
 int 
 userset_validate_entries(lListElem *userset, lList **alpp, int start_up);
 
-int userset_list_validate_acl_list(lList *acl_list, lList **alpp);
+int userset_list_validate_acl_list(lList *acl_list, lList **alpp, const lList *master_userset_list);
 
-int userset_list_validate_access(lList *acl_list, int nm, lList **alpp);
+int userset_list_validate_access(lList *acl_list, int nm, lList **alpp, const lList *master_userset_list);
 
 const char *
-userset_get_type_string(const lListElem *userset, lList **answer_list,
-                        dstring *buffer);
+userset_get_type_string(const lListElem *userset, lList **answer_list, dstring *buffer);
 
 bool 
-userset_set_type_string(lListElem *userset, lList **answer_list, 
-                        const char *value);
+userset_set_type_string(lListElem *userset, lList **answer_list, const char *value);
 
 const char *
 userset_list_append_to_dstring(const lList *this_list, dstring *string);

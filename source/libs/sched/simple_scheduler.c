@@ -106,7 +106,7 @@ static sge_callback_result remove_finished_job(sge_evc_class_t *evc,
                   job_get_id_string(job_id, ja_task_id, NULL, &id_dstring)));
          sge_dstring_free(&id_dstring);
 
-         job = job_list_locate(*object_type_get_master_list(SGE_TYPE_JOB), job_id);
+         job = lGetElemUlong(*object_type_get_master_list(SGE_TYPE_JOB), JB_job_number, job_id);
          ja_task = job_search_task(job, NULL, ja_task_id);
 
          order_list = sge_create_orders(order_list, ORT_remove_job, job, ja_task, NULL, false);

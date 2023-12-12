@@ -79,10 +79,10 @@ bool check_attr_str_list_find_value(void)
       hgroup1 = hgroup_create(NULL, "@A", hostref_list1);
       hgroup2 = hgroup_create(NULL, "@B", hostref_list2);
       hgroup3 = hgroup_create(NULL, "@C", hostref_list3);
-      *(hgroup_list_get_master_list()) = lCreateList("", HGRP_Type);
-      lAppendElem(*(hgroup_list_get_master_list()), hgroup1);
-      lAppendElem(*(hgroup_list_get_master_list()), hgroup2);
-      lAppendElem(*(hgroup_list_get_master_list()), hgroup3);
+      *object_type_get_master_list(SGE_TYPE_HGROUP) = lCreateList("", HGRP_Type);
+      lAppendElem(*object_type_get_master_list(SGE_TYPE_HGROUP), hgroup1);
+      lAppendElem(*object_type_get_master_list(SGE_TYPE_HGROUP), hgroup2);
+      lAppendElem(*object_type_get_master_list(SGE_TYPE_HGROUP), hgroup3);
    }
    return ret;
 }

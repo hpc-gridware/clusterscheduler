@@ -448,7 +448,7 @@ print_hdr(dstring *out, const format_t *format)
 *     sge_sharetree_printing/print_hdr()
 *******************************************************************************/
 void
-sge_sharetree_print(dstring *out, lList *sharetree, const lList *users, 
+sge_sharetree_print(dstring *out, const lList *sharetree_in, const lList *users, 
                     const lList *projects, const lList *usersets,
                     bool group_nodes, bool decay_usage, 
                     const char **names, const format_t *format)
@@ -456,6 +456,7 @@ sge_sharetree_print(dstring *out, lList *sharetree, const lList *users,
 
    lListElem *root;
    u_long32 curr_time = 0;
+   lList *sharetree;
 
    DENTER(TOP_LAYER, "sge_sharetree_print");
 
@@ -465,7 +466,7 @@ sge_sharetree_print(dstring *out, lList *sharetree, const lList *users,
     * This implies modifying the sharetree - so we better create a 
     * copy of the sharetree
     */
-   sharetree = lCopyList("copy of sharetree", sharetree);
+   sharetree = lCopyList("copy of sharetree", sharetree_in);
    
    /* Resolve the default users */
    sge_add_default_user_nodes(lFirst(sharetree), users, projects, usersets);
@@ -484,11 +485,9 @@ sge_sharetree_print(dstring *out, lList *sharetree, const lList *users,
       curr_time = sge_get_gmt();
    }
 
-   _sge_calc_share_tree_proportions(sharetree, users, projects, NULL, 
-                                    curr_time);
+   _sge_calc_share_tree_proportions(sharetree, users, projects, NULL, curr_time);
 
-   print_nodes(out, root, NULL, NULL, users, projects, 
-               group_nodes, names, format, "");
+   print_nodes(out, root, NULL, NULL, users, projects, group_nodes, names, format, "");
 
    sge_mutex_unlock("sharetree_printing", SGE_FUNC, __LINE__, &mtx);
 

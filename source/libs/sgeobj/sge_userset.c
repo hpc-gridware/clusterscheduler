@@ -56,11 +56,6 @@ const char* userset_types[] = {
    NULL
 };
 
-lList **userset_list_get_master_list(void)
-{
-   return object_type_get_master_list(SGE_TYPE_USERSET);
-}
-
 /****** sgeobj/userset/userset_is_deadline_user() ******************************
 *  NAME
 *     userset_is_deadline_user() -- may user submit deadline jobs. 
@@ -78,19 +73,13 @@ lList **userset_list_get_master_list(void)
 *  RESULT
 *     bool - result 
 *******************************************************************************/
-bool userset_is_deadline_user(lList *lp, const char *username)
+bool userset_is_deadline_user(const lList *lp, const char *username)
 {
-   lListElem *deadline_users;
-
    DENTER(TOP_LAYER, "userset_is_deadline_user");
-
-   deadline_users = lGetElemStr(lp, US_name, DEADLINE_USERS);
-
-   if (deadline_users && lGetSubStr(deadline_users, UE_name, username, 
-         US_entries)) {
+   const lListElem *deadline_users = lGetElemStr(lp, US_name, DEADLINE_USERS);
+   if (deadline_users && lGetSubStr(deadline_users, UE_name, username, US_entries)) {
       DRETURN(true); /* found user in deadline user list */
    }
-
    DRETURN(false);
 }
 
@@ -114,7 +103,7 @@ bool userset_is_deadline_user(lList *lp, const char *username)
 *  NOTES
 *     MT-NOTE: userset_is_ar_user() is MT safe 
 *******************************************************************************/
-bool userset_is_ar_user(lList *lp, const char *username)
+bool userset_is_ar_user(const lList *lp, const char *username)
 {
    lListElem *ar_users;
 
@@ -147,7 +136,7 @@ bool userset_is_ar_user(lList *lp, const char *username)
 *  RESULT
 *     lListElem* - NULL or element pointer
 *******************************************************************************/
-lListElem *userset_list_locate(lList *lp, const char *name) 
+lListElem *userset_list_locate(const lList *lp, const char *name) 
 {
    lListElem *ep = NULL;
 
@@ -178,16 +167,15 @@ lListElem *userset_list_locate(lList *lp, const char *name)
 *     int - STATUS_OK, if everything is OK
 *******************************************************************************/
 int 
-userset_list_validate_acl_list(lList *acl_list, lList **alpp)
+userset_list_validate_acl_list(lList *acl_list, lList **alpp, const lList *master_userset_list)
 {
    lListElem *usp;
 
    DENTER(TOP_LAYER, "userset_list_validate_acl_list");
 
    for_each (usp, acl_list) {
-      if (!lGetElemStr(*object_type_get_master_list(SGE_TYPE_USERSET), US_name, lGetString(usp, US_name))) {
-         ERROR((SGE_EVENT, MSG_CQUEUE_UNKNOWNUSERSET_S, 
-                lGetString(usp, US_name) ? lGetString(usp, US_name) : "<NULL>"));
+      if (!lGetElemStr(master_userset_list, US_name, lGetString(usp, US_name))) {
+         ERROR((SGE_EVENT, MSG_CQUEUE_UNKNOWNUSERSET_S, lGetString(usp, US_name) ? lGetString(usp, US_name) : "<NULL>"));
          answer_list_add(alpp, SGE_EVENT, STATUS_EUNKNOWN, ANSWER_QUALITY_ERROR);
          DRETURN(STATUS_EUNKNOWN);
       }
@@ -220,7 +208,7 @@ userset_list_validate_acl_list(lList *acl_list, lList **alpp)
 *     MT-NOTE: userset_list_validate_access() is not MT safe 
 *
 *******************************************************************************/
-int userset_list_validate_access(lList *acl_list, int nm, lList **alpp)
+int userset_list_validate_access(lList *acl_list, int nm, lList **alpp, const lList *master_userset_list)
 {
    lListElem *usp;
    char *user;
@@ -231,7 +219,7 @@ int userset_list_validate_access(lList *acl_list, int nm, lList **alpp)
       user = (char *) lGetString(usp, nm);
       if (is_hgroup_name(user) == true){
          user++;  /* jump ower the @ sign */
-         if (!lGetElemStr(*object_type_get_master_list(SGE_TYPE_USERSET), US_name, user)) {
+         if (!lGetElemStr(master_userset_list, US_name, user)) {
             ERROR((SGE_EVENT, MSG_CQUEUE_UNKNOWNUSERSET_S, user ? user : "<NULL>"));
             answer_list_add(alpp, SGE_EVENT, STATUS_EUNKNOWN, ANSWER_QUALITY_ERROR);
             DRETURN(STATUS_EUNKNOWN);

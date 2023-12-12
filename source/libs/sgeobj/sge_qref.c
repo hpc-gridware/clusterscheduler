@@ -757,19 +757,13 @@ qref_list_trash_some_elemts(lList **this_list, const char *full_name)
 *        false - error
 *******************************************************************************/
 bool
-qref_list_is_valid(const lList *this_list, lList **answer_list)
+qref_list_is_valid(const lList *this_list, lList **answer_list, const lList *master_cqueue_list, 
+                   const lList *master_hgroup_list, const lList *master_centry_list)
 {
    bool ret = true;
 
    DENTER(TOP_LAYER, "qref_list_is_valid");
    if (this_list != NULL) {
-      lList *master_cqueue_list = NULL;
-      lList *master_hgroup_list = NULL;
-      lList *master_centry_list = NULL;
-
-      master_cqueue_list = *(object_type_get_master_list(SGE_TYPE_CQUEUE));
-      master_hgroup_list = *(object_type_get_master_list(SGE_TYPE_HGROUP));
-      master_centry_list = *(object_type_get_master_list(SGE_TYPE_CENTRY));
 
       /*
        * qname has to be requestable
@@ -793,14 +787,11 @@ qref_list_is_valid(const lList *this_list, lList **answer_list)
             lAddElemStr(&qref_list, QR_name, qref_pattern, QR_Type);
             /* queue name expression support */
             qref_list_resolve(qref_list, answer_list, &resolved_qref_list,
-                              &found_something, master_cqueue_list,
-                              master_hgroup_list, true, true);
+                              &found_something, master_cqueue_list, master_hgroup_list, true, true);
             for_each(resolved_qref, resolved_qref_list) {
-               const char *resolved_qref_name = NULL;
+               const char *resolved_qref_name = lGetString(resolved_qref, QR_name);
 
-               resolved_qref_name = lGetString(resolved_qref, QR_name);
-               if (cqueue_list_locate_qinstance(master_cqueue_list,
-                                                resolved_qref_name) != NULL) {
+               if (cqueue_list_locate_qinstance(master_cqueue_list, resolved_qref_name) != NULL) {
                   found_matching_qinstance = true;
                }
             }
@@ -808,15 +799,13 @@ qref_list_is_valid(const lList *this_list, lList **answer_list)
             lFreeList(&resolved_qref_list);
             if (!found_matching_qinstance) {
                ERROR((SGE_EVENT, MSG_QREF_QUNKNOWN_S, qref_pattern == NULL ? "" : qref_pattern));
-               answer_list_add(answer_list, SGE_EVENT,
-                               STATUS_EUNKNOWN, ANSWER_QUALITY_ERROR);
+               answer_list_add(answer_list, SGE_EVENT, STATUS_EUNKNOWN, ANSWER_QUALITY_ERROR);
                ret = false;
             }
          }
       } else {
          ERROR((SGE_EVENT, SFNMAX, MSG_QREF_QNOTREQUESTABLE));
-         answer_list_add(answer_list, SGE_EVENT,
-                         STATUS_EUNKNOWN, ANSWER_QUALITY_ERROR);
+         answer_list_add(answer_list, SGE_EVENT, STATUS_EUNKNOWN, ANSWER_QUALITY_ERROR);
          ret = false;
       }
    }

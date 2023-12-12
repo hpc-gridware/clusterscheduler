@@ -86,17 +86,9 @@
 static int do_add_auto_user(sge_gdi_ctx_class_t *ctx, lListElem*, lList**, monitoring_t *monitor);
 
 
-int userprj_mod(
-sge_gdi_ctx_class_t *ctx,
-lList **alpp,
-lListElem *modp,
-lListElem *ep,
-int add,
-const char *ruser,
-const char *rhost,
-gdi_object_t *object,
-int sub_command, monitoring_t *monitor 
-) {
+int 
+userprj_mod(sge_gdi_ctx_class_t *ctx, lList **alpp, lListElem *modp, lListElem *ep,
+            int add, const char *ruser, const char *rhost, gdi_object_t *object, int sub_command, monitoring_t *monitor) {
    int user_flag = (object->target==SGE_UU_LIST)?1:0;
    int pos;
    const char *userprj;
@@ -109,6 +101,7 @@ int sub_command, monitoring_t *monitor
    int obj_usage;
    int obj_version;
    int obj_project;
+   const lList *master_userset_list = *object_type_get_master_list(SGE_TYPE_USERSET);
 
    DENTER(TOP_LAYER, "userprj_mod");
   
@@ -186,7 +179,7 @@ int sub_command, monitoring_t *monitor
          NULL_OUT_NONE(ep, UU_default_project);
          /* make sure default project exists */
          if ((dproj = lGetPosString(ep, pos))) {
-             lList *master_project_list = *object_type_get_master_list(SGE_TYPE_PROJECT);
+            const lList *master_project_list = *object_type_get_master_list(SGE_TYPE_PROJECT);
             if (master_project_list == NULL||
                 !prj_list_locate(master_project_list, dproj)) {
                ERROR((SGE_EVENT, MSG_SGETEXT_DOESNOTEXIST_SS, MSG_OBJ_PRJ, dproj));
@@ -203,7 +196,7 @@ int sub_command, monitoring_t *monitor
          lp = lGetPosList(ep, pos);
          lSetList(modp, PR_acl, lCopyList("acl", lp));
 
-         if (userset_list_validate_acl_list(lGetList(ep, PR_acl), alpp)!=STATUS_OK) {
+         if (userset_list_validate_acl_list(lGetList(ep, PR_acl), alpp, master_userset_list)!=STATUS_OK) {
             /* answerlist gets filled by userset_list_validate_acl_list() in case of errors */
             goto Error;
          }
@@ -213,7 +206,7 @@ int sub_command, monitoring_t *monitor
       if ((pos=lGetPosViaElem(ep, PR_xacl, SGE_NO_ABORT))>=0) {
          lp = lGetPosList(ep, pos);
          lSetList(modp, PR_xacl, lCopyList("xacl", lp));
-         if (userset_list_validate_acl_list(lGetList(ep, PR_xacl), alpp)!=STATUS_OK) {
+         if (userset_list_validate_acl_list(lGetList(ep, PR_xacl), alpp, master_userset_list)!=STATUS_OK) {
             /* answerlist gets filled by userset_list_validate_acl_list() in case of errors */
             goto Error;
          }
@@ -449,7 +442,7 @@ int user        /* =1 user, =0 project */
 int verify_project_list(
 lList **alpp,
 lList *name_list,
-lList *prj_list,
+const lList *prj_list,
 const char *attr_name, /* e.g. "xprojects" */
 const char *obj_descr, /* e.g. "host"      */
 const char *obj_name   /* e.g. "fangorn"  */
@@ -489,12 +482,11 @@ sge_automatic_user_cleanup_handler(sge_gdi_ctx_class_t *ctx, te_event_t anEvent,
    /* shall auto users be deleted again? */
    if (auto_user_delete_time > 0) {
       lListElem *user, *next;
-      lList **master_user_list;
       u_long32 now = sge_get_gmt();
       u_long32 next_delete = now + auto_user_delete_time;
 
       MONITOR_WAIT_TIME(SGE_LOCK(LOCK_GLOBAL, LOCK_WRITE), monitor);
-      master_user_list = object_type_get_master_list(SGE_TYPE_USER);
+      lList **master_user_list = object_type_get_master_list_rw(SGE_TYPE_USER);
 
       /*
        * Check each user for deletion time. We don't use for_each()

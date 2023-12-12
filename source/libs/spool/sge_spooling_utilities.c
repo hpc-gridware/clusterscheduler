@@ -377,6 +377,13 @@ bool spool_default_validate_func(lList **answer_list,
    bool ret = true;
 
    DENTER(TOP_LAYER, "spool_default_validate_func");
+   const lList *master_cqueue_list = *object_type_get_master_list(SGE_TYPE_CQUEUE);
+   const lList *master_hgroup_list = *object_type_get_master_list(SGE_TYPE_HGROUP);
+   const lList *master_centry_list = *object_type_get_master_list(SGE_TYPE_CENTRY);
+   const lList *master_ehost_list = *object_type_get_master_list(SGE_TYPE_EXECHOST);
+   const lList *master_ckpt_list = *object_type_get_master_list(SGE_TYPE_CKPT);
+   const lList *master_pe_list = *object_type_get_master_list(SGE_TYPE_PE);
+   const lList *master_userset_list = *object_type_get_master_list(SGE_TYPE_USERSET);
 
    switch(object_type) {
       case SGE_TYPE_ADMINHOST:
@@ -394,28 +401,21 @@ bool spool_default_validate_func(lList **answer_list,
                /* if hostname resolving failed: create error */
                if (cl_ret != CL_RETVAL_OK) {
                   if (cl_ret != CL_RETVAL_GETHOSTNAME_ERROR) {
-                     answer_list_add_sprintf(answer_list, STATUS_EUNKNOWN, 
-                                             ANSWER_QUALITY_ERROR, 
-                                             MSG_SPOOL_CANTRESOLVEHOSTNAME_SS, 
-                                             old_name, cl_get_error_text(ret)); 
+                     answer_list_add_sprintf(answer_list, STATUS_EUNKNOWN, ANSWER_QUALITY_ERROR, 
+                                             MSG_SPOOL_CANTRESOLVEHOSTNAME_SS, old_name, cl_get_error_text(ret)); 
                      ret = false;
                   } else {
-                     answer_list_add_sprintf(answer_list, STATUS_EUNKNOWN, 
-                                             ANSWER_QUALITY_WARNING, 
-                                             MSG_SPOOL_CANTRESOLVEHOSTNAME_SS, 
-                                             old_name, cl_get_error_text(ret));
+                     answer_list_add_sprintf(answer_list, STATUS_EUNKNOWN, ANSWER_QUALITY_WARNING, 
+                                             MSG_SPOOL_CANTRESOLVEHOSTNAME_SS, old_name, cl_get_error_text(ret));
                   }
                } else {
                   /* if hostname resolving changed hostname: spool */
                   const char *new_name;
                   new_name = lGetHost(object, key_nm);
                   if (strcmp(old_name, new_name) != 0) {
-                     spooling_write_func write_func = 
-                             (spooling_write_func)lGetRef(rule, SPR_write_func);
-                     spooling_delete_func delete_func = 
-                             (spooling_delete_func)lGetRef(rule, SPR_delete_func);
-                     write_func(answer_list, type, rule, object, new_name, 
-                                object_type);
+                     spooling_write_func write_func = (spooling_write_func)lGetRef(rule, SPR_write_func);
+                     spooling_delete_func delete_func = (spooling_delete_func)lGetRef(rule, SPR_delete_func);
+                     write_func(answer_list, type, rule, object, new_name, object_type);
                      delete_func(answer_list, type, rule, old_name, object_type);
                   }
                }
@@ -425,7 +425,6 @@ bool spool_default_validate_func(lList **answer_list,
 
             if (object_type == SGE_TYPE_EXECHOST && ret) {
                lListElem *load_value;
-               lList *master_centry_list = *object_type_get_master_list(SGE_TYPE_CENTRY);
 
                /* all spooled load values are static, therefore we tag them here */
                for_each(load_value, lGetList(object, EH_load_list)) {
@@ -433,23 +432,21 @@ bool spool_default_validate_func(lList **answer_list,
                }
 
                /* necessary to init double values of consumable configuration */
-               centry_list_fill_request(lGetList(object, EH_consumable_config_list), 
-                     NULL, master_centry_list, true, false, true);
+               centry_list_fill_request(lGetList(object, EH_consumable_config_list), NULL, master_centry_list, true, false, true);
                /* necessary to setup actual list of exechost */
                debit_host_consumable(NULL, object, master_centry_list, 0, true, NULL);
 
-               if (ensure_attrib_available(NULL, object, 
-                                           EH_consumable_config_list)) {
+               if (ensure_attrib_available(NULL, object, EH_consumable_config_list, master_centry_list)) {
                   ret = false;
                }
             }
          }
          break;
       case SGE_TYPE_QINSTANCE:
-         ret = qinstance_validate(object, answer_list, *object_type_get_master_list(SGE_TYPE_EXECHOST));
+         ret = qinstance_validate(object, answer_list, master_ehost_list, master_centry_list);
          break;
       case SGE_TYPE_CQUEUE:
-         ret = qinstance_list_validate(lGetList(object, CQ_qinstances), answer_list, *object_type_get_master_list(SGE_TYPE_EXECHOST));
+         ret = qinstance_list_validate(lGetList(object, CQ_qinstances), answer_list, master_ehost_list, master_centry_list);
          break;
       case SGE_TYPE_CONFIG:
          {
@@ -477,12 +474,9 @@ bool spool_default_validate_func(lList **answer_list,
                   /* if hostname resolving changed hostname: spool */
                   const char *new_name = lGetHost(object, CONF_name);
                   if (strcmp(old_name, new_name) != 0) {
-                     spooling_write_func write_func = 
-                             (spooling_write_func)lGetRef(rule, SPR_write_func);
-                     spooling_delete_func delete_func = 
-                             (spooling_delete_func)lGetRef(rule, SPR_delete_func);
-                     write_func(answer_list, type, rule, object, new_name, 
-                                object_type);
+                     spooling_write_func write_func = (spooling_write_func)lGetRef(rule, SPR_write_func);
+                     spooling_delete_func delete_func = (spooling_delete_func)lGetRef(rule, SPR_delete_func);
+                     write_func(answer_list, type, rule, object, new_name, object_type);
                      delete_func(answer_list, type, rule, old_name, object_type);
                   }
                }
@@ -501,22 +495,22 @@ bool spool_default_validate_func(lList **answer_list,
          }
          break;
       case SGE_TYPE_PE:
-         if (pe_validate(object, answer_list, 1) != STATUS_OK) {
+         if (pe_validate(object, answer_list, 1, master_userset_list) != STATUS_OK) {
             ret = false;
          }
          break;
       case SGE_TYPE_CENTRY:
-         if (!centry_elem_validate(object, *object_type_get_master_list(SGE_TYPE_CENTRY), answer_list)) {
+         if (!centry_elem_validate(object, master_centry_list, answer_list)) {
             ret = false;
          }
          break;
       case SGE_TYPE_RQS:
-         if (!rqs_verify_attributes(object, answer_list, true)) {
+         if (!rqs_verify_attributes(object, answer_list, true, master_centry_list)) {
             ret = false;
          }
          break;
       case SGE_TYPE_AR:
-         if (!ar_validate(object, answer_list, true, true)) {
+         if (!ar_validate(object, answer_list, true, true, master_cqueue_list, master_hgroup_list, master_centry_list, master_ckpt_list, master_pe_list, master_userset_list)) {
             ret = false;
          }
          break;
@@ -552,7 +546,7 @@ spool_default_validate_list_func(lList **answer_list,
       case SGE_TYPE_ADMINHOST:
          break;
       case SGE_TYPE_EXECHOST:
-         host_list_merge(*object_type_get_master_list(SGE_TYPE_EXECHOST));
+         host_list_merge(*object_type_get_master_list_rw(SGE_TYPE_EXECHOST));
          break;
       case SGE_TYPE_SUBMITHOST:
       case SGE_TYPE_CONFIG:
@@ -561,7 +555,7 @@ spool_default_validate_list_func(lList **answer_list,
       case SGE_TYPE_PE:
          break;
       case SGE_TYPE_CENTRY:
-         centry_list_sort(*object_type_get_master_list(SGE_TYPE_CENTRY));
+         centry_list_sort(*object_type_get_master_list_rw(SGE_TYPE_CENTRY));
          break;
       case SGE_TYPE_MANAGER:
       case SGE_TYPE_OPERATOR:

@@ -82,7 +82,7 @@ sharetree_update_master_list(sge_evc_class_t *evc, sge_object_type type, sge_eve
    DENTER(TOP_LAYER, "sharetree_update_master_list");
 
    /* remove old share tree */
-   list = object_type_get_master_list(type); 
+   list = object_type_get_master_list_rw(type); 
    lFreeList(list);
    
 

@@ -65,10 +65,10 @@ PREFIX##_create(lList **answer_list, const char *href, TYPE value);           \
                                                                               \
 bool                                                                          \
 PREFIX##_list_add(lList **this_list, lList **answer_list,                     \
-                  lListElem **attr, int flags, lList **href_list);            \
+                  lListElem **attr, int flags, lList **href_list, const lList *master_hgroup_list);            \
 bool                                                                          \
 PREFIX##_list_add_set_del(lList **this_list, lList **answer_list,             \
-                  const char *hostname, void *value, bool remove);            \
+                  const char *hostname, void *value, bool remove, const lList *master_hgroup_list);            \
 lListElem *                                                                   \
 PREFIX##_list_find(const lList *this_list, const char *href);                 \
                                                                               \
@@ -77,7 +77,7 @@ PREFIX##_list_find_value(const lList *this_list, lList **answer_list,         \
                          const char *hostname, INTERNAL_TYPE *value,          \
                          const char **matching_host_or_group,                 \
                          const char **matching_group,                         \
-                         bool *is_ambiguous);                                 \
+                         bool *is_ambiguous, const lList *master_hgroup_list);                                 \
                                                                               \
 bool                                                                          \
 PREFIX##_list_find_value_href(const lList *this_list, lList **answer_list,    \
@@ -88,7 +88,7 @@ PREFIX##_list_append_to_dstring(const lList *this_list, dstring *string);     \
                                                                               \
 bool                                                                          \
 PREFIX##_list_parse_from_string(lList **this_list, lList **answer_list,       \
-                                const char *string, int flags);               \
+                                const char *string, int flags, const lList *master_hgroup_list);               \
 bool                                                                          \
 PREFIX##_has_hgroup_reference(const lList *this_list,                         \
                               const char *host_or_group);                     \

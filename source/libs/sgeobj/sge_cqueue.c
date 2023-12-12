@@ -86,7 +86,7 @@ list_attribute_struct cqueue_attribute_array[] = {
    { CQ_job_slots,               QU_job_slots,              AULNG_href,    AULNG_value,      NoName,     SGE_ATTR_SLOTS,             false,  false, cqueue_verify_job_slots},
 
    { CQ_tmpdir,                  QU_tmpdir,                 ASTR_href,     ASTR_value,       NoName,     SGE_ATTR_TMPDIR,            false,  false, NULL},
-   { CQ_shell,                   QU_shell,                  ASTR_href,     ASTR_value,       NoName,     SGE_ATTR_SHELL,             false,  true, cqueue_verify_shell},
+   { CQ_shell,                   QU_shell,                  ASTR_href,     ASTR_value,       NoName,     SGE_ATTR_SHELL,             false,  true,  cqueue_verify_shell},
    { CQ_calendar,                QU_calendar,               ASTR_href,     ASTR_value,       NoName,     SGE_ATTR_CALENDAR,          false,  false, cqueue_verify_calendar},
    { CQ_priority,                QU_priority,               ASTR_href,     ASTR_value,       NoName,     SGE_ATTR_PRIORITY,          false,  true,  cqueue_verify_priority},
    { CQ_processors,              QU_processors,             ASTR_href,     ASTR_value,       NoName,     SGE_ATTR_PROCESSORS,        false,  true,  cqueue_verify_processors},
@@ -993,7 +993,10 @@ cqueue_locate_qinstance(const lListElem *this_elem, const char *hostname)
 *******************************************************************************/
 bool 
 cqueue_verify_attributes(lListElem *cqueue, lList **answer_list,
-                         lListElem *reduced_elem, bool in_master)
+                         lListElem *reduced_elem, bool in_master, const lList *master_calendar_list, 
+                         const lList *master_ckpt_list, const lList *master_pe_list, const lList *master_userset_list, 
+                         const lList *master_project_list, const lList *master_centry_list, const lList *master_cqueue_list,
+                         const lList *master_hgroup_list)
 {
    bool ret = true;
 
@@ -1057,10 +1060,7 @@ cqueue_verify_attributes(lListElem *cqueue, lList **answer_list,
                   }
                   if (is_hgroup_name(hostname)) {
                      if (in_master && strcmp(hostname, HOSTREF_DEFAULT)) {
-                        const lList *master_list = 
-                              *(object_type_get_master_list(SGE_TYPE_HGROUP));
-                        const lListElem *hgroup = 
-                                    hgroup_list_locate(master_list, hostname);
+                        const lListElem *hgroup = hgroup_list_locate(master_hgroup_list, hostname);
 
                         if (hgroup == NULL) {
                            ERROR((SGE_EVENT, MSG_CQUEUE_INVALIDDOMSETTING_SS, 
@@ -1096,10 +1096,38 @@ cqueue_verify_attributes(lListElem *cqueue, lList **answer_list,
                 cqueue_attribute_array[index].verify_function != NULL &&
                 (cqueue_attribute_array[index].verify_client || in_master)) {
                lListElem *elem = NULL;
+               const lList *master_list;
+
+               switch(cqueue_attribute_array[index].cqueue_attr) {
+                  case CQ_calendar:
+                     master_list = master_calendar_list;
+                     break;
+                  case CQ_ckpt_list:
+                     master_list = master_ckpt_list;
+                     break;
+                  case CQ_pe_list:
+                     master_list = master_pe_list;
+                     break;
+                  case CQ_acl:
+                  case CQ_xacl:
+                     master_list = master_userset_list;
+                     break;
+                  case CQ_projects:
+                  case CQ_xprojects:
+                     master_list = master_project_list;
+                     break;
+                  case CQ_consumable_config_list:
+                     master_list = master_centry_list;
+                     break;
+                  case CQ_subordinate_list:
+                     master_list = master_cqueue_list;
+                     break;
+                  default:
+                     master_list = NULL;
+               }
 
                for_each(elem, list) {
-                  ret &= cqueue_attribute_array[index].
-                                 verify_function(cqueue, answer_list, elem);
+                  ret &= cqueue_attribute_array[index].verify_function(cqueue, answer_list, elem, master_list);
                }
             }
          }
@@ -1433,7 +1461,7 @@ cqueue_list_set_tag(lList *this_list, u_long32 tag_value, bool tag_qinstances)
 *     MT-NOTE: cqueue_list_locate_qinstance() is MT safe 
 *******************************************************************************/
 lListElem *
-cqueue_list_locate_qinstance(lList *cqueue_list, const char *full_name)
+cqueue_list_locate_qinstance(const lList *cqueue_list, const char *full_name)
 {
    return cqueue_list_locate_qinstance_msg(cqueue_list, full_name, true);
 }
@@ -1463,7 +1491,7 @@ cqueue_list_locate_qinstance(lList *cqueue_list, const char *full_name)
 *     MT-NOTE: cqueue_list_locate_qinstance_msg() is MT safe 
 *******************************************************************************/
 lListElem *
-cqueue_list_locate_qinstance_msg(lList *cqueue_list, const char *full_name, bool raise_error) 
+cqueue_list_locate_qinstance_msg(const lList *cqueue_list, const char *full_name, bool raise_error) 
 {
    lListElem *ret = NULL;
 

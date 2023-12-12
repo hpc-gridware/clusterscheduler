@@ -95,7 +95,7 @@ static int get_load_value(double *dvalp, lListElem *global, lListElem *host, con
       hl             :  the sorted host list
 
 *************************************************************************/
-int sort_host_list(lList *hl, lList *centry_list)
+int sort_host_list(lList *hl, const lList *centry_list)
 {
    lListElem *hlp = NULL;
    lListElem *global = host_list_locate(hl, SGE_GLOBAL_NAME);

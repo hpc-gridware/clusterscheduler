@@ -182,8 +182,11 @@ typedef struct {
 void obj_mt_init(void);
 void obj_init(bool is_global);
 
-lList **
-object_type_get_master_list(const sge_object_type type);
+lList **object_type_get_master_list_rw(const sge_object_type type);
+const lList **object_type_get_master_list(const sge_object_type type);
+
+lListElem *object_type_get_master_str_elem_rw(const sge_object_type type, int key_nm, const char *key);
+const lListElem *object_type_get_master_str_elem(const sge_object_type type, int key_nm, const char *key);
 
 bool 
 object_type_commit_master_list(const sge_object_type type, lList **answer_list); 

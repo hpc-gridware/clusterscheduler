@@ -47,9 +47,6 @@ sge_parse_checkpoint_attr(const char *attr_str);
 
 int ckpt_validate(const lListElem *this_elem, lList **alpp);
 
-lList **
-ckpt_list_get_master_list(void);
-
 bool
 ckpt_list_do_all_exist(const lList *ckpt_list, lList **answer_list,
                        const lList *ckpt_ref_list);

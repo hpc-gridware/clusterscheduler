@@ -73,19 +73,19 @@ PREFIX##_list_find(const lList *this_list, const char *href)                  \
                                                                               \
 bool                                                                          \
 PREFIX##_list_add(lList **this_list, lList **answer_list, lListElem **attr,   \
-                  int flags, lList **ambiguous_href_list)                     \
+                  int flags, lList **ambiguous_href_list, const lList *master_hgroup_list) \
 {                                                                             \
    return attr_list_add(this_list, answer_list, attr, flags,                  \
                         ambiguous_href_list,                                  \
-                        DESCRIPTOR, HREF_NM, VALUE_NM);                       \
+                        DESCRIPTOR, HREF_NM, VALUE_NM, master_hgroup_list);   \
 }                                                                             \
                                                                               \
 bool                                                                          \
 PREFIX##_list_add_set_del(lList **this_list, lList **answer_list,             \
-                         const char *hostname, void *value, bool remove)      \
+                         const char *hostname, void *value, bool remove, const lList *master_hgroup_list) \
 {                                                                             \
    return attr_list_add_set_del(this_list, answer_list, hostname,             \
-                        value, remove, DESCRIPTOR, HREF_NM, VALUE_NM);        \
+                        value, remove, DESCRIPTOR, HREF_NM, VALUE_NM, master_hgroup_list); \
 }                                                                             \
                                                                               \
 bool                                                                          \
@@ -93,12 +93,12 @@ PREFIX##_list_find_value(const lList *this_list, lList **answer_list,         \
                          const char *hostname, INTERNAL_TYPE *value,          \
                          const char **mastching_host_or_group,                \
                          const char **matching_group,                         \
-                         bool *is_ambiguous)                                  \
+                         bool *is_ambiguous, const lList *master_hgroup_list)                                  \
 {                                                                             \
    return attr_list_find_value(this_list, answer_list, hostname,              \
                                value, mastching_host_or_group,                \
                                matching_group, is_ambiguous,                  \
-                               DESCRIPTOR, HREF_NM, VALUE_NM);                \
+                               DESCRIPTOR, HREF_NM, VALUE_NM, master_hgroup_list);                \
 }                                                                             \
                                                                               \
 bool                                                                          \
@@ -120,10 +120,10 @@ PREFIX##_list_append_to_dstring(const lList *this_list, dstring *string)      \
                                                                               \
 bool                                                                          \
 PREFIX##_list_parse_from_string(lList **this_list, lList **answer_list,       \
-                                const char *string, int flags)                \
+                                const char *string, int flags, const lList *master_hgroup_list)                \
 {                                                                             \
    return attr_list_parse_from_string(this_list, answer_list, string,         \
-                                      flags, DESCRIPTOR, HREF_NM, VALUE_NM);  \
+                                      flags, DESCRIPTOR, HREF_NM, VALUE_NM, master_hgroup_list);  \
 }                                                                             \
                                                                               \
 lListElem *                                                                   \
@@ -139,12 +139,12 @@ attr_create(lList **answer_list, const char *href, void *value,
 static bool 
 attr_list_add(lList **this_list, lList **answer_list, lListElem **attr, 
               int flags, lList **ambiguous_href_list,
-              const lDescr *descriptor, int href_nm, int value_nm);
+              const lDescr *descriptor, int href_nm, int value_nm, const lList *master_hgroup_list);
 
 static bool 
 attr_list_add_set_del(lList **this_list, lList **answer_list, 
               const char *hostname, void *value_buffer, bool remove,
-              const lDescr *descriptor, int href_nm, int value_nm);
+              const lDescr *descriptor, int href_nm, int value_nm, const lList *master_hgroup_list);
 
 static bool
 attr_list_find_value(const lList *this_list, lList **answer_list, 
@@ -152,7 +152,7 @@ attr_list_find_value(const lList *this_list, lList **answer_list,
                      const char **matching_host_or_group,
                      const char **matching_group,
                      bool *is_ambiguous, const lDescr *descriptor, 
-                     int href_nm, int value_nm);
+                     int href_nm, int value_nm, const lList *master_hgroup_list);
 
 static bool
 attr_list_find_value_href(const lList *this_list, lList **answer_list, 
@@ -164,7 +164,7 @@ static bool
 attr_list_parse_from_string(lList **this_list, lList **answer_list,
                             const char *string, int flags,
                             const lDescr *descriptor, int href_nm, 
-                            int value_nm);
+                            int value_nm, const lList *master_hgroup_list);
 
 static lListElem *
 attr_list_locate(const lList *this_list, const char *host_or_group, 
@@ -299,7 +299,7 @@ attr_create(lList **answer_list, const char *href, void *value,
 static bool 
 attr_list_add(lList **this_list, lList **answer_list, lListElem **attr, 
               int flags, lList **ambiguous_href_list,
-              const lDescr *descriptor, int href_nm, int value_nm)
+              const lDescr *descriptor, int href_nm, int value_nm, const lList *master_hgroup_list)
 {
    bool ret = false;
 
@@ -385,15 +385,14 @@ attr_list_add(lList **this_list, lList **answer_list, lListElem **attr,
              * hostgroups
              */
             if (lret && href_list != NULL) {
-               lList *master_list = *(hgroup_list_get_master_list());
                lList *tmp_href_list = NULL; 
 
                lret &= href_list_find_all_references(href_list, NULL, 
-                                                     master_list, &host_list, 
+                                                     master_hgroup_list, &host_list, 
                                                      NULL); 
                lret &= href_list_add(&tmp_href_list, NULL, href);
                lret &= href_list_find_all_references(tmp_href_list, NULL,
-                                                     master_list, 
+                                                     master_hgroup_list, 
                                                      &new_host_list, NULL);
                lFreeList(&tmp_href_list);
             }
@@ -470,7 +469,7 @@ static bool
 attr_list_add_set_del(lList **this_list, lList **answer_list, 
               const char *hostname, void *value, bool remove,
               const lDescr *descriptor, 
-              int href_nm, int value_nm)
+              int href_nm, int value_nm, const lList *master_hgroup_list)
 {
    bool ret = true;
    lListElem *attr = NULL;
@@ -484,7 +483,7 @@ attr_list_add_set_del(lList **this_list, lList **answer_list,
                             href_nm, value_nm);
          ret = attr_list_add(this_list, answer_list,
                              &attr, HOSTATTR_OVERWRITE, NULL,
-                             descriptor, href_nm, value_nm);
+                             descriptor, href_nm, value_nm, master_hgroup_list);
       }
    }
    return ret;
@@ -501,7 +500,7 @@ attr_list_find_value(const lList *this_list, lList **answer_list,
                      const char **matching_host_or_group,
                      const char **matching_group,
                      bool *is_ambiguous, const lDescr *descriptor, 
-                     int href_nm, int value_nm)
+                     int href_nm, int value_nm, const lList *master_hroup_list)
 {
    bool ret = false;
 
@@ -531,7 +530,6 @@ attr_list_find_value(const lList *this_list, lList **answer_list,
           */
          for_each(href, this_list) {
             const char *href_name = lGetHost(href, href_nm);
-            lList *master_list = *(hgroup_list_get_master_list());
             bool lret = true;
 
             if (strcmp(href_name, HOSTREF_DEFAULT) && 
@@ -542,7 +540,7 @@ attr_list_find_value(const lList *this_list, lList **answer_list,
 
                href_list_add(&tmp_href_list, NULL, href_name);
                lret &= href_list_find_all_references(tmp_href_list, NULL,
-                                                     master_list, &host_list,
+                                                     master_hroup_list, &host_list,
                                                      NULL); 
                tmp_href = href_list_locate(host_list, hostname);
                if (tmp_href != NULL) {
@@ -724,7 +722,7 @@ static bool
 attr_list_parse_from_string(lList **this_list, lList **answer_list,
                             const char *string, int flags,
                             const lDescr *descriptor, int href_nm, 
-                            int value_nm)
+                            int value_nm, const lList *master_hgroup_list)
 {
    bool ret = true;
    DENTER(TOP_LAYER, "attr_list_parse_from_string");
@@ -879,7 +877,7 @@ attr_list_parse_from_string(lList **this_list, lList **answer_list,
                   if (ret) {
                      ret &= attr_list_add(this_list, answer_list,
                                           &attr_elem, flags, NULL,
-                                          descriptor, href_nm, value_nm);
+                                          descriptor, href_nm, value_nm, master_hgroup_list);
                   } else {
                      SGE_ADD_MSG_ID(sprintf(SGE_EVENT, 
                                     MSG_ATTR_PARSINGERROR_S, value));

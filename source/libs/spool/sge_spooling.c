@@ -972,10 +972,6 @@ spool_type_add_rule(lList **answer_list, lListElem *spool_type,
 *  RESULT
 *     int - true, on success, false, if an error occured
 *
-*  EXAMPLE
-*     spool_read_list(context, object_type_get_master_list(SGE_TYPE_JOB), SGE_TYPE_JOB);
-*     will read the job list.
-*
 *  SEE ALSO
 *     spool/--Spooling
 *******************************************************************************/

@@ -1242,7 +1242,7 @@ object_set_range_id(lListElem *object, int rnm, u_long32 start, u_long32 end,
 *     sgeobj/object/object_type_get_descr()
 *     sgeobj/object/object_type_get_key_nm()
 *******************************************************************************/
-lList **object_type_get_master_list(const sge_object_type type)
+lList **object_type_get_master_list_rw(const sge_object_type type)
 {
    lList **ret = NULL;
 
@@ -1268,6 +1268,20 @@ lList **object_type_get_master_list(const sge_object_type type)
    }
    
    DRETURN(ret);
+}
+
+const lList **object_type_get_master_list(const sge_object_type type) {
+   return (const lList **)object_type_get_master_list_rw(type);
+}
+
+lListElem *object_type_get_master_str_elem_rw(const sge_object_type type, int key_nm, const char *key) {
+   lList **master_list = object_type_get_master_list_rw(type);
+   const void *iterator = NULL;
+   return lGetElemStrFirst(*master_list, key_nm, key, &iterator);
+}
+
+const lListElem *object_type_get_master_str_elem(const sge_object_type type, int key_nm, const char *key) {
+   return object_type_get_master_str_elem_rw(type, key_nm, key);
 }
 
 bool object_type_commit_master_list(const sge_object_type type, lList **answer_list) 
@@ -2874,7 +2888,7 @@ int object_verify_pe_range(lList **alpp, const char *pe_name, lList *pe_range,
     finally being used for urgency value computation be ambiguous. We reject such
     jobs */
    if (range_list_get_number_of_ids(pe_range)>1) {
-      lList *master_pe_list = *object_type_get_master_list(SGE_TYPE_PE);
+      const lList *master_pe_list = *object_type_get_master_list(SGE_TYPE_PE);
       const lListElem *reference_pe = pe_list_find_matching(master_pe_list, pe_name);
       lListElem *pe;
       int nslots = pe_urgency_slots(reference_pe, lGetString(reference_pe, PE_urgency_slots), pe_range);

@@ -179,6 +179,7 @@ void process_job_report(sge_gdi_ctx_class_t *ctx, lListElem *report,
    char job_id_buffer[MAX_STRING_SIZE];
    dstring job_id_dstring;
    const char *job_id_string;
+   const lList *master_pe_list = *object_type_get_master_list(SGE_TYPE_PE);
 
    DENTER(TOP_LAYER, "process_job_report");
 
@@ -218,7 +219,7 @@ void process_job_report(sge_gdi_ctx_class_t *ctx, lListElem *report,
       jataskid = lGetUlong(jr, JR_ja_task_number);
       rstate = lGetUlong(jr, JR_state);
 
-      jep = job_list_locate(*object_type_get_master_list(SGE_TYPE_JOB), jobid);
+      jep = lGetElemUlong(*object_type_get_master_list(SGE_TYPE_JOB), JB_job_number, jobid);
       if (jep != NULL) {
          jatep = lGetElemUlong(lGetList(jep, JB_ja_tasks), JAT_task_number, jataskid);
 
@@ -328,7 +329,7 @@ void process_job_report(sge_gdi_ctx_class_t *ctx, lListElem *report,
                   bool new_task = false;
 
                   /* do we expect a pe task report from this host? */
-                  if (ja_task_is_tightly_integrated(jatep) &&
+                  if (ja_task_is_tightly_integrated(jatep, master_pe_list) &&
                       lGetElemHost(lGetList(jatep, JAT_granted_destin_identifier_list), JG_qhostname, rhost)) {
                     
                     /* is the task already known (object was created earlier)? */
@@ -559,7 +560,7 @@ void process_job_report(sge_gdi_ctx_class_t *ctx, lListElem *report,
                            lGetList(jatep, JAT_scaled_usage_list));
 
                /* additional handling for tightly integrated parallel jobs */
-               if (ja_task_is_tightly_integrated(jatep)) {
+               if (ja_task_is_tightly_integrated(jatep, master_pe_list)) {
                   /* when we get the first job finish report from the master task of a
                    * tightly integrated parallel job,
                    * we tag all gdil entries (including the master gdil_ep)
@@ -621,7 +622,7 @@ void process_job_report(sge_gdi_ctx_class_t *ctx, lListElem *report,
                   break;
                }
             } else {
-               if (ja_task_is_tightly_integrated(jatep) &&
+               if (ja_task_is_tightly_integrated(jatep, master_pe_list) &&
                    lGetElemHost(lGetList(jatep, JAT_granted_destin_identifier_list), JG_qhostname, rhost)) {
                   /* 
                    * here we get usage of tasks that ran on slave/master execd's

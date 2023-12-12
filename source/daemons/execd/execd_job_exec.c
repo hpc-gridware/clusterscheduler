@@ -260,7 +260,7 @@ static int handle_job(sge_gdi_ctx_class_t *ctx, lListElem *jelem, lListElem *jat
     * 
     * We can ignore this job because job is resend by qmaster.
     */
-   jep = lGetElemUlongFirst(*(object_type_get_master_list(SGE_TYPE_JOB)), JB_job_number, jobid, &iterator);
+   jep = lGetElemUlongFirst(*object_type_get_master_list(SGE_TYPE_JOB), JB_job_number, jobid, &iterator);
    while (jep != NULL) {
       if (job_search_task(jep, NULL, jataskid) != NULL) {
          DPRINTF(("Job "sge_u32"."sge_u32" is already running - skip the new one\n", 
@@ -268,7 +268,7 @@ static int handle_job(sge_gdi_ctx_class_t *ctx, lListElem *jelem, lListElem *jat
          goto Ignore;   /* don't set queue in error state */
       }
 
-      jep = lGetElemUlongNext(*(object_type_get_master_list(SGE_TYPE_JOB)), JB_job_number, jobid, &iterator);
+      jep = lGetElemUlongNext(*object_type_get_master_list(SGE_TYPE_JOB), JB_job_number, jobid, &iterator);
    }
 
    /* initialize state - prevent slaves from getting started */
@@ -347,7 +347,7 @@ static int handle_job(sge_gdi_ctx_class_t *ctx, lListElem *jelem, lListElem *jat
              * check wether there is another master task of the same job running
              * on this host. This is important in case of array pe-jobs.
              */
-             if (count_master_tasks(*(object_type_get_master_list(SGE_TYPE_JOB)), job_id) == 0) {
+             if (count_master_tasks(*object_type_get_master_list(SGE_TYPE_JOB), job_id) == 0) {
                int fd;
 
                /* We are root. Make the scriptfile readable for the jobs submitter,
@@ -416,7 +416,7 @@ static int handle_job(sge_gdi_ctx_class_t *ctx, lListElem *jelem, lListElem *jat
    modify_queue_limits_flag_for_job(ctx->get_qualified_hostname(ctx), jelem, true);
 
    /* put into job list */
-   lAppendElem(*(object_type_get_master_list(SGE_TYPE_JOB)), jelem);
+   lAppendElem(*object_type_get_master_list_rw(SGE_TYPE_JOB), jelem);
 
    DRETURN(0);
 

@@ -89,64 +89,35 @@ static void create_spooling_field (
    int (*read_func) (lListElem *ep, int nm, const char *buffer, lList **alp), 
    int (*write_func) (const lListElem *ep, int nm, dstring *buffer, lList **alp)
 );
-static int read_SC_queue_sort_method(lListElem *ep, int nm,
-                                     const char *buffer, lList **alp);
-static int write_SC_queue_sort_method(const lListElem *ep, int nm,
-                                      dstring *buffer, lList **alp);
-static int read_CF_value(lListElem *ep, int nm, const char *buf,
-                         lList **alp);
-static int read_CQ_ulng_attr_list(lListElem *ep, int nm, const char *buffer,
-                                  lList **alp);
-static int write_CQ_ulng_attr_list(const lListElem *ep, int nm,
-                                   dstring *buffer, lList **alp);
-static int read_CQ_mem_attr_list(lListElem *ep, int nm, const char *buffer,
-                                 lList **alp);
-static int write_CQ_mem_attr_list(const lListElem *ep, int nm,
-                                  dstring *buffer, lList **alp);
-static int read_CQ_time_attr_list(lListElem *ep, int nm, const char *buffer,
-                                  lList **alp);
-static int write_CQ_time_attr_list(const lListElem *ep, int nm,
-                                   dstring *buffer, lList **alp);
-static int read_CQ_prjlist_attr_list(lListElem *ep, int nm, const char *buffer,
-                                     lList **alp);
-static int write_CQ_prjlist_attr_list(const lListElem *ep, int nm,
-                                      dstring *buffer, lList **alp);
-static int read_CQ_solist_attr_list(lListElem *ep, int nm, const char *buffer,
-                                    lList **alp);
-static int write_CQ_solist_attr_list(const lListElem *ep, int nm,
-                                     dstring *buffer, lList **alp);
-static int read_CQ_usrlist_attr_list(lListElem *ep, int nm, const char *buffer,
-                                     lList **alp);
-static int write_CQ_usrlist_attr_list(const lListElem *ep, int nm,
-                                      dstring *buffer, lList **alp);
-static int read_CQ_bool_attr_list(lListElem *ep, int nm, const char *buffer,
-                                  lList **alp);
-static int write_CQ_bool_attr_list(const lListElem *ep, int nm,
-                                   dstring *buffer, lList **alp);
-static int read_CQ_strlist_attr_list(lListElem *ep, int nm, const char *buffer,
-                                     lList **alp);
-static int write_CQ_strlist_attr_list(const lListElem *ep, int nm,
-                                      dstring *buffer, lList **alp);
-static int read_CQ_qtlist_attr_list(lListElem *ep, int nm, const char *buffer,
-                                    lList **alp);
-static int write_CQ_qtlist_attr_list(const lListElem *ep, int nm,
-                                     dstring *buffer, lList **alp);
-static int read_CQ_str_attr_list(lListElem *ep, int nm, const char *buffer,
-                                 lList **alp);
-static int write_CQ_str_attr_list(const lListElem *ep, int nm,
-                                  dstring *buffer, lList **alp);
-static int read_CQ_inter_attr_list(lListElem *ep, int nm, const char *buffer,
-                                   lList **alp);
-static int write_CQ_inter_attr_list(const lListElem *ep, int nm,
-                                    dstring *buffer, lList **alp);
-static int read_CQ_celist_attr_list(lListElem *ep, int nm, const char *buffer,
-                                    lList **alp);
-static int write_CQ_celist_attr_list(const lListElem *ep, int nm,
-                                     dstring *buffer, lList **alp);
-static int read_CQ_hostlist(lListElem *ep, int nm, const char *buffer,
-                            lList **alp);
-static int write_CQ_hostlist(const lListElem *ep, int nm,
-                             dstring *buffer, lList **alp);
+static int read_SC_queue_sort_method(lListElem *ep, int nm, const char *buffer, lList **alp);
+static int write_SC_queue_sort_method(const lListElem *ep, int nm, dstring *buffer, lList **alp);
+static int read_CF_value(lListElem *ep, int nm, const char *buf, lList **alp);
+static int read_CQ_ulng_attr_list(lListElem *ep, int nm, const char *buffer, lList **alp);
+static int write_CQ_ulng_attr_list(const lListElem *ep, int nm, dstring *buffer, lList **alp);
+static int read_CQ_mem_attr_list(lListElem *ep, int nm, const char *buffer, lList **alp);
+static int write_CQ_mem_attr_list(const lListElem *ep, int nm, dstring *buffer, lList **alp);
+static int read_CQ_time_attr_list(lListElem *ep, int nm, const char *buffer, lList **alp);
+static int write_CQ_time_attr_list(const lListElem *ep, int nm, dstring *buffer, lList **alp);
+static int read_CQ_prjlist_attr_list(lListElem *ep, int nm, const char *buffer, lList **alp);
+static int write_CQ_prjlist_attr_list(const lListElem *ep, int nm, dstring *buffer, lList **alp);
+static int read_CQ_solist_attr_list(lListElem *ep, int nm, const char *buffer, lList **alp);
+static int write_CQ_solist_attr_list(const lListElem *ep, int nm, dstring *buffer, lList **alp);
+static int read_CQ_usrlist_attr_list(lListElem *ep, int nm, const char *buffer, lList **alp);
+static int write_CQ_usrlist_attr_list(const lListElem *ep, int nm, dstring *buffer, lList **alp);
+static int read_CQ_bool_attr_list(lListElem *ep, int nm, const char *buffer, lList **alp);
+static int write_CQ_bool_attr_list(const lListElem *ep, int nm, dstring *buffer, lList **alp);
+static int read_CQ_strlist_attr_list(lListElem *ep, int nm, const char *buffer, lList **alp);
+static int write_CQ_strlist_attr_list(const lListElem *ep, int nm, dstring *buffer, lList **alp);
+static int read_CQ_qtlist_attr_list(lListElem *ep, int nm, const char *buffer, lList **alp);
+static int write_CQ_qtlist_attr_list(const lListElem *ep, int nm, dstring *buffer, lList **alp);
+static int read_CQ_str_attr_list(lListElem *ep, int nm, const char *buffer, lList **alp);
+static int write_CQ_str_attr_list(const lListElem *ep, int nm, dstring *buffer, lList **alp);
+static int read_CQ_inter_attr_list(lListElem *ep, int nm, const char *buffer, lList **alp);
+static int write_CQ_inter_attr_list(const lListElem *ep, int nm, dstring *buffer, lList **alp);
+static int read_CQ_celist_attr_list(lListElem *ep, int nm, const char *buffer, lList **alp);
+static int write_CQ_celist_attr_list(const lListElem *ep, int nm, dstring *buffer, lList **alp);
+static int read_CQ_hostlist(lListElem *ep, int nm, const char *buffer, lList **alp);
+static int write_CQ_hostlist(const lListElem *ep, int nm, dstring *buffer, lList **alp);
 static int write_CE_stringval(const lListElem *ep, int nm, dstring *buffer,
                        lList **alp);
 static int read_RQR_obj(lListElem *ep, int nm, const char *buffer,
@@ -1098,7 +1069,7 @@ static int read_CQ_ulng_attr_list(lListElem *ep, int nm, const char *buffer, lLi
    lList *lp = NULL;
 
    if (!ulng_attr_list_parse_from_string(&lp, alp, buffer,
-                                         HOSTATTR_ALLOW_AMBIGUITY)) {
+                                         HOSTATTR_ALLOW_AMBIGUITY, NULL)) {
       lFreeList(&lp);
       return 0;
    }
@@ -1125,7 +1096,7 @@ static int read_CQ_celist_attr_list(lListElem *ep, int nm, const char *buffer,
    lList *lp = NULL;
 
    if (!celist_attr_list_parse_from_string(&lp, alp, buffer,
-                                          HOSTATTR_ALLOW_AMBIGUITY)) {
+                                          HOSTATTR_ALLOW_AMBIGUITY, NULL)) {
       lFreeList(&lp);
       return 0;
    }
@@ -1152,7 +1123,7 @@ static int read_CQ_inter_attr_list(lListElem *ep, int nm, const char *buffer,
    lList *lp = NULL;
    
    if (!inter_attr_list_parse_from_string(&lp, alp, buffer,
-                                          HOSTATTR_ALLOW_AMBIGUITY)) {
+                                          HOSTATTR_ALLOW_AMBIGUITY, NULL)) {
       lFreeList(&lp);
       return 0;
    }
@@ -1179,7 +1150,7 @@ static int read_CQ_str_attr_list(lListElem *ep, int nm, const char *buffer,
    lList *lp = NULL;
    
    if (!str_attr_list_parse_from_string(&lp, alp, buffer,
-                                          HOSTATTR_ALLOW_AMBIGUITY)) {
+                                          HOSTATTR_ALLOW_AMBIGUITY, NULL)) {
       lFreeList(&lp);
       return 0;
    }
@@ -1206,7 +1177,7 @@ static int read_CQ_qtlist_attr_list(lListElem *ep, int nm, const char *buffer,
    lList *lp = NULL;
    
    if (!qtlist_attr_list_parse_from_string(&lp, alp, buffer,
-                                          HOSTATTR_ALLOW_AMBIGUITY)) {
+                                          HOSTATTR_ALLOW_AMBIGUITY, NULL)) {
       lFreeList(&lp);
       return 0;
    }
@@ -1233,7 +1204,7 @@ static int read_CQ_strlist_attr_list(lListElem *ep, int nm, const char *buffer,
    lList *lp = NULL;
    
    if (!strlist_attr_list_parse_from_string(&lp, alp, buffer,
-                                          HOSTATTR_ALLOW_AMBIGUITY)) {
+                                          HOSTATTR_ALLOW_AMBIGUITY, NULL)) {
       lFreeList(&lp);
       return 0;
    }
@@ -1260,7 +1231,7 @@ static int read_CQ_bool_attr_list(lListElem *ep, int nm, const char *buffer,
    lList *lp = NULL;
    
    if (!bool_attr_list_parse_from_string(&lp, alp, buffer,
-                                          HOSTATTR_ALLOW_AMBIGUITY)) {
+                                          HOSTATTR_ALLOW_AMBIGUITY, NULL)) {
       lFreeList(&lp);
       return 0;
    }
@@ -1287,7 +1258,7 @@ static int read_CQ_usrlist_attr_list(lListElem *ep, int nm, const char *buffer,
    lList *lp = NULL;
    
    if (!usrlist_attr_list_parse_from_string(&lp, alp, buffer,
-                                          HOSTATTR_ALLOW_AMBIGUITY)) {
+                                          HOSTATTR_ALLOW_AMBIGUITY, NULL)) {
       lFreeList(&lp);
       return 0;
    }
@@ -1314,7 +1285,7 @@ static int read_CQ_solist_attr_list(lListElem *ep, int nm, const char *buffer,
    lList *lp = NULL;
    
    if (!solist_attr_list_parse_from_string(&lp, alp, buffer,
-                                          HOSTATTR_ALLOW_AMBIGUITY)) {
+                                          HOSTATTR_ALLOW_AMBIGUITY, NULL)) {
       lFreeList(&lp);
       return 0;
    }
@@ -1343,7 +1314,7 @@ static int read_CQ_prjlist_attr_list(lListElem *ep, int nm, const char *buffer,
    lList *lp = NULL;
    
    if (!prjlist_attr_list_parse_from_string(&lp, alp, buffer,
-                                          HOSTATTR_ALLOW_AMBIGUITY)) {
+                                          HOSTATTR_ALLOW_AMBIGUITY, NULL)) {
       lFreeList(&lp);
       return 0;
    }
@@ -1370,7 +1341,7 @@ static int read_CQ_time_attr_list(lListElem *ep, int nm, const char *buffer,
    lList *lp = NULL;
    
    if (!time_attr_list_parse_from_string(&lp, alp, buffer,
-                                          HOSTATTR_ALLOW_AMBIGUITY)) {
+                                          HOSTATTR_ALLOW_AMBIGUITY, NULL)) {
       lFreeList(&lp);
       return 0;
    }
@@ -1397,7 +1368,7 @@ static int read_CQ_mem_attr_list(lListElem *ep, int nm, const char *buffer,
    lList *lp = NULL;
    
    if (!mem_attr_list_parse_from_string(&lp, alp, buffer,
-                                          HOSTATTR_ALLOW_AMBIGUITY)) {
+                                          HOSTATTR_ALLOW_AMBIGUITY, NULL)) {
       lFreeList(&lp);
       return 0;
    }

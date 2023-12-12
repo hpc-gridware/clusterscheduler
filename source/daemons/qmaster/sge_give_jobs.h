@@ -60,8 +60,8 @@ typedef enum {
 } sge_commit_mode_t;
 
 int sge_give_job(sge_gdi_ctx_class_t *ctx,
-                 lListElem *jep, lListElem *jatep, lListElem *master_qep, 
-                 lListElem *pep, lListElem *hep, monitoring_t *monitor);
+                 lListElem *jep, lListElem *jatep, const lListElem *master_qep, 
+                 const lListElem *pep, lListElem *hep, monitoring_t *monitor);
 
 void sge_commit_job(sge_gdi_ctx_class_t *ctx,
                     lListElem *jep, lListElem *jatep, lListElem *jr, sge_commit_mode_t mode, 

@@ -38,7 +38,7 @@ int do_signal_queue(sge_gdi_ctx_class_t *ctx, struct_msg_t *aMsg, sge_pack_buffe
 
 int signal_job(u_long32 jobid, u_long32 jataskid, u_long32 signal);
 
-int sge_execd_deliver_signal(u_long32 sig, lListElem *jep, lListElem *jatep);
+int sge_execd_deliver_signal(u_long32 sig, const lListElem *jep, lListElem *jatep);
 
 
 int sge_kill(int pid, u_long32 sge_signal, u_long32 jobid, u_long32 jataskid, 

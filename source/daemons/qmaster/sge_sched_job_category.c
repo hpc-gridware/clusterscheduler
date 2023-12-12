@@ -144,7 +144,7 @@ void sge_print_categories(void)
 /*                                                                         */
 /* SG: TODO: split this into seperate functions                            */
 /*-------------------------------------------------------------------------*/
-int sge_add_job_category(lListElem *job, lList *acl_list, const lList *prj_list, const lList *rqs_list)
+int sge_add_job_category(lListElem *job, const lList *acl_list, const lList *prj_list, const lList *rqs_list)
 {
 
    lListElem *cat = NULL;
@@ -398,7 +398,7 @@ void sge_set_job_category_message_added(lRef cat)
 /*-------------------------------------------------------------------------*/
 /* rebuild the category references                                         */
 /*-------------------------------------------------------------------------*/
-int sge_rebuild_job_category(lList *job_list, lList *acl_list, const lList *prj_list, const lList *rqs_list)
+int sge_rebuild_job_category(const lList *job_list, const lList *acl_list, const lList *prj_list, const lList *rqs_list)
 {
    lListElem *job;
 

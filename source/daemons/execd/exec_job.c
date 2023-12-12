@@ -232,20 +232,20 @@ static long get_next_addgrpid(lList *rlp, long last_addgrpid)
 
 static int addgrpid_already_in_use(long add_grp_id) 
 {
-   lListElem *job = NULL;
-   lListElem *ja_task = NULL;
-   lListElem *pe_task = NULL;
+   const lListElem *job = NULL;
+   const lListElem *ja_task = NULL;
+   const lListElem *pe_task = NULL;
    
-   for_each(job, *(object_type_get_master_list(SGE_TYPE_JOB))) {
+   for_each (job, *object_type_get_master_list(SGE_TYPE_JOB)) {
       for_each (ja_task, lGetList(job, JB_ja_tasks)) {
          const char *id = lGetString(ja_task, JAT_osjobid);
          if (id != NULL && atol(id) == add_grp_id) {
             return 1;
          }
 
-         for_each(pe_task, lGetList(ja_task, JAT_task_list)) {
+         for_each (pe_task, lGetList(ja_task, JAT_task_list)) {
             id = lGetString(pe_task, PET_osjobid);
-            if(id != NULL && atol(id) == add_grp_id) {
+            if (id != NULL && atol(id) == add_grp_id) {
                return 1;
             }
          }

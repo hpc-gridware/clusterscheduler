@@ -38,7 +38,7 @@ void sge_set_flush_jr_flag(bool value);
 bool sge_get_flush_jr_flag(void);
 void flush_job_report(lListElem *jr);
 
-lListElem *add_job_report(u_long32 jobid, u_long32 jataskid, const char *petaskid, lListElem *jep);
+lListElem *add_job_report(u_long32 jobid, u_long32 jataskid, const char *petaskid, const lListElem *jep);
 lListElem *get_job_report(u_long32 jobid, u_long32 jataskid, const char *petaskid);
 
 void del_job_report(lListElem *jr);

@@ -388,7 +388,7 @@ is_not_better(sge_assignment_t *a, u_long32 viola_best, u_long32 tt_best, u_long
 *     MT-NOTE: sge_select_parallel_environment() is not MT safe 
 *******************************************************************************/
 dispatch_t
-sge_select_parallel_environment(sge_assignment_t *best, lList *pe_list) 
+sge_select_parallel_environment(sge_assignment_t *best, const lList *pe_list) 
 {
    int matched_pe_count = 0;
    lListElem *pe, *queue;
@@ -2440,7 +2440,7 @@ bool monitor_next_run,
 lList **unloaded,               /* QU_Type */
 lList **overloaded,             /* QU_Type */
 lList *exechost_list,           /* EH_Type */
-lList *centry_list,             /* CE_Type */
+const lList *centry_list,             /* CE_Type */
 const lList *load_adjustments,  /* CE_Type */
 lList *granted,                 /* JG_Type */
 bool  is_consumable_load_alarm, /* is true, when the consumable evaluation 
@@ -3052,7 +3052,7 @@ dispatch_t cqueue_match_static(const char *cqname, sge_assignment_t *a)
       }
    }
 
-   cq = lGetElemStr(*(object_type_get_master_list(SGE_TYPE_CQUEUE)), CQ_name, cqname);
+   cq = lGetElemStr(*object_type_get_master_list(SGE_TYPE_CQUEUE), CQ_name, cqname);
 
    /* detect if entire cluster queue ruled out due to -l */
    if ((hard_resource_list = lGetList(a->job, JB_hard_resource_list))) {
