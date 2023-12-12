@@ -60,7 +60,7 @@
 
 #include "sge_complex_schedd.h"
 #include "sge_resource_utilization.h"
-#include "sge_resource_utilization_RUE_L.h"
+#include "sgeobj/cull/sge_resource_utilization_RUE_L.h"
 #include "sge_sched.h"
 #include "msg_common.h"
 #include "msg_schedd.h"

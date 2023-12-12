@@ -37,7 +37,7 @@
 
 #include "cull/cull.h"
 
-#include "sgeobj/sge_mesobj_QIM_L.h"
+#include "sgeobj/cull/sge_mesobj_QIM_L.h"
 
 bool
 object_message_add(lListElem *this_elem, int name, 

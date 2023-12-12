@@ -53,8 +53,8 @@
 #include "sgeobj/sge_centry.h"
 #include "sgeobj/sge_range.h"
 #include "sgeobj/sge_str.h"
-#include "sgeobj/sge_parse_SPA_L.h"
-#include "sgeobj/sge_resource_utilization_RUE_L.h"
+#include "sgeobj/cull/sge_parse_SPA_L.h"
+#include "sgeobj/cull/sge_resource_utilization_RUE_L.h"
 
 static int fprint_name_value_list(FILE *fp, char *name, lList *thresholds, int print_slots,
      int nm_name, int nm_strval, int nm_doubleval);

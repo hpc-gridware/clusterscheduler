@@ -114,7 +114,8 @@ SGEOBJLIB_TEST_PROGS = \
               test_sge_utility \
               test_sge_resource_quota \
               test_eval_expression \
-              dump_cull_schema
+              dump_cull_schema \
+              gen_types_from_json
 
 SGEOBJLIB_TEST_PROGS_OBJS = \
               test_sge_object.o \
@@ -123,7 +124,8 @@ SGEOBJLIB_TEST_PROGS_OBJS = \
               test_sge_utility.o \
               test_sge_resource_quota.o\
               test_eval_expression.o \
-              dump_cull_schema.o
+              dump_cull_schema.o \
+              gen_types_from_json.o
 
 ###############################################################################
 # global rules: all, clean, depend, messages
@@ -406,3 +408,11 @@ dump_cull_schema.o: $(SGEOBJLIB_DIR)/dump_cull_schema.c
 dump_cull_schema: dump_cull_schema.o $(SGEOBJLIB) $(SGEOBJDLIB) $(CULLLIB) $(COMMLIB) $(COMMLISTSLIB) $(UTILIB)  $(CJSONLIB_STATIC)
 	$(LD_WRAPPER) $(CC) $(CFLAGS) -o dump_cull_schema $(LFLAGS) dump_cull_schema.o $(SGEOBJLIB) $(SGEOBJDLIB) \
 		           $(CULLLIB) $(UTILIB) $(COMMLIB) $(COMMLISTSLIB) $(DLLIB) $(SECLIB) $(CJSONLIB_STATIC) $(LIBS)
+
+gen_types_from_json.o: $(SGEOBJLIB_DIR)/gen_types_from_json.c
+	$(CC) $(CFLAGS) -c $(SGEOBJLIB_DIR)/gen_types_from_json.c
+
+gen_types_from_json: gen_types_from_json.o $(SGEOBJLIB) $(SGEOBJDLIB) $(CULLLIB) $(COMMLIB) $(COMMLISTSLIB) $(UTILIB)  $(CJSONLIB_STATIC)
+	$(LD_WRAPPER) $(CC) $(CFLAGS) -o gen_types_from_json $(LFLAGS) gen_types_from_json.o $(SGEOBJLIB) $(SGEOBJDLIB) \
+		           $(CULLLIB) $(UTILIB) $(COMMLIB) $(COMMLISTSLIB) $(DLLIB) $(SECLIB) $(CJSONLIB_STATIC) $(LIBS)
+

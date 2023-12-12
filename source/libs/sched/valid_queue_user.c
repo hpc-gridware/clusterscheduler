@@ -44,7 +44,7 @@
 #include "sgeobj/sge_userset.h"
 #include "sgeobj/sge_advance_reservation.h"
 #include "sgeobj/sge_hgroup.h"
-#include "sgeobj/sge_all_listsL.h"
+#include "sgeobj/cull/sge_all_listsL.h"
 
 #include "valid_queue_user.h"
 #include "msg_qmaster.h"

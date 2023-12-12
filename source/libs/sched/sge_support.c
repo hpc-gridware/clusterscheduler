@@ -61,7 +61,7 @@
 #include "sgeee.h"
 #include "sge_support.h"
 #include "valid_queue_user.h"
-#include "sge_eejob_SGEJ_L.h"
+#include "sgeobj/cull/sge_eejob_SGEJ_L.h"
 
 static const long sge_usage_interval = SGE_USAGE_INTERVAL;
 

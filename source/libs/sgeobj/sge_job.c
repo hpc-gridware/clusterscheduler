@@ -66,7 +66,7 @@
 #include "sgeobj/sge_centry.h"
 #include "sgeobj/sge_qinstance.h"
 #include "sgeobj/sge_host.h"
-#include "sgeobj/sge_mesobj_QIM_L.h"
+#include "sgeobj/sge_mesobj.h"
 #include "sgeobj/sge_advance_reservation.h"
 #include "sgeobj/sge_userset.h"
 #include "sgeobj/sge_qref.h"

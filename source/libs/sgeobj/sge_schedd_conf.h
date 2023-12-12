@@ -35,9 +35,8 @@
 
 #include "cull/cull.h"
 
-#include "sgeobj/sge_boundaries.h"
-#include "sgeobj/sge_schedd_conf_PARA_L.h"
-#include "sgeobj/sge_schedd_conf_SC_L.h"
+#include "sgeobj/cull/sge_schedd_conf_PARA_L.h"
+#include "sgeobj/cull/sge_schedd_conf_SC_L.h"
 
 #ifdef  __cplusplus
 extern "C" {

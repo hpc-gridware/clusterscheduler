@@ -34,7 +34,7 @@
 
 #include "uti/sge_dstring.h"
 
-#include "sgeobj/sge_path_alias_PA_L.h"
+#include "sgeobj/cull/sge_path_alias_PA_L.h"
 
 #define PATH_ALIAS_COMMON_FILE    "common/sge_aliases"
 #define PATH_ALIAS_HOME_FILE      ".sge_aliases"

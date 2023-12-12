@@ -3,9 +3,8 @@
 output=$1
 
 echo "/* auto generated file */"             > $output
-echo "#include \"cull.h\""                   >>$output
-echo "#include \"sge_all_listsL.h\""         >>$output
-#echo "#include \"sge_object.h\""             >>$output
+echo "#include \"cull/cull.h\""              >>$output
+echo "#include \"sgeobj/cull/sge_all_listsL.h\"" >>$output
 echo ""                                      >>$output
 echo "const lDescr *"                        >>$output
 echo "object_get_subtype(int nm)"            >>$output

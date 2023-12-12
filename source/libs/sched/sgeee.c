@@ -66,8 +66,8 @@
 #include "sgeobj/sge_userset.h"
 #include "sgeobj/sge_pe_task.h"
 
-#include "sge_eejob_FCAT_L.h"
-#include "sge_eejob_SGEJ_L.h"
+#include "sgeobj/cull/sge_eejob_FCAT_L.h"
+#include "sgeobj/cull/sge_eejob_SGEJ_L.h"
 #include "sge.h"
 #include "sge_job_schedd.h"
 #include "sge_urgency.h"

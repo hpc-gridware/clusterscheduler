@@ -47,7 +47,7 @@
 #include "sgeobj/sge_object.h"
 #include "sgeobj/sge_subordinate.h"
 #include "sgeobj/sge_qref.h"
-#include "sgeobj/sge_ja_task_JAT_L.h"
+#include "sgeobj/sge_ja_task.h"
 
 #include "sched/sge_sched.h"
 

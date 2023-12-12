@@ -32,7 +32,7 @@
  ************************************************************************/
 /*___INFO__MARK_END__*/
 
-#include "sgeobj/sge_boundaries.h"
+#include "sgeobj/cull/sge_boundaries.h"
 
 #include "cull/cull.h"
 

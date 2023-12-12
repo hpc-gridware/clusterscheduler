@@ -54,7 +54,7 @@
 #include "sgeobj/sge_href.h"
 #include "sgeobj/sge_host.h"
 #include "sgeobj/sge_cqueue.h"
-#include "sgeobj/sge_resource_utilization_RUE_L.h"
+#include "sgeobj/cull/sge_resource_utilization_RUE_L.h"
 #include "sgeobj/msg_sgeobjlib.h"
 
 #include "sge.h"

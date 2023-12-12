@@ -38,7 +38,7 @@
 #include "uti/sge_log.h"
 #include "uti/sge_string.h"
 
-#include "sgeobj/sge_resource_utilization_RUE_L.h"
+#include "sgeobj/cull/sge_resource_utilization_RUE_L.h"
 #include "sgeobj/sge_answer.h"
 #include "sgeobj/sge_attr.h"
 #include "sgeobj/sge_calendar.h"

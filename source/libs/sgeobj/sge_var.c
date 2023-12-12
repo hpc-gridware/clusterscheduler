@@ -32,6 +32,12 @@
  ************************************************************************/
 /*___INFO__MARK_END__*/
 
+/** @file libs/sgeobj/sge_var.c
+ * @brief Functions handline variable lists
+ * This file contains functions handling variable lists (VA_Type).
+ * Blah blah blah.
+ */
+
 #include <stdio.h>
 #include <string.h>
 

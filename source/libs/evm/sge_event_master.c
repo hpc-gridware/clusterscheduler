@@ -61,7 +61,7 @@
 #include "sgeobj/sge_feature.h"
 #include "sgeobj/sge_host.h"
 #include "sgeobj/sge_event.h"
-#include "sgeobj/sge_all_listsL.h"
+#include "sgeobj/cull/sge_all_listsL.h"
 #include "sgeobj/sge_conf.h"
 #include "sgeobj/sge_answer.h"
 #include "sgeobj/sge_qinstance.h"
@@ -80,7 +80,7 @@
 #include "sgeobj/sge_object.h"
 #include "sgeobj/sge_range.h"
 #include "sgeobj/sge_schedd_conf.h"
-#include "sgeobj/sge_event_request_EVR_L.h"
+#include "sgeobj/cull/sge_event_request_EVR_L.h"
 #include "sgeobj/msg_sgeobjlib.h"
 
 #include "configuration_qmaster.h"   /* TODO: bad dependency!! */

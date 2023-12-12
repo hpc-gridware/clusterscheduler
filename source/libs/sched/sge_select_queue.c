@@ -91,16 +91,11 @@
 #include "sge_pqs_api.h"
 #endif
 
-#include "sge_resource_utilization_RUE_L.h"
-#include "sge_select_queue_LDR_L.h"
-#include "sge_select_queue_QRL_L.h"
-#include "sge_ct_SCT_L.h"
-#include "sge_ct_REF_L.h"
-#include "sge_ct_CT_L.h"
-#include "sge_ct_CCT_L.h"
-#include "sge_ct_CTI_L.h"
-#include "sge_message_SME_L.h"
-#include "sge_message_MES_L.h"
+#include "sgeobj/cull/sge_resource_utilization_RUE_L.h"
+#include "sgeobj/cull/sge_select_queue_LDR_L.h"
+#include "sgeobj/cull/sge_select_queue_QRL_L.h"
+#include "sgeobj/cull/sge_message_SME_L.h"
+#include "sgeobj/cull/sge_message_MES_L.h"
 #ifdef SGE_PQS_API
 #include "sge_varL.h"
 #endif

@@ -34,10 +34,10 @@
 
 #include "cull/cull.h"
 
-#include "sgeobj/sge_report_REP_L.h"
-#include "sgeobj/sge_report_JR_L.h"
-#include "sgeobj/sge_report_LIC_L.h"
-#include "sgeobj/sge_report_LR_L.h"
+#include "sgeobj/cull/sge_report_REP_L.h"
+#include "sgeobj/cull/sge_report_JR_L.h"
+#include "sgeobj/cull/sge_report_LIC_L.h"
+#include "sgeobj/cull/sge_report_LR_L.h"
 
 /* 
  * ** valid values for REP_type 

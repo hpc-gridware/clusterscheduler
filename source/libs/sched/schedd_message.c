@@ -37,18 +37,14 @@
 
 #include "cull/cull.h"
 
+#include "sgeobj/sge_centry.h"
 #include "sgeobj/sge_ulong.h"
 #include "sgeobj/sge_range.h"
 #include "sgeobj/sge_job.h"
 #include "sgeobj/sge_schedd_conf.h"
 
-#include "sge_message_SME_L.h"
-#include "sge_message_MES_L.h"
-#include "sge_ct_SCT_L.h"
-#include "sge_ct_REF_L.h"
-#include "sge_ct_CT_L.h"
-#include "sge_ct_CCT_L.h"
-#include "sge_ct_CTI_L.h"
+#include "sgeobj/cull/sge_message_SME_L.h"
+#include "sgeobj/cull/sge_message_MES_L.h"
 
 #include "schedd_message.h"
 #include "schedd_monitor.h"

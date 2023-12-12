@@ -49,12 +49,6 @@
 #include "sgeobj/sge_pe.h"
 #include "sgeobj/sge_host.h"
 
-#include "sge_ct_SCT_L.h"
-#include "sge_ct_REF_L.h"
-#include "sge_ct_CT_L.h"
-#include "sge_ct_CCT_L.h"
-#include "sge_ct_CTI_L.h"
-
 #include "sge_complex_schedd.h"
 #include "sge_select_queue.h"
 #include "sge_resource_quota_schedd.h"

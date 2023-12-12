@@ -43,11 +43,10 @@
 #include "uti/sge_string.h"
 #include "uti/sge_log.h"
 
-#include "sgeobj/sge_all_listsL.h"
+#include "sgeobj/cull/sge_all_listsL.h"
 #include "sgeobj/cull_parse_util.h"
 #include "sgeobj/sge_mailrec.h"
 #include "sgeobj/parse.h"
-#include "sgeobj/sge_parse_SPA_L.h"
 #include "sgeobj/sge_range.h"
 #include "sgeobj/sge_ckpt.h"
 #include "sgeobj/sge_ulong.h"

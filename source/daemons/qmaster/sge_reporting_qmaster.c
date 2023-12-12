@@ -68,7 +68,7 @@
 #include "sgeobj/sge_userprj.h"
 #include "sgeobj/sge_userset.h"
 #include "sgeobj/sge_cqueue.h"
-#include "sgeobj/sge_resource_utilization_RUE_L.h"
+#include "sgeobj/cull/sge_resource_utilization_RUE_L.h"
 
 #include "sched/sge_resource_utilization.h"
 #include "sched/sge_sharetree_printing.h"

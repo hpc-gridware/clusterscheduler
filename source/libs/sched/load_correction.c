@@ -43,7 +43,7 @@
 #include "sgeobj/sge_qinstance.h"
 #include "sgeobj/sge_job.h"
 #include "sgeobj/sge_ja_task.h"
-#include "sgeobj/sge_resource_utilization_RUE_L.h"
+#include "sgeobj/cull/sge_resource_utilization_RUE_L.h"
 
 #include "schedd_monitor.h"
 #include "load_correction.h"

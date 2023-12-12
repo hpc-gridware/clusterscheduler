@@ -52,7 +52,7 @@
 #include "uti/sge_binding_hlp.h"
 
 #include "sgeobj/sge_object.h"
-#include "sgeobj/sge_binding_BN_L.h"
+#include "sgeobj/cull/sge_binding_BN_L.h"
 
 #include "err_trace.h"
 

@@ -1352,7 +1352,7 @@ case LINUXSPARC64:
       # LIBRARY_LIBS is used for linking shared libs
       # we may not link shared libs against a memory allocator, copy LIBS before adding jemalloc
       set LIBRARY_LIBS = "$LIBS"
-      set LIBS = "$LIBS -L$JEMALLOC_HOME/lib -Wl,-Bstatic -ljemalloc_pic -Wl,-Bdynamic -lpthread $DLLIB"
+      set LIBS = "$LIBS -L$JEMALLOC_HOME/lib -Wl,-Bstatic -ljemalloc_pic -Wl,-Bdynamic -lpthread $DLLIB -lm"
    endif
 
    breaksw

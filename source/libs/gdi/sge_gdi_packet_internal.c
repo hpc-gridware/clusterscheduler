@@ -53,7 +53,7 @@
 #include "gdi/msg_gdilib.h"
 
 #include "sgeobj/sge_answer.h"
-#include "sgeobj/sge_multi_MA_L.h"
+#include "sgeobj/cull/sge_multi_MA_L.h"
 #include "sgeobj/sge_jsv.h"
 
 #include "msg_common.h"

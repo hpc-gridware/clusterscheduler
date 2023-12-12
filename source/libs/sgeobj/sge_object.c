@@ -49,7 +49,7 @@
 
 #include "gdi/sge_gdi.h"
 
-#include "sgeobj/sge_all_listsL.h"
+#include "sgeobj/cull/sge_all_listsL.h"
 #include "sgeobj/sge_pe.h"
 #include "sgeobj/sge_qinstance_type.h"
 #include "sgeobj/sge_schedd_conf.h"

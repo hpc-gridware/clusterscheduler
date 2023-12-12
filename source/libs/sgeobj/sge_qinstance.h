@@ -36,7 +36,7 @@
 /*___INFO__MARK_END__*/
 
 #include "uti/sge_dstring.h"
-#include "sgeobj/sge_qinstance_QU_L.h"
+#include "sgeobj/cull/sge_qinstance_QU_L.h"
 
 /* 
  * Q types values for QU_qtype 

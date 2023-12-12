@@ -36,10 +36,10 @@
 
 #include "uti/sge_htable.h"
 
-#include "sgeobj/sge_cull_xml_XMLA_L.h"
-#include "sgeobj/sge_cull_xml_XMLS_L.h"
-#include "sgeobj/sge_cull_xml_XMLH_L.h"
-#include "sgeobj/sge_cull_xml_XMLE_L.h"
+#include "sgeobj/cull/sge_cull_xml_XMLA_L.h"
+#include "sgeobj/cull/sge_cull_xml_XMLS_L.h"
+#include "sgeobj/cull/sge_cull_xml_XMLH_L.h"
+#include "sgeobj/cull/sge_cull_xml_XMLE_L.h"
 
 #include "basis_types.h"
 

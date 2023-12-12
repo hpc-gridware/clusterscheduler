@@ -50,8 +50,8 @@
 #include "sge_qeti.h"
 #include "sge_resource_utilization.h"
 #include "sge_select_queue.h"
-#include "sge_resource_utilization_RDE_L.h"
-#include "sge_resource_utilization_RUE_L.h"
+#include "sgeobj/cull/sge_resource_utilization_RDE_L.h"
+#include "sgeobj/cull/sge_resource_utilization_RUE_L.h"
 
 /* At that point in time we only keep references to in the iterator that
  * allow for efficiently iterating trough relevant queue end times in 

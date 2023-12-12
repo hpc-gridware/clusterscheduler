@@ -49,12 +49,7 @@
 #include "sgeobj/sge_range.h"
 #include "sgeobj/sge_pe.h"
 
-#include "sge_ct_SCT_L.h"
-#include "sge_ct_REF_L.h"
-#include "sge_ct_CT_L.h"
-#include "sge_ct_CCT_L.h"
-#include "sge_ct_CTI_L.h"
-#include "sge_eejob_SGEJ_L.h"
+#include "sgeobj/cull/sge_eejob_SGEJ_L.h"
 
 #include "sge_urgency.h"
 #include "sge_sched_process_events.h"

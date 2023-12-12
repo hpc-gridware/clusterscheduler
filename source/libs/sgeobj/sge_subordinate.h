@@ -34,7 +34,7 @@
 /*___INFO__MARK_END__*/
 
 #include "uti/sge_dstring.h"
-#include "sgeobj/sge_subordinate_SO_L.h"
+#include "sgeobj/cull/sge_subordinate_SO_L.h"
 
 /* SO_action defines */
 #define SO_ACTION_SR 0x00000001

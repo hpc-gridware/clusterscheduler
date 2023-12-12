@@ -51,7 +51,7 @@
 #include "sgeobj/sge_centry.h"
 #include "sgeobj/sge_cqueue.h"
 #include "sgeobj/sge_schedd_conf.h"
-#include "sgeobj/sge_resource_utilization_RUE_L.h"
+#include "sgeobj/cull/sge_resource_utilization_RUE_L.h"
 
 #include "sched/sge_select_queue.h"
 #include "sched/valid_queue_user.h"

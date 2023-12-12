@@ -56,7 +56,7 @@
 
 #include "sgeobj/sge_answer.h"
 #include "sgeobj/sge_feature.h"
-#include "sgeobj/sge_multi_MA_L.h"
+#include "sgeobj/cull/sge_multi_MA_L.h"
 
 #include "gdi/sge_gdi2.h"
 #include "gdi/sge_gdiP.h"

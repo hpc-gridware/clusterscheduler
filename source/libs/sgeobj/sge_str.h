@@ -34,8 +34,8 @@
 
 #include "cull/cull.h"
 
-#include "sgeobj/sge_str_ST_L.h"
-#include "sgeobj/sge_str_STU_L.h"
+#include "sgeobj/cull/sge_str_ST_L.h"
+#include "sgeobj/cull/sge_str_STU_L.h"
 
 const char *
 str_list_append_to_dstring(const lList *this_list, dstring *string,

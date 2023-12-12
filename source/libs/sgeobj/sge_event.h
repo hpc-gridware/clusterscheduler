@@ -35,9 +35,9 @@
 #include "cull/cull_list.h"
 #include "uti/sge_dstring.h"
 
-#include "sgeobj/sge_event_EV_L.h"
-#include "sgeobj/sge_event_EVS_L.h"
-#include "sgeobj/sge_event_ET_L.h"
+#include "sgeobj/cull/sge_event_EV_L.h"
+#include "sgeobj/cull/sge_event_EVS_L.h"
+#include "sgeobj/cull/sge_event_ET_L.h"
 
 /* event master request types */
 typedef enum {

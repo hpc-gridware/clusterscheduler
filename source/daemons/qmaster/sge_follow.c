@@ -52,7 +52,7 @@
 #include "sgeobj/sge_usage.h"
 #include "sgeobj/sge_schedd_conf.h"
 #include "sgeobj/sge_host.h"
-#include "sgeobj/sge_message_SME_L.h"
+#include "sgeobj/cull/sge_message_SME_L.h"
 #include "sgeobj/sge_range.h"
 #include "sgeobj/sge_job.h"
 #include "sgeobj/sge_answer.h"

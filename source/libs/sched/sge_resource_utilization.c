@@ -61,8 +61,8 @@
 #include "debit.h"
 #include "sge_job_schedd.h"
 
-#include "sge_resource_utilization_RUE_L.h"
-#include "sge_resource_utilization_RDE_L.h"
+#include "sgeobj/cull/sge_resource_utilization_RUE_L.h"
+#include "sgeobj/cull/sge_resource_utilization_RDE_L.h"
 
 #include "msg_common.h"
 #include "msg_qmaster.h"

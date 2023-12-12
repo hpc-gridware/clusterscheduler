@@ -73,8 +73,8 @@
 #include "sgeobj/sge_ulong.h"
 #include "sgeobj/sge_qref.h"
 #include "sgeobj/sge_pe.h"
-#include "sgeobj/sge_resource_utilization_RUE_L.h"
-#include "sgeobj/sge_resource_utilization_RDE_L.h"
+#include "sgeobj/cull/sge_resource_utilization_RUE_L.h"
+#include "sgeobj/cull/sge_resource_utilization_RDE_L.h"
 
 #include "sched/sge_resource_utilization.h"
 #include "sched/sge_select_queue.h"

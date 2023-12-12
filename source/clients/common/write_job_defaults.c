@@ -235,7 +235,7 @@ FCLOSE_ERROR:
 
 
 #ifdef TEST
-#include "sgeobj/sge_all_listsL.h"
+#include "sgeobj/cull/sge_all_listsL.h"
 
 int main(
 int argc,
@@ -320,7 +320,7 @@ char **envp
 #endif
 
 #ifdef TEST
-#include "sgeobj/sge_all_listsL.h"
+#include "sgeobj/cull/sge_all_listsL.h"
 int main(int argc, char **argv, char **envp);
 
 int main(
