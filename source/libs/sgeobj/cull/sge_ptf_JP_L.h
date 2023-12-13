@@ -1,6 +1,5 @@
-#ifndef __SGE_PTF_JP_L_H
-#define __SGE_PTF_JP_L_H
-
+#ifndef SGE_JP_L_H
+#define SGE_JP_L_H
 /*___INFO__MARK_BEGIN__*/
 /*************************************************************************
  * 
@@ -33,40 +32,45 @@
  ************************************************************************/
 /*___INFO__MARK_END__*/
 
+#include "cull/cull.h"
 #include "sgeobj/cull/sge_boundaries.h"
 
-#include "cull/cull.h"
-
-#ifdef  __cplusplus
+#ifdef __cplusplus
 extern "C" {
 #endif
 
-/* *INDENT-OFF* */ 
+/**
+* @brief @todo add summary
+*
+* @todo add description
+*
+*    SGE_ULONG(JP_pid) - @todo add summary
+*    @todo add description
+*
+*    SGE_ULONG(JP_background) - @todo add summary
+*    @todo add description
+*
+*/
 
-/*
- * This is the list type we use to hold the process ID
- * list for jobs in the PTF O.S. job list
- */
 enum {
    JP_pid = JP_LOWERBOUND,
    JP_background
 };
 
 LISTDEF(JP_Type)
-   SGE_ULONG(JP_pid, CULL_HASH | CULL_UNIQUE)          /* process ID */
-   SGE_ULONG(JP_background, CULL_DEFAULT)   /* background flag */
-LISTEND 
+   SGE_ULONG(JP_pid, CULL_UNIQUE | CULL_HASH)
+   SGE_ULONG(JP_background, CULL_DEFAULT)
+LISTEND
 
 NAMEDEF(JPN)
    NAME("JP_pid")
    NAME("JP_background")
 NAMEEND
 
-#define JPS sizeof(JPN)/sizeof(char*)
+#define JP_SIZE sizeof(JPN)/sizeof(char *)
 
-/* *INDENT-ON* */ 
-
-#ifdef  __cplusplus
+#ifdef __cplusplus
 }
 #endif
-#endif                          /* __SGE_PTFL_H */
+
+#endif

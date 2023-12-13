@@ -33,6 +33,7 @@
 /*___INFO__MARK_END__*/       
 
 #include "sgeobj/cull/sge_proc_PRO_L.h"
+#include "sgeobj/cull/sge_proc_GR_L.h"
 
 lListElem *get_pr (int pid);
 void append_pr (lListElem *pr);

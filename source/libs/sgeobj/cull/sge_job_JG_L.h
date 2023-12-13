@@ -1,5 +1,5 @@
-#ifndef __SGE_JOB_JG_L_H
-#define __SGE_JOB_JG_L_H
+#ifndef SGE_JG_L_H
+#define SGE_JG_L_H
 /*___INFO__MARK_BEGIN__*/
 /*************************************************************************
  * 
@@ -33,17 +33,59 @@
 /*___INFO__MARK_END__*/
 
 #include "cull/cull.h"
-
 #include "sgeobj/cull/sge_boundaries.h"
 
-#ifdef  __cplusplus
+#ifdef __cplusplus
 extern "C" {
 #endif
 
-/* ---------------------------------------- 
-
-   granted destination identifiers 
-
+/**
+* @brief @todo add summary
+*
+* @todo add description
+*
+*    SGE_STRING(JG_qname) - @todo add summary
+*    @todo add description
+*
+*    SGE_ULONG(JG_qversion) - @todo add summary
+*    @todo add description
+*
+*    SGE_HOST(JG_qhostname) - @todo add summary
+*    @todo add description
+*
+*    SGE_ULONG(JG_slots) - @todo add summary
+*    @todo add description
+*
+*    SGE_OBJECT(JG_queue) - @todo add summary
+*    @todo add description
+*
+*    SGE_ULONG(JG_tag_slave_job) - @todo add summary
+*    @todo add description
+*
+*    SGE_ULONG(JG_task_id_range) - @todo add summary
+*    @todo add description
+*
+*    SGE_DOUBLE(JG_ticket) - @todo add summary
+*    @todo add description
+*
+*    SGE_DOUBLE(JG_oticket) - @todo add summary
+*    @todo add description
+*
+*    SGE_DOUBLE(JG_fticket) - @todo add summary
+*    @todo add description
+*
+*    SGE_DOUBLE(JG_sticket) - @todo add summary
+*    @todo add description
+*
+*    SGE_DOUBLE(JG_jcoticket) - @todo add summary
+*    @todo add description
+*
+*    SGE_DOUBLE(JG_jcfticket) - @todo add summary
+*    @todo add description
+*
+*    SGE_STRING(JG_processors) - @todo add summary
+*    @todo add description
+*
 */
 
 enum {
@@ -64,46 +106,43 @@ enum {
 };
 
 LISTDEF(JG_Type)
-   SGE_STRING(JG_qname, CULL_PRIMARY_KEY | CULL_HASH | CULL_UNIQUE | CULL_DEFAULT | CULL_SUBLIST)    /* the queue instance name                           */
-   SGE_ULONG(JG_qversion, CULL_DEFAULT | CULL_JGDI_HIDDEN)  /* it's version                               */
-   SGE_HOST(JG_qhostname, CULL_DEFAULT | CULL_HASH | CULL_SUBLIST)/* redundant qualified host name for caching  */
-   SGE_ULONG(JG_slots, CULL_DEFAULT | CULL_SUBLIST)     /* from orders list                           */
-   SGE_OBJECT(JG_queue, QU_Type, CULL_DEFAULT | CULL_JGDI_HIDDEN | CULL_JGDI_RO) /* QU_Type - complete queue only in execd */
-   SGE_ULONG(JG_tag_slave_job, CULL_DEFAULT | CULL_JGDI_HIDDEN) /* whether slave execds job has arrived in 
-                                 * case of pe's with sge controlled slaves */
-   SGE_ULONG(JG_task_id_range, CULL_DEFAULT | CULL_JGDI_HIDDEN) /* unused - please recycle */
-   SGE_DOUBLE(JG_ticket, CULL_DEFAULT | CULL_JGDI_HIDDEN)    /* SGEEE tickets assigned to slots              */
-   SGE_DOUBLE(JG_oticket, CULL_DEFAULT | CULL_JGDI_HIDDEN)   /* SGEEE override tickets assigned to slots     */
-   SGE_DOUBLE(JG_fticket, CULL_DEFAULT | CULL_JGDI_HIDDEN)   /* SGEEE functional tickets assigned to slots   */
-   SGE_DOUBLE(JG_sticket, CULL_DEFAULT | CULL_JGDI_HIDDEN)   /* SGEEE sharetree tickets assigned to slots    */
-   SGE_DOUBLE(JG_jcoticket, CULL_DEFAULT | CULL_JGDI_HIDDEN) /* SGEEE job class override tickets             */
-   SGE_DOUBLE(JG_jcfticket, CULL_DEFAULT | CULL_JGDI_HIDDEN) /* SGEEE job class functional tickets           */
-   SGE_STRING(JG_processors, CULL_DEFAULT | CULL_JGDI_HIDDEN) /* processor sets */
+   SGE_STRING(JG_qname, CULL_PRIMARY_KEY | CULL_UNIQUE | CULL_HASH | CULL_SUBLIST)
+   SGE_ULONG(JG_qversion, CULL_DEFAULT)
+   SGE_HOST(JG_qhostname, CULL_HASH | CULL_SUBLIST)
+   SGE_ULONG(JG_slots, CULL_SUBLIST)
+   SGE_OBJECT(JG_queue, CULL_ANY_SUBTYPE, CULL_DEFAULT)
+   SGE_ULONG(JG_tag_slave_job, CULL_DEFAULT)
+   SGE_ULONG(JG_task_id_range, CULL_DEFAULT)
+   SGE_DOUBLE(JG_ticket, CULL_DEFAULT)
+   SGE_DOUBLE(JG_oticket, CULL_DEFAULT)
+   SGE_DOUBLE(JG_fticket, CULL_DEFAULT)
+   SGE_DOUBLE(JG_sticket, CULL_DEFAULT)
+   SGE_DOUBLE(JG_jcoticket, CULL_DEFAULT)
+   SGE_DOUBLE(JG_jcfticket, CULL_DEFAULT)
+   SGE_STRING(JG_processors, CULL_DEFAULT)
 LISTEND
 
-NAMEDEF( JGN )
-   NAME( "JG_qname" )
-   NAME( "JG_qversion" )
-   NAME( "JG_qhostname" )
-   NAME( "JG_slots" )
-   NAME( "JG_queue" )
-   NAME( "JG_tag_slave_job" )
-   NAME( "JG_task_id_range" )
-   NAME( "JG_ticket" )
-   NAME( "JG_oticket" )
-   NAME( "JG_fticket" )
-   NAME( "JG_sticket" )
-   NAME( "JG_jcoticket" )
-   NAME( "JG_jcfticket" )
-   NAME( "JG_processors" )
+NAMEDEF(JGN)
+   NAME("JG_qname")
+   NAME("JG_qversion")
+   NAME("JG_qhostname")
+   NAME("JG_slots")
+   NAME("JG_queue")
+   NAME("JG_tag_slave_job")
+   NAME("JG_task_id_range")
+   NAME("JG_ticket")
+   NAME("JG_oticket")
+   NAME("JG_fticket")
+   NAME("JG_sticket")
+   NAME("JG_jcoticket")
+   NAME("JG_jcfticket")
+   NAME("JG_processors")
 NAMEEND
 
-#define JGS sizeof(JGN)/sizeof(char*)
+#define JG_SIZE sizeof(JGN)/sizeof(char *)
 
-/* *INDENT-ON* */
-
-#ifdef  __cplusplus
+#ifdef __cplusplus
 }
 #endif
 
-#endif /* __SGE_JOBL_H */
+#endif

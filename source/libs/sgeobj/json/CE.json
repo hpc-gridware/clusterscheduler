@@ -1,0 +1,191 @@
+{
+	"className":	"CE",
+	"summary":	"@todo add summary",
+	"description":	[{
+			"line":	"@todo add description"
+		}],
+	"cullPrefix":	"CE",
+	"attributes":	[{
+			"name":	"name",
+			"summary":	"@todo add summary",
+			"description":	[{
+					"line":	"@todo add description"
+				}],
+			"type":	"lStringT",
+			"flags":	[{
+					"name":	"PRIMARY_KEY"
+				}, {
+					"name":	"UNIQUE"
+				}, {
+					"name":	"HASH"
+				}, {
+					"name":	"JGDI_CONF"
+				}, {
+					"name":	"SPOOL"
+				}, {
+					"name":	"SPOOL_SUBLIST"
+				}]
+		}, {
+			"name":	"shortcut",
+			"summary":	"@todo add summary",
+			"description":	[{
+					"line":	"@todo add description"
+				}],
+			"type":	"lStringT",
+			"flags":	[{
+					"name":	"UNIQUE"
+				}, {
+					"name":	"HASH"
+				}, {
+					"name":	"JGDI_CONF"
+				}, {
+					"name":	"SPOOL"
+				}]
+		}, {
+			"name":	"valtype",
+			"summary":	"@todo add summary",
+			"description":	[{
+					"line":	"@todo add description"
+				}],
+			"type":	"lUlongT",
+			"flags":	[{
+					"name":	"JGDI_CONF"
+				}, {
+					"name":	"SPOOL"
+				}]
+		}, {
+			"name":	"stringval",
+			"summary":	"@todo add summary",
+			"description":	[{
+					"line":	"@todo add description"
+				}],
+			"type":	"lStringT",
+			"flags":	[{
+					"name":	"JGDI_CONF"
+				}, {
+					"name":	"SPOOL"
+				}, {
+					"name":	"SPOOL_SUBLIST"
+				}]
+		}, {
+			"name":	"doubleval",
+			"summary":	"@todo add summary",
+			"description":	[{
+					"line":	"@todo add description"
+				}],
+			"type":	"lDoubleT",
+			"flags":	[{
+					"name":	"JGDI_HIDDEN"
+				}]
+		}, {
+			"name":	"relop",
+			"summary":	"@todo add summary",
+			"description":	[{
+					"line":	"@todo add description"
+				}],
+			"type":	"lUlongT",
+			"flags":	[{
+					"name":	"JGDI_CONF"
+				}, {
+					"name":	"SPOOL"
+				}]
+		}, {
+			"name":	"consumable",
+			"summary":	"@todo add summary",
+			"description":	[{
+					"line":	"@todo add description"
+				}],
+			"type":	"lUlongT",
+			"flags":	[{
+					"name":	"JGDI_CONF"
+				}, {
+					"name":	"SPOOL"
+				}]
+		}, {
+			"name":	"default",
+			"summary":	"@todo add summary",
+			"description":	[{
+					"line":	"@todo add description"
+				}],
+			"type":	"lStringT",
+			"flags":	[{
+					"name":	"JGDI_CONF"
+				}, {
+					"name":	"SPOOL"
+				}]
+		}, {
+			"name":	"dominant",
+			"summary":	"@todo add summary",
+			"description":	[{
+					"line":	"@todo add description"
+				}],
+			"type":	"lUlongT",
+			"flags":	[{
+					"name":	"JGDI_HIDDEN"
+				}]
+		}, {
+			"name":	"pj_stringval",
+			"summary":	"@todo add summary",
+			"description":	[{
+					"line":	"@todo add description"
+				}],
+			"type":	"lStringT",
+			"flags":	[{
+					"name":	"JGDI_HIDDEN"
+				}]
+		}, {
+			"name":	"pj_doubleval",
+			"summary":	"@todo add summary",
+			"description":	[{
+					"line":	"@todo add description"
+				}],
+			"type":	"lDoubleT",
+			"flags":	[{
+					"name":	"JGDI_HIDDEN"
+				}]
+		}, {
+			"name":	"pj_dominant",
+			"summary":	"@todo add summary",
+			"description":	[{
+					"line":	"@todo add description"
+				}],
+			"type":	"lUlongT",
+			"flags":	[{
+					"name":	"JGDI_HIDDEN"
+				}]
+		}, {
+			"name":	"requestable",
+			"summary":	"@todo add summary",
+			"description":	[{
+					"line":	"@todo add description"
+				}],
+			"type":	"lUlongT",
+			"flags":	[{
+					"name":	"JGDI_CONF"
+				}, {
+					"name":	"SPOOL"
+				}]
+		}, {
+			"name":	"tagged",
+			"summary":	"@todo add summary",
+			"description":	[{
+					"line":	"@todo add description"
+				}],
+			"type":	"lUlongT",
+			"flags":	[{
+					"name":	"JGDI_HIDDEN"
+				}]
+		}, {
+			"name":	"urgency_weight",
+			"summary":	"@todo add summary",
+			"description":	[{
+					"line":	"@todo add description"
+				}],
+			"type":	"lStringT",
+			"flags":	[{
+					"name":	"JGDI_CONF"
+				}, {
+					"name":	"SPOOL"
+				}]
+		}]
+}

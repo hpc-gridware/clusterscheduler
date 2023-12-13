@@ -1,6 +1,5 @@
-#ifndef __SGE_HOST_SH_L_H
-#define __SGE_HOST_SH_L_H
-
+#ifndef SGE_SH_L_H
+#define SGE_SH_L_H
 /*___INFO__MARK_BEGIN__*/
 /*************************************************************************
  * 
@@ -36,34 +35,36 @@
 #include "cull/cull.h"
 #include "sgeobj/cull/sge_boundaries.h"
 
-#ifdef  __cplusplus
+#ifdef __cplusplus
 extern "C" {
 #endif
 
-/* *INDENT-OFF* */
+/**
+* @brief @todo add summary
+*
+* @todo add description
+*
+*    SGE_HOST(SH_name) - @todo add summary
+*    @todo add description
+*
+*/
 
-/*
- * submit host
- */
 enum {
    SH_name = SH_LOWERBOUND
 };
 
 LISTDEF(SH_Type)
-   JGDI_ROOT_OBJ( SubmitHost, SGE_SH_LIST, ADD | DELETE | GET_LIST)
-   JGDI_EVENT_OBJ(ADD(sgeE_SUBMITHOST_ADD) | MODIFY(sgeE_SUBMITHOST_MOD) | DELETE(sgeE_SUBMITHOST_DEL) | GET_LIST(sgeE_SUBMITHOST_LIST))
-   SGE_HOST(SH_name, CULL_PRIMARY_KEY | CULL_HASH | CULL_UNIQUE | CULL_SPOOL | CULL_JGDI_CONF)
-LISTEND 
+   SGE_HOST(SH_name, CULL_PRIMARY_KEY | CULL_UNIQUE | CULL_HASH | CULL_SPOOL)
+LISTEND
 
 NAMEDEF(SHN)
    NAME("SH_name")
 NAMEEND
 
-#define SHS sizeof(SHN)/sizeof(char*)
+#define SH_SIZE sizeof(SHN)/sizeof(char *)
 
-/* *INDENT-ON* */
-
-#ifdef  __cplusplus
+#ifdef __cplusplus
 }
 #endif
-#endif                          /* __SGE_HOSTL_H */
+
+#endif

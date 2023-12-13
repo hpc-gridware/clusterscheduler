@@ -1,0 +1,77 @@
+{
+	"className":	"PETR",
+	"summary":	"@todo add summary",
+	"description":	[{
+			"line":	"@todo add description"
+		}],
+	"cullPrefix":	"PETR",
+	"attributes":	[{
+			"name":	"jobid",
+			"summary":	"@todo add summary",
+			"description":	[{
+					"line":	"@todo add description"
+				}],
+			"type":	"lUlongT",
+			"flags":	[]
+		}, {
+			"name":	"jataskid",
+			"summary":	"@todo add summary",
+			"description":	[{
+					"line":	"@todo add description"
+				}],
+			"type":	"lUlongT",
+			"flags":	[]
+		}, {
+			"name":	"queuename",
+			"summary":	"@todo add summary",
+			"description":	[{
+					"line":	"@todo add description"
+				}],
+			"type":	"lStringT",
+			"flags":	[]
+		}, {
+			"name":	"owner",
+			"summary":	"@todo add summary",
+			"description":	[{
+					"line":	"@todo add description"
+				}],
+			"type":	"lStringT",
+			"flags":	[]
+		}, {
+			"name":	"cwd",
+			"summary":	"@todo add summary",
+			"description":	[{
+					"line":	"@todo add description"
+				}],
+			"type":	"lStringT",
+			"flags":	[]
+		}, {
+			"name":	"path_aliases",
+			"summary":	"@todo add summary",
+			"description":	[{
+					"line":	"@todo add description"
+				}],
+			"type":	"lListT",
+			"subClassName":	"PA",
+			"subCullPrefix":	"PA",
+			"flags":	[]
+		}, {
+			"name":	"environment",
+			"summary":	"@todo add summary",
+			"description":	[{
+					"line":	"@todo add description"
+				}],
+			"type":	"lListT",
+			"subClassName":	"VA",
+			"subCullPrefix":	"VA",
+			"flags":	[]
+		}, {
+			"name":	"submission_time",
+			"summary":	"@todo add summary",
+			"description":	[{
+					"line":	"@todo add description"
+				}],
+			"type":	"lUlongT",
+			"flags":	[]
+		}]
+}

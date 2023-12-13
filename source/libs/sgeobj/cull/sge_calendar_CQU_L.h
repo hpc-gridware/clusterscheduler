@@ -1,6 +1,5 @@
-#ifndef __SGE_CALENDAR_CQU_L_H
-#define __SGE_CALENDAR_CQU_L_H
-
+#ifndef SGE_CQU_L_H
+#define SGE_CQU_L_H
 /*___INFO__MARK_BEGIN__*/
 /*************************************************************************
  * 
@@ -36,39 +35,42 @@
 #include "cull/cull.h"
 #include "sgeobj/cull/sge_boundaries.h"
 
-#ifdef  __cplusplus
+#ifdef __cplusplus
 extern "C" {
 #endif
 
-/* *INDENT-OFF* */   
-
 /**
- *
- * this structure is needed to store the state changes of a queue based on its
- * calendar
- *
- */
+* @brief @todo add summary
+*
+* @todo add description
+*
+*    SGE_ULONG(CQU_state) - @todo add summary
+*    @todo add description
+*
+*    SGE_ULONG(CQU_till) - @todo add summary
+*    @todo add description
+*
+*/
+
 enum {
    CQU_state = CQU_LOWERBOUND,
    CQU_till
 };
 
 LISTDEF(CQU_Type)
-   JGDI_OBJ(CalendarQueueState)
-   SGE_ULONG(CQU_state, CULL_DEFAULT)        /* current state */
-   SGE_ULONG(CQU_till, CULL_DEFAULT)         /* point in time for the next state change */
-LISTEND 
+   SGE_ULONG(CQU_state, CULL_DEFAULT)
+   SGE_ULONG(CQU_till, CULL_DEFAULT)
+LISTEND
 
 NAMEDEF(CQUN)
    NAME("CQU_state")
    NAME("CQU_till")
 NAMEEND
 
-#define CQUS sizeof(CQUN)/sizeof(char*)
+#define CQU_SIZE sizeof(CQUN)/sizeof(char *)
 
-/* *INDENT-ON* */ 
-
-#ifdef  __cplusplus
+#ifdef __cplusplus
 }
 #endif
-#endif                          /* __SGE_CALENDARL_H */
+
+#endif

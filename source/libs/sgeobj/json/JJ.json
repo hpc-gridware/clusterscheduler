@@ -1,0 +1,59 @@
+{
+	"className":	"JJ",
+	"summary":	"@todo add summary",
+	"description":	[{
+			"line":	"@todo add description"
+		}],
+	"cullPrefix":	"JJ",
+	"attributes":	[{
+			"name":	"jobid",
+			"summary":	"@todo add summary",
+			"description":	[{
+					"line":	"@todo add description"
+				}],
+			"type":	"lUlongT",
+			"flags":	[{
+					"name":	"UNIQUE"
+				}, {
+					"name":	"HASH"
+				}]
+		}, {
+			"name":	"type",
+			"summary":	"@todo add summary",
+			"description":	[{
+					"line":	"@todo add description"
+				}],
+			"type":	"lUlongT",
+			"flags":	[]
+		}, {
+			"name":	"finished_tasks",
+			"summary":	"@todo add summary",
+			"description":	[{
+					"line":	"@todo add description"
+				}],
+			"type":	"lListT",
+			"subClassName":	"JJAT",
+			"subCullPrefix":	"JJAT",
+			"flags":	[]
+		}, {
+			"name":	"not_yet_finished_ids",
+			"summary":	"@todo add summary",
+			"description":	[{
+					"line":	"@todo add description"
+				}],
+			"type":	"lListT",
+			"subClassName":	"RN",
+			"subCullPrefix":	"RN",
+			"flags":	[]
+		}, {
+			"name":	"started_task_ids",
+			"summary":	"@todo add summary",
+			"description":	[{
+					"line":	"@todo add description"
+				}],
+			"type":	"lListT",
+			"subClassName":	"RN",
+			"subCullPrefix":	"RN",
+			"flags":	[]
+		}]
+}

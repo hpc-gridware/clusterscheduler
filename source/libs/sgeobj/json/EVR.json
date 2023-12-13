@@ -1,0 +1,69 @@
+{
+	"className":	"EVR",
+	"summary":	"@todo add summary",
+	"description":	[{
+			"line":	"@todo add description"
+		}],
+	"cullPrefix":	"EVR",
+	"attributes":	[{
+			"name":	"operation",
+			"summary":	"@todo add summary",
+			"description":	[{
+					"line":	"@todo add description"
+				}],
+			"type":	"lUlongT",
+			"flags":	[]
+		}, {
+			"name":	"timestamp",
+			"summary":	"@todo add summary",
+			"description":	[{
+					"line":	"@todo add description"
+				}],
+			"type":	"lUlongT",
+			"flags":	[]
+		}, {
+			"name":	"event_client_id",
+			"summary":	"@todo add summary",
+			"description":	[{
+					"line":	"@todo add description"
+				}],
+			"type":	"lUlongT",
+			"flags":	[]
+		}, {
+			"name":	"event_number",
+			"summary":	"@todo add summary",
+			"description":	[{
+					"line":	"@todo add description"
+				}],
+			"type":	"lUlongT",
+			"flags":	[]
+		}, {
+			"name":	"session",
+			"summary":	"@todo add summary",
+			"description":	[{
+					"line":	"@todo add description"
+				}],
+			"type":	"lStringT",
+			"flags":	[]
+		}, {
+			"name":	"event_client",
+			"summary":	"@todo add summary",
+			"description":	[{
+					"line":	"@todo add description"
+				}],
+			"type":	"lObjectT",
+			"subClassName":	"ANY",
+			"subCullPrefix":	"ANY",
+			"flags":	[]
+		}, {
+			"name":	"event_list",
+			"summary":	"@todo add summary",
+			"description":	[{
+					"line":	"@todo add description"
+				}],
+			"type":	"lListT",
+			"subClassName":	"ET",
+			"subCullPrefix":	"ET",
+			"flags":	[]
+		}]
+}

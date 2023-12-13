@@ -1,6 +1,5 @@
-#ifndef __SGE_COMPLEXL_H
-#define __SGE_COMPLEXL_H
-
+#ifndef SGE_CE_L_H
+#define SGE_CE_L_H
 /*___INFO__MARK_BEGIN__*/
 /*************************************************************************
  * 
@@ -33,14 +32,64 @@
  ************************************************************************/
 /*___INFO__MARK_END__*/
 
-#include "sgeobj/cull/sge_boundaries.h"
 #include "cull/cull.h"
+#include "sgeobj/cull/sge_boundaries.h"
 
-#ifdef  __cplusplus
+#ifdef __cplusplus
 extern "C" {
 #endif
 
-/* *INDENT-OFF* */     
+/**
+* @brief @todo add summary
+*
+* @todo add description
+*
+*    SGE_STRING(CE_name) - @todo add summary
+*    @todo add description
+*
+*    SGE_STRING(CE_shortcut) - @todo add summary
+*    @todo add description
+*
+*    SGE_ULONG(CE_valtype) - @todo add summary
+*    @todo add description
+*
+*    SGE_STRING(CE_stringval) - @todo add summary
+*    @todo add description
+*
+*    SGE_DOUBLE(CE_doubleval) - @todo add summary
+*    @todo add description
+*
+*    SGE_ULONG(CE_relop) - @todo add summary
+*    @todo add description
+*
+*    SGE_ULONG(CE_consumable) - @todo add summary
+*    @todo add description
+*
+*    SGE_STRING(CE_default) - @todo add summary
+*    @todo add description
+*
+*    SGE_ULONG(CE_dominant) - @todo add summary
+*    @todo add description
+*
+*    SGE_STRING(CE_pj_stringval) - @todo add summary
+*    @todo add description
+*
+*    SGE_DOUBLE(CE_pj_doubleval) - @todo add summary
+*    @todo add description
+*
+*    SGE_ULONG(CE_pj_dominant) - @todo add summary
+*    @todo add description
+*
+*    SGE_ULONG(CE_requestable) - @todo add summary
+*    @todo add description
+*
+*    SGE_ULONG(CE_tagged) - @todo add summary
+*    @todo add description
+*
+*    SGE_STRING(CE_urgency_weight) - @todo add summary
+*    @todo add description
+*
+*/
 
 enum {
    CE_name = CE_LOWERBOUND,
@@ -52,7 +101,7 @@ enum {
    CE_consumable,
    CE_default,
    CE_dominant,
-   CE_pj_stringval,          /* per job */
+   CE_pj_stringval,
    CE_pj_doubleval,
    CE_pj_dominant,
    CE_requestable,
@@ -61,24 +110,22 @@ enum {
 };
 
 LISTDEF(CE_Type)
-   JGDI_ROOT_OBJ(ComplexEntry, SGE_CE_LIST, ADD | MODIFY | DELETE | GET | GET_LIST)
-   JGDI_EVENT_OBJ(ADD(sgeE_CENTRY_ADD) | MODIFY(sgeE_CENTRY_MOD) | DELETE(sgeE_CENTRY_DEL) | GET_LIST(sgeE_CENTRY_LIST))
-   SGE_STRING(CE_name, CULL_PRIMARY_KEY | CULL_HASH | CULL_UNIQUE | CULL_SPOOL | CULL_SUBLIST | CULL_PRIMARY_KEY | CULL_JGDI_CONF) /* full name of attribute */
-   SGE_STRING_D(CE_shortcut, CULL_HASH | CULL_UNIQUE | CULL_SPOOL | CULL_JGDI_CONF, "NONE")      /* shortcut name of attribute */
-   SGE_ULONG_D(CE_valtype, CULL_DEFAULT | CULL_SPOOL | CULL_JGDI_CONF, TYPE_INT)        /* type */
-   SGE_STRING(CE_stringval, CULL_DEFAULT | CULL_SPOOL | CULL_SUBLIST | CULL_JGDI_CONF)     /* non overwritten value */
-   SGE_DOUBLE(CE_doubleval, CULL_DEFAULT | CULL_JGDI_HIDDEN)    /* parsed CE_stringval */
-   SGE_ULONG(CE_relop, CULL_DEFAULT | CULL_SPOOL | CULL_JGDI_CONF)          /* relational operator */
-   SGE_ULONG(CE_consumable, CULL_DEFAULT | CULL_SPOOL | CULL_JGDI_CONF)      /* flag consumable */
-   SGE_STRING(CE_default, CULL_DEFAULT | CULL_SPOOL | CULL_JGDI_CONF)      /* default request for consumable */
-   SGE_ULONG(CE_dominant, CULL_DEFAULT | CULL_JGDI_HIDDEN)      /* monitoring facility */
-   SGE_STRING(CE_pj_stringval, CULL_DEFAULT | CULL_JGDI_HIDDEN) /* per job string value */
-   SGE_DOUBLE(CE_pj_doubleval, CULL_DEFAULT | CULL_JGDI_HIDDEN) /* per job parsed CE_stringval */
-   SGE_ULONG(CE_pj_dominant, CULL_DEFAULT | CULL_JGDI_HIDDEN)   /* per job monitoring facility */
-   SGE_ULONG(CE_requestable, CULL_DEFAULT | CULL_SPOOL | CULL_JGDI_CONF)
-   SGE_ULONG(CE_tagged, CULL_DEFAULT | CULL_JGDI_HIDDEN)        /* used to tag resource request, which can be fulfilled */
-   SGE_STRING(CE_urgency_weight, CULL_DEFAULT | CULL_SPOOL | CULL_JGDI_CONF) /* static weighting factor */
-LISTEND 
+   SGE_STRING(CE_name, CULL_PRIMARY_KEY | CULL_UNIQUE | CULL_HASH | CULL_SPOOL | CULL_SUBLIST)
+   SGE_STRING(CE_shortcut, CULL_UNIQUE | CULL_HASH | CULL_SPOOL)
+   SGE_ULONG(CE_valtype, CULL_SPOOL)
+   SGE_STRING(CE_stringval, CULL_SPOOL | CULL_SUBLIST)
+   SGE_DOUBLE(CE_doubleval, CULL_DEFAULT)
+   SGE_ULONG(CE_relop, CULL_SPOOL)
+   SGE_ULONG(CE_consumable, CULL_SPOOL)
+   SGE_STRING(CE_default, CULL_SPOOL)
+   SGE_ULONG(CE_dominant, CULL_DEFAULT)
+   SGE_STRING(CE_pj_stringval, CULL_DEFAULT)
+   SGE_DOUBLE(CE_pj_doubleval, CULL_DEFAULT)
+   SGE_ULONG(CE_pj_dominant, CULL_DEFAULT)
+   SGE_ULONG(CE_requestable, CULL_SPOOL)
+   SGE_ULONG(CE_tagged, CULL_DEFAULT)
+   SGE_STRING(CE_urgency_weight, CULL_SPOOL)
+LISTEND
 
 NAMEDEF(CEN)
    NAME("CE_name")
@@ -98,10 +145,10 @@ NAMEDEF(CEN)
    NAME("CE_urgency_weight")
 NAMEEND
 
-/* *INDENT-ON* */ 
+#define CE_SIZE sizeof(CEN)/sizeof(char *)
 
-#define CES sizeof(CEN)/sizeof(char*)
-#ifdef  __cplusplus
+#ifdef __cplusplus
 }
 #endif
-#endif                          /* __SGE_COMPLEXL_H */
+
+#endif

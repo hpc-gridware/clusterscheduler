@@ -1,6 +1,5 @@
-#ifndef __SGE_CONF_CONF_L_H
-#define __SGE_CONF_CONF_L_H
-
+#ifndef SGE_CONF_L_H
+#define SGE_CONF_L_H
 /*___INFO__MARK_BEGIN__*/
 /*************************************************************************
  * 
@@ -36,25 +35,37 @@
 #include "cull/cull.h"
 #include "sgeobj/cull/sge_boundaries.h"
 
-#ifdef  __cplusplus
+#ifdef __cplusplus
 extern "C" {
 #endif
 
-/* *INDENT-OFF* */ 
+/**
+* @brief @todo add summary
+*
+* @todo add description
+*
+*    SGE_HOST(CONF_name) - @todo add summary
+*    @todo add description
+*
+*    SGE_ULONG(CONF_version) - @todo add summary
+*    @todo add description
+*
+*    SGE_LIST(CONF_entries) - @todo add summary
+*    @todo add description
+*
+*/
 
 enum {
    CONF_name = CONF_LOWERBOUND,
    CONF_version,
-   CONF_entries                 /* Points to CF_Type list */
+   CONF_entries
 };
 
 LISTDEF(CONF_Type)
-   JGDI_ROOT_OBJ(Configuration, SGE_CONF_LIST, ADD | MODIFY | DELETE | GET_LIST | GET)
-   JGDI_EVENT_OBJ(ADD(sgeE_CONFIG_ADD) | MODIFY(sgeE_CONFIG_MOD) | DELETE(sgeE_CONFIG_DEL) | GET_LIST(sgeE_CONFIG_LIST))
-   SGE_HOST_D(CONF_name, CULL_PRIMARY_KEY | CULL_HASH | CULL_UNIQUE | CULL_SPOOL | CULL_JGDI_CONF, "global")
-   SGE_ULONG(CONF_version, CULL_DEFAULT | CULL_SPOOL | CULL_JGDI_HIDDEN)
-   SGE_LIST(CONF_entries, CF_Type, CULL_DEFAULT | CULL_SPOOL | CULL_JGDI_CONF)
-LISTEND 
+   SGE_HOST(CONF_name, CULL_PRIMARY_KEY | CULL_UNIQUE | CULL_HASH | CULL_SPOOL)
+   SGE_ULONG(CONF_version, CULL_SPOOL)
+   SGE_LIST(CONF_entries, CF_Type, CULL_SPOOL)
+LISTEND
 
 NAMEDEF(CONFN)
    NAME("CONF_name")
@@ -62,11 +73,10 @@ NAMEDEF(CONFN)
    NAME("CONF_entries")
 NAMEEND
 
-#define CONFS sizeof(CONFN)/sizeof(char*)
+#define CONF_SIZE sizeof(CONFN)/sizeof(char *)
 
-/* *INDENT-ON* */
-
-#ifdef  __cplusplus
+#ifdef __cplusplus
 }
 #endif
-#endif                          /* __SGE_CONFL_H */
+
+#endif

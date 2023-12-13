@@ -1,6 +1,5 @@
-#ifndef __SGE_VAR_VA_L_H
-#define __SGE_VAR_VA_L_H
-
+#ifndef SGE_VA_L_H
+#define SGE_VA_L_H
 /*___INFO__MARK_BEGIN__*/
 /*************************************************************************
  * 
@@ -36,27 +35,22 @@
 #include "cull/cull.h"
 #include "sgeobj/cull/sge_boundaries.h"
 
-#ifdef  __cplusplus
+#ifdef __cplusplus
 extern "C" {
 #endif
 
-/****** sgeobj/var/--VA_Type **************************************************
-*  NAME
-*     VA_Type - CULL variable element
+/**
+* @brief @todo add summary
 *
-*  ELEMENTS
-*     SGE_STRING(VA_variable)
-*        name of variable
+* @todo add description
 *
-*     SGE_STRING(VA_value)
-*        value of variable
+*    SGE_STRING(VA_variable) - @todo add summary
+*    @todo add description
 *
-*  FUNCTION
-*     CULL element holding a variable/value pair (variable[=value])
+*    SGE_STRING(VA_value) - @todo add summary
+*    @todo add description
 *
-*  SEE ALSO
-*     gdi/var/--VariableList
-******************************************************************************/
+*/
 
 enum {
    VA_variable = VA_LOWERBOUND,
@@ -64,9 +58,8 @@ enum {
 };
 
 LISTDEF(VA_Type)
-   JGDI_MAP_OBJ(VA_variable, VA_value)
-   SGE_STRING(VA_variable, CULL_PRIMARY_KEY | CULL_HASH | CULL_UNIQUE | CULL_SUBLIST)
-   SGE_STRING(VA_value, CULL_DEFAULT | CULL_SUBLIST)
+   SGE_STRING(VA_variable, CULL_PRIMARY_KEY | CULL_UNIQUE | CULL_HASH | CULL_SUBLIST)
+   SGE_STRING(VA_value, CULL_SUBLIST)
 LISTEND
 
 NAMEDEF(VAN)
@@ -74,10 +67,10 @@ NAMEDEF(VAN)
    NAME("VA_value")
 NAMEEND
 
-#define VAS sizeof(VAN)/sizeof(char*)
+#define VA_SIZE sizeof(VAN)/sizeof(char *)
 
-#ifdef  __cplusplus
+#ifdef __cplusplus
 }
 #endif
 
-#endif 
+#endif

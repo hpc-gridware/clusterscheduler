@@ -34,6 +34,13 @@
 
 #include "sgeobj/cull/sge_usage_UA_L.h"
 
+// make sure that the following enum is in sync with libs/sgeobj/json/UA.json
+enum {
+   UA_name_POS = 0,
+   UA_value_POS                  /* usage value */
+};
+
+
 /*
  * sge standard usage value names
  * 

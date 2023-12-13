@@ -1,5 +1,5 @@
-#ifndef __PROCL_H
-#define __PROCL_H
+#ifndef SGE_PRO_L_H
+#define SGE_PRO_L_H
 /*___INFO__MARK_BEGIN__*/
 /*************************************************************************
  * 
@@ -30,38 +30,46 @@
  *   All Rights Reserved.
  * 
  ************************************************************************/
-/* Portions of this code are Copyright (c) 2011 Univa Corporation. */
 /*___INFO__MARK_END__*/
 
 #include "cull/cull.h"
-
 #include "sgeobj/cull/sge_boundaries.h"
 
 #ifdef __cplusplus
 extern "C" {
 #endif
-/****** sgeobj/job/--PRO_Type **************************************************
-*  NAME
-*     PRO_Type - CULL process element 
+
+/**
+* @brief @todo add summary
 *
-*  ELEMENTS
-*     SGE_ULONG (PRO_pid)
-*        Process id of the element
-*     SGE_ULONG (PRO_utime)
-*        Number of jiffies that this process has been scheduled in user mode.
-*     SGE_ULONG (PRO_stime)
-*        Number of jiffies that this process has been scheduled in kernel mode.
-*     SGE_ULONG64 (PRO_vsize)
-*        Virtual memory size in bytes.
-*     SGE_LIST (PRO_groups)
-*        GR_Type list with all groups associated with this process.
-*     SGE_BOOL (PRO_rel)
-*        Flag if this process belongs to a GE job.
-*     SGE_BOOL (PRO_run)
-*        Flag if this process is still running.
-*     SGE_ULONG (PRO_io)
-*        IO statistic for the running process.
-******************************************************************************/
+* @todo add description
+*
+*    SGE_ULONG(PRO_pid) - @todo add summary
+*    @todo add description
+*
+*    SGE_ULONG(PRO_utime) - @todo add summary
+*    @todo add description
+*
+*    SGE_ULONG(PRO_stime) - @todo add summary
+*    @todo add description
+*
+*    SGE_ULONG64(PRO_vsize) - @todo add summary
+*    @todo add description
+*
+*    SGE_LIST(PRO_groups) - @todo add summary
+*    @todo add description
+*
+*    SGE_BOOL(PRO_rel) - @todo add summary
+*    @todo add description
+*
+*    SGE_BOOL(PRO_run) - @todo add summary
+*    @todo add description
+*
+*    SGE_ULONG(PRO_io) - @todo add summary
+*    @todo add description
+*
+*/
+
 enum {
    PRO_pid = PRO_LOWERBOUND,
    PRO_utime,
@@ -73,54 +81,32 @@ enum {
    PRO_io
 };
 
-LISTDEF( PRO_Type )
-   SGE_ULONG     ( PRO_pid, CULL_PRIMARY_KEY | CULL_HASH | CULL_UNIQUE )
-   SGE_ULONG     ( PRO_utime, CULL_DEFAULT )
-   SGE_ULONG     ( PRO_stime, CULL_DEFAULT )
-   SGE_ULONG64   ( PRO_vsize, CULL_DEFAULT )
-   SGE_LIST      ( PRO_groups, GR_Type, CULL_DEFAULT )
-   SGE_BOOL      ( PRO_rel, CULL_DEFAULT )
-   SGE_BOOL      ( PRO_run, CULL_DEFAULT )
-   SGE_ULONG     ( PRO_io, CULL_DEFAULT )
+LISTDEF(PRO_Type)
+   SGE_ULONG(PRO_pid, CULL_PRIMARY_KEY | CULL_UNIQUE | CULL_HASH)
+   SGE_ULONG(PRO_utime, CULL_DEFAULT)
+   SGE_ULONG(PRO_stime, CULL_DEFAULT)
+   SGE_ULONG64(PRO_vsize, CULL_DEFAULT)
+   SGE_LIST(PRO_groups, GR_Type, CULL_DEFAULT)
+   SGE_BOOL(PRO_rel, CULL_DEFAULT)
+   SGE_BOOL(PRO_run, CULL_DEFAULT)
+   SGE_ULONG(PRO_io, CULL_DEFAULT)
 LISTEND
 
-NAMEDEF( PRON )
-   NAME   ( "PRO_pid" )
-   NAME   ( "PRO_utime" )
-   NAME   ( "PRO_stime" )
-   NAME   ( "PRO_vsize" )
-   NAME   ( "PRO_groups" )
-   NAME   ( "PRO_rel" )
-   NAME   ( "PRO_run" )
-   NAME   ( "PRO_io" )
+NAMEDEF(PRON)
+   NAME("PRO_pid")
+   NAME("PRO_utime")
+   NAME("PRO_stime")
+   NAME("PRO_vsize")
+   NAME("PRO_groups")
+   NAME("PRO_rel")
+   NAME("PRO_run")
+   NAME("PRO_io")
 NAMEEND
 
-#define PROS sizeof(PRON)/sizeof(char*)
-
-/****** sgeobj/job/--GR_Type **************************************************
-*  NAME
-*     GR_Type - CULL group element 
-*
-*  ELEMENTS
-*     SGE_ULONG (GR_group)
-*       Group IDs of a process. 
-******************************************************************************/
-enum {
-   GR_group = GR_LOWERBOUND
-};
-
-
-LISTDEF( GR_Type )
-   SGE_ULONG     ( GR_group, CULL_DEFAULT | CULL_HASH )
-LISTEND
-
-NAMEDEF( GRN )
-   NAME   ( "GR_group" )
-NAMEEND
-
-#define GRS sizeof(GRN)/sizeof(char*)
+#define PRO_SIZE sizeof(PRON)/sizeof(char *)
 
 #ifdef __cplusplus
 }
 #endif
-#endif /* __PROCL_H */
+
+#endif

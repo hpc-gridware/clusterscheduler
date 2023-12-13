@@ -1,6 +1,5 @@
-#ifndef __SGE_EEJOB_SGEJ_L_H
-#define __SGE_EEJOB_SGEJ_L_H
-
+#ifndef SGE_SGEJ_L_H
+#define SGE_SGEJ_L_H
 /*___INFO__MARK_BEGIN__*/
 /*************************************************************************
  * 
@@ -36,16 +35,41 @@
 #include "cull/cull.h"
 #include "sgeobj/cull/sge_boundaries.h"
 
-#ifdef  __cplusplus
+#ifdef __cplusplus
 extern "C" {
 #endif
 
-/* *INDENT-OFF* */ 
+/**
+* @brief @todo add summary
+*
+* @todo add description
+*
+*    SGE_DOUBLE(SGEJ_priority) - @todo add summary
+*    @todo add description
+*
+*    SGE_ULONG(SGEJ_job_number) - @todo add summary
+*    @todo add description
+*
+*    SGE_STRING(SGEJ_job_name) - @todo add summary
+*    @todo add description
+*
+*    SGE_STRING(SGEJ_owner) - @todo add summary
+*    @todo add description
+*
+*    SGE_ULONG(SGEJ_state) - @todo add summary
+*    @todo add description
+*
+*    SGE_STRING(SGEJ_master_queue) - @todo add summary
+*    @todo add description
+*
+*    SGE_REF(SGEJ_job_reference) - @todo add summary
+*    @todo add description
+*
+*    SGE_ULONG(SGEJ_submission_time) - @todo add summary
+*    @todo add description
+*
+*/
 
-/*
- * This is the list type we use to sort the joblist 
- * in the sge scheduler 
- */
 enum {
    SGEJ_priority = SGEJ_LOWERBOUND,
    SGEJ_job_number,
@@ -57,12 +81,6 @@ enum {
    SGEJ_submission_time
 };
 
-/* a boolean for the sort order */
-enum {
-  SGEJ_sort_decending = 0,
-  SGEJ_sort_ascending
-};
-
 LISTDEF(SGEJ_Type)
    SGE_DOUBLE(SGEJ_priority, CULL_DEFAULT)
    SGE_ULONG(SGEJ_job_number, CULL_DEFAULT)
@@ -70,9 +88,9 @@ LISTDEF(SGEJ_Type)
    SGE_STRING(SGEJ_owner, CULL_DEFAULT)
    SGE_ULONG(SGEJ_state, CULL_DEFAULT)
    SGE_STRING(SGEJ_master_queue, CULL_DEFAULT)
-   SGE_REF(SGEJ_job_reference, JRL_Type, CULL_DEFAULT)
+   SGE_REF(SGEJ_job_reference, CULL_ANY_SUBTYPE, CULL_DEFAULT)
    SGE_ULONG(SGEJ_submission_time, CULL_DEFAULT)
-LISTEND 
+LISTEND
 
 NAMEDEF(SGEJN)
    NAME("SGEJ_priority")
@@ -85,11 +103,10 @@ NAMEDEF(SGEJN)
    NAME("SGEJ_submission_time")
 NAMEEND
 
-#define SGEJS sizeof(SGEJN)/sizeof(char*)
+#define SGEJ_SIZE sizeof(SGEJN)/sizeof(char *)
 
-/* *INDENT-ON* */
-
-#ifdef  __cplusplus
+#ifdef __cplusplus
 }
 #endif
-#endif                          /* __SGE_EEJOBL_H */
+
+#endif

@@ -1,0 +1,327 @@
+{
+	"className":	"STN",
+	"summary":	"@todo add summary",
+	"description":	[{
+			"line":	"@todo add description"
+		}],
+	"cullPrefix":	"STN",
+	"attributes":	[{
+			"name":	"name",
+			"summary":	"@todo add summary",
+			"description":	[{
+					"line":	"@todo add description"
+				}],
+			"type":	"lStringT",
+			"flags":	[{
+					"name":	"PRIMARY_KEY"
+				}, {
+					"name":	"UNIQUE"
+				}, {
+					"name":	"HASH"
+				}, {
+					"name":	"JGDI_CONF"
+				}, {
+					"name":	"SPOOL"
+				}]
+		}, {
+			"name":	"type",
+			"summary":	"@todo add summary",
+			"description":	[{
+					"line":	"@todo add description"
+				}],
+			"type":	"lUlongT",
+			"flags":	[{
+					"name":	"JGDI_CONF"
+				}, {
+					"name":	"SPOOL"
+				}]
+		}, {
+			"name":	"id",
+			"summary":	"@todo add summary",
+			"description":	[{
+					"line":	"@todo add description"
+				}],
+			"type":	"lUlongT",
+			"flags":	[{
+					"name":	"JGDI_CONF"
+				}]
+		}, {
+			"name":	"shares",
+			"summary":	"@todo add summary",
+			"description":	[{
+					"line":	"@todo add description"
+				}],
+			"type":	"lUlongT",
+			"flags":	[{
+					"name":	"JGDI_CONF"
+				}, {
+					"name":	"SPOOL"
+				}]
+		}, {
+			"name":	"children",
+			"summary":	"@todo add summary",
+			"description":	[{
+					"line":	"@todo add description"
+				}],
+			"type":	"lListT",
+			"subClassName":	"STN",
+			"subCullPrefix":	"STN",
+			"flags":	[{
+					"name":	"JGDI_CONF"
+				}, {
+					"name":	"SPOOL"
+				}]
+		}, {
+			"name":	"job_ref_count",
+			"summary":	"@todo add summary",
+			"description":	[{
+					"line":	"@todo add description"
+				}],
+			"type":	"lUlongT",
+			"flags":	[{
+					"name":	"JGDI_HIDDEN"
+				}]
+		}, {
+			"name":	"active_job_ref_count",
+			"summary":	"@todo add summary",
+			"description":	[{
+					"line":	"@todo add description"
+				}],
+			"type":	"lUlongT",
+			"flags":	[{
+					"name":	"JGDI_HIDDEN"
+				}]
+		}, {
+			"name":	"project",
+			"summary":	"@todo add summary",
+			"description":	[{
+					"line":	"@todo add description"
+				}],
+			"type":	"lUlongT",
+			"flags":	[{
+					"name":	"JGDI_HIDDEN"
+				}]
+		}, {
+			"name":	"proportion",
+			"summary":	"@todo add summary",
+			"description":	[{
+					"line":	"@todo add description"
+				}],
+			"type":	"lDoubleT",
+			"flags":	[{
+					"name":	"JGDI_HIDDEN"
+				}]
+		}, {
+			"name":	"adjusted_proportion",
+			"summary":	"@todo add summary",
+			"description":	[{
+					"line":	"@todo add description"
+				}],
+			"type":	"lDoubleT",
+			"flags":	[{
+					"name":	"JGDI_HIDDEN"
+				}]
+		}, {
+			"name":	"combined_usage",
+			"summary":	"@todo add summary",
+			"description":	[{
+					"line":	"@todo add description"
+				}],
+			"type":	"lDoubleT",
+			"flags":	[{
+					"name":	"JGDI_HIDDEN"
+				}]
+		}, {
+			"name":	"pass2_seqno",
+			"summary":	"@todo add summary",
+			"description":	[{
+					"line":	"@todo add description"
+				}],
+			"type":	"lUlongT",
+			"flags":	[{
+					"name":	"JGDI_HIDDEN"
+				}]
+		}, {
+			"name":	"sum_priority",
+			"summary":	"@todo add summary",
+			"description":	[{
+					"line":	"@todo add description"
+				}],
+			"type":	"lUlongT",
+			"flags":	[{
+					"name":	"JGDI_HIDDEN"
+				}]
+		}, {
+			"name":	"actual_proportion",
+			"summary":	"@todo add summary",
+			"description":	[{
+					"line":	"@todo add description"
+				}],
+			"type":	"lDoubleT",
+			"flags":	[{
+					"name":	"JGDI_RO"
+				}]
+		}, {
+			"name":	"m_share",
+			"summary":	"@todo add summary",
+			"description":	[{
+					"line":	"@todo add description"
+				}],
+			"type":	"lDoubleT",
+			"flags":	[{
+					"name":	"JGDI_RO"
+				}]
+		}, {
+			"name":	"last_actual_proportion",
+			"summary":	"@todo add summary",
+			"description":	[{
+					"line":	"@todo add description"
+				}],
+			"type":	"lDoubleT",
+			"flags":	[{
+					"name":	"JGDI_HIDDEN"
+				}]
+		}, {
+			"name":	"adjusted_current_proportion",
+			"summary":	"@todo add summary",
+			"description":	[{
+					"line":	"@todo add description"
+				}],
+			"type":	"lDoubleT",
+			"flags":	[{
+					"name":	"JGDI_HIDDEN"
+				}]
+		}, {
+			"name":	"temp",
+			"summary":	"@todo add summary",
+			"description":	[{
+					"line":	"@todo add description"
+				}],
+			"type":	"lUlongT",
+			"flags":	[{
+					"name":	"JGDI_RO"
+				}]
+		}, {
+			"name":	"stt",
+			"summary":	"@todo add summary",
+			"description":	[{
+					"line":	"@todo add description"
+				}],
+			"type":	"lDoubleT",
+			"flags":	[{
+					"name":	"JGDI_HIDDEN"
+				}]
+		}, {
+			"name":	"ostt",
+			"summary":	"@todo add summary",
+			"description":	[{
+					"line":	"@todo add description"
+				}],
+			"type":	"lDoubleT",
+			"flags":	[{
+					"name":	"JGDI_HIDDEN"
+				}]
+		}, {
+			"name":	"ltt",
+			"summary":	"@todo add summary",
+			"description":	[{
+					"line":	"@todo add description"
+				}],
+			"type":	"lDoubleT",
+			"flags":	[{
+					"name":	"JGDI_HIDDEN"
+				}]
+		}, {
+			"name":	"oltt",
+			"summary":	"@todo add summary",
+			"description":	[{
+					"line":	"@todo add description"
+				}],
+			"type":	"lDoubleT",
+			"flags":	[{
+					"name":	"JGDI_HIDDEN"
+				}]
+		}, {
+			"name":	"shr",
+			"summary":	"@todo add summary",
+			"description":	[{
+					"line":	"@todo add description"
+				}],
+			"type":	"lDoubleT",
+			"flags":	[{
+					"name":	"JGDI_HIDDEN"
+				}]
+		}, {
+			"name":	"sort",
+			"summary":	"@todo add summary",
+			"description":	[{
+					"line":	"@todo add description"
+				}],
+			"type":	"lDoubleT",
+			"flags":	[{
+					"name":	"JGDI_HIDDEN"
+				}]
+		}, {
+			"name":	"ref",
+			"summary":	"@todo add summary",
+			"description":	[{
+					"line":	"@todo add description"
+				}],
+			"type":	"lUlongT",
+			"flags":	[{
+					"name":	"JGDI_HIDDEN"
+				}]
+		}, {
+			"name":	"tickets",
+			"summary":	"@todo add summary",
+			"description":	[{
+					"line":	"@todo add description"
+				}],
+			"type":	"lDoubleT",
+			"flags":	[{
+					"name":	"JGDI_HIDDEN"
+				}]
+		}, {
+			"name":	"jobid",
+			"summary":	"@todo add summary",
+			"description":	[{
+					"line":	"@todo add description"
+				}],
+			"type":	"lUlongT",
+			"flags":	[{
+					"name":	"JGDI_HIDDEN"
+				}]
+		}, {
+			"name":	"taskid",
+			"summary":	"@todo add summary",
+			"description":	[{
+					"line":	"@todo add description"
+				}],
+			"type":	"lUlongT",
+			"flags":	[{
+					"name":	"JGDI_HIDDEN"
+				}]
+		}, {
+			"name":	"usage_list",
+			"summary":	"@todo add summary",
+			"description":	[{
+					"line":	"@todo add description"
+				}],
+			"type":	"lListT",
+			"subClassName":	"UA",
+			"subCullPrefix":	"UA",
+			"flags":	[{
+					"name":	"JGDI_HIDDEN"
+				}]
+		}, {
+			"name":	"version",
+			"summary":	"@todo add summary",
+			"description":	[{
+					"line":	"@todo add description"
+				}],
+			"type":	"lUlongT",
+			"flags":	[{
+					"name":	"JGDI_HIDDEN"
+				}]
+		}]
+}

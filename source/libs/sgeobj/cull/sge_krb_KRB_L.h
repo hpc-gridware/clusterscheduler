@@ -1,5 +1,5 @@
-#ifndef __SGE_KRB_KRB_L_H
-#define __SGE_KRB_KRB_L_H
+#ifndef SGE_KRB_L_H
+#define SGE_KRB_L_H
 /*___INFO__MARK_BEGIN__*/
 /*************************************************************************
  * 
@@ -32,23 +32,40 @@
  ************************************************************************/
 /*___INFO__MARK_END__*/
 
+#include "cull/cull.h"
 #include "sgeobj/cull/sge_boundaries.h"
 
-#include "cull/cull.h"
-
-#ifdef  __cplusplus
+#ifdef __cplusplus
 extern "C" {
 #endif
 
-/* *INDENT-OFF* */
-
-/*
- * This is the list type we use to hold the client
- *  connection list for kerberos authentication
- */
+/**
+* @brief @todo add summary
+*
+* @todo add description
+*
+*    SGE_STRING(KRB_commproc) - @todo add summary
+*    @todo add description
+*
+*    SGE_ULONG(KRB_id) - @todo add summary
+*    @todo add description
+*
+*    SGE_HOST(KRB_host) - @todo add summary
+*    @todo add description
+*
+*    SGE_ULONG(KRB_timestamp) - @todo add summary
+*    @todo add description
+*
+*    SGE_STRING(KRB_auth_context) - @todo add summary
+*    @todo add description
+*
+*    SGE_LIST(KRB_tgt_list) - @todo add summary
+*    @todo add description
+*
+*/
 
 enum {
-   KRB_commproc=KRB_LOWERBOUND,
+   KRB_commproc = KRB_LOWERBOUND,
    KRB_id,
    KRB_host,
    KRB_timestamp,
@@ -56,7 +73,7 @@ enum {
    KRB_tgt_list
 };
 
-LISTDEF( KRB_Type )
+LISTDEF(KRB_Type)
    SGE_STRING(KRB_commproc, CULL_DEFAULT)
    SGE_ULONG(KRB_id, CULL_DEFAULT)
    SGE_HOST(KRB_host, CULL_DEFAULT)
@@ -65,24 +82,19 @@ LISTDEF( KRB_Type )
    SGE_LIST(KRB_tgt_list, KTGT_Type, CULL_DEFAULT)
 LISTEND
 
-NAMEDEF( KRBN )
-    NAME( "KRB_commproc" )
-    NAME( "KRB_id" )
-    NAME( "KRB_host" )
-    NAME( "KRB_timestamp" )
-    NAME( "KRB_auth_context" )
-    NAME( "KRB_tgt_list" )
+NAMEDEF(KRBN)
+   NAME("KRB_commproc")
+   NAME("KRB_id")
+   NAME("KRB_host")
+   NAME("KRB_timestamp")
+   NAME("KRB_auth_context")
+   NAME("KRB_tgt_list")
 NAMEEND
 
-#define KRBS sizeof(KRBN)/sizeof(char*)
+#define KRB_SIZE sizeof(KRBN)/sizeof(char *)
 
-/* *INDENT-ON* */
-
-#define KTGTS sizeof(KTGTN)/sizeof(char*)
-
-#ifdef  __cplusplus
+#ifdef __cplusplus
 }
 #endif
 
-#endif /* __SGE_KRBL_H*/
-
+#endif

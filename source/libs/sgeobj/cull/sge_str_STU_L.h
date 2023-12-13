@@ -1,6 +1,5 @@
-#ifndef __SGE_STRING_STU_L_H
-#define __SGE_STRING_STU_L_H
-
+#ifndef SGE_STU_L_H
+#define SGE_STU_L_H
 /*___INFO__MARK_BEGIN__*/
 /*************************************************************************
  * 
@@ -33,37 +32,39 @@
  ************************************************************************/
 /*___INFO__MARK_END__*/
 
+#include "cull/cull.h"
 #include "sgeobj/cull/sge_boundaries.h"
 
-#include "cull/cull.h"
-
-#ifdef  __cplusplus
+#ifdef __cplusplus
 extern "C" {
 #endif
 
-/* *INDENT-OFF* */
+/**
+* @brief @todo add summary
+*
+* @todo add description
+*
+*    SGE_STRING(STU_name) - @todo add summary
+*    @todo add description
+*
+*/
 
-/*
- * String list with unique strings
- */
 enum {
    STU_name = STU_LOWERBOUND
 };
 
 LISTDEF(STU_Type)
-   JGDI_PRIMITIVE_OBJ(STU_name)
-   SGE_STRING(STU_name, CULL_PRIMARY_KEY | CULL_HASH | CULL_UNIQUE | CULL_SUBLIST)
-LISTEND 
+   SGE_STRING(STU_name, CULL_PRIMARY_KEY | CULL_UNIQUE | CULL_HASH | CULL_SUBLIST)
+LISTEND
 
 NAMEDEF(STUN)
    NAME("STU_name")
 NAMEEND
 
-/* *INDENT-ON* */ 
+#define STU_SIZE sizeof(STUN)/sizeof(char *)
 
-#define STUS sizeof(STUN)/sizeof(char*)
-
-#ifdef  __cplusplus
+#ifdef __cplusplus
 }
 #endif
+
 #endif

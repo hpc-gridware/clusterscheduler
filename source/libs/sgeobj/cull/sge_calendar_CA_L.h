@@ -1,6 +1,5 @@
-#ifndef __SGE_CALENDAR_CA_L_H
-#define __SGE_CALENDAR_CA_L_H
-
+#ifndef SGE_CA_L_H
+#define SGE_CA_L_H
 /*___INFO__MARK_BEGIN__*/
 /*************************************************************************
  * 
@@ -36,15 +35,29 @@
 #include "cull/cull.h"
 #include "sgeobj/cull/sge_boundaries.h"
 
-#ifdef  __cplusplus
+#ifdef __cplusplus
 extern "C" {
 #endif
 
-/* *INDENT-OFF* */   
+/**
+* @brief @todo add summary
+*
+* @todo add description
+*
+*    SGE_LIST(CA_yday_range_list) - @todo add summary
+*    @todo add description
+*
+*    SGE_LIST(CA_wday_range_list) - @todo add summary
+*    @todo add description
+*
+*    SGE_LIST(CA_daytime_range_list) - @todo add summary
+*    @todo add description
+*
+*    SGE_ULONG(CA_state) - @todo add summary
+*    @todo add description
+*
+*/
 
-/* 
- * this data structure is used for parsing calendar functionality
- */
 enum {
    CA_yday_range_list = CA_LOWERBOUND,
    CA_wday_range_list,
@@ -53,17 +66,11 @@ enum {
 };
 
 LISTDEF(CA_Type)
-   JGDI_OBJ(ParsedCalendar)
-   SGE_LIST(CA_yday_range_list, TMR_Type, CULL_DEFAULT)       /* TMR_Type with begin/end of type *
-                                       * TM_Type using *
-                                       * TM_mday/TM_mon/TM_year */
-   SGE_LIST(CA_wday_range_list, TMR_Type, CULL_DEFAULT)       /* TMR_Type with begin/end of type *
-                                       * TM_Type using TM_wday */
-   SGE_LIST(CA_daytime_range_list, TMR_Type, CULL_DEFAULT)    /* TMR_Type with begin/end of type *
-                                       * TM_Type using *
-                                       * TM_sec/TM_min/TM_hour */
+   SGE_LIST(CA_yday_range_list, TMR_Type, CULL_DEFAULT)
+   SGE_LIST(CA_wday_range_list, TMR_Type, CULL_DEFAULT)
+   SGE_LIST(CA_daytime_range_list, TMR_Type, CULL_DEFAULT)
    SGE_ULONG(CA_state, CULL_DEFAULT)
-LISTEND 
+LISTEND
 
 NAMEDEF(CAN)
    NAME("CA_yday_range_list")
@@ -72,11 +79,10 @@ NAMEDEF(CAN)
    NAME("CA_state")
 NAMEEND
 
-#define CAS sizeof(CAN)/sizeof(char*)
+#define CA_SIZE sizeof(CAN)/sizeof(char *)
 
-/* *INDENT-ON* */ 
-
-#ifdef  __cplusplus
+#ifdef __cplusplus
 }
 #endif
-#endif                          /* __SGE_CALENDARL_H */
+
+#endif

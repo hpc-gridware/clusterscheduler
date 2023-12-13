@@ -1,0 +1,27 @@
+{
+	"className":	"AH",
+	"summary":	"@todo add summary",
+	"description":	[{
+			"line":	"@todo add description"
+		}],
+	"cullPrefix":	"AH",
+	"attributes":	[{
+			"name":	"name",
+			"summary":	"@todo add summary",
+			"description":	[{
+					"line":	"@todo add description"
+				}],
+			"type":	"lHostT",
+			"flags":	[{
+					"name":	"PRIMARY_KEY"
+				}, {
+					"name":	"UNIQUE"
+				}, {
+					"name":	"HASH"
+				}, {
+					"name":	"JGDI_CONF"
+				}, {
+					"name":	"SPOOL"
+				}]
+		}]
+}

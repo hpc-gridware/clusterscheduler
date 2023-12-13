@@ -1,6 +1,5 @@
-#ifndef __SGE_RESOURCE_QUOTAL_RQRL_H
-#define __SGE_RESOURCE_QUOTAL_RQRL_H
-
+#ifndef SGE_RQRL_L_H
+#define SGE_RQRL_L_H
 /*___INFO__MARK_BEGIN__*/
 /*************************************************************************
  * 
@@ -36,13 +35,35 @@
 #include "cull/cull.h"
 #include "sgeobj/cull/sge_boundaries.h"
 
-#ifdef  __cplusplus
+#ifdef __cplusplus
 extern "C" {
 #endif
 
-/* *INDENT-OFF* */
+/**
+* @brief @todo add summary
+*
+* @todo add description
+*
+*    SGE_STRING(RQRL_name) - @todo add summary
+*    @todo add description
+*
+*    SGE_STRING(RQRL_value) - @todo add summary
+*    @todo add description
+*
+*    SGE_ULONG(RQRL_type) - @todo add summary
+*    @todo add description
+*
+*    SGE_DOUBLE(RQRL_dvalue) - @todo add summary
+*    @todo add description
+*
+*    SGE_LIST(RQRL_usage) - @todo add summary
+*    @todo add description
+*
+*    SGE_BOOL(RQRL_dynamic) - @todo add summary
+*    @todo add description
+*
+*/
 
-/* Resource Quota Rule Limit */
 enum {
    RQRL_name = RQRL_LOWERBOUND,
    RQRL_value,
@@ -53,15 +74,14 @@ enum {
 };
 
 LISTDEF(RQRL_Type)
- JGDI_OBJ(ResourceQuotaRuleLimit)
- SGE_STRING(RQRL_name, CULL_PRIMARY_KEY | CULL_HASH | CULL_UNIQUE | CULL_SPOOL | CULL_JGDI_CONF)
- SGE_STRING(RQRL_value, CULL_DEFAULT | CULL_SPOOL | CULL_JGDI_CONF)
- SGE_ULONG(RQRL_type, CULL_DEFAULT | CULL_SPOOL | CULL_JGDI_RO)
- SGE_DOUBLE(RQRL_dvalue, CULL_DEFAULT | CULL_SPOOL | CULL_JGDI_RO)
- SGE_LIST(RQRL_usage, RUE_Type, CULL_DEFAULT | CULL_JGDI_RO)
- SGE_BOOL(RQRL_dynamic, CULL_DEFAULT | CULL_JGDI_RO)
+   SGE_STRING(RQRL_name, CULL_PRIMARY_KEY | CULL_UNIQUE | CULL_HASH | CULL_SPOOL)
+   SGE_STRING(RQRL_value, CULL_SPOOL)
+   SGE_ULONG(RQRL_type, CULL_SPOOL)
+   SGE_DOUBLE(RQRL_dvalue, CULL_SPOOL)
+   SGE_LIST(RQRL_usage, RUE_Type, CULL_DEFAULT)
+   SGE_BOOL(RQRL_dynamic, CULL_DEFAULT)
 LISTEND
- 
+
 NAMEDEF(RQRLN)
    NAME("RQRL_name")
    NAME("RQRL_value")
@@ -71,11 +91,10 @@ NAMEDEF(RQRLN)
    NAME("RQRL_dynamic")
 NAMEEND
 
-#define RQRLS sizeof(RQRLN)/sizeof(char*)
+#define RQRL_SIZE sizeof(RQRLN)/sizeof(char *)
 
-/* *INDENT-ON* */ 
-
-#ifdef  __cplusplus
+#ifdef __cplusplus
 }
 #endif
-#endif /* __SGE_RESOURCE_QUOTAL_H */
+
+#endif

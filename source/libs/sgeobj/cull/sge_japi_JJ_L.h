@@ -1,6 +1,5 @@
-#ifndef __SGE_JAPI_JJ_L_H
-#define __SGE_JAPI_JJ_L_H
-
+#ifndef SGE_JJ_L_H
+#define SGE_JJ_L_H
 /*___INFO__MARK_BEGIN__*/
 /*************************************************************************
  * 
@@ -36,35 +35,32 @@
 #include "cull/cull.h"
 #include "sgeobj/cull/sge_boundaries.h"
 
-#ifdef  __cplusplus
+#ifdef __cplusplus
 extern "C" {
 #endif
 
-/* *INDENT-OFF* */
+/**
+* @brief @todo add summary
+*
+* @todo add description
+*
+*    SGE_ULONG(JJ_jobid) - @todo add summary
+*    @todo add description
+*
+*    SGE_ULONG(JJ_type) - @todo add summary
+*    @todo add description
+*
+*    SGE_LIST(JJ_finished_tasks) - @todo add summary
+*    @todo add description
+*
+*    SGE_LIST(JJ_not_yet_finished_ids) - @todo add summary
+*    @todo add description
+*
+*    SGE_LIST(JJ_started_task_ids) - @todo add summary
+*    @todo add description
+*
+*/
 
-/****** japi/--JJ_Type **************************************************
-*  NAME
-*     JJ_Type - JAPI job
-*
-*  ELEMENTS
-*     SGE_ULONG(JJ_jobid)
-*        JAPI jobid
-*
-*     SGE_ULONG(JJ_type)
-*        Job type - analoguous to JB_type
-*
-*     SGE_LIST(JJ_finished_tasks, JJAT_Type)
-*        list of finished job tasks
-*
-*     SGE_LIST(JJ_not_yet_finished_ids, RN_Type)
-*        id's of not yet finished tasks
-*
-*     SGE_LIST(JJ_started_task_ids, RN_Type)
-*        id's of started tasks
-*
-*  FUNCTION
-*     CULL element holding per job information about JAPI session 
-******************************************************************************/
 enum {
    JJ_jobid = JJ_LOWERBOUND,
    JJ_type,
@@ -74,12 +70,12 @@ enum {
 };
 
 LISTDEF(JJ_Type)
-   SGE_ULONG(JJ_jobid, CULL_HASH | CULL_UNIQUE)
+   SGE_ULONG(JJ_jobid, CULL_UNIQUE | CULL_HASH)
    SGE_ULONG(JJ_type, CULL_DEFAULT)
    SGE_LIST(JJ_finished_tasks, JJAT_Type, CULL_DEFAULT)
    SGE_LIST(JJ_not_yet_finished_ids, RN_Type, CULL_DEFAULT)
    SGE_LIST(JJ_started_task_ids, RN_Type, CULL_DEFAULT)
-LISTEND 
+LISTEND
 
 NAMEDEF(JJN)
    NAME("JJ_jobid")
@@ -89,15 +85,10 @@ NAMEDEF(JJN)
    NAME("JJ_started_task_ids")
 NAMEEND
 
-#define JJS sizeof(JJN)/sizeof(char*)
+#define JJ_SIZE sizeof(JJN)/sizeof(char *)
 
-/* *INDENT-ON* */
-
-#define NSVS sizeof(NSVN)/sizeof(char*)
-
-#ifdef  __cplusplus
+#ifdef __cplusplus
 }
 #endif
 
-#endif  /* __SGE_JAPIL_H */
-
+#endif

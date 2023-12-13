@@ -1,0 +1,161 @@
+{
+	"className":	"QAJ",
+	"summary":	"@todo add summary",
+	"description":	[{
+			"line":	"@todo add description"
+		}],
+	"cullPrefix":	"QAJ",
+	"attributes":	[{
+			"name":	"host",
+			"summary":	"@todo add summary",
+			"description":	[{
+					"line":	"@todo add description"
+				}],
+			"type":	"lHostT",
+			"flags":	[]
+		}, {
+			"name":	"queue",
+			"summary":	"@todo add summary",
+			"description":	[{
+					"line":	"@todo add description"
+				}],
+			"type":	"lStringT",
+			"flags":	[]
+		}, {
+			"name":	"group",
+			"summary":	"@todo add summary",
+			"description":	[{
+					"line":	"@todo add description"
+				}],
+			"type":	"lStringT",
+			"flags":	[]
+		}, {
+			"name":	"owner",
+			"summary":	"@todo add summary",
+			"description":	[{
+					"line":	"@todo add description"
+				}],
+			"type":	"lStringT",
+			"flags":	[]
+		}, {
+			"name":	"project",
+			"summary":	"@todo add summary",
+			"description":	[{
+					"line":	"@todo add description"
+				}],
+			"type":	"lStringT",
+			"flags":	[]
+		}, {
+			"name":	"department",
+			"summary":	"@todo add summary",
+			"description":	[{
+					"line":	"@todo add description"
+				}],
+			"type":	"lStringT",
+			"flags":	[]
+		}, {
+			"name":	"ru_wallclock",
+			"summary":	"@todo add summary",
+			"description":	[{
+					"line":	"@todo add description"
+				}],
+			"type":	"lDoubleT",
+			"flags":	[]
+		}, {
+			"name":	"ru_utime",
+			"summary":	"@todo add summary",
+			"description":	[{
+					"line":	"@todo add description"
+				}],
+			"type":	"lDoubleT",
+			"flags":	[]
+		}, {
+			"name":	"ru_stime",
+			"summary":	"@todo add summary",
+			"description":	[{
+					"line":	"@todo add description"
+				}],
+			"type":	"lDoubleT",
+			"flags":	[]
+		}, {
+			"name":	"ru_maxrss",
+			"summary":	"@todo add summary",
+			"description":	[{
+					"line":	"@todo add description"
+				}],
+			"type":	"lDoubleT",
+			"flags":	[]
+		}, {
+			"name":	"ru_inblock",
+			"summary":	"@todo add summary",
+			"description":	[{
+					"line":	"@todo add description"
+				}],
+			"type":	"lDoubleT",
+			"flags":	[]
+		}, {
+			"name":	"granted_pe",
+			"summary":	"@todo add summary",
+			"description":	[{
+					"line":	"@todo add description"
+				}],
+			"type":	"lStringT",
+			"flags":	[]
+		}, {
+			"name":	"slots",
+			"summary":	"@todo add summary",
+			"description":	[{
+					"line":	"@todo add description"
+				}],
+			"type":	"lUlongT",
+			"flags":	[]
+		}, {
+			"name":	"cpu",
+			"summary":	"@todo add summary",
+			"description":	[{
+					"line":	"@todo add description"
+				}],
+			"type":	"lDoubleT",
+			"flags":	[]
+		}, {
+			"name":	"mem",
+			"summary":	"@todo add summary",
+			"description":	[{
+					"line":	"@todo add description"
+				}],
+			"type":	"lDoubleT",
+			"flags":	[]
+		}, {
+			"name":	"io",
+			"summary":	"@todo add summary",
+			"description":	[{
+					"line":	"@todo add description"
+				}],
+			"type":	"lDoubleT",
+			"flags":	[]
+		}, {
+			"name":	"iow",
+			"summary":	"@todo add summary",
+			"description":	[{
+					"line":	"@todo add description"
+				}],
+			"type":	"lDoubleT",
+			"flags":	[]
+		}, {
+			"name":	"maxvmem",
+			"summary":	"@todo add summary",
+			"description":	[{
+					"line":	"@todo add description"
+				}],
+			"type":	"lDoubleT",
+			"flags":	[]
+		}, {
+			"name":	"arid",
+			"summary":	"@todo add summary",
+			"description":	[{
+					"line":	"@todo add description"
+				}],
+			"type":	"lUlongT",
+			"flags":	[]
+		}]
+}

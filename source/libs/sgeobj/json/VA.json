@@ -1,0 +1,35 @@
+{
+	"className":	"VA",
+	"summary":	"@todo add summary",
+	"description":	[{
+			"line":	"@todo add description"
+		}],
+	"cullPrefix":	"VA",
+	"attributes":	[{
+			"name":	"variable",
+			"summary":	"@todo add summary",
+			"description":	[{
+					"line":	"@todo add description"
+				}],
+			"type":	"lStringT",
+			"flags":	[{
+					"name":	"PRIMARY_KEY"
+				}, {
+					"name":	"UNIQUE"
+				}, {
+					"name":	"HASH"
+				}, {
+					"name":	"SPOOL_SUBLIST"
+				}]
+		}, {
+			"name":	"value",
+			"summary":	"@todo add summary",
+			"description":	[{
+					"line":	"@todo add description"
+				}],
+			"type":	"lStringT",
+			"flags":	[{
+					"name":	"SPOOL_SUBLIST"
+				}]
+		}]
+}

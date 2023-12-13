@@ -1,6 +1,5 @@
-#ifndef __SGE_JAPI_JJAT_L_H
-#define __SGE_JAPI_JJAT_L_H
-
+#ifndef SGE_JJAT_L_H
+#define SGE_JJAT_L_H
 /*___INFO__MARK_BEGIN__*/
 /*************************************************************************
  * 
@@ -36,32 +35,29 @@
 #include "cull/cull.h"
 #include "sgeobj/cull/sge_boundaries.h"
 
-#ifdef  __cplusplus
+#ifdef __cplusplus
 extern "C" {
 #endif
 
-/* *INDENT-OFF* */
+/**
+* @brief @todo add summary
+*
+* @todo add description
+*
+*    SGE_ULONG(JJAT_task_id) - @todo add summary
+*    @todo add description
+*
+*    SGE_ULONG(JJAT_stat) - @todo add summary
+*    @todo add description
+*
+*    SGE_LIST(JJAT_rusage) - @todo add summary
+*    @todo add description
+*
+*    SGE_STRING(JJAT_failed_text) - @todo add summary
+*    @todo add description
+*
+*/
 
-/****** japi/--JJAT_Type **************************************************
-*  NAME
-*     JJAT_Type - JAPI array task
-*
-*  ELEMENTS
-*     SGE_ULONG(JJAT_task_id)
-*        array task id
-*
-*     SGE_ULONG(JJAT_stat)
-*        stat information provided by japi_wait()
-*
-*     SGE_LIST(JJAT_rusage)
-*        resource usage information provided by japi_wait()
-*
-*     SGE_STRING(JJAT_failed_text)
-*        printable error text describing reason of job error
-*
-*  FUNCTION
-*     CULL element holding per job information about JAPI session 
-******************************************************************************/
 enum {
    JJAT_task_id = JJAT_LOWERBOUND,
    JJAT_stat,
@@ -72,9 +68,9 @@ enum {
 LISTDEF(JJAT_Type)
    SGE_ULONG(JJAT_task_id, CULL_DEFAULT)
    SGE_ULONG(JJAT_stat, CULL_DEFAULT)
-   SGE_MAP(JJAT_rusage, UA_Type, CULL_DEFAULT)
+   SGE_LIST(JJAT_rusage, UA_Type, CULL_DEFAULT)
    SGE_STRING(JJAT_failed_text, CULL_DEFAULT)
-LISTEND 
+LISTEND
 
 NAMEDEF(JJATN)
    NAME("JJAT_task_id")
@@ -83,13 +79,10 @@ NAMEDEF(JJATN)
    NAME("JJAT_failed_text")
 NAMEEND
 
-#define JJATS sizeof(JJATN)/sizeof(char*)
+#define JJAT_SIZE sizeof(JJATN)/sizeof(char *)
 
-/* *INDENT-ON* */
-
-#ifdef  __cplusplus
+#ifdef __cplusplus
 }
 #endif
 
-#endif  /* __SGE_JAPIL_H */
-
+#endif

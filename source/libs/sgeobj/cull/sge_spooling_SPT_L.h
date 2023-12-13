@@ -1,5 +1,5 @@
-#ifndef __SGE_SPOOL_SPT_L_H
-#define __SGE_SPOOL_SPT_L_H
+#ifndef SGE_SPT_L_H
+#define SGE_SPT_L_H
 /*___INFO__MARK_BEGIN__*/
 /*************************************************************************
  * 
@@ -35,62 +35,34 @@
 #include "cull/cull.h"
 #include "sgeobj/cull/sge_boundaries.h"
 
-#ifdef  __cplusplus
+#ifdef __cplusplus
 extern "C" {
 #endif
 
-/****** spool/--SPT_Type ***************************************
+/**
+* @brief @todo add summary
 *
-*  NAME
-*     SPT_Type -- Spooling object types
+* @todo add description
 *
-*  ELEMENTS
-*     SGE_ULONG(SPT_type, CULL_HASH | CULL_UNIQUE)
-*        Unique type identifier.
-*        See enum sge_object_type in libs/gdi/sge_mirror.h
-*        SGE_TYPE_ALL describes a default type entry for all
-*        object types.
+*    SGE_ULONG(SPT_type) - @todo add summary
+*    @todo add description
 *
-*     SGE_STRING(SPT_name, CULL_DEFAULT)
-*        Name of the type - used for informational messages etc.
+*    SGE_STRING(SPT_name) - @todo add summary
+*    @todo add description
 *
-*     SGE_LIST(SPT_rules, SPTR_Type, CULL_DEFAULT)
-*        List of rules that can be applied for a certain object type.
-*        Does not reference the rules themselves, but contains mapping
-*        objects mapping between type and rule.
+*    SGE_LIST(SPT_rules) - @todo add summary
+*    @todo add description
 *
-*
-*  FUNCTION
-*     Objects to be spooled have a certain type that can be identified
-*     by the sge_object_type enum.
-*     A spooling context can contain information about individual
-*     types and/or define a default behaviour for all (not individually
-*     handled) types.
-*
-*     The spooling behaviour for a type is defined by a list of references
-*     to rules in the spooling context.
-*     One of the referenced spooling rules has to be made default rule
-*     for reading objects.
-*
-*  NOTES
-*     The type identifiers should not come from the mirroring interface,
-*     but be part of a more general type information handling in libgdi.
-*
-*  SEE ALSO
-*     spool/--Spooling
-*     spool/--SPC_Type
-*     spool/--SPTR_Type
-****************************************************************************
 */
 
 enum {
-   SPT_type = SPT_LOWERBOUND,      /* sge_object_type, SGE_TYPE_ALL = default */
-   SPT_name,                       /* name of the type, e.g. "JB_Type" */
-   SPT_rules                       /* list of rules to spool this object type */
+   SPT_type = SPT_LOWERBOUND,
+   SPT_name,
+   SPT_rules
 };
 
 LISTDEF(SPT_Type)
-   SGE_ULONG(SPT_type, CULL_HASH | CULL_UNIQUE)
+   SGE_ULONG(SPT_type, CULL_UNIQUE | CULL_HASH)
    SGE_STRING(SPT_name, CULL_DEFAULT)
    SGE_LIST(SPT_rules, SPTR_Type, CULL_DEFAULT)
 LISTEND
@@ -101,10 +73,10 @@ NAMEDEF(SPTN)
    NAME("SPT_rules")
 NAMEEND
 
-#define SPTS sizeof(SPTN)/sizeof(char *)
+#define SPT_SIZE sizeof(SPTN)/sizeof(char *)
 
-#ifdef  __cplusplus
+#ifdef __cplusplus
 }
 #endif
 
-#endif /* __SGE_SPOOLL_H */
+#endif

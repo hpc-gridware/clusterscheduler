@@ -1,6 +1,5 @@
-#ifndef __SGE_SELECT_QUEUE_QRL_L_H
-#define __SGE_SELECT_QUEUE_QRL_L_H
-
+#ifndef SGE_QRL_L_H
+#define SGE_QRL_L_H
 /*___INFO__MARK_BEGIN__*/
 /*************************************************************************
  * 
@@ -36,44 +35,36 @@
 #include "cull/cull.h"
 #include "sgeobj/cull/sge_boundaries.h"
 
-#ifdef  __cplusplus
+#ifdef __cplusplus
 extern "C" {
 #endif
 
-/****** spool/--QR_Type***************************************
+/**
+* @brief @todo add summary
 *
-*  NAME
-*     QR_Type -- sub list of queue references
+* @todo add description
 *
-*  ELEMENTS
-*     SGE_REF(QR_Queue,CULL_ANY_SUBTYPE, CULL_DEFAULT
-*        References a queue instance object
+*    SGE_REF(QRL_queue) - @todo add summary
+*    @todo add description
 *
-*  FUNCTION
-*     Lists all queue instance objects in the same 
-*     queue_consumable_category
-*
-****************************************************************************
 */
-enum {
-   QRL_queue_pos = 0
-};
 
 enum {
    QRL_queue = QRL_LOWERBOUND
 };
 
 LISTDEF(QRL_Type)
-   SGE_REF(QRL_queue,CULL_ANY_SUBTYPE, CULL_DEFAULT)
-LISTEND 
+   SGE_REF(QRL_queue, CULL_ANY_SUBTYPE, CULL_DEFAULT)
+LISTEND
 
-NAMEDEF(QRL_N)
+NAMEDEF(QRLN)
    NAME("QRL_queue")
 NAMEEND
 
-#define QRL_S sizeof(QRL_N)/sizeof(char*)
+#define QRL_SIZE sizeof(QRLN)/sizeof(char *)
 
-#ifdef  __cplusplus
+#ifdef __cplusplus
 }
 #endif
+
 #endif

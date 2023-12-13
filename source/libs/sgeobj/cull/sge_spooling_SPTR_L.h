@@ -1,5 +1,5 @@
-#ifndef __SGE_SPOOL_SPTR_L_H
-#define __SGE_SPOOL_SPTR_L_H
+#ifndef SGE_SPTR_L_H
+#define SGE_SPTR_L_H
 /*___INFO__MARK_BEGIN__*/
 /*************************************************************************
  * 
@@ -35,46 +35,30 @@
 #include "cull/cull.h"
 #include "sgeobj/cull/sge_boundaries.h"
 
-#ifdef  __cplusplus
+#ifdef __cplusplus
 extern "C" {
 #endif
 
-/****** spool/--SPTR_Type ***************************************
+/**
+* @brief @todo add summary
 *
-*  NAME
-*     SPTR_Type -- references to rules for certain object types
+* @todo add description
 *
-*  ELEMENTS
-*     SGE_BOOL(SPTR_default, CULL_DEFAULT)
-*        Defines whether the referenced rule is the default rule
-*        for reading the defined object type.
+*    SGE_BOOL(SPTR_default) - @todo add summary
+*    @todo add description
 *
-*     SGE_STRING(SPTR_rule_name, CULL_UNIQUE)
-*        Name of the referenced rule.
+*    SGE_STRING(SPTR_rule_name) - @todo add summary
+*    @todo add description
 *
-*     SGE_REF(SPTR_rule, CULL_ANY_SUBTYPE, CULL_DEFAULT)
-*        Pointer/reference to the rule to be used with the
-*        defined object type.
+*    SGE_REF(SPTR_rule) - @todo add summary
+*    @todo add description
 *
-*
-*  FUNCTION
-*     Elements of SPTR_Type define a mapping between object type (SPT_Type)
-*     and spooling rules (SPR_Type).
-*     One object type can be spooled (written) using multiple spooling rules.
-*     One object type will be read using one (the default) spooling rule.
-*     One spooling rule can be referenced by multiple object types.
-*
-*  SEE ALSO
-*     spool/--Spooling
-*     spool/--SPC_Type
-*     spool/--SPT_Type
-****************************************************************************
 */
 
 enum {
-   SPTR_default = SPTR_LOWERBOUND,  /* is this the default rule for this object type? */
-   SPTR_rule_name,                  /* name of the rule in context's rule list */
-   SPTR_rule                        /* reference to rule for quicker access */
+   SPTR_default = SPTR_LOWERBOUND,
+   SPTR_rule_name,
+   SPTR_rule
 };
 
 LISTDEF(SPTR_Type)
@@ -89,10 +73,10 @@ NAMEDEF(SPTRN)
    NAME("SPTR_rule")
 NAMEEND
 
-#define SPTRS sizeof(SPTRN)/sizeof(char *)
+#define SPTR_SIZE sizeof(SPTRN)/sizeof(char *)
 
-#ifdef  __cplusplus
+#ifdef __cplusplus
 }
 #endif
 
-#endif 
+#endif

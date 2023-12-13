@@ -214,7 +214,11 @@ const char *dump_cull_type_flags(cJSON *json_flags, dstring *dstr_flags)
          } else {
             sge_dstring_append(dstr_flags, " | ");
          }
-         sge_dstring_sprintf_append(dstr_flags, "CULL_%s", name);
+         if (strcmp(name, "SPOOL_SUBLIST") == 0) {
+            sge_dstring_append(dstr_flags, "CULL_SUBLIST");
+         } else {
+            sge_dstring_sprintf_append(dstr_flags, "CULL_%s", name);
+         }
       }
    }
    // we didn't dump any flags, write the CULL_DEFAULT
@@ -311,7 +315,7 @@ dump_cull_type_Lh(const char *source_dir, const char *target_dir, const char *cu
       sge_dstring_sprintf_append(&dstr_enum, "};\n\n");
       sge_dstring_sprintf_append(&dstr_listdef, "LISTEND\n\n");
       sge_dstring_sprintf_append(&dstr_namedef, "NAMEEND\n\n", cull_prefix);
-      sge_dstring_sprintf_append(&dstr_namedef, "#define %sS sizeof(%sN)/sizeof(char *)\n\n",
+      sge_dstring_sprintf_append(&dstr_namedef, "#define %s_SIZE sizeof(%sN)/sizeof(char *)\n\n",
                                  cull_prefix, cull_prefix);
       sge_dstring_sprintf_append(&dstr_namedef, "%s\n\n", EXTERN_C_END);
    }
@@ -372,9 +376,9 @@ dump_cull_type(cJSON *json_type, const char **last_cull_prefix,
 
    // create all_listsL.h content
    sprintf(filename, "%s/sge_%s_%s_L.h", target_dir, cull_name_spec, cull_prefix);
+   sge_dstring_sprintf_append(dstr_all_types_includes, "#include \"%s\"\n", filename);
    if (add_to_all_lists) {
-      sge_dstring_sprintf_append(dstr_all_types_includes, "#include \"%s\"\n", filename);
-      sge_dstring_sprintf_append(dstr_all_types_body, "   {%s_LOWERBOUND, %sS, %sN, %s_Type},\n",
+      sge_dstring_sprintf_append(dstr_all_types_body, "   {%s_LOWERBOUND, %s_SIZE, %sN, %s_Type},\n",
                                   cull_prefix, cull_prefix, cull_prefix, cull_prefix);
    }
 
@@ -548,7 +552,6 @@ dump_cull_boundaries_begin(dstring *dstr_boundaries)
 static void
 dump_cull_boundaries_end(dstring *dstr_boundaries)
 {
-   sge_dstring_append(dstr_boundaries, "\n#  define LAST_UPPERBOUND PACK_UPPERBOUND\n\n");
    sge_dstring_append(dstr_boundaries, "};\n\n");
    sge_dstring_sprintf_append(dstr_boundaries, "%s\n\n", EXTERN_C_END);
 }
@@ -576,10 +579,6 @@ dump_cull(const char *source_dir, const char *target_dir)
                                  &dstr_all_types_includes, &dstr_all_types_body,
                                  source_dir, target_dir);
          }
-         // add PACK_Type (which is not in the namespace and therefore not in our json files)
-         sge_dstring_sprintf_append(&dstr_boundaries, "   PACK_LOWERBOUND = %s_UPPERBOUND + 1,\n",
-                                    last_cull_prefix);
-         sge_dstring_sprintf_append(&dstr_boundaries, "   PACK_UPPERBOUND = PACK_LOWERBOUND + 1*BASIC_UNIT - 1\n");
          // add terminating NULL entry
          sge_dstring_sprintf_append(&dstr_all_types_body, "   {0, 0, NULL, NULL}\n");
       } else {

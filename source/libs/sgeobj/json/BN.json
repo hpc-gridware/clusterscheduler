@@ -1,0 +1,81 @@
+{
+	"className":	"BN",
+	"summary":	"@todo add summary",
+	"description":	[{
+			"line":	"@todo add description"
+		}],
+	"cullPrefix":	"BN",
+	"attributes":	[{
+			"name":	"strategy",
+			"summary":	"@todo add summary",
+			"description":	[{
+					"line":	"@todo add description"
+				}],
+			"type":	"lStringT",
+			"flags":	[{
+					"name":	"PRIMARY_KEY"
+				}, {
+					"name":	"SPOOL_SUBLIST"
+				}]
+		}, {
+			"name":	"type",
+			"summary":	"@todo add summary",
+			"description":	[{
+					"line":	"@todo add description"
+				}],
+			"type":	"lUlongT",
+			"flags":	[{
+					"name":	"SPOOL_SUBLIST"
+				}]
+		}, {
+			"name":	"parameter_n",
+			"summary":	"@todo add summary",
+			"description":	[{
+					"line":	"@todo add description"
+				}],
+			"type":	"lUlongT",
+			"flags":	[{
+					"name":	"SPOOL_SUBLIST"
+				}]
+		}, {
+			"name":	"parameter_socket_offset",
+			"summary":	"@todo add summary",
+			"description":	[{
+					"line":	"@todo add description"
+				}],
+			"type":	"lUlongT",
+			"flags":	[{
+					"name":	"SPOOL_SUBLIST"
+				}]
+		}, {
+			"name":	"parameter_core_offset",
+			"summary":	"@todo add summary",
+			"description":	[{
+					"line":	"@todo add description"
+				}],
+			"type":	"lUlongT",
+			"flags":	[{
+					"name":	"SPOOL_SUBLIST"
+				}]
+		}, {
+			"name":	"parameter_striding_step_size",
+			"summary":	"@todo add summary",
+			"description":	[{
+					"line":	"@todo add description"
+				}],
+			"type":	"lUlongT",
+			"flags":	[{
+					"name":	"SPOOL_SUBLIST"
+				}]
+		}, {
+			"name":	"parameter_explicit",
+			"summary":	"@todo add summary",
+			"description":	[{
+					"line":	"@todo add description"
+				}],
+			"type":	"lStringT",
+			"flags":	[{
+					"name":	"SPOOL_SUBLIST"
+				}]
+		}]
+}

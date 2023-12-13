@@ -1,6 +1,5 @@
-#ifndef __SGE_USERPRJ_UPU_L_H
-#define __SGE_USERPRJ_UPU_L_H
-
+#ifndef SGE_UPU_L_H
+#define SGE_UPU_L_H
 /*___INFO__MARK_BEGIN__*/
 /*************************************************************************
  * 
@@ -36,40 +35,42 @@
 #include "cull/cull.h"
 #include "sgeobj/cull/sge_boundaries.h"
 
-#ifdef  __cplusplus
+#ifdef __cplusplus
 extern "C" {
 #endif
 
-/*
- * This is the list type we use to hold the 
- * information for user/project. This objects are targets of throwing
- * tickets to them and as usage accumulators. There are no real differences 
- * at the moment, so putting them together is convenient.
- */
+/**
+* @brief @todo add summary
+*
+* @todo add description
+*
+*    SGE_ULONG(UPU_job_number) - @todo add summary
+*    @todo add description
+*
+*    SGE_LIST(UPU_old_usage_list) - @todo add summary
+*    @todo add description
+*
+*/
 
 enum {
-   UPU_job_number = UPU_LOWERBOUND,  /* job number */
-   UPU_old_usage_list        /* UA_Type still debited usage set and used
-                              * via orders by SGEEE ted_job_usageschedd by
-                              * qmaster */
+   UPU_job_number = UPU_LOWERBOUND,
+   UPU_old_usage_list
 };
 
 LISTDEF(UPU_Type)
-   JGDI_OBJ(JobUsage)
-   SGE_ULONG(UPU_job_number, CULL_PRIMARY_KEY | CULL_HASH | CULL_UNIQUE | CULL_SUBLIST)
-   SGE_MAP(UPU_old_usage_list, UA_Type, CULL_DEFAULT | CULL_SUBLIST)
-LISTEND 
+   SGE_ULONG(UPU_job_number, CULL_PRIMARY_KEY | CULL_UNIQUE | CULL_HASH | CULL_SUBLIST)
+   SGE_LIST(UPU_old_usage_list, UA_Type, CULL_SUBLIST)
+LISTEND
 
 NAMEDEF(UPUN)
    NAME("UPU_job_number")
    NAME("UPU_old_usage_list")
 NAMEEND
 
-#define UPUS sizeof(UPUN)/sizeof(char*)
+#define UPU_SIZE sizeof(UPUN)/sizeof(char *)
 
-/* *INDENT-ON* */ 
-
-#ifdef  __cplusplus
+#ifdef __cplusplus
 }
 #endif
-#endif                         
+
+#endif

@@ -1,0 +1,41 @@
+{
+	"className":	"SCT",
+	"summary":	"@todo add summary",
+	"description":	[{
+			"line":	"@todo add description"
+		}],
+	"cullPrefix":	"SCT",
+	"attributes":	[{
+			"name":	"str",
+			"summary":	"@todo add summary",
+			"description":	[{
+					"line":	"@todo add description"
+				}],
+			"type":	"lStringT",
+			"flags":	[{
+					"name":	"UNIQUE"
+				}, {
+					"name":	"HASH"
+				}]
+		}, {
+			"name":	"job_pending_ref",
+			"summary":	"@todo add summary",
+			"description":	[{
+					"line":	"@todo add description"
+				}],
+			"type":	"lListT",
+			"subClassName":	"REF",
+			"subCullPrefix":	"REF",
+			"flags":	[]
+		}, {
+			"name":	"job_ref",
+			"summary":	"@todo add summary",
+			"description":	[{
+					"line":	"@todo add description"
+				}],
+			"type":	"lListT",
+			"subClassName":	"REF",
+			"subCullPrefix":	"REF",
+			"flags":	[]
+		}]
+}

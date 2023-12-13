@@ -34,6 +34,7 @@
 
 #include "cull/cull_list.h"
 #include "uti/sge_dstring.h"
+#include "uti/sge_monitor.h"
 
 #include "sgeobj/cull/sge_event_EV_L.h"
 #include "sgeobj/cull/sge_event_EVS_L.h"

@@ -1,6 +1,5 @@
-#ifndef __SGE_USERPRJ_UU_L_H
-#define __SGE_USERPRJ_UU_L_H
-
+#ifndef SGE_UU_L_H
+#define SGE_UU_L_H
 /*___INFO__MARK_BEGIN__*/
 /*************************************************************************
  * 
@@ -36,15 +35,62 @@
 #include "cull/cull.h"
 #include "sgeobj/cull/sge_boundaries.h"
 
-#ifdef  __cplusplus
+#ifdef __cplusplus
 extern "C" {
 #endif
 
-/*
- * This is the list type we use to hold the 
- * information for user. This objects are targets of throwing
- * tickets to them and as usage accumulators.
- */
+/**
+* @brief @todo add summary
+*
+* @todo add description
+*
+*    SGE_STRING(UU_name) - @todo add summary
+*    @todo add description
+*
+*    SGE_ULONG(UU_oticket) - @todo add summary
+*    @todo add description
+*
+*    SGE_ULONG(UU_fshare) - @todo add summary
+*    @todo add description
+*
+*    SGE_ULONG(UU_delete_time) - @todo add summary
+*    @todo add description
+*
+*    SGE_ULONG(UU_job_cnt) - @todo add summary
+*    @todo add description
+*
+*    SGE_ULONG(UU_pending_job_cnt) - @todo add summary
+*    @todo add description
+*
+*    SGE_LIST(UU_usage) - @todo add summary
+*    @todo add description
+*
+*    SGE_ULONG(UU_usage_time_stamp) - @todo add summary
+*    @todo add description
+*
+*    SGE_ULONG(UU_usage_seqno) - @todo add summary
+*    @todo add description
+*
+*    SGE_LIST(UU_long_term_usage) - @todo add summary
+*    @todo add description
+*
+*    SGE_LIST(UU_project) - @todo add summary
+*    @todo add description
+*
+*    SGE_LIST(UU_debited_job_usage) - @todo add summary
+*    @todo add description
+*
+*    SGE_STRING(UU_default_project) - @todo add summary
+*    @todo add description
+*
+*    SGE_ULONG(UU_version) - @todo add summary
+*    @todo add description
+*
+*    SGE_BOOL(UU_consider_with_categories) - @todo add summary
+*    @todo add description
+*
+*/
+
 enum {
    UU_name = UU_LOWERBOUND,
    UU_oticket,
@@ -63,73 +109,23 @@ enum {
    UU_consider_with_categories
 };
 
-enum {
-   UU_name_POS = 0,
-   UU_oticket_POS,
-   UU_fshare_POS,
-   UU_delete_time_POS,
-   UU_job_cnt_POS,
-   UU_pending_job_cnt_POS,
-   UU_usage_POS,
-   UU_usage_time_stamp_POS,
-   UU_usage_seqno_POS,
-   UU_long_term_usage_POS,
-   UU_project_POS,
-   UU_debited_job_usage_POS,
-   UU_default_project_POS,
-   UU_version_POS,
-   UU_consider_with_categories_POS
-};
-
 LISTDEF(UU_Type)
-   JGDI_ROOT_OBJ(User, SGE_UU_LIST, ADD | MODIFY | DELETE | GET | GET_LIST)
-   JGDI_EVENT_OBJ(ADD(sgeE_USER_ADD) | MODIFY(sgeE_USER_MOD) | DELETE(sgeE_USER_DEL) | GET_LIST(sgeE_USER_LIST))
-
-   /* configured user name spooled */
-   SGE_STRING_D(UU_name, CULL_PRIMARY_KEY | CULL_HASH | CULL_UNIQUE | CULL_SPOOL | CULL_SUBLIST | CULL_JGDI_CONF, "template")
-
-   /* configured override tickets (set by Qmon, used by SGEEE schedd) spooled */
-   SGE_ULONG(UU_oticket, CULL_DEFAULT | CULL_SPOOL | CULL_JGDI_CONF)
-   
-   /* configured functional shares (set by Qmon, used by SGEEE schedd) spooled */
-   SGE_ULONG(UU_fshare, CULL_DEFAULT | CULL_SPOOL | CULL_JGDI_CONF)
-
-   /* delete time for automatic users, (set by qmaster, * used by SGEEE qmaster) spooled */
-   SGE_ULONG(UU_delete_time, CULL_DEFAULT | CULL_SPOOL | CULL_JGDI_CONF)
-
-   /* job count (set and used by SGEEE schedd, not spooled) schedd local, not stored to qmaster */
-   SGE_ULONG(UU_job_cnt, CULL_DEFAULT | CULL_JGDI_HIDDEN)
-
-   /* job count (set and used by SGEEE schedd, not spooled) schedd local, not stored to qmaster */
-   SGE_ULONG(UU_pending_job_cnt, CULL_DEFAULT | CULL_JGDI_HIDDEN)
-
-   /* UA_Type; decayed usage set and used by SGEEE schedd stored to qmaster; spooled */
-   SGE_MAP(UU_usage, UA_Type, CULL_DEFAULT | CULL_SPOOL | CULL_JGDI_HIDDEN)
-
-   /* time stamp of last decay set when UU_usage changes; set and used by SGEEE schedd stored to qmaster; spooled */
-   SGE_ULONG(UU_usage_time_stamp, CULL_DEFAULT | CULL_SPOOL | CULL_JGDI_HIDDEN)
-
-   /* usage sequence number set and used by SGE schedd, not stored to qmaster; not spooled */
-   SGE_ULONG(UU_usage_seqno, CULL_DEFAULT | CULL_JGDI_HIDDEN)
-
-   /* UA_Type; long term accumulated * non-decayed i usage; set by SGEEE schedd stored to qmaster; spooled */
-   SGE_MAP(UU_long_term_usage, UA_Type, CULL_DEFAULT | CULL_SPOOL | CULL_JGDI_HIDDEN)
-
-   /* UPP_Type; usage on a project basis set and used by SGEEE schedd stored to qmaster; spooled Only used by projects */
-   SGE_LIST(UU_project, UPP_Type, CULL_DEFAULT | CULL_SPOOL | CULL_JGDI_HIDDEN)
-
-   /* UPU_Type (see below) still debited usage per job (set and used by SGEEE schedd) */
-   SGE_LIST(UU_debited_job_usage, UPU_Type, CULL_DEFAULT | CULL_SPOOL | CULL_JGDI_HIDDEN)
-
-   /* default project for user */
-   SGE_STRING(UU_default_project, CULL_DEFAULT | CULL_SPOOL | CULL_JGDI_CONF)
-
-   /* user/project version, increments when usage is updated, stored to qmaster, not spooled */
-   SGE_ULONG(UU_version, CULL_DEFAULT | CULL_JGDI_HIDDEN)
-
-   /* true, if project plays role with categories */
-   SGE_BOOL(UU_consider_with_categories, CULL_DEFAULT | CULL_JGDI_HIDDEN)
-LISTEND 
+   SGE_STRING(UU_name, CULL_PRIMARY_KEY | CULL_UNIQUE | CULL_HASH | CULL_SPOOL | CULL_SUBLIST)
+   SGE_ULONG(UU_oticket, CULL_SPOOL)
+   SGE_ULONG(UU_fshare, CULL_SPOOL)
+   SGE_ULONG(UU_delete_time, CULL_SPOOL)
+   SGE_ULONG(UU_job_cnt, CULL_DEFAULT)
+   SGE_ULONG(UU_pending_job_cnt, CULL_DEFAULT)
+   SGE_LIST(UU_usage, UA_Type, CULL_SPOOL)
+   SGE_ULONG(UU_usage_time_stamp, CULL_SPOOL)
+   SGE_ULONG(UU_usage_seqno, CULL_DEFAULT)
+   SGE_LIST(UU_long_term_usage, UA_Type, CULL_SPOOL)
+   SGE_LIST(UU_project, UPP_Type, CULL_SPOOL)
+   SGE_LIST(UU_debited_job_usage, UPU_Type, CULL_SPOOL)
+   SGE_STRING(UU_default_project, CULL_SPOOL)
+   SGE_ULONG(UU_version, CULL_DEFAULT)
+   SGE_BOOL(UU_consider_with_categories, CULL_DEFAULT)
+LISTEND
 
 NAMEDEF(UUN)
    NAME("UU_name")
@@ -149,13 +145,10 @@ NAMEDEF(UUN)
    NAME("UU_consider_with_categories")
 NAMEEND
 
-#define UUS sizeof(UUN)/sizeof(char*)
+#define UU_SIZE sizeof(UUN)/sizeof(char *)
 
-
-/* *INDENT-ON* */ 
-
-#ifdef  __cplusplus
+#ifdef __cplusplus
 }
 #endif
 
-#endif                         
+#endif

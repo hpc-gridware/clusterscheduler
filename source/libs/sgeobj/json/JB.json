@@ -1,0 +1,969 @@
+{
+	"className":	"Job",
+	"summary":	"job type",
+	"description":	[
+         { "line":	"JB_Type elements make only sense in conjunction with JAT_Type"
+      }, { "line":   "elements.  One element of each type is necessary to hold all"
+      }, { "line":   "data for the execution of one job. One JB_Type element an"
+      }, { "line":   "x JAT_Type elements are needed to execute an array job with"
+      }, { "line":   "x tasks."
+      }, { "line":   ""
+      }, { "line":   "         -----------       1:x        ------------"
+      }, { "line":   "         | JB_Type |<---------------->| JAT_Type |"
+      }, { "line":   "         -----------                  ------------"
+      }, { "line":   ""
+      }, { "line":   "The relation between these two elements is defined in the"
+      }, { "line":   "'JB_ja_tasks' sublist of a 'JB_Type' element. This list will"
+      }, { "line":   "contain all belonging JAT_Type elements."
+      }, { "line":   ""
+      }, { "line":   "The 'JAT_Type' CULL element containes all attributes in which"
+      }, { "line":   "one array task may differ from another array task of the"
+      }, { "line":   "same array job. The 'JB_Type' element defines all attributes"
+      }, { "line":   "wich are equivalent for all tasks of an array job."
+      }, { "line":   "A job and an array job with one task are equivalent"
+      }, { "line":   "concerning their data structures. Both consist of one 'JB_Type'"
+      }, { "line":   "and one 'JAT_Type' element"
+		}],
+	"cullPrefix":	"JB",
+	"attributes":	[{
+			"name":	"job_number",
+			"summary":	"Unique job number",
+			"description":	[{
+					"line":	"@todo add description"
+				}],
+			"type":	"lUlongT",
+			"flags":	[{
+					"name":	"PRIMARY_KEY"
+				}, {
+					"name":	"HASH"
+				}, {
+					"name":	"SPOOL"
+				}]
+		}, {
+			"name":	"job_name",
+			"summary":	"@todo add summary",
+			"description":	[{
+					"line":	"@todo add description"
+				}],
+			"type":	"lStringT",
+			"flags":	[{
+					"name":	"SPOOL"
+				}]
+		}, {
+			"name":	"version",
+			"summary":	"@todo add summary",
+			"description":	[{
+					"line":	"@todo add description"
+				}],
+			"type":	"lUlongT",
+			"flags":	[{
+					"name":	"JGDI_RO"
+				}, {
+					"name":	"SPOOL"
+				}]
+		}, {
+			"name":	"jid_request_list",
+			"summary":	"@todo add summary",
+			"description":	[{
+					"line":	"@todo add description"
+				}],
+			"type":	"lListT",
+			"subClassName":	"JRE",
+			"subCullPrefix":	"JRE",
+			"flags":	[{
+					"name":	"SPOOL"
+				}]
+		}, {
+			"name":	"jid_predecessor_list",
+			"summary":	"@todo add summary",
+			"description":	[{
+					"line":	"@todo add description"
+				}],
+			"type":	"lListT",
+			"subClassName":	"JRE",
+			"subCullPrefix":	"JRE",
+			"flags":	[{
+					"name":	"JGDI_RO"
+				}, {
+					"name":	"SPOOL"
+				}]
+		}, {
+			"name":	"jid_successor_list",
+			"summary":	"@todo add summary",
+			"description":	[{
+					"line":	"@todo add description"
+				}],
+			"type":	"lListT",
+			"subClassName":	"JRE",
+			"subCullPrefix":	"JRE",
+			"flags":	[{
+					"name":	"JGDI_RO"
+				}]
+		}, {
+			"name":	"ja_ad_request_list",
+			"summary":	"@todo add summary",
+			"description":	[{
+					"line":	"@todo add description"
+				}],
+			"type":	"lListT",
+			"subClassName":	"JRE",
+			"subCullPrefix":	"JRE",
+			"flags":	[{
+					"name":	"SPOOL"
+				}]
+		}, {
+			"name":	"ja_ad_predecessor_list",
+			"summary":	"@todo add summary",
+			"description":	[{
+					"line":	"@todo add description"
+				}],
+			"type":	"lListT",
+			"subClassName":	"JRE",
+			"subCullPrefix":	"JRE",
+			"flags":	[{
+					"name":	"JGDI_RO"
+				}, {
+					"name":	"SPOOL"
+				}]
+		}, {
+			"name":	"ja_ad_successor_list",
+			"summary":	"@todo add summary",
+			"description":	[{
+					"line":	"@todo add description"
+				}],
+			"type":	"lListT",
+			"subClassName":	"JRE",
+			"subCullPrefix":	"JRE",
+			"flags":	[{
+					"name":	"JGDI_RO"
+				}]
+		}, {
+			"name":	"session",
+			"summary":	"@todo add summary",
+			"description":	[{
+					"line":	"@todo add description"
+				}],
+			"type":	"lStringT",
+			"flags":	[{
+					"name":	"SPOOL"
+				}]
+		}, {
+			"name":	"project",
+			"summary":	"@todo add summary",
+			"description":	[{
+					"line":	"@todo add description"
+				}],
+			"type":	"lStringT",
+			"flags":	[{
+					"name":	"SPOOL"
+				}]
+		}, {
+			"name":	"department",
+			"summary":	"@todo add summary",
+			"description":	[{
+					"line":	"@todo add description"
+				}],
+			"type":	"lStringT",
+			"flags":	[{
+					"name":	"SPOOL"
+				}]
+		}, {
+			"name":	"directive_prefix",
+			"summary":	"@todo add summary",
+			"description":	[{
+					"line":	"@todo add description"
+				}],
+			"type":	"lStringT",
+			"flags":	[{
+					"name":	"SPOOL"
+				}]
+		}, {
+			"name":	"exec_file",
+			"summary":	"@todo add summary",
+			"description":	[{
+					"line":	"@todo add description"
+				}],
+			"type":	"lStringT",
+			"flags":	[{
+					"name":	"SPOOL"
+				}]
+		}, {
+			"name":	"script_file",
+			"summary":	"@todo add summary",
+			"description":	[{
+					"line":	"@todo add description"
+				}],
+			"type":	"lStringT",
+			"flags":	[{
+					"name":	"SPOOL"
+				}]
+		}, {
+			"name":	"script_size",
+			"summary":	"@todo add summary",
+			"description":	[{
+					"line":	"@todo add description"
+				}],
+			"type":	"lUlongT",
+			"flags":	[{
+					"name":	"SPOOL"
+				}]
+		}, {
+			"name":	"script_ptr",
+			"summary":	"@todo add summary",
+			"description":	[{
+					"line":	"@todo add description"
+				}],
+			"type":	"lStringT",
+			"flags":	[]
+		}, {
+			"name":	"submission_time",
+			"summary":	"@todo add summary",
+			"description":	[{
+					"line":	"@todo add description"
+				}],
+			"type":	"lUlongT",
+			"flags":	[{
+					"name":	"JGDI_RO"
+				}, {
+					"name":	"SPOOL"
+				}]
+		}, {
+			"name":	"execution_time",
+			"summary":	"@todo add summary",
+			"description":	[{
+					"line":	"@todo add description"
+				}],
+			"type":	"lUlongT",
+			"flags":	[{
+					"name":	"SPOOL"
+				}]
+		}, {
+			"name":	"deadline",
+			"summary":	"@todo add summary",
+			"description":	[{
+					"line":	"@todo add description"
+				}],
+			"type":	"lUlongT",
+			"flags":	[{
+					"name":	"SPOOL"
+				}]
+		}, {
+			"name":	"owner",
+			"summary":	"@todo add summary",
+			"description":	[{
+					"line":	"@todo add description"
+				}],
+			"type":	"lStringT",
+			"flags":	[{
+					"name":	"JGDI_RO"
+				}, {
+					"name":	"SPOOL"
+				}]
+		}, {
+			"name":	"uid",
+			"summary":	"@todo add summary",
+			"description":	[{
+					"line":	"@todo add description"
+				}],
+			"type":	"lUlongT",
+			"flags":	[{
+					"name":	"JGDI_RO"
+				}, {
+					"name":	"SPOOL"
+				}]
+		}, {
+			"name":	"group",
+			"summary":	"@todo add summary",
+			"description":	[{
+					"line":	"@todo add description"
+				}],
+			"type":	"lStringT",
+			"flags":	[{
+					"name":	"JGDI_RO"
+				}, {
+					"name":	"SPOOL"
+				}]
+		}, {
+			"name":	"gid",
+			"summary":	"@todo add summary",
+			"description":	[{
+					"line":	"@todo add description"
+				}],
+			"type":	"lUlongT",
+			"flags":	[{
+					"name":	"JGDI_RO"
+				}, {
+					"name":	"SPOOL"
+				}]
+		}, {
+			"name":	"account",
+			"summary":	"@todo add summary",
+			"description":	[{
+					"line":	"@todo add description"
+				}],
+			"type":	"lStringT",
+			"flags":	[{
+					"name":	"SPOOL"
+				}]
+		}, {
+			"name":	"cwd",
+			"summary":	"@todo add summary",
+			"description":	[{
+					"line":	"@todo add description"
+				}],
+			"type":	"lStringT",
+			"flags":	[{
+					"name":	"SPOOL"
+				}]
+		}, {
+			"name":	"notify",
+			"summary":	"@todo add summary",
+			"description":	[{
+					"line":	"@todo add description"
+				}],
+			"type":	"lBoolT",
+			"flags":	[{
+					"name":	"SPOOL"
+				}]
+		}, {
+			"name":	"type",
+			"summary":	"@todo add summary",
+			"description":	[{
+					"line":	"@todo add description"
+				}],
+			"type":	"lUlongT",
+			"flags":	[{
+					"name":	"SPOOL"
+				}]
+		}, {
+			"name":	"reserve",
+			"summary":	"@todo add summary",
+			"description":	[{
+					"line":	"@todo add description"
+				}],
+			"type":	"lBoolT",
+			"flags":	[{
+					"name":	"SPOOL"
+				}]
+		}, {
+			"name":	"priority",
+			"summary":	"@todo add summary",
+			"description":	[{
+					"line":	"@todo add description"
+				}],
+			"type":	"lUlongT",
+			"flags":	[{
+					"name":	"SPOOL"
+				}]
+		}, {
+			"name":	"jobshare",
+			"summary":	"@todo add summary",
+			"description":	[{
+					"line":	"@todo add description"
+				}],
+			"type":	"lUlongT",
+			"flags":	[{
+					"name":	"SPOOL"
+				}]
+		}, {
+			"name":	"shell_list",
+			"summary":	"@todo add summary",
+			"description":	[{
+					"line":	"@todo add description"
+				}],
+			"type":	"lListT",
+			"subClassName":	"PN",
+			"subCullPrefix":	"PN",
+			"flags":	[{
+					"name":	"SPOOL"
+				}]
+		}, {
+			"name":	"verify",
+			"summary":	"@todo add summary",
+			"description":	[{
+					"line":	"@todo add description"
+				}],
+			"type":	"lUlongT",
+			"flags":	[{
+					"name":	"JGDI_RO"
+				}, {
+					"name":	"SPOOL"
+				}]
+		}, {
+			"name":	"env_list",
+			"summary":	"@todo add summary",
+			"description":	[{
+					"line":	"@todo add description"
+				}],
+			"type":	"lListT",
+			"subClassName":	"VA",
+			"subCullPrefix":	"VA",
+			"flags":	[{
+					"name":	"SPOOL"
+				}]
+		}, {
+			"name":	"context",
+			"summary":	"@todo add summary",
+			"description":	[{
+					"line":	"@todo add description"
+				}],
+			"type":	"lListT",
+			"subClassName":	"VA",
+			"subCullPrefix":	"VA",
+			"flags":	[{
+					"name":	"SPOOL"
+				}]
+		}, {
+			"name":	"job_args",
+			"summary":	"@todo add summary",
+			"description":	[{
+					"line":	"@todo add description"
+				}],
+			"type":	"lListT",
+			"subClassName":	"ST",
+			"subCullPrefix":	"ST",
+			"flags":	[{
+					"name":	"SPOOL"
+				}]
+		}, {
+			"name":	"checkpoint_attr",
+			"summary":	"@todo add summary",
+			"description":	[{
+					"line":	"@todo add description"
+				}],
+			"type":	"lUlongT",
+			"flags":	[{
+					"name":	"JGDI_RO"
+				}, {
+					"name":	"SPOOL"
+				}]
+		}, {
+			"name":	"checkpoint_name",
+			"summary":	"@todo add summary",
+			"description":	[{
+					"line":	"@todo add description"
+				}],
+			"type":	"lStringT",
+			"flags":	[{
+					"name":	"SPOOL"
+				}]
+		}, {
+			"name":	"checkpoint_object",
+			"summary":	"@todo add summary",
+			"description":	[{
+					"line":	"@todo add description"
+				}],
+			"type":	"lObjectT",
+			"subClassName":	"ANY",
+			"subCullPrefix":	"ANY",
+			"flags":	[{
+					"name":	"JGDI_RO"
+				}]
+		}, {
+			"name":	"checkpoint_interval",
+			"summary":	"@todo add summary",
+			"description":	[{
+					"line":	"@todo add description"
+				}],
+			"type":	"lUlongT",
+			"flags":	[{
+					"name":	"JGDI_RO"
+				}, {
+					"name":	"SPOOL"
+				}]
+		}, {
+			"name":	"restart",
+			"summary":	"@todo add summary",
+			"description":	[{
+					"line":	"@todo add description"
+				}],
+			"type":	"lUlongT",
+			"flags":	[{
+					"name":	"SPOOL"
+				}]
+		}, {
+			"name":	"stdout_path_list",
+			"summary":	"@todo add summary",
+			"description":	[{
+					"line":	"@todo add description"
+				}],
+			"type":	"lListT",
+			"subClassName":	"PN",
+			"subCullPrefix":	"PN",
+			"flags":	[{
+					"name":	"SPOOL"
+				}]
+		}, {
+			"name":	"stderr_path_list",
+			"summary":	"@todo add summary",
+			"description":	[{
+					"line":	"@todo add description"
+				}],
+			"type":	"lListT",
+			"subClassName":	"PN",
+			"subCullPrefix":	"PN",
+			"flags":	[{
+					"name":	"SPOOL"
+				}]
+		}, {
+			"name":	"stdin_path_list",
+			"summary":	"@todo add summary",
+			"description":	[{
+					"line":	"@todo add description"
+				}],
+			"type":	"lListT",
+			"subClassName":	"PN",
+			"subCullPrefix":	"PN",
+			"flags":	[{
+					"name":	"SPOOL"
+				}]
+		}, {
+			"name":	"merge_stderr",
+			"summary":	"@todo add summary",
+			"description":	[{
+					"line":	"@todo add description"
+				}],
+			"type":	"lBoolT",
+			"flags":	[{
+					"name":	"SPOOL"
+				}]
+		}, {
+			"name":	"hard_resource_list",
+			"summary":	"@todo add summary",
+			"description":	[{
+					"line":	"@todo add description"
+				}],
+			"type":	"lListT",
+			"subClassName":	"CE",
+			"subCullPrefix":	"CE",
+			"flags":	[{
+					"name":	"SPOOL"
+				}]
+		}, {
+			"name":	"soft_resource_list",
+			"summary":	"@todo add summary",
+			"description":	[{
+					"line":	"@todo add description"
+				}],
+			"type":	"lListT",
+			"subClassName":	"CE",
+			"subCullPrefix":	"CE",
+			"flags":	[{
+					"name":	"SPOOL"
+				}]
+		}, {
+			"name":	"hard_queue_list",
+			"summary":	"@todo add summary",
+			"description":	[{
+					"line":	"@todo add description"
+				}],
+			"type":	"lListT",
+			"subClassName":	"QR",
+			"subCullPrefix":	"QR",
+			"flags":	[{
+					"name":	"SPOOL"
+				}]
+		}, {
+			"name":	"soft_queue_list",
+			"summary":	"@todo add summary",
+			"description":	[{
+					"line":	"@todo add description"
+				}],
+			"type":	"lListT",
+			"subClassName":	"QR",
+			"subCullPrefix":	"QR",
+			"flags":	[{
+					"name":	"SPOOL"
+				}]
+		}, {
+			"name":	"mail_options",
+			"summary":	"@todo add summary",
+			"description":	[{
+					"line":	"@todo add description"
+				}],
+			"type":	"lUlongT",
+			"flags":	[{
+					"name":	"SPOOL"
+				}]
+		}, {
+			"name":	"mail_list",
+			"summary":	"@todo add summary",
+			"description":	[{
+					"line":	"@todo add description"
+				}],
+			"type":	"lListT",
+			"subClassName":	"MR",
+			"subCullPrefix":	"MR",
+			"flags":	[{
+					"name":	"SPOOL"
+				}]
+		}, {
+			"name":	"pe",
+			"summary":	"@todo add summary",
+			"description":	[{
+					"line":	"@todo add description"
+				}],
+			"type":	"lStringT",
+			"flags":	[{
+					"name":	"SPOOL"
+				}]
+		}, {
+			"name":	"pe_range",
+			"summary":	"@todo add summary",
+			"description":	[{
+					"line":	"@todo add description"
+				}],
+			"type":	"lListT",
+			"subClassName":	"RN",
+			"subCullPrefix":	"RN",
+			"flags":	[{
+					"name":	"SPOOL"
+				}]
+		}, {
+			"name":	"master_hard_queue_list",
+			"summary":	"@todo add summary",
+			"description":	[{
+					"line":	"@todo add description"
+				}],
+			"type":	"lListT",
+			"subClassName":	"QR",
+			"subCullPrefix":	"QR",
+			"flags":	[{
+					"name":	"SPOOL"
+				}]
+		}, {
+			"name":	"tgt",
+			"summary":	"@todo add summary",
+			"description":	[{
+					"line":	"@todo add description"
+				}],
+			"type":	"lStringT",
+			"flags":	[]
+		}, {
+			"name":	"cred",
+			"summary":	"@todo add summary",
+			"description":	[{
+					"line":	"@todo add description"
+				}],
+			"type":	"lStringT",
+			"flags":	[]
+		}, {
+			"name":	"ja_structure",
+			"summary":	"@todo add summary",
+			"description":	[{
+					"line":	"@todo add description"
+				}],
+			"type":	"lListT",
+			"subClassName":	"RN",
+			"subCullPrefix":	"RN",
+			"flags":	[{
+					"name":	"SPOOL"
+				}]
+		}, {
+			"name":	"ja_n_h_ids",
+			"summary":	"@todo add summary",
+			"description":	[{
+					"line":	"@todo add description"
+				}],
+			"type":	"lListT",
+			"subClassName":	"RN",
+			"subCullPrefix":	"RN",
+			"flags":	[{
+					"name":	"SPOOL"
+				}]
+		}, {
+			"name":	"ja_u_h_ids",
+			"summary":	"@todo add summary",
+			"description":	[{
+					"line":	"@todo add description"
+				}],
+			"type":	"lListT",
+			"subClassName":	"RN",
+			"subCullPrefix":	"RN",
+			"flags":	[{
+					"name":	"SPOOL"
+				}]
+		}, {
+			"name":	"ja_s_h_ids",
+			"summary":	"@todo add summary",
+			"description":	[{
+					"line":	"@todo add description"
+				}],
+			"type":	"lListT",
+			"subClassName":	"RN",
+			"subCullPrefix":	"RN",
+			"flags":	[{
+					"name":	"SPOOL"
+				}]
+		}, {
+			"name":	"ja_o_h_ids",
+			"summary":	"@todo add summary",
+			"description":	[{
+					"line":	"@todo add description"
+				}],
+			"type":	"lListT",
+			"subClassName":	"RN",
+			"subCullPrefix":	"RN",
+			"flags":	[{
+					"name":	"SPOOL"
+				}]
+		}, {
+			"name":	"ja_a_h_ids",
+			"summary":	"@todo add summary",
+			"description":	[{
+					"line":	"@todo add description"
+				}],
+			"type":	"lListT",
+			"subClassName":	"RN",
+			"subCullPrefix":	"RN",
+			"flags":	[{
+					"name":	"SPOOL"
+				}]
+		}, {
+			"name":	"ja_z_ids",
+			"summary":	"@todo add summary",
+			"description":	[{
+					"line":	"@todo add description"
+				}],
+			"type":	"lListT",
+			"subClassName":	"RN",
+			"subCullPrefix":	"RN",
+			"flags":	[{
+					"name":	"JGDI_HIDDEN"
+				}, {
+					"name":	"SPOOL"
+				}]
+		}, {
+			"name":	"ja_template",
+			"summary":	"@todo add summary",
+			"description":	[{
+					"line":	"@todo add description"
+				}],
+			"type":	"lListT",
+			"subClassName":	"JAT",
+			"subCullPrefix":	"JAT",
+			"flags":	[{
+					"name":	"SPOOL"
+				}]
+		}, {
+			"name":	"ja_tasks",
+			"summary":	"@todo add summary",
+			"description":	[{
+					"line":	"@todo add description"
+				}],
+			"type":	"lListT",
+			"subClassName":	"JAT",
+			"subCullPrefix":	"JAT",
+			"flags":	[{
+					"name":	"SPOOL"
+				}]
+		}, {
+			"name":	"host",
+			"summary":	"@todo add summary",
+			"description":	[{
+					"line":	"@todo add description"
+				}],
+			"type":	"lHostT",
+			"flags":	[{
+					"name":	"JGDI_RO"
+				}]
+		}, {
+			"name":	"category",
+			"summary":	"@todo add summary",
+			"description":	[{
+					"line":	"@todo add description"
+				}],
+			"type":	"lRefT",
+			"subClassName":	"ANY",
+			"subCullPrefix":	"ANY",
+			"flags":	[]
+		}, {
+			"name":	"user_list",
+			"summary":	"@todo add summary",
+			"description":	[{
+					"line":	"@todo add description"
+				}],
+			"type":	"lListT",
+			"subClassName":	"ST",
+			"subCullPrefix":	"ST",
+			"flags":	[]
+		}, {
+			"name":	"job_identifier_list",
+			"summary":	"@todo add summary",
+			"description":	[{
+					"line":	"@todo add description"
+				}],
+			"type":	"lListT",
+			"subClassName":	"ID",
+			"subCullPrefix":	"ID",
+			"flags":	[{
+					"name":	"JGDI_HIDDEN"
+				}]
+		}, {
+			"name":	"verify_suitable_queues",
+			"summary":	"@todo add summary",
+			"description":	[{
+					"line":	"@todo add description"
+				}],
+			"type":	"lUlongT",
+			"flags":	[]
+		}, {
+			"name":	"soft_wallclock_gmt",
+			"summary":	"@todo add summary",
+			"description":	[{
+					"line":	"@todo add description"
+				}],
+			"type":	"lUlongT",
+			"flags":	[{
+					"name":	"JGDI_HIDDEN"
+				}, {
+					"name":	"SPOOL"
+				}]
+		}, {
+			"name":	"hard_wallclock_gmt",
+			"summary":	"@todo add summary",
+			"description":	[{
+					"line":	"@todo add description"
+				}],
+			"type":	"lUlongT",
+			"flags":	[{
+					"name":	"JGDI_HIDDEN"
+				}, {
+					"name":	"SPOOL"
+				}]
+		}, {
+			"name":	"override_tickets",
+			"summary":	"@todo add summary",
+			"description":	[{
+					"line":	"@todo add description"
+				}],
+			"type":	"lUlongT",
+			"flags":	[{
+					"name":	"SPOOL"
+				}]
+		}, {
+			"name":	"qs_args",
+			"summary":	"@todo add summary",
+			"description":	[{
+					"line":	"@todo add description"
+				}],
+			"type":	"lListT",
+			"subClassName":	"ST",
+			"subCullPrefix":	"ST",
+			"flags":	[{
+					"name":	"JGDI_HIDDEN"
+				}]
+		}, {
+			"name":	"path_aliases",
+			"summary":	"@todo add summary",
+			"description":	[{
+					"line":	"@todo add description"
+				}],
+			"type":	"lListT",
+			"subClassName":	"PA",
+			"subCullPrefix":	"PA",
+			"flags":	[{
+					"name":	"SPOOL"
+				}]
+		}, {
+			"name":	"urg",
+			"summary":	"@todo add summary",
+			"description":	[{
+					"line":	"@todo add description"
+				}],
+			"type":	"lDoubleT",
+			"flags":	[]
+		}, {
+			"name":	"nurg",
+			"summary":	"@todo add summary",
+			"description":	[{
+					"line":	"@todo add description"
+				}],
+			"type":	"lDoubleT",
+			"flags":	[{
+					"name":	"JGDI_RO"
+				}]
+		}, {
+			"name":	"nppri",
+			"summary":	"@todo add summary",
+			"description":	[{
+					"line":	"@todo add description"
+				}],
+			"type":	"lDoubleT",
+			"flags":	[{
+					"name":	"JGDI_RO"
+				}]
+		}, {
+			"name":	"rrcontr",
+			"summary":	"@todo add summary",
+			"description":	[{
+					"line":	"@todo add description"
+				}],
+			"type":	"lDoubleT",
+			"flags":	[{
+					"name":	"JGDI_RO"
+				}]
+		}, {
+			"name":	"dlcontr",
+			"summary":	"@todo add summary",
+			"description":	[{
+					"line":	"@todo add description"
+				}],
+			"type":	"lDoubleT",
+			"flags":	[{
+					"name":	"JGDI_RO"
+				}]
+		}, {
+			"name":	"wtcontr",
+			"summary":	"@todo add summary",
+			"description":	[{
+					"line":	"@todo add description"
+				}],
+			"type":	"lDoubleT",
+			"flags":	[{
+					"name":	"JGDI_RO"
+				}]
+		}, {
+			"name":	"ar",
+			"summary":	"@todo add summary",
+			"description":	[{
+					"line":	"@todo add description"
+				}],
+			"type":	"lUlongT",
+			"flags":	[{
+					"name":	"SPOOL"
+				}]
+		}, {
+			"name":	"pty",
+			"summary":	"@todo add summary",
+			"description":	[{
+					"line":	"@todo add description"
+				}],
+			"type":	"lUlongT",
+			"flags":	[{
+					"name":	"SPOOL"
+				}]
+		}, {
+			"name":	"ja_task_concurrency",
+			"summary":	"@todo add summary",
+			"description":	[{
+					"line":	"@todo add description"
+				}],
+			"type":	"lUlongT",
+			"flags":	[{
+					"name":	"SPOOL"
+				}]
+		}, {
+			"name":	"binding",
+			"summary":	"@todo add summary",
+			"description":	[{
+					"line":	"@todo add description"
+				}],
+			"type":	"lListT",
+			"subClassName":	"BN",
+			"subCullPrefix":	"BN",
+			"flags":	[{
+					"name":	"SPOOL"
+				}]
+		}]
+}

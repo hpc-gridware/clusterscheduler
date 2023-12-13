@@ -1,6 +1,5 @@
-#ifndef __SGE_CALENDARL_CAL_H
-#define __SGE_CALENDARL_CAL_H
-
+#ifndef SGE_CAL_L_H
+#define SGE_CAL_L_H
 /*___INFO__MARK_BEGIN__*/
 /*************************************************************************
  * 
@@ -34,18 +33,34 @@
 /*___INFO__MARK_END__*/
 
 #include "cull/cull.h"
-
 #include "sgeobj/cull/sge_boundaries.h"
 
-#ifdef  __cplusplus
+#ifdef __cplusplus
 extern "C" {
 #endif
 
-/* *INDENT-OFF* */   
+/**
+* @brief @todo add summary
+*
+* @todo add description
+*
+*    SGE_STRING(CAL_name) - @todo add summary
+*    @todo add description
+*
+*    SGE_STRING(CAL_year_calendar) - @todo add summary
+*    @todo add description
+*
+*    SGE_STRING(CAL_week_calendar) - @todo add summary
+*    @todo add description
+*
+*    SGE_LIST(CAL_parsed_year_calendar) - @todo add summary
+*    @todo add description
+*
+*    SGE_LIST(CAL_parsed_week_calendar) - @todo add summary
+*    @todo add description
+*
+*/
 
-/* 
- * this data structure represents the SGE calendar object
- */
 enum {
    CAL_name = CAL_LOWERBOUND,
    CAL_year_calendar,
@@ -54,16 +69,13 @@ enum {
    CAL_parsed_week_calendar
 };
 
-LISTDEF(CAL_Type) 
-   JGDI_ROOT_OBJ(Calendar, SGE_CAL_LIST, ADD | MODIFY | DELETE | GET | GET_LIST)
-   JGDI_EVENT_OBJ(ADD(sgeE_CALENDAR_ADD) | MODIFY(sgeE_CALENDAR_MOD) | DELETE(sgeE_CALENDAR_DEL) | GET_LIST(sgeE_CALENDAR_LIST))
-   SGE_STRING_D(CAL_name, CULL_PRIMARY_KEY | CULL_HASH | CULL_UNIQUE | CULL_SPOOL | CULL_JGDI_CONF, "template")
-   SGE_STRING_D(CAL_year_calendar, CULL_DEFAULT | CULL_SPOOL | CULL_JGDI_CONF, "none")
-   SGE_STRING_D(CAL_week_calendar, CULL_DEFAULT | CULL_SPOOL | CULL_JGDI_CONF, "none")
-   /* non spooling fields */
-   SGE_LIST(CAL_parsed_year_calendar, CA_Type, CULL_DEFAULT | CULL_JGDI_HIDDEN)
-   SGE_LIST(CAL_parsed_week_calendar, CA_Type, CULL_DEFAULT | CULL_JGDI_HIDDEN)
-LISTEND 
+LISTDEF(CAL_Type)
+   SGE_STRING(CAL_name, CULL_PRIMARY_KEY | CULL_UNIQUE | CULL_HASH | CULL_SPOOL)
+   SGE_STRING(CAL_year_calendar, CULL_SPOOL)
+   SGE_STRING(CAL_week_calendar, CULL_SPOOL)
+   SGE_LIST(CAL_parsed_year_calendar, CA_Type, CULL_DEFAULT)
+   SGE_LIST(CAL_parsed_week_calendar, CA_Type, CULL_DEFAULT)
+LISTEND
 
 NAMEDEF(CALN)
    NAME("CAL_name")
@@ -73,11 +85,10 @@ NAMEDEF(CALN)
    NAME("CAL_parsed_week_calendar")
 NAMEEND
 
-#define CALS sizeof(CALN)/sizeof(char*)
+#define CAL_SIZE sizeof(CALN)/sizeof(char *)
 
-/* *INDENT-ON* */ 
-
-#ifdef  __cplusplus
+#ifdef __cplusplus
 }
 #endif
-#endif                          /* __SGE_CALENDARL_H */
+
+#endif

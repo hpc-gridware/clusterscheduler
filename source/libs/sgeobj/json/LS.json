@@ -1,0 +1,107 @@
+{
+	"className":	"LS",
+	"summary":	"@todo add summary",
+	"description":	[{
+			"line":	"@todo add description"
+		}],
+	"cullPrefix":	"LS",
+	"attributes":	[{
+			"name":	"name",
+			"summary":	"@todo add summary",
+			"description":	[{
+					"line":	"@todo add description"
+				}],
+			"type":	"lStringT",
+			"flags":	[]
+		}, {
+			"name":	"command",
+			"summary":	"@todo add summary",
+			"description":	[{
+					"line":	"@todo add description"
+				}],
+			"type":	"lStringT",
+			"flags":	[]
+		}, {
+			"name":	"pid",
+			"summary":	"@todo add summary",
+			"description":	[{
+					"line":	"@todo add description"
+				}],
+			"type":	"lStringT",
+			"flags":	[]
+		}, {
+			"name":	"in",
+			"summary":	"@todo add summary",
+			"description":	[{
+					"line":	"@todo add description"
+				}],
+			"type":	"lRefT",
+			"subClassName":	"ANY",
+			"subCullPrefix":	"ANY",
+			"flags":	[]
+		}, {
+			"name":	"out",
+			"summary":	"@todo add summary",
+			"description":	[{
+					"line":	"@todo add description"
+				}],
+			"type":	"lRefT",
+			"subClassName":	"ANY",
+			"subCullPrefix":	"ANY",
+			"flags":	[]
+		}, {
+			"name":	"err",
+			"summary":	"@todo add summary",
+			"description":	[{
+					"line":	"@todo add description"
+				}],
+			"type":	"lRefT",
+			"subClassName":	"ANY",
+			"subCullPrefix":	"ANY",
+			"flags":	[]
+		}, {
+			"name":	"has_to_restart",
+			"summary":	"@todo add summary",
+			"description":	[{
+					"line":	"@todo add description"
+				}],
+			"type":	"lBoolT",
+			"flags":	[]
+		}, {
+			"name":	"tag",
+			"summary":	"@todo add summary",
+			"description":	[{
+					"line":	"@todo add description"
+				}],
+			"type":	"lUlongT",
+			"flags":	[]
+		}, {
+			"name":	"incomplete",
+			"summary":	"@todo add summary",
+			"description":	[{
+					"line":	"@todo add description"
+				}],
+			"type":	"lListT",
+			"subClassName":	"LR",
+			"subCullPrefix":	"LR",
+			"flags":	[]
+		}, {
+			"name":	"complete",
+			"summary":	"@todo add summary",
+			"description":	[{
+					"line":	"@todo add description"
+				}],
+			"type":	"lListT",
+			"subClassName":	"LR",
+			"subCullPrefix":	"LR",
+			"flags":	[]
+		}, {
+			"name":	"last_mod",
+			"summary":	"@todo add summary",
+			"description":	[{
+					"line":	"@todo add description"
+				}],
+			"type":	"lUlongT",
+			"flags":	[]
+		}]
+}

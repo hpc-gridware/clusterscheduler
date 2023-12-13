@@ -1,0 +1,49 @@
+{
+	"className":	"RQRF",
+	"summary":	"@todo add summary",
+	"description":	[{
+			"line":	"@todo add description"
+		}],
+	"cullPrefix":	"RQRF",
+	"attributes":	[{
+			"name":	"expand",
+			"summary":	"@todo add summary",
+			"description":	[{
+					"line":	"@todo add description"
+				}],
+			"type":	"lBoolT",
+			"flags":	[{
+					"name":	"JGDI_CONF"
+				}, {
+					"name":	"SPOOL"
+				}]
+		}, {
+			"name":	"scope",
+			"summary":	"@todo add summary",
+			"description":	[{
+					"line":	"@todo add description"
+				}],
+			"type":	"lListT",
+			"subClassName":	"ST",
+			"subCullPrefix":	"ST",
+			"flags":	[{
+					"name":	"JGDI_CONF"
+				}, {
+					"name":	"SPOOL"
+				}]
+		}, {
+			"name":	"xscope",
+			"summary":	"@todo add summary",
+			"description":	[{
+					"line":	"@todo add description"
+				}],
+			"type":	"lListT",
+			"subClassName":	"ST",
+			"subCullPrefix":	"ST",
+			"flags":	[{
+					"name":	"JGDI_CONF"
+				}, {
+					"name":	"SPOOL"
+				}]
+		}]
+}

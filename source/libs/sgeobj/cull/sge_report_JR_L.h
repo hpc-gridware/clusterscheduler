@@ -1,6 +1,5 @@
-#ifndef __SGE_REPORT_JR_L_H
-#define __SGE_REPORT_JR_L_H
-
+#ifndef SGE_JR_L_H
+#define SGE_JR_L_H
 /*___INFO__MARK_BEGIN__*/
 /*************************************************************************
  * 
@@ -34,17 +33,67 @@
 /*___INFO__MARK_END__*/
 
 #include "cull/cull.h"
-
 #include "sgeobj/cull/sge_boundaries.h"
 
-#ifdef  __cplusplus
+#ifdef __cplusplus
 extern "C" {
 #endif
 
-/* *INDENT-OFF* */ 
-/*
- * definition for job report
- */
+/**
+* @brief @todo add summary
+*
+* @todo add description
+*
+*    SGE_ULONG(JR_job_number) - @todo add summary
+*    @todo add description
+*
+*    SGE_ULONG(JR_ja_task_number) - @todo add summary
+*    @todo add description
+*
+*    SGE_STRING(JR_queue_name) - @todo add summary
+*    @todo add description
+*
+*    SGE_ULONG(JR_state) - @todo add summary
+*    @todo add description
+*
+*    SGE_ULONG(JR_failed) - @todo add summary
+*    @todo add description
+*
+*    SGE_ULONG(JR_general_failure) - @todo add summary
+*    @todo add description
+*
+*    SGE_STRING(JR_err_str) - @todo add summary
+*    @todo add description
+*
+*    SGE_LIST(JR_usage) - @todo add summary
+*    @todo add description
+*
+*    SGE_ULONG(JR_job_pid) - @todo add summary
+*    @todo add description
+*
+*    SGE_ULONG(JR_ckpt_arena) - @todo add summary
+*    @todo add description
+*
+*    SGE_STRING(JR_pe_task_id_str) - @todo add summary
+*    @todo add description
+*
+*    SGE_STRING(JR_osjobid) - @todo add summary
+*    @todo add description
+*
+*    SGE_ULONG(JR_wait_status) - @todo add summary
+*    @todo add description
+*
+*    SGE_BOOL(JR_flush) - @todo add summary
+*    @todo add description
+*
+*    SGE_BOOL(JR_no_send) - @todo add summary
+*    @todo add description
+*
+*    SGE_BOOL(JR_delay_report) - @todo add summary
+*    @todo add description
+*
+*/
+
 enum {
    JR_job_number = JR_LOWERBOUND,
    JR_ja_task_number,
@@ -53,7 +102,7 @@ enum {
    JR_failed,
    JR_general_failure,
    JR_err_str,
-   JR_usage,                 /* UA_Type */
+   JR_usage,
    JR_job_pid,
    JR_ckpt_arena,
    JR_pe_task_id_str,
@@ -65,25 +114,22 @@ enum {
 };
 
 LISTDEF(JR_Type)
-   SGE_ULONG(JR_job_number, CULL_HASH)   /* Job to report */
-   SGE_ULONG(JR_ja_task_number, CULL_DEFAULT)       /* JobArray task to report */
-   SGE_STRING(JR_queue_name, CULL_DEFAULT)  /* Queue this job (tried to) run in */
-   SGE_ULONG(JR_state, CULL_DEFAULT)        /* either JRUNNING or JEXITING, JRUNNING sent 
-                               * * as ack for jobdelivery and cyclic */
-   SGE_ULONG(JR_failed, CULL_DEFAULT)       /* FAILED_... */
-   SGE_ULONG(JR_general_failure, CULL_DEFAULT)      /* 1 -> general problem */
-   SGE_STRING(JR_err_str, CULL_DEFAULT)     /* describes failure */
-   SGE_MAP(JR_usage, UA_Type, CULL_DEFAULT)         /* used resources UA_Type */
-   SGE_ULONG(JR_job_pid, CULL_DEFAULT)      /* pid of job script */
-   SGE_ULONG(JR_ckpt_arena, CULL_DEFAULT)   /* if there is a checkpoint in the arena */
+   SGE_ULONG(JR_job_number, CULL_HASH)
+   SGE_ULONG(JR_ja_task_number, CULL_DEFAULT)
+   SGE_STRING(JR_queue_name, CULL_DEFAULT)
+   SGE_ULONG(JR_state, CULL_DEFAULT)
+   SGE_ULONG(JR_failed, CULL_DEFAULT)
+   SGE_ULONG(JR_general_failure, CULL_DEFAULT)
+   SGE_STRING(JR_err_str, CULL_DEFAULT)
+   SGE_LIST(JR_usage, UA_Type, CULL_DEFAULT)
+   SGE_ULONG(JR_job_pid, CULL_DEFAULT)
+   SGE_ULONG(JR_ckpt_arena, CULL_DEFAULT)
    SGE_STRING(JR_pe_task_id_str, CULL_DEFAULT)
-   /* string describing task from sight of PE
-    * if this is non null this is a PE task */
-   SGE_STRING(JR_osjobid, CULL_DEFAULT)     /* string containing osjobid for ckpt jobs */
-   SGE_ULONG(JR_wait_status, CULL_DEFAULT)  /* japi_wait() 'status' information  */
+   SGE_STRING(JR_osjobid, CULL_DEFAULT)
+   SGE_ULONG(JR_wait_status, CULL_DEFAULT)
    SGE_BOOL(JR_flush, CULL_DEFAULT)
-   SGE_BOOL(JR_no_send, CULL_DEFAULT)       /* do not send this job report - used for pe tasks & accounting_summary */
-   SGE_BOOL(JR_delay_report, CULL_DEFAULT)       /* do not send this job report - used for qsub -sync/DRMAA jobs while a qmaster failover*/
+   SGE_BOOL(JR_no_send, CULL_DEFAULT)
+   SGE_BOOL(JR_delay_report, CULL_DEFAULT)
 LISTEND
 
 NAMEDEF(JRN)
@@ -105,12 +151,10 @@ NAMEDEF(JRN)
    NAME("JR_delay_report")
 NAMEEND
 
-#define JRS sizeof(JRN)/sizeof(char*)
-
-/* *INDENT-ON* */ 
+#define JR_SIZE sizeof(JRN)/sizeof(char *)
 
 #ifdef __cplusplus
 }
 #endif
 
-#endif                          /* __SGE_REPORTL_H */
+#endif

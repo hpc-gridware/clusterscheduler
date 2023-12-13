@@ -1,0 +1,35 @@
+{
+	"className":	"ABOOL",
+	"summary":	"@todo add summary",
+	"description":	[{
+			"line":	"@todo add description"
+		}],
+	"cullPrefix":	"ABOOL",
+	"attributes":	[{
+			"name":	"href",
+			"summary":	"@todo add summary",
+			"description":	[{
+					"line":	"@todo add description"
+				}],
+			"type":	"lHostT",
+			"flags":	[{
+					"name":	"PRIMARY_KEY"
+				}, {
+					"name":	"UNIQUE"
+				}, {
+					"name":	"HASH"
+				}, {
+					"name":	"SPOOL_SUBLIST"
+				}]
+		}, {
+			"name":	"value",
+			"summary":	"@todo add summary",
+			"description":	[{
+					"line":	"@todo add description"
+				}],
+			"type":	"lBoolT",
+			"flags":	[{
+					"name":	"SPOOL_SUBLIST"
+				}]
+		}]
+}

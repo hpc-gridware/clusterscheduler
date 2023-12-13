@@ -1,0 +1,37 @@
+{
+	"className":	"SPTR",
+	"summary":	"@todo add summary",
+	"description":	[{
+			"line":	"@todo add description"
+		}],
+	"cullPrefix":	"SPTR",
+	"attributes":	[{
+			"name":	"default",
+			"summary":	"@todo add summary",
+			"description":	[{
+					"line":	"@todo add description"
+				}],
+			"type":	"lBoolT",
+			"flags":	[]
+		}, {
+			"name":	"rule_name",
+			"summary":	"@todo add summary",
+			"description":	[{
+					"line":	"@todo add description"
+				}],
+			"type":	"lStringT",
+			"flags":	[{
+					"name":	"UNIQUE"
+				}]
+		}, {
+			"name":	"rule",
+			"summary":	"@todo add summary",
+			"description":	[{
+					"line":	"@todo add description"
+				}],
+			"type":	"lRefT",
+			"subClassName":	"ANY",
+			"subCullPrefix":	"ANY",
+			"flags":	[]
+		}]
+}

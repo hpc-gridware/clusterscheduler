@@ -1,6 +1,5 @@
-#ifndef __SGE_BINDINGL_H
-#define __SGE_BINDINGL_H
-
+#ifndef SGE_BN_L_H
+#define SGE_BN_L_H
 /*___INFO__MARK_BEGIN__*/
 /*************************************************************************
  * 
@@ -33,46 +32,40 @@
  ************************************************************************/
 /*___INFO__MARK_END__*/
 
-#include "sgeobj/cull/sge_boundaries.h"
 #include "cull/cull.h"
+#include "sgeobj/cull/sge_boundaries.h"
 
-#ifdef  __cplusplus
+#ifdef __cplusplus
 extern "C" {
 #endif
 
-/****** sgeobj/binding/--BN_Type ************************************************
-*  NAME
-*     BN_Type -- CULL binding element
+/**
+* @brief @todo add summary
 *
-*  ELEMENTS
-*     DG TODO
-*     SGE_ULONG(RN_min)
-*        minimum or start value of an id range (e.g. 1)
+* @todo add description
 *
-*     SGE_ULONG(RN_max)
-*        maximum or end value of an id range (e.g. 9)
+*    SGE_STRING(BN_strategy) - @todo add summary
+*    @todo add description
 *
-*     SGE_ULONG(RN_step)
-*        stepsize (e.g. 2)
-* 
-*  FUNCTION
-*     CULL element holding values which define a id range
-*     (e.g. 1-9:2 => 1, 3, 5, 7, 9). 
-*     Lists of this CULL element are hold within a CULL job element
-*     (JB_Type) to hold job array task ids.
-*     Several functions may be used to access/modify/delete range 
-*     elements and range lists. You may find them in the 'SEE ALSO' 
-*     section. It is highly advised to use these access functions
-*     because they assure and require a defined structure of 
-*     elements and lists.
-*     
+*    SGE_ULONG(BN_type) - @todo add summary
+*    @todo add description
 *
-*  SEE ALSO 
-*     gdi/range/range_sort_uniq_compress()
-*     gdi/job/JB_Type
-******************************************************************************/
-
-/* *INDENT-OFF* */ 
+*    SGE_ULONG(BN_parameter_n) - @todo add summary
+*    @todo add description
+*
+*    SGE_ULONG(BN_parameter_socket_offset) - @todo add summary
+*    @todo add description
+*
+*    SGE_ULONG(BN_parameter_core_offset) - @todo add summary
+*    @todo add description
+*
+*    SGE_ULONG(BN_parameter_striding_step_size) - @todo add summary
+*    @todo add description
+*
+*    SGE_STRING(BN_parameter_explicit) - @todo add summary
+*    @todo add description
+*
+*/
 
 enum {
    BN_strategy = BN_LOWERBOUND,
@@ -85,15 +78,14 @@ enum {
 };
 
 LISTDEF(BN_Type)
-   JGDI_OBJ(Binding)
    SGE_STRING(BN_strategy, CULL_PRIMARY_KEY | CULL_SUBLIST)
-   SGE_ULONG(BN_type, CULL_DEFAULT | CULL_SUBLIST)
-   SGE_ULONG(BN_parameter_n, CULL_DEFAULT | CULL_SUBLIST)
-   SGE_ULONG(BN_parameter_socket_offset, CULL_DEFAULT | CULL_SUBLIST)
-   SGE_ULONG(BN_parameter_core_offset, CULL_DEFAULT | CULL_SUBLIST)
-   SGE_ULONG(BN_parameter_striding_step_size, CULL_DEFAULT | CULL_SUBLIST)
-   SGE_STRING(BN_parameter_explicit, CULL_DEFAULT | CULL_SUBLIST)
-LISTEND 
+   SGE_ULONG(BN_type, CULL_SUBLIST)
+   SGE_ULONG(BN_parameter_n, CULL_SUBLIST)
+   SGE_ULONG(BN_parameter_socket_offset, CULL_SUBLIST)
+   SGE_ULONG(BN_parameter_core_offset, CULL_SUBLIST)
+   SGE_ULONG(BN_parameter_striding_step_size, CULL_SUBLIST)
+   SGE_STRING(BN_parameter_explicit, CULL_SUBLIST)
+LISTEND
 
 NAMEDEF(BNN)
    NAME("BN_strategy")
@@ -105,12 +97,10 @@ NAMEDEF(BNN)
    NAME("BN_parameter_explicit")
 NAMEEND
 
-/* *INDENT-ON* */  
+#define BN_SIZE sizeof(BNN)/sizeof(char *)
 
-#define BNS sizeof(BNN)/sizeof(char*)
-
-#ifdef  __cplusplus
+#ifdef __cplusplus
 }
 #endif
-#endif                          /* __SGE_BINDINGL_H */
 
+#endif

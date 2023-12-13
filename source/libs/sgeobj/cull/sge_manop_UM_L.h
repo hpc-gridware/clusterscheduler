@@ -1,6 +1,5 @@
-#ifndef _SGE_MANOP_UM_L_H_
-#define _SGE_MANOP_UM_L_H_
-
+#ifndef SGE_UM_L_H
+#define SGE_UM_L_H
 /*___INFO__MARK_BEGIN__*/
 /*************************************************************************
  * 
@@ -34,35 +33,38 @@
 /*___INFO__MARK_END__*/
 
 #include "cull/cull.h"
-
 #include "sgeobj/cull/sge_boundaries.h"
 
-#ifdef  __cplusplus
+#ifdef __cplusplus
 extern "C" {
 #endif
 
-/* *INDENT-OFF* */
+/**
+* @brief @todo add summary
+*
+* @todo add description
+*
+*    SGE_STRING(UM_name) - @todo add summary
+*    @todo add description
+*
+*/
 
-/* 
- * This is the list type we use to hold the manager list 
- */
 enum {
    UM_name = UM_LOWERBOUND
 };
 
 LISTDEF(UM_Type)
-   JGDI_ROOT_OBJ(Manager, SGE_UM_LIST, ADD | GET | DELETE | GET_LIST)
-   JGDI_EVENT_OBJ(ADD(sgeE_MANAGER_ADD) | MODIFY(sgeE_MANAGER_MOD) | DELETE(sgeE_MANAGER_DEL) | GET_LIST(sgeE_MANAGER_LIST))
-   SGE_STRING(UM_name, CULL_PRIMARY_KEY | CULL_HASH | CULL_UNIQUE | CULL_SPOOL | CULL_JGDI_CONF)
+   SGE_STRING(UM_name, CULL_PRIMARY_KEY | CULL_UNIQUE | CULL_HASH | CULL_SPOOL)
 LISTEND
 
 NAMEDEF(UMN)
    NAME("UM_name")
 NAMEEND
 
-#define UMS sizeof(UMN)/sizeof(char*)
+#define UM_SIZE sizeof(UMN)/sizeof(char *)
 
-#ifdef  __cplusplus
+#ifdef __cplusplus
 }
 #endif
-#endif                          /* _SGE_MANOPL_H_ */
+
+#endif

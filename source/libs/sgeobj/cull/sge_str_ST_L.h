@@ -1,6 +1,5 @@
-#ifndef __SGE_STRING_ST_L_H
-#define __SGE_STRING_ST_L_H
-
+#ifndef SGE_ST_L_H
+#define SGE_ST_L_H
 /*___INFO__MARK_BEGIN__*/
 /*************************************************************************
  * 
@@ -34,38 +33,38 @@
 /*___INFO__MARK_END__*/
 
 #include "cull/cull.h"
-
 #include "sgeobj/cull/sge_boundaries.h"
 
-#ifdef  __cplusplus
+#ifdef __cplusplus
 extern "C" {
 #endif
 
-/* *INDENT-OFF* */
+/**
+* @brief @todo add summary
+*
+* @todo add description
+*
+*    SGE_STRING(ST_name) - @todo add summary
+*    @todo add description
+*
+*/
 
 enum {
    ST_name = ST_LOWERBOUND
 };
 
 LISTDEF(ST_Type)
-   JGDI_PRIMITIVE_OBJ(ST_name)
-   /* misc setup variables */
-   /* JG: TODO: ST_name is not really a primary key! 
-    * we have to check all uses of ST_Type and replace it by a new
-    * STU_Type with primary key and unique hashing 
-    */
    SGE_STRING(ST_name, CULL_PRIMARY_KEY | CULL_HASH | CULL_SUBLIST)
-LISTEND 
+LISTEND
 
 NAMEDEF(STN)
    NAME("ST_name")
 NAMEEND
 
-#define STS sizeof(STN)/sizeof(char*)
+#define ST_SIZE sizeof(STN)/sizeof(char *)
 
-/* *INDENT-ON* */ 
-
-#ifdef  __cplusplus
+#ifdef __cplusplus
 }
 #endif
+
 #endif

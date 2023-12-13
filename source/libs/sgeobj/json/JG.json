@@ -1,0 +1,161 @@
+{
+	"className":	"JG",
+	"summary":	"@todo add summary",
+	"description":	[{
+			"line":	"@todo add description"
+		}],
+	"cullPrefix":	"JG",
+	"attributes":	[{
+			"name":	"qname",
+			"summary":	"@todo add summary",
+			"description":	[{
+					"line":	"@todo add description"
+				}],
+			"type":	"lStringT",
+			"flags":	[{
+					"name":	"PRIMARY_KEY"
+				}, {
+					"name":	"UNIQUE"
+				}, {
+					"name":	"HASH"
+				}, {
+					"name":	"SPOOL_SUBLIST"
+				}]
+		}, {
+			"name":	"qversion",
+			"summary":	"@todo add summary",
+			"description":	[{
+					"line":	"@todo add description"
+				}],
+			"type":	"lUlongT",
+			"flags":	[{
+					"name":	"JGDI_HIDDEN"
+				}]
+		}, {
+			"name":	"qhostname",
+			"summary":	"@todo add summary",
+			"description":	[{
+					"line":	"@todo add description"
+				}],
+			"type":	"lHostT",
+			"flags":	[{
+					"name":	"HASH"
+				}, {
+					"name":	"SPOOL_SUBLIST"
+				}]
+		}, {
+			"name":	"slots",
+			"summary":	"@todo add summary",
+			"description":	[{
+					"line":	"@todo add description"
+				}],
+			"type":	"lUlongT",
+			"flags":	[{
+					"name":	"SPOOL_SUBLIST"
+				}]
+		}, {
+			"name":	"queue",
+			"summary":	"@todo add summary",
+			"description":	[{
+					"line":	"@todo add description"
+				}],
+			"type":	"lObjectT",
+			"subClassName":	"ANY",
+			"subCullPrefix":	"ANY",
+			"flags":	[{
+					"name":	"JGDI_HIDDEN"
+				}, {
+					"name":	"JGDI_RO"
+				}]
+		}, {
+			"name":	"tag_slave_job",
+			"summary":	"@todo add summary",
+			"description":	[{
+					"line":	"@todo add description"
+				}],
+			"type":	"lUlongT",
+			"flags":	[{
+					"name":	"JGDI_HIDDEN"
+				}]
+		}, {
+			"name":	"task_id_range",
+			"summary":	"@todo add summary",
+			"description":	[{
+					"line":	"@todo add description"
+				}],
+			"type":	"lUlongT",
+			"flags":	[{
+					"name":	"JGDI_HIDDEN"
+				}]
+		}, {
+			"name":	"ticket",
+			"summary":	"@todo add summary",
+			"description":	[{
+					"line":	"@todo add description"
+				}],
+			"type":	"lDoubleT",
+			"flags":	[{
+					"name":	"JGDI_HIDDEN"
+				}]
+		}, {
+			"name":	"oticket",
+			"summary":	"@todo add summary",
+			"description":	[{
+					"line":	"@todo add description"
+				}],
+			"type":	"lDoubleT",
+			"flags":	[{
+					"name":	"JGDI_HIDDEN"
+				}]
+		}, {
+			"name":	"fticket",
+			"summary":	"@todo add summary",
+			"description":	[{
+					"line":	"@todo add description"
+				}],
+			"type":	"lDoubleT",
+			"flags":	[{
+					"name":	"JGDI_HIDDEN"
+				}]
+		}, {
+			"name":	"sticket",
+			"summary":	"@todo add summary",
+			"description":	[{
+					"line":	"@todo add description"
+				}],
+			"type":	"lDoubleT",
+			"flags":	[{
+					"name":	"JGDI_HIDDEN"
+				}]
+		}, {
+			"name":	"jcoticket",
+			"summary":	"@todo add summary",
+			"description":	[{
+					"line":	"@todo add description"
+				}],
+			"type":	"lDoubleT",
+			"flags":	[{
+					"name":	"JGDI_HIDDEN"
+				}]
+		}, {
+			"name":	"jcfticket",
+			"summary":	"@todo add summary",
+			"description":	[{
+					"line":	"@todo add description"
+				}],
+			"type":	"lDoubleT",
+			"flags":	[{
+					"name":	"JGDI_HIDDEN"
+				}]
+		}, {
+			"name":	"processors",
+			"summary":	"@todo add summary",
+			"description":	[{
+					"line":	"@todo add description"
+				}],
+			"type":	"lStringT",
+			"flags":	[{
+					"name":	"JGDI_HIDDEN"
+				}]
+		}]
+}

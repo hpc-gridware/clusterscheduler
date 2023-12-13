@@ -1,6 +1,5 @@
-#ifndef __SGE_MESSAGE_MES_L_H
-#define __SGE_MESSAGE_MES_L_H
-
+#ifndef SGE_MES_L_H
+#define SGE_MES_L_H
 /*___INFO__MARK_BEGIN__*/
 /*************************************************************************
  * 
@@ -33,17 +32,29 @@
  ************************************************************************/
 /*___INFO__MARK_END__*/
 
+#include "cull/cull.h"
 #include "sgeobj/cull/sge_boundaries.h"
 
-#ifdef  __cplusplus
+#ifdef __cplusplus
 extern "C" {
 #endif
 
-/* *INDENT-OFF* */ 
+/**
+* @brief @todo add summary
+*
+* @todo add description
+*
+*    SGE_LIST(MES_job_number_list) - @todo add summary
+*    @todo add description
+*
+*    SGE_ULONG(MES_message_number) - @todo add summary
+*    @todo add description
+*
+*    SGE_STRING(MES_message) - @todo add summary
+*    @todo add description
+*
+*/
 
-/*
- * Message element
- */
 enum {
    MES_job_number_list = MES_LOWERBOUND,
    MES_message_number,
@@ -51,11 +62,10 @@ enum {
 };
 
 LISTDEF(MES_Type)
-   JGDI_OBJ(JobSchedulingMessage)
    SGE_LIST(MES_job_number_list, ULNG_Type, CULL_DEFAULT)
    SGE_ULONG(MES_message_number, CULL_DEFAULT)
    SGE_STRING(MES_message, CULL_DEFAULT)
-LISTEND 
+LISTEND
 
 NAMEDEF(MESN)
    NAME("MES_job_number_list")
@@ -63,10 +73,10 @@ NAMEDEF(MESN)
    NAME("MES_message")
 NAMEEND
 
-/* *INDENT-ON* */   
+#define MES_SIZE sizeof(MESN)/sizeof(char *)
 
-#define MESS sizeof(MESN)/sizeof(char*)
-#ifdef  __cplusplus
+#ifdef __cplusplus
 }
 #endif
+
 #endif

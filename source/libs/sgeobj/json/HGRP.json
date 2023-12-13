@@ -1,0 +1,53 @@
+{
+	"className":	"HGRP",
+	"summary":	"@todo add summary",
+	"description":	[{
+			"line":	"@todo add description"
+		}],
+	"cullPrefix":	"HGRP",
+	"attributes":	[{
+			"name":	"name",
+			"summary":	"@todo add summary",
+			"description":	[{
+					"line":	"@todo add description"
+				}],
+			"type":	"lHostT",
+			"flags":	[{
+					"name":	"PRIMARY_KEY"
+				}, {
+					"name":	"UNIQUE"
+				}, {
+					"name":	"HASH"
+				}, {
+					"name":	"JGDI_CONF"
+				}, {
+					"name":	"SPOOL"
+				}]
+		}, {
+			"name":	"host_list",
+			"summary":	"@todo add summary",
+			"description":	[{
+					"line":	"@todo add description"
+				}],
+			"type":	"lListT",
+			"subClassName":	"HR",
+			"subCullPrefix":	"HR",
+			"flags":	[{
+					"name":	"JGDI_CONF"
+				}, {
+					"name":	"SPOOL"
+				}]
+		}, {
+			"name":	"cqueue_list",
+			"summary":	"@todo add summary",
+			"description":	[{
+					"line":	"@todo add description"
+				}],
+			"type":	"lListT",
+			"subClassName":	"CQ",
+			"subCullPrefix":	"CQ",
+			"flags":	[{
+					"name":	"JGDI_HIDDEN"
+				}]
+		}]
+}

@@ -1,6 +1,5 @@
-#ifndef __SGE_EEJOB_FCAT_L_H
-#define __SGE_EEJOB_FCAT_L_H
-
+#ifndef SGE_FCAT_L_H
+#define SGE_FCAT_L_H
 /*___INFO__MARK_BEGIN__*/
 /*************************************************************************
  * 
@@ -36,16 +35,44 @@
 #include "cull/cull.h"
 #include "sgeobj/cull/sge_boundaries.h"
 
-#ifdef  __cplusplus
+#ifdef __cplusplus
 extern "C" {
 #endif
 
-/* *INDENT-OFF* */ 
+/**
+* @brief @todo add summary
+*
+* @todo add description
+*
+*    SGE_ULONG(FCAT_job_share) - @todo add summary
+*    @todo add description
+*
+*    SGE_ULONG(FCAT_user_share) - @todo add summary
+*    @todo add description
+*
+*    SGE_REF(FCAT_user) - @todo add summary
+*    @todo add description
+*
+*    SGE_ULONG(FCAT_project_share) - @todo add summary
+*    @todo add description
+*
+*    SGE_REF(FCAT_project) - @todo add summary
+*    @todo add description
+*
+*    SGE_ULONG(FCAT_dept_share) - @todo add summary
+*    @todo add description
+*
+*    SGE_REF(FCAT_dept) - @todo add summary
+*    @todo add description
+*
+*    SGE_REF(FCAT_jobrelated_ticket_first) - @todo add summary
+*    @todo add description
+*
+*    SGE_REF(FCAT_jobrelated_ticket_last) - @todo add summary
+*    @todo add description
+*
+*/
 
-/*
- * This is the list type we use to sort the joblist 
- * in the sge scheduler 
- */
 enum {
    FCAT_job_share = FCAT_LOWERBOUND,
    FCAT_user_share,
@@ -59,21 +86,21 @@ enum {
 };
 
 LISTDEF(FCAT_Type)
-   SGE_ULONG(FCAT_job_share, CULL_DEFAULT)       /* all jobs in this functional category have this amount of jobs shares */
-   SGE_ULONG(FCAT_user_share, CULL_DEFAULT)      /* all jobs in this functional category have this amount of user shares */
-   SGE_REF(FCAT_user,CULL_ANY_SUBTYPE,  CULL_DEFAULT)              /* pointer to the user structure */
-   SGE_ULONG(FCAT_project_share, CULL_DEFAULT)   /* all jobs in this functional category have this amount of project shares */
-   SGE_REF(FCAT_project,CULL_ANY_SUBTYPE,  CULL_DEFAULT)           /* pointer to the project structure */
-   SGE_ULONG(FCAT_dept_share, CULL_DEFAULT)      /* all jobs in this functional category have this amount of department shares */
-   SGE_REF(FCAT_dept,CULL_ANY_SUBTYPE,  CULL_DEFAULT)              /* pointer to the department structure */
-   SGE_REF(FCAT_jobrelated_ticket_first, CULL_ANY_SUBTYPE, CULL_DEFAULT) /* pointer to the first element of job ticket list*/
-   SGE_REF(FCAT_jobrelated_ticket_last, CULL_ANY_SUBTYPE, CULL_DEFAULT)  /* pointer to the last element in the hob ticket list*/
-LISTEND 
+   SGE_ULONG(FCAT_job_share, CULL_DEFAULT)
+   SGE_ULONG(FCAT_user_share, CULL_DEFAULT)
+   SGE_REF(FCAT_user, CULL_ANY_SUBTYPE, CULL_DEFAULT)
+   SGE_ULONG(FCAT_project_share, CULL_DEFAULT)
+   SGE_REF(FCAT_project, CULL_ANY_SUBTYPE, CULL_DEFAULT)
+   SGE_ULONG(FCAT_dept_share, CULL_DEFAULT)
+   SGE_REF(FCAT_dept, CULL_ANY_SUBTYPE, CULL_DEFAULT)
+   SGE_REF(FCAT_jobrelated_ticket_first, CULL_ANY_SUBTYPE, CULL_DEFAULT)
+   SGE_REF(FCAT_jobrelated_ticket_last, CULL_ANY_SUBTYPE, CULL_DEFAULT)
+LISTEND
 
 NAMEDEF(FCATN)
    NAME("FCAT_job_share")
    NAME("FCAT_user_share")
-   NAME("FACT_user")
+   NAME("FCAT_user")
    NAME("FCAT_project_share")
    NAME("FCAT_project")
    NAME("FCAT_dept_share")
@@ -82,11 +109,10 @@ NAMEDEF(FCATN)
    NAME("FCAT_jobrelated_ticket_last")
 NAMEEND
 
-#define FCATS sizeof(FCATN)/sizeof(char*)
+#define FCAT_SIZE sizeof(FCATN)/sizeof(char *)
 
-/* *INDENT-ON* */
-
-#ifdef  __cplusplus
+#ifdef __cplusplus
 }
 #endif
-#endif                          /* __SGE_EEJOBL_H */
+
+#endif

@@ -1,6 +1,5 @@
-#ifndef __SGE_MESOBJL_H
-#define __SGE_MESOBJL_H
-
+#ifndef SGE_QIM_L_H
+#define SGE_QIM_L_H
 /*___INFO__MARK_BEGIN__*/
 /*************************************************************************
  * 
@@ -34,27 +33,33 @@
 /*___INFO__MARK_END__*/
 
 #include "cull/cull.h"
-
 #include "sgeobj/cull/sge_boundaries.h"
 
-#ifdef  __cplusplus
+#ifdef __cplusplus
 extern "C" {
 #endif
 
-/* *INDENT-OFF* */
+/**
+* @brief @todo add summary
+*
+* @todo add description
+*
+*    SGE_ULONG(QIM_type) - @todo add summary
+*    @todo add description
+*
+*    SGE_STRING(QIM_message) - @todo add summary
+*    @todo add description
+*
+*/
 
-/*
- * Message element
- */
 enum {
    QIM_type = QIM_LOWERBOUND,
    QIM_message
 };
 
 LISTDEF(QIM_Type)
-   JGDI_OBJ(QueueInstanceMessage)
-   SGE_ULONG(QIM_type, CULL_DEFAULT | CULL_SPOOL)
-   SGE_STRING(QIM_message, CULL_DEFAULT | CULL_SPOOL)
+   SGE_ULONG(QIM_type, CULL_SPOOL)
+   SGE_STRING(QIM_message, CULL_SPOOL)
 LISTEND
 
 NAMEDEF(QIMN)
@@ -62,12 +67,10 @@ NAMEDEF(QIMN)
    NAME("QIM_message")
 NAMEEND
 
-#define QIMS sizeof(QIMN)/sizeof(char*)
+#define QIM_SIZE sizeof(QIMN)/sizeof(char *)
 
-/* *INDENT-ON* */
-
-#ifdef  __cplusplus
+#ifdef __cplusplus
 }
 #endif
 
-#endif /* __SGE_MESOBJL_H */
+#endif

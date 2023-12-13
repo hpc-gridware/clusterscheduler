@@ -1,5 +1,5 @@
-#ifndef __SGE_SPOOL_SPC_L_H
-#define __SGE_SPOOL_SPC_L_H
+#ifndef SGE_SPC_L_H
+#define SGE_SPC_L_H
 /*___INFO__MARK_BEGIN__*/
 /*************************************************************************
  * 
@@ -35,74 +35,34 @@
 #include "cull/cull.h"
 #include "sgeobj/cull/sge_boundaries.h"
 
-#ifdef  __cplusplus
+#ifdef __cplusplus
 extern "C" {
 #endif
 
-/****** spool/--SPC_Type ***************************************
+/**
+* @brief @todo add summary
 *
-*  NAME
-*     SPC_Type -- Spooling context
+* @todo add description
 *
-*  ELEMENTS
-*     SGE_STRING(SPC_name, CULL_HASH | CULL_UNIQUE)
-*        Unique name of the spooling context
+*    SGE_STRING(SPC_name) - @todo add summary
+*    @todo add description
 *
-*     SGE_LIST(SPC_rules, SPR_Type, CULL_DEFAULT)
-*        List of spooling rules
-*  
-*     SGE_LIST(SPC_types, SPT_Type, CULL_DEFAULT)
-*        List of spoolable object types with references to 
-*        rules.
+*    SGE_LIST(SPC_rules) - @todo add summary
+*    @todo add description
 *
-*  FUNCTION
-*        A spooling context describes the way how objects
-*        are spooled (read and written).
+*    SGE_LIST(SPC_types) - @todo add summary
+*    @todo add description
 *
-*        A spooling context contains one or multiple rules for 
-*        spooling. A rule can for example describe a database 
-*        connection.
-*
-*        It also contains a list of types that can be spooled.
-*        A default entry for all types can be created; if type entries
-*        for individual types exist, these entries will be used for spooling.
-*        A type references one or multiple rules which will 
-*        be executed for writing or deleting data.
-*        Exactly one rule can be defined to be the default rule
-*        for reading objects.
-*
-*        +----------+       1:n       +----------+
-*        | SPC_Type |----------------<| SPT_Type | 
-*        +----------+                 +----------+
-*             |                             |
-*             |                             |
-*             |                             |
-*             | 1                           |
-*             | :                           |
-*             | n                           |
-*             |                             |
-*             ^                             |
-*        +----------+   1:n, one is default |
-*        | SPR_Type |>----------------------+
-*        +----------+
-*
-*
-*  SEE ALSO
-*     spool/--Spooling
-*     spool/--SPR_Type
-*     spool/--SPT_Type
-*     spool/--SPTR_Type
-****************************************************************************
 */
 
 enum {
-   SPC_name = SPC_LOWERBOUND,  /* name of spooling context */
-   SPC_rules,                  /* list of spooling rules */
-   SPC_types                   /* list of object types to spool */
+   SPC_name = SPC_LOWERBOUND,
+   SPC_rules,
+   SPC_types
 };
 
 LISTDEF(SPC_Type)
-   SGE_STRING(SPC_name, CULL_HASH | CULL_UNIQUE)
+   SGE_STRING(SPC_name, CULL_UNIQUE | CULL_HASH)
    SGE_LIST(SPC_rules, SPR_Type, CULL_DEFAULT)
    SGE_LIST(SPC_types, SPT_Type, CULL_DEFAULT)
 LISTEND
@@ -113,10 +73,10 @@ NAMEDEF(SPCN)
    NAME("SPC_types")
 NAMEEND
 
-#define SPCS sizeof(SPCN)/sizeof(char *)
+#define SPC_SIZE sizeof(SPCN)/sizeof(char *)
 
-#ifdef  __cplusplus
+#ifdef __cplusplus
 }
 #endif
 
-#endif 
+#endif

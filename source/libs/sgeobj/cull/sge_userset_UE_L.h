@@ -1,6 +1,5 @@
-#ifndef __SGE_USERSET_UE_L_H
-#define __SGE_USERSET_UE_L_H
-
+#ifndef SGE_UE_L_H
+#define SGE_UE_L_H
 /*___INFO__MARK_BEGIN__*/
 /*************************************************************************
  * 
@@ -36,31 +35,36 @@
 #include "cull/cull.h"
 #include "sgeobj/cull/sge_boundaries.h"
 
-#ifdef  __cplusplus
+#ifdef __cplusplus
 extern "C" {
 #endif
 
-/* *INDENT-OFF* */
+/**
+* @brief @todo add summary
+*
+* @todo add description
+*
+*    SGE_STRING(UE_name) - @todo add summary
+*    @todo add description
+*
+*/
 
 enum {
-   UE_name = UE_LOWERBOUND   /* user or @group name */
+   UE_name = UE_LOWERBOUND
 };
 
 LISTDEF(UE_Type)
-   JGDI_PRIMITIVE_OBJ(UE_name)
-   SGE_STRING(UE_name, CULL_PRIMARY_KEY | CULL_HASH | CULL_UNIQUE | CULL_SUBLIST)
-LISTEND 
+   SGE_STRING(UE_name, CULL_PRIMARY_KEY | CULL_UNIQUE | CULL_HASH | CULL_SUBLIST)
+LISTEND
 
 NAMEDEF(UEN)
    NAME("UE_name")
 NAMEEND
 
-#define UES sizeof(UEN)/sizeof(char*)
+#define UE_SIZE sizeof(UEN)/sizeof(char *)
 
-/* *INDENT-ON* */
-
-#ifdef  __cplusplus
+#ifdef __cplusplus
 }
 #endif
 
-#endif                         
+#endif

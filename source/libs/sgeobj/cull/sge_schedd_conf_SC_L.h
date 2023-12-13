@@ -1,6 +1,5 @@
-#ifndef __SGE_SCHEDCONF_SC_L_H
-#define __SGE_SCHEDCONF_SC_L_H
-
+#ifndef SGE_SC_L_H
+#define SGE_SC_L_H
 /*___INFO__MARK_BEGIN__*/
 /*************************************************************************
  * 
@@ -36,15 +35,125 @@
 #include "cull/cull.h"
 #include "sgeobj/cull/sge_boundaries.h"
 
-#ifdef  __cplusplus
+#ifdef __cplusplus
 extern "C" {
 #endif
 
-/* *INDENT-OFF* */ 
+/**
+* @brief @todo add summary
+*
+* @todo add description
+*
+*    SGE_STRING(SC_algorithm) - @todo add summary
+*    @todo add description
+*
+*    SGE_STRING(SC_schedule_interval) - @todo add summary
+*    @todo add description
+*
+*    SGE_ULONG(SC_maxujobs) - @todo add summary
+*    @todo add description
+*
+*    SGE_ULONG(SC_queue_sort_method) - @todo add summary
+*    @todo add description
+*
+*    SGE_LIST(SC_job_load_adjustments) - @todo add summary
+*    @todo add description
+*
+*    SGE_STRING(SC_load_adjustment_decay_time) - @todo add summary
+*    @todo add description
+*
+*    SGE_STRING(SC_load_formula) - @todo add summary
+*    @todo add description
+*
+*    SGE_STRING(SC_schedd_job_info) - @todo add summary
+*    @todo add description
+*
+*    SGE_ULONG(SC_flush_submit_sec) - @todo add summary
+*    @todo add description
+*
+*    SGE_ULONG(SC_flush_finish_sec) - @todo add summary
+*    @todo add description
+*
+*    SGE_STRING(SC_params) - @todo add summary
+*    @todo add description
+*
+*    SGE_STRING(SC_reprioritize_interval) - @todo add summary
+*    @todo add description
+*
+*    SGE_ULONG(SC_halftime) - @todo add summary
+*    @todo add description
+*
+*    SGE_LIST(SC_usage_weight_list) - @todo add summary
+*    @todo add description
+*
+*    SGE_DOUBLE(SC_compensation_factor) - @todo add summary
+*    @todo add description
+*
+*    SGE_DOUBLE(SC_weight_user) - @todo add summary
+*    @todo add description
+*
+*    SGE_DOUBLE(SC_weight_project) - @todo add summary
+*    @todo add description
+*
+*    SGE_DOUBLE(SC_weight_department) - @todo add summary
+*    @todo add description
+*
+*    SGE_DOUBLE(SC_weight_job) - @todo add summary
+*    @todo add description
+*
+*    SGE_ULONG(SC_weight_tickets_functional) - @todo add summary
+*    @todo add description
+*
+*    SGE_ULONG(SC_weight_tickets_share) - @todo add summary
+*    @todo add description
+*
+*    SGE_ULONG(SC_weight_tickets_override) - @todo add summary
+*    @todo add description
+*
+*    SGE_BOOL(SC_share_override_tickets) - @todo add summary
+*    @todo add description
+*
+*    SGE_BOOL(SC_share_functional_shares) - @todo add summary
+*    @todo add description
+*
+*    SGE_ULONG(SC_max_functional_jobs_to_schedule) - @todo add summary
+*    @todo add description
+*
+*    SGE_BOOL(SC_report_pjob_tickets) - @todo add summary
+*    @todo add description
+*
+*    SGE_ULONG(SC_max_pending_tasks_per_job) - @todo add summary
+*    @todo add description
+*
+*    SGE_STRING(SC_halflife_decay_list) - @todo add summary
+*    @todo add description
+*
+*    SGE_STRING(SC_policy_hierarchy) - @todo add summary
+*    @todo add description
+*
+*    SGE_DOUBLE(SC_weight_ticket) - @todo add summary
+*    @todo add description
+*
+*    SGE_DOUBLE(SC_weight_waiting_time) - @todo add summary
+*    @todo add description
+*
+*    SGE_DOUBLE(SC_weight_deadline) - @todo add summary
+*    @todo add description
+*
+*    SGE_DOUBLE(SC_weight_urgency) - @todo add summary
+*    @todo add description
+*
+*    SGE_DOUBLE(SC_weight_priority) - @todo add summary
+*    @todo add description
+*
+*    SGE_ULONG(SC_max_reservation) - @todo add summary
+*    @todo add description
+*
+*    SGE_STRING(SC_default_duration) - @todo add summary
+*    @todo add description
+*
+*/
 
-/* 
- * This is the list type we use to hold the configuration of the scheduler.
- */
 enum {
    SC_algorithm = SC_LOWERBOUND,
    SC_schedule_interval,
@@ -54,10 +163,9 @@ enum {
    SC_load_adjustment_decay_time,
    SC_load_formula,
    SC_schedd_job_info,
-   SC_flush_submit_sec,   
-   SC_flush_finish_sec, 
+   SC_flush_submit_sec,
+   SC_flush_finish_sec,
    SC_params,
-   
    SC_reprioritize_interval,
    SC_halftime,
    SC_usage_weight_list,
@@ -69,12 +177,12 @@ enum {
    SC_weight_tickets_functional,
    SC_weight_tickets_share,
    SC_weight_tickets_override,
-   SC_share_override_tickets,  
-   SC_share_functional_shares,  
-   SC_max_functional_jobs_to_schedule, 
-   SC_report_pjob_tickets,    
-   SC_max_pending_tasks_per_job,  
-   SC_halflife_decay_list, 
+   SC_share_override_tickets,
+   SC_share_functional_shares,
+   SC_max_functional_jobs_to_schedule,
+   SC_report_pjob_tickets,
+   SC_max_pending_tasks_per_job,
+   SC_halflife_decay_list,
    SC_policy_hierarchy,
    SC_weight_ticket,
    SC_weight_waiting_time,
@@ -83,82 +191,46 @@ enum {
    SC_weight_priority,
    SC_max_reservation,
    SC_default_duration
-   };
+};
 
 LISTDEF(SC_Type)
-   JGDI_ROOT_OBJ(SchedConf, SGE_SC_LIST, MODIFY | GET)
-   JGDI_EVENT_OBJ(MODIFY(sgeE_SCHED_CONF))
-   /*
-    * configuration values used by both SGE and SGEEE
-    */
-   SGE_STRING_D(SC_algorithm, CULL_DEFAULT | CULL_SPOOL | CULL_JGDI_CONF, "default")
-   SGE_STRING_D(SC_schedule_interval, CULL_DEFAULT | CULL_SPOOL | CULL_JGDI_CONF, "0:0:15")
-   SGE_ULONG_D(SC_maxujobs, CULL_DEFAULT | CULL_SPOOL | CULL_JGDI_CONF, 0)
-   SGE_ULONG_D(SC_queue_sort_method, CULL_DEFAULT | CULL_SPOOL | CULL_JGDI_CONF, 0)    /* see at top of file for valid values */
-   SGE_LIST(SC_job_load_adjustments, CE_Type, CULL_DEFAULT | CULL_SPOOL | CULL_JGDI_CONF)        /* CE_Type */
-   SGE_STRING_D(SC_load_adjustment_decay_time, CULL_DEFAULT | CULL_SPOOL | CULL_JGDI_CONF, "0:7:30")
-   SGE_STRING_D(SC_load_formula, CULL_DEFAULT | CULL_SPOOL | CULL_JGDI_CONF, "np_load_avg")
-   SGE_STRING_D(SC_schedd_job_info, CULL_DEFAULT | CULL_SPOOL | CULL_JGDI_CONF, "true")
-   SGE_ULONG_D(SC_flush_submit_sec, CULL_DEFAULT | CULL_SPOOL | CULL_JGDI_CONF, 0)            /* specifies the time after a job submit       *
-                                                                         * to run the scheduler                        */
-   SGE_ULONG_D(SC_flush_finish_sec, CULL_DEFAULT | CULL_SPOOL | CULL_JGDI_CONF, 0)            /* specifies the time after a job has finished *   
-                                                                         * to run the scheduler                        */
-   SGE_STRING_D(SC_params, CULL_DEFAULT | CULL_SPOOL | CULL_JGDI_CONF, "none")
-
-   /* 
-    * SGEEE specific configuration values
-    */
-   SGE_STRING_D(SC_reprioritize_interval, CULL_DEFAULT | CULL_SPOOL | CULL_JGDI_CONF, "0:0:0")
-   SGE_ULONG_D(SC_halftime, CULL_DEFAULT | CULL_SPOOL | CULL_JGDI_CONF, 168)
-   SGE_MAP(SC_usage_weight_list, UA_Type, CULL_DEFAULT | CULL_SPOOL | CULL_JGDI_CONF)   /* SGEEE - UA_Type; gives    *
-                                                                         * weights for building the  * 
-                                                                         * usage usage = cpu * w_cpu *
-                                                                         * + xxx * w_xxx + ...       */
-   SGE_DOUBLE_D(SC_compensation_factor, CULL_DEFAULT | CULL_SPOOL | CULL_JGDI_CONF, 5.0)
-
-   SGE_DOUBLE_D(SC_weight_user, CULL_DEFAULT | CULL_SPOOL | CULL_JGDI_CONF, 0.25)  /* gives weights between different *
-                                                                                    * functional scheduling targets   */
-   SGE_DOUBLE_D(SC_weight_project, CULL_DEFAULT | CULL_SPOOL | CULL_JGDI_CONF, 0.25)
-   SGE_DOUBLE_D(SC_weight_department, CULL_DEFAULT | CULL_SPOOL | CULL_JGDI_CONF, 0.25)
-   SGE_DOUBLE_D(SC_weight_job, CULL_DEFAULT | CULL_SPOOL | CULL_JGDI_CONF, 0.25)
-
-   SGE_ULONG_D(SC_weight_tickets_functional, CULL_DEFAULT | CULL_SPOOL | CULL_JGDI_CONF, 0)      /* weight between different scheduling targets */
-   SGE_ULONG_D(SC_weight_tickets_share, CULL_DEFAULT | CULL_SPOOL | CULL_JGDI_CONF, 0)
-   SGE_ULONG_D(SC_weight_tickets_override, CULL_DEFAULT | CULL_SPOOL | CULL_JGDI_CONF, 0)
-   SGE_BOOL(SC_share_override_tickets, CULL_DEFAULT | CULL_SPOOL | CULL_JGDI_CONF)          /* Override tickets of any object instance *
-                                                                                             * are shared equally among all jobs       *
-                                                                                             * associated with the object.             */
-   SGE_BOOL(SC_share_functional_shares, CULL_DEFAULT | CULL_SPOOL | CULL_JGDI_CONF)         /* Functional shares of any object instance*
-                                                                                             * are shared among all the jobs associated*
-                                                                                             * with the object.                        */
-   SGE_ULONG_D(SC_max_functional_jobs_to_schedule, CULL_DEFAULT | CULL_SPOOL | CULL_JGDI_CONF, 200)   /* The maximum number of functional pending* 
-                                                                                                       * jobs to scheduling using the brute-force* 
-                                                                                                       * method.                                 */
-   SGE_BOOL(SC_report_pjob_tickets, CULL_DEFAULT | CULL_SPOOL | CULL_JGDI_CONF)             /* report tickets to the qmaster or not    */ 
-   SGE_ULONG_D(SC_max_pending_tasks_per_job, CULL_DEFAULT | CULL_SPOOL | CULL_JGDI_CONF, 50)      /* The number of subtasks per pending job  *
-                                                                                                   * to schedule. This parameter exists in   *
-                                                                                                   * order to reduce overhead.               */
-   SGE_STRING_D(SC_halflife_decay_list,CULL_DEFAULT | CULL_SPOOL | CULL_JGDI_CONF, "none")        /* A list of halflife decay values (UA_Type)*/
-   SGE_STRING_D(SC_policy_hierarchy,CULL_DEFAULT | CULL_SPOOL | CULL_JGDI_CONF, "OFS")            /* defines the order of the ticket         *
-                                                                                                   * computation                             */
-   SGE_DOUBLE_D(SC_weight_ticket, CULL_DEFAULT | CULL_SPOOL | CULL_JGDI_CONF, 0.01)               /* weight in SGEEE priority formula applied */
-                                                                                                  /* on normalized ticket amount             */
-   SGE_DOUBLE_D(SC_weight_waiting_time, CULL_DEFAULT | CULL_SPOOL | CULL_JGDI_CONF, 0.0)          /* weight applied in SGEEE static urgency  *
-                                                                                                   * formula on waiting time                 */
-   SGE_DOUBLE_D(SC_weight_deadline, CULL_DEFAULT | CULL_SPOOL | CULL_JGDI_CONF, 3600000.0)        /* dividend used in SGEEE static urgency   *
-                                                                                                   * formula with deadline initiation time   */
-   SGE_DOUBLE_D(SC_weight_urgency, CULL_DEFAULT | CULL_SPOOL | CULL_JGDI_CONF, 0.1)               /* weight in SGEEE priority formula applied *
-                                                                                                   * on normalized urgency                   */
-   SGE_DOUBLE_D(SC_weight_priority, CULL_DEFAULT | CULL_SPOOL | CULL_JGDI_CONF, 1.0)              /* weight in SGEEE priority formula applied *
-                                                                                                   * on normalized posix priority */
-   SGE_ULONG_D(SC_max_reservation, CULL_DEFAULT | CULL_SPOOL | CULL_JGDI_CONF, 0)                 /* Maximum number of reservations within a *
-                                                                                                   * schedule run. The value U_LONG32_MAX    *
-                                                                                                   * stands for 'infinity'                   */
-   SGE_STRING_D(SC_default_duration, CULL_DEFAULT | CULL_SPOOL | CULL_JGDI_CONF, "0:10:0")        /* Default duration assumed for in         *
-                                                                                                   * reseration scheduling mode for jobs     *
-                                                                                                   * that specify no h_rt/s_rt. May not be   *
-                                                                                                   * null if reservation is enabled */
-LISTEND 
+   SGE_STRING(SC_algorithm, CULL_SPOOL)
+   SGE_STRING(SC_schedule_interval, CULL_SPOOL)
+   SGE_ULONG(SC_maxujobs, CULL_SPOOL)
+   SGE_ULONG(SC_queue_sort_method, CULL_SPOOL)
+   SGE_LIST(SC_job_load_adjustments, CE_Type, CULL_SPOOL)
+   SGE_STRING(SC_load_adjustment_decay_time, CULL_SPOOL)
+   SGE_STRING(SC_load_formula, CULL_SPOOL)
+   SGE_STRING(SC_schedd_job_info, CULL_SPOOL)
+   SGE_ULONG(SC_flush_submit_sec, CULL_SPOOL)
+   SGE_ULONG(SC_flush_finish_sec, CULL_SPOOL)
+   SGE_STRING(SC_params, CULL_SPOOL)
+   SGE_STRING(SC_reprioritize_interval, CULL_SPOOL)
+   SGE_ULONG(SC_halftime, CULL_SPOOL)
+   SGE_LIST(SC_usage_weight_list, UA_Type, CULL_SPOOL)
+   SGE_DOUBLE(SC_compensation_factor, CULL_SPOOL)
+   SGE_DOUBLE(SC_weight_user, CULL_SPOOL)
+   SGE_DOUBLE(SC_weight_project, CULL_SPOOL)
+   SGE_DOUBLE(SC_weight_department, CULL_SPOOL)
+   SGE_DOUBLE(SC_weight_job, CULL_SPOOL)
+   SGE_ULONG(SC_weight_tickets_functional, CULL_SPOOL)
+   SGE_ULONG(SC_weight_tickets_share, CULL_SPOOL)
+   SGE_ULONG(SC_weight_tickets_override, CULL_SPOOL)
+   SGE_BOOL(SC_share_override_tickets, CULL_SPOOL)
+   SGE_BOOL(SC_share_functional_shares, CULL_SPOOL)
+   SGE_ULONG(SC_max_functional_jobs_to_schedule, CULL_SPOOL)
+   SGE_BOOL(SC_report_pjob_tickets, CULL_SPOOL)
+   SGE_ULONG(SC_max_pending_tasks_per_job, CULL_SPOOL)
+   SGE_STRING(SC_halflife_decay_list, CULL_SPOOL)
+   SGE_STRING(SC_policy_hierarchy, CULL_SPOOL)
+   SGE_DOUBLE(SC_weight_ticket, CULL_SPOOL)
+   SGE_DOUBLE(SC_weight_waiting_time, CULL_SPOOL)
+   SGE_DOUBLE(SC_weight_deadline, CULL_SPOOL)
+   SGE_DOUBLE(SC_weight_urgency, CULL_SPOOL)
+   SGE_DOUBLE(SC_weight_priority, CULL_SPOOL)
+   SGE_ULONG(SC_max_reservation, CULL_SPOOL)
+   SGE_STRING(SC_default_duration, CULL_SPOOL)
+LISTEND
 
 NAMEDEF(SCN)
    NAME("SC_algorithm")
@@ -172,21 +244,17 @@ NAMEDEF(SCN)
    NAME("SC_flush_submit_sec")
    NAME("SC_flush_finish_sec")
    NAME("SC_params")
-   
    NAME("SC_reprioritize_interval")
    NAME("SC_halftime")
    NAME("SC_usage_weight_list")
    NAME("SC_compensation_factor")
-
    NAME("SC_weight_user")
    NAME("SC_weight_project")
    NAME("SC_weight_department")
    NAME("SC_weight_job")
-
    NAME("SC_weight_tickets_functional")
    NAME("SC_weight_tickets_share")
    NAME("SC_weight_tickets_override")
-
    NAME("SC_share_override_tickets")
    NAME("SC_share_functional_shares")
    NAME("SC_max_functional_jobs_to_schedule")
@@ -194,7 +262,6 @@ NAMEDEF(SCN)
    NAME("SC_max_pending_tasks_per_job")
    NAME("SC_halflife_decay_list")
    NAME("SC_policy_hierarchy")
-
    NAME("SC_weight_ticket")
    NAME("SC_weight_waiting_time")
    NAME("SC_weight_deadline")
@@ -203,11 +270,11 @@ NAMEDEF(SCN)
    NAME("SC_max_reservation")
    NAME("SC_default_duration")
 NAMEEND
-#define SCS sizeof(SCN)/sizeof(char*)
 
-/* *INDENT-ON* */
+#define SC_SIZE sizeof(SCN)/sizeof(char *)
 
-#ifdef  __cplusplus
+#ifdef __cplusplus
 }
 #endif
-#endif                          /* __SGE_SCHEDCONFL_H */
+
+#endif

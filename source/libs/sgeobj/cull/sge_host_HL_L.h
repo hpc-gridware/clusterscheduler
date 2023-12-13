@@ -1,6 +1,5 @@
-#ifndef __SGE_HOST_HL_L_H
-#define __SGE_HOST_HL_L_H
-
+#ifndef SGE_HL_L_H
+#define SGE_HL_L_H
 /*___INFO__MARK_BEGIN__*/
 /*************************************************************************
  * 
@@ -36,15 +35,29 @@
 #include "cull/cull.h"
 #include "sgeobj/cull/sge_boundaries.h"
 
-#ifdef  __cplusplus
+#ifdef __cplusplus
 extern "C" {
 #endif
 
-/* *INDENT-OFF* */
+/**
+* @brief @todo add summary
+*
+* @todo add description
+*
+*    SGE_STRING(HL_name) - @todo add summary
+*    @todo add description
+*
+*    SGE_STRING(HL_value) - @todo add summary
+*    @todo add description
+*
+*    SGE_ULONG(HL_last_update) - @todo add summary
+*    @todo add description
+*
+*    SGE_BOOL(HL_static) - @todo add summary
+*    @todo add description
+*
+*/
 
-/*
- * host load
- */
 enum {
    HL_name = HL_LOWERBOUND,
    HL_value,
@@ -53,12 +66,11 @@ enum {
 };
 
 LISTDEF(HL_Type)
-   JGDI_MAP_OBJ(HL_name, HL_value)
-   SGE_STRING(HL_name, CULL_PRIMARY_KEY | CULL_HASH | CULL_UNIQUE | CULL_SUBLIST)
-   SGE_STRING(HL_value, CULL_DEFAULT | CULL_SUBLIST)
+   SGE_STRING(HL_name, CULL_PRIMARY_KEY | CULL_UNIQUE | CULL_HASH | CULL_SUBLIST)
+   SGE_STRING(HL_value, CULL_SUBLIST)
    SGE_ULONG(HL_last_update, CULL_DEFAULT)
    SGE_BOOL(HL_static, CULL_DEFAULT)
-LISTEND 
+LISTEND
 
 NAMEDEF(HLN)
    NAME("HL_name")
@@ -67,11 +79,10 @@ NAMEDEF(HLN)
    NAME("HL_static")
 NAMEEND
 
-#define HLS sizeof(HLN)/sizeof(char*)
+#define HL_SIZE sizeof(HLN)/sizeof(char *)
 
-/* *INDENT-ON* */
-
-#ifdef  __cplusplus
+#ifdef __cplusplus
 }
 #endif
-#endif                          /* __SGE_HOSTL_H */
+
+#endif

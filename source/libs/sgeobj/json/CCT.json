@@ -1,0 +1,65 @@
+{
+	"className":	"CachedCategory",
+	"summary":	"@todo add summary",
+	"description":	[{
+			"line":	"@todo add description"
+		}],
+	"cullPrefix":	"CCT",
+	"attributes":	[{
+			"name":	"pe_name",
+			"summary":	"@todo add summary",
+			"description":	[{
+					"line":	"@todo add description"
+				}],
+			"type":	"lStringT",
+			"flags":	[]
+		}, {
+			"name":	"ignore_queues",
+			"summary":	"@todo add summary",
+			"description":	[{
+					"line":	"@todo add description"
+				}],
+			"type":	"lListT",
+			"subClassName":	"SkipListEntry",
+			"subCullPrefix":	"CTI",
+			"flags":	[]
+		}, {
+			"name":	"ignore_hosts",
+			"summary":	"@todo add summary",
+			"description":	[{
+					"line":	"@todo add description"
+				}],
+			"type":	"lListT",
+			"subClassName":	"SkipListEntry",
+			"subCullPrefix":	"CTI",
+			"flags":	[]
+		}, {
+			"name":	"job_messages",
+			"summary":	"@todo add summary",
+			"description":	[{
+					"line":	"@todo add description"
+				}],
+			"type":	"lListT",
+			"subClassName":	"JobSchedulingMessage",
+			"subCullPrefix":	"MES",
+			"flags":	[]
+		}, {
+			"name":	"pe_job_slots",
+			"summary":	"@todo add summary",
+			"description":	[{
+					"line":	"@todo add description"
+				}],
+			"type":	"lRefT",
+			"subClassName":	"ANY",
+			"subCullPrefix":	"ANY",
+			"flags":	[]
+		}, {
+			"name":	"pe_job_slot_count",
+			"summary":	"@todo add summary",
+			"description":	[{
+					"line":	"@todo add description"
+				}],
+			"type":	"lUlongT",
+			"flags":	[]
+		}]
+}

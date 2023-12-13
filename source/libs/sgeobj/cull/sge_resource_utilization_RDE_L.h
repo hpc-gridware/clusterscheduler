@@ -1,6 +1,5 @@
-#ifndef __SGE_RESOURCE_UTILIZATIONL_RDE_H
-#define __SGE_RESOURCE_UTILIZATIONL_RDE_H
-
+#ifndef SGE_RDE_L_H
+#define SGE_RDE_L_H
 /*___INFO__MARK_BEGIN__*/
 /*************************************************************************
  * 
@@ -34,53 +33,24 @@
 /*___INFO__MARK_END__*/
 
 #include "cull/cull.h"
-
 #include "sgeobj/cull/sge_boundaries.h"
 
-#ifdef  __cplusplus
+#ifdef __cplusplus
 extern "C" {
 #endif
 
-/* *INDENT-OFF* */ 
-
-/****** sgeobj/RDE/--RDE_Type **************************************************
-*  NAME
-*     RDE_Type - Resource Diagram Entry
+/**
+* @brief @todo add summary
 *
-*  ELEMENTS
+* @todo add description
 *
-*     SGE_ULONG(RDE_time)
-*        Time of resource diagram entry
+*    SGE_ULONG(RDE_time) - @todo add summary
+*    @todo add description
 *
-*     SGE_DOUBLE(RDE_amount)
-*        Amount since that time
+*    SGE_DOUBLE(RDE_amount) - @todo add summary
+*    @todo add description
 *
-*  FUNCTION
-*     A list of resource diaram entries represents a diagram showing 
-*     resource progression over time. E.g. the following resource
-*     diagram 
-*
-*               N ^
-*                 |             +-------+
-*                 |   +-----+   |  J3   |
-*                 |   |     +---+-------+--+
-*                 |   | J1  |      J2      |
-*                 +---+-----+--------------+-----> t
-*                 0   4     10  14      22 25
-*
-*     is respresented by the the following table 
-*
-*                 t | N
-*                ---+---
-*                 0 | 0
-*                 4 | 3
-*                10 | 2
-*                14 | 4
-*                22 | 2
-*                25 | 2
-*
-*  SEE ALSO
-******************************************************************************/
+*/
 
 enum {
    RDE_time = RDE_LOWERBOUND,
@@ -88,19 +58,19 @@ enum {
 };
 
 LISTDEF(RDE_Type)
-   JGDI_OBJ(ResourceDiagramEntry)
    SGE_ULONG(RDE_time, CULL_DEFAULT)
    SGE_DOUBLE(RDE_amount, CULL_DEFAULT)
-LISTEND 
+LISTEND
 
 NAMEDEF(RDEN)
    NAME("RDE_time")
    NAME("RDE_amount")
 NAMEEND
 
-#define RDES sizeof(RDEN)/sizeof(char*)
+#define RDE_SIZE sizeof(RDEN)/sizeof(char *)
 
-#ifdef  __cplusplus
+#ifdef __cplusplus
 }
 #endif
-#endif                          /* __SGE_RESOURCE_UTILIZATIONL_H */
+
+#endif

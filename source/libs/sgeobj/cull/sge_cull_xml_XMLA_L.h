@@ -1,5 +1,5 @@
-#ifndef __SGE_CULL_XML_XMLA_L_H
-#define __SGE_CULL_XML_XMLA_L_H
+#ifndef SGE_XMLA_L_H
+#define SGE_XMLA_L_H
 /*___INFO__MARK_BEGIN__*/
 /*************************************************************************
  * 
@@ -33,28 +33,25 @@
 /*___INFO__MARK_END__*/
 
 #include "cull/cull.h"
-#include "cull/cull_list.h"
-
 #include "sgeobj/cull/sge_boundaries.h"
 
-#ifdef  __cplusplus
+#ifdef __cplusplus
 extern "C" {
 #endif
 
-/* *INDENT-OFF* */    
-
 /**
- * This file contains some extra cull definition for XML cull output.
- * Such as the XML header structure and a XML element
- *
- */
+* @brief @todo add summary
+*
+* @todo add description
+*
+*    SGE_STRING(XMLA_Name) - @todo add summary
+*    @todo add description
+*
+*    SGE_STRING(XMLA_Value) - @todo add summary
+*    @todo add description
+*
+*/
 
-
-/**************************************************
- *
- * XML attribute:
- *
- **************************************************/
 enum {
    XMLA_Name = XMLA_LOWERBOUND,
    XMLA_Value
@@ -62,19 +59,18 @@ enum {
 
 LISTDEF(XMLA_Type)
    SGE_STRING(XMLA_Name, CULL_DEFAULT)
-   SGE_STRING(XMLA_Value, CULL_DEFAULT)        
-LISTEND        
+   SGE_STRING(XMLA_Value, CULL_DEFAULT)
+LISTEND
 
 NAMEDEF(XMLAN)
    NAME("XMLA_Name")
    NAME("XMLA_Value")
 NAMEEND
 
-#define XMLAS sizeof(XMLAN)/sizeof(char*)
+#define XMLA_SIZE sizeof(XMLAN)/sizeof(char *)
 
-/* *INDENT-ON* */ 
-        
-#ifdef  __cplusplus
+#ifdef __cplusplus
 }
 #endif
-#endif                          /* __SGE_COMPLEXL_H */        
+
+#endif

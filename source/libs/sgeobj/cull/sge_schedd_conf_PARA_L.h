@@ -1,6 +1,5 @@
-#ifndef __SGE_SCHEDCONF_PARA_L_H
-#define __SGE_SCHEDCONF_PARA_L_H
-
+#ifndef SGE_PARA_L_H
+#define SGE_PARA_L_H
 /*___INFO__MARK_BEGIN__*/
 /*************************************************************************
  * 
@@ -36,35 +35,42 @@
 #include "cull/cull.h"
 #include "sgeobj/cull/sge_boundaries.h"
 
-#ifdef  __cplusplus
+#ifdef __cplusplus
 extern "C" {
 #endif
 
-/* *INDENT-OFF* */ 
-
 /**
- * This is a list of parameters, stored in the params flag
- */
+* @brief @todo add summary
+*
+* @todo add description
+*
+*    SGE_STRING(PARA_name) - @todo add summary
+*    @todo add description
+*
+*    SGE_STRING(PARA_value) - @todo add summary
+*    @todo add description
+*
+*/
+
 enum {
    PARA_name = PARA_LOWERBOUND,
    PARA_value
 };
 
 LISTDEF(PARA_Type)
-   SGE_STRING(PARA_name, CULL_PRIMARY_KEY | CULL_DEFAULT)
+   SGE_STRING(PARA_name, CULL_PRIMARY_KEY)
    SGE_STRING(PARA_value, CULL_DEFAULT)
 LISTEND
 
 NAMEDEF(PARAN)
    NAME("PARA_name")
    NAME("PARA_value")
-NAMEEND   
+NAMEEND
 
-#define PARAS sizeof(PARAN)/sizeof(char*)
+#define PARA_SIZE sizeof(PARAN)/sizeof(char *)
 
-/* *INDENT-ON* */
-
-#ifdef  __cplusplus
+#ifdef __cplusplus
 }
 #endif
-#endif                          /* __SGE_SCHEDCONFL_H */
+
+#endif

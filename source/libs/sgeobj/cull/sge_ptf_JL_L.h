@@ -1,6 +1,5 @@
-#ifndef __SGE_PTF_JL_L_H
-#define __SGE_PTF_JL_L_H
-
+#ifndef SGE_JL_L_H
+#define SGE_JL_L_H
 /*___INFO__MARK_BEGIN__*/
 /*************************************************************************
  * 
@@ -34,19 +33,84 @@
 /*___INFO__MARK_END__*/
 
 #include "cull/cull.h"
-
 #include "sgeobj/cull/sge_boundaries.h"
 
-#ifdef  __cplusplus
+#ifdef __cplusplus
 extern "C" {
 #endif
 
-/* *INDENT-OFF* */ 
-
-/*
- * This is the list type we use to hold the jobs which
- * are running under the local execution daemon.
- */
+/**
+* @brief @todo add summary
+*
+* @todo add description
+*
+*    SGE_ULONG(JL_job_ID) - @todo add summary
+*    @todo add description
+*
+*    SGE_LIST(JL_OS_job_list) - @todo add summary
+*    @todo add description
+*
+*    SGE_ULONG(JL_state) - @todo add summary
+*    @todo add description
+*
+*    SGE_ULONG(JL_tickets) - @todo add summary
+*    @todo add description
+*
+*    SGE_DOUBLE(JL_share) - @todo add summary
+*    @todo add description
+*
+*    SGE_DOUBLE(JL_ticket_share) - @todo add summary
+*    @todo add description
+*
+*    SGE_DOUBLE(JL_timeslice) - @todo add summary
+*    @todo add description
+*
+*    SGE_DOUBLE(JL_usage) - @todo add summary
+*    @todo add description
+*
+*    SGE_DOUBLE(JL_old_usage_value) - @todo add summary
+*    @todo add description
+*
+*    SGE_DOUBLE(JL_adjusted_usage) - @todo add summary
+*    @todo add description
+*
+*    SGE_DOUBLE(JL_last_usage) - @todo add summary
+*    @todo add description
+*
+*    SGE_DOUBLE(JL_old_usage) - @todo add summary
+*    @todo add description
+*
+*    SGE_DOUBLE(JL_proportion) - @todo add summary
+*    @todo add description
+*
+*    SGE_DOUBLE(JL_adjusted_proportion) - @todo add summary
+*    @todo add description
+*
+*    SGE_DOUBLE(JL_adjusted_current_proportion) - @todo add summary
+*    @todo add description
+*
+*    SGE_DOUBLE(JL_actual_proportion) - @todo add summary
+*    @todo add description
+*
+*    SGE_DOUBLE(JL_diff_proportion) - @todo add summary
+*    @todo add description
+*
+*    SGE_DOUBLE(JL_last_proportion) - @todo add summary
+*    @todo add description
+*
+*    SGE_DOUBLE(JL_curr_pri) - @todo add summary
+*    @todo add description
+*
+*    SGE_LONG(JL_pri) - @todo add summary
+*    @todo add description
+*
+*    SGE_ULONG(JL_procfd) - @todo add summary
+*    @todo add description
+*
+*    SGE_ULONG(JL_interactive) - @todo add summary
+*    @todo add description
+*
+*/
 
 enum {
    JL_job_ID = JL_LOWERBOUND,
@@ -74,18 +138,18 @@ enum {
 };
 
 LISTDEF(JL_Type)
-   SGE_ULONG(JL_job_ID, CULL_DEFAULT)       /* job identifier */
-   SGE_LIST(JL_OS_job_list, JO_Type, CULL_DEFAULT)   /* O.S. job list */
-   SGE_ULONG(JL_state, CULL_DEFAULT)        /* job state (JL_JOB_*) */
-   SGE_ULONG(JL_tickets, CULL_DEFAULT)      /* job tickets */
-   SGE_DOUBLE(JL_share, CULL_DEFAULT)       /* ptf interval share */
-   SGE_DOUBLE(JL_ticket_share, CULL_DEFAULT) /* ptf job ticket share */
-   SGE_DOUBLE(JL_timeslice, CULL_DEFAULT)   /* ptf calculated timeslice (SX) */
-   SGE_DOUBLE(JL_usage, CULL_DEFAULT)       /* ptf interval combined usage */
-   SGE_DOUBLE(JL_old_usage_value, CULL_DEFAULT)     /* ptf interval combined usage */
-   SGE_DOUBLE(JL_adjusted_usage, CULL_DEFAULT)      /* ptf interval adjusted usage */
-   SGE_DOUBLE(JL_last_usage, CULL_DEFAULT)  /* ptf last interval combined usage */
-   SGE_DOUBLE(JL_old_usage, CULL_DEFAULT)   /* prev interval combined usage */
+   SGE_ULONG(JL_job_ID, CULL_DEFAULT)
+   SGE_LIST(JL_OS_job_list, JO_Type, CULL_DEFAULT)
+   SGE_ULONG(JL_state, CULL_DEFAULT)
+   SGE_ULONG(JL_tickets, CULL_DEFAULT)
+   SGE_DOUBLE(JL_share, CULL_DEFAULT)
+   SGE_DOUBLE(JL_ticket_share, CULL_DEFAULT)
+   SGE_DOUBLE(JL_timeslice, CULL_DEFAULT)
+   SGE_DOUBLE(JL_usage, CULL_DEFAULT)
+   SGE_DOUBLE(JL_old_usage_value, CULL_DEFAULT)
+   SGE_DOUBLE(JL_adjusted_usage, CULL_DEFAULT)
+   SGE_DOUBLE(JL_last_usage, CULL_DEFAULT)
+   SGE_DOUBLE(JL_old_usage, CULL_DEFAULT)
    SGE_DOUBLE(JL_proportion, CULL_DEFAULT)
    SGE_DOUBLE(JL_adjusted_proportion, CULL_DEFAULT)
    SGE_DOUBLE(JL_adjusted_current_proportion, CULL_DEFAULT)
@@ -94,9 +158,9 @@ LISTDEF(JL_Type)
    SGE_DOUBLE(JL_last_proportion, CULL_DEFAULT)
    SGE_DOUBLE(JL_curr_pri, CULL_DEFAULT)
    SGE_LONG(JL_pri, CULL_DEFAULT)
-   SGE_ULONG(JL_procfd, CULL_DEFAULT)       /* /proc file descriptor */
-   SGE_ULONG(JL_interactive, CULL_DEFAULT)  /* interactive flag */
-LISTEND 
+   SGE_ULONG(JL_procfd, CULL_DEFAULT)
+   SGE_ULONG(JL_interactive, CULL_DEFAULT)
+LISTEND
 
 NAMEDEF(JLN)
    NAME("JL_job_ID")
@@ -123,11 +187,10 @@ NAMEDEF(JLN)
    NAME("JL_interactive")
 NAMEEND
 
-#define JLS sizeof(JLN)/sizeof(char*)
+#define JL_SIZE sizeof(JLN)/sizeof(char *)
 
-/* *INDENT-ON* */ 
-
-#ifdef  __cplusplus
+#ifdef __cplusplus
 }
 #endif
-#endif                          /* __SGE_PTFL_H */
+
+#endif

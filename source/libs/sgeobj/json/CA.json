@@ -1,0 +1,47 @@
+{
+	"className":	"CA",
+	"summary":	"@todo add summary",
+	"description":	[{
+			"line":	"@todo add description"
+		}],
+	"cullPrefix":	"CA",
+	"attributes":	[{
+			"name":	"yday_range_list",
+			"summary":	"@todo add summary",
+			"description":	[{
+					"line":	"@todo add description"
+				}],
+			"type":	"lListT",
+			"subClassName":	"TMR",
+			"subCullPrefix":	"TMR",
+			"flags":	[]
+		}, {
+			"name":	"wday_range_list",
+			"summary":	"@todo add summary",
+			"description":	[{
+					"line":	"@todo add description"
+				}],
+			"type":	"lListT",
+			"subClassName":	"TMR",
+			"subCullPrefix":	"TMR",
+			"flags":	[]
+		}, {
+			"name":	"daytime_range_list",
+			"summary":	"@todo add summary",
+			"description":	[{
+					"line":	"@todo add description"
+				}],
+			"type":	"lListT",
+			"subClassName":	"TMR",
+			"subCullPrefix":	"TMR",
+			"flags":	[]
+		}, {
+			"name":	"state",
+			"summary":	"@todo add summary",
+			"description":	[{
+					"line":	"@todo add description"
+				}],
+			"type":	"lUlongT",
+			"flags":	[]
+		}]
+}

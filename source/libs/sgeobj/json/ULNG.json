@@ -1,0 +1,21 @@
+{
+	"className":	"ULNG",
+	"summary":	"@todo add summary",
+	"description":	[{
+			"line":	"@todo add description"
+		}],
+	"cullPrefix":	"ULNG",
+	"attributes":	[{
+			"name":	"value",
+			"summary":	"@todo add summary",
+			"description":	[{
+					"line":	"@todo add description"
+				}],
+			"type":	"lUlongT",
+			"flags":	[{
+					"name":	"UNIQUE"
+				}, {
+					"name":	"HASH"
+				}]
+		}]
+}

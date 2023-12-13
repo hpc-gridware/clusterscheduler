@@ -1,6 +1,5 @@
-#ifndef __SGE_IDL_H
-#define __SGE_IDL_H
-
+#ifndef SGE_ID_L_H
+#define SGE_ID_L_H
 /*___INFO__MARK_BEGIN__*/
 /*************************************************************************
  * 
@@ -36,11 +35,31 @@
 #include "cull/cull.h"
 #include "sgeobj/cull/sge_boundaries.h"
 
-#ifdef  __cplusplus
+#ifdef __cplusplus
 extern "C" {
 #endif
 
-/* *INDENT-OFF* */
+/**
+* @brief @todo add summary
+*
+* @todo add description
+*
+*    SGE_STRING(ID_str) - @todo add summary
+*    @todo add description
+*
+*    SGE_LIST(ID_ja_structure) - @todo add summary
+*    @todo add description
+*
+*    SGE_ULONG(ID_action) - @todo add summary
+*    @todo add description
+*
+*    SGE_ULONG(ID_force) - @todo add summary
+*    @todo add description
+*
+*    SGE_LIST(ID_user_list) - @todo add summary
+*    @todo add description
+*
+*/
 
 enum {
    ID_str = ID_LOWERBOUND,
@@ -56,7 +75,7 @@ LISTDEF(ID_Type)
    SGE_ULONG(ID_action, CULL_DEFAULT)
    SGE_ULONG(ID_force, CULL_DEFAULT)
    SGE_LIST(ID_user_list, ST_Type, CULL_DEFAULT)
-LISTEND 
+LISTEND
 
 NAMEDEF(IDN)
    NAME("ID_str")
@@ -66,10 +85,10 @@ NAMEDEF(IDN)
    NAME("ID_user_list")
 NAMEEND
 
-/* *INDENT-ON* */ 
+#define ID_SIZE sizeof(IDN)/sizeof(char *)
 
-#define IDS sizeof(IDN)/sizeof(char*)
-#ifdef  __cplusplus
+#ifdef __cplusplus
 }
 #endif
+
 #endif

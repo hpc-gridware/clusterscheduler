@@ -1,6 +1,5 @@
-#ifndef __SGE_HELPER_H
-#define __SGE_HELPER_H
-
+#ifndef SGE_QAJ_L_H
+#define SGE_QAJ_L_H
 /*___INFO__MARK_BEGIN__*/
 /*************************************************************************
  * 
@@ -36,20 +35,81 @@
 #include "cull/cull.h"
 #include "sgeobj/cull/sge_boundaries.h"
 
-#ifdef  __cplusplus
+#ifdef __cplusplus
 extern "C" {
 #endif
 
-/*
-** list for sorted output of job sums for QACCT
+/**
+* @brief @todo add summary
+*
+* @todo add description
+*
+*    SGE_HOST(QAJ_host) - @todo add summary
+*    @todo add description
+*
+*    SGE_STRING(QAJ_queue) - @todo add summary
+*    @todo add description
+*
+*    SGE_STRING(QAJ_group) - @todo add summary
+*    @todo add description
+*
+*    SGE_STRING(QAJ_owner) - @todo add summary
+*    @todo add description
+*
+*    SGE_STRING(QAJ_project) - @todo add summary
+*    @todo add description
+*
+*    SGE_STRING(QAJ_department) - @todo add summary
+*    @todo add description
+*
+*    SGE_DOUBLE(QAJ_ru_wallclock) - @todo add summary
+*    @todo add description
+*
+*    SGE_DOUBLE(QAJ_ru_utime) - @todo add summary
+*    @todo add description
+*
+*    SGE_DOUBLE(QAJ_ru_stime) - @todo add summary
+*    @todo add description
+*
+*    SGE_DOUBLE(QAJ_ru_maxrss) - @todo add summary
+*    @todo add description
+*
+*    SGE_DOUBLE(QAJ_ru_inblock) - @todo add summary
+*    @todo add description
+*
+*    SGE_STRING(QAJ_granted_pe) - @todo add summary
+*    @todo add description
+*
+*    SGE_ULONG(QAJ_slots) - @todo add summary
+*    @todo add description
+*
+*    SGE_DOUBLE(QAJ_cpu) - @todo add summary
+*    @todo add description
+*
+*    SGE_DOUBLE(QAJ_mem) - @todo add summary
+*    @todo add description
+*
+*    SGE_DOUBLE(QAJ_io) - @todo add summary
+*    @todo add description
+*
+*    SGE_DOUBLE(QAJ_iow) - @todo add summary
+*    @todo add description
+*
+*    SGE_DOUBLE(QAJ_maxvmem) - @todo add summary
+*    @todo add description
+*
+*    SGE_ULONG(QAJ_arid) - @todo add summary
+*    @todo add description
+*
 */
+
 enum {
    QAJ_host = QAJ_LOWERBOUND,
-   QAJ_queue,                /* qname */
+   QAJ_queue,
    QAJ_group,
    QAJ_owner,
-   QAJ_project,              /* SGEEE project */
-   QAJ_department,           /* SGEEE department */
+   QAJ_project,
+   QAJ_department,
    QAJ_ru_wallclock,
    QAJ_ru_utime,
    QAJ_ru_stime,
@@ -87,7 +147,6 @@ LISTDEF(QAJ_Type)
    SGE_ULONG(QAJ_arid, CULL_DEFAULT)
 LISTEND
 
-
 NAMEDEF(QAJN)
    NAME("QAJ_host")
    NAME("QAJ_queue")
@@ -110,12 +169,10 @@ NAMEDEF(QAJN)
    NAME("QAJ_arid")
 NAMEEND
 
-/* *INDENT-ON* */
+#define QAJ_SIZE sizeof(QAJN)/sizeof(char *)
 
-#define QAJS sizeof(QAJN)/sizeof(char*)
-#ifdef  __cplusplus
+#ifdef __cplusplus
 }
 #endif
 
-#endif /* __SGE_HELPER_H */
-
+#endif

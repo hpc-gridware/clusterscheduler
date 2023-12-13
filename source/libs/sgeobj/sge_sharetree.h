@@ -34,6 +34,41 @@
 
 #include "sgeobj/cull/sge_sharetree_STN_L.h"
 
+
+// make sure that the following enum is in sync with libs/sgeobj/json/STN.json
+enum {
+   STN_name_POS = 0,
+   STN_type_POS,
+   STN_id_POS,
+   STN_shares_POS,
+   STN_children_POS,
+   STN_job_ref_count_POS,
+   STN_active_job_ref_count_POS,
+   STN_project_POS,
+   STN_proportion_POS,
+   STN_adjusted_proportion_POS,
+   STN_combined_usage_POS,
+   STN_pass2_seqno_POS,
+   STN_sum_priority_POS,
+   STN_actual_proportion_POS,
+   STN_m_share_POS,
+   STN_last_actual_proportion_POS,
+   STN_adjusted_current_proportion_POS,
+   STN_temp_POS,
+   STN_stt_POS,
+   STN_ostt_POS,
+   STN_ltt_POS,
+   STN_oltt_POS,
+   STN_shr_POS,
+   STN_sort_POS,
+   STN_ref_POS,
+   STN_tickets_POS,
+   STN_jobid_POS,
+   STN_taskid_POS,
+   STN_usage_list_POS,
+   STN_version_POS
+};
+
 /*
  *  * This is the list type we use to hold the 
  *   * nodes of a share tree.

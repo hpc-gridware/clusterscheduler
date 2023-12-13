@@ -1,6 +1,5 @@
-#ifndef __SGE_CONF_CF_L_H
-#define __SGE_CONF_CF_L_H
-
+#ifndef SGE_CF_L_H
+#define SGE_CF_L_H
 /*___INFO__MARK_BEGIN__*/
 /*************************************************************************
  * 
@@ -36,28 +35,42 @@
 #include "cull/cull.h"
 #include "sgeobj/cull/sge_boundaries.h"
 
-#ifdef  __cplusplus
+#ifdef __cplusplus
 extern "C" {
 #endif
 
-/* *INDENT-OFF* */ 
-/*
- * configuration list 
- */
+/**
+* @brief @todo add summary
+*
+* @todo add description
+*
+*    SGE_STRING(CF_name) - @todo add summary
+*    @todo add description
+*
+*    SGE_STRING(CF_value) - @todo add summary
+*    @todo add description
+*
+*    SGE_LIST(CF_sublist) - @todo add summary
+*    @todo add description
+*
+*    SGE_ULONG(CF_local) - @todo add summary
+*    @todo add description
+*
+*/
+
 enum {
-   CF_name = CF_LOWERBOUND,  /* name of configuration element */
-   CF_value,                 /* value of configuration element */
-   CF_sublist,               /* sub-list of type CF_Type */
-   CF_local                  /* global value can be overridden */
+   CF_name = CF_LOWERBOUND,
+   CF_value,
+   CF_sublist,
+   CF_local
 };
 
 LISTDEF(CF_Type)
-   JGDI_OBJ(ConfigurationElement)
-   SGE_STRING(CF_name, CULL_PRIMARY_KEY | CULL_HASH | CULL_UNIQUE | CULL_SUBLIST | CULL_JGDI_CONF)
-   SGE_STRING(CF_value, CULL_DEFAULT | CULL_SUBLIST | CULL_JGDI_CONF)
-   SGE_LIST(CF_sublist, CULL_ANY_SUBTYPE, CULL_DEFAULT | CULL_JGDI_CONF)
-   SGE_ULONG(CF_local, CULL_DEFAULT | CULL_JGDI_HIDDEN)
-LISTEND 
+   SGE_STRING(CF_name, CULL_PRIMARY_KEY | CULL_UNIQUE | CULL_HASH | CULL_SUBLIST)
+   SGE_STRING(CF_value, CULL_SUBLIST)
+   SGE_LIST(CF_sublist, CULL_ANY_SUBTYPE, CULL_DEFAULT)
+   SGE_ULONG(CF_local, CULL_DEFAULT)
+LISTEND
 
 NAMEDEF(CFN)
    NAME("CF_name")
@@ -66,11 +79,10 @@ NAMEDEF(CFN)
    NAME("CF_local")
 NAMEEND
 
-#define CFS sizeof(CFN)/sizeof(char*)
+#define CF_SIZE sizeof(CFN)/sizeof(char *)
 
-/* *INDENT-ON* */
-
-#ifdef  __cplusplus
+#ifdef __cplusplus
 }
 #endif
-#endif                          /* __SGE_CONFL_H */
+
+#endif

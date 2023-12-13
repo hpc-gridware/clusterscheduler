@@ -1,0 +1,845 @@
+{
+	"className":	"QU",
+	"summary":	"@todo add summary",
+	"description":	[{
+			"line":	"@todo add description"
+		}],
+	"cullPrefix":	"QU",
+	"attributes":	[{
+			"name":	"qhostname",
+			"summary":	"@todo add summary",
+			"description":	[{
+					"line":	"@todo add description"
+				}],
+			"type":	"lHostT",
+			"flags":	[{
+					"name":	"HASH"
+				}, {
+					"name":	"JGDI_RO"
+				}, {
+					"name":	"SPOOL"
+				}]
+		}, {
+			"name":	"qname",
+			"summary":	"@todo add summary",
+			"description":	[{
+					"line":	"@todo add description"
+				}],
+			"type":	"lStringT",
+			"flags":	[{
+					"name":	"JGDI_RO"
+				}, {
+					"name":	"SPOOL"
+				}]
+		}, {
+			"name":	"full_name",
+			"summary":	"@todo add summary",
+			"description":	[{
+					"line":	"@todo add description"
+				}],
+			"type":	"lStringT",
+			"flags":	[{
+					"name":	"PRIMARY_KEY"
+				}, {
+					"name":	"UNIQUE"
+				}, {
+					"name":	"HASH"
+				}, {
+					"name":	"JGDI_RO"
+				}]
+		}, {
+			"name":	"tag",
+			"summary":	"@todo add summary",
+			"description":	[{
+					"line":	"@todo add description"
+				}],
+			"type":	"lUlongT",
+			"flags":	[{
+					"name":	"JGDI_RO"
+				}]
+		}, {
+			"name":	"available_at",
+			"summary":	"@todo add summary",
+			"description":	[{
+					"line":	"@todo add description"
+				}],
+			"type":	"lUlongT",
+			"flags":	[{
+					"name":	"JGDI_RO"
+				}]
+		}, {
+			"name":	"seq_no",
+			"summary":	"@todo add summary",
+			"description":	[{
+					"line":	"@todo add description"
+				}],
+			"type":	"lUlongT",
+			"flags":	[{
+					"name":	"CONFIGURE"
+				}, {
+					"name":	"JGDI_RO"
+				}]
+		}, {
+			"name":	"nsuspend",
+			"summary":	"@todo add summary",
+			"description":	[{
+					"line":	"@todo add description"
+				}],
+			"type":	"lUlongT",
+			"flags":	[{
+					"name":	"CONFIGURE"
+				}, {
+					"name":	"JGDI_RO"
+				}]
+		}, {
+			"name":	"qtype",
+			"summary":	"@todo add summary",
+			"description":	[{
+					"line":	"@todo add description"
+				}],
+			"type":	"lUlongT",
+			"flags":	[{
+					"name":	"CONFIGURE"
+				}, {
+					"name":	"JGDI_RO"
+				}]
+		}, {
+			"name":	"job_slots",
+			"summary":	"@todo add summary",
+			"description":	[{
+					"line":	"@todo add description"
+				}],
+			"type":	"lUlongT",
+			"flags":	[{
+					"name":	"CONFIGURE"
+				}, {
+					"name":	"JGDI_RO"
+				}]
+		}, {
+			"name":	"tmpdir",
+			"summary":	"@todo add summary",
+			"description":	[{
+					"line":	"@todo add description"
+				}],
+			"type":	"lStringT",
+			"flags":	[{
+					"name":	"CONFIGURE"
+				}, {
+					"name":	"JGDI_RO"
+				}]
+		}, {
+			"name":	"shell",
+			"summary":	"@todo add summary",
+			"description":	[{
+					"line":	"@todo add description"
+				}],
+			"type":	"lStringT",
+			"flags":	[{
+					"name":	"CONFIGURE"
+				}, {
+					"name":	"JGDI_RO"
+				}]
+		}, {
+			"name":	"calendar",
+			"summary":	"@todo add summary",
+			"description":	[{
+					"line":	"@todo add description"
+				}],
+			"type":	"lStringT",
+			"flags":	[{
+					"name":	"CONFIGURE"
+				}, {
+					"name":	"JGDI_RO"
+				}]
+		}, {
+			"name":	"priority",
+			"summary":	"@todo add summary",
+			"description":	[{
+					"line":	"@todo add description"
+				}],
+			"type":	"lStringT",
+			"flags":	[{
+					"name":	"CONFIGURE"
+				}, {
+					"name":	"JGDI_RO"
+				}]
+		}, {
+			"name":	"processors",
+			"summary":	"@todo add summary",
+			"description":	[{
+					"line":	"@todo add description"
+				}],
+			"type":	"lStringT",
+			"flags":	[{
+					"name":	"CONFIGURE"
+				}, {
+					"name":	"JGDI_RO"
+				}]
+		}, {
+			"name":	"prolog",
+			"summary":	"@todo add summary",
+			"description":	[{
+					"line":	"@todo add description"
+				}],
+			"type":	"lStringT",
+			"flags":	[{
+					"name":	"CONFIGURE"
+				}, {
+					"name":	"JGDI_RO"
+				}]
+		}, {
+			"name":	"epilog",
+			"summary":	"@todo add summary",
+			"description":	[{
+					"line":	"@todo add description"
+				}],
+			"type":	"lStringT",
+			"flags":	[{
+					"name":	"CONFIGURE"
+				}, {
+					"name":	"JGDI_RO"
+				}]
+		}, {
+			"name":	"shell_start_mode",
+			"summary":	"@todo add summary",
+			"description":	[{
+					"line":	"@todo add description"
+				}],
+			"type":	"lStringT",
+			"flags":	[{
+					"name":	"CONFIGURE"
+				}, {
+					"name":	"JGDI_RO"
+				}]
+		}, {
+			"name":	"starter_method",
+			"summary":	"@todo add summary",
+			"description":	[{
+					"line":	"@todo add description"
+				}],
+			"type":	"lStringT",
+			"flags":	[{
+					"name":	"CONFIGURE"
+				}, {
+					"name":	"JGDI_RO"
+				}]
+		}, {
+			"name":	"suspend_method",
+			"summary":	"@todo add summary",
+			"description":	[{
+					"line":	"@todo add description"
+				}],
+			"type":	"lStringT",
+			"flags":	[{
+					"name":	"CONFIGURE"
+				}, {
+					"name":	"JGDI_RO"
+				}]
+		}, {
+			"name":	"resume_method",
+			"summary":	"@todo add summary",
+			"description":	[{
+					"line":	"@todo add description"
+				}],
+			"type":	"lStringT",
+			"flags":	[{
+					"name":	"CONFIGURE"
+				}, {
+					"name":	"JGDI_RO"
+				}]
+		}, {
+			"name":	"terminate_method",
+			"summary":	"@todo add summary",
+			"description":	[{
+					"line":	"@todo add description"
+				}],
+			"type":	"lStringT",
+			"flags":	[{
+					"name":	"CONFIGURE"
+				}, {
+					"name":	"JGDI_RO"
+				}]
+		}, {
+			"name":	"initial_state",
+			"summary":	"@todo add summary",
+			"description":	[{
+					"line":	"@todo add description"
+				}],
+			"type":	"lStringT",
+			"flags":	[{
+					"name":	"CONFIGURE"
+				}, {
+					"name":	"JGDI_RO"
+				}]
+		}, {
+			"name":	"rerun",
+			"summary":	"@todo add summary",
+			"description":	[{
+					"line":	"@todo add description"
+				}],
+			"type":	"lBoolT",
+			"flags":	[{
+					"name":	"CONFIGURE"
+				}, {
+					"name":	"JGDI_RO"
+				}]
+		}, {
+			"name":	"s_rt",
+			"summary":	"@todo add summary",
+			"description":	[{
+					"line":	"@todo add description"
+				}],
+			"type":	"lStringT",
+			"flags":	[{
+					"name":	"CONFIGURE"
+				}, {
+					"name":	"JGDI_RO"
+				}]
+		}, {
+			"name":	"h_rt",
+			"summary":	"@todo add summary",
+			"description":	[{
+					"line":	"@todo add description"
+				}],
+			"type":	"lStringT",
+			"flags":	[{
+					"name":	"CONFIGURE"
+				}, {
+					"name":	"JGDI_RO"
+				}]
+		}, {
+			"name":	"s_cpu",
+			"summary":	"@todo add summary",
+			"description":	[{
+					"line":	"@todo add description"
+				}],
+			"type":	"lStringT",
+			"flags":	[{
+					"name":	"CONFIGURE"
+				}, {
+					"name":	"JGDI_RO"
+				}]
+		}, {
+			"name":	"h_cpu",
+			"summary":	"@todo add summary",
+			"description":	[{
+					"line":	"@todo add description"
+				}],
+			"type":	"lStringT",
+			"flags":	[{
+					"name":	"CONFIGURE"
+				}, {
+					"name":	"JGDI_RO"
+				}]
+		}, {
+			"name":	"s_fsize",
+			"summary":	"@todo add summary",
+			"description":	[{
+					"line":	"@todo add description"
+				}],
+			"type":	"lStringT",
+			"flags":	[{
+					"name":	"CONFIGURE"
+				}, {
+					"name":	"JGDI_RO"
+				}]
+		}, {
+			"name":	"h_fsize",
+			"summary":	"@todo add summary",
+			"description":	[{
+					"line":	"@todo add description"
+				}],
+			"type":	"lStringT",
+			"flags":	[{
+					"name":	"CONFIGURE"
+				}, {
+					"name":	"JGDI_RO"
+				}]
+		}, {
+			"name":	"s_data",
+			"summary":	"@todo add summary",
+			"description":	[{
+					"line":	"@todo add description"
+				}],
+			"type":	"lStringT",
+			"flags":	[{
+					"name":	"CONFIGURE"
+				}, {
+					"name":	"JGDI_RO"
+				}]
+		}, {
+			"name":	"h_data",
+			"summary":	"@todo add summary",
+			"description":	[{
+					"line":	"@todo add description"
+				}],
+			"type":	"lStringT",
+			"flags":	[{
+					"name":	"CONFIGURE"
+				}, {
+					"name":	"JGDI_RO"
+				}]
+		}, {
+			"name":	"s_stack",
+			"summary":	"@todo add summary",
+			"description":	[{
+					"line":	"@todo add description"
+				}],
+			"type":	"lStringT",
+			"flags":	[{
+					"name":	"CONFIGURE"
+				}, {
+					"name":	"JGDI_RO"
+				}]
+		}, {
+			"name":	"h_stack",
+			"summary":	"@todo add summary",
+			"description":	[{
+					"line":	"@todo add description"
+				}],
+			"type":	"lStringT",
+			"flags":	[{
+					"name":	"CONFIGURE"
+				}, {
+					"name":	"JGDI_RO"
+				}]
+		}, {
+			"name":	"s_core",
+			"summary":	"@todo add summary",
+			"description":	[{
+					"line":	"@todo add description"
+				}],
+			"type":	"lStringT",
+			"flags":	[{
+					"name":	"CONFIGURE"
+				}, {
+					"name":	"JGDI_RO"
+				}]
+		}, {
+			"name":	"h_core",
+			"summary":	"@todo add summary",
+			"description":	[{
+					"line":	"@todo add description"
+				}],
+			"type":	"lStringT",
+			"flags":	[{
+					"name":	"CONFIGURE"
+				}, {
+					"name":	"JGDI_RO"
+				}]
+		}, {
+			"name":	"s_rss",
+			"summary":	"@todo add summary",
+			"description":	[{
+					"line":	"@todo add description"
+				}],
+			"type":	"lStringT",
+			"flags":	[{
+					"name":	"CONFIGURE"
+				}, {
+					"name":	"JGDI_RO"
+				}]
+		}, {
+			"name":	"h_rss",
+			"summary":	"@todo add summary",
+			"description":	[{
+					"line":	"@todo add description"
+				}],
+			"type":	"lStringT",
+			"flags":	[{
+					"name":	"CONFIGURE"
+				}, {
+					"name":	"JGDI_RO"
+				}]
+		}, {
+			"name":	"s_vmem",
+			"summary":	"@todo add summary",
+			"description":	[{
+					"line":	"@todo add description"
+				}],
+			"type":	"lStringT",
+			"flags":	[{
+					"name":	"CONFIGURE"
+				}, {
+					"name":	"JGDI_RO"
+				}]
+		}, {
+			"name":	"h_vmem",
+			"summary":	"@todo add summary",
+			"description":	[{
+					"line":	"@todo add description"
+				}],
+			"type":	"lStringT",
+			"flags":	[{
+					"name":	"CONFIGURE"
+				}, {
+					"name":	"JGDI_RO"
+				}]
+		}, {
+			"name":	"suspend_interval",
+			"summary":	"@todo add summary",
+			"description":	[{
+					"line":	"@todo add description"
+				}],
+			"type":	"lStringT",
+			"flags":	[{
+					"name":	"CONFIGURE"
+				}, {
+					"name":	"JGDI_RO"
+				}]
+		}, {
+			"name":	"min_cpu_interval",
+			"summary":	"@todo add summary",
+			"description":	[{
+					"line":	"@todo add description"
+				}],
+			"type":	"lStringT",
+			"flags":	[{
+					"name":	"CONFIGURE"
+				}, {
+					"name":	"JGDI_RO"
+				}]
+		}, {
+			"name":	"notify",
+			"summary":	"@todo add summary",
+			"description":	[{
+					"line":	"@todo add description"
+				}],
+			"type":	"lStringT",
+			"flags":	[{
+					"name":	"CONFIGURE"
+				}, {
+					"name":	"JGDI_RO"
+				}]
+		}, {
+			"name":	"ckpt_list",
+			"summary":	"@todo add summary",
+			"description":	[{
+					"line":	"@todo add description"
+				}],
+			"type":	"lListT",
+			"subClassName":	"ST",
+			"subCullPrefix":	"ST",
+			"flags":	[{
+					"name":	"CONFIGURE"
+				}, {
+					"name":	"JGDI_RO"
+				}]
+		}, {
+			"name":	"pe_list",
+			"summary":	"@todo add summary",
+			"description":	[{
+					"line":	"@todo add description"
+				}],
+			"type":	"lListT",
+			"subClassName":	"ST",
+			"subCullPrefix":	"ST",
+			"flags":	[{
+					"name":	"CONFIGURE"
+				}, {
+					"name":	"JGDI_RO"
+				}]
+		}, {
+			"name":	"owner_list",
+			"summary":	"@todo add summary",
+			"description":	[{
+					"line":	"@todo add description"
+				}],
+			"type":	"lListT",
+			"subClassName":	"US",
+			"subCullPrefix":	"US",
+			"flags":	[{
+					"name":	"CONFIGURE"
+				}, {
+					"name":	"JGDI_RO"
+				}]
+		}, {
+			"name":	"acl",
+			"summary":	"@todo add summary",
+			"description":	[{
+					"line":	"@todo add description"
+				}],
+			"type":	"lListT",
+			"subClassName":	"US",
+			"subCullPrefix":	"US",
+			"flags":	[{
+					"name":	"CONFIGURE"
+				}, {
+					"name":	"JGDI_RO"
+				}]
+		}, {
+			"name":	"xacl",
+			"summary":	"@todo add summary",
+			"description":	[{
+					"line":	"@todo add description"
+				}],
+			"type":	"lListT",
+			"subClassName":	"US",
+			"subCullPrefix":	"US",
+			"flags":	[{
+					"name":	"CONFIGURE"
+				}, {
+					"name":	"JGDI_RO"
+				}]
+		}, {
+			"name":	"projects",
+			"summary":	"@todo add summary",
+			"description":	[{
+					"line":	"@todo add description"
+				}],
+			"type":	"lListT",
+			"subClassName":	"PR",
+			"subCullPrefix":	"PR",
+			"flags":	[{
+					"name":	"CONFIGURE"
+				}, {
+					"name":	"JGDI_RO"
+				}]
+		}, {
+			"name":	"xprojects",
+			"summary":	"@todo add summary",
+			"description":	[{
+					"line":	"@todo add description"
+				}],
+			"type":	"lListT",
+			"subClassName":	"PR",
+			"subCullPrefix":	"PR",
+			"flags":	[{
+					"name":	"CONFIGURE"
+				}, {
+					"name":	"JGDI_RO"
+				}]
+		}, {
+			"name":	"consumable_config_list",
+			"summary":	"@todo add summary",
+			"description":	[{
+					"line":	"@todo add description"
+				}],
+			"type":	"lListT",
+			"subClassName":	"CE",
+			"subCullPrefix":	"CE",
+			"flags":	[{
+					"name":	"CONFIGURE"
+				}, {
+					"name":	"JGDI_RO"
+				}]
+		}, {
+			"name":	"load_thresholds",
+			"summary":	"@todo add summary",
+			"description":	[{
+					"line":	"@todo add description"
+				}],
+			"type":	"lListT",
+			"subClassName":	"CE",
+			"subCullPrefix":	"CE",
+			"flags":	[{
+					"name":	"CONFIGURE"
+				}, {
+					"name":	"JGDI_RO"
+				}]
+		}, {
+			"name":	"suspend_thresholds",
+			"summary":	"@todo add summary",
+			"description":	[{
+					"line":	"@todo add description"
+				}],
+			"type":	"lListT",
+			"subClassName":	"CE",
+			"subCullPrefix":	"CE",
+			"flags":	[{
+					"name":	"CONFIGURE"
+				}, {
+					"name":	"JGDI_RO"
+				}]
+		}, {
+			"name":	"subordinate_list",
+			"summary":	"@todo add summary",
+			"description":	[{
+					"line":	"@todo add description"
+				}],
+			"type":	"lListT",
+			"subClassName":	"SO",
+			"subCullPrefix":	"SO",
+			"flags":	[{
+					"name":	"CONFIGURE"
+				}, {
+					"name":	"JGDI_RO"
+				}]
+		}, {
+			"name":	"state",
+			"summary":	"@todo add summary",
+			"description":	[{
+					"line":	"@todo add description"
+				}],
+			"type":	"lUlongT",
+			"flags":	[{
+					"name":	"JGDI_HIDDEN"
+				}, {
+					"name":	"SPOOL"
+				}]
+		}, {
+			"name":	"tagged4schedule",
+			"summary":	"@todo add summary",
+			"description":	[{
+					"line":	"@todo add description"
+				}],
+			"type":	"lUlongT",
+			"flags":	[{
+					"name":	"JGDI_RO"
+				}]
+		}, {
+			"name":	"cache_version",
+			"summary":	"@todo add summary",
+			"description":	[{
+					"line":	"@todo add description"
+				}],
+			"type":	"lUlongT",
+			"flags":	[{
+					"name":	"JGDI_RO"
+				}]
+		}, {
+			"name":	"pending_signal",
+			"summary":	"@todo add summary",
+			"description":	[{
+					"line":	"@todo add description"
+				}],
+			"type":	"lUlongT",
+			"flags":	[{
+					"name":	"JGDI_RO"
+				}, {
+					"name":	"SPOOL"
+				}]
+		}, {
+			"name":	"pending_signal_delivery_time",
+			"summary":	"@todo add summary",
+			"description":	[{
+					"line":	"@todo add description"
+				}],
+			"type":	"lUlongT",
+			"flags":	[{
+					"name":	"JGDI_RO"
+				}, {
+					"name":	"SPOOL"
+				}]
+		}, {
+			"name":	"version",
+			"summary":	"@todo add summary",
+			"description":	[{
+					"line":	"@todo add description"
+				}],
+			"type":	"lUlongT",
+			"flags":	[{
+					"name":	"JGDI_RO"
+				}, {
+					"name":	"SPOOL"
+				}]
+		}, {
+			"name":	"suspended_on_subordinate",
+			"summary":	"@todo add summary",
+			"description":	[{
+					"line":	"@todo add description"
+				}],
+			"type":	"lUlongT",
+			"flags":	[{
+					"name":	"JGDI_RO"
+				}]
+		}, {
+			"name":	"last_suspend_threshold_ckeck",
+			"summary":	"@todo add summary",
+			"description":	[{
+					"line":	"@todo add description"
+				}],
+			"type":	"lUlongT",
+			"flags":	[{
+					"name":	"JGDI_RO"
+				}]
+		}, {
+			"name":	"job_cnt",
+			"summary":	"@todo add summary",
+			"description":	[{
+					"line":	"@todo add description"
+				}],
+			"type":	"lUlongT",
+			"flags":	[{
+					"name":	"JGDI_RO"
+				}]
+		}, {
+			"name":	"pending_job_cnt",
+			"summary":	"@todo add summary",
+			"description":	[{
+					"line":	"@todo add description"
+				}],
+			"type":	"lUlongT",
+			"flags":	[{
+					"name":	"JGDI_RO"
+				}]
+		}, {
+			"name":	"soft_violation",
+			"summary":	"@todo add summary",
+			"description":	[{
+					"line":	"@todo add description"
+				}],
+			"type":	"lUlongT",
+			"flags":	[{
+					"name":	"JGDI_RO"
+				}]
+		}, {
+			"name":	"host_seq_no",
+			"summary":	"@todo add summary",
+			"description":	[{
+					"line":	"@todo add description"
+				}],
+			"type":	"lUlongT",
+			"flags":	[{
+					"name":	"JGDI_RO"
+				}]
+		}, {
+			"name":	"resource_utilization",
+			"summary":	"@todo add summary",
+			"description":	[{
+					"line":	"@todo add description"
+				}],
+			"type":	"lListT",
+			"subClassName":	"RUE",
+			"subCullPrefix":	"RUE",
+			"flags":	[{
+					"name":	"JGDI_RO"
+				}]
+		}, {
+			"name":	"message_list",
+			"summary":	"@todo add summary",
+			"description":	[{
+					"line":	"@todo add description"
+				}],
+			"type":	"lListT",
+			"subClassName":	"QIM",
+			"subCullPrefix":	"QIM",
+			"flags":	[{
+					"name":	"JGDI_RO"
+				}, {
+					"name":	"SPOOL"
+				}]
+		}, {
+			"name":	"gdi_do_later",
+			"summary":	"@todo add summary",
+			"description":	[{
+					"line":	"@todo add description"
+				}],
+			"type":	"lUlongT",
+			"flags":	[{
+					"name":	"JGDI_RO"
+				}]
+		}, {
+			"name":	"state_changes",
+			"summary":	"@todo add summary",
+			"description":	[{
+					"line":	"@todo add description"
+				}],
+			"type":	"lListT",
+			"subClassName":	"CCT",
+			"subCullPrefix":	"CCT",
+			"flags":	[{
+					"name":	"JGDI_RO"
+				}]
+		}]
+}

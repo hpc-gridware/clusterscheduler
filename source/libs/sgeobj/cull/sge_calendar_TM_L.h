@@ -1,6 +1,5 @@
-#ifndef __SGE_CALENDAR_TM_L_H
-#define __SGE_CALENDAR_TM_L_H
-
+#ifndef SGE_TM_L_H
+#define SGE_TM_L_H
 /*___INFO__MARK_BEGIN__*/
 /*************************************************************************
  * 
@@ -34,30 +33,46 @@
 /*___INFO__MARK_END__*/
 
 #include "cull/cull.h"
-
 #include "sgeobj/cull/sge_boundaries.h"
 
-#ifdef  __cplusplus
+#ifdef __cplusplus
 extern "C" {
 #endif
 
-/* *INDENT-OFF* */   
+/**
+* @brief @todo add summary
+*
+* @todo add description
+*
+*    SGE_ULONG(TM_mday) - @todo add summary
+*    @todo add description
+*
+*    SGE_ULONG(TM_mon) - @todo add summary
+*    @todo add description
+*
+*    SGE_ULONG(TM_year) - @todo add summary
+*    @todo add description
+*
+*    SGE_ULONG(TM_sec) - @todo add summary
+*    @todo add description
+*
+*    SGE_ULONG(TM_min) - @todo add summary
+*    @todo add description
+*
+*    SGE_ULONG(TM_hour) - @todo add summary
+*    @todo add description
+*
+*    SGE_ULONG(TM_wday) - @todo add summary
+*    @todo add description
+*
+*    SGE_ULONG(TM_yday) - @todo add summary
+*    @todo add description
+*
+*    SGE_ULONG(TM_isdst) - @todo add summary
+*    @todo add description
+*
+*/
 
-/* 
- * this data structure is used for 
- *    yeardays 
- *        TM_mday
- *        TM_mon
- *        TM_year
- *    weekdays 
- *        TM_wday
- *    daytimes 
- *        TM_hour
- *        TM_min
- *        TM_sec
- *        
- *   TM_Type borrows most fields and meaning from struct tm
- */
 enum {
    TM_mday = TM_LOWERBOUND,
    TM_mon,
@@ -71,17 +86,16 @@ enum {
 };
 
 LISTDEF(TM_Type)
-   JGDI_MAPPED_OBJ(java.util.Calendar)
-   SGE_ULONG(TM_mday, CULL_DEFAULT)         /* 1-32 */
-   SGE_ULONG(TM_mon, CULL_DEFAULT)          /* 0-11 */
-   SGE_ULONG(TM_year, CULL_DEFAULT)         /* The number of years since 1900. */
-   SGE_ULONG(TM_sec, CULL_DEFAULT)          /* 0-59 */
-   SGE_ULONG(TM_min, CULL_DEFAULT)          /* 0-59 */
-   SGE_ULONG(TM_hour, CULL_DEFAULT)         /* 0-23 */
-   SGE_ULONG(TM_wday, CULL_DEFAULT)         /* 0-6 */
-   SGE_ULONG(TM_yday, CULL_DEFAULT)         /* ?? */
-   SGE_ULONG(TM_isdst, CULL_DEFAULT)        /* 1 or 0 */
-LISTEND 
+   SGE_ULONG(TM_mday, CULL_DEFAULT)
+   SGE_ULONG(TM_mon, CULL_DEFAULT)
+   SGE_ULONG(TM_year, CULL_DEFAULT)
+   SGE_ULONG(TM_sec, CULL_DEFAULT)
+   SGE_ULONG(TM_min, CULL_DEFAULT)
+   SGE_ULONG(TM_hour, CULL_DEFAULT)
+   SGE_ULONG(TM_wday, CULL_DEFAULT)
+   SGE_ULONG(TM_yday, CULL_DEFAULT)
+   SGE_ULONG(TM_isdst, CULL_DEFAULT)
+LISTEND
 
 NAMEDEF(TMN)
    NAME("TM_mday")
@@ -95,11 +109,10 @@ NAMEDEF(TMN)
    NAME("TM_isdst")
 NAMEEND
 
-#define TMS sizeof(TMN)/sizeof(char*)
+#define TM_SIZE sizeof(TMN)/sizeof(char *)
 
-/* *INDENT-ON* */ 
-
-#ifdef  __cplusplus
+#ifdef __cplusplus
 }
 #endif
-#endif                          /* __SGE_CALENDARL_H */
+
+#endif

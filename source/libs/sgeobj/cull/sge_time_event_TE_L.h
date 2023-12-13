@@ -1,6 +1,5 @@
-#ifndef __SGE_TIME_EVENT_TE_L_H
-#define __SGE_TIME_EVENT_TE_L_H
-
+#ifndef SGE_TE_L_H
+#define SGE_TE_L_H
 /*___INFO__MARK_BEGIN__*/
 /*************************************************************************
  * 
@@ -34,36 +33,64 @@
 /*___INFO__MARK_END__*/
 
 #include "cull/cull.h"
-
 #include "sgeobj/cull/sge_boundaries.h"
 
-#ifdef  __cplusplus
+#ifdef __cplusplus
 extern "C" {
 #endif
 
-/* *INDENT-OFF* */  
+/**
+* @brief @todo add summary
+*
+* @todo add description
+*
+*    SGE_ULONG(TE_when) - @todo add summary
+*    @todo add description
+*
+*    SGE_ULONG(TE_type) - @todo add summary
+*    @todo add description
+*
+*    SGE_ULONG(TE_mode) - @todo add summary
+*    @todo add description
+*
+*    SGE_ULONG(TE_interval) - @todo add summary
+*    @todo add description
+*
+*    SGE_ULONG(TE_uval0) - @todo add summary
+*    @todo add description
+*
+*    SGE_ULONG(TE_uval1) - @todo add summary
+*    @todo add description
+*
+*    SGE_STRING(TE_sval) - @todo add summary
+*    @todo add description
+*
+*    SGE_ULONG(TE_seqno) - @todo add summary
+*    @todo add description
+*
+*/
 
 enum {
-   TE_when = TE_LOWERBOUND,  /* time when this event must be delivered       */
-   TE_type,                  /* to differ between different event categories */
-   TE_mode,                  /* one-time or recurring event                  */
-   TE_interval,              /* event interval, if recurring event           */
-   TE_uval0,                 /* 1st ulong key                                */
-   TE_uval1,                 /* 2nd ulong key                                */
-   TE_sval,                  /* str key                                      */
+   TE_when = TE_LOWERBOUND,
+   TE_type,
+   TE_mode,
+   TE_interval,
+   TE_uval0,
+   TE_uval1,
+   TE_sval,
    TE_seqno
 };
 
 LISTDEF(TE_Type)
-   SGE_ULONG(TE_when,     CULL_DEFAULT)
-   SGE_ULONG(TE_type,     CULL_DEFAULT)
-   SGE_ULONG(TE_mode,     CULL_DEFAULT)
+   SGE_ULONG(TE_when, CULL_DEFAULT)
+   SGE_ULONG(TE_type, CULL_DEFAULT)
+   SGE_ULONG(TE_mode, CULL_DEFAULT)
    SGE_ULONG(TE_interval, CULL_DEFAULT)
-   SGE_ULONG(TE_uval0,    CULL_DEFAULT)
-   SGE_ULONG(TE_uval1,    CULL_DEFAULT)
-   SGE_STRING(TE_sval,    CULL_DEFAULT)
-   SGE_ULONG(TE_seqno,    CULL_DEFAULT)
-LISTEND 
+   SGE_ULONG(TE_uval0, CULL_DEFAULT)
+   SGE_ULONG(TE_uval1, CULL_DEFAULT)
+   SGE_STRING(TE_sval, CULL_DEFAULT)
+   SGE_ULONG(TE_seqno, CULL_DEFAULT)
+LISTEND
 
 NAMEDEF(TEN)
    NAME("TE_when")
@@ -76,10 +103,10 @@ NAMEDEF(TEN)
    NAME("TE_seqno")
 NAMEEND
 
-/* *INDENT-ON* */
+#define TE_SIZE sizeof(TEN)/sizeof(char *)
 
-#define TES sizeof(TEN)/sizeof(char*)
-#ifdef  __cplusplus
+#ifdef __cplusplus
 }
 #endif
-#endif                          /* __SGE_TIME_EVENTL_H */
+
+#endif

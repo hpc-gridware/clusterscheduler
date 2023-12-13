@@ -1,6 +1,5 @@
-#ifndef __SGE_RESOURCE_QUOTAL_RQR_L_H
-#define __SGE_RESOURCE_QUOTAL_RQR_L_H
-
+#ifndef SGE_RQR_L_H
+#define SGE_RQR_L_H
 /*___INFO__MARK_BEGIN__*/
 /*************************************************************************
  * 
@@ -36,13 +35,41 @@
 #include "cull/cull.h"
 #include "sgeobj/cull/sge_boundaries.h"
 
-#ifdef  __cplusplus
+#ifdef __cplusplus
 extern "C" {
 #endif
 
-/* *INDENT-OFF* */
+/**
+* @brief @todo add summary
+*
+* @todo add description
+*
+*    SGE_STRING(RQR_name) - @todo add summary
+*    @todo add description
+*
+*    SGE_OBJECT(RQR_filter_users) - @todo add summary
+*    @todo add description
+*
+*    SGE_OBJECT(RQR_filter_projects) - @todo add summary
+*    @todo add description
+*
+*    SGE_OBJECT(RQR_filter_pes) - @todo add summary
+*    @todo add description
+*
+*    SGE_OBJECT(RQR_filter_queues) - @todo add summary
+*    @todo add description
+*
+*    SGE_OBJECT(RQR_filter_hosts) - @todo add summary
+*    @todo add description
+*
+*    SGE_LIST(RQR_limit) - @todo add summary
+*    @todo add description
+*
+*    SGE_ULONG(RQR_level) - @todo add summary
+*    @todo add description
+*
+*/
 
-/* Resource Quota Rule */
 enum {
    RQR_name = RQR_LOWERBOUND,
    RQR_filter_users,
@@ -55,16 +82,14 @@ enum {
 };
 
 LISTDEF(RQR_Type)
- JGDI_OBJ(ResourceQuotaRule)
- SGE_STRING(RQR_name, CULL_PRIMARY_KEY | CULL_HASH | CULL_UNIQUE | CULL_SPOOL | CULL_JGDI_CONF)
- SGE_OBJECT(RQR_filter_users, RQRF_Type, CULL_DEFAULT | CULL_SPOOL | CULL_JGDI_CONF)
- SGE_OBJECT(RQR_filter_projects, RQRF_Type, CULL_DEFAULT | CULL_SPOOL | CULL_JGDI_CONF)
- SGE_OBJECT(RQR_filter_pes, RQRF_Type, CULL_DEFAULT | CULL_SPOOL | CULL_JGDI_CONF)
- SGE_OBJECT(RQR_filter_queues, RQRF_Type, CULL_DEFAULT | CULL_SPOOL | CULL_JGDI_CONF)
- SGE_OBJECT(RQR_filter_hosts, RQRF_Type, CULL_DEFAULT | CULL_SPOOL | CULL_JGDI_CONF)
- SGE_LIST(RQR_limit, RQRL_Type, CULL_DEFAULT | CULL_SPOOL | CULL_JGDI_CONF)
- SGE_ULONG(RQR_level, CULL_DEFAULT | CULL_JGDI_RO) /* maintained by qmaster needed only in parallel 
-                                                      scheduling for accumulating slots after queues were tagged */
+   SGE_STRING(RQR_name, CULL_PRIMARY_KEY | CULL_UNIQUE | CULL_HASH | CULL_SPOOL)
+   SGE_OBJECT(RQR_filter_users, CULL_ANY_SUBTYPE, CULL_SPOOL)
+   SGE_OBJECT(RQR_filter_projects, CULL_ANY_SUBTYPE, CULL_SPOOL)
+   SGE_OBJECT(RQR_filter_pes, CULL_ANY_SUBTYPE, CULL_SPOOL)
+   SGE_OBJECT(RQR_filter_queues, CULL_ANY_SUBTYPE, CULL_SPOOL)
+   SGE_OBJECT(RQR_filter_hosts, CULL_ANY_SUBTYPE, CULL_SPOOL)
+   SGE_LIST(RQR_limit, RQRL_Type, CULL_SPOOL)
+   SGE_ULONG(RQR_level, CULL_DEFAULT)
 LISTEND
 
 NAMEDEF(RQRN)
@@ -78,11 +103,10 @@ NAMEDEF(RQRN)
    NAME("RQR_level")
 NAMEEND
 
-#define RQRS sizeof(RQRN)/sizeof(char*)
+#define RQR_SIZE sizeof(RQRN)/sizeof(char *)
 
-/* *INDENT-ON* */ 
-
-#ifdef  __cplusplus
+#ifdef __cplusplus
 }
 #endif
-#endif /* __SGE_RESOURCE_QUOTAL_H */
+
+#endif

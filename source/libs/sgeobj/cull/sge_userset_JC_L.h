@@ -1,6 +1,5 @@
-#ifndef __SGE_USERSET_JC_L_H
-#define __SGE_USERSET_JC_L_H
-
+#ifndef SGE_JC_L_H
+#define SGE_JC_L_H
 /*___INFO__MARK_BEGIN__*/
 /*************************************************************************
  * 
@@ -33,35 +32,45 @@
  ************************************************************************/
 /*___INFO__MARK_END__*/
 
-#include "sgeobj/cull/sge_boundaries.h"
 #include "cull/cull.h"
+#include "sgeobj/cull/sge_boundaries.h"
 
-/* *INDENT-OFF* */
+#ifdef __cplusplus
+extern "C" {
+#endif
 
-/*
- * this list is used by schedd to keep the number 
- * of running jobs per user/group efficiently
- */
+/**
+* @brief @todo add summary
+*
+* @todo add description
+*
+*    SGE_STRING(JC_name) - @todo add summary
+*    @todo add description
+*
+*    SGE_ULONG(JC_jobs) - @todo add summary
+*    @todo add description
+*
+*/
+
 enum {
-   JC_name = JC_LOWERBOUND,  /* user or group name */
-   JC_jobs                   /* number of running jobs */
+   JC_name = JC_LOWERBOUND,
+   JC_jobs
 };
 
 LISTDEF(JC_Type)
-   SGE_STRING(JC_name, CULL_HASH | CULL_UNIQUE)
+   SGE_STRING(JC_name, CULL_UNIQUE | CULL_HASH)
    SGE_ULONG(JC_jobs, CULL_DEFAULT)
-LISTEND 
+LISTEND
 
 NAMEDEF(JCN)
    NAME("JC_name")
    NAME("JC_jobs")
 NAMEEND
 
-/* *INDENT-ON* */
+#define JC_SIZE sizeof(JCN)/sizeof(char *)
 
-#define JCS sizeof(JCN)/sizeof(char*)
-
-#ifdef  __cplusplus
+#ifdef __cplusplus
 }
 #endif
-#endif                          /* __SGE_USERSETL_H */
+
+#endif

@@ -1,6 +1,5 @@
-#ifndef __SGE_SELECT_QUEUE_LDR_L_H
-#define __SGE_SELECT_QUEUE_LDR_L_H
-
+#ifndef SGE_LDR_L_H
+#define SGE_LDR_L_H
 /*___INFO__MARK_BEGIN__*/
 /*************************************************************************
  * 
@@ -36,52 +35,31 @@
 #include "cull/cull.h"
 #include "sgeobj/cull/sge_boundaries.h"
 
-#ifdef  __cplusplus
+#ifdef __cplusplus
 extern "C" {
 #endif
 
-/****** spool/--LDR_Type***************************************
+/**
+* @brief @todo add summary
 *
-*  NAME
-*    LDR_Type -- is a high level structure to monitor changes
-*                in consumables, which are used as load threasholds.
+* @todo add description
 *
-*  ELEMENTS
-*   SGE_REF(LDR_global,CULL_ANY_SUBTYPE, CULL_DEFAULT)
-*     Reference to a global cunsumable object
+*    SGE_LIST(LDR_queue_ref_list) - @todo add summary
+*    @todo add description
 *
-*   SGE_REF(LDR_host,CULL_ANY_SUBTYPE, CULL_DEFAULT)
-*     Reference to a host consumable object
+*    SGE_STRING(LDR_limit) - @todo add summary
+*    @todo add description
 *
-*   SGE_REF(LDR_queue,CULL_ANY_SUBTYPE, CULL_DEFAULT)
-*     Reference to a queue consumable object
+*    SGE_REF(LDR_global) - @todo add summary
+*    @todo add description
 *
-*   SGE_LIST(LDR_queue_ref_list, QR_Type, CULL_DEFAULT)
-*     A list of queues instances, which are using all these 
-*     consumables as load thresholds.
+*    SGE_REF(LDR_host) - @todo add summary
+*    @todo add description
 *
-*  FUNCTION
-*     All three consumables form a kind of queue_consumable_category.
-*     All queues which are listed in here are using the same consumables
-*     to compute the load alarm. The whole list is using references because
-*     it is easier to monitor changes in one of the consumable objects and
-*     the function calculation the load alarm for each queue knows exactly
-*     which queues need to be recalculated.
+*    SGE_REF(LDR_queue) - @todo add summary
+*    @todo add description
 *
-*
-*  IMPORTANT
-*     This list a fixed position list. Do not use what filtering on the
-*     elements or the code will break!
-*
-****************************************************************************
 */
-enum {
-   LDR_queue_ref_list_pos = 0,
-   LDR_limit_pos,
-   LDR_global_pos, 
-   LDR_host_pos,
-   LDR_queue_pos
-}; 
 
 enum {
    LDR_queue_ref_list = LDR_LOWERBOUND,
@@ -94,10 +72,10 @@ enum {
 LISTDEF(LDR_Type)
    SGE_LIST(LDR_queue_ref_list, QR_Type, CULL_DEFAULT)
    SGE_STRING(LDR_limit, CULL_DEFAULT)
-   SGE_REF(LDR_global,CULL_ANY_SUBTYPE, CULL_DEFAULT)
-   SGE_REF(LDR_host,CULL_ANY_SUBTYPE, CULL_DEFAULT)
-   SGE_REF(LDR_queue,CULL_ANY_SUBTYPE, CULL_DEFAULT)
-LISTEND 
+   SGE_REF(LDR_global, CULL_ANY_SUBTYPE, CULL_DEFAULT)
+   SGE_REF(LDR_host, CULL_ANY_SUBTYPE, CULL_DEFAULT)
+   SGE_REF(LDR_queue, CULL_ANY_SUBTYPE, CULL_DEFAULT)
+LISTEND
 
 NAMEDEF(LDRN)
    NAME("LDR_queue_ref_list")
@@ -107,9 +85,10 @@ NAMEDEF(LDRN)
    NAME("LDR_queue")
 NAMEEND
 
-#define LDRS sizeof(LDRN)/sizeof(char*)
+#define LDR_SIZE sizeof(LDRN)/sizeof(char *)
 
-#ifdef  __cplusplus
+#ifdef __cplusplus
 }
 #endif
+
 #endif

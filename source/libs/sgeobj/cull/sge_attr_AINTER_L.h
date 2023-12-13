@@ -1,6 +1,5 @@
-#ifndef __SGE_HOSTATTR_INTER_L_H
-#define __SGE_HOSTATTR_INTER_L_H
-
+#ifndef SGE_AINTER_L_H
+#define SGE_AINTER_L_H
 /*___INFO__MARK_BEGIN__*/
 /*************************************************************************
  * 
@@ -33,36 +32,45 @@
  ************************************************************************/
 /*___INFO__MARK_END__*/
 
-#include "sgeobj/cull/sge_boundaries.h"
 #include "cull/cull.h"
+#include "sgeobj/cull/sge_boundaries.h"
 
-#ifdef  __cplusplus
+#ifdef __cplusplus
 extern "C" {
 #endif
 
-/* *INDENT-OFF* */  
+/**
+* @brief @todo add summary
+*
+* @todo add description
+*
+*    SGE_HOST(AINTER_href) - @todo add summary
+*    @todo add description
+*
+*    SGE_STRING(AINTER_value) - @todo add summary
+*    @todo add description
+*
+*/
 
 enum {
    AINTER_href = AINTER_LOWERBOUND,
-   AINTER_value                    
+   AINTER_value
 };
 
 LISTDEF(AINTER_Type)
-   JGDI_MAP_OBJ(AINTER_href, AINTER_value)
-   SGE_HOST(AINTER_href, CULL_PRIMARY_KEY | CULL_HASH | CULL_UNIQUE | CULL_SUBLIST)
-   SGE_STRING(AINTER_value, CULL_DEFAULT | CULL_SUBLIST)
-LISTEND 
+   SGE_HOST(AINTER_href, CULL_PRIMARY_KEY | CULL_UNIQUE | CULL_HASH | CULL_SUBLIST)
+   SGE_STRING(AINTER_value, CULL_SUBLIST)
+LISTEND
 
 NAMEDEF(AINTERN)
    NAME("AINTER_href")
    NAME("AINTER_value")
 NAMEEND
 
-#define AINTERS sizeof(AINTERN)/sizeof(char*)
+#define AINTER_SIZE sizeof(AINTERN)/sizeof(char *)
 
-/* *INDENT-ON* */  
-
-#ifdef  __cplusplus
+#ifdef __cplusplus
 }
 #endif
-#endif   
+
+#endif

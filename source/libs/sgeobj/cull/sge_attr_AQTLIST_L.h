@@ -1,6 +1,5 @@
-#ifndef __SGE_HOSTATTR_QTLIST_L_H
-#define __SGE_HOSTATTR_QTLIST_L_H
-
+#ifndef SGE_AQTLIST_L_H
+#define SGE_AQTLIST_L_H
 /*___INFO__MARK_BEGIN__*/
 /*************************************************************************
  * 
@@ -33,14 +32,25 @@
  ************************************************************************/
 /*___INFO__MARK_END__*/
 
-#include "sgeobj/cull/sge_boundaries.h"
 #include "cull/cull.h"
+#include "sgeobj/cull/sge_boundaries.h"
 
-#ifdef  __cplusplus
+#ifdef __cplusplus
 extern "C" {
 #endif
 
-/* *INDENT-OFF* */  
+/**
+* @brief @todo add summary
+*
+* @todo add description
+*
+*    SGE_HOST(AQTLIST_href) - @todo add summary
+*    @todo add description
+*
+*    SGE_ULONG(AQTLIST_value) - @todo add summary
+*    @todo add description
+*
+*/
 
 enum {
    AQTLIST_href = AQTLIST_LOWERBOUND,
@@ -48,9 +58,8 @@ enum {
 };
 
 LISTDEF(AQTLIST_Type)
-   JGDI_MAP_OBJ(AQTLIST_href, AQTLIST_value)
-   SGE_HOST(AQTLIST_href, CULL_PRIMARY_KEY | CULL_HASH | CULL_UNIQUE | CULL_SUBLIST)
-   SGE_ULONG(AQTLIST_value, CULL_DEFAULT | CULL_SUBLIST)
+   SGE_HOST(AQTLIST_href, CULL_PRIMARY_KEY | CULL_UNIQUE | CULL_HASH | CULL_SUBLIST)
+   SGE_ULONG(AQTLIST_value, CULL_SUBLIST)
 LISTEND
 
 NAMEDEF(AQTLISTN)
@@ -58,11 +67,10 @@ NAMEDEF(AQTLISTN)
    NAME("AQTLIST_value")
 NAMEEND
 
-#define AQTLISTS sizeof(AQTLISTN)/sizeof(char*)
+#define AQTLIST_SIZE sizeof(AQTLISTN)/sizeof(char *)
 
-/* *INDENT-ON* */  
-
-#ifdef  __cplusplus
+#ifdef __cplusplus
 }
 #endif
-#endif   
+
+#endif

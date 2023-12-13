@@ -1,6 +1,5 @@
-#ifndef __SGE_CT_REF_L_H
-#define __SGE_CT_REF_L_H
-
+#ifndef SGE_REF_L_H
+#define SGE_REF_L_H
 /*___INFO__MARK_BEGIN__*/
 /*************************************************************************
  * 
@@ -36,29 +35,36 @@
 #include "cull/cull.h"
 #include "sgeobj/cull/sge_boundaries.h"
 
-#ifdef  __cplusplus
+#ifdef __cplusplus
 extern "C" {
 #endif
 
-/* *INDENT-OFF* */ 
+/**
+* @brief @todo add summary
+*
+* @todo add description
+*
+*    SGE_REF(REF_ref) - @todo add summary
+*    @todo add description
+*
+*/
 
 enum {
-   REF_ref = REF_LOWERBOUND /*reference to an object */
+   REF_ref = REF_LOWERBOUND
 };
 
 LISTDEF(REF_Type)
-   SGE_REF(REF_ref, JB_Type, CULL_DEFAULT)
+   SGE_REF(REF_ref, CULL_ANY_SUBTYPE, CULL_DEFAULT)
 LISTEND
 
 NAMEDEF(REFN)
    NAME("REF_ref")
 NAMEEND
 
-#define REFS sizeof(REFN)/sizeof(char*)
-   
-/* *INDENT-ON* */
+#define REF_SIZE sizeof(REFN)/sizeof(char *)
 
-#ifdef  __cplusplus
+#ifdef __cplusplus
 }
 #endif
-#endif                          /* __SGE_CTL_H */
+
+#endif

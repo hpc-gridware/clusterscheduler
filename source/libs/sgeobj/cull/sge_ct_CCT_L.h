@@ -1,6 +1,5 @@
-#ifndef __SGE_CT_CCT_L_H
-#define __SGE_CT_CCT_L_H
-
+#ifndef SGE_CCT_L_H
+#define SGE_CCT_L_H
 /*___INFO__MARK_BEGIN__*/
 /*************************************************************************
  * 
@@ -36,35 +35,52 @@
 #include "cull/cull.h"
 #include "sgeobj/cull/sge_boundaries.h"
 
-#ifdef  __cplusplus
+#ifdef __cplusplus
 extern "C" {
 #endif
 
-/* *INDENT-OFF* */ 
-
 /**
- * 
- * The caching of dispatch results has to be done per PE. For jobs, which
- * do not request a PE, the pe_name is set to "NONE".
- *
- */
+* @brief @todo add summary
+*
+* @todo add description
+*
+*    SGE_STRING(CCT_pe_name) - @todo add summary
+*    @todo add description
+*
+*    SGE_LIST(CCT_ignore_queues) - @todo add summary
+*    @todo add description
+*
+*    SGE_LIST(CCT_ignore_hosts) - @todo add summary
+*    @todo add description
+*
+*    SGE_LIST(CCT_job_messages) - @todo add summary
+*    @todo add description
+*
+*    SGE_REF(CCT_pe_job_slots) - @todo add summary
+*    @todo add description
+*
+*    SGE_ULONG(CCT_pe_job_slot_count) - @todo add summary
+*    @todo add description
+*
+*/
+
 enum {
-   CCT_pe_name = CCT_LOWERBOUND,   /* pe name */
-   CCT_ignore_queues,         /* stores all queues, which now cannot run this job category */ 
-   CCT_ignore_hosts,          /* stores all hosts, which now cannot run this job category */
-   CCT_job_messages,          /* stores the error messages, which a job got during its dispatching */ 
-   CCT_pe_job_slots,          /* stores the posible pe slots */   
-   CCT_pe_job_slot_count      /* number of values in the array */   
+   CCT_pe_name = CCT_LOWERBOUND,
+   CCT_ignore_queues,
+   CCT_ignore_hosts,
+   CCT_job_messages,
+   CCT_pe_job_slots,
+   CCT_pe_job_slot_count
 };
 
 LISTDEF(CCT_Type)
-   SGE_STRING(CCT_pe_name, CULL_HASH | CULL_UNIQUE)
+   SGE_STRING(CCT_pe_name, CULL_DEFAULT)
    SGE_LIST(CCT_ignore_queues, CTI_Type, CULL_DEFAULT)
    SGE_LIST(CCT_ignore_hosts, CTI_Type, CULL_DEFAULT)
    SGE_LIST(CCT_job_messages, MES_Type, CULL_DEFAULT)
    SGE_REF(CCT_pe_job_slots, CULL_ANY_SUBTYPE, CULL_DEFAULT)
    SGE_ULONG(CCT_pe_job_slot_count, CULL_DEFAULT)
-LISTEND 
+LISTEND
 
 NAMEDEF(CCTN)
    NAME("CCT_pe_name")
@@ -75,11 +91,10 @@ NAMEDEF(CCTN)
    NAME("CCT_pe_job_slot_count")
 NAMEEND
 
-#define CCTS sizeof(CCTN)/sizeof(char*)
+#define CCT_SIZE sizeof(CCTN)/sizeof(char *)
 
-/* *INDENT-ON* */
-
-#ifdef  __cplusplus
+#ifdef __cplusplus
 }
 #endif
-#endif                          /* __SGE_CTL_H */
+
+#endif

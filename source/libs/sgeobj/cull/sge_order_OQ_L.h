@@ -1,6 +1,5 @@
-#ifndef __SGE_ORDER_OQ_L_H
-#define __SGE_ORDER_OQ_L_H
-
+#ifndef SGE_OQ_L_H
+#define SGE_OQ_L_H
 /*___INFO__MARK_BEGIN__*/
 /*************************************************************************
  * 
@@ -34,16 +33,40 @@
 /*___INFO__MARK_END__*/
 
 #include "cull/cull.h"
-
 #include "sgeobj/cull/sge_boundaries.h"
 
-#ifdef  __cplusplus
+#ifdef __cplusplus
 extern "C" {
 #endif
 
-/* *INDENT-OFF* */
+/**
+* @brief @todo add summary
+*
+* @todo add description
+*
+*    SGE_ULONG(OQ_slots) - @todo add summary
+*    @todo add description
+*
+*    SGE_STRING(OQ_dest_queue) - @todo add summary
+*    @todo add description
+*
+*    SGE_ULONG(OQ_dest_version) - @todo add summary
+*    @todo add description
+*
+*    SGE_DOUBLE(OQ_ticket) - @todo add summary
+*    @todo add description
+*
+*    SGE_DOUBLE(OQ_oticket) - @todo add summary
+*    @todo add description
+*
+*    SGE_DOUBLE(OQ_fticket) - @todo add summary
+*    @todo add description
+*
+*    SGE_DOUBLE(OQ_sticket) - @todo add summary
+*    @todo add description
+*
+*/
 
-/* entries for the OR_queuelist-field */
 enum {
    OQ_slots = OQ_LOWERBOUND,
    OQ_dest_queue,
@@ -55,14 +78,14 @@ enum {
 };
 
 LISTDEF(OQ_Type)
-   SGE_ULONG(OQ_slots, CULL_DEFAULT)        /* number of slots on this queue */
-   SGE_STRING(OQ_dest_queue, CULL_DEFAULT)  /* queue where job has to run */
-   SGE_ULONG(OQ_dest_version, CULL_DEFAULT) /* version of this queue */
-   SGE_DOUBLE(OQ_ticket, CULL_DEFAULT)       /* total SGEEE tickets for slots */
-   SGE_DOUBLE(OQ_oticket, CULL_DEFAULT)      /* total SGEEE override tickets */
-   SGE_DOUBLE(OQ_fticket, CULL_DEFAULT)      /* total SGEEE functional tickets */
-   SGE_DOUBLE(OQ_sticket, CULL_DEFAULT)      /* total SGEEE sharetree tickets */
-LISTEND 
+   SGE_ULONG(OQ_slots, CULL_DEFAULT)
+   SGE_STRING(OQ_dest_queue, CULL_DEFAULT)
+   SGE_ULONG(OQ_dest_version, CULL_DEFAULT)
+   SGE_DOUBLE(OQ_ticket, CULL_DEFAULT)
+   SGE_DOUBLE(OQ_oticket, CULL_DEFAULT)
+   SGE_DOUBLE(OQ_fticket, CULL_DEFAULT)
+   SGE_DOUBLE(OQ_sticket, CULL_DEFAULT)
+LISTEND
 
 NAMEDEF(OQN)
    NAME("OQ_slots")
@@ -74,10 +97,10 @@ NAMEDEF(OQN)
    NAME("OQ_sticket")
 NAMEEND
 
-#define OQS sizeof(OQN)/sizeof(char*)
+#define OQ_SIZE sizeof(OQN)/sizeof(char *)
 
-/* *INDENT-ON* */ 
-#ifdef  __cplusplus
+#ifdef __cplusplus
 }
 #endif
-#endif                          /* __SGE_ORDERL_H */
+
+#endif

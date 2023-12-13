@@ -1,6 +1,5 @@
-#ifndef __SGE_HOSTATTR_USR_LIST_L_H
-#define __SGE_HOSTATTR_USR_LIST_L_H
-
+#ifndef SGE_AUSRLIST_L_H
+#define SGE_AUSRLIST_L_H
 /*___INFO__MARK_BEGIN__*/
 /*************************************************************************
  * 
@@ -33,14 +32,25 @@
  ************************************************************************/
 /*___INFO__MARK_END__*/
 
-#include "sgeobj/cull/sge_boundaries.h"
 #include "cull/cull.h"
+#include "sgeobj/cull/sge_boundaries.h"
 
-#ifdef  __cplusplus
+#ifdef __cplusplus
 extern "C" {
 #endif
 
-/* *INDENT-OFF* */  
+/**
+* @brief @todo add summary
+*
+* @todo add description
+*
+*    SGE_HOST(AUSRLIST_href) - @todo add summary
+*    @todo add description
+*
+*    SGE_LIST(AUSRLIST_value) - @todo add summary
+*    @todo add description
+*
+*/
 
 enum {
    AUSRLIST_href = AUSRLIST_LOWERBOUND,
@@ -48,9 +58,8 @@ enum {
 };
 
 LISTDEF(AUSRLIST_Type)
-   JGDI_MAP_OBJ(AUSRLIST_href, AUSRLIST_value)
-   SGE_HOST(AUSRLIST_href, CULL_PRIMARY_KEY | CULL_HASH | CULL_UNIQUE | CULL_SUBLIST)
-   SGE_LIST(AUSRLIST_value, US_Type, CULL_DEFAULT | CULL_SUBLIST)
+   SGE_HOST(AUSRLIST_href, CULL_PRIMARY_KEY | CULL_UNIQUE | CULL_HASH | CULL_SUBLIST)
+   SGE_LIST(AUSRLIST_value, US_Type, CULL_SUBLIST)
 LISTEND
 
 NAMEDEF(AUSRLISTN)
@@ -58,11 +67,10 @@ NAMEDEF(AUSRLISTN)
    NAME("AUSRLIST_value")
 NAMEEND
 
-#define AUSRLISTS sizeof(AUSRLISTN)/sizeof(char*)
+#define AUSRLIST_SIZE sizeof(AUSRLISTN)/sizeof(char *)
 
-/* *INDENT-ON* */  
-
-#ifdef  __cplusplus
+#ifdef __cplusplus
 }
 #endif
-#endif   
+
+#endif

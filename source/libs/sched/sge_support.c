@@ -63,6 +63,12 @@
 #include "valid_queue_user.h"
 #include "sgeobj/cull/sge_eejob_SGEJ_L.h"
 
+/* a boolean for the sort order */
+enum {
+  SGEJ_sort_decending = 0,
+  SGEJ_sort_ascending
+};
+
 static const long sge_usage_interval = SGE_USAGE_INTERVAL;
 
 /*--------------------------------------------------------------------

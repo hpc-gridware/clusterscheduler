@@ -1,6 +1,5 @@
-#ifndef __SGE_CT_CTI_L_H
-#define __SGE_CT_CTI_L_H
-
+#ifndef SGE_CTI_L_H
+#define SGE_CTI_L_H
 /*___INFO__MARK_BEGIN__*/
 /*************************************************************************
  * 
@@ -36,32 +35,36 @@
 #include "cull/cull.h"
 #include "sgeobj/cull/sge_boundaries.h"
 
-#ifdef  __cplusplus
+#ifdef __cplusplus
 extern "C" {
 #endif
 
-/* *INDENT-OFF* */ 
-
 /**
- * the following data structures describe the ignore_* lists
- */
+* @brief @todo add summary
+*
+* @todo add description
+*
+*    SGE_STRING(CTI_name) - @todo add summary
+*    @todo add description
+*
+*/
+
 enum {
    CTI_name = CTI_LOWERBOUND
 };
 
 LISTDEF(CTI_Type)
-   SGE_STRING(CTI_name, CULL_HASH | CULL_UNIQUE )
+   SGE_STRING(CTI_name, CULL_UNIQUE | CULL_HASH)
 LISTEND
 
 NAMEDEF(CTIN)
    NAME("CTI_name")
 NAMEEND
 
-#define CTIS sizeof(CTIN)/sizeof(char*)
+#define CTI_SIZE sizeof(CTIN)/sizeof(char *)
 
-/* *INDENT-ON* */
-
-#ifdef  __cplusplus
+#ifdef __cplusplus
 }
 #endif
-#endif                          /* __SGE_CTL_H */
+
+#endif

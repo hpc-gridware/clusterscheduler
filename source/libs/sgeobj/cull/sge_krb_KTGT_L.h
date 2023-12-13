@@ -1,5 +1,5 @@
-#ifndef __SGE_KRB_KTGT_L_H
-#define __SGE_KRB_KTGT_L_H
+#ifndef SGE_KTGT_L_H
+#define SGE_KTGT_L_H
 /*___INFO__MARK_BEGIN__*/
 /*************************************************************************
  * 
@@ -35,39 +35,42 @@
 #include "cull/cull.h"
 #include "sgeobj/cull/sge_boundaries.h"
 
-#ifdef  __cplusplus
+#ifdef __cplusplus
 extern "C" {
 #endif
 
-/* *INDENT-OFF* */
-
-/*
- * This is the list type we use to hold the client
- * TGT list for kerberos TGT forwarding
- */
+/**
+* @brief @todo add summary
+*
+* @todo add description
+*
+*    SGE_ULONG(KTGT_id) - @todo add summary
+*    @todo add description
+*
+*    SGE_STRING(KTGT_tgt) - @todo add summary
+*    @todo add description
+*
+*/
 
 enum {
-    KTGT_id=KTGT_LOWERBOUND,
-    KTGT_tgt
+   KTGT_id = KTGT_LOWERBOUND,
+   KTGT_tgt
 };
 
-LISTDEF( KTGT_Type )
+LISTDEF(KTGT_Type)
    SGE_ULONG(KTGT_id, CULL_DEFAULT)
    SGE_STRING(KTGT_tgt, CULL_DEFAULT)
 LISTEND
 
-NAMEDEF( KTGTN )
-   NAME( "KTGT_id" )
-   NAME( "KTGT_tgt" )
+NAMEDEF(KTGTN)
+   NAME("KTGT_id")
+   NAME("KTGT_tgt")
 NAMEEND
 
-/* *INDENT-ON* */
+#define KTGT_SIZE sizeof(KTGTN)/sizeof(char *)
 
-#define KTGTS sizeof(KTGTN)/sizeof(char*)
-
-#ifdef  __cplusplus
+#ifdef __cplusplus
 }
 #endif
 
-#endif /* __SGE_KRBL_H*/
-
+#endif

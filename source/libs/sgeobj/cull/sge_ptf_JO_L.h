@@ -1,6 +1,5 @@
-#ifndef __SGE_PTF_JO_L_H
-#define __SGE_PTF_JO_L_H
-
+#ifndef SGE_JO_L_H
+#define SGE_JO_L_H
 /*___INFO__MARK_BEGIN__*/
 /*************************************************************************
  * 
@@ -36,19 +35,37 @@
 #include "cull/cull.h"
 #include "sgeobj/cull/sge_boundaries.h"
 
-#ifdef  __cplusplus
+#ifdef __cplusplus
 extern "C" {
 #endif
 
-/* *INDENT-OFF* */ 
-
-/*
- * This is the list type we use to hold the list of
- * O.S. jobs being tracked for each PTF job. There
- * will normally only be one O.S. job per PTF job,
- * except in the case of parallel jobs or jobs with
- * multiple tasks.
- */
+/**
+* @brief @todo add summary
+*
+* @todo add description
+*
+*    SGE_ULONG(JO_OS_job_ID) - @todo add summary
+*    @todo add description
+*
+*    SGE_ULONG(JO_OS_job_ID2) - @todo add summary
+*    @todo add description
+*
+*    SGE_ULONG(JO_ja_task_ID) - @todo add summary
+*    @todo add description
+*
+*    SGE_STRING(JO_task_id_str) - @todo add summary
+*    @todo add description
+*
+*    SGE_ULONG(JO_state) - @todo add summary
+*    @todo add description
+*
+*    SGE_LIST(JO_usage_list) - @todo add summary
+*    @todo add description
+*
+*    SGE_LIST(JO_pid_list) - @todo add summary
+*    @todo add description
+*
+*/
 
 enum {
    JO_OS_job_ID = JO_LOWERBOUND,
@@ -61,14 +78,14 @@ enum {
 };
 
 LISTDEF(JO_Type)
-   SGE_ULONG(JO_OS_job_ID, CULL_DEFAULT)    /* O.S. job id (lower 32 bits) */
-   SGE_ULONG(JO_OS_job_ID2, CULL_DEFAULT)   /* O.S. job id (upper 32 bits) */
-   SGE_ULONG(JO_ja_task_ID, CULL_DEFAULT)   /* job array task id */
-   SGE_STRING(JO_task_id_str, CULL_DEFAULT) /* task ID string */
-   SGE_ULONG(JO_state, CULL_DEFAULT)        /* job state (JL_JOB_*) */
-   SGE_MAP(JO_usage_list, UA_Type, CULL_DEFAULT)    /* ptf interval usage */
-   SGE_LIST(JO_pid_list, JP_Type, CULL_DEFAULT)      /* process ID list */
-LISTEND 
+   SGE_ULONG(JO_OS_job_ID, CULL_DEFAULT)
+   SGE_ULONG(JO_OS_job_ID2, CULL_DEFAULT)
+   SGE_ULONG(JO_ja_task_ID, CULL_DEFAULT)
+   SGE_STRING(JO_task_id_str, CULL_DEFAULT)
+   SGE_ULONG(JO_state, CULL_DEFAULT)
+   SGE_LIST(JO_usage_list, UA_Type, CULL_DEFAULT)
+   SGE_LIST(JO_pid_list, JP_Type, CULL_DEFAULT)
+LISTEND
 
 NAMEDEF(JON)
    NAME("JO_OS_job_ID")
@@ -80,12 +97,10 @@ NAMEDEF(JON)
    NAME("JO_pid_list")
 NAMEEND
 
-#define JOS sizeof(JON)/sizeof(char*)
+#define JO_SIZE sizeof(JON)/sizeof(char *)
 
-
-/* *INDENT-ON* */ 
-
-#ifdef  __cplusplus
+#ifdef __cplusplus
 }
 #endif
-#endif                          /* __SGE_PTFL_H */
+
+#endif

@@ -1,0 +1,29 @@
+{
+	"className":	"TMR",
+	"summary":	"@todo add summary",
+	"description":	[{
+			"line":	"@todo add description"
+		}],
+	"cullPrefix":	"TMR",
+	"attributes":	[{
+			"name":	"begin",
+			"summary":	"@todo add summary",
+			"description":	[{
+					"line":	"@todo add description"
+				}],
+			"type":	"lListT",
+			"subClassName":	"TM",
+			"subCullPrefix":	"TM",
+			"flags":	[]
+		}, {
+			"name":	"end",
+			"summary":	"@todo add summary",
+			"description":	[{
+					"line":	"@todo add description"
+				}],
+			"type":	"lListT",
+			"subClassName":	"TM",
+			"subCullPrefix":	"TM",
+			"flags":	[]
+		}]
+}

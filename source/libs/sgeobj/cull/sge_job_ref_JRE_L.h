@@ -1,6 +1,5 @@
-#ifndef __SGE_JOB_REFL_H
-#define __SGE_JOB_REFL_H
-
+#ifndef SGE_JRE_L_H
+#define SGE_JRE_L_H
 /*___INFO__MARK_BEGIN__*/
 /*************************************************************************
  * 
@@ -33,35 +32,45 @@
  ************************************************************************/
 /*___INFO__MARK_END__*/
 
-#include "sgeobj/cull/sge_boundaries.h"
 #include "cull/cull.h"
+#include "sgeobj/cull/sge_boundaries.h"
 
-#ifdef  __cplusplus
+#ifdef __cplusplus
 extern "C" {
 #endif
 
-/* *INDENT-OFF* */
+/**
+* @brief @todo add summary
+*
+* @todo add description
+*
+*    SGE_ULONG(JRE_job_number) - @todo add summary
+*    @todo add description
+*
+*    SGE_STRING(JRE_job_name) - @todo add summary
+*    @todo add description
+*
+*/
 
 enum {
-   JRE_job_number = JRE_LOWERBOUND,  /* used in JB_jid_successor_list */
-   JRE_job_name                      /* used in JB_jid_predecessor_list */
+   JRE_job_number = JRE_LOWERBOUND,
+   JRE_job_name
 };
 
 LISTDEF(JRE_Type)
-   JGDI_OBJ(JobReference)
-   SGE_ULONG(JRE_job_number, CULL_PRIMARY_KEY | CULL_DEFAULT | CULL_SUBLIST)
-   SGE_STRING(JRE_job_name, CULL_DEFAULT | CULL_SUBLIST)
-LISTEND 
+   SGE_ULONG(JRE_job_number, CULL_PRIMARY_KEY | CULL_SUBLIST)
+   SGE_STRING(JRE_job_name, CULL_SUBLIST)
+LISTEND
 
 NAMEDEF(JREN)
    NAME("JRE_job_number")
    NAME("JRE_job_name")
 NAMEEND
 
-/* *INDENT-ON* */
+#define JRE_SIZE sizeof(JREN)/sizeof(char *)
 
-#define JRES sizeof(JREN)/sizeof(char*)
-#ifdef  __cplusplus
+#ifdef __cplusplus
 }
 #endif
-#endif                          /* __SGE_JOB_REFL_H */
+
+#endif

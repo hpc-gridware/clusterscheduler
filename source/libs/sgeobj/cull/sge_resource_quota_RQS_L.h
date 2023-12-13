@@ -1,6 +1,5 @@
-#ifndef __SGE_RESOURCE_QUOTAL_RQS_L_H
-#define __SGE_RESOURCE_QUOTAL_RQS_L_H
-
+#ifndef SGE_RQS_L_H
+#define SGE_RQS_L_H
 /*___INFO__MARK_BEGIN__*/
 /*************************************************************************
  * 
@@ -34,16 +33,31 @@
 /*___INFO__MARK_END__*/
 
 #include "cull/cull.h"
-
 #include "sgeobj/cull/sge_boundaries.h"
 
-#ifdef  __cplusplus
+#ifdef __cplusplus
 extern "C" {
 #endif
 
-/* *INDENT-OFF* */
+/**
+* @brief @todo add summary
+*
+* @todo add description
+*
+*    SGE_STRING(RQS_name) - @todo add summary
+*    @todo add description
+*
+*    SGE_STRING(RQS_description) - @todo add summary
+*    @todo add description
+*
+*    SGE_BOOL(RQS_enabled) - @todo add summary
+*    @todo add description
+*
+*    SGE_LIST(RQS_rule) - @todo add summary
+*    @todo add description
+*
+*/
 
-/* Resource Quota Set */
 enum {
    RQS_name = RQS_LOWERBOUND,
    RQS_description,
@@ -52,12 +66,10 @@ enum {
 };
 
 LISTDEF(RQS_Type)
- JGDI_ROOT_OBJ(ResourceQuotaSet, SGE_RQS_LIST, ADD | MODIFY | DELETE | GET | GET_LIST)
- JGDI_EVENT_OBJ(ADD(sgeE_RQS_ADD) | MODIFY(sgeE_RQS_MOD) | DELETE(sgeE_RQS_DEL) | GET_LIST(sgeE_RQS_LIST))
- SGE_STRING(RQS_name, CULL_PRIMARY_KEY | CULL_HASH | CULL_UNIQUE | CULL_SPOOL | CULL_JGDI_CONF)
- SGE_STRING(RQS_description, CULL_DEFAULT | CULL_SPOOL | CULL_JGDI_CONF)
- SGE_BOOL(RQS_enabled, CULL_DEFAULT | CULL_SPOOL | CULL_JGDI_CONF)
- SGE_LIST(RQS_rule, RQR_Type, CULL_DEFAULT | CULL_SPOOL | CULL_JGDI_CONF)
+   SGE_STRING(RQS_name, CULL_PRIMARY_KEY | CULL_UNIQUE | CULL_HASH | CULL_SPOOL)
+   SGE_STRING(RQS_description, CULL_SPOOL)
+   SGE_BOOL(RQS_enabled, CULL_SPOOL)
+   SGE_LIST(RQS_rule, RQR_Type, CULL_SPOOL)
 LISTEND
 
 NAMEDEF(RQSN)
@@ -67,11 +79,10 @@ NAMEDEF(RQSN)
    NAME("RQS_rule")
 NAMEEND
 
-#define RQSS sizeof(RQSN)/sizeof(char*)
+#define RQS_SIZE sizeof(RQSN)/sizeof(char *)
 
-/* *INDENT-ON* */ 
-
-#ifdef  __cplusplus
+#ifdef __cplusplus
 }
 #endif
-#endif 
+
+#endif

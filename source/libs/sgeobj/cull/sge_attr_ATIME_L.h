@@ -1,6 +1,5 @@
-#ifndef __SGE_HOSTATTR_ATIME_L_H
-#define __SGE_HOSTATTR_ATIME_L_H
-
+#ifndef SGE_ATIME_L_H
+#define SGE_ATIME_L_H
 /*___INFO__MARK_BEGIN__*/
 /*************************************************************************
  * 
@@ -33,36 +32,45 @@
  ************************************************************************/
 /*___INFO__MARK_END__*/
 
-#include "sgeobj/cull/sge_boundaries.h"
 #include "cull/cull.h"
+#include "sgeobj/cull/sge_boundaries.h"
 
-#ifdef  __cplusplus
+#ifdef __cplusplus
 extern "C" {
 #endif
 
-/* *INDENT-OFF* */  
+/**
+* @brief @todo add summary
+*
+* @todo add description
+*
+*    SGE_HOST(ATIME_href) - @todo add summary
+*    @todo add description
+*
+*    SGE_STRING(ATIME_value) - @todo add summary
+*    @todo add description
+*
+*/
 
 enum {
    ATIME_href = ATIME_LOWERBOUND,
-   ATIME_value                    
+   ATIME_value
 };
 
 LISTDEF(ATIME_Type)
-   JGDI_MAP_OBJ(ATIME_href, ATIME_value)
-   SGE_HOST(ATIME_href, CULL_PRIMARY_KEY | CULL_HASH | CULL_UNIQUE | CULL_SUBLIST)
-   SGE_STRING(ATIME_value, CULL_DEFAULT | CULL_SUBLIST)
-LISTEND 
+   SGE_HOST(ATIME_href, CULL_PRIMARY_KEY | CULL_UNIQUE | CULL_HASH | CULL_SUBLIST)
+   SGE_STRING(ATIME_value, CULL_SUBLIST)
+LISTEND
 
 NAMEDEF(ATIMEN)
    NAME("ATIME_href")
    NAME("ATIME_value")
 NAMEEND
 
-#define ATIMES sizeof(ATIMEN)/sizeof(char*)
+#define ATIME_SIZE sizeof(ATIMEN)/sizeof(char *)
 
-/* *INDENT-ON* */  
-
-#ifdef  __cplusplus
+#ifdef __cplusplus
 }
 #endif
-#endif   
+
+#endif

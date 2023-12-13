@@ -1,6 +1,5 @@
-#ifndef __SGE_HOSTATTR_STRING_L_H
-#define __SGE_HOSTATTR_STRING_L_H
-
+#ifndef SGE_ASTRING_L_H
+#define SGE_ASTRING_L_H
 /*___INFO__MARK_BEGIN__*/
 /*************************************************************************
  * 
@@ -33,35 +32,45 @@
  ************************************************************************/
 /*___INFO__MARK_END__*/
 
-#include "sgeobj/cull/sge_boundaries.h"
 #include "cull/cull.h"
+#include "sgeobj/cull/sge_boundaries.h"
 
-#ifdef  __cplusplus
+#ifdef __cplusplus
 extern "C" {
 #endif
 
-/* *INDENT-OFF* */  
+/**
+* @brief @todo add summary
+*
+* @todo add description
+*
+*    SGE_HOST(ASTRING_href) - @todo add summary
+*    @todo add description
+*
+*    SGE_STRING(ASTRING_value) - @todo add summary
+*    @todo add description
+*
+*/
 
 enum {
    ASTRING_href = ASTRING_LOWERBOUND,
-   ASTRING_value                    
+   ASTRING_value
 };
 
 LISTDEF(ASTRING_Type)
-   SGE_HOST(ASTRING_href, CULL_PRIMARY_KEY | CULL_HASH | CULL_UNIQUE | CULL_SUBLIST)
-   SGE_STRING(ASTRING_value, CULL_DEFAULT | CULL_SUBLIST)
-LISTEND 
+   SGE_HOST(ASTRING_href, CULL_PRIMARY_KEY | CULL_UNIQUE | CULL_HASH | CULL_SUBLIST)
+   SGE_STRING(ASTRING_value, CULL_SUBLIST)
+LISTEND
 
 NAMEDEF(ASTRINGN)
    NAME("ASTRING_href")
    NAME("ASTRING_value")
 NAMEEND
 
-#define ASTRINGS sizeof(ASTRINGN)/sizeof(char*)
+#define ASTRING_SIZE sizeof(ASTRINGN)/sizeof(char *)
 
-/* *INDENT-ON* */  
-
-#ifdef  __cplusplus
+#ifdef __cplusplus
 }
 #endif
-#endif   
+
+#endif

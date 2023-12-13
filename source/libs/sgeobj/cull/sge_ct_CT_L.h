@@ -1,6 +1,5 @@
-#ifndef __SGE_CT_CT_L_H
-#define __SGE_CT_CT_L_H
-
+#ifndef SGE_CT_L_H
+#define SGE_CT_L_H
 /*___INFO__MARK_BEGIN__*/
 /*************************************************************************
  * 
@@ -36,30 +35,58 @@
 #include "cull/cull.h"
 #include "sgeobj/cull/sge_boundaries.h"
 
-#ifdef  __cplusplus
+#ifdef __cplusplus
 extern "C" {
 #endif
 
-/* *INDENT-OFF* */ 
-   
-/* 
- * this data structures describe the category list 
- */
+/**
+* @brief @todo add summary
+*
+* @todo add description
+*
+*    SGE_STRING(CT_str) - @todo add summary
+*    @todo add description
+*
+*    SGE_ULONG(CT_refcount) - @todo add summary
+*    @todo add description
+*
+*    SGE_INT(CT_count) - @todo add summary
+*    @todo add description
+*
+*    SGE_ULONG(CT_rejected) - @todo add summary
+*    @todo add description
+*
+*    SGE_LIST(CT_cache) - @todo add summary
+*    @todo add description
+*
+*    SGE_BOOL(CT_messages_added) - @todo add summary
+*    @todo add description
+*
+*    SGE_DOUBLE(CT_resource_contribution) - @todo add summary
+*    @todo add description
+*
+*    SGE_BOOL(CT_rc_valid) - @todo add summary
+*    @todo add description
+*
+*    SGE_ULONG(CT_reservation_rejected) - @todo add summary
+*    @todo add description
+*
+*/
+
 enum {
-   CT_str = CT_LOWERBOUND,    /* string of category */
-   CT_refcount,               /* number of jobs referencing the string */
-   CT_count,                  /* number of jobs used in this schuling run, if -1, than CT_refcount is used */ 
-   CT_rejected,               /* has this category been rejected as it can not be dispached now */
-   CT_cache,                  /* stores all info, which cannot run this job category */ 
-   CT_messages_added,         /* if true, the scheduler info messages have been added for this category */
-   CT_resource_contribution,  /* resource request dependent contribution on urgency 
-                                 this value is common with all jobs of a category */
-   CT_rc_valid,               /* indicates whether cached CT_resource_contribution is valid */
-   CT_reservation_rejected    /* has this category been rejected as it can not be reserved */
+   CT_str = CT_LOWERBOUND,
+   CT_refcount,
+   CT_count,
+   CT_rejected,
+   CT_cache,
+   CT_messages_added,
+   CT_resource_contribution,
+   CT_rc_valid,
+   CT_reservation_rejected
 };
 
 LISTDEF(CT_Type)
-   SGE_STRING(CT_str, CULL_HASH | CULL_UNIQUE)
+   SGE_STRING(CT_str, CULL_UNIQUE | CULL_HASH)
    SGE_ULONG(CT_refcount, CULL_DEFAULT)
    SGE_INT(CT_count, CULL_DEFAULT)
    SGE_ULONG(CT_rejected, CULL_DEFAULT)
@@ -68,7 +95,7 @@ LISTDEF(CT_Type)
    SGE_DOUBLE(CT_resource_contribution, CULL_DEFAULT)
    SGE_BOOL(CT_rc_valid, CULL_DEFAULT)
    SGE_ULONG(CT_reservation_rejected, CULL_DEFAULT)
-LISTEND 
+LISTEND
 
 NAMEDEF(CTN)
    NAME("CT_str")
@@ -82,11 +109,10 @@ NAMEDEF(CTN)
    NAME("CT_reservation_rejected")
 NAMEEND
 
-#define CTS sizeof(CTN)/sizeof(char*)
+#define CT_SIZE sizeof(CTN)/sizeof(char *)
 
-/* *INDENT-ON* */
-
-#ifdef  __cplusplus
+#ifdef __cplusplus
 }
 #endif
-#endif                          /* __SGE_CTL_H */
+
+#endif

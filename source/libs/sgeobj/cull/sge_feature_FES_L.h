@@ -1,6 +1,5 @@
-#ifndef __SGE_FEATUREL_H
-#define __SGE_FEATUREL_H
-
+#ifndef SGE_FES_L_H
+#define SGE_FES_L_H
 /*___INFO__MARK_BEGIN__*/
 /*************************************************************************
  * 
@@ -36,11 +35,22 @@
 #include "cull/cull.h"
 #include "sgeobj/cull/sge_boundaries.h"
 
-#ifdef  __cplusplus
+#ifdef __cplusplus
 extern "C" {
 #endif
 
-/* *INDENT-OFF* */ 
+/**
+* @brief @todo add summary
+*
+* @todo add description
+*
+*    SGE_ULONG(FES_id) - @todo add summary
+*    @todo add description
+*
+*    SGE_ULONG(FES_active) - @todo add summary
+*    @todo add description
+*
+*/
 
 enum {
    FES_id = FES_LOWERBOUND,
@@ -50,16 +60,17 @@ enum {
 LISTDEF(FES_Type)
    SGE_ULONG(FES_id, CULL_DEFAULT)
    SGE_ULONG(FES_active, CULL_DEFAULT)
-LISTEND 
+LISTEND
 
 NAMEDEF(FESN)
-   NAME("FES_id")             /* unique feature set id (see enum *
-                               * featureset_id_t) */
-   NAME("FES_active")         /* boolean */
+   NAME("FES_id")
+   NAME("FES_active")
 NAMEEND
 
-#define FESS sizeof(FESN)/sizeof(char*)
-#ifdef  __cplusplus
+#define FES_SIZE sizeof(FESN)/sizeof(char *)
+
+#ifdef __cplusplus
 }
 #endif
-#endif                          /* __SGE_FEATUREL_H */
+
+#endif

@@ -1,5 +1,5 @@
-#ifndef __SGE_CULL_XMLL_H
-#define __SGE_CULL_XMLL_H
+#ifndef SGE_XMLH_L_H
+#define SGE_XMLH_L_H
 /*___INFO__MARK_BEGIN__*/
 /*************************************************************************
  * 
@@ -33,21 +33,34 @@
 /*___INFO__MARK_END__*/
 
 #include "cull/cull.h"
-#include "cull/cull_list.h"
-
 #include "sgeobj/cull/sge_boundaries.h"
 
-#ifdef  __cplusplus
+#ifdef __cplusplus
 extern "C" {
 #endif
 
-/* *INDENT-OFF* */    
+/**
+* @brief @todo add summary
+*
+* @todo add description
+*
+*    SGE_STRING(XMLH_Version) - @todo add summary
+*    @todo add description
+*
+*    SGE_STRING(XMLH_Name) - @todo add summary
+*    @todo add description
+*
+*    SGE_LIST(XMLH_Stylesheet) - @todo add summary
+*    @todo add description
+*
+*    SGE_LIST(XMLH_Attribute) - @todo add summary
+*    @todo add description
+*
+*    SGE_LIST(XMLH_Element) - @todo add summary
+*    @todo add description
+*
+*/
 
-/**************************************************
- *
- * XML document head
- *
- **************************************************/
 enum {
    XMLH_Version = XMLH_LOWERBOUND,
    XMLH_Name,
@@ -61,22 +74,21 @@ LISTDEF(XMLH_Type)
    SGE_STRING(XMLH_Name, CULL_DEFAULT)
    SGE_LIST(XMLH_Stylesheet, XMLS_Type, CULL_DEFAULT)
    SGE_LIST(XMLH_Attribute, XMLA_Type, CULL_DEFAULT)
-   SGE_LIST(XMLH_Element, CULL_ANY_SUBTYPE, CULL_DEFAULT)   
+   SGE_LIST(XMLH_Element, CULL_ANY_SUBTYPE, CULL_DEFAULT)
 LISTEND
 
 NAMEDEF(XMLHN)
-   NAME("XMLH_Version") 
+   NAME("XMLH_Version")
    NAME("XMLH_Name")
    NAME("XMLH_Stylesheet")
    NAME("XMLH_Attribute")
-   NAME("XMLH_Element")  
-NAMEEND   
+   NAME("XMLH_Element")
+NAMEEND
 
-#define XMLHS sizeof(XMLHN)/sizeof(char*)
+#define XMLH_SIZE sizeof(XMLHN)/sizeof(char *)
 
-/* *INDENT-ON* */ 
-        
-#ifdef  __cplusplus
+#ifdef __cplusplus
 }
 #endif
-#endif                          /* __SGE_COMPLEXL_H */        
+
+#endif

@@ -1,6 +1,5 @@
-#ifndef __SGE_ORDER_RTIC_L_H
-#define __SGE_ORDER_RTIC_L_H
-
+#ifndef SGE_RTIC_L_H
+#define SGE_RTIC_L_H
 /*___INFO__MARK_BEGIN__*/
 /*************************************************************************
  * 
@@ -34,23 +33,32 @@
 /*___INFO__MARK_END__*/
 
 #include "cull/cull.h"
-
 #include "sgeobj/cull/sge_boundaries.h"
 
-#ifdef  __cplusplus
+#ifdef __cplusplus
 extern "C" {
 #endif
 
-/* *INDENT-OFF* */
+/**
+* @brief @todo add summary
+*
+* @todo add description
+*
+*    SGE_HOST(RTIC_host) - @todo add summary
+*    @todo add description
+*
+*    SGE_LIST(RTIC_tickets) - @todo add summary
+*    @todo add description
+*
+*/
 
-/* internal list for reprioritze tickets to distribute */
 enum {
    RTIC_host = RTIC_LOWERBOUND,
    RTIC_tickets
 };
 
 LISTDEF(RTIC_Type)
-   SGE_HOST(RTIC_host, CULL_PRIMARY_KEY | CULL_HASH | CULL_UNIQUE)
+   SGE_HOST(RTIC_host, CULL_PRIMARY_KEY | CULL_UNIQUE | CULL_HASH)
    SGE_LIST(RTIC_tickets, OR_Type, CULL_DEFAULT)
 LISTEND
 
@@ -59,11 +67,10 @@ NAMEDEF(RTICN)
    NAME("RTIC_tickets")
 NAMEEND
 
-#define RTICS sizeof(RTICN)/sizeof(char*)
+#define RTIC_SIZE sizeof(RTICN)/sizeof(char *)
 
-
-/* *INDENT-ON* */ 
-#ifdef  __cplusplus
+#ifdef __cplusplus
 }
 #endif
-#endif                          /* __SGE_ORDERL_H */
+
+#endif

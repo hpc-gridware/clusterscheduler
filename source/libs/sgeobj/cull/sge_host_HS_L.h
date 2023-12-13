@@ -1,6 +1,5 @@
-#ifndef __SGE_HOST_HS_L_H
-#define __SGE_HOST_HS_L_H
-
+#ifndef SGE_HS_L_H
+#define SGE_HS_L_H
 /*___INFO__MARK_BEGIN__*/
 /*************************************************************************
  * 
@@ -36,36 +35,42 @@
 #include "cull/cull.h"
 #include "sgeobj/cull/sge_boundaries.h"
 
-#ifdef  __cplusplus
+#ifdef __cplusplus
 extern "C" {
 #endif
 
-/* *INDENT-OFF* */
+/**
+* @brief @todo add summary
+*
+* @todo add description
+*
+*    SGE_STRING(HS_name) - @todo add summary
+*    @todo add description
+*
+*    SGE_DOUBLE(HS_value) - @todo add summary
+*    @todo add description
+*
+*/
 
-/*
- * load scaling
- */
 enum {
    HS_name = HS_LOWERBOUND,
    HS_value
 };
 
 LISTDEF(HS_Type)
-   JGDI_MAP_OBJ(HS_name, HS_value)
-   SGE_STRING(HS_name, CULL_PRIMARY_KEY | CULL_DEFAULT | CULL_SUBLIST)
-   SGE_DOUBLE(HS_value, CULL_DEFAULT | CULL_SUBLIST)
-LISTEND 
+   SGE_STRING(HS_name, CULL_PRIMARY_KEY | CULL_SUBLIST)
+   SGE_DOUBLE(HS_value, CULL_SUBLIST)
+LISTEND
 
 NAMEDEF(HSN)
    NAME("HS_name")
    NAME("HS_value")
 NAMEEND
 
-/* *INDENT-ON* */
+#define HS_SIZE sizeof(HSN)/sizeof(char *)
 
-#define HSS sizeof(HSN)/sizeof(char*)
-
-#ifdef  __cplusplus
+#ifdef __cplusplus
 }
 #endif
-#endif                          /* __SGE_HOSTL_H */
+
+#endif

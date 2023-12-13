@@ -1,6 +1,5 @@
-#ifndef __SGE_HOSTATTR_PRJLIST_L_H
-#define __SGE_HOSTATTR_PRJLIST_L_H
-
+#ifndef SGE_APRJLIST_L_H
+#define SGE_APRJLIST_L_H
 /*___INFO__MARK_BEGIN__*/
 /*************************************************************************
  * 
@@ -33,14 +32,25 @@
  ************************************************************************/
 /*___INFO__MARK_END__*/
 
-#include "sgeobj/cull/sge_boundaries.h"
 #include "cull/cull.h"
+#include "sgeobj/cull/sge_boundaries.h"
 
-#ifdef  __cplusplus
+#ifdef __cplusplus
 extern "C" {
 #endif
 
-/* *INDENT-OFF* */  
+/**
+* @brief @todo add summary
+*
+* @todo add description
+*
+*    SGE_HOST(APRJLIST_href) - @todo add summary
+*    @todo add description
+*
+*    SGE_LIST(APRJLIST_value) - @todo add summary
+*    @todo add description
+*
+*/
 
 enum {
    APRJLIST_href = APRJLIST_LOWERBOUND,
@@ -48,9 +58,8 @@ enum {
 };
 
 LISTDEF(APRJLIST_Type)
-   JGDI_MAP_OBJ(APRJLIST_href, APRJLIST_value)
-   SGE_HOST(APRJLIST_href, CULL_PRIMARY_KEY | CULL_HASH | CULL_UNIQUE | CULL_SUBLIST)
-   SGE_LIST(APRJLIST_value, PR_Type, CULL_DEFAULT | CULL_SUBLIST)
+   SGE_HOST(APRJLIST_href, CULL_PRIMARY_KEY | CULL_UNIQUE | CULL_HASH | CULL_SUBLIST)
+   SGE_LIST(APRJLIST_value, PR_Type, CULL_SUBLIST)
 LISTEND
 
 NAMEDEF(APRJLISTN)
@@ -58,11 +67,10 @@ NAMEDEF(APRJLISTN)
    NAME("APRJLIST_value")
 NAMEEND
 
-#define APRJLISTS sizeof(APRJLISTN)/sizeof(char*)
+#define APRJLIST_SIZE sizeof(APRJLISTN)/sizeof(char *)
 
-/* *INDENT-ON* */  
-
-#ifdef  __cplusplus
+#ifdef __cplusplus
 }
 #endif
-#endif   
+
+#endif

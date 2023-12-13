@@ -1,5 +1,5 @@
-#ifndef __SGE_CULL_XML_XMLE_L_H
-#define __SGE_CULL_XML_XMLE_L_H
+#ifndef SGE_XMLE_L_H
+#define SGE_XMLE_L_H
 /*___INFO__MARK_BEGIN__*/
 /*************************************************************************
  * 
@@ -32,24 +32,34 @@
  ************************************************************************/
 /*___INFO__MARK_END__*/
 
+#include "cull/cull.h"
 #include "sgeobj/cull/sge_boundaries.h"
 
-#include "cull/cull.h"
-#include "cull/cull_list.h"
-
-#ifdef  __cplusplus
+#ifdef __cplusplus
 extern "C" {
 #endif
 
-/* *INDENT-OFF* */    
+/**
+* @brief @todo add summary
+*
+* @todo add description
+*
+*    SGE_LIST(XMLE_Attribute) - @todo add summary
+*    @todo add description
+*
+*    SGE_BOOL(XMLE_Print) - @todo add summary
+*    @todo add description
+*
+*    SGE_OBJECT(XMLE_Element) - @todo add summary
+*    @todo add description
+*
+*    SGE_LIST(XMLE_List) - @todo add summary
+*    @todo add description
+*
+*/
 
-/**************************************************
- *
- * XML document entry
- *
- **************************************************/
 enum {
-   XMLE_Attribute = XMLE_LOWERBOUND,     
+   XMLE_Attribute = XMLE_LOWERBOUND,
    XMLE_Print,
    XMLE_Element,
    XMLE_List
@@ -63,17 +73,16 @@ LISTDEF(XMLE_Type)
 LISTEND
 
 NAMEDEF(XMLEN)
-   NAME("XMLE_Attribute")     
+   NAME("XMLE_Attribute")
    NAME("XMLE_Print")
    NAME("XMLE_Element")
    NAME("XMLE_List")
 NAMEEND
 
-#define XMLES sizeof (XMLEN)/sizeof(char*)
+#define XMLE_SIZE sizeof(XMLEN)/sizeof(char *)
 
-/* *INDENT-ON* */ 
-        
-#ifdef  __cplusplus
+#ifdef __cplusplus
 }
 #endif
-#endif                          /* __SGE_COMPLEXL_H */        
+
+#endif

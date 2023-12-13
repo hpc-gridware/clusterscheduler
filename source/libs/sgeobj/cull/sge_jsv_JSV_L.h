@@ -1,6 +1,5 @@
-#ifndef __SGE_JSVL_H
-#define __SGE_JSVL_H
-
+#ifndef SGE_JSV_L_H
+#define SGE_JSV_L_H
 /*___INFO__MARK_BEGIN__*/
 /*************************************************************************
  * 
@@ -26,7 +25,7 @@
  * 
  *   The Initial Developer of the Original Code is: Sun Microsystems, Inc.
  * 
- *   Copyright: 2008 by Sun Microsystems, Inc.
+ *   Copyright: 2001 by Sun Microsystems, Inc.
  * 
  *   All Rights Reserved.
  * 
@@ -34,54 +33,85 @@
 /*___INFO__MARK_END__*/
 
 #include "cull/cull.h"
-
 #include "sgeobj/cull/sge_boundaries.h"
 
-#ifdef  __cplusplus
+#ifdef __cplusplus
 extern "C" {
 #endif
 
-/* *INDENT-OFF* */ 
+/**
+* @brief @todo add summary
+*
+* @todo add description
+*
+*    SGE_STRING(JSV_name) - @todo add summary
+*    @todo add description
+*
+*    SGE_STRING(JSV_context) - @todo add summary
+*    @todo add description
+*
+*    SGE_STRING(JSV_url) - @todo add summary
+*    @todo add description
+*
+*    SGE_STRING(JSV_type) - @todo add summary
+*    @todo add description
+*
+*    SGE_STRING(JSV_user) - @todo add summary
+*    @todo add description
+*
+*    SGE_STRING(JSV_command) - @todo add summary
+*    @todo add description
+*
+*    SGE_STRING(JSV_pid) - @todo add summary
+*    @todo add description
+*
+*    SGE_REF(JSV_in) - @todo add summary
+*    @todo add description
+*
+*    SGE_REF(JSV_out) - @todo add summary
+*    @todo add description
+*
+*    SGE_REF(JSV_err) - @todo add summary
+*    @todo add description
+*
+*    SGE_BOOL(JSV_has_to_restart) - @todo add summary
+*    @todo add description
+*
+*    SGE_ULONG(JSV_last_mod) - @todo add summary
+*    @todo add description
+*
+*    SGE_BOOL(JSV_send_env) - @todo add summary
+*    @todo add description
+*
+*    SGE_REF(JSV_old_job) - @todo add summary
+*    @todo add description
+*
+*    SGE_REF(JSV_new_job) - @todo add summary
+*    @todo add description
+*
+*    SGE_BOOL(JSV_restart) - @todo add summary
+*    @todo add description
+*
+*    SGE_BOOL(JSV_accept) - @todo add summary
+*    @todo add description
+*
+*    SGE_BOOL(JSV_done) - @todo add summary
+*    @todo add description
+*
+*    SGE_BOOL(JSV_soft_shutdown) - @todo add summary
+*    @todo add description
+*
+*    SGE_BOOL(JSV_test) - @todo add summary
+*    @todo add description
+*
+*    SGE_ULONG(JSV_test_pos) - @todo add summary
+*    @todo add description
+*
+*    SGE_STRING(JSV_result) - @todo add summary
+*    @todo add description
+*
+*/
 
-/****** sgeobj/jsv/--JSV_Type **********************************************
-*  NAME
-*     JSV_Type - CULL job submission verification element
-*     
-*  ELEMENTS
-*     SGE_STRING(JSV_name)        
-*        name of this element, no hashing because there are not much
-*
-*     SGE_STRING(JSV_command)     
-*        absolute path of the script 
-*
-*     SGE_STRING(JSV_pid)         
-*        pid of the process 
-*
-*     SGE_REF(JSV_in)             
-*        stdin to the process (type: FILE*) 
-*
-*     SGE_REF(JSV_out)            
-*        stdout of the process (type: FILE*) 
-*
-*     SGE_REF(JSV_err)            
-*        stderr of the process (type: FILE*) 
-*
-*     SGE_BOOL(JSV_has_to_restart)        
-*        should we restart the ls script?
-*
-*     SGE_LIST(JSV_incomplete)    
-*        current values we got from the script 
-*
-*     SGE_LIST(JSV_complete)      
-*        last complete set of send values 
-*
-*     SGE_ULONG(JSV_last_mod)     
-*        last modification time of ls script 
-*
-*  FUNCTION
-*     The attributes of this element show the state of a jsv script.
-*     A list of these elements is used in submit clients and master process. 
-******************************************************************************/
 enum {
    JSV_name = JSV_LOWERBOUND,
    JSV_context,
@@ -108,34 +138,29 @@ enum {
 };
 
 LISTDEF(JSV_Type)
-   SGE_STRING(JSV_name, CULL_DEFAULT)                    /* name of a JSV */
-   SGE_STRING(JSV_context, CULL_DEFAULT)                 /* value of the JSV_CONTEXT_CLIENT define
-                                                          * or name of the worker thread in
-                                                          * case of server JSV 
-                                                          */
-   SGE_STRING(JSV_url, CULL_DEFAULT)                     /* jsv_url as specified in sge_types man page */
-   SGE_STRING(JSV_type, CULL_DEFAULT)                    /* in the moment only "script" is allowed here */
-   SGE_STRING(JSV_user, CULL_DEFAULT)                    /* user name used in jsv_url */
-   SGE_STRING(JSV_command, CULL_DEFAULT)                 /* absolute path of jsv_url */
-   SGE_STRING(JSV_pid, CULL_DEFAULT)                     /* -1 or pid of running jsv instance */ 
-   SGE_REF(JSV_in, SGE_ANY_SUBTYPE, CULL_DEFAULT)        /* type is FILE* */
-   SGE_REF(JSV_out, SGE_ANY_SUBTYPE, CULL_DEFAULT)       /* type is FILE* */
-   SGE_REF(JSV_err, SGE_ANY_SUBTYPE, CULL_DEFAULT)       /* type is FILE* */
-   SGE_BOOL(JSV_has_to_restart, CULL_DEFAULT)            /* JSV has to be restarted as soon as possible */
-   SGE_ULONG(JSV_last_mod, CULL_DEFAULT)                 /* timestamp when the jsv script file
-                                                          * was last modified */ 
-   SGE_BOOL(JSV_send_env, CULL_DEFAULT)                  /* environment information has to be sent
-                                                          * to the JSV */
-   SGE_REF(JSV_old_job, JB_Type, CULL_DEFAULT)           /* job template before verification step */
-   SGE_REF(JSV_new_job, JB_Type, CULL_DEFAULT)           /* job after the verification step */
-   SGE_BOOL(JSV_restart, CULL_DEFAULT) 
-   SGE_BOOL(JSV_accept, CULL_DEFAULT) 
-   SGE_BOOL(JSV_done, CULL_DEFAULT) 
-   SGE_BOOL(JSV_soft_shutdown, CULL_DEFAULT)              
+   SGE_STRING(JSV_name, CULL_DEFAULT)
+   SGE_STRING(JSV_context, CULL_DEFAULT)
+   SGE_STRING(JSV_url, CULL_DEFAULT)
+   SGE_STRING(JSV_type, CULL_DEFAULT)
+   SGE_STRING(JSV_user, CULL_DEFAULT)
+   SGE_STRING(JSV_command, CULL_DEFAULT)
+   SGE_STRING(JSV_pid, CULL_DEFAULT)
+   SGE_REF(JSV_in, CULL_ANY_SUBTYPE, CULL_DEFAULT)
+   SGE_REF(JSV_out, CULL_ANY_SUBTYPE, CULL_DEFAULT)
+   SGE_REF(JSV_err, CULL_ANY_SUBTYPE, CULL_DEFAULT)
+   SGE_BOOL(JSV_has_to_restart, CULL_DEFAULT)
+   SGE_ULONG(JSV_last_mod, CULL_DEFAULT)
+   SGE_BOOL(JSV_send_env, CULL_DEFAULT)
+   SGE_REF(JSV_old_job, CULL_ANY_SUBTYPE, CULL_DEFAULT)
+   SGE_REF(JSV_new_job, CULL_ANY_SUBTYPE, CULL_DEFAULT)
+   SGE_BOOL(JSV_restart, CULL_DEFAULT)
+   SGE_BOOL(JSV_accept, CULL_DEFAULT)
+   SGE_BOOL(JSV_done, CULL_DEFAULT)
+   SGE_BOOL(JSV_soft_shutdown, CULL_DEFAULT)
    SGE_BOOL(JSV_test, CULL_DEFAULT)
    SGE_ULONG(JSV_test_pos, CULL_DEFAULT)
    SGE_STRING(JSV_result, CULL_DEFAULT)
-LISTEND 
+LISTEND
 
 NAMEDEF(JSVN)
    NAME("JSV_name")
@@ -162,10 +187,10 @@ NAMEDEF(JSVN)
    NAME("JSV_result")
 NAMEEND
 
-/* *INDENT-ON* */ 
+#define JSV_SIZE sizeof(JSVN)/sizeof(char *)
 
-#define JSVS sizeof(JSVN)/sizeof(char*)
-#ifdef  __cplusplus
+#ifdef __cplusplus
 }
 #endif
-#endif /* __SGE_JSVL_H */
+
+#endif

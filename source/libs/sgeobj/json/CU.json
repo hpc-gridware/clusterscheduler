@@ -1,0 +1,85 @@
+{
+	"className":	"CU",
+	"summary":	"@todo add summary",
+	"description":	[{
+			"line":	"@todo add description"
+		}],
+	"cullPrefix":	"CU",
+	"attributes":	[{
+			"name":	"name",
+			"summary":	"@todo add summary",
+			"description":	[{
+					"line":	"@todo add description"
+				}],
+			"type":	"lStringT",
+			"flags":	[{
+					"name":	"UNIQUE"
+				}, {
+					"name":	"HASH"
+				}, {
+					"name":	"SPOOL"
+				}]
+		}, {
+			"name":	"ruser_list",
+			"summary":	"@todo add summary",
+			"description":	[{
+					"line":	"@todo add description"
+				}],
+			"type":	"lListT",
+			"subClassName":	"ASTR",
+			"subCullPrefix":	"ASTR",
+			"flags":	[{
+					"name":	"SPOOL"
+				}]
+		}, {
+			"name":	"ulong32",
+			"summary":	"@todo add summary",
+			"description":	[{
+					"line":	"@todo add description"
+				}],
+			"type":	"lListT",
+			"subClassName":	"AULNG",
+			"subCullPrefix":	"AULNG",
+			"flags":	[]
+		}, {
+			"name":	"bool",
+			"summary":	"@todo add summary",
+			"description":	[{
+					"line":	"@todo add description"
+				}],
+			"type":	"lListT",
+			"subClassName":	"ABOOL",
+			"subCullPrefix":	"ABOOL",
+			"flags":	[]
+		}, {
+			"name":	"time",
+			"summary":	"@todo add summary",
+			"description":	[{
+					"line":	"@todo add description"
+				}],
+			"type":	"lListT",
+			"subClassName":	"ATIME",
+			"subCullPrefix":	"ATIME",
+			"flags":	[]
+		}, {
+			"name":	"mem",
+			"summary":	"@todo add summary",
+			"description":	[{
+					"line":	"@todo add description"
+				}],
+			"type":	"lListT",
+			"subClassName":	"AMEM",
+			"subCullPrefix":	"AMEM",
+			"flags":	[]
+		}, {
+			"name":	"inter",
+			"summary":	"@todo add summary",
+			"description":	[{
+					"line":	"@todo add description"
+				}],
+			"type":	"lListT",
+			"subClassName":	"AINTER",
+			"subCullPrefix":	"AINTER",
+			"flags":	[]
+		}]
+}

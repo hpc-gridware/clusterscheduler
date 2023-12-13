@@ -1,6 +1,5 @@
-#ifndef __SGE_ULONG_ULNG_L_H
-#define __SGE_ULONG_ULNG_L_H
-
+#ifndef SGE_ULNG_L_H
+#define SGE_ULNG_L_H
 /*___INFO__MARK_BEGIN__*/
 /*************************************************************************
  * 
@@ -36,28 +35,36 @@
 #include "cull/cull.h"
 #include "sgeobj/cull/sge_boundaries.h"
 
-#ifdef  __cplusplus
+#ifdef __cplusplus
 extern "C" {
 #endif
 
-/* *INDENT-OFF* */ 
+/**
+* @brief @todo add summary
+*
+* @todo add description
+*
+*    SGE_ULONG(ULNG_value) - @todo add summary
+*    @todo add description
+*
+*/
 
 enum {
    ULNG_value = ULNG_LOWERBOUND
 };
 
 LISTDEF(ULNG_Type)
-   SGE_ULONG(ULNG_value, CULL_HASH | CULL_UNIQUE | CULL_DEFAULT)
-LISTEND 
+   SGE_ULONG(ULNG_value, CULL_UNIQUE | CULL_HASH)
+LISTEND
 
 NAMEDEF(ULNGN)
    NAME("ULNG_value")
 NAMEEND
 
-/* *INDENT-ON* */
+#define ULNG_SIZE sizeof(ULNGN)/sizeof(char *)
 
-#define ULNGS sizeof(ULNGN)/sizeof(char*)
-#ifdef  __cplusplus
+#ifdef __cplusplus
 }
 #endif
+
 #endif

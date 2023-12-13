@@ -1,6 +1,5 @@
-#ifndef PARSE_QSUBL_H
-#define PARSE_QSUBL_H
-
+#ifndef SGE_SPA_L_H
+#define SGE_SPA_L_H
 /*___INFO__MARK_BEGIN__*/
 /*************************************************************************
  * 
@@ -34,14 +33,57 @@
 /*___INFO__MARK_END__*/
 
 #include "cull/cull.h"
-
 #include "sgeobj/cull/sge_boundaries.h"
 
-#ifdef  __cplusplus
+#ifdef __cplusplus
 extern "C" {
 #endif
 
-/* *INDENT-OFF* */
+/**
+* @brief @todo add summary
+*
+* @todo add description
+*
+*    SGE_ULONG(SPA_number) - @todo add summary
+*    @todo add description
+*
+*    SGE_ULONG(SPA_argtype) - @todo add summary
+*    @todo add description
+*
+*    SGE_STRING(SPA_switch) - @todo add summary
+*    @todo add description
+*
+*    SGE_STRING(SPA_switch_arg) - @todo add summary
+*    @todo add description
+*
+*    SGE_ULONG(SPA_occurrence) - @todo add summary
+*    @todo add description
+*
+*    SGE_FLOAT(SPA_argval_lFloatT) - @todo add summary
+*    @todo add description
+*
+*    SGE_DOUBLE(SPA_argval_lDoubleT) - @todo add summary
+*    @todo add description
+*
+*    SGE_ULONG(SPA_argval_lUlongT) - @todo add summary
+*    @todo add description
+*
+*    SGE_LONG(SPA_argval_lLongT) - @todo add summary
+*    @todo add description
+*
+*    SGE_CHAR(SPA_argval_lCharT) - @todo add summary
+*    @todo add description
+*
+*    SGE_INT(SPA_argval_lIntT) - @todo add summary
+*    @todo add description
+*
+*    SGE_STRING(SPA_argval_lStringT) - @todo add summary
+*    @todo add description
+*
+*    SGE_LIST(SPA_argval_lListT) - @todo add summary
+*    @todo add description
+*
+*/
 
 enum {
    SPA_number = SPA_LOWERBOUND,
@@ -73,7 +115,7 @@ LISTDEF(SPA_Type)
    SGE_INT(SPA_argval_lIntT, CULL_DEFAULT)
    SGE_STRING(SPA_argval_lStringT, CULL_DEFAULT)
    SGE_LIST(SPA_argval_lListT, ST_Type, CULL_DEFAULT)
-LISTEND 
+LISTEND
 
 NAMEDEF(SPAN)
    NAME("SPA_number")
@@ -91,11 +133,10 @@ NAMEDEF(SPAN)
    NAME("SPA_argval_lListT")
 NAMEEND
 
-/* *INDENT-ON* */ 
+#define SPA_SIZE sizeof(SPAN)/sizeof(char *)
 
-#define SPAS sizeof(SPAN)/sizeof(char*)
-
-#ifdef  __cplusplus
+#ifdef __cplusplus
 }
 #endif
-#endif                          /* PARSE_QSUBL_H */
+
+#endif

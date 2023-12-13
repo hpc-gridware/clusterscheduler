@@ -1,0 +1,19 @@
+{
+	"className":	"GR",
+	"summary":	"@todo add summary",
+	"description":	[{
+			"line":	"@todo add description"
+		}],
+	"cullPrefix":	"GR",
+	"attributes":	[{
+			"name":	"group",
+			"summary":	"@todo add summary",
+			"description":	[{
+					"line":	"@todo add description"
+				}],
+			"type":	"lUlongT",
+			"flags":	[{
+					"name":	"HASH"
+				}]
+		}]
+}

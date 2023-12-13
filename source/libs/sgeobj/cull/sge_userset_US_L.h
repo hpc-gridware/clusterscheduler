@@ -1,6 +1,5 @@
-#ifndef __SGE_USERSET_US_L_H
-#define __SGE_USERSET_US_L_H
-
+#ifndef SGE_US_L_H
+#define SGE_US_L_H
 /*___INFO__MARK_BEGIN__*/
 /*************************************************************************
  * 
@@ -36,38 +35,64 @@
 #include "cull/cull.h"
 #include "sgeobj/cull/sge_boundaries.h"
 
-#ifdef  __cplusplus
+#ifdef __cplusplus
 extern "C" {
 #endif
 
-/* *INDENT-OFF* */
+/**
+* @brief @todo add summary
+*
+* @todo add description
+*
+*    SGE_STRING(US_name) - @todo add summary
+*    @todo add description
+*
+*    SGE_ULONG(US_type) - @todo add summary
+*    @todo add description
+*
+*    SGE_ULONG(US_fshare) - @todo add summary
+*    @todo add description
+*
+*    SGE_ULONG(US_oticket) - @todo add summary
+*    @todo add description
+*
+*    SGE_ULONG(US_job_cnt) - @todo add summary
+*    @todo add description
+*
+*    SGE_ULONG(US_pending_job_cnt) - @todo add summary
+*    @todo add description
+*
+*    SGE_LIST(US_entries) - @todo add summary
+*    @todo add description
+*
+*    SGE_BOOL(US_consider_with_categories) - @todo add summary
+*    @todo add description
+*
+*/
 
 enum {
    US_name = US_LOWERBOUND,
-   US_type,                  /* type of USERSET encoded as bitfield */
-   US_fshare,                /* 960703 svd - SGEEE functional share */
-   US_oticket,               /* SGEEE override tickets */
-   US_job_cnt,               /* SGEEE job count (internal to schedd) */
-   US_pending_job_cnt,       /* SGEEE job count (internal to schedd) */
+   US_type,
+   US_fshare,
+   US_oticket,
+   US_job_cnt,
+   US_pending_job_cnt,
    US_entries,
-   US_consider_with_categories /* true, if userset plays role with categories */
+   US_consider_with_categories
 };
 
-
 LISTDEF(US_Type)
-   JGDI_ROOT_OBJ(UserSet, SGE_US_LIST, ADD | MODIFY | DELETE | GET | GET_LIST)
-   JGDI_EVENT_OBJ(ADD(sgeE_USERSET_ADD) | MODIFY(sgeE_USERSET_MOD) | DELETE(sgeE_USERSET_DEL) | GET_LIST(sgeE_USERSET_LIST))
-   SGE_STRING(US_name, CULL_PRIMARY_KEY | CULL_HASH | CULL_UNIQUE | CULL_SPOOL | CULL_SUBLIST | CULL_JGDI_CONF)       /* configured name spooled */
-   SGE_ULONG_D(US_type, CULL_DEFAULT | CULL_SPOOL | CULL_JGDI_CONF, 1)         /* configured type spooled */
-   SGE_ULONG(US_fshare, CULL_DEFAULT | CULL_SPOOL | CULL_JGDI_CONF)       /* configured share spooled */
-   SGE_ULONG(US_oticket, CULL_DEFAULT | CULL_SPOOL | CULL_JGDI_CONF)      /* configured override tickets spooled */
-   SGE_ULONG(US_job_cnt, CULL_DEFAULT | CULL_JGDI_CONF)     /* local to schedd */
-   SGE_ULONG(US_pending_job_cnt, CULL_DEFAULT | CULL_JGDI_HIDDEN) /* local to schedd */
-   SGE_LIST(US_entries, UE_Type, CULL_DEFAULT  | CULL_SPOOL | CULL_JGDI_CONF)     /* UE_Type */
-   SGE_BOOL(US_consider_with_categories, CULL_DEFAULT | CULL_JGDI_HIDDEN)
-LISTEND 
+   SGE_STRING(US_name, CULL_PRIMARY_KEY | CULL_UNIQUE | CULL_HASH | CULL_SPOOL | CULL_SUBLIST)
+   SGE_ULONG(US_type, CULL_SPOOL)
+   SGE_ULONG(US_fshare, CULL_SPOOL)
+   SGE_ULONG(US_oticket, CULL_SPOOL)
+   SGE_ULONG(US_job_cnt, CULL_DEFAULT)
+   SGE_ULONG(US_pending_job_cnt, CULL_DEFAULT)
+   SGE_LIST(US_entries, UE_Type, CULL_SPOOL)
+   SGE_BOOL(US_consider_with_categories, CULL_DEFAULT)
+LISTEND
 
-NAMEDEF(USEN)
+NAMEDEF(USN)
    NAME("US_name")
    NAME("US_type")
    NAME("US_fshare")
@@ -78,11 +103,10 @@ NAMEDEF(USEN)
    NAME("US_consider_with_categories")
 NAMEEND
 
-/* *INDENT-ON* */
+#define US_SIZE sizeof(USN)/sizeof(char *)
 
-#define USES sizeof(USEN)/sizeof(char*)
-
-#ifdef  __cplusplus
+#ifdef __cplusplus
 }
 #endif
-#endif                          /* __SGE_USERSETL_H */
+
+#endif

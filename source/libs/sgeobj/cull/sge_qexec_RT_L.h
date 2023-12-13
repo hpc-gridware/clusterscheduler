@@ -1,6 +1,5 @@
-#ifndef __SGE_QEXEC_RT_L_H__
-#define __SGE_QEXEC_RT_L_H__
-
+#ifndef SGE_RT_L_H
+#define SGE_RT_L_H
 /*___INFO__MARK_BEGIN__*/
 /*************************************************************************
  * 
@@ -36,20 +35,34 @@
 #include "cull/cull.h"
 #include "sgeobj/cull/sge_boundaries.h"
 
-#ifdef  __cplusplus
+#ifdef __cplusplus
 extern "C" {
 #endif
 
-/* *INDENT-OFF* */  
+/**
+* @brief @todo add summary
+*
+* @todo add description
+*
+*    SGE_STRING(RT_tid) - @todo add summary
+*    @todo add description
+*
+*    SGE_HOST(RT_hostname) - @todo add summary
+*    @todo add description
+*
+*    SGE_ULONG(RT_status) - @todo add summary
+*    @todo add description
+*
+*    SGE_ULONG(RT_state) - @todo add summary
+*    @todo add description
+*
+*/
 
-/* 
- * this data structure describes a remote task
- */
 enum {
-   RT_tid = RT_LOWERBOUND,       /* task id */
-   RT_hostname,                  /* remote host where task runs on */
-   RT_status,                    /* status as it comes from waitpid(2) */
-   RT_state                      /* for internally use of qrexec module */
+   RT_tid = RT_LOWERBOUND,
+   RT_hostname,
+   RT_status,
+   RT_state
 };
 
 LISTDEF(RT_Type)
@@ -57,7 +70,7 @@ LISTDEF(RT_Type)
    SGE_HOST(RT_hostname, CULL_DEFAULT)
    SGE_ULONG(RT_status, CULL_DEFAULT)
    SGE_ULONG(RT_state, CULL_DEFAULT)
-LISTEND 
+LISTEND
 
 NAMEDEF(RTN)
    NAME("RT_tid")
@@ -66,10 +79,10 @@ NAMEDEF(RTN)
    NAME("RT_state")
 NAMEEND
 
-/* *INDENT-ON* */
+#define RT_SIZE sizeof(RTN)/sizeof(char *)
 
-#define RTS sizeof(RTN)/sizeof(char*)
-#ifdef  __cplusplus
+#ifdef __cplusplus
 }
 #endif
-#endif                          /* __SGE_QEXECL_H__ */
+
+#endif

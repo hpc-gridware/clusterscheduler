@@ -1,6 +1,5 @@
-#ifndef __SGE_HOST_RU_L_H
-#define __SGE_HOST_RU_L_H
-
+#ifndef SGE_RU_L_H
+#define SGE_RU_L_H
 /*___INFO__MARK_BEGIN__*/
 /*************************************************************************
  * 
@@ -36,15 +35,26 @@
 #include "cull/cull.h"
 #include "sgeobj/cull/sge_boundaries.h"
 
-#ifdef  __cplusplus
+#ifdef __cplusplus
 extern "C" {
 #endif
 
-/* *INDENT-OFF* */
+/**
+* @brief @todo add summary
+*
+* @todo add description
+*
+*    SGE_ULONG(RU_job_number) - @todo add summary
+*    @todo add description
+*
+*    SGE_ULONG(RU_task_number) - @todo add summary
+*    @todo add description
+*
+*    SGE_ULONG(RU_state) - @todo add summary
+*    @todo add description
+*
+*/
 
-/*
- * reschedule unknown list
- */
 enum {
    RU_job_number = RU_LOWERBOUND,
    RU_task_number,
@@ -52,11 +62,10 @@ enum {
 };
 
 LISTDEF(RU_Type)
-   JGDI_OBJ(RescheduleUnknown)
    SGE_ULONG(RU_job_number, CULL_DEFAULT)
    SGE_ULONG(RU_task_number, CULL_DEFAULT)
    SGE_ULONG(RU_state, CULL_DEFAULT)
-LISTEND 
+LISTEND
 
 NAMEDEF(RUN)
    NAME("RU_job_number")
@@ -64,11 +73,10 @@ NAMEDEF(RUN)
    NAME("RU_state")
 NAMEEND
 
-#define RUS sizeof(RUN)/sizeof(char*)
+#define RU_SIZE sizeof(RUN)/sizeof(char *)
 
-/* *INDENT-ON* */
-
-#ifdef  __cplusplus
+#ifdef __cplusplus
 }
 #endif
-#endif                          /* __SGE_HOSTL_H */
+
+#endif

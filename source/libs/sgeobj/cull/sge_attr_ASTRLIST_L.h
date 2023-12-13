@@ -1,6 +1,5 @@
-#ifndef __SGE_HOSTATTR_STRLIST_L_H
-#define __SGE_HOSTATTR_STRLIST_L_H
-
+#ifndef SGE_ASTRLIST_L_H
+#define SGE_ASTRLIST_L_H
 /*___INFO__MARK_BEGIN__*/
 /*************************************************************************
  * 
@@ -33,14 +32,25 @@
  ************************************************************************/
 /*___INFO__MARK_END__*/
 
-#include "sgeobj/cull/sge_boundaries.h"
 #include "cull/cull.h"
+#include "sgeobj/cull/sge_boundaries.h"
 
-#ifdef  __cplusplus
+#ifdef __cplusplus
 extern "C" {
 #endif
 
-/* *INDENT-OFF* */  
+/**
+* @brief @todo add summary
+*
+* @todo add description
+*
+*    SGE_HOST(ASTRLIST_href) - @todo add summary
+*    @todo add description
+*
+*    SGE_LIST(ASTRLIST_value) - @todo add summary
+*    @todo add description
+*
+*/
 
 enum {
    ASTRLIST_href = ASTRLIST_LOWERBOUND,
@@ -48,9 +58,8 @@ enum {
 };
 
 LISTDEF(ASTRLIST_Type)
-   JGDI_MAP_OBJ(ASTRLIST_href, ASTRLIST_value)
-   SGE_HOST(ASTRLIST_href, CULL_PRIMARY_KEY | CULL_HASH | CULL_UNIQUE | CULL_SUBLIST)
-   SGE_LIST(ASTRLIST_value, ST_Type, CULL_DEFAULT | CULL_SUBLIST)
+   SGE_HOST(ASTRLIST_href, CULL_PRIMARY_KEY | CULL_UNIQUE | CULL_HASH | CULL_SUBLIST)
+   SGE_LIST(ASTRLIST_value, ST_Type, CULL_SUBLIST)
 LISTEND
 
 NAMEDEF(ASTRLISTN)
@@ -58,11 +67,10 @@ NAMEDEF(ASTRLISTN)
    NAME("ASTRLIST_value")
 NAMEEND
 
-#define ASTRLISTS sizeof(ASTRLISTN)/sizeof(char*)
+#define ASTRLIST_SIZE sizeof(ASTRLISTN)/sizeof(char *)
 
-/* *INDENT-ON* */  
-
-#ifdef  __cplusplus
+#ifdef __cplusplus
 }
 #endif
-#endif   
+
+#endif

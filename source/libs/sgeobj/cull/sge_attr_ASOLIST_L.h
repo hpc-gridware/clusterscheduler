@@ -1,6 +1,5 @@
-#ifndef __SGE_HOSTATTR_SOLIST_L_H
-#define __SGE_HOSTATTR_SOLIST_L_H
-
+#ifndef SGE_ASOLIST_L_H
+#define SGE_ASOLIST_L_H
 /*___INFO__MARK_BEGIN__*/
 /*************************************************************************
  * 
@@ -33,14 +32,25 @@
  ************************************************************************/
 /*___INFO__MARK_END__*/
 
-#include "sgeobj/cull/sge_boundaries.h"
 #include "cull/cull.h"
+#include "sgeobj/cull/sge_boundaries.h"
 
-#ifdef  __cplusplus
+#ifdef __cplusplus
 extern "C" {
 #endif
 
-/* *INDENT-OFF* */  
+/**
+* @brief @todo add summary
+*
+* @todo add description
+*
+*    SGE_HOST(ASOLIST_href) - @todo add summary
+*    @todo add description
+*
+*    SGE_LIST(ASOLIST_value) - @todo add summary
+*    @todo add description
+*
+*/
 
 enum {
    ASOLIST_href = ASOLIST_LOWERBOUND,
@@ -48,9 +58,8 @@ enum {
 };
 
 LISTDEF(ASOLIST_Type)
-   JGDI_MAP_OBJ(ASOLIST_href, ASOLIST_value)
-   SGE_HOST(ASOLIST_href, CULL_PRIMARY_KEY | CULL_HASH | CULL_UNIQUE | CULL_SUBLIST)
-   SGE_LIST(ASOLIST_value, SO_Type, CULL_DEFAULT | CULL_SUBLIST)
+   SGE_HOST(ASOLIST_href, CULL_PRIMARY_KEY | CULL_UNIQUE | CULL_HASH | CULL_SUBLIST)
+   SGE_LIST(ASOLIST_value, SO_Type, CULL_SUBLIST)
 LISTEND
 
 NAMEDEF(ASOLISTN)
@@ -58,11 +67,10 @@ NAMEDEF(ASOLISTN)
    NAME("ASOLIST_value")
 NAMEEND
 
-#define ASOLISTS sizeof(ASOLISTN)/sizeof(char*)
+#define ASOLIST_SIZE sizeof(ASOLISTN)/sizeof(char *)
 
-/* *INDENT-ON* */  
-
-#ifdef  __cplusplus
+#ifdef __cplusplus
 }
 #endif
-#endif   
+
+#endif

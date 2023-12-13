@@ -1,5 +1,5 @@
-#ifndef __SGE_MAILRECL_H
-#define __SGE_MAILRECL_H
+#ifndef SGE_MR_L_H
+#define SGE_MR_L_H
 /*___INFO__MARK_BEGIN__*/
 /*************************************************************************
  * 
@@ -35,12 +35,22 @@
 #include "cull/cull.h"
 #include "sgeobj/cull/sge_boundaries.h"
 
-#ifdef  __cplusplus
+#ifdef __cplusplus
 extern "C" {
 #endif
 
-/* ------------- mail recipiants ---------- */
-/*    user[@host][,user[@host],...]         */
+/**
+* @brief @todo add summary
+*
+* @todo add description
+*
+*    SGE_STRING(MR_user) - @todo add summary
+*    @todo add description
+*
+*    SGE_HOST(MR_host) - @todo add summary
+*    @todo add description
+*
+*/
 
 enum {
    MR_user = MR_LOWERBOUND,
@@ -48,9 +58,8 @@ enum {
 };
 
 LISTDEF(MR_Type)
-   JGDI_OBJ(MailReceiver)
-   SGE_STRING(MR_user, CULL_PRIMARY_KEY | CULL_DEFAULT | CULL_SUBLIST)
-   SGE_HOST(MR_host, CULL_DEFAULT | CULL_SUBLIST)
+   SGE_STRING(MR_user, CULL_PRIMARY_KEY | CULL_SUBLIST)
+   SGE_HOST(MR_host, CULL_SUBLIST)
 LISTEND
 
 NAMEDEF(MRN)
@@ -58,10 +67,10 @@ NAMEDEF(MRN)
    NAME("MR_host")
 NAMEEND
 
-#define MRS sizeof(MRN)/sizeof(char*)
+#define MR_SIZE sizeof(MRN)/sizeof(char *)
 
-#ifdef  __cplusplus
+#ifdef __cplusplus
 }
 #endif
 
-#endif /* __SGE_MAILRECL_H */
+#endif

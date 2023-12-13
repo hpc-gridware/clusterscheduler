@@ -1,6 +1,5 @@
-#ifndef __SGE_JAPI_NSV_L_H
-#define __SGE_JAPI_NSV_L_H
-
+#ifndef SGE_NSV_L_H
+#define SGE_NSV_L_H
 /*___INFO__MARK_BEGIN__*/
 /*************************************************************************
  * 
@@ -36,26 +35,23 @@
 #include "cull/cull.h"
 #include "sgeobj/cull/sge_boundaries.h"
 
-#ifdef  __cplusplus
+#ifdef __cplusplus
 extern "C" {
 #endif
 
-/* *INDENT-OFF* */
+/**
+* @brief @todo add summary
+*
+* @todo add description
+*
+*    SGE_STRING(NSV_name) - @todo add summary
+*    @todo add description
+*
+*    SGE_LIST(NSV_strings) - @todo add summary
+*    @todo add description
+*
+*/
 
-/****** japi/--NSV_Type **************************************************
-*  NAME
-*     NSV_Type - Named string vector
-*
-*  ELEMENTS
-*     SGE_STRING(NSV_name)
-*        name of the string vector
-*
-*     SGE_LIST(NSV_strings)
-*        strings of this string vector
-*
-*  FUNCTION
-*     CULL element implementing DRMAA vector job template attributes 
-******************************************************************************/
 enum {
    NSV_name = NSV_LOWERBOUND,
    NSV_strings
@@ -64,20 +60,17 @@ enum {
 LISTDEF(NSV_Type)
    SGE_STRING(NSV_name, CULL_DEFAULT)
    SGE_LIST(NSV_strings, ST_Type, CULL_DEFAULT)
-LISTEND 
+LISTEND
 
 NAMEDEF(NSVN)
    NAME("NSV_name")
    NAME("NSV_strings")
 NAMEEND
 
-#define NSVS sizeof(NSVN)/sizeof(char*)
+#define NSV_SIZE sizeof(NSVN)/sizeof(char *)
 
-/* *INDENT-ON* */
-
-#ifdef  __cplusplus
+#ifdef __cplusplus
 }
 #endif
 
-#endif  /* __SGE_JAPIL_H */
-
+#endif

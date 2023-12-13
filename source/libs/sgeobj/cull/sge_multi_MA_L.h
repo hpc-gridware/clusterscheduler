@@ -1,6 +1,5 @@
-#ifndef __SGE_MULTIL_H
-#define __SGE_MULTIL_H
-
+#ifndef SGE_MA_L_H
+#define SGE_MA_L_H
 /*___INFO__MARK_BEGIN__*/
 /*************************************************************************
  * 
@@ -33,14 +32,28 @@
  ************************************************************************/
 /*___INFO__MARK_END__*/
 
-#include "sgeobj/cull/sge_boundaries.h"
 #include "cull/cull.h"
+#include "sgeobj/cull/sge_boundaries.h"
 
-#ifdef  __cplusplus
+#ifdef __cplusplus
 extern "C" {
 #endif
 
-/* *INDENT-ON* */
+/**
+* @brief @todo add summary
+*
+* @todo add description
+*
+*    SGE_ULONG(MA_id) - @todo add summary
+*    @todo add description
+*
+*    SGE_LIST(MA_objects) - @todo add summary
+*    @todo add description
+*
+*    SGE_LIST(MA_answers) - @todo add summary
+*    @todo add description
+*
+*/
 
 enum {
    MA_id = MA_LOWERBOUND,
@@ -50,10 +63,9 @@ enum {
 
 LISTDEF(MA_Type)
    SGE_ULONG(MA_id, CULL_DEFAULT)
-   SGE_LIST(MA_objects, CULL_ANY_SUBTYPE, CULL_DEFAULT)       /* list which is returned in get requests, *
-                               * any type */
-   SGE_LIST(MA_answers, AN_Type, CULL_DEFAULT)       /* AN_Type */
-LISTEND 
+   SGE_LIST(MA_objects, CULL_ANY_SUBTYPE, CULL_DEFAULT)
+   SGE_LIST(MA_answers, AN_Type, CULL_DEFAULT)
+LISTEND
 
 NAMEDEF(MAN)
    NAME("MA_id")
@@ -61,10 +73,10 @@ NAMEDEF(MAN)
    NAME("MA_answers")
 NAMEEND
 
-/* *INDENT-OFF* */     
+#define MA_SIZE sizeof(MAN)/sizeof(char *)
 
-#define MAS sizeof(MAN)/sizeof(char*)
-#ifdef  __cplusplus
+#ifdef __cplusplus
 }
 #endif
-#endif                          /* __SGE_MULTIL_H */
+
+#endif

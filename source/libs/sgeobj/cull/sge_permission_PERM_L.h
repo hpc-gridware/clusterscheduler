@@ -1,6 +1,5 @@
-#ifndef __SGE_PERMISSIONL_H
-#define __SGE_PERMISSIONL_H
-
+#ifndef SGE_PERM_L_H
+#define SGE_PERM_L_H
 /*___INFO__MARK_BEGIN__*/
 /*************************************************************************
  * 
@@ -36,75 +35,47 @@
 #include "cull/cull.h"
 #include "sgeobj/cull/sge_boundaries.h"
 
-#ifdef  __cplusplus
+#ifdef __cplusplus
 extern "C" {
 #endif
 
-/****** gdi/sge/PERM_Type *****************************************************
-*  NAME
-*     PERM_Type -- CULL Permission element
+/**
+* @brief @todo add summary
 *
-*  SYNOPSIS
-*     PERM_Type
-*     +--- PERM_manager: 0 or 1 (1 means user has the right)
-*     +--- PERM_operator: 0 or 1 (1 means user has the right)
-*     +--- PERM_req_host: Name of destination host
-*     +--- PERM_req_username: Username on destination host
-*     +--- PERM_sge_username: Username on master host
-*     
-*  FUNCTION
-*     This list is used for an SGE_GDI_PERMCHECK gdi request. The 
-*     sge_gdi() function is called with SGE_DUMMY_LIST. The qmaster 
-*     will fill the list with the permisson of the user who is calling. 
-*     If a PERM_Type list is given to the sge_gdi() function the 
-*     master is looking for the PERM_req_host value. The 
-*     PERM_req_username and PERM_sge_username values are filled up with 
-*     the correct user mapping names.
+* @todo add description
 *
-*     sge_gdi_get_mapping_name() is using the SGE_GDI_PERMCHECK gdi 
-*     request. 
-* 
-*  EXAMPLE
-*        permList = lCreateList("permissions", PERM_Type);
-*        ep = lCreateElem(PERM_Type);
-*        lAppendElem(permList,ep);
-*        lSetString(ep, PERM_req_host, requestedHost); 
-*     
-*        alp = sge_gdi(SGE_DUMMY_LIST, SGE_GDI_PERMCHECK,  &permList, 
-*                      NULL, NULL);
-*        
-*        if (permList != NULL) {
-*           ep = permList->first;
-*           if (ep != NULL) {
-*              mapName = lGetString(ep, PERM_req_username ); 
-*           } 
-*        }
-*       
-*  SEE ALSO
-*    gdilib/sge_gdi_get_mapping_name()
-*    gdilib/sge_gdi()
-*****************************************************************************/
+*    SGE_ULONG(PERM_manager) - @todo add summary
+*    @todo add description
+*
+*    SGE_ULONG(PERM_operator) - @todo add summary
+*    @todo add description
+*
+*    SGE_HOST(PERM_req_host) - @todo add summary
+*    @todo add description
+*
+*    SGE_STRING(PERM_req_username) - @todo add summary
+*    @todo add description
+*
+*    SGE_STRING(PERM_sge_username) - @todo add summary
+*    @todo add description
+*
+*/
 
-/* *INDENT-OFF* */ 
-
-/*
- * permission list  
- */
 enum {
-   PERM_manager = PERM_LOWERBOUND,    /* is master ? */
-   PERM_operator,                     /* is operator ? */
-   PERM_req_host,                     /* Name of destination host */
-   PERM_req_username,                 /* Username on destination host */
-   PERM_sge_username                  /* username on master host */
+   PERM_manager = PERM_LOWERBOUND,
+   PERM_operator,
+   PERM_req_host,
+   PERM_req_username,
+   PERM_sge_username
 };
 
 LISTDEF(PERM_Type)
-   SGE_ULONG(PERM_manager, CULL_DEFAULT)            /* 0 or 1 (1 means user has the right) */
-   SGE_ULONG(PERM_operator, CULL_DEFAULT)           /* 0 or 1 (1 means user has the right) */
-   SGE_HOST(PERM_req_host, CULL_DEFAULT)          /* Name of destination host */
-   SGE_STRING(PERM_req_username, CULL_DEFAULT)      /* Username on destination host */
-   SGE_STRING(PERM_sge_username, CULL_DEFAULT)      /* username on master host */
-LISTEND 
+   SGE_ULONG(PERM_manager, CULL_DEFAULT)
+   SGE_ULONG(PERM_operator, CULL_DEFAULT)
+   SGE_HOST(PERM_req_host, CULL_DEFAULT)
+   SGE_STRING(PERM_req_username, CULL_DEFAULT)
+   SGE_STRING(PERM_sge_username, CULL_DEFAULT)
+LISTEND
 
 NAMEDEF(PERMN)
    NAME("PERM_manager")
@@ -114,10 +85,10 @@ NAMEDEF(PERMN)
    NAME("PERM_sge_username")
 NAMEEND
 
-/* *INDENT-ON* */
+#define PERM_SIZE sizeof(PERMN)/sizeof(char *)
 
-#define PERMS sizeof(PERMN)/sizeof(char*)
-#ifdef  __cplusplus
+#ifdef __cplusplus
 }
 #endif
-#endif                          /* __SGE_PERMISSIONL_H */
+
+#endif

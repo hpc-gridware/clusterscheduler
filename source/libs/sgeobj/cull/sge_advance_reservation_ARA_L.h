@@ -1,6 +1,5 @@
-#ifndef __SGE_ADVANCE_RESERVATIONL_ARA_H
-#define __SGE_ADVANCE_RESERVATIONL_ARA_H
-
+#ifndef SGE_ARA_L_H
+#define SGE_ARA_L_H
 /*___INFO__MARK_BEGIN__*/
 /*************************************************************************
  * 
@@ -33,22 +32,34 @@
  ************************************************************************/
 /*___INFO__MARK_END__*/
 
-#include "sgeobj/cull/sge_boundaries.h"
 #include "cull/cull.h"
+#include "sgeobj/cull/sge_boundaries.h"
 
-#ifdef  __cplusplus
+#ifdef __cplusplus
 extern "C" {
 #endif
 
-/* Advance Reservation ACL Entry Object */
+/**
+* @brief @todo add summary
+*
+* @todo add description
+*
+*    SGE_STRING(ARA_name) - @todo add summary
+*    @todo add description
+*
+*    SGE_STRING(ARA_group) - @todo add summary
+*    @todo add description
+*
+*/
+
 enum {
-   ARA_name = ARA_LOWERBOUND,   /* user or userset */
-   ARA_group                    /* group name for user */
+   ARA_name = ARA_LOWERBOUND,
+   ARA_group
 };
 
 LISTDEF(ARA_Type)
-   SGE_STRING(ARA_name, CULL_PRIMARY_KEY | CULL_HASH | CULL_UNIQUE | CULL_SPOOL)
-   SGE_STRING(ARA_group, CULL_DEFAULT | CULL_SPOOL)
+   SGE_STRING(ARA_name, CULL_PRIMARY_KEY | CULL_UNIQUE | CULL_HASH | CULL_SPOOL)
+   SGE_STRING(ARA_group, CULL_SPOOL)
 LISTEND
 
 NAMEDEF(ARAN)
@@ -56,11 +67,10 @@ NAMEDEF(ARAN)
    NAME("ARA_group")
 NAMEEND
 
-#define ARAS sizeof(ARAN)/sizeof(char*)
+#define ARA_SIZE sizeof(ARAN)/sizeof(char *)
 
-/* *INDENT-ON* */ 
-
-#ifdef  __cplusplus
+#ifdef __cplusplus
 }
 #endif
-#endif /* __SGE_ADVANCE_RESERVATIONL_H */
+
+#endif

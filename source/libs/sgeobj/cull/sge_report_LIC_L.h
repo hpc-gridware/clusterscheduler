@@ -1,6 +1,5 @@
-#ifndef __SGE_REPORT_LIC_L_H
-#define __SGE_REPORT_LIC_L_H
-
+#ifndef SGE_LIC_L_H
+#define SGE_LIC_L_H
 /*___INFO__MARK_BEGIN__*/
 /*************************************************************************
  * 
@@ -34,18 +33,25 @@
 /*___INFO__MARK_END__*/
 
 #include "cull/cull.h"
-
 #include "sgeobj/cull/sge_boundaries.h"
 
-#ifdef  __cplusplus
+#ifdef __cplusplus
 extern "C" {
 #endif
 
-/* *INDENT-OFF* */ 
+/**
+* @brief @todo add summary
+*
+* @todo add description
+*
+*    SGE_ULONG(LIC_processors) - @todo add summary
+*    @todo add description
+*
+*    SGE_STRING(LIC_arch) - @todo add summary
+*    @todo add description
+*
+*/
 
-/*
- * definition for license report, still to be enhanced
- */
 enum {
    LIC_processors = LIC_LOWERBOUND,
    LIC_arch
@@ -54,19 +60,17 @@ enum {
 LISTDEF(LIC_Type)
    SGE_ULONG(LIC_processors, CULL_DEFAULT)
    SGE_STRING(LIC_arch, CULL_DEFAULT)
-LISTEND 
+LISTEND
 
 NAMEDEF(LICN)
    NAME("LIC_processors")
    NAME("LIC_arch")
 NAMEEND
 
-#define LICS sizeof(LICN)/sizeof(char*)
-
-/* *INDENT-ON* */ 
+#define LIC_SIZE sizeof(LICN)/sizeof(char *)
 
 #ifdef __cplusplus
 }
 #endif
 
-#endif                          /* __SGE_REPORTL_H */
+#endif

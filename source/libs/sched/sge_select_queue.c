@@ -105,6 +105,15 @@
 
 /* -- these implement helpers for the category optimization -------- */
 
+/* make sure that this is in sync with libs/sgeobj/json/LDR.json */
+enum {
+   LDR_queue_ref_list_pos = 0,
+   LDR_limit_pos,
+   LDR_global_pos,
+   LDR_host_pos,
+   LDR_queue_pos
+};
+
 typedef struct {
    lListElem *category;          /* ref to the category */
    lListElem *cache;             /* ref to the cache object in th category */

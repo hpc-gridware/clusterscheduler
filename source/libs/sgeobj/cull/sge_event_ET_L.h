@@ -1,6 +1,5 @@
-#ifndef __SGE_EVENT_ET_L_H
-#define __SGE_EVENT_ET_L_H
-
+#ifndef SGE_ET_L_H
+#define SGE_ET_L_H
 /*___INFO__MARK_BEGIN__*/
 /*************************************************************************
  * 
@@ -33,34 +32,56 @@
  ************************************************************************/
 /*___INFO__MARK_END__*/
 
-#include "uti/sge_monitor.h"
 #include "cull/cull.h"
 #include "sgeobj/cull/sge_boundaries.h"
 
-#ifdef  __cplusplus
+#ifdef __cplusplus
 extern "C" {
 #endif
 
-/* *INDENT-OFF* */
+/**
+* @brief @todo add summary
+*
+* @todo add description
+*
+*    SGE_ULONG(ET_number) - @todo add summary
+*    @todo add description
+*
+*    SGE_ULONG(ET_timestamp) - @todo add summary
+*    @todo add description
+*
+*    SGE_ULONG(ET_type) - @todo add summary
+*    @todo add description
+*
+*    SGE_ULONG(ET_intkey) - @todo add summary
+*    @todo add description
+*
+*    SGE_ULONG(ET_intkey2) - @todo add summary
+*    @todo add description
+*
+*    SGE_STRING(ET_strkey) - @todo add summary
+*    @todo add description
+*
+*    SGE_STRING(ET_strkey2) - @todo add summary
+*    @todo add description
+*
+*    SGE_LIST(ET_new_version) - @todo add summary
+*    @todo add description
+*
+*/
 
 enum {
-   ET_number = ET_LOWERBOUND,/* number of the event */
-   ET_timestamp,             /* unix time stamp (gmt) when the event occured */
-   ET_type,                  /* type the event */
-   ET_intkey,                /* a int key for use by a specific event type */
-   ET_intkey2,               /* a int key for use by a specific event type */
-   ET_strkey,                /* a str key for use by a specific event type */
-   ET_strkey2,               /* a str key for use by a specific event type */
-   ET_new_version            /* new version of the changed object */
-                             /* JG: TODO: we should have different fields for 
-                              *           objects (SGE_OBJECT) and
-                              *           lists   (SGE_LIST), as we now have
-                              *           proper handling for objects.
-                              */
+   ET_number = ET_LOWERBOUND,
+   ET_timestamp,
+   ET_type,
+   ET_intkey,
+   ET_intkey2,
+   ET_strkey,
+   ET_strkey2,
+   ET_new_version
 };
 
 LISTDEF(ET_Type)
-   JGDI_OBJ(Event)
    SGE_ULONG(ET_number, CULL_DEFAULT)
    SGE_ULONG(ET_timestamp, CULL_DEFAULT)
    SGE_ULONG(ET_type, CULL_DEFAULT)
@@ -69,7 +90,7 @@ LISTDEF(ET_Type)
    SGE_STRING(ET_strkey, CULL_DEFAULT)
    SGE_STRING(ET_strkey2, CULL_DEFAULT)
    SGE_LIST(ET_new_version, CULL_ANY_SUBTYPE, CULL_DEFAULT)
-LISTEND 
+LISTEND
 
 NAMEDEF(ETN)
    NAME("ET_number")
@@ -82,11 +103,10 @@ NAMEDEF(ETN)
    NAME("ET_new_version")
 NAMEEND
 
-#define ETS sizeof(ETN)/sizeof(char*)
+#define ET_SIZE sizeof(ETN)/sizeof(char *)
 
-/* *INDENT-ON* */ 
-
-#ifdef  __cplusplus
+#ifdef __cplusplus
 }
 #endif
-#endif                          /* __SGE_EVENTL_H */
+
+#endif

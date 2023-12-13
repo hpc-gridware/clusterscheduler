@@ -1,5 +1,5 @@
-#ifndef __SGE_ACKL_H
-#define __SGE_ACKL_H
+#ifndef SGE_ACK_L_H
+#define SGE_ACK_L_H
 /*___INFO__MARK_BEGIN__*/
 /*************************************************************************
  * 
@@ -32,12 +32,31 @@
  ************************************************************************/
 /*___INFO__MARK_END__*/
 
-#include "sgeobj/cull/sge_boundaries.h"
 #include "cull/cull.h"
+#include "sgeobj/cull/sge_boundaries.h"
 
-#ifdef  __cplusplus
+#ifdef __cplusplus
 extern "C" {
 #endif
+
+/**
+* @brief @todo add summary
+*
+* @todo add description
+*
+*    SGE_ULONG(ACK_type) - @todo add summary
+*    @todo add description
+*
+*    SGE_ULONG(ACK_id) - @todo add summary
+*    @todo add description
+*
+*    SGE_ULONG(ACK_id2) - @todo add summary
+*    @todo add description
+*
+*    SGE_STRING(ACK_str) - @todo add summary
+*    @todo add description
+*
+*/
 
 enum {
    ACK_type = ACK_LOWERBOUND,
@@ -47,10 +66,10 @@ enum {
 };
 
 LISTDEF(ACK_Type)
-   SGE_ULONG(ACK_type, CULL_DEFAULT | CULL_JGDI_HIDDEN)
-   SGE_ULONG(ACK_id, CULL_DEFAULT | CULL_JGDI_HIDDEN)
-   SGE_ULONG(ACK_id2, CULL_DEFAULT | CULL_JGDI_HIDDEN)
-   SGE_STRING(ACK_str, CULL_DEFAULT | CULL_JGDI_HIDDEN)
+   SGE_ULONG(ACK_type, CULL_DEFAULT)
+   SGE_ULONG(ACK_id, CULL_DEFAULT)
+   SGE_ULONG(ACK_id2, CULL_DEFAULT)
+   SGE_STRING(ACK_str, CULL_DEFAULT)
 LISTEND
 
 NAMEDEF(ACKN)
@@ -60,9 +79,10 @@ NAMEDEF(ACKN)
    NAME("ACK_str")
 NAMEEND
 
-#define ACKS sizeof(ACKN)/sizeof(char*)
+#define ACK_SIZE sizeof(ACKN)/sizeof(char *)
 
-#ifdef  __cplusplus
+#ifdef __cplusplus
 }
 #endif
-#endif                          /* __SGE_ACKL_H */
+
+#endif

@@ -1,6 +1,5 @@
 #ifndef __SGE_ALL_LISTSL_H
 #define __SGE_ALL_LISTSL_H
-
 /*___INFO__MARK_BEGIN__*/
 /*************************************************************************
  * 
@@ -38,10 +37,89 @@
 
 /* Definition of new names */
 
-#include "sgeobj/cull/sge_ack_ACK_L.h"
-#include "sgeobj/cull/sge_advance_reservation_AR_L.h"
-#include "sgeobj/cull/sge_advance_reservation_ARA_L.h"
+#include "sgeobj/cull/sge_job_JB_L.h"
+#include "sgeobj/cull/sge_qinstance_QU_L.h"
+#include "sgeobj/cull/sge_host_EH_L.h"
+#include "sgeobj/cull/sge_host_AH_L.h"
+#include "sgeobj/cull/sge_host_SH_L.h"
 #include "sgeobj/cull/sge_answer_AN_L.h"
+#include "sgeobj/cull/sge_host_HL_L.h"
+#include "sgeobj/cull/sge_host_HS_L.h"
+#include "sgeobj/cull/sge_event_ET_L.h"
+#include "sgeobj/cull/sge_event_EV_L.h"
+#include "sgeobj/cull/sge_event_EVS_L.h"
+#include "sgeobj/cull/sge_centry_CE_L.h"
+#include "sgeobj/cull/sge_report_LR_L.h"
+#include "sgeobj/cull/sge_order_OR_L.h"
+#include "sgeobj/cull/sge_order_OQ_L.h"
+#include "sgeobj/cull/sge_userset_US_L.h"
+#include "sgeobj/cull/sge_userset_UE_L.h"
+#include "sgeobj/cull/sge_range_RN_L.h"
+#include "sgeobj/cull/sge_job_PN_L.h"
+#include "sgeobj/cull/sge_var_VA_L.h"
+#include "sgeobj/cull/sge_mailrec_MR_L.h"
+#include "sgeobj/cull/sge_manop_UM_L.h"
+#include "sgeobj/cull/sge_manop_UO_L.h"
+#include "sgeobj/cull/sge_pe_PE_L.h"
+#include "sgeobj/cull/sge_qref_QR_L.h"
+#include "sgeobj/cull/sge_userset_JC_L.h"
+#include "sgeobj/cull/sge_conf_CONF_L.h"
+#include "sgeobj/cull/sge_conf_CF_L.h"
+#include "sgeobj/cull/sge_str_ST_L.h"
+#include "sgeobj/cull/sge_str_STU_L.h"
+#include "sgeobj/cull/sge_job_JG_L.h"
+#include "sgeobj/cull/sge_subordinate_SO_L.h"
+#include "sgeobj/cull/sge_helper_QAJ_L.h"
+#include "sgeobj/cull/sge_parse_SPA_L.h"
+#include "sgeobj/cull/sge_report_REP_L.h"
+#include "sgeobj/cull/sge_usage_UA_L.h"
+#include "sgeobj/cull/sge_userprj_PR_L.h"
+#include "sgeobj/cull/sge_userprj_UU_L.h"
+#include "sgeobj/cull/sge_sharetree_STN_L.h"
+#include "sgeobj/cull/sge_schedd_conf_SC_L.h"
+#include "sgeobj/cull/sge_pe_task_PET_L.h"
+#include "sgeobj/cull/sge_pe_task_PETR_L.h"
+#include "sgeobj/cull/sge_pe_task_FPET_L.h"
+#include "sgeobj/cull/sge_report_JR_L.h"
+#include "sgeobj/cull/sge_report_LIC_L.h"
+#include "sgeobj/cull/sge_ptf_JL_L.h"
+#include "sgeobj/cull/sge_ptf_JP_L.h"
+#include "sgeobj/cull/sge_ptf_JO_L.h"
+#include "sgeobj/cull/sge_userprj_UPU_L.h"
+#include "sgeobj/cull/sge_ckpt_CK_L.h"
+#include "sgeobj/cull/sge_krb_KRB_L.h"
+#include "sgeobj/cull/sge_path_alias_PA_L.h"
+#include "sgeobj/cull/sge_job_ref_JRE_L.h"
+#include "sgeobj/cull/sge_id_ID_L.h"
+#include "sgeobj/cull/sge_multi_MA_L.h"
+#include "sgeobj/cull/sge_time_event_TE_L.h"
+#include "sgeobj/cull/sge_calendar_CAL_L.h"
+#include "sgeobj/cull/sge_calendar_CA_L.h"
+#include "sgeobj/cull/sge_calendar_TMR_L.h"
+#include "sgeobj/cull/sge_calendar_TM_L.h"
+#include "sgeobj/cull/sge_qexec_RT_L.h"
+#include "sgeobj/cull/sge_userprj_UPP_L.h"
+#include "sgeobj/cull/sge_krb_KTGT_L.h"
+#include "sgeobj/cull/sge_message_SME_L.h"
+#include "sgeobj/cull/sge_message_MES_L.h"
+#include "sgeobj/cull/sge_ja_task_JAT_L.h"
+#include "sgeobj/cull/sge_ct_CT_L.h"
+#include "sgeobj/cull/sge_eejob_SGEJ_L.h"
+#include "sgeobj/cull/sge_ulong_ULNG_L.h"
+#include "sgeobj/cull/sge_hgroup_HGRP_L.h"
+#include "sgeobj/cull/sge_href_HR_L.h"
+#include "sgeobj/cull/sge_permission_PERM_L.h"
+#include "sgeobj/cull/sge_loadsensor_LS_L.h"
+#include "sgeobj/cull/sge_host_RU_L.h"
+#include "sgeobj/cull/sge_feature_FES_L.h"
+#include "sgeobj/cull/sge_suser_SU_L.h"
+#include "sgeobj/cull/sge_spooling_SPC_L.h"
+#include "sgeobj/cull/sge_spooling_SPR_L.h"
+#include "sgeobj/cull/sge_spooling_SPT_L.h"
+#include "sgeobj/cull/sge_spooling_SPTR_L.h"
+#include "sgeobj/cull/sge_japi_JJ_L.h"
+#include "sgeobj/cull/sge_japi_JJAT_L.h"
+#include "sgeobj/cull/sge_japi_NSV_L.h"
 #include "sgeobj/cull/sge_attr_ASTR_L.h"
 #include "sgeobj/cull/sge_attr_AULNG_L.h"
 #include "sgeobj/cull/sge_attr_ABOOL_L.h"
@@ -55,320 +133,205 @@
 #include "sgeobj/cull/sge_attr_ACELIST_L.h"
 #include "sgeobj/cull/sge_attr_ASOLIST_L.h"
 #include "sgeobj/cull/sge_attr_AQTLIST_L.h"
-#include "sgeobj/cull/sge_binding_BN_L.h"
-#include "sgeobj/cull/sge_calendar_CAL_L.h"
-#include "sgeobj/cull/sge_calendar_CA_L.h"
-#include "sgeobj/cull/sge_calendar_CQU_L.h"
-#include "sgeobj/cull/sge_calendar_TMR_L.h"
-#include "sgeobj/cull/sge_calendar_TM_L.h"
-#include "sgeobj/cull/sge_centry_CE_L.h"
-#include "sgeobj/cull/sge_ckpt_CK_L.h"
-#include "sgeobj/cull/sge_conf_CONF_L.h"
-#include "sgeobj/cull/sge_conf_CF_L.h"
 #include "sgeobj/cull/sge_cqueue_CQ_L.h"
+#include "sgeobj/cull/sge_mesobj_QIM_L.h"
+#include "sgeobj/cull/sge_eejob_FCAT_L.h"
+#include "sgeobj/cull/sge_ct_CTI_L.h"
+#include "sgeobj/cull/sge_schedd_conf_PARA_L.h"
+#include "sgeobj/cull/sge_cull_xml_XMLA_L.h"
+#include "sgeobj/cull/sge_cull_xml_XMLH_L.h"
+#include "sgeobj/cull/sge_cull_xml_XMLS_L.h"
+#include "sgeobj/cull/sge_cull_xml_XMLE_L.h"
+#include "sgeobj/cull/sge_resource_utilization_RDE_L.h"
+#include "sgeobj/cull/sge_resource_utilization_RUE_L.h"
+#include "sgeobj/cull/sge_qeti_QETI_L.h"
+#include "sgeobj/cull/sge_select_queue_LDR_L.h"
+#include "sgeobj/cull/sge_select_queue_QRL_L.h"
+#include "sgeobj/cull/sge_ct_CCT_L.h"
+#include "sgeobj/cull/sge_calendar_CQU_L.h"
 #include "sgeobj/cull/sge_ct_SCT_L.h"
 #include "sgeobj/cull/sge_ct_REF_L.h"
-#include "sgeobj/cull/sge_ct_CT_L.h"
-#include "sgeobj/cull/sge_ct_CCT_L.h"
-#include "sgeobj/cull/sge_ct_CTI_L.h"
-#include "sgeobj/cull/sge_cull_xml_XMLA_L.h"
-#include "sgeobj/cull/sge_cull_xml_XMLS_L.h"
-#include "sgeobj/cull/sge_cull_xml_XMLH_L.h"
-#include "sgeobj/cull/sge_cull_xml_XMLE_L.h"
-#include "sgeobj/cull/sge_eejob_FCAT_L.h"
-#include "sgeobj/cull/sge_eejob_SGEJ_L.h"
-#include "sgeobj/cull/sge_event_EV_L.h"
-#include "sgeobj/cull/sge_event_EVS_L.h"
-#include "sgeobj/cull/sge_event_ET_L.h"
-#include "sgeobj/cull/sge_event_request_EVR_L.h"
-#include "sgeobj/cull/sge_feature_FES_L.h"
-#include "sgeobj/cull/sge_helper_QAJ_L.h"
-#include "sgeobj/cull/sge_hgroup_HGRP_L.h"
-#include "sgeobj/cull/sge_host_EH_L.h"
-#include "sgeobj/cull/sge_host_RU_L.h"
-#include "sgeobj/cull/sge_host_AH_L.h"
-#include "sgeobj/cull/sge_host_SH_L.h"
-#include "sgeobj/cull/sge_host_HL_L.h"
-#include "sgeobj/cull/sge_host_HS_L.h"
-#include "sgeobj/cull/sge_href_HR_L.h"
-#include "sgeobj/cull/sge_id_ID_L.h"
-#include "sgeobj/cull/sge_japi_JJ_L.h"
-#include "sgeobj/cull/sge_japi_JJAT_L.h"
-#include "sgeobj/cull/sge_japi_NSV_L.h"
-#include "sgeobj/cull/sge_ja_task_JAT_L.h"
-#include "sgeobj/cull/sge_job_JB_L.h"
-#include "sgeobj/cull/sge_job_JG_L.h"
-#include "sgeobj/cull/sge_job_PN_L.h"
-#include "sgeobj/cull/sge_job_ref_JRE_L.h"
-#include "sgeobj/cull/sge_jsv_JSV_L.h"
-#include "sgeobj/cull/sge_krb_KRB_L.h"
-#include "sgeobj/cull/sge_krb_KTGT_L.h"
-#include "sgeobj/cull/sge_loadsensor_LS_L.h"
-#include "sgeobj/cull/sge_mailrec_MR_L.h"
-#include "sgeobj/cull/sge_manop_UM_L.h"
-#include "sgeobj/cull/sge_manop_UO_L.h"
-#include "sgeobj/cull/sge_mesobj_QIM_L.h"
-#include "sgeobj/cull/sge_message_SME_L.h"
-#include "sgeobj/cull/sge_message_MES_L.h"
-#include "sgeobj/cull/sge_multi_MA_L.h"
-#include "sgeobj/cull/sge_order_OR_L.h"
-#include "sgeobj/cull/sge_order_OQ_L.h"
-#include "sgeobj/cull/sge_order_RTIC_L.h"
-#include "sgeobj/cull/sge_pack_PACK_L.h"
-#include "sgeobj/cull/sge_parse_SPA_L.h"
-#include "sgeobj/cull/sge_path_alias_PA_L.h"
-#include "sgeobj/cull/sge_pe_PE_L.h"
-#include "sgeobj/cull/sge_pe_task_PET_L.h"
-#include "sgeobj/cull/sge_pe_task_PETR_L.h"
-#include "sgeobj/cull/sge_pe_task_FPET_L.h"
-#include "sgeobj/cull/sge_permission_PERM_L.h"
-#include "sgeobj/cull/sge_ptf_JL_L.h"
-#include "sgeobj/cull/sge_ptf_JO_L.h"
-#include "sgeobj/cull/sge_ptf_JP_L.h"
-#include "sgeobj/cull/sge_qeti_QETI_L.h"
-#include "sgeobj/cull/sge_qexec_RT_L.h"
-#include "sgeobj/cull/sge_qinstance_QU_L.h"
-#include "sgeobj/cull/sge_qref_QR_L.h"
-#include "sgeobj/cull/sge_range_RN_L.h"
-#include "sgeobj/cull/sge_report_REP_L.h"
-#include "sgeobj/cull/sge_report_JR_L.h"
-#include "sgeobj/cull/sge_report_LIC_L.h"
-#include "sgeobj/cull/sge_report_LR_L.h"
 #include "sgeobj/cull/sge_resource_quota_RQS_L.h"
 #include "sgeobj/cull/sge_resource_quota_RQR_L.h"
 #include "sgeobj/cull/sge_resource_quota_RQRF_L.h"
 #include "sgeobj/cull/sge_resource_quota_RQRL_L.h"
 #include "sgeobj/cull/sge_resource_quota_RQL_L.h"
-#include "sgeobj/cull/sge_resource_utilization_RDE_L.h"
-#include "sgeobj/cull/sge_resource_utilization_RUE_L.h"
-#include "sgeobj/cull/sge_schedd_conf_PARA_L.h"
-#include "sgeobj/cull/sge_schedd_conf_SC_L.h"
-#include "sgeobj/cull/sge_select_queue_LDR_L.h"
-#include "sgeobj/cull/sge_select_queue_QRL_L.h"
-#include "sgeobj/cull/sge_sharetree_STN_L.h"
-#include "sgeobj/cull/sge_spooling_SPC_L.h"
-#include "sgeobj/cull/sge_spooling_SPR_L.h"
-#include "sgeobj/cull/sge_spooling_SPT_L.h"
-#include "sgeobj/cull/sge_spooling_SPTR_L.h"
-#include "sgeobj/cull/sge_str_ST_L.h"
-#include "sgeobj/cull/sge_str_STU_L.h"
-#include "sgeobj/cull/sge_subordinate_SO_L.h"
-#include "sgeobj/cull/sge_suser_SU_L.h"
-#include "sgeobj/cull/sge_time_event_TE_L.h"
-#include "sgeobj/cull/sge_ulong_ULNG_L.h"
-#include "sgeobj/cull/sge_usage_UA_L.h"
-#include "sgeobj/cull/sge_userprj_PR_L.h"
-#include "sgeobj/cull/sge_userprj_UU_L.h"
-#include "sgeobj/cull/sge_userprj_UPU_L.h"
-#include "sgeobj/cull/sge_userprj_UPP_L.h"
-#include "sgeobj/cull/sge_userset_US_L.h"
-#include "sgeobj/cull/sge_userset_UE_L.h"
-#include "sgeobj/cull/sge_userset_JC_L.h"
-#include "sgeobj/cull/sge_var_VA_L.h"
+#include "sgeobj/cull/sge_advance_reservation_AR_L.h"
+#include "sgeobj/cull/sge_advance_reservation_ARA_L.h"
+#include "sgeobj/cull/sge_ack_ACK_L.h"
+#include "sgeobj/cull/sge_event_request_EVR_L.h"
+#include "sgeobj/cull/sge_jsv_JSV_L.h"
+#include "sgeobj/cull/sge_order_RTIC_L.h"
 #include "sgeobj/cull/sge_proc_PRO_L.h"
-
-#ifdef  __cplusplus
-extern "C" {
-#endif
-
-#ifdef  __cplusplus
-}
-#endif
+#include "sgeobj/cull/sge_proc_GR_L.h"
+#include "sgeobj/cull/sge_binding_BN_L.h"
+#include "sgeobj/cull/sge_pack_PACK_L.h"
 #if defined(__SGE_GDI_LIBRARY_HOME_OBJECT_FILE__)
-#ifdef  __cplusplus
+
+#ifdef __cplusplus
 extern "C" {
 #endif
 
 lNameSpace nmv[] = {
 
-/*  
-   1. unique keq of the first element in the descriptor 
-   2. number of elements in the descriptor 
+/*
+   1. unique keq of the first element in the descriptor
+   2. number of elements in the descriptor
    3. array with names describing the fields of the descriptor
    4. pointer to the descriptor
-   1.              2.   3.   4.
+      1.              2.   3.   4.
 */
-   {JB_LOWERBOUND, JBS, JBN, JB_Type},        /* job */
-   {QU_LOWERBOUND, QUS, QUN, QU_Type},        /* Queue Instance list */
-   {EH_LOWERBOUND, EHS, EHN, EH_Type},        /* exec host */
-   {AH_LOWERBOUND, AHS, AHN, AH_Type},        /* admin host */
-   {SH_LOWERBOUND, SHS, SHN, SH_Type},        /* submit host */
-   {AN_LOWERBOUND, ANS, ANN, AN_Type},        /* gdi acknowledge format */
-   {HL_LOWERBOUND, HLS, HLN, HL_Type},        /* load of an exec host */
-   {HS_LOWERBOUND, HSS, HSN, HS_Type},        /* scaling of and exec host */
-   {ET_LOWERBOUND, ETS, ETN, ET_Type},        /* event */
-   {EV_LOWERBOUND, EVS, EVN, EV_Type},        /* event client */
-   {EVS_LOWERBOUND, EVSS, EVSN, EVS_Type},    /* subscribed event list */
-   {CE_LOWERBOUND, CES, CEN, CE_Type},        /* complex entity */
-   {LR_LOWERBOUND, LRS, LRN, LR_Type},        /* load report */
-   {OR_LOWERBOUND, ORS, ORN, OR_Type},        /* ?? */
-   {OQ_LOWERBOUND, OQS, OQN, OQ_Type},        /* ?? */
-   {US_LOWERBOUND, USES, USEN, US_Type},      /* user set */
-   {UE_LOWERBOUND, UES, UEN, UE_Type},        /* user set entry */
-   {RN_LOWERBOUND, RNS, RNN, RN_Type},        /* range list */
-   {PN_LOWERBOUND, PNS, PNN, PN_Type},        /* path name list */
-   {VA_LOWERBOUND, VAS, VAN, VA_Type},        /* variable list */
-   {MR_LOWERBOUND, MRS, MRN, MR_Type},        /* mail recipiants list */
-   {UM_LOWERBOUND, UMS, UMN, UM_Type},        /* manager list */
-   {UO_LOWERBOUND, UOS, UON, UO_Type},        /* operator list */
-   {PE_LOWERBOUND, PES, PEN, PE_Type},        /* parallel environment object */
-   {QR_LOWERBOUND, QRS, QRN, QR_Type},        /* queue reference used in PE object */
-   {JC_LOWERBOUND, JCS, JCN, JC_Type},        /* job couter used in schedd */
-   {CONF_LOWERBOUND, CONFS, CONFN, CONF_Type},  /* config */
-   {CF_LOWERBOUND, CFS, CFN, CF_Type},        /* config list */
-   {ST_LOWERBOUND, STS, STN, ST_Type},        /* string list */
-   {STU_LOWERBOUND, STUS, STUN, STU_Type},     /* unique string list */
-   {JG_LOWERBOUND, JGS, JGN, JG_Type},        /* jobs sublist of granted destinatin 
-                                      * identifiers */
-   {SO_LOWERBOUND, SOS, SON, SO_Type},        /* subordinate configuration list */
-   {QAJ_LOWERBOUND, QAJS, QAJN, QAJ_Type},     /* list for qacct special purpose */
-   {SPA_LOWERBOUND, SPAS, SPAN, SPA_Type},     /* option parse struct */
-   {REP_LOWERBOUND, REPS, REPN, REP_Type},     /* report list */
-   {UA_LOWERBOUND, UAS, UAN, UA_Type},        /* usage list */
-   {PR_LOWERBOUND, PRS, PRN, PR_Type},        /* SGEEE - project */
-   {UU_LOWERBOUND, UUS, UUN, UU_Type},        /* SGEEE - user */
-   {STN_LOWERBOUND, STNS, STNN, STN_Type},     /* SGEEE - share tree node */
-   {SC_LOWERBOUND, SCS, SCN, SC_Type},        /* scheduler config */
-   {PET_LOWERBOUND, PETS, PETN, PET_Type},     /* PE Task object */
-   {PETR_LOWERBOUND, PETRS, PETRN, PETR_Type},  /* PE Task request object */
-   {FPET_LOWERBOUND, FPETS, FPETN, FPET_Type},  /* finished PE Task reference */
-   {JR_LOWERBOUND, JRS, JRN, JR_Type},        /* Job report */
-   {LIC_LOWERBOUND, LICS, LICN, LIC_Type},     /* structure of license report */
 
-   {JL_LOWERBOUND, JLS, JLN, JL_Type},        /* ptf job list */
-   {JP_LOWERBOUND, JPS, JPN, JP_Type},        /* ptf pid list */
-   {JO_LOWERBOUND, JOS, JON, JO_Type},        /* ptf O.S. job list */
-
-   {UPU_LOWERBOUND, UPUS, UPUN, UPU_Type},     /* SGEEE - sublist of user/project for
-                                      * storing jobs old usage */
-   {CK_LOWERBOUND, CKS, CKN, CK_Type},        /* checkpointing object */
-   {KRB_LOWERBOUND, KRBS, KRBN, KRB_Type},     /* Kerberos connection list */
-   {PA_LOWERBOUND, PAS, PAN, PA_Type},        /* Path alias list */
-   {JRE_LOWERBOUND, JRES, JREN, JRE_Type},     /* job reference */
-   {ID_LOWERBOUND, IDS, IDN, ID_Type},        /* id struct used for qmod requests */
-   {MA_LOWERBOUND, MAS, MAN, MA_Type},        /* ma struct used for multi gdi
-                                      * requests */
-
-   {TE_LOWERBOUND, TES, TEN, TE_Type},        /* time event struct used for timer
-                                      * in qmaster */
-   {CAL_LOWERBOUND, CALS, CALN, CAL_Type},     /* calendar week/year */
-   {CA_LOWERBOUND, CAS, CAN, CA_Type},        /* calendar week/year */
-   {TMR_LOWERBOUND, TMRS, TMRN, TMR_Type},     /* time range */
-   {TM_LOWERBOUND, TMS, TMN, TM_Type},        /* cullified struct tm */
-
-   {RT_LOWERBOUND, RTS, RTN, RT_Type},        /* remote task (qrexec) */
-   {UPP_LOWERBOUND, UPPS, UPPN, UPP_Type},     /* SGEEE - sublist of user/project for
-                                      * storing project usage */
-   {KTGT_LOWERBOUND, KTGTS, KTGTN, KTGT_Type},  /* Kerberos TGT list */
-   {SME_LOWERBOUND, SMES, SMEN, SME_Type},     /* scheduler message structure */
-   {MES_LOWERBOUND, MESS, MESN, MES_Type},     /* scheduler job info */
-   {JAT_LOWERBOUND, JATS, JATN, JAT_Type},     /* JobArray task structure contains
-                                      * the dynamic elements of a Job */
-   {CT_LOWERBOUND, CTS, CTN, CT_Type},        /* scheduler job category */
-
-   {SGEJ_LOWERBOUND, SGEJS, SGEJN, SGEJ_Type},     /* scheduler sge job sort element */
-   {ULNG_LOWERBOUND, ULNGS, ULNGN, ULNG_Type},          /* ???? info-messages ??? */
-
-   {HGRP_LOWERBOUND, HGRPS, HGRPN, HGRP_Type},  /* hostgroup list */
-   {HR_LOWERBOUND, HRS, HRN, HR_Type},        /* host/group reference list */
-   {PERM_LOWERBOUND, PERMS, PERMN, PERM_Type},  /* permission list */
-   {LS_LOWERBOUND, LSS, LSN, LS_Type},        /* load sensor list */
-
-   {RU_LOWERBOUND, RUS, RUN, RU_Type},        /* user unknown list */
-   {FES_LOWERBOUND, FESS, FESN, FES_Type},
-   
-   {SU_LOWERBOUND, SUS, SUN, SU_Type},        /* submit user */
-
-   {SPC_LOWERBOUND, SPCS, SPCN, SPC_Type},     /* Spooling context */
-   {SPR_LOWERBOUND, SPRS, SPRN, SPR_Type},     /* Spooling rule */
-   {SPT_LOWERBOUND, SPTS, SPTN, SPT_Type},     /* Spooling object type */
-   {SPTR_LOWERBOUND, SPTRS, SPTRN, SPTR_Type},  /* Spooling rules for object type */
-
-   {JJ_LOWERBOUND, JJS, JJN, JJ_Type},        /* JAPI job */
-   {JJAT_LOWERBOUND, JJATS, JJATN, JJAT_Type},  /* JAPI array task */
-   {NSV_LOWERBOUND, NSVS, NSVN, NSV_Type},  /* JAPI ??? */
-
-   {ASTR_LOWERBOUND, ASTRS, ASTRN, ASTR_Type},          /* CQ string sublist */
-   {AULNG_LOWERBOUND, AULNGS, AULNGN, AULNG_Type},       /* CQ u_long32 sublist */
-   {ABOOL_LOWERBOUND, ABOOLS, ABOOLN, ABOOL_Type},       /* CQ bool sublist */
-   {ATIME_LOWERBOUND, ATIMES, ATIMEN, ATIME_Type},       /* CQ time limit sublist */
-   {AMEM_LOWERBOUND, AMEMS, AMEMN, AMEM_Type},          /* CQ memory limit sublist */
-   {AINTER_LOWERBOUND, AINTERS, AINTERN, AINTER_Type},    /* CQ interval sublist */
-   {ASTRING_LOWERBOUND, ASTRINGS, ASTRINGN, ASTRING_Type},
-   {ASTRLIST_LOWERBOUND, ASTRLISTS, ASTRLISTN, ASTRLIST_Type}, /* CQ ST_Type-list sublist */
-   {AUSRLIST_LOWERBOUND, AUSRLISTS, AUSRLISTN, AUSRLIST_Type}, /* CQ US_Type-list sublist */
-   {APRJLIST_LOWERBOUND, APRJLISTS, APRJLISTN, APRJLIST_Type}, /* CQ PR_Type-list sublist */
-   {ACELIST_LOWERBOUND, ACELISTS, ACELISTN, ACELIST_Type},    /* CQ CE_Type-list sublist */
-   {ASOLIST_LOWERBOUND, ASOLISTS, ASOLISTN, ASOLIST_Type},    /* CQ SO_Type-list sublist */
-   {AQTLIST_LOWERBOUND, AQTLISTS, AQTLISTN, AQTLIST_Type},    /* CQ qtype sublist */
-   {CQ_LOWERBOUND, CQS, CQN, CQ_Type},                /* Cluster Queue list */
-   {QIM_LOWERBOUND, QIMS, QIMN, QIM_Type},                /* Queue Instance Messege list */
-   {FCAT_LOWERBOUND, FCATS, FCATN, FCAT_Type},          /* Functional category */
-   {CTI_LOWERBOUND, CTIS, CTIN, CTI_Type},             /* ignore host/queue list in a job category */
-   {PARA_LOWERBOUND, PARAS, PARAN, PARA_Type},          /* store the configuration "params" parameters in a list */
-
-/* this would generate a cycle in the dependencies between lib cull and lib obj. Therefor
-   we ignore the names here and live with the fact, that lWriteList or lWriteElem will
-   not print the CULL_names for the PACK structure. */
-/*      {PACK_LOWERBOUND, PACKS, PACKN, PACK_Type},   */       /* a cull version of the pack buffer */
-
-   {XMLA_LOWERBOUND, XMLAS, XMLAN, XMLA_Type},          /* XML-Attribute */
-   {XMLH_LOWERBOUND, XMLHS, XMLHN, XMLH_Type},          /* XML-Header*/
-   {XMLS_LOWERBOUND, XMLSS, XMLSN, XMLS_Type},          /* XML-Stype-Sheet */
-   {XMLE_LOWERBOUND, XMLES, XMLEN, XMLE_Type},          /* XML-Element*/
-
-   {RDE_LOWERBOUND, RDES, RDEN, RDE_Type},             /* resource diagram */
-   {RUE_LOWERBOUND, RUES, RUEN, RUE_Type},             /* resource utilization */
-   {QETI_LOWERBOUND, QETIS, QETIN, QETI_Type},          /* queue end time iterator (scheduler) */
-
-   {LDR_LOWERBOUND, LDRS, LDRN, LDR_Type},             /* queue consumables load alarm structure */
-   {QRL_LOWERBOUND, QRL_S, QRL_N, QRL_Type},           /* queue consumables load alarm structure */
-
-   {CCT_LOWERBOUND, CCTS, CCTN, CCT_Type},
-
-   {CQU_LOWERBOUND, CQUS, CQUN, CQU_Type},             /* queue state changes structure */
-   
-   {SCT_LOWERBOUND, SCTS, SCTN, SCT_Type},             /* scheduler categories */
-
-   {REF_LOWERBOUND, REFS, REFN, REF_Type},             /* a simple ref object */
-
-   {RQS_LOWERBOUND, RQSS, RQSN, RQS_Type},             /* resource quota set */
-   {RQR_LOWERBOUND, RQRS, RQRN, RQR_Type},             /* resource quota rule */
-   {RQRF_LOWERBOUND, RQRFS, RQRFN, RQRF_Type},          /* resource quota rule filter */
-   {RQRL_LOWERBOUND, RQRLS, RQRLN, RQRL_Type},          /* resource quota rule limit */
-   {RQL_LOWERBOUND, RQLS, RQLN, RQL_Type},             /* resource quota limit (scheduler) */
-  
-   {AR_LOWERBOUND, ARS, ARN, AR_Type},                /* advance reservation */ 
-   {ARA_LOWERBOUND, ARAS, ARAN, ARA_Type},             /* advance reservation acl*/ 
-   
-   {ACK_LOWERBOUND, ACKS, ACKN, ACK_Type},             /* acknowledge */
-
-   {EVR_LOWERBOUND, EVRS, EVRN, EVR_Type},             /* event master requests */
-   {JSV_LOWERBOUND, JSVS, JSVN, JSV_Type},             /* job submission verifier */
-   {RTIC_LOWERBOUND, RTICS, RTICN, RTIC_Type},          /* internal list for reprioritzie tickets to distribute */
-   {PRO_LOWERBOUND, PROS, PRON, PRO_Type},             /* list for all running processes under Linux */
-   {GR_LOWERBOUND, GRS, GRN, GR_Type},                /* list of all process groups of Linux process */
-
-   {BN_LOWERBOUND, BNS, BNN, BN_Type},                /* list of binding information */
-
+   {JB_LOWERBOUND, JB_SIZE, JBN, JB_Type},
+   {QU_LOWERBOUND, QU_SIZE, QUN, QU_Type},
+   {EH_LOWERBOUND, EH_SIZE, EHN, EH_Type},
+   {AH_LOWERBOUND, AH_SIZE, AHN, AH_Type},
+   {SH_LOWERBOUND, SH_SIZE, SHN, SH_Type},
+   {AN_LOWERBOUND, AN_SIZE, ANN, AN_Type},
+   {HL_LOWERBOUND, HL_SIZE, HLN, HL_Type},
+   {HS_LOWERBOUND, HS_SIZE, HSN, HS_Type},
+   {ET_LOWERBOUND, ET_SIZE, ETN, ET_Type},
+   {EV_LOWERBOUND, EV_SIZE, EVN, EV_Type},
+   {EVS_LOWERBOUND, EVS_SIZE, EVSN, EVS_Type},
+   {CE_LOWERBOUND, CE_SIZE, CEN, CE_Type},
+   {LR_LOWERBOUND, LR_SIZE, LRN, LR_Type},
+   {OR_LOWERBOUND, OR_SIZE, ORN, OR_Type},
+   {OQ_LOWERBOUND, OQ_SIZE, OQN, OQ_Type},
+   {US_LOWERBOUND, US_SIZE, USN, US_Type},
+   {UE_LOWERBOUND, UE_SIZE, UEN, UE_Type},
+   {RN_LOWERBOUND, RN_SIZE, RNN, RN_Type},
+   {PN_LOWERBOUND, PN_SIZE, PNN, PN_Type},
+   {VA_LOWERBOUND, VA_SIZE, VAN, VA_Type},
+   {MR_LOWERBOUND, MR_SIZE, MRN, MR_Type},
+   {UM_LOWERBOUND, UM_SIZE, UMN, UM_Type},
+   {UO_LOWERBOUND, UO_SIZE, UON, UO_Type},
+   {PE_LOWERBOUND, PE_SIZE, PEN, PE_Type},
+   {QR_LOWERBOUND, QR_SIZE, QRN, QR_Type},
+   {JC_LOWERBOUND, JC_SIZE, JCN, JC_Type},
+   {CONF_LOWERBOUND, CONF_SIZE, CONFN, CONF_Type},
+   {CF_LOWERBOUND, CF_SIZE, CFN, CF_Type},
+   {ST_LOWERBOUND, ST_SIZE, STN, ST_Type},
+   {STU_LOWERBOUND, STU_SIZE, STUN, STU_Type},
+   {JG_LOWERBOUND, JG_SIZE, JGN, JG_Type},
+   {SO_LOWERBOUND, SO_SIZE, SON, SO_Type},
+   {QAJ_LOWERBOUND, QAJ_SIZE, QAJN, QAJ_Type},
+   {SPA_LOWERBOUND, SPA_SIZE, SPAN, SPA_Type},
+   {REP_LOWERBOUND, REP_SIZE, REPN, REP_Type},
+   {UA_LOWERBOUND, UA_SIZE, UAN, UA_Type},
+   {PR_LOWERBOUND, PR_SIZE, PRN, PR_Type},
+   {UU_LOWERBOUND, UU_SIZE, UUN, UU_Type},
+   {STN_LOWERBOUND, STN_SIZE, STNN, STN_Type},
+   {SC_LOWERBOUND, SC_SIZE, SCN, SC_Type},
+   {PET_LOWERBOUND, PET_SIZE, PETN, PET_Type},
+   {PETR_LOWERBOUND, PETR_SIZE, PETRN, PETR_Type},
+   {FPET_LOWERBOUND, FPET_SIZE, FPETN, FPET_Type},
+   {JR_LOWERBOUND, JR_SIZE, JRN, JR_Type},
+   {LIC_LOWERBOUND, LIC_SIZE, LICN, LIC_Type},
+   {JL_LOWERBOUND, JL_SIZE, JLN, JL_Type},
+   {JP_LOWERBOUND, JP_SIZE, JPN, JP_Type},
+   {JO_LOWERBOUND, JO_SIZE, JON, JO_Type},
+   {UPU_LOWERBOUND, UPU_SIZE, UPUN, UPU_Type},
+   {CK_LOWERBOUND, CK_SIZE, CKN, CK_Type},
+   {KRB_LOWERBOUND, KRB_SIZE, KRBN, KRB_Type},
+   {PA_LOWERBOUND, PA_SIZE, PAN, PA_Type},
+   {JRE_LOWERBOUND, JRE_SIZE, JREN, JRE_Type},
+   {ID_LOWERBOUND, ID_SIZE, IDN, ID_Type},
+   {MA_LOWERBOUND, MA_SIZE, MAN, MA_Type},
+   {TE_LOWERBOUND, TE_SIZE, TEN, TE_Type},
+   {CAL_LOWERBOUND, CAL_SIZE, CALN, CAL_Type},
+   {CA_LOWERBOUND, CA_SIZE, CAN, CA_Type},
+   {TMR_LOWERBOUND, TMR_SIZE, TMRN, TMR_Type},
+   {TM_LOWERBOUND, TM_SIZE, TMN, TM_Type},
+   {RT_LOWERBOUND, RT_SIZE, RTN, RT_Type},
+   {UPP_LOWERBOUND, UPP_SIZE, UPPN, UPP_Type},
+   {KTGT_LOWERBOUND, KTGT_SIZE, KTGTN, KTGT_Type},
+   {SME_LOWERBOUND, SME_SIZE, SMEN, SME_Type},
+   {MES_LOWERBOUND, MES_SIZE, MESN, MES_Type},
+   {JAT_LOWERBOUND, JAT_SIZE, JATN, JAT_Type},
+   {CT_LOWERBOUND, CT_SIZE, CTN, CT_Type},
+   {SGEJ_LOWERBOUND, SGEJ_SIZE, SGEJN, SGEJ_Type},
+   {ULNG_LOWERBOUND, ULNG_SIZE, ULNGN, ULNG_Type},
+   {HGRP_LOWERBOUND, HGRP_SIZE, HGRPN, HGRP_Type},
+   {HR_LOWERBOUND, HR_SIZE, HRN, HR_Type},
+   {PERM_LOWERBOUND, PERM_SIZE, PERMN, PERM_Type},
+   {LS_LOWERBOUND, LS_SIZE, LSN, LS_Type},
+   {RU_LOWERBOUND, RU_SIZE, RUN, RU_Type},
+   {FES_LOWERBOUND, FES_SIZE, FESN, FES_Type},
+   {SU_LOWERBOUND, SU_SIZE, SUN, SU_Type},
+   {SPC_LOWERBOUND, SPC_SIZE, SPCN, SPC_Type},
+   {SPR_LOWERBOUND, SPR_SIZE, SPRN, SPR_Type},
+   {SPT_LOWERBOUND, SPT_SIZE, SPTN, SPT_Type},
+   {SPTR_LOWERBOUND, SPTR_SIZE, SPTRN, SPTR_Type},
+   {JJ_LOWERBOUND, JJ_SIZE, JJN, JJ_Type},
+   {JJAT_LOWERBOUND, JJAT_SIZE, JJATN, JJAT_Type},
+   {NSV_LOWERBOUND, NSV_SIZE, NSVN, NSV_Type},
+   {ASTR_LOWERBOUND, ASTR_SIZE, ASTRN, ASTR_Type},
+   {AULNG_LOWERBOUND, AULNG_SIZE, AULNGN, AULNG_Type},
+   {ABOOL_LOWERBOUND, ABOOL_SIZE, ABOOLN, ABOOL_Type},
+   {ATIME_LOWERBOUND, ATIME_SIZE, ATIMEN, ATIME_Type},
+   {AMEM_LOWERBOUND, AMEM_SIZE, AMEMN, AMEM_Type},
+   {AINTER_LOWERBOUND, AINTER_SIZE, AINTERN, AINTER_Type},
+   {ASTRING_LOWERBOUND, ASTRING_SIZE, ASTRINGN, ASTRING_Type},
+   {ASTRLIST_LOWERBOUND, ASTRLIST_SIZE, ASTRLISTN, ASTRLIST_Type},
+   {AUSRLIST_LOWERBOUND, AUSRLIST_SIZE, AUSRLISTN, AUSRLIST_Type},
+   {APRJLIST_LOWERBOUND, APRJLIST_SIZE, APRJLISTN, APRJLIST_Type},
+   {ACELIST_LOWERBOUND, ACELIST_SIZE, ACELISTN, ACELIST_Type},
+   {ASOLIST_LOWERBOUND, ASOLIST_SIZE, ASOLISTN, ASOLIST_Type},
+   {AQTLIST_LOWERBOUND, AQTLIST_SIZE, AQTLISTN, AQTLIST_Type},
+   {CQ_LOWERBOUND, CQ_SIZE, CQN, CQ_Type},
+   {QIM_LOWERBOUND, QIM_SIZE, QIMN, QIM_Type},
+   {FCAT_LOWERBOUND, FCAT_SIZE, FCATN, FCAT_Type},
+   {CTI_LOWERBOUND, CTI_SIZE, CTIN, CTI_Type},
+   {PARA_LOWERBOUND, PARA_SIZE, PARAN, PARA_Type},
+   {XMLA_LOWERBOUND, XMLA_SIZE, XMLAN, XMLA_Type},
+   {XMLH_LOWERBOUND, XMLH_SIZE, XMLHN, XMLH_Type},
+   {XMLS_LOWERBOUND, XMLS_SIZE, XMLSN, XMLS_Type},
+   {XMLE_LOWERBOUND, XMLE_SIZE, XMLEN, XMLE_Type},
+   {RDE_LOWERBOUND, RDE_SIZE, RDEN, RDE_Type},
+   {RUE_LOWERBOUND, RUE_SIZE, RUEN, RUE_Type},
+   {QETI_LOWERBOUND, QETI_SIZE, QETIN, QETI_Type},
+   {LDR_LOWERBOUND, LDR_SIZE, LDRN, LDR_Type},
+   {QRL_LOWERBOUND, QRL_SIZE, QRLN, QRL_Type},
+   {CCT_LOWERBOUND, CCT_SIZE, CCTN, CCT_Type},
+   {CQU_LOWERBOUND, CQU_SIZE, CQUN, CQU_Type},
+   {SCT_LOWERBOUND, SCT_SIZE, SCTN, SCT_Type},
+   {REF_LOWERBOUND, REF_SIZE, REFN, REF_Type},
+   {RQS_LOWERBOUND, RQS_SIZE, RQSN, RQS_Type},
+   {RQR_LOWERBOUND, RQR_SIZE, RQRN, RQR_Type},
+   {RQRF_LOWERBOUND, RQRF_SIZE, RQRFN, RQRF_Type},
+   {RQRL_LOWERBOUND, RQRL_SIZE, RQRLN, RQRL_Type},
+   {RQL_LOWERBOUND, RQL_SIZE, RQLN, RQL_Type},
+   {AR_LOWERBOUND, AR_SIZE, ARN, AR_Type},
+   {ARA_LOWERBOUND, ARA_SIZE, ARAN, ARA_Type},
+   {ACK_LOWERBOUND, ACK_SIZE, ACKN, ACK_Type},
+   {EVR_LOWERBOUND, EVR_SIZE, EVRN, EVR_Type},
+   {JSV_LOWERBOUND, JSV_SIZE, JSVN, JSV_Type},
+   {RTIC_LOWERBOUND, RTIC_SIZE, RTICN, RTIC_Type},
+   {PRO_LOWERBOUND, PRO_SIZE, PRON, PRO_Type},
+   {GR_LOWERBOUND, GR_SIZE, GRN, GR_Type},
+   {BN_LOWERBOUND, BN_SIZE, BNN, BN_Type},
    {0, 0, NULL, NULL}
 };
 
-#ifdef  __cplusplus
+#ifdef __cplusplus
 }
 #endif
+
 #else
 #ifdef __SGE_GDI_LIBRARY_SUBLIST_FILE__
 #else
-#ifdef  __cplusplus
+#ifdef __cplusplus
 extern "C" {
 #endif
 
-   extern lNameSpace nmv[];
+extern lNameSpace nmv[];
 
-#ifdef  __cplusplus
+#ifdef __cplusplus
 }
 #endif
-#endif                          /* __SGE_GDI_LIBRARY_HOME_OBJECT_FILE__ */
-#endif                          /* __SGE_GDI_LIBRARY_SUBLIST_FILE__     */
-#endif                          /* __SGE_ALL_LISTSL_H */
+
+#endif /* __SGE_GDI_LIBRARY_HOME_OBJECT_FILE__ */
+
+#endif /* __SGE_GDI_LIBRARY_SUBLIST_FILE__     */
+
+#endif /* __SGE_ALL_LISTSL_H */

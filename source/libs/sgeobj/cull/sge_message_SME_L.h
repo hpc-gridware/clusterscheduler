@@ -1,6 +1,5 @@
-#ifndef __SGE_MESSAGE_SME_L_H
-#define __SGE_MESSAGE_SME_L_H
-
+#ifndef SGE_SME_L_H
+#define SGE_SME_L_H
 /*___INFO__MARK_BEGIN__*/
 /*************************************************************************
  * 
@@ -33,39 +32,45 @@
  ************************************************************************/
 /*___INFO__MARK_END__*/
 
+#include "cull/cull.h"
 #include "sgeobj/cull/sge_boundaries.h"
 
-#ifdef  __cplusplus
+#ifdef __cplusplus
 extern "C" {
 #endif
 
-/* *INDENT-OFF* */ 
+/**
+* @brief @todo add summary
+*
+* @todo add description
+*
+*    SGE_LIST(SME_message_list) - @todo add summary
+*    @todo add description
+*
+*    SGE_LIST(SME_global_message_list) - @todo add summary
+*    @todo add description
+*
+*/
 
-/*
- * Scheduler messages
- */
 enum {
    SME_message_list = SME_LOWERBOUND,
    SME_global_message_list
 };
 
 LISTDEF(SME_Type)
-   JGDI_ROOT_OBJ(JobSchedulingInfo, SGE_SME_LIST, GET )
-   JGDI_EVENT_OBJ(ADD(sgeE_JOB_SCHEDD_INFO_ADD) | MODIFY(sgeE_JOB_SCHEDD_INFO_MOD) | DELETE(sgeE_JOB_SCHEDD_INFO_DEL) | GET_LIST(sgeE_JOB_SCHEDD_INFO_LIST))
-   SGE_LIST(SME_message_list, MES_Type, CULL_DEFAULT | CULL_JGDI_RO)         /* MES_Type */
-   SGE_LIST(SME_global_message_list, MES_Type, CULL_DEFAULT | CULL_JGDI_RO)  /* MES_Type */
-LISTEND 
+   SGE_LIST(SME_message_list, MES_Type, CULL_DEFAULT)
+   SGE_LIST(SME_global_message_list, MES_Type, CULL_DEFAULT)
+LISTEND
 
 NAMEDEF(SMEN)
    NAME("SME_message_list")
    NAME("SME_global_message_list")
 NAMEEND
 
-#define SMES sizeof(SMEN)/sizeof(char*)
+#define SME_SIZE sizeof(SMEN)/sizeof(char *)
 
-/* *INDENT-ON* */   
-
-#ifdef  __cplusplus
+#ifdef __cplusplus
 }
 #endif
+
 #endif

@@ -1,6 +1,5 @@
-#ifndef __SGE_EVENTREQUESTL_H
-#define __SGE_EVENTREQUESTL_H
-
+#ifndef SGE_EVR_L_H
+#define SGE_EVR_L_H
 /*___INFO__MARK_BEGIN__*/
 /*************************************************************************
  * 
@@ -34,25 +33,48 @@
 /*___INFO__MARK_END__*/
 
 #include "cull/cull.h"
-#include "uti/sge_monitor.h"
 #include "sgeobj/cull/sge_boundaries.h"
 
-#ifdef  __cplusplus
+#ifdef __cplusplus
 extern "C" {
 #endif
 
-/* *INDENT-OFF* */
+/**
+* @brief @todo add summary
+*
+* @todo add description
+*
+*    SGE_ULONG(EVR_operation) - @todo add summary
+*    @todo add description
+*
+*    SGE_ULONG(EVR_timestamp) - @todo add summary
+*    @todo add description
+*
+*    SGE_ULONG(EVR_event_client_id) - @todo add summary
+*    @todo add description
+*
+*    SGE_ULONG(EVR_event_number) - @todo add summary
+*    @todo add description
+*
+*    SGE_STRING(EVR_session) - @todo add summary
+*    @todo add description
+*
+*    SGE_OBJECT(EVR_event_client) - @todo add summary
+*    @todo add description
+*
+*    SGE_LIST(EVR_event_list) - @todo add summary
+*    @todo add description
+*
+*/
 
-/* documentation see libs/evc/sge_event_client.c */
 enum {
-   /* identification */
-   EVR_operation = EVR_LOWERBOUND,        /* evm_request_t */
-   EVR_timestamp,                         /* timestamp when operation was triggered */
-   EVR_event_client_id,                   /* e.g. vor EVR_DEL_EVC request */
-   EVR_event_number,                      /* for EVR_ACK_EVENT */
-   EVR_session,                           /* DRMAA session */
-   EVR_event_client,                      /* event client object, e.g. for EVR_ADD_EVC, EVR_MOD_EVC */
-   EVR_event_list                         /* for EVR_ADD_EVENT request */
+   EVR_operation = EVR_LOWERBOUND,
+   EVR_timestamp,
+   EVR_event_client_id,
+   EVR_event_number,
+   EVR_session,
+   EVR_event_client,
+   EVR_event_list
 };
 
 LISTDEF(EVR_Type)
@@ -61,9 +83,9 @@ LISTDEF(EVR_Type)
    SGE_ULONG(EVR_event_client_id, CULL_DEFAULT)
    SGE_ULONG(EVR_event_number, CULL_DEFAULT)
    SGE_STRING(EVR_session, CULL_DEFAULT)
-   SGE_OBJECT(EVR_event_client, EV_Type, CULL_DEFAULT)
+   SGE_OBJECT(EVR_event_client, CULL_ANY_SUBTYPE, CULL_DEFAULT)
    SGE_LIST(EVR_event_list, ET_Type, CULL_DEFAULT)
-LISTEND 
+LISTEND
 
 NAMEDEF(EVRN)
    NAME("EVR_operation")
@@ -75,11 +97,10 @@ NAMEDEF(EVRN)
    NAME("EVR_event_list")
 NAMEEND
 
-#define EVRS sizeof(EVRN)/sizeof(char*)
+#define EVR_SIZE sizeof(EVRN)/sizeof(char *)
 
-/* *INDENT-ON* */ 
-
-#ifdef  __cplusplus
+#ifdef __cplusplus
 }
 #endif
-#endif                          /* __SGE_EVENTREQUESTL_H */
+
+#endif

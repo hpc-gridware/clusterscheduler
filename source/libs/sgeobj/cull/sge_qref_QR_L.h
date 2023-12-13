@@ -1,6 +1,5 @@
-#ifndef __SGE_QREF_QR_L_H
-#define __SGE_QREF_QR_L_H
-
+#ifndef SGE_QR_L_H
+#define SGE_QR_L_H
 /*___INFO__MARK_BEGIN__*/
 /*************************************************************************
  * 
@@ -36,31 +35,36 @@
 #include "cull/cull.h"
 #include "sgeobj/cull/sge_boundaries.h"
 
-#ifdef  __cplusplus
+#ifdef __cplusplus
 extern "C" {
 #endif
 
-/* *INDENT-OFF* */
+/**
+* @brief @todo add summary
+*
+* @todo add description
+*
+*    SGE_STRING(QR_name) - @todo add summary
+*    @todo add description
+*
+*/
 
 enum {
    QR_name = QR_LOWERBOUND
 };
 
 LISTDEF(QR_Type)
-   JGDI_PRIMITIVE_OBJ(QR_name)
-   SGE_STRING(QR_name, CULL_PRIMARY_KEY | CULL_HASH | CULL_UNIQUE | CULL_SUBLIST)
+   SGE_STRING(QR_name, CULL_PRIMARY_KEY | CULL_UNIQUE | CULL_HASH | CULL_SUBLIST)
 LISTEND
 
 NAMEDEF(QRN)
    NAME("QR_name")
 NAMEEND
 
-/* *INDENT-ON* */
+#define QR_SIZE sizeof(QRN)/sizeof(char *)
 
-#define QRS sizeof(QRN)/sizeof(char*)
-
-#ifdef  __cplusplus
+#ifdef __cplusplus
 }
 #endif
 
-#endif /* __SGE_QREF_H */
+#endif

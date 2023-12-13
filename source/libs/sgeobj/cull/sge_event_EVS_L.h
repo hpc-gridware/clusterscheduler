@@ -1,6 +1,5 @@
-#ifndef __SGE_EVENT_EVS_L_H
-#define __SGE_EVENT_EVS_L_H
-
+#ifndef SGE_EVS_L_H
+#define SGE_EVS_L_H
 /*___INFO__MARK_BEGIN__*/
 /*************************************************************************
  * 
@@ -33,15 +32,34 @@
  ************************************************************************/
 /*___INFO__MARK_END__*/
 
-#include "uti/sge_monitor.h"
 #include "cull/cull.h"
 #include "sgeobj/cull/sge_boundaries.h"
 
-#ifdef  __cplusplus
+#ifdef __cplusplus
 extern "C" {
 #endif
 
-/* *INDENT-OFF* */
+/**
+* @brief @todo add summary
+*
+* @todo add description
+*
+*    SGE_ULONG(EVS_id) - @todo add summary
+*    @todo add description
+*
+*    SGE_BOOL(EVS_flush) - @todo add summary
+*    @todo add description
+*
+*    SGE_ULONG(EVS_interval) - @todo add summary
+*    @todo add description
+*
+*    SGE_OBJECT(EVS_what) - @todo add summary
+*    @todo add description
+*
+*    SGE_OBJECT(EVS_where) - @todo add summary
+*    @todo add description
+*
+*/
 
 enum {
    EVS_id = EVS_LOWERBOUND,
@@ -52,7 +70,6 @@ enum {
 };
 
 LISTDEF(EVS_Type)
-   JGDI_OBJ(EventSubcribtion)
    SGE_ULONG(EVS_id, CULL_DEFAULT)
    SGE_BOOL(EVS_flush, CULL_DEFAULT)
    SGE_ULONG(EVS_interval, CULL_DEFAULT)
@@ -61,18 +78,17 @@ LISTDEF(EVS_Type)
 LISTEND
 
 NAMEDEF(EVSN)
-   NAME("EVS_id") 
+   NAME("EVS_id")
    NAME("EVS_flush")
    NAME("EVS_interval")
    NAME("EVS_what")
    NAME("EVS_where")
-NAMEEND   
+NAMEEND
 
-#define EVSS sizeof(EVSN)/sizeof(char*)
+#define EVS_SIZE sizeof(EVSN)/sizeof(char *)
 
-/* *INDENT-ON* */ 
-
-#ifdef  __cplusplus
+#ifdef __cplusplus
 }
 #endif
-#endif                          /* __SGE_EVENTL_H */
+
+#endif

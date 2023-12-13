@@ -1,6 +1,5 @@
-#ifndef __SGE_REPORT_LR_L_H
-#define __SGE_REPORT_LR_L_H
-
+#ifndef SGE_LR_L_H
+#define SGE_LR_L_H
 /*___INFO__MARK_BEGIN__*/
 /*************************************************************************
  * 
@@ -34,31 +33,48 @@
 /*___INFO__MARK_END__*/
 
 #include "cull/cull.h"
-
 #include "sgeobj/cull/sge_boundaries.h"
 
-#ifdef  __cplusplus
+#ifdef __cplusplus
 extern "C" {
 #endif
 
-/* *INDENT-OFF* */ 
+/**
+* @brief @todo add summary
+*
+* @todo add description
+*
+*    SGE_STRING(LR_name) - @todo add summary
+*    @todo add description
+*
+*    SGE_STRING(LR_value) - @todo add summary
+*    @todo add description
+*
+*    SGE_ULONG(LR_global) - @todo add summary
+*    @todo add description
+*
+*    SGE_ULONG(LR_static) - @todo add summary
+*    @todo add description
+*
+*    SGE_HOST(LR_host) - @todo add summary
+*    @todo add description
+*
+*/
 
 enum {
    LR_name = LR_LOWERBOUND,
    LR_value,
    LR_global,
-   LR_static, /* 0 - non static load_value */
-              /* 1 - static load_value */
-              /* 2 - remove load_value */
+   LR_static,
    LR_host
 };
 
 LISTDEF(LR_Type)
    SGE_STRING(LR_name, CULL_HASH)
    SGE_STRING(LR_value, CULL_DEFAULT)
-   SGE_ULONG(LR_global, CULL_DEFAULT)       /* ==1 global load value */
-   SGE_ULONG(LR_static, CULL_DEFAULT)       /* ==1 static load value */
-   SGE_HOST(LR_host, CULL_HASH)        /* sender host of load value */
+   SGE_ULONG(LR_global, CULL_DEFAULT)
+   SGE_ULONG(LR_static, CULL_DEFAULT)
+   SGE_HOST(LR_host, CULL_HASH)
 LISTEND
 
 NAMEDEF(LRN)
@@ -69,12 +85,10 @@ NAMEDEF(LRN)
    NAME("LR_host")
 NAMEEND
 
-#define LRS sizeof(LRN)/sizeof(char*)
-
-/* *INDENT-ON* */ 
+#define LR_SIZE sizeof(LRN)/sizeof(char *)
 
 #ifdef __cplusplus
 }
 #endif
 
-#endif                          /* __SGE_REPORTL_H */
+#endif

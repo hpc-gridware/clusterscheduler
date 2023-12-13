@@ -1,6 +1,5 @@
-#ifndef __SGE_RESOURCE_QUOTAL_RQRF_H
-#define __SGE_RESOURCE_QUOTAL_RQRF_H
-
+#ifndef SGE_RQRF_L_H
+#define SGE_RQRF_L_H
 /*___INFO__MARK_BEGIN__*/
 /*************************************************************************
  * 
@@ -34,16 +33,28 @@
 /*___INFO__MARK_END__*/
 
 #include "cull/cull.h"
-
 #include "sgeobj/cull/sge_boundaries.h"
 
-#ifdef  __cplusplus
+#ifdef __cplusplus
 extern "C" {
 #endif
 
-/* *INDENT-OFF* */
+/**
+* @brief @todo add summary
+*
+* @todo add description
+*
+*    SGE_BOOL(RQRF_expand) - @todo add summary
+*    @todo add description
+*
+*    SGE_LIST(RQRF_scope) - @todo add summary
+*    @todo add description
+*
+*    SGE_LIST(RQRF_xscope) - @todo add summary
+*    @todo add description
+*
+*/
 
-/* Resource Quota Rule Filter */
 enum {
    RQRF_expand = RQRF_LOWERBOUND,
    RQRF_scope,
@@ -51,10 +62,9 @@ enum {
 };
 
 LISTDEF(RQRF_Type)
- JGDI_OBJ(ResourceQuotaRuleFilter)
- SGE_BOOL(RQRF_expand, CULL_DEFAULT | CULL_SPOOL | CULL_JGDI_CONF)
- SGE_LIST(RQRF_scope, ST_Type, CULL_DEFAULT | CULL_SPOOL | CULL_JGDI_CONF)
- SGE_LIST(RQRF_xscope, ST_Type, CULL_DEFAULT | CULL_SPOOL | CULL_JGDI_CONF)
+   SGE_BOOL(RQRF_expand, CULL_SPOOL)
+   SGE_LIST(RQRF_scope, ST_Type, CULL_SPOOL)
+   SGE_LIST(RQRF_xscope, ST_Type, CULL_SPOOL)
 LISTEND
 
 NAMEDEF(RQRFN)
@@ -63,11 +73,10 @@ NAMEDEF(RQRFN)
    NAME("RQRF_xscope")
 NAMEEND
 
-#define RQRFS sizeof(RQRFN)/sizeof(char*)
+#define RQRF_SIZE sizeof(RQRFN)/sizeof(char *)
 
-/* *INDENT-ON* */ 
-
-#ifdef  __cplusplus
+#ifdef __cplusplus
 }
 #endif
-#endif /* __SGE_RESOURCE_QUOTAL_H */
+
+#endif

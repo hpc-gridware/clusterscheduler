@@ -1,6 +1,5 @@
-#ifndef __SGE_CT_SCT_L_H
-#define __SGE_CT_SCT_L_H
-
+#ifndef SGE_SCT_L_H
+#define SGE_SCT_L_H
 /*___INFO__MARK_BEGIN__*/
 /*************************************************************************
  * 
@@ -36,24 +35,34 @@
 #include "cull/cull.h"
 #include "sgeobj/cull/sge_boundaries.h"
 
-#ifdef  __cplusplus
+#ifdef __cplusplus
 extern "C" {
 #endif
 
-/* *INDENT-OFF* */ 
+/**
+* @brief @todo add summary
+*
+* @todo add description
+*
+*    SGE_STRING(SCT_str) - @todo add summary
+*    @todo add description
+*
+*    SGE_LIST(SCT_job_pending_ref) - @todo add summary
+*    @todo add description
+*
+*    SGE_LIST(SCT_job_ref) - @todo add summary
+*    @todo add description
+*
+*/
 
-/*
- * this date structures describe the schduler category list
- */
-  
 enum {
-   SCT_str = SCT_LOWERBOUND, /* category string */
-   SCT_job_pending_ref,      /* contains only pending jobs */
-   SCT_job_ref               /* contains all other jobs, could also be pending ones */
+   SCT_str = SCT_LOWERBOUND,
+   SCT_job_pending_ref,
+   SCT_job_ref
 };
 
 LISTDEF(SCT_Type)
-   SGE_STRING(SCT_str, CULL_HASH | CULL_UNIQUE)
+   SGE_STRING(SCT_str, CULL_UNIQUE | CULL_HASH)
    SGE_LIST(SCT_job_pending_ref, REF_Type, CULL_DEFAULT)
    SGE_LIST(SCT_job_ref, REF_Type, CULL_DEFAULT)
 LISTEND
@@ -64,11 +73,10 @@ NAMEDEF(SCTN)
    NAME("SCT_job_ref")
 NAMEEND
 
-#define SCTS sizeof(SCTN)/sizeof(char*)
+#define SCT_SIZE sizeof(SCTN)/sizeof(char *)
 
-/* *INDENT-ON* */
-
-#ifdef  __cplusplus
+#ifdef __cplusplus
 }
 #endif
-#endif                          /* __SGE_CTL_H */
+
+#endif

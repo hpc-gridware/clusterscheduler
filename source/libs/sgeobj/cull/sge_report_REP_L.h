@@ -1,6 +1,5 @@
-#ifndef __SGE_REPORT_REP_L_H
-#define __SGE_REPORT_REP_L_H
-
+#ifndef SGE_REP_L_H
+#define SGE_REP_L_H
 /*___INFO__MARK_BEGIN__*/
 /*************************************************************************
  * 
@@ -34,18 +33,34 @@
 /*___INFO__MARK_END__*/
 
 #include "cull/cull.h"
-
 #include "sgeobj/cull/sge_boundaries.h"
 
-#ifdef  __cplusplus
+#ifdef __cplusplus
 extern "C" {
 #endif
 
-/* *INDENT-OFF* */ 
+/**
+* @brief @todo add summary
+*
+* @todo add description
+*
+*    SGE_ULONG(REP_type) - @todo add summary
+*    @todo add description
+*
+*    SGE_HOST(REP_host) - @todo add summary
+*    @todo add description
+*
+*    SGE_LIST(REP_list) - @todo add summary
+*    @todo add description
+*
+*    SGE_ULONG(REP_version) - @todo add summary
+*    @todo add description
+*
+*    SGE_ULONG(REP_seqno) - @todo add summary
+*    @todo add description
+*
+*/
 
-/*
- * definition for REP_Type, sge report type
- */
 enum {
    REP_type = REP_LOWERBOUND,
    REP_host,
@@ -55,12 +70,12 @@ enum {
 };
 
 LISTDEF(REP_Type)
-   SGE_ULONG(REP_type, CULL_DEFAULT)        /* type of report, e.g. load report */
-   SGE_HOST(REP_host, CULL_DEFAULT)       /* hostname as it is seen by sender of report */
-   SGE_LIST(REP_list, CULL_ANY_SUBTYPE, CULL_DEFAULT)         /* list type depends on REP_type */
-   SGE_ULONG(REP_version, CULL_DEFAULT)     /* used to report software version of execd */
-   SGE_ULONG(REP_seqno, CULL_DEFAULT)       /* used to recognize old reports sent by execd */
-LISTEND 
+   SGE_ULONG(REP_type, CULL_DEFAULT)
+   SGE_HOST(REP_host, CULL_DEFAULT)
+   SGE_LIST(REP_list, CULL_ANY_SUBTYPE, CULL_DEFAULT)
+   SGE_ULONG(REP_version, CULL_DEFAULT)
+   SGE_ULONG(REP_seqno, CULL_DEFAULT)
+LISTEND
 
 NAMEDEF(REPN)
    NAME("REP_type")
@@ -70,12 +85,10 @@ NAMEDEF(REPN)
    NAME("REP_seqno")
 NAMEEND
 
-#define REPS sizeof(REPN)/sizeof(char*)
-
-/* *INDENT-ON* */ 
+#define REP_SIZE sizeof(REPN)/sizeof(char *)
 
 #ifdef __cplusplus
 }
 #endif
 
-#endif                          /* __SGE_REPORTL_H */
+#endif

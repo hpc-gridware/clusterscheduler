@@ -1,5 +1,5 @@
-#ifndef __SGE_CULL_XML_XMLS_L_H
-#define __SGE_CULL_XML_XMLS_L_H
+#ifndef SGE_XMLS_L_H
+#define SGE_XMLS_L_H
 /*___INFO__MARK_BEGIN__*/
 /*************************************************************************
  * 
@@ -33,27 +33,28 @@
 /*___INFO__MARK_END__*/
 
 #include "cull/cull.h"
-#include "cull/cull_list.h"
-
 #include "sgeobj/cull/sge_boundaries.h"
 
-#ifdef  __cplusplus
+#ifdef __cplusplus
 extern "C" {
 #endif
 
-/* *INDENT-OFF* */    
-
 /**
- * This file contains some extra cull definition for XML cull output.
- * Such as the XML header structure and a XML element
- *
- */
+* @brief @todo add summary
+*
+* @todo add description
+*
+*    SGE_STRING(XMLS_Name) - @todo add summary
+*    @todo add description
+*
+*    SGE_STRING(XMLS_Value) - @todo add summary
+*    @todo add description
+*
+*    SGE_STRING(XMLS_Version) - @todo add summary
+*    @todo add description
+*
+*/
 
-/**************************************************
- *
- * XML schema:
- *
- **************************************************/
 enum {
    XMLS_Name = XMLS_LOWERBOUND,
    XMLS_Value,
@@ -62,9 +63,9 @@ enum {
 
 LISTDEF(XMLS_Type)
    SGE_STRING(XMLS_Name, CULL_DEFAULT)
-   SGE_STRING(XMLS_Value, CULL_DEFAULT)        
+   SGE_STRING(XMLS_Value, CULL_DEFAULT)
    SGE_STRING(XMLS_Version, CULL_DEFAULT)
-LISTEND        
+LISTEND
 
 NAMEDEF(XMLSN)
    NAME("XMLS_Name")
@@ -72,11 +73,10 @@ NAMEDEF(XMLSN)
    NAME("XMLS_Version")
 NAMEEND
 
-#define XMLSS sizeof(XMLSN)/sizeof(char*)
+#define XMLS_SIZE sizeof(XMLSN)/sizeof(char *)
 
-/* *INDENT-ON* */ 
-        
-#ifdef  __cplusplus
+#ifdef __cplusplus
 }
 #endif
-#endif                          /* __SGE_COMPLEXL_H */        
+
+#endif

@@ -1,6 +1,5 @@
-#ifndef __SGE_HOSTATTR_MEM_L_H
-#define __SGE_HOSTATTR_MEM_L_H
-
+#ifndef SGE_AMEM_L_H
+#define SGE_AMEM_L_H
 /*___INFO__MARK_BEGIN__*/
 /*************************************************************************
  * 
@@ -33,36 +32,45 @@
  ************************************************************************/
 /*___INFO__MARK_END__*/
 
-#include "sgeobj/cull/sge_boundaries.h"
 #include "cull/cull.h"
+#include "sgeobj/cull/sge_boundaries.h"
 
-#ifdef  __cplusplus
+#ifdef __cplusplus
 extern "C" {
 #endif
 
-/* *INDENT-OFF* */  
+/**
+* @brief @todo add summary
+*
+* @todo add description
+*
+*    SGE_HOST(AMEM_href) - @todo add summary
+*    @todo add description
+*
+*    SGE_STRING(AMEM_value) - @todo add summary
+*    @todo add description
+*
+*/
 
 enum {
    AMEM_href = AMEM_LOWERBOUND,
-   AMEM_value                    
+   AMEM_value
 };
 
 LISTDEF(AMEM_Type)
-   JGDI_MAP_OBJ(AMEM_href, AMEM_value)
-   SGE_HOST(AMEM_href, CULL_PRIMARY_KEY | CULL_HASH | CULL_UNIQUE | CULL_SUBLIST)
-   SGE_STRING(AMEM_value, CULL_DEFAULT | CULL_SUBLIST)
-LISTEND 
+   SGE_HOST(AMEM_href, CULL_PRIMARY_KEY | CULL_UNIQUE | CULL_HASH | CULL_SUBLIST)
+   SGE_STRING(AMEM_value, CULL_SUBLIST)
+LISTEND
 
 NAMEDEF(AMEMN)
    NAME("AMEM_href")
    NAME("AMEM_value")
 NAMEEND
 
-#define AMEMS sizeof(AMEMN)/sizeof(char*)
+#define AMEM_SIZE sizeof(AMEMN)/sizeof(char *)
 
-/* *INDENT-ON* */  
-
-#ifdef  __cplusplus
+#ifdef __cplusplus
 }
 #endif
-#endif   
+
+#endif

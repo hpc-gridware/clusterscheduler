@@ -1,6 +1,5 @@
-#ifndef __SGE_RESOURCE_QUOTAL_RQL_H
-#define __SGE_RESOURCE_QUOTAL_RQL_H
-
+#ifndef SGE_RQL_L_H
+#define SGE_RQL_L_H
 /*___INFO__MARK_BEGIN__*/
 /*************************************************************************
  * 
@@ -36,31 +35,53 @@
 #include "cull/cull.h"
 #include "sgeobj/cull/sge_boundaries.h"
 
-#ifdef  __cplusplus
+#ifdef __cplusplus
 extern "C" {
 #endif
 
-/* *INDENT-OFF* */
+/**
+* @brief @todo add summary
+*
+* @todo add description
+*
+*    SGE_STRING(RQL_name) - @todo add summary
+*    @todo add description
+*
+*    SGE_INT(RQL_result) - @todo add summary
+*    @todo add description
+*
+*    SGE_ULONG(RQL_time) - @todo add summary
+*    @todo add description
+*
+*    SGE_INT(RQL_slots) - @todo add summary
+*    @todo add description
+*
+*    SGE_INT(RQL_slots_qend) - @todo add summary
+*    @todo add description
+*
+*    SGE_ULONG(RQL_tagged4schedule) - @todo add summary
+*    @todo add description
+*
+*/
 
-/* Resource Quota Limit - used only for caching scheduler-internally */
 enum {
    RQL_name = RQL_LOWERBOUND,
-   RQL_result,      /* dispatch_t */
-   RQL_time,        /* sequential dispatching only */
-   RQL_slots,       /* parallel dispatching only */
-   RQL_slots_qend,   /* parallel dispatching only */
-   RQL_tagged4schedule /* parallel dispatching only */
+   RQL_result,
+   RQL_time,
+   RQL_slots,
+   RQL_slots_qend,
+   RQL_tagged4schedule
 };
 
 LISTDEF(RQL_Type)
-   SGE_STRING(RQL_name, CULL_PRIMARY_KEY | CULL_HASH | CULL_UNIQUE )
-   SGE_INT(RQL_result, CULL_DEFAULT )
-   SGE_ULONG(RQL_time, CULL_DEFAULT )
-   SGE_INT(RQL_slots, CULL_DEFAULT )
-   SGE_INT(RQL_slots_qend, CULL_DEFAULT )
+   SGE_STRING(RQL_name, CULL_PRIMARY_KEY | CULL_UNIQUE | CULL_HASH)
+   SGE_INT(RQL_result, CULL_DEFAULT)
+   SGE_ULONG(RQL_time, CULL_DEFAULT)
+   SGE_INT(RQL_slots, CULL_DEFAULT)
+   SGE_INT(RQL_slots_qend, CULL_DEFAULT)
    SGE_ULONG(RQL_tagged4schedule, CULL_DEFAULT)
 LISTEND
- 
+
 NAMEDEF(RQLN)
    NAME("RQL_name")
    NAME("RQL_result")
@@ -70,11 +91,10 @@ NAMEDEF(RQLN)
    NAME("RQL_tagged4schedule")
 NAMEEND
 
-#define RQLS sizeof(RQLN)/sizeof(char*)
+#define RQL_SIZE sizeof(RQLN)/sizeof(char *)
 
-/* *INDENT-ON* */ 
-
-#ifdef  __cplusplus
+#ifdef __cplusplus
 }
 #endif
-#endif 
+
+#endif

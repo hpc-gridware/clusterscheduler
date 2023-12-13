@@ -1,6 +1,5 @@
-#ifndef __SGE_ANSWERL_H
-#define __SGE_ANSWERL_H
-
+#ifndef SGE_AN_L_H
+#define SGE_AN_L_H
 /*___INFO__MARK_BEGIN__*/
 /*************************************************************************
  * 
@@ -33,32 +32,29 @@
  ************************************************************************/
 /*___INFO__MARK_END__*/
 
-#include "sgeobj/cull/sge_boundaries.h"
 #include "cull/cull.h"
+#include "sgeobj/cull/sge_boundaries.h"
 
-#ifdef  __cplusplus
+#ifdef __cplusplus
 extern "C" {
 #endif
 
-/* *INDENT-OFF* */
+/**
+* @brief @todo add summary
+*
+* @todo add description
+*
+*    SGE_ULONG(AN_status) - @todo add summary
+*    @todo add description
+*
+*    SGE_STRING(AN_text) - @todo add summary
+*    @todo add description
+*
+*    SGE_ULONG(AN_quality) - @todo add summary
+*    @todo add description
+*
+*/
 
-/****** sgeobj/answer/--AN_Type ***********************************************
-*  NAME
-*     AN_Type - CULL answer element
-*
-*  ELEMENTS
-*     SGE_ULONG(AN_status)
-*        status of an answer (e.g STATUS_NOCOMMD) 
-*
-*     SGE_STRING(AN_text)
-*        printable error text
-*
-*     SGE_ULONG(AN_quality)
-*        answer quality (e.g ANSWER_QUALITY_ERROR)
-*
-*  FUNCTION
-*     CULL element holding information for an answer of a request. 
-******************************************************************************/
 enum {
    AN_status = AN_LOWERBOUND,
    AN_text,
@@ -66,11 +62,10 @@ enum {
 };
 
 LISTDEF(AN_Type)
-   JGDI_OBJ(JGDIAnswer)
    SGE_ULONG(AN_status, CULL_DEFAULT)
    SGE_STRING(AN_text, CULL_DEFAULT)
    SGE_ULONG(AN_quality, CULL_DEFAULT)
-LISTEND 
+LISTEND
 
 NAMEDEF(ANN)
    NAME("AN_status")
@@ -78,12 +73,10 @@ NAMEDEF(ANN)
    NAME("AN_quality")
 NAMEEND
 
-/* *INDENT-ON* */
+#define AN_SIZE sizeof(ANN)/sizeof(char *)
 
-#define ANS sizeof(ANN)/sizeof(char*)
-#ifdef  __cplusplus
+#ifdef __cplusplus
 }
 #endif
 
-#endif  /* __SGE_ANSWERL_H */
-
+#endif

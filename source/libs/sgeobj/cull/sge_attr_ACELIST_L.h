@@ -1,6 +1,5 @@
-#ifndef __SGE_HOSTATTR_CELIST_L_H
-#define __SGE_HOSTATTR_CELIST_L_H
-
+#ifndef SGE_ACELIST_L_H
+#define SGE_ACELIST_L_H
 /*___INFO__MARK_BEGIN__*/
 /*************************************************************************
  * 
@@ -33,14 +32,25 @@
  ************************************************************************/
 /*___INFO__MARK_END__*/
 
-#include "sgeobj/cull/sge_boundaries.h"
 #include "cull/cull.h"
+#include "sgeobj/cull/sge_boundaries.h"
 
-#ifdef  __cplusplus
+#ifdef __cplusplus
 extern "C" {
 #endif
 
-/* *INDENT-OFF* */  
+/**
+* @brief @todo add summary
+*
+* @todo add description
+*
+*    SGE_HOST(ACELIST_href) - @todo add summary
+*    @todo add description
+*
+*    SGE_LIST(ACELIST_value) - @todo add summary
+*    @todo add description
+*
+*/
 
 enum {
    ACELIST_href = ACELIST_LOWERBOUND,
@@ -48,9 +58,8 @@ enum {
 };
 
 LISTDEF(ACELIST_Type)
-   JGDI_MAP_OBJ(ACELIST_href, ACELIST_value)
-   SGE_HOST(ACELIST_href, CULL_PRIMARY_KEY | CULL_HASH | CULL_UNIQUE | CULL_SUBLIST)
-   SGE_LIST(ACELIST_value, CE_Type, CULL_DEFAULT | CULL_SUBLIST)
+   SGE_HOST(ACELIST_href, CULL_PRIMARY_KEY | CULL_UNIQUE | CULL_HASH | CULL_SUBLIST)
+   SGE_LIST(ACELIST_value, CE_Type, CULL_SUBLIST)
 LISTEND
 
 NAMEDEF(ACELISTN)
@@ -58,11 +67,10 @@ NAMEDEF(ACELISTN)
    NAME("ACELIST_value")
 NAMEEND
 
-#define ACELISTS sizeof(ACELISTN)/sizeof(char*)
+#define ACELIST_SIZE sizeof(ACELISTN)/sizeof(char *)
 
-/* *INDENT-ON* */  
-
-#ifdef  __cplusplus
+#ifdef __cplusplus
 }
 #endif
-#endif   
+
+#endif

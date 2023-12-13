@@ -39,6 +39,7 @@
 #include "uti/sge_os.h"
 #include "uti/sge_stdlib.h"
 #include "uti/sge_log.h"
+#include "uti/sge_monitor.h"
 #include "uti/sge_time.h"
 
 #include "gdi/sge_gdi.h"

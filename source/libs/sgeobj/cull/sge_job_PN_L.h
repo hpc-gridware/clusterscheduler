@@ -1,5 +1,5 @@
-#ifndef __SGE_JOB_PN_L_H
-#define __SGE_JOB_PN_L_H
+#ifndef SGE_PN_L_H
+#define SGE_PN_L_H
 /*___INFO__MARK_BEGIN__*/
 /*************************************************************************
  * 
@@ -32,17 +32,32 @@
  ************************************************************************/
 /*___INFO__MARK_END__*/
 
+#include "cull/cull.h"
 #include "sgeobj/cull/sge_boundaries.h"
 
-#include "cull/cull.h"
-
-#ifdef  __cplusplus
+#ifdef __cplusplus
 extern "C" {
 #endif
 
-/* -------- path name list ----------------- */
-/* [host:]path[,[host:]path...]              */
-   
+/**
+* @brief @todo add summary
+*
+* @todo add description
+*
+*    SGE_STRING(PN_path) - @todo add summary
+*    @todo add description
+*
+*    SGE_HOST(PN_host) - @todo add summary
+*    @todo add description
+*
+*    SGE_HOST(PN_file_host) - @todo add summary
+*    @todo add description
+*
+*    SGE_BOOL(PN_file_staging) - @todo add summary
+*    @todo add description
+*
+*/
+
 enum {
    PN_path = PN_LOWERBOUND,
    PN_host,
@@ -51,9 +66,8 @@ enum {
 };
 
 LISTDEF(PN_Type)
-   JGDI_OBJ(PathName)
-   SGE_STRING(PN_path, CULL_PRIMARY_KEY | CULL_DEFAULT | CULL_SUBLIST)
-   SGE_HOST(PN_host, CULL_DEFAULT)                   
+   SGE_STRING(PN_path, CULL_PRIMARY_KEY | CULL_SUBLIST)
+   SGE_HOST(PN_host, CULL_DEFAULT)
    SGE_HOST(PN_file_host, CULL_DEFAULT)
    SGE_BOOL(PN_file_staging, CULL_DEFAULT)
 LISTEND
@@ -65,12 +79,10 @@ NAMEDEF(PNN)
    NAME("PN_file_staging")
 NAMEEND
 
-#define PNS sizeof(PNN)/sizeof(char*)
+#define PN_SIZE sizeof(PNN)/sizeof(char *)
 
-/* *INDENT-ON* */
-
-#ifdef  __cplusplus
+#ifdef __cplusplus
 }
 #endif
 
-#endif /* __SGE_JOBL_H */
+#endif

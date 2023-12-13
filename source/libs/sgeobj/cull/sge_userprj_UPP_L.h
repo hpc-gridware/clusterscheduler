@@ -1,6 +1,5 @@
-#ifndef __SGE_USERPRJ_UPP_L_H
-#define __SGE_USERPRJ_UPP_L_H
-
+#ifndef SGE_UPP_L_H
+#define SGE_UPP_L_H
 /*___INFO__MARK_BEGIN__*/
 /*************************************************************************
  * 
@@ -36,40 +35,37 @@
 #include "cull/cull.h"
 #include "sgeobj/cull/sge_boundaries.h"
 
-#ifdef  __cplusplus
+#ifdef __cplusplus
 extern "C" {
 #endif
 
-/* 
- *
- * This is the project usage list type we use to hold the usage for
- * a user on a project basis. Each entry contains a project name and
- * a usage list.
- */
+/**
+* @brief @todo add summary
+*
+* @todo add description
+*
+*    SGE_STRING(UPP_name) - @todo add summary
+*    @todo add description
+*
+*    SGE_LIST(UPP_usage) - @todo add summary
+*    @todo add description
+*
+*    SGE_LIST(UPP_long_term_usage) - @todo add summary
+*    @todo add description
+*
+*/
+
 enum {
    UPP_name = UPP_LOWERBOUND,
    UPP_usage,
    UPP_long_term_usage
 };
 
-enum {
-   UPP_name_POS = 0,
-   UPP_usage_POS,
-   UPP_long_term_usage_POS
-};
-
-
 LISTDEF(UPP_Type)
-   JGDI_OBJ(ProjectUsage)
-   SGE_STRING(UPP_name, CULL_PRIMARY_KEY | CULL_HASH | CULL_UNIQUE | CULL_SUBLIST)    /* project name */
-   SGE_MAP(UPP_usage, UA_Type, CULL_DEFAULT | CULL_SUBLIST)     /* 
-                            * UA_Type; decayed usage set and used by SGEEE 
-                            * schedd stored to qmaster; spooled 
-                            */
-   SGE_MAP(UPP_long_term_usage, UA_Type, CULL_DEFAULT | CULL_SUBLIST) /* UA_Type; long term accumulated 
-                                  * non-decayed usage; set by SGEEE 
-                                  * schedd stored to qmaster; spooled */
-LISTEND 
+   SGE_STRING(UPP_name, CULL_PRIMARY_KEY | CULL_UNIQUE | CULL_HASH | CULL_SUBLIST)
+   SGE_LIST(UPP_usage, UA_Type, CULL_SUBLIST)
+   SGE_LIST(UPP_long_term_usage, UA_Type, CULL_SUBLIST)
+LISTEND
 
 NAMEDEF(UPPN)
    NAME("UPP_name")
@@ -77,11 +73,10 @@ NAMEDEF(UPPN)
    NAME("UPP_long_term_usage")
 NAMEEND
 
-/* *INDENT-ON* */ 
+#define UPP_SIZE sizeof(UPPN)/sizeof(char *)
 
-#define UPPS sizeof(UPPN)/sizeof(char*)
-
-#ifdef  __cplusplus
+#ifdef __cplusplus
 }
 #endif
-#endif                          
+
+#endif

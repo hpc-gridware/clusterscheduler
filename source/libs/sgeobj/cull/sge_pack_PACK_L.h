@@ -1,5 +1,5 @@
-#ifndef __PACK_PACK_L_H
-#define __PACK_PACK_L_H
+#ifndef SGE_PACK_L_H
+#define SGE_PACK_L_H
 /*___INFO__MARK_BEGIN__*/
 /*************************************************************************
  * 
@@ -33,33 +33,44 @@
 /*___INFO__MARK_END__*/
 
 #include "cull/cull.h"
-
 #include "sgeobj/cull/sge_boundaries.h"
 
-#ifdef  __cplusplus
+#ifdef __cplusplus
 extern "C" {
 #endif
 
-/* *INDENT-OFF* */
+/**
+* @brief @todo add summary
+*
+* @todo add description
+*
+*    SGE_ULONG(PACK_id) - @todo add summary
+*    @todo add description
+*
+*    SGE_STRING(PACK_string) - @todo add summary
+*    @todo add description
+*
+*/
+
 enum {
    PACK_id = PACK_LOWERBOUND,
    PACK_string
 };
 
-LISTDEF( PACK_Type )
-   SGE_ULONG(PACK_id, CULL_DEFAULT) /* id = what or where date structure */
-   SGE_STRING(PACK_string, CULL_DEFAULT)  /* the raw data in ascii */
+LISTDEF(PACK_Type)
+   SGE_ULONG(PACK_id, CULL_DEFAULT)
+   SGE_STRING(PACK_string, CULL_DEFAULT)
 LISTEND
 
-NAMEDEF( PACKN )
-   NAME   ( "PACK_id") 
-   NAME   ( "PACK_string")
+NAMEDEF(PACKN)
+   NAME("PACK_id")
+   NAME("PACK_string")
 NAMEEND
 
-/* *INDENT-ON* */ 
+#define PACK_SIZE sizeof(PACKN)/sizeof(char *)
 
-#define PACKS sizeof(PACKN)/sizeof(char*)
-#ifdef  __cplusplus
+#ifdef __cplusplus
 }
 #endif
-#endif /* __PACKL_H */
+
+#endif

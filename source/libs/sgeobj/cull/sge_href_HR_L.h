@@ -1,6 +1,5 @@
-#ifndef __SGE_HOSTGRPL_H
-#define __SGE_HOSTGRPL_H
-
+#ifndef SGE_HR_L_H
+#define SGE_HR_L_H
 /*___INFO__MARK_BEGIN__*/
 /*************************************************************************
  * 
@@ -36,32 +35,36 @@
 #include "cull/cull.h"
 #include "sgeobj/cull/sge_boundaries.h"
 
-#ifdef  __cplusplus
+#ifdef __cplusplus
 extern "C" {
 #endif
 
-/* *INDENT-OFF* */
+/**
+* @brief @todo add summary
+*
+* @todo add description
+*
+*    SGE_HOST(HR_name) - @todo add summary
+*    @todo add description
+*
+*/
 
 enum {
    HR_name = HR_LOWERBOUND
 };
 
 LISTDEF(HR_Type)
-   JGDI_PRIMITIVE_OBJ(HR_name)
-   SGE_HOST(HR_name, CULL_PRIMARY_KEY | CULL_HASH | CULL_UNIQUE | CULL_SUBLIST)
+   SGE_HOST(HR_name, CULL_PRIMARY_KEY | CULL_UNIQUE | CULL_HASH | CULL_SUBLIST)
 LISTEND
 
 NAMEDEF(HRN)
    NAME("HR_name")
 NAMEEND
 
-#define HRS sizeof(HRN)/sizeof(char*)
+#define HR_SIZE sizeof(HRN)/sizeof(char *)
 
-
-/* *INDENT-ON* */
-
-#ifdef  __cplusplus
+#ifdef __cplusplus
 }
 #endif
 
-#endif /* __SGE_HOSTREFL_H */
+#endif

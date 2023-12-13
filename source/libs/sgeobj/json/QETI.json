@@ -1,0 +1,37 @@
+{
+	"className":	"QETI",
+	"summary":	"@todo add summary",
+	"description":	[{
+			"line":	"@todo add description"
+		}],
+	"cullPrefix":	"QETI",
+	"attributes":	[{
+			"name":	"total",
+			"summary":	"@todo add summary",
+			"description":	[{
+					"line":	"@todo add description"
+				}],
+			"type":	"lDoubleT",
+			"flags":	[]
+		}, {
+			"name":	"resource_instance",
+			"summary":	"@todo add summary",
+			"description":	[{
+					"line":	"@todo add description"
+				}],
+			"type":	"lRefT",
+			"subClassName":	"ResourceUtilization",
+			"subCullPrefix":	"RUE",
+			"flags":	[]
+		}, {
+			"name":	"queue_end_next",
+			"summary":	"@todo add summary",
+			"description":	[{
+					"line":	"@todo add description"
+				}],
+			"type":	"lRefT",
+			"subClassName":	"ResourceDiagramEntry",
+			"subCullPrefix":	"RDE",
+			"flags":	[]
+		}]
+}

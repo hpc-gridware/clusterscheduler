@@ -1,6 +1,5 @@
-#ifndef __SGE_QETIL_H
-#define __SGE_QETIL_H
-
+#ifndef SGE_QETI_L_H
+#define SGE_QETI_L_H
 /*___INFO__MARK_BEGIN__*/
 /*************************************************************************
  * 
@@ -34,43 +33,28 @@
 /*___INFO__MARK_END__*/
 
 #include "cull/cull.h"
-
 #include "sgeobj/cull/sge_boundaries.h"
 
-#ifdef  __cplusplus
+#ifdef __cplusplus
 extern "C" {
 #endif
 
-/* *INDENT-OFF* */ 
+/**
+* @brief @todo add summary
+*
+* @todo add description
+*
+*    SGE_DOUBLE(QETI_total) - @todo add summary
+*    @todo add description
+*
+*    SGE_REF(QETI_resource_instance) - @todo add summary
+*    @todo add description
+*
+*    SGE_REF(QETI_queue_end_next) - @todo add summary
+*    @todo add description
+*
+*/
 
-/****** sgeobj/QETI/--QETI_Type **************************************************
-*  NAME
-*     QETI_Type - Queue End Time Iterator building blocks
-*
-*  ELEMENTS
-*
-*     SGE_DOUBLE(QETI_total)
-*        Keeps information about total amount of the resource instance.
-*        It would be nice if that in information were also contained in
-*        the RUE_Type element referenced via the resource utilization 
-*        entry QETI_resource_instance. Unfortunately this is not the 
-*        case so we keep it here separately.
-*
-*     SGE_REF(QETI_resource_instance)
-*        Reference to a resource utilization entry (RUE_Type element) that keeps 
-*        all information about resource utilization of a particular resource
-*        instance.
-*
-*     SGE_REF(QETI_queue_end_next)
-*        Reference to the next entry in the resource utilization diagram 
-*        (RDE_Type elemnt). All next pointers related to all resource instances
-*        represent the state of a sge_qeti_t iterator.
-*
-*  FUNCTION
-*     Qeti != Yeti 
-*
-*  SEE ALSO
-******************************************************************************/
 enum {
    QETI_total = QETI_LOWERBOUND,
    QETI_resource_instance,
@@ -81,7 +65,7 @@ LISTDEF(QETI_Type)
    SGE_DOUBLE(QETI_total, CULL_DEFAULT)
    SGE_REF(QETI_resource_instance, RUE_Type, CULL_DEFAULT)
    SGE_REF(QETI_queue_end_next, RDE_Type, CULL_DEFAULT)
-LISTEND 
+LISTEND
 
 NAMEDEF(QETIN)
    NAME("QETI_total")
@@ -89,10 +73,10 @@ NAMEDEF(QETIN)
    NAME("QETI_queue_end_next")
 NAMEEND
 
-#define QETIS sizeof(QETIN)/sizeof(char*)
+#define QETI_SIZE sizeof(QETIN)/sizeof(char *)
 
-#ifdef  __cplusplus
+#ifdef __cplusplus
 }
 #endif
-#endif                          /* __SGE_QETIL_H */
 
+#endif
