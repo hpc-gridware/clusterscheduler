@@ -180,12 +180,19 @@ dump_cull_type_doc(cJSON *json_attrib, const char *cull_prefix, dstring *dstr_do
 }
 
 static bool
-dump_cull_type_enum(cJSON *json_attrib, const char *cull_prefix, dstring *dstr_enum, bool last)
+dump_cull_type_enum(cJSON *json_attrib, const char *cull_prefix, dstring *dstr_enum, bool first, bool last)
 {
    bool ret = true;
    const char *name = get_json_string(json_attrib, "name");
 
-   sge_dstring_sprintf_append(dstr_enum, "   %s_%s%s\n", cull_prefix, name, last ? "" : ",");
+   sge_dstring_sprintf_append(dstr_enum, "   %s_%s", cull_prefix, name);
+   if (first) {
+      sge_dstring_sprintf_append(dstr_enum, " = %s_LOWERBOUND", cull_prefix);
+   }
+   if (!last) {
+      sge_dstring_append_char(dstr_enum, ',');
+   }
+   sge_dstring_append_char(dstr_enum, '\n');
 
    return ret;
 }
@@ -194,8 +201,7 @@ const char *dump_cull_type_flags(cJSON *json_flags, dstring *dstr_flags)
 {
    int num_items = cJSON_GetArraySize(json_flags);
    int i;
-
-   sge_dstring_sprintf(dstr_flags, "CULL_DEFAULT");
+   bool first = true;
 
    for (i = 0; i < num_items; i++) {
       cJSON *json_item = cJSON_GetArrayItem(json_flags, i);
@@ -203,8 +209,17 @@ const char *dump_cull_type_flags(cJSON *json_flags, dstring *dstr_flags)
 
       // dump flags except for the JGDI_*
       if (strstr(name, "JGDI") == NULL) {
-         sge_dstring_sprintf_append(dstr_flags, ", %s", name);
+         if (first) {
+            first = false;
+         } else {
+            sge_dstring_append(dstr_flags, " | ");
+         }
+         sge_dstring_sprintf_append(dstr_flags, "CULL_%s", name);
       }
+   }
+   // we didn't dump any flags, write the CULL_DEFAULT
+   if (first) {
+      sge_dstring_sprintf(dstr_flags, "CULL_DEFAULT");
    }
 
    return sge_dstring_get_string(dstr_flags);
@@ -286,7 +301,7 @@ dump_cull_type_Lh(const char *source_dir, const char *target_dir, const char *cu
       for (i = 0; i < num_attribs; i++) {
          cJSON *json_attrib = cJSON_GetArrayItem(json_attribs, i);
          dump_cull_type_doc(json_attrib, cull_prefix, &dstr_begin);
-         dump_cull_type_enum(json_attrib, cull_prefix, &dstr_enum, i == num_attribs -1);
+         dump_cull_type_enum(json_attrib, cull_prefix, &dstr_enum, i == 0, i == num_attribs -1);
          dump_cull_type_listdef(json_attrib, cull_prefix, &dstr_listdef);
          dump_cull_type_namedef(json_attrib, cull_prefix, &dstr_namedef);
       }

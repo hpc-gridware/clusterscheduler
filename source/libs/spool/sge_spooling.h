@@ -42,7 +42,6 @@
 #include "sgeobj/cull/sge_spooling_SPR_L.h"
 #include "sgeobj/cull/sge_spooling_SPT_L.h"
 #include "sgeobj/cull/sge_spooling_SPTR_L.h"
-#include "sgeobj/cull/sge_spooling_SPM_L.h"
 
 /****** spool/--Spooling ***************************************
 *

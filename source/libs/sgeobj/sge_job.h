@@ -38,7 +38,6 @@
 #include "sgeobj/cull/sge_job_JB_L.h"
 #include "sgeobj/cull/sge_job_JG_L.h"
 #include "sgeobj/cull/sge_job_PN_L.h"
-#include "sgeobj/cull/sge_job_AT_L.h"
 #include "sgeobj/cull/sge_job_ref_JRE_L.h"
 
 /* Job states moved in from def.h */

@@ -42,5 +42,4 @@
 
 int do_core_binding(void);
 
-#endif /* __SGE_BINDING_H */
-
+#endif /* __SHEPHERD_BINDING_H */

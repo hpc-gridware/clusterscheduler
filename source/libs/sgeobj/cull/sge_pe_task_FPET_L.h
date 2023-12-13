@@ -1,6 +1,5 @@
-
-#ifndef __SGE_PE_TASKL_H
-#define __SGE_PE_TASKL_H
+#ifndef __SGE_PE_TASK_FPET_L_H
+#define __SGE_PE_TASK_FPET_L_H
 /*___INFO__MARK_BEGIN__*/
 /*************************************************************************
  * 
@@ -41,6 +40,7 @@
 extern "C" {
 #endif
 
+#if 0
 /****** sgeobj/pe_task/--PET_Type *********************************************
 *  NAME
 *     PET_Type - CULL pe task element 
@@ -260,7 +260,7 @@ NAMEDEF(PETRN)
 NAMEEND
 
 #define PETRS sizeof(PETRN)/sizeof(char*)
-
+#endif
 /*
  * We need to store information about finished pe tasks to avoid
  * duplicate accounting records (see IZ 438).
@@ -291,5 +291,5 @@ NAMEEND
 }
 #endif
 
-#endif /* __SGE_PE_TASKL_H */
+#endif /* __SGE_PE_TASK_FPET_L_H */
 

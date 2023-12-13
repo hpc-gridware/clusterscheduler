@@ -38,9 +38,6 @@
 
 /* Definition of new names */
 
-#include "sgeobj/cull/sge_access_tree_PGR_L.h"
-#include "sgeobj/cull/sge_access_tree_USR_L.h"
-#include "sgeobj/cull/sge_access_tree_JRL_L.h"
 #include "sgeobj/cull/sge_ack_ACK_L.h"
 #include "sgeobj/cull/sge_advance_reservation_AR_L.h"
 #include "sgeobj/cull/sge_advance_reservation_ARA_L.h"
@@ -78,7 +75,6 @@
 #include "sgeobj/cull/sge_cull_xml_XMLS_L.h"
 #include "sgeobj/cull/sge_cull_xml_XMLH_L.h"
 #include "sgeobj/cull/sge_cull_xml_XMLE_L.h"
-#include "sgeobj/cull/sge_cuser_CU_L.h"
 #include "sgeobj/cull/sge_eejob_FCAT_L.h"
 #include "sgeobj/cull/sge_eejob_SGEJ_L.h"
 #include "sgeobj/cull/sge_event_EV_L.h"
@@ -100,7 +96,6 @@
 #include "sgeobj/cull/sge_japi_JJAT_L.h"
 #include "sgeobj/cull/sge_japi_NSV_L.h"
 #include "sgeobj/cull/sge_ja_task_JAT_L.h"
-#include "sgeobj/cull/sge_job_AT_L.h"
 #include "sgeobj/cull/sge_job_JB_L.h"
 #include "sgeobj/cull/sge_job_JG_L.h"
 #include "sgeobj/cull/sge_job_PN_L.h"
@@ -123,9 +118,9 @@
 #include "sgeobj/cull/sge_parse_SPA_L.h"
 #include "sgeobj/cull/sge_path_alias_PA_L.h"
 #include "sgeobj/cull/sge_pe_PE_L.h"
-#include "sgeobj/cull/sge_pe_task_FPET_L.h"
 #include "sgeobj/cull/sge_pe_task_PET_L.h"
 #include "sgeobj/cull/sge_pe_task_PETR_L.h"
+#include "sgeobj/cull/sge_pe_task_FPET_L.h"
 #include "sgeobj/cull/sge_permission_PERM_L.h"
 #include "sgeobj/cull/sge_ptf_JL_L.h"
 #include "sgeobj/cull/sge_ptf_JO_L.h"
@@ -148,7 +143,6 @@
 #include "sgeobj/cull/sge_resource_utilization_RUE_L.h"
 #include "sgeobj/cull/sge_schedd_conf_PARA_L.h"
 #include "sgeobj/cull/sge_schedd_conf_SC_L.h"
-#include "sgeobj/cull/sge_sec_SEC_L.h"
 #include "sgeobj/cull/sge_select_queue_LDR_L.h"
 #include "sgeobj/cull/sge_select_queue_QRL_L.h"
 #include "sgeobj/cull/sge_sharetree_STN_L.h"
@@ -156,7 +150,6 @@
 #include "sgeobj/cull/sge_spooling_SPR_L.h"
 #include "sgeobj/cull/sge_spooling_SPT_L.h"
 #include "sgeobj/cull/sge_spooling_SPTR_L.h"
-#include "sgeobj/cull/sge_spooling_SPM_L.h"
 #include "sgeobj/cull/sge_str_ST_L.h"
 #include "sgeobj/cull/sge_str_STU_L.h"
 #include "sgeobj/cull/sge_subordinate_SO_L.h"
@@ -214,7 +207,6 @@ lNameSpace nmv[] = {
    {UE_LOWERBOUND, UES, UEN, UE_Type},        /* user set entry */
    {RN_LOWERBOUND, RNS, RNN, RN_Type},        /* range list */
    {PN_LOWERBOUND, PNS, PNN, PN_Type},        /* path name list */
-   {AT_LOWERBOUND, ATS, ATN, AT_Type},        /* account list */
    {VA_LOWERBOUND, VAS, VAN, VA_Type},        /* variable list */
    {MR_LOWERBOUND, MRS, MRN, MR_Type},        /* mail recipiants list */
    {UM_LOWERBOUND, UMS, UMN, UM_Type},        /* manager list */
@@ -274,32 +266,23 @@ lNameSpace nmv[] = {
                                       * the dynamic elements of a Job */
    {CT_LOWERBOUND, CTS, CTN, CT_Type},        /* scheduler job category */
 
-   {PGR_LOWERBOUND, PGRS, PGRN, PGR_Type},     /* scheduler access tree: priority
-                                      * group */
-   {USR_LOWERBOUND, USRS, USRN, USR_Type},     /* scheduler access tree: user */
-   {JRL_LOWERBOUND, JRLS, JRLN, JRL_Type},     /* scheduler access tree: job
-                                      * reference */
    {SGEJ_LOWERBOUND, SGEJS, SGEJN, SGEJ_Type},     /* scheduler sge job sort element */
    {ULNG_LOWERBOUND, ULNGS, ULNGN, ULNG_Type},          /* ???? info-messages ??? */
 
    {HGRP_LOWERBOUND, HGRPS, HGRPN, HGRP_Type},  /* hostgroup list */
    {HR_LOWERBOUND, HRS, HRN, HR_Type},        /* host/group reference list */
    {PERM_LOWERBOUND, PERMS, PERMN, PERM_Type},  /* permission list */
-   {CU_LOWERBOUND, CUS, CUN, CU_Type},        /* usermap entry list for
-                                      * administrator mapping */
    {LS_LOWERBOUND, LSS, LSN, LS_Type},        /* load sensor list */
 
    {RU_LOWERBOUND, RUS, RUN, RU_Type},        /* user unknown list */
    {FES_LOWERBOUND, FESS, FESN, FES_Type},
    
    {SU_LOWERBOUND, SUS, SUN, SU_Type},        /* submit user */
-   {SEC_LOWERBOUND, SECS, SECN, SEC_Type},    /* Certificate security */
 
    {SPC_LOWERBOUND, SPCS, SPCN, SPC_Type},     /* Spooling context */
    {SPR_LOWERBOUND, SPRS, SPRN, SPR_Type},     /* Spooling rule */
    {SPT_LOWERBOUND, SPTS, SPTN, SPT_Type},     /* Spooling object type */
    {SPTR_LOWERBOUND, SPTRS, SPTRN, SPTR_Type},  /* Spooling rules for object type */
-   {SPM_LOWERBOUND, SPMS, SPMN, SPM_Type},     /* Mapping object->id */
 
    {JJ_LOWERBOUND, JJS, JJN, JJ_Type},        /* JAPI job */
    {JJAT_LOWERBOUND, JJATS, JJATN, JJAT_Type},  /* JAPI array task */

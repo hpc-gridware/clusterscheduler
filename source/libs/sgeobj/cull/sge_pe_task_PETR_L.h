@@ -1,6 +1,5 @@
-
-#ifndef __SGE_PE_TASKL_H
-#define __SGE_PE_TASKL_H
+#ifndef __SGE_PE_TASK_PETR_L_H
+#define __SGE_PE_TASK_PETR_L_H
 /*___INFO__MARK_BEGIN__*/
 /*************************************************************************
  * 
@@ -110,6 +109,7 @@ extern "C" {
 *     gdi/job/--JB_Type
 *     gdi/job_jatask/JAT_Type                             
 ******************************************************************************/
+#if 0
 enum {
    PET_id = PET_LOWERBOUND,
    PET_name,
@@ -190,6 +190,7 @@ NAMEEND
 
 
 #define PETS sizeof(PETN)/sizeof(char*)
+#endif
 
 /****** sgeobj/pe_task/--PETR_Type ********************************************
 *  NAME
@@ -261,6 +262,7 @@ NAMEEND
 
 #define PETRS sizeof(PETRN)/sizeof(char*)
 
+#if 0
 /*
  * We need to store information about finished pe tasks to avoid
  * duplicate accounting records (see IZ 438).
@@ -285,11 +287,11 @@ NAMEEND
 /* *INDENT-ON* */
 
 #define FPETS sizeof(FPETN)/sizeof(char *)
-
+#endif
 
 #ifdef  __cplusplus
 }
 #endif
 
-#endif /* __SGE_PE_TASKL_H */
+#endif /* __SGE_PE_TASK_PETR_L_H */
 

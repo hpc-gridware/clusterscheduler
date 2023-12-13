@@ -1,6 +1,5 @@
-
-#ifndef __SGE_PE_TASKL_H
-#define __SGE_PE_TASKL_H
+#ifndef __SGE_PE_TASK_PET_L_H
+#define __SGE_PE_TASK_PET_L_H
 /*___INFO__MARK_BEGIN__*/
 /*************************************************************************
  * 
@@ -191,6 +190,8 @@ NAMEEND
 
 #define PETS sizeof(PETN)/sizeof(char*)
 
+
+#if 0
 /****** sgeobj/pe_task/--PETR_Type ********************************************
 *  NAME
 *     PET_Type - CULL pe task request element 
@@ -285,11 +286,11 @@ NAMEEND
 /* *INDENT-ON* */
 
 #define FPETS sizeof(FPETN)/sizeof(char *)
-
+#endif
 
 #ifdef  __cplusplus
 }
 #endif
 
-#endif /* __SGE_PE_TASKL_H */
+#endif /* __SGE_PE_TASK_PET_L_H */
 
