@@ -170,7 +170,7 @@ bool test_scenario2(void) {
       lObserveStart();
       lListElem *ep, *ep1;
       for_each(ep, master_list0) {
-         lList *lp = lGetList(ep, TEST_list);
+         lList *lp = lGetListRW(ep, TEST_list);
 
          for_each(ep1, lp) {
             u_long32 val = lGetUlong(ep1, TEST_ulong);
@@ -220,7 +220,7 @@ bool test_scenario3(void) {
       lObserveStart();
       lListElem *ep, *ep1;
       for_each(ep, master_list0) {
-         lList *lp = lGetList(ep, TEST_list);
+         lList *lp = lGetListRW(ep, TEST_list);
 
          for_each(ep1, lp) {
             u_long32 val = lGetUlong(ep1, TEST_ulong);
