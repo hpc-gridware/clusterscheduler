@@ -110,7 +110,7 @@
 #include "sge_cqueue_qmaster.h"
 #include "sge_give_jobs.h"
 #include "sge_qmod_qmaster.h"
-#include "sge_event_master.h"
+#include "evm/sge_event_master.h"
 #include "msg_common.h"
 #include "msg_qmaster.h"
 

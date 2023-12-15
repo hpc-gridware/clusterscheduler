@@ -38,14 +38,14 @@
 #include <pthread.h>
 #include <pwd.h>
 
-#include "sge_mtutil.h"
+#include "uti/sge_mtutil.h"
 
 #include "drmaa.h"
 #include "msg_drmaa.h"
 #include "japi.h"
 #include "japiP.h"
 
-#include "sge_answer.h"
+#include "sgeobj/sge_answer.h"
 
 /* CLIENTS/COMMON */
 #include "read_defaults.h"
@@ -58,32 +58,31 @@
 #include "symbols.h"
 
 /* UTI */
-#include "setup_path.h"
-#include "sge_dstring.h"
-#include "sge_parse_args.h"
-#include "sge_prog.h"
-#include "sge_string.h"
-#include "sge_uidgid.h"
-#include "sge_profiling.h"
+#include "uti/setup_path.h"
+#include "uti/sge_dstring.h"
+#include "uti/sge_parse_args.h"
+#include "uti/sge_prog.h"
+#include "uti/sge_string.h"
+#include "uti/sge_uidgid.h"
+#include "uti/sge_profiling.h"
 
 /* RMON */
-#include "sge_rmon.h"
+#include "uti/sge_rmon.h"
 
 /* SGEOBJ */
-#include "sge_path_alias.h"
-#include "sge_job.h"
-#include "parse.h"
-#include "sge_mailrec.h"
-#include "sge_range.h"
-#include "sge_ulong.h"
-#include "sge_var.h"
-#include "sge_job.h"
-#include "sge_ja_task.h"
-#include "sge_str.h"
+#include "sgeobj/sge_path_alias.h"
+#include "sgeobj/sge_job.h"
+#include "sgeobj/parse.h"
+#include "sgeobj/sge_mailrec.h"
+#include "sgeobj/sge_range.h"
+#include "sgeobj/sge_ulong.h"
+#include "sgeobj/sge_var.h"
+#include "sgeobj/sge_job.h"
+#include "sgeobj/sge_ja_task.h"
+#include "sgeobj/sge_str.h"
 
 /* GDI */
-#include "sge_qtcsh.h"
-
+#include "gdi/sge_qtcsh.h"
 #include "gdi/sge_gdi_ctx.h"
 
 extern sge_gdi_ctx_class_t *ctx;

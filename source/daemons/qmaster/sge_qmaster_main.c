@@ -69,7 +69,7 @@
 #include "sge_thread_event_master.h"
 #include "setup_qmaster.h"
 #include "sge_qmaster_process_message.h"
-#include "sge_event_master.h"
+#include "evm/sge_event_master.h"
 #include "sge_persistence_qmaster.h"
 #include "sge_reporting_qmaster.h"
 #include "sge_qmaster_timed_event.h"

@@ -32,7 +32,7 @@
  ************************************************************************/
 /*___INFO__MARK_END__*/
 
-#include "cull.h"
+#include "cull/cull.h"
 #include "evc/sge_event_client.h"
 
 typedef struct {

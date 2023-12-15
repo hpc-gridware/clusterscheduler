@@ -56,7 +56,7 @@
 #include "basis_types.h"
 #include "setup_qmaster.h"
 #include "sgeobj/sge_manop.h"
-#include "sge_event_master.h"
+#include "evm/sge_event_master.h"
 #include "sge_reporting_qmaster.h"
 #include "sge_qmaster_timed_event.h"
 #include "sge_host_qmaster.h"

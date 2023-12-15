@@ -47,7 +47,7 @@
 #include <setjmp.h>
 #include <stdlib.h>
 
-#include "cull.h"
+#include "cull/cull.h"
 #include "sge_load_sensor.h"
 #include "sge_rmon.h"
 #include "sge_prog.h"

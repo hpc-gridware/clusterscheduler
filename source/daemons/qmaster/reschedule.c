@@ -57,7 +57,7 @@
 #include "sge.h"
 #include "basis_types.h"
 #include "job_exit.h"
-#include "sge_event_master.h"
+#include "evm/sge_event_master.h"
 #include "sge_ckpt_qmaster.h"
 #include "sge_host_qmaster.h"
 #include "execution_states.h"

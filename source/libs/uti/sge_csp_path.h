@@ -34,7 +34,7 @@
 
 #include "sge_error_class.h"
 #include "sge_env.h"
-#include "cl_data_types.h"
+#include "comm/cl_data_types.h"
 
 typedef struct sge_csp_path_class_str sge_csp_path_class_t; 
 

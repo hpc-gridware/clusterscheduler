@@ -66,9 +66,9 @@
 #include "sched/sge_serf.h"
 
 #include "sge.h"
-#include "sge_event_master.h"
+#include "evm/sge_event_master.h"
 #include "sge_persistence_qmaster.h"
-#include "sge_queue_event_master.h"
+#include "evm/sge_queue_event_master.h"
 #include "sge_qinstance_qmaster.h"
 #include "sge_subordinate_qmaster.h"
 #include "sge_qmod_qmaster.h"

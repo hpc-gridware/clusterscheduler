@@ -34,12 +34,12 @@
 /*___INFO__MARK_END__*/
 
 #include "drmaa.h"
-#include "sge_dstring.h"
+#include "uti/sge_dstring.h"
 #include "basis_types.h"
 #include "sgeobj/cull/sge_japi_JJ_L.h"
 #include "sgeobj/cull/sge_japi_JJAT_L.h"
 #include "sgeobj/cull/sge_japi_NSV_L.h"
-#include "cull.h"
+#include "cull/cull.h"
 
 /****** JAPI/-JAPI_Interface *******************************************************
 *  NAME

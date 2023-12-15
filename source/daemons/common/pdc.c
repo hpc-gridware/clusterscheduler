@@ -187,8 +187,8 @@ int getpagesize(void);
 #include "basis_types.h"
 
 #if defined(PDC_STANDALONE)
-#  include "sge_log.h"
-#  include "sge_language.h"
+#  include "uti/sge_log.h"
+#  include "uti/sge_language.h"
 #  if defined(LINUX)
 #     include "sge_proc.h"
 #  endif

@@ -55,7 +55,7 @@
 #include "msg_qmaster.h"
 #include "basis_types.h"
 #include "sge_qmaster_process_message.h"
-#include "sge_event_master.h"
+#include "evm/sge_event_master.h"
 #include "sge_reporting_qmaster.h"
 #include "sge_qmaster_timed_event.h"
 #include "sge_host_qmaster.h"

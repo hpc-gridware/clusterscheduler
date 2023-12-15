@@ -57,7 +57,7 @@
 #include "execution_states.h"
 #include "job_report_qmaster.h"
 #include "job_exit.h"
-#include "sge_event_master.h"
+#include "evm/sge_event_master.h"
 #include "sge_job_qmaster.h"
 #include "sge_give_jobs.h"
 #include "sge_pe_qmaster.h"

@@ -35,7 +35,7 @@
 
 
 #ifndef __SGE_GDI_INTERN_H
-#   include "sge_gdiP.h"
+#   include "gdi/sge_gdiP.h"
 #endif
 
 #include "uti/sge_monitor.h"

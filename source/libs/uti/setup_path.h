@@ -33,9 +33,9 @@
 /*___INFO__MARK_END__*/
 
 #include "basis_types.h"
-#include "cull_list.h"
-#include "sge_dstring.h"
-#include "sge_env.h"
+#include "cull/cull_list.h"
+#include "uti/sge_dstring.h"
+#include "uti/sge_env.h"
 
 /* These files and directories will be found in COMMON_DIR
  * They must be accessed with an absolute path. Do not use these defines!

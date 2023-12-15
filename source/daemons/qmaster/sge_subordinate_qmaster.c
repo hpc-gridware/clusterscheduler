@@ -51,7 +51,7 @@
 
 #include "sched/sge_sched.h"
 
-#include "sge_event_master.h"
+#include "evm/sge_event_master.h"
 #include "sge_qmod_qmaster.h"
 #include "sge_qinstance_qmaster.h"
 #include "sge_subordinate_qmaster.h"

@@ -68,7 +68,7 @@
 
 #include "spool/sge_spooling.h"
 
-#include "sge_event_master.h"
+#include "evm/sge_event_master.h"
 #include "sge_c_gdi.h"
 #include "sge.h"
 #include "sge_persistence_qmaster.h"

@@ -77,7 +77,7 @@
 #include "msg_common.h"
 #include "msg_qmaster.h"
 #include "sge_host_qmaster.h"
-#include "sge_event_master.h"
+#include "evm/sge_event_master.h"
 #include "configuration_qmaster.h"
 #include "sge_c_gdi.h"
 #include "mail.h"

@@ -74,7 +74,7 @@
 #include "sge_userprj_qmaster.h"
 #include "sge_userset_qmaster.h"
 #include "sge_sharetree_qmaster.h"
-#include "sge_event_master.h"
+#include "evm/sge_event_master.h"
 #include "sge_resource_quota_qmaster.h"
 #include "sge_persistence_qmaster.h"
 #include "spool/sge_spooling.h"

@@ -65,13 +65,13 @@
 
 
 #include "basis_types.h"
-#include "sge_parse_num_par.h"
-#include "config_file.h"
 #include "setrlimits.h"
 #include "err_trace.h"
 #include "setjoblimit.h"
-#include "sge_uidgid.h"
-#include "sge_os.h"
+#include "uti/sge_parse_num_par.h"
+#include "uti/config_file.h"
+#include "uti/sge_uidgid.h"
+#include "uti/sge_os.h"
 #include "sgeobj/sge_conf.h"
 
 #ifndef CRAY

@@ -50,7 +50,7 @@
 #include "spool/sge_spooling.h"
 
 #include "sched_conf_qmaster.h"
-#include "sge_event_master.h"
+#include "evm/sge_event_master.h"
 #include "configuration_qmaster.h"
 #include "sge_persistence_qmaster.h"
 #include "msg_qmaster.h"

@@ -86,7 +86,6 @@
 
 #include "evm/sge_event_master.h"
 #include "evm/sge_queue_event_master.h"
-#include "evm/sge_event_master.h"
 
 #include "sge_utility_qmaster.h"
 #include "sge_host_qmaster.h"

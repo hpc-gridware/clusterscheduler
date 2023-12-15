@@ -38,8 +38,8 @@
 #include "sgeobj/sge_event.h"
 #include "sgeobj/sge_qinstance.h"
 
-#include "sge_event_master.h"
-#include "sge_queue_event_master.h"
+#include "evm/sge_event_master.h"
+#include "evm/sge_queue_event_master.h"
 
 void
 qinstance_add_event(lListElem *this_elem, ev_event type)

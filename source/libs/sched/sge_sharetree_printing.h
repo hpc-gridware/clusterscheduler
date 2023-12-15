@@ -34,9 +34,9 @@
 
 #endif /* __SGE_SHARETREE_PRINTING_H */
 
-#include "cull.h"
+#include "cull/cull.h"
 
-#include "sge_dstring.h"
+#include "uti/sge_dstring.h"
 
 typedef struct {
    bool name_format;

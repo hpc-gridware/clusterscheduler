@@ -46,7 +46,7 @@
 #include "spool/loader/sge_spooling_loader.h"
 
 #include "basis_types.h"
-#include "sge_event_master.h"
+#include "evm/sge_event_master.h"
 #include "sge_persistence_qmaster.h"
 #include "msg_qmaster.h"
 

@@ -36,7 +36,7 @@
 extern "C" {
 #endif
 
-#include "cull.h"
+#include "cull/cull.h"
 #include "sge_select_queue.h"
 
 #define MAXMSGLEN 256

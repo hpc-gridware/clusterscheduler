@@ -38,7 +38,7 @@
 #endif
 
 
-#include "cull_list.h"
+#include "cull/cull_list.h"
 
 /* type wrapper */
 #if defined(CRAY)

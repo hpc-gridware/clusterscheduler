@@ -47,7 +47,7 @@
 
 #include "sge_persistence_qmaster.h"
 #include "sge_manop_qmaster.h"
-#include "sge_event_master.h"
+#include "evm/sge_event_master.h"
 #include "msg_common.h"
 #include "msg_qmaster.h"
 

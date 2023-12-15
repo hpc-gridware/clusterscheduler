@@ -27,9 +27,9 @@
 	"cullPrefix":	"JB",
 	"attributes":	[{
 			"name":	"job_number",
-			"summary":	"Unique job number",
+			"summary":	"Unique Job Number",
 			"description":	[{
-					"line":	"@todo add description"
+					"line":	"holds values in the range of 1..U_LONG32_MAX"
 				}],
 			"type":	"lUlongT",
 			"flags":	[{
@@ -41,9 +41,9 @@
 				}]
 		}, {
 			"name":	"job_name",
-			"summary":	"@todo add summary",
+			"summary":	"Job Name",
 			"description":	[{
-					"line":	"@todo add description"
+					"line":	"(qsub/qalter -N job_name)"
 				}],
 			"type":	"lStringT",
 			"flags":	[{
@@ -51,9 +51,9 @@
 				}]
 		}, {
 			"name":	"version",
-			"summary":	"@todo add summary",
+			"summary":	"Job Version Number",
 			"description":	[{
-					"line":	"@todo add description"
+					"line":	"will be in increased when job is modified"
 				}],
 			"type":	"lUlongT",
 			"flags":	[{
@@ -63,9 +63,11 @@
 				}]
 		}, {
 			"name":	"jid_request_list",
-			"summary":	"@todo add summary",
+			"summary":	"Job Requested Dependencies",
 			"description":	[{
-					"line":	"@todo add description"
+					"line":	"Dependencies as requested via qsub -hold_jid."
+            }, {
+					"line":	"Can be job ids or job names, including the use of wildcards. (JRE_Type only JRE_job_name)"
 				}],
 			"type":	"lListT",
 			"subClassName":	"JRE",
@@ -75,9 +77,9 @@
 				}]
 		}, {
 			"name":	"jid_predecessor_list",
-			"summary":	"@todo add summary",
+			"summary":	"Predecessor Jobs",
 			"description":	[{
-					"line":	"@todo add description"
+					"line":	"list of job numbers of predecessor jobs (JRE_Type only JRE_job_name)"
 				}],
 			"type":	"lListT",
 			"subClassName":	"JRE",
@@ -89,9 +91,9 @@
 				}]
 		}, {
 			"name":	"jid_successor_list",
-			"summary":	"@todo add summary",
+			"summary":	"Successor Jobs",
 			"description":	[{
-					"line":	"@todo add description"
+					"line":	"list of job numbers of successor jobs (JRE_Type only JRE_job_name)"
 				}],
 			"type":	"lListT",
 			"subClassName":	"JRE",
@@ -101,9 +103,15 @@
 				}]
 		}, {
 			"name":	"ja_ad_request_list",
-			"summary":	"@todo add summary",
+			"summary":	"Job Requested Array Dependencies",
 			"description":	[{
-					"line":	"@todo add description"
+					"line":	"Job dependencies between jobs and their array tasks"
+            } , {
+					"line":	"requested via qsub -hold_jid_ad"
+            } , {
+					"line":	"e.g. when task 1 of job a has finished then task 1 of job b can start"
+            }, {
+					"line":	"Can be job ids or job names, including the use of wildcards. (JRE_Type only JRE_job_name)"
 				}],
 			"type":	"lListT",
 			"subClassName":	"JRE",
@@ -113,9 +121,9 @@
 				}]
 		}, {
 			"name":	"ja_ad_predecessor_list",
-			"summary":	"@todo add summary",
+			"summary":	"Job Array Predecessor Jobs",
 			"description":	[{
-					"line":	"@todo add description"
+					"line":	"List of job numbers of predecessor jobs for array job dependencies (JRE_Type only JRE_job_name)"
 				}],
 			"type":	"lListT",
 			"subClassName":	"JRE",
@@ -127,9 +135,9 @@
 				}]
 		}, {
 			"name":	"ja_ad_successor_list",
-			"summary":	"@todo add summary",
+			"summary":	"Job Array Successor Jobs",
 			"description":	[{
-					"line":	"@todo add description"
+					"line":	"List of job numbers of successor jobs for array job dependencies (JRE_Type only JRE_job_name)"
 				}],
 			"type":	"lListT",
 			"subClassName":	"JRE",
@@ -139,9 +147,9 @@
 				}]
 		}, {
 			"name":	"session",
-			"summary":	"@todo add summary",
+			"summary":	"Jobs Session",
 			"description":	[{
-					"line":	"@todo add description"
+					"line":	"Jobs session (JAPI session tag for job event selection)"
 				}],
 			"type":	"lStringT",
 			"flags":	[{
@@ -149,9 +157,9 @@
 				}]
 		}, {
 			"name":	"project",
-			"summary":	"@todo add summary",
+			"summary":	"Project Name",
 			"description":	[{
-					"line":	"@todo add description"
+					"line":	"Project name (qsub -P project_name)"
 				}],
 			"type":	"lStringT",
 			"flags":	[{
@@ -159,9 +167,9 @@
 				}]
 		}, {
 			"name":	"department",
-			"summary":	"@todo add summary",
+			"summary":	"Department Name",
 			"description":	[{
-					"line":	"@todo add description"
+					"line":	"Department name. Set by schedd, saved (once) to qmaster."
 				}],
 			"type":	"lStringT",
 			"flags":	[{
@@ -169,9 +177,11 @@
 				}]
 		}, {
 			"name":	"directive_prefix",
-			"summary":	"@todo add summary",
+			"summary":	"Command Prefix for Job Script",
 			"description":	[{
-					"line":	"@todo add description"
+					"line":	"Command prefix for jobscript (\"qsub -C prefix\") for parsing"
+            }, {
+               "line":  "special comments in the script file."
 				}],
 			"type":	"lStringT",
 			"flags":	[{
@@ -179,9 +189,13 @@
 				}]
 		}, {
 			"name":	"exec_file",
-			"summary":	"@todo add summary",
+			"summary":	"Executed File",
 			"description":	[{
-					"line":	"@todo add description"
+					"line":	"is the path to the locally spooled copy on the execution daemon,"
+            }, {
+					"line":	"it is script that actually gets executed,"
+            }, {
+					"line":	"In the case of a binary, is unused."
 				}],
 			"type":	"lStringT",
 			"flags":	[{
@@ -189,9 +203,11 @@
 				}]
 		}, {
 			"name":	"script_file",
-			"summary":	"@todo add summary",
+			"summary":	"Script File Path",
 			"description":	[{
-					"line":	"@todo add description"
+					"line":	"is the path to the job as sent from the CLI, is the path on the submit host"
+            }, {
+					"line":	"In the case of a binary, is the path to the binary"
 				}],
 			"type":	"lStringT",
 			"flags":	[{
@@ -199,9 +215,9 @@
 				}]
 		}, {
 			"name":	"script_size",
-			"summary":	"@todo add summary",
+			"summary":	"Script Size",
 			"description":	[{
-					"line":	"@todo add description"
+					"line":	"@todo really needed?"
 				}],
 			"type":	"lUlongT",
 			"flags":	[{
@@ -209,17 +225,17 @@
 				}]
 		}, {
 			"name":	"script_ptr",
-			"summary":	"@todo add summary",
+			"summary":	"Script in Memory",
 			"description":	[{
-					"line":	"@todo add description"
+					"line":	"the pointer to the character area of the jobscript"
 				}],
 			"type":	"lStringT",
 			"flags":	[]
 		}, {
 			"name":	"submission_time",
-			"summary":	"@todo add summary",
+			"summary":	"Submission Time",
 			"description":	[{
-					"line":	"@todo add description"
+					"line":	"timestamp in s since epoch"
 				}],
 			"type":	"lUlongT",
 			"flags":	[{
@@ -229,9 +245,11 @@
 				}]
 		}, {
 			"name":	"execution_time",
-			"summary":	"@todo add summary",
+			"summary":	"Earliest Execution Time",
 			"description":	[{
-					"line":	"@todo add description"
+					"line":	"When should the job start (\"qsub/qalter -a date_time\")"
+            }, {
+               "line":  "timestamp in s since epoch"
 				}],
 			"type":	"lUlongT",
 			"flags":	[{
@@ -239,9 +257,11 @@
 				}]
 		}, {
 			"name":	"deadline",
-			"summary":	"@todo add summary",
+			"summary":	"Deadline Time",
 			"description":	[{
-					"line":	"@todo add description"
+					"line":	"SGEEE. Deadline initiation time. (qsub -dl date_time)"
+            }, {
+               "line":  "timestamp in s since epoch"
 				}],
 			"type":	"lUlongT",
 			"flags":	[{
@@ -249,9 +269,11 @@
 				}]
 		}, {
 			"name":	"owner",
-			"summary":	"@todo add summary",
+			"summary":	"Job Owner",
 			"description":	[{
-					"line":	"@todo add description"
+					"line":	"user who submitted the job"
+            }, {
+               "line":  "@todo rename to JB_user to be consistent?"
 				}],
 			"type":	"lStringT",
 			"flags":	[{
@@ -261,9 +283,9 @@
 				}]
 		}, {
 			"name":	"uid",
-			"summary":	"@todo add summary",
+			"summary":	"User Id",
 			"description":	[{
-					"line":	"@todo add description"
+					"line":	"user id of the job owner"
 				}],
 			"type":	"lUlongT",
 			"flags":	[{
@@ -273,9 +295,9 @@
 				}]
 		}, {
 			"name":	"group",
-			"summary":	"@todo add summary",
+			"summary":	"Job Owner Group Name",
 			"description":	[{
-					"line":	"@todo add description"
+					"line":	"primary group name of the job owner"
 				}],
 			"type":	"lStringT",
 			"flags":	[{
@@ -285,9 +307,9 @@
 				}]
 		}, {
 			"name":	"gid",
-			"summary":	"@todo add summary",
+			"summary":	"Job Owner Group Id",
 			"description":	[{
-					"line":	"@todo add description"
+					"line":	"primary group id if the job owner"
 				}],
 			"type":	"lUlongT",
 			"flags":	[{
@@ -297,9 +319,9 @@
 				}]
 		}, {
 			"name":	"account",
-			"summary":	"@todo add summary",
+			"summary":	"Account String",
 			"description":	[{
-					"line":	"@todo add description"
+					"line":	"Account string (\"qsub/qalter -A account string\")"
 				}],
 			"type":	"lStringT",
 			"flags":	[{
@@ -307,9 +329,9 @@
 				}]
 		}, {
 			"name":	"cwd",
-			"summary":	"@todo add summary",
+			"summary":	"Current Working Directory",
 			"description":	[{
-					"line":	"@todo add description"
+					"line":	"Current working directory from qsub (\"qsub -cwd\" or \"qsub -wd\")"
 				}],
 			"type":	"lStringT",
 			"flags":	[{
@@ -317,9 +339,9 @@
 				}]
 		}, {
 			"name":	"notify",
-			"summary":	"@todo add summary",
+			"summary":	"Notify Job",
 			"description":	[{
-					"line":	"@todo add description"
+					"line":	"Notify job of impending kill/stop signal. (\"qsub -notify\")"
 				}],
 			"type":	"lBoolT",
 			"flags":	[{
@@ -327,9 +349,11 @@
 				}]
 		}, {
 			"name":	"type",
-			"summary":	"@todo add summary",
+			"summary":	"Job Type",
 			"description":	[{
-					"line":	"@todo add description"
+					"line":	"Start job immediately or not at all. (\"qsub -now\")"
+            }, {
+               "line":  "@todo it could be a boolean, but is misused for other information!"
 				}],
 			"type":	"lUlongT",
 			"flags":	[{
@@ -337,9 +361,27 @@
 				}]
 		}, {
 			"name":	"reserve",
-			"summary":	"@todo add summary",
+			"summary":	"Reserve Resources",
 			"description":	[{
-					"line":	"@todo add description"
+					"line":	"Specifies if a reservation is desired by the user (\"qsub -R y|n\")."
+            }, {
+					"line":	"Available for non-immediate job submissions. Irrespective"
+            }, {
+					"line":	"of the users desire a job reservation is made"
+            }, {
+					"line":	"  o only in reservation scheduling mode"
+            }, {
+					"line":	"  o only until the maximum number of reservations during a"
+            }, {
+					"line":	"    scheduling run is not exceeded when the order comes at"
+            }, {
+					"line":	"    this job. The maximum number (SC_max_reservation) can be"
+            }, {
+					"line":	"    specified in sched_conf(5)."
+            }, {
+					"line":	"  o only for non-immediate jobs"
+            }, {
+					"line":	"Default is 'n'."
 				}],
 			"type":	"lBoolT",
 			"flags":	[{
@@ -347,9 +389,9 @@
 				}]
 		}, {
 			"name":	"priority",
-			"summary":	"@todo add summary",
+			"summary":	"Priority",
 			"description":	[{
-					"line":	"@todo add description"
+					"line":	"Priority (\"qsub/qalter -p priority\")"
 				}],
 			"type":	"lUlongT",
 			"flags":	[{
@@ -357,9 +399,9 @@
 				}]
 		}, {
 			"name":	"jobshare",
-			"summary":	"@todo add summary",
+			"summary":	"SGEE Job Share",
 			"description":	[{
-					"line":	"@todo add description"
+					"line":	"Priority (\"qsub/qalter -js jobshare\")"
 				}],
 			"type":	"lUlongT",
 			"flags":	[{
@@ -367,9 +409,11 @@
 				}]
 		}, {
 			"name":	"shell_list",
-			"summary":	"@todo add summary",
+			"summary":	"Shell List",
 			"description":	[{
-					"line":	"@todo add description"
+					"line":	"Command interpreter to be used (PN_Type)."
+            }, {
+               "line":  "(\"qsub/qalter -S shell\")"
 				}],
 			"type":	"lListT",
 			"subClassName":	"PN",
@@ -379,9 +423,9 @@
 				}]
 		}, {
 			"name":	"verify",
-			"summary":	"@todo add summary",
+			"summary":	"Verify",
 			"description":	[{
-					"line":	"@todo add description"
+					"line":	"Triggers \"verify\" messages. (qsub -verify)"
 				}],
 			"type":	"lUlongT",
 			"flags":	[{
@@ -391,9 +435,9 @@
 				}]
 		}, {
 			"name":	"env_list",
-			"summary":	"@todo add summary",
+			"summary":	"Environment List",
 			"description":	[{
-					"line":	"@todo add description"
+					"line":	"Export these env variables (VA_Type). (\"qsub -V\")."
 				}],
 			"type":	"lListT",
 			"subClassName":	"VA",
@@ -403,9 +447,11 @@
 				}]
 		}, {
 			"name":	"context",
-			"summary":	"@todo add summary",
+			"summary":	"Job Context",
 			"description":	[{
-					"line":	"@todo add description"
+					"line":	"Custom attributes (name,val) pairs (VA_Type)."
+            }, {
+					"line":	"(\"qsub/qalter -ac/-dc context_list\")"
 				}],
 			"type":	"lListT",
 			"subClassName":	"VA",
@@ -415,9 +461,9 @@
 				}]
 		}, {
 			"name":	"job_args",
-			"summary":	"@todo add summary",
+			"summary":	"Job Arguments",
 			"description":	[{
-					"line":	"@todo add description"
+					"line":	"Job arguments (ST_Type)."
 				}],
 			"type":	"lListT",
 			"subClassName":	"ST",
@@ -427,9 +473,11 @@
 				}]
 		}, {
 			"name":	"checkpoint_attr",
-			"summary":	"@todo add summary",
+			"summary":	"Checkpoint Attributes",
 			"description":	[{
-					"line":	"@todo add description"
+					"line":	"Checkpoint attributes (\"qsub/qalter -c interval_flags\")"
+            }, {
+					"line":	"@todo  merge all checkpointing stuff to one object?"
 				}],
 			"type":	"lUlongT",
 			"flags":	[{
@@ -439,9 +487,9 @@
 				}]
 		}, {
 			"name":	"checkpoint_name",
-			"summary":	"@todo add summary",
+			"summary":	"Checkpoint Name",
 			"description":	[{
-					"line":	"@todo add description"
+					"line":	"Name of ckpt object (\"qsub/qalter -ckpt ckpt_name\")"
 				}],
 			"type":	"lStringT",
 			"flags":	[{
@@ -449,9 +497,11 @@
 				}]
 		}, {
 			"name":	"checkpoint_object",
-			"summary":	"@todo add summary",
+			"summary":	"Checkpoint Object",
 			"description":	[{
-					"line":	"@todo add description"
+					"line":	"Ckpt object which will be sent from qmaster to execd."
+            }, {
+               "line":  "@todo: meaning when we change it in qmaster it will not be updated in execd"
 				}],
 			"type":	"lObjectT",
 			"subClassName":	"ANY",
@@ -461,9 +511,9 @@
 				}]
 		}, {
 			"name":	"checkpoint_interval",
-			"summary":	"@todo add summary",
+			"summary":	"Checkpoint Interval",
 			"description":	[{
-					"line":	"@todo add description"
+					"line":	"Checkpoint frequency (\"qsub/qalter -c seconds\")"
 				}],
 			"type":	"lUlongT",
 			"flags":	[{
@@ -473,9 +523,11 @@
 				}]
 		}, {
 			"name":	"restart",
-			"summary":	"@todo add summary",
+			"summary":	"Rerunnable",
 			"description":	[{
-					"line":	"@todo add description"
+					"line":	"Is job rerunable? (\"qsub/qalter -r y/n\")"
+            }, {
+					"line":	"@todo it could be a boolean but is misused for other information!"
 				}],
 			"type":	"lUlongT",
 			"flags":	[{
@@ -483,9 +535,9 @@
 				}]
 		}, {
 			"name":	"stdout_path_list",
-			"summary":	"@todo add summary",
+			"summary":	"stdout Path List",
 			"description":	[{
-					"line":	"@todo add description"
+					"line":	"Pathname for stdout (PN_Type). (\"qsub/qalter -o path_name\")"
 				}],
 			"type":	"lListT",
 			"subClassName":	"PN",
@@ -495,9 +547,9 @@
 				}]
 		}, {
 			"name":	"stderr_path_list",
-			"summary":	"@todo add summary",
+			"summary":	"stderr Path List",
 			"description":	[{
-					"line":	"@todo add description"
+					"line":	"Std error path streams (PN_Type). (\"qsub/qalter -e path_name\")"
 				}],
 			"type":	"lListT",
 			"subClassName":	"PN",
@@ -507,9 +559,9 @@
 				}]
 		}, {
 			"name":	"stdin_path_list",
-			"summary":	"@todo add summary",
+			"summary":	"stdin Path List",
 			"description":	[{
-					"line":	"@todo add description"
+					"line":	"Std input path streams (PN_Type). (\"qsub/qalter -i path_name\")"
 				}],
 			"type":	"lListT",
 			"subClassName":	"PN",
@@ -519,9 +571,9 @@
 				}]
 		}, {
 			"name":	"merge_stderr",
-			"summary":	"@todo add summary",
+			"summary":	"Merge stderr",
 			"description":	[{
-					"line":	"@todo add description"
+					"line":	"Merge stdout and stderr? (\"qsub/qalter -j y|n\")"
 				}],
 			"type":	"lBoolT",
 			"flags":	[{
@@ -925,9 +977,9 @@
 				}]
 		}, {
 			"name":	"ar",
-			"summary":	"@todo add summary",
+			"summary":	"AR Number",
 			"description":	[{
-					"line":	"@todo add description"
+					"line":	"Uniq advance reservation number, > 0 if the job shall run within an AR"
 				}],
 			"type":	"lUlongT",
 			"flags":	[{
@@ -955,9 +1007,9 @@
 				}]
 		}, {
 			"name":	"binding",
-			"summary":	"@todo add summary",
+			"summary":	"Binding Strategy",
 			"description":	[{
-					"line":	"@todo add description"
+					"line":	"Binding strategy for execution host (and later scheduler)"
 				}],
 			"type":	"lListT",
 			"subClassName":	"BN",

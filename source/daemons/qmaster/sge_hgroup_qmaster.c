@@ -58,7 +58,7 @@
 #include "sge.h"
 #include "sge_c_gdi.h"
 #include "sge_hgroup_qmaster.h"
-#include "sge_event_master.h"
+#include "evm/sge_event_master.h"
 #include "sge_cqueue_qmaster.h"
 #include "sge_host_qmaster.h"
 #include "sge_utility_qmaster.h"

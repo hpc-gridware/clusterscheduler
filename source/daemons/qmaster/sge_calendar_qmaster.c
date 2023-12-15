@@ -52,7 +52,7 @@
 #include "spool/sge_spooling.h"
 
 #include "sge.h"
-#include "sge_event_master.h"
+#include "evm/sge_event_master.h"
 #include "sge_c_gdi.h"
 #include "sge_calendar_qmaster.h"
 #include "sge_qmod_qmaster.h"

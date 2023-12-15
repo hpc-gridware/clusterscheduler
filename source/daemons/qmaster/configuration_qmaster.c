@@ -71,7 +71,7 @@
 #include "sge_persistence_qmaster.h"
 #include "sge_userset_qmaster.h"
 #include "sge_userprj_qmaster.h"
-#include "sge_event_master.h"
+#include "evm/sge_event_master.h"
 #include "reschedule.h"
 #include "msg_common.h"
 #include "msg_qmaster.h"

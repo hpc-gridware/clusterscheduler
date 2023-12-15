@@ -76,7 +76,7 @@
 #include "sge_pe_qmaster.h"
 #include "sge_resource_quota_qmaster.h"
 #include "configuration_qmaster.h"
-#include "sge_event_master.h"
+#include "evm/sge_event_master.h"
 #include "sched_conf_qmaster.h"
 #include "sge_userprj_qmaster.h"
 #include "sge_ckpt_qmaster.h"

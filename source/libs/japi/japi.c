@@ -90,7 +90,7 @@
 #include "gdi/sge_gdi2.h"
 
 #include "sge.h"
-#include "sge_event_master.h"
+#include "evm/sge_event_master.h"
 #include "msg_common.h"
 
 sge_gdi_ctx_class_t *ctx = NULL;

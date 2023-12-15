@@ -64,44 +64,49 @@ extern "C" {
 * concerning their data structures. Both consist of one 'JB_Type'
 * and one 'JAT_Type' element
 *
-*    SGE_ULONG(JB_job_number) - Unique job number
-*    @todo add description
+*    SGE_ULONG(JB_job_number) - Unique Job Number
+*    holds values in the range of 1..U_LONG32_MAX
 *
-*    SGE_STRING(JB_job_name) - @todo add summary
-*    @todo add description
+*    SGE_STRING(JB_job_name) - Job Name
+*    (qsub/qalter -N job_name)
 *
-*    SGE_ULONG(JB_version) - @todo add summary
-*    @todo add description
+*    SGE_ULONG(JB_version) - Job Version Number
+*    will be in increased when job is modified
 *
-*    SGE_LIST(JB_jid_request_list) - @todo add summary
-*    @todo add description
+*    SGE_LIST(JB_jid_request_list) - Job Requested Dependencies
+*    Dependencies as requested via qsub -hold_jid.
+*    Can be job ids or job names, including the use of wildcards. (JRE_Type only JRE_job_name)
 *
-*    SGE_LIST(JB_jid_predecessor_list) - @todo add summary
-*    @todo add description
+*    SGE_LIST(JB_jid_predecessor_list) - Predecessor Jobs
+*    list of job numbers of predecessor jobs (JRE_Type only JRE_job_name)
 *
-*    SGE_LIST(JB_jid_successor_list) - @todo add summary
-*    @todo add description
+*    SGE_LIST(JB_jid_successor_list) - Successor Jobs
+*    list of job numbers of successor jobs (JRE_Type only JRE_job_name)
 *
-*    SGE_LIST(JB_ja_ad_request_list) - @todo add summary
-*    @todo add description
+*    SGE_LIST(JB_ja_ad_request_list) - Job Requested Array Dependencies
+*    Job dependencies between jobs and their array tasks
+*    requested via qsub -hold_jid_ad
+*    e.g. when task 1 of job a has finished then task 1 of job b can start
+*    Can be job ids or job names, including the use of wildcards. (JRE_Type only JRE_job_name)
 *
-*    SGE_LIST(JB_ja_ad_predecessor_list) - @todo add summary
-*    @todo add description
+*    SGE_LIST(JB_ja_ad_predecessor_list) - Job Array Predecessor Jobs
+*    List of job numbers of predecessor jobs for array job dependencies (JRE_Type only JRE_job_name)
 *
-*    SGE_LIST(JB_ja_ad_successor_list) - @todo add summary
-*    @todo add description
+*    SGE_LIST(JB_ja_ad_successor_list) - Job Array Successor Jobs
+*    List of job numbers of successor jobs for array job dependencies (JRE_Type only JRE_job_name)
 *
-*    SGE_STRING(JB_session) - @todo add summary
-*    @todo add description
+*    SGE_STRING(JB_session) - Jobs Session
+*    Jobs session (JAPI session tag for job event selection)
 *
-*    SGE_STRING(JB_project) - @todo add summary
-*    @todo add description
+*    SGE_STRING(JB_project) - Project Name
+*    Project name (qsub -P project_name)
 *
-*    SGE_STRING(JB_department) - @todo add summary
-*    @todo add description
+*    SGE_STRING(JB_department) - Department Name
+*    Department name. Set by schedd, saved (once) to qmaster.
 *
-*    SGE_STRING(JB_directive_prefix) - @todo add summary
-*    @todo add description
+*    SGE_STRING(JB_directive_prefix) - Command Prefix for Job Script
+*    Command prefix for jobscript ("qsub -C prefix") for parsing
+*    special comments in the script file.
 *
 *    SGE_STRING(JB_exec_file) - @todo add summary
 *    @todo add description

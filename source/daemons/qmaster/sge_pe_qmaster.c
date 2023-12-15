@@ -56,7 +56,7 @@
 #include "sge.h"
 #include "sge_pe_qmaster.h"
 #include "sge_host_qmaster.h"
-#include "sge_event_master.h"
+#include "evm/sge_event_master.h"
 #include "sge_userset_qmaster.h"
 #include "sge_ckpt_qmaster.h"
 #include "sge_utility_qmaster.h"

@@ -70,7 +70,7 @@
 
 #include "sge.h"
 #include "sge_pe_qmaster.h"
-#include "sge_queue_event_master.h"
+#include "evm/sge_queue_event_master.h"
 #include "sge_qmod_qmaster.h"
 #include "sge_job_qmaster.h"
 #include "sge_give_jobs.h"

@@ -84,7 +84,7 @@
 #include "sgeobj/msg_sgeobjlib.h"
 
 #include "configuration_qmaster.h"   /* TODO: bad dependency!! */
-#include "sge_event_master.h"
+#include "evm/sge_event_master.h"
 #include "sge.h"
 
 #include "msg_common.h"
@@ -384,7 +384,7 @@ sge_event_master_init_transaction_store(event_master_transaction_t *t_store)
 *     sge_add_event_client() -- register a new event client
 *
 *  SYNOPSIS
-*     #include "sge_event_master.h"
+*     #include "evm/sge_event_master.h"
 *
 *     int 
 *     sge_add_event_client(lListElem *clio, lList **alpp, lList **eclpp, 
@@ -583,7 +583,7 @@ int sge_add_event_client(lListElem *clio, lList **alpp, lList **eclpp, char *rus
 *     sge_mod_event_client() -- modify event client
 *
 *  SYNOPSIS
-*     #include "sge_event_master.h"
+*     #include "evm/sge_event_master.h"
 *
 *     int 
 *     sge_mod_event_client(lListElem *clio, lList **alpp, lList **eclpp, 
@@ -648,7 +648,7 @@ sge_mod_event_client(lListElem *clio, lList **alpp, char *ruser, char *rhost)
 *     sge_mod_event_client() -- modify event client
 *
 *  SYNOPSIS
-*     #include "sge_event_master.h"
+*     #include "evm/sge_event_master.h"
 *
 *     int 
 *     sge_event_master_process_mod_event_client(lListElem *clio, lList **alpp, 
@@ -1000,7 +1000,7 @@ u_long32 sge_get_max_dynamic_event_clients(void)
 *     sge_has_event_client() -- Is a event client registered
 *
 *  SYNOPSIS
-*     #include "sge_event_master.h"
+*     #include "evm/sge_event_master.h"
 *
 *    bool sge_has_event_client(u_long32 event_client_id)
 *
@@ -1221,7 +1221,7 @@ int sge_shutdown_dynamic_event_clients(const char *anUser, lList **alpp, monitor
 *     sge_add_event() -- add an object as event
 *
 *  SYNOPSIS
-*     #include "sge_event_master.h"
+*     #include "evm/sge_event_master.h"
 *
 *     void 
 *     sge_add_event(u_long32 timestamp, ev_event type,
@@ -1336,7 +1336,7 @@ bool sge_add_event_for_client(u_long32 event_client_id, u_long32 timestamp, ev_e
 *     sge_add_list_event() -- add a list as event
 *
 *  SYNOPSIS
-*     #include "sge_event_master.h"
+*     #include "evm/sge_event_master.h"
 *
 *     void 
 *     sge_add_list_event(u_long32 timestamp, ev_event type, 
@@ -1414,7 +1414,7 @@ bool sge_add_list_event(u_long32 timestamp, ev_event type,
 *     sge_add_list_event() -- add a list as event
 *
 *  SYNOPSIS
-*     #include "sge_event_master.h"
+*     #include "evm/sge_event_master.h"
 *
 *     static lListElem* sge_create_event(u_long32    event_client_id,
 *                                        u_long32    number,
@@ -1485,7 +1485,7 @@ static lListElem* sge_create_event(u_long32    event_client_id,
 *     add_list_event_for_client() -- add a list as event
 *
 *  SYNOPSIS
-*     #include "sge_event_master.h"
+*     #include "evm/sge_event_master.h"
 *
 *     void 
 *     add_list_event_for_client(u_long32 event_client_id, u_long32 timestamp,
@@ -1663,7 +1663,7 @@ static void sge_event_master_process_send(const lListElem *request, monitoring_t
 *     sge_handle_event_ack() -- acknowledge event delivery
 *
 *  SYNOPSIS
-*     #include "sge_event_master.h"
+*     #include "evm/sge_event_master.h"
 *
 *     void 
 *     sge_handle_event_ack(u_long32 event_client_id, ev_event event_number) 
@@ -2456,7 +2456,7 @@ check_send_new_subscribed_list(const subscription_t *old_subscription,
 *     eventclient_subscribed() -- has event client subscribed an event?
 *
 *  SYNOPSIS
-*     #include "sge_event_master.h"
+*     #include "evm/sge_event_master.h"
 *
 *     int 
 *     eventclient_subscribed(const lListElem *event_client, ev_event event) 
@@ -3075,7 +3075,7 @@ static lListElem *elem_select(subscription_t *subscription, lListElem *element,
 *     eventclient_list_locate_by_adress() -- search event client by adress
 *
 *  SYNOPSIS
-*     #include "sge_event_master.h"
+*     #include "evm/sge_event_master.h"
 *
 *     lListElem *
 *     eventclient_list_locate_by_adress(const char *host, 

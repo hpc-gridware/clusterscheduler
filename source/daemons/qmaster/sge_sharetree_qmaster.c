@@ -54,7 +54,7 @@
 
 #include "sge.h"
 #include "sge_persistence_qmaster.h"
-#include "sge_event_master.h"
+#include "evm/sge_event_master.h"
 #include "sge_sharetree_qmaster.h"
 #include "sge_userprj_qmaster.h"
 

@@ -57,7 +57,7 @@
 #include "qmaster_to_execd.h"
 #include "job_report_qmaster.h"
 #include "sge_persistence_qmaster.h"
-#include "sge_event_master.h"
+#include "evm/sge_event_master.h"
 #include "reschedule.h"
 
 static int update_license_data(sge_gdi_ctx_class_t *ctx, lListElem *hep, lList *lp_lic); 

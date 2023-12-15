@@ -58,7 +58,7 @@
 #include "sched/valid_queue_user.h"
 
 #include "sge.h"
-#include "sge_event_master.h"
+#include "evm/sge_event_master.h"
 #include "sge_userset_qmaster.h"
 #include "sge_persistence_qmaster.h"
 #include "sge_utility_qmaster.h"
