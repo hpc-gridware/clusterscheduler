@@ -127,6 +127,7 @@ sge_event_master_main(void *arg)
    cl_thread_settings_t *thread_config = (cl_thread_settings_t*)arg;
    sge_gdi_ctx_class_t *ctx = NULL;
    monitoring_t monitor;
+   monitoring_t *p_monitor = &monitor;
 
    lListElem *report = NULL;
    lList *report_list = NULL;
@@ -136,7 +137,7 @@ sge_event_master_main(void *arg)
 
    DPRINTF(("started"));
    cl_thread_func_startup(thread_config);
-   sge_monitor_init(&monitor, thread_config->thread_name, EDT_EXT, EMT_WARNING, EMT_ERROR);
+   sge_monitor_init(p_monitor, thread_config->thread_name, EDT_EXT, EMT_WARNING, EMT_ERROR);
    sge_qmaster_thread_init(&ctx, QMASTER, DELIVERER_THREAD, true);
 
    /* register at profiling module */
@@ -157,16 +158,16 @@ sge_event_master_main(void *arg)
       /*
        * did a new event arrive which has a flush time of 0 seconds?
        */
-      MONITOR_IDLE_TIME(sge_event_master_wait_next(), (&monitor), mconf_get_monitor_time(), 
+      MONITOR_IDLE_TIME(sge_event_master_wait_next(), p_monitor, mconf_get_monitor_time(), 
                         mconf_is_monitor_message());
 
-      MONITOR_MESSAGES((&monitor));
-      MONITOR_EDT_COUNT((&monitor));
-      MONITOR_CLIENT_COUNT((&monitor), lGetNumberOfElem(Event_Master_Control.clients));
+      MONITOR_MESSAGES(p_monitor);
+      MONITOR_EDT_COUNT(p_monitor);
+      MONITOR_CLIENT_COUNT(p_monitor, lGetNumberOfElem(Event_Master_Control.clients));
 
-      sge_event_master_process_requests(&monitor);
-      sge_event_master_send_events(ctx, report, report_list, &monitor);
-      sge_monitor_output(&monitor);
+      sge_event_master_process_requests(p_monitor);
+      sge_event_master_send_events(ctx, report, report_list, p_monitor);
+      sge_monitor_output(p_monitor);
 
       thread_output_profiling("event master thread profiling summary:\n",
                               &next_prof_output);

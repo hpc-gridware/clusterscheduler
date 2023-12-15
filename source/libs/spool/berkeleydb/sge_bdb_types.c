@@ -48,7 +48,6 @@ struct _bdb_info {
    pthread_mutex_t   mtx;                 /* lock access to this object */
    pthread_key_t     key;                 /* for thread specific data */
   
-   const char *      server;              /* server, in case of RPC mechanism */
    const char *      path;                /* the database path */
 
    DB_ENV *          env;                 /* global database environment */
@@ -77,26 +76,18 @@ bdb_destroy_connection(void *connection);
 *
 *  SYNOPSIS
 *     bdb_info 
-*     bdb_create(const char *server, const char *path) 
+*     bdb_create(const char *path)
 *
 *  FUNCTION
 *     Creates and initializes an object describing the connection to a 
 *     Berkeley DB database and holding database and transaction handles.
 *
-*     Transaction handles are thread specific, in case of spooling using the
-*     RPC client/server mechanism, the database environment and the database
-*     handle are also thread specific.
-*     
-*     The parameter server is optional. If it is given, the Berkeley DB RPC
-*     mechanism will be used. It then defines the name of the host, where the
-*     Berkeley DB RPC server (berkeley_db_svc_) is running.
+*     Transaction handles are thread specific.
 *
-*     Path is either
+*     Path is
 *     - the absolute path to a Database in case of local spooling
-*     - the database name (last component of path) in case of RPC mechanism
 *
 *  INPUTS
-*     const char *server - hostname of Berkeley DB rpc server, or NULL
 *     const char *path   - path to the database
 *
 *  RESULT
@@ -106,7 +97,7 @@ bdb_destroy_connection(void *connection);
 *     MT-NOTE: bdb_create() is MT safe 
 *******************************************************************************/
 bdb_info
-bdb_create(const char *server, const char *path) 
+bdb_create(const char *path)
 {
    int ret, i;
    bdb_info info = (bdb_info) malloc(sizeof(struct _bdb_info));
@@ -116,7 +107,6 @@ bdb_create(const char *server, const char *path)
    if (ret != 0) {
       fprintf(stderr, "can't initialize key for thread local storage: %s\n", strerror(ret));
    }
-   info->server = server;
    info->path   = path;
    info->env    = NULL;
 
@@ -185,33 +175,6 @@ bdb_destroy_connection(void *connection)
    DEXIT;
 }
 
-/****** spool/berkeleydb/bdb_get_server() **************************************
-*  NAME
-*     bdb_get_server() -- get server name for a Berkeley DB
-*
-*  SYNOPSIS
-*     const char * 
-*     bdb_get_server(bdb_info info) 
-*
-*  FUNCTION
-*     Returns the hostname of a Berkeley DB RPC server, if the RPC mechanism
-*     is used, else NULL.
-*
-*  INPUTS
-*     bdb_info info - the database object
-*
-*  RESULT
-*     const char * - hostname or NULL
-*
-*  NOTES
-*     MT-NOTE: bdb_get_server() is MT safe 
-*******************************************************************************/
-const char *
-bdb_get_server(bdb_info info)
-{
-   return info->server;
-}
-
 /****** spool/berkeleydb/bdb_get_path() ****************************************
 *  NAME
 *     bdb_get_path() -- get the database path
@@ -268,13 +231,7 @@ bdb_get_env(bdb_info info)
 {
    DB_ENV *env = NULL;
 
-   if (info->server == NULL) {
-      env = info->env;
-   } else {
-      GET_SPECIFIC(bdb_connection, con, bdb_init_connection, info->key, 
-                   "bdb_get_env");
-      env = con->env;
-   }
+   env = info->env;
 
    return env;
 }
@@ -308,13 +265,7 @@ bdb_get_db(bdb_info info, const bdb_database database)
 {
    DB *db = NULL;
 
-   if (info->server == NULL) {
-      db = info->db[database];
-   } else {
-      GET_SPECIFIC(bdb_connection, con, bdb_init_connection, info->key, 
-                   "bdb_get_db");
-      db = con->db[database];
-   }
+   db = info->db[database];
 
    return db;
 }
@@ -395,13 +346,7 @@ bdb_get_recover(bdb_info info)
 void
 bdb_set_env(bdb_info info, DB_ENV *env)
 {
-   if (info->server == NULL) {
-      info->env  = env;
-   } else {
-      GET_SPECIFIC(bdb_connection, con, bdb_init_connection, info->key, 
-                   "bdb_set_env");
-      con->env = env;
-   }
+   info->env  = env;
 }
 
 /****** spool/berkeleydb/bdb_set_db() ******************************************
@@ -430,13 +375,7 @@ bdb_set_env(bdb_info info, DB_ENV *env)
 void
 bdb_set_db(bdb_info info, DB *db, const bdb_database database)
 {
-   if (info->server == NULL) {
-      info->db[database]  = db;
-   } else {
-      GET_SPECIFIC(bdb_connection, con, bdb_init_connection, info->key, 
-                   "bdb_set_db");
-      con->db[database] = db;
-   }
+   info->db[database]  = db;
 }
 
 /****** spool/berkeleydb/bdb_set_txn() *****************************************
@@ -497,8 +436,7 @@ bdb_set_recover(bdb_info info, bool recover)
 *
 *  FUNCTION
 *     Return a meaningfull name for a database connection.
-*     It contains the server name (in case of RPC mechanism) and the database
-*     path.
+*     It contains the database path.
 *     A dstring buffer has to be provided by the caller.
 *
 *  INPUTS
@@ -515,15 +453,12 @@ const char *
 bdb_get_dbname(bdb_info info, dstring *buffer)
 {
    const char *ret;
-   const char *server = bdb_get_server(info);
    const char *path   = bdb_get_path(info);
 
    if (path == NULL) {
       ret = sge_dstring_copy_string(buffer, MSG_BERKELEY_DBNOTINITIALIZED);
-   } else if (server == NULL) {
-      ret = sge_dstring_copy_string(buffer, path);
    } else {
-      ret = sge_dstring_sprintf(buffer, "%s:%s", server, path);
+      ret = sge_dstring_copy_string(buffer, path);
    }
 
    return ret;

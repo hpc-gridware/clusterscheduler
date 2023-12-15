@@ -226,13 +226,14 @@ sge_worker_main(void *arg)
    cl_thread_settings_t *thread_config = (cl_thread_settings_t*)arg;
    sge_gdi_ctx_class_t *ctx = NULL;
    monitoring_t monitor;
+   monitoring_t *p_monitor = &monitor;
    time_t next_prof_output = 0;
 
    DENTER(TOP_LAYER, "sge_worker_main");
 
    DPRINTF(("started"));
    cl_thread_func_startup(thread_config);
-   sge_monitor_init(&monitor, thread_config->thread_name, GDI_EXT, MT_WARNING, MT_ERROR);
+   sge_monitor_init(p_monitor, thread_config->thread_name, GDI_EXT, MT_WARNING, MT_ERROR);
    sge_qmaster_thread_init(&ctx, QMASTER, WORKER_THREAD, true);
 
    /* register at profiling module */
@@ -250,9 +251,9 @@ sge_worker_main(void *arg)
        */
       MONITOR_IDLE_TIME(
          sge_tq_wait_for_task(Master_Task_Queue, 1, SGE_TQ_GDI_PACKET, (void *)&packet),
-         &monitor, mconf_get_monitor_time(), mconf_is_monitor_message());
+         p_monitor, mconf_get_monitor_time(), mconf_is_monitor_message());
 
-      MONITOR_SET_QLEN((&monitor), sge_tq_get_task_count(Master_Task_Queue));
+      MONITOR_SET_QLEN(p_monitor, sge_tq_get_task_count(Master_Task_Queue));
 
       if (packet != NULL) {
          sge_gdi_task_class_t *task = packet->first_task;
@@ -270,7 +271,7 @@ sge_worker_main(void *arg)
          }
 #endif
 
-         MONITOR_MESSAGES((&monitor));
+         MONITOR_MESSAGES(p_monitor);
 
          if (packet->is_gdi_request == true) {
             /*
@@ -294,9 +295,9 @@ sge_worker_main(void *arg)
           * acquire the correct lock
           */
          if (is_only_read_request) {
-            MONITOR_WAIT_TIME(SGE_LOCK(LOCK_GLOBAL, LOCK_READ), &monitor); 
+            MONITOR_WAIT_TIME(SGE_LOCK(LOCK_GLOBAL, LOCK_READ), p_monitor); 
          } else {
-            MONITOR_WAIT_TIME(SGE_LOCK(LOCK_GLOBAL, LOCK_WRITE), &monitor);
+            MONITOR_WAIT_TIME(SGE_LOCK(LOCK_GLOBAL, LOCK_WRITE), p_monitor);
          }
 
 #ifdef OBSERVE
@@ -310,14 +311,14 @@ sge_worker_main(void *arg)
              */
             task = packet->first_task;
             while (task != NULL) {
-               sge_c_gdi(ctx, packet, task, &(task->answer_list), &monitor);
+               sge_c_gdi(ctx, packet, task, &(task->answer_list), p_monitor);
 
                task = task->next;
             }
          } else {
             task = packet->first_task;
             sge_c_report(ctx, packet->host, packet->commproc, packet->commproc_id, 
-                         task->data_list, &monitor);
+                         task->data_list, p_monitor);
          }
 
 #ifdef OBSERVE
@@ -353,7 +354,7 @@ sge_worker_main(void *arg)
              * Send the answer to the client
              */
             if (packet->is_intern_request == false) {
-               MONITOR_MESSAGES_OUT(&monitor);
+               MONITOR_MESSAGES_OUT(p_monitor);
                sge_gdi2_send_any_request(ctx, 0, NULL,
                                          packet->host, packet->commproc, packet->commproc_id, 
                                          &(packet->pb), TAG_GDI_REQUEST, 
@@ -394,7 +395,7 @@ sge_worker_main(void *arg)
          thread_output_profiling("worker thread profiling summary:\n",
                                  &next_prof_output);
 
-         sge_monitor_output(&monitor);
+         sge_monitor_output(p_monitor);
       } else { 
          int execute = 0;
 
@@ -402,7 +403,7 @@ sge_worker_main(void *arg)
           * pthread cancelation point
           */
          pthread_cleanup_push((void (*)(void *))sge_worker_cleanup_monitor,
-                              (void *)&monitor);
+                              (void *)p_monitor);
          cl_thread_func_testcancel(thread_config);
          pthread_cleanup_pop(execute); 
       }

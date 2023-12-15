@@ -55,8 +55,7 @@
 /* Berkeley DB data structures:
  * We have a bdb_info object per spooling rule.
  * It holds all data that is required to use the spooling rule.
- * In case of local spooling, the DB_ENV and the DB are accessable for multiple threads.
- * If we use the RPC server, we need per thread DB_ENV and DB.
+ * In case of local spooling, the DB_ENV and the DB are accessible for multiple threads.
  * The transaction handle is always thread specific.
  * Thread specific data is initialized in the spooling startup function.
  */
@@ -71,10 +70,7 @@ typedef enum {
 typedef struct _bdb_info *bdb_info;
 
 bdb_info
-bdb_create(const char *server, const char *path);
-
-const char *
-bdb_get_server(bdb_info info);
+bdb_create(const char *path);
 
 const char *
 bdb_get_path(bdb_info info);

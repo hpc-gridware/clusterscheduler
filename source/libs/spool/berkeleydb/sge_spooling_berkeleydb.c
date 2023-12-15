@@ -97,13 +97,8 @@ spool_berkeleydb_option_func(lList **answer_list, lListElem *rule,
 *     
 *     Argv has as first (and currently only) parameter the Database URL.
 *
-*     If we spool to a local filesystem this is the path to the database 
-*     directory.
+*     It currently consists of the path to the database directory.
 *
-*     If the RPC Client/Server mechanism shall be used, the URL has the form
-*     <server>:basename(<path>), e.g. "nori:sge" if we have the RPC server
-*     running on nori and it uses the path /export/home/spooldb/sge.
-* 
 *  INPUTS
 *     lList **answer_list - to return error messages
 *     const char *args    - arguments to the spooling method, see above.
@@ -126,7 +121,6 @@ spool_berkeleydb_create_context(lList **answer_list, const char *args)
    if (args != NULL) {
       lListElem *rule, *type;
       bdb_info info;
-      char *server = NULL;
       char *path   = NULL;
       
       /* create spooling context */
@@ -150,26 +144,11 @@ spool_berkeleydb_create_context(lList **answer_list, const char *args)
                                        spool_default_validate_list_func);
 
       /* parse arguments */
-      {
-         char *dup = strdup(args);
-         path = strchr(dup, ':');
-         if (path != NULL) {
-            *path = '\0';
-            server = strdup(dup);
-            path = strdup(path + 1);
-         } else {
-            server = NULL;
-            path = strdup(dup);
-         }
-         sge_free(&dup);
-      }
+      path = strdup(args);
 
-      DPRINTF(("using %sRPC server %s, database %s\n", 
-               server == NULL ? "no " : "",
-               server == NULL ? "" : server,
-               path));
+      DPRINTF(("using database path %s\n", path));
 
-      info = bdb_create(server, path);
+      info = bdb_create(path);
       lSetRef(rule, SPR_clientdata, info);
       type = spool_context_create_type(answer_list, context, SGE_TYPE_ALL);
       spool_type_add_rule(answer_list, type, rule, true);
@@ -371,12 +350,9 @@ spool_berkeleydb_default_maintenance_func(lList **answer_list,
 *  FUNCTION
 *     Does recurring tasks for the Berkeley DB.
 *     
-*     In case of spooling to a local filesystem (no use of RPC server), 
+*     In case of spooling to a local filesystem
 *     - regular checkpointing is done
 *     - a cleanup of the transaction log is done
-*
-*     If we use the RPC server, nothing has to be done - the RPC server takes
-*     care of these tasks.
 *
 *  INPUTS
 *     lList **answer_list   - used to return error messages
