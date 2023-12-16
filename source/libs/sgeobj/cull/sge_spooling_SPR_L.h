@@ -74,6 +74,11 @@ extern "C" {
 *    SGE_REF(SPR_read_func) - @todo add summary
 *    @todo add description
 *
+*    SGE_REF(SPR_read_keys_func) - read keys from the database
+*    reads all keys from a spooling database
+*    matching beginning with a certain pattern
+*    @see e.g. spool_berkeleydb_read_keys()
+*
 *    SGE_REF(SPR_write_func) - @todo add summary
 *    @todo add description
 *
@@ -102,6 +107,7 @@ enum {
    SPR_transaction_func,
    SPR_list_func,
    SPR_read_func,
+   SPR_read_keys_func,
    SPR_write_func,
    SPR_delete_func,
    SPR_validate_func,
@@ -120,6 +126,7 @@ LISTDEF(SPR_Type)
    SGE_REF(SPR_transaction_func, CULL_ANY_SUBTYPE, CULL_DEFAULT)
    SGE_REF(SPR_list_func, CULL_ANY_SUBTYPE, CULL_DEFAULT)
    SGE_REF(SPR_read_func, CULL_ANY_SUBTYPE, CULL_DEFAULT)
+   SGE_REF(SPR_read_keys_func, CULL_ANY_SUBTYPE, CULL_DEFAULT)
    SGE_REF(SPR_write_func, CULL_ANY_SUBTYPE, CULL_DEFAULT)
    SGE_REF(SPR_delete_func, CULL_ANY_SUBTYPE, CULL_DEFAULT)
    SGE_REF(SPR_validate_func, CULL_ANY_SUBTYPE, CULL_DEFAULT)
@@ -138,6 +145,7 @@ NAMEDEF(SPRN)
    NAME("SPR_transaction_func")
    NAME("SPR_list_func")
    NAME("SPR_read_func")
+   NAME("SPR_read_keys_func")
    NAME("SPR_write_func")
    NAME("SPR_delete_func")
    NAME("SPR_validate_func")

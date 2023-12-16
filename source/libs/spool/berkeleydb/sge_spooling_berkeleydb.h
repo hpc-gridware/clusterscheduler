@@ -95,6 +95,11 @@ spool_berkeleydb_default_read_func(lList **answer_list,
                                  const lListElem *type, 
                                  const lListElem *rule, const char *key, 
                                  const sge_object_type object_type);
+bool
+spool_berkeleydb_default_read_keys_func(lList **answer_list, 
+                                        const lListElem *rule,
+                                        lList **list,
+                                        const char *key);
 bool 
 spool_berkeleydb_default_write_func(lList **answer_list, 
                                   const lListElem *type, 

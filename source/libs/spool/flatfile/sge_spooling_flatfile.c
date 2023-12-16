@@ -260,6 +260,7 @@ spool_classic_create_context(lList **answer_list, const char *args)
                                           NULL,
                                           spool_classic_default_list_func,
                                           spool_classic_default_read_func,
+                                          NULL, // @todo read keys from flatfile spooling db
                                           spool_classic_default_write_func,
                                           spool_classic_default_delete_func,
                                           spool_default_validate_func,
@@ -280,6 +281,7 @@ spool_classic_create_context(lList **answer_list, const char *args)
                                           NULL,
                                           spool_classic_default_list_func,
                                           spool_classic_default_read_func,
+                                          NULL, // @todo read keys from flatfile spooling db
                                           spool_classic_default_write_func,
                                           spool_classic_default_delete_func,
                                           spool_default_validate_func,

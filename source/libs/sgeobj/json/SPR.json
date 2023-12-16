@@ -99,7 +99,19 @@
 			"name":	"read_func",
 			"summary":	"@todo add summary",
 			"description":	[{
-					"line":	"@todo add description"
+				"line":	"@todo add description"
+			}],
+			"type":	"lRefT",
+			"subClassName":	"ANY",
+			"subCullPrefix":	"ANY",
+			"flags":	[]
+		}, {
+			"name":	"read_keys_func",
+			"summary":	"read keys from the database",
+			"description":	[{
+				"line":	"reads all keys from a spooling database" }, {
+				"line":	"matching beginning with a certain pattern"}, {
+				"line":	"@see e.g. spool_berkeleydb_read_keys()"
 				}],
 			"type":	"lRefT",
 			"subClassName":	"ANY",

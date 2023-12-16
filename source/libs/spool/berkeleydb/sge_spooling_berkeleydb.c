@@ -138,6 +138,7 @@ spool_berkeleydb_create_context(lList **answer_list, const char *args)
                                        spool_berkeleydb_transaction_func,
                                        spool_berkeleydb_default_list_func,
                                        spool_berkeleydb_default_read_func,
+                                       spool_berkeleydb_default_read_keys_func,
                                        spool_berkeleydb_default_write_func,
                                        spool_berkeleydb_default_delete_func,
                                        spool_default_validate_func,
@@ -805,6 +806,65 @@ spool_berkeleydb_default_read_func(lList **answer_list,
 
    DEXIT;
    return ep;
+}
+
+bool
+spool_berkeleydb_default_read_keys_func(lList **answer_list, 
+                                        const lListElem *rule,
+                                        lList **list,
+                                        const char *key)
+{
+   bool ret = true;
+
+   bdb_info info;
+
+   DENTER(BDB_LAYER, "spool_berkeleydb_default_read_keys_func");
+
+   info = (bdb_info)lGetRef(rule, SPR_clientdata);
+
+   if (info == NULL) {
+      answer_list_add_sprintf(answer_list, STATUS_EUNKNOWN,
+                              ANSWER_QUALITY_WARNING,
+                              MSG_BERKELEY_NOCONNECTIONOPEN_S,
+                              lGetString(rule, SPR_url));
+      ret = false;
+   }
+
+   if (ret) {
+      ret = spool_berkeleydb_check_reopen_database(answer_list, info);
+   }
+
+   if (ret) {
+      if (key == NULL || strlen(key) == 0) {
+         /* return all keys
+          * - we first fetch all keys from the config db
+          * - then append the all keys from the job db
+          */
+         ret = spool_berkeleydb_read_keys(answer_list, info, BDB_CONFIG_DB, list, "");
+         if (ret) {
+            ret = spool_berkeleydb_read_keys(answer_list, info, BDB_JOB_DB, list, "");
+         }
+      } else {
+         /* return all keys starting with the given pattern
+          * need to figure out the database
+          * only the first letter(s) of the key need to be given, we have in the job database
+          * J(OB), J(ATASK) - no J(C) in Open Gridengine yet
+          * PET(ASK) - PE would be in the config database
+          * all other keys are in the config db
+          */
+         bdb_database database;
+         if (strncmp(key, "J", 1) == 0 ||
+             strncmp(key, "PET", 3) == 0) {
+            database = BDB_JOB_DB;
+         } else {
+            database = BDB_CONFIG_DB;
+         }
+         ret = spool_berkeleydb_read_keys(answer_list, info, database, list, key);
+      }
+   }
+
+   DEXIT;
+   return ret;
 }
 
 /****** spool/berkeleydb/spool_berkeleydb_default_write_func() ****************

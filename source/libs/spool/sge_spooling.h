@@ -73,6 +73,7 @@
 *
 *     spool/spool_read_list()
 *     spool/spool_read_object()
+*     spool/spool_read_keys()
 *
 *     spool/spool_write_object()
 *
@@ -144,6 +145,7 @@
 *
 *     spool/spool_read_list()
 *     spool/spool_read_object()
+*     spool/spool_read_keys()
 *
 *     spool/spool_write_object()
 *
@@ -208,10 +210,16 @@ typedef bool
                        const sge_object_type object_type);
 
 typedef lListElem *
-(*spooling_read_func)(lList **answer_list, 
-                      const lListElem *type, const lListElem *rule, 
-                      const char *key, 
+(*spooling_read_func)(lList **answer_list,
+                      const lListElem *type, const lListElem *rule,
+                      const char *key,
                       const sge_object_type object_type);
+
+typedef bool
+(*spooling_read_keys_func)(lList **answer_list,
+                      const lListElem *rule, 
+                      lList **list,
+                      const char *key);
 
 typedef bool
 (*spooling_delete_func)(lList **answer_list, 
@@ -257,6 +265,7 @@ spool_context_create_rule(lList **answer_list, lListElem *context,
                           spooling_transaction_func transaction_func,
                           spooling_list_func list_func, 
                           spooling_read_func read_func, 
+                          spooling_read_keys_func read_keys_func, 
                           spooling_write_func write_func, 
                           spooling_delete_func delete_func,
                           spooling_validate_func validate_func,
@@ -307,6 +316,10 @@ spool_read_list(lList **answer_list, const lListElem *context,
 lListElem *
 spool_read_object(lList **answer_list, const lListElem *context, 
                   const sge_object_type object_type, const char *key);
+
+bool
+spool_read_keys(lList **answer_list, const lListElem *context,
+                lList **list, const char *key);
 
 /* writing */
 bool 

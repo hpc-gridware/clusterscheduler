@@ -673,8 +673,9 @@ spool_context_create_rule(lList **answer_list, lListElem *context,
                           spooling_trigger_func trigger_func, 
                           spooling_transaction_func transaction_func, 
                           spooling_list_func list_func, 
-                          spooling_read_func read_func, 
-                          spooling_write_func write_func, 
+                          spooling_read_func read_func,
+                          spooling_read_keys_func read_keys_func,
+                          spooling_write_func write_func,
                           spooling_delete_func delete_func,
                           spooling_validate_func validate_func,
                           spooling_validate_list_func validate_list_func)
@@ -1117,6 +1118,47 @@ spool_read_object(lList **answer_list, const lListElem *context,
    PROF_STOP_MEASUREMENT(SGE_PROF_SPOOLING);
    DRETURN(result);
 }
+
+bool
+spool_read_keys(lList **answer_list, const lListElem *context, 
+                lList **list, const char *key)
+{
+   bool result = true;
+
+   DENTER(TOP_LAYER, "spool_read_keys");
+   PROF_START_MEASUREMENT(SGE_PROF_SPOOLING);
+
+   if (context == NULL) {
+      answer_list_add_sprintf(answer_list, STATUS_EUNKNOWN, 
+                              ANSWER_QUALITY_ERROR, MSG_SPOOL_NOVALIDCONTEXT_S,
+                              SGE_FUNC);
+   } else {
+      const lList *rules = lGetList(context, SPC_rules);
+      lListElem *rule;
+
+      /* use the default rule to read object */
+      for_each (rule, rules) {
+         spooling_read_keys_func func;
+
+         /* retrieve and execute the read callback */
+         func = (spooling_read_keys_func)lGetRef(rule, SPR_read_keys_func);
+         if (func == NULL) {
+            answer_list_add_sprintf(answer_list, STATUS_EUNKNOWN, 
+                                    ANSWER_QUALITY_ERROR, 
+                                    MSG_SPOOL_CORRUPTRULEINCONTEXT_SSS,
+                                    lGetString(rule, SPR_name), 
+                                    lGetString(context, SPC_name),
+                                    SGE_FUNC);
+         } else {
+            result = func(answer_list, rule, list, key);
+         }
+      }
+   }
+
+   PROF_STOP_MEASUREMENT(SGE_PROF_SPOOLING);
+   DRETURN(result);
+}
+
 
 /****** spool/spool_write_object() **************************************
 *  NAME

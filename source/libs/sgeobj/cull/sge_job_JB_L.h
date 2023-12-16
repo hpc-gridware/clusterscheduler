@@ -108,101 +108,122 @@ extern "C" {
 *    Command prefix for jobscript ("qsub -C prefix") for parsing
 *    special comments in the script file.
 *
-*    SGE_STRING(JB_exec_file) - @todo add summary
-*    @todo add description
+*    SGE_STRING(JB_exec_file) - Executed File
+*    is the path to the locally spooled copy on the execution daemon,
+*    it is script that actually gets executed,
+*    In the case of a binary, is unused.
 *
-*    SGE_STRING(JB_script_file) - @todo add summary
-*    @todo add description
+*    SGE_STRING(JB_script_file) - Script File Path
+*    is the path to the job as sent from the CLI, is the path on the submit host
+*    In the case of a binary, is the path to the binary
 *
-*    SGE_ULONG(JB_script_size) - @todo add summary
-*    @todo add description
+*    SGE_ULONG(JB_script_size) - Script Size
+*    @todo really needed?
 *
-*    SGE_STRING(JB_script_ptr) - @todo add summary
-*    @todo add description
+*    SGE_STRING(JB_script_ptr) - Script in Memory
+*    the pointer to the character area of the jobscript
 *
-*    SGE_ULONG(JB_submission_time) - @todo add summary
-*    @todo add description
+*    SGE_ULONG(JB_submission_time) - Submission Time
+*    timestamp in s since epoch
 *
-*    SGE_ULONG(JB_execution_time) - @todo add summary
-*    @todo add description
+*    SGE_ULONG(JB_execution_time) - Earliest Execution Time
+*    When should the job start ("qsub/qalter -a date_time")
+*    timestamp in s since epoch
 *
-*    SGE_ULONG(JB_deadline) - @todo add summary
-*    @todo add description
+*    SGE_ULONG(JB_deadline) - Deadline Time
+*    SGEEE. Deadline initiation time. (qsub -dl date_time)
+*    timestamp in s since epoch
 *
-*    SGE_STRING(JB_owner) - @todo add summary
-*    @todo add description
+*    SGE_STRING(JB_owner) - Job Owner
+*    user who submitted the job
+*    @todo rename to JB_user to be consistent?
 *
-*    SGE_ULONG(JB_uid) - @todo add summary
-*    @todo add description
+*    SGE_ULONG(JB_uid) - User Id
+*    user id of the job owner
 *
-*    SGE_STRING(JB_group) - @todo add summary
-*    @todo add description
+*    SGE_STRING(JB_group) - Job Owner Group Name
+*    primary group name of the job owner
 *
-*    SGE_ULONG(JB_gid) - @todo add summary
-*    @todo add description
+*    SGE_ULONG(JB_gid) - Job Owner Group Id
+*    primary group id if the job owner
 *
-*    SGE_STRING(JB_account) - @todo add summary
-*    @todo add description
+*    SGE_STRING(JB_account) - Account String
+*    Account string ("qsub/qalter -A account string")
 *
-*    SGE_STRING(JB_cwd) - @todo add summary
-*    @todo add description
+*    SGE_STRING(JB_cwd) - Current Working Directory
+*    Current working directory from qsub ("qsub -cwd" or "qsub -wd")
 *
-*    SGE_BOOL(JB_notify) - @todo add summary
-*    @todo add description
+*    SGE_BOOL(JB_notify) - Notify Job
+*    Notify job of impending kill/stop signal. ("qsub -notify")
 *
-*    SGE_ULONG(JB_type) - @todo add summary
-*    @todo add description
+*    SGE_ULONG(JB_type) - Job Type
+*    Start job immediately or not at all. ("qsub -now")
+*    @todo it could be a boolean, but is misused for other information!
 *
-*    SGE_BOOL(JB_reserve) - @todo add summary
-*    @todo add description
+*    SGE_BOOL(JB_reserve) - Reserve Resources
+*    Specifies if a reservation is desired by the user ("qsub -R y|n").
+*    Available for non-immediate job submissions. Irrespective
+*    of the users desire a job reservation is made
+*      o only in reservation scheduling mode
+*      o only until the maximum number of reservations during a
+*        scheduling run is not exceeded when the order comes at
+*        this job. The maximum number (SC_max_reservation) can be
+*        specified in sched_conf(5).
+*      o only for non-immediate jobs
+*    Default is 'n'.
 *
-*    SGE_ULONG(JB_priority) - @todo add summary
-*    @todo add description
+*    SGE_ULONG(JB_priority) - Priority
+*    Priority ("qsub/qalter -p priority")
 *
-*    SGE_ULONG(JB_jobshare) - @todo add summary
-*    @todo add description
+*    SGE_ULONG(JB_jobshare) - SGEE Job Share
+*    Priority ("qsub/qalter -js jobshare")
 *
-*    SGE_LIST(JB_shell_list) - @todo add summary
-*    @todo add description
+*    SGE_LIST(JB_shell_list) - Shell List
+*    Command interpreter to be used (PN_Type).
+*    ("qsub/qalter -S shell")
 *
-*    SGE_ULONG(JB_verify) - @todo add summary
-*    @todo add description
+*    SGE_ULONG(JB_verify) - Verify
+*    Triggers "verify" messages. (qsub -verify)
 *
-*    SGE_LIST(JB_env_list) - @todo add summary
-*    @todo add description
+*    SGE_LIST(JB_env_list) - Environment List
+*    Export these env variables (VA_Type). ("qsub -V").
 *
-*    SGE_LIST(JB_context) - @todo add summary
-*    @todo add description
+*    SGE_LIST(JB_context) - Job Context
+*    Custom attributes (name,val) pairs (VA_Type).
+*    ("qsub/qalter -ac/-dc context_list")
 *
-*    SGE_LIST(JB_job_args) - @todo add summary
-*    @todo add description
+*    SGE_LIST(JB_job_args) - Job Arguments
+*    Job arguments (ST_Type).
 *
-*    SGE_ULONG(JB_checkpoint_attr) - @todo add summary
-*    @todo add description
+*    SGE_ULONG(JB_checkpoint_attr) - Checkpoint Attributes
+*    Checkpoint attributes ("qsub/qalter -c interval_flags")
+*    @todo  merge all checkpointing stuff to one object?
 *
-*    SGE_STRING(JB_checkpoint_name) - @todo add summary
-*    @todo add description
+*    SGE_STRING(JB_checkpoint_name) - Checkpoint Name
+*    Name of ckpt object ("qsub/qalter -ckpt ckpt_name")
 *
-*    SGE_OBJECT(JB_checkpoint_object) - @todo add summary
-*    @todo add description
+*    SGE_OBJECT(JB_checkpoint_object) - Checkpoint Object
+*    Ckpt object which will be sent from qmaster to execd.
+*    @todo: meaning when we change it in qmaster it will not be updated in execd
 *
-*    SGE_ULONG(JB_checkpoint_interval) - @todo add summary
-*    @todo add description
+*    SGE_ULONG(JB_checkpoint_interval) - Checkpoint Interval
+*    Checkpoint frequency ("qsub/qalter -c seconds")
 *
-*    SGE_ULONG(JB_restart) - @todo add summary
-*    @todo add description
+*    SGE_ULONG(JB_restart) - Rerunnable
+*    Is job rerunable? ("qsub/qalter -r y/n")
+*    @todo it could be a boolean but is misused for other information!
 *
-*    SGE_LIST(JB_stdout_path_list) - @todo add summary
-*    @todo add description
+*    SGE_LIST(JB_stdout_path_list) - stdout Path List
+*    Pathname for stdout (PN_Type). ("qsub/qalter -o path_name")
 *
-*    SGE_LIST(JB_stderr_path_list) - @todo add summary
-*    @todo add description
+*    SGE_LIST(JB_stderr_path_list) - stderr Path List
+*    Std error path streams (PN_Type). ("qsub/qalter -e path_name")
 *
-*    SGE_LIST(JB_stdin_path_list) - @todo add summary
-*    @todo add description
+*    SGE_LIST(JB_stdin_path_list) - stdin Path List
+*    Std input path streams (PN_Type). ("qsub/qalter -i path_name")
 *
-*    SGE_BOOL(JB_merge_stderr) - @todo add summary
-*    @todo add description
+*    SGE_BOOL(JB_merge_stderr) - Merge stderr
+*    Merge stdout and stderr? ("qsub/qalter -j y|n")
 *
 *    SGE_LIST(JB_hard_resource_list) - @todo add summary
 *    @todo add description
@@ -312,8 +333,8 @@ extern "C" {
 *    SGE_DOUBLE(JB_wtcontr) - @todo add summary
 *    @todo add description
 *
-*    SGE_ULONG(JB_ar) - @todo add summary
-*    @todo add description
+*    SGE_ULONG(JB_ar) - AR Number
+*    Uniq advance reservation number, > 0 if the job shall run within an AR
 *
 *    SGE_ULONG(JB_pty) - @todo add summary
 *    @todo add description
@@ -321,8 +342,8 @@ extern "C" {
 *    SGE_ULONG(JB_ja_task_concurrency) - @todo add summary
 *    @todo add description
 *
-*    SGE_LIST(JB_binding) - @todo add summary
-*    @todo add description
+*    SGE_LIST(JB_binding) - Binding Strategy
+*    Binding strategy for execution host (and later scheduler)
 *
 */
 
