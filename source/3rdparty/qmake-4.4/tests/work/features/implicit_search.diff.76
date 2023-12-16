@@ -1,0 +1,7 @@
+*** work/features/implicit_search.base.76	Wed Jul 12 15:25:05 2023
+--- work/features/implicit_search.log.76	Wed Jul 12 15:25:05 2023
+***************
+*** 1 ****
+! f77 -c hello.f
+--- 1 ----
+! make: *** No rule to make target 'hello.c', needed by 'hello.o'.  Stop.

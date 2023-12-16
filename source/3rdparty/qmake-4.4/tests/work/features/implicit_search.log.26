@@ -1,0 +1,3 @@
+hello.o
+fail 1
+make: *** [work/features/implicit_search.mk.26:5: hello.o] Error 1

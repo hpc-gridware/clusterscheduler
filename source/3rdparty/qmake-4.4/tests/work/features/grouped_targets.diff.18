@@ -1,0 +1,7 @@
+*** work/features/grouped_targets.base.18	Wed Jul 12 15:25:05 2023
+--- work/features/grouped_targets.log.18	Wed Jul 12 15:25:05 2023
+***************
+*** 1 ****
+! touch gta gtb
+--- 1 ----
+! make: 'gta' is up to date.

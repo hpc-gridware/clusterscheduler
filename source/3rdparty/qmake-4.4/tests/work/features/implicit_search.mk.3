@@ -1,0 +1,5 @@
+
+all: hello
+%: %.c; $(info hello.c)
+%: %.f; $(info hello.f)
+unrelated: hello.c

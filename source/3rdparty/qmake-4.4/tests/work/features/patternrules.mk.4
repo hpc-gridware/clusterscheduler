@@ -1,0 +1,12 @@
+
+.PHONY: all
+all: foo.c foo.o
+
+%.h %.c: %.in ; touch $*.h ; touch $*.c
+
+%.o: %.c %.h ; echo $+ >$@
+
+%.o: %.c ; @echo wrong rule
+
+foo.in: ; touch $@
+

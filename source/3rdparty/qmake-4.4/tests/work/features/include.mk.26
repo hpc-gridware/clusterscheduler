@@ -1,0 +1,5 @@
+
+default:; @echo $(hello)
+-include hello.mk
+$(shell echo hello=world >hello.mk)
+include hello.mk

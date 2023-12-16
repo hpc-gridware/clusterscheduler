@@ -1,0 +1,4 @@
+
+all: hello.o
+%.o:: %.c; $(info hello.c)
+%.o:: %.f; $(info hello.f)

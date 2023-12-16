@@ -1,0 +1,4 @@
+
+.PHONY: all
+&:;
+all: ;@printf ''

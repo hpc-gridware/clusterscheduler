@@ -1,0 +1,4 @@
+make: Circular hello.o <- hello.tsk dependency dropped.
+hello.f
+hello.tsk
+make: Nothing to be done for 'all'.

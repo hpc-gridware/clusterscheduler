@@ -1,0 +1,5 @@
+
+all: hello.tsk
+%.tsk: % %.x; $(info $@ from $^)
+unrelated: hello
+%.x: %.xx; $(info $@ from $<)

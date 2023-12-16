@@ -1,0 +1,12 @@
+*** work/features/include.base.33	Wed Jul 12 15:25:06 2023
+--- work/features/include.log.33	Wed Jul 12 15:25:06 2023
+***************
+*** 1,2 ****
+  exit 1
+! work/features/include.mk.31:4: Failed to remake makefile 'inc_b.mk'.
+--- 1,5 ----
+  exit 1
+! work/features/include.mk.31:4: inc_b.mk: No such file or directory
+! make: *** [work/features/include.mk.31:5: inc_b.mk] Error 1
+! make: Failed to remake makefile 'inc_b.mk'.
+! hello

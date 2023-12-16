@@ -1,0 +1,84 @@
+# package manager to be used for 3rdparty code which has custom rules (*not* cmake)
+# none: use hand written code below
+# we might want to use conan or VCPKG instead but
+# - none of them has libplpa (which we need to get rid of)
+# - conan has libdb and jemalloc
+# - VCPKG only has an old version of libdb (4.8.30)
+#
+# for cmake projects we use CPM
+set(SGE_PACKAGE_MANAGER none)
+
+function(build_third_party 3rdparty_install_path)
+    include(cmake/CPM.cmake)
+
+    cpmaddpackage("gh:DaveGamble/cJSON#v1.7.16")
+
+    if (${SGE_PACKAGE_MANAGER} STREQUAL none)
+        include(ExternalProject)
+
+        # berkeleydb
+        ExternalProject_Add(
+                3rd_party_berkeleydb
+                EXCLUDE_FROM_ALL TRUE
+                PREFIX ${3rdparty_install_path}/berkeleydb
+                INSTALL_DIR ${3rdparty_install_path}
+                GIT_REPOSITORY https://github.com/Positeral/libdb5.git
+                GIT_TAG master
+                CONFIGURE_COMMAND dist/configure --prefix ${3rdparty_install_path}
+                BUILD_IN_SOURCE TRUE
+                BUILD_ALWAYS FALSE
+                BUILD_COMMAND make clean all
+                INSTALL_COMMAND make install)
+        add_library(berkeleydb SHARED IMPORTED GLOBAL)
+        set_target_properties(
+                berkeleydb
+                PROPERTIES
+                IMPORTED_LOCATION
+                ${3rdparty_install_path}/lib/${CMAKE_SHARED_LIBRARY_PREFIX}db${CMAKE_SHARED_LIBRARY_SUFFIX}
+        )
+        # install(FILES berkeleydb DESTINATION lib/${SGE_ARCH}) @todo multiple files, e.g.
+        # libdb.so, libdb.so.5 @todo we build the static lib as well and apparently the
+        # static lib is linked to libspoolb.so - is this an issue? @todo db_* binaries
+        # @todo db_* man pages
+
+        # jemalloc @todo for all platforms? Only lx-amd64?
+        ExternalProject_Add(
+                3rd_party_jemalloc
+                EXCLUDE_FROM_ALL TRUE
+                PREFIX ${3rdparty_install_path}/jemalloc
+                INSTALL_DIR ${3rdparty_install_path}
+                GIT_REPOSITORY https://github.com/jemalloc/jemalloc.git
+                GIT_TAG 5.3.0
+                CONFIGURE_COMMAND ./autogen.sh --prefix ${3rdparty_install_path} --disable-shared
+                BUILD_IN_SOURCE TRUE
+                BUILD_ALWAYS FALSE
+                BUILD_COMMAND make)
+        add_library(jemalloc STATIC IMPORTED GLOBAL)
+        set_target_properties(
+                jemalloc
+                PROPERTIES
+                IMPORTED_LOCATION
+                ${3rdparty_install_path}/lib/${CMAKE_STATIC_LIBRARY_PREFIX}jemalloc_pic${CMAKE_STATIC_LIBRARY_SUFFIX}
+        )
+
+        # plpa
+        ExternalProject_Add(
+                3rd_party_plpa
+                EXCLUDE_FROM_ALL TRUE
+                PREFIX ${3rdparty_install_path}/plpa
+                INSTALL_DIR ${3rdparty_install_path}
+                # GIT_REPOSITORY https://github.com/jemalloc/jemalloc.git GIT_TAG 5.3.0
+                URL https://download.open-mpi.org/release/plpa/v1.3/plpa-1.3.2.tar.gz
+                CONFIGURE_COMMAND ./configure --prefix ${3rdparty_install_path} --disable-shared
+                BUILD_IN_SOURCE TRUE
+                BUILD_ALWAYS FALSE
+                BUILD_COMMAND make)
+        add_library(plpa STATIC IMPORTED GLOBAL)
+        set_target_properties(
+                plpa
+                PROPERTIES
+                IMPORTED_LOCATION
+                ${3rdparty_install_path}/lib/${CMAKE_STATIC_LIBRARY_PREFIX}plpa${CMAKE_STATIC_LIBRARY_SUFFIX}
+        )
+    endif()
+endfunction(build_third_party)

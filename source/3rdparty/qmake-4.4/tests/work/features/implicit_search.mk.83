@@ -1,0 +1,5 @@
+
+all: hello.tsk
+%.tsk: hello.x; $(info $@)
+%.x:; $(flags)
+hello.x: flags:=true

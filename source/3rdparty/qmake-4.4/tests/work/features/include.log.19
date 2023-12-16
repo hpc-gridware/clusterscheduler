@@ -1,0 +1,2 @@
+work/features/include.mk.18:3: inc1: No such file or directory
+make: *** No rule to make target 'foo', needed by 'inc1'.  Stop.

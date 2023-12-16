@@ -1,0 +1,4 @@
+
+all: hello.z
+%.z %.q: %.x test.x ; @echo $*.z $*.q
+%.x: ;

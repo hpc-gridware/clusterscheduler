@@ -1,0 +1,6 @@
+make: Entering directory '/home/jgabler/out/make-4.4/tests'
+foo
+make: Leaving directory '/home/jgabler/out/make-4.4/tests'
+make: Entering directory '/home/jgabler/out/make-4.4/tests'
+bar
+make: Leaving directory '/home/jgabler/out/make-4.4/tests'

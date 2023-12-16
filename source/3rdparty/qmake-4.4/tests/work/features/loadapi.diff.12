@@ -1,0 +1,12 @@
+*** work/features/loadapi.base.12	Wed Jul 12 15:25:07 2023
+--- work/features/loadapi.log.12	Wed Jul 12 15:25:06 2023
+***************
+*** 1,7 ****
+  testapi_gmk_setup
+  work/features/loadapi.mk.12:2
+  testapi.so
+- testapi_gmk_setup
+- work/features/loadapi.mk.12:2
+- hello
+- make: 'all' is up to date.
+--- 1,3 ----

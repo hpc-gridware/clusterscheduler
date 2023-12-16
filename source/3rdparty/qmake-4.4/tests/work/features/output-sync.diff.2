@@ -1,0 +1,21 @@
+*** work/features/output-sync.base.2	Wed Jul 12 15:25:16 2023
+--- work/features/output-sync.log.2	Wed Jul 12 15:25:16 2023
+***************
+*** 1,8 ****
+  make -C foo
+  /usr/bin/perl /home/jgabler/out/make-4.4/tests/../tests/thelp.pl -q sleep 1 ; make -C bar
+  bar: start
+  bar: end
+- foo: start
+  foo: end
+- baz: start
+  baz: end
+--- 1,8 ----
+  make -C foo
+  /usr/bin/perl /home/jgabler/out/make-4.4/tests/../tests/thelp.pl -q sleep 1 ; make -C bar
++ foo: start
+  bar: start
++ baz: start
+  bar: end
+  foo: end
+  baz: end

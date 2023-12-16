@@ -1,0 +1,12 @@
+
+$(dir)/foo.o:
+
+$(dir)/foo.y: ; @echo $@
+
+%.c: %.y ; touch $@
+
+%.o: %.c ; @echo $@
+
+.PHONY: install
+install: $(dir)/foo.c
+

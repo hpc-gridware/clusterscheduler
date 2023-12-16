@@ -1,0 +1,6 @@
+# source/daemons
+add_subdirectory(common)
+add_subdirectory(execd)
+add_subdirectory(qmaster)
+add_subdirectory(shadowd)
+add_subdirectory(shepherd)

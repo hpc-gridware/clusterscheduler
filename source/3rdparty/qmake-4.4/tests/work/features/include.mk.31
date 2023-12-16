@@ -1,0 +1,5 @@
+
+all:; @echo hello
+-include inc_a.mk
+include inc_b.mk
+%_a.mk %_b.mk:; exit 1

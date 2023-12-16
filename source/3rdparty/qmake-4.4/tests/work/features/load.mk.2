@@ -1,0 +1,6 @@
+
+PRE := $(.LOADED)
+load ./testload.so
+load testload.so(explicit_setup)
+POST := $(.LOADED)
+all: ; @echo pre=$(PRE) post=$(POST) $(TESTLOAD)

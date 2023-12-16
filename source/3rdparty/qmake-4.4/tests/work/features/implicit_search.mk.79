@@ -1,0 +1,3 @@
+
+all: hello.tsk
+%.tsk: %; $(info $@ from $<)

@@ -1,0 +1,8 @@
+
+.PHONY: default
+default:; @echo DONE
+
+inc1:; echo > $@
+include inc1
+include inc2
+inc2:; echo > $@

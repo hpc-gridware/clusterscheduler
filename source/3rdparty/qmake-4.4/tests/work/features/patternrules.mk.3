@@ -1,0 +1,9 @@
+
+.DELETE_ON_ERROR:
+
+.PRECIOUS: %.bar
+
+%.bar:; @touch $@ && exit 1
+
+$(dir)/foo.bar:
+

@@ -1,0 +1,6 @@
+
+PRE := $(.LOADED)
+-load ./testload.so(explicit_setup)
+POST := $(.LOADED)
+all: ; @echo pre=$(PRE) post=$(POST) $(TESTLOAD)
+%.so: %.c ; @echo "rebuilding $@"; gcc  -I../src -g -O2 -fPIC  -shared -o testload.so testload.c

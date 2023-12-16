@@ -1,0 +1,1 @@
+make: *** No rule to make target 'hello.o', needed by 'hello.tsk'.  Stop.

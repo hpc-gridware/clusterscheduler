@@ -1,0 +1,8 @@
+make -C foo
+/usr/bin/perl /home/jgabler/out/make-4.4/tests/../tests/thelp.pl -q sleep 1 ; make -C bar
+foo: start
+bar: start
+baz: start
+bar: end
+foo: end
+baz: end

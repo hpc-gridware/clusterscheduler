@@ -1,0 +1,8 @@
+*** work/features/include.base.23	Wed Jul 12 15:25:06 2023
+--- work/features/include.log.23	Wed Jul 12 15:25:06 2023
+***************
+*** 1,2 ****
+! work/features/include.mk.22:2: inc1: Permission denied
+! make: *** No rule to make target 'inc1'.  Stop.
+--- 1 ----
+! 

@@ -1,0 +1,7 @@
+
+load testapi.so
+
+all:; $(info $(test-expand hello))
+testapi.so: force; @/usr/bin/perl /home/jgabler/out/make-4.4/tests/../tests/thelp.pl fail 1
+force:;
+.PHONY: force

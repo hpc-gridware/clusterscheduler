@@ -1,0 +1,7 @@
+*** work/features/include.base.31	Wed Jul 12 15:25:06 2023
+--- work/features/include.log.31	Wed Jul 12 15:25:06 2023
+***************
+*** 1 ****
+--- 1,2 ----
++ echo 'FOO=bar' > hello.mk
+  FOO=

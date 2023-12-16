@@ -1,0 +1,5 @@
+
+.PHONY: default
+default:;@echo 'FOO=$(FOO)'
+-include hello.mk
+hello.mk:: ; echo 'FOO=bar' > $@

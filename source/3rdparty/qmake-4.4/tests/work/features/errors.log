@@ -1,0 +1,3 @@
+exit 1
+make: [work/features/errors.mk:3: one] Error 1 (ignored)
+exit 0

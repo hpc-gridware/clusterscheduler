@@ -1,0 +1,7 @@
+*** work/features/export.base.13	Wed Jul 12 15:25:05 2023
+--- work/features/export.log.13	Wed Jul 12 15:25:05 2023
+***************
+*** 1 ****
+! hello=sun hello=
+--- 1 ----
+! hello=moon hello=moon

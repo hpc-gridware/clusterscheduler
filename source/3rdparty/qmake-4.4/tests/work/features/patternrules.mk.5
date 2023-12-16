@@ -1,0 +1,7 @@
+
+all: foo.s1 foo.s2 p1.foo p2.foo
+
+p1.% p2.%: %.orig ; @echo $@
+%.s1 %.s2: %.orig ; @echo $@
+
+.PHONY: foo.orig

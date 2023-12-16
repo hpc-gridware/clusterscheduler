@@ -1,0 +1,2 @@
+exit 1
+work/features/include.mk.31:4: Failed to remake makefile 'inc_b.mk'.

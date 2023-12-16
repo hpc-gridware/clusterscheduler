@@ -1,0 +1,158 @@
+#                                                                    -*-perl-*-
+
+$description = "Test proper behavior of MAKEFLAGS";
+
+$details = "DETAILS";
+
+# Normal flags aren't prefixed with "-"
+run_make_test(q!
+all: ; @echo /$(MAKEFLAGS)/
+!,
+              '-e -r -R', '/erR/');
+
+# Long arguments mean everything is prefixed with "-"
+run_make_test(q!
+all: ; @echo /$(MAKEFLAGS)/
+!,
+              '--no-print-directory -e -r -R --trace', "#MAKEFILE#:2: update target 'all' due to: target does not exist
+echo /erR --trace --no-print-directory/
+/erR --trace --no-print-directory/");
+
+
+# Recursive invocations of make should accumulate MAKEFLAGS values.
+# Savannah bug #2216
+run_make_test(q!
+MSG = Fails
+.RECIPEPREFIX = >
+all:
+> @echo '$@: MAKEFLAGS=$(MAKEFLAGS)'
+> @MSG=Works $(MAKE) -e -f #MAKEFILE# jump
+jump:
+> @echo '$@ $(MSG): MAKEFLAGS=$(MAKEFLAGS)'
+> @$(MAKE) -f #MAKEFILE# print
+print:
+> @echo '$@ $(MSG): MAKEFLAGS=$(MAKEFLAGS)'
+.PHONY: all jump print
+!,
+                  '--no-print-directory',
+                  'all: MAKEFLAGS= --no-print-directory
+jump Works: MAKEFLAGS=e --no-print-directory
+print Works: MAKEFLAGS=e --no-print-directory');
+
+# Ensure MAKEFLAGS updates are handled immediately rather than later
+
+mkdir('foo', 0777);
+mkdir('bar', 0777);
+
+run_make_test(q!
+$(info MAKEFLAGS=$(MAKEFLAGS))
+$(info INCLUDE_DIRS=$(.INCLUDE_DIRS))
+MAKEFLAGS += -Ibar
+$(info MAKEFLAGS=$(MAKEFLAGS))
+$(info INCLUDE_DIRS=$(.INCLUDE_DIRS))
+.PHONY: all
+all: ; @echo 'MAKEFLAGS=$(MAKEFLAGS)' "\$$MAKEFLAGS=$$MAKEFLAGS"
+!,
+              '-I- -Ifoo', 'MAKEFLAGS= -I- -Ifoo
+INCLUDE_DIRS=foo
+MAKEFLAGS= -I- -Ifoo -Ibar
+INCLUDE_DIRS=foo bar
+MAKEFLAGS= -I- -Ifoo -Ibar $MAKEFLAGS= -I- -Ifoo -Ibar');
+
+rmdir('foo');
+rmdir('bar');
+
+# Test that command line switches are all present in MAKEFLAGS.
+# sv 62514.
+my @opts;
+
+# Simple flags.
+@opts = ('i', 'k', 'n', 'q', 'r', 's', 'w', 'd');
+exists $FEATURES{'check-symlink'} and push @opts, 'L';
+
+for my $opt (@opts) {
+  run_make_test(q!
+MAKEFLAGS:=B
+all:; $(info makeflags='$(MAKEFLAGS)')
+!, "-$opt", "/makeflags='B$opt'/");
+}
+
+# Switches which carry arguments.
+@opts = (' -I/tmp', ' -Onone', ' --debug=b', ' -l2.5');
+for my $opt (@opts) {
+  run_make_test(q!
+MAKEFLAGS:=B
+all:; $(info makeflags='$(MAKEFLAGS)')
+!, "$opt", "/makeflags='B$opt'/");
+}
+
+# Long options which take no arguments.
+# sv 62514.
+@opts = (' --no-print-directory', ' --warn-undefined-variables', ' --trace');
+for my $opt (@opts) {
+run_make_test(q!
+MAKEFLAGS:=B
+all:; $(info makeflags='$(MAKEFLAGS)')
+!, "$opt", "/makeflags='B$opt'/");
+}
+
+# Test that make filters out duplicates.
+# Each option is specified in the makefile, env and on the command line.
+@opts = (' -I/tmp', ' -Onone', ' --debug=b', ' -l2.5');
+$ENV{'MAKEFLAGS'} = $opt;
+for my $opt (@opts) {
+  run_make_test("
+MAKEFLAGS:=B $opt
+all:; \$(info makeflags='\$(MAKEFLAGS)')
+", "$opt", "/makeflags='B$opt'/");
+}
+
+# Test that make filters out duplicates.
+# Each option is specified in the makefile, env and on the command line.
+# decode_switches reallocates when the number of parameters in sl->list exceeds 5.
+# This test exercises the realloc branch.
+$ENV{'MAKEFLAGS'} = '-I1 -Onone --debug=b -l2.5 -I2 -I3 -I4 -I5 -I6 -I2 -I2';
+run_make_test(q!
+MAKEFLAGS:=B -I1 -Onone --debug=b -l2.5 -I2 -I3 -I4 -I5 -I6 -I2 -I2
+all:; $(info makeflags='$(MAKEFLAGS)')
+!,
+'-I1 -Onone --debug=b -l2.5 -I2 -I3 -I4 -I5 -I6',
+"/makeflags='B -I1 -I2 -I3 -I4 -I5 -I6 -l2.5 -Onone --debug=b'/");
+
+# A mix of multiple flags from env, the makefile and command line.
+# Skip -L since it's not available everywhere
+$ENV{'MAKEFLAGS'} = 'ikB --no-print-directory --warn-undefined-variables --trace';
+run_make_test(q!
+MAKEFLAGS:=iknqrswd -I/tmp -I/tmp -Onone -Onone -l2.5 -l2.5
+all:; $(info makeflags='$(MAKEFLAGS)')
+!,
+'-Onone -l2.5 -l2.5 -Onone -I/tmp -iknqrswd -i -n -s -k -I/tmp',
+"/makeflags='Bdiknqrsw -I/tmp -l2.5 -Onone --trace --warn-undefined-variables'/");
+
+# Verify MAKEFLAGS are all available to shell functions
+$ENV{'MAKEFLAGS'} = 'ikB --no-print-directory --warn-undefined-variables';
+run_make_test(q!
+MAKEFLAGS := iknqrsw -I/tmp -I/tmp -Onone -Onone -l2.5 -l2.5 --no-print-directory
+XX := $(shell echo "$$MAKEFLAGS")
+all:; $(info makeflags='$(XX)')
+!,
+    '-Onone -l2.5 -l2.5 -Onone -I/tmp -iknqrs -i -n -s -k -I/tmp',
+    "makeflags='iknqrsw -I/tmp -I/tmp -Onone -Onone -l2.5 -l2.5 --no-print-directory'");
+
+# Verify that command line arguments are included in MAKEFLAGS
+run_make_test(q!
+all: ; @echo $(MAKEFLAGS)
+!,
+              '-e FOO=bar -r -R', 'erR -- FOO=bar');
+
+# Long arguments mean everything is prefixed with "-"
+run_make_test(q!
+all: ; @echo /$(MAKEFLAGS)/
+!,
+              '--no-print-directory -e -r -R --trace FOO=bar',
+              "#MAKEFILE#:2: update target 'all' due to: target does not exist
+echo /erR --trace --no-print-directory -- FOO=bar/
+/erR --trace --no-print-directory -- FOO=bar/");
+
+
+1;

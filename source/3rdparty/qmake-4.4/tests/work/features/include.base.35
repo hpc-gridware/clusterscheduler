@@ -1,0 +1,4 @@
+exit 1
+work/features/include.mk.32:3: inc_a.mk: No such file or directory
+make: *** [work/features/include.mk.32:5: inc_a.mk] Error 1
+work/features/include.mk.32:3: Failed to remake makefile 'inc_a.mk'.

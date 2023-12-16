@@ -1,0 +1,13 @@
+
+TARGETS := foo foo.out
+
+.PHONY: all foo.in
+
+all: $(TARGETS)
+
+%: %.in ; @echo $@
+
+%.out: % ; @echo $@
+
+foo.in: ; @:
+

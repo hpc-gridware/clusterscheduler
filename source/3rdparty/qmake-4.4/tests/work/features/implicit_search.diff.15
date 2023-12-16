@@ -1,0 +1,10 @@
+*** work/features/implicit_search.base.15	Wed Jul 12 15:25:05 2023
+--- work/features/implicit_search.log.15	Wed Jul 12 15:25:05 2023
+***************
+*** 1,2 ****
+! hello.f
+! make: Nothing to be done for 'all'.
+--- 1,3 ----
+! hello.c
+! true
+! hello.c

@@ -1,0 +1,2 @@
+recurse: /-j2 --jobserver-auth=<auth> --no-print-directory/
+all: /-j2 --jobserver-auth=<auth> --no-print-directory/

@@ -1,0 +1,4 @@
+
+all: t1 t2
+t1: ; @$(MAKE) -f work/features/output-sync.mk.8
+t2: ; @$(MAKE) -f work/features/output-sync.mk.9

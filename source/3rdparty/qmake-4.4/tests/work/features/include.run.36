@@ -1,0 +1,2 @@
+# /home/jgabler/out/make-4.4/tests/scripts/features/include:461:
+make -E '%:;@echo $@' -E 'all:;' -E -include bizbaz -E -include bazbiz

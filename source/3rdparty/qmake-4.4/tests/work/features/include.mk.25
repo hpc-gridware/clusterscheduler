@@ -1,0 +1,6 @@
+
+-include i1 i2
+-include i3
+-include i4
+%:;@echo $@
+all:;

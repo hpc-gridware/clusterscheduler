@@ -1,0 +1,6 @@
+
+final: x ; @echo $@
+x: x.t1 x.t2 ; @echo $@
+x.t2: dep
+dep: ; @echo $@
+%.t1 %.t2: ; @echo $*.t1 ; echo $*.t2

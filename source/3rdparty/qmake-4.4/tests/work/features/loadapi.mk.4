@@ -1,0 +1,7 @@
+
+load testapi.so
+
+all:; $(info $(test-expand hello))
+testapi.so: force; $(info $@)
+force:;
+.PHONY: force

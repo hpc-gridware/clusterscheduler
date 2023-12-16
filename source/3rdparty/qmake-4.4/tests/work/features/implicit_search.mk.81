@@ -1,0 +1,5 @@
+
+all: bye.tsk
+%.tsk: %.o; $(info $@ from $<)
+.DEFAULT:; $(info bye.o)
+unrelated: bye.o

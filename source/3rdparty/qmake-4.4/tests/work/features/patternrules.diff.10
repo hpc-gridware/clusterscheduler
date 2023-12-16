@@ -1,0 +1,7 @@
+*** work/features/patternrules.base.10	Wed Jul 12 15:26:32 2023
+--- work/features/patternrules.log.10	Wed Jul 12 15:25:32 2023
+***************
+*** 1,2 ****
+  : a.elf a.lnk
+- : a.elf a.dbg
+--- 1 ----

@@ -1,0 +1,8 @@
+*** work/features/implicit_search.base.12	Wed Jul 12 15:25:05 2023
+--- work/features/implicit_search.log.12	Wed Jul 12 15:25:05 2023
+***************
+*** 1,2 ****
+! hello.f
+! make: Nothing to be done for 'all'.
+--- 1 ----
+! make: *** No rule to make target 'hello.c', needed by 'hello'.  Stop.

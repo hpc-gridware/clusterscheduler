@@ -1,0 +1,13 @@
+
+.RECIPEPREFIX = >
+-include inc.mk
+recur:
+#> @echo 'MAKEFLAGS = $(MAKEFLAGS)'
+> @rm -f inc.mk
+> @$(MAKE) -j2 -f work/features/jobserver.mk.4 all
+all:
+#> @echo 'MAKEFLAGS = $(MAKEFLAGS)'
+> @echo $@
+inc.mk:
+#> @echo 'MAKEFLAGS = $(MAKEFLAGS)'
+> @echo 'FOO = bar' > $@

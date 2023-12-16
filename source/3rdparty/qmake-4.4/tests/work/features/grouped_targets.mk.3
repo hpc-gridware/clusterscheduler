@@ -1,0 +1,5 @@
+
+.PHONY: m1 t1 t2 t3 t4 g1 g2 g3 g4
+m1: t1 t2 t3 t4 g4 g3 g2 g1
+t1 t2 t3 t4: ; @echo $@
+g1 g2 g3 g4&: ; @echo $@

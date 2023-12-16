@@ -1,0 +1,14 @@
+make -C foo foo-job
+/usr/bin/perl /home/jgabler/out/make-4.4/tests/../tests/thelp.pl -q sleep 1 ; make -C bar bar-job
+make[1]: Entering directory '/home/jgabler/out/make-4.4/tests/foo'
+foo: start
+make[1]: Leaving directory '/home/jgabler/out/make-4.4/tests/foo'
+make[1]: Entering directory '/home/jgabler/out/make-4.4/tests/bar'
+bar: start
+make[1]: Leaving directory '/home/jgabler/out/make-4.4/tests/bar'
+make[1]: Entering directory '/home/jgabler/out/make-4.4/tests/bar'
+bar: end
+make[1]: Leaving directory '/home/jgabler/out/make-4.4/tests/bar'
+make[1]: Entering directory '/home/jgabler/out/make-4.4/tests/foo'
+foo: end
+make[1]: Leaving directory '/home/jgabler/out/make-4.4/tests/foo'

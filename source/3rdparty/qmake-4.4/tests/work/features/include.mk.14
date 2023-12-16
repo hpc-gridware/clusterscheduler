@@ -1,0 +1,5 @@
+
+default:; @echo DEFAULT
+include inc1
+inc1:; echo > $@
+include inc1

@@ -1,0 +1,3 @@
+exit 1
+make: Failed to remake makefile 'inc_a.mk'.
+hello

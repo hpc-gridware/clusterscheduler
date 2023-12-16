@@ -1,0 +1,84 @@
+# source/daemons/qmaster
+add_executable(
+  sge_qmaster
+  configuration_qmaster.c
+  job_exit.c
+  job_report_qmaster.c
+  qmaster_to_execd.c
+  reschedule.c
+  sched_conf_qmaster.c
+  setup_qmaster.c
+  sge_advance_reservation_qmaster.c
+  sge_c_gdi.c
+  sge_c_report.c
+  sge_calendar_qmaster.c
+  sge_centry_qmaster.c
+  sge_ckpt_qmaster.c
+  sge_cqueue_qmaster.c
+  sge_follow.c
+  sge_give_jobs.c
+  sge_hgroup_qmaster.c
+  sge_host_qmaster.c
+  sge_job_enforce_limit.c
+  sge_job_qmaster.c
+  sge_job_verify.c
+  sge_manop_qmaster.c
+  sge_pe_qmaster.c
+  sge_persistence_qmaster.c
+  sge_qinstance_qmaster.c
+  sge_qmaster_heartbeat.c
+  sge_qmaster_main.c
+  sge_qmaster_process_message.c
+  sge_qmaster_threads.c
+  sge_qmaster_timed_event.c
+  sge_qmod_qmaster.c
+  sge_reporting_qmaster.c
+  sge_resource_quota_qmaster.c
+  sge_rusage.c
+  sge_sched_job_category.c
+  sge_sched_order.c
+  sge_sched_prepare_data.c
+  sge_sched_process_events.c
+  sge_sched_thread.c
+  sge_sharetree_qmaster.c
+  sge_subordinate_qmaster.c
+  sge_task_depend.c
+  sge_thread_event_master.c
+  sge_thread_jvm.c
+  sge_thread_listener.c
+  sge_thread_main.c
+  sge_thread_scheduler.c
+  sge_thread_signaler.c
+  sge_thread_timer.c
+  sge_thread_worker.c
+  sge_userprj_qmaster.c
+  sge_userset_qmaster.c
+  sge_utility_qmaster.c
+  ../../common/sig_handlers.c
+  ../../common/sge_options.c
+  ../../common/sge_mt_init.c
+  ../../common/usage.c
+  ../../common/execution_states.c)
+
+target_include_directories(sge_qmaster PUBLIC "./" ${SGE_INCLUDES})
+
+target_link_libraries(
+  sge_qmaster
+  PUBLIC daemonscommon
+         spoolloader
+         spoold
+         spool
+         sched
+         evm
+         mir
+         evc
+         gdi
+         sgeobj
+         cull
+         comm
+         commlists
+         uti
+         plpa
+         ${SGE_LIBS})
+
+install(TARGETS sge_qmaster DESTINATION bin/${SGE_ARCH})

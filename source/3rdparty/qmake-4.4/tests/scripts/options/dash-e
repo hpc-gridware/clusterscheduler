@@ -1,0 +1,15 @@
+#                                                                    -*-perl-*-
+
+$description = "The following test creates a makefile to ...";
+
+$details = "";
+
+$ENV{GOOGLE} = 'boggle';
+
+run_make_test(q!
+GOOGLE = bazzle
+all:; @echo "$(GOOGLE)"
+!,
+              '-e', "boggle\n");
+
+1;

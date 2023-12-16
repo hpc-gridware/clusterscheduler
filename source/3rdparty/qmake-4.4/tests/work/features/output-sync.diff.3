@@ -1,0 +1,35 @@
+*** work/features/output-sync.base.3	Wed Jul 12 15:25:18 2023
+--- work/features/output-sync.log.3	Wed Jul 12 15:25:18 2023
+***************
+*** 1,12 ****
+  make -C foo foo-fail
+  /usr/bin/perl /home/jgabler/out/make-4.4/tests/../tests/thelp.pl -q sleep 1 ; make -C bar bar
+  make[1]: Entering directory '/home/jgabler/out/make-4.4/tests/bar'
+  bar: start
+  bar: end
+  make[1]: Leaving directory '/home/jgabler/out/make-4.4/tests/bar'
+  make[1]: Entering directory '/home/jgabler/out/make-4.4/tests/foo'
+- foo-fail: start
+  foo-fail: end
+  make[1]: *** [Makefile:23: foo-fail] Error 1
+  make[1]: Leaving directory '/home/jgabler/out/make-4.4/tests/foo'
+  make: *** [work/features/output-sync.mk.2:4: make-foo-fail] Error 2
+--- 1,18 ----
+  make -C foo foo-fail
+  /usr/bin/perl /home/jgabler/out/make-4.4/tests/../tests/thelp.pl -q sleep 1 ; make -C bar bar
++ make[1]: Entering directory '/home/jgabler/out/make-4.4/tests/foo'
++ foo-fail: start
++ make[1]: Leaving directory '/home/jgabler/out/make-4.4/tests/foo'
+  make[1]: Entering directory '/home/jgabler/out/make-4.4/tests/bar'
+  bar: start
++ make[1]: Leaving directory '/home/jgabler/out/make-4.4/tests/bar'
++ make[1]: Entering directory '/home/jgabler/out/make-4.4/tests/bar'
+  bar: end
+  make[1]: Leaving directory '/home/jgabler/out/make-4.4/tests/bar'
+  make[1]: Entering directory '/home/jgabler/out/make-4.4/tests/foo'
+  foo-fail: end
++ make[1]: Leaving directory '/home/jgabler/out/make-4.4/tests/foo'
++ make[1]: Entering directory '/home/jgabler/out/make-4.4/tests/foo'
+  make[1]: *** [Makefile:23: foo-fail] Error 1
+  make[1]: Leaving directory '/home/jgabler/out/make-4.4/tests/foo'
+  make: *** [work/features/output-sync.mk.2:4: make-foo-fail] Error 2

@@ -1,0 +1,2 @@
+f77 hello.f -o hello
+hello.tsk from hello

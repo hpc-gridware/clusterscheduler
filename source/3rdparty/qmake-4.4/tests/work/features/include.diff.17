@@ -1,0 +1,8 @@
+*** work/features/include.base.17	Wed Jul 12 15:25:06 2023
+--- work/features/include.log.17	Wed Jul 12 15:25:06 2023
+***************
+*** 1,3 ****
+- echo > inc1
+  work/features/include.mk.16:7: inc2: No such file or directory
+  make: *** No rule to make target 'inc2'.  Stop.
+--- 1,2 ----

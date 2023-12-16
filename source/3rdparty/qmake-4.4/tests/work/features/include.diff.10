@@ -1,0 +1,11 @@
+*** work/features/include.base.10	Wed Jul 12 15:25:05 2023
+--- work/features/include.log.10	Wed Jul 12 15:25:05 2023
+***************
+*** 1,3 ****
+- echo > inc1
+  echo > inc2
+  DONE
+--- 1,3 ----
+  echo > inc2
++ echo > inc1
+  DONE

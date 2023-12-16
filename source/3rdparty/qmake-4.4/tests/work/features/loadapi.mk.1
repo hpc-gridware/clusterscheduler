@@ -1,0 +1,7 @@
+
+load testapi.so
+TEST = bye
+ASSIGN = VAR = $(TEST) $(shell echo there)
+$(test-eval $(value ASSIGN))
+TEST = hi
+all:;@echo '$(VAR)'

@@ -1,0 +1,5 @@
+
+all: hello.o
+%.o: %.c; $(info hello.c)
+%.o: %.f; $(info hello.f)
+hello.c:; @/usr/bin/perl /home/jgabler/out/make-4.4/tests/../tests/thelp.pl fail 1

@@ -1,0 +1,4 @@
+
+all:;@echo $(FOO)
+include inc1
+inc1:; @rm -f $@ && echo FOO := bar > $@

@@ -1,0 +1,3 @@
+
+all: t1
+t1: ; -@$(MAKE) -f work/features/output-sync.mk.11

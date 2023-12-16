@@ -1,0 +1,6 @@
+make[1]: Entering directory '/home/jgabler/out/make-4.4/tests'
+d1 stderr
+d1 stdout
+work/features/output-sync.mk.11:3: *** d1 failed.  Stop.
+make[1]: Leaving directory '/home/jgabler/out/make-4.4/tests'
+make: [work/features/output-sync.mk.12:3: t1] Error 2 (ignored)

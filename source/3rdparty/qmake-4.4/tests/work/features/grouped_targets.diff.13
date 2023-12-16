@@ -1,0 +1,7 @@
+*** work/features/grouped_targets.base.13	Wed Jul 12 15:25:05 2023
+--- work/features/grouped_targets.log.13	Wed Jul 12 15:25:05 2023
+***************
+*** 1 ****
+! hello.z hello.q
+--- 1 ----
+! make: Nothing to be done for 'all'.

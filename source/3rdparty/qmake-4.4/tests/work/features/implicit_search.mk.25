@@ -1,0 +1,6 @@
+
+all: hello.o
+%.o: %.c; $(info $<)
+%.o: %.f; $(info $<)
+.DEFAULT:; @$(info $@) /usr/bin/perl /home/jgabler/out/make-4.4/tests/../tests/thelp.pl fail 1
+unrelated: hello.c

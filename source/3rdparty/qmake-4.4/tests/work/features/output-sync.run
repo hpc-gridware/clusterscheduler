@@ -1,0 +1,2 @@
+# /home/jgabler/out/make-4.4/tests/scripts/features/output-sync:124:
+make -f work/features/output-sync.mk -j -Orecurse

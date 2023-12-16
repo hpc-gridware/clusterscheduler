@@ -1,0 +1,5 @@
+
+all: hello.z
+%.z %.q: %.x; @echo $*.z $*.q
+%.x: ;
+unrelated: hello.x

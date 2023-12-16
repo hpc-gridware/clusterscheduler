@@ -1,0 +1,4 @@
+
+hello: hello.c
+%:: %.c; $(info hello.c)
+%:: %.f; $(info hello.f)

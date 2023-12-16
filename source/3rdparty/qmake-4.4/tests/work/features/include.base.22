@@ -1,0 +1,2 @@
+work/features/include.mk.21:2: inc1: Permission denied
+make: *** No rule to make target 'inc1'.  Stop.

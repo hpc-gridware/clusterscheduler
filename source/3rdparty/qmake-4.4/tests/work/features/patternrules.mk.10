@@ -1,0 +1,6 @@
+
+all: a.elf a.dbg
+
+%.elf %.lnk: %.c ; : $*.elf $*.lnk
+
+%.elf %.dbg: %.lnk ; : $*.elf $*.dbg

@@ -1,0 +1,2 @@
+
+foo: $(OBJS) ; echo $(or $(filter %.o,$^),$(error fail))

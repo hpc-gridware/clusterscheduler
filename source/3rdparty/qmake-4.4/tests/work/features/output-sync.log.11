@@ -1,0 +1,8 @@
+make[1]: Entering directory '/home/jgabler/out/make-4.4/tests'
+d1 stderr
+d1 stdout
+make[1]: Leaving directory '/home/jgabler/out/make-4.4/tests'
+make[1]: Entering directory '/home/jgabler/out/make-4.4/tests'
+d2 stderr
+d2 stdout
+make[1]: Leaving directory '/home/jgabler/out/make-4.4/tests'

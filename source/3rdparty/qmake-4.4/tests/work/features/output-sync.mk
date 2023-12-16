@@ -1,0 +1,6 @@
+
+all: make-foo make-bar
+
+make-foo: ; $(MAKE) -C foo
+
+make-bar: ; /usr/bin/perl /home/jgabler/out/make-4.4/tests/../tests/thelp.pl -q sleep 1 ; $(MAKE) -C bar

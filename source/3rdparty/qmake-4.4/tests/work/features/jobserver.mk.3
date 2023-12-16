@@ -1,0 +1,5 @@
+
+SHOW = $(patsubst --jobserver-auth=%,--jobserver-auth=<auth>,$(MAKEFLAGS))
+recurse: ; @echo $@: "/$(SHOW)/"; $(MAKE) -j -f work/features/jobserver.mk.3 recurse2
+recurse2: ; @echo $@: "/$(SHOW)/"; $(MAKE) -f work/features/jobserver.mk.3 all
+all:;@echo $@: "/$(SHOW)/"

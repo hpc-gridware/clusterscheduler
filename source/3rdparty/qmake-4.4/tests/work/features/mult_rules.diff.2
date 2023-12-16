@@ -1,0 +1,17 @@
+*** work/features/mult_rules.base.2	Wed Jul 12 15:25:07 2023
+--- work/features/mult_rules.log.2	Wed Jul 12 15:25:07 2023
+***************
+*** 1,6 ****
+! work/features/mult_rules.mk:4: Recipe was specified for file 'hello.c' at work/features/mult_rules.mk:4,
+  work/features/mult_rules.mk:4: but 'hello.c' is now considered the same file as 'src/hello.c'.
+! work/features/mult_rules.mk:4: Recipe for 'hello.c' will be ignored in favor of the one for 'src/hello.c'.
+  2 src/hello.c
+  all from src/hello.c
+  make: 'all' is up to date.
+--- 1,6 ----
+! work/features/mult_rules.mk:4: Recipe was specified for file 'hello.c' at work/features/mult_rules.mk:5,
+  work/features/mult_rules.mk:4: but 'hello.c' is now considered the same file as 'src/hello.c'.
+! work/features/mult_rules.mk:4: Recipe for 'src/hello.c' will be ignored in favor of the one for 'hello.c'.
+  2 src/hello.c
+  all from src/hello.c
+  make: 'all' is up to date.

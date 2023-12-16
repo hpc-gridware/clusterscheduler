@@ -1,0 +1,7 @@
+
+all: hello.tsk big_hello.tsk
+%.tsk: %.x; $(info $@)
+big_%.tsk: %.x; $(info $@)
+%.x:; $(flags)
+hello.x: flags+=good
+%.x: flags:=true

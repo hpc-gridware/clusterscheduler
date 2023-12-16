@@ -1,0 +1,2 @@
+fail 1
+make: *** [work/features/implicit_search.mk.29:5: hello.c] Error 1

@@ -1,0 +1,7 @@
+testapi_gmk_setup
+work/features/loadapi.mk.12:2
+testapi.so
+testapi_gmk_setup
+work/features/loadapi.mk.12:2
+hello
+make: 'all' is up to date.

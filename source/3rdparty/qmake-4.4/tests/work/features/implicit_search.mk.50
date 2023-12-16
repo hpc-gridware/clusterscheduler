@@ -1,0 +1,6 @@
+
+all: hello.tsk
+hello: hello.c
+%.tsk: %; $(info hello.tsk)
+%: %.c; $(info hello.c)
+%: %.f; $(info hello.f)

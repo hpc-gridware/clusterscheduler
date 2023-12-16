@@ -1,0 +1,4 @@
+bye.o
+bye.x from bye.xx
+bye.tsk from bye.o bye.x
+make: Nothing to be done for 'all'.

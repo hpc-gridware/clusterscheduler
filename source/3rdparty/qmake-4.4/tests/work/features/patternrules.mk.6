@@ -1,0 +1,9 @@
+
+BIN = xyz
+COPY = $(BIN).cp
+SRC = $(BIN).c
+allbroken: $(COPY) $(BIN) ; @echo ok
+$(SRC): ; @echo 'main(){}' > $@
+%.cp: % ; @cp $< $@
+% : %.c ; @cp $< $@
+clean: ; @rm -f $(SRC) $(COPY) $(BIN)

@@ -1,0 +1,7 @@
+*** work/features/dircache.base	Wed Jul 12 15:24:59 2023
+--- work/features/dircache.log	Wed Jul 12 15:24:59 2023
+***************
+*** 1 ****
+! diff=./anewfile
+--- 1 ----
+! diff=
