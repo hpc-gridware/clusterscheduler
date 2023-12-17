@@ -24,6 +24,12 @@ set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_CXX_EXTENSIONS OFF)
 
+# berkeleydb might not build on all platforms
+# provide a way to disable it
+# @todo try updating config.guess and config.sub with a current version
+set(WITH_SPOOL_BERKELEYDB ON CACHE BOOL "enable berkeleydb spooling")
+set(WITH_PLPA ON CACHE BOOL "enable building with plpa library")
+
 include(cmake/ArchitectureSpecificSettings.cmake)
 architecture_specific_settings()
 
@@ -49,8 +55,12 @@ set(SGE_INCLUDES
     ${3RD_PARTY}/include)
 
 set(SGE_LIBS jemalloc pthread dl m)
-
 set(SPOOLING_LIBS spoolloader spoold spool)
+if (${WITH_PLPA})
+  set(SGE_TOPO_LIB "plpa")
+else()
+  set(SGE_TOPO_LIB "")
+endif()
 
 add_compile_options(
   # @todo does -fPIC have any disadvantages when not required (only for shared libs)?

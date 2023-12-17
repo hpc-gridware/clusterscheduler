@@ -37,7 +37,7 @@
 
 /*___INFO__MARK_END__*/
 
-#if ( defined(LINUXAMD64) || defined(LINUX86) ) && !defined(ULINUX86_24) && !defined(LINUXIA64_24) && !defined(ULINUXAMD64_24) && defined(PLPA)
+#if ( defined(LINUXAMD64) || defined(LINUXARM64) || defined(LINUX86) ) && !defined(ULINUX86_24) && !defined(LINUXIA64_24) && !defined(ULINUXAMD64_24) && defined(PLPA)
 #  define PLPA_LINUX
 #endif
 

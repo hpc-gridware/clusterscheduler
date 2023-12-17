@@ -23,7 +23,7 @@ target_link_libraries(
           comm
           commlists
           uti
-          plpa
+          ${SGE_TOPO_LIB}
           dl)
 
 install(TARGETS qrstat DESTINATION bin/${SGE_ARCH})

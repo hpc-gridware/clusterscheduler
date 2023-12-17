@@ -14,7 +14,7 @@ target_link_libraries(
           sgeobj
           cull
           uti
-          plpa
+          ${SGE_TOPO_LIB}
           dl
           m)
 

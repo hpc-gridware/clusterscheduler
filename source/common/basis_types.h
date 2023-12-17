@@ -79,7 +79,8 @@ typedef enum {
 #define NONE_STR  "NONE"
 #define NONE_LEN  4
 
-#if defined(FREEBSD) || defined(NETBSD) || defined(LINUXAMD64) || defined(LINUXIA64) || defined(LINUXS390X)
+//#if defined(FREEBSD) || defined(NETBSD) || defined(LINUXAMD64) || defined(LINUXIA64) || defined(LINUXS390X)
+#if defined(TARGET_64BIT)
 #  define sge_U32CFormat "%u"  
 #  define sge_U32CLetter "u"
 #  define sge_u32c(x)  (unsigned int)(x)

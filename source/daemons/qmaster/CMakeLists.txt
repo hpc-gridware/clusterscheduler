@@ -78,7 +78,7 @@ target_link_libraries(
          comm
          commlists
          uti
-         plpa
+         ${SGE_TOPO_LIB}
          ${SGE_LIBS})
 
 install(TARGETS sge_qmaster DESTINATION bin/${SGE_ARCH})

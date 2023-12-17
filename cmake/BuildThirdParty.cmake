@@ -13,35 +13,42 @@ function(build_third_party 3rdparty_install_path)
 
     cpmaddpackage("gh:DaveGamble/cJSON#v1.7.16")
 
+    set(3rdparty_list "")
     if (${SGE_PACKAGE_MANAGER} STREQUAL none)
         include(ExternalProject)
 
         # berkeleydb
-        ExternalProject_Add(
-                3rd_party_berkeleydb
-                EXCLUDE_FROM_ALL TRUE
-                PREFIX ${3rdparty_install_path}/berkeleydb
-                INSTALL_DIR ${3rdparty_install_path}
-                GIT_REPOSITORY https://github.com/Positeral/libdb5.git
-                GIT_TAG master
-                CONFIGURE_COMMAND dist/configure --prefix ${3rdparty_install_path}
-                BUILD_IN_SOURCE TRUE
-                BUILD_ALWAYS FALSE
-                BUILD_COMMAND make clean all
-                INSTALL_COMMAND make install)
-        add_library(berkeleydb SHARED IMPORTED GLOBAL)
-        set_target_properties(
-                berkeleydb
-                PROPERTIES
-                IMPORTED_LOCATION
-                ${3rdparty_install_path}/lib/${CMAKE_SHARED_LIBRARY_PREFIX}db${CMAKE_SHARED_LIBRARY_SUFFIX}
-        )
+        if (${WITH_SPOOL_BERKELEYDB})
+            message(STATUS "adding 3rdparty berkeleydb")
+            list(APPEND 3rdparty_list 3rd_party_berkeleydb)
+            ExternalProject_Add(
+                    3rd_party_berkeleydb
+                    EXCLUDE_FROM_ALL TRUE
+                    PREFIX ${3rdparty_install_path}/berkeleydb
+                    INSTALL_DIR ${3rdparty_install_path}
+                    GIT_REPOSITORY https://github.com/Positeral/libdb5.git
+                    GIT_TAG master
+                    CONFIGURE_COMMAND dist/configure --prefix ${3rdparty_install_path}
+                    BUILD_IN_SOURCE TRUE
+                    BUILD_ALWAYS FALSE
+                    BUILD_COMMAND make clean all
+                    INSTALL_COMMAND make install)
+            add_library(berkeleydb SHARED IMPORTED GLOBAL)
+            set_target_properties(
+                    berkeleydb
+                    PROPERTIES
+                    IMPORTED_LOCATION
+                    ${3rdparty_install_path}/lib/${CMAKE_SHARED_LIBRARY_PREFIX}db${CMAKE_SHARED_LIBRARY_SUFFIX}
+            )
+        endif()
         # install(FILES berkeleydb DESTINATION lib/${SGE_ARCH}) @todo multiple files, e.g.
         # libdb.so, libdb.so.5 @todo we build the static lib as well and apparently the
         # static lib is linked to libspoolb.so - is this an issue? @todo db_* binaries
         # @todo db_* man pages
 
         # jemalloc @todo for all platforms? Only lx-amd64?
+        message(STATUS "adding 3rdparty jemalloc")
+        list(APPEND 3rdparty_list 3rd_party_jemalloc)
         ExternalProject_Add(
                 3rd_party_jemalloc
                 EXCLUDE_FROM_ALL TRUE
@@ -62,23 +69,31 @@ function(build_third_party 3rdparty_install_path)
         )
 
         # plpa
-        ExternalProject_Add(
-                3rd_party_plpa
-                EXCLUDE_FROM_ALL TRUE
-                PREFIX ${3rdparty_install_path}/plpa
-                INSTALL_DIR ${3rdparty_install_path}
-                # GIT_REPOSITORY https://github.com/jemalloc/jemalloc.git GIT_TAG 5.3.0
-                URL https://download.open-mpi.org/release/plpa/v1.3/plpa-1.3.2.tar.gz
-                CONFIGURE_COMMAND ./configure --prefix ${3rdparty_install_path} --disable-shared
-                BUILD_IN_SOURCE TRUE
-                BUILD_ALWAYS FALSE
-                BUILD_COMMAND make)
-        add_library(plpa STATIC IMPORTED GLOBAL)
-        set_target_properties(
-                plpa
-                PROPERTIES
-                IMPORTED_LOCATION
-                ${3rdparty_install_path}/lib/${CMAKE_STATIC_LIBRARY_PREFIX}plpa${CMAKE_STATIC_LIBRARY_SUFFIX}
-        )
+        if (${WITH_PLPA})
+            message(STATUS "adding 3rdparty plpa")
+            list(APPEND 3rdparty_list 3rd_party_plpa)
+            ExternalProject_Add(
+                    3rd_party_plpa
+                    EXCLUDE_FROM_ALL TRUE
+                    PREFIX ${3rdparty_install_path}/plpa
+                    INSTALL_DIR ${3rdparty_install_path}
+                    # GIT_REPOSITORY https://github.com/jemalloc/jemalloc.git GIT_TAG 5.3.0
+                    URL https://download.open-mpi.org/release/plpa/v1.3/plpa-1.3.2.tar.gz
+                    CONFIGURE_COMMAND ./configure --prefix ${3rdparty_install_path} --disable-shared
+                    BUILD_IN_SOURCE TRUE
+                    BUILD_ALWAYS FALSE
+                    BUILD_COMMAND make)
+            add_library(plpa STATIC IMPORTED GLOBAL)
+            set_target_properties(
+                    plpa
+                    PROPERTIES
+                    IMPORTED_LOCATION
+                    ${3rdparty_install_path}/lib/${CMAKE_STATIC_LIBRARY_PREFIX}plpa${CMAKE_STATIC_LIBRARY_SUFFIX}
+            )
+        endif()
     endif()
+
+    # add a target containing all 3rdparty libs which need to be built once
+    message(STATUS "We are building the following 3rdparty libraries: ${3rdparty_list}")
+    add_custom_target(3rdparty DEPENDS ${3rdparty_list})
 endfunction(build_third_party)

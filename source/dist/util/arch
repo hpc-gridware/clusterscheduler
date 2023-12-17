@@ -191,6 +191,9 @@ Linux)
    i*86)
       lxmachine=x86
       ;;
+   aarch64)
+      lxmachine=arm64
+      ;;
    alpha)
       lxmachine=alpha
       ;;

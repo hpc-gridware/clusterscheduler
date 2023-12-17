@@ -58,7 +58,7 @@ target_link_libraries(infotext PRIVATE gdi uti commlists dl)
 # loadcheck
 add_executable(loadcheck loadcheck.c)
 target_include_directories(loadcheck PRIVATE ${SGE_INCLUDES})
-target_link_libraries(loadcheck PRIVATE sgeobj cull uti commlists plpa dl)
+target_link_libraries(loadcheck PRIVATE sgeobj cull uti commlists ${SGE_TOPO_LIB} dl)
 
 # now
 add_executable(now now.c)
@@ -109,7 +109,7 @@ target_include_directories(spooldefaults PRIVATE ${SGE_INCLUDES})
 target_link_libraries(
   spooldefaults
   PRIVATE # @todo should be independent on specific spooling method
-          spoolb
+#          spoolb
           spoolc
           ${SPOOLING_LIBS}
           sched
@@ -119,7 +119,7 @@ target_link_libraries(
           comm
           uti
           commlists
-          berkeleydb
+#          berkeleydb
           dl)
 
 # spooledit
@@ -128,7 +128,7 @@ target_include_directories(spooledit PRIVATE ${SGE_INCLUDES})
 target_link_libraries(
   spooledit
   PRIVATE # @todo should be independent on specific spooling method
-          spoolb
+#          spoolb
           spoolc
           ${SPOOLING_LIBS}
           sched
@@ -138,7 +138,7 @@ target_link_libraries(
           comm
           uti
           commlists
-          berkeleydb
+#          berkeleydb
           dl)
 
 # spoolinit
@@ -147,7 +147,7 @@ target_include_directories(spoolinit PRIVATE ${SGE_INCLUDES})
 target_link_libraries(
   spoolinit
   PRIVATE # @todo should be independent on specific spooling method
-          spoolb
+#          spoolb
           spoolc
           ${SPOOLING_LIBS}
           sched
@@ -157,7 +157,7 @@ target_link_libraries(
           comm
           uti
           commlists
-          berkeleydb
+#          berkeleydb
           dl)
 
 # testsuidroot

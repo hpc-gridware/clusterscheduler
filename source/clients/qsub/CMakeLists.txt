@@ -21,7 +21,7 @@ target_link_libraries(
           sgeobj
           cull
           uti
-          plpa
+          ${SGE_TOPO_LIB}
           dl)
 
 install(TARGETS qsub DESTINATION bin/${SGE_ARCH})

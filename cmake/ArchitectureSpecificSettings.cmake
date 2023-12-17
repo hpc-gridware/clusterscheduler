@@ -30,9 +30,7 @@ function(architecture_specific_settings)
     )
 
     if (${SGE_ARCH} STREQUAL lx-amd64 OR
-        ${SGE_ARCH} STREQUAL lx-arm64 OR
         ${SGE_ARCH} STREQUAL "lx-x86")
-        message(STATUS "we are on Linux")
         add_compile_options(-Wall -Werror -Wstrict-prototypes -Wno-strict-aliasing)
         add_compile_definitions(
                 LINUX
@@ -40,17 +38,34 @@ function(architecture_specific_settings)
                 GETHOSTBYNAME_R6
                 GETHOSTBYADDR_R8
                 HAS_IN_PORT_T
-                PLPA
         )
+        if (${WITH_PLPA})
+            add_compile_definitions(PLPA)
+        endif()
         add_link_options(-pthread -rdynamic)
+    elseif (${SGE_ARCH} STREQUAL lx-arm64)
+        add_compile_options(-Wall -Werror -Wstrict-prototypes -Wno-strict-aliasing)
+        add_compile_definitions(
+                LINUX
+                _GNU_SOURCE
+                GETHOSTBYNAME_R6
+                GETHOSTBYADDR_R8
+                HAS_IN_PORT_T
+        )
+        set(WITH_PLPA OFF PARENT_SCOPE)
     elseif (${SGE_ARCH} STREQUAL "sol-amd64")
-        message(STATUS "we are on Solaris")
         add_compile_definitions(
                 SOLARIS
                 GETHOSTBYNAME_R5
                 GETHOSTBYADDR_R7
         )
+        set(WITH_PLPA OFF PARENT_SCOPE)
     else()
         message(WARNING "no arch specific compiler options for ${SGE_ARCH}")
+    endif()
+
+    # disable berkeleydb on platforms where we cannot (yet) build it
+    if (${SGE_ARCH} STREQUAL lx-arm64)
+        set(WITH_SPOOL_BERKELEYDB OFF PARENT_SCOPE)
     endif()
 endfunction(architecture_specific_settings)

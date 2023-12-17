@@ -23,7 +23,7 @@ target_link_libraries(
           commlists
           uti
           ijs
-          plpa
+          ${SGE_TOPO_LIB}
           dl)
 
 install(TARGETS qsh DESTINATION bin/${SGE_ARCH})
