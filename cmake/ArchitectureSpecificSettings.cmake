@@ -1,9 +1,7 @@
 function(architecture_specific_settings)
-    execute_process(COMMAND ${CMAKE_SOURCE_DIR}/source/dist/util/arch
-            OUTPUT_VARIABLE SGE_ARCH_RAW)
+    execute_process(COMMAND ${CMAKE_SOURCE_DIR}/source/dist/util/arch OUTPUT_VARIABLE SGE_ARCH_RAW)
     string(STRIP ${SGE_ARCH_RAW} SGE_ARCH)
     set(SGE_ARCH ${SGE_ARCH} PARENT_SCOPE)
-    message(STATUS "on platform \"${SGE_ARCH}\"")
 
     execute_process(COMMAND ${CMAKE_SOURCE_DIR}/source/scripts/compilearch -b ${SGE_ARCH} OUTPUT_VARIABLE SGE_BUILDARCH_RAW)
     string(STRIP ${SGE_BUILDARCH_RAW} SGE_BUILDARCH)
@@ -29,9 +27,22 @@ function(architecture_specific_settings)
             __SGE_COMPILE_WITH_GETTEXT__
     )
 
-    if (${SGE_ARCH} STREQUAL lx-amd64 OR
-        ${SGE_ARCH} STREQUAL "lx-x86")
-        add_compile_options(-Wall -Werror -Wstrict-prototypes -Wno-strict-aliasing)
+    # Linux
+    if (SGE_ARCH MATCHES "lx-.*")
+        message(STATUS "We are on Linux: ${SGE_ARCH}")
+        add_compile_options(-Wall -Werror -Wstrict-prototypes -Wno-strict-aliasing -Wstrict-prototypes)
+        # @todo does -fPIC have any disadvantages when not required (only for shared libs)?
+        add_compile_options(-fPIC)
+        if (CMAKE_BUILD_TYPE STREQUAL "Debug")
+            message(STATUS "Doing a debug build")
+            # cmake already adds -g, completely disable optimization
+            # @todo do we want to add a define like SGE_DEVELOPMENT_BUILD?
+            add_compile_options(-O0)
+        else()
+            message(STATUS "Doing a release build")
+            # cmake already adds -O3 and sets define NDEBUG
+            #add_compile_options(-O3)
+        endif()
         add_compile_definitions(
                 LINUX
                 _GNU_SOURCE
@@ -39,33 +50,35 @@ function(architecture_specific_settings)
                 GETHOSTBYADDR_R8
                 HAS_IN_PORT_T
         )
-        if (${WITH_PLPA})
+        if (WITH_PLPA)
             add_compile_definitions(PLPA)
         endif()
         add_link_options(-pthread -rdynamic)
-    elseif (${SGE_ARCH} STREQUAL lx-arm64)
-        add_compile_options(-Wall -Werror -Wstrict-prototypes -Wno-strict-aliasing)
-        add_compile_definitions(
-                LINUX
-                _GNU_SOURCE
-                GETHOSTBYNAME_R6
-                GETHOSTBYADDR_R8
-                HAS_IN_PORT_T
-        )
-        set(WITH_PLPA OFF PARENT_SCOPE)
-    elseif (${SGE_ARCH} STREQUAL "sol-amd64")
+
+        set(WITH_MTMALLOC OFF PARENT_SCOPE)
+
+        # specific linux architectures
+        if (SGE_ARCH STREQUAL "lx-x86")
+            add_compile_definitions(_FILE_OFFSET_BITS=64)
+        elseif (SGE_ARCH STREQUAL lx-arm64)
+            # plpa and berkeleydb are not building on lx-arm64
+            set(WITH_PLPA OFF PARENT_SCOPE)
+            set(WITH_SPOOL_BERKELEYDB OFF PARENT_SCOPE)
+        endif()
+
+    # Solaris
+    elseif (SGE_ARCH MATCHES "sol-.*")
+        message(STATUS "We are on Solaris: ${SGE_ARCH}")
         add_compile_definitions(
                 SOLARIS
                 GETHOSTBYNAME_R5
                 GETHOSTBYADDR_R7
         )
         set(WITH_PLPA OFF PARENT_SCOPE)
+        set(WITH_JEMALLOC OFF PARENT_SCOPE)
+
+    # unknown platform
     else()
         message(WARNING "no arch specific compiler options for ${SGE_ARCH}")
-    endif()
-
-    # disable berkeleydb on platforms where we cannot (yet) build it
-    if (${SGE_ARCH} STREQUAL lx-arm64)
-        set(WITH_SPOOL_BERKELEYDB OFF PARENT_SCOPE)
     endif()
 endfunction(architecture_specific_settings)

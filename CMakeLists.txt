@@ -14,7 +14,7 @@ project(gridengine
   HOMEPAGE_URL "https://www.opengridengine.org"
   LANGUAGES C CXX)
 
-message(STATUS "Building ${PROJECT_NAME} ${PROJECT_VERSION}")
+message(STATUS "Building project ${PROJECT_NAME} version ${PROJECT_VERSION}")
 
 set(CMAKE_C_STANDARD 99)
 set(CMAKE_C_STANDARD_REQUIRED ON)
@@ -24,11 +24,15 @@ set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_CXX_EXTENSIONS OFF)
 
+set(CMAKE_BUILD_TYPE Debug ON CACHE BOOL "select build type between Debug and Release")
+
 # berkeleydb might not build on all platforms
 # provide a way to disable it
 # @todo try updating config.guess and config.sub with a current version
 set(WITH_SPOOL_BERKELEYDB ON CACHE BOOL "enable berkeleydb spooling")
 set(WITH_PLPA ON CACHE BOOL "enable building with plpa library")
+set(WITH_JEMALLOC ON CACHE BOOL "enable use of the jemalloc memory allocator")
+set(WITH_MTMALLOC ON CACHE BOOL "enable use of the mtmalloc memory allocator on Solaris")
 
 include(cmake/ArchitectureSpecificSettings.cmake)
 architecture_specific_settings()
@@ -37,6 +41,7 @@ architecture_specific_settings()
 set(CMAKE_INSTALL_RPATH "\$ORIGIN/../../lib/${SGE_ARCH}")
 
 # 3rdparty packages
+# @todo: better install them into <base_dir>/<pkg>/<version>/<arch>/<os>/<osversion>/<debug|release>
 include(cmake/BuildThirdParty.cmake)
 set(3RD_PARTY ${CMAKE_BINARY_DIR}/3rd_party)
 build_third_party(${3RD_PARTY})
@@ -56,15 +61,11 @@ set(SGE_INCLUDES
 
 set(SGE_LIBS jemalloc pthread dl m)
 set(SPOOLING_LIBS spoolloader spoold spool)
-if (${WITH_PLPA})
+if (WITH_PLPA)
   set(SGE_TOPO_LIB "plpa")
 else()
   set(SGE_TOPO_LIB "")
 endif()
-
-add_compile_options(
-  # @todo does -fPIC have any disadvantages when not required (only for shared libs)?
-  -fPIC -O2 -Wstrict-prototypes)
 
 # add_subdirectory(doc)
 add_subdirectory(source)
