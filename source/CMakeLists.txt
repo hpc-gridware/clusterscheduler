@@ -8,7 +8,9 @@ add_subdirectory(libs)
 add_subdirectory(security)
 add_subdirectory(utilbin)
 
-install(
-  DIRECTORY scripts/dtrace
-  DESTINATION .
-  USE_SOURCE_PERMISSIONS)
+if(INSTALL_SGE_COMMON)
+  install(
+    DIRECTORY scripts/dtrace
+    DESTINATION .
+    USE_SOURCE_PERMISSIONS)
+endif()

@@ -12,4 +12,6 @@ target_link_libraries(
           uti
           dl)
 
-install(TARGETS qmod DESTINATION bin/${SGE_ARCH})
+if(INSTALL_SGE_BIN)
+  install(TARGETS qmod DESTINATION bin/${SGE_ARCH})
+endif()

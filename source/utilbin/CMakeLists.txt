@@ -58,7 +58,8 @@ target_link_libraries(infotext PRIVATE gdi uti commlists dl)
 # loadcheck
 add_executable(loadcheck loadcheck.c)
 target_include_directories(loadcheck PRIVATE ${SGE_INCLUDES})
-target_link_libraries(loadcheck PRIVATE sgeobj cull uti commlists ${SGE_TOPO_LIB} dl)
+target_link_libraries(loadcheck PRIVATE sgeobj cull uti commlists
+                                        ${SGE_TOPO_LIB} dl)
 
 # now
 add_executable(now now.c)
@@ -108,8 +109,7 @@ add_executable(spooldefaults spooldefaults.c)
 target_include_directories(spooldefaults PRIVATE ${SGE_INCLUDES})
 target_link_libraries(
   spooldefaults
-  PRIVATE # @todo should be independent on specific spooling method
-#          spoolb
+  PRIVATE # @todo should be independent on specific spooling method spoolb
           spoolc
           ${SPOOLING_LIBS}
           sched
@@ -119,7 +119,7 @@ target_link_libraries(
           comm
           uti
           commlists
-#          berkeleydb
+          # berkeleydb
           dl)
 
 # spooledit
@@ -127,8 +127,7 @@ add_executable(spooledit spooledit.c)
 target_include_directories(spooledit PRIVATE ${SGE_INCLUDES})
 target_link_libraries(
   spooledit
-  PRIVATE # @todo should be independent on specific spooling method
-#          spoolb
+  PRIVATE # @todo should be independent on specific spooling method spoolb
           spoolc
           ${SPOOLING_LIBS}
           sched
@@ -138,7 +137,7 @@ target_link_libraries(
           comm
           uti
           commlists
-#          berkeleydb
+          # berkeleydb
           dl)
 
 # spoolinit
@@ -146,8 +145,7 @@ add_executable(spoolinit spoolinit.c ../common/sge_mt_init.c)
 target_include_directories(spoolinit PRIVATE ${SGE_INCLUDES})
 target_link_libraries(
   spoolinit
-  PRIVATE # @todo should be independent on specific spooling method
-#          spoolb
+  PRIVATE # @todo should be independent on specific spooling method spoolb
           spoolc
           ${SPOOLING_LIBS}
           sched
@@ -157,7 +155,7 @@ target_link_libraries(
           comm
           uti
           commlists
-#          berkeleydb
+          # berkeleydb
           dl)
 
 # testsuidroot
@@ -186,28 +184,30 @@ target_link_libraries(
 
 # valid_jvmlib @todo remove
 
-install(TARGETS qping DESTINATION bin/${SGE_ARCH})
-install(
-  TARGETS adminrun
-          checkprog
-          checkuser
-          echo_raw
-          filestat
-          fstype
-          gethostbyaddr
-          gethostbyname
-          gethostname
-          getservbyname
-          infotext
-          loadcheck
-          now
-          qping
-          read_raw
-          sge_share_mon
-          spooldefaults
-          spooledit
-          spoolinit
-          testsuidroot
-          uidgid
-  DESTINATION utilbin/${SGE_ARCH})
-install(TARGETS work DESTINATION examples/jobsbin/${SGE_ARCH})
+if(INSTALL_SGE_BIN)
+  install(TARGETS qping DESTINATION bin/${SGE_ARCH})
+  install(
+    TARGETS adminrun
+            checkprog
+            checkuser
+            echo_raw
+            filestat
+            fstype
+            gethostbyaddr
+            gethostbyname
+            gethostname
+            getservbyname
+            infotext
+            loadcheck
+            now
+            qping
+            read_raw
+            sge_share_mon
+            spooldefaults
+            spooledit
+            spoolinit
+            testsuidroot
+            uidgid
+    DESTINATION utilbin/${SGE_ARCH})
+  install(TARGETS work DESTINATION examples/jobsbin/${SGE_ARCH})
+endif()

@@ -65,5 +65,5 @@ set(LIBRARY_INCLUDES ${SGE_INCLUDES} "./")
 add_library(${LIBRARY_NAME} STATIC ${LIBRARY_SOURCES})
 target_include_directories(${LIBRARY_NAME} PUBLIC ${LIBRARY_INCLUDES})
 
-#add_executable(test_sge_utility test_sge_utility.c)
-#install(TARGETS test_sge_utility DESTINATION test/bin/${SGE_ARCH})
+# add_executable(test_sge_utility test_sge_utility.c) install(TARGETS
+# test_sge_utility DESTINATION test/bin/${SGE_ARCH})

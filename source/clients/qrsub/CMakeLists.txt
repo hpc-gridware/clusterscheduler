@@ -23,4 +23,6 @@ target_link_libraries(
           ${SGE_TOPO_LIB}
           dl)
 
-install(TARGETS qrsub DESTINATION bin/${SGE_ARCH})
+if(INSTALL_SGE_BIN)
+  install(TARGETS qrsub DESTINATION bin/${SGE_ARCH})
+endif()

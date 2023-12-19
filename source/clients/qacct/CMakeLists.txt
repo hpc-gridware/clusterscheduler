@@ -13,4 +13,6 @@ target_link_libraries(
           uti
           ${SGE_LIBS})
 
-install(TARGETS qacct DESTINATION bin/${SGE_ARCH})
+if(INSTALL_SGE_BIN)
+  install(TARGETS qacct DESTINATION bin/${SGE_ARCH})
+endif()

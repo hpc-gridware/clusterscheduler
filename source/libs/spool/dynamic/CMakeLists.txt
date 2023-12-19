@@ -7,4 +7,6 @@ add_library(${LIBRARY_NAME} SHARED ${LIBRARY_SOURCES})
 target_include_directories(${LIBRARY_NAME} PUBLIC ${SGE_INCLUDES}
                                                   ${LIBRARY_INCLUDES})
 
-install(TARGETS spoold DESTINATION lib/${SGE_ARCH})
+if(INSTALL_SGE_BIN)
+  install(TARGETS spoold DESTINATION lib/${SGE_ARCH})
+endif()

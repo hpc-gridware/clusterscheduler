@@ -22,4 +22,6 @@ target_link_libraries(
          dl
          m)
 
-install(TARGETS showq DESTINATION examples/jobsbin/${SGE_ARCH})
+if(INSTALL_SGE_BIN)
+  install(TARGETS showq DESTINATION examples/jobsbin/${SGE_ARCH})
+endif()

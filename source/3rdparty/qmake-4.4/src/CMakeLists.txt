@@ -45,15 +45,9 @@ target_include_directories(
   qmake
   PRIVATE ${CMAKE_CURRENT_BINARY_DIR} ${CMAKE_CURRENT_LIST_DIR}
           ${CMAKE_CURRENT_LIST_DIR}/../lib
-  # ../../clients/common ../../common ../../daemons/qmaster ../../libs
-  # ../../libs/cull ../../libs/evm ../../libs/sgeobj
-  # ../../libs/ut./source/dist/3rd_party/make-3.78.1.tar.gzi ../common
 )
-target_link_libraries(
-  qmake
-  PRIVATE # comm commlists cull evc gdi japi parse_job_cull parse_qsub
-          # read_defaults sge_mt_init sge_options sgeobj sgeobjd show_job
-          # sig_handlers usage ssl uti
-          dl)
+target_link_libraries(qmake PRIVATE dl)
 
-install(TARGETS qmake DESTINATION bin/${SGE_ARCH})
+if(INSTALL_SGE_BIN)
+  install(TARGETS qmake DESTINATION bin/${SGE_ARCH})
+endif()

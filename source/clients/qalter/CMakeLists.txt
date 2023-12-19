@@ -22,10 +22,11 @@ target_link_libraries(
           ${SGE_TOPO_LIB}
           dl)
 
-install(TARGETS qalter DESTINATION bin/${SGE_ARCH})
+if(INSTALL_SGE_BIN)
+  install(TARGETS qalter DESTINATION bin/${SGE_ARCH})
 
-install(
-  CODE "execute_process(
+  install(
+    CODE "execute_process(
     COMMAND /bin/sh -c \"
     cd ${CMAKE_INSTALL_PREFIX}/bin/${SGE_ARCH}
     ln -s qalter qhold
@@ -33,3 +34,4 @@ install(
     ln -s qalter qrls
     \"
 )")
+endif()

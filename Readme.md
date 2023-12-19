@@ -5,7 +5,7 @@
 * gcc >= 
 * g++
 * cmake >= 3.0
-* autoconf
+* autoconf, automake
 * git
 
 ## Building Gridengine
@@ -112,6 +112,27 @@ make sge_qmaster
 ```
 
 ### Install the Binaries and other Project Files
+
+#### Configure what to install
+When configuring the project installation targets can be set:
+* INSTALL_SGE_BIN: Install all binaries and libraries including example binaries
+* INSTALL_SGE_COMMON: Install common files (e.g. util, mpi templates, examples)
+* INSTALL_SGE_DOC: Build and install documentation (TBD)
+* INSTALL_SGE_TEST: Install test binaries
+
+When installing to a local directory you'll want to install all of them which is default.
+
+When installing to a shared SGE_ROOT directory you'll want to
+* install all on the build host for one of the target architectures
+* build and install docs on one host being set up as doc build host
+* install only binaries (and optionally test binaries) on build hosts for additional architectures
+
+Select what to install when calling cmake, e.g.
+```shell
+cmake ... -DINSTALL_SGE_BIN=ON -DINSTALL_SGE_COMMON=OFF
+```
+
+#### Do the actual Installation
 
 ```shell
 make install

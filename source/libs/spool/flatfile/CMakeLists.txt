@@ -25,4 +25,6 @@ target_link_libraries(
   uti
   commlists)
 
-install(TARGETS spoolc DESTINATION lib/${SGE_ARCH})
+if(INSTALL_SGE_BIN)
+  install(TARGETS spoolc DESTINATION lib/${SGE_ARCH})
+endif()

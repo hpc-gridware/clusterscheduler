@@ -28,12 +28,14 @@ target_link_libraries(
           dl
           m)
 
-install(TARGETS qstat DESTINATION bin/${SGE_ARCH})
+if(INSTALL_SGE_BIN)
+  install(TARGETS qstat DESTINATION bin/${SGE_ARCH})
 
-install(
-  CODE "execute_process(
+  install(
+    CODE "execute_process(
     COMMAND /bin/sh -c \"
     cd ${CMAKE_INSTALL_PREFIX}/bin/${SGE_ARCH}
     ln -s qstat qselect
     \"
 )")
+endif()

@@ -16,4 +16,6 @@ target_link_libraries(
          uti
          dl)
 
-install(TARGETS qevent DESTINATION test/bin/${SGE_ARCH})
+if(INSTALL_SGE_TEST)
+  install(TARGETS qevent DESTINATION test/bin/${SGE_ARCH})
+endif()

@@ -14,4 +14,6 @@ target_link_libraries(
           uti
           dl)
 
-install(TARGETS sge_shadowd DESTINATION bin/${SGE_ARCH})
+if(INSTALL_SGE_BIN)
+  install(TARGETS sge_shadowd DESTINATION bin/${SGE_ARCH})
+endif()

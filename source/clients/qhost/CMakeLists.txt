@@ -18,4 +18,6 @@ target_link_libraries(
           dl
           m)
 
-install(TARGETS qhost DESTINATION bin/${SGE_ARCH})
+if(INSTALL_SGE_BIN)
+  install(TARGETS qhost DESTINATION bin/${SGE_ARCH})
+endif()

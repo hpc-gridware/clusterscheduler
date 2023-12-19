@@ -1,15 +1,17 @@
 # source/dist
 
-install(PROGRAMS install_execd install_qmaster inst_sge DESTINATION .)
+if(INSTALL_SGE_COMMON)
+  install(PROGRAMS install_execd install_qmaster inst_sge DESTINATION .)
 
-install(
-  DIRECTORY 3rd_party
-            ckpt
-            examples
-            hadoop
-            mpi
-            pvm
-            # qmon @todo remove
-            util
-  DESTINATION .
-  USE_SOURCE_PERMISSIONS)
+  install(
+    DIRECTORY 3rd_party
+              ckpt
+              examples
+              hadoop
+              mpi
+              pvm
+              # qmon @todo remove
+              util
+    DESTINATION .
+    USE_SOURCE_PERMISSIONS)
+endif()
