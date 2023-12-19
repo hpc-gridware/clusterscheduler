@@ -35,7 +35,7 @@
 /*___INFO__MARK_END__*/
 
 #define MSG_ANSWER_NOANSWERLIST     _MESSAGE(64000, _("no answer list - gdi request failed"))
-#define MSG_CKPTREFINJOB_SU         _MESSAGE(64001, _("Checkpointing object "SFQ" is still referenced in job " sge_U32CFormat"."))
+#define MSG_CKPTREFINJOB_SU         _MESSAGE(64001, _("Checkpointing object "SFQ" is still referenced in job "sge_U32CFormat"."))
 #define MSG_GDI_INVALIDPRODUCTMODESTRING_S   _MESSAGE(64005, _("invalid security mode string "SFQ))
 #define MSG_GDI_SWITCHFROMTO_SS              _MESSAGE(64007, _("switching from "SFQ" to "SFQ" feature set"))
 #define MSG_HOSTREFINQUEUE_SS                _MESSAGE(64008, _("Host object "SFQ" is still referenced in cluster queue "SFQ"."))
@@ -57,10 +57,10 @@
 
 #define MSG_JOB_JLPPNULL                  _MESSAGE(64028, _("jlpp == NULL in job_add_job()"))                                                        
 #define MSG_JOB_JEPNULL                   _MESSAGE(64029, _("jep == NULL in job_add_job()"))
-#define MSG_JOB_JOBALREADYEXISTS_S        _MESSAGE(64030, _("can't add job "SFN" - job already exists") )
+#define MSG_JOB_JOBALREADYEXISTS_S        _MESSAGE(64030, _("can't add job "SFN" - job already exists"))
 #define MSG_JOB_NULLNOTALLOWEDT           _MESSAGE(64031, _("job rejected: 0 is an invalid task id"))
-#define MSG_JOB_NOIDNOTALLOWED            _MESSAGE(64032, _("job rejected: Job comprises no tasks in its id lists") )
-#define MSG_JOB_JOB_ID_U                  _MESSAGE(64033, _(sge_U32CFormat))
+#define MSG_JOB_NOIDNOTALLOWED            _MESSAGE(64032, _("job rejected: Job comprises no tasks in its id lists"))
+#define MSG_JOB_JOB_ID_U                  _MESSAGE(64033, _(""sge_U32CFormat""))
 #define MSG_JOB_JOB_JATASK_ID_UU          _MESSAGE(64034, _(sge_U32CFormat"."sge_U32CFormat))
 #define MSG_JOB_JOB_JATASK_PETASK_ID_UUS  _MESSAGE(64035, _(sge_U32CFormat"."sge_U32CFormat" task "SFN))
 #define MSG_JOB_NODISPLAY_S               _MESSAGE(64036, _("no DISPLAY variable found with interactive job "SFN))
@@ -87,7 +87,7 @@
 #define MSG_PARSE_NOALLOCATTRELEM                        _MESSAGE(64068, _("unable to alloc space for attrib. element"))
 #define MSG_NONE_NOT_ALLOWED_S                           _MESSAGE(64079, _("The keyword \"none\" is not allowed in "SFQ))
 #define MSG_NOTEXISTING_ATTRIBUTE_SS                     _MESSAGE(64080, _(SFQ" references not existing complex attribute "SFQ))
-#define MSG_WRONGTYPE_ATTRIBUTE_SS                       _MESSAGE(64081, _("String, CString, ReString or Host attributes are not allowed in "SFQ": " SFQ))
+#define MSG_WRONGTYPE_ATTRIBUTE_SS                       _MESSAGE(64081, _("String, CString, ReString or Host attributes are not allowed in "SFQ": "SFQ))
 #define MSG_US_INVALIDUSERNAME                           _MESSAGE(64083, _("userset contains invalid (null) user name"))
 
 /*
@@ -115,7 +115,7 @@
 #define MSG_CUSER_NOREMOTE_USER_S                  _MESSAGE(64169, _("attribute \'"SFQ"\' not available"))
 #define MSG_SGETEXT_NO_INTERFACE_S                 _MESSAGE(64174, _("no valid checkpoint interface "SFN))
 #define MSG_OBJ_CKPTENV_SSS                        _MESSAGE(64175, _("parameter "SFN" of ckpt environment "SFQ": "SFN))
-#define MSG_CKPT_XISNOTASIGNALSTRING_S             _MESSAGE(64176, _(SFQ" is not a signal string (like HUP, INT, " "WINCH, ..)"))
+#define MSG_CKPT_XISNOTASIGNALSTRING_S             _MESSAGE(64176, _(SFQ" is not a signal string (like HUP, INT, WINCH, ..)"))
 #define MSG_PE_STARTPROCARGS_SS                    _MESSAGE(64177, _("parameter start_proc_args of pe "SFQ": "SFN))
 #define MSG_PE_STOPPROCARGS_SS                     _MESSAGE(64178, _("parameter stop_proc_args of pe "SFQ": "SFN))
 #define MSG_ANSWERWITHOUTDIAG                      _MESSAGE(64179, _("error without diagnosis message"))
@@ -144,7 +144,7 @@
 
 #define MSG_CQUEUE_NONDEFNOTALLOWED    _MESSAGE(64210, _("Queue domain/instance values are only allowed for cluster queues."))
 #define MSG_CQUEUE_PRIORITYNOTINRANGE  _MESSAGE(64211, _("Priority not in range -20 to +20"))
-#define MSG_CQUEUE_UNKNOWNUSERSET_S    _MESSAGE(64213, _("Userset "SFQ" does not exist") )
+#define MSG_CQUEUE_UNKNOWNUSERSET_S    _MESSAGE(64213, _("Userset "SFQ" does not exist"))
 #define MSG_CQUEUE_UNKNOWNPROJECT_S    _MESSAGE(64214, _("Project "SFQ" does not exist"))
 #define MSG_CQUEUE_UNKNOWNCALENDAR_S   _MESSAGE(64215, _("Calendar "SFQ" does not exist"))
 #define MSG_CQUEUE_UNKNOWNINITSTATE_S  _MESSAGE(64216, _("Invalid value "SFQ" as initial state"))

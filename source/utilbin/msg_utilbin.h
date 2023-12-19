@@ -37,7 +37,7 @@
 /* 
 ** utilbin/adminrun.c
 */
-#define MSG_UTILBIN_USAGE                    _MESSAGE(57000, _("usage:") ) 
+#define MSG_UTILBIN_USAGE                    _MESSAGE(57000, _("usage:")) 
 #define MSG_COMMAND_RUNCOMMANDASUSERNAME_S     _MESSAGE(57001, _("run commandline under "SFN" of given user"))
 #define MSG_COMMAND_EXECUTEFAILED_S          _MESSAGE(57002, _("can't execute command "SFQ))
 #define MSG_SYSTEM_RESOLVEUSERFAILED_S       _MESSAGE(57003, _("can't resolve username "SFQ))
@@ -121,7 +121,7 @@
 /* 
 ** utilbin/range.c
 */ 
-/* #define MSG_COMMAND_USAGE_RANGE              _message(57037, _("usage: range lower upper") )  __TS Removed automatically from testsuite!! TS__*/
+/* #define MSG_COMMAND_USAGE_RANGE              _message(57037, _("usage: range lower upper"))  __TS Removed automatically from testsuite!! TS__*/
 
 /*
  * utilbin/spooldefaults.c

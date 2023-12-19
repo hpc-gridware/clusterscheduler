@@ -774,22 +774,22 @@
 #define MSG_GDI_UTEXT_sstree_OPT                         _MESSAGE(23433, _("show the sharetree"))
 
 #define MSG_GDI_USAGE_shgrp_OPT                          "[-shgrp group]"
-#define MSG_GDI_UTEXT_shgrp_OPT                          _MESSAGE(23441, _("show host group") )  
+#define MSG_GDI_UTEXT_shgrp_OPT                          _MESSAGE(23441, _("show host group"))  
 
 #define MSG_GDI_USAGE_shgrpl_OPT                         "[-shgrpl]"
-#define MSG_GDI_UTEXT_shgrpl_OPT                         _MESSAGE(23442, _("show host group list") )  
+#define MSG_GDI_UTEXT_shgrpl_OPT                         _MESSAGE(23442, _("show host group list"))  
 
 #define MSG_GDI_USAGE_ahgrp_OPT                          "[-ahgrp group]"
-#define MSG_GDI_UTEXT_ahgrp_OPT                          _MESSAGE(23443, _("add new host group entry") ) 
+#define MSG_GDI_UTEXT_ahgrp_OPT                          _MESSAGE(23443, _("add new host group entry")) 
 
 #define MSG_GDI_USAGE_Ahgrp_OPT                          "[-Ahgrp file]"
-#define MSG_GDI_UTEXT_Ahgrp_OPT                          _MESSAGE(23444, _("add new host group entry from file") ) 
+#define MSG_GDI_UTEXT_Ahgrp_OPT                          _MESSAGE(23444, _("add new host group entry from file")) 
 
 #define MSG_GDI_USAGE_dhgrp_OPT                          "[-dhgrp group]"
-#define MSG_GDI_UTEXT_dhgrp_OPT                          _MESSAGE(23445, _("delete host group entry") ) 
+#define MSG_GDI_UTEXT_dhgrp_OPT                          _MESSAGE(23445, _("delete host group entry")) 
 
 #define MSG_GDI_USAGE_mhgrp_OPT                          "[-mhgrp group]"
-#define MSG_GDI_UTEXT_mhgrp_OPT                          _MESSAGE(23446, _("modify host group entry") ) 
+#define MSG_GDI_UTEXT_mhgrp_OPT                          _MESSAGE(23446, _("modify host group entry")) 
 
 #define MSG_GDI_USAGE_Mhgrp_OPT                          "[-Mhgrp file]"
 #define MSG_GDI_UTEXT_Mhgrp_OPT                          _MESSAGE(23447, _("modify host group entry from file"))
@@ -885,7 +885,7 @@
 #define MSG_GDI_UTEXT_dattr_OPT                          _MESSAGE(23478, _("delete from a list attribute of an object"))
 
 #define MSG_GDI_USAGE_aattr_OPT                          "[-aattr obj_nm attr_nm val obj_id_list]"
-#define MSG_GDI_UTEXT_aattr_OPT                          _MESSAGE(23479, _("add to a list attribute of an object") ) 
+#define MSG_GDI_UTEXT_aattr_OPT                          _MESSAGE(23479, _("add to a list attribute of an object")) 
 
 #define MSG_GDI_USAGE_Mattr_OPT                          "[-Mattr obj_nm fname obj_id_list]"
 #define MSG_GDI_UTEXT_Mattr_OPT                          _MESSAGE(23480, _("modify an attribute (or element in a sublist) of an object"))
@@ -897,7 +897,7 @@
 #define MSG_GDI_UTEXT_Dattr_OPT                          _MESSAGE(23482, _("delete from a list attribute of an object"))
 
 #define MSG_GDI_USAGE_Aattr_OPT                          "[-Aattr obj_nm fname obj_id_list]"
-#define MSG_GDI_UTEXT_Aattr_OPT                          _MESSAGE(23483, _("add to a list attribute of an object") ) 
+#define MSG_GDI_UTEXT_Aattr_OPT                          _MESSAGE(23483, _("add to a list attribute of an object")) 
 
 #define MSG_GDI_USAGE_show_license_OPT                   "[-show-license]"
 /* #define MSG_GDI_UTEXT_show_license_OPT                   _message(23484, _("show license information")) __TS Removed automatically from testsuite!! TS__*/
@@ -930,7 +930,7 @@
 #define MSG_SGETEXT_NOMEM                       _MESSAGE(23492, _("out of memory"))
 #define MSG_SGETEXT_CANT_OPEN_SS                _MESSAGE(23493, _("can't open "SFQ" ("SFN")"))
 #define MSG_GDI_UTEXT_TASK_OPR                  _MESSAGE(23494, _("delete all jobs given in list"))
-#define MSG_SYSTEM_GETPWNAMFAILED_S             _MESSAGE(23495, _("can't get password entry for user "SFQ". Either the user does not exist or NIS error!") ) 
+#define MSG_SYSTEM_GETPWNAMFAILED_S             _MESSAGE(23495, _("can't get password entry for user "SFQ". Either the user does not exist or NIS error!")) 
 #define MSG_SGETEXT_NULLPTRPASSED_S             _MESSAGE(23497, _("NULL ptr passed to "SFN"()"))
 #define MSG_ATTRIB_MISSINGATTRIBUTEXINCOMPLEXES_S     _MESSAGE(23498, _("missing attribute "SFQ" in complexes"))
 
@@ -1025,7 +1025,7 @@
 #define MSG_SEC_NOSTORECRED_USI       _MESSAGE(60409, _("could not store credentials for job " sge_U32CFormat" - command "SFQ" failed with return code %d"))
 #define MSG_SEC_NOSTORECREDNOBIN_US   _MESSAGE(60410, _("could not store client credentials for job " sge_U32CFormat" - "SFN" binary does not exist"))
 #define MSG_SEC_DELCREDSTDERR_S       _MESSAGE(60411, _("delete_cred stderr: "SFN))
-#define MSG_SEC_DELCREDRETCODE_USI    _MESSAGE(60412, _("could not delete credentials for job " sge_U32CFormat" - command "SFQ" failed with return code %d"))
+#define MSG_SEC_DELCREDRETCODE_USI    _MESSAGE(60412, _("could not delete credentials for job "sge_U32CFormat" - command "SFQ" failed with return code %d"))
 #define MSG_SEC_DELCREDNOBIN_US       _MESSAGE(60413, _("could not delete credentials for job "sge_U32CFormat" - "SFN" binary does not exist"))
 #define MSG_SEC_PUTCREDSTDERR_S       _MESSAGE(60414, _("put_cred stderr: "SFN))                                                                              
 #define MSG_SEC_NOSTARTCMD4GETCRED_SU _MESSAGE(60415, _("can't start command "SFQ" for job " sge_U32CFormat " to get credentials"))

@@ -104,7 +104,7 @@
 #define MSG_MAIL_NOFORK_S              _MESSAGE(27046, _("fork() for mail failed: "SFQ))
 #define MSG_MAIL_NODUP_S               _MESSAGE(27047, _("dup() failed: "SFQ))
 #define MSG_MAIL_NOEXEC_SS             _MESSAGE(27048, _("exec of mailer "SFQ" failed: "SFQ))
-#define MSG_MAIL_NOMAIL1               _MESSAGE(27049, _("wait for mailer returned 0 - killing") ) 
+#define MSG_MAIL_NOMAIL1               _MESSAGE(27049, _("wait for mailer returned 0 - killing")) 
 #define MSG_MAIL_NOMAIL2               _MESSAGE(27050, _("mailer had timeout - killing"))
 #define MSG_MAIL_NOMAIL3_I             _MESSAGE(27051, _("mailer was stopped due to signal %d - killing"))
 #define MSG_MAIL_NOSUBJ                _MESSAGE(27052, _("<no subject>"))
@@ -189,7 +189,7 @@
 #define MSG_MAIL_SUBJECT_JA_TASK_STATE_UUSS     "Job-array task "sge_U32CFormat"."sge_U32CFormat" ("SFN") "SFN
 #define MSG_MAIL_SUBJECT_JOB_STATE_USS          "Job "sge_U32CFormat" ("SFN") "SFN
 
-#define MSG_MAIL_BODY_STATE_SSSSSSSSSSSSS       _MESSAGE(27087, _(SFN"\n Exit Status      = "SFN"\n Signal           = "SFN"\n User             = "SFN"\n Queue            = "SFN"\n Host             = "SFN"\n Start Time       = "SFN"\n End Time         = "SFN"\n CPU              = "SFN"\n Max vmem         = "SFN"\nfailed "SFN" because:\n"SFN SFN))
+#define MSG_MAIL_BODY_STATE_SSSSSSSSSSSSS       _MESSAGE(27087, _(SFN"\n Exit Status      = "SFN"\n Signal           = "SFN"\n User             = "SFN"\n Queue            = "SFN"\n Host             = "SFN"\n Start Time       = "SFN"\n End Time         = "SFN"\n CPU              = "SFN"\n Max vmem         = "SFN"\nfailed "SFN" because:\n"SFN" "SFN))
 #define MSG_MAIL_TYPE_STATE                     _MESSAGE(27088, _("job abortion/end"))
 /* #define MSG_MAIL_TYPE_ABORT                     _message(27089, _("job abortion")) __TS Removed automatically from testsuite!! TS__*/
 #define MSG_MAIL_UNKNOWN_NAME                   _MESSAGE(27090, _("<unknown>"))

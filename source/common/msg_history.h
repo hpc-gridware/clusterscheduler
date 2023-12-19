@@ -45,7 +45,7 @@
 #define MSG_HISTORY_IGNORINGINVALIDENTRYINLINEX_U  _MESSAGE(25076, _("ignoring invalid entry in line " sge_U32CFormat))
 #define MSG_HISTORY_IGNORINGJOBXFORACCOUNTINGMASTERQUEUEYNOTEXISTS_IS   _MESSAGE(25082, _("%d jobs ignored for accounting. Jobs master queue no longer exists."))
 #define MSG_HISTORY_JOBARRAYTASKSWXYZNOTFOUND_DDDD   _MESSAGE(25084, _("Job-array tasks "sge_U32CFormat"."sge_U32CFormat"-"sge_U32CFormat":"sge_U32CFormat" not found" ))
-#define MSG_HISTORY_JOBIDXNOTFOUND_D          _MESSAGE(25085, _("job id " sge_U32CFormat  " not found"))
+#define MSG_HISTORY_JOBIDXNOTFOUND_D          _MESSAGE(25085, _("job id "sge_U32CFormat" not found"))
 #define MSG_HISTORY_JOBARRAYTASKSWXYZNOTFOUND_SDDD    _MESSAGE(25086, _("Job-array tasks "SFQ"."sge_U32CFormat"-"sge_U32CFormat":"sge_U32CFormat" not found"))
 #define MSG_HISTORY_JOBNAMEXNOTFOUND_S       _MESSAGE(25087, _("job name "SFN" not found"))
 #define MSG_HISTORY_TOPTIONREQUIRESJOPTION   _MESSAGE(25088, _("-t option requires -j option"))

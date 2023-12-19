@@ -176,8 +176,16 @@ int main(int argc, char *argv[]) {
    } else {
       if (buf.f_type == 0x52654973) {
          printf("reiserfs\n");
+      } else if (buf.f_type == 0x2fc12fc1) {
+         printf("zfs\n");
+      } else if (buf.f_type == 0xef53) {
+         printf("ext4\n");
+      } else if (buf.f_type == 0x58465342) {
+         printf("xfs\n");
+      } else if (buf.f_type == 0x1021994) {
+         printf("tmpfs\n");
       } else {
-         printf("%lx\n", (long unsigned int)buf.f_type);
+         printf("0x%lx\n", (long unsigned int)buf.f_type);
       }
    }
 #elif defined(INTERIX)

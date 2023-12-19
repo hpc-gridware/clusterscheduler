@@ -94,7 +94,7 @@
 #define MSG_SHEPHERD_INCORRECTCONFIGFILEFORJOBXY_UU    _MESSAGE(29041, _("incorrect config file for job "sge_U32CFormat"."sge_U32CFormat""))
 #define MSG_SHEPHERD_CANTSTARTJOBXY_US     _MESSAGE(29042, _("can't start job \""sge_U32CFormat"\": "SFN))
 #define MSG_SHEPHERD_PROBLEMSAFTERSTART_DS _MESSAGE(29043, _("problems after job start \""sge_U32CFormat"\": "SFN))
-#define MSG_SHEPHERD_JATASKXYISKNOWNREPORTINGITTOQMASTER    _MESSAGE(29044, _("ja-task \"" sge_U32CFormat"."sge_U32CFormat"\" is unknown - reporting it to qmaster"))
+#define MSG_SHEPHERD_JATASKXYISKNOWNREPORTINGITTOQMASTER    _MESSAGE(29044, _("ja-task \""sge_U32CFormat"."sge_U32CFormat"\" is unknown - reporting it to qmaster"))
 #define MSG_SHEPHERD_CKECKINGFOROLDJOBS    _MESSAGE(29045, _("checking for old jobs"))
 #define MSG_SHEPHERD_NOOLDJOBSATSTARTUP    _MESSAGE(29046, _("no old jobs at startup"))
 #define MSG_SHEPHERD_CANTGETPROCESSESFROMPSCOMMAND    _MESSAGE(29047, _("can't get processes from ps command"))
@@ -154,7 +154,7 @@
 ** job_report_execd.c
 */
 #define MSG_JOB_TYPEMALLOC            _MESSAGE(29091, _("runtime type error or malloc failure in add_job_report"))
-#define MSG_PARSE_USAGEATTR_SSU       _MESSAGE(29092, _("failed parsing "SFQ" passed as usage attribute "SFQ" of job "sge_U32CFormat) )      
+#define MSG_PARSE_USAGEATTR_SSU       _MESSAGE(29092, _("failed parsing "SFQ" passed as usage attribute "SFQ" of job "sge_U32CFormat))      
 
 
 /*
@@ -197,14 +197,14 @@
  */
 #define MSG_MAIL_STARTSUBJECT_UUS     "Job-array task "sge_U32CFormat"."sge_U32CFormat" ("SFN") Started" 
 
-#define MSG_MAIL_STARTBODY_UUSSSSS    _MESSAGE(29116, _("Job-array task "sge_U32CFormat"."sge_U32CFormat" ("SFN") Started\n User       = "SFN"\n Queue      = "SFN"\n Host       = "SFN"\n Start Time = "SFN) ) 
+#define MSG_MAIL_STARTBODY_UUSSSSS    _MESSAGE(29116, _("Job-array task "sge_U32CFormat"."sge_U32CFormat" ("SFN") Started\n User       = "SFN"\n Queue      = "SFN"\n Host       = "SFN"\n Start Time = "SFN)) 
 
 /* CR: don't localize mail subject, until we send it in Mime format!
  *  The message definition is not l10n'ed (no _() macro used)!!!     
  */
 #define MSG_MAIL_STARTSUBJECT_US      "Job "sge_U32CFormat" ("SFN") Started"
 
-#define MSG_MAIL_STARTBODY_USSSSS     _MESSAGE(29117, _("Job "sge_U32CFormat" ("SFN") Started\n User       = "SFN"\n Queue      = "SFN"\n Host       = "SFN"\n Start Time = "SFN) ) 
+#define MSG_MAIL_STARTBODY_USSSSS     _MESSAGE(29117, _("Job "sge_U32CFormat" ("SFN") Started\n User       = "SFN"\n Queue      = "SFN"\n Host       = "SFN"\n Start Time = "SFN)) 
 #define MSG_EXECD_NOFORK_S            _MESSAGE(29119, _("fork failed: "SFN))
 #define MSG_EXECD_NOSTARTSHEPHERD     _MESSAGE(29120, _("unable to start shepherd process"))
 #define MSG_SYSTEM_CANTMAKETMPDIR     _MESSAGE(29122, _("can't make tmpdir"))

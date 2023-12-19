@@ -85,8 +85,8 @@
 ** utilib/sge_loadmem.c
 */ 
 #define MSG_SYSTEM_NOPAGESIZEASSUME8192      _MESSAGE(49030, _("can't determine system page size - assuming 8192"))
-#define MSG_SYSTEM_TABINFO_FAILED_SS         _MESSAGE(49031, _("tabinfo("SFQ", ...) failed, "SFN) )            
-#define MSG_MEMORY_MALLOCFAILED_D            _MESSAGE(49032, _("malloc("sge_U32CFormat") failed" ))
+#define MSG_SYSTEM_TABINFO_FAILED_SS         _MESSAGE(49031, _("tabinfo("SFQ", ...) failed, "SFN))            
+#define MSG_MEMORY_MALLOCFAILED_D            _MESSAGE(49032, _("malloc("sge_U32CFormat") failed"))
 
 /* 
 ** utilib/sge_log.c
@@ -137,7 +137,7 @@
 /* 
 ** utilib/sge_sysconf.c
 */
-#define MSG_SYSCONF_UNABLETORETRIEVE_I          _MESSAGE(49057, _("unable to retrieve value for system limit (%d)") )   
+#define MSG_SYSCONF_UNABLETORETRIEVE_I          _MESSAGE(49057, _("unable to retrieve value for system limit (%d)"))   
 #define MSG_FILE_FCLOSEFAILED_SS                _MESSAGE(49058, _("fclose("SFQ") failed: "SFN))
 
 /* 
@@ -165,12 +165,12 @@
 ** utilib/sge_stdlib.c
 */ 
 #define MSG_MEMORY_MALLOCFAILED                    _MESSAGE(49072, _("malloc() failure"))
-#define MSG_MEMORY_REALLOCFAILED                   _MESSAGE(49073, _("realloc() failure") ) 
+#define MSG_MEMORY_REALLOCFAILED                   _MESSAGE(49073, _("realloc() failure")) 
 
 /* 
 ** utilib/sge_unistd.c
 */ 
-#define MSG_POINTER_SUFFIXISNULLINSGEUNLINK        _MESSAGE(49075, _("suffix == NULL in sge_unlink()") ) 
+#define MSG_POINTER_SUFFIXISNULLINSGEUNLINK        _MESSAGE(49075, _("suffix == NULL in sge_unlink()")) 
 #define MSG_VAR_PATHISNULLINSGEMKDIR            _MESSAGE(49076, _("path == NULL in sge_mkdir()"))
 #define MSG_FILE_CREATEDIRFAILED_SS             _MESSAGE(49077, _("can't create directory "SFQ": "SFN))
 

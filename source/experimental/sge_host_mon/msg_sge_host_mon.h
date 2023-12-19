@@ -52,10 +52,6 @@
 #define MSG_SGEHOSTMON_t_OPT_USAGE              _MESSAGE(37015, _("show formatted times"))
 #define MSG_SGEHOSTMON_u_OPT_USAGE              _MESSAGE(37016, _("show decayed usage (since timestamp) in nodes"))
 #define MSG_SGEHOSTMON_x_OPT_USAGE              _MESSAGE(37017, _("exclude non-leaf nodes"))
-#define MSG_ERROR_XISNOTAVALIDINTERVAL_S        _MESSAGE(37018, _(SFN" is not a valid interval"))
-#define MSG_ERROR_XISNOTAVALIDCOUNT_S           _MESSAGE(37019, _(SFN" is not a valid count"))
-#define MSG_FILE_COULDNOTOPENXFORY_SS           _MESSAGE(37020, _("could not open "SFN" for "SFN))
-/* #define MSG_ERROR_UNABLETODUMPLIST              _message(37021, _("Unable to dump list")) __TS Removed automatically from testsuite!! TS__*/
 
 
 
