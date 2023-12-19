@@ -1293,11 +1293,18 @@ case LINUXS390:
 case LINUXS390X:
 case LINUXSPARC:
 case LINUXSPARC64:
+case LINUXARM64:
    set MAKEWINGRIDLIB   = 0
    set MAKEWINGRIDAPP   = 0
    set AUTHLIBS = "-lcrypt -lpam"
 
    set CFLAGS = "-std=c99 $CFLAGS"
+
+   # if /usr/include/tirpc exists, extent CFLAGS
+   if ( -d  /usr/include/tirpc ) then
+      set CFLAGS = "-I/usr/include/tirpc $CFLAGS"
+      set LIBS = "-ltirpc $LIBS"
+   endif
 
    if ( $BUILDARCH == LINUXSPARC ) then
       set COMPILE_DC = 0
@@ -1356,6 +1363,8 @@ case LINUXSPARC64:
 
    if ($buildarch == "lx-x86" || $buildarch == "lx-amd64" || $buildarch == "lx-sparc" || $buildarch == "lx-mips" || $buildarch == "lx-mips64" || $buildarch == "lx-s390" || $buildarch == "lx-s390x") then
       set CFLAGS = "$CFLAGS -Wno-strict-aliasing"
+   else if ($buildarch == "lx-arm64") then
+      set CFLAGS = "$CFLAGS -Wno-unused-result -Wno-deprecated-declarations -Wno-stringop-truncation -Wno-stringop-overflow -Wno-format-overflow -Wno-format-truncation -Wno-multistatement-macros"
    endif
 
    set CFLAGS = "$OFLAG -Wall -Werror -Wstrict-prototypes -DUSE_POLL -DLINUX -D$BUILDARCH -D$COMPILE_ARCH -D_GNU_SOURCE -DGETHOSTBYNAME_R6 -DGETHOSTBYADDR_R8 $DEBUG_FLAG $CFLAGS"

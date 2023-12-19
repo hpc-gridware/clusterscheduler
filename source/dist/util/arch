@@ -209,6 +209,9 @@ Linux)
    x86_64)
       lxmachine=amd64
       ;;
+   aarch64)
+      lxmachine=arm64
+      ;;
    ia64)
       lxmachine=ia64
       ;;
