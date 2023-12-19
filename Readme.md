@@ -2,14 +2,14 @@
 
 ## Prerequisits
 
-* gcc >= 
-* g++
+* gcc >= 4.8.5 (e.g. default on CentOS 7 i386)
+* g++ >= @todo will the 4.8.5 be new enough? Or better compile a newer one on our build host? It has only experimental support for C++11!
+* libstdc++ >= @todo what version do we want / require? Might also depend on 3rdparty tools.
 * cmake >= 3.0
 * autoconf, automake
 * git
 
 ## Building Gridengine
-
 
 ### Configure the Project
 

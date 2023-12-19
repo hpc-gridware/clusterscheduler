@@ -3800,7 +3800,7 @@ static int test(sge_gdi_ctx_class_t *ctx, int *argc, char **argv[], int parse_ar
             time_t now, later;
             struct tm timenow;
             struct tm timelater;
-            char timestr[32];
+            char timestr[72]; // printf does *not* truncate with e.g. "%.4d", gcc > 8 will complain if buffer is too small
             int time_diff;  
             printf ("Testing start time\n");
             printf ("Getting job template\n");

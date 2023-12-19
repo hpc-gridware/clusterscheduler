@@ -223,6 +223,50 @@ const char* sge_dstring_append(dstring *sb, const char *a)
    return sb->s;
 }
 
+/**
+* @brief 
+*
+* @param sb
+* @param a
+* @param n
+*
+* @return 
+*/
+const char* sge_dstring_nappend(dstring *sb, const char *a, size_t n) 
+{
+   DENTER(DSTRING_LAYER, "sge_dstring_nappend");
+
+   if (sb == NULL || a == NULL) {
+      DRETURN(0);
+   }
+
+   if (sb->is_static) {
+      if ((sb->length + n) > sb->size )
+         n = sb->size - sb->length;
+
+      strncat(sb->s + sb->length, a, n);
+      sb->length += n;
+   } else {
+      size_t required;
+
+      /* only allow to append a string with length 0 for memory allocation */
+      if (n == 0 && sb->s != NULL ) {
+         DRETURN(sb->s);
+      }
+
+      required = n + sb->length + 1;
+
+      if (required > sb->size) {
+         sge_dstring_allocate(sb, required - sb->size);
+      }
+
+      strncat(sb->s + sb->length, a, n);
+      sb->length += n;
+   }
+
+   DRETURN(sb->s);
+}
+
 const char* sge_dstring_append_char(dstring *sb, const char a)
 {
    DENTER(DSTRING_LAYER, "sge_dstring_append_char");

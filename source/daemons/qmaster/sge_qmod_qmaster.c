@@ -1355,7 +1355,7 @@ static void signal_slave_tasks_of_job(sge_gdi_ctx_class_t *ctx, int how,
    /* do not signal slave tasks in case of checkpointing jobs with
       STOP/CONT when suspending means migration */
    if ((how==SGE_SIGCONT || how==SGE_SIGSTOP) &&
-      (lGetUlong(jep, JB_checkpoint_attr) & CHECKPOINT_SUSPEND)!=0) {
+       ISSET(lGetUlong(jep, JB_checkpoint_attr), CHECKPOINT_SUSPEND)) {
       DPRINTF(("omit signaling - checkpoint script does action for whole job\n"));
       return;
    }

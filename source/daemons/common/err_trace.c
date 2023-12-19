@@ -724,9 +724,12 @@ static FILE* shepherd_trace_init_intern(st_shepherd_file_t shepherd_file)
    dstring         ds;
    char            buffer[SGE_PATH_MAX+128];
    char            tmppath[SGE_PATH_MAX];
+   dstring         dstr_tmppath;
    int             fd       = -1;
    FILE            *fp      = NULL;
    int             do_chown = 0;
+
+   sge_dstring_init(&dstr_tmppath, tmppath, sizeof(tmppath));
 
   	/* 
   	 *  after changing into the jobs cwd we need an 
@@ -741,7 +744,7 @@ static FILE* shepherd_trace_init_intern(st_shepherd_file_t shepherd_file)
 		called=true;
 	}
 
-  	snprintf(tmppath, SGE_PATH_MAX,"%s/%s",path, g_shepherd_file_name[shepherd_file]);
+  	sge_dstring_sprintf(&dstr_tmppath, "%s/%s", path, g_shepherd_file_name[shepherd_file]);
    sge_strlcpy(g_shepherd_file_path[shepherd_file], tmppath, SGE_PATH_MAX);
 
 	/* If the file does not exist, create it. Otherwise just open it. */

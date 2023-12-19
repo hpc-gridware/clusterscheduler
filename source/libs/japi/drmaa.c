@@ -3565,7 +3565,7 @@ static char *drmaa_time2sge_time(const char *drmaa_time, dstring *diag)
    int century_set = 0, year_set = 0, month_set = 0, day_set = 0;
    int tz_diff_hours, tz_diff_minutes;
    char *p1, *p2, *start;
-   char tz_sign, tmp[128], sge_time[16]; /* We will always build a string 15 + 1 long */
+   char tz_sign, tmp[128], sge_time[68]; /* We will always build a string 15 + 1 long (yet printf used below does *not* truncate numbers! */
    time_t now;
    struct tm gmnow;
    struct tm herenow;

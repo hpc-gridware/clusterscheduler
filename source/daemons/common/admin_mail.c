@@ -121,13 +121,11 @@ void job_related_adminmail(u_long32 progid, lListElem *jr, int is_array, const c
       char filepath[SGE_PATH_MAX];
    } shepherd_files[3];
    int i;
-   char *sge_mail_body_total = NULL;
-   int sge_mail_body_total_size = 0;
-   FILE *fp;
-   int start = 0;
+   dstring dstr_sge_mail_body_total = DSTRING_INIT;
    dstring ds;
-   char buffer[128];
+   char buffer[256];
    char* administrator_mail = NULL;
+   char *shepherd_file_buf = NULL; 
 
    DENTER(TOP_LAYER, "job_related_adminmail");
 
@@ -142,26 +140,27 @@ void job_related_adminmail(u_long32 progid, lListElem *jr, int is_array, const c
    administrator_mail = mconf_get_administrator_mail();
 
    if (administrator_mail == NULL) {
-      DEXIT;
-      return;
+      DRETURN_VOID;
    }
 
    if (!strcasecmp(administrator_mail, "none")) {
       sge_free(&administrator_mail);
-      DEXIT;
-      return;
+      DRETURN_VOID;
    }
 
-   if (!(q=lGetString(jr, JR_queue_name)))
+   if (!(q=lGetString(jr, JR_queue_name))) {
       q = MSG_MAIL_UNKNOWN_NAME;
-   if ((ep=lGetSubStr(jr, UA_name, "start_time", JR_usage)))
-      strcpy(sge_mail_start, sge_ctime((time_t)lGetDouble(ep, UA_value), &ds));
-   else   
-      strcpy(sge_mail_start, MSG_MAIL_UNKNOWN_NAME);
-   if ((ep=lGetSubStr(jr, UA_name, "end_time", JR_usage)))
-      strcpy(sge_mail_end, sge_ctime((time_t)lGetDouble(ep, UA_value), &ds));
-   else   
-      strcpy(sge_mail_end, MSG_MAIL_UNKNOWN_NAME);
+   }
+   if ((ep=lGetSubStr(jr, UA_name, "start_time", JR_usage))) {
+      sge_strlcpy(sge_mail_start, sge_ctime((time_t)lGetDouble(ep, UA_value), &ds), sizeof(sge_mail_start));
+   } else {
+      sge_strlcpy(sge_mail_start, MSG_MAIL_UNKNOWN_NAME, sizeof(sge_mail_start));
+   }
+   if ((ep=lGetSubStr(jr, UA_name, "end_time", JR_usage))) {
+      sge_strlcpy(sge_mail_end, sge_ctime((time_t)lGetDouble(ep, UA_value), &ds), sizeof(sge_mail_end));
+   } else {
+      sge_strlcpy(sge_mail_end, MSG_MAIL_UNKNOWN_NAME, sizeof(sge_mail_end));
+   }
 
    jobid = lGetUlong(jr, JR_job_number);
    jataskid = lGetUlong(jr, JR_ja_task_number);
@@ -172,9 +171,7 @@ void job_related_adminmail(u_long32 progid, lListElem *jr, int is_array, const c
    
    if (failed) {
       const char *err_str;
-      dstring ds;
-      char buffer[256];
-      sge_dstring_init(&ds, buffer, sizeof(buffer));
+      size_t max_shepherd_files_size = 0;
 
       if (failed <= MAX_SSTATE) {
          /*
@@ -183,52 +180,47 @@ void job_related_adminmail(u_long32 progid, lListElem *jr, int is_array, const c
          if ((admail_states[failed] & BIT_ADM_NEVER)) {
             DPRINTF(("NEVER SENDING ADMIN MAIL for state %d\n", failed));
             sge_free(&administrator_mail);
-            DEXIT;
-            return;
+            DRETURN_VOID;
          }
          if ((admail_states[failed] & BIT_ADM_NEW_CONF)) {
             if (admail_times[failed]) {
                DPRINTF(("NOT SENDING ADMIN MAIL AGAIN for state %d, again on conf\n", failed));
                sge_free(&administrator_mail);
-               DEXIT;
-               return;
+               DRETURN_VOID;
             }
          }
          if ((admail_states[failed] & BIT_ADM_QCHANGE)) {
             if (admail_times[failed]) {
                DPRINTF(("NOT SENDING ADMIN MAIL AGAIN for state %d, again on qchange\n", failed));
                sge_free(&administrator_mail);
-               DEXIT;
-               return;
+               DRETURN_VOID;
             }
          }
          if ((admail_states[failed] & BIT_ADM_HOUR)) {
             if ((now - admail_times[failed] < 3600))
                DPRINTF(("NOT SENDING ADMIN MAIL AGAIN for state %d, again next hour\n", failed));
                sge_free(&administrator_mail);
-               DEXIT;
-               return;
+               DRETURN_VOID;
          }
          admail_times[failed] = now;
       }
-      if (!(err_str=lGetString(jr, JR_err_str)))
+      if (!(err_str=lGetString(jr, JR_err_str))) {
          err_str = MSG_MAIL_UNKNOWN_REASON;
+      }
 
       ret = mailrec_parse(&lp_mail, administrator_mail);
       if (ret) {
          ERROR((SGE_EVENT, MSG_MAIL_PARSE_S,
             (administrator_mail ? administrator_mail : MSG_NULL)));
          sge_free(&administrator_mail);
-         DEXIT;
-         return;
+         DRETURN_VOID;
       }
 
       if (lGetString(jr, JR_pe_task_id_str) == NULL) {
           /* This is a regular job */
           if (general == GFSTATE_QUEUE) {
              snprintf(str_general, sizeof(str_general), MSG_GFSTATE_QUEUE_S, q);
-          }
-          else if (general == GFSTATE_HOST) {
+          } else if (general == GFSTATE_HOST) {
              const char *s = strchr(q, '@');
              if (s != NULL) {
                s++;
@@ -236,14 +228,13 @@ void job_related_adminmail(u_long32 progid, lListElem *jr, int is_array, const c
              } else {
                snprintf(str_general, sizeof(str_general), MSG_GFSTATE_HOST_S, MSG_MAIL_UNKNOWN_NAME);
              }
-          }
-          else if (general == GFSTATE_JOB) {
-             if (is_array)
+          } else if (general == GFSTATE_JOB) {
+             if (is_array) {
                 snprintf(str_general, sizeof(str_general), MSG_GFSTATE_JOB_UU, sge_u32c(jobid), sge_u32c(jataskid));
-             else
+             } else {
                 snprintf(str_general, sizeof(str_general), MSG_GFSTATE_JOB_U, sge_u32c(jobid));
-          }
-          else {
+             }
+          } else {
              sge_strlcpy(str_general, MSG_NONE, sizeof(str_general));
           }
       } else {
@@ -251,12 +242,14 @@ void job_related_adminmail(u_long32 progid, lListElem *jr, int is_array, const c
           snprintf(str_general, sizeof(str_general), MSG_GFSTATE_PEJOB_U, sge_u32c(jobid));
       }
 
-      if (is_array)
-         sprintf(sge_mail_subj, MSG_MAIL_SUBJECT_SUU, 
+      if (is_array) {
+         snprintf(sge_mail_subj, sizeof(sge_mail_subj), MSG_MAIL_SUBJECT_SUU, 
                  feature_get_product_name(FS_SHORT_VERSION, &ds), sge_u32c(jobid), sge_u32c(jataskid));
-      else
-         sprintf(sge_mail_subj, MSG_MAIL_SUBJECT_SU, 
+      } else {
+         snprintf(sge_mail_subj, sizeof(sge_mail_subj), MSG_MAIL_SUBJECT_SU, 
                  feature_get_product_name(FS_SHORT_VERSION, &ds), sge_u32c(jobid));
+      }
+
       snprintf(sge_mail_body, sizeof(sge_mail_body),
               MSG_MAIL_BODY_USSSSSSS,
               sge_u32c(jobid),
@@ -267,61 +260,56 @@ void job_related_adminmail(u_long32 progid, lListElem *jr, int is_array, const c
       /*
       ** attach the trace and error file to admin mail if it is present
       */
-      sge_mail_body_total_size = strlen(sge_mail_body) + 1000;
-
       for (i=0; i<num_files; i++) {
          shepherd_files[i].exists = 0;
       }
       for (i=0; i<num_files; i++) {
          /* JG: TODO (254): use function creating path */
-         sprintf(shepherd_files[i].filepath, "%s/" sge_u32"."sge_u32"/%s", ACTIVE_DIR, 
+         snprintf(shepherd_files[i].filepath, SGE_PATH_MAX, "%s/" sge_u32"."sge_u32"/%s", ACTIVE_DIR, 
                      jobid, jataskid, shepherd_filenames[i]);
          if (!SGE_STAT(shepherd_files[i].filepath, &shepherd_files[i].statbuf) 
              && (shepherd_files[i].statbuf.st_size > 0)) {
-            sge_mail_body_total_size += shepherd_files[i].statbuf.st_size;
             shepherd_files[i].exists = 1;
+            max_shepherd_files_size = MAX(max_shepherd_files_size, shepherd_files[i].statbuf.st_size);
          }
       }
-      /*
-      ** allocate enough space for trace and error file
-      */
-      sge_mail_body_total = (char*) malloc(sizeof(char) * 
-                                           sge_mail_body_total_size); 
-      
-      strcpy(sge_mail_body_total, sge_mail_body);
 
-      
-      for (i=0; i<num_files; i++) {
-         if (shepherd_files[i].exists) {
-            sprintf(sge_mail_body_total, "%s\nShepherd %s:\n", 
-                      sge_mail_body_total, shepherd_filenames[i]);
-            start = strlen(sge_mail_body_total);
-            if ((fp = fopen(shepherd_files[i].filepath, "r"))) {
-               int n;
+      sge_dstring_copy_string(&dstr_sge_mail_body_total, sge_mail_body);
+     
+      if (max_shepherd_files_size > 0) {
+         shepherd_file_buf = sge_malloc(max_shepherd_files_size + 1);
+         for (i=0; i<num_files; i++) {
+            if (shepherd_files[i].exists) {
+               FILE *fp;
+               sge_dstring_sprintf_append(&dstr_sge_mail_body_total, "\nShepherd %s:\n", shepherd_filenames[i]);
+               if ((fp = fopen(shepherd_files[i].filepath, "r"))) {
+                  size_t n;
 
-               n=fread(sge_mail_body_total+start, 1, 
-                        sge_mail_body_total_size - start, fp);
-               FCLOSE(fp);
-               sge_mail_body_total[start + n] = '\0';
+                  n = fread(shepherd_file_buf, 1, max_shepherd_files_size, fp);
+                  FCLOSE(fp);
+                  shepherd_file_buf[n] = '\0';
+                  sge_dstring_append(&dstr_sge_mail_body_total, shepherd_file_buf);
+               }
             }
          }
+         sge_free(&shepherd_file_buf);
       }
 
-      cull_mail(progid, lp_mail, sge_mail_subj, sge_mail_body_total, 
+      cull_mail(progid, lp_mail, sge_mail_subj, sge_dstring_get_string(&dstr_sge_mail_body_total),
                 MSG_MAIL_TYPE_ADMIN);
 
-      if (sge_mail_body_total) {
-         sge_free(&sge_mail_body_total);
-      }
+      sge_dstring_free(&dstr_sge_mail_body_total);
    }
    lFreeList(&lp_mail);
-   sge_free(&administrator_mail); 
-   DEXIT;
-   return;
+   sge_free(&administrator_mail);
+   DRETURN_VOID;
 FCLOSE_ERROR:
    DPRINTF((MSG_FILE_ERRORCLOSEINGXY_SS, shepherd_files[i].filepath, strerror(errno)));
-   DEXIT;
-   return;
+   sge_free(&administrator_mail);
+   sge_free(&shepherd_file_buf);
+   sge_dstring_free(&dstr_sge_mail_body_total);
+
+   DRETURN_VOID;
 }
 
 int adm_mail_reset(int state)
@@ -335,7 +323,7 @@ int adm_mail_reset(int state)
    */
    if (state == 0) {
       memset(admail_times, 0, sizeof(admail_times));
-      return 0;
+      DRETURN(0);
    }
 
    DPRINTF(("resetting admin mail for state %d\n", state));
@@ -345,6 +333,5 @@ int adm_mail_reset(int state)
       }
    }
    
-   DEXIT;
-   return 0;
+   DRETURN(0);
 }

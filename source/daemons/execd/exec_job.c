@@ -294,11 +294,8 @@ int sge_exec_job(sge_gdi_ctx_class_t *ctx, lListElem *jep, lListElem *jatep,
 
    char shepherd_path[SGE_PATH_MAX] = "", 
         coshepherd_path[SGE_PATH_MAX] = "",
-        hostfilename[SGE_PATH_MAX] = "", 
-        script_file[SGE_PATH_MAX] = "", 
         tmpdir[SGE_PATH_MAX] = "", 
         active_dir_buffer[SGE_PATH_MAX] = "",
-        fname[SGE_PATH_MAX] = "",
         shell_path[SGE_PATH_MAX] = "", 
         stdout_path[SGE_PATH_MAX] ="",
         stderr_path[SGE_PATH_MAX] ="",
@@ -311,6 +308,11 @@ int sge_exec_job(sge_gdi_ctx_class_t *ctx, lListElem *jep, lListElem *jatep,
         fs_stdout_path[SGE_PATH_MAX]= "",
         fs_stderr_host[SGE_PATH_MAX] = "\"\"",
         fs_stderr_path[SGE_PATH_MAX] ="";
+
+   DSTRING_STATIC(dstr_fname, SGE_PATH_MAX);
+   const char *str_fname;
+   DSTRING_STATIC(dstr_script_file, SGE_PATH_MAX);
+   const char *str_script_file = ""; // @todo initialization shouldn't be necessary, but compiler seems to find a path in which str_script_file is not initialized!
 
    char mail_str[1024], *shepherd_name;
    const lList *gdil;
@@ -512,12 +514,14 @@ int sge_exec_job(sge_gdi_ctx_class_t *ctx, lListElem *jep, lListElem *jatep,
       /* JG: TODO: create function write_pe_hostfile() */
       /* JG: TODO (254) use function sge_get_active_job.... */
       if (petep == NULL) {
+         DSTRING_STATIC(dstr_hostfilename, SGE_PATH_MAX);
+         const char *str_hostfilename;
          lFreeList(&processor_set);
 
-         sprintf(hostfilename, "%s/%s/%s", execd_spool_dir, active_dir_buffer, PE_HOSTFILE);
-         fp = fopen(hostfilename, "w");
+         str_hostfilename = sge_dstring_sprintf(&dstr_hostfilename, "%s/%s/%s", execd_spool_dir, active_dir_buffer, PE_HOSTFILE);
+         fp = fopen(str_hostfilename, "w");
          if (!fp) {
-            snprintf(err_str, err_length, MSG_FILE_NOOPEN_SS,  hostfilename, strerror(errno));
+            snprintf(err_str, err_length, MSG_FILE_NOOPEN_SS,  str_hostfilename, strerror(errno));
             sge_free(&rankfileinput);
             sge_free(&pw_buffer);
             DRETURN(-2);
@@ -582,10 +586,10 @@ int sge_exec_job(sge_gdi_ctx_class_t *ctx, lListElem *jep, lListElem *jatep,
       /*************************** finished writing sge hostfile  ********/
 
       /********************** setup environment file ***************************/
-      sprintf(fname, "%s/%s/environment", execd_spool_dir, active_dir_buffer);
-      fp = fopen(fname, "w");
+      str_fname = sge_dstring_sprintf(&dstr_fname, "%s/%s/environment", execd_spool_dir, active_dir_buffer);
+      fp = fopen(str_fname, "w");
       if (!fp) {
-         snprintf(err_str, err_length, MSG_FILE_NOOPEN_SS, fname, strerror(errno));
+         snprintf(err_str, err_length, MSG_FILE_NOOPEN_SS, str_fname, strerror(errno));
          sge_free(&pw_buffer);
          DRETURN(-2);
       }
@@ -687,30 +691,28 @@ int sge_exec_job(sge_gdi_ctx_class_t *ctx, lListElem *jep, lListElem *jatep,
          /* set script_file */
          JOB_TYPE_CLEAR_IMMEDIATE(jb_now);
          if (jb_now & JOB_TYPE_QSH) {
-            strcpy(script_file, JOB_TYPE_STR_QSH);
+            str_script_file = sge_dstring_copy_string(&dstr_script_file, JOB_TYPE_STR_QSH);
          } else if (jb_now & JOB_TYPE_QLOGIN) {
-            strcpy(script_file, JOB_TYPE_STR_QLOGIN);
+            str_script_file = sge_dstring_copy_string(&dstr_script_file, JOB_TYPE_STR_QLOGIN);
          } else if (jb_now & JOB_TYPE_QRSH) {
-            strcpy(script_file, JOB_TYPE_STR_QRSH);
+            str_script_file = sge_dstring_copy_string(&dstr_script_file, JOB_TYPE_STR_QRSH);
          } else if (jb_now & JOB_TYPE_QRLOGIN) {
-            strcpy(script_file, JOB_TYPE_STR_QRLOGIN);
+            str_script_file = sge_dstring_copy_string(&dstr_script_file, JOB_TYPE_STR_QRLOGIN);
          } else if (jb_now & JOB_TYPE_BINARY) {
             const char *sfile;
 
             sfile = lGetString(jep, JB_script_file);
             if (sfile != NULL) {
-               dstring script_file_out = DSTRING_INIT;
+               DSTRING_STATIC(dstr_script_file_out, SGE_PATH_MAX);
                path_alias_list_get_path(lGetList(jep, JB_path_aliases), NULL, 
                                         sfile, qualified_hostname, 
-                                        &script_file_out);
-               sge_strlcpy(script_file, sge_dstring_get_string(&script_file_out), 
-                       SGE_PATH_MAX);
-               sge_dstring_free(&script_file_out);
+                                        &dstr_script_file_out);
+               str_script_file = sge_dstring_copy_dstring(&dstr_script_file, &dstr_script_file_out);
             }
          } else {
             if (lGetString(jep, JB_script_file) != NULL) {
                /* JG: TODO: use some function to create path */
-               sprintf(script_file, "%s/%s/" sge_u32, execd_spool_dir, EXEC_DIR,
+               str_script_file = sge_dstring_sprintf(&dstr_script_file, "%s/%s/" sge_u32, execd_spool_dir, EXEC_DIR,
                        job_id);
             } else {
                /* 
@@ -719,13 +721,13 @@ int sge_exec_job(sge_gdi_ctx_class_t *ctx, lListElem *jep, lListElem *jatep,
                 * might become valid and the binary to execute might be the
                 * first argument to execute.
                 */
-               sprintf(script_file, "none");
+               str_script_file = sge_dstring_copy_string(&dstr_script_file, "none");
             }
          }
 
          /* set JOB_NAME */
          if(job_name == NULL) {
-            job_name = sge_basename(script_file, PATH_SEPARATOR_CHAR);
+            job_name = sge_basename(str_script_file, PATH_SEPARATOR_CHAR);
          }
          
          var_list_set_string(&environmentList, "JOB_NAME", job_name);
@@ -770,21 +772,20 @@ int sge_exec_job(sge_gdi_ctx_class_t *ctx, lListElem *jep, lListElem *jatep,
 
             sfile = var_list_get_string(environmentList, var_name); 
             if (sfile != NULL) {
-               dstring script_file_out = DSTRING_INIT;
+               DSTRING_STATIC(dstr_script_file_out, SGE_PATH_MAX);
 
                path_alias_list_get_path(lGetList(jep, JB_path_aliases), NULL,
                                         sfile, qualified_hostname,
-                                        &script_file_out);
+                                        &dstr_script_file_out);
                var_list_set_string(&environmentList, var_name, 
-                                   sge_dstring_get_string(&script_file_out));
-               sge_dstring_free(&script_file_out);
+                                   sge_dstring_get_string(&dstr_script_file_out));
             }
          }
       }
 
-      var_list_set_string(&environmentList, "JOB_SCRIPT", script_file);
-      sprintf(fname, "%s/%s", binary_path, arch);
-      var_list_set_string(&environmentList, "SGE_BINARY_PATH", fname);
+      var_list_set_string(&environmentList, "JOB_SCRIPT", str_script_file);
+      str_fname = sge_dstring_sprintf(&dstr_fname, "%s/%s", binary_path, arch);
+      var_list_set_string(&environmentList, "SGE_BINARY_PATH", str_fname);
       
       /* JG: TODO (ENV): do we need REQNAME and REQUEST? */
       var_list_set_string(&environmentList, "REQUEST", petep == NULL ? lGetString(jep, JB_job_name) : lGetString(petep, PET_name));
@@ -855,14 +856,15 @@ int sge_exec_job(sge_gdi_ctx_class_t *ctx, lListElem *jep, lListElem *jatep,
 
       /* forward name of pe to job */
       if (lGetString(jatep, JAT_granted_pe) != NULL) {
-         char buffer[SGE_PATH_MAX];
+         DSTRING_STATIC(dstr_buffer, SGE_PATH_MAX);
+         const char *str_buffer;
          const lListElem *pe;
 
          var_list_set_string(&environmentList, "PE", lGetString(jatep, JAT_granted_pe));
          /* forward PE_HOSTFILE only to master task */
          if (petep == NULL) {
-            sprintf(buffer, "%s/%s/%s", execd_spool_dir, active_dir_buffer, PE_HOSTFILE);
-            var_list_set_string(&environmentList, "PE_HOSTFILE", buffer);
+            str_buffer = sge_dstring_sprintf(&dstr_buffer, "%s/%s/%s", execd_spool_dir, active_dir_buffer, PE_HOSTFILE);
+            var_list_set_string(&environmentList, "PE_HOSTFILE", str_buffer);
          }
          /* for tightly integrated jobs, also set the rsh_command SGE_RSH_COMMAND */
          pe = lGetObject(jatep, JAT_pe_object);
@@ -906,10 +908,11 @@ int sge_exec_job(sge_gdi_ctx_class_t *ctx, lListElem *jep, lListElem *jatep,
       }
 
       {
-         char buffer[SGE_PATH_MAX]; 
+         DSTRING_STATIC(dstr_buffer, SGE_PATH_MAX);
+         const char *str_buffer;
 
-         sprintf(buffer, "%s/%s", execd_spool_dir, active_dir_buffer);  
-         var_list_set_string(&environmentList, VAR_PREFIX "JOB_SPOOL_DIR", buffer);
+         str_buffer = sge_dstring_sprintf(&dstr_buffer, "%s/%s", execd_spool_dir, active_dir_buffer);  
+         var_list_set_string(&environmentList, VAR_PREFIX "JOB_SPOOL_DIR", str_buffer);
       }
 
       /* Bugfix: Issuezilla 1300
@@ -966,11 +969,11 @@ int sge_exec_job(sge_gdi_ctx_class_t *ctx, lListElem *jep, lListElem *jatep,
 
       /**************** write out config file ******************************/
       /* JG: TODO (254) use function sge_get_active_job.... */
-      sprintf(fname, "%s/config", active_dir_buffer);
-      fp = fopen(fname, "w");
+      str_fname = sge_dstring_sprintf(&dstr_fname, "%s/config", active_dir_buffer);
+      fp = fopen(str_fname, "w");
       if (!fp) {
          lFreeList(&environmentList);
-         snprintf(err_str, err_length, MSG_FILE_NOOPEN_SS, fname, strerror(errno));
+         snprintf(err_str, err_length, MSG_FILE_NOOPEN_SS, str_fname, strerror(errno));
          DEXIT;
          return -2;
       }
@@ -1239,18 +1242,26 @@ int sge_exec_job(sge_gdi_ctx_class_t *ctx, lListElem *jep, lListElem *jatep,
 
    fprintf(fp, "priority=%s\n", lGetString(master_q, QU_priority));
    fprintf(fp, "shell_path=%s\n", shell_path);
-   fprintf(fp, "script_file=%s\n", script_file);
+   fprintf(fp, "script_file=%s\n", str_script_file);
    fprintf(fp, "job_owner=%s\n", lGetString(jep, JB_owner));
    fprintf(fp, "min_gid=" sge_u32 "\n", mconf_get_min_gid());
    fprintf(fp, "min_uid=" sge_u32 "\n", mconf_get_min_uid());
    
    /* do path substitutions also for cwd */
-   if ((cp = expand_path(cwd, job_id, job_is_array(jep) ? ja_task_id : 0,
-         lGetString(jep, JB_job_name),
-         lGetString(jep, JB_owner), 
-         qualified_hostname))) 
-      cwd = sge_dstring_copy_string(&cwd_out, cp);
-   fprintf(fp, "cwd=%s\n", cwd);
+   {
+      char cwd_buf[SGE_PATH_MAX];
+      dstring dstr_cwd;
+
+      sge_dstring_init(&dstr_cwd, cwd_buf, sizeof(cwd_buf));
+
+      if ((cp = expand_path(&dstr_cwd, cwd, job_id, job_is_array(jep) ? ja_task_id : 0,
+            lGetString(jep, JB_job_name),
+            lGetString(jep, JB_owner), 
+            qualified_hostname))) { 
+         cwd = sge_dstring_copy_string(&cwd_out, cp);
+      }
+      fprintf(fp, "cwd=%s\n", cwd);
+   }
 #if defined(IRIX)
    {
       const char *env_value = job_get_env_string(jep, VAR_PREFIX "O_HOST");
@@ -1675,9 +1686,9 @@ int sge_exec_job(sge_gdi_ctx_class_t *ctx, lListElem *jep, lListElem *jatep,
       u_long32 jb_now = lGetUlong(jep, JB_type);
       JOB_TYPE_CLEAR_IMMEDIATE(jb_now);            /* batch jobs can also be immediate */
       if(jb_now == 0) {                          /* it is a batch job */
-         if (SGE_STAT(script_file, &buf)) {
+         if (SGE_STAT(str_script_file, &buf)) {
             snprintf(err_str, err_length, MSG_EXECD_UNABLETOFINDSCRIPTFILE_SS,
-                    script_file, strerror(errno));
+                    str_script_file, strerror(errno));
             DEXIT;
             return -2;
          }
@@ -1748,8 +1759,8 @@ int sge_exec_job(sge_gdi_ctx_class_t *ctx, lListElem *jep, lListElem *jatep,
       sge_free(&set_token_cmd);
 
    /* JG: TODO (254) use function sge_get_active_job.... */
-      sprintf(fname, "%s/%s", active_dir_buffer, TOKEN_FILE);
-      if ((fd = SGE_OPEN3(fname, O_RDWR | O_CREAT | O_TRUNC, 0600)) == -1) {
+      str_fname = sge_dstring_sprintf(&dstr_fname, "%s/%s", active_dir_buffer, TOKEN_FILE);
+      if ((fd = SGE_OPEN3(str_fname, O_RDWR | O_CREAT | O_TRUNC, 0600)) == -1) {
          snprintf(err_str, err_length, MSG_EXECD_NOCREATETOKENFILE_S, strerror(errno));
          sge_free(&pag_cmd);
          sge_free(&shepherd_cmd);

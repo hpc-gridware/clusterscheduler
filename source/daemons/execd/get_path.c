@@ -52,7 +52,37 @@
 #include "msg_execd.h"
 #include "sge.h"
 
-static int getHomeDir(char *exp_path, const char *user);
+static int
+getHomeDir(dstring *dstr_exp_path, const char *user)
+{
+   struct passwd *pwd;
+   struct passwd pw_struct;
+   char *buffer;
+   int size;
+
+   DENTER(TOP_LAYER, "getHomeDir");
+
+   size = get_pw_buffer_size();
+   buffer = sge_malloc(size);
+
+   pwd = sge_getpwnam_r(user, &pw_struct, buffer, size);
+   if (pwd == NULL) {
+      ERROR((SGE_EVENT, MSG_EXECD_INVALIDUSERNAME_S, user));
+      sge_free(&buffer);
+      DRETURN(0);
+   }
+   if (pwd->pw_dir == NULL) {
+      ERROR((SGE_EVENT, MSG_EXECD_NOHOMEDIR_S, user));
+      sge_free(&buffer);
+      DRETURN(0);
+   }
+
+   sge_dstring_append(dstr_exp_path, pwd->pw_dir);
+
+   sge_free(&buffer);
+   DRETURN(1);
+}
+
 
 int sge_get_path(const char *qualified_hostname, const lList *lp, const char *cwd, const char *owner, 
                  const char *job_name, u_long32 job_number, 
@@ -61,9 +91,12 @@ int sge_get_path(const char *qualified_hostname, const lList *lp, const char *cw
 {
    const lListElem *ep = NULL;
    const char *path = NULL, *host = NULL;
+   char exp_path_buf[SGE_PATH_MAX];
+   dstring dstr_exp_path;
 
    DENTER(TOP_LAYER, "sge_get_path");
 
+   sge_dstring_init(&dstr_exp_path, exp_path_buf, sizeof(exp_path_buf));
    *pathstr = '\0';
 
    /*
@@ -71,14 +104,14 @@ int sge_get_path(const char *qualified_hostname, const lList *lp, const char *cw
     */
    ep = lGetElemHost(lp, PN_host, qualified_hostname);
    if (ep != NULL) {
-      path = expand_path(lGetString(ep, PN_path), job_number, ja_task_number, job_name, owner, qualified_hostname);
+      path = expand_path(&dstr_exp_path, lGetString(ep, PN_path), job_number, ja_task_number, job_name, owner, qualified_hostname);
       host = lGetHost(ep, PN_host);
    } else {
       /* 
        * hostname: wasn't set, look for a default 
        */
       for_each(ep, lp) {
-         path = expand_path(lGetString(ep, PN_path), job_number, ja_task_number, job_name, owner, qualified_hostname);
+         path = expand_path(&dstr_exp_path, lGetString(ep, PN_path), job_number, ja_task_number, job_name, owner, qualified_hostname);
          host = lGetHost(ep, PN_host);
          if (host == NULL) {
             break;
@@ -155,21 +188,17 @@ bool sge_get_fs_path(const lList* lp, char* fs_host, size_t fs_host_len, char* f
    return bFileStaging;
 }
 
-const char* expand_path(
-const char *in_path,
-u_long32 job_id,
-u_long32 ja_task_id,
-const char *job_name,
-const char *user,
-const char *host 
-) {
+const char*
+expand_path(dstring *dstr_exp_path, const char *in_path, u_long32 job_id, u_long32 ja_task_id,
+            const char *job_name, const char *user, const char *host)
+{
    char *t;
    const char *s;
-   static char exp_path[10000];
    char tmp[255];
    
    DENTER(TOP_LAYER, "expand_path");
-   exp_path[0] = '\0';
+
+   sge_dstring_clear(dstr_exp_path);
 
    if (in_path) {
       s = in_path;
@@ -181,95 +210,57 @@ const char *host
          strncpy(tmp, s+1, t-s+1);
          strcat(tmp, "");
          if (!strcmp(tmp, "")) {
-            if (!getHomeDir(exp_path, user)) {
-               DEXIT;
-               return NULL;
+            if (!getHomeDir(dstr_exp_path, user)) {
+               DRETURN(NULL);
             }
             s = s + 2;
-         }
-         else if (!getHomeDir(exp_path, tmp)) {
-               s = t;
+         } else if (!getHomeDir(dstr_exp_path, tmp)) {
+            s = t;
          }
       }
       t = strchr(s, '$');
       while (t) {
-         strncat(exp_path, s, t-s);
+         sge_dstring_nappend(dstr_exp_path, s, t-s);
          s = t;
          if (!strncmp(t, "$HOME", sizeof("$HOME") - 1)) {
-            if (!getHomeDir(exp_path, user)) {
+            if (!getHomeDir(dstr_exp_path, user)) {
                DEXIT;
                return NULL;
             }
             s = t + sizeof("$HOME") - 1;
          }
          if (!strncmp(t, "$JOB_ID", sizeof("$JOB_ID") - 1)) {
-            sprintf(exp_path, "%s" sge_u32, exp_path, job_id);
+            sge_dstring_sprintf_append(dstr_exp_path, sge_u32, job_id);
             s = t + sizeof("$JOB_ID") - 1;
          }
          if (ja_task_id) {
             if (!strncmp(t, "$TASK_ID", sizeof("$TASK_ID") - 1)) {
-               sprintf(exp_path, "%s" sge_u32, exp_path, ja_task_id);
+               sge_dstring_sprintf_append(dstr_exp_path, sge_u32, ja_task_id);
                s = t + sizeof("$TASK_ID") - 1;
             }
          }
          if (!strncmp(t, "$JOB_NAME", sizeof("$JOB_NAME") - 1)) {
-            sprintf(exp_path, "%s%s", exp_path, job_name);
+            sge_dstring_sprintf_append(dstr_exp_path, "%s", job_name);
             s = t + sizeof("$JOB_NAME") - 1;
          }
          if (!strncmp(t, "$USER", sizeof("$USER") - 1)) {
-            sprintf(exp_path, "%s%s", exp_path, user);
+            sge_dstring_sprintf_append(dstr_exp_path, "%s", user);
             s = t + sizeof("$USER") - 1;
          }
          if (!strncmp(t, "$HOSTNAME", sizeof("$HOSTNAME") - 1)) {
-            sprintf(exp_path, "%s%s", exp_path, host);
+            sge_dstring_sprintf_append(dstr_exp_path, "%s", host);
             s = t + sizeof("$HOSTNAME") - 1;
          }
          if (*s == '$')  {
-            strncat(exp_path, s, 1);
+            sge_dstring_append_char(dstr_exp_path, *s);
             s++;
          }
          t = strchr(s, '$');
       }
-      strcat(exp_path, s);
+      sge_dstring_append(dstr_exp_path, s);
    }
 
-   DEXIT;
-   return exp_path;
-}
-
-static int getHomeDir(
-char *exp_path,
-const char *user 
-) {
-   struct passwd *pwd;
-   struct passwd pw_struct;
-   char *buffer;
-   int size;
-
-   DENTER(TOP_LAYER, "getHomeDir");
-
-   size = get_pw_buffer_size();
-   buffer = sge_malloc(size);
-
-   pwd = sge_getpwnam_r(user, &pw_struct, buffer, size);
-   if (!pwd) {
-      ERROR((SGE_EVENT, MSG_EXECD_INVALIDUSERNAME_S, user));
-      sge_free(&buffer);
-      DEXIT;
-      return 0;
-   }
-   if (!pwd->pw_dir) {
-      ERROR((SGE_EVENT, MSG_EXECD_NOHOMEDIR_S, user));
-      sge_free(&buffer);
-      DEXIT;
-      return 0;
-
-   }
-   strcat(exp_path, pwd->pw_dir);
-
-   sge_free(&buffer);
-   DEXIT;
-   return 1;
+   DRETURN(sge_dstring_get_string(dstr_exp_path));
 }
 
 /****** execd/fileio/sge_make_ja_task_active_dir() *********************************

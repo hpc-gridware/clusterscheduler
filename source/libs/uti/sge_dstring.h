@@ -59,6 +59,9 @@
 
 #define DSTRING_INIT {NULL, 0, 0, false}
 
+#define DSTRING_STATIC(n, s) char _buffer_for_##n[s] = "\0"; \
+                                    dstring n = {_buffer_for_##n, 0, s, true}
+
 typedef struct {
    char *s;        /* refers to allocated buffer with dynamic dstrings
                     *  or static buffer with static dstrings 
@@ -73,6 +76,7 @@ void sge_dstring_init(dstring *sb, char *buffer, size_t size);
 dstring *sge_dstring_init_dynamic(dstring *sb, size_t size);
 
 const char* sge_dstring_append(dstring *sb, const char *a);
+const char* sge_dstring_nappend(dstring *sb, const char *a, size_t n);
 const char* sge_dstring_append_dstring(dstring *sb, const dstring *a);
 const char* sge_dstring_append_char(dstring *sb, const char a);
 const char* sge_dstring_append_time(dstring *sb, time_t time, bool as_xml);

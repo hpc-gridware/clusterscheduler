@@ -5563,16 +5563,18 @@ static lListElem *edit_exechost(sge_gdi_ctx_class_t *ctx, lListElem *ep, uid_t u
       unlink(filename);
       sge_free(&filename);
       sge_free(&fields);
-      if (sge_error_and_exit(ctx, MSG_PARSE_EDITFAILED))
+      if (sge_error_and_exit(ctx, MSG_PARSE_EDITFAILED)) {
          DRETURN(NULL);
+      }
    }
 
    if (status > 0) {
       unlink(filename);
       sge_free(&filename);
       sge_free(&fields);
-      if (sge_error_and_exit(ctx, MSG_FILE_FILEUNCHANGED))
+      if (sge_error_and_exit(ctx, MSG_FILE_FILEUNCHANGED)) {
          DRETURN(NULL);
+      }
    }
    
    fields_out[0] = NoName;
@@ -5628,8 +5630,9 @@ static lList* edit_sched_conf(sge_gdi_ctx_class_t *ctx, lList *confl, uid_t uid,
       unlink(fname);
       sge_free(&fname);
       
-      if (sge_error_and_exit(ctx, MSG_PARSE_EDITFAILED))
+      if (sge_error_and_exit(ctx, MSG_PARSE_EDITFAILED)) {
          DRETURN(NULL);
+      }
    }
 
    if (status > 0) {
@@ -5717,15 +5720,17 @@ static lListElem *edit_user(sge_gdi_ctx_class_t *ctx, lListElem *ep, uid_t uid, 
    if (status < 0) {
       sge_free(&fields);
       unlink(filename);
-      if (sge_error_and_exit(ctx, MSG_PARSE_EDITFAILED))
+      if (sge_error_and_exit(ctx, MSG_PARSE_EDITFAILED)) {
          DRETURN(NULL);
+      }
    }
 
    if (status > 0) {
       sge_free(&fields);
       unlink(filename);
-      if (sge_error_and_exit(ctx, MSG_FILE_FILEUNCHANGED))
+      if (sge_error_and_exit(ctx, MSG_FILE_FILEUNCHANGED)) {
          DRETURN(NULL);
+      }
    }
 
    fields_out[0] = NoName;
@@ -5792,15 +5797,17 @@ static lListElem *edit_project(sge_gdi_ctx_class_t *ctx, lListElem *ep, uid_t ui
    if (status < 0) {
       sge_free(&fields);
       unlink(filename);
-      if (sge_error_and_exit(ctx, MSG_PARSE_EDITFAILED))
+      if (sge_error_and_exit(ctx, MSG_PARSE_EDITFAILED)) {
          DRETURN(NULL);
+      }
    }
 
    if (status > 0) {
       sge_free(&fields);
       unlink(filename);
-      if (sge_error_and_exit(ctx, MSG_FILE_FILEUNCHANGED))
+      if (sge_error_and_exit(ctx, MSG_FILE_FILEUNCHANGED)) {
          DRETURN(NULL);
+      }
    }
 
    fields_out[0] = NoName;
@@ -5883,16 +5890,18 @@ static lListElem *edit_sharetree(sge_gdi_ctx_class_t *ctx, lListElem *ep, uid_t 
       sge_free(&fields);
       unlink(filename);
       sge_free(&filename);
-      if (sge_error_and_exit(ctx, MSG_PARSE_EDITFAILED))
+      if (sge_error_and_exit(ctx, MSG_PARSE_EDITFAILED)) {
          DRETURN(NULL);
+      }
    }
 
    if (status > 0) {
       sge_free(&fields);
       unlink(filename);
       sge_free(&filename);
-      if (sge_error_and_exit(ctx, MSG_FILE_FILEUNCHANGED))
+      if (sge_error_and_exit(ctx, MSG_FILE_FILEUNCHANGED)) {
          DRETURN(NULL);
+      }
    }
    
    fields_out[0] = NoName;

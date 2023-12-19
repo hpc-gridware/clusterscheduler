@@ -123,7 +123,7 @@ cl_thread_list.o: $(COMMLISTSLIB_DIR)/cl_thread_list.c
 test_cl_raw_list: test_cl_raw_list.o $(COMMLISTSLIB) $(COMMLISTSBIN_DEPEND)
 	$(CC) -o test_cl_raw_list $(LFLAGS) test_cl_raw_list.o $(COMMLISTSLIB) $(LIBS)
 test_cl_parameter_list: test_cl_parameter_list.o $(COMMLISTSLIB) $(COMMLISTSBIN_DEPEND)
-	$(CC) -o test_cl_parameter_list $(LFLAGS) test_cl_parameter_list.o $(COMMLISTSLIB) $(LIBS)
+	$(CC) -o test_cl_parameter_list $(LFLAGS) test_cl_parameter_list.o $(COMMLISTSLIB) -luti $(LIBS)
 test_cl_util: test_cl_util.o $(COMMLISTSLIB) $(COMMLISTSBIN_DEPEND)
 	$(CC) -o test_cl_util $(LFLAGS) test_cl_util.o $(COMMLISTSLIB) $(LIBS)
 test_cl_errors: test_cl_errors.o $(COMMLISTSLIB) $(COMMLISTSBIN_DEPEND)

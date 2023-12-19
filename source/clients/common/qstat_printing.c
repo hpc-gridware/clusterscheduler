@@ -157,16 +157,18 @@ int indent
       }
 
       /* scaled mem usage */
-      if (!(up = lGetElemStr(scaled_usage_list, UA_name, USAGE_ATTR_MEM))) 
+      if (!(up = lGetElemStr(scaled_usage_list, UA_name, USAGE_ATTR_MEM))) {
          printf("%-7.7s ", task_running?"NA":""); 
-      else
-         printf("%-5.5f ", lGetDouble(up, UA_value)); 
+      } else {
+         printf("%-5.5f ", lGetDouble(up, UA_value));
+      }
   
       /* scaled io usage */
-      if (!(up = lGetElemStr(scaled_usage_list, UA_name, USAGE_ATTR_IO))) 
+      if (!(up = lGetElemStr(scaled_usage_list, UA_name, USAGE_ATTR_IO))) {
          printf("%-7.7s ", task_running?"NA":""); 
-      else
+      } else {
          printf("%-5.5f ", lGetDouble(up, UA_value)); 
+      }
    }
 
    if (tstatus==JFINISHED) {
@@ -245,9 +247,9 @@ lList **alpp
                lListElem *pe;
                if (((pe_name=lGetString(jatep, JAT_granted_pe))) &&
                    ((pe=pe_list_locate(pe_list, pe_name))) &&
-                   !lGetBool(pe, PE_job_is_first_task))
-
-                   slot_adjust = 1;
+                   !lGetBool(pe, PE_job_is_first_task)) {
+                  slot_adjust = 1;
+               }
             }
 
             /* job distribution view ? */
@@ -262,10 +264,11 @@ lList **alpp
                lines_to_print = 1;
 
                /* always only show the number of job slots represented by the line */
-               if ((full_listing & QSTAT_DISPLAY_FULL))
+               if ((full_listing & QSTAT_DISPLAY_FULL)) {
                   slots_per_line = slots_in_queue;
-               else
+               } else {
                   slots_per_line = sge_granted_slots(lGetList(jatep, JAT_granted_destin_identifier_list));
+               }
             } else {
                /* yes */
                lines_to_print = (int)slots_in_queue+slot_adjust;
@@ -287,13 +290,14 @@ lList **alpp
                      sge_dstring_sprintf(&dyn_task_str, sge_u32, jataskid);
                      different = (jid != old_jid) || (jataskid != old_jataskid);
 
-                     if (different) 
+                     if (different) {
                         print_jobid = 1;
-                     else {
-                        if (!(full_listing & QSTAT_DISPLAY_RUNNING))
+                     } else {
+                        if (!(full_listing & QSTAT_DISPLAY_RUNNING)) {
                            print_jobid = master && (i==0);
-                        else 
+                        } else {
                            print_jobid = 0;
+                        }
                      }
 
                      if (!already_printed && (full_listing & QSTAT_DISPLAY_RUNNING) &&
@@ -571,17 +575,19 @@ lList **alpp
       }
 
       if (sge_pri) {
-         if (print_jobid)
+         if (print_jobid) {
             printf("%7.5f ", lGetDouble(job, JB_nppri)); /* nppri 0.0 - 1.0 */
-         else
+         } else {
             printf("        ");
+         }
       }
 
       if (sge_pri || sge_ext) {
-         if (print_jobid)
+         if (print_jobid) {
             printf("%7.5f ", lGetDouble(jatep, JAT_ntix)); /* ntix 0.0 - 1.0 */
-         else
+         } else {
             printf("        ");
+         }
       }
 
       if (sge_urg) {
@@ -690,18 +696,8 @@ lList **alpp
             /* start/submit time */
             if (!lGetUlong(jatep, JAT_start_time) ) {
                printf("%s ", sge_ctime((time_t)lGetUlong(job, JB_submission_time), &ds));
-            }   
-            else {
-   #if 0
-               /* AH: intermediate change to monitor JAT_stop_initiate_time 
-                * must be removed before 6.0 if really needed a better possiblity 
-                * for monitoring must be found (TODO)
-                */
-               if (getenv("JAT_stop_initiate_time") && (lGetUlong(jatep, JAT_state) & JDELETED))
-                  printf("%s!", sge_ctime(lGetUlong(jatep, JAT_stop_initiate_time), &ds));
-               else
-   #endif
-                  printf("%s ", sge_ctime((time_t)lGetUlong(jatep, JAT_start_time), &ds));
+            } else {
+               printf("%s ", sge_ctime((time_t)lGetUlong(jatep, JAT_start_time), &ds));
             }
          } else {
             printf("                    "); 
@@ -716,10 +712,11 @@ lList **alpp
    /* deadline time */
    if (sge_urg) {
       if (print_jobid) { 
-         if (!lGetUlong(job, JB_deadline) )
+         if (!lGetUlong(job, JB_deadline) ) {
             printf("                    ");
-         else
+         } else {
             printf("%s ", sge_ctime((time_t)lGetUlong(job, JB_deadline), &ds));
+         }
       } else {
          printf("                    "); 
       }
@@ -730,10 +727,11 @@ lList **alpp
       lList *job_usage_list;
       const char *pe_name;
       
-      if (!master || !strcmp(master, "MASTER"))
+      if (!master || !strcmp(master, "MASTER")) {
          job_usage_list = lCopyList(NULL, lGetList(jatep, JAT_scaled_usage_list));
-      else
+      } else {
          job_usage_list = lCreateList("", UA_Type);
+      }
 
       /* sum pe-task usage based on queue slots */
       if (job_usage_list) {
@@ -749,10 +747,11 @@ lList **alpp
                  ((qname=lGetString(ep, JG_qname))) &&
                  !strcmp(qname, queue_name) && ((subtask_ndx++%slots)==slot))) {
                for_each(src, lGetList(task, PET_scaled_usage)) {
-                  if ((dst=lGetElemStrRW(job_usage_list, UA_name, lGetString(src, UA_name))))
+                  if ((dst=lGetElemStrRW(job_usage_list, UA_name, lGetString(src, UA_name)))) {
                      lSetDouble(dst, UA_value, lGetDouble(dst, UA_value) + lGetDouble(src, UA_value));
-                  else
+                  } else {
                      lAppendElem(job_usage_list, lCopyElem(src));
+                  }
                }
             }
          }
@@ -760,9 +759,9 @@ lList **alpp
 
 
       /* scaled cpu usage */
-      if (!(up = lGetElemStr(job_usage_list, UA_name, USAGE_ATTR_CPU))) 
+      if (!(up = lGetElemStr(job_usage_list, UA_name, USAGE_ATTR_CPU))) {
          printf("%-10.10s ", running?"NA":""); 
-      else {
+      } else {
          int secs, minutes, hours, days;
 
          secs = lGetDouble(up, UA_value);
@@ -779,16 +778,18 @@ lList **alpp
          printf("%d:%2.2d:%2.2d:%2.2d ", days, hours, minutes, secs); 
       } 
       /* scaled mem usage */
-      if (!(up = lGetElemStr(job_usage_list, UA_name, USAGE_ATTR_MEM))) 
+      if (!(up = lGetElemStr(job_usage_list, UA_name, USAGE_ATTR_MEM))) {
          printf("%-7.7s ", running?"NA":""); 
-      else
+      } else {
          printf("%-5.5f ", lGetDouble(up, UA_value)); 
+      }
   
       /* scaled io usage */
-      if (!(up = lGetElemStr(job_usage_list, UA_name, USAGE_ATTR_IO))) 
+      if (!(up = lGetElemStr(job_usage_list, UA_name, USAGE_ATTR_IO))) {
          printf("%-7.7s ", running?"NA":""); 
-      else
+      } else {
          printf("%-5.5f ", lGetDouble(up, UA_value)); 
+      }
 
       lFreeList(&job_usage_list);
 
@@ -804,20 +805,17 @@ lList **alpp
             otickets = (u_long)lGetDouble(gdil_ep, JG_oticket);
             ftickets = (u_long)lGetDouble(gdil_ep, JG_fticket);
             stickets = (u_long)lGetDouble(gdil_ep, JG_sticket);
-         }
-         else {
+         } else {
             if (slots) {
                tickets = (u_long)(lGetDouble(gdil_ep, JG_ticket) / slots);
                otickets = (u_long)(lGetDouble(gdil_ep, JG_oticket) / slots);
                ftickets = (u_long)(lGetDouble(gdil_ep, JG_fticket) / slots);
                stickets = (u_long)(lGetDouble(gdil_ep, JG_sticket) / slots);
-            } 
-            else {
+            } else {
                tickets = otickets = ftickets = stickets = 0;
             }
          }
-      }
-      else {
+      } else {
          tickets = (u_long)lGetDouble(jatep, JAT_tix);
          otickets = (u_long)lGetDouble(jatep, JAT_oticket);
          ftickets = (u_long)lGetDouble(jatep, JAT_fticket);
@@ -997,12 +995,14 @@ lList **alpp
 
                name = lGetString(ce, CE_name);
                if (!lGetUlong(ce, CE_consumable) || !strcmp(name, "slots") || 
-                   job_get_request(job, name))
+                   job_get_request(job, name)) {
                   continue;
+               }
 
                parse_ulong_val(&dval, NULL, lGetUlong(ce, CE_valtype), lGetString(ce, CE_default), NULL, 0); 
-               if (dval == 0.0)
+               if (dval == 0.0) {
                   continue;
+               }
 
                /* For pending jobs (no queue/no exec host) we may print default request only
                   if the consumable is specified in the global host. For running we print it
@@ -1011,9 +1011,9 @@ lList **alpp
                    (qep && (hep=host_list_locate(exechost_list, lGetHost(qep, QU_qhostname))) &&
                     lGetSubStr(hep, CE_name, name, EH_consumable_config_list)) ||
                      ((hep=host_list_locate(exechost_list, SGE_GLOBAL_NAME)) &&
-                         lGetSubStr(hep, CE_name, name, EH_consumable_config_list)))
-
-               printf("%s%s=%s (default)\n", QSTAT_INDENT, name, lGetString(ce, CE_default));      
+                         lGetSubStr(hep, CE_name, name, EH_consumable_config_list))) {
+                  printf("%s%s=%s (default)\n", QSTAT_INDENT, name, lGetString(ce, CE_default));      
+               }
             }
             lFreeList(&attributes);
          }

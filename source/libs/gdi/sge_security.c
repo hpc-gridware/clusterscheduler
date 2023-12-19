@@ -658,7 +658,7 @@ int set_sec_cred(const char *sge_root, const char *mastername, lListElem *job, l
    DENTER(TOP_LAYER, "set_sec_cred");
    
    if (feature_is_enabled(FEATURE_AFS_SECURITY)) {
-      sprintf(binary, "%s/util/get_token_cmd", sge_root);
+      snprintf(binary, sizeof(binary), "%s/util/get_token_cmd", sge_root);
 
       if (sge_get_token_cmd(binary, NULL) != 0) {
          answer_list_add(alpp, MSG_QSH_QSUBFAILED, STATUS_EUNKNOWN, ANSWER_QUALITY_ERROR);
@@ -690,14 +690,14 @@ int set_sec_cred(const char *sge_root, const char *mastername, lListElem *job, l
 
    if (feature_is_enabled(FEATURE_DCE_SECURITY) ||
        feature_is_enabled(FEATURE_KERBEROS_SECURITY)) {
-      sprintf(binary, "%s/utilbin/%s/get_cred", sge_root, sge_get_arch());
+      snprintf(binary, sizeof(binary), "%s/utilbin/%s/get_cred", sge_root, sge_get_arch());
 
       if (sge_get_token_cmd(binary, NULL) != 0) {
          answer_list_add(alpp, MSG_QSH_QSUBFAILED, STATUS_EUNKNOWN, ANSWER_QUALITY_ERROR);
          DRETURN(-1);
       }   
 
-      sprintf(cmd, "%s %s%s%s", binary, "sge", "@", mastername);
+      snprintf(cmd, sizeof(cmd), "%s %s%s%s", binary, "sge", "@", mastername);
       
       command_pid = sge_peopen("/bin/sh", 0, cmd, NULL, NULL, &fp_in, &fp_out, &fp_err, false);
 
@@ -775,22 +775,22 @@ bool cache_sec_cred(const char* sge_root, lListElem *jep, const char *rhost)
       pid_t command_pid=-1;
       FILE *fp_in, *fp_out, *fp_err;
       char *str;
-      char binary[1024], cmd[2048], ccname[256];
+      char binary[1024], cmd[2048], ccname[64];
       int ret;
       char *env[2];
 
       /* set up credentials cache for this job */
-      sprintf(ccname, "KRB5CCNAME=FILE:/tmp/krb5cc_qmaster_" sge_u32,
+      snprintf(ccname, sizeof(ccname), "KRB5CCNAME=FILE:/tmp/krb5cc_qmaster_" sge_u32,
               lGetUlong(jep, JB_job_number));
       env[0] = ccname;
       env[1] = NULL;
 
-      sprintf(binary, "%s/utilbin/%s/get_cred", sge_root, sge_get_arch());
+      snprintf(binary, sizeof(binary), "%s/utilbin/%s/get_cred", sge_root, sge_get_arch());
 
       if (sge_get_token_cmd(binary, NULL) == 0) {
          char line[1024];
 
-         sprintf(cmd, "%s %s%s%s", binary, "sge", "@", rhost);
+         snprintf(cmd, sizeof(cmd), "%s %s%s%s", binary, "sge", "@", rhost);
 
          command_pid = sge_peopen("/bin/sh", 0, cmd, NULL, env, &fp_in, &fp_out, &fp_err, false);
 
@@ -846,25 +846,25 @@ void delete_credentials(const char *sge_root, lListElem *jep)
 
       pid_t command_pid=-1;
       FILE *fp_in, *fp_out, *fp_err;
-      char binary[1024], cmd[2048], ccname[256], ccfile[256], ccenv[256];
+      char binary[1024], cmd[2048], ccname[128], ccfile[32], ccenv[64];
       int ret=0;
       char *env[2];
       char tmpstr[1024];
 
       /* set up credentials cache for this job */
-      sprintf(ccfile, "/tmp/krb5cc_qmaster_" sge_u32,
-              lGetUlong(jep, JB_job_number));
-      sprintf(ccenv, "FILE:%s", ccfile);
-      sprintf(ccname, "KRB5CCNAME=%s", ccenv);
+      snprintf(ccfile, sizeof(ccfile), "/tmp/krb5cc_qmaster_" sge_u32,
+               lGetUlong(jep, JB_job_number));
+      snprintf(ccenv, sizeof(ccenv), "FILE:%s", ccfile);
+      snprintf(ccname, sizeof(ccname), "KRB5CCNAME=%s", ccenv);
       env[0] = ccname;
       env[1] = NULL;
 
-      sprintf(binary, "%s/utilbin/%s/delete_cred", sge_root, sge_get_arch());
+      snprintf(binary, sizeof(binary), "%s/utilbin/%s/delete_cred", sge_root, sge_get_arch());
 
       if (sge_get_token_cmd(binary, NULL) == 0) {
          char line[1024];
 
-         sprintf(cmd, "%s -s %s", binary, "sge");
+         snprintf(cmd, sizeof(cmd), "%s -s %s", binary, "sge");
 
          command_pid = sge_peopen("/bin/sh", 0, cmd, NULL, env, &fp_in, &fp_out, &fp_err, false);
 
@@ -923,7 +923,7 @@ int store_sec_cred(const char* sge_root, sge_gdi_packet_class_t *packet, lListEl
 
       pid_t command_pid;
       FILE *fp_in, *fp_out, *fp_err;
-      char line[1024], binary[1024], cmd[2048], ccname[256];
+      char line[1024], binary[1024], cmd[2048], ccname[64];
       int ret;
       char *env[2];
 
@@ -934,15 +934,15 @@ int store_sec_cred(const char* sge_root, sge_gdi_packet_class_t *packet, lListEl
       }
 
       /* set up credentials cache for this job */
-      sprintf(ccname, "KRB5CCNAME=FILE:/tmp/krb5cc_qmaster_" sge_u32,
+      snprintf(ccname, sizeof(ccname), "KRB5CCNAME=FILE:/tmp/krb5cc_qmaster_" sge_u32,
               lGetUlong(jep, JB_job_number));
       env[0] = ccname;
       env[1] = NULL;
 
-      sprintf(binary, "%s/utilbin/%s/put_cred", sge_root, sge_get_arch());
+      snprintf(binary, sizeof(binary), "%s/utilbin/%s/put_cred", sge_root, sge_get_arch());
 
       if (sge_get_token_cmd(binary, NULL) == 0) {
-         sprintf(cmd, "%s -s %s -u %s", binary, "sge", lGetString(jep, JB_owner));
+         snprintf(cmd, sizeof(cmd), "%s -s %s -u %s", binary, "sge", lGetString(jep, JB_owner));
 
          command_pid = sge_peopen("/bin/sh", 0, cmd, NULL, env, &fp_in, &fp_out, &fp_err, false);
 
@@ -1039,29 +1039,29 @@ int store_sec_cred2(const char* sge_root, const char* unqualified_hostname, lLis
 
       pid_t command_pid;
       FILE *fp_in, *fp_out, *fp_err;
-      char binary[1024], cmd[2048], ccname[256], ccfile[256], ccenv[256],
-           jobstr[64];
+      char binary[1024], cmd[2048], ccname[128], ccfile[32], ccenv[64],
+           jobstr[32];
       int ret;
       char *env[3];
       lListElem *vep;
 
       /* set up credentials cache for this job */
-      sprintf(ccfile, "/tmp/krb5cc_%s_" sge_u32, "sge", lGetUlong(jelem, JB_job_number));
-      sprintf(ccenv, "FILE:%s", ccfile);
-      sprintf(ccname, "KRB5CCNAME=%s", ccenv);
-      sprintf(jobstr, "JOB_ID="sge_u32, lGetUlong(jelem, JB_job_number));
+      snprintf(ccfile, sizeof(ccfile), "/tmp/krb5cc_%s_"sge_u32, "sge", lGetUlong(jelem, JB_job_number));
+      snprintf(ccenv, sizeof(ccenv), "FILE:%s", ccfile);
+      snprintf(ccname, sizeof(ccname), "KRB5CCNAME=%s", ccenv);
+      snprintf(jobstr, sizeof(jobstr), "JOB_ID="sge_u32, lGetUlong(jelem, JB_job_number));
       env[0] = ccname;
       env[1] = jobstr;
       env[2] = NULL;
       vep = lAddSubStr(jelem, VA_variable, "KRB5CCNAME", JB_env_list, VA_Type);
       lSetString(vep, VA_value, ccenv);
 
-      sprintf(binary, "%s/utilbin/%s/put_cred", sge_root, sge_get_arch());
+      snprintf(binary, sizeof(binary), "%s/utilbin/%s/put_cred", sge_root, sge_get_arch());
 
       if (sge_get_token_cmd(binary, NULL) == 0) {
          char line[1024];
 
-         sprintf(cmd, "%s -s %s -u %s -b %s", binary, "sge",
+         snprintf(cmd, sizeof(cmd), "%s -s %s -u %s -b %s", binary, "sge",
                  lGetString(jelem, JB_owner), lGetString(jelem, JB_owner));
 
          command_pid = sge_peopen("/bin/sh", 0, cmd, NULL, env, &fp_in, &fp_out, &fp_err, false);
@@ -1302,7 +1302,7 @@ sge_gdi_packet_initialize_auth_info(sge_gdi_ctx_class_t *ctx,
    DPRINTF(("sge_set_auth_info: username(uid) = %s(%d), groupname = %s(%d)\n",
             username, uid, groupname, gid));
 
-   sprintf(buffer, pid_t_fmt" "pid_t_fmt" %s %s", uid, gid, username, groupname);
+   snprintf(buffer, sizeof(buffer), pid_t_fmt" "pid_t_fmt" %s %s", uid, gid, username, groupname);
    if (sge_encrypt(buffer, sizeof(buffer), obuffer, sizeof(obuffer))) {
       packet_handle->auth_info = sge_strdup(NULL, obuffer);
    } else {

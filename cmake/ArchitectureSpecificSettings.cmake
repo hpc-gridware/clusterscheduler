@@ -36,6 +36,7 @@ function(architecture_specific_settings)
     message(STATUS "We are on Linux: ${SGE_ARCH}")
     add_compile_options(-Wall -Werror -Wstrict-prototypes -Wno-strict-aliasing
                         -Wstrict-prototypes)
+
     # @todo does -fPIC have any disadvantages when not required (only for shared
     # libs)?
     add_compile_options(-fPIC)

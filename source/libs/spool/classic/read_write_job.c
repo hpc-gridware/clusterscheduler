@@ -175,7 +175,7 @@ static lList *ja_task_list_create_from_file(u_long32 job_id,
          char spool_dir_tasks[SGE_PATH_MAX];
          lListElem *ja_task_entry; 
 
-         sprintf(spool_dir_tasks, SFN"/"SFN, spool_dir_job, entry);
+         snprintf(spool_dir_tasks, sizeof(spool_dir_tasks), SFN"/"SFN, spool_dir_job, entry);
          ja_task_entries = sge_get_dirents(spool_dir_tasks);
          for_each(ja_task_entry, ja_task_entries) {
             const char *ja_task_string;
@@ -192,7 +192,7 @@ static lList *ja_task_list_create_from_file(u_long32 job_id,
                   DTRACE;
                   goto error;
                }
-               sprintf(spool_dir_pe_tasks, SFN"/"SFN, spool_dir_tasks,
+               snprintf(spool_dir_pe_tasks, sizeof(spool_dir_pe_tasks), SFN"/"SFN, spool_dir_tasks,
                        ja_task_string);
 
                if (sge_is_directory(spool_dir_pe_tasks)) {
@@ -776,7 +776,8 @@ int job_list_read_from_disk(lList **job_list, char *list_name, int check,
    char first_dir[SGE_PATH_MAX] = ""; 
    lList *first_direnties; 
    lListElem *first_direntry;
-   char path[SGE_PATH_MAX];
+   DSTRING_STATIC(dstr_path, SGE_PATH_MAX);
+   const char *str_path;
    int handle_as_zombie = (flags & SPOOL_HANDLE_AS_ZOMBIE) > 0;
    lList *master_suser_list = *object_type_get_master_list_rw(SGE_TYPE_SUSER);
 
@@ -798,13 +799,13 @@ int job_list_read_from_disk(lList **job_list, char *list_name, int check,
 
 
       first_entry_string = lGetString(first_direntry, ST_name);
-      sprintf(path, "%s/%s", first_dir, first_entry_string);
-      if (!sge_is_directory(path)) {
-         ERROR((SGE_EVENT, MSG_CONFIG_NODIRECTORY_S, path)); 
+      str_path = sge_dstring_sprintf(&dstr_path, "%s/%s", first_dir, first_entry_string);
+      if (!sge_is_directory(str_path)) {
+         ERROR((SGE_EVENT, MSG_CONFIG_NODIRECTORY_S, str_path)); 
          break;
       }
    
-      sprintf(second_dir, SFN"/"SFN, first_dir, first_entry_string); 
+      snprintf(second_dir, sizeof(second_dir), SFN"/"SFN, first_dir, first_entry_string); 
       second_direnties = sge_get_dirents(second_dir);
       for (; (second_direntry = lFirstRW(second_direnties)); lRemoveElem(second_direnties, &second_direntry)) {
          char third_dir[SGE_PATH_MAX] = "";
@@ -813,14 +814,14 @@ int job_list_read_from_disk(lList **job_list, char *list_name, int check,
          const char *second_entry_string;
 
          second_entry_string = lGetString(second_direntry, ST_name);
-         sprintf(path, "%s/%s/%s", first_dir, first_entry_string,
+         str_path = sge_dstring_sprintf(&dstr_path, "%s/%s/%s", first_dir, first_entry_string,
                  second_entry_string);
-         if (!sge_is_directory(path)) {
-            ERROR((SGE_EVENT, MSG_CONFIG_NODIRECTORY_S, path));
+         if (!sge_is_directory(str_path)) {
+            ERROR((SGE_EVENT, MSG_CONFIG_NODIRECTORY_S, str_path));
             break;
          } 
 
-         sprintf(third_dir, SFN"/"SFN, second_dir, second_entry_string);
+         snprintf(third_dir, sizeof(third_dir), SFN"/"SFN, second_dir, second_entry_string);
          third_direnties = sge_get_dirents(third_dir);
          for (; (third_direntry = lFirstRW(third_direnties)); lRemoveElem(third_direnties, &third_direntry)) {
             lListElem *job, *ja_task;
@@ -833,9 +834,9 @@ int job_list_read_from_disk(lList **job_list, char *list_name, int check,
             int all_finished;
 
             sge_status_next_turn();
-            sprintf(fourth_dir, SFN"/"SFN, third_dir,
+            snprintf(fourth_dir, sizeof(fourth_dir), SFN"/"SFN, third_dir,
                     lGetString(third_direntry, ST_name));
-            sprintf(job_id_string, SFN SFN SFN, 
+            snprintf(job_id_string, sizeof(job_id_string), SFN SFN SFN, 
                     lGetString(first_direntry, ST_name),
                     lGetString(second_direntry, ST_name),
                     lGetString(third_direntry, ST_name)); 
@@ -918,6 +919,5 @@ int job_list_read_from_disk(lList **job_list, char *list_name, int check,
       sge_status_end_turn();
    }      
 
-   DEXIT;
-   return 0;
+   DRETURN(0);
 }

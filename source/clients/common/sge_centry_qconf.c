@@ -519,8 +519,7 @@ centry_list_add_del_mod_via_gdi(sge_gdi_ctx_class_t *ctx, lList **this_list, lLi
                                              ANSWER_QUALITY_ERROR,
                                              SFNMAX, MSG_CENTRY_NULL_URGENCY);
                DRETURN(false);
-            }
-            else if (urgency2 == NULL) {
+            } else if (urgency2 == NULL) {
                answer_list_add_sprintf(answer_list, STATUS_EUNKNOWN,
                                               ANSWER_QUALITY_ERROR,
                                               SFNMAX, MSG_CENTRY_NULL_URGENCY);
@@ -528,17 +527,18 @@ centry_list_add_del_mod_via_gdi(sge_gdi_ctx_class_t *ctx, lList **this_list, lLi
             }
 
             /* Check then that the entry is valid  */
-              error_msg[0] = '\0';
-              attrname = lGetString(centry_elem, CE_name);
+            error_msg[0] = '\0';
+            attrname = lGetString(centry_elem, CE_name);
   
-              if(!parse_ulong_val(&dval, NULL, TYPE_DOUBLE, urgency1, error_msg, 199) || !parse_ulong_val(&dval, NULL, TYPE_DOUBLE, urgency2, error_msg, 199)){answer_list_add_sprintf(answer_list, STATUS_EUNKNOWN , ANSWER_QUALITY_ERROR, MSG_INVALID_CENTRY_PARSE_URGENCY_SS, attrname, error_msg);
-                   DRETURN(false);
-              }
+            if (!parse_ulong_val(&dval, NULL, TYPE_DOUBLE, urgency1, error_msg, 199) || !parse_ulong_val(&dval, NULL, TYPE_DOUBLE, urgency2, error_msg, 199)) {
+               answer_list_add_sprintf(answer_list, STATUS_EUNKNOWN , ANSWER_QUALITY_ERROR, MSG_INVALID_CENTRY_PARSE_URGENCY_SS, attrname, error_msg);
+               DRETURN(false);
+            }
 
             cmp_elem = lNextRW(cmp_elem);
          }
          
-         if (!centry_elem_validate(centry_elem, NULL, answer_list)){
+         if (!centry_elem_validate(centry_elem, NULL, answer_list)) {
             cont = false;
          }
 
