@@ -1024,6 +1024,87 @@ case DARWIN_PPC:
    unset REL
    breaksw
 
+case DARWIN_ARM64:
+   set MAKEWINGRIDLIB   = 0
+   set MAKEWINGRIDAPP   = 0
+   set COMPILE_DC = 1
+
+   if ( $OPTIMIZATION == 1 ) then
+      set OFLAG = "-O3"
+   else
+      set OFLAG = ""
+   endif
+
+   set CC = "gcc"
+   set CXX = "g++"
+   set DLLIB = "-ldl"
+
+   if ( $DEBUGGED == 1) then
+      set DEBUG_FLAG = "-g -DSGE_LOCK_DEBUG"
+      set OFLAG = ""
+   endif
+
+   if ( $GPROFFED == 1) then
+      set DEBUG_FLAG = "$DEBUG_FLAG -pg"
+   endif
+
+   if ($COVED == 1) then
+      set DEBUG_FLAG = "$DEBUG_FLAG -fprofile-arcs -ftest-coverage"
+   endif
+
+   set REL = `/usr/bin/uname -r`
+   switch ($REL)
+   case "22.*":
+      set CFLAGS = "$OFLAG -arch arm64 -no-cpp-precomp -Wall -Wno-format -Wstrict-prototypes -DFD_SETSIZE=8192 -DDARWIN -DDARWIN10 -D$BUILDARCH -DGETHOSTBYNAME -DGETHOSTBYADDR_M $DEBUG_FLAG $CFLAGS"
+      set SHARED_CFLAGS = "$SHARED_CFLAGS -arch arm64"
+      set SHARED_LFLAGS = "$SHARED_LFLAGS -arch arm64"
+      set LFLAGS = "$LFLAGS -arch arm64"
+      breaksw
+   default:
+      echo DARWIN release \"$REL\" not supported!
+      exit 1
+      breaksw
+   endsw
+
+   set DEPEND_FLAGS = "$CFLAGS"
+   set LFLAGS   = "$DEBUG_FLAG $LFLAGS"
+
+   set SHAREDLD = "$CC -dynamiclib -flat_namespace -undefined warning"
+   set SHARED_CFLAGS = "-dynamic -fno-common"
+   set SHARED_LFLAGS = "$SHARED_LFLAGS -L."
+
+   set SHAREDEXT = ".dylib"
+   if ( $SHAREDLIBS == 1 ) then
+      set libext = $(SHAREDEXT)
+   else
+      set libext = ".a"
+   endif   
+  
+   # Can be overwritten in aimk.private or aimk.site 
+   if ( ! $?MOTIFHOME ) then
+      set MOTIFHOME = /Applications/Darwin/openmotif-2.2.3
+   endif
+
+   switch ($REL)
+   case "22.*":
+      breaksw
+   default:
+      echo DARWIN release \"$REL\" not supported!
+      exit 1
+      breaksw
+   endsw
+
+   set NOERR_CFLAG = "-Wno-error"
+   set NOERR_PROTO = "-Wno-strict-prototypes"
+   set JAVA_ARCH = ""
+   # set JAVA_BINDIR = "Commands"
+   # set JAVA_INCL = "Headers"
+   # set JAVA_INCL = "Versions/Current/Headers"
+   set JAVA_SHAREDEXT = ".jnilib"
+   #set JAVA_LFLAGS = ""
+   unset REL
+   breaksw
+
 case FREEBSD_*:
    set MAKEWINGRIDLIB   = 0
    set MAKEWINGRIDAPP   = 0
@@ -1980,7 +2061,7 @@ if ( "$SGE_DEPEND" == 1 ) then
       mkdir $COMPILE_ARCH
    endif
 
-   set DEPEND_CFLAGS = "$CFLAGS -Wno-error"
+   set DEPEND_CFLAGS = "$CFLAGS -Wno-error -DNeedVarargsPrototypes"
 
    cd $COMPILE_ARCH
    $MAKE $MAKEOPT -f ../Makefile "CC=$CC" "CFLAGS=$DEPEND_CFLAGS -U_GNU_SOURCE $NO_XDEPEND" "LFLAGS=$LFLAGS" "COMPILE_ARCH=$COMPILE_ARCH" $*
@@ -2093,8 +2174,8 @@ if ( "$CORE" == 1 && "$JAVA" != 2 ) then
    # spooledit is only available if berkeleydb is available.
    # if we build with spooling method classic, touch spooledit
    if ( $SPOOLING_METHOD == classic ) then
-      touch -t 202012312358 libspoolb.a spooledit.o
-      touch -t 202012312359 spooledit
+      touch -t 203012312358 libspoolb.a spooledit.o
+      touch -t 203012312359 spooledit
    endif
 
    # we must map the symbolic spooling lib names the target filenames,

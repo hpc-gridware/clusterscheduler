@@ -445,7 +445,7 @@ int main(argc, argv)
    /*
     * now peruse through the list of files.
     */
-   for(fp=filelist; *fp; fp++) {
+   for(fp=filelist; *fp && strcmp(*fp, "") != 0; fp++) {
       filecontent = getfile(*fp);
       ip = newinclude(*fp, (char *)NULL);
 

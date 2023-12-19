@@ -133,6 +133,10 @@ case $buildarch in
       BUILDARCH=DARWIN_X64
       TARGET_BITS=TARGET_64BIT
       ;;
+   darwin-arm64)
+      BUILDARCH=DARWIN_ARM64
+      TARGET_BITS=TARGET_64BIT
+      ;;
    fbsd-alpha)
       BUILDARCH=FREEBSD_ALPHA
       TARGET_BITS=TARGET_64BIT

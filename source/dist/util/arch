@@ -119,6 +119,9 @@ Darwin)
       Power*)
          darwin_machine=ppc
          ;;
+      arm64)
+         darwin_machine=arm64
+         ;;
       *)
          darwin_machine=unsupported
          ;;

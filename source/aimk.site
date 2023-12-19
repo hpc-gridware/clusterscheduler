@@ -44,6 +44,9 @@ switch($buildarch)
    case "usol-sparc64"
       set argv = ( -no-intl -no-java -no-jni $* )
       breaksw
+   case "darwin-arm64"
+      set argv = ( -no-secure -spool-classic -no-qmake $* )
+      breaksw
    default:
       set argv = ( $* )
       breaksw
