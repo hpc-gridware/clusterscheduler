@@ -139,9 +139,12 @@ spool_dynamic_create_context(lList **answer_list, const char *method,
       sge_dstring_sprintf(&get_spooling_method_func_name,
                           "get_%s_spooling_method", method);
 
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wpedantic"
       get_spooling_method = (spooling_get_method_func)
                             dlsym(shlib_handle, 
                             sge_dstring_get_string(&get_spooling_method_func_name));
+#pragma GCC diagnostic pop
       if (get_spooling_method == NULL) {
          answer_list_add_sprintf(answer_list, STATUS_EUNKNOWN, 
                                  ANSWER_QUALITY_ERROR, 
@@ -186,10 +189,13 @@ spool_dynamic_create_context(lList **answer_list, const char *method,
       sge_dstring_sprintf(&create_context_func_name, 
                           "spool_%s_create_context", spooling_name);
 
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wpedantic"
       create_context = 
             (spooling_create_context_func) 
             dlsym(shlib_handle, 
                   sge_dstring_get_string(&create_context_func_name));
+#pragma GCC diagnostic pop
       if (create_context == NULL) {
          answer_list_add_sprintf(answer_list, STATUS_EUNKNOWN, 
                                  ANSWER_QUALITY_ERROR, 

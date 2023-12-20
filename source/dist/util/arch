@@ -194,6 +194,12 @@ Linux)
    i*86)
       lxmachine=x86
       ;;
+   armv6*)
+      lxmachine=arm6
+      ;;
+   armv7*)
+      lxmachine=arm7
+      ;;
    aarch64)
       lxmachine=arm64
       ;;

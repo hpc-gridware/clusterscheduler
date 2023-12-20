@@ -536,7 +536,10 @@ int sge_add_event_client(lListElem *clio, lList **alpp, lList **eclpp, char *rus
    }
 
    ep = lCopyElem(clio);
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wpedantic"
    lSetRef(ep, EV_update_function, (void*) update_func);
+#pragma GCC diagnostic pop
    lSetBool(clio, EV_changed, false);
 
    lAppendElem(Event_Master_Control.clients, ep);
@@ -2099,7 +2102,10 @@ void sge_event_master_send_events(sge_gdi_ctx_class_t *ctx, lListElem *report, l
       /* extract address of event client      */
       /* Important:                           */
       /*   host and commproc have to be freed */
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wpedantic"
       update_func = (event_client_update_func_t) lGetRef(event_client, EV_update_function);
+#pragma GCC diagnostic pop
 
       host = lGetHost(event_client, EV_host);
       commproc = lGetString(event_client, EV_commproc);

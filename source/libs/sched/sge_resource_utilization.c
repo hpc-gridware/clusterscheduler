@@ -809,14 +809,14 @@ int rc_add_job_utilization(lListElem *jep, u_long32 task_id, const char *type,
    if (!ep) {
       ERROR((SGE_EVENT, "rc_add_job_utilization NULL object "
             "(job "sge_u32" obj %s type %s) slots %d ep %p\n", 
-            lGetUlong(jep, JB_job_number), obj_name, type, slots, ep));
+            lGetUlong(jep, JB_job_number), obj_name, type, slots, (void*)ep));
       DRETURN(0);
    }
 
    if (!slots) {
       ERROR((SGE_EVENT, "rc_add_job_utilization 0 slot amount "
             "(job "sge_u32" obj %s type %s) slots %d ep %p\n", 
-            lGetUlong(jep, JB_job_number), obj_name, type, slots, ep));
+            lGetUlong(jep, JB_job_number), obj_name, type, slots, (void*)ep));
       DRETURN(0);
    }
 

@@ -461,8 +461,11 @@ static bool read_validate_object(lList **answer_list,
          object_parse_field_from_string(ep, NULL, key_nm, key);
       }
 
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wpedantic"
       /* validate object */
       validate_func = (spooling_validate_func)lGetRef(rule, SPR_validate_func);
+#pragma GCC diagnostic pop
       if (validate_func != NULL) {
          if (!validate_func(answer_list, type, rule, ep, object_type)) {
             lFreeElem(&ep);
@@ -711,8 +714,11 @@ spool_classic_default_list_func(lList **answer_list,
 
       /* validate complete list */
       if (ret) {
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wpedantic"
          spooling_validate_list_func validate_list = 
             (spooling_validate_list_func)lGetRef(rule, SPR_validate_list_func);
+#pragma GCC diagnostic pop
          
          ret = validate_list(answer_list, type, rule, object_type);
       }

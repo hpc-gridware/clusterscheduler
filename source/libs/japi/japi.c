@@ -3329,14 +3329,14 @@ static int japi_parse_jobid(const char *job_id_str, u_long32 *jp, u_long32 *tp,
 
    /* parse jobid/taskid */
    if (strchr(job_id_str, '.')) {
-      if (sscanf(job_id_str, sge_u32"."sge_u32, &jobid, &taskid) != 2) {
+      if (sscanf(job_id_str, sge_uu32"."sge_uu32, &jobid, &taskid) != 2) {
          sge_dstring_sprintf(diag, MSG_JAPI_BAD_BULK_JOB_ID_S, job_id_str);
          DRETURN(DRMAA_ERRNO_INVALID_ARGUMENT);
       }
 /*       DPRINTF(("parsing jobid.taskid: %ld.%ld\n", jobid, taskid)); */
       is_array_task = true;
    } else {
-      if (sscanf(job_id_str, sge_u32, &jobid) != 1) {
+      if (sscanf(job_id_str, sge_uu32, &jobid) != 1) {
          sge_dstring_sprintf(diag, MSG_JAPI_BAD_JOB_ID_S, job_id_str);
          DRETURN(DRMAA_ERRNO_INVALID_ARGUMENT);
       }

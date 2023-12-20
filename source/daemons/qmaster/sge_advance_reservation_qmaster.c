@@ -827,7 +827,7 @@ void sge_init_ar_id(void)
    DENTER(TOP_LAYER, "sge_init_ar_id");
    
    if ((fp = fopen(ARSEQ_NUM_FILE, "r"))) {
-      if (fscanf(fp, sge_u32, &ar_id) != 1) {
+      if (fscanf(fp, sge_uu32, &ar_id) != 1) {
          ERROR((SGE_EVENT, MSG_NOSEQNRREAD_SSS, "ar", ARSEQ_NUM_FILE, strerror(errno)));
       }
       FCLOSE(fp);

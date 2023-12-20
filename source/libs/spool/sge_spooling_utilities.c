@@ -385,6 +385,8 @@ bool spool_default_validate_func(lList **answer_list,
    const lList *master_pe_list = *object_type_get_master_list(SGE_TYPE_PE);
    const lList *master_userset_list = *object_type_get_master_list(SGE_TYPE_USERSET);
 
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wpedantic"
    switch(object_type) {
       case SGE_TYPE_ADMINHOST:
       case SGE_TYPE_EXECHOST:
@@ -528,6 +530,7 @@ bool spool_default_validate_func(lList **answer_list,
       default:
          break;
    }
+#pragma GCC diagnostic pop
 
    DRETURN(ret);
 }

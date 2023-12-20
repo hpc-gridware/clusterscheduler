@@ -249,7 +249,7 @@ int main(int argc, char **argv)
                u_long32 gid;
                stringT buffer;
 
-               if (sscanf(argv[++ii], sge_u32, &gid) == 1) {
+               if (sscanf(argv[++ii], sge_uu32, &gid) == 1) {
                   if (sge_gid2group((gid_t)gid, buffer, 
                                    MAX_STRING_SIZE, MAX_NIS_RETRIES) != 0) {
                      options.group = sge_strdup(options.group, argv[ii]);
@@ -308,7 +308,7 @@ int main(int argc, char **argv)
          if (argv[ii+1]) {
             if (*(argv[ii+1])=='-') {
                options.jobflag = 1;
-            } else if (sscanf(argv[++ii], sge_u32, &options.job_number) != 1) {
+            } else if (sscanf(argv[++ii], sge_uu32, &options.job_number) != 1) {
                options.job_number = 0;
                options.job_name = argv[ii];
             }
@@ -394,7 +394,7 @@ int main(int argc, char **argv)
       */
       else if (!strcmp("-d", argv[ii])) {
          if (argv[ii+1]) {
-            if (sscanf(argv[++ii], sge_u32, &days) != 1) {
+            if (sscanf(argv[++ii], sge_uu32, &days) != 1) {
                /*
                ** problem: insufficient error reporting
                */
@@ -462,7 +462,7 @@ int main(int argc, char **argv)
             if (*(argv[ii+1])=='-') {
                options.arflag = 1;
             } else {
-               if (sscanf(argv[++ii], sge_u32, &options.ar_number) != 1) {
+               if (sscanf(argv[++ii], sge_uu32, &options.ar_number) != 1) {
                   fprintf(stderr, "%s\n", MSG_PARSE_INVALID_AR_MUSTBEUINT);
                   qacct_usage(&ctx, stderr);
                   DRETURN(1); 

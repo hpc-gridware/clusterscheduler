@@ -2514,7 +2514,10 @@ static bool ec2_commit_local(sge_evc_class_t *thiz, lList **alpp)
          ruser = gdi_ctx->get_admin_user(gdi_ctx);
          rhost = gdi_ctx->get_master(gdi_ctx, false);
       }
-      lSetRef(sge_evc->ec, EV_update_function, (void*) evc_local->update_func);
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wpedantic"
+      lSetRef(sge_evc->ec, EV_update_function, evc_local->update_func);
+#pragma GCC diagnostic pop
 
       /*
        *  to add may also means to modify

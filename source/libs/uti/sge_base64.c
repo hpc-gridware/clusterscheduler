@@ -67,7 +67,7 @@ buffer_decode_hex(unsigned char *input, size_t *len, unsigned char **output)
 
    for (s = 0; s < *len; s+=2) {
       char buffer[32] = "";
-      int byte = 0;
+      unsigned int byte = 0;
 
       buffer[0] = input[s];
       buffer[1] = input[s+1];

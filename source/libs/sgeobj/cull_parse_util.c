@@ -177,7 +177,7 @@ lList **pplist
             {
                lUlong ul;
 
-               if (sscanf(*pstrlist, sge_u32, &ul) != 1) {
+               if (sscanf(*pstrlist, sge_uu32, &ul) != 1) {
                   DPRINTF(("cull_parse_string_list: " \
                            "error interpreting ulong: %s\n", *pstrlist));
                   lFreeList(&list);

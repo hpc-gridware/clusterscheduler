@@ -214,7 +214,10 @@ sge_monitor_init(monitoring_t *monitor, const char *thread_name, extension_t ext
 #  endif /* RTLD_NODELETE */
 
       if (mallinfo_shlib_handle != NULL) {
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wpedantic"
          mallinfo_func_pointer = (struct mallinfo (*)(void)) dlsym(mallinfo_shlib_handle, function_name);
+#pragma GCC diagnostic pop
       }
    }
    sge_mutex_unlock("sge_monitor_status", SGE_FUNC, __LINE__, &global_mutex);

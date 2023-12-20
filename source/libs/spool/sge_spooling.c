@@ -42,6 +42,8 @@
 
 static lList *Default_Spool_Context_List;
 
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wpedantic"
 /****** spool/spool_create_context() ************************************
 *  NAME
 *     spool_create_context() -- create a new spooing context
@@ -1445,3 +1447,4 @@ spool_compare_objects(lList **answer_list, const lListElem *context,
 
    DRETURN(ret);
 }
+#pragma GCC diagnostic pop

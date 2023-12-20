@@ -140,42 +140,22 @@ extern "C" {
 /* set sge_u32 and sge_x32 for 64 or 32 bit machines */
 /* sge_uu32 for strictly unsigned, not nice, but did I use %d for an unsigned? */
 #if defined(TARGET_64BIT) || defined(FREEBSD) || defined(NETBSD)
-#  define sge_u64    "%ld"
+#  define sge_u64    "%lu"
 #  define sge_u32    "%d"
 #  define sge_uu32   "%u"
 #  define sge_x32    "%x"
 #  define sge_fu32   "d"
 #else
-#  define sge_u64    "%lld"
+#  define sge_u64    "%llu"
 #  define sge_u32    "%ld"
 #  define sge_uu32   "%lu"
 #  define sge_x32    "%lx"
 #  define sge_fu32   "ld"
 #endif
 
-/* -------------------------------
-   solaris (who else - it's IRIX?) uses long 
-   variables for uid_t, gid_t and pid_t 
-*/
-#if defined(FREEBSD)
-#  define uid_t_fmt "%u"
-#else
-#  define uid_t_fmt pid_t_fmt
-#endif
-
-#if (defined(SOLARIS) && defined(TARGET_32BIT)) || defined(IRIX) || defined(INTERIX)
-#  define pid_t_fmt    "%ld"
-#else
-#  define pid_t_fmt    "%d"
-#endif
-
-#if (defined(SOLARIS) && defined(TARGET_32BIT)) || defined(IRIX) || defined(INTERIX)
-#  define gid_t_fmt    "%ld"
-#elif defined(LINUX86) || defined(FREEBSD)
-#  define gid_t_fmt    "%u"
-#else
-#  define gid_t_fmt    "%d"
-#endif
+#define uid_t_fmt "%u"
+#define gid_t_fmt "%u"
+#define pid_t_fmt "%d"
 
 /* _POSIX_PATH_MAX is only 255 and this is less than in most real systmes */
 #define SGE_PATH_MAX    1024

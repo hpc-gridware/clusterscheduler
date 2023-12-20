@@ -1107,7 +1107,7 @@ static int fGetUlong(FILE *fp, lUlong *up)
       return -1;
    }
 
-   if (sscanf(s, sge_u32, up) != 1) {
+   if (sscanf(s, sge_uu32, up) != 1) {
       LERROR(LESSCANF);
       DEXIT;
       return -1;

@@ -3139,7 +3139,7 @@ void sge_init_job_number(void)
    DENTER(TOP_LAYER, "sge_init_job_number");
    
    if ((fp = fopen(SEQ_NUM_FILE, "r"))) {
-      if (fscanf(fp, sge_u32, &job_nr) != 1) {
+      if (fscanf(fp, sge_uu32, &job_nr) != 1) {
          ERROR((SGE_EVENT, MSG_NOSEQNRREAD_SSS, SGE_OBJ_JOB, SEQ_NUM_FILE, strerror(errno)));
       }
       FCLOSE(fp);

@@ -676,10 +676,13 @@ spool_berkeleydb_default_list_func(lList **answer_list,
 
    if (ret) {
       lListElem *ep;
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wpedantic"
       spooling_validate_func validate = 
          (spooling_validate_func)lGetRef(rule, SPR_validate_func);
       spooling_validate_list_func validate_list = 
          (spooling_validate_list_func)lGetRef(rule, SPR_validate_list_func);
+#pragma GCC diagnostic pop
 
       /* validate each individual object */
       /* JG: TODO: is it valid to validate after reading all objects? */
@@ -793,8 +796,11 @@ spool_berkeleydb_default_read_func(lList **answer_list,
          default:
             ep = spool_berkeleydb_read_object(answer_list, info, database, key);
             if (ep != NULL) {
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wpedantic"
                spooling_validate_func validate = 
-                  (spooling_validate_func)lGetRef(rule, SPR_validate_func);
+                  (spooling_validate_func)(void *)lGetRef(rule, SPR_validate_func);
+#pragma GCC diagnostic pop
                bool ret = validate(answer_list, type, rule, ep, object_type);
                if (!ret) {
                   lFreeElem(&ep);

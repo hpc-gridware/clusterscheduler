@@ -680,7 +680,7 @@ static int clean_up_job(lListElem *jr, int failed, int shepherd_exit_status,
                                 "job_pid");
       if (!SGE_STAT(sge_dstring_get_string(&fname), &statbuf)) {
          if ((fp = fopen(sge_dstring_get_string(&fname), "r"))) {
-            if (!fscanf(fp, sge_u32 , &job_pid))
+            if (!fscanf(fp, sge_uu32 , &job_pid))
                job_pid = 0;
             FCLOSE_IGNORE_ERROR(fp);
          }
@@ -1599,7 +1599,7 @@ read_dusage(lListElem *jr, const char *jobdir, u_long32 jobid, u_long32 jataskid
    if (failed != ESSTATE_NO_PID) {
       fp = fopen(pid_file, "r");
       if (fp != NULL) {
-         if (fscanf(fp, sge_u32 , &pid) != 1) {
+         if (fscanf(fp, sge_uu32 , &pid) != 1) {
             ERROR((SGE_EVENT, MSG_EXECD_ERRORREADINGPIDOFJOB_UU,
                    sge_u32c(jobid), sge_u32c(jataskid)));
          }
@@ -1857,7 +1857,7 @@ u_long32 *valuep
 
    if (!(s = get_conf_value(NULL, *cflpp, CF_name, CF_value, name)))
       return -1;
-   ret = sscanf(s, sge_u32, valuep);
+   ret = sscanf(s, sge_uu32, valuep);
    lDelElemStr(cflpp, CF_name, name);
    return (ret == 1)?0:-1;
 }

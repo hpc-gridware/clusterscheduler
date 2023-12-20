@@ -143,7 +143,7 @@ sge_tid_t sge_qexecve(sge_gdi_ctx_class_t *ctx,
       DRETURN(NULL);
    }
 
-   if (sscanf(s, sge_u32, &jobid) != 1) {
+   if (sscanf(s, sge_uu32, &jobid) != 1) {
       sprintf(lasterror, MSG_GDI_STRINGISINVALID_SS, s, "JOB_ID");
       DRETURN(NULL);
    }
@@ -152,7 +152,7 @@ sge_tid_t sge_qexecve(sge_gdi_ctx_class_t *ctx,
       if (strcmp(s, "undefined") == 0) {
          jataskid = 1;
       } else {
-         if (sscanf(s, sge_u32, &jataskid) != 1) {
+         if (sscanf(s, sge_uu32, &jataskid) != 1) {
             sprintf(lasterror, MSG_GDI_STRINGISINVALID_SS, s, env_var_name);
             DRETURN(NULL);
          }

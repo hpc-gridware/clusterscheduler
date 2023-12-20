@@ -570,7 +570,7 @@ static void pushlimit(int resource, struct RLIMIT_STRUCT_TAG *rlp,
 
 #if defined(NETBSD_ALPHA) || defined(NETBSD_X86_64) || defined(NETBSD_SPARC64)
 #  define limit_fmt "%ld%s"
-#elif defined(IRIX) || defined(HPUX) || defined(DARWIN) || defined(FREEBSD) || defined(NETBSD) || defined(INTERIX) || defined(LINUX86)
+#elif defined(IRIX) || defined(HPUX) || defined(DARWIN) || defined(FREEBSD) || defined(NETBSD) || defined(INTERIX) || defined(LINUX86) || defined(LINUXARM6) || defined(LINUXARM7)
 #  define limit_fmt "%lld%s"
 #elif defined(ALPHA) || defined(SOLARIS) || defined(LINUX)
 #  define limit_fmt "%lu%s"

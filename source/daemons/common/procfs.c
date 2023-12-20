@@ -804,7 +804,7 @@ time_t last_time
                        !strcmp("wchar:", label))
                    {
                       unsigned long long nchar = 0UL;
-                      if (sscanf(token, "%Lu", &nchar) == 1)
+                      if (sscanf(token, "%llu", &nchar) == 1)
                          new_iochars += (uint64) nchar;
                    }
                } /* while */

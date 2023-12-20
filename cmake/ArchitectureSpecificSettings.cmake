@@ -35,7 +35,7 @@ function(architecture_specific_settings)
   if(SGE_ARCH MATCHES "lx-.*")
     message(STATUS "We are on Linux: ${SGE_ARCH}")
     add_compile_options(-Wall -Werror -Wstrict-prototypes -Wno-strict-aliasing
-                        -Wstrict-prototypes)
+                        -Wstrict-prototypes -pedantic)
 
     # @todo does -fPIC have any disadvantages when not required (only for shared
     # libs)?
@@ -58,9 +58,12 @@ function(architecture_specific_settings)
         PARENT_SCOPE)
 
     # specific linux architectures
-    if(SGE_ARCH STREQUAL "lx-x86")
+    if(SGE_TARGETBITS STREQUAL "TARGET_32BIT")
       add_compile_definitions(_FILE_OFFSET_BITS=64)
+      # readdir64_r seems to be deprecated
+      add_compile_options(-Wno-deprecated-declarations)
     endif()
+
 
     # Solaris
   elseif(SGE_ARCH MATCHES "sol-.*")
