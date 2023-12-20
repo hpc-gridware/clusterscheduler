@@ -62,8 +62,7 @@ JOBBINARIES="work showq"
 SHARED_LIBRARIES="libcom libcull libgdi librmon libsched libsge libuti \
                   libspool libspoolb libspoold libspoolc libspoolf \
                   libsgeobj libsgeobjd \
-                  libevc libevm libmir \
-                  libjuti libjgdi"
+                  libevc libevm libmir"
 
 OPENSSL_SHARED_LIBRARIES="libcrypto libssl"
 
@@ -75,11 +74,9 @@ DRMAA_SHARED_LIB_VERSIONS="1.0"
 DRMAA_HEADER_FILES="libs/japi/drmaa.h"
 DRMAAJ_FILES="CLASSES/jdrmaa/drmaa"
 
-JNI_SHARED_LIBRARIES="libdrmaa libjuti libjgdi"
+JNI_SHARED_LIBRARIES="libdrmaa"
 
-JUTIJ_FILES="CLASSES/juti/juti"
-JGDIJ_FILES="libs/jgdi/build/jgdi"
-JAVA_LIBRARIES="${DRMAAJ_FILES} ${JUTIJ_FILES} ${JGDIJ_FILES}"
+JAVA_LIBRARIES="${DRMAAJ_FILES}"
 
 PVMSOURCES="start_pvm.c stop_pvm.c slave.c master.c spmd.c Makefile"
 PVMSRCSCRIPTS="install.sh aimk"
@@ -814,13 +811,6 @@ if [ $instcommon = true ]; then
       Execute rm -rf $DEST_SGE_ROOT/util
       MakeDir util
       Execute cp -r dist/util $DEST_SGE_ROOT
-      Execute cp libs/jgdi/util/java.policy.template $DEST_SGE_ROOT/util
-      Execute cp libs/jgdi/util/rmiconsole.policy $DEST_SGE_ROOT/util
-      Execute cp libs/jgdi/util/jmxremote.access $DEST_SGE_ROOT/util
-      Execute cp libs/jgdi/util/jmxremote.password.template $DEST_SGE_ROOT/util/jmxremote.password
-      Execute cp libs/jgdi/util/management.properties.template $DEST_SGE_ROOT/util
-      Execute cp libs/jgdi/util/jaas.config.template $DEST_SGE_ROOT/util
-      Execute cp libs/jgdi/util/logging.properties.template $DEST_SGE_ROOT/util
       if [ $enforce_shlibpath = true ]; then
          Execute grep -v "#ENFORCE_SHLIBPATH#" dist/util/create_settings.sh > $DEST_SGE_ROOT/util/create_settings.sh
          Execute grep -v "#ENFORCE_SHLIBPATH#" dist/util/rctemplates/sgemaster_template > $DEST_SGE_ROOT/util/rctemplates/sgemaster_template
@@ -1407,19 +1397,6 @@ for i in $ARCH; do
                     -a "$lib" != "libspoolf" \) ]; then
                if [ -f $lib.$shlibext ]; then
                   InstallProg $lib.$shlibext
-                  if [ "$DSTARCH" = "sol-sparc64" ]; then
-                     if [ "$lib" = "libjuti" -o "$lib" = "libjgdi" ]; then
-                        # Install the 32bit libraries
-                        DSTARCH="sol-sparc"
-                        SetArchBin $DSTARCH
-
-                        Execute mkdir -p $DEST_SGE_ROOT/lib/sol-sparc
-                        InstallProg ../$ARCHBIN/$lib.$shlibext
-
-                        DSTARCH="sol-sparc64"
-                        SetArchBin $DSTARCH
-                     fi
-                  fi
                fi
             fi
          done

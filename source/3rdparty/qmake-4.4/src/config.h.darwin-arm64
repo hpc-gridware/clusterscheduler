@@ -24,7 +24,7 @@
 /* #undef __arm64_ilp32__ */
 #endif
 #ifndef __arm64__
-/* #undef __arm64__ */
+#define __arm64__ 1
 #endif
 #ifndef __hppa__
 /* #undef __hppa__ */
@@ -132,14 +132,14 @@
 #define FILE_TIMESTAMP_HI_RES 1
 
 /* Define to 1 when the gnulib module getloadavg should be tested. */
-/* #undef GNULIB_TEST_GETLOADAVG */
+#define GNULIB_TEST_GETLOADAVG 1
 
 /* Define to 1 if you have 'alloca' after including <alloca.h>, a header that
    may be supplied by this distribution. */
-/* #undef HAVE_ALLOCA */
+#define HAVE_ALLOCA 1
 
 /* Define to 1 if <alloca.h> works. */
-/* #undef HAVE_ALLOCA_H */
+#define HAVE_ALLOCA_H 1
 
 /* Define to 1 if you have the `atexit' function. */
 #define HAVE_ATEXIT 1
@@ -149,7 +149,7 @@
 
 /* Define to 1 if you have the Mac OS X function CFLocaleCopyCurrent in the
    CoreFoundation framework. */
-/* #undef HAVE_CFLOCALECOPYCURRENT */
+#define HAVE_CFLOCALECOPYCURRENT 1
 
 /* Define to 1 if you have the Mac OS X function CFPreferencesCopyAppValue in
    the CoreFoundation framework. */
@@ -179,7 +179,7 @@
 #define HAVE_DECL_DLSYM 1
 
 /* Define to 1 if you have the declaration of 'getloadavg'. */
-#define HAVE_DECL_GETLOADAVG 
+#define HAVE_DECL_GETLOADAVG 1
 
 /* Define to 1 if you have the declaration of `sys_siglist', and to 0 if you
    don't. */
@@ -354,7 +354,7 @@
 #define HAVE_SIGSETMASK 1
 
 /* Define to 1 if the system has the type `sig_atomic_t'. */
-/* #undef HAVE_SIG_ATOMIC_T */
+#define HAVE_SIG_ATOMIC_T 1
 
 /* Define to 1 if you have the `socket' function. */
 /* #undef HAVE_SOCKET */
@@ -501,10 +501,10 @@
 #define HAVE_WORKING_VFORK 1
 
 /* Define to 1 if the system has the type `_Bool'. */
-/* #undef HAVE__BOOL */
+#define HAVE__BOOL 1
 
 /* Build host information. */
-#define MAKE_HOST "aarch64-apple-darwin22.5.0"
+#define MAKE_HOST "aarch64-apple-darwin22.6.0"
 
 /* Define to 1 to enable job server support in GNU make. */
 #define MAKE_JOBSERVER 1
@@ -568,7 +568,7 @@
 #define STDC_HEADERS 1
 
 /* Define if struct stat contains a nanoseconds field */
-/* #undef ST_MTIM_NSEC */
+#define ST_MTIM_NSEC st_mtimespec.tv_nsec
 
 /* Define to 1 on System V Release 4. */
 /* #undef SVR4 */
@@ -1149,7 +1149,7 @@
 /* #undef const */
 
 /* Define as 'access' if you don't have the eaccess() function. */
-/* #undef eaccess */
+#define eaccess access
 
 /* Define to `int' if <sys/types.h> doesn't define. */
 /* #undef gid_t */
