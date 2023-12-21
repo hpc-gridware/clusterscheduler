@@ -220,7 +220,7 @@ int do_job_slave(sge_gdi_ctx_class_t *ctx, struct_msg_t *aMsg)
    }
    lFreeList(&answer_list);
 
-   for_each(ja_task, lGetList(jelem, JB_ja_tasks)) {
+   for_each_rw(ja_task, lGetList(jelem, JB_ja_tasks)) {
       DPRINTF(("Job: %ld Task: %ld\n", (long) lGetUlong(jelem, JB_job_number),
          (long) lGetUlong(ja_task, JAT_task_number)));
       ret = handle_job(ctx, jelem, ja_task, 1);
@@ -278,7 +278,7 @@ static int handle_job(sge_gdi_ctx_class_t *ctx, lListElem *jelem, lListElem *jat
                (u_long32)lGetDouble(jatep, JAT_tix)));
 
    /* initialize job */
-   for_each (gdil_ep, lGetList(jatep, JAT_granted_destin_identifier_list)) {
+   for_each_rw (gdil_ep, lGetList(jatep, JAT_granted_destin_identifier_list)) {
       lList *answer_list = NULL;
       int slots;
 
@@ -506,7 +506,7 @@ static lList *job_get_queue_with_task_about_to_exit(lListElem *jep,
                                                     const char *qualified_hostname,
                                                     const char *queuename)
 {
-   lListElem *petask;
+   const lListElem *petask;
    
    DENTER(TOP_LAYER, "job_get_queue_with_task_about_to_exit");
    
@@ -581,7 +581,7 @@ static lList *
 job_get_queue_for_task(lListElem *jatep, lListElem *petep, 
                        const char *qualified_hostname, const char *queuename) 
 {
-   lListElem *this_q, *gdil_ep;
+   const lListElem *this_q, *gdil_ep;
 
    DENTER(TOP_LAYER, "job_get_queue_for_task");
 

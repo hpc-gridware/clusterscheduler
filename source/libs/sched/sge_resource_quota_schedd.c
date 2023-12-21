@@ -364,7 +364,7 @@ static void rqs_can_optimize(const lListElem *rule, bool *host, bool *queue, sge
 *******************************************************************************/
 static void rqs_excluded_cqueues(const lListElem *rule, sge_assignment_t *a)
 {
-   lListElem *cq;
+   const lListElem *cq;
    const lListElem *prev;
    int ignored = 0, excluded = 0;
 
@@ -425,7 +425,7 @@ static void rqs_excluded_cqueues(const lListElem *rule, sge_assignment_t *a)
 *******************************************************************************/
 static void rqs_excluded_hosts(const lListElem *rule, sge_assignment_t *a)
 {
-   lListElem *eh;
+   const lListElem *eh;
    const lListElem *prev;
    int ignored = 0, excluded = 0;
 
@@ -837,11 +837,11 @@ static void rqs_exceeded_sort_out_par(sge_assignment_t *a, const lListElem *rule
 bool sge_user_is_referenced_in_rqs(const lList *rqs, const char *user, const char *group, const lList *acl_list)
 {
    bool ret = false;
-   lListElem *ep;
+   const lListElem *ep;
 
    for_each(ep, rqs) {
       const lList *rule_list = lGetList(ep, RQS_rule);
-      lListElem *rule;
+      const lListElem *rule;
 
       for_each(rule, rule_list) {
          /* there may be no per-user limitation and also not limitation that is special for this user */
@@ -890,7 +890,7 @@ bool sge_user_is_referenced_in_rqs(const lList *rqs, const char *user, const cha
 void parallel_check_and_debit_rqs_slots(sge_assignment_t *a, const char *host, const char *queue, 
       int *slots, int *slots_qend, dstring *rule_name, dstring *rue_name, dstring *limit_name)
 {
-   lListElem *rqs, *rule;
+   const lListElem *rqs, *rule;
    const char* user = a->user;
    const char* group = a->group;
    const char* project = a->project;
@@ -953,7 +953,7 @@ void parallel_check_and_debit_rqs_slots(sge_assignment_t *a, const char *host, c
 void parallel_revert_rqs_slot_debitation(sge_assignment_t *a, const char *host, const char *queue, 
       int slots, int slots_qend, dstring *rule_name, dstring *rue_name, dstring *limit_name)
 {
-   lListElem *rqs, *rule;
+   const lListElem *rqs, *rule;
    const char* user = a->user;
    const char* group = a->group;
    const char* project = a->project;
@@ -1045,7 +1045,7 @@ parallel_limit_slots_by_time(const sge_assignment_t *a, lList *requests,
    }
 {
    const char *object_name = "bla";
-   lListElem *rde;
+   const lListElem *rde;
    DPRINTF(("resource utilization: %s \"%s\" %f utilized now\n", 
          object_name?object_name:"<unknown_object>", lGetString(tmp_rue_elem, RUE_name),
             lGetDouble(tmp_rue_elem, RUE_utilized_now)));
@@ -1121,7 +1121,8 @@ parallel_rqs_slots_by_time(sge_assignment_t *a, int *slots, int *slots_qend, lLi
       const char* group = a->group;
       const char* project = a->project;
       const char* pe = a->pe_name;
-      lListElem *rql, *rqs;
+      lListElem *rql;
+      const lListElem *rqs;
       dstring rule_name = DSTRING_INIT;
       dstring rue_string = DSTRING_INIT;
       dstring limit_name = DSTRING_INIT;
@@ -1164,7 +1165,7 @@ parallel_rqs_slots_by_time(sge_assignment_t *a, int *slots, int *slots_qend, lLi
                u_long32 tagged_for_schedule_old = lGetUlong(qep, QU_tagged4schedule);  /* default value or set in match_static_queue() */
                lSetUlong(qep, QU_tagged4schedule, 2);
                
-               for_each(limit, lGetList(rule, RQR_limit)) {
+               for_each_rw(limit, lGetList(rule, RQR_limit)) {
                   const char *limit_name = lGetString(limit, RQRL_name);
 
                   lListElem *raw_centry = centry_list_locate(a->centry_list, limit_name);
@@ -1303,7 +1304,7 @@ static dispatch_t rqs_limitation_reached(sge_assignment_t *a, const lListElem *r
    }
 
    limit_list = lGetList(rule, RQR_limit);
-   for_each(limit, limit_list) {
+   for_each_rw(limit, limit_list) {
       bool       is_forced = false;
       const lList      *job_centry_list = NULL;
       lListElem  *job_centry = NULL;
@@ -1439,7 +1440,7 @@ static dispatch_t rqs_limitation_reached(sge_assignment_t *a, const lListElem *r
 dispatch_t rqs_by_slots(sge_assignment_t *a, const char *queue, const char *host, 
   u_long32 *tt_rqs_all, bool *is_global, dstring *rue_string, dstring *limit_name, dstring *rule_name, u_long32 tt_best)
 {
-   lListElem *rqs;
+   const lListElem *rqs;
    dispatch_t result = DISPATCH_OK;
 
    DENTER(TOP_LAYER, "rqs_by_slots");

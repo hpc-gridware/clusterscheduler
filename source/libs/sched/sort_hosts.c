@@ -105,7 +105,7 @@ int sort_host_list(lList *hl, const lList *centry_list)
 
    DENTER(TOP_LAYER, "sort_host_list");
 
-   for_each (hlp, hl) {
+   for_each_rw (hlp, hl) {
       if (hlp != global && hlp != template) { /* don't treat global or template */
          /* build complexes for that host */
          load = scaled_mixed_load(load_formula, global, hlp, centry_list);

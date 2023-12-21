@@ -107,7 +107,7 @@ qinstance_list_locate(const lList *this_list, const char *hostname,
    if (cqueue_name == NULL) {
       ret = lGetElemHostRW(this_list, QU_qhostname, hostname);
    } else {
-      for_each(ret, this_list) {
+      for_each_rw(ret, this_list) {
          const char *qname = lGetString(ret, QU_qname);
          const char *hname = lGetHost(ret, QU_qhostname);
 
@@ -212,7 +212,7 @@ qinstance_list_set_tag(lList *this_list, u_long32 tag_value)
    if (this_list != NULL) {
       lListElem *qinstance = NULL;
 
-      for_each(qinstance, this_list) {
+      for_each_rw (qinstance, this_list) {
          lSetUlong(qinstance, QU_tag, tag_value);
       }
    }
@@ -313,7 +313,7 @@ bool
 qinstance_is_pe_referenced(const lListElem *this_elem, const lListElem *pe)
 {
    bool ret = false;
-   lListElem *re_ref_elem;
+   const lListElem *re_ref_elem;
 
    DENTER(TOP_LAYER, "qinstance_is_pe_referenced");
    for_each(re_ref_elem, lGetList(this_elem, QU_pe_list)) {
@@ -557,7 +557,7 @@ qinstance_list_find_matching(const lList *this_list, lList **answer_list,
    }
 
    if (this_list != NULL && hostname_pattern != NULL) {
-      lListElem *qinstance;
+      const lListElem *qinstance;
       char host[CL_MAXHOSTLEN];
 
       if ((getuniquehostname(hostname_pattern, host, 0)) == CL_RETVAL_OK) {
@@ -640,7 +640,7 @@ qinstance_slots_reserved(const lListElem *this_elem)
 {
    int ret = 0;
    lListElem *slots;
-   lListElem *utilized;
+   const lListElem *utilized;
 
    DENTER(QINSTANCE_LAYER, "qinstance_slots_reserved");
 
@@ -951,7 +951,7 @@ qinstance_list_validate(lList *this_list, lList **answer_list, const lList *mast
 
    DENTER(TOP_LAYER, "qinstance_list_validate");
 
-   for_each(qinstance, this_list) {
+   for_each_rw(qinstance, this_list) {
       if (!qinstance_validate(qinstance, answer_list, master_exechost_list, master_centry_list)) {
          ret = false;
          break;
@@ -1015,7 +1015,8 @@ rc_debit_consumable(lListElem *jep, lListElem *ep, const lList *centry_list,
                     const char *obj_name, bool is_master_task,
                     bool *just_check)
 {
-   lListElem *cr, *cr_config, *dcep;
+   lListElem *cr, *dcep;
+   const lListElem *cr_config;
    double dval;
    const char *name;
    int mods = 0;

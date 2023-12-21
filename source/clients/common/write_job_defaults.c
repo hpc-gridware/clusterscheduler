@@ -78,7 +78,7 @@ char *filename,
 int flags 
 ) {
    lList *alp;
-   lListElem *aep;
+   const lListElem *aep;
    lList *cmdline = NULL;
    int status;
    
@@ -139,7 +139,7 @@ lList *lp,
 char *filename,
 int flags 
 ) {
-   lListElem *ep;
+   const lListElem *ep;
    const char *cp;
    FILE *fp;
    lList *answer = NULL;

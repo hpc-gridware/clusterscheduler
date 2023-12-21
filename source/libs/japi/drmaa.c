@@ -3069,7 +3069,7 @@ static int opt_list_append_opts_from_drmaa_attr(lList **args, const lList *attrs
       dstring env = DSTRING_INIT;
       char *variable = NULL;
       char *value = NULL;
-      lListElem *oep = NULL;
+      const lListElem *oep = NULL;
       const lList *olp = lGetList(ep, NSV_strings);
       lListElem *nep = NULL;
       lList *nlp = lCreateList("variable list", VA_Type);
@@ -3117,7 +3117,7 @@ static int opt_list_append_opts_from_drmaa_attr(lList **args, const lList *attrs
       dstring email = DSTRING_INIT;
       char *user = NULL;
       char *host = NULL;
-      lListElem *oep = NULL;
+      const lListElem *oep = NULL;
       const lList *olp = lGetList(ep, NSV_strings);
       lListElem *nep = NULL;
       lList *nlp = lCreateList("mail list", MR_Type);

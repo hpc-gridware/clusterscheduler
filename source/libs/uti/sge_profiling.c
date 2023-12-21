@@ -1354,10 +1354,10 @@ bool prof_output_info(prof_level level, bool with_sub, const char *info)
          struct saved_vars_s *context = NULL;
 
          info_message = prof_get_info_string(level, with_sub, NULL);
-         PROFILING((SGE_EVENT, "PROF(%d): %s%s", (int)thread_id, info, ""));
+         PROFILING((SGE_EVENT, "PROF(%d): %s%s", (int)thread_num, info, ""));
          for (message = sge_strtok_r(info_message, "\n", &context); message != NULL; 
               message = sge_strtok_r(NULL, "\n", &context)) {
-            PROFILING((SGE_EVENT, "PROF(%d): %s", (int)thread_id, message));
+            PROFILING((SGE_EVENT, "PROF(%d): %s", (int)thread_num, message));
          }
          prof_reset(level, NULL);
 

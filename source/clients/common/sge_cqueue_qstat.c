@@ -222,8 +222,8 @@ select_by_qref_list(lList *cqueue_list, const lList *hgrp_list, const lList *qre
 
    
    if (cqueue_list != NULL && queueref_list != NULL) {
-      lListElem *cqueue = NULL;
-      lListElem *qref = NULL;
+      const lListElem *cqueue = NULL;
+      const lListElem *qref = NULL;
 
       for_each(qref, queueref_list) {
          dstring cqueue_buffer = DSTRING_INIT;
@@ -252,7 +252,7 @@ select_by_qref_list(lList *cqueue_list, const lList *hgrp_list, const lList *qre
          const lList *qinstance_list = lGetList(cqueue, CQ_qinstances);
          lListElem *qinstance = NULL;
 
-         for_each(qinstance, qinstance_list) {
+         for_each_rw(qinstance, qinstance_list) {
             u_long32 tag = lGetUlong(qinstance, QU_tag);
             bool selected = ((tag & TAG_SELECT_IT) != 0) ? true : false;
 
@@ -287,7 +287,9 @@ lList *pe_list
 ) {
    int nqueues = 0;
    lList *pe_selected = NULL;
-   lListElem *pe, *qep, *cqueue;
+   const lListElem *pe;
+   lListElem *qep;
+   const lListElem *cqueue;
 
    DENTER(TOP_LAYER, "select_by_pe_list");
 
@@ -320,7 +322,7 @@ lList *pe_list
    for_each(cqueue, queue_list) {
       const lList *qinstance_list = lGetList(cqueue, CQ_qinstances);
 
-      for_each(qep, qinstance_list) { 
+      for_each_rw(qep, qinstance_list) {
          lListElem* found = NULL;
 
          if (!qinstance_is_parallel_queue(qep)) {
@@ -366,9 +368,9 @@ lList *acl_list,
 lList *project_list
 ) {
    int nqueues = 0;
-   lListElem *qu = NULL;
+   const lListElem *qu = NULL;
    lListElem *qep = NULL;
-   lListElem *cqueue = NULL;
+   const lListElem *cqueue = NULL;
    lListElem *ehep = NULL;
    const lList *h_acl = NULL;
    const lList *h_xacl = NULL;
@@ -399,7 +401,7 @@ lList *project_list
    for_each(cqueue, cqueue_list) {
       const lList *qinstance_list = lGetList(cqueue, CQ_qinstances);
 
-      for_each(qep, qinstance_list) {
+      for_each_rw(qep, qinstance_list) {
          int access = 0;
          const char *host_name = NULL;
 
@@ -418,7 +420,7 @@ lList *project_list
          }
 
          for_each (qu, queue_user_list) {
-            lListElem *pep = NULL;
+            const lListElem *pep = NULL;
             int q_access = 0;
             int h_access = 0;
             int gh_access = 0;
@@ -611,7 +613,7 @@ lList *centry_list
    bool has_value_from_object; 
    double load_avg;
    char *load_avg_str;
-   lListElem *cqueue = NULL;
+   const lListElem *cqueue = NULL;
    u_long32 interval;
 
    DENTER(TOP_LAYER, "select_by_queue_state");
@@ -624,7 +626,7 @@ lList *centry_list
    for_each(cqueue, queue_list){
       const lList *qinstance_list = lGetList(cqueue, CQ_qinstances);
       lListElem *qep = NULL;
-      for_each(qep, qinstance_list) { 
+      for_each_rw(qep, qinstance_list) {
 
          /* compute the load and suspend alarm */
          sge_get_double_qattr(&load_avg, load_avg_str, qep, exechost_list, centry_list, &has_value_from_object);
@@ -664,7 +666,7 @@ lList *queue_list,
 lList *centry_list,
 u_long32 empty_qs
 ) {
-   lListElem *cqueue = NULL;
+   const lListElem *cqueue = NULL;
 
    DENTER(TOP_LAYER, "select_by_resource_list");
 
@@ -683,7 +685,7 @@ u_long32 empty_qs
       bool selected;
       const lList *qinstance_list = lGetList(cqueue, CQ_qinstances);
 
-      for_each(qep, qinstance_list) {
+      for_each_rw(qep, qinstance_list) {
          if (empty_qs)
             sconf_set_qs_state(QS_STATE_EMPTY);
 
@@ -708,7 +710,7 @@ bool is_cqueue_selected(lList *queue_list)
 
    DENTER(TOP_LAYER, "is_cqueue_selected");
    
-   for_each(cqueue, queue_list) {
+   for_each_rw(cqueue, queue_list) {
       const lListElem *qep;
       const lList *qinstance_list = lGetList(cqueue, CQ_qinstances);
       bool tmp_a_qinstance_is_selected = false;
@@ -719,7 +721,7 @@ bool is_cqueue_selected(lList *queue_list)
             break;
          }
       }
-      a_qinstance_is_selected |= tmp_a_qinstance_is_selected;
+      a_qinstance_is_selected = a_qinstance_is_selected | tmp_a_qinstance_is_selected;
       if (!tmp_a_qinstance_is_selected && (lGetNumberOfElem(lGetList(cqueue,CQ_qinstances)) > 0)) {
          lSetUlong(cqueue, CQ_tag, TAG_DEFAULT);
       } else {

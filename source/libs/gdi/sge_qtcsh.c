@@ -187,7 +187,7 @@ static int init_qtask_config(sge_gdi_ctx_class_t *ctx, lList **alpp, print_func_
    task_config = clp_cluster;
 
    /* remove leading '!' from command names */
-   for_each (cep, clp_cluster) {
+   for_each_rw(cep, clp_cluster) {
       task_name = lGetString(cep, CF_name);
       if (task_name[0] == '!') {
          char *t = (char *)malloc(strlen(task_name));

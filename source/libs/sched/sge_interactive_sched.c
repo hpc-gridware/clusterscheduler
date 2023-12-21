@@ -42,7 +42,7 @@
 #include "sge_interactive_sched.h"
 
 static void 
-order_remove_order_and_immediate(lListElem *job, lListElem *ja_task, 
+order_remove_order_and_immediate(const lListElem *job, const lListElem *ja_task,
                                  order_t *orders);
 
 /****** SCHEDD/remove_immediate_jobs()******************************************
@@ -148,8 +148,8 @@ int remove_immediate_jobs(lList *pending_job_list, lList *running_job_list, orde
 void 
 remove_immediate_job(lList *job_list, lListElem *job, order_t *orders, int remove_orders) 
 {
-   lListElem *ja_task; 
-   lListElem *range = NULL;
+   const lListElem *ja_task;
+   const lListElem *range = NULL;
    const lList *range_list = NULL;
    u_long32 ja_task_id;
 
@@ -209,7 +209,7 @@ remove_immediate_job(lList *job_list, lListElem *job, order_t *orders, int remov
 *
 *******************************************************************************/
 static void 
-order_remove_order_and_immediate( lListElem *job, lListElem *ja_task, order_t *orders) 
+order_remove_order_and_immediate(const lListElem *job, const lListElem *ja_task, order_t *orders)
 {
    /* The possibility exists that this task is part of an array task, that it
     * already has earned an order to be scheduled, and that one or more other
@@ -269,7 +269,7 @@ order_remove_order_and_immediate( lListElem *job, lListElem *ja_task, order_t *o
 *
 *******************************************************************************/
 int 
-order_remove_immediate(lListElem *job, lListElem *ja_task, order_t *orders) 
+order_remove_immediate(const lListElem *job, const lListElem *ja_task, order_t *orders)
 {
    DENTER(TOP_LAYER, "order_remove_immediate");
 

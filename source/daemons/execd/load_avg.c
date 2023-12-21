@@ -157,7 +157,7 @@ void execd_merge_load_report(u_long32 seqno)
    if (last_lr == NULL || seqno != lGetUlong(last_lr, REP_seqno)) {
       return;
    } else {
-      lListElem *old_lr;
+      const lListElem *old_lr;
 
       for_each(old_lr, lGetList(last_lr, REP_list)) {
          const void *iterator = NULL;
@@ -234,7 +234,7 @@ execd_add_load_report(sge_gdi_ctx_class_t *ctx, lList *report_list, u_long32 now
       } else {
          lListElem *lr;
 
-         for_each(lr, lr_list) {
+         for_each_rw(lr, lr_list) {
             const void *iterator = NULL;
             const char *hostname = lGetHost(lr, LR_host);
             const char *name = lGetString(lr, LR_name);
@@ -408,7 +408,7 @@ execd_add_job_report(sge_gdi_ctx_class_t *ctx, lList *report_list, u_long32 now,
        * We keep job reports where the job is started via JAPI (qsub -sync or
        * DRMAA). This is done only when we reconnect after a qmaster failover
        */
-      for_each (jr, jr_list) {
+      for_each_rw (jr, jr_list) {
          if ((!only_flush || lGetBool(jr, JR_flush)) &&
                !lGetBool(jr, JR_no_send) &&
                !(sge_get_delay_job_reports_flag() && lGetBool(jr, JR_delay_report))) {
@@ -828,14 +828,14 @@ void update_job_usage(const char* qualified_hostname)
 {
    lList *usage_list = NULL;
    lListElem *jr;
-   lListElem *usage;
+   const lListElem *usage;
 
    DENTER(TOP_LAYER, "update_job_usage");
 
    if (mconf_get_simulate_jobs()) {
       lListElem *jr;
 
-      for_each(jr, jr_list) {
+      for_each_rw(jr, jr_list) {
          add_usage(jr, USAGE_ATTR_CPU, NULL, 0.1);
          add_usage(jr, USAGE_ATTR_MEM, NULL, 0.1);
          add_usage(jr, USAGE_ATTR_IO, NULL, 0.0);
@@ -885,14 +885,14 @@ void update_job_usage(const char* qualified_hostname)
    /* replace existing usage in the job report with the new one */
    for_each(usage, usage_list) {
       u_long32 job_id;
-      lListElem *ja_task;
+      const lListElem *ja_task;
 
       job_id = lGetUlong(usage, JB_job_number);
 
       for_each(ja_task, lGetList(usage, JB_ja_tasks)) {
          u_long32 ja_task_id;
          lListElem *uep;
-         lListElem *pe_task;
+         const lListElem *pe_task;
 
          ja_task_id = lGetUlong(ja_task, JAT_task_number);
          /* search matching job report */
@@ -1165,7 +1165,7 @@ static void get_reserved_usage(const char *qualified_hostname, lList **job_usage
 
       for_each (ja_task, lGetList(job, JB_ja_tasks)) {
          u_long32 ja_task_id;
-         lListElem *pe_task;
+         const lListElem *pe_task;
 
          ja_task_id = lGetUlong(ja_task, JAT_task_number);
 

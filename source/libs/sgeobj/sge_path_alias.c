@@ -404,7 +404,7 @@ int path_alias_list_get_path(const lList *path_aliases, lList **alpp,
    sge_dstring_copy_dstring(&the_path, outpath); 
 
    if (path_aliases && lGetNumberOfElem(path_aliases) > 0) { 
-      for_each(pap, path_aliases) {
+      for_each_rw (pap, path_aliases) {
          size_t orign_str_len = 0; 
          origin = lGetString(pap, PA_origin);
          orign_str_len = strlen(origin);

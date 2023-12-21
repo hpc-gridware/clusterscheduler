@@ -156,7 +156,7 @@ bool sge_ar_have_users_access(lList **alpp, lListElem *ar, const char *name, con
                                     const lList *xacl_list, const lList *master_userset_list)
 {
    bool ret = true;
-   lListElem *acl_entry;
+   const lListElem *acl_entry;
    const char *user= NULL;
 
    DENTER(TOP_LAYER, "sge_ar_have_users_access");

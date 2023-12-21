@@ -92,10 +92,10 @@ int do_get_new_conf(sge_gdi_ctx_class_t *ctx, struct_msg_t *aMsg)
 
       sge_switch2start_user();
 
-      for_each(job, *object_type_get_master_list(SGE_TYPE_JOB)) {
+      for_each_rw (job, *object_type_get_master_list(SGE_TYPE_JOB)) {
          lListElem *master_queue;
 
-         for_each (jatask, lGetList(job, JB_ja_tasks)) {
+         for_each_rw (jatask, lGetList(job, JB_ja_tasks)) {
             int priority;
 
             master_queue = responsible_queue(job, jatask, NULL);
@@ -110,7 +110,7 @@ int do_get_new_conf(sge_gdi_ctx_class_t *ctx, struct_msg_t *aMsg)
                                       lGetUlong(jatask, JAT_task_number),
                                       NULL, priority);
 
-            for_each(petask, lGetList(jatask, JAT_task_list)) {
+            for_each_rw(petask, lGetList(jatask, JAT_task_list)) {
                master_queue = responsible_queue(job, jatask, petask);
                priority = atoi(lGetString(master_queue, QU_priority));
                DPRINTF(("Set priority of task "sge_u32"."sge_u32"-%s running "

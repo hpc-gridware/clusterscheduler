@@ -1113,7 +1113,7 @@ sge_mirror_process_event_list_(sge_evc_class_t *evc, lList *event_list)
 
    function_ret = SGE_EM_OK;
 
-   for_each(event, event_list) {
+   for_each_rw(event, event_list) {
       sge_mirror_error ret = SGE_EM_OK;
       if (no_more_events) {
          break;

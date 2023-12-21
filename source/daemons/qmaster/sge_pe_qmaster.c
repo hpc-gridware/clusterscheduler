@@ -351,20 +351,21 @@ int sge_del_pe(sge_gdi_ctx_class_t *ctx, lListElem *pep, lList **alpp, char *rus
 
 void debit_all_jobs_from_pes(lList *pe_list) {
    const char *pe_name;
-   lListElem *jep, *pep;
+   const lListElem *jep;
+   lListElem *pep;
    int slots;
    const lList *master_job_list = *object_type_get_master_list(SGE_TYPE_JOB);
 
    DENTER(TOP_LAYER, "debit_all_jobs_from_pes");
 
-   for_each (pep, pe_list) {
+   for_each_rw (pep, pe_list) {
    
       pe_set_slots_used(pep, 0);
       pe_name = lGetString(pep, PE_name);
       DPRINTF(("debiting from pe %s:\n", pe_name));
 
       for_each(jep, master_job_list) {
-         lListElem *jatep;
+         const lListElem *jatep;
 
          if (lGetString(jep, JB_pe) != NULL) { /* is job  parallel */
             slots = 0;

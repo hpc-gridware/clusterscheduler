@@ -160,10 +160,6 @@ obj_thread_local_once_init(void)
    pthread_key_create(&obj_state_key, obj_state_destroy);
 }
 
-static bool 
-object_parse_raw_field_from_string(lListElem *object, lList **answer_list, 
-                                   const int nm, const char *value);
-
 static const char *
 object_append_raw_field_to_dstring(const lListElem *object, lList **answer_list,
                                    dstring *buffer, const int nm,
@@ -340,7 +336,106 @@ void obj_init(bool is_global)
       }
    }
    DEXIT;
-} 
+}
+
+/****** sgeobj/object/object_parse_raw_field_from_string() ************************
+*  NAME
+*     object_parse_raw_field_from_string() -- set object attr. from str
+*
+*  SYNOPSIS
+*     bool
+*     object_parse_raw_field_from_string(lListElem *object,
+*                                        lList **answer_list,
+*                                        const int nm, const char *value)
+*
+*  FUNCTION
+*     Sets a new value for a certain object attribute.
+*     The new value is passed as parameter in string format.
+*
+*  INPUTS
+*     lListElem *object   - the object to change
+*     lList **answer_list - used to return error messages
+*     const int nm        - the attribute to change
+*     const char *value   - the new value
+*
+*  RESULT
+*     bool - true on success,
+*            false, on error, error description in answer_list
+*
+*  NOTES
+*     Sublists, subobjects and references cannot be set with this
+*     function.
+*
+*  SEE ALSO
+*     sgeobj/object/--GDI-object-Handling
+*     sgeobj/object/object_append_field_to_dstring()
+******************************************************************************/
+static bool
+object_parse_raw_field_from_string(lListElem *object, lList **answer_list,
+                                   const int nm, const char *value)
+{
+   bool ret = true;
+   int pos;
+
+   DENTER(OBJECT_LAYER, "object_parse_raw_field_from_string");
+
+   pos = lGetPosViaElem(object, nm, SGE_NO_ABORT);
+   if (pos < 0) {
+      answer_list_add_sprintf(answer_list, STATUS_EUNKNOWN,
+                              ANSWER_QUALITY_ERROR, MSG_NMNOTINELEMENT_S,
+                              lNm2Str(nm));
+      ret = false;
+   } else {
+      const lDescr *descr;
+      int type;
+
+      descr = lGetElemDescr(object);
+      type = lGetPosType(descr, pos);
+
+      /* read data */
+      switch (type) {
+         case lFloatT:
+            ret = object_parse_float_from_string(object, answer_list, nm, value);
+            break;
+         case lDoubleT:
+            ret = object_parse_double_from_string(object, answer_list, nm, value);
+            break;
+         case lUlongT:
+            ret = object_parse_ulong32_from_string(object, answer_list, nm, value);
+            break;
+         case lLongT:
+            ret = object_parse_long_from_string(object, answer_list, nm, value);
+            break;
+         case lCharT:
+            ret = object_parse_char_from_string(object, answer_list, nm, value);
+            break;
+         case lBoolT:
+            ret = object_parse_bool_from_string(object, answer_list, nm, value);
+            break;
+         case lIntT:
+            ret = object_parse_int_from_string(object, answer_list, nm, value);
+            break;
+         case lStringT:
+            lSetPosString(object, pos, value);
+            break;
+         case lHostT:
+            lSetPosHost(object, pos, value);
+            break;
+         case lListT:
+         case lObjectT:
+         case lRefT:
+            /* what do to here? */
+            break;
+         default:
+            answer_list_add_sprintf(answer_list, STATUS_EUNKNOWN,
+                                    ANSWER_QUALITY_ERROR,
+                                    MSG_INVALIDCULLDATATYPE_D, type);
+            break;
+      }
+   }
+
+   DRETURN(ret);
+}
 
 /****** sgeobj/object/object_has_type() ***************************************
 *  NAME
@@ -1019,104 +1114,6 @@ object_parse_field_from_string(lListElem *object, lList **answer_list,
    DRETURN(ret);
 }
 
-/****** sgeobj/object/object_parse_raw_field_from_string() ************************
-*  NAME
-*     object_parse_raw_field_from_string() -- set object attr. from str
-*
-*  SYNOPSIS
-*     bool 
-*     object_parse_raw_field_from_string(lListElem *object, 
-*                                        lList **answer_list, 
-*                                        const int nm, const char *value) 
-*
-*  FUNCTION
-*     Sets a new value for a certain object attribute.
-*     The new value is passed as parameter in string format.
-*
-*  INPUTS
-*     lListElem *object   - the object to change
-*     lList **answer_list - used to return error messages
-*     const int nm        - the attribute to change
-*     const char *value   - the new value
-*
-*  RESULT
-*     bool - true on success,
-*            false, on error, error description in answer_list 
-*
-*  NOTES
-*     Sublists, subobjects and references cannot be set with this 
-*     function.
-*
-*  SEE ALSO
-*     sgeobj/object/--GDI-object-Handling
-*     sgeobj/object/object_append_field_to_dstring()
-******************************************************************************/
-static bool 
-object_parse_raw_field_from_string(lListElem *object, lList **answer_list, 
-                                   const int nm, const char *value)
-{
-   bool ret = true;
-   int pos;
-
-   DENTER(OBJECT_LAYER, "object_parse_raw_field_from_string");
-
-   pos = lGetPosViaElem(object, nm, SGE_NO_ABORT);
-   if (pos < 0) {
-      answer_list_add_sprintf(answer_list, STATUS_EUNKNOWN, 
-                              ANSWER_QUALITY_ERROR, MSG_NMNOTINELEMENT_S, 
-                              lNm2Str(nm));
-      ret = false;
-   } else {
-      const lDescr *descr;
-      int type;
-
-      descr = lGetElemDescr(object);
-      type = lGetPosType(descr, pos);
-
-      /* read data */
-      switch (type) {
-         case lFloatT:
-            ret = object_parse_float_from_string(object, answer_list, nm, value);
-            break;
-         case lDoubleT:
-            ret = object_parse_double_from_string(object, answer_list, nm, value);
-            break;
-         case lUlongT:
-            ret = object_parse_ulong32_from_string(object, answer_list, nm, value);
-            break;
-         case lLongT:
-            ret = object_parse_long_from_string(object, answer_list, nm, value);
-            break;
-         case lCharT:
-            ret = object_parse_char_from_string(object, answer_list, nm, value);
-            break;
-         case lBoolT:
-            ret = object_parse_bool_from_string(object, answer_list, nm, value);
-            break;
-         case lIntT:
-            ret = object_parse_int_from_string(object, answer_list, nm, value);
-            break;
-         case lStringT:
-            lSetPosString(object, pos, value);
-            break;
-         case lHostT:
-            lSetPosHost(object, pos, value);
-            break;
-         case lListT:
-         case lObjectT:
-         case lRefT:
-            /* what do to here? */
-            break;
-         default:
-            answer_list_add_sprintf(answer_list, STATUS_EUNKNOWN, 
-                                    ANSWER_QUALITY_ERROR, 
-                                    MSG_INVALIDCULLDATATYPE_D, type);
-            break;
-      }
-   }
-
-   DRETURN(ret);
-}
 
 /****** sgeobj/object/object_delete_range_id() ********************************
 *  NAME
@@ -1735,7 +1732,7 @@ object_parse_solist_from_string(lListElem *this_elem, lList **answer_list,
             sub_queues_text = sge_strtok_r(NULL, ")", &last);
             /* split up the original string from the first subordinated queue on */
             lString2List(sub_queues_text, &tmp_list, SO_Type, SO_name, ",) \t");
-            for_each(tmp_elem, tmp_list) {
+            for_each_rw (tmp_elem, tmp_list) {
                const char *queue_value = lGetString(tmp_elem, SO_name);
                char *queuename   = sge_strtok(queue_value, ":");
                char *value_str   = sge_strtok(NULL, ":");
@@ -1810,7 +1807,7 @@ object_parse_solist_from_string(lListElem *this_elem, lList **answer_list,
                /* 
                 * queue instance-wise suspend on subordinate
                 */
-               for_each(tmp_elem, tmp_list) {
+               for_each_rw (tmp_elem, tmp_list) {
                   const char *queue_value = lGetString(tmp_elem, SO_name);
                   const char *queuename = sge_strtok(queue_value, ":=");
                   const char *value_str = sge_strtok(NULL, ":=");
@@ -2203,7 +2200,7 @@ object_replace_any_type(lListElem *this_elem, int name, lListElem *org_elem)
 }
 
 void 
-object_get_any_type(lListElem *this_elem, int name, void *value)
+object_get_any_type(const lListElem *this_elem, int name, void *value)
 {
    int pos = lGetPosViaElem(this_elem, name, SGE_NO_ABORT);
    int type = lGetPosType(lGetElemDescr(this_elem), pos);
@@ -2863,7 +2860,7 @@ int object_verify_name(const lListElem *object, lList **answer_list, int name,
 int object_verify_pe_range(lList **alpp, const char *pe_name, lList *pe_range,
                                   const char *object_descr)
 {
-   lListElem *relem = NULL;
+   const lListElem *relem = NULL;
    unsigned long pe_range_max;
    unsigned long pe_range_min;
    
@@ -2889,7 +2886,7 @@ int object_verify_pe_range(lList **alpp, const char *pe_name, lList *pe_range,
    if (range_list_get_number_of_ids(pe_range)>1) {
       const lList *master_pe_list = *object_type_get_master_list(SGE_TYPE_PE);
       const lListElem *reference_pe = pe_list_find_matching(master_pe_list, pe_name);
-      lListElem *pe;
+      const lListElem *pe;
       int nslots = pe_urgency_slots(reference_pe, lGetString(reference_pe, PE_urgency_slots), pe_range);
       for_each(pe, master_pe_list) {
          if (pe_is_matching(pe, pe_name) &&
@@ -2929,7 +2926,9 @@ int object_verify_pe_range(lList **alpp, const char *pe_name, lList *pe_range,
 *
 *******************************************************************************/
 int compress_ressources(lList **alpp, lList *rl, const char *object_descr) {
-   lListElem *ep, *prev, *rm_ep;
+   const lListElem *ep;
+   lListElem *prev;
+   lListElem *rm_ep;
    const char *attr_name;
 
    DENTER(TOP_LAYER, "compress_ressources");

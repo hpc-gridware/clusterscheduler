@@ -413,11 +413,11 @@ rqs_reinit_consumable_actual_list(lListElem *rqs, lList **answer_list) {
 
    if (rqs != NULL) {
       lListElem *job;
-      lListElem * rule = NULL;
+      const lListElem * rule = NULL;
 
       for_each(rule, lGetList(rqs, RQS_rule)) {
          lListElem *limit = NULL;
-         for_each(limit, lGetList(rule, RQR_limit)) {
+         for_each_rw(limit, lGetList(rule, RQR_limit)) {
             lList *usage = NULL;
             lXchgList(limit, RQRL_usage, &usage);
             lFreeList(&usage);
@@ -428,7 +428,7 @@ rqs_reinit_consumable_actual_list(lListElem *rqs, lList **answer_list) {
          DRETURN(ret);
       }
 
-      for_each(job, master_job_list) {
+      for_each_rw(job, master_job_list) {
          const lList *ja_task_list = lGetList(job, JB_ja_tasks);
          const lListElem *ja_task = NULL;
 
@@ -486,7 +486,7 @@ rqs_reinit_consumable_actual_list(lListElem *rqs, lList **answer_list) {
 *******************************************************************************/
 static bool filter_diff_usersets_or_projects_scope(lList *filter_scope, int filter_nm, 
             lList **scope_ref, int nm, const lDescr *dp, const lList *master_list) {
-   lListElem *scope_ep;
+   const lListElem *scope_ep;
    const char *scope;
    bool ret = true;
 
@@ -517,7 +517,7 @@ static bool filter_diff_usersets_or_projects_scope(lList *filter_scope, int filt
          break;
       } else {
          if (sge_is_pattern(scope)) {
-            lListElem *ep;
+            const lListElem *ep;
             for_each(ep, master_list) {
                const char* ep_entry = lGetString(ep, nm);
                if (fnmatch(scope, ep_entry, 0) == 0) {

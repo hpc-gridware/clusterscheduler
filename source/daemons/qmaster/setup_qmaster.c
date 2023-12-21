@@ -377,7 +377,7 @@ void sge_process_qmaster_cmdline(char**anArgv) {
 static void process_cmdline(char **anArgv)
 {
    lList *alp, *pcmdline;
-   lListElem *aep;
+   const lListElem *aep;
    u_long32 help = 0;
 
    DENTER(TOP_LAYER, "process_cmdline");
@@ -742,7 +742,7 @@ static void sge_propagate_queue_suspension(lListElem *jep, dstring *cqueue_name,
    const lListElem *gdil_ep, *cq, *qi;
    lListElem *jatep;
 
-   for_each (jatep, lGetList(jep, JB_ja_tasks)) {
+   for_each_rw (jatep, lGetList(jep, JB_ja_tasks)) {
       u_long32 jstate = lGetUlong(jatep, JAT_state); 
       bool is_suspended = false;
 
@@ -968,7 +968,7 @@ static int setup_qmaster(sge_gdi_ctx_class_t *ctx)
          DRETURN(-1);
       }
    }
-   for_each(ep, *object_type_get_master_list(SGE_TYPE_MANAGER)) {
+   for_each_rw(ep, *object_type_get_master_list(SGE_TYPE_MANAGER)) {
       DPRINTF(("%s\n", lGetString(ep, UM_name)));
    }   
 
@@ -990,7 +990,7 @@ static int setup_qmaster(sge_gdi_ctx_class_t *ctx)
          return -1;
       }
    }
-   for_each(ep, *object_type_get_master_list(SGE_TYPE_OPERATOR)) {
+   for_each_rw(ep, *object_type_get_master_list(SGE_TYPE_OPERATOR)) {
       DPRINTF(("%s\n", lGetString(ep, UO_name)));
    }   
 
@@ -1017,7 +1017,7 @@ static int setup_qmaster(sge_gdi_ctx_class_t *ctx)
     *    - fullname
     *    - suspend_on_subordinate
     */
-   for_each(tmpqep, *(object_type_get_master_list(SGE_TYPE_CQUEUE))) {
+   for_each_rw(tmpqep, *(object_type_get_master_list(SGE_TYPE_CQUEUE))) {
       const lList *qinstance_list = lGetList(tmpqep, CQ_qinstances);
       lListElem *qinstance = NULL;
       const lList *aso_list = NULL;
@@ -1032,7 +1032,7 @@ static int setup_qmaster(sge_gdi_ctx_class_t *ctx)
       if (aso_list != NULL) {
          /* This cluster queue has a list of subordinate lists (possibly one
           * for each host).*/
-         for_each (aso, aso_list) {
+         for_each_rw (aso, aso_list) {
             const lListElem *elem;
             int   pos;
             const lList *so_list = lGetList(aso, ASOLIST_value);
@@ -1062,7 +1062,7 @@ static int setup_qmaster(sge_gdi_ctx_class_t *ctx)
                   so_list_name = lGetListName(so_list);
                   new_so_list = lCreateList(so_list_name, SO_Type);
 
-                  for_each (so, so_list) {
+                  for_each_rw (so, so_list) {
                      new_so = lCreateElem(SO_Type);
                      lSetString(new_so, SO_name, lGetString(so, SO_name));
                      lSetUlong(new_so, SO_threshold, lGetUlong(so, SO_threshold));
@@ -1076,7 +1076,7 @@ static int setup_qmaster(sge_gdi_ctx_class_t *ctx)
             }
          }
       }
-      for_each(qinstance, qinstance_list) {
+      for_each_rw(qinstance, qinstance_list) {
          qinstance_set_full_name(qinstance);
          sge_qmaster_qinstance_state_set_susp_on_sub(qinstance, false);
       }
@@ -1097,7 +1097,7 @@ static int setup_qmaster(sge_gdi_ctx_class_t *ctx)
    /* initialize cached advance reservations structures */
    {
       lListElem *ar;
-      for_each(ar, *object_type_get_master_list(SGE_TYPE_AR)) {
+      for_each_rw(ar, *object_type_get_master_list(SGE_TYPE_AR)) {
          ar_initialize_reserved_queue_list(ar);
       }
    }
@@ -1122,7 +1122,7 @@ static int setup_qmaster(sge_gdi_ctx_class_t *ctx)
       dstring cqueue_name = DSTRING_INIT;
       dstring host_domain = DSTRING_INIT;
 
-      for_each(jep, *object_type_get_master_list(SGE_TYPE_JOB)) {
+      for_each_rw(jep, *object_type_get_master_list(SGE_TYPE_JOB)) {
 
          DPRINTF(("JOB "sge_u32" PRIORITY %d\n", lGetUlong(jep, JB_job_number), 
                (int)lGetUlong(jep, JB_priority) - BASE_PRIORITY));
@@ -1156,7 +1156,7 @@ static int setup_qmaster(sge_gdi_ctx_class_t *ctx)
 
       ctx->set_job_spooling(ctx, true);
       
-      for_each(jep, *object_type_get_master_list(SGE_TYPE_JOB)) {
+      for_each_rw(jep, *object_type_get_master_list(SGE_TYPE_JOB)) {
          u_long32 job_id = lGetUlong(jep, JB_job_number);
          sge_dstring_clear(&buffer);
 
@@ -1195,7 +1195,7 @@ static int setup_qmaster(sge_gdi_ctx_class_t *ctx)
     */
    const lList *master_hgroup_list = *object_type_get_master_list(SGE_TYPE_HGROUP);
    lList *master_cqueue_list = *object_type_get_master_list_rw(SGE_TYPE_CQUEUE);
-   for_each(tmpqep, *object_type_get_master_list(SGE_TYPE_CQUEUE)) {
+   for_each_rw(tmpqep, *object_type_get_master_list(SGE_TYPE_CQUEUE)) {
       cqueue_mod_qinstances(ctx, tmpqep, NULL, tmpqep, true, false, &monitor, master_hgroup_list, master_cqueue_list);
    }
 
@@ -1264,7 +1264,8 @@ static int setup_qmaster(sge_gdi_ctx_class_t *ctx)
 static int 
 remove_invalid_job_references(bool job_spooling, int user) 
 {
-   lListElem *up, *upu, *next;
+   const lListElem *up;
+   lListElem *upu, *next;
    u_long32 jobid;
    int object_key = user ? UU_name : PR_name;
    const lList *object_list = user ? *object_type_get_master_list(SGE_TYPE_USER) : *object_type_get_master_list(SGE_TYPE_PROJECT);
@@ -1303,7 +1304,7 @@ remove_invalid_job_references(bool job_spooling, int user)
 
 static int debit_all_jobs_from_qs()
 {
-   lListElem *gdi;
+   const lListElem *gdi;
    u_long32 slots;
    const char *queue_name;
    lListElem *next_jep  = NULL;
@@ -1357,7 +1358,7 @@ static int debit_all_jobs_from_qs()
                         *object_type_get_master_list(SGE_TYPE_EXECHOST), lGetHost(qep, QU_qhostname)),
                         master_centry_list, slots, master_task, NULL);
                qinstance_debit_consumable(qep, jep, master_centry_list, slots, master_task, NULL);
-               for_each (rqs, master_rqs_list) {
+               for_each_rw (rqs, master_rqs_list) {
                   rqs_debit_consumable(rqs, jep, gdi, lGetString(jatep, JAT_granted_pe), master_centry_list, 
                                         *object_type_get_master_list(SGE_TYPE_USERSET), *object_type_get_master_list(SGE_TYPE_HGROUP), slots, master_task);
                }
@@ -1395,7 +1396,8 @@ static int debit_all_jobs_from_qs()
 static void init_categories(void)
 {
    const lListElem *cq, *pe, *hep, *ep;
-   lListElem *acl, *prj, *rqs;
+   lListElem *acl, *prj;
+   const lListElem *rqs;
    lList *u_list = NULL, *p_list = NULL;
    const lList *master_project_list = *object_type_get_master_list(SGE_TYPE_PROJECT);
    const lList *master_userset_list = *object_type_get_master_list(SGE_TYPE_USERSET);

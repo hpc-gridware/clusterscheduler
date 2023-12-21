@@ -3001,7 +3001,8 @@ static bool ec2_get(sge_evc_class_t *thiz, lList **event_list, bool exit_on_qmas
 static bool ck_event_number(lList *lp, u_long32 *waiting_for, u_long32 *wrong_number)
 {
    bool ret = true;
-   lListElem *ep, *tmp;
+   lListElem *ep;
+   lListElem *tmp;
    u_long32 i, j;
    int skipped;
   
@@ -3060,7 +3061,7 @@ static bool ck_event_number(lList *lp, u_long32 *waiting_for, u_long32 *wrong_nu
          }
 
          /* ensure number of events increase */
-         for_each (ep, lp) {
+         for_each_rw(ep, lp) {
             if ((j=lGetUlong(ep, ET_number)) != i++) {
                /* 
                   do not change waiting_for because 

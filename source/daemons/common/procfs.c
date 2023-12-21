@@ -584,7 +584,7 @@ time_t last_time
 
          groups = 0;
          if (fst.st_mtime < last_time && groupTable != NULL) {
-            lListElem *group;
+            const lListElem *group;
 
             for_each(group, groupTable) {
                list[groups] = lGetPosUlong(group, pos_group);

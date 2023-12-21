@@ -69,7 +69,7 @@ suspend_job_in_queues( lList *susp_queues, lList *job_list, order_t *orders)
    DENTER(TOP_LAYER, "suspend_job_in_queues");
 
    now = sge_get_gmt();
-   for_each (qep, susp_queues) {
+   for_each_rw (qep, susp_queues) {
       u_long32 interval;      
 
       /* are suspend thresholds enabled? */
@@ -131,7 +131,7 @@ unsuspend_job_in_queues( lList *queue_list, lList *job_list, order_t *orders)
    DENTER(TOP_LAYER, "unsuspend_job_in_queues");
 
    now = sge_get_gmt();
-   for_each (qep, queue_list) {
+   for_each_rw (qep, queue_list) {
       u_long32 interval;
       dstring ds;
       char buffer[128];
@@ -200,7 +200,8 @@ select4suspension(lList *job_list, lListElem *qep, lListElem **jepp,
                   lListElem **ja_taskp) 
 {
    u_long32 jstate;
-   lListElem *jep, *jshortest = NULL, *shortest = NULL, *ja_task;
+   lListElem *jep, *ja_task;
+   lListElem *jshortest = NULL, *shortest = NULL;
    const char *qnm;
 
    DENTER(TOP_LAYER, "select4suspension");
@@ -213,10 +214,10 @@ select4suspension(lList *job_list, lListElem *qep, lListElem **jepp,
       return -1;
    }
   
-   for_each (jep, job_list) {
+   for_each_rw (jep, job_list) {
 
       /* job running */ 
-      for_each (ja_task, lGetList(jep, JB_ja_tasks)) {
+      for_each_rw (ja_task, lGetList(jep, JB_ja_tasks)) {
          jstate = lGetUlong(ja_task, JAT_state);
          if (!(jstate & JRUNNING) || 
              (jstate & JSUSPENDED) || (jstate & JSUSPENDED_ON_THRESHOLD)) {
@@ -265,8 +266,8 @@ lListElem **ja_taskp
 
    qnm = lGetString(qep, QU_full_name);
 
-   for_each (jep, job_list) {
-      for_each (ja_task, lGetList(jep, JB_ja_tasks)) {
+   for_each_rw (jep, job_list) {
+      for_each_rw (ja_task, lGetList(jep, JB_ja_tasks)) {
          /* job must be suspended */ 
          jstate = lGetUlong(ja_task, JAT_state);
          if (!(jstate & JSUSPENDED_ON_THRESHOLD)) {

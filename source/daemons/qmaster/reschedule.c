@@ -113,7 +113,7 @@ static lListElem* get_from_reschedule_unknown_list(const lListElem *host,
 *******************************************************************************/
 void reschedule_unknown_event(sge_gdi_ctx_class_t *ctx, te_event_t anEvent, monitoring_t *monitor)
 {
-   lListElem *qep;            /* QU_Type */
+   const lListElem *qep;            /* QU_Type */
    lList *answer_list = NULL; /* AN_Type */
    lListElem *hep;            /* EH_Type */
    const lList *master_list = *object_type_get_master_list(SGE_TYPE_CQUEUE);
@@ -232,7 +232,7 @@ int reschedule_jobs(sge_gdi_ctx_class_t *ctx, lListElem *ep, u_long32 force, lLi
        * Find all jobs currently running on the host/queue
        * append the jobids/taskids into a sublist of the exechost object
        */
-      for_each(jep, *(object_type_get_master_list_rw(SGE_TYPE_JOB))) {
+      for_each_rw(jep, *(object_type_get_master_list_rw(SGE_TYPE_JOB))) {
          reschedule_job(ctx, jep, NULL, ep, force, answer, monitor, is_manual);
       }      
       ret = 0;
@@ -380,7 +380,7 @@ int reschedule_job(sge_gdi_ctx_class_t *ctx, lListElem *jep, lListElem *jatep, l
           *    PE jobs will only be rescheduled when the master task is effected 
           */
          if (mconf_get_enable_reschedule_slave() == true) {
-            lListElem *granted_q;
+            const lListElem *granted_q;
             bool one_matched = false;
 
             for_each(granted_q, granted_qs) {
@@ -665,7 +665,7 @@ static lListElem* get_from_reschedule_unknown_list(const lListElem *host,
    lListElem *ruep = NULL;
  
    DENTER(TOP_LAYER, "get_from_reschedule_unknown_list");
-   for_each(ruep, lGetList(host, EH_reschedule_unknown_list)) {
+   for_each_rw(ruep, lGetList(host, EH_reschedule_unknown_list)) {
       if (job_number == lGetUlong(ruep, RU_job_number)
           && task_number == lGetUlong(ruep, RU_task_number)) {
           break;
@@ -748,7 +748,7 @@ void update_reschedule_unknown_list(sge_gdi_ctx_class_t *ctx, lListElem *host)
    DENTER(TOP_LAYER, "update_reschedule_unknown_list");
    if (host) {
       bool changed = false;
-      for_each(ruep, lGetList(host, EH_reschedule_unknown_list)) {
+      for_each_rw(ruep, lGetList(host, EH_reschedule_unknown_list)) {
          u_long32 state = lGetUlong(ruep, RU_state);
 
          if (state == RESCHEDULE_SKIP_JR_SEND_ACK) {
@@ -819,7 +819,7 @@ u_long32 skip_restarted_job(lListElem *host, lListElem *job_report,
    u_long32 ret = 0;
    DENTER(TOP_LAYER, "skip_restarted_job");
  
-   for_each(ruep, lGetList(host, EH_reschedule_unknown_list)) {
+   for_each_rw(ruep, lGetList(host, EH_reschedule_unknown_list)) {
       if (lGetUlong(ruep, RU_job_number) == job_number
           && lGetUlong(ruep, RU_task_number) == task_number) {
          u_long32 state = lGetUlong(ruep, RU_state);
@@ -872,7 +872,7 @@ void update_reschedule_unknown_list_for_job(lListElem *host,
    DENTER(TOP_LAYER, "update_reschedule_unknown_list_for_job");
 
    if (host) {
-      for_each(ruep, lGetList(host, EH_reschedule_unknown_list)) {
+      for_each_rw(ruep, lGetList(host, EH_reschedule_unknown_list)) {
          if (lGetUlong(ruep, RU_job_number) == job_number
              && lGetUlong(ruep, RU_task_number) == task_number) {
             if (lGetUlong(ruep, RU_state) == RESCHEDULE_HANDLE_JR_WAIT) {
@@ -920,7 +920,7 @@ void update_reschedule_unknown_timout_values(const char *config_name)
       global_exechost_elem   = host_list_locate(master_exechost_list, SGE_GLOBAL_NAME); 
       template_exechost_elem = host_list_locate(master_exechost_list, SGE_TEMPLATE_NAME); 
 
-      for_each(host, master_exechost_list) {
+      for_each_rw(host, master_exechost_list) {
          if ((host != global_exechost_elem) && (host != template_exechost_elem)) {
             update_reschedule_unknown_timeout(host);
          }
@@ -1110,7 +1110,7 @@ remove_from_reschedule_unknown_list(sge_gdi_ctx_class_t *ctx,
       lList *unknown_list = lGetListRW(host, EH_reschedule_unknown_list);
       lListElem *elem;
 
-      for_each(elem, unknown_list) {
+      for_each_rw(elem, unknown_list) {
          if (lGetUlong(elem, RU_job_number) == job_number &&
              lGetUlong(elem, RU_task_number) == task_number) {
             break;
@@ -1137,7 +1137,7 @@ remove_from_reschedule_unknown_lists(sge_gdi_ctx_class_t *ctx,
 
    DENTER(TOP_LAYER, "remove_from_reschedule_unknown_lists");
 
-   for_each(host, *object_type_get_master_list_rw(SGE_TYPE_EXECHOST)) {
+   for_each_rw(host, *object_type_get_master_list_rw(SGE_TYPE_EXECHOST)) {
       remove_from_reschedule_unknown_list(ctx, host, job_number, task_number);
    }
 

@@ -157,11 +157,12 @@ lList *sge_add_schedd_info(lList *or_list, int *global_mes_count, int *job_mes_c
 *     ???/???
 *******************************************************************************/
 lList 
-*sge_create_orders(lList *or_list, u_long32 type, lListElem *job, lListElem *ja_task,
+*sge_create_orders(lList *or_list, u_long32 type, const lListElem *job, const lListElem *ja_task,
                    const lList *granted , bool update_execd) 
 {
    lList *ql = NULL;
-   lListElem *gel, *ep, *ep2;
+   const lListElem *gel;
+   lListElem *ep, *ep2;
    u_long32 qslots;
   
    DENTER(TOP_LAYER, "sge_create_orders");
@@ -377,7 +378,7 @@ lList *create_delete_job_orders(
 lList *finished_jobs, 
 lList *order_list  
 ) {
-   lListElem *job, *ja_task;
+   const lListElem *job, *ja_task;
 
    DENTER(TOP_LAYER, "create_delete_job_orders");
 

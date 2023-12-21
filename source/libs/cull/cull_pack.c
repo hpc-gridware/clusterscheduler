@@ -991,7 +991,7 @@ int cull_pack_list_partial(sge_pack_buffer *pb, const lList *lp,
                            lEnumeration *what, int flags) 
 {
    int ret;
-   lListElem *ep;
+   const lListElem *ep;
 
    DENTER(CULL_LAYER, "cull_pack_list_partial");
 

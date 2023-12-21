@@ -746,7 +746,7 @@ sge_scheduler_main(void *arg)
              * Within the scheduler we do only need QIs
              */
             {
-               lListElem *cqueue = NULL;
+               const lListElem *cqueue = NULL;
                lEnumeration *what_queue3 = NULL;
 
                for_each(cqueue, master_cqueue_list) {

@@ -469,7 +469,7 @@ centry_is_referenced(const lListElem *centry, lList **answer_list,
       ret = true;
    }
    if (!ret) {
-      lListElem *cqueue = NULL, *cel = NULL; 
+      const lListElem *cqueue = NULL, *cel = NULL;
  
       /* fix for bug 6422335
        * check the cq configuration for centry references instead of qinstances
@@ -492,7 +492,7 @@ centry_is_referenced(const lListElem *centry, lList **answer_list,
       }
    }
    if (!ret) {
-      lListElem *host = NULL;    /* EH_Type */
+      const lListElem *host = NULL;    /* EH_Type */
 
       for_each(host, master_exechost_list) {
          if (host_is_centry_referenced(host, centry)) {
@@ -508,7 +508,7 @@ centry_is_referenced(const lListElem *centry, lList **answer_list,
       }
    }
    if (!ret) {
-      lListElem *rqs = NULL;
+      const lListElem *rqs = NULL;
       for_each(rqs, master_rqs_list) {
          if (sge_centry_referenced_in_rqs(rqs, centry)) {
             answer_list_add_sprintf(answer_list, STATUS_EUNKNOWN,
@@ -664,7 +664,7 @@ centry_list_init_double(lList *this_list)
    if (this_list != NULL) {
       lListElem *centry;
 
-      for_each(centry, this_list) {
+      for_each_rw (centry, this_list) {
          double new_val = 0.0; /* 
                                 * parse_ulong_val will not set it for all 
                                 * data types! 
@@ -725,7 +725,7 @@ centry_list_fill_request(lList *this_list, lList **answer_list, const lList *mas
 
    DENTER(CENTRY_LAYER, "centry_list_fill_request");
 
-   for_each(entry, this_list) {
+   for_each_rw(entry, this_list) {
       const char *name = lGetString(entry, CE_name);
       u_long32 requestable;
 
@@ -797,7 +797,7 @@ centry_list_append_to_dstring(const lList *this_list, dstring *string)
 
    DENTER(CENTRY_LAYER, "centry_list_append_to_dstring");
    if (string != NULL) {
-      lListElem *elem = NULL;
+      const lListElem *elem = NULL;
       bool printed = false;
 
       for_each(elem, this_list) {
@@ -1280,7 +1280,7 @@ centry_list_do_all_exists(const lList *this_list, lList **answer_list,
                           const lList *centry_list) 
 {
    bool ret = true;
-   lListElem *centry = NULL;
+   const lListElem *centry = NULL;
    
    DENTER(TOP_LAYER, "centry_list_do_all_exists");
    for_each(centry, centry_list) {
@@ -1322,7 +1322,7 @@ centry_list_is_correct(lList *this_list, lList **answer_list)
    
 /* do complex attributes syntax verification */
   if (ret) {  
-    lListElem *elem;
+    const lListElem *elem;
     for_each(elem, this_list){
       ret = object_verify_expression_syntax(elem, answer_list);
       if(!ret) break;
@@ -1338,7 +1338,7 @@ int ensure_attrib_available(lList **alpp, lListElem *ep, int nm, const lList *ma
 
    DENTER(TOP_LAYER, "ensure_attrib_available");
    if (ep != NULL) {
-      for_each (attr, lGetList(ep, nm)) {
+      for_each_rw (attr, lGetList(ep, nm)) {
          const char *name = lGetString(attr, CE_name);
          lListElem *centry = centry_list_locate(master_centry_list, name);
 

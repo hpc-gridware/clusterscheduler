@@ -121,7 +121,7 @@ const char *prj_list_append_to_dstring(const lList *this_list, dstring *string)
 
    DENTER(BASIS_LAYER, "prj_list_append_to_dstring");
    if (string != NULL) {
-      lListElem *elem = NULL;
+      const lListElem *elem = NULL;
       bool printed = false;
 
       for_each(elem, this_list) {
@@ -145,7 +145,7 @@ prj_list_do_all_exist(const lList *this_list, lList **answer_list,
                       const lList *prj_list)
 {
    bool ret = true;
-   lListElem *prj = NULL;
+   const lListElem *prj = NULL;
 
    DENTER(TOP_LAYER, "prj_list_do_all_exist");
    for_each(prj, prj_list) {

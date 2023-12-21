@@ -303,7 +303,7 @@ cqueue_verify_subordinate_list(lListElem *cqueue, lList **answer_list, lListElem
    if (cqueue != NULL && attr_elem != NULL) {
       const char *cqueue_name = lGetString(cqueue, CQ_name);
       const lList *so_list = lGetList(attr_elem, ASOLIST_value);
-      lListElem *so;
+      const lListElem *so;
 
       for_each(so, so_list) {
          const char *so_name = lGetString(so, SO_name);

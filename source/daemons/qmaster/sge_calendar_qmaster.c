@@ -73,7 +73,7 @@ calendar_initalize_timer(sge_gdi_ctx_class_t *ctx, monitoring_t *monitor)
 
    DENTER(TOP_LAYER, "calendar_initalize_timer");
 
-   for_each (cep, master_calendar_list) {
+   for_each_rw (cep, master_calendar_list) {
       calendar_parse_year(cep, &answer_list);
       calendar_parse_week(cep, &answer_list);         
       answer_list_output(&answer_list);
@@ -94,7 +94,7 @@ calendar_mod(sge_gdi_ctx_class_t *ctx, lList **alpp, lListElem *new_cal, lListEl
 {
    const lList *master_ar_list = *object_type_get_master_list(SGE_TYPE_AR);
    const lList *master_cqueue_list = *object_type_get_master_list(SGE_TYPE_CQUEUE);
-   lListElem *cqueue;
+   const lListElem *cqueue;
    const char *cal_name;
 
    DENTER(TOP_LAYER, "calendar_mod");
@@ -125,7 +125,7 @@ calendar_mod(sge_gdi_ctx_class_t *ctx, lList **alpp, lListElem *new_cal, lListEl
 
    if (add != 1) {
       for_each(cqueue, master_cqueue_list) {
-         lListElem *queue;
+         const lListElem *queue;
          for_each(queue, lGetList(cqueue, CQ_qinstances)) {
             const char *q_cal = lGetString(queue, QU_calendar);
             if ((q_cal != NULL) && (strcmp(cal_name, q_cal) == 0)) {

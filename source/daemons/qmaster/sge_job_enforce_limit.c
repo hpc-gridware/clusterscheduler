@@ -151,8 +151,8 @@ sge_host_add_remove_enforce_limit_trigger(const char *hostname, bool add)
        * and remove a flag which prevents the qmaster<->execd protocol from waiting
        * for a certain pe task waiting on that host
        */ 
-      for_each (job, master_job_list) {
-         for_each (ja_task, lGetList(job, JB_ja_tasks)) {
+      for_each_rw (job, master_job_list) {
+         for_each_rw (ja_task, lGetList(job, JB_ja_tasks)) {
             bool do_action = false;
             const lList *gdil = lGetList(ja_task, JAT_granted_destin_identifier_list);
             const lListElem *gdil_ep = lFirst(gdil);
@@ -179,7 +179,7 @@ sge_host_add_remove_enforce_limit_trigger(const char *hostname, bool add)
                   if (sge_hostcmp(lGetHost(gdil_ep, JG_qhostname), hostname) == 0) {
                      do_action = true;
                   } else {
-                     lListElem *pe_task;
+                     const lListElem *pe_task;
 
                      for_each (pe_task, lGetList(ja_task, JAT_task_list)) {
                         const lList *gdil = lGetList(pe_task, PET_granted_destin_identifier_list);
@@ -203,7 +203,7 @@ sge_host_add_remove_enforce_limit_trigger(const char *hostname, bool add)
                      if (qinstance_state_is_unknown(qinstance) == true) {
                         do_action = true;
                      } else {
-                        lListElem *pe_task;
+                        const lListElem *pe_task;
 
                         for_each (pe_task, lGetList(ja_task, JAT_task_list)) {
                            const lList *gdil = lGetList(pe_task, PET_granted_destin_identifier_list);
@@ -285,7 +285,7 @@ sge_add_check_limit_trigger(void)
 
    DENTER(TOP_LAYER, "sge_add_check_limit_trigger");
 
-   for_each (host, master_host_list) {
+   for_each_rw (host, master_host_list) {
       max_time = MAX(max_time,  2 * load_report_interval(host));
    }
 
@@ -425,7 +425,7 @@ sge_job_enfoce_limit_handler(sge_gdi_ctx_class_t *ctx, te_event_t event, monitor
                      const lList *pe_task_list = lGetList(ja_task, JAT_task_list);
                      lListElem *pe_task;
 
-                     for_each (pe_task, pe_task_list) {
+                     for_each_rw (pe_task, pe_task_list) {
                         if (lGetBool(pe_task, PET_do_contact) == false) {
                            lListElem *dummy_jr = lCreateElem(JR_Type);
 
@@ -603,7 +603,7 @@ sge_job_add_enforce_limit_trigger(lListElem *job, lListElem *ja_task)
             const lList *pe_tasks = lGetList(ja_task, JAT_task_list);
             lListElem *pe_task;
 
-            for_each(pe_task, pe_tasks) {
+            for_each_rw(pe_task, pe_tasks) {
                const lList *gdil = NULL;
                const lListElem *gdil_ep;
                lListElem *qinstance;
@@ -757,7 +757,7 @@ sge_job_remove_enforce_limit_trigger(u_long32 job_id, u_long32 ja_task_id)
          lListElem *pe_task;
          bool all_are_known = true;
 
-         for_each (pe_task, pe_tasks) {
+         for_each_rw (pe_task, pe_tasks) {
             const lList *gdil = NULL;
             const lListElem *gdil_ep;
             lListElem *qinstance;

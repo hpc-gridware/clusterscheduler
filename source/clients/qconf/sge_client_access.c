@@ -64,7 +64,7 @@ lList **alpp,
 lList *user_args,
 lList *acl_args 
 ) {
-   lListElem *userarg, *aclarg;
+   const lListElem *userarg, *aclarg;
    lList *acl=NULL, *answers=NULL;
    const char *acl_name, *user_name;
    lCondition *where;
@@ -157,7 +157,7 @@ lList **alpp,
 lList *user_args,
 lList *acl_args 
 ) {
-   lListElem *userarg, *aclarg;
+   const lListElem *userarg, *aclarg;
    lList *acl=NULL, *answers=NULL;
    const char *acl_name, *user_name;
    lCondition *where;
@@ -253,7 +253,7 @@ lList *acl_args,
 lList **dst 
 ) {
    lList *answers;
-   lListElem *aclarg;
+   const lListElem *aclarg;
    lCondition *where, *newcp;
    lEnumeration *what;
    const char *acl_name;

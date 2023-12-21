@@ -551,7 +551,7 @@ int lGetNumberOfElem(const lList *lp)
 int lGetElemIndex(const lListElem *ep, const lList *lp) 
 {
    int i = -1;
-   lListElem *ep2;
+   const lListElem *ep2;
 
    DENTER(CULL_LAYER, "lGetElemIndex");
 
@@ -852,7 +852,7 @@ void lWriteListToStr(const lList* lp, dstring* buffer) {
 
 static void lWriteList_(const lList *lp, dstring *buffer, int nesting_level) 
 {
-   lListElem *ep;
+   const lListElem *ep;
    char indent[128];
    int i;
 
@@ -2684,7 +2684,7 @@ lList_clear_changed_info(lList *lp)
 
       lp->changed = false;
 
-      for_each(ep, lp) {
+      for_each_rw(ep, lp) {
          lListElem_clear_changed_info(ep);
       }
    }

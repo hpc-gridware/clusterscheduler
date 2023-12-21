@@ -192,7 +192,9 @@ debit_job_from_queues(lListElem *job, lList *granted, lList *global_queue_list,
    int qslots, total;
    unsigned int tagged;
    const char *qname;
-   lListElem *gel, *qep, *so;
+   const lListElem *gel;
+   lListElem *qep;
+   const lListElem *so;
    int ret = 0;
    dstring queue_name = DSTRING_INIT;
 
@@ -218,7 +220,7 @@ debit_job_from_queues(lListElem *job, lList *granted, lList *global_queue_list,
          for_each (so, lGetList(qep, QU_subordinate_list)) {
             if (!tst_sos(qslots,        total, so)  &&  /* not suspended till now */
                  tst_sos(qslots+tagged, total, so)) {   /* but now                */
-               lListElem *order = NULL;
+               const lListElem *order = NULL;
 
                sge_dstring_sprintf(&queue_name, "%s@%s", lGetString(so, SO_name), lGetHost(qep, QU_qhostname));
              
@@ -269,7 +271,8 @@ const lList *centry_list, /* CE_Type */
 int *sort_hostlist
 ) {
    lSortOrder *so = NULL;
-   lListElem *gel, *hep;
+   const lListElem *gel;
+   lListElem *hep;
    lListElem *global;
    const char *hnm = NULL;
    const char *load_formula = NULL;
@@ -372,7 +375,7 @@ static int
 debit_job_from_rqs(lListElem *job, lList *granted, lList *rqs_list, lListElem* pe,
                    const lList *centry_list, const lList *acl_list, const lList *hgrp_list) 
 {
-   lListElem *gel = NULL;
+   const lListElem *gel = NULL;
    bool master_task = true;
 
    DENTER(TOP_LAYER, "debit_job_from_rqs");
@@ -392,7 +395,7 @@ debit_job_from_rqs(lListElem *job, lList *granted, lList *rqs_list, lListElem* p
          pe_name =  lGetString(pe, PE_name);
       }
 
-      for_each (rqs, rqs_list) {
+      for_each_rw (rqs, rqs_list) {
          rqs_debit_consumable(rqs, job, gel, pe_name, centry_list, acl_list, hgrp_list, slots, master_task);
       }
       master_task = false;
@@ -405,7 +408,7 @@ static int
 debit_job_from_ar(lListElem *job, lList *granted, lList *ar_list, const lList *centry_list)
 {
    bool master_task = true;
-   lListElem *gel = NULL;
+   const lListElem *gel = NULL;
 
    DENTER(TOP_LAYER, "debit_job_from_ar");
 

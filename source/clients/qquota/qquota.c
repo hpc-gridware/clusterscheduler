@@ -562,7 +562,7 @@ sge_parse_qquota(lList **ppcmdline, lList **host_list, lList **resource_list,
          ** resolve hostnames and replace them in list
          */
          lListElem *ep = NULL;
-         for_each(ep, *host_list) {
+         for_each_rw (ep, *host_list) {
             sge_resolve_host(ep, ST_name);
          }
          continue;

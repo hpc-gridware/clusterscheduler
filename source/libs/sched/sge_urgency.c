@@ -143,7 +143,7 @@ static void sge_urgency(u_long32 now, double *min_urgency, double *max_urgency,
 
    DENTER(TOP_LAYER, "sge_urgency");
 
-   for_each (jep, job_list) {
+   for_each_rw (jep, job_list) {
       lListElem *cat;
       u_long32 deadline;
 
@@ -166,7 +166,7 @@ static void sge_urgency(u_long32 now, double *min_urgency, double *max_urgency,
          rrc = lGetDouble(cat, CT_resource_contribution);
 /*         DPRINTF(("  resource contribution from category cache ---> %7f\n", rrc)); */
       } else {
-         lListElem *centry, *rr;
+         const lListElem *centry, *rr;
          double contribution;
 
          slots = sge_job_slot_request(jep, pe_list);
@@ -249,7 +249,7 @@ static void sge_normalize_urgency(lList *job_list, double min_urgency,
 
    DPRINTF(("ASU min = %13.11f, ASU max = %13.11f\n", 
          min_urgency, max_urgency));
-   for_each (jep, job_list) {
+   for_each_rw (jep, job_list) {
       double asu = lGetDouble(jep, JB_urg);
       nsu = sge_normalize_value(asu, min_urgency, max_urgency);
       lSetDouble(jep, JB_nurg, nsu);

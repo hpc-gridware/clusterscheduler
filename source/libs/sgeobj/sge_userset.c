@@ -168,7 +168,7 @@ lListElem *userset_list_locate(const lList *lp, const char *name)
 int 
 userset_list_validate_acl_list(const lList *acl_list, lList **alpp, const lList *master_userset_list)
 {
-   lListElem *usp;
+   const lListElem *usp;
 
    DENTER(TOP_LAYER, "userset_list_validate_acl_list");
 
@@ -209,7 +209,7 @@ userset_list_validate_acl_list(const lList *acl_list, lList **alpp, const lList 
 *******************************************************************************/
 int userset_list_validate_access(const lList *acl_list, int nm, lList **alpp, const lList *master_userset_list)
 {
-   lListElem *usp;
+   const lListElem *usp;
    char *user;
 
    DENTER(TOP_LAYER, "userset_list_validate_access");
@@ -251,7 +251,7 @@ int userset_list_validate_access(const lList *acl_list, int nm, lList **alpp, co
 *******************************************************************************/
 int userset_validate_entries(lListElem *userset, lList **alpp, int start_up)
 {
-   lListElem *ep;
+   const lListElem *ep;
    int name_pos;
 
    DENTER(TOP_LAYER, "userset_validate_entries");
@@ -389,7 +389,7 @@ userset_list_append_to_dstring(const lList *this_list, dstring *string)
 
    DENTER(BASIS_LAYER, "userset_list_append_to_dstring");
    if (string != NULL) {
-      lListElem *elem = NULL;
+      const lListElem *elem = NULL;
       bool printed = false;
 
       for_each(elem, this_list) {
@@ -429,7 +429,7 @@ int sge_contained_in_access_list(const char *user, const char *group,
       if (lGetElemStr(user_list, UE_name, sge_dstring_get_string(&group_entry)) != NULL) {
          found = true;
       } else if (sge_is_pattern(group)) {
-         lListElem *acl_entry; 
+         const lListElem *acl_entry;
          const char *entry_name;
          for_each(acl_entry, user_list) {
             entry_name = lGetString(acl_entry, UE_name);
@@ -445,7 +445,7 @@ int sge_contained_in_access_list(const char *user, const char *group,
       if (lGetElemStr(user_list, UE_name, user) != NULL) {
          found = true;            
       } else if (sge_is_pattern(user)) {
-         lListElem *acl_entry; 
+         const lListElem *acl_entry;
          const char *entry_name;
          for_each(acl_entry, user_list) {
             entry_name = lGetString(acl_entry, UE_name);

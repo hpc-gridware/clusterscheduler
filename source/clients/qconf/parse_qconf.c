@@ -159,7 +159,8 @@ int sge_parse_qconf(sge_gdi_ctx_class_t *ctx, char *argv[])
    lEnumeration *what = NULL;
    lCondition *where = NULL;
    lList *lp=NULL, *arglp=NULL, *alp=NULL, *newlp=NULL;
-   lListElem *hep=NULL, *ep=NULL, *argep=NULL;
+   lListElem *hep=NULL, *ep=NULL;
+   lListElem *argep=NULL;
    const lListElem *aep=NULL;
    lListElem *newep = NULL;
    const char *host = NULL;
@@ -1208,7 +1209,7 @@ int sge_parse_qconf(sge_gdi_ctx_class_t *ctx, char *argv[])
 
          lString2List(*spp, &arglp, STN_Type, STN_name, ", ");
 
-         for_each(argep, arglp) {
+         for_each_rw (argep, arglp) {
             lListElem *node = NULL;
             char *buf=NULL, *nodepath=NULL, *sharestr=NULL;
             int shares;
@@ -1378,13 +1379,13 @@ int sge_parse_qconf(sge_gdi_ctx_class_t *ctx, char *argv[])
          lFreeList(&alp);
  
          /* clear user usage */
-         for_each(ep, lp) {
+         for_each_rw (ep, lp) {
             lSetList(ep, UU_usage, NULL);
             lSetList(ep, UU_project, NULL);
          }
 
          /* clear project usage */
-         for_each(ep, lp2) {
+         for_each_rw (ep, lp2) {
             lSetList(ep, PR_usage, NULL);
             lSetList(ep, PR_project, NULL);
          }
@@ -1679,7 +1680,7 @@ int sge_parse_qconf(sge_gdi_ctx_class_t *ctx, char *argv[])
 
          lString2List(*spp, &arglp, STN_Type, STN_name, ", ");
 
-         for_each(argep, arglp) {
+         for_each_rw (argep, arglp) {
 
             lListElem *node = NULL;
             const char *nodepath = NULL;
@@ -1841,7 +1842,7 @@ int sge_parse_qconf(sge_gdi_ctx_class_t *ctx, char *argv[])
 
          spp = sge_parser_get_next(ctx, spp);
          lString2List(*spp, &lp, ID_Type, ID_str, ", ");
-         for_each(ep, lp) {
+         for_each_rw (ep, lp) {
             lSetUlong(ep, ID_action, SGE_THREAD_TRIGGER_START);
          }
          alp = ctx->kill(ctx, lp, default_cell, 0, opt);
@@ -1863,7 +1864,7 @@ int sge_parse_qconf(sge_gdi_ctx_class_t *ctx, char *argv[])
 
          spp = sge_parser_get_next(ctx, spp);
          lString2List(*spp, &lp, ID_Type, ID_str, ", ");
-         for_each(ep, lp) {
+         for_each_rw(ep, lp) {
             lSetUlong(ep, ID_action, SGE_THREAD_TRIGGER_STOP);
          }
          alp = ctx->kill(ctx, lp, default_cell, 0, opt);
@@ -2311,7 +2312,7 @@ int sge_parse_qconf(sge_gdi_ctx_class_t *ctx, char *argv[])
          parse_name_list_to_cull("hosts to change", &arglp, EH_Type, EH_name, 
             *spp);
 
-         for_each(argep, arglp) {
+         for_each_rw (argep, arglp) {
             /* resolve hostname */
             if (sge_resolve_host(argep, EH_name) != CL_RETVAL_OK) {
                fprintf(stderr, MSG_SGETEXT_CANTRESOLVEHOST_S, lGetHost(argep, EH_name));
@@ -2607,7 +2608,7 @@ int sge_parse_qconf(sge_gdi_ctx_class_t *ctx, char *argv[])
          }
          lFreeList(&answer_list);
 
-         for_each(elem, list) {
+         for_each_rw (elem, list) {
             const char *hostname = NULL;
             bool already_handled = false;
 
@@ -2828,7 +2829,7 @@ int sge_parse_qconf(sge_gdi_ctx_class_t *ctx, char *argv[])
          }
          lFreeList(&answer_list);
 
-         for_each(elem, list) {
+         for_each_rw (elem, list) {
             int index = 0;
             bool already_handled = false;
 
@@ -2875,7 +2876,7 @@ int sge_parse_qconf(sge_gdi_ctx_class_t *ctx, char *argv[])
                             cqueue_attribute_array[index].name, 0)) {
                   dstring value = DSTRING_INIT;
                   const lList *attribute_list = lGetList(elem, cqueue_attribute_array[index].cqueue_attr);
-                  lListElem *attribute;
+                  const lListElem *attribute;
 
                   already_handled = false;
                   for_each(attribute, attribute_list) {
@@ -4451,7 +4452,7 @@ int sge_parse_qconf(sge_gdi_ctx_class_t *ctx, char *argv[])
 
          lString2List(*spp, &arglp, STN_Type, STN_name, ", ");
 
-         for_each(argep, arglp) {
+         for_each_rw (argep, arglp) {
             const char *nodepath = lGetString(argep, STN_name);
 
             if (nodepath) {
@@ -4501,7 +4502,7 @@ int sge_parse_qconf(sge_gdi_ctx_class_t *ctx, char *argv[])
 
          lString2List(*spp, &arglp, STN_Type, STN_name, ", ");
 
-         for_each(argep, arglp) {
+         for_each_rw(argep, arglp) {
             const char *nodepath = NULL;
             nodepath = lGetString(argep, STN_name);
             if (nodepath) {
@@ -5065,7 +5066,7 @@ int sge_parse_qconf(sge_gdi_ctx_class_t *ctx, char *argv[])
       if (strcmp("-cq", *spp) == 0) {
          spp = sge_parser_get_next(ctx, spp);
          lString2List(*spp, &lp, ID_Type, ID_str, ", ");
-         for_each(ep, lp) {
+         for_each_rw (ep, lp) {
             lSetUlong(ep, ID_action, QI_DO_CLEAN);
          }
          alp = ctx->gdi(ctx, SGE_CQ_LIST, SGE_GDI_TRIGGER, &lp, NULL, NULL);
@@ -5140,7 +5141,7 @@ int sge_parse_qconf(sge_gdi_ctx_class_t *ctx, char *argv[])
       if (strcmp("-suser", *spp) == 0) {
          const char*  user = NULL;
          lList* uList = NULL;
-         lListElem* uep = NULL;
+         const lListElem* uep = NULL;
          bool first = true;
          spooling_field *fields = NULL;
 
@@ -5441,7 +5442,7 @@ static bool add_host_of_type(sge_gdi_ctx_class_t *ctx, lList *arglp, u_long32 ta
          DRETURN(ret);
    }
    
-   for_each(argep, arglp) {
+   for_each_rw(argep, arglp) {
       /* resolve hostname */
       if (sge_resolve_host(argep, nm) != CL_RETVAL_OK) {
          const char* host = lGetHost(argep, nm);
@@ -5504,7 +5505,7 @@ static bool del_host_of_type(sge_gdi_ctx_class_t *ctx, lList *arglp, u_long32 ta
       break;
    }
 
-   for_each(argep, arglp) {
+   for_each_rw (argep, arglp) {
 
       /* make a new host element */
       lp = lCreateList("host_to_del", type);
@@ -5989,7 +5990,7 @@ static bool show_object_list(sge_gdi_ctx_class_t *ctx, u_long32 target, lDescr *
    }
 
    if (lGetNumberOfElem(lp) > 0) {
-      for_each(ep, lp) {
+      for_each_rw (ep, lp) {
          const char *line = NULL;
          pos = lGetPosInDescr(type, keynm);
          dataType = lGetPosType(type , pos);
@@ -6026,7 +6027,7 @@ static int show_eventclients(sge_gdi_ctx_class_t *ctx)
 {
    lEnumeration *what = NULL;
    lList *alp = NULL, *lp = NULL;
-   lListElem *ep = NULL;
+   const lListElem *ep = NULL;
 
    DENTER(TOP_LAYER, "show_eventclients");
 
@@ -6185,7 +6186,7 @@ sge_gdi_ctx_class_t *ctx,
 lList *arglp 
 ) {
    lList *acls = NULL;
-   lListElem *argep = NULL, *ep = NULL;
+   const lListElem *argep = NULL, *ep = NULL;
    int fail = 0;
    const char *acl_name = NULL;
    int first_time = 1;
@@ -6241,9 +6242,10 @@ lList *arglp
 static int edit_usersets(sge_gdi_ctx_class_t *ctx, lList *arglp)
 {
    lList *usersets = NULL;
-   lListElem *argep=NULL;
+   const lListElem *argep=NULL;
    lListElem *ep=NULL;
-   lListElem *aep=NULL, *changed_ep=NULL;
+   const lListElem *aep=NULL;
+   lListElem *changed_ep=NULL;
    int status;
    const char *userset_name = NULL;
    lList *alp = NULL, *lp = NULL;
@@ -6869,7 +6871,7 @@ static int qconf_modify_attribute(sge_gdi_ctx_class_t *ctx,
       if (answer_list_has_error(alpp)) {
          lListElem *aep = NULL;
          
-         for_each(aep, *alpp) {
+         for_each_rw(aep, *alpp) {
             if (answer_has_quality(aep, ANSWER_QUALITY_ERROR) &&
                 (answer_get_status(aep) == STATUS_ESYNTAX)) {
                sprintf(SGE_EVENT, MSG_PARSE_BAD_ATTR_ARGS_SS, name, value);

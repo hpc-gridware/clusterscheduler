@@ -48,7 +48,7 @@
 #define ANSWER_LAYER CULL_LAYER
 
 static bool answer_is_recoverable(const lListElem *answer);
-static bool answer_log(lListElem *answer, bool show_info);
+static bool answer_log(const lListElem *answer, bool show_info);
 
 /****** sgeobj/answer/-AnswerList *********************************************
 *  NAME
@@ -397,7 +397,7 @@ void answer_list_to_dstring(const lList *alp, dstring *diag)
       if (!alp || (lGetNumberOfElem (alp) == 0)) {
          sge_dstring_copy_string(diag, MSG_ANSWERWITHOUTDIAG);
       } else {
-         lListElem *aep = NULL;
+         const lListElem *aep = NULL;
          
          sge_dstring_clear(diag);
          
@@ -506,7 +506,7 @@ bool answer_list_has_quality(lList **answer_list, answer_quality_t quality)
 
    DENTER(ANSWER_LAYER, "answer_list_has_quality");
    if (answer_list != NULL) {
-      lListElem *answer;   /* AN_Type */
+      const lListElem *answer;   /* AN_Type */
 
       for_each(answer, *answer_list) {
          if (answer_has_quality(answer, quality)) {
@@ -584,7 +584,7 @@ bool answer_list_has_status(lList **answer_list, u_long32 status)
    DENTER(ANSWER_LAYER, "answer_list_has_status");
 
    if (answer_list != NULL) {
-      lListElem *answer;   /* AN_Type */
+      const lListElem *answer;   /* AN_Type */
 
       for_each(answer, *answer_list) {
          if (answer_get_status(answer) == status) {
@@ -650,7 +650,7 @@ bool answer_list_has_error(lList **answer_list)
 ******************************************************************************/
 void answer_list_on_error_print_or_exit(lList **answer_list, FILE *stream)
 {
-   lListElem *answer;   /* AN_Type */
+   const lListElem *answer;   /* AN_Type */
 
    DENTER(ANSWER_LAYER, "answer_list_on_error_print_or_exit");
    for_each(answer, *answer_list) {
@@ -698,7 +698,7 @@ int answer_list_print_err_warn(lList **answer_list,
                                const char *warn_prefix)
 {
    int do_exit = 0;
-   lListElem *answer;   /* AN_Type */
+   const lListElem *answer;   /* AN_Type */
    u_long32 status = 0;
 
    DENTER(ANSWER_LAYER, "answer_list_print_err_warn");
@@ -757,7 +757,7 @@ int answer_list_handle_request_answer_list(lList **answer_list, FILE *stream) {
 
    DENTER(ANSWER_LAYER, "answer_list_handle_request_answer_list");
    if(answer_list != NULL && *answer_list != NULL) {
-      lListElem *answer;
+      const lListElem *answer;
 
       for_each(answer, *answer_list) {
          if(answer_has_quality(answer, ANSWER_QUALITY_CRITICAL) ||
@@ -965,7 +965,7 @@ void answer_list_append_list(lList **answer_list, lList **new_list)
 bool answer_list_log(lList **answer_list, bool is_free_list, bool show_info) {
 
    bool ret = false;
-   lListElem *answer;   /* AN_Type */
+   const lListElem *answer;   /* AN_Type */
 
    DENTER(ANSWER_LAYER, "answer_list_log");
 
@@ -1003,7 +1003,7 @@ bool answer_list_log(lList **answer_list, bool is_free_list, bool show_info) {
 *  NOTES
 *     MT-NOTE: answer_log() is MT safe
 ******************************************************************************/
-static bool answer_log(lListElem *answer, bool show_info) {
+static bool answer_log(const lListElem *answer, bool show_info) {
 
    bool ret = false;
 
@@ -1094,7 +1094,7 @@ int show_answer(lList *alp)
 
 int show_answer_list(lList *alp) 
 {
-   lListElem *aep = NULL;
+   const lListElem *aep = NULL;
    int ret = 0;
    
    DENTER(TOP_LAYER, "show_answer_list");

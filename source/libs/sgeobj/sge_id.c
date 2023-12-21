@@ -56,7 +56,7 @@ id_list_build_from_str_list(lList **id_list,
                             u_long32 option) 
 {
    bool ret = true;
-   lListElem *elem;
+   const lListElem *elem;
 
    DENTER(ID_LAYER, "id_list_build_from_str_list");
 

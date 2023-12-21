@@ -926,7 +926,7 @@ u_long32 sge_set_max_dynamic_event_clients(u_long32 new_value)
    if (max != Event_Master_Control.max_event_clients) {
       lList *answer_list = NULL;
       lListElem *new_range;
-      lListElem *event_client;
+      const lListElem *event_client;
 
       /* If the new max is lower than the old max, then lowering the maximum
        * prevents new event clients, but allows the old ones there to drain off naturally.
@@ -1187,7 +1187,7 @@ int sge_shutdown_event_client(u_long32 event_client_id, const char* anUser,
 *******************************************************************************/
 int sge_shutdown_dynamic_event_clients(const char *anUser, lList **alpp, monitoring_t *monitor)
 {
-   lListElem *client; 
+   const lListElem *client;
    int id = 0;
    const lList *master_manager_list = *object_type_get_master_list(SGE_TYPE_MANAGER);
 
@@ -1380,7 +1380,7 @@ bool sge_add_list_event(u_long32 timestamp, ev_event type,
       if (lp == NULL) {
          return false;
       }
-      for_each(element, list) {
+      for_each_rw (element, list) {
          lList *temp_sub_lp = NULL;
          int sub_list_elem = 0;
 
@@ -1608,7 +1608,7 @@ static void sge_event_master_process_send(const lListElem *request, monitoring_t
          type = (ev_event)lGetUlong(event, ET_type);
 
          sge_mutex_lock("event_master_mutex", SGE_FUNC, __LINE__, &Event_Master_Control.mutex);
-         for_each (event_client, Event_Master_Control.clients) {
+         for_each_rw (event_client, Event_Master_Control.clients) {
             ec_id = lGetUlong(event_client, EV_id);
 
             DPRINTF(("Preparing event for client %ld\n", ec_id));
@@ -2362,7 +2362,7 @@ static void total_update(lListElem *event_client, monitoring_t *monitor)
 static void build_subscription(lListElem *event_el)
 {
    const lList *subscription = lGetList(event_el, EV_subscribed);
-   lListElem *sub_el = NULL;
+   const lListElem *sub_el = NULL;
    subscription_t *sub_array = NULL;
    subscription_t *old_sub_array = NULL;
    int i = 0;
@@ -2591,7 +2591,7 @@ static int purge_event_list(lList *event_list, u_long32 event_number)
    DRETURN(purged);
 } /* remove_events_from_client() */
 
-static void add_list_event_direct(lListElem *event_client, lListElem *event, 
+static void add_list_event_direct(lListElem *event_client, lListElem *event,
                                   bool copy_event)
 {
    lList *lp = NULL;
@@ -2934,7 +2934,7 @@ static bool list_select(subscription_t *subscription, int type,
                ret = true;
                *reduced_lp = lCreateListHash("update", descr, do_hash);
 
-               for_each(element, lp) {
+               for_each_rw (element, lp) {
                   reduced_el = elem_select(subscription, element,
                                FIELD_LIST[entry_counter], selection,
                                fields, descr, sub_type);
@@ -3112,7 +3112,7 @@ eventclient_list_locate_by_adress(const char *host, const char *commproc,
 
    DENTER(TOP_LAYER, "eventclient_list_locate_by_adress");
 
-   for_each(ep, Event_Master_Control.clients) {
+   for_each_rw(ep, Event_Master_Control.clients) {
       if (lGetUlong(ep, EV_commid) == id &&
           !sge_hostcmp(lGetHost(ep, EV_host), host) &&
           !strcmp(lGetString(ep, EV_commproc), commproc)) {

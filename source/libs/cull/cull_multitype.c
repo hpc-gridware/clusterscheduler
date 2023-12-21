@@ -4322,7 +4322,7 @@ lListElem *lGetElemStrFirstRW(const lList *lp, int nm, const char *str, const vo
       return ep;
    } else {
       /* seek for element */
-      for_each(ep, lp) {
+      for_each_rw(ep, lp) {
          const char *s = lGetPosString(ep, pos);
          if (s && !strcmp(s, str)) {
             *iterator = ep;
@@ -4498,7 +4498,7 @@ lListElem *lGetElemStrLikeRW(const lList *lp, int nm, const char *str)
 
    /* seek for element */
    str_pos = strlen(str)-1;
-   for_each(ep, lp) {
+   for_each_rw(ep, lp) {
       s = lGetPosString(ep, pos);
       if (s && (!strcmp(s, str) ||
             (str[str_pos] == '*' && !strncmp(s, str, str_pos)))) {
@@ -4858,7 +4858,7 @@ lListElem *lGetElemUlongFirstRW(const lList *lp, int nm, lUlong val, const void 
       return ep;
    } else {
       /* seek for element */
-      for_each(ep, lp) {
+      for_each_rw(ep, lp) {
          lUlong s = lGetPosUlong(ep, pos);
          if (s == val) {
             *iterator = ep;
@@ -5153,7 +5153,7 @@ int lDelElemUlong64(lList **lpp, int nm, lUlong64 val)
    }
 
    /* seek element */
-   ep = lGetElemUlong64(*lpp, nm, val);
+   ep = lGetElemUlong64RW(*lpp, nm, val);
    if (ep) {
       lRemoveElem(*lpp, &ep);
       if (lGetNumberOfElem(*lpp) == 0) {
@@ -5198,7 +5198,7 @@ lListElem *lGetSubUlong64(const lListElem *ep, int nm, lUlong64 val, int snm)
    /* get position of sublist in ep */
    sublist_pos = lGetPosViaElem(ep, snm, SGE_DO_ABORT);
 
-   ret = lGetElemUlong64(ep->cont[sublist_pos].glp, nm, val);
+   ret = lGetElemUlong64RW(ep->cont[sublist_pos].glp, nm, val);
 
    DEXIT;
    return ret;
@@ -5224,10 +5224,15 @@ lListElem *lGetSubUlong64(const lListElem *ep, int nm, lUlong64 val, int snm)
 *    NULL if element was not found or an error occured
 *    otherwise pointer to element 
 ******************************************************************************/
-lListElem *lGetElemUlong64(const lList *lp, int nm, lUlong64 val) 
+lListElem *lGetElemUlong64RW(const lList *lp, int nm, lUlong64 val)
 {
    const void *iterator = NULL;
-   return lGetElemUlong64First(lp, nm, val, &iterator);
+   return lGetElemUlong64FirstRW(lp, nm, val, &iterator);
+}
+
+const lListElem *lGetElemUlong64(const lList *lp, int nm, lUlong64 val)
+{
+   return lGetElemUlong64RW(lp, nm, val);
 }
 
 /****** cull/multitype/lGetElemUlong64First() *********************************
@@ -5255,8 +5260,7 @@ lListElem *lGetElemUlong64(const lList *lp, int nm, lUlong64 val)
 *  RESULT
 *     lListElem* - element or NULL 
 ******************************************************************************/
-lListElem *lGetElemUlong64First(const lList *lp, int nm, lUlong64 val, 
-                              const void **iterator)
+lListElem *lGetElemUlong64FirstRW(const lList *lp, int nm, lUlong64 val, const void **iterator)
 {
    lListElem *ep = NULL;
    int pos;
@@ -5289,7 +5293,7 @@ lListElem *lGetElemUlong64First(const lList *lp, int nm, lUlong64 val,
       return ep;
    } else {
       /* seek for element */
-      for_each(ep, lp) {
+      for_each_rw(ep, lp) {
          lUlong64 s = lGetPosUlong64(ep, pos);
          if (s == val) {
             *iterator = ep;
@@ -5301,6 +5305,11 @@ lListElem *lGetElemUlong64First(const lList *lp, int nm, lUlong64 val,
 
    DEXIT;
    return NULL;
+}
+
+const lListElem *lGetElemUlong64First(const lList *lp, int nm, lUlong64 val, const void **iterator)
+{
+   return lGetElemUlong64FirstRW(lp, nm, val, iterator);
 }
 
 /****** cull/multitype/lGetElemUlong64Next() **********************************
@@ -5329,8 +5338,7 @@ lListElem *lGetElemUlong64First(const lList *lp, int nm, lUlong64 val,
 *  RESULT
 *     lListElem* - next element or NULL 
 ******************************************************************************/
-lListElem *lGetElemUlong64Next(const lList *lp, int nm, lUlong64 val, 
-                             const void **iterator)
+lListElem *lGetElemUlong64NextRW(const lList *lp, int nm, lUlong64 val, const void **iterator)
 {
    lListElem *ep;
    int pos;
@@ -5372,6 +5380,12 @@ lListElem *lGetElemUlong64Next(const lList *lp, int nm, lUlong64 val,
    DEXIT;
    return NULL;
 }
+
+const lListElem *lGetElemUlong64Next(const lList *lp, int nm, lUlong64 val, const void **iterator)
+{
+   return lGetElemUlong64NextRW(lp, nm, val, iterator);
+}
+
 /****** cull/multitype/lDelSubCaseStr() ***************************************
 *  NAME
 *     lDelSubCaseStr() -- removes elem specified by a string field nm 
@@ -5573,7 +5587,7 @@ lListElem *lGetElemCaseStr(const lList *lp, int nm, const char *str)
    }
 
    /* seek for element */
-   for_each(ep, lp) {
+   for_each_rw(ep, lp) {
       s = lGetPosString(ep, pos);
       if (s && !SGE_STRCASECMP(s, str)) {
          DEXIT;
@@ -5683,7 +5697,7 @@ lListElem *lGetElemHostFirstRW(const lList *lp, int nm, const char *str, const v
       sge_hostcpy(uhost, str); 
   
       /* sequence search */ 
-      for_each(ep, lp) {
+      for_each_rw(ep, lp) {
          s = lGetPosHost(ep, pos);
          if (s != NULL) {
             sge_hostcpy(cmphost, s);

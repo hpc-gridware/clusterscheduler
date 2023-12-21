@@ -198,7 +198,7 @@ static bool sge_parse_showq_tacc(lList **alpp, lList **ppcmdline, lList **user_l
 static int showq_show_job_tacc(sge_gdi_ctx_class_t * ctx, lList * user_list, int full, const bool binding,
                                lList * sfa_list, lList * sfw_list)
 {
-   lListElem      *j_elem = 0;
+   const lListElem      *j_elem = 0;
    lList          *jlp = NULL;
    lList          *ilp = NULL;
    lCondition     *where = NULL, *newcp = NULL;

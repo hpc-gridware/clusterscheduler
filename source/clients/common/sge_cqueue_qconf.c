@@ -140,7 +140,7 @@ static bool cqueue_hgroup_get_via_gdi(sge_gdi_ctx_class_t *ctx, lList **answer_l
       state_gdi_multi state = STATE_GDI_MULTI_INIT;
       lList *multi_answer_list = NULL;
       lCondition *cqueue_where = NULL;
-      lListElem *qref = NULL;
+      const lListElem *qref = NULL;
       bool fetch_all_hgroup = false;
       bool fetch_all_qi = false;
       bool fetch_all_nqi = false;
@@ -559,7 +559,7 @@ cqueue_show(sge_gdi_ctx_class_t *ctx, lList **answer_list, const lList *qref_pat
       local_ret = cqueue_hgroup_get_via_gdi(ctx, answer_list, qref_pattern_list,
                                             &hgroup_list, &cqueue_list);
       if (local_ret) {
-         for_each(qref_pattern, qref_pattern_list) {
+         for_each_rw(qref_pattern, qref_pattern_list) {
             dstring cqueue_name = DSTRING_INIT;
             dstring host_domain = DSTRING_INIT;
             const char *cq_pattern = NULL;
@@ -567,7 +567,7 @@ cqueue_show(sge_gdi_ctx_class_t *ctx, lList **answer_list, const lList *qref_pat
             bool has_hostname;
             bool has_domain;
             lList *qref_list = NULL;
-            lListElem *qref = NULL;
+            const lListElem *qref = NULL;
             bool found_something = false;
 
             name = lGetString(qref_pattern, QR_name);
@@ -781,7 +781,7 @@ cqueue_list_sick(sge_gdi_ctx_class_t *ctx, lList **answer_list)
       dstring ds = DSTRING_INIT;
       lListElem *cqueue = NULL;
 
-      for_each(cqueue, cqueue_list) {
+      for_each_rw(cqueue, cqueue_list) {
          cqueue_sick(cqueue, answer_list, hgroup_list, &ds);
       }
 

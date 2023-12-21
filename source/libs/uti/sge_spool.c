@@ -821,7 +821,7 @@ void sge_silent_set(int i)
 *  NOTES
 *     MT-NOTE: sge_silent_get() is not MT safe
 ******************************************************************************/
-int sge_silent_get()
+int sge_silent_get(void)
 {
    return silent_flag;
 } 

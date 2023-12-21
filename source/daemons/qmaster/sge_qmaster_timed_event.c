@@ -918,7 +918,7 @@ void te_check_time(time_t aTime)
 
       WARNING((SGE_EVENT, MSG_SYSTEM_SYSTEMHASBEENMODIFIEDXSECONDS_I, (int)delta));
 
-      for_each (le, Event_Control.list) {
+      for_each_rw (le, Event_Control.list) {
          lSetUlong(le, TE_when, (lGetUlong(le, TE_when) - delta));
       }
 

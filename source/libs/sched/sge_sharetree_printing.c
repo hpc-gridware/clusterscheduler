@@ -103,7 +103,7 @@ calculate_share_percents(lListElem *node, double parent_percent, double sibling_
    lListElem *child;
    double sum_shares=0;
 
-   for_each(child, lGetList(node, STN_children)) {
+   for_each_rw(child, lGetList(node, STN_children)) {
       sum_shares += lGetUlong(child, STN_shares);
    }
 
@@ -122,7 +122,7 @@ calculate_share_percents(lListElem *node, double parent_percent, double sibling_
       lSetDouble(node, STN_adjusted_proportion, 0);
    }
 
-   for_each(child, lGetList(node, STN_children)) {
+   for_each_rw(child, lGetList(node, STN_children)) {
       calculate_share_percents(child, lGetDouble(node, STN_adjusted_proportion),
 			       sum_shares);
    }

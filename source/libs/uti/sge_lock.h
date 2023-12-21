@@ -54,7 +54,7 @@ typedef enum {
    LOCK_WRITE = 2  /* exclusive */
 } sge_lockmode_t;
 
-typedef u_long32 sge_locker_t;
+typedef u_long64 sge_locker_t;
 
 typedef enum {
    /* 

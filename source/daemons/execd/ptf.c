@@ -178,7 +178,7 @@ static void ptf_get_usage_from_data_collector(void);
 
 static lListElem *ptf_process_job(osjobid_t os_job_id,
                                   const char *task_id_str,
-                                  lListElem *new_job, u_long32 jataskid);
+                                  const lListElem *new_job, u_long32 jataskid);
 
 static lListElem *ptf_get_job_os(const lList *job_list, osjobid_t os_job_id,
                                  lListElem **job_elem);
@@ -193,7 +193,7 @@ static osjobid_t ptf_get_osjobid(lListElem *osjob);
 
 static void ptf_set_osjobid(lListElem *osjob, osjobid_t osjobid);
 
-static void ptf_set_native_job_priority(lListElem *job, lListElem *osjob,
+static void ptf_set_native_job_priority(lListElem *job, const lListElem *osjob,
                                         long pri);
 
 static lList *ptf_build_usage_list(char *name, lList *old_usage_list);
@@ -210,7 +210,7 @@ static void ptf_setpriority_jobid(lListElem *job, lListElem *osjob, long pri);
 
 #elif defined(ALPHA) || defined(SOLARIS) || defined(LINUX) || defined(FREEBSD) || defined(DARWIN)
 
-static void ptf_setpriority_addgrpid(lListElem *job, lListElem *osjob,
+static void ptf_setpriority_addgrpid(const lListElem *job, const lListElem *osjob,
                                      long pri);
 
 #endif
@@ -316,7 +316,7 @@ static lList *ptf_build_usage_list(char *name, lList *old_usage_list)
 
    if (old_usage_list) {
       usage_list = lCopyList(name, old_usage_list);
-      for_each(usage, usage_list) {
+      for_each_rw(usage, usage_list) {
          lSetDouble(usage, UA_value, 0);
       }
    } else {
@@ -390,14 +390,14 @@ void ptf_reinit_queue_priority(u_long32 job_id, u_long32 ja_task_id,
       return;
    }
 
-   for_each(job_elem, ptf_jobs) {
+   for_each_rw(job_elem, ptf_jobs) {
       const lList *os_job_list;
       lListElem *os_job;
 
       if (lGetUlong(job_elem, JL_job_ID) == job_id) {
          DPRINTF(("\tjob id: " sge_u32 "\n", lGetUlong(job_elem, JL_job_ID)));
          os_job_list = lGetList(job_elem, JL_OS_job_list);
-         for_each(os_job, os_job_list) {
+         for_each_rw(os_job, os_job_list) {
             if (lGetUlong(os_job, JO_ja_task_ID) == ja_task_id &&
                 ((!pe_task_id_str && !lGetString(os_job, JO_task_id_str))
                  || (pe_task_id_str && lGetString(os_job, JO_task_id_str) &&
@@ -436,7 +436,7 @@ void ptf_reinit_queue_priority(u_long32 job_id, u_long32 ja_task_id,
 ******************************************************************************/
 static void ptf_set_job_priority(lListElem *job)
 {
-   lListElem *osjob;
+   const lListElem *osjob;
    long pri = lGetLong(job, JL_pri);
 
    DENTER(TOP_LAYER, "ptf_set_job_priority");
@@ -464,7 +464,7 @@ static void ptf_set_job_priority(lListElem *job)
 *     lListElem *osjob - one of the os jobs of "job" 
 *     long pri         - new priority value 
 ******************************************************************************/
-static void ptf_set_native_job_priority(lListElem *job, lListElem *osjob, 
+static void ptf_set_native_job_priority(lListElem *job, const lListElem *osjob,
                                         long pri)
 {
 #if defined(__sgi)
@@ -652,10 +652,10 @@ static void ptf_setpriority_jobid(lListElem *job, lListElem *osjob, long pri)
 *     lListElem *osjob - one of the os jobs of "job"
 *     long pri         - new priority
 ******************************************************************************/
-static void ptf_setpriority_addgrpid(lListElem *job, lListElem *osjob, 
+static void ptf_setpriority_addgrpid(const lListElem *job, const lListElem *osjob,
                                      long pri)
 {
-   lListElem *pid;
+   const lListElem *pid;
 
    DENTER(TOP_LAYER, "ptf_setpriority_addgrpid");
 
@@ -750,7 +750,8 @@ static lListElem *ptf_get_job(u_long job_id)
 static lListElem *ptf_get_job_os(const lList *job_list, osjobid_t os_job_id, 
                                  lListElem **job_elem)
 {
-   lListElem *job, *osjob = NULL;
+   lListElem *job;
+   lListElem *osjob = NULL;
    lCondition *where;
 
    DENTER(TOP_LAYER, "ptf_get_job_os");
@@ -771,7 +772,7 @@ static lListElem *ptf_get_job_os(const lList *job_list, osjobid_t os_job_id,
    if (job_elem && (*job_elem)) {
       osjob = lFindFirst(lGetList(*job_elem, JL_OS_job_list), where);
    } else {
-      for_each(job, job_list) {
+      for_each_rw(job, job_list) {
          osjob = lFindFirst(lGetList(job, JL_OS_job_list), where);
          if (osjob) {
             break;
@@ -796,7 +797,7 @@ static lListElem *ptf_get_job_os(const lList *job_list, osjobid_t os_job_id,
  *--------------------------------------------------------------------*/
 
 static lListElem *ptf_process_job(osjobid_t os_job_id, const char *task_id_str,
-                                  lListElem *new_job, u_long32 jataskid)
+                                  const lListElem *new_job, u_long32 jataskid)
 {
    lListElem *job, *osjob;
    lList *job_list = ptf_jobs;
@@ -1034,12 +1035,12 @@ static void ptf_get_usage_from_data_collector(void)
       }
       sge_free(&ojobs);
 
-      for_each(job, ptf_jobs) {
+      for_each_rw(job, ptf_jobs) {
          double usage_value, old_usage_value;
          double cpu_usage_value = 0;
          int active_jobs = 0;
 
-         for_each(osjob, lGetList(job, JL_OS_job_list)) {
+         for_each_rw(osjob, lGetList(job, JL_OS_job_list)) {
             lListElem *usage;
 
             if ((usage = lGetElemStrRW(lGetList(osjob, JO_usage_list), UA_name, USAGE_ATTR_CPU))) {
@@ -1332,7 +1333,7 @@ static void ptf_set_OS_scheduling_parameters(lList *job_list, double min_share,
    }
 
    /* Set the priority for each job */
-   for_each(job, job_list) {
+   for_each_rw(job, job_list) {
 
       pri = pri_max + (long)(pri_range * (1.0 -
                        lGetDouble(job, JL_adjusted_current_proportion)));
@@ -1376,7 +1377,7 @@ static void ptf_set_OS_scheduling_parameters(lList *job_list, double min_share,
  * ptf_job_started - process new job
  *--------------------------------------------------------------------*/
 int ptf_job_started(osjobid_t os_job_id, const char *task_id_str, 
-                    lListElem *new_job, u_long32 jataskid)
+                    const lListElem *new_job, u_long32 jataskid)
 {
    DENTER(TOP_LAYER, "ptf_job_started");
 
@@ -1453,7 +1454,7 @@ int ptf_job_complete(u_long32 job_id, u_long32 ja_task_id, const char *pe_task_i
    if (pe_task_id == NULL) {
       osjob = lFirstRW(osjobs);
    } else {
-      for_each(osjob, osjobs) {
+      for_each_rw(osjob, osjobs) {
          if (lGetUlong(osjob, JO_ja_task_ID) == ja_task_id) {
             const char *osjob_pe_task_id = lGetString(osjob, JO_task_id_str);
 
@@ -1523,7 +1524,7 @@ int ptf_process_job_ticket_list(lList *job_ticket_list)
      * tickets from the job ticket list.  Reset the usage to the
      * minimum usage value.
      */
-   for_each(jte, job_ticket_list) {
+   for_each_rw(jte, job_ticket_list) {
 
       /* 
        * set JB_script_file because we don't know if this is
@@ -1589,7 +1590,7 @@ int ptf_adjust_job_priorities(void)
    /*
     * Do pass 0 of calculating job proportional share of resources
     */
-   for_each(job, job_list) {
+   for_each_rw(job, job_list) {
       ptf_calc_job_proportion_pass0(job, &sum_of_job_tickets,
                                     &sum_of_last_usage);
    }
@@ -1600,7 +1601,7 @@ int ptf_adjust_job_priorities(void)
    /*
     * Do pass 1 of calculating job proportional share of resources
     */
-   for_each(job, job_list) {
+   for_each_rw(job, job_list) {
       ptf_calc_job_proportion_pass1(job, sum_of_job_tickets,
                                     sum_of_last_usage, &sum_proportion);
    }
@@ -1608,7 +1609,7 @@ int ptf_adjust_job_priorities(void)
    /*
     * Do pass 2 of calculating job proportional share of resources
     */
-   for_each(job, job_list) {
+   for_each_rw(job, job_list) {
       ptf_calc_job_proportion_pass2(job, sum_of_job_tickets,
                                     sum_proportion, 
                                     &sum_adjusted_proportion,
@@ -1618,7 +1619,7 @@ int ptf_adjust_job_priorities(void)
    /*
     * Do pass 3 of calculating job proportional share of resources
     */
-   for_each(job, job_list) {
+   for_each_rw(job, job_list) {
       ptf_calc_job_proportion_pass3(job, sum_proportion,
                                     sum_interval_usage, &min_share,
                                     &max_share, &max_ticket_share);
@@ -1627,7 +1628,7 @@ int ptf_adjust_job_priorities(void)
    max_share = 0;
    min_share = -1;
 
-   for_each(job, job_list) {
+   for_each_rw(job, job_list) {
       double shr;
 
       /*
@@ -1636,7 +1637,7 @@ int ptf_adjust_job_priorities(void)
       shr = lGetDouble(job, JL_share);
 
       num_procs = 0;
-      for_each(osjob, lGetList(job, JL_OS_job_list)) {
+      for_each_rw(osjob, lGetList(job, JL_OS_job_list)) {
          if ((pid_list = lGetList(osjob, JO_pid_list))) {
             num_procs += lGetNumberOfElem(pid_list);
          }
@@ -1691,7 +1692,7 @@ static lList *_ptf_get_job_usage(lListElem *job, u_long ja_task_id,
       return NULL;
    }
 
-   for_each(osjob, lGetList(job, JL_OS_job_list)) {
+   for_each_rw(osjob, lGetList(job, JL_OS_job_list)) {
       task_id_str = lGetString(osjob, JO_task_id_str);
 
       if ((((!task_id || !task_id[0]) && !task_id_str) 
@@ -1700,7 +1701,7 @@ static lList *_ptf_get_job_usage(lListElem *job, u_long ja_task_id,
           && (lGetUlong(osjob, JO_ja_task_ID) == ja_task_id)) {
 
          if (job_usage) {
-            for_each(usrc, lGetList(osjob, JO_usage_list)) {
+            for_each_rw(usrc, lGetList(osjob, JO_usage_list)) {
                if ((udst = lGetElemStrRW(job_usage, UA_name, lGetString(usrc, UA_name)))) {
                   lSetDouble(udst, UA_value, lGetDouble(udst, UA_value) + lGetDouble(usrc, UA_value));
                } else {
@@ -1734,11 +1735,11 @@ int ptf_get_usage(lList **job_usage_list)
 
    temp_usage_list = lCreateList("PtfJobUsageList", JB_Type);
    job_list = ptf_jobs;
-   for_each(job, job_list) {
+   for_each_rw(job, job_list) {
       lListElem *tmp_job = NULL;
       u_long32 job_id = lGetUlong(job, JL_job_ID);
 
-      for_each(osjob, lGetList(job, JL_OS_job_list)) {
+      for_each_rw(osjob, lGetList(job, JL_OS_job_list)) {
          lListElem *tmp_ja_task;
          lListElem *tmp_pe_task;
          u_long32 ja_task_id = lGetUlong(osjob, JO_ja_task_ID);
@@ -1853,20 +1854,20 @@ void ptf_stop(void)
 void ptf_show_registered_jobs(void)
 {
    lList *job_list;
-   lListElem *job_elem;
+   const lListElem *job_elem;
 
    DENTER(TOP_LAYER, "ptf_show_registered_jobs");
 
    job_list = ptf_jobs;
    for_each(job_elem, job_list) {
       const lList *os_job_list;
-      lListElem *os_job;
+      const lListElem *os_job;
 
       DPRINTF(("\tjob id: " sge_u32 "\n", lGetUlong(job_elem, JL_job_ID)));
       os_job_list = lGetList(job_elem, JL_OS_job_list);
       for_each(os_job, os_job_list) {
          const lList *process_list;
-         lListElem *process;
+         const lListElem *process;
          const char *pe_task_id_str;
          u_long32 ja_task_id;
 
@@ -1890,7 +1891,7 @@ void ptf_show_registered_jobs(void)
 }
 
 void ptf_unregister_registered_job(u_long32 job_id, u_long32 ja_task_id ) {
-  lListElem *job;
+   lListElem *job;
    lListElem *next_job;
 
    DENTER(TOP_LAYER, "ptf_unregister_registered_job");
@@ -1930,13 +1931,13 @@ void ptf_unregister_registered_job(u_long32 job_id, u_long32 ja_task_id ) {
 
 void ptf_unregister_registered_jobs(void)
 {
-   lListElem *job;
+   const lListElem *job;
 
    DENTER(TOP_LAYER, "ptf_unregister_registered_jobs");
 
    for_each(job, ptf_jobs) {
       lListElem *os_job;
-      for_each(os_job, lGetList(job, JL_OS_job_list)) {
+      for_each_rw(os_job, lGetList(job, JL_OS_job_list)) {
          psIgnoreJob(ptf_get_osjobid(os_job));
          DPRINTF(("PTF: Notify PDC to remove data for osjobid " sge_u32 "\n",
                   lGetUlong(os_job, JO_OS_job_ID)));

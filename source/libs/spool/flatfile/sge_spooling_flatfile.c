@@ -643,7 +643,7 @@ spool_classic_default_list_func(lList **answer_list,
          /* if we have a directory (= multiple files) to parse */ 
          if (ret && directory != NULL) { 
             lList *direntries;
-            lListElem *direntry;
+            const lListElem *direntry;
             char abs_dir_buf[SGE_PATH_MAX];
             dstring abs_dir_dstring;
             const char *abs_dir;
@@ -678,14 +678,14 @@ spool_classic_default_list_func(lList **answer_list,
                dstring key = DSTRING_INIT;
                dstring dir = DSTRING_INIT;
 
-               for_each(queue, *list) {
+               for_each_rw(queue, *list) {
                   lList *direntries;
                   lListElem *direntry;
                   lList *qinstance_list = lCreateList("", QU_Type);
 
                   sge_dstring_sprintf(&dir, "%s/%s/%s", url, QINSTANCES_DIR, lGetString(queue, CQ_name));
                   direntries = sge_get_dirents(sge_dstring_get_string(&dir));
-                  for_each(direntry, direntries) {
+                  for_each_rw(direntry, direntries) {
                      const char *directory = lGetString(direntry, ST_name);
                      if (directory[0] != '.') {
                         sge_dstring_sprintf(&key, "%s/%s", lGetString(queue, CQ_name), directory);
@@ -1335,7 +1335,7 @@ spool_classic_default_delete_func(lList **answer_list,
 
 static bool write_manop(int spool, int target) {
    FILE *fp;
-   lListElem *ep;
+   const lListElem *ep;
    const lList *lp;
    char filename[255], real_filename[255];
    dstring ds = DSTRING_INIT;

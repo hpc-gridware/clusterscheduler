@@ -171,7 +171,7 @@ int mailrec_unparse(const lList *head, char *mail_str, unsigned int mail_str_len
    int len=0;
    int comma_needed = 0; /* whether we need to insert a comma */
    char tmpstr[1000];    /* need 1000 for brain damaged mail addresse(e)s */
-   lListElem *elem;
+   const lListElem *elem;
    const char *h;
    const char *u;
 

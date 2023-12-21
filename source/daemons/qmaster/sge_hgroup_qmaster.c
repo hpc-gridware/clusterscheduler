@@ -137,7 +137,7 @@ hgroup_mod_hostlist(lListElem *hgroup, lList **answer_list,
                                  lGetHost(hgroup, HGRP_name));
             if (ret) {
                if (*occupant_groups != NULL && add_groups != NULL) {
-                  lListElem *add_group = NULL;
+                  const lListElem *add_group = NULL;
 
                   for_each(add_group, add_groups) {
                      const char *name = lGetHost(add_group, HR_name);
@@ -257,7 +257,7 @@ hgroup_mod(sge_gdi_ctx_class_t *ctx,
          if (hgroup_check_name(answer_list, name)) {
             lSetHost(hgroup, HGRP_name, name); 
          } else {
-            lListElem *aep;
+            const lListElem *aep;
             for_each(aep, *answer_list) {
                ERROR((SGE_EVENT, SFNMAX, lGetString(aep, AN_text)));
             }
@@ -301,7 +301,7 @@ hgroup_mod(sge_gdi_ctx_class_t *ctx,
                                        &occupant_groups);
          }
          if (ret) {
-            lListElem *cqueue;
+            const lListElem *cqueue;
 
             for_each (cqueue, master_cqueue_list) {
                if (cqueue_is_a_href_referenced(cqueue, occupant_groups, true)) {
@@ -575,7 +575,7 @@ hgroup_spool(sge_gdi_ctx_class_t *ctx, lList **answer_list, lListElem *this_elem
    bool dbret;
    const char *name = lGetHost(this_elem, HGRP_name);
    const lList *cqueue_list = lGetList(this_elem, HGRP_cqueue_list);
-   lListElem *cqueue = NULL;
+   const lListElem *cqueue = NULL;
    dstring key_dstring = DSTRING_INIT;
    lList *spool_answer_list = NULL;
    bool job_spooling = ctx->get_job_spooling(ctx);
@@ -596,7 +596,7 @@ hgroup_spool(sge_gdi_ctx_class_t *ctx, lList **answer_list, lListElem *this_elem
    if (tmp_ret) {
       for_each (cqueue, cqueue_list) {
          const lList *qinstance_list = lGetList(cqueue, CQ_qinstances);
-         lListElem *qinstance = NULL;
+         const lListElem *qinstance = NULL;
          const char *cqname = lGetString(cqueue, CQ_name);
 
          for_each(qinstance, qinstance_list) {

@@ -916,7 +916,7 @@ bool qinstance_change_state_on_calendar_all(sge_gdi_ctx_class_t *ctx,
                                             const lList *state_change_list, monitoring_t *monitor)
 {
    bool ret = true;
-   lListElem *cqueue;
+   const lListElem *cqueue;
 
    DENTER(TOP_LAYER, "qinstance_signal_on_calendar_all");
 
@@ -924,7 +924,7 @@ bool qinstance_change_state_on_calendar_all(sge_gdi_ctx_class_t *ctx,
       const lList *qinstance_list = lGetList(cqueue, CQ_qinstances);
       lListElem *qinstance = NULL;
 
-      for_each(qinstance, qinstance_list) {
+      for_each_rw(qinstance, qinstance_list) {
          const char *queue_calendar = lGetString(qinstance, QU_calendar);
 
          if (queue_calendar != NULL && !strcmp(queue_calendar, cal_name)) {
@@ -1228,9 +1228,9 @@ qinstance_reinit_consumable_actual_list(lListElem *this_elem,
       qinstance_set_conf_slots_used(this_elem);
       qinstance_debit_consumable(this_elem, NULL, centry_list, 0, true, NULL);
 
-      for_each(ep, job_list) {
+      for_each_rw(ep, job_list) {
          const lList *ja_task_list = lGetList(ep, JB_ja_tasks);
-         lListElem *ja_task = NULL;
+         const lListElem *ja_task = NULL;
 
          for_each(ja_task, ja_task_list) {
             const lList *gdil = lGetList(ja_task, JAT_granted_destin_identifier_list);
@@ -1250,7 +1250,7 @@ qinstance_reinit_consumable_actual_list(lListElem *this_elem,
             }
          }
       }
-      for_each(ep, ar_list) {
+      for_each_rw(ep, ar_list) {
          const lList *gdil = lGetList(ep, AR_granted_slots);
          const lListElem *gdil_ep = lGetElemStr(gdil, JG_qname, name);
 

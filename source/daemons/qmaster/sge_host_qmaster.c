@@ -122,7 +122,7 @@ host_initalitze_timer(void)
       /* get "template" element pointer */
       template_host_elem = host_list_locate(master_ehost_list, SGE_TEMPLATE_NAME);
       
-      for_each(host, master_ehost_list) {
+      for_each_rw(host, master_ehost_list) {
          if ((host != global_host_elem) && (host != template_host_elem)) {
             reschedule_add_additional_time(load_report_interval(host));
             reschedule_unknown_trigger(host);
@@ -224,7 +224,7 @@ host_list_add_missing_href(sge_gdi_ctx_class_t *ctx,
                            monitoring_t *monitor)
 {
    bool ret = true;
-   lListElem *href = NULL;
+   const lListElem *href = NULL;
 
    DENTER(TOP_LAYER, "host_list_add_missing_href");
    for_each(href, href_list) {
@@ -557,7 +557,7 @@ int host_mod(sge_gdi_ctx_class_t *ctx, lList **alpp, lListElem *new_host, lListE
       if (acl_changed == true) {
          lListElem *ar;
 
-         for_each(ar, master_ar_list) {
+         for_each_rw(ar, master_ar_list) {
             if (lGetElemHost(lGetList(ar, AR_granted_slots), JG_qhostname, host)) {
                if (!sge_ar_have_users_access(NULL, ar, host, lGetList(ep, EH_acl),
                                              lGetList(ep, EH_xacl),
@@ -742,7 +742,7 @@ void sge_update_load_values(sge_gdi_ctx_class_t *ctx, const char *rhost, lList *
 
    host_ep = NULL;
    /* loop over all received load values */
-   for_each(ep, lp) {
+   for_each_rw(ep, lp) {
       /* get name, value and other info */
       const char *name = lGetString(ep, LR_name);
       const char *value = lGetString(ep, LR_value);
@@ -841,7 +841,7 @@ void sge_update_load_values(sge_gdi_ctx_class_t *ctx, const char *rhost, lList *
 */
 void sge_load_value_cleanup_handler(sge_gdi_ctx_class_t *ctx, te_event_t anEvent, monitoring_t *monitor)
 {
-   lListElem *hep; 
+   lListElem *hep;
    const char *host;
    u_long32 timeout; 
    lListElem *global_host_elem   = NULL;
@@ -861,7 +861,7 @@ void sge_load_value_cleanup_handler(sge_gdi_ctx_class_t *ctx, te_event_t anEvent
    /* get "template" element pointer */
    template_host_elem = host_list_locate(master_exechost_list, SGE_TEMPLATE_NAME); 
    /* take each host including the "global" host */
-   for_each(hep, master_exechost_list) {
+   for_each_rw(hep, master_exechost_list) {
       unsigned long last_heard;
       if (hep == template_host_elem || hep == global_host_elem) {
          continue;
@@ -954,7 +954,7 @@ u_long32 load_report_interval(lListElem *hep)
 
 static void exec_host_change_queue_version(sge_gdi_ctx_class_t *ctx, const char *exechost_name)
 {
-   lListElem *cqueue = NULL;
+   const lListElem *cqueue = NULL;
    bool change_all = (strcasecmp(exechost_name, SGE_GLOBAL_NAME) == 0) ? true : false;
    lList *master_cqueue_list = *object_type_get_master_list_rw(SGE_TYPE_CQUEUE);
 
@@ -1035,7 +1035,8 @@ static void master_kill_execds(
 sge_gdi_ctx_class_t *ctx, sge_gdi_packet_class_t *packet, sge_gdi_task_class_t *task) 
 {
    int kill_jobs;
-   lListElem *lel, *rep;
+   lListElem *lel;
+   const lListElem *rep;
    char host[CL_MAXHOSTLEN];
    const char *hostname;
    lList *master_ehost_list = *object_type_get_master_list_rw(SGE_TYPE_EXECHOST);
@@ -1048,7 +1049,7 @@ sge_gdi_ctx_class_t *ctx, sge_gdi_packet_class_t *packet, sge_gdi_task_class_t *
       kill_jobs = lGetUlong(lFirst(task->data_list), ID_force)?1:0;
       /* walk over exechost list and send every exechosts execd a
          notification */
-      for_each(lel, master_ehost_list) {  
+      for_each_rw(lel, master_ehost_list) {
          hostname = lGetHost(lel, EH_name);
          if (strcmp(hostname, SGE_TEMPLATE_NAME) && strcmp(hostname, SGE_GLOBAL_NAME)) {
             notify(ctx, lel, packet, task, kill_jobs, 0); 
@@ -1107,7 +1108,7 @@ notify(sge_gdi_ctx_class_t *ctx, lListElem *lel, sge_gdi_packet_class_t *packet,
    u_long execd_alive;
    const char *action_str;
    u_long32 state;
-   lListElem *jep;
+   const lListElem *jep;
    const lList *mail_users;
    const lList *gdil;
    int mail_options;
@@ -1154,7 +1155,7 @@ notify(sge_gdi_ctx_class_t *ctx, lListElem *lel, sge_gdi_packet_class_t *packet,
          mail_users = NULL;
          mail_options = 0;
 
-         for_each(jatep, lGetList(jep, JB_ja_tasks)) {
+         for_each_rw(jatep, lGetList(jep, JB_ja_tasks)) {
             gdil = lGetList(jatep, JAT_granted_destin_identifier_list);
             if (gdil) {
                if(!(sge_hostcmp(lGetHost(lFirst(gdil), JG_qhostname), hostname))) {
@@ -1265,7 +1266,7 @@ sge_execd_startedup(sge_gdi_ctx_class_t *ctx, lListElem *host, lList **alpp,
     * reinit state of all qinstances at this host according to initial_state
     */
    if (!is_restart) {
-      for_each (cqueue, master_cqueue_list) {
+      for_each_rw (cqueue, master_cqueue_list) {
          const lList *qinstance_list = lGetList(cqueue, CQ_qinstances);
          lListElem *qinstance = lGetElemHostRW(qinstance_list, QU_qhostname, rhost);
 
@@ -1295,7 +1296,7 @@ sge_execd_startedup(sge_gdi_ctx_class_t *ctx, lListElem *host, lList **alpp,
 static int verify_scaling_list(lList **answer_list, lListElem *host) 
 {
    bool ret = true;
-   lListElem *hs_elem = NULL;
+   const lListElem *hs_elem = NULL;
    const lList *master_centry_list = *object_type_get_master_list(SGE_TYPE_CENTRY);
 
    DENTER(TOP_LAYER, "verify_scaling_list");
@@ -1540,14 +1541,14 @@ static int attr_mod_threshold(sge_gdi_ctx_class_t *ctx, lList **alpp, lListElem 
       }
       {
          lListElem *jep = NULL;
-         lListElem *ar_ep = NULL;
+         const lListElem *ar_ep = NULL;
          const char *host = lGetHost(tmp_elem, EH_name);
          int global_host = !strcmp(SGE_GLOBAL_NAME, host);
 
          lSetList(tmp_elem, EH_resource_utilization, NULL);
          debit_host_consumable(NULL, tmp_elem, master_centry_list, 0, true, NULL);
-         for_each (jep, master_job_list) {
-            lListElem *jatep = NULL;
+         for_each_rw (jep, master_job_list) {
+            const lListElem *jatep = NULL;
 
             for_each (jatep, lGetList(jep, JB_ja_tasks)) {
                const lList *gdil = lGetList(jatep, JAT_granted_destin_identifier_list);

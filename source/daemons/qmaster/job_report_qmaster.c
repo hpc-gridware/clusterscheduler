@@ -207,7 +207,7 @@ void process_job_report(sge_gdi_ctx_class_t *ctx, lListElem *report,
    ** now check all job reports found in step 1 are 
    ** removed from job report list
    */
-   for_each(jr, jrl) {
+   for_each_rw(jr, jrl) {
       const char *queue_name;
       const char *pe_task_id_str = lGetString(jr, JR_pe_task_id_str);
       u_long32 status = 0;

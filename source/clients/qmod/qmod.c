@@ -77,7 +77,7 @@ char **argv
    u_long32 force = 0;
    lList *ref_list = NULL;
    lList *alp = NULL, *pcmdline = NULL;
-   lListElem *aep;
+   const lListElem *aep;
    sge_gdi_ctx_class_t *ctx = NULL;
    bool answ_list_has_err = false;
 
@@ -127,7 +127,7 @@ char **argv
 
    {
       lListElem *idep = NULL;
-      for_each(idep, ref_list) {
+      for_each_rw(idep, ref_list) {
          lSetUlong(idep, ID_force, force);
       }
    }
@@ -193,7 +193,7 @@ static bool answer_list_has_exit_code_error(lList **answer_list)
    if (answer_list_has_quality(answer_list, ANSWER_QUALITY_CRITICAL) == true) {
       ret = true;
    } else {
-      lListElem *answer;   /* AN_Type */
+      const lListElem *answer;   /* AN_Type */
       /* check each ERROR if the status is really != 1 (STATUS_OK) */
       u_long32 status;
       for_each(answer, *answer_list) {

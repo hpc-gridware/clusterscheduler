@@ -609,7 +609,7 @@ static int sge_parse_qhost(lList **ppcmdline,
          /* 
          ** resolve hostnames and replace them in list
          */
-         for_each(ep, *pphost) {
+         for_each_rw(ep, *pphost) {
             if (sge_resolve_host(ep, ST_name) != CL_RETVAL_OK) {
                char buf[BUFSIZ];
                sprintf(buf, MSG_SGETEXT_CANTRESOLVEHOST_S, lGetString(ep,ST_name) );

@@ -201,7 +201,7 @@ static void utilization_print_all(const lList* pe_list, lList *host_list, const 
 
 void utilization_print(const lListElem *cr, const char *object_name) 
 { 
-   lListElem *rde;
+   const lListElem *rde;
    DENTER(TOP_LAYER, "utilization_print");
 
    DPRINTF(("resource utilization: %s \"%s\" %f utilized now\n", 
@@ -695,7 +695,9 @@ u_long32 utilization_below(const lListElem *cr, double max_util, const char *obj
 *******************************************************************************/
 int add_job_utilization(const sge_assignment_t *a, const char *type, bool for_job_scheduling)
 {
-   lListElem *gel, *qep, *hep; 
+   const lListElem *gel;
+   lListElem *qep;
+   lListElem *hep;
    u_long32 ar_id = lGetUlong(a->job, JB_ar);
 
    DENTER(TOP_LAYER, "add_job_utilization");
@@ -724,7 +726,7 @@ int add_job_utilization(const sge_assignment_t *a, const char *type, bool for_jo
          const char *queue_instance = lGetString(gel, JG_qname);
          char *queue = cqueue_get_name_from_qinstance(queue_instance);
 
-         lListElem *rqs = NULL;
+         const lListElem *rqs = NULL;
 
          /* hosts */
          if ((hep = host_list_locate(a->host_list, eh_name)) != NULL) {
@@ -820,7 +822,7 @@ int rc_add_job_utilization(lListElem *jep, u_long32 task_id, const char *type,
       DRETURN(0);
    }
 
-   for_each(cr_config, lGetList(ep, config_nm)) {
+   for_each_rw (cr_config, lGetList(ep, config_nm)) {
       u_long32 consumable;
       const char *name = lGetString(cr_config, CE_name);
       double dval = 0.0;
@@ -927,7 +929,7 @@ rqs_add_job_utilization(lListElem *jep, u_long32 task_id, const char *type,
    if (jep != NULL) {
       limit_list = lGetList(rule, RQR_limit);
 
-      for_each(limit, limit_list) {
+      for_each_rw (limit, limit_list) {
          u_long32 consumable;
          lListElem *raw_centry;
          lListElem *rue_elem;
@@ -1002,8 +1004,8 @@ add_job_list_to_schedule(const lList *job_list, bool suspended, lList *pe_list,
       type = SCHEDULING_RECORD_ENTRY_TYPE_RUNNING;
    }   
 
-   for_each (jep, job_list) {
-      for_each (ja_task, lGetList(jep, JB_ja_tasks)) {  
+   for_each_rw (jep, job_list) {
+      for_each_rw (ja_task, lGetList(jep, JB_ja_tasks)) {
          sge_assignment_t a = SGE_ASSIGNMENT_INIT;
 
          assignment_init(&a, jep, ja_task, false);
@@ -1144,7 +1146,7 @@ void prepare_resource_schedules(const lList *running_jobs, const lList *suspende
 static void 
 add_calendar_to_schedule(lList *queue_list, u_long32 now) 
 {
-   lListElem *queue;
+   const lListElem *queue;
 
    DENTER(TOP_LAYER, "add_calendar_to_schedule");
 
@@ -1162,7 +1164,7 @@ add_calendar_to_schedule(lList *queue_list, u_long32 now)
          lListElem *slot_uti = lGetElemStrRW(queue_uti_list, RUE_name, "slots");
          lList *slot_uti_list = lGetListRW(slot_uti, RUE_utilized);
          
-         lListElem *queue_state = NULL;     
+         const lListElem *queue_state = NULL;
 
          DPRINTF(("queue: %s time %d\n", lGetString(queue, QU_full_name), from));
 

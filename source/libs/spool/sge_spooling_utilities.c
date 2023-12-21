@@ -429,7 +429,7 @@ bool spool_default_validate_func(lList **answer_list,
                lListElem *load_value;
 
                /* all spooled load values are static, therefore we tag them here */
-               for_each(load_value, lGetList(object, EH_load_list)) {
+               for_each_rw(load_value, lGetList(object, EH_load_list)) {
                   lSetBool(load_value, HL_static, true);
                }
 

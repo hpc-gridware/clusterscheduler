@@ -696,7 +696,7 @@ reporting_write_consumables(lList **answer_list, dstring *buffer,
                             const lListElem *host, const lListElem *job)
 {
    bool ret = true;
-   lListElem *cep; 
+   const lListElem *cep;
    
    DENTER(TOP_LAYER, "reporting_write_consumables");
 
@@ -1782,7 +1782,7 @@ reporting_create_ar_log_record(lList **answer_list,
 *******************************************************************************/
 bool reporting_create_ar_acct_records(lList **answer_list, const lListElem *ar, u_long32 report_time)
 {
-   lListElem *elem;
+   const lListElem *elem;
    bool ret = true;
 
    for_each(elem, lGetList(ar, AR_granted_slots)) {

@@ -70,7 +70,8 @@ extern char **environ;
 int main(int argc, char **argv) {
    /* lListElem *rep, *nxt_rep, *jep, *aep, *jrep, *idep; */
    int ret = 0;
-   lListElem *aep, *idep;
+   const lListElem *aep;
+   lListElem *idep;
    lList *jlp = NULL, *alp = NULL, *pcmdline = NULL, *ref_list = NULL, *user_list=NULL;
    u_long32 force = 0;
    int wait;
@@ -115,7 +116,7 @@ int main(int argc, char **argv) {
          id = lAddElemStr(&ref_list, ID_str, "0", ID_Type);
          lSetList(id, ID_user_list, user_list);
       } else {
-         for_each(id, ref_list){
+         for_each_rw(id, ref_list){
             lSetList(id, ID_user_list, user_list);
          }
       }
@@ -172,7 +173,7 @@ int main(int argc, char **argv) {
          lList *part_ref_list = NULL;
          lList *cp_ref_list = lCopyList("", ref_list);
 
-         for_each(idep, cp_ref_list) {
+         for_each_rw(idep, cp_ref_list) {
             lSetUlong(idep, ID_force, !no_forced_deletion);
          } 
 
@@ -362,7 +363,7 @@ lList **alpp
       /* job id's */
       if (*sp) {
          lList *del_list = NULL;
-         lListElem *job;         
+         const lListElem *job;
          lListElem *ep = NULL;
          str_list_parse_from_string(&del_list, *sp, ",");
         

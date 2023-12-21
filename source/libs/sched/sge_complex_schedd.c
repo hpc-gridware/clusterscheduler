@@ -654,10 +654,11 @@ static lList *get_attribute_list_by_names(lListElem *global, lListElem *host,
                                           lListElem *queue, const lList *centry_list,
                                           lList *attrnames)
 {
-   lListElem *attr, *elem;
+   lListElem *attr;
+   const lListElem *elem;
    lList *list = NULL;
 
-   for_each(elem, attrnames) {
+   for_each (elem, attrnames) {
       attr = get_attribute_by_name(global, host, queue, lGetString(elem, ST_name), centry_list, DISPATCH_TIME_NOW, 0);
       if (attr) {
          if (!list )
@@ -751,7 +752,7 @@ static lList *get_attribute_list(lListElem *global, lListElem *host, lListElem *
 *
 *******************************************************************************/
 static void build_name_filter(lList *filter, const lList *list, int t_name){
-   lListElem *current = NULL;
+   const lListElem *current = NULL;
    
    if (!list) {
       return;

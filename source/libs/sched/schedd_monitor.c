@@ -109,7 +109,7 @@ int schedd_log_list(lList **monitor_alpp, bool monitor_next_run, const char *log
    int fields[] = { 0, 0 };
    const char *delis[] = {NULL, " ", NULL};
    lList *lp_part = NULL;
-   lListElem *ep = NULL;
+   const lListElem *ep = NULL;
 
    DENTER(TOP_LAYER, "schedd_log_list");
 

@@ -611,7 +611,7 @@ static const char *quote_argument(const char *arg) {
 */
 static int parse_result_list(lList *alp, int *alp_error)
 {
-   lListElem *aep;
+   const lListElem *aep;
    int do_exit = 0;
 
    DENTER(TOP_LAYER, "parse_result_list");
@@ -1386,7 +1386,7 @@ int main(int argc, char **argv)
    lList *alp = NULL;
    lList *answer = NULL;
 
-   lListElem *aep = NULL;
+   const lListElem *aep = NULL;
    u_long32 status = STATUS_OK;
    u_long32 quality;
    u_long32 job_id = 0;

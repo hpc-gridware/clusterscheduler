@@ -57,7 +57,7 @@
 #include "msg_execd.h"
 
 static int ls_send_command(lListElem *elem, const char *command);
-static pid_t sge_ls_get_pid(lListElem *this_ls);
+static pid_t sge_ls_get_pid(const lListElem *this_ls);
 static void sge_ls_set_pid(lListElem *this_ls, pid_t pid);
 static int sge_ls_status(lListElem *this_ls);
 static lListElem *sge_ls_create_ls(const char* qualified_hostname, char *name, const char *scriptfile);
@@ -107,7 +107,7 @@ static int has_to_use_gnu_load_sensor = 0;
 *  RESULT
 *     returns pid
 ******************************************************************************/
-static pid_t sge_ls_get_pid(lListElem *this_ls)
+static pid_t sge_ls_get_pid(const lListElem *this_ls)
 {
    pid_t pid = -1;
    const char *pid_string;
@@ -441,7 +441,7 @@ static int read_ls(void)
 
    DENTER(TOP_LAYER, "read_ls");
 
-   for_each(ls_elem, ls_list) {
+   for_each_rw(ls_elem, ls_list) {
          FILE *file = lGetRef(ls_elem, LS_out);
       
       if (sge_ls_get_pid(ls_elem) == -1) {
@@ -662,7 +662,7 @@ static int sge_ls_start(const char *qualified_hostname, const char *binary_path,
    DENTER(TOP_LAYER, "sge_ls_start");
 
    /* tag all elements */
-   for_each(ls_elem, ls_list) {
+   for_each_rw(ls_elem, ls_list) {
       lSetUlong(ls_elem, LS_tag, 1);
    }
 
@@ -779,7 +779,7 @@ void trigger_ls_restart(void)
 
    DENTER(TOP_LAYER, "sge_ls_trigger_restart");
 
-   for_each(ls, ls_list) {
+   for_each_rw(ls, ls_list) {
       lSetBool(ls, LS_has_to_restart, true);
    }
 
@@ -812,7 +812,7 @@ int sge_ls_stop_if_pid(pid_t pid)
 
    DENTER(TOP_LAYER, "sge_ls_stop_if_pid");
 
-   for_each(ls, ls_list) {
+   for_each_rw(ls, ls_list) {
       if (pid == sge_ls_get_pid(ls)) {
          trigger_ls_restart();
          DRETURN(1);
@@ -859,7 +859,7 @@ int sge_ls_get(const char *qualified_hostname, const char *binary_path, lList **
    load_sensor = mconf_get_load_sensor();
    sge_ls_start(qualified_hostname, binary_path, load_sensor);
 
-   for_each(ls_elem, ls_list) {
+   for_each_rw(ls_elem, ls_list) {
       bool restart = false;
       SGE_STRUCT_STAT st;
       const char *ls_command;
@@ -904,9 +904,9 @@ int sge_ls_get(const char *qualified_hostname, const char *binary_path, lList **
 
    read_ls();
 
-   for_each(ls_elem, ls_list) {
+   for_each_rw(ls_elem, ls_list) {
       /* merge external load into existing load report list */
-      for_each(ep, lGetList(ls_elem, LS_complete)) {
+      for_each_rw(ep, lGetList(ls_elem, LS_complete)) {
          sge_add_str2load_report(lpp, lGetString(ep, LR_name),
                                  lGetString(ep, LR_value),
                                  lGetHost(ep, LR_host));
@@ -940,7 +940,7 @@ void sge_ls_stop(int exited)
 
    DENTER(TOP_LAYER, "sge_ls_stop");
 
-   for_each(ls_elem, ls_list) {
+   for_each_rw(ls_elem, ls_list) {
       sge_ls_stop_ls(ls_elem, exited);
    }
    lFreeList(&ls_list);

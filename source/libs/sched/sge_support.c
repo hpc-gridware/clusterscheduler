@@ -83,7 +83,7 @@ static void decay_usage(lList *usage_list, const lList *decay_list, double inter
       double decay = 0;
       double default_decay = pow(sconf_get_decay_constant(), interval / (double)sge_usage_interval);
 
-      for_each(usage, usage_list) {
+      for_each_rw (usage, usage_list) {
          const lListElem *decay_elem;
          if (decay_list && ((decay_elem = lGetElemStr(decay_list, UA_name, lGetPosString(usage, UA_name_POS))))) {
 
@@ -128,7 +128,7 @@ decay_userprj_usage( lListElem *userprj,
       usage_time_stamp = lGetPosUlong(userprj, obj_usage_time_stamp_POS);
 
       if (usage_time_stamp > 0 && (curr_time > usage_time_stamp)) {
-         lListElem *upp;
+         const lListElem *upp;
          double interval = curr_time - usage_time_stamp;
 
          decay_usage(lGetPosList(userprj, obj_usage_POS), decay_list, interval);
@@ -216,7 +216,7 @@ sge_for_each_share_tree_node( lListElem *node,
    }
 
    if ((children = lGetPosList(node, STN_children_POS))) {
-      for_each(child_node, children) {
+      for_each_rw(child_node, children) {
          if ((retcode = sge_for_each_share_tree_node(child_node, func, ptr))) {
             break;
          }
@@ -402,7 +402,7 @@ sge_calc_node_usage( lListElem *node,
        * Sum child usage
        *-------------------------------------------------------------*/
 
-      for_each(child_node, children) {
+      for_each_rw(child_node, children) {
          lListElem *nu;
          child_usage += sge_calc_node_usage(child_node, user_list,
                                             project_list, decay_list, curr_time,
@@ -413,7 +413,7 @@ sge_calc_node_usage( lListElem *node,
           *-------------------------------------------------------------*/
 
          if (!project_node)
-            for_each(nu, lGetPosList(child_node, STN_usage_list_POS)) {
+            for_each_rw(nu, lGetPosList(child_node, STN_usage_list_POS)) {
                const char *nm = lGetPosString(nu, UA_name_POS);
                lListElem *u;
                if (((u=lGetElemStrRW(lGetPosList(node, STN_usage_list_POS),
@@ -492,7 +492,7 @@ sge_calc_node_proportion( lListElem *node,
     *-------------------------------------------------------------*/
 
    if ((children = lGetPosList(node, STN_children_POS))) {
-      for_each(child_node, children) {
+      for_each_rw(child_node, children) {
          sge_calc_node_proportion(child_node, total_usage);
       }
    }  
@@ -589,7 +589,7 @@ set_share_tree_project_flags( const lList *project_list,
 
    children = lGetList(node, STN_children);
    if (children) {
-      for_each(child, children) {
+      for_each_rw(child, children) {
          set_share_tree_project_flags(project_list, child);
       }
    }
@@ -603,7 +603,8 @@ sge_add_default_user_nodes( lListElem *root_node,
                             const lList *project_list,
                             const lList *userset_list)
 {
-   lListElem *user, *project, *pnode, *dnode;
+   const lListElem *user, *project;
+   lListElem *pnode, *dnode;
    const char *proj_name, *user_name;
 
    /*
@@ -738,7 +739,7 @@ search_userprj_node_work( lListElem *ep,      /* branch to search */
       } 
       else {
           /* search the child nodes for the project */
-         for_each(cep, children) {
+         for_each_rw(cep, children) {
             if ((fep = search_userprj_node_work(cep, username, projname, pep, root))) {
                if (pep && (cep == fep)) {
                   *pep = ep;
@@ -759,7 +760,7 @@ search_userprj_node_work( lListElem *ep,      /* branch to search */
        * no project name supplied, so search for child node
        */
 
-      for_each(cep, children) {
+      for_each_rw(cep, children) {
          if ((fep = search_userprj_node_work(cep, username, projname, pep, root))) {
             if (pep && (cep == fep)) {
                *pep = ep;
@@ -812,7 +813,7 @@ void sgeee_sort_jobs(lList **job_list)              /* JB_Type */
 void sgeee_sort_jobs_by( lList **job_list , int by_SGEJ_field, int field_sort_direction, int jobnum_sort_direction) /* JB_Type */
 {
 
-   lListElem *job = NULL, *nxt_job = NULL;     
+   lListElem *job = NULL, *nxt_job = NULL;
    lList *tmp_list = NULL;    /* SGEJ_Type */
    char *sortorder = NULL;
 
@@ -915,7 +916,7 @@ void sgeee_sort_jobs_by( lList **job_list , int by_SGEJ_field, int field_sort_di
    /*-----------------------------------------------------------------
     * rebuild job_list according sort order
     *-----------------------------------------------------------------*/
-   for_each(job, tmp_list) {
+   for_each_rw(job, tmp_list) {
       lAppendElem(*job_list, lGetRef(job, SGEJ_job_reference)); 
    } 
 

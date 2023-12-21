@@ -1350,7 +1350,7 @@ int subval_nm
       return fields?true:false;
    }
    lString2List(str, &tmplp, descr, subname_nm, ", \t");
-   for_each (tmpep, tmplp) {
+   for_each_rw(tmpep, tmplp) {
       s = sge_strtok(lGetString(tmpep, subname_nm), ":=");
       lSetString(tmpep, subname_nm, s);
       if (!(s=sge_strtok(NULL, ":=")))

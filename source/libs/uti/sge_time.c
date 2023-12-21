@@ -116,7 +116,7 @@ static void sge_stopwatch_stop(int i)
 *  RESULT
 *     u_long32 - 32 bit time value
 ******************************************************************************/
-u_long32 sge_get_gmt()
+u_long32 sge_get_gmt(void)
 {
 #ifndef WIN32NATIVE
 

@@ -744,7 +744,7 @@ lListElem *job_enroll(lListElem *job, lList **answer_list,
 *******************************************************************************/
 static int job_count_rescheduled_ja_tasks(const lListElem *job, bool count_all)
 {
-   lListElem *ja_task;
+   const lListElem *ja_task;
    u_long32 state;
    int n = 0;
 
@@ -1275,7 +1275,7 @@ bool job_is_tight_parallel(const lListElem *job, const lList *pe_list)
    if (pe_name != NULL) {
       int found_pe = 0;
       int all_are_tight = 1;
-      lListElem *pe;
+      const lListElem *pe;
 
       for_each(pe, pe_list) {
          if (pe_is_matching(pe, pe_name)) {
@@ -1327,7 +1327,7 @@ bool job_might_be_tight_parallel(const lListElem *job, const lList *pe_list)
 
    pe_name = lGetString(job, JB_pe);
    if (pe_name != NULL) {
-      lListElem *pe;
+      const lListElem *pe;
 
       for_each(pe, pe_list) {
          if (pe_is_matching(pe, pe_name) && lGetBool(pe, PE_control_slaves)) {
@@ -1896,7 +1896,7 @@ void job_check_correct_id_sublists(lListElem *job, lList **answer_list)
          const lList *range_list = lGetList(job, field[i]);
          lListElem *range = NULL;
 
-         for_each(range, range_list) {
+         for_each_rw(range, range_list) {
             if (field[i] != JB_ja_structure)
                range_correct_end(range);
             if (range_is_id_within(range, 0)) {
@@ -2562,7 +2562,7 @@ int job_resolve_host_for_path_list(const lListElem *job, lList **answer_list,
 
    DENTER(TOP_LAYER, "job_resolve_host_for_path_list");
 
-   for_each(ep, lGetList(job, name)){
+   for_each_rw(ep, lGetList(job, name)){
       int res = sge_resolve_host(ep, PN_host);
       DPRINTF(("after sge_resolve_host() which returned %s\n", cl_get_error_text(res)));
       if (res != CL_RETVAL_OK) { 
@@ -3625,7 +3625,7 @@ void
 set_context(lList *jbctx, lListElem *job) 
 {
    lList* newjbctx = NULL;
-   lListElem* jbctxep;
+   const lListElem* jbctxep;
    lListElem* temp;
    char   mode = '+';
    

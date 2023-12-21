@@ -149,7 +149,7 @@ char *rhost
 static void 
 sge_change_queue_version_acl(sge_gdi_ctx_class_t *ctx, const char *acl_name) 
 {
-   lListElem *cqueue = NULL;
+   const lListElem *cqueue = NULL;
    const lList *master_cqueue_list = *object_type_get_master_list(SGE_TYPE_CQUEUE);
 
    DENTER(TOP_LAYER, "sge_change_queue_version_acl");
@@ -158,7 +158,7 @@ sge_change_queue_version_acl(sge_gdi_ctx_class_t *ctx, const char *acl_name)
       const lList *qinstance_list = lGetList(cqueue, CQ_qinstances);
       lListElem *qinstance = NULL;
 
-      for_each(qinstance, qinstance_list) {
+      for_each_rw(qinstance, qinstance_list) {
          const lList *acl_list = lGetList(qinstance, QU_acl);
          const lList *xacl_list = lGetList(qinstance, QU_xacl);
          const lListElem *acl = lGetElemStr(acl_list, US_name, acl_name);
@@ -244,7 +244,7 @@ lList **alpp
    ** element is already contained in another department list.
    ** This requires expanding the group entries.
    */
-   for_each(up, depts) {
+   for_each_rw(up, depts) {
       answers = do_depts_conflict(new_userset, up); 
       if (answers)
          break;
@@ -345,7 +345,7 @@ static lList* do_depts_conflict(lListElem *new_dep, lListElem *old_dep)
 {
    const lList *new_users = NULL;
    const lList *old_users = NULL; 
-   lListElem *np;
+   const lListElem *np;
    lList *alp = NULL;
    const char *nname;
    
@@ -385,7 +385,7 @@ static lList* do_depts_conflict(lListElem *new_dep, lListElem *old_dep)
 */
 int set_department(lList **alpp, lListElem *job, const lList *userset_list)
 {
-   lListElem *dep;
+   const lListElem *dep;
    const char *owner, *group; 
 
    DENTER(TOP_LAYER, "set_department");
@@ -445,8 +445,8 @@ lList **alpp,
 const char *userset_name 
 ) {
    int ret = STATUS_OK;
-   lListElem *ep = NULL;
-   lListElem *cqueue = NULL;
+   const lListElem *ep = NULL;
+   const lListElem *cqueue = NULL;
    lList* user_lists = NULL;
    const lListElem *cl;
    const lList *master_cqueue_list = *object_type_get_master_list(SGE_TYPE_CQUEUE);
@@ -764,12 +764,12 @@ int userset_mod(sge_gdi_ctx_class_t *ctx, lList **alpp, lListElem *new_userset,
    ** check advance reservations
    */
    if (!add) {
-      lListElem *cqueue;
+      const lListElem *cqueue;
       lList *new_master_userset_list = NULL;
 
       for_each(cqueue, master_cqueue_list) {
          const lList *qinstance_list = lGetList(cqueue, CQ_qinstances);
-         lListElem *qinstance = NULL;
+         const lListElem *qinstance = NULL;
 
          for_each(qinstance, qinstance_list) {
             lListElem *ar;
@@ -786,7 +786,7 @@ int userset_mod(sge_gdi_ctx_class_t *ctx, lList **alpp, lListElem *new_userset,
                continue;
             }
 
-            for_each(ar, master_ar_list) {
+            for_each_rw(ar, master_ar_list) {
                if (lGetElemStr(lGetList(ar, AR_granted_slots), JG_qname, queue_name)) {
                   if (new_master_userset_list == NULL) {
                      lListElem *old_userset;
@@ -901,7 +901,7 @@ int userset_success(sge_gdi_ctx_class_t *ctx, lListElem *ep, lListElem *old_ep, 
 {
    const char *userset_name;
    dstring ds = DSTRING_INIT;
-   lListElem *rqs;
+   const lListElem *rqs;
    const lList *master_rqs_list = *object_type_get_master_list(SGE_TYPE_RQS);
 
    DENTER(TOP_LAYER, "userset_success");

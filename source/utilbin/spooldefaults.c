@@ -342,7 +342,7 @@ static int spool_object_list(const char *directory,
    lList *answer_list = NULL;
    lListElem *ep;
    lList *direntries;
-   lListElem *direntry;
+   const lListElem *direntry;
    const char *name;
    dstring file = DSTRING_INIT;
 

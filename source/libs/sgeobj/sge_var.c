@@ -360,7 +360,7 @@ void var_list_set_sharedlib_path(lList **varl)
 ******************************************************************************/
 void var_list_dump_to_file(const lList *varl, FILE *file)
 {
-   lListElem *elem;
+   const lListElem *elem;
 
    if (varl == NULL || file == NULL) {
       return;
@@ -453,7 +453,7 @@ void var_list_copy_prefix_vars(lList **varl,
                                const char *new_prefix)
 {
    int prefix_len = strlen(prefix);
-   lListElem *var_elem = NULL;
+   const lListElem *var_elem = NULL;
    lList *var_list2 = NULL;
 
    DENTER(TOP_LAYER, "var_list_copy_prefix_vars");
@@ -511,7 +511,7 @@ void var_list_copy_prefix_vars_undef(lList **varl,
                                      const char *new_prefix)
 {
    int prefix_len = strlen(prefix);
-   lListElem *var_elem = NULL;
+   const lListElem *var_elem = NULL;
    lList *var_list2 = NULL;
 
    DENTER(TOP_LAYER, "var_list_copy_prefix_vars");
@@ -563,7 +563,7 @@ void var_list_copy_prefix_vars_undef(lList **varl,
 void var_list_copy_env_vars_and_value(lList **varl,
                                       const lList* src_varl)
 {
-   lListElem *env;
+   const lListElem *env;
 
    for_each(env, src_varl) {
       const char *s, *name;
@@ -768,7 +768,7 @@ bool
 var_list_verify(const lList *lp, lList **answer_list)
 {
    bool ret = true;
-   lListElem *ep;
+   const lListElem *ep;
 
    for_each (ep, lp) {
       const char *variable = lGetString(ep, VA_variable);

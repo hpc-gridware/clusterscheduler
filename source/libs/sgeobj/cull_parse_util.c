@@ -358,7 +358,8 @@ lList *lp_new,
 int nm_var,
 int nm_value 
 ) {
-   lListElem *ep_old, *ep_new;
+   lListElem *ep_old;
+   lListElem *ep_new;
    int type;
    int is_there;
 
@@ -406,9 +407,9 @@ int nm_value
    ** if it is, change the value to the new value
    ** if it isn't, append it
    */
-   for_each(ep_new, lp_new) {
+   for_each_rw(ep_new, lp_new) {
       is_there = 0;
-      for_each(ep_old, *lpp_old) {
+      for_each_rw(ep_old, *lpp_old) {
          type = lGetType(lGetListDescr(lp_new), nm_var);
          switch (type) {
          case lFloatT:
@@ -545,7 +546,7 @@ int nm_var,
 int nm_value,
 int double_keys 
 ) {
-   lListElem *ep_one;
+   const lListElem *ep_one;
    lListElem *ep_other;
    int is_there;
    int type;
@@ -829,7 +830,7 @@ unsigned long flags
       return -3;
    }
 
-   for_each(ep, lp) {
+   for_each_rw(ep, lp) {
 
       if (!begin && pdelis[1] && *pdelis[1]) {
          if (max_len && (cb_sum + strlen(pdelis[1]) > max_len)) {
@@ -1033,7 +1034,7 @@ FPRINTF_ERROR:
 *******************************************************************************/
 int fprint_cull_list(FILE *fp, char *str, lList *lp, int fi)
 {
-   lListElem *ep;
+   const lListElem *ep;
 
    DENTER(TOP_LAYER, "fprint_cull_list");
 
@@ -1173,7 +1174,7 @@ int nm_name,
 int nm_strval,
 int nm_doubleval
 ) {
-   lListElem *lep;
+   const lListElem *lep;
    int printed = 0;
    const char *s;
    char buffer[1024];

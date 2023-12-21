@@ -570,7 +570,7 @@ int main(int argc, char **argv)
    {
       dstring cqueue_name = DSTRING_INIT;
       dstring host_or_hgroup = DSTRING_INIT;      
-      lListElem *qref_pattern = NULL;
+      const lListElem *qref_pattern = NULL;
       const char *name = NULL;
       bool has_hostname = false;
       bool has_domain = true;
@@ -1629,7 +1629,7 @@ sge_read_rusage(FILE *f, sge_rusage_type *d, sge_qacct_options *options, char *s
 
    if (options->queue_name_list){
       dstring qi = DSTRING_INIT;
-      lListElem *elem = NULL;
+      const lListElem *elem = NULL;
       const char *queue;
       bool found = false;
 

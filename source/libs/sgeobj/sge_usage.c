@@ -251,7 +251,7 @@ lList *scaled_usage /* UA_Type */
       scaled_usage = lCreateList("usage", UA_Type);
    }
 
-   for_each (ep, scaled_usage) {
+   for_each_rw (ep, scaled_usage) {
       if ((sep=lGetElemStr(scaling, HS_name, lGetString(ep, UA_name)))) {
          lSetDouble(ep, UA_value, lGetDouble(ep, UA_value) * lGetDouble(sep, HS_value));
       }

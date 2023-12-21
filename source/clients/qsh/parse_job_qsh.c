@@ -254,7 +254,8 @@ lList *cull_parse_qsh_parameter(u_long32 prog_number, u_long32 uid, const char *
 
    /* -hold_jid */
    if (lGetElemStr(cmdline, SPA_switch, "-hold_jid")) {
-      lListElem *ep, *sep;
+      lListElem *ep;
+      const lListElem *sep;
       lList *jref_list = NULL;
       while ((ep = lGetElemStrRW(cmdline, SPA_switch, "-hold_jid"))) {
          for_each(sep, lGetList(ep, SPA_argval_lListT)) {
@@ -268,7 +269,8 @@ lList *cull_parse_qsh_parameter(u_long32 prog_number, u_long32 uid, const char *
 
    /* -hold_jid_ad */
    if (lGetElemStr(cmdline, SPA_switch, "-hold_jid_ad")) {
-      lListElem *ep, *sep;
+      lListElem *ep;
+      const lListElem *sep;
       lList *jref_list = NULL;
       while ((ep = lGetElemStrRW(cmdline, SPA_switch, "-hold_jid_ad"))) {
          for_each(sep, lGetList(ep, SPA_argval_lListT)) {
@@ -523,7 +525,7 @@ lList *cull_parse_qsh_parameter(u_long32 prog_number, u_long32 uid, const char *
    }
 
    
-   for_each(ep, cmdline) {
+   for_each_rw(ep, cmdline) {
       char str[1024];
 
       sprintf(str, MSG_ANSWER_UNKOWNOPTIONX_S, 

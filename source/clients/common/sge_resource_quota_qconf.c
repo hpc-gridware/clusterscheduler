@@ -144,7 +144,7 @@ bool rqs_get_via_gdi(sge_gdi_ctx_class_t *ctx, lList **answer_list, const lList 
 
    DENTER(TOP_LAYER, "rqs_get_via_gdi");
    if (rqsref_list != NULL) {
-      lListElem *rqsref = NULL;
+      const lListElem *rqsref = NULL;
       lCondition *where = NULL;
       lEnumeration *what = NULL;
 
@@ -243,7 +243,7 @@ bool rqs_add(sge_gdi_ctx_class_t *ctx, lList **answer_list, const char *name)
       lListElem *rqs = NULL;
 
       lString2List(name, &rqs_list, RQS_Type, RQS_name, ", ");
-      for_each (rqs, rqs_list) {
+      for_each_rw (rqs, rqs_list) {
          rqs = rqs_set_defaults(rqs);
       }
 
@@ -549,7 +549,7 @@ bool rqs_modify_from_file(sge_gdi_ctx_class_t *ctx, lList **answer_list, const c
 
          if (name != NULL && strlen(name) > 0 ) {
             lList *selected_rqs_list = NULL;
-            lListElem *tmp_rqs = NULL;
+            const lListElem *tmp_rqs = NULL;
             lList *found_rqs_list = lCreateList("rqs_list", RQS_Type);
 
             gdi_command = SGE_GDI_MOD | SGE_GDI_SET_ALL;

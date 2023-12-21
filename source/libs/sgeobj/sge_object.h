@@ -307,7 +307,7 @@ bool
 object_replace_any_type(lListElem *this_elem, int name, lListElem *org_elem);
 
 void
-object_get_any_type(lListElem *this_elem, int name, void *value);
+object_get_any_type(const lListElem *this_elem, int name, void *value);
 
 bool  
 object_has_differences(const lListElem *this_elem, lList **answer_list,

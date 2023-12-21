@@ -376,7 +376,7 @@ int cl_thread_trigger_thread_condition(cl_thread_condition_t* condition, int do_
 #undef __CL_FUNCTION__
 #endif
 #define __CL_FUNCTION__ "cl_thread_cleanup_global_thread_config_key()"
-void cl_thread_cleanup_global_thread_config_key()
+void cl_thread_cleanup_global_thread_config_key(void)
 {
    pthread_mutex_lock(&global_thread_config_key_mutex);
    if (global_thread_config_key_done == 1) {

@@ -276,7 +276,9 @@ wcal,  CA_Type
 static int state_at(time_t now, const lList *ycal, const lList *wcal, time_t *next_event) {
    struct tm *tm_now;
    int state = 0, w_is_active = -1, y_is_active;
-   lListElem *yc, *wc, *tm;
+   lListElem *yc;
+   lListElem *wc;
+   lListElem *tm;
    time_t limit;
    time_t temp_next_event = 0;
    struct tm res;
@@ -303,7 +305,7 @@ static int state_at(time_t now, const lList *ycal, const lList *wcal, time_t *ne
          tm_now->tm_isdst)); 
 
    /* ycal */
-   for_each (yc, ycal) {
+   for_each_rw (yc, ycal) {
       y_is_active = is_year_entry_active(tm, yc, &limit);
       if (state != y_is_active || state == QI_DO_NOTHING) {
          state |= y_is_active;
@@ -334,7 +336,7 @@ static int state_at(time_t now, const lList *ycal, const lList *wcal, time_t *ne
          counter = 0;
          isOverlapping = false;
          
-         for_each (wc, wcal) {
+         for_each_rw (wc, wcal) {
             if ((w_is_active = is_week_entry_active(tm, wc, &limit, &next_state, 0))) {
                state |= w_is_active;
             }   
@@ -1053,7 +1055,7 @@ static int normalize_range_list(lList *rl, cmp_func_t cmp_func) {
 
 /*    i1 = i2 = i3 = i4 = -1; */
 
-   for_each(r, rl) {
+   for_each_rw(r, rl) {
 
       r1 = lFirst(lGetList(r, TMR_begin));
       r2 = lFirst(lGetList(r, TMR_end));
@@ -1135,7 +1137,7 @@ static int normalize_range_list(lList *rl, cmp_func_t cmp_func) {
 lListElem *tm, TM_Type 
 */
 static bool in_range_list(const lListElem *tm, const lList *rl, cmp_func_t cmp_func) {
-   lListElem *r;
+   const lListElem *r;
 
    DENTER(TOP_LAYER, "in_range_list");
 
@@ -2520,7 +2522,7 @@ calendar_is_referenced(const lListElem *calendar, lList **answer_list,
                        const lList *master_cqueue_list)
 {
    bool ret = false;
-   lListElem *cqueue = NULL, *cal = NULL;
+   const lListElem *cqueue = NULL, *cal = NULL;
  
    /*
     * fix for bug 6422335

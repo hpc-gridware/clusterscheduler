@@ -205,7 +205,7 @@ int scheduler_method(sge_evc_class_t *evc, lList **answer_list, scheduler_all_da
       lCondition *where = NULL;
       lEnumeration *what = NULL;
       const lDescr *dp = lGetListDescr(lists->all_queue_list);
-      lListElem *mes_queues;
+      const lListElem *mes_queues;
 
       what = lWhat("%T(ALL)", dp);
       where = lWhere("%T(%I m= %u "
@@ -271,7 +271,7 @@ int scheduler_method(sge_evc_class_t *evc, lList **answer_list, scheduler_all_da
                           SPLIT_HOLD};
       int i = 0;
       int max = 6;
-      lListElem *job;
+      const lListElem *job;
 
       for (i = 0; i < max; i++) {
          /* clear SGEEE fields for queued jobs */
@@ -448,7 +448,7 @@ static int dispatch_jobs(sge_evc_class_t *evc, scheduler_all_data_t *lists, orde
             if so this will make it necessary to check load thresholds
             of each queue after each dispatched job */
          {
-            lListElem *gep, *lcep;
+            const lListElem *gep, *lcep;
             if ((gep = host_list_locate(lists->host_list, "global"))) {
                for_each (lcep, job_load_adjustments) {
                   const char *attr = lGetString(lcep, CE_name);
@@ -1172,8 +1172,7 @@ select_assign_debit(lList **queue_list, lList **dis_queue_list, lListElem *job, 
          job_otickets_per_slot =(double)lGetDouble(ja_task, JAT_oticket)/a.slots;
          job_stickets_per_slot =(double)lGetDouble(ja_task, JAT_sticket)/a.slots;
 
-
-         for_each(granted_el, a.gdil) {
+         for_each_rw(granted_el, a.gdil) {
             u_long32 granted_slots = lGetUlong(granted_el, JG_slots);
             lSetDouble(granted_el, JG_ticket, job_tickets_per_slot * granted_slots);
             lSetDouble(granted_el, JG_oticket, job_otickets_per_slot  * granted_slots);

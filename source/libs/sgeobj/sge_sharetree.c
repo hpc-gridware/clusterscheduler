@@ -65,7 +65,7 @@ bool id_sharetree(lList **alpp, lListElem *ep, int id, int *ret_id)
    lSetUlong(ep, STN_id, my_id++);
 
    /* handle the children */
-   for_each(cep, lGetList(ep, STN_children)) {     
+   for_each_rw(cep, lGetList(ep, STN_children)) {
       if (false == id_sharetree(NULL, cep, my_id, &my_id)) {
          DRETURN(false);
       }
@@ -85,10 +85,10 @@ bool id_sharetree(lList **alpp, lListElem *ep, int id, int *ret_id)
 
  ************************************************************************/
 int show_sharetree(
-lListElem *ep,
+const lListElem *ep,
 char *indent 
 ) {
-   lListElem *cep;
+   const lListElem *cep;
    FILE *fp = stdout;
    static int level = 0;
    int i;
@@ -124,7 +124,7 @@ int show_sharetree_path(
 lListElem *root,
 const char *path 
 ) {
-   lListElem *cep;
+   const lListElem *cep;
    lListElem *node;
    FILE *fp = stdout;
    ancestors_t ancestors;
@@ -198,8 +198,8 @@ lListElem *getSNTemplate(void)
  Search for a share tree node with a given name in a
  share tree
  ********************************************************/
-lListElem *search_named_node( lListElem *ep,  /* root of the tree */
-                              const char *name )
+lListElem *search_named_node(lListElem *ep,  /* root of the tree */
+                             const char *name )
 {
    lListElem *cep, *fep;
    static int sn_children_pos = -1;
@@ -222,7 +222,7 @@ lListElem *search_named_node( lListElem *ep,  /* root of the tree */
       return ep;
    }
 
-   for_each(cep, lGetPosList(ep, sn_children_pos)) {
+   for_each_rw(cep, lGetPosList(ep, sn_children_pos)) {
       if ((fep = search_named_node(cep, name))) {
          DEXIT;
          return fep;
@@ -372,7 +372,7 @@ search_ancestors( lListElem *ep,
       return ep;
    }
 
-   for_each(cep, lGetPosList(ep, sn_children_pos)) {
+   for_each_rw(cep, lGetPosList(ep, sn_children_pos)) {
       if ((fep = search_ancestors(cep, name, ancestors, depth+1))) {
          ancestors->nodes[depth-1] = ep;
          DEXIT;
@@ -414,7 +414,7 @@ lListElem *sge_search_unspecified_node(lListElem *ep)
       return NULL;
    }
 
-   for_each(cep, lGetList(ep, STN_children)) {
+   for_each_rw(cep, lGetList(ep, STN_children)) {
       if ((ret = sge_search_unspecified_node(cep))) {
          DEXIT;
          return ret;

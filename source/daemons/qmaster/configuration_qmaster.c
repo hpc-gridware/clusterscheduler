@@ -413,7 +413,7 @@ int sge_mod_configuration(sge_gdi_ctx_class_t *ctx, lListElem *aConf, lList **an
    
 static int check_config(lList **alpp, lListElem *conf)
 {
-   lListElem *ep;
+   const lListElem *ep;
    const char *name, *value;
    const char *conf_name;
    const lList *master_userset_list = *object_type_get_master_list(SGE_TYPE_USERSET);
@@ -638,7 +638,7 @@ static int check_config(lList **alpp, lListElem *conf)
  */
 int sge_compare_configuration(const lListElem *aHost, const lList *aConf)
 {
-   lListElem *conf_entry = NULL;
+   const lListElem *conf_entry = NULL;
 
    DENTER(TOP_LAYER, "sge_compare_configuration");
 

@@ -793,7 +793,7 @@ static int read_CF_value(lListElem *ep, int nm, const char *buf,
                sge_free(&buffer);
                DRETURN(0);
             } else {
-               lListElem *rep;
+               const lListElem *rep;
 
                for_each(rep, rlp) {
                   u_long32 min;

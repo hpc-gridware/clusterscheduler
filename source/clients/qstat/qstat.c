@@ -196,8 +196,8 @@ char **argv
    lList *pfile = NULL;
    lList *jid_list = NULL;
    lList *ref_list = NULL;
-   lListElem *aep = NULL;
-   lListElem *ep_1 = NULL;
+   const lListElem *aep = NULL;
+   const lListElem *ep_1 = NULL;
    lListElem *ep_2 = NULL;
    char *hostname = NULL;
    const char *username = NULL;
@@ -275,7 +275,7 @@ char **argv
              * objects representing the same option.
              */
             more = false;
-            for_each(ep_2, pfile) {
+            for_each_rw(ep_2, pfile) {
                if (strcmp(lGetString(ep_1, SPA_switch),
                        lGetString(ep_2, SPA_switch)) == 0) {
                   /*
@@ -1931,17 +1931,17 @@ static int qselect_stdout_report_queue(qselect_handler_t* handler, const char* q
 */
 static int 
 qstat_show_job(sge_gdi_ctx_class_t *ctx, lList *jid_list, u_long32 isXML, qstat_env_t *qstat_env) {
-   lListElem *j_elem = 0;
+   const lListElem *j_elem = 0;
    lList* jlp = NULL;
    lList* ilp = NULL;
-   lListElem* aep = NULL;
+   const lListElem* aep = NULL;
    lCondition *where = NULL, *newcp = NULL;
    lEnumeration* what = NULL;
    lList* alp = NULL;
    bool schedd_info = true;
    bool jobs_exist = true;
-   lListElem* mes;
-   lListElem *tmpElem;
+   const lListElem* mes;
+   const lListElem *tmpElem;
 
    DENTER(TOP_LAYER, "qstat_show_job");
 
@@ -2075,7 +2075,7 @@ qstat_show_job(sge_gdi_ctx_class_t *ctx, lList *jid_list, u_long32 isXML, qstat_
       lListElem *elem1, *elem2;
       int first_time = 1;
 
-      for_each(elem1, jlp) {
+      for_each_rw(elem1, jlp) {
          char buffer[256];
  
          sprintf(buffer, sge_U32CFormat, sge_u32c(lGetUlong(elem1, JB_job_number)));   
@@ -2087,7 +2087,7 @@ qstat_show_job(sge_gdi_ctx_class_t *ctx, lList *jid_list, u_long32 isXML, qstat_
          }    
       }
       fprintf(stderr, "%s\n", MSG_QSTAT_FOLLOWINGDONOTEXIST);
-      for_each(elem1, jid_list) {
+      for_each_rw(elem1, jid_list) {
          if (!first_time) {
             fprintf(stderr, ", "); 
          }
@@ -2126,7 +2126,7 @@ qstat_show_job(sge_gdi_ctx_class_t *ctx, lList *jid_list, u_long32 isXML, qstat_
 
             /* job scheduling info */
             for_each(mes, lGetList(sme, SME_message_list)) {
-               lListElem *mes_jid;
+               const lListElem *mes_jid;
 
                for_each(mes_jid, lGetList(mes, MES_job_number_list)) {
                   if (lGetUlong(mes_jid, ULNG_value) == jid) {
@@ -2153,11 +2153,11 @@ static int qstat_show_job_info(sge_gdi_ctx_class_t *ctx, u_long32 isXML, qstat_e
 {
    lList *ilp = NULL;
    lList *mlp = NULL;
-   lListElem* aep = NULL;
+   const lListElem* aep = NULL;
    lEnumeration* what = NULL;
    lList* alp = NULL;
    bool schedd_info = true;
-   lListElem* mes;
+   const lListElem* mes;
    int initialized = 0;
    u_long32 last_jid = 0;
    u_long32 last_mid = 0;
@@ -2166,7 +2166,7 @@ static int qstat_show_job_info(sge_gdi_ctx_class_t *ctx, u_long32 isXML, qstat_e
    int first_run = 1;
    int first_row = 1;
    lListElem *sme;
-   lListElem *jid_ulng = NULL; 
+   const lListElem *jid_ulng = NULL;
 
    DENTER(TOP_LAYER, "qstat_show_job_info");
 
@@ -2219,7 +2219,7 @@ static int qstat_show_job_info(sge_gdi_ctx_class_t *ctx, u_long32 isXML, qstat_e
          {
             lListElem *flt_msg, *flt_nxt_msg;
             lList *new_list;
-            lListElem *ref_msg, *ref_jid;
+            const lListElem *ref_msg, *ref_jid;
 
             new_list = lCreateList("filtered message list", MES_Type);
 

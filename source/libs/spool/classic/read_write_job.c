@@ -81,7 +81,7 @@ static int job_write_ja_task_part(lListElem *job, u_long32 ja_task_id,
                                   const char *pe_task_id,
                                   sge_spool_flags_t flags);
 
-static int job_write_as_single_file(lListElem *job, u_long32 ja_task_id,
+static int job_write_as_single_file(const lListElem *job, u_long32 ja_task_id,
                                    sge_spool_flags_t flags);
 
 static lListElem *job_create_from_file(u_long32 job_id, u_long32 task_id,
@@ -154,7 +154,7 @@ static lList *ja_task_list_create_from_file(u_long32 job_id,
    lList *pe_task_entries = NULL;
    lList *ja_tasks = NULL;
    lList *pe_tasks = NULL;
-   lListElem *dir_entry;
+   const lListElem *dir_entry;
    char spool_dir_job[SGE_PATH_MAX];
    DENTER(TOP_LAYER, "ja_task_list_create_from_file");
 
@@ -173,7 +173,7 @@ static lList *ja_task_list_create_from_file(u_long32 job_id,
       if (strcmp(entry, ".") && strcmp(entry, "..") && 
           strcmp(entry, "common")) {
          char spool_dir_tasks[SGE_PATH_MAX];
-         lListElem *ja_task_entry; 
+         const lListElem *ja_task_entry;
 
          snprintf(spool_dir_tasks, sizeof(spool_dir_tasks), SFN"/"SFN, spool_dir_job, entry);
          ja_task_entries = sge_get_dirents(spool_dir_tasks);
@@ -183,7 +183,7 @@ static lList *ja_task_list_create_from_file(u_long32 job_id,
             ja_task_string = lGetString(ja_task_entry, ST_name);
             if (strcmp(ja_task_string, ".") && strcmp(ja_task_string, "..")) {
                char spool_dir_pe_tasks[SGE_PATH_MAX];
-               lListElem *pe_task_entry;
+               const lListElem *pe_task_entry;
                u_long32 ja_task_id;
                lListElem *ja_task;
 
@@ -335,7 +335,7 @@ static lListElem *pe_task_create_from_file(u_long32 job_id,
 *  RESULT
 *     int - 0 on success otherwise != 0 
 ******************************************************************************/
-int job_write_spool_file(lListElem *job, u_long32 ja_taskid, 
+int job_write_spool_file(lListElem *job, u_long32 ja_taskid,
                          const char *pe_task_id,
                          sge_spool_flags_t flags) 
 {
@@ -389,7 +389,7 @@ static int job_has_to_spool_one_file(const lListElem *job,
    DRETURN(1);
 }
 
-static int job_write_as_single_file(lListElem *job, u_long32 ja_task_id,
+static int job_write_as_single_file(const lListElem *job, u_long32 ja_task_id,
                                    sge_spool_flags_t flags) 
 {
    int ret = 0;
@@ -824,7 +824,8 @@ int job_list_read_from_disk(lList **job_list, char *list_name, int check,
          snprintf(third_dir, sizeof(third_dir), SFN"/"SFN, second_dir, second_entry_string);
          third_direnties = sge_get_dirents(third_dir);
          for (; (third_direntry = lFirstRW(third_direnties)); lRemoveElem(third_direnties, &third_direntry)) {
-            lListElem *job, *ja_task;
+            lListElem *job;
+            const lListElem *ja_task;
             char *lasts = NULL;
             char job_dir[SGE_PATH_MAX] = "";
             char fourth_dir[SGE_PATH_MAX] = "";

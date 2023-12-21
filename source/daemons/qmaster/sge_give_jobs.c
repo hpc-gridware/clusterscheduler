@@ -268,7 +268,7 @@ send_slave_jobs(sge_gdi_ctx_class_t *ctx, lListElem *jep, lListElem *jatep, cons
    DENTER(TOP_LAYER, "send_slave_jobs");
 
    /* do we have pe slave tasks* */
-   for_each(gdil_ep, lGetList(jatep, JAT_granted_destin_identifier_list)) { 
+   for_each_rw(gdil_ep, lGetList(jatep, JAT_granted_destin_identifier_list)) {
       if (lGetUlong(gdil_ep, JG_tag_slave_job)) {
          lSetUlong(jatep, JAT_next_pe_task_id, 1);   
          is_pe_jobs = true;
@@ -305,7 +305,7 @@ send_slave_jobs(sge_gdi_ctx_class_t *ctx, lListElem *jep, lListElem *jatep, cons
    lReduceDescr(&rdp, QU_Type, what);
 
    tmpjatep = lFirstRW(lGetList(tmpjep, JB_ja_tasks));   
-   for_each (gdil_ep, lGetList(tmpjatep, JAT_granted_destin_identifier_list)) {
+   for_each_rw (gdil_ep, lGetList(tmpjatep, JAT_granted_destin_identifier_list)) {
       const char *src_qname = lGetString(gdil_ep, JG_qname);
       const lListElem *src_qep = cqueue_list_locate_qinstance(master_cqueue_list, src_qname);
 
@@ -553,7 +553,7 @@ send_job(sge_gdi_ctx_class_t *ctx,
    what = lIntVector2What(QU_Type, queue_field);
    lReduceDescr(&rdp, QU_Type, what);
 
-   for_each(gdil_ep, lGetList(tmpjatep, JAT_granted_destin_identifier_list)) {
+   for_each_rw(gdil_ep, lGetList(tmpjatep, JAT_granted_destin_identifier_list)) {
       const char *src_qname = lGetString(gdil_ep, JG_qname);
       const lListElem *src_qep = cqueue_list_locate_qinstance(master_cqueue_list, src_qname);
 
@@ -969,7 +969,7 @@ void sge_commit_job(sge_gdi_ctx_class_t *ctx,
       reporting_create_job_log(NULL, now, JL_SENT, MSG_QMASTER, qualified_hostname, jr, jep, jatep, NULL, MSG_LOG_SENT2EXECD);
 
       global_host_ep = host_list_locate(master_exechost_list, "global");
-      for_each(ep, gdil) {
+      for_each_rw(ep, gdil) {
          lListElem *ar = NULL;
          u_long32 ar_id = lGetUlong(jep, JB_ar);
          const char *queue_name = lGetString(ep, JG_qname);
@@ -1036,7 +1036,7 @@ void sge_commit_job(sge_gdi_ctx_class_t *ctx,
 
             if (ar_id == 0) {
                /* debit resource quota set */
-               for_each(rqs, master_rqs_list) {
+               for_each_rw(rqs, master_rqs_list) {
                   if (rqs_debit_consumable(rqs, jep, ep, lGetString(jatep, JAT_granted_pe), master_centry_list, 
                                            master_userset_list, master_hgroup_list, tmp_slot, master_task) > 0) {
                      /* this info is not spooled */
@@ -1105,7 +1105,7 @@ void sge_commit_job(sge_gdi_ctx_class_t *ctx,
 
          if (pe_name) {
             const lListElem *pe = pe_list_locate(master_pe_list, pe_name);
-            lListElem *granted_queue;
+            const lListElem *granted_queue;
 
             if (pe && lGetBool(pe, PE_control_slaves)) { 
                bool is_master = true;
@@ -1248,7 +1248,7 @@ void sge_commit_job(sge_gdi_ctx_class_t *ctx,
       }
       sge_clear_granted_resources(ctx, jep, jatep, 1, monitor);
       job_enroll(jep, NULL, jataskid);
-      for_each(petask, lGetList(jatep, JAT_task_list)) {
+      for_each_rw(petask, lGetList(jatep, JAT_task_list)) {
          sge_add_list_event( now, sgeE_JOB_FINAL_USAGE, jobid,
                             jataskid,
                             lGetString(petask, PET_id), 
@@ -1268,7 +1268,7 @@ void sge_commit_job(sge_gdi_ctx_class_t *ctx,
          no_unlink = 1;
       } else {
          /* finished all ja-tasks => remove job script */
-         for_each(tmp_ja_task, lGetList(jep, JB_ja_tasks)) {
+         for_each_rw(tmp_ja_task, lGetList(jep, JB_ja_tasks)) {
             if (lGetUlong(tmp_ja_task, JAT_status) != JFINISHED) {
                no_unlink = 1;
                break;
@@ -1383,7 +1383,8 @@ static void sge_job_finish_event(lListElem *jep, lListElem *jatep, lListElem *jr
 
 static void release_successor_jobs(const lListElem *jep)
 {
-   lListElem *jid, *suc_jep;
+   const lListElem *jid;
+   lListElem *suc_jep;
    u_long32 job_ident;
    const lList *master_job_list = *object_type_get_master_list(SGE_TYPE_JOB);
 
@@ -1417,7 +1418,8 @@ static void release_successor_jobs(const lListElem *jep)
 
 static void release_successor_jobs_ad(const lListElem *jep) 
 {
-   lListElem *jid, *suc_jep;
+   const lListElem *jid;
+   lListElem *suc_jep;
    u_long32 job_ident;
    lList *master_job_list = *object_type_get_master_list_rw(SGE_TYPE_JOB);
 
@@ -1522,7 +1524,7 @@ static void sge_clear_granted_resources(sge_gdi_ctx_class_t *ctx,
    u_long32 job_id = lGetUlong(job, JB_job_number);
    u_long32 ja_task_id = lGetUlong(ja_task, JAT_task_number);
    const lList *gdi_list = lGetList(ja_task, JAT_granted_destin_identifier_list);
-   lListElem *ep;
+   const lListElem *ep;
    lList *answer_list = NULL;
    u_long32 now;
    const lList *master_cqueue_list = *object_type_get_master_list(SGE_TYPE_CQUEUE);
@@ -1602,7 +1604,7 @@ static void sge_clear_granted_resources(sge_gdi_ctx_class_t *ctx,
 
             if (ar_id == 0) {
                /* undebit resource quota set */
-               for_each(rqs, master_rqs_list) {
+               for_each_rw(rqs, master_rqs_list) {
                   DPRINTF(("undebiting rqs %s\n", lGetString(rqs, RQS_name)));
                   if (rqs_debit_consumable(rqs, job, ep, lGetString(ja_task, JAT_granted_pe),
                                             master_centry_list, master_userset_list, master_hgroup_list,
@@ -1985,7 +1987,7 @@ setCheckpointObj(lListElem *job)
 bool gdil_del_all_orphaned(sge_gdi_ctx_class_t *ctx, const lList *gdil_list, lList **alpp)
 {
    bool ret = true;
-   lListElem *gdil_ep;
+   const lListElem *gdil_ep;
    lList *master_cqueue_list = *object_type_get_master_list_rw(SGE_TYPE_CQUEUE);
    
    dstring cqueue_name = DSTRING_INIT;

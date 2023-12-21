@@ -315,7 +315,7 @@ void feature_activate(feature_id_t id)
 ******************************************************************************/
 feature_id_t feature_get_active_featureset_id(void) 
 {
-   lListElem *feature;
+   const lListElem *feature;
    feature_id_t ret = FEATURE_UNINITIALIZED;
    lList **featurelist_pp = NULL;
 

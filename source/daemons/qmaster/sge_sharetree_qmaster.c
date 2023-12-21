@@ -284,7 +284,7 @@ lList **found  /* tmp list that contains one entry for each found u/p */
             return -1;
       }
 
-      for_each(child, children) {
+      for_each_rw(child, children) {
          /* ensure pathes are identically inside share tree */ 
          for (remaining=lNext(child); remaining; remaining=lNext(remaining)) {
             const char *cn = lGetString(child, STN_name);
@@ -488,7 +488,8 @@ const char *name,
 int node_type,
 int recurse 
 ) {
-   lListElem *tmp, *node;
+   lListElem *tmp;
+   lListElem *node;
   
    DENTER(TOP_LAYER, "getNode");
 
@@ -504,7 +505,7 @@ int recurse
    } 
 #endif
 
-   for_each (node, share_tree) {
+   for_each_rw (node, share_tree) {
       if (!strcmp(name, lGetString(node, STN_name))) {
          DEXIT;
          return node;

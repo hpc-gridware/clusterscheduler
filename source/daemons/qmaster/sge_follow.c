@@ -398,7 +398,7 @@ sge_follow_order(sge_gdi_ctx_class_t *ctx,
             lSetString(jatp, JAT_granted_pe, NULL);
             DRETURN(-2);
          } else {
-            lListElem *ruep;
+            const lListElem *ruep;
 
             /* host not yet clean after reschedule unknown? */
             for_each(ruep, lGetList(hep, EH_reschedule_unknown_list)) {
@@ -1102,7 +1102,8 @@ sge_follow_order(sge_gdi_ctx_class_t *ctx,
    case ORT_update_project_usage:
       DPRINTF(("ORDER: ORT_update_project_usage\n"));
       {
-         lListElem *up_order, *up, *ju, *up_ju, *next;
+         lListElem *up_order;
+         lListElem *up, *ju, *up_ju, *next;
          int pos;
          const char *up_name;
          lList *tlp;
@@ -1132,7 +1133,7 @@ sge_follow_order(sge_gdi_ctx_class_t *ctx,
 
          DPRINTF(("ORDER: update %d projects\n", lGetNumberOfElem(lGetList(ep, OR_joker))));
 
-         for_each (up_order, lGetList(ep, OR_joker)) {
+         for_each_rw (up_order, lGetList(ep, OR_joker)) {
             if ((pos=lGetPosViaElem(up_order, PR_name, SGE_NO_ABORT))<0 ||
                   !(up_name = lGetString(up_order, PR_name))) {
                continue;
@@ -1269,7 +1270,7 @@ sge_follow_order(sge_gdi_ctx_class_t *ctx,
 
          DPRINTF(("ORDER: update %d users\n", lGetNumberOfElem(lGetList(ep, OR_joker))));
 
-         for_each (up_order, lGetList(ep, OR_joker)) {
+         for_each_rw (up_order, lGetList(ep, OR_joker)) {
             if ((pos=lGetPosViaElem(up_order, UU_name, SGE_NO_ABORT))<0 ||
                   !(up_name = lGetString(up_order, UU_name))) {
                continue;
@@ -1553,7 +1554,7 @@ int distribute_ticket_orders(sge_gdi_ctx_class_t *ctx, lList *ticket_orders, mon
    u_long32 now = sge_get_gmt();
    unsigned long last_heard_from = 0;
    int cl_err = CL_RETVAL_OK;
-   lListElem *ep;
+   const lListElem *ep;
    lList *master_ehost_list = *object_type_get_master_list_rw(SGE_TYPE_EXECHOST);
 
    DENTER(TOP_LAYER, "distribute_ticket_orders");
@@ -1574,7 +1575,7 @@ int distribute_ticket_orders(sge_gdi_ctx_class_t *ctx, lList *ticket_orders, mon
 
          if (init_packbuffer(&pb, sizeof(u_long32)*3*n, 0)==PACK_SUCCESS) {
             u_long32 dummyid = 0;
-            lListElem *ep2;
+            const lListElem *ep2;
             for_each (ep2, to_send) {
                packint(&pb, lGetUlong(ep2, OR_job_number));
                packint(&pb, lGetUlong(ep2, OR_ja_task_number));

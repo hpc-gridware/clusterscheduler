@@ -63,7 +63,7 @@ int lInsertSorted(const lSortOrder * so, lListElem * ep, lList * lp)
       DRETURN(-1);
    }
 
-   for_each(tmp, lp)
+   for_each_rw(tmp, lp)
       if (lSortCompare(ep, tmp, so) <= 0)
       break;                    /* insert before tmp */
 

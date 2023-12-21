@@ -316,7 +316,8 @@ int sge_exec_job(sge_gdi_ctx_class_t *ctx, lListElem *jep, lListElem *jatep,
 
    char mail_str[1024], *shepherd_name;
    const lList *gdil;
-   lListElem *gdil_ep, *master_q;
+   const lListElem *gdil_ep;
+   lListElem *master_q;
    lListElem *ep;
    const lListElem *env;
    lList *environmentList = NULL;
@@ -1451,7 +1452,7 @@ int sge_exec_job(sge_gdi_ctx_class_t *ctx, lListElem *jep, lListElem *jatep,
 
    {
       const lList *args;
-      lListElem *se;
+      const lListElem *se;
 
       int nargs=1;
      
@@ -2052,7 +2053,7 @@ char *shell
 static int 
 get_nhosts(const lList *gdil_orig) {
    int nhosts = 0;
-   lListElem *ep;
+   const lListElem *ep;
    lList *cache = lCreateList("", STU_Type);
    const char *hostname;
 

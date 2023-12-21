@@ -166,11 +166,11 @@ int job_initialize_job(lListElem *job)
 {
    u_long32 job_id;
    lListElem *ja_task;
-   lListElem *pe_task;
+   const lListElem *pe_task;
    DENTER(TOP_LAYER, "job_initialize_job");
 
    job_id = lGetUlong(job, JB_job_number); 
-   for_each (ja_task, lGetList(job, JB_ja_tasks)) {
+   for_each_rw (ja_task, lGetList(job, JB_ja_tasks)) {
       u_long32 ja_task_id;
 
       ja_task_id = lGetUlong(ja_task, JAT_task_number);

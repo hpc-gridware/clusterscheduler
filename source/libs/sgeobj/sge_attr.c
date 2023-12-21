@@ -370,7 +370,7 @@ attr_list_add(lList **this_list, lList **answer_list, lListElem **attr,
              * (except HOSTREF_DEFAULT, and host entries)
              */
             if (lret) {
-               for_each(attr_elem, *this_list) {
+               for_each_rw(attr_elem, *this_list) {
                   const char *href = lGetHost(attr_elem, ASTR_href); 
 
                   if (strcmp(href, HOSTREF_DEFAULT) && 
@@ -507,7 +507,7 @@ attr_list_find_value(const lList *this_list, lList **answer_list,
    DENTER(HOSTATTR_LAYER, "attr_list_find_value");
 
    if (this_list != NULL && hostname != NULL) {
-      lListElem *href = NULL;
+      const lListElem *href = NULL;
    
       /*
        * Try to find a value for the concerned host
@@ -530,7 +530,6 @@ attr_list_find_value(const lList *this_list, lList **answer_list,
           */
          for_each(href, this_list) {
             const char *href_name = lGetHost(href, href_nm);
-            bool lret = true;
 
             if (strcmp(href_name, HOSTREF_DEFAULT) && 
                 is_hgroup_name(href_name)) {
@@ -539,9 +538,9 @@ attr_list_find_value(const lList *this_list, lList **answer_list,
                lList *host_list = NULL;
 
                href_list_add(&tmp_href_list, NULL, href_name);
-               lret &= href_list_find_all_references(tmp_href_list, NULL,
-                                                     master_hroup_list, &host_list,
-                                                     NULL); 
+               href_list_find_all_references(tmp_href_list, NULL,
+                                             master_hroup_list, &host_list,
+                                             NULL);
                tmp_href = href_list_locate(host_list, hostname);
                if (tmp_href != NULL) {
                   if (already_found == false) {
@@ -658,7 +657,7 @@ attr_list_append_to_dstring(const lList *this_list, dstring *string,
    bool found_default = false;
    bool found_group = false;
    bool found_host = false;
-   lListElem *attr = NULL;
+   const lListElem *attr = NULL;
    dstring host_string = DSTRING_INIT;
 
    DENTER(HOSTATTR_LAYER, "attr_list_append_to_dstring");

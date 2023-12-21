@@ -85,7 +85,7 @@ bool ckpt_is_referenced(const lListElem *ckpt, lList **answer_list,
    bool ret = false;
 
    {
-      lListElem *job = NULL;
+      const lListElem *job = NULL;
 
       for_each(job, master_job_list) {
          if (job_is_ckpt_referenced(job, ckpt)) {
@@ -101,7 +101,7 @@ bool ckpt_is_referenced(const lListElem *ckpt, lList **answer_list,
       } 
    }
    if (!ret) {
-      lListElem *queue = NULL, *ckl = NULL;
+      const lListElem *queue = NULL, *ckl = NULL;
  
       /* fix for bug 6422335
        * check the cq configuration for ckpt references instead of qinstances
@@ -347,7 +347,7 @@ ckpt_list_do_all_exist(const lList *ckpt_list, lList **answer_list,
                        const lList *ckpt_ref_list)
 {
    bool ret = true;
-   lListElem *ckpt_ref_elem = NULL;
+   const lListElem *ckpt_ref_elem = NULL;
 
    DENTER(TOP_LAYER, "ckpt_list_do_all_exist");
    for_each(ckpt_ref_elem, ckpt_ref_list) {

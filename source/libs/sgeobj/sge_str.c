@@ -85,7 +85,7 @@ str_list_append_to_dstring(const lList *this_list, dstring *string,
 
    DENTER(STR_LAYER, "str_list_append_to_dstring");
    if (string != NULL) {
-      lListElem *elem = NULL;
+      const lListElem *elem = NULL;
       bool printed = false;
 
       for_each(elem, this_list) {
@@ -182,7 +182,7 @@ str_list_is_valid(const lList *this_list, lList **answer_list)
 
    DENTER(STR_LAYER, "str_list_is_valid");
    if (this_list != NULL) {
-      lListElem *elem;
+      const lListElem *elem;
 
       for_each(elem, this_list) {
          if (lGetString(elem, ST_name) == NULL) {
@@ -204,7 +204,7 @@ str_list_transform_user_list(lList **this_list, lList **answer_list, const char 
    if (this_list != NULL && *this_list != NULL) {
       lListElem *elem;
 
-      for_each(elem, *this_list) {
+      for_each_rw (elem, *this_list) {
          const char *string = lGetString(elem, ST_name);
 
          if (string != NULL) {

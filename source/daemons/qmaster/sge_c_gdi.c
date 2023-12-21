@@ -705,7 +705,7 @@ sge_c_gdi_del(sge_gdi_ctx_class_t *ctx,
    } else {
       sge_set_commit_required();
 
-      for_each (ep, task->data_list) {
+      for_each_rw(ep, task->data_list) {
          /* try to remove the element */
          switch (task->target)
          {
@@ -813,7 +813,7 @@ static void sge_c_gdi_copy(sge_gdi_ctx_class_t *ctx, gdi_object_t *ao,
       return;
    }
 
-   for_each (ep, task->data_list) {
+   for_each_rw (ep, task->data_list) {
       switch (task->target)
       {
          case SGE_JB_LIST:
@@ -962,7 +962,7 @@ void sge_c_gdi_replace(sge_gdi_ctx_class_t *ctx, gdi_object_t *ao,
                ep = lFirstRW(*object_type_get_master_list(SGE_TYPE_RQS));
             }
 
-            for_each(ep, task->data_list) {
+            for_each_rw (ep, task->data_list) {
                sge_gdi_add_mod_generic(ctx, &(task->answer_list), ep, 1, ao, packet->user, packet->host, SGE_GDI_SET_ALL, &tmp_list, monitor);
             }
             lFreeList(&tmp_list);
@@ -1046,7 +1046,7 @@ sge_gdi_tigger_thread_state_transition(sge_gdi_ctx_class_t *ctx,
    lList **answer_list = &(task->answer_list);
 
    DENTER(TOP_LAYER, "sge_gdi_tigger_thread_state_transition");
-   for_each (elem, task->data_list) {
+   for_each_rw(elem, task->data_list) {
       const char *name = lGetString(elem, ID_str);
       sge_thread_state_transitions_t action = (sge_thread_state_transitions_t) lGetUlong(elem, ID_action);
 
@@ -1123,7 +1123,7 @@ sge_gdi_shutdown_event_client(sge_gdi_ctx_class_t *ctx, sge_gdi_packet_class_t *
 
    DENTER(TOP_LAYER, "sge_gdi_shutdown_event_client");
 
-   for_each (elem, task->data_list) {
+   for_each_rw(elem, task->data_list) {
       lList *local_alp = NULL;
       int client_id = EV_ID_ANY;
       int res = -1;
@@ -1294,7 +1294,7 @@ static void sge_c_gdi_mod(sge_gdi_ctx_class_t *ctx, gdi_object_t *ao,
       return;
    }
 
-   for_each (ep, task->data_list) {
+   for_each_rw(ep, task->data_list) {
       if (sge_chck_mod_perm_host(&(task->answer_list), task->target, packet->host, packet->commproc, 1, ep, monitor)) {
          continue;
       }

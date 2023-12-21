@@ -226,14 +226,14 @@ int sge_reap_children_execd(int max_count, bool is_qmaster_down)
          int Break = 0;
    
          petep = NULL;
-         for_each (jatep, lGetList(jep, JB_ja_tasks)) {
+         for_each_rw (jatep, lGetList(jep, JB_ja_tasks)) {
             if (lGetUlong(jatep, JAT_pid) == pid) {
                petep = NULL;
                Break = 1;
                break;
             }
             
-            for_each(petep, lGetList(jatep, JAT_task_list)) {
+            for_each_rw (petep, lGetList(jatep, JAT_task_list)) {
                if (lGetUlong(petep, PET_pid) == pid) {
                   break;
                }
@@ -689,6 +689,8 @@ static int clean_up_job(lListElem *jr, int failed, int shepherd_exit_status,
             ERROR((SGE_EVENT, MSG_JOB_CANTOPENJOBPIDFILEFORJOBXY_S, 
                    job_get_id_string(job_id, ja_task_id, pe_task_id, &id_dstring)));
          }
+      } else {
+         job_pid = 0;
       }
    } else {
       job_pid = 0;
@@ -1339,7 +1341,7 @@ int clean_up_old_jobs(sge_gdi_ctx_class_t *ctx, int startup)
          sprintf(dir, "%s/%s", ACTIVE_DIR, jobdir);
          examine_job_task_from_file(ctx, startup, dir, jep, jatep, NULL, pids, npids);
       }
-      for_each(petep, lGetList(jatep, JAT_task_list)) {
+      for_each_rw (petep, lGetList(jatep, JAT_task_list)) {
          sprintf(dir, "%s/%s/%s", ACTIVE_DIR, jobdir, lGetString(petep, PET_id));
          examine_job_task_from_file(ctx, startup, dir, jep, jatep, petep, pids, npids);
       }

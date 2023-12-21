@@ -235,7 +235,7 @@ Error:
 int userprj_success(sge_gdi_ctx_class_t *ctx, lListElem *ep, lListElem *old_ep, gdi_object_t *object, lList **ppList, monitoring_t *monitor) 
 {
    int user_flag = (object->target==SGE_UU_LIST)?1:0;
-   lListElem *rqs;
+   const lListElem *rqs;
    
    DENTER(TOP_LAYER, "userprj_success");
 
@@ -340,7 +340,7 @@ int user        /* =1 user, =0 project */
    }
 
    if (!user) { /* ensure this project is not referenced in any queue */
-      lListElem *cqueue, *host;
+      const lListElem *cqueue, *host;
       const lListElem *prj;
 
       /*
@@ -448,7 +448,7 @@ const char *attr_name, /* e.g. "xprojects" */
 const char *obj_descr, /* e.g. "host"      */
 const char *obj_name   /* e.g. "fangorn"  */
 ) {
-   lListElem *up;
+   const lListElem *up;
 
    DENTER(TOP_LAYER, "verify_project_list");
 
@@ -678,13 +678,13 @@ void sge_userprj_spool(sge_gdi_ctx_class_t *ctx) {
    /* this function is used on qmaster shutdown, no need to monitor this lock */
    SGE_LOCK(LOCK_GLOBAL, LOCK_READ);
 
-   for_each(elem, *object_type_get_master_list(SGE_TYPE_USER)) {
+   for_each_rw(elem, *object_type_get_master_list(SGE_TYPE_USER)) {
       name = lGetString(elem, UU_name);
       sge_event_spool(ctx, &answer_list, now, sgeE_USER_MOD, 0, 0, name, NULL, NULL,
                       elem, NULL, NULL, false, true);
    }
 
-   for_each(elem, *object_type_get_master_list(SGE_TYPE_PROJECT)) {
+   for_each_rw(elem, *object_type_get_master_list(SGE_TYPE_PROJECT)) {
       name = lGetString(elem, PR_name);
       sge_event_spool(ctx, &answer_list, now, sgeE_PROJECT_MOD, 0, 0, name, NULL, NULL,
                       elem, NULL, NULL, false, true);   

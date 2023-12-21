@@ -558,7 +558,7 @@ static void rmon_mprintf_va(int debug_class, const char* fmt, va_list args) {
    helper = rmon_get_helper();
    strcpy(msgbuf, empty);
    vsnprintf(&msgbuf[4], (RMON_BUF_SIZE) - 10 , fmt, args);
-   if ((helper != NULL) && (helper->thread_name != NULL) && (strlen(helper->thread_name) > 0)) {
+   if ((helper != NULL) && (strlen(helper->thread_name) > 0)) {
       mwrite(msgbuf, helper->thread_name);
    } else {
       mwrite(msgbuf, NULL);

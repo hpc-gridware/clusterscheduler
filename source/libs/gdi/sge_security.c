@@ -1543,7 +1543,7 @@ static bool sge_decrypt(char *intext, int inlen, char *outbuf, int* outsize)
  */
 static bool change_encoding(char *cbuf, int* csize, unsigned char* ubuf, int* usize, int mode)
 {
-   static const char alphabet[16] = {"*b~de,gh&j§lrn=p"};
+   static const char alphabet[16] = {"*b~de,gh&jklrn=p"};
 
    DENTER(TOP_LAYER, "change_encoding");
 

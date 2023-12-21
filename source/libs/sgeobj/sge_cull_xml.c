@@ -157,7 +157,7 @@ void xml_addAttribute(lListElem *xml_elem, const char *name, const char *value){
 *******************************************************************************/
 static void lWriteListXML_(const lList *lp, int nesting_level, FILE *fp, int ignore_cull_name) 
 {
-   lListElem *ep;
+   const lListElem *ep;
    char indent[128];
    int i;
    bool is_XML_elem = false;

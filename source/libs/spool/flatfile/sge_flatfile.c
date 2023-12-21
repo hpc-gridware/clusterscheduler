@@ -1459,7 +1459,7 @@ spool_flatfile_write_list_fields(lList **answer_list, const lList *list,
                                  const spool_flatfile_instr *instr,
                                  const spooling_field *fields, bool recurse, const char *list_name)
 {
-   lListElem *ep;
+   const lListElem *ep;
    bool first = true;
    bool first_start = true;
    const spooling_field *my_fields = fields;
@@ -2084,7 +2084,7 @@ FF_DEBUG("skipping field delimiter");
                   }
 
                   /* Read in the full element for each element in the list */
-                  for_each (ep, list) {
+                  for_each_rw(ep, list) {
                      /* We're passing in NULL for the fields_out parameter
                       * because we don't care about the fields read from sub
                       * lists. */

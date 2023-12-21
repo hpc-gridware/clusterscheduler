@@ -57,7 +57,7 @@ u_long32 num_in_range(
 u_long32 num,
 lList *r 
 ) {
-   lListElem *rep;
+   const lListElem *rep;
    u_long32 ret;
 
    DENTER(TOP_LAYER, "num_in_range");

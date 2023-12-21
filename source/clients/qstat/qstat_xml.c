@@ -797,7 +797,7 @@ static int qstat_xml_finish_job_list(qstat_handler_t *handler, const char* state
    
    DENTER(TOP_LAYER, "qstat_xml_finish_job_list");
    
-   for_each(job_elem, ctx->job_list) {
+   for_each_rw(job_elem, ctx->job_list) {
       attributes = lGetListRW(job_elem, XMLE_Attribute);
       if (!attributes){
          attributes = lCreateList("attributes", XMLA_Type);
@@ -1118,7 +1118,7 @@ static int qstat_xml_queue_resource(qstat_handler_t* handler, const char* dom, c
 
 
 void xml_qstat_show_job_info(lList **list, lList **answer_list, qstat_env_t *qstat_env) {
-   lListElem *answer = NULL;
+   const lListElem *answer = NULL;
    lListElem *xml_elem = NULL;
    bool error = false;
    lListElem* mes;
@@ -1147,10 +1147,10 @@ void xml_qstat_show_job_info(lList **list, lList **answer_list, qstat_env_t *qst
       if (sme) {
          mlp = lGetListRW(sme, SME_message_list);         
       }      
-      for_each(mes, mlp) {
+      for_each_rw(mes, mlp) {
          lPSortList (lGetListRW(mes, MES_job_number_list), "I+", ULNG_value);
 
-         for_each(jid_ulng, lGetList(mes, MES_job_number_list)) {
+         for_each_rw(jid_ulng, lGetList(mes, MES_job_number_list)) {
             u_long32 mid;            
 
             mid = lGetUlong(mes, MES_message_number);
@@ -1175,7 +1175,7 @@ void xml_qstat_show_job_info(lList **list, lList **answer_list, qstat_env_t *qst
 }
 
 void xml_qstat_show_job(lList **job_list, lList **msg_list, lList **answer_list, lList **id_list, qstat_env_t *qstat_env){
-   lListElem *answer = NULL;
+   const lListElem *answer = NULL;
    lListElem *xml_elem = NULL;
    bool error = false;
    bool suppress_binding_data = (qstat_env->full_listing & QSTAT_DISPLAY_BINDING) == QSTAT_DISPLAY_BINDING ? false : true;

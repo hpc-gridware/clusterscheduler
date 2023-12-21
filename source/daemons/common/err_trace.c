@@ -209,7 +209,7 @@ void shepherd_trace_chown(const char* job_owner)
 *  RESULT
 *     void - none
 *******************************************************************************/
-void shepherd_error_init()
+void shepherd_error_init(void)
 {
 	if (shepherd_error_fp == NULL) {
 		shepherd_error_fp = shepherd_trace_init_intern(st_error);
@@ -219,7 +219,7 @@ void shepherd_error_init()
 	}
 }
 
-void shepherd_error_exit()
+void shepherd_error_exit(void)
 {
     int  old_euid = SGE_SUPERUSER_UID;
 

@@ -356,7 +356,7 @@ int main(int argc, char *argv[])
 }
 
 void work(char *mmp) {
-   float a = 0, b = 0.1;
+   float a=0.0, b = 0.1;
    char c;
    char *miter = NULL, *miter_max = NULL;
    char buffer[2];
@@ -367,7 +367,7 @@ void work(char *mmp) {
    }
 
    while (!should_stop) {
-      a += b;
+      a = a + b;
       if (mmp) {
          c = *miter + 1;
          *miter = c;

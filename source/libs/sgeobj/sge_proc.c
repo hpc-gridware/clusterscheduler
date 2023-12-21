@@ -132,7 +132,7 @@ void clean_procList()
 
    /* mark all jobs to finished */
 
-   for_each(next, procList) {
+   for_each_rw (next, procList) {
       lSetPosBool(next, pos, false);
    }
 }

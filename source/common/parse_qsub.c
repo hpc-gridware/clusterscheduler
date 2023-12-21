@@ -1804,7 +1804,7 @@ DTRACE;
 
       if (!strcmp("-@", *sp)) {
          lList *alp;
-         lListElem *aep;
+         const lListElem *aep;
          int do_exit = 0;
 
          sp++;

@@ -156,7 +156,7 @@ bool host_is_referenced(const lListElem *host,
       /* if we have not found a reference yet, we keep looking in the host groups, if
          we have an exec host */
       if (!ret && object_has_type(host, EH_Type)) {
-         lListElem *hgrp_elem = NULL;
+         const lListElem *hgrp_elem = NULL;
          lList *host_list = NULL;
 
          for_each (hgrp_elem, hgrp_list) {
@@ -418,7 +418,7 @@ host_list_merge(lList *this_list)
          lSetList(global_host, EH_merged_report_variables, lCopyList("", lGetList(global_host, EH_report_variables)));
 
          /* do merge for all hosts except global */
-         for_each (host, this_list) {
+         for_each_rw (host, this_list) {
             if (host != global_host) {
                /* on error continue, but return error status */
                if (!host_merge(host, global_host)) {

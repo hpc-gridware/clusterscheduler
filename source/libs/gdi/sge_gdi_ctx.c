@@ -243,7 +243,7 @@ static void sge_gdi_thread_local_ctx_init(sge_gdi_ctx_thread_local_t* theState)
 }
 
 
-sge_gdi_ctx_class_t* sge_gdi_get_thread_local_ctx() {
+sge_gdi_ctx_class_t* sge_gdi_get_thread_local_ctx(void) {
 
    pthread_once(&sge_gdi_ctx_once, sge_gdi_thread_local_ctx_once_init);
    {

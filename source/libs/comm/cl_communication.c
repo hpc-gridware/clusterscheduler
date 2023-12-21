@@ -95,15 +95,10 @@ static bool cl_com_default_ssl_verify_func(cl_ssl_verify_mode_t mode, bool servi
          break;
       }
    }
-   switch(service_mode) {
-      case true: {
-         CL_LOG(CL_LOG_INFO,"running in service mode");
-         break;
-      }
-      case false: {
-         CL_LOG(CL_LOG_INFO,"running in client mode");
-         break;
-      }
+   if (service_mode) {
+       CL_LOG(CL_LOG_INFO, "running in service mode");
+   } else {
+       CL_LOG(CL_LOG_INFO,"running in client mode");
    }
    if (value != NULL) {
       CL_LOG_STR(CL_LOG_INFO,"compare value is:",value);

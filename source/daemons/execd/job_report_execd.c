@@ -79,9 +79,10 @@ flush_job_report(lListElem *jr)
    }
 }
 
+#if 0
 void trace_jr()
 {
-   lListElem *jr;
+   const lListElem *jr;
 
    DENTER(TOP_LAYER, "trace_jr");
 
@@ -97,6 +98,7 @@ void trace_jr()
    }
    DEXIT;
 }
+#endif
 
 lListElem *add_job_report(u_long32 jobid, u_long32 jataskid, const char *petaskid, const lListElem *jep)
 {
@@ -400,8 +402,8 @@ int do_ack(sge_gdi_ctx_class_t *ctx, struct_msg_t *aMsg)
 
 void modify_queue_limits_flag_for_job(const char *qualified_hostname, lListElem *jep, bool increase)
 {
-   lListElem *jatep;
-   lListElem *gdil_ep;
+   const lListElem *jatep;
+   const lListElem *gdil_ep;
 
    for_each(jatep, lGetList(jep, JB_ja_tasks)) {
       for_each (gdil_ep, lGetList(jatep, JAT_granted_destin_identifier_list)) {

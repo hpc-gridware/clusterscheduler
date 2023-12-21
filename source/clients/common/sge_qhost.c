@@ -153,7 +153,7 @@ int do_qhost(void *ctx, lList *host_list, lList *user_list, lList *resource_matc
 
       {/* clean host list */
          lListElem *host = NULL;
-         for_each(host, ehl) {
+         for_each_rw(host, ehl) {
             lSetUlong(host, EH_tagged, 0);
          }
       }
@@ -162,7 +162,7 @@ int do_qhost(void *ctx, lList *host_list, lList *user_list, lList *resource_matc
       global = lGetElemHostRW(ehl, EH_name, "global");
       selected = sge_select_queue(resource_match_list, NULL, global, ehl, cl, true, -1, NULL, NULL, NULL);
       if (selected) {
-         for_each(ep, ehl) {
+         for_each_rw(ep, ehl) {
             lSetUlong(ep, EH_tagged, 1);
          }
       } else {
@@ -174,7 +174,7 @@ int do_qhost(void *ctx, lList *host_list, lList *user_list, lList *resource_matc
          if ((tmp_resource_list = lGetElemStrRW(resource_match_list, CE_name, "hostname"))) {
             lDechainElem(resource_match_list, tmp_resource_list);
          }
-         for_each(ep, ehl) {
+         for_each_rw(ep, ehl) {
             /* prepare complex attributes */
             if (strcmp(lGetHost(ep, EH_name), SGE_TEMPLATE_NAME) == 0) {
                continue;
@@ -235,7 +235,7 @@ int do_qhost(void *ctx, lList *host_list, lList *user_list, lList *resource_matc
          DRETURN(ret);
       }
    }
-   for_each(ep, ehl) {
+   for_each_rw(ep, ehl) {
 
       if (shut_me_down) {
          DRETURN(QHOST_ERROR);
@@ -534,7 +534,7 @@ lList **alpp
       DRETURN(ret);
    }
 
-   for_each(cqueue, qlp) {
+   for_each_rw(cqueue, qlp) {
       const lList *qinstance_list = lGetList(cqueue, CQ_qinstances);
 
       if ((qep=lGetElemHostRW(qinstance_list, QU_qhostname, ehname))) {
@@ -706,13 +706,13 @@ lList **alpp
       DRETURN(QHOST_SUCCESS);
    }
    host_complexes2scheduler(&rlp, host, ehl, cl);
-   for_each(rep , rlp) {
+   for_each_rw(rep , rlp) {
       u_long32 type = lGetUlong(rep, CE_valtype);
 
       if (resl != NULL) {
          lListElem *r1;
          int found = 0;
-         for_each (r1, resl) {
+         for_each_rw (r1, resl) {
             if (!strcmp(lGetString(r1, ST_name), lGetString(rep, CE_name)) ||
                 !strcmp(lGetString(r1, ST_name), lGetString(rep, CE_shortcut))) {
                found = 1;
@@ -893,7 +893,7 @@ u_long32 show
    ** build where struct to filter out  either all hosts or only the 
    ** hosts listed in host_list
    */
-   for_each(ep, hostref_list) {
+   for_each_rw(ep, hostref_list) {
       nw = lWhere("%T(%I h= %s)", EH_Type, EH_name, lGetString(ep, ST_name));
       if (!where)
          where = nw;
@@ -943,7 +943,7 @@ u_long32 show
 
 /* lWriteListTo(user_list, stdout); */
 
-      for_each(ep, user_list) {
+      for_each_rw(ep, user_list) {
          nw = lWhere("%T(%I p= %s)", JB_Type, JB_owner, lGetString(ep, ST_name));
          if (!jw)
             jw = nw;
@@ -1085,8 +1085,8 @@ u_long32 show
       /*
       ** tag the jobs, we need it for the printing functions
       */
-      for_each(ep, *job_l) {
-         for_each(jatep, lGetList(ep, JB_ja_tasks)) {
+      for_each_rw(ep, *job_l) {
+         for_each_rw(jatep, lGetList(ep, JB_ja_tasks)) {
             lSetUlong(jatep, JAT_suitable, TAG_SHOW_IT);
          }
       }   

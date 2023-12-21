@@ -1,5 +1,5 @@
 <component name="ProjectRunConfigurationManager">
-  <configuration default="false" name="sge_qmaster (Linux)" type="CMakeRunConfiguration" factoryName="Application" focusToolWindowBeforeRun="true" REDIRECT_INPUT="false" ELEVATE="true" USE_EXTERNAL_CONSOLE="false" EMULATE_TERMINAL="true" WORKING_DIR="file:///home/ebablick/OGE/oge3/inst/bin/lx-amd64" PASS_PARENT_ENVS_2="true" PROJECT_NAME="gridengine" TARGET_NAME="sge_qmaster" CONFIG_NAME="Debug" RUN_PATH="/home/ebablick/OGE/oge3/inst/bin/lx-amd64/sge_qmaster">
+  <configuration default="false" name="sge_qmaster (Linux)" type="CMakeRunConfiguration" factoryName="Application" folderName="Daemon" focusToolWindowBeforeRun="true" REDIRECT_INPUT="false" ELEVATE="true" USE_EXTERNAL_CONSOLE="false" EMULATE_TERMINAL="true" WORKING_DIR="file:///home/ebablick/OGE/oge3/inst/bin/lx-amd64" PASS_PARENT_ENVS_2="true" PROJECT_NAME="gridengine" TARGET_NAME="sge_qmaster" CONFIG_NAME="darwin-arm64 (Debug)" RUN_PATH="/home/ebablick/OGE/oge3/inst/bin/lx-amd64/sge_qmaster">
     <envs>
       <env name="DYLD_LIBRARY_PATH" value="/home/ebablick/OGE/oge3/inst/lib/darwin-arm64" />
       <env name="SGE_CELL" value="oge3" />

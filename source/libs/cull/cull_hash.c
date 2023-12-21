@@ -742,7 +742,7 @@ int cull_hash_new_check(lList *lp, int nm, bool unique)
 int cull_hash_new(lList *lp, int nm, bool unique)
 {
    lDescr *descr;
-   lListElem *ep;
+   const lListElem *ep;
    int pos, size;
    char host_key[CL_MAXHOSTLEN];
 
@@ -884,7 +884,7 @@ void cull_hash_recreate_after_sort(lList *lp)
 
       if (hash_index > 0) {
          char host_key[CL_MAXHOSTLEN];
-         lListElem *ep;
+         const lListElem *ep;
 
          /* now insert into the cleared hash list */
          for_each (ep, lp) {

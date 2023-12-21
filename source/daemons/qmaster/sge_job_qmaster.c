@@ -425,7 +425,7 @@ int sge_gdi_del_job(sge_gdi_ctx_class_t *ctx, lListElem *idep, lList **alpp, cha
 
    /* Did we get a user list? */
    if (user_list && lGetNumberOfElem(user_list) > 0) {
-       lListElem *user = NULL;
+       const lListElem *user = NULL;
        for_each(user, user_list) {
           if (strcmp(lGetString(user, ST_name), "*") == 0) {
              all_users_flag = true;
@@ -545,7 +545,7 @@ bool
 is_pe_master_task_send(lListElem *jatep) 
 {
    bool all_slaves_arrived = true;
-   lListElem *gdil_ep = NULL;
+   const lListElem *gdil_ep = NULL;
    
    for_each (gdil_ep, lGetList(jatep, JAT_granted_destin_identifier_list)) {
       if (lGetUlong(gdil_ep, JG_tag_slave_job) != 0) {
@@ -587,7 +587,7 @@ bool all_slave_jobs_finished(lListElem *jatep)
 {
    bool all_slaves_finished = true;
    const lList *gdil = NULL;
-   lListElem *gdil_ep = NULL;
+   const lListElem *gdil_ep = NULL;
 
    /* Search gdil for tagged entries.
     * Tagged means, the slave execd did not yet report job finish.
@@ -630,7 +630,7 @@ void tag_all_host_gdil(lListElem *jatep)
    const lList *gdil = lGetList(jatep, JAT_granted_destin_identifier_list);
    lListElem *gdil_ep;
 
-   for_each (gdil_ep, gdil) {
+   for_each_rw (gdil_ep, gdil) {
       const char *host = lGetHost(gdil_ep, JG_qhostname);
       /* only the first gdil_ep for a host is tagged
        * if the pe job spawns multiple queues there might be multiple entries per host
@@ -722,7 +722,7 @@ u_long32 step
       sge_dstring_sprintf(&user_list_string, "");
 
       if (lGetNumberOfElem(user_list) > 0) {
-         lListElem *user;
+         const lListElem *user;
          bool first = true;
          int umax = 20;
 
@@ -820,7 +820,7 @@ static void job_list_filter( lList *user_list, const char* jobid,
    }
 
    if (user_list != NULL) {
-      lListElem *user;
+      const lListElem *user;
 
       DPRINTF(("Add all users given in userlist to filter\n"));
       for_each(user, user_list) {
@@ -1258,7 +1258,7 @@ int sub_command
       /* ignore modify requests if all job tasks are already JFINISHED 
          and no task id remains in not yet ran task id lists */
       if (job_get_not_enrolled_ja_tasks(jobep) == 0) {
-         lListElem *ja_task;
+         const lListElem *ja_task;
          bool all_finished = true;
          for_each (ja_task, lGetList(jobep, JB_ja_tasks)) {
             if (lGetUlong(ja_task, JAT_status) != JFINISHED) {
@@ -1335,7 +1335,7 @@ int sub_command
 
          if (trigger & MOD_EVENT) {
             sge_add_job_event(sgeE_JOB_MOD, new_job, NULL);
-            for_each(jatep, lGetList(new_job, JB_ja_tasks)) {
+            for_each_rw(jatep, lGetList(new_job, JB_ja_tasks)) {
                sge_add_jatask_event(sgeE_JATASK_MOD, new_job, jatep);
             }
          }
@@ -1351,7 +1351,7 @@ int sub_command
 
          if (trigger & RECHAIN_JID_HOLD) {
             lListElem *suc_jobep, *jid;
-            for_each(jid, lGetList(jobep, JB_jid_predecessor_list)) {
+            for_each_rw(jid, lGetList(jobep, JB_jid_predecessor_list)) {
                u_long32 pre_ident = lGetUlong(jid, JRE_job_number);
 
                DPRINTF((" JOB #"sge_u32": P: "sge_u32"\n", jobid, pre_ident)); 
@@ -1367,7 +1367,7 @@ int sub_command
 
          if (trigger & RECHAIN_JA_AD_HOLD) {
             lListElem *suc_jobep, *jid;
-            for_each(jid, lGetList(jobep, JB_ja_ad_predecessor_list)) {
+            for_each_rw(jid, lGetList(jobep, JB_ja_ad_predecessor_list)) {
                u_long32 pre_ident = lGetUlong(jid, JRE_job_number);
 
                DPRINTF((" JOB #"sge_u32": P: "sge_u32"\n", jobid, pre_ident)); 
@@ -1446,7 +1446,8 @@ void sge_add_jatask_event(ev_event type, lListElem *jep, lListElem *jatask)
 */
 static void job_suc_pre_doit(lListElem *jep, bool array_deps)
 {
-   lListElem *parent_jep, *task;
+   lListElem *parent_jep;
+   const lListElem *task;
    const lListElem *prep;
    int pre_nm, suc_nm;
    const lList *master_job_list = *object_type_get_master_list(SGE_TYPE_JOB);
@@ -1472,7 +1473,7 @@ static void job_suc_pre_doit(lListElem *jep, bool array_deps)
       parent_jep = lGetElemUlongRW(master_job_list, JB_job_number, pre_ident);
       if (parent_jep) {
          bool Exited = true;
-         lListElem *ja_task;
+         const lListElem *ja_task;
 
          if (lGetList(parent_jep, JB_ja_n_h_ids) != NULL ||
              lGetList(parent_jep, JB_ja_u_h_ids) != NULL ||
@@ -1847,7 +1848,7 @@ static bool is_changes_consumables(lList **alpp, const lList* new_lp, const lLis
 *******************************************************************************/
 int deny_soft_consumables(lList **alpp, const lList *srl, const lList *master_centry_list)
 {
-   lListElem *entry, *dcep;
+   const lListElem *entry, *dcep;
    const char *name;
 
    DENTER(TOP_LAYER, "deny_soft_consumables");
@@ -1899,7 +1900,7 @@ int *trigger
 
    /* is job running ? */
    {
-      lListElem *ja_task;
+      const lListElem *ja_task;
       for_each(ja_task, lGetList(new_job, JB_ja_tasks)) {
          if (lGetUlong(ja_task, JAT_status) & JTRANSFERING ||
              lGetUlong(ja_task, JAT_status) & JRUNNING) {
@@ -1961,7 +1962,7 @@ int *trigger
             while (list_id[++i] != -1) {
                lList *range_list = 
                               lCopyList("task_id_range", lGetList(new_job, list_id[i]));
-               lListElem *range = NULL;
+               const lListElem *range = NULL;
                u_long32 id;
  
                for_each(range, range_list) {
@@ -1982,13 +1983,13 @@ int *trigger
             /*
              * Visit enrolled tasks
              */
-            for_each (dst_ja_task, lGetList(new_job, JB_ja_tasks)) {
+            for_each_rw (dst_ja_task, lGetList(new_job, JB_ja_tasks)) {
                mod_task_attributes(new_job, dst_ja_task, ja_task, alpp,
                                    ruser, rhost, trigger, 
                                    job_is_array(new_job), 1);
             }
          } else {
-            for_each (ja_task, ja_task_list) {
+            for_each_rw (ja_task, ja_task_list) {
                u_long32 ja_task_id = lGetUlong(ja_task, JAT_task_number);
                int is_defined = job_is_ja_task_defined(new_job, ja_task_id);
 
@@ -2802,7 +2803,7 @@ static bool contains_dependency_cycles(const lListElem * new_job, u_long32 job_n
    bool is_cycle = false;
    const lList *predecessor_list = lGetList(new_job, JB_jid_predecessor_list);
    const lList *predecessor_list_ad = lGetList(new_job, JB_ja_ad_predecessor_list);
-   lListElem *pre_elem = NULL;
+   const lListElem *pre_elem = NULL;
    u_long32 pre_nr;
    const lList *master_job_list = *object_type_get_master_list(SGE_TYPE_JOB);
 
@@ -2871,7 +2872,7 @@ int job_verify_predecessors(lListElem *job, lList **alpp)
    u_long32 jobid = lGetUlong(job, JB_job_number);
    const lList *predecessors_req = NULL;
    lList *predecessors_id = NULL;
-   lListElem *pre;
+   const lListElem *pre;
    lListElem *pre_temp;
    const lList *master_job_list = *object_type_get_master_list(SGE_TYPE_JOB);
 
@@ -2975,7 +2976,7 @@ int job_verify_predecessors_ad(lListElem *job, lList **alpp)
    u_long32 jobid = lGetUlong(job, JB_job_number);
    const lList *predecessors_req = NULL;
    lList *predecessors_id = NULL;
-   lListElem *pre;
+   const lListElem *pre;
    lListElem *pre_temp;
    const lList *master_job_list = *object_type_get_master_list(SGE_TYPE_JOB);
 
@@ -3328,7 +3329,7 @@ int verify_suitable_queues(lList **alpp, lListElem *jep, int *trigger, bool is_m
          for_each(cqueue, master_cqueue_list) {
             const char *cqname = lGetString(cqueue, CQ_name);
             const lList *qinstance_list = lGetList(cqueue, CQ_qinstances);
-            lListElem *qinstance;
+            const lListElem *qinstance;
 
             /* we sort out explicit -q -l requests on queues */
             if (cqueue_match_static(cqname, &a) != DISPATCH_OK) {
@@ -3379,7 +3380,7 @@ int verify_suitable_queues(lList **alpp, lListElem *jep, int *trigger, bool is_m
                /* we only have to consider queues containing the requested pe */
                if (pe_name != NULL) {
                   bool found = false;
-                  lListElem *pe_ref;
+                  const lListElem *pe_ref;
 
                   for_each(pe_ref, lGetList(qinstance, QU_pe_list)) {
                      if (pe_name_is_matching(lGetString(pe_ref, ST_name), pe_name)) {
@@ -3573,7 +3574,7 @@ void sge_job_spool(sge_gdi_ctx_class_t *ctx) {
       SGE_LOCK(LOCK_GLOBAL, LOCK_READ);
 
       /* store each job */
-      for_each(jep, master_job_list) {
+      for_each_rw(jep, master_job_list) {
          u_long32 job_number = lGetUlong(jep, JB_job_number);
          lListElem *ja_task = NULL;
          lListElem *pe_task = NULL;
@@ -3602,7 +3603,7 @@ void sge_job_spool(sge_gdi_ctx_class_t *ctx) {
 
             /* store each ja task */
             if (is_success) {
-               for_each(ja_task, lGetList(jep, JB_ja_tasks)) {
+               for_each_rw(ja_task, lGetList(jep, JB_ja_tasks)) {
                   int jataskid = lGetUlong(ja_task, JAT_task_number);
                   dstring buffer = DSTRING_INIT;
                  
@@ -3615,7 +3616,7 @@ void sge_job_spool(sge_gdi_ctx_class_t *ctx) {
 
                   sge_dstring_free(&buffer);
 
-                  for_each(pe_task, lGetList(ja_task, JAT_task_list)) {
+                  for_each_rw(pe_task, lGetList(ja_task, JAT_task_list)) {
                      const char *pe_task_id_str = lGetString(pe_task, PET_id);
                      
                      if (!sge_event_spool(ctx, &answer_list, 0, sgeE_PETASK_ADD, 
@@ -4025,7 +4026,7 @@ static int sge_delete_all_tasks_of_job(sge_gdi_ctx_class_t *ctx, lList **alpp, c
                               const lList *pe_task_list = lGetList(tmp_task, JAT_task_list);
                               lListElem *pe_task;
 
-                              for_each (pe_task, pe_task_list) {
+                              for_each_rw(pe_task, pe_task_list) {
                                  gdil = lGetList(pe_task, PET_granted_destin_identifier_list);
                                  gdil_ep = lFirst(gdil);
 

@@ -550,7 +550,7 @@ jsv_handle_param_command(sge_gdi_ctx_class_t *ctx, lListElem *jsv, lList **answe
          if (ret && strcmp("hold_jid", param) == 0) {
             lList *hold_list = NULL;
             lList *jref_list = NULL;
-            lListElem *jid_str;
+            const lListElem *jid_str;
 
             if (value != NULL) {
                int lret = cull_parse_jid_hold_list(&hold_list, value);
@@ -574,7 +574,7 @@ jsv_handle_param_command(sge_gdi_ctx_class_t *ctx, lListElem *jsv, lList **answe
          if (ret && strcmp("hold_jid_ad", param) == 0) {
             lList *hold_list = NULL;
             lList *jref_list = NULL;
-            lListElem *jid_str;
+            const lListElem *jid_str;
 
             if (value != NULL) {
                int lret = cull_parse_jid_hold_list(&hold_list, value);
@@ -1379,7 +1379,7 @@ jsv_handle_started_command(sge_gdi_ctx_class_t *ctx, lListElem *jsv, lList **ans
     */
    {
       const lList *list = lGetList(old_job, JB_job_args);
-      lListElem *elem;
+      const lListElem *elem;
       int i = 0;
 
       sge_dstring_clear(&buffer);
@@ -1422,7 +1422,7 @@ jsv_handle_started_command(sge_gdi_ctx_class_t *ctx, lListElem *jsv, lList **ans
 
       if (context_list != NULL) {
          lListElem *tmp_job = lCopyElem(old_job);
-         lListElem *context = NULL;
+         const lListElem *context = NULL;
          lList* tmp = NULL;
 
          lXchgList(tmp_job, JB_context, &tmp);
@@ -1579,7 +1579,7 @@ jsv_handle_started_command(sge_gdi_ctx_class_t *ctx, lListElem *jsv, lList **ans
       const lList *shell_list = lGetList(old_job, JB_stderr_path_list);
 
       if (shell_list != NULL) {
-         lListElem *shell;
+         const lListElem *shell;
          bool first = true;
  
          sge_dstring_clear(&buffer);
@@ -1613,7 +1613,7 @@ jsv_handle_started_command(sge_gdi_ctx_class_t *ctx, lListElem *jsv, lList **ans
       const lList *hold_jid_list = lGetList(old_job, JB_jid_request_list);
      
       if (hold_jid_list != NULL) {
-         lListElem *hold_jid;
+         const lListElem *hold_jid;
          bool first = true;
 
          sge_dstring_clear(&buffer); 
@@ -1642,7 +1642,7 @@ jsv_handle_started_command(sge_gdi_ctx_class_t *ctx, lListElem *jsv, lList **ans
       const lList *hold_jid_list = lGetList(old_job, JB_ja_ad_request_list);
     
       if (hold_jid_list != NULL) {
-         lListElem *hold_jid;
+         const lListElem *hold_jid;
          bool first = true;
 
          sge_dstring_clear(&buffer);
@@ -1690,7 +1690,7 @@ jsv_handle_started_command(sge_gdi_ctx_class_t *ctx, lListElem *jsv, lList **ans
       const lList *shell_list = lGetList(old_job, JB_stdin_path_list);
 
       if (shell_list != NULL) {
-         lListElem *shell;
+         const lListElem *shell;
          bool first = true;
  
          sge_dstring_clear(&buffer);
@@ -1868,7 +1868,7 @@ jsv_handle_started_command(sge_gdi_ctx_class_t *ctx, lListElem *jsv, lList **ans
       const lList *shell_list = lGetList(old_job, JB_stdout_path_list);
 
       if (shell_list != NULL) {
-         lListElem *shell;
+         const lListElem *shell;
  
          sge_dstring_clear(&buffer);
          sge_dstring_sprintf(&buffer, "%s o ", prefix);
@@ -2090,7 +2090,7 @@ jsv_handle_started_command(sge_gdi_ctx_class_t *ctx, lListElem *jsv, lList **ans
       const lList *hard_queue_list = lGetList(old_job, JB_hard_queue_list);
 
       if (hard_queue_list != NULL) {
-         lListElem *queue;
+         const lListElem *queue;
          bool first = true;
 
          sge_dstring_clear(&buffer);
@@ -2109,7 +2109,7 @@ jsv_handle_started_command(sge_gdi_ctx_class_t *ctx, lListElem *jsv, lList **ans
       const lList *soft_queue_list = lGetList(old_job, JB_soft_queue_list);
 
       if (soft_queue_list != NULL) {
-         lListElem *queue;
+         const lListElem *queue;
          bool first = true;
 
          sge_dstring_clear(&buffer);
@@ -2270,7 +2270,7 @@ jsv_handle_started_command(sge_gdi_ctx_class_t *ctx, lListElem *jsv, lList **ans
     */  
    {
       lList *env_list = NULL;
-      lListElem *env = NULL;
+      const lListElem *env = NULL;
       const lListElem *display = NULL;
 
       /* make a copy of the environment */
@@ -2870,7 +2870,7 @@ jsv_is_modify_rejected(sge_gdi_ctx_class_t *context, lList **answer_list, lListE
             if (lGetNumberOfElem(got_switches) == 0) {
                ret = false;
             } else {
-               lListElem *not_allowed;
+               const lListElem *not_allowed;
                dstring switches = DSTRING_INIT;
                bool first = true;
 

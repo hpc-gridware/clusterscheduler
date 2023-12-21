@@ -437,7 +437,7 @@ bool sge_task_depend_flush(lListElem *jep, lList **alpp)
          ret = true;
       }
       /* unhold any arary held tasks that are enrolled */
-      for_each(ja_task, lGetList(jep, JB_ja_tasks)) {
+      for_each_rw(ja_task, lGetList(jep, JB_ja_tasks)) {
          u_long32 task_id = lGetUlong(ja_task, JAT_task_number);
          u_long32 hold_state = job_get_hold_state(jep, task_id);
          if ((hold_state & MINUS_H_TGT_JA_AD) != 0) {

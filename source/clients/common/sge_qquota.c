@@ -152,7 +152,7 @@ bool qquota_output(sge_gdi_ctx_class_t *ctx, lList *host_list, lList *resource_m
    ret = get_all_lists(ctx, &rqs_list, &centry_list, &userset_list, &hgroup_list, &exechost_list, host_list, alpp);
 
    if (ret == true) {
-      lListElem *rqs = NULL;
+      const lListElem *rqs = NULL;
       printed_rules = lCreateList("rule_hash", ST_Type); 
       global_host = host_list_locate(exechost_list, SGE_GLOBAL_NAME);
 
@@ -172,7 +172,7 @@ bool qquota_output(sge_gdi_ctx_class_t *ctx, lList *host_list, lList *resource_m
             continue;
          }
 
-         for_each(rule, lGetList(rqs, RQS_rule)) { 
+         for_each_rw(rule, lGetList(rqs, RQS_rule)) {
             const lListElem *user_ep = lFirst(user_list);
             const lListElem *project_ep = lFirst(project_list);
             const lListElem *pe_ep = lFirst(pe_list);
@@ -202,13 +202,13 @@ bool qquota_output(sge_gdi_ctx_class_t *ctx, lList *host_list, lList *resource_m
                            if (rqs_is_matching_rule(rule, qquota_filter.user, NULL, qquota_filter.project,
                                                      qquota_filter.pe, qquota_filter.host,
                                                      qquota_filter.queue, userset_list, hgroup_list)) {
-                              lListElem *limit = NULL;
+                              const lListElem *limit = NULL;
 
                               for_each(limit, lGetList(rule, RQR_limit)) {
                                  const char *limit_name = lGetString(limit, RQRL_name);
                                  const lList *rue_list = lGetList(limit, RQRL_usage);
                                  lListElem *raw_centry = centry_list_locate(centry_list, limit_name);
-                                 lListElem *rue_elem = NULL;
+                                 const lListElem *rue_elem = NULL;
 
                                  if (raw_centry == NULL) {
                                     /* undefined centries can be ignored */
@@ -396,7 +396,7 @@ static bool
 get_all_lists(sge_gdi_ctx_class_t *ctx, lList **rqs_l, lList **centry_l, lList **userset_l,
               lList **hgroup_l, lList **exechost_l, lList *hostref_l, lList **alpp)
 {
-   lListElem *ep = NULL;
+   const lListElem *ep = NULL;
    lEnumeration *what = NULL;
    lCondition *where = NULL, *nw = NULL;
    lList *mal = NULL;
@@ -697,7 +697,7 @@ qquota_print_out_filter(lListElem *filter, const char *name, const char *value,
                         dstring *buffer, report_handler_t *report_handler, lList **alpp) 
 {
    bool ret = true;
-   lListElem *scope;
+   const lListElem *scope;
    
    if (filter != NULL) {
       if (!lGetBool(filter, RQRF_expand) || value == NULL) {

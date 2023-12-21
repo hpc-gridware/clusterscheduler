@@ -109,7 +109,7 @@ lListElem *ja_task_search_pe_task(const lListElem *ja_task,
 void ja_task_list_print_to_string(const lList *ja_task_list, 
                                   dstring *range_string)
 {
-   lListElem *ja_task = NULL;    /* JAT_Type */
+   const lListElem *ja_task = NULL;    /* JAT_Type */
    lList *range_list = NULL;     /* RN_Type */
 
    DENTER(TOP_LAYER, "ja_task_list_print_to_string");

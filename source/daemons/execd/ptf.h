@@ -224,7 +224,7 @@ void ptf_reinit_queue_priority(u_long32 job_id, u_long32 ja_task_idr,
                                const char *pe_task_id_str, int priority);
 
 int ptf_job_started(osjobid_t os_jobid, const char *task_id_str, 
-                    lListElem *job, u_long32 jataskid);
+                    const lListElem *job, u_long32 jataskid);
 
 int ptf_get_usage(lList **jobs);
 

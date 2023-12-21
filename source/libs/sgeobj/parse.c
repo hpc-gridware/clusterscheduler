@@ -360,7 +360,8 @@ lList **ppdestlist,
 lDescr *type,
 int field 
 ) {
-   lListElem *ep, *sep;
+   lListElem *ep;
+   const lListElem *sep;
 
    DENTER(TOP_LAYER, "parse_multi_stringlist");
 
@@ -401,7 +402,7 @@ u_long32 action
       if ((arrayDef != NULL) && lGetUlong(arrayDef, SPA_number) ==  t_OPT) {
          arrayDefList = lGetList(arrayDef, SPA_argval_lListT);
       }
-      for_each(sep, lGetList(ep, SPA_argval_lListT)) {
+      for_each_rw(sep, lGetList(ep, SPA_argval_lListT)) {
          const lList *tempArrayList = NULL;
      
          if ((arrayDefList != NULL) && (lNext(sep) == NULL)) {
@@ -509,7 +510,7 @@ u_long32
 parse_group_options(lList *string_list, lList **answer_list) 
 {
    u_long32 group_opt = GROUP_DEFAULT;
-   lListElem *str_elem;
+   const lListElem *str_elem;
 
    DENTER(TOP_LAYER, "sge_parse_group_options");
 

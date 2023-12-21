@@ -279,7 +279,7 @@ static void append_opts_from_default_files(u_long32 prog_number,
                                            char **def_files) 
 {
    lList *alp;
-   lListElem *aep;
+   const lListElem *aep;
    char **pstr;
    char **ppstr;
    SGE_STRUCT_STAT buf;

@@ -487,12 +487,12 @@ sge_job_verify_adjust(sge_gdi_ctx_class_t *ctx, lListElem *jep, lList **alpp,
 
    /* first check user permissions */
    {
-      lListElem *cqueue = NULL;
+      const lListElem *cqueue = NULL;
       int has_permissions = 0;
 
       for_each (cqueue, master_cqueue_list) {
          const lList *qinstance_list = lGetList(cqueue, CQ_qinstances);
-         lListElem *qinstance = NULL;
+         const lListElem *qinstance = NULL;
 
          for_each(qinstance, qinstance_list) {
             if (sge_has_access(ruser, lGetString(jep, JB_group), qinstance, master_userset_list)) {

@@ -356,7 +356,7 @@ void range_list_initialize(lList **this_list, lList **answer_list)
 u_long32 range_list_get_number_of_ids(const lList *this_list)
 {
    u_long32 ret = 0;
-   lListElem *range;
+   const lListElem *range;
 
    DENTER(RANGE_LAYER, "range_list_get_number_of_ids");
    for_each(range, this_list) {
@@ -434,7 +434,7 @@ range_list_print_to_string(const lList *this_list,
    DENTER(RANGE_LAYER, "range_list_print_to_string");
    if (string != NULL) {
       if (this_list != NULL) {
-         lListElem *range;
+         const lListElem *range;
 
          for_each(range, this_list) {
             u_long32 start, end, step;
@@ -562,7 +562,7 @@ u_long32 range_list_get_last_id(const lList *range_list, lList **answer_list)
 *******************************************************************************/
 double range_list_get_average(const lList *this_list, u_long32 upperbound)
 {
-   lListElem *range;
+   const lListElem *range;
    double sum = 0.0;
    u_long32 id, min, max, step;
    int n = 0;
@@ -650,7 +650,7 @@ void range_list_sort_uniq_compress(lList *range_list, lList **answer_list, bool 
          /*
           * Insert all removed entries at the correct position
           */
-         for_each(range1, tmp_list) {
+         for_each_rw(range1, tmp_list) {
             u_long32 start1, end1, step1;
 
             range_get_all_ids(range1, &start1, &end1, &step1);
@@ -782,7 +782,7 @@ void range_list_compress(lList *range_list)
 *******************************************************************************/
 bool range_list_is_id_within(const lList *range_list, u_long32 id)
 {
-   lListElem *range = NULL;
+   const lListElem *range = NULL;
    bool ret = false;
 
    DENTER(RANGE_LAYER, "range_list_is_id_within");
@@ -815,7 +815,7 @@ bool range_list_is_id_within(const lList *range_list, u_long32 id)
 *******************************************************************************/
 bool range_list_containes_id_less_than(const lList *range_list, u_long32 id)
 {
-   lListElem *range = NULL;
+   const lListElem *range = NULL;
    bool ret = false;
 
    DENTER(RANGE_LAYER, "range_list_containes_id_less_than");
@@ -1027,7 +1027,7 @@ void range_list_move_first_n_ids(lList **range_list, lList **answer_list,
 {
    DENTER(RANGE_LAYER, "range_list_move_first_n_ids");
    if (range_list && *range_list && range_list2) {
-      lListElem *range = NULL;
+      const lListElem *range = NULL;
       u_long32 id;
 
       for_each(range, *range_list) {
@@ -1324,7 +1324,7 @@ void range_list_calculate_union_set(lList **range_list,
       }
 
       if (range_list1 != NULL && range_list2 != NULL) {
-         lListElem *range2 = NULL;
+         const lListElem *range2 = NULL;
 
          for_each(range2, range_list2) {
             u_long32 start2, end2, step2;
@@ -1388,7 +1388,7 @@ void range_list_calculate_difference_set(lList **range_list,
       }
 
       if (range_list2 != NULL) {
-         lListElem *range2 = NULL;
+         const lListElem *range2 = NULL;
 
          for_each(range2, range_list2) {
             u_long32 start2, end2, step2;
@@ -1444,7 +1444,7 @@ void range_list_calculate_intersection_set(lList **range_list,
    DENTER(RANGE_LAYER, "range_list_calculate_intersection_set");
    lFreeList(range_list);
    if (range_list1 && range_list2) {
-      lListElem *range;
+      const lListElem *range;
 
       for_each(range, range_list1) {
          u_long32 start, end, step;

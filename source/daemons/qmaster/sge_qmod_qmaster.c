@@ -133,7 +133,7 @@ sge_gdi_qmod(sge_gdi_ctx_class_t *ctx, sge_gdi_packet_class_t *packet, sge_gdi_t
              monitoring_t *monitor)
 {
    lList *alp = NULL;
-   lListElem *dep;
+   const lListElem *dep;
    lListElem *jatask = NULL, *job, *tmp_task;
    const lListElem *rn;
    bool found;
@@ -184,7 +184,7 @@ sge_gdi_qmod(sge_gdi_ctx_class_t *ctx, sge_gdi_packet_class_t *packet, sge_gdi_t
                            master_hgroup_list,
                            true, true);
          if (found_something) {
-            lListElem *qref = NULL;
+            const lListElem *qref = NULL;
 
             id_action = (id_action & (~QUEUE_DO_ACTION));
 
@@ -288,7 +288,7 @@ sge_gdi_qmod(sge_gdi_ctx_class_t *ctx, sge_gdi_packet_class_t *packet, sge_gdi_t
                      found = true;
                   }
                } else {
-                  lListElem *range;
+                  const lListElem *range;
                   u_long32 min, max, step;
                   u_long32 taskid;
 
@@ -1019,7 +1019,7 @@ monitoring_t *monitor
 
 void rebuild_signal_events()
 {
-   lListElem *cqueue, *jep, *jatep;
+   const lListElem *cqueue, *jep, *jatep;
    const lList *master_job_list = *object_type_get_master_list(SGE_TYPE_JOB);
    const lList *master_cqueue_list = *object_type_get_master_list(SGE_TYPE_CQUEUE);
 
@@ -1049,7 +1049,7 @@ void rebuild_signal_events()
    for_each(cqueue, master_cqueue_list)
    {
       const lList *qinstance_list = lGetList(cqueue, CQ_qinstances);
-      lListElem *qinstance;
+      const lListElem *qinstance;
 
       for_each(qinstance, qinstance_list)
       {
@@ -1119,14 +1119,15 @@ void resend_signal_event(sge_gdi_ctx_class_t *ctx, te_event_t anEvent, monitorin
 
 static void sge_propagate_queue_suspension(const char *qnm, int how)
 {
-   lListElem *jep, *jatep;
+   const lListElem *jep;
+   lListElem *jatep;
    const lList *master_job_list = *object_type_get_master_list(SGE_TYPE_JOB);
 
    DENTER(TOP_LAYER, "sge_propagate_queue_suspension");
 
    DPRINTF(("searching for all jobs in queue %s due to %s\n", qnm, sge_sig2str(how)));
    for_each (jep, master_job_list) {
-      for_each (jatep, lGetList(jep, JB_ja_tasks)) {
+      for_each_rw (jatep, lGetList(jep, JB_ja_tasks)) {
          if (lGetElemStr(lGetList(jatep, JAT_granted_destin_identifier_list), JG_qname, qnm)) {
             u_long32 jstate;
             DPRINTF(("found "sge_u32"."sge_u32"\n", lGetUlong(jep, JB_job_number), lGetUlong(jatep, JAT_task_number)));
@@ -1299,7 +1300,8 @@ lListElem *qep,
 monitoring_t *monitor
 ) {
    const lList *gdil_lp;
-   lListElem *mq, *jep, *jatep;
+   lListElem *mq;
+   lListElem *jep, *jatep;
    const char *qname, *mqname, *pe_name;
    const lList *master_job_list = *object_type_get_master_list(SGE_TYPE_JOB);
    const lList *master_cqueue_list = *object_type_get_master_list(SGE_TYPE_CQUEUE);
@@ -1311,8 +1313,8 @@ monitoring_t *monitor
    /* test whether there are parallel jobs
       with a slave slot in this queue
       if so then signal this job */
-   for_each (jep, master_job_list) {
-      for_each (jatep, lGetList(jep, JB_ja_tasks)) {
+   for_each_rw (jep, master_job_list) {
+      for_each_rw (jatep, lGetList(jep, JB_ja_tasks)) {
 
          /* skip sequential and not running jobs */
          if (lGetNumberOfElem(gdil_lp = lGetList(jatep, JAT_granted_destin_identifier_list))<=1)

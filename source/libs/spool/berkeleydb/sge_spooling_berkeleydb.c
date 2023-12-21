@@ -593,7 +593,7 @@ spool_berkeleydb_default_list_func(lList **answer_list,
                   const char *qinstance_table;
                   /* for all cluster queues: read queue instances */
                   qinstance_table = object_type_get_name(SGE_TYPE_QINSTANCE);
-                  for_each(queue, *list) {
+                  for_each_rw(queue, *list) {
                      lList *qinstance_list = NULL;
                      const char *qname = lGetString(queue, CQ_name);
 
@@ -621,7 +621,7 @@ spool_berkeleydb_default_list_func(lList **answer_list,
                   const char *ja_task_table;
                   /* for all jobs: read ja_tasks */
                   ja_task_table = object_type_get_name(SGE_TYPE_JATASK);
-                  for_each(job, *list) {
+                  for_each_rw(job, *list) {
                      lList *task_list = NULL;
                      u_long32 job_id = lGetUlong(job, JB_job_number);
 
@@ -637,7 +637,7 @@ spool_berkeleydb_default_list_func(lList **answer_list,
                            lSetList(job, JB_ja_tasks, task_list);
                            pe_task_table = object_type_get_name(SGE_TYPE_PETASK);
 
-                           for_each(ja_task, task_list) {
+                           for_each_rw(ja_task, task_list) {
                               lList *pe_task_list = NULL;
                               u_long32 ja_task_id = lGetUlong(ja_task, JAT_task_number);
                               key = sge_dstring_sprintf(&key_dstring, "%s:%8d.%8d.", pe_task_table, job_id, ja_task_id);
@@ -686,7 +686,7 @@ spool_berkeleydb_default_list_func(lList **answer_list,
 
       /* validate each individual object */
       /* JG: TODO: is it valid to validate after reading all objects? */
-      for_each(ep, *list) {
+      for_each_rw(ep, *list) {
          ret = validate(answer_list, type, rule, ep, object_type);
          if (!ret) {
             /* error message has been created in the validate func */

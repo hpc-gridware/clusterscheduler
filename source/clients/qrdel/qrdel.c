@@ -183,7 +183,7 @@ static bool sge_parse_qrdel(lList **ppcmdline, lList **ppid_list, lList **alpp)
    DENTER(TOP_LAYER, "sge_parse_qrdel");
 
    while (lGetNumberOfElem(*ppcmdline)) {
-      lListElem *ep = NULL;
+      const lListElem *ep = NULL;
       
       if (parse_flag(ppcmdline, "-help",  alpp, &helpflag)) {
          sge_usage(QRDEL, stdout);
@@ -229,7 +229,7 @@ static bool sge_parse_qrdel(lList **ppcmdline, lList **ppid_list, lList **alpp)
             id = lAddElemStr(ppid_list, ID_str, "0", ID_Type);
             lSetList(id, ID_user_list, lCopyList("", user_list));
          } else {
-            for_each(id, *ppid_list){
+            for_each_rw (id, *ppid_list){
                lSetList(id, ID_user_list, lCopyList("", user_list));
             }
          }
@@ -238,7 +238,7 @@ static bool sge_parse_qrdel(lList **ppcmdline, lList **ppid_list, lList **alpp)
 
       if (pforce != 0) {
          lListElem *id;
-         for_each(id, *ppid_list){
+         for_each_rw (id, *ppid_list){
             lSetUlong(id, ID_force, pforce);
          }
       }

@@ -381,7 +381,7 @@ int job_get_next_task(lListElem *job, lListElem **task_ret, u_long32 *id_ret)
 *******************************************************************************/
 void user_list_init_jc(lList **user_list, lList **splitted_job_lists[])
 {
-   lListElem *job;   /* JB_Type */
+   const lListElem *job;   /* JB_Type */
 
    if (splitted_job_lists[SPLIT_RUNNING] != NULL) {
       for_each(job, *(splitted_job_lists[SPLIT_RUNNING])) {
@@ -953,7 +953,7 @@ void trash_splitted_jobs(bool monitor_next_run, lList **splitted_job_lists[])
 
    while (split_id_a[++i] != SPLIT_LAST) { 
       lList **job_list = splitted_job_lists[split_id_a[i]];
-      lListElem *job = NULL;
+      const lListElem *job = NULL;
       int is_first_of_category = 1;
 
       for_each (job, *job_list) {
@@ -1024,7 +1024,7 @@ void trash_splitted_jobs(bool monitor_next_run, lList **splitted_job_lists[])
 
 void job_lists_print(lList **job_list[]) 
 {
-   lListElem *job;
+   const lListElem *job;
    int i;
 
    DENTER(TOP_LAYER, "job_lists_print");
@@ -1094,7 +1094,7 @@ void sge_inc_jc(lList **jcpp, const char *name, int slots)
 /*---------------------------------------------------------*/
 int nslots_granted(const lList *granted, const char *qhostname)
 {
-   lListElem *gdil_ep;
+   const lListElem *gdil_ep;
    int nslots = 0;
    const void *iterator = NULL;
 
@@ -1150,7 +1150,7 @@ const char *qname
 int 
 active_nslots_granted(lListElem *job, const lList *granted, const char *qhostname) {
    const lList *task_list;
-   lListElem *gdil_ep, *jatask;
+   const lListElem *gdil_ep, *jatask;
    int nslots = 0;
    const void *iterator = NULL;
 
@@ -1187,7 +1187,7 @@ active_nslots_granted(lListElem *job, const lList *granted, const char *qhostnam
 int sge_granted_slots(
 const lList *gdil 
 ) {
-   lListElem *ep;
+   const lListElem *ep;
    int slots = 0;
 
    for_each(ep, gdil) 

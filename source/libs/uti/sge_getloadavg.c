@@ -802,7 +802,7 @@ static double get_cpu_load()
 
 #elif defined(DARWIN)
 
-double get_cpu_load()
+double get_cpu_load(void)
 {
    static long cpu_new[CPU_STATE_MAX];
    static long cpu_old[CPU_STATE_MAX];
@@ -1121,7 +1121,7 @@ int nelem
 #endif 
 
 
-int get_channel_fd()
+int get_channel_fd(void)
 {
    if (kernel_initialized) {
 #if defined(SOLARIS) || defined(LINUX) || defined(HP11) || defined(HP1164) || defined(FREEBSD)

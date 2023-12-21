@@ -152,7 +152,7 @@ static int
 sge_add_qeti_resource_container(lList **qeti_to_add, const lList* rue_list, 
       const lList* total_list, const lList* centry_list, const lList* requests, bool force_slots) 
 {
-   lListElem *req;
+   const lListElem *req;
    const lListElem *actual;
    const lListElem *tep;
    const char *name;
@@ -221,7 +221,8 @@ sge_qeti_t *sge_qeti_allocate(sge_assignment_t *a)
 {
    int ar_id = lGetUlong(a->job, JB_ar);
    sge_qeti_t *iter = NULL;
-   lListElem *next_queue, *qep, *hep;
+   lListElem *next_queue, *qep;
+   const lListElem *hep;
    const lList *requests = lGetList(a->job, JB_hard_resource_list);
 
    DENTER(TOP_LAYER, "sge_qeti_allocate");
@@ -341,7 +342,7 @@ static void sge_qeti_init_refs(lList *cref_lp)
 
    DENTER(TOP_LAYER, "sge_qeti_init_refs");
 
-   for_each(cr_ep, cref_lp) {
+   for_each_rw(cr_ep, cref_lp) {
       rue_ep = lGetRef(cr_ep, QETI_resource_instance);
       utilization_diagram = lGetList((lListElem *)lGetRef(cr_ep, QETI_resource_instance), RUE_utilized);
       DPRINTF(("   QETI INIT: %s %p\n", lGetString(rue_ep, RUE_name), utilization_diagram));
@@ -357,7 +358,8 @@ static void sge_qeti_init_refs(lList *cref_lp)
    is available now - thus we can skip it when determining the maximum */
 static void sge_qeti_max_end_time(u_long32 *max_time, const lList *cref_lp)
 {
-   lListElem *cr_ep, *ref;
+   const lListElem *cr_ep;
+   lListElem *ref;
    u_long32 tmp_time = *max_time;
    lListElem *rue_ep;
 
@@ -390,7 +392,7 @@ static void sge_qeti_switch_to_next(u_long32 time, lList *cref_lp)
    
    time--;
 
-   for_each (cr_ep, cref_lp) {
+   for_each_rw (cr_ep, cref_lp) {
       rue_ep = lGetRef(cr_ep, QETI_resource_instance);
       if (!(ref = lGetRef(cr_ep, QETI_queue_end_next))) {
          DPRINTF(("   QETI NEXT: %s (finished)\n", lGetString(rue_ep, RUE_name)));

@@ -541,7 +541,7 @@ int sge_execd_register_at_qmaster(sge_gdi_ctx_class_t *ctx, bool is_restart) {
 static void parse_cmdline_execd(char **argv)
 {
    lList *ref_list = NULL, *alp = NULL, *pcmdline = NULL;
-   lListElem *aep;
+   const lListElem *aep;
    u_long32 help = 0;
 
    DENTER(TOP_LAYER, "parse_cmdline_execd");

@@ -138,7 +138,7 @@ qref_list_resolve_qinstance_names(const lList *cq_qref_list,
       const lListElem *cqueue = NULL;
       const lList *qinstance_list = NULL;
       lList *qi_ref_list = NULL;
-      lListElem *qi_qref = NULL;
+      const lListElem *qi_qref = NULL;
 
       cqueue_name = lGetString(cq_qref, QR_name);
       cqueue = lGetElemStr(cqueue_list, CQ_name, cqueue_name);
@@ -171,7 +171,7 @@ qref_list_resolve_qdomain_names(const lList *cq_qref_list,
    bool ret = true;
    const char *hgroup_pattern = NULL;
    lList *href_list = NULL;
-   lListElem *cq_qref = NULL;
+   const lListElem *cq_qref = NULL;
    dstring buffer = DSTRING_INIT;
 
    DENTER(QREF_LAYER, "qref_list_resolve_qdomain_names");
@@ -350,7 +350,7 @@ qref_list_resolve(const lList *src_qref_list, lList **answer_list,
    DENTER(QREF_LAYER, "qref_list_resolve");
 
    if (src_qref_list != NULL) {
-      lListElem *qref_pattern = NULL;
+      const lListElem *qref_pattern = NULL;
 
       *found_something = false;
       for_each(qref_pattern, src_qref_list) {
@@ -521,7 +521,7 @@ qref_eh_rejected(const char *qref_pattern, const char *hostname, const lList *hg
 bool
 qref_list_eh_rejected(const lList *qref_list, const char *hostname, const lList *hgroup_list)
 {
-   lListElem *qref_pattern = NULL;
+   const lListElem *qref_pattern = NULL;
 
    DENTER(TOP_LAYER, "qref_list_eh_rejected");
 
@@ -552,7 +552,7 @@ bool
 qref_list_cq_rejected(const lList *qref_list, const char *cqname,
       const char *hostname, const lList *hgroup_list)
 {
-   lListElem *qref_pattern = NULL;
+   const lListElem *qref_pattern = NULL;
 
    DENTER(TOP_LAYER, "qref_list_cq_rejected");
 
@@ -774,13 +774,13 @@ qref_list_is_valid(const lList *this_list, lList **answer_list, const lList *mas
          /*
           * At least one qinstance has to exist for each pattern
           */
-         for_each(qref_elem, this_list) {
+         for_each_rw(qref_elem, this_list) {
             bool found_something = false;
             bool found_matching_qinstance = false;
             const char *qref_pattern = NULL;
             lList *resolved_qref_list = NULL;
             lList *qref_list = NULL;
-            lListElem *resolved_qref = NULL;
+            const lListElem *resolved_qref = NULL;
             qref_resolve_hostname(qref_elem);
             qref_pattern = lGetString(qref_elem, QR_name);
 
@@ -818,7 +818,7 @@ qref_list_resolve_hostname(lList *this_list)
    lListElem *qref;
 
    DENTER(TOP_LAYER, "qref_list_resolve_hostname");
-   for_each(qref, this_list) {
+   for_each_rw(qref, this_list) {
       qref_resolve_hostname(qref);
    }
    DEXIT;

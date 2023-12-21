@@ -793,7 +793,7 @@ cqueue_mod_sublist(lListElem *this_elem, lList **answer_list,
        * Do modifications for all given elements of 
        * domain/host-configuration list
        */
-      for_each(mod_elem, mod_list) {
+      for_each_rw(mod_elem, mod_list) {
          const char *name = lGetHost(mod_elem, sublist_host_name);
          char resolved_name[CL_MAXHOSTLEN+1];
          lListElem *org_elem = NULL;
@@ -864,7 +864,7 @@ int nm,
 const char *name,
 const char *obj_name 
 ) {
-   lListElem *ep1;
+   const lListElem *ep1;
    const char *s;
 
    DENTER(TOP_LAYER, "multiple_occurances");

@@ -904,7 +904,8 @@ lList *gdi2_kill(sge_gdi_ctx_class_t *thiz, lList *id_list, const char *cell,
    }
 
    if ((action_flag & EXECD_KILL) || (action_flag & JOB_KILL)) {
-      lListElem *hlep = NULL, *hep = NULL;
+      lListElem *hlep = NULL;
+      const lListElem *hep = NULL;
       lList *hlp = NULL;
       if (id_list != NULL) {
          /*

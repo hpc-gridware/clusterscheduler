@@ -121,7 +121,7 @@ static bool is_job_pending(lListElem *job);
 
 void sge_print_categories(void)
 {
-   lListElem *cat;
+   const lListElem *cat;
 
    DENTER(TOP_LAYER, "sge_print_categories");
 
@@ -253,7 +253,7 @@ int sge_delete_job_category(lListElem *job)
       if (rc > 1) {
          lSetUlong(cat, CT_refcount, --rc);
       } else {
-         lListElem *cache = NULL;
+         const lListElem *cache = NULL;
          const lList *cache_list = lGetList(cat, CT_cache);
 
          DPRINTF(("############## Removing %s from category list (refcount: " sge_u32 ")\n", 
@@ -279,7 +279,7 @@ int sge_delete_job_category(lListElem *job)
       lList *refs[2] = {NULL, NULL};
       bool is_job_pending_ = is_job_pending(job);
       
-      for_each(cat, CS_CATEGORY_LIST) {
+      for_each_rw(cat, CS_CATEGORY_LIST) {
          if (is_job_pending_) {
             refs[0] = lGetListRW(cat, SCT_job_pending_ref);
             refs[1] = lGetListRW(cat, SCT_job_ref);
@@ -289,7 +289,7 @@ int sge_delete_job_category(lListElem *job)
          }
 
          for(i=0; (i < max && !found); i++) {
-            for_each(ref, refs[i]) {
+            for_each_rw(ref, refs[i]) {
                if (lGetRef(ref, REF_ref) == job) {
                   lRemoveElem(refs[i], &ref);
                   found = true;
@@ -413,7 +413,7 @@ int sge_rebuild_job_category(const lList *job_list, const lList *acl_list, const
    lFreeList(&CATEGORY_LIST);
    lFreeList(&CS_CATEGORY_LIST);
 
-   for_each (job, job_list) {
+   for_each_rw (job, job_list) {
       sge_add_job_category(job, acl_list, prj_list, rqs_list);
    } 
 
@@ -462,8 +462,8 @@ int sge_reset_job_category()
    lListElem *cat;
    DENTER(TOP_LAYER, "sge_reset_job_category");
 
-   for_each (cat, CATEGORY_LIST) {
-      lListElem *cache;
+   for_each_rw (cat, CATEGORY_LIST) {
+      const lListElem *cache;
 
       for_each(cache, lGetList(cat, CT_cache)) {
          int *range = lGetRef(cache, CCT_pe_job_slots);
@@ -509,8 +509,8 @@ lList *sge_category_job_copy(lList *queue_list, lList **orders, bool monitor_nex
    const int maxJobPerCategory = 300;
    
    lList *jobListCopy = NULL;
-   lListElem *queue = NULL;
-   lListElem *category = NULL;
+   const lListElem *queue = NULL;
+   const lListElem *category = NULL;
    int jobPerCategory = 0; 
    
    DENTER(TOP_LAYER, "sge_category_job_copy");
@@ -541,7 +541,7 @@ lList *sge_category_job_copy(lList *queue_list, lList **orders, bool monitor_nex
    }
   
    for_each(category, CS_CATEGORY_LIST) {
-      lListElem *job_ref = NULL;
+      const lListElem *job_ref = NULL;
       int copy_counter = 0;
 
       /* copy running jobs and others maybe pending */   

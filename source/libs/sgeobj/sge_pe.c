@@ -116,7 +116,7 @@ lListElem *pe_list_find_matching(const lList *pe_list, const char *wildcard)
 {
    lListElem *ret = NULL;
 
-   for_each (ret, pe_list) {
+   for_each_rw (ret, pe_list) {
       if (pe_is_matching(ret, wildcard)) {
          break;
       }
@@ -180,7 +180,7 @@ bool pe_is_referenced(const lListElem *pe, lList **answer_list,
    bool ret = false;
 
    {
-      lListElem *job = NULL;
+      const lListElem *job = NULL;
 
       for_each(job, master_job_list) {
          if (job_is_pe_referenced(job, pe)) {
@@ -196,7 +196,7 @@ bool pe_is_referenced(const lListElem *pe, lList **answer_list,
       } 
    }
    if (!ret) {
-      lListElem *cqueue = NULL, *cpl = NULL;
+      const lListElem *cqueue = NULL, *cpl = NULL;
 
       /* fix for bug 6422335
        * check cq configuration for pe references instead of qinstances
@@ -488,7 +488,7 @@ bool pe_list_do_all_exist(const lList *pe_list, lList **answer_list,
                           const lList *pe_ref_list, bool ignore_make_pe)
 {
    bool ret = true;
-   lListElem *pe_ref_elem = NULL;
+   const lListElem *pe_ref_elem = NULL;
 
    DENTER(TOP_LAYER, "pe_list_do_all_exist");
    for_each(pe_ref_elem, pe_ref_list) {

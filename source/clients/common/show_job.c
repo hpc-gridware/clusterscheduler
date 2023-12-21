@@ -570,7 +570,7 @@ void cull_show_job(const lListElem *job, int flags, bool show_binding)
    }
 
    if (lGetPosViaElem(job, JB_ja_tasks, SGE_NO_ABORT) >= 0) {
-      lListElem *uep, *jatep, *pe_task_ep;
+      const lListElem *uep, *jatep, *pe_task_ep;
 
       for_each (jatep, lGetList(job, JB_ja_tasks)) {
          int first_task = 1;
@@ -631,11 +631,11 @@ void cull_show_job(const lListElem *job, int flags, bool show_binding)
    }
 
    if (lGetPosViaElem(job, JB_ja_tasks, SGE_NO_ABORT) >= 0 && show_binding) {
-      lListElem *jatep;
+      const lListElem *jatep;
 
       for_each (jatep, lGetList(job, JB_ja_tasks)) {
          int first_task = 1;
-         lListElem *usage_elem;
+         const lListElem *usage_elem;
          const char *binding_inuse = NULL; 
 
          if (lGetUlong(jatep, JAT_status) != JRUNNING && lGetUlong(jatep, JAT_status) != JTRANSFERING) {
@@ -661,11 +661,11 @@ void cull_show_job(const lListElem *job, int flags, bool show_binding)
       }
    }
    if (lGetPosViaElem(job, JB_ja_tasks, SGE_NO_ABORT) >= 0) {
-      lListElem *jatep;
+      const lListElem *jatep;
 
       for_each (jatep, lGetList(job, JB_ja_tasks)) {
          bool first_task = true;
-         lListElem *mesobj;
+         const lListElem *mesobj;
 
          for_each(mesobj, lGetList(jatep, JAT_message_list)) {
             const char *message = lGetString(mesobj, QIM_message);

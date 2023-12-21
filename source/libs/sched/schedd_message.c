@@ -70,7 +70,7 @@ static void schedd_mes_find_others(lListElem *tmp_sme, lList *job_list, int igno
        * MES_job_number_list containes only one id.
        * We have to find the other jobs (jids) which have the same category.
        */
-      for_each(message_elem, message_list) {
+      for_each_rw(message_elem, message_list) {
          const lList *jid_list = lGetList(message_elem, MES_job_number_list);
          u_long32 jid;
          lRef jid_category; 
@@ -113,7 +113,7 @@ static lList *schedd_mes_get_same_category_jids(lRef category,
                                                 int ignore_category)
 {
    lList *ret = NULL;      /* ULNG */
-   lListElem *job = NULL;  /* JB_Type */
+   const lListElem *job = NULL;  /* JB_Type */
 
    DENTER(TOP_LAYER, "schedd_mes_get_same_category_jids");
    if (job_list != NULL && category != NULL) {
@@ -644,7 +644,7 @@ void schedd_mes_set_tmp_list(lListElem *category, int name, u_long32 job_number)
 
    lXchgList(category, name, &tmp_list);
 
-   for_each(tmp_elem, tmp_list)
+   for_each_rw(tmp_elem, tmp_list)
       lAddSubUlong(tmp_elem, ULNG_value, job_number, MES_job_number_list, ULNG_Type);
 
    if (tmp_sme && tmp_list) {

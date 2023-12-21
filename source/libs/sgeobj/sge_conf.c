@@ -603,7 +603,8 @@ tConfEntry conf[]
 *******************************************************************************/
 int merge_configuration(lList **answer_list, u_long32 progid, const char *cell_root, lListElem *global, lListElem *local, lList **lpp) {
    const lList *cl;
-   lListElem *elem, *ep2;
+   const lListElem *elem;
+   lListElem *ep2;
    lList *mlist = NULL;
    
    DENTER(BASIS_LAYER, "merge_configuration");
@@ -1098,7 +1099,7 @@ int merge_configuration(lList **answer_list, u_long32 progid, const char *cell_r
 *******************************************************************************/
 void sge_show_conf()
 {
-   lListElem *ep;
+   const lListElem *ep;
 
    DENTER(BASIS_LAYER, "sge_show_conf");
  

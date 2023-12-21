@@ -85,7 +85,7 @@ static void sge_send_mail(u_long32 progid,
 void cull_mail(u_long32 progid, const lList *user_list, const char *subj, const char *buf, const char *mail_type) {
    char *mailer;
    int mailer_has_subj_line;
-   lListElem *ep;
+   const lListElem *ep;
    const char *user, *host;
 
    DENTER(TOP_LAYER, "cull_mail");

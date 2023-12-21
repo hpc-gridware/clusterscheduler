@@ -542,7 +542,7 @@ sge_event_spool(sge_gdi_ctx_class_t *ctx,
                                       object_type, key, job_spooling);
          } else {
             lList *tmp_list = NULL;
-            lListElem *load_value;
+            const lListElem *load_value;
 
             /* 
              *  Only static load values should be spooled, therefore we modify

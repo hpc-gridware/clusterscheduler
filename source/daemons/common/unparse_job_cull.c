@@ -291,7 +291,7 @@ lList *cull_unparse_job_parameter(sge_gdi_ctx_class_t *ctx, lList **pcmdline, lL
    if ((lp = lGetList(job, JB_mail_list))) {
       lList *lp_new = NULL;
       lListElem *ep_new = NULL;
-      lListElem *ep = NULL;
+      const lListElem *ep = NULL;
       const char *host;
       const char *user;
 

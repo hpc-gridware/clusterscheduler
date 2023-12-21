@@ -82,7 +82,7 @@ Return value: true if queue C is to be suspended,
               false else.
 */
 bool
-tst_sos(int used, int total, lListElem *so)
+tst_sos(int used, int total, const lListElem *so)
 {
    u_long32 threshold;
    bool     ret = false;
@@ -265,7 +265,7 @@ so_list_resolve(const lList *so_list, lList **answer_list,
 
    DENTER(TOP_LAYER, "so_list_resolve");
    if ((so_list != NULL) && (hostname != NULL)) {
-      lListElem *so;
+      const lListElem *so;
 
       if (cq_name != NULL) {
          DPRINTF(("Finding subordinates for %s on %s\n", cq_name, hostname));

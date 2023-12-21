@@ -156,7 +156,7 @@ int sort_dj_list(lList *djobs, lList *field_list, bool sort_waiting)
    int             ret;
    int             i;
    struct sort_def *default_sort_def = NULL;
-   lListElem      *field_elem;
+   const lListElem      *field_elem;
 
    if (sort_waiting) {
       default_sort_def = &waiting_default_sort;
@@ -248,7 +248,7 @@ int extract_dj_lists(lList *job_list, lList **active_jobs, lList **waiting_jobs,
    time_t          current_time;
    int             jdep;
    u_long32        unf_task_start, unf_task_end, unf_task_step;
-   lListElem      *range_spec;
+   const lListElem      *range_spec;
    const lListElem      *pe_range = NULL;        /* RN_Type */
    /*
     * lList *active_jobs; lList *waiting_jobs; lList *dep_waiting_jobs; lList
@@ -289,7 +289,7 @@ int extract_dj_lists(lList *job_list, lList **active_jobs, lList **waiting_jobs,
 
       /* if any tasks are running, they'll be in JB_ja_tasks */
       if (lGetPosViaElem(job, JB_ja_tasks, SGE_NO_ABORT) >= 0) {
-         lListElem      *jatep, *granted_destination;
+         const lListElem      *jatep, *granted_destination;
 
          for_each(jatep, lGetList(job, JB_ja_tasks)) {
 
@@ -590,7 +590,7 @@ int sum_slots(lList *dj_list)
 {
    /* sums core field from TACCDJ list input */
    int             sum = 0;
-   lListElem      *entry;
+   const lListElem      *entry;
 
    for_each(entry, dj_list) {
       sum += (int)lGetUlong(entry, TACCDJ_core);
@@ -613,7 +613,7 @@ void show_active_jobs(lList *joblist, int flags, const bool binding)
    /* const char *qname =NULL; */
    /* lListElem *rqueue; */
    /* lList* req_queue_list = NULL; */
-   lListElem      *job;
+   const lListElem      *job;
 
    for_each(job, joblist) {
 
@@ -721,7 +721,7 @@ void show_waiting_jobs(lList *joblist, int flags)
    u_long32 time_limit = 0;
    char trunc_string[256];
 
-   lListElem *job;
+   const lListElem *job;
 
    for_each(job, joblist) {
 
@@ -806,7 +806,7 @@ void show_waiting_jobs(lList *joblist, int flags)
 
 static void get_core_binding_string(lListElem *job, const int task_number, dstring* corebinding)
 {
-   lListElem *jatep;
+   const lListElem *jatep;
    bool binding_of_first_task_found = false;
 
    if (corebinding == NULL || job == NULL) {
@@ -815,7 +815,7 @@ static void get_core_binding_string(lListElem *job, const int task_number, dstri
 
    for_each (jatep, lGetList(job, JB_ja_tasks)) {
       /* int first_task = 1; */
-      lListElem *usage_elem;
+      const lListElem *usage_elem;
       const char *binding_inuse = NULL; 
       const char *binding_topo = NULL;
 
