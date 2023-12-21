@@ -766,7 +766,7 @@ static int clean_up_job(lListElem *jr, int failed, int shepherd_exit_status,
                                                    shell_start_mode);
             sge_free(&shell_start_mode);
 
-            if (!strcmp(mode, "unix_behavior") != 0) {
+            if (strcmp(mode, "unix_behavior") != 0) {
                job_caused_failure = 1;
             }
          } else if ((failed == SSTATE_BEFORE_JOB) && (job != NULL) &&
@@ -1385,7 +1385,7 @@ examine_job_task_from_file(sge_gdi_ctx_class_t *ctx, int startup, char *dir, lLi
       return;
    }
 
-   if (!(statbuf.st_mode && S_IFDIR)) {
+   if (!(statbuf.st_mode & S_IFDIR)) {
       ERROR((SGE_EVENT, MSG_FILE_XISNOTADIRECTORY_S, dir));
       DEXIT;
       return;

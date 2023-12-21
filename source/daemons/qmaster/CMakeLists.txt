@@ -65,9 +65,6 @@ target_include_directories(sge_qmaster PUBLIC "./" ${SGE_INCLUDES})
 target_link_libraries(
   sge_qmaster
   PUBLIC daemonscommon
-         spoolloader
-         spoold
-         spool
          sched
          evm
          mir
@@ -79,7 +76,10 @@ target_link_libraries(
          commlists
          uti
          ${SGE_TOPO_LIB}
-         ${SGE_LIBS})
+  PRIVATE
+         ${SGE_LIBS}
+         ${SPOOLING_LIBS}
+  )
 
 if(INSTALL_SGE_BIN)
   install(TARGETS sge_qmaster DESTINATION bin/${SGE_ARCH})

@@ -497,7 +497,7 @@ sge_c_gdi_add(sge_gdi_ctx_class_t *ctx, sge_gdi_packet_class_t *packet, sge_gdi_
 
    DENTER(TOP_LAYER, "sge_c_gdi_add");
 
-   if (!packet->host || !packet->user || !packet->commproc) {
+   if (!packet->host || !packet->commproc) {
       CRITICAL((SGE_EVENT, MSG_SGETEXT_NULLPTRPASSED_S, SGE_FUNC));
       answer_list_add(&(task->answer_list), SGE_EVENT, STATUS_EUNKNOWN, ANSWER_QUALITY_ERROR);
       DEXIT;
@@ -795,7 +795,7 @@ static void sge_c_gdi_copy(sge_gdi_ctx_class_t *ctx, gdi_object_t *ao,
 
    DENTER(TOP_LAYER, "sge_c_gdi_copy");
 
-   if (!packet->host || !packet->user || !packet->commproc) {
+   if (!packet->host || !packet->commproc) {
       CRITICAL((SGE_EVENT, MSG_SGETEXT_NULLPTRPASSED_S, SGE_FUNC));
       answer_list_add(&(task->answer_list), SGE_EVENT, STATUS_EUNKNOWN, ANSWER_QUALITY_ERROR);
       DEXIT;

@@ -1227,7 +1227,8 @@ do_slotwise_x_on_subordinate_check(sge_gdi_ctx_class_t *ctx, lListElem *qinstanc
       /* we have to (un)suspend as many running/suspended jobs as new jobs
        * were scheduled/finished or (un)suspended by other ways.
        */
-      diff = abs(running_jobs - slots_sum);
+      diff = running_jobs - slots_sum;
+      diff = abs(diff);
       do {
          /* suspend/unsuspend the highest/lowest running/suspended task */
          ret = x_most_extreme_task(ctx, qinstances_in_slotwise_sos_tree, suspend, monitor);

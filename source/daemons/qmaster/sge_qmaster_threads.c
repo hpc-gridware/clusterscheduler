@@ -109,7 +109,7 @@ void sge_gdi_kill_master(sge_gdi_packet_class_t *packet, sge_gdi_task_class_t *t
    DENTER(GDI_LAYER, "sge_gdi_kill_master");
 
    if (sge_gdi_packet_parse_auth_info(packet, &(task->answer_list), &uid, username, sizeof(username), 
-                                  &gid, groupname, sizeof(groupname)) == -1) {
+                                  &gid, groupname, sizeof(groupname)) == false) {
       ERROR((SGE_EVENT, SFNMAX, MSG_GDI_FAILEDTOEXTRACTAUTHINFO));
       answer_list_add(&(task->answer_list), SGE_EVENT, STATUS_ENOMGR, ANSWER_QUALITY_ERROR);
       DEXIT;

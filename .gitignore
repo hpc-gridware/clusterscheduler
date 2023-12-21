@@ -9,6 +9,8 @@ distinst.private
 *.swp
 tags
 cvs_update.*
+._*
+.idea
 
 # C build directories
 source/[DARWIN_|LINUX86_|SOLARIS|FREEBSD]*

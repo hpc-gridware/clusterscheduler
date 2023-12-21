@@ -25,6 +25,9 @@ set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_CXX_EXTENSIONS OFF)
 
+#set (CMAKE_C_FLAGS "-arch arm64 -rdynamic -g")
+#set (CMAKE_EXE_LINKER_FLAGS "-arch arm64 -flat_namespace -g")
+
 set(CMAKE_BUILD_TYPE
     Debug ON
     CACHE BOOL "select build type between Debug and Release")
@@ -34,6 +37,9 @@ set(CMAKE_BUILD_TYPE
 set(WITH_SPOOL_BERKELEYDB
     ON
     CACHE BOOL "enable berkeleydb spooling")
+set(WITH_SPOOL_DYNAMIC
+    ON
+    CACHE BOOL "enable dynamic spooling configuration")
 set(WITH_PLPA
     ON
     CACHE BOOL "enable building with plpa library")
@@ -55,7 +61,10 @@ set(INSTALL_SGE_DOC
 set(INSTALL_SGE_TEST
     ON
     CACHE BOOL "install test binaries")
+
+include(cmake/OsReleaseInfo.cmake)
 include(cmake/ArchitectureSpecificSettings.cmake)
+
 architecture_specific_settings()
 
 # set rpath in binaries and shared libs
@@ -81,7 +90,13 @@ set(SGE_INCLUDES
     ${3RD_PARTY}/include)
 
 set(SGE_LIBS jemalloc pthread dl m)
-set(SPOOLING_LIBS spoolloader spoold spool)
+
+if(SGE_ARCH MATCHES "darwin-arm64")
+  set(SPOOLING_LIBS spoolloader spoolc_static spool)
+else()
+  set(SPOOLING_LIBS spoolloader spoold spool)
+endif()
+
 if(WITH_PLPA)
   set(SGE_TOPO_LIB "plpa")
 else()

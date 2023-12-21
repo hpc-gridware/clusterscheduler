@@ -1,8 +1,17 @@
 # source/3rdparty/qmake-4.4/src
 
+if(SGE_ARCH MATCHES "darwin-arm64")
+  add_custom_command(
+    OUTPUT glob.h COMMAND cp ${CMAKE_CURRENT_SOURCE_DIR}/../lib/glob.h.${SGE_ARCH} glob.h)
+
+  set(ADD_QMAKE_SOURCES glob.h ../lib/concat-filename.c ../lib/findprog-in.c ../lib/fnmatch.c)
+else()
+  set(ADD_QMAKE_SOURCES "")
+endif()
+
 add_custom_command(
-  OUTPUT config.h COMMAND cp ${CMAKE_CURRENT_SOURCE_DIR}/config.h.${SGE_ARCH}
-                          config.h)
+  OUTPUT config.h COMMAND cp ${CMAKE_CURRENT_SOURCE_DIR}/config.h.${SGE_ARCH} config.h)
+
 add_executable(
   qmake
   ar.c
@@ -35,7 +44,8 @@ add_executable(
   strcache.c
   variable.c
   version.c
-  vpath.c)
+  vpath.c
+  ${ADD_QMAKE_SOURCES})
 target_compile_definitions(
   qmake
   PRIVATE LOCALEDIR="/usr/local/share/locale" INCLUDEDIR="/usr/local/include"

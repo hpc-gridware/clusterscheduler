@@ -1996,7 +1996,7 @@ sge_read_rusage(FILE *f, sge_rusage_type *d, sge_qacct_options *options, char *s
 
       if (options->taskstart && options->taskend && options->taskstep) {
          if (d->task_number < options->taskstart || d->task_number > options->taskend || 
-             !((d->task_number-options->taskstart)%options->taskstep) == 0) { 
+             !(((d->task_number-options->taskstart)%options->taskstep) == 0)) { 
             DRETURN(-2);
          }
       }
