@@ -427,7 +427,7 @@ int lCountDescr(const lDescr *dp)
 lDescr *lCopyDescr(const lDescr *dp) 
 {
    int i;
-   lDescr *new = NULL;
+   lDescr *new_descr = NULL;
 
    DENTER(CULL_BASIS_LAYER, "lCopyDescr");
 
@@ -441,19 +441,19 @@ lDescr *lCopyDescr(const lDescr *dp)
       goto error;
    }
 
-   if (!(new = (lDescr *) malloc(sizeof(lDescr) * (i + 1)))) {
+   if (!(new_descr = (lDescr *) malloc(sizeof(lDescr) * (i + 1)))) {
       LERROR(LEMALLOC);
       goto error;
    }
-   memcpy(new, dp, sizeof(lDescr) * (i + 1));
+   memcpy(new_descr, dp, sizeof(lDescr) * (i + 1));
 
    /* copy hashing information */
    for(i = 0; mt_get_type(dp[i].mt) != lEndT; i++) {
-      new[i].ht = NULL;
+      new_descr[i].ht = NULL;
    }
 
    DEXIT;
-   return new;
+   return new_descr;
 
  error:
    DPRINTF(("lCopyDescr failed\n"));

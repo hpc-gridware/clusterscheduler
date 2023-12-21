@@ -67,7 +67,7 @@
 #include "msg_qmaster.h"
 
 static void sge_change_queue_version_acl(sge_gdi_ctx_class_t *ctx, const char *acl_name);
-static lList* do_depts_conflict(lListElem *new, lListElem *old);
+static lList* do_depts_conflict(lListElem *new_dep, lListElem *old);
 static int verify_userset_deletion(lList **alpp, const char *userset_name);
 static int dept_is_valid_defaultdepartment(lListElem *dept, lList **answer_list);
 static int acl_is_valid_acl(lListElem *acl, lList **answer_list);
@@ -341,7 +341,7 @@ static int acl_is_valid_acl(lListElem *acl,
    DRETURN(ret);
 }
 
-static lList* do_depts_conflict(lListElem *new, lListElem *old)
+static lList* do_depts_conflict(lListElem *new_dep, lListElem *old_dep)
 {
    const lList *new_users = NULL;
    const lList *old_users = NULL; 
@@ -351,8 +351,8 @@ static lList* do_depts_conflict(lListElem *new, lListElem *old)
    
    DENTER(TOP_LAYER, "do_depts_conflict");
    
-   new_users = lGetList(new, US_entries);
-   old_users = lGetList(old, US_entries);
+   new_users = lGetList(new_dep, US_entries);
+   old_users = lGetList(old_dep, US_entries);
 
    if (!old_users || !new_users) {
       DRETURN(NULL);
@@ -364,11 +364,11 @@ static lList* do_depts_conflict(lListElem *new, lListElem *old)
    for_each(np, new_users) {
       nname = lGetString(np, UE_name);
       if (nname && nname[0] == '@') { 
-         if (sge_contained_in_access_list(NULL, &nname[1], old, &alp)) {
+         if (sge_contained_in_access_list(NULL, &nname[1], old_dep, &alp)) {
             DRETURN(alp);
          }
       } else {
-         if (sge_contained_in_access_list(nname, NULL, old, &alp)) {
+         if (sge_contained_in_access_list(nname, NULL, old_dep, &alp)) {
             DRETURN(alp);
          }
       }   

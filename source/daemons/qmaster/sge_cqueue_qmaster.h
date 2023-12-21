@@ -80,8 +80,8 @@ void
 cqueue_list_set_unknown_state(lList *this_list, const char *hostname,
                               bool send_events, bool is_unknown);
 
-void cqueue_diff_projects(const lListElem *new, const lListElem *old, lList **new_prj, lList **old_prj);
-void cqueue_diff_usersets(const lListElem *new, const lListElem *old, lList **new_acl, lList **old_acl);
+void cqueue_diff_projects(const lListElem *new_cqueue, const lListElem *old_cqueue, lList **new_prj, lList **old_prj);
+void cqueue_diff_usersets(const lListElem *new_cqueue, const lListElem *old_cqueue, lList **new_acl, lList **old_acl);
 
 #endif /* _SGE_CQUEUE_QMASTER_H_ */
 

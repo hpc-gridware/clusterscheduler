@@ -418,23 +418,23 @@ sge_callback_result
 sge_process_schedd_conf_event_before(sge_evc_class_t *evc, sge_object_type type,
                                      sge_event_action action, lListElem *event, void *clientdata)
 {
-   lListElem *new = NULL;
+   lListElem *new_ep = NULL;
 
    DENTER(GDI_LAYER, "sge_process_schedd_conf_event_before");
 
    DPRINTF(("callback processing schedd config event\n"));
 
-   new = lFirstRW(lGetList(event, ET_new_version));
+   new_ep = lFirstRW(lGetList(event, ET_new_version));
 
-   if (new == NULL) {
+   if (new_ep == NULL) {
       ERROR((SGE_EVENT, "> > > > > no scheduler configuration available < < < < <\n"));
       DEXIT;
       return SGE_EMA_FAILURE;
    }
    /* check for valid load formula */
    {
-      lListElem *old = sconf_get_config();
-      const char *new_load_formula = lGetString(new, SC_load_formula);
+      lListElem *old_ep = sconf_get_config();
+      const char *new_load_formula = lGetString(new_ep, SC_load_formula);
       lList *alpp = NULL;
       const lList *master_centry_list = *object_type_get_master_list_rw(SGE_TYPE_CENTRY);
 
@@ -443,10 +443,10 @@ sge_process_schedd_conf_event_before(sge_evc_class_t *evc, sge_object_type type,
 
          ERROR((SGE_EVENT,MSG_INVALID_LOAD_FORMULA, new_load_formula ));
          answer_list_output(&alpp);
-         if (old) {
-            lSetString(new, SC_load_formula, lGetString(old, SC_load_formula) );
+         if (old_ep) {
+            lSetString(new_ep, SC_load_formula, lGetString(old_ep, SC_load_formula) );
          } else {
-            lSetString(new, SC_load_formula, "none");
+            lSetString(new_ep, SC_load_formula, "none");
          }
       } else {
          int n = strlen(new_load_formula);
@@ -459,13 +459,13 @@ sge_process_schedd_conf_event_before(sge_evc_class_t *evc, sge_object_type type,
                strcpy(copy, new_load_formula);
 
                sge_strip_blanks(copy);
-               lSetString(new, SC_load_formula, copy);
+               lSetString(new_ep, SC_load_formula, copy);
             }
 
             sge_free(&copy);
          }
       }
-      lFreeElem(&old);
+      lFreeElem(&old_ep);
    }
 
    DEXIT;
@@ -488,7 +488,7 @@ sge_callback_result
 sge_process_project_event_before(sge_evc_class_t *evc, sge_object_type type,
                                     sge_event_action action, lListElem *event, void *clientdata)
 {
-   const lListElem *new, *old;
+   const lListElem *new_ep, *old_ep;
    const char *p;
 
    DENTER(GDI_LAYER, "sge_process_project_event_before");
@@ -501,24 +501,24 @@ sge_process_project_event_before(sge_evc_class_t *evc, sge_object_type type,
    }
 
    p = lGetString(event, ET_strkey);
-   new = lFirst(lGetList(event, ET_new_version));
-   old = prj_list_locate(*object_type_get_master_list(SGE_TYPE_PROJECT), p);
+   new_ep = lFirst(lGetList(event, ET_new_version));
+   old_ep = prj_list_locate(*object_type_get_master_list(SGE_TYPE_PROJECT), p);
 
    switch (action) {
    case SGE_EMA_ADD:
-      if (new != NULL && lGetBool(new, PR_consider_with_categories) == true) {
+      if (new_ep != NULL && lGetBool(new_ep, PR_consider_with_categories) == true) {
          set_rebuild_categories(true);
          DPRINTF(("callback before project event: rebuild categories due to SGE_EMA_ADD(%s)\n", p));
       }
       break;
    case SGE_EMA_MOD:
-      if (new != NULL && old != NULL && lGetBool(new, PR_consider_with_categories) != lGetBool(old, PR_consider_with_categories)) {
+      if (new_ep != NULL && old_ep != NULL && lGetBool(new_ep, PR_consider_with_categories) != lGetBool(old_ep, PR_consider_with_categories)) {
          set_rebuild_categories(true);
          DPRINTF(("callback before project event: rebuild categories due to SGE_EMA_MOD(%s)\n", p));
       }
       break;
    case SGE_EMA_DEL:
-      if (old != NULL && lGetBool(old, PR_consider_with_categories) == true) {
+      if (old_ep != NULL && lGetBool(old_ep, PR_consider_with_categories) == true) {
          set_rebuild_categories(true);
          DPRINTF(("callback before project event: rebuild categories due to SGE_EMA_DEL(%s)\n", p));
       }
@@ -758,7 +758,7 @@ sge_process_ja_task_event_after(sge_evc_class_t *evc, sge_object_type type,
 sge_callback_result 
 sge_process_userset_event_before(sge_evc_class_t *evc, sge_object_type type, sge_event_action action, lListElem *event, void *clientdata)
 {
-   const lListElem *new, *old;
+   const lListElem *new_ep, *old_ep;
    const char *u;
 
    DENTER(GDI_LAYER, "sge_process_userset_event_before");
@@ -771,12 +771,12 @@ sge_process_userset_event_before(sge_evc_class_t *evc, sge_object_type type, sge
    }
 
    u = lGetString(event, ET_strkey);
-   new = lFirst(lGetList(event, ET_new_version));
-   old = userset_list_locate(*object_type_get_master_list(SGE_TYPE_USERSET), u);
+   new_ep = lFirst(lGetList(event, ET_new_version));
+   old_ep = userset_list_locate(*object_type_get_master_list(SGE_TYPE_USERSET), u);
 
    switch (action) {
    case SGE_EMA_ADD:
-      if (lGetBool(new, US_consider_with_categories) == true) {
+      if (lGetBool(new_ep, US_consider_with_categories) == true) {
          set_rebuild_categories(true);
          DPRINTF(("callback before userset event: rebuild categories due to SGE_EMA_ADD(%s)\n", u));
       }
@@ -787,16 +787,16 @@ sge_process_userset_event_before(sge_evc_class_t *evc, sge_object_type type, sge
          --> it is in use as ACL with queue_conf(5)/host_conf(5)/sge_pe(5)
              and a change with users/groups occured */
 
-      if ((lGetBool(new, US_consider_with_categories) != lGetBool(old, US_consider_with_categories))
-          || ( lGetBool(old, US_consider_with_categories) == true &&
-            object_list_has_differences(lGetList(old, US_entries), NULL, lGetList(new, US_entries), false))) {
+      if ((lGetBool(new_ep, US_consider_with_categories) != lGetBool(old_ep, US_consider_with_categories))
+          || ( lGetBool(old_ep, US_consider_with_categories) == true &&
+            object_list_has_differences(lGetList(old_ep, US_entries), NULL, lGetList(new_ep, US_entries), false))) {
          set_rebuild_categories(true);
          DPRINTF(("callback before userset event: rebuild categories due to SGE_EMA_MOD(%s)\n", u));
       }
 
       break;
    case SGE_EMA_DEL:
-      if (lGetBool(old, US_consider_with_categories) == true) {
+      if (lGetBool(old_ep, US_consider_with_categories) == true) {
          set_rebuild_categories(true);
          DPRINTF(("callback before userset event: rebuild categories due to SGE_EMA_DEL(%s)\n", u));
       }

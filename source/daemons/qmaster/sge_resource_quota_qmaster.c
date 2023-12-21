@@ -740,21 +740,21 @@ bool rqs_diff_projects(const lListElem *new_rqs, const lListElem *old_rqs, lList
 *******************************************************************************/
 static void rqs_update_categories(const lListElem *new_rqs, const lListElem *old_rqs)
 {
-   lList *old = NULL, *new = NULL;
+   lList *old_lp = NULL, *new_lp = NULL;
    const lList *master_userset_list = *object_type_get_master_list(SGE_TYPE_USERSET);
    const lList *master_project_list = *object_type_get_master_list(SGE_TYPE_PROJECT);
 
    DENTER(TOP_LAYER, "rqs_update_categories");
 
-   rqs_diff_projects(new_rqs, old_rqs, &new, &old, master_project_list);
-   project_update_categories(new, old);
-   lFreeList(&old);
-   lFreeList(&new);
+   rqs_diff_projects(new_rqs, old_rqs, &new_lp, &old_lp, master_project_list);
+   project_update_categories(new_lp, old_lp);
+   lFreeList(&old_lp);
+   lFreeList(&new_lp);
 
-   rqs_diff_usersets(new_rqs, old_rqs, &new, &old, master_userset_list);
-   userset_update_categories(new, old);
-   lFreeList(&old);
-   lFreeList(&new);
+   rqs_diff_usersets(new_rqs, old_rqs, &new_lp, &old_lp, master_userset_list);
+   userset_update_categories(new_lp, old_lp);
+   lFreeList(&old_lp);
+   lFreeList(&new_lp);
 
    DRETURN_VOID;
 }

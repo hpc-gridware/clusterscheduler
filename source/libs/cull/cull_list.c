@@ -164,7 +164,7 @@ lListElem *lCopyElem(const lListElem *ep) {
 ******************************************************************************/
 lListElem *lCopyElemHash(const lListElem *ep, bool isHash) 
 {
-   lListElem *new;
+   lListElem *new_ep;
    int index;
    int max;
 
@@ -177,29 +177,29 @@ lListElem *lCopyElemHash(const lListElem *ep, bool isHash)
 
    max = lCountDescr(ep->descr); 
 
-   if (!(new = lCreateElem(ep->descr))) {
+   if (!(new_ep = lCreateElem(ep->descr))) {
       LERROR(LECREATEELEM);
       DRETURN(NULL);
    }
 
    for (index = 0; index<max ; index++) { 
-      if (lCopySwitchPack(ep, new, index, index, isHash, NULL, NULL) != 0) {
-         lFreeElem(&new);
+      if (lCopySwitchPack(ep, new_ep, index, index, isHash, NULL, NULL) != 0) {
+         lFreeElem(&new_ep);
 
          LERROR(LECOPYSWITCH);
          DRETURN(NULL);
       }
    }
-   if (!sge_bitfield_copy(&(ep->changed), &(new->changed))) {
-      lFreeElem(&new);
+   if (!sge_bitfield_copy(&(ep->changed), &(new_ep->changed))) {
+      lFreeElem(&new_ep);
 
       LERROR(LECOPYSWITCH);
       DRETURN(NULL);
    }
 
-   new->status = FREE_ELEM;
+   new_ep->status = FREE_ELEM;
 
-   DRETURN(new);
+   DRETURN(new_ep);
 }
 
 /****** cull/list/lModifyWhat() ************************************************
@@ -407,9 +407,9 @@ lCopySwitchPack(const lListElem *sep, lListElem *dep, int src_idx, int dst_idx,
       if ((tep = sep->cont[src_idx].obj) == NULL) {
          dep->cont[dst_idx].obj = NULL;
       } else {
-         lListElem *new = lSelectElemPack(tep, NULL, ep, isHash, pb);
-         new->status = OBJECT_ELEM;
-         dep->cont[dst_idx].obj = new;
+         lListElem *new_ep = lSelectElemPack(tep, NULL, ep, isHash, pb);
+         new_ep->status = OBJECT_ELEM;
+         dep->cont[dst_idx].obj = new_ep;
       }   
       break;
    case lIntT:
@@ -1623,23 +1623,23 @@ lList *lCopyListHash(const char *name, const lList *src, bool hash)
 *     lInsertElem() -- Insert element after another in a list 
 *
 *  SYNOPSIS
-*     int lInsertElem(lList *lp, lListElem *ep, lListElem *new) 
+*     int lInsertElem(lList *lp, lListElem *ep, lListElem *new_ep) 
 *
 *  FUNCTION
-*     Insert a 'new' element after element 'ep' into list 'lp'.
-*     If 'ep' is NULL then 'new' will be the first element in 'lp'.
+*     Insert a 'new_ep' element after element 'ep' into list 'lp'.
+*     If 'ep' is NULL then 'new_ep' will be the first element in 'lp'.
 *
 *  INPUTS
 *     lList *lp      - list 
 *     lListElem *ep  - element 
-*     lListElem *new - new element 
+*     lListElem *new_ep - new element 
 *
 *  RESULT
 *     int - error state
 *         0 - OK
 *        -1 - Error
 ******************************************************************************/
-int lInsertElem(lList *lp, lListElem *ep, lListElem *new) 
+int lInsertElem(lList *lp, lListElem *ep, lListElem *new_ep) 
 {
    DENTER(CULL_LAYER, "lInsertElem");
 
@@ -1648,46 +1648,46 @@ int lInsertElem(lList *lp, lListElem *ep, lListElem *new)
       DRETURN(-1);
    }
    
-   if (!new) {
+   if (!new_ep) {
       LERROR(LEELEMNULL);
       DRETURN(-1);
    }
    
-   /* is the element new still chained in an other list, this is not allowed ? */
-   if (new->status == BOUND_ELEM || new->status == OBJECT_ELEM) {
+   /* is the element new_ep still chained in an other list, this is not allowed ? */
+   if (new_ep->status == BOUND_ELEM || new_ep->status == OBJECT_ELEM) {
       DPRINTF(("WARNING: tried to insert chained element\n"));
-      lWriteElem(new);
+      lWriteElem(new_ep);
       DEXIT;
       abort();
    }
 
    if (ep) {
-      new->prev = ep;
-      new->next = ep->next;
-      ep->next = new;
-      if (new->next)            /* the new element has successors */
-         new->next->prev = new;
+      new_ep->prev = ep;
+      new_ep->next = ep->next;
+      ep->next = new_ep;
+      if (new_ep->next)            /* the new element has successors */
+         new_ep->next->prev = new_ep;
       else                      /* the new element is the last element */
-         lp->last = new;
+         lp->last = new_ep;
    }
    else {                       /* insert as first element */
-      new->prev = NULL;
-      new->next = lp->first;
+      new_ep->prev = NULL;
+      new_ep->next = lp->first;
       if (!lp->first)           /* empty list ? */
-         lp->last = new;
+         lp->last = new_ep;
       else
-         lp->first->prev = new;
-      lp->first = new;
+         lp->first->prev = new_ep;
+      lp->first = new_ep;
    }
 
-   if (new->status == FREE_ELEM) {
-      cull_hash_free_descr(new->descr);
-      sge_free(&(new->descr));
+   if (new_ep->status == FREE_ELEM) {
+      cull_hash_free_descr(new_ep->descr);
+      sge_free(&(new_ep->descr));
    }   
-   new->status = BOUND_ELEM;
-   new->descr = lp->descr;
+   new_ep->status = BOUND_ELEM;
+   new_ep->descr = lp->descr;
 
-   cull_hash_elem(new);
+   cull_hash_elem(new_ep);
    
    lp->nelem++;
    lp->changed = true;

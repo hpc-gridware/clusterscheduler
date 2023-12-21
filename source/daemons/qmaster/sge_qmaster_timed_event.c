@@ -110,7 +110,7 @@ handler_tbl_t Handler_Tbl = {
 *     MT-NOTE: If a timed event has been deleted we need to signal the event
 *     MT-NOTE: delivery thread. This is because the event delivery thread
 *     MT-NOTE: maybe waiting until the just deleted event becomes due. Event
-*     MT-NOTE: deletion is communicated by setting 'Event_Control.delete'
+*     MT-NOTE: deletion is communicated by setting 'Event_Control.deleted'
 *     MT-NOTE: to 'true'.
 *******************************************************************************/
 static int 
@@ -167,7 +167,7 @@ te_delete_all_or_one_time_event(te_type_t aType, u_long32 aKey1, u_long32 aKey2,
 
    if( res > 0)
    {
-      Event_Control.delete = true;
+      Event_Control.deleted = true;
 
       pthread_cond_signal(&Event_Control.cond_var);
 
@@ -518,7 +518,7 @@ void te_add_event(te_event_t anEvent)
 *     MT-NOTE: If a timed event has been deleted we need to signal the event
 *     MT-NOTE: delivery thread. This is because the event delivery thread
 *     MT-NOTE: maybe waiting until the just deleted event becomes due. Event
-*     MT-NOTE: deletion is communicated by setting 'Event_Control.delete'
+*     MT-NOTE: deletion is communicated by setting 'Event_Control.deleted'
 *     MT-NOTE: to 'true'.
 *******************************************************************************/
 int te_delete_one_time_event(te_type_t aType, u_long32 aKey1, u_long32 aKey2, const char* strKey) 
@@ -556,7 +556,7 @@ int te_delete_one_time_event(te_type_t aType, u_long32 aKey1, u_long32 aKey2, co
 *     MT-NOTE: If a timed event has been deleted we need to signal the event
 *     MT-NOTE: delivery thread. This is because the event delivery thread
 *     MT-NOTE: maybe waiting until the just deleted event becomes due. Event
-*     MT-NOTE: deletion is communicated by setting 'Event_Control.delete'
+*     MT-NOTE: deletion is communicated by setting 'Event_Control.deleted'
 *     MT-NOTE: to 'true'.
 *******************************************************************************/
 int te_delete_all_one_time_events(te_type_t aType) {

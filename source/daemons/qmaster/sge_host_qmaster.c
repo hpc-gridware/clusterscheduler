@@ -1320,7 +1320,7 @@ static int verify_scaling_list(lList **answer_list, lListElem *host)
 *     host_diff_sublist() -- Diff exechost sublists
 *
 *  SYNOPSIS
-*     static void host_diff_sublist(const lListElem *new, const lListElem *old,
+*     static void host_diff_sublist(const lListElem *new_host, const lListElem *old_host,
 *     int snm1, int snm2, int key_nm, const lDescr *dp, lList **new_sublist,
 *     lList **old_sublist)
 *
@@ -1328,8 +1328,8 @@ static int verify_scaling_list(lList **answer_list, lListElem *host)
 *     Makes a diff userset/project sublists of an exec host.
 *
 *  INPUTS
-*     const lListElem *new - New exec host (EH_Type)
-*     const lListElem *old - Pld exec host (EH_Type)
+*     const lListElem *new_host - New exec host (EH_Type)
+*     const lListElem *old_host - Old exec host (EH_Type)
 *     int snm1             - First exec host sublist field
 *     int snm2             - Second exec host sublist field
 *     int key_nm           - Field with key in sublist
@@ -1340,7 +1340,7 @@ static int verify_scaling_list(lList **answer_list, lListElem *host)
 *  NOTES
 *     MT-NOTE: host_diff_sublist() is MT safe
 *******************************************************************************/
-static void host_diff_sublist(const lListElem *new, const lListElem *old,
+static void host_diff_sublist(const lListElem *new_host, const lListElem *old_host,
       int snm1, int snm2, int key_nm, const lDescr *dp,
       lList **new_sublist, lList **old_sublist)
 {
@@ -1348,13 +1348,13 @@ static void host_diff_sublist(const lListElem *new, const lListElem *old,
    const char *p;
 
    /* collect 'old' entries in 'old_sublist' */
-   if (old && old_sublist) {
-      for_each (ep, lGetList(old, snm1)) {
+   if (old_host && old_sublist) {
+      for_each (ep, lGetList(old_host, snm1)) {
          p = lGetString(ep, key_nm);
          if (!lGetElemStr(*old_sublist, key_nm, p))
             lAddElemStr(old_sublist, key_nm, p, dp);
       }
-      for_each (ep, lGetList(old, snm2)) {
+      for_each (ep, lGetList(old_host, snm2)) {
          p = lGetString(ep, key_nm);
          if (!lGetElemStr(*old_sublist, key_nm, p))
             lAddElemStr(old_sublist, key_nm, p, dp);
@@ -1362,13 +1362,13 @@ static void host_diff_sublist(const lListElem *new, const lListElem *old,
    }
 
    /* collect 'new' entries in 'new_sublist' */
-   if (new && new_sublist) {
-      for_each (ep, lGetList(new, snm1)) {
+   if (new_host && new_sublist) {
+      for_each (ep, lGetList(new_host, snm1)) {
          p = lGetString(ep, key_nm);
          if (!lGetElemStr(*new_sublist, key_nm, p))
             lAddElemStr(new_sublist, key_nm, p, dp);
       }
-      for_each (ep, lGetList(new, snm2)) {
+      for_each (ep, lGetList(new_host, snm2)) {
          p = lGetString(ep, key_nm);
          if (!lGetElemStr(*new_sublist, key_nm, p))
             lAddElemStr(new_sublist, key_nm, p, dp);
@@ -1384,7 +1384,7 @@ static void host_diff_sublist(const lListElem *new, const lListElem *old,
 *     host_diff_projects() -- Diff old/new exec host projects
 *
 *  SYNOPSIS
-*     void host_diff_projects(const lListElem *new, const lListElem *old, lList
+*     void host_diff_projects(const lListElem *new_host, const lListElem *old_host, lList
 *     **new_prj, lList **old_prj)
 *
 *  FUNCTION
@@ -1392,18 +1392,18 @@ static void host_diff_sublist(const lListElem *new, const lListElem *old,
 *     Project references are returned in new_prj/old_prj.
 *
 *  INPUTS
-*     const lListElem *new - New exec host (EH_Type)
-*     const lListElem *old - Old exec host (EH_Type)
+*     const lListElem *new_host - New exec host (EH_Type)
+*     const lListElem *old_host - Old exec host (EH_Type)
 *     lList **new_prj      - New project references (US_Type)
 *     lList **old_prj      - Old project references (US_Type)
 *
 *  NOTES
 *     MT-NOTE: host_diff_projects() is not MT safe
 *******************************************************************************/
-void host_diff_projects(const lListElem *new,
-         const lListElem *old, lList **new_prj, lList **old_prj)
+void host_diff_projects(const lListElem *new_host,
+         const lListElem *old_host, lList **new_prj, lList **old_prj)
 {
-   host_diff_sublist(new, old, EH_prj, EH_xprj,
+   host_diff_sublist(new_host, old_host, EH_prj, EH_xprj,
          PR_name, PR_Type, new_prj, old_prj);
    lDiffListStr(PR_name, new_prj, old_prj);
 }
@@ -1413,7 +1413,7 @@ void host_diff_projects(const lListElem *new,
 *     host_diff_usersets() -- Diff old/new exec host usersets
 *
 *  SYNOPSIS
-*     void host_diff_usersets(const lListElem *new, const lListElem *old, lList
+*     void host_diff_usersets(const lListElem *new_host, const lListElem *old_host, lList
 *     **new_acl, lList **old_acl)
 *
 *  FUNCTION
@@ -1421,18 +1421,18 @@ void host_diff_projects(const lListElem *new,
 *     Userset references are returned in new_acl/old_acl.
 *
 *  INPUTS
-*     const lListElem *new - New exec host (EH_Type)
-*     const lListElem *old - Old exec host (EH_Type)
+*     const lListElem *new_host - New exec host (EH_Type)
+*     const lListElem *old_host - Old exec host (EH_Type)
 *     lList **new_acl      - New userset references (US_Type)
 *     lList **old_acl      - Old userset references (US_Type)
 *
 *  NOTES
 *     MT-NOTE: host_diff_usersets() is not MT safe
 *******************************************************************************/
-void host_diff_usersets(const lListElem *new,
-      const lListElem *old, lList **new_acl, lList **old_acl)
+void host_diff_usersets(const lListElem *new_host,
+      const lListElem *old_host, lList **new_acl, lList **old_acl)
 {
-   host_diff_sublist(new, old, EH_acl, EH_xacl,
+   host_diff_sublist(new_host, old_host, EH_acl, EH_xacl,
          US_name, US_Type, new_acl, old_acl);
    lDiffListStr(US_name, new_acl, old_acl);
 }
@@ -1462,17 +1462,17 @@ void host_diff_usersets(const lListElem *new,
 *******************************************************************************/
 static void host_update_categories(const lListElem *new_hep, const lListElem *old_hep)
 {
-   lList *old = NULL, *new = NULL;
+   lList *old_lp = NULL, *new_lp = NULL;
 
-   host_diff_projects(new_hep, old_hep, &new, &old);
-   project_update_categories(new, old);
-   lFreeList(&old);
-   lFreeList(&new);
+   host_diff_projects(new_hep, old_hep, &new_lp, &old_lp);
+   project_update_categories(new_lp, old_lp);
+   lFreeList(&old_lp);
+   lFreeList(&new_lp);
 
-   host_diff_usersets(new_hep, old_hep, &new, &old);
-   userset_update_categories(new, old);
-   lFreeList(&old);
-   lFreeList(&new);
+   host_diff_usersets(new_hep, old_hep, &new_lp, &old_lp);
+   userset_update_categories(new_lp, old_lp);
+   lFreeList(&old_lp);
+   lFreeList(&new_lp);
 }
 
 /****** sge_utility_qmaster/attr_mod_threshold() *******************************

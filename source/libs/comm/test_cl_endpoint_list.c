@@ -88,24 +88,24 @@ main(int argc, char** argv)
 
  
   while( argv[arg] != NULL) {
-     cl_com_endpoint_t* new = NULL;
+     cl_com_endpoint_t* new_ep = NULL;
 
      printf("append \"%s\" (static):\n", argv[arg]);
-     new = cl_com_create_endpoint(argv[arg], "name", 1, &in_addr);
-     retval = cl_endpoint_list_define_endpoint(endpoint_list, new, 1024+ arg, CL_CM_AC_DISABLED, true);
+     new_ep = cl_com_create_endpoint(argv[arg], "name", 1, &in_addr);
+     retval = cl_endpoint_list_define_endpoint(endpoint_list, new_ep, 1024+ arg, CL_CM_AC_DISABLED, true);
      printf("%s\n\n",cl_get_error_text(retval));
-     retval = cl_endpoint_list_define_endpoint(endpoint_list, new, 1024+ arg, CL_CM_AC_DISABLED, true);
+     retval = cl_endpoint_list_define_endpoint(endpoint_list, new_ep, 1024+ arg, CL_CM_AC_DISABLED, true);
      printf("%s\n\n",cl_get_error_text(retval));
 
-     cl_com_free_endpoint(&new);
+     cl_com_free_endpoint(&new_ep);
 
      
 
      printf("append \"%s\" (non static):\n", argv[arg]);
-     new = cl_com_create_endpoint(argv[arg], "name", 2, &in_addr);
-     retval = cl_endpoint_list_define_endpoint(endpoint_list, new, 1024 +arg,CL_CM_AC_DISABLED, false);
+     new_ep = cl_com_create_endpoint(argv[arg], "name", 2, &in_addr);
+     retval = cl_endpoint_list_define_endpoint(endpoint_list, new_ep, 1024 +arg,CL_CM_AC_DISABLED, false);
      printf("%s\n\n",cl_get_error_text(retval));
-     cl_com_free_endpoint(&new);
+     cl_com_free_endpoint(&new_ep);
 
      arg++;
   }
@@ -211,13 +211,13 @@ main(int argc, char** argv)
 
   arg=2;
   while( argv[arg] != NULL) {
-     cl_com_endpoint_t* new = NULL;
+     cl_com_endpoint_t* new_ep = NULL;
      printf("elements in list: %ld\n", cl_raw_list_get_elem_count(endpoint_list));
      printf("delete %s/%s/%ld (static):\n", argv[arg], "name", (unsigned long)1);
-     new = cl_com_create_endpoint(argv[arg], "name", 1, &in_addr);
-     retval = cl_endpoint_list_undefine_endpoint(endpoint_list,new);
+     new_ep = cl_com_create_endpoint(argv[arg], "name", 1, &in_addr);
+     retval = cl_endpoint_list_undefine_endpoint(endpoint_list,new_ep);
      printf("%s\n\n",cl_get_error_text(retval));
-     cl_com_free_endpoint(&new);
+     cl_com_free_endpoint(&new_ep);
      arg++;
      printf("elements in list: %ld\n", cl_raw_list_get_elem_count(endpoint_list));
   }

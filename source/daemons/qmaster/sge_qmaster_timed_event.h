@@ -85,7 +85,7 @@ typedef struct {
    pthread_mutex_t mutex;      /* used for mutual exclusion                         */
    pthread_cond_t  cond_var;   /* used for waiting                                  */
    bool            exit;       /* true -> exit event delivery                       */
-   bool            delete;     /* true -> at least one event has been deleted       */
+   bool            deleted;     /* true -> at least one event has been deleted       */
    lList*          list;       /* timed event list                                  */
    lSortOrder*     sort_order; /* list sort order                                   */
    u_long32        seq_no;     /* last added timed event sequence number            */

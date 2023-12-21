@@ -319,7 +319,7 @@ sge_timer_terminate(void)
 *     MT-NOTE: If no event is due, i.e. the due date of the next event does lie
 *     MT-NOTE: ahead, 'timed_event_thread()' does wait until the next event does
 *     MT-NOTE: become due, or an event which is due earlier has been added. If
-*     MT-NOTE: an event has been deleted while waiting ('Event_Control.delete'
+*     MT-NOTE: an event has been deleted while waiting ('Event_Control.deleted'
 *     MT-NOTE: equals 'true'), skip the current event and start over. The
 *     MT-NOTE: deleted event maybe the event 'timed_event_thread()' has been
 *     MT-NOTE: waiting for.
@@ -379,11 +379,11 @@ sge_timer_main(void *arg)
       if (te->when > now) {
          
          Event_Control.next = te->when;
-         Event_Control.delete = false;
+         Event_Control.deleted = false;
          MONITOR_IDLE_TIME(te_wait_next(te, now), p_monitor, mconf_get_monitor_time(),
                            mconf_is_monitor_message());
 
-         if ((Event_Control.next < te->when) || (Event_Control.delete == true))
+         if ((Event_Control.next < te->when) || (Event_Control.deleted == true))
          {
             DPRINTF(("%s: event list changed - next:"sge_u32" --> start over\n", SGE_FUNC, 
                      Event_Control.next));

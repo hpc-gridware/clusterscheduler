@@ -206,29 +206,29 @@ FCLOSE_ERROR:
 /******************************************************/
 int add_config_entry(const char *name, const char *value)
 {
-   config_entry *new;
+   config_entry *new_entry;
 
-   if ((new = (config_entry *)malloc(sizeof(config_entry))) == NULL) {
+   if ((new_entry = (config_entry *)malloc(sizeof(config_entry))) == NULL) {
       return 1;
    }
    
-   if ((new->name = strdup(name)) == NULL) {
-      sge_free(&new);
+   if ((new_entry->name = strdup(name)) == NULL) {
+      sge_free(&new_entry);
       return 1;
    }
   
    if (value != NULL) {
-      if ((new->value = strdup(value)) == NULL) {
-         sge_free(&(new->name));
-         sge_free(&(new));
+      if ((new_entry->value = strdup(value)) == NULL) {
+         sge_free(&(new_entry->name));
+         sge_free(&(new_entry));
          return 1;
       }
    } else {
-      new->value = NULL;
+      new_entry->value = NULL;
    }
   
-   new->next = config_list;
-   config_list = new;
+   new_entry->next = config_list;
+   config_list = new_entry;
 
    return 0;
 }

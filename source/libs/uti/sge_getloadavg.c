@@ -194,7 +194,7 @@ typedef int kernel_fd_type;
 #endif
 
 #ifdef SGE_LOADCPU
-static long percentages(int cnt, double *out, long *new, long *old, long *diffs);
+static long percentages(int cnt, double *out, long *new_value, long *old_value, long *diffs);
 #endif
 
 #if defined(ALPHA4) || defined(ALPHA5) || defined(HPUX) || defined(IRIX) || defined(LINUX) || defined(DARWIN) || defined(HAS_AIX5_PERFLIB)
@@ -709,7 +709,7 @@ static double get_cpu_load()
 }    
 
 #elif defined(HP11) || defined(HP1164)
-static long percentages_new(int cnt, double *out, long *new, long *old, long *diffs, bool first)
+static long percentages_new(int cnt, double *out, long *new_value, long *old_value, long *diffs, bool first)
 {
    int i;
    long total_change = 0;
@@ -722,7 +722,7 @@ static long percentages_new(int cnt, double *out, long *new, long *old, long *di
     */
    if (first) {
       for (i = 0; i < cnt; i++) {
-         *old++ = *new++;
+         *old_value++ = *new_value++;
          *out++ = 0.0;
       }
    } else {
@@ -735,16 +735,16 @@ static long percentages_new(int cnt, double *out, long *new, long *old, long *di
 
       /* calculate changes for each state and the overall change */
       for (i = 0; i < cnt; i++) {
-         change = *new - *old;
+         change = *new_value - *old_value;
 
          /* when the counter wraps, we get a negative value */
          if (change < 0) {
             change = (long)
-            ((unsigned long)*new-(unsigned long)*old);
+            ((unsigned long)*new_value-(unsigned long)*old_value);
          }
          *dp++ = change;
          total_change += change;
-         *old++ = *new++;
+         *old_value++ = *new_value++;
       }
 
       /* 
@@ -1190,7 +1190,7 @@ int sge_getcpuload(double *cpu_load)
    return ret;
 }
 
-static long percentages(int cnt, double *out, long *new, long *old, long *diffs)
+static long percentages(int cnt, double *out, long *new_value, long *old_value, long *diffs)
 {
    int i;
    long change;
@@ -1205,13 +1205,13 @@ static long percentages(int cnt, double *out, long *new, long *old, long *diffs)
    dp = diffs;
    /* calculate changes for each state and the overall change */
    for (i = 0; i < cnt; i++) {
-      if ((change = *new - *old) < 0) {
+      if ((change = *new_value - *old_value) < 0) {
          /* this only happens when the counter wraps */
          change = (int)
-         ((unsigned long)*new-(unsigned long)*old);
+         ((unsigned long)*new_value-(unsigned long)*old_value);
       }
       total_change += (*dp++ = change);
-      *old++ = *new++;
+      *old_value++ = *new_value++;
    }
    /* avoid divide by zero potential */
    if (total_change == 0) {

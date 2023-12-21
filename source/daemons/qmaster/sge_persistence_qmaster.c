@@ -237,7 +237,7 @@ sge_event_spool(sge_gdi_ctx_class_t *ctx,
    const char *key = NULL;
    sge_object_type object_type;
    lListElem *element = NULL;
-   bool delete = false;
+   bool do_delete = false;
    dstring buffer = DSTRING_INIT;
    bool job_spooling = ctx->get_job_spooling(ctx);
 
@@ -519,15 +519,15 @@ sge_event_spool(sge_gdi_ctx_class_t *ctx,
          case sgeE_RQS_DEL:
          case sgeE_HGROUP_DEL:
          case sgeE_AR_DEL:
-            delete = true;
+            do_delete = true;
             break;
          case sgeE_NEW_SHARETREE:
             if (object == NULL) {
-               delete = true;
+               do_delete = true;
             }
             break;
          default:
-            delete = false;
+            do_delete = false;
             break;
       }
 
@@ -537,7 +537,7 @@ sge_event_spool(sge_gdi_ctx_class_t *ctx,
           * in case of error, generate a high level error message.
           */
          lList *spool_answer_list = NULL;
-         if (delete) {
+         if (do_delete) {
             ret = spool_delete_object(&spool_answer_list, spool_get_default_context(), 
                                       object_type, key, job_spooling);
          } else {
@@ -585,7 +585,7 @@ sge_event_spool(sge_gdi_ctx_class_t *ctx,
          if (!ret) {
             answer_list_add_sprintf(answer_list, STATUS_EUNKNOWN, 
                                     ANSWER_QUALITY_ERROR, 
-                                    delete ? 
+                                    do_delete ? 
                                     MSG_PERSISTENCE_DELETE_FAILED_S : 
                                     MSG_PERSISTENCE_WRITE_FAILED_S,
                                     key);

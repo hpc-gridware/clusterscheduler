@@ -543,13 +543,13 @@ void sge_free_saved_vars(struct saved_vars_s *context)
 *     sge_strdup() -- Replacement for strdup() 
 *
 *  SYNOPSIS
-*     char* sge_strdup(char *old, const char *s) 
+*     char* sge_strdup(char *old_str, const char *s) 
 *
 *  FUNCTION
-*     Duplicate string 's'. "Use" 'old' buffer.
+*     Duplicate string 's'. "Use" 'old_str' buffer.
 *
 *  INPUTS
-*     char *old     - buffer (will be freed) 
+*     char *old_str     - buffer (will be freed) 
 *     const char *s - string 
 *
 *  RESULT
@@ -558,13 +558,13 @@ void sge_free_saved_vars(struct saved_vars_s *context)
 *  NOTES
 *     MT-NOTE: sge_strdup() is MT safe
 ******************************************************************************/
-char *sge_strdup(char *old, const char *s) 
+char *sge_strdup(char *old_str, const char *s) 
 {
    char *ret = NULL;
 
    /* 
-    * target (old) and source (s) might point to the same object!
-    * therefore free old only after the dup
+    * target (old_str) and source (s) might point to the same object!
+    * therefore free old_str only after the dup
     */
    if (s != NULL) {
       int n = strlen(s);
@@ -574,8 +574,8 @@ char *sge_strdup(char *old, const char *s)
       }
    }
 
-   /* free and NULL the old pointer */
-   sge_free(&old);
+   /* free and NULL the old_str pointer */
+   sge_free(&old_str);
 
    return ret;
 }
@@ -1658,7 +1658,7 @@ bool sge_str_is_number(const char *string)
 *     sge_replace_substring - replace sub strings in a string
 *
 *  SYNOPSIS
-*     const char *sge_replace_substring(const char *input, char *old, char *new)
+*     const char *sge_replace_substring(const char *input, char *search, char *replace)
 *
 *  FUNCTION
 *     Replaces all occurences of old with new.
@@ -1667,8 +1667,8 @@ bool sge_str_is_number(const char *string)
 *
 *  INPUTS
 *     const char *input - the input string
-*     const char *old   - the string to replace
-*     const char *new   - the replacement string
+*     const char *search   - the string to replace
+*     const char *replace   - the replacement string
 *
 *  RESULT
 *     NULL, if the input string didn't contain the pattern,
@@ -1679,7 +1679,7 @@ bool sge_str_is_number(const char *string)
 *     It is the responsibility of the caller to free the returned string!
 *
 *******************************************************************************/
-const char *sge_replace_substring(const char *input, const char *old, const char *new)
+const char *sge_replace_substring(const char *input, const char *search, const char *replace)
 {
    int to_replace = 0;
    int change, new_len;
@@ -1693,7 +1693,7 @@ const char *sge_replace_substring(const char *input, const char *old, const char
    /*
     * Basic sanity checks first.
     */
-   if (input == NULL || old == NULL || new == NULL) {
+   if (input == NULL || search == NULL || replace == NULL) {
       return NULL;
    }
    /*
@@ -1703,11 +1703,11 @@ const char *sge_replace_substring(const char *input, const char *old, const char
    source = source_string = (char *)input;
    tail = source_string + strlen(source_string) - 1;
    while (source <= tail) {
-      current_tail = source + strlen(old) - 1;
+      current_tail = source + strlen(search) - 1;
       if (current_tail > tail) {
          break;
       }
-      if (memcmp(old, source, strlen(old)) == 0) {
+      if (memcmp(search, source, strlen(search)) == 0) {
          to_replace++;
       }
       source++;
@@ -1718,7 +1718,7 @@ const char *sge_replace_substring(const char *input, const char *old, const char
    /*
     * Calculate size of new string based on number of substrings to replace.
     */
-   change = to_replace * (strlen(new) - strlen(old));
+   change = to_replace * (strlen(replace) - strlen(search));
    new_len = strlen(source_string) + change + 1;
    /*
     * Allocate new string and re-shuffle original string.
@@ -1730,11 +1730,11 @@ const char *sge_replace_substring(const char *input, const char *old, const char
    memset(new_string, 0x0, new_len);
    source = source_string;
    while (source <= tail) {
-      current_tail = source + strlen(old) - 1;
-      if (current_tail <= tail && memcmp(old, source, strlen(old)) == 0) {
-         memcpy(new_string, new, strlen(new));
-         new_string += strlen(new);
-         source += strlen(old);
+      current_tail = source + strlen(search) - 1;
+      if (current_tail <= tail && memcmp(search, source, strlen(search)) == 0) {
+         memcpy(new_string, replace, strlen(replace));
+         new_string += strlen(replace);
+         source += strlen(search);
       } else {
          *new_string = *source;
          source++;

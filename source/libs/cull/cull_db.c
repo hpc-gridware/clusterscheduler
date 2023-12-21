@@ -582,7 +582,7 @@ lListElem *
 lSelectElemPack(const lListElem *slp, const lCondition *cp,
                 const lEnumeration *enp, bool isHash, sge_pack_buffer *pb) 
 {
-   lListElem *new = NULL;
+   lListElem *new_ep = NULL;
 
    DENTER(CULL_LAYER, "lSelectElemPack");
 
@@ -614,16 +614,16 @@ lSelectElemPack(const lListElem *slp, const lCondition *cp,
          return NULL;
       }
       /* create reduced element */
-      new = lSelectElemDPack(slp, cp, dp, enp, isHash, pb, &elements);
+      new_ep = lSelectElemDPack(slp, cp, dp, enp, isHash, pb, &elements);
       /* free the descriptor, it has been copied by lCreateList */
       cull_hash_free_descr(dp);
       sge_free(&dp);
    } else {
       /* no enumeration => make a copy of element */
-      new = lCopyElemHash(slp, isHash);
+      new_ep = lCopyElemHash(slp, isHash);
    }
    DEXIT;
-   return new;
+   return new_ep;
 }
 
 /****** cull/db/lSelectElemDPack() ********************************************
@@ -659,7 +659,7 @@ lSelectElemDPack(const lListElem *slp, const lCondition *cp, const lDescr *dp,
                  const lEnumeration *enp, bool isHash, sge_pack_buffer *pb,
                  u_long32 *elements) 
 {
-   lListElem *new = NULL;
+   lListElem *new_ep = NULL;
    int index = 0;
 
    DENTER(CULL_LAYER, "lSelectElemDPack");
@@ -672,12 +672,12 @@ lSelectElemDPack(const lListElem *slp, const lCondition *cp, const lDescr *dp,
     */
    if (lCompare(slp, cp)) {
       if (pb == NULL) {
-         if (!(new = lCreateElem(dp))) {
+         if (!(new_ep = lCreateElem(dp))) {
             DRETURN(NULL);
          }
          
-         if (lCopyElemPartialPack(new, &index, slp, enp, isHash, NULL)) {
-            lFreeElem(&new);
+         if (lCopyElemPartialPack(new_ep, &index, slp, enp, isHash, NULL)) {
+            lFreeElem(&new_ep);
          }
       } else {
          if (elements != NULL) {
@@ -685,10 +685,10 @@ lSelectElemDPack(const lListElem *slp, const lCondition *cp, const lDescr *dp,
          }
 
          lCopyElemPartialPack(NULL, &index, slp, enp, isHash, pb);
-         new = NULL;
+         new_ep = NULL;
       }
    }
-   DRETURN(new);
+   DRETURN(new_ep);
 }
 
 /****** cull/db/lSelect() *****************************************************
@@ -878,7 +878,7 @@ lList *lSelectDPack(const char *name, const lList *slp, const lCondition *cp,
                     sge_pack_buffer *pb, u_long32 *elements) 
 {
 
-   lListElem *ep, *new;
+   lListElem *ep, *new_ep;
    lList *dlp = (lList *) NULL;
    const lDescr *descr = NULL;
 
@@ -904,11 +904,11 @@ lList *lSelectDPack(const char *name, const lList *slp, const lCondition *cp,
       depending on result of lCompare
     */
    for (ep = slp->first; ep; ep = ep->next) {
-      new = lSelectElemDPack(ep, cp, descr, enp, isHash, pb, elements);
-      if (new != NULL) {
-         if (lAppendElem(dlp, new) == -1) {
+      new_ep = lSelectElemDPack(ep, cp, descr, enp, isHash, pb, elements);
+      if (new_ep != NULL) {
+         if (lAppendElem(dlp, new_ep) == -1) {
             LERROR(LEAPPENDELEM);
-            lFreeElem(&new);
+            lFreeElem(&new_ep);
             lFreeList(&dlp);
             DEXIT;
             return NULL;
@@ -1128,7 +1128,7 @@ lDescr *lJoinDescr(const lDescr *sdp0, const lDescr *sdp1,
 
 lDescr *lGetReducedDescr(const lDescr *type, const lEnumeration *what) {
 
-   lDescr *new = NULL;
+   lDescr *new_descr = NULL;
    int index = 0;
    int n = 0;
    DENTER(CULL_LAYER, "lGetReducedDescr");
@@ -1138,18 +1138,18 @@ lDescr *lGetReducedDescr(const lDescr *type, const lEnumeration *what) {
       return NULL;
    }
    
-   if (!(new= (lDescr *) malloc(sizeof(lDescr) * (n + 1)))) {
+   if (!(new_descr= (lDescr *) malloc(sizeof(lDescr) * (n + 1)))) {
       DEXIT;
       return NULL;
    }
-   if (lPartialDescr(what, type, new, &index) != 0){
-      sge_free(&new);
+   if (lPartialDescr(what, type, new_descr, &index) != 0){
+      sge_free(&new_descr);
       DEXIT;
       return NULL;      
    }
   
    DEXIT;
-   return new;
+   return new_descr;
 }
 
 /****** cull/db/lString2List() ************************************************

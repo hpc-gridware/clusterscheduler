@@ -182,7 +182,7 @@ static void empty_job_list_filter(lList **alpp, int was_modify, int user_list_fl
 
 static void get_rid_of_schedd_job_messages(u_long32 job_number);
 
-static bool is_changes_consumables(lList **alpp, const lList* new, const lList* old);
+static bool is_changes_consumables(lList **alpp, const lList* new_lp, const lList* old_lp);
 
 static void job_list_filter(lList *user_list, const char* jobid, lCondition **job_filter);
 
@@ -1752,12 +1752,12 @@ int is_task_enrolled
 *     is_changes_consumables() -- detect changes with consumable resource request
 *
 *  SYNOPSIS
-*     static bool is_changes_consumables(lList* new, lList* old) 
+*     static bool is_changes_consumables(lList* new_lp, lList* old_lp) 
 *
 *  INPUTS
 *     lList** alpp - answer list pointer pointer
-*     lList*  new  - jobs new JB_hard_resource_list
-*     lList*  old  - jobs old JB_hard_resource_list
+*     lList*  new_lp  - jobs new JB_hard_resource_list
+*     lList*  old_lp  - jobs old JB_hard_resource_list
 *
 *  RESULT
 *     bool      - false, nothing changed
@@ -1765,7 +1765,7 @@ int is_task_enrolled
 *  MT-NOTE:  is thread safe (works only on parsed in variables)
 *
 *******************************************************************************/
-static bool is_changes_consumables(lList **alpp, const lList* new, const lList* old)
+static bool is_changes_consumables(lList **alpp, const lList* new_lp, const lList* old_lp)
 {
    const lListElem *new_entry = NULL;
    const lListElem *old_entry = NULL;
@@ -1775,7 +1775,7 @@ static bool is_changes_consumables(lList **alpp, const lList* new, const lList* 
 
    /* ensure all old resource requests implying consumables 
       debitation are still contained in new resource request list */
-   for_each(old_entry, old) { 
+   for_each(old_entry, old_lp) { 
 
       /* ignore non-consumables */
       if (!lGetUlong(old_entry, CE_consumable)) {
@@ -1784,7 +1784,7 @@ static bool is_changes_consumables(lList **alpp, const lList* new, const lList* 
       name = lGetString(old_entry, CE_name);
 
       /* search it in new hard resource list */
-      if (lGetElemStr(new, CE_name, name) == NULL) {
+      if (lGetElemStr(new_lp, CE_name, name) == NULL) {
          ERROR((SGE_EVENT, MSG_JOB_MOD_MISSINGRUNNINGJOBCONSUMABLE_S, name));
          answer_list_add(alpp, SGE_EVENT, STATUS_EUNKNOWN, ANSWER_QUALITY_ERROR);
          DRETURN(true);
@@ -1794,7 +1794,7 @@ static bool is_changes_consumables(lList **alpp, const lList* new, const lList* 
    /* ensure all new resource requests implying consumable 
       debitation were also contained in old resource request list
       AND have not changed the requested amount */ 
-   for_each(new_entry, new) { 
+   for_each(new_entry, new_lp) { 
 
       /* ignore non-consumables */
       if (!lGetUlong(new_entry, CE_consumable)) {
@@ -1803,7 +1803,7 @@ static bool is_changes_consumables(lList **alpp, const lList* new, const lList* 
       name = lGetString(new_entry, CE_name);
 
       /* search it in old hard resource list */
-      if ((old_entry = lGetElemStr(old, CE_name, name)) == NULL) {
+      if ((old_entry = lGetElemStr(old_lp, CE_name, name)) == NULL) {
          ERROR((SGE_EVENT, MSG_JOB_MOD_ADDEDRUNNINGJOBCONSUMABLE_S, name));
          answer_list_add(alpp, SGE_EVENT, STATUS_EUNKNOWN, ANSWER_QUALITY_ERROR);
          DRETURN(true);

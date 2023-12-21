@@ -1421,7 +1421,7 @@ int lCompare(const lListElem *ep, const lCondition *cp)
 lCondition *lCopyWhere(const lCondition *cp) 
 {
 
-   lCondition *new = NULL;
+   lCondition *new_cond = NULL;
 
    DENTER(CULL_LAYER, "lCopyWhere");
 
@@ -1429,12 +1429,12 @@ lCondition *lCopyWhere(const lCondition *cp)
       DRETURN(NULL);
    }
 
-   if (!(new = (lCondition *) calloc(1, sizeof(lCondition)))) {
+   if (!(new_cond = (lCondition *) calloc(1, sizeof(lCondition)))) {
       LERROR(LEMALLOC);
       DRETURN(NULL);
    }
 
-   new->op = cp->op;
+   new_cond->op = cp->op;
 
    switch (cp->op) {
    case EQUAL:
@@ -1447,72 +1447,72 @@ lCondition *lCopyWhere(const lCondition *cp)
    case STRCASECMP:
    case HOSTNAMECMP:
    case PATTERNCMP:
-      new->operand.cmp.pos = cp->operand.cmp.pos;
-      new->operand.cmp.mt = cp->operand.cmp.mt;
-      new->operand.cmp.nm = cp->operand.cmp.nm;
+      new_cond->operand.cmp.pos = cp->operand.cmp.pos;
+      new_cond->operand.cmp.mt = cp->operand.cmp.mt;
+      new_cond->operand.cmp.nm = cp->operand.cmp.nm;
 
       switch (mt_get_type(cp->operand.cmp.mt)) {
       case lIntT:
-         new->operand.cmp.val.i = cp->operand.cmp.val.i;
+         new_cond->operand.cmp.val.i = cp->operand.cmp.val.i;
          break;
       case lUlongT:
-         new->operand.cmp.val.ul = cp->operand.cmp.val.ul;
+         new_cond->operand.cmp.val.ul = cp->operand.cmp.val.ul;
          break;
       case lUlong64T:
-         new->operand.cmp.val.ul64 = cp->operand.cmp.val.ul64;
+         new_cond->operand.cmp.val.ul64 = cp->operand.cmp.val.ul64;
          break;
       case lStringT:
-         new->operand.cmp.val.str = strdup(cp->operand.cmp.val.str);
+         new_cond->operand.cmp.val.str = strdup(cp->operand.cmp.val.str);
          break;
       case lHostT:
-         new->operand.cmp.val.host = strdup(cp->operand.cmp.val.host);
+         new_cond->operand.cmp.val.host = strdup(cp->operand.cmp.val.host);
          break;
       case lListT:
          break;
       case lObjectT:
          break;
       case lFloatT:
-         new->operand.cmp.val.fl = cp->operand.cmp.val.fl;
+         new_cond->operand.cmp.val.fl = cp->operand.cmp.val.fl;
          break;
       case lDoubleT:
-         new->operand.cmp.val.db = cp->operand.cmp.val.db;
+         new_cond->operand.cmp.val.db = cp->operand.cmp.val.db;
          break;
       case lLongT:
-         new->operand.cmp.val.l = cp->operand.cmp.val.l;
+         new_cond->operand.cmp.val.l = cp->operand.cmp.val.l;
          break;
       case lBoolT:
-         new->operand.cmp.val.b = cp->operand.cmp.val.b;
+         new_cond->operand.cmp.val.b = cp->operand.cmp.val.b;
          break;
       case lCharT:
-         new->operand.cmp.val.c = cp->operand.cmp.val.c;
+         new_cond->operand.cmp.val.c = cp->operand.cmp.val.c;
          break;
       case lRefT:
          break;
       default:
          unknownType("lCopyWhere");
-         lFreeWhere(&new);
+         lFreeWhere(&new_cond);
          DRETURN(NULL);
       }
    case SUBSCOPE:
       if (mt_get_type(cp->operand.cmp.mt) == lListT) {
-         new->operand.cmp.pos = cp->operand.cmp.pos;
-         new->operand.cmp.mt = cp->operand.cmp.mt;
-         new->operand.cmp.nm = cp->operand.cmp.nm;
-         new->operand.cmp.val.cp = lCopyWhere(cp->operand.cmp.val.cp);
+         new_cond->operand.cmp.pos = cp->operand.cmp.pos;
+         new_cond->operand.cmp.mt = cp->operand.cmp.mt;
+         new_cond->operand.cmp.nm = cp->operand.cmp.nm;
+         new_cond->operand.cmp.val.cp = lCopyWhere(cp->operand.cmp.val.cp);
       }
       break;
    case AND:
    case OR:
-      new->operand.log.second = lCopyWhere(cp->operand.log.second);
+      new_cond->operand.log.second = lCopyWhere(cp->operand.log.second);
    case NEG:
-      new->operand.log.first = lCopyWhere(cp->operand.log.first);
+      new_cond->operand.log.first = lCopyWhere(cp->operand.log.first);
       break;
 
    default:
       LERROR(LEOPUNKNOWN);
-      lFreeWhere(&new);
+      lFreeWhere(&new_cond);
       DRETURN(NULL);
    }
 
-   DRETURN(new);
+   DRETURN(new_cond);
 }

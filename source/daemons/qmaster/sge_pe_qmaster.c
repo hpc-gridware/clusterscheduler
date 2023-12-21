@@ -387,7 +387,7 @@ void debit_all_jobs_from_pes(lList *pe_list) {
 *     pe_diff_usersets() -- Diff old/new PE usersets
 *
 *  SYNOPSIS
-*     void pe_diff_usersets(const lListElem *new, const lListElem *old, lList
+*     void pe_diff_usersets(const lListElem *new_pe, const lListElem *old_pe, lList
 *     **new_acl, lList **old_acl)
 *
 *  FUNCTION
@@ -395,40 +395,40 @@ void debit_all_jobs_from_pes(lList *pe_list) {
 *     Userset references are returned in new_acl/old_acl.
 *
 *  INPUTS
-*     const lListElem *new - New PE (PE_Type)
-*     const lListElem *old - Old PE (PE_Type)
+*     const lListElem *new_pe - New PE (PE_Type)
+*     const lListElem *old_pe - Old PE (PE_Type)
 *     lList **new_acl      - New userset references (US_Type)
 *     lList **old_acl      - Old userset references (US_Type)
 *
 *  NOTES
 *     MT-NOTE: pe_diff_usersets() is not MT safe
 *******************************************************************************/
-void pe_diff_usersets(const lListElem *new,
-      const lListElem *old, lList **new_acl, lList **old_acl)
+void pe_diff_usersets(const lListElem *new_pe,
+      const lListElem *old_pe, lList **new_acl, lList **old_acl)
 {
    const lListElem *ep;
    const char *u;
 
-   if (old && old_acl) {
-      for_each (ep, lGetList(old, PE_user_list)) {
+   if (old_pe && old_acl) {
+      for_each (ep, lGetList(old_pe, PE_user_list)) {
          u = lGetString(ep, US_name);
          if (!lGetElemStr(*old_acl, US_name, u))
             lAddElemStr(old_acl, US_name, u, US_Type);
       }
-      for_each (ep, lGetList(old, PE_xuser_list)) {
+      for_each (ep, lGetList(old_pe, PE_xuser_list)) {
          u = lGetString(ep, US_name);
          if (!lGetElemStr(*old_acl, US_name, u))
             lAddElemStr(old_acl, US_name, u, US_Type);
       }
    }
 
-   if (new && new_acl) {
-      for_each (ep, lGetList(new, PE_user_list)) {
+   if (new_pe && new_acl) {
+      for_each (ep, lGetList(new_pe, PE_user_list)) {
          u = lGetString(ep, US_name);
          if (!lGetElemStr(*new_acl, US_name, u))
             lAddElemStr(new_acl, US_name, u, US_Type);
       }
-      for_each (ep, lGetList(new, PE_xuser_list)) {
+      for_each (ep, lGetList(new_pe, PE_xuser_list)) {
          u = lGetString(ep, US_name);
          if (!lGetElemStr(*new_acl, US_name, u))
             lAddElemStr(new_acl, US_name, u, US_Type);
@@ -460,11 +460,11 @@ void pe_diff_usersets(const lListElem *new,
 *******************************************************************************/
 static void pe_update_categories(const lListElem *new_pe, const lListElem *old_pe)
 {
-   lList *old = NULL, *new = NULL;
+   lList *old_lp = NULL, *new_lp = NULL;
 
-   pe_diff_usersets(new_pe, old_pe, &new, &old);
-   userset_update_categories(new, old);
-   lFreeList(&old);
-   lFreeList(&new);
+   pe_diff_usersets(new_pe, old_pe, &new_lp, &old_lp);
+   userset_update_categories(new_lp, old_lp);
+   lFreeList(&old_lp);
+   lFreeList(&new_lp);
 }
 

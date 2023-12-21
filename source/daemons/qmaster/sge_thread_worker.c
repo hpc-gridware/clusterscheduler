@@ -173,7 +173,7 @@ sge_worker_terminate(sge_gdi_ctx_class_t *ctx)
    }
 
    /*
-    * Shutdown/delete the therads and wait for termination
+    * Shutdown/delete the threads and wait for termination
     */
    {
       cl_thread_settings_t *thread = NULL;
