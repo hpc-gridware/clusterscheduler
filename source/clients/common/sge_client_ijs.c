@@ -288,7 +288,7 @@ static void client_check_window_change(COMM_HANDLE *handle)
    char           buf[200];
    dstring        err_msg = DSTRING_INIT;
 
-   DENTER(TOP_LAYER, "client_check_window_change");
+   DENTER(TOP_LAYER);
 
    if (received_window_change_signal) {
       /*
@@ -316,7 +316,7 @@ static void client_check_window_change(COMM_HANDLE *handle)
       }
    }
    sge_dstring_free(&err_msg);
-   DEXIT;
+   DRETURN_VOID;
 }
 
 /****** tty_to_commlib() *******************************************************
@@ -351,7 +351,7 @@ void* tty_to_commlib(void *t_conf)
    int                  do_exit = 0;
    int                  ret, nread = 0;
 
-   DENTER(TOP_LAYER, "tty_to_commlib");
+   DENTER(TOP_LAYER);
    thread_func_startup(t_conf);
    
    /* 
@@ -462,8 +462,7 @@ void* tty_to_commlib(void *t_conf)
    
    sge_dstring_free(&err_msg);
    DPRINTF(("tty_to_commlib: exiting tty_to_commlib thread!\n"));
-   DEXIT;
-   return NULL;
+   DRETURN(NULL);
 }
 
 /****** commlib_to_tty() *******************************************************
@@ -494,7 +493,7 @@ void* commlib_to_tty(void *t_conf)
    dstring              err_msg = DSTRING_INIT;
    int                  ret = 0, do_exit = 0;
 
-   DENTER(TOP_LAYER, "commlib_to_tty");
+   DENTER(TOP_LAYER);
    thread_func_startup(t_conf);
 
    while (do_exit == 0) {
@@ -628,8 +627,7 @@ void* commlib_to_tty(void *t_conf)
    thread_func_cleanup(t_conf);
    DPRINTF(("commlib_to_tty: exiting commlib_to_tty thread!\n"));
    sge_dstring_free(&err_msg);
-   DEXIT;
-   return NULL;
+   DRETURN(NULL);
 }
 
 /****** run_ijs_server() *******************************************************
@@ -687,7 +685,7 @@ int run_ijs_server(COMM_HANDLE *handle, const char *remote_host,
    THREAD_LIB_HANDLE *thread_lib_handle = NULL;
    cl_raw_list_t     *cl_com_log_list = NULL;
 
-   DENTER(TOP_LAYER, "run_ijs_server");
+   DENTER(TOP_LAYER);
 
    if (handle == NULL || p_err_msg == NULL || p_exit_status == NULL || remote_host == NULL) {
       return 1;
@@ -846,7 +844,7 @@ int start_ijs_server(bool csp_mode, const char* username,
 {
    int     ret, ret_val = 0;
 
-   DENTER(TOP_LAYER, "start_ijs_server");
+   DENTER(TOP_LAYER);
 
    /* we must copy the hostname here to a global variable, because the 
     * worker threads need it later.
@@ -905,7 +903,7 @@ int stop_ijs_server(COMM_HANDLE **phandle, dstring *p_err_msg)
 {
    int ret = 0;
 
-   DENTER(TOP_LAYER, "stop_ijs_server");
+   DENTER(TOP_LAYER);
 
    if (phandle == NULL) {
       ret = 1;
@@ -965,7 +963,7 @@ int force_ijs_server_shutdown(COMM_HANDLE **phandle,
 {
    int     ret;
 
-   DENTER(TOP_LAYER, "force_ijs_server_shutdown");
+   DENTER(TOP_LAYER);
 
    if (phandle == NULL || *phandle == NULL) {
       sge_dstring_sprintf(p_err_msg, "invalid connection handle");

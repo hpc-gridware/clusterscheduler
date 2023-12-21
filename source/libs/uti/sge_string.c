@@ -77,7 +77,7 @@ const char *sge_basename(const char *name, int delim)
 {
    char *cp;
 
-   DENTER(BASIS_LAYER, "sge_basename");
+   DENTER(BASIS_LAYER);
 
    if (!name) {
       DRETURN(NULL);
@@ -141,7 +141,7 @@ const char *sge_jobname(const char *name) {
 
    const char *cp = NULL;
    
-   DENTER(BASIS_LAYER, "sge_jobname");
+   DENTER(BASIS_LAYER);
    if (name && name[0] != '\0' ) {
 
       cp = sge_strtok(name, ";");
@@ -182,7 +182,7 @@ char *sge_dirname(const char *name, int delim)
 {
    char *cp, *cp2;
 
-   DENTER(BASIS_LAYER, "sge_dirname");
+   DENTER(BASIS_LAYER);
 
    if (!name) {
       DRETURN(NULL);
@@ -242,7 +242,7 @@ char *sge_strtok(const char *str, const char *delimitor)
    unsigned int n;
    bool done;
 
-   DENTER(BASIS_LAYER, "sge_strtok");
+   DENTER(BASIS_LAYER);
 
    if (str) {
       n = strlen(str);
@@ -444,7 +444,7 @@ char *sge_strtok_r(const char *str, const char *delimitor,
    struct saved_vars_s *saved;
    bool done;
 
-   DENTER(BASIS_LAYER, "sge_strtok_r");
+   DENTER(BASIS_LAYER);
 
    if (str != NULL) {
       if (*context != NULL) {
@@ -602,7 +602,7 @@ void sge_strip_blanks(char *str)
 {
    char *cp = str;
 
-   DENTER(BASIS_LAYER, "sge_strip_blanks");
+   DENTER(BASIS_LAYER);
 
    if (!str) {
       DRETURN_VOID;
@@ -642,7 +642,7 @@ void sge_strip_blanks(char *str)
 *******************************************************************************/
 void sge_strip_white_space_at_eol(char *str) 
 {
-   DENTER(BASIS_LAYER, "sge_strip_white_space_at_eol");
+   DENTER(BASIS_LAYER);
 
    if (str != NULL) {
       size_t length = strlen(str);
@@ -676,7 +676,7 @@ void sge_strip_white_space_at_eol(char *str)
 *******************************************************************************/
 void sge_strip_slash_at_eol(char *str) 
 {
-   DENTER(BASIS_LAYER, "sge_strip_slash_at_eol");
+   DENTER(BASIS_LAYER);
 
    if (str != NULL) {
       size_t length = strlen(str);
@@ -729,7 +729,7 @@ char *sge_delim_str(char *str, char **delim_pos, const char *delim)
    char *cp = NULL; 
    char *tstr = NULL;
 
-   DENTER(BASIS_LAYER, "sge_delim_str");
+   DENTER(BASIS_LAYER);
 
    /* we want it non-destructive --> we need a copy of str */
    if ((tstr = strdup(str)) == NULL) {
@@ -1010,7 +1010,7 @@ int sge_strisint(const char *str)
 ******************************************************************************/
 void sge_strtoupper(char *buffer, int max_len) 
 {
-   DENTER(BASIS_LAYER, "sge_strtoupper");
+   DENTER(BASIS_LAYER);
 
    if (buffer != NULL) {
       int i;
@@ -1046,7 +1046,7 @@ void sge_strtoupper(char *buffer, int max_len)
 ******************************************************************************/
 void sge_strtolower(char *buffer, int max_len)
 {
-   DENTER(BASIS_LAYER, "sge_strtolower");
+   DENTER(BASIS_LAYER);
    if (buffer != NULL) {
       int i;
       for(i=0;buffer[i]!='\0' && i<max_len ;i++){
@@ -1361,7 +1361,7 @@ void sge_compress_slashes(char *str)
 {
    char *p;
    int compressed = 0;
-   DENTER(BASIS_LAYER, "sge_compress_slashes");
+   DENTER(BASIS_LAYER);
 
    for (p = str; *p; p++) {
       while (*p == '/' && *(p+1) == '/') {
@@ -1398,7 +1398,7 @@ void sge_strip_quotes(char **pstr)
    char *cp = NULL;
    char *cp2 = NULL;
 
-   DENTER(TOP_LAYER, "sge_strip_quotes");
+   DENTER(TOP_LAYER);
    
    if (!pstr) {
       DRETURN_VOID;
@@ -1481,7 +1481,7 @@ char **string_list(char *str, char *delis, char **pstr)
    char **head = NULL;
    bool done;
 
-   DENTER(BASIS_LAYER, "string_list");
+   DENTER(BASIS_LAYER);
 
    if (str == NULL) {
       DRETURN(NULL);

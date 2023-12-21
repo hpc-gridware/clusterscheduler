@@ -63,7 +63,7 @@ print_event(sge_evc_class_t *evc, sge_object_type type,
    sge_pack_buffer pb;
    dstring buffer_wrapper;
 
-   DENTER(TOP_LAYER, "print_event");
+   DENTER(TOP_LAYER);
 
    events++;
    init_packbuffer(&pb, 0, 1);

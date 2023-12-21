@@ -232,7 +232,7 @@ void sge_usage(u_long32 prog_number, FILE *fp) {
 #define PRINTIT(o) print_option_syntax(fp,o,NULL)
 #define MARK(n) mark_argument_syntax(n)
 
-   DENTER(TOP_LAYER, "sge_usage");
+   DENTER(TOP_LAYER);
 
    sge_dstring_init(&ds, buffer, sizeof(buffer));
 
@@ -1339,7 +1339,7 @@ void sge_usage(u_long32 prog_number, FILE *fp) {
 static void usage_silent(
 FILE *fp 
 ) {
-   DENTER(TOP_LAYER, "usage_silent");
+   DENTER(TOP_LAYER);
    print_option_syntax(fp, "[-s]", MSG_GDI_USAGE_SILENT);
    DRETURN_VOID;
 }

@@ -255,7 +255,7 @@ int extract_dj_lists(lList *job_list, lList **active_jobs, lList **waiting_jobs,
     * *unsched_jobs;
     */
 
-   DENTER(TOP_LAYER, "extract_dj_lists");
+   DENTER(TOP_LAYER);
 
    if (job_list == NULL) {
       return 1;

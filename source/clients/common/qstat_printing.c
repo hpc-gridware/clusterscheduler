@@ -84,7 +84,7 @@ int indent
    const lList *usage_list;
    const lList *scaled_usage_list;
 
-   DENTER(TOP_LAYER, "sge_print_subtask");
+   DENTER(TOP_LAYER);
 
    /* is sub-task logically running */
    if(pe_task == NULL) {
@@ -210,7 +210,7 @@ lList **alpp
    const char *qnm;
    dstring dyn_task_str = DSTRING_INIT;
 
-   DENTER(TOP_LAYER, "sge_print_jobs_queue");
+   DENTER(TOP_LAYER);
 
    qnm = lGetString(qep, QU_full_name);
 
@@ -452,7 +452,7 @@ lList **alpp
    char jobid[128];
    int ret = QHOST_SUCCESS; 
 
-   DENTER(TOP_LAYER, "sge_print_job");
+   DENTER(TOP_LAYER);
 
    sge_dstring_init(&ds, buffer, sizeof(buffer));
 

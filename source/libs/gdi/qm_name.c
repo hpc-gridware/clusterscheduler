@@ -68,7 +68,7 @@ char *err_str
    char buf[CL_MAXHOSTLEN*3+1], *cp, *first;
    int len;
 
-   DENTER(TOP_LAYER, "get_qm_name");
+   DENTER(TOP_LAYER);
    
    if (!master_host || !master_file) {
       if (err_str) {

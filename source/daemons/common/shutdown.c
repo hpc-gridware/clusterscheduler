@@ -50,7 +50,7 @@ void starting_up(void)
    dstring ds3 = DSTRING_INIT;
    char buffer[256];
 
-   DENTER(TOP_LAYER, "starting_up");
+   DENTER(TOP_LAYER);
 
    sge_dstring_init(&ds, buffer, sizeof(buffer));
    log_state_set_log_level(LOG_INFO);
@@ -71,8 +71,7 @@ void starting_up(void)
    sge_dstring_free(&ds3);
    log_state_set_log_level(old_ll);
 
-   DEXIT;
-   return;
+   DRETURN_VOID;
 }
 
 /******************************************************************************/
@@ -83,7 +82,7 @@ void sge_shutdown(void **context, int i)
    dstring ds2 = DSTRING_INIT;
    char buffer[256];
    
-   DENTER(TOP_LAYER, "sge_shutdown");
+   DENTER(TOP_LAYER);
 
    sge_dstring_init(&ds, buffer, sizeof(buffer));
    log_state_set_log_level(LOG_INFO);
@@ -104,6 +103,5 @@ void sge_shutdown(void **context, int i)
    sge_dstring_free(&ds2);
    log_state_set_log_level(old_ll);
 
-   DEXIT;
    SGE_EXIT(context, i); /* call sge_exit() */
 }

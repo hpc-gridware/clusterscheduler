@@ -289,12 +289,11 @@ static sge_task_ref_t *task_ref_get_entry(u_long32 index)
 {
    sge_task_ref_t *ret = NULL;
 
-   DENTER(BASIS_LAYER, "task_ref_get_entry");
+   DENTER(BASIS_LAYER);
    if (index < task_ref_entries) {
       ret = &task_ref_table[index];
    }
-   DEXIT;
-   return ret;
+   DRETURN(ret);
 }
 
 #ifdef DEBUG_TASK_REF
@@ -302,7 +301,7 @@ static void task_ref_print_table(void)
 {
    u_long32 i;
 
-   DENTER(BASIS_LAYER, "task_ref_print_table");
+   DENTER(BASIS_LAYER);
    for (i = 0; i < task_ref_entries; i++) {
       sge_task_ref_t *tref = task_ref_get_entry(i);
 
@@ -312,12 +311,12 @@ static void task_ref_print_table(void)
 
       task_ref_print_table_entry(tref);
    }
-   DEXIT;
+   DRETURN_VOID;
 }
 
 static void task_ref_print_table_entry(sge_task_ref_t *tref) 
 {
-   DENTER(TOP_LAYER, "task_ref_print_table_entry");
+   DENTER(TOP_LAYER);
 
    if (tref != NULL) {
       DPRINTF(("    @@@ "
@@ -334,7 +333,7 @@ static void task_ref_print_table_entry(sge_task_ref_t *tref)
          tref->ja_task_share
       ));       
    }
-   DEXIT;
+   DRETURN_VOID;
 }
 #endif
 
@@ -344,7 +343,7 @@ static sge_task_ref_t *task_ref_get_first(u_long32 job_number,
    sge_task_ref_t *ret = NULL;
    u_long32 i;
 
-   DENTER(TOP_LAYER, "task_ref_get_first");
+   DENTER(TOP_LAYER);
 
    for (i = 0; i < task_ref_entries; i++) {
       sge_task_ref_t *tref = task_ref_get_entry(i);
@@ -356,21 +355,19 @@ static sge_task_ref_t *task_ref_get_first(u_long32 job_number,
       }
    }
 
-   DEXIT;
-   return ret;
+   DRETURN(ret);
 }
 
 static sge_task_ref_t *task_ref_get_first_job_entry(void)
 {
    sge_task_ref_t *ret = NULL;
 
-   DENTER(BASIS_LAYER, "task_ref_get_first_job_entry");
+   DENTER(BASIS_LAYER);
    task_ref_job_pos = 0;
    if (task_ref_job_pos < task_ref_entries) {
       ret = task_ref_get_entry(task_ref_job_pos);
    }
-   DEXIT;
-   return ret;
+   DRETURN(ret);
 }
 
 static sge_task_ref_t *task_ref_get_next_job_entry(void)
@@ -379,7 +376,7 @@ static sge_task_ref_t *task_ref_get_next_job_entry(void)
    sge_task_ref_t *ret = NULL;
    u_long32 pos = task_ref_job_pos;
 
-   DENTER(BASIS_LAYER, "task_ref_get_next_job_entry"); 
+   DENTER(BASIS_LAYER); 
    if (current_entry != NULL) {
       u_long32 current_job_number = current_entry->job_number;
    
@@ -394,14 +391,13 @@ static sge_task_ref_t *task_ref_get_next_job_entry(void)
          } 
       } 
    }
-   DEXIT;
-   return ret;        
+   DRETURN(ret);        
 }
 
 static void task_ref_copy_to_ja_task(sge_task_ref_t *tref, lListElem *ja_task) 
 {
 
-   DENTER(BASIS_LAYER, "task_ref_copy_to_ja_task");
+   DENTER(BASIS_LAYER);
 
    if (ja_task != NULL && tref != NULL) {
       lSetUlong(ja_task, JAT_task_number, tref->ja_task_number);
@@ -414,7 +410,7 @@ static void task_ref_copy_to_ja_task(sge_task_ref_t *tref, lListElem *ja_task)
       lSetUlong(ja_task, JAT_fshare,                     tref->ja_task_fshare); 
 
    }
-   DEXIT;
+   DRETURN_VOID;
 }
 
 
@@ -522,7 +518,7 @@ void sgeee_resort_pending_jobs(lList **job_list)
 {
    lListElem *next_job = lFirstRW(*job_list);
 
-   DENTER(TOP_LAYER, "sgeee_resort_pending_jobs");
+   DENTER(TOP_LAYER);
 
    if (next_job) {
       u_long32 job_id = lGetUlong(next_job, JB_job_number);
@@ -618,7 +614,7 @@ void sgeee_resort_pending_jobs(lList **job_list)
          lInsertElem(*job_list, insert_jep, next_job);
       }
    }
-   DEXIT;
+   DRETURN_VOID;
 }
 
 
@@ -651,7 +647,7 @@ static void recompute_prio(sge_task_ref_t *tref, lListElem *task, double nurg, d
    double weight_urgency = 0.0;
    double weight_priority = 0.0;
 
-   DENTER(TOP_LAYER, "recompute_prio");
+   DENTER(TOP_LAYER);
 
    sconf_get_weight_ticket_urgency_priority(&weight_ticket, &weight_urgency, &weight_priority);
 
@@ -670,8 +666,7 @@ static void recompute_prio(sge_task_ref_t *tref, lListElem *task, double nurg, d
          ntix, min_tix, max_tix, 
          prio));
 
-   DEXIT;
-   return;
+   DRETURN_VOID;
 }
 
 /*--------------------------------------------------------------------
@@ -895,12 +890,11 @@ calculate_m_shares( lListElem *parent_node )
    const lList *children;
    double parent_m_share;
 
-   DENTER(TOP_LAYER, "calculate_m_shares");
+   DENTER(TOP_LAYER);
 
    children = lGetList(parent_node, STN_children);
    if (!children) {
-      DEXIT;
-      return;
+      DRETURN_VOID;
    }
 
    /*-------------------------------------------------------------
@@ -932,8 +926,7 @@ calculate_m_shares( lListElem *parent_node )
       calculate_m_shares(child_node);
    }
 
-   DEXIT;
-   return;
+   DRETURN_VOID;
 }
 
 
@@ -1131,7 +1124,7 @@ delete_debited_job_usage( sge_ref_t *ref,
    const lList *upu_list;
    lListElem *upu;
    
-   DENTER(TOP_LAYER, "delete_debited_job_usage");
+   DENTER(TOP_LAYER);
 
    DPRINTF(("DDJU (1) "sge_u32"\n", lGetUlong(job, JB_job_number)));
 
@@ -1168,8 +1161,7 @@ delete_debited_job_usage( sge_ref_t *ref,
       }
    }
 
-   DEXIT;
-   return;
+   DRETURN_VOID;
 }
 
 
@@ -1736,12 +1728,11 @@ static u_long32 build_functional_categories(sge_ref_t *job_ref, int num_jobs, lL
    int ref_array_pos = 0;
    u_long32 job_counter = 0;
    
-   DENTER(TOP_LAYER,"build_functional_categories");
+   DENTER(TOP_LAYER);
 
    *ref_array = malloc(sizeof(sge_ref_list_t) * num_jobs);
    if (*ref_array == NULL) {
-      DEXIT;
-      return 0;
+      DRETURN(0);
    }
    
    memset(*ref_array, 0, sizeof(sge_ref_list_t) * num_jobs);
@@ -1809,8 +1800,7 @@ static u_long32 build_functional_categories(sge_ref_t *job_ref, int num_jobs, lL
             if (!(current = lAddElemUlong(fcategories, FCAT_job_share, job_shares, FCAT_Type))) {
                free_fcategories(fcategories, ref_array);
                /* maybe an error code */
-               DEXIT;
-               return 0;
+               DRETURN(0);
             }
             lSetUlong(current, FCAT_user_share, user_shares);
             lSetRef(current, FCAT_user, user_el);
@@ -1887,8 +1877,7 @@ static u_long32 build_functional_categories(sge_ref_t *job_ref, int num_jobs, lL
       }
 
    }
-   DEXIT;
-   return job_counter;
+   DRETURN(job_counter);
 }
 
 /****** sgeee/free_fcategories() ***********************************************
@@ -2130,7 +2119,7 @@ static double calc_job_override_tickets( sge_ref_t *ref, int shared) {
    double job_override_tickets = 0;
    double otickets, job_cnt;
 
-   DENTER(TOP_LAYER, "calc_job_override_tickets");
+   DENTER(TOP_LAYER);
 
    /*-------------------------------------------------------
     * job.override_tickets = user.override_tickets +
@@ -2179,15 +2168,14 @@ static double calc_job_override_tickets( sge_ref_t *ref, int shared) {
 
    REF_SET_OTICKET(ref, job_override_tickets);
 
-   DEXIT;
-   return job_override_tickets;
+   DRETURN(job_override_tickets);
 }
 
 static double calc_pjob_override_tickets_shared( sge_ref_t *ref) {
    double job_override_tickets = 0;
    double otickets, job_cnt;
 
-   DENTER(TOP_LAYER, "calc_job_override_tickets");
+   DENTER(TOP_LAYER);
 
    /*-------------------------------------------------------
     * job.override_tickets = user.override_tickets +
@@ -2221,8 +2209,7 @@ static double calc_pjob_override_tickets_shared( sge_ref_t *ref) {
 
    REF_SET_OTICKET(ref, job_override_tickets);
 
-   DEXIT;
-   return job_override_tickets;
+   DRETURN(job_override_tickets);
 }
 
 /*--------------------------------------------------------------------
@@ -2555,7 +2542,7 @@ sge_calc_tickets( scheduler_all_data_t *lists,
 
    u_long32 free_qslots = 0;
 
-   DENTER(TOP_LAYER, "sge_calc_tickets");
+   DENTER(TOP_LAYER);
   
    PROF_START_MEASUREMENT(SGE_PROF_SCHEDLIB4);
 
@@ -3091,8 +3078,7 @@ sge_calc_tickets( scheduler_all_data_t *lists,
                   free_fcategories(&fcategories, &ref_array);
                }
                
-               DEXIT;
-               return sge_scheduling_run;
+               DRETURN(sge_scheduling_run);
             }
 
             get_functional_weighting_parameters(1, 1, 1, 1, weight);
@@ -3363,8 +3349,7 @@ sge_calc_tickets( scheduler_all_data_t *lists,
                prof_init, prof_pass0, prof_pass1, prof_pass2, prof_calc));
    }
 
-   DEXIT;
-   return sge_scheduling_run;
+   DRETURN(sge_scheduling_run);
 }
 
 
@@ -3472,7 +3457,7 @@ sge_calc_sharetree_targets( lListElem *root,
                             u_long seqno )
 {
 
-   DENTER(TOP_LAYER, "sge_calc_sharetree_targets");
+   DENTER(TOP_LAYER);
 
    /* decay and store user and project usage into sharetree nodes */
 
@@ -3488,8 +3473,7 @@ sge_calc_sharetree_targets( lListElem *root,
 
    sge_calc_node_targets(root, root, lists);
 
-   DEXIT;
-   return 0;
+   DRETURN(0);
 }
 
 
@@ -3508,7 +3492,7 @@ sge_calc_node_targets( lListElem *root,
    double sum_shares, sum, compensation_factor;
    /* char *node_name = lGetString(node, STN_name); */
 
-   DENTER(TOP_LAYER, "sge_calc_node_targets");
+   DENTER(TOP_LAYER);
 
    /*---------------------------------------------------------------
     * if this is the root node, initialize proportions
@@ -3530,8 +3514,7 @@ sge_calc_node_targets( lListElem *root,
     *---------------------------------------------------------------*/
 
    if ((!(children = lGetList(node, STN_children))) || lGetNumberOfElem(children) == 0) {
-      DEXIT;
-      return 0;
+      DRETURN(0);
    }
 
 /*
@@ -3691,8 +3674,7 @@ sge_calc_node_targets( lListElem *root,
       }
    }
 
-   DEXIT;
-   return 0;
+   DRETURN(0);
 }
 
 /*--------------------------------------------------------------------
@@ -3798,7 +3780,7 @@ sge_build_sgeee_orders(scheduler_all_data_t *lists, lList *running_jobs, lList *
 
    bool max_queued_ticket_orders = sconf_get_report_pjob_tickets();
    
-   DENTER(TOP_LAYER, "sge_build_sgeee_orders");
+   DENTER(TOP_LAYER);
 
    if (share_tree_what == NULL) {
       share_tree_what = lWhat("%T(%I %I %I %I %I %I)", STN_Type,
@@ -4013,8 +3995,7 @@ sge_build_sgeee_orders(scheduler_all_data_t *lists, lList *running_jobs, lList *
       last_seqno = seqno;
    }
 
-   DEXIT;
-   return;
+   DRETURN_VOID;
 }
 
 /*--------------------------------------------------------------------
@@ -4105,7 +4086,7 @@ int sgeee_scheduler(scheduler_all_data_t *lists,
    bool report_priority = sconf_get_report_pjob_tickets();
    bool do_nurg, do_nprio;
 
-   DENTER(TOP_LAYER, "sgeee_scheduler");
+   DENTER(TOP_LAYER);
 
    /* skip computation of ntix, nurg and nprio 
       but only if it is irrelevant and not monitored */
@@ -4201,8 +4182,7 @@ int sgeee_scheduler(scheduler_all_data_t *lists,
                prof_get_measurement_wallclock(SGE_PROF_SCHEDLIB4, false, NULL)));
    }  
    
-   DEXIT;
-   return 0;
+   DRETURN(0);
 }
 
 /****** sgeee/sge_do_sgeee_priority() ******************************************
@@ -4293,7 +4273,7 @@ static void sgeee_priority(lListElem *task, u_long32 jobid, double nsu,
    double weight_urgency = 0.0;
    double weight_priority = 0.0; 
 
-   DENTER(TOP_LAYER, "sgeee_priority");
+   DENTER(TOP_LAYER);
    sconf_get_weight_ticket_urgency_priority(&weight_ticket, &weight_urgency, &weight_priority);
 
    /* now compute normalized ticket amount (NTA) for each job/task */
@@ -4313,7 +4293,7 @@ static void sgeee_priority(lListElem *task, u_long32 jobid, double nsu,
    lSetDouble(task, JAT_ntix, nta);
    lSetDouble(task, JAT_prio, geee_priority);
 
-   DEXIT;
+   DRETURN_VOID;
 }
 
 
@@ -4383,7 +4363,7 @@ static void calculate_pending_shared_override_tickets(sge_ref_t *job_ref, int nu
          u_long32 max;
          u_long32 job_ndx;
        
-         DENTER(TOP_LAYER, "calculate_pending_shared_override_tickets");
+         DENTER(TOP_LAYER);
        
          max = build_functional_categories(job_ref, num_jobs, &fcategories, &ref_array, dependent, 
                                      JB_override_tickets, UU_oticket, PR_oticket, US_oticket);
@@ -4399,8 +4379,7 @@ static void calculate_pending_shared_override_tickets(sge_ref_t *job_ref, int nu
                if (fcategories != NULL) {
                   free_fcategories(&fcategories, &ref_array);
                }
-               DEXIT;
-               return;
+               DRETURN_VOID;
             }
 
             for(i=0; i < max; i++) {        

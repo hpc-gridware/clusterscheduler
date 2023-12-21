@@ -451,7 +451,7 @@ static bool event_client_verify_subscription(const lListElem *event_client, lLis
    bool ret = true;
    const lListElem *ep;
 
-   DENTER(TOP_LAYER, "event_client_verify_subscription");
+   DENTER(TOP_LAYER);
 
    for_each (ep, lGetList(event_client, EV_subscribed)) {
       u_long32 id = lGetUlong(ep, EVS_id);
@@ -524,11 +524,11 @@ event_client_verify(const lListElem *event_client, lList **answer_list, bool add
    const char *str;
    u_long d_time = 0;
   
-   DENTER(TOP_LAYER, "event_client_verify");
+   DENTER(TOP_LAYER);
 
    if (event_client == NULL) {
       answer_list_add_sprintf(answer_list, STATUS_ESYNTAX, ANSWER_QUALITY_ERROR,
-                              MSG_NULLELEMENTPASSEDTO_S, SGE_FUNC);
+                              MSG_NULLELEMENTPASSEDTO_S, __func__);
       DTRACE;
       ret = false;
    }

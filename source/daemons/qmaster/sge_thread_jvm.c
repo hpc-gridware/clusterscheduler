@@ -124,9 +124,9 @@ void
 sge_jvm_terminate(sge_gdi_ctx_class_t *ctx, lList **answer_list)
 {
 
-   DENTER(TOP_LAYER, "sge_jvm_terminate");
+   DENTER(TOP_LAYER);
 
-   sge_mutex_lock("master jvm struct", SGE_FUNC, __LINE__, &(Master_Jvm.mutex));
+   sge_mutex_lock("master jvm struct", __func__, __LINE__, &(Master_Jvm.mutex));
 
    if (Master_Jvm.is_running) {
       pthread_t thread_id; 
@@ -155,7 +155,7 @@ sge_jvm_terminate(sge_gdi_ctx_class_t *ctx, lList **answer_list)
        * JVM threads cancelation point in sge_jvm_cleanup_thread() ...
        * ... therefore we have nothing more to do.
        */
-      sge_mutex_unlock("master jvm struct", SGE_FUNC, __LINE__, &(Master_Jvm.mutex));
+      sge_mutex_unlock("master jvm struct", __func__, __LINE__, &(Master_Jvm.mutex));
 
       /* 
        * after releasing the lock it is safe to wait for the termination. 
@@ -167,7 +167,7 @@ sge_jvm_terminate(sge_gdi_ctx_class_t *ctx, lList **answer_list)
       INFO((SGE_EVENT, MSG_THREAD_XTERMINATED_S, threadnames[JVM_THREAD]));
       answer_list_add(answer_list, SGE_EVENT, STATUS_EUNKNOWN, ANSWER_QUALITY_INFO);
    } else {
-      sge_mutex_unlock("master jvm struct", SGE_FUNC, __LINE__, &(Master_Jvm.mutex));
+      sge_mutex_unlock("master jvm struct", __func__, __LINE__, &(Master_Jvm.mutex));
 
       ERROR((SGE_EVENT, MSG_THREAD_XNOTRUNNING_S, threadnames[JVM_THREAD]));
       answer_list_add(answer_list, SGE_EVENT, STATUS_EUNKNOWN, ANSWER_QUALITY_ERROR);
@@ -218,9 +218,9 @@ sge_jvm_terminate(sge_gdi_ctx_class_t *ctx, lList **answer_list)
 void
 sge_jvm_initialize(sge_gdi_ctx_class_t *ctx, lList **answer_list)
 {
-   DENTER(TOP_LAYER, "sge_jvm_initialize");
+   DENTER(TOP_LAYER);
 
-   sge_mutex_lock("master jvm struct", SGE_FUNC, __LINE__, &(Master_Jvm.mutex));
+   sge_mutex_lock("master jvm struct", __func__, __LINE__, &(Master_Jvm.mutex));
   
    if (Master_Jvm.is_running == false) {
       bool start_thread = true;
@@ -278,7 +278,7 @@ sge_jvm_initialize(sge_gdi_ctx_class_t *ctx, lList **answer_list)
       ERROR((SGE_EVENT, MSG_THREAD_XISRUNNING_S, threadnames[JVM_THREAD]));
       answer_list_add(answer_list, SGE_EVENT, STATUS_EUNKNOWN, ANSWER_QUALITY_ERROR);
    }
-   sge_mutex_unlock("master jvm struct", SGE_FUNC, __LINE__, &(Master_Jvm.mutex));
+   sge_mutex_unlock("master jvm struct", __func__, __LINE__, &(Master_Jvm.mutex));
 
    DRETURN_VOID;
 }
@@ -330,7 +330,7 @@ sge_run_jvm(sge_gdi_ctx_class_t *ctx, void *anArg, monitoring_t *monitor);
 static void
 sge_jvm_cleanup_monitor(monitoring_t *monitor)
 {
-   DENTER(TOP_LAYER, "cleanup_monitor");
+   DENTER(TOP_LAYER);
    sge_monitor_free(monitor);
    DRETURN_VOID;
 }
@@ -361,7 +361,7 @@ static bool shutdown_main(void)
    bool error_occured = false;
    JavaVMAttachArgs attach_args = { JNI_VERSION_1_2, NULL, NULL };
 
-   DENTER(TOP_LAYER, "shutdown_main");
+   DENTER(TOP_LAYER);
 
    pthread_mutex_lock(&myjvm_mutex);
 
@@ -422,7 +422,7 @@ static jint (JNICALL printVMErrors)(FILE *fp, const char *format, va_list args) 
    const char* str = NULL;
    dstring ds = DSTRING_INIT;
 
-   DENTER(TOP_LAYER, "printVMErrors");
+   DENTER(TOP_LAYER);
    str = sge_dstring_vsprintf(&ds, format, args);
    if (str != NULL) {
       rc = strlen(str);
@@ -435,7 +435,7 @@ static jint (JNICALL printVMErrors)(FILE *fp, const char *format, va_list args) 
 
 #if 0
 static void (JNICALL exitVM)(jint code) {
-    DENTER(TOP_LAYER, "exitVM");
+    DENTER(TOP_LAYER);
     DPRINTF(("CALLED exitVM %d\n", (int)code));
     fflush(stdout);
     DRETURN_VOID;
@@ -472,7 +472,7 @@ static JNIEnv* create_vm(const char *libjvm_path, int argc, char** argv)
 	JavaVMOption* options = NULL;
    const int extraOptionCount = 1;
 
-   DENTER(GDI_LAYER, "create_vm");
+   DENTER(GDI_LAYER);
 
    options = (JavaVMOption*)malloc((argc+extraOptionCount)*sizeof(JavaVMOption));
 
@@ -618,7 +618,7 @@ static int invoke_main(JNIEnv* env, jclass main_class, int argc, char** argv)
 	jobjectArray main_args;
    int i = 0;
 
-   DENTER(TOP_LAYER, "invoke_main");
+   DENTER(TOP_LAYER);
    
 	main_mid = (*env)->GetStaticMethodID(env, main_class, "main", "([Ljava/lang/String;)V");
    if (main_mid == NULL) {
@@ -668,7 +668,7 @@ sge_run_jvm(sge_gdi_ctx_class_t *ctx, void *anArg, monitoring_t *monitor)
    bool ret = true;
    char keystore_path[SGE_PATH_MAX];
 
-   DENTER(TOP_LAYER, "sge_run_jvm");
+   DENTER(TOP_LAYER);
 
    confEntry = sge_get_configuration_entry_by_name(ctx->get_qualified_hostname(ctx), "libjvm_path");
    if (confEntry != NULL) {
@@ -858,18 +858,17 @@ sge_run_jvm(sge_gdi_ctx_class_t *ctx, void *anArg, monitoring_t *monitor)
 void                          
 sge_jvm_wait_for_terminate(void)
 {        
-   DENTER(TOP_LAYER, "sge_thread_wait_for_signal");
+   DENTER(TOP_LAYER);
          
-   sge_mutex_lock("master jvm struct", SGE_FUNC, __LINE__, &Master_Jvm.mutex);
+   sge_mutex_lock("master jvm struct", __func__, __LINE__, &Master_Jvm.mutex);
             
    while (Master_Jvm.shutdown_started == false) {
       pthread_cond_wait(&Master_Jvm.cond_var, &Master_Jvm.mutex);
    }     
             
-   sge_mutex_unlock("master jvm struct", SGE_FUNC, __LINE__, &Master_Jvm.mutex);
+   sge_mutex_unlock("master jvm struct", __func__, __LINE__, &Master_Jvm.mutex);
 
-   DEXIT;
-   return;
+   DRETURN_VOID;
 }
 
 /****** qmaster/threads/sge_jvm_cleanup_thread() ********************************
@@ -907,9 +906,9 @@ sge_jvm_wait_for_terminate(void)
 static void
 sge_jvm_cleanup_thread(void *ctx_ref)
 {
-   DENTER(TOP_LAYER, "sge_jvm_cleanup_thread");
+   DENTER(TOP_LAYER);
 
-   sge_mutex_lock("master jvm struct", SGE_FUNC, __LINE__, &(Master_Jvm.mutex));
+   sge_mutex_lock("master jvm struct", __func__, __LINE__, &(Master_Jvm.mutex));
 
    if (Master_Jvm.is_running) {
       cl_thread_settings_t* thread = NULL;
@@ -945,7 +944,7 @@ sge_jvm_cleanup_thread(void *ctx_ref)
       sge_gdi_ctx_class_destroy((sge_gdi_ctx_class_t **)ctx_ref);
    }
 
-   sge_mutex_unlock("master jvm struct", SGE_FUNC, __LINE__, &(Master_Jvm.mutex));
+   sge_mutex_unlock("master jvm struct", __func__, __LINE__, &(Master_Jvm.mutex));
 
    DRETURN_VOID;
 }
@@ -990,7 +989,7 @@ sge_jvm_main(void *arg)
    bool jvm_started = false;
    bool do_endlessly = true;
 
-   DENTER(TOP_LAYER, "sge_jvm_main");
+   DENTER(TOP_LAYER);
 
    cl_thread_func_startup(thread_config);
    sge_monitor_init(&monitor, thread_config->thread_name, GDI_EXT, MT_WARNING, MT_ERROR);

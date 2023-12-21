@@ -183,7 +183,7 @@ static void touch_time_stamp(const char *d_name, int time_stamp, lnk_link_t *job
    proc_elem_t *proc_elem;
    lnk_link_t *proc;
 
-   DENTER(TOP_LAYER, "touch_time_stamp");
+   DENTER(TOP_LAYER);
 
    sscanf(d_name, pid_t_fmt, &pid);
    if ((proc = find_pid_in_jobs(pid, job_list))) {
@@ -198,8 +198,7 @@ static void touch_time_stamp(const char *d_name, int time_stamp, lnk_link_t *job
       INFO((SGE_EVENT, "found no job to process %s\n", d_name));
 #endif
 
-   DEXIT;
-   return;
+   DRETURN_VOID;
 }
 
 void procfs_kill_addgrpid(gid_t add_grp_id, int sig, tShepherd_trace shepherd_trace)
@@ -219,12 +218,11 @@ void procfs_kill_addgrpid(gid_t add_grp_id, int sig, tShepherd_trace shepherd_tr
    gid_t gids[4] = {0,0,0,0};
 #endif
 
-   DENTER(TOP_LAYER, "procfs_kill_addgrpid");
+   DENTER(TOP_LAYER);
 
    /* quick return in case of invalid add. group id */
    if (add_grp_id == 0) {
-      DEXIT;
-      return;
+      DRETURN_VOID;
    }
 
    max_groups = sge_sysconf(SGE_SYSCONF_NGROUPS_MAX);
@@ -377,7 +375,7 @@ FCLOSE_ERROR:
    }
    pt_close();
    sge_free(&list);
-   DEXIT;
+   DRETURN_VOID;
 }
 
 int pt_open(void)
@@ -432,20 +430,18 @@ time_t last_time
    double old_time = 0;
    uint64 old_vmem = 0;
 
-   DENTER(TOP_LAYER, "pt_dispatch_proc_to_job");
+   DENTER(TOP_LAYER);
 
    max_groups = sge_sysconf(SGE_SYSCONF_NGROUPS_MAX);
    if (max_groups <= 0) {
       ERROR((SGE_EVENT, SFNMAX, MSG_SGE_NGROUPS_MAXOSRECONFIGURATIONNECESSARY));
-      DEXIT;
-      return 1;  
+      DRETURN(1);  
    }   
 
    list = (gid_t*) malloc(max_groups*sizeof(gid_t));
    if (list == NULL) {
       ERROR((SGE_EVENT, SFNMAX, MSG_SGE_PTDISPATCHPROCTOJOBMALLOCFAILED));
-      DEXIT;
-      return 1;
+      DRETURN(1);
    }
 
    /* find next valid entry in procfs */ 
@@ -704,8 +700,7 @@ time_t last_time
 #if defined(LINUX)
       clean_procList();
 #endif
-      DEXIT;
-      return 1;
+      DRETURN(1);
    }
    /* 
     * try to find process in this jobs' proc list 
@@ -729,8 +724,7 @@ time_t last_time
       if (!(proc_elem=(proc_elem_t *)malloc(sizeof(proc_elem_t)))) {
          if (fd >= 0)
             close(fd);
-         DEXIT;
-         return 0;
+         DRETURN(0);
       }
       memset(proc_elem, 0, sizeof(proc_elem_t));
       proc_elem->proc.pd_length = sizeof(psProc_t);
@@ -866,8 +860,7 @@ time_t last_time
 
 
    close(fd);
-   DEXIT;
-   return 0;
+   DRETURN(0);
 }
 #endif
 

@@ -220,7 +220,7 @@ int sge_gdi_add_job(sge_gdi_ctx_class_t *ctx,
    lList **master_job_list = object_type_get_master_list_rw(SGE_TYPE_JOB);
    lList **master_suser_list = object_type_get_master_list_rw(SGE_TYPE_SUSER);
 
-   DENTER(TOP_LAYER, "sge_gdi_add_job");
+   DENTER(TOP_LAYER);
 
    if (jsv_is_enabled(tc->thread_name)) {
       struct timeval start_time;
@@ -383,10 +383,10 @@ int sge_gdi_del_job(sge_gdi_ctx_class_t *ctx, lListElem *idep, lList **alpp, cha
    lList *master_cqueue_list = *object_type_get_master_list_rw(SGE_TYPE_CQUEUE);
    lList *master_job_list = *object_type_get_master_list_rw(SGE_TYPE_JOB);
 
-   DENTER(TOP_LAYER, "sge_gdi_del_job");
+   DENTER(TOP_LAYER);
 
    if ( !idep || !ruser || !rhost ) {
-      CRITICAL((SGE_EVENT, MSG_SGETEXT_NULLPTRPASSED_S, SGE_FUNC));
+      CRITICAL((SGE_EVENT, MSG_SGETEXT_NULLPTRPASSED_S, __func__));
       answer_list_add(alpp, SGE_EVENT, STATUS_EUNKNOWN, ANSWER_QUALITY_ERROR);
       DRETURN(STATUS_EUNKNOWN);
    }
@@ -712,7 +712,7 @@ u_long32 start,
 u_long32 end, 
 u_long32 step
 ) {
-   DENTER(TOP_LAYER, "empty_job_list_filter");
+   DENTER(TOP_LAYER);
 
    if (all_users_flag) {
       ERROR((SGE_EVENT, SFNMAX, MSG_SGETEXT_THEREARENOJOBS));
@@ -812,7 +812,7 @@ static void job_list_filter( lList *user_list, const char* jobid,
                               lCondition **job_filter) {
    lCondition *new_where = NULL;
 
-   DENTER(TOP_LAYER, "job_list_filter");
+   DENTER(TOP_LAYER);
 
    if (job_filter == NULL) {
       ERROR((SGE_EVENT, "job_list_filter() got no filters"));
@@ -881,7 +881,7 @@ int jid_flag,
 int user_list_flag,
 char *ruser 
 ) {
-   DENTER(TOP_LAYER, "verify_job_list_filter");
+   DENTER(TOP_LAYER);
    const lList *master_manager_list = *object_type_get_master_list(SGE_TYPE_MANAGER);
 
    /* Reject incorrect requests */
@@ -927,7 +927,7 @@ static void get_rid_of_schedd_job_messages(u_long32 job_number)
    lList *master_job_schedd_info_list = *object_type_get_master_list_rw(SGE_TYPE_JOB_SCHEDD_INFO);
 
 
-   DENTER(TOP_LAYER, "get_rid_of_schedd_job_messages");
+   DENTER(TOP_LAYER);
    if (master_job_schedd_info_list != NULL) {
       sme = lFirst(master_job_schedd_info_list);
       mes_list = lGetListRW(sme, SME_message_list);
@@ -1016,7 +1016,7 @@ void get_rid_of_job_due_to_qdel(sge_gdi_ctx_class_t *ctx,
    lListElem *qep = NULL;
    const lList *master_cqueue_list = *object_type_get_master_list(SGE_TYPE_CQUEUE);
 
-   DENTER(TOP_LAYER, "get_rid_of_job_due_to_qdel");
+   DENTER(TOP_LAYER);
 
    job_number = lGetUlong(j, JB_job_number);
    task_number = lGetUlong(t, JAT_task_number);
@@ -1092,7 +1092,7 @@ void job_mark_job_as_deleted(sge_gdi_ctx_class_t *ctx,
 {
    bool job_spooling = ctx->get_job_spooling(ctx);
 
-   DENTER(TOP_LAYER, "job_mark_job_as_deleted");
+   DENTER(TOP_LAYER);
    if (j && t) {
       lList *answer_list = NULL;
       dstring buffer = DSTRING_INIT;
@@ -1167,10 +1167,10 @@ int sub_command
    const lList *master_operator_list = *object_type_get_master_list(SGE_TYPE_OPERATOR);
    lList **master_job_list = object_type_get_master_list_rw(SGE_TYPE_JOB);
  
-   DENTER(TOP_LAYER, "sge_gdi_mod_job");
+   DENTER(TOP_LAYER);
 
    if (jep == NULL || ruser == NULL || rhost == NULL) {
-      CRITICAL((SGE_EVENT, MSG_SGETEXT_NULLPTRPASSED_S, SGE_FUNC));
+      CRITICAL((SGE_EVENT, MSG_SGETEXT_NULLPTRPASSED_S, __func__));
       answer_list_add(alpp, SGE_EVENT, STATUS_EUNKNOWN, ANSWER_QUALITY_ERROR);
       DRETURN(STATUS_EUNKNOWN);
    }
@@ -1423,7 +1423,7 @@ int sub_command
 
 void sge_add_job_event(ev_event type, lListElem *jep, lListElem *jatask) 
 {
-   DENTER(TOP_LAYER, "sge_add_job_event");
+   DENTER(TOP_LAYER);
    sge_add_event( 0, type, lGetUlong(jep, JB_job_number), 
                  jatask ? lGetUlong(jatask, JAT_task_number) : 0, 
                  NULL, NULL, lGetString(jep, JB_session), jep);
@@ -1432,7 +1432,7 @@ void sge_add_job_event(ev_event type, lListElem *jep, lListElem *jatask)
 
 void sge_add_jatask_event(ev_event type, lListElem *jep, lListElem *jatask) 
 {           
-   DENTER(TOP_LAYER, "sge_add_jatask_event");
+   DENTER(TOP_LAYER);
    sge_add_event( 0, type, lGetUlong(jep, JB_job_number), 
                  lGetUlong(jatask, JAT_task_number),
                  NULL, NULL, lGetString(jep, JB_session), jatask);
@@ -1452,7 +1452,7 @@ static void job_suc_pre_doit(lListElem *jep, bool array_deps)
    int pre_nm, suc_nm;
    const lList *master_job_list = *object_type_get_master_list(SGE_TYPE_JOB);
 
-   DENTER(TOP_LAYER, "job_suc_pre_doit");
+   DENTER(TOP_LAYER);
 
    if (array_deps) {
       pre_nm = JB_ja_ad_predecessor_list;
@@ -1555,7 +1555,7 @@ static void job_suc_pre_doit(lListElem *jep, bool array_deps)
 *******************************************************************************/
 void job_suc_pre(lListElem *jep)
 {
-   DENTER(TOP_LAYER, "job_suc_pre");
+   DENTER(TOP_LAYER);
    job_suc_pre_doit(jep, false);
    DRETURN_VOID;
 }
@@ -1586,7 +1586,7 @@ void job_suc_pre(lListElem *jep)
 *******************************************************************************/
 void job_suc_pre_ad(lListElem *jep)
 {
-   DENTER(TOP_LAYER, "job_suc_pre_ad");
+   DENTER(TOP_LAYER);
    job_suc_pre_doit(jep, true);
    DRETURN_VOID;
 }
@@ -1616,7 +1616,7 @@ int is_task_enrolled
    const lList *master_manager_list = *object_type_get_master_list(SGE_TYPE_MANAGER);
    const lList *master_operator_list = *object_type_get_master_list(SGE_TYPE_OPERATOR);
    
-   DENTER(TOP_LAYER, "mod_task_attributes");
+   DENTER(TOP_LAYER);
 
    if (is_task_enrolled) {
 
@@ -1772,7 +1772,7 @@ static bool is_changes_consumables(lList **alpp, const lList* new_lp, const lLis
    const lListElem *old_entry = NULL;
    const char *name = NULL;
 
-   DENTER(TOP_LAYER, "is_changes_consumables");
+   DENTER(TOP_LAYER);
 
    /* ensure all old resource requests implying consumables 
       debitation are still contained in new resource request list */
@@ -1851,7 +1851,7 @@ int deny_soft_consumables(lList **alpp, const lList *srl, const lList *master_ce
    const lListElem *entry, *dcep;
    const char *name;
 
-   DENTER(TOP_LAYER, "deny_soft_consumables");
+   DENTER(TOP_LAYER);
 
    /* ensure no consumables are requested in JB_soft_resource_list */
    for_each(entry, srl) {
@@ -1896,7 +1896,7 @@ int *trigger
    const lList *master_job_list = *object_type_get_master_list(SGE_TYPE_JOB);
    const lList *master_pe_list = *object_type_get_master_list(SGE_TYPE_PE);
 
-   DENTER(TOP_LAYER, "mod_job_attributes");
+   DENTER(TOP_LAYER);
 
    /* is job running ? */
    {
@@ -1927,13 +1927,13 @@ int *trigger
        */
       if (!ja_task) {
          ERROR((SGE_EVENT, MSG_SGETEXT_NEEDONEELEMENT_SS,
-               lNm2Str(JB_ja_tasks), SGE_FUNC));
+               lNm2Str(JB_ja_tasks), __func__));
          answer_list_add(alpp, SGE_EVENT, STATUS_EUNKNOWN, ANSWER_QUALITY_ERROR);
          DRETURN(STATUS_EUNKNOWN);
       }
       if ((pos = lGetPosViaElem(ja_task, JAT_task_number, SGE_NO_ABORT)) < 0) {
          ERROR((SGE_EVENT, MSG_SGETEXT_MISSINGCULLFIELD_SS,
-               lNm2Str(JAT_task_number), SGE_FUNC));
+               lNm2Str(JAT_task_number), __func__));
          answer_list_add(alpp, SGE_EVENT, STATUS_EUNKNOWN, ANSWER_QUALITY_ERROR);
          DRETURN(STATUS_EUNKNOWN);
       }
@@ -2807,7 +2807,7 @@ static bool contains_dependency_cycles(const lListElem * new_job, u_long32 job_n
    u_long32 pre_nr;
    const lList *master_job_list = *object_type_get_master_list(SGE_TYPE_JOB);
 
-   DENTER(TOP_LAYER, "contains_dependency_cycles");
+   DENTER(TOP_LAYER);
    
    for_each(pre_elem, predecessor_list) {
       pre_nr = lGetUlong(pre_elem, JRE_job_number);
@@ -2876,7 +2876,7 @@ int job_verify_predecessors(lListElem *job, lList **alpp)
    lListElem *pre_temp;
    const lList *master_job_list = *object_type_get_master_list(SGE_TYPE_JOB);
 
-   DENTER(TOP_LAYER, "job_verify_predecessors");
+   DENTER(TOP_LAYER);
 
    predecessors_req = lGetList(job, JB_jid_request_list);
    predecessors_id = lCreateList("job_predecessors", JRE_Type);
@@ -2980,7 +2980,7 @@ int job_verify_predecessors_ad(lListElem *job, lList **alpp)
    lListElem *pre_temp;
    const lList *master_job_list = *object_type_get_master_list(SGE_TYPE_JOB);
 
-   DENTER(TOP_LAYER, "job_verify_predecessors_ad");
+   DENTER(TOP_LAYER);
 
    predecessors_req = lGetList(job, JB_ja_ad_request_list);
    predecessors_id = lCreateList("job_predecessors_ad", JRE_Type);
@@ -3100,7 +3100,7 @@ sge_get_job_number(sge_gdi_ctx_class_t *ctx, monitoring_t *monitor)
    u_long32 job_nr;
    bool is_store_job = false;
 
-   DENTER(TOP_LAYER, "sge_get_job_number");
+   DENTER(TOP_LAYER);
 
    sge_mutex_lock("job_number_mutex", "sge_get_job_number", __LINE__, 
                   &job_number_control.job_number_mutex);
@@ -3137,7 +3137,7 @@ void sge_init_job_number(void)
    u_long32 job_nr = 0;
    u_long32 guess_job_nr;
   
-   DENTER(TOP_LAYER, "sge_init_job_number");
+   DENTER(TOP_LAYER);
    
    if ((fp = fopen(SEQ_NUM_FILE, "r"))) {
       if (fscanf(fp, sge_uu32, &job_nr) != 1) {
@@ -3167,7 +3167,7 @@ void sge_store_job_number(sge_gdi_ctx_class_t *ctx, te_event_t anEvent, monitori
    u_long32 job_nr = 0;
    bool changed = false;
 
-   DENTER(TOP_LAYER, "sge_store_job_number");
+   DENTER(TOP_LAYER);
    
    sge_mutex_lock("job_number_mutex", "sge_store_job_number", __LINE__, 
                   &job_number_control.job_number_mutex);
@@ -3206,7 +3206,7 @@ static u_long32 guess_highest_job_number()
    int pos;
    const lList *master_job_list = *object_type_get_master_list(SGE_TYPE_JOB); 
 
-   DENTER(TOP_LAYER, "guess_highest_job_number");   
+   DENTER(TOP_LAYER);   
 
    /* this function is called during qmaster startup and not while it is running,
       we do not need to monitor this lock */
@@ -3242,7 +3242,7 @@ int verify_suitable_queues(lList **alpp, lListElem *jep, int *trigger, bool is_m
    lList *master_ehost_list = *object_type_get_master_list_rw(SGE_TYPE_EXECHOST);
    lList *master_rqs_list = *object_type_get_master_list_rw(SGE_TYPE_RQS);
 
-   DENTER(TOP_LAYER, "verify_suitable_queues");
+   DENTER(TOP_LAYER);
 
    if (verify_mode == SKIP_VERIFY) {
       DPRINTF(("skip expensive verification of schedulability\n"));
@@ -3484,10 +3484,10 @@ int sge_gdi_copy_job(sge_gdi_ctx_class_t *ctx,
    const lList *master_manager_list = *object_type_get_master_list(SGE_TYPE_MANAGER);
    const lList *master_job_list = *object_type_get_master_list(SGE_TYPE_JOB);
 
-   DENTER(TOP_LAYER, "sge_gdi_copy_job");
+   DENTER(TOP_LAYER);
 
    if ( !jep || !ruser || !rhost ) {
-      CRITICAL((SGE_EVENT, MSG_SGETEXT_NULLPTRPASSED_S, SGE_FUNC));
+      CRITICAL((SGE_EVENT, MSG_SGETEXT_NULLPTRPASSED_S, __func__));
       answer_list_add(alpp, SGE_EVENT, STATUS_EUNKNOWN, ANSWER_QUALITY_ERROR);
       DRETURN(STATUS_EUNKNOWN);
    }
@@ -3561,7 +3561,7 @@ void sge_job_spool(sge_gdi_ctx_class_t *ctx) {
    bool job_spooling = ctx->get_job_spooling(ctx);
    lList *master_job_list = *object_type_get_master_list_rw(SGE_TYPE_JOB);
 
-   DENTER(TOP_LAYER, "sge_job_spool");
+   DENTER(TOP_LAYER);
 
    if (!job_spooling) {
 
@@ -3689,7 +3689,7 @@ bool spool_write_script(lList **answer_list, u_long32 jobid, const lListElem *je
    bool ret=true;
    dstring buffer = DSTRING_INIT;
    
-   DENTER(TOP_LAYER, "spool_write_script");
+   DENTER(TOP_LAYER);
    PROF_START_MEASUREMENT(SGE_PROF_JOBSCRIPT);
    /* The whole job object is needed for spooling classic */
    ret = spool_write_object(answer_list, spool_get_default_context(), 
@@ -3731,7 +3731,7 @@ bool spool_read_script(lList **answer_list, u_long32 jobid, lListElem *jep)
    bool ret=true;
    dstring buffer = DSTRING_INIT;
    lListElem *script_el = NULL;
-   DENTER(TOP_LAYER, "spool_read_script");
+   DENTER(TOP_LAYER);
    PROF_START_MEASUREMENT(SGE_PROF_JOBSCRIPT);
    script_el = spool_read_object(answer_list, spool_get_default_context(), 
                      SGE_TYPE_JOBSCRIPT, jobscript_get_key(jep, &buffer));
@@ -3781,7 +3781,7 @@ bool spool_delete_script(lList **answer_list, u_long32 jobid, lListElem *jep)
 {
    bool ret=true;
    dstring buffer = DSTRING_INIT;
-   DENTER(TOP_LAYER, "spool_delete_script");
+   DENTER(TOP_LAYER);
    PROF_START_MEASUREMENT(SGE_PROF_JOBSCRIPT);
    ret = spool_delete_object(answer_list, spool_get_default_context(),
                   SGE_TYPE_JOBSCRIPT, jobscript_get_key(jep, &buffer), true);
@@ -3806,7 +3806,7 @@ static int sge_delete_all_tasks_of_job(sge_gdi_ctx_class_t *ctx, lList **alpp, c
    const lList *master_cqueue_list = *object_type_get_master_list(SGE_TYPE_CQUEUE);
    const lList *master_pe_list = *object_type_get_master_list(SGE_TYPE_PE);
    
-   DENTER(TOP_LAYER, "sge_delete_all_tasks_of_job");
+   DENTER(TOP_LAYER);
 
    /* In certain cases sge_commit_job() free's the job structure passed.
     * The session information is needed after sge_commit_job() so we make 
@@ -4174,7 +4174,7 @@ job_verify_project(const lListElem *job, lList **alpp,
    const lList *master_userset_list = *object_type_get_master_list(SGE_TYPE_USERSET);
    const lList *master_project_list = *object_type_get_master_list(SGE_TYPE_PROJECT);
 
-   DENTER(TOP_LAYER, "job_verify_project");
+   DENTER(TOP_LAYER);
 
    /* job requests a project, verify existance, access rights, ... */
    if (project != NULL) {

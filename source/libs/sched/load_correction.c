@@ -57,11 +57,10 @@ int correct_load(lList *running_jobs, lList *queue_list, lList *host_list,
    lListElem *global_host = NULL;
 
    
-   DENTER(TOP_LAYER, "correct_load");
+   DENTER(TOP_LAYER);
 
    if (queue_list == NULL || host_list == NULL) {
-      DEXIT;
-      return 1;
+      DRETURN(1);
    }
 
    global_host = host_list_locate(host_list, "global");
@@ -158,8 +157,7 @@ int correct_load(lList *running_jobs, lList *queue_list, lList *host_list,
                 lGetUlong(global_host, EH_load_correction_factor));
    }
 
-   DEXIT;
-   return 0;
+   DRETURN(0);
 }
 
 
@@ -179,7 +177,7 @@ correct_capacities(lList *host_list, const lList *centry_list)
    double load_correction;
    lList* job_load_adj_list = NULL;
 
-   DENTER(TOP_LAYER, "correct_capacities");
+   DENTER(TOP_LAYER);
    job_load_adj_list = sconf_get_job_load_adjustments();
  
    for_each_rw(hep, host_list) {
@@ -258,6 +256,5 @@ correct_capacities(lList *host_list, const lList *centry_list)
    }
    lFreeList(&job_load_adj_list);
 
-   DEXIT;
-   return 0;
+   DRETURN(0);
 }

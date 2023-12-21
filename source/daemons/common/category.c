@@ -127,12 +127,12 @@ void sge_build_job_category_dstring(dstring *category_str, lListElem *job, const
    const char *owner = NULL;
    const char *group = NULL;
 
-   DENTER(TOP_LAYER, "sge_build_job_category_dstring");
+   DENTER(TOP_LAYER);
 
    DTRACE;
 
 #if 0
-   sge_mutex_lock("cull_order_mutex", SGE_FUNC, __LINE__, &Category_Control.cull_order_mutex);
+   sge_mutex_lock("cull_order_mutex", __func__, __LINE__, &Category_Control.cull_order_mutex);
    if (Category_Control.cull_order_pos.JB_hard_queue_list_pos == -1) {
       Category_Control.cull_order_pos.JB_checkpoint_name_pos = lGetPosViaElem(job, JB_checkpoint_name, SGE_NO_ABORT);
       Category_Control.cull_order_pos.JB_soft_resource_list_pos = lGetPosViaElem(job, JB_soft_resource_list, SGE_NO_ABORT);
@@ -147,7 +147,7 @@ void sge_build_job_category_dstring(dstring *category_str, lListElem *job, const
       Category_Control.cull_order_pos.JB_pe_pos = lGetPosViaElem(job, JB_pe, SGE_NO_ABORT);
       Category_Control.cull_order_pos.JB_range_pos = lGetPosViaElem(job, JB_pe_range, SGE_NO_ABORT);
    }
-   sge_mutex_unlock("cull_order_mutex", SGE_FUNC, __LINE__, &Category_Control.cull_order_mutex);
+   sge_mutex_unlock("cull_order_mutex", __func__, __LINE__, &Category_Control.cull_order_mutex);
 #endif
 
    DTRACE;
@@ -299,7 +299,7 @@ sge_build_job_cs_category(dstring *category_str, lListElem *job, lListElem *cat_
 {
    const char *p;
 
-   DENTER(TOP_LAYER, "sge_build_job_cs_category");
+   DENTER(TOP_LAYER);
 
    /* 
     *  deadline
@@ -327,6 +327,5 @@ sge_build_job_cs_category(dstring *category_str, lListElem *job, lListElem *cat_
     */
    sge_dstring_sprintf_append(category_str, " %x", cat_obj);
 
-   DEXIT;
-   return sge_dstring_get_string(category_str);
+   DRETURN(sge_dstring_get_string(category_str));
 }

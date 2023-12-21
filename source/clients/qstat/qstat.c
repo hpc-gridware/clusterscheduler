@@ -445,7 +445,7 @@ sge_parse_qstat(sge_gdi_ctx_class_t *ctx, lList **ppcmdline, qstat_env_t *qstat_
    lList *plstringopt = NULL; 
 
 
-   DENTER(TOP_LAYER, "sge_parse_qstat");
+   DENTER(TOP_LAYER);
 
    qstat_env->need_queues = false;
    qstat_filter_add_core_attributes(qstat_env);
@@ -461,7 +461,6 @@ sge_parse_qstat(sge_gdi_ctx_class_t *ctx, lList **ppcmdline, qstat_env_t *qstat_
    while (lGetNumberOfElem(*ppcmdline)) {
       if (parse_flag(ppcmdline, "-help",  &alp, &helpflag)) {
          usageshowed = qstat_usage(qstat_env->qselect_mode, stdout, NULL);
-         DEXIT;
          SGE_EXIT((void**)&ctx, 0);
          break;
       }
@@ -528,8 +527,7 @@ sge_parse_qstat(sge_gdi_ctx_class_t *ctx, lList **ppcmdline, qstat_env_t *qstat_
                   qstat_usage(qstat_env->qselect_mode, stderr, NULL);
                }
                sge_free(&argstr);
-               DEXIT;
-               return alp;
+               DRETURN(alp);
             }
             sge_free(&argstr);
          }
@@ -660,12 +658,10 @@ sge_parse_qstat(sge_gdi_ctx_class_t *ctx, lList **ppcmdline, qstat_env_t *qstat_
      if (!usageshowed)
         qstat_usage(qstat_env->qselect_mode, stderr, NULL);
      answer_list_add(&alp, str, STATUS_ESEMANTIC, ANSWER_QUALITY_ERROR);
-     DEXIT;
-     return alp;
+     DRETURN(alp);
    }
 
-   DEXIT;
-   return alp;
+   DRETURN(alp);
 }
 
 /* --------------- qstat stdout handler --------------------------------------*/
@@ -676,7 +672,7 @@ static int qstat_stdout_init(qstat_handler_t *handler, lList **alpp)
    int ret = 0;
    qstat_stdout_ctx_t *ctx = (qstat_stdout_ctx_t*)sge_malloc(sizeof(qstat_stdout_ctx_t));
    
-   DENTER(TOP_LAYER, "qstat_stdout_init");
+   DENTER(TOP_LAYER);
    
    if (ctx == NULL) {
       answer_list_add(alpp, "malloc of qstat_stdout_ctx failed",
@@ -720,31 +716,28 @@ error:
          sge_free(&ctx);
       }
    }
-   DEXIT;
-   return ret;
+   DRETURN(ret);
 }
 
 static int qstat_stdout_destroy(qstat_handler_t *handler) 
 {
-   DENTER(TOP_LAYER, "qstat_stdout_destroy");
+   DENTER(TOP_LAYER);
 
    if (handler->ctx) {
       sge_dstring_free(&(((qstat_stdout_ctx_t*)(handler->ctx))->last_queue_name));
       sge_free(&(handler->ctx));
    }
 
-   DEXIT;
-   return 0;
+   DRETURN(0);
 }
 
 
 static int job_stdout_init(job_handler_t *handler, lList** alpp) 
 {
-   DENTER(TOP_LAYER, "job_stdout_init");
+   DENTER(TOP_LAYER);
 
    if (handler == NULL) {
-      DEXIT;
-      return -1;
+      DRETURN(-1);
    }
 
    handler->report_job = job_stdout_job;
@@ -798,8 +791,7 @@ static int job_stdout_init(job_handler_t *handler, lList** alpp)
    handler->report_binding = job_stdout_binding;
    handler->report_binding_finished = job_stdout_binding_finished;
 
-   DEXIT;
-   return 0;
+   DRETURN(0);
 }
 
 static char hashes[] = "##############################################################################################################";
@@ -832,7 +824,7 @@ static int job_stdout_job(job_handler_t* handler, u_long32 jid, job_summary_t *s
    bool print_job_id;
    dstring ds = DSTRING_INIT;
    
-   DENTER(TOP_LAYER, "job_stdout_job");
+   DENTER(TOP_LAYER);
    
    sge_ext = ((qstat_env->full_listing & QSTAT_DISPLAY_EXTENDED) == QSTAT_DISPLAY_EXTENDED);
    tsk_ext = (qstat_env->full_listing & QSTAT_DISPLAY_TASKS);
@@ -1131,27 +1123,25 @@ static int job_stdout_job(job_handler_t* handler, u_long32 jid, job_summary_t *s
    
    sge_dstring_free(&ds);
    
-   DEXIT;
-   return 0;
+   DRETURN(0);
 }
 
 static int job_stdout_sub_tasks_started(job_handler_t* handler, lList **alpp)
 {
    qstat_stdout_ctx_t *ctx = (qstat_stdout_ctx_t*)handler->ctx;
 
-   DENTER(TOP_LAYER, "job_stdout_sub_tasks_started");
+   DENTER(TOP_LAYER);
 
    ctx->sub_task_count = 0;
    
-   DEXIT;
-   return 0;
+   DRETURN(0);
 }
 
 
 static int job_stdout_sub_task(job_handler_t* handler, task_summary_t *summary, lList **alpp)
 {
    bool indent = false;
-   DENTER(TOP_LAYER, "job_stdout_sub_task");
+   DENTER(TOP_LAYER);
    
    printf("   %s%-12s ", indent ? QSTAT_INDENT2: "", (summary->task_id == NULL)? "" : summary->task_id );
    printf("%-5.5s ", summary->state); 
@@ -1183,26 +1173,23 @@ static int job_stdout_sub_task(job_handler_t* handler, task_summary_t *summary, 
       printf("%-4d", (int)summary->exit_status);
    }
 
-   DEXIT;
-   return 0;
+   DRETURN(0);
 }
 
 static int job_stdout_sub_tasks_finished(job_handler_t* handler, lList **alpp)
 {
-   DENTER(TOP_LAYER, "job_stdout_sub_tasks_finished");
+   DENTER(TOP_LAYER);
    putchar('\n');
-   DEXIT;
-   return 0;
+   DRETURN(0);
 }
 
 static int job_stdout_requested_pe(job_handler_t *handler, const char* pe_name, const char* pe_range, lList **alpp) 
 {
    const char* name = "Requested PE";
    int len = MAX(1,17 - strlen(name));
-   DENTER(TOP_LAYER, "job_stdout_requested_pe");
+   DENTER(TOP_LAYER);
    printf("%s%s:%*s%s %s\n", QSTAT_INDENT, name, len, " ", pe_name, pe_range);
-   DEXIT;
-   return 0;
+   DRETURN(0);
    
 }
 
@@ -1210,17 +1197,16 @@ static int job_stdout_granted_pe(job_handler_t *handler, const char* pe_name, in
 {
    const char* name = "Granted PE";
    int len = MAX(1,17 - strlen(name));   
-   DENTER(TOP_LAYER, "job_stdout_granted_pe");
+   DENTER(TOP_LAYER);
    printf("%s%s:%*s%s %d\n", QSTAT_INDENT, name, len, " ", pe_name, pe_slots);
-   DEXIT;
-   return 0;
+   DRETURN(0);
 }
 
 static int job_stdout_additional_info(job_handler_t* handler, job_additional_info_t name, const char* value, lList **alpp)
 {
    dstring ds = DSTRING_INIT;
    
-   DENTER(TOP_LAYER, "job_stdout_additional_info");
+   DENTER(TOP_LAYER);
 
    switch(name) {
       case CHECKPOINT_ENV: sge_dstring_copy_string(&ds, "Checkpoint Env."); break;
@@ -1237,36 +1223,33 @@ static int job_stdout_additional_info(job_handler_t* handler, job_additional_inf
              value == NULL ? "" : value);
    }
    sge_dstring_free(&ds);
-   DEXIT;
-   return 0;
+   DRETURN(0);
 }
 
 static int job_stdout_request(job_handler_t* handler, const char* name, const char* value, lList **alpp)
 {
-   DENTER(TOP_LAYER, "job_stdout_request");
+   DENTER(TOP_LAYER);
    printf("%s%s=%s (default)\n", QSTAT_INDENT, name, value);  
-   DEXIT;
-   return 0;
+   DRETURN(0);
 }
 
 static int job_stdout_hard_requested_queues_started(job_handler_t* handler, lList **alpp) 
 {
    qstat_stdout_ctx_t *ctx = (qstat_stdout_ctx_t*)handler->ctx;
 
-   DENTER(TOP_LAYER, "job_stdout_hard_requested_queues_started");
+   DENTER(TOP_LAYER);
 
    printf(QSTAT_INDENT "Hard requested queues: ");
    ctx->hard_requested_queue_count = 0;
 
-   DEXIT;
-   return 0;
+   DRETURN(0);
 }
 
 static int job_stdout_hard_requested_queue(job_handler_t* handler, const char* qname, lList **alpp)
 {
    qstat_stdout_ctx_t *ctx = (qstat_stdout_ctx_t*)handler->ctx;
 
-   DENTER(TOP_LAYER, "job_stdout_hard_requested_queue");
+   DENTER(TOP_LAYER);
 
    if(ctx->hard_requested_queue_count > 0 ) {
       printf(", %s", qname);
@@ -1274,36 +1257,33 @@ static int job_stdout_hard_requested_queue(job_handler_t* handler, const char* q
       printf("%s", qname);
    }
    ctx->hard_requested_queue_count++;
-   DEXIT;
-   return 0;
+   DRETURN(0);
 }
 
 static int job_stdout_hard_requested_queues_finished(job_handler_t* handler, lList **alpp) 
 {
-   DENTER(TOP_LAYER, "job_stdout_hard_requested_queues_finished");
+   DENTER(TOP_LAYER);
    putchar('\n');
-   DEXIT;
-   return 0;
+   DRETURN(0);
 }
 
 static int job_stdout_soft_requested_queues_started(job_handler_t* handler, lList **alpp) 
 {
    qstat_stdout_ctx_t *ctx = (qstat_stdout_ctx_t*)handler->ctx;
 
-   DENTER(TOP_LAYER, "job_stdout_soft_requested_queues_started");
+   DENTER(TOP_LAYER);
    
    printf(QSTAT_INDENT "Soft requested queues: ");
    ctx->soft_requested_queue_count = 0;
 
-   DEXIT;
-   return 0;
+   DRETURN(0);
 }
 
 static int job_stdout_soft_requested_queue(job_handler_t* handler, const char* qname, lList **alpp)
 {
    qstat_stdout_ctx_t *ctx = (qstat_stdout_ctx_t*)handler->ctx;
 
-   DENTER(TOP_LAYER, "job_stdout_soft_requested_queue");
+   DENTER(TOP_LAYER);
    
    if(ctx->soft_requested_queue_count > 0 ) {
       printf(", %s", qname);
@@ -1312,36 +1292,33 @@ static int job_stdout_soft_requested_queue(job_handler_t* handler, const char* q
    }
    ctx->soft_requested_queue_count++;
 
-   DEXIT;
-   return 0;
+   DRETURN(0);
 }
 
 static int job_stdout_soft_requested_queues_finished(job_handler_t* handler, lList **alpp) 
 {
-   DENTER(TOP_LAYER, "job_stdout_soft_requested_queues_finished");
+   DENTER(TOP_LAYER);
    putchar('\n');
-   DEXIT;
-   return 0;
+   DRETURN(0);
 }
 
 static int job_stdout_master_hard_requested_queues_started(job_handler_t* handler, lList **alpp) 
 {
    qstat_stdout_ctx_t *ctx = (qstat_stdout_ctx_t*)handler->ctx;
 
-   DENTER(TOP_LAYER, "job_stdout_master_hard_requested_queues_started");
+   DENTER(TOP_LAYER);
 
    printf(QSTAT_INDENT "Master task hard requested queues: ");
    ctx->master_hard_requested_queue_count = 0;
 
-   DEXIT;
-   return 0;
+   DRETURN(0);
 }
 
 static int job_stdout_master_hard_request_queue(job_handler_t* handler, const char* qname, lList **alpp)
 {
    qstat_stdout_ctx_t *ctx = (qstat_stdout_ctx_t*)handler->ctx;
 
-   DENTER(TOP_LAYER, "job_stdout_master_hard_request_queue");
+   DENTER(TOP_LAYER);
 
    if(ctx->master_hard_requested_queue_count > 0 ) {
       printf(", %s", qname);
@@ -1350,36 +1327,33 @@ static int job_stdout_master_hard_request_queue(job_handler_t* handler, const ch
    }
    ctx->master_hard_requested_queue_count++;
    
-   DEXIT;
-   return 0;
+   DRETURN(0);
 }
 
 static int job_stdout_master_hard_requested_queues_finished(job_handler_t* handler, lList **alpp) 
 {
-   DENTER(TOP_LAYER, "job_stdout_master_hard_requested_queues_finished");
+   DENTER(TOP_LAYER);
    putchar('\n');
-   DEXIT;
-   return 0;
+   DRETURN(0);
 }
 
 static int job_stdout_hard_resources_started(job_handler_t* handler, lList **alpp) 
 {
    qstat_stdout_ctx_t *ctx = (qstat_stdout_ctx_t*)handler->ctx;
 
-   DENTER(TOP_LAYER, "job_stdout_hard_resources_started");
+   DENTER(TOP_LAYER);
 
    ctx->hard_resource_count = 0;
    printf("       Hard Resources:   ");
 
-   DEXIT;
-   return 0;
+   DRETURN(0);
 }
 
 static int job_stdout_hard_resource(job_handler_t *handler, const char* name, const char* value, double uc, lList **alpp) 
 {
    qstat_stdout_ctx_t *ctx = (qstat_stdout_ctx_t*)handler->ctx;
 
-   DENTER(TOP_LAYER, "job_stdout_hard_resource");
+   DENTER(TOP_LAYER);
 
    if(ctx->hard_resource_count > 0 ) {
       printf("                         ");
@@ -1387,42 +1361,39 @@ static int job_stdout_hard_resource(job_handler_t *handler, const char* name, co
    printf("%s=%s (%f)\n", name, value == NULL ? "" : value, uc);
    ctx->hard_resource_count++;
 
-   DEXIT;
-   return 0;
+   DRETURN(0);
 }
 
 static int job_stdout_hard_resources_finished(job_handler_t* handler, lList **alpp) 
 {
    qstat_stdout_ctx_t *ctx = (qstat_stdout_ctx_t*)handler->ctx;
 
-   DENTER(TOP_LAYER, "job_stdout_hard_resources_finished");
+   DENTER(TOP_LAYER);
    
    if (ctx->hard_resource_count == 0) {
       putchar('\n');
    }
 
-   DEXIT;
-   return 0;
+   DRETURN(0);
 }
 
 static int job_stdout_soft_resources_started(job_handler_t* handler, lList **alpp) 
 {
    qstat_stdout_ctx_t *ctx = (qstat_stdout_ctx_t*)handler->ctx;
 
-   DENTER(TOP_LAYER, "job_stdout_soft_resources_started");
+   DENTER(TOP_LAYER);
 
    ctx->soft_resource_count = 0;
    printf("       Soft Resources:   ");
 
-   DEXIT;
-   return 0;
+   DRETURN(0);
 }
 
 static int job_stdout_soft_resource(job_handler_t *handler, const char* name, const char* value, double uc, lList **alpp) 
 {
    qstat_stdout_ctx_t *ctx = (qstat_stdout_ctx_t*)handler->ctx;
 
-   DENTER(TOP_LAYER, "job_stdout_soft_resource");
+   DENTER(TOP_LAYER);
 
    if (ctx->soft_resource_count > 0 ) {
       printf("                         ");
@@ -1430,42 +1401,39 @@ static int job_stdout_soft_resource(job_handler_t *handler, const char* name, co
    printf("%s=%s\n", name, value == NULL ? "" : value);
    ctx->soft_resource_count++;
 
-   DEXIT;
-   return 0;
+   DRETURN(0);
 }
 
 static int job_stdout_soft_resources_finished(job_handler_t* handler, lList **alpp) 
 {
    qstat_stdout_ctx_t *ctx = (qstat_stdout_ctx_t*)handler->ctx;
 
-   DENTER(TOP_LAYER, "job_stdout_soft_resources_finished");
+   DENTER(TOP_LAYER);
 
    if (ctx->soft_resource_count == 0) {
       putchar('\n');
    }
 
-   DEXIT;
-   return 0;
+   DRETURN(0);
 }
 
 static int job_stdout_predecessors_requested_started(job_handler_t* handler, lList **alpp) 
 {
    qstat_stdout_ctx_t *ctx = (qstat_stdout_ctx_t*)handler->ctx;
 
-   DENTER(TOP_LAYER, "job_stdout_predecessors_requested_started");
+   DENTER(TOP_LAYER);
 
    ctx->predecessor_requested_count = 0;
    printf("       Predecessor Jobs (request): ");
 
-   DEXIT;
-   return 0;
+   DRETURN(0);
 }
 
 static int job_stdout_predecessor_requested(job_handler_t* handler, const char* name, lList **alpp)
 {
    qstat_stdout_ctx_t *ctx = (qstat_stdout_ctx_t*)handler->ctx;
 
-   DENTER(TOP_LAYER, "job_stdout_predecessor_requested");
+   DENTER(TOP_LAYER);
 
    if(ctx->predecessor_requested_count > 0 ) {
       printf(", %s", name);
@@ -1474,36 +1442,33 @@ static int job_stdout_predecessor_requested(job_handler_t* handler, const char* 
    }
    ctx->predecessor_requested_count++;
    
-   DEXIT;
-   return 0;
+   DRETURN(0);
 }
 
 static int job_stdout_predecessors_requested_finished(job_handler_t* handler, lList **alpp) 
 {
-   DENTER(TOP_LAYER, "job_stdout_predecessors_requested_finished");
+   DENTER(TOP_LAYER);
    putchar('\n');
-   DEXIT;
-   return 0;
+   DRETURN(0);
 }
 
 static int job_stdout_predecessors_started(job_handler_t* handler, lList **alpp) 
 {
    qstat_stdout_ctx_t *ctx = (qstat_stdout_ctx_t*)handler->ctx;
 
-   DENTER(TOP_LAYER, "job_stdout_predecessors_started");
+   DENTER(TOP_LAYER);
 
    ctx->predecessor_count = 0;
    printf("       Predecessor Jobs: ");
 
-   DEXIT;
-   return 0;
+   DRETURN(0);
 }
 
 static int job_stdout_predecessor(job_handler_t* handler, u_long32 jid, lList **alpp)
 {
    qstat_stdout_ctx_t *ctx = (qstat_stdout_ctx_t*)handler->ctx;
 
-   DENTER(TOP_LAYER, "job_stdout_predecessor");
+   DENTER(TOP_LAYER);
 
    if (ctx->predecessor_count > 0 ) {
       printf(", "sge_u32, jid);
@@ -1512,36 +1477,33 @@ static int job_stdout_predecessor(job_handler_t* handler, u_long32 jid, lList **
    }
    ctx->predecessor_count++;
 
-   DEXIT;
-   return 0;
+   DRETURN(0);
 }
 
 static int job_stdout_predecessors_finished(job_handler_t* handler, lList **alpp) 
 {
-   DENTER(TOP_LAYER, "job_stdout_predecessors_finished");
+   DENTER(TOP_LAYER);
    putchar('\n');
-   DEXIT;
-   return 0;
+   DRETURN(0);
 }
 
 static int job_stdout_ad_predecessors_requested_started(job_handler_t* handler, lList **alpp) 
 {
    qstat_stdout_ctx_t *ctx = (qstat_stdout_ctx_t*)handler->ctx;
 
-   DENTER(TOP_LAYER, "job_stdout_ad_predecessors_requested_started");
+   DENTER(TOP_LAYER);
 
    ctx->ad_predecessor_requested_count = 0;
    printf("       Predecessor Array Jobs (request): ");
 
-   DEXIT;
-   return 0;
+   DRETURN(0);
 }
 
 static int job_stdout_ad_predecessor_requested(job_handler_t* handler, const char* name, lList **alpp)
 {
    qstat_stdout_ctx_t *ctx = (qstat_stdout_ctx_t*)handler->ctx;
 
-   DENTER(TOP_LAYER, "job_stdout_ad_predecessor_requested");
+   DENTER(TOP_LAYER);
 
    if(ctx->ad_predecessor_requested_count > 0) {
       printf(", %s", name);
@@ -1550,36 +1512,33 @@ static int job_stdout_ad_predecessor_requested(job_handler_t* handler, const cha
    }
    ctx->ad_predecessor_requested_count++;
    
-   DEXIT;
-   return 0;
+   DRETURN(0);
 }
 
 static int job_stdout_ad_predecessors_requested_finished(job_handler_t* handler, lList **alpp) 
 {
-   DENTER(TOP_LAYER, "job_stdout_ad_predecessors_requested_finished");
+   DENTER(TOP_LAYER);
    putchar('\n');
-   DEXIT;
-   return 0;
+   DRETURN(0);
 }
 
 static int job_stdout_ad_predecessors_started(job_handler_t* handler, lList **alpp) 
 {
    qstat_stdout_ctx_t *ctx = (qstat_stdout_ctx_t*)handler->ctx;
 
-   DENTER(TOP_LAYER, "job_stdout_ad_predecessors_started");
+   DENTER(TOP_LAYER);
 
    ctx->ad_predecessor_count = 0;
    printf("       Predecessor Array Jobs: ");
 
-   DEXIT;
-   return 0;
+   DRETURN(0);
 }
 
 static int job_stdout_ad_predecessor(job_handler_t* handler, u_long32 jid, lList **alpp)
 {
    qstat_stdout_ctx_t *ctx = (qstat_stdout_ctx_t*)handler->ctx;
 
-   DENTER(TOP_LAYER, "job_stdout_ad_predecessor");
+   DENTER(TOP_LAYER);
 
    if (ctx->ad_predecessor_count > 0) {
       printf(", "sge_u32, jid);
@@ -1588,46 +1547,41 @@ static int job_stdout_ad_predecessor(job_handler_t* handler, u_long32 jid, lList
    }
    ctx->ad_predecessor_count++;
 
-   DEXIT;
-   return 0;
+   DRETURN(0);
 }
 
 static int job_stdout_ad_predecessors_finished(job_handler_t* handler, lList **alpp) 
 {
-   DENTER(TOP_LAYER, "job_stdout_ad_predecessors_finished");
+   DENTER(TOP_LAYER);
    putchar('\n');
-   DEXIT;
-   return 0;
+   DRETURN(0);
 }
 
 static int job_stdout_binding_started(job_handler_t* handler, lList **alpp) 
 {
-   DENTER(TOP_LAYER, "job_stdout_binding_started");
+   DENTER(TOP_LAYER);
 
    printf("       Binding:          ");
 
-   DEXIT;
-   return 0;
+   DRETURN(0);
 }
 
 static int job_stdout_binding(job_handler_t *handler, const char* binding, lList **alpp) 
 {
-   DENTER(TOP_LAYER, "job_stdout_binding");
+   DENTER(TOP_LAYER);
 
    printf("%s", binding);
 
-   DEXIT;
-   return 0;
+   DRETURN(0);
 }
 
 static int job_stdout_binding_finished(job_handler_t* handler, lList **alpp) 
 {
-   DENTER(TOP_LAYER, "job_stdout_binding_finished");
+   DENTER(TOP_LAYER);
    
    putchar('\n');
 
-   DEXIT;
-   return 0;
+   DRETURN(0);
 }
 
 static int qstat_stdout_queue_summary(qstat_handler_t* handler, const char* qname, queue_summary_t *summary, lList **alpp) 
@@ -1637,7 +1591,7 @@ static int qstat_stdout_queue_summary(qstat_handler_t* handler, const char* qnam
    int sge_ext = qstat_env->full_listing & QSTAT_DISPLAY_EXTENDED;
    char to_print[80];
    
-   DENTER(TOP_LAYER, "qstat_stdout_queue_summary");
+   DENTER(TOP_LAYER);
 
    if (ctx->header_printed == false) {
       char temp[20];
@@ -1705,44 +1659,39 @@ static int qstat_stdout_queue_summary(qstat_handler_t* handler, const char* qnam
 
 static int qstat_stdout_queue_load_alarm(qstat_handler_t* handler, const char* qname, const char* reason, lList **alpp) 
 {
-   DENTER(TOP_LAYER, "qstat_stdout_queue_load_alarm");
+   DENTER(TOP_LAYER);
    printf("\t%s\n", reason != NULL ? reason : "no alarm reason given");
-   DEXIT;
-   return 0;
+   DRETURN(0);
 }
 
 static int qstat_stdout_queue_suspend_alarm(qstat_handler_t* handler, const char* qname, const char* reason, lList **alpp) 
 {
-   DENTER(TOP_LAYER, "qstat_stdout_queue_suspend_alarm");
+   DENTER(TOP_LAYER);
    printf("\t%s\n", reason != NULL ? reason : "no alarm reason given");
-   DEXIT;
-   return 0;
+   DRETURN(0);
 }
 
 static int qstat_stdout_queue_message(qstat_handler_t* handler, const char* qname, const char *message, lList **alpp) 
 {
-   DENTER(TOP_LAYER, "qstat_stdout_queue_message");
+   DENTER(TOP_LAYER);
    printf("\t%s\n", message != NULL ? message : "no queue message given");
-   DEXIT;
-   return 0;
+   DRETURN(0);
 }
 
 
 static int qstat_stdout_queue_finished(qstat_handler_t* handler, const char *qname, lList** alpp) 
 {
-   DENTER(TOP_LAYER, "qstat_stdout_queue_finished");
+   DENTER(TOP_LAYER);
 /*    printf("\n"); */
-   DEXIT;
-   return 0;
+   DRETURN(0);
 }
 
 static int qstat_stdout_queue_resource(qstat_handler_t* handler, const char* dom, 
                                        const char* name, const char* value, lList **alpp) 
 {
-   DENTER(TOP_LAYER, "qstat_stdout_queue_resource");
+   DENTER(TOP_LAYER);
    printf("\t%s:%s=%s\n", dom, name, value);
-   DEXIT;
-   return 0;
+   DRETURN(0);
 }
 
 static int qstat_stdout_pending_jobs_started(qstat_handler_t *handler, lList **alpp) 
@@ -1750,14 +1699,13 @@ static int qstat_stdout_pending_jobs_started(qstat_handler_t *handler, lList **a
    qstat_env_t *qstat_env = handler->qstat_env;
    qstat_stdout_ctx_t *ctx = (qstat_stdout_ctx_t*)handler->ctx;
    
-   DENTER(TOP_LAYER, "qstat_stdout_pending_jobs_started");
+   DENTER(TOP_LAYER);
    
    ctx->last_job_id = 0;
    sge_printf_header((qstat_env->full_listing & QSTAT_DISPLAY_FULL) |
                      (qstat_env->full_listing & QSTAT_DISPLAY_PENDING), 
                      (qstat_env->full_listing & QSTAT_DISPLAY_EXTENDED) == QSTAT_DISPLAY_EXTENDED);
-   DEXIT;
-   return 0;
+   DRETURN(0);
 }
 
 static int qstat_stdout_finished_jobs_started(qstat_handler_t *handler, lList **alpp) 
@@ -1766,7 +1714,7 @@ static int qstat_stdout_finished_jobs_started(qstat_handler_t *handler, lList **
    qstat_stdout_ctx_t *ctx = (qstat_stdout_ctx_t*)handler->ctx;
    int sge_ext = (qstat_env->full_listing & QSTAT_DISPLAY_EXTENDED);
    
-   DENTER(TOP_LAYER,"qstat_stdout_finished_jobs_started");
+   DENTER(TOP_LAYER);
    
    ctx->last_job_id = 0;
 
@@ -1774,8 +1722,7 @@ static int qstat_stdout_finished_jobs_started(qstat_handler_t *handler, lList **
    printf("%s\n", MSG_QSTAT_PRT_JOBSWAITINGFORACCOUNTING);
    printf(  "################################################################################%s\n", sge_ext?hashes:"");
 
-   DEXIT;
-   return 0;
+   DRETURN(0);
 }
 
 static int qstat_stdout_error_jobs_started(qstat_handler_t *handler, lList **alpp) 
@@ -1783,29 +1730,27 @@ static int qstat_stdout_error_jobs_started(qstat_handler_t *handler, lList **alp
    qstat_env_t *qstat_env = handler->qstat_env;
    int sge_ext = (qstat_env->full_listing & QSTAT_DISPLAY_EXTENDED);
    
-   DENTER(TOP_LAYER,"qstat_stdout_error_jobs_started");
+   DENTER(TOP_LAYER);
    
    printf("\n################################################################################%s\n", sge_ext?hashes:"");
    printf("%s\n", MSG_QSTAT_PRT_ERRORJOBS);
    printf(  "################################################################################%s\n", sge_ext?hashes:"");
 
-   DEXIT;
-   return 0;
+   DRETURN(0);
 }
 
 /* --------------- Cluster Queue Summary To Stdout Handler -------------------*/
 
 static int cqueue_summary_stdout_init(cqueue_summary_handler_t *handler, lList **alpp) 
 {
-   DENTER(TOP_LAYER, "cqueue_summary_stdout_init");
+   DENTER(TOP_LAYER);
 
    memset(handler, 0, sizeof(cqueue_summary_handler_t));
    
    handler->report_started = cqueue_summary_stdout_report_started;
    handler->report_cqueue = cqueue_summary_stdout_report_cqueue;
 
-   DEXIT;
-   return 0;
+   DRETURN(0);
 }
 
 
@@ -1819,7 +1764,7 @@ static int cqueue_summary_stdout_report_started(cqueue_summary_handler_t *handle
    char queue_def[50];
    char fields[] = "%7s %6s %6s %6s %6s %6s %6s ";
 
-   DENTER(TOP_LAYER, "cqueue_summary_stdout_report_started");
+   DENTER(TOP_LAYER);
 
    sprintf(queue_def, "%%-%d.%ds %s ", qstat_env->longest_queue_length, qstat_env->longest_queue_length, fields);                         
    printf( queue_def,
@@ -1846,8 +1791,7 @@ static int cqueue_summary_stdout_report_started(cqueue_summary_handler_t *handle
    }   
    printf("\n");
 
-   DEXIT;
-   return 0;
+   DRETURN(0);
 }
 
 
@@ -1859,7 +1803,7 @@ static int cqueue_summary_stdout_report_cqueue(cqueue_summary_handler_t *handler
    bool show_states = (qstat_env->full_listing & QSTAT_DISPLAY_EXTENDED) ? true : false;
    char queue_def[50];
 
-   DENTER(TOP_LAYER, "cqueue_summary_stdout_report_cqueue");
+   DENTER(TOP_LAYER);
 
    sprintf(queue_def, "%%-%d.%ds ", qstat_env->longest_queue_length, qstat_env->longest_queue_length);
 
@@ -1892,8 +1836,7 @@ static int cqueue_summary_stdout_report_cqueue(cqueue_summary_handler_t *handler
    }
    printf("\n");
 
-   DEXIT;
-   return 0;
+   DRETURN(0);
 }
 
 
@@ -1902,22 +1845,21 @@ static int cqueue_summary_stdout_report_cqueue(cqueue_summary_handler_t *handler
 
 static void qselect_stdout_init(qselect_handler_t* handler, lList **alpp) 
 {
-   DENTER(TOP_LAYER, "qselect_stdout_init");
+   DENTER(TOP_LAYER);
 
    memset(handler, 0, sizeof(qselect_handler_t));
    handler->report_queue = qselect_stdout_report_queue;
 
-   DEXIT;
+   DRETURN_VOID;
 }
 
 static int qselect_stdout_report_queue(qselect_handler_t* handler, const char* qname, lList **alpp) 
 {
-   DENTER(TOP_LAYER, "qselect_stdout_report_queue");
+   DENTER(TOP_LAYER);
 
    printf("%s\n", qname);
 
-   DEXIT;
-   return 0;
+   DRETURN(0);
 }
 
 
@@ -1943,7 +1885,7 @@ qstat_show_job(sge_gdi_ctx_class_t *ctx, lList *jid_list, u_long32 isXML, qstat_
    const lListElem* mes;
    const lListElem *tmpElem;
 
-   DENTER(TOP_LAYER, "qstat_show_job");
+   DENTER(TOP_LAYER);
 
    /* get job scheduling information */
    what = lWhat("%T(ALL)", SME_Type);
@@ -2095,7 +2037,6 @@ qstat_show_job(sge_gdi_ctx_class_t *ctx, lList *jid_list, u_long32 isXML, qstat_
          fprintf(stderr, "%s", lGetString(elem1, ST_name));
       }
       fprintf(stderr, "\n");
-      DEXIT;
       SGE_EXIT((void**)&ctx, 1);
    }
 
@@ -2168,7 +2109,7 @@ static int qstat_show_job_info(sge_gdi_ctx_class_t *ctx, u_long32 isXML, qstat_e
    lListElem *sme;
    const lListElem *jid_ulng = NULL;
 
-   DENTER(TOP_LAYER, "qstat_show_job_info");
+   DENTER(TOP_LAYER);
 
    /* get job scheduling information */
    what = lWhat("%T(ALL)", SME_Type);
@@ -2186,8 +2127,7 @@ static int qstat_show_job_info(sge_gdi_ctx_class_t *ctx, u_long32 isXML, qstat_e
       }
       lFreeList(&alp);
       if (!schedd_info) {
-         DEXIT;
-         return 1;
+         DRETURN(1);
       }
 
       sme = lFirstRW(ilp);
@@ -2328,7 +2268,6 @@ static int qstat_show_job_info(sge_gdi_ctx_class_t *ctx, u_long32 isXML, qstat_e
 
    lFreeList(&ilp);
    
-   DEXIT;
-   return 0;
+   DRETURN(0);
 }
 

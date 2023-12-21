@@ -52,7 +52,7 @@ int sos_schedd(const char *qname, lList *qlist)
    u_long32 sos;
    int ret = 0;
 
-   DENTER(TOP_LAYER, "sos_schedd");
+   DENTER(TOP_LAYER);
 
    q = qinstance_list_locate2(qlist, qname);
    if (!q) {
@@ -62,8 +62,7 @@ int sos_schedd(const char *qname, lList *qlist)
          suspended then this is no error because
          they are already suspended.
       */
-      DEXIT;
-      return 1;
+      DRETURN(1);
    }
 
    /* increment sos counter */
@@ -77,7 +76,6 @@ int sos_schedd(const char *qname, lList *qlist)
       qinstance_state_set_susp_on_sub(q, true);
    }
 
-   DEXIT;
-   return ret;
+   DRETURN(ret);
 }
 

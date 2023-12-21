@@ -97,7 +97,7 @@ void sge_c_report(sge_gdi_ctx_class_t *ctx, char *rhost, char *commproc, int id,
    bool is_pb_used = false;
    bool send_tag_new_conf = false;
 
-   DENTER(TOP_LAYER, "sge_c_report");
+   DENTER(TOP_LAYER);
 
    if (lGetNumberOfElem(report_list) == 0) {
       DPRINTF(("received empty report\n"));
@@ -234,7 +234,7 @@ void sge_c_report(sge_gdi_ctx_class_t *ctx, char *rhost, char *commproc, int id,
       case NUM_REP_REPORT_CONF: 
          MONITOR_ECONF(monitor); 
          if (sge_compare_configuration(hep, lGetList(report, REP_list)) != 0) {
-            DPRINTF(("%s: configuration on host %s is not up to date\n", SGE_FUNC, rhost));
+            DPRINTF(("%s: configuration on host %s is not up to date\n", __func__, rhost));
             send_tag_new_conf = true;
          }
          break;
@@ -309,7 +309,7 @@ static int update_license_data(sge_gdi_ctx_class_t *ctx, lListElem *hep, lList *
 {
    u_long32 processors;
 
-   DENTER(TOP_LAYER, "update_license_data");
+   DENTER(TOP_LAYER);
 
    if (!hep) {
       DRETURN(-1);

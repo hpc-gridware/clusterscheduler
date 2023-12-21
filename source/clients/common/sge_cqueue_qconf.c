@@ -72,7 +72,7 @@ cqueue_add_del_mod_via_gdi(sge_gdi_ctx_class_t *ctx, lListElem *this_elem, lList
 {
    bool ret = true;
 
-   DENTER(TOP_LAYER, "cqueue_add_del_mod_via_gdi");
+   DENTER(TOP_LAYER);
    if (this_elem != NULL) {
       u_long32 operation = SGE_GDI_GET_OPERATION(gdi_command);
       bool do_verify = (operation == SGE_GDI_MOD) || (operation == SGE_GDI_ADD) ? true : false;
@@ -102,7 +102,7 @@ cqueue_get_via_gdi(sge_gdi_ctx_class_t *ctx, lList **answer_list, const char *na
 {
    lListElem *ret = NULL;
 
-   DENTER(TOP_LAYER, "cqueue_get_via_gdi");
+   DENTER(TOP_LAYER);
    if (name != NULL) {
       lList *gdi_answer_list = NULL;
       lEnumeration *what = NULL;
@@ -134,7 +134,7 @@ static bool cqueue_hgroup_get_via_gdi(sge_gdi_ctx_class_t *ctx, lList **answer_l
 {
    bool ret = true;
 
-   DENTER(TOP_LAYER, "cqueue_hgroup_get_via_gdi");
+   DENTER(TOP_LAYER);
 
    if (hgrp_list != NULL && cq_list != NULL) {
       state_gdi_multi state = STATE_GDI_MULTI_INIT;
@@ -245,7 +245,7 @@ cqueue_hgroup_get_all_via_gdi(sge_gdi_ctx_class_t *ctx, lList **answer_list,
 {
    bool ret = true;
 
-   DENTER(TOP_LAYER, "cqueue_hgroup_get_all_via_gdi");
+   DENTER(TOP_LAYER);
    if (hgrp_list != NULL && cq_list != NULL) {
       state_gdi_multi state = STATE_GDI_MULTI_INIT;
       lEnumeration *hgrp_what = NULL; 
@@ -312,7 +312,7 @@ cqueue_provide_modify_context(sge_gdi_ctx_class_t *ctx, lListElem **this_elem, l
    uid_t uid = ctx->get_uid(ctx);
    gid_t gid = ctx->get_gid(ctx);
    
-   DENTER(TOP_LAYER, "cqueue_provide_modify_context");
+   DENTER(TOP_LAYER);
    if (this_elem != NULL && *this_elem) {
       const char *filename = NULL;      
       filename = spool_flatfile_write_object(answer_list, *this_elem,
@@ -384,7 +384,7 @@ cqueue_add(sge_gdi_ctx_class_t *ctx, lList **answer_list, const char *name)
 {
    bool ret = true;
 
-   DENTER(TOP_LAYER, "cqueue_add");
+   DENTER(TOP_LAYER);
    if (name != NULL) {
       lListElem *cqueue = cqueue_create(answer_list, name);
 
@@ -415,7 +415,7 @@ cqueue_add_from_file(sge_gdi_ctx_class_t *ctx, lList **answer_list, const char *
    int fields_out[MAX_NUM_FIELDS];
    int missing_field = NoName;
 
-   DENTER(TOP_LAYER, "cqueue_add_from_file");
+   DENTER(TOP_LAYER);
    if (filename != NULL) {
       lListElem *cqueue;
 
@@ -456,7 +456,7 @@ cqueue_modify(sge_gdi_ctx_class_t *ctx, lList **answer_list, const char *name)
 {
    bool ret = true;
 
-   DENTER(TOP_LAYER, "cqueue_modify");
+   DENTER(TOP_LAYER);
    if (name != NULL) {
       lListElem *cqueue = cqueue_get_via_gdi(ctx, answer_list, name);
 
@@ -486,7 +486,7 @@ cqueue_modify_from_file(sge_gdi_ctx_class_t *ctx, lList **answer_list, const cha
    int fields_out[MAX_NUM_FIELDS];
    int missing_field = NoName;
 
-   DENTER(TOP_LAYER, "cqueue_modify_from_file");
+   DENTER(TOP_LAYER);
    if (filename != NULL) {
       lListElem *cqueue;
 
@@ -531,7 +531,7 @@ cqueue_delete(sge_gdi_ctx_class_t *ctx, lList **answer_list, const char *name)
 {
    bool ret = true;
 
-   DENTER(TOP_LAYER, "cqueue_delete");
+   DENTER(TOP_LAYER);
    if (name != NULL) {
       lListElem *cqueue = cqueue_create(answer_list, name); 
    
@@ -549,7 +549,7 @@ cqueue_show(sge_gdi_ctx_class_t *ctx, lList **answer_list, const lList *qref_pat
 {
    bool ret = true;
 
-   DENTER(TOP_LAYER, "cqueue_show");
+   DENTER(TOP_LAYER);
    if (qref_pattern_list != NULL) {
       lList *hgroup_list = NULL;
       lList *cqueue_list = NULL;
@@ -773,7 +773,7 @@ cqueue_list_sick(sge_gdi_ctx_class_t *ctx, lList **answer_list)
    lList *cqueue_list = NULL;
    bool local_ret;
 
-   DENTER(TOP_LAYER, "cqueue_sick");
+   DENTER(TOP_LAYER);
 
    local_ret = cqueue_hgroup_get_all_via_gdi(ctx, answer_list, 
                                              &hgroup_list, &cqueue_list);
@@ -823,7 +823,7 @@ static void insert_custom_complex_values_writer(spooling_field *fields)
    /* First, find the complex_values field. */
    int count = 0;
    
-   DENTER(TOP_LAYER, "insert_custom_complex_values_writer");
+   DENTER(TOP_LAYER);
 
    while ((fields[count].nm != NoName) && (fields[count].nm != QU_consumable_config_list)) {
       count++;
@@ -863,7 +863,7 @@ static int write_QU_consumable_config_list(const lListElem *ep, int nm,
    const lListElem *vep = NULL;
    bool first = true, has_elems = false;
    
-   DENTER(TOP_LAYER, "write_QU_consumable_config_list");
+   DENTER(TOP_LAYER);
 
    /* Look through the complex_values list and print everything but slots */
    /* The format we're using to print is intended to replicate what is set forth

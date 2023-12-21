@@ -123,7 +123,7 @@ void sge_print_categories(void)
 {
    const lListElem *cat;
 
-   DENTER(TOP_LAYER, "sge_print_categories");
+   DENTER(TOP_LAYER);
 
    for_each (cat, CATEGORY_LIST) {
       DPRINTF(("PTR: %p CAT: %s REJECTED: "sge_u32" REFCOUNT: "sge_u32"\n", 
@@ -154,7 +154,7 @@ int sge_add_job_category(lListElem *job, const lList *acl_list, const lList *prj
    dstring category_str = DSTRING_INIT;
    bool did_project;
 
-   DENTER(TOP_LAYER, "sge_add_job_category");
+   DENTER(TOP_LAYER);
   
    /* First part:
       Builds the category for the resource matching
@@ -244,7 +244,7 @@ int sge_delete_job_category(lListElem *job)
    lListElem *cat = NULL;
    u_long32 rc = 0;
 
-   DENTER(TOP_LAYER, "sge_delete_job_category");
+   DENTER(TOP_LAYER);
    
    /* First part */
    cat = (lListElem *)lGetRef(job, JB_category);
@@ -343,7 +343,7 @@ sge_is_job_category_rejected(const lListElem *job)
    int ret;
    lListElem *cat = NULL;
 
-   DENTER(TOP_LAYER, "sge_is_job_category_rejected");
+   DENTER(TOP_LAYER);
    cat = lGetRef(job, JB_category); 
    ret = sge_is_job_category_rejected_(cat);  
    DRETURN(ret);
@@ -356,7 +356,7 @@ sge_is_job_category_reservation_rejected(const lListElem *job)
    int ret;
    lListElem *cat = NULL;
 
-   DENTER(TOP_LAYER, "sge_is_job_category_reservation_rejected");
+   DENTER(TOP_LAYER);
    cat = lGetRef(job, JB_category); 
    ret = sge_is_job_category_reservation_rejected_(cat);  
    DRETURN(ret);
@@ -402,7 +402,7 @@ int sge_rebuild_job_category(const lList *job_list, const lList *acl_list, const
 {
    lListElem *job;
 
-   DENTER(TOP_LAYER, "sge_rebuild_job_category");
+   DENTER(TOP_LAYER);
 
    if (!reb_cat) {
       DRETURN(0);
@@ -460,7 +460,7 @@ int sge_cs_category_count(void)
 int sge_reset_job_category()
 {
    lListElem *cat;
-   DENTER(TOP_LAYER, "sge_reset_job_category");
+   DENTER(TOP_LAYER);
 
    for_each_rw (cat, CATEGORY_LIST) {
       const lListElem *cache;
@@ -513,7 +513,7 @@ lList *sge_category_job_copy(lList *queue_list, lList **orders, bool monitor_nex
    const lListElem *category = NULL;
    int jobPerCategory = 0; 
    
-   DENTER(TOP_LAYER, "sge_category_job_copy");
+   DENTER(TOP_LAYER);
 
    INFO((SGE_EVENT, "the job category filter is enabled"));
 

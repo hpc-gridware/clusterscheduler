@@ -66,7 +66,7 @@ int lGetNumberOfNodes(const lListElem *ep, const lList *lp, int nm)
 {
    int n = 0;
 
-   DENTER(CULL_LAYER, "lGetNumberOfNodes");
+   DENTER(CULL_LAYER);
 
    if (ep) {
       int pos;
@@ -77,14 +77,12 @@ int lGetNumberOfNodes(const lListElem *ep, const lList *lp, int nm)
          if ((lp = lGetPosList(ep, pos)))
             n += lGetNumberOfNodes(NULL, lp, nm);
       }
-      DEXIT;
-      return n;
+      DRETURN(n);
    } else {
       for_each(ep, lp) {
          n += lGetNumberOfNodes(ep, NULL, nm);
       }
-      DEXIT;
-      return n;
+      DRETURN(n);
    }
 }
 
@@ -110,7 +108,7 @@ int lGetNumberOfLeafs(const lListElem *ep, const lList *lp, int nm)
 {
    int n = 0;
 
-   DENTER(CULL_LAYER, "lGetNumberOfLeafs");
+   DENTER(CULL_LAYER);
 
    if (ep) {
       int pos;
@@ -121,14 +119,12 @@ int lGetNumberOfLeafs(const lListElem *ep, const lList *lp, int nm)
          else
             n = lGetNumberOfLeafs(NULL, lp, nm);
       }
-      DEXIT;
-      return n;
+      DRETURN(n);
    }
    else {
       for_each(ep, lp) {
          n += lGetNumberOfLeafs(ep, NULL, nm);
       }
-      DEXIT;
-      return n;
+      DRETURN(n);
    }
 }

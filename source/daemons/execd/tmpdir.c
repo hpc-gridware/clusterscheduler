@@ -49,7 +49,7 @@ char *sge_make_tmpdir(lListElem *qep, u_long32 jobid, u_long32 jataskid, uid_t u
 {
    const char *t;
 
-   DENTER(TOP_LAYER, "sge_make_tmpdir");
+   DENTER(TOP_LAYER);
 
    t = lGetString(qep, QU_tmpdir);
    if (t == NULL) {
@@ -92,7 +92,7 @@ int sge_remove_tmpdir(const char *dir, const char *job_owner, u_long32 jobid, u_
    char err_str_buffer[1024];
    dstring err_str;
 
-   DENTER(TOP_LAYER, "sge_remove_tmpdir");
+   DENTER(TOP_LAYER);
 
    sge_dstring_init(&err_str, err_str_buffer, sizeof(err_str_buffer));
 
@@ -118,17 +118,15 @@ char *sge_get_tmpdir(lListElem *qep, u_long32 jobid, u_long32 jataskid, char *tm
 {
    const char *t;
 
-   DENTER(TOP_LAYER, "sge_get_tmpdir");
+   DENTER(TOP_LAYER);
 
    if (!(t=lGetString(qep, QU_tmpdir))) {
-      DEXIT;
-      return NULL;
+      DRETURN(NULL);
    }
 
    sprintf(tmpdir, "%s/"sge_u32"."sge_u32".%s", t, jobid, jataskid, lGetString(qep, QU_qname));
 
    DPRINTF(("TMPDIR=%s\n", tmpdir));
 
-   DEXIT;
-   return tmpdir;
+   DRETURN(tmpdir);
 }

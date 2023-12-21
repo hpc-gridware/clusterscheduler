@@ -59,7 +59,7 @@ static bool parse_job_identifier(const char *id, u_long32 *job_id, u_long32 *ja_
 {
    char *copy = NULL;
 
-   DENTER(TOP_LAYER, "parse_job_identifier");
+   DENTER(TOP_LAYER);
 
    copy = strdup(id);
    *job_id = atoi(strtok(copy, "."));
@@ -111,7 +111,7 @@ bool sge_ssi_job_cancel(sge_evc_class_t *evc, const char *job_identifier, bool r
    char job_id_str[100];
    sge_gdi_ctx_class_t *ctx = evc->get_gdi_ctx(evc);
 
-   DENTER(TOP_LAYER, "sge_ssi_job_cancel");
+   DENTER(TOP_LAYER);
 
    /* reschedule not yet implemented */
    if(reschedule) {
@@ -177,7 +177,7 @@ bool sge_ssi_job_start(sge_evc_class_t *evc, const char *job_identifier, const c
    lList *granted = NULL;    /* granted queues */
    int i;
 
-   DENTER(TOP_LAYER, "sge_ssi_job_start");
+   DENTER(TOP_LAYER);
 
    if(!parse_job_identifier(job_identifier, &job_id, &ja_task_id)) {
       DRETURN(false);

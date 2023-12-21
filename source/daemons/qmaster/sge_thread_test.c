@@ -97,7 +97,7 @@
 static void
 sge_test_cleanup_monitor(monitoring_t *monitor)
 {
-   DENTER(TOP_LAYER, "sge_test_cleanup_monitor");
+   DENTER(TOP_LAYER);
    sge_monitor_free(monitor);
    DRETURN_VOID;
 }
@@ -109,7 +109,7 @@ sge_test_initialize(sge_gdi_ctx_class_t *ctx)
    cl_thread_settings_t* dummy_thread_p = NULL;
    int i;   
 
-   DENTER(TOP_LAYER, "sge_test_initialize");
+   DENTER(TOP_LAYER);
 
    INFO((SGE_EVENT, MSG_QMASTER_THREADCOUNT_US, 
          sge_u32c(max_initial_test_threads), threadnames[TESTER_THREAD]));
@@ -131,7 +131,7 @@ sge_test_terminate(sge_gdi_ctx_class_t *ctx)
 {
    cl_thread_settings_t* thread = NULL;
 
-   DENTER(TOP_LAYER, "sge_test_terminate");
+   DENTER(TOP_LAYER);
 
    thread = cl_thread_list_get_first_thread(Main_Control.test_thread_pool);
    while (thread != NULL) {
@@ -153,7 +153,7 @@ sge_test_main(void *arg)
    sge_gdi_ctx_class_t *ctx = NULL;
    monitoring_t monitor;
 
-   DENTER(TOP_LAYER, "sge_test_main");
+   DENTER(TOP_LAYER);
 
    DPRINTF((SFN" started", thread_config->thread_name));
    cl_thread_func_startup(thread_config);

@@ -158,7 +158,7 @@ static void rmon_helper_key_destroy(void * ctx)
 *     The RMON library is a set of functions, which do allow monitoring of 
 *     of application execution. The functions provided, however, should not
 *     be used directly. Rather the RMON functions are utilized by a set of
-*     monitoring macros, like 'DENTER' or 'DEXIT'.
+*     monitoring macros, like 'DENTER' or 'DRETURN'/'DRETURN_VOID'.
 *
 *     If monitoring is active, the RMON functions do get called very frequently.
 *     Hence, the overhead caused by monitoring needs to be minimal. For this
@@ -178,7 +178,7 @@ static void rmon_helper_key_destroy(void * ctx)
 *     'rmon_mexit()', from within multiple threads. 'rmon_mopen()' is the only
 *     RMON function which does change the critical global variables ('mtype',
 *     'rmon_fp' and 'RMON_DEBUG_ON'). 'rmon_menter()' and 'rmon_mexit()' are used by
-*     the macro 'DENTER' and 'DEXIT', respectively.
+*     the macro 'DENTER' and ,'DRETURN'/'DRETURN_VOID' respectively.
 *     
 *******************************************************************************/
 

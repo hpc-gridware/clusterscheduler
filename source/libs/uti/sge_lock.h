@@ -82,7 +82,7 @@ sge_locker_id(void);
 
 #define SGE_LOCK(type, mode) \
 { \
-   sge_lock(type, mode, SGE_FUNC, sge_locker_id()); \
+   sge_lock(type, mode, __func__, sge_locker_id()); \
 }
 
 #if defined(SGE_UNLOCK)
@@ -91,7 +91,7 @@ sge_locker_id(void);
 
 #define SGE_UNLOCK(type, mode) \
 { \
-   sge_unlock(type, mode, SGE_FUNC, sge_locker_id()); \
+   sge_unlock(type, mode, __func__, sge_locker_id()); \
 }
 
 #endif /* _SGE_LOCK_H_ */

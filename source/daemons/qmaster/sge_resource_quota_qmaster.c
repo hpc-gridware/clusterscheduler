@@ -130,7 +130,7 @@ int rqs_mod(sge_gdi_ctx_class_t *ctx,
    bool previous_enabled = (bool)lGetBool(new_rqs, RQS_enabled);
    const lList *master_centry_list = *object_type_get_master_list(SGE_TYPE_CENTRY);
 
-   DENTER(TOP_LAYER, "rqs_mod");
+   DENTER(TOP_LAYER);
 
    /* ---- RQS_name */
    if (add) {
@@ -229,7 +229,7 @@ int rqs_spool(sge_gdi_ctx_class_t *ctx, lList **alpp, lListElem *ep, gdi_object_
    bool dbret;
    bool job_spooling = ctx->get_job_spooling(ctx);
 
-   DENTER(TOP_LAYER, "rqs_spool");
+   DENTER(TOP_LAYER);
 
    dbret = spool_write_object(&answer_list, spool_get_default_context(), ep, 
                               lGetString(ep, RQS_name), SGE_TYPE_RQS,
@@ -282,7 +282,7 @@ int rqs_success(sge_gdi_ctx_class_t *ctx, lListElem *ep, lListElem *old_ep, gdi_
 {
    const char *rqs_name = NULL;
 
-   DENTER(TOP_LAYER, "rqs_success");
+   DENTER(TOP_LAYER);
 
    rqs_name = lGetString(ep, RQS_name);
 
@@ -330,10 +330,10 @@ int rqs_del(sge_gdi_ctx_class_t *ctx,
    int pos;
    lListElem *found;
 
-   DENTER(TOP_LAYER, "rqs_del");
+   DENTER(TOP_LAYER);
 
    if ( !ep || !ruser || !rhost ) {
-      CRITICAL((SGE_EVENT, MSG_SGETEXT_NULLPTRPASSED_S, SGE_FUNC));
+      CRITICAL((SGE_EVENT, MSG_SGETEXT_NULLPTRPASSED_S, __func__));
       answer_list_add(alpp, SGE_EVENT, STATUS_EUNKNOWN, ANSWER_QUALITY_ERROR);
       DRETURN(STATUS_EUNKNOWN);
    }
@@ -341,14 +341,14 @@ int rqs_del(sge_gdi_ctx_class_t *ctx,
    /* ep is no rqs element, if ep has no RQS_name */
    if ((pos = lGetPosViaElem(ep, RQS_name, SGE_NO_ABORT)) < 0) {
       CRITICAL((SGE_EVENT, MSG_SGETEXT_MISSINGCULLFIELD_SS,
-            lNm2Str(RQS_name), SGE_FUNC));
+            lNm2Str(RQS_name), __func__));
       answer_list_add(alpp, SGE_EVENT, STATUS_EUNKNOWN, ANSWER_QUALITY_ERROR);
       DRETURN(STATUS_EUNKNOWN);
    }
 
    rqs_name = lGetPosString(ep, pos);
    if (!rqs_name) {
-      CRITICAL((SGE_EVENT, MSG_SGETEXT_NULLPTRPASSED_S, SGE_FUNC));
+      CRITICAL((SGE_EVENT, MSG_SGETEXT_NULLPTRPASSED_S, __func__));
       answer_list_add(alpp, SGE_EVENT, STATUS_EUNKNOWN, ANSWER_QUALITY_ERROR);
       DRETURN(STATUS_EUNKNOWN);
    }
@@ -409,7 +409,7 @@ rqs_reinit_consumable_actual_list(lListElem *rqs, lList **answer_list) {
    const lList *master_hgroup_list = *object_type_get_master_list(SGE_TYPE_HGROUP);
    const lList *master_job_list = *object_type_get_master_list(SGE_TYPE_JOB);
 
-   DENTER(TOP_LAYER, "rqs_reinit_consumable_actual_list");
+   DENTER(TOP_LAYER);
 
    if (rqs != NULL) {
       lListElem *job;
@@ -490,7 +490,7 @@ static bool filter_diff_usersets_or_projects_scope(lList *filter_scope, int filt
    const char *scope;
    bool ret = true;
 
-   DENTER(TOP_LAYER, "filter_diff_usersets_or_projects_scope");
+   DENTER(TOP_LAYER);
 
    for_each(scope_ep, filter_scope) {
       scope = lGetString(scope_ep, ST_name);
@@ -574,7 +574,7 @@ static bool filter_diff_usersets_or_projects(const lListElem *rule, int filter_n
    lListElem *filter;
    bool ret = true;
 
-   DENTER(TOP_LAYER, "filter_diff_usersets_or_projects");
+   DENTER(TOP_LAYER);
 
    if (filter_nm != RQR_filter_users && filter_nm != RQR_filter_projects) {
       DRETURN(ret);
@@ -630,7 +630,7 @@ bool rqs_diff_usersets(const lListElem *new_rqs, const lListElem *old_rqs, lList
    const lListElem *rule;
    bool ret = true;
 
-   DENTER(TOP_LAYER, "rqs_diff_usersets");
+   DENTER(TOP_LAYER);
 
    if (old_rqs && old_list) {
       for_each(rule, lGetList(old_rqs, RQS_rule)) {
@@ -689,7 +689,7 @@ bool rqs_diff_projects(const lListElem *new_rqs, const lListElem *old_rqs, lList
 {
    bool ret = true;
 
-   DENTER(TOP_LAYER, "rqs_diff_projects");
+   DENTER(TOP_LAYER);
 
    if (old_rqs && old_list) {
       const lListElem *rule;
@@ -744,7 +744,7 @@ static void rqs_update_categories(const lListElem *new_rqs, const lListElem *old
    const lList *master_userset_list = *object_type_get_master_list(SGE_TYPE_USERSET);
    const lList *master_project_list = *object_type_get_master_list(SGE_TYPE_PROJECT);
 
-   DENTER(TOP_LAYER, "rqs_update_categories");
+   DENTER(TOP_LAYER);
 
    rqs_diff_projects(new_rqs, old_rqs, &new_lp, &old_lp, master_project_list);
    project_update_categories(new_lp, old_lp);
@@ -796,7 +796,7 @@ scope_is_referenced_rqs(const lListElem *rqs, int nm, const char *name) {
    const lListElem *rule;
    bool ret = false;
 
-   DENTER(TOP_LAYER, "scope_is_referenced_rqs");
+   DENTER(TOP_LAYER);
 
    if (rqs == NULL || name == NULL) {
       DRETURN(ret);

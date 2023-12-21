@@ -60,31 +60,27 @@ lList *r
    const lListElem *rep;
    u_long32 ret;
 
-   DENTER(TOP_LAYER, "num_in_range");
+   DENTER(TOP_LAYER);
 
    if (!r) {
       /* no ranges ==> we need to fit exactly 1 and we're sure we can */
-      DEXIT;
-      return MIN(num, 1);
+      DRETURN(MIN(num, 1));
    }
 
    for_each (rep, r) {
       if (num >= (ret=lGetUlong(rep,RN_max))) {
          /* We've more than we need */
-         DEXIT;
-         return ret;
+         DRETURN(ret);
       }
       else if (num < lGetUlong(rep,RN_min))
          /* We've to few for the range ==> next */
          continue;
       else {
          /* We're somewhere within the range */
-         DEXIT;
-         return num;
+         DRETURN(num);
       }
    }
 
    /* it's a pitty - we simply don't have enough */
-   DEXIT;
-   return 0;
+   DRETURN(0);
 }

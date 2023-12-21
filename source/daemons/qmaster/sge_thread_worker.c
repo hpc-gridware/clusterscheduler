@@ -106,7 +106,7 @@
 static void
 sge_worker_cleanup_monitor(monitoring_t *monitor)
 {
-   DENTER(TOP_LAYER, "sge_worker_cleanup_monitor");
+   DENTER(TOP_LAYER);
    sge_monitor_free(monitor);
    DRETURN_VOID;
 }
@@ -118,7 +118,7 @@ sge_worker_initialize(sge_gdi_ctx_class_t *ctx)
    cl_thread_settings_t* dummy_thread_p = NULL;
    int i;   
 
-   DENTER(TOP_LAYER, "sge_worker_initialize");
+   DENTER(TOP_LAYER);
 
    /*
     * TODO: EB: corresponding destroy function is missing during shutdown
@@ -152,7 +152,7 @@ sge_worker_terminate(sge_gdi_ctx_class_t *ctx)
 {
    bool do_final_spooling;
 
-   DENTER(TOP_LAYER, "sge_worker_terminate");
+   DENTER(TOP_LAYER);
 
    sge_tq_wakeup_waiting(Master_Task_Queue);
 
@@ -229,7 +229,7 @@ sge_worker_main(void *arg)
    monitoring_t *p_monitor = &monitor;
    time_t next_prof_output = 0;
 
-   DENTER(TOP_LAYER, "sge_worker_main");
+   DENTER(TOP_LAYER);
 
    DPRINTF(("started"));
    cl_thread_func_startup(thread_config);

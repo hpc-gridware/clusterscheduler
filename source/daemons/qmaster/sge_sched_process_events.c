@@ -86,9 +86,9 @@
 *******************************************************************************/
 void event_update_func(u_long32 ec_id, lList **alpp, lList *event_list) 
 {
-   DENTER(TOP_LAYER, "event_update_func");
+   DENTER(TOP_LAYER);
 
-   sge_mutex_lock("event_control_mutex", SGE_FUNC, __LINE__, &Scheduler_Control.mutex);  
+   sge_mutex_lock("event_control_mutex", __func__, __LINE__, &Scheduler_Control.mutex);
    
    if (Scheduler_Control.new_events != NULL) {
       lList *events = NULL;
@@ -104,7 +104,7 @@ void event_update_func(u_long32 ec_id, lList **alpp, lList *event_list)
 
    pthread_cond_signal(&Scheduler_Control.cond_var);
 
-   sge_mutex_unlock("event_control_mutex", SGE_FUNC, __LINE__, &Scheduler_Control.mutex);
+   sge_mutex_unlock("event_control_mutex", __func__, __LINE__, &Scheduler_Control.mutex);
 
 
    DRETURN_VOID;
@@ -134,7 +134,7 @@ void set_job_flushing(sge_evc_class_t *evc)
 
 int subscribe_scheduler(sge_evc_class_t *evc, sge_where_what_t *where_what)
 {
-   DENTER(TOP_LAYER, "subscribe_scheduler");
+   DENTER(TOP_LAYER);
 
    /* subscribe event types for the mirroring interface */
    sge_mirror_subscribe(evc, SGE_TYPE_AR,             NULL, NULL, NULL, NULL, NULL);
@@ -184,7 +184,7 @@ int sge_before_dispatch(sge_evc_class_t *evc)
    const char *cell_root = ctx->get_cell_root(ctx);
    u_long32 progid = ctx->get_who(ctx);
    
-   DENTER(TOP_LAYER, "sge_before_dispatch");
+   DENTER(TOP_LAYER);
 
    /* hostname resolving scheme in global config could have changed
       get it and use it if we got a notification about a new global config */

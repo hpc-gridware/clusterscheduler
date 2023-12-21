@@ -55,7 +55,7 @@ bool id_sharetree(lList **alpp, lListElem *ep, int id, int *ret_id)
    lListElem *cep = NULL;
    int my_id = id;
 
-   DENTER(TOP_LAYER, "id_sharetree");
+   DENTER(TOP_LAYER);
 
    if (ep == NULL) {
       answer_list_add(alpp, MSG_OBJ_NOSTREEELEM, STATUS_EUNKNOWN, ANSWER_QUALITY_ERROR);
@@ -93,11 +93,10 @@ char *indent
    static int level = 0;
    int i;
 
-   DENTER(TOP_LAYER, "show_sharetree");
+   DENTER(TOP_LAYER);
 
    if (!ep) {
-      DEXIT;
-      return -1;
+      DRETURN(-1);
    }
 
    for (i=0;i<level;i++)
@@ -110,8 +109,7 @@ char *indent
       level--;
    }   
 
-   DEXIT;
-   return 0;
+   DRETURN(0);
 }
 
 /************************************************************************
@@ -131,11 +129,10 @@ const char *path
    int i;
    dstring sb = DSTRING_INIT;
  
-   DENTER(TOP_LAYER, "show_sharetree_path");
+   DENTER(TOP_LAYER);
  
    if (!root) {
-      DEXIT;
-      return 1;
+      DRETURN(1);
    }
  
    memset(&ancestors, 0, sizeof(ancestors));
@@ -170,8 +167,7 @@ const char *path
    }
  
    sge_dstring_free(&sb);
-   DEXIT;
-   return 0;
+   DRETURN(0);
 }                                                                               
 
 /***************************************************
@@ -181,7 +177,7 @@ lListElem *getSNTemplate(void)
 {
    lListElem *ep;
 
-   DENTER(TOP_LAYER, "getSNTemplate");
+   DENTER(TOP_LAYER);
 
    ep = lCreateElem(STN_Type);
    lSetString(ep, STN_name, "template");
@@ -190,8 +186,7 @@ lListElem *getSNTemplate(void)
    lSetUlong(ep, STN_shares, 0);
    lSetList(ep, STN_children, NULL);
 
-   DEXIT;
-   return ep;
+   DRETURN(ep);
 }
 
 /********************************************************
@@ -205,11 +200,10 @@ lListElem *search_named_node(lListElem *ep,  /* root of the tree */
    static int sn_children_pos = -1;
    static int sn_name_pos = -1;
 
-   DENTER(TOP_LAYER, "search_named_node");
+   DENTER(TOP_LAYER);
 
    if (!ep || !name) {
-      DEXIT;
-      return NULL;
+      DRETURN(NULL);
    }
 
    if (sn_name_pos == -1) {
@@ -218,19 +212,16 @@ lListElem *search_named_node(lListElem *ep,  /* root of the tree */
    }
 
    if (strcmp(lGetPosString(ep, sn_name_pos), name) == 0) {
-      DEXIT;
-      return ep;
+      DRETURN(ep);
    }
 
    for_each_rw(cep, lGetPosList(ep, sn_children_pos)) {
       if ((fep = search_named_node(cep, name))) {
-         DEXIT;
-         return fep;
+         DRETURN(fep);
       }
    }
       
-   DEXIT;
-   return NULL;
+   DRETURN(NULL);
 }
 
 
@@ -353,11 +344,10 @@ search_ancestors( lListElem *ep,
    static int sn_children_pos = -1;
    static int sn_name_pos = -1;
 
-   DENTER(TOP_LAYER, "search_named_node");
+   DENTER(TOP_LAYER);
 
    if (!ep || !name) {
-      DEXIT;
-      return NULL;
+      DRETURN(NULL);
    }
 
    if (sn_name_pos == -1) {
@@ -368,20 +358,17 @@ search_ancestors( lListElem *ep,
       ancestors->depth = depth;
       ancestors->nodes = (lListElem **)malloc(depth * sizeof(lListElem *));
       ancestors->nodes[depth-1] = ep;
-      DEXIT;
-      return ep;
+      DRETURN(ep);
    }
 
    for_each_rw(cep, lGetPosList(ep, sn_children_pos)) {
       if ((fep = search_ancestors(cep, name, ancestors, depth+1))) {
          ancestors->nodes[depth-1] = ep;
-         DEXIT;
-         return fep;
+         DRETURN(fep);
       }
    }
       
-   DEXIT;
-   return NULL;
+   DRETURN(NULL);
 }
 
 /****** sge_search_unspecified_node() ******************************************
@@ -407,25 +394,21 @@ lListElem *sge_search_unspecified_node(lListElem *ep)
 {
    lListElem *cep = NULL, *ret = NULL;
 
-   DENTER(TOP_LAYER, "sge_search_unspecified_node");
+   DENTER(TOP_LAYER);
 
    if (ep == NULL) {
-      DEXIT;
-      return NULL;
+      DRETURN(NULL);
    }
 
    for_each_rw(cep, lGetList(ep, STN_children)) {
       if ((ret = sge_search_unspecified_node(cep))) {
-         DEXIT;
-         return ret;
+         DRETURN(ret);
       }   
    }
 
    if (lGetString(ep, STN_name) == NULL) {
-      DEXIT;
-      return ep;         /* no name filled in -> unspecified */
+      DRETURN(ep);         /* no name filled in -> unspecified */
    }
    
-   DEXIT;
-   return NULL;
+   DRETURN(NULL);
 }

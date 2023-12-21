@@ -253,7 +253,7 @@ static lList *qalter_parse_job_parameter(u_long32 me_who, lList *cmdline, lList 
    int job_field[100];
    bool is_hold_option = false;
 
-   DENTER(TOP_LAYER, "qalter_parse_job_parameter"); 
+   DENTER(TOP_LAYER); 
 
    if (!prequestlist) {
       answer_list_add(&answer, MSG_PARSE_NULLPOINTERRECEIVED, STATUS_EUNKNOWN, 
@@ -271,7 +271,7 @@ static lList *qalter_parse_job_parameter(u_long32 me_who, lList *cmdline, lList 
    job = lCreateElem(JB_Type);
    if (job == NULL) {
       answer_list_add_sprintf(&answer, STATUS_EMALLOC, ANSWER_QUALITY_ERROR,
-                              MSG_MEM_MEMORYALLOCFAILED_S, SGE_FUNC);
+                              MSG_MEM_MEMORYALLOCFAILED_S, __func__);
       DRETURN(answer);
    }
 
@@ -807,7 +807,7 @@ static lList *qalter_parse_job_parameter(u_long32 me_who, lList *cmdline, lList 
 
       if (!rep) {   
          answer_list_add_sprintf(&answer, STATUS_EMALLOC, ANSWER_QUALITY_ERROR,
-                                 MSG_MEM_MEMORYALLOCFAILED_S, SGE_FUNC);
+                                 MSG_MEM_MEMORYALLOCFAILED_S, __func__);
          lFreeElem(&job);
          sge_free(&rdp);
          DRETURN(answer);

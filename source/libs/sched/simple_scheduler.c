@@ -87,7 +87,7 @@ static sge_callback_result remove_finished_job(sge_evc_class_t *evc,
                                 sge_object_type type, sge_event_action action, 
                                 lListElem *event, void *clientdata)
 {
-   DENTER(TOP_LAYER, "remove_finished_job");
+   DENTER(TOP_LAYER);
 
    /* if we get a final usage event for a ja_task,
     * we have to send a job delete order to qmaster
@@ -114,8 +114,7 @@ static sge_callback_result remove_finished_job(sge_evc_class_t *evc,
       }
    }
    
-   DEXIT;
-   return true;
+   DRETURN(true);
 }
 
 static void print_load_value(lListElem *host, const char *name, const char *format)
@@ -452,7 +451,7 @@ static void simple_scheduler(sge_evc_class_t *evc)
    u_long32 procs = 1;
    lList *allocated_queues = NULL; /* JG_Type */
   
-   DENTER(TOP_LAYER, "simple_scheduler");
+   DENTER(TOP_LAYER);
 
    /* find a pending job */
    if(!find_pending_ja_task(&job, &ja_task)) {
@@ -508,8 +507,7 @@ static void simple_scheduler(sge_evc_class_t *evc)
    if(procs > 0) {
       DPRINTF(("job could not be scheduled\n"));
       lFreeList(&allocated_queues);
-      DEXIT;
-      return;
+      DRETURN_VOID;
    }
 
    /* schedule job:
@@ -542,7 +540,7 @@ static void simple_scheduler(sge_evc_class_t *evc)
       }   
    }
 
-   DEXIT;
+   DRETURN_VOID;
 }
 
 #if 0
@@ -570,7 +568,7 @@ static void delete_some_jobs(sge_evc_class_t *evc)
 
 static void register_scheduler(sge_evc_class_t *evc)
 {
-   DENTER(TOP_LAYER, "register_scheduler");
+   DENTER(TOP_LAYER);
 
    /* initialize mirroring interface */
    sge_mirror_initialize(evc, EV_ID_SCHEDD, "simple_scheduler", true);
@@ -581,7 +579,7 @@ static void register_scheduler(sge_evc_class_t *evc)
     */
    sge_mirror_subscribe(evc, SGE_TYPE_JOB, remove_finished_job, NULL, NULL, NULL, NULL);
 
-   DEXIT;
+   DRETURN_VOID;
 }
 
 int main(int argc, char *argv[])
@@ -632,6 +630,5 @@ int main(int argc, char *argv[])
       }
    }
    
-   DEXIT;
-   return EXIT_SUCCESS;
+   DRETURN(EXIT_SUCCESS);
 }

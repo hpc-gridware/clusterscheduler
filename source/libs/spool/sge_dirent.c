@@ -62,7 +62,7 @@ lList *sge_get_dirents(const char *path) {
    SGE_STRUCT_DIRENT *dent;
    char dirent[SGE_PATH_MAX*2];
 
-   DENTER(TOP_LAYER, "sge_get_dirents");
+   DENTER(TOP_LAYER);
 
    cwd = opendir(path);
 

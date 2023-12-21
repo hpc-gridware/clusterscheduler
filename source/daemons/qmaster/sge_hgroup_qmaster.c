@@ -90,7 +90,7 @@ hgroup_mod_hostlist(lListElem *hgroup, lList **answer_list,
    bool ret = true;
    const lList *master_hgroup_list = *object_type_get_master_list(SGE_TYPE_HGROUP);
 
-   DENTER(TOP_LAYER, "hgroup_mod_hostlist");
+   DENTER(TOP_LAYER);
    if (hgroup != NULL && reduced_elem != NULL) {
       int pos = lGetPosViaElem(reduced_elem, HGRP_host_list, SGE_NO_ABORT);
 
@@ -197,8 +197,7 @@ hgroup_mod_hostlist(lListElem *hgroup, lList **answer_list,
          lFreeList(&rem_groups);
       }
    }
-   DEXIT;
-   return ret;
+   DRETURN(ret);
 }
 
 static void 
@@ -209,7 +208,7 @@ hgroup_commit(sge_gdi_ctx_class_t *ctx, lListElem *hgroup)
    lListElem *next_cqueue = NULL;
    lListElem *cqueue = NULL;
 
-   DENTER(TOP_LAYER, "hgroup_commit");
+   DENTER(TOP_LAYER);
    next_cqueue = lFirstRW(cqueue_list);
    while ((cqueue = next_cqueue)) {
       const char *name = lGetString(cqueue, CQ_name);
@@ -222,15 +221,15 @@ hgroup_commit(sge_gdi_ctx_class_t *ctx, lListElem *hgroup)
       lAppendElem(master_cqueue_list, cqueue);
    }
    lSetList(hgroup, HGRP_cqueue_list, NULL);
-   DEXIT;
+   DRETURN_VOID;
 }
 
 static void 
 hgroup_rollback(lListElem *this_elem) 
 {
-   DENTER(TOP_LAYER, "hgroup_rollback");
+   DENTER(TOP_LAYER);
    lSetList(this_elem, HGRP_cqueue_list, NULL);
-   DEXIT;
+   DRETURN_VOID;
 }
 
 int 
@@ -245,7 +244,7 @@ hgroup_mod(sge_gdi_ctx_class_t *ctx,
    lList *master_cqueue_list = *object_type_get_master_list_rw(SGE_TYPE_CQUEUE);
    const lList *master_ehost_list = *object_type_get_master_list(SGE_TYPE_EXECHOST);
 
-   DENTER(TOP_LAYER, "hgroup_mod");
+   DENTER(TOP_LAYER);
 
    /* Did we get a hostgroupname?  */
    pos = lGetPosViaElem(reduced_elem, HGRP_name, SGE_NO_ABORT);
@@ -277,7 +276,7 @@ hgroup_mod(sge_gdi_ctx_class_t *ctx,
       }
    } else {
       ERROR((SGE_EVENT, MSG_SGETEXT_MISSINGCULLFIELD_SS, 
-             lNm2Str(HGRP_name), SGE_FUNC));
+             lNm2Str(HGRP_name), __func__));
       answer_list_add(answer_list, SGE_EVENT, STATUS_EUNKNOWN, 
                       ANSWER_QUALITY_ERROR);
       ret = false;
@@ -430,11 +429,10 @@ hgroup_mod(sge_gdi_ctx_class_t *ctx,
       }  
    } 
 
-   DEXIT;
    if (ret) {
-      return 0;
+      DRETURN(0);
    } else {
-      return STATUS_EUNKNOWN;
+      DRETURN(STATUS_EUNKNOWN);
    }
 }
 
@@ -447,7 +445,7 @@ hgroup_del(sge_gdi_ctx_class_t *ctx,
    lList *master_hgroup_list = *object_type_get_master_list_rw(SGE_TYPE_HGROUP);
    const lList *master_cqueue_list = *object_type_get_master_list(SGE_TYPE_CQUEUE);
 
-   DENTER(TOP_LAYER, "hgroup_del");
+   DENTER(TOP_LAYER);
    /*
     * Check all incoming parameter
     */
@@ -522,21 +520,20 @@ hgroup_del(sge_gdi_ctx_class_t *ctx,
             ret = false;
          }
       } else {
-         ERROR((SGE_EVENT, MSG_SGETEXT_MISSINGCULLFIELD_SS, lNm2Str(HGRP_name), SGE_FUNC));
+         ERROR((SGE_EVENT, MSG_SGETEXT_MISSINGCULLFIELD_SS, lNm2Str(HGRP_name), __func__));
          answer_list_add(answer_list, SGE_EVENT, STATUS_EUNKNOWN, ANSWER_QUALITY_ERROR);
          ret = false;
       } 
    } else {
-      CRITICAL((SGE_EVENT, MSG_SGETEXT_NULLPTRPASSED_S, SGE_FUNC));
+      CRITICAL((SGE_EVENT, MSG_SGETEXT_NULLPTRPASSED_S, __func__));
       answer_list_add(answer_list, SGE_EVENT, STATUS_EUNKNOWN, ANSWER_QUALITY_ERROR);
       ret = false;        
    }
 
-   DEXIT;
    if (ret) {
-      return STATUS_OK;
+      DRETURN(STATUS_OK);
    } else {
-      return STATUS_EUNKNOWN;
+      DRETURN(STATUS_EUNKNOWN);
    }
 }
 
@@ -546,7 +543,7 @@ hgroup_success(sge_gdi_ctx_class_t *ctx, lListElem *hgroup, lListElem *old_hgrou
    const char *name = lGetHost(hgroup, HGRP_name);
    lList *cqueue_list = NULL;
 
-   DENTER(TOP_LAYER, "hgroup_success");
+   DENTER(TOP_LAYER);
 
    /* we will have the cqueue_list in the final event */
    lXchgList(hgroup, HGRP_cqueue_list, &cqueue_list);
@@ -580,7 +577,7 @@ hgroup_spool(sge_gdi_ctx_class_t *ctx, lList **answer_list, lListElem *this_elem
    lList *spool_answer_list = NULL;
    bool job_spooling = ctx->get_job_spooling(ctx);
 
-   DENTER(TOP_LAYER, "hgroup_spool");
+   DENTER(TOP_LAYER);
 
    /* start a transaction for spooling of all affected objects */
    dbret = spool_transaction(&spool_answer_list, spool_get_default_context(),
@@ -656,6 +653,5 @@ hgroup_spool(sge_gdi_ctx_class_t *ctx, lList **answer_list, lListElem *this_elem
       hgroup_rollback(this_elem);
    }
 
-   DEXIT;
-   return tmp_ret ? 0 : 1;
+   DRETURN(tmp_ret ? 0 : 1);
 }

@@ -144,7 +144,7 @@ bool qquota_output(sge_gdi_ctx_class_t *ctx, lList *host_list, lList *resource_m
 
    dstring rule_name = DSTRING_INIT;
 
-   DENTER(TOP_LAYER, "qquota_output");
+   DENTER(TOP_LAYER);
 
    /* If no user is requested on command line we set the current user as default */
    qquota_filter.user = ctx->get_username(ctx);
@@ -158,7 +158,7 @@ bool qquota_output(sge_gdi_ctx_class_t *ctx, lList *host_list, lList *resource_m
 
       if (report_handler != NULL) {
          xml_ret = report_handler->report_started(report_handler, alpp);
-         if (xml_ret != QQUOTA_SUCCESS) {
+         if (xml_ret != 0) {
             ret = false;
             goto qquota_output_error;
          }
@@ -403,7 +403,7 @@ get_all_lists(sge_gdi_ctx_class_t *ctx, lList **rqs_l, lList **centry_l, lList *
    int rqs_id, ce_id, userset_id, hgroup_id, eh_id;
    state_gdi_multi state = STATE_GDI_MULTI_INIT;
    
-   DENTER(TOP_LAYER, "get_all_lists");
+   DENTER(TOP_LAYER);
 
    /*
    ** resource quota sets

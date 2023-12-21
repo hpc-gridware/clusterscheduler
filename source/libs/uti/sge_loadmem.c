@@ -158,8 +158,7 @@ int sge_loadmem(sge_mem_info_t *mem_info)
    
    /* get total number of swap entries */
    if ((cnt = swapctl(SC_GETNSWP, 0))<0) {
-      DEXIT;
-      return -1;
+      DRETURN(-1);
    }
 
    /* allocate enough space to hold count + n swapents */
@@ -169,8 +168,7 @@ int sge_loadmem(sge_mem_info_t *mem_info)
    if (swt == NULL) {
       total = 0;
       fr = 0;
-      DEXIT;
-      return -1;
+      DRETURN(-1);
    }
    swt->swt_n = cnt;
 
@@ -184,8 +182,7 @@ int sge_loadmem(sge_mem_info_t *mem_info)
 
    /* grab all swap info */
    if (swapctl(SC_LIST, swt) != cnt) {
-      DEXIT;
-      return -1;
+      DRETURN(-1);
    }
 
    /* walk thru the structs and sum up the fields */
@@ -217,8 +214,7 @@ int sge_loadmem(sge_mem_info_t *mem_info)
    mem_info->swap_free = page2M(fr);
 
    if (get_freemem(&freemem)) {
-      DEXIT;
-      return -1;
+      DRETURN(-1);
    }
 
    mem_info->mem_free = page2M(freemem);
@@ -365,7 +361,7 @@ int sge_loadmem(sge_mem_info_t *mem_info)
    static long pagesize = 0;
 
 #ifndef NO_SGE_COMPILE_DEBUG
-   char SGE_FUNC[] = "";
+   char __func__[] = "";
 #endif
          
    if (first) {

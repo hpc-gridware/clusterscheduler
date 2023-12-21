@@ -78,7 +78,7 @@ static lListElem* sge_get_configuration_for_host(const char* aName)
    int ret = -1;
    const lList *cluster_config = *object_type_get_master_list(SGE_TYPE_CONFIG);
 
-   DENTER(TOP_LAYER, "sge_get_configuration_for_host");
+   DENTER(TOP_LAYER);
 
    SGE_ASSERT((NULL != aName));
 
@@ -90,7 +90,7 @@ static lListElem* sge_get_configuration_for_host(const char* aName)
     */
    ret = sge_resolve_hostname(aName, unique_name, EH_name);
    if (CL_RETVAL_OK != ret) {
-      DPRINTF(("%s: error %s resolving host %s\n", SGE_FUNC,
+      DPRINTF(("%s: error %s resolving host %s\n", __func__,
               cl_get_error_text(ret), aName));
       strcpy(unique_name, aName);
    }
@@ -110,7 +110,7 @@ static int sge_read_configuration(sge_gdi_ctx_class_t *ctx, const lListElem *aSp
    u_long32 progid = ctx->get_who(ctx);
    lList *cluster_config = *object_type_get_master_list_rw(SGE_TYPE_CONFIG);
 
-   DENTER(TOP_LAYER, "sge_read_configuration");
+   DENTER(TOP_LAYER);
    
    spool_read_list(&anAnswer, aSpoolContext, &cluster_config, SGE_TYPE_CONFIG);
 
@@ -165,7 +165,7 @@ static bool read_spooled_data(sge_gdi_ctx_class_t *ctx)
    lList *master_list = NULL;
    lList **cluster_configuration = object_type_get_master_list_rw(SGE_TYPE_CONFIG);
 
-   DENTER(TOP_LAYER, "read_spooled_data");
+   DENTER(TOP_LAYER);
 
    context = spool_get_default_context();
 
@@ -291,7 +291,7 @@ sge_callback_result spool_event_before(sge_evc_class_t *evc, sge_object_type typ
    int key_nm;
    dstring buffer = DSTRING_INIT;
 
-   DENTER(TOP_LAYER, "spool_event_before");
+   DENTER(TOP_LAYER);
 
    context = spool_get_default_context();
    
@@ -463,7 +463,7 @@ sge_callback_result spool_event_after(sge_evc_class_t *evc, sge_object_type type
    const char *key;
    dstring buffer = DSTRING_INIT;
 
-   DENTER(TOP_LAYER, "spool_event_after");
+   DENTER(TOP_LAYER);
 
    context = spool_get_default_context();
    

@@ -283,7 +283,7 @@ sge_calc_node_usage( lListElem *node,
    const char *usage_name;
    bool is_user = false;
 
-   DENTER(TOP_LAYER, "sge_calc_node_usage");
+   DENTER(TOP_LAYER);
 
    children = lGetPosList(node, STN_children_POS);
    if (!children) {
@@ -470,8 +470,7 @@ sge_calc_node_usage( lListElem *node,
 
    lSetPosDouble(node, STN_combined_usage_POS, usage_value);
 
-   DEXIT;
-   return usage_value;
+   DRETURN(usage_value);
 }
 
 
@@ -531,11 +530,10 @@ _sge_calc_share_tree_proportions(const lList *share_tree,
    lListElem *root;
    double total_usage;
 
-   DENTER(TOP_LAYER, "sge_calc_share_tree_proportions");
+   DENTER(TOP_LAYER);
 
    if (!share_tree || !((root=lFirstRW(share_tree)))) {
-      DEXIT;
-      return;
+      DRETURN_VOID;
    }
 
    calculate_default_decay_constant( sconf_get_halftime());
@@ -550,8 +548,7 @@ _sge_calc_share_tree_proportions(const lList *share_tree,
 
    sge_calc_node_proportion(root, total_usage);
 
-   DEXIT;
-   return;
+   DRETURN_VOID;
 }
 
 
@@ -817,11 +814,10 @@ void sgeee_sort_jobs_by( lList **job_list , int by_SGEJ_field, int field_sort_di
    lList *tmp_list = NULL;    /* SGEJ_Type */
    char *sortorder = NULL;
 
-   DENTER(TOP_LAYER, "sgeee_sort_jobs_by");
+   DENTER(TOP_LAYER);
 
    if (!job_list || !*job_list) {
-      DEXIT;
-      return;
+      DRETURN_VOID;
    }
 
 #if 0
@@ -925,8 +921,7 @@ void sgeee_sort_jobs_by( lList **job_list , int by_SGEJ_field, int field_sort_di
     *-----------------------------------------------------------------*/
    lFreeList(&tmp_list);
 
-   DEXIT;
-   return;
+   DRETURN_VOID;
 }
 
 

@@ -86,16 +86,14 @@ static int sge_domkdir(const char *path_, int fmode, bool exit_on_error, bool ma
 {
    SGE_STRUCT_STAT statbuf;
  
-   DENTER(TOP_LAYER, "sge_domkdir");
+   DENTER(TOP_LAYER);
  
    if (mkdir(path_, (mode_t) fmode)) {
       if (errno == EEXIST) {
          if (may_not_exist) {
-            DEXIT;
-            return -1;
+            DRETURN(-1);
          } else {
-            DEXIT;
-            return 0;
+            DRETURN(0);
          }
       }
  
@@ -104,8 +102,7 @@ static int sge_domkdir(const char *path_, int fmode, bool exit_on_error, bool ma
           * may be we do not have permission, 
           * but directory already exists 
           */
-         DEXIT;
-         return 0;
+         DRETURN(0);
       }
  
       if (exit_on_error) {
@@ -115,8 +112,7 @@ static int sge_domkdir(const char *path_, int fmode, bool exit_on_error, bool ma
       } else {
          ERROR((SGE_EVENT, MSG_FILE_CREATEDIRFAILED_SS, path_, 
                 strerror(errno)));
-         DEXIT;
-         return -1;
+         DRETURN(-1);
       }
    }
 #if defined( INTERIX )
@@ -127,8 +123,7 @@ static int sge_domkdir(const char *path_, int fmode, bool exit_on_error, bool ma
    chown(path_, geteuid(), getegid());
 #endif
  
-   DEXIT;
-   return 0;
+   DRETURN(0);
 }         
 
 /****** uti/unistd/sge_unlink() ***********************************************
@@ -156,12 +151,11 @@ bool sge_unlink(const char *prefix, const char *suffix)
    int status;
    stringT str;
  
-   DENTER(TOP_LAYER, "sge_unlink");
+   DENTER(TOP_LAYER);
  
    if (!suffix) {
       ERROR((SGE_EVENT, SFNMAX, MSG_POINTER_SUFFIXISNULLINSGEUNLINK));
-      DEXIT;
-      return false;
+      DRETURN(false);
    }
  
    if (prefix) {
@@ -175,11 +169,9 @@ bool sge_unlink(const char *prefix, const char *suffix)
  
    if (status) {
       ERROR((SGE_EVENT, MSG_FILE_UNLINKFAILED_SS, str, strerror(errno)));
-      DEXIT;
-      return false;
+      DRETURN(false);
    } else {
-      DEXIT;
-      return true;
+      DRETURN(true);
    }
 }  
 
@@ -232,7 +224,7 @@ void sge_sleep(int sec, int usec)
 ******************************************************************************/
 int sge_chdir_exit(const char *path, int exit_on_error) 
 {
-   DENTER(BASIS_LAYER, "sge_chdir");
+   DENTER(BASIS_LAYER);
  
    if (chdir(path)) {
       if (exit_on_error) {
@@ -244,8 +236,7 @@ int sge_chdir_exit(const char *path, int exit_on_error)
       }
    }
  
-   DEXIT;
-   return 0;
+   DRETURN(0);
 }           
 
 /****** uti/unistd/sge_chdir() ************************************************
@@ -348,7 +339,7 @@ int sge_mkdir(const char *path, int fmode, bool exit_on_error, bool may_not_exis
    int i = 0, res=0;
    stringT path_;
  
-   DENTER(TOP_LAYER, "sge_mkdir");
+   DENTER(TOP_LAYER);
    if (!path) {
       if (exit_on_error) {
          CRITICAL((SGE_EVENT, SFNMAX, MSG_VAR_PATHISNULLINSGEMKDIR));
@@ -356,8 +347,7 @@ int sge_mkdir(const char *path, int fmode, bool exit_on_error, bool may_not_exis
          SGE_EXIT(NULL, 1);
       } else {
          ERROR((SGE_EVENT, SFNMAX, MSG_VAR_PATHISNULLINSGEMKDIR));
-         DEXIT;
-         return -1;
+         DRETURN(-1);
       }
    }
 
@@ -371,8 +361,7 @@ int sge_mkdir(const char *path, int fmode, bool exit_on_error, bool may_not_exis
          res = sge_domkdir(path_, fmode, exit_on_error, false);
          if (res) {
             DPRINTF(("retval = %d\n", res));
-            DEXIT;
-            return res;
+            DRETURN(res);
          }
       }
       path_[i] = path[i];
@@ -382,8 +371,7 @@ int sge_mkdir(const char *path, int fmode, bool exit_on_error, bool may_not_exis
    i = sge_domkdir(path_, fmode, exit_on_error, may_not_exist);
  
    DPRINTF(("retval = %d\n", i));
-   DEXIT;
-   return i;
+   DRETURN(i);
 }   
 
 int sge_mkdir2(const char *base_dir, const char *name, int fmode, bool exit_on_error)
@@ -391,7 +379,7 @@ int sge_mkdir2(const char *base_dir, const char *name, int fmode, bool exit_on_e
    dstring path = DSTRING_INIT;
    int ret;
 
-   DENTER(TOP_LAYER, "sge_mkdir2");
+   DENTER(TOP_LAYER);
    
    if (base_dir == NULL || name == NULL) {
       if (exit_on_error) {
@@ -440,18 +428,16 @@ int sge_rmdir(const char *cp, dstring *error)
    char dirent[SGE_PATH_MAX*2];
    char fname[SGE_PATH_MAX];
 
-   DENTER(TOP_LAYER, "sge_rmdir");
+   DENTER(TOP_LAYER);
  
    if (!cp) {
       sge_dstring_sprintf(error, MSG_POINTER_NULLPARAMETER);
-      DEXIT;
-      return -1;
+      DRETURN(-1);
    }
  
    if (!(dir = opendir(cp))) {
       sge_dstring_sprintf(error, MSG_FILE_OPENDIRFAILED_SS , cp, strerror(errno));
-      DEXIT;
-      return -1;
+      DRETURN(-1);
    }
  
    while (SGE_READDIR_R(dir, (SGE_STRUCT_DIRENT *)dirent, &dent)==0 && dent!=NULL) {
@@ -463,16 +449,14 @@ int sge_rmdir(const char *cp, dstring *error)
          if (SGE_LSTAT(fname, &statbuf)) {
             sge_dstring_sprintf(error, MSG_FILE_STATFAILED_SS , fname, strerror(errno));
             closedir(dir);
-            DEXIT;
-            return -1;
+            DRETURN(-1);
          }
 #else
          /* so symbolic links under Windows */
          if (SGE_STAT(fname, &statbuf)) {
             sge_dstring_sprintf(error, MSG_FILE_STATFAILED_SS , fname, strerror(errno));
             closedir(dir);
-            DEXIT;
-            return -1;
+            DRETURN(-1);
          }
 #endif /* WIN32 */
  
@@ -480,8 +464,7 @@ int sge_rmdir(const char *cp, dstring *error)
        if (sge_rmdir(fname, error)) {
           sge_dstring_sprintf(error, MSG_FILE_RECURSIVERMDIRFAILED );
           closedir(dir);
-          DEXIT;
-          return -1;
+          DRETURN(-1);
        }
     } else {                                                
 #ifdef TEST
@@ -491,8 +474,7 @@ int sge_rmdir(const char *cp, dstring *error)
                sge_dstring_sprintf(error, MSG_FILE_UNLINKFAILED_SS,
                       fname, strerror(errno));
                closedir(dir);
-               DEXIT;
-               return -1;
+               DRETURN(-1);
             }
 #endif
          }
@@ -506,8 +488,7 @@ int sge_rmdir(const char *cp, dstring *error)
 #else
    if (rmdir(cp)) {
       sge_dstring_sprintf(error, MSG_FILE_RMDIRFAILED_SS , cp, strerror(errno));
-      DEXIT;
-      return -1;
+      DRETURN(-1);
    }
 #endif
  
@@ -595,7 +576,7 @@ u_long32 sge_sysconf(sge_sysconf_t id)
 {
    u_long32 ret = 0;
  
-   DENTER(BASIS_LAYER, "sge_sysconf");
+   DENTER(BASIS_LAYER);
    switch (id) {
       case SGE_SYSCONF_NGROUPS_MAX:
          ret = sysconf(_SC_NGROUPS_MAX);
@@ -604,8 +585,7 @@ u_long32 sge_sysconf(sge_sysconf_t id)
          CRITICAL((SGE_EVENT, MSG_SYSCONF_UNABLETORETRIEVE_I, (int) id));
       break;
    }
-   DEXIT;
-   return ret;
+   DRETURN(ret);
 }      
  
 #ifdef TEST

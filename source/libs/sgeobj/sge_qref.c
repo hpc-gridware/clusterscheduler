@@ -97,7 +97,7 @@ qref_list_resolve_cqueue_names(const lList *cq_qref_list,
    bool ret = true;
    const lListElem *cq_qref = NULL;
 
-   DENTER(QREF_LAYER, "qref_list_resolve_cqueue_names");
+   DENTER(QREF_LAYER);
    for_each(cq_qref, cq_qref_list) {
       const char *cq_name = lGetString(cq_qref, QR_name);
 
@@ -116,8 +116,7 @@ qref_list_resolve_cqueue_names(const lList *cq_qref_list,
          lAddElemStr(qref_list, QR_name, cq_name, QR_Type);
       }
    }
-   DEXIT;
-   return ret;
+   DRETURN(ret);
 }
 
 static bool
@@ -131,7 +130,7 @@ qref_list_resolve_qinstance_names(const lList *cq_qref_list,
    bool ret = true;
    const lListElem *cq_qref = NULL;
 
-   DENTER(QREF_LAYER, "qref_list_resolve_qinstance_names");
+   DENTER(QREF_LAYER);
    for_each(cq_qref, cq_qref_list) {
       const char *cqueue_name = NULL;
       const char *hostname_pattern = NULL;
@@ -174,7 +173,7 @@ qref_list_resolve_qdomain_names(const lList *cq_qref_list,
    const lListElem *cq_qref = NULL;
    dstring buffer = DSTRING_INIT;
 
-   DENTER(QREF_LAYER, "qref_list_resolve_qdomain_names");
+   DENTER(QREF_LAYER);
    hgroup_pattern = sge_dstring_get_string(host_or_hgroup);
    /*
     * Find all hostgroups which match 'hgroup_pattern'
@@ -225,8 +224,7 @@ qref_list_resolve_qdomain_names(const lList *cq_qref_list,
    }
    sge_dstring_free(&buffer);
    lFreeList(&href_list);
-   DEXIT;
-   return ret;
+   DRETURN(ret);
 }
 
 /****** sgeobj/qref/qref_list_add() *******************************************
@@ -258,7 +256,7 @@ qref_list_add(lList **this_list, lList **answer_list, const char *qref_string)
 {
    bool ret = true;
 
-   DENTER(QREF_LAYER, "qref_list_add");
+   DENTER(QREF_LAYER);
    if (this_list != NULL && qref_string != NULL) {
       lListElem *new_elem; 
 
@@ -269,13 +267,12 @@ qref_list_add(lList **this_list, lList **answer_list, const char *qref_string)
          ret = false;
       }
    } else {
-      SGE_ADD_MSG_ID(sprintf(SGE_EVENT, MSG_INAVLID_PARAMETER_IN_S, SGE_FUNC));
+      SGE_ADD_MSG_ID(sprintf(SGE_EVENT, MSG_INAVLID_PARAMETER_IN_S, __func__));
       answer_list_add(answer_list, SGE_EVENT,
                       STATUS_ERROR1, ANSWER_QUALITY_ERROR);
       ret = false;
    }
-   DEXIT;
-   return ret;
+   DRETURN(ret);
 }
 
 /****** sgeobj/qref/qref_list_resolve() ****************************************
@@ -347,7 +344,7 @@ qref_list_resolve(const lList *src_qref_list, lList **answer_list,
    dstring cqueue_name = DSTRING_INIT;
    dstring host_or_hgroup = DSTRING_INIT;
 
-   DENTER(QREF_LAYER, "qref_list_resolve");
+   DENTER(QREF_LAYER);
 
    if (src_qref_list != NULL) {
       const lListElem *qref_pattern = NULL;
@@ -442,7 +439,7 @@ qref_cq_rejected(const char *qref_pattern, const char *cqname,
 {
    const char *s;
 
-   DENTER(TOP_LAYER, "qref_cq_rejected");
+   DENTER(TOP_LAYER);
 
    if ((s=strchr(qref_pattern, '@'))) {
       /* use qref part before '@' as wc_cqueue pattern */
@@ -454,21 +451,18 @@ qref_cq_rejected(const char *qref_pattern, const char *cqname,
       sge_free(&wc_cqueue);
       if (!boo) {
          if (!hostname || !qref_list_host_rejected(&s[1], hostname, hgroup_list)) {
-            DEXIT;
-            return false;
+            DRETURN(false);
          }
       }
    } else {
       /* use entire qref as wc_queue */
      /* cqueue expression support */
       if (!sge_eval_expression(TYPE_STR,qref_pattern, cqname, NULL)) {
-         DEXIT;
-         return false;
+         DRETURN(false);
       }
    }
 
-   DEXIT;
-   return true;
+   DRETURN(true);
 }
 
 
@@ -502,20 +496,17 @@ qref_eh_rejected(const char *qref_pattern, const char *hostname, const lList *hg
 {
    const char *s;
 
-   DENTER(TOP_LAYER, "qref_cq_rejected");
+   DENTER(TOP_LAYER);
 
    if (!(s=strchr(qref_pattern, '@'))) {
-      DEXIT;
-      return false;
+      DRETURN(false);
    }
   
    if (!qref_list_host_rejected(&s[1], hostname, hgroup_list)) {
-       DEXIT;
-       return false;
+       DRETURN(false);
    }
 
-   DEXIT;
-   return true;
+   DRETURN(true);
 }
 
 bool
@@ -523,28 +514,24 @@ qref_list_eh_rejected(const lList *qref_list, const char *hostname, const lList 
 {
    const lListElem *qref_pattern = NULL;
 
-   DENTER(TOP_LAYER, "qref_list_eh_rejected");
+   DENTER(TOP_LAYER);
 
    if (!hostname) {
-      DEXIT;
-      return true;
+      DRETURN(true);
    }
 
    if (!qref_list) {
-      DEXIT;
-      return false;
+      DRETURN(false);
    }
 
    for_each(qref_pattern, qref_list) {
       const char *name = lGetString(qref_pattern, QR_name);
       if (qref_eh_rejected(name, hostname, hgroup_list)==false) {
-         DEXIT;
-         return false;
+         DRETURN(false);
       }
    }
 
-   DEXIT;
-   return true;
+   DRETURN(true);
 }
 
 
@@ -554,28 +541,24 @@ qref_list_cq_rejected(const lList *qref_list, const char *cqname,
 {
    const lListElem *qref_pattern = NULL;
 
-   DENTER(TOP_LAYER, "qref_list_cq_rejected");
+   DENTER(TOP_LAYER);
 
    if (!cqname) {
-      DEXIT;
-      return true;
+      DRETURN(true);
    }
 
    if (!qref_list) {
-      DEXIT;
-      return false;
+      DRETURN(false);
    }
 
    for_each(qref_pattern, qref_list) {
       const char *name = lGetString(qref_pattern, QR_name);
       if (qref_cq_rejected(name, cqname, hostname, hgroup_list)==false) {
-         DEXIT;
-         return false;
+         DRETURN(false);
       }
    }
 
-   DEXIT;
-   return true;
+   DRETURN(true);
 }
 
 
@@ -605,7 +588,7 @@ qref_list_cq_rejected(const lList *qref_list, const char *cqname,
 bool
 qref_list_host_rejected(const char *href, const char *hostname, const lList *hgroup_list)
 {
-   DENTER(BASIS_LAYER, "qref_list_host_rejected");
+   DENTER(BASIS_LAYER);
 
    if (href[0] == '@') { /* wc_hostgroup */
       const char *wc_hostgroup = &href[1];
@@ -619,8 +602,7 @@ qref_list_host_rejected(const char *href, const char *hostname, const lList *hgr
             const lListElem *h;
             for_each (h, lGetList(hgroup, HGRP_host_list)) {
                if (!qref_list_host_rejected(lGetHost(h, HR_name), hostname, hgroup_list)) {
-                  DEXIT;
-                  return false;
+                  DRETURN(false);
                }
             }
          }
@@ -628,15 +610,13 @@ qref_list_host_rejected(const char *href, const char *hostname, const lList *hgr
    } else { /* wc_host */
       /* use host expression */
       if (sge_eval_expression(TYPE_HOST, href, hostname, NULL)==0) {
-            DEXIT;
-            return false;
+            DRETURN(false);
       }
    }
 
    DPRINTF(("-q ?@%s rejected by \"%s\"\n", hostname, href));
 
-   DEXIT;
-   return true;
+   DRETURN(true);
 }
 
 /****** sgeobj/qref/qref_list_trash_some_elemts() *****************************
@@ -668,7 +648,7 @@ qref_list_trash_some_elemts(lList **this_list, const char *full_name)
 {
    bool ret = true;
 
-   DENTER(TOP_LAYER, "qref_list_trash_some_elemts");
+   DENTER(TOP_LAYER);
    if (this_list != NULL) {
       lListElem *qref = NULL;
       lListElem *next_qref = NULL;
@@ -762,7 +742,7 @@ qref_list_is_valid(const lList *this_list, lList **answer_list, const lList *mas
 {
    bool ret = true;
 
-   DENTER(TOP_LAYER, "qref_list_is_valid");
+   DENTER(TOP_LAYER);
    if (this_list != NULL) {
 
       /*
@@ -817,11 +797,11 @@ qref_list_resolve_hostname(lList *this_list)
 {
    lListElem *qref;
 
-   DENTER(TOP_LAYER, "qref_list_resolve_hostname");
+   DENTER(TOP_LAYER);
    for_each_rw(qref, this_list) {
       qref_resolve_hostname(qref);
    }
-   DEXIT;
+   DRETURN_VOID;
 }
 
 /* QR_name might be a pattern */
@@ -835,7 +815,7 @@ qref_resolve_hostname(lListElem *this_elem)
    bool has_hostname;
    bool has_domain;
    
-   DENTER(TOP_LAYER, "qref_resolve_hostname");
+   DENTER(TOP_LAYER);
    name = lGetString(this_elem, QR_name);
 
    if (cqueue_name_split(name, &cqueue_name, &host_or_hgroup,
@@ -898,7 +878,7 @@ cull_parse_destination_identifier_list(lList **lpp, const char *dest_str)
    int i_ret;
    char *s;
 
-   DENTER(TOP_LAYER, "cull_parse_destination_identifier_list");
+   DENTER(TOP_LAYER);
 
    if (lpp == NULL) {
       DRETURN(1);

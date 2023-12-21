@@ -88,11 +88,10 @@ sge_env_state_class_t *sge_env_state_class_create(const char *sge_root, const ch
 {
    sge_env_state_class_t *ret = (sge_env_state_class_t *)sge_malloc(sizeof(sge_env_state_class_t));
 
-   DENTER(TOP_LAYER, "sge_env_state_class_create");
+   DENTER(TOP_LAYER);
    if (!ret) {
       eh->error(eh, STATUS_EMALLOC, ANSWER_QUALITY_ERROR, MSG_MEMORY_MALLOCFAILED);
-      DEXIT;
-      return NULL;
+      DRETURN(NULL);
    }   
    
    ret->dprintf = sge_env_state_dprintf;
@@ -113,37 +112,33 @@ sge_env_state_class_t *sge_env_state_class_create(const char *sge_root, const ch
    if (ret->sge_env_state_handle == NULL) {
       eh->error(eh, STATUS_EMALLOC, ANSWER_QUALITY_ERROR, MSG_MEMORY_MALLOCFAILED);
       sge_env_state_class_destroy(&ret);
-      DEXIT;
-      return NULL;
+      DRETURN(NULL);
    }
    memset(ret->sge_env_state_handle, 0, sizeof(sge_env_state_t));
 
    if (!sge_env_state_setup(ret, sge_root, sge_cell, sge_qmaster_port, sge_execd_port, from_services, qmaster_internal, eh)) {
       sge_env_state_class_destroy(&ret);
-      DEXIT;
-      return NULL;
+      DRETURN(NULL);
    }
 
-   DEXIT;
-   return ret;
+   DRETURN(ret);
 }   
 
 void sge_env_state_class_destroy(sge_env_state_class_t **pst)
 {
-   DENTER(TOP_LAYER, "sge_env_state_class_destroy");
+   DENTER(TOP_LAYER);
 
    if (!pst || !*pst) {
-      DEXIT;
-      return;
+      DRETURN_VOID;
    }   
    sge_env_state_destroy((*pst)->sge_env_state_handle);
    sge_free(pst);
-   DEXIT;
+   DRETURN_VOID;
 }
 
 static bool sge_env_state_setup(sge_env_state_class_t *thiz, const char *sge_root, const char *sge_cell, u_long32 sge_qmaster_port, u_long32 sge_execd_port, bool from_services, bool qmaster_internal, sge_error_class_t *eh)
 {
-   DENTER(TOP_LAYER, "sge_env_state_setup");
+   DENTER(TOP_LAYER);
  
    thiz->set_sge_qmaster_port(thiz, sge_qmaster_port);
    thiz->set_sge_execd_port(thiz, sge_execd_port);
@@ -154,26 +149,25 @@ static bool sge_env_state_setup(sge_env_state_class_t *thiz, const char *sge_roo
 
    /*thiz->dprintf(thiz);*/
 
-   DEXIT;
-   return true;
+   DRETURN(true);
 }
 
 static void sge_env_state_destroy(void *theState)
 {
    sge_env_state_t *s = (sge_env_state_t *)theState;
 
-   DENTER(TOP_LAYER, "sge_env_state_destroy");
+   DENTER(TOP_LAYER);
    sge_free(&(s->sge_root));
    sge_free(&(s->sge_cell));
    sge_free(&s);
-   DEXIT;
+   DRETURN_VOID;
 }
 
 static void sge_env_state_dprintf(sge_env_state_class_t *thiz)
 {
    sge_env_state_t *es = (sge_env_state_t *)thiz->sge_env_state_handle;
 
-   DENTER(TOP_LAYER, "sge_env_state_dprintf");
+   DENTER(TOP_LAYER);
 
    DPRINTF(("sge_root            >%s<\n", es->sge_root ? es->sge_root : "NA"));
    DPRINTF(("sge_cell            >%s<\n", es->sge_cell ? es->sge_cell : "NA"));
@@ -182,7 +176,7 @@ static void sge_env_state_dprintf(sge_env_state_class_t *thiz)
    DPRINTF(("from_services       >%s<\n", es->from_services ? "true" : "false"));
    DPRINTF(("qmaster_internal    >%s<\n", es->qmaster_internal ? "true" : "false"));
 
-   DEXIT;
+   DRETURN_VOID;
 }
 
 static const char* get_sge_root(sge_env_state_class_t *thiz) 

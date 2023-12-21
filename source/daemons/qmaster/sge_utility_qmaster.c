@@ -96,7 +96,7 @@
 *******************************************************************************/
 int attr_mod_procedure( lList **alpp, lListElem *qep, lListElem *new_ep, int nm, char *attr_name, char *variables[])
 {
-   DENTER(TOP_LAYER, "attr_mod_procedure");
+   DENTER(TOP_LAYER);
 
    /* ---- attribute nm */
    if (lGetPosViaElem(qep, nm, SGE_NO_ABORT)>=0) {
@@ -116,23 +116,20 @@ int attr_mod_procedure( lList **alpp, lListElem *qep, lListElem *new_ep, int nm,
          if (script[0] != '/' ) { 
             ERROR((SGE_EVENT, MSG_GDI_APATH_S, attr_name));
             answer_list_add(alpp, SGE_EVENT, STATUS_EUNKNOWN, ANSWER_QUALITY_ERROR);
-            DEXIT;
-            return STATUS_EEXIST;
+            DRETURN(STATUS_EEXIST);
          } 
         
          /* ensure that variables are valid */
          if (replace_params(script, NULL, 0, variables )) {
             ERROR((SGE_EVENT, MSG_GDI_VARS_SS, attr_name, err_msg));
             answer_list_add(alpp, SGE_EVENT, STATUS_EEXIST, ANSWER_QUALITY_ERROR);
-            DEXIT;
-            return STATUS_EEXIST;
+            DRETURN(STATUS_EEXIST);
          }
       }
       lSetString(new_ep, nm, s);
    }
 
-   DEXIT;
-   return 0;
+   DRETURN(0);
 }
 
 /****** sge_utility_qmaster/attr_mod_zerostr() *********************************
@@ -162,7 +159,7 @@ int attr_mod_procedure( lList **alpp, lListElem *qep, lListElem *new_ep, int nm,
 *******************************************************************************/
 int attr_mod_zerostr( lListElem *qep, lListElem *new_ep, int nm, char *attr_name )
 {
-   DENTER(TOP_LAYER, "attr_mod_zerostr");
+   DENTER(TOP_LAYER);
 
    /* ---- attribute nm */
    if (lGetPosViaElem(qep, nm, SGE_NO_ABORT)>=0) {
@@ -170,8 +167,7 @@ int attr_mod_zerostr( lListElem *qep, lListElem *new_ep, int nm, char *attr_name
       lSetString(new_ep, nm, lGetString(qep, nm));
    }
 
-   DEXIT;
-   return 0;
+   DRETURN(0);
 }
 
 /****** sge_utility_qmaster/attr_mod_str() *************************************
@@ -205,7 +201,7 @@ int attr_mod_str(lList **alpp, lListElem *qep, lListElem *new_ep, int nm, char *
    int dataType;
    int pos;
   
-   DENTER(TOP_LAYER, "attr_mod_str");
+   DENTER(TOP_LAYER);
 
    /* ---- attribute nm */
    if ((pos=lGetPosViaElem(qep, nm, SGE_NO_ABORT))>=0) {
@@ -219,8 +215,7 @@ int attr_mod_str(lList **alpp, lListElem *qep, lListElem *new_ep, int nm, char *
             if (!(s = lGetString(qep, nm))) {
                ERROR((SGE_EVENT, MSG_GDI_VALUE_S, lNm2Str(nm)));
                answer_list_add(alpp, SGE_EVENT, STATUS_EUNKNOWN, ANSWER_QUALITY_ERROR);
-               DEXIT;
-               return STATUS_EUNKNOWN;
+               DRETURN(STATUS_EUNKNOWN);
             }
             lSetString(new_ep, nm, s);
             break;
@@ -228,20 +223,17 @@ int attr_mod_str(lList **alpp, lListElem *qep, lListElem *new_ep, int nm, char *
             if (!(s = lGetHost(qep, nm))) {
                ERROR((SGE_EVENT, MSG_GDI_VALUE_S, attr_name));
                answer_list_add(alpp, SGE_EVENT, STATUS_EUNKNOWN, ANSWER_QUALITY_ERROR);
-               DEXIT;
-               return STATUS_EUNKNOWN;
+               DRETURN(STATUS_EUNKNOWN);
             }
             lSetHost(new_ep, nm, s);
             break;
          default:
             DPRINTF(("unexpected data type\n"));
-            DEXIT;
-            return STATUS_EUNKNOWN;
+            DRETURN(STATUS_EUNKNOWN);
       }
    }
 
-   DEXIT;
-   return 0;
+   DRETURN(0);
 }
 
 /****** sge_utility_qmaster/attr_mod_bool() ************************************
@@ -270,7 +262,7 @@ int attr_mod_str(lList **alpp, lListElem *qep, lListElem *new_ep, int nm, char *
 *******************************************************************************/
 int attr_mod_bool( lListElem *qep, lListElem *new_ep, int nm, char *attr_name)
 {
-   DENTER(TOP_LAYER, "attr_mod_ulong");
+   DENTER(TOP_LAYER);
 
    /* ---- attribute nm */
    if (lGetPosViaElem(qep, nm, SGE_NO_ABORT)>=0) {
@@ -278,8 +270,7 @@ int attr_mod_bool( lListElem *qep, lListElem *new_ep, int nm, char *attr_name)
       lSetBool(new_ep, nm, lGetBool(qep, nm));
    }
 
-   DEXIT;
-   return 0;
+   DRETURN(0);
 }
 
 /****** sge_utility_qmaster/attr_mod_ulong() ***********************************
@@ -308,7 +299,7 @@ int attr_mod_bool( lListElem *qep, lListElem *new_ep, int nm, char *attr_name)
 *******************************************************************************/
 int attr_mod_ulong(lListElem *qep, lListElem *new_ep, int nm, char *attr_name)
 {
-   DENTER(TOP_LAYER, "attr_mod_ulong");
+   DENTER(TOP_LAYER);
 
    /* ---- attribute nm */
    if (lGetPosViaElem(qep, nm, SGE_NO_ABORT)>=0) {
@@ -345,7 +336,7 @@ int attr_mod_ulong(lListElem *qep, lListElem *new_ep, int nm, char *attr_name)
 *******************************************************************************/
 int attr_mod_double(lListElem *qep, lListElem *new_ep, int nm, char *attr_name)
 {
-   DENTER(TOP_LAYER, "attr_mod_double");
+   DENTER(TOP_LAYER);
 
    /* ---- attribute nm */
    if (lGetPosViaElem(qep, nm, SGE_NO_ABORT)>=0) {
@@ -353,8 +344,7 @@ int attr_mod_double(lListElem *qep, lListElem *new_ep, int nm, char *attr_name)
       lSetDouble(new_ep, nm, lGetDouble(qep, nm));
    }
 
-   DEXIT;
-   return 0;
+   DRETURN(0);
 }
 
 /****** sge_utility_qmaster/attr_mod_mem_str() *********************************
@@ -385,7 +375,7 @@ int attr_mod_double(lListElem *qep, lListElem *new_ep, int nm, char *attr_name)
 *******************************************************************************/
 int attr_mod_mem_str(lList **alpp, lListElem *qep, lListElem *new_ep, int nm, char *attr_name)
 {
-   DENTER(TOP_LAYER, "attr_mod_mem_str");
+   DENTER(TOP_LAYER);
 
    /* ---- attribute nm */
    if (lGetPosViaElem(qep, nm, SGE_NO_ABORT)>=0) {
@@ -397,15 +387,13 @@ int attr_mod_mem_str(lList **alpp, lListElem *qep, lListElem *new_ep, int nm, ch
       if(!parse_ulong_val(NULL, NULL, TYPE_MEM, str, NULL, 0)) {
          SGE_ADD_MSG_ID(sprintf(SGE_EVENT, MSG_GDI_TYPE_MEM_SS, attr_name, str?str:"(null)"));
          answer_list_add(alpp, SGE_EVENT, STATUS_ESYNTAX, ANSWER_QUALITY_ERROR);
-         DEXIT;
-         return STATUS_ESYNTAX;
+         DRETURN(STATUS_ESYNTAX);
       }
 
       lSetString(new_ep, nm, str);
    }
 
-   DEXIT;
-   return 0;
+   DRETURN(0);
 }
 
 /****** sge_utility_qmaster/attr_mod_time_str() ********************************
@@ -437,7 +425,7 @@ int attr_mod_mem_str(lList **alpp, lListElem *qep, lListElem *new_ep, int nm, ch
 *******************************************************************************/
 int attr_mod_time_str(lList **alpp, lListElem *qep, lListElem *new_ep, int nm, char *attr_name, int enable_infinity)
 {
-   DENTER(TOP_LAYER, "attr_mod_time_str");
+   DENTER(TOP_LAYER);
 
    /* ---- attribute nm */
    if (lGetPosViaElem(qep, nm, SGE_NO_ABORT)>=0) {
@@ -452,23 +440,20 @@ int attr_mod_time_str(lList **alpp, lListElem *qep, lListElem *new_ep, int nm, c
               DPRINTF(("ERROR! Infinity value for \"%s\"\n",attr_name));
               SGE_ADD_MSG_ID(sprintf(SGE_EVENT, MSG_GDI_SIG_DIGIT_SS, attr_name, str));
               answer_list_add(alpp, SGE_EVENT, STATUS_ESYNTAX, ANSWER_QUALITY_ERROR);
-              DEXIT;
-              return STATUS_ESYNTAX;
+              DRETURN(STATUS_ESYNTAX);
          }
       }
 
       if(!parse_ulong_val(NULL, NULL, TYPE_TIM, str, NULL, 0)) {
          SGE_ADD_MSG_ID(sprintf(SGE_EVENT, MSG_GDI_TYPE_TIME_SS, attr_name, str?str:"(null)"));
          answer_list_add(alpp, SGE_EVENT, STATUS_ESYNTAX, ANSWER_QUALITY_ERROR);
-         DEXIT;
-         return STATUS_ESYNTAX;
+         DRETURN(STATUS_ESYNTAX);
       }
 
       lSetString(new_ep, nm, str);
    }
 
-   DEXIT;
-   return 0;
+   DRETURN(0);
 }
 
 /****** sge_utility_qmaster/attr_mod_sub_list() ********************************
@@ -515,7 +500,7 @@ bool attr_mod_sub_list(lList **alpp, lListElem *this_elem, int this_elem_name,
    bool ret = true;
    bool did_changes = false;
 
-   DENTER(TOP_LAYER, "attr_mod_sub_list");
+   DENTER(TOP_LAYER);
    if (lGetPosViaElem(delta_elem, this_elem_name, SGE_NO_ABORT) >= 0) {
       if (SGE_GDI_IS_SUBCOMMAND_SET(sub_command, SGE_GDI_CHANGE) ||
           SGE_GDI_IS_SUBCOMMAND_SET(sub_command, SGE_GDI_APPEND) ||
@@ -761,7 +746,7 @@ cqueue_mod_sublist(lListElem *this_elem, lList **answer_list,
    bool ret = true;
    int pos;
 
-   DENTER(CQUEUE_LAYER, "cqueue_mod_sublist");
+   DENTER(CQUEUE_LAYER);
  
    pos = lGetPosViaElem(reduced_elem, attribute_name, SGE_NO_ABORT);
    if (pos >= 0) {
@@ -867,11 +852,10 @@ const char *obj_name
    const lListElem *ep1;
    const char *s;
 
-   DENTER(TOP_LAYER, "multiple_occurances");
+   DENTER(TOP_LAYER);
 
    if (!lp1 || !lp2) {
-      DEXIT;
-      return 0;
+      DRETURN(0);
    }
 
    for_each (ep1, lp1) {
@@ -880,13 +864,11 @@ const char *obj_name
          SGE_ADD_MSG_ID(sprintf(SGE_EVENT, MSG_GDI_MULTIPLE_OCCUR_SSSS, 
                   (nm==US_name)?MSG_OBJ_USERSET:MSG_JOB_PROJECT, s, obj_name, name));
          answer_list_add(alpp, SGE_EVENT, STATUS_ESYNTAX, ANSWER_QUALITY_ERROR);
-         DEXIT;
-         return -1;
+         DRETURN(-1);
       }
    }
 
-   DEXIT;
-   return 0;
+   DRETURN(0);
 }
 
 void normalize_sublist(

@@ -116,8 +116,7 @@ int main(int argc, char *argv[]) {
          ret = (int)((double) new_total_tm/(3*old_total_tm)); /* No more than 3x slower */
          fprintf(stdout, "Performance tests result is: %s \n", RESULT(ret));
       }
-      DEXIT;
-      return ret;
+      DRETURN(ret);
    } 
    for(i=0;(i<LOOP_COUNT) && (ret==0);i++){
      if(argv[1][0]=='0'){ 
@@ -126,8 +125,7 @@ int main(int argc, char *argv[]) {
        string_base_cmp(TYPE_RESTR, argv[2], argv[3]);
      }
    }     
-  DEXIT;
-  return 0;
+  DRETURN(0);
 }
 
 static int tests(int (*test)(u_long32, const char *, const char *, int)) {

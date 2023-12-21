@@ -44,7 +44,7 @@ typedef enum sge_thread_state_transitions_t_ {
    if ((pointer) == NULL) {                                          \
       answer_list_add_sprintf(answer_list, STATUS_EUNKNOWN,          \
                               ANSWER_QUALITY_ERROR,                  \
-                              MSG_NULLELEMENTPASSEDTO_S, SGE_FUNC);  \
+                              MSG_NULLELEMENTPASSEDTO_S, __func__);  \
       DRETURN(NULL);                                                 \
    }
 
@@ -52,7 +52,7 @@ typedef enum sge_thread_state_transitions_t_ {
    if ((pointer) == NULL) {                                          \
       answer_list_add_sprintf(answer_list, STATUS_EUNKNOWN,          \
                               ANSWER_QUALITY_ERROR,                  \
-                              MSG_NULLELEMENTPASSEDTO_S, SGE_FUNC);  \
+                              MSG_NULLELEMENTPASSEDTO_S, __func__);  \
       DRETURN(false);                                                \
    }
 

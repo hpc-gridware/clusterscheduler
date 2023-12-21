@@ -55,7 +55,7 @@ cqueue_update_master_list(sge_evc_class_t *evc, sge_object_type type,
    lList **list = NULL;
    const lDescr *list_descr = NULL;
 
-   DENTER(TOP_LAYER, "cqueue_update_master_list");
+   DENTER(TOP_LAYER);
    name = lGetString(event, ET_strkey);
    list = object_type_get_master_list_rw(SGE_TYPE_CQUEUE); 
    list_descr = lGetListDescr(lGetList(event, ET_new_version));
@@ -83,8 +83,7 @@ cqueue_update_master_list(sge_evc_class_t *evc, sge_object_type type,
       lFreeList(&qinstance_list);
    }
 
-   DEXIT;
-   return ret;
+   DRETURN(ret);
 }
 
 sge_callback_result
@@ -96,7 +95,7 @@ qinstance_update_cqueue_list(sge_evc_class_t *evc, sge_object_type type,
    const char *hostname = NULL;
    lListElem *cqueue = NULL;
 
-   DENTER(TOP_LAYER, "qinstance_update_cqueue_list");
+   DENTER(TOP_LAYER);
    name = lGetString(event, ET_strkey);
    hostname = lGetString(event, ET_strkey2);
 
@@ -127,12 +126,11 @@ qinstance_update_cqueue_list(sge_evc_class_t *evc, sge_object_type type,
                }
             } else {
                ERROR((SGE_EVENT, MSG_QINSTANCE_CANTFINDFORUPDATEIN_SS, key,
-                      SGE_FUNC));
+                      __func__));
                ret = SGE_EMA_FAILURE;
             }
             sge_dstring_free(&key_buffer);
-            DEXIT;
-            return ret;
+            DRETURN(ret);
          }
       }
       ret &= (sge_mirror_update_master_list(&list, list_descr, qinstance, key,
@@ -142,10 +140,9 @@ qinstance_update_cqueue_list(sge_evc_class_t *evc, sge_object_type type,
          lSetList(cqueue, CQ_qinstances, list);
       }
    } else {
-      ERROR((SGE_EVENT, MSG_CQUEUE_CANTFINDFORUPDATEIN_SS, name, SGE_FUNC));
+      ERROR((SGE_EVENT, MSG_CQUEUE_CANTFINDFORUPDATEIN_SS, name, __func__));
       ret = SGE_EMA_FAILURE;
    }
 
-   DEXIT;
-   return ret;
+   DRETURN(ret);
 }

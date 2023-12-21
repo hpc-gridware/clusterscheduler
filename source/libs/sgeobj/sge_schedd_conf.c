@@ -449,7 +449,7 @@ static bool calc_pos(void)
 {
    bool ret = true;
 
-   DENTER(TOP_LAYER, "calc_pos");
+   DENTER(TOP_LAYER);
 
    if (pos.empty) {
       const lListElem *config = lFirst(*object_type_get_master_list(SGE_TYPE_SCHEDD_CONF));
@@ -543,7 +543,7 @@ bool sconf_set_config(lList **config, lList **answer_list)
    bool ret = true;
    lList **master_sconf_list = NULL;
 
-   DENTER(TOP_LAYER,"sconf_set_config"); 
+   DENTER(TOP_LAYER); 
 
    sge_mutex_lock("Sched_Conf_Lock", "", __LINE__, &pos.mutex);
 
@@ -614,7 +614,7 @@ bool sconf_is_valid_load_formula(lList **answer_list, const lList *centry_list)
    const lListElem *schedd_conf = NULL;
    const char *load_formula = NULL;
 
-   DENTER(TOP_LAYER, "sconf_is_valid_load_formula");
+   DENTER(TOP_LAYER);
    sge_mutex_lock("Sched_Conf_Lock", "", __LINE__, &pos.mutex);
 
    schedd_conf = lFirst(*object_type_get_master_list(SGE_TYPE_SCHEDD_CONF));
@@ -650,7 +650,7 @@ lListElem *sconf_create_default()
 {
    lListElem *ep, *added;
 
-   DENTER(TOP_LAYER, "sconf_create_default");
+   DENTER(TOP_LAYER);
 
    ep = lCreateElem(SC_Type);
 
@@ -2548,7 +2548,7 @@ lList *sconf_get_config_list(void)
 {
    lList *copy_list = NULL;
 
-   DENTER(TOP_LAYER, "sconf_get_config_list");
+   DENTER(TOP_LAYER);
    sge_mutex_lock("Sched_Conf_Lock", "", __LINE__, &pos.mutex);
  
    copy_list = lCopyList("sched_conf_copy", *object_type_get_master_list(SGE_TYPE_SCHEDD_CONF));
@@ -2575,7 +2575,7 @@ void sconf_print_config(void){
    const lList *lval= NULL;
    double dval;
 
-   DENTER(TOP_LAYER, "sconf_print_config");
+   DENTER(TOP_LAYER);
 
    if (!sconf_is()){
       ERROR((SGE_EVENT, SFNMAX, MSG_SCONF_NO_CONFIG));
@@ -2801,7 +2801,7 @@ bool sconf_validate_config_(lList **answer_list)
    bool ret = true;
    u_long32 max_reservation = 0;
 
-   DENTER(TOP_LAYER, "sconf_validate_config_");
+   DENTER(TOP_LAYER);
 
    if (!sconf_is()){
       DPRINTF(("sconf_validate: no config to validate\n"));
@@ -3118,7 +3118,7 @@ bool sconf_validate_config(lList **answer_list, lList *config){
    const lList *store = NULL;
    bool ret = true;
 
-   DENTER(TOP_LAYER, "sconf_validate_config");
+   DENTER(TOP_LAYER);
 
    if (config){
       sge_mutex_lock("Sched_Conf_Lock", "", __LINE__, &pos.mutex);
@@ -3165,7 +3165,7 @@ static int policy_hierarchy_verify_value(const char* value)
 {
    int ret = 0;
 
-   DENTER(TOP_LAYER, "policy_hierarchy_verify_value");
+   DENTER(TOP_LAYER);
 
    if (value != NULL) {
       if (strcmp(value, "") && strcasecmp(value, "NONE")) {
@@ -3267,7 +3267,7 @@ void sconf_ph_fill_array(policy_hierarchy_t array[])
    int i;
    const char *policy_hierarchy_string = NULL;
    
-   DENTER(TOP_LAYER, "sconf_ph_fill_array");
+   DENTER(TOP_LAYER);
 
    sge_mutex_lock("Sched_Conf_Lock", "", __LINE__, &pos.mutex);
    
@@ -3361,7 +3361,7 @@ void sconf_ph_print_array(policy_hierarchy_t array[])
 {
    int i;
 
-   DENTER(TOP_LAYER, "sconf_ph_print_array");
+   DENTER(TOP_LAYER);
    
    for (i = INVALID_POLICY + 1; i < LAST_POLICY_VALUE; i++) {
       char character = policy_hierarchy_enum2char(array[i-1].policy);
@@ -3424,7 +3424,7 @@ static char policy_hierarchy_enum2char(policy_type_t value)
 static bool sconf_eval_set_profiling(lList *param_list, lList **answer_list, const char* param){
    bool ret = true;
    lListElem *elem = NULL;
-   DENTER(TOP_LAYER, "sconf_eval_set_profiling");
+   DENTER(TOP_LAYER);
 
    schedd_profiling = false;
 
@@ -3481,7 +3481,7 @@ static bool sconf_eval_set_job_category_filtering(lList *param_list, lList **ans
    bool ret = true;
    lListElem *elem = NULL;
    
-   DENTER(TOP_LAYER, "sconf_eval_set_job_category_filtering");
+   DENTER(TOP_LAYER);
 
    is_category_job_filtering= false;
 
@@ -3542,7 +3542,7 @@ static bool sconf_eval_set_monitoring(lList *param_list, lList **answer_list, co
    const char mon_false[] = "MONITOR=FALSE", mon_zero[] = "MONITOR=0";
    bool do_monitoring = false;
 
-   DENTER(TOP_LAYER, "sconf_eval_set_monitoring");
+   DENTER(TOP_LAYER);
 
    if (!strncasecmp(param, mon_one, sizeof(mon_one)-1) || 
        !strncasecmp(param, mon_true, sizeof(mon_true)-1) ) {
@@ -3605,7 +3605,7 @@ static bool sconf_eval_set_pe_range_alg(lList *param_list, lList **answer_list, 
 {
    char *s;
 
-   DENTER(TOP_LAYER, "sconf_eval_set_monitoring");
+   DENTER(TOP_LAYER);
    
    if ((s=strchr(param, '=')) != NULL) {
       s++;

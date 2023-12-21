@@ -245,7 +245,7 @@ char **sge_get_qtask_args(void *context, char *taskname, lList **answer_list)
    char** args = NULL;
    sge_gdi_ctx_class_t *ctx = (sge_gdi_ctx_class_t *)context;
    
-   DENTER (TOP_LAYER, "sge_get_qtask_args");
+   DENTER(TOP_LAYER);
    
    if (mode_verbose) {
       fprintf(stderr, "sge_get_qtask_args(taskname = %s)\n", taskname);
@@ -257,25 +257,23 @@ char **sge_get_qtask_args(void *context, char *taskname, lList **answer_list)
    /* We lock this part because multi-threaded DRMAA apps can have problems
     * here.  Once we're past this part, qtask_config's read-only, so we don't
     * have any more problems. */
-   sge_mutex_lock("qtask_mutex", SGE_FUNC, __LINE__, &qtask_mutex);
+   sge_mutex_lock("qtask_mutex", __func__, __LINE__, &qtask_mutex);
     
    if (task_config == NULL) {
       /* Just using printf here since we don't really have an exciting function
        * like xprintf to pass in.  This was really meant for use with qtsch. */
       if (init_qtask_config(ctx, answer_list, (print_func_t)printf) != 0) {
-         sge_mutex_unlock("qtask_mutex", SGE_FUNC, __LINE__, &qtask_mutex);
-         DEXIT;
-         return args;
+         sge_mutex_unlock("qtask_mutex", __func__, __LINE__, &qtask_mutex);
+         DRETURN(args);
       }
    }
 
-   sge_mutex_unlock("qtask_mutex", SGE_FUNC, __LINE__, &qtask_mutex);
+   sge_mutex_unlock("qtask_mutex", __func__, __LINE__, &qtask_mutex);
    
    task = lGetElemStr(task_config, CF_name, taskname);
    
    if (task == NULL) {
-      DEXIT;
-      return args;
+      DRETURN(args);
    }
   
    value = lGetString(task, CF_value);
@@ -288,7 +286,6 @@ char **sge_get_qtask_args(void *context, char *taskname, lList **answer_list)
    memset(args, 0, sizeof(char *) * (num_args + 1));
    sge_parse_args (value, args);
    
-   DEXIT;
-   return args;
+   DRETURN(args);
 }
 

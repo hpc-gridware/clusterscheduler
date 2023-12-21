@@ -112,7 +112,7 @@ int sge_task_depend_get_range(lListElem **range, lList **alpp,
 {
    u_long32 a0, a1, b0, b1, sa, sb, rmin, rmax;
 
-   DENTER(TOP_LAYER, "sge_task_depend_get_range");
+   DENTER(TOP_LAYER);
 
    if (range == NULL || 
          pre_jep == NULL || 
@@ -161,7 +161,7 @@ static bool task_depend_is_finished(const lListElem *job, u_long32 task_id)
 {
    const lListElem *ja_task = NULL;
 
-   DENTER(TOP_LAYER, "task_depend_is_finished");
+   DENTER(TOP_LAYER);
 
    if (!job_is_enrolled(job, task_id)) {
       DRETURN(false);
@@ -231,7 +231,7 @@ bool sge_task_depend_update(lListElem *jep, lList **alpp, u_long32 task_id)
    int Depend = 0;
    const lList *master_job_list = *object_type_get_master_list(SGE_TYPE_JOB);
 
-   DENTER(TOP_LAYER, "sge_task_depend_update");
+   DENTER(TOP_LAYER);
 
    /* this should not really be necessary */
    if (jep == NULL) {
@@ -339,7 +339,7 @@ bool sge_task_depend_init(lListElem *jep, lList **alpp)
 {
    bool ret = false;
 
-   DENTER(TOP_LAYER, "sge_task_depend_init");
+   DENTER(TOP_LAYER);
 
    if (jep == NULL) {
       DPRINTF(("got NULL for job argument\n"));
@@ -402,7 +402,7 @@ bool sge_task_depend_flush(lListElem *jep, lList **alpp)
 {
    bool ret = false;
 
-   DENTER(TOP_LAYER, "sge_task_depend_flush");
+   DENTER(TOP_LAYER);
 
    /* this should not really be necessary */
    if (jep == NULL) {
@@ -480,7 +480,7 @@ bool sge_task_depend_is_same_range(const lListElem *pre_jep,
 {
    u_long32 a0, a1, b0, b1, sa, sb;
 
-   DENTER(TOP_LAYER, "sge_task_depend_is_same_range");
+   DENTER(TOP_LAYER);
 
    /* equivalent jobs cannot be NULL */
    if (pre_jep == NULL || suc_jep == NULL) {

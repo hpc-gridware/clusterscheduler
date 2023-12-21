@@ -157,7 +157,7 @@ bdb_destroy_connection(void *connection)
     */
    bdb_connection *con = (bdb_connection *)connection;
 
-   DENTER(TOP_LAYER, "bdb_destroy_connection");
+   DENTER(TOP_LAYER);
 
    if (con->txn != NULL) {
       /* error */
@@ -172,7 +172,7 @@ bdb_destroy_connection(void *connection)
       /* error */
    }
    
-   DEXIT;
+   DRETURN_VOID;
 }
 
 /****** spool/berkeleydb/bdb_get_path() ****************************************

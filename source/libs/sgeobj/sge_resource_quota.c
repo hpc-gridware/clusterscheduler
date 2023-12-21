@@ -95,7 +95,7 @@ bool rqs_parse_filter_from_string(lListElem **filter, const char* buffer, lList 
    lList *xscope_list = NULL;
    char delims[] = "\t \v\r,{}"; 
 
-   DENTER(TOP_LAYER, "rqs_parse_filter_from_string");
+   DENTER(TOP_LAYER);
 
    if (buffer == NULL) {
      DRETURN(false);
@@ -234,7 +234,7 @@ bool rqs_append_filter_to_dstring(const lListElem *filter, dstring *buffer, lLis
 *******************************************************************************/
 lListElem* rqs_set_defaults(lListElem* rqs)
 {
-   DENTER(TOP_LAYER, "rqs_set_defaults");
+   DENTER(TOP_LAYER);
 
    if (rqs != NULL) {
       lList *limit_list = NULL;
@@ -358,7 +358,7 @@ bool rqs_verify_attributes(lListElem *rqs, lList **answer_list, bool in_master, 
    bool ret = true;
    const lList *rules = NULL;
 
-   DENTER(TOP_LAYER, "rqs_verify_attributes");
+   DENTER(TOP_LAYER);
 
    /* every rule set needs a RQS_name */
    if (lGetString(rqs, RQS_name) == NULL) {
@@ -520,7 +520,7 @@ bool rqs_list_verify_attributes(lList *rqs_list, lList **answer_list, bool in_ma
 {
    bool ret = true;
    
-   DENTER(TOP_LAYER, "rqs_list_verify_attributes");
+   DENTER(TOP_LAYER);
    if (rqs_list != NULL) {
       lListElem *rqs = NULL;
 
@@ -559,7 +559,7 @@ lListElem *rqs_list_locate(lList *lp, const char *name)
 {
    lListElem *ep = NULL;
 
-   DENTER(TOP_LAYER, "rqs_list_locate");
+   DENTER(TOP_LAYER);
 
    ep = lGetElemStrRW(lp, RQS_name, name);
 
@@ -597,7 +597,7 @@ lListElem* rqs_rule_locate(lList *lp, const char *name)
    int get_pos = 0;
    int act_pos = 1;
 
-   DENTER(TOP_LAYER, "rqs_rule_locate");
+   DENTER(TOP_LAYER);
 
    if (name == NULL) {
       DRETURN(NULL);
@@ -648,7 +648,7 @@ bool rqs_xattr_pre_gdi(lList *this_list, lList **answer_list)
    bool ret = true;
    char delim[] = "/";
 
-   DENTER(TOP_LAYER, "rqs_xattr_pre_gdi");
+   DENTER(TOP_LAYER);
    if (this_list != NULL) {
       lListElem *rqs = NULL;
 
@@ -719,7 +719,7 @@ rqs_get_rue_string(dstring *name, const lListElem *rule, const char *user,
 {
    lListElem *filter = NULL;
 
-   DENTER(BASIS_LAYER, "rqs_get_rue_string");
+   DENTER(BASIS_LAYER);
 
    if (rule == NULL) {
       DRETURN(false);
@@ -809,7 +809,7 @@ rqs_debit_consumable(lListElem *rqs, lListElem *job, const lListElem *granted, c
    const char *queue_instance = lGetString(granted, JG_qname);
    const char* project = lGetString(job, JB_project);
 
-   DENTER(TOP_LAYER, "rqs_debit_consumable");
+   DENTER(TOP_LAYER);
 
    if (!lGetBool(rqs, RQS_enabled)) {
       DRETURN(0);
@@ -876,7 +876,7 @@ rqs_get_matching_rule(const lListElem *rqs, const char *user, const char *group,
    const lList *rule_list = lGetList(rqs, RQS_rule);
    int i = 0;
 
-   DENTER(BASIS_LAYER, "rqs_get_matching_rule");
+   DENTER(BASIS_LAYER);
 
    for_each_rw (rule, rule_list) {
       i++;
@@ -930,7 +930,7 @@ rqs_debit_rule_usage(lListElem *job, lListElem *rule, dstring *rue_name, int slo
    const char *centry_name;
    int mods = 0;
 
-   DENTER(TOP_LAYER, "rqs_debit_rule_usage");
+   DENTER(TOP_LAYER);
 
    limit_list = lGetList(rule, RQR_limit);
 
@@ -1034,7 +1034,7 @@ rqs_match_user_host_scope(const lList *scope, int filter_type, const char *value
    bool found = false;
    const lListElem *ep;
 
-   DENTER(TOP_LAYER, "rqs_match_user_host_scope");
+   DENTER(TOP_LAYER);
 
    if (!sge_is_pattern(value)) {
       /* used in scheduler/qmaster and qquota */
@@ -1255,7 +1255,7 @@ rqs_match_user_host_scope(const lList *scope, int filter_type, const char *value
 bool
 rqs_is_matching_rule(lListElem *rule, const char *user, const char *group, const char *project, const char *pe, const char *host, const char *queue, const lList *master_userset_list, const lList *master_hgroup_list)
 {
-      DENTER(TOP_LAYER, "rqs_is_matching_rule");
+      DENTER(TOP_LAYER);
 
       if (!rqs_filter_match(lGetObject(rule, RQR_filter_users), FILTER_USERS, user, master_userset_list, NULL, group)) {
          DPRINTF(("user doesn't match\n"));
@@ -1313,7 +1313,7 @@ rqs_match_host_scope(const lList *scope, const char *name, const lList *master_h
 {
    const lListElem *ep;
 
-   DENTER(TOP_LAYER, "rqs_match_host_scope");
+   DENTER(TOP_LAYER);
 
    if (lGetElemStr(scope, ST_name, "*")) {
       DRETURN(true);
@@ -1367,7 +1367,7 @@ rqs_filter_match(lListElem *filter, int filter_type, const char *value, const lL
    bool ret = true;
    const lListElem* ep;
 
-   DENTER(BASIS_LAYER, "rqs_filter_match");
+   DENTER(BASIS_LAYER);
 
    if (filter != NULL) {
       const lList* scope = lGetList(filter, RQRF_scope);
@@ -1477,7 +1477,7 @@ bool sge_centry_referenced_in_rqs(const lListElem *rqs, const lListElem *centry)
    const char *centry_name = lGetString(centry, CE_name);
    const lListElem *rule;
 
-   DENTER(TOP_LAYER, "sge_centry_referenced_in_rqs");
+   DENTER(TOP_LAYER);
 
    for_each(rule, lGetList(rqs, RQS_rule)) {
       const lListElem *limit;
@@ -1532,7 +1532,7 @@ bool rqs_replace_request_verify(lList **answer_list, const lList *request)
 {
    const lListElem *ep;
 
-   DENTER(TOP_LAYER, "rqs_replace_request_verify");
+   DENTER(TOP_LAYER);
 
    /* search for duplicate rqs names in the request */
    for_each(ep, request) {

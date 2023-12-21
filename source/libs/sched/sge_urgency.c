@@ -141,7 +141,7 @@ static void sge_urgency(u_long32 now, double *min_urgency, double *max_urgency,
    double weight_deadline = sconf_get_weight_deadline();
    double weight_waiting_time = sconf_get_weight_waiting_time();
 
-   DENTER(TOP_LAYER, "sge_urgency");
+   DENTER(TOP_LAYER);
 
    for_each_rw (jep, job_list) {
       lListElem *cat;
@@ -215,8 +215,7 @@ static void sge_urgency(u_long32 now, double *min_urgency, double *max_urgency,
       }   
    }
 
-   DEXIT;
-   return;
+   DRETURN_VOID;
 }
 
 /****** sge_urgency/sge_normalize_urgency() **********************
@@ -245,7 +244,7 @@ static void sge_normalize_urgency(lList *job_list, double min_urgency,
    double nsu;
    lListElem *jep;
 
-   DENTER(TOP_LAYER, "sge_normalize_urgency");
+   DENTER(TOP_LAYER);
 
    DPRINTF(("ASU min = %13.11f, ASU max = %13.11f\n", 
          min_urgency, max_urgency));
@@ -255,8 +254,7 @@ static void sge_normalize_urgency(lList *job_list, double min_urgency,
       lSetDouble(jep, JB_nurg, nsu);
 /*    DPRINTF(("NSU(job " sge_u32 ") = %f from %f\n", lGetUlong(jep, JB_job_number), nsu, asu)); */
    }
-
-   DEXIT;
+   DRETURN_VOID;
 }
 
 
@@ -292,19 +290,17 @@ int sge_job_slot_request(const lListElem *job, const lList *pe_list)
    const lListElem *pep;
    int n;
   
-   DENTER(TOP_LAYER, "sge_job_slot_request");
+   DENTER(TOP_LAYER);
 
    /* sequential job */
    if (!(pe_name=lGetString(job, JB_pe))) {
-      DEXIT;
-      return 1;
+      DRETURN(1);
    } 
 
    /* parallel job with fixed slot request */
    range_list = lGetList(job, JB_pe_range);
    if (range_list_get_number_of_ids(range_list)==1) { 
-      DEXIT;
-      return range_list_get_first_id(range_list, NULL);
+      DRETURN(range_list_get_first_id(range_list, NULL));
    } 
 
    /* parallel job with slot range request */
@@ -320,8 +316,7 @@ int sge_job_slot_request(const lListElem *job, const lList *pe_list)
    if (!pep) {
       ERROR((SGE_EVENT, "no matching parallel environment "
             "for job's PE request \"%s\"\n", pe_name));
-      DEXIT;
-      return 1;
+      DRETURN(1);
    }
 
    urgency_slot_setting = lGetString(pep, PE_urgency_slots);
@@ -338,8 +333,7 @@ int sge_job_slot_request(const lListElem *job, const lList *pe_list)
           urgency_slot_setting));
    }
 
-   DEXIT;
-   return n;
+   DRETURN(n);
 }
 
 

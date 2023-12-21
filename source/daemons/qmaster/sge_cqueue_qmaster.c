@@ -130,7 +130,7 @@ qinstance_create(sge_gdi_ctx_class_t *ctx,
    lListElem *ret = NULL;
    int index;
 
-   DENTER(TOP_LAYER, "qinstance_create");
+   DENTER(TOP_LAYER);
    
    ret = lCreateElem(QU_Type);
 
@@ -211,7 +211,7 @@ cqueue_add_qinstances(sge_gdi_ctx_class_t *ctx, lListElem *cqueue, lList **answe
 {
    bool ret = true;
 
-   DENTER(TOP_LAYER, "cqueue_add_qinstances");
+   DENTER(TOP_LAYER);
    if (cqueue != NULL && add_hosts != NULL) {
       const lListElem *href = NULL;
 
@@ -251,8 +251,7 @@ cqueue_add_qinstances(sge_gdi_ctx_class_t *ctx, lListElem *cqueue, lList **answe
          }
       }
    }
-   DEXIT;
-   return ret;
+   DRETURN(ret);
 }
 
 static bool
@@ -260,7 +259,7 @@ cqueue_mark_qinstances(lListElem *cqueue, lList **answer_list, lList *del_hosts)
 {
    bool ret = true;
 
-   DENTER(TOP_LAYER, "cqueue_mark_qinstances");
+   DENTER(TOP_LAYER);
    if (cqueue != NULL) {
       const lList *qinstance_list = lGetList(cqueue, CQ_qinstances);
       lListElem *qinstance = NULL;
@@ -295,7 +294,7 @@ cqueue_mod_attributes(lListElem *cqueue, lList **answer_list,
 {
    bool ret = true;
 
-   DENTER(TOP_LAYER, "cqueue_mod_attributes");
+   DENTER(TOP_LAYER);
    if (cqueue != NULL && reduced_elem != NULL) {
       const char *cqueue_name = lGetString(cqueue, CQ_name);
       int index = 0;
@@ -328,7 +327,7 @@ cqueue_mod_hostlist(lListElem *cqueue, lList **answer_list,
    bool ret = true;
    const lList *master_hgroup_list = *object_type_get_master_list(SGE_TYPE_HGROUP);
 
-   DENTER(TOP_LAYER, "cqueue_mod_hostlist");
+   DENTER(TOP_LAYER);
    if (cqueue != NULL && reduced_elem != NULL) {
       int pos = lGetPosViaElem(reduced_elem, CQ_hostlist, SGE_NO_ABORT);
 
@@ -398,8 +397,7 @@ cqueue_mod_hostlist(lListElem *cqueue, lList **answer_list,
          lFreeList(&rem_groups);
       }
    }
-   DEXIT;
-   return ret;
+   DRETURN(ret);
 }
 
 bool
@@ -413,7 +411,7 @@ cqueue_mod_qinstances(sge_gdi_ctx_class_t *ctx,
    const lList *master_userset_list = *object_type_get_master_list(SGE_TYPE_USERSET);
    const lList *master_ar_list = *object_type_get_master_list(SGE_TYPE_AR);
    
-   DENTER(TOP_LAYER, "cqueue_mod_qinstances");
+   DENTER(TOP_LAYER);
 
    if (cqueue != NULL && reduced_elem != NULL) {
       const lList *qinstance_list = lGetList(cqueue, CQ_qinstances);
@@ -594,7 +592,7 @@ cqueue_handle_qinstances(sge_gdi_ctx_class_t *ctx,
 {
    bool ret = true;
 
-   DENTER(TOP_LAYER, "cqueue_handle_qinstances");
+   DENTER(TOP_LAYER);
 
    if (ret) { 
       ret = cqueue_mark_qinstances(cqueue, answer_list, rem_hosts);
@@ -627,7 +625,7 @@ int cqueue_mod(sge_gdi_ctx_class_t *ctx,
    const lList *master_ehost_list = *object_type_get_master_list(SGE_TYPE_EXECHOST);
    lList *master_cqueue_list = *object_type_get_master_list_rw(SGE_TYPE_CQUEUE);
 
-   DENTER(TOP_LAYER, "cqueue_mod");
+   DENTER(TOP_LAYER);
 
    if (ret) {
       int pos = lGetPosViaElem(reduced_elem, CQ_name, SGE_NO_ABORT);
@@ -658,7 +656,7 @@ int cqueue_mod(sge_gdi_ctx_class_t *ctx,
          }
       } else {
          ERROR((SGE_EVENT, MSG_SGETEXT_MISSINGCULLFIELD_SS,
-                lNm2Str(CQ_name), SGE_FUNC));
+                lNm2Str(CQ_name), __func__));
          answer_list_add(answer_list, SGE_EVENT, STATUS_EUNKNOWN,
                          ANSWER_QUALITY_ERROR);
          ret = false;
@@ -728,7 +726,7 @@ int cqueue_success(sge_gdi_ctx_class_t *ctx,
 {
    const lList *qinstances;
    lListElem *qinstance; 
-   DENTER(TOP_LAYER, "cqueue_success");
+   DENTER(TOP_LAYER);
    const lList *master_job_list = *object_type_get_master_list(SGE_TYPE_JOB);
 
    cqueue_update_categories(cqueue, old_cqueue);
@@ -820,7 +818,7 @@ void cqueue_commit(sge_gdi_ctx_class_t *ctx, lListElem *cqueue)
    lListElem *next_qinstance = NULL;
    lListElem *qinstance = NULL;
 
-   DENTER(TOP_LAYER, "cqueue_commit"); 
+   DENTER(TOP_LAYER); 
 
    /*
     * QI modify, add or delete event
@@ -859,7 +857,7 @@ void cqueue_commit(sge_gdi_ctx_class_t *ctx, lListElem *cqueue)
    if (lGetNumberOfElem(qinstances) == 0) {
       lSetList(cqueue, CQ_qinstances, NULL);
    }
-   DEXIT;
+   DRETURN_VOID;
 }
 
 int cqueue_spool(sge_gdi_ctx_class_t *ctx, lList **answer_list, lListElem *cqueue, gdi_object_t *object) 
@@ -872,7 +870,7 @@ int cqueue_spool(sge_gdi_ctx_class_t *ctx, lList **answer_list, lListElem *cqueu
    lList *spool_answer_list = NULL;
    bool job_spooling = ctx->get_job_spooling(ctx);
 
-   DENTER(TOP_LAYER, "cqueue_spool");
+   DENTER(TOP_LAYER);
    dbret = spool_write_object(&spool_answer_list, spool_get_default_context(), 
                               cqueue, name, SGE_TYPE_CQUEUE,
                               job_spooling);
@@ -911,8 +909,7 @@ int cqueue_spool(sge_gdi_ctx_class_t *ctx, lList **answer_list, lListElem *cqueu
 
    sge_dstring_free(&key_dstring);
    
-   DEXIT;
-   return ret;
+   DRETURN(ret);
 }
 
 int cqueue_del(sge_gdi_ctx_class_t *ctx, lListElem *this_elem, lList **answer_list, 
@@ -921,7 +918,7 @@ int cqueue_del(sge_gdi_ctx_class_t *ctx, lListElem *this_elem, lList **answer_li
    bool ret = true;
    lList *master_cqueue_list = *object_type_get_master_list_rw(SGE_TYPE_CQUEUE);
 
-   DENTER(TOP_LAYER, "cqueue_del");
+   DENTER(TOP_LAYER);
 
    if (this_elem != NULL && remote_user != NULL && remote_host != NULL) {
       const char* name = lGetString(this_elem, CQ_name);
@@ -1023,23 +1020,22 @@ int cqueue_del(sge_gdi_ctx_class_t *ctx, lListElem *this_elem, lList **answer_li
          }
       } else {
          ERROR((SGE_EVENT, MSG_SGETEXT_MISSINGCULLFIELD_SS,
-                lNm2Str(CQ_name), SGE_FUNC));
+                lNm2Str(CQ_name), __func__));
          answer_list_add(answer_list, SGE_EVENT, STATUS_EUNKNOWN,
                          ANSWER_QUALITY_ERROR);
          ret = false;
       }
    } else {
-      CRITICAL((SGE_EVENT, MSG_SGETEXT_NULLPTRPASSED_S, SGE_FUNC));
+      CRITICAL((SGE_EVENT, MSG_SGETEXT_NULLPTRPASSED_S, __func__));
       answer_list_add(answer_list, SGE_EVENT, STATUS_EUNKNOWN,
                       ANSWER_QUALITY_ERROR);
       ret = false;
    }
 
-   DEXIT;
    if (ret) {
-      return STATUS_OK;
+      DRETURN(STATUS_OK);
    } else {
-      return STATUS_EUNKNOWN;
+      DRETURN(STATUS_EUNKNOWN);
    } 
 }
 
@@ -1048,7 +1044,7 @@ cqueue_del_all_orphaned(sge_gdi_ctx_class_t *ctx, lListElem *this_elem, lList **
 {
    bool ret = true;
 
-   DENTER(TOP_LAYER, "cqueue_del_all_orphaned");
+   DENTER(TOP_LAYER);
 
    if (this_elem != NULL) {
       dstring dir = DSTRING_INIT;
@@ -1106,8 +1102,7 @@ cqueue_del_all_orphaned(sge_gdi_ctx_class_t *ctx, lListElem *this_elem, lList **
       sge_dstring_free(&dir);
    }
 
-   DEXIT;
-   return ret;
+   DRETURN(ret);
 }
 
 bool
@@ -1116,7 +1111,7 @@ cqueue_list_del_all_orphaned(sge_gdi_ctx_class_t *ctx, lList *this_list, lList *
    bool ret = true;
    lListElem *cqueue;
 
-   DENTER(TOP_LAYER, "cqueue_list_del_all_orphaned");
+   DENTER(TOP_LAYER);
 
    if (cqname) {
       cqueue = lGetElemStrRW(this_list, CQ_name, cqname);
@@ -1130,8 +1125,7 @@ cqueue_list_del_all_orphaned(sge_gdi_ctx_class_t *ctx, lList *this_list, lList *
       }
    }
 
-   DEXIT;
-   return ret;
+   DRETURN(ret);
 }
 
 void
@@ -1200,7 +1194,7 @@ static void cqueue_diff_sublist(const lListElem *new_cqueue, const lListElem *ol
    const lListElem *qc, *ep;
    const char *p;
 
-   DENTER(TOP_LAYER, "cqueue_diff_sublist");
+   DENTER(TOP_LAYER);
 
    /* collect 'old' entries in 'old_sublist' */
    if (old_cqueue && old_sublist) {
@@ -1238,8 +1232,7 @@ static void cqueue_diff_sublist(const lListElem *new_cqueue, const lListElem *ol
       }
    }
 
-   DEXIT;
-   return;
+   DRETURN_VOID;
 }
 
 /****** sge_cqueue_qmaster/cqueue_diff_projects() ******************************
@@ -1364,7 +1357,7 @@ qinstance_check_unknown_state(lListElem *this_elem, const lList *master_exechost
    const char *hostname = NULL;
    lListElem *host = NULL;
 
-   DENTER(TOP_LAYER, "qinstance_check_unknown_state");
+   DENTER(TOP_LAYER);
    hostname = lGetHost(this_elem, QU_qhostname);
    host = host_list_locate(master_exechost_list, hostname);
    if (host != NULL) {

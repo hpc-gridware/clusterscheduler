@@ -109,7 +109,7 @@ print_event(sge_evc_class_t *evc, sge_object_type type,
    char buffer[1024];
    dstring buffer_wrapper;
 
-   DENTER(TOP_LAYER, "print_event");
+   DENTER(TOP_LAYER);
 
    sge_dstring_init(&buffer_wrapper, buffer, sizeof(buffer));
 
@@ -117,12 +117,10 @@ print_event(sge_evc_class_t *evc, sge_object_type type,
    fflush(stdout);
    /* create a callback error to test error handling */
    if(type == SGE_TYPE_GLOBAL_CONFIG) {
-      DEXIT;
-      return SGE_EMA_FAILURE;
+      DRETURN(SGE_EMA_FAILURE);
    }
    
-   DEXIT;
-   return SGE_EMA_OK;
+   DRETURN(SGE_EMA_OK);
 }
 
 #ifndef QEVENT_SHOW_ALL
@@ -133,7 +131,7 @@ print_jatask_event(sge_evc_class_t *evc, sge_object_type type,
    char buffer[1024];
    dstring buffer_wrapper;
 
-   DENTER(TOP_LAYER, "print_jatask_event");
+   DENTER(TOP_LAYER);
 
    sge_dstring_init(&buffer_wrapper, buffer, sizeof(buffer));
    
@@ -190,12 +188,10 @@ print_jatask_event(sge_evc_class_t *evc, sge_object_type type,
    }
    /* create a callback error to test error handling */
    if(type == SGE_TYPE_GLOBAL_CONFIG) {
-      DEXIT;
-      return SGE_EMA_FAILURE;
+      DRETURN(SGE_EMA_FAILURE);
    }
    
-   DEXIT;
-   return SGE_EMA_OK;
+   DRETURN(SGE_EMA_OK);
 }
 #endif
 
@@ -253,7 +249,7 @@ analyze_jatask_event(sge_evc_class_t *evc, sge_object_type type,
 static void qevent_trigger_scripts( int qevent_event, qevent_options *option_struct, lListElem *event) {
 
    int i=0;
-   DENTER(TOP_LAYER, "qevent_trigger_scripts");
+   DENTER(TOP_LAYER);
    if (option_struct->trigger_option_count > 0) {
       INFO((SGE_EVENT, "trigger for event "SFN"\n", qevent_get_event_name(qevent_event) ));
       for (i=0;i<option_struct->trigger_option_count;i++) {
@@ -262,7 +258,7 @@ static void qevent_trigger_scripts( int qevent_event, qevent_options *option_str
          }
       }
    }
-   DEXIT;
+   DRETURN_VOID;
 }
 
 static void qevent_start_trigger_script(int qevent_event, const char* script_file, lListElem *event ) {
@@ -272,7 +268,7 @@ static void qevent_start_trigger_script(int qevent_event, const char* script_fil
    char buffer[MAX_STRING_SIZE];
    char buffer2[MAX_STRING_SIZE];
 
-   DENTER(TOP_LAYER, "qevent_start_trigger_script");
+   DENTER(TOP_LAYER);
 
    jobid  = lGetUlong(event, ET_intkey);
    taskid = lGetUlong(event, ET_intkey2);
@@ -282,22 +278,19 @@ static void qevent_start_trigger_script(int qevent_event, const char* script_fil
    /* test if script is executable and valid file */
    if (!sge_is_file(script_file)) {
       ERROR((SGE_EVENT, "no script file: "SFQ"\n", script_file));
-      DEXIT;
-      return;
+      DRETURN_VOID;
    }
 
    /* is file executable ? */
    if (!sge_is_executable(script_file)) {  
       ERROR((SGE_EVENT, "file not executable: "SFQ"\n", script_file));
-      DEXIT;
-      return;
+      DRETURN_VOID;
    } 
 
    pid = fork();
    if (pid < 0) {
       ERROR((SGE_EVENT, "fork() error\n"));
-      DEXIT;
-      return;
+      DRETURN_VOID;
    }
 
    if (pid > 0) {
@@ -328,8 +321,7 @@ static void qevent_start_trigger_script(int qevent_event, const char* script_fil
       } else {
          ERROR((SGE_EVENT,"exit status of script: "sge_U32CFormat"\n", sge_u32c(WEXITSTATUS(exit_status))));
       }
-      DEXIT;
-      return;
+      DRETURN_VOID;
    } else {
       const char *basename = sge_basename( script_file, '/' );
       /*      SETPGRP;  */
@@ -372,7 +364,7 @@ static void qevent_show_usage(void) {
 static void qevent_parse_command_line(int argc, char **argv, qevent_options *option_struct) {
 
    
-   DENTER(TOP_LAYER, "qevent_parse_command_line");
+   DENTER(TOP_LAYER);
 
    option_struct->help_option = 0;
    option_struct->testsuite_option = 0;
@@ -463,7 +455,7 @@ static void qevent_parse_command_line(int argc, char **argv, qevent_options *opt
          sge_dstring_append(option_struct->error_message,"\n");
       }
    } 
-   DEXIT;
+   DRETURN_VOID;
 }
 
 int main(int argc, char *argv[])
@@ -666,7 +658,7 @@ static void qevent_testsuite_mode(sge_evc_class_t *evc)
    };  
 #endif
    
-   DENTER(TOP_LAYER, "qevent_testsuite_mode");
+   DENTER(TOP_LAYER);
 
    sge_mirror_initialize(evc, EV_ID_ANY, "qevent", true,
                          NULL, NULL, NULL, NULL, NULL);
@@ -713,8 +705,7 @@ static void qevent_testsuite_mode(sge_evc_class_t *evc)
    }
 
    sge_mirror_shutdown(evc);
-
-   DEXIT;
+   DRETURN_VOID;
 }
 
 /****** qevent/qevent_subscribe_mode() *****************************************
@@ -749,7 +740,7 @@ static void qevent_subscribe_mode(sge_evc_class_t *evc)
 {
    sge_object_type event_type = SGE_TYPE_ADMINHOST;
    
-   DENTER(TOP_LAYER, "qevent_subscribe_mode");
+   DENTER(TOP_LAYER);
 
    sge_mirror_initialize(evc, EV_ID_ANY, "qevent", true,
                          NULL, NULL, NULL, NULL, NULL);
@@ -777,7 +768,6 @@ static void qevent_subscribe_mode(sge_evc_class_t *evc)
    }
 
    sge_mirror_shutdown(evc);
-
-   DEXIT;
+   DRETURN_VOID;
 }
 

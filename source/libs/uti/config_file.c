@@ -509,7 +509,7 @@ bool parse_time_param(const char *input, const char *variable, u_long32 *value)
 {
    bool ret = false;
 
-   DENTER(BASIS_LAYER, "parse_time_param");
+   DENTER(BASIS_LAYER);
 
    if (input != NULL && variable != NULL && value != NULL) {
       int var_len = strlen(variable);
@@ -545,8 +545,7 @@ bool parse_time_param(const char *input, const char *variable, u_long32 *value)
       }
    }
 
-   DEXIT;
-   return ret;
+   DRETURN(ret);
 }
 
 
@@ -554,7 +553,7 @@ bool parse_bool_param(const char *input, const char *variable, bool *value)
 {
    bool ret = false;
 
-   DENTER(BASIS_LAYER, "parse_bool_param");
+   DENTER(BASIS_LAYER);
 
    if (input != NULL && variable != NULL && value != NULL) {
       int var_len = strlen(variable);
@@ -594,8 +593,7 @@ bool parse_bool_param(const char *input, const char *variable, bool *value)
       }
    }
 
-   DEXIT;
-   return ret;
+   DRETURN(ret);
 }
 
 bool parse_int_param(const char *input, const char *variable, 
@@ -603,7 +601,7 @@ bool parse_int_param(const char *input, const char *variable,
 {
    bool ret = false;
 
-   DENTER(BASIS_LAYER, "parse_int_param");
+   DENTER(BASIS_LAYER);
 
    if (input != NULL && variable != NULL && value != NULL) {
       int var_len = strlen(variable);
@@ -637,6 +635,5 @@ bool parse_int_param(const char *input, const char *variable,
       }
    }
 
-   DEXIT;
-   return ret;
+   DRETURN(ret);
 }

@@ -280,7 +280,7 @@ ensure_valid_what_and_where(sge_where_what_t *where_what)
 {
    lDescr *tmp_what_descr = NULL;
 
-   DENTER(GDI_LAYER, "ensure_valid_what_and_where");
+   DENTER(GDI_LAYER);
 
    /* prepare temp data used to create new lists with partial descriptor */
    if (where_what->what_queue2 == NULL || where_what->where_queue2 == NULL ||
@@ -420,7 +420,7 @@ sge_process_schedd_conf_event_before(sge_evc_class_t *evc, sge_object_type type,
 {
    lListElem *new_ep = NULL;
 
-   DENTER(GDI_LAYER, "sge_process_schedd_conf_event_before");
+   DENTER(GDI_LAYER);
 
    DPRINTF(("callback processing schedd config event\n"));
 
@@ -428,8 +428,7 @@ sge_process_schedd_conf_event_before(sge_evc_class_t *evc, sge_object_type type,
 
    if (new_ep == NULL) {
       ERROR((SGE_EVENT, "> > > > > no scheduler configuration available < < < < <\n"));
-      DEXIT;
-      return SGE_EMA_FAILURE;
+      DRETURN(SGE_EMA_FAILURE);
    }
    /* check for valid load formula */
    {
@@ -468,8 +467,7 @@ sge_process_schedd_conf_event_before(sge_evc_class_t *evc, sge_object_type type,
       lFreeElem(&old_ep);
    }
 
-   DEXIT;
-   return SGE_EMA_OK;
+   DRETURN(SGE_EMA_OK);
 }
 
 sge_callback_result
@@ -491,13 +489,12 @@ sge_process_project_event_before(sge_evc_class_t *evc, sge_object_type type,
    const lListElem *new_ep, *old_ep;
    const char *p;
 
-   DENTER(GDI_LAYER, "sge_process_project_event_before");
+   DENTER(GDI_LAYER);
 
    if (action != SGE_EMA_ADD &&
        action != SGE_EMA_MOD &&
        action != SGE_EMA_DEL) {
-      DEXIT;
-      return SGE_EMA_OK;
+      DRETURN(SGE_EMA_OK);
    }
 
    p = lGetString(event, ET_strkey);
@@ -527,15 +524,14 @@ sge_process_project_event_before(sge_evc_class_t *evc, sge_object_type type,
       break;
    }
 
-   DEXIT;
-   return SGE_EMA_OK;
+   DRETURN(SGE_EMA_OK);
 }
 
 sge_callback_result
 sge_process_schedd_monitor_event(sge_evc_class_t *evc, sge_object_type type,
                                  sge_event_action action, lListElem *event, void *clientdata)
 {
-   DENTER(GDI_LAYER, "sge_process_schedd_monitor_event");
+   DENTER(GDI_LAYER);
    DPRINTF(("monitoring next scheduler run\n"));
    evc->monitor_next_run = true;
    DRETURN(SGE_EMA_OK);
@@ -545,11 +541,10 @@ sge_callback_result
 sge_process_global_config_event(sge_evc_class_t *evc, sge_object_type type,
                                 sge_event_action action, lListElem *event, void *clientdata)
 {
-   DENTER(GDI_LAYER, "sge_process_global_config_event");
+   DENTER(GDI_LAYER);
    DPRINTF(("notification about new global configuration\n"));
    st_set_flag_new_global_conf(true);
-   DEXIT;
-   return SGE_EMA_OK;
+   DRETURN(SGE_EMA_OK);
 }
 
 sge_callback_result
@@ -559,7 +554,7 @@ sge_process_job_event_before(sge_evc_class_t *evc, sge_object_type type,
    u_long32 job_id = 0;
    lListElem *job = NULL;
 
-   DENTER(GDI_LAYER, "sge_process_job_event_before");
+   DENTER(GDI_LAYER);
    DPRINTF(("callback processing job event before default rule\n"));
 
    if (action == SGE_EMA_DEL || action == SGE_EMA_MOD) {
@@ -606,7 +601,7 @@ sge_process_job_event_after(sge_evc_class_t *evc, sge_object_type type,
    u_long32 job_id = 0;
    lListElem *job  = NULL;
 
-   DENTER(TOP_LAYER, "sge_process_job_event_after");
+   DENTER(TOP_LAYER);
    DPRINTF(("callback processing job event after default rule\n"));
 
    if (action == SGE_EMA_ADD || action == SGE_EMA_MOD) {
@@ -616,8 +611,7 @@ sge_process_job_event_after(sge_evc_class_t *evc, sge_object_type type,
          dstring id_dstring = DSTRING_INIT;
          ERROR((SGE_EVENT, MSG_CANTFINDJOBINMASTERLIST_S, job_get_id_string(job_id, 0, NULL, &id_dstring)));
          sge_dstring_free(&id_dstring);
-         DEXIT;
-         return SGE_EMA_FAILURE;
+         DRETURN(SGE_EMA_FAILURE);
       }
       sge_do_priority_job(job); /* job got added or modified, recompute the priorities */
    }
@@ -680,8 +674,7 @@ sge_process_job_event_after(sge_evc_class_t *evc, sge_object_type type,
                      if (ja_task == NULL) {
                         ERROR((SGE_EVENT, MSG_CANTFINDTASKINJOB_UU,
                                sge_u32c(ja_task_id), sge_u32c(job_id)));
-                        DEXIT;
-                        return SGE_EMA_FAILURE;
+                        DRETURN(SGE_EMA_FAILURE);
                      }
 
                      lSetUlong(ja_task, JAT_status, JFINISHED);
@@ -701,8 +694,7 @@ sge_process_job_event_after(sge_evc_class_t *evc, sge_object_type type,
          break;
    }
 
-   DEXIT;
-   return SGE_EMA_OK;
+   DRETURN(SGE_EMA_OK);
 }
 
 /* If the last ja task of a job is deleted, 
@@ -714,7 +706,7 @@ sge_callback_result
 sge_process_ja_task_event_after(sge_evc_class_t *evc, sge_object_type type,
                                 sge_event_action action, lListElem *event, void *clientdata)
 {
-   DENTER(GDI_LAYER, "sge_process_ja_task_event_after");
+   DENTER(GDI_LAYER);
 
    if (action == SGE_EMA_DEL) {
       const lListElem *job;
@@ -727,15 +719,13 @@ sge_process_ja_task_event_after(sge_evc_class_t *evc, sge_object_type type,
          dstring id_dstring = DSTRING_INIT;
          ERROR((SGE_EVENT, MSG_CANTFINDJOBINMASTERLIST_S, job_get_id_string(job_id, 0, NULL, &id_dstring)));
          sge_dstring_free(&id_dstring);
-         DEXIT;
-         return SGE_EMA_FAILURE;
+         DRETURN(SGE_EMA_FAILURE);
       }
    } else {
       DPRINTF(("callback processing ja_task event after default rule\n"));
    }
 
-   DEXIT;
-   return SGE_EMA_OK;
+   DRETURN(SGE_EMA_OK);
 }
 
 /****** sge_process_events/sge_process_userset_event_before() ******************
@@ -761,13 +751,12 @@ sge_process_userset_event_before(sge_evc_class_t *evc, sge_object_type type, sge
    const lListElem *new_ep, *old_ep;
    const char *u;
 
-   DENTER(GDI_LAYER, "sge_process_userset_event_before");
+   DENTER(GDI_LAYER);
 
    if (action != SGE_EMA_ADD &&
        action != SGE_EMA_MOD &&
        action != SGE_EMA_DEL) {
-      DEXIT;
-      return SGE_EMA_OK;
+      DRETURN(SGE_EMA_OK);
    }
 
    u = lGetString(event, ET_strkey);
@@ -805,7 +794,6 @@ sge_process_userset_event_before(sge_evc_class_t *evc, sge_object_type type, sge
       break;
    }
 
-   DEXIT;
-   return SGE_EMA_OK;
+   DRETURN(SGE_EMA_OK);
 }
 

@@ -51,7 +51,7 @@ bool
 schedd_order_initialize(void) {
    bool ret = true;
 
-   DENTER(TOP_LAYER, "schedd_order_initialize");
+   DENTER(TOP_LAYER);
    Master_Request_Queue.order_list = NULL;
    ret &= sge_sl_create(&Master_Request_Queue.request_list);
    DRETURN(ret);
@@ -61,7 +61,7 @@ bool
 schedd_order_destroy(void) {
    bool ret = true;
 
-   DENTER(TOP_LAYER, "schedd_order_initialize");   
+   DENTER(TOP_LAYER);   
    ret &= sge_sl_destroy(&Master_Request_Queue.request_list, NULL);
    DRETURN(ret);
 }
@@ -72,7 +72,7 @@ sge_schedd_send_orders(sge_gdi_ctx_class_t *ctx, order_t *orders, lList **order_
 {
    bool ret = true;
 
-   DENTER(TOP_LAYER, "sge_schedd_send_orders");
+   DENTER(TOP_LAYER);
 
    if ((order_list != NULL) && (*order_list != NULL) && (lGetNumberOfElem(*order_list) != 0)) {
       /*
@@ -98,7 +98,7 @@ sge_schedd_add_gdi_order_request(sge_gdi_ctx_class_t *ctx, order_t *orders, lLis
    bool ret = true;
    state_gdi_multi *state = NULL;
 
-   DENTER(TOP_LAYER, "sge_schedd_add_gdi_order_request");
+   DENTER(TOP_LAYER);
    state = (state_gdi_multi *)sge_malloc(sizeof(state_gdi_multi));
    if (state != NULL) {
       int order_id;
@@ -137,7 +137,7 @@ sge_schedd_block_until_orders_processed(sge_gdi_ctx_class_t *ctx,
    sge_sl_elem_t *next_elem = NULL;
    sge_sl_elem_t *current_elem = NULL;
 
-   DENTER(TOP_LAYER, "sge_schedd_block_until_orders_processed");
+   DENTER(TOP_LAYER);
 
    /*
     * wait till all GDI order requests are finished

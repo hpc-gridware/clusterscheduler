@@ -101,7 +101,7 @@ int flags
    u_long32 i=0;
    u_long64 i64=0;
 
-   DENTER(CULL_LAYER, "cull_unpack_switch");
+   DENTER(CULL_LAYER);
 
    switch (type) {
 
@@ -158,8 +158,7 @@ int flags
       break;
    }
 
-   DEXIT;
-   return ret;
+   DRETURN(ret);
 }
 
 /* ------------------------------------------------------------
@@ -177,7 +176,7 @@ cull_pack_switch(sge_pack_buffer *pb, const lMultiType *src, lEnumeration *what,
                  int type, int flags) {
    int ret;
 
-   DENTER(CULL_LAYER, "cull_pack_switch");
+   DENTER(CULL_LAYER);
 
    switch (type) {
 
@@ -230,8 +229,7 @@ cull_pack_switch(sge_pack_buffer *pb, const lMultiType *src, lEnumeration *what,
       break;
    }
 
-   DEXIT;
-   return ret;
+   DRETURN(ret);
 }
 
 /* ------------------------------------------------------------
@@ -254,27 +252,24 @@ lDescr **dpp
    u_long32 i=0;
    u_long32 temp=0;
 
-   DENTER(CULL_LAYER, "cull_unpack_descr");
+   DENTER(CULL_LAYER);
 
    *dpp = NULL;
 
    /* read in number of lDescr fields (without end mark) */
    if ((ret = unpackint(pb, &n))) {
-      DEXIT;
-      return ret;
+      DRETURN(ret);
    }
 
    /* n+1 does not work because this casts n to int */ 
    if ( n > MAX_DESCR_SIZE - 1 ) {
       LERROR(LEMALLOC);
-      DEXIT;
-      return PACK_ENOMEM;
+      DRETURN(PACK_ENOMEM);
    }
 
    if ((dp = (lDescr *) malloc(sizeof(lDescr) * (n+1))) == NULL) {
       LERROR(LEMALLOC);
-      DEXIT;
-      return PACK_ENOMEM;
+      DRETURN(PACK_ENOMEM);
    }
 
    memset(dp, 0, sizeof(lDescr) * (n+1));
@@ -287,15 +282,13 @@ lDescr **dpp
    for (i = 0; i < n; i++) {
       if ((ret = unpackint(pb, &temp))) {
          sge_free(&dp);
-         DEXIT;
-         return ret;
+         DRETURN(ret);
       }
       dp[i].nm = temp;
 
       if ((ret = unpackint(pb, &temp))) {
          sge_free(&dp);
-         DEXIT;
-         return ret;
+         DRETURN(ret);
       }
       dp[i].mt = temp;
       dp[i].ht = NULL;
@@ -382,8 +375,7 @@ lDescr **dpp
    
    *dpp = dp;
 
-   DEXIT;
-   return PACK_SUCCESS;
+   DRETURN(PACK_SUCCESS);
 }
 
 /* ------------------------------------------------------------
@@ -400,27 +392,23 @@ static int cull_pack_descr(sge_pack_buffer *pb, const lDescr *dp)
 {
    int i, ret;
 
-   DENTER(CULL_LAYER, "cull_pack_descr");
+   DENTER(CULL_LAYER);
 
    /* pack the number of lDescr fields (without end mark) */
    if ((ret = packint(pb, lCountDescr(dp)))) {
-      DEXIT;
-      return ret;
+      DRETURN(ret);
    }
    /* pack the lDescr fields */
    for (i = 0; mt_get_type(dp[i].nm) != NoName && mt_get_type(dp[i].mt) != lEndT; i++) {
       if ((ret = packint(pb, dp[i].nm))) {
-         DEXIT;
-         return ret;
+         DRETURN(ret);
       }
       if ((ret = packint(pb, dp[i].mt))) {
-         DEXIT;
-         return ret;
+         DRETURN(ret);
       }
    }
 
-   DEXIT;
-   return PACK_SUCCESS;
+   DRETURN(PACK_SUCCESS);
 }
 
 /* TODO EB: doc is missing */
@@ -431,27 +419,24 @@ cull_pack_enum_as_descr(sge_pack_buffer * pb, const lEnumeration *what,
 {
    int i, ret;
 
-   DENTER(CULL_LAYER, "cull_pack_enum_as_descr");
+   DENTER(CULL_LAYER);
 
    PROF_START_MEASUREMENT(SGE_PROF_PACKING);
    /* pack the number of lDescr fields (without end mark) */
    if ((ret = packint(pb, lCountWhat(what, descr)))) {
       PROF_STOP_MEASUREMENT(SGE_PROF_PACKING);
-      DEXIT;
-      return ret;
+      DRETURN(ret);
    }
    switch (what[0].pos) {
    case WHAT_ALL:               
       for (i = 0; descr[i].nm != NoName; i++) {
          if ((ret = packint(pb, descr[i].nm))) {
             PROF_STOP_MEASUREMENT(SGE_PROF_PACKING);
-            DEXIT;
-            return ret;
+            DRETURN(ret);
          }
          if ((ret = packint(pb, descr[i].mt))) {
             PROF_STOP_MEASUREMENT(SGE_PROF_PACKING);
-            DEXIT;
-            return ret;
+            DRETURN(ret);
          }
       }
       break;
@@ -462,20 +447,17 @@ cull_pack_enum_as_descr(sge_pack_buffer * pb, const lEnumeration *what,
       for (i = 0; what[i].nm != NoName; i++) {
          if ((ret = packint(pb, what[i].nm))) {    
             PROF_STOP_MEASUREMENT(SGE_PROF_PACKING);
-            DEXIT;
-            return ret;
+            DRETURN(ret);
          }
          if ((ret = packint(pb, what[i].mt))) {
             PROF_STOP_MEASUREMENT(SGE_PROF_PACKING);
-            DEXIT;
-            return ret;
+            DRETURN(ret);
          }
       }
       break;
    }
    PROF_STOP_MEASUREMENT(SGE_PROF_PACKING);
-   DEXIT;
-   return PACK_SUCCESS;
+   DRETURN(PACK_SUCCESS);
 }
 
 /* ================================================================ */
@@ -497,7 +479,7 @@ cull_pack_cont(sge_pack_buffer *pb, const lMultiType *cp, const lDescr *dp,
    int i, ret;
    int n;
 
-   DENTER(CULL_LAYER, "cull_pack_cont");
+   DENTER(CULL_LAYER);
 
    if (what == NULL) {
       n = lCountDescr(dp);
@@ -505,8 +487,7 @@ cull_pack_cont(sge_pack_buffer *pb, const lMultiType *cp, const lDescr *dp,
          /* if flags are given, pack only fields matching flags, e.g. CULL_SPOOL */
          if (flags == 0 || (dp[i].mt & flags) != 0) {
             if ((ret = cull_pack_switch(pb, &cp[i], NULL, mt_get_type(dp[i].mt), flags))) {
-               DEXIT;
-               return ret;
+               DRETURN(ret);
             }
          }
       }
@@ -515,15 +496,13 @@ cull_pack_cont(sge_pack_buffer *pb, const lMultiType *cp, const lDescr *dp,
          if (flags == 0 || (what[i].mt & flags) != 0) {
             if ((ret = cull_pack_switch(pb, &cp[what[i].pos], what[i].ep,
                                         mt_get_type(what[i].mt), flags))) {
-               DEXIT;
-               return ret;
+               DRETURN(ret);
             }
          }
       }
    }
 
-   DEXIT;
-   return PACK_SUCCESS;
+   DRETURN(PACK_SUCCESS);
 }
 
 /* ------------------------------------------------------------
@@ -552,14 +531,13 @@ int flags
                                      * or PACK_SUCCESS */
    lMultiType *cp = NULL;
 
-   DENTER(CULL_LAYER, "cull_unpack_cont");
+   DENTER(CULL_LAYER);
 
    *mpp = NULL;
    n = lCountDescr(dp);
    if ((cp = (lMultiType *) calloc(1, sizeof(lMultiType) * (n + 1))) == NULL) {
       LERROR(LEMALLOC);
-      DEXIT;
-      return PACK_ENOMEM;
+      DRETURN(PACK_ENOMEM);
    }
 
    for (i = 0; i < n; i++) {
@@ -628,10 +606,9 @@ int cull_pack_elem(sge_pack_buffer *pb, const lListElem *ep)
 {
    int ret;
 
-   DENTER(TOP_LAYER, "cull_pack_elem");
+   DENTER(TOP_LAYER);
    ret = cull_pack_elem_partial(pb, ep, NULL, 0);
-   DEXIT;
-   return ret;
+   DRETURN(ret);
 }
 
 
@@ -641,33 +618,29 @@ cull_pack_elem_partial(sge_pack_buffer *pb, const lListElem *ep,
 {
    int ret;
 
-   DENTER(TOP_LAYER, "cull_pack_elem_partial");
+   DENTER(TOP_LAYER);
 
    PROF_START_MEASUREMENT(SGE_PROF_PACKING);
    if(ep->descr == NULL) {
       DPRINTF(("element descriptor NULL not allowed !!!\n"));
-      DEXIT;
       abort();
    }
 
    if((ret = packint(pb, ep->status)) != PACK_SUCCESS) {
       PROF_STOP_MEASUREMENT(SGE_PROF_PACKING);
-      DEXIT;
-      return ret;
+      DRETURN(ret);
    }
 
    if(ep->status == FREE_ELEM) {
       if (what == NULL) {
          if((ret = cull_pack_descr(pb, ep->descr)) != PACK_SUCCESS) {
             PROF_STOP_MEASUREMENT(SGE_PROF_PACKING);
-            DEXIT;
-            return ret;
+            DRETURN(ret);
          }
       } else {
          if ((ret = cull_pack_enum_as_descr(pb, what, ep->descr)) != PACK_SUCCESS) {
             PROF_STOP_MEASUREMENT(SGE_PROF_PACKING);
-            DEXIT;
-            return ret;
+            DRETURN(ret);
          }
       }
    }
@@ -682,20 +655,17 @@ cull_pack_elem_partial(sge_pack_buffer *pb, const lListElem *ep,
       if (what == NULL) {
          if (!sge_bitfield_init(&field, lCountDescr(ep->descr))) {
             PROF_STOP_MEASUREMENT(SGE_PROF_PACKING);
-            DEXIT;
-            return PACK_ENOMEM;
+            DRETURN(PACK_ENOMEM);
          }
       } else {
          if (!sge_bitfield_init(&field, lCountWhat(what, ep->descr))) {
             PROF_STOP_MEASUREMENT(SGE_PROF_PACKING);
-            DEXIT;
-            return PACK_ENOMEM;
+            DRETURN(PACK_ENOMEM);
          }
       }
       if((ret = packbitfield(pb, &(field))) != PACK_SUCCESS) {
          PROF_STOP_MEASUREMENT(SGE_PROF_PACKING);
-         DEXIT;
-         return ret;
+         DRETURN(ret);
       }
       sge_bitfield_free_data(&field);
    }
@@ -703,8 +673,7 @@ cull_pack_elem_partial(sge_pack_buffer *pb, const lListElem *ep,
    ret = cull_pack_cont(pb, ep->cont, ep->descr, what, flags);
 
    PROF_STOP_MEASUREMENT(SGE_PROF_PACKING);
-   DEXIT;
-   return ret;
+   DRETURN(ret);
 }
 
 /* ------------------------------------------------------------
@@ -725,10 +694,9 @@ const lDescr *dp                  /* has to be NULL in case of free elements
 ) {
    int ret;
    
-   DENTER(CULL_LAYER, "cull_unpack_elem");
+   DENTER(CULL_LAYER);
    ret = cull_unpack_elem_partial(pb, epp, dp, 0);
-   DEXIT;
-   return ret;
+   DRETURN(ret);
 }
 
 int cull_unpack_elem_partial(sge_pack_buffer *pb, lListElem **epp, const lDescr *dp, int flags) 
@@ -736,30 +704,27 @@ int cull_unpack_elem_partial(sge_pack_buffer *pb, lListElem **epp, const lDescr 
    int ret;
    lListElem *ep = NULL;
 
-   DENTER(CULL_LAYER, "cull_unpack_elem_partial");
+   DENTER(CULL_LAYER);
 
    PROF_START_MEASUREMENT(SGE_PROF_PACKING);
    *epp = NULL;
 
    if((ep = (lListElem *) calloc(1, sizeof(lListElem))) == NULL) {
       PROF_STOP_MEASUREMENT(SGE_PROF_PACKING);
-      DEXIT;
-      return PACK_ENOMEM;
+      DRETURN(PACK_ENOMEM);
    }
 
    if((ret = unpackint(pb, &(ep->status))) != PACK_SUCCESS) {
       sge_free(&ep);
       PROF_STOP_MEASUREMENT(SGE_PROF_PACKING);
-      DEXIT;
-      return ret;
+      DRETURN(ret);
    }
 
    if(ep->status == FREE_ELEM) {
       if((ret = cull_unpack_descr(pb, &(ep->descr))) != PACK_SUCCESS) {
          sge_free(&ep);
          PROF_STOP_MEASUREMENT(SGE_PROF_PACKING);
-         DEXIT;
-         return ret;
+         DRETURN(ret);
       }
 
       /*
@@ -784,8 +749,7 @@ int cull_unpack_elem_partial(sge_pack_buffer *pb, lListElem **epp, const lDescr 
          if((ep->descr = lCopyDescr((lDescr *) dp)) == NULL) {
             sge_free(&ep);
             PROF_STOP_MEASUREMENT(SGE_PROF_PACKING);
-            DEXIT;
-            return PACK_BADARG;
+            DRETURN(PACK_BADARG);
          }
       }
    } else {
@@ -796,8 +760,7 @@ int cull_unpack_elem_partial(sge_pack_buffer *pb, lListElem **epp, const lDescr 
       if((ep->descr = (lDescr *) dp) == NULL) {
          sge_free(&ep);
          PROF_STOP_MEASUREMENT(SGE_PROF_PACKING);
-         DEXIT;
-         return PACK_BADARG;
+         DRETURN(PACK_BADARG);
       }
    }
 
@@ -817,8 +780,7 @@ int cull_unpack_elem_partial(sge_pack_buffer *pb, lListElem **epp, const lDescr 
       }
       sge_free(&ep);
       PROF_STOP_MEASUREMENT(SGE_PROF_PACKING);
-      DEXIT;
-      return ret;
+      DRETURN(ret);
    }
     
    if((ret = cull_unpack_cont(pb, &(ep->cont), ep->descr, flags))) {
@@ -827,8 +789,7 @@ int cull_unpack_elem_partial(sge_pack_buffer *pb, lListElem **epp, const lDescr 
       }   
       sge_free(&ep);
       PROF_STOP_MEASUREMENT(SGE_PROF_PACKING);
-      DEXIT;
-      return ret;
+      DRETURN(ret);
    }
 
 #ifdef OBSERVE
@@ -838,8 +799,7 @@ int cull_unpack_elem_partial(sge_pack_buffer *pb, lListElem **epp, const lDescr 
    *epp = ep;
 
    PROF_STOP_MEASUREMENT(SGE_PROF_PACKING);
-   DEXIT;
-   return PACK_SUCCESS;
+   DRETURN(PACK_SUCCESS);
 }
 
 /* ================================================================ */
@@ -861,29 +821,25 @@ int flags
 ) {
    int ret;
 
-   DENTER(CULL_LAYER, "cull_pack_object");
+   DENTER(CULL_LAYER);
 
    if((ret = packint(pb, ep != NULL)) != PACK_SUCCESS) {
-      DEXIT;
-      return ret;
+      DRETURN(ret);
    }
 
    if(ep != NULL) {
       /* pack descriptor */
       if((ret = cull_pack_descr(pb, ep->descr)) != PACK_SUCCESS) {
-         DEXIT;
-         return ret;
+         DRETURN(ret);
       }
 
       /* pack list element */
       if((ret = cull_pack_elem_partial(pb, ep, NULL, flags)) != PACK_SUCCESS) {
-         DEXIT;
-         return ret;
+         DRETURN(ret);
       }
    }
 
-   DEXIT;
-   return PACK_SUCCESS;
+   DRETURN(PACK_SUCCESS);
 }
 
 /* ------------------------------------------------------------
@@ -900,10 +856,9 @@ int cull_pack_list(sge_pack_buffer *pb, const lList *lp)
 {
    int ret;
 
-   DENTER(CULL_LAYER, "cull_pack_list");
+   DENTER(CULL_LAYER);
    ret = cull_pack_list_partial(pb, lp, NULL, 0);
-   DEXIT;
-   return ret;
+   DRETURN(ret);
 }
 
 int
@@ -913,13 +868,12 @@ cull_pack_list_summary(sge_pack_buffer *pb, const lList *lp,
 {     
    int ret;
          
-   DENTER(CULL_LAYER, "cull_pack_list_summary");
+   DENTER(CULL_LAYER);
 
    PROF_START_MEASUREMENT(SGE_PROF_PACKING);
    if((ret = packint(pb, lp != NULL)) != PACK_SUCCESS) {
       PROF_STOP_MEASUREMENT(SGE_PROF_PACKING);
-      DEXIT;
-      return ret;
+      DRETURN(ret);
    }
 
    if (lp != NULL) {
@@ -942,8 +896,7 @@ cull_pack_list_summary(sge_pack_buffer *pb, const lList *lp,
        */
       if((ret = packint(pb, lp->nelem)) != PACK_SUCCESS) {
          PROF_STOP_MEASUREMENT(SGE_PROF_PACKING);
-         DEXIT;
-         return ret;
+         DRETURN(ret);
       }
      
       /*
@@ -954,15 +907,13 @@ cull_pack_list_summary(sge_pack_buffer *pb, const lList *lp,
       }
       if((ret = packstr(pb, name)) != PACK_SUCCESS) {
          PROF_STOP_MEASUREMENT(SGE_PROF_PACKING);
-         DEXIT;
-         return ret;
+         DRETURN(ret);
       }
 
       /* changed variable */
       if((ret = packint(pb, lp->changed)) != PACK_SUCCESS) {
          PROF_STOP_MEASUREMENT(SGE_PROF_PACKING);
-         DEXIT;
-         return ret;
+         DRETURN(ret);
       }
 
       /* pack descriptor */
@@ -970,21 +921,18 @@ cull_pack_list_summary(sge_pack_buffer *pb, const lList *lp,
          ret = cull_pack_descr(pb, lp->descr);
          if(ret != PACK_SUCCESS) {
             PROF_STOP_MEASUREMENT(SGE_PROF_PACKING);
-            DEXIT;
-            return ret;
+            DRETURN(ret);
          }
       } else {
          ret = cull_pack_enum_as_descr(pb, what, lp->descr);
          if (ret != PACK_SUCCESS) {
             PROF_STOP_MEASUREMENT(SGE_PROF_PACKING);
-            DEXIT;
-            return ret;
+            DRETURN(ret);
          }
       }
    }
 
-   DEXIT;
-   return PACK_SUCCESS;
+   DRETURN(PACK_SUCCESS);
 }        
 
 int cull_pack_list_partial(sge_pack_buffer *pb, const lList *lp, 
@@ -993,54 +941,47 @@ int cull_pack_list_partial(sge_pack_buffer *pb, const lList *lp,
    int ret;
    const lListElem *ep;
 
-   DENTER(CULL_LAYER, "cull_pack_list_partial");
+   DENTER(CULL_LAYER);
 
    PROF_START_MEASUREMENT(SGE_PROF_PACKING);
 
    if (lp != NULL && pb != NULL) {
       if((ret = packint(pb, 1)) != PACK_SUCCESS) {
          PROF_STOP_MEASUREMENT(SGE_PROF_PACKING);
-         DEXIT;
-         return ret;
+         DRETURN(ret);
       }
 
       if((ret = packint(pb, lp->nelem)) != PACK_SUCCESS) {
          PROF_STOP_MEASUREMENT(SGE_PROF_PACKING);
-         DEXIT;
-         return ret;
+         DRETURN(ret);
       }
 
       if((ret = packstr(pb, lp->listname)) != PACK_SUCCESS) {
          PROF_STOP_MEASUREMENT(SGE_PROF_PACKING);
-         DEXIT;
-         return ret;
+         DRETURN(ret);
       }
       
       if((ret = packint(pb, lp->changed)) != PACK_SUCCESS) {
          PROF_STOP_MEASUREMENT(SGE_PROF_PACKING);
-         DEXIT;
-         return ret;
+         DRETURN(ret);
       }
 
       /* pack descriptor */
       if (what == NULL) {
          if((ret = cull_pack_descr(pb, lp->descr)) != PACK_SUCCESS) {
             PROF_STOP_MEASUREMENT(SGE_PROF_PACKING);
-            DEXIT;
-            return ret;
+            DRETURN(ret);
          }
       } else {
          if ((ret = cull_pack_enum_as_descr(pb, what, lp->descr)) != PACK_SUCCESS) {
             PROF_STOP_MEASUREMENT(SGE_PROF_PACKING);
-            DEXIT;
-            return ret;
+            DRETURN(ret);
          }
       }
    } else {
       if((ret = packint(pb, 0)) != PACK_SUCCESS) {
          PROF_STOP_MEASUREMENT(SGE_PROF_PACKING);
-         DEXIT;
-         return ret;
+         DRETURN(ret);
       }
    }
 
@@ -1050,15 +991,13 @@ int cull_pack_list_partial(sge_pack_buffer *pb, const lList *lp,
       for_each(ep, lp) {
          if((ret = cull_pack_elem_partial(pb, ep, what, flags)) != PACK_SUCCESS) {
             PROF_STOP_MEASUREMENT(SGE_PROF_PACKING);
-            DEXIT;
-            return ret;
+            DRETURN(ret);
          }
       }
    }
 
    PROF_STOP_MEASUREMENT(SGE_PROF_PACKING);
-   DEXIT;
-   return PACK_SUCCESS;
+   DRETURN(PACK_SUCCESS);
 }
 
 /* ------------------------------------------------------------
@@ -1076,10 +1015,9 @@ int cull_unpack_list(sge_pack_buffer *pb, lList **lpp)
 {
    int ret;
 
-   DENTER(CULL_LAYER, "cull_unpack_list");
+   DENTER(CULL_LAYER);
    ret = cull_unpack_list_partial(pb, lpp, 0);
-   DEXIT;
-   return ret;
+   DRETURN(ret);
 }
 
 int cull_unpack_list_partial(sge_pack_buffer *pb, lList **lpp, int flags)
@@ -1092,49 +1030,43 @@ int cull_unpack_list_partial(sge_pack_buffer *pb, lList **lpp, int flags)
    u_long32 n=0;
    u_long32 c=0;
 
-   DENTER(CULL_LAYER, "cull_unpack_list_partial");
+   DENTER(CULL_LAYER);
 
    PROF_START_MEASUREMENT(SGE_PROF_PACKING);
    *lpp = NULL;
 
    if((ret = unpackint(pb, &i))) {
       PROF_STOP_MEASUREMENT(SGE_PROF_PACKING);
-      DEXIT;
-      return ret;
+      DRETURN(ret);
    }
 
    /* do we have an empty list (NULL) ? */
    if(!i) {
       PROF_STOP_MEASUREMENT(SGE_PROF_PACKING);
-      DEXIT;
-      return PACK_SUCCESS;
+      DRETURN(PACK_SUCCESS);
    }
 
    if((lp = (lList *) calloc(1, sizeof(lList))) == NULL) {
       PROF_STOP_MEASUREMENT(SGE_PROF_PACKING);
-      DEXIT;
-      return PACK_ENOMEM;
+      DRETURN(PACK_ENOMEM);
    }
 
    if((ret = unpackint(pb, &n)) != PACK_SUCCESS) {
       lFreeList(&lp);
       PROF_STOP_MEASUREMENT(SGE_PROF_PACKING);
-      DEXIT;
-      return ret;
+      DRETURN(ret);
    }
 
    if((ret = unpackstr(pb, &(lp->listname))) != PACK_SUCCESS) {
       lFreeList(&lp);
       PROF_STOP_MEASUREMENT(SGE_PROF_PACKING);
-      DEXIT;
-      return ret;
+      DRETURN(ret);
    }
 
    if((ret = unpackint(pb, &c)) != PACK_SUCCESS) {
       lFreeList(&lp);
       PROF_STOP_MEASUREMENT(SGE_PROF_PACKING);
-      DEXIT;
-      return ret;
+      DRETURN(ret);
    }
    lp->changed = (bool)c;
 
@@ -1142,8 +1074,7 @@ int cull_unpack_list_partial(sge_pack_buffer *pb, lList **lpp, int flags)
    if((ret = cull_unpack_descr(pb, &(lp->descr))) != PACK_SUCCESS) {
       lFreeList(&lp);
       PROF_STOP_MEASUREMENT(SGE_PROF_PACKING);
-      DEXIT;
-      return ret;
+      DRETURN(ret);
    }
 
 #ifdef OBSERVE
@@ -1155,8 +1086,7 @@ int cull_unpack_list_partial(sge_pack_buffer *pb, lList **lpp, int flags)
       if((ret = cull_unpack_elem_partial(pb, &ep, lp->descr, flags)) != PACK_SUCCESS) {
          lFreeList(&lp);
          PROF_STOP_MEASUREMENT(SGE_PROF_PACKING);
-         DEXIT;
-         return ret;
+         DRETURN(ret);
       }
       lAppendElem(lp, ep);
    }
@@ -1166,8 +1096,7 @@ int cull_unpack_list_partial(sge_pack_buffer *pb, lList **lpp, int flags)
    *lpp = lp;
 
    PROF_STOP_MEASUREMENT(SGE_PROF_PACKING);
-   DEXIT;
-   return PACK_SUCCESS;
+   DRETURN(PACK_SUCCESS);
 }
 
 /* ------------------------------------------------------------
@@ -1191,32 +1120,28 @@ int flags
    lListElem *ep;
    u_long32 i=0;
 
-   DENTER(CULL_LAYER, "cull_unpack_object");
+   DENTER(CULL_LAYER);
 
    *epp = NULL;
 
    if((ret = unpackint(pb, &i))) {
-      DEXIT;
-      return ret;
+      DRETURN(ret);
    }
 
    /* do we have an empty object (NULL) ? */
    if(!i) {
-      DEXIT;
-      return PACK_SUCCESS;
+      DRETURN(PACK_SUCCESS);
    }
 
    /* unpack descriptor */
    if((ret = cull_unpack_descr(pb, &descr)) != PACK_SUCCESS) {
-      DEXIT;
-      return ret;
+      DRETURN(ret);
    }
 
    /* unpack each element */
    if((ret = cull_unpack_elem_partial(pb, &ep, descr, flags)) != PACK_SUCCESS) {
       sge_free(&descr);
-      DEXIT;
-      return ret;
+      DRETURN(ret);
    }
 
    ep->status = OBJECT_ELEM;
@@ -1227,8 +1152,7 @@ int flags
 
    *epp = ep;
 
-   DEXIT;
-   return PACK_SUCCESS;
+   DRETURN(PACK_SUCCESS);
 }
 
 enum {
@@ -1253,7 +1177,7 @@ const lEnumeration *enp
    u_long32 flag=0;
    int i=0, n=0;
 
-   DENTER(CULL_LAYER, "cull_pack_enum");
+   DENTER(CULL_LAYER);
 
    PROF_START_MEASUREMENT(SGE_PROF_PACKING);
    if ((ret = packint(pb, enp != NULL)))
@@ -1261,8 +1185,7 @@ const lEnumeration *enp
 
    if (!enp) {
       PROF_STOP_MEASUREMENT(SGE_PROF_PACKING);
-      DEXIT;
-      return PACK_SUCCESS;
+      DRETURN(PACK_SUCCESS);
    }
 
    /* pack flag indicating ALL, NONE or normal enumeration (array) */
@@ -1310,14 +1233,12 @@ const lEnumeration *enp
    }
 
    PROF_STOP_MEASUREMENT(SGE_PROF_PACKING);
-   DEXIT;
-   return PACK_SUCCESS;
+   DRETURN(PACK_SUCCESS);
 
  error:
    DPRINTF(("error packing enumeration\n"));
    PROF_STOP_MEASUREMENT(SGE_PROF_PACKING);
-   DEXIT;
-   return ret;
+   DRETURN(ret);
 }
 
 /* ------------------------------------------------------------
@@ -1339,7 +1260,7 @@ lEnumeration **enpp
    u_long32 flag=0, i=0, temp=0;
    u_long32 n=0;
 
-   DENTER(CULL_LAYER, "cull_unpack_enum");
+   DENTER(CULL_LAYER);
 
    PROF_START_MEASUREMENT(SGE_PROF_PACKING);
    *enpp = NULL;
@@ -1349,8 +1270,7 @@ lEnumeration **enpp
 
    if (!i) {
       PROF_STOP_MEASUREMENT(SGE_PROF_PACKING);
-      DEXIT;
-      return PACK_SUCCESS;
+      DRETURN(PACK_SUCCESS);
    }
 
    if ((ret = unpackint(pb, &flag)))
@@ -1359,8 +1279,7 @@ lEnumeration **enpp
    if (flag != PackWhatArray) {
       if (!(enp = (lEnumeration *) malloc(2 * sizeof(lEnumeration)))) {
          PROF_STOP_MEASUREMENT(SGE_PROF_PACKING);
-         DEXIT;
-         return PACK_ENOMEM;
+         DRETURN(PACK_ENOMEM);
       }
 
       switch (flag) {
@@ -1388,14 +1307,12 @@ lEnumeration **enpp
 
       if ( n+1 > MAX_DESCR_SIZE ) {
          LERROR(LEMALLOC);
-         DEXIT;
-         return PACK_ENOMEM;
+         DRETURN(PACK_ENOMEM);
       }
 
       if (!(enp = (lEnumeration *) malloc(sizeof(lEnumeration) * (n + 1)))) {
          PROF_STOP_MEASUREMENT(SGE_PROF_PACKING);
-         DEXIT;
-         return PACK_ENOMEM;
+         DRETURN(PACK_ENOMEM);
       }
 
       /* read in n lEnumeration fields */
@@ -1430,15 +1347,13 @@ lEnumeration **enpp
    *enpp = enp;
 
    PROF_STOP_MEASUREMENT(SGE_PROF_PACKING);
-   DEXIT;
-   return PACK_SUCCESS;
+   DRETURN(PACK_SUCCESS);
 
  error:
 
    lFreeWhat(&enp);
    PROF_STOP_MEASUREMENT(SGE_PROF_PACKING);
-   DEXIT;
-   return ret;
+   DRETURN(ret);
 }
 
 /* ------------------------------------------------------------
@@ -1457,26 +1372,23 @@ const lCondition *cp
 ) {
    int ret;
 
-   DENTER(CULL_LAYER, "cull_pack_cond");
+   DENTER(CULL_LAYER);
 
    PROF_START_MEASUREMENT(SGE_PROF_PACKING);
    if ((ret = packint(pb, cp != NULL))) {
       PROF_STOP_MEASUREMENT(SGE_PROF_PACKING);
-      DEXIT;
-      return ret;
+      DRETURN(ret);
    }
 
    if (!cp) {
       PROF_STOP_MEASUREMENT(SGE_PROF_PACKING);
-      DEXIT;
-      return PACK_SUCCESS;
+      DRETURN(PACK_SUCCESS);
    }
 
    /* pack operator indicating the following contents */
    if ((ret = packint(pb, cp->op))) {
       PROF_STOP_MEASUREMENT(SGE_PROF_PACKING);
-      DEXIT;
-      return ret;
+      DRETURN(ret);
    }
 
    DPRINTF(("cp->op: %d\n", cp->op));
@@ -1496,34 +1408,29 @@ const lCondition *cp
       DPRINTF(("cp->operand.cmp.pos: %d\n", cp->operand.cmp.pos));
       if ((ret = packint(pb, cp->operand.cmp.pos))) {
          PROF_STOP_MEASUREMENT(SGE_PROF_PACKING);
-         DEXIT;
-         return ret;
+         DRETURN(ret);
       }
       DPRINTF(("cp->operand.cmp.mt: %d\n", cp->operand.cmp.mt));
       if ((ret = packint(pb, cp->operand.cmp.mt))) {
          PROF_STOP_MEASUREMENT(SGE_PROF_PACKING);
-         DEXIT;
-         return ret;
+         DRETURN(ret);
       }
       DPRINTF(("cp->operand.cmp.nm: %d\n", cp->operand.cmp.nm));
       if ((ret = packint(pb, cp->operand.cmp.nm))) {
          PROF_STOP_MEASUREMENT(SGE_PROF_PACKING);
-         DEXIT;
-         return ret;
+         DRETURN(ret);
       }
 
       if (mt_get_type(cp->operand.cmp.mt) != lListT) {
          if ((ret = cull_pack_switch(pb, &(cp->operand.cmp.val), NULL,
                                      mt_get_type(cp->operand.cmp.mt), 0))) {
             PROF_STOP_MEASUREMENT(SGE_PROF_PACKING);
-            DEXIT;
-            return ret;
+            DRETURN(ret);
          }
       } else {
          if ((ret = cull_pack_cond(pb, cp->operand.cmp.val.cp))) {
             PROF_STOP_MEASUREMENT(SGE_PROF_PACKING);
-            DEXIT;
-            return ret;
+            DRETURN(ret);
          }
       }
       break;
@@ -1531,8 +1438,7 @@ const lCondition *cp
    case NEG:
       if ((ret = cull_pack_cond(pb, cp->operand.log.first))) {
          PROF_STOP_MEASUREMENT(SGE_PROF_PACKING);
-         DEXIT;
-         return ret;
+         DRETURN(ret);
       }
       break;
 
@@ -1540,25 +1446,21 @@ const lCondition *cp
    case OR:
       if ((ret = cull_pack_cond(pb, cp->operand.log.first))) {
          PROF_STOP_MEASUREMENT(SGE_PROF_PACKING);
-         DEXIT;
-         return ret;
+         DRETURN(ret);
       }
       if ((ret = cull_pack_cond(pb, cp->operand.log.second))) {
          PROF_STOP_MEASUREMENT(SGE_PROF_PACKING);
-         DEXIT;
-         return ret;
+         DRETURN(ret);
       }
       break;
 
    default:
       PROF_STOP_MEASUREMENT(SGE_PROF_PACKING);
-      DEXIT;
-      return PACK_FORMAT;
+      DRETURN(PACK_FORMAT);
    }
 
    PROF_STOP_MEASUREMENT(SGE_PROF_PACKING);
-   DEXIT;
-   return PACK_SUCCESS;
+   DRETURN(PACK_SUCCESS);
 }
 
 /* ------------------------------------------------------------
@@ -1579,34 +1481,30 @@ lCondition **cpp
    u_long32 i=0;
    lCondition *cp = NULL;
 
-   DENTER(CULL_LAYER, "cull_unpack_cond");
+   DENTER(CULL_LAYER);
 
    PROF_START_MEASUREMENT(SGE_PROF_PACKING);
    *cpp = NULL;
    if ((ret = unpackint(pb, &i))) {
       PROF_STOP_MEASUREMENT(SGE_PROF_PACKING);
-      DEXIT;
-      return ret;
+      DRETURN(ret);
    }
    if (!i) {
       *cpp = NULL;
       PROF_STOP_MEASUREMENT(SGE_PROF_PACKING);
-      DEXIT;
-      return 0;
+      DRETURN(0);
    }
 
    if (!(cp = (lCondition *) calloc(1, sizeof(lCondition)))) {
       LERROR(LEMALLOC);
       PROF_STOP_MEASUREMENT(SGE_PROF_PACKING);
-      DEXIT;
-      return PACK_ENOMEM;
+      DRETURN(PACK_ENOMEM);
    }
 
    if ((ret = unpackint(pb, &i))) {
       lFreeWhere(&cp);
       PROF_STOP_MEASUREMENT(SGE_PROF_PACKING);
-      DEXIT;
-      return ret;
+      DRETURN(ret);
    }
    cp->op = i;
 
@@ -1625,22 +1523,19 @@ lCondition **cpp
       if ((ret = unpackint(pb, &i))) {
          lFreeWhere(&cp);
          PROF_STOP_MEASUREMENT(SGE_PROF_PACKING);
-         DEXIT;
-         return ret;
+         DRETURN(ret);
       }
       cp->operand.cmp.pos = i;
       if ((ret = unpackint(pb, &i))) {
          lFreeWhere(&cp);
          PROF_STOP_MEASUREMENT(SGE_PROF_PACKING);
-         DEXIT;
-         return ret;
+         DRETURN(ret);
       }
       cp->operand.cmp.mt = i;
       if ((ret = unpackint(pb, &i))) {
          lFreeWhere(&cp);
          PROF_STOP_MEASUREMENT(SGE_PROF_PACKING);
-         DEXIT;
-         return ret;
+         DRETURN(ret);
       }
       cp->operand.cmp.nm = i;
 
@@ -1648,15 +1543,13 @@ lCondition **cpp
          if ((ret = cull_unpack_switch(pb, &(cp->operand.cmp.val), mt_get_type(cp->operand.cmp.mt), 0))) {
             lFreeWhere(&cp);
             PROF_STOP_MEASUREMENT(SGE_PROF_PACKING);
-            DEXIT;
-            return ret;
+            DRETURN(ret);
          }
       } else {
          if ((ret = cull_unpack_cond(pb, &(cp->operand.cmp.val.cp)))) {
             lFreeWhere(&cp);
             PROF_STOP_MEASUREMENT(SGE_PROF_PACKING);
-            DEXIT;
-            return ret;
+            DRETURN(ret);
          }
       }
       break;
@@ -1665,8 +1558,7 @@ lCondition **cpp
       if ((ret = cull_unpack_cond(pb, &(cp->operand.log.first)))) {
          lFreeWhere(&cp);
          PROF_STOP_MEASUREMENT(SGE_PROF_PACKING);
-         DEXIT;
-         return ret;
+         DRETURN(ret);
       }
       break;
 
@@ -1675,29 +1567,25 @@ lCondition **cpp
       if ((ret = cull_unpack_cond(pb, &(cp->operand.log.first)))) {
          PROF_STOP_MEASUREMENT(SGE_PROF_PACKING);
          lFreeWhere(&cp);
-         DEXIT;
-         return ret;
+         DRETURN(ret);
       }
       if ((ret = cull_unpack_cond(pb, &(cp->operand.log.second)))) {
          lFreeWhere(&cp);
          PROF_STOP_MEASUREMENT(SGE_PROF_PACKING);
-         DEXIT;
-         return ret;
+         DRETURN(ret);
       }
       break;
 
    default:
       lFreeWhere(&cp);
       PROF_STOP_MEASUREMENT(SGE_PROF_PACKING);
-      DEXIT;
-      return PACK_FORMAT;
+      DRETURN(PACK_FORMAT);
    }
 
    *cpp = cp;
 
    PROF_STOP_MEASUREMENT(SGE_PROF_PACKING);
-   DEXIT;
-   return PACK_SUCCESS;
+   DRETURN(PACK_SUCCESS);
 }
 
 /****** cull_pack/setByteArray() ***********************************************

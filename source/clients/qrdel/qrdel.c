@@ -129,7 +129,7 @@ static bool sge_parse_cmdline_qrdel(char **argv, char **envp, lList **ppcmdline,
    char **sp;
    char **rp;
 
-   DENTER(TOP_LAYER, "sge_parse_cmdline_qrdel");
+   DENTER(TOP_LAYER);
 
    rp = argv;
    while (*(sp=rp)) {
@@ -180,14 +180,13 @@ static bool sge_parse_qrdel(lList **ppcmdline, lList **ppid_list, lList **alpp)
    lList *user_list = NULL;
    bool ret = true;
 
-   DENTER(TOP_LAYER, "sge_parse_qrdel");
+   DENTER(TOP_LAYER);
 
    while (lGetNumberOfElem(*ppcmdline)) {
       const lListElem *ep = NULL;
       
       if (parse_flag(ppcmdline, "-help",  alpp, &helpflag)) {
          sge_usage(QRDEL, stdout);
-         DEXIT;
          SGE_EXIT(NULL, 0);
          break;
       }

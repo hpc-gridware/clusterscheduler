@@ -181,7 +181,7 @@ void process_job_report(sge_gdi_ctx_class_t *ctx, lListElem *report,
    const char *job_id_string;
    const lList *master_pe_list = *object_type_get_master_list(SGE_TYPE_PE);
 
-   DENTER(TOP_LAYER, "process_job_report");
+   DENTER(TOP_LAYER);
 
    sge_dstring_init(&job_id_dstring, job_id_buffer, MAX_STRING_SIZE);
 

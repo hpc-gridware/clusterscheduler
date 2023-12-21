@@ -492,7 +492,7 @@ void sge_getme(u_long32 program_number)
    stringT tmp_str;
    struct hostent *hent = NULL;
  
-   DENTER(TOP_LAYER, "sge_getme");
+   DENTER(TOP_LAYER);
  
    pthread_once(&prog_once, prog_once_init);
 
@@ -501,8 +501,7 @@ void sge_getme(u_long32 program_number)
       resolution we can utilize the user name as an indication sge_getme()
       was already called and safe the effort of doing it again */
    if (uti_state_get_user_name()!=NULL) {
-      DEXIT;
-      return;
+      DRETURN_VOID;
    }
 
    /* get program info */
@@ -562,8 +561,7 @@ void sge_getme(u_long32 program_number)
  
    sge_show_me();
  
-   DEXIT;
-   return;
+   DRETURN_VOID;
 }
 
 /****** uti/prog/sge_show_me() ************************************************
@@ -581,14 +579,13 @@ void sge_getme(u_long32 program_number)
 ******************************************************************************/
 static void sge_show_me(void)
 {
-   DENTER(TOP_LAYER, "sge_show_me");
+   DENTER(TOP_LAYER);
  
 #ifdef NO_SGE_COMPILE_DEBUG
    return;
 #else
    if (!TRACEON) {
-      DEXIT;
-      return;
+      DRETURN_VOID;
    }
 #endif
  
@@ -602,8 +599,7 @@ static void sge_show_me(void)
    DPRINTF(("me.user_name                >%s<\n", uti_state_get_user_name()));
    DPRINTF(("me.default_cell             >%s<\n", uti_state_get_default_cell()));
  
-   DEXIT;
-   return;
+   DRETURN_VOID;
 }     
 
 /****** uti/prog/prog_once_init() *********************************************
@@ -757,12 +753,11 @@ sge_prog_state_class_create(sge_env_state_class_t *sge_env,
 {
    sge_prog_state_class_t *ret = (sge_prog_state_class_t *)sge_malloc(sizeof(sge_prog_state_class_t));
 
-   DENTER(TOP_LAYER, "sge_prog_state_class_create");
+   DENTER(TOP_LAYER);
 
    if (!ret) {
       eh->error(eh, STATUS_EMALLOC, ANSWER_QUALITY_ERROR, MSG_MEMORY_MALLOCFAILED);
-      DEXIT;
-      return NULL;
+      DRETURN(NULL);
    }   
    
    ret->dprintf = sge_prog_state_dprintf;
@@ -795,32 +790,28 @@ sge_prog_state_class_create(sge_env_state_class_t *sge_env,
    if (ret->sge_prog_state_handle == NULL) {
       eh->error(eh, STATUS_EMALLOC, ANSWER_QUALITY_ERROR, MSG_MEMORY_MALLOCFAILED);
       sge_free(&ret);
-      DEXIT;
-      return NULL;
+      DRETURN(NULL);
    }
    memset(ret->sge_prog_state_handle, 0, sizeof(sge_prog_state_t));
    
    if (!sge_prog_state_setup(ret, sge_env, program_number, eh)) {
       sge_prog_state_class_destroy(&ret);
-      DEXIT;
-      return NULL;
+      DRETURN(NULL);
    }
 
-   DEXIT;
-   return ret;
+   DRETURN(ret);
 }   
 
 void sge_prog_state_class_destroy(sge_prog_state_class_t **pst)
 {
-   DENTER(TOP_LAYER, "sge_prog_state_class_destroy");
+   DENTER(TOP_LAYER);
    if (!pst || !*pst) {
-      DEXIT;
-      return;
+      DRETURN_VOID;
    }   
       
    prog_state_destroy((*pst)->sge_prog_state_handle);
    sge_free(pst);
-   DEXIT;
+   DRETURN_VOID;
 }
 
 
@@ -829,7 +820,7 @@ static bool sge_prog_state_setup(sge_prog_state_class_t *thiz, sge_env_state_cla
    stringT tmp_str;
    bool ret = true;
 
-   DENTER(TOP_LAYER, "sge_prog_state_setup");
+   DENTER(TOP_LAYER);
  
    thiz->set_who(thiz, program_number);
    thiz->set_sge_formal_prog_name(thiz, prognames[program_number]);
@@ -897,15 +888,14 @@ static bool sge_prog_state_setup(sge_prog_state_class_t *thiz, sge_env_state_cla
       thiz->dprintf(thiz);
    }*/
 
-   DEXIT;
-   return ret;
+   DRETURN(ret);
 }
 
 static void sge_prog_state_dprintf(sge_prog_state_class_t *thiz)
 {
    sge_prog_state_t *ps = (sge_prog_state_t *) thiz->sge_prog_state_handle;
 
-   DENTER(TOP_LAYER, "sge_prog_state_dprintf");
+   DENTER(TOP_LAYER);
 
    DPRINTF(("who                      >%d<\n", ps->who));
    DPRINTF(("sge_formal_prog_name     >%s<\n", ps->sge_formal_prog_name));
@@ -917,7 +907,7 @@ static void sge_prog_state_dprintf(sge_prog_state_class_t *thiz)
    DPRINTF(("user_name                >%s<\n", ps->user_name));
    DPRINTF(("default_cell             >%s<\n", ps->default_cell));
 
-   DEXIT;
+   DRETURN_VOID;
 }   
 
 static const char* get_sge_formal_prog_name(sge_prog_state_class_t *thiz) 

@@ -104,7 +104,7 @@ void opt_list_append_opts_from_default_files(u_long32 prog_number,
    dstring req_file = DSTRING_INIT;
    char *def_files[3 + 1];
 
-   DENTER(TOP_LAYER, "opt_list_append_opts_from_default_files");
+   DENTER(TOP_LAYER);
 
    lFreeList(answer_list);
 
@@ -173,7 +173,7 @@ bool get_user_home_file_path(dstring *absolut_filename, const char *filename, co
 {
    bool ret = false;
 
-   DENTER (TOP_LAYER, "get_user_home_file_path");
+   DENTER (TOP_LAYER);
 
    if (absolut_filename != NULL && filename != NULL) {
 
@@ -222,7 +222,7 @@ static char *get_cwd_defaults_file_path(lList **answer_list)
    char str[MAX_STRING_SIZE];
    char *file = NULL;
    
-   DENTER (TOP_LAYER, "get_cwd_defaults_file_name");
+   DENTER (TOP_LAYER);
 
    if (!getcwd(cwd, sizeof(cwd))) {
       snprintf(str, sizeof(str), SFNMAX, MSG_FILE_CANTREADCURRENTWORKINGDIR);
@@ -285,7 +285,7 @@ static void append_opts_from_default_files(u_long32 prog_number,
    SGE_STRUCT_STAT buf;
    int do_exit = 0;
    
-   DENTER(TOP_LAYER, "append_opts_from_default_files");
+   DENTER(TOP_LAYER);
 
    for (pstr = def_files; *pstr; pstr++) {
       int already_read;
@@ -732,7 +732,7 @@ bool opt_list_is_X_true(lList *opts, const char *option)
 *******************************************************************************/
 const char *get_root_file_path(dstring *absolut_filename, const char *cell_root, const char *filename)
 {
-   DENTER (TOP_LAYER, "get_root_file_path");
+   DENTER (TOP_LAYER);
 
    sge_dstring_sprintf(absolut_filename, "%s/%s", cell_root, filename);
 
@@ -767,7 +767,7 @@ bool get_user_home(dstring *home_dir, const char *user, lList **answer_list)
 {
    bool ret = true;
 
-   DENTER(TOP_LAYER, "get_user_home");
+   DENTER(TOP_LAYER);
 
    if (home_dir != NULL) {
       struct passwd *pwd;

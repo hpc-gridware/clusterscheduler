@@ -71,7 +71,7 @@ calendar_initalize_timer(sge_gdi_ctx_class_t *ctx, monitoring_t *monitor)
    lList *answer_list = NULL;
    const lList *master_calendar_list = *object_type_get_master_list(SGE_TYPE_CALENDAR);
 
-   DENTER(TOP_LAYER, "calendar_initalize_timer");
+   DENTER(TOP_LAYER);
 
    for_each_rw (cep, master_calendar_list) {
       calendar_parse_year(cep, &answer_list);
@@ -97,7 +97,7 @@ calendar_mod(sge_gdi_ctx_class_t *ctx, lList **alpp, lListElem *new_cal, lListEl
    const lListElem *cqueue;
    const char *cal_name;
 
-   DENTER(TOP_LAYER, "calendar_mod");
+   DENTER(TOP_LAYER);
 
    /* ---- CAL_name cannot get changed - we just ignore it */
    if (add == 1) {
@@ -151,7 +151,7 @@ calendar_spool(sge_gdi_ctx_class_t *ctx, lList **alpp, lListElem *cep, gdi_objec
    bool dbret;
    bool job_spooling = ctx->get_job_spooling(ctx);
 
-   DENTER(TOP_LAYER, "calendar_spool");
+   DENTER(TOP_LAYER);
 
    dbret = spool_write_object(&answer_list, spool_get_default_context(), cep,
                               lGetString(cep, CAL_name), SGE_TYPE_CALENDAR,
@@ -165,8 +165,7 @@ calendar_spool(sge_gdi_ctx_class_t *ctx, lList **alpp, lListElem *cep, gdi_objec
                               lGetString(cep, CAL_name));
    }
 
-   DEXIT;
-   return dbret ? 0 : 1;
+   DRETURN(dbret ? 0 : 1);
 }
 
 int 
@@ -176,29 +175,26 @@ sge_del_calendar(sge_gdi_ctx_class_t *ctx, lListElem *cep, lList **alpp, char *r
    lList **master_calendar_list = object_type_get_master_list_rw(SGE_TYPE_CALENDAR);
    const lList *master_cqueue_list = *object_type_get_master_list(SGE_TYPE_CQUEUE);
 
-   DENTER(TOP_LAYER, "sge_del_calendar");
+   DENTER(TOP_LAYER);
 
    if ( !cep || !ruser || !rhost ) {
-      CRITICAL((SGE_EVENT, MSG_SGETEXT_NULLPTRPASSED_S, SGE_FUNC));
+      CRITICAL((SGE_EVENT, MSG_SGETEXT_NULLPTRPASSED_S, __func__));
       answer_list_add(alpp, SGE_EVENT, STATUS_EUNKNOWN, ANSWER_QUALITY_ERROR);
-      DEXIT;
-      return STATUS_EUNKNOWN;
+      DRETURN(STATUS_EUNKNOWN);
    }
 
    /* ep is no calendar element, if cep has no CAL_name */
    if (lGetPosViaElem(cep, CAL_name, SGE_NO_ABORT)<0) {
-      CRITICAL((SGE_EVENT, MSG_SGETEXT_MISSINGCULLFIELD_SS, lNm2Str(QU_qname), SGE_FUNC));
+      CRITICAL((SGE_EVENT, MSG_SGETEXT_MISSINGCULLFIELD_SS, lNm2Str(QU_qname), __func__));
       answer_list_add(alpp, SGE_EVENT, STATUS_EUNKNOWN, ANSWER_QUALITY_ERROR);
-      DEXIT;
-      return STATUS_EUNKNOWN;
+      DRETURN(STATUS_EUNKNOWN);
    }
    cal_name = lGetString(cep, CAL_name);
 
    if (!lGetElemStrRW(*master_calendar_list, CAL_name, cal_name)) {
       ERROR((SGE_EVENT, MSG_SGETEXT_DOESNOTEXIST_SS, MSG_OBJ_CALENDAR, cal_name));
       answer_list_add(alpp, SGE_EVENT, STATUS_EEXIST, ANSWER_QUALITY_ERROR);
-      DEXIT;
-      return STATUS_EEXIST;
+      DRETURN(STATUS_EEXIST);
    }
 
    /* prevent deletion of a still referenced calendar */
@@ -212,8 +208,7 @@ sge_del_calendar(sge_gdi_ctx_class_t *ctx, lListElem *cep, lList **alpp, char *r
          answer_list_add(alpp, SGE_EVENT, STATUS_ESEMANTIC,
                          ANSWER_QUALITY_ERROR);
          lFreeList(&local_answer_list);
-         DEXIT;
-         return STATUS_ESEMANTIC;
+         DRETURN(STATUS_ESEMANTIC);
       }
    }
 
@@ -229,8 +224,7 @@ sge_del_calendar(sge_gdi_ctx_class_t *ctx, lListElem *cep, lList **alpp, char *r
    INFO((SGE_EVENT, MSG_SGETEXT_REMOVEDFROMLIST_SSSS,
          ruser, rhost, cal_name, MSG_OBJ_CALENDAR));
    answer_list_add(alpp, SGE_EVENT, STATUS_OK, ANSWER_QUALITY_INFO);
-   DEXIT;
-   return STATUS_OK;
+   DRETURN(STATUS_OK);
 }
 
 /****** qmaster/sge_calendar_qmaster/sge_calendar_event_handler() **************
@@ -260,7 +254,7 @@ void sge_calendar_event_handler(sge_gdi_ctx_class_t *ctx, te_event_t anEvent, mo
    lList *ppList = NULL;
    const lList *master_calendar_list = *object_type_get_master_list(SGE_TYPE_CALENDAR);
 
-   DENTER(TOP_LAYER, "sge_calendar_event_handler");
+   DENTER(TOP_LAYER);
 
    MONITOR_WAIT_TIME(SGE_LOCK(LOCK_GLOBAL, LOCK_WRITE), monitor);
 
@@ -286,7 +280,7 @@ int calendar_update_queue_states(sge_gdi_ctx_class_t *ctx, lListElem *cep, lList
    lList *state_changes_list = NULL;
    u_long32 state;
    time_t when = 0; 
-   DENTER(TOP_LAYER, "calendar_update_queue_states");
+   DENTER(TOP_LAYER);
 
    if (lListElem_is_changed(cep)) {
       sge_add_event( 0, old_cep ? sgeE_CALENDAR_MOD : sgeE_CALENDAR_ADD, 
@@ -308,7 +302,6 @@ int calendar_update_queue_states(sge_gdi_ctx_class_t *ctx, lListElem *cep, lList
       te_free_event(&ev);
    }
   
-   DEXIT;
-   return 0;
+   DRETURN(0);
 }
 

@@ -146,22 +146,20 @@ sge_gdi_qmod(sge_gdi_ctx_class_t *ctx, sge_gdi_packet_class_t *packet, sge_gdi_t
    const lList *master_cqueue_list = *object_type_get_master_list(SGE_TYPE_CQUEUE);
    const lList *master_job_list = *object_type_get_master_list(SGE_TYPE_JOB);
 
-   DENTER(TOP_LAYER, "sge_gdi_qmod");
+   DENTER(TOP_LAYER);
 
 
    if (!packet->host || (strlen(packet->user) == 0) || !packet->commproc) {
-      CRITICAL((SGE_EVENT, MSG_SGETEXT_NULLPTRPASSED_S, SGE_FUNC));
+      CRITICAL((SGE_EVENT, MSG_SGETEXT_NULLPTRPASSED_S, __func__));
       answer_list_add(&(task->answer_list), SGE_EVENT,
                       STATUS_EUNKNOWN, ANSWER_QUALITY_ERROR);
       sge_dstring_free(&cqueue_buffer);
       sge_dstring_free(&hostname_buffer);
-      DEXIT;
-      return;
+      DRETURN_VOID;
    }
 
    if (sge_chck_mod_perm_host(&(task->answer_list), task->target, packet->host, packet->commproc, 0, NULL, monitor)) {
-      DEXIT;
-      return;
+      DRETURN_VOID;
    }
 
    /*
@@ -418,7 +416,7 @@ sge_gdi_qmod(sge_gdi_ctx_class_t *ctx, sge_gdi_packet_class_t *packet, sge_gdi_t
 
    task->answer_list = alp;
 
-   DEXIT;
+   DRETURN_VOID;
 }
 
 static int
@@ -434,7 +432,7 @@ sge_change_queue_state(sge_gdi_ctx_class_t *ctx,
    const lList *master_operator_list = *object_type_get_master_list(SGE_TYPE_OPERATOR);
    lList *master_cqueue_list = *object_type_get_master_list_rw(SGE_TYPE_CQUEUE);
 
-   DENTER(TOP_LAYER, "sge_change_queue_state");
+   DENTER(TOP_LAYER);
 
    isowner = qinstance_check_owner(qep, user, master_manager_list, master_operator_list);
    isoperator = manop_is_operator(user, master_manager_list, master_operator_list);
@@ -442,12 +440,11 @@ sge_change_queue_state(sge_gdi_ctx_class_t *ctx,
    if (!isowner) {
       ERROR((SGE_EVENT, MSG_QUEUE_NOCHANGEQPERMS_SS, user, lGetString(qep, QU_full_name)));
       answer_list_add(answer, SGE_EVENT, STATUS_ESEMANTIC, ANSWER_QUALITY_ERROR);
-      DEXIT;
-      return -1;
+      DRETURN(-1);
    }
 
    if (qep == NULL) {
-      ERROR((SGE_EVENT, MSG_NULLELEMENTPASSEDTO_S, SGE_FUNC));
+      ERROR((SGE_EVENT, MSG_NULLELEMENTPASSEDTO_S, __func__));
       DRETURN(-1);
    }
 
@@ -504,8 +501,7 @@ sge_change_queue_state(sge_gdi_ctx_class_t *ctx,
          break;
    }
 
-   DEXIT;
-   return result;
+   DRETURN(result);
 }
 
 static int sge_change_job_state(
@@ -523,7 +519,7 @@ monitoring_t *monitor
    lListElem *queueep;
    u_long32 job_id;
 
-   DENTER(TOP_LAYER, "sge_change_job_state");
+   DENTER(TOP_LAYER);
    const lList *master_manager_list = *object_type_get_master_list(SGE_TYPE_MANAGER);
    const lList *master_operator_list = *object_type_get_master_list(SGE_TYPE_OPERATOR);
    const lList *master_cqueue_list = *object_type_get_master_list(SGE_TYPE_CQUEUE);
@@ -534,8 +530,7 @@ monitoring_t *monitor
    if (strcmp(user, lGetString(jep, JB_owner)) && !manop_is_operator(user, master_manager_list, master_operator_list)) {
       ERROR((SGE_EVENT, MSG_JOB_NOMODJOBPERMS_SU, user, sge_u32c(job_id)));
       answer_list_add(answer, SGE_EVENT, STATUS_ENOTOWNER, ANSWER_QUALITY_ERROR);
-      DEXIT;
-      return -1;
+      DRETURN(-1);
    }
 
    if (!jatep) {
@@ -546,8 +541,7 @@ monitoring_t *monitor
          WARNING((SGE_EVENT, MSG_QMODJOB_NOTENROLLED_U, sge_u32c(job_id)));
       }   
       answer_list_add(answer, SGE_EVENT, STATUS_ESEMANTIC, ANSWER_QUALITY_WARNING);
-      DEXIT;
-      return -1;
+      DRETURN(-1);
    }
 
    task_id = lGetUlong(jatep, JAT_task_number);
@@ -607,8 +601,7 @@ monitoring_t *monitor
          break;
    }
 
-   DEXIT;
-   return 0;
+   DRETURN(0);
 }
 
 /****
@@ -625,20 +618,18 @@ int isoperator,
 int isowner,
 monitoring_t *monitor
 ) {
-   DENTER(TOP_LAYER, "qmod_queue_weakclean");
+   DENTER(TOP_LAYER);
 
    if (!isoperator && !isowner) {
       ERROR((SGE_EVENT, MSG_QUEUE_NORESCHEDULEQPERMS_SS, user,
          lGetString(qep, QU_full_name)));
       answer_list_add(answer, SGE_EVENT, STATUS_ESEMANTIC, ANSWER_QUALITY_ERROR);
-      DEXIT;
-      return -1;
+      DRETURN(-1);
    }
 
    reschedule_jobs(ctx, qep, force, answer, monitor, true);
 
-   DEXIT;
-   return 0;
+   DRETURN(0);
 }
 
 /****
@@ -663,7 +654,7 @@ monitoring_t *monitor
    const lList *master_manager_list = *object_type_get_master_list(SGE_TYPE_MANAGER);
    const lList *master_job_list = *object_type_get_master_list(SGE_TYPE_JOB);
 
-   DENTER(TOP_LAYER, "qmod_queue_clean");
+   DENTER(TOP_LAYER);
 
    qname = lGetString(qep, QU_full_name);
 
@@ -672,8 +663,7 @@ monitoring_t *monitor
    if (!manop_is_manager(user, master_manager_list)) {
       ERROR((SGE_EVENT, SFNMAX, MSG_QUEUE_NOCLEANQPERMS));
       answer_list_add(answer, SGE_EVENT, STATUS_ESEMANTIC, ANSWER_QUALITY_ERROR);
-      DEXIT;
-      return -1;
+      DRETURN(-1);
    }
 
    /* using sge_commit_job(j, COMMIT_ST_FINISHED_FAILED) q->job_list
@@ -713,11 +703,11 @@ char *user,
 char *host,
 monitoring_t *monitor
 ) {
-   DENTER(TOP_LAYER, "qmod_job_reschedule");
+   DENTER(TOP_LAYER);
 
    reschedule_job(ctx, jep, jatep, queueep, force, answer, monitor, true);
 
-   DEXIT;
+   DRETURN_VOID;
 }
 /****
  **** qmod_job_suspend (static)
@@ -740,7 +730,7 @@ monitoring_t *monitor
    bool migrate_on_suspend = false;
    u_long32 now;
 
-   DENTER(TOP_LAYER, "qmod_job_suspend");
+   DENTER(TOP_LAYER);
 
    now = sge_get_gmt();
 
@@ -857,7 +847,7 @@ monitoring_t *monitor
       }
       reporting_create_job_log(NULL, now, JL_SUSPENDED, user, host, NULL, jep, jatep, NULL, NULL);
    }
-   DEXIT;
+   DRETURN_VOID;
 }
 
 /****
@@ -879,7 +869,7 @@ monitoring_t *monitor
    u_long32 jobid, jataskid;
    u_long32 now;
 
-   DENTER(TOP_LAYER, "qmod_job_unsuspend");
+   DENTER(TOP_LAYER);
 
    now = sge_get_gmt();
 
@@ -904,8 +894,7 @@ monitoring_t *monitor
                          jobid, jataskid, NULL, NULL, NULL,
                          jep, jatep, NULL, true, true);
          reporting_create_job_log(NULL, now, JL_UNSUSPENDED, user, host, NULL, jep, jatep, NULL, NULL);
-         DEXIT;
-         return;
+         DRETURN_VOID;
       }
       else {
          /* guess admin tries to remove threshold suspension by qmon -us <jobid> */
@@ -915,8 +904,7 @@ monitoring_t *monitor
             WARNING((SGE_EVENT, MSG_JOB_NOADMSUSPENDJOB_SU, user, sge_u32c(jobid)));
          }
          answer_list_add(answer, SGE_EVENT, STATUS_ESEMANTIC, ANSWER_QUALITY_WARNING);
-         DEXIT;
-         return;
+         DRETURN_VOID;
       }
    }
 
@@ -1013,7 +1001,7 @@ monitoring_t *monitor
       }
    }
    reporting_create_job_log(NULL, now, JL_UNSUSPENDED, user, host, NULL, jep, jatep, NULL, NULL);
-   DEXIT;
+   DRETURN_VOID;
 }
 
 
@@ -1023,7 +1011,7 @@ void rebuild_signal_events()
    const lList *master_job_list = *object_type_get_master_list(SGE_TYPE_JOB);
    const lList *master_cqueue_list = *object_type_get_master_list(SGE_TYPE_CQUEUE);
 
-   DENTER(TOP_LAYER, "rebuild_signal_events");
+   DENTER(TOP_LAYER);
 
    /* J O B */
    for_each(jep, master_job_list)
@@ -1067,8 +1055,7 @@ void rebuild_signal_events()
       }
    }
 
-   DEXIT;
-   return;
+   DRETURN_VOID;
 } /* rebuild_signal_events() */
 
 /* this function is called by our timer mechanism for resending signals */
@@ -1081,7 +1068,7 @@ void resend_signal_event(sge_gdi_ctx_class_t *ctx, te_event_t anEvent, monitorin
    const lList *master_job_list = *object_type_get_master_list(SGE_TYPE_JOB);
    const lList *master_cqueue_list = *object_type_get_master_list(SGE_TYPE_CQUEUE);
 
-   DENTER(TOP_LAYER, "resend_signal_event");
+   DENTER(TOP_LAYER);
 
    MONITOR_WAIT_TIME(SGE_LOCK(LOCK_GLOBAL, LOCK_WRITE), monitor);
 
@@ -1090,8 +1077,7 @@ void resend_signal_event(sge_gdi_ctx_class_t *ctx, te_event_t anEvent, monitorin
       {
          ERROR((SGE_EVENT, MSG_EVE_RESENTSIGNALTASK_UU, sge_u32c(jobid), sge_u32c(jataskid)));
          SGE_UNLOCK(LOCK_GLOBAL, LOCK_WRITE);
-         DEXIT;
-         return;
+         DRETURN_VOID;
       }
 
       if ((qep = cqueue_list_locate_qinstance(master_cqueue_list, lGetString(jatep, JAT_master_queue)))) {
@@ -1102,8 +1088,7 @@ void resend_signal_event(sge_gdi_ctx_class_t *ctx, te_event_t anEvent, monitorin
          ERROR((SGE_EVENT, MSG_EVE_RESENTSIGNALQ_S, queue));
          SGE_UNLOCK(LOCK_GLOBAL, LOCK_WRITE);
          sge_free(&queue);
-         DEXIT;
-         return;
+         DRETURN_VOID;
       }
 
       sge_signal_queue(ctx, lGetUlong(qep, QU_pending_signal), qep, NULL, NULL, monitor);
@@ -1113,8 +1098,7 @@ void resend_signal_event(sge_gdi_ctx_class_t *ctx, te_event_t anEvent, monitorin
 
    SGE_UNLOCK(LOCK_GLOBAL, LOCK_WRITE);
 
-   DEXIT;
-   return;
+   DRETURN_VOID;
 }
 
 static void sge_propagate_queue_suspension(const char *qnm, int how)
@@ -1123,7 +1107,7 @@ static void sge_propagate_queue_suspension(const char *qnm, int how)
    lListElem *jatep;
    const lList *master_job_list = *object_type_get_master_list(SGE_TYPE_JOB);
 
-   DENTER(TOP_LAYER, "sge_propagate_queue_suspension");
+   DENTER(TOP_LAYER);
 
    DPRINTF(("searching for all jobs in queue %s due to %s\n", qnm, sge_sig2str(how)));
    for_each (jep, master_job_list) {
@@ -1163,7 +1147,7 @@ monitoring_t *monitor
    sge_pack_buffer pb;
    int sent = 0;
 
-   DENTER(TOP_LAYER, "sge_signal_queue");
+   DENTER(TOP_LAYER);
 
    now = sge_get_gmt();
 
@@ -1284,8 +1268,7 @@ monitoring_t *monitor
       }
    }
 
-   DEXIT;
-   return 0;
+   DRETURN(0);
 } /* sge_signal_queue() */
 
 /* in case we have to signal a queue
@@ -1307,7 +1290,7 @@ monitoring_t *monitor
    const lList *master_cqueue_list = *object_type_get_master_list(SGE_TYPE_CQUEUE);
    const lList *master_pe_list = *object_type_get_master_list(SGE_TYPE_PE);
 
-   DENTER(TOP_LAYER, "signal_slave_jobs_in_queue");
+   DENTER(TOP_LAYER);
 
    qname = lGetString(qep, QU_full_name);
    /* test whether there are parallel jobs
@@ -1352,7 +1335,7 @@ static void signal_slave_tasks_of_job(sge_gdi_ctx_class_t *ctx, int how,
    const lList *master_pe_list = *object_type_get_master_list(SGE_TYPE_PE);
    const lList *master_cqueue_list = *object_type_get_master_list(SGE_TYPE_CQUEUE);
 
-   DENTER(TOP_LAYER, "signal_slave_tasks_of_job");
+   DENTER(TOP_LAYER);
 
    /* do not signal slave tasks in case of checkpointing jobs with
       STOP/CONT when suspending means migration */
@@ -1372,7 +1355,6 @@ static void signal_slave_tasks_of_job(sge_gdi_ctx_class_t *ctx, int how,
             sge_signal_queue(ctx, how, mq, jep, jatep, monitor);
          }
 
-   DEXIT;
-   return;
+   DRETURN_VOID;
 }
 

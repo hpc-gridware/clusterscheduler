@@ -339,7 +339,7 @@ void fgl_dump_stats(dstring *stats_str) {
 }
 
 void fgl_lock(void) {
-   DENTER(TOP_LAYER, "fgl_lock");
+   DENTER(TOP_LAYER);
 
    // fetch request array 
    fgl_t *requests = NULL;
@@ -440,7 +440,7 @@ void fgl_lock(void) {
 }
 
 void fgl_unlock(void) {
-   DENTER(TOP_LAYER, "fgl_unlock");
+   DENTER(TOP_LAYER);
    // fetch current array and pos 
    fgl_t *requests = NULL;
    u_long32 pos = 0;

@@ -127,7 +127,7 @@ void job_related_adminmail(u_long32 progid, lListElem *jr, int is_array, const c
    char* administrator_mail = NULL;
    char *shepherd_file_buf = NULL; 
 
-   DENTER(TOP_LAYER, "job_related_adminmail");
+   DENTER(TOP_LAYER);
 
    sge_dstring_init(&ds, buffer, sizeof(buffer));
 
@@ -316,7 +316,7 @@ int adm_mail_reset(int state)
 {
    int i;
 
-   DENTER(TOP_LAYER, "adm_mail_reset");
+   DENTER(TOP_LAYER);
 
    /*
    ** let 0 be a reset all

@@ -162,7 +162,7 @@ lListElem* get_attribute(const char *attrname, const lList *config_attr, const l
    const lListElem *load_el=NULL;
    lListElem *cplx_el=NULL;
 
-   DENTER(BASIS_LAYER, "get_attribute");
+   DENTER(BASIS_LAYER);
 
    /* resource_attr is a complex_entry (CE_Type) */
    if (config_attr) {
@@ -375,7 +375,7 @@ bool get_queue_resource(lListElem *queue_elem, const lListElem *queue, const cha
    char as_str[100];
    int type, field;
 
-   DENTER(BASIS_LAYER, "get_queue_resource");
+   DENTER(BASIS_LAYER);
 
    if(!queue_elem){
       /* error */
@@ -472,7 +472,7 @@ bool is_attr_prior(lListElem *upper_el, lListElem *lower_el){
    u_long32 unused_dom_str;
    u_long32 unused_dom;
 
-   DENTER(BASIS_LAYER, "is_attr_prior");
+   DENTER(BASIS_LAYER);
 
    /* the order is important must not be changed */   
    if(!upper_el){
@@ -565,7 +565,7 @@ static bool is_attr_prior2(lListElem *upper_el, double lower_value, int t_value,
    bool ret;
    double upper_value;
 
-   DENTER(BASIS_LAYER, "is_attr_prior2");
+   DENTER(BASIS_LAYER);
 
    if ((dom = lGetUlong(upper_el, t_dominant)) == 0 || (dom & DOMINANT_TYPE_VALUE) ){
       DRETURN(false);
@@ -593,7 +593,7 @@ lListElem *host,
 lList *exechost_list,
 lList *centry_list
 ) {
-   DENTER(TOP_LAYER, "host_comlexes2scheduler");
+   DENTER(TOP_LAYER);
 
    if (!host) {
       DPRINTF(("!!missing host!!\n"));
@@ -616,7 +616,7 @@ lList *centry_list
 int queue_complexes2scheduler(lList **new_centry_list, lListElem *queue, const lList *exechost_list,
                               const lList *centry_list)
 {
-   DENTER(BASIS_LAYER, "queue_complexes2scheduler");
+   DENTER(BASIS_LAYER);
 
    lFreeList(new_centry_list);
    *new_centry_list = get_attribute_list(host_list_locate(exechost_list, "global"), 
@@ -698,7 +698,7 @@ static lList *get_attribute_list(lListElem *global, lListElem *host, lListElem *
    lList *filter = NULL; 
    lList *list = NULL;
 
-   DENTER(BASIS_LAYER, "get_attribute_list");
+   DENTER(BASIS_LAYER);
    
    filter = lCreateList("", ST_Type);
 
@@ -844,7 +844,7 @@ const char *offer) {
 static int resource_cmp(u_long32 relop, double req, double src_dl) {
    int match;
 
-   DENTER(CULL_LAYER, "resource_cmp");
+   DENTER(CULL_LAYER);
 
    switch(relop) {
    case CMPLXEQ_OP :
@@ -897,7 +897,7 @@ int compare_complexes(int slots, lListElem *req_cplx, lListElem *src_cplx, char 
    char availability_text2[STR_LEN_AVAIL_TEXT]; 
    dstring resource_string = DSTRING_INIT;
 
-   DENTER(TOP_LAYER,"compare_complexes");
+   DENTER(TOP_LAYER);
 
    name = lGetString(src_cplx, CE_name); 
    type = lGetUlong(src_cplx, CE_valtype);
@@ -1157,7 +1157,7 @@ lListElem *get_attribute_by_name(const lListElem* global, const lListElem *host,
    const lList *config_attr = NULL;
    const lList *actual_attr = NULL; 
 
-   DENTER(BASIS_LAYER, "get_attribute_by_name");
+   DENTER(BASIS_LAYER);
 
    if (global) {
       double lc_factor = 0;
@@ -1309,7 +1309,7 @@ bool request_cq_rejected(const lList* hard_resource_list, const lListElem *cq,
    bool rejected;
    int match;
 
-   DENTER(TOP_LAYER, "request_cq_rejected");
+   DENTER(TOP_LAYER);
 
    for_each (req, hard_resource_list) {
       int cqfld, valfld;

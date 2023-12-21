@@ -254,7 +254,7 @@ int pe_validate(lListElem *pep, lList **alpp, int startup, const lList *master_u
    const char *pe_name;
    int ret;
 
-   DENTER(TOP_LAYER, "pe_validate");
+   DENTER(TOP_LAYER);
    pe_name = lGetString(pep, PE_name);
    if (pe_name != NULL && verify_str_key(alpp, pe_name, MAX_VERIFY_STRING, MSG_OBJ_PE, KEY_TABLE) != STATUS_OK) {
       if (alpp == NULL) {
@@ -263,8 +263,7 @@ int pe_validate(lListElem *pep, lList **alpp, int startup, const lList *master_u
          answer_list_add_sprintf(alpp, STATUS_EEXIST, ANSWER_QUALITY_ERROR,
                                  MSG_PE_INVALIDCHARACTERINPE_S, pe_name);
       }
-      DEXIT;
-      return STATUS_EEXIST;
+      DRETURN(STATUS_EEXIST);
    }
 
    /* register our error function for use in replace_params() */
@@ -280,8 +279,7 @@ int pe_validate(lListElem *pep, lList **alpp, int startup, const lList *master_u
          answer_list_add_sprintf(alpp, STATUS_EEXIST, ANSWER_QUALITY_ERROR,
                                  MSG_PE_STARTPROCARGS_SS, pe_name, err_msg);
       }
-      DEXIT;
-      return STATUS_EEXIST;
+      DRETURN(STATUS_EEXIST);
    }
 
    /* -------- stop_proc_args */
@@ -294,14 +292,12 @@ int pe_validate(lListElem *pep, lList **alpp, int startup, const lList *master_u
          answer_list_add_sprintf(alpp, STATUS_EEXIST, ANSWER_QUALITY_ERROR,
                                  MSG_PE_STOPPROCARGS_SS, pe_name, err_msg); 
       }
-      DEXIT;
-      return STATUS_EEXIST;
+      DRETURN(STATUS_EEXIST);
    }
 
    /* -------- slots */
    if ((ret=pe_validate_slots(alpp, lGetUlong(pep, PE_slots))) != STATUS_OK) {
-      DEXIT;
-      return ret;
+      DRETURN(ret);
    }
 
    /* -------- allocation_rule */
@@ -315,8 +311,7 @@ int pe_validate(lListElem *pep, lList **alpp, int startup, const lList *master_u
                                  MSG_SGETEXT_MISSINGCULLFIELD_SS,
                                  lNm2Str(PE_allocation_rule), "validate_pe");
       }
-      DEXIT;
-      return STATUS_EEXIST;
+      DRETURN(STATUS_EEXIST);
    }
 
    if (replace_params(s, NULL, 0, pe_alloc_rule_variables)) {
@@ -326,29 +321,25 @@ int pe_validate(lListElem *pep, lList **alpp, int startup, const lList *master_u
          answer_list_add_sprintf(alpp, STATUS_EEXIST, ANSWER_QUALITY_ERROR,
                                  MSG_PE_ALLOCRULE_SS, pe_name, err_msg);
       }
-      DEXIT;
-      return STATUS_EEXIST;
+      DRETURN(STATUS_EEXIST);
    }
 
    /* do this only in qmaster. we don't have the usersets in qconf */
    if (startup) {
       /* -------- PE_user_list */
       if ((ret=userset_list_validate_acl_list(lGetList(pep, PE_user_list), alpp, master_userset_list))!=STATUS_OK) {
-         DEXIT;
-         return ret;
+         DRETURN(ret);
       }
 
       /* -------- PE_xuser_list */
       if ((ret=userset_list_validate_acl_list(lGetList(pep, PE_xuser_list), alpp, master_userset_list))!=STATUS_OK) {
-         DEXIT;
-         return ret;
+         DRETURN(ret);
       }
    }
 
    /* -------- PE_urgency_slots */
    if ((ret=pe_validate_urgency_slots(alpp, lGetString(pep, PE_urgency_slots)))!=STATUS_OK) {
-      DEXIT;
-      return ret;
+      DRETURN(ret);
    }
 
 #ifdef SGE_PQS_API
@@ -360,16 +351,14 @@ int pe_validate(lListElem *pep, lList **alpp, int startup, const lList *master_u
       if (qsort_args) {
          if ((ret=pe_validate_qsort_args(alpp, qsort_args, pep,
                      &handle, &fn))!=STATUS_OK) {
-            DEXIT;
-            return ret;
+            DRETURN(ret);
          }
          /* lSetRef(pep, PE_qsort_validated, 1); */
       }
    }
 #endif
 
-   DEXIT;
-   return STATUS_OK;
+   DRETURN(STATUS_OK);
 }
 
 /****** sgeobj/pe/pe_validate_slots() *********************************
@@ -394,7 +383,7 @@ int pe_validate(lListElem *pep, lList **alpp, int startup, const lList *master_u
 *******************************************************************************/
 int pe_validate_slots(lList **alpp, u_long32 slots)
 {
-   DENTER(TOP_LAYER, "pe_validate_slots");
+   DENTER(TOP_LAYER);
 
    if (slots > MAX_SEQNUM) {
       if (alpp == NULL) {
@@ -405,12 +394,10 @@ int pe_validate_slots(lList **alpp, u_long32 slots)
                                  MSG_ATTR_INVALID_ULONGVALUE_USUU, sge_u32c(slots), 
                                  "slots", sge_u32c(0), sge_u32c(MAX_SEQNUM));
       }
-      DEXIT;
-      return STATUS_ESEMANTIC;
+      DRETURN(STATUS_ESEMANTIC);
    }
 
-   DEXIT;
-   return STATUS_OK;
+   DRETURN(STATUS_OK);
 }
 /****** sgeobj/pe/pe_validate_urgency_slots() *********************************
 *  NAME
@@ -434,7 +421,7 @@ int pe_validate_slots(lList **alpp, u_long32 slots)
 *******************************************************************************/
 int pe_validate_urgency_slots(lList **answer_list, const char *s)
 {
-   DENTER(TOP_LAYER, "pe_validate_urgency_slots");
+   DENTER(TOP_LAYER);
 
    if (strcasecmp(s, SGE_ATTRVAL_MIN) &&
        strcasecmp(s, SGE_ATTRVAL_MAX) &&
@@ -446,12 +433,10 @@ int pe_validate_urgency_slots(lList **answer_list, const char *s)
       } else {
          answer_list_add_sprintf(answer_list, STATUS_EEXIST, ANSWER_QUALITY_ERROR, MSG_PE_REJECTINGURGENCYSLOTS_S, s); 
       }
-      DEXIT;
-      return STATUS_ESEMANTIC;
+      DRETURN(STATUS_ESEMANTIC);
    }
 
-   DEXIT;
-   return STATUS_OK;
+   DRETURN(STATUS_OK);
 }
 
 /****** sgeobj/pe/pe_list_do_all_exist() **************************************
@@ -490,7 +475,7 @@ bool pe_list_do_all_exist(const lList *pe_list, lList **answer_list,
    bool ret = true;
    const lListElem *pe_ref_elem = NULL;
 
-   DENTER(TOP_LAYER, "pe_list_do_all_exist");
+   DENTER(TOP_LAYER);
    for_each(pe_ref_elem, pe_ref_list) {
       const char *pe_ref_string = lGetString(pe_ref_elem, ST_name);
 
@@ -505,8 +490,7 @@ bool pe_list_do_all_exist(const lList *pe_list, lList **answer_list,
          break;
       }
    }
-   DEXIT;
-   return ret;
+   DRETURN(ret);
 }
 
 /****** sgeobj/pe/pe_urgency_slots() ******************************************
@@ -540,7 +524,7 @@ pe_urgency_slots(const lListElem *pe, const char *urgency_slot_setting,
 {
    int n;
 
-   DENTER(TOP_LAYER, "pe_urgency_slots");
+   DENTER(TOP_LAYER);
 
    if (!strcasecmp(urgency_slot_setting, SGE_ATTRVAL_MIN)) {
       n = range_list_get_first_id(range_list, NULL);
@@ -565,8 +549,7 @@ pe_urgency_slots(const lListElem *pe, const char *urgency_slot_setting,
       CRITICAL((SGE_EVENT, MSG_PE_UNKNOWN_URGENCY_SLOT_SS, urgency_slot_setting, lGetString(pe, PE_name)));
       n = 1;
    }
-   DEXIT;
-   return n;
+   DRETURN(n);
 }
 
 /****** sgeobj/pe/pe_create_template() ****************************************
@@ -595,7 +578,7 @@ lListElem* pe_create_template(char *pe_name)
 {
    lListElem *pep;
 
-   DENTER(TOP_LAYER, "pe_create_template");
+   DENTER(TOP_LAYER);
 
    pep = lCreateElem(PE_Type);
 
@@ -618,8 +601,7 @@ lListElem* pe_create_template(char *pe_name)
    lSetString(pep, PE_qsort_args, NULL);
 #endif
 
-   DEXIT;
-   return pep;
+   DRETURN(pep);
 }
 
 /****** sgeobj/pe/pe_slots_used() *********************************************
@@ -707,7 +689,7 @@ void pe_debit_slots(lListElem *pep, int slots, u_long32 job_id)
 {
    int n;
 
-   DENTER(TOP_LAYER, "pe_debit_slots");
+   DENTER(TOP_LAYER);
 
    if (pep) {
       n = pe_get_slots_used(pep);
@@ -717,8 +699,7 @@ void pe_debit_slots(lListElem *pep, int slots, u_long32 job_id)
       }
       pe_set_slots_used(pep, n);
    }
-   DEXIT;
-   return;
+   DRETURN_VOID;
 }
 
 
@@ -760,7 +741,7 @@ int pe_validate_qsort_args(lList **alpp, const char *qsort_args, lListElem *pe,
    int ret = STATUS_OK;
    const char *error;
 
-   DENTER(TOP_LAYER, "pe_validate_qsort_args");
+   DENTER(TOP_LAYER);
 
    /*
     * If we already have already validated the function and the old and new qsort_args

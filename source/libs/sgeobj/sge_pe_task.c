@@ -85,7 +85,7 @@ pe_task_sum_past_usage(lListElem *container, const lListElem *pe_task)
    lList *container_reported_usage;
    const lList *pe_task_reported_usage;
    
-   DENTER(TOP_LAYER, "pe_task_sum_past_usage");
+   DENTER(TOP_LAYER);
 
    /* invalid input - nothing to do */
    if (container == NULL || pe_task == NULL) {
@@ -145,7 +145,7 @@ lListElem *pe_task_sum_past_usage_all(lList *pe_task_list)
    lListElem *container = NULL;
    const lListElem *pe_task;
 
-   DENTER(TOP_LAYER, "pe_task_sum_past_usage_all");
+   DENTER(TOP_LAYER);
 
    /* no pe task list - nothing to do */
    if (pe_task_list == NULL) {
@@ -195,7 +195,7 @@ pe_task_sum_past_usage_list(lList *pe_task_list, const lListElem *pe_task)
 {
    lListElem *container;
 
-   DENTER(TOP_LAYER, "pe_task_sum_past_usage_list");
+   DENTER(TOP_LAYER);
 
    /* no pe task list - nothing to do */
    if (pe_task_list == NULL) {
@@ -251,11 +251,11 @@ bool
 pe_task_verify_request(const lListElem *petr, lList **answer_list) {
    bool ret = true;
 
-   DENTER(TOP_LAYER, "pe_task_verify_request");
+   DENTER(TOP_LAYER);
 
    if (petr == NULL) {
       answer_list_add_sprintf(answer_list, STATUS_ESYNTAX, ANSWER_QUALITY_ERROR,
-                              MSG_NULLELEMENTPASSEDTO_S, SGE_FUNC);
+                              MSG_NULLELEMENTPASSEDTO_S, __func__);
       ret = false;
    }
 

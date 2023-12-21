@@ -70,7 +70,7 @@ int do_get_new_conf(sge_gdi_ctx_class_t *ctx, struct_msg_t *aMsg)
    char* spool_dir = NULL;
    int old_reprioritization_enabled = mconf_get_reprioritize(); 
 
-   DENTER(TOP_LAYER, "do_get_new_conf");
+   DENTER(TOP_LAYER);
 
    unpackint(&(aMsg->buf), &dummy);
 

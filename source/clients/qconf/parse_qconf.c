@@ -138,7 +138,7 @@ static const char *write_attr_tmp_file(const char *name, const char *value,
 /***************************************************************************/
 static char **sge_parser_get_next(sge_gdi_ctx_class_t *ctx, char **arg) 
 {
-   DENTER(TOP_LAYER, "sge_parser_get_next");
+   DENTER(TOP_LAYER);
    if (!*(arg+1)) {
       ERROR((SGE_EVENT, MSG_PARSE_NOOPTIONARGPROVIDEDTOX_S , *arg));
       sge_usage(QCONF, stderr);
@@ -176,7 +176,7 @@ int sge_parse_qconf(sge_gdi_ctx_class_t *ctx, char *argv[])
    gid_t gid = ctx->get_gid(ctx);
    bool has_binding_param = false;
 
-   DENTER(TOP_LAYER, "sge_parse_qconf");
+   DENTER(TOP_LAYER);
 
    /* If no arguments were given, output the help message on stderr. */
    if (*argv == NULL) {
@@ -5334,7 +5334,7 @@ static void parse_name_list_to_cull(char *name, lList **lpp, lDescr *dp, int nm,
    int pos;
    int dataType;
 
-   DENTER(TOP_LAYER, "parse_name_list_to_cull");
+   DENTER(TOP_LAYER);
 
    
    *lpp = lCreateList(name, dp);
@@ -5383,7 +5383,7 @@ static void parse_name_list_to_cull(char *name, lList **lpp, lDescr *dp, int nm,
 /****************************************************************************/
 static int sge_next_is_an_opt(char **pptr) 
 {
-   DENTER(TOP_LAYER, "sge_next_is_an_opt");
+   DENTER(TOP_LAYER);
 
    if (!*(pptr+1)) {
       DRETURN(1);
@@ -5398,7 +5398,7 @@ static int sge_next_is_an_opt(char **pptr)
 
 /****************************************************************************/
 static int sge_error_and_exit(sge_gdi_ctx_class_t *ctx, const char *ptr) {
-   DENTER(TOP_LAYER, "sge_error_and_exit");
+   DENTER(TOP_LAYER);
 
    fflush(stderr);
    fflush(stdout);
@@ -5423,7 +5423,7 @@ static bool add_host_of_type(sge_gdi_ctx_class_t *ctx, lList *arglp, u_long32 ta
    char *name = NULL;
    bool ret = true;
 
-   DENTER(TOP_LAYER, "add_host_of_type");
+   DENTER(TOP_LAYER);
 
    switch (target) {
       case SGE_SH_LIST:
@@ -5491,7 +5491,7 @@ static bool del_host_of_type(sge_gdi_ctx_class_t *ctx, lList *arglp, u_long32 ta
    lDescr *type = NULL;
    bool ret = true;
 
-   DENTER(TOP_LAYER, "del_host_of_type");
+   DENTER(TOP_LAYER);
 
    switch (target) {
    case SGE_SH_LIST:
@@ -5542,7 +5542,7 @@ static lListElem *edit_exechost(sge_gdi_ctx_class_t *ctx, lListElem *ep, uid_t u
    /* used for generating filenames */
    char *filename = NULL;
 
-   DENTER(TOP_LAYER, "edit_exechost");
+   DENTER(TOP_LAYER);
 
    filename = (char *)spool_flatfile_write_object(&alp, ep, false, fields,
                                                   &qconf_sfi, SP_DEST_TMP,
@@ -5613,7 +5613,7 @@ static lList* edit_sched_conf(sge_gdi_ctx_class_t *ctx, lList *confl, uid_t uid,
    int fields_out[MAX_NUM_FIELDS];
    int missing_field = NoName;
 
-   DENTER(TOP_LAYER, "edit_sched_conf");
+   DENTER(TOP_LAYER);
 
    fname = (char *)spool_flatfile_write_object(&alp, lFirst(confl), false,
                                        SC_fields, &qconf_comma_sfi,
@@ -5700,7 +5700,7 @@ static lListElem *edit_user(sge_gdi_ctx_class_t *ctx, lListElem *ep, uid_t uid, 
    int fields_out[MAX_NUM_FIELDS];
    int missing_field = NoName;
 
-   DENTER(TOP_LAYER, "edit_user");
+   DENTER(TOP_LAYER);
 
    filename = (char *)spool_flatfile_write_object(&alp, ep, false, fields,
                                                   &qconf_sfi, SP_DEST_TMP,
@@ -5777,7 +5777,7 @@ static lListElem *edit_project(sge_gdi_ctx_class_t *ctx, lListElem *ep, uid_t ui
    int fields_out[MAX_NUM_FIELDS];
    int missing_field = NoName;
 
-   DENTER(TOP_LAYER, "edit_project");
+   DENTER(TOP_LAYER);
 
    filename = (char *)spool_flatfile_write_object(&alp, ep, false, fields,
                                                   &qconf_sfi, SP_DEST_TMP,
@@ -5855,7 +5855,7 @@ static lListElem *edit_sharetree(sge_gdi_ctx_class_t *ctx, lListElem *ep, uid_t 
    int missing_field = NoName;
    bool is_missing = false;
 
-   DENTER(TOP_LAYER, "edit_sharetree");
+   DENTER(TOP_LAYER);
 
    if (ep == NULL) {
       is_missing = true;
@@ -5953,7 +5953,7 @@ static bool show_object_list(sge_gdi_ctx_class_t *ctx, u_long32 target, lDescr *
    int dataType;
    bool ret = true;
    
-   DENTER(TOP_LAYER, "show_object_list");
+   DENTER(TOP_LAYER);
 
    what = lWhat("%T(%I)", type, keynm);
 
@@ -6029,7 +6029,7 @@ static int show_eventclients(sge_gdi_ctx_class_t *ctx)
    lList *alp = NULL, *lp = NULL;
    const lListElem *ep = NULL;
 
-   DENTER(TOP_LAYER, "show_eventclients");
+   DENTER(TOP_LAYER);
 
    what = lWhat("%T(%I %I %I)", EV_Type, EV_id, EV_name, EV_host);
 
@@ -6077,7 +6077,7 @@ static int show_processors(sge_gdi_ctx_class_t *ctx, bool has_binding_param)
    u_long32 socket_sum = 0;
    u_long32 core_sum = 0;
 
-   DENTER(TOP_LAYER, "show_processors");
+   DENTER(TOP_LAYER);
 
    what = lWhat("%T(%I %I %I)", EH_Type, EH_name, EH_processors, EH_load_list);
    where = lWhere("%T(!(%Ic=%s || %Ic=%s))", EH_Type, EH_name, 
@@ -6192,7 +6192,7 @@ lList *arglp
    int first_time = 1;
    const char *filename_stdout;
 
-   DENTER(TOP_LAYER, "print_acl");
+   DENTER(TOP_LAYER);
 
    /* get all acls named in arglp, put them into acls */
    if (sge_client_get_acls(ctx, NULL, arglp, &acls)) {
@@ -6256,7 +6256,7 @@ static int edit_usersets(sge_gdi_ctx_class_t *ctx, lList *arglp)
    uid_t uid = ctx->get_uid(ctx);
    gid_t gid = ctx->get_gid(ctx);
 
-   DENTER(TOP_LAYER, "edit_usersets");
+   DENTER(TOP_LAYER);
 
    /* get all usersets named in arglp, put them into usersets */
    if (sge_client_get_acls(ctx, NULL, arglp, &usersets)) {
@@ -6357,7 +6357,7 @@ const char *config_name
    const char *cfn = NULL;
    spooling_field *fields = NULL;
    
-   DENTER(TOP_LAYER, "print_config");
+   DENTER(TOP_LAYER);
 
    /* get config */
    if (!strcasecmp(config_name, "global")) {
@@ -6417,7 +6417,7 @@ const char *config_name
    const lListElem *ep = NULL;
    int fail = 0;
    
-   DENTER(TOP_LAYER, "delete_config");
+   DENTER(TOP_LAYER);
 
    lAddElemHost(&lp, CONF_name, config_name, CONF_Type);
    alp = ctx->gdi(ctx, SGE_CONF_LIST, SGE_GDI_DEL, &lp, NULL, NULL);
@@ -6453,7 +6453,7 @@ static int add_modify_config(sge_gdi_ctx_class_t *ctx, const char *cfn, const ch
    uid_t uid = ctx->get_uid(ctx);
    gid_t gid = ctx->get_gid(ctx);
    
-   DENTER(TOP_LAYER, "add_modify_config");
+   DENTER(TOP_LAYER);
 
    where = lWhere("%T(%Ih=%s)", CONF_Type, CONF_name, cfn);
    what = lWhat("%T(ALL)", CONF_Type);
@@ -6632,7 +6632,7 @@ static int qconf_is_manager(sge_gdi_ctx_class_t *ctx, const char *user)
    int perm_return;
    lList *alp = NULL;
 
-   DENTER(TOP_LAYER, "qconf_is_manager");
+   DENTER(TOP_LAYER);
 
    
    if (!user || !*user) {
@@ -6698,7 +6698,7 @@ static int qconf_is_adminhost(sge_gdi_ctx_class_t *ctx, const char *host)
    lList *lp = NULL;
    lListElem  *ep = NULL;
 
-   DENTER(TOP_LAYER, "qconf_is_adminhost");
+   DENTER(TOP_LAYER);
 
    if (!host || !*host) {
       DRETURN(-1);
@@ -6801,7 +6801,7 @@ static int qconf_modify_attribute(sge_gdi_ctx_class_t *ctx,
    lList *qlp = NULL;
    lEnumeration *what = NULL;
    
-   DENTER(TOP_LAYER, "qconf_modify_attribute");    
+   DENTER(TOP_LAYER);    
 
    DTRACE;
 
@@ -7012,7 +7012,7 @@ static const char *write_attr_tmp_file(const char *name, const char *value,
    char *filename = (char *)malloc(sizeof(char) * SGE_PATH_MAX);
    FILE *fp = NULL;
    int my_errno;
-   DENTER(TOP_LAYER, "write_attr_tmp_file");
+   DENTER(TOP_LAYER);
 
    if (sge_tmpnam(filename, error_message) == NULL) {
       DRETURN(NULL);

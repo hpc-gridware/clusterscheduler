@@ -115,7 +115,7 @@ spool_berkeleydb_create_context(lList **answer_list, const char *args)
 {
    lListElem *context = NULL;
 
-   DENTER(BDB_LAYER, "spool_berkeleydb_create_context");
+   DENTER(BDB_LAYER);
 
    /* check input parameter */
    if (args != NULL) {
@@ -155,8 +155,7 @@ spool_berkeleydb_create_context(lList **answer_list, const char *args)
       spool_type_add_rule(answer_list, type, rule, true);
    }
 
-   DEXIT;
-   return context;
+   DRETURN(context);
 }
 
 /****** spool/berkeleydb/spool_berkeleydb_default_startup_func() **************
@@ -196,7 +195,7 @@ spool_berkeleydb_default_startup_func(lList **answer_list,
    bool ret = true;
    bdb_info info;
 
-   DENTER(BDB_LAYER, "spool_berkeleydb_default_startup_func");
+   DENTER(BDB_LAYER);
 
    info = (bdb_info)lGetRef(rule, SPR_clientdata);
 
@@ -211,8 +210,7 @@ spool_berkeleydb_default_startup_func(lList **answer_list,
       ret = spool_berkeleydb_open_database(answer_list, info, false);
    }
 
-   DEXIT;
-   return ret;
+   DRETURN(ret);
 }
 
 /****** spool/berkeleydb/spool_berkeleydb_default_shutdown_func() **************
@@ -253,7 +251,7 @@ spool_berkeleydb_default_shutdown_func(lList **answer_list,
 
    bdb_info info;
 
-   DENTER(BDB_LAYER, "spool_berkeleydb_default_shutdown_func");
+   DENTER(BDB_LAYER);
 
    info = (bdb_info)lGetRef(rule, SPR_clientdata);
 
@@ -267,8 +265,7 @@ spool_berkeleydb_default_shutdown_func(lList **answer_list,
       ret = spool_berkeleydb_close_database(answer_list, info);
    }
 
-   DEXIT;
-   return ret;
+   DRETURN(ret);
 }
 
 /****** spool/berkeleydb/spool_berkeleydb_default_maintenance_func() ************
@@ -318,7 +315,7 @@ spool_berkeleydb_default_maintenance_func(lList **answer_list,
 
    bdb_info info;
 
-   DENTER(BDB_LAYER, "spool_berkeleydb_default_maintenance_func");
+   DENTER(BDB_LAYER);
 
    info = (bdb_info)lGetRef(rule, SPR_clientdata);
 
@@ -335,8 +332,7 @@ spool_berkeleydb_default_maintenance_func(lList **answer_list,
          
    }
 
-   DEXIT;
-   return ret;
+   DRETURN(ret);
 }
 
 /****** spool/berkeleydb/spool_berkeleydb_trigger_func() ****************
@@ -377,7 +373,7 @@ spool_berkeleydb_trigger_func(lList **answer_list, const lListElem *rule,
    bool ret = true;
    bdb_info info;
 
-   DENTER(BDB_LAYER, "spool_berkeleydb_trigger_func");
+   DENTER(BDB_LAYER);
 
    info = (bdb_info)lGetRef(rule, SPR_clientdata);
    if (info == NULL) {
@@ -399,8 +395,7 @@ spool_berkeleydb_trigger_func(lList **answer_list, const lListElem *rule,
       ret = spool_berkeleydb_trigger(answer_list, info, trigger, next_trigger);
    }
 
-   DEXIT;
-   return ret;
+   DRETURN(ret);
 }
 
 /****** spool/berkeleydb/spool_berkeleydb_transaction_func() ************
@@ -439,7 +434,7 @@ spool_berkeleydb_transaction_func(lList **answer_list, const lListElem *rule,
 
    bdb_info info;
 
-   DENTER(BDB_LAYER, "spool_berkeleydb_default_transaction_func");
+   DENTER(BDB_LAYER);
 
    info = (bdb_info)lGetRef(rule, SPR_clientdata);
    if (info == NULL) {
@@ -474,8 +469,7 @@ spool_berkeleydb_transaction_func(lList **answer_list, const lListElem *rule,
       }
    }
    
-   DEXIT;
-   return ret;
+   DRETURN(ret);
 }
 
 /****** spool/berkeleydb/spool_berkeleydb_default_list_func() *****************
@@ -531,7 +525,7 @@ spool_berkeleydb_default_list_func(lList **answer_list,
    bdb_info info;
    lList *master_suser_list = *object_type_get_master_list_rw(SGE_TYPE_SUSER);
 
-   DENTER(BDB_LAYER, "spool_berkeleydb_default_list_func");
+   DENTER(BDB_LAYER);
 
    info = (bdb_info)lGetRef(rule, SPR_clientdata);
    descr = object_type_get_descr(object_type);
@@ -702,8 +696,7 @@ spool_berkeleydb_default_list_func(lList **answer_list,
 
 
 
-   DEXIT;
-   return ret;
+   DRETURN(ret);
 }
 
 /****** spool/berkeleydb/spool_berkeleydb_default_read_func() *****************
@@ -750,7 +743,7 @@ spool_berkeleydb_default_read_func(lList **answer_list,
 
    bdb_info info;
 
-   DENTER(BDB_LAYER, "spool_berkeleydb_default_read_func");
+   DENTER(BDB_LAYER);
 
    info = (bdb_info)lGetRef(rule, SPR_clientdata);
 
@@ -810,8 +803,7 @@ spool_berkeleydb_default_read_func(lList **answer_list,
       }
    }
 
-   DEXIT;
-   return ep;
+   DRETURN(ep);
 }
 
 bool
@@ -824,7 +816,7 @@ spool_berkeleydb_default_read_keys_func(lList **answer_list,
 
    bdb_info info;
 
-   DENTER(BDB_LAYER, "spool_berkeleydb_default_read_keys_func");
+   DENTER(BDB_LAYER);
 
    info = (bdb_info)lGetRef(rule, SPR_clientdata);
 
@@ -869,8 +861,7 @@ spool_berkeleydb_default_read_keys_func(lList **answer_list,
       }
    }
 
-   DEXIT;
-   return ret;
+   DRETURN(ret);
 }
 
 /****** spool/berkeleydb/spool_berkeleydb_default_write_func() ****************
@@ -922,7 +913,7 @@ spool_berkeleydb_default_write_func(lList **answer_list,
    bool local_transaction = false; /* did we start a transaction? */
    bdb_info info;
 
-   DENTER(BDB_LAYER, "spool_berkeleydb_default_write_func");
+   DENTER(BDB_LAYER);
 
    DPRINTF(("spool_berkeleydb_default_write_func called for %s with key %s\n",
             object_type_get_name(object_type), key != NULL ? key : "<null>"));
@@ -1031,8 +1022,7 @@ spool_berkeleydb_default_write_func(lList **answer_list,
       }
    }
 
-   DEXIT;
-   return ret;
+   DRETURN(ret);
 }
 
 /****** spool/berkeleydb/spool_berkeleydb_default_delete_func() ***************
@@ -1086,7 +1076,7 @@ spool_berkeleydb_default_delete_func(lList **answer_list,
    char dbkey_buffer[MAX_STRING_SIZE];
    const char *dbkey;
 
-   DENTER(BDB_LAYER, "spool_berkeleydb_default_delete_func");
+   DENTER(BDB_LAYER);
 
    sge_dstring_init(&dbkey_dstring, dbkey_buffer, sizeof(dbkey_buffer));
    info = (bdb_info)lGetRef(rule, SPR_clientdata);
@@ -1178,8 +1168,7 @@ spool_berkeleydb_default_delete_func(lList **answer_list,
       }   
    }
 
-   DEXIT;
-   return ret;
+   DRETURN(ret);
 }
 
 static bool
@@ -1190,7 +1179,7 @@ spool_berkeleydb_option_func(lList **answer_list, lListElem *rule,
    const char *delimiter = ",; ";
    bdb_info info;
 
-   DENTER(BDB_LAYER, "spool_berkeleydb_option_func");
+   DENTER(BDB_LAYER);
 
    info = (bdb_info)lGetRef(rule, SPR_clientdata);
 
@@ -1216,6 +1205,5 @@ spool_berkeleydb_option_func(lList **answer_list, lListElem *rule,
       sge_free_saved_vars(context);
    }
 
-   DEXIT;
-   return ret;
+   DRETURN(ret);
 }

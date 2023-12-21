@@ -57,7 +57,7 @@ bool
 qrstat_print(lList **answer_list, qrstat_report_handler_t *handler, qrstat_env_t *qrstat_env) {
    bool ret = true;
 
-   DENTER(TOP_LAYER, "qrstat_print");
+   DENTER(TOP_LAYER);
 
    {
       const lListElem *ar = NULL;

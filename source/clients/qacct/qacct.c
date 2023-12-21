@@ -1127,7 +1127,7 @@ QACCT_EXIT:
 static void print_full_ulong(int full_length, u_long32 value) {
    char tmp_buf[100];
 
-   DENTER(TOP_LAYER, "print_full_ulong");
+   DENTER(TOP_LAYER);
    sprintf(tmp_buf, "%5"sge_fu32, value);
    print_full(full_length, tmp_buf); 
    DRETURN_VOID;
@@ -1137,7 +1137,7 @@ static void print_full(int full_length, const char* string) {
 
    int string_length=0;
 
-   DENTER(TOP_LAYER, "print_full");
+   DENTER(TOP_LAYER);
    if ( string != NULL) {
       printf("%s",string); 
       string_length = strlen(string);
@@ -1151,7 +1151,7 @@ static void print_full(int full_length, const char* string) {
 
 static void calc_column_sizes(const lListElem* ep, sge_qacct_columns* column_size_data) {
    const lListElem* lep = NULL;
-   DENTER(TOP_LAYER, "calc_column_sizes");
+   DENTER(TOP_LAYER);
    
    if (column_size_data == NULL) {
       DPRINTF(("no column size data!\n"));
@@ -1302,7 +1302,7 @@ static void qacct_usage(sge_gdi_ctx_class_t **ctx, FILE *fp)
    dstring ds;
    char buffer[256];
 
-   DENTER(TOP_LAYER, "qacct_usage");
+   DENTER(TOP_LAYER);
 
    sge_dstring_init(&ds, buffer, sizeof(buffer));
 
@@ -1474,7 +1474,7 @@ lList **hgrp_l
    int ce_id = 0, eh_id = 0, q_id = 0, hgrp_id = 0;
    state_gdi_multi state = STATE_GDI_MULTI_INIT;
 
-   DENTER(TOP_LAYER, "get_qacct_lists");
+   DENTER(TOP_LAYER);
 
    /*
    ** GET SGE_CE_LIST 
@@ -1593,7 +1593,7 @@ sge_read_rusage(FILE *f, sge_rusage_type *d, sge_qacct_options *options, char *s
    char  *pc;
    int len;
 
-   DENTER(TOP_LAYER, "sge_read_rusage");
+   DENTER(TOP_LAYER);
 
    do {
       pc = fgets(szLine, size, f);

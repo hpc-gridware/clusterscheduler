@@ -71,7 +71,7 @@ volatile int sge_sig_handler_sigpipe_received = 0;
 void sge_setup_sig_handlers(
 int me_who 
 ) {
-   DENTER(TOP_LAYER, "sge_setup_sig_handlers");
+   DENTER(TOP_LAYER);
 
    /******* set default signal mask *******/
    sigfillset(&default_mask);   /* default mask */
@@ -188,8 +188,7 @@ int me_who
       sigaction(SIGPIPE, &sigcld_pipe_vec, &sigcld_pipe_ovec);
    }
 
-   DEXIT;
-   return;
+   DRETURN_VOID;
 }
 
 /********************************************************/

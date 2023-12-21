@@ -81,14 +81,13 @@ lList *sge_add_schedd_info(lList *or_list, int *global_mes_count, int *job_mes_c
    lList *jlist;
    lListElem *sme, *ep;
 
-   DENTER(TOP_LAYER, "sge_add_schedd_info");
+   DENTER(TOP_LAYER);
 
    sme = schedd_mes_obtain_package(global_mes_count, job_mes_count);
 
    if (!sme || (lGetNumberOfElem(lGetList(sme, SME_message_list)) < 1 
          && lGetNumberOfElem(lGetList(sme, SME_global_message_list)) < 1)) {
-      DEXIT;
-      return or_list;
+      DRETURN(or_list);
    }
    
    /* create orders list if not existent */
@@ -106,8 +105,7 @@ lList *sge_add_schedd_info(lList *or_list, int *global_mes_count, int *job_mes_c
    lSetUlong(ep, OR_type, ORT_job_schedd_info);
    lAppendElem(or_list, ep);
 
-   DEXIT;
-   return or_list;
+   DRETURN(or_list);
 }
 
 /*************************************************************
@@ -165,12 +163,11 @@ lList
    lListElem *ep, *ep2;
    u_long32 qslots;
   
-   DENTER(TOP_LAYER, "sge_create_orders");
+   DENTER(TOP_LAYER);
    
    if (!job) {
       lFreeList(&or_list);
-      DEXIT;
-      return or_list;
+      DRETURN(or_list);
    }
 
    /* create orders list if not existent */
@@ -325,8 +322,7 @@ lList
 
    lAppendElem(or_list, ep);
 
-   DEXIT;
-   return or_list; 
+   DRETURN(or_list); 
 }
 
 
@@ -344,7 +340,7 @@ sge_send_orders2master(sge_evc_class_t *evc, lList **orders)
    state_gdi_multi state = STATE_GDI_MULTI_INIT;
    sge_gdi_ctx_class_t *ctx = evc->get_gdi_ctx(evc);
 
-   DENTER(TOP_LAYER, "sge_send_orders2master");
+   DENTER(TOP_LAYER);
 
    if (*orders != NULL) {
       DPRINTF(("SENDING %d ORDERS TO QMASTER\n", lGetNumberOfElem(*orders)));
@@ -380,7 +376,7 @@ lList *order_list
 ) {
    const lListElem *job, *ja_task;
 
-   DENTER(TOP_LAYER, "create_delete_job_orders");
+   DENTER(TOP_LAYER);
 
    for_each(job, finished_jobs) {
       for_each(ja_task, lGetList(job, JB_ja_tasks)) {
@@ -391,8 +387,7 @@ lList *order_list
       }
    }
 
-   DEXIT;
-   return order_list;
+   DRETURN(order_list);
 }
 
 

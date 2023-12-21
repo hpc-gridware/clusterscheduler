@@ -278,8 +278,7 @@ error_exit:
    sge_gdi2_shutdown((void**)&ctx);
    sge_prof_cleanup();
    SGE_EXIT((void**)&ctx, 1);
-   DEXIT;
-   return 1;
+   DRETURN(1);
 }
 
 /****
@@ -297,7 +296,7 @@ lList **alpp
    char **sp;
    char **rp;
 
-   DENTER(TOP_LAYER, "sge_parse_cmdline_qdel");
+   DENTER(TOP_LAYER);
 
    rp = argv;
    while (*(sp=rp)) {
@@ -411,7 +410,7 @@ lList **alpp
    lListElem *ep;
    bool ret = true;
 
-   DENTER(TOP_LAYER, "sge_parse_qdel");
+   DENTER(TOP_LAYER);
 
    /* Loop over all options. Only valid options can be in the
       ppcmdline list. 
@@ -421,7 +420,6 @@ lList **alpp
    {
       if(parse_flag(ppcmdline, "-help",  alpp, &helpflag)) {
          sge_usage(QDEL, stdout);
-         DEXIT;
          SGE_EXIT(NULL, 0);
          break;
       }

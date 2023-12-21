@@ -75,11 +75,10 @@ void cull_show_job(const lListElem *job, int flags, bool show_binding)
    const char *delis[] = {NULL, ",", "\n"};
    time_t ultime;   /* used to be u_long32, but problem w/ 64 bit times */
 
-   DENTER(TOP_LAYER, "cull_show_job");
+   DENTER(TOP_LAYER);
 
    if(!job) {
-      DEXIT;
-      return;
+      DRETURN_VOID;
    }
 
    if (!(flags & FLG_QALTER)) {
@@ -682,8 +681,7 @@ void cull_show_job(const lListElem *job, int flags, bool show_binding)
    }
 
 
-   DEXIT;
-   return;
+   DRETURN_VOID;
 }
 
 static void sge_show_checkpoint(int how, int op) 
@@ -692,7 +690,7 @@ static void sge_show_checkpoint(int how, int op)
    int count = 0;
    dstring string = DSTRING_INIT;
  
-   DENTER(TOP_LAYER, "sge_show_checkpoint");
+   DENTER(TOP_LAYER);
    job_get_ckpt_attr(op, &string); 
    if (VALID(SGE_STDOUT, how)) {
       printf("%s", sge_dstring_get_string(&string));
@@ -714,7 +712,7 @@ static void sge_show_y_n(int op, int how)
 {
    stringT tmp_str;
  
-   DENTER(TOP_LAYER, "sge_show_y_n");
+   DENTER(TOP_LAYER);
  
    if (op)
       sprintf(tmp_str, "y");
@@ -727,18 +725,16 @@ static void sge_show_y_n(int op, int how)
    if (VALID(how, SGE_STDERR))
       fprintf(stderr, "%s", tmp_str);
  
-   DEXIT;
-   return;
+   DRETURN_VOID;
 }         
 
 void sge_show_ce_type_list(const lList *rel)
 {
-   DENTER(TOP_LAYER, "sge_show_ce_type_list");
+   DENTER(TOP_LAYER);
 
    show_ce_type_list(rel, "", ",", false, NULL, 0);
 
-   DEXIT;
-   return;
+   DRETURN_VOID;
 }
 
 /*************************************************************/
@@ -754,7 +750,7 @@ static void show_ce_type_list(const lList *cel, const char *indent,
    const char *s, *name;
    double uc = -1;
 
-   DENTER(TOP_LAYER, "show_ce_type_list");
+   DENTER(TOP_LAYER);
 
    /* walk through complex entries */
    for_each (ce, cel) {
@@ -783,8 +779,7 @@ static void show_ce_type_list(const lList *cel, const char *indent,
       }
    }
 
-   DEXIT;
-   return;
+   DRETURN_VOID;
 }
 
 /*************************************************************/
@@ -796,13 +791,12 @@ void sge_show_ce_type_list_line_by_line(const char *label,
                                         const lList *centry_list,
                                         int slots)
 {
-   DENTER(TOP_LAYER, "sge_show_ce_type_list_line_by_line");
+   DENTER(TOP_LAYER);
 
    printf("%s", label);
    show_ce_type_list(rel, indent, "\n", display_resource_contribution, centry_list, slots);
    printf("\n");
 
-   DEXIT;
-   return;
+   DRETURN_VOID;
 }
 

@@ -66,7 +66,7 @@ char *sge_malloc(int size)
 {
    char *cp = NULL;
 
-   DENTER_(BASIS_LAYER, "sge_malloc");
+   DENTER_(BASIS_LAYER);
 
    if (!size) {
       DRETURN_(NULL);
@@ -75,7 +75,6 @@ char *sge_malloc(int size)
    cp = (char *) malloc(size);
    if (!cp) {
       CRITICAL((SGE_EVENT, SFNMAX, MSG_MEMORY_MALLOCFAILED));
-      DEXIT_;
       abort();
    }
 
@@ -107,7 +106,7 @@ void *sge_realloc(void *ptr, int size, int do_abort)
 {
    void *cp = NULL;
 
-   DENTER_(BASIS_LAYER, "sge_realloc");
+   DENTER_(BASIS_LAYER);
 
    /* if new size is 0, just free the currently allocated memory */
    if (size == 0) {
@@ -119,7 +118,6 @@ void *sge_realloc(void *ptr, int size, int do_abort)
    if (cp == NULL) {
       CRITICAL((SGE_EVENT, SFNMAX, MSG_MEMORY_REALLOCFAILED));
       if (do_abort) {
-         DEXIT_;
          abort();
       } else {
          sge_free(&ptr);
@@ -186,7 +184,7 @@ const char *sge_getenv(const char *env_str)
 {
    const char *cp=NULL;
  
-   DENTER_(BASIS_LAYER, "sge_getenv");
+   DENTER_(BASIS_LAYER);
  
    cp = (char *) getenv(env_str);
 

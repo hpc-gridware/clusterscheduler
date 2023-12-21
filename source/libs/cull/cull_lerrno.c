@@ -188,22 +188,19 @@ int lerror(void)
 {
    const char* errorText = NULL;
 
-   DENTER(TOP_LAYER, "lerrno");
+   DENTER(TOP_LAYER);
 
    errorText = get_lerror_string(lerrno);
    
    if (errorText == NULL) {
-      DEXIT;
-      return -1;
+      DRETURN(-1);
    }
       
    if (strlen(errorText) == 0) {
-      DEXIT;
-      return -1;
+      DRETURN(-1);
    }
 
    DPRINTF(("%s\n", errorText));
 
-   DEXIT;
-   return 0;
+   DRETURN(0);
 }

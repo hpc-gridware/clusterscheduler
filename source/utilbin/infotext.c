@@ -103,7 +103,7 @@ static char* sge_infotext_make_line_break(dstring* buffer, char* text) {
    int line;
    char hbuf[3];
 
-   DENTER(TOP_LAYER, "sge_infotext_make_line_break");
+   DENTER(TOP_LAYER);
 
    strcpy(hbuf,"a");
 
@@ -136,8 +136,7 @@ static char* sge_infotext_make_line_break(dstring* buffer, char* text) {
    }
    sge_dstring_append(buffer,"\"");
    
-   DEXIT;
-   return (char*) sge_dstring_get_string(buffer);
+   DRETURN((char*) sge_dstring_get_string(buffer));
 
 }
 
@@ -260,7 +259,7 @@ static void  sge_infotext_format_output(dstring* dash_buf,sge_infotext_options* 
 
    bool done;
 
-   DENTER(TOP_LAYER,"sge_infotext_format_output" );
+   DENTER(TOP_LAYER);
 
 
    DPRINTF(("format 1\n"));
@@ -386,7 +385,7 @@ static void  sge_infotext_format_output(dstring* dash_buf,sge_infotext_options* 
    sge_dstring_free(&line2);
    /* Ugly, but needed for remote invocation with -wait or -ask options */
    fflush((options->e == 1) ? stderr : stdout); 
-   DEXIT;
+   DRETURN_VOID;
 }
 
 
@@ -1156,6 +1155,5 @@ int main( int argc, char* argv[] ) {
    sge_dstring_free(&tmp_buf);
    sge_dstring_free(&buffer);
    sge_dstring_free(&buffer2);
-   DEXIT;
-   return ret_val;
+   DRETURN(ret_val);
 }

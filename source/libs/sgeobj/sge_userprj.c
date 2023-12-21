@@ -62,7 +62,7 @@ lListElem *prj_list_locate(const lList *lp, const char *name)
 {
    lListElem *ep = NULL;
 
-   DENTER(BASIS_LAYER, "prj_list_locate");
+   DENTER(BASIS_LAYER);
 
    ep = lGetElemStrRW(lp, PR_name, name);
 
@@ -90,7 +90,7 @@ lListElem *user_list_locate(const lList *lp, const char *name)
 {
    lListElem *ep = NULL;
 
-   DENTER(BASIS_LAYER, "user_list_locate");
+   DENTER(BASIS_LAYER);
 
    ep = lGetElemStrRW(lp, UU_name, name);
 
@@ -119,7 +119,7 @@ const char *prj_list_append_to_dstring(const lList *this_list, dstring *string)
 {
    const char *ret = NULL;
 
-   DENTER(BASIS_LAYER, "prj_list_append_to_dstring");
+   DENTER(BASIS_LAYER);
    if (string != NULL) {
       const lListElem *elem = NULL;
       bool printed = false;
@@ -136,8 +136,7 @@ const char *prj_list_append_to_dstring(const lList *this_list, dstring *string)
       }
       ret = sge_dstring_get_string(string);
    }
-   DEXIT;
-   return ret;
+   DRETURN(ret);
 }
 
 bool
@@ -147,7 +146,7 @@ prj_list_do_all_exist(const lList *this_list, lList **answer_list,
    bool ret = true;
    const lListElem *prj = NULL;
 
-   DENTER(TOP_LAYER, "prj_list_do_all_exist");
+   DENTER(TOP_LAYER);
    for_each(prj, prj_list) {
       const char *name = lGetString(prj, PR_name);
 
@@ -160,8 +159,7 @@ prj_list_do_all_exist(const lList *this_list, lList **answer_list,
          break;
       }
    }
-   DEXIT;
-   return ret;
+   DRETURN(ret);
 }
 
 /***************************************************
@@ -171,7 +169,7 @@ lListElem *getUserTemplate()
 {
    lListElem *ep;
 
-   DENTER(TOP_LAYER, "getUserTemplate");
+   DENTER(TOP_LAYER);
 
    ep = lCreateElem(UU_Type);
    lSetString(ep, UU_name, "template");
@@ -183,8 +181,7 @@ lListElem *getUserTemplate()
    lSetList(ep, UU_usage, NULL);
    lSetList(ep, UU_long_term_usage, NULL);
 
-   DEXIT;
-   return ep;
+   DRETURN(ep);
 }
 
 /***************************************************
@@ -194,7 +191,7 @@ lListElem *getPrjTemplate()
 {
    lListElem *ep;
 
-   DENTER(TOP_LAYER, "getPrjTemplate");
+   DENTER(TOP_LAYER);
 
    ep = lCreateElem(PR_Type);
    lSetString(ep, PR_name, "template");
@@ -207,7 +204,6 @@ lListElem *getPrjTemplate()
    lSetList(ep, PR_acl, NULL);
    lSetList(ep, PR_xacl, NULL);
 
-   DEXIT;
-   return ep;
+   DRETURN(ep);
 }
 

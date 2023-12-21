@@ -115,7 +115,7 @@ jsv_create(const char *name, const char *context, lList **answer_list, const cha
 {
    lListElem *new_jsv = NULL;
 
-   DENTER(TOP_LAYER, "jsv_create");
+   DENTER(TOP_LAYER);
    if (name != NULL && scriptfile != NULL) {
       new_jsv = lCreateElem(JSV_Type);
 
@@ -141,7 +141,7 @@ jsv_create(const char *name, const char *context, lList **answer_list, const cha
             lSetUlong(new_jsv, JSV_last_mod, st.st_mtime);
             lSetBool(new_jsv, JSV_test, false);
 
-            sge_mutex_lock("jsv_list", SGE_FUNC, __LINE__, &jsv_mutex);
+            sge_mutex_lock("jsv_list", __func__, __LINE__, &jsv_mutex);
 
             if (jsv_list == NULL) {
                jsv_list = lCreateList("", JSV_Type);
@@ -153,7 +153,7 @@ jsv_create(const char *name, const char *context, lList **answer_list, const cha
                                        MSG_JSV_INSTANCIATE_S, scriptfile);
             }
 
-            sge_mutex_unlock("jsv_list", SGE_FUNC, __LINE__, &jsv_mutex);
+            sge_mutex_unlock("jsv_list", __func__, __LINE__, &jsv_mutex);
 
          } else {
             lFreeElem(&new_jsv);
@@ -173,7 +173,7 @@ jsv_get_pid(lListElem *jsv) {
    pid_t pid = -1;
    const char *pid_string = NULL;
 
-   DENTER(TOP_LAYER, "jsv_get_pid");
+   DENTER(TOP_LAYER);
    pid_string = lGetString(jsv, JSV_pid);
    if (pid_string != NULL) {
       sscanf(pid_string, pid_t_fmt, &pid);
@@ -186,7 +186,7 @@ jsv_set_pid(lListElem *jsv, pid_t pid)
 {
    char pid_buffer[256]; /* it is sure that pid is smaller than 256 characters */
 
-   DENTER(TOP_LAYER, "jsv_set_pid");
+   DENTER(TOP_LAYER);
    sprintf(pid_buffer, pid_t_fmt, pid);
    lSetString(jsv, JSV_pid, pid_buffer);
    DRETURN_VOID;
@@ -206,7 +206,7 @@ jsv_is_send_ready(lListElem *jsv, lList **answer_list) {
    int fd;
    int lret;
 
-   DENTER(TOP_LAYER, "jsv_is_send_ready");
+   DENTER(TOP_LAYER);
    
    fd = fileno((FILE *) lGetRef(jsv, JSV_in));
 
@@ -252,7 +252,7 @@ static bool
 jsv_send_data(lListElem *jsv, lList **answer_list, const char *buffer, size_t size) {
    bool ret = true;
 
-   DENTER(TOP_LAYER, "jsv_send_data");
+   DENTER(TOP_LAYER);
    if (jsv_is_send_ready(jsv, answer_list)) {
       int lret;
 
@@ -304,7 +304,7 @@ jsv_start(lListElem *jsv, lList **answer_list)
 {
    bool ret = true;
 
-   DENTER(TOP_LAYER, "jsv_start");
+   DENTER(TOP_LAYER);
    if (jsv != NULL && jsv_is_started(jsv) == false) {
       const char *scriptfile = lGetString(jsv, JSV_command);
       const char *user = lGetString(jsv, JSV_user);
@@ -386,7 +386,7 @@ jsv_stop(lListElem *jsv, lList **answer_list, bool try_soft_quit) {
    bool ret = true;
    pid_t pid = -1;
 
-   DENTER(TOP_LAYER, "jsv_stop");
+   DENTER(TOP_LAYER);
 
    /* stop is only possible if it was started before */
    pid = jsv_get_pid(jsv);
@@ -468,7 +468,7 @@ bool jsv_url_parse(dstring *jsv_url, lList **answer_list, dstring *type,
 {
    bool success = true;
 
-   DENTER(TOP_LAYER, "jsv_url_parse");
+   DENTER(TOP_LAYER);
    if (jsv_url != NULL) {
       dstring tmp = DSTRING_INIT;
       const char *t, *u, *p;
@@ -577,7 +577,7 @@ jsv_send_command(lListElem *jsv, lList **answer_list, const char *message)
    dstring buffer = DSTRING_INIT;
    const char *new_message = NULL;
 
-   DENTER(TOP_LAYER, "jsv_send_command");
+   DENTER(TOP_LAYER);
    sge_dstring_sprintf(&buffer, "%s\n", message);
    new_message = sge_dstring_get_string(&buffer);
    DPRINTF(("JSV(%s) >> %s\n", lGetString(jsv, JSV_context), message));
@@ -629,7 +629,7 @@ bool
 jsv_list_add(const char *name, const char *context, lList **answer_list, const char *jsv_url)
 {
    bool ret = true;
-   DENTER(TOP_LAYER, "jsv_list_add");
+   DENTER(TOP_LAYER);
 
    if (strcasecmp("none", jsv_url) != 0) {
       lListElem *new_jsv = NULL;
@@ -688,13 +688,13 @@ jsv_list_remove(const char *name, const char *context)
 {
    bool ret = true;
 
-   DENTER(TOP_LAYER, "jsv_list_remove");
+   DENTER(TOP_LAYER);
    if (name != NULL && context != NULL) {
       const void *iterator = NULL;
       lListElem *jsv_next;
       lListElem *jsv;
 
-      sge_mutex_lock("jsv_list", SGE_FUNC, __LINE__, &jsv_mutex);
+      sge_mutex_lock("jsv_list", __func__, __LINE__, &jsv_mutex);
       jsv_next = lGetElemStrFirstRW(jsv_list, JSV_context, context, &iterator);
       while ((jsv = jsv_next) != NULL) {
          jsv_next = lGetElemStrNextRW(jsv_list, JSV_context, context, &iterator);
@@ -703,7 +703,7 @@ jsv_list_remove(const char *name, const char *context)
             lRemoveElem(jsv_list, &jsv);
          }
       }
-      sge_mutex_unlock("jsv_list", SGE_FUNC, __LINE__, &jsv_mutex);
+      sge_mutex_unlock("jsv_list", __func__, __LINE__, &jsv_mutex);
    }
    DRETURN(ret);
 }
@@ -736,14 +736,14 @@ jsv_is_enabled(const char *context) {
    bool ret = true;
    const char *jsv_url;
 
-   DENTER(TOP_LAYER, "jsv_is_enabled");
+   DENTER(TOP_LAYER);
 
    jsv_url = mconf_get_jsv_url();
    jsv_list_update("jsv", context, NULL, jsv_url);
    sge_free(&jsv_url);
-   sge_mutex_lock("jsv_list", SGE_FUNC, __LINE__, &jsv_mutex);
+   sge_mutex_lock("jsv_list", __func__, __LINE__, &jsv_mutex);
    ret = (lGetNumberOfElem(jsv_list) > 0) ? true : false;
-   sge_mutex_unlock("jsv_list", SGE_FUNC, __LINE__, &jsv_mutex);
+   sge_mutex_unlock("jsv_list", __func__, __LINE__, &jsv_mutex);
    DRETURN(ret);
 }
 
@@ -775,15 +775,15 @@ jsv_list_remove_all(void)
    lListElem *jsv;
    lListElem *jsv_next;
 
-   DENTER(TOP_LAYER, "jsv_list_remove_all");
-   sge_mutex_lock("jsv_list", SGE_FUNC, __LINE__, &jsv_mutex);
+   DENTER(TOP_LAYER);
+   sge_mutex_lock("jsv_list", __func__, __LINE__, &jsv_mutex);
    jsv_next = lFirstRW(jsv_list);
    while ((jsv = jsv_next) != NULL) {
       jsv_next = lNextRW(jsv);
       jsv_stop(jsv, NULL, true);
       lRemoveElem(jsv_list, &jsv);
    }
-   sge_mutex_unlock("jsv_list", SGE_FUNC, __LINE__, &jsv_mutex);
+   sge_mutex_unlock("jsv_list", __func__, __LINE__, &jsv_mutex);
    DRETURN(ret);
 }
 
@@ -830,7 +830,7 @@ jsv_list_update(const char *name, const char *context,
 {
    bool ret = false;
 
-   DENTER(TOP_LAYER, "jsv_list_update");
+   DENTER(TOP_LAYER);
 
    if (name != NULL && context != NULL) {
       bool already_exists = false;
@@ -850,7 +850,7 @@ jsv_list_update(const char *name, const char *context,
          bool not_parsed = true;
          bool use_old_url = (jsv_url == NULL) ? true : false;
 
-         sge_mutex_lock("jsv_list", SGE_FUNC, __LINE__, &jsv_mutex);
+         sge_mutex_lock("jsv_list", __func__, __LINE__, &jsv_mutex);
 
          ret = true;
          jsv_next = lGetElemStrFirstRW(jsv_list, JSV_context, context, &iterator);
@@ -926,7 +926,7 @@ jsv_list_update(const char *name, const char *context,
             sge_dstring_free(&path);
          }
 
-         sge_mutex_unlock("jsv_list", SGE_FUNC, __LINE__, &jsv_mutex);
+         sge_mutex_unlock("jsv_list", __func__, __LINE__, &jsv_mutex);
       }
 
       /*
@@ -1012,7 +1012,7 @@ jsv_do_verify(sge_gdi_ctx_class_t* ctx, const char *context, lListElem **job,
    lListElem *jsv_next;
    const void *iterator = NULL;
    
-   DENTER(TOP_LAYER, "jsv_do_verify");
+   DENTER(TOP_LAYER);
 
    if (context != NULL && job != NULL) {
       const char *jsv_url = NULL;
@@ -1040,7 +1040,7 @@ jsv_do_verify(sge_gdi_ctx_class_t* ctx, const char *context, lListElem **job,
       jsv_list_update("jsv", context, answer_list, jsv_url);
       DPRINTF(("JSV list for current thread updated\n"));
 
-      sge_mutex_lock("jsv_list", SGE_FUNC, __LINE__, &jsv_mutex);
+      sge_mutex_lock("jsv_list", __func__, __LINE__, &jsv_mutex);
       holding_mutex = true;
 
       /*
@@ -1101,7 +1101,7 @@ jsv_do_verify(sge_gdi_ctx_class_t* ctx, const char *context, lListElem **job,
              */
             if (holding_lock) {
                DPRINTF(("JSV releases global lock for verification process\n"));
-               sge_mutex_unlock("jsv_list", SGE_FUNC, __LINE__, &jsv_mutex);
+               sge_mutex_unlock("jsv_list", __func__, __LINE__, &jsv_mutex);
                holding_mutex = false;
                SGE_UNLOCK(LOCK_GLOBAL, LOCK_WRITE)
                DPRINTF(("Client/master will start communication with JSV\n"));
@@ -1147,7 +1147,7 @@ jsv_do_verify(sge_gdi_ctx_class_t* ctx, const char *context, lListElem **job,
          } 
       }
       if (holding_mutex) {
-         sge_mutex_unlock("jsv_list", SGE_FUNC, __LINE__, &jsv_mutex);
+         sge_mutex_unlock("jsv_list", __func__, __LINE__, &jsv_mutex);
       }
       sge_free(&jsv_url);
    }

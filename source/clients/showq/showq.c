@@ -133,7 +133,7 @@ static bool sge_parse_showq_tacc(lList **alpp, lList **ppcmdline, lList **user_l
    u_long32 add_me = 0;
    u_long32 bnd = 0;
 
-   DENTER(TOP_LAYER, "sge_parse_showq_tacc");
+   DENTER(TOP_LAYER);
 
    /*
     * Loop over all options. Only valid options can be in the ppcmdline list.
@@ -216,7 +216,7 @@ static int showq_show_job_tacc(sge_gdi_ctx_class_t * ctx, lList * user_list, int
    lList          *dep_waiting_dj_list = NULL;
    lList          *unsched_dj_list = NULL;
 
-   DENTER(TOP_LAYER, "qstat_show_job_tacc");
+   DENTER(TOP_LAYER);
 
    /* if the user_list is empty, display all users' jobs */
    if (lGetNumberOfElem(user_list) != 0) {

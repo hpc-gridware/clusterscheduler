@@ -392,6 +392,5 @@ main(int argc, char **argv)
    sge_prof_cleanup();
    sge_dstring_free(&output_dstring);
 
-   DEXIT;
-   return 0;
+   DRETURN(0);
 }

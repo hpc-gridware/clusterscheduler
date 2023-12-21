@@ -105,7 +105,7 @@ static void rqs_excluded_cqueues(const lListElem *rule, sge_assignment_t *a);
 bool
 rqs_set_dynamical_limit(lListElem *limit, lListElem *global_host, lListElem *exec_host, const lList *centry) {
 
-   DENTER(TOP_LAYER, "rqs_set_dynamical_limit");
+   DENTER(TOP_LAYER);
 
    if (lGetBool(limit, RQRL_dynamic)) {
       double dynamic_limit = scaled_mixed_load(lGetString(limit, RQRL_value), global_host, exec_host, centry);
@@ -368,7 +368,7 @@ static void rqs_excluded_cqueues(const lListElem *rule, sge_assignment_t *a)
    const lListElem *prev;
    int ignored = 0, excluded = 0;
 
-   DENTER(TOP_LAYER, "rqs_excluded_cqueues");
+   DENTER(TOP_LAYER);
 
    for_each (cq, *object_type_get_master_list(SGE_TYPE_CQUEUE)) {
       const char *cqname = lGetString(cq, CQ_name);
@@ -429,7 +429,7 @@ static void rqs_excluded_hosts(const lListElem *rule, sge_assignment_t *a)
    const lListElem *prev;
    int ignored = 0, excluded = 0;
 
-   DENTER(TOP_LAYER, "rqs_excluded_hosts");
+   DENTER(TOP_LAYER);
 
    for_each (eh, a->host_list) {
       const char *hname = lGetHost(eh, EH_name);
@@ -486,7 +486,7 @@ static void rqs_expand_cqueues(const lListElem *rule, sge_assignment_t *a)
    const char *cqname;
    lListElem *qfilter = lGetObject(rule, RQR_filter_queues);
 
-   DENTER(TOP_LAYER, "rqs_expand_cqueues");
+   DENTER(TOP_LAYER);
 
    for_each (cq, *object_type_get_master_list(SGE_TYPE_CQUEUE)) {
       cqname = lGetString(cq, CQ_name);
@@ -496,8 +496,7 @@ static void rqs_expand_cqueues(const lListElem *rule, sge_assignment_t *a)
          lAddElemStr(&(a->skip_cqueue_list), CTI_name, cqname, CTI_Type);
    }
 
-   DEXIT;
-   return;
+   DRETURN_VOID;
 }
 
 /****** sge_resource_quota_schedd/rqs_expand_hosts() ***************************
@@ -693,7 +692,7 @@ static bool rqs_exceeded_sort_out(sge_assignment_t *a, const lListElem *rule, co
    bool cq_global = is_cqueue_global(rule);
    bool eh_global = is_host_global(rule);
 
-   DENTER(TOP_LAYER, "rqs_exceeded_sort_out");
+   DENTER(TOP_LAYER);
 
    if ((!cq_global && !eh_global) || (cq_global && eh_global &&
          (is_cqueue_expand(rule) || is_host_expand(rule)))) { /* failure at queue instance limit */
@@ -896,7 +895,7 @@ void parallel_check_and_debit_rqs_slots(sge_assignment_t *a, const char *host, c
    const char* project = a->project;
    const char* pe = a->pe_name;
 
-   DENTER(TOP_LAYER, "parallel_check_and_debit_rqs_slots");
+   DENTER(TOP_LAYER);
 
    /* first step - see how many slots are left */
    for_each(rqs, a->rqs_list) {
@@ -959,7 +958,7 @@ void parallel_revert_rqs_slot_debitation(sge_assignment_t *a, const char *host, 
    const char* project = a->project;
    const char* pe = a->pe_name;
 
-   DENTER(TOP_LAYER, "parallel_revert_rqs_slot_debitation");
+   DENTER(TOP_LAYER);
 
    for_each(rqs, a->rqs_list) {
 
@@ -1028,7 +1027,7 @@ parallel_limit_slots_by_time(const sge_assignment_t *a, lList *requests,
    const lList *rue_list = lGetList(limit, RQRL_usage);
    dispatch_t result = DISPATCH_NEVER_CAT;
 
-   DENTER(TOP_LAYER, "parallel_limit_slots_by_time");
+   DENTER(TOP_LAYER);
 
    /* create tmp_centry_list */
    tmp_centry_elem = lCopyElem(centry);
@@ -1114,7 +1113,7 @@ parallel_rqs_slots_by_time(sge_assignment_t *a, int *slots, int *slots_qend, lLi
    const char* queue = lGetString(qep, QU_qname);
    const char* host = lGetHost(qep, QU_qhostname);
 
-   DENTER(TOP_LAYER, "parallel_rqs_slots_by_time");
+   DENTER(TOP_LAYER);
 
    if (lGetNumberOfElem(a->rqs_list) != 0) {
       const char* user = a->user;
@@ -1294,7 +1293,7 @@ static dispatch_t rqs_limitation_reached(sge_assignment_t *a, const lListElem *r
    dstring rue_name = DSTRING_INIT;
    dstring reason = DSTRING_INIT;
 
-   DENTER(TOP_LAYER, "rqs_limitation_reached");
+   DENTER(TOP_LAYER);
 
     if (implicit_slots_request == NULL) {
       implicit_slots_request = lCreateElem(CE_Type);
@@ -1443,7 +1442,7 @@ dispatch_t rqs_by_slots(sge_assignment_t *a, const char *queue, const char *host
    const lListElem *rqs;
    dispatch_t result = DISPATCH_OK;
 
-   DENTER(TOP_LAYER, "rqs_by_slots");
+   DENTER(TOP_LAYER);
 
    *is_global = false;
 

@@ -83,7 +83,7 @@ str_list_append_to_dstring(const lList *this_list, dstring *string,
 {
    const char *ret = NULL;
 
-   DENTER(STR_LAYER, "str_list_append_to_dstring");
+   DENTER(STR_LAYER);
    if (string != NULL) {
       const lListElem *elem = NULL;
       bool printed = false;
@@ -140,7 +140,7 @@ str_list_parse_from_string(lList **this_list,
 {
    bool ret = true;
 
-   DENTER(STR_LAYER, "str_list_parse_from_dstring");
+   DENTER(STR_LAYER);
    if (this_list != NULL && string != NULL && delimitor != NULL) {
       struct saved_vars_s *context = NULL;
       const char *token;
@@ -180,7 +180,7 @@ str_list_is_valid(const lList *this_list, lList **answer_list)
 {
    bool ret = true;
 
-   DENTER(STR_LAYER, "str_list_is_valid");
+   DENTER(STR_LAYER);
    if (this_list != NULL) {
       const lListElem *elem;
 
@@ -200,7 +200,7 @@ str_list_transform_user_list(lList **this_list, lList **answer_list, const char 
 {
    bool ret = true;
 
-   DENTER(STR_LAYER, "str_list_transform_user_list");
+   DENTER(STR_LAYER);
    if (this_list != NULL && *this_list != NULL) {
       lListElem *elem;
 

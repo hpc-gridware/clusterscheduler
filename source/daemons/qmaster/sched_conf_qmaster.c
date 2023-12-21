@@ -66,7 +66,7 @@ int sge_read_sched_configuration(sge_gdi_ctx_class_t *ctx, const lListElem *aSpo
    lList *sched_conf = NULL;
    bool job_spooling = ctx->get_job_spooling(ctx);
 
-   DENTER(TOP_LAYER, "sge_read_sched_configuration");
+   DENTER(TOP_LAYER);
 
    spool_read_list(anAnswer, aSpoolContext, &sched_conf, SGE_TYPE_SCHEDD_CONF);
 
@@ -85,14 +85,12 @@ int sge_read_sched_configuration(sge_gdi_ctx_class_t *ctx, const lListElem *aSpo
    if (!sconf_set_config(&sched_conf, anAnswer))
    {
       lFreeList(&sched_conf);
-      DEXIT;
-      return -1;
+      DRETURN(-1);
    } 
 
    check_reprioritize_interval(ctx, anAnswer, "local" , "local");
 
-   DEXIT;
-   return 0;
+   DRETURN(0);
 }
 	
 
@@ -111,13 +109,12 @@ char *rhost
 ) {
    lList *temp_conf_list = NULL;
    
-   DENTER(TOP_LAYER, "sge_mod_sched_configuration");
+   DENTER(TOP_LAYER);
 
    if ( !confp || !ruser || !rhost ) {
-      CRITICAL((SGE_EVENT, MSG_SGETEXT_NULLPTRPASSED_S, SGE_FUNC));
+      CRITICAL((SGE_EVENT, MSG_SGETEXT_NULLPTRPASSED_S, __func__));
       answer_list_add(alpp, SGE_EVENT, STATUS_EUNKNOWN, ANSWER_QUALITY_ERROR);
-      DEXIT;
-      return STATUS_EUNKNOWN;
+      DRETURN(STATUS_EUNKNOWN);
    }
    temp_conf_list = lCreateList("sched config", SC_Type);
 
@@ -130,8 +127,7 @@ char *rhost
    /* just check and log */
    if (!sconf_set_config(&temp_conf_list, alpp)) {
       lFreeList(&temp_conf_list);
-      DEXIT;
-      return STATUS_EUNKNOWN;
+      DRETURN(STATUS_EUNKNOWN);
    }
 
    if (!sge_event_spool(ctx,
@@ -139,8 +135,7 @@ char *rhost
                         0, 0, "schedd_conf", NULL, NULL,
                         confp, NULL, NULL, true, true)) {
       answer_list_add(alpp, MSG_SCHEDCONF_CANTCREATESCHEDULERCONFIGURATION, STATUS_ESEMANTIC, ANSWER_QUALITY_ERROR);
-      DEXIT;
-      return -1;
+      DRETURN(-1);
    }
 
    check_reprioritize_interval(ctx, alpp, ruser, rhost);
@@ -148,14 +143,13 @@ char *rhost
    INFO((SGE_EVENT, MSG_SGETEXT_MODIFIEDINLIST_SSSS, ruser, rhost, "scheduler", "scheduler configuration"));
    answer_list_add(alpp, SGE_EVENT, STATUS_OK, ANSWER_QUALITY_INFO);
 
-   DEXIT;
-   return STATUS_OK;
+   DRETURN(STATUS_OK);
 } /* sge_mod_sched_configuration */
 
 
 static void check_reprioritize_interval(sge_gdi_ctx_class_t *ctx, lList **alpp, char *ruser, char *rhost)
 {
-   DENTER(TOP_LAYER, "check_reprioritize_interval");
+   DENTER(TOP_LAYER);
 
    if (((sconf_get_reprioritize_interval() == 0) && (mconf_get_reprioritize())) ||
        ((sconf_get_reprioritize_interval() != 0) && (!mconf_get_reprioritize()))) {
@@ -169,7 +163,6 @@ static void check_reprioritize_interval(sge_gdi_ctx_class_t *ctx, lList **alpp, 
       lFreeElem(&conf);
    }
 
-   DEXIT;
-   return;
+   DRETURN_VOID;
 } /* check_reprioritize_interval */
 

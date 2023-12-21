@@ -70,7 +70,7 @@ cqueue_verify_calendar(lListElem *cqueue, lList **answer_list, lListElem *attr_e
 {
    bool ret = true;
 
-   DENTER(CQUEUE_VERIFY_LAYER, "cqueue_verify_calendar");
+   DENTER(CQUEUE_VERIFY_LAYER);
    if (cqueue != NULL && attr_elem != NULL) {
       const char *name = lGetString(attr_elem, ASTR_value);
 
@@ -83,8 +83,7 @@ cqueue_verify_calendar(lListElem *cqueue, lList **answer_list, lListElem *attr_e
          }
       }
    }
-   DEXIT;
-   return ret;
+   DRETURN(ret);
 }
 
 bool
@@ -92,7 +91,7 @@ cqueue_verify_ckpt_list(lListElem *cqueue, lList **answer_list, lListElem *attr_
 {
    bool ret = true;
 
-   DENTER(CQUEUE_VERIFY_LAYER, "cqueue_verify_ckpt_list");
+   DENTER(CQUEUE_VERIFY_LAYER);
    if (cqueue != NULL && attr_elem != NULL) {
       const lList *ckpt_list = lGetList(attr_elem, ASTRLIST_value);
 
@@ -102,8 +101,7 @@ cqueue_verify_ckpt_list(lListElem *cqueue, lList **answer_list, lListElem *attr_
          }
       }
    }
-   DEXIT;
-   return ret;
+   DRETURN(ret);
 }
 
 bool
@@ -111,7 +109,7 @@ cqueue_verify_consumable_config_list(lListElem *cqueue, lList **answer_list, lLi
 {
    bool ret = true;
 
-   DENTER(CQUEUE_VERIFY_LAYER, "cqueue_verify_project_list");
+   DENTER(CQUEUE_VERIFY_LAYER);
    if (cqueue != NULL && attr_elem != NULL) {
       const lList *centry_list = lGetList(attr_elem, ACELIST_value);
 
@@ -121,8 +119,7 @@ cqueue_verify_consumable_config_list(lListElem *cqueue, lList **answer_list, lLi
          }
       }
    }
-   DEXIT;
-   return ret;
+   DRETURN(ret);
 }
 
 bool
@@ -130,7 +127,7 @@ cqueue_verify_initial_state(lListElem *cqueue, lList **answer_list, lListElem *a
 {
    bool ret = true;
 
-   DENTER(CQUEUE_VERIFY_LAYER, "cqueue_verify_initial_state");
+   DENTER(CQUEUE_VERIFY_LAYER);
    if (cqueue != NULL && attr_elem != NULL) {
       const char *names[] = {"default", "enabled", "disabled", NULL};
       const char *name = lGetString(attr_elem, ASTR_value);
@@ -150,8 +147,7 @@ cqueue_verify_initial_state(lListElem *cqueue, lList **answer_list, lListElem *a
          ret = false;
       }
    }
-   DEXIT;
-   return ret;
+   DRETURN(ret);
 }
 
 bool
@@ -159,7 +155,7 @@ cqueue_verify_pe_list(lListElem *cqueue, lList **answer_list, lListElem *attr_el
 {
    bool ret = true;
 
-   DENTER(CQUEUE_VERIFY_LAYER, "cqueue_verify_pe_list");
+   DENTER(CQUEUE_VERIFY_LAYER);
    if (cqueue != NULL && attr_elem != NULL) {
       const lList *pe_list = lGetList(attr_elem, ASTRLIST_value);
 
@@ -169,8 +165,7 @@ cqueue_verify_pe_list(lListElem *cqueue, lList **answer_list, lListElem *attr_el
          }
       }
    }
-   DEXIT;
-   return ret;
+   DRETURN(ret);
 }
 
 bool
@@ -178,7 +173,7 @@ cqueue_verify_priority(lListElem *cqueue, lList **answer_list, lListElem *attr_e
 {
    bool ret = true;
 
-   DENTER(CQUEUE_VERIFY_LAYER, "cqueue_verify_priority");
+   DENTER(CQUEUE_VERIFY_LAYER);
    if (cqueue != NULL && attr_elem != NULL) {
       const char *priority_string = lGetString(attr_elem, ASTR_value);
 
@@ -194,8 +189,7 @@ cqueue_verify_priority(lListElem *cqueue, lList **answer_list, lListElem *attr_e
          }
       }
    }
-   DEXIT;
-   return ret;
+   DRETURN(ret);
 }
 
 bool
@@ -203,7 +197,7 @@ cqueue_verify_processors(lListElem *cqueue, lList **answer_list, lListElem *attr
 {
    bool ret = true;
 
-   DENTER(CQUEUE_VERIFY_LAYER, "cqueue_verify_priority");
+   DENTER(CQUEUE_VERIFY_LAYER);
    if (cqueue != NULL && attr_elem != NULL) {
       const char *processors_string = lGetString(attr_elem, ASTR_value);
 
@@ -216,8 +210,7 @@ cqueue_verify_processors(lListElem *cqueue, lList **answer_list, lListElem *attr
          }
       }
    }
-   DEXIT;
-   return ret;
+   DRETURN(ret);
 }
 
 bool
@@ -225,7 +218,7 @@ cqueue_verify_project_list(lListElem *cqueue, lList **answer_list, lListElem *at
 {
    bool ret = true;
 
-   DENTER(CQUEUE_VERIFY_LAYER, "cqueue_verify_project_list");
+   DENTER(CQUEUE_VERIFY_LAYER);
    if (cqueue != NULL && attr_elem != NULL) {
       const lList *project_list = lGetList(attr_elem, APRJLIST_value);
 
@@ -235,8 +228,7 @@ cqueue_verify_project_list(lListElem *cqueue, lList **answer_list, lListElem *at
          }
       }
    }
-   DEXIT;
-   return ret;
+   DRETURN(ret);
 }
 
 bool
@@ -244,7 +236,7 @@ cqueue_verify_shell_start_mode(lListElem *cqueue, lList **answer_list, lListElem
 {
    bool ret = true;
 
-   DENTER(CQUEUE_VERIFY_LAYER, "cqueue_verify_shell_start_mode");
+   DENTER(CQUEUE_VERIFY_LAYER);
    if (cqueue != NULL && attr_elem != NULL) {
       const char *names[] = {
          "unix_behavior", "posix_compliant", "script_from_stdin",
@@ -267,8 +259,7 @@ cqueue_verify_shell_start_mode(lListElem *cqueue, lList **answer_list, lListElem
          ret = false;
       }
    }
-   DEXIT;
-   return ret;
+   DRETURN(ret);
 }
 bool
 cqueue_verify_shell(lListElem *cqueue, lList **answer_list, lListElem *attr_elem, const lList *master_list)
@@ -278,7 +269,7 @@ cqueue_verify_shell(lListElem *cqueue, lList **answer_list, lListElem *attr_elem
 
        const char *name = lGetString(attr_elem, ASTR_value);
 
-       DENTER(CQUEUE_VERIFY_LAYER, "cqueue_verify_shell");
+       DENTER(CQUEUE_VERIFY_LAYER);
 
        /* Check also if it is an absolute valid path */
        path_found = path_verify(name, answer_list, "shell", true);
@@ -290,8 +281,7 @@ cqueue_verify_shell(lListElem *cqueue, lList **answer_list, lListElem *attr_elem
                ret = false;
            }
         
-        DEXIT;
-        return ret;
+        DRETURN(ret);
    }
 
 bool
@@ -299,7 +289,7 @@ cqueue_verify_subordinate_list(lListElem *cqueue, lList **answer_list, lListElem
 {
    bool ret = true;
 
-   DENTER(CQUEUE_VERIFY_LAYER, "cqueue_verify_subordinate_list");
+   DENTER(CQUEUE_VERIFY_LAYER);
    if (cqueue != NULL && attr_elem != NULL) {
       const char *cqueue_name = lGetString(cqueue, CQ_name);
       const lList *so_list = lGetList(attr_elem, ASOLIST_value);
@@ -338,8 +328,7 @@ cqueue_verify_subordinate_list(lListElem *cqueue, lList **answer_list, lListElem
          }
       }
    }
-   DEXIT;
-   return ret;
+   DRETURN(ret);
 }
 
 bool
@@ -347,7 +336,7 @@ cqueue_verify_user_list(lListElem *cqueue, lList **answer_list, lListElem *attr_
 {
    bool ret = true;
 
-   DENTER(CQUEUE_VERIFY_LAYER, "cqueue_verify_user_list");
+   DENTER(CQUEUE_VERIFY_LAYER);
    if (cqueue != NULL && attr_elem != NULL) {
       const lList *user_list = lGetList(attr_elem, AUSRLIST_value);
 
@@ -357,8 +346,7 @@ cqueue_verify_user_list(lListElem *cqueue, lList **answer_list, lListElem *attr_
          }
       }
    }
-   DEXIT;
-   return ret;
+   DRETURN(ret);
 }
 
 
@@ -392,7 +380,7 @@ cqueue_verify_job_slots(lListElem *cqueue, lList **answer_list, lListElem *attr_
 {
    bool ret = true;
 
-   DENTER(CQUEUE_VERIFY_LAYER, "cqueue_verify_job_slots");
+   DENTER(CQUEUE_VERIFY_LAYER);
    if (cqueue != NULL && attr_elem != NULL) {
       u_long32 slots = lGetUlong(attr_elem, AULNG_value);
 
@@ -404,8 +392,7 @@ cqueue_verify_job_slots(lListElem *cqueue, lList **answer_list, lListElem *attr_
       }
    }
 
-   DEXIT;
-   return ret;
+   DRETURN(ret);
 }
 
 /****** sge_cqueue_verify/cqueue_verify_memory_value() ****************************
@@ -437,7 +424,7 @@ cqueue_verify_memory_value(lListElem *cqueue, lList **answer_list, lListElem *at
 {
    bool ret = true;
 
-   DENTER(CQUEUE_VERIFY_LAYER, "cqueue_verify_memory_value");
+   DENTER(CQUEUE_VERIFY_LAYER);
    if (cqueue != NULL && attr_elem != NULL) {
       const char *memory_string = lGetString(attr_elem, AMEM_value);
 
@@ -455,8 +442,7 @@ cqueue_verify_memory_value(lListElem *cqueue, lList **answer_list, lListElem *at
       }
 #endif      
    }
-   DEXIT;
-   return ret;
+   DRETURN(ret);
 }
 
 /****** sge_cqueue_verify/cqueue_verify_time_value() ****************************
@@ -488,7 +474,7 @@ cqueue_verify_time_value(lListElem *cqueue, lList **answer_list, lListElem *attr
 {
    bool ret = true;
 
-   DENTER(CQUEUE_VERIFY_LAYER, "cqueue_verify_time_value");
+   DENTER(CQUEUE_VERIFY_LAYER);
    if (cqueue != NULL && attr_elem != NULL) {
       const char *time_string = lGetString(attr_elem, ATIME_value);
 
@@ -498,7 +484,6 @@ cqueue_verify_time_value(lListElem *cqueue, lList **answer_list, lListElem *attr
          ret = false;
       }
    }
-   DEXIT;
-   return ret;
+   DRETURN(ret);
 }
 

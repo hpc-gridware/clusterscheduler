@@ -88,7 +88,7 @@ void cull_mail(u_long32 progid, const lList *user_list, const char *subj, const 
    const lListElem *ep;
    const char *user, *host;
 
-   DENTER(TOP_LAYER, "cull_mail");
+   DENTER(TOP_LAYER);
 
    mailer = mconf_get_mailer();
    mailer_has_subj_line = 1;
@@ -151,11 +151,10 @@ const char *buf
    int status;
 #endif
 
-   DENTER(TOP_LAYER, "sge_send_mail");
+   DENTER(TOP_LAYER);
 
    if (!user) {
-      DEXIT;
-      return;
+      DRETURN_VOID;
    }
 
    alarm(0);
@@ -175,14 +174,12 @@ const char *buf
 #endif
    if (i>0) {
       DPRINTF(("PARENT RETURNS\n"));
-      DEXIT;
-      return;
+      DRETURN_VOID;
    }
    /* log fork() failure */
    else if (i == -1) { /* still in parent */
       ERROR((SGE_EVENT, MSG_MAIL_NOFORK_S, strerror(errno)));
-      DEXIT;
-      return;
+      DRETURN_VOID;
    } /* else in child */
 
    DPRINTF(("CHILD CONTINUES\n"));

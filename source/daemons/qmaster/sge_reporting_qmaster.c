@@ -206,7 +206,7 @@ reporting_initialize(lList **answer_list)
    bool ret = true;
    te_event_t ev = NULL;
 
-   DENTER(TOP_LAYER, "reporting_initialize");
+   DENTER(TOP_LAYER);
 
    te_register_event_handler(reporting_trigger_handler, TYPE_REPORTING_TRIGGER);
    te_register_event_handler(reporting_trigger_handler, TYPE_ACCOUNTING_TRIGGER);
@@ -267,7 +267,7 @@ reporting_shutdown(sge_gdi_ctx_class_t *ctx, lList **answer_list, bool do_spool)
    const char *reporting_file = ctx->get_reporting_file(ctx);
    const char *acct_file = ctx->get_acct_file(ctx);
 
-   DENTER(TOP_LAYER, "reporting_shutdown");
+   DENTER(TOP_LAYER);
 
    if (do_spool == true) {
       /* flush the last reporting values, suppress adding new timer */
@@ -278,14 +278,14 @@ reporting_shutdown(sge_gdi_ctx_class_t *ctx, lList **answer_list, bool do_spool)
 
    buf = &reporting_buffer[ACCOUNTING_BUFFER];
    /* free memory of buffers */
-   sge_mutex_lock(buf->mtx_name, SGE_FUNC, __LINE__, &(buf->mtx));
+   sge_mutex_lock(buf->mtx_name, __func__, __LINE__, &(buf->mtx));
    sge_dstring_free(&(buf->buffer));
-   sge_mutex_unlock(buf->mtx_name, SGE_FUNC, __LINE__, &(buf->mtx));
+   sge_mutex_unlock(buf->mtx_name, __func__, __LINE__, &(buf->mtx));
 
    buf = &reporting_buffer[REPORTING_BUFFER];
-   sge_mutex_lock(buf->mtx_name, SGE_FUNC, __LINE__, &(buf->mtx));
+   sge_mutex_lock(buf->mtx_name, __func__, __LINE__, &(buf->mtx));
    sge_dstring_free(&(buf->buffer));
-   sge_mutex_unlock(buf->mtx_name, SGE_FUNC, __LINE__, &(buf->mtx));
+   sge_mutex_unlock(buf->mtx_name, __func__, __LINE__, &(buf->mtx));
    
    DRETURN(ret);
 }
@@ -319,7 +319,7 @@ reporting_trigger_handler(sge_gdi_ctx_class_t *ctx, te_event_t anEvent, monitori
    const char *reporting_file = ctx->get_reporting_file(ctx);
    const char *acct_file = ctx->get_acct_file(ctx);
 
-   DENTER(TOP_LAYER, "reporting_trigger_handler");
+   DENTER(TOP_LAYER);
 
    config_sharelog();
 
@@ -386,7 +386,7 @@ reporting_create_new_job_record(lList **answer_list, const lListElem *job)
 {
    bool ret = true;
 
-   DENTER(TOP_LAYER, "reporting_create_new_job_record");
+   DENTER(TOP_LAYER);
 
    if (mconf_get_do_reporting() && mconf_get_do_joblog() && job != NULL) {
       dstring job_dstring = DSTRING_INIT;
@@ -451,7 +451,7 @@ reporting_create_job_log(lList **answer_list,
 {
    bool ret = true;
 
-   DENTER(TOP_LAYER, "reporting_create_job_log");
+   DENTER(TOP_LAYER);
 
    if (mconf_get_do_reporting() && mconf_get_do_joblog() && job != NULL) {
       dstring job_dstring = DSTRING_INIT;
@@ -593,7 +593,7 @@ reporting_create_acct_record(sge_gdi_ctx_class_t *ctx,
    const lList *master_project_list = *object_type_get_master_list(SGE_TYPE_PROJECT);
    const lList *master_rqs_list = *object_type_get_master_list(SGE_TYPE_RQS);
 
-   DENTER(TOP_LAYER, "reporting_create_acct_record");
+   DENTER(TOP_LAYER);
 
    /* anything to do at all? */
    if (do_reporting || do_accounting) {
@@ -616,9 +616,9 @@ reporting_create_acct_record(sge_gdi_ctx_class_t *ctx,
          } else {
             /* write accounting file */
             rep_buf_t *buf = &reporting_buffer[ACCOUNTING_BUFFER];
-            sge_mutex_lock(buf->mtx_name, SGE_FUNC, __LINE__, &(buf->mtx));
+            sge_mutex_lock(buf->mtx_name, __func__, __LINE__, &(buf->mtx));
             sge_dstring_append(&(buf->buffer), job_string);
-            sge_mutex_unlock(buf->mtx_name, SGE_FUNC, __LINE__, &(buf->mtx));
+            sge_mutex_unlock(buf->mtx_name, __func__, __LINE__, &(buf->mtx));
          }
    
          /* If the flush internal is set to 0, flush the accounting buffer after
@@ -698,7 +698,7 @@ reporting_write_consumables(lList **answer_list, dstring *buffer,
    bool ret = true;
    const lListElem *cep;
    
-   DENTER(TOP_LAYER, "reporting_write_consumables");
+   DENTER(TOP_LAYER);
 
    for_each (cep, actual) {
       const char *name = lGetString(cep, RUE_name);
@@ -777,7 +777,7 @@ reporting_create_queue_record(lList **answer_list,
 {
    bool ret = true;
 
-   DENTER(TOP_LAYER, "reporting_create_queue_record");
+   DENTER(TOP_LAYER);
 
    if (mconf_get_do_reporting() && queue != NULL) {
       dstring queue_dstring = DSTRING_INIT;
@@ -839,7 +839,7 @@ reporting_create_queue_consumable_record(lList **answer_list,
 {
    bool ret = true;
 
-   DENTER(TOP_LAYER, "reporting_create_queue_consumable_record");
+   DENTER(TOP_LAYER);
 
    if (mconf_get_do_reporting() && host != NULL && queue != NULL) {
       dstring consumable_dstring = DSTRING_INIT;
@@ -908,7 +908,7 @@ reporting_create_host_record(lList **answer_list,
 {
    bool ret = true;
 
-   DENTER(TOP_LAYER, "reporting_create_host_record");
+   DENTER(TOP_LAYER);
 
    if (mconf_get_do_reporting() && host != NULL) {
       dstring load_dstring = DSTRING_INIT;
@@ -974,7 +974,7 @@ reporting_create_host_consumable_record(lList **answer_list,
 {
    bool ret = true;
 
-   DENTER(TOP_LAYER, "reporting_create_host_consumable_record");
+   DENTER(TOP_LAYER);
 
    if (mconf_get_do_reporting() && host != NULL) {
       dstring consumable_dstring = DSTRING_INIT;
@@ -1038,7 +1038,7 @@ reporting_create_sharelog_record(lList **answer_list, monitoring_t *monitor)
    const lList *master_userset_list = *object_type_get_master_list(SGE_TYPE_USERSET);
    const lList *master_project_list = *object_type_get_master_list(SGE_TYPE_PROJECT);
 
-   DENTER(TOP_LAYER, "reporting_create_sharelog_record");
+   DENTER(TOP_LAYER);
 
    if (mconf_get_do_reporting() && mconf_get_sharelog_time() > 0) {
       /* only create sharelog entries if we have a sharetree */
@@ -1075,9 +1075,9 @@ reporting_create_sharelog_record(lList **answer_list, monitoring_t *monitor)
 
          /* write data to reporting buffer */
          buf = &reporting_buffer[REPORTING_BUFFER];
-         sge_mutex_lock(buf->mtx_name, SGE_FUNC, __LINE__, &(buf->mtx));
+         sge_mutex_lock(buf->mtx_name, __func__, __LINE__, &(buf->mtx));
          sge_dstring_append(&(buf->buffer), sge_dstring_get_string(&data_dstring));
-         sge_mutex_unlock(buf->mtx_name, SGE_FUNC, __LINE__, &(buf->mtx));
+         sge_mutex_unlock(buf->mtx_name, __func__, __LINE__, &(buf->mtx));
 
          /* cleanup */
          sge_dstring_free(&prefix_dstring);
@@ -1142,7 +1142,7 @@ reporting_is_intermediate_acct_required(const lListElem *job,
    struct tm tm_last_intermediate, tm_now;
 
 
-   DENTER(TOP_LAYER, "reporting_is_intermediate_acct_required");
+   DENTER(TOP_LAYER);
 
    /* if reporting isn't active, we needn't write intermediate usage */
    if (!mconf_get_do_reporting()) {
@@ -1243,7 +1243,7 @@ reporting_write_load_values(lList **answer_list, dstring *buffer,
    bool first = true;
    const lListElem *variable;
 
-   DENTER(TOP_LAYER, "reporting_write_load_values");
+   DENTER(TOP_LAYER);
 
    for_each (variable, variables) {
       const char *name;
@@ -1278,16 +1278,16 @@ reporting_create_record(lList **answer_list,
    bool ret = true;
    rep_buf_t *buf = &reporting_buffer[REPORTING_BUFFER];
 
-   DENTER(TOP_LAYER, "reporting_create_record");
+   DENTER(TOP_LAYER);
 
-   sge_mutex_lock(buf->mtx_name, SGE_FUNC, __LINE__, &(buf->mtx));
+   sge_mutex_lock(buf->mtx_name, __func__, __LINE__, &(buf->mtx));
    sge_dstring_sprintf_append(&(buf->buffer), sge_U32CFormat"%c%s%c%s",
                               sge_u32c(sge_get_gmt()),
                               REPORTING_DELIMITER,
                               type,
                               REPORTING_DELIMITER,
                               data);
-   sge_mutex_unlock(buf->mtx_name, SGE_FUNC, __LINE__, &(buf->mtx));
+   sge_mutex_unlock(buf->mtx_name, __func__, __LINE__, &(buf->mtx));
 
    DRETURN(ret);
 }
@@ -1317,7 +1317,7 @@ static bool reporting_flush_accounting(const char *acct_file, lList **answer_lis
 {
    bool ret = true;
 
-   DENTER(TOP_LAYER, "sge_flush_accounting");
+   DENTER(TOP_LAYER);
 
    /* write accounting data */
    ret = reporting_flush_report_file(answer_list, acct_file,
@@ -1349,7 +1349,7 @@ static bool reporting_flush_reporting(const char *reporting_file, lList **answer
 {
    bool ret = true;
 
-   DENTER(TOP_LAYER, "sge_flush_reporting");
+   DENTER(TOP_LAYER);
    /* write reporting data */
    ret = reporting_flush_report_file(answer_list,
                                      reporting_file,
@@ -1388,9 +1388,9 @@ static bool reporting_flush_report_file(lList **answer_list,
    char error_buffer[MAX_STRING_SIZE];
    dstring error_dstring;
 
-   DENTER(TOP_LAYER, "reporting_flush_report_file");
+   DENTER(TOP_LAYER);
 
-   sge_mutex_lock(buf->mtx_name, SGE_FUNC, __LINE__, &(buf->mtx));
+   sge_mutex_lock(buf->mtx_name, __func__, __LINE__, &(buf->mtx));
    size = sge_dstring_strlen(&(buf->buffer));
    sge_dstring_init(&error_dstring, error_buffer, sizeof(error_buffer));
 
@@ -1480,12 +1480,12 @@ static bool reporting_flush_report_file(lList **answer_list,
       }
    }
 
-   sge_mutex_unlock(buf->mtx_name, SGE_FUNC, __LINE__, &(buf->mtx));
+   sge_mutex_unlock(buf->mtx_name, __func__, __LINE__, &(buf->mtx));
 
    DRETURN(ret);
 
 FCLOSE_ERROR:
-   sge_mutex_unlock(buf->mtx_name, SGE_FUNC, __LINE__, &(buf->mtx));
+   sge_mutex_unlock(buf->mtx_name, __func__, __LINE__, &(buf->mtx));
    if (answer_list == NULL) {
       ERROR((SGE_EVENT, MSG_ERRORCLOSINGFILE_SS, filename, 
              sge_strerror(errno, &error_dstring)));
@@ -1525,7 +1525,7 @@ static bool reporting_flush(const char *acct_file, const char *reporting_file, l
    bool ret = true;
    bool reporting_ret;
 
-   DENTER(TOP_LAYER, "reporting_flush");
+   DENTER(TOP_LAYER);
 
    /* flush accounting data */
    reporting_ret = reporting_flush_accounting(acct_file, answer_list);
@@ -1577,14 +1577,14 @@ reporting_create_new_ar_record(lList **answer_list,
    rep_buf_t *buf = &reporting_buffer[REPORTING_BUFFER];
    const char *owner = lGetString(ar, AR_owner);
 
-   DENTER(TOP_LAYER, "reporting_create_new_ar_record");
+   DENTER(TOP_LAYER);
 
    /* if reporting isn't active, we needn't write intermediate usage */
    if (!mconf_get_do_reporting()) {
       DRETURN(false);
    }
 
-   sge_mutex_lock(buf->mtx_name, SGE_FUNC, __LINE__, &(buf->mtx));
+   sge_mutex_lock(buf->mtx_name, __func__, __LINE__, &(buf->mtx));
    sge_dstring_sprintf_append(&(buf->buffer), 
                               sge_U32CFormat"%c"
                               SFN"%c"
@@ -1596,7 +1596,7 @@ reporting_create_new_ar_record(lList **answer_list,
                               sge_u32c(lGetUlong(ar, AR_submission_time)), REPORTING_DELIMITER,
                               sge_u32c(lGetUlong(ar, AR_id)), REPORTING_DELIMITER,
                               (owner != NULL) ? owner : "");
-   sge_mutex_unlock(buf->mtx_name, SGE_FUNC, __LINE__, &(buf->mtx));
+   sge_mutex_unlock(buf->mtx_name, __func__, __LINE__, &(buf->mtx));
 
    DRETURN(ret);
 }
@@ -1640,14 +1640,14 @@ reporting_create_ar_attribute_record(lList **answer_list,
    const char *ar_account = NULL;
    dstring ar_granted_resources = DSTRING_INIT;
 
-   DENTER(TOP_LAYER, "reporting_create_ar_attribute_record");
+   DENTER(TOP_LAYER);
 
    /* if reporting isn't active, we needn't write intermediate usage */
    if (!mconf_get_do_reporting()) {
       DRETURN(false);
    }
 
-   sge_mutex_lock(buf->mtx_name, SGE_FUNC, __LINE__, &(buf->mtx));
+   sge_mutex_lock(buf->mtx_name, __func__, __LINE__, &(buf->mtx));
    pe_name = lGetString(ar, AR_pe);
    ar_name = lGetString(ar, AR_name);
    ar_account = lGetString(ar, AR_account);
@@ -1676,7 +1676,7 @@ reporting_create_ar_attribute_record(lList **answer_list,
                               (pe_name != NULL) ? pe_name : "", REPORTING_DELIMITER,
                               sge_dstring_get_string(&ar_granted_resources));
    sge_dstring_free(&ar_granted_resources);
-   sge_mutex_unlock(buf->mtx_name, SGE_FUNC, __LINE__, &(buf->mtx));
+   sge_mutex_unlock(buf->mtx_name, __func__, __LINE__, &(buf->mtx));
 
    DRETURN(ret);
 }
@@ -1722,7 +1722,7 @@ reporting_create_ar_log_record(lList **answer_list,
    rep_buf_t *buf = &reporting_buffer[REPORTING_BUFFER];
    dstring state_string = DSTRING_INIT;
 
-   DENTER(TOP_LAYER, "reporting_create_ar_log_record");
+   DENTER(TOP_LAYER);
 
    /* if reporting isn't active, we needn't write intermediate usage */
    if (!mconf_get_do_reporting()) {
@@ -1730,7 +1730,7 @@ reporting_create_ar_log_record(lList **answer_list,
    }
 
    ar_state2dstring((ar_state_t)lGetUlong(ar, AR_state), &state_string);
-   sge_mutex_lock(buf->mtx_name, SGE_FUNC, __LINE__, &(buf->mtx));
+   sge_mutex_lock(buf->mtx_name, __func__, __LINE__, &(buf->mtx));
    sge_dstring_sprintf_append(&(buf->buffer), 
                               sge_U32CFormat"%c"
                               SFN"%c"
@@ -1748,7 +1748,7 @@ reporting_create_ar_log_record(lList **answer_list,
                               sge_dstring_get_string(&state_string), REPORTING_DELIMITER,
                               ar_get_string_from_event(event), REPORTING_DELIMITER,
                               (ar_description != NULL) ? ar_description : "");
-   sge_mutex_unlock(buf->mtx_name, SGE_FUNC, __LINE__, &(buf->mtx));
+   sge_mutex_unlock(buf->mtx_name, __func__, __LINE__, &(buf->mtx));
    sge_dstring_free(&state_string);
    DRETURN(ret);
 }
@@ -1854,14 +1854,14 @@ reporting_create_ar_acct_record(lList **answer_list,
    bool ret = true;
    rep_buf_t *buf = &reporting_buffer[REPORTING_BUFFER];
 
-   DENTER(TOP_LAYER, "reporting_create_ar_acct_record");
+   DENTER(TOP_LAYER);
 
    /* if reporting isn't active, we needn't write intermediate usage */
    if (!mconf_get_do_reporting()) {
       DRETURN(false);
    }
 
-   sge_mutex_lock(buf->mtx_name, SGE_FUNC, __LINE__, &(buf->mtx));
+   sge_mutex_lock(buf->mtx_name, __func__, __LINE__, &(buf->mtx));
    sge_dstring_sprintf_append(&(buf->buffer), 
                               sge_U32CFormat"%c"
                               SFN"%c"
@@ -1879,7 +1879,7 @@ reporting_create_ar_acct_record(lList **answer_list,
                               cqueue_name, REPORTING_DELIMITER,
                               hostname, REPORTING_DELIMITER,
                               slots);
-   sge_mutex_unlock(buf->mtx_name, SGE_FUNC, __LINE__, &(buf->mtx));
+   sge_mutex_unlock(buf->mtx_name, __func__, __LINE__, &(buf->mtx));
 
    DRETURN(ret);
 }

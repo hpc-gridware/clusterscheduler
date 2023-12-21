@@ -160,7 +160,7 @@ int sge_reap_children_execd(int max_count, bool is_qmaster_down)
    int status;
    int reap_count = 0;
 
-   DENTER(TOP_LAYER, "sge_reap_children_execd");
+   DENTER(TOP_LAYER);
    DPRINTF(("========================REAPER======================\n"));
 
    pid = 999;
@@ -344,8 +344,7 @@ int sge_reap_children_execd(int max_count, bool is_qmaster_down)
    }
    DPRINTF(("reaped "sge_U32CFormat" childs - no child remaining\n", sge_u32c(reap_count)));
 
-   DEXIT;
-   return 0;
+   DRETURN(0);
 }
 
 #ifdef COMPILE_DC
@@ -363,7 +362,7 @@ static void unregister_from_ptf(u_long32 job_id, u_long32 ja_task_id,
    lList* usage = NULL;
    int ptf_error;
 
-   DENTER(TOP_LAYER, "unregister_from_ptf");
+   DENTER(TOP_LAYER);
 
    ptf_error = ptf_job_complete(job_id, ja_task_id, pe_task_id, &usage);
    if (ptf_error) {
@@ -421,14 +420,13 @@ static int clean_up_job(lListElem *jr, int failed, int shepherd_exit_status,
    const char *pe_task_id = NULL;
    lListElem *du;
 
-   DENTER(TOP_LAYER, "clean_up_job");
+   DENTER(TOP_LAYER);
 
    sge_dstring_init(&id_dstring, id_buffer, MAX_STRING_SIZE);
 
    if (!jr) {
       CRITICAL((SGE_EVENT, SFNMAX, MSG_JOB_CLEANUPJOBCALLEDWITHINVALIDPARAMETERS));
-      DEXIT;
-      return -1;
+      DRETURN(-1);
    }
 
    job_id = lGetUlong(jr, JR_job_number);
@@ -483,8 +481,7 @@ static int clean_up_job(lListElem *jr, int failed, int shepherd_exit_status,
 
       sge_dstring_free(&fname);
       sge_dstring_free(&jobdir);
-      DEXIT;
-      return 0;
+      DRETURN(0);
    }
 
    *error = '\0';
@@ -845,8 +842,7 @@ static int clean_up_job(lListElem *jr, int failed, int shepherd_exit_status,
    sge_dstring_free(&fname);
    sge_dstring_free(&jobdir);
 
-   DEXIT;
-   return 0;
+   DRETURN(0);
 }
 
 /* ------------------------- */
@@ -862,7 +858,7 @@ void remove_acked_job_exit(sge_gdi_ctx_class_t *ctx, u_long32 job_id, u_long32 j
    const char *pe_task_id_str; 
    const char *sge_root = ctx->get_sge_root(ctx);
 
-   DENTER(TOP_LAYER, "remove_acked_job_exit");
+   DENTER(TOP_LAYER);
 
    sge_dstring_init(&err_str, err_str_buffer, sizeof(err_str_buffer));
 
@@ -1139,7 +1135,7 @@ static lListElem *execd_job_failure(lListElem *jep, lListElem *jatep, lListElem 
    u_long32 jobid, jataskid = 0;
    const char *petaskid = NULL;
 
-   DENTER(TOP_LAYER, "execd_job_failure");
+   DENTER(TOP_LAYER);
 
    jobid = lGetUlong(jep, JB_job_number);
    if (jatep != NULL) {
@@ -1193,7 +1189,7 @@ void job_unknown(u_long32 jobid, u_long32 jataskid, char *qname)
 {
    lListElem *jr;
 
-   DENTER(TOP_LAYER, "job_unknown");
+   DENTER(TOP_LAYER);
 
    ERROR((SGE_EVENT, MSG_SHEPHERD_JATASKXYISKNOWNREPORTINGITTOQMASTER, 
      sge_u32c(jobid), sge_u32c(jataskid)));
@@ -1206,8 +1202,7 @@ void job_unknown(u_long32 jobid, u_long32 jataskid, char *qname)
       lSetString(jr, JR_err_str, (char*) MSG_JR_ERRSTR_EXECDDONTKNOWJOB);
    }
 
-   DEXIT;
-   return;
+   DRETURN_VOID;
 }
 
 /************************************************************************
@@ -1230,7 +1225,7 @@ int clean_up_old_jobs(sge_gdi_ctx_class_t *ctx, int startup)
    static int lost_children = 1;
    lListElem *jep, *petep, *jatep = NULL;
 
-   DENTER(TOP_LAYER, "clean_up_old_jobs");
+   DENTER(TOP_LAYER);
 
    if (startup) {
       INFO((SGE_EVENT, SFNMAX, MSG_SHEPHERD_CKECKINGFOROLDJOBS));
@@ -1267,16 +1262,14 @@ int clean_up_old_jobs(sge_gdi_ctx_class_t *ctx, int startup)
          lost_children = 0;
       }
       /* all children exited */
-      DEXIT;
-      return 0;
+      DRETURN(0);
    }
 
    /* Get pids of running jobs. So we can look for running shepherds. */
    npids = sge_get_pids(pids, 10000, SGE_SHEPHERD, PSCMD);
    if (npids == -1) {
       ERROR((SGE_EVENT, SFNMAX, MSG_SHEPHERD_CANTGETPROCESSESFROMPSCOMMAND));
-      DEXIT;
-      return -1;
+      DRETURN(-1);
    }
 
    DPRINTF(("found %d running processes\n", npids));
@@ -1288,8 +1281,7 @@ int clean_up_old_jobs(sge_gdi_ctx_class_t *ctx, int startup)
 
    if (!(cwd=opendir(ACTIVE_DIR))) {
       ERROR((SGE_EVENT, MSG_FILE_CANTOPENDIRECTORYX_SS, ACTIVE_DIR, strerror(errno)));
-      DEXIT;
-      return -1;
+      DRETURN(-1);
    }
 
    while ((dent=SGE_READDIR(cwd))) {
@@ -1349,8 +1341,7 @@ int clean_up_old_jobs(sge_gdi_ctx_class_t *ctx, int startup)
 
    closedir(cwd);
 
-   DEXIT;
-   return 0;
+   DRETURN(0);
 }
 
 static void 
@@ -1369,7 +1360,7 @@ examine_job_task_from_file(sge_gdi_ctx_class_t *ctx, int startup, char *dir, lLi
    const char *pe_task_id_str = NULL;
    static u_long32 startup_time = 0;
 
-   DENTER(TOP_LAYER, "examine_job_task_from_file");
+   DENTER(TOP_LAYER);
    
    if (!startup_time) {
       startup_time = sge_get_gmt();
@@ -1383,14 +1374,12 @@ examine_job_task_from_file(sge_gdi_ctx_class_t *ctx, int startup, char *dir, lLi
 
    if (SGE_STAT(dir, &statbuf)) {
       ERROR((SGE_EVENT, MSG_SHEPHERD_CANTSTATXY_SS, dir, strerror(errno)));
-      DEXIT;
-      return;
+      DRETURN_VOID;
    }
 
    if (!(statbuf.st_mode & S_IFDIR)) {
       ERROR((SGE_EVENT, MSG_FILE_XISNOTADIRECTORY_S, dir));
-      DEXIT;
-      return;
+      DRETURN_VOID;
    }
 
    DPRINTF(("Found job directory: %s\n", dir));
@@ -1435,8 +1424,7 @@ examine_job_task_from_file(sge_gdi_ctx_class_t *ctx, int startup, char *dir, lLi
       WARNING((SGE_EVENT, MSG_SHEPHERD_CANTREADPIDFROMPIDFILEXFORJOBY_SS,
                   fname, dir));
       FCLOSE_IGNORE_ERROR(fp);
-      DEXIT;
-      return;
+      DRETURN_VOID;
    }
    FCLOSE_IGNORE_ERROR(fp);
 
@@ -1497,16 +1485,14 @@ examine_job_task_from_file(sge_gdi_ctx_class_t *ctx, int startup, char *dir, lLi
             lSetUlong(jr, JR_state, JEXITING);
          }
       }
-      DEXIT;
-      return;
+      DRETURN_VOID;
    }
 
    /* seek job report for this job - it must be contained in job report */
    if (!(jr=get_job_report(jobid, jataskid, pe_task_id_str))) {
       CRITICAL((SGE_EVENT, MSG_SHEPHERD_MISSINGJOBXYINJOBREPORT_UU, sge_u32c(jobid), sge_u32c(jataskid)));
       jr = add_job_report(jobid, jataskid, pe_task_id_str, jep);
-      DEXIT;
-      return;
+      DRETURN_VOID;
    }
 
    /* if the state is already JEXITING work is done  
@@ -1530,7 +1516,7 @@ static void update_used_cores(const char* path_to_config, lListElem** jr)
 {
    const char* binding_cfg;
    
-   DENTER(TOP_LAYER, "update_used_cores");
+   DENTER(TOP_LAYER);
   
    DPRINTF(("update used cores: %s\n", path_to_config));
 
@@ -1592,7 +1578,7 @@ read_dusage(lListElem *jr, const char *jobdir, u_long32 jobid, u_long32 jataskid
    FILE *fp;
    u_long32 pid;
 
-   DENTER(TOP_LAYER, "read_dusage");
+   DENTER(TOP_LAYER);
 
    pid = 0xffffffff;
 
@@ -1722,7 +1708,7 @@ static void build_derived_final_usage(lListElem *jr, u_long32 job_id, u_long32 j
 
    bool accounting_summary = false;
 
-   DENTER(TOP_LAYER, "build_derived_final_usage");
+   DENTER(TOP_LAYER);
 
    usage_list = lGetList(jr, JR_usage);
    
@@ -1890,7 +1876,7 @@ lListElem *jr
    dstring maxvmem_string = DSTRING_INIT;
    const char *qualified_hostname = ctx->get_qualified_hostname(ctx);
 
-   DENTER(TOP_LAYER, "reaper_sendmail");
+   DENTER(TOP_LAYER);
 
    sge_dstring_init(&ds, buffer, sizeof(buffer));
    mail_users = lGetList(jep, JB_mail_list);
@@ -2075,8 +2061,7 @@ lListElem *jr
 
    sge_dstring_free(&cpu_string);
    sge_dstring_free(&maxvmem_string);
-   DEXIT;
-   return ;
+   DRETURN();
 }
 
 /****** reaper_execd/execd_slave_job_exit() ************************************
@@ -2149,7 +2134,7 @@ void execd_slave_job_exit(u_long32 job_id, u_long32 ja_task_id)
 *******************************************************************************/
 static void clean_up_binding(char* binding)
 {
-   DENTER(TOP_LAYER, "clean_up_binding");
+   DENTER(TOP_LAYER);
 
    if (binding == NULL || strcasecmp("NULL", binding) == 0 
       || strcasecmp("no_job_binding", binding) == 0) {
@@ -2273,7 +2258,7 @@ int count_master_tasks(const lList *lp, u_long32 job_id)
    int master_jobs = 0;
    const lListElem *jep;
 
-   DENTER(TOP_LAYER, "count_master_tasks");
+   DENTER(TOP_LAYER);
 
    jep = lGetElemUlongFirst(lp, JB_job_number, job_id, &iterator);
    while (jep != NULL) {

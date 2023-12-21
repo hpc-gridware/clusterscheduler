@@ -131,7 +131,7 @@ static void utilization_print_all(const lList* pe_list, lList *host_list, const 
    lListElem *ep, *cr;
    const char *name;
 
-   DENTER(TOP_LAYER, "utilization_print_all");
+   DENTER(TOP_LAYER);
 
    /* pe_list */
    for_each (ep, pe_list) {
@@ -202,7 +202,7 @@ static void utilization_print_all(const lList* pe_list, lList *host_list, const 
 void utilization_print(const lListElem *cr, const char *object_name) 
 { 
    const lListElem *rde;
-   DENTER(TOP_LAYER, "utilization_print");
+   DENTER(TOP_LAYER);
 
    DPRINTF(("resource utilization: %s \"%s\" %f utilized now\n", 
          object_name?object_name:"<unknown_object>", lGetString(cr, RUE_name),
@@ -224,7 +224,7 @@ static u_long32 utilization_endtime(u_long32 start, u_long32 duration)
 {
    u_long32 end_time;
 
-   DENTER(BASIS_LAYER, "utilization_endtime");
+   DENTER(BASIS_LAYER);
 
    if (((double)start + (double)duration) < ((double)U_LONG32_MAX)) {
       end_time = start + duration;
@@ -280,7 +280,7 @@ int utilization_add(lListElem *cr, u_long32 start_time, u_long32 duration, doubl
    int nm;
    double util_prev;
    
-   DENTER(TOP_LAYER, "utilization_add");
+   DENTER(TOP_LAYER);
 
    if (implicit_non_exclusive) {
       nm = RUE_utilized_nonexclusive;
@@ -462,7 +462,7 @@ double utilization_queue_end(const lListElem *cr, bool for_excl_request)
    const lListElem *ep = lLast(lGetList(cr, RUE_utilized));
    double max = 0.0;
 
-   DENTER(TOP_LAYER, "utilization_queue_end");
+   DENTER(TOP_LAYER);
 
 #if 1
    utilization_print(cr, "the object");
@@ -524,7 +524,7 @@ double utilization_max(const lListElem *cr, u_long32 start_time, u_long32 durati
    double max = 0.0;
    u_long32 end_time = utilization_endtime(start_time, duration);
 
-   DENTER(TOP_LAYER, "utilization_max");
+   DENTER(TOP_LAYER);
 
    /* someone is asking for the current utilization */
    if (start_time == DISPATCH_TIME_NOW) {
@@ -626,7 +626,7 @@ u_long32 utilization_below(const lListElem *cr, double max_util, const char *obj
    double util = 0;
    u_long32 when = DISPATCH_TIME_NOW;
 
-   DENTER(TOP_LAYER, "utilization_below");
+   DENTER(TOP_LAYER);
 
 #if 0
    utilization_print(cr, object_name);
@@ -700,7 +700,7 @@ int add_job_utilization(const sge_assignment_t *a, const char *type, bool for_jo
    lListElem *hep;
    u_long32 ar_id = lGetUlong(a->job, JB_ar);
 
-   DENTER(TOP_LAYER, "add_job_utilization");
+   DENTER(TOP_LAYER);
 
    if (ar_id == 0) {
       bool is_master_task = true;
@@ -806,7 +806,7 @@ int rc_add_job_utilization(lListElem *jep, u_long32 task_id, const char *type,
    lListElem *cr, *cr_config, *dcep;
    int mods = 0;
 
-   DENTER(TOP_LAYER, "rc_add_job_utilization");
+   DENTER(TOP_LAYER);
 
    if (!ep) {
       ERROR((SGE_EVENT, "rc_add_job_utilization NULL object "
@@ -924,7 +924,7 @@ rqs_add_job_utilization(lListElem *jep, u_long32 task_id, const char *type,
    const char *centry_name;
    int mods = 0;
 
-   DENTER(TOP_LAYER, "rqs_add_job_utilization");
+   DENTER(TOP_LAYER);
 
    if (jep != NULL) {
       limit_list = lGetList(rule, RQR_limit);
@@ -996,7 +996,7 @@ add_job_list_to_schedule(const lList *job_list, bool suspended, lList *pe_list,
    const char *type;
    u_long32 interval = sconf_get_schedule_interval();
 
-   DENTER(TOP_LAYER, "add_job_list_to_schedule");
+   DENTER(TOP_LAYER);
 
    if (suspended) {
       type = SCHEDULING_RECORD_ENTRY_TYPE_SUSPENDED;
@@ -1102,7 +1102,7 @@ void prepare_resource_schedules(const lList *running_jobs, const lList *suspende
    lList *pe_list, lList *host_list, lList *queue_list, lList *rqs_list, const lList *centry_list,
    const lList *acl_list, const lList *hgroup_list, lList *ar_list, bool for_job_scheduling, u_long32 now)
 {
-   DENTER(TOP_LAYER, "prepare_resource_schedules");
+   DENTER(TOP_LAYER);
 
    add_job_list_to_schedule(running_jobs, false, pe_list, host_list, queue_list,
                             rqs_list, centry_list, acl_list, hgroup_list,
@@ -1148,7 +1148,7 @@ add_calendar_to_schedule(lList *queue_list, u_long32 now)
 {
    const lListElem *queue;
 
-   DENTER(TOP_LAYER, "add_calendar_to_schedule");
+   DENTER(TOP_LAYER);
 
    for_each(queue, queue_list) {
       const lList *queue_states = lGetList(queue, QU_state_changes);
@@ -1222,7 +1222,7 @@ add_calendar_to_schedule(lList *queue_list, u_long32 now)
 static void 
 set_utilization(lList *uti_list, u_long32 from, u_long32 till, double uti)
 {
-   DENTER(TOP_LAYER, "set_utilization");
+   DENTER(TOP_LAYER);
 
    if (uti > 0) {
       bool is_from_added = false;

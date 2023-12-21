@@ -82,7 +82,7 @@ bool rqs_show(sge_gdi_ctx_class_t *ctx, lList **answer_list, const char *name)
    lList *rqs_list = NULL;
    bool ret = false;
 
-   DENTER(TOP_LAYER, "rqs_show");
+   DENTER(TOP_LAYER);
 
    if (name != NULL) {
       lList *rqsref_list = NULL;
@@ -142,7 +142,7 @@ bool rqs_get_via_gdi(sge_gdi_ctx_class_t *ctx, lList **answer_list, const lList 
 {
    bool ret = false;
 
-   DENTER(TOP_LAYER, "rqs_get_via_gdi");
+   DENTER(TOP_LAYER);
    if (rqsref_list != NULL) {
       const lListElem *rqsref = NULL;
       lCondition *where = NULL;
@@ -198,7 +198,7 @@ bool rqs_get_all_via_gdi(sge_gdi_ctx_class_t *ctx, lList **answer_list, lList **
    bool ret = false;
    lEnumeration *what = lWhat("%T(ALL)", RQS_Type);
 
-   DENTER(TOP_LAYER, "rqs_get_all_via_gdi");
+   DENTER(TOP_LAYER);
 
    *answer_list = ctx->gdi(ctx, SGE_RQS_LIST, SGE_GDI_GET, rqs_list, NULL, what);
    if (!answer_list_has_error(answer_list)) {
@@ -237,7 +237,7 @@ bool rqs_add(sge_gdi_ctx_class_t *ctx, lList **answer_list, const char *name)
 {
    bool ret = false;
 
-   DENTER(TOP_LAYER, "rqs_list_add");
+   DENTER(TOP_LAYER);
    if (name != NULL) {
       lList *rqs_list = NULL;
       lListElem *rqs = NULL;
@@ -288,7 +288,7 @@ bool rqs_modify(sge_gdi_ctx_class_t *ctx, lList **answer_list, const char *name)
    lList *rqs_list = NULL;
    u_long32 gdi_command = 0;
 
-   DENTER(TOP_LAYER, "rqs_modify");
+   DENTER(TOP_LAYER);
 
    if (name != NULL) {
       lList *rqsref_list = NULL;
@@ -343,7 +343,7 @@ bool rqs_add_from_file(sge_gdi_ctx_class_t *ctx, lList **answer_list, const char
 {
    bool ret = false;
 
-   DENTER(TOP_LAYER, "rqs_add_from_file");
+   DENTER(TOP_LAYER);
    if (filename != NULL) {
       lList *rqs_list = NULL;
 
@@ -395,7 +395,7 @@ static bool rqs_provide_modify_context(sge_gdi_ctx_class_t *ctx, lList **rqs_lis
    uid_t uid = ctx->get_uid(ctx);
    gid_t gid = ctx->get_gid(ctx);
    
-   DENTER(TOP_LAYER, "rqs_provide_modify_context");
+   DENTER(TOP_LAYER);
 
    if (rqs_list == NULL) {
       answer_list_add(answer_list, MSG_PARSE_NULLPOINTERRECEIVED, 
@@ -488,7 +488,7 @@ bool rqs_add_del_mod_via_gdi(sge_gdi_ctx_class_t *ctx, lList *rqs_list, lList **
    bool ret = false;
    const lList *master_centry_list = *object_type_get_master_list(SGE_TYPE_CENTRY);
    
-   DENTER(TOP_LAYER, "rqs_add_del_mod_via_gdi");
+   DENTER(TOP_LAYER);
 
    if (rqs_list != NULL) {
       u_long32 operation = SGE_GDI_GET_OPERATION(gdi_command);
@@ -537,7 +537,7 @@ bool rqs_modify_from_file(sge_gdi_ctx_class_t *ctx, lList **answer_list, const c
    bool ret = false;
    u_long32 gdi_command = 0;
    
-   DENTER(TOP_LAYER, "rqs_modify_from_file");
+   DENTER(TOP_LAYER);
    if (filename != NULL) {
       lList *rqs_list = NULL;
 

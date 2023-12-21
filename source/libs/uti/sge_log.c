@@ -545,7 +545,7 @@ int sge_log(int log_level, const char *mesg, const char *file__, const char *fun
    const char *unqualified_hostname = NULL;
    int is_daemonized = 0; 
 
-   DENTER_(BASIS_LAYER, "sge_log");
+   DENTER_(BASIS_LAYER);
    
    ctx = log_state_get_log_context();
    

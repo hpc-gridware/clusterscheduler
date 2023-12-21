@@ -130,8 +130,7 @@ int main(int argc, char** argv)
       }
    }
 
-   DEXIT;
-   return(EXIT_SUCCESS);
+   DRETURN_VOID(EXIT_SUCCESS);
 }
 
 static int PE_test(void)

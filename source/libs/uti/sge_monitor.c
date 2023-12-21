@@ -128,7 +128,7 @@ static void ext_sch_output(dstring *message, void *monitoring_extension, double 
 *******************************************************************************/
 void sge_monitor_free(monitoring_t *monitor)
 {
-   DENTER(GDI_LAYER, "sge_monitor_free");
+   DENTER(GDI_LAYER);
   
    sge_dstring_free(monitor->output_line1);
    sge_dstring_free(monitor->output_line2);
@@ -137,14 +137,14 @@ void sge_monitor_free(monitoring_t *monitor)
    sge_free(&(monitor->ext_data));
 
    if(monitor->pos != -1) {
-      sge_mutex_lock("sge_monitor_init", SGE_FUNC, __LINE__, &(Output[monitor->pos].Output_Mutex));
+      sge_mutex_lock("sge_monitor_init", __func__, __LINE__, &(Output[monitor->pos].Output_Mutex));
 
       Output[monitor->pos].output = NULL;
       Output[monitor->pos].name = NULL;
       Output[monitor->pos].warning_timeout = NO_WARNING;
       Output[monitor->pos].error_timeout = NO_ERROR;
    
-      sge_mutex_unlock("sge_monitor_init", SGE_FUNC, __LINE__, &(Output[monitor->pos].Output_Mutex));
+      sge_mutex_unlock("sge_monitor_init", __func__, __LINE__, &(Output[monitor->pos].Output_Mutex));
    }
    
    monitor->ext_data_size = 0;
@@ -157,15 +157,15 @@ void sge_monitor_free(monitoring_t *monitor)
    monitor->thread_name = NULL;
 
 #if defined(LINUX) || defined(AIX43) || defined(AIX51) || defined(IRIX) || defined(SOLARIS) || defined(HP11)
-   sge_mutex_lock("sge_monitor_status", SGE_FUNC, __LINE__, &global_mutex);
+   sge_mutex_lock("sge_monitor_status", __func__, __LINE__, &global_mutex);
    if (mallinfo_shlib_handle != NULL) {  
       dlclose(mallinfo_shlib_handle);
       mallinfo_shlib_handle = NULL;
    }
-   sge_mutex_unlock("sge_monitor_status", SGE_FUNC, __LINE__, &global_mutex);
+   sge_mutex_unlock("sge_monitor_status", __func__, __LINE__, &global_mutex);
 #endif
  
-   DEXIT;
+   DRETURN_VOID;
 }
 
 /****** uti/monitor/sge_monitor_init() *****************************************
@@ -196,13 +196,13 @@ void
 sge_monitor_init(monitoring_t *monitor, const char *thread_name, extension_t ext, 
                  thread_warning_t warning_timeout, thread_error_t error_timeout)
 {
-   DENTER(GDI_LAYER, "sge_monitor_init");
+   DENTER(GDI_LAYER);
 
    /*
     * initialize the mallinfo function pointer if it is available
     */
 #if defined(LINUX) || defined(AIX43) || defined(AIX51) || defined(IRIX) || defined(SOLARIS) || defined(HP11)
-   sge_mutex_lock("sge_monitor_status", SGE_FUNC, __LINE__, &global_mutex);
+   sge_mutex_lock("sge_monitor_status", __func__, __LINE__, &global_mutex);
    if (mallinfo_initialized == false) {
       const char *function_name = "mallinfo";
 
@@ -220,7 +220,7 @@ sge_monitor_init(monitoring_t *monitor, const char *thread_name, extension_t ext
 #pragma GCC diagnostic pop
       }
    }
-   sge_mutex_unlock("sge_monitor_status", SGE_FUNC, __LINE__, &global_mutex);
+   sge_mutex_unlock("sge_monitor_status", __func__, __LINE__, &global_mutex);
 #endif
 
    monitor->thread_name = thread_name;
@@ -327,7 +327,7 @@ sge_monitor_init(monitoring_t *monitor, const char *thread_name, extension_t ext
       gettimeofday(&time, NULL);
       
       for (i = 0; i < MAX_OUTPUT_LINES; i++) {
-         sge_mutex_lock("sge_monitor_init", SGE_FUNC, __LINE__, &(Output[i].Output_Mutex));
+         sge_mutex_lock("sge_monitor_init", __func__, __LINE__, &(Output[i].Output_Mutex));
          if (Output[i].name == NULL) {
             monitor->pos = i;
             Output[i].output = monitor->output_line1;
@@ -335,10 +335,10 @@ sge_monitor_init(monitoring_t *monitor, const char *thread_name, extension_t ext
             Output[i].warning_timeout = warning_timeout;
             Output[i].error_timeout = error_timeout;
             Output[i].update_time = time.tv_sec; 
-            sge_mutex_unlock("sge_monitor_init", SGE_FUNC, __LINE__, &(Output[i].Output_Mutex));
+            sge_mutex_unlock("sge_monitor_init", __func__, __LINE__, &(Output[i].Output_Mutex));
             break;
          }      
-         sge_mutex_unlock("sge_monitor_init", SGE_FUNC, __LINE__, &(Output[i].Output_Mutex));
+         sge_mutex_unlock("sge_monitor_init", __func__, __LINE__, &(Output[i].Output_Mutex));
       }
       
       sge_set_last_wait_time(monitor, time);
@@ -348,7 +348,7 @@ sge_monitor_init(monitoring_t *monitor, const char *thread_name, extension_t ext
       ERROR((SGE_EVENT, MSG_UTI_MONITOR_NOLINES_S, monitor->thread_name));
    }
    
-   DEXIT;
+   DRETURN_VOID;
 }
 
 
@@ -383,16 +383,15 @@ u_long32 sge_monitor_status(char **info_message, u_long32 monitor_time)
    char date[40];
    dstring ddate;
    
-   DENTER(GDI_LAYER, "sge_monitor_status");
+   DENTER(GDI_LAYER);
 
    if (info_message == NULL) {
-      DEXIT;
-      return 3;
+      DRETURN(3);
    }
 
    sge_dstring_init(&ddate, date, sizeof(date));
    
-   sge_mutex_lock("sge_monitor_status", SGE_FUNC, __LINE__, &global_mutex);
+   sge_mutex_lock("sge_monitor_status", __func__, __LINE__, &global_mutex);
 
    sge_dstring_clear(&Info_Line);
    
@@ -405,7 +404,7 @@ u_long32 sge_monitor_status(char **info_message, u_long32 monitor_time)
       gettimeofday(&now,NULL);
       
       for (i = 0; i < MAX_OUTPUT_LINES; i++) {
-         sge_mutex_lock("sge_monitor_status", SGE_FUNC, __LINE__, &(Output[i].Output_Mutex));
+         sge_mutex_lock("sge_monitor_status", __func__, __LINE__, &(Output[i].Output_Mutex));
          if (Output[i].name != NULL) {
             time = now.tv_usec - Output[i].last_wait_time.tv_usec;
             time = now.tv_sec - Output[i].last_wait_time.tv_sec + (time /1000000);
@@ -424,7 +423,7 @@ u_long32 sge_monitor_status(char **info_message, u_long32 monitor_time)
             } 
             sge_dstring_sprintf_append(&Info_Line, MSG_UTI_MONITOR_INFO_SCF, Output[i].name, state, time);
          }
-         sge_mutex_unlock("sge_monitor_status", SGE_FUNC, __LINE__, &(Output[i].Output_Mutex));
+         sge_mutex_unlock("sge_monitor_status", __func__, __LINE__, &(Output[i].Output_Mutex));
       }
 
       if (error_count == 0) {
@@ -467,14 +466,14 @@ u_long32 sge_monitor_status(char **info_message, u_long32 monitor_time)
       sge_dstring_append(&Info_Line, "\n");
 
       for (i = 0; i < MAX_OUTPUT_LINES; i++) {
-         sge_mutex_lock("sge_monitor_status", SGE_FUNC, __LINE__, &(Output[i].Output_Mutex));
+         sge_mutex_lock("sge_monitor_status", __func__, __LINE__, &(Output[i].Output_Mutex));
          if (Output[i].name != NULL) {
             append_time(Output[i].update_time, &Info_Line, false);
             sge_dstring_append(&Info_Line, " | ");
             sge_dstring_append_dstring(&Info_Line, Output[i].output);
             sge_dstring_append(&Info_Line,"\n");
          }
-         sge_mutex_unlock("sge_monitor_status", SGE_FUNC, __LINE__, &(Output[i].Output_Mutex));
+         sge_mutex_unlock("sge_monitor_status", __func__, __LINE__, &(Output[i].Output_Mutex));
       }
    }
    else {
@@ -484,9 +483,8 @@ u_long32 sge_monitor_status(char **info_message, u_long32 monitor_time)
 
    *info_message = strdup(sge_dstring_get_string(&Info_Line));
   
-   sge_mutex_unlock("sge_monitor_status", SGE_FUNC, __LINE__, &global_mutex);
-   DEXIT;
-   return ret;
+   sge_mutex_unlock("sge_monitor_status", __func__, __LINE__, &global_mutex);
+   DRETURN(ret);
 }
 
 
@@ -511,16 +509,16 @@ u_long32 sge_monitor_status(char **info_message, u_long32 monitor_time)
 *******************************************************************************/
 void sge_set_last_wait_time(monitoring_t *monitor, struct timeval wait_time) 
 {
-   DENTER(GDI_LAYER, "sge_set_last_wait_time");
+   DENTER(GDI_LAYER);
 
    if (monitor->pos != -1) {
-      sge_mutex_lock("sge_monitor_init", SGE_FUNC, __LINE__, &(Output[monitor->pos].Output_Mutex));
+      sge_mutex_lock("sge_monitor_init", __func__, __LINE__, &(Output[monitor->pos].Output_Mutex));
 
       Output[monitor->pos].last_wait_time = wait_time;
 
-      sge_mutex_unlock("sge_monitor_init", SGE_FUNC, __LINE__, &(Output[monitor->pos].Output_Mutex));
+      sge_mutex_unlock("sge_monitor_init", __func__, __LINE__, &(Output[monitor->pos].Output_Mutex));
    }
-   DEXIT;
+   DRETURN_VOID;
 }
 
 
@@ -553,7 +551,7 @@ void sge_set_last_wait_time(monitoring_t *monitor, struct timeval wait_time)
 *******************************************************************************/
 void sge_monitor_output(monitoring_t *monitor) 
 {
-   DENTER(GDI_LAYER, "sge_monitor_output");
+   DENTER(GDI_LAYER);
 
    if ((monitor != NULL) && (monitor->output == true)) {
       struct timeval after;
@@ -581,17 +579,17 @@ void sge_monitor_output(monitoring_t *monitor)
     
       /* only log into the message file, if the user wants it */
       if (monitor->log_monitor_mes) {
-         sge_log(LOG_PROF, sge_dstring_get_string(monitor->work_line),__FILE__,SGE_FUNC,__LINE__); 
+         sge_log(LOG_PROF, sge_dstring_get_string(monitor->work_line),__FILE__,__func__,__LINE__);
       }
      
       if (monitor->pos != -1) {
          dstring *tmp = NULL;
 
-         sge_mutex_lock("sge_monitor_init", SGE_FUNC, __LINE__, &(Output[monitor->pos].Output_Mutex));
+         sge_mutex_lock("sge_monitor_init", __func__, __LINE__, &(Output[monitor->pos].Output_Mutex));
          tmp = Output[monitor->pos].output;
          Output[monitor->pos].output = monitor->work_line;
          Output[monitor->pos].update_time = after.tv_sec;         
-         sge_mutex_unlock("sge_monitor_init", SGE_FUNC, __LINE__, &(Output[monitor->pos].Output_Mutex));
+         sge_mutex_unlock("sge_monitor_init", __func__, __LINE__, &(Output[monitor->pos].Output_Mutex));
 
          monitor->work_line = tmp;
        }
@@ -623,7 +621,7 @@ void sge_monitor_output(monitoring_t *monitor)
 *******************************************************************************/
 void sge_monitor_reset(monitoring_t *monitor) 
 {
-   DENTER(GDI_LAYER, "sge_monitor_reset");
+   DENTER(GDI_LAYER);
 
    monitor->monitor_time = 0;
    monitor->now.tv_sec = 0;
@@ -638,7 +636,7 @@ void sge_monitor_reset(monitoring_t *monitor)
       memset(monitor->ext_data, 0, monitor->ext_data_size); 
    }
   
-   DEXIT;         
+   DRETURN_VOID;
 }
 
 /****************************************

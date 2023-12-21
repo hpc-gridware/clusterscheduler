@@ -74,7 +74,7 @@ void nm_set(int job_field[], int nm)
 {
    int i;
 
-   DENTER(TOP_LAYER, "nm_set");
+   DENTER(TOP_LAYER);
 
    /* seek it */
    for (i=0; job_field[i]!=NoName; i++)
@@ -115,7 +115,7 @@ int lReduceDescr(lDescr **dst_dpp, lDescr *src_dp, lEnumeration *enp)
 {
    int n, index = 0;
 
-   DENTER(TOP_LAYER, "lReduceDescr");
+   DENTER(TOP_LAYER);
 
    if (!dst_dpp || !src_dp || !enp) {
       DRETURN(-1);
@@ -151,7 +151,7 @@ lEnumeration *_lWhat(const char *fmt, const lDescr *dp,
    int error_status;
    cull_parse_state state;
 
-   DENTER(CULL_LAYER, "_lWhat");
+   DENTER(CULL_LAYER);
 
    if (!fmt) {
       error_status = LENOFORMATSTR;
@@ -358,7 +358,7 @@ lEnumeration *lWhat(const char *fmt, ...)
    va_list ap;
    cull_parse_state state;
 
-   DENTER(CULL_LAYER, "lWhat");
+   DENTER(CULL_LAYER);
 
    if (!fmt) {
       LERROR(LENOFORMATSTR);
@@ -394,7 +394,7 @@ static lEnumeration *subscope_lWhat(cull_parse_state* state, va_list *app)
    int next_id = 0;
    int i;
 
-   DENTER(CULL_LAYER, "subscope_lWhat");
+   DENTER(CULL_LAYER);
 
    if (scan(NULL, state) != TYPE) {
       LERROR(LESYNTAX);
@@ -515,7 +515,7 @@ lEnumeration *lWhatAll(void)
    lEnumeration *ep;
    int error_status;
 
-   DENTER(CULL_LAYER, "lWhatAll");
+   DENTER(CULL_LAYER);
 
    if (!(ep = (lEnumeration *) malloc(sizeof(lEnumeration) * 2))) {
       error_status = LEMALLOC;
@@ -557,7 +557,7 @@ void lFreeWhat(lEnumeration **ep)
 {
    int i;
 
-   DENTER(CULL_LAYER, "lFreeWhat");
+   DENTER(CULL_LAYER);
 
    if (ep == NULL || *ep == NULL) {
       DRETURN_VOID;
@@ -592,7 +592,7 @@ int lCountWhat(const lEnumeration *enp, const lDescr *dp)
 {
    int n;
 
-   DENTER(CULL_LAYER, "lCountWhat");
+   DENTER(CULL_LAYER);
 
    if (!enp) {
       LERROR(LEENUMNULL);
@@ -641,7 +641,7 @@ lEnumeration *lCopyWhat(const lEnumeration *ep)
    int i, n;
    lEnumeration *copy = NULL;
 
-   DENTER(CULL_LAYER, "lCopyWhat");
+   DENTER(CULL_LAYER);
 
    if (!ep) {
       LERROR(LEENUMNULL);
@@ -688,7 +688,7 @@ lEnumeration *lIntVector2What(const lDescr *dp, const int intv[])
    char fmtstr[2000];
    int i;
 
-   DENTER(CULL_LAYER, "lIntVector2What");
+   DENTER(CULL_LAYER);
 
    /*
       reduce a descriptor to get one with only
@@ -711,7 +711,7 @@ int lMergeWhat(lEnumeration **what1, lEnumeration **what2)
 {
    int ret = 0;
 
-   DENTER(CULL_LAYER, "lMergeWhat");
+   DENTER(CULL_LAYER);
    if (*what1 == NULL || 
        (*what1)[0].pos == WHAT_NONE ||
        (*what2)[0].pos == WHAT_ALL) {
@@ -824,7 +824,7 @@ int lWhatSetSubWhat(lEnumeration *what1, int nm, lEnumeration **what2)
    int ret = -1;
    int i;
 
-   DENTER(CULL_LAYER, "lWhatSetSubWhat");
+   DENTER(CULL_LAYER);
    if (what1 != NULL && what2 != NULL) {
       for (i = 0; mt_get_type(what1[i].mt) != lEndT; i++) {
          if (what1[i].nm == nm) {

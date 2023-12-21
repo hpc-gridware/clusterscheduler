@@ -112,7 +112,7 @@ void ja_task_list_print_to_string(const lList *ja_task_list,
    const lListElem *ja_task = NULL;    /* JAT_Type */
    lList *range_list = NULL;     /* RN_Type */
 
-   DENTER(TOP_LAYER, "ja_task_list_print_to_string");
+   DENTER(TOP_LAYER);
    for_each(ja_task, ja_task_list) {
       u_long32 tid = lGetUlong(ja_task, JAT_task_number);
 
@@ -206,7 +206,7 @@ bool ja_task_add_finished_pe_task(lListElem *ja_task, const char *pe_task_id)
 {
    lListElem *pe_task;
 
-   DENTER(TOP_LAYER, "ja_task_add_finished_pe_task");
+   DENTER(TOP_LAYER);
 
    pe_task = lGetSubStr(ja_task, FPET_id, pe_task_id, JAT_finished_task_list);
    if (pe_task != NULL) {
@@ -253,7 +253,7 @@ bool ja_task_clear_finished_pe_tasks(lListElem *ja_task)
 {
    const lList *pe_task_list;
 
-   DENTER(TOP_LAYER, "ja_task_clear_finished_pe_tasks");
+   DENTER(TOP_LAYER);
 
    /* get list of finished pe tasks */
    pe_task_list = lGetList(ja_task, JAT_finished_task_list);
@@ -312,7 +312,7 @@ int sge_parse_jobtasks(lList **ipp, lListElem **idp, const char *str_jobtask,
    lList *task_id_range_list = NULL;
    int ret = 1;
 
-   DENTER(TOP_LAYER, "sge_parse_jobtasks");
+   DENTER(TOP_LAYER);
    job_str = strdup(str_jobtask);
 
    /* An empty job id string is a bad job id string! */
@@ -411,7 +411,7 @@ ja_task_message_add(lListElem *this_elem, u_long32 type, const char *message)
 {
    bool ret = true;
 
-   DENTER(TOP_LAYER, "ja_task_message_add");
+   DENTER(TOP_LAYER);
    ret = object_message_add(this_elem, JAT_message_list, type, message);
    DRETURN(ret);
 }
@@ -447,7 +447,7 @@ ja_task_message_trash_all_of_type_X(lListElem *this_elem, u_long32 type)
 {
    bool ret = true;
 
-   DENTER(TOP_LAYER, "ja_task_message_trash_all_of_type_X");
+   DENTER(TOP_LAYER);
    ret = object_message_trash_all_of_type_X(this_elem, JAT_message_list, type);
    DRETURN(ret);
 }
@@ -481,7 +481,7 @@ ja_task_verify(const lListElem *ja_task, lList **answer_list)
 {
    bool ret = true;
 
-   DENTER(TOP_LAYER, "ja_task_verify");
+   DENTER(TOP_LAYER);
 
    ret = object_verify_ulong_not_null(ja_task, answer_list, JAT_task_number);
 
@@ -558,7 +558,7 @@ ja_task_verify_execd_job(const lListElem *ja_task, lList **answer_list)
 {
    bool ret = true;
 
-   DENTER(TOP_LAYER, "ja_task_verify_execd_job");
+   DENTER(TOP_LAYER);
 
    ret = ja_task_verify(ja_task, answer_list);
 
@@ -600,7 +600,7 @@ ja_task_verify_granted_destin_identifier_list(const lList *gdil, lList **answer_
 {
    bool ret = true;
 
-   DENTER(TOP_LAYER, "ja_task_verify_granted_destin_identifier_list");
+   DENTER(TOP_LAYER);
 
    if (gdil == NULL) {
       answer_list_add_sprintf(answer_list, STATUS_ESYNTAX, ANSWER_QUALITY_ERROR, 
@@ -653,11 +653,11 @@ ja_task_verify_granted_destin_identifier(const lListElem *ep, lList **answer_lis
 {
    bool ret = true;
 
-   DENTER(TOP_LAYER, "ja_task_verify_granted_destin_identifier");
+   DENTER(TOP_LAYER);
 
    if (ep == NULL) {
       answer_list_add_sprintf(answer_list, STATUS_ESYNTAX, ANSWER_QUALITY_ERROR, 
-                              MSG_NULLELEMENTPASSEDTO_S, SGE_FUNC);
+                              MSG_NULLELEMENTPASSEDTO_S, __func__);
       ret = false;
    }
 

@@ -105,7 +105,7 @@ void set_thread_count(int count)
 *******************************************************************************/
 static void *thread_function_1(void *anArg)
 {
-   DENTER(TOP_LAYER, "thread_function");
+   DENTER(TOP_LAYER);
 
    SGE_LOCK(LOCK_GLOBAL, LOCK_READ);
    sleep(3);
@@ -122,8 +122,7 @@ static void *thread_function_1(void *anArg)
    SGE_UNLOCK(LOCK_GLOBAL, LOCK_READ);
    sleep(3);
 
-   DEXIT;
-   return (void *)NULL;
+   DRETURN((void *)NULL);
 } /* thread_function_1 */
 
 /****** test_sge_deadlock/thread_function_2() **********************************
@@ -161,7 +160,7 @@ static void *thread_function_1(void *anArg)
 *******************************************************************************/
 static void *thread_function_2(void *anArg)
 {
-   DENTER(TOP_LAYER, "thread_function");
+   DENTER(TOP_LAYER);
 
    SGE_LOCK(LOCK_MASTER_CONF, LOCK_READ);
    sleep(3);
@@ -178,8 +177,7 @@ static void *thread_function_2(void *anArg)
    SGE_UNLOCK(LOCK_MASTER_CONF, LOCK_READ);
    sleep(3);
 
-   DEXIT;
-   return (void *)NULL;
+   DRETURN((void *)NULL);
 } /* thread_function_2 */
 
 int validate(int thread_count) {

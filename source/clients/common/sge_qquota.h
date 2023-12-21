@@ -41,9 +41,6 @@ extern "C" {
 
 typedef struct report_handler_str report_handler_t;
 
-#define QQUOTA_SUCCESS 0
-#define QQUOTA_ERROR   -1
-
 struct report_handler_str {
    void* ctx;
    int (*report_started)(report_handler_t* handler, lList **alpp);

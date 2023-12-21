@@ -149,7 +149,7 @@ static void *work(void *args)
    int work_num;
    int failed = 0;
 
-   DENTER(TOP_LAYER, "work");
+   DENTER(TOP_LAYER);
 
    work_num = *((int *)args);
   
@@ -191,8 +191,7 @@ static void *work(void *args)
             work_num, loops, failed));
 
    
-   DEXIT;
-   return (void *)NULL;
+   DRETURN((void *)NULL);
 }
 
 int main(int argc, char *argv[])
@@ -264,6 +263,5 @@ int main(int argc, char *argv[])
 
    sge_free(&t);
 
-   DEXIT;
-   return EXIT_SUCCESS;
+   DRETURN(EXIT_SUCCESS);
 }

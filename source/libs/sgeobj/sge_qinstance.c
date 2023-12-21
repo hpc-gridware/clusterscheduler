@@ -240,7 +240,7 @@ qinstance_list_set_tag(lList *this_list, u_long32 tag_value)
 void
 qinstance_increase_qversion(lListElem *this_elem)
 {
-   DENTER(TOP_LAYER, "qinstance_increase_qversion");
+   DENTER(TOP_LAYER);
    lAddUlong(this_elem, QU_version, 1);
    DRETURN_VOID;
 }
@@ -269,7 +269,7 @@ qinstance_check_owner(const lListElem *this_elem, const char *user_name, const l
 {
    bool ret = false;
 
-   DENTER(TOP_LAYER, "qinstance_check_owner");
+   DENTER(TOP_LAYER);
    if (this_elem == NULL) {
       ret = false;
    } else if (user_name == NULL) {
@@ -315,7 +315,7 @@ qinstance_is_pe_referenced(const lListElem *this_elem, const lListElem *pe)
    bool ret = false;
    const lListElem *re_ref_elem;
 
-   DENTER(TOP_LAYER, "qinstance_is_pe_referenced");
+   DENTER(TOP_LAYER);
    for_each(re_ref_elem, lGetList(this_elem, QU_pe_list)) {
       if (pe_is_matching(pe, lGetString(re_ref_elem, ST_name))) {
          ret = true;
@@ -356,7 +356,7 @@ qinstance_is_calendar_referenced(const lListElem *this_elem,
    bool ret = false;
    const char *queue_calendar = NULL;
 
-   DENTER(TOP_LAYER, "qinstance_is_calendar_referenced");
+   DENTER(TOP_LAYER);
    queue_calendar = lGetString(this_elem, QU_calendar);
    if (queue_calendar != NULL) {
       const char *calendar_name = lGetString(calendar, CAL_name);
@@ -394,7 +394,7 @@ qinstance_is_a_pe_referenced(const lListElem *this_elem)
 {
    bool ret = false;
 
-   DENTER(TOP_LAYER, "qinstance_is_a_pe_referenced");
+   DENTER(TOP_LAYER);
    if (lGetNumberOfElem(lGetList(this_elem, QU_pe_list))) {
       ret = true;
    }
@@ -432,7 +432,7 @@ qinstance_is_ckpt_referenced(const lListElem *this_elem, const lListElem *ckpt)
    bool ret = false;
    const lList *ckpt_list = lGetList(this_elem, QU_ckpt_list);
 
-   DENTER(TOP_LAYER, "qinstance_is_ckpt_referenced");
+   DENTER(TOP_LAYER);
    if (lGetElemStr(ckpt_list, ST_name, lGetString(ckpt, CK_name)) != NULL) {
       ret = true;
    }
@@ -465,7 +465,7 @@ qinstance_is_a_ckpt_referenced(const lListElem *this_elem)
 {
    bool ret = false;
 
-   DENTER(TOP_LAYER, "qinstance_is_a_ckpt_referenced");
+   DENTER(TOP_LAYER);
    if (lGetNumberOfElem(lGetList(this_elem, QU_ckpt_list))) {
       ret = true;
    }
@@ -501,7 +501,7 @@ qinstance_is_centry_a_complex_value(const lListElem *this_elem,
 {
    bool ret = false;
 
-   DENTER(TOP_LAYER, "qinstance_is_centry_a_complex_value");
+   DENTER(TOP_LAYER);
    if (this_elem != NULL) {
       const char *name = lGetString(centry, CE_name);
       const lList *centry_list = lGetList(this_elem, QU_consumable_config_list);
@@ -550,7 +550,7 @@ qinstance_list_find_matching(const lList *this_list, lList **answer_list,
 {
    bool ret = true;
 
-   DENTER(QINSTANCE_LAYER, "qinstance_list_find_matching");
+   DENTER(QINSTANCE_LAYER);
 
    if (qref_list == NULL) {
       DRETURN(true);
@@ -601,7 +601,7 @@ qinstance_slots_used(const lListElem *this_elem)
    int ret = 1000000; /* when slots is unknown */ 
    lListElem *slots;
 
-   DENTER(QINSTANCE_LAYER, "qinstance_slots_used");
+   DENTER(QINSTANCE_LAYER);
    
    slots = lGetSubStr(this_elem, RUE_name, SGE_ATTR_SLOTS, QU_resource_utilization);
    if (slots != NULL) {
@@ -642,7 +642,7 @@ qinstance_slots_reserved(const lListElem *this_elem)
    lListElem *slots;
    const lListElem *utilized;
 
-   DENTER(QINSTANCE_LAYER, "qinstance_slots_reserved");
+   DENTER(QINSTANCE_LAYER);
 
    slots = lGetSubStr(this_elem, RUE_name, SGE_ATTR_SLOTS, QU_resource_utilization);
    if (slots != NULL) {
@@ -680,7 +680,7 @@ qinstance_set_slots_used(lListElem *this_elem, int new_slots)
 {
    lListElem *slots;
 
-   DENTER(QINSTANCE_LAYER, "qinstance_set_slots_used");
+   DENTER(QINSTANCE_LAYER);
    slots = lGetSubStr(this_elem, RUE_name, "slots", QU_resource_utilization);
    if (slots != NULL) {
       lSetDouble(slots, RUE_utilized_now, new_slots);
@@ -767,7 +767,7 @@ qinstance_message_add(lListElem *this_elem, u_long32 type, const char *message)
 {
    bool ret = true;
 
-   DENTER(TOP_LAYER, "qinstance_message_add");
+   DENTER(TOP_LAYER);
    object_message_add(this_elem, QU_message_list, type, message);
    DRETURN(ret);
 }
@@ -801,7 +801,7 @@ qinstance_message_trash_all_of_type_X(lListElem *this_elem, u_long32 type)
 {
    bool ret = true;
 
-   DENTER(TOP_LAYER, "qinstance_message_trash_all_of_type_X");
+   DENTER(TOP_LAYER);
    object_message_trash_all_of_type_X(this_elem, QU_message_list, type);
    DRETURN(ret);
 }
@@ -869,7 +869,7 @@ qinstance_validate(lListElem *this_elem, lList **answer_list, const lList *maste
 {
    bool ret = true;
 
-   DENTER(TOP_LAYER, "qinstance_validate");
+   DENTER(TOP_LAYER);
 
    /* QU_full_name isn't spooled, if it is not set, create it */
    if (lGetString(this_elem, QU_full_name) == NULL) {
@@ -949,7 +949,7 @@ qinstance_list_validate(lList *this_list, lList **answer_list, const lList *mast
    bool ret = true;
    lListElem *qinstance;
 
-   DENTER(TOP_LAYER, "qinstance_list_validate");
+   DENTER(TOP_LAYER);
 
    for_each_rw(qinstance, this_list) {
       if (!qinstance_validate(qinstance, answer_list, master_exechost_list, master_centry_list)) {
@@ -1021,7 +1021,7 @@ rc_debit_consumable(lListElem *jep, lListElem *ep, const lList *centry_list,
    const char *name;
    int mods = 0;
 
-   DENTER(TOP_LAYER, "rc_debit_consumable");
+   DENTER(TOP_LAYER);
 
    if (ep == NULL) {
       DRETURN(0);
@@ -1132,7 +1132,7 @@ qinstance_set_conf_slots_used(lListElem *this_elem)
 {
    lListElem *slots;
 
-   DENTER(QINSTANCE_LAYER, "qinstance_set_conf_slots_used");
+   DENTER(QINSTANCE_LAYER);
    slots = lGetSubStr(this_elem, CE_name, "slots", 
                       QU_consumable_config_list);
    if (slots == NULL) {
@@ -1180,11 +1180,11 @@ bool
 qinstance_list_verify_execd_job(const lList *queue_list, lList **answer_list)
 {
 
-   DENTER(TOP_LAYER, "qinstance_list_verify_execd_job");
+   DENTER(TOP_LAYER);
 
    if (queue_list == NULL) {
       answer_list_add_sprintf(answer_list, STATUS_ESYNTAX, ANSWER_QUALITY_ERROR, 
-                              MSG_NULLELEMENTPASSEDTO_S, SGE_FUNC);
+                              MSG_NULLELEMENTPASSEDTO_S, __func__);
       DRETURN(false);
    } else {
       const lListElem *qep;
@@ -1226,11 +1226,11 @@ qinstance_verify(const lListElem *qep, lList **answer_list)
 {
    bool ret = true;
 
-   DENTER(TOP_LAYER, "qinstance_verify");
+   DENTER(TOP_LAYER);
 
    if (qep == NULL) {
       answer_list_add_sprintf(answer_list, STATUS_ESYNTAX, ANSWER_QUALITY_ERROR, 
-                              MSG_NULLELEMENTPASSEDTO_S, SGE_FUNC);
+                              MSG_NULLELEMENTPASSEDTO_S, __func__);
       ret = false;
    }
 

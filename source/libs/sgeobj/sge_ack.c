@@ -42,7 +42,7 @@ int pack_ack(sge_pack_buffer *pb, u_long32 type, u_long32 id, u_long32 id2, cons
    int ret;
    lListElem *ack = lCreateElem(ACK_Type);
 
-   DENTER(TOP_LAYER, "pack_ack");
+   DENTER(TOP_LAYER);
 
    lSetUlong(ack, ACK_type, type);
    lSetUlong(ack, ACK_id, id);
@@ -64,7 +64,7 @@ int sge_send_ack_to_qmaster(sge_gdi_ctx_class_t *ctx, u_long32 type, u_long32 ul
    const char* rhost = ctx->get_master(ctx, false);
    int         id   = 1;
    
-   DENTER(TOP_LAYER, "sge_gdi2_send_ack_to_qmaster");
+   DENTER(TOP_LAYER);
 
    /* send an ack to the qmaster for the events */
    if (init_packbuffer(&pb, 1024, 0) != PACK_SUCCESS) {

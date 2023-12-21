@@ -76,10 +76,9 @@ char *rhost
 ) {
    int ret;
 
-   DENTER(TOP_LAYER, "sge_add_sharetree");
+   DENTER(TOP_LAYER);
    ret = sge_mod_sharetree(ctx, ep, lpp, alpp, ruser, rhost);
-   DEXIT;
-   return ret;
+   DRETURN(ret);
 }
 
 /************************************************************
@@ -100,14 +99,13 @@ int sge_mod_sharetree(sge_gdi_ctx_class_t *ctx,
    const lList *master_user_list = *object_type_get_master_list(SGE_TYPE_USER);
    const lList *master_project_list = *object_type_get_master_list(SGE_TYPE_PROJECT);
 
-   DENTER(TOP_LAYER, "sge_mod_sharetree");
+   DENTER(TOP_LAYER);
 
    /* do some checks */
    if (!ep || !ruser || !rhost) {
-      CRITICAL((SGE_EVENT, MSG_SGETEXT_NULLPTRPASSED_S, SGE_FUNC));
+      CRITICAL((SGE_EVENT, MSG_SGETEXT_NULLPTRPASSED_S, __func__));
       answer_list_add(alpp, SGE_EVENT, STATUS_EUNKNOWN, ANSWER_QUALITY_ERROR);
-      DEXIT;
-      return STATUS_EUNKNOWN;
+      DRETURN(STATUS_EUNKNOWN);
    }
 
    ret = check_sharetree(alpp, ep, master_user_list, master_project_list, NULL, &found);
@@ -150,8 +148,7 @@ int sge_mod_sharetree(sge_gdi_ctx_class_t *ctx,
                         ep, NULL, NULL, true, true)) {
 
       /* answer list gets filled in sge_event_spool() */
-      DEXIT;
-      return ret;
+      DRETURN(ret);
    }
 
    if (adding) {
@@ -164,8 +161,7 @@ int sge_mod_sharetree(sge_gdi_ctx_class_t *ctx,
 
    answer_list_add(alpp, SGE_EVENT, STATUS_OK, ANSWER_QUALITY_INFO);
 
-   DEXIT;
-   return STATUS_OK;
+   DRETURN(STATUS_OK);
 }
 
 /************************************************************
@@ -180,13 +176,12 @@ lList **alpp,
 char *ruser,
 char *rhost 
 ) {
-   DENTER(TOP_LAYER, "sge_del_sharetree");
+   DENTER(TOP_LAYER);
 
    if (!*lpp || !lFirst(*lpp)) {
       ERROR((SGE_EVENT, MSG_SGETEXT_DOESNOTEXIST_S, MSG_OBJ_SHARETREE));
       answer_list_add(alpp, SGE_EVENT, STATUS_EEXIST, ANSWER_QUALITY_ERROR);
-      DEXIT;
-      return STATUS_EEXIST;
+      DRETURN(STATUS_EEXIST);
    }
 
    sge_event_spool(ctx,
@@ -199,8 +194,7 @@ char *rhost
    INFO((SGE_EVENT, MSG_SGETEXT_REMOVEDLIST_SSS, ruser, rhost, MSG_OBJ_SHARETREE));
    answer_list_add(alpp, SGE_EVENT, STATUS_OK, ANSWER_QUALITY_INFO);
 
-   DEXIT;
-   return STATUS_OK;
+   DRETURN(STATUS_OK);
 }
 
 /********************************************************
@@ -234,15 +228,14 @@ lList **found  /* tmp list that contains one entry for each found u/p */
    const char *name = lGetString(node, STN_name);
    lListElem *pep;
 
-   DENTER(TOP_LAYER, "check_sharetree");
+   DENTER(TOP_LAYER);
 
    /* Check for dangling or circular references. */
    if (name == NULL) {
       ERROR((SGE_EVENT, MSG_STREE_NOVALIDNODEREF_U,
              sge_u32c(lGetUlong(node, STN_id))));
       answer_list_add(alpp, SGE_EVENT, STATUS_EUNKNOWN, ANSWER_QUALITY_ERROR);
-      DEXIT;
-      return -1;
+      DRETURN(-1);
    }
    
    if ((children=lGetList(node, STN_children))) {
@@ -256,16 +249,14 @@ lList **found  /* tmp list that contains one entry for each found u/p */
          if (project) {
             ERROR((SGE_EVENT, MSG_STREE_PRJINPTJSUBTREE_SS, name, lGetString(project, PR_name)));
             answer_list_add(alpp, SGE_EVENT, STATUS_EUNKNOWN, ANSWER_QUALITY_ERROR);
-            DEXIT;
-            return -1;
+            DRETURN(-1);
          }
 
          /* check for projects appearing more than once */
          if (lGetElemStr(*found, STN_name, name)) {
             ERROR((SGE_EVENT, MSG_STREE_PRJTWICE_S, name));
             answer_list_add(alpp, SGE_EVENT, STATUS_EUNKNOWN, ANSWER_QUALITY_ERROR);
-            DEXIT;
-            return -1;
+            DRETURN(-1);
          }
 
          /* register that this project was found */
@@ -280,8 +271,7 @@ lList **found  /* tmp list that contains one entry for each found u/p */
       } else if (user_list_locate(user_list, name)) {
             ERROR((SGE_EVENT, MSG_STREE_USERNONLEAF_S, name));
             answer_list_add(alpp, SGE_EVENT, STATUS_EUNKNOWN, ANSWER_QUALITY_ERROR);
-            DEXIT;
-            return -1;
+            DRETURN(-1);
       }
 
       for_each_rw(child, children) {
@@ -297,8 +287,7 @@ lList **found  /* tmp list that contains one entry for each found u/p */
                   lFreeList(found);
                   *found = save_found;
                }
-               DEXIT;
-               return -1;
+               DRETURN(-1);
             }
             if (!strcmp(cn, rn)) {
                ERROR((SGE_EVENT, MSG_SGETEXT_FOUND_UP_TWICE_SS, 
@@ -309,8 +298,7 @@ lList **found  /* tmp list that contains one entry for each found u/p */
                   lFreeList(found);
                   *found = save_found;
                }
-               DEXIT;
-               return -1;
+               DRETURN(-1);
             }  
          }
 
@@ -321,8 +309,7 @@ lList **found  /* tmp list that contains one entry for each found u/p */
                lFreeList(found);
                *found = save_found;
             }
-            DEXIT;
-            return -1;
+            DRETURN(-1);
          }
       }
 
@@ -347,8 +334,7 @@ lList **found  /* tmp list that contains one entry for each found u/p */
          if (prj_list_locate(project_list, name)) {
             ERROR((SGE_EVENT, MSG_STREE_PRJINPTJSUBTREE_SS, name, lGetString(project, PR_name)));
             answer_list_add(alpp, SGE_EVENT, STATUS_EUNKNOWN, ANSWER_QUALITY_ERROR);
-            DEXIT;
-            return -1;
+            DRETURN(-1);
          }
 
          /* leaf nodes of project sub-trees must be users */
@@ -356,16 +342,14 @@ lList **found  /* tmp list that contains one entry for each found u/p */
              strcmp(name, "default")) {
             ERROR((SGE_EVENT, MSG_SGETEXT_UNKNOWN_SHARE_TREE_REF_TO_SS, MSG_OBJ_USER, name));
             answer_list_add(alpp, SGE_EVENT, STATUS_EUNKNOWN, ANSWER_QUALITY_ERROR);
-            DEXIT;
-            return -1;
+            DRETURN(-1);
          }
 
          /* make sure this user is in the project sub-tree once */
          if (lGetElemStr(*found, STN_name, name)) {
             ERROR((SGE_EVENT, MSG_STREE_USERTWICEINPRJSUBTREE_SS, name, lGetString(project, PR_name)));
             answer_list_add(alpp, SGE_EVENT, STATUS_EUNKNOWN, ANSWER_QUALITY_ERROR);
-            DEXIT;
-            return -1;
+            DRETURN(-1);
          }
       } else {
          const char *objname = MSG_OBJ_USER;
@@ -380,8 +364,7 @@ lList **found  /* tmp list that contains one entry for each found u/p */
                ERROR((SGE_EVENT, MSG_SGETEXT_UNKNOWN_SHARE_TREE_REF_TO_SS, 
                         MSG_OBJ_USERPRJ, name));
                answer_list_add(alpp, SGE_EVENT, STATUS_EUNKNOWN, ANSWER_QUALITY_ERROR);
-               DEXIT;
-               return -1;
+               DRETURN(-1);
             }
          }
 
@@ -390,8 +373,7 @@ lList **found  /* tmp list that contains one entry for each found u/p */
          if (lGetElemStr(*found, STN_name, name)) {
             ERROR((SGE_EVENT, MSG_STREE_USERPRJTWICE_SS, objname, name));
             answer_list_add(alpp, SGE_EVENT, STATUS_EUNKNOWN, ANSWER_QUALITY_ERROR);
-            DEXIT;
-            return -1;
+            DRETURN(-1);
          }
 
       }
@@ -400,8 +382,7 @@ lList **found  /* tmp list that contains one entry for each found u/p */
       lAddElemStr(found, STN_name, name, STN_Type);
    }
    
-   DEXIT;
-   return 0;
+   DRETURN(0);
 }
  
 /* ----------------------------------------------
@@ -427,7 +408,7 @@ int update_sharetree(lList *dst, const lList *src)
 #endif
    const char *s_name;
 
-   DENTER(TOP_LAYER, "update_sharetree");
+   DENTER(TOP_LAYER);
 
    dnode = lFirstRW(dst);
    snode = lFirst(src);
@@ -491,32 +472,27 @@ int recurse
    lListElem *tmp;
    lListElem *node;
   
-   DENTER(TOP_LAYER, "getNode");
+   DENTER(TOP_LAYER);
 
    if (!share_tree || !lFirst(share_tree)) {
-      DEXIT;
-      return NULL;
+      DRETURN(NULL);
    }
    
 #ifdef notdef
    if ( !recurse && lGetUlong(lFirst(share_tree), STN_type)!=node_type ) {
-      DEXIT;
-      return NULL;
+      DRETURN(NULL);
    } 
 #endif
 
    for_each_rw (node, share_tree) {
       if (!strcmp(name, lGetString(node, STN_name))) {
-         DEXIT;
-         return node;
+         DRETURN(node);
       }
       if ((tmp=getNode(lGetList(node, STN_children), name, node_type, 1))) {
-         DEXIT;
-         return tmp;
+         DRETURN(tmp);
       }
    }
 
-   DEXIT;
-   return NULL;
+   DRETURN(NULL);
 }
 

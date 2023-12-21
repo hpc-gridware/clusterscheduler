@@ -236,7 +236,7 @@ long *address
 ) {
    int ret = 0;
 
-   DENTER(TOP_LAYER, "sge_get_kernel_address");
+   DENTER(TOP_LAYER);
 
 #if defined(IRIX)
    if (!strcmp(KERNEL_AVG_NAME, name)) {
@@ -273,8 +273,7 @@ long *address
       }
    }
 #endif
-   DEXIT;
-   return ret;
+   DRETURN(ret);
 }    
 
 
@@ -285,7 +284,7 @@ kernel_fd_type *fd
    char prefix[256] = "my_error:";
 #endif   
 
-   DENTER(TOP_LAYER, "sge_get_kernel_fd");
+   DENTER(TOP_LAYER);
 
    if (!kernel_initialized) {
 
@@ -304,8 +303,7 @@ kernel_fd_type *fd
       }
    } 
    *fd = kernel_fd; 
-   DEXIT;
-   return kernel_initialized;
+   DRETURN(kernel_initialized);
 }
 
 static int getkval(
@@ -528,8 +526,7 @@ double get_cpu_load(void) {
 
    /* use kstat to update all processor information */
    if ((cpus_found = kupdate(avenrun)) < 0 ) {
-      DEXIT;
-      return cpu_load;
+      DRETURN(cpu_load);
    }
    for (i=0; i<CPUSTATES; i++)
       cpu_time[i] = 0;
@@ -564,8 +561,7 @@ double get_cpu_load(void) {
 #endif
 #endif
 
-   DEXIT;
-   return cpu_load;
+   DRETURN(cpu_load);
 }
 #elif defined(LINUX)
 
@@ -714,7 +710,7 @@ static long percentages_new(int cnt, double *out, long *new_value, long *old_val
    int i;
    long total_change = 0;
 
-   DENTER(CULL_LAYER, "percentages_new");
+   DENTER(CULL_LAYER);
 
    /* 
     * In the first call of this function, 
@@ -1177,7 +1173,7 @@ int sge_getcpuload(double *cpu_load)
    double load;
    int ret;
 
-   DENTER(TOP_LAYER, "sge_getcpuload");
+   DENTER(TOP_LAYER);
 
    if ((load = get_cpu_load()) < 0.0) {
       ret = -1;
@@ -1186,8 +1182,7 @@ int sge_getcpuload(double *cpu_load)
       ret = 0;
    }
 
-   DEXIT;
-   return ret;
+   DRETURN(ret);
 }
 
 static long percentages(int cnt, double *out, long *new_value, long *old_value, long *diffs)
@@ -1198,7 +1193,7 @@ static long percentages(int cnt, double *out, long *new_value, long *old_value, 
    long *dp;
    long half_total;
 
-   DENTER(CULL_LAYER, "percentages");
+   DENTER(CULL_LAYER);
 
    /* initialization */
    total_change = 0;
@@ -1228,8 +1223,7 @@ static long percentages(int cnt, double *out, long *new_value, long *old_value, 
       out++;
    }
 
-   DEXIT;
-   return total_change;
+   DRETURN(total_change);
 }       
 
 #endif

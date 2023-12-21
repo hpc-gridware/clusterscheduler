@@ -92,12 +92,12 @@ static int destroy_xml_report_handler(report_handler_t** handler, lList **alpp);
 static int xml_report_started(report_handler_t* handler, lList **alpp) {
    printf("<?xml version='1.0'?>\n");
    printf("<qquota_result xmlns=\"https://github.com/gridengine/gridengine/raw/master/source/dist/util/resources/schemas/qquota/qquota.xsd\">\n");
-   return QQUOTA_SUCCESS;
+   return 0;
 }
 
 static int xml_report_finished(report_handler_t* handler, lList **alpp) {
    printf("</qquota_result>\n");
-   return QQUOTA_SUCCESS;
+   return 0;
 }
 
 static report_handler_t* create_xml_report_handler(lList **alpp) {
@@ -134,7 +134,7 @@ static int destroy_xml_report_handler(report_handler_t** handler, lList **alpp) 
       sge_free(handler);
       *handler = NULL;
    }
-   return QQUOTA_SUCCESS;
+   return 0;
 }
 
 static int xml_report_limit_rule_begin(report_handler_t* handler, const char* limit_name, lList **alpp) {
@@ -142,7 +142,7 @@ static int xml_report_limit_rule_begin(report_handler_t* handler, const char* li
   escape_string(limit_name, (dstring*)handler->ctx);
   printf(" <qquota_rule name='%s'>\n", sge_dstring_get_string((dstring*)handler->ctx));
   sge_dstring_clear((dstring*)handler->ctx);
-  return QQUOTA_SUCCESS;
+  return 0;
 }
 
 static int xml_report_limit_string_value(report_handler_t* handler, const char *name, const char *value, bool exclude, lList **alpp) {
@@ -167,12 +167,12 @@ static int xml_report_limit_string_value(report_handler_t* handler, const char *
 
    sge_dstring_clear((dstring*)handler->ctx);
 
-   return QQUOTA_SUCCESS;
+   return 0;
 }
 
 static int xml_report_limit_rule_finished(report_handler_t* handler, const char *limit_name, lList **alpp) {
   printf(" </qquota_rule>\n");   
-   return QQUOTA_SUCCESS;
+   return 0;
 }
 
 static int xml_report_resource_value(report_handler_t* handler, const char* resource, const char* limit, const char *value, lList **alpp) {
@@ -191,7 +191,7 @@ static int xml_report_resource_value(report_handler_t* handler, const char* reso
    printf("/>\n");
    
    sge_dstring_clear((dstring*)handler->ctx);
-   return QQUOTA_SUCCESS;
+   return 0;
 }
 
 static bool sge_parse_from_file_qquota(const char *file, lList **ppcmdline, lList **alpp);
@@ -297,8 +297,7 @@ int main(int argc, char **argv)
 
    sge_prof_cleanup();
    SGE_EXIT((void**)&ctx, 0); /* 0 means ok - others are errors */
-   DEXIT;
-   return 0;
+   DRETURN(0);
 }
 
 /****** qquota/qquota_usage() **************************************************
@@ -330,7 +329,7 @@ qquota_usage(FILE *fp)
    dstring ds;
    char buffer[256];
 
-   DENTER(TOP_LAYER, "qquota_usage");
+   DENTER(TOP_LAYER);
 
    if (fp == NULL) {
       DRETURN(false);
@@ -394,7 +393,7 @@ sge_parse_from_file_qquota(const char *file, lList **ppcmdline, lList **alpp)
 {
    bool ret = true;
 
-   DENTER(TOP_LAYER, "sge_parse_from_file_qquota");
+   DENTER(TOP_LAYER);
    if (ppcmdline == NULL) {
       ret = false;
    } else {
@@ -454,7 +453,7 @@ static bool sge_parse_cmdline_qquota(char **argv, lList **ppcmdline, lList **alp
 {
    char **sp;
    char **rp;
-   DENTER(TOP_LAYER, "sge_parse_cmdline_qquota");
+   DENTER(TOP_LAYER);
 
    if (argv == NULL) {
       answer_list_add_sprintf(alpp, STATUS_ESEMANTIC, ANSWER_QUALITY_ERROR, SFNMAX, MSG_NULLPOINTER);
@@ -544,7 +543,7 @@ sge_parse_qquota(lList **ppcmdline, lList **host_list, lList **resource_list,
    char *argstr = NULL;
    bool ret = true;
  
-   DENTER(TOP_LAYER, "sge_parse_qquota");
+   DENTER(TOP_LAYER);
  
    /* Loop over all options. Only valid options can be in the
       ppcmdline list. 
@@ -552,7 +551,6 @@ sge_parse_qquota(lList **ppcmdline, lList **host_list, lList **resource_list,
    while (lGetNumberOfElem(*ppcmdline)) {
       if (parse_flag(ppcmdline, "-help",  alpp, &helpflag)) {
          qquota_usage(stdout);
-         DEXIT;
          SGE_EXIT(NULL, 0);
          break;
       }

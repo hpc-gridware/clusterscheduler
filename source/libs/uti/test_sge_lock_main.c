@@ -91,7 +91,7 @@ int main(int argc, char *argv[])
       
       before = sge_get_gmt();
 
-      printf("\n%s Create %d threads\n\n", SGE_FUNC, i);
+      printf("\n%s Create %d threads\n\n", __func__, i);
 
       for(j = 0; j < i; j++) {
          pthread_create(&(t[j]), NULL, get_thrd_func(), get_thrd_func_arg());
@@ -111,6 +111,5 @@ int main(int argc, char *argv[])
    }
    sge_free(&t);
 
-   DEXIT;
-   return ret;
+   DRETURN(ret);
 } /* main */

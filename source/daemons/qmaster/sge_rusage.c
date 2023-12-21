@@ -385,7 +385,7 @@ sge_write_rusage(dstring *buffer,
    const lList *master_pe_list = *object_type_get_master_list(SGE_TYPE_PE);
    const lList *master_ar_list = *object_type_get_master_list(SGE_TYPE_AR);
 
-   DENTER(TOP_LAYER, "sge_write_rusage");
+   DENTER(TOP_LAYER);
 
    /* invalid input data */
    if (buffer == NULL) {

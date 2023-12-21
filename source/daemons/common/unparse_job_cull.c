@@ -87,7 +87,7 @@ lList *cull_unparse_job_parameter(sge_gdi_ctx_class_t *ctx, lList **pcmdline, lL
    const char *username = ctx->get_username(ctx);
    const char *qualified_hostname = ctx->get_qualified_hostname(ctx);
 
-   DENTER(TOP_LAYER, "cull_unparse_job_parameter");
+   DENTER(TOP_LAYER);
 
    /*
    ** -a
@@ -99,16 +99,14 @@ lList *cull_unparse_job_parameter(sge_gdi_ctx_class_t *ctx, lList **pcmdline, lL
    ** -A
    */
    if (sge_unparse_account_string(job, pcmdline, &answer) != 0) {
-      DEXIT;
-      return answer;
+      DRETURN(answer);
    }
 
    /*
    ** -c
    */
    if (sge_unparse_checkpoint_option(job, pcmdline, &answer) != 0) {
-      DEXIT;
-      return answer;
+      DRETURN(answer);
    }
   
    /*
@@ -116,8 +114,7 @@ lList *cull_unparse_job_parameter(sge_gdi_ctx_class_t *ctx, lList **pcmdline, lL
     */
    if (sge_unparse_string_option(job, JB_checkpoint_name, "-ckpt", 
             pcmdline, &answer) != 0) {
-      DEXIT;
-      return answer;
+      DRETURN(answer);
    }
 
 
@@ -133,8 +130,7 @@ lList *cull_unparse_job_parameter(sge_gdi_ctx_class_t *ctx, lList **pcmdline, lL
     */
    if (sge_unparse_string_option(job, JB_project, "-P",
             pcmdline, &answer) != 0) {
-      DEXIT;
-      return answer;
+      DRETURN(answer);
    }
 
 #if 0
@@ -143,8 +139,7 @@ lList *cull_unparse_job_parameter(sge_gdi_ctx_class_t *ctx, lList **pcmdline, lL
    */
    if (sge_unparse_string_option(job, JB_directive_prefix, "-C", 
             pcmdline, &answer) != 0) {
-      DEXIT;
-      return answer;
+      DRETURN(answer);
    }
 #endif   
 
@@ -153,8 +148,7 @@ lList *cull_unparse_job_parameter(sge_gdi_ctx_class_t *ctx, lList **pcmdline, lL
    */
    if (sge_unparse_path_list(job, JB_stderr_path_list, "-e", pcmdline, 
                      &answer) != 0) {
-      DEXIT;
-      return answer;
+      DRETURN(answer);
    }
 
    /*
@@ -205,8 +199,7 @@ lList *cull_unparse_job_parameter(sge_gdi_ctx_class_t *ctx, lList **pcmdline, lL
    */
    if (sge_unparse_path_list(job, JB_stdin_path_list, "-i", pcmdline, 
                      &answer) != 0) {
-      DEXIT;
-      return answer;
+      DRETURN(answer);
    }
 
    /*
@@ -254,13 +247,11 @@ lList *cull_unparse_job_parameter(sge_gdi_ctx_class_t *ctx, lList **pcmdline, lL
    */
    if (sge_unparse_resource_list(job, JB_hard_resource_list,
             pcmdline, &answer) != 0) {
-      DEXIT;
-      return answer;
+      DRETURN(answer);
    }
    if (sge_unparse_resource_list(job, JB_soft_resource_list,
             pcmdline, &answer) != 0) {
-      DEXIT;
-      return answer;
+      DRETURN(answer);
    }
 
 
@@ -348,8 +339,7 @@ lList *cull_unparse_job_parameter(sge_gdi_ctx_class_t *ctx, lList **pcmdline, lL
    */
    if (sge_unparse_path_list(job, JB_stdout_path_list, "-o", pcmdline, 
                      &answer) != 0) {
-      DEXIT;
-      return answer;
+      DRETURN(answer);
    }
 
    /*
@@ -362,14 +352,12 @@ lList *cull_unparse_job_parameter(sge_gdi_ctx_class_t *ctx, lList **pcmdline, lL
       if (prty > 1024) {
          answer_list_add_sprintf(&answer, STATUS_ESYNTAX, ANSWER_QUALITY_ERROR,
                                  MSG_PROC_INVALIDPROIRITYMUSTBELESSTHAN1025);
-         DEXIT;
-         return answer;
+         DRETURN(answer);
       }
       if (prty < -1023) {
          answer_list_add_sprintf(&answer, STATUS_ESYNTAX, ANSWER_QUALITY_ERROR,
                                  MSG_PROC_INVALIDPRIORITYMUSTBEGREATERTHANMINUS1024);
-         DEXIT;
-         return answer;
+         DRETURN(answer);
       }
       sprintf(str, "%d", prty);
       ep_opt = sge_add_arg(pcmdline, p_OPT, lIntT, "-p", str);
@@ -380,8 +368,7 @@ lList *cull_unparse_job_parameter(sge_gdi_ctx_class_t *ctx, lList **pcmdline, lL
    ** -pe
    */
    if (sge_unparse_pe(job, pcmdline, &answer) != 0) {
-      DEXIT;
-      return answer;
+      DRETURN(answer);
    }
 
 
@@ -452,8 +439,7 @@ lList *cull_unparse_job_parameter(sge_gdi_ctx_class_t *ctx, lList **pcmdline, lL
 #if 1   
    if (sge_unparse_path_list(job, JB_shell_list, "-S", pcmdline, 
                      &answer) != 0) {
-      DEXIT;
-      return answer;
+      DRETURN(answer);
    }
 #else
    if ((lp = lGetList(job, JB_shell_list))) {
@@ -535,8 +521,7 @@ lList *cull_unparse_job_parameter(sge_gdi_ctx_class_t *ctx, lList **pcmdline, lL
 
 
 
-   DEXIT;
-   return answer;
+   DRETURN(answer);
 }
 
 
@@ -565,7 +550,7 @@ u_long32 mail_opt
    static char mail_str[5 + 1];
    char *pc;
 
-   DENTER(TOP_LAYER, "sge_unparse_mail_options");
+   DENTER(TOP_LAYER);
 
    memset(mail_str, 0, sizeof(mail_str));
    pc = mail_str;
@@ -586,12 +571,10 @@ u_long32 mail_opt
    }
    
    if  (!*mail_str) {
-      DEXIT;
-      return NULL;
+      DRETURN(NULL);
    }
 
-   DEXIT;
-   return (mail_str);
+   DRETURN((mail_str));
 }
 
 /*-------------------------------------------------------------------------*/
@@ -603,7 +586,7 @@ lList **alpp
    const char *cp;
    lListElem *ep_opt;
 
-   DENTER(TOP_LAYER, "sge_unparse_account_string");
+   DENTER(TOP_LAYER);
    
    if ((cp = lGetString(job, JB_account))) {
       if (strcmp(cp, DEFAULT_ACCOUNT)) {
@@ -611,8 +594,7 @@ lList **alpp
          lSetString(ep_opt, SPA_argval_lStringT, cp);
       }
    }
-   DEXIT;
-   return 0;
+   DRETURN(0);
 }
 
 
@@ -625,7 +607,7 @@ static int sge_unparse_checkpoint_option(lListElem *job, lList **pcmdline, lList
    u_long32 ul;
    char str[256];
 
-   DENTER(TOP_LAYER, "sge_unparse_checkpoint_option");
+   DENTER(TOP_LAYER);
 
    if ((i = lGetUlong(job, JB_checkpoint_attr))) {
       if ((cp = sge_unparse_checkpoint_attr(i, str))) {
@@ -660,14 +642,13 @@ lList **alpp
    lListElem *ep_opt = NULL;
    const char *cp;
 
-   DENTER(TOP_LAYER, "sge_unparse_string_option");
+   DENTER(TOP_LAYER);
    
    if ((cp = lGetString(job, nm))) {
       ep_opt = sge_add_arg(pcmdline, 0, lStringT, option, cp);
       lSetString(ep_opt, SPA_argval_lStringT, cp);
    }
-   DEXIT;
-   return 0;
+   DRETURN(0);
 }
 
 
@@ -678,7 +659,7 @@ static int sge_unparse_resource_list(lListElem *job, int nm, lList **pcmdline, l
    int ret = 0;
    char str[MAX_STRING_SIZE];
 
-   DENTER(TOP_LAYER, "sge_unparse_resource_list");
+   DENTER(TOP_LAYER);
 
    if ((lp = lGetListRW(job, nm))) {
       lListElem *ep_opt;
@@ -713,8 +694,7 @@ static int sge_unparse_resource_list(lListElem *job, int nm, lList **pcmdline, l
       else
          lSetInt(ep_opt, SPA_argval_lIntT, 2); /* means soft */
    }
-   DEXIT;
-   return ret;
+   DRETURN(ret);
 }
 
 /*-------------------------------------------------------------------------*/
@@ -729,7 +709,7 @@ lList **alpp
    dstring string_buffer = DSTRING_INIT;
    int ret = 0;
 
-   DENTER(TOP_LAYER, "sge_unparse_pe");
+   DENTER(TOP_LAYER);
 
    if ((cp = lGetString(job, JB_pe))) {
       sge_dstring_append(&string_buffer, cp);
@@ -739,8 +719,7 @@ lList **alpp
          answer_list_add_sprintf(alpp, STATUS_ESYNTAX, ANSWER_QUALITY_ERROR,
                                  MSG_JOB_JOBHASPEWITHNORANGES);
          sge_dstring_free(&string_buffer);
-         DEXIT;
-         return -1;
+         DRETURN(-1);
       }
       {
          dstring range_string = DSTRING_INIT;
@@ -754,8 +733,7 @@ lList **alpp
          answer_list_add_sprintf(alpp, STATUS_ESYNTAX, ANSWER_QUALITY_ERROR,
                                  MSG_LIST_ERRORFORMATINGRANGESINPE);
          sge_dstring_free(&string_buffer);
-         DEXIT;
-         return ret;
+         DRETURN(ret);
       }
       ep_opt = sge_add_arg(pcmdline, pe_OPT, lStringT, "-pe", 
                            sge_dstring_get_string(&string_buffer));
@@ -763,8 +741,7 @@ lList **alpp
       lSetList(ep_opt, SPA_argval_lListT, lCopyList("pe ranges", lp));
    }
    sge_dstring_free(&string_buffer);
-   DEXIT;
-   return ret;
+   DRETURN(ret);
 }
 
 /*-------------------------------------------------------------------------*/
@@ -775,7 +752,7 @@ static int sge_unparse_path_list(lListElem *job, int nm, char *option, lList **p
    char str[MAX_STRING_SIZE];
    lListElem *ep_opt;
 
-   DENTER(TOP_LAYER, "sge_unparse_path_list");
+   DENTER(TOP_LAYER);
 
    if ((lp = lGetList(job, nm))) {
       int fields[] = { PN_host, PN_path, 0 };
@@ -791,7 +768,6 @@ static int sge_unparse_path_list(lListElem *job, int nm, char *option, lList **p
       ep_opt = sge_add_arg(pcmdline, e_OPT, lListT, option, str);
       lSetList(ep_opt, SPA_argval_lListT, lCopyList(option, lp));
    }
-   DEXIT;
-   return ret;
+   DRETURN(ret);
 }
 

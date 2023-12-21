@@ -218,7 +218,7 @@ attr_create(lList **answer_list, const char *href, void *value,
 {
    lListElem *ret = NULL;
 
-   DENTER(HOSTATTR_LAYER, "attr_create");
+   DENTER(HOSTATTR_LAYER);
    if (href != NULL) {
       lListElem *new_attr = lCreateElem(descriptor);
 
@@ -234,12 +234,11 @@ attr_create(lList **answer_list, const char *href, void *value,
                          STATUS_ERROR1, ANSWER_QUALITY_ERROR);
       }
    } else {
-      SGE_ADD_MSG_ID(sprintf(SGE_EVENT, MSG_INAVLID_PARAMETER_IN_S, SGE_FUNC));
+      SGE_ADD_MSG_ID(sprintf(SGE_EVENT, MSG_INAVLID_PARAMETER_IN_S, __func__));
       answer_list_add(answer_list, SGE_EVENT, 
                       STATUS_ERROR1, ANSWER_QUALITY_ERROR);
    }
-   DEXIT;
-   return ret;
+   DRETURN(ret);
 }
 
 /****** sgeobj/attr/attr_list_add() *******************************************
@@ -303,7 +302,7 @@ attr_list_add(lList **this_list, lList **answer_list, lListElem **attr,
 {
    bool ret = false;
 
-   DENTER(HOSTATTR_LAYER, "attr_list_add");
+   DENTER(HOSTATTR_LAYER);
 
    if (this_list != NULL && attr != NULL && *attr != NULL) {
       lListElem *attr_elem = NULL; 
@@ -504,7 +503,7 @@ attr_list_find_value(const lList *this_list, lList **answer_list,
 {
    bool ret = false;
 
-   DENTER(HOSTATTR_LAYER, "attr_list_find_value");
+   DENTER(HOSTATTR_LAYER);
 
    if (this_list != NULL && hostname != NULL) {
       const lListElem *href = NULL;
@@ -589,8 +588,7 @@ attr_list_find_value(const lList *this_list, lList **answer_list,
          DTRACE;
       }
    }
-   DEXIT;
-   return ret;
+   DRETURN(ret);
 }
 
 /*
@@ -606,7 +604,7 @@ attr_list_find_value_href(const lList *this_list, lList **answer_list,
 {
    bool ret = false;
 
-   DENTER(HOSTATTR_LAYER, "attr_list_find_value");
+   DENTER(HOSTATTR_LAYER);
 
    if (this_list != NULL && hostname != NULL) {
       lListElem *href = NULL;
@@ -660,7 +658,7 @@ attr_list_append_to_dstring(const lList *this_list, dstring *string,
    const lListElem *attr = NULL;
    dstring host_string = DSTRING_INIT;
 
-   DENTER(HOSTATTR_LAYER, "attr_list_append_to_dstring");
+   DENTER(HOSTATTR_LAYER);
 
    if ((attr = attr_list_locate(this_list, HOSTREF_DEFAULT, href_nm)) != NULL) {
       found_default = true;
@@ -724,7 +722,7 @@ attr_list_parse_from_string(lList **this_list, lList **answer_list,
                             int value_nm, const lList *master_hgroup_list)
 {
    bool ret = true;
-   DENTER(TOP_LAYER, "attr_list_parse_from_string");
+   DENTER(TOP_LAYER);
   
    if (this_list != NULL && string != NULL) { 
       struct saved_vars_s *strtok_context = NULL;
@@ -901,14 +899,13 @@ attr_list_parse_from_string(lList **this_list, lList **answer_list,
       sge_free_saved_vars(strtok_context);
       strtok_context = NULL;
    } else {
-      SGE_ADD_MSG_ID(sprintf(SGE_EVENT, MSG_INAVLID_PARAMETER_IN_S, SGE_FUNC));
+      SGE_ADD_MSG_ID(sprintf(SGE_EVENT, MSG_INAVLID_PARAMETER_IN_S, __func__));
       answer_list_add(answer_list, SGE_EVENT, 
                       STATUS_ERROR1, ANSWER_QUALITY_ERROR);
       ret = false;
    } 
 
-   DEXIT;
-   return ret;
+   DRETURN(ret);
 }
 
 /*
@@ -919,12 +916,11 @@ attr_list_locate(const lList *this_list, const char *host_or_group, int href_nm)
 {
    lListElem *ret = NULL;
 
-   DENTER(HOSTATTR_LAYER, "attr_list_locate");
+   DENTER(HOSTATTR_LAYER);
    if (this_list != NULL && host_or_group != NULL) {
       ret = lGetElemHostRW(this_list, href_nm, host_or_group);
    }
-   DEXIT;
-   return ret; 
+   DRETURN(ret); 
 }
 
 TEMPLATE_ATTR_IMPL(str_attr, const char *, const char *, ASTR_Type, ASTR_href, ASTR_value) 

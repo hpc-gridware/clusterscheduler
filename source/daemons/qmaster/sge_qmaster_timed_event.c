@@ -53,7 +53,7 @@
 
 #define EVENT_LAYER CULL_LAYER
 
-#define EVENT_FRMT(x) SGE_FUNC, x->type, x->when, x->mode, x->str_key?x->str_key:MSG_SMALLNULL
+#define EVENT_FRMT(x) __func__, x->type, x->when, x->mode, x->str_key?x->str_key:MSG_SMALLNULL
 
 event_control_t Event_Control = {
    PTHREAD_MUTEX_INITIALIZER, 
@@ -119,10 +119,10 @@ te_delete_all_or_one_time_event(te_type_t aType, u_long32 aKey1, u_long32 aKey2,
    int res, n = 0;
    lCondition *cond = NULL;
 
-   DENTER(EVENT_LAYER, "te_delete_event");
+   DENTER(EVENT_LAYER);
 
 
-   DPRINTF(("%s: (t:"sge_u32" u1:"sge_u32" u2:"sge_u32" s:%s)\n", SGE_FUNC, aType, aKey1, aKey2, strKey?strKey:MSG_SMALLNULL));
+   DPRINTF(("%s: (t:"sge_u32" u1:"sge_u32" u2:"sge_u32" s:%s)\n", __func__, aType, aKey1, aKey2, strKey?strKey:MSG_SMALLNULL));
 
    if (ignore_keys) {
       cond = lWhere("%T(%I != %u || %I != %u)", TE_Type, TE_type, aType, TE_mode, ONE_TIME_EVENT);
@@ -137,27 +137,26 @@ te_delete_all_or_one_time_event(te_type_t aType, u_long32 aKey1, u_long32 aKey2,
       }
    }
 
-   sge_mutex_lock("event_control_mutex", SGE_FUNC, __LINE__, &Event_Control.mutex);
+   sge_mutex_lock("event_control_mutex", __func__, __LINE__, &Event_Control.mutex);
 
    n = lGetNumberOfElem(Event_Control.list);
 
    if (0 == n)
    {
-      DPRINTF(("%s: event list empty!\n", SGE_FUNC));
+      DPRINTF(("%s: event list empty!\n", __func__));
 
-      sge_mutex_unlock("event_control_mutex", SGE_FUNC, __LINE__, &Event_Control.mutex);
+      sge_mutex_unlock("event_control_mutex", __func__, __LINE__, &Event_Control.mutex);
    
       lFreeWhere(&cond);
    
-      DEXIT;
-      return 0;  
+      DRETURN(0);  
    }
 
    lSplit(&Event_Control.list, NULL, NULL, cond);
 
    if (NULL == Event_Control.list)
    {
-      DPRINTF(("%s: event list has been freed --> recreate \n", SGE_FUNC));
+      DPRINTF(("%s: event list has been freed --> recreate \n", __func__));
 
       Event_Control.list = lCreateList("timed event list", TE_Type);
       res = n; /* all elements have been deleted */
@@ -171,15 +170,14 @@ te_delete_all_or_one_time_event(te_type_t aType, u_long32 aKey1, u_long32 aKey2,
 
       pthread_cond_signal(&Event_Control.cond_var);
 
-      DPRINTF(("%s: did delete %d event!\n", SGE_FUNC, res));
+      DPRINTF(("%s: did delete %d event!\n", __func__, res));
    }
 
-   sge_mutex_unlock("event_control_mutex", SGE_FUNC, __LINE__, &Event_Control.mutex);
+   sge_mutex_unlock("event_control_mutex", __func__, __LINE__, &Event_Control.mutex);
 
    lFreeWhere(&cond);
 
-   DEXIT;
-   return res;
+   DRETURN(res);
 } 
 
 /****** sge_qmaster_timed_event/te_wait_empty() ***********************
@@ -199,15 +197,15 @@ te_delete_all_or_one_time_event(te_type_t aType, u_long32 aKey1, u_long32 aKey2,
 void te_wait_empty(void) 
 {
 
-   DENTER(EVENT_LAYER, "te_wait_empty");
+   DENTER(EVENT_LAYER);
    
    while (lGetNumberOfElem((const lList*)Event_Control.list) == 0) {
-         DPRINTF(("%s: event list empty --> will wait\n", SGE_FUNC));
+         DPRINTF(("%s: event list empty --> will wait\n", __func__));
          Event_Control.next = 0;
          pthread_cond_wait(&Event_Control.cond_var, &Event_Control.mutex);
    }
 
-   DEXIT;
+   DRETURN_VOID;
 }
 
 /****** sge_qmaster_timed_event/te_wait_next() ************************
@@ -231,7 +229,7 @@ void te_wait_empty(void)
 void te_wait_next(te_event_t te, time_t now) 
 {
    struct timespec ts;
-   DENTER(EVENT_LAYER, "te_wait_next");
+   DENTER(EVENT_LAYER);
 
    ts.tv_sec = te->when;
    ts.tv_nsec = 0;
@@ -241,13 +239,13 @@ void te_wait_next(te_event_t te, time_t now)
       int res = 0;
 
       DPRINTF(("%s: time:"sge_u32" next:"sge_u32" --> will wait\n", 
-               SGE_FUNC, now, Event_Control.next));
+               __func__, now, Event_Control.next));
 
       res = pthread_cond_timedwait(&Event_Control.cond_var, &Event_Control.mutex, &ts);
       if (ETIMEDOUT == res) { break; }
    }
 
-DEXIT;
+   DRETURN_VOID;
 }
 
 /****** qmaster/sge_qmaster_timed_event/te_register_event_handler() ************
@@ -278,11 +276,11 @@ DEXIT;
 *******************************************************************************/
 void te_register_event_handler(te_handler_t aHandler, te_type_t aType)
 {
-   DENTER(EVENT_LAYER, "te_add_event_handler");
+   DENTER(EVENT_LAYER);
 
    SGE_ASSERT(aHandler != NULL);
 
-   sge_mutex_lock("handler_table_mutex", SGE_FUNC, __LINE__, &Handler_Tbl.mutex);
+   sge_mutex_lock("handler_table_mutex", __func__, __LINE__, &Handler_Tbl.mutex);
 
    if (Handler_Tbl.num >= Handler_Tbl.max) /* grow table */
    {
@@ -291,19 +289,18 @@ void te_register_event_handler(te_handler_t aHandler, te_type_t aType)
       Handler_Tbl.list = (struct tbl_elem *)sge_realloc((char*)Handler_Tbl.list, sz, 1);
       Handler_Tbl.max *= TBL_GROW_FACTOR;
 
-      DPRINTF(("%s: grow handler table to %d elements\n", SGE_FUNC, Handler_Tbl.max));
+      DPRINTF(("%s: grow handler table to %d elements\n", __func__, Handler_Tbl.max));
    }
 
    Handler_Tbl.list[Handler_Tbl.num].type    = aType;
    Handler_Tbl.list[Handler_Tbl.num].handler = aHandler;
    Handler_Tbl.num++;
 
-   DPRINTF(("%s: handler #%d for event type %d\n", SGE_FUNC, (Handler_Tbl.num - 1), aType));
+   DPRINTF(("%s: handler #%d for event type %d\n", __func__, (Handler_Tbl.num - 1), aType));
 
-   sge_mutex_unlock("handler_table_mutex", SGE_FUNC, __LINE__, &Handler_Tbl.mutex);
+   sge_mutex_unlock("handler_table_mutex", __func__, __LINE__, &Handler_Tbl.mutex);
 
-   DEXIT;
-   return;
+   DRETURN_VOID;
 } /* te_register_event_handler() */
 
 /****** qmaster/sge_qmaster_timed_event/te_new_event() *************************
@@ -347,7 +344,7 @@ te_event_t te_new_event(time_t aTime, te_type_t aType, te_mode_t aMode, u_long32
 {
    te_event_t ev = NULL;
   
-   DENTER(EVENT_LAYER, "te_new_event");
+   DENTER(EVENT_LAYER);
    
    ev = (te_event_t)sge_malloc(sizeof(struct te_event));
    
@@ -366,8 +363,7 @@ te_event_t te_new_event(time_t aTime, te_type_t aType, te_mode_t aMode, u_long32
    ev->str_key = (aStrKey != NULL) ? strdup(aStrKey) : NULL;
    ev->seq_no = 0;
 
-   DEXIT;
-   return ev;
+   DRETURN(ev);
 } /* te_new_event() */
 
 /****** qmaster/sge_qmaster_timed_event/te_free_event() ************************
@@ -393,7 +389,7 @@ te_event_t te_new_event(time_t aTime, te_type_t aType, te_mode_t aMode, u_long32
 void te_free_event(te_event_t *anEvent)
 {
 
-   DENTER(EVENT_LAYER, "te_free_event");
+   DENTER(EVENT_LAYER);
 
    SGE_ASSERT((anEvent != NULL));
    
@@ -448,7 +444,7 @@ void te_add_event(te_event_t anEvent)
    time_t when = 0;
    lListElem *le;
 
-   DENTER(EVENT_LAYER, "te_add_event");
+   DENTER(EVENT_LAYER);
 
    SGE_ASSERT((anEvent != NULL));
 
@@ -463,10 +459,10 @@ void te_add_event(te_event_t anEvent)
    lSetUlong(le,  TE_uval1,    anEvent->ulong_key_2);
    lSetString(le, TE_sval,     anEvent->str_key);
 
-   DPRINTF(("%s: (t:"sge_u32" w:"sge_u32" m:"sge_u32" s:%s)\n", SGE_FUNC, anEvent->type,
+   DPRINTF(("%s: (t:"sge_u32" w:"sge_u32" m:"sge_u32" s:%s)\n", __func__, anEvent->type,
       when, anEvent->mode, anEvent->str_key?anEvent->str_key:MSG_SMALLNULL));
 
-   sge_mutex_lock("event_control_mutex", SGE_FUNC, __LINE__, &Event_Control.mutex);
+   sge_mutex_lock("event_control_mutex", __func__, __LINE__, &Event_Control.mutex);
 
    lSetUlong(le, TE_seqno, Event_Control.seq_no++);
 
@@ -479,10 +475,10 @@ void te_add_event(te_event_t anEvent)
 
       pthread_cond_signal(&Event_Control.cond_var);
 
-      DPRINTF(("%s: did signal delivery thread!\n", SGE_FUNC));
+      DPRINTF(("%s: did signal delivery thread!\n", __func__));
    }
 
-   sge_mutex_unlock("event_control_mutex", SGE_FUNC, __LINE__, &Event_Control.mutex);
+   sge_mutex_unlock("event_control_mutex", __func__, __LINE__, &Event_Control.mutex);
 
    DRETURN_VOID;
 } /* te_add_event() */
@@ -525,7 +521,7 @@ int te_delete_one_time_event(te_type_t aType, u_long32 aKey1, u_long32 aKey2, co
 {
    int ret;
 
-   DENTER(EVENT_LAYER, "te_delete_one_time_event");
+   DENTER(EVENT_LAYER);
    ret = te_delete_all_or_one_time_event(aType, aKey1, aKey2, strKey, false);
    DRETURN(ret); 
 }
@@ -562,7 +558,7 @@ int te_delete_one_time_event(te_type_t aType, u_long32 aKey1, u_long32 aKey2, co
 int te_delete_all_one_time_events(te_type_t aType) {
    int ret;
 
-   DENTER(EVENT_LAYER, "te_delete_all_one_time_events");
+   DENTER(EVENT_LAYER);
    ret = te_delete_all_or_one_time_event(aType, 0, 0, NULL, true);
    DRETURN(ret);
 }
@@ -592,14 +588,13 @@ time_t te_get_when(te_event_t anEvent)
 {
    time_t res = 0;
 
-   DENTER(EVENT_LAYER, "te_get_when");
+   DENTER(EVENT_LAYER);
 
    SGE_ASSERT(NULL != anEvent);
 
    res = (time_t)anEvent->when;
 
-   DEXIT;
-   return res;
+   DRETURN(res);
 } /* te_get_when() */
 
 /****** qmaster/sge_qmaster_timed_event/te_get_type() **************************
@@ -626,14 +621,13 @@ te_type_t te_get_type(te_event_t anEvent)
 {
    te_type_t res;
 
-   DENTER(EVENT_LAYER, "te_get_type");
+   DENTER(EVENT_LAYER);
 
    SGE_ASSERT(NULL != anEvent);
 
    res = anEvent->type;
 
-   DEXIT;
-   return res;
+   DRETURN(res);
 } /* te_get_type() */
 
 /****** qmaster/sge_qmaster_timed_event/te_get_mode() **************************
@@ -660,14 +654,13 @@ te_mode_t te_get_mode(te_event_t anEvent)
 {
    te_mode_t res;
 
-   DENTER(EVENT_LAYER, "te_get_mode");
+   DENTER(EVENT_LAYER);
 
    SGE_ASSERT(NULL != anEvent);
 
    res = anEvent->mode;
 
-   DEXIT;
-   return res;
+   DRETURN(res);
 } /* te_get_mode() */
 
 /****** qmaster/sge_qmaster_timed_event/te_get_first_numeric_key() *************
@@ -694,14 +687,13 @@ u_long32 te_get_first_numeric_key(te_event_t anEvent)
 {
    u_long32 res = 0;
 
-   DENTER(EVENT_LAYER, "te_get_first_numeric_key");
+   DENTER(EVENT_LAYER);
 
    SGE_ASSERT(NULL != anEvent);
    
    res = anEvent->ulong_key_1;
 
-   DEXIT;
-   return res;
+   DRETURN(res);
 } /* te_get_first_numeric_key() */
 
 /****** qmaster/sge_qmaster_timed_event/te_get_second_numeric_key() ************
@@ -728,14 +720,13 @@ u_long32 te_get_second_numeric_key(te_event_t anEvent)
 {
    u_long32 res = 0;
 
-   DENTER(EVENT_LAYER, "te_get_second_numeric_key");
+   DENTER(EVENT_LAYER);
 
    SGE_ASSERT(NULL != anEvent);
    
    res = anEvent->ulong_key_2;
 
-   DEXIT;
-   return res;
+   DRETURN(res);
 } /* te_get_second_numeric_key() */
 
 /****** qmaster/sge_qmaster_timed_event/te_get_alphanumeric_key() **************
@@ -764,7 +755,7 @@ char* te_get_alphanumeric_key(te_event_t anEvent)
 {
    char* res = NULL;
 
-   DENTER(EVENT_LAYER, "te_get_alphanumeric_key");
+   DENTER(EVENT_LAYER);
 
    SGE_ASSERT(NULL != anEvent);
 
@@ -797,14 +788,13 @@ u_long32 te_get_sequence_number(te_event_t anEvent)
 {
    u_long32 res = 0;
 
-   DENTER(EVENT_LAYER, "te_get_sequence_number");
+   DENTER(EVENT_LAYER);
 
    SGE_ASSERT(NULL != anEvent);
 
    res = anEvent->seq_no;
 
-   DEXIT;
-   return res;
+   DRETURN(res);
 } /* te_get_sequence_number() */
 
 /****** qmaster/sge_qmaster_timed_event/te_init() ****************
@@ -833,7 +823,7 @@ u_long32 te_get_sequence_number(te_event_t anEvent)
 *******************************************************************************/
 void te_init(void)
 {
-   DENTER(EVENT_LAYER, "te_init");
+   DENTER(EVENT_LAYER);
 
    Event_Control.list = lCreateList("timed event list", TE_Type);
    Event_Control.sort_order = lParseSortOrderVarArg(TE_Type, "%I+", TE_when);
@@ -842,8 +832,7 @@ void te_init(void)
    Handler_Tbl.max = TBL_INIT_SIZE;
    Handler_Tbl.num = 0;
 
-   DEXIT;
-   return;
+   DRETURN_VOID;
 } /* te_init() */
 
 /****** qmaster/sge_qmaster_timed_event/te_shutdown() **************************
@@ -873,12 +862,11 @@ void te_init(void)
 *******************************************************************************/
 void te_shutdown(void)
 {
-   DENTER(EVENT_LAYER, "te_shutdown");
+   DENTER(EVENT_LAYER);
 
    sge_free(&(Handler_Tbl.list));
 
-   DEXIT;
-   return;
+   DRETURN_VOID;
 } /* te_shutdown() */
 
 /****** qmaster/sge_qmaster_timed_event/te_check_time() ***************************
@@ -910,7 +898,7 @@ void te_check_time(time_t aTime)
 {
    lListElem* le;
 
-   DENTER(EVENT_LAYER, "te_check_time");
+   DENTER(EVENT_LAYER);
 
    if (Event_Control.last > aTime)
    {
@@ -926,8 +914,7 @@ void te_check_time(time_t aTime)
       Event_Control.next -= delta;
    }
 
-   DEXIT;
-   return;
+   DRETURN_VOID;
 } /* te_check_time() */
 
 /****** qmaster/sge_qmaster_timed_event/te_event_from_list_elem() *****************
@@ -959,7 +946,7 @@ te_event_t te_event_from_list_elem(const lListElem* aListElem)
    te_event_t ev = NULL;
    const char* str = NULL;
 
-   DENTER(EVENT_LAYER, "te_event_from_list_elem");
+   DENTER(EVENT_LAYER);
 
    ev = (te_event_t)sge_malloc(sizeof(struct te_event));
    
@@ -974,8 +961,7 @@ te_event_t te_event_from_list_elem(const lListElem* aListElem)
    str = lGetString(aListElem, TE_sval);
    ev->str_key = ((str != NULL) ? strdup(str) : NULL);
 
-   DEXIT;
-   return ev;
+   DRETURN(ev);
 } /* te_event_from_list_elem() */
 
 /****** qmaster/sge_qmaster_timed_event/te_scan_table_and_deliver() ***************
@@ -1008,11 +994,11 @@ void te_scan_table_and_deliver(sge_gdi_ctx_class_t *ctx, te_event_t anEvent, mon
    int i = 0;
    te_handler_t handler = NULL;
 
-   DENTER(EVENT_LAYER, "te_scan_table_and_deliver");
+   DENTER(EVENT_LAYER);
 
    DPRINTF(("%s: event (t:"sge_u32" w:"sge_u32" m:"sge_u32" s:%s)\n", EVENT_FRMT(anEvent)));
 
-   sge_mutex_lock("handler_table_mutex", SGE_FUNC, __LINE__, &Handler_Tbl.mutex);
+   sge_mutex_lock("handler_table_mutex", __func__, __LINE__, &Handler_Tbl.mutex);
 
    for(i = 0; i < Handler_Tbl.num; i++)
    {
@@ -1024,7 +1010,7 @@ void te_scan_table_and_deliver(sge_gdi_ctx_class_t *ctx, te_event_t anEvent, mon
       }
    }
 
-   sge_mutex_unlock("handler_table_mutex", SGE_FUNC, __LINE__, &Handler_Tbl.mutex);
+   sge_mutex_unlock("handler_table_mutex", __func__, __LINE__, &Handler_Tbl.mutex);
 
    if (handler != NULL) {
       handler(ctx, anEvent, monitor);
@@ -1041,6 +1027,5 @@ void te_scan_table_and_deliver(sge_gdi_ctx_class_t *ctx, te_event_t anEvent, mon
       te_add_event(anEvent);
    }
 
-   DEXIT;
-   return;
+   DRETURN_VOID;
 } /* te_scan_table_and_deliver */

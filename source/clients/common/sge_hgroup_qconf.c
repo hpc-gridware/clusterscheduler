@@ -68,7 +68,7 @@ hgroup_list_show_elem(lList *hgroup_list, const char *name, int indent)
    const lListElem *hgroup = NULL;
    int i;
 
-   DENTER(TOP_LAYER, "hgroup_list_show_elem");
+   DENTER(TOP_LAYER);
 
    for (i = 0; i < indent; i++) {
       printf("%s", indent_string);
@@ -96,7 +96,7 @@ hgroup_add_del_mod_via_gdi(sge_gdi_ctx_class_t *ctx,
 {
    bool ret = true;
 
-   DENTER(TOP_LAYER, "hgroup_add_del_mod_via_gdi");
+   DENTER(TOP_LAYER);
    if (this_elem != NULL) {
       lListElem *element = NULL;
       lList *hgroup_list = NULL;
@@ -118,7 +118,7 @@ lListElem *hgroup_get_via_gdi(sge_gdi_ctx_class_t *ctx,
 {
    lListElem *ret = NULL;
 
-   DENTER(TOP_LAYER, "hgroup_get_via_gdi");
+   DENTER(TOP_LAYER);
    if (name != NULL) {
       lList *gdi_answer_list = NULL;
       lEnumeration *what = NULL;
@@ -154,7 +154,7 @@ static bool hgroup_provide_modify_context(sge_gdi_ctx_class_t *ctx, lListElem **
    uid_t uid = ctx->get_uid(ctx);
    gid_t gid = ctx->get_gid(ctx);
    
-   DENTER(TOP_LAYER, "hgroup_provide_modify_context");
+   DENTER(TOP_LAYER);
    if (this_elem != NULL && *this_elem != NULL) {
       const char *filename = NULL;
       filename = spool_flatfile_write_object(answer_list, *this_elem,
@@ -247,7 +247,7 @@ bool hgroup_add(sge_gdi_ctx_class_t *ctx, lList **answer_list, const char *name,
 {
    bool ret = true;
 
-   DENTER(TOP_LAYER, "hgroup_add");
+   DENTER(TOP_LAYER);
    if (name != NULL) {
       lListElem *hgroup = hgroup_create(answer_list, name, NULL, is_name_validate);
 
@@ -273,7 +273,7 @@ bool hgroup_add_from_file(sge_gdi_ctx_class_t *ctx, lList **answer_list, const c
    int fields_out[MAX_NUM_FIELDS];
    int missing_field = NoName;
 
-   DENTER(TOP_LAYER, "hgroup_add");
+   DENTER(TOP_LAYER);
 
    if (filename != NULL) {
       lListElem *hgroup;
@@ -312,7 +312,7 @@ bool hgroup_modify(sge_gdi_ctx_class_t *ctx, lList **answer_list, const char *na
 {
    bool ret = true;
 
-   DENTER(TOP_LAYER, "hgroup_modify");
+   DENTER(TOP_LAYER);
    if (name != NULL) {
       lListElem *hgroup = hgroup_get_via_gdi(ctx, answer_list, name);
 
@@ -339,7 +339,7 @@ bool hgroup_modify_from_file(sge_gdi_ctx_class_t *ctx, lList **answer_list, cons
    int fields_out[MAX_NUM_FIELDS];
    int missing_field = NoName;
 
-   DENTER(TOP_LAYER, "hgroup_modify");
+   DENTER(TOP_LAYER);
    if (filename != NULL) {
       lListElem *hgroup;
 
@@ -381,7 +381,7 @@ bool hgroup_delete(sge_gdi_ctx_class_t *ctx, lList **answer_list, const char *na
 {
    bool ret = true;
 
-   DENTER(TOP_LAYER, "hgroup_delete");
+   DENTER(TOP_LAYER);
    if (name != NULL) {
       lListElem *hgroup = hgroup_create(answer_list, name, NULL, true); 
    
@@ -397,7 +397,7 @@ bool hgroup_show(sge_gdi_ctx_class_t *ctx, lList **answer_list, const char *name
 {
    bool ret = true;
 
-   DENTER(TOP_LAYER, "hgroup_show");
+   DENTER(TOP_LAYER);
    if (name != NULL) {
       lListElem *hgroup = hgroup_get_via_gdi(ctx, answer_list, name); 
    
@@ -427,7 +427,7 @@ bool hgroup_show_structure(sge_gdi_ctx_class_t *ctx, lList **answer_list, const 
 {
    bool ret = true;
 
-   DENTER(TOP_LAYER, "hgroup_show_tree");
+   DENTER(TOP_LAYER);
    if (name != NULL) {
       lList *hgroup_list = NULL;
       const lListElem *hgroup = NULL;

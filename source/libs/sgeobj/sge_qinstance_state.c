@@ -292,7 +292,7 @@ transition_option_is_valid_for_qinstance(u_long32 option, lList **answer_list)
 {
    bool ret = false;
 
-   DENTER(QINSTANCE_STATE_LAYER, "transition_option_is_valid_for_qinstance");
+   DENTER(QINSTANCE_STATE_LAYER);
    if (option == QI_TRANSITION_NOTHING ||
        option == QI_TRANSITION_OPTION) {
       ret = true;
@@ -300,8 +300,7 @@ transition_option_is_valid_for_qinstance(u_long32 option, lList **answer_list)
       answer_list_add(answer_list, MSG_QINSTANCE_INVALIDOPTION, 
                      STATUS_ESEMANTIC, ANSWER_QUALITY_ERROR);
    }
-   DEXIT;
-   return ret;
+   DRETURN(ret);
 }
 
 const char *
@@ -343,7 +342,7 @@ qinstance_state_as_string(u_long32 bit)
    const char *ret = NULL;
    int i = 0;
 
-   DENTER(TOP_LAYER, "qinstance_state_as_string");
+   DENTER(TOP_LAYER);
    if (names[0] == NULL) {
       names[0] = MSG_QINSTANCE_ALARM;
       names[1] = MSG_QINSTANCE_SUSPALARM;
@@ -377,8 +376,7 @@ qinstance_state_as_string(u_long32 bit)
       }
       i++;
    }
-   DEXIT;
-   return ret;
+   DRETURN(ret);
 }
 
 /****** sgeobj/qinstance_state/qinstance_state_from_string() ******************
@@ -411,7 +409,7 @@ qinstance_state_from_string(const char* sstate,
    int i;
    int y;
    bool found = false;
-   DENTER(QINSTANCE_STATE_LAYER, "qinstance_state_from_string");
+   DENTER(QINSTANCE_STATE_LAYER);
 
    i=-1;
    while(sstate[++i]!='\0'){
@@ -428,8 +426,7 @@ qinstance_state_from_string(const char* sstate,
       if ((!found) || ((ustate & ~filter) != 0)){
          ERROR((SGE_EVENT, MSG_QSTATE_UNKNOWNCHAR_CS, sstate[i], sstate));
          answer_list_add(answer_list, SGE_EVENT, STATUS_ENOMGR, ANSWER_QUALITY_ERROR);
-         DEXIT;
-         return U_LONG32_MAX;
+         DRETURN(U_LONG32_MAX);
       }
    }
 
@@ -437,8 +434,7 @@ qinstance_state_from_string(const char* sstate,
       ustate = U_LONG32_MAX;
    }
 
-   DEXIT;
-   return ustate;
+   DRETURN(ustate);
 }
 
 
@@ -448,7 +444,7 @@ qinstance_state_append_to_dstring(const lListElem *this_elem, dstring *string)
    bool ret = true;
    int i = 0;
 
-   DENTER(QINSTANCE_STATE_LAYER, "qinstance_state_append_to_dstring");
+   DENTER(QINSTANCE_STATE_LAYER);
    while (states[i] != 0) {
       if (qinstance_has_state(this_elem, states[i])) {
          sge_dstring_append_char(string, letters[i]);
@@ -465,7 +461,7 @@ qinstance_state_set_orphaned(lListElem *this_elem, bool set_state)
 {
    bool changed;
 
-   DENTER(QINSTANCE_STATE_LAYER, "qinstance_state_set_orphaned");
+   DENTER(QINSTANCE_STATE_LAYER);
    changed = qinstance_set_state(this_elem, set_state, QI_ORPHANED);
    DRETURN(changed);
 }
@@ -481,7 +477,7 @@ qinstance_state_set_ambiguous(lListElem *this_elem, bool set_state)
 {
    bool changed;
 
-   DENTER(QINSTANCE_STATE_LAYER, "qinstance_state_set_ambiguous");
+   DENTER(QINSTANCE_STATE_LAYER);
    changed = qinstance_set_state(this_elem, set_state, QI_AMBIGUOUS);
    DRETURN(changed);
 }
@@ -497,7 +493,7 @@ qinstance_state_set_alarm(lListElem *this_elem, bool set_state)
 {
    bool changed;
 
-   DENTER(QINSTANCE_STATE_LAYER, "qinstance_state_set_alarm");
+   DENTER(QINSTANCE_STATE_LAYER);
    changed = qinstance_set_state(this_elem, set_state, QI_ALARM);
    DRETURN(changed);
 }
@@ -513,7 +509,7 @@ qinstance_state_set_suspend_alarm(lListElem *this_elem, bool set_state)
 {
    bool changed;
 
-   DENTER(QINSTANCE_STATE_LAYER, "qinstance_state_set_suspend_alarm");
+   DENTER(QINSTANCE_STATE_LAYER);
    changed = qinstance_set_state(this_elem, set_state, QI_SUSPEND_ALARM);
    DRETURN(changed);
 }
@@ -529,7 +525,7 @@ qinstance_state_set_manual_disabled(lListElem *this_elem, bool set_state)
 {
    bool changed;
 
-   DENTER(QINSTANCE_STATE_LAYER, "qinstance_state_set_manual_disabled");
+   DENTER(QINSTANCE_STATE_LAYER);
    changed = qinstance_set_state(this_elem, set_state, QI_DISABLED);
    DRETURN(changed);
 }
@@ -545,7 +541,7 @@ qinstance_state_set_manual_suspended(lListElem *this_elem, bool set_state)
 {
    bool changed;
 
-   DENTER(QINSTANCE_STATE_LAYER, "qinstance_state_set_manual_suspended");
+   DENTER(QINSTANCE_STATE_LAYER);
    changed = qinstance_set_state(this_elem, set_state, QI_SUSPENDED);
    DRETURN(changed);
 }
@@ -560,7 +556,7 @@ bool
 qinstance_state_set_unknown(lListElem *this_elem, bool set_state)
 {
    bool changed;
-   DENTER(QINSTANCE_STATE_LAYER, "qinstance_state_set_unknown");
+   DENTER(QINSTANCE_STATE_LAYER);
    if (mconf_get_simulate_execds())
       changed = qinstance_set_state(this_elem, false, QI_UNKNOWN);
    else
@@ -580,7 +576,7 @@ qinstance_state_set_error(lListElem *this_elem, bool set_state)
 {
    bool changed;
 
-   DENTER(QINSTANCE_STATE_LAYER, "qinstance_state_set_error");
+   DENTER(QINSTANCE_STATE_LAYER);
    changed = qinstance_set_state(this_elem, set_state, QI_ERROR);
    DRETURN(changed);
 }
@@ -596,7 +592,7 @@ qinstance_state_set_susp_on_sub(lListElem *this_elem, bool set_state)
 {
    bool changed;
 
-   DENTER(QINSTANCE_STATE_LAYER, "qinstance_state_set_susp_on_sub");
+   DENTER(QINSTANCE_STATE_LAYER);
    changed = qinstance_set_state(this_elem, set_state, QI_SUSPENDED_ON_SUBORDINATE);
    DRETURN(changed);
 }
@@ -612,7 +608,7 @@ qinstance_state_set_cal_disabled(lListElem *this_elem, bool set_state)
 {
    bool changed;
 
-   DENTER(QINSTANCE_STATE_LAYER, "qinstance_state_set_cal_disabled");
+   DENTER(QINSTANCE_STATE_LAYER);
    changed = qinstance_set_state(this_elem, set_state, QI_CAL_DISABLED);
    DRETURN(changed);
 }
@@ -628,7 +624,7 @@ qinstance_state_set_cal_suspended(lListElem *this_elem, bool set_state)
 {
    bool changed;
 
-   DENTER(QINSTANCE_STATE_LAYER, "qinstance_state_set_cal_suspended");
+   DENTER(QINSTANCE_STATE_LAYER);
    changed = qinstance_set_state(this_elem, set_state, QI_CAL_SUSPENDED);
    DRETURN(changed);
 }

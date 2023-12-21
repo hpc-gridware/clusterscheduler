@@ -94,7 +94,7 @@ centry_mod(sge_gdi_ctx_class_t *ctx,
    const char *attrname;
    const char *temp;
 
-   DENTER(TOP_LAYER, "centry_mod");
+   DENTER(TOP_LAYER);
 
    /*
     * At least the centry name has to be available (CE_name)
@@ -227,8 +227,7 @@ centry_mod(sge_gdi_ctx_class_t *ctx,
             ERROR((SGE_EVENT, MSG_SGETEXT_MISSINGCULLFIELD_SS,
                   lNm2Str(CE_urgency_weight), "urgency_weight"));
             answer_list_add(answer_list, SGE_EVENT, STATUS_EEXIST, ANSWER_QUALITY_ERROR);
-            DEXIT;
-            return STATUS_EEXIST;
+            DRETURN(STATUS_EEXIST);
          }
          /* Check then that the entry is valid   */
 
@@ -246,11 +245,10 @@ centry_mod(sge_gdi_ctx_class_t *ctx,
       ret = centry_elem_validate(centry, NULL, answer_list);
    }
 
-   DEXIT;
    if (ret) {
-      return 0;
+      DRETURN(0);
    } else {
-      return STATUS_EUNKNOWN;
+      DRETURN(STATUS_EUNKNOWN);
    }
 }
 
@@ -263,7 +261,7 @@ centry_spool(sge_gdi_ctx_class_t *ctx, lList **alpp, lListElem *cep, gdi_object_
    bool dbret;
    bool job_spooling = ctx->get_job_spooling(ctx);
 
-   DENTER(TOP_LAYER, "centry_spool");
+   DENTER(TOP_LAYER);
 
    dbret = spool_write_object(&answer_list, spool_get_default_context(), cep, 
                               lGetString(cep, CE_name), SGE_TYPE_CENTRY,
@@ -277,8 +275,7 @@ centry_spool(sge_gdi_ctx_class_t *ctx, lList **alpp, lListElem *cep, gdi_object_
                               lGetString(cep, CE_name));
    } 
    
-   DEXIT;
-   return dbret ? 0 : 1;
+   DRETURN(dbret ? 0 : 1);
 }
 
 /* ------------------------------------------------------------ */
@@ -342,7 +339,7 @@ centry_success(sge_gdi_ctx_class_t *ctx, lListElem *ep, lListElem *old_ep, gdi_o
 {
    bool rebuild_consumables = false;
 
-   DENTER(TOP_LAYER, "centry_success");
+   DENTER(TOP_LAYER);
 
    sge_add_event( 0, old_ep?sgeE_CENTRY_MOD:sgeE_CENTRY_ADD, 0, 0, 
                  lGetString(ep, CE_name), NULL, NULL, ep);
@@ -372,8 +369,7 @@ centry_success(sge_gdi_ctx_class_t *ctx, lListElem *ep, lListElem *old_ep, gdi_o
       lAddElemStr(ppList, STU_name, lGetString(ep, CE_name), STU_Type);
    }
 
-   DEXIT;
-   return 0;
+   DRETURN(0);
 }
 
 int sge_del_centry(sge_gdi_ctx_class_t *ctx, lListElem *centry, lList **answer_list, 
@@ -385,7 +381,7 @@ int sge_del_centry(sge_gdi_ctx_class_t *ctx, lListElem *centry, lList **answer_l
    const lList *master_ehost_list = *object_type_get_master_list(SGE_TYPE_EXECHOST);
    const lList *master_rqs_list = *object_type_get_master_list(SGE_TYPE_RQS);
 
-   DENTER(TOP_LAYER, "sge_del_centry");
+   DENTER(TOP_LAYER);
 
    if (centry != NULL || remote_user != NULL || remote_host != NULL) {
       const char* name = lGetString(centry, CE_name);
@@ -439,21 +435,20 @@ int sge_del_centry(sge_gdi_ctx_class_t *ctx, lListElem *centry, lList **answer_l
          }
       } else {
          CRITICAL((SGE_EVENT, MSG_SGETEXT_MISSINGCULLFIELD_SS,
-                   lNm2Str(CE_name), SGE_FUNC));
+                   lNm2Str(CE_name), __func__));
          answer_list_add(answer_list, SGE_EVENT, STATUS_EUNKNOWN, ANSWER_QUALITY_ERROR);
          ret = false;
       }
    } else {
-      CRITICAL((SGE_EVENT, MSG_SGETEXT_NULLPTRPASSED_S, SGE_FUNC));
+      CRITICAL((SGE_EVENT, MSG_SGETEXT_NULLPTRPASSED_S, __func__));
       answer_list_add(answer_list, SGE_EVENT, STATUS_EUNKNOWN, ANSWER_QUALITY_ERROR);
       ret = false;
    }
 
-   DEXIT;
    if (ret) {
-      return STATUS_OK;
+      DRETURN(STATUS_OK);
    } else {
-      return STATUS_EUNKNOWN;
+      DRETURN(STATUS_EUNKNOWN);
    }
 }
 
@@ -466,7 +461,7 @@ sge_change_queue_version_centry(sge_gdi_ctx_class_t *ctx)
    const lList *master_ehost_list = *object_type_get_master_list(SGE_TYPE_EXECHOST);
    const lList *master_cqueue_list = *object_type_get_master_list(SGE_TYPE_CQUEUE);
 
-   DENTER(TOP_LAYER, "sge_change_queue_version_centry");
+   DENTER(TOP_LAYER);
 
    for_each(cqueue, master_cqueue_list) {
       const lList *qinstance_list = lGetList(cqueue, CQ_qinstances);

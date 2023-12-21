@@ -112,7 +112,7 @@ sge_gdi_packet_create_multi_answer(sge_gdi_ctx_class_t* ctx, lList **answer_list
    sge_gdi_task_class_t *task = NULL;
    bool ret = true;
 
-   DENTER(TOP_LAYER, "sge_packet_create_multi_answer");
+   DENTER(TOP_LAYER);
 
    /* 
     * make multi answer list and move all data contained in packet 
@@ -187,10 +187,10 @@ sge_gdi_packet_create_multi_answer(sge_gdi_ctx_class_t* ctx, lList **answer_list
 void
 sge_gdi_packet_wait_till_handled(sge_gdi_packet_class_t *packet)
 {
-   DENTER(TOP_LAYER, "sge_gdi_packet_wait_till_handled");
+   DENTER(TOP_LAYER);
 
    if (packet != NULL) {
-      sge_mutex_lock(GDI_PACKET_MUTEX, SGE_FUNC, __LINE__, &(packet->mutex));
+      sge_mutex_lock(GDI_PACKET_MUTEX, __func__, __LINE__, &(packet->mutex));
 
       while (packet->is_handled == false) {
          struct timespec ts; 
@@ -200,7 +200,7 @@ sge_gdi_packet_wait_till_handled(sge_gdi_packet_class_t *packet)
          pthread_cond_timedwait(&(packet->cond), &(packet->mutex), &ts);
       }
 
-      sge_mutex_unlock(GDI_PACKET_MUTEX, SGE_FUNC, __LINE__, &(packet->mutex));
+      sge_mutex_unlock(GDI_PACKET_MUTEX, __func__, __LINE__, &(packet->mutex));
 
       DPRINTF(("got signal that packet is handled\n"));
    }
@@ -245,11 +245,11 @@ sge_gdi_packet_is_handled(sge_gdi_packet_class_t *packet)
 {
    bool ret = true;
 
-   DENTER(TOP_LAYER, "sge_gdi_packet_wait_till_handled");
+   DENTER(TOP_LAYER);
    if (packet != NULL) {   
-      sge_mutex_lock(GDI_PACKET_MUTEX, SGE_FUNC, __LINE__, &(packet->mutex));
+      sge_mutex_lock(GDI_PACKET_MUTEX, __func__, __LINE__, &(packet->mutex));
       ret = packet->is_handled;
-      sge_mutex_unlock(GDI_PACKET_MUTEX, SGE_FUNC, __LINE__, &(packet->mutex));
+      sge_mutex_unlock(GDI_PACKET_MUTEX, __func__, __LINE__, &(packet->mutex));
    }
    DRETURN(ret);
 }
@@ -295,13 +295,13 @@ sge_gdi_packet_is_handled(sge_gdi_packet_class_t *packet)
 void
 sge_gdi_packet_broadcast_that_handled(sge_gdi_packet_class_t *packet)
 {
-   DENTER(TOP_LAYER, "sge_gdi_packet_broadcast_that_handled");
+   DENTER(TOP_LAYER);
 
-   sge_mutex_lock(GDI_PACKET_MUTEX, SGE_FUNC, __LINE__, &(packet->mutex));
+   sge_mutex_lock(GDI_PACKET_MUTEX, __func__, __LINE__, &(packet->mutex));
    packet->is_handled = true; 
    DPRINTF(("broadcast that packet is handled\n"));
    pthread_cond_broadcast(&(packet->cond));
-   sge_mutex_unlock(GDI_PACKET_MUTEX, SGE_FUNC, __LINE__, &(packet->mutex));
+   sge_mutex_unlock(GDI_PACKET_MUTEX, __func__, __LINE__, &(packet->mutex));
 
    DRETURN_VOID;   
 }
@@ -436,7 +436,7 @@ sge_gdi_packet_execute_external(sge_gdi_ctx_class_t* ctx, lList **answer_list,
    int commlib_error;
    u_long32 message_id;
 
-   DENTER(TOP_LAYER, "sge_gdi_packet_execute_external");
+   DENTER(TOP_LAYER);
 
    /* here the packet gets a unique request id */
    packet->id = gdi_state_get_next_request_id();
@@ -760,7 +760,7 @@ sge_gdi_packet_execute_internal(sge_gdi_ctx_class_t* ctx, lList **answer_list,
 {
    bool ret = true;
 
-   DENTER(TOP_LAYER, "sge_gdi_packet_execute_internal");
+   DENTER(TOP_LAYER);
 
    /* 
     * here the packet gets a unique request id and source for host
@@ -826,7 +826,7 @@ sge_gdi_packet_wait_for_result_external(sge_gdi_ctx_class_t* ctx, lList **answer
 {
    bool ret = true;
 
-   DENTER(TOP_LAYER, "sge_gdi_packet_wait_for_result_extern");
+   DENTER(TOP_LAYER);
 
    /* 
     * The packet itself has already be executed in sge_gdi_packet_execute_external() 
@@ -882,7 +882,7 @@ sge_gdi_packet_wait_for_result_internal(sge_gdi_ctx_class_t* ctx, lList **answer
 {
    bool ret = true;
 
-   DENTER(TOP_LAYER, "sge_gdi_packet_wait_for_result_internal");
+   DENTER(TOP_LAYER);
 
    /* 
     * wait for response from worker thread that the packet is handled

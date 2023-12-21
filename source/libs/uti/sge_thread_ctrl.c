@@ -79,12 +79,11 @@ sge_thread_has_shutdown_started(void)
 {
    bool res = false;
 
-   DENTER(THREAD_LAYER, "sge_thread_has_shutdown_started");
-   sge_mutex_lock(THREAD_CONTROL_MUTEX, SGE_FUNC, __LINE__, &Thread_Control.mutex);
+   DENTER(THREAD_LAYER);
+   sge_mutex_lock(THREAD_CONTROL_MUTEX, __func__, __LINE__, &Thread_Control.mutex);
    res = Thread_Control.shutdown_started;
-   sge_mutex_unlock(THREAD_CONTROL_MUTEX, SGE_FUNC, __LINE__, &Thread_Control.mutex);
-   DEXIT;
-   return res;
+   sge_mutex_unlock(THREAD_CONTROL_MUTEX, __func__, __LINE__, &Thread_Control.mutex);
+   DRETURN(res);
 }
 
 /****** uti/thread_ctrl/sge_thread_notify_all_waiting() ************************
@@ -116,14 +115,14 @@ sge_thread_has_shutdown_started(void)
 void
 sge_thread_notify_all_waiting(void)
 {
-   DENTER(THREAD_LAYER, "sge_thread_notify_all_waiting");
+   DENTER(THREAD_LAYER);
 
-   sge_mutex_lock(THREAD_CONTROL_MUTEX, SGE_FUNC, __LINE__, &Thread_Control.mutex);
+   sge_mutex_lock(THREAD_CONTROL_MUTEX, __func__, __LINE__, &Thread_Control.mutex);
 
    Thread_Control.shutdown_started = true;
    pthread_cond_broadcast(&Thread_Control.cond_var);
 
-   sge_mutex_unlock(THREAD_CONTROL_MUTEX, SGE_FUNC, __LINE__, &Thread_Control.mutex);
+   sge_mutex_unlock(THREAD_CONTROL_MUTEX, __func__, __LINE__, &Thread_Control.mutex);
 
    DRETURN_VOID;
 }
@@ -154,17 +153,16 @@ sge_thread_notify_all_waiting(void)
 void 
 sge_thread_wait_for_signal(void)
 {
-   DENTER(THREAD_LAYER, "sge_thread_wait_for_signal");
+   DENTER(THREAD_LAYER);
 
-   sge_mutex_lock(THREAD_CONTROL_MUTEX, SGE_FUNC, __LINE__, &Thread_Control.mutex);
+   sge_mutex_lock(THREAD_CONTROL_MUTEX, __func__, __LINE__, &Thread_Control.mutex);
 
    while (Thread_Control.shutdown_started == false) {
       pthread_cond_wait(&Thread_Control.cond_var, &Thread_Control.mutex);
    }
 
-   sge_mutex_unlock(THREAD_CONTROL_MUTEX, SGE_FUNC, __LINE__, &Thread_Control.mutex);
+   sge_mutex_unlock(THREAD_CONTROL_MUTEX, __func__, __LINE__, &Thread_Control.mutex);
 
-   DEXIT;
-   return;
+   DRETURN_VOID;
 }
 

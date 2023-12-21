@@ -57,7 +57,7 @@ int do_kill_execd(sge_gdi_ctx_class_t *ctx, struct_msg_t *aMsg)
    u_long32 kill_jobs;
    u_long32 sge_signal;
    
-   DENTER(TOP_LAYER, "do_kill_execd");
+   DENTER(TOP_LAYER);
 
    /* real shut down is done in the execd_ck_to_do function */
 

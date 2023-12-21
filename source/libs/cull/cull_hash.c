@@ -746,11 +746,10 @@ int cull_hash_new(lList *lp, int nm, bool unique)
    int pos, size;
    char host_key[CL_MAXHOSTLEN];
 
-   DENTER(CULL_LAYER, "cull_hash_new");
+   DENTER(CULL_LAYER);
 
    if(lp == NULL) {
-      DEXIT;
-      return 0;
+      DRETURN(0);
    }
  
    descr = lp->descr;
@@ -759,14 +758,12 @@ int cull_hash_new(lList *lp, int nm, bool unique)
 
    if(pos < 0) {
       CRITICAL((SGE_EVENT, MSG_CULL_GETELEMSTRERRORXRUNTIMETYPE_S , lNm2Str(nm)));
-      DEXIT;
-      return 0;
+      DRETURN(0);
    }
 
    if(descr[pos].ht != NULL) {
       WARNING((SGE_EVENT, MSG_CULL_HASHTABLEALREADYEXISTS_S, lNm2Str(nm)));
-      DEXIT;
-      return 0;
+      DRETURN(0);
    }
 
    /* copy hashing information */
@@ -780,8 +777,7 @@ int cull_hash_new(lList *lp, int nm, bool unique)
    descr[pos].ht = cull_hash_create(&descr[pos], size);
 
    if (descr[pos].ht == NULL) {
-      DEXIT;
-      return 0;
+      DRETURN(0);
    }
 
    /* insert all elements into the new hash table */
@@ -790,8 +786,7 @@ int cull_hash_new(lList *lp, int nm, bool unique)
                        unique);
    }
 
-   DEXIT;
-   return 1;
+   DRETURN(1);
 }
 
 void *cull_hash_key(const lListElem *ep, int pos, char *host_key)

@@ -110,7 +110,7 @@ pid_t sge_peopen(const char *shell, int login_shell, const char *command,
 #endif /* WIN32 */
    uid_t myuid;
  
-   DENTER(TOP_LAYER, "sge_peopen");
+   DENTER(TOP_LAYER);
  
    /* open pipes - close on failure */
    for (i=0; i<3; i++) {
@@ -121,8 +121,7 @@ pid_t sge_peopen(const char *shell, int login_shell, const char *command,
          }
          ERROR((SGE_EVENT, MSG_SYSTEM_FAILOPENPIPES_SS,
                 command, strerror(errno)));
-         DEXIT;
-         return -1;
+         DRETURN(-1);
       }
    }
 
@@ -372,7 +371,7 @@ pid_t sge_peopen_r(const char *shell, int login_shell, const char *command,
    uid_t myuid;
    uid_t tuid;
  
-   DENTER(TOP_LAYER, "sge_peopen_r");
+   DENTER(TOP_LAYER);
 
    if (sge_has_admin_user()) {
       sge_switch2start_user();
@@ -651,7 +650,7 @@ int sge_peclose(pid_t pid, FILE *fp_in, FILE *fp_out, FILE *fp_err,
 {
    int i, status;
  
-   DENTER(TOP_LAYER, "sge_peclose");
+   DENTER(TOP_LAYER);
  
    if (fp_in != NULL) {
       FCLOSE(fp_in);
@@ -666,8 +665,7 @@ int sge_peclose(pid_t pid, FILE *fp_in, FILE *fp_out, FILE *fp_err,
    do {
       i = waitpid(pid, &status, timeout?WNOHANG:0);
       if (i==-1) {
-         DEXIT;
-         return -1;
+         DRETURN(-1);
       }
       if (i==0) { /* not yet exited */
          if (timeout->tv_sec == 0) {
@@ -690,12 +688,10 @@ int sge_peclose(pid_t pid, FILE *fp_in, FILE *fp_out, FILE *fp_err,
    } while (i != pid);
  
    if (status & 0xff) {    /* terminated by signal */
-      DEXIT;
-      return -1;
+      DRETURN(-1);
    }
  
-   DEXIT;
-   return (status&0xff00) >> 8;  /* return exitcode */
+   DRETURN((status&0xff00) >> 8);  /* return exitcode */
 FCLOSE_ERROR:
    return -1;
 }

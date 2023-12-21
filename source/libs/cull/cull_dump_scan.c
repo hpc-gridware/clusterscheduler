@@ -100,7 +100,7 @@ int lDumpDescr(FILE *fp, const lDescr *dp, int indent)
    int i, ret = ~EOF;
    char space[256];
 
-   DENTER(CULL_LAYER, "lDumpDescr");
+   DENTER(CULL_LAYER);
 
    space[0] = '\0';
    for (i = 0; i < indent; i++)
@@ -108,15 +108,13 @@ int lDumpDescr(FILE *fp, const lDescr *dp, int indent)
 
    if (!fp) {
       LERROR(LEFILENULL);
-      DEXIT;
-      return -1;
+      DRETURN(-1);
    }
    ret = fprintf(fp, "%s{ /* DESCR BEGIN */\n", space);
 
    if (!dp) {
       LERROR(LEDESCRNULL);
-      DEXIT;
-      return -1;
+      DRETURN(-1);
    }
    ret = fprintf(fp, "%s/* NUMBER OF DESCR FIELDS */ %d\n", space, 
                  lCountDescr(dp));
@@ -128,8 +126,7 @@ int lDumpDescr(FILE *fp, const lDescr *dp, int indent)
 
    ret = fprintf(fp, "%s} /* DESCR END */\n", space);
 
-   DEXIT;
-   return (ret == EOF) ? -1 : 0;
+   DRETURN((ret == EOF) ? -1 : 0);
 }
 
 /****** cull/dump_scan/lUndumpDescr() ****************************************
@@ -153,42 +150,37 @@ lDescr *lUndumpDescr(FILE *fp)
    int n, i;
    lDescr *dp = NULL;
 
-   DENTER(CULL_LAYER, "lUndumpDescr");
+   DENTER(CULL_LAYER);
 
    if (!fp) {
       LERROR(LEFILENULL);
-      DEXIT;
-      return NULL;
+      DRETURN(NULL);
    }
 
    /* read bra */
    if (fGetBra(fp)) {
       printf("bra is missing\n");
       LERROR(LESYNTAX);
-      DEXIT;
-      return NULL;
+      DRETURN(NULL);
    }
 
    /* read Descriptor Count */
    if (fGetInt(fp, &n)) {
       printf("reading integer from dump file failed\n");
       LERROR(LEFIELDREAD);
-      DEXIT;
-      return NULL;
+      DRETURN(NULL);
    }
 
    if (!(dp = (lDescr *) malloc(sizeof(lDescr) * (n + 1)))) {
       LERROR(LEMALLOC);
-      DEXIT;
-      return NULL;
+      DRETURN(NULL);
    }
 
    for (i = 0; i < n; i++) {
       /* read descriptor */
       if (fGetDescr(fp, &(dp[i]))) {
          LERROR(LEFGETDESCR);
-         DEXIT;
-         return NULL;
+         DRETURN(NULL);
       }
    }
    dp[i].nm = NoName;
@@ -200,12 +192,10 @@ lDescr *lUndumpDescr(FILE *fp)
       printf("ket is missing");
       sge_free(&dp);
       LERROR(LESYNTAX);
-      DEXIT;
-      return NULL;
+      DRETURN(NULL);
    }
 
-   DEXIT;
-   return dp;
+   DRETURN(dp);
 }
 
 /****** cull/dump_scan/lDumpElem() ********************************************
@@ -282,7 +272,7 @@ int lDumpElemFp(FILE *fp, const lListElem *ep, int indent)
    const char *str;
    dstring dstr = DSTRING_INIT;
 
-   DENTER(CULL_LAYER, "lDumpElemFp");
+   DENTER(CULL_LAYER);
 
    space[0] = '\0';
    for (i = 0; i < indent; i++)
@@ -290,13 +280,11 @@ int lDumpElemFp(FILE *fp, const lListElem *ep, int indent)
 
    if (!fp) {
       LERROR(LEFILENULL);
-      DEXIT;
-      return -1;
+      DRETURN(-1);
    }
    if (!ep) {
       LERROR(LEELEMNULL);
-      DEXIT;
-      return -1;
+      DRETURN(-1);
    }
 
    ret = fprintf(fp, "%s{ \n", space);
@@ -388,8 +376,7 @@ int lDumpElemFp(FILE *fp, const lListElem *ep, int indent)
 
    ret = fprintf(fp, "%s}\n", space);
 
-   DEXIT;
-   return (ret == EOF) ? -1 : 0;
+   DRETURN((ret == EOF) ? -1 : 0);
 }
 
 /****** cull/dump_scan/lDumpObject() ********************************************
@@ -418,7 +405,7 @@ int lDumpObject(FILE *fp, const lListElem *ep, int indent)
 
    char space[256];
 
-   DENTER(CULL_LAYER, "lDumpObject");
+   DENTER(CULL_LAYER);
 
    space[0] = '\0';
    for (i = 0; i < indent; i++)
@@ -426,13 +413,11 @@ int lDumpObject(FILE *fp, const lListElem *ep, int indent)
 
    if (!fp) {
       LERROR(LEFILENULL);
-      DEXIT;
-      return -1;
+      DRETURN(-1);
    }
    if (!ep) {
       LERROR(LEELEMNULL);
-      DEXIT;
-      return -1;
+      DRETURN(-1);
    }
 
    ret = fprintf(fp, "%s{ /* OBJECT BEGIN */\n", space);
@@ -443,8 +428,7 @@ int lDumpObject(FILE *fp, const lListElem *ep, int indent)
 
    ret = fprintf(fp, "%s} /* OBJECT END */\n", space);
 
-   DEXIT;
-   return (ret == EOF) ? -1 : 0;
+   DRETURN((ret == EOF) ? -1 : 0);
 
 }
 /****** cull/dump_scan/lDumpList() ********************************************
@@ -477,7 +461,7 @@ int lDumpList(FILE *fp, const lList *lp, int indent)
 
    char space[256];
 
-   DENTER(CULL_LAYER, "lDumpList");
+   DENTER(CULL_LAYER);
 
    space[0] = '\0';
    for (i = 0; i < indent; i++)
@@ -485,13 +469,11 @@ int lDumpList(FILE *fp, const lList *lp, int indent)
 
    if (!fp) {
       LERROR(LEFILENULL);
-      DEXIT;
-      return -1;
+      DRETURN(-1);
    }
    if (!lp) {
       LERROR(LELISTNULL);
-      DEXIT;
-      return -1;
+      DRETURN(-1);
    }
 
    ret = fprintf(fp, "%s{ /* LIST BEGIN */\n", space);
@@ -508,8 +490,7 @@ int lDumpList(FILE *fp, const lList *lp, int indent)
 
    ret = fprintf(fp, "%s} /* LIST END */\n", space);
 
-   DEXIT;
-   return (ret == EOF) ? -1 : 0;
+   DRETURN((ret == EOF) ? -1 : 0);
 
 }
 /****** cull/dump_scan/lUndumpElem() ******************************************
@@ -534,7 +515,7 @@ lListElem *lUndumpElem(const char *fname, const lDescr *dp)
    lListElem *ep = NULL;
    FILE *fp;
 
-   DENTER(CULL_LAYER, "lUndumpElemFp");
+   DENTER(CULL_LAYER);
 
    fp = fopen(fname, "r");
    if (fp == NULL) {
@@ -543,8 +524,7 @@ lListElem *lUndumpElem(const char *fname, const lDescr *dp)
       ep = lUndumpElemFp(fp, dp);
    }
 
-   DEXIT;
-   return ep;
+   DRETURN(ep);
 }
 
 /****** cull/dump_scan/lUndumpElemFp() ******************************************
@@ -572,29 +552,25 @@ lListElem *lUndumpElemFp(FILE *fp, const lDescr *dp)
    char *str;
    u_long32 dummy;
 
-   DENTER(CULL_LAYER, "lUndumpElemFp");
+   DENTER(CULL_LAYER);
 
    if (!fp) {
       LERROR(LEFILENULL);
-      DEXIT;
-      return NULL;
+      DRETURN(NULL);
    }
    if (!dp) {
       LERROR(LEDESCRNULL);
-      DEXIT;
-      return NULL;
+      DRETURN(NULL);
    }
    if (!(ep = lCreateElem(dp))) {
       LERROR(LECREATEELEM);
-      DEXIT;
-      return NULL;
+      DRETURN(NULL);
    }
 
    if ((n = lCountDescr(dp)) <= 0) {
       LERROR(LECOUNTDESCR);
       lFreeElem(&ep);
-      DEXIT;
-      return NULL;
+      DRETURN(NULL);
    }
 
    /* read bra */
@@ -602,8 +578,7 @@ lListElem *lUndumpElemFp(FILE *fp, const lDescr *dp)
       printf("bra is missing\n");
       LERROR(LESYNTAX);
       lFreeElem(&ep);
-      DEXIT;
-      return NULL;
+      DRETURN(NULL);
    }
 
    for (i = 0; i < n && ret == 0; i++) {
@@ -667,8 +642,7 @@ lListElem *lUndumpElemFp(FILE *fp, const lDescr *dp)
    if (ret != 0) {
       lFreeElem(&ep);
       LERROR(LEFIELDREAD);
-      DEXIT;
-      return NULL;
+      DRETURN(NULL);
    }
 
    /* read ket */
@@ -676,12 +650,10 @@ lListElem *lUndumpElemFp(FILE *fp, const lDescr *dp)
       lFreeElem(&ep);
       printf("ket is missing\n");
       LERROR(LESYNTAX);
-      DEXIT;
-      return NULL;
+      DRETURN(NULL);
    }
 
-   DEXIT;
-   return ep;
+   DRETURN(ep);
 }
 
 /****** cull/dump_scan/lUndumpObject() ******************************************
@@ -708,40 +680,35 @@ lListElem *lUndumpObject(FILE *fp)
    lListElem *ep;
    lDescr *dp = NULL;
 
-   DENTER(CULL_LAYER, "lUndumpObject");
+   DENTER(CULL_LAYER);
 
    if (!fp) {
       LERROR(LEFILENULL);
-      DEXIT;
-      return NULL;
+      DRETURN(NULL);
    }
    /* read bra */
    if (fGetBra(fp)) {
       printf("bra is missing\n");
       LERROR(LESYNTAX);
-      DEXIT;
-      return NULL;
+      DRETURN(NULL);
    }
 
    /* read Descriptor from file */
    if ((dp = lUndumpDescr(fp)) == NULL) {
       LERROR(LEFGETDESCR);
-      DEXIT;
-      return NULL;
+      DRETURN(NULL);
    }
 
    if (lCountDescr(dp) <= 0) {
       LERROR(LECOUNTDESCR);
       sge_free(&dp);
-      DEXIT;
-      return NULL;
+      DRETURN(NULL);
    }
 
    if ((ep = lUndumpElemFp(fp, dp)) == NULL) {
       LERROR(LEUNDUMPELEM);
       sge_free(&dp);
-      DEXIT;
-      return NULL;
+      DRETURN(NULL);
    }
 
    sge_free(&dp);
@@ -751,12 +718,10 @@ lListElem *lUndumpObject(FILE *fp)
       lFreeElem(&ep);
       printf("ket is missing\n");
       LERROR(LESYNTAX);
-      DEXIT;
-      return NULL;
+      DRETURN(NULL);
    }
 
-   DEXIT;
-   return ep;
+   DRETURN(ep);
 }
 
 /****** cull/dump_scan/lUndumpList() ******************************************
@@ -799,7 +764,7 @@ lList *lUndumpList(FILE *fp, const char *name, const lDescr *dp)
    int *found;
    char *oldname;
 
-   DENTER(CULL_LAYER, "lUndumpList");
+   DENTER(CULL_LAYER);
 
    if (!fp) {
       LERROR(LEFILENULL);
@@ -939,76 +904,66 @@ static int space_comment(char *s)
 {
    char *p, *t;
 
-   DENTER(CULL_LAYER, "space_comment");
+   DENTER(CULL_LAYER);
 
    while ((t = strstr(s, "/*"))) {
       if (!(p = strstr(t + 2, "*/"))) {
-         DEXIT;
-         return -1;
+         DRETURN(-1);
       }
       while (t < p + 2)
          *t++ = ' ';
    }
-   DEXIT;
-   return 0;
+   DRETURN(0);
 
 }
 
 static int fGetLine(FILE *fp, char *line, int max_line) 
 {
-   DENTER(CULL_LAYER, "fGetLine");
+   DENTER(CULL_LAYER);
 
    if (!fp) {
       LERROR(LEFILENULL);
-      DEXIT;
-      return -1;
+      DRETURN(-1);
    }
 
    if (!(fgets(line, max_line, fp))) {
       LERROR(LEFGETS);
-      DEXIT;
-      return -1;
+      DRETURN(-1);
    }
    if (space_comment(line)) {
       LERROR(LESPACECOMMENT);
-      DEXIT;
-      return -1;
+      DRETURN(-1);
    }
 
-   DEXIT;
-   return 0;
+   DRETURN(0);
 }
 
 static int fGetBra(FILE *fp) 
 {
    char s[READ_LINE_LENGHT + 1];
 
-   DENTER(CULL_LAYER, "fGetBra");
+   DENTER(CULL_LAYER);
 
    if (fGetLine(fp, s, READ_LINE_LENGHT)) {
       LERROR(LEFGETLINE);
-      DEXIT;
-      return -1;
+      DRETURN(-1);
    }
 
-   DEXIT;
-   return strstr(s, "{") ? 0 : -1;
+   DRETURN(strstr(s, "{") ? 0 : -1);
 }
 
 static int fGetKet(FILE *fp) 
 {
    char s[READ_LINE_LENGHT + 1];
 
-   DENTER(CULL_LAYER, "fGetKet");
+   DENTER(CULL_LAYER);
 
    if (fGetLine(fp, s, READ_LINE_LENGHT)) {
       LERROR(LEFGETLINE);
-      DEXIT;
-      return -1;
+      DRETURN(-1);
    }
 
-   DEXIT;
-   return strstr(s, "}") ? 0 : -1;
+   DRETURN(strstr(s, "}") ? 0 : -1);
 }
 
 static int fGetDescr(FILE *fp, lDescr *dp) 
@@ -1017,24 +972,21 @@ static int fGetDescr(FILE *fp, lDescr *dp)
    int mt, nm;
    char bra[2], comma[2], ket[2];
 
-   DENTER(CULL_LAYER, "fGetDescr");
+   DENTER(CULL_LAYER);
 
    if (!fp) {
       LERROR(LEFILENULL);
-      DEXIT;
-      return -1;
+      DRETURN(-1);
    }
 
    if (!dp) {
       LERROR(LEDESCRNULL);
-      DEXIT;
-      return -1;
+      DRETURN(-1);
    }
 
    if (fGetLine(fp, s, READ_LINE_LENGHT)) {
       LERROR(LEFGETLINE);
-      DEXIT;
-      return -1;
+      DRETURN(-1);
    }
 
    /* 
@@ -1043,106 +995,91 @@ static int fGetDescr(FILE *fp, lDescr *dp)
     */
    if (sscanf(s, "%1s %d %1s %d %1s", bra, &nm, comma, &mt, ket) != 5) {
       LERROR(LESSCANF);
-      DEXIT;
-      return -1;
+      DRETURN(-1);
    }
 
    if (bra[0] != '{' || comma[0] != ',' || ket[0] != '}') {
       LERROR(LESYNTAX);
-      DEXIT;
-      return -1;
+      DRETURN(-1);
    }
 
    dp->nm = nm;
    dp->mt = mt;
    dp->ht = NULL;
 
-   DEXIT;
-   return 0;
+   DRETURN(0);
 }
 
 static int fGetInt(FILE *fp, int *ip) 
 {
    char s[READ_LINE_LENGHT + 1];
 
-   DENTER(CULL_LAYER, "fGetInt");
+   DENTER(CULL_LAYER);
 
    if (!fp) {
       LERROR(LEFILENULL);
-      DEXIT;
-      return -1;
+      DRETURN(-1);
    }
 
    if (fGetLine(fp, s, READ_LINE_LENGHT)) {
       LERROR(LEFGETLINE);
-      DEXIT;
-      return -1;
+      DRETURN(-1);
    }
 
    if (sscanf(s, "%d", ip) != 1) {
       LERROR(LESSCANF);
-      DEXIT;
-      return -1;
+      DRETURN(-1);
    }
 
-   DEXIT;
-   return 0;
+   DRETURN(0);
 }
 
 static int fGetUlong(FILE *fp, lUlong *up) 
 {
    char s[READ_LINE_LENGHT + 1];
 
-   DENTER(CULL_LAYER, "fGetUlong");
+   DENTER(CULL_LAYER);
 
    if (!fp) {
       LERROR(LEFILENULL);
-      DEXIT;
-      return -1;
+      DRETURN(-1);
    }
 
    if (fGetLine(fp, s, READ_LINE_LENGHT)) {
       LERROR(LEFGETLINE);
-      DEXIT;
-      return -1;
+      DRETURN(-1);
    }
 
    if (sscanf(s, sge_uu32, up) != 1) {
       LERROR(LESSCANF);
-      DEXIT;
-      return -1;
+      DRETURN(-1);
    }
 
-   DEXIT;
-   return 0;
+   DRETURN(0);
 }
 
 static int fGetUlong64(FILE *fp, lUlong64 *up) 
 {
    char s[READ_LINE_LENGHT + 1];
 
-   DENTER(CULL_LAYER, "fGetUlong64");
+   DENTER(CULL_LAYER);
 
    if (!fp) {
       LERROR(LEFILENULL);
-      DEXIT;
-      return -1;
+      DRETURN(-1);
    }
 
    if (fGetLine(fp, s, READ_LINE_LENGHT)) {
       LERROR(LEFGETLINE);
-      DEXIT;
-      return -1;
+      DRETURN(-1);
    }
 
    if (sscanf(s, sge_u64, up) != 1) {
       LERROR(LESSCANF);
-      DEXIT;
-      return -1;
+      DRETURN(-1);
    }
 
-   DEXIT;
-   return 0;
+   DRETURN(0);
 }
 
 static int fGetString(FILE *fp, lString *tp) 
@@ -1152,17 +1089,15 @@ static int fGetString(FILE *fp, lString *tp)
    dstring sp = DSTRING_INIT;
    const char *s;
 
-   DENTER(CULL_LAYER, "fGetString");
+   DENTER(CULL_LAYER);
 
    if (!fp) {
       LERROR(LEFILENULL);
-      DEXIT;
-      return -1;
+      DRETURN(-1);
    }
    if (fGetLine(fp, line, READ_LINE_LENGHT)) {
       LERROR(LEFGETLINE);
-      DEXIT;
-      return -1;
+      DRETURN(-1);
    }
    s = line;
 
@@ -1171,8 +1106,7 @@ static int fGetString(FILE *fp, lString *tp)
    }
    if (*s++ != '"') {
       LERROR(LESYNTAX);
-      DEXIT;
-      return -1;
+      DRETURN(-1);
    }
    for (i = 0; s[i] != '\0' && s[i] != '"'; i++) {
       if (s[i] == '\\') {
@@ -1187,8 +1121,7 @@ static int fGetString(FILE *fp, lString *tp)
          if (fGetLine(fp, line, READ_LINE_LENGHT)) {
             sge_dstring_free(&sp);
             LERROR(LEFGETLINE);
-            DEXIT;
-            return -1;
+            DRETURN(-1);
          }
          s = line;
          for (j = 0; s[j] != '\0' && s[j] != '"'; j++, i++) {
@@ -1212,12 +1145,10 @@ static int fGetString(FILE *fp, lString *tp)
 
    if (!(*tp)) {
       LERROR(LESTRDUP);
-      DEXIT;
-      return -1;
+      DRETURN(-1);
    }
 
-   DEXIT;
-   return 0;
+   DRETURN(0);
 }
 
 static int fGetHost(FILE *fp, lHost *tp) 
@@ -1227,18 +1158,16 @@ static int fGetHost(FILE *fp, lHost *tp)
    char sp[READ_LINE_LENGHT + 1];
    char *s;
 
-   DENTER(CULL_LAYER, "fGetHost");
+   DENTER(CULL_LAYER);
 
    if (!fp) {
       LERROR(LEFILENULL);
-      DEXIT;
-      return -1;
+      DRETURN(-1);
    }
 
    if (fGetLine(fp, line, READ_LINE_LENGHT)) {
       LERROR(LEFGETLINE);
-      DEXIT;
-      return -1;
+      DRETURN(-1);
    }
    s = line;
 
@@ -1246,138 +1175,118 @@ static int fGetHost(FILE *fp, lHost *tp)
       s++;
    if (*s++ != '"') {
       LERROR(LESYNTAX);
-      DEXIT;
-      return -1;
+      DRETURN(-1);
    }
    for (i = 0; s[i] != '\0' && s[i] != '"'; i++)
       sp[i] = s[i];
    if (s[i] != '"') {
       LERROR(LESYNTAX);
-      DEXIT;
-      return -1;
+      DRETURN(-1);
    }
    sp[i] = '\0';
 
    if (!(*tp = strdup(sp))) {
       LERROR(LESTRDUP);
-      DEXIT;
-      return -1;
+      DRETURN(-1);
    }
 
-   DEXIT;
-   return 0;
+   DRETURN(0);
 }
 
 static int fGetFloat(FILE *fp, lFloat *flp) 
 {
    char s[READ_LINE_LENGHT + 1];
 
-   DENTER(CULL_LAYER, "fGetFloat");
+   DENTER(CULL_LAYER);
 
    if (!fp) {
       LERROR(LEFILENULL);
-      DEXIT;
-      return -1;
+      DRETURN(-1);
    }
 
    if (fGetLine(fp, s, READ_LINE_LENGHT)) {
       LERROR(LEFGETLINE);
-      DEXIT;
-      return -1;
+      DRETURN(-1);
    }
 
    if (sscanf(s, "%f", flp) != 1) {
       LERROR(LESSCANF);
-      DEXIT;
-      return -1;
+      DRETURN(-1);
    }
 
-   DEXIT;
-   return 0;
+   DRETURN(0);
 }
 
 static int fGetDouble(FILE *fp, lDouble *dp) 
 {
    char s[READ_LINE_LENGHT + 1];
 
-   DENTER(CULL_LAYER, "fGetDouble");
+   DENTER(CULL_LAYER);
 
    if (!fp) {
       LERROR(LEFILENULL);
-      DEXIT;
-      return -1;
+      DRETURN(-1);
    }
 
    if (fGetLine(fp, s, READ_LINE_LENGHT)) {
       LERROR(LEFGETLINE);
-      DEXIT;
-      return -1;
+      DRETURN(-1);
    }
 
    if (sscanf(s, "%lf", dp) != 1) {
       LERROR(LESSCANF);
-      DEXIT;
-      return -1;
+      DRETURN(-1);
    }
 
-   DEXIT;
-   return 0;
+   DRETURN(0);
 }
 
 static int fGetLong(FILE *fp, lLong *lp) 
 {
    char s[READ_LINE_LENGHT + 1];
 
-   DENTER(CULL_LAYER, "fGetLong");
+   DENTER(CULL_LAYER);
 
    if (!fp) {
       LERROR(LEFILENULL);
-      DEXIT;
-      return -1;
+      DRETURN(-1);
    }
 
    if (fGetLine(fp, s, READ_LINE_LENGHT)) {
       LERROR(LEFGETLINE);
-      DEXIT;
-      return -1;
+      DRETURN(-1);
    }
 
    if (sscanf(s, "%ld", lp) != 1) {
       LERROR(LESSCANF);
-      DEXIT;
-      return -1;
+      DRETURN(-1);
    }
 
-   DEXIT;
-   return 0;
+   DRETURN(0);
 }
 
 static int fGetChar(FILE *fp, lChar *cp) 
 {
    char s[READ_LINE_LENGHT + 1];
 
-   DENTER(CULL_LAYER, "fGetChar");
+   DENTER(CULL_LAYER);
 
    if (!fp) {
       LERROR(LEFILENULL);
-      DEXIT;
-      return -1;
+      DRETURN(-1);
    }
 
    if (fGetLine(fp, s, READ_LINE_LENGHT)) {
       LERROR(LEFGETLINE);
-      DEXIT;
-      return -1;
+      DRETURN(-1);
    }
 
    if (sscanf(s, "%c", cp) != 1) {
       LERROR(LESSCANF);
-      DEXIT;
-      return -1;
+      DRETURN(-1);
    }
 
-   DEXIT;
-   return 0;
+   DRETURN(0);
 }
 
 static int fGetBool(FILE *fp, lBool *cp) 
@@ -1385,48 +1294,42 @@ static int fGetBool(FILE *fp, lBool *cp)
    char s[READ_LINE_LENGHT + 1];
    int i = 0;
 
-   DENTER(CULL_LAYER, "fGetBool");
+   DENTER(CULL_LAYER);
 
    if (!fp) {
       LERROR(LEFILENULL);
-      DEXIT;
-      return -1;
+      DRETURN(-1);
    }
 
    if (fGetLine(fp, s, READ_LINE_LENGHT)) {
       LERROR(LEFGETLINE);
-      DEXIT;
-      return -1;
+      DRETURN(-1);
    }
 
    if (sscanf(s, "%d", &i) != 1) {
       LERROR(LESSCANF);
-      DEXIT;
-      return -1;
+      DRETURN(-1);
    }
 
    *cp = i;
 
-   DEXIT;
-   return 0;
+   DRETURN(0);
 }
 
 static int fGetList(FILE *fp, lList **lpp) 
 {
    char s[READ_LINE_LENGHT + 1];
 
-   DENTER(CULL_LAYER, "fGetList");
+   DENTER(CULL_LAYER);
 
    if (fp == NULL) {
       LERROR(LEFILENULL);
-      DEXIT;
-      return -1;
+      DRETURN(-1);
    }
 
    if (fGetLine(fp, s, READ_LINE_LENGHT)) {
       LERROR(LEFGETLINE);
-      DEXIT;
-      return -1;
+      DRETURN(-1);
    }
    
    if (strstr(s, "empty") != NULL)
@@ -1435,37 +1338,32 @@ static int fGetList(FILE *fp, lList **lpp)
 /*
       if (strstr(s, "full") == 0) {
          LERROR(LESYNTAX);
-         DEXIT;
-         return -1;
+         DRETURN(-1);
       }
 */
       if ((*lpp = lUndumpList(fp, NULL, NULL)) == NULL) {
          LERROR(LEUNDUMPLIST);
-         DEXIT;
-         return -1;
+         DRETURN(-1);
       }
    }
 
-   DEXIT;
-   return 0;
+   DRETURN(0);
 }
 
 static int fGetObject(FILE *fp, lListElem **epp) 
 {
    char s[READ_LINE_LENGHT + 1];
 
-   DENTER(CULL_LAYER, "fGetObject");
+   DENTER(CULL_LAYER);
 
    if (fp == NULL) {
       LERROR(LEFILENULL);
-      DEXIT;
-      return -1;
+      DRETURN(-1);
    }
 
    if (fGetLine(fp, s, READ_LINE_LENGHT)) {
       LERROR(LEFGETLINE);
-      DEXIT;
-      return -1;
+      DRETURN(-1);
    }
 
    if (strstr(s, "none") != NULL)
@@ -1473,18 +1371,15 @@ static int fGetObject(FILE *fp, lListElem **epp)
    else {
       if (strstr(s, "object") == 0) {
          LERROR(LESYNTAX);
-         DEXIT;
-         return -1;
+         DRETURN(-1);
       }
 
       if ((*epp = lUndumpObject(fp)) == NULL) {
          LERROR(LEUNDUMPELEM);
-         DEXIT;
-         return -1;
+         DRETURN(-1);
       }
       (*epp)->status = OBJECT_ELEM;
    }
 
-   DEXIT;
-   return 0;
+   DRETURN(0);
 }

@@ -376,8 +376,8 @@ print_hdr(dstring *out, const format_t *format)
 {
    int i;
 
-   DENTER(TOP_LAYER, "");
-   sge_mutex_lock("sharetree_printing", SGE_FUNC, __LINE__, &mtx);
+   DENTER(TOP_LAYER);
+   sge_mutex_lock("sharetree_printing", __func__, __LINE__, &mtx);
    
    if (format->field_names) {
       struct saved_vars_s *context = NULL;
@@ -404,8 +404,8 @@ print_hdr(dstring *out, const format_t *format)
    sge_dstring_sprintf_append(out, "%s", format->line_delim);
    sge_dstring_sprintf_append(out, "%s", format->rec_delim);
 
-   sge_mutex_unlock("sharetree_printing", SGE_FUNC, __LINE__, &mtx);
-   DEXIT;
+   sge_mutex_unlock("sharetree_printing", __func__, __LINE__, &mtx);
+   DRETURN_VOID;
 }
 
 /****** sge_sharetree_printing/sge_sharetree_print() ***************************
@@ -458,7 +458,7 @@ sge_sharetree_print(dstring *out, const lList *sharetree_in, const lList *users,
    u_long32 curr_time = 0;
    lList *sharetree;
 
-   DENTER(TOP_LAYER, "sge_sharetree_print");
+   DENTER(TOP_LAYER);
 
    /* 
     * The sharetree might contain "default" nodes which
@@ -475,7 +475,7 @@ sge_sharetree_print(dstring *out, const lList *sharetree_in, const lList *users,
     * The sharetree calculation and output uses lots of global variables
     * Better control access to them through a mutex.
     */
-   sge_mutex_lock("sharetree_printing", SGE_FUNC, __LINE__, &mtx);
+   sge_mutex_lock("sharetree_printing", __func__, __LINE__, &mtx);
 
    root = lFirstRW(sharetree);
 
@@ -489,11 +489,10 @@ sge_sharetree_print(dstring *out, const lList *sharetree_in, const lList *users,
 
    print_nodes(out, root, NULL, NULL, users, projects, group_nodes, names, format, "");
 
-   sge_mutex_unlock("sharetree_printing", SGE_FUNC, __LINE__, &mtx);
+   sge_mutex_unlock("sharetree_printing", __func__, __LINE__, &mtx);
 
    /* free our sharetree copy */
    lFreeList(&sharetree);
-   
-   DEXIT;
+   DRETURN_VOID;
 }
 

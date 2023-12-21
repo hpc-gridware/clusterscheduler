@@ -91,7 +91,7 @@ sge_job_verify_adjust(sge_gdi_ctx_class_t *ctx, lListElem *jep, lList **alpp,
 {
    int ret = STATUS_OK;
 
-   DENTER(TOP_LAYER, "sge_job_verify_adjust");
+   DENTER(TOP_LAYER);
 
    const lList *master_cqueue_list = *object_type_get_master_list(SGE_TYPE_CQUEUE);
    const lList *master_hgroup_list = *object_type_get_master_list(SGE_TYPE_HGROUP);
@@ -107,7 +107,7 @@ sge_job_verify_adjust(sge_gdi_ctx_class_t *ctx, lListElem *jep, lList **alpp,
    lList *master_suser_list = *object_type_get_master_list_rw(SGE_TYPE_SUSER);
 
    if (jep == NULL || ruser == NULL || rhost == NULL ) {
-      CRITICAL((SGE_EVENT, MSG_SGETEXT_NULLPTRPASSED_S, SGE_FUNC));
+      CRITICAL((SGE_EVENT, MSG_SGETEXT_NULLPTRPASSED_S, __func__));
       answer_list_add(alpp, SGE_EVENT, STATUS_EUNKNOWN, ANSWER_QUALITY_ERROR);
       ret = STATUS_EUNKNOWN;
    }
@@ -706,7 +706,7 @@ static bool check_binding_param_consistency(const lListElem* binding_elem)
 {
    const char* strategy;
    
-   DENTER(TOP_LAYER, "check_binding_param_consistency");
+   DENTER(TOP_LAYER);
 
    if (binding_elem == NULL) {
       DRETURN(false);

@@ -49,27 +49,26 @@ void usage(void)
 /*-------------------------------------------*/
 int main(int argc, char *argv[])
 {
- int i = 10;
- struct passwd *pw;
- pw = NULL;
+   int i = 10;
+   struct passwd *pw;
+   pw = NULL;
  
- if (argc != 3)
-    usage();
+   if (argc != 3)
+      usage();
  
- while (i-- && !pw)
-   pw = getpwnam(argv[2]);
+   while (i-- && !pw)
+      pw = getpwnam(argv[2]);
    
- if (!pw || !pw->pw_name)
-    exit(1);  
-   
- if (!strcmp(argv[1], "-check"))
-    exit(0);
- else if (!strcmp(argv[1], "-uid"))
-    printf(uid_t_fmt"\n", pw->pw_uid);
- else if (!strcmp(argv[1], "-gid"))
-    printf(gid_t_fmt"\n", pw->pw_gid);
- else
-    usage();
- exit(0);
- return 0;   
+   if (!pw || !pw->pw_name)
+      return 1;
+
+   if (!strcmp(argv[1], "-check"))
+      return 0;
+   else if (!strcmp(argv[1], "-uid"))
+      printf(uid_t_fmt"\n", pw->pw_uid);
+   else if (!strcmp(argv[1], "-gid"))
+      printf(gid_t_fmt"\n", pw->pw_gid);
+   else
+      usage();
+   return 0;
 }

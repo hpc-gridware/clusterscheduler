@@ -103,7 +103,7 @@ static int host_notify_about_X(sge_gdi_ctx_class_t *ctx,
    sge_pack_buffer pb;
    int ret = -1;
 
-   DENTER(TOP_LAYER, "host_notify_about_X");
+   DENTER(TOP_LAYER);
 
    hostname = lGetHost(host, EH_name);
    if (progname_id == EXECD) {

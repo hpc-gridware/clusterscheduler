@@ -421,7 +421,7 @@ pid_t fork_no_pty(int *fd_pipe_in, int *fd_pipe_out,
    int   ret;
    pid_t pid;
 
-   DENTER(TOP_LAYER, "fork_no_pty");
+   DENTER(TOP_LAYER);
    
    ret = pipe(fd_pipe_in);
    if (ret == -1) {
@@ -482,8 +482,7 @@ pid_t fork_no_pty(int *fd_pipe_in, int *fd_pipe_out,
       close(fd_pipe_out[1]); fd_pipe_out[1] = -1;
       close(fd_pipe_err[1]); fd_pipe_err[1] = -1;
    }
-   DEXIT;
-   return pid;
+   DRETURN(pid);
 }
 
 /****** uti/pty/terminal_enter_raw_mode() **************************************

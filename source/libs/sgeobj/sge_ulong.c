@@ -60,7 +60,7 @@ bool double_print_infinity_to_dstring(double value, dstring *string)
 {
    bool ret = true;
 
-   DENTER(ULONG_LAYER, "double_print_infinity_to_dstring");
+   DENTER(ULONG_LAYER);
    if (string != NULL) {
       if (value == DBL_MAX) {
          sge_dstring_append(string, "infinity");
@@ -68,8 +68,7 @@ bool double_print_infinity_to_dstring(double value, dstring *string)
          ret = false;
       }
    }
-   DEXIT;
-   return ret;
+   DRETURN(ret);
 }
 
 /*
@@ -80,7 +79,7 @@ bool double_print_time_to_dstring(double value, dstring *string)
 {
    bool ret = true;
 
-   DENTER(ULONG_LAYER, "double_print_time_to_dstring");
+   DENTER(ULONG_LAYER);
    if (string != NULL) {
       if (!double_print_infinity_to_dstring(value, string)) {
          const u_long32 minute_in_seconds = 60;
@@ -105,8 +104,7 @@ bool double_print_time_to_dstring(double value, dstring *string)
          } 
       }
    }
-   DEXIT;
-   return ret; 
+   DRETURN(ret); 
 }
 
 /*
@@ -117,7 +115,7 @@ bool double_print_memory_to_dstring(double value, dstring *string)
 {
    bool ret = true;
 
-   DENTER(ULONG_LAYER, "double_print_memory_to_dstring");
+   DENTER(ULONG_LAYER);
    if (string != NULL) {
       if (!double_print_infinity_to_dstring(value, string)) {
          const double kilo_byte = 1024;
@@ -143,8 +141,7 @@ bool double_print_memory_to_dstring(double value, dstring *string)
          }
       } 
    }
-   DEXIT;
-   return ret;
+   DRETURN(ret);
 }
 
 /****** sgeobj/double_print_int_to_dstring() ***********************************
@@ -173,7 +170,7 @@ bool double_print_int_to_dstring(double value, dstring *string)
 {
    bool ret = true;
 
-   DENTER(ULONG_LAYER, "double_print_int_to_dstring");
+   DENTER(ULONG_LAYER);
    
    if (string != NULL) {
       if (!double_print_infinity_to_dstring(value, string)) {
@@ -182,15 +179,13 @@ bool double_print_int_to_dstring(double value, dstring *string)
 
          if (value > max_as_dbl || value < min_as_dbl) {
             sge_dstring_append(string, "integer_overflow");
-            DEXIT;
-            return false;
+            DRETURN(false);
          }
      
          sge_dstring_sprintf_append(string, "%d", (int)value);
       } 
    }
-   DEXIT;
-   return ret;
+   DRETURN(ret);
 }
 
 /****** sgeobj/double_print_to_dstring() ***********************************
@@ -219,14 +214,13 @@ bool double_print_to_dstring(double value, dstring *string)
 {
    bool ret = true;
 
-   DENTER(ULONG_LAYER, "double_print_to_dstring");
+   DENTER(ULONG_LAYER);
    if (string != NULL) {
       if (!double_print_infinity_to_dstring(value, string)) {
          sge_dstring_sprintf_append(string, "%f", value);
       } 
    }
-   DEXIT;
-   return ret;
+   DRETURN(ret);
 }
 
 /****** sge_ulong/ulong_parse_date_time_from_string() **************************
@@ -267,7 +261,7 @@ ulong_parse_date_time_from_string(u_long32 *this_ulong,
    struct tm *tmp_timeptr,timeptr;
    struct saved_vars_s *context = NULL;
 
-   DENTER(TOP_LAYER, "ulong_parse_date_time_from_string");
+   DENTER(TOP_LAYER);
 
    memset(tmp_str, 0, sizeof(tmp_str));
 
@@ -280,8 +274,7 @@ ulong_parse_date_time_from_string(u_long32 *this_ulong,
          fprintf(stderr,"\n%s\n", SGE_EVENT);
       }
       *this_ulong = -1;   
-      DEXIT;
-      return false;
+      DRETURN(false);
    }
 
    if (strlen(string) > sizeof(stringT)) {
@@ -293,8 +286,7 @@ ulong_parse_date_time_from_string(u_long32 *this_ulong,
          fprintf(stderr,"\n%s\n", SGE_EVENT);
       }
       *this_ulong = -1;
-      DEXIT;
-      return false;
+      DRETURN(false);
    }
 
    strcpy(inp_date_str, string);
@@ -317,8 +309,7 @@ ulong_parse_date_time_from_string(u_long32 *this_ulong,
          fprintf(stderr,"\n%s\n", SGE_EVENT);
       }
       *this_ulong = -1;
-      DEXIT;
-      return false;
+      DRETURN(false);
    }
 
    i=strlen(non_seconds);
@@ -333,8 +324,7 @@ ulong_parse_date_time_from_string(u_long32 *this_ulong,
          fprintf(stderr,"\n%s\n", SGE_EVENT);
       }
       *this_ulong = -1;
-      DEXIT;
-      return false;
+      DRETURN(false);
    }
 
    memset((char *)&timeptr, 0, sizeof(timeptr));
@@ -377,8 +367,7 @@ ulong_parse_date_time_from_string(u_long32 *this_ulong,
          fprintf(stderr,"\n%s\n", SGE_EVENT);
       }
       *this_ulong = -1;
-      DEXIT;
-      return false;
+      DRETURN(false);
    }
 
    non_seconds+=2;
@@ -400,8 +389,7 @@ ulong_parse_date_time_from_string(u_long32 *this_ulong,
          fprintf(stderr,"\n%s\n", SGE_EVENT);
       }
       *this_ulong = -1;
-      DEXIT;
-      return false;
+      DRETURN(false);
    }
 
    memset(tmp_str, 0, sizeof(tmp_str));
@@ -418,8 +406,7 @@ ulong_parse_date_time_from_string(u_long32 *this_ulong,
          fprintf(stderr,"\n%s\n", SGE_EVENT);
       }
       *this_ulong = -1;
-      DEXIT;
-      return false;
+      DRETURN(false);
    }
 
    memset(tmp_str, 0, sizeof(tmp_str));
@@ -436,8 +423,7 @@ ulong_parse_date_time_from_string(u_long32 *this_ulong,
          fprintf(stderr,"\n%s\n", SGE_EVENT);
       }
       *this_ulong = -1;
-      DEXIT;
-      return false;
+      DRETURN(false);
    }
 
    if (seconds) {
@@ -453,8 +439,7 @@ ulong_parse_date_time_from_string(u_long32 *this_ulong,
          fprintf(stderr,"\n%s\n", SGE_EVENT);
       }
       *this_ulong = -1;
-      DEXIT;
-      return false;
+      DRETURN(false);
    }
 
    /*
@@ -476,15 +461,13 @@ ulong_parse_date_time_from_string(u_long32 *this_ulong,
          fprintf(stderr,"\n%s\n", SGE_EVENT);
       }
       *this_ulong = -1;
-      DEXIT;
-      return false;
+      DRETURN(false);
    }
 
    sge_free_saved_vars(context);
 
    *this_ulong = gmt_secs;
-   DEXIT;
-   return true;
+   DRETURN(true);
 }
 
 bool
@@ -493,7 +476,7 @@ ulong_parse_centry_type_from_string(u_long32 *this_ulong,
 {
    bool ret = true;
    int i;
-   DENTER(TOP_LAYER, "ulong_parse_centry_type_from_string");
+   DENTER(TOP_LAYER);
 
    *this_ulong = 0;
    for (i = TYPE_FIRST; i <= TYPE_CE_LAST; i++) {
@@ -507,8 +490,7 @@ ulong_parse_centry_type_from_string(u_long32 *this_ulong,
                               MSG_INVALID_CENTRY_TYPE_S, string);
       ret = false;
    }
-   DEXIT;
-   return ret;
+   DRETURN(ret);
 }
 
 bool
@@ -517,7 +499,7 @@ ulong_parse_centry_relop_from_string(u_long32 *this_ulong,
 {
    bool ret = true;
    int i;
-   DENTER(TOP_LAYER, "ulong_parse_centry_relop_from_string");
+   DENTER(TOP_LAYER);
 
    *this_ulong = 0;
    for (i = CMPLXEQ_OP; i <= CMPLXNE_OP; i++) {
@@ -531,8 +513,7 @@ ulong_parse_centry_relop_from_string(u_long32 *this_ulong,
                               MSG_INVALID_CENTRY_RELOP_S, string);
       ret = false;
    }
-   DEXIT;
-   return ret;
+   DRETURN(ret);
 }
 
 bool
@@ -541,7 +522,7 @@ ulong_parse_from_string(u_long32 *this_ulong,
 {
    bool ret = true;
       
-   DENTER(TOP_LAYER, "ulong_parse_from_string");
+   DENTER(TOP_LAYER);
    if (this_ulong != NULL && string != NULL) {
       if (!parse_ulong_val(NULL, this_ulong, TYPE_INT, string, NULL, 0)) {
          answer_list_add(answer_list, MSG_PARSE_INVALID_ID_MUSTBEUINT,
@@ -559,7 +540,7 @@ ulong_list_parse_from_string(lList **this_list, lList **answer_list,
 {
    bool ret = true;
                                 
-   DENTER(TOP_LAYER, "ulong_list_parse_from_string");
+   DENTER(TOP_LAYER);
    if (this_list != NULL && string != NULL && delimitor != NULL) {
       struct saved_vars_s *context = NULL;
       const char *token;
@@ -588,7 +569,7 @@ ulong_parse_priority(lList **answer_list, int *valp, const char *priority_str)
    bool ret = true;
    char *s;
 
-   DENTER(TOP_LAYER, "ulong_parse_priority");
+   DENTER(TOP_LAYER);
    *valp = strtol(priority_str, &s, 10);
    if ((char*)valp == s || *valp > 1024 || *valp < -1023) {
       SGE_ADD_MSG_ID(sprintf(SGE_EVENT, MSG_ULNG_INVALIDPRIO_I, (int) *valp));
@@ -606,7 +587,7 @@ ulong_parse_value_from_string(u_long32 *this_ulong,
    bool ret = true;
    char *s;
    
-   DENTER(TOP_LAYER, "ulong_parse_value_from_string");
+   DENTER(TOP_LAYER);
    
    *this_ulong = strtol(string, &s, 10);
    if (string == s) {
@@ -624,7 +605,7 @@ ulong_parse_task_concurrency(lList **answer_list, int *valp, const char *task_co
    bool ret = true;
    char *s;
 
-   DENTER(TOP_LAYER, "ulong_parse_task_concurrency");
+   DENTER(TOP_LAYER);
    *valp = strtol(task_concurrency_str, &s, 10);
    if (task_concurrency_str == s || *valp < 0) {
       SGE_ADD_MSG_ID(sprintf(SGE_EVENT, MSG_ULNG_INVALID_TASK_CONCURRENCY_I, (int) *valp));

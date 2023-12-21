@@ -90,7 +90,7 @@ bool cqueue_calculate_summary(const lListElem *cqueue,
 {
    bool ret = true;
    
-   DENTER(TOP_LAYER, "cqueue_calculate_summary");
+   DENTER(TOP_LAYER);
    if (cqueue != NULL) {
       const lList *qinstance_list = lGetList(cqueue, CQ_qinstances);
       const lListElem *qinstance = NULL;
@@ -188,8 +188,7 @@ bool cqueue_calculate_summary(const lListElem *cqueue,
       }
       *available -= used_available;
    }
-   DEXIT;
-   return ret;
+   DRETURN(ret);
 }
 
 int 
@@ -198,7 +197,7 @@ select_by_qref_list(lList *cqueue_list, const lList *hgrp_list, const lList *qre
    int ret = 0;
    lList *queueref_list = NULL;
 
-   DENTER(TOP_LAYER, "select_by_qref_list");
+   DENTER(TOP_LAYER);
 
    /* 
     * Resolve queue pattern
@@ -212,8 +211,7 @@ select_by_qref_list(lList *cqueue_list, const lList *hgrp_list, const lList *qre
                         &found_something, cqueue_list, hgrp_list, true, true);
       if (!found_something) {
          lFreeList(&queueref_list);
-         DEXIT;
-         return -1;
+         DRETURN(-1);
       }
       lFreeList(&queueref_list);
       queueref_list = tmp_list;
@@ -268,8 +266,7 @@ select_by_qref_list(lList *cqueue_list, const lList *hgrp_list, const lList *qre
 
    lFreeList(&queueref_list);
 
-   DEXIT;
-   return ret;
+   DRETURN(ret);
 }
 
 /* 
@@ -291,7 +288,7 @@ lList *pe_list
    lListElem *qep;
    const lListElem *cqueue;
 
-   DENTER(TOP_LAYER, "select_by_pe_list");
+   DENTER(TOP_LAYER);
 
   /*
    * iterate through peref_list and build up a new pe_list
@@ -348,8 +345,7 @@ lList *pe_list
    if (pe_selected != NULL) {
       lFreeList(&pe_selected);
    }
-   DEXIT;
-   return nqueues;
+   DRETURN(nqueues);
 }
 
 /* 
@@ -385,7 +381,7 @@ lList *project_list
    const lList *global_prj = NULL;
    const lList *global_xprj = NULL;
 
-   DENTER(TOP_LAYER, "select_by_queue_user_list");
+   DENTER(TOP_LAYER);
 
    /* untag all queues where no of the users has access */
 
@@ -592,8 +588,7 @@ lList *project_list
 
    lFreeList(&config_acl);
    lFreeList(&config_xacl);
-   DEXIT;
-   return nqueues;
+   DRETURN(nqueues);
 }
 
 /* 
@@ -616,7 +611,7 @@ lList *centry_list
    const lListElem *cqueue = NULL;
    u_long32 interval;
 
-   DENTER(TOP_LAYER, "select_by_queue_state");
+   DENTER(TOP_LAYER);
 
    /* only show queues in the requested state */
    /* make it possible to display any load value in qstat output */
@@ -647,8 +642,7 @@ lList *centry_list
          }   
       }
    }
-   DEXIT;
-   return 0;
+   DRETURN(0);
 }   
 
 /* 
@@ -668,15 +662,14 @@ u_long32 empty_qs
 ) {
    const lListElem *cqueue = NULL;
 
-   DENTER(TOP_LAYER, "select_by_resource_list");
+   DENTER(TOP_LAYER);
 
    if (centry_list_fill_request(resource_list, NULL, centry_list, true, true, false)) {
       /* 
       ** error message gets written by centry_list_fill_request into 
       ** SGE_EVENT 
       */
-      DEXIT;
-      return -1;
+      DRETURN(-1);
    }
 
    /* prepare request */
@@ -698,8 +691,7 @@ u_long32 empty_qs
       }
    }
 
-   DEXIT;
-   return 0;
+   DRETURN(0);
 }   
 
 bool is_cqueue_selected(lList *queue_list)
@@ -708,7 +700,7 @@ bool is_cqueue_selected(lList *queue_list)
    bool a_qinstance_is_selected = false;
    bool a_cqueue_is_selected = false;
 
-   DENTER(TOP_LAYER, "is_cqueue_selected");
+   DENTER(TOP_LAYER);
    
    for_each_rw(cqueue, queue_list) {
       const lListElem *qep;
@@ -729,8 +721,7 @@ bool is_cqueue_selected(lList *queue_list)
       }
    }
 
-   DEXIT;
-   return a_cqueue_is_selected;
+   DRETURN(a_cqueue_is_selected);
 }
 
 /****** sge_cqueue_qstat/qinstance_slots_reserved_now() ************************
@@ -761,7 +752,7 @@ int qinstance_slots_reserved_now(const lListElem *this_elem)
    lListElem *slots;
    u_long32 now = sge_get_gmt();
    
-   DENTER(TOP_LAYER, "qinstance_slots_reserved_now");
+   DENTER(TOP_LAYER);
 
    slots = lGetSubStr(this_elem, RUE_name, SGE_ATTR_SLOTS, QU_resource_utilization);
    if (slots != NULL) {

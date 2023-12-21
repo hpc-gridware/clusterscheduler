@@ -69,7 +69,7 @@ void heartbeat_initialize(void)
 {
    te_event_t ev     = NULL;
 
-   DENTER(TOP_LAYER, "heartbeat_initialize");
+   DENTER(TOP_LAYER);
 
    te_register_event_handler(increment_heartbeat, TYPE_HEARTBEAT_EVENT);
    ev = te_new_event(HEARTBEAT_INTERVAL, TYPE_HEARTBEAT_EVENT, RECURRING_EVENT, 
@@ -84,8 +84,7 @@ void heartbeat_initialize(void)
       DPRINTF(("heartbeat timeout test enabled (timeout="sge_U32CFormat")\n", sge_u32c(test_timeout)));
    }
 
-   DEXIT;
-   return;
+   DRETURN_VOID;
 } /* sge_start_heartbeat(void) */
 
 /****** qmaster/sge_qmaster_heartbeat/increment_heartbeat() *************************
@@ -124,7 +123,7 @@ increment_heartbeat(sge_gdi_ctx_class_t *ctx, te_event_t anEvent, monitoring_t *
    const char *act_qmaster_file = ctx->get_act_qmaster_file(ctx);
    const char *qualified_hostname = ctx->get_qualified_hostname(ctx);
 
-   DENTER(TOP_LAYER, "increment_heartbeat");
+   DENTER(TOP_LAYER);
 
    retval = inc_qmaster_heartbeat(QMASTER_HEARTBEAT_FILE, 30, &heartbeat);
 
@@ -168,7 +167,6 @@ increment_heartbeat(sge_gdi_ctx_class_t *ctx, te_event_t anEvent, monitoring_t *
       }
    }
 
-   DEXIT;
-   return;
+   DRETURN_VOID;
 } /* increment_heartbeat() */
 

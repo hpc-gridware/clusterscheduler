@@ -63,7 +63,7 @@ void *get_thrd_func_arg(void)
 
 static void *thread_function_1(void *anArg)
 {
-   DENTER(TOP_LAYER, "thread_function_1");
+   DENTER(TOP_LAYER);
 
    SGE_LOCK(LOCK_GLOBAL, LOCK_WRITE);
 
@@ -73,13 +73,12 @@ static void *thread_function_1(void *anArg)
 
    SGE_UNLOCK(LOCK_GLOBAL, LOCK_WRITE);
 
-   DEXIT;
-   return (void *)NULL;
+   DRETURN((void *)NULL);
 }
 
 static void lock_recursive(void)
 {
-   DENTER(TOP_LAYER, "lock_recursive");
+   DENTER(TOP_LAYER);
 
    SGE_LOCK(LOCK_GLOBAL, LOCK_WRITE);
 
@@ -87,13 +86,12 @@ static void lock_recursive(void)
 
    SGE_UNLOCK(LOCK_GLOBAL, LOCK_WRITE);
 
-   DEXIT;
-   return;
+   DRETURN_VOID;
 }
 
 static void *thread_function_2(void *anArg)
 {
-   DENTER(TOP_LAYER, "thread_function_2");
+   DENTER(TOP_LAYER);
 
    sleep(6);
 
@@ -103,8 +101,7 @@ static void *thread_function_2(void *anArg)
 
    SGE_UNLOCK(LOCK_GLOBAL, LOCK_WRITE);
 
-   DEXIT;
-   return (void *)NULL;
+   DRETURN((void *)NULL);
 } /* thread_function_2 */
 
 int validate(int thread_count) {

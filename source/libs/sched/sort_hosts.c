@@ -103,7 +103,7 @@ int sort_host_list(lList *hl, const lList *centry_list)
    const char *load_formula = sconf_get_load_formula();
    double load;
 
-   DENTER(TOP_LAYER, "sort_host_list");
+   DENTER(TOP_LAYER);
 
    for_each_rw (hlp, hl) {
       if (hlp != global && hlp != template) { /* don't treat global or template */
@@ -161,7 +161,7 @@ double scaled_mixed_load(const char* load_formula, lListElem *global,
    int op_pos, next_op=LOAD_OP_NONE;
    char *lasts = NULL;
 
-   DENTER(TOP_LAYER, "scaled_mixed_load");
+   DENTER(TOP_LAYER);
 
    /* we'll use strtok ==> we need a safety copy */
    if ((tf = strdup(load_formula)) == NULL) {
@@ -297,7 +297,7 @@ static int get_load_value(double *dvalp, lListElem *global, lListElem *host, con
 {
    lListElem *cep;
 
-   DENTER(TOP_LAYER, "get_load_value");
+   DENTER(TOP_LAYER);
    
    /* search complex */
    if (strchr(attrname, '$')) {

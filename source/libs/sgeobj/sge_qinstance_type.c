@@ -94,7 +94,7 @@ qtype_append_to_dstring(u_long32 qtype, dstring *string)
 {
    const char *ret = NULL;
 
-   DENTER(QINSTANCE_TYPE_LAYER, "qtype_append_to_dstring");
+   DENTER(QINSTANCE_TYPE_LAYER);
    if (string != NULL) {
       const char **ptr = NULL;
       u_long32 bitmask = 1;
@@ -115,8 +115,7 @@ qtype_append_to_dstring(u_long32 qtype, dstring *string)
       }
       ret = sge_dstring_get_string(string);
    }
-   DEXIT;
-   return ret;
+   DRETURN(ret);
 }
 
 bool
@@ -125,7 +124,7 @@ qinstance_print_qtype_to_dstring(const lListElem *this_elem,
 {
    bool ret = true;
 
-   DENTER(QINSTANCE_TYPE_LAYER, "qinstance_print_qtype_to_dstring");
+   DENTER(QINSTANCE_TYPE_LAYER);
    if (this_elem != NULL && string != NULL) {
       const char **ptr = NULL;
       u_long32 bitmask = 1;
@@ -170,7 +169,7 @@ qinstance_parse_qtype_from_string(lListElem *this_elem, lList **answer_list,
    bool ret = true;
    u_long32 type = 0;
 
-   DENTER(QINSTANCE_TYPE_LAYER, "qinstance_parse_qtype_from_string");
+   DENTER(QINSTANCE_TYPE_LAYER);
    SGE_CHECK_POINTER_FALSE(this_elem, answer_list);
    if (value != NULL && *value != 0) {
       if (!sge_parse_bitfield_str(value, queue_types, &type,
@@ -180,8 +179,7 @@ qinstance_parse_qtype_from_string(lListElem *this_elem, lList **answer_list,
    }
 
    lSetUlong(this_elem, QU_qtype, type);
-   DEXIT;
-   return ret;
+   DRETURN(ret);
 }
 
 bool qinstance_is_batch_queue(const lListElem *this_elem)

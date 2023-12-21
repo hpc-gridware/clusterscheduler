@@ -122,7 +122,7 @@ void reschedule_unknown_event(sge_gdi_ctx_class_t *ctx, te_event_t anEvent, moni
    char* hostname = te_get_alphanumeric_key(anEvent);
 
 
-   DENTER(TOP_LAYER, "reschedule_unknown_event");
+   DENTER(TOP_LAYER);
 
    MONITOR_WAIT_TIME(SGE_LOCK(LOCK_GLOBAL, LOCK_WRITE), monitor);
  
@@ -220,7 +220,7 @@ int reschedule_jobs(sge_gdi_ctx_class_t *ctx, lListElem *ep, u_long32 force, lLi
    lListElem *jep;               /* JB_Type */
    int ret = 1;
  
-   DENTER(TOP_LAYER, "reschedule_jobs");
+   DENTER(TOP_LAYER);
  
    /*
     * if ep is of type EH_Type than we will reschedule all jobs
@@ -238,8 +238,7 @@ int reschedule_jobs(sge_gdi_ctx_class_t *ctx, lListElem *ep, u_long32 force, lLi
       ret = 0;
    }
  
-   DEXIT;
-   return ret;
+   DRETURN(ret);
 }
  
 /****** qmaster/reschedule/reschedule_job() ***********************************
@@ -296,7 +295,7 @@ int reschedule_job(sge_gdi_ctx_class_t *ctx, lListElem *jep, lListElem *jatep, l
    const char *hostname;
    int ret = 0;
 
-   DENTER(TOP_LAYER, "reschedule_job");
+   DENTER(TOP_LAYER);
  
    job_number = lGetUlong(jep, JB_job_number);
 
@@ -615,7 +614,7 @@ lListElem* add_to_reschedule_unknown_list(sge_gdi_ctx_class_t *ctx,
                                           u_long32 task_number, u_long32 state)
 {
    lListElem* ruep = NULL;
-   DENTER(TOP_LAYER, "add_to_reschedule_unknown_list");
+   DENTER(TOP_LAYER);
  
    if (host) {
       ruep = lAddSubUlong(host, RU_job_number, job_number, EH_reschedule_unknown_list, RU_Type);
@@ -664,7 +663,7 @@ static lListElem* get_from_reschedule_unknown_list(const lListElem *host,
 {
    lListElem *ruep = NULL;
  
-   DENTER(TOP_LAYER, "get_from_reschedule_unknown_list");
+   DENTER(TOP_LAYER);
    for_each_rw(ruep, lGetList(host, EH_reschedule_unknown_list)) {
       if (job_number == lGetUlong(ruep, RU_job_number)
           && task_number == lGetUlong(ruep, RU_task_number)) {
@@ -692,7 +691,7 @@ void delete_from_reschedule_unknown_list(sge_gdi_ctx_class_t *ctx, lListElem *ho
 {
    lList *rulp;
    bool changed = false;
-   DENTER(TOP_LAYER, "delete_from_reschedule_unknown_list");
+   DENTER(TOP_LAYER);
  
    rulp = lGetListRW(host, EH_reschedule_unknown_list);
    if (rulp) {
@@ -745,7 +744,7 @@ void update_reschedule_unknown_list(sge_gdi_ctx_class_t *ctx, lListElem *host)
 {
    lListElem *ruep;
  
-   DENTER(TOP_LAYER, "update_reschedule_unknown_list");
+   DENTER(TOP_LAYER);
    if (host) {
       bool changed = false;
       for_each_rw(ruep, lGetList(host, EH_reschedule_unknown_list)) {
@@ -817,7 +816,7 @@ u_long32 skip_restarted_job(lListElem *host, lListElem *job_report,
 {
    lListElem *ruep;
    u_long32 ret = 0;
-   DENTER(TOP_LAYER, "skip_restarted_job");
+   DENTER(TOP_LAYER);
  
    for_each_rw(ruep, lGetList(host, EH_reschedule_unknown_list)) {
       if (lGetUlong(ruep, RU_job_number) == job_number
@@ -869,7 +868,7 @@ void update_reschedule_unknown_list_for_job(lListElem *host,
 {
    lListElem *ruep;
  
-   DENTER(TOP_LAYER, "update_reschedule_unknown_list_for_job");
+   DENTER(TOP_LAYER);
 
    if (host) {
       for_each_rw(ruep, lGetList(host, EH_reschedule_unknown_list)) {
@@ -885,7 +884,7 @@ void update_reschedule_unknown_list_for_job(lListElem *host,
          }
       }
    }
-   DEXIT;
+   DRETURN_VOID;
 }      
 
 /****** qmaster/reschedule/update_reschedule_unknown_timout_values() **********
@@ -911,7 +910,7 @@ void update_reschedule_unknown_timout_values(const char *config_name)
    lListElem *host = NULL;
    lList *master_exechost_list = *object_type_get_master_list_rw(SGE_TYPE_EXECHOST);
 
-   DENTER(TOP_LAYER, "update_reschedule_unknown_timout_values");
+   DENTER(TOP_LAYER);
 
    if (strcmp(SGE_GLOBAL_NAME, config_name) == 0) {
       lListElem *global_exechost_elem   = NULL;
@@ -952,7 +951,7 @@ void update_reschedule_unknown_timout_values(const char *config_name)
 ******************************************************************************/
 static void update_reschedule_unknown_timeout(lListElem *host) 
 {
-   DENTER(TOP_LAYER, "update_reschedule_unknown_timeout");
+   DENTER(TOP_LAYER);
    
    if (host != NULL) {
       lListElem *conf_entry = NULL; /* CF_Type */
@@ -975,11 +974,11 @@ static void update_reschedule_unknown_timeout(lListElem *host)
       }
       
       DPRINTF(("%s: reschedule_unknown timeout for host "SFN" is "sge_u32"\n", 
-               SGE_FUNC, hostname, timeout));  
+               __func__, hostname, timeout));
          
       lSetUlong(host, EH_reschedule_unknown, timeout); 
    } else {
-      DPRINTF(("%s: host == NULL\n", SGE_FUNC));
+      DPRINTF(("%s: host == NULL\n", __func__));
    }
    
    DRETURN_VOID; 
@@ -1008,7 +1007,7 @@ static u_long32 reschedule_unknown_timeout(lListElem *hep)
    u_long32 timeout = 0;
    const char *host = NULL;
  
-   DENTER(TOP_LAYER, "reschedule_unknown_timeout");
+   DENTER(TOP_LAYER);
  
    host = lGetHost(hep, EH_name);
    timeout = lGetUlong(hep, EH_reschedule_unknown);
@@ -1029,7 +1028,7 @@ static u_long32 reschedule_unknown_timeout(lListElem *hep)
          lFreeElem(&conf_entry);
       }
    
-      DPRINTF(("%s: reschedule_unknown timeout for host %s is "sge_u32"\n", SGE_FUNC, host, timeout));
+      DPRINTF(("%s: reschedule_unknown timeout for host %s is "sge_u32"\n", __func__, host, timeout));
       
       lSetUlong(hep, EH_reschedule_unknown, timeout);
       
@@ -1060,7 +1059,7 @@ void reschedule_unknown_trigger(lListElem *hep)
 {
    u_long32 timeout;
 
-   DENTER(TOP_LAYER, "reschedule_unknown_trigger"); 
+   DENTER(TOP_LAYER); 
 
    timeout = reschedule_unknown_timeout(hep);
  
@@ -1075,7 +1074,7 @@ void reschedule_unknown_trigger(lListElem *hep)
       te_add_event(ev);
       te_free_event(&ev);
    }
-   DEXIT;
+   DRETURN_VOID;
 }       
 
 /****** qmaster/reschedule/reschedule_add_additional_time() *******************
@@ -1095,9 +1094,9 @@ void reschedule_unknown_trigger(lListElem *hep)
 ******************************************************************************/
 void reschedule_add_additional_time(u_long32 time) 
 {
-   DENTER(TOP_LAYER, "reschedule_add_additional_time");
+   DENTER(TOP_LAYER);
    add_time = time;
-   DEXIT;
+   DRETURN_VOID;
 }  
 
 void
@@ -1105,7 +1104,7 @@ remove_from_reschedule_unknown_list(sge_gdi_ctx_class_t *ctx,
                                     lListElem *host, u_long32 job_number,
                                     u_long32 task_number)
 {
-   DENTER(TOP_LAYER, "remove_from_reschedule_unknown_list");
+   DENTER(TOP_LAYER);
    if (host) {
       lList *unknown_list = lGetListRW(host, EH_reschedule_unknown_list);
       lListElem *elem;
@@ -1135,7 +1134,7 @@ remove_from_reschedule_unknown_lists(sge_gdi_ctx_class_t *ctx,
 {
    lListElem *host;
 
-   DENTER(TOP_LAYER, "remove_from_reschedule_unknown_lists");
+   DENTER(TOP_LAYER);
 
    for_each_rw(host, *object_type_get_master_list_rw(SGE_TYPE_EXECHOST)) {
       remove_from_reschedule_unknown_list(ctx, host, job_number, task_number);

@@ -312,7 +312,7 @@ static lList *ptf_build_usage_list(char *name, lList *old_usage_list)
    lList *usage_list;
    lListElem *usage;
 
-   DENTER(TOP_LAYER, "ptf_build_usage_list");
+   DENTER(TOP_LAYER);
 
    if (old_usage_list) {
       usage_list = lCopyList(name, old_usage_list);
@@ -357,8 +357,7 @@ static lList *ptf_build_usage_list(char *name, lList *old_usage_list)
 #endif
    }
 
-   DEXIT;
-   return usage_list;
+   DRETURN(usage_list);
 }
 
 /****** execd/ptf/ptf_reinit_queue_priority() *********************************
@@ -383,11 +382,10 @@ void ptf_reinit_queue_priority(u_long32 job_id, u_long32 ja_task_id,
                                const char *pe_task_id_str, int priority)
 {
    lListElem *job_elem;
-   DENTER(TOP_LAYER, "ptf_reinit_queue_priority");
+   DENTER(TOP_LAYER);
 
    if (!job_id || !ja_task_id) {
-      DEXIT;
-      return;
+      DRETURN_VOID;
    }
 
    for_each_rw(job_elem, ptf_jobs) {
@@ -417,7 +415,7 @@ void ptf_reinit_queue_priority(u_long32 job_id, u_long32 ja_task_id,
          }
       }
    }
-   DEXIT;
+   DRETURN_VOID;
 }
 
 /****** execd/ptf/ptf_set_job_priority() **************************************
@@ -439,12 +437,12 @@ static void ptf_set_job_priority(lListElem *job)
    const lListElem *osjob;
    long pri = lGetLong(job, JL_pri);
 
-   DENTER(TOP_LAYER, "ptf_set_job_priority");
+   DENTER(TOP_LAYER);
 
    for_each(osjob, lGetList(job, JL_OS_job_list)) {
       ptf_set_native_job_priority(job, osjob, pri);
    }
-   DEXIT;
+   DRETURN_VOID;
 }
 
 /****** execd/ptf/ptf_set_native_job_priority() *******************************
@@ -506,7 +504,7 @@ static void ptf_setpriority_ash(lListElem *job, lListElem *osjob, long pri)
    static int first = 1;
 #  endif
 
-   DENTER(TOP_LAYER, "ptf_setpriority_ash");
+   DENTER(TOP_LAYER);
 
 #  if defined(IRIX)
    if (first) {
@@ -581,7 +579,7 @@ static void ptf_setpriority_ash(lListElem *job, lListElem *osjob, long pri)
 #     endif
    }
 #  endif
-   DEXIT;
+   DRETURN_VOID;
 }
 
 #elif defined(CRAY)
@@ -606,7 +604,7 @@ static void ptf_setpriority_ash(lListElem *job, lListElem *osjob, long pri)
 static void ptf_setpriority_jobid(lListElem *job, lListElem *osjob, long pri)
 {
    int nice;
-   DENTER(TOP_LAYER, "ptf_setpriority_jobid");
+   DENTER(TOP_LAYER);
 
 #  ifdef CRAY
    nice = nicem(C_JOB, ptf_get_osjobid(osjob), 0);
@@ -626,7 +624,7 @@ static void ptf_setpriority_jobid(lListElem *job, lListElem *osjob, long pri)
    }
 #  endif
 
-   DEXIT;
+   DRETURN_VOID;
 }
 
 #elif defined(ALPHA) || defined(SOLARIS) || defined(LINUX) || defined(FREEBSD) || defined(DARWIN)
@@ -657,7 +655,7 @@ static void ptf_setpriority_addgrpid(const lListElem *job, const lListElem *osjo
 {
    const lListElem *pid;
 
-   DENTER(TOP_LAYER, "ptf_setpriority_addgrpid");
+   DENTER(TOP_LAYER);
 
 #  ifdef USE_ALPHA_PGRPS
 
@@ -669,7 +667,7 @@ static void ptf_setpriority_addgrpid(const lListElem *job, const lListElem *osjo
       ERROR((SGE_EVENT, MSG_PRIO_JOBXSETPRIORITYFAILURE_DS,
              sge_u32c(lGetUlong(job, JL_job_ID)), strerror(errno)));
    }
-   DEXIT;
+   DRETURN_VOID;
 #  else
 
    /*
@@ -686,7 +684,7 @@ static void ptf_setpriority_addgrpid(const lListElem *job, const lListElem *osjo
                   sge_u32c(lGetUlong(pid, JP_pid)), sge_u32c((u_long32) pri)));
       }
    }
-   DEXIT;
+   DRETURN_VOID;
 #  endif
 }
 
@@ -754,7 +752,7 @@ static lListElem *ptf_get_job_os(const lList *job_list, osjobid_t os_job_id,
    lListElem *osjob = NULL;
    lCondition *where;
 
-   DENTER(TOP_LAYER, "ptf_get_job_os");
+   DENTER(TOP_LAYER);
 
 #if defined(LINUX) || defined(SOLARIS) || defined(ALPHA5) || defined(DARWIN) || defined(FREEBSD) || defined(NETBSD) || defined(INTERIX) || defined(HP1164) || defined(AIX)
    where = lWhere("%T(%I == %u)", JO_Type, JO_OS_job_ID, (u_long32) os_job_id);
@@ -806,7 +804,7 @@ static lListElem *ptf_process_job(osjobid_t os_job_id, const char *task_id_str,
       lGetDouble(lFirst(lGetList(new_job, JB_ja_tasks)), JAT_tix);
    u_long interactive = (lGetString(new_job, JB_script_file) == NULL);
 
-   DENTER(TOP_LAYER, "ptf_process_job");
+   DENTER(TOP_LAYER);
 
    /*
     * Add the job to the job list, if it does not already exist
@@ -826,8 +824,7 @@ static lListElem *ptf_process_job(osjobid_t os_job_id, const char *task_id_str,
    job = ptf_get_job(job_id);
    if (os_job_id == 0) {
       if (job == NULL) {
-         DEXIT;
-         return NULL;
+         DRETURN(NULL);
       }
    } else {
       lList *osjoblist;
@@ -868,8 +865,7 @@ static lListElem *ptf_process_job(osjobid_t os_job_id, const char *task_id_str,
       lSetUlong(job, JL_interactive, 1);
    }
 
-   DEXIT;
-   return job;
+   DRETURN(job);
 }
 
 /****** execd/ptf/ptf_get_usage_from_data_collector() *************************
@@ -902,7 +898,7 @@ static void ptf_get_usage_from_data_collector(void)
    const char *tid;
    int i, j;
 
-   DENTER(TOP_LAYER, "ptf_get_usage_from_data_collector");
+   DENTER(TOP_LAYER);
 
    ojobs = jobs = psGetAllJobs();
    if (jobs) {
@@ -1077,7 +1073,7 @@ static void ptf_get_usage_from_data_collector(void)
    lList *pid_list;
    int j;
 
-   DENTER(TOP_LAYER, "ptf_get_usage_from_data_collector");
+   DENTER(TOP_LAYER);
 
    j = 0;
    for_each(job, ptf_jobs) {
@@ -1153,7 +1149,7 @@ static void ptf_get_usage_from_data_collector(void)
 
 # endif /* MODULE_TEST */
 
-   DEXIT;
+   DRETURN_VOID;
 
 #endif /* USE_DC */
 
@@ -1288,7 +1284,7 @@ static void ptf_set_OS_scheduling_parameters(lList *job_list, double min_share,
    long pri_min_tmp, pri_max_tmp;
    long pri;
    
-   DENTER(TOP_LAYER, "ptf_set_OS_scheduling_parameters");
+   DENTER(TOP_LAYER);
 
    
    pri_min_tmp = mconf_get_ptf_min_priority();
@@ -1369,7 +1365,7 @@ static void ptf_set_OS_scheduling_parameters(lList *job_list, double min_share,
       ptf_set_job_priority(job);
    }
 
-   DEXIT;
+   DRETURN_VOID;
 }
 
 
@@ -1379,7 +1375,7 @@ static void ptf_set_OS_scheduling_parameters(lList *job_list, double min_share,
 int ptf_job_started(osjobid_t os_job_id, const char *task_id_str, 
                     const lListElem *new_job, u_long32 jataskid)
 {
-   DENTER(TOP_LAYER, "ptf_job_started");
+   DENTER(TOP_LAYER);
 
    /*
     * Add new job to job list
@@ -1412,8 +1408,7 @@ int ptf_job_started(osjobid_t os_job_id, const char *task_id_str,
 
 #endif
 
-   DEXIT;
-   return 0;
+   DRETURN(0);
 }
 
 /*--------------------------------------------------------------------
@@ -1425,7 +1420,7 @@ int ptf_job_complete(u_long32 job_id, u_long32 ja_task_id, const char *pe_task_i
    lListElem *ptf_job, *osjob;
    lList *osjobs;
 
-   DENTER(TOP_LAYER, "ptf_job_complete");
+   DENTER(TOP_LAYER);
 
    ptf_job = ptf_get_job(job_id);
 
@@ -1517,7 +1512,7 @@ int ptf_process_job_ticket_list(lList *job_ticket_list)
 {
    lListElem *jte, *job;
 
-   DENTER(TOP_LAYER, "ptf_process_job_ticket_list");
+   DENTER(TOP_LAYER);
 
     /*
      * Update the job entries in the job list with the number of
@@ -1544,16 +1539,15 @@ int ptf_process_job_ticket_list(lList *job_ticket_list)
       }
    }
 
-   DEXIT;
-   return 0;
+   DRETURN(0);
 }
 
 void ptf_update_job_usage()
 {
-   DENTER(TOP_LAYER, "ptf_update_job_usage");
+   DENTER(TOP_LAYER);
 
    ptf_get_usage_from_data_collector();
-   DEXIT;
+   DRETURN_VOID;
 }
 
 
@@ -1579,7 +1573,7 @@ int ptf_adjust_job_priorities(void)
    double sum_interval_usage = 0;
    double sum_of_last_usage = 0;
 
-   DENTER(TOP_LAYER, "ptf_adjust_job_priorities");
+   DENTER(TOP_LAYER);
 
    if ((now = sge_get_gmt()) < next) {
       DRETURN(0);
@@ -1667,8 +1661,7 @@ int ptf_adjust_job_priorities(void)
    
    next = now + PTF_SCHEDULE_TIME;
 
-   DEXIT;
-   return 0;
+   DRETURN(0);
 }
 
 /*--------------------------------------------------------------------
@@ -1729,7 +1722,7 @@ int ptf_get_usage(lList **job_usage_list)
    lListElem *job, *osjob;
    lEnumeration *what;
 
-   DENTER(TOP_LAYER, "ptf_get_usage");
+   DENTER(TOP_LAYER);
 
    what = lWhat("%T(%I %I)", JB_Type, JB_job_number, JB_ja_tasks);
 
@@ -1788,20 +1781,18 @@ int ptf_get_usage(lList **job_usage_list)
 
 int ptf_init(void)
 {
-   DENTER(TOP_LAYER, "ptf_init");
+   DENTER(TOP_LAYER);
    lInit(nmv);
 
    ptf_jobs = lCreateList("ptf_job_list", JL_Type);
    if (ptf_jobs == NULL) {
-      DEXIT;
-      return -1; 
+      DRETURN(-1); 
    }
 
    sge_switch2start_user();
    if (psStartCollector()) {
       sge_switch2admin_user();
-      DEXIT;
-      return -1;
+      DRETURN(-1);
    }
 #if defined(__sgi)
    schedctl(RENICE, 0, 0);
@@ -1824,23 +1815,22 @@ int ptf_init(void)
    }
 #endif
    sge_switch2admin_user();
-   DEXIT;
-   return 0;
+   DRETURN(0);
 }
 
 void ptf_start(void)
 {
-   DENTER(TOP_LAYER, "ptf_start");
+   DENTER(TOP_LAYER);
    if (!is_ptf_running) {
       ptf_init();
       is_ptf_running = 1;
    }
-   DEXIT;
+   DRETURN_VOID;
 }
 
 void ptf_stop(void)
 {
-   DENTER(TOP_LAYER, "ptf_stop");
+   DENTER(TOP_LAYER);
    if (is_ptf_running) {
       ptf_unregister_registered_jobs();
       psStopCollector();
@@ -1848,7 +1838,7 @@ void ptf_stop(void)
    }
 
    lFreeList(&ptf_jobs);
-   DEXIT;
+   DRETURN_VOID;
 }
 
 void ptf_show_registered_jobs(void)
@@ -1856,7 +1846,7 @@ void ptf_show_registered_jobs(void)
    lList *job_list;
    const lListElem *job_elem;
 
-   DENTER(TOP_LAYER, "ptf_show_registered_jobs");
+   DENTER(TOP_LAYER);
 
    job_list = ptf_jobs;
    for_each(job_elem, job_list) {
@@ -1887,14 +1877,14 @@ void ptf_show_registered_jobs(void)
          }
       }
    }
-   DEXIT;
+   DRETURN_VOID;
 }
 
 void ptf_unregister_registered_job(u_long32 job_id, u_long32 ja_task_id ) {
    lListElem *job;
    lListElem *next_job;
 
-   DENTER(TOP_LAYER, "ptf_unregister_registered_job");
+   DENTER(TOP_LAYER);
 
    next_job = lFirstRW(ptf_jobs);
    while ((job = next_job)) {
@@ -1926,14 +1916,14 @@ void ptf_unregister_registered_job(u_long32 job_id, u_long32 ja_task_id ) {
          }
       }
    }
-   DEXIT;
+   DRETURN_VOID;
 }
 
 void ptf_unregister_registered_jobs(void)
 {
    const lListElem *job;
 
-   DENTER(TOP_LAYER, "ptf_unregister_registered_jobs");
+   DENTER(TOP_LAYER);
 
    for_each(job, ptf_jobs) {
       lListElem *os_job;
@@ -1946,7 +1936,7 @@ void ptf_unregister_registered_jobs(void)
 
    lFreeList(&ptf_jobs);
    DPRINTF(("PTF: All jobs unregistered from PTF\n"));
-   DEXIT;
+   DRETURN_VOID;
 }
 
 int ptf_is_running(void)
@@ -1962,7 +1952,7 @@ const char *ptf_errstr(int ptf_error_code)
 {
    const char *errmsg = MSG_ERROR_UNKNOWNERRORCODE;
 
-   DENTER(TOP_LAYER, "ptf_errstr");
+   DENTER(TOP_LAYER);
 
    switch (ptf_error_code) {
    case PTF_ERROR_NONE:

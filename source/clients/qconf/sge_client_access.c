@@ -72,7 +72,7 @@ lList *acl_args
    u_long32 status;
    int already;
 
-   DENTER(TOP_LAYER, "sge_client_add_user");
+   DENTER(TOP_LAYER);
 
    what = lWhat("%T(ALL)", US_Type);
 
@@ -164,7 +164,7 @@ lList *acl_args
    lEnumeration *what;
    u_long32 status;
 
-   DENTER(TOP_LAYER, "sge_client_del_user");
+   DENTER(TOP_LAYER);
 
    what = lWhat("%T(ALL)", US_Type);
 
@@ -258,7 +258,7 @@ lList **dst
    lEnumeration *what;
    const char *acl_name;
    
-   DENTER(TOP_LAYER, "sge_client_get_acls");
+   DENTER(TOP_LAYER);
 
    where = NULL;
    for_each(aclarg, acl_args) {

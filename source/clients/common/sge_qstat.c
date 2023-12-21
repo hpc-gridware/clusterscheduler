@@ -151,7 +151,7 @@ int qselect(qstat_env_t* qstat_env, qselect_handler_t* handler, lList **alpp) {
    const lListElem *cqueue = NULL;
    const lListElem *qep = NULL;
    
-   DENTER(TOP_LAYER,"qselect");
+   DENTER(TOP_LAYER);
    
    /* we need the queue list in any case */
    qstat_env->need_queues = true;
@@ -191,7 +191,7 @@ int qstat_cqueue_summary(qstat_env_t *qstat_env, cqueue_summary_handler_t *handl
    int ret = 0;
    const lListElem *cqueue = NULL;
    
-   DENTER(TOP_LAYER,"qstat_cqueue_summary");
+   DENTER(TOP_LAYER);
    
    if ((ret = qstat_env_prepare(qstat_env, true, alpp)) != 0 ) {
       DPRINTF(("qstat_env_prepare failed\n"));
@@ -272,7 +272,7 @@ int qstat_no_group(qstat_env_t* qstat_env, qstat_handler_t* handler, lList **alp
  
    int ret = 0;
 
-   DENTER(TOP_LAYER,"qstat_no_group");
+   DENTER(TOP_LAYER);
 
    if (getenv("SGE_QSTAT_ENV_DEBUG") != NULL) {
       print_qstat_env_to(qstat_env, stdout);
@@ -410,7 +410,7 @@ static int qstat_env_prepare(qstat_env_t* qstat_env, bool need_job_list, lList *
 {
    int ret = 0;
 
-   DENTER(TOP_LAYER,"qstat_env_prepare");
+   DENTER(TOP_LAYER);
    
    ret = qstat_env_get_all_lists(qstat_env, need_job_list, alpp);
    if (ret) {
@@ -475,7 +475,7 @@ static int qstat_handle_running_jobs(qstat_env_t *qstat_env, qstat_handler_t *ha
    lListElem *qep = NULL;
    int ret = 0;
    
-   DENTER(TOP_LAYER,"qstat_handle_running_jobs");
+   DENTER(TOP_LAYER);
 
    /* no need to iterate through queues if queues are not printed */
    if (!qstat_env->need_queues) {
@@ -542,7 +542,7 @@ static int handle_jobs_queue(lListElem *qep, qstat_env_t* qstat_env, int print_j
    int ret = 0;
    dstring dyn_task_str = DSTRING_INIT;
 
-   DENTER(TOP_LAYER, "handle_jobs_queue");
+   DENTER(TOP_LAYER);
 
    if (handler->report_queue_jobs_started && (ret=handler->report_queue_jobs_started(handler, qnm, alpp)) ) {
       DPRINTF(("report_queue_jobs_started failed\n"));
@@ -705,7 +705,7 @@ static int filter_jobs(qstat_env_t *qstat_env, lList **alpp) {
    lListElem *jatep = NULL;
    const lListElem *up = NULL;
    
-   DENTER(TOP_LAYER,"filter_jobs");
+   DENTER(TOP_LAYER);
 
    /* 
    ** all jobs are selected 
@@ -833,7 +833,7 @@ int qstat_env_filter_queues( qstat_env_t *qstat_env, lList** filtered_queue_list
    
    int ret = 0;
 
-   DENTER(TOP_LAYER, "qstat_env_filter_queues");
+   DENTER(TOP_LAYER);
 
    ret = filter_queues(NULL,
                         qstat_env->queue_list,
@@ -871,7 +871,7 @@ int filter_queues(lList **filtered_queue_list,
 /*   u_long32 empty_qs = 0; */
    u_long32 empty_qs = 1;
 
-   DENTER(TOP_LAYER, "filter_queues");
+   DENTER(TOP_LAYER);
 
    centry_list_init_double(centry_list);
 
@@ -1008,7 +1008,7 @@ static int qstat_env_get_all_lists(qstat_env_t* qstat_env, bool need_job_list, l
    const char *cell_root = qstat_env->ctx->get_cell_root(qstat_env->ctx);
    u_long32 progid = qstat_env->ctx->get_who(qstat_env->ctx);
 
-   DENTER(TOP_LAYER, "qstat_env_get_all_lists");
+   DENTER(TOP_LAYER);
 
    if (queue_l) {
       DPRINTF(("need queues\n"));
@@ -1367,7 +1367,7 @@ static int handle_queue(lListElem *q, qstat_env_t *qstat_env, qstat_handler_t *h
    dstring state_string = DSTRING_INIT;
    int ret = 0;
    
-   DENTER(TOP_LAYER, "handle_queue");
+   DENTER(TOP_LAYER);
 
    memset(&summary, 0, sizeof(queue_summary_t));
    
@@ -1556,7 +1556,7 @@ static int handle_pending_jobs(qstat_env_t *qstat_env, qstat_handler_t *handler,
    int count = 0;
    dstring dyn_task_str = DSTRING_INIT;
    
-   DENTER(TOP_LAYER, "handle_pending_jobs");
+   DENTER(TOP_LAYER);
 
    nxt = lFirstRW(qstat_env->job_list);
    while ((jep=nxt)) {
@@ -1680,7 +1680,7 @@ static int handle_finished_jobs(qstat_env_t *qstat_env, qstat_handler_t *handler
    int count = 0;
    dstring dyn_task_str = DSTRING_INIT;
 
-   DENTER(TOP_LAYER, "handle_finished_jobs");
+   DENTER(TOP_LAYER);
 
    for_each_rw (jep, qstat_env->job_list) {
       for_each_rw (jatep, lGetList(jep, JB_ja_tasks)) {
@@ -1738,7 +1738,7 @@ static int handle_error_jobs(qstat_env_t *qstat_env, qstat_handler_t* handler, l
    int count = 0;
    dstring dyn_task_str = DSTRING_INIT;
    
-   DENTER(TOP_LAYER, "handle_error_jobs");
+   DENTER(TOP_LAYER);
 
    for_each_rw (jep, qstat_env->job_list) {
       for_each_rw (jatep, lGetList(jep, JB_ja_tasks)) {
@@ -1785,7 +1785,7 @@ static int handle_zombie_jobs(qstat_env_t *qstat_env, qstat_handler_t *handler, 
    int count = 0;
    dstring dyn_task_str = DSTRING_INIT; 
    
-   DENTER(TOP_LAYER, "handle_zombie_jobs");
+   DENTER(TOP_LAYER);
    
    if (!(qstat_env->full_listing & QSTAT_DISPLAY_ZOMBIES)) {
       sge_dstring_free(&dyn_task_str);
@@ -1836,7 +1836,7 @@ static int handle_jobs_not_enrolled(lListElem *job, bool print_jobid, char *mast
    dstring ja_task_id_string = DSTRING_INIT;
    int ret = 0;
 
-   DENTER(TOP_LAYER, "handle_jobs_not_enrolled");
+   DENTER(TOP_LAYER);
 
    job_create_hold_id_lists(job, range_list, hold_state); 
    for (i = 0; i <= 15; i++) {
@@ -1942,7 +1942,7 @@ static int sge_handle_job(lListElem *job, lListElem *jatep, lListElem *qep, lLis
    job_summary_t summary;
    u_long32 ret = 0;
 
-   DENTER(TOP_LAYER, "sge_handle_job");
+   DENTER(TOP_LAYER);
 
    memset(&summary, 0, sizeof(job_summary_t));
    
@@ -2513,7 +2513,7 @@ static int job_handle_resources(const lList* cel, lList* centry_list, int slots,
    const lListElem *ce, *centry;
    const char *s, *name;
    double uc;
-   DENTER(TOP_LAYER,"job_handle_requests_from_ce_type");
+   DENTER(TOP_LAYER);
    
    if (start_func && (ret=start_func(handler, alpp))) {
       DPRINTF(("start_func failed\n"));
@@ -2553,7 +2553,7 @@ static int job_handle_subtask(lListElem *job, lListElem *ja_task, lListElem *pe_
    task_summary_t summary;
    int ret = 0;
 
-   DENTER(TOP_LAYER, "job_handle_subtask");
+   DENTER(TOP_LAYER);
 
    /* is sub-task logically running */
    if (pe_task == NULL) {
@@ -2649,7 +2649,7 @@ lCondition *qstat_get_JB_Type_selection(lList *user_list, u_long32 show)
    lCondition *jw = NULL;
    lCondition *nw = NULL;
 
-   DENTER(TOP_LAYER, "qstat_get_JB_Type_selection");
+   DENTER(TOP_LAYER);
 
    /*
     * Retrieve jobs only for those users specified via -u switch
@@ -2917,7 +2917,7 @@ lCondition *qstat_get_JB_Type_selection(lList *user_list, u_long32 show)
 
 lEnumeration *qstat_get_JB_Type_filter(qstat_env_t* qstat_env) 
 {
-   DENTER(TOP_LAYER, "qstat_get_JB_Type_filter");
+   DENTER(TOP_LAYER);
 
    if (qstat_env->what_JAT_Type_template != NULL) {
       lWhatSetSubWhat(qstat_env->what_JB_Type, JB_ja_template, &(qstat_env->what_JAT_Type_template));
@@ -3199,7 +3199,7 @@ const char* sge_get_dominant_stringval(lListElem *rep, u_long32 *dominant_p, dst
    const char *s = NULL;
    u_long32 type = lGetUlong(rep, CE_valtype);
 
-   DENTER(TOP_LAYER, "sge_get_dominant_stringval");
+   DENTER(TOP_LAYER);
 
    switch (type) {
    case TYPE_HOST:   
@@ -3301,7 +3301,7 @@ const char* sge_get_dominant_stringval(lListElem *rep, u_long32 *dominant_p, dst
 int build_job_state_filter(qstat_env_t *qstat_env, const char* job_state, lList **alpp) {
    int ret = 0;
    
-   DENTER(TOP_LAYER, "build_job_state_filter");
+   DENTER(TOP_LAYER);
 
    if (job_state != NULL) {
       /* 

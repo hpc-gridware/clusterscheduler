@@ -56,7 +56,7 @@ bool switch_list_showq_parse_from_cmdline_tacc(lList **ppcmdline,
    char **rp;
    stringT str;
 
-   DENTER(TOP_LAYER, "sge_parse_cmdline_qstat");
+   DENTER(TOP_LAYER);
 
    rp = argv;
    while(*(sp=rp)) {

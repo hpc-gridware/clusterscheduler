@@ -3330,7 +3330,7 @@ bool
 binding_print_to_string(const lListElem *this_elem, dstring *string) {
    bool ret = true;
 
-   DENTER(BINDING_LAYER, "binding_print_to_string");
+   DENTER(BINDING_LAYER);
    if (this_elem != NULL && string != NULL) {
       const char *const strategy = lGetString(this_elem, BN_strategy);
       binding_type_t type = (binding_type_t)lGetUlong(this_elem, BN_type);
@@ -3379,7 +3379,7 @@ binding_parse_from_string(lListElem *this_elem, lList **answer_list, dstring *st
 {
    bool ret = true;
 
-   DENTER(BINDING_LAYER, "binding_parse_from_string");
+   DENTER(BINDING_LAYER);
 
    if (this_elem != NULL && string != NULL) {
       int amount = 0;

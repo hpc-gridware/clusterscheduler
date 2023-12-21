@@ -96,7 +96,7 @@ void sge_job_exit(sge_gdi_ctx_class_t *ctx, lListElem *jr, lListElem *jep, lList
    lList *master_ar_list = *object_type_get_master_list_rw(SGE_TYPE_AR);
    const lList *master_ehost_list = *object_type_get_master_list(SGE_TYPE_EXECHOST);
 
-   DENTER(TOP_LAYER, "sge_job_exit");
+   DENTER(TOP_LAYER);
 
    /* JG: TODO: we'd prefer some more precise timestamp, e.g. from jr */
    timestamp = sge_get_gmt();

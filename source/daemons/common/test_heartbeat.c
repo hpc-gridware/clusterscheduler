@@ -118,8 +118,7 @@ int main(int argc, char* argv[])
        */
       if (return_value != 0) {
          unlink(filename);
-         DEXIT;
-         return (-return_value);
+         DRETURN((-return_value));
       }
       if (i==1 && runs++ != 0) {
          do_stop = 1;
@@ -135,7 +134,6 @@ int main(int argc, char* argv[])
    /* delete file */
    unlink(filename);
 
-   DEXIT;
-   return 0;
+   DRETURN(0);
 } /* main() */
 

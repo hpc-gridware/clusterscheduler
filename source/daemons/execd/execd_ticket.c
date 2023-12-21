@@ -59,7 +59,7 @@ int do_ticket(sge_gdi_ctx_class_t *ctx, struct_msg_t *aMsg)
    lListElem *job_ticket, *task_ticket;
    lList *ticket_modifier = NULL;
 
-   DENTER(TOP_LAYER, "do_ticket");
+   DENTER(TOP_LAYER);
 
    while (pb_unused(&(aMsg->buf))>0) {
       lList *jatasks = NULL;

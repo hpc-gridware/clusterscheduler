@@ -72,7 +72,7 @@ centry_add_del_mod_via_gdi(sge_gdi_ctx_class_t *ctx, lListElem *this_elem, lList
 {
    bool ret = false;
 
-   DENTER(TOP_LAYER, "centry_add_del_mod_via_gdi");
+   DENTER(TOP_LAYER);
    if (this_elem != NULL) {
       lList *centry_list = NULL;
       lList *gdi_answer_list = NULL;
@@ -92,7 +92,7 @@ centry_get_via_gdi(sge_gdi_ctx_class_t *ctx, lList **answer_list, const char *na
 {
    lListElem *ret = NULL;
 
-   DENTER(TOP_LAYER, "centry_get_via_gdi");
+   DENTER(TOP_LAYER);
    if (name != NULL) {
       lList *gdi_answer_list = NULL;
       lEnumeration *what = NULL;
@@ -127,7 +127,7 @@ centry_provide_modify_context(sge_gdi_ctx_class_t *ctx, lListElem **this_elem, l
    uid_t uid = ctx->get_uid(ctx);
    gid_t gid = ctx->get_gid(ctx);
 
-   DENTER(TOP_LAYER, "centry_provide_modify_context");
+   DENTER(TOP_LAYER);
 
    if (this_elem != NULL && *this_elem) {
       const char *filename = NULL;
@@ -192,7 +192,7 @@ centry_add(sge_gdi_ctx_class_t *ctx, lList **answer_list, const char *name)
 {
    bool ret = true;
 
-   DENTER(TOP_LAYER, "centry_add");
+   DENTER(TOP_LAYER);
    if (name != NULL) {
       lListElem *centry = centry_create(answer_list, name);
 
@@ -217,7 +217,7 @@ centry_add_from_file(sge_gdi_ctx_class_t *ctx, lList **answer_list, const char *
    int fields_out[MAX_NUM_FIELDS];
    int missing_field = NoName;
 
-   DENTER(TOP_LAYER, "centry_add_from_file");
+   DENTER(TOP_LAYER);
    if (filename != NULL) {
       lListElem *centry;
 
@@ -255,7 +255,7 @@ centry_modify(sge_gdi_ctx_class_t *ctx, lList **answer_list, const char *name)
 {
    bool ret = true;
 
-   DENTER(TOP_LAYER, "centry_modify");
+   DENTER(TOP_LAYER);
    if (name != NULL) {
       lListElem *centry = centry_get_via_gdi(ctx, answer_list, name);
 
@@ -285,7 +285,7 @@ centry_modify_from_file(sge_gdi_ctx_class_t *ctx, lList **answer_list, const cha
    int fields_out[MAX_NUM_FIELDS];
    int missing_field = NoName;
 
-   DENTER(TOP_LAYER, "centry_modify_from_file");
+   DENTER(TOP_LAYER);
    if (filename != NULL) {
       lListElem *centry;
 
@@ -328,7 +328,7 @@ centry_delete(sge_gdi_ctx_class_t *ctx, lList **answer_list, const char *name)
 {
    bool ret = true;
 
-   DENTER(TOP_LAYER, "centry_delete");
+   DENTER(TOP_LAYER);
    if (name != NULL) {
       lListElem *centry = centry_create(answer_list, name); 
    
@@ -345,7 +345,7 @@ centry_show(sge_gdi_ctx_class_t *ctx, lList **answer_list, const char *name)
 {
    bool ret = true;
 
-   DENTER(TOP_LAYER, "centry_show");
+   DENTER(TOP_LAYER);
    if (name != NULL) {
       lListElem *centry = centry_get_via_gdi(ctx, answer_list, name);
    
@@ -374,7 +374,7 @@ centry_list_show(sge_gdi_ctx_class_t *ctx, lList **answer_list)
    bool ret = true;
    lList *centry_list = NULL;
 
-   DENTER(TOP_LAYER, "centry_list_show");
+   DENTER(TOP_LAYER);
    centry_list = centry_list_get_via_gdi(ctx, answer_list);
    if (centry_list != NULL) {
       const char *filename;
@@ -403,7 +403,7 @@ centry_list_get_via_gdi(sge_gdi_ctx_class_t *ctx, lList **answer_list)
    lList *gdi_answer_list = NULL;
    lEnumeration *what = NULL;
 
-   DENTER(TOP_LAYER, "centry_list_get_via_gdi");
+   DENTER(TOP_LAYER);
    what = lWhat("%T(ALL)", CE_Type);
    gdi_answer_list = ctx->gdi(ctx, SGE_CE_LIST, SGE_GDI_GET,
                              &ret, NULL, what);
@@ -426,9 +426,9 @@ centry_list_add_del_mod_via_gdi(sge_gdi_ctx_class_t *ctx, lList **this_list, lLi
 {
    bool ret = true;
 
-   DENTER(TOP_LAYER, "centry_list_add_del_mod_via_gdi");
+   DENTER(TOP_LAYER);
    if (!this_list || !old_list) {
-      SGE_ADD_MSG_ID(sprintf(SGE_EVENT, MSG_INAVLID_PARAMETER_IN_S, SGE_FUNC));
+      SGE_ADD_MSG_ID(sprintf(SGE_EVENT, MSG_INAVLID_PARAMETER_IN_S, __func__));
       answer_list_add(answer_list, SGE_EVENT, 
                       STATUS_EUNKNOWN, ANSWER_QUALITY_ERROR);
       DRETURN(false);
@@ -696,7 +696,7 @@ centry_list_modify(sge_gdi_ctx_class_t *ctx, lList **answer_list)
 {
    bool ret = true;
 
-   DENTER(TOP_LAYER, "centry_list_modify");
+   DENTER(TOP_LAYER);
    if (ret) {
       lList *centry_list = centry_list_get_via_gdi(ctx, answer_list);
       lList *old_centry_list = lCopyList("", centry_list);
@@ -717,7 +717,7 @@ centry_list_modify_from_file(sge_gdi_ctx_class_t *ctx, lList **answer_list, cons
 {
    bool ret = true;
 
-   DENTER(TOP_LAYER, "centry_list_modify_from_file");
+   DENTER(TOP_LAYER);
    if (ret) {
       lList *old_centry_list = NULL; 
       lList *centry_list = NULL; 
@@ -759,7 +759,7 @@ centry_list_provide_modify_context(sge_gdi_ctx_class_t *ctx,
    uid_t uid = ctx->get_uid(ctx);
    gid_t gid = ctx->get_gid(ctx);
 
-   DENTER(TOP_LAYER, "centry_list_provide_modify_context");
+   DENTER(TOP_LAYER);
    if (this_list != NULL) {
       const char *filename;
 

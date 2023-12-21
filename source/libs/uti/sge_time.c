@@ -384,8 +384,6 @@ void sge_stopwatch_log(int i, const char *str)
    sge_stopwatch_stop(i);
  
    if ((wdiff[i] * 1000) / clock_tick >= time_log_interval[i]) {
-      static char SGE_FUNC[] = "";
- 
       WARNING((SGE_EVENT, "%-30s: %d/%d/%d", str,
                (int) ((wtot[i] * 1000) / clock_tick),
                (int) ((end[i].tms_utime * 1000)  / clock_tick),

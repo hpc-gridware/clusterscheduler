@@ -204,7 +204,7 @@ static int sge_init_lib(void *lib_ptr, char *lib_name,
 {
     int ret;
     
-    DENTER(TOP_LAYER, "sge_init_lib");
+    DENTER(TOP_LAYER);
     
     if (lib_ptr == NULL) {
         lib_ptr = dlopen(lib_name, RTLD_LAZY | RTLD_NODELETE);
@@ -283,13 +283,13 @@ static void init_scf_lib(void)
         NULL
     };
     
-    DENTER(TOP_LAYER, "init_scf_lib");
+    DENTER(TOP_LAYER);
     if (sge_init_lib(scf_lib, "libscf.so", func_name, func_ptr) == 0) {
         libscfLoaded = 1;
     } else {
         libscfLoaded = 0;
     }
-    DEXIT;
+    DRETURN_VOID;
 }
 
 
@@ -321,7 +321,7 @@ static void init_scf_lib(void)
 *******************************************************************************/
 static int once_libscf_init(void) 
 {
-    DENTER(TOP_LAYER, "once_libscf_init");
+    DENTER(TOP_LAYER);
     /* Init scf lib ONCE */
     if (pthread_once(&libscfcontrol, init_scf_lib) != 0) {
         DPRINTF(("once_libscf_init() -> pthread_once call failed: useSMF=%d, libscf=%d, libcontract=%d\n",
@@ -387,13 +387,13 @@ static void init_contract_lib(void)
         NULL
     };
     
-    DENTER(TOP_LAYER, "init_contract_lib");
+    DENTER(TOP_LAYER);
     if (sge_init_lib(contract_lib, "libcontract.so", func_name, func_ptr) == 0) {
         libcontractLoaded = 1;
     } else {
         libcontractLoaded = 0;
     }
-    DEXIT;
+    DRETURN_VOID;
 }
 
 
@@ -422,7 +422,7 @@ static void init_contract_lib(void)
 *******************************************************************************/
 static void init_smf_libs(void) 
 {   
-    DENTER(TOP_LAYER, "init_smf_libs");
+    DENTER(TOP_LAYER);
     /* Init shared libs ONCE */
     once_libscf_init();
     pthread_once(&libcontractcontrol, init_contract_lib);
@@ -431,7 +431,7 @@ static void init_smf_libs(void)
     } else {
         libsLoaded = 0;
     }
-    DEXIT;
+    DRETURN_VOID;
 }
 
 
@@ -463,7 +463,7 @@ static void init_smf_libs(void)
 *******************************************************************************/
 int sge_smf_init_libs(void) 
 {
-    DENTER(TOP_LAYER, "sge_smf_init_libs");
+    DENTER(TOP_LAYER);
     /* Init shared libs ONCE */
     pthread_once(&libscontrol, init_smf_libs);
     DRETURN((libsLoaded == 1) ? 0 : 1);
@@ -497,7 +497,7 @@ int sge_smf_init_libs(void)
 *******************************************************************************/
 static int is_valid_sge_fmri(char *fmri) 
 {
-    DENTER(TOP_LAYER, "is_valid_sge_fmri");
+    DENTER(TOP_LAYER);
     
     /* Test for execd */
     if (strncmp(EXECD_FMRI, fmri, strlen(EXECD_FMRI)) == 0) {
@@ -539,7 +539,7 @@ static int is_valid_sge_fmri(char *fmri)
 *******************************************************************************/
 static void init_fmri(void) 
 {
-    DENTER(TOP_LAYER, "init_fmri");
+    DENTER(TOP_LAYER);
     /* Will be set is started over SMF */
     char *temp = getenv("SMF_FMRI");
     /* We explicitly check the fmri for valid service names */
@@ -547,7 +547,7 @@ static void init_fmri(void)
         FMRI = sge_strdup(NULL, temp);
         DPRINTF(("init_fmri() - FMRI set to %s\n", (FMRI==NULL) ? "NULL" : FMRI));
     }
-    DEXIT;
+    DRETURN_VOID;
 }
 
 
@@ -577,7 +577,7 @@ static void init_fmri(void)
 *******************************************************************************/
 static char *get_fmri(void) 
 {
-    DENTER(TOP_LAYER, "get_fmri");
+    DENTER(TOP_LAYER);
     if (pthread_once(&FMRIcontrol, init_fmri) != 0) {
         ERROR((SGE_EVENT, MSG_SMF_PTHREAD_ONCE_FAILED_S, "get_fmri()"));
     }
@@ -615,7 +615,7 @@ static void init_use_smf(void)
     struct stat buff;
     int fd, status;
     
-    DENTER(TOP_LAYER, "init_use_smf");
+    DENTER(TOP_LAYER);
     
     if (get_fmri() == NULL) {
         useSMF = 0;
@@ -643,7 +643,7 @@ static void init_use_smf(void)
         }
         close(fd);
     }
-    DEXIT;
+    DRETURN_VOID;
 }
 
 
@@ -674,7 +674,7 @@ static void init_use_smf(void)
 *******************************************************************************/
 int sge_smf_used(void) 
 {
-    DENTER(TOP_LAYER, "sge_smf_used");
+    DENTER(TOP_LAYER);
     if (pthread_once(&useSMFcontrol, init_use_smf) != 0) {
         ERROR((SGE_EVENT, MSG_SMF_PTHREAD_ONCE_FAILED_S, "sge_smf_used()"));
     }
@@ -969,7 +969,7 @@ void sge_smf_temporary_disable_instance(void)
 {
     uid_t old_euid = NULL;
     int change_user = 1;
-    DENTER(TOP_LAYER, "sge_smf_temporary_disable_instance");
+    DENTER(TOP_LAYER);
     if (once_libscf_init() != 0) {
         ERROR((SGE_EVENT, MSG_SMF_LOAD_LIBSCF_FAILED_S, "sge_smf_temporary_disable_instance()"));
         DRETURN_VOID;
@@ -991,7 +991,7 @@ void sge_smf_temporary_disable_instance(void)
         DRETURN_VOID;
     }
     DPRINTF(("Service %s temporary disabled.\n", FMRI));
-    DEXIT;
+    DRETURN_VOID;
 }
 
 
@@ -1050,7 +1050,7 @@ char *sge_smf_get_instance_next_state()
     const char *state_str;
     char *ret;
 
-    DENTER(TOP_LAYER, "sge_smf_get_instance_next_state");
+    DENTER(TOP_LAYER);
     
     if ((prop = shared_scf_func__scf_simple_prop_get(NULL, FMRI, SCF_PG_RESTARTER, SCF_PROPERTY_NEXT_STATE)) == NULL) {
        DRETURN(NULL);

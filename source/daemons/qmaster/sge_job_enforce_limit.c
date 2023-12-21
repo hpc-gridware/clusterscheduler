@@ -139,7 +139,7 @@ sge_host_add_remove_enforce_limit_trigger(const char *hostname, bool add)
    lListElem *ja_task;
    const lList *master_job_list = *object_type_get_master_list(SGE_TYPE_JOB);
 
-   DENTER(TOP_LAYER, "sge_host_add_remove_enforce_limit_trigger");
+   DENTER(TOP_LAYER);
 
    /*
     * is the limit enforcment module enabled?
@@ -283,7 +283,7 @@ sge_add_check_limit_trigger(void)
    lListElem *host;
    te_event_t ev;
 
-   DENTER(TOP_LAYER, "sge_add_check_limit_trigger");
+   DENTER(TOP_LAYER);
 
    for_each_rw (host, master_host_list) {
       max_time = MAX(max_time,  2 * load_report_interval(host));
@@ -342,7 +342,7 @@ sge_add_check_limit_trigger(void)
 void 
 sge_job_enfoce_limit_handler(sge_gdi_ctx_class_t *ctx, te_event_t event, monitoring_t *monitor)
 {
-   DENTER(TOP_LAYER, "sge_job_enfoce_limit_handler");
+   DENTER(TOP_LAYER);
 
    if (is_module_enabled()) {
       u_long32 job_id = te_get_first_numeric_key(event);
@@ -501,7 +501,7 @@ sge_job_enfoce_limit_handler(sge_gdi_ctx_class_t *ctx, te_event_t event, monitor
 void 
 sge_host_add_enforce_limit_trigger(const char *hostname) 
 {
-   DENTER(TOP_LAYER, "sge_host_add_enforce_limit_trigger");
+   DENTER(TOP_LAYER);
    sge_host_add_remove_enforce_limit_trigger(hostname, true);
    DRETURN_VOID;
 }
@@ -538,7 +538,7 @@ sge_host_add_enforce_limit_trigger(const char *hostname)
 void
 sge_host_remove_enforce_limit_trigger(const char *hostname) 
 {
-   DENTER(TOP_LAYER, "sge_host_remove_enforce_limit_trigger");
+   DENTER(TOP_LAYER);
    sge_host_add_remove_enforce_limit_trigger(hostname, false);
    DRETURN_VOID;
 }
@@ -579,7 +579,7 @@ sge_host_remove_enforce_limit_trigger(const char *hostname)
 void 
 sge_job_add_enforce_limit_trigger(lListElem *job, lListElem *ja_task) 
 {
-   DENTER(TOP_LAYER, "sge_job_add_enforce_limit_trigger");
+   DENTER(TOP_LAYER);
 
    /*
     * is the limit enforcment enabled?
@@ -745,7 +745,7 @@ sge_job_remove_enforce_limit_trigger(u_long32 job_id, u_long32 ja_task_id)
    lListElem *ja_task = job_search_task(job, NULL, ja_task_id);
    bool delete_trigger = false;
 
-   DENTER(TOP_LAYER, "sge_job_remove_enforce_limit_trigger");
+   DENTER(TOP_LAYER);
 
    /*
     * Delete pe task flag which prevents communication with unknwon 

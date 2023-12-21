@@ -49,8 +49,8 @@
 /* MT-NOTE: language_mutex guards all language module function calls */
 static pthread_mutex_t language_mutex = PTHREAD_MUTEX_INITIALIZER;
 
-#   define LANGUAGE_LOCK()            sge_mutex_lock("language_mutex", SGE_FUNC, __LINE__, &language_mutex)
-#   define LANGUAGE_UNLOCK()          sge_mutex_unlock("language_mutex", SGE_FUNC, __LINE__, &language_mutex)
+#   define LANGUAGE_LOCK()            sge_mutex_lock("language_mutex", __func__, __LINE__, &language_mutex)
+#   define LANGUAGE_UNLOCK()          sge_mutex_unlock("language_mutex", __func__, __LINE__, &language_mutex)
 
 /*
  *  environment variable "SGE_ENABLE_MSG_ID"
@@ -152,7 +152,7 @@ int sge_init_languagefunc(char *package, char *localeDir)
   int   back;
   int   stop = 0;
 
-  DENTER_(TOP_LAYER, "sge_init_language");
+  DENTER_(TOP_LAYER);
 
   LANGUAGE_LOCK();
 
@@ -398,7 +398,7 @@ void sge_init_language_func(gettext_func_type new_gettext,
                             bindtextdomain_func_type new_bindtextdomain,
                             textdomain_func_type new_textdomain) 
 {
-   DENTER_(TOP_LAYER, "sge_init_language_func");
+   DENTER_(TOP_LAYER);
 
    LANGUAGE_LOCK();
 
@@ -463,7 +463,7 @@ void sge_init_language_func(gettext_func_type new_gettext,
 void sge_set_message_id_output(int flag) {
    int *buf = NULL;
 
-   DENTER_(CULL_LAYER, "sge_set_message_id_output");
+   DENTER_(CULL_LAYER);
 
    pthread_once(&message_id_once, message_id_once_init);
    
@@ -507,7 +507,7 @@ int sge_get_message_id_output(void)
 {
    int ret;
 
-   DENTER_(TOP_LAYER, "sge_get_message_id_output");
+   DENTER_(TOP_LAYER);
 
    LANGUAGE_LOCK();
    ret = sge_get_message_id_output_implementation();
@@ -550,7 +550,7 @@ int sge_get_message_id_output(void)
 static int sge_get_message_id_output_implementation(void) 
 {
    int *buf;
-   DENTER_(CULL_LAYER, "sge_get_message_id_output_implementation");
+   DENTER_(CULL_LAYER);
 
    if (sge_enable_msg_id_to_every_message == 1) {
       DRETURN_(1);
@@ -641,7 +641,7 @@ const char *sge_gettext_(int msg_id, const char *msg_str)
    } message_p;
    long key;
 
-   DENTER_(CULL_LAYER, "sge_gettext_");
+   DENTER_(CULL_LAYER);
 
    message_p.l = NULL;
 
@@ -742,7 +742,7 @@ const char *sge_gettext_(int msg_id, const char *msg_str)
 const char *sge_gettext__(char *x) 
 {
    char *z;
-   DENTER_(BASIS_LAYER, "sge_gettext__");
+   DENTER_(BASIS_LAYER);
 
    if ( (sge_language_functions.gettext_func != NULL) && 
         (sge_are_language_functions_installed == true)   ) {

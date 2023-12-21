@@ -274,7 +274,7 @@ int drmaa_init(const char *contact, char *error_diagnosis,
    dstring session_key_out = DSTRING_INIT;
    char *session_key_in = NULL;
 
-   DENTER(TOP_LAYER, "drmaa_init");
+   DENTER(TOP_LAYER);
 
    if (error_diagnosis != NULL) {
       sge_dstring_init(&diag, error_diagnosis, error_diag_len+1);
@@ -336,7 +336,7 @@ static int drmaa_parse_contact_string(const char *contact, char **session)
    struct saved_vars_s *context = NULL;
    int drmaa_errno = DRMAA_ERRNO_SUCCESS;
    
-   DENTER(TOP_LAYER, "drmaa_parse_contact_string");
+   DENTER(TOP_LAYER);
 
    if (contact != NULL) {
       /* First look for the = sign to find the name. */
@@ -410,7 +410,7 @@ int drmaa_exit(char *error_diagnosis, size_t error_diag_len)
    dstring *diagp = NULL;
    int drmaa_errno;
 
-   DENTER(TOP_LAYER, "drmaa_exit");
+   DENTER(TOP_LAYER);
 
    if (error_diagnosis != NULL) {
       sge_dstring_init(&diag, error_diagnosis, error_diag_len+1);
@@ -451,7 +451,7 @@ int drmaa_allocate_job_template(drmaa_job_template_t **jtp, char *error_diagnosi
    dstring diag, *diagp = NULL;
    int ret = DRMAA_ERRNO_SUCCESS;
 
-   DENTER(TOP_LAYER, "drmaa_allocate_job_template");
+   DENTER(TOP_LAYER);
 
    if (error_diagnosis) {
       sge_dstring_init(&diag, error_diagnosis, error_diag_len+1);
@@ -504,7 +504,7 @@ int drmaa_delete_job_template(drmaa_job_template_t *jt, char *error_diagnosis, s
 {
    dstring diag;
 
-   DENTER(TOP_LAYER, "drmaa_delete_job_template");
+   DENTER(TOP_LAYER);
 
    if (error_diagnosis != NULL) {
       sge_dstring_init(&diag, error_diagnosis, error_diag_len);
@@ -548,7 +548,7 @@ static drmaa_attr_names_t *drmaa_fill_string_vector(const char *name[])
    drmaa_attr_names_t *vector;
    int  i;
 
-   DENTER(TOP_LAYER, "drmaa_fill_string_vector");
+   DENTER(TOP_LAYER);
 
    /* allocate iterator */
    if (!(vector=(drmaa_attr_names_t *)japi_allocate_string_vector(JAPI_ITERATOR_STRINGS))) {
@@ -597,7 +597,7 @@ static int drmaa_is_attribute_supported(const char *name, bool vector, dstring *
    int ret;
    drmaa_attr_names_t *p_attr;
 
-   DENTER(TOP_LAYER, "drmaa_is_attribute_supported");
+   DENTER(TOP_LAYER);
    
    if( vector ) {
       p_attr = drmaa_fill_supported_vector_attributes(diag);
@@ -654,7 +654,7 @@ int drmaa_set_attribute(drmaa_job_template_t *jt, const char *name, const char *
    int       ret = DRMAA_ERRNO_SUCCESS;
    dstring   diag, *diagp = NULL;
    
-   DENTER(TOP_LAYER, "drmaa_set_attribute");
+   DENTER(TOP_LAYER);
 
    if (error_diagnosis != NULL) {
       sge_dstring_init(&diag, error_diagnosis, error_diag_len+1);
@@ -763,7 +763,7 @@ int drmaa_get_attribute(drmaa_job_template_t *jt, const char *name, char *value,
    const lListElem *va = NULL;
    int ret = DRMAA_ERRNO_SUCCESS;
 
-   DENTER(TOP_LAYER, "drmaa_get_attribute");
+   DENTER(TOP_LAYER);
 
    if (error_diagnosis) {
       sge_dstring_init(&diag, error_diagnosis, error_diag_len+1);
@@ -833,7 +833,7 @@ int drmaa_set_vector_attribute(drmaa_job_template_t *jt, const char *name,
    int i;
    int ret = DRMAA_ERRNO_SUCCESS;
 
-   DENTER(TOP_LAYER, "drmaa_set_vector_attribute");
+   DENTER(TOP_LAYER);
 
    if (error_diagnosis) {
       sge_dstring_init(&diag, error_diagnosis, error_diag_len+1);
@@ -913,7 +913,7 @@ int drmaa_get_vector_attribute(drmaa_job_template_t *jt, const char *name,
    dstring diag, *diagp = NULL;
    int ret = DRMAA_ERRNO_SUCCESS;
 
-   DENTER(TOP_LAYER, "drmaa_get_vector_attribute");
+   DENTER(TOP_LAYER);
 
    if (error_diagnosis) {
       sge_dstring_init(&diag, error_diagnosis, error_diag_len+1);
@@ -991,7 +991,7 @@ int drmaa_get_attribute_names(drmaa_attr_names_t **values, char *error_diagnosis
    dstring            diag, *diagp = NULL;
    drmaa_attr_names_t *iter;
 
-   DENTER(TOP_LAYER, "drmaa_get_attribute_names");
+   DENTER(TOP_LAYER);
 
    if (error_diagnosis) {
       sge_dstring_init(&diag, error_diagnosis, error_diag_len+1);
@@ -1047,7 +1047,7 @@ int drmaa_get_vector_attribute_names(drmaa_attr_names_t **values, char *error_di
    drmaa_attr_names_t *iter = NULL;
    int ret = DRMAA_ERRNO_SUCCESS;
 
-   DENTER(TOP_LAYER, "drmaa_get_vector_attribute_names");
+   DENTER(TOP_LAYER);
 
    if (error_diagnosis) {
       sge_dstring_init(&diag, error_diagnosis, error_diag_len+1);
@@ -1108,7 +1108,7 @@ int drmaa_run_job(char *job_id, size_t job_id_len, const drmaa_job_template_t *j
    int drmaa_errno = DRMAA_ERRNO_SUCCESS;
    lListElem *sge_job_template;
 
-   DENTER(TOP_LAYER, "drmaa_run_job");
+   DENTER(TOP_LAYER);
 
    if (error_diagnosis) {
       sge_dstring_init(&diag, error_diagnosis, error_diag_len+1);
@@ -1189,7 +1189,7 @@ int drmaa_run_bulk_jobs(drmaa_job_ids_t **jobids, const drmaa_job_template_t *jt
    int drmaa_errno = DRMAA_ERRNO_SUCCESS;
    lListElem *sge_job_template = NULL;
 
-   DENTER(TOP_LAYER, "drmaa_run_bulk_jobs");
+   DENTER(TOP_LAYER);
 
    if (error_diagnosis) {
       sge_dstring_init(&diag, error_diagnosis, error_diag_len+1);
@@ -2259,7 +2259,7 @@ static int drmaa_path2wd_opt(const lList *attrs, lList **args, int is_bulk,
    const char *new_path = NULL;
    int drmaa_errno;
    
-   DENTER(TOP_LAYER, "drmaa_path2wd_opt");
+   DENTER(TOP_LAYER);
    
    if ((drmaa_errno = drmaa_path2sge_path(attrs, is_bulk,
                                            DRMAA_WD, 0, &new_path,
@@ -2328,7 +2328,7 @@ static int drmaa_path2path_opt(const lList *attrs, lList **args, int is_bulk,
    lList *path_list = lCreateList("path_list", PN_Type);
    const char *unqualified_hostname = ctx->get_unqualified_hostname(ctx);
    
-   DENTER(TOP_LAYER, "drmaa_path2path_opt");
+   DENTER(TOP_LAYER);
 
    if (path_list == NULL) {
       japi_standard_error(DRMAA_ERRNO_NO_MEMORY, diag);
@@ -2447,7 +2447,7 @@ static int drmaa_path2sge_path(const lList *attrs, int is_bulk,
 {
    const lListElem *ep = NULL;
 
-   DENTER(TOP_LAYER, "drmaa_path2sge_path");
+   DENTER(TOP_LAYER);
 
    if ((ep=lGetElemStr(attrs, VA_variable, attribute_key ))) {
       dstring ds = DSTRING_INIT;
@@ -2575,7 +2575,7 @@ static int drmaa_job2sge_job(lListElem **jtp, const drmaa_job_template_t *drmaa_
    const char *unqualified_hostname = ctx->get_unqualified_hostname(ctx);
    const char *qualified_hostname = ctx->get_qualified_hostname(ctx);
 
-   DENTER(TOP_LAYER, "drmaa_job2sge_job");
+   DENTER(TOP_LAYER);
    
    /* make JB_Type job description out of DRMAA job template */
    if (!(jt = lCreateElem(JB_Type))) {
@@ -2981,7 +2981,7 @@ static int opt_list_append_opts_from_drmaa_attr(lList **args, const lList *attrs
    const char *scriptname = NULL;
    /* Turn each DRMAA attribute into a list entry. */
 
-   DENTER(TOP_LAYER, "opt_list_append_opts_from_drmaa_attr");
+   DENTER(TOP_LAYER);
    DPRINTF(("%d DRMAA attributes\n", lGetNumberOfElem(attrs)));
    DPRINTF(("%d DRMAA vector attributes\n", lGetNumberOfElem(vattrs)));
    
@@ -3272,7 +3272,7 @@ static int opt_list_append_opts_from_drmaa_attr(lList **args, const lList *attrs
 static void opt_list_append_default_drmaa_opts(lList **opts)
 {
    lListElem *ep_opt;
-   DENTER(TOP_LAYER, "opt_list_append_drmaa_default_opts");
+   DENTER(TOP_LAYER);
    
    /* average priority of 0 -- -p 0 */
    DPRINTF(("setting default priority to 0\n"));
@@ -3346,7 +3346,7 @@ static void merge_drmaa_options(lList **opts_all, lList **opts_default,
                                 lList **opts_job_cat, lList **opts_native,
                                 lList **opts_drmaa)
 {
-   DENTER(TOP_LAYER, "merge_drmaa_options");
+   DENTER(TOP_LAYER);
    
    /*
     * Order is very important here
@@ -3493,7 +3493,7 @@ o   -V                                     export all environment variables
    lListElem *element = NULL;
    const void *i = NULL;
    
-   DENTER(TOP_LAYER, "prune_arg_list");
+   DENTER(TOP_LAYER);
    
    /* skip arguments that aren't supported */
    while ((element = lGetElemStrRW(args, SPA_switch, "-help"))) {
@@ -3570,7 +3570,7 @@ static char *drmaa_time2sge_time(const char *drmaa_time, dstring *diag)
    struct tm gmnow;
    struct tm herenow;
    
-   DENTER(TOP_LAYER, "drmaa_time2sge_time");
+   DENTER(TOP_LAYER);
 
    /* Get default times */
    time(&now);
@@ -3879,7 +3879,7 @@ static char *drmaa_expand_wd_path(const char*username, const char *path, lList *
    char *file = NULL;
    char str[MAX_STRING_SIZE];
    
-   DENTER(TOP_LAYER, "drmaa_expand_wd_path");
+   DENTER(TOP_LAYER);
    DPRINTF(("Expanding \"%s\"\n", path));
 
    /* First look for the job index placeholder.  It is illegal. */
@@ -3948,7 +3948,7 @@ static char *drmaa_get_home_directory(const char* username, lList **answer_list)
    char *buffer;
    int size;
 
-   DENTER(TOP_LAYER, "drmaa_get_home_directory");
+   DENTER(TOP_LAYER);
    
    size = get_pw_buffer_size();
    buffer = sge_malloc(size);
@@ -4004,7 +4004,7 @@ static int drmaa_set_bulk_range(lList **opts, int start, int end, int step,
    lListElem *ep_opt = NULL;
    lList *task_id_range_list = NULL;
 
-   DENTER(TOP_LAYER, "drmaa_set_bulk_range");
+   DENTER(TOP_LAYER);
    
    snprintf(str, sizeof(str), "%d-%d:%d", start, end, step);
 
@@ -4031,7 +4031,7 @@ static drmaa_attr_names_t *drmaa_fill_supported_nonvector_attributes(dstring *di
 {
    drmaa_attr_names_t *p = NULL;
    
-   DENTER(TOP_LAYER, "drmaa_fill_supported_nonvector_attribute");
+   DENTER(TOP_LAYER);
    
    p = drmaa_fill_string_vector(drmaa_supported_nonvector);
    

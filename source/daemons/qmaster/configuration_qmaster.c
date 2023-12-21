@@ -107,7 +107,7 @@ int sge_read_configuration(sge_gdi_ctx_class_t *ctx, const lListElem *aSpoolCont
    const char *qualified_hostname = ctx->get_qualified_hostname(ctx);
    u_long32 progid = ctx->get_who(ctx);
 
-   DENTER(TOP_LAYER, "sge_read_configuration");
+   DENTER(TOP_LAYER);
    
    SGE_LOCK(LOCK_MASTER_CONF, LOCK_WRITE);
 
@@ -203,10 +203,10 @@ sge_del_configuration(sge_gdi_ctx_class_t *ctx,
    char unique_name[CL_MAXHOSTLEN];
    int ret = -1;
 
-   DENTER(TOP_LAYER, "sge_del_configuration");
+   DENTER(TOP_LAYER);
 
    if (!aConf || !aUser || !aHost) {
-      CRITICAL((SGE_EVENT, MSG_SGETEXT_NULLPTRPASSED_S, SGE_FUNC));
+      CRITICAL((SGE_EVENT, MSG_SGETEXT_NULLPTRPASSED_S, __func__));
       answer_list_add(anAnswer, SGE_EVENT, 
                       STATUS_EUNKNOWN, ANSWER_QUALITY_ERROR);
       DRETURN(STATUS_EUNKNOWN);
@@ -214,7 +214,7 @@ sge_del_configuration(sge_gdi_ctx_class_t *ctx,
    
    if ((tmp_name = lGetHost(aConf, CONF_name)) == NULL) {
       CRITICAL((SGE_EVENT, MSG_SGETEXT_MISSINGCULLFIELD_SS, 
-                lNm2Str(CONF_name), SGE_FUNC));
+                lNm2Str(CONF_name), __func__));
       answer_list_add(anAnswer, SGE_EVENT, 
                       STATUS_EUNKNOWN, ANSWER_QUALITY_ERROR);
       DRETURN(STATUS_EUNKNOWN);
@@ -231,7 +231,7 @@ sge_del_configuration(sge_gdi_ctx_class_t *ctx,
    if (ret != CL_RETVAL_OK) {
       lListElem *conf_obj = NULL;
  
-      DPRINTF(("%s: error %s resolving host %s\n", SGE_FUNC,
+      DPRINTF(("%s: error %s resolving host %s\n", __func__,
                cl_get_error_text(ret), tmp_name));
  
       conf_obj = sge_get_configuration_for_host(tmp_name);
@@ -307,22 +307,22 @@ int sge_mod_configuration(sge_gdi_ctx_class_t *ctx, lListElem *aConf, lList **an
    const char *qualified_hostname = ctx->get_qualified_hostname(ctx);
    u_long32 progid = ctx->get_who(ctx);
 
-   DENTER(TOP_LAYER, "sge_mod_configuration");
+   DENTER(TOP_LAYER);
 
    if (!aConf || !aUser || !aHost) {
-      CRITICAL((SGE_EVENT, MSG_SGETEXT_NULLPTRPASSED_S, SGE_FUNC));
+      CRITICAL((SGE_EVENT, MSG_SGETEXT_NULLPTRPASSED_S, __func__));
       answer_list_add(anAnswer, SGE_EVENT, STATUS_EUNKNOWN, ANSWER_QUALITY_ERROR);
       DRETURN(STATUS_EUNKNOWN);
    }
 
    if ((tmp_name = lGetHost(aConf, CONF_name)) == NULL) {
-      CRITICAL((SGE_EVENT, MSG_SGETEXT_MISSINGCULLFIELD_SS, lNm2Str(CONF_name), SGE_FUNC));
+      CRITICAL((SGE_EVENT, MSG_SGETEXT_MISSINGCULLFIELD_SS, lNm2Str(CONF_name), __func__));
       answer_list_add(anAnswer, SGE_EVENT, STATUS_EUNKNOWN, ANSWER_QUALITY_ERROR);
       DRETURN(STATUS_EUNKNOWN);
    }
 
    if ((ret = sge_resolve_hostname(tmp_name, unique_name, EH_name)) != CL_RETVAL_OK) {
-      DPRINTF(("%s: error %s resolving host %s\n", SGE_FUNC, cl_get_error_text(ret), tmp_name));
+      DPRINTF(("%s: error %s resolving host %s\n", __func__, cl_get_error_text(ret), tmp_name));
       ERROR((SGE_EVENT, MSG_SGETEXT_CANTRESOLVEHOST_S, tmp_name));
       answer_list_add(anAnswer, SGE_EVENT, STATUS_EUNKNOWN, ANSWER_QUALITY_ERROR);
       DRETURN(STATUS_EUNKNOWN);
@@ -418,7 +418,7 @@ static int check_config(lList **alpp, lListElem *conf)
    const char *conf_name;
    const lList *master_userset_list = *object_type_get_master_list(SGE_TYPE_USERSET);
  
-   DENTER(TOP_LAYER, "check_config");
+   DENTER(TOP_LAYER);
  
    conf_name = lGetHost(conf, CONF_name);
  
@@ -640,10 +640,10 @@ int sge_compare_configuration(const lListElem *aHost, const lList *aConf)
 {
    const lListElem *conf_entry = NULL;
 
-   DENTER(TOP_LAYER, "sge_compare_configuration");
+   DENTER(TOP_LAYER);
 
    if (lGetNumberOfElem(aConf) == 0) {
-      DPRINTF(("%s: configuration for %s is empty\n", SGE_FUNC, lGetHost(aHost, EH_name)));
+      DPRINTF(("%s: configuration for %s is empty\n", __func__, lGetHost(aHost, EH_name)));
       DRETURN(1);
    }
    
@@ -658,7 +658,7 @@ int sge_compare_configuration(const lListElem *aHost, const lList *aConf)
       conf_version = lGetUlong(conf_entry, CONF_version);
       
       if (master_version != conf_version) {
-         DPRINTF(("%s: configuration for %s changed from version %ld to %ld\n", SGE_FUNC, host_name, master_version, conf_version));
+         DPRINTF(("%s: configuration for %s changed from version %ld to %ld\n", __func__, host_name, master_version, conf_version));
          DRETURN(1);
       }
    }
@@ -677,7 +677,7 @@ lListElem *sge_get_configuration_entry_by_name(const char *aHost, const char *an
    lListElem *conf = NULL;
    lListElem *elem = NULL;
    
-   DENTER(TOP_LAYER, "sge_get_configuration_entry_by_name");
+   DENTER(TOP_LAYER);
    
    SGE_ASSERT((NULL != aHost) && (NULL != anEntryName));
    
@@ -711,7 +711,7 @@ lList* sge_get_configuration(const lCondition *condition, const lEnumeration *en
    lList *conf = NULL;
    const lList *config_list = *object_type_get_master_list(SGE_TYPE_CONFIG);
    
-   DENTER(TOP_LAYER, "sge_get_configuration");
+   DENTER(TOP_LAYER);
 
    SGE_LOCK(LOCK_MASTER_CONF, LOCK_READ);
    
@@ -730,7 +730,7 @@ static u_long32 sge_get_config_version_for_host(const char* aName)
    int ret = -1;
    const lList *config_list = *object_type_get_master_list(SGE_TYPE_CONFIG);
 
-   DENTER(TOP_LAYER, "sge_get_configuration_for_host");
+   DENTER(TOP_LAYER);
 
    SGE_LOCK(LOCK_MASTER_CONF, LOCK_READ);
   
@@ -744,14 +744,14 @@ static u_long32 sge_get_config_version_for_host(const char* aName)
        */
       ret = sge_resolve_hostname(aName, unique_name, EH_name);
       if (CL_RETVAL_OK != ret) {
-         DPRINTF(("%s: error %s resolving host %s\n", SGE_FUNC,
+         DPRINTF(("%s: error %s resolving host %s\n", __func__,
                  cl_get_error_text(ret), aName));
       }
       conf = lGetElemHost(config_list, CONF_name, unique_name);
    } 
 
    if (conf == NULL) {
-      DPRINTF(("%s: no master configuration for %s found\n", SGE_FUNC, aName));
+      DPRINTF(("%s: no master configuration for %s found\n", __func__, aName));
    } else {
       version = lGetUlong(conf, CONF_version);
    }
@@ -773,7 +773,7 @@ lListElem* sge_get_configuration_for_host(const char* aName)
    int ret = -1;
    const lList *config_list = *object_type_get_master_list(SGE_TYPE_CONFIG);
 
-   DENTER(TOP_LAYER, "sge_get_configuration_for_host");
+   DENTER(TOP_LAYER);
 
    SGE_ASSERT((NULL != aName));
 
@@ -785,7 +785,7 @@ lListElem* sge_get_configuration_for_host(const char* aName)
     */
    ret = sge_resolve_hostname(aName, unique_name, EH_name);
    if (CL_RETVAL_OK != ret) {
-      DPRINTF(("%s: error %s resolving host %s\n", SGE_FUNC,
+      DPRINTF(("%s: error %s resolving host %s\n", __func__,
               cl_get_error_text(ret), aName));
       strcpy(unique_name, aName);
    }
@@ -805,7 +805,7 @@ void sge_set_conf_reprioritize(lListElem *aConf, bool aFlag)
    lList *entries = NULL;
    lListElem *ep = NULL;
 
-   DENTER(TOP_LAYER, "sge_set_conf_reprioritize");
+   DENTER(TOP_LAYER);
 
    SGE_ASSERT((NULL != aConf));
 
@@ -838,7 +838,7 @@ static int do_mod_config(sge_gdi_ctx_class_t *ctx, char *aConfName, lListElem *a
    lList *new_entries = NULL;
    lListElem* reprio = NULL;
    
-   DENTER(TOP_LAYER, "do_mod_config");
+   DENTER(TOP_LAYER);
    
    old_entries = lGetList(anOldConf, CONF_entries); 
    new_entries = lGetListRW(aNewConf, CONF_entries);
@@ -867,7 +867,7 @@ static int check_static_conf_entries(const lList *theOldConfEntries, const lList
 {
    int entry_idx = 0;
    
-   DENTER(TOP_LAYER, "check_static_conf_entries");
+   DENTER(TOP_LAYER);
 
    while (NULL != Static_Conf_Entries[entry_idx]) {
       const lListElem *old_entry, *new_entry = NULL;
@@ -910,7 +910,7 @@ static lListElem* is_reprioritize_missing(const lList *theOldConfEntries, const 
    const lListElem *new_reprio = NULL;
    lListElem *res = NULL;
 
-   DENTER(TOP_LAYER, "is_reprioritize_missing");
+   DENTER(TOP_LAYER);
 
    old_reprio = lGetElemStr(theOldConfEntries, CF_name, REPRIORITIZE);
    new_reprio = lGetElemStr(theNewConfEntries, CF_name, REPRIORITIZE);
@@ -934,7 +934,7 @@ static int exchange_conf_by_name(sge_gdi_ctx_class_t *ctx, char *aConfName, lLis
    const char *old_conf_name = lGetHost(anOldConf, CONF_name);
    lList *config_list = *object_type_get_master_list_rw(SGE_TYPE_CONFIG);
   
-   DENTER(TOP_LAYER, "exchange_conf_by_name");
+   DENTER(TOP_LAYER);
 
    old_version = lGetUlong(anOldConf, CONF_version);
    
@@ -970,7 +970,7 @@ static bool has_reschedule_unknown_change(const lList *theOldConfEntries, const 
    const char *new_value = NULL;
    bool res = false;
    
-   DENTER(TOP_LAYER, "has_reschedule_unknown_change");
+   DENTER(TOP_LAYER);
    
    old_elem = lGetElemStr(theOldConfEntries, CF_name, "reschedule_unknown");
    new_elem = lGetElemStr(theNewConfEntries, CF_name, "reschedule_unknown");
@@ -985,7 +985,7 @@ static bool has_reschedule_unknown_change(const lList *theOldConfEntries, const 
    }
    
    if (true == res) {
-      DPRINTF(("%s: reschedule_unknown did change!\n", SGE_FUNC));   
+      DPRINTF(("%s: reschedule_unknown did change!\n", __func__));
    }
    
    DRETURN(res);
@@ -996,7 +996,7 @@ static int do_add_config(sge_gdi_ctx_class_t *ctx, char *aConfName, lListElem *a
    lListElem *elem = NULL;
    lList *config_list = *object_type_get_master_list_rw(SGE_TYPE_CONFIG);
 
-   DENTER(TOP_LAYER, "do_add_config");
+   DENTER(TOP_LAYER);
 
    elem = lCopyElem(aConf);
 
@@ -1016,7 +1016,7 @@ static int remove_conf_by_name(char *aConfName)
    lListElem *elem = NULL;
    lList *config_list = *object_type_get_master_list_rw(SGE_TYPE_CONFIG);
    
-   DENTER(TOP_LAYER, "remove_conf_by_name");
+   DENTER(TOP_LAYER);
 
    SGE_LOCK(LOCK_MASTER_CONF, LOCK_WRITE);
 

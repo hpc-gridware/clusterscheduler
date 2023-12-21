@@ -80,7 +80,7 @@ int sge_readnbytes(int sfd, char *ptr, int n)
    int i;                       /* number of bytes read */
    int nleft = n;               /* number of bytes still to read */
 
-   DENTER(BASIS_LAYER, "sge_readnbytes");
+   DENTER(BASIS_LAYER);
    DPRINTF(("TOTAL BYTES TO BE READ %d\n", n));
 
    /* Read n bytes */
@@ -90,8 +90,7 @@ int sge_readnbytes(int sfd, char *ptr, int n)
 
       if (i < 0) {
          DPRINTF(("sge_readnbytes: returning %d\n", i));
-         DEXIT;
-         return (i);
+         DRETURN((i));
       } else {
          if (i == 0)
             break;
@@ -101,8 +100,7 @@ int sge_readnbytes(int sfd, char *ptr, int n)
    } 
 
    DPRINTF(("sge_readnbytes: returning %d\n", nleft));
-   DEXIT;
-   return (n - nleft);
+   DRETURN((n - nleft));
 
 }            
 
@@ -138,7 +136,7 @@ int sge_writenbytes(int sfd, const char *ptr,
    int i;                       /* number of bytes written */
    int nleft = n;               /* number of bytes still to write */
 
-   DENTER(BASIS_LAYER, "sge_writenbytes");
+   DENTER(BASIS_LAYER);
 
    /* Write n bytes */
    while (nleft > 0) {
@@ -152,15 +150,13 @@ int sge_writenbytes(int sfd, const char *ptr,
 
       if (i <= 0) {
          DPRINTF(("sge_writenbytes: returning %d\n", i));
-         DEXIT;
-         return (i);
+         DRETURN((i));
       }              
       nleft -= i;
       ptr += i;
    }                   
 
-   DEXIT;
-   return (n);
+   DRETURN((n));
 }
 
 /****** uti/io/sge_filecmp() **************************************************
@@ -197,29 +193,24 @@ int sge_filecmp(const char *name0, const char *name1)
 {
    SGE_STRUCT_STAT buf0, buf1;
  
-   DENTER(TOP_LAYER, "filecmp");
+   DENTER(TOP_LAYER);
  
    if (!strcmp(name0, name1)) {
-      DEXIT;
-      return 0;
+      DRETURN(0);
    }
  
    if (SGE_STAT(name0, &buf0)<0) {
-      DEXIT;
-      return 1;
+      DRETURN(1);
    }
  
    if (SGE_STAT(name1, &buf1)<0) {
-      DEXIT;
-      return 1;
+      DRETURN(1);
    }
  
    if (buf0.st_ino == buf1.st_ino && buf0.st_dev == buf1.st_dev) {
-      DEXIT;
-      return 0;
+      DRETURN(0);
    } else {
-      DEXIT;
-      return 1;
+      DRETURN(1);
    }
 }          
 
@@ -258,22 +249,19 @@ int sge_copy_append(char *src, const char *dst, sge_mode_t mode)
    int fdsrc, fddst, modus, rs, ws;
    bool error;
 
-   DENTER(TOP_LAYER, "sge_copy_append");
+   DENTER(TOP_LAYER);
   
    if (src == NULL || dst == NULL || strlen(src) == 0 || strlen(dst) == 0 ||
       !(mode == SGE_MODE_APPEND || mode == SGE_MODE_COPY)) {
-      DEXIT;
-      return -1;   
+      DRETURN(-1);   
    }
    if (!strcmp(src, dst)) {
-      DEXIT;
-      return -1;
+      DRETURN(-1);
    }   
  
    /* Return if source file doesn't exist */
    if ((fdsrc = SGE_OPEN2(src, O_RDONLY)) == -1) {
-      DEXIT;
-      return -1;
+      DRETURN(-1);
    }   
      
    if (mode == SGE_MODE_APPEND)
@@ -282,8 +270,7 @@ int sge_copy_append(char *src, const char *dst, sge_mode_t mode)
       modus = O_WRONLY | O_CREAT;      
     
    if ((fddst = SGE_OPEN3(dst, modus, 0666)) == -1) {
-      DEXIT;
-      return -1;
+      DRETURN(-1);
    }    
     
    error = false;
@@ -316,8 +303,7 @@ int sge_copy_append(char *src, const char *dst, sge_mode_t mode)
    close(fdsrc);
    close(fddst);
  
-   DEXIT;
-   return (error ? -1: 0);
+   DRETURN((error ? -1: 0));
 }
 
 /****** uti/io/sge_bin2string() ***********************************************
@@ -526,7 +512,7 @@ char *sge_file2string(const char *fname, int *len)
    int size, i;
    char *str;
  
-   DENTER(CULL_LAYER, "sge_file2string");
+   DENTER(CULL_LAYER);
 
    /* initialize len - in case of errors we want to return 0 
     * JG: TODO: it would be better to return -1. Check if calling
@@ -538,22 +524,19 @@ char *sge_file2string(const char *fname, int *len)
 
    /* try file access, read file info */
    if (SGE_STAT(fname, &statbuf)) {
-      DEXIT;
-      return NULL;
+      DRETURN(NULL);
    }
  
    size = statbuf.st_size;
  
    if ((fp = fopen(fname, "r")) == NULL) {
       ERROR((SGE_EVENT, MSG_FILE_FOPENFAILED_SS, fname, strerror(errno)));
-      DEXIT;
-      return NULL;
+      DRETURN(NULL);
    }
  
    if ((str = malloc(size+1)) == NULL) {
       FCLOSE(fp);
-      DEXIT;
-      return NULL;
+      DRETURN(NULL);
    }
 
    str[0] = '\0';
@@ -574,8 +557,7 @@ char *sge_file2string(const char *fname, int *len)
       if (i == 0) {
          sge_free(&str);
          FCLOSE(fp);
-         DEXIT;
-         return NULL;
+         DRETURN(NULL);
       }
       str[i] = '\0';    /* delimit this string */   
       if (len != NULL) {
@@ -587,8 +569,7 @@ char *sge_file2string(const char *fname, int *len)
          ERROR((SGE_EVENT, MSG_FILE_FREADFAILED_SS, fname, strerror(errno)));
          sge_free(&str);
          FCLOSE(fp);
-         DEXIT;
-         return NULL;
+         DRETURN(NULL);
       }
       str[size] = '\0';    /* delimit this string */
       if (len != NULL) {
@@ -599,11 +580,9 @@ char *sge_file2string(const char *fname, int *len)
  
    FCLOSE(fp);
 
-   DEXIT;
-   return str;
+   DRETURN(str);
 FCLOSE_ERROR:
-   DEXIT;
-   return NULL;
+   DRETURN(NULL);
 }
  
 /****** uti/io/sge_stream2string() ********************************************
@@ -636,11 +615,10 @@ char *sge_stream2string(FILE *fp, int *len)
    int filled = 0;
    int malloced_len, i;
  
-   DENTER(TOP_LAYER, "sge_stream2string");
+   DENTER(TOP_LAYER);
  
    if (!(str = malloc(FILE_CHUNK))) {
-      DEXIT;
-      return NULL;
+      DRETURN(NULL);
    }
    malloced_len = FILE_CHUNK;
  
@@ -650,8 +628,7 @@ char *sge_stream2string(FILE *fp, int *len)
       if (malloced_len == filled+1) {
          str = sge_realloc(str, malloced_len + FILE_CHUNK, 0);
          if (str == NULL) {
-            DEXIT;
-            return NULL;
+            DRETURN(NULL);
          }
          malloced_len += FILE_CHUNK;
       }
@@ -664,8 +641,7 @@ char *sge_stream2string(FILE *fp, int *len)
    str[filled] = '\0';  /* NULL termination */
    *len = filled;
  
-   DEXIT;
-   return str;
+   DRETURN(str);
 }
  
 /****** uti/io/sge_string2file() **********************************************
@@ -706,7 +682,7 @@ int sge_string2file(const char *str, int len, const char *fname)
    int fp = -1;
 #endif
  
-   DENTER(TOP_LAYER, "sge_string2file");
+   DENTER(TOP_LAYER);
  
 #ifdef USE_FOPEN
    if (!(fp = fopen(fname, "w")))
@@ -715,8 +691,7 @@ int sge_string2file(const char *str, int len, const char *fname)
 #endif
    {
       ERROR((SGE_EVENT, MSG_FILE_OPENFAILED_S , fname));
-      DEXIT;
-      return -1;
+      DRETURN(-1);
    }
    if (!len) {
       len = strlen(str);
@@ -739,8 +714,7 @@ int sge_string2file(const char *str, int len, const char *fname)
 #endif
       unlink(fname);
       errno = old_errno;
-      DEXIT;
-      return -1;
+      DRETURN(-1);
    }
  
 #ifdef USE_FOPEN
@@ -750,11 +724,9 @@ int sge_string2file(const char *str, int len, const char *fname)
       goto FCLOSE_ERROR; 
    }
 #endif
-   DEXIT;
-   return 0;
+   DRETURN(0);
 FCLOSE_ERROR:
    ERROR((SGE_EVENT, MSG_FILE_FCLOSEFAILED_SS, fname, strerror(errno)));
-   DEXIT;
-   return -1;
+   DRETURN(-1);
 }          
 

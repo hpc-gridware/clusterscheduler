@@ -70,7 +70,7 @@ sge_parse_qrstat(sge_gdi_ctx_class_t *ctx, lList **answer_list,
 {
    bool ret = true;
    
-   DENTER(TOP_LAYER, "sge_parse_qrstat");
+   DENTER(TOP_LAYER);
 
    qrstat_env->is_summary = true;
    while (lGetNumberOfElem(*cmdline)) {
@@ -79,7 +79,6 @@ sge_parse_qrstat(sge_gdi_ctx_class_t *ctx, lList **answer_list,
       /* -help */
       if (opt_list_has_X(*cmdline, "-help")) {
          sge_usage(QRSTAT, stdout);
-         DEXIT;
          SGE_EXIT((void**)&ctx, 0);
       }
 
@@ -253,7 +252,7 @@ sge_parse_from_file_qrstat(const char *file, lList **ppcmdline, lList **alpp)
 {
    bool ret = true;
 
-   DENTER(TOP_LAYER, "sge_parse_from_file_qrstat");
+   DENTER(TOP_LAYER);
 
    if (ppcmdline == NULL) {
       ret = false;

@@ -255,7 +255,7 @@ sge_gdi_ctx_class_t* sge_gdi_get_thread_local_ctx(void) {
 
 void sge_gdi_set_thread_local_ctx(sge_gdi_ctx_class_t* ctx) {
  
-   DENTER(TOP_LAYER, "sge_gdi_set_thread_local_ctx");
+   DENTER(TOP_LAYER);
    
    pthread_once(&sge_gdi_ctx_once, sge_gdi_thread_local_ctx_once_init);
    { 
@@ -367,7 +367,7 @@ sge_gdi_ctx_class_create(int prog_number, const char *component_name,
    sge_gdi_ctx_class_t *ret = (sge_gdi_ctx_class_t *)sge_malloc(sizeof(sge_gdi_ctx_class_t));
    sge_gdi_ctx_t *gdi_ctx = NULL;
 
-   DENTER(TOP_LAYER, "sge_gdi_ctx_class_create");
+   DENTER(TOP_LAYER);
 
    if (!ret) {
       answer_list_add_sprintf(alpp, STATUS_EMALLOC, 
@@ -490,7 +490,7 @@ sge_gdi_ctx_class_create(int prog_number, const char *component_name,
 
 void sge_gdi_ctx_class_destroy(sge_gdi_ctx_class_t **pst)
 {
-   DENTER(TOP_LAYER, "sge_gdi_ctx_class_destroy");
+   DENTER(TOP_LAYER);
 
    if (!pst || !*pst) {
       DRETURN_VOID;
@@ -507,7 +507,7 @@ static void sge_gdi_ctx_class_get_errors(sge_gdi_ctx_class_t *thiz, lList **alpp
 {
    sge_gdi_ctx_t *gdi_ctx = NULL;
 
-   DENTER(TOP_LAYER, "sge_gdi_ctx_class_get_errors");
+   DENTER(TOP_LAYER);
 
    if (!thiz || !thiz->sge_gdi_ctx_handle) {
       DRETURN_VOID;
@@ -524,7 +524,7 @@ static void sge_gdi_ctx_class_error(sge_gdi_ctx_class_t *thiz, int error_type, i
 {
    sge_gdi_ctx_t *gdi_ctx = NULL;
 
-   DENTER(TOP_LAYER, "sge_gdi_ctx_class_error");
+   DENTER(TOP_LAYER);
 
    if (thiz != NULL && thiz->sge_gdi_ctx_handle != NULL) {
       gdi_ctx = (sge_gdi_ctx_t*)thiz->sge_gdi_ctx_handle;
@@ -544,7 +544,7 @@ static void sge_gdi_ctx_set_is_setup(sge_gdi_ctx_class_t *thiz, bool is_setup)
 {
    sge_gdi_ctx_t *gdi_ctx = NULL;
 
-   DENTER(TOP_LAYER, "sge_gdi_ctx_set_is_setup");
+   DENTER(TOP_LAYER);
 
    if (!thiz || !thiz->sge_gdi_ctx_handle) {
       DRETURN_VOID;
@@ -562,7 +562,7 @@ static bool sge_gdi_ctx_is_setup(sge_gdi_ctx_class_t *thiz)
 {
    sge_gdi_ctx_t *gdi_ctx = NULL;
 
-   DENTER(TOP_LAYER, "sge_gdi_ctx_is_setup");
+   DENTER(TOP_LAYER);
 
    if (!thiz || !thiz->sge_gdi_ctx_handle) {
       DRETURN(false);
@@ -584,7 +584,7 @@ sge_gdi_ctx_setup(sge_gdi_ctx_class_t *thiz, int prog_number, const char* compon
    sge_gdi_ctx_t *es = (sge_gdi_ctx_t *)thiz->sge_gdi_ctx_handle;
    sge_error_class_t *eh = es->eh;
 
-   DENTER(TOP_LAYER, "sge_gdi_ctx_setup");
+   DENTER(TOP_LAYER);
  
    /*
     * Call all functions which have to be called once for each process.
@@ -768,7 +768,7 @@ sge_gdi_ctx_class_create_from_bootstrap(int prog_number, const char* component_n
 
    sge_gdi_ctx_class_t * ret = NULL;
    
-   DENTER(TOP_LAYER, "sge_gdi_ctx_class_create_from_bootstrap");
+   DENTER(TOP_LAYER);
 
    /* determine the connection type: local/remote */
    if (!strncmp(url, "internal://", (sizeof("internal://")-1))) {
@@ -845,7 +845,7 @@ static void sge_gdi_ctx_destroy(void *theState)
 {
    sge_gdi_ctx_t *s = (sge_gdi_ctx_t *)theState;
 
-   DENTER(TOP_LAYER, "sge_gdi_ctx_destroy");
+   DENTER(TOP_LAYER);
 
    sge_env_state_class_destroy(&(s->sge_env_state_obj));
    sge_prog_state_class_destroy(&(s->sge_prog_state_obj));
@@ -872,7 +872,7 @@ static int sge_gdi_ctx_class_connect(sge_gdi_ctx_class_t *thiz)
    int ret = 0;
    bool is_alive_check = true;
    
-   DENTER(TOP_LAYER, "sge_gdi_ctx_class_connect");
+   DENTER(TOP_LAYER);
    
    /*
    ** TODO: must contain similar functionality as sge_gdi_setup
@@ -901,7 +901,7 @@ static int sge_gdi_ctx_class_prepare_enroll(sge_gdi_ctx_class_t *thiz) {
    const char *default_domain = NULL;
    int cl_ret = CL_RETVAL_OK;
    
-   DENTER(TOP_LAYER, "sge_gdi_ctx_class_prepare_enroll");
+   DENTER(TOP_LAYER);
 
    /* context setup is complete => setup the commlib
    ** TODO:
@@ -1300,7 +1300,7 @@ static int sge_gdi_ctx_class_is_alive(sge_gdi_ctx_class_t *thiz)
    int         comp_id   = 1;
    int         comp_port = thiz->get_sge_qmaster_port(thiz);
  
-   DENTER(TOP_LAYER, "sge_gdi_ctx_class_is_alive");
+   DENTER(TOP_LAYER);
    
    if (handle == NULL) {
       sge_gdi_ctx_class_error(thiz, STATUS_EUNKNOWN, ANSWER_QUALITY_ERROR,
@@ -1337,7 +1337,7 @@ static lList* sge_gdi_ctx_class_gdi_tsm(sge_gdi_ctx_class_t *thiz, const char *s
 {
    lList *alp = NULL;
    
-   DENTER(TOP_LAYER, "sge_gdi_ctx_class_gdi_tsm");
+   DENTER(TOP_LAYER);
 
    alp = gdi2_tsm(thiz, schedd_name, cell);
 
@@ -1350,7 +1350,7 @@ static lList* sge_gdi_ctx_class_gdi_kill(sge_gdi_ctx_class_t *thiz, lList *id_li
 {
    lList *alp = NULL;
    
-   DENTER(TOP_LAYER, "sge_gdi_ctx_class_gdi_kill");
+   DENTER(TOP_LAYER);
 
    alp = gdi2_kill(thiz, id_list, cell, option_flags, action_flag);
 
@@ -1362,7 +1362,7 @@ static bool sge_gdi_ctx_class_gdi_check_permission(sge_gdi_ctx_class_t *thiz, lL
 {
    bool ret = false;
    
-   DENTER(TOP_LAYER, "sge_gdi_ctx_class_gdi_check_permission");
+   DENTER(TOP_LAYER);
 
    ret = sge_gdi2_check_permission(thiz, alpp, option);
 
@@ -1374,7 +1374,7 @@ static bool sge_gdi_ctx_class_gdi_get_mapping_name(sge_gdi_ctx_class_t *thiz, co
 {
    bool ret = false;
    
-   DENTER(TOP_LAYER, "sge_gdi_ctx_class_gdi_get_mapping_name");
+   DENTER(TOP_LAYER);
 
    ret = sge_gdi2_get_mapping_name(thiz, requestedHost, buf, buflen);
 
@@ -1384,7 +1384,7 @@ static bool sge_gdi_ctx_class_gdi_get_mapping_name(sge_gdi_ctx_class_t *thiz, co
 
 static void sge_gdi_ctx_class_dprintf(sge_gdi_ctx_class_t *ctx)
 {
-   DENTER(TOP_LAYER, "sge_gdi_ctx_class_dprintf");
+   DENTER(TOP_LAYER);
 
    if (ctx == NULL) {
       DRETURN_VOID;
@@ -1449,7 +1449,7 @@ static const char* get_master(sge_gdi_ctx_class_t *thiz, bool reread) {
    sge_error_class_t *eh = es ? es->eh : NULL;
    static bool error_already_logged = false;
    
-   DENTER(BASIS_LAYER, "sge_gdi_ctx_class->get_master");
+   DENTER(BASIS_LAYER);
    
    if (es->master == NULL || reread) {
       char err_str[SGE_PATH_MAX+128];
@@ -1488,7 +1488,7 @@ static const char* get_qualified_hostname(sge_gdi_ctx_class_t *thiz) {
    sge_prog_state_class_t* prog_state = thiz->get_sge_prog_state(thiz);
    const char *qualified_hostname = NULL;
    
-   DENTER(BASIS_LAYER, "sge_gdi_ctx_class->get_progname");
+   DENTER(BASIS_LAYER);
    qualified_hostname = prog_state->get_qualified_hostname(prog_state); 
    DRETURN(qualified_hostname);
 }
@@ -1497,7 +1497,7 @@ static const char* get_unqualified_hostname(sge_gdi_ctx_class_t *thiz) {
    sge_prog_state_class_t* prog_state = thiz->get_sge_prog_state(thiz);
    const char *unqualified_hostname = NULL;
    
-   DENTER(BASIS_LAYER, "sge_gdi_ctx_class->get_unqualified_hostname");
+   DENTER(BASIS_LAYER);
    unqualified_hostname = prog_state->get_unqualified_hostname(prog_state); 
    DRETURN(unqualified_hostname);
 }
@@ -1505,7 +1505,7 @@ static const char* get_unqualified_hostname(sge_gdi_ctx_class_t *thiz) {
 static const char* get_component_name(sge_gdi_ctx_class_t *thiz) {
    sge_gdi_ctx_t *es = (sge_gdi_ctx_t *) thiz->sge_gdi_ctx_handle;
    const char* ret = NULL;
-   DENTER(BASIS_LAYER, "sge_gdi_ctx_class->get_component_name");
+   DENTER(BASIS_LAYER);
    ret = es->component_name;
    DRETURN(ret);
 }  
@@ -1513,7 +1513,7 @@ static const char* get_component_name(sge_gdi_ctx_class_t *thiz) {
 static const char* get_thread_name(sge_gdi_ctx_class_t *thiz) {
    sge_gdi_ctx_t *es = (sge_gdi_ctx_t *) thiz->sge_gdi_ctx_handle;
    const char* ret = NULL;
-   DENTER(BASIS_LAYER, "sge_gdi_ctx_class->get_thread_name");
+   DENTER(BASIS_LAYER);
    ret = es->thread_name;
    DRETURN(ret);
 }  
@@ -1522,7 +1522,7 @@ static const char* get_progname(sge_gdi_ctx_class_t *thiz) {
    sge_prog_state_class_t* prog_state = thiz->get_sge_prog_state(thiz);
    const char *progname = NULL;
    
-   DENTER(BASIS_LAYER, "sge_gdi_ctx_class->get_progname");
+   DENTER(BASIS_LAYER);
    progname = prog_state->get_sge_formal_prog_name(prog_state); 
    DRETURN(progname);
 }
@@ -1531,7 +1531,7 @@ static u_long32 get_who(sge_gdi_ctx_class_t *thiz) {
    sge_prog_state_class_t* prog_state = thiz->get_sge_prog_state(thiz);
    u_long32 prognumber = 0;
    
-   DENTER(BASIS_LAYER, "sge_gdi_ctx_class->get_who");
+   DENTER(BASIS_LAYER);
    prognumber = prog_state->get_who(prog_state); 
    DRETURN(prognumber);
 }
@@ -1540,14 +1540,14 @@ static bool is_daemonized(sge_gdi_ctx_class_t *thiz) {
    sge_prog_state_class_t* prog_state = thiz->get_sge_prog_state(thiz);
    bool is_daemonized = false;
    
-   DENTER(BASIS_LAYER, "sge_gdi_ctx_class->is_daemonized");
+   DENTER(BASIS_LAYER);
    is_daemonized = (prog_state->get_daemonized(prog_state)) ? true : false;
    DRETURN(is_daemonized);
 }
 
 static void set_daemonized(sge_gdi_ctx_class_t *thiz, bool daemonized) {
    sge_prog_state_class_t* prog_state = thiz->get_sge_prog_state(thiz);
-   DENTER(BASIS_LAYER, "sge_gdi_ctx_class->set_daemonized");
+   DENTER(BASIS_LAYER);
    prog_state->set_daemonized(prog_state, daemonized);
    DRETURN_VOID;
 }
@@ -1556,7 +1556,7 @@ static bool get_job_spooling(sge_gdi_ctx_class_t *thiz) {
    sge_bootstrap_state_class_t* bootstrap_state = thiz->get_sge_bootstrap_state(thiz);
    bool job_spooling = true;
    
-   DENTER(BASIS_LAYER, "sge_gdi_ctx_class->get_job_spooling");
+   DENTER(BASIS_LAYER);
    job_spooling = bootstrap_state->get_job_spooling(bootstrap_state);
    DRETURN(job_spooling);
 }
@@ -1564,7 +1564,7 @@ static bool get_job_spooling(sge_gdi_ctx_class_t *thiz) {
 static void set_job_spooling(sge_gdi_ctx_class_t *thiz, bool job_spooling) {
    sge_bootstrap_state_class_t* bootstrap_state = thiz->get_sge_bootstrap_state(thiz);
 
-   DENTER(BASIS_LAYER, "sge_gdi_ctx_class->set_job_spooling");
+   DENTER(BASIS_LAYER);
    bootstrap_state->set_job_spooling(bootstrap_state, job_spooling);
    DRETURN_VOID;
 }
@@ -1573,7 +1573,7 @@ static const char* get_spooling_method(sge_gdi_ctx_class_t *thiz) {
    sge_bootstrap_state_class_t* bootstrap_state = thiz->get_sge_bootstrap_state(thiz);
    const char *spooling_method = NULL;
    
-   DENTER(BASIS_LAYER, "sge_gdi_ctx_class->get_spooling_method");
+   DENTER(BASIS_LAYER);
    spooling_method = bootstrap_state->get_spooling_method(bootstrap_state);
    DRETURN(spooling_method);
 }
@@ -1582,7 +1582,7 @@ static const char* get_spooling_lib(sge_gdi_ctx_class_t *thiz) {
    sge_bootstrap_state_class_t* bootstrap_state = thiz->get_sge_bootstrap_state(thiz);
    const char *spooling_lib = NULL;
    
-   DENTER(BASIS_LAYER, "sge_gdi_ctx_class->get_spooling_lib");
+   DENTER(BASIS_LAYER);
    spooling_lib = bootstrap_state->get_spooling_lib(bootstrap_state);
    DRETURN(spooling_lib);
 }
@@ -1591,7 +1591,7 @@ static const char* get_spooling_params(sge_gdi_ctx_class_t *thiz) {
    sge_bootstrap_state_class_t* bootstrap_state = thiz->get_sge_bootstrap_state(thiz);
    const char *spooling_params = NULL;
    
-   DENTER(BASIS_LAYER, "sge_gdi_ctx_class->get_spooling_params");
+   DENTER(BASIS_LAYER);
    spooling_params = bootstrap_state->get_spooling_params(bootstrap_state);
    DRETURN(spooling_params);
 }
@@ -1600,7 +1600,7 @@ static u_long32 get_listener_thread_count(sge_gdi_ctx_class_t *thiz) {
    sge_bootstrap_state_class_t* bootstrap_state = thiz->get_sge_bootstrap_state(thiz);
    u_long32 thread_count = 0;
    
-   DENTER(BASIS_LAYER, "sge_gdi_ctx_class->get_listenr_thread_count");
+   DENTER(BASIS_LAYER);
    thread_count = bootstrap_state->get_listener_thread_count(bootstrap_state);
    DRETURN(thread_count);
 }
@@ -1609,7 +1609,7 @@ static u_long32 get_worker_thread_count(sge_gdi_ctx_class_t *thiz) {
    sge_bootstrap_state_class_t* bootstrap_state = thiz->get_sge_bootstrap_state(thiz);
    u_long32 thread_count = 0;
    
-   DENTER(BASIS_LAYER, "sge_gdi_ctx_class->get_worker_thread_count");
+   DENTER(BASIS_LAYER);
    thread_count = bootstrap_state->get_worker_thread_count(bootstrap_state);
    DRETURN(thread_count);
 }
@@ -1618,7 +1618,7 @@ static u_long32 get_scheduler_thread_count(sge_gdi_ctx_class_t *thiz) {
    sge_bootstrap_state_class_t* bootstrap_state = thiz->get_sge_bootstrap_state(thiz);
    u_long32 thread_count = 0;
    
-   DENTER(BASIS_LAYER, "sge_gdi_ctx_class->get_scheduler_thread_count");
+   DENTER(BASIS_LAYER);
    thread_count = bootstrap_state->get_scheduler_thread_count(bootstrap_state);
    DRETURN(thread_count);
 }
@@ -1627,7 +1627,7 @@ static u_long32 get_jvm_thread_count(sge_gdi_ctx_class_t *thiz) {
    sge_bootstrap_state_class_t* bootstrap_state = thiz->get_sge_bootstrap_state(thiz);
    u_long32 thread_count = 0;
    
-   DENTER(BASIS_LAYER, "sge_gdi_ctx_class->get_jvm_thread_count");
+   DENTER(BASIS_LAYER);
    thread_count = bootstrap_state->get_jvm_thread_count(bootstrap_state);
    DRETURN(thread_count);
 }
@@ -1635,14 +1635,14 @@ static u_long32 get_jvm_thread_count(sge_gdi_ctx_class_t *thiz) {
 static sge_exit_func_t get_exit_func(sge_gdi_ctx_class_t *thiz) {
    sge_prog_state_class_t* prog_state = thiz->get_sge_prog_state(thiz);
    sge_exit_func_t exit_func = NULL;
-   DENTER(BASIS_LAYER, "sge_gdi_ctx_class->get_exit_func");
+   DENTER(BASIS_LAYER);
    exit_func = prog_state->get_exit_func(prog_state);
    DRETURN(exit_func);
 }
 
 static void set_exit_func(sge_gdi_ctx_class_t *thiz, sge_exit_func_t exit_func) {
    sge_prog_state_class_t* prog_state = thiz->get_sge_prog_state(thiz);
-   DENTER(BASIS_LAYER, "sge_gdi_ctx_class->set_exit_func");
+   DENTER(BASIS_LAYER);
    prog_state->set_exit_func(prog_state, exit_func);
    DRETURN_VOID;
 }
@@ -1650,7 +1650,7 @@ static void set_exit_func(sge_gdi_ctx_class_t *thiz, sge_exit_func_t exit_func) 
 static void set_private_key(sge_gdi_ctx_class_t *thiz, const char *pkey) {
    sge_gdi_ctx_t *es = (sge_gdi_ctx_t *) thiz->sge_gdi_ctx_handle;
    
-   DENTER(BASIS_LAYER, "sge_gdi_ctx_class->set_private_key");
+   DENTER(BASIS_LAYER);
 
    if (es->ssl_private_key != NULL) {
       sge_free(&(es->ssl_private_key));
@@ -1664,7 +1664,7 @@ static const char* get_private_key(sge_gdi_ctx_class_t *thiz) {
    sge_gdi_ctx_t *es = (sge_gdi_ctx_t *) thiz->sge_gdi_ctx_handle;
    const char *pkey = NULL;
    
-   DENTER(BASIS_LAYER, "sge_gdi_ctx_class->get_private_key");
+   DENTER(BASIS_LAYER);
    pkey = es->ssl_private_key;
    DRETURN(pkey);
 }
@@ -1673,7 +1673,7 @@ static const char* get_private_key(sge_gdi_ctx_class_t *thiz) {
 static void set_certificate(sge_gdi_ctx_class_t *thiz, const char *cert) {
    sge_gdi_ctx_t *es = (sge_gdi_ctx_t *) thiz->sge_gdi_ctx_handle;
 
-   DENTER(BASIS_LAYER, "sge_gdi_ctx_class->set_certificate");
+   DENTER(BASIS_LAYER);
 
    if (es->ssl_certificate != NULL) {
       sge_free(&(es->ssl_certificate));
@@ -1687,7 +1687,7 @@ static const char* get_certificate(sge_gdi_ctx_class_t *thiz) {
    sge_gdi_ctx_t *es = (sge_gdi_ctx_t *) thiz->sge_gdi_ctx_handle;
    const char *cert = NULL;
    
-   DENTER(BASIS_LAYER, "sge_gdi_ctx_class->get_certificate");
+   DENTER(BASIS_LAYER);
    cert = es->ssl_certificate;
    DRETURN(cert);
 }
@@ -1696,7 +1696,7 @@ static const char* get_ca_local_root(sge_gdi_ctx_class_t *thiz) {
    sge_csp_path_class_t *sge_csp = get_sge_csp_path(thiz);
    const char *ca_local_root = NULL;
    
-   DENTER(BASIS_LAYER, "sge_gdi_ctx_class->get_ca_local_root");
+   DENTER(BASIS_LAYER);
    if (sge_csp != NULL) {
       ca_local_root = sge_csp->get_ca_local_root(sge_csp);
    }   
@@ -1707,7 +1707,7 @@ static const char* get_ca_root(sge_gdi_ctx_class_t *thiz) {
    sge_csp_path_class_t *sge_csp = get_sge_csp_path(thiz);
    const char *ca_root = NULL;
    
-   DENTER(BASIS_LAYER, "sge_gdi_ctx_class->get_ca_root");
+   DENTER(BASIS_LAYER);
    if (sge_csp != NULL) {
       ca_root = sge_csp->get_ca_root(sge_csp);
    }
@@ -1718,7 +1718,7 @@ static const char* get_default_cell(sge_gdi_ctx_class_t *thiz) {
    sge_prog_state_class_t* prog_state = thiz->get_sge_prog_state(thiz);
    const char *default_cell = NULL;
    
-   DENTER(BASIS_LAYER, "sge_gdi_ctx_class->get_default_cell");
+   DENTER(BASIS_LAYER);
    default_cell = prog_state->get_default_cell(prog_state); 
    DRETURN(default_cell);
 }
@@ -1728,7 +1728,7 @@ static const char* get_cell_root(sge_gdi_ctx_class_t *thiz) {
    sge_path_state_class_t* path_state = thiz->get_sge_path_state(thiz);
    const char *cell_root = NULL;
    
-   DENTER(BASIS_LAYER, "sge_gdi_ctx_class->get_cell_root");
+   DENTER(BASIS_LAYER);
    cell_root = path_state->get_cell_root(path_state); 
    DRETURN(cell_root);
 }
@@ -1737,7 +1737,7 @@ static const char* get_sge_root(sge_gdi_ctx_class_t *thiz) {
    sge_path_state_class_t* path_state = thiz->get_sge_path_state(thiz);
    const char *sge_root = NULL;
    
-   DENTER(BASIS_LAYER, "sge_gdi_ctx_class->get_sge_root");
+   DENTER(BASIS_LAYER);
    sge_root = path_state->get_sge_root(path_state); 
    DRETURN(sge_root);
 }
@@ -1838,7 +1838,7 @@ static int sge_gdi_ctx_log_flush_func(cl_raw_list_t* list_p)
    int ret_val;
    cl_log_list_elem_t* elem = NULL;
 
-   DENTER(COMMD_LAYER, "sge_gdi_ctx_log_flush_func");
+   DENTER(COMMD_LAYER);
 
    if (list_p == NULL) {
       DRETURN(CL_RETVAL_LOG_NO_LOGLIST);
@@ -1913,7 +1913,7 @@ sge_setup2(sge_gdi_ctx_class_t **context, u_long32 progid, u_long32 thread_id,
    u_long32 sge_execd_port = 0;
    bool from_services = false;
 
-   DENTER(TOP_LAYER, "sge_setup2");
+   DENTER(TOP_LAYER);
 
    if (context == NULL) {
       answer_list_add_sprintf(alpp, STATUS_ESEMANTIC, ANSWER_QUALITY_CRITICAL, MSG_GDI_CONTEXT_NULL);
@@ -2002,7 +2002,7 @@ int sge_gdi2_setup(sge_gdi_ctx_class_t **context_ref, u_long32 progid, u_long32 
    int ret = AE_OK;
    bool alpp_was_null = true;
 
-   DENTER(TOP_LAYER, "sge_gdi2_setup");
+   DENTER(TOP_LAYER);
 
    if (context_ref && sge_gdi_ctx_is_setup(*context_ref)) {
       if (alpp_was_null) {
@@ -2033,7 +2033,7 @@ static int reresolve_qualified_hostname(sge_gdi_ctx_class_t *thiz) {
    sge_prog_state_class_t* prog_state = thiz->get_sge_prog_state(thiz);
    int ret = CL_RETVAL_OK;
 
-   DENTER(TOP_LAYER, "gdi2_reresolve_qualified_hostname");
+   DENTER(TOP_LAYER);
 
    ret=getuniquehostname(prog_state->get_qualified_hostname(prog_state), unique_hostname, 0);
    if( ret != CL_RETVAL_OK ) {
@@ -2097,7 +2097,7 @@ bool sge_daemonize_prepare(sge_gdi_ctx_class_t *ctx) {
 
    int is_daemonized = ctx->is_daemonized(ctx);
 
-   DENTER(TOP_LAYER, "sge_daemonize_prepare");
+   DENTER(TOP_LAYER);
 
 #ifndef NO_SGE_COMPILE_DEBUG
    if (TRACEON) {
@@ -2135,7 +2135,6 @@ bool sge_daemonize_prepare(sge_gdi_ctx_class_t *ctx) {
    pid=fork();
    if (pid <0) {
       CRITICAL((SGE_EVENT, MSG_PROC_FIRSTFORKFAILED_S , strerror(errno)));
-      DEXIT;
       exit(1);
    }
 
@@ -2188,7 +2187,6 @@ bool sge_daemonize_prepare(sge_gdi_ctx_class_t *ctx) {
       }
       /* close read pipe */
       close(fd_pipe[0]);
-      DEXIT;
       exit(exit_status); /* parent exit */
    }
 
@@ -2208,7 +2206,6 @@ bool sge_daemonize_prepare(sge_gdi_ctx_class_t *ctx) {
    pid=fork();
    if (pid < 0) {
       CRITICAL((SGE_EVENT, MSG_PROC_SECONDFORKFAILED_S , strerror(errno)));
-      DEXIT;
       exit(1);
    }
    if ( pid > 0) {
@@ -2269,7 +2266,7 @@ bool sge_daemonize_finalize(sge_gdi_ctx_class_t *ctx)
    char tmp_buffer[4];
    int is_daemonized = ctx->is_daemonized(ctx);
 
-   DENTER(TOP_LAYER, "sge_daemonize_finalize");
+   DENTER(TOP_LAYER);
 
    /* don't call this function twice */
    if (is_daemonized) {
@@ -2355,7 +2352,7 @@ int sge_daemonize(int *keep_open, unsigned long nr_of_fds, sge_gdi_ctx_class_t *
    pid_t pid;
    int failed_fd;
  
-   DENTER(TOP_LAYER, "sge_daemonize");
+   DENTER(TOP_LAYER);
  
 #ifndef NO_SGE_COMPILE_DEBUG
    if (TRACEON) {

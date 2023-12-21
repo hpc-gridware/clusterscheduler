@@ -49,7 +49,7 @@ static int _lStr2Nm(const lNameSpace *nsp, const char *str)
    int ret = NoName;
    int found = 0;
 
-   DENTER(CULL_LAYER, "_lStr2Nm");
+   DENTER(CULL_LAYER);
 
    if (nsp) {
       for (i = 0; i < nsp->size; i++) {
@@ -66,8 +66,7 @@ static int _lStr2Nm(const lNameSpace *nsp, const char *str)
          ret = NoName;
    }
 
-   DEXIT;
-   return ret;
+   DRETURN(ret);
 }
 
 
@@ -93,18 +92,16 @@ int lStr2NmGenerator(const char *str, lNameSpace *ns)
    const lNameSpace *nsp;
    int ret;
 
-   DENTER(CULL_LAYER, "lStr2NmGenerator");
+   DENTER(CULL_LAYER);
 
    for (nsp = ns; nsp->lower; nsp++) {
       if ((ret = _lStr2Nm(nsp, str)) != NoName) {
          DPRINTF(("Name: %s Id: %d\n", str, ret));
-         DEXIT;
-         return ret;
+         DRETURN(ret);
       }
    }
 
-   DEXIT;
-   return NoName;
+   DRETURN(NoName);
 }
 
 
@@ -123,7 +120,6 @@ int main(int argc, char *argv[])
        printf("%s -> %d\n", argv[argc-1], lStr2NmGenerator(argv[argc-1], nmv));
        argc--;
     }
-    DEXIT;
-    return 0;
+    DRETURN(0);
 }
 #endif

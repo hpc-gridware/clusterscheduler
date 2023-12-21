@@ -91,7 +91,7 @@ lListElem *ar_list_locate(const lList *ar_list, u_long32 ar_id)
 {
    lListElem *ep = NULL;
 
-   DENTER(TOP_LAYER, "ar_list_locate");
+   DENTER(TOP_LAYER);
 
    ep = lGetElemUlongRW(ar_list, AR_id, ar_id);
 
@@ -129,7 +129,7 @@ bool ar_validate(lListElem *ar, lList **alpp, bool in_master, bool is_spool, con
    u_long32 duration;
    u_long32 now = sge_get_gmt();
 
-   DENTER(TOP_LAYER, "ar_validate");
+   DENTER(TOP_LAYER);
 
    /*   AR_start_time, SGE_ULONG        */
    if ((start_time = lGetUlong(ar, AR_start_time)) == 0) {
@@ -324,7 +324,7 @@ ar_get_event_from_string(const char *string)
 {
    ar_state_event_t ret = ARL_UNKNOWN;
 
-   DENTER(TOP_LAYER, "ar_get_event_from_string");
+   DENTER(TOP_LAYER);
    if (string != NULL) {
       if (!strcmp(MSG_AR_EVENT_STATE_UNKNOWN, string)) {
          ret = ARL_UNKNOWN;
@@ -368,7 +368,7 @@ const char *
 ar_get_string_from_event(ar_state_event_t event)
 {
    const char *ret = MSG_AR_EVENT_STATE_UNKNOWN;
-   DENTER(TOP_LAYER, "ar_get_string_from_event");
+   DENTER(TOP_LAYER);
    switch(event) {
       case ARL_UNKNOWN:
          ret = MSG_AR_EVENT_STATE_UNKNOWN;
@@ -476,7 +476,7 @@ ar_state2dstring(ar_state_t state, dstring *state_as_string)
 bool sge_ar_has_errors(lListElem *ar) {
    bool ret = false;
 
-   DENTER(TOP_LAYER, "sge_ar_has_errors");
+   DENTER(TOP_LAYER);
 
    if (lGetUlong(ar, AR_qi_errors) != 0) {
       ret = true;

@@ -48,17 +48,15 @@ char *file
 ) {
    int fd;
 
-   DENTER(TOP_LAYER, "qmaster_lock");
+   DENTER(TOP_LAYER);
 
    fd = SGE_OPEN3(file, O_RDWR | O_CREAT | O_EXCL, 0600);
    if (fd == -1) {
-      DEXIT;
-      return -1;
+      DRETURN(-1);
    }
    else {
       close(fd);
-      DEXIT;
-      return 0;
+      DRETURN(0);
    }
 }
 
@@ -72,12 +70,11 @@ char *file
 ) {
    int ret;
 
-   DENTER(TOP_LAYER, "qmaster_unlock");
+   DENTER(TOP_LAYER);
 
    ret = unlink(file);
 
-   DEXIT;
-   return ret;
+   DRETURN(ret);
 }
 
 /*-------------------------------------------------------------
@@ -91,11 +88,10 @@ char *file
    int ret;
    SGE_STRUCT_STAT sb;
 
-   DENTER(TOP_LAYER, "isLocked");
+   DENTER(TOP_LAYER);
 
    ret = SGE_STAT(file, &sb);
    ret = ret ? 0 : 1;
 
-   DEXIT;
-   return ret;
+   DRETURN(ret);
 }

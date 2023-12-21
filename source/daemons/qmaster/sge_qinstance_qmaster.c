@@ -120,9 +120,9 @@ qinstance_modify_attribute(sge_gdi_ctx_class_t *ctx,
    const lList *master_centry_list = *object_type_get_master_list(SGE_TYPE_CENTRY);
   
 #ifdef QINSTANCE_MODIFY_DEBUG
-   DENTER(TOP_LAYER, "qinstance_modify_attribute");
+   DENTER(TOP_LAYER);
 #else 
-   DENTER(BASIS_LAYER, "qinstance_modify_attribute");
+   DENTER(BASIS_LAYER);
 #endif
 
    if (this_elem != NULL && cqueue != NULL && 
@@ -732,7 +732,7 @@ qinstance_change_state_on_command(sge_gdi_ctx_class_t *ctx,
       { QI_DO_NOTHING,        0,             NULL,                                true,  NULL,                                 true }
    };
 
-   DENTER(TOP_LAYER, "qinstance_change_state_on_command");
+   DENTER(TOP_LAYER);
    if (is_owner || is_operator) {
       int i = 0;
 
@@ -840,8 +840,7 @@ qinstance_change_state_on_command(sge_gdi_ctx_class_t *ctx,
                       STATUS_ESEMANTIC, ANSWER_QUALITY_WARNING);
    }
    sge_dstring_free(&buffer);
-   DEXIT;
-   return ret;
+   DRETURN(ret);
 }
 
 
@@ -872,7 +871,7 @@ bool qinstance_change_state_on_calendar(sge_gdi_ctx_class_t *ctx,
 {
    bool ret = true;
 
-   DENTER(TOP_LAYER, "qinstance_change_state_on_calendar");
+   DENTER(TOP_LAYER);
 
    if (this_elem != NULL && calendar != NULL) {
       lList *state_changes_list = NULL;
@@ -918,7 +917,7 @@ bool qinstance_change_state_on_calendar_all(sge_gdi_ctx_class_t *ctx,
    bool ret = true;
    const lListElem *cqueue;
 
-   DENTER(TOP_LAYER, "qinstance_signal_on_calendar_all");
+   DENTER(TOP_LAYER);
 
    for_each (cqueue, *object_type_get_master_list(SGE_TYPE_CQUEUE)) {
       const lList *qinstance_list = lGetList(cqueue, CQ_qinstances);
@@ -934,8 +933,7 @@ bool qinstance_change_state_on_calendar_all(sge_gdi_ctx_class_t *ctx,
       }
    }
 
-   DEXIT;
-   return ret;
+   DRETURN(ret);
 }
 
 /****** sge_qinstance_qmaster/qinstance_change_state_on_calender_() ************
@@ -971,7 +969,7 @@ static bool qinstance_change_state_on_calender_(sge_gdi_ctx_class_t *ctx,
    bool new_cal_disabled = (cal_order == QI_DO_CAL_DISABLE) ? true : false;
    bool new_cal_suspended = (cal_order == QI_DO_CAL_SUSPEND) ? true : false;
 
-   DENTER(TOP_LAYER, "qinstance_signal_on_calendar_");
+   DENTER(TOP_LAYER);
 
    lSetList(this_elem, QU_state_changes, *state_change_list);
    *state_change_list = NULL;
@@ -1169,9 +1167,9 @@ sge_qmaster_qinstance_set_initial_state(lListElem *this_elem)
    const char *state_string = lGetString(this_elem, QU_initial_state);
 
 #ifdef QINSTANCE_MODIFY_DEBUG
-   DENTER(TOP_LAYER, "sge_qmaster_qinstance_set_initial_state");
+   DENTER(TOP_LAYER);
 #else 
-   DENTER(BASIS_LAYER, "sge_qmaster_qinstance_set_initial_state");
+   DENTER(BASIS_LAYER);
 #endif
 
    if (state_string != NULL && strcmp(state_string, "default")) {
@@ -1215,7 +1213,7 @@ qinstance_reinit_consumable_actual_list(lListElem *this_elem,
 {
    bool ret = true;
 
-   DENTER(TOP_LAYER, "qinstance_reinit_consumable_actual_list");
+   DENTER(TOP_LAYER);
 
    if (this_elem != NULL) {
       const char *name = lGetString(this_elem, QU_full_name);

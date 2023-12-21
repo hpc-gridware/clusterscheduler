@@ -80,7 +80,7 @@ static void *thread_function(void *anArg)
    bool read_thread = true;
    bool do_loop = true;
     
-   DENTER(TOP_LAYER, "thread_function");
+   DENTER(TOP_LAYER);
 
    while (do_loop) {
       /*

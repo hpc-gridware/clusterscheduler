@@ -123,7 +123,7 @@ sge_eval_expression(u_long32 type, const char *expr, const char *value, lList **
    int match;
    char pattern_buf[MAX_STRING_SIZE], value_buf[MAX_STRING_SIZE];
    
-   DENTER(BASIS_LAYER, "sge_eval_expression");
+   DENTER(BASIS_LAYER);
    
    /* Null values are supported in str_cmp_null way */
    if (expr==NULL && value!=NULL) {
@@ -298,7 +298,7 @@ static bool is_pattern(const char c)
  *-----------------------------------------------------------*/
 static int Error(s_token *token_p, int expected)
 {
-   DENTER(GUI_LAYER, "sge_eval_expression:Error");
+   DENTER(GUI_LAYER);
    if (token_p->tt!=T_ERROR){
       answer_list_add_sprintf(token_p->answer_list, STATUS_ESYNTAX,
                               ANSWER_QUALITY_ERROR, MSG_EVAL_EXPRESSION_PARSE_ERROR,

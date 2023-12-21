@@ -120,7 +120,7 @@ u_long32 flags
    bool is_hold_option = false;
    int hard_soft_flag = 0;
 
-   DENTER(TOP_LAYER, "cull_parse_cmdline");
+   DENTER(TOP_LAYER);
 
    if (!arg_list || !pcmdline) {
       answer_list_add(&answer, MSG_PARSE_NULLPOINTERRECEIVED, 
@@ -919,16 +919,14 @@ u_long32 flags
          if (!parse_ulong_val(&jobshare_d, NULL, TYPE_INT, *sp, NULL, 0)) {
             answer_list_add(&answer, MSG_PARSE_INVALIDJOBSHAREMUSTBEUINT,
                              STATUS_ESEMANTIC, ANSWER_QUALITY_ERROR);
-            DEXIT;
-            return answer;
+            DRETURN(answer);
          }
 
 
          if (jobshare_d < 0) {
             answer_list_add(&answer, MSG_PARSE_INVALIDJOBSHAREMUSTBEUINT,
                              STATUS_ESEMANTIC, ANSWER_QUALITY_ERROR);
-            DEXIT;
-            return answer;
+            DRETURN(answer);
          }
 
          jobshare = jobshare_d;
@@ -1811,8 +1809,7 @@ DTRACE;
          if (!*sp) {
              snprintf(str, sizeof(str), SFNMAX, MSG_PARSE_ATSIGNOPTIONMUSTHAVEFILEARGUMENT);
              answer_list_add(&answer, str, STATUS_ESEMANTIC, ANSWER_QUALITY_ERROR);
-             DEXIT;
-             return answer;
+             DRETURN(answer);
          }
 
          DPRINTF(("\"-@ %s\"\n", *sp));
@@ -1830,8 +1827,7 @@ DTRACE;
 
          lFreeList(&alp);
          if (do_exit) {
-            DEXIT;
-            return answer;
+            DRETURN(answer);
          }
 
          sp++;
@@ -2035,8 +2031,7 @@ DTRACE;
       }
    }
 
-   DEXIT;
-   return answer;
+   DRETURN(answer);
 }
 
 /***************************************************************************/
@@ -2045,15 +2040,14 @@ char *time_str
 ) {
    u_long32 seconds;
 
-   DENTER(TOP_LAYER, "sge_parse_checkpoint_interval");
+   DENTER(TOP_LAYER);
 
    DPRINTF(("--------time_string: %s\n", time_str));
    if (!parse_ulong_val(NULL, &seconds, TYPE_TIM, time_str, NULL, 0))
       seconds = 0;
 
      DPRINTF(("-------- seconds: %d\n", (int) seconds));
-   DEXIT;
-   return seconds;
+   DRETURN(seconds);
 }
 
 /***************************************************************************/
@@ -2082,18 +2076,16 @@ char *time_str
 *******************************************************************************/
 static int var_list_parse_from_environment(lList **lpp, char **envp) 
 {
-   DENTER(TOP_LAYER, "var_list_parse_from_environment");
+   DENTER(TOP_LAYER);
 
    if (!lpp || !envp) {
-      DEXIT;
-      return 1;
+      DRETURN(1);
    }
 
    if (!*lpp) {
       *lpp = lCreateList("env list", VA_Type);
       if (!*lpp) {
-         DEXIT;
-         return 3;
+         DRETURN(3);
       }
    }
 
@@ -2121,8 +2113,7 @@ static int var_list_parse_from_environment(lList **lpp, char **envp)
       sge_free_saved_vars(context);
    }
 
-   DEXIT;
-   return 0;
+   DRETURN(0);
 }
 
 /****** set_yn_option() ********************************************************
@@ -2183,7 +2174,7 @@ char *reroot_path(lListElem* pjob, const char *path, lList **alpp) {
    char tmp_str2[SGE_PATH_MAX + 1];
    char tmp_str3[SGE_PATH_MAX + 1];
 
-   DENTER (TOP_LAYER, "reroot_path");
+   DENTER(TOP_LAYER);
 
    home = job_get_env_string(pjob, VAR_PREFIX "O_HOME");
    strcpy(tmp_str, path);

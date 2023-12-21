@@ -115,7 +115,7 @@ static void notify_ptf()
    lListElem *tep;
    int write_job = -1;
 
-   DENTER(TOP_LAYER, "notify_ptf");
+   DENTER(TOP_LAYER);
 
 #ifdef DEBUG_DC
    ptf_show_registered_jobs();
@@ -185,8 +185,7 @@ static void notify_ptf()
       }   
    }
 
-   DEXIT;
-   return;
+   DRETURN_VOID;
 }
 
 /* force job resource limits */
@@ -194,7 +193,7 @@ static void force_job_rlimit(const char* qualified_hostname)
 {
    const lListElem *jep;
 
-   DENTER(TOP_LAYER, "force_job_rlimit");
+   DENTER(TOP_LAYER);
 
    for_each (jep, *object_type_get_master_list(SGE_TYPE_JOB)) {
       const lListElem *jatep;
@@ -372,7 +371,7 @@ int do_ck_to_do(sge_gdi_ctx_class_t *ctx, bool is_qmaster_down) {
    int return_value = 0;
    const char *qualified_hostname = ctx->get_qualified_hostname(ctx);
 
-   DENTER(TOP_LAYER, "execd_ck_to_do");
+   DENTER(TOP_LAYER);
 
    /*
     *  get current time (now)
@@ -657,7 +656,7 @@ static int sge_start_jobs(sge_gdi_ctx_class_t *ctx)
    int state_changed;
    int jobs_started = 0;
 
-   DENTER(TOP_LAYER, "sge_start_jobs");
+   DENTER(TOP_LAYER);
 
    if (lGetNumberOfElem(*object_type_get_master_list(SGE_TYPE_JOB)) == 0) {
       DPRINTF(("No jobs to start\n"));
@@ -697,7 +696,7 @@ static int exec_job_or_task(sge_gdi_ctx_class_t *ctx, lListElem *jep, lListElem 
    const char *pe_task_id = NULL;
    const char *qualified_hostname = ctx->get_qualified_hostname(ctx);
 
-   DENTER(TOP_LAYER, "exec_job_or_task");
+   DENTER(TOP_LAYER);
 
    /* retrieve ids - we need them later on */
    job_id = lGetUlong(jep, JB_job_number);
@@ -846,7 +845,7 @@ const lListElem *pe_task
    dstring osjobid_path = DSTRING_INIT;
    osjobid_t osjobid;   
 #endif   
-   DENTER(TOP_LAYER, "register_at_ptf");
+   DENTER(TOP_LAYER);
 
    sge_dstring_init(&id_dstring, id_buffer, MAX_STRING_SIZE);
 
@@ -875,16 +874,14 @@ const lListElem *pe_task
       DPRINTF(("still waiting for addgrpid of job %s\n", 
          job_get_id_string(job_id, ja_task_id, pe_task_id, &id_dstring)));
       sge_dstring_free(&addgrpid_path);
-      DEXIT;
-      return(1);
+      DRETURN(1);
    }  
 
    if (!(fp = fopen(sge_dstring_get_string(&addgrpid_path), "r"))) {
       ERROR((SGE_EVENT, MSG_EXECD_NOADDGIDOPEN_SSS, sge_dstring_get_string(&addgrpid_path), 
              job_get_id_string(job_id, ja_task_id, pe_task_id, &id_dstring), strerror(errno)));
       sge_dstring_free(&addgrpid_path);
-      DEXIT;
-      return(-1);
+      DRETURN(-1);
    }
   
    sge_dstring_free(&addgrpid_path);       
@@ -894,8 +891,7 @@ const lListElem *pe_task
    FCLOSE(fp);
    if (!success) {
       /* can happen that shepherd has opend the file but not written */
-      DEXIT;
-      return (1);
+      DRETURN((1));
    }
    {
       int ptf_error;
@@ -905,8 +901,7 @@ const lListElem *pe_task
          ERROR((SGE_EVENT, MSG_JOB_NOREGISTERPTF_SS, 
                 job_get_id_string(job_id, ja_task_id, pe_task_id, &id_dstring), 
                 ptf_errstr(ptf_error)));
-         DEXIT;
-         return (1);
+         DRETURN((1));
       }
    }
 
@@ -933,8 +928,7 @@ const lListElem *pe_task
       DPRINTF(("still waiting for osjobid of job %s\n", 
             job_get_id_string(job_id, ja_task_id, pe_task_id, &id_dstring)));
       sge_dstring_free(&osjobid_path);      
-      DEXIT;
-      return 1;
+      DRETURN(1);
    } 
 
    if (!(fp=fopen(sge_dstring_get_string(&osjobid_path), "r"))) {
@@ -942,8 +936,7 @@ const lListElem *pe_task
              job_get_id_string(job_id, ja_task_id, pe_task_id, &id_dstring), 
              strerror(errno)));
       sge_dstring_free(&osjobid_path);      
-      DEXIT;
-      return -1;
+      DRETURN(-1);
    }
 
    sge_dstring_free(&osjobid_path);      
@@ -952,8 +945,7 @@ const lListElem *pe_task
    FCLOSE(fp);
    if (!success) {
       /* can happen that shepherd has opend the file but not written */
-      DEXIT;
-      return 1;
+      DRETURN(1);
    }
 
    {
@@ -962,8 +954,7 @@ const lListElem *pe_task
          ERROR((SGE_EVENT, MSG_JOB_NOREGISTERPTF_SS,  
                 job_get_id_string(job_id, ja_task_id, pe_task_id, &id_dstring), 
                 ptf_errstr(ptf_error)));
-         DEXIT;
-         return -1;
+         DRETURN(-1);
       }
    }
 
@@ -981,10 +972,8 @@ const lListElem *pe_task
    }
 #endif
 
-   DEXIT;
-   return 0;
+   DRETURN(0);
 FCLOSE_ERROR:
-   DEXIT;
-   return 1;
+   DRETURN(1);
 }
 #endif

@@ -66,7 +66,7 @@ suspend_job_in_queues( lList *susp_queues, lList *job_list, order_t *orders)
    lListElem *jep = NULL, *ja_task = NULL;
    lListElem *qep;
 
-   DENTER(TOP_LAYER, "suspend_job_in_queues");
+   DENTER(TOP_LAYER);
 
    now = sge_get_gmt();
    for_each_rw (qep, susp_queues) {
@@ -115,8 +115,7 @@ suspend_job_in_queues( lList *susp_queues, lList *job_list, order_t *orders)
       }
    }
    
-   DEXIT;
-   return;
+   DRETURN_VOID;
 }
 
 
@@ -128,7 +127,7 @@ unsuspend_job_in_queues( lList *queue_list, lList *job_list, order_t *orders)
    lListElem *jep = NULL, *ja_task = NULL;
    lListElem *qep;
 
-   DENTER(TOP_LAYER, "unsuspend_job_in_queues");
+   DENTER(TOP_LAYER);
 
    now = sge_get_gmt();
    for_each_rw (qep, queue_list) {
@@ -190,8 +189,7 @@ unsuspend_job_in_queues( lList *queue_list, lList *job_list, order_t *orders)
       }
    }
 
-   DEXIT;
-   return;
+   DRETURN_VOID;
 }
    
 
@@ -204,14 +202,13 @@ select4suspension(lList *job_list, lListElem *qep, lListElem **jepp,
    lListElem *jshortest = NULL, *shortest = NULL;
    const char *qnm;
 
-   DENTER(TOP_LAYER, "select4suspension");
+   DENTER(TOP_LAYER);
 
    qnm = lGetString(qep, QU_full_name);
    if (qinstance_state_is_manual_suspended(qep) ||
        qinstance_state_is_susp_on_sub(qep) ||
        qinstance_state_is_cal_suspended(qep)) {
-      DEXIT;
-      return -1;
+      DRETURN(-1);
    }
   
    for_each_rw (jep, job_list) {
@@ -248,8 +245,7 @@ select4suspension(lList *job_list, lListElem *qep, lListElem **jepp,
       *ja_taskp = shortest; 
    }
 
-   DEXIT;
-   return shortest?0:1;
+   DRETURN(shortest?0:1);
 }
 
 static int select4unsuspension(
@@ -262,7 +258,7 @@ lListElem **ja_taskp
    lListElem *jep, *jlongest = NULL, *longest = NULL, *ja_task;
    const char *qnm;
 
-   DENTER(TOP_LAYER, "select4unsuspension");
+   DENTER(TOP_LAYER);
 
    qnm = lGetString(qep, QU_full_name);
 
@@ -294,7 +290,6 @@ lListElem **ja_taskp
       *ja_taskp = longest; 
    }
 
-   DEXIT;
-   return longest?0:1;
+   DRETURN(longest?0:1);
 }
 

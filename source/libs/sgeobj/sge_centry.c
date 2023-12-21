@@ -196,7 +196,7 @@ centry_fill_and_check(lListElem *this_elem, lList** answer_list, bool allow_empt
    double dval;
    int ret, allow_infinity;
 
-   DENTER(CENTRY_LAYER, "centry_fill_and_check");
+   DENTER(CENTRY_LAYER);
 
    name = lGetString(this_elem, CE_name);
    s = lGetString(this_elem, CE_stringval);
@@ -402,7 +402,7 @@ centry_create(lList **answer_list, const char *name)
 {
    lListElem *ret = NULL;  /* CE_Type */
 
-   DENTER(CENTRY_LAYER, "centry_create");
+   DENTER(CENTRY_LAYER);
    if (name != NULL) {
       ret = lCreateElem(CE_Type);
       if (ret != NULL) {
@@ -416,11 +416,11 @@ centry_create(lList **answer_list, const char *name)
       } else {
          answer_list_add_sprintf(answer_list, STATUS_EMALLOC, 
                                  ANSWER_QUALITY_ERROR,
-                                 MSG_MEM_MEMORYALLOCFAILED_S, SGE_FUNC);
+                                 MSG_MEM_MEMORYALLOCFAILED_S, __func__);
       }
    } else {
       answer_list_add_sprintf(answer_list, STATUS_ERROR1, ANSWER_QUALITY_ERROR,
-                              MSG_INAVLID_PARAMETER_IN_S, SGE_FUNC);
+                              MSG_INAVLID_PARAMETER_IN_S, __func__);
    }
    DRETURN(ret);
 }
@@ -460,7 +460,7 @@ centry_is_referenced(const lListElem *centry, lList **answer_list,
    bool ret = false;
    const char *centry_name = lGetString(centry, CE_name);
 
-   DENTER(CENTRY_LAYER, "centry_is_referenced");
+   DENTER(CENTRY_LAYER);
 
    if (sconf_is_centry_referenced(centry)) {
       answer_list_add_sprintf(answer_list, STATUS_EUNKNOWN,
@@ -553,7 +553,7 @@ centry_print_resource_to_dstring(const lListElem *this_elem, dstring *string)
 {
    bool ret = true;
 
-   DENTER(CENTRY_LAYER, "centry_print_resource_to_dstring");
+   DENTER(CENTRY_LAYER);
    if (this_elem != NULL && string != NULL) {
       u_long32 type = lGetUlong(this_elem, CE_valtype);
       double val = lGetDouble(this_elem, CE_doubleval);
@@ -595,7 +595,7 @@ centry_list_locate(const lList *this_list, const char *name)
 {
    lListElem *ret = NULL;   /* CE_Type */
 
-   DENTER(CENTRY_LAYER, "centry_list_locate");
+   DENTER(CENTRY_LAYER);
    if (this_list != NULL && name != NULL) {
       ret = lGetElemStrRW(this_list, CE_name, name);
       if (ret == NULL) {
@@ -628,7 +628,7 @@ centry_list_sort(lList *this_list)
 {
    bool ret = true;
 
-   DENTER(CENTRY_LAYER, "centry_list_sort");
+   DENTER(CENTRY_LAYER);
    if (this_list != NULL) {
       lSortOrder *order = NULL;
 
@@ -660,7 +660,7 @@ centry_list_init_double(lList *this_list)
 {
    bool ret = true;
 
-   DENTER(CENTRY_LAYER, "centry_list_init_double");
+   DENTER(CENTRY_LAYER);
    if (this_list != NULL) {
       lListElem *centry;
 
@@ -723,7 +723,7 @@ centry_list_fill_request(lList *this_list, lList **answer_list, const lList *mas
    lListElem *entry = NULL;
    lListElem *cep = NULL;
 
-   DENTER(CENTRY_LAYER, "centry_list_fill_request");
+   DENTER(CENTRY_LAYER);
 
    for_each_rw(entry, this_list) {
       const char *name = lGetString(entry, CE_name);
@@ -779,7 +779,7 @@ centry_list_are_queues_requestable(const lList *this_list)
 {
    bool ret = false;
    
-   DENTER(CENTRY_LAYER, "centry_list_are_queues_requestable");
+   DENTER(CENTRY_LAYER);
    if (this_list != NULL) {
       lListElem *centry = centry_list_locate(this_list, "qname");
       
@@ -795,7 +795,7 @@ centry_list_append_to_dstring(const lList *this_list, dstring *string)
 {
    const char *ret = NULL;
 
-   DENTER(CENTRY_LAYER, "centry_list_append_to_dstring");
+   DENTER(CENTRY_LAYER);
    if (string != NULL) {
       const lListElem *elem = NULL;
       bool printed = false;
@@ -826,7 +826,7 @@ centry_list_append_to_string(lList *this_list, char *buff, u_long32 max_len)
    const char *attr_delis[] = {"=", ",", "\n"};
    int ret;
 
-   DENTER(TOP_LAYER, "centry_list_append_to_string");
+   DENTER(TOP_LAYER);
 
    if (buff)
       buff[0] = '\0';
@@ -853,7 +853,7 @@ centry_list_parse_from_string(lList *complex_attributes,
    const char *cp;
    struct saved_vars_s *context = NULL;
 
-   DENTER(TOP_LAYER, "centry_list_parse_from_string");
+   DENTER(TOP_LAYER);
 
    /* allocate space for attribute list if no list is passed */
    if (complex_attributes == NULL) {
@@ -917,7 +917,7 @@ centry_list_parse_from_string(lList *complex_attributes,
 void
 centry_list_remove_duplicates(lList *this_list) 
 {
-   DENTER(TOP_LAYER, "centry_list_remove_duplicates");
+   DENTER(TOP_LAYER);
    cull_compress_definition_list(this_list, CE_name, CE_stringval, 0);
    DRETURN_VOID;
 }
@@ -976,7 +976,7 @@ bool centry_elem_validate(lListElem *centry, const lList *centry_list,
    const char *temp;
    bool ret = true;
 
-   DENTER(TOP_LAYER, "centry_elem_validate");
+   DENTER(TOP_LAYER);
 
    switch(type){
       case TYPE_INT :
@@ -1239,7 +1239,7 @@ centry_urgency_contribution(int slots, const char *name, double value,
    const char *strval;
    u_long32 complex_type;
    
-   DENTER(TOP_LAYER, "centry_urgency_contribution");
+   DENTER(TOP_LAYER);
 
    if (!centry || 
        !(strval = lGetString(centry, CE_urgency_weight)) ||
@@ -1282,7 +1282,7 @@ centry_list_do_all_exists(const lList *this_list, lList **answer_list,
    bool ret = true;
    const lListElem *centry = NULL;
    
-   DENTER(TOP_LAYER, "centry_list_do_all_exists");
+   DENTER(TOP_LAYER);
    for_each(centry, centry_list) {
       const char *name = lGetString(centry, CE_name);
 
@@ -1304,7 +1304,7 @@ centry_list_is_correct(lList *this_list, lList **answer_list)
 
    bool ret = true;
 
-   DENTER(TOP_LAYER, "centry_list_has_error");
+   DENTER(TOP_LAYER);
    if (this_list != NULL) {
       const lListElem *centry = lGetElemStr(this_list, CE_name, "qname");
 
@@ -1336,7 +1336,7 @@ int ensure_attrib_available(lList **alpp, lListElem *ep, int nm, const lList *ma
    int ret = 0;
    lListElem *attr = NULL;
 
-   DENTER(TOP_LAYER, "ensure_attrib_available");
+   DENTER(TOP_LAYER);
    if (ep != NULL) {
       for_each_rw (attr, lGetList(ep, nm)) {
          const char *name = lGetString(attr, CE_name);
@@ -1391,7 +1391,7 @@ int ensure_attrib_available(lList **alpp, lListElem *ep, int nm, const lList *ma
 bool validate_load_formula(const char *load_formula, lList **answer_list, const lList *centry_list, const char *name) {
    bool ret = true;
 
-   DENTER(TOP_LAYER, "validate_load_formual");
+   DENTER(TOP_LAYER);
 
    /* Check for keyword 'none' */
    if (!strcasecmp(load_formula, "none")) {
@@ -1503,7 +1503,7 @@ bool load_formula_is_centry_referenced(const char *load_formula, const lListElem
    struct saved_vars_s *term_context = NULL;
    const char *centry_name = lGetString(centry, CE_name);
 
-   DENTER(TOP_LAYER, "load_formula_is_centry_referenced");
+   DENTER(TOP_LAYER);
 
    if (load_formula == NULL) {
       DRETURN(ret);

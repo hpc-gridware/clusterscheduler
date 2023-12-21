@@ -106,14 +106,13 @@ void sge_gdi_kill_master(sge_gdi_packet_class_t *packet, sge_gdi_task_class_t *t
    char groupname[128];
    const lList *master_manager_list = *object_type_get_master_list(SGE_TYPE_MANAGER);
 
-   DENTER(GDI_LAYER, "sge_gdi_kill_master");
+   DENTER(GDI_LAYER);
 
    if (sge_gdi_packet_parse_auth_info(packet, &(task->answer_list), &uid, username, sizeof(username), 
                                   &gid, groupname, sizeof(groupname)) == false) {
       ERROR((SGE_EVENT, SFNMAX, MSG_GDI_FAILEDTOEXTRACTAUTHINFO));
       answer_list_add(&(task->answer_list), SGE_EVENT, STATUS_ENOMGR, ANSWER_QUALITY_ERROR);
-      DEXIT;
-      return;
+      DRETURN_VOID;
    }
 
    DPRINTF(("uid/username = %d/%s, gid/groupname = %d/%s\n", (int) uid, username, (int) gid, groupname));
@@ -121,8 +120,7 @@ void sge_gdi_kill_master(sge_gdi_packet_class_t *packet, sge_gdi_task_class_t *t
    if (!manop_is_manager(username, master_manager_list)) {
       ERROR((SGE_EVENT, SFNMAX, MSG_SHUTDOWN_SHUTTINGDOWNQMASTERREQUIRESMANAGERPRIVILEGES));
       answer_list_add(&(task->answer_list), SGE_EVENT, STATUS_ENOMGR, ANSWER_QUALITY_ERROR);
-      DEXIT;
-      return;
+      DRETURN_VOID;
    }
 
    if (sge_qmaster_shutdown_via_signal_thread(0) == 0) {
@@ -133,8 +131,7 @@ void sge_gdi_kill_master(sge_gdi_packet_class_t *packet, sge_gdi_task_class_t *t
       answer_list_add(&(task->answer_list), SGE_EVENT, STATUS_ERROR1, ANSWER_QUALITY_ERROR);
    }
 
-   DEXIT;
-   return;
+   DRETURN_VOID;
 } /* sge_gdi_kill_master() */
 
 /****** qmaster/sge_qmaster_main/sge_daemonize_qmaster() ***************************
@@ -187,12 +184,11 @@ bool sge_daemonize_qmaster()
    pid_t pid = -1;
    int failed_fd;
 
-   DENTER(TOP_LAYER, "sge_daemonize_qmaster");
+   DENTER(TOP_LAYER);
 
    if (getenv("SGE_ND") != NULL) {
       DPRINTF(("sge_qmaster is not daemonized\n"));
-      DEXIT;
-      return false;
+      DRETURN(false);
    }
 
    if((pid = fork()) != 0) {
@@ -221,8 +217,7 @@ bool sge_daemonize_qmaster()
       SGE_EXIT(NULL, 0);
    }
 
-   DEXIT;
-   return true;
+   DRETURN(true);
 } /* sge_daemonize_qmaster() */
 
 /****** qmaster/sge_qmaster_main/sge_become_admin_user() ***************************
@@ -252,7 +247,7 @@ void sge_become_admin_user(const char *admin_user)
 {
    char str[MAX_STRING_SIZE];
 
-   DENTER(TOP_LAYER, "sge_become_admin_user");
+   DENTER(TOP_LAYER);
 
    if (sge_set_admin_username(admin_user, str) == -1) {
       CRITICAL((SGE_EVENT, SFNMAX, str));
@@ -264,8 +259,7 @@ void sge_become_admin_user(const char *admin_user)
       SGE_EXIT(NULL, 1);
    }
 
-   DEXIT;
-   return;
+   DRETURN_VOID;
 } /* sge_become_admin_user() */
 
 /****** qmaster/sge_qmaster_main/sge_exit_func() **********************************
@@ -295,10 +289,9 @@ void sge_become_admin_user(const char *admin_user)
 *******************************************************************************/
 void sge_exit_func(void **ctx_ref, int anExitValue)
 {
-   DENTER(TOP_LAYER, "sge_exit_func");
+   DENTER(TOP_LAYER);
    sge_gdi2_shutdown(ctx_ref);
 
-   DEXIT;
-   return;
+   DRETURN_VOID;
 } /* sge_exit_func */
 

@@ -77,13 +77,12 @@ u_long32 target  /* may be SGE_UM_LIST or SGE_UO_LIST */
    lDescr *descr = NULL;
    ev_event eve = sgeE_EVENTSIZE; 
 
-   DENTER(TOP_LAYER, "sge_add_manop");
+   DENTER(TOP_LAYER);
 
    if ( !ep || !ruser || !rhost ) {
-      CRITICAL((SGE_EVENT, MSG_SGETEXT_NULLPTRPASSED_S, SGE_FUNC));
+      CRITICAL((SGE_EVENT, MSG_SGETEXT_NULLPTRPASSED_S, __func__));
       answer_list_add(alpp, SGE_EVENT, STATUS_EUNKNOWN, ANSWER_QUALITY_ERROR);
-      DEXIT;
-      return STATUS_EUNKNOWN;
+      DRETURN(STATUS_EUNKNOWN);
    }
 
    switch (target) {
@@ -102,33 +101,29 @@ u_long32 target  /* may be SGE_UM_LIST or SGE_UO_LIST */
       eve = sgeE_OPERATOR_ADD;
       break;
    default :
-      DPRINTF(("unknown target passed to %s\n", SGE_FUNC));
-      DEXIT;
-      return STATUS_EUNKNOWN;
+      DPRINTF(("unknown target passed to %s\n", __func__));
+      DRETURN(STATUS_EUNKNOWN);
    }
 
    /* ep is no acl element, if ep has no UM_name/UO_name */
    if ((pos = lGetPosViaElem(ep, key, SGE_NO_ABORT)) < 0) {
       CRITICAL((SGE_EVENT, MSG_SGETEXT_MISSINGCULLFIELD_SS,
-            lNm2Str(key), SGE_FUNC));
+            lNm2Str(key), __func__));
       answer_list_add(alpp, SGE_EVENT, STATUS_EUNKNOWN, ANSWER_QUALITY_ERROR);
-      DEXIT;
-      return STATUS_EUNKNOWN;
+      DRETURN(STATUS_EUNKNOWN);
    }
 
    manop_name = lGetPosString(ep, pos);
    if (!manop_name) {
-      CRITICAL((SGE_EVENT, MSG_SGETEXT_NULLPTRPASSED_S, SGE_FUNC));
+      CRITICAL((SGE_EVENT, MSG_SGETEXT_NULLPTRPASSED_S, __func__));
       answer_list_add(alpp, SGE_EVENT, STATUS_EUNKNOWN, ANSWER_QUALITY_ERROR);
-      DEXIT;
-      return STATUS_EUNKNOWN;
+      DRETURN(STATUS_EUNKNOWN);
    }
 
    if (lGetElemStr(*lpp, key, manop_name)) {
       ERROR((SGE_EVENT, MSG_SGETEXT_ALREADYEXISTS_SS, object_name, manop_name));
       answer_list_add(alpp, SGE_EVENT, STATUS_EEXIST, ANSWER_QUALITY_ERROR);
-      DEXIT;
-      return STATUS_EEXIST;
+      DRETURN(STATUS_EEXIST);
    }
 
    /* update in interal lists */
@@ -144,15 +139,13 @@ u_long32 target  /* may be SGE_UM_LIST or SGE_UO_LIST */
       /* remove element from list */
       lRemoveElem(*lpp, &added);
 
-      DEXIT;
-      return STATUS_EDISK;
+      DRETURN(STATUS_EDISK);
    }
 
    INFO((SGE_EVENT, MSG_SGETEXT_ADDEDTOLIST_SSSS,
             ruser, rhost, manop_name, object_name));
    answer_list_add(alpp, SGE_EVENT, STATUS_OK, ANSWER_QUALITY_INFO);
-   DEXIT;
-   return STATUS_OK;
+   DRETURN(STATUS_OK);
 }
 
 /****** sge_manop_qmaster/sge_del_manop() **************************************
@@ -191,10 +184,10 @@ int sge_del_manop(sge_gdi_ctx_class_t *ctx, lListElem *ep, lList **alpp, char *r
    int key = NoName;
    ev_event eve = sgeE_EVENTSIZE;
 
-   DENTER(TOP_LAYER, "sge_del_manop");
+   DENTER(TOP_LAYER);
 
    if (ep == NULL || ruser == NULL || rhost == NULL) {
-      CRITICAL((SGE_EVENT, MSG_SGETEXT_NULLPTRPASSED_S, SGE_FUNC));
+      CRITICAL((SGE_EVENT, MSG_SGETEXT_NULLPTRPASSED_S, __func__));
       answer_list_add(alpp, SGE_EVENT, STATUS_EUNKNOWN, ANSWER_QUALITY_ERROR);
       DRETURN(STATUS_EUNKNOWN);
    }
@@ -213,20 +206,20 @@ int sge_del_manop(sge_gdi_ctx_class_t *ctx, lListElem *ep, lList **alpp, char *r
          eve = sgeE_OPERATOR_DEL;
          break;
       default :
-         DPRINTF(("unknown target passed to %s\n", SGE_FUNC));
+         DPRINTF(("unknown target passed to %s\n", __func__));
          DRETURN(STATUS_EUNKNOWN);
    }
 
    /* ep is no manop element, if ep has no UM_name/UO_name */
    if ((pos = lGetPosViaElem(ep, key, SGE_NO_ABORT)) < 0) {
-      CRITICAL((SGE_EVENT, MSG_SGETEXT_MISSINGCULLFIELD_SS, lNm2Str(key), SGE_FUNC));
+      CRITICAL((SGE_EVENT, MSG_SGETEXT_MISSINGCULLFIELD_SS, lNm2Str(key), __func__));
       answer_list_add(alpp, SGE_EVENT, STATUS_EUNKNOWN, ANSWER_QUALITY_ERROR);
       DRETURN(STATUS_EUNKNOWN);
    }
 
    manop_name = lGetPosString(ep, pos);
    if (manop_name == NULL) {
-      CRITICAL((SGE_EVENT, MSG_SGETEXT_NULLPTRPASSED_S, SGE_FUNC));
+      CRITICAL((SGE_EVENT, MSG_SGETEXT_NULLPTRPASSED_S, __func__));
       answer_list_add(alpp, SGE_EVENT, STATUS_EUNKNOWN, ANSWER_QUALITY_ERROR);
       DRETURN(STATUS_EUNKNOWN);
    }

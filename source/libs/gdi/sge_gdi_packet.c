@@ -205,7 +205,7 @@ sge_gdi_task_debug_print(sge_gdi_task_class_t * task)
 {
     bool ret = true;
     
-    DENTER(TOP_LAYER, "sge_gdi_task_debug_print");
+    DENTER(TOP_LAYER);
     if (task != NULL) {
         DPRINTF(("task->id = " sge_U32CFormat "\n", sge_u32c(task->id)));
         DPRINTF(("task->command = " sge_U32CFormat "\n",
@@ -234,7 +234,7 @@ sge_gdi_task_verify(sge_gdi_task_class_t * task, lList **answer_list)
    u_long32 target = 0;
 #endif
 
-   DENTER(TOP_LAYER, "sge_gdi_task_verify");
+   DENTER(TOP_LAYER);
 #if 0
    operation = SGE_GDI_GET_OPERATION(task->command);
    list = task->data_list;
@@ -262,7 +262,7 @@ sge_gdi_task_create(sge_gdi_packet_class_t * packet, lList **answer_list,
 {
    sge_gdi_task_class_t *task = NULL;
 
-   DENTER(TOP_LAYER, "sge_gdi_task_create");
+   DENTER(TOP_LAYER);
 
    task = (sge_gdi_task_class_t *) sge_malloc(sizeof(sge_gdi_task_class_t));
    if (task != NULL) {
@@ -364,7 +364,7 @@ sge_gdi_task_free(sge_gdi_task_class_t ** task)
 {
    bool ret = true;
 
-   DENTER(TOP_LAYER, "sge_gdi_task_free");
+   DENTER(TOP_LAYER);
    if (task != NULL && *task != NULL) {
       lFreeList(&((*task)->data_list));
       lFreeList(&((*task)->answer_list));
@@ -381,7 +381,7 @@ sge_gdi_packet_debug_print(sge_gdi_packet_class_t * packet)
 {
    bool ret = true;
 
-   DENTER(TOP_LAYER, "sge_gdi_packet_debug_print");
+   DENTER(TOP_LAYER);
 
    if (packet != NULL) {
       sge_gdi_task_class_t *task;
@@ -443,7 +443,7 @@ sge_gdi_packet_create_base(lList **answer_list)
 {
    sge_gdi_packet_class_t *ret = NULL;
 
-   DENTER(TOP_LAYER, "sge_gdi_packet_create_base");
+   DENTER(TOP_LAYER);
    ret = (sge_gdi_packet_class_t *) sge_malloc(sizeof(sge_gdi_packet_class_t));
    if (ret != NULL) {
       int local_ret1;
@@ -509,7 +509,7 @@ sge_gdi_packet_create(sge_gdi_ctx_class_t * ctx, lList **answer_list)
 {
    sge_gdi_packet_class_t *ret = NULL;
 
-   DENTER(TOP_LAYER, "sge_gdi_packet_create");
+   DENTER(TOP_LAYER);
    ret = sge_gdi_packet_create_base(answer_list);
    if (ret != NULL) {
       sge_gdi_packet_initialize_auth_info(ctx, ret);
@@ -584,7 +584,7 @@ sge_gdi_packet_append_task(sge_gdi_packet_class_t * packet,
    bool ret = true;
    sge_gdi_task_class_t *task = NULL;
 
-   DENTER(TOP_LAYER, "sge_gdi_packet_append_task");
+   DENTER(TOP_LAYER);
 
    task =
       sge_gdi_task_create(packet, answer_list, target, command, lp, a_list,
@@ -694,7 +694,7 @@ sge_gdi_packet_get_last_task_id(sge_gdi_packet_class_t * packet)
 {
    u_long32 ret = 0;
 
-   DENTER(TOP_LAYER, "sge_gdi_packet_get_last_task_id");
+   DENTER(TOP_LAYER);
 
    if (packet->last_task != NULL) {
       ret = packet->last_task->id;
@@ -737,7 +737,7 @@ sge_gdi_packet_free(sge_gdi_packet_class_t ** packet)
 {
    bool ret = true;
 
-   DENTER(TOP_LAYER, "sge_gdi_packet_free");
+   DENTER(TOP_LAYER);
    if (packet != NULL && *packet != NULL) {
       sge_gdi_task_class_t *task = NULL;
       sge_gdi_task_class_t *next_task = NULL;
@@ -807,7 +807,7 @@ sge_gdi_packet_verify_version(sge_gdi_packet_class_t * packet, lList **alpp)
    const vdict_t *vdict = GRM_GDI_VERSION_ARRAY;
    u_long32 version = packet->version;
 
-   DENTER(TOP_LAYER, "sge_gdi_packet_verify_version");
+   DENTER(TOP_LAYER);
    sge_dstring_init(&ds, buffer, sizeof(buffer));
 
    if (version != GRM_GDI_VERSION) {

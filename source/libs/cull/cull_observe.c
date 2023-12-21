@@ -257,7 +257,7 @@ void lObserveChangeListType(const void *pointer, bool is_master_list, const char
  * @param[in] nm        CULL nm if the attribute name is available otherwise NoName.
  */
 void lObserveChangeOwner(const void *pointer, const void *new_owner, const void *old_owner, int nm) {
-   DENTER(OBSERVE_LAYER, "lObserveChangeOwner");
+   DENTER(OBSERVE_LAYER);
 
    const void *owner = NULL;
    if (new_owner != NULL) {
@@ -282,7 +282,7 @@ void lObserveChangeOwner(const void *pointer, const void *new_owner, const void 
 }
 
 void lObserveSwitchOwner(const void *pointer_a, const void *pointer_b, const void *owner_a, const void *owner_b, int nm) {
-   DENTER(OBSERVE_LAYER, "lObserveChangeOwner");
+   DENTER(OBSERVE_LAYER);
 
    pthread_mutex_lock(&ob_mtx);
    lObserveEntry *entry_a = NULL;
@@ -316,7 +316,7 @@ void lObserveSwitchOwner(const void *pointer_a, const void *pointer_b, const voi
  * @param[in] nm       Attribute which is changed. 
  */
 void lObserveChangeValue(const void *pointer, bool has_hash, int nm) {
-   DENTER(OBSERVE_LAYER, "lObserveChangeValue");
+   DENTER(OBSERVE_LAYER);
 
    pthread_mutex_lock(&ob_mtx);
    dstring *ob_dstring = cull_state_get_observe_dstring();

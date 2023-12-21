@@ -251,21 +251,19 @@ int ckpt_validate(const lListElem *this_elem, lList **alpp)
    int found = 0;
    const char *s, *interface;
 
-   DENTER(TOP_LAYER, "ckpt_validate");
+   DENTER(TOP_LAYER);
 
    if (!this_elem) {
-      CRITICAL((SGE_EVENT, MSG_SGETEXT_NULLPTRPASSED_S, SGE_FUNC));
+      CRITICAL((SGE_EVENT, MSG_SGETEXT_NULLPTRPASSED_S, __func__));
       answer_list_add(alpp, SGE_EVENT, STATUS_EUNKNOWN, ANSWER_QUALITY_ERROR);
-      DEXIT;
-      return STATUS_EUNKNOWN;
+      DRETURN(STATUS_EUNKNOWN);
    }
 
    /* -------- CK_name */
    if (verify_str_key(
          alpp, lGetString(this_elem, CK_name), 
          MAX_VERIFY_STRING, "checkpoint interface", KEY_TABLE) != STATUS_OK) {
-      DEXIT;
-      return STATUS_EUNKNOWN;
+      DRETURN(STATUS_EUNKNOWN);
    }
 
    /*
@@ -291,8 +289,7 @@ int ckpt_validate(const lListElem *this_elem, lList **alpp)
       ERROR((SGE_EVENT, MSG_SGETEXT_NO_INTERFACE_S, interface));
       answer_list_add(alpp, SGE_EVENT, 
                       STATUS_ESEMANTIC, ANSWER_QUALITY_ERROR);
-      DEXIT;
-      return STATUS_EEXIST;
+      DRETURN(STATUS_EEXIST);
    }
 
    for (i = 0; ckpt_commands[i].nm != NoName; i++) {
@@ -301,8 +298,7 @@ int ckpt_validate(const lListElem *this_elem, lList **alpp)
          ERROR((SGE_EVENT, MSG_OBJ_CKPTENV_SSS,
                ckpt_commands[i].text, lGetString(this_elem, CK_name), err_msg));
          answer_list_add(alpp, SGE_EVENT, STATUS_EEXIST, ANSWER_QUALITY_ERROR);
-         DEXIT;
-         return STATUS_EEXIST;
+         DRETURN(STATUS_EEXIST);
       }
    }
 
@@ -312,12 +308,10 @@ int ckpt_validate(const lListElem *this_elem, lList **alpp)
          sge_sys_str2signal(s)==-1) {
       ERROR((SGE_EVENT, MSG_CKPT_XISNOTASIGNALSTRING_S , s));
       answer_list_add(alpp, SGE_EVENT, STATUS_EEXIST, ANSWER_QUALITY_ERROR);
-      DEXIT;
-      return STATUS_EEXIST;
+      DRETURN(STATUS_EEXIST);
    }
 
-   DEXIT;
-   return STATUS_OK;
+   DRETURN(STATUS_OK);
 }
 
 /****** sgeobj/ckpt/ckpt_list_do_all_exist() **********************************
@@ -349,7 +343,7 @@ ckpt_list_do_all_exist(const lList *ckpt_list, lList **answer_list,
    bool ret = true;
    const lListElem *ckpt_ref_elem = NULL;
 
-   DENTER(TOP_LAYER, "ckpt_list_do_all_exist");
+   DENTER(TOP_LAYER);
    for_each(ckpt_ref_elem, ckpt_ref_list) {
       const char *ckpt_ref_string = lGetString(ckpt_ref_elem, ST_name);
 
@@ -361,8 +355,7 @@ ckpt_list_do_all_exist(const lList *ckpt_list, lList **answer_list,
          break;
       }
    }
-   DEXIT;
-   return ret;
+   DRETURN(ret);
 }
 
 
@@ -400,7 +393,7 @@ lListElem* sge_generic_ckpt(char *ckpt_name)
 {
    lListElem *ep;
 
-   DENTER(TOP_LAYER, "sge_generic_ckpt");
+   DENTER(TOP_LAYER);
 
    ep = lCreateElem(CK_Type);
 
@@ -419,7 +412,6 @@ lListElem* sge_generic_ckpt(char *ckpt_name)
    lSetString(ep, CK_signal, "none");
    lSetUlong(ep, CK_job_pid, 0);
 
-   DEXIT;
-   return ep;
+   DRETURN(ep);
 }
 

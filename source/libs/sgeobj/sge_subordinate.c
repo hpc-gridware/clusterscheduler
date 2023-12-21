@@ -87,7 +87,7 @@ tst_sos(int used, int total, const lListElem *so)
    u_long32 threshold;
    bool     ret = false;
 
-   DENTER(TOP_LAYER, "tst_sos");
+   DENTER(TOP_LAYER);
 
    /*
     * then check if B's usage meets the threshold
@@ -112,7 +112,7 @@ so_list_append_to_dstring(const lList *this_list, dstring *string)
 {
    const char *ret = NULL;
 
-   DENTER(BASIS_LAYER, "so_list_append_to_dstring");
+   DENTER(BASIS_LAYER);
    if (string != NULL) {
       const lListElem *elem = NULL;
       bool printed = false;
@@ -180,7 +180,7 @@ so_list_add(lList **this_list, lList **answer_list, const char *so_name,
             u_long32 threshold, u_long32 slots_sum, u_long32 seq_no,
             u_long32 action)
 {
-   DENTER(TOP_LAYER, "so_list_add");
+   DENTER(TOP_LAYER);
 
    if (this_list != NULL && so_name != NULL) {
       lListElem *elem = lGetElemStrRW(*this_list, SO_name, so_name);
@@ -263,7 +263,7 @@ so_list_resolve(const lList *so_list, lList **answer_list,
 {
    bool ret = true;
 
-   DENTER(TOP_LAYER, "so_list_resolve");
+   DENTER(TOP_LAYER);
    if ((so_list != NULL) && (hostname != NULL)) {
       const lListElem *so;
 

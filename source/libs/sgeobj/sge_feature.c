@@ -184,7 +184,7 @@ int feature_initialize_from_string(const char *mode)
    feature_id_t id;
    int ret;
 
-   DENTER(TOP_LAYER, "feature_initialize_from_string");
+   DENTER(TOP_LAYER);
    id = feature_get_featureset_id(mode);
 
    if (id == FEATURE_UNINITIALIZED) {
@@ -194,8 +194,7 @@ int feature_initialize_from_string(const char *mode)
       feature_activate(id);
       ret = 0;
    }
-   DEXIT;
-   return ret;
+   DRETURN(ret);
 }
 
 /****** sgeobj/feature/feature_initialize() ***********************************
@@ -263,7 +262,7 @@ void feature_activate(feature_id_t id)
    lListElem *active_set;
    lListElem *inactive_set;
 
-   DENTER(TOP_LAYER, "feature_activate");
+   DENTER(TOP_LAYER);
 
    /* get fature list, if it hasn't been initialized yet, do so */
    feature_list_pp = feature_get_master_featureset_list();
@@ -294,7 +293,7 @@ void feature_activate(feature_id_t id)
       lSetUlong(inactive_set, FES_active, 1);
    }
 
-   DEXIT;
+   DRETURN_VOID;
 }
 
 /****** sgeobj/feature/feature_get_active_featureset_id() *********************
@@ -319,7 +318,7 @@ feature_id_t feature_get_active_featureset_id(void)
    feature_id_t ret = FEATURE_UNINITIALIZED;
    lList **featurelist_pp = NULL;
 
-   DENTER(TOP_LAYER, "feature_get_active_featureset_id");
+   DENTER(TOP_LAYER);
 
    featurelist_pp = feature_get_master_featureset_list();
    if (featurelist_pp != NULL) {
@@ -330,8 +329,7 @@ feature_id_t feature_get_active_featureset_id(void)
          }
       }
    }
-   DEXIT;
-   return ret;  
+   DRETURN(ret);  
 }
 
 /****** sgeobj/feature/feature_get_featureset_name() **************************
@@ -358,15 +356,14 @@ const char *feature_get_featureset_name(feature_id_t id)
    int i = 0;
    char *ret = "<<unknown>>";
 
-   DENTER(TOP_LAYER, "feature_get_featureset_name");
+   DENTER(TOP_LAYER);
    while (featureset_list[i].name && featureset_list[i].id != id) {
       i++;
    }
    if (featureset_list[i].name) {
       ret = featureset_list[i].name;
    } 
-   DEXIT;
-   return ret; 
+   DRETURN(ret); 
 }
 
 /****** sgeobj/feature/feature_get_featureset_id() ****************************
@@ -395,10 +392,9 @@ static feature_id_t feature_get_featureset_id(const char *name)
    int i = 0;
    feature_id_t ret = FEATURE_UNINITIALIZED;
 
-   DENTER(TOP_LAYER, "feature_get_featureset_id");
+   DENTER(TOP_LAYER);
    if (!name) {
-      DEXIT;
-      return ret;
+      DRETURN(ret);
    }
 
    while (featureset_list[i].name && strcmp(featureset_list[i].name, name)) {
@@ -407,8 +403,7 @@ static feature_id_t feature_get_featureset_id(const char *name)
    if (featureset_list[i].name) {
       ret = featureset_list[i].id;
    } 
-   DEXIT;
-   return ret;
+   DRETURN(ret);
 }
 
 /****** sgeobj/feature/feature_is_enabled() ***********************************
@@ -436,15 +431,14 @@ bool feature_is_enabled(feature_id_t id)
    const lListElem *active_set;
    bool ret = false;
 
-   DENTER(BASIS_LAYER, "feature_is_enabled");
+   DENTER(BASIS_LAYER);
    active_set = lGetElemUlong(*feature_get_master_featureset_list(), FES_active, 1);
    if (active_set) {
       if ( lGetUlong(active_set, FES_id) == id ) {
          ret = true;
       }
    }
-   DEXIT;
-   return ret;
+   DRETURN(ret);
 }  
  
 /****** sgeobj/feature/feature_get_product_name() *****************************
@@ -482,7 +476,7 @@ const char *feature_get_product_name(featureset_product_name_id_t style, dstring
    const char *short_name = "";
    const char *version    = "";
    const char *ret = NULL;
-   DENTER(TOP_LAYER, "feature_get_product_name");
+   DENTER(TOP_LAYER);
 
    if (feature_get_active_featureset_id() != FEATURE_UNINITIALIZED ) {
       short_name = GE_SHORTNAME;
