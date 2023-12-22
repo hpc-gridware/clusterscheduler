@@ -1,0 +1,7 @@
+<component name="ProjectRunConfigurationManager">
+  <configuration default="false" name="qmake" type="CMakeRunConfiguration" factoryName="Application" folderName="Clients" REDIRECT_INPUT="false" ELEVATE="false" USE_EXTERNAL_CONSOLE="false" EMULATE_TERMINAL="false" PASS_PARENT_ENVS_2="true" PROJECT_NAME="gridengine" TARGET_NAME="qmake" CONFIG_NAME="darwin-arm64 (Debug)" RUN_TARGET_PROJECT_NAME="gridengine" RUN_TARGET_NAME="qmake">
+    <method v="2">
+      <option name="com.jetbrains.cidr.execution.CidrBuildBeforeRunTaskProvider$BuildBeforeRunTask" enabled="true" />
+    </method>
+  </configuration>
+</component>

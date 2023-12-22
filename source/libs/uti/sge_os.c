@@ -111,7 +111,7 @@ int sge_get_pids(pid_t *pids, int max_pids, const char *name,
    int num_of_pids = 0, last, len;
    pid_t pid, command_pid;
 
-   DENTER(TOP_LAYER, "sge_get_pids");
+   DENTER(TOP_LAYER);
    
    command_pid = sge_peopen("/bin/sh", 0, pscommand, NULL, NULL, 
                         &fp_in, &fp_out, &fp_err, false);
@@ -229,7 +229,7 @@ int sge_checkprog(pid_t pid, const char *name, const char *pscommand)
    pid_t command_pid, pidfound;
    int len, last, notfound;
 
-   DENTER(TOP_LAYER, "sge_checkprog");
+   DENTER(TOP_LAYER);
 
    command_pid = sge_peopen("/bin/sh", 0, pscommand, NULL, NULL, 
                         &fp_in, &fp_out, &fp_err, false);
@@ -348,7 +348,7 @@ int sge_occupy_first_three(void)
 {
    int ret = -1;
 
-   DENTER(TOP_LAYER, "occupy_first_three");
+   DENTER(TOP_LAYER);
 
    ret = redirect_to_dev_null(0, O_RDONLY);
 

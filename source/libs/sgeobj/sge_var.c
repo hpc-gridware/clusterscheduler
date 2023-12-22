@@ -158,17 +158,16 @@ void var_list_set_string(lList **varl, const char *name, const char *value)
 {
    lListElem *elem;
 
-   DENTER(TOP_LAYER, "var_list_set_string");
+   DENTER(TOP_LAYER);
    if (varl == NULL || name == NULL || value == NULL) {
-      DEXIT;
-      return;
+      DRETURN_VOID;
    }
    elem = lGetElemStrRW(*varl, VA_variable, name);
    if (elem == NULL) {
       elem = lAddElemStr(varl, VA_variable, name, VA_Type);
    }
    lSetString(elem, VA_value, value);
-   DEXIT;
+   DRETURN_VOID;
 }
 
 /****** sgeobj/var/var_list_delete_string() ***********************************
@@ -193,7 +192,7 @@ void var_list_delete_string(lList **varl, const char *name)
 {
    lListElem *elem;
 
-   DENTER(TOP_LAYER, "var_list_delete_string");
+   DENTER(TOP_LAYER);
    if (varl == NULL || name == NULL) {
       DRETURN_VOID;
    }
@@ -201,7 +200,7 @@ void var_list_delete_string(lList **varl, const char *name)
    if (elem != NULL) {
       lRemoveElem(*varl, &elem);
    }
-   DEXIT;
+   DRETURN_VOID;
 }
 
 /****** sgeobj/var/var_list_set_int() *****************************************
@@ -232,10 +231,10 @@ void var_list_set_int(lList **varl, const char *name, int value)
 {
    char buffer[2048];
 
-   DENTER(TOP_LAYER, "var_list_set_int");
+   DENTER(TOP_LAYER);
    sprintf(buffer, "%d", value);
    var_list_set_string(varl, name, buffer);
-   DEXIT;
+   DRETURN_VOID;
 }
 
 /****** sgeobj/var/var_list_set_sge_u32() *****************************************
@@ -266,10 +265,10 @@ void var_list_set_sge_u32(lList **varl, const char *name, u_long32 value)
 {
    char buffer[2048];
 
-   DENTER(TOP_LAYER, "var_list_set_sge_u32");
+   DENTER(TOP_LAYER);
    sprintf(buffer, sge_u32, value);
    var_list_set_string(varl, name, buffer);
-   DEXIT;
+   DRETURN_VOID;
 }
 
 /****** sgeobj/var/var_list_set_sharedlib_path() ******************************
@@ -302,7 +301,7 @@ void var_list_set_sharedlib_path(lList **varl)
    const char *sharedlib_path_name = var_get_sharedlib_path_name();
    lListElem *sharedlib_elem = NULL;
 
-   DENTER(TOP_LAYER, "set_sharedlib_path");
+   DENTER(TOP_LAYER);
 
    /* this is the SGE sharedlib path */
    sge_sharedlib_path = sge_malloc(strlen(sge_root) + 
@@ -337,7 +336,7 @@ void var_list_set_sharedlib_path(lList **varl)
    }
 
    sge_free(&sge_sharedlib_path);
-   DEXIT;
+   DRETURN_VOID;
 }
 
 /****** sgeobj/var/var_list_dump_to_file() ************************************
@@ -360,7 +359,7 @@ void var_list_set_sharedlib_path(lList **varl)
 ******************************************************************************/
 void var_list_dump_to_file(const lList *varl, FILE *file)
 {
-   lListElem *elem;
+   const lListElem *elem;
 
    if (varl == NULL || file == NULL) {
       return;
@@ -453,10 +452,10 @@ void var_list_copy_prefix_vars(lList **varl,
                                const char *new_prefix)
 {
    int prefix_len = strlen(prefix);
-   lListElem *var_elem = NULL;
+   const lListElem *var_elem = NULL;
    lList *var_list2 = NULL;
 
-   DENTER(TOP_LAYER, "var_list_copy_prefix_vars");
+   DENTER(TOP_LAYER);
    for_each(var_elem, src_varl) {
       const char *prefix_name = lGetString(var_elem, VA_variable);
 
@@ -511,10 +510,10 @@ void var_list_copy_prefix_vars_undef(lList **varl,
                                      const char *new_prefix)
 {
    int prefix_len = strlen(prefix);
-   lListElem *var_elem = NULL;
+   const lListElem *var_elem = NULL;
    lList *var_list2 = NULL;
 
-   DENTER(TOP_LAYER, "var_list_copy_prefix_vars");
+   DENTER(TOP_LAYER);
    for_each(var_elem, src_varl) {
       const char *prefix_name = lGetString(var_elem, VA_variable);
 
@@ -535,7 +534,7 @@ void var_list_copy_prefix_vars_undef(lList **varl,
       *varl = lCreateList("", VA_Type);
    }
    lAddList(*varl, &var_list2);
-   DEXIT;
+   DRETURN_VOID;
 }
 
 /****** sgeobj/var/var_list_copy_env_vars_and_value() *************************
@@ -563,7 +562,7 @@ void var_list_copy_prefix_vars_undef(lList **varl,
 void var_list_copy_env_vars_and_value(lList **varl,
                                       const lList* src_varl)
 {
-   lListElem *env;
+   const lListElem *env;
 
    for_each(env, src_varl) {
       const char *s, *name;
@@ -599,7 +598,7 @@ void var_list_remove_prefix_vars(lList **varl, const char *prefix)
    lListElem *var_elem = NULL;
    lListElem *next_var_elem = NULL;
 
-   DENTER(TOP_LAYER, "var_list_remove_prefix_vars");
+   DENTER(TOP_LAYER);
    next_var_elem = lFirstRW(*varl);
    while((var_elem = next_var_elem)) {
       const char *prefix_name = lGetString(var_elem, VA_variable);
@@ -609,8 +608,7 @@ void var_list_remove_prefix_vars(lList **varl, const char *prefix)
          lRemoveElem(*varl, &var_elem);
       } 
    }
-   DEXIT;
-   return;
+   DRETURN_VOID;
 }
 
 /****** sgeobj/var/var_list_split_prefix_vars() *******************************
@@ -646,7 +644,7 @@ void var_list_split_prefix_vars(lList **varl,
    lListElem *var_elem = NULL;
    lListElem *next_var_elem = NULL;
 
-   DENTER(TOP_LAYER, "var_list_remove_prefix_vars");
+   DENTER(TOP_LAYER);
    next_var_elem = lFirstRW(*varl);
    while((var_elem = next_var_elem)) {
       const char *prefix_name = lGetString(var_elem, VA_variable);
@@ -662,8 +660,7 @@ void var_list_split_prefix_vars(lList **varl,
          lAppendElem(*pefix_vars, dechained_elem);
       }
    }
-   DEXIT;
-   return;
+   DRETURN_VOID;
 }
 
 /****** sgeobj/var/var_list_add_as_set() ***************************************
@@ -695,7 +692,7 @@ int var_list_add_as_set(lList *lp0, lList *lp1)
    const lDescr *dp0, *dp1;
    const char *name, *value;
 
-   DENTER(CULL_LAYER, "var_list_add_as_set");
+   DENTER(CULL_LAYER);
 
    if (lp1 == NULL || lp0 == NULL) {
       DRETURN(-1);
@@ -768,7 +765,7 @@ bool
 var_list_verify(const lList *lp, lList **answer_list)
 {
    bool ret = true;
-   lListElem *ep;
+   const lListElem *ep;
 
    for_each (ep, lp) {
       const char *variable = lGetString(ep, VA_variable);
@@ -824,25 +821,22 @@ int var_list_parse_from_string(lList **lpp, const char *variable_str,
    lListElem *ep;
    char *va_string;
 
-   DENTER(TOP_LAYER, "var_list_parse_from_string");
+   DENTER(TOP_LAYER);
 
    if (!lpp) {
-      DEXIT;
-      return 1;
+      DRETURN(1);
    }
 
    va_string = sge_strdup(NULL, variable_str);
    if (!va_string) {
       *lpp = NULL;
-      DEXIT;
-      return 2;
+      DRETURN(2);
    }
    str_str = string_list(va_string, ",", NULL);
    if (!str_str || !*str_str) {
       *lpp = NULL;
       sge_free(&va_string);
-      DEXIT;
-      return 3;
+      DRETURN(3);
    }
 
    if (!*lpp) {
@@ -850,8 +844,7 @@ int var_list_parse_from_string(lList **lpp, const char *variable_str,
       if (!*lpp) {
          sge_free(&va_string);
          sge_free(&str_str);
-         DEXIT;
-         return 4;
+         DRETURN(4);
       }
    }
 

@@ -80,7 +80,7 @@ static bool
 sge_err_get_object(sge_err_object_t **object) {
    bool ret = true;
 
-   DENTER(ERR_LAYER, "sge_err_get_object");
+   DENTER(ERR_LAYER);
    *object = pthread_getspecific(sge_err_key);
    if (*object == NULL) {
       sge_err_object_t *new_object = (sge_err_object_t *)malloc(sizeof(sge_err_object_t));
@@ -90,7 +90,7 @@ sge_err_get_object(sge_err_object_t **object) {
          sge_err_object_init(new_object);
          *object = new_object;
       } else {
-         ERROR(("pthread_setspecific failed to initialize sge_err_object_t in %s\n", SGE_FUNC));
+         ERROR(("pthread_setspecific failed to initialize sge_err_object_t in %s\n", __func__));
          abort();
       }
    }
@@ -102,37 +102,37 @@ static void
 sge_err_vset(sge_err_t id, const char *format, va_list args) {
    sge_err_object_t *err_obj = NULL;
 
-   DENTER(ERR_LAYER, "sge_err_vset");
+   DENTER(ERR_LAYER);
    sge_err_get_object(&err_obj);
    err_obj->id = id;
    vsnprintf(err_obj->message, SGE_ERR_MAX_MESSAGE_LENGTH, format, args);
-   DEXIT;
+   DRETURN_VOID;
 }
 
 /* initialization function that has to be called before threads are spawned */
 void 
 sge_err_init(void) {
-   DENTER(ERR_LAYER, "sge_err_init");
+   DENTER(ERR_LAYER);
    pthread_once(&sge_err_once, sge_err_once_init);
-   DEXIT;
+   DRETURN_VOID;
 }
 
 void
 sge_err_set(sge_err_t id, const char *format, ...) {
    va_list args;
   
-   DENTER(ERR_LAYER, "sge_err_set");
+   DENTER(ERR_LAYER);
    if (format != NULL) {
       va_start(args, format);
       sge_err_vset(id, format, args);
       va_end(args);
    }
-   DEXIT;
+   DRETURN_VOID;
 }
 
 void
 sge_err_get(u_long32 pos, sge_err_t *id, char *message, size_t size) {
-   DENTER(ERR_LAYER, "sge_err_get");
+   DENTER(ERR_LAYER);
    if (id != NULL && message != NULL && size > 0) {
       sge_err_object_t *err_obj = NULL;
 
@@ -145,7 +145,7 @@ sge_err_get(u_long32 pos, sge_err_t *id, char *message, size_t size) {
          message[0] = '\0';
       }
    }
-   DEXIT;
+   DRETURN_VOID;
 }
 
 bool
@@ -153,7 +153,7 @@ sge_err_has_error(void) {
    sge_err_object_t *err_obj = NULL;
    bool ret;
 
-   DENTER(ERR_LAYER, "sge_err_has_error");
+   DENTER(ERR_LAYER);
    sge_err_get_object(&err_obj);
    ret = (err_obj->id != SGE_ERR_SUCCESS) ? true : false;
    DRETURN(ret);
@@ -163,9 +163,9 @@ void
 sge_err_clear(void) {
    sge_err_object_t *err_obj = NULL;
 
-   DENTER(ERR_LAYER, "sge_err_clear");
+   DENTER(ERR_LAYER);
    sge_err_get_object(&err_obj);
    err_obj->id = SGE_ERR_SUCCESS;
-   DEXIT;
+   DRETURN_VOID;
 }
 

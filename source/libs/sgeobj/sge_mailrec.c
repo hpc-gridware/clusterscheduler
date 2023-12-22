@@ -83,25 +83,22 @@ int mailrec_parse(lList **lpp, const char *mail_str)
    char *mail;
    struct saved_vars_s *context;
 
-   DENTER(TOP_LAYER, "mailrec_parse");
+   DENTER(TOP_LAYER);
 
    if (!lpp) {
-      DEXIT;
-      return 1;
+      DRETURN(1);
    }
 
    mail = sge_strdup(NULL, mail_str);
    if (!mail) {
       *lpp = NULL;
-      DEXIT;
-      return 2;
+      DRETURN(2);
    }
    str_str = string_list(mail, ",", NULL);
    if (!str_str || !*str_str) {
       *lpp = NULL;
       sge_free(&mail);
-      DEXIT;
-      return 3;
+      DRETURN(3);
    }
 
    if (!*lpp) {
@@ -109,8 +106,7 @@ int mailrec_parse(lList **lpp, const char *mail_str)
       if (!*lpp) {
          sge_free(&mail);
          sge_free(&str_str);
-         DEXIT;
-         return 4;
+         DRETURN(4);
       }
    }
 
@@ -138,8 +134,7 @@ int mailrec_parse(lList **lpp, const char *mail_str)
 
    sge_free(&mail);
    sge_free(&str_str);
-   DEXIT;
-   return 0;
+   DRETURN(0);
 }
 
 /****** sgeobj/mailrec/mailrec_unparse() **************************************
@@ -171,7 +166,7 @@ int mailrec_unparse(const lList *head, char *mail_str, unsigned int mail_str_len
    int len=0;
    int comma_needed = 0; /* whether we need to insert a comma */
    char tmpstr[1000];    /* need 1000 for brain damaged mail addresse(e)s */
-   lListElem *elem;
+   const lListElem *elem;
    const char *h;
    const char *u;
 
@@ -209,7 +204,7 @@ sge_mailopt_to_dstring(u_long32 opt, dstring *string)
 {
    bool success = true;
 
-   DENTER(TOP_LAYER, "sge_mailopt_to_dstring");
+   DENTER(TOP_LAYER);
    if (VALID(MAIL_AT_ABORT, opt)) {
       sge_dstring_append_char(string, 'a');
    } 
@@ -236,7 +231,7 @@ sge_parse_mail_options(lList **alpp, const char *mail_str, u_long32 prog_number)
    int i, j;
    int mail_opt = 0;
 
-   DENTER(TOP_LAYER, "sge_parse_mail_options");
+   DENTER(TOP_LAYER);
 
    i = strlen(mail_str);
 

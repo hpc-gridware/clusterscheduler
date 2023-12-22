@@ -111,7 +111,7 @@ spool_berkeleydb_check_version(lList **answer_list)
    const char *version;
    int major, minor;
 
-   DENTER(BDB_LAYER, "spool_berkeleydb_check_version");
+   DENTER(BDB_LAYER);
    
    version = db_version(&major, &minor, NULL);
 
@@ -128,8 +128,7 @@ spool_berkeleydb_check_version(lList **answer_list)
       ret = false;
    }
   
-   DEXIT;
-   return ret;
+   DRETURN(ret);
 }
 
 /****** spool/berkeleydb/spool_berkeleydb_create_environment() *****************
@@ -172,7 +171,7 @@ bool spool_berkeleydb_create_environment(lList **answer_list,
 
    DB_ENV *env = NULL;
 
-   DENTER(BDB_LAYER, "spool_berkeleydb_create_environment");
+   DENTER(BDB_LAYER);
 
    path   = bdb_get_path(info);
 
@@ -343,8 +342,7 @@ bool spool_berkeleydb_create_environment(lList **answer_list,
    /* now unlock the info structure */
    bdb_unlock_info(info);
 
-   DEXIT;
-   return ret;
+   DRETURN(ret);
 }
 
 bool 
@@ -354,7 +352,7 @@ spool_berkeleydb_open_database(lList **answer_list, bdb_info info,
    bool ret = true;
    bdb_database i;
 
-   DENTER(BDB_LAYER, "spool_berkeleydb_open_database");
+   DENTER(BDB_LAYER);
 
    for (i = BDB_CONFIG_DB; i < BDB_ALL_DBS && ret; i++) {
       DB_ENV *env;
@@ -456,8 +454,7 @@ spool_berkeleydb_open_database(lList **answer_list, bdb_info info,
       bdb_unlock_info(info);
    }
 
-   DEXIT;
-   return ret;
+   DRETURN(ret);
 }
 
 bool 
@@ -472,7 +469,7 @@ spool_berkeleydb_close_database(lList **answer_list, bdb_info info)
    dstring dbname_dstring = DSTRING_INIT;
    const char *dbname;
 
-   DENTER(BDB_LAYER, "spool_berkeleydb_close_database");
+   DENTER(BDB_LAYER);
 
    sge_dstring_init(&dbname_dstring, dbname_buffer, sizeof(dbname_buffer));
    dbname = bdb_get_dbname(info, &dbname_dstring);
@@ -537,8 +534,7 @@ spool_berkeleydb_close_database(lList **answer_list, bdb_info info)
 
    bdb_unlock_info(info);
 
-   DEXIT;
-   return ret;
+   DRETURN(ret);
 }
 
 /****** sge_bdb/spool_berkeleydb_start_transaction() ***************************
@@ -575,7 +571,7 @@ spool_berkeleydb_start_transaction(lList **answer_list, bdb_info info)
    DB_ENV *env;
    DB_TXN *txn;
 
-   DENTER(BDB_LAYER, "spool_berkeleydb_start_transaction");
+   DENTER(BDB_LAYER);
 
    env = bdb_get_env(info);
    txn = bdb_get_txn(info);
@@ -619,8 +615,7 @@ spool_berkeleydb_start_transaction(lList **answer_list, bdb_info info)
       DEBUG((SGE_EVENT, "BEGIN transaction"));
    }
 
-   DEXIT;
-   return ret;
+   DRETURN(ret);
 }
 
 bool
@@ -633,7 +628,7 @@ spool_berkeleydb_end_transaction(lList **answer_list, bdb_info info,
    DB_ENV *env;
    DB_TXN *txn;
 
-   DENTER(BDB_LAYER, "spool_berkeleydb_end_transaction");
+   DENTER(BDB_LAYER);
 
    env = bdb_get_env(info);
    txn = bdb_get_txn(info);
@@ -685,8 +680,7 @@ spool_berkeleydb_end_transaction(lList **answer_list, bdb_info info,
       }
    }
 
-   DEXIT;
-   return ret;
+   DRETURN(ret);
 }
 
 bool 
@@ -695,7 +689,7 @@ spool_berkeleydb_trigger(lList **answer_list, bdb_info info,
 {
    bool ret = true;
 
-   DENTER(BDB_LAYER, "spool_berkeleydb_trigger");
+   DENTER(BDB_LAYER);
 
    if (bdb_get_next_clear(info) <= trigger) {
       /* 
@@ -715,8 +709,7 @@ spool_berkeleydb_trigger(lList **answer_list, bdb_info info,
    /* set time of next trigger */
    *next_trigger = MIN(bdb_get_next_clear(info), bdb_get_next_checkpoint(info));
 
-   DEXIT;
-   return ret;
+   DRETURN(ret);
 }
 
 bool 
@@ -734,7 +727,7 @@ spool_berkeleydb_read_list(lList **answer_list, bdb_info info,
    DBT key_dbt, data_dbt;
    DBC *dbc;
 
-   DENTER(BDB_LAYER, "spool_berkeleydb_read_list");
+   DENTER(BDB_LAYER);
 
    db  = bdb_get_db(info, database);
    txn = bdb_get_txn(info);
@@ -845,8 +838,7 @@ spool_berkeleydb_read_list(lList **answer_list, bdb_info info,
       }
    }
 
-   DEXIT;
-   return ret;
+   DRETURN(ret);
 }
 
 bool 
@@ -857,7 +849,7 @@ spool_berkeleydb_write_object(lList **answer_list, bdb_info info,
    bool ret = true;
    lList *tmp_list = NULL;
 
-   DENTER(BDB_LAYER, "spool_berkeleydb_write_object");
+   DENTER(BDB_LAYER);
 
    /* do not spool free elems. If a free elem is passed, put a copy 
     * into a temporary list and spool this copy.
@@ -944,8 +936,7 @@ spool_berkeleydb_write_object(lList **answer_list, bdb_info info,
       lFreeList(&tmp_list);
    }
 
-   DEXIT;
-   return ret;
+   DRETURN(ret);
 }
 
 bool spool_berkeleydb_write_string(lList **answer_list, bdb_info info,
@@ -954,7 +945,7 @@ bool spool_berkeleydb_write_string(lList **answer_list, bdb_info info,
 {
    bool ret = true;
 
-   DENTER(BDB_LAYER, "spool_berkeleydb_write_string");
+   DENTER(BDB_LAYER);
 
    {
       int dbret;
@@ -1001,8 +992,7 @@ bool spool_berkeleydb_write_string(lList **answer_list, bdb_info info,
       }
    }
 
-   DEXIT;
-   return ret;
+   DRETURN(ret);
 }
 
 bool
@@ -1155,7 +1145,7 @@ spool_berkeleydb_delete_object(lList **answer_list, bdb_info info,
    DB *db;
    DB_TXN *txn;
 
-   DENTER(BDB_LAYER, "spool_berkeleydb_delete_object");
+   DENTER(BDB_LAYER);
 
    db = bdb_get_db(info, database);
    txn = bdb_get_txn(info);
@@ -1277,8 +1267,7 @@ spool_berkeleydb_delete_object(lList **answer_list, bdb_info info,
       }
    }
 
-   DEXIT;
-   return ret;
+   DRETURN(ret);
 }
 
 /****** spool/berkeleydb/spool_berkeleydb_delete_pe_task() *********************
@@ -1580,7 +1569,7 @@ spool_berkeleydb_check_reopen_database(lList **answer_list,
    bool ret = true;
    DB_ENV *env;
 
-   DENTER(BDB_LAYER, "spool_berkeleydb_check_reopen_database");
+   DENTER(BDB_LAYER);
 
    env = bdb_get_env(info);
 
@@ -1598,8 +1587,7 @@ spool_berkeleydb_check_reopen_database(lList **answer_list,
       }
    }
 
-   DEXIT;
-   return ret;
+   DRETURN(ret);
 }
 
 bool 
@@ -1616,7 +1604,7 @@ spool_berkeleydb_read_keys(lList **answer_list, bdb_info info,
    DBT key_dbt, data_dbt;
    DBC *dbc;
 
-   DENTER(BDB_LAYER, "spool_berkeleydb_read_keys");
+   DENTER(BDB_LAYER);
 
    db  = bdb_get_db(info, database);
    txn = bdb_get_txn(info);
@@ -1688,8 +1676,7 @@ spool_berkeleydb_read_keys(lList **answer_list, bdb_info info,
       }
    }
 
-   DEXIT;
-   return ret;
+   DRETURN(ret);
 }
 
 lListElem *
@@ -1705,7 +1692,7 @@ spool_berkeleydb_read_object(lList **answer_list, bdb_info info,
 
    DBT key_dbt, data_dbt;
 
-   DENTER(BDB_LAYER, "spool_berkeleydb_read_object");
+   DENTER(BDB_LAYER);
 
    db  = bdb_get_db(info, database);
    txn = bdb_get_txn(info);
@@ -1788,7 +1775,7 @@ spool_berkeleydb_read_string(lList **answer_list, bdb_info info,
 
    DBT key_dbt, data_dbt;
 
-   DENTER(BDB_LAYER, "spool_berkeleydb_read_string");
+   DENTER(BDB_LAYER);
 
    db  = bdb_get_db(info, database);
    txn = bdb_get_txn(info);
@@ -1830,7 +1817,7 @@ spool_berkeleydb_clear_log(lList **answer_list, bdb_info info)
    bool ret = true;
    DB_ENV *env;
 
-   DENTER(BDB_LAYER, "spool_berkeleydb_clear_log");
+   DENTER(BDB_LAYER);
 
    /* check connection */
    env = bdb_get_env(info);
@@ -1885,8 +1872,7 @@ spool_berkeleydb_clear_log(lList **answer_list, bdb_info info)
       }
    }
 
-   DEXIT;
-   return ret;
+   DRETURN(ret);
 }
 
 static bool
@@ -1894,7 +1880,7 @@ spool_berkeleydb_checkpoint(lList **answer_list, bdb_info info)
 {
    bool ret = true;
 
-   DENTER(BDB_LAYER, "spool_berkeleydb_checkpoint");
+   DENTER(BDB_LAYER);
 
    /* only necessary for local spooling */
    {
@@ -1931,7 +1917,6 @@ spool_berkeleydb_checkpoint(lList **answer_list, bdb_info info)
       }
    }
 
-   DEXIT;
-   return ret;
+   DRETURN(ret);
 }
 

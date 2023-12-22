@@ -87,13 +87,12 @@ lList *cull_parse_qsh_parameter(u_long32 prog_number, u_long32 uid, const char *
    lList *path_alias = NULL;
    u_long32 job_now;
 
-   DENTER(TOP_LAYER, "cull_parse_qsh_parameter"); 
+   DENTER(TOP_LAYER); 
 
    if (!pjob) {
       answer_list_add(&answer, MSG_PARSE_NULLPOINTERRECEIVED, 
                       STATUS_EUNKNOWN, ANSWER_QUALITY_ERROR);
-      DEXIT;
-      return answer;
+      DRETURN(answer);
    }
 
    /*
@@ -102,15 +101,13 @@ lList *cull_parse_qsh_parameter(u_long32 prog_number, u_long32 uid, const char *
    if (path_alias_list_initialize(&path_alias, &answer, cell_root, username, 
                                   qualified_hostname) == -1) {
       lFreeList(&path_alias);
-      DEXIT;
-      return answer;
+      DRETURN(answer);
    }
 
    job_initialize_env(*pjob, &answer, path_alias, unqualified_hostname, qualified_hostname);
    if (answer) {
       lFreeList(&path_alias);
-      DEXIT;
-      return answer;
+      DRETURN(answer);
    }
 
    lSetUlong(*pjob, JB_priority, BASE_PRIORITY);
@@ -228,8 +225,7 @@ lList *cull_parse_qsh_parameter(u_long32 prog_number, u_long32 uid, const char *
    job_initialize_id_lists(*pjob, &answer);
    if (answer != NULL) {
       lFreeList(&path_alias);
-      DEXIT;
-      return answer;
+      DRETURN(answer);
    }
 
    while ((ep = lGetElemStrRW(cmdline, SPA_switch, "-ar"))) {
@@ -254,7 +250,8 @@ lList *cull_parse_qsh_parameter(u_long32 prog_number, u_long32 uid, const char *
 
    /* -hold_jid */
    if (lGetElemStr(cmdline, SPA_switch, "-hold_jid")) {
-      lListElem *ep, *sep;
+      lListElem *ep;
+      const lListElem *sep;
       lList *jref_list = NULL;
       while ((ep = lGetElemStrRW(cmdline, SPA_switch, "-hold_jid"))) {
          for_each(sep, lGetList(ep, SPA_argval_lListT)) {
@@ -268,7 +265,8 @@ lList *cull_parse_qsh_parameter(u_long32 prog_number, u_long32 uid, const char *
 
    /* -hold_jid_ad */
    if (lGetElemStr(cmdline, SPA_switch, "-hold_jid_ad")) {
-      lListElem *ep, *sep;
+      lListElem *ep;
+      const lListElem *sep;
       lList *jref_list = NULL;
       while ((ep = lGetElemStrRW(cmdline, SPA_switch, "-hold_jid_ad"))) {
          for_each(sep, lGetList(ep, SPA_argval_lListT)) {
@@ -290,8 +288,7 @@ lList *cull_parse_qsh_parameter(u_long32 prog_number, u_long32 uid, const char *
       answer_list_add_sprintf(&answer, STATUS_ENOIMP, ANSWER_QUALITY_ERROR,
                               SFNMAX, MSG_ANSWER_HELPNOTALLOWEDINCONTEXT);
       lFreeList(&path_alias);
-      DEXIT;
-      return answer;
+      DRETURN(answer);
    }
 
    while ((ep = lGetElemStrRW(cmdline, SPA_switch, "-j"))) {
@@ -523,7 +520,7 @@ lList *cull_parse_qsh_parameter(u_long32 prog_number, u_long32 uid, const char *
    }
 
    
-   for_each(ep, cmdline) {
+   for_each_rw(ep, cmdline) {
       char str[1024];
 
       sprintf(str, MSG_ANSWER_UNKOWNOPTIONX_S, 
@@ -562,8 +559,7 @@ lList *cull_parse_qsh_parameter(u_long32 prog_number, u_long32 uid, const char *
       job_check_qsh_display(*pjob, &answer, false);
    }
 
-   DEXIT;
-   return answer;
+   DRETURN(answer);
 }
 
 

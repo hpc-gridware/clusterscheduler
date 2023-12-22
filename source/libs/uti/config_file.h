@@ -34,7 +34,7 @@
 
 #include "basis_types.h"
 
-extern char err_msg[]; /* JG: TODO: thats potentially very dangerous! */
+extern char err_msg[]; /* JG: TODO: that is potentially very dangerous! */
 void set_error(const char *err_str);
 
 int read_config(const char *fname);
@@ -43,7 +43,7 @@ char *get_conf_val(const char *name);
 char *search_conf_val(const char *name);
 char *search_nonone_conf_val(const char *name);
 
-int replace_params(const char *src, char *dst, int dst_len, char **alllowed);
+int replace_params(const char *src, char *dst, int dst_len, char **allowed);
 void delete_config(void);
 int add_config_entry(const char *name, const char *value);
 void set_conf_val(const char* name, const char* value);

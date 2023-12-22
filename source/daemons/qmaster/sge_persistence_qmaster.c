@@ -62,7 +62,7 @@ sge_initialize_persistence(sge_gdi_ctx_class_t *ctx, lList **answer_list)
    const char *spooling_lib = ctx->get_spooling_lib(ctx);
    const char *spooling_params = ctx->get_spooling_params(ctx);
 
-   DENTER(TOP_LAYER, "sge_initialize_persistence");
+   DENTER(TOP_LAYER);
 
    if (getenv("SGE_TEST_SPOOLING_WAIT_TIME") != NULL) {
          spooling_wait_time=atoi(getenv("SGE_TEST_SPOOLING_WAIT_TIME"));
@@ -90,8 +90,7 @@ sge_initialize_persistence(sge_gdi_ctx_class_t *ctx, lList **answer_list)
       }
    }
 
-   DEXIT;
-   return ret;
+   DRETURN(ret);
 }
 
 void
@@ -99,7 +98,7 @@ sge_initialize_persistance_timer(void)
 {
    te_event_t ev = NULL;
 
-   DENTER(TOP_LAYER, "sge_initialize_persistance_timer");
+   DENTER(TOP_LAYER);
 
    te_register_event_handler(spooling_trigger_handler, TYPE_SPOOLING_TRIGGER);
 
@@ -118,7 +117,7 @@ sge_shutdown_persistence(lList **answer_list)
    lList* alp = NULL;
    lListElem *context;
 
-   DENTER(TOP_LAYER, "sge_shutdown_persistence");
+   DENTER(TOP_LAYER);
 
    /* trigger spooling actions (flush data) */
    if (!spool_trigger_context(&alp, spool_get_default_context(), 0, &time)) {
@@ -143,8 +142,7 @@ sge_shutdown_persistence(lList **answer_list)
       spool_set_default_context(context);
    }
 
-   DEXIT;
-   return ret;
+   DRETURN(ret);
 }
 
 void
@@ -155,7 +153,7 @@ spooling_trigger_handler(sge_gdi_ctx_class_t *ctx, te_event_t anEvent, monitorin
    lList *answer_list = NULL;
    te_event_t ev = NULL;
 
-   DENTER(TOP_LAYER, "deliver_spooling_trigger");
+   DENTER(TOP_LAYER);
 
    /* trigger spooling regular actions */
    if (!spool_trigger_context(&answer_list, spool_get_default_context(), 
@@ -174,8 +172,7 @@ spooling_trigger_handler(sge_gdi_ctx_class_t *ctx, te_event_t anEvent, monitorin
    te_add_event(ev);
    te_free_event(&ev);
 
-   DEXIT;
-   return;
+   DRETURN_VOID;
 }
 
 /****** sge_persistence_qmaster/sge_event_spool() ******************************
@@ -241,7 +238,7 @@ sge_event_spool(sge_gdi_ctx_class_t *ctx,
    dstring buffer = DSTRING_INIT;
    bool job_spooling = ctx->get_job_spooling(ctx);
 
-   DENTER(TOP_LAYER, "sge_event_spool");
+   DENTER(TOP_LAYER);
 
    /*for testing a fixed gid_error, this has been introduced. We need it to slowdown*/
    /*the spooling mechanism, to simulate the situation where this error appears*/ 
@@ -542,7 +539,7 @@ sge_event_spool(sge_gdi_ctx_class_t *ctx,
                                       object_type, key, job_spooling);
          } else {
             lList *tmp_list = NULL;
-            lListElem *load_value;
+            const lListElem *load_value;
 
             /* 
              *  Only static load values should be spooled, therefore we modify

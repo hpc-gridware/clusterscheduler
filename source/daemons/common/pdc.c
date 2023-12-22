@@ -1447,7 +1447,7 @@ static int psRetrieveOSJobData(void) {
    static int clk_tck;
 #endif
 
-   DENTER(TOP_LAYER, "psRetrieveOSJobData");
+   DENTER(TOP_LAYER);
 
    if (time_stamp <= next_time) {
       DRETURN(0);

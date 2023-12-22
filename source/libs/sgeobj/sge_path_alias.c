@@ -152,23 +152,20 @@ static int path_alias_read_from_file(lList **path_alias_list, lList **alpp,
    SGE_STRUCT_STAT sb;
    int ret = 0;
 
-   DENTER(GDI_LAYER, "path_alias_read_from_file");
+   DENTER(GDI_LAYER);
 
    if (!path_alias_list || !file_name) {
-      CRITICAL((SGE_EVENT, MSG_SGETEXT_NULLPTRPASSED_S, SGE_FUNC));
+      CRITICAL((SGE_EVENT, MSG_SGETEXT_NULLPTRPASSED_S, __func__));
       answer_list_add(alpp, SGE_EVENT, STATUS_EUNKNOWN, ANSWER_QUALITY_ERROR);
-      DEXIT;
-      return -1;
+      DRETURN(-1);
    }
 
    if ((SGE_STAT(file_name, &sb) != 0) && (errno == ENOENT)) {
-      DEXIT;
-      return 0;
+      DRETURN(0);
    }    
 
    if (!(fd=(fopen(file_name, "r")))) {
-      DEXIT;
-      return -1;
+      DRETURN(-1);
    }
 
    while (fgets(buf, sizeof(buf), fd)) {
@@ -238,8 +235,7 @@ static int path_alias_read_from_file(lList **path_alias_list, lList **alpp,
 
    FCLOSE(fd);
 
-   DEXIT;
-   return ret;
+   DRETURN(ret);
 FCLOSE_ERROR:
    SGE_ADD_MSG_ID(sprintf(SGE_EVENT, MSG_FILE_ERRORCLOSEINGXY_SS, file_name,
                   strerror(errno)));
@@ -288,7 +284,7 @@ int path_alias_list_initialize(lList **path_alias_list,
 {
    char filename[2][SGE_PATH_MAX];
    char err[MAX_STRING_SIZE];
-   DENTER(TOP_LAYER, "path_alias_list_initialize");
+   DENTER(TOP_LAYER);
 
    /* 
     * find names of different sge_path_alias files:
@@ -334,8 +330,7 @@ int path_alias_list_initialize(lList **path_alias_list,
                                        alpp, filename[i]) != 0) {
             sprintf(err, MSG_ALIAS_CANTREAD_SS, filename[i], strerror(errno));
             answer_list_add(alpp, err, STATUS_EDISK, ANSWER_QUALITY_ERROR);
-            DEXIT;
-            return -1;
+            DRETURN(-1);
          }
       }
    }
@@ -352,8 +347,7 @@ int path_alias_list_initialize(lList **path_alias_list,
       lFreeWhere(&where);
    }
 
-   DEXIT;
-   return 0;
+   DRETURN(0);
 }
 
 /****** sgeobj/path_alias/path_alias_list_get_path() **************************
@@ -398,13 +392,13 @@ int path_alias_list_get_path(const lList *path_aliases, lList **alpp,
    const char *exec_host;
    dstring the_path = DSTRING_INIT;
  
-   DENTER(TOP_LAYER, "path_alias_list_get_path");
+   DENTER(TOP_LAYER);
 
    sge_dstring_copy_string(outpath, inpath);
    sge_dstring_copy_dstring(&the_path, outpath); 
 
    if (path_aliases && lGetNumberOfElem(path_aliases) > 0) { 
-      for_each(pap, path_aliases) {
+      for_each_rw (pap, path_aliases) {
          size_t orign_str_len = 0; 
          origin = lGetString(pap, PA_origin);
          orign_str_len = strlen(origin);
@@ -454,8 +448,7 @@ int path_alias_list_get_path(const lList *path_aliases, lList **alpp,
 
    sge_dstring_free(&the_path);
 
-   DEXIT;
-   return 0;
+   DRETURN(0);
 
 }
 

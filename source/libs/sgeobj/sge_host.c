@@ -58,7 +58,7 @@ host_list_locate(const lList *host_list, const char *hostname)
 {
    lListElem *ret = NULL;
    
-   DENTER(TOP_LAYER, "host_list_locate");
+   DENTER(TOP_LAYER);
    if (host_list != NULL) {
       if (hostname != NULL) {
          const lListElem *element = lFirst(host_list);
@@ -76,7 +76,7 @@ host_list_locate(const lList *host_list, const char *hostname)
             ret = lGetElemHostRW(host_list, nm, hostname);
          }
       } else {
-         CRITICAL((SGE_EVENT, MSG_SGETEXT_NULLPTRPASSED_S, SGE_FUNC));
+         CRITICAL((SGE_EVENT, MSG_SGETEXT_NULLPTRPASSED_S, __func__));
       }
    } else {
       /*
@@ -156,7 +156,7 @@ bool host_is_referenced(const lListElem *host,
       /* if we have not found a reference yet, we keep looking in the host groups, if
          we have an exec host */
       if (!ret && object_has_type(host, EH_Type)) {
-         lListElem *hgrp_elem = NULL;
+         const lListElem *hgrp_elem = NULL;
          lList *host_list = NULL;
 
          for_each (hgrp_elem, hgrp_list) {
@@ -226,7 +226,7 @@ int sge_resolve_host(lListElem *ep, int nm)
    char unique[CL_MAXHOSTLEN];
    const char *hostname;
 
-   DENTER(TOP_LAYER, "sge_resolve_host");
+   DENTER(TOP_LAYER);
 
    memset(unique, 0, CL_MAXHOSTLEN);
 
@@ -281,7 +281,7 @@ int sge_resolve_hostname(const char *hostname, char *unique, int nm)
 {
    int ret = CL_RETVAL_OK;
 
-   DENTER(TOP_LAYER, "sge_resolve_hostname");
+   DENTER(TOP_LAYER);
 
    if (hostname == NULL) {
       DRETURN(CL_RETVAL_PARAMS);
@@ -326,7 +326,7 @@ host_is_centry_referenced(const lListElem *this_elem, const lListElem *centry)
 {
    bool ret = false;
 
-   DENTER(TOP_LAYER, "host_is_centry_referenced");
+   DENTER(TOP_LAYER);
 
    if (this_elem != NULL) {
       const char *name = lGetString(centry, CE_name);
@@ -356,7 +356,7 @@ host_is_centry_a_complex_value(const lListElem *this_elem,
 {
    bool ret = false;
 
-   DENTER(TOP_LAYER, "host_is_centry_a_complex_value");
+   DENTER(TOP_LAYER);
 
    if (this_elem != NULL) {  
       const char *name = lGetString(centry, CE_name);
@@ -405,7 +405,7 @@ host_list_merge(lList *this_list)
 {
    bool ret = true;
 
-   DENTER(TOP_LAYER, "host_list_merge");
+   DENTER(TOP_LAYER);
    
    if (this_list != NULL) {
       lListElem *global_host = lGetElemHostRW(this_list, EH_name, SGE_GLOBAL_NAME);
@@ -418,7 +418,7 @@ host_list_merge(lList *this_list)
          lSetList(global_host, EH_merged_report_variables, lCopyList("", lGetList(global_host, EH_report_variables)));
 
          /* do merge for all hosts except global */
-         for_each (host, this_list) {
+         for_each_rw (host, this_list) {
             if (host != global_host) {
                /* on error continue, but return error status */
                if (!host_merge(host, global_host)) {
@@ -463,7 +463,7 @@ host_merge(lListElem *host, const lListElem *global_host)
 {
    bool ret = true;
 
-   DENTER(TOP_LAYER, "host_merge");
+   DENTER(TOP_LAYER);
 
    if (host != NULL && global_host != NULL) {
       const lList *local_list = lGetList(host, EH_report_variables);

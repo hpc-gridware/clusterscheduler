@@ -276,13 +276,15 @@ wcal,  CA_Type
 static int state_at(time_t now, const lList *ycal, const lList *wcal, time_t *next_event) {
    struct tm *tm_now;
    int state = 0, w_is_active = -1, y_is_active;
-   lListElem *yc, *wc, *tm;
+   lListElem *yc;
+   lListElem *wc;
+   lListElem *tm;
    time_t limit;
    time_t temp_next_event = 0;
    struct tm res;
    u_long32 next_state;
 
-   DENTER(TOP_LAYER, "state_at");
+   DENTER(TOP_LAYER);
 
    /* convert time_t format into struct tm format */
    tm_now = localtime_r(&now, &res);
@@ -303,7 +305,7 @@ static int state_at(time_t now, const lList *ycal, const lList *wcal, time_t *ne
          tm_now->tm_isdst)); 
 
    /* ycal */
-   for_each (yc, ycal) {
+   for_each_rw (yc, ycal) {
       y_is_active = is_year_entry_active(tm, yc, &limit);
       if (state != y_is_active || state == QI_DO_NOTHING) {
          state |= y_is_active;
@@ -334,7 +336,7 @@ static int state_at(time_t now, const lList *ycal, const lList *wcal, time_t *ne
          counter = 0;
          isOverlapping = false;
          
-         for_each (wc, wcal) {
+         for_each_rw (wc, wcal) {
             if ((w_is_active = is_week_entry_active(tm, wc, &limit, &next_state, 0))) {
                state |= w_is_active;
             }   
@@ -427,7 +429,7 @@ static u_long32 is_week_entry_active(lListElem *tm, lListElem *week_entry, time_
    bool in_wday_range, in_daytime_range = false;
 
 
-   DENTER(TOP_LAYER, "is_week_entry_active");
+   DENTER(TOP_LAYER);
 
    /* compute state */
    if ((in_wday_range=in_range_list(tm, lGetList(week_entry, CA_wday_range_list), tm_wday_cmp)) 
@@ -530,7 +532,7 @@ static u_long32 is_year_entry_active(lListElem *tm, lListElem *year_entry, time_
    u_long32 state;
    bool in_yday_range, in_daytime_range = false;
 
-   DENTER(TOP_LAYER, "is_year_entry_active");
+   DENTER(TOP_LAYER);
 
    /* compute state */
    if ((in_yday_range=in_range_list(tm, lGetList(year_entry, CA_yday_range_list), tm_yday_cmp)) 
@@ -781,7 +783,7 @@ static time_t compute_limit(bool today, bool active, const lList *year_time, con
                                               the function. But a const lListElem cannot be freed. */
    bool is_new_now_copy = false;
 
-   DENTER(TOP_LAYER, "compute_limit");
+   DENTER(TOP_LAYER);
 
    if (day_time == NULL) {
       DPRINTF(("no day time calendar is set "));
@@ -1049,11 +1051,11 @@ static int normalize_range_list(lList *rl, cmp_func_t cmp_func) {
 /*    lListElem *t1, *t2, *t3, *t4; */
 /*    int i1, i2, i3, i4; */
 
-   DENTER(TOP_LAYER, "normalize_range_list");
+   DENTER(TOP_LAYER);
 
 /*    i1 = i2 = i3 = i4 = -1; */
 
-   for_each(r, rl) {
+   for_each_rw(r, rl) {
 
       r1 = lFirst(lGetList(r, TMR_begin));
       r2 = lFirst(lGetList(r, TMR_end));
@@ -1135,9 +1137,9 @@ static int normalize_range_list(lList *rl, cmp_func_t cmp_func) {
 lListElem *tm, TM_Type 
 */
 static bool in_range_list(const lListElem *tm, const lList *rl, cmp_func_t cmp_func) {
-   lListElem *r;
+   const lListElem *r;
 
-   DENTER(TOP_LAYER, "in_range_list");
+   DENTER(TOP_LAYER);
 
    if (!rl) {
       DRETURN(true);
@@ -1158,7 +1160,7 @@ lListElem *tm, TM_Type
 static int in_range(const lListElem *tm, const lListElem *r, cmp_func_t cmp_func) {
    const lListElem *t1, *t2;
 
-   DENTER(TOP_LAYER, "in_range");
+   DENTER(TOP_LAYER);
 
    t1 = lFirst(lGetList(r, TMR_begin));
    t2 = lFirst(lGetList(r, TMR_end));
@@ -1207,7 +1209,7 @@ static int disabled_year_list(lList **alpp, const char *s, lList **cal, const ch
       { 0,               NULL }
    };
 
-   DENTER(TOP_LAYER, "disabled_year_list");
+   DENTER(TOP_LAYER);
 
    if (cal != NULL) {
       *cal = NULL;
@@ -1263,7 +1265,7 @@ static int disabled_year_entry(lListElem **cal) {
          *dtrl = NULL;
    int state = QI_DO_DISABLE;
   
-   DENTER(TOP_LAYER, "disabled_year_entry");
+   DENTER(TOP_LAYER);
 
    if (scan(NULL, NULL)==NUMBER) {
       if (year_day_range_list(&ydrl))
@@ -1314,7 +1316,7 @@ ERROR:
 static void full_daytime_range(lList **dtrl) {
    lListElem *tmr;
 
-   DENTER(TOP_LAYER, "full_daytime_range");
+   DENTER(TOP_LAYER);
 
    if (!*dtrl)
       *dtrl = lCreateList("full day", TMR_Type);
@@ -1333,7 +1335,7 @@ static void full_daytime_range(lList **dtrl) {
 static void full_weekday_range(lList **dtrl) {
    lListElem *tmr;
 
-   DENTER(TOP_LAYER, "full_weekday_range");
+   DENTER(TOP_LAYER);
 
    if (!*dtrl)
       *dtrl = lCreateList("full week", TMR_Type);
@@ -1354,7 +1356,7 @@ static void full_weekday_range(lList **dtrl) {
 static int year_day_range_list(lList **ydrl) { 
    lListElem *tmr;
 
-   DENTER(TOP_LAYER, "year_day_range_list");
+   DENTER(TOP_LAYER);
 
    if (year_day_range(&tmr)) {
       DRETURN(-1);
@@ -1383,7 +1385,7 @@ static int year_day_range_list(lList **ydrl) {
 static int year_day_range(lListElem **tmr) { 
    lListElem *t1, *t2 = NULL;
  
-   DENTER(TOP_LAYER, "year_day_range");
+   DENTER(TOP_LAYER);
 
    if (year_day(&t1)) {
       DRETURN(-1);
@@ -1430,7 +1432,7 @@ static int year_day_range(lListElem **tmr) {
 static int year_day(lListElem **tm) { 
    int y, m, d;
 
-   DENTER(TOP_LAYER, "year_day");
+   DENTER(TOP_LAYER);
 
    if (day(&d)) {
       DRETURN(-1);
@@ -1468,7 +1470,7 @@ static int year_day(lListElem **tm) {
 
 static int range_number(int min, int max, int *ip, const char *name) {
    
-   DENTER(TOP_LAYER, "range_number");
+   DENTER(TOP_LAYER);
 
    if (scan(NULL, NULL)==NUMBER) {
       int this_number = get_number();
@@ -1509,7 +1511,7 @@ static int month(int *mp) {
       { -1, NULL }
    };
 
-   DENTER(TOP_LAYER, "month");
+   DENTER(TOP_LAYER);
 
    if (scan(NULL, NULL)==STRING) {
       char *s = get_string();
@@ -1540,7 +1542,7 @@ static int year(int *yp) {
 static int daytime_range_list(lList **dtrl) { 
    lListElem *tmr;
 
-   DENTER(TOP_LAYER, "daytime_range_list");
+   DENTER(TOP_LAYER);
 
    if (daytime_range(&tmr)) {
       DRETURN(-1);
@@ -1572,7 +1574,7 @@ static void split_daytime_range(lList *dtrl, lListElem *tmr) {
    const lListElem *t2, *t1, *t3, *t4;
    lListElem *tmr2;
 
-   DENTER(TOP_LAYER, "split_daytime_range");
+   DENTER(TOP_LAYER);
 
    if ((t2=lFirst(lGetList(tmr, TMR_end)))) {
       t1=lFirst(lGetList(tmr, TMR_begin));
@@ -1624,7 +1626,7 @@ static void split_daytime_range(lList *dtrl, lListElem *tmr) {
 static int daytime_range(lListElem **tmr) {
    lListElem *t1 = NULL, *t2 = NULL;
   
-   DENTER(TOP_LAYER, "daytime_range");
+   DENTER(TOP_LAYER);
 
    if (daytime(&t1)) {
       goto ERROR;
@@ -1674,7 +1676,7 @@ ERROR:
 static int daytime(lListElem **tm) { 
    int h, m = 0, s = 0;
 
-   DENTER(TOP_LAYER, "daytime");
+   DENTER(TOP_LAYER);
 
    if (hour(&h)) {
       DRETURN(-1);
@@ -1729,7 +1731,7 @@ static int seconds(int *sp) {
 static int action(int *sp) {
    int state;
    char *s;
-   DENTER(TOP_LAYER, "action");
+   DENTER(TOP_LAYER);
 
    if (scan(NULL, NULL)!=STRING) {
       sprintf(parse_error, MSG_PARSE_XISNOTASTATESPECIFIER_S, get_string());
@@ -1760,7 +1762,7 @@ static int disabled_week_list(lList **alpp, const char *s, lList **cal, const ch
       { 0,            NULL }
    };
    
-   DENTER(TOP_LAYER, "disabled_week_list");
+   DENTER(TOP_LAYER);
 
    if (cal) {
       *cal = NULL;
@@ -1821,7 +1823,7 @@ static int disabled_week_entry(lListElem **cal) {
          *dtrl = NULL;
        int state = QI_DO_DISABLE;
 
-   DENTER(TOP_LAYER, "disabled_week_entry");
+   DENTER(TOP_LAYER);
 
    if (scan(NULL, NULL)==STRING &&
        cheap_scan(get_string(), statev, 3, "state specifier")<0) {
@@ -1886,7 +1888,7 @@ ERROR:
 static int week_day_range_list(lList **wdrl) { 
    lListElem *tmr;
 
-   DENTER(TOP_LAYER, "week_day_range_list");
+   DENTER(TOP_LAYER);
    if (week_day_range(&tmr)) {
       DRETURN(-1);
    }
@@ -2096,7 +2098,7 @@ static void split_wday_range(lList *wdrl, lListElem *tmr) {
    const lListElem *t2, *t1; /* *t3, *t4, */ 
    lListElem *tmr2;
 
-   DENTER(TOP_LAYER, "split_wday_range");
+   DENTER(TOP_LAYER);
 
    if ((t2=lFirst(lGetList(tmr, TMR_end)))) {
       t1=lFirst(lGetList(tmr, TMR_begin));
@@ -2136,7 +2138,7 @@ static int week_day_range(lListElem **tmr) {
    lListElem *t1 = NULL;
    lListElem *t2 = NULL;
 
-   DENTER(TOP_LAYER, "week_day_range");
+   DENTER(TOP_LAYER);
 
    if (week_day(&t1)) 
       goto ERROR;
@@ -2196,7 +2198,7 @@ static int week_day(lListElem **tm) {
       { -1, NULL }
    };
 
-   DENTER(TOP_LAYER, "week_day");
+   DENTER(TOP_LAYER);
 
    if (scan(NULL, NULL)!=STRING) {
       sprintf(parse_error, SFNMAX, MSG_PARSE_EXPECTEDSTRINGFORWEEKDAY);
@@ -2236,7 +2238,7 @@ static char *save_error() {
 
  */
 static void eat_token() {
-/*    DENTER(TOP_LAYER, "eat_token"); */
+/*    DENTER(TOP_LAYER); */
 /*    DPRINTF(("token \"%s\"\n", store)); */
    token_is_valid = 0;
 /*    DRETURN_VOID; */
@@ -2250,7 +2252,7 @@ static int scan(const char *s, token_set_t token_set[]) {
    int i, j, k, len = 0;
    int found;
 
-   DENTER(CULL_LAYER, "scan");
+   DENTER(CULL_LAYER);
 
    if (s) {                     /* initialize scan() with a new string to parse */
       t = s;
@@ -2341,7 +2343,7 @@ static int cheap_scan(char *s, token_set_t tokenv[], int n, char *name) {
    int len;
    int match_all_chars = 0;
 
-   DENTER(TOP_LAYER, "cheap_scan");
+   DENTER(TOP_LAYER);
 
    if ((len=strlen(s)) < n) {
       match_all_chars = 1;
@@ -2429,7 +2431,7 @@ calendar_parse_year(lListElem *cal, lList **answer_list)
    bool ret = true;
    lList *yc = NULL;
 
-   DENTER(TOP_LAYER, "calendar_parse_year");
+   DENTER(TOP_LAYER);
    if (disabled_year_list(answer_list, lGetString(cal, CAL_year_calendar), 
                           &yc, lGetString(cal, CAL_name))) {
       ret = false;               
@@ -2445,7 +2447,7 @@ bool calendar_parse_week(lListElem *cal, lList **answer_list) {
    bool ret = true;
    lList *wc = NULL;
 
-   DENTER(TOP_LAYER, "calendar_parse_week");
+   DENTER(TOP_LAYER);
    if (disabled_week_list(answer_list, lGetString(cal, CAL_week_calendar), 
             &wc, lGetString(cal, CAL_name))) {
       ret = false;
@@ -2485,7 +2487,7 @@ static u_long32 calendar_get_current_state_and_end(const lListElem *cep, time_t 
    const lList *year_list = NULL;
    const lList *week_list = NULL;
    
-   DENTER(TOP_LAYER, "calendar_get_current_state_and_end");
+   DENTER(TOP_LAYER);
 
    DPRINTF(("cal: %s\n", lGetString(cep, CAL_name)));
 
@@ -2520,7 +2522,7 @@ calendar_is_referenced(const lListElem *calendar, lList **answer_list,
                        const lList *master_cqueue_list)
 {
    bool ret = false;
-   lListElem *cqueue = NULL, *cal = NULL;
+   const lListElem *cqueue = NULL, *cal = NULL;
  
    /*
     * fix for bug 6422335
@@ -2557,7 +2559,7 @@ calendar_is_referenced(const lListElem *calendar, lList **answer_list,
 lListElem* sge_generic_cal(char *cal_name) {
    lListElem *calp;
 
-   DENTER(TOP_LAYER, "sge_generic_cal");
+   DENTER(TOP_LAYER);
 
    calp = lCreateElem(CAL_Type);
 
@@ -2601,7 +2603,7 @@ bool calendar_open_in_time_frame(const lListElem *cep, u_long32 start_time, u_lo
    time_t start = (time_t)start_time;
    time_t end = (time_t)duration_add_offset(start_time, duration);
 
-   DENTER(TOP_LAYER, "calendar_open_in_time_frame");
+   DENTER(TOP_LAYER);
 
    if (cep != NULL) {
       year_list = lGetList(cep, CAL_parsed_year_calendar);

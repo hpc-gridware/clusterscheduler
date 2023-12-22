@@ -52,20 +52,20 @@ void schedd_set_schedd_log_file(sge_gdi_ctx_class_t *ctx)
 {
    const char *cell_root = ctx->get_cell_root(ctx);
    
-   DENTER(TOP_LAYER, "schedd_set_schedd_log_file");
+   DENTER(TOP_LAYER);
 
    if (!*schedd_log_file) {
       snprintf(schedd_log_file, sizeof(schedd_log_file), "%s/%s/%s", cell_root, "common", SCHED_LOG_NAME);
       DPRINTF(("schedd log file >>%s<<\n", schedd_log_file));
    }
 
-   DEXIT;
+   DRETURN_VOID;
 }
 
 
 int schedd_log(const char *logstr, lList **monitor_alpp, bool monitor_next_run)
 {
-   DENTER(TOP_LAYER, "schedd_log");
+   DENTER(TOP_LAYER);
 
    if (monitor_alpp != NULL) {
       /* add to answer list for verification (-w v) */
@@ -109,9 +109,9 @@ int schedd_log_list(lList **monitor_alpp, bool monitor_next_run, const char *log
    int fields[] = { 0, 0 };
    const char *delis[] = {NULL, " ", NULL};
    lList *lp_part = NULL;
-   lListElem *ep = NULL;
+   const lListElem *ep = NULL;
 
-   DENTER(TOP_LAYER, "schedd_log_list");
+   DENTER(TOP_LAYER);
 
 #ifndef WIN32NATIVE
 
@@ -146,8 +146,7 @@ int schedd_log_list(lList **monitor_alpp, bool monitor_next_run, const char *log
    DPRINTF(("schedd_log_list does nothing for QMonNT !!!\n"));
 #endif
 
-   DEXIT;
-   return 0;
+   DRETURN(0);
 }
 
 const char *job_descr(

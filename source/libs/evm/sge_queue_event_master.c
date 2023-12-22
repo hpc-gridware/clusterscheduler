@@ -44,7 +44,7 @@
 void
 qinstance_add_event(lListElem *this_elem, ev_event type)
 {
-   DENTER(TOP_LAYER, "qinstance_add_event");
+   DENTER(TOP_LAYER);
    sge_add_event(0, type, 0, 0,
                  lGetString(this_elem, QU_qname),
                  lGetHost(this_elem, QU_qhostname), NULL, this_elem);
@@ -54,7 +54,7 @@ qinstance_add_event(lListElem *this_elem, ev_event type)
 void
 cqueue_add_event(lListElem *this_elem, ev_event type)
 {
-   DENTER(TOP_LAYER, "cqueue_add_event");
+   DENTER(TOP_LAYER);
    sge_add_event(0, type, 0, 0,
                  lGetString(this_elem, CQ_name), NULL,
                  NULL, this_elem);

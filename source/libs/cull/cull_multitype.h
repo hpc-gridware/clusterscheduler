@@ -214,10 +214,13 @@ lListElem *lGetSubUlong(const lListElem *ep, int nm, lUlong val, int snm);
 
 */
 lListElem* lAddElemUlong64(lList **lpp, int nm, lUlong64 val, const lDescr *dp);
-int lDelElemUlong64(lList **lpp, int nm, lUlong64 val); 
-lListElem *lGetElemUlong64(const lList *lp, int nm, lUlong64 val);
-lListElem *lGetElemUlong64First(const lList *lp, int nm, lUlong64 val, const void **iterator);
-lListElem *lGetElemUlong64Next(const lList *lp, int nm, lUlong64 val, const void **iterator);
+int lDelElemUlong64(lList **lpp, int nm, lUlong64 val);
+lListElem *lGetElemUlong64RW(const lList *lp, int nm, lUlong64 val);
+lListElem *lGetElemUlong64FirstRW(const lList *lp, int nm, lUlong64 val, const void **iterator);
+lListElem *lGetElemUlong64NextRW(const lList *lp, int nm, lUlong64 val, const void **iterator);
+const lListElem *lGetElemUlong64(const lList *lp, int nm, lUlong64 val);
+const lListElem *lGetElemUlong64First(const lList *lp, int nm, lUlong64 val, const void **iterator);
+const lListElem *lGetElemUlong64Next(const lList *lp, int nm, lUlong64 val, const void **iterator);
 
 /* - -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- - 
 

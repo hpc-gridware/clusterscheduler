@@ -57,13 +57,13 @@ int lInsertSorted(const lSortOrder * so, lListElem * ep, lList * lp)
 {
    lListElem *tmp;
 
-   DENTER(TOP_LAYER, "lInsertSorted");
+   DENTER(TOP_LAYER);
 
    if (!so || !ep || !lp) {
       DRETURN(-1);
    }
 
-   for_each(tmp, lp)
+   for_each_rw(tmp, lp)
       if (lSortCompare(ep, tmp, so) <= 0)
       break;                    /* insert before tmp */
 
@@ -97,7 +97,7 @@ const lSortOrder *sp
 ) {
    int i;
 
-   DENTER(CULL_LAYER, "lWriteSortOrder");
+   DENTER(CULL_LAYER);
 
    if (!sp) {
       LERROR(LESORTORDNULL);
@@ -143,7 +143,7 @@ const lSortOrder *sp
 ) {
    int i, result = 0;
 
-   DENTER(CULL_LAYER, "lSortCompare");
+   DENTER(CULL_LAYER);
 
    for (i = 0; !result && sp[i].nm != NoName; i++) {
 
@@ -238,7 +238,7 @@ lSortOrder *lParseSortOrder(const lDescr *dp, const char *fmt, va_list ap)
    int i, n;
    cull_parse_state state;
 
-   DENTER(CULL_LAYER, "lParseSortOrder");
+   DENTER(CULL_LAYER);
 
    if (!dp || !fmt) {
       DRETURN(NULL);

@@ -136,7 +136,7 @@ cull_parse_state *state
    int n = sizeof(opv) / sizeof(char *);
    int found;
 
-   DENTER(CULL_LAYER, "scan");
+   DENTER(CULL_LAYER);
 
    if (s) {                     /* initialize scan() with a new string to parse */
       state->t = s;
@@ -144,16 +144,14 @@ cull_parse_state *state
    }
 
    if (state->token_is_valid) {        /* no need for a new token to parse */
-      DEXIT;
-      return state->token;
+      DRETURN(state->token);
    }
 
    state->t = eatws(state->t);
    if (state->t == NULL) {       /* end of the string to parse */
       state->token_is_valid = 1;
       state->token = NO_TOKEN;
-      DEXIT;
-      return state->token;
+      DRETURN(state->token);
    }
 
    /* try every possible token */
@@ -170,14 +168,12 @@ cull_parse_state *state
          state->token_is_valid = 1;
          state->token = i + 1;
 
-         DEXIT;
-         return (state->token);
+         DRETURN((state->token));
       }
    }
 
    state->token_is_valid = 1;
    state->token = NO_TOKEN;
 
-   DEXIT;
-   return state->token;
+   DRETURN(state->token);
 }

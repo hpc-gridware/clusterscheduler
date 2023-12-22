@@ -76,7 +76,7 @@ static int init_framework(const char *method, const char *shlib,
    lListElem *spooling_context = NULL;
    lList *answer_list = NULL;
 
-   DENTER(TOP_LAYER, "init_framework");
+   DENTER(TOP_LAYER);
 
    lInit(nmv);
 #ifdef HP1164   
@@ -101,8 +101,7 @@ static int init_framework(const char *method, const char *shlib,
       answer_list_output(&answer_list);
    }
 
-   DEXIT;
-   return ret;
+   DRETURN(ret);
 }
 
 int main(int argc, char *argv[])

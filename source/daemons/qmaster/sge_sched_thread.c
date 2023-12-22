@@ -130,10 +130,10 @@ select_assign_debit(lList **queue_list, lList **dis_queue_list, lListElem *job, 
 
 void st_set_flag_new_global_conf(bool new_value)
 {
-   DENTER(TOP_LAYER, "st_set_flag_new_global_conf");
-   sge_mutex_lock("event_control_mutex", SGE_FUNC, __LINE__, &Scheduler_Control.mutex);
+   DENTER(TOP_LAYER);
+   sge_mutex_lock("event_control_mutex", __func__, __LINE__, &Scheduler_Control.mutex);
    Scheduler_Control.new_global_conf = new_value;
-   sge_mutex_unlock("event_control_mutex", SGE_FUNC, __LINE__, &Scheduler_Control.mutex);
+   sge_mutex_unlock("event_control_mutex", __func__, __LINE__, &Scheduler_Control.mutex);
    DRETURN_VOID;
 } 
 
@@ -141,10 +141,10 @@ bool st_get_flag_new_global_conf(void)
 {
    bool ret = false;
 
-   DENTER(TOP_LAYER, "st_get_flag_new_global_conf");
-   sge_mutex_lock("event_control_mutex", SGE_FUNC, __LINE__, &Scheduler_Control.mutex);
+   DENTER(TOP_LAYER);
+   sge_mutex_lock("event_control_mutex", __func__, __LINE__, &Scheduler_Control.mutex);
    ret = Scheduler_Control.new_global_conf;
-   sge_mutex_unlock("event_control_mutex", SGE_FUNC, __LINE__, &Scheduler_Control.mutex);
+   sge_mutex_unlock("event_control_mutex", __func__, __LINE__, &Scheduler_Control.mutex);
    DRETURN(ret);
 } 
 
@@ -168,7 +168,7 @@ int scheduler_method(sge_evc_class_t *evc, lList **answer_list, scheduler_all_da
 
    int i;
 
-   DENTER(TOP_LAYER, "scheduler_method");
+   DENTER(TOP_LAYER);
 
    PROF_START_MEASUREMENT(SGE_PROF_CUSTOM0);
 
@@ -205,7 +205,7 @@ int scheduler_method(sge_evc_class_t *evc, lList **answer_list, scheduler_all_da
       lCondition *where = NULL;
       lEnumeration *what = NULL;
       const lDescr *dp = lGetListDescr(lists->all_queue_list);
-      lListElem *mes_queues;
+      const lListElem *mes_queues;
 
       what = lWhat("%T(ALL)", dp);
       where = lWhere("%T(%I m= %u "
@@ -271,7 +271,7 @@ int scheduler_method(sge_evc_class_t *evc, lList **answer_list, scheduler_all_da
                           SPLIT_HOLD};
       int i = 0;
       int max = 6;
-      lListElem *job;
+      const lListElem *job;
 
       for (i = 0; i < max; i++) {
          /* clear SGEEE fields for queued jobs */
@@ -422,7 +422,7 @@ static int dispatch_jobs(sge_evc_class_t *evc, scheduler_all_data_t *lists, orde
    bool is_schedule_based = (max_reserve > 0) ? true: false;
    u_long32 now = sge_get_gmt();
 
-   DENTER(TOP_LAYER, "dispatch_jobs");
+   DENTER(TOP_LAYER);
 
    queue_sort_method =  sconf_get_queue_sort_method();
    maxujobs = sconf_get_maxujobs();
@@ -448,7 +448,7 @@ static int dispatch_jobs(sge_evc_class_t *evc, scheduler_all_data_t *lists, orde
             if so this will make it necessary to check load thresholds
             of each queue after each dispatched job */
          {
-            lListElem *gep, *lcep;
+            const lListElem *gep, *lcep;
             if ((gep = host_list_locate(lists->host_list, "global"))) {
                for_each (lcep, job_load_adjustments) {
                   const char *attr = lGetString(lcep, CE_name);
@@ -1022,7 +1022,7 @@ select_assign_debit(lList **queue_list, lList **dis_queue_list, lListElem *job, 
    sge_assignment_t a = SGE_ASSIGNMENT_INIT;
    bool is_computed_reservation = false;
 
-   DENTER(TOP_LAYER, "select_assign_debit");
+   DENTER(TOP_LAYER);
 
    assignment_init(&a, job, ja_task, true);
    a.queue_list       = *queue_list;
@@ -1172,8 +1172,7 @@ select_assign_debit(lList **queue_list, lList **dis_queue_list, lListElem *job, 
          job_otickets_per_slot =(double)lGetDouble(ja_task, JAT_oticket)/a.slots;
          job_stickets_per_slot =(double)lGetDouble(ja_task, JAT_sticket)/a.slots;
 
-
-         for_each(granted_el, a.gdil) {
+         for_each_rw(granted_el, a.gdil) {
             u_long32 granted_slots = lGetUlong(granted_el, JG_slots);
             lSetDouble(granted_el, JG_ticket, job_tickets_per_slot * granted_slots);
             lSetDouble(granted_el, JG_oticket, job_otickets_per_slot  * granted_slots);

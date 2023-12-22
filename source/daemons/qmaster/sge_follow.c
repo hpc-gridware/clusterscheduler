@@ -127,9 +127,9 @@ static int ticket_orders_field[] = { OR_job_number,
 *******************************************************************************/
 void sge_set_next_spooling_time(void)
 {
-   DENTER(TOP_LAYER, "sge_set_next_spooling_time");
+   DENTER(TOP_LAYER);
 
-   sge_mutex_lock("follow_last_update_mutex", SGE_FUNC, __LINE__, &Follow_Control.last_update_mutex);
+   sge_mutex_lock("follow_last_update_mutex", __func__, __LINE__, &Follow_Control.last_update_mutex);
 
    if (Follow_Control.is_spooling != NOT_DEFINED) {
       if ((Follow_Control.now + mconf_get_spool_time()) < Follow_Control.last_update) {
@@ -143,9 +143,9 @@ void sge_set_next_spooling_time(void)
       Follow_Control.is_spooling = NOT_DEFINED;
    }
 
-   sge_mutex_unlock("follow_last_update_mutex", SGE_FUNC, __LINE__, &Follow_Control.last_update_mutex);
+   sge_mutex_unlock("follow_last_update_mutex", __func__, __LINE__, &Follow_Control.last_update_mutex);
 
-   DEXIT;
+   DRETURN_VOID;
 }
 
 /**********************************************************************
@@ -178,7 +178,7 @@ sge_follow_order(sge_gdi_ctx_class_t *ctx,
    u_long32 pe_slots = 0, q_slots = 0, q_version;
    lListElem *pe = NULL;
 
-   DENTER(TOP_LAYER, "sge_follow_order");
+   DENTER(TOP_LAYER);
 
    or_type=lGetUlong(ep, OR_type);
    or_pe=lGetString(ep, OR_pe);
@@ -398,7 +398,7 @@ sge_follow_order(sge_gdi_ctx_class_t *ctx,
             lSetString(jatp, JAT_granted_pe, NULL);
             DRETURN(-2);
          } else {
-            lListElem *ruep;
+            const lListElem *ruep;
 
             /* host not yet clean after reschedule unknown? */
             for_each(ruep, lGetList(hep, EH_reschedule_unknown_list)) {
@@ -613,7 +613,7 @@ sge_follow_order(sge_gdi_ctx_class_t *ctx,
             DRETURN(-2);
          }
 
-         sge_mutex_lock("follow_last_update_mutex", SGE_FUNC, __LINE__, &Follow_Control.last_update_mutex);
+         sge_mutex_lock("follow_last_update_mutex", __func__, __LINE__, &Follow_Control.last_update_mutex);
 
          if (Follow_Control.cull_order_pos != NULL) { /* do we have the positions cached? */
             ja_pos =        &(Follow_Control.cull_order_pos->ja_task);
@@ -666,7 +666,7 @@ sge_follow_order(sge_gdi_ctx_class_t *ctx,
             lSetDouble(jep, JB_wtcontr, 0);
          }
 
-         sge_mutex_unlock("follow_last_update_mutex", SGE_FUNC, __LINE__, &Follow_Control.last_update_mutex);
+         sge_mutex_unlock("follow_last_update_mutex", __func__, __LINE__, &Follow_Control.last_update_mutex);
       }
       break;
 
@@ -722,7 +722,7 @@ sge_follow_order(sge_gdi_ctx_class_t *ctx,
             }
          }
 
-         sge_mutex_lock("follow_last_update_mutex", SGE_FUNC, __LINE__, &Follow_Control.last_update_mutex);
+         sge_mutex_lock("follow_last_update_mutex", __func__, __LINE__, &Follow_Control.last_update_mutex);
 
          if (Follow_Control.cull_order_pos == NULL) {
             const lListElem *joker_task;
@@ -742,7 +742,7 @@ sge_follow_order(sge_gdi_ctx_class_t *ctx,
             WARNING((SGE_EVENT, MSG_JOB_CHANGEPTICKETS_UU,
                      sge_u32c(lGetUlong(jep, JB_job_number)),
                      sge_u32c(lGetUlong(jatp, JAT_task_number))));
-            sge_mutex_unlock("follow_last_update_mutex", SGE_FUNC, __LINE__, &Follow_Control.last_update_mutex);
+            sge_mutex_unlock("follow_last_update_mutex", __func__, __LINE__, &Follow_Control.last_update_mutex);
             DRETURN(0);
          }
 
@@ -770,7 +770,7 @@ sge_follow_order(sge_gdi_ctx_class_t *ctx,
             lSetPosDouble(jep, job_pos->JB_wtcontr_pos, lGetPosDouble(joker, order_job_pos->JB_wtcontr_pos));
          }
 
-         sge_mutex_unlock("follow_last_update_mutex", SGE_FUNC, __LINE__, &Follow_Control.last_update_mutex);
+         sge_mutex_unlock("follow_last_update_mutex", __func__, __LINE__, &Follow_Control.last_update_mutex);
 
 #if 0
          DPRINTF(("PRIORITY: "sge_u32"."sge_u32" %f/%f tix/ntix %f npri %f/%f urg/nurg %f prio\n",
@@ -865,7 +865,7 @@ sge_follow_order(sge_gdi_ctx_class_t *ctx,
                joker_task = lFirst(lGetList(joker, JB_ja_tasks));
                distribute_tickets = (lGetPosViaElem(joker_task, JAT_granted_destin_identifier_list, SGE_NO_ABORT) > -1)? true : false;
 
-               sge_mutex_lock("follow_last_update_mutex", SGE_FUNC, __LINE__, &Follow_Control.last_update_mutex);
+               sge_mutex_lock("follow_last_update_mutex", __func__, __LINE__, &Follow_Control.last_update_mutex);
 
                if (Follow_Control.cull_order_pos == NULL) {
                   const lListElem *joker_task;
@@ -894,7 +894,7 @@ sge_follow_order(sge_gdi_ctx_class_t *ctx,
                lSetPosDouble(jep, job_pos->JB_rrcontr_pos, lGetPosDouble(joker, order_job_pos->JB_rrcontr_pos));
                lSetPosDouble(jep, job_pos->JB_dlcontr_pos, lGetPosDouble(joker, order_job_pos->JB_dlcontr_pos));
                lSetPosDouble(jep, job_pos->JB_wtcontr_pos, lGetPosDouble(joker, order_job_pos->JB_wtcontr_pos));
-               sge_mutex_unlock("follow_last_update_mutex", SGE_FUNC, __LINE__, &Follow_Control.last_update_mutex);
+               sge_mutex_unlock("follow_last_update_mutex", __func__, __LINE__, &Follow_Control.last_update_mutex);
             }
 
             /* tickets should only be further distributed in the scheduler reprioritize_interval. Only in
@@ -1102,7 +1102,8 @@ sge_follow_order(sge_gdi_ctx_class_t *ctx,
    case ORT_update_project_usage:
       DPRINTF(("ORDER: ORT_update_project_usage\n"));
       {
-         lListElem *up_order, *up, *ju, *up_ju, *next;
+         lListElem *up_order;
+         lListElem *up, *ju, *up_ju, *next;
          int pos;
          const char *up_name;
          lList *tlp;
@@ -1110,7 +1111,7 @@ sge_follow_order(sge_gdi_ctx_class_t *ctx,
          bool is_spool = false;
          const lList *master_project_list = *object_type_get_master_list(SGE_TYPE_PROJECT);
 
-         sge_mutex_lock("follow_last_update_mutex", SGE_FUNC, __LINE__, &Follow_Control.last_update_mutex);
+         sge_mutex_lock("follow_last_update_mutex", __func__, __LINE__, &Follow_Control.last_update_mutex);
 
          if (Follow_Control.is_spooling == NOT_DEFINED) {
 
@@ -1128,11 +1129,11 @@ sge_follow_order(sge_gdi_ctx_class_t *ctx,
             now =  Follow_Control.now;
          }
 
-         sge_mutex_unlock("follow_last_update_mutex", SGE_FUNC, __LINE__, &Follow_Control.last_update_mutex);
+         sge_mutex_unlock("follow_last_update_mutex", __func__, __LINE__, &Follow_Control.last_update_mutex);
 
          DPRINTF(("ORDER: update %d projects\n", lGetNumberOfElem(lGetList(ep, OR_joker))));
 
-         for_each (up_order, lGetList(ep, OR_joker)) {
+         for_each_rw (up_order, lGetList(ep, OR_joker)) {
             if ((pos=lGetPosViaElem(up_order, PR_name, SGE_NO_ABORT))<0 ||
                   !(up_name = lGetString(up_order, PR_name))) {
                continue;
@@ -1247,7 +1248,7 @@ sge_follow_order(sge_gdi_ctx_class_t *ctx,
          bool is_spool = false;
          const lList *master_user_list = *object_type_get_master_list(SGE_TYPE_USER);
 
-         sge_mutex_lock("follow_last_update_mutex", SGE_FUNC, __LINE__, &Follow_Control.last_update_mutex);
+         sge_mutex_lock("follow_last_update_mutex", __func__, __LINE__, &Follow_Control.last_update_mutex);
 
          if (Follow_Control.is_spooling == NOT_DEFINED) {
 
@@ -1265,11 +1266,11 @@ sge_follow_order(sge_gdi_ctx_class_t *ctx,
             now =  Follow_Control.now;
          }
 
-         sge_mutex_unlock("follow_last_update_mutex", SGE_FUNC, __LINE__, &Follow_Control.last_update_mutex);
+         sge_mutex_unlock("follow_last_update_mutex", __func__, __LINE__, &Follow_Control.last_update_mutex);
 
          DPRINTF(("ORDER: update %d users\n", lGetNumberOfElem(lGetList(ep, OR_joker))));
 
-         for_each (up_order, lGetList(ep, OR_joker)) {
+         for_each_rw (up_order, lGetList(ep, OR_joker)) {
             if ((pos=lGetPosViaElem(up_order, UU_name, SGE_NO_ABORT))<0 ||
                   !(up_name = lGetString(up_order, UU_name))) {
                continue;
@@ -1553,10 +1554,10 @@ int distribute_ticket_orders(sge_gdi_ctx_class_t *ctx, lList *ticket_orders, mon
    u_long32 now = sge_get_gmt();
    unsigned long last_heard_from = 0;
    int cl_err = CL_RETVAL_OK;
-   lListElem *ep;
+   const lListElem *ep;
    lList *master_ehost_list = *object_type_get_master_list_rw(SGE_TYPE_EXECHOST);
 
-   DENTER(TOP_LAYER, "distribute_ticket_orders");
+   DENTER(TOP_LAYER);
    
    for_each(ep, ticket_orders) {
       const lList *to_send = lGetList(ep, RTIC_tickets);
@@ -1574,7 +1575,7 @@ int distribute_ticket_orders(sge_gdi_ctx_class_t *ctx, lList *ticket_orders, mon
 
          if (init_packbuffer(&pb, sizeof(u_long32)*3*n, 0)==PACK_SUCCESS) {
             u_long32 dummyid = 0;
-            lListElem *ep2;
+            const lListElem *ep2;
             for_each (ep2, to_send) {
                packint(&pb, lGetUlong(ep2, OR_job_number));
                packint(&pb, lGetUlong(ep2, OR_ja_task_number));

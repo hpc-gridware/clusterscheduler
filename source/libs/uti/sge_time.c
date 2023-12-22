@@ -116,7 +116,7 @@ static void sge_stopwatch_stop(int i)
 *  RESULT
 *     u_long32 - 32 bit time value
 ******************************************************************************/
-u_long32 sge_get_gmt()
+u_long32 sge_get_gmt(void)
 {
 #ifndef WIN32NATIVE
 
@@ -384,8 +384,6 @@ void sge_stopwatch_log(int i, const char *str)
    sge_stopwatch_stop(i);
  
    if ((wdiff[i] * 1000) / clock_tick >= time_log_interval[i]) {
-      static char SGE_FUNC[] = "";
- 
       WARNING((SGE_EVENT, "%-30s: %d/%d/%d", str,
                (int) ((wtot[i] * 1000) / clock_tick),
                (int) ((end[i].tms_utime * 1000)  / clock_tick),

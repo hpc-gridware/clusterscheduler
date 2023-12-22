@@ -399,7 +399,7 @@ static void debug_flatfile(const char *msg, int line, int token,
    const char *text;
    const char *et;
 
-   DENTER(FLATFILE_LAYER, "debug_flatfile");
+   DENTER(FLATFILE_LAYER);
 
    if (token == 0) {
       text = "<EOF>";
@@ -418,7 +418,7 @@ static void debug_flatfile(const char *msg, int line, int token,
    DPRINTF(("%-20s: line %4d, token %2d, text "SFQ", end_token = "SFQ"\n",
             msg, line, token, text, et));
 
-   DEXIT;
+   DRETURN_VOID;
 }
 #else
 #define FF_DEBUG(msg)
@@ -581,7 +581,7 @@ spool_flatfile_align_object(lList **answer_list, spooling_field *fields)
    int i;
    int width = 0;
 
-   DENTER(FLATFILE_LAYER, "spool_flatfile_align_object");
+   DENTER(FLATFILE_LAYER);
 
    SGE_CHECK_POINTER_FALSE(fields, answer_list);
 
@@ -593,8 +593,7 @@ spool_flatfile_align_object(lList **answer_list, spooling_field *fields)
       fields[i].width = width;
    }
 
-   DEXIT;
-   return true;
+   DRETURN(true);
 }
 
 
@@ -634,7 +633,7 @@ spool_flatfile_align_list(lList **answer_list, const lList *list,
    const lListElem *object;
    int i;
 
-   DENTER(FLATFILE_LAYER, "spool_flatfile_align_list");
+   DENTER(FLATFILE_LAYER);
 
    SGE_CHECK_POINTER_FALSE(list, answer_list);
    SGE_CHECK_POINTER_FALSE(fields, answer_list);
@@ -722,7 +721,7 @@ spool_flatfile_write_list(lList **answer_list,
    const spooling_field *fields = NULL;
    spooling_field *my_fields = NULL;
 
-   DENTER(FLATFILE_LAYER, "spool_flatfile_write_list");
+   DENTER(FLATFILE_LAYER);
 
    SGE_CHECK_POINTER_NULL(list, answer_list);
    SGE_CHECK_POINTER_NULL(instr, answer_list);
@@ -897,7 +896,7 @@ spool_flatfile_write_object(lList **answer_list, const lListElem *object,
    size_t data_len  = 0;
    spooling_field *my_fields = NULL;
 
-   DENTER(FLATFILE_LAYER, "spool_flatfile_write_object");
+   DENTER(FLATFILE_LAYER);
 
    SGE_CHECK_POINTER_NULL(object, answer_list);
    SGE_CHECK_POINTER_NULL(instr, answer_list);
@@ -1040,7 +1039,7 @@ spool_flatfile_open_file(lList **answer_list,
    int fd = -1;
 #endif
 
-   DENTER(FLATFILE_LAYER, "spool_flatfile_open_file");
+   DENTER(FLATFILE_LAYER);
 
    *filepath_out = NULL;
 
@@ -1221,7 +1220,7 @@ spool_flatfile_write_data(lList **answer_list, const void *data, int data_len,
 #endif
    const char *result = NULL;
 
-   DENTER(FLATFILE_LAYER, "spool_flatfile_write_data");
+   DENTER(FLATFILE_LAYER);
 
    SGE_CHECK_POINTER_NULL(data, answer_list);
 
@@ -1290,7 +1289,7 @@ spool_flatfile_write_object_fields(lList **answer_list, const lListElem *object,
    bool show_empty_fields;
    bool align_data;
 
-   DENTER(FLATFILE_LAYER, "spool_flatfile_write_object_fields");
+   DENTER(FLATFILE_LAYER);
 
    SGE_CHECK_POINTER_FALSE(object, answer_list);
    SGE_CHECK_POINTER_FALSE(buffer, answer_list);
@@ -1393,7 +1392,7 @@ spool_flatfile_write_object_fields(lList **answer_list, const lListElem *object,
                answer_list_add_sprintf(answer_list, STATUS_EUNKNOWN, 
                                        ANSWER_QUALITY_WARNING, 
                                        MSG_DONTKNOWHOWTOSPOOLSUBLIST_SS,
-                                       lNm2Str(nm), SGE_FUNC);
+                                       lNm2Str(nm), __func__);
                sge_dstring_append(&field_buffer, NONE_STR);
             } else {
                continue;
@@ -1459,7 +1458,7 @@ spool_flatfile_write_list_fields(lList **answer_list, const lList *list,
                                  const spool_flatfile_instr *instr,
                                  const spooling_field *fields, bool recurse, const char *list_name)
 {
-   lListElem *ep;
+   const lListElem *ep;
    bool first = true;
    bool first_start = true;
    const spooling_field *my_fields = fields;
@@ -1472,7 +1471,7 @@ spool_flatfile_write_list_fields(lList **answer_list, const lList *list,
    bool ignore_list_name;
    bool record_start_end_newline;
 
-   DENTER(FLATFILE_LAYER, "spool_flatfile_write_list_fields");
+   DENTER(FLATFILE_LAYER);
 
    SGE_CHECK_POINTER_FALSE(list, answer_list);
    SGE_CHECK_POINTER_FALSE(buffer, answer_list);
@@ -1608,7 +1607,7 @@ spool_flatfile_read_object(lList **answer_list, const lDescr *descr,
    const spooling_field *fields = fields_in;
    spooling_field *my_fields = NULL;
 
-   DENTER(FLATFILE_LAYER, "spool_flatfile_read_object");
+   DENTER(FLATFILE_LAYER);
 
    SGE_CHECK_POINTER_NULL(descr, answer_list);
    SGE_CHECK_POINTER_NULL(instr, answer_list);
@@ -1743,7 +1742,7 @@ _spool_flatfile_read_live_object(lList **answer_list, lListElem **object,
    dstring buffer = DSTRING_INIT;
    bool stop = false;
 
-   DENTER(FLATFILE_LAYER, "_spool_flatfile_read_live_object");
+   DENTER(FLATFILE_LAYER);
    
 FF_DEBUG("reading object");
 
@@ -2037,7 +2036,7 @@ FF_DEBUG("empty list");
                answer_list_add_sprintf(answer_list, STATUS_EUNKNOWN,
                                        ANSWER_QUALITY_ERROR,
                                        MSG_UNKNOWNOBJECTTYPEFOR_SS, 
-                                       lNm2Str(nm), SGE_FUNC);
+                                       lNm2Str(nm), __func__);
                stop = true;
                continue;
             }
@@ -2084,7 +2083,7 @@ FF_DEBUG("skipping field delimiter");
                   }
 
                   /* Read in the full element for each element in the list */
-                  for_each (ep, list) {
+                  for_each_rw(ep, list) {
                      /* We're passing in NULL for the fields_out parameter
                       * because we don't care about the fields read from sub
                       * lists. */
@@ -2231,7 +2230,7 @@ spool_flatfile_read_list(lList **answer_list, const lDescr *descr,
    const char *end_token = NULL;
    char new_end_token[MAX_STRING_SIZE];
 
-   DENTER(FLATFILE_LAYER, "spool_flatfile_read_list");
+   DENTER(FLATFILE_LAYER);
 
    SGE_CHECK_POINTER_NULL(descr, answer_list);
    SGE_CHECK_POINTER_NULL(instr, answer_list);
@@ -2254,8 +2253,7 @@ spool_flatfile_read_list(lList **answer_list, const lDescr *descr,
                                  ANSWER_QUALITY_ERROR, 
                                  MSG_ERROROPENINGFILEFORREADING_SS,
                                  filepath, strerror(errno));
-         DEXIT;
-         return NULL;
+         DRETURN(NULL);
       }
 
       file_opened = true;
@@ -2331,15 +2329,14 @@ _spool_flatfile_read_list(lList **answer_list, const lDescr *descr,
    lList *list;
    lListElem *object;
 
-   DENTER(FLATFILE_LAYER, "_spool_flatfile_read_list");
+   DENTER(FLATFILE_LAYER);
 
    list = lCreateList("list", descr);
    if (list == NULL) {
       answer_list_add_sprintf(answer_list, STATUS_EUNKNOWN,
                               ANSWER_QUALITY_ERROR,
                               MSG_ERRORCREATINGLIST);
-      DEXIT;
-      return NULL;
+      DRETURN(NULL);
    }
 
    if (instr->record_end == '\0') {
@@ -2458,8 +2455,7 @@ FF_DEBUG("after parsing list");
       lFreeList(&list);
    }
 
-   DEXIT;
-   return list;
+   DRETURN(list);
 }
 
 static spooling_field *get_recursion_field_list(const spool_flatfile_instr *instr)

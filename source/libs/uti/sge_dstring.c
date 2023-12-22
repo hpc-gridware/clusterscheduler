@@ -184,11 +184,10 @@ const char* sge_dstring_append(dstring *sb, const char *a)
 {
    size_t len;  /* length of string a */
 
-   DENTER(DSTRING_LAYER, "sge_dstring_append");
+   DENTER(DSTRING_LAYER);
 
    if (sb == NULL || a == NULL) {
-      DEXIT;
-      return NULL;
+      DRETURN(NULL);
    }
 
    len = strlen(a);
@@ -205,8 +204,7 @@ const char* sge_dstring_append(dstring *sb, const char *a)
       /* only allow to append a string with length 0
          for memory allocation */
       if (len == 0 && sb->s != NULL ) {
-         DEXIT;
-         return sb->s;
+         DRETURN(sb->s);
       }
 
       required = len + sb->length + 1;
@@ -219,8 +217,7 @@ const char* sge_dstring_append(dstring *sb, const char *a)
       sb->length += len;
    }
 
-   DEXIT;
-   return sb->s;
+   DRETURN(sb->s);
 }
 
 /**
@@ -234,7 +231,7 @@ const char* sge_dstring_append(dstring *sb, const char *a)
 */
 const char* sge_dstring_nappend(dstring *sb, const char *a, size_t n) 
 {
-   DENTER(DSTRING_LAYER, "sge_dstring_nappend");
+   DENTER(DSTRING_LAYER);
 
    if (sb == NULL || a == NULL) {
       DRETURN(0);
@@ -269,7 +266,7 @@ const char* sge_dstring_nappend(dstring *sb, const char *a, size_t n)
 
 const char* sge_dstring_append_char(dstring *sb, const char a)
 {
-   DENTER(DSTRING_LAYER, "sge_dstring_append_char");
+   DENTER(DSTRING_LAYER);
 
    if (sb == NULL) {
       DRETURN(NULL);
@@ -305,7 +302,7 @@ const char* sge_dstring_append_time(dstring *buffer, time_t time, bool as_xml)
    struct tm tm_buffer;
 #endif
           
-   DENTER(DSTRING_LAYER, "sge_dstring_append_time");
+   DENTER(DSTRING_LAYER);
 
 #ifdef HAS_LOCALTIME_R
    tm = (struct tm *)localtime_r(&time, &tm_buffer);
@@ -328,7 +325,7 @@ const char* sge_dstring_append_time(dstring *buffer, time_t time, bool as_xml)
 
 const char* sge_dstring_append_mailopt(dstring *sb, u_long32 mailopt)
 {
-   DENTER(DSTRING_LAYER, "sge_dstring_append_time");
+   DENTER(DSTRING_LAYER);
 
    if ((MAIL_AT_ABORT | mailopt) == mailopt) {
       sge_dstring_append_char(sb, MAIL_AT_ABORT_SYM);
@@ -517,15 +514,14 @@ const char *sge_dstring_copy_string(dstring *sb, const char *str)
 {
    const char *ret = NULL;
 
-   DENTER(DSTRING_LAYER, "sge_dstring_copy_string");
+   DENTER(DSTRING_LAYER);
 
    if (sb != NULL) {
       sge_dstring_clear(sb);
       ret = sge_dstring_append(sb, str);
    }
 
-   DEXIT;
-   return ret;
+   DRETURN(ret);
 }
 
 /****** uti/dstring/sge_dstring_copy_dstring() ********************************
@@ -553,15 +549,14 @@ const char *sge_dstring_copy_dstring(dstring *sb1, const dstring *sb2)
 {
    const char *ret = NULL;
 
-   DENTER(DSTRING_LAYER, "sge_dstring_copy_dstring");
+   DENTER(DSTRING_LAYER);
 
    if (sb1 != NULL) {
       sge_dstring_clear(sb1);
       ret = sge_dstring_append(sb1, sge_dstring_get_string(sb2));
    }
 
-   DEXIT;
-   return ret;
+   DRETURN(ret);
 }
 
 /****** uti/dstring/sge_dstring_free() ****************************************
@@ -805,7 +800,7 @@ sge_dstring_split(dstring *string, char character, dstring *before, dstring *aft
 {
    bool ret = true;
 
-   DENTER(DSTRING_LAYER, "sge_dstring_split");
+   DENTER(DSTRING_LAYER);
    if (string != NULL && before != NULL && after != NULL) {
       const char *s = sge_dstring_get_string(string);
       const char *end = strchr(s, character);
@@ -836,7 +831,7 @@ sge_dstring_split(dstring *string, char character, dstring *before, dstring *aft
 *******************************************************************************/
 void sge_dstring_strip_white_space_at_eol(dstring *string)
 {
-   DENTER(DSTRING_LAYER, "sge_strip_white_space_at_eol");
+   DENTER(DSTRING_LAYER);
    if (string != NULL) {
       char *s = (string != NULL) ? string->s : NULL;
 

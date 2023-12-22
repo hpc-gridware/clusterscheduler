@@ -55,7 +55,7 @@ int sge_edit(const char *fname, uid_t myuid, gid_t mygid)
    int status;
    int ws = 0;
 
-   DENTER(TOP_LAYER, "sge_edit");;
+   DENTER(TOP_LAYER);;
 
    if (fname == NULL) {
       ERROR((SGE_EVENT, SFNMAX, MSG_NULLPOINTER));

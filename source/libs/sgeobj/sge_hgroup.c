@@ -130,10 +130,9 @@ hgroup_list_locate(const lList *this_list, const char *group)
 {
    lListElem *ret = NULL;
    
-   DENTER(HGROUP_LAYER, "hgroup_list_locate");
+   DENTER(HGROUP_LAYER);
    ret = lGetElemHostRW(this_list, HGRP_name, group);
-   DEXIT;
-   return ret;
+   DRETURN(ret);
 }
 
 
@@ -164,7 +163,7 @@ hgroup_create(lList **answer_list, const char *name, lList *href_or_groupref, bo
 {
    lListElem *ret = NULL;  /* HGRP_Type */
 
-   DENTER(HGROUP_LAYER, "hgroup_create");
+   DENTER(HGROUP_LAYER);
    if (name != NULL) {
       if(!is_name_validate || hgroup_check_name(answer_list, name) ) {
          ret = lCreateElem(HGRP_Type);
@@ -173,18 +172,17 @@ hgroup_create(lList **answer_list, const char *name, lList *href_or_groupref, bo
             lSetList(ret, HGRP_host_list, href_or_groupref);
          } else {
             SGE_ADD_MSG_ID(sprintf(SGE_EVENT, 
-                                   MSG_MEM_MEMORYALLOCFAILED_S, SGE_FUNC));
+                                   MSG_MEM_MEMORYALLOCFAILED_S, __func__));
             answer_list_add(answer_list, SGE_EVENT, 
                             STATUS_EMALLOC, ANSWER_QUALITY_ERROR);
          }
      }
    } else {
-      SGE_ADD_MSG_ID(sprintf(SGE_EVENT, MSG_INAVLID_PARAMETER_IN_S, SGE_FUNC));
+      SGE_ADD_MSG_ID(sprintf(SGE_EVENT, MSG_INAVLID_PARAMETER_IN_S, __func__));
       answer_list_add(answer_list, SGE_EVENT,
                       STATUS_ERROR1, ANSWER_QUALITY_ERROR);
    }
-   DEXIT;
-   return ret; 
+   DRETURN(ret); 
 }
 
 /****** sgeobj/hgroup/hgroup_add_references() *********************************
@@ -215,10 +213,10 @@ hgroup_add_references(lListElem *this_elem, lList **answer_list,
 {
    bool ret = true;
 
-   DENTER(HGROUP_LAYER, "hgroup_add_references");
+   DENTER(HGROUP_LAYER);
    if (this_elem != NULL && href_or_groupref != NULL) {
       lList *href_list = NULL;   /* HR_Type */
-      lListElem *href;           /* HR_Type */
+      const lListElem *href;           /* HR_Type */
 
       lXchgList(this_elem, HGRP_host_list, &href_list);
       for_each(href, href_or_groupref) {
@@ -231,7 +229,7 @@ hgroup_add_references(lListElem *this_elem, lList **answer_list,
       } 
       lXchgList(this_elem, HGRP_host_list, &href_list);
    } else {
-      SGE_ADD_MSG_ID(sprintf(SGE_EVENT, MSG_INAVLID_PARAMETER_IN_S, SGE_FUNC));
+      SGE_ADD_MSG_ID(sprintf(SGE_EVENT, MSG_INAVLID_PARAMETER_IN_S, __func__));
       answer_list_add(answer_list, SGE_EVENT,
                       STATUS_ERROR1, ANSWER_QUALITY_ERROR);
       ret = false;
@@ -277,7 +275,7 @@ hgroup_find_all_references(const lListElem *this_elem, lList **answer_list,
 {
    bool ret = true;
 
-   DENTER(HGROUP_LAYER, "hgroup_find_all_references");
+   DENTER(HGROUP_LAYER);
    if (this_elem != NULL && master_list != NULL) {
       lList *href_list = NULL;   /* HR_Type */
       const char *name;
@@ -333,7 +331,7 @@ hgroup_find_references(const lListElem *this_elem, lList **answer_list,
 {
    bool ret = true;
 
-   DENTER(HGROUP_LAYER, "hgroup_find_all_references");
+   DENTER(HGROUP_LAYER);
    if (this_elem != NULL && master_list != NULL) {
       const char *name = lGetHost(this_elem, HGRP_name);
       lList *href_list = NULL;   /* HR_Type */
@@ -386,7 +384,7 @@ hgroup_find_all_referencees(const lListElem *this_elem,
 {
    bool ret = true;
 
-   DENTER(HGROUP_LAYER, "hgroup_find_all_referencees");
+   DENTER(HGROUP_LAYER);
    if (this_elem != NULL && occupants_groups != NULL) {
       lList *href_list = NULL;
       const char *name;
@@ -400,8 +398,7 @@ hgroup_find_all_referencees(const lListElem *this_elem,
       }
       lFreeList(&href_list);
    }
-   DEXIT;
-   return ret;
+   DRETURN(ret);
 }
 
 /****** sgeobj/hgroup/hgroup_find_referencees() *********************************
@@ -446,7 +443,7 @@ hgroup_find_referencees(const lListElem *this_elem,
 {
    bool ret = true;
 
-   DENTER(HGROUP_LAYER, "hgroup_find_all_referencees");
+   DENTER(HGROUP_LAYER);
    if (this_elem != NULL) {
       if (occupants_groups != NULL) {
          const char *name = lGetHost(this_elem, HGRP_name);
@@ -467,8 +464,7 @@ hgroup_find_referencees(const lListElem *this_elem,
                                                    occupants_queues);
       }
    }
-   DEXIT;
-   return ret;
+   DRETURN(ret);
 }
 
 /****** sgeobj/hgroup/hgroup_list_exists() *************************************
@@ -500,9 +496,9 @@ hgroup_list_exists(const lList *this_list, lList **answer_list,
 {
    bool ret = true;
 
-   DENTER(HGROUP_LAYER, "hgroup_list_exists");
+   DENTER(HGROUP_LAYER);
    if (href_list != NULL && this_list != NULL) {
-      lListElem *href;
+      const lListElem *href;
 
       for_each(href, href_list) {
          const char *name = lGetHost(href, HR_name);
@@ -521,8 +517,7 @@ hgroup_list_exists(const lList *this_list, lList **answer_list,
          }
       }
    }
-   DEXIT;
-   return ret;
+   DRETURN(ret);
 }
 
 /****** sgeobj/hgroup/hgroup_list_find_matching_and_resolve() *****************
@@ -560,9 +555,9 @@ hgroup_list_find_matching_and_resolve(const lList *this_list,
 {
    bool ret = true;
 
-   DENTER(HGROUP_LAYER, "hgroup_list_find_matching_and_resolve");
+   DENTER(HGROUP_LAYER);
    if (this_list != NULL && hgroup_pattern != NULL) {
-      lListElem *hgroup;
+      const lListElem *hgroup;
 
       for_each(hgroup, this_list) {
          const char *hgroup_name = lGetHost(hgroup, HGRP_name);
@@ -570,7 +565,7 @@ hgroup_list_find_matching_and_resolve(const lList *this_list,
          /* use hostgroup expression */
          if (!sge_eval_expression(TYPE_HOST,hgroup_pattern, hgroup_name, NULL)) {
             lList *tmp_used_hosts = NULL;
-            lListElem *tmp_href = NULL;
+            const lListElem *tmp_href = NULL;
 
             ret = hgroup_find_all_references(hgroup, NULL, this_list,
                                              &tmp_used_hosts, NULL);
@@ -585,8 +580,7 @@ hgroup_list_find_matching_and_resolve(const lList *this_list,
          }
       }
    }
-   DEXIT;
-   return ret;
+   DRETURN(ret);
 }
 
 /****** sgeobj/hgroup/hgroup_list_find_matching() *****************************
@@ -622,9 +616,9 @@ hgroup_list_find_matching(const lList *this_list, lList **answer_list,
 {
    bool ret = true;
 
-   DENTER(HGROUP_LAYER, "hgroup_list_find_matching");
+   DENTER(HGROUP_LAYER);
    if (this_list != NULL && hgroup_pattern != NULL) {
-      lListElem *hgroup;
+      const lListElem *hgroup;
 
       for_each(hgroup, this_list) {
          const char *hgroup_name = lGetHost(hgroup, HGRP_name);
@@ -637,6 +631,5 @@ hgroup_list_find_matching(const lList *this_list, lList **answer_list,
          }
       }
    }
-   DEXIT;
-   return ret;
+   DRETURN(ret);
 }

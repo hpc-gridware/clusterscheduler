@@ -57,10 +57,10 @@ bool
 qrstat_print(lList **answer_list, qrstat_report_handler_t *handler, qrstat_env_t *qrstat_env) {
    bool ret = true;
 
-   DENTER(TOP_LAYER, "qrstat_print");
+   DENTER(TOP_LAYER);
 
    {
-      lListElem *ar = NULL;
+      const lListElem *ar = NULL;
 
       handler->report_start(handler, answer_list);
       if (qrstat_env->is_summary == false &&
@@ -89,9 +89,9 @@ qrstat_print(lList **answer_list, qrstat_report_handler_t *handler, qrstat_env_t
             handler->report_ar_node_duration(handler, answer_list, "duration", lGetUlong(ar, AR_duration));
 
             if (qrstat_env->is_explain || handler->show_summary == false) {
-               lListElem *qinstance;
+               const lListElem *qinstance;
                for_each(qinstance, lGetList(ar, AR_reserved_queues)) {
-                  lListElem *qim = NULL;
+                  const lListElem *qim = NULL;
                   for_each(qim, lGetList(qinstance, QU_message_list)) {
                      const char *message = lGetString(qim, QIM_message);
                      handler->report_ar_node_string(handler, answer_list, "message", message);
@@ -105,7 +105,7 @@ qrstat_print(lList **answer_list, qrstat_report_handler_t *handler, qrstat_env_t
                handler->report_ar_node_string(handler, answer_list, "account", lGetString(ar, AR_account));
 
                if (lGetList(ar, AR_resource_list) != NULL) {
-                  lListElem *resource = NULL;
+                  const lListElem *resource = NULL;
 
                   handler->report_start_resource_list(handler, answer_list);            
                   for_each(resource, lGetList(ar, AR_resource_list)) {
@@ -130,7 +130,7 @@ qrstat_print(lList **answer_list, qrstat_report_handler_t *handler, qrstat_env_t
                }
                
                if (lGetList(ar, AR_granted_slots) != NULL) {
-                  lListElem *resource = NULL;
+                  const lListElem *resource = NULL;
 
                   handler->report_start_granted_slots_list(handler, answer_list);
                   for_each(resource, lGetList(ar, AR_granted_slots)) {
@@ -176,7 +176,7 @@ qrstat_print(lList **answer_list, qrstat_report_handler_t *handler, qrstat_env_t
                }
 
                if (lGetList(ar, AR_mail_list) != NULL) {
-                  lListElem *mail = NULL;
+                  const lListElem *mail = NULL;
 
                   handler->report_start_mail_list(handler, answer_list);
                   for_each(mail, lGetList(ar, AR_mail_list)) {
@@ -189,7 +189,7 @@ qrstat_print(lList **answer_list, qrstat_report_handler_t *handler, qrstat_env_t
                   handler->report_finish_mail_list(handler, answer_list);
                }
                if (lGetList(ar, AR_acl_list) != NULL) {
-                  lListElem *acl = NULL;
+                  const lListElem *acl = NULL;
 
                   handler->report_start_acl_list(handler, answer_list);
                   for_each(acl, lGetList(ar, AR_acl_list)) {
@@ -199,7 +199,7 @@ qrstat_print(lList **answer_list, qrstat_report_handler_t *handler, qrstat_env_t
                   handler->report_finish_acl_list(handler, answer_list);
                }
                if (lGetList(ar, AR_xacl_list) != NULL) {
-                  lListElem *xacl = NULL;
+                  const lListElem *xacl = NULL;
 
                   handler->report_start_xacl_list(handler, answer_list);
                   for_each(xacl, lGetList(ar, AR_xacl_list)) {

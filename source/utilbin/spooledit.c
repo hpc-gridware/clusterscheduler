@@ -86,7 +86,7 @@ init_framework(sge_gdi_ctx_class_t *ctx)
    const char *spooling_lib = ctx->get_spooling_lib(ctx);
    const char *spooling_params = ctx->get_spooling_params(ctx);
 
-   DENTER(TOP_LAYER, "init_framework");
+   DENTER(TOP_LAYER);
 
    /* create spooling context */
    spooling_context = spool_create_dynamic_context(&answer_list, 
@@ -137,7 +137,7 @@ get_descr_from_key(const char *key)
 {
    const lDescr *descr = NULL;
 
-   DENTER(TOP_LAYER, "get_descr_from_key");
+   DENTER(TOP_LAYER);
 
    if (key != NULL) {
       struct saved_vars_s *context = NULL;
@@ -169,7 +169,7 @@ list_objects(const char *key)
    lList *answer_list = NULL;
    lList *stu_list = NULL;
 
-   DENTER(TOP_LAYER, "list_objects");
+   DENTER(TOP_LAYER);
 
    /* 
     * Start transaction to sync with other transaction-protected
@@ -222,7 +222,7 @@ dump_object(const char *key)
    bool dbret;
    lList *answer_list = NULL;
 
-   DENTER(TOP_LAYER, "dump_object");
+   DENTER(TOP_LAYER);
 
    /* start a transaction */
    dbret = spool_transaction(&answer_list, spool_get_default_context(), STC_begin);
@@ -285,7 +285,7 @@ load_object(const char *key, const char *fname)
    const lDescr *descr;
    lListElem *object = NULL;
 
-   DENTER(TOP_LAYER, "load_object");
+   DENTER(TOP_LAYER);
 
    descr    = get_descr_from_key(key);
 
@@ -352,7 +352,7 @@ delete_object(const char *key)
    bool dbret;
    lList *answer_list = NULL;
 
-   DENTER(TOP_LAYER, "delete_object");
+   DENTER(TOP_LAYER);
 
    /* start a transaction */
    dbret = spool_transaction(&answer_list, spool_get_default_context(), STC_begin);

@@ -679,7 +679,7 @@ sge_evc_class_create(sge_gdi_ctx_class_t *sge_gdi_ctx, ev_registration_id reg_id
    sge_evc_t *sge_evc = NULL;
    bool is_qmaster_internal = false;
 
-   DENTER(EVC_LAYER, "sge_evc_class_create");
+   DENTER(EVC_LAYER);
 
    if (!ret) {
       answer_list_add_sprintf(alpp, STATUS_EMALLOC, ANSWER_QUALITY_ERROR, MSG_MEMORY_MALLOCFAILED);
@@ -764,7 +764,7 @@ sge_evc_class_create(sge_gdi_ctx_class_t *sge_gdi_ctx, ev_registration_id reg_id
 
 void sge_evc_class_destroy(sge_evc_class_t **pst)
 {
-   DENTER(EVC_LAYER, "sge_evc_class_destroy");
+   DENTER(EVC_LAYER);
 
    if (pst == NULL || *pst == NULL) {
       DRETURN_VOID;
@@ -777,7 +777,7 @@ void sge_evc_class_destroy(sge_evc_class_t **pst)
 
 static void sge_evc_destroy(sge_evc_t **sge_evc)
 {
-   DENTER(EVC_LAYER, "sge_evc_destroy");
+   DENTER(EVC_LAYER);
    
    if (sge_evc == NULL || *sge_evc == NULL) {
       DRETURN_VOID;
@@ -844,7 +844,7 @@ static bool sge_evc_setup(sge_evc_class_t *thiz,
    const char *name = NULL;
    sge_evc_t *sge_evc = (sge_evc_t*)thiz->sge_evc_handle;
 
-   DENTER(EVC_LAYER, "sge_evc_setup");
+   DENTER(EVC_LAYER);
 
    PROF_START_MEASUREMENT(SGE_PROF_EVENTCLIENT);
 
@@ -998,7 +998,7 @@ static void ec2_mark4registration(sge_evc_class_t *thiz)
    sge_gdi_ctx_class_t *sge_gdi_ctx = thiz->get_gdi_ctx(thiz);
    const char *mastername = sge_gdi_ctx->get_master(sge_gdi_ctx, true);
 
-   DENTER(EVC_LAYER, "ec2_mark4registration");
+   DENTER(EVC_LAYER);
 
    handle = sge_gdi_ctx->get_com_handle(sge_gdi_ctx);
    if (handle != NULL) {
@@ -1031,7 +1031,7 @@ static bool ec2_need_new_registration(sge_evc_class_t *thiz)
 {
    sge_evc_t *sge_evc = NULL;
 
-   DENTER(EVC_LAYER, "ec2_need_new_registration");
+   DENTER(EVC_LAYER);
    sge_evc = (sge_evc_t*) thiz->sge_evc_handle;
    DRETURN(sge_evc->need_register);
 }
@@ -1073,7 +1073,7 @@ static int ec2_set_edtime(sge_evc_class_t *thiz, int interval)
    int ret = 0;
    sge_evc_t *sge_evc = (sge_evc_t *)thiz->sge_evc_handle; 
 
-   DENTER(EVC_LAYER, "ec2_set_edtime");
+   DENTER(EVC_LAYER);
    
    if (sge_evc->ec == NULL) {
       ERROR((SGE_EVENT, SFNMAX, MSG_EVENT_UNINITIALIZED_EC));
@@ -1112,7 +1112,7 @@ static int ec2_get_edtime(sge_evc_class_t *thiz)
    int interval = 0;
    sge_evc_t *sge_evc = (sge_evc_t *)thiz->sge_evc_handle; 
 
-   DENTER(EVC_LAYER, "ec2_get_edtime");
+   DENTER(EVC_LAYER);
 
    if (sge_evc->ec == NULL) {
       ERROR((SGE_EVENT, SFNMAX, MSG_EVENT_UNINITIALIZED_EC));
@@ -1154,7 +1154,7 @@ static bool ec2_set_flush_delay(sge_evc_class_t *thiz, int flush_delay)
    bool ret = false;
    sge_evc_t *sge_evc = (sge_evc_t *)thiz->sge_evc_handle; 
 
-   DENTER(EVC_LAYER, "ec2_set_flush_delay");
+   DENTER(EVC_LAYER);
    
    if (sge_evc->ec == NULL) {
       ERROR((SGE_EVENT, SFNMAX, MSG_EVENT_UNINITIALIZED_EC));
@@ -1195,7 +1195,7 @@ static int ec2_get_flush_delay(sge_evc_class_t *thiz)
    int flush_delay = 0;
    sge_evc_t *sge_evc = (sge_evc_t *)thiz->sge_evc_handle; 
 
-   DENTER(EVC_LAYER, "ec2_get_flush_delay");
+   DENTER(EVC_LAYER);
 
    if (sge_evc->ec == NULL) {
       ERROR((SGE_EVENT, SFNMAX, MSG_EVENT_UNINITIALIZED_EC));
@@ -1244,7 +1244,7 @@ static bool ec2_set_busy_handling(sge_evc_class_t *thiz, ev_busy_handling handli
    bool ret = false;
    sge_evc_t *sge_evc = (sge_evc_t *) thiz->sge_evc_handle;
 
-   DENTER(EVC_LAYER, "ec2_set_busy_handling");
+   DENTER(EVC_LAYER);
    
    if (sge_evc->ec == NULL) {
       ERROR((SGE_EVENT, SFNMAX, MSG_EVENT_UNINITIALIZED_EC));
@@ -1287,7 +1287,7 @@ static ev_busy_handling ec2_get_busy_handling(sge_evc_class_t *thiz)
    ev_busy_handling handling = EV_BUSY_NO_HANDLING;
    sge_evc_t *sge_evc = (sge_evc_t *) thiz->sge_evc_handle;
 
-   DENTER(EVC_LAYER, "ec2_get_busy_handling");
+   DENTER(EVC_LAYER);
 
    if (sge_evc->ec == NULL) {
       ERROR((SGE_EVENT, SFNMAX, MSG_EVENT_UNINITIALIZED_EC));
@@ -1303,7 +1303,7 @@ static bool ec2_deregister_local(sge_evc_class_t *thiz)
    bool ret = false;
    sge_evc_t *sge_evc = (sge_evc_t *) thiz->sge_evc_handle;
 
-   DENTER(EVC_LAYER, "ec2_deregister_local");
+   DENTER(EVC_LAYER);
 
    PROF_START_MEASUREMENT(SGE_PROF_EVENTCLIENT);
 
@@ -1326,7 +1326,7 @@ static bool ec2_deregister_local(sge_evc_class_t *thiz)
          DRETURN(false);
       }
 
-      sge_mutex_lock("event_control_mutex", SGE_FUNC, __LINE__, &(evco->mutex));  
+      sge_mutex_lock("event_control_mutex", __func__, __LINE__, &(evco->mutex));
       
       evco->exit = true;
 
@@ -1341,7 +1341,7 @@ static bool ec2_deregister_local(sge_evc_class_t *thiz)
       printf("EVENT_CLIENT %d has been signaled at %s\n", thiz->ec_get_id(thiz), sge_ctime(0, &dsbuf));
       }
 #endif
-      sge_mutex_unlock("event_control_mutex", SGE_FUNC, __LINE__, &(evco->mutex));
+      sge_mutex_unlock("event_control_mutex", __func__, __LINE__, &(evco->mutex));
 
       if (id != 0 && evc_local && evc_local->remove_func) {
          evc_local->remove_func(id);
@@ -1368,7 +1368,7 @@ ec2_register_local(sge_evc_class_t *thiz, bool exit_on_qmaster_down, lList** alp
    bool ret = true;
    sge_evc_t *sge_evc = (sge_evc_t *) thiz->sge_evc_handle;
 
-   DENTER(EVC_LAYER, "ec2_register_local");
+   DENTER(EVC_LAYER);
 
    PROF_START_MEASUREMENT(SGE_PROF_EVENTCLIENT);
 
@@ -1479,7 +1479,7 @@ static bool ec2_register(sge_evc_class_t *thiz, bool exit_on_qmaster_down, lList
    sge_evc_t *sge_evc = (sge_evc_t *) thiz->sge_evc_handle;
    sge_gdi_ctx_class_t * sge_gdi_ctx = thiz->get_gdi_ctx(thiz);
 
-   DENTER(EVC_LAYER, "ec2_register");
+   DENTER(EVC_LAYER);
 
    PROF_START_MEASUREMENT(SGE_PROF_EVENTCLIENT);
 
@@ -1635,7 +1635,7 @@ static bool ec2_deregister(sge_evc_class_t *thiz)
    sge_evc_t *sge_evc = (sge_evc_t *) thiz->sge_evc_handle;
    sge_gdi_ctx_class_t *sge_gdi_ctx = thiz->get_gdi_ctx(thiz);
 
-   DENTER(EVC_LAYER, "ec2_deregister");
+   DENTER(EVC_LAYER);
 
    PROF_START_MEASUREMENT(SGE_PROF_EVENTCLIENT);
 
@@ -1714,7 +1714,7 @@ static bool ec2_subscribe(sge_evc_class_t *thiz, ev_event event)
    bool ret = false;
    sge_evc_t *sge_evc = (sge_evc_t *) thiz->sge_evc_handle;
    
-   DENTER(EVC_LAYER, "ec2_subscribe");
+   DENTER(EVC_LAYER);
 
    PROF_START_MEASUREMENT(SGE_PROF_EVENTCLIENT);
 
@@ -1746,7 +1746,7 @@ static void ec2_add_subscriptionElement(sge_evc_class_t *thiz, ev_event event, b
 
    sge_evc_t *sge_evc = (sge_evc_t *) thiz->sge_evc_handle;
 
-   DENTER(EVC_LAYER, "ec2_add_subscriptionElement");
+   DENTER(EVC_LAYER);
 
    if (sge_evc->ec == NULL) {
       ERROR((SGE_EVENT, SFNMAX, MSG_EVENT_UNINITIALIZED_EC));
@@ -1784,7 +1784,7 @@ static void ec2_mod_subscription_flush(sge_evc_class_t *thiz, ev_event event, bo
    lListElem *sub_el = NULL; 
    sge_evc_t *sge_evc = (sge_evc_t *) thiz->sge_evc_handle;
 
-   DENTER(EVC_LAYER, "ec2_mod_subscription_flush");
+   DENTER(EVC_LAYER);
   
    if (sge_evc->ec == NULL) {
       ERROR((SGE_EVENT, SFNMAX, MSG_EVENT_UNINITIALIZED_EC));
@@ -1839,7 +1839,7 @@ static bool ec2_mod_subscription_where(sge_evc_class_t *thiz, ev_event event, co
    bool ret = false;
    sge_evc_t *sge_evc = (sge_evc_t *) thiz->sge_evc_handle;
 
-   DENTER(EVC_LAYER, "ec2_mod_subscription_where");
+   DENTER(EVC_LAYER);
  
    if (sge_evc->ec == NULL) {
       ERROR((SGE_EVENT, SFNMAX, MSG_EVENT_UNINITIALIZED_EC));
@@ -1870,7 +1870,7 @@ static void ec2_remove_subscriptionElement(sge_evc_class_t *thiz, ev_event event
    lListElem *sub_el = NULL;
    sge_evc_t *sge_evc = (sge_evc_t *) thiz->sge_evc_handle;
    
-   DENTER(EVC_LAYER, "ec2_remove_subscriptionElement");
+   DENTER(EVC_LAYER);
 
    if (sge_evc->ec == NULL) {
       ERROR((SGE_EVENT, SFNMAX, MSG_EVENT_UNINITIALIZED_EC));
@@ -1967,7 +1967,7 @@ static bool ec2_unsubscribe(sge_evc_class_t *thiz, ev_event event)
    bool ret = false;
    sge_evc_t *sge_evc = (sge_evc_t *) thiz->sge_evc_handle;
    
-   DENTER(EVC_LAYER, "ec2_unsubscribe");
+   DENTER(EVC_LAYER);
 
    PROF_START_MEASUREMENT(SGE_PROF_EVENTCLIENT);
 
@@ -2069,7 +2069,7 @@ static int ec2_get_flush(sge_evc_class_t *thiz, ev_event event)
    int ret = EV_NO_FLUSH;
    sge_evc_t *sge_evc = (sge_evc_t *) thiz->sge_evc_handle;
    
-   DENTER(EVC_LAYER, "ec2_get_flush");
+   DENTER(EVC_LAYER);
 
    PROF_START_MEASUREMENT(SGE_PROF_EVENTCLIENT);
 
@@ -2130,7 +2130,7 @@ static bool ec2_set_flush(sge_evc_class_t *thiz, ev_event event, bool flush, int
    bool ret = false;
    sge_evc_t *sge_evc = (sge_evc_t *) thiz->sge_evc_handle;
    
-   DENTER(EVC_LAYER, "ec2_set_flush");
+   DENTER(EVC_LAYER);
 
    PROF_START_MEASUREMENT(SGE_PROF_EVENTCLIENT);
 
@@ -2197,7 +2197,7 @@ static bool ec2_unset_flush(sge_evc_class_t *thiz, ev_event event)
    bool ret = false;
    sge_evc_t *sge_evc = (sge_evc_t *) thiz->sge_evc_handle;
    
-   DENTER(EVC_LAYER, "ec2_unset_flush");
+   DENTER(EVC_LAYER);
 
    PROF_START_MEASUREMENT(SGE_PROF_EVENTCLIENT);
 
@@ -2304,7 +2304,7 @@ static bool ec2_set_busy(sge_evc_class_t *thiz, int busy)
    bool ret = false;
    sge_evc_t *sge_evc = (sge_evc_t *) thiz->sge_evc_handle;
 
-   DENTER(EVC_LAYER, "ec2_set_busy");
+   DENTER(EVC_LAYER);
 
    if (sge_evc->ec == NULL) {
       ERROR((SGE_EVENT, SFNMAX, MSG_EVENT_UNINITIALIZED_EC));
@@ -2346,7 +2346,7 @@ static bool ec2_get_busy(sge_evc_class_t *thiz)
    bool ret = false;
    sge_evc_t *sge_evc = (sge_evc_t *) thiz->sge_evc_handle;
 
-   DENTER(EVC_LAYER, "ec2_get_busy");
+   DENTER(EVC_LAYER);
 
    if (sge_evc->ec == NULL) {
       ERROR((SGE_EVENT, SFNMAX, MSG_EVENT_UNINITIALIZED_EC));
@@ -2384,7 +2384,7 @@ static bool ec2_set_session(sge_evc_class_t *thiz, const char *session)
    bool ret = false;
    sge_evc_t *sge_evc = (sge_evc_t *) thiz->sge_evc_handle;
 
-   DENTER(EVC_LAYER, "ec2_set_session");
+   DENTER(EVC_LAYER);
 
    if (sge_evc->ec == NULL) {
       ERROR((SGE_EVENT, SFNMAX, MSG_EVENT_UNINITIALIZED_EC));
@@ -2422,7 +2422,7 @@ static const char *ec2_get_session(sge_evc_class_t *thiz)
    const char *ret = NULL;
    sge_evc_t *sge_evc = (sge_evc_t *) thiz->sge_evc_handle;
 
-   DENTER(EVC_LAYER, "ec2_get_session");
+   DENTER(EVC_LAYER);
 
    if (sge_evc->ec == NULL) {
       ERROR((SGE_EVENT, SFNMAX, MSG_EVENT_UNINITIALIZED_EC));
@@ -2450,7 +2450,7 @@ static ev_registration_id ec2_get_id(sge_evc_class_t *thiz)
 {
    sge_evc_t *sge_evc = (sge_evc_t *) thiz->sge_evc_handle;
 
-   DENTER(EVC_LAYER, "ec2_get_id");
+   DENTER(EVC_LAYER);
    if (sge_evc->ec == NULL) {
       ERROR((SGE_EVENT, SFNMAX, MSG_EVENT_UNINITIALIZED_EC));
       DRETURN(EV_ID_INVALID);
@@ -2495,7 +2495,7 @@ static bool ec2_commit_local(sge_evc_class_t *thiz, lList **alpp)
    bool ret = false;
    sge_evc_t *sge_evc = (sge_evc_t *) thiz->sge_evc_handle;
 
-   DENTER(EVC_LAYER, "ec2_commit_local");
+   DENTER(EVC_LAYER);
 
    PROF_START_MEASUREMENT(SGE_PROF_EVENTCLIENT);
 
@@ -2531,8 +2531,7 @@ static bool ec2_commit_local(sge_evc_class_t *thiz, lList **alpp)
    }
 
    PROF_STOP_MEASUREMENT(SGE_PROF_EVENTCLIENT);
-   DEXIT;
-   return ret;
+   DRETURN(ret);
 }
 
 static bool ec2_ack(sge_evc_class_t *thiz) 
@@ -2540,7 +2539,7 @@ static bool ec2_ack(sge_evc_class_t *thiz)
    bool ret = false;
    sge_evc_t *sge_evc = (sge_evc_t *) thiz->sge_evc_handle;
 
-   DENTER(EVC_LAYER, "ec2_ack");
+   DENTER(EVC_LAYER);
 
    /* not yet initialized? Cannot send modification to qmaster! */
    if (sge_evc->ec == NULL) {
@@ -2590,7 +2589,7 @@ static bool ec2_commit(sge_evc_class_t *thiz, lList **alpp)
    sge_evc_t *sge_evc = (sge_evc_t *) thiz->sge_evc_handle;
    sge_gdi_ctx_class_t * sge_gdi_ctx = thiz->get_gdi_ctx(thiz);
 
-   DENTER(EVC_LAYER, "ec2_commit");
+   DENTER(EVC_LAYER);
 
    PROF_START_MEASUREMENT(SGE_PROF_EVENTCLIENT);
 
@@ -2674,7 +2673,7 @@ static bool ec2_commit_multi(sge_evc_class_t *thiz, lList **malpp, state_gdi_mul
    sge_evc_t *sge_evc = (sge_evc_t *) thiz->sge_evc_handle;
    sge_gdi_ctx_class_t * sge_gdi_ctx = thiz->get_gdi_ctx(thiz);
 
-   DENTER(EVC_LAYER, "ec2_commit_multi");
+   DENTER(EVC_LAYER);
 
    PROF_START_MEASUREMENT(SGE_PROF_EVENTCLIENT);
 
@@ -2777,7 +2776,7 @@ static bool ec2_get(sge_evc_class_t *thiz, lList **event_list, bool exit_on_qmas
    sge_evc_t *sge_evc = (sge_evc_t *) thiz->sge_evc_handle;
    sge_gdi_ctx_class_t *sge_gdi_ctx = thiz->get_gdi_ctx(thiz);
 
-   DENTER(EVC_LAYER, "ec2_get");
+   DENTER(EVC_LAYER);
 
    PROF_START_MEASUREMENT(SGE_PROF_EVENTCLIENT);
 
@@ -3001,11 +3000,12 @@ static bool ec2_get(sge_evc_class_t *thiz, lList **event_list, bool exit_on_qmas
 static bool ck_event_number(lList *lp, u_long32 *waiting_for, u_long32 *wrong_number)
 {
    bool ret = true;
-   lListElem *ep, *tmp;
+   lListElem *ep;
+   lListElem *tmp;
    u_long32 i, j;
    int skipped;
   
-   DENTER(EVC_LAYER, "gdi2_ck_event_number");
+   DENTER(EVC_LAYER);
 
    PROF_START_MEASUREMENT(SGE_PROF_EVENTCLIENT);
 
@@ -3060,7 +3060,7 @@ static bool ck_event_number(lList *lp, u_long32 *waiting_for, u_long32 *wrong_nu
          }
 
          /* ensure number of events increase */
-         for_each (ep, lp) {
+         for_each_rw(ep, lp) {
             if ((j=lGetUlong(ep, ET_number)) != i++) {
                /* 
                   do not change waiting_for because 
@@ -3124,7 +3124,7 @@ static bool get_event_list(sge_evc_class_t *thiz, int sync, lList **report_list,
    char commproc[CL_MAXHOSTLEN+1] = "";
    u_short id = 0;
 
-   DENTER(EVC_LAYER, "get_event_list");
+   DENTER(EVC_LAYER);
 
    PROF_START_MEASUREMENT(SGE_PROF_EVENTCLIENT);
 
@@ -3163,7 +3163,7 @@ sge_gdi2_evc_setup(sge_evc_class_t **evc_ref, sge_gdi_ctx_class_t *sge_gdi_ctx,
 {
    sge_evc_class_t *evc = NULL;
 
-   DENTER(EVC_LAYER, "sge_gdi2_evc_setup");
+   DENTER(EVC_LAYER);
 
    if (evc_ref == NULL) {
       answer_list_add_sprintf(alpp, STATUS_ESEMANTIC, ANSWER_QUALITY_ERROR, MSG_NULLPOINTER);
@@ -3183,7 +3183,7 @@ sge_gdi2_evc_setup(sge_evc_class_t **evc_ref, sge_gdi_ctx_class_t *sge_gdi_ctx,
 static ec_control_t *ec2_get_event_control(sge_evc_class_t *thiz) {
    ec_control_t *event_control = NULL;
 
-   DENTER(EVC_LAYER, "ec2_get_event_control");
+   DENTER(EVC_LAYER);
    if (thiz && thiz->ec_is_initialized(thiz)) {
       sge_gdi_ctx_class_t *gdi_ctx = thiz->get_gdi_ctx(thiz);
       if (gdi_ctx && gdi_ctx->is_qmaster_internal_client(gdi_ctx)) {
@@ -3202,7 +3202,7 @@ static bool ec2_get_local(sge_evc_class_t *thiz, lList **elist, bool exit_on_qma
    dstring dsbuf;
    char buffer[1024];
 
-   DENTER(EVC_LAYER, "ec2_get_local");
+   DENTER(EVC_LAYER);
 
    sge_dstring_init(&dsbuf, buffer, sizeof(buffer));
 
@@ -3220,7 +3220,7 @@ static bool ec2_get_local(sge_evc_class_t *thiz, lList **elist, bool exit_on_qma
       thiz->ec_register(thiz, exit_on_qmaster_down, NULL, NULL);
    }
 
-   sge_mutex_lock("evco_event_thread_cond_mutex", SGE_FUNC, __LINE__, 
+   sge_mutex_lock("evco_event_thread_cond_mutex", __func__, __LINE__,
                   &(evco->mutex));
 
    current_time = sge_get_gmt();
@@ -3245,7 +3245,7 @@ printf("EVENT_CLIENT %d ends to wait at %s\n", thiz->ec_get_id(thiz), sge_ctime(
 
    DPRINTF(("EVENT_CLIENT id=%d TAKES FROM EVENT QUEUE at %s\n", thiz->ec_get_id(thiz), sge_ctime(0, &dsbuf)));
 
-   sge_mutex_unlock("evco_event_thread_cond_mutex", SGE_FUNC, __LINE__, 
+   sge_mutex_unlock("evco_event_thread_cond_mutex", __func__, __LINE__,
                     &(evco->mutex));
 
    thiz->ec_ack(thiz);
@@ -3262,7 +3262,7 @@ printf("EVENT_CLIENT %d ends to wait at %s\n", thiz->ec_get_id(thiz), sge_ctime(
 
 static void ec2_wait_local(sge_evc_class_t *thiz) {
 
-   DENTER(EVC_LAYER, "ec2_wait_local");
+   DENTER(EVC_LAYER);
    /*
    ** reset busy, important otherwise no new events
    */
@@ -3277,7 +3277,7 @@ static int ec2_signal_local(sge_evc_class_t *thiz, lList **alpp, lList *event_li
    ec_control_t *evco = NULL;
    int num_events = 0;
 
-   DENTER(EVC_LAYER, "ec2_signal_local");
+   DENTER(EVC_LAYER);
 
    if (thiz == NULL) {
       DPRINTF(("EVENT UPDATE FUNCTION thiz IS NULL\n"));
@@ -3290,7 +3290,7 @@ static int ec2_signal_local(sge_evc_class_t *thiz, lList **alpp, lList *event_li
    }
 
    if ((num_events = lGetNumberOfElem(lGetList(lFirst(event_list), REP_list))) > 0) {
-      sge_mutex_lock("event_control_mutex", SGE_FUNC, __LINE__, &(evco->mutex));  
+      sge_mutex_lock("event_control_mutex", __func__, __LINE__, &(evco->mutex));
       if (evco->new_events != NULL) {
          lList *events = NULL;
          lXchgList(lFirstRW(event_list), REP_list, &(events));
@@ -3312,7 +3312,7 @@ sge_dstring_init(&dsbuf, buf, sizeof(buf));
 printf("EVENT_CLIENT %d has been signaled at %s\n", thiz->ec_get_id(thiz), sge_ctime(0, &dsbuf));
 }
 #endif
-      sge_mutex_unlock("event_control_mutex", SGE_FUNC, __LINE__, &(evco->mutex));
+      sge_mutex_unlock("event_control_mutex", __func__, __LINE__, &(evco->mutex));
    }
 
    DRETURN(num_events);
@@ -3331,7 +3331,7 @@ static bool ec2_evco_triggered(sge_evc_class_t *thiz) {
    bool ret = false;
    ec_control_t *evco = NULL;
 
-   DENTER(EVC_LAYER, "ec2_evco_triggered");
+   DENTER(EVC_LAYER);
    if (thiz == NULL) {
       DRETURN(false); 
    }
@@ -3339,9 +3339,9 @@ static bool ec2_evco_triggered(sge_evc_class_t *thiz) {
    if (evco == NULL) {
       DRETURN(false);
    }
-   sge_mutex_lock("event_control_mutex", SGE_FUNC, __LINE__, &(evco->mutex));  
+   sge_mutex_lock("event_control_mutex", __func__, __LINE__, &(evco->mutex));
    ret = evco->triggered;
-   sge_mutex_unlock("event_control_mutex", SGE_FUNC, __LINE__, &(evco->mutex));
+   sge_mutex_unlock("event_control_mutex", __func__, __LINE__, &(evco->mutex));
 
    DRETURN(ret);
 }
@@ -3350,7 +3350,7 @@ static bool ec2_evco_exit(sge_evc_class_t *thiz) {
    bool ret = false;
    ec_control_t *evco = NULL;
 
-   DENTER(EVC_LAYER, "ec2_evco_exit");
+   DENTER(EVC_LAYER);
    if (thiz == NULL) {
       DRETURN(false); 
    }
@@ -3358,9 +3358,9 @@ static bool ec2_evco_exit(sge_evc_class_t *thiz) {
    if (evco == NULL) {
       DRETURN(false);
    }
-   sge_mutex_lock("event_control_mutex", SGE_FUNC, __LINE__, &(evco->mutex));  
+   sge_mutex_lock("event_control_mutex", __func__, __LINE__, &(evco->mutex));
    ret = evco->exit;
-   sge_mutex_unlock("event_control_mutex", SGE_FUNC, __LINE__, &(evco->mutex));
+   sge_mutex_unlock("event_control_mutex", __func__, __LINE__, &(evco->mutex));
 
    DRETURN(ret);
 }

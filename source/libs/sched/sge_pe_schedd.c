@@ -75,11 +75,10 @@ int slots
    const char *alloc_rule;
    int ret = 0;
 
-   DENTER(TOP_LAYER, "sge_pe_slots_per_host");
+   DENTER(TOP_LAYER);
 
    if (!pep) { /* seq jobs */
-      DEXIT;
-      return 1;
+      DRETURN(1);
    }
 
    alloc_rule = lGetString(pep, PE_allocation_rule);
@@ -99,30 +98,25 @@ int slots
          ret = 0; 
       }
 
-      DEXIT;
-      return ret;
+      DRETURN(ret);
    }
 
    if  (!strcasecmp(alloc_rule, "$pe_slots")) {
-      DEXIT;
-      return slots;
+      DRETURN(slots);
    }
 
    if  (!strcasecmp(alloc_rule, "$fill_up")) {
-      DEXIT;
-      return ALLOC_RULE_FILLUP;
+      DRETURN(ALLOC_RULE_FILLUP);
    }
       
    if  (!strcasecmp(alloc_rule, "$round_robin")) {
-      DEXIT;
-      return ALLOC_RULE_ROUNDROBIN;
+      DRETURN(ALLOC_RULE_ROUNDROBIN);
    }
 
    ERROR((SGE_EVENT, MSG_PE_XFAILEDPARSINGALLOCATIONRULEY_SS , 
       lGetString(pep, PE_name), alloc_rule));
 
-   DEXIT;
-   return 0;
+   DRETURN(0);
 }
 
 
@@ -169,7 +163,7 @@ dispatch_t pe_match_static(const sge_assignment_t *a)
 {
    int total_slots;
 
-   DENTER(TOP_LAYER, "pe_match_static");
+   DENTER(TOP_LAYER);
 
    total_slots = (int)lGetUlong(a->pe, PE_slots);
    if (total_slots == 0) { 
@@ -178,8 +172,7 @@ dispatch_t pe_match_static(const sge_assignment_t *a)
             total_slots, a->pe_name, a->job_id));
          schedd_mes_add(a->monitor_alpp, a->monitor_next_run, a->job_id,
                         SCHEDD_INFO_TOTALPESLOTSNOTINRANGE_S, a->pe_name);
-      DEXIT;
-      return DISPATCH_NEVER_CAT;
+      DRETURN(DISPATCH_NEVER_CAT);
    }
 
    if (!sge_has_access_(a->user, a->group, lGetList(a->pe, PE_user_list), 

@@ -64,11 +64,10 @@ void job_report_print_usage(const lListElem *job_report, FILE *fp)
 {
    lListElem *uep;
 
-   DENTER(TOP_LAYER, "job_report_print_usage");
+   DENTER(TOP_LAYER);
 
    if (!job_report) {
-      DEXIT;
-      return;
+      DRETURN_VOID;
    }
 
    for_each(uep, lGetList(job_report, JR_usage)) {
@@ -81,8 +80,7 @@ void job_report_print_usage(const lListElem *job_report, FILE *fp)
       }
    }
 
-   DEXIT;
-   return;
+   DRETURN_VOID;
 }
 #endif
 
@@ -115,7 +113,7 @@ void job_report_init_from_job(lListElem *job_report,
    u_long32 ja_task_id = lGetUlong(ja_task, JAT_task_number);
    const lListElem *queue;
 
-   DENTER(TOP_LAYER, "job_report_init_from_job");
+   DENTER(TOP_LAYER);
 
    lSetUlong(job_report, JR_job_number, job_id);
    lSetUlong(job_report, JR_ja_task_number, ja_task_id);
@@ -141,7 +139,7 @@ void job_report_init_from_job(lListElem *job_report,
       lSetString(job_report, JR_queue_name, lGetString(queue, JG_qname));
    }
 
-   DEXIT;
+   DRETURN_VOID;
 }
 
 void job_report_init_from_job_with_usage(lListElem *job_report,
@@ -154,7 +152,7 @@ void job_report_init_from_job_with_usage(lListElem *job_report,
    lListElem *obj;
    int nm;
 
-   DENTER(TOP_LAYER, "job_report_init_from_job_with_usage");
+   DENTER(TOP_LAYER);
 
    /*
     * initialize the job jeport like any other job report...
@@ -187,6 +185,6 @@ void job_report_init_from_job_with_usage(lListElem *job_report,
    lSetDouble(ep, UA_value, 0.0);
 
    lSetList(job_report, JR_usage, lCopyList("", lGetList(obj, nm)));
-   DEXIT;
+   DRETURN_VOID;
 }
 

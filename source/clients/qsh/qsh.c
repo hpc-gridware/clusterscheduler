@@ -259,12 +259,12 @@ pid_t child_pid = 0;
 
 static void forward_signal(int sig)
 {
-   DENTER(TOP_LAYER, "forward_signal");
+   DENTER(TOP_LAYER);
    if (child_pid > 0) {
       DPRINTF(("forwarding signal %d to child %d\n", sig, child_pid));
       kill(child_pid, sig);
    }
-   DEXIT;
+   DRETURN_VOID;
 }
 
 /****** Interactive/qsh/open_qrsh_socket() ***************************************
@@ -301,14 +301,13 @@ static int open_qrsh_socket(int *port) {
    socklen_t length;
 #endif
  
-   DENTER(TOP_LAYER, "open_qrsh_socket");
+   DENTER(TOP_LAYER);
 
    /* create socket */
    sock = socket(AF_INET, SOCK_STREAM, 0);
    if (sock == -1) {
       ERROR((SGE_EVENT, MSG_QSH_ERROROPENINGSTREAMSOCKET_S, strerror(errno)));
       sge_prof_cleanup();
-      DEXIT;
       SGE_EXIT(NULL, 1);
    }
 
@@ -319,7 +318,6 @@ static int open_qrsh_socket(int *port) {
    if (bind(sock, (struct sockaddr *) &server, sizeof server) == -1) {
       ERROR((SGE_EVENT, MSG_QSH_ERRORBINDINGSTREAMSOCKET_S, strerror(errno)));
       sge_prof_cleanup();
-      DEXIT;
       SGE_EXIT(NULL, 1);
    }
    
@@ -328,7 +326,6 @@ static int open_qrsh_socket(int *port) {
    if (getsockname(sock, (struct sockaddr *)&server, &length) == -1) {
       ERROR((SGE_EVENT, MSG_QSH_ERRORGETTINGSOCKETNAME_S, strerror(errno)));
       sge_prof_cleanup();
-      DEXIT;
       SGE_EXIT(NULL, 1);
    }
    
@@ -337,12 +334,10 @@ static int open_qrsh_socket(int *port) {
 
    if (listen(sock, 1) == -1) {
       ERROR((SGE_EVENT, MSG_QSH_ERRORLISTENINGONSOCKETCONNECTION_S, strerror(errno)));
-      DEXIT;
-      return 0;
+      DRETURN(0);
    }
    
-   DEXIT;
-   return sock;
+   DRETURN(sock);
 }   
 
 /****** Interactive/qsh/wait_for_qrsh_socket() ***************************************
@@ -377,7 +372,7 @@ static int wait_for_qrsh_socket(int sock, int timeout)
    fd_set ready;
    struct timeval to;
 
-   DENTER(TOP_LAYER, "wait_for_qrsh_socket");
+   DENTER(TOP_LAYER);
 
    /* wait for anyone connecting to socket, with timeout */
    FD_ZERO(&ready);
@@ -407,9 +402,7 @@ static int wait_for_qrsh_socket(int sock, int timeout)
          }
          break;
    } 
-   DEXIT;
-
-   return msgsock;
+   DRETURN(msgsock);
 }               
 
 /****** Interactive/qsh/read_from_qrsh_socket() ***************************************
@@ -444,7 +437,7 @@ static char *read_from_qrsh_socket(int msgsock)
    static char buffer[1024];
    char *c  = buffer;
   
-   DENTER(TOP_LAYER, "read_from_qrsh_socket");
+   DENTER(TOP_LAYER);
 
    memset(buffer, 0, 1024);
    do {
@@ -452,20 +445,17 @@ static char *read_from_qrsh_socket(int msgsock)
 
       if ((rval = read(msgsock, c, 1)) == -1) {
          ERROR((SGE_EVENT, MSG_QSH_ERRORREADINGSTREAMMESSAGE_S, strerror(errno)));
-         DEXIT;
-         return NULL;
+         DRETURN(NULL);
       } else {
          if (rval == 0) {
             ERROR((SGE_EVENT, SFNMAX, MSG_QSH_ERRORENDINGCONNECTION));
-            DEXIT;
-            return NULL; 
+            DRETURN(NULL); 
          } 
       }
    } while (*c++ != 0); 
 
    close(msgsock);
-   DEXIT;
-   return buffer;
+   DRETURN(buffer);
 }
 
 /****** Interactive/qsh/get_remote_exit() ***************************************
@@ -505,7 +495,7 @@ static int get_remote_exit_code(int sock)
 {
    int msgsock;
 
-   DENTER(TOP_LAYER, "get_remote_exit_code");
+   DENTER(TOP_LAYER);
    
    VERBOSE_LOG((stderr, SFNMAX, MSG_QSH_READINGEXITCODEFROMSHEPHERD));
 
@@ -519,14 +509,12 @@ static int get_remote_exit_code(int sock)
             *message = 0;
          }
          VERBOSE_LOG((stderr, "%s\n", s_ret));
-         DEXIT;
-         return atoi(s_ret);
+         DRETURN(atoi(s_ret));
       }
    }
 
    ERROR((SGE_EVENT, SFNMAX, MSG_QSH_ERRORREADINGRETURNCODEOFREMOTECOMMAND));
-   DEXIT;
-   return -1;
+   DRETURN(-1);
 }
 
 /****** Interactive/qsh/quote_argument() ***************************************
@@ -564,7 +552,7 @@ static int get_remote_exit_code(int sock)
 static const char *quote_argument(const char *arg) {
    char *new_arg = NULL;
 
-   DENTER(TOP_LAYER, "quote_argument");
+   DENTER(TOP_LAYER);
    
    if (arg == NULL) {
       return arg;
@@ -574,13 +562,11 @@ static const char *quote_argument(const char *arg) {
 
    if (new_arg == NULL) {
       ERROR((SGE_EVENT, SFNMAX, MSG_QSH_MALLOCFAILED));
-      DEXIT;
-      return NULL;
+      DRETURN(NULL);
    }
  
    sprintf(new_arg, "'%s'", arg);
-   DEXIT;
-   return new_arg;
+   DRETURN(new_arg);
 }
 
 /****** Interactive/qsh/parse_result_list() ***************************************
@@ -611,10 +597,10 @@ static const char *quote_argument(const char *arg) {
 */
 static int parse_result_list(lList *alp, int *alp_error)
 {
-   lListElem *aep;
+   const lListElem *aep;
    int do_exit = 0;
 
-   DENTER(TOP_LAYER, "parse_result_list");
+   DENTER(TOP_LAYER);
 
    *alp_error = 0;
 
@@ -640,8 +626,7 @@ static int parse_result_list(lList *alp, int *alp_error)
       }
    }
 
-   DEXIT;
-   return do_exit;
+   DRETURN(do_exit);
 }
 
 
@@ -702,14 +687,13 @@ static int start_client_program(const char *client_name,
                                 int noshell,
                                 int sock)
 {
-   DENTER(TOP_LAYER, "start_client_program");
+   DENTER(TOP_LAYER);
 
    child_pid = fork();
 
    if (child_pid == -1) {
       ERROR((SGE_EVENT, MSG_QSH_CANNOTFORKPROCESS_S, strerror(errno))); 
-      DEXIT;
-      return 1;
+      DRETURN(1);
    }
 
    if (child_pid) {
@@ -755,8 +739,7 @@ static int start_client_program(const char *client_name,
                ret = get_remote_exit_code(sock);
             }
 
-            DEXIT;
-            return ret;
+            DRETURN(ret);
          }
       }
    } else {
@@ -825,7 +808,6 @@ static int start_client_program(const char *client_name,
 
       execvp(args[0], args);
       ERROR((SGE_EVENT, MSG_EXEC_CANTEXECXYZ_SS, args[0], strerror(errno)));
-      DEXIT;
       exit(EXIT_FAILURE);
    }
 
@@ -889,14 +871,13 @@ static int get_client_server_context(int msgsock, char **port, char **job_dir, c
    char *s_code = NULL;
    char *data   = NULL;
    
-   DENTER(TOP_LAYER, "get_client_server_context");
+   DENTER(TOP_LAYER);
    
    data = read_from_qrsh_socket(msgsock);
 
    if (data == NULL || *data == 0) {
       ERROR((SGE_EVENT, MSG_QSH_ERRORREADINGCONTEXTFROMQLOGIN_STARTER_S,"qlogin_starter"));
-      DEXIT;
-      return 0;
+      DRETURN(0);
    }
 
    DPRINTF(("qlogin_starter sent: %s\n", data));
@@ -905,8 +886,7 @@ static int get_client_server_context(int msgsock, char **port, char **job_dir, c
 
    if (s_code == NULL) {
       ERROR((SGE_EVENT, MSG_QSH_ERRORREADINGCONTEXTFROMQLOGIN_STARTER_S,"qlogin_starter"));
-      DEXIT;
-      return 0;
+      DRETURN(0);
    }
    
    if (strcmp(s_code, "0") == 0) {  /* qlogin_starter reports valid data */
@@ -920,15 +900,13 @@ static int get_client_server_context(int msgsock, char **port, char **job_dir, c
          }
       }
       ERROR((SGE_EVENT, MSG_QSH_ERRORREADINGCONTEXTFROMQLOGIN_STARTER_S,"qlogin_starter"));
-      DEXIT;
-      return 0;
+      DRETURN(0);
    } else {                        /* qlogin_starter reports error */
       char *message = strtok(NULL, "\n");
       ERROR((SGE_EVENT, "%s: %s\n", s_code, message == NULL ? "" : message));
    }
 
-   DEXIT;
-   return 0;
+   DRETURN(0);
 }
 
 /****** Interactive/qsh/get_client_name() ***************************************
@@ -990,7 +968,7 @@ get_client_name(sge_gdi_ctx_class_t *ctx, int is_rsh, int is_rlogin, int inherit
    const char *cell_root = ctx->get_cell_root(ctx);
    const char *sge_root = ctx->get_sge_root(ctx);
 
-   DENTER(TOP_LAYER, "get_client_name");
+   DENTER(TOP_LAYER);
 
    /* 
     * In case of qrsh -inherit, try to read client_command from
@@ -1030,8 +1008,7 @@ get_client_name(sge_gdi_ctx_class_t *ctx, int is_rsh, int is_rlogin, int inherit
       lFreeList(&conf_list);
       lFreeElem(&global);
       lFreeElem(&local);
-      DEXIT;
-      return NULL;
+      DRETURN(NULL);
    }
 
    /* search for config entry */
@@ -1041,8 +1018,7 @@ get_client_name(sge_gdi_ctx_class_t *ctx, int is_rsh, int is_rlogin, int inherit
       lFreeList(&conf_list);
       lFreeElem(&global);
       lFreeElem(&local);
-      DEXIT;
-      return NULL;
+      DRETURN(NULL);
    }
 
    /* use config entry, if found */
@@ -1349,7 +1325,7 @@ void block_notification_signals(void)
 
    const char *signal_name;
 
-   DENTER(TOP_LAYER, "block_notification_signals");
+   DENTER(TOP_LAYER);
 
    /* check if they have been redefined */
    signal_name = getenv("SGE_NOTIFY_SUSP_SIGNAL"); 
@@ -1386,7 +1362,7 @@ int main(int argc, char **argv)
    lList *alp = NULL;
    lList *answer = NULL;
 
-   lListElem *aep = NULL;
+   const lListElem *aep = NULL;
    u_long32 status = STATUS_OK;
    u_long32 quality;
    u_long32 job_id = 0;
@@ -1511,7 +1487,7 @@ int main(int argc, char **argv)
    job = lCreateElem(JB_Type);
    
    if (job == NULL) {
-      sprintf(SGE_EVENT, MSG_MEM_MEMORYALLOCFAILED_S, SGE_FUNC);
+      sprintf(SGE_EVENT, MSG_MEM_MEMORYALLOCFAILED_S, __func__);
       answer_list_add(&answer, SGE_EVENT, 
                       STATUS_EMALLOC, ANSWER_QUALITY_ERROR);
       do_exit = parse_result_list(alp, &alp_error);
@@ -2308,8 +2284,7 @@ int main(int argc, char **argv)
    sge_free(&client_name);
    sge_prof_cleanup();
    SGE_EXIT((void **)&ctx, exit_status);
-   DEXIT;
-   return exit_status;
+   DRETURN(exit_status);
 }
 
 static void delete_job(sge_gdi_ctx_class_t *ctx, u_long32 job_id, lList *jlp) 
@@ -2342,12 +2317,11 @@ static void remove_unknown_opts(lList *lp, u_long32 jb_now, int tightly_integrat
 {
    lListElem *ep, *next;
 
-   DENTER(TOP_LAYER, "remove_unknown_opts");
+   DENTER(TOP_LAYER);
 
    /* no options given - nothing to remove */
    if (lp == NULL) {
-      DEXIT;
-      return;
+      DRETURN_VOID;
    }
 
    /* loop over all options and remove the ones that are not allowed */
@@ -2456,6 +2430,6 @@ static void remove_unknown_opts(lList *lp, u_long32 jb_now, int tightly_integrat
       }
    }
 
-   DEXIT;
+   DRETURN_VOID;
 }
 

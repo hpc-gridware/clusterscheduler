@@ -2898,8 +2898,8 @@ static void remove_markers(void);
 static void remove_backslash(void);
 static void remove_newline(void);
 
-/* We define SGE_FUNC so that we can use SGE_ASSERT. */
-#define SGE_FUNC "spool_lex"
+/* We define __func__ so that we can use SGE_ASSERT. */
+#define __func__ "spool_lex"
 #define YY_BREAK
 #ifndef YYLMAX
 #  define YYLMAX MAX_STRING_SIZE

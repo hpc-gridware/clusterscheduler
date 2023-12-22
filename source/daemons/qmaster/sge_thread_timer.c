@@ -101,7 +101,7 @@
 static void
 sge_timer_cleanup_monitor(monitoring_t *monitor)
 {
-   DENTER(TOP_LAYER, "sge_timer_cleanup_monitor");
+   DENTER(TOP_LAYER);
    sge_monitor_free(monitor);
    DRETURN_VOID;
 }
@@ -125,7 +125,7 @@ sge_timer_cleanup_monitor(monitoring_t *monitor)
 void
 sge_timer_register_event_handler(void)
 {
-   DENTER(TOP_LAYER, "sge_timer_register_event_handler");
+   DENTER(TOP_LAYER);
    
    /* 
     * recurring events 
@@ -188,7 +188,7 @@ void sge_timer_start_periodic_tasks(void)
 {
    te_event_t ev = NULL;
 
-   DENTER(TOP_LAYER, "sge_timer_start_periodic_tasks");
+   DENTER(TOP_LAYER);
 
    /* recurring events */
    ev = te_new_event(15, TYPE_JOB_NUMBER_EVENT, RECURRING_EVENT, 0, 0, "job_number_changed");
@@ -215,8 +215,7 @@ void sge_timer_start_periodic_tasks(void)
    te_add_event(ev);
    te_free_event(&ev);
 
-   DEXIT;
-   return;
+   DRETURN_VOID;
 } 
 
 void 
@@ -226,7 +225,7 @@ sge_timer_initialize(sge_gdi_ctx_class_t *ctx, monitoring_t *monitor)
    lList *answer_list = NULL;
    dstring thread_name = DSTRING_INIT;
 
-   DENTER(TOP_LAYER, "sge_timer_initialize");
+   DENTER(TOP_LAYER);
 
    te_init();
    DPRINTF(("timed event module has been initialized\n"));
@@ -266,7 +265,7 @@ sge_timer_terminate(void)
 {
    cl_thread_settings_t* thread = NULL;
 
-   DENTER(TOP_LAYER, "sge_timer_terminate");
+   DENTER(TOP_LAYER);
 
    thread = cl_thread_list_get_first_thread(Main_Control.timer_thread_pool);
    while (thread != NULL) {
@@ -343,7 +342,7 @@ sge_timer_main(void *arg)
    time_t now;
    time_t next_prof_output = 0;
 
-   DENTER(TOP_LAYER, "sge_timer_main");
+   DENTER(TOP_LAYER);
 
    DPRINTF(("started"));
    cl_thread_func_startup(thread_config);
@@ -359,7 +358,7 @@ sge_timer_main(void *arg)
 
       thread_start_stop_profiling();
 
-      sge_mutex_lock("event_control_mutex", SGE_FUNC, __LINE__, &Event_Control.mutex);
+      sge_mutex_lock("event_control_mutex", __func__, __LINE__, &Event_Control.mutex);
       
       te_check_time(time(NULL));
       
@@ -385,10 +384,10 @@ sge_timer_main(void *arg)
 
          if ((Event_Control.next < te->when) || (Event_Control.deleted == true))
          {
-            DPRINTF(("%s: event list changed - next:"sge_u32" --> start over\n", SGE_FUNC, 
+            DPRINTF(("%s: event list changed - next:"sge_u32" --> start over\n", __func__,
                      Event_Control.next));
 
-            sge_mutex_unlock("event_control_mutex", SGE_FUNC, __LINE__, &Event_Control.mutex);
+            sge_mutex_unlock("event_control_mutex", __func__, __LINE__, &Event_Control.mutex);
 
             te_free_event(&te);
             sge_monitor_output(p_monitor);
@@ -401,7 +400,7 @@ sge_timer_main(void *arg)
       lDechainElem(Event_Control.list, le);
       lFreeElem(&le);
 
-      sge_mutex_unlock("event_control_mutex", SGE_FUNC, __LINE__, &Event_Control.mutex);
+      sge_mutex_unlock("event_control_mutex", __func__, __LINE__, &Event_Control.mutex);
 
       te_scan_table_and_deliver(ctx, te, p_monitor);
       te_free_event(&te);

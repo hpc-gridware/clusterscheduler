@@ -89,10 +89,10 @@ char *rhost
    int pos, ret;
    const char *userset_name;
 
-   DENTER(TOP_LAYER, "sge_del_userset");
+   DENTER(TOP_LAYER);
 
    if ( !ep || !ruser || !rhost ) {
-      CRITICAL((SGE_EVENT, MSG_SGETEXT_NULLPTRPASSED_S, SGE_FUNC));
+      CRITICAL((SGE_EVENT, MSG_SGETEXT_NULLPTRPASSED_S, __func__));
       answer_list_add(alpp, SGE_EVENT, STATUS_EUNKNOWN, ANSWER_QUALITY_ERROR);
       DRETURN(STATUS_EUNKNOWN);
    }
@@ -100,14 +100,14 @@ char *rhost
    /* ep is no userset element, if ep has no US_name */
    if ((pos = lGetPosViaElem(ep, US_name, SGE_NO_ABORT)) < 0) {
       CRITICAL((SGE_EVENT, MSG_SGETEXT_MISSINGCULLFIELD_SS,
-            lNm2Str(US_name), SGE_FUNC));
+            lNm2Str(US_name), __func__));
       answer_list_add(alpp, SGE_EVENT, STATUS_EUNKNOWN, ANSWER_QUALITY_ERROR);
       DRETURN(STATUS_EUNKNOWN);
    }
 
    userset_name = lGetPosString(ep, pos);
    if (!userset_name) {
-      CRITICAL((SGE_EVENT, MSG_SGETEXT_NULLPTRPASSED_S, SGE_FUNC));
+      CRITICAL((SGE_EVENT, MSG_SGETEXT_NULLPTRPASSED_S, __func__));
       answer_list_add(alpp, SGE_EVENT, STATUS_EUNKNOWN, ANSWER_QUALITY_ERROR);
       DRETURN(STATUS_EUNKNOWN);
    }
@@ -149,16 +149,16 @@ char *rhost
 static void 
 sge_change_queue_version_acl(sge_gdi_ctx_class_t *ctx, const char *acl_name) 
 {
-   lListElem *cqueue = NULL;
+   const lListElem *cqueue = NULL;
    const lList *master_cqueue_list = *object_type_get_master_list(SGE_TYPE_CQUEUE);
 
-   DENTER(TOP_LAYER, "sge_change_queue_version_acl");
+   DENTER(TOP_LAYER);
 
    for_each(cqueue, master_cqueue_list) {
       const lList *qinstance_list = lGetList(cqueue, CQ_qinstances);
       lListElem *qinstance = NULL;
 
-      for_each(qinstance, qinstance_list) {
+      for_each_rw(qinstance, qinstance_list) {
          const lList *acl_list = lGetList(qinstance, QU_acl);
          const lList *xacl_list = lGetList(qinstance, QU_xacl);
          const lListElem *acl = lGetElemStr(acl_list, US_name, acl_name);
@@ -209,7 +209,7 @@ lList **alpp
    lCondition *where = NULL;
    lEnumeration *what = NULL;
 
-   DENTER(TOP_LAYER, "sge_verify_department_entries");
+   DENTER(TOP_LAYER);
 
    /*
     * make tests for the defaultdepartment
@@ -244,7 +244,7 @@ lList **alpp
    ** element is already contained in another department list.
    ** This requires expanding the group entries.
    */
-   for_each(up, depts) {
+   for_each_rw(up, depts) {
       answers = do_depts_conflict(new_userset, up); 
       if (answers)
          break;
@@ -282,7 +282,7 @@ static int dept_is_valid_defaultdepartment(lListElem *dept,
                                            lList **answer_list)
 {
    int ret = 1;
-   DENTER(TOP_LAYER, "dept_is_valid_defaultdepartment");
+   DENTER(TOP_LAYER);
 
    if (dept != NULL) {
       /* test 'type' */
@@ -322,7 +322,7 @@ static int acl_is_valid_acl(lListElem *acl,
                             lList **answer_list)
 {
    int ret = 1;
-   DENTER(TOP_LAYER, "acl_is_valid_acl");
+   DENTER(TOP_LAYER);
 
    if (acl != NULL) {
       if (!(lGetUlong(acl, US_type) & US_DEPT)) {
@@ -345,11 +345,11 @@ static lList* do_depts_conflict(lListElem *new_dep, lListElem *old_dep)
 {
    const lList *new_users = NULL;
    const lList *old_users = NULL; 
-   lListElem *np;
+   const lListElem *np;
    lList *alp = NULL;
    const char *nname;
    
-   DENTER(TOP_LAYER, "do_depts_conflict");
+   DENTER(TOP_LAYER);
    
    new_users = lGetList(new_dep, US_entries);
    old_users = lGetList(old_dep, US_entries);
@@ -385,10 +385,10 @@ static lList* do_depts_conflict(lListElem *new_dep, lListElem *old_dep)
 */
 int set_department(lList **alpp, lListElem *job, const lList *userset_list)
 {
-   lListElem *dep;
+   const lListElem *dep;
    const char *owner, *group; 
 
-   DENTER(TOP_LAYER, "set_department");
+   DENTER(TOP_LAYER);
 
    /* first try to find a department searching the user name directly
       in a department */
@@ -445,8 +445,8 @@ lList **alpp,
 const char *userset_name 
 ) {
    int ret = STATUS_OK;
-   lListElem *ep = NULL;
-   lListElem *cqueue = NULL;
+   const lListElem *ep = NULL;
+   const lListElem *cqueue = NULL;
    lList* user_lists = NULL;
    const lListElem *cl;
    const lList *master_cqueue_list = *object_type_get_master_list(SGE_TYPE_CQUEUE);
@@ -454,7 +454,7 @@ const char *userset_name
    const lList *master_project_list = *object_type_get_master_list(SGE_TYPE_PROJECT);
    const lList *master_ehost_list = *object_type_get_master_list(SGE_TYPE_EXECHOST);
 
-   DENTER(TOP_LAYER, "verify_userset_deletion");
+   DENTER(TOP_LAYER);
 
    /*
     * fix for bug 6422335
@@ -641,7 +641,7 @@ void userset_update_categories(const lList *added, const lList *removed)
    lListElem *acl;
    const lList *master_userset_list = *object_type_get_master_list(SGE_TYPE_USERSET);
 
-   DENTER(TOP_LAYER, "userset_update_categories");
+   DENTER(TOP_LAYER);
 
    for_each (ep, added) {
       u = lGetString(ep, US_name);
@@ -711,7 +711,7 @@ int userset_mod(sge_gdi_ctx_class_t *ctx, lList **alpp, lListElem *new_userset,
    const lList *master_cqueue_list = *object_type_get_master_list(SGE_TYPE_CQUEUE);
    const lList *master_ar_list = *object_type_get_master_list(SGE_TYPE_AR);
    
-   DENTER(TOP_LAYER, "userset_mod");
+   DENTER(TOP_LAYER);
 
    /* ---- US_name */
    if (add) {
@@ -764,12 +764,12 @@ int userset_mod(sge_gdi_ctx_class_t *ctx, lList **alpp, lListElem *new_userset,
    ** check advance reservations
    */
    if (!add) {
-      lListElem *cqueue;
+      const lListElem *cqueue;
       lList *new_master_userset_list = NULL;
 
       for_each(cqueue, master_cqueue_list) {
          const lList *qinstance_list = lGetList(cqueue, CQ_qinstances);
-         lListElem *qinstance = NULL;
+         const lListElem *qinstance = NULL;
 
          for_each(qinstance, qinstance_list) {
             lListElem *ar;
@@ -786,7 +786,7 @@ int userset_mod(sge_gdi_ctx_class_t *ctx, lList **alpp, lListElem *new_userset,
                continue;
             }
 
-            for_each(ar, master_ar_list) {
+            for_each_rw(ar, master_ar_list) {
                if (lGetElemStr(lGetList(ar, AR_granted_slots), JG_qname, queue_name)) {
                   if (new_master_userset_list == NULL) {
                      lListElem *old_userset;
@@ -853,7 +853,7 @@ int userset_spool(sge_gdi_ctx_class_t *ctx, lList **alpp, lListElem *userset, gd
    bool dbret;
    bool job_spooling = ctx->get_job_spooling(ctx);
 
-   DENTER(TOP_LAYER, "userset_spool");
+   DENTER(TOP_LAYER);
 
    dbret = spool_write_object(&answer_list, spool_get_default_context(), userset, 
                               lGetString(userset, US_name), SGE_TYPE_USERSET,
@@ -901,10 +901,10 @@ int userset_success(sge_gdi_ctx_class_t *ctx, lListElem *ep, lListElem *old_ep, 
 {
    const char *userset_name;
    dstring ds = DSTRING_INIT;
-   lListElem *rqs;
+   const lListElem *rqs;
    const lList *master_rqs_list = *object_type_get_master_list(SGE_TYPE_RQS);
 
-   DENTER(TOP_LAYER, "userset_success");
+   DENTER(TOP_LAYER);
 
    userset_name = lGetString(ep, US_name);
 

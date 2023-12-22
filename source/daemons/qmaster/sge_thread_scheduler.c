@@ -94,7 +94,7 @@ static void schedd_set_serf_log_file(sge_gdi_ctx_class_t *ctx)
 {
    const char *cell_root = ctx->get_cell_root(ctx);
 
-   DENTER(TOP_LAYER, "set_schedd_serf_log_path");
+   DENTER(TOP_LAYER);
 
    if (!*schedule_log_path) {
       snprintf(schedule_log_path, sizeof(schedule_log_path), "%s/%s/%s", cell_root, "common", schedule_log_file);
@@ -113,7 +113,7 @@ schedd_serf_record_func(u_long32 job_id, u_long32 ja_taskid, const char *state,
 {
    FILE *fp;
 
-   DENTER(TOP_LAYER, "schedd_serf_record_func");
+   DENTER(TOP_LAYER);
 
    if (!(fp = fopen(schedule_log_path, "a"))) {
       DRETURN_VOID;
@@ -138,7 +138,7 @@ static void schedd_serf_newline(u_long32 time)
 {
    FILE *fp;
 
-   DENTER(TOP_LAYER, "schedd_serf_newline");
+   DENTER(TOP_LAYER);
    fp = fopen(schedule_log_path, "a");
    if (fp) {
       /* well, some kind of new line indicating a new schedule run */
@@ -155,7 +155,7 @@ FCLOSE_ERROR:
 static void
 sge_scheduler_cleanup_monitor(monitoring_t *monitor)
 {
-   DENTER(TOP_LAYER, "sge_scheduler_cleanup_monitor");
+   DENTER(TOP_LAYER);
    sge_monitor_free(monitor);
    DRETURN_VOID;
 }
@@ -163,7 +163,7 @@ sge_scheduler_cleanup_monitor(monitoring_t *monitor)
 static void
 sge_scheduler_cleanup_event_client(sge_evc_class_t *evc)
 {
-   DENTER(TOP_LAYER, "sge_scheduler_cleanup_event_client");
+   DENTER(TOP_LAYER);
    sge_mirror_shutdown(evc);
    DRETURN_VOID;
 }
@@ -173,10 +173,10 @@ static void sge_scheduler_wait_for_event(sge_evc_class_t *evc, lList **event_lis
    int wait_ret;
    bool do_ack = false;
 
-   DENTER(TOP_LAYER, "sge_scheduler_wait_for_event");
+   DENTER(TOP_LAYER);
 
 
-   sge_mutex_lock("event_control_mutex", SGE_FUNC, __LINE__, &Scheduler_Control.mutex);
+   sge_mutex_lock("event_control_mutex", __func__, __LINE__, &Scheduler_Control.mutex);
 
    if (!Scheduler_Control.triggered) {
       struct timespec ts;
@@ -202,7 +202,7 @@ static void sge_scheduler_wait_for_event(sge_evc_class_t *evc, lList **event_lis
       do_ack = true;
    }
 
-   sge_mutex_unlock("event_control_mutex", SGE_FUNC, __LINE__, &Scheduler_Control.mutex);
+   sge_mutex_unlock("event_control_mutex", __func__, __LINE__, &Scheduler_Control.mutex);
 
    if (do_ack) {
       if (lGetElemUlong(*event_list, ET_type, sgeE_ACK_TIMEOUT) != NULL) {
@@ -255,7 +255,7 @@ static void sge_scheduler_wait_for_event(sge_evc_class_t *evc, lList **event_lis
 void 
 sge_scheduler_initialize(sge_gdi_ctx_class_t *ctx, lList **answer_list)
 {
-   DENTER(TOP_LAYER, "sge_scheduler_initialize");
+   DENTER(TOP_LAYER);
 
    /* initialize debugging instrumentation */
    {
@@ -265,7 +265,7 @@ sge_scheduler_initialize(sge_gdi_ctx_class_t *ctx, lList **answer_list)
       }
    }
 
-   sge_mutex_lock("master scheduler struct", SGE_FUNC, __LINE__, &(Master_Scheduler.mutex));
+   sge_mutex_lock("master scheduler struct", __func__, __LINE__, &(Master_Scheduler.mutex));
 
    if (Master_Scheduler.is_running == false) {
       bool start_thread = true;
@@ -321,7 +321,7 @@ sge_scheduler_initialize(sge_gdi_ctx_class_t *ctx, lList **answer_list)
       ERROR((SGE_EVENT, MSG_THREAD_XISRUNNING_S, threadnames[SCHEDD_THREAD]));
       answer_list_add(answer_list, SGE_EVENT, STATUS_EUNKNOWN, ANSWER_QUALITY_ERROR);
    }
-   sge_mutex_unlock("master scheduler struct", SGE_FUNC, __LINE__, &(Master_Scheduler.mutex));
+   sge_mutex_unlock("master scheduler struct", __func__, __LINE__, &(Master_Scheduler.mutex));
    DRETURN_VOID;
 }
 
@@ -359,9 +359,9 @@ sge_scheduler_initialize(sge_gdi_ctx_class_t *ctx, lList **answer_list)
 void
 sge_scheduler_cleanup_thread(void *ctx_ref)
 {
-   DENTER(TOP_LAYER, "sge_scheduler_cleanup_thread");
+   DENTER(TOP_LAYER);
    
-   sge_mutex_lock("master scheduler struct", SGE_FUNC, __LINE__, &(Master_Scheduler.mutex));
+   sge_mutex_lock("master scheduler struct", __func__, __LINE__, &(Master_Scheduler.mutex));
 
    if (Master_Scheduler.is_running) {
       cl_thread_settings_t* thread = NULL;
@@ -397,7 +397,7 @@ sge_scheduler_cleanup_thread(void *ctx_ref)
       sge_gdi_ctx_class_destroy((sge_gdi_ctx_class_t **)ctx_ref);
    }
 
-   sge_mutex_unlock("master scheduler struct", SGE_FUNC, __LINE__, &(Master_Scheduler.mutex));
+   sge_mutex_unlock("master scheduler struct", __func__, __LINE__, &(Master_Scheduler.mutex));
 
    DRETURN_VOID;
 }
@@ -434,9 +434,9 @@ sge_scheduler_cleanup_thread(void *ctx_ref)
 void
 sge_scheduler_terminate(sge_gdi_ctx_class_t *ctx, lList **answer_list)
 {
-   DENTER(TOP_LAYER, "sge_scheduler_terminate");
+   DENTER(TOP_LAYER);
    
-   sge_mutex_lock("master scheduler struct", SGE_FUNC, __LINE__, &(Master_Scheduler.mutex));
+   sge_mutex_lock("master scheduler struct", __func__, __LINE__, &(Master_Scheduler.mutex));
 
    if (Master_Scheduler.is_running) {
       pthread_t thread_id;
@@ -465,12 +465,12 @@ sge_scheduler_terminate(sge_gdi_ctx_class_t *ctx, lList **answer_list)
        */
       ;
 
-      sge_mutex_unlock("master scheduler struct", SGE_FUNC, __LINE__, &(Master_Scheduler.mutex));
+      sge_mutex_unlock("master scheduler struct", __func__, __LINE__, &(Master_Scheduler.mutex));
 
       INFO((SGE_EVENT, MSG_THREAD_XTERMINATED_S, threadnames[SCHEDD_THREAD]));
       answer_list_add(answer_list, SGE_EVENT, STATUS_EUNKNOWN, ANSWER_QUALITY_INFO);
    } else {
-      sge_mutex_unlock("master scheduler struct", SGE_FUNC, __LINE__, &(Master_Scheduler.mutex));
+      sge_mutex_unlock("master scheduler struct", __func__, __LINE__, &(Master_Scheduler.mutex));
 
       ERROR((SGE_EVENT, MSG_THREAD_XNOTRUNNING_S, threadnames[SCHEDD_THREAD]));
       answer_list_add(answer_list, SGE_EVENT, STATUS_EUNKNOWN, ANSWER_QUALITY_ERROR);
@@ -521,7 +521,7 @@ sge_scheduler_main(void *arg)
    bool do_endlessly = true;
    bool local_ret = true;
 
-   DENTER(TOP_LAYER, "sge_scheduler_main");
+   DENTER(TOP_LAYER);
 
    memset(&where_what, 0, sizeof(where_what));
 
@@ -746,7 +746,7 @@ sge_scheduler_main(void *arg)
              * Within the scheduler we do only need QIs
              */
             {
-               lListElem *cqueue = NULL;
+               const lListElem *cqueue = NULL;
                lEnumeration *what_queue3 = NULL;
 
                for_each(cqueue, master_cqueue_list) {

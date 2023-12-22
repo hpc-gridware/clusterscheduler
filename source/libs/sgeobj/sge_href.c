@@ -80,7 +80,7 @@ href_list_add(lList **this_list, lList **answer_list, const char *host_or_group)
 {
    bool ret = true;
 
-   DENTER(HOSTREF_LAYER, "href_list_add");
+   DENTER(HOSTREF_LAYER);
    if (this_list != NULL && host_or_group != NULL) {
       if (!href_list_has_member(*this_list, host_or_group)) {
          lListElem *h_or_g;   /* HR_Type */
@@ -93,13 +93,12 @@ href_list_add(lList **this_list, lList **answer_list, const char *host_or_group)
          }
       }
    } else {
-      SGE_ADD_MSG_ID(sprintf(SGE_EVENT, MSG_INAVLID_PARAMETER_IN_S, SGE_FUNC));
+      SGE_ADD_MSG_ID(sprintf(SGE_EVENT, MSG_INAVLID_PARAMETER_IN_S, __func__));
       answer_list_add(answer_list, SGE_EVENT, 
                       STATUS_ERROR1, ANSWER_QUALITY_ERROR);
       ret = false;
    }
-   DEXIT;
-   return ret;
+   DRETURN(ret);
 }
 
 /****** sgeobj/href/href_list_has_member() ************************************
@@ -129,7 +128,7 @@ href_list_has_member(const lList *this_list, const char *host_or_group)
 {
    bool ret = false;
 
-   DENTER(HOSTREF_LAYER, "href_list_has_member");
+   DENTER(HOSTREF_LAYER);
    if (this_list != NULL && host_or_group != NULL) {
       if (href_list_locate(this_list, host_or_group) != NULL) {
          ret = true;
@@ -141,8 +140,7 @@ href_list_has_member(const lList *this_list, const char *host_or_group)
        */
       ;
    }
-   DEXIT;
-   return ret;
+   DRETURN(ret);
 }
 
 /****** sgeobj/href/href_list_compare() ***************************************
@@ -195,11 +193,11 @@ href_list_compare(const lList *this_list, lList **answer_list,
                   lList **equity_groups) 
 {
    bool ret = true;
-   lListElem *this_elem;   /* HR_Type */
+   const lListElem *this_elem;   /* HR_Type */
   
-   DENTER(HOSTREF_LAYER, "href_list_compare"); 
+   DENTER(HOSTREF_LAYER); 
 
-   for_each(this_elem, this_list) {
+   for_each_rw(this_elem, this_list) {
       const char *host_or_group = lGetHost(this_elem, HR_name);
 
       if (!href_list_has_member(list, host_or_group)) {
@@ -272,13 +270,12 @@ href_list_find_diff(const lList *this_list, lList **answer_list,
 {
    bool ret = true;
 
-   DENTER(HOSTREF_LAYER, "href_list_find_diff");
+   DENTER(HOSTREF_LAYER);
    ret &= href_list_compare(this_list, answer_list, list,
                             add_hosts, add_groups, NULL, NULL);
    ret &= href_list_compare(list, answer_list, this_list,
                                rem_hosts, rem_groups, NULL, NULL);
-   DEXIT;
-   return ret;
+   DRETURN(ret);
 }
 
 /****** sgeobj/href/href_list_find_effective_diff() ***************************
@@ -319,7 +316,7 @@ href_list_find_effective_diff(lList **answer_list, const lList *add_groups,
 {
    bool ret = true;
 
-   DENTER(HOSTREF_LAYER, "href_list_find_effective_diff");
+   DENTER(HOSTREF_LAYER);
    if (ret && add_groups != NULL) {
       ret &= href_list_find_all_references(add_groups, answer_list,
                                            master_list, add_hosts, NULL);
@@ -345,8 +342,7 @@ href_list_find_effective_diff(lList **answer_list, const lList *add_groups,
          tmp_rem_hosts = NULL;
       }
    }
-   DEXIT;
-   return ret;
+   DRETURN(ret);
 }
 
 /****** sgeobj/href/href_list_locate() ****************************************
@@ -372,12 +368,11 @@ href_list_locate(const lList *this_list, const char *name)
 {
    lListElem *ret = NULL;  /* HR_Type */
 
-   DENTER(HOSTREF_LAYER, "href_list_locate");
+   DENTER(HOSTREF_LAYER);
    if (this_list != NULL && name != NULL) {
       ret = lGetElemHostRW(this_list, HR_name, name);
    }
-   DEXIT;
-   return ret;
+   DRETURN(ret);
 }
 
 /****** sgeobj/href/href_list_find_references() *******************************
@@ -418,9 +413,9 @@ href_list_find_references(const lList *this_list, lList **answer_list,
 {
    bool ret = true;
 
-   DENTER(HOSTREF_LAYER, "href_list_find_references");
+   DENTER(HOSTREF_LAYER);
    if (this_list != NULL && master_list != NULL) { 
-      lListElem *href;  /* HR_Type */
+      const lListElem *href;  /* HR_Type */
 
       /*
        * Handle each reference which was given by the calling context
@@ -444,7 +439,7 @@ href_list_find_references(const lList *this_list, lList **answer_list,
 
          if (hgroup != NULL) {
             const lList *href_list2 = lGetList(hgroup, HGRP_host_list);
-            lListElem *href2;    /* HR_Type */
+            const lListElem *href2;    /* HR_Type */
 
             /* 
              * Add each element contained in the sublist of the hostgroup
@@ -466,8 +461,7 @@ href_list_find_references(const lList *this_list, lList **answer_list,
          }
       } 
    } 
-   DEXIT;
-   return ret;
+   DRETURN(ret);
 }
 
 /****** sgeobj/href/href_list_find_all_references() ***************************
@@ -508,7 +502,7 @@ href_list_find_all_references(const lList *this_list, lList **answer_list,
 {
    bool ret = true;
 
-   DENTER(HOSTREF_LAYER, "href_list_find_all_references");
+   DENTER(HOSTREF_LAYER);
    if (this_list != NULL && master_list != NULL) {
       lList *tmp_used_groups = NULL;
       bool free_tmp_list = false;
@@ -561,8 +555,7 @@ href_list_find_all_references(const lList *this_list, lList **answer_list,
          lFreeList(&tmp_used_groups);
       }
    } 
-   DEXIT;
-   return ret;
+   DRETURN(ret);
 }
 
 /****** sgeobj/href/href_list_find_referencees() ******************************
@@ -600,15 +593,15 @@ href_list_find_referencees(const lList *this_list, lList **answer_list,
 {
    bool ret = true;
 
-   DENTER(HOSTREF_LAYER, "href_list_find_referencees");
+   DENTER(HOSTREF_LAYER);
    if (this_list != NULL && occupant_groups != NULL) {
-      lListElem *href;  /* HR_Type */
+      const lListElem *href;  /* HR_Type */
 
       for_each(href, this_list) {
          const char *name = lGetHost(href, HR_name);
 
          if (is_hgroup_name(name)) {
-            lListElem *hgroup;   /* HGRP_Type */
+            const lListElem *hgroup;   /* HGRP_Type */
 
             for_each(hgroup, master_list) {
                const lList *href_list = lGetList(hgroup, HGRP_host_list);
@@ -623,13 +616,12 @@ href_list_find_referencees(const lList *this_list, lList **answer_list,
          } 
       }
    } else {
-      SGE_ADD_MSG_ID(sprintf(SGE_EVENT, MSG_INAVLID_PARAMETER_IN_S, SGE_FUNC));
+      SGE_ADD_MSG_ID(sprintf(SGE_EVENT, MSG_INAVLID_PARAMETER_IN_S, __func__));
       answer_list_add(answer_list, SGE_EVENT,
                       STATUS_ERROR1, ANSWER_QUALITY_ERROR);
       ret = false;
    }
-   DEXIT;
-   return ret;
+   DRETURN(ret);
 }
 
 /****** sgeobj/href/href_list_find_all_referencees() **************************
@@ -668,7 +660,7 @@ href_list_find_all_referencees(const lList *this_list, lList **answer_list,
 {
    bool ret = true;
 
-   DENTER(HOSTREF_LAYER, "href_list_find_all_referencees");
+   DENTER(HOSTREF_LAYER);
    if (this_list != NULL && occupant_groups != NULL) {
 
       /*
@@ -695,13 +687,12 @@ href_list_find_all_referencees(const lList *this_list, lList **answer_list,
          } 
       }
    } else {
-      SGE_ADD_MSG_ID(sprintf(SGE_EVENT, MSG_INAVLID_PARAMETER_IN_S, SGE_FUNC));
+      SGE_ADD_MSG_ID(sprintf(SGE_EVENT, MSG_INAVLID_PARAMETER_IN_S, __func__));
       answer_list_add(answer_list, SGE_EVENT,
                       STATUS_ERROR1, ANSWER_QUALITY_ERROR);
       ret = false;
    }
-   DEXIT;
-   return ret;
+   DRETURN(ret);
 }
 
 /****** sgeobj/href/href_list_resolve_hostnames() *****************************
@@ -734,11 +725,11 @@ href_list_resolve_hostnames(lList *this_list, lList **answer_list,
 {
    bool ret = true;
 
-   DENTER(HOSTREF_LAYER, "href_list_resolve_hostnames");
+   DENTER(HOSTREF_LAYER);
    if (this_list != NULL) {
       lListElem *href = NULL;
 
-      for_each(href, this_list) {
+      for_each_rw (href, this_list) {
          const char *name = lGetHost(href, HR_name);
 
          if (!is_hgroup_name(name)) {
@@ -758,8 +749,7 @@ href_list_resolve_hostnames(lList *this_list, lList **answer_list,
          }
       }
    }
-   DEXIT;
-   return ret;
+   DRETURN(ret);
 }
 
 /****** sgeobj/href/href_list_append_to_dstring() *****************************
@@ -789,9 +779,9 @@ href_list_append_to_dstring(const lList *this_list, dstring *string)
    const char *const delim = " ";
    bool ret = true;
 
-   DENTER(HOSTREF_LAYER, "href_list_append_to_dstring");
+   DENTER(HOSTREF_LAYER);
    if (this_list != NULL && string != NULL) {
-      lListElem *href;  /* HR_Type */
+      const lListElem *href;  /* HR_Type */
       bool is_first = true;
 
       for_each(href, this_list) {
@@ -806,8 +796,7 @@ href_list_append_to_dstring(const lList *this_list, dstring *string)
    } else {
       ret = false;
    } 
-   DEXIT;
-   return ret;
+   DRETURN(ret);
 }
 
 /****** sgeobj/href/href_list_remove_existing() *******************************
@@ -839,9 +828,9 @@ href_list_remove_existing(lList **this_list, lList **answer_list,
 {
    bool ret = true;
 
-   DENTER(HOSTREF_LAYER, "href_list_remove_existing");
+   DENTER(HOSTREF_LAYER);
    if (this_list != NULL && *this_list != NULL && list != NULL) {
-      lListElem * href = NULL;
+      const lListElem * href = NULL;
 
       for_each(href, list) {
          const char *hostname = lGetHost(href, HR_name);
@@ -855,8 +844,7 @@ href_list_remove_existing(lList **this_list, lList **answer_list,
          lFreeList(this_list);
       }
    }
-   DEXIT;
-   return ret;
+   DRETURN(ret);
 }
 
 /****** sgeobj/href/href_list_debug_print() ***********************************
@@ -880,10 +868,10 @@ href_list_remove_existing(lList **this_list, lList **answer_list,
 void
 href_list_debug_print(const lList *this_list, const char *prefix) 
 {
-   lListElem *href = NULL;
+   const lListElem *href = NULL;
    dstring message = DSTRING_INIT;
    bool is_first_hostname = true;
-   DENTER(TOP_LAYER, "href_list_debug_print");
+   DENTER(TOP_LAYER);
 
    for_each(href, this_list) {
       const char *hostname = lGetHost(href, HR_name);
@@ -901,7 +889,7 @@ href_list_debug_print(const lList *this_list, const char *prefix)
       DPRINTF((sge_dstring_get_string(&message)));
    }
    sge_dstring_free(&message);
-   DEXIT;
+   DRETURN_VOID;
 }
 
 /****** sgeobj/href/href_list_make_uniq() *************************************
@@ -927,7 +915,7 @@ href_list_make_uniq(lList *this_list, lList **answer_list)
    lListElem *elem = NULL;
    lListElem *next_elem = NULL;
 
-   DENTER(TOP_LAYER, "href_list_make_uniq");
+   DENTER(TOP_LAYER);
    next_elem = lFirstRW(this_list);
    while((elem = next_elem) != NULL) {
       lListElem *elem2 = NULL;
@@ -939,6 +927,6 @@ href_list_make_uniq(lList *this_list, lList **answer_list)
          lRemoveElem(this_list, &elem);
       }
    }
-   DEXIT;
+   DRETURN_VOID;
 }
 

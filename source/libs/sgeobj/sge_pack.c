@@ -43,7 +43,7 @@
 lListElem *lWhereToElem(const lCondition *where){
    lListElem *whereElem = NULL;
    sge_pack_buffer pb;
-   DENTER(CULL_LAYER, "lWhereToElem");
+   DENTER(CULL_LAYER);
 
    if (init_packbuffer(&pb, 1024, 0) == PACK_SUCCESS) {
       if (cull_pack_cond(&pb, where) == PACK_SUCCESS) {
@@ -63,7 +63,7 @@ lCondition *lWhereFromElem(const lListElem *where){
    int size=0;
    char *buffer;
    int ret=0;
-   DENTER(CULL_LAYER, "lWhereFromCull");
+   DENTER(CULL_LAYER);
 
    if (lGetUlong(where, PACK_id) == SGE_WHERE) {
       size = getByteArray(&buffer, where, PACK_string);
@@ -89,7 +89,7 @@ lListElem *lWhatToElem(const lEnumeration *what)
    lListElem *whatElem = NULL;
    sge_pack_buffer pb;
 
-   DENTER(CULL_LAYER, "lWhatToElem");
+   DENTER(CULL_LAYER);
 
    if (init_packbuffer(&pb, 1024, 0) == PACK_SUCCESS) {
       if (cull_pack_enum(&pb, what) == PACK_SUCCESS) {
@@ -101,8 +101,7 @@ lListElem *lWhatToElem(const lEnumeration *what)
    }
    clear_packbuffer(&pb);
 
-   DEXIT;
-   return whatElem;
+   DRETURN(whatElem);
 }
 
 lEnumeration *lWhatFromElem(const lListElem *what){
@@ -111,7 +110,7 @@ lEnumeration *lWhatFromElem(const lListElem *what){
    int size=0;
    char *buffer;
    int ret=0;
-   DENTER(CULL_LAYER, "lWhatFromCull");
+   DENTER(CULL_LAYER);
 
    if (lGetUlong(what, PACK_id) == SGE_WHAT) {
       size = getByteArray(&buffer, what, PACK_string);
@@ -128,8 +127,7 @@ lEnumeration *lWhatFromElem(const lListElem *what){
    else {
       ERROR((SGE_EVENT, MSG_PACK_WRONGPACKTYPE_UI, lGetUlong(what, PACK_id), SGE_WHAT));
    }
-   DEXIT;
-   return cond;
+   DRETURN(cond);
 }
 
 

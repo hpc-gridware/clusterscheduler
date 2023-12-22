@@ -62,7 +62,7 @@ lList *sge_get_dirents(const char *path) {
    SGE_STRUCT_DIRENT *dent;
    char dirent[SGE_PATH_MAX*2];
 
-   DENTER(TOP_LAYER, "sge_get_dirents");
+   DENTER(TOP_LAYER);
 
    cwd = opendir(path);
 
@@ -72,8 +72,6 @@ lList *sge_get_dirents(const char *path) {
    }
 
    while (SGE_READDIR_R(cwd, (SGE_STRUCT_DIRENT *)dirent, &dent)==0 && dent!=NULL) {
-      if (!dent->d_name)
-         continue;              
       if (!dent->d_name[0])
          continue;             
       if (strcmp(dent->d_name, "..") == 0 || strcmp(dent->d_name, ".") == 0)
@@ -88,7 +86,7 @@ lList *sge_get_dirents(const char *path) {
 u_long32 sge_count_dirents(char *directory_name) 
 {
    lList *dir_entries;
-   lListElem *dir_entry;
+   const lListElem *dir_entry;
    u_long32 entries = 0;
 
    dir_entries = sge_get_dirents(directory_name);
@@ -107,7 +105,7 @@ u_long32 sge_count_dirents(char *directory_name)
 int has_more_dirents(char *directory_name, u_long32 number_of_entries)
 {
    lList *dir_entries;
-   lListElem *dir_entry;
+   const lListElem *dir_entry;
    u_long32 entries = 0;
    int ret = 0;
  

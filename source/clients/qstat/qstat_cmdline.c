@@ -70,7 +70,7 @@ switch_list_qstat_parse_from_file(lList **switch_list, lList **answer_list,
 {
    bool ret = true;
 
-   DENTER(TOP_LAYER, "switch_list_qstat_parse_from_file");
+   DENTER(TOP_LAYER);
    if (switch_list == NULL) {
       ret = false;
    } else {
@@ -113,7 +113,7 @@ switch_list_qstat_parse_from_cmdline(lList **ppcmdline, lList **answer_list,
    char **rp;
    stringT str;
 
-   DENTER(TOP_LAYER, "sge_parse_cmdline_qstat");
+   DENTER(TOP_LAYER);
 
    rp = argv;
    while(*(sp=rp)) {
@@ -223,11 +223,9 @@ switch_list_qstat_parse_from_cmdline(lList **ppcmdline, lList **answer_list,
       sprintf(str, MSG_ANSWER_INVALIDOPTIONARGX_S, *sp);
       qstat_usage(qselect_mode, stderr, NULL);
       answer_list_add(answer_list, str, STATUS_ESEMANTIC, ANSWER_QUALITY_ERROR);
-      DEXIT;
-      return ret;
+      DRETURN(ret);
    }
-   DEXIT;
-   return ret;
+   DRETURN(ret);
 }
 
 /****

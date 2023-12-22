@@ -119,7 +119,7 @@ spool_classic_create_context(lList **answer_list, const char *args)
 {
    lListElem *context = NULL;
 
-   DENTER(TOP_LAYER, "spool_classic_create_context");
+   DENTER(TOP_LAYER);
 
    /* check parameters - both must be set and be absolute paths */
    if (args == NULL) {
@@ -340,7 +340,7 @@ spool_classic_default_startup_func(lList **answer_list,
    bool ret = true;
    const char *url;
 
-   DENTER(TOP_LAYER, "spool_classic_default_startup_func");
+   DENTER(TOP_LAYER);
 
    /* check spool directory */
    url = lGetString(rule, SPR_url);
@@ -420,7 +420,7 @@ spool_classic_common_startup_func(lList **answer_list,
    bool ret = true;
    const char *url;
 
-   DENTER(TOP_LAYER, "spool_classic_common_startup_func");
+   DENTER(TOP_LAYER);
 
    /* check common directory */
    url = lGetString(rule, SPR_url);
@@ -445,7 +445,7 @@ static bool read_validate_object(lList **answer_list,
    bool ret = true;
    lListElem *ep;
 
-   DENTER(TOP_LAYER, "read_validate_object");
+   DENTER(TOP_LAYER);
 
    DPRINTF(("reading "SFN" "SFQ"\n", object_type_get_name(object_type), key));
 
@@ -533,7 +533,7 @@ spool_classic_default_list_func(lList **answer_list,
 
    bool ret = true;
 
-   DENTER(TOP_LAYER, "spool_classic_default_list_func");
+   DENTER(TOP_LAYER);
 
    if (!list) {
       answer_list_add_sprintf(answer_list, STATUS_EUNKNOWN, 
@@ -643,7 +643,7 @@ spool_classic_default_list_func(lList **answer_list,
          /* if we have a directory (= multiple files) to parse */ 
          if (ret && directory != NULL) { 
             lList *direntries;
-            lListElem *direntry;
+            const lListElem *direntry;
             char abs_dir_buf[SGE_PATH_MAX];
             dstring abs_dir_dstring;
             const char *abs_dir;
@@ -678,14 +678,14 @@ spool_classic_default_list_func(lList **answer_list,
                dstring key = DSTRING_INIT;
                dstring dir = DSTRING_INIT;
 
-               for_each(queue, *list) {
+               for_each_rw(queue, *list) {
                   lList *direntries;
                   lListElem *direntry;
                   lList *qinstance_list = lCreateList("", QU_Type);
 
                   sge_dstring_sprintf(&dir, "%s/%s/%s", url, QINSTANCES_DIR, lGetString(queue, CQ_name));
                   direntries = sge_get_dirents(sge_dstring_get_string(&dir));
-                  for_each(direntry, direntries) {
+                  for_each_rw(direntry, direntries) {
                      const char *directory = lGetString(direntry, ST_name);
                      if (directory[0] != '.') {
                         sge_dstring_sprintf(&key, "%s/%s", lGetString(queue, CQ_name), directory);
@@ -776,7 +776,7 @@ spool_classic_default_read_func(lList **answer_list,
    lListElem *ep = NULL;
    bool parse_values = true;
 
-   DENTER(TOP_LAYER, "spool_classic_default_read_func");
+   DENTER(TOP_LAYER);
 
    rule_clientdata = lGetRef(rule, SPR_clientdata);
    field_info = &(rule_clientdata[object_type]);
@@ -967,7 +967,7 @@ spool_classic_default_write_func(lList **answer_list,
    dstring tmp = DSTRING_INIT;
    bool ret = true;
 
-   DENTER(TOP_LAYER, "spool_flatfile_default_write_func");
+   DENTER(TOP_LAYER);
 
    rule_clientdata = lGetRef(rule, SPR_clientdata);
    field_info = &(rule_clientdata[object_type]);
@@ -1212,7 +1212,7 @@ spool_classic_default_delete_func(lList **answer_list,
 {
    bool ret = true;
 
-   DENTER(TOP_LAYER, "spool_classic_default_delete_func");
+   DENTER(TOP_LAYER);
 
    switch(object_type) {
       case SGE_TYPE_ADMINHOST:
@@ -1335,13 +1335,13 @@ spool_classic_default_delete_func(lList **answer_list,
 
 static bool write_manop(int spool, int target) {
    FILE *fp;
-   lListElem *ep;
+   const lListElem *ep;
    const lList *lp;
    char filename[255], real_filename[255];
    dstring ds = DSTRING_INIT;
    int key = NoName;
 
-   DENTER(TOP_LAYER, "write_manop");
+   DENTER(TOP_LAYER);
 
    switch (target) {
    case SGE_UM_LIST:
@@ -1405,7 +1405,7 @@ static bool read_manop(int target) {
    int key = NoName;
    lDescr *descr = NULL;
 
-   DENTER(TOP_LAYER, "read_manop");
+   DENTER(TOP_LAYER);
 
    switch (target) {
    case SGE_UM_LIST:

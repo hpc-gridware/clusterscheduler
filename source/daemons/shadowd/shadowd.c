@@ -115,7 +115,7 @@ static int shadowd_is_old_master_enrolled(int sge_test_heartbeat, int sge_qmaste
    int is_up_and_running = 0;
    int commlib_error = CL_RETVAL_OK;
 
-   DENTER(TOP_LAYER, "shadowd_is_old_master_enrolled");
+   DENTER(TOP_LAYER);
 
    /*
     * This is for testsuite testing to simulate qmaster outage.
@@ -469,7 +469,7 @@ const char *oldqmaster
  char newqmaster[SGE_PATH_MAX];
  int ret;
  
- DENTER(TOP_LAYER, "compare_qmaster_names");
+ DENTER(TOP_LAYER);
  
  if (get_qm_name(newqmaster, act_qmaster_file, NULL)) {
     WARNING((SGE_EVENT, MSG_SHADOWD_CANTREADACTQMASTERFILEX_S, act_qmaster_file)); 
@@ -498,7 +498,7 @@ static int check_if_valid_shadow(char *binpath,
 {
    struct hostent *hp;
 
-   DENTER(TOP_LAYER, "check_if_valid_shadow");
+   DENTER(TOP_LAYER);
 
    if (isLocked(QMASTER_LOCK_FILE)) {
       DPRINTF(("lock file exits\n"));
@@ -557,7 +557,7 @@ const char *file
    FILE *fp;
    char buf[512], *cp;
 
-   DENTER(TOP_LAYER, "host_in_file");
+   DENTER(TOP_LAYER);
 
    fp = fopen(file, "r");
    if (!fp) {
@@ -596,7 +596,7 @@ char **argv
    dstring ds;
    char buffer[256];
 
-   DENTER(TOP_LAYER, "parse_cmdline_shadowd");
+   DENTER(TOP_LAYER);
 
    sge_dstring_init(&ds, buffer, sizeof(buffer));
    /*

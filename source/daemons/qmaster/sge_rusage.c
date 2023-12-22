@@ -185,7 +185,7 @@ reporting_get_ulong_usage_sum(const lList *usage_list, lList *reported_list,
       lListElem *pe_task = NULL;
       const lList *pe_tasks = lGetList(ja_task, JAT_task_list);
 
-      for_each (pe_task, pe_tasks) {
+      for_each_rw (pe_task, pe_tasks) {
          const lList *pe_usage_list = lGetList(pe_task, PET_scaled_usage);
 
          if (pe_usage_list != NULL) {
@@ -323,7 +323,7 @@ reporting_get_double_usage_sum(const lList *usage_list, lList *reported_list,
       lListElem *pe_task = NULL;
       const lList *pe_tasks = lGetList(ja_task, JAT_task_list);
 
-      for_each (pe_task, pe_tasks) {
+      for_each_rw (pe_task, pe_tasks) {
          const lList *pe_usage_list = lGetList(pe_task, PET_scaled_usage);
 
          if (pe_usage_list != NULL) {
@@ -385,7 +385,7 @@ sge_write_rusage(dstring *buffer,
    const lList *master_pe_list = *object_type_get_master_list(SGE_TYPE_PE);
    const lList *master_ar_list = *object_type_get_master_list(SGE_TYPE_AR);
 
-   DENTER(TOP_LAYER, "sge_write_rusage");
+   DENTER(TOP_LAYER);
 
    /* invalid input data */
    if (buffer == NULL) {

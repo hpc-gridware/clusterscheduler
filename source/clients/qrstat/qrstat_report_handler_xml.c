@@ -157,12 +157,12 @@ qrstat_create_report_handler_xml(qrstat_env_t *qrstat_env, lList **answer_list)
 {
    qrstat_report_handler_t* ret = NULL;
 
-   DENTER(TOP_LAYER, "qrstat_create_report_handler_xml");
+   DENTER(TOP_LAYER);
 
    ret = (qrstat_report_handler_t*)sge_malloc(sizeof(qrstat_report_handler_t));
    if (ret == NULL) {
       answer_list_add_sprintf(answer_list, STATUS_EMALLOC, ANSWER_QUALITY_ERROR,
-                              MSG_MEM_MEMORYALLOCFAILED_S, SGE_FUNC);      
+                              MSG_MEM_MEMORYALLOCFAILED_S, __func__);
    } else {
      /*
       * xml report handler ctx is a dstring
@@ -170,7 +170,7 @@ qrstat_create_report_handler_xml(qrstat_env_t *qrstat_env, lList **answer_list)
       ret->ctx = sge_malloc(sizeof(dstring));
       if (ret->ctx == NULL ) {
          answer_list_add_sprintf(answer_list, STATUS_EMALLOC, ANSWER_QUALITY_ERROR,
-                                 MSG_MEM_MEMORYALLOCFAILED_S, SGE_FUNC);
+                                 MSG_MEM_MEMORYALLOCFAILED_S, __func__);
       } else {
          /*
           * corresponds to initializing with DSTRING_INIT
@@ -229,7 +229,7 @@ qrstat_destroy_report_handler_xml(qrstat_report_handler_t** handler, lList **ans
 {
    bool ret = true;
 
-   DENTER(TOP_LAYER, "qrstat_destroy_report_handler_xml");
+   DENTER(TOP_LAYER);
 
    if (handler != NULL && *handler != NULL ) {
       sge_dstring_free((dstring*)(*handler)->ctx);
@@ -246,7 +246,7 @@ qrstat_report_start(qrstat_report_handler_t* handler, lList **alpp)
    bool ret = true;
    dstring *buffer = (dstring*)handler->ctx;
 
-   DENTER(TOP_LAYER, "qrstat_report_start");
+   DENTER(TOP_LAYER);
 
    sge_dstring_append(buffer, "<?xml version='1.0'?>\n");
    sge_dstring_append(buffer, "<qrstat xmlns:xsd=\"https://github.com/gridengine/gridengine/raw/master/source/dist/util/resources/schemas/qrstat/qrstat.xsd\">\n");
@@ -260,7 +260,7 @@ qrstat_report_finish(qrstat_report_handler_t* handler, lList **alpp)
    bool ret = true;
    dstring *buffer = (dstring*)handler->ctx;
 
-   DENTER(TOP_LAYER, "qrstat_report_finish");
+   DENTER(TOP_LAYER);
   
    sge_dstring_append(buffer, "</qrstat>\n");
    printf("%s", sge_dstring_get_string((dstring *)handler->ctx));
@@ -274,7 +274,7 @@ qrstat_report_start_ar(qrstat_report_handler_t* handler, qrstat_env_t *qrstat_en
    bool ret = true;
    dstring *buffer = (dstring*)handler->ctx;
 
-   DENTER(TOP_LAYER, "qrstat_report_start_ar");
+   DENTER(TOP_LAYER);
 
    sge_dstring_append(buffer, "   <ar_summary>\n");
      
@@ -287,7 +287,7 @@ qrstat_report_start_unknown_ar(qrstat_report_handler_t* handler, qrstat_env_t *q
    bool ret = true;
    dstring *buffer = (dstring*)handler->ctx;
 
-   DENTER(TOP_LAYER, "qrstat_report_start_unknown_ar");
+   DENTER(TOP_LAYER);
 
    sge_dstring_append(buffer, "   <ar_unknown>\n");
      
@@ -300,7 +300,7 @@ qrstat_report_finish_ar(qrstat_report_handler_t* handler, lList **alpp)
    bool ret = true;
    dstring *buffer = (dstring*)handler->ctx;
 
-   DENTER(TOP_LAYER, "qrstat_report_finish_ar");
+   DENTER(TOP_LAYER);
   
    sge_dstring_append(buffer, "   </ar_summary>\n");
 
@@ -313,7 +313,7 @@ qrstat_report_finish_unknown_ar(qrstat_report_handler_t* handler, lList **alpp)
    bool ret = true;
    dstring *buffer = (dstring*)handler->ctx;
 
-   DENTER(TOP_LAYER, "qrstat_report_finish_unknown_ar");
+   DENTER(TOP_LAYER);
   
    sge_dstring_append(buffer, "   </ar_unknown>\n");
 
@@ -327,7 +327,7 @@ qrstat_report_ar_node_ulong(qrstat_report_handler_t* handler, qrstat_env_t *qrst
    bool ret = true;
    dstring *buffer = (dstring*)handler->ctx;
 
-   DENTER(TOP_LAYER, "qrstat_report_ar_node_ulong");
+   DENTER(TOP_LAYER);
   
    sge_dstring_sprintf_append(buffer, "      <"SFN">"sge_U32CFormat"</"SFN">\n", 
                               name, value, name);
@@ -345,7 +345,7 @@ qrstat_report_ar_node_duration(qrstat_report_handler_t* handler, lList **alpp,
    int minutes = ((value - seconds) / 60) % 60;      
    int hours = ((value - seconds - minutes * 60) / 3600);
 
-   DENTER(TOP_LAYER, "qrstat_report_ar_node_duration");
+   DENTER(TOP_LAYER);
   
    sge_dstring_sprintf_append(buffer, "      <"SFN">%02d:%02d:%02d</"SFN">\n", 
                               name, hours, minutes, seconds, name);
@@ -360,7 +360,7 @@ qrstat_report_ar_node_string(qrstat_report_handler_t* handler, lList **alpp,
    bool ret = true;
    dstring *buffer = (dstring*)handler->ctx;
 
-   DENTER(TOP_LAYER, "qrstat_report_ar_node_string");
+   DENTER(TOP_LAYER);
  
    if (value != NULL) { 
       sge_dstring_sprintf_append(buffer, "      <"SFN">"SFN"</"SFN">\n", name, value, name);
@@ -379,7 +379,7 @@ qrstat_report_ar_node_time(qrstat_report_handler_t* handler, lList **alpp,
    dstring *buffer = (dstring*)handler->ctx;
    dstring time_string = DSTRING_INIT;
 
-   DENTER(TOP_LAYER, "qrstat_report_ar_node_time");
+   DENTER(TOP_LAYER);
  
    sge_dstring_append_time(&time_string, value, true); 
    sge_dstring_sprintf_append(buffer, "      <"SFN">"SFN"</"SFN">\n", 
@@ -397,7 +397,7 @@ qrstat_report_ar_node_state(qrstat_report_handler_t* handler, lList **alpp,
    dstring *buffer = (dstring*)handler->ctx;
    dstring state_string = DSTRING_INIT;
 
-   DENTER(TOP_LAYER, "qrstat_report_ar_node_time");
+   DENTER(TOP_LAYER);
  
    ar_state2dstring((ar_state_t)state, &state_string);
    sge_dstring_sprintf_append(buffer, "      <"SFN">"SFN"</"SFN">\n", 
@@ -413,7 +413,7 @@ qrstat_report_start_resource_list(qrstat_report_handler_t* handler, lList **alpp
    bool ret = true;
    dstring *buffer = (dstring*)handler->ctx;
 
-   DENTER(TOP_LAYER, "qrstat_report_start_resource_list");
+   DENTER(TOP_LAYER);
 
    sge_dstring_append(buffer, "      <resource_list>\n");
      
@@ -426,7 +426,7 @@ qrstat_report_finish_resource_list(qrstat_report_handler_t* handler, lList **alp
    bool ret = true;
    dstring *buffer = (dstring*)handler->ctx;
 
-   DENTER(TOP_LAYER, "qrstat_report_finish_resource_list");
+   DENTER(TOP_LAYER);
   
    sge_dstring_append(buffer, "      </resource_list>\n");
 
@@ -440,7 +440,7 @@ qrstat_report_resource_list_node(qrstat_report_handler_t* handler, lList **alpp,
    bool ret = true;
    dstring *buffer = (dstring*)handler->ctx;
 
-   DENTER(TOP_LAYER, "qrstat_report_resource_list_node");
+   DENTER(TOP_LAYER);
   
    sge_dstring_sprintf_append(buffer, "         <resource name="SFQ" type="SFQ"/>\n",
                               name, value);
@@ -455,7 +455,7 @@ qrstat_report_ar_node_boolean(qrstat_report_handler_t* handler, lList **alpp, co
    bool ret = true;
    dstring *buffer = (dstring*)handler->ctx;
 
-   DENTER(TOP_LAYER, "qrstat_report_ar_node_boolean");
+   DENTER(TOP_LAYER);
   
    sge_dstring_sprintf_append(buffer,"      <"SFN">"SFN"</"SFN">\n", 
                               name, value ? "true":"false", name);
@@ -469,7 +469,7 @@ qrstat_report_start_granted_slots_list(qrstat_report_handler_t* handler, lList *
    bool ret = true;
    dstring *buffer = (dstring*)handler->ctx;
 
-   DENTER(TOP_LAYER, "qrstat_report_start_granted_slots_list");
+   DENTER(TOP_LAYER);
 
    sge_dstring_append(buffer, "      <granted_slots_list>\n");
      
@@ -482,7 +482,7 @@ qrstat_report_finish_granted_slots_list(qrstat_report_handler_t* handler, lList 
    bool ret = true;
    dstring *buffer = (dstring*)handler->ctx;
 
-   DENTER(TOP_LAYER, "qrstat_report_finish_granted_slots_list");
+   DENTER(TOP_LAYER);
   
    sge_dstring_append(buffer, "      </granted_slots_list>\n");
 
@@ -497,7 +497,7 @@ qrstat_report_granted_slots_list_node(qrstat_report_handler_t* handler,
    bool ret = true;
    dstring *buffer = (dstring*)handler->ctx;
 
-   DENTER(TOP_LAYER, "qrstat_report_granted_slots_list_node");
+   DENTER(TOP_LAYER);
   
    sge_dstring_sprintf_append(buffer, "         <granted_slots  queue_instance="SFQ
                               " slots=\""sge_U32CFormat"\"/>\n", name, value);
@@ -511,7 +511,7 @@ qrstat_report_start_granted_parallel_environment(qrstat_report_handler_t* handle
    bool ret = true;
    dstring *buffer = (dstring*)handler->ctx;
 
-   DENTER(TOP_LAYER, "qrstat_report_start_granted_parallel_environment");
+   DENTER(TOP_LAYER);
 
    sge_dstring_append(buffer, "      <granted_parallel_environment>\n");
      
@@ -524,7 +524,7 @@ qrstat_report_finish_granted_parallel_environment(qrstat_report_handler_t* handl
    bool ret = true;
    dstring *buffer = (dstring*)handler->ctx;
 
-   DENTER(TOP_LAYER, "qrstat_report_finish_parallel_environment");
+   DENTER(TOP_LAYER);
   
    sge_dstring_append(buffer, "      </granted_parallel_environment>\n");
 
@@ -539,7 +539,7 @@ qrstat_report_granted_parallel_environment_node(qrstat_report_handler_t* handler
    bool ret = true;
    dstring *buffer = (dstring*)handler->ctx;
 
-   DENTER(TOP_LAYER, "qrstat_report_granted_granted_parallel_environment_node");
+   DENTER(TOP_LAYER);
   
    sge_dstring_sprintf_append(buffer, "         <parallel_environment>"SFN"</parallel_environment>\n", (name != NULL) ? name : "");
    sge_dstring_sprintf_append(buffer, "         <slots>"SFN"</slots>\n", (slots_range != NULL) ? slots_range : "");
@@ -553,7 +553,7 @@ qrstat_report_start_mail_list(qrstat_report_handler_t* handler, lList **alpp)
    bool ret = true;
    dstring *buffer = (dstring*)handler->ctx;
 
-   DENTER(TOP_LAYER, "qrstat_report_start_mail_list");
+   DENTER(TOP_LAYER);
 
    sge_dstring_append(buffer, "      <mail_list>\n");
      
@@ -566,7 +566,7 @@ qrstat_report_finish_mail_list(qrstat_report_handler_t* handler, lList **alpp)
    bool ret = true;
    dstring *buffer = (dstring*)handler->ctx;
 
-   DENTER(TOP_LAYER, "qrstat_report_finish_mail_list");
+   DENTER(TOP_LAYER);
   
    sge_dstring_append(buffer, "      </mail_list>\n");
 
@@ -581,7 +581,7 @@ qrstat_report_mail_list_node(qrstat_report_handler_t* handler,
    bool ret = true;
    dstring *buffer = (dstring*)handler->ctx;
 
-   DENTER(TOP_LAYER, "qrstat_report_mail_list_node");
+   DENTER(TOP_LAYER);
   
    sge_dstring_sprintf_append(buffer, "         <mail  user="SFQ
                               " host="SFQ"/>\n", name, host?host:"NULL");
@@ -595,7 +595,7 @@ qrstat_report_start_acl_list(qrstat_report_handler_t* handler, lList **alpp)
    bool ret = true;
    dstring *buffer = (dstring*)handler->ctx;
 
-   DENTER(TOP_LAYER, "qrstat_report_start_acl_list");
+   DENTER(TOP_LAYER);
 
    sge_dstring_append(buffer, "      <acl_list>\n");
      
@@ -608,7 +608,7 @@ qrstat_report_finish_acl_list(qrstat_report_handler_t* handler, lList **alpp)
    bool ret = true;
    dstring *buffer = (dstring*)handler->ctx;
 
-   DENTER(TOP_LAYER, "qrstat_report_finish_acl_list");
+   DENTER(TOP_LAYER);
   
    sge_dstring_append(buffer, "      </acl_list>\n");
 
@@ -623,7 +623,7 @@ qrstat_report_acl_list_node(qrstat_report_handler_t* handler,
    bool ret = true;
    dstring *buffer = (dstring*)handler->ctx;
 
-   DENTER(TOP_LAYER, "qrstat_report_acl_list_node");
+   DENTER(TOP_LAYER);
   
    sge_dstring_sprintf_append(buffer, "         <acl  user="SFQ"/>\n", name);
 
@@ -636,7 +636,7 @@ qrstat_report_start_xacl_list(qrstat_report_handler_t* handler, lList **alpp)
    bool ret = true;
    dstring *buffer = (dstring*)handler->ctx;
 
-   DENTER(TOP_LAYER, "qrstat_report_start_xacl_list");
+   DENTER(TOP_LAYER);
 
    sge_dstring_append(buffer, "      <xacl_list>\n");
      
@@ -649,7 +649,7 @@ qrstat_report_finish_xacl_list(qrstat_report_handler_t* handler, lList **alpp)
    bool ret = true;
    dstring *buffer = (dstring*)handler->ctx;
 
-   DENTER(TOP_LAYER, "qrstat_report_finish_xacl_list");
+   DENTER(TOP_LAYER);
   
    sge_dstring_append(buffer, "      </xacl_list>\n");
 
@@ -664,7 +664,7 @@ qrstat_report_xacl_list_node(qrstat_report_handler_t* handler,
    bool ret = true;
    dstring *buffer = (dstring*)handler->ctx;
 
-   DENTER(TOP_LAYER, "qrstat_report_xacl_list_node");
+   DENTER(TOP_LAYER);
   
    sge_dstring_sprintf_append(buffer, "         <acl  user="SFQ"/>\n", name);
 

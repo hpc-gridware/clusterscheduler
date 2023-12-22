@@ -97,29 +97,25 @@ lList **pplist
    int *rule;
    int type;
 
-   DENTER(BASIS_LAYER, "cull_parse_string_list");
+   DENTER(BASIS_LAYER);
    if (!pstrlist || !descr || !interpretation_rule || !pplist) {
       DPRINTF(("cull_parse_string_list: NULL pointer received\n"));
-      DEXIT;
-      return -1;
+      DRETURN(-1);
    }
    if (*interpretation_rule == 0) {
       DPRINTF(("cull_parse_string_list: zero interpretation rule\n"));
-      DEXIT;
-      return -2;
+      DRETURN(-2);
    }
    list = lCreateList(listname, descr);
    if (!list) {
       DPRINTF(("cull_parse_string_list: cannot create list\n"));
-      DEXIT;
-      return -3;      
+      DRETURN(-3);      
    }
    ep = lCreateElem(descr);
    if (!ep) {
       DPRINTF(("cull_parse_string_list: cannot create element\n"));
       lFreeList(&list);
-      DEXIT;
-      return -4;      
+      DRETURN(-4);      
    }
    lAppendElem(list, ep);
    /*
@@ -132,8 +128,7 @@ lList **pplist
          if (!ep) {
             DPRINTF(("cull_parse_string_list: cannot create another element\n"));
             lFreeList(&list);
-            DEXIT;
-            return -5;      
+            DRETURN(-5);      
          }
          lAppendElem(list, ep);
       }
@@ -151,8 +146,7 @@ lList **pplist
                   DPRINTF(("cull_parse_string_list: " \
                            "error interpreting float: %s\n", *pstrlist));
                   lFreeList(&list);
-                  DEXIT;
-                  return -6;
+                  DRETURN(-6);
                }
                lSetFloat(ep, *rule, f);
             }
@@ -166,8 +160,7 @@ lList **pplist
                   DPRINTF(("cull_parse_string_list: " \
                            "error interpreting double: %s\n", *pstrlist));
                   lFreeList(&list);
-                  DEXIT;
-                  return -7;
+                  DRETURN(-7);
                }
                lSetDouble(ep, *rule, dd);
             }
@@ -181,8 +174,7 @@ lList **pplist
                   DPRINTF(("cull_parse_string_list: " \
                            "error interpreting ulong: %s\n", *pstrlist));
                   lFreeList(&list);
-                  DEXIT;
-                  return -8;
+                  DRETURN(-8);
                }
                lSetUlong(ep, *rule, ul);
             }
@@ -197,8 +189,7 @@ lList **pplist
                   DPRINTF(("cull_parse_string_list: " \
                            "error interpreting long: %s\n", *pstrlist));
                   lFreeList(&list);
-                  DEXIT;
-                  return -9;
+                  DRETURN(-9);
                }
                lSetLong(ep, *rule, l);
             }
@@ -212,8 +203,7 @@ lList **pplist
                   DPRINTF(("cull_parse_string_list: " \
                            "error interpreting char: %s\n", *pstrlist));
                   lFreeList(&list);
-                  DEXIT;
-                  return -10;
+                  DRETURN(-10);
                }
                lSetChar(ep, *rule, c);
             }
@@ -227,8 +217,7 @@ lList **pplist
                   DPRINTF(("cull_parse_string_list: " \
                            "error interpreting int: %s\n", *pstrlist));
                   lFreeList(&list);
-                  DEXIT;
-                  return -11;
+                  DRETURN(-11);
                }
                lSetInt(ep, *rule, i);
             }
@@ -256,8 +245,7 @@ lList **pplist
          default:
             DPRINTF(("encountered unknown list field type %d\n", type));
             lFreeList(&list);
-            DEXIT;
-            return -12;
+            DRETURN(-12);
 
       } /* end switch */
       rule++;
@@ -266,14 +254,12 @@ lList **pplist
    if (*rule != 0) {
       DPRINTF(("invalid number of entries specified\n"));
       lFreeList(&list);
-      DEXIT;
-      return -13;
+      DRETURN(-13);
    } 
    *pplist = list;
    DPRINTF(("list parsed: \n"));
 
-   DEXIT;
-   return 0;
+   DRETURN(0);
 }
 
 
@@ -304,30 +290,25 @@ int *interpretation_rule
    char **pstr;
    int ret;
 
-   DENTER(BASIS_LAYER, "cull_parse_definition_list");
+   DENTER(BASIS_LAYER);
    if (!str || !lpp) {
-      DEXIT;
-      return -1;
+      DRETURN(-1);
    }
    pstr = string_list(str, " ,=\t\n\f\r\v", NULL);
    if (!pstr) {
-      DEXIT;
-      return -2;
+      DRETURN(-2);
    }
    if (!strcasecmp("NONE", pstr[0]) || !strcasecmp("UNDEFINED", pstr[0])) {
       *lpp = NULL;
       sge_free(&pstr);
-      DEXIT;
-      return 0;
+      DRETURN(0);
    }
    ret = cull_parse_string_list(pstr, name, descr, interpretation_rule, lpp);
    sge_free(&pstr);
    if (ret) {
-      DEXIT;
-      return -3;
+      DRETURN(-3);
    }
-   DEXIT;
-   return 0;
+   DRETURN(0);
 }
 
 
@@ -358,20 +339,19 @@ lList *lp_new,
 int nm_var,
 int nm_value 
 ) {
-   lListElem *ep_old, *ep_new;
+   lListElem *ep_old;
+   lListElem *ep_new;
    int type;
    int is_there;
 
-   DENTER(CULL_LAYER, "cull_merge_definition_list");
+   DENTER(CULL_LAYER);
    
    if (!lp_new) {
-      DEXIT;
-      return 0;
+      DRETURN(0);
    }
    
    if (!lpp_old) {
-      DEXIT;
-      return -1;
+      DRETURN(-1);
    }
    /*
    ** problem: type equal check missing here, look at lAddList
@@ -381,22 +361,19 @@ int nm_value
    if (lGetType(lGetListDescr(*lpp_old), nm_var) != 
        lGetType(lGetListDescr(lp_new), nm_var)) {
       DPRINTF(("cull_merge_definition_list: conflicting types for nm_var\n"));
-      DEXIT;
-      return -2;
+      DRETURN(-2);
    }
    if (lGetType(lGetListDescr(*lpp_old), nm_value) != 
        lGetType(lGetListDescr(lp_new), nm_value)) {
       DPRINTF(("cull_merge_definition_list: conflicting types for nm_value\n"));
-      DEXIT;
-      return -3;
+      DRETURN(-3);
    }
 
    if (!*lpp_old) {
       *lpp_old = lCreateList("copied list", lGetListDescr(lp_new));
       if (!*lpp_old) {
          DPRINTF(("memory allocation fault\n"));
-         DEXIT;
-         return -4;
+         DRETURN(-4);
       }
    }
 
@@ -406,9 +383,9 @@ int nm_value
    ** if it is, change the value to the new value
    ** if it isn't, append it
    */
-   for_each(ep_new, lp_new) {
+   for_each_rw(ep_new, lp_new) {
       is_there = 0;
-      for_each(ep_old, *lpp_old) {
+      for_each_rw(ep_old, *lpp_old) {
          type = lGetType(lGetListDescr(lp_new), nm_var);
          switch (type) {
          case lFloatT:
@@ -456,12 +433,10 @@ int nm_value
          case lListT:
             DPRINTF(("cull_merge_definition_list: " \
                "list type not implemented with this function\n"));
-            DEXIT;
-            return -4;
+            DRETURN(-4);
          default:
             DPRINTF(("cull_merge_definition_list: invalid type\n"));
-            DEXIT;
-            return -5;
+            DRETURN(-5);
          } /* end switch */
          if (is_there) {
             break;
@@ -503,12 +478,10 @@ int nm_value
          case lListT:
             DPRINTF(("cull_merge_definition_list: " \
                "list type not implemented with function\n"));
-            DEXIT;
-            return -6;
+            DRETURN(-6);
          default:
             DPRINTF(("cull_merge_definition_list: invalid type to set\n"));
-            DEXIT;
-            return -7;
+            DRETURN(-7);
          } /* end switch */
       }
       else {
@@ -516,8 +489,7 @@ int nm_value
       }
    }
 
-   DEXIT;
-   return 0;
+   DRETURN(0);
 }
 
 
@@ -545,12 +517,12 @@ int nm_var,
 int nm_value,
 int double_keys 
 ) {
-   lListElem *ep_one;
+   const lListElem *ep_one;
    lListElem *ep_other;
    int is_there;
    int type;
 
-   DENTER(BASIS_LAYER, "cull_compress_definition_list");
+   DENTER(BASIS_LAYER);
 
    for_each(ep_one, lp) {
       for (ep_other = lFirstRW(lp); ep_other; ) {
@@ -618,12 +590,10 @@ int double_keys
          case lListT:
             DPRINTF(("cull_compress_definition_list: " \
                "list type not implemented with this function\n"));
-            DEXIT;
-            return -4;
+            DRETURN(-4);
          default:
             DPRINTF(("cull_compress_definition_list: invalid type\n"));
-            DEXIT;
-            return -5;
+            DRETURN(-5);
          } /* end switch */
          
          ep_other = lNextRW(ep_other);
@@ -638,8 +608,7 @@ int double_keys
          }
       }
    }
-   DEXIT;
-   return 0;
+   DRETURN(0);
 }
 
 
@@ -672,11 +641,10 @@ int *interpretation_rule
    char **pstr;
    int ret;
 
-   DENTER(BASIS_LAYER, "cull_parse_simple_list");
+   DENTER(BASIS_LAYER);
    if (!str || !lpp) {
       DPRINTF(("cull_parse_simple_list: NULL pointer received\n"));
-      DEXIT;
-      return -1;
+      DRETURN(-1);
     }
 
    /*
@@ -685,26 +653,22 @@ int *interpretation_rule
    pstr = string_list(str, " ,\t\n\f\r\v",  NULL);
    if (!pstr) {
       DPRINTF(("cull_parse_simple_list: could not parse string\n"));
-      DEXIT;
-      return -2;
+      DRETURN(-2);
    }
    if (!strcasecmp("NONE", pstr[0])) {
       *lpp = NULL;
       sge_free(&pstr);
       DPRINTF(("cull_parse_simple_list: String is NONE, no list, not an error\n"));
-      DEXIT;
-      return 0;
+      DRETURN(0);
    }
    
    ret = cull_parse_string_list(pstr, name, descr, interpretation_rule, lpp);
    sge_free(&pstr);
    if (ret) {
       DPRINTF(("cull_parse_simple_list: cull_parse_string_list returns %d\n", ret));
-      DEXIT;
-      return -3;
+      DRETURN(-3);
    }
-   DEXIT;
-   return 0;
+   DRETURN(0);
 }
 
 
@@ -761,32 +725,28 @@ unsigned long flags
    char str[256];
    const char *cp;
 
-   DENTER(BASIS_LAYER, "uni_print_list");
+   DENTER(BASIS_LAYER);
 
    /*
    ** problem: one might allow NULL deli as no deli
    */
    if (!which_elements_rule || !pdelis) {
       DPRINTF(("uni_print_list: NULL pointer received\n"));
-      DEXIT;
-      return -1;
+      DRETURN(-1);
    }
    if (!fp && !buff) {
       DPRINTF(("uni_print_list: must have either file or buffer\n"));
-      DEXIT;
-      return -1;
+      DRETURN(-1);
    }
    if (buff && !max_len) {
       DPRINTF(("uni_print_list: zero len output required\n"));
-      DEXIT;
-      return -1;
+      DRETURN(-1);
    }
 
    if (!lp) {
       if (max_len && (cb_sum + (sizeof("NONE") - 1) > max_len)) {
          DPRINTF(("max_len too small even for zero list\n"));
-         DEXIT;
-         return -1;
+         DRETURN(-1);
       }
       if (fp) {
 /*          cb = FPRINTF((fp, "NONE")); */
@@ -801,8 +761,7 @@ unsigned long flags
       if (pdelis[2] && *pdelis[2]) {
          if (max_len && (cb_sum + strlen(pdelis[2]) > max_len)) {
             DPRINTF(("max_len too small even for zero list plus delimiter\n"));
-            DEXIT;
-            return -1;
+            DRETURN(-1);
          }
          if (fp) {
             cb = fprintf(fp, "%s", pdelis[2]);
@@ -813,29 +772,25 @@ unsigned long flags
          buff += cb;
          cb_sum += cb;
       }
-      DEXIT;
-      return 0;
+      DRETURN(0);
    }
    if (*which_elements_rule == 0) {
       DPRINTF(("uni_print_list: zero interpretation rule\n"));
-      DEXIT;
-      return -2;
+      DRETURN(-2);
    }
 
    descr = lGetListDescr(lp);
    if (!descr) {
       DPRINTF(("uni_print_list: list has no descriptor\n"));
-      DEXIT;
-      return -3;
+      DRETURN(-3);
    }
 
-   for_each(ep, lp) {
+   for_each_rw(ep, lp) {
 
       if (!begin && pdelis[1] && *pdelis[1]) {
          if (max_len && (cb_sum + strlen(pdelis[1]) > max_len)) {
             DPRINTF(("max_len too small\n"));
-            DEXIT;
-            return -1;
+            DRETURN(-1);
          }
          if (fp) {
 /*             cb = FPRINTF((fp, "%s", pdelis[1])); */
@@ -847,8 +802,7 @@ unsigned long flags
          }
          if (cb <= 0) {
             DPRINTF(("uni_print_list: error writing delimiter 1\n"));
-            DEXIT;
-            return -4;
+            DRETURN(-4);
          }
          buff += cb;
          cb_sum += cb;
@@ -913,8 +867,7 @@ unsigned long flags
 
          default:
             DPRINTF(("encountered unknown list field type %d\n", type));
-            DEXIT;
-            return -19;
+            DRETURN(-19);
          } /* end switch */
 
          /*
@@ -931,8 +884,7 @@ unsigned long flags
                || strcmp(cp, "0"))) {
             if (max_len && (cb_sum + strlen(pdelis[0]) > max_len)) {
                DPRINTF(("max_len too small\n"));
-               DEXIT;
-               return -1;
+               DRETURN(-1);
             }
             if (fp) {
 /*                cb = FPRINTF((fp, "%s", pdelis[0])); */
@@ -944,8 +896,7 @@ unsigned long flags
             }
             if (cb <= 0) {
                DPRINTF(("uni_print_list: error writing delimiter\n"));
-               DEXIT;
-               return -5;
+               DRETURN(-5);
             }
             buff += cb;
             cb_sum += cb;
@@ -953,8 +904,7 @@ unsigned long flags
 
          if (max_len && (cb_sum + strlen(cp) > max_len)) {
             DPRINTF(("max_len too small\n"));
-            DEXIT;
-            return -1;
+            DRETURN(-1);
          }
          if (*cp) {
             if (fp) {
@@ -966,8 +916,7 @@ unsigned long flags
             }
             if (cb <= 0) {
                DPRINTF(("uni_print_list: error writing to file\n"));
-               DEXIT;
-               return -6;
+               DRETURN(-6);
             }
             buff += cb;
             cb_sum += cb;
@@ -980,8 +929,7 @@ unsigned long flags
    if (!begin && pdelis[2] && *pdelis[2]) {
       if (max_len && (cb_sum + strlen(pdelis[2]) > max_len)) {
          DPRINTF(("max_len too small\n"));
-         DEXIT;
-         return -1;
+         DRETURN(-1);
       }
       if (fp) {
          FPRINTF_ASSIGN(cb, (fp, "%s", pdelis[2]));
@@ -992,18 +940,15 @@ unsigned long flags
       }
       if (cb <= 0) {
          DPRINTF(("uni_print_list: error writing delimiter 1\n"));
-         DEXIT;
-         return -4;
+         DRETURN(-4);
       }
       buff += cb;
       cb_sum += cb;
    }
 
-   DEXIT;
-   return 0;
+   DRETURN(0);
 FPRINTF_ERROR:
-   DEXIT;
-   return -7;
+   DRETURN(-7);
 }
 
 /****** cull_parse_util/fprint_cull_list() *************************************
@@ -1033,9 +978,9 @@ FPRINTF_ERROR:
 *******************************************************************************/
 int fprint_cull_list(FILE *fp, char *str, lList *lp, int fi)
 {
-   lListElem *ep;
+   const lListElem *ep;
 
-   DENTER(TOP_LAYER, "fprint_cull_list");
+   DENTER(TOP_LAYER);
 
    FPRINTF((fp, "%s", str));
 
@@ -1051,12 +996,10 @@ int fprint_cull_list(FILE *fp, char *str, lList *lp, int fi)
       FPRINTF((fp, "\n"));
    }
 
-   DEXIT;
-   return 0;
+   DRETURN(0);
 
 FPRINTF_ERROR:
-   DEXIT;
-   return -1;
+   DRETURN(-1);
 }                   
 
 
@@ -1173,12 +1116,12 @@ int nm_name,
 int nm_strval,
 int nm_doubleval
 ) {
-   lListElem *lep;
+   const lListElem *lep;
    int printed = 0;
    const char *s;
    char buffer[1024];
 
-   DENTER(TOP_LAYER, "fprint_thresholds");
+   DENTER(TOP_LAYER);
 
    FPRINTF((fp, "%s", name));
 
@@ -1203,12 +1146,10 @@ int nm_doubleval
       FPRINTF((fp, "\n"));
    }
 
-   DEXIT;
-   return 0;
+   DRETURN(0);
 
 FPRINTF_ERROR:
-   DEXIT;
-   return -1;
+   DRETURN(-1);
 }            
 
 int parse_list_hardsoft(
@@ -1223,7 +1164,7 @@ int soft_field
    lList *lp = NULL;
    lListElem *ep = NULL;
 
-   DENTER(TOP_LAYER, "parse_list_hardsoft");
+   DENTER(TOP_LAYER);
 
    hard_list = lCopyList("job_hard_sublist", lGetList(job, hard_field));
    if (soft_field) {
@@ -1267,7 +1208,7 @@ parse_list_simple(lList *cmdline, char *option, lListElem *job, int field,
    lList *lp = NULL;
    lListElem *ep;
 
-   DENTER(TOP_LAYER, "parse_list_simple");
+   DENTER(TOP_LAYER);
 
    destlist = lCopyList("job_sublist", lGetList(job, field));
 
@@ -1283,8 +1224,7 @@ parse_list_simple(lList *cmdline, char *option, lListElem *job, int field,
 
    lSetList(job, field, destlist);
 
-   DEXIT;
-   return 0;
+   DRETURN(0);
 }
 
 int 
@@ -1355,7 +1295,7 @@ int cull_parse_path_list(lList **lpp, const char *path_str)
    char *path_string = NULL;
    bool ret_error = false;
 
-   DENTER(TOP_LAYER, "cull_parse_path_list");
+   DENTER(TOP_LAYER);
 
    ret_error = (lpp == NULL) ? true : false;
 
@@ -1435,39 +1375,34 @@ cull_parse_jid_hold_list(lList **lpp, const char *str)
    int i_ret;
    char *s;
 
-   DENTER(TOP_LAYER, "cull_parse_jid_hold_list");
+   DENTER(TOP_LAYER);
 
    if (!lpp) {
-      DEXIT;
-      return 1;
+      DRETURN(1);
    }
 
    s = sge_strdup(NULL, str);
    if (!s) {
       *lpp = NULL;
-      DEXIT;
-      return 3;
+      DRETURN(3);
    }
    str_str = string_list(s, ",", NULL);
    if (!str_str || !*str_str) {
       *lpp = NULL;
       sge_free(&s);
-      DEXIT;
-      return 2;
+      DRETURN(2);
    }
    i_ret = cull_parse_string_list(str_str, "jid_hold list", ST_Type, rule, lpp);
    
    if (i_ret) {
       sge_free(&s);
       sge_free(&str_str);
-      DEXIT;
-      return 3;
+      DRETURN(3);
    }
 
    sge_free(&s);
    sge_free(&str_str);
-   DEXIT;
-   return 0;
+   DRETURN(0);
 }
 
 /****** cull_parse_util/sge_parse_hold_list() **********************************
@@ -1498,7 +1433,7 @@ sge_parse_hold_list(const char *hold_str, u_long32 prog_number) {
    int target = 0;
    int op_code = 0;
 
-   DENTER(TOP_LAYER, "sge_parse_hold_list");
+   DENTER(TOP_LAYER);
 
    i = strlen(hold_str);
 
@@ -1610,7 +1545,6 @@ sge_parse_hold_list(const char *hold_str, u_long32 prog_number) {
    if (target != -1)
       target |= op_code;
 
-   DEXIT;
-   return target;
+   DRETURN(target);
 }
 

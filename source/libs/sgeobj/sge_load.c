@@ -50,7 +50,7 @@ sge_is_static_load_value(const char *name)
 {
    bool ret = false;
 
-   DENTER(BASIS_LAYER, "sge_is_static_load_value");
+   DENTER(BASIS_LAYER);
 
    if (name != NULL) {
       if (strcmp(name, LOAD_ATTR_ARCH) == 0 || 

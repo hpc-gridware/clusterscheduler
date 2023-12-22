@@ -1339,7 +1339,7 @@ bool prof_output_info(prof_level level, bool with_sub, const char *info)
 {
    bool ret = false;
 
-   DENTER(TOP_LAYER, "prof_output_info");
+   DENTER(TOP_LAYER);
    
    if (profiling_enabled && (level <= SGE_PROF_ALL)) {
       int thread_num;
@@ -1354,10 +1354,10 @@ bool prof_output_info(prof_level level, bool with_sub, const char *info)
          struct saved_vars_s *context = NULL;
 
          info_message = prof_get_info_string(level, with_sub, NULL);
-         PROFILING((SGE_EVENT, "PROF(%d): %s%s", (int)thread_id, info, ""));
+         PROFILING((SGE_EVENT, "PROF(%d): %s%s", (int)thread_num, info, ""));
          for (message = sge_strtok_r(info_message, "\n", &context); message != NULL; 
               message = sge_strtok_r(NULL, "\n", &context)) {
-            PROFILING((SGE_EVENT, "PROF(%d): %s", (int)thread_id, message));
+            PROFILING((SGE_EVENT, "PROF(%d): %s", (int)thread_num, message));
          }
          prof_reset(level, NULL);
 
@@ -1542,7 +1542,7 @@ static void init_array(pthread_t num) {
 
    int i, c;
    
-   DENTER(CULL_LAYER,"init_array");
+   DENTER(CULL_LAYER);
    
    if (sge_prof_array_initialized == 0) {
       CRITICAL((SGE_EVENT,"Profiling array is not initialized!\n"));
@@ -1579,8 +1579,7 @@ static void init_array(pthread_t num) {
       
    pthread_mutex_unlock(&thrdInfo_mutex);
 
-   DEXIT;
-   return;
+   DRETURN_VOID;
    
 }
 

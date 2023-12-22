@@ -148,7 +148,7 @@ debit_scheduled_job(const sge_assignment_t *a, int *sort_hostlist,
                     order_t *orders, bool now, const char *type,
                     bool for_job_scheduling) 
 {
-   DENTER(TOP_LAYER, "debit_scheduled_job");
+   DENTER(TOP_LAYER);
 
    if (!a) {
       DRETURN(-1);
@@ -192,11 +192,13 @@ debit_job_from_queues(lListElem *job, lList *granted, lList *global_queue_list,
    int qslots, total;
    unsigned int tagged;
    const char *qname;
-   lListElem *gel, *qep, *so;
+   const lListElem *gel;
+   lListElem *qep;
+   const lListElem *so;
    int ret = 0;
    dstring queue_name = DSTRING_INIT;
 
-   DENTER(TOP_LAYER, "debit_job_from_queues");
+   DENTER(TOP_LAYER);
 
    /* use each entry in sel_q_list as reference into the global_queue_list */
    for_each(gel, granted) {
@@ -218,7 +220,7 @@ debit_job_from_queues(lListElem *job, lList *granted, lList *global_queue_list,
          for_each (so, lGetList(qep, QU_subordinate_list)) {
             if (!tst_sos(qslots,        total, so)  &&  /* not suspended till now */
                  tst_sos(qslots+tagged, total, so)) {   /* but now                */
-               lListElem *order = NULL;
+               const lListElem *order = NULL;
 
                sge_dstring_sprintf(&queue_name, "%s@%s", lGetString(so, SO_name), lGetHost(qep, QU_qhostname));
              
@@ -257,7 +259,6 @@ debit_job_from_queues(lListElem *job, lList *granted, lList *global_queue_list,
 
    sge_dstring_free(&queue_name);
 
-   DEXIT;
    DRETURN(ret);
 }
 
@@ -269,7 +270,8 @@ const lList *centry_list, /* CE_Type */
 int *sort_hostlist
 ) {
    lSortOrder *so = NULL;
-   lListElem *gel, *hep;
+   const lListElem *gel;
+   lListElem *hep;
    lListElem *global;
    const char *hnm = NULL;
    const char *load_formula = NULL;
@@ -279,7 +281,7 @@ int *sort_hostlist
 
    double old_sort_value, new_sort_value;
 
-   DENTER(TOP_LAYER, "debit_job_from_hosts");
+   DENTER(TOP_LAYER);
 
    so = lParseSortOrderVarArg(lGetListDescr(host_list), "%I+", EH_sort_value);
 
@@ -372,10 +374,10 @@ static int
 debit_job_from_rqs(lListElem *job, lList *granted, lList *rqs_list, lListElem* pe,
                    const lList *centry_list, const lList *acl_list, const lList *hgrp_list) 
 {
-   lListElem *gel = NULL;
+   const lListElem *gel = NULL;
    bool master_task = true;
 
-   DENTER(TOP_LAYER, "debit_job_from_rqs");
+   DENTER(TOP_LAYER);
 
    if (lGetUlong(job, JB_ar) != 0) {
       /* don't debit for AR jobs in resource quotas */
@@ -392,7 +394,7 @@ debit_job_from_rqs(lListElem *job, lList *granted, lList *rqs_list, lListElem* p
          pe_name =  lGetString(pe, PE_name);
       }
 
-      for_each (rqs, rqs_list) {
+      for_each_rw (rqs, rqs_list) {
          rqs_debit_consumable(rqs, job, gel, pe_name, centry_list, acl_list, hgrp_list, slots, master_task);
       }
       master_task = false;
@@ -405,9 +407,9 @@ static int
 debit_job_from_ar(lListElem *job, lList *granted, lList *ar_list, const lList *centry_list)
 {
    bool master_task = true;
-   lListElem *gel = NULL;
+   const lListElem *gel = NULL;
 
-   DENTER(TOP_LAYER, "debit_job_from_ar");
+   DENTER(TOP_LAYER);
 
    for_each(gel, granted) {
       const lListElem *ar = NULL;

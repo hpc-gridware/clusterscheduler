@@ -36,14 +36,6 @@
 #include "cull/cull.h"
 
 /*
- * defines for SPA_argtype
- * argtypes are lFloatT - lListT plus others
- */
-#define NUM_SPA_ARGTYPE_DATETIME    (lListT + 100 + 1)
-#define NUM_SPA_ARGTYPE_SIMPLELIST  (lListT + 100 + 2)  /* a,b,c */
-#define NUM_SPA_ARGTYPE_DEFLIST     (lListT + 100 + 3)  /* a=x,b=y ... */
-
-/*
  * defines for SPA_occurrence
  */
 #define BIT_SPA_OCC_NONE               0x00000000L

@@ -306,7 +306,7 @@ bool sge_setup_paths(u_long32 progid, const char *sge_cell, dstring *error_dstri
    char buffer[2*1024];
    dstring bw;
    
-   DENTER(TOP_LAYER, "sge_setup_paths");
+   DENTER(TOP_LAYER);
   
    path_mt_init();
    sge_dstring_init(&bw, buffer, sizeof(buffer)); 
@@ -317,8 +317,7 @@ bool sge_setup_paths(u_long32 progid, const char *sge_cell, dstring *error_dstri
       if (error_dstring != NULL) {
          sge_dstring_copy_string(error_dstring, buffer);
       }
-      DEXIT;
-      return false;
+      DRETURN(false);
    }
 
    if (SGE_STAT(sge_root, &sbuf)) {
@@ -329,8 +328,7 @@ bool sge_setup_paths(u_long32 progid, const char *sge_cell, dstring *error_dstri
          sge_dstring_sprintf(error_dstring, MSG_SGETEXT_SGEROOTNOTFOUND_S, 
                              sge_root);
          sge_dstring_append(error_dstring, "\n");
-         DEXIT;
-         return false;
+         DRETURN(false);
       }   
    }
    
@@ -342,8 +340,7 @@ bool sge_setup_paths(u_long32 progid, const char *sge_cell, dstring *error_dstri
          sge_dstring_sprintf(error_dstring, MSG_UTI_SGEROOTNOTADIRECTORY_S, 
                              sge_root);
          sge_dstring_append(error_dstring, "\n");
-         DEXIT;
-         return false;
+         DRETURN(false);
       }
    } 
 
@@ -354,8 +351,7 @@ bool sge_setup_paths(u_long32 progid, const char *sge_cell, dstring *error_dstri
          SGE_EXIT(NULL, 1);
       } else {
          sge_dstring_copy_string(error_dstring, MSG_SGETEXT_NOMEM);
-         DEXIT;
-         return false;
+         DRETURN(false);
       }
    }
 
@@ -370,8 +366,7 @@ bool sge_setup_paths(u_long32 progid, const char *sge_cell, dstring *error_dstri
             sge_dstring_sprintf(error_dstring, MSG_SGETEXT_NOSGECELL_S, 
                                 cell_root);
             sge_free(&cell_root);
-            DEXIT;
-            return false;
+            DRETURN(false);
          }
       }   
    }
@@ -388,8 +383,7 @@ bool sge_setup_paths(u_long32 progid, const char *sge_cell, dstring *error_dstri
                                 common_dir);
             sge_free(&cell_root);
             sge_free(&common_dir);
-            DEXIT;
-            return false;
+            DRETURN(false);
          }
       }   
    }       
@@ -435,8 +429,7 @@ bool sge_setup_paths(u_long32 progid, const char *sge_cell, dstring *error_dstri
    DPRINTF(("local_conf_dir      >%s<\n", path_state_get_local_conf_dir()));
    DPRINTF(("shadow_masters_file >%s<\n", path_state_get_shadow_masters_file()));
    
-   DEXIT;
-   return true;
+   DRETURN(true);
 } /* sge_setup_path() */
 
 /****** uti/path/path_once_init() *********************************************
@@ -537,12 +530,11 @@ sge_path_state_class_t *sge_path_state_class_create(sge_env_state_class_t *sge_e
 {
    sge_path_state_class_t *ret = (sge_path_state_class_t *)sge_malloc(sizeof(sge_path_state_class_t));
 
-   DENTER(TOP_LAYER, "sge_path_state_class_create");
+   DENTER(TOP_LAYER);
 
    if (!ret) {
       eh->error(eh, STATUS_EMALLOC, ANSWER_QUALITY_ERROR, MSG_MEMORY_MALLOCFAILED);
-      DEXIT;
-      return NULL;
+      DRETURN(NULL);
    }
    
    ret->dprintf = sge_path_state_dprintf;
@@ -573,34 +565,30 @@ sge_path_state_class_t *sge_path_state_class_create(sge_env_state_class_t *sge_e
    ret->sge_path_state_handle = sge_malloc(sizeof(sge_path_state_t));
    if (ret->sge_path_state_handle == NULL) {
       sge_free(&ret);
-      DEXIT;
-      return NULL;
+      DRETURN(NULL);
    }
    memset(ret->sge_path_state_handle, 0, sizeof(sge_path_state_t));
 
 
    if (!sge_path_state_setup(ret, sge_env, eh)) {
       sge_path_state_class_destroy(&ret);
-      DEXIT;
-      return NULL;
+      DRETURN(NULL);
    }
 
-   DEXIT;
-   return ret;
+   DRETURN(ret);
 }   
 
 void sge_path_state_class_destroy(sge_path_state_class_t **pst)
 {
-   DENTER(TOP_LAYER, "sge_path_state_class_destroy");
+   DENTER(TOP_LAYER);
 
    if (!pst || !*pst) {
-      DEXIT;
-      return;
-   }   
+      DRETURN_VOID;
+   }
       
    path_state_destroy((*pst)->sge_path_state_handle);
    sge_free(pst);
-   DEXIT;
+   DRETURN_VOID;
 }
 
 static bool sge_path_state_setup(sge_path_state_class_t *thiz, sge_env_state_class_t *sge_env, sge_error_class_t *eh)
@@ -612,12 +600,11 @@ static bool sge_path_state_setup(sge_path_state_class_t *thiz, sge_env_state_cla
    const char* sge_cell = NULL;
    SGE_STRUCT_STAT sbuf;
  
-   DENTER(TOP_LAYER, "sge_path_state_setup");
+   DENTER(TOP_LAYER);
 
    if (!sge_env) {
       eh->error(eh, STATUS_EUNKNOWN, ANSWER_QUALITY_ERROR, "sge_env is NULL");
-      DEXIT;
-      return false;
+      DRETURN(false);
    }
    
    sge_root = sge_env->get_sge_root(sge_env);
@@ -628,14 +615,12 @@ static bool sge_path_state_setup(sge_path_state_class_t *thiz, sge_env_state_cla
 
    if (SGE_STAT(sge_root, &sbuf)) {
       eh->error(eh, STATUS_EUNKNOWN, ANSWER_QUALITY_ERROR, MSG_SGETEXT_SGEROOTNOTFOUND_S, sge_root);
-      DEXIT;
-      return false;
+      DRETURN(false);
    }
    
    if (!S_ISDIR(sbuf.st_mode)) {
       eh->error(eh, STATUS_EUNKNOWN, ANSWER_QUALITY_ERROR, MSG_UTI_SGEROOTNOTADIRECTORY_S, sge_root);
-      DEXIT;
-      return false;
+      DRETURN(false);
    }
    
    thiz->set_sge_root(thiz, sge_root);
@@ -645,8 +630,7 @@ static bool sge_path_state_setup(sge_path_state_class_t *thiz, sge_env_state_cla
 
    if (SGE_STAT(sge_dstring_get_string(&bw), &sbuf)) {
       eh->error(eh, STATUS_EUNKNOWN, ANSWER_QUALITY_ERROR, MSG_SGETEXT_NOSGECELL_S, sge_dstring_get_string(&bw));
-      DEXIT;
-      return false;
+      DRETURN(false);
    }
    
    thiz->set_cell_root(thiz, sge_dstring_get_string(&bw));
@@ -656,8 +640,7 @@ static bool sge_path_state_setup(sge_path_state_class_t *thiz, sge_env_state_cla
    sge_dstring_sprintf(&bw, "%s"PATH_SEPARATOR"%s", cell_root, COMMON_DIR);
    if (SGE_STAT(buffer, &sbuf)) {
       eh->error(eh, STATUS_EUNKNOWN, ANSWER_QUALITY_ERROR, MSG_UTI_DIRECTORYNOTEXIST_S, buffer);
-      DEXIT;
-      return false;
+      DRETURN(false);
    }
 
 
@@ -690,15 +673,14 @@ static bool sge_path_state_setup(sge_path_state_class_t *thiz, sge_env_state_cla
 
    /*thiz->dprintf(thiz);*/
 
-   DEXIT;
-   return true;
+   DRETURN(true);
 }
 
 static void sge_path_state_dprintf(sge_path_state_class_t *thiz)
 {
    sge_path_state_t *ps = (sge_path_state_t *) thiz->sge_path_state_handle;
 
-   DENTER(TOP_LAYER, "sge_path_state_dprintf");
+   DENTER(TOP_LAYER);
 
    DPRINTF(("sge_root            >%s<\n", ps->sge_root));
    DPRINTF(("cell_root           >%s<\n", ps->cell_root));
@@ -711,7 +693,7 @@ static void sge_path_state_dprintf(sge_path_state_class_t *thiz)
    DPRINTF(("shadow_masters_file >%s<\n", ps->shadow_masters_file));
    DPRINTF(("alias_file          >%s<\n", ps->alias_file));
    
-   DEXIT;
+   DRETURN_VOID;
 }   
 
 static const char* get_sge_root(sge_path_state_class_t *thiz) 

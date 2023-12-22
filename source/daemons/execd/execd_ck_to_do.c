@@ -111,10 +111,11 @@ extern lList *jr_list;
 static void notify_ptf(void);
 static void notify_ptf()
 {
-   lListElem *jep, *tep;
+   lListElem *jep;
+   lListElem *tep;
    int write_job = -1;
 
-   DENTER(TOP_LAYER, "notify_ptf");
+   DENTER(TOP_LAYER);
 
 #ifdef DEBUG_DC
    ptf_show_registered_jobs();
@@ -124,10 +125,10 @@ static void notify_ptf()
    if (waiting4osjid) {
       waiting4osjid = 0;
 
-      for_each(jep, *object_type_get_master_list_rw(SGE_TYPE_JOB)) {
+      for_each_rw(jep, *object_type_get_master_list_rw(SGE_TYPE_JOB)) {
          lListElem* jatep;
          
-         for_each (jatep, lGetList(jep, JB_ja_tasks)) {
+         for_each_rw (jatep, lGetList(jep, JB_ja_tasks)) {
             write_job = 0;
             if (lGetUlong(jatep, JAT_status) == JWAITING4OSJID) {
                switch (register_at_ptf(jep, jatep, NULL)) {
@@ -149,7 +150,7 @@ static void notify_ptf()
                }
             }
 
-            for_each(tep, lGetList(jatep, JAT_task_list)) {
+            for_each_rw (tep, lGetList(jatep, JAT_task_list)) {
                if (lGetUlong(tep, PET_status) == JWAITING4OSJID) {
                   switch (register_at_ptf(jep, jatep, tep)) {
                      case 0:   
@@ -184,8 +185,7 @@ static void notify_ptf()
       }   
    }
 
-   DEXIT;
-   return;
+   DRETURN_VOID;
 }
 
 /* force job resource limits */
@@ -193,7 +193,7 @@ static void force_job_rlimit(const char* qualified_hostname)
 {
    const lListElem *jep;
 
-   DENTER(TOP_LAYER, "force_job_rlimit");
+   DENTER(TOP_LAYER);
 
    for_each (jep, *object_type_get_master_list(SGE_TYPE_JOB)) {
       const lListElem *jatep;
@@ -371,7 +371,7 @@ int do_ck_to_do(sge_gdi_ctx_class_t *ctx, bool is_qmaster_down) {
    int return_value = 0;
    const char *qualified_hostname = ctx->get_qualified_hostname(ctx);
 
-   DENTER(TOP_LAYER, "execd_ck_to_do");
+   DENTER(TOP_LAYER);
 
    /*
     *  get current time (now)
@@ -429,8 +429,8 @@ int do_ck_to_do(sge_gdi_ctx_class_t *ctx, bool is_qmaster_down) {
    if (next_signal <= now) {
       next_signal = now + SIGNAL_RESEND_INTERVAL;
       /* resend signals to shepherds */
-      for_each(jep, *object_type_get_master_list_rw(SGE_TYPE_JOB)) {
-         for_each(jatep, lGetList(jep, JB_ja_tasks)) {
+      for_each_rw (jep, *object_type_get_master_list_rw(SGE_TYPE_JOB)) {
+         for_each_rw (jatep, lGetList(jep, JB_ja_tasks)) {
 
             /* don't start wallclock before job acutally started */
             if (lGetUlong(jatep, JAT_status) == JWAITING4OSJID ||
@@ -504,8 +504,8 @@ int do_ck_to_do(sge_gdi_ctx_class_t *ctx, bool is_qmaster_down) {
 
    /* check for end of simulated jobs */
    if (mconf_get_simulate_jobs()) {
-      for_each(jep, *object_type_get_master_list_rw(SGE_TYPE_JOB)) {
-         for_each (jatep, lGetList(jep, JB_ja_tasks)) {
+      for_each_rw(jep, *object_type_get_master_list_rw(SGE_TYPE_JOB)) {
+         for_each_rw(jatep, lGetList(jep, JB_ja_tasks)) {
             if (lGetUlong(jatep, JAT_end_time) <= now) {
                lListElem *jr = NULL;
                u_long32 jobid, jataskid;
@@ -633,7 +633,7 @@ sge_kill_petasks(const lListElem *job, const lListElem *ja_task)
    bool ret = false;
 
    if (job != NULL && ja_task != NULL) {
-      lListElem *pe_task;
+      const lListElem *pe_task;
 
       for_each(pe_task, lGetList(ja_task, JAT_task_list)) {
          if (sge_kill(lGetUlong(pe_task, PET_pid), SGE_SIGKILL,
@@ -656,19 +656,19 @@ static int sge_start_jobs(sge_gdi_ctx_class_t *ctx)
    int state_changed;
    int jobs_started = 0;
 
-   DENTER(TOP_LAYER, "sge_start_jobs");
+   DENTER(TOP_LAYER);
 
    if (lGetNumberOfElem(*object_type_get_master_list(SGE_TYPE_JOB)) == 0) {
       DPRINTF(("No jobs to start\n"));
       DRETURN(0);
    }
 
-   for_each(jep, *object_type_get_master_list_rw(SGE_TYPE_JOB)) {
-      for_each(jatep, lGetList(jep, JB_ja_tasks)) {
+   for_each_rw(jep, *object_type_get_master_list_rw(SGE_TYPE_JOB)) {
+      for_each_rw(jatep, lGetList(jep, JB_ja_tasks)) {
          state_changed = exec_job_or_task(ctx, jep, jatep, NULL);
 
          /* visit all tasks */
-         for_each(petep, lGetList(jatep, JAT_task_list)) {
+         for_each_rw(petep, lGetList(jatep, JAT_task_list)) {
             state_changed |= exec_job_or_task(ctx, jep, jatep, petep);
          }
 
@@ -696,7 +696,7 @@ static int exec_job_or_task(sge_gdi_ctx_class_t *ctx, lListElem *jep, lListElem 
    const char *pe_task_id = NULL;
    const char *qualified_hostname = ctx->get_qualified_hostname(ctx);
 
-   DENTER(TOP_LAYER, "exec_job_or_task");
+   DENTER(TOP_LAYER);
 
    /* retrieve ids - we need them later on */
    job_id = lGetUlong(jep, JB_job_number);
@@ -823,9 +823,9 @@ static int exec_job_or_task(sge_gdi_ctx_class_t *ctx, lListElem *jep, lListElem 
 
 #ifdef COMPILE_DC
 int register_at_ptf(
-lListElem *job,
-lListElem *ja_task,
-lListElem *pe_task 
+const lListElem *job,
+const lListElem *ja_task,
+const lListElem *pe_task
 ) {
    u_long32 job_id;   
    u_long32 ja_task_id;   
@@ -845,7 +845,7 @@ lListElem *pe_task
    dstring osjobid_path = DSTRING_INIT;
    osjobid_t osjobid;   
 #endif   
-   DENTER(TOP_LAYER, "register_at_ptf");
+   DENTER(TOP_LAYER);
 
    sge_dstring_init(&id_dstring, id_buffer, MAX_STRING_SIZE);
 
@@ -874,16 +874,14 @@ lListElem *pe_task
       DPRINTF(("still waiting for addgrpid of job %s\n", 
          job_get_id_string(job_id, ja_task_id, pe_task_id, &id_dstring)));
       sge_dstring_free(&addgrpid_path);
-      DEXIT;
-      return(1);
+      DRETURN(1);
    }  
 
    if (!(fp = fopen(sge_dstring_get_string(&addgrpid_path), "r"))) {
       ERROR((SGE_EVENT, MSG_EXECD_NOADDGIDOPEN_SSS, sge_dstring_get_string(&addgrpid_path), 
              job_get_id_string(job_id, ja_task_id, pe_task_id, &id_dstring), strerror(errno)));
       sge_dstring_free(&addgrpid_path);
-      DEXIT;
-      return(-1);
+      DRETURN(-1);
    }
   
    sge_dstring_free(&addgrpid_path);       
@@ -893,8 +891,7 @@ lListElem *pe_task
    FCLOSE(fp);
    if (!success) {
       /* can happen that shepherd has opend the file but not written */
-      DEXIT;
-      return (1);
+      DRETURN((1));
    }
    {
       int ptf_error;
@@ -904,8 +901,7 @@ lListElem *pe_task
          ERROR((SGE_EVENT, MSG_JOB_NOREGISTERPTF_SS, 
                 job_get_id_string(job_id, ja_task_id, pe_task_id, &id_dstring), 
                 ptf_errstr(ptf_error)));
-         DEXIT;
-         return (1);
+         DRETURN((1));
       }
    }
 
@@ -932,8 +928,7 @@ lListElem *pe_task
       DPRINTF(("still waiting for osjobid of job %s\n", 
             job_get_id_string(job_id, ja_task_id, pe_task_id, &id_dstring)));
       sge_dstring_free(&osjobid_path);      
-      DEXIT;
-      return 1;
+      DRETURN(1);
    } 
 
    if (!(fp=fopen(sge_dstring_get_string(&osjobid_path), "r"))) {
@@ -941,8 +936,7 @@ lListElem *pe_task
              job_get_id_string(job_id, ja_task_id, pe_task_id, &id_dstring), 
              strerror(errno)));
       sge_dstring_free(&osjobid_path);      
-      DEXIT;
-      return -1;
+      DRETURN(-1);
    }
 
    sge_dstring_free(&osjobid_path);      
@@ -951,8 +945,7 @@ lListElem *pe_task
    FCLOSE(fp);
    if (!success) {
       /* can happen that shepherd has opend the file but not written */
-      DEXIT;
-      return 1;
+      DRETURN(1);
    }
 
    {
@@ -961,8 +954,7 @@ lListElem *pe_task
          ERROR((SGE_EVENT, MSG_JOB_NOREGISTERPTF_SS,  
                 job_get_id_string(job_id, ja_task_id, pe_task_id, &id_dstring), 
                 ptf_errstr(ptf_error)));
-         DEXIT;
-         return -1;
+         DRETURN(-1);
       }
    }
 
@@ -980,10 +972,8 @@ lListElem *pe_task
    }
 #endif
 
-   DEXIT;
-   return 0;
+   DRETURN(0);
 FCLOSE_ERROR:
-   DEXIT;
-   return 1;
+   DRETURN(1);
 }
 #endif

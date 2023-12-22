@@ -63,7 +63,7 @@ test_thread_consumer_template(void *arg, sge_tq_type_t type, const char *type_st
    void *ret = NULL;
    test_sl_thread_cp_t *global = (test_sl_thread_cp_t *)arg;
 
-   DENTER(TOP_LAYER, "test_thread_consumer_main");
+   DENTER(TOP_LAYER);
    while (global->do_terminate != true) { 
       const char *string;
      
@@ -94,7 +94,7 @@ test_thread_producer_template(void *arg, sge_tq_type_t type, const char *type_st
    void *ret = NULL;
    test_sl_thread_cp_t *global = (test_sl_thread_cp_t *)arg;
 
-   DENTER(TOP_LAYER, "test_thread_producer_main");
+   DENTER(TOP_LAYER);
    while (global->do_terminate != true) { 
       /* produce: new element */
       sge_tq_store_notify(global->queue, type, (void*)type_string);
@@ -156,7 +156,7 @@ test_mt_consumer_producer(void) {
    char last = '\0';
    int switches = 0;
 
-   DENTER(TOP_LAYER, "test_mt_consumer_producer");
+   DENTER(TOP_LAYER);
 
    /* create a list */
    memset(&global, 0, sizeof(test_sl_thread_cp_t));
@@ -220,7 +220,7 @@ test_mt_consumer_producer(void) {
       if (switches < min || switches > max) {
          fprintf(stderr, "switch of thread type is out of range in %s(). "
                  "got %d but expected something in range [%d;%d]", 
-                 SGE_FUNC, switches, min, max);
+                 __func__, switches, min, max);
       }
    }
 #endif

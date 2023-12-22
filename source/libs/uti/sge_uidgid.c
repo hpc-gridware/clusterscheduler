@@ -178,13 +178,12 @@ bool sge_is_start_user_superuser(void)
    bool   is_root = false;
    uid_t  start_uid; 
 
-   DENTER(UIDGID_LAYER, "sge_is_start_user_superuser");
+   DENTER(UIDGID_LAYER);
 
    start_uid = getuid();
    is_root = (start_uid == SGE_SUPERUSER_UID)?true:false;
 
-   DEXIT;
-   return is_root;
+   DRETURN(is_root);
 } /* sge_is_start_user_superuser() */           
 
 /****** uti/uidgid/sge_set_admin_username() ***********************************
@@ -227,7 +226,7 @@ int sge_set_admin_username(const char *user, char *err_str)
    char fq_name[1024];
 #endif
 
-   DENTER(UIDGID_LAYER, "sge_set_admin_username");
+   DENTER(UIDGID_LAYER);
 
 #if defined( INTERIX ) 
    /* For Interix: Construct full qualified admin user name.
@@ -245,15 +244,13 @@ int sge_set_admin_username(const char *user, char *err_str)
     * Do only if admin user is not already set!
     */
    if (get_admin_user(&uid, &gid) != ESRCH) {
-      DEXIT;
-      return -2;
+      DRETURN(-2);
    }
    if (!user || user[0] == '\0') {
       if (err_str) {
          sprintf(err_str, SFNMAX, MSG_POINTER_SETADMINUSERNAMEFAILED);
       }
-      DEXIT;
-      return -1;
+      DRETURN(-1);
    }
  
    ret = 0;
@@ -274,8 +271,7 @@ int sge_set_admin_username(const char *user, char *err_str)
       }
       sge_free(&buffer);
    }
-   DEXIT;
-   return ret;
+   DRETURN(ret);
 } /* sge_set_admin_username() */           
 
 /****** uti/uidgid/sge_is_admin_user() ****************************************
@@ -358,7 +354,7 @@ int sge_switch2admin_user(void)
    gid_t gid;
    int ret = 0;
 
-   DENTER(UIDGID_LAYER, "sge_switch2admin_user");
+   DENTER(UIDGID_LAYER);
 #if !defined(INTERIX)
    /*
     * On Windows Vista (and probably later versions) we can't set the effective
@@ -402,8 +398,7 @@ exit:
             (long)getuid(), (long)getgid(), 
             (long)geteuid(), (long)getegid(),
             (long)uid, (long)gid));
-   DEXIT;
-   return ret;
+   DRETURN(ret);
 } /* sge_switch_2admin_user() */
 
 /****** uti/uidgid/sge_switch2start_user() ************************************
@@ -442,7 +437,7 @@ int sge_switch2start_user(void)
 #endif
    int ret = 0;
 
-   DENTER(UIDGID_LAYER, "sge_switch2start_user");
+   DENTER(UIDGID_LAYER);
 #if !defined(INTERIX)
    /*
     * On Windows Vista (and probably later versions) we can't set the effective
@@ -489,8 +484,7 @@ exit:
             (long)geteuid(), (long)getegid(),
             (long)uid, (long)gid));
 #endif
-   DEXIT;
-   return ret;
+   DRETURN(ret);
 } /* sge_switch2start_user() */ 
 
 /****** uti/uidgid/sge_run_as_user() ******************************************
@@ -521,7 +515,7 @@ int sge_run_as_user(void)
 {
    int ret = 0;
  
-   DENTER(UIDGID_LAYER, "sge_run_as_user");
+   DENTER(UIDGID_LAYER);
 
    if(geteuid() != getuid()) {
       if (seteuid(getuid())) {
@@ -529,8 +523,7 @@ int sge_run_as_user(void)
       }
    }
  
-   DEXIT;
-   return ret;
+   DRETURN(ret);
 } /* sge_run_as_user() */
 
 /****** uti/uidgid/sge_user2uid() *********************************************
@@ -567,7 +560,7 @@ int sge_user2uid(const char *user, uid_t *puid, uid_t *pgid, int retries)
    char *buffer;
    int size;
 
-   DENTER(UIDGID_LAYER, "sge_user2uid");
+   DENTER(UIDGID_LAYER);
 
    size = get_pw_buffer_size();
    buffer = sge_malloc(size);
@@ -577,8 +570,7 @@ int sge_user2uid(const char *user, uid_t *puid, uid_t *pgid, int retries)
 
       if (!retries--) {
          sge_free(&buffer);
-         DEXIT;
-         return 1;
+         DRETURN(1);
       }
       if (getpwnam_r(user, &pwentry, buffer, size, &pw) != 0) {
          pw = NULL;
@@ -593,8 +585,7 @@ int sge_user2uid(const char *user, uid_t *puid, uid_t *pgid, int retries)
    }
 
    sge_free(&buffer);
-   DEXIT; 
-   return 0;
+   DRETURN(0);
 } /* sge_user2uid() */
 
 /****** uti/uidgid/sge_group2gid() ********************************************
@@ -629,7 +620,7 @@ int sge_group2gid(const char *gname, gid_t *gidp, int retries)
    char *buffer;
    int size;
 
-   DENTER(UIDGID_LAYER, "sge_group2gid");
+   DENTER(UIDGID_LAYER);
 
    size = get_group_buffer_size();
    buffer = sge_malloc(size);
@@ -637,8 +628,7 @@ int sge_group2gid(const char *gname, gid_t *gidp, int retries)
    do {
       if (!retries--) {
          sge_free(&buffer);
-         DEXIT;
-         return 1;
+         DRETURN(1);
       }
 #if defined(INTERIX)
       if (getgrnam_nomembers_r(gname, &grentry, buffer, size, &gr) != 0)
@@ -660,8 +650,7 @@ int sge_group2gid(const char *gname, gid_t *gidp, int retries)
    }
 
    sge_free(&buffer);
-   DEXIT; 
-   return 0;
+   DRETURN(0);
 } /* sge_group2gid() */
 
 /****** uti/uidgid/sge_uid2user() *********************************************
@@ -693,7 +682,7 @@ int sge_uid2user(uid_t uid, char *dst, size_t sz, int retries)
 {
    const char *last_username;
 
-   DENTER(UIDGID_LAYER, "sge_uid2user");
+   DENTER(UIDGID_LAYER);
 
    last_username = uidgid_state_get_last_username();
 
@@ -712,8 +701,7 @@ int sge_uid2user(uid_t uid, char *dst, size_t sz, int retries)
             ERROR((SGE_EVENT, MSG_SYSTEM_GETPWUIDFAILED_US, 
                   sge_u32c(uid), strerror(errno)));
             sge_free(&buffer);
-            DEXIT;
-            return 1;
+            DRETURN(1);
          }
          sleep(1);
       }
@@ -727,9 +715,7 @@ int sge_uid2user(uid_t uid, char *dst, size_t sz, int retries)
    if (dst) {
       sge_strlcpy(dst, uidgid_state_get_last_username(), sz);
    }
-
-   DEXIT; 
-   return 0;
+   DRETURN(0);
 } /* sge_uid2user() */
 
 /****** uti/uidgid/sge_gid2group() ********************************************
@@ -763,7 +749,7 @@ int sge_gid2group(gid_t gid, char *dst, size_t sz, int retries)
    struct group grentry;
    const char *last_groupname;
 
-   DENTER(UIDGID_LAYER, "sge_gid2group");
+   DENTER(UIDGID_LAYER);
 
    last_groupname = uidgid_state_get_last_groupname();
 
@@ -780,8 +766,7 @@ int sge_gid2group(gid_t gid, char *dst, size_t sz, int retries)
        * a name. [DT] */
       if (gr == NULL) {
          sge_free(&buf);
-         DEXIT;
-         return 1;
+         DRETURN(1);
       }
       
       /* cache group name */
@@ -794,9 +779,7 @@ int sge_gid2group(gid_t gid, char *dst, size_t sz, int retries)
    if (dst != NULL) {
       sge_strlcpy(dst, uidgid_state_get_last_groupname(), sz);
    }
-
-   DEXIT; 
-   return 0;
+   DRETURN(0);
 } /* sge_gid2group() */
 
 
@@ -806,11 +789,10 @@ int _sge_gid2group(gid_t gid, gid_t *last_gid, char **groupnamep, int retries)
    struct group *gr;
    struct group grentry;
 
-   DENTER(TOP_LAYER, "_sge_gid2group");
+   DENTER(TOP_LAYER);
 
    if (!groupnamep || !last_gid) {
-      DEXIT;
-      return 1;
+      DRETURN(1);
    }
 
    if ( !(*groupnamep) || *last_gid != gid) {
@@ -830,8 +812,7 @@ int _sge_gid2group(gid_t gid, gid_t *last_gid, char **groupnamep, int retries)
          if (!retries--) {
             sge_free(&buf);
             
-            DEXIT;
-            return 1;
+            DRETURN(1);
          }
          
          sleep(1);
@@ -842,8 +823,7 @@ int _sge_gid2group(gid_t gid, gid_t *last_gid, char **groupnamep, int retries)
        * a name. [DT] */
       if (gr == NULL) {
          sge_free(&buf);
-         DEXIT;
-         return 1;
+         DRETURN(1);
       }
       
       /* cache group name */
@@ -852,9 +832,7 @@ int _sge_gid2group(gid_t gid, gid_t *last_gid, char **groupnamep, int retries)
 
       sge_free(&buf);
    }
-   
-   DEXIT; 
-   return 0;
+   DRETURN(0);
 } /* _sge_gid2group() */
 
 /****** uti/uidgid/get_pw_buffer_size() ****************************************
@@ -1322,7 +1300,7 @@ struct passwd *sge_getpwnam_r(const char *name, struct passwd *pw,
    struct passwd *res = NULL;
    int i = MAX_NIS_RETRIES;
  
-   DENTER(UIDGID_LAYER, "sge_getpwnam_r");
+   DENTER(UIDGID_LAYER);
 
    while (i-- && !res) {
       if (getpwnam_r(name, pw, buffer, bufsize, &res) != 0) {
@@ -1372,7 +1350,7 @@ struct group *sge_getgrgid_r(gid_t gid, struct group *pg,
 {
    struct group *res = NULL;
 
-   DENTER(UIDGID_LAYER, "sge_getgrgid_r");
+   DENTER(UIDGID_LAYER);
 
    while(retries-- && !res) {
 #if defined(INTERIX)
@@ -1395,8 +1373,7 @@ struct group *sge_getgrgid_r(gid_t gid, struct group *pg,
       res = NULL;
    }
 
-   DEXIT;
-   return res;
+   DRETURN(res);
 } /* sge_getgrgid_r() */
 
 /****** uti/uidgid/sge_is_user_superuser() *************************************
@@ -1536,19 +1513,18 @@ static void set_admin_user(const char *user_name, uid_t theUID, gid_t theGID)
    uid_t uid = theUID;
    gid_t gid = theGID;
 
-   DENTER(UIDGID_LAYER, "set_admin_user");
+   DENTER(UIDGID_LAYER);
 
-   sge_mutex_lock("admin_user_mutex", SGE_FUNC, __LINE__, &admin_user.mutex);
+   sge_mutex_lock("admin_user_mutex", __func__, __LINE__, &admin_user.mutex);
    admin_user.user_name = user_name;
    admin_user.uid = uid;
    admin_user.gid = gid;
    admin_user.initialized = true;
-   sge_mutex_unlock("admin_user_mutex", SGE_FUNC, __LINE__, &admin_user.mutex);
+   sge_mutex_unlock("admin_user_mutex", __func__, __LINE__, &admin_user.mutex);
 
    DPRINTF(("auid=%ld; agid=%ld\n", (long)uid, (long)gid));
 
-   DEXIT;
-   return;
+   DRETURN_VOID;
 } /* set_admin_user() */
 
 /****** uti/uidgid/get_admin_user() ********************************************
@@ -1595,13 +1571,13 @@ static int get_admin_user(uid_t* theUID, gid_t* theGID)
    bool init = false;
    int res = ESRCH;
 
-   DENTER(UIDGID_LAYER, "get_admin_user");
+   DENTER(UIDGID_LAYER);
 
-   sge_mutex_lock("admin_user_mutex", SGE_FUNC, __LINE__, &admin_user.mutex);
+   sge_mutex_lock("admin_user_mutex", __func__, __LINE__, &admin_user.mutex);
    uid = admin_user.uid;
    gid = admin_user.gid;
    init = admin_user.initialized;
-   sge_mutex_unlock("admin_user_mutex", SGE_FUNC, __LINE__, &admin_user.mutex);
+   sge_mutex_unlock("admin_user_mutex", __func__, __LINE__, &admin_user.mutex);
 
    if (init == true) {
       *theUID = uid;
@@ -1609,8 +1585,7 @@ static int get_admin_user(uid_t* theUID, gid_t* theGID)
       res = 0;
    }
 
-   DEXIT;
-   return res;
+   DRETURN(res);
 } /* get_admin_user() */
 
 /****** uti/uidgid/get_admin_user_name() ***************************************
@@ -1662,7 +1637,7 @@ sge_has_admin_user(void) {
    uid_t uid;
    gid_t gid;
 
-   DENTER(TOP_LAYER, "sge_has_admin_user");
+   DENTER(TOP_LAYER);
    ret = (get_admin_user(&uid, &gid) == ESRCH) ? false : true; 
    DRETURN(ret);
 }
@@ -1750,15 +1725,14 @@ sge_get_file_passwd(void)
 {  
    static char file[4096] = "";
 
-   DENTER(TOP_LAYER, "sge_get_file_passwd");
+   DENTER(TOP_LAYER);
    if (file[0] == '\0') {
       const char *sge_root = sge_get_root_dir(0, NULL, 0, 1);
       const char *sge_cell = sge_get_default_cell();
 
       sprintf(file, "%s/%s/common/sgepasswd", sge_root, sge_cell);
    } 
-   DEXIT;
-   return file;
+   DRETURN(file);
 }
 
 /****** uti/uidgid/password_get_size()****************************************
@@ -1793,7 +1767,7 @@ password_get_size(const char *filename)
    char   input[MAX_LINE_LENGTH];
    bool   do_loop = true;
 
-   DENTER(TOP_LAYER, "password_get_size");
+   DENTER(TOP_LAYER);
    fp = fopen(filename, "r");
    if (fp != NULL) {
       while (do_loop) {
@@ -1915,7 +1889,7 @@ password_read_file(char **users[], char**encryped_pwds[], const char *filename)
    size_t size = 0;
    int    i = 0;
 
-   DENTER(TOP_LAYER, "password_read_file");
+   DENTER(TOP_LAYER);
    fp = fopen(filename, "r");
    if (fp != NULL) {
       size = password_get_size(filename);
@@ -1979,11 +1953,9 @@ password_read_file(char **users[], char**encryped_pwds[], const char *filename)
       /* Can't read passwd file */
       ret = 1;
    }
-   DEXIT;
-   return ret;
+   DRETURN(ret);
 FCLOSE_ERROR:
-   DEXIT;
-   return 1;
+   DRETURN(1);
 }
 
 /* Not MT-Safe */
@@ -1993,7 +1965,7 @@ password_find_entry(char *users[], char *encryped_pwds[], const char *user)
    int ret = -1;
    size_t i = 0;
 
-   DENTER(TOP_LAYER, "password_find_entry");
+   DENTER(TOP_LAYER);
    while (users[i] != NULL) {
       if (!strcmp(users[i], user)) {
          ret = i;

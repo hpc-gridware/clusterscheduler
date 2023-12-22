@@ -1,4 +1,4 @@
-#ifndef _SGE_RESOURCE_QUOTA_SCHEDD_H
+#ifndef __SGE_RESOURCE_QUOTA_SCHEDD_H
 #define __SGE_RESOURCE_QUOTA_SCHEDD_H
 /*___INFO__MARK_BEGIN__*/
 /*************************************************************************

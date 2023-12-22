@@ -125,7 +125,6 @@ main(int argc, char **argv)
       fprintf(stderr, MSG_QSUB_COULDNOTINITIALIZEENV_S,
               sge_dstring_get_string(&diag));
       fprintf(stderr, "\n");
-      DEXIT;
       SGE_EXIT((void**)&ctx, 1);
    }
 
@@ -144,7 +143,6 @@ main(int argc, char **argv)
    opt_list_append_opts_from_default_files(prog_number, cell_root, username, &opts_defaults, &alp, environ);
    tmp_ret = answer_list_print_err_warn(&alp, NULL, NULL, MSG_WARNING);
    if (tmp_ret > 0) {
-      DEXIT;
       SGE_EXIT((void**)&ctx, tmp_ret);
    }
 
@@ -155,7 +153,6 @@ main(int argc, char **argv)
                                           argv + 1, environ);
    tmp_ret = answer_list_print_err_warn(&alp, NULL, "qsub: ", MSG_QSUB_WARNING_S);
    if (tmp_ret > 0) {
-      DEXIT;
       SGE_EXIT((void**)&ctx, tmp_ret);
    }
 
@@ -164,7 +161,6 @@ main(int argc, char **argv)
     */
    if (opt_list_has_X(opts_cmdline, "-help")) {
       sge_usage(QSUB, stdout);
-      DEXIT;
       SGE_EXIT((void**)&ctx, 0);
    }
 
@@ -190,7 +186,6 @@ main(int argc, char **argv)
       tmp_ret = answer_list_print_err_warn(&alp, NULL, MSG_QSUB_COULDNOTREADSCRIPT_S,
                                            MSG_WARNING);
       if (tmp_ret > 0) {
-         DEXIT;
          SGE_EXIT((void**)&ctx, tmp_ret);
       }
    }
@@ -221,13 +216,11 @@ main(int argc, char **argv)
 
    tmp_ret = answer_list_print_err_warn(&alp, NULL, "qsub: ", MSG_WARNING);
    if (tmp_ret > 0) {
-      DEXIT;
       SGE_EXIT((void**)&ctx, tmp_ret);
    }
 
    if (set_sec_cred(sge_root, mastername, job, &alp) != 0) {
       answer_list_output(&alp);
-      DEXIT;
       SGE_EXIT((void**)&ctx, 1);
    }
 
@@ -239,7 +232,6 @@ main(int argc, char **argv)
 
    if (lGetUlong(job, JB_verify)) {
       cull_show_job(job, 0, false);
-      DEXIT;
       SGE_EXIT((void**)&ctx, 0);
    }
 
@@ -470,7 +462,7 @@ Error:
          DPRINTF(("Sleeping for 15 seconds to wait for the exit to finish.\n"));
          
          sge_relative_timespec(15, &ts);
-         sge_mutex_lock("qsub_exit_mutex", SGE_FUNC, __LINE__, &exit_mutex);
+         sge_mutex_lock("qsub_exit_mutex", __func__, __LINE__, &exit_mutex);
          
          while (!exited) {
             if (pthread_cond_timedwait(&exit_cv, &exit_mutex, &ts) == ETIMEDOUT) {
@@ -479,7 +471,7 @@ Error:
             }
          }
          
-         sge_mutex_unlock("qsub_exit_mutex", SGE_FUNC, __LINE__, &exit_mutex);
+         sge_mutex_unlock("qsub_exit_mutex", __func__, __LINE__, &exit_mutex);
       }
    }
 
@@ -488,8 +480,7 @@ Error:
    /* This is an exit() instead of an SGE_EXIT() because when the qmaster is
     * supended, SGE_EXIT() hangs. */
    exit(exit_status);
-   DEXIT;
-   return exit_status;
+   DRETURN(exit_status);
 }
 
 /****** get_bulk_jobid_string() ************************************************

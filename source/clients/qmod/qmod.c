@@ -77,7 +77,7 @@ char **argv
    u_long32 force = 0;
    lList *ref_list = NULL;
    lList *alp = NULL, *pcmdline = NULL;
-   lListElem *aep;
+   const lListElem *aep;
    sge_gdi_ctx_class_t *ctx = NULL;
    bool answ_list_has_err = false;
 
@@ -127,7 +127,7 @@ char **argv
 
    {
       lListElem *idep = NULL;
-      for_each(idep, ref_list) {
+      for_each_rw(idep, ref_list) {
          lSetUlong(idep, ID_force, force);
       }
    }
@@ -157,8 +157,7 @@ char **argv
    else {
       SGE_EXIT((void**)&ctx, 0);
    }
-   DEXIT;
-   return 0;
+   DRETURN(0);
 }
 
 
@@ -188,12 +187,12 @@ static bool answer_list_has_exit_code_error(lList **answer_list)
 {
    bool ret = false;
 
-   DENTER(TOP_LAYER, "answer_list_has_exit_code_error");
+   DENTER(TOP_LAYER);
 
    if (answer_list_has_quality(answer_list, ANSWER_QUALITY_CRITICAL) == true) {
       ret = true;
    } else {
-      lListElem *answer;   /* AN_Type */
+      const lListElem *answer;   /* AN_Type */
       /* check each ERROR if the status is really != 1 (STATUS_OK) */
       u_long32 status;
       for_each(answer, *answer_list) {
@@ -225,7 +224,7 @@ char **sp;
 char **rp;
 lList *alp = NULL;
 
-   DENTER(TOP_LAYER, "sge_parse_cmdline_qmod");
+   DENTER(TOP_LAYER);
 
    rp = argv;
 
@@ -355,11 +354,9 @@ lList *alp = NULL;
       answer_list_add_sprintf(&alp, STATUS_ESEMANTIC, ANSWER_QUALITY_ERROR, MSG_PARSE_INVALIDOPTIONARGUMENTX_S, *sp);
 error:
       qmod_usage(stderr, NULL);
-      DEXIT;
-      return alp;
+      DRETURN(alp);
    }
-   DEXIT;
-   return alp;
+   DRETURN(alp);
 }
 
 /****
@@ -375,7 +372,7 @@ static lList *sge_parse_qmod(lList **ppcmdline, lList **ppreflist, u_long32 *pfo
    u_long32 helpflag;
    int usageshowed = 0;
 
-   DENTER(TOP_LAYER, "sge_parse_qmod");
+   DENTER(TOP_LAYER);
 
    /* Loop over all options. Only valid options can be in the
       ppcmdline list. Except f_OPT all options are exclusive.

@@ -83,7 +83,7 @@ int main(int argc, char **argv) {
    lList *alp = NULL;
    lList *request_list = NULL;
    lList *cmdline = NULL;
-   lListElem *aep;
+   const lListElem *aep;
    int all_jobs = 0;
    int all_users = 0;
    u_long32 gdi_cmd = SGE_GDI_MOD; 
@@ -253,7 +253,7 @@ static lList *qalter_parse_job_parameter(u_long32 me_who, lList *cmdline, lList 
    int job_field[100];
    bool is_hold_option = false;
 
-   DENTER(TOP_LAYER, "qalter_parse_job_parameter"); 
+   DENTER(TOP_LAYER); 
 
    if (!prequestlist) {
       answer_list_add(&answer, MSG_PARSE_NULLPOINTERRECEIVED, STATUS_EUNKNOWN, 
@@ -271,7 +271,7 @@ static lList *qalter_parse_job_parameter(u_long32 me_who, lList *cmdline, lList 
    job = lCreateElem(JB_Type);
    if (job == NULL) {
       answer_list_add_sprintf(&answer, STATUS_EMALLOC, ANSWER_QUALITY_ERROR,
-                              MSG_MEM_MEMORYALLOCFAILED_S, SGE_FUNC);
+                              MSG_MEM_MEMORYALLOCFAILED_S, __func__);
       DRETURN(answer);
    }
 
@@ -434,7 +434,7 @@ static lList *qalter_parse_job_parameter(u_long32 me_who, lList *cmdline, lList 
       lListElem *jid;
       is_hold_option = true;
 
-      for_each (jid, lGetList(job, JB_job_identifier_list)) {
+      for_each_rw (jid, lGetList(job, JB_job_identifier_list)) {
          lSetUlong(jid, ID_force, (u_long32) lGetInt(ep, SPA_argval_lIntT));
       }
       lRemoveElem(cmdline, &ep);
@@ -445,7 +445,8 @@ static lList *qalter_parse_job_parameter(u_long32 me_who, lList *cmdline, lList 
    if (me_who != QRESUB) {
       /* -hold_jid */
       if (lGetElemStrRW(cmdline, SPA_switch, "-hold_jid")) {
-         lListElem *sep, *ep;
+         const lListElem *sep;
+         lListElem *ep;
          lList *jref_list = NULL;
          while ((ep = lGetElemStrRW(cmdline, SPA_switch, "-hold_jid"))) {
             for_each(sep, lGetList(ep, SPA_argval_lListT)) {
@@ -461,7 +462,8 @@ static lList *qalter_parse_job_parameter(u_long32 me_who, lList *cmdline, lList 
 
       /* -hold_jid_ad */
       if (lGetElemStrRW(cmdline, SPA_switch, "-hold_jid_ad")) {
-         lListElem *sep, *ep;
+         const lListElem *sep;
+         lListElem *ep;
          lList *jref_list = NULL;
          while ((ep = lGetElemStrRW(cmdline, SPA_switch, "-hold_jid_ad"))) {
             for_each(sep, lGetList(ep, SPA_argval_lListT)) {
@@ -675,7 +677,7 @@ static lList *qalter_parse_job_parameter(u_long32 me_who, lList *cmdline, lList 
    }
 
    /* complain about unused options */
-   for_each(ep, cmdline) {
+   for_each_rw(ep, cmdline) {
       const char *cp;
       char str[1024];
  
@@ -741,7 +743,7 @@ static lList *qalter_parse_job_parameter(u_long32 me_who, lList *cmdline, lList 
    }
 
    /* get next job id from cmd line */
-   for_each (ep, lGetList(job, JB_job_identifier_list)) {
+   for_each_rw(ep, lGetList(job, JB_job_identifier_list)) {
       lList *task_list = NULL;
       lListElem *task;
       lDescr task_descr[] = { 
@@ -805,7 +807,7 @@ static lList *qalter_parse_job_parameter(u_long32 me_who, lList *cmdline, lList 
 
       if (!rep) {   
          answer_list_add_sprintf(&answer, STATUS_EMALLOC, ANSWER_QUALITY_ERROR,
-                                 MSG_MEM_MEMORYALLOCFAILED_S, SGE_FUNC);
+                                 MSG_MEM_MEMORYALLOCFAILED_S, __func__);
          lFreeElem(&job);
          sge_free(&rdp);
          DRETURN(answer);
@@ -817,7 +819,7 @@ static lList *qalter_parse_job_parameter(u_long32 me_who, lList *cmdline, lList 
          task = lAddElemUlong(&task_list, JAT_task_number, 0, task_descr);      
          lSetUlong(task, JAT_hold, lGetUlong(ep, ID_force));
       } else if (lGetList(ep, ID_ja_structure)) {
-         lListElem *range;
+         const lListElem *range;
          for_each(range, lGetList(ep, ID_ja_structure)) {
             u_long32 start = lGetUlong(range, RN_min);
             u_long32 end = lGetUlong(range, RN_max);

@@ -147,7 +147,7 @@ void bootstrap_mt_init(void)
 }
 
 void sge_bootstrap_state_set_thread_local(sge_bootstrap_state_class_t* ctx) {
-   DENTER(TOP_LAYER, "sge_bootstrap_state_set_thread_local");
+   DENTER(TOP_LAYER);
    
    {   
       GET_SPECIFIC(sge_bootstrap_thread_local_t, handle, bootstrap_thread_local_init, sge_bootstrap_thread_local_key, 
@@ -158,7 +158,7 @@ void sge_bootstrap_state_set_thread_local(sge_bootstrap_state_class_t* ctx) {
          handle->current = handle->original;
       }
    }
-   DEXIT;
+   DRETURN_VOID;
 }
 
 const char *bootstrap_get_admin_user(void)
@@ -462,7 +462,7 @@ bool sge_bootstrap(const char *bootstrap_file, dstring *error_dstring)
                                      };
    char value[NUM_BOOTSTRAP][1025];
 
-   DENTER(TOP_LAYER, "sge_bootstrap");
+   DENTER(TOP_LAYER);
 
    for (i = 0; i < NUM_BOOTSTRAP; i++) {
       value[i][0] = '\0';
@@ -543,8 +543,7 @@ bool sge_bootstrap(const char *bootstrap_file, dstring *error_dstring)
       DPRINTF(("jvm_threads         >%d<\n", bootstrap_get_jvm_thread_count()));
    } 
 
-   DEXIT;
-   return ret;
+   DRETURN(ret);
 }
 
 
@@ -638,37 +637,33 @@ sge_bootstrap_state_class_t *sge_bootstrap_state_class_create(sge_path_state_cla
 {
    sge_bootstrap_state_class_t *ret = (sge_bootstrap_state_class_t *)sge_malloc(sizeof(sge_bootstrap_state_class_t));
 
-   DENTER(TOP_LAYER, "sge_bootstrap_state_class_create");
+   DENTER(TOP_LAYER);
 
    if (!ret) {
       if (eh != NULL) {
          eh->error(eh, STATUS_EMALLOC, ANSWER_QUALITY_ERROR, MSG_MEMORY_MALLOCFAILED);
       }
-      DEXIT;
-      return NULL;
+      DRETURN(NULL);
    }
    
    if( !sge_bootstrap_state_class_init(ret, eh) ) {
       sge_bootstrap_state_class_destroy(&ret);
-      DEXIT;
-      return NULL;
+      DRETURN(NULL);
    }
 
    /* TODO move the following block into sge_bootstrap_state_class_init and
            delete bootstrap_setup */
    if (!sge_bootstrap_state_setup(ret, sge_paths, eh)) {
       sge_bootstrap_state_class_destroy(&ret);
-      DEXIT;
-      return NULL;
+      DRETURN(NULL);
    }
 
-   DEXIT;
-   return ret;
+   DRETURN(ret);
 }   
 
 static bool sge_bootstrap_state_class_init(sge_bootstrap_state_class_t *st, sge_error_class_t *eh) {
    
-   DENTER(TOP_LAYER, "sge_bootstrap_state_class_init");
+   DENTER(TOP_LAYER);
    
    st->dprintf = sge_bootstrap_state_dprintf;
 
@@ -708,26 +703,23 @@ static bool sge_bootstrap_state_class_init(sge_bootstrap_state_class_t *st, sge_
       if (eh != NULL) {
          eh->error(eh, STATUS_EMALLOC, ANSWER_QUALITY_ERROR, MSG_MEMORY_MALLOCFAILED);
       }
-      DEXIT;
-      return false;
+      DRETURN(false);
    }
    memset(st->sge_bootstrap_state_handle, 0, sizeof(sge_bootstrap_state_t));
    bootstrap_mt_init();
 
-   DEXIT;
-   return true;
+   DRETURN(true);
 }
 
 void sge_bootstrap_state_class_destroy(sge_bootstrap_state_class_t **pst)
 {
-   DENTER(TOP_LAYER, "sge_bootstrap_state_class_destroy");
+   DENTER(TOP_LAYER);
    if (!pst || !*pst) {
-      DEXIT;
-      return;
+      DRETURN_VOID;
    }   
    bootstrap_state_destroy((*pst)->sge_bootstrap_state_handle);
    sge_free(pst);
-   DEXIT;
+   DRETURN_VOID;
 }
 
 /****** uti/bootstrap/bootstrap_state_destroy() ****************************
@@ -788,7 +780,7 @@ static bool sge_bootstrap_state_setup(sge_bootstrap_state_class_t *thiz, sge_pat
    char value[NUM_BOOTSTRAP][1025];
    int i;
 
-   DENTER(TOP_LAYER, "sge_bootstrap_state_setup");
+   DENTER(TOP_LAYER);
 
    for (i = 0; i < NUM_BOOTSTRAP; i++) {
       value[i][0] = '\0';
@@ -796,16 +788,14 @@ static bool sge_bootstrap_state_setup(sge_bootstrap_state_class_t *thiz, sge_pat
 
    if (!sge_paths) {
       eh->error(eh, STATUS_EUNKNOWN, ANSWER_QUALITY_ERROR, "sge_paths is NULL");
-      DEXIT;
-      return false;
+      DRETURN(false);
    }
 
    /* get filepath of bootstrap file */
    bootstrap_file = sge_paths->get_bootstrap_file(sge_paths);
    if (bootstrap_file == NULL) {
       eh->error(eh, STATUS_EUNKNOWN, ANSWER_QUALITY_ERROR, MSG_UTI_CANNOTRESOLVEBOOTSTRAPFILE);
-      DEXIT;
-      return false;
+      DRETURN(false);
    } 
    
    /* read bootstrapping information */   
@@ -813,8 +803,7 @@ static bool sge_bootstrap_state_setup(sge_bootstrap_state_class_t *thiz, sge_pat
                                     value, &error_dstring)) {
       eh->error(eh, STATUS_EUNKNOWN, ANSWER_QUALITY_ERROR, sge_dstring_get_string(&error_dstring));
       sge_dstring_free(&error_dstring);
-      DEXIT;
-      return false;
+      DRETURN(false);
    } 
 
    /* store bootstrapping information */
@@ -863,15 +852,14 @@ static bool sge_bootstrap_state_setup(sge_bootstrap_state_class_t *thiz, sge_pat
    thiz->dprintf(thiz);
 #endif
 
-   DEXIT;
-   return true;
+   DRETURN(true);
 }
 
 static void sge_bootstrap_state_dprintf(sge_bootstrap_state_class_t *thiz)
 {
    sge_bootstrap_state_t *bs = (sge_bootstrap_state_t *) thiz->sge_bootstrap_state_handle;
    
-   DENTER(TOP_LAYER, "sge_bootstrap_state_dprintf");
+   DENTER(TOP_LAYER);
 
    DPRINTF(("admin_user          >%s<\n", bs->admin_user));
    DPRINTF(("default_domain      >%s<\n", bs->default_domain));
@@ -888,7 +876,7 @@ static void sge_bootstrap_state_dprintf(sge_bootstrap_state_class_t *thiz)
    DPRINTF(("scheduler_threads   >%d<\n", bs->scheduler_thread_count));
    DPRINTF(("jvm_threads         >%d<\n", bs->jvm_thread_count));
 
-   DEXIT;
+   DRETURN_VOID;
 }
 
 static const char* get_admin_user(sge_bootstrap_state_class_t *thiz) 

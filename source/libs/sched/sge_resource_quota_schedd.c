@@ -105,7 +105,7 @@ static void rqs_excluded_cqueues(const lListElem *rule, sge_assignment_t *a);
 bool
 rqs_set_dynamical_limit(lListElem *limit, lListElem *global_host, lListElem *exec_host, const lList *centry) {
 
-   DENTER(TOP_LAYER, "rqs_set_dynamical_limit");
+   DENTER(TOP_LAYER);
 
    if (lGetBool(limit, RQRL_dynamic)) {
       double dynamic_limit = scaled_mixed_load(lGetString(limit, RQRL_value), global_host, exec_host, centry);
@@ -364,11 +364,11 @@ static void rqs_can_optimize(const lListElem *rule, bool *host, bool *queue, sge
 *******************************************************************************/
 static void rqs_excluded_cqueues(const lListElem *rule, sge_assignment_t *a)
 {
-   lListElem *cq;
+   const lListElem *cq;
    const lListElem *prev;
    int ignored = 0, excluded = 0;
 
-   DENTER(TOP_LAYER, "rqs_excluded_cqueues");
+   DENTER(TOP_LAYER);
 
    for_each (cq, *object_type_get_master_list(SGE_TYPE_CQUEUE)) {
       const char *cqname = lGetString(cq, CQ_name);
@@ -425,11 +425,11 @@ static void rqs_excluded_cqueues(const lListElem *rule, sge_assignment_t *a)
 *******************************************************************************/
 static void rqs_excluded_hosts(const lListElem *rule, sge_assignment_t *a)
 {
-   lListElem *eh;
+   const lListElem *eh;
    const lListElem *prev;
    int ignored = 0, excluded = 0;
 
-   DENTER(TOP_LAYER, "rqs_excluded_hosts");
+   DENTER(TOP_LAYER);
 
    for_each (eh, a->host_list) {
       const char *hname = lGetHost(eh, EH_name);
@@ -486,7 +486,7 @@ static void rqs_expand_cqueues(const lListElem *rule, sge_assignment_t *a)
    const char *cqname;
    lListElem *qfilter = lGetObject(rule, RQR_filter_queues);
 
-   DENTER(TOP_LAYER, "rqs_expand_cqueues");
+   DENTER(TOP_LAYER);
 
    for_each (cq, *object_type_get_master_list(SGE_TYPE_CQUEUE)) {
       cqname = lGetString(cq, CQ_name);
@@ -496,8 +496,7 @@ static void rqs_expand_cqueues(const lListElem *rule, sge_assignment_t *a)
          lAddElemStr(&(a->skip_cqueue_list), CTI_name, cqname, CTI_Type);
    }
 
-   DEXIT;
-   return;
+   DRETURN_VOID;
 }
 
 /****** sge_resource_quota_schedd/rqs_expand_hosts() ***************************
@@ -693,7 +692,7 @@ static bool rqs_exceeded_sort_out(sge_assignment_t *a, const lListElem *rule, co
    bool cq_global = is_cqueue_global(rule);
    bool eh_global = is_host_global(rule);
 
-   DENTER(TOP_LAYER, "rqs_exceeded_sort_out");
+   DENTER(TOP_LAYER);
 
    if ((!cq_global && !eh_global) || (cq_global && eh_global &&
          (is_cqueue_expand(rule) || is_host_expand(rule)))) { /* failure at queue instance limit */
@@ -837,11 +836,11 @@ static void rqs_exceeded_sort_out_par(sge_assignment_t *a, const lListElem *rule
 bool sge_user_is_referenced_in_rqs(const lList *rqs, const char *user, const char *group, const lList *acl_list)
 {
    bool ret = false;
-   lListElem *ep;
+   const lListElem *ep;
 
    for_each(ep, rqs) {
       const lList *rule_list = lGetList(ep, RQS_rule);
-      lListElem *rule;
+      const lListElem *rule;
 
       for_each(rule, rule_list) {
          /* there may be no per-user limitation and also not limitation that is special for this user */
@@ -890,13 +889,13 @@ bool sge_user_is_referenced_in_rqs(const lList *rqs, const char *user, const cha
 void parallel_check_and_debit_rqs_slots(sge_assignment_t *a, const char *host, const char *queue, 
       int *slots, int *slots_qend, dstring *rule_name, dstring *rue_name, dstring *limit_name)
 {
-   lListElem *rqs, *rule;
+   const lListElem *rqs, *rule;
    const char* user = a->user;
    const char* group = a->group;
    const char* project = a->project;
    const char* pe = a->pe_name;
 
-   DENTER(TOP_LAYER, "parallel_check_and_debit_rqs_slots");
+   DENTER(TOP_LAYER);
 
    /* first step - see how many slots are left */
    for_each(rqs, a->rqs_list) {
@@ -953,13 +952,13 @@ void parallel_check_and_debit_rqs_slots(sge_assignment_t *a, const char *host, c
 void parallel_revert_rqs_slot_debitation(sge_assignment_t *a, const char *host, const char *queue, 
       int slots, int slots_qend, dstring *rule_name, dstring *rue_name, dstring *limit_name)
 {
-   lListElem *rqs, *rule;
+   const lListElem *rqs, *rule;
    const char* user = a->user;
    const char* group = a->group;
    const char* project = a->project;
    const char* pe = a->pe_name;
 
-   DENTER(TOP_LAYER, "parallel_revert_rqs_slot_debitation");
+   DENTER(TOP_LAYER);
 
    for_each(rqs, a->rqs_list) {
 
@@ -1028,7 +1027,7 @@ parallel_limit_slots_by_time(const sge_assignment_t *a, lList *requests,
    const lList *rue_list = lGetList(limit, RQRL_usage);
    dispatch_t result = DISPATCH_NEVER_CAT;
 
-   DENTER(TOP_LAYER, "parallel_limit_slots_by_time");
+   DENTER(TOP_LAYER);
 
    /* create tmp_centry_list */
    tmp_centry_elem = lCopyElem(centry);
@@ -1045,7 +1044,7 @@ parallel_limit_slots_by_time(const sge_assignment_t *a, lList *requests,
    }
 {
    const char *object_name = "bla";
-   lListElem *rde;
+   const lListElem *rde;
    DPRINTF(("resource utilization: %s \"%s\" %f utilized now\n", 
          object_name?object_name:"<unknown_object>", lGetString(tmp_rue_elem, RUE_name),
             lGetDouble(tmp_rue_elem, RUE_utilized_now)));
@@ -1114,14 +1113,15 @@ parallel_rqs_slots_by_time(sge_assignment_t *a, int *slots, int *slots_qend, lLi
    const char* queue = lGetString(qep, QU_qname);
    const char* host = lGetHost(qep, QU_qhostname);
 
-   DENTER(TOP_LAYER, "parallel_rqs_slots_by_time");
+   DENTER(TOP_LAYER);
 
    if (lGetNumberOfElem(a->rqs_list) != 0) {
       const char* user = a->user;
       const char* group = a->group;
       const char* project = a->project;
       const char* pe = a->pe_name;
-      lListElem *rql, *rqs;
+      lListElem *rql;
+      const lListElem *rqs;
       dstring rule_name = DSTRING_INIT;
       dstring rue_string = DSTRING_INIT;
       dstring limit_name = DSTRING_INIT;
@@ -1164,7 +1164,7 @@ parallel_rqs_slots_by_time(sge_assignment_t *a, int *slots, int *slots_qend, lLi
                u_long32 tagged_for_schedule_old = lGetUlong(qep, QU_tagged4schedule);  /* default value or set in match_static_queue() */
                lSetUlong(qep, QU_tagged4schedule, 2);
                
-               for_each(limit, lGetList(rule, RQR_limit)) {
+               for_each_rw(limit, lGetList(rule, RQR_limit)) {
                   const char *limit_name = lGetString(limit, RQRL_name);
 
                   lListElem *raw_centry = centry_list_locate(a->centry_list, limit_name);
@@ -1293,7 +1293,7 @@ static dispatch_t rqs_limitation_reached(sge_assignment_t *a, const lListElem *r
    dstring rue_name = DSTRING_INIT;
    dstring reason = DSTRING_INIT;
 
-   DENTER(TOP_LAYER, "rqs_limitation_reached");
+   DENTER(TOP_LAYER);
 
     if (implicit_slots_request == NULL) {
       implicit_slots_request = lCreateElem(CE_Type);
@@ -1303,7 +1303,7 @@ static dispatch_t rqs_limitation_reached(sge_assignment_t *a, const lListElem *r
    }
 
    limit_list = lGetList(rule, RQR_limit);
-   for_each(limit, limit_list) {
+   for_each_rw(limit, limit_list) {
       bool       is_forced = false;
       const lList      *job_centry_list = NULL;
       lListElem  *job_centry = NULL;
@@ -1439,10 +1439,10 @@ static dispatch_t rqs_limitation_reached(sge_assignment_t *a, const lListElem *r
 dispatch_t rqs_by_slots(sge_assignment_t *a, const char *queue, const char *host, 
   u_long32 *tt_rqs_all, bool *is_global, dstring *rue_string, dstring *limit_name, dstring *rule_name, u_long32 tt_best)
 {
-   lListElem *rqs;
+   const lListElem *rqs;
    dispatch_t result = DISPATCH_OK;
 
-   DENTER(TOP_LAYER, "rqs_by_slots");
+   DENTER(TOP_LAYER);
 
    *is_global = false;
 

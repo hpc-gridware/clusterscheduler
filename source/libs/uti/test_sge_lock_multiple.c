@@ -91,9 +91,9 @@ static sge_control_t Control = {PTHREAD_MUTEX_INITIALIZER, MAX_THREADS,0.0, PTHR
 
 static void has_finished(const char* str, double time) 
 {
-   DENTER(TOP_LAYER, "has_finished");
+   DENTER(TOP_LAYER);
 
-   sge_mutex_lock("has_finished", SGE_FUNC, __LINE__, &Control.mutex);
+   sge_mutex_lock("has_finished", __func__, __LINE__, &Control.mutex);
    Control.working--;
    Control.time += time;
 
@@ -113,9 +113,8 @@ static void has_finished(const char* str, double time)
                              &Control.mutex, &ts);
    }
    
-   sge_mutex_unlock("has_finished", SGE_FUNC, __LINE__, &Control.mutex);
-   
-   DEXIT;
+   sge_mutex_unlock("has_finished", __func__, __LINE__, &Control.mutex);
+   DRETURN_VOID;
 }
 
 /*---------------------------*/
@@ -183,7 +182,7 @@ static void *thread_function(void *anArg)
    int test = 257;
    int result;
 
-   DENTER(TOP_LAYER, "thread_function");
+   DENTER(TOP_LAYER);
 
    has_finished("start",0.0);
  
@@ -230,10 +229,10 @@ static void *thread_function(void *anArg)
    
    gettimeofday(&before, NULL); 
    for (i = 0; i < max; i++) {
-      sge_mutex_lock("mutex", SGE_FUNC, __LINE__, &mutex);
+      sge_mutex_lock("mutex", __func__, __LINE__, &mutex);
       result = test +1;
       test = result +1;
-      sge_mutex_unlock("mutex", SGE_FUNC, __LINE__, &mutex);
+      sge_mutex_unlock("mutex", __func__, __LINE__, &mutex);
    }
    gettimeofday(&after, NULL);
 
@@ -271,8 +270,7 @@ static void *thread_function(void *anArg)
    has_finished("write lock     ", time_new);
 
  
-   DEXIT;
-   return (void *)NULL;
+   DRETURN((void *)NULL);
 } /* thread_function */
 
 int validate(int thread_count) {

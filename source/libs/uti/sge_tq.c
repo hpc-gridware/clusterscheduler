@@ -127,7 +127,7 @@ static bool
 sge_tq_task_create(sge_tq_task_t **task, sge_tq_type_t type, void *data) {
    bool ret = true;
 
-   DENTER(TQ_LAYER, "sge_tq_task_create");
+   DENTER(TQ_LAYER);
    if (task != NULL && type != SGE_TQ_UNKNOWN && data != NULL) {
       sge_tq_task_t *new_task;
       int size = sizeof(sge_tq_task_t);
@@ -139,7 +139,7 @@ sge_tq_task_create(sge_tq_task_t **task, sge_tq_type_t type, void *data) {
 
          *task = new_task;
       } else {
-         sge_err_set(SGE_ERR_MEMORY, MSG_UNABLETOALLOCATEBYTES_DS, size, SGE_FUNC);
+         sge_err_set(SGE_ERR_MEMORY, MSG_UNABLETOALLOCATEBYTES_DS, size, __func__);
          *task = NULL;
          ret = false;
       }
@@ -172,7 +172,7 @@ static bool
 sge_tq_task_destroy(sge_tq_task_t **task) {
    bool ret = true;
 
-   DENTER(TQ_LAYER, "sge_tq_task_destroy");
+   DENTER(TQ_LAYER);
    if (task != NULL && *task != NULL) {
       sge_free(task);
    }
@@ -207,7 +207,7 @@ bool
 sge_tq_create(sge_tq_queue_t **queue) {
    bool ret = true;
 
-   DENTER(TQ_LAYER, "sge_tq_create");
+   DENTER(TQ_LAYER);
    if (queue != NULL) {
       sge_tq_queue_t *new_queue;
       int size = sizeof(sge_tq_queue_t);
@@ -220,7 +220,7 @@ sge_tq_create(sge_tq_queue_t **queue) {
 
          *queue = new_queue;
       } else {
-         sge_err_set(SGE_ERR_MEMORY, MSG_UNABLETOALLOCATEBYTES_DS, size, SGE_FUNC);
+         sge_err_set(SGE_ERR_MEMORY, MSG_UNABLETOALLOCATEBYTES_DS, size, __func__);
          *queue = NULL;
          ret = false;
       }
@@ -257,7 +257,7 @@ bool
 sge_tq_destroy(sge_tq_queue_t **queue) {
    bool ret = true;
 
-   DENTER(TQ_LAYER, "sge_tq_destroy");
+   DENTER(TQ_LAYER);
    if (queue != NULL && *queue != NULL) {
       pthread_cond_destroy(&(*queue)->cond);
       sge_sl_destroy(&(*queue)->list, (sge_sl_destroy_f)sge_tq_task_destroy);
@@ -289,7 +289,7 @@ u_long32
 sge_tq_get_task_count(sge_tq_queue_t *queue) {
    u_long32 count = 0;
    
-   DENTER(TQ_LAYER, "sge_tq_get_task_count");
+   DENTER(TQ_LAYER);
    if (queue != NULL) {
       count = sge_sl_get_elem_count(queue->list); 
    }
@@ -324,11 +324,11 @@ u_long32
 sge_tq_get_waiting_count(sge_tq_queue_t *queue) {
    u_long32 count = 0;
    
-   DENTER(TQ_LAYER, "sge_tq_get_waiting_count");
+   DENTER(TQ_LAYER);
    if (queue != NULL) {
-      sge_mutex_lock(TQ_MUTEX_NAME, SGE_FUNC, __LINE__, sge_sl_get_mutex(queue->list));
+      sge_mutex_lock(TQ_MUTEX_NAME, __func__, __LINE__, sge_sl_get_mutex(queue->list));
       count = queue->waiting; 
-      sge_mutex_unlock(TQ_MUTEX_NAME, SGE_FUNC, __LINE__, sge_sl_get_mutex(queue->list));
+      sge_mutex_unlock(TQ_MUTEX_NAME, __func__, __LINE__, sge_sl_get_mutex(queue->list));
    }
    DRETURN(count);
 }
@@ -371,7 +371,7 @@ bool
 sge_tq_store_notify(sge_tq_queue_t *queue, sge_tq_type_t type, void *data) {
    bool ret = true;
 
-   DENTER(TQ_LAYER, "sge_tq_store_notify");
+   DENTER(TQ_LAYER);
    if (queue != NULL && type != SGE_TQ_UNKNOWN && data != NULL) {
       sge_tq_task_t *new_task = NULL;
 
@@ -379,14 +379,14 @@ sge_tq_store_notify(sge_tq_queue_t *queue, sge_tq_type_t type, void *data) {
       ret &= sge_tq_task_create(&new_task, type, data); 
 
       /* insert the task in the list and notify one waiting thread if there is one */ 
-      sge_mutex_lock(TQ_MUTEX_NAME, SGE_FUNC, __LINE__, sge_sl_get_mutex(queue->list));
+      sge_mutex_lock(TQ_MUTEX_NAME, __func__, __LINE__, sge_sl_get_mutex(queue->list));
       if (ret) {
          ret = sge_sl_insert(queue->list, new_task, SGE_SL_BACKWARD);
       }
       if (ret && queue->waiting > 0) {
          sge_tq_wakeup_waiting(queue);
       }
-      sge_mutex_unlock(TQ_MUTEX_NAME, SGE_FUNC, __LINE__, sge_sl_get_mutex(queue->list));
+      sge_mutex_unlock(TQ_MUTEX_NAME, __func__, __LINE__, sge_sl_get_mutex(queue->list));
    }
    DRETURN(ret);
 }
@@ -420,14 +420,14 @@ bool
 sge_tq_wakeup_waiting(sge_tq_queue_t *queue) {
    bool ret = true;
    
-   DENTER(TQ_LAYER, "sge_tq_wakeup_waiting");
+   DENTER(TQ_LAYER);
    if (queue != NULL) {
-      sge_mutex_lock(TQ_MUTEX_NAME, SGE_FUNC, __LINE__, sge_sl_get_mutex(queue->list));
+      sge_mutex_lock(TQ_MUTEX_NAME, __func__, __LINE__, sge_sl_get_mutex(queue->list));
 
       /* wake up all threads waiting for a task */
       pthread_cond_broadcast(&(queue->cond));
 
-      sge_mutex_unlock(TQ_MUTEX_NAME, SGE_FUNC, __LINE__, sge_sl_get_mutex(queue->list));
+      sge_mutex_unlock(TQ_MUTEX_NAME, __func__, __LINE__, sge_sl_get_mutex(queue->list));
    }
    DRETURN(ret);
 }
@@ -482,7 +482,7 @@ sge_tq_wait_for_task(sge_tq_queue_t *queue, int seconds,
                      sge_tq_type_t type, void **data) {
    bool ret = true;
    
-   DENTER(TQ_LAYER, "sge_tq_wait_for_task");
+   DENTER(TQ_LAYER);
    if (queue != NULL && data != NULL) {
       sge_sl_elem_t *elem = NULL;
       sge_tq_task_t key;
@@ -490,7 +490,7 @@ sge_tq_wait_for_task(sge_tq_queue_t *queue, int seconds,
       key.type = type;
       *data = NULL;
 
-      sge_mutex_lock(TQ_MUTEX_NAME, SGE_FUNC, __LINE__, sge_sl_get_mutex(queue->list));
+      sge_mutex_lock(TQ_MUTEX_NAME, __func__, __LINE__, sge_sl_get_mutex(queue->list));
      
       /*
        * block until either
@@ -528,7 +528,7 @@ sge_tq_wait_for_task(sge_tq_queue_t *queue, int seconds,
          }
       }
  
-      sge_mutex_unlock(TQ_MUTEX_NAME, SGE_FUNC, __LINE__, sge_sl_get_mutex(queue->list));
+      sge_mutex_unlock(TQ_MUTEX_NAME, __func__, __LINE__, sge_sl_get_mutex(queue->list));
    }
    DRETURN(ret);
 }

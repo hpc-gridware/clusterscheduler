@@ -73,7 +73,7 @@ sge_signaler_initialize(sge_gdi_ctx_class_t *ctx)
    cl_thread_settings_t* dummy_thread_p = NULL;
    dstring thread_name = DSTRING_INIT; 
 
-   DENTER(TOP_LAYER, "sge_signaler_initialize");
+   DENTER(TOP_LAYER);
 
    sge_dstring_sprintf(&thread_name, "%s%03d", threadnames[SIGNALER_THREAD], 0);
    cl_thread_list_setup(&(Main_Control.signal_thread_pool), "signal thread pool");
@@ -88,7 +88,7 @@ void
 sge_signaler_initiate_termination(void)
 {
    cl_thread_settings_t* thread = NULL;
-   DENTER(TOP_LAYER, "sge_signaler_initiate_termination");
+   DENTER(TOP_LAYER);
 
    thread = cl_thread_list_get_first_thread(Main_Control.signal_thread_pool);
    if (thread != NULL) {
@@ -102,7 +102,7 @@ void
 sge_signaler_terminate(void)
 {
    cl_thread_settings_t* thread = NULL;
-   DENTER(TOP_LAYER, "sge_signaler_terminate");
+   DENTER(TOP_LAYER);
 
    thread = cl_thread_list_get_first_thread(Main_Control.signal_thread_pool);
    if (thread != NULL) {
@@ -150,7 +150,7 @@ void* sge_signaler_main(void* arg)
    monitoring_t monitor;
    sge_gdi_ctx_class_t *ctx = NULL;
 
-   DENTER(TOP_LAYER, "sge_signaler_main");
+   DENTER(TOP_LAYER);
 
    cl_thread_func_startup(thread_config);
 

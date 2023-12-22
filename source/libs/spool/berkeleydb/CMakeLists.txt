@@ -4,21 +4,26 @@ if(${WITH_SPOOL_BERKELEYDB})
   set(LIBRARY_SOURCES sge_bdb.c sge_bdb_types.c sge_spooling_berkeleydb.c)
   set(LIBRARY_INCLUDES "./")
 
-  add_library(${LIBRARY_NAME} SHARED ${LIBRARY_SOURCES})
+  add_library(${LIBRARY_NAME}_objlib OBJECT ${LIBRARY_SOURCES})
+  target_include_directories(${LIBRARY_NAME}_objlib PUBLIC ${SGE_INCLUDES} ${LIBRARY_INCLUDES})
+  set_property(TARGET ${LIBRARY_NAME}_objlib PROPERTY POSITION_INDEPENDENT_CODE 1)
 
-  target_include_directories(${LIBRARY_NAME} PUBLIC ${SGE_INCLUDES}
-                                                    ${LIBRARY_INCLUDES})
+  add_library(${LIBRARY_NAME}_static STATIC $<TARGET_OBJECTS:${LIBRARY_NAME}_objlib>)
+  target_include_directories(${LIBRARY_NAME}_static PUBLIC ${SGE_INCLUDES} ${LIBRARY_INCLUDES})
 
+  add_library(${LIBRARY_NAME} SHARED $<TARGET_OBJECTS:${LIBRARY_NAME}_objlib>)
+  target_include_directories(${LIBRARY_NAME} PUBLIC ${SGE_INCLUDES} ${LIBRARY_INCLUDES})
   target_link_libraries(
-    ${LIBRARY_NAME}
-    spool
-    sched
-    sgeobj
-    cull
-    comm
-    uti
-    commlists
-    berkeleydb)
+      ${LIBRARY_NAME}
+    PRIVATE
+      spool
+      sched
+      sgeobj
+      cull
+      comm
+      uti
+      commlists
+      berkeleydb)
 
   if(INSTALL_SGE_BIN)
     install(TARGETS spoolb DESTINATION lib/${SGE_ARCH})

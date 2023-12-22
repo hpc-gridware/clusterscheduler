@@ -80,7 +80,7 @@ spool_dynamic_create_context(lList **answer_list, const char *method,
    spooling_get_method_func get_spooling_method = NULL;
    const char *spooling_name = NULL;
 
-   DENTER(TOP_LAYER, "spool_dynamic_create_context");
+   DENTER(TOP_LAYER);
 
    /* build the full name of the shared lib - append architecture dependent
     * shlib postfix 

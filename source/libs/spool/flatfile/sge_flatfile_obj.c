@@ -774,7 +774,7 @@ static int read_CF_value(lListElem *ep, int nm, const char *buf,
    char *buffer = strdup(buf);
    struct saved_vars_s *context = NULL;
 
-   DENTER(TOP_LAYER, "read_CF_value");
+   DENTER(TOP_LAYER);
    
    if (!strcmp(name, "gid_range")) {
       if ((value = sge_strtok_r(buffer, " \t\n", &context))) {
@@ -793,7 +793,7 @@ static int read_CF_value(lListElem *ep, int nm, const char *buf,
                sge_free(&buffer);
                DRETURN(0);
             } else {
-               lListElem *rep;
+               const lListElem *rep;
 
                for_each(rep, rlp) {
                   u_long32 min;
@@ -1466,7 +1466,7 @@ static int read_RQR_obj(lListElem *ep, int nm, const char *buffer,
    lListElem *filter = NULL;
    int ret = 1;
 
-   DENTER(TOP_LAYER, "read_RQR_obj");
+   DENTER(TOP_LAYER);
 
    if ((ret = rqs_parse_filter_from_string(&filter, buffer, alp)) == 1) {
       lSetObject(ep, nm, filter);

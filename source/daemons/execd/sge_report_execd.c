@@ -71,7 +71,7 @@ int sge_send_all_reports(sge_gdi_ctx_class_t *ctx, u_long32 now, int which,
 {
    int ret = 0;
    unsigned long connect_time = 0;
-   DENTER(TOP_LAYER, "sge_send_all_reports");
+   DENTER(TOP_LAYER);
 
    /*
     * Send reports only if there is not a communication error.
@@ -124,7 +124,7 @@ int sge_add_double2load_report(lList **lpp, char *name, double value,
 {
    char load_string[255];
  
-   DENTER(BASIS_LAYER, "sge_add_double2load_report");
+   DENTER(BASIS_LAYER);
  
    sprintf(load_string, "%f%s", value, units?units:"");
    sge_add_str2load_report(lpp, name, load_string, host);
@@ -143,7 +143,7 @@ int sge_add_int2load_report(lList **lpp, const char *name, int value,
    char load_string[255];
    int ret;
 
-   DENTER(BASIS_LAYER, "sge_add_int2load_report");
+   DENTER(BASIS_LAYER);
 
    sprintf(load_string, "%d", value);
    ret = sge_add_str2load_report(lpp, name, load_string, host);
@@ -161,7 +161,7 @@ int sge_add_str2load_report(lList **lpp, const char *name, const char *value, co
    lListElem *ep = NULL;
    const void *iterator = NULL;
 
-   DENTER(BASIS_LAYER, "sge_add_str2load_report");
+   DENTER(BASIS_LAYER);
 
    if (lpp == NULL || name == NULL || value == NULL || host == NULL) {
       DRETURN(-1);

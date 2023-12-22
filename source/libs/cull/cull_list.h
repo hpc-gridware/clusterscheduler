@@ -99,14 +99,14 @@ enum _enum_lMultiType {
 #define CULL_PRIMARY_KEY   0x00000100
 #define CULL_HASH          0x00000200
 #define CULL_UNIQUE        0x00000400
-#define CULL_JGDI_HIDDEN   0x00000800
+#define CULL_UNUSED0       0x00000800
 #define CULL_CONFIGURE     0x00001000
 #define CULL_SPOOL         0x00002000
 #define CULL_SUBLIST       0x00010000
 #define CULL_SPOOL_PROJECT 0x00020000
 #define CULL_SPOOL_USER    0x00040000
-#define CULL_JGDI_RO       0x00080000
-#define CULL_JGDI_CONF     0x00100000
+#define CULL_UNUSED1       0x00080000
+#define CULL_UNUSED2       0x00100000
 #define CULL_IS_REDUCED    0x00200000
 
 /*
@@ -363,15 +363,19 @@ bool lListElem_is_changed(const lListElem *ep);
 bool lList_clear_changed_info(lList *lp);
 bool lListElem_clear_changed_info(lListElem *lp);
 
-/* #define for_each(ep,lp) for (ep=lFirst(lp);ep;ep=lNext(ep)) */
-/* #define for_each_rev(ep,lp) for (ep=lLast(lp);ep;ep=lPrev(ep)) */
+#define for_each(ep,lp) for (ep=lFirst(lp);ep;ep=lNext(ep))
+#define for_each_rev(ep,lp) for (ep=lLast(lp);ep;ep=lPrev(ep))
+#define for_each_rw(ep,lp) for (ep=lFirstRW(lp);ep;ep=lNextRW(ep))
+#define for_each_rev_rw(ep,lp) for (ep=lLastRW(lp);ep;ep=lPrevRW(ep))
 
+#if 0
 #ifndef __cplusplus
 #define for_each(ep,lp) for (ep = ((lp) ? (lp)->first : (lListElem *) NULL); ep; ep = ep->next)
 #else
 #define for_each_cpp(ep,lp) for (ep = ((lp) ? (lp)->first : (lListElem *) NULL); ep; ep = ep->next)
 #endif
 #define for_each_rev(ep,lp) for (ep = ((lp) ? (lp)->last : (lListElem *) NULL); ep; ep = ep->prev)
+#endif
 
 #define for_each_where(ep,lp,cp) \
    for (ep=lFindFirst(lp,cp);ep;ep=lFindNext(ep,cp))

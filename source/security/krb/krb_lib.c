@@ -131,7 +131,7 @@ static krb5_error_code krb_get_tkt_for_daemon(const char *qmaster_host)
    krb5_error_code rc;
    char ccname[256];
 
-   DENTER(TOP_LAYER, "krb_get_tkt_for_daemon");
+   DENTER(TOP_LAYER);
 
    sprintf(ccname, "FILE:/tmp/krb5cc_%s", gsd.progname);
 
@@ -163,8 +163,7 @@ static krb5_error_code krb_get_tkt_for_daemon(const char *qmaster_host)
 
  error:
 
-   DEXIT;
-   return rc;
+   DRETURN(rc);
 }
 
 
@@ -176,24 +175,21 @@ int krb_init(const char *progname)
    u_long32 prog_number = uti_state_get_mewho();
    
 
-   DENTER(TOP_LAYER, "krb_init");
+   DENTER(TOP_LAYER);
 
    if (gsd.initialized) {
-      DEXIT;
-      return 0;
+      DRETURN(0);
    }
 
    /* initialize kerberos context */
    if ((rc = krb5_init_context(&gsd.context))) {
        ERROR((SGE_EVENT, MSG_KRB_KRB5INITCONTEXTFAILEDX_S , error_message(rc)));
-       DEXIT;
        exit(1);
    }
 
    /* register memory-based credentials cache */
    if ((rc = krb5_cc_register(gsd.context, &krb5_mcc_ops, 0))) {
        ERROR((SGE_EVENT, MSG_KRB_KRB5CCREGISTERFAILEDX_S , error_message(rc)));
-       DEXIT;
        exit(1);
    }
 
@@ -255,7 +251,6 @@ int krb_init(const char *progname)
 
    if (!krbhost || !krbrealm) {
       ERROR((SGE_EVENT, MSG_KRB_COULDNOTDETERMINEHOSTSORREALFORQMASTER ));
-      DEXIT;
       exit(1);
    }
 
@@ -265,7 +260,6 @@ int krb_init(const char *progname)
       ERROR((SGE_EVENT, MSG_KRB_KRB5PARSENAMEFAILEDX_S , error_message(rc)));
       if (!gsd.daemon)
 	 com_err(gsd.progname, rc, MSG_KRB_KRB5PARSENAMEFAILED );
-      DEXIT;
       exit(1);
    }
 
@@ -275,13 +269,11 @@ int krb_init(const char *progname)
 
    if (gethostname(gsd.hostname, sizeof(gsd.hostname)) < 0) {
       ERROR((SGE_EVENT, MSG_KRB_GETHOSTNAMEFAILED));
-      DEXIT;
       exit(1);
    }
 
    if ((he = gethostbyname(gsd.hostname)) == NULL) {
       ERROR((SGE_EVENT, MSG_KRB_GETHOSTNAMEFAILED));
-      DEXIT;
       exit(1);
    }
 
@@ -303,7 +295,6 @@ int krb_init(const char *progname)
       if ((rc = krb5_kt_resolve(gsd.context, keytab, &gsd.keytab))) {
 
 	 ERROR((SGE_EVENT, MSG_KRB_COULDNOTRESOLVEKEYTABX_S, error_message(rc)));
-	 DEXIT;
 	 exit(1);
       }
 
@@ -314,7 +305,6 @@ int krb_init(const char *progname)
 	    ERROR((SGE_EVENT, MSG_KRB_KRB5SNAMETOPRINCIPALFAILEDX_S ,
 		   error_message(rc)));
 	    com_err(gsd.progname, rc, MSG_KRB_KRB5SNAMETOPRINCIPAL );
-	    DEXIT;
 	    exit(1);
 	 }
 
@@ -324,7 +314,6 @@ int krb_init(const char *progname)
 					   gsd.progname, KRB5_NT_SRV_HST, &gsd.serverp))) {
 	    ERROR((SGE_EVENT, MSG_KRB_KRB5SNAMETOPRINCIPALFAILEDX_S, error_message(rc)));
 	    com_err(gsd.progname, rc, MSG_KRB_KRB5SNAMETOPRINCIPAL );
-	    DEXIT;
 	    exit(1);
 	 }
 
@@ -364,7 +353,6 @@ int krb_init(const char *progname)
 
       if (gsd.conn_list == NULL) {
 	 ERROR(( SGE_EVENT, MSB_KRB_CONNECTIONLISTCOULDNOTBECREATED ));
-         DEXIT;
 	 exit(1);
       }
 
@@ -383,7 +371,6 @@ int krb_init(const char *progname)
 	 ERROR((SGE_EVENT, MSG_KRB_KRBGETNEWAUTHCONFAILUREX_S ,
 		error_message(rc)));
 	 com_err(gsd.progname, rc, MSG_KRB_KRBGETNEWAUTHCONFAILED );
-         DEXIT;
          exit(1);
       }
 
@@ -394,7 +381,6 @@ int krb_init(const char *progname)
             gsd.conn_list = lCreateList("krb_connections", KRB_Type);
             if (gsd.conn_list == NULL) {
                ERROR((SGE_EVENT, MSB_KRB_CONNECTIONLISTCOULDNOTBECREATED));
-               DEXIT;
                exit(1);
             }
             gsd.client = lCreateElem(KRB_Type);
@@ -412,7 +398,6 @@ int krb_init(const char *progname)
 	    ERROR((SGE_EVENT, MSG_KRB_KRB5CCDEFAULTFAILEDX_S ,
 		   error_message(rc)));
 	    com_err(gsd.progname, rc, MSG_KRB_COULDNOTGETCLIENTCREDENTIALS);
-	    DEXIT;
 	    exit(1);
 	 }
 
@@ -421,7 +406,6 @@ int krb_init(const char *progname)
             ERROR((SGE_EVENT, MSG_KRB_KRB5CCGETPRINCIPALFAILEDX_S ,
                    error_message(rc)));
 	    com_err(gsd.progname, rc, MSG_KRB_COULDNOTGETCLIENTPRINCIPAL );
-	    DEXIT;
 	    exit(1);
          }
 
@@ -438,8 +422,7 @@ int krb_init(const char *progname)
    if (krbrealm) free(krbrealm);
 #endif
 
-   DEXIT;
-   return 0;
+   DRETURN(0);
 }
 
 
@@ -476,11 +459,10 @@ int krb_check_for_idle_clients(void)
    u_long32 now = sge_get_gmt();
    lListElem *client, *next;
 
-   DENTER(TOP_LAYER, "krb_check_for_idle_clients");
+   DENTER(TOP_LAYER);
 
    if ((now = sge_get_gmt())<next_time) {
-      DEXIT;
-      return 0;
+      DRETURN(0);
    }
 
    for (client=lFirst(gsd.conn_list); client; client=next) {
@@ -497,8 +479,7 @@ int krb_check_for_idle_clients(void)
 
    next_time = now + gsd.idle_client_interval;
 
-   DEXIT;
-   return 0;
+   DRETURN(0);
 }
 
 
@@ -557,7 +538,7 @@ static krb5_error_code krb_get_forwardable_tgt(char *host,
    char ccname[40];
    krb5_ccache          ccache = NULL;
 
-   DENTER(TOP_LAYER, "krb_get_forwardable_tgt");
+   DENTER(TOP_LAYER);
 
    /* create an in-memory credentials cache */
 
@@ -583,9 +564,7 @@ static krb5_error_code krb_get_forwardable_tgt(char *host,
    if (ccache)
       krb5_cc_destroy(gsd.context, ccache);
 
-   DEXIT;
-
-   return rc;
+   DRETURN(rc);
 }
 
 int
@@ -612,7 +591,7 @@ krb_send_message(int synchron, const char *tocomproc, int toid,
 #endif /* KRB_DO_REPLAY_STUFF */
    const char *progname = uti_state_get_sge_formal_prog_name();
 
-   DENTER(TOP_LAYER, "krb_send_message");
+   DENTER(TOP_LAYER);
 
    /* prepare packing buffer */
    if ((ret = init_packbuffer(&pb, 4096, 0))) {
@@ -882,8 +861,7 @@ krb_send_message(int synchron, const char *tocomproc, int toid,
 
    clear_packbuffer(&pb);
 
-   DEXIT;
-   return ret;
+   DRETURN(ret);
 }
 
 static int 
@@ -963,7 +941,7 @@ krb_receive_message(char *fromcommproc, u_short *fromid, char *fromhost,
    int tmptag=0;
    u_long32 tgt_id=0;
 
-   DENTER(TOP_LAYER,"krb_receive_message");
+   DENTER(TOP_LAYER);
 
    ap_req.length = 0;
    inbuf.length = 0;
@@ -1316,8 +1294,7 @@ krb_receive_message(char *fromcommproc, u_short *fromid, char *fromhost,
 
    clear_packbuffer(&pb);
 
-   DEXIT;
-   return ret;
+   DRETURN(ret);
 }
 
 
@@ -1336,7 +1313,7 @@ const char *user
    char clientname[256];
    krb5_authenticator *authenticator=NULL;
 
-   DENTER(TOP_LAYER,"krb_verify_user");
+   DENTER(TOP_LAYER);
 
    /* lookup client in the connection list using commd triple */
 
@@ -1389,8 +1366,7 @@ error:
    if (authenticator)
       krb5_free_authenticator(gsd.context, authenticator);
 
-   DEXIT;
-   return ret;
+   DRETURN(ret);
 }
 
 
@@ -1543,7 +1519,7 @@ krb5_data *outbuf
    krb5_data          * scratch = NULL;
    krb5_address         addr;
 
-   DENTER(TOP_LAYER, "krb_encrypt_tgt_creds");
+   DENTER(TOP_LAYER);
 
    if ((rc = krb5_auth_con_init(gsd.context, &auth_context)))
       goto error;
@@ -1586,8 +1562,7 @@ error:
    if (auth_context)
       krb5_auth_con_free(gsd.context, auth_context);
 
-   DEXIT;
-   return rc;
+   DRETURN(rc);
 }
 
 
@@ -1606,7 +1581,7 @@ krb5_creds ***tgt_creds
    krb5_int32           flags;
    krb5_address         addr;
 
-   DENTER(TOP_LAYER, "krb_encrypt_tgt_creds");
+   DENTER(TOP_LAYER);
 
    if ((rc = krb5_auth_con_init(gsd.context, &auth_context)))
       goto error;
@@ -1641,8 +1616,7 @@ error:
    if (auth_context)
       krb5_auth_con_free(gsd.context, auth_context);
 
-   DEXIT;
-   return rc;
+   DRETURN(rc);
 }
 
 
@@ -1688,7 +1662,7 @@ krb5_creds ***tgt_creds
    lListElem  *client=NULL, *tgt_ep;
    krb5_creds **creds=NULL;
 
-   DENTER(TOP_LAYER, "krb_get_tgt");
+   DENTER(TOP_LAYER);
 
    if (tgt_creds == NULL || host == NULL || comproc == NULL) {
       ERROR((SGE_EVENT, MSG_KRB_TGTCREDSHOSTORCOMPROCISNULL ));
@@ -1744,8 +1718,7 @@ all_done:
    if (where)
       lFreeWhere(where);
 
-   DEXIT;
-   return ret;
+   DRETURN(ret);
 }
 
 
@@ -1767,7 +1740,7 @@ krb5_creds **tgt_creds
    lListElem  *client=NULL, *tgt_ep;
    krb5_creds **creds=NULL;
 
-   DENTER(TOP_LAYER, "krb_put_tgt");
+   DENTER(TOP_LAYER);
 
 #if 0
    if (host == NULL && comproc == NULL) {
@@ -1828,8 +1801,7 @@ all_done:
    if (where)
       lFreeWhere(where);
 
-   DEXIT;
-   return ret;
+   DRETURN(ret);
 }
 
 
@@ -1848,7 +1820,7 @@ krb5_creds **tgt_creds
    char                 ccname[40];
    krb5_ccache          ccache = NULL;
 
-   DENTER(TOP_LAYER, "krb_store_fowarded_tgt");
+   DENTER(TOP_LAYER);
 
    krb_get_ccname(jobid, ccname);
 
@@ -1882,8 +1854,7 @@ all_done:
       ret = -1;
    }
 
-   DEXIT;
-   return ret;
+   DRETURN(ret);
 }
 
 
@@ -1900,7 +1871,7 @@ int jobid
    char                 ccname[40];
    krb5_ccache          ccache = NULL;
 
-   DENTER(TOP_LAYER, "krb_destory_fowarded_tgt");
+   DENTER(TOP_LAYER);
 
    krb_get_ccname(jobid, ccname);
 
@@ -1917,8 +1888,7 @@ all_done:
       ret = -1;
    }
 
-   DEXIT;
-   return ret;
+   DRETURN(ret);
 }
 
 

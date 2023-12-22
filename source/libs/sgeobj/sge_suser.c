@@ -186,7 +186,7 @@ void suser_increase_job_counter(lListElem *suser)
 ******************************************************************************/
 void suser_decrease_job_counter(lListElem *suser)
 {
-   DENTER(TOP_LAYER, "suser_decrease_job_counter");
+   DENTER(TOP_LAYER);
 
    if (suser != NULL) {
       u_long32 jobs = lGetUlong(suser, SU_jobs);
@@ -198,7 +198,7 @@ void suser_decrease_job_counter(lListElem *suser)
          lAddUlong(suser, SU_jobs, -1);
       }
    }
-   DEXIT;
+   DRETURN_VOID;
 }
 
 /****** sgeobj/suser/suser_get_job_counter() **********************************
@@ -261,7 +261,7 @@ int suser_check_new_job(const lListElem *job, u_long32 max_u_jobs, lList *master
    lListElem *suser = NULL;
    int ret = 1;
 
-   DENTER(TOP_LAYER, "suser_check_new_job");
+   DENTER(TOP_LAYER);
    submit_user = lGetString(job, JB_owner);
    suser = suser_list_add(&master_suser_list, NULL, submit_user);
    if (suser != NULL) {
@@ -314,7 +314,7 @@ int suser_register_new_job(const lListElem *job, u_long32 max_u_jobs,
    lListElem *suser = NULL;
    int ret = 0;
 
-   DENTER(TOP_LAYER, "suser_register_new_job");
+   DENTER(TOP_LAYER);
 
    if (!force_registration){
       ret = suser_check_new_job(job, max_u_jobs, master_suser_list);
@@ -325,8 +325,7 @@ int suser_register_new_job(const lListElem *job, u_long32 max_u_jobs,
       suser_increase_job_counter(suser);
    }
 
-   DEXIT;
-   return ret;
+   DRETURN(ret);
 }
 
 /****** sgeobj/suser/suser_get_job_count() ************************************
@@ -351,14 +350,13 @@ int suser_job_count(const lListElem *job, const lList *master_suser_list)
    lListElem *suser = NULL;
    int ret = 0;    
 
-   DENTER(TOP_LAYER, "suser_job_job");
+   DENTER(TOP_LAYER);
    submit_user = lGetString(job, JB_owner);  
    suser = suser_list_find(master_suser_list, submit_user);
    if (suser != NULL) {
       ret = suser_get_job_counter(suser);
    }
-   DEXIT;
-   return ret;
+   DRETURN(ret);
 }
 
 /****** sgeobj/suser/suser_unregister_job() ***********************************
@@ -386,11 +384,11 @@ void suser_unregister_job(const lListElem *job, const lList *master_suser_list)
    const char *submit_user = NULL;
    lListElem *suser = NULL;    
 
-   DENTER(TOP_LAYER, "suser_unregister_job");
+   DENTER(TOP_LAYER);
    submit_user = lGetString(job, JB_owner);  
    suser = suser_list_find(master_suser_list, submit_user);
    if (suser != NULL) {
       suser_decrease_job_counter(suser);
    }
-   DEXIT;
+   DRETURN_VOID;
 }

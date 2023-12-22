@@ -79,11 +79,12 @@ flush_job_report(lListElem *jr)
    }
 }
 
+#if 0
 void trace_jr()
 {
-   lListElem *jr;
+   const lListElem *jr;
 
-   DENTER(TOP_LAYER, "trace_jr");
+   DENTER(TOP_LAYER);
 
    DPRINTF(("--- JOB REPORT LIST ----------------\n"));
    for_each (jr, jr_list) {
@@ -95,14 +96,15 @@ void trace_jr()
          DPRINTF(("Jobtask "sge_u32"."sge_u32"\n", lGetUlong(jr, JR_job_number), lGetUlong(jr, JR_ja_task_number)));
       }   
    }
-   DEXIT;
+   DRETURN_VOID;
 }
+#endif
 
 lListElem *add_job_report(u_long32 jobid, u_long32 jataskid, const char *petaskid, const lListElem *jep)
 {
    lListElem *jr, *jatep = NULL;
  
-   DENTER(TOP_LAYER, "add_job_report");
+   DENTER(TOP_LAYER);
 
    if (jr_list == NULL) 
       jr_list = lCreateList("job report list", JR_Type);
@@ -141,7 +143,7 @@ get_job_report(u_long32 job_id, u_long32 ja_task_id, const char *pe_task_id)
    lListElem *jr;
    const void *iterator = NULL;
 
-   DENTER(TOP_LAYER, "get_job_report");
+   DENTER(TOP_LAYER);
 
    jr = lGetElemUlongFirstRW(jr_list, JR_job_number, job_id, &iterator);
    while (jr != NULL) {
@@ -171,7 +173,7 @@ void cleanup_job_report(u_long32 jobid, u_long32 jataskid)
    lListElem *jr, *jr_next;
    const void *iterator = NULL;
 
-   DENTER(TOP_LAYER, "cleanup_job_report");
+   DENTER(TOP_LAYER);
 
    /* get rid of job reports for all slave tasks */
    jr_next = lGetElemUlongFirstRW(jr_list, JR_job_number, jobid, &iterator);
@@ -210,19 +212,17 @@ int add_usage(lListElem *jr, const char *name, const char *val_as_str, double va
 {
    lListElem *usage;
 
-   DENTER(TOP_LAYER, "add_usage");
+   DENTER(TOP_LAYER);
 
    if (!jr || !name) {
-      DEXIT;
-      return -1;
+      DRETURN(-1);
    }
 
    /* check if we already have an usage value with this name */
    usage = lGetSubStr(jr, UA_name, name, JR_usage);
    if (!usage) {
       if (!(usage = lAddSubStr(jr, UA_name, name, JR_usage, UA_Type))) {
-         DEXIT;
-         return -1;
+         DRETURN(-1);
       }
    }
 
@@ -236,16 +236,14 @@ int add_usage(lListElem *jr, const char *name, const char *val_as_str, double va
                 val_as_str, name, sge_u32c(lGetUlong(jr, JR_job_number)))); 
          /* use default value */
          lSetDouble(usage, UA_value, val); 
-         DEXIT;
-         return -1;
+         DRETURN(-1);
       }
       val = parsed;
    }
       
    lSetDouble(usage, UA_value, val);
 
-   DEXIT;
-   return 0;
+   DRETURN(0);
 }
 
 
@@ -274,7 +272,7 @@ int do_ack(sge_gdi_ctx_class_t *ctx, struct_msg_t *aMsg)
    lListElem *ack;
    const char *pe_task_id_str;
 
-   DENTER(TOP_LAYER, "do_ack");
+   DENTER(TOP_LAYER);
  
    DPRINTF(("------- GOT ACK'S ---------\n"));
  
@@ -400,8 +398,8 @@ int do_ack(sge_gdi_ctx_class_t *ctx, struct_msg_t *aMsg)
 
 void modify_queue_limits_flag_for_job(const char *qualified_hostname, lListElem *jep, bool increase)
 {
-   lListElem *jatep;
-   lListElem *gdil_ep;
+   const lListElem *jatep;
+   const lListElem *gdil_ep;
 
    for_each(jatep, lGetList(jep, JB_ja_tasks)) {
       for_each (gdil_ep, lGetList(jatep, JAT_granted_destin_identifier_list)) {

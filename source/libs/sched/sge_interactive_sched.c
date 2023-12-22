@@ -42,7 +42,7 @@
 #include "sge_interactive_sched.h"
 
 static void 
-order_remove_order_and_immediate(lListElem *job, lListElem *ja_task, 
+order_remove_order_and_immediate(const lListElem *job, const lListElem *ja_task,
                                  order_t *orders);
 
 /****** SCHEDD/remove_immediate_jobs()******************************************
@@ -82,7 +82,7 @@ int remove_immediate_jobs(lList *pending_job_list, lList *running_job_list, orde
    const lListElem *ep; 
    const lList* lp;
 
-   DENTER (TOP_LAYER, "remove_immediate_jobs");
+   DENTER(TOP_LAYER);
 
    next_job = lFirstRW(pending_job_list);
    while ((job = next_job)) {
@@ -114,8 +114,7 @@ int remove_immediate_jobs(lList *pending_job_list, lList *running_job_list, orde
       lFreeWhere(&where);
    }
 
-   DEXIT;
-   return 0;
+   DRETURN(0);
 }
 
 /****** SCHEDD/remove_immediate_job()*******************************************
@@ -148,12 +147,12 @@ int remove_immediate_jobs(lList *pending_job_list, lList *running_job_list, orde
 void 
 remove_immediate_job(lList *job_list, lListElem *job, order_t *orders, int remove_orders) 
 {
-   lListElem *ja_task; 
-   lListElem *range = NULL;
+   const lListElem *ja_task;
+   const lListElem *range = NULL;
    const lList *range_list = NULL;
    u_long32 ja_task_id;
 
-   DENTER (TOP_LAYER, "remove_immediate_job");
+   DENTER(TOP_LAYER);
 
    for_each (ja_task, lGetList(job, JB_ja_tasks)) {
       if (remove_orders) {
@@ -180,7 +179,7 @@ remove_immediate_job(lList *job_list, lListElem *job, order_t *orders, int remov
    }
    lRemoveElem(job_list, &job);
    
-   DEXIT;
+   DRETURN_VOID;
 }
 
 /****** SCHEDD/order_remove_order_and_immediate()*******************************
@@ -209,7 +208,7 @@ remove_immediate_job(lList *job_list, lListElem *job, order_t *orders, int remov
 *
 *******************************************************************************/
 static void 
-order_remove_order_and_immediate( lListElem *job, lListElem *ja_task, order_t *orders) 
+order_remove_order_and_immediate(const lListElem *job, const lListElem *ja_task, order_t *orders)
 {
    /* The possibility exists that this task is part of an array task, that it
     * already has earned an order to be scheduled, and that one or more other
@@ -229,7 +228,7 @@ order_remove_order_and_immediate( lListElem *job, lListElem *ja_task, order_t *o
                       OR_ja_task_number, lGetUlong(ja_task, JAT_task_number));
    lListElem *ep = lFindFirst (orderList, where);
    
-   DENTER(TOP_LAYER, "order_remove_order_and_immediate");
+   DENTER(TOP_LAYER);
    
    if (ep != NULL) {
       DPRINTF (("Removing job start order for job task %u.%u\n",
@@ -241,7 +240,7 @@ order_remove_order_and_immediate( lListElem *job, lListElem *ja_task, order_t *o
    order_remove_immediate(job, ja_task, orders);
    lFreeWhere(&where);
    
-   DEXIT;
+   DRETURN_VOID;
 }
 
 /****** SCHEDD/order_remove_immediate()*****************************************
@@ -269,9 +268,9 @@ order_remove_order_and_immediate( lListElem *job, lListElem *ja_task, order_t *o
 *
 *******************************************************************************/
 int 
-order_remove_immediate(lListElem *job, lListElem *ja_task, order_t *orders) 
+order_remove_immediate(const lListElem *job, const lListElem *ja_task, order_t *orders)
 {
-   DENTER(TOP_LAYER, "order_remove_immediate");
+   DENTER(TOP_LAYER);
 
    DPRINTF(("JOB "sge_u32"."sge_u32" can't get dispatched - removing\n", 
       lGetUlong(job, JB_job_number), lGetUlong(ja_task, JAT_task_number)));
@@ -280,6 +279,5 @@ order_remove_immediate(lListElem *job, lListElem *ja_task, order_t *orders)
                                                  ORT_remove_immediate_job, 
                                                  job, ja_task, NULL, true);
    
-   DEXIT;
-   return (orders->jobStartOrderList == NULL);
+   DRETURN((orders->jobStartOrderList == NULL));
 }

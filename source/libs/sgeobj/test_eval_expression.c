@@ -182,8 +182,7 @@ int main(int argc, char *argv[]) {
       fprintf(stdout, "eval_expr(%s,%s) => %s\n", argv[1], argv[2], RESULT(ret) );
    }
    
-   DEXIT;
-   return ret;
+   DRETURN(ret);
 }
 
 static int test_match(u_long32 type, const char *expression, const char *value, int expected) {

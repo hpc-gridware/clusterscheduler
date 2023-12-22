@@ -156,7 +156,7 @@ static void sge_htable_resize(htable ht, int grow)
    char buffer[1024];
    dstring buffer_wrapper;
 
-   DENTER_(BASIS_LAYER, "sge_htable_resize");
+   DENTER_(BASIS_LAYER);
 
    sge_dstring_init(&buffer_wrapper, buffer, sizeof(buffer));
 

@@ -144,9 +144,9 @@ int sge_get_qmaster_port(bool *from_services) {
    static int cached_port = -1;
    static bool is_port_from_services_file = false;
 
-   DENTER(GDI_LAYER, "sge_get_qmaster_port");
+   DENTER(GDI_LAYER);
 
-   sge_mutex_lock("get_qmaster_port_mutex", SGE_FUNC, __LINE__, &get_qmaster_port_mutex);
+   sge_mutex_lock("get_qmaster_port_mutex", __func__, __LINE__, &get_qmaster_port_mutex);
 
    /* check for reresolve timeout */
    gettimeofday(&now,NULL);
@@ -162,9 +162,8 @@ int sge_get_qmaster_port(bool *from_services) {
          *from_services = is_port_from_services_file;
       }
       DPRINTF(("returning cached port value: "sge_U32CFormat"\n", sge_u32c(int_port)));
-      sge_mutex_unlock("get_qmaster_port_mutex", SGE_FUNC, __LINE__, &get_qmaster_port_mutex);
-      DEXIT;
-      return int_port;
+      sge_mutex_unlock("get_qmaster_port_mutex", __func__, __LINE__, &get_qmaster_port_mutex);
+      DRETURN(int_port);
    }
 
    /* get port from environment variable SGE_QMASTER_PORT */
@@ -199,7 +198,7 @@ int sge_get_qmaster_port(bool *from_services) {
          WARNING((SGE_EVENT, MSG_UTI_USING_CACHED_PORT_SU, "sge_qmaster", sge_u32c(cached_port) ));
          int_port = cached_port; 
       } else {
-         sge_mutex_unlock("get_qmaster_port_mutex", SGE_FUNC, __LINE__, &get_qmaster_port_mutex);
+         sge_mutex_unlock("get_qmaster_port_mutex", __func__, __LINE__, &get_qmaster_port_mutex);
          SGE_EXIT(NULL, 1);
       }
    } else {
@@ -212,10 +211,9 @@ int sge_get_qmaster_port(bool *from_services) {
       cached_port = int_port;
    }
 
-   sge_mutex_unlock("get_qmaster_port_mutex", SGE_FUNC, __LINE__, &get_qmaster_port_mutex);
+   sge_mutex_unlock("get_qmaster_port_mutex", __func__, __LINE__, &get_qmaster_port_mutex);
    
-   DEXIT;
-   return int_port;
+   DRETURN(int_port);
 }
 
 int sge_get_execd_port(void) {
@@ -226,9 +224,9 @@ int sge_get_execd_port(void) {
    static long next_timeout = 0;
    static int cached_port = -1;
 
-   DENTER(TOP_LAYER, "sge_get_execd_port");
+   DENTER(TOP_LAYER);
 
-   sge_mutex_lock("get_execd_port_mutex", SGE_FUNC, __LINE__, &get_execd_port_mutex);
+   sge_mutex_lock("get_execd_port_mutex", __func__, __LINE__, &get_execd_port_mutex);
    
    /* check for reresolve timeout */
    gettimeofday(&now,NULL);
@@ -239,7 +237,7 @@ int sge_get_execd_port(void) {
    if ( cached_port >= 0 && next_timeout > now.tv_sec ) {
       int_port = cached_port;
       DPRINTF(("returning cached port value: "sge_U32CFormat"\n", sge_u32c(int_port)));
-      sge_mutex_unlock("get_execd_port_mutex", SGE_FUNC, __LINE__, &get_execd_port_mutex);
+      sge_mutex_unlock("get_execd_port_mutex", __func__, __LINE__, &get_execd_port_mutex);
       return int_port;
    }
 
@@ -266,7 +264,7 @@ int sge_get_execd_port(void) {
          WARNING((SGE_EVENT, MSG_UTI_USING_CACHED_PORT_SU, "sge_execd", sge_u32c(cached_port) ));
          int_port = cached_port; 
       } else {
-         sge_mutex_unlock("get_execd_port_mutex", SGE_FUNC, __LINE__, &get_execd_port_mutex);
+         sge_mutex_unlock("get_execd_port_mutex", __func__, __LINE__, &get_execd_port_mutex);
          SGE_EXIT(NULL, 1);
       }
    } else {
@@ -279,10 +277,9 @@ int sge_get_execd_port(void) {
       cached_port = int_port;
    } 
 
-   sge_mutex_unlock("get_execd_port_mutex", SGE_FUNC, __LINE__, &get_execd_port_mutex);
+   sge_mutex_unlock("get_execd_port_mutex", __func__, __LINE__, &get_execd_port_mutex);
 
-   DEXIT;
-   return int_port;
+   DRETURN(int_port);
 
 }
 
@@ -357,12 +354,11 @@ const char *name
    int i;
    struct hostent *he;
 
-   DENTER(TOP_LAYER, "sge_gethostbyname_retry");
+   DENTER(TOP_LAYER);
 
    if (!name || name[0] == '\0') {
       DPRINTF(("hostname to resolve is NULL or has zero length\n"));
-      DEXIT;
-      return NULL;
+      DRETURN(NULL);
    }
 
    he = sge_gethostbyname(name,NULL);
@@ -374,8 +370,7 @@ const char *name
       }
    }
 
-   DEXIT;
-   return he;
+   DRETURN(he);
 }
 
 /****** uti/host/sge_gethostbyname() ****************************************
@@ -413,7 +408,7 @@ struct hostent *sge_gethostbyname(const char *name, int* system_error_retval)
    time_t time;
    int l_errno = 0;
    
-   DENTER(GDI_LAYER, "sge_gethostbyname");
+   DENTER(GDI_LAYER);
 
    /* This method goes to great lengths to slip a reentrant gethostbyname into
     * the code without making changes to the rest of the source base.  That
@@ -536,7 +531,7 @@ struct hostent *sge_gethostbyname(const char *name, int* system_error_retval)
     *    worth the effort. */
    DPRINTF (("Getting host by name - Mutex guarded\n"));
 
-   sge_mutex_lock("hostbyname", SGE_FUNC, __LINE__, &hostbyname_mutex);
+   sge_mutex_lock("hostbyname", __func__, __LINE__, &hostbyname_mutex);
 
    he = gethostbyname(name);
    l_errno = h_errno;
@@ -546,7 +541,7 @@ struct hostent *sge_gethostbyname(const char *name, int* system_error_retval)
       /* do NOT free he, there was no malloc() */
       he = new_he;
    }
-   sge_mutex_unlock("hostbyname", SGE_FUNC, __LINE__, &hostbyname_mutex);
+   sge_mutex_unlock("hostbyname", __func__, __LINE__, &hostbyname_mutex);
 
 #endif
 
@@ -571,8 +566,7 @@ struct hostent *sge_gethostbyname(const char *name, int* system_error_retval)
       *system_error_retval = l_errno;
    }
 
-   DEXIT;
-   return he;
+   DRETURN(he);
 }
 
 /****** uti/host/sge_copy_hostent() ****************************************
@@ -595,7 +589,7 @@ struct hostent *sge_copy_hostent(struct hostent *orig)
    char **p = NULL;
    int count = 0;
 
-   DENTER (GDI_LAYER, "sge_copy_hostent");
+   DENTER(GDI_LAYER);
  
    if (copy != NULL) {  
       /* reset the malloced memory */
@@ -653,8 +647,7 @@ struct hostent *sge_copy_hostent(struct hostent *orig)
       
       copy->h_aliases[count] = NULL;
    }
-   DEXIT;
-   return copy;
+   DRETURN(copy);
 }
 
 /****** uti/host/sge_gethostbyaddr() ****************************************
@@ -690,7 +683,7 @@ struct hostent *sge_gethostbyaddr(const struct in_addr *addr, int* system_error_
    time_t time;
    int l_errno;
 
-   DENTER(TOP_LAYER, "sge_gethostbyaddr");
+   DENTER(TOP_LAYER);
 
    /* This method goes to great lengths to slip a reentrant gethostbyaddr into
     * the code without making changes to the rest of the source base.  That
@@ -815,7 +808,7 @@ struct hostent *sge_gethostbyaddr(const struct in_addr *addr, int* system_error_
    /* This is for everone else. */
    DPRINTF (("Getting host by addr - Mutex guarded\n"));
    
-   sge_mutex_lock("hostbyaddr", SGE_FUNC, __LINE__, &hostbyaddr_mutex);
+   sge_mutex_lock("hostbyaddr", __func__, __LINE__, &hostbyaddr_mutex);
 
 #if defined(CRAY)
    he = gethostbyaddr((const char *)addr, sizeof(struct in_addr), AF_INET);
@@ -830,7 +823,7 @@ struct hostent *sge_gethostbyaddr(const struct in_addr *addr, int* system_error_
       /* do not free he, there was no malloc() */
       he = new_he;
    }
-   sge_mutex_unlock("hostbyaddr", SGE_FUNC, __LINE__, &hostbyaddr_mutex);
+   sge_mutex_unlock("hostbyaddr", __func__, __LINE__, &hostbyaddr_mutex);
 #endif
 
 #ifndef SGE_GETHOSTBYADDR_FOUND
@@ -852,8 +845,7 @@ struct hostent *sge_gethostbyaddr(const struct in_addr *addr, int* system_error_
       *system_error_retval = l_errno;
    }
 
-   DEXIT;
-   return he;
+   DRETURN(he);
 }
 
 /****** uti/hostname/sge_host_search_pred_alias() ******************************
@@ -1212,7 +1204,7 @@ int sge_hostcmp(const char *h1, const char*h2)
    char h1_cpy[CL_MAXHOSTLEN+1], h2_cpy[CL_MAXHOSTLEN+1];
  
  
-   DENTER(BASIS_LAYER, "sge_hostcmp");
+   DENTER(BASIS_LAYER);
  
    if (h1 != NULL && h2 != NULL) {
       sge_hostcpy(h1_cpy,h1);
@@ -1223,8 +1215,7 @@ int sge_hostcmp(const char *h1, const char*h2)
       DPRINTF(("sge_hostcmp(%s, %s) = %d\n", h1_cpy, h2_cpy));
    }
  
-   DEXIT;
-   return cmp;
+   DRETURN(cmp);
 }
 
 /****** uti/hostname/sge_hostmatch() ********************************************
@@ -1260,7 +1251,7 @@ int sge_hostmatch(const char *h1, const char*h2)
    char h1_cpy[CL_MAXHOSTLEN+1], h2_cpy[CL_MAXHOSTLEN+1];
  
  
-   DENTER(BASIS_LAYER, "sge_hostmatch");
+   DENTER(BASIS_LAYER);
  
    if (h1 != NULL && h2 != NULL) {
       sge_hostcpy(h1_cpy,h1);
@@ -1271,8 +1262,7 @@ int sge_hostmatch(const char *h1, const char*h2)
       DPRINTF(("sge_hostmatch(%s, %s) = %d\n", h1_cpy, h2_cpy));
    }
  
-   DEXIT;
-   return cmp;
+   DRETURN(cmp);
 }
 
 

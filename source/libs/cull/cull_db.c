@@ -92,36 +92,31 @@ static lListElem *lJoinCopyElem(const lDescr *dp,
    lListElem *dst;
    int i;
 
-   DENTER(CULL_LAYER, "lJoinCopyElem");
+   DENTER(CULL_LAYER);
 
    if (!src0 || !src1) {
       LERROR(LEELEMNULL);
-      DEXIT;
-      return NULL;
+      DRETURN(NULL);
    }
 
    if (!(dst = lCreateElem(dp))) {
       LERROR(LECREATEELEM);
-      DEXIT;
-      return NULL;
+      DRETURN(NULL);
    }
 
    i = 0;
    if (lCopyElemPartialPack(dst, &i, src0, enp0, true, NULL) == -1) {
       sge_free(&dst);
       LERROR(LECOPYELEMPART);
-      DEXIT;
-      return NULL;
+      DRETURN(NULL);
    }
    if (lCopyElemPartialPack(dst, &i, src1, enp1, true, NULL) == -1) {
       sge_free(&dst);
       LERROR(LECOPYELEMPART);
-      DEXIT;
-      return NULL;
+      DRETURN(NULL);
    }
 
-   DEXIT;
-   return dst;
+   DRETURN(dst);
 }
 
 /****** cull/db/lJoinSublist() ************************************************
@@ -168,57 +163,49 @@ lList *lJoinSublist(const char *name, int nm0, const lList *lp,
    const lDescr *tdp;
    int i, pos;
 
-   DENTER(CULL_LAYER, "lJoinSublist");
+   DENTER(CULL_LAYER);
 
    /* check different pointers */
    if (!name || !lp || !enp0 || !sldp || !enp1) {
       LERROR(LENULLARGS);
-      DEXIT;
-      return NULL;
+      DRETURN(NULL);
    }
 
    /* make sure that nm0 is a sublist field of lp */
    if (!(tdp = lGetListDescr(lp))) {
       LERROR(LEDESCRNULL);
-      DEXIT;
-      return NULL;
+      DRETURN(NULL);
    }
    if ((pos = lGetPosInDescr(tdp, nm0)) < 0) {
       LERROR(LENAMENOT);
-      DEXIT;
-      return NULL;
+      DRETURN(NULL);
    }
 
    if (mt_get_type(tdp[pos].mt) != lListT) {
       LERROR(LEINCTYPE);
-      DEXIT;
-      return NULL;
+      DRETURN(NULL);
    }
 
    /* is nm0 enumerated in enp0 ? */
    if (enp0[0].pos == WHAT_ALL) {
       LERROR(LEFALSEFIELD);
-      DEXIT;
-      return NULL;
+      DRETURN(NULL);
    }
    for (i = 0; enp0[i].nm != NoName; i++)
       if (enp0[i].nm == nm0) {
          LERROR(LEFALSEFIELD);
-         DEXIT;
-         return NULL;
+         DRETURN(NULL);
       }
 
    /* create destination list */
    if (!(dp = lJoinDescr(lGetListDescr(lp), sldp, enp0, enp1))) {
       LERROR(LEJOINDESCR);
-      DEXIT;
-      return NULL;
+      DRETURN(NULL);
    }
    if (!(dlp = lCreateList(name, dp))) {
       sge_free(&dp);
       LERROR(LECREATELIST);
-      DEXIT;
-      return NULL;
+      DRETURN(NULL);
    }
    /* free dp it has been copied in lCreateList */
    sge_free(&dp);
@@ -227,8 +214,7 @@ lList *lJoinSublist(const char *name, int nm0, const lList *lp,
    if (!(tlp = lCreateList("lJoinSublist: tlp", lGetListDescr(lp)))) {
       lFreeList(&dlp);
       LERROR(LECREATELIST);
-      DEXIT;
-      return NULL;
+      DRETURN(NULL);
    }
 
    for_each_where(ep, lp, cp0) {
@@ -240,8 +226,7 @@ lList *lJoinSublist(const char *name, int nm0, const lList *lp,
             lFreeList(&tlp);
             lFreeList(&dlp);
             LERROR(LEAPPENDELEM);
-            DEXIT;
-            return NULL;
+            DRETURN(NULL);
          }
 
          /* join the tlp with one element together with its sublist */
@@ -252,8 +237,7 @@ lList *lJoinSublist(const char *name, int nm0, const lList *lp,
             lFreeList(&tlp);
             lFreeList(&dlp);
             LERROR(LEJOIN);
-            DEXIT;
-            return NULL;
+            DRETURN(NULL);
          }
 
          /* joinedlist is freed in lAddList */
@@ -261,8 +245,7 @@ lList *lJoinSublist(const char *name, int nm0, const lList *lp,
             LERROR(LEADDLIST);
             lFreeList(&tlp);
             lFreeList(&dlp);
-            DEXIT;
-            return NULL;
+            DRETURN(NULL);
          }
 
          /* dechain the only element from tlp and free it (copy) */
@@ -278,8 +261,7 @@ lList *lJoinSublist(const char *name, int nm0, const lList *lp,
       lFreeList(&dlp);
    }
 
-   DEXIT;
-   return dlp;
+   DRETURN(dlp);
 }
 
 /****** cull/db/lJoin() *******************************************************
@@ -326,45 +308,39 @@ lList *lJoin(const char *name, int nm0, const lList *lp0,
    int i, j;
    int needed;
 
-   DENTER(CULL_LAYER, "lJoin");
+   DENTER(CULL_LAYER);
 
    if (!lp0 || !lp1 || !name || !enp0 || !enp1) {
       LERROR(LENULLARGS);
-      DEXIT;
-      return NULL;
+      DRETURN(NULL);
    }
 
    if (nm1 != NoName) {
       if ((lp0_pos = lGetPosInDescr(lGetListDescr(lp0), nm0)) < 0) {
          LERROR(LENAMENOT);
-         DEXIT;
-         return NULL;
+         DRETURN(NULL);
       }
       if ((lp1_pos = lGetPosInDescr(lGetListDescr(lp1), nm1)) < 0) {
          LERROR(LENAMENOT);
-         DEXIT;
-         return NULL;
+         DRETURN(NULL);
       }
 
       if (mt_get_type(lp0->descr[lp0_pos].mt) != mt_get_type(lp1->descr[lp1_pos].mt) ||
           mt_get_type(lp0->descr[lp0_pos].mt) == lListT) {
          LERROR(LEDIFFDESCR);
-         DEXIT;
-         return NULL;
+         DRETURN(NULL);
       }
    }
 
    /* the real join ?! */
    if (!(dp = lJoinDescr(lGetListDescr(lp0), lGetListDescr(lp1), enp0, enp1))) {
       LERROR(LEJOINDESCR);
-      DEXIT;
-      return NULL;
+      DRETURN(NULL);
    }
    if (!(dlp = lCreateList(name, dp))) {
       LERROR(LECREATELIST);
       sge_free(&dp);
-      DEXIT;
-      return NULL;
+      DRETURN(NULL);
    }
    /* free dp it has been copied by lCreateList */
    sge_free(&dp);
@@ -413,8 +389,7 @@ lList *lJoin(const char *name, int nm0, const lList *lp0,
                break;
             default:
                unknownType("lJoin");
-               DEXIT;
-               return NULL;
+               DRETURN(NULL);
             }
             if (!needed)
                continue;
@@ -422,15 +397,13 @@ lList *lJoin(const char *name, int nm0, const lList *lp0,
          if (!(ep = lJoinCopyElem(dlp->descr, ep0, enp0, ep1, enp1))) {
             LERROR(LEJOINCOPYELEM);
             lFreeList(&dlp);
-            DEXIT;
-            return NULL;
+            DRETURN(NULL);
          }
          else {
             if (lAppendElem(dlp, ep) == -1) {
                LERROR(LEAPPENDELEM);
                lFreeList(&dlp);
-               DEXIT;
-               return NULL;
+               DRETURN(NULL);
             }
          }
       }
@@ -442,8 +415,7 @@ lList *lJoin(const char *name, int nm0, const lList *lp0,
       lFreeList(&dlp);
    }
 
-   DEXIT;
-   return dlp;
+   DRETURN(dlp);
 }
 
 /****** cull/db/lSplit() ******************************************************
@@ -477,15 +449,14 @@ int lSplit(lList **slp, lList **ulp, const char *ulp_name,
    lListElem *ep, *next;
    int has_been_allocated = 0;
 
-   DENTER(TOP_LAYER, "lSplit");
+   DENTER(TOP_LAYER);
 
    /*
       iterate through the source list call lCompare and chain all elems
       that don't fullfill the condition into a new list.
     */
    if (!slp) {
-      DEXIT;
-      return -1;
+      DRETURN(-1);
    }
 
    for (ep = lFirstRW(*slp); ep; ep = next) {
@@ -495,8 +466,7 @@ int lSplit(lList **slp, lList **ulp, const char *ulp_name,
          if (ulp && !*ulp) {
             *ulp = lCreateList(ulp_name ? ulp_name : "ulp", (*slp)->descr);
             if (!*ulp) {
-               DEXIT;
-               return -1;
+               DRETURN(-1);
             }
             has_been_allocated = 1;
          }
@@ -517,8 +487,7 @@ int lSplit(lList **slp, lList **ulp, const char *ulp_name,
       lFreeList(ulp);
    }
 
-   DEXIT;
-   return 0;
+   DRETURN(0);
 }
 
 /****** cull/db/lSelectDestroy() **********************************************
@@ -542,15 +511,13 @@ int lSplit(lList **slp, lList **ulp, const char *ulp_name,
 lList *lSelectDestroy(lList *slp, const lCondition *cp) 
 {
 
-   DENTER(CULL_LAYER, "lSelectDestroy");
+   DENTER(CULL_LAYER);
 
    if (lSplit(&slp, NULL, NULL, cp)) {
       lFreeList(&slp);
-      DEXIT;
-      return NULL;
+      DRETURN(NULL);
    }
-   DEXIT;
-   return slp;
+   DRETURN(slp);
 }
 
 /****** cull/db/lSelectElemPack() *********************************************
@@ -584,11 +551,10 @@ lSelectElemPack(const lListElem *slp, const lCondition *cp,
 {
    lListElem *new_ep = NULL;
 
-   DENTER(CULL_LAYER, "lSelectElemPack");
+   DENTER(CULL_LAYER);
 
    if (!slp) {
-      DEXIT;
-      return NULL;
+      DRETURN(NULL);
    }
    if (enp != NULL) {
       lDescr *dp;
@@ -598,20 +564,17 @@ lSelectElemPack(const lListElem *slp, const lCondition *cp,
       /* create new lList with partial descriptor */
       if ((n = lCountWhat(enp, slp->descr)) <= 0) {
          LERROR(LECOUNTWHAT);
-         DEXIT;
-         return NULL;
+         DRETURN(NULL);
       }
       if (!(dp = (lDescr *) malloc(sizeof(lDescr) * (n + 1)))) {
          LERROR(LEMALLOC);
-         DEXIT;
-         return NULL;
+         DRETURN(NULL);
       }
       /* INITIALIZE THE INDEX IF YOU BUILD A NEW DESCRIPTOR */
       if (lPartialDescr(enp, slp->descr, dp, &index) < 0) {
          LERROR(LEPARTIALDESCR);
          sge_free(&dp);
-         DEXIT;
-         return NULL;
+         DRETURN(NULL);
       }
       /* create reduced element */
       new_ep = lSelectElemDPack(slp, cp, dp, enp, isHash, pb, &elements);
@@ -622,8 +585,7 @@ lSelectElemPack(const lListElem *slp, const lCondition *cp,
       /* no enumeration => make a copy of element */
       new_ep = lCopyElemHash(slp, isHash);
    }
-   DEXIT;
-   return new_ep;
+   DRETURN(new_ep);
 }
 
 /****** cull/db/lSelectElemDPack() ********************************************
@@ -662,7 +624,7 @@ lSelectElemDPack(const lListElem *slp, const lCondition *cp, const lDescr *dp,
    lListElem *new_ep = NULL;
    int index = 0;
 
-   DENTER(CULL_LAYER, "lSelectElemDPack");
+   DENTER(CULL_LAYER);
    if (!slp || (!dp && !pb)) {
       DRETURN(NULL);
    }
@@ -749,10 +711,9 @@ lList *lSelectHashPack(const char *name, const lList *slp,
 {
    lList *ret = NULL;
 
-   DENTER(CULL_LAYER, "lSelectHashPack");
+   DENTER(CULL_LAYER);
    if (slp == NULL && pb == NULL) {
-      DEXIT;
-      return NULL;
+      DRETURN(NULL);
    }
 
    if (enp != NULL) {
@@ -764,15 +725,13 @@ lList *lSelectHashPack(const char *name, const lList *slp,
          n = lCountWhat(enp, slp->descr);
          if (n <= 0) {
             LERROR(LECOUNTWHAT);
-            DEXIT;
-            return NULL;
+            DRETURN(NULL);
          }
 
          dp = malloc(sizeof(lDescr) * (n + 1));
          if (dp == NULL) {
             LERROR(LEMALLOC);
-            DEXIT;
-            return NULL;
+            DRETURN(NULL);
          }
 
          /* INITIALIZE THE INDEX IF YOU BUILD A NEW DESCRIPTOR */
@@ -780,8 +739,7 @@ lList *lSelectHashPack(const char *name, const lList *slp,
          if (lPartialDescr(enp, slp->descr, dp, &index) < 0) {
             LERROR(LEPARTIALDESCR);
             sge_free(&dp);
-            DEXIT;
-            return NULL;
+            DRETURN(NULL);
          }
          ret = lSelectDPack(name, slp, cp, dp, enp, isHash, NULL, NULL);
 
@@ -804,8 +762,7 @@ lList *lSelectHashPack(const char *name, const lList *slp,
          local_ret = cull_pack_list_summary(pb, slp, enp, pack_name, &offset, &used);
          if (local_ret != PACK_SUCCESS) {
             LERROR(LEMALLOC);
-            DEXIT;
-            return NULL;
+            DRETURN(NULL);
          }
 
          lSelectDPack(name, slp, cp, NULL, enp, isHash, pb, 
@@ -826,8 +783,7 @@ lList *lSelectHashPack(const char *name, const lList *slp,
             local_ret = repackint(pb, number_of_packed_elements);
             if(local_ret != PACK_SUCCESS) {
                LERROR(LEMALLOC);
-               DEXIT;
-               return NULL;
+               DRETURN(NULL);
             }
             pb->cur_ptr = old_cur_ptr;
             pb->bytes_used = old_used;
@@ -840,8 +796,7 @@ lList *lSelectHashPack(const char *name, const lList *slp,
          cull_pack_list(pb, slp);
       }
    }
-   DEXIT;
-   return ret;
+   DRETURN(ret);
 }
 
 /****** cull_db/lSelectDPack() ************************************************
@@ -882,18 +837,16 @@ lList *lSelectDPack(const char *name, const lList *slp, const lCondition *cp,
    lList *dlp = (lList *) NULL;
    const lDescr *descr = NULL;
 
-   DENTER(CULL_LAYER, "lSelectDPack");
+   DENTER(CULL_LAYER);
 
    if (!slp || (!dp && !pb)) {
-      DEXIT;
-      return NULL;
+      DRETURN(NULL);
    }
 
    if (pb == NULL) {
       if (!(dlp = lCreateListHash(name, dp, false))) {
          LERROR(LECREATELIST);
-         DEXIT;
-         return NULL;
+         DRETURN(NULL);
       }
       dlp->changed = slp->changed;
       descr = dlp->descr;
@@ -910,8 +863,7 @@ lList *lSelectDPack(const char *name, const lList *slp, const lCondition *cp,
             LERROR(LEAPPENDELEM);
             lFreeElem(&new_ep);
             lFreeList(&dlp);
-            DEXIT;
-            return NULL;
+            DRETURN(NULL);
          }
       }
    }
@@ -930,8 +882,7 @@ lList *lSelectDPack(const char *name, const lList *slp, const lCondition *cp,
       }
    }
 
-   DEXIT;
-   return dlp;
+   DRETURN(dlp);
 }
 
 /****** cull/db/lPartialDescr() ***********************************************
@@ -963,28 +914,24 @@ int lPartialDescr(const lEnumeration *ep, const lDescr *sdp, lDescr *ddp,
    int i;
    bool reduced = false;
 
-   DENTER(CULL_LAYER, "lPartialDescr");
+   DENTER(CULL_LAYER);
 
    if (!ep) {
       LERROR(LEELEMNULL);
-      DEXIT;
-      return -1;
+      DRETURN(-1);
    }
    if (!sdp || !ddp) {
       LERROR(LEDESCRNULL);
-      DEXIT;
-      return -1;
+      DRETURN(-1);
    }
    if (!indexp) {
       LERROR(LENULLARGS);
-      DEXIT;
-      return -1;
+      DRETURN(-1);
    }
 
    switch (ep[0].pos) {
    case WHAT_NONE:
-      DEXIT;
-      return 0;
+      DRETURN(0);
    case WHAT_ALL:
       for (i = 0; mt_get_type(sdp[i].mt) != lEndT; i++) {
          ddp[*indexp].mt = sdp[i].mt;
@@ -1006,8 +953,7 @@ int lPartialDescr(const lEnumeration *ep, const lDescr *sdp, lDescr *ddp,
 
                if (ep[i].pos > maxpos || ep[i].pos < 0) {
                   LERROR(LEENUMDESCR);
-                  DEXIT;
-                  return -1;
+                  DRETURN(-1);
                }
                ddp[*indexp].mt = sdp[ep[i].pos].mt;
                ddp[*indexp].nm = sdp[ep[i].pos].nm;
@@ -1018,8 +964,7 @@ int lPartialDescr(const lEnumeration *ep, const lDescr *sdp, lDescr *ddp,
                (*indexp)++;
             } else {
                LERROR(LEENUMDESCR);
-               DEXIT;
-               return -1;
+               DRETURN(-1);
             }
          }
       }
@@ -1070,18 +1015,16 @@ lDescr *lJoinDescr(const lDescr *sdp0, const lDescr *sdp1,
    int n, m, index;
    lDescr *ddp;
 
-   DENTER(CULL_LAYER, "lJoinDescr");
+   DENTER(CULL_LAYER);
 
    if (!sdp0 || !sdp1) {
       LERROR(LEDESCRNULL);
-      DEXIT;
-      return NULL;
+      DRETURN(NULL);
    }
 
    if (!ep0 || !ep1) {
       LERROR(LEELEMNULL);
-      DEXIT;
-      return NULL;
+      DRETURN(NULL);
    }
 
    /* compute size of new descr */
@@ -1090,40 +1033,34 @@ lDescr *lJoinDescr(const lDescr *sdp0, const lDescr *sdp1,
 
    if (n == -1 || m == -1) {
       LERROR(LECOUNTWHAT);
-      DEXIT;
-      return NULL;
+      DRETURN(NULL);
    }
 
    /* There is WHAT_NONE specified in both lEnumeration ptr's */
    if (!n && !m) {
       LERROR(LEENUMBOTHNONE);
-      DEXIT;
-      return NULL;
+      DRETURN(NULL);
    }
 
    if (!(ddp = (lDescr *) malloc(sizeof(lDescr) * (n + m + 1)))) {
       LERROR(LEMALLOC);
-      DEXIT;
-      return NULL;
+      DRETURN(NULL);
    }
    /* INITIALIZE THE INDEX IF YOU BUILD A NEW DESCRIPTOR */
    index = 0;
    if (lPartialDescr(ep0, sdp0, ddp, &index) < 0) {
       LERROR(LEPARTIALDESCR);
       sge_free(&ddp);
-      DEXIT;
-      return NULL;
+      DRETURN(NULL);
    }
    /* This one is appended */
    if (lPartialDescr(ep1, sdp1, ddp, &index) < 0) {
       LERROR(LEPARTIALDESCR);
       sge_free(&ddp);
-      DEXIT;
-      return NULL;
+      DRETURN(NULL);
    }
 
-   DEXIT;
-   return ddp;
+   DRETURN(ddp);
 }
 
 lDescr *lGetReducedDescr(const lDescr *type, const lEnumeration *what) {
@@ -1131,25 +1068,21 @@ lDescr *lGetReducedDescr(const lDescr *type, const lEnumeration *what) {
    lDescr *new_descr = NULL;
    int index = 0;
    int n = 0;
-   DENTER(CULL_LAYER, "lGetReducedDescr");
+   DENTER(CULL_LAYER);
   
    if ((n = lCountWhat(what, type)) <= 0) {
-      DEXIT;
-      return NULL;
+      DRETURN(NULL);
    }
    
    if (!(new_descr= (lDescr *) malloc(sizeof(lDescr) * (n + 1)))) {
-      DEXIT;
-      return NULL;
+      DRETURN(NULL);
    }
    if (lPartialDescr(what, type, new_descr, &index) != 0){
       sge_free(&new_descr);
-      DEXIT;
-      return NULL;      
+      DRETURN(NULL);      
    }
   
-   DEXIT;
-   return new_descr;
+   DRETURN(new_descr);
 }
 
 /****** cull/db/lString2List() ************************************************
@@ -1184,11 +1117,10 @@ int lString2List(const char *s, lList **lpp, const lDescr *dp, int nm,
    int dataType;
    struct saved_vars_s *context = NULL;
 
-   DENTER(TOP_LAYER, "lString2List");
+   DENTER(TOP_LAYER);
 
    if (!s) {
-      DEXIT;
-      return 1;
+      DRETURN(1);
    }
 
    pos = lGetPosInDescr(dp, nm);
@@ -1204,8 +1136,7 @@ int lString2List(const char *s, lList **lpp, const lDescr *dp, int nm,
             if (!lAddElemStr(lpp, nm, s, dp)) {
                sge_free_saved_vars(context);
                lFreeList(lpp);
-               DEXIT;
-               return 1;
+               DRETURN(1);
             }
          }
 
@@ -1220,8 +1151,7 @@ int lString2List(const char *s, lList **lpp, const lDescr *dp, int nm,
             if (!lAddElemHost(lpp, nm, s, dp)) {
                sge_free_saved_vars(context);
                lFreeList(lpp);
-               DEXIT;
-               return 1;
+               DRETURN(1);
             }
          }
 
@@ -1234,8 +1164,7 @@ int lString2List(const char *s, lList **lpp, const lDescr *dp, int nm,
    if (context)   
       sge_free_saved_vars(context);
 
-   DEXIT;
-   return 0;
+   DRETURN(0);
 }
 
 /****** cull/db/lString2ListNone() ********************************************
@@ -1333,7 +1262,7 @@ int lDiffListStr(int nm, lList **lpp1, lList **lpp2)
    const char *key;
    const lListElem *ep, *to_check;
 
-   DENTER(CULL_LAYER, "lDiffListStr");
+   DENTER(CULL_LAYER);
 
    if (!lpp1 || !lpp2) {
       DRETURN(-1);
@@ -1364,7 +1293,7 @@ int lDiffListUlong(int nm, lList **lpp1, lList **lpp2)
    u_long32 key;
    const lListElem *ep, *to_check;
 
-   DENTER(CULL_LAYER, "lDiffListUlong");
+   DENTER(CULL_LAYER);
 
    if (!lpp1 || !lpp2) {
       DRETURN(-1);

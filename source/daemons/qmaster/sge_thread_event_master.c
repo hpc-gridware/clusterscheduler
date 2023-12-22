@@ -70,7 +70,7 @@
 static void
 sge_event_master_cleanup_monitor(monitoring_t *monitor)
 {
-   DENTER(TOP_LAYER, "sge_event_master_cleanup_monitor");
+   DENTER(TOP_LAYER);
    sge_monitor_free(monitor);
    DRETURN_VOID;
 }
@@ -78,7 +78,7 @@ sge_event_master_cleanup_monitor(monitoring_t *monitor)
 static void
 sge_event_master_cleanup_report_list(lList **list)
 {
-   DENTER(TOP_LAYER, "sge_event_master_cleanup_monitor");
+   DENTER(TOP_LAYER);
    lFreeList(list);
    DRETURN_VOID;
 }
@@ -89,7 +89,7 @@ sge_event_master_initialize(sge_gdi_ctx_class_t *ctx)
    cl_thread_settings_t* dummy_thread_p = NULL;
    dstring thread_name = DSTRING_INIT;
 
-   DENTER(TOP_LAYER, "sge_event_master_initialize");
+   DENTER(TOP_LAYER);
 
    DPRINTF(("event master functionality has been initialized\n"));
 
@@ -107,7 +107,7 @@ sge_event_master_terminate(void)
 {
    cl_thread_settings_t* thread = NULL;
 
-   DENTER(TOP_LAYER, "sge_event_master_terminate");
+   DENTER(TOP_LAYER);
 
    thread = cl_thread_list_get_first_thread(Main_Control.event_master_thread_pool);
    while (thread != NULL) {
@@ -133,7 +133,7 @@ sge_event_master_main(void *arg)
    lList *report_list = NULL;
    time_t next_prof_output = 0;
 
-   DENTER(TOP_LAYER, "sge_event_master_main");
+   DENTER(TOP_LAYER);
 
    DPRINTF(("started"));
    cl_thread_func_startup(thread_config);

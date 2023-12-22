@@ -82,11 +82,10 @@ spool_template_create_context(lList **answer_list, const char *args)
 {
    lListElem *context = NULL;
 
-   DENTER(TOP_LAYER, "spool_template_create_context");
+   DENTER(TOP_LAYER);
 
 
-   DEXIT;
-   return context;
+   DRETURN(context);
 }
 
 /****** spool/template/spool_template_default_startup_func() **************
@@ -124,12 +123,11 @@ spool_template_default_startup_func(lList **answer_list,
    bool ret = true;
    const char *url;
 
-   DENTER(TOP_LAYER, "spool_template_default_startup_func");
+   DENTER(TOP_LAYER);
 
    url = lGetString(rule, SPR_url);
 
-   DEXIT;
-   return ret;
+   DRETURN(ret);
 }
 
 /****** spool/template/spool_template_default_shutdown_func() **************
@@ -167,13 +165,12 @@ spool_template_default_shutdown_func(lList **answer_list,
    bool ret = true;
    const char *url;
 
-   DENTER(TOP_LAYER, "spool_template_default_shutdown_func");
+   DENTER(TOP_LAYER);
 
    url = lGetString(rule, SPR_url);
 
 
-   DEXIT;
-   return ret;
+   DRETURN(ret);
 }
 
 /****** spool/template/spool_template_default_maintenance_func() ************
@@ -219,7 +216,7 @@ spool_template_default_maintenance_func(lList **answer_list,
 {
    bool ret = true;
 
-   DENTER(TOP_LAYER, "spool_template_default_maintenance_func");
+   DENTER(TOP_LAYER);
 
    switch (cmd) {
       case SPM_init:
@@ -233,8 +230,7 @@ spool_template_default_maintenance_func(lList **answer_list,
          
    }
 
-   DEXIT;
-   return ret;
+   DRETURN(ret);
 }
 
 /****** spool/template/spool_template_default_list_func() *****************
@@ -277,7 +273,7 @@ spool_template_default_list_func(lList **answer_list,
 {
    bool ret = true;
 
-   DENTER(TOP_LAYER, "spool_template_default_list_func");
+   DENTER(TOP_LAYER);
 
    switch (object_type) {
       default:
@@ -291,8 +287,7 @@ spool_template_default_list_func(lList **answer_list,
 
    ret = spool_default_validate_list_func(answer_list, type, rule, object_type);
 
-   DEXIT;
-   return ret;
+   DRETURN(ret);
 }
 
 /****** spool/template/spool_template_default_read_func() *****************
@@ -334,7 +329,7 @@ spool_template_default_read_func(lList **answer_list,
 {
    lListElem *ep = NULL;
 
-   DENTER(TOP_LAYER, "spool_template_default_read_func");
+   DENTER(TOP_LAYER);
 
    switch (object_type) {
       default:
@@ -345,8 +340,7 @@ spool_template_default_read_func(lList **answer_list,
          break;
    }
 
-   DEXIT;
-   return ep;
+   DRETURN(ep);
 }
 
 /****** spool/template/spool_template_default_write_func() ****************
@@ -394,7 +388,7 @@ spool_template_default_write_func(lList **answer_list,
 {
    bool ret = true;
 
-   DENTER(TOP_LAYER, "spool_template_default_write_func");
+   DENTER(TOP_LAYER);
 
    switch (object_type) {
       default:
@@ -406,8 +400,7 @@ spool_template_default_write_func(lList **answer_list,
          break;
    }
 
-   DEXIT;
-   return ret;
+   DRETURN(ret);
 }
 
 /****** spool/template/spool_template_default_delete_func() ***************
@@ -452,7 +445,7 @@ spool_template_default_delete_func(lList **answer_list,
 {
    bool ret = true;
 
-   DENTER(TOP_LAYER, "spool_template_default_delete_func");
+   DENTER(TOP_LAYER);
 
    switch (object_type) {
       default:
@@ -464,7 +457,6 @@ spool_template_default_delete_func(lList **answer_list,
          break;
    }
 
-   DEXIT;
-   return ret;
+   DRETURN(ret);
 }
 

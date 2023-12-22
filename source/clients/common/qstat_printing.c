@@ -84,7 +84,7 @@ int indent
    const lList *usage_list;
    const lList *scaled_usage_list;
 
-   DENTER(TOP_LAYER, "sge_print_subtask");
+   DENTER(TOP_LAYER);
 
    /* is sub-task logically running */
    if(pe_task == NULL) {
@@ -210,14 +210,14 @@ lList **alpp
    const char *qnm;
    dstring dyn_task_str = DSTRING_INIT;
 
-   DENTER(TOP_LAYER, "sge_print_jobs_queue");
+   DENTER(TOP_LAYER);
 
    qnm = lGetString(qep, QU_full_name);
 
-   for_each(jlep, job_list) {
+   for_each_rw(jlep, job_list) {
       int master, i;
 
-      for_each(jatep, lGetList(jlep, JB_ja_tasks)) {
+      for_each_rw(jatep, lGetList(jlep, JB_ja_tasks)) {
          u_long32 jstate = lGetUlong(jatep, JAT_state);
 
          if (shut_me_down) {
@@ -438,7 +438,8 @@ lList **alpp
    u_long32 jstate;
    int sge_urg, sge_pri, sge_ext, sge_time;
    const lList *ql = NULL;
-   lListElem *qrep, *gdil_ep=NULL;
+   const lListElem *qrep;
+   lListElem *gdil_ep=NULL;
    int running;
    const char *queue_name = NULL;
    const char *cqname = NULL;
@@ -451,7 +452,7 @@ lList **alpp
    char jobid[128];
    int ret = QHOST_SUCCESS; 
 
-   DENTER(TOP_LAYER, "sge_print_job");
+   DENTER(TOP_LAYER);
 
    sge_dstring_init(&ds, buffer, sizeof(buffer));
 
@@ -967,7 +968,7 @@ lList **alpp
             sge_dstring_free(&range_string);
          }
          if (lGetString(jatep, JAT_granted_pe)) {
-            lListElem *gdil_ep;
+            const lListElem *gdil_ep;
             u_long32 pe_slots = 0;
             for_each (gdil_ep, lGetList(jatep, JAT_granted_destin_identifier_list))
                pe_slots += lGetUlong(gdil_ep, JG_slots);
@@ -985,7 +986,7 @@ lList **alpp
          /* display default requests if necessary */
          {
             lList *attributes = NULL;
-            lListElem *ce;
+            const lListElem *ce;
             const char *name;
             lListElem *hep;
 

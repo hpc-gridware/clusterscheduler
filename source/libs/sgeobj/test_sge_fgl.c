@@ -43,20 +43,20 @@ static int requests[REQUESTS];
 static long request = 0;
 
 #define _DENTER(layer, function) \
-   const char *SGE_FUNC = function;                                  \
+   const char *__func__ = function;                                  \
    const int xaybzc = layer;                                          \
                                                                              \
    if (rmon_condition(xaybzc, TRACE)) {                                      \
       cl_thread_settings_t* ___thread_config = cl_thread_get_thread_config();\
       if (___thread_config != NULL) {                                        \
-         rmon_menter (SGE_FUNC, ___thread_config->thread_name);              \
+         rmon_menter (__func__, ___thread_config->thread_name);              \
       } else {                                                               \
-         rmon_menter (SGE_FUNC, NULL);                                       \
+         rmon_menter (__func__, NULL);                                       \
       }                                                                      \
    } 
 
 void simulate_job_add(void) {
-   DENTER(TOP_LAYER, "simulate_job_add");
+   DENTER(TOP_LAYER);
    fgl_lock();
 
 #if 0
@@ -72,7 +72,7 @@ void simulate_job_add(void) {
 }
 
 void simulate_job_start(u_long32 jid, const char *cqueue, const char *host) {
-   DENTER(TOP_LAYER, "simulate_job_start");
+   DENTER(TOP_LAYER);
    fgl_lock();
 
 #if 0
@@ -88,7 +88,7 @@ void simulate_job_start(u_long32 jid, const char *cqueue, const char *host) {
 }
 
 void simulate_load_report(const char *host) {
-   DENTER(TOP_LAYER, "simulate_load_report");
+   DENTER(TOP_LAYER);
    fgl_lock();
 
 #if 0
@@ -104,7 +104,7 @@ void simulate_load_report(const char *host) {
 }
 
 void simulate_project_update(const char *host) {
-   DENTER(TOP_LAYER, "simulate_project_update");
+   DENTER(TOP_LAYER);
    fgl_lock();
 
 #if 0

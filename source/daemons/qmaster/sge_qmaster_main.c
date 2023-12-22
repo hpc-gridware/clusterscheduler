@@ -456,8 +456,7 @@ int main(int argc, char* argv[])
    sge_shutdown((void**)&ctx, sge_qmaster_get_exit_state());
    sge_prof_cleanup();
 
-   DEXIT;
-   return 0;
+   DRETURN(0);
 } /* main() */
 
 #if !defined(INTERIX)

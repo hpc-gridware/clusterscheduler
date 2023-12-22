@@ -164,12 +164,12 @@ qrstat_create_report_handler_stdout(qrstat_env_t *qrstat_env,
 {
    qrstat_report_handler_t* ret = NULL;
 
-   DENTER(TOP_LAYER, "qrstat_create_report_handler_stdout");
+   DENTER(TOP_LAYER);
 
    ret = (qrstat_report_handler_t*)sge_malloc(sizeof(qrstat_report_handler_t));
    if (ret == NULL) {
       answer_list_add_sprintf(answer_list, STATUS_EMALLOC, ANSWER_QUALITY_ERROR,
-                              MSG_MEM_MEMORYALLOCFAILED_S, SGE_FUNC);      
+                              MSG_MEM_MEMORYALLOCFAILED_S, __func__);
    } else {
      /*
       * report handler ctx is stdout 
@@ -227,7 +227,7 @@ qrstat_destroy_report_handler_stdout(qrstat_report_handler_t** handler, lList **
 {
    bool ret = true;
 
-   DENTER(TOP_LAYER, "qrstat_destroy_report_handler");
+   DENTER(TOP_LAYER);
 
    if (handler != NULL && *handler != NULL ) {
       sge_free(handler);
@@ -241,7 +241,7 @@ qrstat_report_start(qrstat_report_handler_t* handler, lList **alpp)
 {
    bool ret = true;
 
-   DENTER(TOP_LAYER, "qrstat_report_start");
+   DENTER(TOP_LAYER);
    DRETURN(ret); 
 }
 
@@ -250,7 +250,7 @@ qrstat_report_finish(qrstat_report_handler_t* handler, lList **alpp)
 {
    bool ret = true;
 
-   DENTER(TOP_LAYER, "qrstat_report_finish");
+   DENTER(TOP_LAYER);
    DRETURN(ret); 
 }
 
@@ -260,7 +260,7 @@ qrstat_report_start_ar(qrstat_report_handler_t* handler, qrstat_env_t *qrstat_en
    bool ret = true;
    FILE *out = (FILE*)handler->ctx;
 
-   DENTER(TOP_LAYER, "qrstat_report_start");
+   DENTER(TOP_LAYER);
 
    if (handler->show_summary == false) {
       fprintf(out, "----------");
@@ -290,7 +290,7 @@ qrstat_report_start_unknown_ar(qrstat_report_handler_t* handler, qrstat_env_t *q
    bool ret = true;
    FILE *out = (FILE*)handler->ctx;
 
-   DENTER(TOP_LAYER, "qrstat_report_unknown_start");
+   DENTER(TOP_LAYER);
 
    if (!qrstat_env->header_printed) {
       fprintf(out, "Following advance reservations do not exist:\n");
@@ -305,7 +305,7 @@ qrstat_report_finish_ar(qrstat_report_handler_t* handler, lList **alpp)
    bool ret = true;
    FILE *out = (FILE*)handler->ctx;
 
-   DENTER(TOP_LAYER, "qrstat_report_finish_ar");
+   DENTER(TOP_LAYER);
    if (handler->show_summary) {
       fprintf(out, "\n");
    }
@@ -317,7 +317,7 @@ qrstat_report_finish_unknown_ar(qrstat_report_handler_t* handler, lList **alpp)
 {
    bool ret = true;
 
-   DENTER(TOP_LAYER, "qrstat_report_finish_unknown_ar");
+   DENTER(TOP_LAYER);
    DRETURN(ret); 
 }
 
@@ -328,7 +328,7 @@ qrstat_report_ar_node_ulong(qrstat_report_handler_t* handler, qrstat_env_t *qrst
    bool ret = true;
    FILE *out = (FILE*)handler->ctx;
 
-   DENTER(TOP_LAYER, "qrstat_report_ar_node_ulong");
+   DENTER(TOP_LAYER);
    if (handler->show_summary) {
       fprintf(out, "%7" sge_U32CLetter " ", sge_u32c(value));  
    } else {
@@ -344,7 +344,7 @@ qrstat_report_ar_node_ulong_unknown(qrstat_report_handler_t* handler, qrstat_env
    bool ret = true;
    FILE *out = (FILE*)handler->ctx;
 
-   DENTER(TOP_LAYER, "qrstat_report_ar_node_ulong_unknown");
+   DENTER(TOP_LAYER);
    if (qrstat_env->header_printed) {
       fprintf(out, ", ");
    } else {
@@ -365,7 +365,7 @@ qrstat_report_ar_node_duration(qrstat_report_handler_t* handler, lList **alpp,
    int minutes = ((value - seconds) / 60) % 60;
    int hours = ((value - seconds - minutes * 60) / 3600);
 
-   DENTER(TOP_LAYER, "qrstat_report_ar_node_duration");
+   DENTER(TOP_LAYER);
 
    if (handler->show_summary) {
       fprintf(out, "%02d:%02d:%02d", hours, minutes, seconds); 
@@ -383,7 +383,7 @@ qrstat_report_ar_node_string(qrstat_report_handler_t* handler, lList **alpp,
    bool ret = true;
    FILE *out = (FILE*)handler->ctx;
 
-   DENTER(TOP_LAYER, "qrstat_report_ar_node_string");
+   DENTER(TOP_LAYER);
    if (value == NULL) {
       value = "";
    }
@@ -409,7 +409,7 @@ qrstat_report_ar_node_time(qrstat_report_handler_t* handler, lList **alpp,
    FILE *out = (FILE*)handler->ctx;
    dstring time_string = DSTRING_INIT;
 
-   DENTER(TOP_LAYER, "qrstat_report_ar_node_time");
+   DENTER(TOP_LAYER);
  
    sge_dstring_append_time(&time_string, value, false); 
    if (handler->show_summary) {
@@ -432,7 +432,7 @@ qrstat_report_ar_node_state(qrstat_report_handler_t* handler, lList **alpp,
    FILE *out = (FILE*)handler->ctx;
    dstring state_string = DSTRING_INIT;
 
-   DENTER(TOP_LAYER, "qrstat_report_ar_node_time");
+   DENTER(TOP_LAYER);
  
    ar_state2dstring((ar_state_t)state, &state_string);
    if (handler->show_summary) {
@@ -451,7 +451,7 @@ qrstat_report_start_resource_list(qrstat_report_handler_t* handler, lList **alpp
    bool ret = true;
    FILE *out = (FILE*)handler->ctx;
 
-   DENTER(TOP_LAYER, "qrstat_report_start_resource_list");
+   DENTER(TOP_LAYER);
    if (!handler->show_summary) {
       fprintf(out, SFN_FIRST_COLUMN" ", "resource_list");
       handler->first_resource = true;
@@ -465,7 +465,7 @@ qrstat_report_finish_resource_list(qrstat_report_handler_t* handler, lList **alp
    bool ret = true;
    FILE *out = (FILE*)handler->ctx;
 
-   DENTER(TOP_LAYER, "qrstat_report_finish_resource_list");
+   DENTER(TOP_LAYER);
    if (!handler->show_summary) {
       fprintf(out, "\n");
    }
@@ -479,7 +479,7 @@ qrstat_report_resource_list_node(qrstat_report_handler_t* handler, lList **alpp,
    bool ret = true;
    FILE *out = (FILE*)handler->ctx;
 
-   DENTER(TOP_LAYER, "qrstat_report_resource_list_node");
+   DENTER(TOP_LAYER);
    if (!handler->show_summary) {
       fprintf(out, SFN SFN"="SFN, (handler->first_resource ? "" : ", "), name, value);
       if (handler->first_resource) {
@@ -496,7 +496,7 @@ qrstat_report_ar_node_boolean(qrstat_report_handler_t* handler, lList **alpp, co
    FILE *out = (FILE*)handler->ctx;
    const char* chvalue = value ? "true":"false";
 
-   DENTER(TOP_LAYER, "qrstat_report_ar_node_boolean");
+   DENTER(TOP_LAYER);
    if (handler->show_summary) {
       fprintf(out, "       "SFN, chvalue);
    } else {
@@ -513,7 +513,7 @@ qrstat_report_start_granted_slots_list(qrstat_report_handler_t* handler, lList *
    bool ret = true;
    FILE *out = (FILE*)handler->ctx;
 
-   DENTER(TOP_LAYER, "qrstat_report_start_granted_slots_list");
+   DENTER(TOP_LAYER);
    if (!handler->show_summary) {
       fprintf(out, SFN_FIRST_COLUMN" ", "granted_slots_list");
       handler->first_granted_slot = true;
@@ -527,7 +527,7 @@ qrstat_report_finish_granted_slots_list(qrstat_report_handler_t* handler, lList 
    bool ret = true;
    FILE *out = (FILE*)handler->ctx;
 
-   DENTER(TOP_LAYER, "qrstat_report_finish_granted_slots_list");
+   DENTER(TOP_LAYER);
    if (!handler->show_summary) {
       fprintf(out, "\n");
    }
@@ -542,7 +542,7 @@ qrstat_report_granted_slots_list_node(qrstat_report_handler_t* handler,
    bool ret = true;
    FILE *out = (FILE*)handler->ctx;
 
-   DENTER(TOP_LAYER, "qrstat_report_granted_slots_list_node");
+   DENTER(TOP_LAYER);
    if (!handler->show_summary) {
       fprintf(out, SFN SFN"="sge_U32CFormat, (handler->first_granted_slot ? "" : ","), name, sge_u32c(value));
       if (handler->first_granted_slot) {
@@ -558,7 +558,7 @@ qrstat_report_start_granted_parallel_environment(qrstat_report_handler_t* handle
    bool ret = true;
    FILE *out = (FILE*)handler->ctx;
 
-   DENTER(TOP_LAYER, "qrstat_report_start_granted_parallel_environment");
+   DENTER(TOP_LAYER);
    if (!handler->show_summary) {
       fprintf(out, SFN_FIRST_COLUMN" ", "granted_parallel_environment");
    }
@@ -571,7 +571,7 @@ qrstat_report_finish_granted_parallel_environment(qrstat_report_handler_t* handl
    bool ret = true;
    FILE *out = (FILE*)handler->ctx;
 
-   DENTER(TOP_LAYER, "qrstat_report_finish_parallel_environment");
+   DENTER(TOP_LAYER);
    if (!handler->show_summary) {
       fprintf(out, "\n");
    }
@@ -586,7 +586,7 @@ qrstat_report_granted_parallel_environment_node(qrstat_report_handler_t* handler
    bool ret = true;
    FILE *out = (FILE*)handler->ctx;
 
-   DENTER(TOP_LAYER, "qrstat_report_granted_granted_parallel_environment_node");
+   DENTER(TOP_LAYER);
    if (!handler->show_summary) {
       fprintf(out, SFN" slots "SFN, name, slots_range);
    }
@@ -599,7 +599,7 @@ qrstat_report_start_mail_list(qrstat_report_handler_t* handler, lList **alpp)
    bool ret = true;
    FILE *out = (FILE*)handler->ctx;
 
-   DENTER(TOP_LAYER, "qrstat_report_start_mail_list");
+   DENTER(TOP_LAYER);
    if (!handler->show_summary) {
       fprintf(out, SFN_FIRST_COLUMN" ", "mail_list");
       handler->first_mail = true;
@@ -613,7 +613,7 @@ qrstat_report_finish_mail_list(qrstat_report_handler_t* handler, lList **alpp)
    bool ret = true;
    FILE *out = (FILE*)handler->ctx;
 
-   DENTER(TOP_LAYER, "qrstat_report_finish_mail_list");
+   DENTER(TOP_LAYER);
    if (!handler->show_summary) {
       fprintf(out, "\n");
    }
@@ -628,7 +628,7 @@ qrstat_report_mail_list_node(qrstat_report_handler_t* handler,
    bool ret = true;
    FILE *out = (FILE*)handler->ctx;
 
-   DENTER(TOP_LAYER, "qrstat_report_mail_list_node");
+   DENTER(TOP_LAYER);
    if (!handler->show_summary) {
       fprintf(out, SFN SFN"@"SFN, (handler->first_mail ? "" : ","), name?name:"", host?host:"");
       if (handler->first_mail) {
@@ -644,7 +644,7 @@ qrstat_report_start_acl_list(qrstat_report_handler_t* handler, lList **alpp)
    bool ret = true;
    FILE *out = (FILE*)handler->ctx;
 
-   DENTER(TOP_LAYER, "qrstat_report_start_acl_list");
+   DENTER(TOP_LAYER);
    if (!handler->show_summary) {
       fprintf(out, SFN_FIRST_COLUMN" ", "acl_list");
       handler->first_acl = true;
@@ -658,7 +658,7 @@ qrstat_report_finish_acl_list(qrstat_report_handler_t* handler, lList **alpp)
    bool ret = true;
    FILE *out = (FILE*)handler->ctx;
 
-   DENTER(TOP_LAYER, "qrstat_report_finish_acl_list");
+   DENTER(TOP_LAYER);
    if (!handler->show_summary) {
       fprintf(out, "\n");
    }
@@ -673,7 +673,7 @@ qrstat_report_acl_list_node(qrstat_report_handler_t* handler,
    bool ret = true;
    FILE *out = (FILE*)handler->ctx;
 
-   DENTER(TOP_LAYER, "qrstat_report_acl_list_node");
+   DENTER(TOP_LAYER);
    if (!handler->show_summary) {
       fprintf(out, SFN SFN, (handler->first_acl ? "" : ","), name);
       if (handler->first_acl) {
@@ -689,7 +689,7 @@ qrstat_report_start_xacl_list(qrstat_report_handler_t* handler, lList **alpp)
    bool ret = true;
    FILE *out = (FILE*)handler->ctx;
 
-   DENTER(TOP_LAYER, "qrstat_report_start_xacl_list");
+   DENTER(TOP_LAYER);
    if (!handler->show_summary) {
       fprintf(out, SFN_FIRST_COLUMN" ", "xacl_list");
       handler->first_xacl = true;
@@ -703,7 +703,7 @@ qrstat_report_finish_xacl_list(qrstat_report_handler_t* handler, lList **alpp)
    bool ret = true;
    FILE *out = (FILE*)handler->ctx;
 
-   DENTER(TOP_LAYER, "qrstat_report_finish_xacl_list");
+   DENTER(TOP_LAYER);
    if (!handler->show_summary) {
       fprintf(out, "\n");
    }
@@ -718,7 +718,7 @@ qrstat_report_xacl_list_node(qrstat_report_handler_t* handler,
    bool ret = true;
    FILE *out = (FILE*)handler->ctx;
 
-   DENTER(TOP_LAYER, "qrstat_report_xacl_list_node");
+   DENTER(TOP_LAYER);
    if (!handler->show_summary) {
       fprintf(out, SFN SFN, (handler->first_xacl ? "" : ","), name);
       if (handler->first_xacl) {
@@ -734,7 +734,7 @@ qrstat_report_newline(qrstat_report_handler_t* handler, lList **alpp)
    bool ret = true;
    FILE *out = (FILE*)handler->ctx;
 
-   DENTER(TOP_LAYER, "qrstat_report_newline");
+   DENTER(TOP_LAYER);
    fprintf(out, "\n");
    DRETURN(ret);
 }

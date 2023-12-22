@@ -163,7 +163,7 @@ void sge_lock(sge_locktype_t aType, sge_lockmode_t aMode, const char *func, sge_
 {
    int res = -1;
 
-   DENTER(BASIS_LAYER, "sge_lock");
+   DENTER(BASIS_LAYER);
 
    pthread_once(&lock_once, lock_once_init);
 
@@ -222,7 +222,7 @@ void sge_lock(sge_locktype_t aType, sge_lockmode_t aMode, const char *func, sge_
    double time;
 #endif
 
-   DENTER(BASIS_LAYER, "sge_lock");
+   DENTER(BASIS_LAYER);
    
    pthread_once(&lock_once, lock_once_init);
 
@@ -310,7 +310,7 @@ void sge_lock(sge_locktype_t aType, sge_lockmode_t aMode, const char *func, sge_
 void sge_unlock(sge_locktype_t aType, sge_lockmode_t aMode, const char *func, sge_locker_t anID)
 {
    int res = -1;
-   DENTER(BASIS_LAYER, "sge_unlock");
+   DENTER(BASIS_LAYER);
 
    pthread_once(&lock_once, lock_once_init);
 #ifdef SGE_USE_LOCK_FIFO
@@ -339,7 +339,7 @@ void sge_unlock(sge_locktype_t aType, sge_lockmode_t aMode, const char *func, sg
 {
    int res = -1;
    
-   DENTER(BASIS_LAYER, "sge_unlock");
+   DENTER(BASIS_LAYER);
 
    pthread_once(&lock_once, lock_once_init);
 

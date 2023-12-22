@@ -64,7 +64,7 @@ lList **alpp,
 lList *user_args,
 lList *acl_args 
 ) {
-   lListElem *userarg, *aclarg;
+   const lListElem *userarg, *aclarg;
    lList *acl=NULL, *answers=NULL;
    const char *acl_name, *user_name;
    lCondition *where;
@@ -72,7 +72,7 @@ lList *acl_args
    u_long32 status;
    int already;
 
-   DENTER(TOP_LAYER, "sge_client_add_user");
+   DENTER(TOP_LAYER);
 
    what = lWhat("%T(ALL)", US_Type);
 
@@ -157,14 +157,14 @@ lList **alpp,
 lList *user_args,
 lList *acl_args 
 ) {
-   lListElem *userarg, *aclarg;
+   const lListElem *userarg, *aclarg;
    lList *acl=NULL, *answers=NULL;
    const char *acl_name, *user_name;
    lCondition *where;
    lEnumeration *what;
    u_long32 status;
 
-   DENTER(TOP_LAYER, "sge_client_del_user");
+   DENTER(TOP_LAYER);
 
    what = lWhat("%T(ALL)", US_Type);
 
@@ -253,12 +253,12 @@ lList *acl_args,
 lList **dst 
 ) {
    lList *answers;
-   lListElem *aclarg;
+   const lListElem *aclarg;
    lCondition *where, *newcp;
    lEnumeration *what;
    const char *acl_name;
    
-   DENTER(TOP_LAYER, "sge_client_get_acls");
+   DENTER(TOP_LAYER);
 
    where = NULL;
    for_each(aclarg, acl_args) {

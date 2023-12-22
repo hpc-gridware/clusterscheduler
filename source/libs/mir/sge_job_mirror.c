@@ -77,7 +77,7 @@ static bool job_update_master_list_usage(lList *job_list, lListElem *event)
    u_long32 job_id, ja_task_id;
    const char *pe_task_id;
 
-   DENTER(TOP_LAYER, "job_update_master_list_usage");
+   DENTER(TOP_LAYER);
 
    job_id = lGetUlong(event, ET_intkey);
    ja_task_id = lGetUlong(event, ET_intkey2);
@@ -96,8 +96,7 @@ static bool job_update_master_list_usage(lList *job_list, lListElem *event)
       ret = (ja_task_update_master_list_usage(job_list, event) != SGE_EMA_FAILURE)?true:false;   /* usage for a ja task */
    }
 
-   DEXIT;
-   return ret;
+   DRETURN(ret);
 }
 
 /****** Eventmirror/job/job_update_master_list() *****************************
@@ -149,7 +148,7 @@ job_update_master_list(sge_evc_class_t *evc, sge_object_type type,
    char id_buffer[MAX_STRING_SIZE];
    dstring id_dstring;
 
-   DENTER(TOP_LAYER, "job_update_master_list");
+   DENTER(TOP_LAYER);
 
    sge_dstring_init(&id_dstring, id_buffer, MAX_STRING_SIZE);
 
@@ -231,7 +230,7 @@ job_schedd_info_update_master_list(sge_evc_class_t *evc, sge_object_type type,
    lList *data_list;
    lListElem *ep = NULL;
    
-   DENTER(TOP_LAYER, "job_schedd_info_update_master_list");
+   DENTER(TOP_LAYER);
 
    list = object_type_get_master_list_rw(type); 
    list_descr = lGetListDescr(lGetList(event, ET_new_version));
@@ -251,7 +250,6 @@ job_schedd_info_update_master_list(sge_evc_class_t *evc, sge_object_type type,
       lAppendElem(*list, ep);
    }
 
-   DEXIT;
-   return SGE_EMA_OK;
+   DRETURN(SGE_EMA_OK);
 }
 

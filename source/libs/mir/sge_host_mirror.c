@@ -84,7 +84,7 @@ host_update_master_list(sge_evc_class_t *evc, sge_object_type type,
 
    const char *key;
 
-   DENTER(TOP_LAYER, "host_update_master_list");
+   DENTER(TOP_LAYER);
    list = object_type_get_master_list_rw(type);
    list_descr = lGetListDescr(lGetList(event, ET_new_version));
    key_nm = object_type_get_key_nm(type); 

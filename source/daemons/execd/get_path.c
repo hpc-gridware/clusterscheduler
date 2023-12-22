@@ -60,7 +60,7 @@ getHomeDir(dstring *dstr_exp_path, const char *user)
    char *buffer;
    int size;
 
-   DENTER(TOP_LAYER, "getHomeDir");
+   DENTER(TOP_LAYER);
 
    size = get_pw_buffer_size();
    buffer = sge_malloc(size);
@@ -94,7 +94,7 @@ int sge_get_path(const char *qualified_hostname, const lList *lp, const char *cw
    char exp_path_buf[SGE_PATH_MAX];
    dstring dstr_exp_path;
 
-   DENTER(TOP_LAYER, "sge_get_path");
+   DENTER(TOP_LAYER);
 
    sge_dstring_init(&dstr_exp_path, exp_path_buf, sizeof(exp_path_buf));
    *pathstr = '\0';
@@ -135,8 +135,7 @@ int sge_get_path(const char *qualified_hostname, const lList *lp, const char *cw
       sge_strlcpy(pathstr, cwd, pathstr_len);
    }
 
-   DEXIT;
-   return 0;
+   DRETURN(0);
 }
 
 /****** execd/fileio/sge_get_fs_path() ********************************
@@ -170,7 +169,7 @@ bool sge_get_fs_path(const lList* lp, char* fs_host, size_t fs_host_len, char* f
    const lListElem* ep;
    bool       bFileStaging=false;
 
-   DENTER(TOP_LAYER, "sge_get_fs_path");
+   DENTER(TOP_LAYER);
 
    if(lp && (ep=lFirst(lp))) {
       bFileStaging = (bool)lGetBool(ep, PN_file_staging);
@@ -184,8 +183,7 @@ bool sge_get_fs_path(const lList* lp, char* fs_host, size_t fs_host_len, char* f
          }
       }
    }
-   DEXIT;
-   return bFileStaging;
+   DRETURN(bFileStaging);
 }
 
 const char*
@@ -196,7 +194,7 @@ expand_path(dstring *dstr_exp_path, const char *in_path, u_long32 job_id, u_long
    const char *s;
    char tmp[255];
    
-   DENTER(TOP_LAYER, "expand_path");
+   DENTER(TOP_LAYER);
 
    sge_dstring_clear(dstr_exp_path);
 
@@ -224,8 +222,7 @@ expand_path(dstring *dstr_exp_path, const char *in_path, u_long32 job_id, u_long
          s = t;
          if (!strncmp(t, "$HOME", sizeof("$HOME") - 1)) {
             if (!getHomeDir(dstr_exp_path, user)) {
-               DEXIT;
-               return NULL;
+               DRETURN(NULL);
             }
             s = t + sizeof("$HOME") - 1;
          }
@@ -301,15 +298,14 @@ const char *sge_make_ja_task_active_dir(const lListElem *job, const lListElem *j
    int result;
 
 
-   DENTER(TOP_LAYER, "sge_make_ja_task_active_dir");
+   DENTER(TOP_LAYER);
    
    if (err_str != NULL) {
       sge_dstring_clear(err_str);
    }
    
    if (job == NULL || ja_task == NULL) {
-      DEXIT;
-      return NULL;
+      DRETURN(NULL);
    }
 
    /* build path to active dir */
@@ -349,8 +345,7 @@ const char *sge_make_ja_task_active_dir(const lListElem *job, const lListElem *j
                         sge_dstring_get_string(&error_string)));
                } else {
                   ERROR((SGE_EVENT, MSG_FILE_RMDIR_SS, path, SGE_EVENT));
-                  DEXIT;
-                  return NULL;
+                  DRETURN(NULL);
                }
             }
          }
@@ -368,12 +363,10 @@ const char *sge_make_ja_task_active_dir(const lListElem *job, const lListElem *j
       } else {
          ERROR((SGE_EVENT, MSG_FILE_CREATEDIR_SS, path, strerror(errno)));
       }
-      DEXIT;
-      return NULL;
+      DRETURN(NULL);
    }
 
-   DEXIT;
-   return path;
+   DRETURN(path);
 }
 
 /****** execd/fileio/sge_make_pe_task_active_dir() *********************************
@@ -409,15 +402,14 @@ const char *sge_make_pe_task_active_dir(const lListElem *job, const lListElem *j
    static dstring path_buffer = DSTRING_INIT;
    const char *path;
 
-   DENTER(TOP_LAYER, "sge_make_pe_task_active_dir");
+   DENTER(TOP_LAYER);
   
    if(err_str != NULL) {
       sge_dstring_clear(err_str);
    }
   
    if(job == NULL || ja_task == NULL || pe_task == NULL) {
-      DEXIT;
-      return NULL;
+      DRETURN(NULL);
    }
 
    /* build path to active dir */
@@ -435,10 +427,8 @@ const char *sge_make_pe_task_active_dir(const lListElem *job, const lListElem *j
       } else {
          ERROR((SGE_EVENT, MSG_FILE_CREATEDIR_SS, path, strerror(errno)));
       }
-      DEXIT;
-      return NULL;
+      DRETURN(NULL);
    }
 
-   DEXIT;
-   return path;
+   DRETURN(path);
 }

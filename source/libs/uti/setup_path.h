@@ -40,7 +40,6 @@
 /* These files and directories will be found in COMMON_DIR
  * They must be accessed with an absolute path. Do not use these defines!
  */
-#define ROOT_DIR                  "/usr/SGE"
 #define COMMON_DIR                "common"
 #define BOOTSTRAP_FILE            "bootstrap"
 #define CONF_FILE                 "configuration"

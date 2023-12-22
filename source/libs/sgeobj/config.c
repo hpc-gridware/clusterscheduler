@@ -81,7 +81,7 @@ int read_config_list(FILE *fp, lList **lpp, lList **alpp, lDescr *dp, int nm1,
    struct saved_vars_s *last = NULL;
    int force_value;
   
-   DENTER(TOP_LAYER, "read_config_list");
+   DENTER(TOP_LAYER);
 
    force_value = ((flag&RCL_NO_VALUE)==0);
 
@@ -129,7 +129,6 @@ int read_config_list(FILE *fp, lList **lpp, lList **alpp, lDescr *dp, int nm1,
          if (force_value) {
             SGE_ADD_MSG_ID(sprintf(SGE_EVENT, MSG_GDI_CONFIGNOARGUMENTGIVEN_S , name));
             answer_list_add(alpp, SGE_EVENT, STATUS_ESYNTAX, ANSWER_QUALITY_ERROR);
-            DEXIT;
             goto Error;
          }
          value = NULL;
@@ -149,14 +148,12 @@ int read_config_list(FILE *fp, lList **lpp, lList **alpp, lDescr *dp, int nm1,
       if (nm3 && value && strcmp(value, "{") == 0) {
          lList *slpp = NULL;
          if (read_config_list(fp, &slpp, alpp, dp, nm1, nm2, nm3, delimitor, flag, buffer, buffer_size)<0) {
-            DEXIT;
             goto Error;
          }
          ep = lAddElemStr(lpp, nm1, name, dp);
          if (!ep) { 
             ERROR((SGE_EVENT, MSG_GDI_CONFIGADDLISTFAILED_S , name));
             answer_list_add(alpp, SGE_EVENT, STATUS_EDISK, ANSWER_QUALITY_ERROR);
-            DEXIT;
             goto Error;
          } 
          lSetList(ep, nm3, slpp);
@@ -165,7 +162,6 @@ int read_config_list(FILE *fp, lList **lpp, lList **alpp, lDescr *dp, int nm1,
          if (!ep) { 
             ERROR((SGE_EVENT, MSG_GDI_CONFIGADDLISTFAILED_S , name));
             answer_list_add(alpp, SGE_EVENT, STATUS_EDISK, ANSWER_QUALITY_ERROR);
-            DEXIT;
             goto Error;
          } 
 
@@ -176,13 +172,12 @@ int read_config_list(FILE *fp, lList **lpp, lList **alpp, lDescr *dp, int nm1,
    if (last) {
       sge_free_saved_vars(last);
    }   
-   DEXIT;
-   return 0; 
+   DRETURN(0); 
 
 Error:
    if (last)
       sge_free_saved_vars(last);
-   return -1;
+   DRETURN(-1);
 }
 
 /*
@@ -205,7 +200,7 @@ lList *get_conf_sublist(lList **alpp, lList *lp, int name_nm, int value_nm,
 {
    lList *value;
 
-   DENTER(CULL_LAYER, "get_conf_sublist");
+   DENTER(CULL_LAYER);
    
    const lListElem *ep = lGetElemStr(lp, name_nm, key);
    if (ep == NULL) {
@@ -214,14 +209,12 @@ lList *get_conf_sublist(lList **alpp, lList *lp, int name_nm, int value_nm,
          sprintf(error, MSG_GDI_CONFIGMISSINGARGUMENT_S , key);
          answer_list_add(alpp, error, STATUS_ESEMANTIC, ANSWER_QUALITY_ERROR);
       }
-      DEXIT;
-      return NULL;
+      DRETURN(NULL);
    }
 
    value = lGetListRW(ep, value_nm);
 
-   DEXIT;
-   return value;
+   DRETURN(value);
 }
 
 /*
@@ -243,7 +236,7 @@ char *get_conf_value(lList **alpp, lList *lp, int name_nm, int value_nm,
                            const char *key) {
    char *value;
 
-   DENTER(CULL_LAYER, "get_conf_value");
+   DENTER(CULL_LAYER);
    
    const lListElem *ep = lGetElemStr(lp, name_nm, key);
    if (ep == NULL) {
@@ -252,16 +245,14 @@ char *get_conf_value(lList **alpp, lList *lp, int name_nm, int value_nm,
          sprintf(error, MSG_GDI_CONFIGMISSINGARGUMENT_S , key);
          answer_list_add(alpp, error, STATUS_ESEMANTIC, ANSWER_QUALITY_ERROR);
       }
-      DEXIT;
-      return NULL;
+      DRETURN(NULL);
    }
 
    /* FIX_CONST */
    value = (char*) lGetString(ep, value_nm);
    DPRINTF(("%s = %s\n", key, value?value:"<null ptr>"));
 
-   DEXIT;
-   return value;
+   DRETURN(value);
 }
 
 /****
@@ -289,11 +280,10 @@ int name_nm
    int pos;
    int dataType;
 
-   DENTER(TOP_LAYER, "set_conf_string");
+   DENTER(TOP_LAYER);
 
    if(!(str=get_conf_value(fields?NULL:alpp, *clpp, CF_name, CF_value, key))) {
-      DEXIT;
-      return fields?true:false;
+      DRETURN(fields?true:false);
    }
 
    pos = lGetPosViaElem(ep, name_nm, SGE_NO_ABORT);
@@ -314,8 +304,7 @@ int name_nm
    lDelElemStr(clpp, CF_name, key);
    add_nm_to_set(fields, name_nm);
 
-   DEXIT;
-   return true;
+   DRETURN(true);
 }
 
 /****
@@ -343,22 +332,19 @@ int name_nm
 ) {
    const char *str;
 
-   DENTER(CULL_LAYER, "set_conf_boolean");
+   DENTER(CULL_LAYER);
 
    if(!(str=get_conf_value(fields?NULL:alpp, *clpp, CF_name, CF_value, key))) {
-      DEXIT;
-      return fields?true:false;
+      DRETURN(fields?true:false);
    }
    if (!object_parse_bool_from_string(ep, NULL, name_nm, str)) {
-      DEXIT;
-      return false;
+      DRETURN(false);
    }
       
    lDelElemStr(clpp, CF_name, key);
    add_nm_to_set(fields, name_nm);
 
-   DEXIT;
-   return true;
+   DRETURN(true);
 }
 
 bool set_conf_centry_type(
@@ -372,15 +358,13 @@ int name_nm
    const char *str;
    u_long32 type;
 
-   DENTER(CULL_LAYER, "set_conf_centry_type");
+   DENTER(CULL_LAYER);
 
    if(!(str=get_conf_value(fields?NULL:alpp, *clpp, CF_name, CF_value, key))) {
-      DEXIT;
-      return fields?true:false;
+      DRETURN(fields?true:false);
    }
    if (!ulong_parse_centry_type_from_string(&type, alpp, str)) {
-      DEXIT;
-      return false;
+      DRETURN(false);
    } else {
       lSetUlong(ep, name_nm, type);
    }
@@ -388,8 +372,7 @@ int name_nm
    lDelElemStr(clpp, CF_name, key);
    add_nm_to_set(fields, name_nm);
 
-   DEXIT;
-   return true;
+   DRETURN(true);
 }
 
 bool set_conf_centry_relop(
@@ -403,15 +386,13 @@ int name_nm
    const char *str;
    u_long32 type;
 
-   DENTER(CULL_LAYER, "set_conf_centry_relop");
+   DENTER(CULL_LAYER);
 
    if(!(str=get_conf_value(fields?NULL:alpp, *clpp, CF_name, CF_value, key))) {
-      DEXIT;
-      return fields?true:false;
+      DRETURN(fields?true:false);
    }
    if (!ulong_parse_centry_relop_from_string(&type, alpp, str)) {
-      DEXIT;
-      return false;
+      DRETURN(false);
    } else {
       lSetUlong(ep, name_nm, type);
    }
@@ -419,8 +400,7 @@ int name_nm
    lDelElemStr(clpp, CF_name, key);
    add_nm_to_set(fields, name_nm);
 
-   DEXIT;
-   return true;
+   DRETURN(true);
 }
 
 bool set_conf_centry_requestable(
@@ -434,11 +414,10 @@ int name_nm
    const char *str;
    u_long32 flag;
 
-   DENTER(CULL_LAYER, "set_conf_centry_relop");
+   DENTER(CULL_LAYER);
 
    if(!(str=get_conf_value(fields?NULL:alpp, *clpp, CF_name, CF_value, key))) {
-      DEXIT;
-      return fields?true:false;
+      DRETURN(fields?true:false);
    }
    if (!strcasecmp(str, "y") || !strcasecmp(str, "yes")) {
       flag = REQU_YES;
@@ -449,16 +428,14 @@ int name_nm
    } else {
       answer_list_add_sprintf(alpp, STATUS_ESYNTAX, ANSWER_QUALITY_ERROR,
                               MSG_INVALID_CENTRY_REQUESTABLE_S, str);
-      DEXIT;
-      return false;
+      DRETURN(false);
    }
    lSetUlong(ep, name_nm, flag);
 
    lDelElemStr(clpp, CF_name, key);
    add_nm_to_set(fields, name_nm);
 
-   DEXIT;
-   return true;
+   DRETURN(true);
 }
 
 /****
@@ -484,21 +461,18 @@ int name_nm
 ) {
    const char *str;
 
-   DENTER(CULL_LAYER, "set_conf_ulong");
+   DENTER(CULL_LAYER);
 
    if(!(str=get_conf_value(fields?NULL:alpp, *clpp, CF_name, CF_value, key))) {
-      DEXIT;
-      return fields?true:false;
+      DRETURN(fields?true:false);
    }
    if (!object_parse_ulong32_from_string(ep, alpp, name_nm, str)) {
-      DEXIT;
-      return false;
+      DRETURN(false);
    }
    lDelElemStr(clpp, CF_name, key);
    add_nm_to_set(fields, name_nm);
 
-   DEXIT;
-   return true;
+   DRETURN(true);
 }
 
 /****
@@ -528,11 +502,10 @@ int operation_nm
    const char *str;
    double dval;
 
-   DENTER(CULL_LAYER, "set_conf_double"); 
+   DENTER(CULL_LAYER); 
 
    if(!(str=get_conf_value(fields?NULL:alpp, *clpp, CF_name, CF_value, key))) {
-      DEXIT;
-      return fields?true:false;
+      DRETURN(fields?true:false);
    }
    /*
    ** only treated if operation_nm != 0
@@ -562,16 +535,14 @@ int operation_nm
       SGE_ADD_MSG_ID(sprintf(SGE_EVENT, MSG_GDI_CONFIGARGUMENTNOTDOUBLE_SS , 
                key, str));
       answer_list_add(alpp, SGE_EVENT, STATUS_ESYNTAX, ANSWER_QUALITY_ERROR);
-      DEXIT;
-      return false;
+      DRETURN(false);
    }
 
    lSetDouble(ep, name_nm, dval);
    lDelElemStr(clpp, CF_name, key);
    add_nm_to_set(fields, name_nm);
 
-   DEXIT;
-   return true;
+   DRETURN(true);
 }
 
 /****
@@ -603,7 +574,7 @@ int *interpretation_rule
    lList *tmplp = NULL;
    char *str;
 
-   DENTER(CULL_LAYER, "set_conf_deflist");
+   DENTER(CULL_LAYER);
 
 
    if(!(str=get_conf_value(fields?NULL:alpp, *clpp, CF_name, CF_value, key))) {
@@ -645,30 +616,26 @@ int name_nm
 ) {
    const char *str;
 
-   DENTER(CULL_LAYER, "set_conf_timestring");
+   DENTER(CULL_LAYER);
 
    if (key == NULL) {
-      DEXIT;
-      return false;
+      DRETURN(false);
    }
 
    if(!(str=get_conf_value(fields?NULL:alpp, *clpp, CF_name, CF_value, key))) {
-      DEXIT;
-      return fields?true:false;
+      DRETURN(fields?true:false);
    }
    if(!parse_ulong_val(NULL, NULL, TYPE_TIM, str, NULL, 0)) {
       SGE_ADD_MSG_ID(sprintf(SGE_EVENT, MSG_GDI_CONFIGARGUMENTNOTTIME_SS , key, str));
       answer_list_add(alpp, SGE_EVENT, STATUS_ESYNTAX, ANSWER_QUALITY_ERROR);
-      DEXIT;
-      return false;
+      DRETURN(false);
    }
 
    lSetString(ep, name_nm, str);
    lDelElemStr(clpp, CF_name, key);
    add_nm_to_set(fields, name_nm);
 
-   DEXIT;
-   return true;
+   DRETURN(true);
 }
 
 /****
@@ -694,25 +661,22 @@ int name_nm
 ) {
    const char *str;
 
-   DENTER(CULL_LAYER, "set_conf_memstr");
+   DENTER(CULL_LAYER);
 
    if(!(str=get_conf_value(fields?NULL:alpp, *clpp, CF_name, CF_value, key))) {
-      DEXIT;
-      return fields?true:false;
+      DRETURN(fields?true:false);
    }
    if(!parse_ulong_val(NULL, NULL, TYPE_MEM, str, NULL, 0)) {
       SGE_ADD_MSG_ID(sprintf(SGE_EVENT, MSG_GDI_CONFIGARGUMENTNOMEMORY_SS , key, str));
       answer_list_add(alpp, SGE_EVENT, STATUS_ESYNTAX, ANSWER_QUALITY_ERROR);
-      DEXIT;
-      return false;
+      DRETURN(false);
    }
 
    lSetString(ep, name_nm, str);
    lDelElemStr(clpp, CF_name, key);
    add_nm_to_set(fields, name_nm);
 
-   DEXIT;
-   return true;
+   DRETURN(true);
 }
 
 /****
@@ -734,22 +698,19 @@ bool set_conf_enum(lList **alpp, lList **clpp, int fields[], const char *key,
    const char *str;
    u_long32 uval = 0;
 
-   DENTER(CULL_LAYER, "set_conf_enum");
+   DENTER(CULL_LAYER);
 
    if(!(str=get_conf_value(fields?NULL:alpp, *clpp, CF_name, CF_value, key))) {
-      DEXIT;
-      return fields?true:false;
+      DRETURN(fields?true:false);
    }
    if(!sge_parse_bitfield_str(str, enum_strings, &uval, key, alpp, false)) {
-      DEXIT;
-      return false;
+      DRETURN(false);
    }
    
    if(!uval) {
       SGE_ADD_MSG_ID(sprintf(SGE_EVENT, SFNMAX, MSG_GDI_CONFIGINVALIDQUEUESPECIFIED ));
       answer_list_add(alpp, SGE_EVENT, STATUS_ESYNTAX, ANSWER_QUALITY_ERROR);
-      DEXIT;
-      return false;
+      DRETURN(false);
    }
 
    lSetUlong(ep, name_nm, uval);
@@ -757,8 +718,7 @@ bool set_conf_enum(lList **alpp, lList **clpp, int fields[], const char *key,
    add_nm_to_set(fields, name_nm);
 
 
-   DEXIT;
-   return true;
+   DRETURN(true);
 }
 
 bool set_conf_enum_none(lList **alpp, lList **clpp, int fields[], const char *key,
@@ -767,15 +727,13 @@ bool set_conf_enum_none(lList **alpp, lList **clpp, int fields[], const char *ke
    const char *str;
    u_long32 uval = 0;
 
-   DENTER(TOP_LAYER, "set_conf_enum_none");
+   DENTER(TOP_LAYER);
 
    if(!(str=get_conf_value(fields?NULL:alpp, *clpp, CF_name, CF_value, key))) {
-      DEXIT;
-      return fields?true:false;
+      DRETURN(fields?true:false);
    }
    if(!sge_parse_bitfield_str(str, enum_strings, &uval, key, alpp, true)) {
-      DEXIT;
-      return false;
+      DRETURN(false);
    }
    
    lSetUlong(ep, name_nm, uval);
@@ -783,8 +741,7 @@ bool set_conf_enum_none(lList **alpp, lList **clpp, int fields[], const char *ke
    add_nm_to_set(fields, name_nm);
 
 
-   DEXIT;
-   return true;
+   DRETURN(true);
 }
 
 /****
@@ -810,11 +767,10 @@ bool set_conf_list(lList **alpp, lList **clpp, int fields[], const char *key,
    const char *tmp_str = NULL;
    char delims[] = "\t \v\r,"; 
 
-   DENTER(TOP_LAYER, "set_conf_list");
+   DENTER(TOP_LAYER);
 
    if(!(str=get_conf_value(fields?NULL:alpp, *clpp, CF_name, CF_value, key))) {
-      DEXIT;
-      return fields?true:false;
+      DRETURN(fields?true:false);
    }
    lString2List(str, &tmplp, descr, sub_name_nm, delims); 
 
@@ -844,15 +800,13 @@ bool set_conf_list(lList **alpp, lList **clpp, int fields[], const char *key,
       }
       if (strcasecmp("NONE", tmp_str)) {
          lSetList(ep, name_nm, tmplp);
-         DEXIT;
-         return true;
+         DRETURN(true);
       } else {
          lFreeList(&tmplp);
       }
    }
 
-   DEXIT;
-   return true;
+   DRETURN(true);
 }
 
 bool set_conf_str_attr_list(lList **alpp, lList **clpp, int fields[], 
@@ -864,11 +818,10 @@ bool set_conf_str_attr_list(lList **alpp, lList **clpp, int fields[],
    const char *str;
    lList *lanswer_list = NULL;
 
-   DENTER(TOP_LAYER, "set_conf_str_attr_list");
+   DENTER(TOP_LAYER);
 
    if(!(str=get_conf_value(fields?NULL:alpp, *clpp, CF_name, CF_value, key))) {
-      DEXIT;
-      return fields?true:false;
+      DRETURN(fields?true:false);
    }
    ret = str_attr_list_parse_from_string(&tmplp, &lanswer_list, str,
                                          HOSTATTR_ALLOW_AMBIGUITY, master_hgroup_list);
@@ -884,12 +837,10 @@ bool set_conf_str_attr_list(lList **alpp, lList **clpp, int fields[],
 
    if (tmplp != NULL) {
       lSetList(ep, name_nm, tmplp);
-      DEXIT;
-      return true;
+      DRETURN(true);
    }
 
-   DEXIT;
-   return true;
+   DRETURN(true);
 }
 
 bool set_conf_strlist_attr_list(lList **alpp, lList **clpp, int fields[], 
@@ -901,11 +852,10 @@ bool set_conf_strlist_attr_list(lList **alpp, lList **clpp, int fields[],
    const char *str;
    lList *lanswer_list = NULL;
 
-   DENTER(TOP_LAYER, "set_conf_strlist_attr_list");
+   DENTER(TOP_LAYER);
 
    if(!(str=get_conf_value(fields?NULL:alpp, *clpp, CF_name, CF_value, key))) {
-      DEXIT;
-      return fields?true:false;
+      DRETURN(fields?true:false);
    }
 
    ret = strlist_attr_list_parse_from_string(&tmplp, &lanswer_list, str,
@@ -922,12 +872,10 @@ bool set_conf_strlist_attr_list(lList **alpp, lList **clpp, int fields[],
 
    if (tmplp != NULL) {
       lSetList(ep, name_nm, tmplp);
-      DEXIT;
-      return true;
+      DRETURN(true);
    }
 
-   DEXIT;
-   return true;
+   DRETURN(true);
 }
 
 bool set_conf_usrlist_attr_list(lList **alpp, lList **clpp, int fields[], 
@@ -939,11 +887,10 @@ bool set_conf_usrlist_attr_list(lList **alpp, lList **clpp, int fields[],
    const char *str;
    lList *lanswer_list = NULL;
 
-   DENTER(TOP_LAYER, "set_conf_usrlist_attr_list");
+   DENTER(TOP_LAYER);
 
    if(!(str=get_conf_value(fields?NULL:alpp, *clpp, CF_name, CF_value, key))) {
-      DEXIT;
-      return fields?true:false;
+      DRETURN(fields?true:false);
    }
 
    ret = usrlist_attr_list_parse_from_string(&tmplp, &lanswer_list, str,
@@ -960,12 +907,10 @@ bool set_conf_usrlist_attr_list(lList **alpp, lList **clpp, int fields[],
 
    if (tmplp != NULL) {
       lSetList(ep, name_nm, tmplp);
-      DEXIT;
-      return true;
+      DRETURN(true);
    }
 
-   DEXIT;
-   return true;
+   DRETURN(true);
 }
 
 bool set_conf_prjlist_attr_list(lList **alpp, lList **clpp, int fields[], 
@@ -977,11 +922,10 @@ bool set_conf_prjlist_attr_list(lList **alpp, lList **clpp, int fields[],
    const char *str;
    lList *lanswer_list = NULL;
 
-   DENTER(TOP_LAYER, "set_conf_prjlist_attr_list");
+   DENTER(TOP_LAYER);
 
    if(!(str=get_conf_value(fields?NULL:alpp, *clpp, CF_name, CF_value, key))) {
-      DEXIT;
-      return fields?true:false;
+      DRETURN(fields?true:false);
    }
 
    ret = prjlist_attr_list_parse_from_string(&tmplp, &lanswer_list, str,
@@ -998,12 +942,10 @@ bool set_conf_prjlist_attr_list(lList **alpp, lList **clpp, int fields[],
 
    if (tmplp != NULL) {
       lSetList(ep, name_nm, tmplp);
-      DEXIT;
-      return true;
+      DRETURN(true);
    }
 
-   DEXIT;
-   return true;
+   DRETURN(true);
 }
 
 bool set_conf_celist_attr_list(lList **alpp, lList **clpp, int fields[], 
@@ -1015,11 +957,10 @@ bool set_conf_celist_attr_list(lList **alpp, lList **clpp, int fields[],
    const char *str;
    lList *lanswer_list = NULL;
 
-   DENTER(TOP_LAYER, "set_conf_celist_attr_list");
+   DENTER(TOP_LAYER);
 
    if(!(str=get_conf_value(fields?NULL:alpp, *clpp, CF_name, CF_value, key))) {
-      DEXIT;
-      return fields?true:false;
+      DRETURN(fields?true:false);
    }
 
    ret = celist_attr_list_parse_from_string(&tmplp, &lanswer_list, str,
@@ -1036,12 +977,10 @@ bool set_conf_celist_attr_list(lList **alpp, lList **clpp, int fields[],
 
    if (tmplp != NULL) {
       lSetList(ep, name_nm, tmplp);
-      DEXIT;
-      return true;
+      DRETURN(true);
    }
 
-   DEXIT;
-   return true;
+   DRETURN(true);
 }
 
 bool set_conf_solist_attr_list(lList **alpp, lList **clpp, int fields[], 
@@ -1053,11 +992,10 @@ bool set_conf_solist_attr_list(lList **alpp, lList **clpp, int fields[],
    const char *str;
    lList *lanswer_list = NULL;
 
-   DENTER(TOP_LAYER, "set_conf_solist_attr_list");
+   DENTER(TOP_LAYER);
 
    if(!(str=get_conf_value(fields?NULL:alpp, *clpp, CF_name, CF_value, key))) {
-      DEXIT;
-      return fields?true:false;
+      DRETURN(fields?true:false);
    }
 
    ret = solist_attr_list_parse_from_string(&tmplp, &lanswer_list, str,
@@ -1074,12 +1012,10 @@ bool set_conf_solist_attr_list(lList **alpp, lList **clpp, int fields[],
 
    if (tmplp != NULL) {
       lSetList(ep, name_nm, tmplp);
-      DEXIT;
-      return true;
+      DRETURN(true);
    }
 
-   DEXIT;
-   return true;
+   DRETURN(true);
 }
 
 bool set_conf_qtlist_attr_list(lList **alpp, lList **clpp, int fields[], 
@@ -1091,11 +1027,10 @@ bool set_conf_qtlist_attr_list(lList **alpp, lList **clpp, int fields[],
    const char *str;
    lList *lanswer_list = NULL;
 
-   DENTER(TOP_LAYER, "set_conf_qtlist_attr_list");
+   DENTER(TOP_LAYER);
 
    if(!(str=get_conf_value(fields?NULL:alpp, *clpp, CF_name, CF_value, key))) {
-      DEXIT;
-      return fields?true:false;
+      DRETURN(fields?true:false);
    }
 
    ret = qtlist_attr_list_parse_from_string(&tmplp, &lanswer_list, str,
@@ -1112,12 +1047,10 @@ bool set_conf_qtlist_attr_list(lList **alpp, lList **clpp, int fields[],
 
    if (tmplp != NULL) {
       lSetList(ep, name_nm, tmplp);
-      DEXIT;
-      return true;
+      DRETURN(true);
    }
 
-   DEXIT;
-   return true;
+   DRETURN(true);
 }
 
 bool set_conf_ulng_attr_list(lList **alpp, lList **clpp, int fields[], 
@@ -1129,11 +1062,10 @@ bool set_conf_ulng_attr_list(lList **alpp, lList **clpp, int fields[],
    const char *str;
    lList *lanswer_list = NULL;
 
-   DENTER(TOP_LAYER, "set_conf_ulng_attr_list");
+   DENTER(TOP_LAYER);
 
    if(!(str=get_conf_value(fields?NULL:alpp, *clpp, CF_name, CF_value, key))) {
-      DEXIT;
-      return fields?true:false;
+      DRETURN(fields?true:false);
    }
    ret = ulng_attr_list_parse_from_string(&tmplp, &lanswer_list, str,
                                           HOSTATTR_ALLOW_AMBIGUITY, master_hgroup_list);
@@ -1149,12 +1081,10 @@ bool set_conf_ulng_attr_list(lList **alpp, lList **clpp, int fields[],
 
    if (tmplp != NULL) {
       lSetList(ep, name_nm, tmplp);
-      DEXIT;
-      return true;
+      DRETURN(true);
    }
 
-   DEXIT;
-   return true;
+   DRETURN(true);
 }
 
 bool set_conf_bool_attr_list(lList **alpp, lList **clpp, int fields[], 
@@ -1166,11 +1096,10 @@ bool set_conf_bool_attr_list(lList **alpp, lList **clpp, int fields[],
    const char *str;
    lList *lanswer_list = NULL;
 
-   DENTER(TOP_LAYER, "set_conf_bool_attr_list");
+   DENTER(TOP_LAYER);
 
    if(!(str=get_conf_value(fields?NULL:alpp, *clpp, CF_name, CF_value, key))) {
-      DEXIT;
-      return fields?true:false;
+      DRETURN(fields?true:false);
    }
    ret = bool_attr_list_parse_from_string(&tmplp, &lanswer_list, str,
                                           HOSTATTR_ALLOW_AMBIGUITY, master_hgroup_list);
@@ -1186,12 +1115,10 @@ bool set_conf_bool_attr_list(lList **alpp, lList **clpp, int fields[],
 
    if (tmplp != NULL) {
       lSetList(ep, name_nm, tmplp);
-      DEXIT;
-      return true;
+      DRETURN(true);
    }
 
-   DEXIT;
-   return true;
+   DRETURN(true);
 }
 
 bool set_conf_time_attr_list(lList **alpp, lList **clpp, int fields[], 
@@ -1203,11 +1130,10 @@ bool set_conf_time_attr_list(lList **alpp, lList **clpp, int fields[],
    const char *str;
    lList *lanswer_list = NULL;
 
-   DENTER(TOP_LAYER, "set_conf_time_attr_list");
+   DENTER(TOP_LAYER);
 
    if(!(str=get_conf_value(fields?NULL:alpp, *clpp, CF_name, CF_value, key))) {
-      DEXIT;
-      return fields?true:false;
+      DRETURN(fields?true:false);
    }
    ret = time_attr_list_parse_from_string(&tmplp, &lanswer_list, str,
                                           HOSTATTR_ALLOW_AMBIGUITY, master_hgroup_list);
@@ -1223,12 +1149,10 @@ bool set_conf_time_attr_list(lList **alpp, lList **clpp, int fields[],
 
    if (tmplp != NULL) {
       lSetList(ep, name_nm, tmplp);
-      DEXIT;
-      return true;
+      DRETURN(true);
    }
 
-   DEXIT;
-   return true;
+   DRETURN(true);
 }
 
 bool set_conf_mem_attr_list(lList **alpp, lList **clpp, int fields[], 
@@ -1240,11 +1164,10 @@ bool set_conf_mem_attr_list(lList **alpp, lList **clpp, int fields[],
    const char *str;
    lList *lanswer_list = NULL;
 
-   DENTER(TOP_LAYER, "set_conf_mem_attr_list");
+   DENTER(TOP_LAYER);
 
    if(!(str=get_conf_value(fields?NULL:alpp, *clpp, CF_name, CF_value, key))) {
-      DEXIT;
-      return fields?true:false;
+      DRETURN(fields?true:false);
    }
    ret = mem_attr_list_parse_from_string(&tmplp, &lanswer_list, str,
                                           HOSTATTR_ALLOW_AMBIGUITY, master_hgroup_list);
@@ -1260,12 +1183,10 @@ bool set_conf_mem_attr_list(lList **alpp, lList **clpp, int fields[],
 
    if (tmplp != NULL) {
       lSetList(ep, name_nm, tmplp);
-      DEXIT;
-      return true;
+      DRETURN(true);
    }
 
-   DEXIT;
-   return true;
+   DRETURN(true);
 }
 
 bool set_conf_inter_attr_list(lList **alpp, lList **clpp, int fields[], 
@@ -1277,11 +1198,10 @@ bool set_conf_inter_attr_list(lList **alpp, lList **clpp, int fields[],
    const char *str;
    lList *lanswer_list = NULL;
 
-   DENTER(TOP_LAYER, "set_conf_inter_attr_list");
+   DENTER(TOP_LAYER);
 
    if(!(str=get_conf_value(fields?NULL:alpp, *clpp, CF_name, CF_value, key))) {
-      DEXIT;
-      return fields?true:false;
+      DRETURN(fields?true:false);
    }
    ret = inter_attr_list_parse_from_string(&tmplp, &lanswer_list, str,
                                            HOSTATTR_ALLOW_AMBIGUITY, master_hgroup_list);
@@ -1298,12 +1218,10 @@ bool set_conf_inter_attr_list(lList **alpp, lList **clpp, int fields[],
 
    if (tmplp != NULL) {
       lSetList(ep, name_nm, tmplp);
-      DEXIT;
-      return true;
+      DRETURN(true);
    }
 
-   DEXIT;
-   return true;
+   DRETURN(true);
 }
 
 /****
@@ -1343,14 +1261,13 @@ int subval_nm
    const char *s;
    char *endptr;
 
-   DENTER(CULL_LAYER, "set_conf_subordlist");
+   DENTER(CULL_LAYER);
 
    if(!(str=get_conf_value(fields?NULL:alpp, *clpp, CF_name, CF_value, key))) {
-      DEXIT;
-      return fields?true:false;
+      DRETURN(fields?true:false);
    }
    lString2List(str, &tmplp, descr, subname_nm, ", \t");
-   for_each (tmpep, tmplp) {
+   for_each_rw(tmpep, tmplp) {
       s = sge_strtok(lGetString(tmpep, subname_nm), ":=");
       lSetString(tmpep, subname_nm, s);
       if (!(s=sge_strtok(NULL, ":=")))
@@ -1359,8 +1276,7 @@ int subval_nm
       if (*endptr) {
          SGE_ADD_MSG_ID(sprintf(SGE_EVENT, MSG_GDI_CONFIGREADFILEERRORNEAR_SS , key, endptr));
          answer_list_add(alpp, SGE_EVENT, STATUS_ESYNTAX, ANSWER_QUALITY_ERROR);
-         DEXIT;
-         return false;
+         DRETURN(false);
       }
    }
    
@@ -1372,8 +1288,7 @@ int subval_nm
    lDelElemStr(clpp, CF_name, key);
    add_nm_to_set(fields, name_nm);
 
-   DEXIT;
-   return true;
+   DRETURN(true);
 }
 
 
@@ -1389,11 +1304,10 @@ int name_nm
 ) {
    int i = 0;
 
-   DENTER(CULL_LAYER, "add_nm_to_set");
+   DENTER(CULL_LAYER);
 
    if (!fields) {
-      DEXIT;
-      return 0; /* we leave here in most cases */
+      DRETURN(0); /* we leave here in most cases */
    }
 
    /* seek end and check whether 'name_nm' 
@@ -1402,14 +1316,12 @@ int name_nm
       i++;
    
    if (fields[i]==name_nm) {
-      DEXIT;
-      return -1;
+      DRETURN(-1);
    }
 
    fields[i] = name_nm;      
    fields[++i] = NoName;      
 
-   DEXIT;
-   return 0;
+   DRETURN(0);
 }
 

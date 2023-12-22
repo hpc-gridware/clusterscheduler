@@ -86,7 +86,7 @@ typedef struct {
 ************************************************************************/
 bool id_sharetree(lList **alpp, lListElem *ep, int id, int *ret_id);
 int show_sharetree_path(lListElem *root, const char *path);
-int show_sharetree(lListElem *ep, char *indent);
+int show_sharetree(const lListElem *ep, char *indent);
 lListElem *getSNTemplate(void);
 lListElem *search_named_node ( lListElem *ep, const char *name );
 lListElem *search_named_node_path ( lListElem *ep, const char *path, ancestors_t *ancestors );

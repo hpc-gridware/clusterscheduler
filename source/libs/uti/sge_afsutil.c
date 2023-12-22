@@ -74,36 +74,31 @@ char *sge_read_token(const char *file)
    char *tokenbuf;
    size_t size;
 
-   DENTER(TOP_LAYER, "sge_read_token");
+   DENTER(TOP_LAYER);
 
    if (SGE_STAT(file, &sb)) {
-      DTRACE;
-      return NULL;
+      DRETURN(NULL);
    }
 
    size = sb.st_size + 1;
    if (((SGE_OFF_T)size != sb.st_size + 1)
        || (tokenbuf = (char *) malloc(size)) == NULL) {
-      DTRACE;
-      return NULL;
+      DRETURN(NULL);
    }
 
    if ((fd = SGE_OPEN2(file, O_RDONLY)) == -1) {
-      DTRACE;
-      return NULL;
+      DRETURN(NULL);
    }
 
    if (read(fd, tokenbuf, sb.st_size) != sb.st_size) {
-      DTRACE;
       close(fd);
-      return NULL;
+      DRETURN(NULL);
    }
 
    tokenbuf[sb.st_size] = '\0';
 
    close(fd);
-   DEXIT;
-   return tokenbuf;
+   DRETURN(tokenbuf);
 }
 
 /****** uti/afsutil/sge_afs_extend_token() ************************************
@@ -143,7 +138,7 @@ int sge_afs_extend_token(const char *command, char *tokenbuf, const char *user,
    int ret;
    char cmdbuf[SGE_PATH_MAX+128];
 
-   DENTER(TOP_LAYER, "sge_afs_extend_token");
+   DENTER(TOP_LAYER);
 
    sprintf(cmdbuf, "%s %s %d", command, user, token_extend_time);
    if (err_str) {
@@ -156,23 +151,20 @@ int sge_afs_extend_token(const char *command, char *tokenbuf, const char *user,
       if (err_str) {
          sprintf(err_str, MSG_TOKEN_NOSTART_S , cmdbuf);
       }
-      DEXIT;
-      return -1;
+      DRETURN(-1);
    }
    if (sge_string2bin(fp_in, tokenbuf) == -1) {
       if (err_str) {
          sprintf(err_str, MSG_TOKEN_NOWRITEAFS_S , cmdbuf);
       }
-      DEXIT;
-      return -1;
+      DRETURN(-1);
    }
 
    if ((ret = sge_peclose(command_pid, fp_in, fp_out, fp_err, NULL)) != 0) {
       if (err_str) {
          sprintf(err_str, MSG_TOKEN_NOSETAFS_SI , cmdbuf, ret);
       }
-      DEXIT;
-      return -1;
+      DRETURN(-1);
    }
     
    return 0;

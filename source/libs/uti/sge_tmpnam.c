@@ -96,19 +96,17 @@ char *sge_tmpnam(char *aBuffer, dstring *error_message)
 {
    dstring s = DSTRING_INIT;
 
-   DENTER(TOP_LAYER, "sge_tmpnam");
+   DENTER(TOP_LAYER);
 
    if (aBuffer == NULL) {
       sge_dstring_sprintf(error_message, MSG_TMPNAM_GOT_NULL_PARAMETER);
-      DEXIT;
-      return NULL;
+      DRETURN(NULL);
    }
 
    if (elect_path(&s) < 0) {
       sge_dstring_sprintf(error_message, MSG_TMPNAM_CANNOT_GET_TMP_PATH);
       sge_dstring_free(&s);
-      DEXIT;
-      return NULL;
+      DRETURN(NULL);
    }
 
    if ((sge_dstring_get_string(&s))[sge_dstring_strlen(&s)-1] != '/') {
@@ -117,16 +115,14 @@ char *sge_tmpnam(char *aBuffer, dstring *error_message)
 
    if (spawn_file(&s, error_message) < 0) {
       sge_dstring_free(&s);
-      DEXIT;
-      return NULL;
+      DRETURN(NULL);
    }
 
    sge_strlcpy(aBuffer, sge_dstring_get_string(&s), SGE_PATH_MAX);
    sge_dstring_free(&s);
 
    DPRINTF(("sge_tmpnam: returning %s\n", aBuffer));
-   DEXIT;
-   return aBuffer;
+   DRETURN(aBuffer);
 }
 
 

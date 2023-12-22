@@ -97,7 +97,7 @@ void sge_c_report(sge_gdi_ctx_class_t *ctx, char *rhost, char *commproc, int id,
    bool is_pb_used = false;
    bool send_tag_new_conf = false;
 
-   DENTER(TOP_LAYER, "sge_c_report");
+   DENTER(TOP_LAYER);
 
    if (lGetNumberOfElem(report_list) == 0) {
       DPRINTF(("received empty report\n"));
@@ -184,7 +184,7 @@ void sge_c_report(sge_gdi_ctx_class_t *ctx, char *rhost, char *commproc, int id,
    ** usually there will be a load report
    ** and a configuration version report
    */
-   for_each(report, report_list) {
+   for_each_rw(report, report_list) {
       rep_type = lGetUlong(report, REP_type);
 
       switch (rep_type) {
@@ -203,7 +203,7 @@ void sge_c_report(sge_gdi_ctx_class_t *ctx, char *rhost, char *commproc, int id,
 
             if (mconf_get_simulate_execds()) {
                const lList *master_exechost_list = *object_type_get_master_list(SGE_TYPE_EXECHOST);
-               lListElem *shep;
+               const lListElem *shep;
                lListElem *simhostElem=NULL; 
 
                for_each(shep, master_exechost_list) {
@@ -217,7 +217,7 @@ void sge_c_report(sge_gdi_ctx_class_t *ctx, char *rhost, char *commproc, int id,
                         DPRINTF(("Copy load values of %s to simulated host %s\n",
                                 rhost, sim_host));
 
-                        for_each(clp, lGetList(report, REP_list)) {
+                        for_each_rw(clp, lGetList(report, REP_list)) {
                            if (strcmp(lGetHost(clp, LR_host), SGE_GLOBAL_NAME) != 0) {
                               lSetHost(clp, LR_host, sim_host);
                            }
@@ -234,7 +234,7 @@ void sge_c_report(sge_gdi_ctx_class_t *ctx, char *rhost, char *commproc, int id,
       case NUM_REP_REPORT_CONF: 
          MONITOR_ECONF(monitor); 
          if (sge_compare_configuration(hep, lGetList(report, REP_list)) != 0) {
-            DPRINTF(("%s: configuration on host %s is not up to date\n", SGE_FUNC, rhost));
+            DPRINTF(("%s: configuration on host %s is not up to date\n", __func__, rhost));
             send_tag_new_conf = true;
          }
          break;
@@ -309,7 +309,7 @@ static int update_license_data(sge_gdi_ctx_class_t *ctx, lListElem *hep, lList *
 {
    u_long32 processors;
 
-   DENTER(TOP_LAYER, "update_license_data");
+   DENTER(TOP_LAYER);
 
    if (!hep) {
       DRETURN(-1);

@@ -124,7 +124,7 @@ sge_tid_t sge_qexecve(sge_gdi_ctx_class_t *ctx,
    u_long32 dummymid = 0;
    const char *env_var_name = "SGE_TASK_ID";
 
-   DENTER(TOP_LAYER, "sge_qexecve");
+   DENTER(TOP_LAYER);
 
    if (hostname == NULL) {
       sprintf(lasterror, MSG_GDI_INVALIDPARAMETER_SS, "sge_qexecve", "hostname");
@@ -238,15 +238,14 @@ int sge_qwaittid(sge_gdi_ctx_class_t *ctx, sge_tid_t tid, int *status, int optio
    lListElem *rt = NULL;
    int ret, rcv_opt = 0;
 
-   DENTER(TOP_LAYER, "sge_qwaittid");
+   DENTER(TOP_LAYER);
 
    if (!(options&WNOHANG))
       rcv_opt |= OPT_SYNCHRON;
 
    if (tid != NULL && !(rt=LOCATE_RTASK(tid))) {
       sprintf(lasterror, MSG_GDI_TASKNOTEXIST_S , tid);
-      DEXIT;
-      return -1;
+      DRETURN(-1);
    }
 
    while ((rt && /* definite one searched */
@@ -257,8 +256,7 @@ int sge_qwaittid(sge_gdi_ctx_class_t *ctx, sge_tid_t tid, int *status, int optio
             lGetElemUlong(remote_task_list, RT_state, RT_STATE_WAIT4ACK))) /* but one is waiting for ack */ {
       /* wait for incoming messeges about exited tasks */
       if ((ret=rcv_from_execd(ctx, rcv_opt, TAG_TASK_EXIT))) {
-         DEXIT;
-         return (ret<0)?-1:0;
+         DRETURN((ret<0)?-1:0);
       }
    }
 
@@ -266,8 +264,7 @@ int sge_qwaittid(sge_gdi_ctx_class_t *ctx, sge_tid_t tid, int *status, int optio
       *status = lGetUlong(rt, RT_status);
    lSetUlong(rt, RT_state, RT_STATE_WAITED);
 
-   DEXIT;
-   return 0;
+   DRETURN(0);
 }
 
 /* return 
@@ -292,7 +289,7 @@ static int rcv_from_execd(sge_gdi_ctx_class_t *ctx, int options, int tag)
    u_long32 exit_status=0;
    sge_tid_t tid = NULL;
 
-   DENTER(TOP_LAYER, "rcv_from_execd");
+   DENTER(TOP_LAYER);
 
    host[0] = '\0';
    from_id = 1;
@@ -303,21 +300,18 @@ static int rcv_from_execd(sge_gdi_ctx_class_t *ctx, int options, int tag)
       
       if (ret != CL_RETVAL_OK && ret != CL_RETVAL_SYNC_RECEIVE_TIMEOUT) {
          sprintf(lasterror, MSG_GDI_MESSAGERECEIVEFAILED_SI , cl_get_error_text(ret), ret);
-         DEXIT;
-         return -1;
+         DRETURN(-1);
       }
    } while (options&OPT_SYNCHRON && ret == CL_RETVAL_SYNC_RECEIVE_TIMEOUT);
 
    if (ret==CL_RETVAL_SYNC_RECEIVE_TIMEOUT) {
-      DEXIT;
-      return 1;
+      DRETURN(1);
    }
 
    ret = init_packbuffer_from_buffer(&pb, msg, msg_len);     
    if(ret != PACK_SUCCESS) {
       sprintf(lasterror,  MSG_GDI_ERRORUNPACKINGGDIREQUEST_S, cull_pack_strerror(ret));
-      DEXIT;
-      return -1;
+      DRETURN(-1);
    }
 
    switch (tag) {
@@ -340,8 +334,7 @@ static int rcv_from_execd(sge_gdi_ctx_class_t *ctx, int options, int tag)
       if (!(rt_rcv = lGetElemStrRW(remote_task_list, RT_tid, tid))) {
          sprintf(lasterror, MSG_GDI_TASKNOTFOUND_S, tid);
          sge_free(&tid);
-         DEXIT;
-         return -1;
+         DRETURN(-1);
       }
 
       lSetUlong(rt_rcv, RT_status, exit_status);
@@ -352,8 +345,7 @@ static int rcv_from_execd(sge_gdi_ctx_class_t *ctx, int options, int tag)
       /* search task without taskid */
       if (!(rt_rcv = lGetElemStrRW(remote_task_list, RT_tid, "none"))) {
          sprintf(lasterror, MSG_GDI_TASKNOTFOUNDNOIDGIVEN_S , tid);
-         DEXIT;
-         return -1;
+         DRETURN(-1);
       }
       lSetString(rt_rcv, RT_tid, tid);
       break;
@@ -363,7 +355,6 @@ static int rcv_from_execd(sge_gdi_ctx_class_t *ctx, int options, int tag)
    }
 
    sge_free(&tid);
-   DEXIT;
-   return 0;
+   DRETURN(0);
 }
 

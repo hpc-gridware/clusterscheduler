@@ -74,7 +74,7 @@ int sge_has_access_(const char *user, const char *group, const lList *q_acl,
 {
    int ret;
 
-   DENTER(TOP_LAYER, "sge_has_access_");
+   DENTER(TOP_LAYER);
 
    ret = sge_contained_in_access_list_(user, group, q_xacl, acl_list);
    if (ret < 0 || ret == 1) { /* also deny when an xacl entry was not found in acl_list */
@@ -111,7 +111,7 @@ int sge_contained_in_access_list_(const char *user, const char *group,
 {
    const lListElem *acl_search, *acl_found;
 
-   DENTER(TOP_LAYER,"sge_contained_in_access_list_");
+   DENTER(TOP_LAYER);
 
    for_each (acl_search, acl) {
       if ((acl_found=lGetElemStr(acl_list, US_name, lGetString(acl_search, US_name)))) {
@@ -156,10 +156,10 @@ bool sge_ar_have_users_access(lList **alpp, lListElem *ar, const char *name, con
                                     const lList *xacl_list, const lList *master_userset_list)
 {
    bool ret = true;
-   lListElem *acl_entry;
+   const lListElem *acl_entry;
    const char *user= NULL;
 
-   DENTER(TOP_LAYER, "sge_ar_have_users_access");
+   DENTER(TOP_LAYER);
 
    for_each(acl_entry, lGetList(ar, AR_acl_list)) {
       user = lGetString(acl_entry, ARA_name);

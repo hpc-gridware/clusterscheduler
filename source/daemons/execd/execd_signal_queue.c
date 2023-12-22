@@ -93,12 +93,12 @@ int do_signal_queue(sge_gdi_ctx_class_t *ctx, struct_msg_t *aMsg, sge_pack_buffe
    u_long32 jobid, signal, jataskid;
    char *qname = NULL;
 
-   DENTER(TOP_LAYER, "do_signal_queue");
+   DENTER(TOP_LAYER);
 
    if (unpackint(&(aMsg->buf), &jobid) != 0 ||
        unpackint(&(aMsg->buf), &jataskid) != 0 ||
        unpackstr(&(aMsg->buf), &qname) != 0 || /* mallocs qname !! */
-       unpackint(&(aMsg->buf), &signal)) {     /* signal don't need to be packed Ü*/
+       unpackint(&(aMsg->buf), &signal)) {     /* signal don't need to be packed ï¿½*/
       sge_free(&qname); 
       DRETURN(1);    
    }
@@ -113,11 +113,12 @@ int do_signal_queue(sge_gdi_ctx_class_t *ctx, struct_msg_t *aMsg, sge_pack_buffe
    } else {            /* signal a queue */
       pack_ack(apb, ACK_SIGQUEUE, jobid, jataskid, qname);
 
-      for_each(jep, *object_type_get_master_list(SGE_TYPE_JOB)) {
-         lListElem *gdil_ep, *master_q, *jatep;
+      for_each_rw(jep, *object_type_get_master_list(SGE_TYPE_JOB)) {
+         lListElem *gdil_ep, *master_q;
+         lListElem *jatep;
          const char *qnm;
 
-         for_each (jatep, lGetList(jep, JB_ja_tasks)) {
+         for_each_rw (jatep, lGetList(jep, JB_ja_tasks)) {
             if (lGetUlong(jatep, JAT_status) == JSLAVE) {
                break;
             }   
@@ -125,7 +126,7 @@ int do_signal_queue(sge_gdi_ctx_class_t *ctx, struct_msg_t *aMsg, sge_pack_buffe
             /* iterate through all queues of a parallel job -
                this is done to ensure that signal delivery is also
                forwarded to the job in case the master queue keeps still active */
-            for_each (gdil_ep, lGetList(jatep, JAT_granted_destin_identifier_list)) {
+            for_each_rw (gdil_ep, lGetList(jatep, JAT_granted_destin_identifier_list)) {
                master_q = lGetObject(gdil_ep, JG_queue);
                if (master_q != NULL) {
                   qnm =  lGetString(master_q, QU_full_name);
@@ -144,7 +145,7 @@ int do_signal_queue(sge_gdi_ctx_class_t *ctx, struct_msg_t *aMsg, sge_pack_buffe
                               signal = SGE_MIGRATE;
                            }   
                            if (sge_execd_deliver_signal(signal, jep, jatep) == 0) {
-                              sge_send_suspend_mail(signal,master_q ,jep, jatep); 
+                              sge_send_suspend_mail(signal,master_q, jep, jatep);
                            }
                         }   
                      } else {
@@ -227,7 +228,7 @@ int sge_execd_deliver_signal(u_long32 sig, const lListElem *jep, lListElem *jate
    int queue_already_suspended;
    int getridofjob = 0;
 
-   DENTER(TOP_LAYER, "sge_execd_deliver_signal");
+   DENTER(TOP_LAYER);
 
    INFO((SGE_EVENT, MSG_JOB_SIGNALTASK_UUS,   
          sge_u32c(lGetUlong(jep, JB_job_number)), sge_u32c(lGetUlong(jatep, JAT_task_number)), 
@@ -284,7 +285,7 @@ int sge_execd_deliver_signal(u_long32 sig, const lListElem *jep, lListElem *jate
    if (!(sig == SGE_MIGRATE 
          && (lGetUlong(jep, JB_checkpoint_attr)|CHECKPOINT_SUSPEND)) 
          && !queue_already_suspended) {
-      lListElem *petep;
+      const lListElem *petep;
       /* signal each pe task */
       for_each (petep, lGetList(jatep, JAT_task_list)) {
          if (sge_kill((int)lGetUlong(petep, PET_pid), sig, 
@@ -334,7 +335,7 @@ void sge_send_suspend_mail(u_long32 signal, lListElem *master_q, lListElem *jep,
 
    u_long32 mail_options; 
 
-   DENTER(TOP_LAYER, "sge_send_suspend_mail");
+   DENTER(TOP_LAYER);
 
    mail_options = lGetUlong(jep, JB_mail_options); 
 
@@ -426,8 +427,7 @@ void sge_send_suspend_mail(u_long32 signal, lListElem *master_q, lListElem *jep,
           mail_type = MSG_MAIL_TYPE_CONT;
        } else {
           DPRINTF(("no suspend or continue signaling\n"));
-          DEXIT;
-          return;
+          DRETURN_VOID;
        }
 
        /* create mail body */
@@ -442,7 +442,7 @@ void sge_send_suspend_mail(u_long32 signal, lListElem *master_q, lListElem *jep,
  
        cull_mail(EXECD, mail_users, mail_subject, mail_body, mail_type );
    } 
-   DEXIT;
+   DRETURN_VOID;
 }
 
 /***********************************************************************
@@ -461,14 +461,13 @@ int sge_kill(int pid, u_long32 sge_signal, u_long32 job_id, u_long32 ja_task_id,
    char id_buffer[MAX_STRING_SIZE];
    dstring id_dstring;
 
-   DENTER(TOP_LAYER, "sge_kill");
+   DENTER(TOP_LAYER);
 
    sge_dstring_init(&id_dstring, id_buffer, MAX_STRING_SIZE);
 
    if (!pid) {
       DPRINTF(("sge_kill won't kill pid 0!\n"));
-      DEXIT;
-      return -1;
+      DRETURN(-1);
    }
 
    /* mapping from SGE_SIG... which is equal on all platforms to the platform
@@ -536,12 +535,10 @@ int sge_kill(int pid, u_long32 sge_signal, u_long32 job_id, u_long32 ja_task_id,
 #endif   
       if (errno == ESRCH)
          goto CheckShepherdStillRunning;
-      DEXIT; 
-      return -1;
+      DRETURN(-1);
    }
    
-   DEXIT;
-   return 0;
+   DRETURN(0);
 
 FCLOSE_ERROR:
 CheckShepherdStillRunning:
@@ -555,15 +552,13 @@ CheckShepherdStillRunning:
       if (!SGE_STAT(sge_dstring_get_string(&path), &statbuf) && S_ISDIR(statbuf.st_mode)) {
          sge_sig_handler_dead_children = 1; /* may be we've lost a SIGCHLD */
          sge_dstring_free(&path);
-         DEXIT;
-         return 0;
+         DRETURN(0);
       } else {
          WARNING((SGE_EVENT, MSG_JOB_DELIVERSIGNAL_ISSIS, sig, 
          job_get_id_string(job_id, ja_task_id, pe_task_id, &id_dstring), 
          sge_sig2str(sge_signal), pid, strerror(errno)));
          sge_dstring_free(&path);
-         DEXIT;
-         return -2;
+         DRETURN(-2);
       }
    }
 }
@@ -595,7 +590,7 @@ int signal_job(u_long32 jobid, u_long32 jataskid, u_long32 signal)
    int suspend_change = 0;
    int send_mail = 0;
 
-   DENTER(TOP_LAYER, "signal_job");
+   DENTER(TOP_LAYER);
 
    /* search appropriate array task and job */
    if (!execd_get_job_ja_task(jobid, jataskid, &jep, &jatep)) {

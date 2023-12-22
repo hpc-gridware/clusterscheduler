@@ -102,9 +102,9 @@ int sge_nprocs (void);
 *  NOTES
 *     MT-NOTE: sge_nprocs() is MT safe (SOLARIS, NEC, IRIX, ALPHA, HPUX, LINUX)
 ******************************************************************************/
-int sge_nprocs()
+int sge_nprocs(void)
 {
-   int nprocs=1; /* default */
+   int nprocs = 1; /* default */
 
 #if defined(DARWIN)
   struct host_basic_info cpu_load_data;

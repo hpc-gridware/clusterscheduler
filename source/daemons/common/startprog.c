@@ -88,7 +88,7 @@ int startprog(int out, int err,
  char err_str[err_length];
 #endif
 
- DENTER(TOP_LAYER, "startprog");
+ DENTER(TOP_LAYER);
 
  sge_dstring_init(&ds, buffer, sizeof(buffer));
 
@@ -157,7 +157,6 @@ int startprog(int out, int err,
       close(1);
       if (dup(out) == -1) {
          /* exit with special exit code 8 being treated as error */
-         DEXIT;
          exit(8);
       }
    }
@@ -165,7 +164,6 @@ int startprog(int out, int err,
       close(2);
       if (dup(err) == -1) {
          /* exit with special exit code 8 being treated as error */
-         DEXIT;
          exit(8);
       }
       fprintf(stderr, "######################\n");
@@ -173,7 +171,6 @@ int startprog(int out, int err,
       fprintf(stderr, "######################\n");
    }
    execvp(prog_path, argv);
-   DEXIT;
    exit(8);
  } else {
     /* parent */
@@ -202,7 +199,7 @@ pid_t pid
    pid_t npid;
    int status, exit_status, ret;
 
-   DENTER(TOP_LAYER, "do_wait");
+   DENTER(TOP_LAYER);
 
    /* This loop only ends if the process exited normally or
     * died through signal

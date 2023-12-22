@@ -82,7 +82,7 @@ void sge_setup_sge_execd(sge_gdi_ctx_class_t *ctx, const char* tmp_err_file_name
    const char *unqualified_hostname = ctx->get_unqualified_hostname(ctx);
    const char *admin_user = ctx->get_admin_user(ctx);
 
-   DENTER(TOP_LAYER, "sge_setup_sge_execd");
+   DENTER(TOP_LAYER);
 
    /* TODO: is this the right place to switch the user ?
             ports below 1024 ok */
@@ -166,11 +166,11 @@ int job_initialize_job(lListElem *job)
 {
    u_long32 job_id;
    lListElem *ja_task;
-   lListElem *pe_task;
-   DENTER(TOP_LAYER, "job_initialize_job");
+   const lListElem *pe_task;
+   DENTER(TOP_LAYER);
 
    job_id = lGetUlong(job, JB_job_number); 
-   for_each (ja_task, lGetList(job, JB_ja_tasks)) {
+   for_each_rw (ja_task, lGetList(job, JB_ja_tasks)) {
       u_long32 ja_task_id;
 
       ja_task_id = lGetUlong(ja_task, JAT_task_number);
@@ -226,6 +226,5 @@ int job_initialize_job(lListElem *job)
       }
 #endif
    }     
-   DEXIT;
-   return 0;           
+   DRETURN(0);           
 }

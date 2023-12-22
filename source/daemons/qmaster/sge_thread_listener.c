@@ -67,7 +67,7 @@
 static void
 sge_listener_cleanup_monitor(monitoring_t *monitor) 
 {
-   DENTER(TOP_LAYER, "sge_listener_cleanup_monitor");
+   DENTER(TOP_LAYER);
    sge_monitor_free(monitor);
    DRETURN_VOID;
 }
@@ -79,7 +79,7 @@ sge_listener_initialize(sge_gdi_ctx_class_t *ctx)
    cl_thread_settings_t* dummy_thread_p = NULL;
    u_long32 i;  
 
-   DENTER(TOP_LAYER, "sge_listener_initialize");
+   DENTER(TOP_LAYER);
 
    INFO((SGE_EVENT, MSG_QMASTER_THREADCOUNT_US, sge_u32c(max_initial_listener_threads), threadnames[LISTENER_THREAD]));
    cl_thread_list_setup(&(Main_Control.listener_thread_pool), "thread pool");
@@ -99,7 +99,7 @@ void
 sge_listener_terminate(void)
 {
    cl_thread_settings_t* thread = NULL;
-   DENTER(TOP_LAYER, "sge_listener_terminate");
+   DENTER(TOP_LAYER);
 
    /*
     * Currently the event master (EDE) does need a working gdi thread to 
@@ -148,7 +148,7 @@ sge_listener_main(void *arg)
    sge_gdi_ctx_class_t *ctx = NULL;
    time_t next_prof_output = 0;
 
-   DENTER(TOP_LAYER, "sge_listener_main");
+   DENTER(TOP_LAYER);
 
    DPRINTF(("started\n"));
    cl_thread_func_startup(thread_config);

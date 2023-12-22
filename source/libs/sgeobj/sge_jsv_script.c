@@ -88,7 +88,7 @@ jsv_split_commandline(const char *input, dstring *command, dstring *subcommand, 
 {
    bool ret = true;
 
-   DENTER(TOP_LAYER, "jsv_split_commandline");
+   DENTER(TOP_LAYER);
    if (input != NULL) {
       struct saved_vars_s *cntx = NULL;
       const char *token1 = sge_strtok_r(input, " ", &cntx);
@@ -126,7 +126,7 @@ jsv_split_token(dstring *input, dstring *token, dstring *args)
    const char *i = sge_dstring_get_string(input);
    bool ret = true;
 
-   DENTER(TOP_LAYER, "jsv_split_token");
+   DENTER(TOP_LAYER);
    if (i != NULL) {
       struct saved_vars_s *cntx = NULL;
       const char *token1 = sge_strtok_r(i, " ", &cntx);
@@ -160,7 +160,7 @@ jsv_handle_param_command(sge_gdi_ctx_class_t *ctx, lListElem *jsv, lList **answe
    const char *param = sge_dstring_get_string(s);
    const char *value = sge_dstring_get_string(a);
 
-   DENTER(TOP_LAYER, "jsv_handle_param_command");
+   DENTER(TOP_LAYER);
    if (param != NULL) {
       bool skip_check = false;
       lList *local_answer_list = NULL;
@@ -550,7 +550,7 @@ jsv_handle_param_command(sge_gdi_ctx_class_t *ctx, lListElem *jsv, lList **answe
          if (ret && strcmp("hold_jid", param) == 0) {
             lList *hold_list = NULL;
             lList *jref_list = NULL;
-            lListElem *jid_str;
+            const lListElem *jid_str;
 
             if (value != NULL) {
                int lret = cull_parse_jid_hold_list(&hold_list, value);
@@ -574,7 +574,7 @@ jsv_handle_param_command(sge_gdi_ctx_class_t *ctx, lListElem *jsv, lList **answe
          if (ret && strcmp("hold_jid_ad", param) == 0) {
             lList *hold_list = NULL;
             lList *jref_list = NULL;
-            lListElem *jid_str;
+            const lListElem *jid_str;
 
             if (value != NULL) {
                int lret = cull_parse_jid_hold_list(&hold_list, value);
@@ -1203,7 +1203,7 @@ jsv_handle_send_command(sge_gdi_ctx_class_t *ctx, lListElem *jsv, lList **answer
    bool ret = true;
    const char *subcommand = sge_dstring_get_string(s);
 
-   DENTER(TOP_LAYER, "jsv_handle_send_command");
+   DENTER(TOP_LAYER);
    if (strcmp(subcommand, "ENV") == 0) {
       lSetBool(jsv, JSV_send_env, true);
    } else {
@@ -1231,7 +1231,7 @@ jsv_handle_result_command(sge_gdi_ctx_class_t *ctx, lListElem *jsv, lList **answ
    const char *state = NULL;
    const char *message = NULL;
 
-   DENTER(TOP_LAYER, "jsv_handle_result_command");
+   DENTER(TOP_LAYER);
    sub_command = sge_dstring_get_string(s);
    jsv_split_token(a, &st, &m);
    state = sge_dstring_get_string(&st);
@@ -1295,7 +1295,7 @@ jsv_handle_started_command(sge_gdi_ctx_class_t *ctx, lListElem *jsv, lList **ans
    bool ret = true;
    lListElem *old_job = lGetRef(jsv, JSV_old_job);
 
-   DENTER(TOP_LAYER, "jsv_handle_started_command");
+   DENTER(TOP_LAYER);
 
    /* reset variables which are only used in test cases */
    lSetBool(jsv, JSV_test, false);
@@ -1379,7 +1379,7 @@ jsv_handle_started_command(sge_gdi_ctx_class_t *ctx, lListElem *jsv, lList **ans
     */
    {
       const lList *list = lGetList(old_job, JB_job_args);
-      lListElem *elem;
+      const lListElem *elem;
       int i = 0;
 
       sge_dstring_clear(&buffer);
@@ -1422,7 +1422,7 @@ jsv_handle_started_command(sge_gdi_ctx_class_t *ctx, lListElem *jsv, lList **ans
 
       if (context_list != NULL) {
          lListElem *tmp_job = lCopyElem(old_job);
-         lListElem *context = NULL;
+         const lListElem *context = NULL;
          lList* tmp = NULL;
 
          lXchgList(tmp_job, JB_context, &tmp);
@@ -1579,7 +1579,7 @@ jsv_handle_started_command(sge_gdi_ctx_class_t *ctx, lListElem *jsv, lList **ans
       const lList *shell_list = lGetList(old_job, JB_stderr_path_list);
 
       if (shell_list != NULL) {
-         lListElem *shell;
+         const lListElem *shell;
          bool first = true;
  
          sge_dstring_clear(&buffer);
@@ -1613,7 +1613,7 @@ jsv_handle_started_command(sge_gdi_ctx_class_t *ctx, lListElem *jsv, lList **ans
       const lList *hold_jid_list = lGetList(old_job, JB_jid_request_list);
      
       if (hold_jid_list != NULL) {
-         lListElem *hold_jid;
+         const lListElem *hold_jid;
          bool first = true;
 
          sge_dstring_clear(&buffer); 
@@ -1642,7 +1642,7 @@ jsv_handle_started_command(sge_gdi_ctx_class_t *ctx, lListElem *jsv, lList **ans
       const lList *hold_jid_list = lGetList(old_job, JB_ja_ad_request_list);
     
       if (hold_jid_list != NULL) {
-         lListElem *hold_jid;
+         const lListElem *hold_jid;
          bool first = true;
 
          sge_dstring_clear(&buffer);
@@ -1690,7 +1690,7 @@ jsv_handle_started_command(sge_gdi_ctx_class_t *ctx, lListElem *jsv, lList **ans
       const lList *shell_list = lGetList(old_job, JB_stdin_path_list);
 
       if (shell_list != NULL) {
-         lListElem *shell;
+         const lListElem *shell;
          bool first = true;
  
          sge_dstring_clear(&buffer);
@@ -1868,7 +1868,7 @@ jsv_handle_started_command(sge_gdi_ctx_class_t *ctx, lListElem *jsv, lList **ans
       const lList *shell_list = lGetList(old_job, JB_stdout_path_list);
 
       if (shell_list != NULL) {
-         lListElem *shell;
+         const lListElem *shell;
  
          sge_dstring_clear(&buffer);
          sge_dstring_sprintf(&buffer, "%s o ", prefix);
@@ -2090,7 +2090,7 @@ jsv_handle_started_command(sge_gdi_ctx_class_t *ctx, lListElem *jsv, lList **ans
       const lList *hard_queue_list = lGetList(old_job, JB_hard_queue_list);
 
       if (hard_queue_list != NULL) {
-         lListElem *queue;
+         const lListElem *queue;
          bool first = true;
 
          sge_dstring_clear(&buffer);
@@ -2109,7 +2109,7 @@ jsv_handle_started_command(sge_gdi_ctx_class_t *ctx, lListElem *jsv, lList **ans
       const lList *soft_queue_list = lGetList(old_job, JB_soft_queue_list);
 
       if (soft_queue_list != NULL) {
-         lListElem *queue;
+         const lListElem *queue;
          bool first = true;
 
          sge_dstring_clear(&buffer);
@@ -2270,7 +2270,7 @@ jsv_handle_started_command(sge_gdi_ctx_class_t *ctx, lListElem *jsv, lList **ans
     */  
    {
       lList *env_list = NULL;
-      lListElem *env = NULL;
+      const lListElem *env = NULL;
       const lListElem *display = NULL;
 
       /* make a copy of the environment */
@@ -2355,7 +2355,7 @@ jsv_handle_log_command(sge_gdi_ctx_class_t *ctx, lListElem *jsv, lList **answer_
    const char *sub_command = sge_dstring_get_string(s);
    const char *args = sge_dstring_get_string(a);
 
-   DENTER(TOP_LAYER, "jsv_handle_log_command");
+   DENTER(TOP_LAYER);
    if (args == NULL) {
       /* empty message will print a empty line (only newline) */
       args = "";
@@ -2390,7 +2390,7 @@ jsv_handle_env_command(sge_gdi_ctx_class_t *ctx, lListElem *jsv, lList **answer_
    lList *local_answer_list = NULL;
    lListElem *new_job = lGetRef(jsv, JSV_new_job);
 
-   DENTER(TOP_LAYER, "jsv_handle_env_command");
+   DENTER(TOP_LAYER);
 
    jsv_split_token(a, &variable, &value);
    mod = sge_dstring_get_string(s);
@@ -2514,7 +2514,7 @@ jsv_do_communication(sge_gdi_ctx_class_t *ctx, lListElem *jsv, lList **answer_li
    bool ret = true;
    char input[10000];
 
-   DENTER(TOP_LAYER, "jsv_do_communication");
+   DENTER(TOP_LAYER);
    if (ret) {
       /* 
        * Try to read some error messages from stderr. There still has no command been send
@@ -2680,7 +2680,7 @@ jsv_cull_attr2switch_name(int cull_attr, lListElem *job)
 {
    char *ret = NULL;
 
-   DENTER(TOP_LAYER, "jsv_cull_attr2switch_name");
+   DENTER(TOP_LAYER);
    if (cull_attr == JB_execution_time) {
       ret = "a";
    } else if (cull_attr == JB_context) {
@@ -2793,7 +2793,7 @@ jsv_is_modify_rejected(sge_gdi_ctx_class_t *context, lList **answer_list, lListE
 {
    bool ret = false;
 
-   DENTER(TOP_LAYER, "jsv_is_modify_rejected");
+   DENTER(TOP_LAYER);
    if (job != NULL) {
       const char *jsv_allowed_mod = mconf_get_jsv_allowed_mod();
       const char *jsv_url = mconf_get_jsv_url();
@@ -2870,7 +2870,7 @@ jsv_is_modify_rejected(sge_gdi_ctx_class_t *context, lList **answer_list, lListE
             if (lGetNumberOfElem(got_switches) == 0) {
                ret = false;
             } else {
-               lListElem *not_allowed;
+               const lListElem *not_allowed;
                dstring switches = DSTRING_INIT;
                bool first = true;
 

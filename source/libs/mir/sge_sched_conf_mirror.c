@@ -85,7 +85,7 @@ schedd_conf_update_master_list(sge_evc_class_t *evc, sge_object_type type,
    lList *data_list;
    lListElem *ep = NULL;
 
-   DENTER(TOP_LAYER, "schedd_conf_update_master_list");
+   DENTER(TOP_LAYER);
 
    list_descr = SC_Type;
 
@@ -106,6 +106,5 @@ schedd_conf_update_master_list(sge_evc_class_t *evc, sge_object_type type,
       answer_list_output(&answer_list);
    }
 
-   DEXIT;
-   return SGE_EMA_OK;
+   DRETURN(SGE_EMA_OK);
 }

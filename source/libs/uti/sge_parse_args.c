@@ -49,7 +49,7 @@ const char* args /* The argument string to count by whitespace tokens */
    char *s;
    struct saved_vars_s *context = NULL;
    
-   DENTER(TOP_LAYER, "sge_quick_count_num_args");
+   DENTER(TOP_LAYER);
    
    /* This function may return a larger number than required since it does not
     * parse quotes.  This is ok, however, since it's current usage is for
@@ -79,7 +79,7 @@ char** pargs /* The array to contain the parsed arguments */
    char *resreq;
    int finished, count = 0;
 
-   DENTER(TOP_LAYER, "sge_parse_args");
+   DENTER(TOP_LAYER);
    
    resreq = malloc(strlen(args) + 1);
    d = resreq;

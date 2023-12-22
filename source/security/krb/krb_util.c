@@ -86,19 +86,17 @@ lList *joblist
    krb5_timestamp time_now;
    krb_global_data_t *gsd = krb_gsd();
 
-   DENTER(TOP_LAYER, "krb_renew_tgts");
+   DENTER(TOP_LAYER);
 
 
    if ((now = sge_get_gmt())<next_time) {
-      DEXIT;
-      return 0;
+      DRETURN(0);
    }
 
    if ((rc = krb5_timeofday(context, &time_now))) {
       ERROR((SGE_EVENT, MSG_KRB_KRB5TIMEOFDAYFAILEDX_S ,
 	     error_message(rc)));
-      DEXIT;
-      return -1;
+      DRETURN(-1);
    }
 
    /* renew job TGT's */
@@ -245,7 +243,6 @@ lList *joblist
 
    next_time = now + gsd->tgt_renew_interval;
 
-   DEXIT;
-   return 0;
+   DRETURN(0);
 }
 

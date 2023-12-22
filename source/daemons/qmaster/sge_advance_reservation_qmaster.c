@@ -122,7 +122,7 @@ ar_initialize_timer(sge_gdi_ctx_class_t *ctx, lList **answer_list, monitoring_t 
    lListElem *ar, *next_ar;
    u_long32 now = sge_get_gmt();
 
-   DENTER(TOP_LAYER, "ar_initialize_timer");
+   DENTER(TOP_LAYER);
 
    lList *ar_master_list = *object_type_get_master_list_rw(SGE_TYPE_AR);
 
@@ -235,7 +235,7 @@ int ar_mod(sge_gdi_ctx_class_t *ctx, lList **alpp, lListElem *new_ar,
    const lList *master_userset_list = *object_type_get_master_list(SGE_TYPE_USERSET);
    const lList *master_ar_list = *object_type_get_master_list(SGE_TYPE_AR);
 
-   DENTER(TOP_LAYER, "ar_mod");
+   DENTER(TOP_LAYER);
 
    if (!ar_validate(ar, alpp, true, false, master_cqueue_list, master_hgroup_list, master_centry_list, master_ckpt_list, master_pe_list, master_userset_list)) {
       goto ERROR;
@@ -357,7 +357,7 @@ int ar_spool(sge_gdi_ctx_class_t *ctx, lList **alpp, lListElem *ep, gdi_object_t
    bool job_spooling = ctx->get_job_spooling(ctx);
    dstring buffer = DSTRING_INIT;
 
-   DENTER(TOP_LAYER, "ar_spool");
+   DENTER(TOP_LAYER);
 
    sge_dstring_sprintf(&buffer, sge_U32CFormat, lGetUlong(ep, AR_id));
    dbret = spool_write_object(&answer_list, spool_get_default_context(), ep, 
@@ -414,7 +414,7 @@ int ar_success(sge_gdi_ctx_class_t *ctx, lListElem *ep, lListElem *old_ep,
    dstring buffer = DSTRING_INIT;
    u_long32 timestamp = 0; 
 
-   DENTER(TOP_LAYER, "ar_success");
+   DENTER(TOP_LAYER);
 
    /* with old_ep it is possible to identify if it is an add or modify request */
    timestamp = sge_get_gmt();
@@ -497,10 +497,10 @@ int ar_del(sge_gdi_ctx_class_t *ctx, lListElem *ep, lList **alpp, lList **master
    u_long32 now;
    const lList *master_manager_list = *object_type_get_master_list(SGE_TYPE_MANAGER);
 
-   DENTER(TOP_LAYER, "ar_del");
+   DENTER(TOP_LAYER);
 
    if (!ep || !ruser || !rhost) {
-      CRITICAL((SGE_EVENT, MSG_SGETEXT_NULLPTRPASSED_S, SGE_FUNC));
+      CRITICAL((SGE_EVENT, MSG_SGETEXT_NULLPTRPASSED_S, __func__));
       answer_list_add(alpp, SGE_EVENT, STATUS_EUNKNOWN, ANSWER_QUALITY_ERROR);
       sge_dstring_free(&buffer);
       DRETURN(STATUS_EUNKNOWN);
@@ -509,7 +509,7 @@ int ar_del(sge_gdi_ctx_class_t *ctx, lListElem *ep, lList **alpp, lList **master
    /* ep is no ar_del element, if ep has no ID_str */
    if (lGetPosViaElem(ep, ID_str, SGE_NO_ABORT) < 0) {
       CRITICAL((SGE_EVENT, MSG_SGETEXT_MISSINGCULLFIELD_SS,
-            lNm2Str(ID_str), SGE_FUNC));
+            lNm2Str(ID_str), __func__));
       answer_list_add(alpp, SGE_EVENT, STATUS_EUNKNOWN, ANSWER_QUALITY_ERROR);
       sge_dstring_free(&buffer);
       DRETURN(STATUS_EUNKNOWN);
@@ -519,7 +519,7 @@ int ar_del(sge_gdi_ctx_class_t *ctx, lListElem *ep, lList **alpp, lList **master
    
    if ((user_list = lGetList(ep, ID_user_list)) != NULL) {
       lCondition *new_where = NULL;
-      lListElem *user;
+      const lListElem *user;
 
       for_each(user, user_list) {
          if (sge_is_pattern(lGetString(user, ST_name)) && !manop_is_manager(ruser, master_manager_list)) {
@@ -666,7 +666,7 @@ int ar_del(sge_gdi_ctx_class_t *ctx, lListElem *ep, lList **alpp, lList **master
          sge_dstring_sprintf(&buffer, "%s", id_str);
          ERROR((SGE_EVENT, MSG_SGETEXT_DOESNOTEXIST_SS, SGE_OBJ_AR, sge_dstring_get_string(&buffer)));
       } else {
-         lListElem *user;
+         const lListElem *user;
          bool first = true;
          int umax = 5;
 
@@ -724,7 +724,7 @@ static u_long32 sge_get_ar_id(sge_gdi_ctx_class_t *ctx, monitoring_t *monitor)
    u_long32 ar_id;
    bool is_store_ar = false;
 
-   DENTER(TOP_LAYER, "sge_get_ar_id");
+   DENTER(TOP_LAYER);
 
    sge_mutex_lock("ar_id_mutex", "sge_get_ar_id", __LINE__, 
                   &ar_id_control.ar_id_mutex);
@@ -773,7 +773,7 @@ void sge_store_ar_id(sge_gdi_ctx_class_t *ctx, te_event_t anEvent, monitoring_t 
    u_long32 ar_id = 0;
    bool changed = false;
 
-   DENTER(TOP_LAYER, "sge_store_ar_id");
+   DENTER(TOP_LAYER);
    
    sge_mutex_lock("ar_id_mutex", "sge_store_ar_id", __LINE__, 
                   &ar_id_control.ar_id_mutex);
@@ -824,7 +824,7 @@ void sge_init_ar_id(void)
    u_long32 ar_id = 0;
    u_long32 guess_ar_id = 0;
   
-   DENTER(TOP_LAYER, "sge_init_ar_id");
+   DENTER(TOP_LAYER);
    
    if ((fp = fopen(ARSEQ_NUM_FILE, "r"))) {
       if (fscanf(fp, sge_uu32, &ar_id) != 1) {
@@ -873,7 +873,7 @@ static u_long32 guess_highest_ar_id(void)
    u_long32 maxid = 0;
    const lList *master_ar_list = *object_type_get_master_list(SGE_TYPE_AR); 
 
-   DENTER(TOP_LAYER, "guess_highest_ar_id");   
+   DENTER(TOP_LAYER);   
 
    /* this function is called during qmaster startup and not while it is running,
       we do not need to monitor this lock */
@@ -924,7 +924,7 @@ void sge_ar_event_handler(sge_gdi_ctx_class_t *ctx, te_event_t anEvent, monitori
    te_event_t ev;
    dstring buffer = DSTRING_INIT;
 
-   DENTER(TOP_LAYER, "sge_ar_event_handler");
+   DENTER(TOP_LAYER);
    
    /*
     To guarantee all jobs are removed from the cluster when AR end time is
@@ -1036,7 +1036,7 @@ static bool ar_reserve_queues(lList **alpp, lListElem *ar)
    const char *ar_pe_request = lGetString(ar, AR_pe);
    const char *ar_ckpt_request = lGetString(ar, AR_checkpoint_name);
 
-   lListElem *cqueue = NULL;
+   const lListElem *cqueue = NULL;
    bool ret = true;
    int i = 0;
    lListElem *dummy_job = lCreateElem(JB_Type);
@@ -1054,7 +1054,7 @@ static bool ar_reserve_queues(lList **alpp, lListElem *ar)
 
    dispatch_t result = DISPATCH_NEVER_CAT;
 
-   DENTER(TOP_LAYER, "ar_reserve_queues");
+   DENTER(TOP_LAYER);
 
    if (lGetList(ar, AR_acl_list) != NULL) {
       lSetString(dummy_job, JB_owner, "*");
@@ -1121,7 +1121,7 @@ static bool ar_reserve_queues(lList **alpp, lListElem *ar)
          /* we only have to consider queues containing the requested pe */
          if (ar_pe_request != NULL) {
             bool found = false;
-            lListElem *pe_ref;
+            const lListElem *pe_ref;
 
             for_each(pe_ref, lGetList(qinstance, QU_pe_list)) {
                if (pe_name_is_matching(lGetString(pe_ref, ST_name), ar_pe_request)) {
@@ -1286,7 +1286,7 @@ static bool ar_reserve_queues(lList **alpp, lListElem *ar)
 int ar_do_reservation(lListElem *ar, bool incslots)
 {
    lListElem *dummy_job = lCreateElem(JB_Type);
-   lListElem *qep;
+   const lListElem *qep;
    lListElem *global_host_ep = NULL;
    int pe_slots = 0;
    int tmp_slots;
@@ -1299,7 +1299,7 @@ int ar_do_reservation(lListElem *ar, bool incslots)
    const lList *master_pe_list = *object_type_get_master_list(SGE_TYPE_PE);
    bool is_master_task = true;
 
-   DENTER(TOP_LAYER, "ar_do_reservation");
+   DENTER(TOP_LAYER);
 
    lSetList(dummy_job, JB_hard_resource_list, lCopyList("", lGetList(ar, AR_resource_list)));
    lSetList(dummy_job, JB_hard_queue_list, lCopyList("", lGetList(ar, AR_queue_list)));
@@ -1424,9 +1424,9 @@ bool
 ar_list_has_reservation_due_to_ckpt(const lList *ar_master_list, lList **answer_list, 
                                     const char *qinstance_name, lList *ckpt_string_list) 
 {
-   lListElem *ar;
+   const lListElem *ar;
 
-   DENTER(TOP_LAYER, "ar_has_reservation_due_to_ckpt");
+   DENTER(TOP_LAYER);
 
    for_each(ar, ar_master_list) {
       const char *ckpt_string = lGetString(ar, AR_checkpoint_name);
@@ -1485,9 +1485,9 @@ bool
 ar_list_has_reservation_due_to_pe(const lList *ar_master_list, lList **answer_list, 
                                   const char *qinstance_name, lList *pe_string_list) 
 {
-   lListElem *ar;
+   const lListElem *ar;
 
-   DENTER(TOP_LAYER, "ar_list_has_reservation_due_to_pe");
+   DENTER(TOP_LAYER);
 
    for_each(ar, ar_master_list) {
       const char *pe_string = lGetString(ar, AR_pe);
@@ -1550,11 +1550,11 @@ ar_list_has_reservation_for_pe_with_slots(const lList *ar_master_list,
                                           u_long32 new_slots) 
 {
    bool ret = false;
-   lListElem *ar;
-   lListElem *gs;
+   const lListElem *ar;
+   const lListElem *gs;
    u_long32 max_res_slots = 0;
 
-   DENTER(TOP_LAYER, "ar_list_has_reservation_for_pe_with_slots");
+   DENTER(TOP_LAYER);
 
    for_each(ar, ar_master_list) {
       const char *pe_string = lGetString(ar, AR_pe);
@@ -1597,7 +1597,7 @@ ar_list_has_reservation_for_pe_with_slots(const lList *ar_master_list,
 *******************************************************************************/
 void ar_initialize_reserved_queue_list(lListElem *ar)
 {
-   lListElem *gep;
+   const lListElem *gep;
    const lList *gdil = lGetList(ar, AR_granted_slots);
    const lList *master_centry_list = *object_type_get_master_list(SGE_TYPE_CENTRY);
    const lList *master_cqueue_list = *object_type_get_master_list(SGE_TYPE_CQUEUE);
@@ -1641,7 +1641,7 @@ void ar_initialize_reserved_queue_list(lListElem *ar)
    lEnumeration *what; 
    lList *queue_list;
 
-   DENTER(TOP_LAYER, "ar_initialize_reserved_queue_list");
+   DENTER(TOP_LAYER);
 
    what = lIntVector2What(QU_Type, queue_field);
    lReduceDescr(&rdp, QU_Type, what);
@@ -1654,7 +1654,7 @@ void ar_initialize_reserved_queue_list(lListElem *ar)
       u_long32 slots = lGetUlong(gep, JG_slots);
       lListElem *queue = lCreateElem(rdp);
       lList *crl = NULL;
-      lListElem *cr;
+      const lListElem *cr;
       lListElem *new_cr;
       
       const char *queue_name = lGetString(gep, JG_qname);
@@ -1801,7 +1801,7 @@ bool sge_ar_remove_all_jobs(sge_gdi_ctx_class_t *ctx, u_long32 ar_id, int forced
    lListElem *tmp_task;
    bool ret = true;
 
-   DENTER(TOP_LAYER, "sge_ar_remove_all_jobs");
+   DENTER(TOP_LAYER);
 
    nextjep = lFirstRW(*object_type_get_master_list(SGE_TYPE_JOB));
    while ((jep=nextjep)) {
@@ -1891,9 +1891,9 @@ bool
 sge_ar_list_conflicts_with_calendar(lList **answer_list, const char *qinstance_name,
                                     const lListElem *cal_ep, const lList *master_ar_list)
 {
-   lListElem *ar;
+   const lListElem *ar;
 
-   DENTER(TOP_LAYER, "ar_list_conflicts_with_calendar");
+   DENTER(TOP_LAYER);
 
    for_each(ar, master_ar_list) {
       if (lGetElemStr(lGetList(ar, AR_granted_slots), JG_qname, qinstance_name)) {
@@ -2086,9 +2086,9 @@ void sge_ar_list_set_error_state(lList *ar_list, const char *qname, u_long32 err
    lListElem *ar;
    dstring buffer = DSTRING_INIT;
 
-   DENTER(TOP_LAYER, "sge_ar_list_set_error_state");
+   DENTER(TOP_LAYER);
 
-   for_each(ar, ar_list) {
+   for_each_rw(ar, ar_list) {
       lListElem *qinstance;
       const lList *granted_slots = lGetList(ar, AR_reserved_queues);
 
@@ -2153,7 +2153,7 @@ static void sge_ar_send_mail(lListElem *ar, int type)
    const char *ar_name;
    const char *mail_type = NULL;
 
-   DENTER(TOP_LAYER, "sge_ar_send_mail");
+   DENTER(TOP_LAYER);
 
    if (!VALID(type, lGetUlong(ar, AR_mail_options))) {
       sge_dstring_append_mailopt(&buffer, type);
@@ -2261,21 +2261,21 @@ ar_list_has_reservation_due_to_qinstance_complex_attr(const lList *ar_master_lis
                                                       lListElem *qinstance, 
                                                       const lList *ce_master_list)
 {  
-   lListElem *ar = NULL;
+   const lListElem *ar = NULL;
    const lListElem *gs;
 
-   DENTER(TOP_LAYER, "ar_list_has_reservation_due_to_qinstance_complex_attr");
+   DENTER(TOP_LAYER);
 
    for_each(ar, ar_master_list) {
       const char *qinstance_name = lGetString(qinstance, QU_full_name);
 
       if ((gs =lGetElemStr(lGetList(ar, AR_granted_slots), JG_qname, qinstance_name))) {
 
-         lListElem *rue = NULL;
+         const lListElem *rue = NULL;
          lListElem *request = NULL;
          const lList *rue_list;
 
-         for_each(request, lGetList(ar, AR_resource_list)) {
+         for_each_rw(request, lGetList(ar, AR_resource_list)) {
             const char *ce_name = lGetString(request, CE_name);
             const lListElem *ce = lGetElemStr(ce_master_list, CE_name, ce_name);
             bool is_consumable = (lGetUlong(ce, CE_consumable) > 0) ? true : false;
@@ -2315,7 +2315,7 @@ ar_list_has_reservation_due_to_qinstance_complex_attr(const lList *ar_master_lis
             bool is_consumable = (lGetUlong(ce, CE_consumable) > 0) ? true : false;
 
             if (is_consumable) {
-               lListElem *rde = NULL;
+               const lListElem *rde = NULL;
                const lList * rde_list = lGetList(rue, RUE_utilized);
                lListElem *cv = lGetSubStr(qinstance, CE_name, ce_name, QU_consumable_config_list);
 
@@ -2382,23 +2382,23 @@ bool
 ar_list_has_reservation_due_to_host_complex_attr(const lList *ar_master_list, lList **answer_list,
                                                  lListElem *host, const lList *ce_master_list)
 {  
-   lListElem *ar = NULL;
+   const lListElem *ar = NULL;
    const char *hostname = lGetHost(host, EH_name);
 
-   DENTER(TOP_LAYER, "ar_list_has_reservation_due_to_host_complex_attr");
+   DENTER(TOP_LAYER);
 
    for_each(ar, ar_master_list) {
-      lListElem *gs = NULL;
+      const lListElem *gs = NULL;
 
       for_each(gs, lGetList(ar, AR_granted_slots)) {
          const char *gh = lGetHost(gs, JG_qhostname);
 
          if (!sge_hostcmp(gh, hostname)) {
-            lListElem *rue = NULL;
+            const lListElem *rue = NULL;
             lListElem *request = NULL;
             const lList *rue_list = lGetList(host, EH_resource_utilization);
 
-            for_each(request, lGetList(ar, AR_resource_list)) {
+            for_each_rw(request, lGetList(ar, AR_resource_list)) {
                const char *ce_name = lGetString(request, CE_name);
                const lListElem *ce = lGetElemStr(ce_master_list, CE_name, ce_name);
                bool is_consumable = (lGetUlong(ce, CE_consumable) > 0) ? true : false;

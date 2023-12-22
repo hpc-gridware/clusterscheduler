@@ -69,13 +69,12 @@ bool sge_parse_qrsub(sge_gdi_ctx_class_t *ctx, lList *pcmdline, lList **alpp, lL
 {
    lListElem *ep = NULL, *next_ep = NULL;
    lList *lp = NULL;
-   DENTER(TOP_LAYER, "sge_parse_qrsub");
+   DENTER(TOP_LAYER);
 
    /*  -help 	 print this help */
    if ((ep = lGetElemStrRW(pcmdline, SPA_switch, "-help"))) {
       lRemoveElem(pcmdline, &ep);
       sge_usage(QRSUB, stdout);
-      DEXIT;
       SGE_EXIT((void **)&ctx, 0);
    }
 

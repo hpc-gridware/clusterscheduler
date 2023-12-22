@@ -445,11 +445,10 @@ pid_t sge_readpid(const char *fname)
    char buf[512], *cp;
    pid_t pid;
  
-   DENTER(TOP_LAYER, "sge_readpid");
+   DENTER(TOP_LAYER);
  
    if (!(fp = fopen(fname, "r"))) {
-      DEXIT;
-      return 0;
+      DRETURN(0);
    }
  
    pid = 0;
@@ -476,11 +475,9 @@ pid_t sge_readpid(const char *fname)
  
    FCLOSE(fp);
  
-   DEXIT;
-   return pid;
+   DRETURN(pid);
 FCLOSE_ERROR:
-   DEXIT;
-   return 0;
+   DRETURN(0);
 } /* sge_readpid() */        
 
 /****** uti/spool/sge_write_pid() *********************************************
@@ -504,7 +501,7 @@ void sge_write_pid(const char *pid_log_file)
    int pid;
    FILE *fp;
  
-   DENTER(TOP_LAYER, "sge_write_pid");
+   DENTER(TOP_LAYER);
  
    close(creat(pid_log_file, 0644));
 #if defined( INTERIX )
@@ -519,13 +516,11 @@ void sge_write_pid(const char *pid_log_file)
       FPRINTF((fp, "%d\n", pid));
       FCLOSE(fp);
    }
-   DEXIT;
-   return;
+   DRETURN_VOID;
 FPRINTF_ERROR:
 FCLOSE_ERROR:
    /* EB: TODO: CLEANUP: make it possible that calling function handles this error */
-   DEXIT;
-   return;
+   DRETURN_VOID;
 }  
 
  
@@ -597,7 +592,7 @@ int sge_get_confval_array(const char *fname, int n, int nmissing, bootstrap_entr
    int i;
    bool *is_found = NULL;
    
-   DENTER(TOP_LAYER, "sge_get_confval_array");
+   DENTER(TOP_LAYER);
 
    if (!(fp = fopen(fname, "r"))) {
       if (error_dstring == NULL){
@@ -607,8 +602,7 @@ int sge_get_confval_array(const char *fname, int n, int nmissing, bootstrap_entr
          sge_dstring_sprintf(error_dstring, MSG_FILE_FOPENFAILED_SS, 
                              fname, strerror(errno));
       }
-      DEXIT;
-      return n;
+      DRETURN(n);
    }
    is_found = malloc(sizeof(bool) * n);
    memset(is_found, false, n * sizeof(bool));
@@ -660,11 +654,9 @@ int sge_get_confval_array(const char *fname, int n, int nmissing, bootstrap_entr
    
    sge_free(&is_found);
    FCLOSE(fp);
-   DEXIT;
-   return nmissing;
+   DRETURN(nmissing);
 FCLOSE_ERROR:
-   DEXIT;
-   return 0;
+   DRETURN(0);
 } /* sge_get_confval_array() */
 
 
@@ -821,7 +813,7 @@ void sge_silent_set(int i)
 *  NOTES
 *     MT-NOTE: sge_silent_get() is not MT safe
 ******************************************************************************/
-int sge_silent_get()
+int sge_silent_get(void)
 {
    return silent_flag;
 } 
@@ -856,7 +848,7 @@ int sge_get_management_entry(const char *fname, int n, int nmissing, bootstrap_e
    int i;
    bool *is_found = NULL;
    
-   DENTER(TOP_LAYER, "sge_get_management_entry");
+   DENTER(TOP_LAYER);
 
    if (!(fp = fopen(fname, "r"))) {
       if (error_dstring == NULL){
@@ -866,8 +858,7 @@ int sge_get_management_entry(const char *fname, int n, int nmissing, bootstrap_e
          sge_dstring_sprintf(error_dstring, MSG_FILE_FOPENFAILED_SS, 
                              fname, strerror(errno));
       }
-      DEXIT;
-      return n;
+      DRETURN(n);
    }
    is_found = malloc(sizeof(bool) * n);
    memset(is_found, false, n * sizeof(bool));
@@ -925,11 +916,9 @@ int sge_get_management_entry(const char *fname, int n, int nmissing, bootstrap_e
    
    sge_free(&is_found);
    FCLOSE(fp);
-   DEXIT;
-   return nmissing;
+   DRETURN(nmissing);
 FCLOSE_ERROR:
-   DEXIT;
-   return 0;
+   DRETURN(0);
 } /* sge_get_management_entry() */
 
 /****** uti/spool/sge_get_active_job_file_path() ********************************
@@ -979,7 +968,7 @@ FCLOSE_ERROR:
 const char *sge_get_active_job_file_path(dstring *buffer, u_long32 job_id, 
    u_long32 ja_task_id, const char *pe_task_id, const char *filename) 
 {
-   DENTER(TOP_LAYER, "sge_get_active_job_file_path");
+   DENTER(TOP_LAYER);
 
    if (buffer == NULL) {
       DRETURN(NULL);

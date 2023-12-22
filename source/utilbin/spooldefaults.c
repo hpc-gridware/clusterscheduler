@@ -104,7 +104,7 @@ static int init_framework(sge_gdi_ctx_class_t *ctx)
    const char *spooling_lib = ctx->get_spooling_lib(ctx);
    const char *spooling_params = ctx->get_spooling_params(ctx);
 
-   DENTER(TOP_LAYER, "init_framework");
+   DENTER(TOP_LAYER);
 
 #ifdef HP1164   
    sge_set_admin_username("none", NULL);
@@ -142,7 +142,7 @@ static int spool_manops(sge_object_type type, int argc, char *argv[])
    int key = object_type_get_key_nm(type);
    const lDescr *descr = object_type_get_descr(type);
 
-   DENTER(TOP_LAYER, "spool_manops");
+   DENTER(TOP_LAYER);
 
    if (*lpp == NULL) {
       *lpp = lCreateList("master list", descr);
@@ -170,7 +170,7 @@ static int spool_configuration(int argc, char *argv[])
    lList *answer_list = NULL;
    spooling_field *fields = sge_build_CONF_field_list(true);
 
-   DENTER(TOP_LAYER, "spool_configuration");
+   DENTER(TOP_LAYER);
 
    conf = spool_flatfile_read_object(&answer_list, CONF_Type, NULL,
                                    fields, NULL, false, &qconf_sfi,
@@ -197,7 +197,7 @@ static int spool_local_conf(int argc, char *argv[])
 {
    int ret = EXIT_SUCCESS;
 
-   DENTER(TOP_LAYER, "spool_local_conf");
+   DENTER(TOP_LAYER);
 
    /* we get an additional argument: the config name */
    if (argc < 4) {
@@ -342,11 +342,11 @@ static int spool_object_list(const char *directory,
    lList *answer_list = NULL;
    lListElem *ep;
    lList *direntries;
-   lListElem *direntry;
+   const lListElem *direntry;
    const char *name;
    dstring file = DSTRING_INIT;
 
-   DENTER(TOP_LAYER, "spool_object_list");
+   DENTER(TOP_LAYER);
 
    direntries = sge_get_dirents(directory);
    for_each(direntry, direntries) {

@@ -113,7 +113,7 @@ lList *cull_parse_job_parameter(u_long32 uid, const char *username, const char *
    lList *path_alias = NULL;
    char error_string[MAX_STRING_SIZE];
 
-   DENTER(TOP_LAYER, "cull_parse_job_parameter"); 
+   DENTER(TOP_LAYER); 
 
    if (!pjob) {
       answer_list_add(&answer,  MSG_PARSE_NULLPOINTERRECEIVED, 
@@ -124,7 +124,7 @@ lList *cull_parse_job_parameter(u_long32 uid, const char *username, const char *
    if (!*pjob) {
       *pjob = lCreateElem(JB_Type);
       if (!*pjob) {
-         sprintf(SGE_EVENT, MSG_MEM_MEMORYALLOCFAILED_S, SGE_FUNC);
+         sprintf(SGE_EVENT, MSG_MEM_MEMORYALLOCFAILED_S, __func__);
          answer_list_add(&answer, SGE_EVENT,
                          STATUS_EMALLOC, ANSWER_QUALITY_ERROR);
          DRETURN(answer);
@@ -368,10 +368,11 @@ lList *cull_parse_job_parameter(u_long32 uid, const char *username, const char *
 
    /* -hold_jid */
    if (lGetElemStr(cmdline, SPA_switch, "-hold_jid")) {
-      lListElem *ep, *sep;
+      lListElem *ep;
+      lListElem *sep;
       lList *jref_list = NULL;
       while ((ep = lGetElemStrRW(cmdline, SPA_switch, "-hold_jid"))) {
-         for_each(sep, lGetList(ep, SPA_argval_lListT)) {
+         for_each_rw(sep, lGetList(ep, SPA_argval_lListT)) {
             DPRINTF(("-hold_jid %s\n", lGetString(sep, ST_name)));
             lAddElemStr(&jref_list, JRE_job_name, lGetString(sep, ST_name), JRE_Type);
          }
@@ -382,7 +383,8 @@ lList *cull_parse_job_parameter(u_long32 uid, const char *username, const char *
 
    /* -hold_jid_ad */
    if (lGetElemStr(cmdline, SPA_switch, "-hold_jid_ad")) {
-      lListElem *ep, *sep;
+      lListElem *ep;
+      const lListElem *sep;
       lList *jref_list = NULL;
       while ((ep = lGetElemStrRW(cmdline, SPA_switch, "-hold_jid_ad"))) {
          for_each(sep, lGetList(ep, SPA_argval_lListT)) {
@@ -631,7 +633,7 @@ lList *cull_parse_job_parameter(u_long32 uid, const char *username, const char *
       lSetList(*pjob, JB_job_args, lp);
    }
    
-   for_each(ep, cmdline) {
+   for_each_rw(ep, cmdline) {
       sprintf(error_string, MSG_ANSWER_UNKOWNOPTIONX_S,
          lGetString(ep, SPA_switch));
       cp = lGetString(ep, SPA_switch_arg);
@@ -752,7 +754,7 @@ u_long32 flags
    /* snprintf takes the NULL terminator into account. */
    char error_string[MAX_STRING_SIZE];
 
-   DENTER(TOP_LAYER, "parse_script_file");
+   DENTER(TOP_LAYER);
 
    if (!lpp_options) {
       /* no place where to put result */
@@ -952,7 +954,7 @@ u_long32 flags
                */
                alp = cull_parse_cmdline(prog_number, str_table, envp, &lp_new_opts, 0);
 
-               for_each (aep, alp) {
+               for_each_rw (aep, alp) {
                   answer_quality_t quality;
                   u_long32 status = STATUS_OK;
 

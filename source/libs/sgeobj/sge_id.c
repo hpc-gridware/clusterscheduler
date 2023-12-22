@@ -56,9 +56,9 @@ id_list_build_from_str_list(lList **id_list,
                             u_long32 option) 
 {
    bool ret = true;
-   lListElem *elem;
+   const lListElem *elem;
 
-   DENTER(ID_LAYER, "id_list_build_from_str_list");
+   DENTER(ID_LAYER);
 
    if (transition_is_valid_for_qinstance(transition, answer_list) &&
        transition_option_is_valid_for_qinstance(option, answer_list) &&
@@ -92,8 +92,7 @@ id_list_build_from_str_list(lList **id_list,
       }
    }
 
-   DEXIT;
-   return ret;
+   DRETURN(ret);
 }
 
 

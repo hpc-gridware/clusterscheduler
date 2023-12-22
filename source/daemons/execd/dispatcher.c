@@ -86,7 +86,7 @@ int sge_execd_process_messages(sge_gdi_ctx_class_t *ctx)
    u_long32      load_report_time     = 0;
    u_long32      alive_check_interval = 0;
 
-   DENTER(TOP_LAYER, "sge_execd_process_messages");
+   DENTER(TOP_LAYER);
 
    sge_monitor_init(&monitor, "sge_execd_process_messages", NONE_EXT, EXECD_WARNING, EXECD_ERROR);
 

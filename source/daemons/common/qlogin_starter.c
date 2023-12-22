@@ -81,7 +81,7 @@
 *  SEE ALSO
 *  qrsh_starter
 *******************************************************************************/
-int delete_qrsh_pid_file()
+int delete_qrsh_pid_file(void)
 {
    char *pid_file_name = NULL;
    int ret = 1;

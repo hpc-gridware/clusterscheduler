@@ -99,7 +99,7 @@ int do_job_exec(sge_gdi_ctx_class_t *ctx, struct_msg_t *aMsg, sge_pack_buffer *a
    const char *admin_user = ctx->get_admin_user(ctx);
    const char *progname = ctx->get_progname(ctx);
 
-   DENTER(TOP_LAYER, "do_job_exec");
+   DENTER(TOP_LAYER);
 
    /* ------- featureset */
    if (unpackint(&(aMsg->buf), &feature_set)) {
@@ -198,7 +198,7 @@ int do_job_slave(sge_gdi_ctx_class_t *ctx, struct_msg_t *aMsg)
    u_long32 feature_set;
    lList *answer_list = NULL;
 
-   DENTER(TOP_LAYER, "do_job_slave");
+   DENTER(TOP_LAYER);
 
    /* ------- featureset */
    if (unpackint(&(aMsg->buf), &feature_set)) {
@@ -220,7 +220,7 @@ int do_job_slave(sge_gdi_ctx_class_t *ctx, struct_msg_t *aMsg)
    }
    lFreeList(&answer_list);
 
-   for_each(ja_task, lGetList(jelem, JB_ja_tasks)) {
+   for_each_rw(ja_task, lGetList(jelem, JB_ja_tasks)) {
       DPRINTF(("Job: %ld Task: %ld\n", (long) lGetUlong(jelem, JB_job_number),
          (long) lGetUlong(ja_task, JAT_task_number)));
       ret = handle_job(ctx, jelem, ja_task, 1);
@@ -245,7 +245,7 @@ static int handle_job(sge_gdi_ctx_class_t *ctx, lListElem *jelem, lListElem *jat
    const void *iterator = NULL;
    bool report_job_error = true;   /* send job report on error? */
 
-   DENTER(TOP_LAYER, "handle_job");
+   DENTER(TOP_LAYER);
 
    DPRINTF(("got %s job "sge_u32"\n",
            slave ?"slave ":"", lGetUlong(jelem, JB_job_number)));
@@ -278,7 +278,7 @@ static int handle_job(sge_gdi_ctx_class_t *ctx, lListElem *jelem, lListElem *jat
                (u_long32)lGetDouble(jatep, JAT_tix)));
 
    /* initialize job */
-   for_each (gdil_ep, lGetList(jatep, JAT_granted_destin_identifier_list)) {
+   for_each_rw (gdil_ep, lGetList(jatep, JAT_granted_destin_identifier_list)) {
       lList *answer_list = NULL;
       int slots;
 
@@ -454,7 +454,7 @@ static lList *job_set_queue_info_in_task(const char *qualified_hostname, const c
 {
    lListElem *jge;
 
-   DENTER(TOP_LAYER, "job_set_queue_info_in_task");
+   DENTER(TOP_LAYER);
 
    jge = lAddSubStr(petep, JG_qname, qname, 
                     PET_granted_destin_identifier_list, JG_Type);
@@ -506,9 +506,9 @@ static lList *job_get_queue_with_task_about_to_exit(lListElem *jep,
                                                     const char *qualified_hostname,
                                                     const char *queuename)
 {
-   lListElem *petask;
+   const lListElem *petask;
    
-   DENTER(TOP_LAYER, "job_get_queue_with_task_about_to_exit");
+   DENTER(TOP_LAYER);
    
    for_each(petask, lGetList(jatep, JAT_task_list)) {
       const lListElem *pe_task_queue = lFirst(lGetList(petask, PET_granted_destin_identifier_list));
@@ -581,9 +581,9 @@ static lList *
 job_get_queue_for_task(lListElem *jatep, lListElem *petep, 
                        const char *qualified_hostname, const char *queuename) 
 {
-   lListElem *this_q, *gdil_ep;
+   const lListElem *this_q, *gdil_ep;
 
-   DENTER(TOP_LAYER, "job_get_queue_for_task");
+   DENTER(TOP_LAYER);
 
    for_each (gdil_ep, lGetList(jatep, JAT_granted_destin_identifier_list)) {
       /* if a certain queuename is requested, check only this queue */
@@ -632,7 +632,7 @@ static int handle_task(sge_gdi_ctx_class_t *ctx, lListElem *petrep, char *commpr
    const char *qualified_hostname = ctx->get_qualified_hostname(ctx);
    const char *unqualified_hostname = ctx->get_unqualified_hostname(ctx);
 
-   DENTER(TOP_LAYER, "handle_task");
+   DENTER(TOP_LAYER);
 
 #ifdef KERBEROS
    if (krb_verify_user(de->host, de->commproc, de->id,
@@ -827,7 +827,7 @@ job_verify_execd_job(const lListElem *job, lList **answer_list, const char *qual
 {
    bool ret = true;
 
-   DENTER(TOP_LAYER, "job_verify_execd_job");
+   DENTER(TOP_LAYER);
 
    ret = job_verify(job, answer_list, false);
 

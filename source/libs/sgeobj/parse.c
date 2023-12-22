@@ -62,7 +62,7 @@ static void sge_parse_string_list(lList **lp, const char *str, int field,
                            lDescr *descr) {
    const char *cp;
 
-   DENTER(TOP_LAYER, "sge_parse_string_list");
+   DENTER(TOP_LAYER);
 
    cp = sge_strtok(str, ",");
    lAddElemStr(lp, field, cp, descr);
@@ -70,7 +70,7 @@ static void sge_parse_string_list(lList **lp, const char *str, int field,
       lAddElemStr(lp, field, cp, descr);
    }
 
-   DEXIT;
+   DRETURN_VOID;
 }
 
 /***************************************************************************/
@@ -117,11 +117,10 @@ const char *opt_switch_arg
 ) {
    lListElem *ep;
    
-   DENTER(TOP_LAYER, "sge_add_arg");
+   DENTER(TOP_LAYER);
    
    if (popt_list == NULL) {
-       DEXIT;
-       return NULL;
+       DRETURN(NULL);
    }
 
    ep = lAddElemStr(popt_list, SPA_switch, opt_switch, SPA_Type);
@@ -133,8 +132,7 @@ const char *opt_switch_arg
       lSetUlong(ep, SPA_occurrence, BIT_SPA_OCC_ARG);
    }
 
-   DEXIT;
-   return ep;
+   DRETURN(ep);
 }
 
 /***************************************************************************/
@@ -157,7 +155,7 @@ lList **ppcmdline,
 lList **alpp 
 ) {
 
-   DENTER (TOP_LAYER, "parse_noopt");
+   DENTER(TOP_LAYER);
 
    if ( (!strcmp(shortopt, *sp)) || (longopt && !strcmp(longopt, *sp)) ) {
       if(!lGetElemStr(*ppcmdline, SPA_switch, shortopt)) {
@@ -165,8 +163,7 @@ lList **alpp
       }
       sp++;
    }
-   DEXIT;
-   return sp;
+   DRETURN(sp);
 }
 
 /****
@@ -194,7 +191,7 @@ char **rp;
 stringT str;
 lListElem *ep; /* SPA_Type */
 
-   DENTER (TOP_LAYER, "parse_until_next_opt");
+   DENTER(TOP_LAYER);
 
    rp = sp;
    if ( (!strcmp(shortopt, *sp)) || (longopt && !strcmp(longopt, *sp)) 
@@ -205,8 +202,7 @@ lListElem *ep; /* SPA_Type */
       if(!*(++rp) || (**rp == '-') || (!**rp)) {
          sprintf(str, MSG_PARSE_XOPTIONMUSTHAVEARGUMENT_S, *sp);
          answer_list_add(alpp, str, STATUS_ESEMANTIC, ANSWER_QUALITY_ERROR);
-         DEXIT;
-         return rp;
+         DRETURN(rp);
       }
       ep = sge_add_arg(ppcmdline, 0, lListT, shortopt, NULL);
       while (*rp && **rp != '-') {
@@ -215,8 +211,7 @@ lListElem *ep; /* SPA_Type */
          rp++;
       }
    }
-   DEXIT;
-   return rp;
+   DRETURN(rp);
 }
 
 
@@ -241,7 +236,7 @@ lList **alpp
    char **rp;
    lListElem *ep; /* SPA_Type */
 
-   DENTER (TOP_LAYER, "parse_until_next_opt2");
+   DENTER(TOP_LAYER);
 
    rp = sp;
    if ( (!strcmp(shortopt, *sp)) || (longopt && !strcmp(longopt, *sp)) ) {
@@ -252,8 +247,7 @@ lList **alpp
       if(!*() || (**rp == '-')) {
          sprintf(str, MSG_PARSE_XOPTIONMUSTHAVEARGUMENT_S, *sp);
          answer_list_add(alpp, str, STATUS_ESEMANTIC, ANSWER_QUALITY_ERROR);
-         DEXIT;
-         return rp;
+         DRETURN(rp);
       }
 #endif
       ep = sge_add_arg(ppcmdline, 0, lListT, shortopt, NULL);
@@ -263,8 +257,7 @@ lList **alpp
          rp++;
       }
    }
-   DEXIT;
-   return rp;
+   DRETURN(rp);
 }
 
 /****
@@ -285,7 +278,7 @@ lList **alpp
 char **rp;
 lListElem *ep = NULL; /* SPA_Type */
 
-   DENTER (TOP_LAYER, "parse_param");
+   DENTER(TOP_LAYER)
 
    rp = sp;
    while( (*rp) && (**rp != '-') ) {
@@ -295,8 +288,7 @@ lListElem *ep = NULL; /* SPA_Type */
       lAddElemStr(lGetListRef(ep, SPA_argval_lListT), ST_name, *rp, ST_Type);
       rp++;
    }
-   DEXIT;
-   return rp;
+   DRETURN(rp);
 }
 
 /****
@@ -321,7 +313,7 @@ u_long32 *pflag
 lListElem *ep;
 char* actual_opt;
 
-   DENTER(BASIS_LAYER, "parse_flag");
+   DENTER(BASIS_LAYER);
 
    if((ep = lGetElemStrLikeRW(*ppcmdline, SPA_switch, opt))) {
       actual_opt = sge_strdup(NULL, lGetString(ep, SPA_switch));
@@ -332,11 +324,9 @@ char* actual_opt;
       }
       sge_free(&actual_opt);
       *pflag = 1;
-      DEXIT;
-      return true;
+      DRETURN(true);
    } else {
-      DEXIT;
-      return false;
+      DRETURN(false);
    }
 }
 
@@ -360,9 +350,10 @@ lList **ppdestlist,
 lDescr *type,
 int field 
 ) {
-   lListElem *ep, *sep;
+   lListElem *ep;
+   const lListElem *sep;
 
-   DENTER(TOP_LAYER, "parse_multi_stringlist");
+   DENTER(TOP_LAYER);
 
    if((ep = lGetElemStrRW(*ppcmdline, SPA_switch, opt))) {
       while(ep) {
@@ -391,7 +382,7 @@ u_long32 action
    bool ret = false;
    bool is_run_once = false;
 
-   DENTER(TOP_LAYER, "parse_multi_jobtaskslist");
+   DENTER(TOP_LAYER);
    while ((ep = lGetElemStrRW(*ppcmdline, SPA_switch, opt))) {
       lListElem *arrayDef = lNextRW(ep);
       const lList *arrayDefList = NULL;
@@ -401,7 +392,7 @@ u_long32 action
       if ((arrayDef != NULL) && lGetUlong(arrayDef, SPA_number) ==  t_OPT) {
          arrayDefList = lGetList(arrayDef, SPA_argval_lListT);
       }
-      for_each(sep, lGetList(ep, SPA_argval_lListT)) {
+      for_each_rw(sep, lGetList(ep, SPA_argval_lListT)) {
          const lList *tempArrayList = NULL;
      
          if ((arrayDefList != NULL) && (lNext(sep) == NULL)) {
@@ -446,7 +437,7 @@ char **str
 ) {
    lListElem *ep, *ep2;
 
-   DENTER(TOP_LAYER, "parse_string");
+   DENTER(TOP_LAYER);
 
    if((ep = lGetElemStrRW(*ppcmdline, SPA_switch, opt))) {
       ep2 = lFirstRW(lGetList(ep, SPA_argval_lListT));
@@ -461,11 +452,9 @@ char **str
          lRemoveElem(*ppcmdline, &ep);
       }
      
-      DEXIT;
-      return true;
+      DRETURN(true);
    } else {
-      DEXIT;
-      return false;
+      DRETURN(false);
    }
 }
 
@@ -475,7 +464,7 @@ parse_u_long32(lList **ppcmdline, const char *opt, lList **ppal, u_long32 *value
    bool ret = false;
    lListElem *ep = NULL;
 
-   DENTER(TOP_LAYER, "parse_u_long32");
+   DENTER(TOP_LAYER);
    ep = lGetElemStrRW(*ppcmdline, SPA_switch, opt);
    if(ep != NULL) {
       *value = lGetUlong(ep, SPA_argval_lUlongT); 
@@ -492,7 +481,7 @@ parse_u_longlist(lList **ppcmdline, const char *opt, lList **ppal, lList **value
    bool ret = false;
    lListElem *ep = NULL;
 
-   DENTER(TOP_LAYER, "parse_u_longlist");
+   DENTER(TOP_LAYER);
    ep = lGetElemStrRW(*ppcmdline, SPA_switch, opt);
    if(ep != NULL) {
       *value = NULL;
@@ -509,9 +498,9 @@ u_long32
 parse_group_options(lList *string_list, lList **answer_list) 
 {
    u_long32 group_opt = GROUP_DEFAULT;
-   lListElem *str_elem;
+   const lListElem *str_elem;
 
-   DENTER(TOP_LAYER, "sge_parse_group_options");
+   DENTER(TOP_LAYER);
 
    for_each(str_elem, string_list) {
       const char *letter_string = lGetString(str_elem, ST_name);
@@ -534,8 +523,7 @@ parse_group_options(lList *string_list, lList **answer_list)
          }
       }
    }
-   DEXIT; 
-   return (group_opt);
+   DRETURN(group_opt);
 }
 
 /* ------------------------------------------ 
@@ -560,13 +548,12 @@ sge_parse_bitfield_str(const char *str, const char *set_specifier[],
    u_long32 bitmask;
    /* isspace() character plus "," */
    static const char delim[] = ", \t\v\n\f\r";
-   DENTER(TOP_LAYER, "sge_parse_bitfield_str");
+   DENTER(TOP_LAYER);
    
    *value = 0;
 
    if (none_allowed && !strcasecmp(str, "none")) {
-      DEXIT;
-      return true;
+      DRETURN(true);
    }
 
    for (s = sge_strtok(str, delim); s; s=sge_strtok(NULL, delim)) {
@@ -579,8 +566,7 @@ sge_parse_bitfield_str(const char *str, const char *set_specifier[],
                /* whops! same specifier, already supplied! */
                SGE_ADD_MSG_ID(sprintf(SGE_EVENT, MSG_GDI_READCONFIGFILESPECGIVENTWICE_SS, *cpp, name)); 
                answer_list_add(alpp, SGE_EVENT, STATUS_ESYNTAX, ANSWER_QUALITY_ERROR);
-               DEXIT;
-               return false;
+               DRETURN(false);
             }
 
             *value |= bitmask;
@@ -594,8 +580,7 @@ sge_parse_bitfield_str(const char *str, const char *set_specifier[],
          /* whops! unknown specifier */
          SGE_ADD_MSG_ID(sprintf(SGE_EVENT, MSG_GDI_READCONFIGFILEUNKNOWNSPEC_SS, s, name)); 
          answer_list_add(alpp, SGE_EVENT, STATUS_ESYNTAX, ANSWER_QUALITY_ERROR);
-         DEXIT;
-         return false;
+         DRETURN(false);
       }
 
    }
@@ -604,10 +589,8 @@ sge_parse_bitfield_str(const char *str, const char *set_specifier[],
       /* empty or no specifier for userset type */
       SGE_ADD_MSG_ID(sprintf(SGE_EVENT, MSG_GDI_READCONFIGFILEEMPTYSPEC_S, name));
       answer_list_add(alpp, SGE_EVENT, STATUS_ESYNTAX, ANSWER_QUALITY_ERROR);
-      DEXIT;
-      return false;
+      DRETURN(false);
 
    }
-   DEXIT;
-   return true;
+   DRETURN(true);
 }

@@ -95,7 +95,7 @@ lCondition *lOrWhere(const lCondition *cp0, const lCondition *cp1)
 {
    lCondition *newcp;
 
-   DENTER(TOP_LAYER, "lOrWhere");
+   DENTER(TOP_LAYER);
 
    if (!cp0 || !cp1) {
       LERROR(LECONDNULL);
@@ -135,7 +135,7 @@ lCondition *lAndWhere(const lCondition *cp0, const lCondition *cp1)
 {
    lCondition *newcp;
 
-   DENTER(TOP_LAYER, "lAndWhere");
+   DENTER(TOP_LAYER);
 
    if (!cp0 || !cp1) {
       LERROR(LECONDNULL);
@@ -178,7 +178,7 @@ static void lWriteWhereTo_(const lCondition *cp, int depth, FILE *fp)
    char space[80];
    char out[256];
 
-   DENTER(CULL_LAYER, "lWriteWhere");
+   DENTER(CULL_LAYER);
 
    if (!cp) {
       LERROR(LECONDNULL);
@@ -451,7 +451,7 @@ lCondition *lWhere(const char *fmt,...)
    va_list ap;
    cull_parse_state state;
 
-   DENTER(CULL_LAYER, "lWhere");
+   DENTER(CULL_LAYER);
 
    if (!fmt) {
       LERROR(LENOFORMATSTR);
@@ -482,7 +482,7 @@ static lCondition *subscope(cull_parse_state* state, va_list *app)
    lDescr *dp = NULL;
    lCondition *cp = NULL;
 
-   DENTER(CULL_LAYER, "subscope");
+   DENTER(CULL_LAYER);
 
    if (scan(NULL, state) != TYPE) {
       LERROR(LESYNTAX);
@@ -519,7 +519,7 @@ static lCondition *sum(lDescr *dp, cull_parse_state *state, va_list *app)
 {
    lCondition *cp, *newcp;
 
-   DENTER(CULL_LAYER, "sum");
+   DENTER(CULL_LAYER);
 
    cp = product(dp, state, app);
 
@@ -544,7 +544,7 @@ static lCondition *product(lDescr *dp, cull_parse_state *state, va_list *app)
 {
    lCondition *cp, *newcp;
 
-   DENTER(CULL_LAYER, "product");
+   DENTER(CULL_LAYER);
 
    cp = factor(dp, state, app);
 
@@ -569,7 +569,7 @@ static lCondition *factor(lDescr *dp, cull_parse_state *state, va_list *app)
 {
    lCondition *cp;
 
-   DENTER(CULL_LAYER, "factor");
+   DENTER(CULL_LAYER);
 
    if (scan(NULL, state) == NEG) {
       eat_token(state);
@@ -596,7 +596,7 @@ va_list *app
 ) {
    lCondition *cp;
 
-   DENTER(CULL_LAYER, "negfactor");
+   DENTER(CULL_LAYER);
 
    if (scan(NULL, state) == BRA) {
       eat_token(state);
@@ -628,7 +628,7 @@ static lCondition *read_val(lDescr *dp, cull_parse_state *state, va_list *app)
    lCondition *cp;
    int token;
 
-   DENTER(CULL_LAYER, "read_val");
+   DENTER(CULL_LAYER);
 
    if (!dp) {
       LERROR(LEDESCRNULL);
@@ -782,7 +782,7 @@ static lCondition *_subscope(cull_parse_state *state, WhereArgList *wapp)
    lDescr *dp = NULL;
    lCondition *cp = NULL;
 
-   DENTER(CULL_LAYER, "_subscope");
+   DENTER(CULL_LAYER);
 
    if (scan(NULL, state) != TYPE) {
       LERROR(LESYNTAX);
@@ -825,7 +825,7 @@ static lCondition *_sum(lDescr *dp, cull_parse_state *state, WhereArgList *wapp)
 {
    lCondition *cp, *newcp;
 
-   DENTER(CULL_LAYER, "_sum");
+   DENTER(CULL_LAYER);
 
    cp = _product(dp, state, wapp);
 
@@ -850,7 +850,7 @@ static lCondition *_product(lDescr *dp, cull_parse_state *state, WhereArgList *w
 {
    lCondition *cp, *newcp;
 
-   DENTER(CULL_LAYER, "_product");
+   DENTER(CULL_LAYER);
 
    cp = _factor(dp, state, wapp);
 
@@ -875,7 +875,7 @@ static lCondition *_factor(lDescr *dp, cull_parse_state *state, WhereArgList *wa
 {
    lCondition *cp;
 
-   DENTER(CULL_LAYER, "_factor");
+   DENTER(CULL_LAYER);
 
    if (scan(NULL, state) == NEG) {
       eat_token(state);
@@ -899,7 +899,7 @@ static lCondition *_negfactor(lDescr *dp, cull_parse_state *state, WhereArgList 
 {
    lCondition *cp;
 
-   DENTER(CULL_LAYER, "_negfactor");
+   DENTER(CULL_LAYER);
 
    if (scan(NULL, state) == BRA) {
       eat_token(state);
@@ -924,7 +924,7 @@ static lCondition *_read_val(lDescr *dp, cull_parse_state *state, WhereArgList *
    lCondition *cp;
    int token;
 
-   DENTER(CULL_LAYER, "_read_val");
+   DENTER(CULL_LAYER);
 
    if (!dp) {
       LERROR(LEDESCRNULL);
@@ -1103,7 +1103,7 @@ static lCondition *_read_val(lDescr *dp, cull_parse_state *state, WhereArgList *
 ******************************************************************************/ 
 void lFreeWhere(lCondition **cp) 
 {
-   DENTER(CULL_LAYER, "lFreeWhere");
+   DENTER(CULL_LAYER);
 
    if (cp == NULL || *cp == NULL) {
       DRETURN_VOID;
@@ -1180,7 +1180,7 @@ int lCompare(const lListElem *ep, const lCondition *cp)
    int result = 0;
    const char *str1, *str2;
 
-   DENTER(CULL_LAYER, "lCompare");
+   DENTER(CULL_LAYER);
 
    if (!ep) {
       LERROR(LEELEMNULL);
@@ -1395,9 +1395,7 @@ int lCompare(const lListElem *ep, const lCondition *cp)
 
    default:
       DPRINTF(("lCompare(): unknown operator %d\n", cp->op));
-      DEXIT;
       exit(-1);
-
    }
    DRETURN(result);
 }
@@ -1423,7 +1421,7 @@ lCondition *lCopyWhere(const lCondition *cp)
 
    lCondition *new_cond = NULL;
 
-   DENTER(CULL_LAYER, "lCopyWhere");
+   DENTER(CULL_LAYER);
 
    if (!cp) {
       DRETURN(NULL);

@@ -79,7 +79,7 @@ sharetree_update_master_list(sge_evc_class_t *evc, sge_object_type type, sge_eve
    lList **list = NULL;
    lList *src = NULL;
 
-   DENTER(TOP_LAYER, "sharetree_update_master_list");
+   DENTER(TOP_LAYER);
 
    /* remove old share tree */
    list = object_type_get_master_list_rw(type); 
@@ -93,7 +93,6 @@ sharetree_update_master_list(sge_evc_class_t *evc, sge_object_type type, sge_eve
       lAppendElem(*list, lDechainElem(src, lFirstRW(src)));
    }
 
-   DEXIT;
-   return SGE_EMA_OK;
+   DRETURN(SGE_EMA_OK);
 }
 

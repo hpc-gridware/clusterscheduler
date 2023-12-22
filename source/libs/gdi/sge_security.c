@@ -90,8 +90,8 @@ const char* sge_dummy_sec_string = "AIMK_SECURE_OPTION_ENABLED";
 
 static pthread_mutex_t sec_ssl_setup_config_mutex = PTHREAD_MUTEX_INITIALIZER;
 static cl_ssl_setup_t* sec_ssl_setup_config       = NULL;
-#define SEC_LOCK_SSL_SETUP()      sge_mutex_lock("ssl_setup_mutex", SGE_FUNC, __LINE__, &sec_ssl_setup_config_mutex)
-#define SEC_UNLOCK_SSL_SETUP()    sge_mutex_unlock("ssl_setup_mutex", SGE_FUNC, __LINE__, &sec_ssl_setup_config_mutex)
+#define SEC_LOCK_SSL_SETUP()      sge_mutex_lock("ssl_setup_mutex", __func__, __LINE__, &sec_ssl_setup_config_mutex)
+#define SEC_UNLOCK_SSL_SETUP()    sge_mutex_unlock("ssl_setup_mutex", __func__, __LINE__, &sec_ssl_setup_config_mutex)
 
 static bool ssl_cert_verify_func(cl_ssl_verify_mode_t mode, bool service_mode, const char* value);
 static bool is_daemon(const char* progname);
@@ -168,7 +168,7 @@ int sge_ssl_setup_security_path(const char *progname, const char *user) {
    user_name = wl_strip_hostname(user_name);
 #endif
 
-   DENTER(TOP_LAYER, "sge_ssl_setup_security_path");
+   DENTER(TOP_LAYER);
 
    if (progname == NULL) {
       CRITICAL((SGE_EVENT, SFNMAX, MSG_GDI_NO_VALID_PROGRAMM_NAME));
@@ -465,7 +465,7 @@ static bool ssl_cert_verify_func(cl_ssl_verify_mode_t mode, bool service_mode, c
     *   no application specific context initalization. So never call functions within this callback 
     *   which need thread specific setup.
     */
-   DENTER(TOP_LAYER, "ssl_cert_verify_func");
+   DENTER(TOP_LAYER);
 
    DPRINTF(("ssl_cert_verify_func()\n"));
 
@@ -547,7 +547,7 @@ static bool ssl_cert_verify_func(cl_ssl_verify_mode_t mode, bool service_mode, c
 
 int sge_security_initialize(const char *progname, const char *username)
 {
-   DENTER(TOP_LAYER, "sge_security_initialize");
+   DENTER(TOP_LAYER);
 
 #ifdef SECURE
    {
@@ -603,7 +603,7 @@ int sge_security_initialize(const char *progname, const char *username)
 ******************************************************************************/
 void sge_security_exit(int i)
 {
-   DENTER(TOP_LAYER, "sge_security_exit");
+   DENTER(TOP_LAYER);
 
 #ifdef SECURE
    if (feature_is_enabled(FEATURE_CSP_SECURITY)) {
@@ -655,7 +655,7 @@ int set_sec_cred(const char *sge_root, const char *mastername, lListElem *job, l
    char cmd[2048];
    char line[1024];
 
-   DENTER(TOP_LAYER, "set_sec_cred");
+   DENTER(TOP_LAYER);
    
    if (feature_is_enabled(FEATURE_AFS_SECURITY)) {
       snprintf(binary, sizeof(binary), "%s/util/get_token_cmd", sge_root);
@@ -760,7 +760,7 @@ bool cache_sec_cred(const char* sge_root, lListElem *jep, const char *rhost)
 {
    bool ret_value = true;
 
-   DENTER(TOP_LAYER, "cache_sec_cred");
+   DENTER(TOP_LAYER);
 
    /* 
     * Execute command to get DCE or Kerberos credentials.
@@ -835,7 +835,7 @@ bool cache_sec_cred(const char* sge_root, lListElem *jep, const char *rhost)
 void delete_credentials(const char *sge_root, lListElem *jep)
 {
 
-   DENTER(TOP_LAYER, "delete_credentials");
+   DENTER(TOP_LAYER);
 
    /* 
     * Execute command to delete the client's DCE or Kerberos credentials.
@@ -915,7 +915,7 @@ void delete_credentials(const char *sge_root, lListElem *jep)
 int store_sec_cred(const char* sge_root, sge_gdi_packet_class_t *packet, lListElem *jep, int do_authentication, lList** alpp)
 {
 
-   DENTER(TOP_LAYER, "store_sec_cred");
+   DENTER(TOP_LAYER);
 
    if ((feature_is_enabled(FEATURE_DCE_SECURITY) ||
         feature_is_enabled(FEATURE_KERBEROS_SECURITY)) &&
@@ -1031,7 +1031,7 @@ int store_sec_cred2(const char* sge_root, const char* unqualified_hostname, lLis
    int ret = 0;
    const char *cred;
    
-   DENTER(TOP_LAYER, "store_sec_cred2");
+   DENTER(TOP_LAYER);
 
    if ((feature_is_enabled(FEATURE_DCE_SECURITY) ||
         feature_is_enabled(FEATURE_KERBEROS_SECURITY)) &&
@@ -1117,7 +1117,7 @@ struct dispatch_entry *de
    krb5_creds ** tgt_creds = NULL;
    krb5_data outbuf;
 
-   DENTER(TOP_LAYER, "kerb_job");
+   DENTER(TOP_LAYER);
 
    outbuf.length = 0;
 
@@ -1186,7 +1186,7 @@ void tgt2cc(lListElem *jep, const char *rhost)
    char *tgtstr = NULL;
    u_long32 jid = 0;
    
-   DENTER(TOP_LAYER, "tgt2cc");
+   DENTER(TOP_LAYER);
    inbuf.length = 0;
    jid = lGetUlong(jep, JB_job_number);
    
@@ -1277,11 +1277,11 @@ sge_gdi_packet_initialize_auth_info(sge_gdi_ctx_class_t *ctx,
    char buffer[SGE_SEC_BUFSIZE];
    char obuffer[3*SGE_SEC_BUFSIZE];
 
-   DENTER(TOP_LAYER, "sge_gdi_packet_initialize_auth_info");
+   DENTER(TOP_LAYER);
 
 #if 0
    /* EB: TODO: ST: remove mutex lock */
-   sge_mutex_lock(GDI_PACKET_MUTEX, SGE_FUNC, __LINE__, &(packet_handle->mutex));
+   sge_mutex_lock(GDI_PACKET_MUTEX, __func__, __LINE__, &(packet_handle->mutex));
 #endif
 
    uid = ctx->get_uid(ctx);
@@ -1310,7 +1310,7 @@ sge_gdi_packet_initialize_auth_info(sge_gdi_ctx_class_t *ctx,
    }  
 
 #if 0
-   sge_mutex_unlock(GDI_PACKET_MUTEX, SGE_FUNC, __LINE__, &(packet_handle->mutex));
+   sge_mutex_unlock(GDI_PACKET_MUTEX, __func__, __LINE__, &(packet_handle->mutex));
 #endif
 
    DRETURN(ret);
@@ -1369,7 +1369,7 @@ sge_gdi_packet_parse_auth_info(sge_gdi_packet_class_t *packet, lList **answer_li
    char dbuffer[2 * SGE_SEC_BUFSIZE];
    int dlen = 0;
 
-   DENTER(TOP_LAYER, "sge_gdi_packet_parse_auth_info");
+   DENTER(TOP_LAYER);
    if (sge_decrypt(packet->auth_info, strlen(packet->auth_info), dbuffer, &dlen)) {
       char userbuf[2 * SGE_SEC_BUFSIZE];
       char groupbuf[2 * SGE_SEC_BUFSIZE];
@@ -1412,7 +1412,7 @@ static bool sge_encrypt(char *intext, int inlen, char *outbuf, int outsize)
 {
    int len;
 
-   DENTER(TOP_LAYER, "sge_encrypt");
+   DENTER(TOP_LAYER);
 
 /*    DPRINTF(("======== intext:\n"SFN"\n=========\n", intext)); */
 
@@ -1434,7 +1434,7 @@ static bool sge_decrypt(char *intext, int inlen, char *outbuf, int* outsize)
    unsigned char decbuf[2*SGE_SEC_BUFSIZE];
    int declen = sizeof(decbuf);
 
-   DENTER(TOP_LAYER, "sge_decrypt");
+   DENTER(TOP_LAYER);
 
    if (!change_encoding(intext, &inlen, decbuf, &declen, DECODE_FROM_STRING)) {
       DRETURN(false);
@@ -1463,7 +1463,7 @@ static bool sge_encrypt(char *intext, int inlen, char *outbuf, int outsize)
    unsigned char iv[] = {1,2,3,4,5,6,7,8};
    EVP_CIPHER_CTX ctx;
 
-   DENTER(TOP_LAYER, "sge_encrypt");
+   DENTER(TOP_LAYER);
 
 /*    DPRINTF(("======== intext:\n"SFN"\n=========\n", intext)); */
 
@@ -1502,7 +1502,7 @@ static bool sge_decrypt(char *intext, int inlen, char *outbuf, int* outsize)
    unsigned char iv[] = {1,2,3,4,5,6,7,8};
    EVP_CIPHER_CTX ctx;
 
-   DENTER(TOP_LAYER, "sge_decrypt");
+   DENTER(TOP_LAYER);
 
    if (!change_encoding(intext, &inlen, decbuf, &declen, DECODE_FROM_STRING)) {
       DRETURN(false);
@@ -1543,9 +1543,9 @@ static bool sge_decrypt(char *intext, int inlen, char *outbuf, int* outsize)
  */
 static bool change_encoding(char *cbuf, int* csize, unsigned char* ubuf, int* usize, int mode)
 {
-   static const char alphabet[16] = {"*b~de,gh&j§lrn=p"};
+   static const char alphabet[16] = {"*b~de,gh&jklrn=p"};
 
-   DENTER(TOP_LAYER, "change_encoding");
+   DENTER(TOP_LAYER);
 
    if (mode == ENCODE_TO_STRING) {
       /*
@@ -1598,7 +1598,7 @@ static bool change_encoding(char *cbuf, int* csize, unsigned char* ubuf, int* us
 int sge_security_verify_user(const char *host, const char *commproc, u_long32 id,
                              const char *admin_user, const char *gdi_user, const char *progname) 
 {
-   DENTER(TOP_LAYER, "sge_security_verify_user");
+   DENTER(TOP_LAYER);
 
    if (gdi_user == NULL || host == NULL || commproc == NULL) {
      DPRINTF(("gdi user name or host or commproc is NULL\n"));
@@ -1637,7 +1637,7 @@ int sge_security_verify_user(const char *host, const char *commproc, u_long32 id
 bool sge_security_verify_unique_identifier(bool check_admin_user, const char* user, const char* progname,
         unsigned long progid, const char* hostname, const char* commproc, unsigned long commid) {
 
-   DENTER(TOP_LAYER, "sge_security_verify_unique_identifier");
+   DENTER(TOP_LAYER);
 
 #ifdef SECURE
 
@@ -1692,10 +1692,10 @@ bool sge_security_verify_unique_identifier(bool check_admin_user, const char* us
 /* MT-NOTE: sge_security_ck_to_do() is MT safe (assumptions) */
 void sge_security_event_handler(sge_gdi_ctx_class_t *ctx, te_event_t anEvent, monitoring_t *monitor)
 {
-   DENTER(TOP_LAYER, "sge_security_event_handler");  
+   DENTER(TOP_LAYER);  
 #ifdef KERBEROS
    krb_check_for_idle_clients();
 #endif
-   DEXIT;
+   DRETURN_VOID;
 }
 

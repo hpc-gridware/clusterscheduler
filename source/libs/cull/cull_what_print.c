@@ -56,12 +56,11 @@ static void _lWriteWhatTo(const lEnumeration *ep, dstring *buffer, int level)
 {
    int i;
 
-   DENTER(CULL_LAYER, "lWriteWhatTo");
+   DENTER(CULL_LAYER);
 
    if (!ep) {
       LERROR(LEENUMNULL);
-      DEXIT;
-      return;
+      DRETURN_VOID;
    }
    for (i = 0; mt_get_type(ep[i].mt) != lEndT; i++) {
       int j;
@@ -94,8 +93,7 @@ static void _lWriteWhatTo(const lEnumeration *ep, dstring *buffer, int level)
       }
    }
 
-   DEXIT;
-   return;
+   DRETURN_VOID;
 }
 
 /****** cull/what/lWriteWhatTo() **********************************************

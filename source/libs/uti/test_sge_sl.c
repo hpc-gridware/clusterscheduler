@@ -101,7 +101,7 @@ test_sequence(sge_sl_list_t *list, bool forward, const char *expected,
               u_long32 elems, const char *function) {
    bool ret = true;
 
-   DENTER(TOP_LAYER, "test_sequence");
+   DENTER(TOP_LAYER);
    if (ret) {
       sge_sl_elem_t *next;
       sge_sl_elem_t *current;
@@ -140,7 +140,7 @@ test_search_sequence(sge_sl_list_t *list, bool forward, const char *key,
                      const char *expected, u_long32 elems, const char *function) {
    bool ret = true;
 
-   DENTER(TOP_LAYER, "test_sequence");
+   DENTER(TOP_LAYER);
    if (ret) {
       sge_sl_elem_t *next;
       sge_sl_elem_t *current;
@@ -182,7 +182,7 @@ test_create_insert_destroy(void) {
    bool ret = true;
    sge_sl_list_t *list = NULL;
 
-   DENTER(TOP_LAYER, "test_create_insert_destroy");
+   DENTER(TOP_LAYER);
 
    /* create a list */
    ret = sge_sl_create(&list);
@@ -203,8 +203,8 @@ test_create_insert_destroy(void) {
 
    /* test links forward and backward */
    if (ret) {
-      ret &= test_sequence(list, true, "abcdefghij", 10, SGE_FUNC);
-      ret &= test_sequence(list, false, "jihgfedcba", 10, SGE_FUNC);
+      ret &= test_sequence(list, true, "abcdefghij", 10, __func__);
+      ret &= test_sequence(list, false, "jihgfedcba", 10, __func__);
    }
 
    /* cleanup: destroy function saves deletion sequence in test_string */
@@ -217,7 +217,7 @@ test_create_insert_destroy(void) {
    if (ret) {
       if (strcmp("abcdefghij", sge_dstring_get_string(&test_string)) != 0) {
          fprintf(stderr, "Error: Expected sequence in %s() is \"%s\" "
-                 "but it was \"%s\"\n", SGE_FUNC, "abcdefghij", 
+                 "but it was \"%s\"\n", __func__, "abcdefghij",
                  sge_dstring_get_string(&test_string));
          ret = false;
       }
@@ -231,7 +231,7 @@ test_create_append(void) {
    bool ret = true;
    sge_sl_list_t *list = NULL;
 
-   DENTER(TOP_LAYER, "test_create_append");
+   DENTER(TOP_LAYER);
 
    /* create a list */
    ret = sge_sl_create(&list);
@@ -252,8 +252,8 @@ test_create_append(void) {
 
    /* test links forward and backward */
    if (ret) {
-      ret &= test_sequence(list, true, "abcdefghij", 10, SGE_FUNC);
-      ret &= test_sequence(list, false, "jihgfedcba", 10, SGE_FUNC);
+      ret &= test_sequence(list, true, "abcdefghij", 10, __func__);
+      ret &= test_sequence(list, false, "jihgfedcba", 10, __func__);
    }
 
    if (ret) {
@@ -268,7 +268,7 @@ test_create_insort(void) {
    bool ret = true;
    sge_sl_list_t *list = NULL;
 
-   DENTER(TOP_LAYER, "test_create_insort");
+   DENTER(TOP_LAYER);
 
    /* create a list */
    ret = sge_sl_create(&list);
@@ -290,8 +290,8 @@ test_create_insort(void) {
 
    /* test links forward and backward */
    if (ret) {
-      ret &= test_sequence(list, true, "abcdefghij", 10, SGE_FUNC);
-      ret &= test_sequence(list, false, "jihgfedcba", 10, SGE_FUNC);
+      ret &= test_sequence(list, true, "abcdefghij", 10, __func__);
+      ret &= test_sequence(list, false, "jihgfedcba", 10, __func__);
    }
 
    if (ret) {
@@ -306,7 +306,7 @@ test_create_insert_sort(void) {
    bool ret = true;
    sge_sl_list_t *list = NULL;
 
-   DENTER(TOP_LAYER, "test_create_insort");
+   DENTER(TOP_LAYER);
 
    /* create a list */
    ret = sge_sl_create(&list);
@@ -330,8 +330,8 @@ test_create_insert_sort(void) {
 
    /* test links forward and backward */
    if (ret) {
-      ret &= test_sequence(list, true, "abcdefghij", 10, SGE_FUNC);
-      ret &= test_sequence(list, false, "jihgfedcba", 10, SGE_FUNC);
+      ret &= test_sequence(list, true, "abcdefghij", 10, __func__);
+      ret &= test_sequence(list, false, "jihgfedcba", 10, __func__);
    }
 
    if (ret) {
@@ -348,7 +348,7 @@ test_dechain_before_after(void) {
    sge_sl_elem_t *new_elem = NULL;
    sge_sl_elem_t *elem = NULL;
 
-   DENTER(TOP_LAYER, "test_dechain_before_after");
+   DENTER(TOP_LAYER);
 
    /* create a list */
    ret = sge_sl_create(&list);
@@ -370,8 +370,8 @@ test_dechain_before_after(void) {
 
    /* test links forward and backward */
    if (ret) {
-      ret &= test_sequence(list, true, "abc", 3, SGE_FUNC);
-      ret &= test_sequence(list, false, "cba", 3, SGE_FUNC);
+      ret &= test_sequence(list, true, "abc", 3, __func__);
+      ret &= test_sequence(list, false, "cba", 3, __func__);
    }
 
    /* append after */
@@ -384,8 +384,8 @@ test_dechain_before_after(void) {
 
    /* test links forward and backward */
    if (ret) {
-      ret &= test_sequence(list, true, "abcde", 5, SGE_FUNC);
-      ret &= test_sequence(list, false, "edcba", 5, SGE_FUNC);
+      ret &= test_sequence(list, true, "abcde", 5, __func__);
+      ret &= test_sequence(list, false, "edcba", 5, __func__);
    }
    
    /* dechain */
@@ -396,8 +396,8 @@ test_dechain_before_after(void) {
 
    /* test links forward and backward */
    if (ret) {
-      ret &= test_sequence(list, true, "abde", 4, SGE_FUNC);
-      ret &= test_sequence(list, false, "edba", 4, SGE_FUNC);
+      ret &= test_sequence(list, true, "abde", 4, __func__);
+      ret &= test_sequence(list, false, "edba", 4, __func__);
    }
 
    /* dechain first */
@@ -410,8 +410,8 @@ test_dechain_before_after(void) {
 
    /* test links forward and backward */
    if (ret) {
-      ret &= test_sequence(list, true, "bde", 3, SGE_FUNC);
-      ret &= test_sequence(list, false, "edb", 3, SGE_FUNC);
+      ret &= test_sequence(list, true, "bde", 3, __func__);
+      ret &= test_sequence(list, false, "edb", 3, __func__);
    }
 
    /* dechain first */
@@ -424,8 +424,8 @@ test_dechain_before_after(void) {
 
    /* test links forward and backward */
    if (ret) {
-      ret &= test_sequence(list, true, "bd", 2, SGE_FUNC);
-      ret &= test_sequence(list, false, "db", 2, SGE_FUNC);
+      ret &= test_sequence(list, true, "bd", 2, __func__);
+      ret &= test_sequence(list, false, "db", 2, __func__);
    }
 
    /* cleanup */
@@ -441,7 +441,7 @@ test_search_forward_backward(void) {
    bool ret = true;
    sge_sl_list_t *list = NULL;
 
-   DENTER(TOP_LAYER, "test_search_forward_backward");
+   DENTER(TOP_LAYER);
 
    /* create a list */
    ret = sge_sl_create(&list);
@@ -467,15 +467,15 @@ test_search_forward_backward(void) {
                                 test_compare_first_char, SGE_SL_FORWARD);
       if (strcmp(data, "Xa") != 0) {   
          fprintf(stderr, "Error: Expected %s as search result but got %s "
-                 "in function %s()\n", "Xa", data, SGE_FUNC);
+                 "in function %s()\n", "Xa", data, __func__);
          ret = false;
       }
    }
 
    /* test links forward and backward */
    if (ret) {
-      ret &= test_search_sequence(list, true, "X*", "XaXbXcXd", 10, SGE_FUNC);
-      ret &= test_search_sequence(list, false, "X*", "XdXcXbXa", 10, SGE_FUNC);
+      ret &= test_search_sequence(list, true, "X*", "XaXbXcXd", 10, __func__);
+      ret &= test_search_sequence(list, false, "X*", "XdXcXbXa", 10, __func__);
    }
 
    if (ret) {
@@ -490,7 +490,7 @@ test_delete_forward_backward(void) {
    bool ret = true;
    sge_sl_list_t *list = NULL;
 
-   DENTER(TOP_LAYER, "test_delete_forward_backward");
+   DENTER(TOP_LAYER);
 
    /* create a list */
    ret = sge_sl_create(&list);
@@ -518,7 +518,7 @@ test_delete_forward_backward(void) {
  
    /* test */ 
    if (ret) {
-      ret &= test_sequence(list, true, "XbexfxXchxixXd", 7, SGE_FUNC);
+      ret &= test_sequence(list, true, "XbexfxXchxixXd", 7, __func__);
    }
 
    /* delete some from end */
@@ -530,7 +530,7 @@ test_delete_forward_backward(void) {
  
    /* test */ 
    if (ret) {
-      ret &= test_sequence(list, true, "XbexfxXc", 4, SGE_FUNC);
+      ret &= test_sequence(list, true, "XbexfxXc", 4, __func__);
    }
 
    if (ret) {
@@ -545,7 +545,7 @@ test_delete_search(void) {
    bool ret = true;
    sge_sl_list_t *list = NULL;
 
-   DENTER(TOP_LAYER, "test_delete_search");
+   DENTER(TOP_LAYER);
 
    /* create a list */
    ret = sge_sl_create(&list);
@@ -578,7 +578,7 @@ test_delete_search(void) {
  
    /* test */ 
    if (ret) {
-      ret &= test_sequence(list, true, "axbxexfxhxix", 6, SGE_FUNC);
+      ret &= test_sequence(list, true, "axbxexfxhxix", 6, __func__);
    }
 
    if (ret) {
@@ -594,7 +594,7 @@ test_for_each(void) {
    sge_sl_list_t *list = NULL;
    int sum = 0;
 
-   DENTER(TOP_LAYER, "test_for_each");
+   DENTER(TOP_LAYER);
 
    /* create a list */
    ret = sge_sl_create(&list);
@@ -616,7 +616,7 @@ test_for_each(void) {
    }
    if (sum != 10) {
       fprintf(stderr, "Error: Expected a sum if %d but got %d "
-              "in function %s()\n", 10, sum, SGE_FUNC);
+              "in function %s()\n", 10, sum, __func__);
       ret = false;
    }
 
@@ -629,7 +629,7 @@ test_thread1_main(void *arg) {
    void *ret = NULL;
    test_sl_thread_t *global = (test_sl_thread_t *)arg;
 
-   DENTER(TOP_LAYER, "test_thread1_main");
+   DENTER(TOP_LAYER);
    while (global->do_terminate != true) { 
       int max_actions = 10;
       int action = random() % max_actions;
@@ -740,7 +740,7 @@ test_mt_support(void) {
    bool ret = true;
    test_sl_thread_t global;
 
-   DENTER(TOP_LAYER, "test_mt_support");
+   DENTER(TOP_LAYER);
 
    /* create a list */
    memset(&global, 0, sizeof(test_sl_thread_t));

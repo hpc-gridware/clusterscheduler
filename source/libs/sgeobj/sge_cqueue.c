@@ -158,7 +158,7 @@ enumeration_create_reduced_cq(bool fetch_all_qi, bool fetch_all_nqi)
    int names = -1;
    int attr;
 
-   DENTER(CQUEUE_LAYER, "enumeration_create_reduced_cq");
+   DENTER(CQUEUE_LAYER);
    for_each_attr(attr, descr) {
       if (names == -1) {
          sge_dstring_clear(&format_string);
@@ -177,8 +177,7 @@ enumeration_create_reduced_cq(bool fetch_all_qi, bool fetch_all_nqi)
                 name_array, ++names);
    sge_dstring_free(&format_string);
    
-   DEXIT;
-   return ret;
+   DRETURN(ret);
 }
 
 /****** sgeobj/cqueue/cqueue_name_split() *************************************
@@ -222,7 +221,7 @@ cqueue_name_split(const char *name,
 {
    bool ret = true;
 
-   DENTER(CQUEUE_LAYER, "cqueue_name_split");
+   DENTER(CQUEUE_LAYER);
 
    if (has_hostname)
       *has_hostname = false;
@@ -335,7 +334,7 @@ cqueue_create(lList **answer_list, const char *name)
 {
    lListElem *ret = NULL;
 
-   DENTER(CQUEUE_LAYER, "cqueue_create");
+   DENTER(CQUEUE_LAYER);
    if (name != NULL) {
       ret = lCreateElem(CQ_Type);
 
@@ -343,13 +342,12 @@ cqueue_create(lList **answer_list, const char *name)
          lSetString(ret, CQ_name, name);
       } else {
          SGE_ADD_MSG_ID(sprintf(SGE_EVENT, 
-                                MSG_MEM_MEMORYALLOCFAILED_S, SGE_FUNC));
+                                MSG_MEM_MEMORYALLOCFAILED_S, __func__));
          answer_list_add(answer_list, SGE_EVENT,
                          STATUS_EMALLOC, ANSWER_QUALITY_ERROR);
       }
    }
-   DEXIT;
-   return ret;
+   DRETURN(ret);
 }
 
 /****** sgeobj/cqueue/cqueue_is_href_referenced() *****************************
@@ -508,7 +506,7 @@ cqueue_is_a_href_referenced(const lListElem *this_elem,
    bool ret = false;
   
    if (this_elem != NULL && href_list != NULL) { 
-      lListElem *href;
+      const lListElem *href;
 
       for_each(href, href_list) {
          if (cqueue_is_href_referenced(this_elem, href, only_hostlist)) {
@@ -548,7 +546,7 @@ cqueue_set_template_attributes(lListElem *this_elem, lList **answer_list)
 {
    bool ret = true;
 
-   DENTER(CQUEUE_LAYER, "cqueue_set_template_attributes");
+   DENTER(CQUEUE_LAYER);
    if (this_elem != NULL) {
       /*
        * initialize u_long32 values
@@ -859,8 +857,7 @@ cqueue_set_template_attributes(lListElem *this_elem, lList **answer_list)
          }
       }
    }
-   DEXIT;
-   return ret;
+   DRETURN(ret);
 }
 
 /****** sgeobj/cqueue/cqueue_list_add_cqueue() ********************************
@@ -888,7 +885,7 @@ cqueue_list_add_cqueue(lList *this_list, lListElem *queue)
    bool ret = false;
    static lSortOrder *so = NULL;
 
-   DENTER(TOP_LAYER, "cqueue_list_add_cqueue");
+   DENTER(TOP_LAYER);
 
    if (queue != NULL) {
       if (so == NULL) {
@@ -898,8 +895,7 @@ cqueue_list_add_cqueue(lList *this_list, lListElem *queue)
       lInsertSorted(so, queue, this_list);
       ret = true;
    } 
-   DEXIT;
-   return ret;
+   DRETURN(ret);
 }
 
 /****** sgeobj/cqueue/cqueue_list_locate() ************************************
@@ -996,7 +992,7 @@ cqueue_verify_attributes(lListElem *cqueue, lList **answer_list,
 {
    bool ret = true;
 
-   DENTER(CQUEUE_LAYER, "cqueue_verify_attributes");
+   DENTER(CQUEUE_LAYER);
    if (cqueue != NULL && reduced_elem != NULL) {
       int index = 0;
 
@@ -1028,7 +1024,7 @@ cqueue_verify_attributes(lListElem *cqueue, lList **answer_list,
             if (ret) {
                lListElem *elem = NULL;
 
-               for_each(elem, list) {
+               for_each_rw(elem, list) {
                   const char *hostname = NULL;
                   const void *iterator = NULL;
                   const lListElem *first_elem = NULL;
@@ -1105,7 +1101,7 @@ cqueue_verify_attributes(lListElem *cqueue, lList **answer_list,
                      master_list = NULL;
                }
 
-               for_each(elem, list) {
+               for_each_rw(elem, list) {
                   ret &= cqueue_attribute_array[index].verify_function(cqueue, answer_list, elem, master_list);
                }
             }
@@ -1114,8 +1110,7 @@ cqueue_verify_attributes(lListElem *cqueue, lList **answer_list,
          index++;
       }
    }
-   DEXIT;
-   return ret;
+   DRETURN(ret);
 }
 
 /****** sgeobj/cqueue/cqueue_list_find_all_matching_references() **************
@@ -1157,9 +1152,9 @@ cqueue_list_find_all_matching_references(const lList *this_list,
 {
    bool ret = true;
 
-   DENTER(CQUEUE_LAYER, "cqueue_list_find_all_matching_references");
+   DENTER(CQUEUE_LAYER);
    if (this_list != NULL && cqueue_pattern != NULL && qref_list != NULL) {
-      lListElem *cqueue;
+      const lListElem *cqueue;
 
       for_each(cqueue, this_list) {
          const char *cqueue_name = lGetString(cqueue, CQ_name);
@@ -1174,8 +1169,7 @@ cqueue_list_find_all_matching_references(const lList *this_list,
          }
       }
    }
-   DEXIT;
-   return ret;
+   DRETURN(ret);
 }
 
 /****** sgeobj/cqueue/cqueue_xattr_pre_gdi() **********************************
@@ -1209,11 +1203,11 @@ cqueue_xattr_pre_gdi(lList *this_list, lList **answer_list)
    dstring cqueue_name = DSTRING_INIT;
    dstring host_domain = DSTRING_INIT;
 
-   DENTER(CQUEUE_LAYER, "cqueue_xattr_pre_gdi");
+   DENTER(CQUEUE_LAYER);
    if (this_list != NULL) {
       lListElem *cqueue = NULL;
    
-      for_each(cqueue, this_list) {
+      for_each_rw(cqueue, this_list) {
          const char *name = lGetString(cqueue, CQ_name);
          bool has_hostname = false;
          bool has_domain = false;
@@ -1246,7 +1240,7 @@ cqueue_xattr_pre_gdi(lList *this_list, lList **answer_list)
                   lList *list = lGetPosList(cqueue, pos);
                   lListElem *elem = NULL;
 
-                  for_each(elem, list) {
+                  for_each_rw(elem, list) {
                      const char *attr_hostname = lGetHost(elem, 
                                        cqueue_attribute_array[index].href_attr);
 
@@ -1300,7 +1294,7 @@ cqueue_is_used_in_subordinate(const char *cqueue_name, const lListElem *cqueue)
 {
    bool ret = false;
 
-   DENTER(CQUEUE_LAYER, "cqueue_is_used_in_subordinate");
+   DENTER(CQUEUE_LAYER);
 
    if (cqueue != NULL && cqueue_name != NULL) {
       const lList *sub_list = lGetList(cqueue, CQ_subordinate_list);
@@ -1317,8 +1311,7 @@ cqueue_is_used_in_subordinate(const char *cqueue_name, const lListElem *cqueue)
       }
    }
 
-   DEXIT;
-   return ret;
+   DRETURN(ret);
 }
 
 /****** sgeobj/cqueue/cqueue_list_find_hgroup_references() ********************
@@ -1356,9 +1349,9 @@ cqueue_list_find_hgroup_references(const lList *this_list, lList **answer_list,
                                    const lListElem *hgroup, lList **string_list)
 {
    bool ret = true;
-   lListElem *cqueue;
+   const lListElem *cqueue;
 
-   DENTER(CQUEUE_LAYER, "cqueue_list_find_hgroup_references");
+   DENTER(CQUEUE_LAYER);
    if (this_list != NULL && hgroup != NULL && string_list != NULL) {
       for_each(cqueue, this_list) {
          if (cqueue_is_hgroup_referenced(cqueue, hgroup)) {
@@ -1368,8 +1361,7 @@ cqueue_list_find_hgroup_references(const lList *this_list, lList **answer_list,
          }
       }
    }
-   DEXIT;
-   return ret;
+   DRETURN(ret);
 }
 
 /****** sgeobj/cqueue/cqueue_list_set_tag() ***********************************
@@ -1401,11 +1393,11 @@ cqueue_list_find_hgroup_references(const lList *this_list, lList **answer_list,
 void
 cqueue_list_set_tag(lList *this_list, u_long32 tag_value, bool tag_qinstances)
 {
-   DENTER(TOP_LAYER, "cqueue_list_set_tag");
+   DENTER(TOP_LAYER);
    if (this_list != NULL) {
       lListElem *cqueue = NULL;
 
-      for_each(cqueue, this_list) {
+      for_each_rw(cqueue, this_list) {
          lSetUlong(cqueue, CQ_tag, tag_value);
          if (tag_qinstances) {
             lList *qinstance_list = lGetListRW(cqueue, CQ_qinstances);
@@ -1414,7 +1406,7 @@ cqueue_list_set_tag(lList *this_list, u_long32 tag_value, bool tag_qinstances)
          }
       }
    }
-   DEXIT;
+   DRETURN_VOID;
 }
 
 /****** sgeobj/cqueue/cqueue_list_locate_qinstance() **************************
@@ -1474,7 +1466,7 @@ cqueue_list_locate_qinstance_msg(const lList *cqueue_list, const char *full_name
 {
    lListElem *ret = NULL;
 
-   DENTER(TOP_LAYER, "cqueue_list_locate_qinstance");
+   DENTER(TOP_LAYER);
    if (full_name != NULL) {
       dstring cqueue_name_buffer = DSTRING_INIT;
       dstring host_domain_buffer = DSTRING_INIT;
@@ -1539,7 +1531,7 @@ cqueue_find_used_href(lListElem *this_elem, lList **answer_list,
 {
    bool ret = true;
 
-   DENTER(CQUEUE_LAYER, "cqueue_find_used_href");
+   DENTER(CQUEUE_LAYER);
    if (this_elem != NULL) {
       int index=0;
 
@@ -1549,7 +1541,7 @@ cqueue_find_used_href(lListElem *this_elem, lList **answer_list,
 
          if (pos >= 0) {
             lList *list = lGetPosList(this_elem, pos);
-            lListElem *elem = NULL;
+            const lListElem *elem = NULL;
 
             for_each(elem, list) {
                const char *attr_hostname = lGetHost(elem, 
@@ -1561,8 +1553,7 @@ cqueue_find_used_href(lListElem *this_elem, lList **answer_list,
          index++;
       }
    }
-   DEXIT;
-   return ret;
+   DRETURN(ret);
 }
 
 /****** sgeobj/cqueue/cqueue_trash_used_href_setting() ************************
@@ -1599,7 +1590,7 @@ cqueue_trash_used_href_setting(lListElem *this_elem, lList **answer_list,
 {
    bool ret = true;
 
-   DENTER(CQUEUE_LAYER, "cqueue_trash_used_href_setting");
+   DENTER(CQUEUE_LAYER);
    if (this_elem != NULL) {
       int index=0;
 
@@ -1626,8 +1617,7 @@ cqueue_trash_used_href_setting(lListElem *this_elem, lList **answer_list,
          index++;
       }
    }
-   DEXIT;
-   return ret;
+   DRETURN(ret);
 }
 
 /****** sge_cqueue/cqueue_purge_host() *****************************************
@@ -1666,10 +1656,10 @@ cqueue_purge_host(lListElem *this_elem, lList **answer_list,
    int index;
 
    lList *sublist = NULL;
-   lListElem *ep = NULL;
+   const lListElem *ep = NULL;
    const char *attr_name = NULL;
 
-   DENTER(CQUEUE_LAYER, "cqueue_purge_host");
+   DENTER(CQUEUE_LAYER);
 
    if (this_elem != NULL) {
       for_each (ep, attr_list) {
@@ -1707,8 +1697,7 @@ cqueue_purge_host(lListElem *this_elem, lList **answer_list,
       }
    }
 
-   DEXIT;
-   return ret;
+   DRETURN(ret);
 }
 
 bool
@@ -1717,7 +1706,7 @@ cqueue_sick(lListElem *cqueue, lList **answer_list,
 {
    bool ret = true;
 
-   DENTER(TOP_LAYER, "cqueue_sick");
+   DENTER(TOP_LAYER);
 
    /*
     * Warn about:

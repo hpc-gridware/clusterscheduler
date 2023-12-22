@@ -147,15 +147,14 @@ static bool ssl_cert_verify_func(cl_ssl_verify_mode_t mode, bool service_mode, c
     *   no application specific context initalization. So never call functions within this callback 
     *   which need thread specific setup.
     */
-   DENTER(TOP_LAYER, "ssl_cert_verify_func");
+   DENTER(TOP_LAYER);
 
    DPRINTF(("ssl_cert_verify_func()\n"));
 
    if (value == NULL) {
       /* This should never happen */
       CRITICAL((SGE_EVENT, SFNMAX, MSG_SEC_CERT_VERIFY_FUNC_NO_VAL));
-      DEXIT;
-      return false;
+      DRETURN(false);
    }
 
    if (service_mode == true) {
@@ -164,8 +163,7 @@ static bool ssl_cert_verify_func(cl_ssl_verify_mode_t mode, bool service_mode, c
             DPRINTF(("local service got certificate from peer \"%s\"\n", value));
 #if 0
             if (strcmp(value,"SGE admin user") != 0) {
-               DEXIT;
-               return false;
+               DRETURN(false);
             }
 #endif
             break;
@@ -174,8 +172,7 @@ static bool ssl_cert_verify_func(cl_ssl_verify_mode_t mode, bool service_mode, c
             DPRINTF(("local service got certificate from user \"%s\"\n", value));
 #if 0
             if (strcmp(value,"") != 0) {
-               DEXIT;
-               return false;
+               DRETURN(false);
             }
 #endif
             break;
@@ -187,8 +184,7 @@ static bool ssl_cert_verify_func(cl_ssl_verify_mode_t mode, bool service_mode, c
             DPRINTF(("local client got certificate from peer \"%s\"\n", value));
 #if 0
             if (strcmp(value,"SGE admin user") != 0) {
-               DEXIT;
-               return false;
+               DRETURN(false);
             }
 #endif
             break;
@@ -197,16 +193,14 @@ static bool ssl_cert_verify_func(cl_ssl_verify_mode_t mode, bool service_mode, c
             DPRINTF(("local client got certificate from user \"%s\"\n", value));
 #if 0
             if (strcmp(value,"") != 0) {
-               DEXIT;
-               return false;
+               DRETURN(false);
             }
 #endif
             break;
          }
       }
    }
-   DEXIT;
-   return true;
+   DRETURN(true);
 }
 
 
@@ -214,13 +208,12 @@ sge_csp_path_class_t *sge_csp_path_class_create(sge_env_state_class_t *sge_env, 
 {
    sge_csp_path_class_t *ret = NULL;
 
-   DENTER(TOP_LAYER, "sge_csp_path_class_create");
+   DENTER(TOP_LAYER);
 
    ret = (sge_csp_path_class_t *)sge_malloc(sizeof(sge_csp_path_class_t));
    if (!ret) {
       eh->error(eh, STATUS_EMALLOC, ANSWER_QUALITY_ERROR, MSG_MEMORY_MALLOCFAILED);
-      DEXIT;
-      return NULL;
+      DRETURN(NULL);
    }   
 
    ret->dprintf = sge_csp_path_dprintf;
@@ -253,32 +246,28 @@ sge_csp_path_class_t *sge_csp_path_class_create(sge_env_state_class_t *sge_env, 
    if (ret->sge_csp_path_handle == NULL) {
       eh->error(eh, STATUS_EMALLOC, ANSWER_QUALITY_ERROR, MSG_MEMORY_MALLOCFAILED);
       sge_csp_path_class_destroy(&ret);
-      DEXIT;
-      return NULL;
+      DRETURN(NULL);
    }
    memset(ret->sge_csp_path_handle, 0, sizeof(sge_csp_path_t));
 
    if (!sge_csp_path_setup(ret, sge_env, sge_prog, eh)) {
       sge_csp_path_class_destroy(&ret);
-      DEXIT;
-      return NULL;
+      DRETURN(NULL);
    }
 
-   DEXIT;
-   return ret;
+   DRETURN(ret);
 }   
 
 void sge_csp_path_class_destroy(sge_csp_path_class_t **pst)
 {
-   DENTER(TOP_LAYER, "sge_csp_path_class_destroy");
+   DENTER(TOP_LAYER);
 
    if (!pst || !*pst) {
-      DEXIT;
-      return;
+      DRETURN_VOID;
    }   
    sge_csp_path_destroy((*pst)->sge_csp_path_handle);
    sge_free(pst);
-   DEXIT;
+   DRETURN_VOID;
 }
 
 static bool sge_csp_path_setup(sge_csp_path_class_t *thiz, sge_env_state_class_t *sge_env, sge_prog_state_class_t *sge_prog, sge_error_class_t *eh)
@@ -299,12 +288,11 @@ static bool sge_csp_path_setup(sge_csp_path_class_t *thiz, sge_env_state_class_t
 /*    bool sge_no_ca_local_root = false;  */
    char ca_local_dir[SGE_PATH_MAX]; 
 
-   DENTER(TOP_LAYER, "sge_csp_path_setup");
+   DENTER(TOP_LAYER);
  
    if (!sge_env) {
       eh->error(eh, STATUS_EUNKNOWN, ANSWER_QUALITY_ERROR, "sge_env is NULL");
-      DEXIT;
-      return false;
+      DRETURN(false);
    }
    
    /* get the necessary info to build the paths */
@@ -445,15 +433,14 @@ static bool sge_csp_path_setup(sge_csp_path_class_t *thiz, sge_env_state_class_t
 
 /*    thiz->dprintf(thiz); */
 
-   DEXIT;
-   return true;
+   DRETURN(true);
 }
 
 static void sge_csp_path_destroy(void *theState)
 {
    sge_csp_path_t *s = (sge_csp_path_t *)theState;
 
-   DENTER(TOP_LAYER, "sge_csp_path_destroy");
+   DENTER(TOP_LAYER);
 
    sge_free(&(s->ca_root));
    sge_free(&(s->ca_local_root));
@@ -467,14 +454,14 @@ static void sge_csp_path_destroy(void *theState)
    sge_free(&(s->password));
    sge_free(&s);
 
-   DEXIT;
+   DRETURN_VOID;
 }
 
 static void sge_csp_path_dprintf(sge_csp_path_class_t *thiz)
 {
    sge_csp_path_t *es = (sge_csp_path_t *)thiz->sge_csp_path_handle;
 
-   DENTER(TOP_LAYER, "sge_csp_path_dprintf");
+   DENTER(TOP_LAYER);
 
    DPRINTF(("ca_root             >%s<\n", es->ca_root ? es->ca_root : "NA"));
    DPRINTF(("ca_local_root       >%s<\n", es->ca_local_root ? es->ca_local_root : "NA"));
@@ -488,7 +475,7 @@ static void sge_csp_path_dprintf(sge_csp_path_class_t *thiz)
    DPRINTF(("refresh_time        >%d<\n", es->refresh_time));
    DPRINTF(("password            >%s<\n", es->password ? es->password : "NA"));
 
-   DEXIT;
+   DRETURN_VOID;
 }
 
 static const char* get_ca_root(sge_csp_path_class_t *thiz) 

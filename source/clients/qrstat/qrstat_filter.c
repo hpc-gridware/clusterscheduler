@@ -159,7 +159,7 @@ void
 qrstat_filter_add_u_where(qrstat_env_t *qrstat_env)
 {
    lCondition *where = NULL;
-   lListElem *elem = NULL; /* ST_Type */
+   const lListElem *elem = NULL; /* ST_Type */
 
    for_each(elem, qrstat_env->user_list) {
       lCondition *tmp_where = NULL;
@@ -187,9 +187,9 @@ void
 qrstat_filter_add_ar_where(qrstat_env_t *qrstat_env)
 {
    lCondition *where = NULL;
-   lListElem *elem = NULL; /* ULNG_Type */
+   const lListElem *elem = NULL; /* ULNG_Type */
 
-   DENTER(TOP_LAYER, "qrstat_filter_add_ar_where");
+   DENTER(TOP_LAYER);
    for_each(elem, qrstat_env->ar_id_list) {
       lCondition *tmp_where = NULL;
       u_long32 value = lGetUlong(elem, ULNG_value);

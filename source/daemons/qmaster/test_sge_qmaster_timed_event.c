@@ -66,78 +66,74 @@ int main(int argc, char* argv[])
    feature_mt_init();
    sge_prof_set_enabled(false);
 
-   printf("%s: delete_nonexistent_event ----------------------------------\n", SGE_FUNC);
+   printf("%s: delete_nonexistent_event ----------------------------------\n", __func__);
 
    test_delete_nonexistent_event();
 
-   printf("%s: add_one_time_event_without_hander -------------------------\n", SGE_FUNC);
+   printf("%s: add_one_time_event_without_hander -------------------------\n", __func__);
 
    test_add_one_time_event_without_handler();
 
-   printf("%s: delete_one_time_event -------------------------------------\n", SGE_FUNC);
+   printf("%s: delete_one_time_event -------------------------------------\n", __func__);
 
    test_delete_one_time_event();
 
-   printf("%s: delete_multiple_one_time_events ---------------------------\n", SGE_FUNC);
+   printf("%s: delete_multiple_one_time_events ---------------------------\n", __func__);
 
    test_delete_multiple_one_time_events();
 
-   printf("%s: one_time_event_delivery -----------------------------------\n", SGE_FUNC);
+   printf("%s: one_time_event_delivery -----------------------------------\n", __func__);
 
    test_one_time_event_delivery();
 
-   printf("%s: multiple_one_time_events_delivery -------------------------\n", SGE_FUNC);
+   printf("%s: multiple_one_time_events_delivery -------------------------\n", __func__);
 
    test_multiple_one_time_events_delivery();
 
-   printf("%s: recurring_event_delivery ----------------------------------\n", SGE_FUNC);
+   printf("%s: recurring_event_delivery ----------------------------------\n", __func__);
 
    test_recurring_event_delivery();
 
-   printf("%s: add_earlier_one_time_event --------------------------------\n", SGE_FUNC);
+   printf("%s: add_earlier_one_time_event --------------------------------\n", __func__);
 
    test_add_earlier_one_time_event();
 
-   printf("%s: add_earlier_recurring_event -------------------------------\n", SGE_FUNC);
+   printf("%s: add_earlier_recurring_event -------------------------------\n", __func__);
 
    test_add_earlier_recurring_event();
 
-   printf("%s: shutdown --------------------------------------------------\n", SGE_FUNC);
+   printf("%s: shutdown --------------------------------------------------\n", __func__);
 
    te_shutdown();
 
-   DEXIT;
-   return 0;
+   DRETURN(0);
 } /* main() */
 
 void calendar_event_handler(sge_gdi_ctx_class_t *ctx, te_event_t anEvent, monitoring_t *monitor)
 {
-   DENTER(TOP_LAYER, "calendar_event_handler");
+   DENTER(TOP_LAYER);
 
-   DPRINTF(("%s: time:"sge_u32" when:"sge_u32"\n", SGE_FUNC, time(NULL), te_get_when(anEvent)));
+   DPRINTF(("%s: time:"sge_u32" when:"sge_u32"\n", __func__, time(NULL), te_get_when(anEvent)));
 
-   DEXIT;
-   return;
+   DRETURN_VOID;
 } /* calendar_event_handler() */
 
 void signal_resend_event_handler(sge_gdi_ctx_class_t *ctx, te_event_t anEvent, monitoring_t *monitor)
 {
-   DENTER(TOP_LAYER, "signal_resend_event_handler");
+   DENTER(TOP_LAYER);
 
-   DPRINTF(("%s: time:"sge_u32" when:"sge_u32"\n", SGE_FUNC, time(NULL), te_get_when(anEvent)));
+   DPRINTF(("%s: time:"sge_u32" when:"sge_u32"\n", __func__, time(NULL), te_get_when(anEvent)));
 
-   DEXIT;
-   return;
+   DRETURN_VOID;
 } /* signal_resend_event_handler() */
 
 void job_resend_event_handler(sge_gdi_ctx_class_t *ctx, te_event_t anEvent, monitoring_t *monitor)
 {
-   DENTER(TOP_LAYER, "job_resend_event_handler");
+   DENTER(TOP_LAYER);
 
-   DPRINTF(("%s: time:"sge_u32" when:"sge_u32"\n", SGE_FUNC, time(NULL), te_get_when(anEvent)));
+   DPRINTF(("%s: time:"sge_u32" when:"sge_u32"\n", __func__, time(NULL), te_get_when(anEvent)));
 
-   DEXIT;
-   return;
+   DRETURN_VOID;
 } /* job_resend_event_handler() */
 
 static void test_delete_nonexistent_event(void)

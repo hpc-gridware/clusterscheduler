@@ -74,6 +74,5 @@ int main(int argc, char **argv)
    } else {
       SGE_EXIT((void**)&ctx, 0);
    }
-   DEXIT;
-   return 0;
+   DRETURN(0);
 }

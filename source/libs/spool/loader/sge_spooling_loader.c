@@ -92,7 +92,7 @@ spool_create_dynamic_context(lList **answer_list, const char *method,
    const char *compiled_method;
    lListElem *context = NULL;
 
-   DENTER(TOP_LAYER, "spool_create_dynamic_context");
+   DENTER(TOP_LAYER);
 
 #ifdef SPOOLING_berkeleydb
    compiled_method = "berkeleydb";
@@ -156,8 +156,7 @@ spool_create_dynamic_context(lList **answer_list, const char *method,
                               method);
    }
 
-   DEXIT;
-   return context;
+   DRETURN(context);
 }
 
 

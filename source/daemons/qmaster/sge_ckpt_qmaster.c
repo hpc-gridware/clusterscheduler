@@ -118,7 +118,7 @@ int ckpt_mod(sge_gdi_ctx_class_t *ctx,
 {
    const char *ckpt_name;
 
-   DENTER(TOP_LAYER, "ckpt_mod");
+   DENTER(TOP_LAYER);
 
    /* ---- CK_name */
    if (lGetPosViaElem(ckpt, CK_name, SGE_NO_ABORT) >= 0) {
@@ -130,12 +130,11 @@ int ckpt_mod(sge_gdi_ctx_class_t *ctx,
       ckpt_name = lGetString(new_ckpt, CK_name);
       if (add && verify_str_key(
             alpp, ckpt_name, MAX_VERIFY_STRING, SGE_ATTR_CKPT_NAME, KEY_TABLE) != STATUS_OK) {
-         DEXIT;
-         return STATUS_EUNKNOWN;
+         DRETURN(STATUS_EUNKNOWN);
       }
    } else {
       ERROR((SGE_EVENT, MSG_SGETEXT_MISSINGCULLFIELD_SS,
-            lNm2Str(CK_name), SGE_FUNC));
+            lNm2Str(CK_name), __func__));
       answer_list_add(alpp, SGE_EVENT, STATUS_EUNKNOWN, ANSWER_QUALITY_ERROR); 
       goto ERROR;
    }
@@ -194,12 +193,10 @@ int ckpt_mod(sge_gdi_ctx_class_t *ctx,
       goto ERROR;
    }
 
-   DEXIT;
-   return 0;
+   DRETURN(0);
 
 ERROR:
-   DEXIT;
-   return STATUS_EUNKNOWN;
+   DRETURN(STATUS_EUNKNOWN);
 }
 
 /****** qmaster/ckpt/ckpt_spool() *********************************************
@@ -235,7 +232,7 @@ int ckpt_spool(sge_gdi_ctx_class_t *ctx, lList **alpp, lListElem *ep, gdi_object
    bool dbret;
    bool job_spooling = ctx->get_job_spooling(ctx);
 
-   DENTER(TOP_LAYER, "ckpt_spool");
+   DENTER(TOP_LAYER);
 
    dbret = spool_write_object(&answer_list, spool_get_default_context(), ep, 
                               lGetString(ep, CK_name), SGE_TYPE_CKPT,
@@ -249,8 +246,7 @@ int ckpt_spool(sge_gdi_ctx_class_t *ctx, lList **alpp, lListElem *ep, gdi_object
                               lGetString(ep, CK_name));
    }
 
-   DEXIT;
-   return dbret ? 0 : 1;
+   DRETURN(dbret ? 0 : 1);
 }
 
 /****** qmaster/ckpt/ckpt_success() *******************************************
@@ -285,7 +281,7 @@ int ckpt_success(sge_gdi_ctx_class_t *ctx, lListElem *ep, lListElem *old_ep, gdi
 {
    const char *ckpt_name;
 
-   DENTER(TOP_LAYER, "ckpt_success");
+   DENTER(TOP_LAYER);
 
    ckpt_name = lGetString(ep, CK_name);
 
@@ -293,8 +289,7 @@ int ckpt_success(sge_gdi_ctx_class_t *ctx, lListElem *ep, lListElem *old_ep, gdi
                  ckpt_name, NULL, NULL, ep);
    lListElem_clear_changed_info(ep);
 
-   DEXIT;
-   return 0;
+   DRETURN(0);
 }
 
 /****** qmaster/ckpt/sge_del_ckpt() *******************************************
@@ -329,38 +324,34 @@ int sge_del_ckpt(sge_gdi_ctx_class_t *ctx, lListElem *ep, lList **alpp, char *ru
    const char *ckpt_name;
    lList **lpp = object_type_get_master_list_rw(SGE_TYPE_CKPT);
 
-   DENTER(TOP_LAYER, "sge_del_ckpt");
+   DENTER(TOP_LAYER);
 
    if ( !ep || !ruser || !rhost ) {
-      CRITICAL((SGE_EVENT, MSG_SGETEXT_NULLPTRPASSED_S, SGE_FUNC));
+      CRITICAL((SGE_EVENT, MSG_SGETEXT_NULLPTRPASSED_S, __func__));
       answer_list_add(alpp, SGE_EVENT, STATUS_EUNKNOWN, ANSWER_QUALITY_ERROR);
-      DEXIT;
-      return STATUS_EUNKNOWN;
+      DRETURN(STATUS_EUNKNOWN);
    }
 
    /* ep is no ckpt element, if ep has no CK_name */
    if ((pos = lGetPosViaElem(ep, CK_name, SGE_NO_ABORT)) < 0) {
       CRITICAL((SGE_EVENT, MSG_SGETEXT_MISSINGCULLFIELD_SS,
-            lNm2Str(CK_name), SGE_FUNC));
+            lNm2Str(CK_name), __func__));
       answer_list_add(alpp, SGE_EVENT, STATUS_EUNKNOWN, ANSWER_QUALITY_ERROR);
-      DEXIT;
-      return STATUS_EUNKNOWN;
+      DRETURN(STATUS_EUNKNOWN);
    }
 
    ckpt_name = lGetPosString(ep, pos);
    if (!ckpt_name) {
-      CRITICAL((SGE_EVENT, MSG_SGETEXT_NULLPTRPASSED_S, SGE_FUNC));
+      CRITICAL((SGE_EVENT, MSG_SGETEXT_NULLPTRPASSED_S, __func__));
       answer_list_add(alpp, SGE_EVENT, STATUS_EUNKNOWN, ANSWER_QUALITY_ERROR);
-      DEXIT;
-      return STATUS_EUNKNOWN;
+      DRETURN(STATUS_EUNKNOWN);
    }                    
    found = ckpt_list_locate(*lpp, ckpt_name);
 
    if (!found) {
       ERROR((SGE_EVENT, MSG_SGETEXT_DOESNOTEXIST_SS, MSG_OBJ_CKPT, ckpt_name));
       answer_list_add(alpp, SGE_EVENT, STATUS_EEXIST, ANSWER_QUALITY_ERROR);
-      DEXIT;
-      return STATUS_EEXIST;
+      DRETURN(STATUS_EEXIST);
    }
 
    /* 
@@ -377,8 +368,7 @@ int sge_del_ckpt(sge_gdi_ctx_class_t *ctx, lListElem *ep, lList **alpp, char *ru
          answer_list_add(alpp, SGE_EVENT, STATUS_EUNKNOWN,
                          ANSWER_QUALITY_ERROR);
          lFreeList(&local_answer_list);
-         DEXIT;
-         return STATUS_EUNKNOWN;
+         DRETURN(STATUS_EUNKNOWN);
       }
    }
 
@@ -387,8 +377,7 @@ int sge_del_ckpt(sge_gdi_ctx_class_t *ctx, lListElem *ep, lList **alpp, char *ru
                         NULL, NULL, NULL, true, true)) {
       ERROR((SGE_EVENT, MSG_CANTSPOOL_SS, MSG_OBJ_CKPT, ckpt_name));
       answer_list_add(alpp, SGE_EVENT, STATUS_EEXIST, ANSWER_QUALITY_ERROR);
-      DEXIT;
-      return STATUS_EDISK;
+      DRETURN(STATUS_EDISK);
    }
 
    /* now we can remove the element */
@@ -397,15 +386,14 @@ int sge_del_ckpt(sge_gdi_ctx_class_t *ctx, lListElem *ep, lList **alpp, char *ru
    INFO((SGE_EVENT, MSG_SGETEXT_REMOVEDFROMLIST_SSSS,
             ruser, rhost, ckpt_name, MSG_OBJ_CKPT));
    answer_list_add(alpp, SGE_EVENT, STATUS_OK, ANSWER_QUALITY_INFO);
-   DEXIT;
-   return STATUS_OK;
+   DRETURN(STATUS_OK);
 }                     
 
 const char *get_checkpoint_when(int bitmask)
 {
    int i = 0;
    static char when[32];
-   DENTER(TOP_LAYER, "get_checkpoint_string");
+   DENTER(TOP_LAYER);
 
    if (is_checkpoint_when_valid(bitmask) && !(bitmask & NO_CHECKPOINT)) {
       if (bitmask & CHECKPOINT_SUSPEND) {
@@ -425,8 +413,7 @@ const char *get_checkpoint_when(int bitmask)
    }
    when[i] = '\0';
 
-   DEXIT;
-   return when;
+   DRETURN(when);
 }
 
 int is_checkpoint_when_valid(int bitmask)
@@ -434,7 +421,7 @@ int is_checkpoint_when_valid(int bitmask)
    int ret = 0;
    int mask = 0;
 
-   DENTER(TOP_LAYER, "is_checkpoint_when_valid");
+   DENTER(TOP_LAYER);
    mask = CHECKPOINT_SUSPEND | CHECKPOINT_AT_SHUTDOWN
       | CHECKPOINT_AT_MINIMUM_INTERVAL | CHECKPOINT_AT_AUTO_RES;
 
@@ -442,8 +429,7 @@ int is_checkpoint_when_valid(int bitmask)
        || ((bitmask & mask) == bitmask)) {
       ret = 1;
    }
-   DEXIT;
-   return ret;
+   DRETURN(ret);
 }
 
 

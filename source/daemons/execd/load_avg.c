@@ -157,7 +157,7 @@ void execd_merge_load_report(u_long32 seqno)
    if (last_lr == NULL || seqno != lGetUlong(last_lr, REP_seqno)) {
       return;
    } else {
-      lListElem *old_lr;
+      const lListElem *old_lr;
 
       for_each(old_lr, lGetList(last_lr, REP_list)) {
          const void *iterator = NULL;
@@ -198,7 +198,7 @@ execd_add_load_report(sge_gdi_ctx_class_t *ctx, lList *report_list, u_long32 now
    const char* qualified_hostname = ctx->get_qualified_hostname(ctx);
    const char* binary_path = ctx->get_binary_path(ctx);
 
-   DENTER(TOP_LAYER, "execd_add_load_report");
+   DENTER(TOP_LAYER);
 
    if (*next_send <= now || sge_get_flush_lr_flag()) {
       lSortOrder *order = lParseSortOrderVarArg(LR_Type, "%I+", LR_host);
@@ -234,7 +234,7 @@ execd_add_load_report(sge_gdi_ctx_class_t *ctx, lList *report_list, u_long32 now
       } else {
          lListElem *lr;
 
-         for_each(lr, lr_list) {
+         for_each_rw(lr, lr_list) {
             const void *iterator = NULL;
             const char *hostname = lGetHost(lr, LR_host);
             const char *name = lGetString(lr, LR_name);
@@ -293,7 +293,7 @@ execd_add_conf_report(sge_gdi_ctx_class_t *ctx, lList *report_list, u_long32 now
 {
    const char* qualified_hostname = ctx->get_qualified_hostname(ctx);
 
-   DENTER(TOP_LAYER, "execd_add_conf_report");
+   DENTER(TOP_LAYER);
    if (*next_send <= now) {
       lListElem *report;
 
@@ -320,7 +320,7 @@ execd_add_conf_report(sge_gdi_ctx_class_t *ctx, lList *report_list, u_long32 now
 static int 
 execd_add_license_report(sge_gdi_ctx_class_t *ctx, lList *report_list, u_long32 now, u_long32 *next_send) 
 {
-   DENTER(TOP_LAYER, "execd_add_license_report");
+   DENTER(TOP_LAYER);
    if (*next_send == 0) {
       const char* qualified_hostname = ctx->get_qualified_hostname(ctx);
       lListElem *report;
@@ -363,7 +363,7 @@ execd_add_job_report(sge_gdi_ctx_class_t *ctx, lList *report_list, u_long32 now,
    static u_long32 last_send = 0;
    const char* qualified_hostname = ctx->get_qualified_hostname(ctx);
 
-   DENTER(TOP_LAYER, "execd_add_job_report");
+   DENTER(TOP_LAYER);
 
    /* return if no job reports are in the list */
    if (lGetNumberOfElem(jr_list) == 0) {
@@ -408,7 +408,7 @@ execd_add_job_report(sge_gdi_ctx_class_t *ctx, lList *report_list, u_long32 now,
        * We keep job reports where the job is started via JAPI (qsub -sync or
        * DRMAA). This is done only when we reconnect after a qmaster failover
        */
-      for_each (jr, jr_list) {
+      for_each_rw (jr, jr_list) {
          if ((!only_flush || lGetBool(jr, JR_flush)) &&
                !lGetBool(jr, JR_no_send) &&
                !(sge_get_delay_job_reports_flag() && lGetBool(jr, JR_delay_report))) {
@@ -434,7 +434,7 @@ lList *sge_build_load_report(const char* qualified_hostname, const char* binary_
    double load;
    const void *iterator = NULL;
 
-   DENTER(TOP_LAYER, "sge_build_load_report");
+   DENTER(TOP_LAYER);
 
    /* 
       adding load values to the load report 
@@ -542,7 +542,7 @@ static int sge_get_sockets(const char* qualified_hostname, lList **lpp) {
   
    int sockets = 0;
    
-   DENTER(TOP_LAYER, "sge_get_sockets");
+   DENTER(TOP_LAYER);
    
    /* get total amount of sockets installed on system */ 
    sockets = get_execd_amount_of_sockets();
@@ -579,7 +579,7 @@ static int sge_get_cores(const char* qualified_hostname, lList **lpp) {
    
    int cores = 0;
    
-   DENTER(TOP_LAYER, "sge_get_cores");
+   DENTER(TOP_LAYER);
 
    /* get the total amount of cores */
    cores = get_execd_amount_of_cores();
@@ -615,7 +615,7 @@ static int sge_get_cores(const char* qualified_hostname, lList **lpp) {
 static int sge_get_hwthreads(const char* qualified_hostname, lList **lpp)
 {
    int hwthreads = 0;
-   DENTER(TOP_LAYER, "sge_get_hwthreads");
+   DENTER(TOP_LAYER);
 
    /* get the total amount of threads */
    hwthreads = get_execd_amount_of_threads();
@@ -644,7 +644,7 @@ static int sge_get_topology(const char* qualified_hostname, lList **lpp) {
    char* topology = NULL;
    int topology_length = 0;
 
-   DENTER(TOP_LAYER, "sge_get_topology");
+   DENTER(TOP_LAYER);
    
    if (get_execd_topology(&topology, &topology_length)) {
       /* add topology to return value */
@@ -669,7 +669,7 @@ static int sge_get_topology_inuse(const char* qualified_hostname, lList **lpp) {
    /* pointer to topology string */
    char* topology = NULL;
    
-   DENTER(TOP_LAYER, "sge_get_topology_inuse");
+   DENTER(TOP_LAYER);
 
    if (get_execd_topology_in_use(&topology)) {
       /* add topology to return value */
@@ -694,7 +694,7 @@ static int sge_get_loadavg(const char* qualified_hostname, lList **lpp)
    sge_mem_info_t mem_info;
 #endif
 
-   DENTER(TOP_LAYER, "sge_get_loadavg");
+   DENTER(TOP_LAYER);
 
    loads = sge_getloadavg(avg, 3);
    nprocs = sge_nprocs();
@@ -828,14 +828,14 @@ void update_job_usage(const char* qualified_hostname)
 {
    lList *usage_list = NULL;
    lListElem *jr;
-   lListElem *usage;
+   const lListElem *usage;
 
-   DENTER(TOP_LAYER, "update_job_usage");
+   DENTER(TOP_LAYER);
 
    if (mconf_get_simulate_jobs()) {
       lListElem *jr;
 
-      for_each(jr, jr_list) {
+      for_each_rw(jr, jr_list) {
          add_usage(jr, USAGE_ATTR_CPU, NULL, 0.1);
          add_usage(jr, USAGE_ATTR_MEM, NULL, 0.1);
          add_usage(jr, USAGE_ATTR_IO, NULL, 0.0);
@@ -885,14 +885,14 @@ void update_job_usage(const char* qualified_hostname)
    /* replace existing usage in the job report with the new one */
    for_each(usage, usage_list) {
       u_long32 job_id;
-      lListElem *ja_task;
+      const lListElem *ja_task;
 
       job_id = lGetUlong(usage, JB_job_number);
 
       for_each(ja_task, lGetList(usage, JB_ja_tasks)) {
          u_long32 ja_task_id;
          lListElem *uep;
-         lListElem *pe_task;
+         const lListElem *pe_task;
 
          ja_task_id = lGetUlong(ja_task, JAT_task_number);
          /* search matching job report */
@@ -1145,7 +1145,7 @@ static void get_reserved_usage(const char *qualified_hostname, lList **job_usage
    lEnumeration *what;
    u_long32 now;
 
-   DENTER(TOP_LAYER, "get_reserved_usage");
+   DENTER(TOP_LAYER);
 
    now = sge_get_gmt();
    what = lWhat("%T(%I %I)", JB_Type, JB_job_number, JB_ja_tasks);
@@ -1165,7 +1165,7 @@ static void get_reserved_usage(const char *qualified_hostname, lList **job_usage
 
       for_each (ja_task, lGetList(job, JB_ja_tasks)) {
          u_long32 ja_task_id;
-         lListElem *pe_task;
+         const lListElem *pe_task;
 
          ja_task_id = lGetUlong(ja_task, JAT_task_number);
 

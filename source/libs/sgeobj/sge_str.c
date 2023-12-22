@@ -83,9 +83,9 @@ str_list_append_to_dstring(const lList *this_list, dstring *string,
 {
    const char *ret = NULL;
 
-   DENTER(STR_LAYER, "str_list_append_to_dstring");
+   DENTER(STR_LAYER);
    if (string != NULL) {
-      lListElem *elem = NULL;
+      const lListElem *elem = NULL;
       bool printed = false;
 
       for_each(elem, this_list) {
@@ -140,7 +140,7 @@ str_list_parse_from_string(lList **this_list,
 {
    bool ret = true;
 
-   DENTER(STR_LAYER, "str_list_parse_from_dstring");
+   DENTER(STR_LAYER);
    if (this_list != NULL && string != NULL && delimitor != NULL) {
       struct saved_vars_s *context = NULL;
       const char *token;
@@ -180,9 +180,9 @@ str_list_is_valid(const lList *this_list, lList **answer_list)
 {
    bool ret = true;
 
-   DENTER(STR_LAYER, "str_list_is_valid");
+   DENTER(STR_LAYER);
    if (this_list != NULL) {
-      lListElem *elem;
+      const lListElem *elem;
 
       for_each(elem, this_list) {
          if (lGetString(elem, ST_name) == NULL) {
@@ -200,11 +200,11 @@ str_list_transform_user_list(lList **this_list, lList **answer_list, const char 
 {
    bool ret = true;
 
-   DENTER(STR_LAYER, "str_list_transform_user_list");
+   DENTER(STR_LAYER);
    if (this_list != NULL && *this_list != NULL) {
       lListElem *elem;
 
-      for_each(elem, *this_list) {
+      for_each_rw (elem, *this_list) {
          const char *string = lGetString(elem, ST_name);
 
          if (string != NULL) {

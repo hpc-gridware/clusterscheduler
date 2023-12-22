@@ -107,6 +107,5 @@ char **argv
 
    printf ("\n[end of test]\n"); 
  
-   DEXIT;
-   return 0;
+   DRETURN(0);
 }

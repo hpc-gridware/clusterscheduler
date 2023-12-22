@@ -39,6 +39,6 @@ void remove_immediate_job(lList *job_list, lListElem *job, order_t *orders, int 
 int remove_immediate_jobs(lList *pending_job_list, lList *running_job_list,
                           order_t *orders);
 
-int order_remove_immediate(lListElem *job, lListElem *ja_task, order_t *orders);
+int order_remove_immediate(const lListElem *job, const lListElem *ja_task, order_t *orders);
 
 #endif /* _INTERACTIVE_SCHED_H_ */

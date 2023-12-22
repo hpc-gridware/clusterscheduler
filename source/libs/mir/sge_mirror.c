@@ -289,7 +289,7 @@ sge_mirror_initialize(sge_evc_class_t *evc, ev_registration_id id, const char *n
                       evm_mod_func_t mod_func, evm_add_func_t add_func,
                       evm_remove_func_t remove_func, evm_ack_func_t ack_func)
 {
-   DENTER(TOP_LAYER, "sge_mirror_initialize");
+   DENTER(TOP_LAYER);
 
    evc->ec_local.update_func = update_func;
    evc->ec_local.mod_func = mod_func;
@@ -331,7 +331,7 @@ sge_mirror_initialize(sge_evc_class_t *evc, ev_registration_id id, const char *n
 *******************************************************************************/
 sge_mirror_error sge_mirror_shutdown(sge_evc_class_t *evc)
 {
-   DENTER(TOP_LAYER, "sge_mirror_shutdown");
+   DENTER(TOP_LAYER);
 
    if (evc && evc->ec_is_initialized(evc)) {
       sge_mirror_unsubscribe(evc, SGE_TYPE_ALL);
@@ -390,10 +390,10 @@ sge_mirror_error sge_mirror_subscribe(sge_evc_class_t *evc,
 {
    sge_mirror_error ret = SGE_EM_OK;
 
-   DENTER(TOP_LAYER, "sge_mirror_subscribe");
+   DENTER(TOP_LAYER);
 
    if (type < 0 || type > SGE_TYPE_ALL) {
-      ERROR((SGE_EVENT, MSG_MIRROR_INVALID_OBJECT_TYPE_SI, SGE_FUNC, type));
+      ERROR((SGE_EVENT, MSG_MIRROR_INVALID_OBJECT_TYPE_SI, __func__, type));
       DRETURN(SGE_EM_BAD_ARG);
    }
 
@@ -784,10 +784,10 @@ _sge_mirror_subscribe(sge_evc_class_t *evc,
 sge_mirror_error sge_mirror_unsubscribe(sge_evc_class_t *evc, sge_object_type type)
 {
    sge_mirror_error ret = SGE_EM_OK;
-   DENTER(TOP_LAYER, "sge_mirror_unsubscribe");
+   DENTER(TOP_LAYER);
 
    if (type < 0 || type > SGE_TYPE_ALL) {
-      ERROR((SGE_EVENT, MSG_MIRROR_INVALID_OBJECT_TYPE_SI, SGE_FUNC, type));
+      ERROR((SGE_EVENT, MSG_MIRROR_INVALID_OBJECT_TYPE_SI, __func__, type));
       DRETURN(SGE_EM_BAD_ARG);
    }
 
@@ -810,7 +810,7 @@ static sge_mirror_error _sge_mirror_unsubscribe(sge_evc_class_t *evc, sge_object
 {
    mirror_description *mirror_base = mir_get_mirror_base();
  
-   DENTER(TOP_LAYER, "_sge_mirror_unsubscribe");
+   DENTER(TOP_LAYER);
  
    /* type has been checked in calling function - clear callback information */
    mirror_base[type].callback_before  = NULL;
@@ -1022,7 +1022,7 @@ sge_mirror_error sge_mirror_process_events(sge_evc_class_t *evc)
    sge_mirror_error ret = SGE_EM_OK;
    static int test_debug = 0;
 
-   DENTER(TOP_LAYER, "sge_mirror_process_events");
+   DENTER(TOP_LAYER);
 
    if (evc && evc->ec_get(evc, &event_list, false)) {
       if (event_list != NULL) {
@@ -1107,13 +1107,13 @@ sge_mirror_process_event_list_(sge_evc_class_t *evc, lList *event_list)
    int num_events = 0;
    mirror_description *mirror_base = mir_get_mirror_base();
 
-   DENTER(TOP_LAYER, "sge_mirror_process_event_list");
+   DENTER(TOP_LAYER);
 
    PROF_START_MEASUREMENT(SGE_PROF_MIRROR);
 
    function_ret = SGE_EM_OK;
 
-   for_each(event, event_list) {
+   for_each_rw(event, event_list) {
       sge_mirror_error ret = SGE_EM_OK;
       if (no_more_events) {
          break;
@@ -1486,7 +1486,7 @@ sge_mirror_process_event(sge_evc_class_t *evc, mirror_description *mirror_base,
    char buffer[1024];
    dstring buffer_wrapper;
 
-   DENTER(TOP_LAYER, "sge_mirror_process_event");
+   DENTER(TOP_LAYER);
 
    sge_dstring_init(&buffer_wrapper, buffer, sizeof(buffer));
 
@@ -1544,7 +1544,7 @@ static sge_callback_result
 sge_mirror_process_shutdown(sge_evc_class_t *evc, sge_object_type type,
                             sge_event_action action, lListElem *event, void *clientdata)
 {
-   DENTER(TOP_LAYER, "sge_mirror_process_shutdown");
+   DENTER(TOP_LAYER);
 
    DPRINTF(("shutting down sge mirror\n"));
    sge_mirror_shutdown(evc);
@@ -1560,7 +1560,7 @@ sge_mirror_process_mark4registration(sge_evc_class_t *evc,
                                      lListElem *event,
                                      void *clientdata)
 {
-   DENTER(TOP_LAYER, "sge_mirror_process_mark4registration");
+   DENTER(TOP_LAYER);
 
    DPRINTF(("mark4registration - this happens for ACK TIMEOUT or QMASTER GOES DOWN event\n"));
 
@@ -1578,7 +1578,7 @@ generic_update_master_list(sge_evc_class_t *evc, sge_object_type type,
    int key_nm;
    const char *key;
 
-   DENTER(TOP_LAYER, "generic_update_master_list");
+   DENTER(TOP_LAYER);
 
    list = object_type_get_master_list_rw(type);
    list_descr = lGetListDescr(lGetList(event, ET_new_version));
@@ -1636,7 +1636,7 @@ sge_mirror_update_master_list_str_key(lList **list, const lDescr *list_descr,
    lListElem *ep;
    sge_mirror_error ret;
 
-   DENTER(TOP_LAYER, "sge_mirror_update_master_list_str_key");
+   DENTER(TOP_LAYER);
 
 #if 0
    ep = lGetElemStr(*list, key_nm, key);
@@ -1692,7 +1692,7 @@ sge_mirror_error sge_mirror_update_master_list_host_key(lList **list, const lDes
    lListElem *ep;
    sge_mirror_error ret;
 
-   DENTER(TOP_LAYER, "sge_mirror_update_master_list_host_key");
+   DENTER(TOP_LAYER);
 
    ep = lGetElemHostRW(*list, key_nm, key);
    ret = sge_mirror_update_master_list(list, list_descr, ep, key, action, event);
@@ -1742,7 +1742,7 @@ sge_mirror_update_master_list(lList **list, const lDescr *list_descr,
 {
    lList *data_list = NULL;
 
-   DENTER(TOP_LAYER, "sge_mirror_update_master_list");
+   DENTER(TOP_LAYER);
 
    switch (action) {
       case SGE_EMA_LIST:
@@ -1831,7 +1831,7 @@ ar_update_master_list(sge_evc_class_t *evc, sge_object_type type,
    int key_nm;
    const char *key;
 
-   DENTER(TOP_LAYER, "ar_update_master_list");
+   DENTER(TOP_LAYER);
 
    list = object_type_get_master_list_rw(type);
    list_descr = lGetListDescr(lGetList(event, ET_new_version));
@@ -1881,7 +1881,7 @@ static sge_mirror_error sge_mirror_update_master_list_ar_key(lList **list, const
    lListElem *ep = NULL;
    sge_mirror_error ret;
 
-   DENTER(TOP_LAYER, "sge_mirror_update_master_list_ar_key");
+   DENTER(TOP_LAYER);
 
    if (list != NULL) {
       if (key != NULL) {

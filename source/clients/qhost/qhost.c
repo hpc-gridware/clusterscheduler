@@ -100,7 +100,7 @@ static int xml_report_job_finished(qhost_report_handler_t* handler, const char *
 
 static int xml_report_started(qhost_report_handler_t* handler, lList **alpp)
 {
-   DENTER(TOP_LAYER, "xml_report_started");
+   DENTER(TOP_LAYER);
 
    printf("<?xml version='1.0'?>\n");
    printf("<qhost xmlns:xsd=\"https://github.com/gridengine/gridengine/raw/master/source/dist/util/resources/schemas/qhost/qhost.xsd\">\n");
@@ -110,7 +110,7 @@ static int xml_report_started(qhost_report_handler_t* handler, lList **alpp)
 
 static int xml_report_finished(qhost_report_handler_t* handler, lList **alpp)
 {
-   DENTER(TOP_LAYER, "xml_report_finished");
+   DENTER(TOP_LAYER);
    
    printf("</qhost>\n");
    
@@ -121,11 +121,11 @@ static qhost_report_handler_t* xml_report_handler_create(lList **alpp)
 {
    qhost_report_handler_t* ret = (qhost_report_handler_t*)sge_malloc(sizeof(qhost_report_handler_t));
 
-   DENTER(TOP_LAYER, "xml_report_handler_create");
+   DENTER(TOP_LAYER);
 
    if (ret == NULL ) {
       answer_list_add_sprintf(alpp, STATUS_EMALLOC, ANSWER_QUALITY_ERROR,
-                              MSG_MEM_MEMORYALLOCFAILED_S, SGE_FUNC);
+                              MSG_MEM_MEMORYALLOCFAILED_S, __func__);
       DRETURN(NULL);
    }
    /*
@@ -134,7 +134,7 @@ static qhost_report_handler_t* xml_report_handler_create(lList **alpp)
    ret->ctx = sge_malloc(sizeof(dstring));
    if (ret->ctx == NULL ) {
       answer_list_add_sprintf(alpp, STATUS_EMALLOC, ANSWER_QUALITY_ERROR,
-                              MSG_MEM_MEMORYALLOCFAILED_S, SGE_FUNC);
+                              MSG_MEM_MEMORYALLOCFAILED_S, __func__);
       DRETURN(NULL);
    }
    /*
@@ -169,7 +169,7 @@ static qhost_report_handler_t* xml_report_handler_create(lList **alpp)
 
 static int xml_report_handler_destroy(qhost_report_handler_t** handler, lList **alpp)
 {
-   DENTER(TOP_LAYER, "xml_report_handler_destroy");
+   DENTER(TOP_LAYER);
 
    if (handler != NULL && *handler != NULL ) {
       sge_dstring_free((dstring*)(*handler)->ctx);
@@ -183,7 +183,7 @@ static int xml_report_handler_destroy(qhost_report_handler_t** handler, lList **
 
 static int xml_report_host_begin(qhost_report_handler_t* handler, const char* host_name, lList **alpp)
 {
-   DENTER(TOP_LAYER, "xml_report_host_begin");
+   DENTER(TOP_LAYER);
 
    sge_dstring_clear((dstring*)handler->ctx);
    escape_string(host_name, (dstring*)handler->ctx);
@@ -194,7 +194,7 @@ static int xml_report_host_begin(qhost_report_handler_t* handler, const char* ho
 
 static int xml_report_host_string_value(qhost_report_handler_t* handler, const char*name, const char *value, lList **alpp)
 {
-   DENTER(TOP_LAYER, "xml_report_host_string_value");
+   DENTER(TOP_LAYER);
 
    sge_dstring_clear((dstring*)handler->ctx);
    escape_string(name, (dstring*)handler->ctx);
@@ -208,7 +208,7 @@ static int xml_report_host_string_value(qhost_report_handler_t* handler, const c
 
 static int xml_report_host_ulong_value(qhost_report_handler_t* handler, const char* name, u_long32 value, lList **alpp)
 {
-   DENTER(TOP_LAYER, "xml_report_host_ulong_value");
+   DENTER(TOP_LAYER);
 
    sge_dstring_clear((dstring*)handler->ctx);
    escape_string(name, (dstring*)handler->ctx);
@@ -219,7 +219,7 @@ static int xml_report_host_ulong_value(qhost_report_handler_t* handler, const ch
 
 static int xml_report_host_finished(qhost_report_handler_t* handler, const char* host_name, lList **alpp)
 {
-   DENTER(TOP_LAYER, "xml_report_host_finished");
+   DENTER(TOP_LAYER);
 
    printf(" </host>\n");   
 
@@ -228,7 +228,7 @@ static int xml_report_host_finished(qhost_report_handler_t* handler, const char*
 
 static int xml_report_resource_value(qhost_report_handler_t* handler, const char* dominance, const char* name, const char* value, lList **alpp)
 {
-   DENTER(TOP_LAYER, "xml_report_resource_value");
+   DENTER(TOP_LAYER);
 
    sge_dstring_clear((dstring*)handler->ctx);
    escape_string(name, (dstring*)handler->ctx);
@@ -247,7 +247,7 @@ static int xml_report_resource_value(qhost_report_handler_t* handler, const char
 
 static int xml_report_queue_begin(qhost_report_handler_t* handler, const char* qname, lList **alpp)
 {
-   DENTER(TOP_LAYER, "xml_report_queue_begin");
+   DENTER(TOP_LAYER);
 
    sge_dstring_clear((dstring*)handler->ctx);
    escape_string(qname, (dstring*)handler->ctx);
@@ -258,7 +258,7 @@ static int xml_report_queue_begin(qhost_report_handler_t* handler, const char* q
 
 static int xml_report_queue_string_value(qhost_report_handler_t* handler, const char* qname, const char* name, const char *value, lList **alpp)
 {
-   DENTER(TOP_LAYER, "xml_report_queue_string_value");
+   DENTER(TOP_LAYER);
 
    sge_dstring_clear((dstring*)handler->ctx);
    escape_string(qname, (dstring*)handler->ctx);
@@ -277,7 +277,7 @@ static int xml_report_queue_string_value(qhost_report_handler_t* handler, const 
 
 static int xml_report_queue_ulong_value(qhost_report_handler_t* handler, const char* qname, const char* name, u_long32 value, lList **alpp)
 {
-   DENTER(TOP_LAYER, "xml_report_queue_ulong_value");
+   DENTER(TOP_LAYER);
 
    sge_dstring_clear((dstring*)handler->ctx);
    escape_string(qname, (dstring*)handler->ctx);
@@ -292,7 +292,7 @@ static int xml_report_queue_ulong_value(qhost_report_handler_t* handler, const c
 
 static int xml_report_queue_finished(qhost_report_handler_t* handler, const char* qname, lList **alpp)
 {
-   DENTER(TOP_LAYER, "xml_report_queue_finished");
+   DENTER(TOP_LAYER);
 
    printf(" </queue>\n");   
 
@@ -301,7 +301,7 @@ static int xml_report_queue_finished(qhost_report_handler_t* handler, const char
 
 static int xml_report_job_begin(qhost_report_handler_t* handler, const char *qname, const char* jobname, lList **alpp)
 {
-   DENTER(TOP_LAYER, "xml_report_job_begin");
+   DENTER(TOP_LAYER);
 
    sge_dstring_clear((dstring*)handler->ctx);
    escape_string(jobname, (dstring*)handler->ctx);
@@ -312,7 +312,7 @@ static int xml_report_job_begin(qhost_report_handler_t* handler, const char *qna
 
 static int xml_report_job_string_value(qhost_report_handler_t* handler, const char *qname, const char* jobname, const char* name, const char *value, lList **alpp)
 {
-   DENTER(TOP_LAYER, "xml_report_job_string_value");
+   DENTER(TOP_LAYER);
 
    sge_dstring_clear((dstring*)handler->ctx);
    escape_string(jobname, (dstring*)handler->ctx);
@@ -331,7 +331,7 @@ static int xml_report_job_string_value(qhost_report_handler_t* handler, const ch
 
 static int xml_report_job_ulong_value(qhost_report_handler_t* handler, const char *qname, const char* jobname, const char* name, u_long32 value, lList **alpp)
 {
-   DENTER(TOP_LAYER, "xml_report_job_ulong_value");
+   DENTER(TOP_LAYER);
 
    sge_dstring_clear((dstring*)handler->ctx);
    escape_string(jobname, (dstring*)handler->ctx);
@@ -346,7 +346,7 @@ static int xml_report_job_ulong_value(qhost_report_handler_t* handler, const cha
 
 static int xml_report_job_double_value(qhost_report_handler_t* handler, const char *qname, const char* jobname, const char* name, double value, lList **alpp)
 {
-   DENTER(TOP_LAYER, "xml_report_job_double_value");
+   DENTER(TOP_LAYER);
 
    sge_dstring_clear((dstring*)handler->ctx);
    escape_string(jobname, (dstring*)handler->ctx);
@@ -361,7 +361,7 @@ static int xml_report_job_double_value(qhost_report_handler_t* handler, const ch
 
 static int xml_report_job_finished(qhost_report_handler_t* handler, const char *qname, const char* job_name, lList **alpp)
 {
-   DENTER(TOP_LAYER, "xml_report_job_finished");
+   DENTER(TOP_LAYER);
 
    printf(" </job>\n");   
 
@@ -452,8 +452,7 @@ int main(int argc, char **argv)
 
    sge_prof_cleanup();
    SGE_EXIT((void**)&ctx, 0); /* 0 means ok - others are errors */
-   DEXIT;
-   return 0;
+   DRETURN(0);
 }
 
 
@@ -477,7 +476,7 @@ FILE *fp
    dstring ds;
    char buffer[256];
 
-   DENTER(TOP_LAYER, "qhost_usage");
+   DENTER(TOP_LAYER);
 
    if (fp == NULL) {
       DRETURN(false);
@@ -516,7 +515,7 @@ lList **alpp
 ) {
    char **sp;
    char **rp;
-   DENTER(TOP_LAYER, "sge_parse_cmdline_qhost");
+   DENTER(TOP_LAYER);
 
    rp = ++argv;
 
@@ -587,7 +586,7 @@ static int sge_parse_qhost(lList **ppcmdline,
    lListElem *ep;
    int ret = 1;
 
-   DENTER(TOP_LAYER, "sge_parse_host");
+   DENTER(TOP_LAYER);
  
    /* Loop over all options. Only valid options can be in the
       ppcmdline list. 
@@ -609,7 +608,7 @@ static int sge_parse_qhost(lList **ppcmdline,
          /* 
          ** resolve hostnames and replace them in list
          */
-         for_each(ep, *pphost) {
+         for_each_rw(ep, *pphost) {
             if (sge_resolve_host(ep, ST_name) != CL_RETVAL_OK) {
                char buf[BUFSIZ];
                sprintf(buf, MSG_SGETEXT_CANTRESOLVEHOST_S, lGetString(ep,ST_name) );

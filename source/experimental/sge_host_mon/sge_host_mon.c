@@ -240,13 +240,12 @@ ulong host_sge_tickets, total_host_tickets=0, num_running_jobs_on_host;
 #ifdef TEST_CALC_HOST_USAGE
 FILE *fpdchu;
 #endif
-   DENTER(TOP_LAYER, "calculate_host_usage");
+   DENTER(TOP_LAYER);
 #ifdef TEST_CALC_HOST_USAGE
    fpdchu = fopen("/tmp/sge_debug_calc_host_usage.out", "a");
 #endif
    if (!(hosts)) {
-      DEXIT;
-      return -1;
+      DRETURN(-1);
    }
       /* split job list in finished jobs and others */
       if (sge_split_job_finished( 
@@ -258,8 +257,7 @@ FILE *fpdchu;
          fprintf(fpdchu, "%s\n", MSG_JOB_SPLITJOBLISTFINISHSTATEFAILED );
          fclose(fpdchu);
 #endif
-         DEXIT;
-         return -1;
+         DRETURN(-1);
       }
 
    /* split job list in running jobs and others */
@@ -275,8 +273,7 @@ FILE *fpdchu;
          fprintf(fpdchu, "%s\n", MSG_JOB_SPLITJOBLISTRUNNINGSTATEFAILED );
          fclose(fpdchu);
 #endif
-      DEXIT;
-      return -1;
+      DRETURN(-1);
    }
 
 #ifdef notdef
@@ -514,8 +511,7 @@ was added here because it was a convenient place to gather the information */
    lDumpList(fpdchu, hosts, 5);
    fclose(fpdchu);
 #endif
-   DEXIT;
-   return 0;
+   DRETURN(0);
 }
 
 
@@ -540,19 +536,17 @@ char *host_name;
 u_long host_sge_tickets;
 lList *running_jobs;
 lListElem *hep, *running_job_elem, *rjq;
-   DENTER(TOP_LAYER, "calculate_host_tickets");
+   DENTER(TOP_LAYER);
 
    if (!hosts) {
-      DEXIT;
-      return -1;
+      DRETURN(-1);
    }
 
   if (!running) {
       for_each (hep, *hosts) {
          lSetUlong(hep, EH_sge_tickets, 0);
       }
-      DEXIT;
-      return 0;
+      DRETURN(0);
    }
 
    for_each (hep, hosts) {         
@@ -573,8 +567,7 @@ lListElem *hep, *running_job_elem, *rjq;
    for_each (hep, hosts) {       
      lSetDouble(hep, EH_sge_ticket_pct, double(lGetUlong(hep, EH_sge_tickets))/total_host_tickets);
    }   /* for_each (hep, hosts) */
-   DEXIT;
-   return 0;
+   DRETURN(0);
 }
 
 #endif
@@ -600,11 +593,10 @@ int calculate_host_pcts(lList *hosts, lList *centry)
    lListElem *hep;
    char *host_name;
 
-   DENTER(TOP_LAYER, "calculate_host_pcts");
+   DENTER(TOP_LAYER);
 
    if (!hosts) {
-      DEXIT;
-      return -1;
+      DRETURN(-1);
    }
 
 
@@ -642,8 +634,7 @@ int calculate_host_pcts(lList *hosts, lList *centry)
       } /* if (strcmp(host_name,"global")) */
    }  /* for_each (hep, hosts) */
 
-   DEXIT;
-   return 0;
+   DRETURN(0);
 }
 
 

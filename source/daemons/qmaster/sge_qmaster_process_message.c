@@ -127,7 +127,7 @@ void sge_qmaster_process_message(sge_gdi_ctx_class_t *ctx, monitoring_t *monitor
    int res;
    struct_msg_t msg;
 
-   DENTER(TOP_LAYER, "sge_qmaster_process_message");
+   DENTER(TOP_LAYER);
    
    memset((void*)&msg, 0, sizeof(struct_msg_t));
 
@@ -186,7 +186,7 @@ do_gdi_packet(sge_gdi_ctx_class_t *ctx, lList **answer_list,
    sge_gdi_packet_class_t *packet = NULL;
    bool local_ret;
 
-   DENTER(TOP_LAYER, "do_gdi_packet");
+   DENTER(TOP_LAYER);
 
    /*
     * unpack the packet and set values 
@@ -311,7 +311,7 @@ do_report_request(sge_gdi_ctx_class_t *ctx, struct_msg_t *aMsg, monitoring_t *mo
    const char *myprogname = ctx->get_progname(ctx);
    sge_gdi_packet_class_t *packet = NULL;
 
-   DENTER(TOP_LAYER, "do_report_request");
+   DENTER(TOP_LAYER);
 
    /* Load reports are only accepted from admin/root user */
    if (!sge_security_verify_unique_identifier(true, admin_user, myprogname, 0,
@@ -377,17 +377,16 @@ static void do_event_client_exit(sge_gdi_ctx_class_t *ctx, struct_msg_t *aMsg, m
 {
    u_long32 client_id = 0;
 
-   DENTER(TOP_LAYER, "do_event_client_exit");
+   DENTER(TOP_LAYER);
 
    if (unpackint(&(aMsg->buf), &client_id) != PACK_SUCCESS)
    {
       ERROR((SGE_EVENT, MSG_COM_UNPACKINT_I, 1));
-      DPRINTF(("%s: client id unpack failed - host %s - sender %s\n", SGE_FUNC, aMsg->snd_host, aMsg->snd_name));
-      DEXIT;
-      return;
+      DPRINTF(("%s: client id unpack failed - host %s - sender %s\n", __func__, aMsg->snd_host, aMsg->snd_name));
+      DRETURN_VOID;
    }
 
-   DPRINTF(("%s: remove client " sge_u32 " - host %s - sender %s\n", SGE_FUNC, client_id, aMsg->snd_host, aMsg->snd_name));
+   DPRINTF(("%s: remove client " sge_u32 " - host %s - sender %s\n", __func__, client_id, aMsg->snd_host, aMsg->snd_name));
 
    /* 
    ** check for scheduler shutdown if the request comes from admin or root 
@@ -399,15 +398,13 @@ static void do_event_client_exit(sge_gdi_ctx_class_t *ctx, struct_msg_t *aMsg, m
       const char *myprogname = ctx->get_progname(ctx);
       if (false == sge_security_verify_unique_identifier(true, admin_user, myprogname, 0,
                                                aMsg->snd_host, aMsg->snd_name, aMsg->snd_id)) {
-         DEXIT;
-         return;
+         DRETURN_VOID;
        }
    }
    
    sge_remove_event_client(client_id);
 
-   DEXIT;
-   return;
+   DRETURN_VOID;
 } /* do_event_client_exit() */
 
 
@@ -431,7 +428,7 @@ static void do_c_ack(sge_gdi_ctx_class_t *ctx, struct_msg_t *aMsg, monitoring_t 
    const char *myprogname = ctx->get_progname(ctx);
    lListElem *ack = NULL;
 
-   DENTER(TOP_LAYER, "do_c_ack");
+   DENTER(TOP_LAYER);
 
    MONITOR_WAIT_TIME(SGE_LOCK(LOCK_GLOBAL, LOCK_WRITE), monitor);
 
@@ -490,7 +487,7 @@ static void sge_c_job_ack(sge_gdi_ctx_class_t *ctx, const char *host, const char
    lList *answer_list = NULL;
    bool job_spooling = ctx->get_job_spooling(ctx);
 
-   DENTER(TOP_LAYER, "sge_c_job_ack");
+   DENTER(TOP_LAYER);
 
    if (strcmp(prognames[EXECD], commproc)) {
       ERROR((SGE_EVENT, MSG_COM_ACK_S, commproc));

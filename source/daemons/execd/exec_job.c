@@ -176,7 +176,7 @@ lListElem* responsible_queue(lListElem *jep, lListElem *jatep, lListElem *petep)
 {
    lListElem *master_q = NULL;
 
-   DENTER(TOP_LAYER, "responsible_queue");
+   DENTER(TOP_LAYER);
 
    if (petep == NULL) {
       master_q = lGetObject(lFirst(lGetList(jatep, JAT_granted_destin_identifier_list)), JG_queue);
@@ -316,7 +316,8 @@ int sge_exec_job(sge_gdi_ctx_class_t *ctx, lListElem *jep, lListElem *jatep,
 
    char mail_str[1024], *shepherd_name;
    const lList *gdil;
-   lListElem *gdil_ep, *master_q;
+   const lListElem *gdil_ep;
+   lListElem *master_q;
    lListElem *ep;
    const lListElem *env;
    lList *environmentList = NULL;
@@ -361,7 +362,7 @@ int sge_exec_job(sge_gdi_ctx_class_t *ctx, lListElem *jep, lListElem *jatep,
       char* shepherd_cmd = NULL;
       char* set_token_cmd = NULL;
 
-      DENTER(TOP_LAYER, "sge_exec_job");
+      DENTER(TOP_LAYER);
 
       sge_dstring_init(&cwd_out, cwd_out_buffer, sizeof(cwd_out_buffer));
       sge_dstring_init(&active_dir, active_dir_buffer, sizeof(active_dir_buffer));
@@ -974,8 +975,7 @@ int sge_exec_job(sge_gdi_ctx_class_t *ctx, lListElem *jep, lListElem *jatep,
       if (!fp) {
          lFreeList(&environmentList);
          snprintf(err_str, err_length, MSG_FILE_NOOPEN_SS, str_fname, strerror(errno));
-         DEXIT;
-         return -2;
+         DRETURN(-2);
       }
 
 #ifdef COMPILE_DC
@@ -994,8 +994,7 @@ int sge_exec_job(sge_gdi_ctx_class_t *ctx, lListElem *jep, lListElem *jatep,
             lFreeList(&environmentList);
             snprintf(err_str, err_length, SFNMAX, MSG_EXECD_NOSGID);
             FCLOSE(fp);
-            DEXIT;
-            return(-2);
+            DRETURN(-2);
          }
 
 #     endif
@@ -1011,8 +1010,7 @@ int sge_exec_job(sge_gdi_ctx_class_t *ctx, lListElem *jep, lListElem *jatep,
              snprintf(err_str, err_length, SFNMAX, MSG_EXECD_NOPARSEGIDRANGE);
              lFreeList(&environmentList);
              FCLOSE(fp);
-             DEXIT;
-             return (-2);
+             DRETURN((-2));
          } 
 
          /* search next add_grp_id */
@@ -1024,8 +1022,7 @@ int sge_exec_job(sge_gdi_ctx_class_t *ctx, lListElem *jep, lListElem *jatep,
                snprintf(err_str, err_length, SFNMAX, MSG_EXECD_NOADDGID);
                lFreeList(&environmentList);
                FCLOSE(fp);
-               DEXIT;
-               return (-1);
+               DRETURN((-1));
             }
          }
 
@@ -1433,8 +1430,7 @@ int sge_exec_job(sge_gdi_ctx_class_t *ctx, lListElem *jep, lListElem *jatep,
             FCLOSE(fp);
             lFreeList(&environmentList);
             sge_dstring_free(&core_binding_strategy_string);
-            DEXIT;
-            return -2;
+            DRETURN(-2);
             /*
             ** this causes a general failure
             */
@@ -1451,7 +1447,7 @@ int sge_exec_job(sge_gdi_ctx_class_t *ctx, lListElem *jep, lListElem *jatep,
 
    {
       const lList *args;
-      lListElem *se;
+      const lListElem *se;
 
       int nargs=1;
      
@@ -1507,8 +1503,7 @@ int sge_exec_job(sge_gdi_ctx_class_t *ctx, lListElem *jep, lListElem *jatep,
             lFreeList(&environmentList);
             FCLOSE(fp);
             sge_dstring_free(&core_binding_strategy_string);
-            DEXIT;
-            return -1;
+            DRETURN(-1);
          }
       }
    }
@@ -1689,8 +1684,7 @@ int sge_exec_job(sge_gdi_ctx_class_t *ctx, lListElem *jep, lListElem *jatep,
          if (SGE_STAT(str_script_file, &buf)) {
             snprintf(err_str, err_length, MSG_EXECD_UNABLETOFINDSCRIPTFILE_SS,
                     str_script_file, strerror(errno));
-            DEXIT;
-            return -2;
+            DRETURN(-2);
          }
       }   
    }
@@ -1703,8 +1697,7 @@ int sge_exec_job(sge_gdi_ctx_class_t *ctx, lListElem *jep, lListElem *jatep,
       sprintf(shepherd_path, "%s/%s", binary_path, shepherd_name);
       if (SGE_STAT(shepherd_path, &buf)) {
          snprintf(err_str, err_length, MSG_EXECD_NOSHEPHERD_SSS, arch, shepherd_path, strerror(errno));
-         DEXIT;
-         return -2;
+         DRETURN(-2);
       }
    }
 
@@ -1716,8 +1709,7 @@ int sge_exec_job(sge_gdi_ctx_class_t *ctx, lListElem *jep, lListElem *jatep,
          snprintf(err_str, err_length, MSG_EXECD_NOSHEPHERDWRAP_SS, shepherd_cmd, strerror(errno));
          sge_free(&pag_cmd);
          sge_free(&shepherd_cmd);
-         DEXIT;
-         return -2;
+         DRETURN(-2);
       }
    }
    else if (mconf_get_do_credentials() && feature_is_enabled(FEATURE_DCE_SECURITY)) {
@@ -1727,8 +1719,7 @@ int sge_exec_job(sge_gdi_ctx_class_t *ctx, lListElem *jep, lListElem *jatep,
          snprintf(err_str, err_length, MSG_DCE_NOSHEPHERDWRAP_SS, dce_wrapper_cmd, strerror(errno));
          sge_free(&pag_cmd);
          sge_free(&shepherd_cmd);
-         DEXIT;
-         return -2;
+         DRETURN(-2);
       }
    }
    else if (feature_is_enabled(FEATURE_AFS_SECURITY) && pag_cmd &&
@@ -1743,8 +1734,7 @@ int sge_exec_job(sge_gdi_ctx_class_t *ctx, lListElem *jep, lListElem *jatep,
             snprintf(err_str, err_length, MSG_EXECD_NOCOSHEPHERD_SSS, arch, coshepherd_path, strerror(errno));
             sge_free(&pag_cmd);
             sge_free(&shepherd_cmd);
-            DEXIT;
-            return -2;
+            DRETURN(-2);
          }
       }
       set_token_cmd = mconf_get_set_token_cmd();
@@ -1753,8 +1743,7 @@ int sge_exec_job(sge_gdi_ctx_class_t *ctx, lListElem *jep, lListElem *jatep,
          snprintf(err_str, err_length, SFNMAX, MSG_EXECD_AFSCONFINCOMPLETE);
          sge_free(&pag_cmd);
          sge_free(&shepherd_cmd);
-         DEXIT;
-         return -2;
+         DRETURN(-2);
       }
       sge_free(&set_token_cmd);
 
@@ -1764,8 +1753,7 @@ int sge_exec_job(sge_gdi_ctx_class_t *ctx, lListElem *jep, lListElem *jatep,
          snprintf(err_str, err_length, MSG_EXECD_NOCREATETOKENFILE_S, strerror(errno));
          sge_free(&pag_cmd);
          sge_free(&shepherd_cmd);
-         DEXIT;
-         return -2;
+         DRETURN(-2);
       }   
       
       cp = lGetString(jep, JB_tgt);
@@ -1773,15 +1761,13 @@ int sge_exec_job(sge_gdi_ctx_class_t *ctx, lListElem *jep, lListElem *jatep,
          snprintf(err_str, err_length, SFNMAX, MSG_EXECD_TOKENZERO);
          sge_free(&pag_cmd);
          sge_free(&shepherd_cmd);
-         DEXIT;
-         return -3; /* problem of this user */
+         DRETURN(-3); /* problem of this user */
       }
       if (write(fd, cp, len) != len) {
          snprintf(err_str, err_length, MSG_EXECD_NOWRITETOKEN_S, strerror(errno));
          sge_free(&pag_cmd);
          sge_free(&shepherd_cmd);
-         DEXIT;
-         return -2;
+         DRETURN(-2);
       }
       close(fd);
    }
@@ -1830,8 +1816,7 @@ int sge_exec_job(sge_gdi_ctx_class_t *ctx, lListElem *jep, lListElem *jatep,
       ensure chdir() works before forking. */
    if (chdir(active_dir_buffer)) {
       snprintf(err_str, err_length, MSG_FILE_CHDIR_SS, active_dir_buffer, strerror(errno));
-      DEXIT;
-      return -2;
+      DRETURN(-2);
    }
    {
 
@@ -1891,8 +1876,7 @@ int sge_exec_job(sge_gdi_ctx_class_t *ctx, lListElem *jep, lListElem *jatep,
          }
       }
 
-      DEXIT;
-      return i;
+      DRETURN(i);
    }
 
    {  /* close all fd's except 0,1,2 */ 
@@ -2011,14 +1995,13 @@ char *shell
    char* login_shells;
    int ret; 
 
-   DENTER(TOP_LAYER, "ck_login_sh");
+   DENTER(TOP_LAYER);
 
    login_shells = mconf_get_login_shells();
   
    if (login_shells == NULL) {
-      DEXIT; 
-      return 0;
-   }  
+      DRETURN(0);
+   }
 
    cp = login_shells; 
 
@@ -2034,8 +2017,7 @@ char *shell
               cp, shell, strlen(shell), ret));
       if (!ret) {
          sge_free(&login_shells);
-         DEXIT;  
-         return 1;
+         DRETURN(1);
       }
 
       /* skip name of shell, proceed until next delimiter */
@@ -2044,19 +2026,18 @@ char *shell
       }
    }
   sge_free(&login_shells);
-  DEXIT;
-  return 0;
+  DRETURN(0);
 }
 
    
 static int 
 get_nhosts(const lList *gdil_orig) {
    int nhosts = 0;
-   lListElem *ep;
+   const lListElem *ep;
    lList *cache = lCreateList("", STU_Type);
    const char *hostname;
 
-   DENTER(TOP_LAYER, "get_nhosts");
+   DENTER(TOP_LAYER);
    for_each(ep, gdil_orig) {
       hostname = lGetHost(ep, JG_qhostname);
       if (lGetElemStr(cache, STU_name, hostname) == NULL) {
@@ -2111,7 +2092,7 @@ static bool create_binding_strategy_string_linux(dstring* result, lListElem *jep
    const lListElem *binding_elem = NULL;
    const lList *binding = lGetList(jep, JB_binding);
 
-   DENTER(TOP_LAYER, "create_binding_strategy_string_linux");
+   DENTER(TOP_LAYER);
 
    if (binding != NULL) {
       /* get sublist */
@@ -2239,7 +2220,7 @@ static bool linear_linux(dstring* result, const lListElem* binding_elem, const b
    int topo_job_length    = 0;
    bool retval;
 
-   DENTER(TOP_LAYER, "linear_linux");
+   DENTER(TOP_LAYER);
    
    amount = (int) lGetUlong(binding_elem, BN_parameter_n);
 
@@ -2377,7 +2358,7 @@ static bool striding_linux(dstring* result, const lListElem* binding_elem, const
    int amount = (int) lGetUlong(binding_elem, BN_parameter_n);
    int step_size = (int) lGetUlong(binding_elem, BN_parameter_striding_step_size);
    
-   DENTER(TOP_LAYER, "striding_linux");
+   DENTER(TOP_LAYER);
 
    if (automatic == false) {
 
@@ -2470,7 +2451,7 @@ static bool explicit_linux(dstring* result, const lListElem* binding_elem)
    int socket_list_length, core_list_length;
    bool retval;
 
-   DENTER(TOP_LAYER, "explicit_linux");
+   DENTER(TOP_LAYER);
 
    request = (char*) lGetString(binding_elem, BN_parameter_explicit);
 
@@ -2560,7 +2541,7 @@ static bool create_binding_strategy_string_solaris(dstring* result,
    lList *binding = lGetList(jep, JB_binding);
    lListElem *binding_elem = NULL;
 
-   DENTER(TOP_LAYER, "create_binding_strategy_string_solaris");
+   DENTER(TOP_LAYER);
 
    if (binding != NULL && ((binding_elem = lFirst(binding)) != NULL)) {
 
@@ -2664,7 +2645,7 @@ static bool linear_automatic_solaris(dstring* result, lListElem* binding_elem,
    /* return value */
    bool retval = false;
 
-   DENTER(TOP_LAYER, "linear_automatic_solaris");
+   DENTER(TOP_LAYER);
 
    /* get mandatory parameters of -binding linear */
    amount = (int) lGetUlong(binding_elem, BN_parameter_n);
@@ -2772,7 +2753,7 @@ static bool striding_solaris(dstring* result, lListElem* binding_elem, const boo
    /* return value */
    bool retval = false;
    
-   DENTER(TOP_LAYER, "striding_solaris");
+   DENTER(TOP_LAYER);
 
    /* get mandatory parameters of -binding striding */
    amount = (int) lGetUlong(binding_elem, BN_parameter_n);
@@ -2907,7 +2888,7 @@ static bool explicit_solaris(dstring* result, lListElem* binding_elem, char* err
    binding_type_t type;
    bool retval = false;
 
-   DENTER(TOP_LAYER, "explicit_solaris");
+   DENTER(TOP_LAYER);
 
    /* get the socket and core numbers */ 
    request = (char*) lGetString(binding_elem, BN_parameter_explicit);
@@ -3021,7 +3002,7 @@ static bool parse_job_accounting_and_create_logical_list(const char* binding_str
 
    const char* pos;
 
-   DENTER(TOP_LAYER, "parse_job_accounting_and_create_logical_list");
+   DENTER(TOP_LAYER);
 
    /* get the position of the "SCCSCc" job accounting string in string */
    pos = binding_get_topology_for_job(binding_string);

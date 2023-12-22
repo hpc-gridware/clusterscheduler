@@ -90,13 +90,11 @@ int main(int argc, char *argv[])
 
    if (argc != 4) {
       show_coshepherd_version();
-      DEXIT;
-      return 1;
+      DRETURN(1);
    }
 
    if ((tokenbuf = sge_read_token(TOKEN_FILE)) == NULL) {
-      DEXIT;
-      return 1;
+      DRETURN(1);
    }   
    
    command = argv[1];

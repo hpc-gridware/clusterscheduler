@@ -124,15 +124,14 @@ static bool do_timeout_handling(unsigned long *time, int *counter)
 static void ijs_general_communication_error(
                const cl_application_error_list_elem_t *commlib_error)
 {
-   DENTER(TOP_LAYER, "ijs_general_communication_error");
+   DENTER(TOP_LAYER);
 
    if (commlib_error == NULL) {
-      DEXIT;
-      return;
+      DRETURN_VOID;
    }
 
    sge_mutex_lock("ijs_general_communication_error_mutex",
-                  SGE_FUNC, __LINE__, &ijs_general_communication_error_mutex);  
+                  __func__, __LINE__, &ijs_general_communication_error_mutex);
 
    /* save the communication error to react later */
    ijs_communication_error.com_error = commlib_error->cl_error;
@@ -230,7 +229,7 @@ static void ijs_general_communication_error(
       }
    }
    sge_mutex_unlock("ijs_general_communication_error_mutex", 
-                    SGE_FUNC, __LINE__, &ijs_general_communication_error_mutex);  
+                    __func__, __LINE__, &ijs_general_communication_error_mutex);
    DRETURN_VOID;
 }
 
@@ -238,9 +237,9 @@ int comm_get_application_error(dstring *err_msg)
 {
    int ret = COMM_RETVAL_OK;
 
-   DENTER(TOP_LAYER, "comm_get_application_error");
+   DENTER(TOP_LAYER);
    sge_mutex_lock("ijs_general_communication_error_mutex", 
-                    SGE_FUNC, __LINE__, &ijs_general_communication_error_mutex);  
+                    __func__, __LINE__, &ijs_general_communication_error_mutex);
 
    if (ijs_communication_error.com_endpoint_not_unique == true) {
       sge_dstring_sprintf(err_msg, "%s", MSG_CL_RETVAL_ENDPOINT_NOT_UNIQUE);
@@ -253,7 +252,7 @@ int comm_get_application_error(dstring *err_msg)
       ret = COMM_ACCESS_DENIED;
    }
    sge_mutex_unlock("ijs_general_communication_error_mutex", 
-                    SGE_FUNC, __LINE__, &ijs_general_communication_error_mutex);  
+                    __func__, __LINE__, &ijs_general_communication_error_mutex);
    DRETURN(ret);
 }
 
@@ -339,7 +338,7 @@ int comm_init_lib(dstring *err_msg)
 {
    int ret, ret_val = COMM_RETVAL_OK;
 
-   DENTER(TOP_LAYER, "comm_init_lib");
+   DENTER(TOP_LAYER);
 
    /*
     * To enable commlib logging to a file (see my_log_list_flush_list()
@@ -425,7 +424,7 @@ int comm_cleanup_lib(dstring *err_msg)
 {
    int ret, ret_val = COMM_RETVAL_OK;
 
-   DENTER(TOP_LAYER, "comm_cleanup_lib");
+   DENTER(TOP_LAYER);
 
    ret = cl_com_cleanup_commlib();
    if (ret != CL_RETVAL_OK) {
@@ -435,8 +434,7 @@ int comm_cleanup_lib(dstring *err_msg)
       ret_val = COMM_CANT_CLEANUP_COMMLIB;
    }
 
-   DEXIT;
-   return ret_val;
+   DRETURN(ret_val);
 }
  
 /****** sge_ijs_comm/comm_open_connection() ***********************************
@@ -515,14 +513,13 @@ int comm_open_connection(bool        b_server,
    cl_tcp_connect_t connect_type            = CL_TCP_DEFAULT;
    cl_xml_connection_type_t connection_type = CL_CM_CT_MESSAGE;
 
-   DENTER(TOP_LAYER, "open_connection");
+   DENTER(TOP_LAYER);
 
    /* Check validity of parameters */
    if (*handle != NULL) {
       sge_dstring_sprintf(err_msg, "Invalid parameter: *handle is not NULL");
       DPRINTF((sge_dstring_get_string(err_msg)));
-      DEXIT;
-      return COMM_INVALID_PARAMETER;
+      DRETURN(COMM_INVALID_PARAMETER);
    }
 
    if (b_secure == true) {
@@ -630,8 +627,7 @@ int comm_open_connection(bool        b_server,
       ret_val = comm_get_application_error(err_msg);
    }
 
-   DEXIT;
-   return ret_val;
+   DRETURN(ret_val);
 }
 
 /****** sge_ijs_comm/comm_shutdown_connection() *******************************
@@ -675,7 +671,7 @@ int comm_shutdown_connection(COMM_HANDLE *handle, const char *component_name,
    int ret;
    int ret_val = COMM_RETVAL_OK;
 
-   DENTER(TOP_LAYER, "comm_shutdown_connection");
+   DENTER(TOP_LAYER);
 
    /*
     * From here on the user shouldn't get informed of any errors occuring
@@ -701,8 +697,7 @@ int comm_shutdown_connection(COMM_HANDLE *handle, const char *component_name,
          ret_val = COMM_CANT_SHUTDOWN_HANDLE;
       }
    }
-   DEXIT;
-   return ret_val;
+   DRETURN(ret_val);
 }  
 
 /****** sge_ijs_comm/comm_set_connection_param() ******************************
@@ -741,7 +736,7 @@ int comm_set_connection_param(COMM_HANDLE *handle, int param, int value,
    int ret;
    int ret_val = COMM_RETVAL_OK;
 
-   DENTER(TOP_LAYER, "comm_set_connection_param");
+   DENTER(TOP_LAYER);
    ret = cl_commlib_set_connection_param(handle, param, value);
    if (ret != CL_RETVAL_OK) {
          sge_dstring_sprintf(err_msg, cl_get_error_text(ret));
@@ -749,8 +744,7 @@ int comm_set_connection_param(COMM_HANDLE *handle, int param, int value,
                   sge_dstring_get_string(err_msg), ret));
          ret_val = COMM_CANT_SET_CONNECTION_PARAM;
    }
-   DEXIT;
-   return ret_val;
+   DRETURN(ret_val);
 }
 
 /****** sge_ijs_comm/comm_ignore_timeouts() ***********************************
@@ -785,7 +779,7 @@ int comm_ignore_timeouts(bool b_ignore, dstring *err_msg)
    int ret     = CL_RETVAL_OK;
    int ret_val = COMM_RETVAL_OK;
 
-   DENTER(TOP_LAYER, "comm_ignore_timeouts");
+   DENTER(TOP_LAYER);
    
    cl_com_ignore_timeouts(b_ignore==true ? true : false);
    if (ret != CL_RETVAL_OK) {
@@ -794,8 +788,7 @@ int comm_ignore_timeouts(bool b_ignore, dstring *err_msg)
                   sge_dstring_get_string(err_msg), ret));
          ret_val = COMM_CANT_SET_IGNORE_TIMEOUTS;
    }
-   DEXIT;
-   return ret_val;
+   DRETURN(ret_val);
 }
 
 /****** sge_ijs_comm/comm_wait_for_connection() *******************************
@@ -851,7 +844,7 @@ int comm_wait_for_connection(COMM_HANDLE *handle,
    cl_raw_list_t           *endpoint_list = NULL;
    cl_endpoint_list_elem_t *endpoint;
 
-   DENTER(TOP_LAYER, "wait_for_connection");
+   DENTER(TOP_LAYER);
 
    if (handle == NULL) {
       return COMM_INVALID_PARAMETER;
@@ -906,8 +899,7 @@ int comm_wait_for_connection(COMM_HANDLE *handle,
    if (ret_val == COMM_RETVAL_OK) {
       ret_val = comm_get_application_error(err_msg);
    }
-   DEXIT;
-   return ret_val;
+   DRETURN(ret_val);
 }
 
 /****** sge_ijs_comm/comm_wait_for_no_connection() ****************************
@@ -957,7 +949,7 @@ int comm_wait_for_no_connection(COMM_HANDLE *handle, const char *component,
    cl_raw_list_t           *endpoint_list = NULL;
    bool                    do_exit = false;
 
-   DENTER(TOP_LAYER, "comm_wait_for_no_connection");
+   DENTER(TOP_LAYER);
   
    /*
     * In the while loop, do this:
@@ -1016,8 +1008,7 @@ int comm_wait_for_no_connection(COMM_HANDLE *handle, const char *component,
       DPRINTF(("wait_for_no_connection: cleaning up endpoint list\n"));
       cl_endpoint_list_cleanup(&endpoint_list);
    }
-   DEXIT;
-   return ret_val;
+   DRETURN(ret_val);
 }
 
 /****** sge_ijs_comm/comm_get_connection_count() ******************************
@@ -1053,7 +1044,7 @@ int comm_get_connection_count(const COMM_HANDLE *handle, dstring *err_msg)
    int                        ret_val = 1;
    cl_connection_list_elem_t* elem    = NULL;
 
-   DENTER(TOP_LAYER, "comm_get_connection_count");
+   DENTER(TOP_LAYER);
 
    ret = cl_raw_list_lock(handle->connection_list);
    if (ret != CL_RETVAL_OK) {
@@ -1075,8 +1066,7 @@ int comm_get_connection_count(const COMM_HANDLE *handle, dstring *err_msg)
       }
    }
 
-   DEXIT;
-   return ret_val;
+   DRETURN(ret_val);
 }
 
 /****** sge_ijs_comm/comm_trigger() *******************************************
@@ -1117,7 +1107,7 @@ int comm_trigger(COMM_HANDLE *handle, int synchron, dstring *err_msg)
    int ret;
    int ret_val = COMM_RETVAL_OK;
 
-   DENTER(TOP_LAYER, "comm_trigger");
+   DENTER(TOP_LAYER);
 
    ret = cl_commlib_trigger(handle, synchron);
    if (ret != CL_RETVAL_OK) {
@@ -1129,8 +1119,7 @@ int comm_trigger(COMM_HANDLE *handle, int synchron, dstring *err_msg)
    if (ret_val == COMM_RETVAL_OK) {
       ret_val = comm_get_application_error(err_msg);
    }
-   DEXIT;
-   return ret_val;
+   DRETURN(ret_val);
 }
       
 /****** sge_ijs_comm/comm_write_message() *************************************
@@ -1179,7 +1168,7 @@ unsigned long comm_write_message(COMM_HANDLE *handle,
    cl_byte_t     *sendbuf;
    unsigned long nwritten = 0;
 
-   DENTER(TOP_LAYER, "comm_write_message");
+   DENTER(TOP_LAYER);
 
    /* 
     * Copy only 'size' bytes from 'buffer' to a new sendbuf and add
@@ -1225,8 +1214,7 @@ unsigned long comm_write_message(COMM_HANDLE *handle,
                sge_dstring_get_string(err_msg), ret));
    }
    
-   DEXIT;
-   return nwritten;
+   DRETURN(nwritten);
 }
 
 /****** sge_ijs_comm/comm_flush_write_messages() ******************************
@@ -1343,7 +1331,7 @@ int comm_recv_message(COMM_HANDLE *handle, bool b_synchron,
    cl_com_message_t  *message = NULL;
    cl_com_endpoint_t *sender  = NULL;
 
-   DENTER(TOP_LAYER, "recv_message");
+   DENTER(TOP_LAYER);
 
    /* check validity of parameters */
    if (handle == NULL || recv_mess == NULL) {
@@ -1353,8 +1341,7 @@ int comm_recv_message(COMM_HANDLE *handle, bool b_synchron,
          sge_dstring_sprintf(err_msg, "Invalid parameter: recv_mess == NULL");
       }
       DPRINTF((sge_dstring_get_string(err_msg)));
-      DEXIT;
-      return COMM_INVALID_PARAMETER;
+      DRETURN(COMM_INVALID_PARAMETER);
    }
 
    ret = cl_commlib_receive_message(handle,
@@ -1451,8 +1438,7 @@ int comm_recv_message(COMM_HANDLE *handle, bool b_synchron,
    } else {
       cl_commlib_trigger(handle, b_synchron);
    }
-   DEXIT;
-   return ret_val;
+   DRETURN(ret_val);
 }
 
 /****** sge_ijs_comm/comm_free_message() **************************************
@@ -1487,7 +1473,7 @@ int comm_free_message(recv_message_t *recv_mess, dstring *err_msg)
    int ret;
    int ret_val = COMM_RETVAL_OK;
 
-   DENTER(TOP_LAYER, "comm_free_message");
+   DENTER(TOP_LAYER);
 
    if (recv_mess != NULL && recv_mess->cl_message != NULL) {
       ret = cl_com_free_message(&(recv_mess->cl_message));
@@ -1498,8 +1484,7 @@ int comm_free_message(recv_message_t *recv_mess, dstring *err_msg)
          ret_val = COMM_CANT_FREE_MESSAGE;
       }
    }
-   DEXIT;
-   return ret_val;
+   DRETURN(ret_val);
 }
 
 
@@ -1540,7 +1525,7 @@ int check_client_alive(COMM_HANDLE *handle,
    int           ret_val = COMM_RETVAL_OK;
    cl_com_SIRM_t *status = NULL;
 
-   DENTER(TOP_LAYER, "check_client_alive");
+   DENTER(TOP_LAYER);
 
    DPRINTF(("handle->connect_port = %d\n", handle->connect_port));
    DPRINTF(("handle->service_port = %d\n", handle->service_port));
@@ -1557,8 +1542,7 @@ int check_client_alive(COMM_HANDLE *handle,
    }
 
    cl_com_free_sirm_message(&status);
-   DEXIT;
-   return ret_val;
+   DRETURN(ret_val);
 }
 
 

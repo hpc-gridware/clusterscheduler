@@ -73,7 +73,7 @@ sge_qmaster_shutdown_via_signal_thread(int i)
 {
    int ret = 0;
 
-   DENTER(TOP_LAYER, "sge_shutdown_qmaster_via_signal_thread");
+   DENTER(TOP_LAYER);
 
    sge_signaler_initiate_termination();
    sge_qmaster_set_exit_state(i);

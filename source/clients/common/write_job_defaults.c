@@ -78,11 +78,11 @@ char *filename,
 int flags 
 ) {
    lList *alp;
-   lListElem *aep;
+   const lListElem *aep;
    lList *cmdline = NULL;
    int status;
    
-   DENTER(TOP_LAYER, "write_job_defaults");
+   DENTER(TOP_LAYER);
 
    alp = cull_unparse_job_parameter(ctx, &cmdline, job, flags);
    for_each(aep, alp) {
@@ -139,14 +139,14 @@ lList *lp,
 char *filename,
 int flags 
 ) {
-   lListElem *ep;
+   const lListElem *ep;
    const char *cp;
    FILE *fp;
    lList *answer = NULL;
    int i = 0;
    char str[256 + 1];
    
-   DENTER(BASIS_LAYER, "write_defaults_file");
+   DENTER(BASIS_LAYER);
    
    if (!filename) {
       fp = stdout;

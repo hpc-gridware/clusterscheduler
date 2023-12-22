@@ -142,10 +142,7 @@ int main(int argc, char *argv[])
    
    if (core_binding) {
       check_core_binding();
-#ifndef WINDOWS
-      DEXIT;
-#endif
-      return 1;
+      DRETURN(1);
    } else if (print_as_int) {
       m = "";
       precision = 0;
@@ -237,7 +234,7 @@ int main(int argc, char *argv[])
    if (sge_loadmem(&mem_info)) {
       fprintf(stderr, "%s\n", MSG_SYSTEM_RETMEMORYINDICESFAILED);
 #ifndef WINDOWS
-      DEXIT;
+      DRETURN(1);
 #endif
 #if defined(PLPA_LINUX) || defined(BINDING_SOLARIS)
       sge_dstring_free(&mcore);
@@ -245,7 +242,7 @@ int main(int argc, char *argv[])
       sge_dstring_free(&mthread);
       sge_dstring_free(&mtopology);
 #endif
-      return 1;
+      DRETURN(1);
    }
 
    print_mem_load(LOAD_ATTR_MEM_FREE, name, precision, mem_info.mem_free, m); 
@@ -275,7 +272,7 @@ int main(int argc, char *argv[])
    }
 #endif /* SGE_LOADCPU */
 #ifndef WINDOWS
-   DEXIT;
+   DRETURN(0);
 #endif
 #if defined(PLPA_LINUX) || defined(BINDING_SOLARIS)
    sge_dstring_free(&mcore);

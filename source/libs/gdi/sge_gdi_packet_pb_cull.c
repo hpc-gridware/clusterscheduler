@@ -77,7 +77,7 @@ sge_pack_gdi_info(u_long32 command)
 {
    bool ret = true;
 
-   DENTER(GDI_LAYER, "sge_pack_gdi_info");
+   DENTER(GDI_LAYER);
    switch (command) {
    case SGE_GDI_GET:
       DPRINTF(("packing SGE_GDI_GET request\n"));
@@ -134,7 +134,7 @@ sge_gdi_map_pack_errors(int pack_ret, lList **answer_list)
 {
    bool ret = true;
 
-   DENTER(GDI_LAYER, "sge_gdi_map_pack_errors");
+   DENTER(GDI_LAYER);
    switch (pack_ret) {
    case PACK_SUCCESS:
       break;
@@ -190,7 +190,7 @@ sge_gdi_packet_get_pb_size(sge_gdi_packet_class_t *packet)
 {
    u_long32 ret = 0;
 
-   DENTER(TOP_LAYER, "sge_gdi_packet_get_pb_size");
+   DENTER(TOP_LAYER);
    if (packet != NULL) {
       bool local_ret;
       lList *local_answer_list = NULL;
@@ -247,7 +247,7 @@ sge_gdi_packet_unpack(sge_gdi_packet_class_t **packet, lList **answer_list,
    bool has_next;
    int pack_ret;
 
-   DENTER(TOP_LAYER, "sge_gdi_packet_unpack");
+   DENTER(TOP_LAYER);
    *packet = sge_gdi_packet_create_base(answer_list);
    if (*packet != NULL) {
       bool first = true;
@@ -384,7 +384,7 @@ sge_gdi_packet_pack(sge_gdi_packet_class_t *packet, lList **answer_list,
    bool ret = true;
    sge_gdi_task_class_t *task = NULL;
 
-   DENTER(TOP_LAYER, "sge_gdi_packet_pack");
+   DENTER(TOP_LAYER);
 
    task = packet->first_task;
    while (ret && task != NULL) {
@@ -447,7 +447,7 @@ sge_gdi_packet_pack_task(sge_gdi_packet_class_t *packet,
    bool ret = true;
    int pack_ret = PACK_SUCCESS;
 
-   DENTER(TOP_LAYER, "sge_gdi_packet_pack_task");
+   DENTER(TOP_LAYER);
 
    if ((task != NULL) && (packet != NULL)
        && (packet->is_intern_request == false)) {

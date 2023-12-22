@@ -41,7 +41,7 @@
 #define SO_ACTION_LR 0x00000010
 
 bool
-tst_sos(int used, int total, lListElem *so);
+tst_sos(int used, int total, const lListElem *so);
 
 const char *
 so_list_append_to_dstring(const lList *this_list, dstring *string);

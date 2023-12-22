@@ -45,10 +45,10 @@ test_err_has_which_error(void) {
    char buffer[1024];
    const char message[] = "example for an error message";
 
-   DENTER(ERR_LAYER, "test_err_has_which_error");
+   DENTER(ERR_LAYER);
 
    if (sge_err_has_error() == true) {
-      fprintf(stderr, "in error state although no error occured in %s()\n", SGE_FUNC);
+      fprintf(stderr, "in error state although no error occured in %s()\n", __func__);
       ret = false;
    }
 
@@ -58,16 +58,16 @@ test_err_has_which_error(void) {
    }
 
    if (sge_err_has_error() != true) {
-      fprintf(stderr, "not in error state although error occured in %s()\n", SGE_FUNC);
+      fprintf(stderr, "not in error state although error occured in %s()\n", __func__);
       ret = false;
    }
 
    if (id != SGE_ERR_PARAMETER) {
-      fprintf(stderr, "got error id %d but expected %d in %s()\n", id, SGE_ERR_PARAMETER, SGE_FUNC);
+      fprintf(stderr, "got error id %d but expected %d in %s()\n", id, SGE_ERR_PARAMETER, __func__);
       ret = false;
    }
    if (strcmp(buffer, message) != 0) {
-      fprintf(stderr, "got error \"%s\" but expected \"%s\" in %s()\n", buffer, message, SGE_FUNC);
+      fprintf(stderr, "got error \"%s\" but expected \"%s\" in %s()\n", buffer, message, __func__);
       ret = false;
    }
 
@@ -75,18 +75,18 @@ test_err_has_which_error(void) {
       sge_err_clear();
    }
    if (sge_err_has_error() != false) {
-      fprintf(stderr, "in error state in %s() although error was cleard\n", SGE_FUNC);
+      fprintf(stderr, "in error state in %s() although error was cleard\n", __func__);
       ret = false;
    }
    if (ret) {
       sge_err_get(0, &id, buffer, 1024);
    }
    if (id != SGE_ERR_SUCCESS) {
-      fprintf(stderr, "got error id %d but expected %d in %s()\n", id, SGE_ERR_SUCCESS, SGE_FUNC);
+      fprintf(stderr, "got error id %d but expected %d in %s()\n", id, SGE_ERR_SUCCESS, __func__);
       ret = false;
    }
    if (strcmp(buffer, "") != 0) {
-      fprintf(stderr, "got error \"%s\" but expected \"%s\" in %s()\n", buffer, message, SGE_FUNC);
+      fprintf(stderr, "got error \"%s\" but expected \"%s\" in %s()\n", buffer, message, __func__);
       ret = false;
    }
 

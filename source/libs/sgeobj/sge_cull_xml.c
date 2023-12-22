@@ -105,7 +105,7 @@ void xml_addAttribute(lListElem *xml_elem, const char *name, const char *value){
    lList *attr_list = NULL;
    dstring mod_value = DSTRING_INIT;
    bool is_mod_value; 
-   DENTER(CULL_LAYER, "xml_addAttribute");
+   DENTER(CULL_LAYER);
 
    is_mod_value = escape_string(value, &mod_value); 
    
@@ -125,15 +125,12 @@ void xml_addAttribute(lListElem *xml_elem, const char *name, const char *value){
       else {
          sge_dstring_free(&mod_value);
          CRITICAL((SGE_EVENT, "xml_addAttribute() called on wrong cull structure"));
-         
-         DEXIT;   
          abort();
       }
       lAppendElem(attr_list, attr_elem);
    }
    sge_dstring_free(&mod_value);
-   DEXIT;
-   return;
+   DRETURN_VOID;
 }
 
 /****** cull/list/lWriteListXMLTo() **********************************************
@@ -157,19 +154,18 @@ void xml_addAttribute(lListElem *xml_elem, const char *name, const char *value){
 *******************************************************************************/
 static void lWriteListXML_(const lList *lp, int nesting_level, FILE *fp, int ignore_cull_name) 
 {
-   lListElem *ep;
+   const lListElem *ep;
    char indent[128];
    int i;
    bool is_XML_elem = false;
    dstring attr = DSTRING_INIT;
    bool is_attr = false;
 
-   DENTER(CULL_LAYER, "lWriteListXML_");
+   DENTER(CULL_LAYER);
    
    if (!lp) {
       LERROR(LELISTNULL);
-      DEXIT;
-      return;
+      DRETURN_VOID;
    }
 
    {
@@ -241,7 +237,7 @@ static void lWriteListXML_(const lList *lp, int nesting_level, FILE *fp, int ign
       }
    }
    sge_dstring_free(&attr);
-   DEXIT;
+   DRETURN_VOID;
 }
 
 
@@ -260,11 +256,11 @@ static void lWriteListXML_(const lList *lp, int nesting_level, FILE *fp, int ign
 ******************************************************************************/
 void lWriteElemXML(const lListElem *ep) 
 {
-   DENTER(CULL_LAYER, "lWriteElem");
+   DENTER(CULL_LAYER);
 
    lWriteElemXML_(ep, 0, NULL, -1);
 
-   DEXIT;
+   DRETURN_VOID;
 }
 
 /****** cull/list/lWriteElemXMLTo() **********************************************
@@ -287,11 +283,11 @@ void lWriteElemXML(const lListElem *ep)
 ******************************************************************************/
 void lWriteElemXMLTo(const lListElem *ep, FILE *fp, int ignore_cull_name) 
 {
-   DENTER(CULL_LAYER, "lWriteElemTo");
+   DENTER(CULL_LAYER);
 
    lWriteElemXML_(ep, 0, fp, ignore_cull_name);
 
-   DEXIT;
+   DRETURN_VOID;
 }
 
 static void lWriteElemXML_(const lListElem *ep, int nesting_level, FILE *fp, int ignore_cull_name) 
@@ -304,7 +300,7 @@ static void lWriteElemXML_(const lListElem *ep, int nesting_level, FILE *fp, int
    const char *attr_name;
    int max = nesting_level *2;
 
-   DENTER(CULL_LAYER, "lWriteElemXML_");
+   DENTER(CULL_LAYER);
 
    if (!ep) {
       LERROR(LEELEMNULL);
@@ -506,8 +502,7 @@ static void lWriteElemXML_(const lListElem *ep, int nesting_level, FILE *fp, int
          }
       }
    }
-   DEXIT;
-   return;
+   DRETURN_VOID;
 }
 
 lListElem *xml_append_Attr_D(lList *attributeList, const char *name, double value) {
@@ -571,11 +566,10 @@ static void lWriteXMLHead_(const lListElem *ep, int nesting_level, FILE *fp, int
    dstring attr = DSTRING_INIT;
    bool is_attr = false;
    
-   DENTER(CULL_LAYER, "lWriteXMLHead_");
+   DENTER(CULL_LAYER);
    
    if (!ep){
-      DEXIT;
-      return;
+      DRETURN_VOID;
    }
 
    name = lGetString(ep, XMLH_Name);
@@ -607,7 +601,7 @@ static void lWriteXMLHead_(const lListElem *ep, int nesting_level, FILE *fp, int
       fprintf(fp, "</%s>\n", name);
    }
    sge_dstring_free(&attr);
-   DEXIT;
+   DRETURN_VOID;
 }
 
 static lListElem *append_Attr_S(lList *attributeList, const char *name, const char *value) {
@@ -633,17 +627,15 @@ bool escape_string(const char *string, dstring *target){
    int size;
    int i;
  
-   DENTER(CULL_LAYER, "escape_string");
+   DENTER(CULL_LAYER);
    
    if (target == NULL) {
       DPRINTF(("no target string in excape_string()\n"));
-      DEXIT;
       abort();
    } 
  
    if (string == NULL){
-      DEXIT;
-      return false;
+      DRETURN(false);
    }
      
    size = strlen(string);
@@ -664,7 +656,6 @@ bool escape_string(const char *string, dstring *target){
             sge_dstring_append_char(target, string[i]); 
       }
    }
-   DEXIT;
-   return true;
+   DRETURN(true);
 }
 

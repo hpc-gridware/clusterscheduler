@@ -97,7 +97,7 @@
 *******************************************************************************/
 bool job_get_duration(u_long32 *duration, const lListElem *jep)
 {
-   DENTER(TOP_LAYER, "job_get_duration");
+   DENTER(TOP_LAYER);
 
    if (!job_get_wallclock_limit(duration, jep)) {
       *duration = sconf_get_default_duration();
@@ -129,7 +129,7 @@ bool job_get_duration(u_long32 *duration, const lListElem *jep)
 *******************************************************************************/
 bool task_get_duration(u_long32 *duration, const lListElem *ja_task) {
 
-   DENTER(TOP_LAYER, "task_get_duration");
+   DENTER(TOP_LAYER);
 
    if (ja_task != NULL) {
       *duration = lGetUlong(ja_task, JAT_wallclock_limit);
@@ -240,7 +240,7 @@ job_move_first_pending_to_running(lListElem **pending_job, lList **splitted_jobs
    u_long32 job_id;
    u_long32 ja_task_id;
 
-   DENTER(TOP_LAYER, "job_move_first_pending_to_running");
+   DENTER(TOP_LAYER);
 
    job_id = lGetUlong(*pending_job, JB_job_number);
    ja_task_list = lGetListRW(*pending_job, JB_ja_tasks);
@@ -328,8 +328,7 @@ job_move_first_pending_to_running(lListElem **pending_job, lList **splitted_jobs
    job_lists_print(splitted_jobs);
 #endif
 
-   DEXIT;
-   return ret;
+   DRETURN(ret);
 }
 
 int job_get_next_task(lListElem *job, lListElem **task_ret, u_long32 *id_ret)
@@ -337,7 +336,7 @@ int job_get_next_task(lListElem *job, lListElem **task_ret, u_long32 *id_ret)
    lListElem *ja_task;
    u_long32 ja_task_id;
 
-   DENTER(TOP_LAYER, "job_get_next_task");
+   DENTER(TOP_LAYER);
 
    ja_task = lFirstRW(lGetList(job, JB_ja_tasks));
    if (ja_task == NULL) {
@@ -381,7 +380,7 @@ int job_get_next_task(lListElem *job, lListElem **task_ret, u_long32 *id_ret)
 *******************************************************************************/
 void user_list_init_jc(lList **user_list, lList **splitted_job_lists[])
 {
-   lListElem *job;   /* JB_Type */
+   const lListElem *job;   /* JB_Type */
 
    if (splitted_job_lists[SPLIT_RUNNING] != NULL) {
       for_each(job, *(splitted_job_lists[SPLIT_RUNNING])) {
@@ -437,7 +436,7 @@ void job_lists_split_with_reference_to_max_running(bool monitor_next_run, lList 
                                                    const char* user_name,
                                                    int max_jobs_per_user)
 {
-   DENTER(TOP_LAYER, "job_lists_split_with_reference_to_max_running");
+   DENTER(TOP_LAYER);
    if (max_jobs_per_user != 0 && 
        job_lists[SPLIT_PENDING] != NULL && 
        *(job_lists[SPLIT_PENDING]) != NULL &&
@@ -503,7 +502,7 @@ void job_lists_split_with_reference_to_max_running(bool monitor_next_run, lList 
          }
       } 
    }
-   DEXIT;
+   DRETURN_VOID;
 }      
 
 /****** sched/sge_job_schedd/split_jobs() *************************************
@@ -564,7 +563,7 @@ void split_jobs(lList **job_list, u_long32 max_aj_instances,
    lListElem *job = NULL;
    lListElem *next_job = NULL;
    lListElem *previous_job = NULL;
-   DENTER(TOP_LAYER, "split_jobs");
+   DENTER(TOP_LAYER);
 
    next_job = lFirstRW(*job_list);
    while ((job = next_job)) {
@@ -953,7 +952,7 @@ void trash_splitted_jobs(bool monitor_next_run, lList **splitted_job_lists[])
 
    while (split_id_a[++i] != SPLIT_LAST) { 
       lList **job_list = splitted_job_lists[split_id_a[i]];
-      lListElem *job = NULL;
+      const lListElem *job = NULL;
       int is_first_of_category = 1;
 
       for_each (job, *job_list) {
@@ -1024,10 +1023,10 @@ void trash_splitted_jobs(bool monitor_next_run, lList **splitted_job_lists[])
 
 void job_lists_print(lList **job_list[]) 
 {
-   lListElem *job;
+   const lListElem *job;
    int i;
 
-   DENTER(TOP_LAYER, "job_lists_print");
+   DENTER(TOP_LAYER);
 
    for (i = SPLIT_FIRST; i < SPLIT_LAST; i++) {
       u_long32 ids = 0;
@@ -1043,8 +1042,7 @@ void job_lists_print(lList **job_list[])
       }
    } 
 
-   DEXIT;
-   return;
+   DRETURN_VOID;
 } 
 
 /* jcpp: JC_Type */
@@ -1053,7 +1051,7 @@ void sge_dec_jc(lList **jcpp, const char *name, int slots)
    int n = 0;
    lListElem *ep;
 
-   DENTER(TOP_LAYER, "sge_dec_jc");
+   DENTER(TOP_LAYER);
 
    ep = lGetElemStrRW(*jcpp, JC_name, name);
    if (ep) {
@@ -1064,8 +1062,7 @@ void sge_dec_jc(lList **jcpp, const char *name, int slots)
          lSetUlong(ep, JC_jobs, n);
    }
 
-   DEXIT;
-   return;
+   DRETURN_VOID;
 }
 
 /* jcpp: JC_Type */
@@ -1074,7 +1071,7 @@ void sge_inc_jc(lList **jcpp, const char *name, int slots)
    int n = 0;
    lListElem *ep;
 
-   DENTER(TOP_LAYER, "sge_inc_jc");
+   DENTER(TOP_LAYER);
 
    ep = lGetElemStrRW(*jcpp, JC_name, name);
    if (ep) 
@@ -1086,15 +1083,14 @@ void sge_inc_jc(lList **jcpp, const char *name, int slots)
 
    lSetUlong(ep, JC_jobs, n);
 
-   DEXIT;
-   return;
+   DRETURN_VOID;
 }
 
 
 /*---------------------------------------------------------*/
 int nslots_granted(const lList *granted, const char *qhostname)
 {
-   lListElem *gdil_ep;
+   const lListElem *gdil_ep;
    int nslots = 0;
    const void *iterator = NULL;
 
@@ -1150,7 +1146,7 @@ const char *qname
 int 
 active_nslots_granted(lListElem *job, const lList *granted, const char *qhostname) {
    const lList *task_list;
-   lListElem *gdil_ep, *jatask;
+   const lListElem *gdil_ep, *jatask;
    int nslots = 0;
    const void *iterator = NULL;
 
@@ -1187,7 +1183,7 @@ active_nslots_granted(lListElem *job, const lList *granted, const char *qhostnam
 int sge_granted_slots(
 const lList *gdil 
 ) {
-   lListElem *ep;
+   const lListElem *ep;
    int slots = 0;
 
    for_each(ep, gdil) 

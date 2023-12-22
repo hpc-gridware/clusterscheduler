@@ -168,7 +168,7 @@ spool_get_fields_to_spool(lList **answer_list, const lDescr *descr,
 {
    spooling_field *fields;
 
-   DENTER(TOP_LAYER, "spool_get_fields_to_spool");
+   DENTER(TOP_LAYER);
 
    SGE_CHECK_POINTER_NULL(descr, answer_list);
 
@@ -185,7 +185,7 @@ _spool_get_fields_to_spool(lList **answer_list, const lDescr *descr,
    int i, j, size;
    int strip = 0;
 
-   DENTER(TOP_LAYER, "_spool_get_fields_to_spool");
+   DENTER(TOP_LAYER);
 
    /* we don't check descr and instr, as we know they are ok
     * (it's a static function)
@@ -204,7 +204,7 @@ _spool_get_fields_to_spool(lList **answer_list, const lDescr *descr,
       answer_list_add_sprintf(answer_list, STATUS_EUNKNOWN, 
                               ANSWER_QUALITY_ERROR, 
                               MSG_UNABLETOALLOCATEBYTES_DS, 
-                              (size * 1) * sizeof(spooling_field), SGE_FUNC);
+                              (size * 1) * sizeof(spooling_field), __func__);
       DRETURN(NULL);
    }
 
@@ -245,8 +245,7 @@ _spool_get_fields_to_spool(lList **answer_list, const lDescr *descr,
                                        MSG_NONAMEFORATTRIBUTE_D, 
                                        descr[i].nm);
                fields = spool_free_spooling_fields(fields);
-               DEXIT;
-               return NULL;
+               DRETURN(NULL);
             }
             fields[j].name = strdup(name + strip);
          }
@@ -258,10 +257,9 @@ _spool_get_fields_to_spool(lList **answer_list, const lDescr *descr,
                answer_list_add_sprintf(answer_list, STATUS_EUNKNOWN, 
                                        ANSWER_QUALITY_ERROR,
                                        MSG_DONTKNOWHOWTOSPOOLSUBLIST_SS,
-                                       lNm2Str(descr[i].nm), SGE_FUNC);
+                                       lNm2Str(descr[i].nm), __func__);
                fields = spool_free_spooling_fields(fields);
-               DEXIT;
-               return NULL;
+               DRETURN(NULL);
             }
 
             sub_descr = object_get_subtype(descr[i].nm);
@@ -269,10 +267,9 @@ _spool_get_fields_to_spool(lList **answer_list, const lDescr *descr,
                answer_list_add_sprintf(answer_list, STATUS_EUNKNOWN, 
                                        ANSWER_QUALITY_ERROR,
                                        MSG_UNKNOWNOBJECTTYPEFOR_SS,
-                                       lNm2Str(descr[i].nm), SGE_FUNC);
+                                       lNm2Str(descr[i].nm), __func__);
                fields = spool_free_spooling_fields(fields);
-               DEXIT;
-               return NULL;
+               DRETURN(NULL);
             }
 
             /* recursive spooling, e.g. sharetree */
@@ -293,8 +290,7 @@ _spool_get_fields_to_spool(lList **answer_list, const lDescr *descr,
    /* end of field array */
    fields[j].nm = NoName;
 
-   DEXIT;
-   return fields;
+   DRETURN(fields);
 }
 
 /****** spool/utilities/spool_free_spooling_fields() ********************
@@ -376,7 +372,7 @@ bool spool_default_validate_func(lList **answer_list,
 {
    bool ret = true;
 
-   DENTER(TOP_LAYER, "spool_default_validate_func");
+   DENTER(TOP_LAYER);
    const lList *master_cqueue_list = *object_type_get_master_list(SGE_TYPE_CQUEUE);
    const lList *master_hgroup_list = *object_type_get_master_list(SGE_TYPE_HGROUP);
    const lList *master_centry_list = *object_type_get_master_list(SGE_TYPE_CENTRY);
@@ -429,7 +425,7 @@ bool spool_default_validate_func(lList **answer_list,
                lListElem *load_value;
 
                /* all spooled load values are static, therefore we tag them here */
-               for_each(load_value, lGetList(object, EH_load_list)) {
+               for_each_rw(load_value, lGetList(object, EH_load_list)) {
                   lSetBool(load_value, HL_static, true);
                }
 
@@ -543,7 +539,7 @@ spool_default_validate_list_func(lList **answer_list,
 {
    bool ret = true;
 
-   DENTER(TOP_LAYER, "spool_default_validate_list_func");
+   DENTER(TOP_LAYER);
 
    switch(object_type) {
       case SGE_TYPE_ADMINHOST:

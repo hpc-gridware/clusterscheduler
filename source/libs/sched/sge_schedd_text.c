@@ -408,21 +408,18 @@ const char* sge_get_schedd_text( int nr )
 const char *sge_schedd_text(int number) {
    const char *error_text = NULL;
 
-   DENTER(TOP_LAYER, "sge_schedd_text");
+   DENTER(TOP_LAYER);
 
    error_text = sge_get_schedd_text(number);
 
    if (error_text == NULL) {
-      DEXIT;
-      return MSG_SYSTEM_GOTNULLASERRORTEXT;
+      DRETURN(MSG_SYSTEM_GOTNULLASERRORTEXT);
    }
  
    if (strlen(error_text) == 0) {
-      DEXIT;
-      return MSG_SYSTEM_INVALIDERRORNUMBER;
+      DRETURN(MSG_SYSTEM_INVALIDERRORNUMBER);
    }
 
-   DEXIT;
-   return error_text;
+   DRETURN(error_text);
 }
 

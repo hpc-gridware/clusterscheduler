@@ -421,7 +421,7 @@ int main(int argc, char **argv)
  *-------------------------------------------------------------*/
 static void execd_exit_func(void **ctx_ref, int i)
 {
-   DENTER(TOP_LAYER, "execd_exit_func");
+   DENTER(TOP_LAYER);
 
    sge_gdi2_shutdown(ctx_ref);
 
@@ -441,7 +441,7 @@ static void execd_exit_func(void **ctx_ref, int i)
       }
    }
 #endif  
-   DEXIT;
+   DRETURN_VOID;
 }
 
 /****** execd/sge_execd_register_at_qmaster() **********************************
@@ -476,7 +476,7 @@ int sge_execd_register_at_qmaster(sge_gdi_ctx_class_t *ctx, bool is_restart) {
     */
    const char *master_host = ctx->get_master(ctx, is_restart);
 
-   DENTER(TOP_LAYER, "sge_execd_register_at_qmaster");
+   DENTER(TOP_LAYER);
 
    /* We will not try to make a gdi request when qmaster is not alive. The
     * gdi will return with timeout after one minute. If qmaster is not alive
@@ -541,10 +541,10 @@ int sge_execd_register_at_qmaster(sge_gdi_ctx_class_t *ctx, bool is_restart) {
 static void parse_cmdline_execd(char **argv)
 {
    lList *ref_list = NULL, *alp = NULL, *pcmdline = NULL;
-   lListElem *aep;
+   const lListElem *aep;
    u_long32 help = 0;
 
-   DENTER(TOP_LAYER, "parse_cmdline_execd");
+   DENTER(TOP_LAYER);
             
    alp = sge_parse_cmdline_execd(argv+1, &pcmdline);
    if(alp) {
@@ -584,7 +584,7 @@ static void parse_cmdline_execd(char **argv)
       /* TODO: replace with alpp and DRETURN */
       SGE_EXIT(NULL, 0);
    }
-   DEXIT;
+   DRETURN_VOID;
 }
 
 
@@ -599,7 +599,7 @@ char **rp;
 stringT str;
 lList *alp = NULL;
 
-   DENTER(TOP_LAYER, "sge_parse_cmdline_execd");
+   DENTER(TOP_LAYER);
 
    rp = argv;
    while(*(sp=rp)) {
@@ -619,11 +619,9 @@ lList *alp = NULL;
       sprintf(str, MSG_PARSE_INVALIDARG_S, *sp);
       sge_usage(EXECD, stderr);
       answer_list_add(&alp, str, STATUS_ESEMANTIC, ANSWER_QUALITY_ERROR);
-      DEXIT;
-      return alp;
+      DRETURN(alp);
    }
-   DEXIT;
-   return alp;
+   DRETURN(alp);
 }
 
 
@@ -637,7 +635,7 @@ static lList *sge_parse_execd(lList **ppcmdline, lList **ppreflist,
    lList *alp = NULL;
    int usageshowed = 0;
 
-   DENTER(TOP_LAYER, "sge_parse_execd");
+   DENTER(TOP_LAYER);
 
    /* Loop over all options. Only valid options can be in the
       ppcmdline list.
@@ -656,12 +654,10 @@ static lList *sge_parse_execd(lList **ppcmdline, lList **ppreflist,
          sge_usage(EXECD, stderr);
       }
       answer_list_add(&alp, MSG_PARSE_TOOMANYARGS, STATUS_ESEMANTIC, ANSWER_QUALITY_ERROR);
-      DEXIT;
-      return alp;
+      DRETURN(alp);
    }
 
-   DEXIT;
-   return alp;
+   DRETURN(alp);
 }
 
 /* JG: TODO: we have this searching code in many places!! */
@@ -694,7 +690,7 @@ bool execd_get_job_ja_task(u_long32 job_id, u_long32 ja_task_id, lListElem **job
 {
    const void *iterator = NULL;
 
-   DENTER(TOP_LAYER, "execd_get_job_ja_task");
+   DENTER(TOP_LAYER);
 
    *job = lGetElemUlongFirstRW(*object_type_get_master_list_rw(SGE_TYPE_JOB), JB_job_number, job_id, &iterator);
    while (*job != NULL) {
