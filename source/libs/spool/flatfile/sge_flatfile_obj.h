@@ -32,10 +32,6 @@
  ************************************************************************/
 /*___INFO__MARK_END__*/       
 
-#ifdef	__cplusplus
-extern "C" {
-#endif
-
 /* A number guaranteed to be larger than the largest number of fields in a
  * static of dynamic field list. */
 #define MAX_NUM_FIELDS 60
@@ -61,9 +57,5 @@ spooling_field *sge_build_EH_field_list(bool spool, bool to_stdout,
                                             bool history);
 spooling_field *sge_build_CONF_field_list(bool spool_config);
 spooling_field *sge_build_QU_field_list(bool to_stdout, bool to_file);
-
-#ifdef	__cplusplus
-}
-#endif
 
 #endif	/* _sge_flatfile_obj_H */

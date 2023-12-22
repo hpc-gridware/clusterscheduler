@@ -42,6 +42,10 @@
 #  include <note.h>
 #endif
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 /* EB: TODO: ST: add adoc comments */
 
 #define DENTER_MAIN(layer, program)                                          \
@@ -183,6 +187,10 @@
 #define DCLOSE
 
 #define SGE_EXIT(x, y) sge_exit((x), (y))
+
+#ifdef __cplusplus
+}
+#endif
 
 #else /* NO_SGE_COMPILE_DEBUG */
 

@@ -53,4 +53,3 @@ int  is_shepherd_trace_fd( int fd );
 int  count_exit_status(void);
 
 #endif /* __ERR_TRACE_H */
-

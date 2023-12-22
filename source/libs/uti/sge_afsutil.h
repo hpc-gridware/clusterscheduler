@@ -32,6 +32,10 @@
  ************************************************************************/
 /*___INFO__MARK_END__*/
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 #define TOKEN_FILE "token.afs"
 
 char *sge_read_token(const char *file);
@@ -40,6 +44,10 @@ int sge_afs_extend_token(const char *command, char *tokenbuf, const char *user,
                      int token_extend_time, char *err_str);
 
 int sge_get_token_cmd(const char *tokencmdname, char *buf);
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif /* __SGE_AFSUTIL_H */
 

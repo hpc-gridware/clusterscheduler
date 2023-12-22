@@ -31,9 +31,17 @@
 /*___INFO__MARK_END__*/
 #include "sge_sl.h"
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 int sge_quick_count_num_args(const char* args);
 int sge_parse_args(const char* args, char **pargs);
 
 int parse_quoted_command_line(char *command, sge_sl_list_t *sl_args);
 int convert_arg_list_to_vector(sge_sl_list_t *sl_args, char ***pargs);
+
+#ifdef __cplusplus
+}
+#endif
 

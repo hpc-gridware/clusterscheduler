@@ -1214,9 +1214,9 @@ int sge_add_group(gid_t add_grp_id, char *err_str, bool skip_silently)
  * Is this a bug in the kernel or in INSURE?
  */
 #if defined(LINUX)
-   list = (gid_t*) malloc(2*max_groups*sizeof(gid_t));
+   list = (gid_t*) sge_malloc(2*max_groups*sizeof(gid_t));
 #else
-   list = (gid_t*) malloc(max_groups*sizeof(gid_t));
+   list = (gid_t*) sge_malloc(max_groups*sizeof(gid_t));
 #endif
    if (list == NULL) {
       if(err_str != NULL) {
@@ -1900,8 +1900,8 @@ password_read_file(char **users[], char**encryped_pwds[], const char *filename)
          do_loop = false;
       }
       size = size + 2;
-      *users = malloc(size * sizeof(char*));
-      *encryped_pwds = malloc(size * sizeof(char*));
+      *users = (char **)sge_malloc(size * sizeof(char*));
+      *encryped_pwds = (char **)sge_malloc(size * sizeof(char*));
 
       while (do_loop) {
          uname = NULL;
@@ -1943,8 +1943,8 @@ password_read_file(char **users[], char**encryped_pwds[], const char *filename)
 
       FCLOSE(fp);
    } else {
-      *users = malloc(2 * sizeof(char*));
-      *encryped_pwds = malloc(2 * sizeof(char*));
+      *users = (char **)sge_malloc(2 * sizeof(char*));
+      *encryped_pwds = (char **)sge_malloc(2 * sizeof(char*));
       (*users)[0] = NULL;
       (*encryped_pwds)[0] = NULL;
       (*users)[1] = NULL;

@@ -245,4 +245,3 @@ typedef int (*pqs_qsort_t)(pqs_params_t *pqs_params, int verify, char *err_str, 
 #define PQS_NO_ASSIGNMENT_FOR_JOB -2
 
 #endif /* _SGE_PQS_API_H_ */
-

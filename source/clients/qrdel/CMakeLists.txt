@@ -1,8 +1,8 @@
 # source/clients/qrdel
 add_executable(
   qrdel
-  qrdel.c ../../common/parse_job_cull.c ../../common/parse_qsub.c
-  ../../common/sig_handlers.c ../../common/sge_options.c ../../common/usage.c)
+  qrdel.cc ../../common/parse_job_cull.cc ../../common/parse_qsub.cc
+  ../../common/sig_handlers.cc ../../common/sge_options.cc ../../common/usage.cc)
 target_include_directories(qrdel PRIVATE ${SGE_INCLUDES})
 
 target_link_libraries(

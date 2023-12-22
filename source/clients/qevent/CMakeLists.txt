@@ -1,7 +1,7 @@
 # source/clients/qevent
 add_executable(
-  qevent qevent.c ../../common/sig_handlers.c ../../common/sge_options.c
-         ../../common/sge_mt_init.c ../../common/usage.c)
+  qevent qevent.cc ../../common/sig_handlers.cc ../../common/sge_options.cc
+         ../../common/sge_mt_init.cc ../../common/usage.cc)
 target_include_directories(qevent PUBLIC ${SGE_INCLUDES})
 target_link_libraries(
   qevent
@@ -17,5 +17,5 @@ target_link_libraries(
          dl)
 
 if(INSTALL_SGE_TEST)
-  install(TARGETS qevent DESTINATION test/bin/${SGE_ARCH})
+  install(TARGETS qevent DESTINATION testbin/${SGE_ARCH})
 endif()

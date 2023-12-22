@@ -40,6 +40,10 @@
 #include "comm/cl_data_types.h"
 #include "comm/cl_communication.h"
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 #define CL_COM_DEBUG_CLIENT_NAME "debug_client"
 
 /* commlib init and hostlist functions */
@@ -214,6 +218,10 @@ int cl_commlib_get_last_message_time(cl_com_handle_t* handle, const char* un_res
 #endif
 
 int getuniquehostname(const char *hostin, char *hostout, int refresh_aliases);
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif /* __CL_COMMLIB_H */
 

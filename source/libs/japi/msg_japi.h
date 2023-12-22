@@ -33,10 +33,6 @@
 #ifndef _MSG_JAPI_H
 #define	_MSG_JAPI_H
 
-#ifdef	__cplusplus
-extern "C" {
-#endif
-
 #include "basis_types.h"
    
 #define MSG_JAPI_NO_EVENT_CLIENT   _MESSAGE(45501, _("The event client has not been started."))
@@ -58,8 +54,5 @@ extern "C" {
 #define MSG_JAPI_BAD_JOB_ID_S  _MESSAGE(45518, _("Job id, "SFQ", is not a valid job id"))
 #define MSG_JAPI_BAD_BULK_JOB_ID_S  _MESSAGE(45519, _("Job id, "SFQ", is not a valid bulk job id"))
 #define MSG_JAPI_QMASTER_TIMEDOUT _MESSAGE(45520, _("Timed out at qmaster. Waiting to reconnect."))
-#ifdef	__cplusplus
-}
-#endif
 
 #endif	/* _MSG_JAPI_H */

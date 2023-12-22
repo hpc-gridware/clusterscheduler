@@ -34,6 +34,10 @@
 
 #include "sge_tmpnam.h"
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 /****** uti/io/sge_mode_t *****************************************************
 *  NAME
 *     sge_mode_t -- Type of operation for sge_copy_append()
@@ -60,10 +64,10 @@ typedef enum {
    SGE_MODE_COPY = 2
 } sge_mode_t;
 
-int sge_readnbytes(register int sfd, register char *ptr, register int n);
+int sge_readnbytes(int sfd, char *ptr, int n);
 
-int sge_writenbytes(register int sfd, register const char *ptr, 
-                    register int n);
+int sge_writenbytes(int sfd, const char *ptr, 
+                    int n);
 
 int sge_filecmp(const char *file0, const char *file1); 
 
@@ -79,5 +83,9 @@ char *sge_stream2string(FILE *fp, int *len);
  
 int sge_string2file(const char *str, int len, const char *fname); 
  
+#ifdef __cplusplus
+}
+#endif
+
 #endif /* __SGE_IO_H */
 

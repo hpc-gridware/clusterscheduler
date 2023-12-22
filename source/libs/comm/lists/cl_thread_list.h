@@ -35,6 +35,10 @@
 
 
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 /* basic functions */
 int cl_thread_list_setup(cl_raw_list_t** list_p, char* list_name);  /* CR check */
 int cl_thread_list_cleanup(cl_raw_list_t** list_p);                 /* CR check */
@@ -65,5 +69,9 @@ cl_thread_settings_t* cl_thread_list_get_first_thread(cl_raw_list_t* list_p);  /
 
 cl_thread_list_elem_t* cl_thread_list_get_first_elem(cl_raw_list_t* list_p);
 cl_thread_list_elem_t* cl_thread_list_get_next_elem(cl_thread_list_elem_t* elem);
+#ifdef __cplusplus
+}
+#endif
+
 #endif /* __CL_THREAD_LIST_H */
 

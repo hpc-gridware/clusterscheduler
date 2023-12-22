@@ -32,7 +32,15 @@
  ************************************************************************/
 /*___INFO__MARK_END__*/
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 int sge_edit(const char *fname, uid_t uid, gid_t gid); 
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif /* __SGE_EDIT_H */
 

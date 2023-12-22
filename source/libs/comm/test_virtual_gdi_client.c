@@ -170,7 +170,7 @@ extern int main(int argc, char** argv)
          cl_com_message_t*  message = NULL;
          cl_com_endpoint_t* sender  = NULL;
          if (snd_data == NULL) {
-            snd_data = malloc(DATA_SIZE);
+            snd_data = sge_malloc(DATA_SIZE);
 #ifdef PACKAGE_COUNTER
             sprintf(snd_data, "%d\n", snd_messages);
 #else

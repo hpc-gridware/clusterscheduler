@@ -32,10 +32,6 @@
  ************************************************************************/
 /*___INFO__MARK_END__*/
 
-#ifdef  __cplusplus
-extern "C" {
-#endif
-
 #include "cull/cull.h"
 #include "gdi/sge_gdi_ctx.h"
 
@@ -56,10 +52,6 @@ struct report_handler_str {
 bool qquota_output(sge_gdi_ctx_class_t *ctx, lList *host_list, lList *resource_match_list, lList *user_list,
                 lList *pe_list, lList *project_list, lList *cqueue_list, lList **alpp,
                 report_handler_t* report_handler);
-
-#ifdef  __cplusplus
-}
-#endif
 
 #endif
 

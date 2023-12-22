@@ -43,16 +43,3 @@ void sge_show_ce_type_list_line_by_line(const char *label, const char *indent, c
       bool display_resource_contribution, const lList *centry_list, int slot); 
 
 #endif /* SHOW_JOB_H */
-
-
-
-
-
-
-
-
-
-
-
-
-

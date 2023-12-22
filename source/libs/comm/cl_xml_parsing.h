@@ -35,6 +35,10 @@
 
 #include <arpa/inet.h>
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 #define CL_DEFINE_MAX_MESSAGE_LENGTH                 1024 * 1024 * 1024 /* 1GB max message length */
 
 
@@ -450,5 +454,9 @@ int cl_xml_parse_CCRM(unsigned char* buffer, unsigned long buffer_length, cl_com
 
 int cl_com_transformString2XML(const char* input, char** output);
 int cl_com_transformXML2String(const char* input, char** output);
+#ifdef __cplusplus
+}
+#endif
+
 #endif /* __CL_XML_PARSING_H */
 

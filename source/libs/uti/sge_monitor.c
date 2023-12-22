@@ -225,8 +225,8 @@ sge_monitor_init(monitoring_t *monitor, const char *thread_name, extension_t ext
 
    monitor->thread_name = thread_name;
  
-   monitor->output_line1 = (dstring*) malloc(sizeof(dstring));
-   monitor->output_line2 = (dstring*) malloc(sizeof(dstring));
+   monitor->output_line1 = (dstring*) sge_malloc(sizeof(dstring));
+   monitor->output_line2 = (dstring*) sge_malloc(sizeof(dstring));
    
    if (monitor->output_line1 == NULL || monitor->output_line2 == NULL) {
       CRITICAL((SGE_EVENT, SFNMAX, MSG_UTI_MONITOR_MEMERROR));
@@ -243,7 +243,7 @@ sge_monitor_init(monitoring_t *monitor, const char *thread_name, extension_t ext
  
    switch(ext) {
       case SCH_EXT :
-            monitor->ext_data = malloc(sizeof(m_sch_t));
+            monitor->ext_data = sge_malloc(sizeof(m_sch_t));
             if (monitor->ext_data != NULL) {
                monitor->ext_type = SCH_EXT;
                monitor->ext_data_size = sizeof(m_sch_t);
@@ -255,7 +255,7 @@ sge_monitor_init(monitoring_t *monitor, const char *thread_name, extension_t ext
          break;
 
       case GDI_EXT :
-            monitor->ext_data = malloc(sizeof(m_gdi_t));
+            monitor->ext_data = sge_malloc(sizeof(m_gdi_t));
             if (monitor->ext_data != NULL) {
                monitor->ext_type = GDI_EXT;
                monitor->ext_data_size = sizeof(m_gdi_t);
@@ -267,7 +267,7 @@ sge_monitor_init(monitoring_t *monitor, const char *thread_name, extension_t ext
          break;
 
       case LIS_EXT :
-            monitor->ext_data = malloc(sizeof(m_lis_t));
+            monitor->ext_data = sge_malloc(sizeof(m_lis_t));
             if (monitor->ext_data != NULL) {
                monitor->ext_type = LIS_EXT;
                monitor->ext_data_size = sizeof(m_lis_t);
@@ -279,7 +279,7 @@ sge_monitor_init(monitoring_t *monitor, const char *thread_name, extension_t ext
          break;
          
       case EDT_EXT : 
-            monitor->ext_data = malloc(sizeof(m_edt_t));
+            monitor->ext_data = sge_malloc(sizeof(m_edt_t));
             if (monitor->ext_data != NULL) {
                monitor->ext_type = EDT_EXT;
                monitor->ext_data_size = sizeof(m_edt_t);
@@ -291,7 +291,7 @@ sge_monitor_init(monitoring_t *monitor, const char *thread_name, extension_t ext
          break;
        
       case TET_EXT : 
-            monitor->ext_data = malloc(sizeof(m_tet_t));
+            monitor->ext_data = sge_malloc(sizeof(m_tet_t));
             if (monitor->ext_data != NULL) {
                monitor->ext_type = TET_EXT;
                monitor->ext_data_size = sizeof(m_tet_t);

@@ -37,4 +37,3 @@ int correct_load(lList *lp_job, lList *lp_queue, lList *lpp_host, u_long32 decay
 int correct_capacities(lList *host_list, const lList *complex_list);
 
 #endif /* __LOAD_CORRECTION_H */
-

@@ -300,7 +300,7 @@ const char *sge_get_alias_path(void)
    }
 
    len = strlen(sge_root) + strlen(sge_cell) + strlen(COMMON_DIR) + strlen(ALIAS_FILE) + 5;
-   if (!(cp = malloc(len))) {
+   if (!(cp = sge_malloc(len))) {
       CRITICAL((SGE_EVENT, SFNMAX, MSG_MEMORY_MALLOCFAILEDFORPATHTOHOSTALIASFILE));
       SGE_EXIT(NULL, 1);
    }

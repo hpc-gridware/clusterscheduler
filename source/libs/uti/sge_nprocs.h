@@ -32,7 +32,15 @@
  ************************************************************************/
 /*___INFO__MARK_END__*/
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 int sge_nprocs(void);
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif /* __SGE_NPROCS_H */
 

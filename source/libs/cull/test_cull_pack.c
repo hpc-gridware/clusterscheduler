@@ -135,7 +135,7 @@ int main(int argc, char *argv[])
    }
    printf("element uses "sge_u32" kb, mem_size is "sge_u32" kb\n", (u_long32)pb.bytes_used/1024, (u_long32)pb.mem_size/1024);
 
-   buffer = (char *)malloc(pb.bytes_used);
+   buffer = sge_malloc(pb.bytes_used);
    memcpy(buffer, pb.head_ptr, pb.bytes_used);
    if((pack_ret = init_packbuffer_from_buffer(&copy_pb, buffer, pb.bytes_used)) != PACK_SUCCESS) {
       printf("initializing packbuffer from packed data failed: %s\n", cull_pack_strerror(pack_ret));
@@ -166,7 +166,7 @@ int main(int argc, char *argv[])
       return EXIT_FAILURE;
    }
 
-   buffer = (char *)malloc(pb.bytes_used);
+   buffer = sge_malloc(pb.bytes_used);
    memcpy(buffer, pb.head_ptr, pb.bytes_used);
    if((pack_ret = init_packbuffer_from_buffer(&copy_pb, buffer, pb.bytes_used)) != PACK_SUCCESS) {
       printf("initializing packbuffer from partially packed data failed: %s\n", cull_pack_strerror(pack_ret));

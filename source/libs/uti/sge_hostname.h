@@ -47,6 +47,10 @@
 
 #include "sge_unistd.h"
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 /* compare hosts with FQDN or not */
 #if !defined(CL_MAXHOSTLEN) && defined(MAXHOSTNAMELEN)
    #define CL_MAXHOSTLEN MAXHOSTNAMELEN
@@ -104,5 +108,9 @@ struct hostent *sge_copy_hostent (struct hostent *orig);
 
 int sge_get_qmaster_port(bool *from_services);
 int sge_get_execd_port(void);
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif /* __HOST_H */

@@ -34,6 +34,10 @@
 
 #include "basis_types.h"
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 #define MSG_CL_CRM_ERROR_MESSAGE1_SS                                          _MESSAGE(85000, _("server host resolves source host "SFQ" as "SFQ""))
 #define MSG_CL_CRM_ERROR_MESSAGE2_SS                                          _MESSAGE(85001, _("server host resolves destination host "SFQ" as "SFQ""))
 #define MSG_CL_CRM_ERROR_MESSAGE3_SS                                          _MESSAGE(85002, _("server host resolves rdata host "SFQ" as "SFQ""))
@@ -106,15 +110,8 @@
 #define MSG_CL_COMMLIB_SSL_ERROR_336151573            _MESSAGE(85502, _("the used certificate is expired"))
 #define MSG_CL_COMMLIB_SSL_ERROR_336105650            _MESSAGE(85503, _("the used certificate is expired or invalid"))
 
-
-
-
-
-
-
-
-
-
-
+#ifdef __cplusplus
+}
+#endif
 
 #endif /* __MSG_COMMLIB_H */

@@ -38,6 +38,10 @@
 #include "basis_types.h"
 #include "msg_utilib.h"
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 #define LOG_PROF       0      /* no action, but it has to be printed allways */
 
 void log_state_set_log_level(u_long32);
@@ -278,6 +282,10 @@ int sge_log(int log_level, const char *mesg, const char *file__,
       sge_log(LOG_CRIT, MSG_UNREC_ERROR,__FILE__,__func__,__LINE__); \
       abort(); \
    }
+#endif
+
+#ifdef __cplusplus
+}
 #endif
 
 #endif /* __SGE_LOG_H */

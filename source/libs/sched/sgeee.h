@@ -61,5 +61,5 @@ sge_build_sgeee_orders(scheduler_all_data_t *lists, lList *running_jobs, lList *
 
 void sge_do_priority(lList *running_jobs, lList *pending_jobs);
 void sge_do_priority_job(lListElem *jep);
-#endif /*  __SGEEE_H */
 
+#endif /*  __SGEEE_H */

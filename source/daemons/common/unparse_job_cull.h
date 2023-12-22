@@ -38,6 +38,4 @@
 
 lList *cull_unparse_job_parameter(sge_gdi_ctx_class_t *ctx, lList **pcmdline, lListElem *job, int flags);
 
-
 #endif /* __UNPARSE_JOB_CULL_H */
-

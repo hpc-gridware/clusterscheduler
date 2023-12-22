@@ -35,11 +35,19 @@
 
 #include "basis_types.h"
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 unsigned char *
 buffer_encode_hex(unsigned char *input, size_t len, unsigned char **output);
 
 unsigned char *
 buffer_decode_hex(unsigned char *buf, size_t *len, unsigned char **outbuf);
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif /* __SGE_BAS64_H */
 

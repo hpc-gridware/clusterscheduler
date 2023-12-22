@@ -48,10 +48,18 @@
 
 #else
 /* windows */
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 #define CL_LOG(log_type, log_text)              /* cl_log_list_log(log_type, __LINE__ , __CL_FUNCTION__ ,__FILE__ , log_text, NULL) */
 #define CL_LOG_STR(log_type, log_text, log_str) /* cl_log_list_log(log_type, __LINE__ , __CL_FUNCTION__ ,__FILE__ , log_text, log_str )*/
 #define CL_LOG_INT(log_type, log_text, log_str) /* cl_log_list_log_int(log_type, __LINE__ , __CL_FUNCTION__ ,__FILE__ , log_text, log_str )*/
 #define CL_LOG_STR_STR_INT(log_type, log_text, log_str1, log_str2, log_str3)
+#ifdef __cplusplus
+}
+#endif
+
 #endif
 
 #endif /* __CL_LISTS_H */

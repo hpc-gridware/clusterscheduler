@@ -34,10 +34,6 @@
 
 #include <signal.h>
 
-#ifdef  __cplusplus
-extern "C" {
-#endif
-
 void sge_setup_sig_handlers(int me_who);
 void sge_reap(int dummy);
 
@@ -53,9 +49,5 @@ extern volatile int shut_me_down;
 extern volatile int sge_sig_handler_dead_children;
 extern volatile int sge_sig_handler_in_main_loop;
 extern volatile int sge_sig_handler_sigpipe_received;
-
-#ifdef  __cplusplus
-}
-#endif
 
 #endif /* __SIG_HANDLERS_H */

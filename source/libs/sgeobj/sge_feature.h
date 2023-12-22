@@ -34,10 +34,6 @@
 
 #include "sgeobj/cull/sge_feature_FES_L.h"
 
-#ifdef  __cplusplus
-extern "C" {
-#endif  
-
 typedef enum {
    FS_SHORT,
    FS_LONG,
@@ -79,8 +75,4 @@ feature_id_t    feature_get_active_featureset_id(void);
 bool            feature_is_enabled(feature_id_t id);
 const char*     feature_get_product_name(featureset_product_name_id_t style, dstring *buffer);
  
-#ifdef  __cplusplus
-}
-#endif                   
-
 #endif

@@ -38,6 +38,8 @@
 #include <unistd.h>
 #include <libgen.h>
 
+#include "uti/sge_stdlib.h"
+
 #include "comm/lists/cl_lists.h"
 #include "comm/lists/cl_util.h"
 
@@ -71,7 +73,7 @@ static int cl_log_list_add_log(cl_raw_list_t* list_p, const char* thread_name, i
    }
 
    /* create new cl_log_list_elem_t element */
-   new_elem = (cl_log_list_elem_t*) malloc(sizeof(cl_log_list_elem_t));
+   new_elem = (cl_log_list_elem_t*) sge_malloc(sizeof(cl_log_list_elem_t));
    if (new_elem == NULL) {
       return CL_RETVAL_MALLOC;
    }
@@ -116,7 +118,7 @@ static int cl_log_list_add_log(cl_raw_list_t* list_p, const char* thread_name, i
    }
    
    module_length = strlen(function_name) + strlen(mod_name_start) + cl_util_get_int_number_length(line) + 1 + 4;
-   new_elem->log_module_name = (char*) malloc (sizeof(char) * module_length);
+   new_elem->log_module_name = sge_malloc (sizeof(char) * module_length);
    if (new_elem->log_module_name == NULL) {
       free(new_elem->log_message);
       free(new_elem->log_thread_name);
@@ -317,12 +319,12 @@ int cl_log_list_setup(cl_raw_list_t** list_p, const char* creator_name, int crea
    }
 
    /* malloc creator and list data structures */
-   creator_settings = (cl_thread_settings_t*)malloc(sizeof(cl_thread_settings_t));
+   creator_settings = (cl_thread_settings_t*)sge_malloc(sizeof(cl_thread_settings_t));
    if (creator_settings == NULL) {
       return CL_RETVAL_MALLOC;
    }
 
-   ldata = (cl_log_list_data_t*) malloc(sizeof(cl_log_list_data_t));
+   ldata = (cl_log_list_data_t*) sge_malloc(sizeof(cl_log_list_data_t));
    if (ldata == NULL) {
       free(creator_settings);
       return CL_RETVAL_MALLOC;

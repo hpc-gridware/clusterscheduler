@@ -33,6 +33,10 @@
  ************************************************************************/
 /*___INFO__MARK_END__*/
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 #ifndef __CL_FUNCTION__
 #define __CL_FUNCTION__ ""
 #endif
@@ -78,6 +82,10 @@ int cl_log_list_log_ssi(cl_log_t log_type,int line, const char* function_name,co
 int cl_log_list_del_log(cl_raw_list_t* list_p);   /* CR check */
 cl_log_list_elem_t* cl_log_list_get_first_elem(cl_raw_list_t* list_p);  /* CR check */
 
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif /* __CL_LOG_LIST_H */
 

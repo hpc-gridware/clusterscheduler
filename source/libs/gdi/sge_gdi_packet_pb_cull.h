@@ -35,10 +35,6 @@
 #include "basis_types.h"
 #include "gdi/sge_gdi_packet_type.h"
 
-#ifdef  __cplusplus
-extern "C" {
-#endif
-
 u_long32
 sge_gdi_packet_get_pb_size(sge_gdi_packet_class_t *packet);
 
@@ -52,11 +48,4 @@ bool
 sge_gdi_packet_pack_task(sge_gdi_packet_class_t *packet, sge_gdi_task_class_t *task,
                          lList **answer_list, sge_pack_buffer *pb);
 
-#ifdef  __cplusplus
-}
-#endif
-
 #endif 
-
-
-

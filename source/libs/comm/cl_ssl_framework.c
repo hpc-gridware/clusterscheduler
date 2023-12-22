@@ -2024,7 +2024,7 @@ static int cl_com_ssl_transform_ssl_error(unsigned long ssl_error, char* buffer,
       return CL_RETVAL_PARAMS;
    }
 
-   buffer_copy = (char*) malloc(sizeof(char)*buflen);
+   buffer_copy = sge_malloc(sizeof(char)*buflen);
    if (buffer_copy == NULL) {
       return CL_RETVAL_MALLOC;
    }
@@ -2068,7 +2068,7 @@ static int cl_com_ssl_transform_ssl_error(unsigned long ssl_error, char* buffer,
    }  
 
    if (error_text == NULL) {
-      error_text = (char*) malloc(sizeof(char)*buflen);
+      error_text = sge_malloc(sizeof(char)*buflen);
       if (error_text == NULL) {
          sge_free(&module);
          return CL_RETVAL_MALLOC;
@@ -2441,7 +2441,7 @@ int cl_com_ssl_framework_setup(void) {
    int ret_val = CL_RETVAL_OK;
    pthread_mutex_lock(&cl_com_ssl_global_config_mutex);
    if (cl_com_ssl_global_config_object == NULL) {
-      cl_com_ssl_global_config_object = (cl_com_ssl_global_t*) malloc(sizeof(cl_com_ssl_global_t));
+      cl_com_ssl_global_config_object = (cl_com_ssl_global_t*) sge_malloc(sizeof(cl_com_ssl_global_t));
       if (cl_com_ssl_global_config_object == NULL) {
          ret_val = CL_RETVAL_MALLOC;
       } else {
@@ -2705,7 +2705,7 @@ int cl_com_ssl_setup_connection(cl_com_connection_t**          connection,
    }
 
    /* create private data structure */
-   com_private = (cl_com_ssl_private_t*) malloc(sizeof(cl_com_ssl_private_t));
+   com_private = (cl_com_ssl_private_t*) sge_malloc(sizeof(cl_com_ssl_private_t));
    if (com_private == NULL) {
       cl_com_close_connection(connection);
       return CL_RETVAL_MALLOC;
@@ -2767,7 +2767,7 @@ int cl_com_ssl_setup_connection(cl_com_connection_t**          connection,
                     cl_com_ssl_global_config_object->ssl_lib_lock_num);
 
          cl_com_ssl_global_config_object->ssl_lib_lock_mutex_array = 
-            malloc(cl_com_ssl_global_config_object->ssl_lib_lock_num * sizeof(pthread_mutex_t));
+            sge_malloc(cl_com_ssl_global_config_object->ssl_lib_lock_num * sizeof(pthread_mutex_t));
 
          if (cl_com_ssl_global_config_object->ssl_lib_lock_mutex_array == NULL) {
             CL_LOG(CL_LOG_ERROR,"can't malloc ssl library mutex array");
@@ -2853,7 +2853,7 @@ int cl_com_ssl_setup_connection(cl_com_connection_t**          connection,
    } 
 
    /* ssl_crl_data */
-   com_private->ssl_crl_data = (cl_ssl_verify_crl_data_t*) malloc(sizeof(cl_ssl_verify_crl_data_t));
+   com_private->ssl_crl_data = (cl_ssl_verify_crl_data_t*) sge_malloc(sizeof(cl_ssl_verify_crl_data_t));
    if (com_private->ssl_crl_data == NULL) {
       cl_com_close_connection(connection);
       return CL_RETVAL_MALLOC;

@@ -32,9 +32,6 @@
  ************************************************************************/
 /*___INFO__MARK_END__*/
 
-
-
-
 /*
 ** defines for admin mail handling of the job-related
 ** error states
@@ -50,4 +47,3 @@ int adm_mail_reset(int state);
 void job_related_adminmail(u_long32 progid, lListElem *jr, int is_array, const char *job_owner);
 
 #endif /* __ADMIN_MAIL_H */
-

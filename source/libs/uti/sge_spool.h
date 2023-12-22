@@ -35,6 +35,10 @@
 #include "basis_types.h"
 #include "sge_dstring.h"
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 #define COMMENT_CHAR '#'
 
 /****** uti/spool/sge_file_path_id_t ******************************************
@@ -255,5 +259,9 @@ int sge_get_management_entry(const char *fname, int n, int nmissing, bootstrap_e
 /* get path to active_jobs directory (just for execd and shepherd) */
 const char *sge_get_active_job_file_path(dstring *buffer, u_long32 job_id, 
    u_long32 ja_task_id, const char *pe_task_id, const char *filename);
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif /* _SGE_FILE_PATH_H_ */

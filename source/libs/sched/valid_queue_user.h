@@ -43,4 +43,3 @@ int sge_has_access_(const char *user, const char *group, const lList *q_acl,
 bool sge_ar_have_users_access(lList **alpp, lListElem *ar, const char *name, const lList *acl_list, const lList *xacl_list, const lList *master_userset_list);
 
 #endif /* __VALID_QUEUE_USER_H */
-

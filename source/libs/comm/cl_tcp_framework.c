@@ -552,7 +552,7 @@ int cl_com_tcp_setup_connection(cl_com_connection_t**          connection,
    }
 
    /* create private data structure */
-   com_private = (cl_com_tcp_private_t*) malloc(sizeof(cl_com_tcp_private_t));
+   com_private = (cl_com_tcp_private_t*) sge_malloc(sizeof(cl_com_tcp_private_t));
    if (com_private == NULL) {
       cl_com_close_connection(connection);
       return CL_RETVAL_MALLOC;

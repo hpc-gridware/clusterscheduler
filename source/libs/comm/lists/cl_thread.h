@@ -32,6 +32,10 @@
  ************************************************************************/
 /*___INFO__MARK_END__*/
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 /* 
    thread states 
    =============
@@ -198,5 +202,8 @@ void cl_thread_default_cleanup_function(cl_thread_settings_t* thread_config);
     }
 */
 
+#ifdef __cplusplus
+}
+#endif
 
 #endif /* __CL_THREAD_H */

@@ -35,6 +35,10 @@
 
 #include <pthread.h>
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 /****** uti/sl/--SimpleList() **********************************************
 *
 *  NAME
@@ -227,5 +231,9 @@ sge_sl_get_mutex(sge_sl_list_t *list);
 
 bool
 sge_sl_sort(sge_sl_list_t *list, sge_sl_compare_f compare);
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif

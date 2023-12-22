@@ -47,6 +47,10 @@
 #include "comm/lists/cl_lists.h"
 #include "comm/cl_xml_parsing.h"
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 typedef enum cl_com_debug_message_tag_type {
    CL_DMT_MESSAGE = 1,  /* default */
    CL_DMT_APP_MESSAGE,
@@ -535,5 +539,9 @@ struct cl_com_connection_type {
 };
 
 
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif /* __CL_DATA_TYPES_H */

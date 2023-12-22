@@ -54,7 +54,7 @@ extern int main(void)
   int retval;
   cl_thread_settings_t thread_list[THREAD_COUNT];
 
-/*  timeout_thread = (cl_thread_settings_t*) malloc(sizeof(cl_thread_settings_t)); */
+/*  timeout_thread = (cl_thread_settings_t*) sge_malloc(sizeof(cl_thread_settings_t)); */
 
   for (i=0;i<THREAD_COUNT;i++) {
      char name[20];

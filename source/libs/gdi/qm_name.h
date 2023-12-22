@@ -36,4 +36,3 @@ int get_qm_name(char *master_host, const char *master_file, char *err_str);
 int write_qm_name(const char *master_host, const char *master_file, char *err_str);
 
 #endif /* __QM_NAME_H */
-

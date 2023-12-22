@@ -40,17 +40,7 @@
 #include "cull/cull.h"
 #include "gdi/sge_gdi.h"
 
-#ifdef  __cplusplus
-extern "C" {
-#endif
-
 u_long32 
 gdi_state_get_next_request_id(void);
 
-#ifdef  __cplusplus
-}
-#endif
-
-
 #endif /* __SGE_GDI_INTERN_H */
-

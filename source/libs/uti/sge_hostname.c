@@ -449,7 +449,7 @@ struct hostent *sge_gethostbyname(const char *name, int* system_error_retval)
       char buffer[4096];
       struct hostent *help_he = NULL;
 
-      he = (struct hostent *)malloc (sizeof (struct hostent));
+      he = (struct hostent *)sge_malloc (sizeof (struct hostent));
       if (he != NULL) {
          memset(he, 0, sizeof(struct hostent));
          /* On Solaris, this function returns the pointer to my struct on success
@@ -478,7 +478,7 @@ struct hostent *sge_gethostbyname(const char *name, int* system_error_retval)
       struct hostent_data he_data;
      
       memset(&he_data, 0, sizeof(he_data));
-      he = (struct hostent *)malloc (sizeof (struct hostent));
+      he = (struct hostent *)sge_malloc (sizeof (struct hostent));
       if (he != NULL) {
          memset(he, 0, sizeof(struct hostent));
          if (gethostbyname_r(name, he, &he_data) < 0) {
@@ -585,7 +585,7 @@ struct hostent *sge_gethostbyname(const char *name, int* system_error_retval)
 *******************************************************************************/
 struct hostent *sge_copy_hostent(struct hostent *orig)
 {
-   struct hostent *copy = (struct hostent *)malloc(sizeof(struct hostent));
+   struct hostent *copy = (struct hostent *)sge_malloc(sizeof(struct hostent));
    char **p = NULL;
    int count = 0;
 
@@ -608,7 +608,7 @@ struct hostent *sge_copy_hostent(struct hostent *orig)
       
       DPRINTF (("%d names in h_addr_list\n", count));
       
-      copy->h_addr_list = (char **) malloc (sizeof (char *) * (count + 1));
+      copy->h_addr_list = (char **) sge_malloc (sizeof (char *) * (count + 1));
       
       /* Copy the entries */
       count = 0;
@@ -620,7 +620,7 @@ struct hostent *sge_copy_hostent(struct hostent *orig)
          int tmp_size = sizeof (in_addr_t);
 #endif
          /* struct in_addr */
-         copy->h_addr_list[count] = (char *)malloc (tmp_size);
+         copy->h_addr_list[count] = sge_malloc (tmp_size);
          memcpy (copy->h_addr_list[count++], *p, tmp_size);
       }
       
@@ -634,14 +634,14 @@ struct hostent *sge_copy_hostent(struct hostent *orig)
       
       DPRINTF (("%d names in h_aliases\n", count));
       
-      copy->h_aliases = (char **) malloc (sizeof (char *) * (count + 1));
+      copy->h_aliases = (char **) sge_malloc (sizeof (char *) * (count + 1));
       
       /* Copy the entries */
       count = 0;
       for (p = orig->h_aliases; *p != 0; p++) {
          int tmp_size = (strlen(*p) + 1) * sizeof(char);
 
-         copy->h_aliases[count] = (char *)malloc(tmp_size);
+         copy->h_aliases[count] = sge_malloc(tmp_size);
          memcpy(copy->h_aliases[count++], *p, tmp_size);
       }
       
@@ -722,7 +722,7 @@ struct hostent *sge_gethostbyaddr(const struct in_addr *addr, int* system_error_
    {
       char buffer[4096];
       struct hostent *help_he = NULL;
-      he = (struct hostent *)malloc(sizeof(struct hostent));
+      he = (struct hostent *)sge_malloc(sizeof(struct hostent));
       if (he != NULL) {
          memset(he, 0, sizeof(struct hostent));
 
@@ -752,7 +752,7 @@ struct hostent *sge_gethostbyaddr(const struct in_addr *addr, int* system_error_
       struct hostent_data he_data;
      
       memset(&he_data, 0, sizeof(he_data));
-      he = (struct hostent *)malloc (sizeof (struct hostent));
+      he = (struct hostent *)sge_malloc (sizeof (struct hostent));
       if (he != NULL) {
          memset(he, 0, sizeof(struct hostent));
          if (gethostbyaddr_r ((const char *)addr, 4, AF_INET, he, &he_data) < 0) {

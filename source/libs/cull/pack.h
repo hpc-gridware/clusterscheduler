@@ -121,18 +121,18 @@ int pb_used(sge_pack_buffer *pb);
 bool pb_are_equivalent(sge_pack_buffer *pb1, sge_pack_buffer *pb2);
 void pb_print_to(sge_pack_buffer *pb, bool only_header, FILE*);
 
-int repackint(register sge_pack_buffer *, register u_long32);
-int packint(register sge_pack_buffer *, register u_long32);
-int packint64(register sge_pack_buffer *, register u_long64);
-int packdouble(register sge_pack_buffer *, double);
-int packstr(register sge_pack_buffer *, register const char *);
+int repackint(sge_pack_buffer *, u_long32);
+int packint(sge_pack_buffer *, u_long32);
+int packint64(sge_pack_buffer *, u_long64);
+int packdouble(sge_pack_buffer *, double);
+int packstr(sge_pack_buffer *, const char *);
 int packbuf(sge_pack_buffer *, const char *, u_long32);
 int packbitfield(sge_pack_buffer *, const bitfield *);
 
-int unpackint(register sge_pack_buffer *, register u_long32 *);
-int unpackint64(register sge_pack_buffer *, register u_long64 *);
-int unpackdouble(register sge_pack_buffer *, register double *);
-int unpackstr(register sge_pack_buffer *, register char **);
+int unpackint(sge_pack_buffer *, u_long32 *);
+int unpackint64(sge_pack_buffer *, u_long64 *);
+int unpackdouble(sge_pack_buffer *, double *);
+int unpackstr(sge_pack_buffer *, char **);
 int unpackbuf(sge_pack_buffer *, char **, int);
 int unpackbitfield(sge_pack_buffer *, bitfield *, int descr_size);
 

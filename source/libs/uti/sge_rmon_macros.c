@@ -132,7 +132,7 @@ rmon_helper_t *rmon_get_helper(void)
 
    helper = pthread_getspecific(rmon_helper_key);
    if (helper == NULL) {
-      helper = (rmon_helper_t *)malloc(sizeof(rmon_helper_t));
+      helper = (rmon_helper_t *)sge_malloc(sizeof(rmon_helper_t));
 
       memset(helper, 0, sizeof(rmon_helper_t));
       pthread_setspecific(rmon_helper_key, helper);

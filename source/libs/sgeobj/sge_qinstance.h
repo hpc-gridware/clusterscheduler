@@ -1,6 +1,5 @@
 #ifndef __SGE_QINSTANCE_H
 #define __SGE_QINSTANCE_H
-
 /*___INFO__MARK_BEGIN__*/
 /*************************************************************************
  * 
@@ -106,7 +105,7 @@ qinstance_set_slots_used(lListElem *this_elem, int new_slots);
 int
 qinstance_slots_used(const lListElem *this_elem);
 
-int
+u_long32
 qinstance_slots_reserved(const lListElem *this_elem);
 
 void
@@ -136,8 +135,8 @@ int
 rc_debit_consumable(lListElem *jep, lListElem *ep, const lList *centry_list, int slots,
                  int config_nm, int actual_nm, const char *obj_name, bool is_master_task, bool *just_check);
 
-lListElem *
-explicit_job_request(lListElem *jep, const char *name);
+//lListElem *
+//explicit_job_request(lListElem *jep, const char *name);
 
 bool
 qinstance_list_find_matching(const lList *this_list, lList **answer_list,
@@ -154,4 +153,5 @@ qinstance_verify_full_name(lList **answer_list, const char *full_name);
 
 void
 qinstance_set_error(lListElem *qinstance, u_long32 type, const char *message, bool set_error);
+
 #endif /* __SGE_QINSTANCE_H */

@@ -7,6 +7,10 @@
 
 #include "uti/sge_lock.h"
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 typedef struct sge_fifo_elem_t__ {
    /*
     * is the waiting thread a reader or writer
@@ -101,5 +105,9 @@ sge_fifo_debug(sge_locktype_t aType);
 
 void 
 sge_debug_time(sge_locktype_t aType);
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif

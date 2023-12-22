@@ -30,6 +30,10 @@
  ************************************************************************/
 /*___INFO__MARK_END__*/
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 int   ptym_open(char *pts_name);
 int   ptys_open(int fdm, char *pts_name);
 
@@ -41,3 +45,7 @@ int terminal_enter_raw_mode(void);
 int terminal_leave_raw_mode(void);
 
 ssize_t writen(int fd, const void *buf, size_t n);
+#ifdef __cplusplus
+}
+#endif
+

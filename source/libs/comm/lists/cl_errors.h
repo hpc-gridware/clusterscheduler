@@ -32,6 +32,10 @@
  ************************************************************************/
 /*___INFO__MARK_END__*/
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 #define CL_RETVAL_START_ID 1000
 #define CL_RETVAL_OK                          (CL_RETVAL_START_ID + 0)
 #define CL_RETVAL_MALLOC                      (CL_RETVAL_START_ID + 1)
@@ -167,5 +171,9 @@
 
 int         cl_is_commlib_error(int error_id);
 const char* cl_get_error_text(int error_id);
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif /* __CL_ERROR_H */

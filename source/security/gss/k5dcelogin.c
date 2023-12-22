@@ -252,7 +252,7 @@ main(int argc, char *argv[])
      * if this is a cross cell
      */
 
-	if ((username = malloc(7+strlen(kusername)+strlen(urealm))) == 0) {
+	if ((username = sge_malloc(7+strlen(kusername)+strlen(urealm))) == 0) {
          fprintf(stderr,"Malloc failed for username\n");
          exit(EXIT_STATUS);
 	}
@@ -267,7 +267,7 @@ main(int argc, char *argv[])
 	}
     DEEDEBUG2("username=%s\n",username);
 
-	if ((tgtname = malloc(9 + 2 * strlen(urealm))) == 0) {
+	if ((tgtname = sge_malloc(9 + 2 * strlen(urealm))) == 0) {
          fprintf(stderr,"Malloc failed for tgtname\n");
          exit(EXIT_STATUS);
 	}
@@ -480,7 +480,7 @@ main(int argc, char *argv[])
 	ccname = getenv("KRB5CCNAME"); /* get new version */
 
     if (ccname && (strcmp(cp,"login") == 0)) {
-        if ((ccenv = malloc(11 + strlen(ccname) + 1)) == 0) {
+        if ((ccenv = sge_malloc(11 + strlen(ccname) + 1)) == 0) {
             fprintf(stderr,"Malloc failed for new ccname\n");
             exit(EXIT_STATUS);
         }

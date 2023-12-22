@@ -1,15 +1,15 @@
 # source/clients/qstat
 add_executable(
   qstat
-  qstat.c
-  qstat_cmdline.c
-  qstat_xml.c
-  ../../common/parse_job_cull.c
-  ../../common/parse_qsub.c
-  ../../common/sig_handlers.c
-  ../../common/sge_options.c
-  ../../common/sge_mt_init.c
-  ../../common/usage.c)
+  qstat.cc
+  qstat_cmdline.cc
+  qstat_xml.cc
+  ../../common/parse_job_cull.cc
+  ../../common/parse_qsub.cc
+  ../../common/sig_handlers.cc
+  ../../common/sge_options.cc
+  ../../common/sge_mt_init.cc
+  ../../common/usage.cc)
 
 target_include_directories(qstat PRIVATE ${SGE_INCLUDES} "../../libs/uti"
                                          "../../libs/cull" "../../libs/sgeobj")

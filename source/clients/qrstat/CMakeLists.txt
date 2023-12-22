@@ -1,16 +1,16 @@
 # source/clients/qrstat
 add_executable(
   qrstat
-  qrstat.c
-  qrstat_filter.c
-  qrstat_report_handler.c
-  qrstat_report_handler_stdout.c
-  qrstat_report_handler_xml.c
-  ../../common/parse_job_cull.c
-  ../../common/parse_qsub.c
-  ../../common/sig_handlers.c
-  ../../common/sge_options.c
-  ../../common/usage.c)
+  qrstat.cc
+  qrstat_filter.cc
+  qrstat_report_handler.cc
+  qrstat_report_handler_stdout.cc
+  qrstat_report_handler_xml.cc
+  ../../common/parse_job_cull.cc
+  ../../common/parse_qsub.cc
+  ../../common/sig_handlers.cc
+  ../../common/sge_options.cc
+  ../../common/usage.cc)
 
 target_include_directories(qrstat PRIVATE ${SGE_INCLUDES})
 

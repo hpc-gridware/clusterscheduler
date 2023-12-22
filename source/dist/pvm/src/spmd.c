@@ -156,7 +156,7 @@ char *argv[];
 
       if (nodes>1) {
          int *tids;
-         tids = (int *)malloc(nodes*sizeof(int));
+         tids = (int *)sge_malloc(nodes*sizeof(int));
          /* spawn nodes-1 on other hosts */
          printf("spmd: pvm_spawn(\"%s\", ..)\n", argv[0]);
          numt = pvm_spawn(argv[0], (argc>1)?(&argv[1]):NULL, 

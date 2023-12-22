@@ -155,6 +155,4 @@
 
 #define MSG_GDI_CONTEXT_NULL             _MESSAGE(55015, _("context is NULL"))
 
-
 #endif /* __MSG_GDILIB_H */
-

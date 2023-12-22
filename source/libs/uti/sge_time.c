@@ -305,8 +305,9 @@ const char *sge_ctime32(u_long32 *i, dstring *buffer)
 #else 
    s = (const char *)ctime_r((time_t *)&temp, str);
 #endif
-   if (!s)
+   if (s == NULL) {
       return NULL;
+   }
    return sge_dstring_copy_string(buffer, s);
 }
 

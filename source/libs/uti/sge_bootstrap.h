@@ -36,6 +36,10 @@
 #include "sge_dstring.h"
 #include "setup_path.h"
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 void bootstrap_mt_init(void);
 
 #ifndef GDI_OFF
@@ -117,5 +121,9 @@ void sge_bootstrap_state_class_destroy(sge_bootstrap_state_class_t **pst);
 
 void sge_bootstrap_state_set_thread_local(sge_bootstrap_state_class_t* ctx);
 
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif /* __SGE_BOOTSTRAP_H */

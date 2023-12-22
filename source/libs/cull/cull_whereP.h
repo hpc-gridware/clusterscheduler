@@ -36,6 +36,10 @@
 #include "cull/cull_where.h"
 #include "cull/cull_multitypeP.h"
 
+#ifdef  __cplusplus
+extern "C" {
+#endif
+
 struct _lCondition {
    int op;                      /* operator of the condition                 */
    union {
@@ -60,6 +64,10 @@ struct _WhereArg {
    int         field;
    lMultiType  value;
 }; 
+
+#ifdef  __cplusplus
+}
+#endif
 
 #endif /* __CULL_WHEREP_H */
 

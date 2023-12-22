@@ -32,14 +32,6 @@
  ************************************************************************/
 /*___INFO__MARK_END__*/
 
-#ifdef  __cplusplus
-extern "C" {
-#endif
-
 int pack_job_delivery(sge_pack_buffer *pb, lListElem *jep);
-
-#ifdef  __cplusplus
-}
-#endif
 
 #endif /* _PACK_JOB_DELIVERY_H_ */

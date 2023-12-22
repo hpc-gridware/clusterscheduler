@@ -36,10 +36,6 @@
 
 #include "cull/cull.h"
 
-#ifdef  __cplusplus
-extern "C" {
-#endif
-
 typedef struct _sge_gdi_task_class_t sge_gdi_task_class_t;
 
 typedef struct _sge_gdi_packet_class_t sge_gdi_packet_class_t;
@@ -190,11 +186,4 @@ struct _sge_gdi_packet_class_t {
    sge_gdi_packet_class_t *next;
 };
 
-#ifdef  __cplusplus
-}
-#endif
-
 #endif 
-
-
-

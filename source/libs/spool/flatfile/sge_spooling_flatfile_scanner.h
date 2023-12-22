@@ -35,6 +35,10 @@
 #include <sys/types.h>
 #include <stdio.h>
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 typedef enum {
    SPFT_INT = 1,
    SPFT_FLOAT,
@@ -57,5 +61,9 @@ extern char *spool_text;
 int spool_lex(void);
 int spool_scanner_initialize(FILE *input);
 void spool_scanner_shutdown(void);
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif /* __SGE_SPOOLING_FLATFILE_SCANNER_H */    

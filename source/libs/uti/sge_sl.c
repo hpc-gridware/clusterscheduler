@@ -90,7 +90,7 @@ sge_sl_elem_create(sge_sl_elem_t **elem, void *data) {
       const size_t size = sizeof(sge_sl_elem_t);
       sge_sl_elem_t *new_elem;
 
-      new_elem = (sge_sl_elem_t *)malloc(size);
+      new_elem = (sge_sl_elem_t *)sge_malloc(size);
       if (new_elem != NULL) {
          new_elem->prev = NULL;
          new_elem->next = NULL;
@@ -602,7 +602,7 @@ sge_sl_create(sge_sl_list_t **list) {
       const size_t size = sizeof(sge_sl_list_t);
       sge_sl_list_t *new_list;
 
-      new_list = (sge_sl_list_t *)malloc(size);
+      new_list = (sge_sl_list_t *)sge_malloc(size);
       if (new_list != NULL) {
          pthread_mutexattr_t mutex_attr;
 
@@ -1195,7 +1195,7 @@ sge_sl_sort(sge_sl_list_t *list, sge_sl_compare_f compare) {
 
       sge_mutex_lock(SL_MUTEX_NAME, __func__, __LINE__, &list->mutex);
       size = sizeof(void *) * list->elements;
-      pointer_array = (void**) malloc(size);
+      pointer_array = (void**) sge_malloc(size);
       if (pointer_array != NULL) {
          sge_sl_elem_t *elem = NULL;
          int i;

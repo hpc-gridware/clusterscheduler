@@ -86,14 +86,14 @@ struct sge_evc_class_str {
 
    bool (*ec_mod_subscription_where)(sge_evc_class_t *thiz, ev_event event, const lListElem *what, const lListElem *where);
 
-   int (*ec_set_edtime)(sge_evc_class_t *thiz, int intval);
-   int (*ec_get_edtime)(sge_evc_class_t *thiz);
+   bool (*ec_set_edtime)(sge_evc_class_t *thiz, u_long32 intval);
+   u_long32 (*ec_get_edtime)(sge_evc_class_t *thiz);
 
    bool (*ec_set_busy_handling)(sge_evc_class_t *thiz, ev_busy_handling handling);
    ev_busy_handling (*ec_get_busy_handling)(sge_evc_class_t *thiz);
 
-   bool (*ec_set_flush_delay)(sge_evc_class_t *thiz, int flush_delay);
-   int (*ec_get_flush_delay)(sge_evc_class_t *thiz);
+   bool (*ec_set_flush_delay)(sge_evc_class_t *thiz, u_long32 flush_delay);
+   u_long32 (*ec_get_flush_delay)(sge_evc_class_t *thiz);
 
    bool (*ec_set_busy)(sge_evc_class_t *thiz, int busy);
    bool (*ec_get_busy)(sge_evc_class_t *thiz);
@@ -135,4 +135,3 @@ sge_gdi2_evc_setup(sge_evc_class_t **evc_ref, sge_gdi_ctx_class_t *sge_gdi_ctx,
                    ev_registration_id reg_id, lList **alpp, const char * name);
 
 #endif /* __SGE_C_EVENT2_H */
-

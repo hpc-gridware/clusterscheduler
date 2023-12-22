@@ -37,6 +37,10 @@
 #include "comm/lists/cl_lists.h"
 #include "comm/cl_data_types.h"
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 int cl_com_tcp_get_fd(cl_com_connection_t* connection, int* fd);
 int cl_com_tcp_get_service_port(cl_com_connection_t* connection, int* port);
 int cl_com_tcp_get_connect_port(cl_com_connection_t* connection, int* port);
@@ -86,6 +90,10 @@ int cl_com_tcp_read(cl_com_connection_t* connection, cl_byte_t* message, unsigne
 
 
 
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif /* __CL_TCP_FRAMEWORK_H */
 

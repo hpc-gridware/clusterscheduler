@@ -64,4 +64,3 @@ spool_dynamic_create_context(lList **answer_list, const char *method,
                              const char *shlib_name, const char *args);
 
 #endif /* __SGE_SPOOLING_DYNAMIC_H */    
-

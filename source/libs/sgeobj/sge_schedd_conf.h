@@ -38,10 +38,6 @@
 #include "sgeobj/cull/sge_schedd_conf_PARA_L.h"
 #include "sgeobj/cull/sge_schedd_conf_SC_L.h"
 
-#ifdef  __cplusplus
-extern "C" {
-#endif
-
 /* 
  * valid values for SC_queue_sort_method 
  */
@@ -251,7 +247,4 @@ void sconf_reset_jobs(void);
 
 void sconf_get_weight_ticket_urgency_priority(double *ticket, double *urgency, double *priority);
 
-#ifdef  __cplusplus
-}
-#endif
 #endif                          /* __SGE_SCHEDCONFL_H */

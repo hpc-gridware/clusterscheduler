@@ -1,5 +1,5 @@
 # source/clients/qdel
-add_executable(qdel qdel.c ../../common/sge_options.c ../../common/usage.c)
+add_executable(qdel qdel.cc ../../common/sge_options.cc ../../common/usage.cc)
 target_include_directories(qdel PUBLIC ${SGE_INCLUDES})
 target_link_libraries(
   qdel

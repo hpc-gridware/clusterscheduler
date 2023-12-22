@@ -74,5 +74,4 @@ u_long32 parse_group_options(lList *string_list, lList **anser_list);
 
 bool sge_parse_bitfield_str(const char *str, const char *set_specifier[],
                            u_long32 *value, const char *name, lList **alpp,  bool none_allowed);
-
 #endif /* __PARSE_H */

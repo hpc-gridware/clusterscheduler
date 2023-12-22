@@ -34,6 +34,10 @@
 
 #include "cull/cull_sort.h"
 
+#ifdef  __cplusplus
+extern "C" {
+#endif
+
 struct _lSortOrder {
    int pos;                     /* position in the desc array          */
    int mt;                      /* type of the cont element            */
@@ -43,5 +47,8 @@ struct _lSortOrder {
 
 int lSortCompareUsingGlobal(const void *ep0, const void *ep1);
 
+#ifdef  __cplusplus
+}
+#endif
 #endif /* __CULL_SORTP_H */
 

@@ -35,6 +35,10 @@
 
 #include "sge_sl.h"
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 struct _sge_tq_queue_t {
    /*
     * List that stores tasks.
@@ -89,5 +93,9 @@ sge_tq_wakeup_waiting(sge_tq_queue_t *queue);
 
 bool
 sge_tq_wait_for_task(sge_tq_queue_t *queue, int seconds, sge_tq_type_t type, void **data);
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif

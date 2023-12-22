@@ -208,7 +208,7 @@ int add_config_entry(const char *name, const char *value)
 {
    config_entry *new_entry;
 
-   if ((new_entry = (config_entry *)malloc(sizeof(config_entry))) == NULL) {
+   if ((new_entry = (config_entry *)sge_malloc(sizeof(config_entry))) == NULL) {
       return 1;
    }
    

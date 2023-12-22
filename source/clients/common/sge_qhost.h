@@ -32,10 +32,6 @@
  ************************************************************************/
 /*___INFO__MARK_END__*/
 
-#ifdef  __cplusplus
-extern "C" {
-#endif
-
 #define QHOST_DISPLAY_QUEUES     (1<<0)
 #define QHOST_DISPLAY_JOBS       (1<<1)
 #define QHOST_DISPLAY_RESOURCES  (1<<2)
@@ -47,7 +43,6 @@ typedef struct qhost_report_handler_str qhost_report_handler_t;
 #define QHOST_ERROR   -1
 
 struct qhost_report_handler_str {
-
    void* ctx;
    
    int (*report_started)(qhost_report_handler_t* handler, lList **alpp);
@@ -74,12 +69,8 @@ struct qhost_report_handler_str {
    int (*destroy)(qhost_report_handler_t** handler, lList **alpp);
 };
 
-int do_qhost(void *ctx, lList *host_list, lList *user_list, lList *resource_match_list, 
+int do_qhost(sge_gdi_ctx_class_t *ctx, lList *host_list, lList *user_list, lList *resource_match_list, 
               lList *resource_list, u_long32 show, lList **alp, qhost_report_handler_t* report_handler);
-
-#ifdef  __cplusplus
-}
-#endif
 
 #endif
 

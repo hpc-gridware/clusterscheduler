@@ -1157,7 +1157,7 @@ cl_com_handle_t* cl_com_create_handle(int* commlib_error,
    CL_LOG_STR(CL_LOG_INFO,"local host name is",local_hostname );
 
 
-   new_handle = (cl_com_handle_t*) malloc(sizeof(cl_com_handle_t));
+   new_handle = (cl_com_handle_t*) sge_malloc(sizeof(cl_com_handle_t));
    if (new_handle == NULL) {
       sge_free(&local_hostname);
       CL_LOG(CL_LOG_ERROR,"malloc() error");
@@ -1316,7 +1316,7 @@ cl_com_handle_t* cl_com_create_handle(int* commlib_error,
    new_handle->write_thread = NULL;
 
 
-   new_handle->statistic = (cl_com_handle_statistic_t*)malloc(sizeof(cl_com_handle_statistic_t));
+   new_handle->statistic = (cl_com_handle_statistic_t*)sge_malloc(sizeof(cl_com_handle_statistic_t));
    if (new_handle->statistic == NULL) {
       sge_free(&new_handle);
       sge_free(&local_hostname);
@@ -1335,7 +1335,7 @@ cl_com_handle_t* cl_com_create_handle(int* commlib_error,
    gettimeofday(&(new_handle->last_message_queue_cleanup_time),NULL);
    gettimeofday(&(new_handle->last_statistic_update_time),NULL);
 
-   new_handle->messages_ready_mutex = (pthread_mutex_t*)malloc(sizeof(pthread_mutex_t));
+   new_handle->messages_ready_mutex = (pthread_mutex_t*)sge_malloc(sizeof(pthread_mutex_t));
    if (new_handle->messages_ready_mutex == NULL) {
       cl_com_free_handle_statistic(&(new_handle->statistic));
       sge_free(&new_handle);
@@ -1348,7 +1348,7 @@ cl_com_handle_t* cl_com_create_handle(int* commlib_error,
       return NULL;
    }
 
-   new_handle->connection_list_mutex = (pthread_mutex_t*)malloc(sizeof(pthread_mutex_t));
+   new_handle->connection_list_mutex = (pthread_mutex_t*)sge_malloc(sizeof(pthread_mutex_t));
    if (new_handle->connection_list_mutex == NULL) {
       sge_free(&(new_handle->messages_ready_mutex));
       cl_com_free_handle_statistic(&(new_handle->statistic));
@@ -1667,12 +1667,12 @@ cl_com_handle_t* cl_com_create_handle(int* commlib_error,
          {
             sigset_t old_sigmask;
             cl_com_thread_data_t* thread_data = NULL;
-            thread_data = (cl_com_thread_data_t*) malloc(sizeof(cl_com_thread_data_t));
+            thread_data = (cl_com_thread_data_t*) sge_malloc(sizeof(cl_com_thread_data_t));
             if (thread_data == NULL) {
                return_value = CL_RETVAL_MALLOC;
             } else {
 #ifdef USE_POLL
-               cl_com_poll_t* poll_handle = (cl_com_poll_t*) malloc(sizeof(cl_com_poll_t));
+               cl_com_poll_t* poll_handle = (cl_com_poll_t*) sge_malloc(sizeof(cl_com_poll_t));
                if (poll_handle == NULL) {
                   return_value = CL_RETVAL_MALLOC;
                   sge_free(&thread_data);
@@ -1710,12 +1710,12 @@ cl_com_handle_t* cl_com_create_handle(int* commlib_error,
          {
             sigset_t old_sigmask;
             cl_com_thread_data_t* thread_data = NULL;
-            thread_data = (cl_com_thread_data_t*) malloc(sizeof(cl_com_thread_data_t));
+            thread_data = (cl_com_thread_data_t*) sge_malloc(sizeof(cl_com_thread_data_t));
             if (thread_data == NULL) {
                return_value = CL_RETVAL_MALLOC;
             } else {
 #ifdef USE_POLL
-               cl_com_poll_t* poll_handle = (cl_com_poll_t*) malloc(sizeof(cl_com_poll_t));
+               cl_com_poll_t* poll_handle = (cl_com_poll_t*) sge_malloc(sizeof(cl_com_poll_t));
                if (poll_handle == NULL) {
                   return_value = CL_RETVAL_MALLOC;
                   sge_free(&thread_data);
@@ -2671,7 +2671,7 @@ int cl_com_set_handle_fds(cl_com_handle_t* handle, int** fdArrayBack, unsigned l
 
    fd_count += cl_raw_list_get_elem_count(handle->connection_list);
    if (fd_count > 0) {
-      fd_array = (int*) malloc(sizeof(int) * fd_count);
+      fd_array = (int*) sge_malloc(sizeof(int) * fd_count);
       if (fd_array == NULL) {
          cl_raw_list_unlock(handle->connection_list);
          cl_raw_list_unlock(cl_com_handle_list);
@@ -3396,7 +3396,7 @@ static int cl_commlib_handle_connection_read(cl_com_connection_t* connection) {
          /* set last transfer time of connection */
          memcpy(&connection->last_transfer_time, &message->message_receive_time, sizeof(struct timeval));
    
-         message->message = (cl_byte_t*) malloc(sizeof(cl_byte_t) * size);
+         message->message = (cl_byte_t*) sge_malloc(sizeof(cl_byte_t) * size);
          if (message->message == NULL) {
             cl_com_free_message(&message);
             return CL_RETVAL_MALLOC;   
@@ -3567,7 +3567,7 @@ static int cl_commlib_handle_connection_read(cl_com_connection_t* connection) {
          message->message_tag         = mih_message->tag;
          message->message_response_id = mih_message->rid;
          cl_com_free_mih_message(&mih_message);
-         message->message = (cl_byte_t*) malloc( sizeof(cl_byte_t) * message->message_length);
+         message->message = (cl_byte_t*) sge_malloc( sizeof(cl_byte_t) * message->message_length);
          if (message->message == NULL) {
             cl_raw_list_unlock(connection->received_message_list);
             if (connection->handler != NULL) { 
@@ -4292,7 +4292,7 @@ int cl_com_get_actual_statistic_data(cl_com_handle_t* handle, cl_com_handle_stat
       return CL_RETVAL_PARAMS;
    }
 
-   *statistics = (cl_com_handle_statistic_t*)malloc(sizeof(cl_com_handle_statistic_t));
+   *statistics = (cl_com_handle_statistic_t*)sge_malloc(sizeof(cl_com_handle_statistic_t));
    if (*statistics == NULL) {
       return CL_RETVAL_MALLOC;
    }
@@ -4395,7 +4395,7 @@ int cl_com_external_fd_register(cl_com_handle_t* handle,
    }
    pthread_mutex_unlock(&cl_com_external_fd_list_setup_mutex);
 
-   new_fd = (cl_com_fd_data_t*) malloc(sizeof(cl_com_fd_data_t));
+   new_fd = (cl_com_fd_data_t*) sge_malloc(sizeof(cl_com_fd_data_t));
    if (new_fd == NULL) {
       return CL_RETVAL_MALLOC;
    }
@@ -4522,7 +4522,7 @@ int cl_com_application_debug(cl_com_handle_t* handle, const char* message) {
    dm_buffer_len += strlen(CL_DEBUG_DMT_APP_MESSAGE_FORMAT_STRING);
    dm_buffer_len += 1;
 
-   dm_buffer = (char*) malloc(sizeof(char)*dm_buffer_len);
+   dm_buffer = sge_malloc(sizeof(char)*dm_buffer_len);
    if (dm_buffer == NULL) {
       return CL_RETVAL_MALLOC;
    } else {
@@ -5545,7 +5545,7 @@ static int cl_commlib_send_ack_message(cl_com_connection_t* connection, cl_com_m
    ack_message_size = ack_message_size + cl_util_get_ulong_number_length(message->message_id);
    ack_message_malloc_size = sizeof(cl_byte_t)* ( ack_message_size + 1);
 
-   ack_message_data = (cl_byte_t*)malloc(ack_message_malloc_size) ;
+   ack_message_data = (cl_byte_t*)sge_malloc(ack_message_malloc_size) ;
    if (ack_message_data == NULL) {
       return CL_RETVAL_MALLOC;
    }
@@ -5582,7 +5582,7 @@ static int cl_commlib_send_ccm_message(cl_com_connection_t* connection) {
 
    ccm_message_size        = CL_CCM_MESSAGE_SIZE;
    ccm_message_malloc_size = sizeof(cl_byte_t)* ( ccm_message_size + 1);
-   ccm_message_data = (cl_byte_t*)malloc(ccm_message_malloc_size) ;
+   ccm_message_data = (cl_byte_t*)sge_malloc(ccm_message_malloc_size) ;
    if (ccm_message_data == NULL) {
       return CL_RETVAL_MALLOC;
    }
@@ -5617,7 +5617,7 @@ static int cl_commlib_send_sim_message(cl_com_connection_t* connection, unsigned
 
    sim_message_size = CL_SIM_MESSAGE_SIZE;
    sim_message_malloc_size = sizeof(cl_byte_t)* ( sim_message_size + 1);
-   sim_message_data = (cl_byte_t*)malloc(sim_message_malloc_size) ;
+   sim_message_data = (cl_byte_t*)sge_malloc(sim_message_malloc_size) ;
    if (sim_message_data == NULL) {
       return CL_RETVAL_MALLOC;
    }
@@ -5673,7 +5673,7 @@ static int cl_commlib_send_sirm_message(cl_com_connection_t* connection,
    sirm_message_size += strlen(xml_infotext);
 
    sirm_message_malloc_size = sizeof(cl_byte_t)* (sirm_message_size + 1);
-   sirm_message_data = (cl_byte_t*)malloc(sirm_message_malloc_size);
+   sirm_message_data = (cl_byte_t*)sge_malloc(sirm_message_malloc_size);
    if (sirm_message_data == NULL) {
       if (xml_infotext != NULL) {
          sge_free(&xml_infotext);
@@ -5726,7 +5726,7 @@ static int cl_commlib_send_ccrm_message(cl_com_connection_t* connection) {
 
    ccrm_message_size = CL_CCRM_MESSAGE_SIZE;
    ccrm_message_malloc_size = sizeof(cl_byte_t)* (ccrm_message_size + 1);
-   ccrm_message_data = (cl_byte_t*)malloc(ccrm_message_malloc_size) ;
+   ccrm_message_data = (cl_byte_t*)sge_malloc(ccrm_message_malloc_size) ;
    if (ccrm_message_data == NULL) {
       return CL_RETVAL_MALLOC;
    }
@@ -6870,7 +6870,7 @@ int cl_commlib_send_message(cl_com_handle_t*  handle,
 
    /* make a copy of the message data (if wished) */
    if (copy_data == true) {
-      help_data = (cl_byte_t*)malloc((sizeof(cl_byte_t)*size));
+      help_data = (cl_byte_t*)sge_malloc((sizeof(cl_byte_t)*size));
       if (help_data == NULL) {
          return CL_RETVAL_MALLOC;
       }

@@ -34,6 +34,10 @@
 /*___INFO__MARK_END__*/
 
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 int                 cl_raw_list_setup                   (cl_raw_list_t** list_p, char* list_name, int enable_list_locking);         /* CR check */
 int                 cl_raw_list_cleanup                 (cl_raw_list_t** list_p);                                 /* CR check */
 cl_raw_list_elem_t* cl_raw_list_append_elem             (cl_raw_list_t* list_p, void* data);                      /* CR check */
@@ -48,6 +52,10 @@ cl_raw_list_elem_t* cl_raw_list_get_first_elem          (cl_raw_list_t* list_p);
 cl_raw_list_elem_t* cl_raw_list_get_least_elem          (cl_raw_list_t* list_p);
 cl_raw_list_elem_t* cl_raw_list_get_next_elem           (cl_raw_list_elem_t* elem);                               /* CR check */
 cl_raw_list_elem_t* cl_raw_list_get_last_elem           (cl_raw_list_elem_t* elem);                               /* CR check */
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif /* __CL_RAW_LIST_H */
 

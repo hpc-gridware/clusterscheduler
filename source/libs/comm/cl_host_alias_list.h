@@ -37,6 +37,10 @@
 #include "comm/cl_data_types.h"
 
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 typedef struct cl_host_alias_list_elem_t {
    cl_raw_list_elem_t*   raw_elem;
    char*                 local_resolved_hostname;
@@ -60,6 +64,10 @@ cl_host_alias_list_elem_t* cl_host_alias_list_get_first_elem(cl_raw_list_t* list
 cl_host_alias_list_elem_t* cl_host_alias_list_get_least_elem(cl_raw_list_t* list_p);
 cl_host_alias_list_elem_t* cl_host_alias_list_get_next_elem(cl_host_alias_list_elem_t* elem);
 cl_host_alias_list_elem_t* cl_host_alias_list_get_last_elem(cl_host_alias_list_elem_t* elem);
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif /* __CL_HOST_ALIAS_LIST_H */
 

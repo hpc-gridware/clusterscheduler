@@ -50,4 +50,3 @@ lList *cull_parse_job_parameter(u_long32 uid, const char *username, const char *
 lList *parse_script_file(u_long32 prog_number, const char *script_file, const char *directive_prefix, lList **option_list_ref, char **envp, u_long32 flags);
 
 #endif /* __PARSE_JOB_CULL_H */
-

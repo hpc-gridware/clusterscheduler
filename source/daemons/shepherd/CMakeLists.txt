@@ -1,21 +1,20 @@
 # source/daemons/shepherd
-add_executable(
-  sge_shepherd
-  am_chdir.c
-  builtin_starter.c
-  setjoblimit.c
-  setrlimits.c
-  sge_fileio.c
-  sge_pset.c
-  sge_shepconf.c
-  sge_shepherd_ijs.c
-  shepherd.c
-  shepherd_binding.c
-  signal_queue.c
-  ../../common/sge_mt_init.c
-  ../../common/execution_states.c
-  ../../common/sge_ijs_comm.c
-  ../../common/sge_ijs_threads.c)
+add_executable(sge_shepherd
+  am_chdir.cc
+  builtin_starter.cc
+  setjoblimit.cc
+  setrlimits.cc
+  sge_fileio.cc
+  sge_pset.cc
+  sge_shepconf.cc
+  sge_shepherd_ijs.cc
+  shepherd.cc
+  shepherd_binding.cc
+  signal_queue.cc
+  ../../common/sge_mt_init.cc
+  ../../common/execution_states.cc
+  ../../common/sge_ijs_comm.cc
+  ../../common/sge_ijs_threads.cc)
 
 target_include_directories(sge_shepherd PRIVATE ${SGE_INCLUDES})
 

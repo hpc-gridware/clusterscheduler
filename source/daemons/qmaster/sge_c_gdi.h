@@ -66,7 +66,7 @@ typedef int (*writer_func_t)(
    sge_gdi_ctx_class_t *ctx,
    lList **alpp,
    lListElem *ep,      /* new modified element */
-   gdi_object_t *this   /* some kind of "this" */
+   gdi_object_t *thiz   /* some kind of "this" */
 );
 
 /* allows to retrieve a master list */
@@ -76,7 +76,7 @@ typedef int (*on_success_func_t)(
    sge_gdi_ctx_class_t *ctx,
    lListElem *ep,       /* new modified and already spooled element */
    lListElem *old_ep,   /* old element is NULL in add case */
-   gdi_object_t *this,  /* some kind of "this" */
+   gdi_object_t *thiz,  /* some kind of "this" */
    lList **ppList,       /* a list to pass back information for post processing */
    monitoring_t *monitor  /* monitoring structure */
 );

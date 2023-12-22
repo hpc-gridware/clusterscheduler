@@ -32,6 +32,7 @@
  ************************************************************************/
 /*___INFO__MARK_END__*/
 
+#include "uti/sge_error_class.h"
 #include "sgeobj/cull/sge_answer_AN_L.h"
 
 typedef enum {
@@ -140,6 +141,8 @@ void answer_list_append_list(lList **answer_list, lList **new_list);
 int show_answer(lList *alp);
 
 int show_answer_list(lList *alp);
+
+void answer_list_from_sge_error(sge_error_class_t *eh, lList **alpp, bool clear_errors);
 
 
 #endif /* __SGE_ANSWER_H */

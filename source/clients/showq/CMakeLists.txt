@@ -1,11 +1,11 @@
 # source/clients/showq
 add_executable(
   showq
-  showq.c showq_cmdline_tacc.c showq_support.c ../../common/parse_job_cull.c
-  ../../common/parse_qsub.c ../../common/sig_handlers.c
-  # ../../common/sge_options.c
-  # ../../common/sge_mt_init.c
-  # ../../common/usage.c
+  showq.cc showq_cmdline_tacc.cc showq_support.cc ../../common/parse_job_cull.cc
+  ../../common/parse_qsub.cc ../../common/sig_handlers.cc
+  # ../../common/sge_options.cc
+  # ../../common/sge_mt_init.cc
+  # ../../common/usage.cc
 )
 target_include_directories(showq PUBLIC ${SGE_INCLUDES})
 target_link_libraries(

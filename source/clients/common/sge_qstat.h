@@ -32,10 +32,6 @@
  ************************************************************************/
 /*___INFO__MARK_END__*/
 
-#ifdef  __cplusplus
-extern "C" {
-#endif
-
 #include "gdi/sge_gdi_ctx.h"
 
 typedef struct qstat_env_str qstat_env_t;
@@ -381,10 +377,6 @@ void qstat_filter_add_t_attributes(qstat_env_t *qstat_env);
 void qstat_filter_add_U_attributes(qstat_env_t *qstat_env);
 
 int build_job_state_filter(qstat_env_t *qstat_env, const char* job_state, lList **alpp);
-
-#ifdef  __cplusplus
-}
-#endif
 
 #endif
 

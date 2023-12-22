@@ -133,6 +133,5 @@ struct sge_gdi_ctx_class_str {
    /* dump current settings */
    void (*dprintf)(sge_gdi_ctx_class_t *thiz);
 };
+
 #endif /* __SGE_GDI_CTX_TYPE_H */
-
-

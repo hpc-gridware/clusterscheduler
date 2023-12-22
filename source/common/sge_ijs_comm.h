@@ -142,4 +142,3 @@ int check_client_alive(COMM_HANDLE *handle,
                        const char *component_name,
                        char *hostname,
                        dstring *err_msg);
-

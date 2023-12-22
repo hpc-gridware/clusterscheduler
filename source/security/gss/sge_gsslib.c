@@ -459,7 +459,7 @@ gsslib_put_credentials(gss_cred_id_t server_creds,
    }
 
    if (username && (ret_flags & GSS_C_DELEG_FLAG)) {
-      char *principal = malloc(client_name.length + 1);
+      char *principal = sge_malloc(client_name.length + 1);
       strncpy(principal, client_name.value, client_name.length);
       principal[client_name.length] = 0;
       put_creds_in_ccache(principal, delegated_cred);

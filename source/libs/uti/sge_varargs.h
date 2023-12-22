@@ -35,8 +35,16 @@
 
 #include <stdarg.h>
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 #ifndef va_copy
    #define va_copy(dst, src) memcpy(&dst, &src, sizeof(va_list))
+#endif
+
+#ifdef __cplusplus
+}
 #endif
 
 #endif /* __SGE_VARARGS_H__ */

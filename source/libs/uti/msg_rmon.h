@@ -34,6 +34,10 @@
 
 #include "basis_types.h"
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 /*
  * rmon/src/rmon_macros.c 
  */
@@ -50,5 +54,9 @@
 #define MSG_RMON_XERRORINASHAREDMEMOPERATION_I  "(%d) Error in a Shared Memory Operation !"
 #define MSG_RMON_XERRORINASEMAPHOREOPERATION_I  "(%d) Error in a Semaphore Operation !"
 #define MSG_RMON_FILEXLINEY_SI                  "    File: "SFN", Line: %d"
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif /* __MSG_RMON_H   */

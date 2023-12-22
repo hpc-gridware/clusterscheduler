@@ -1,12 +1,3 @@
-#include <stdio.h>
-#include <errno.h>
-#include <string.h>
-#include <stdlib.h>
-#include <sys/time.h>
-#include <pthread.h>
-
-#include "comm/lists/cl_lists.h"
-
 /*___INFO__MARK_BEGIN__*/
 /*************************************************************************
  *
@@ -39,6 +30,17 @@
  ************************************************************************/
 /*___INFO__MARK_END__*/
 
+#include <stdio.h>
+#include <errno.h>
+#include <string.h>
+#include <stdlib.h>
+#include <sys/time.h>
+#include <pthread.h>
+
+#include "uti/sge_stdlib.h"
+
+#include "comm/lists/cl_lists.h"
+
 
 #define CL_DO_THREAD_DEBUG 0
 
@@ -67,18 +69,18 @@ int cl_thread_create_thread_condition(cl_thread_condition_t** condition ) {
       return CL_RETVAL_PARAMS;
    }
 
-   new_condition =  (cl_thread_condition_t*)malloc(sizeof(cl_thread_condition_t));
+   new_condition =  (cl_thread_condition_t*)sge_malloc(sizeof(cl_thread_condition_t));
    if ( new_condition == NULL) {
       return CL_RETVAL_MALLOC;
    }
 
-   new_condition->thread_mutex_lock = (pthread_mutex_t*)malloc(sizeof(pthread_mutex_t));
+   new_condition->thread_mutex_lock = (pthread_mutex_t*)sge_malloc(sizeof(pthread_mutex_t));
    if ( new_condition->thread_mutex_lock == NULL) {
       free(new_condition);
       return CL_RETVAL_MALLOC;
    }
 
-   new_condition->trigger_count_mutex = (pthread_mutex_t*)malloc(sizeof(pthread_mutex_t));
+   new_condition->trigger_count_mutex = (pthread_mutex_t*)sge_malloc(sizeof(pthread_mutex_t));
    if ( new_condition->trigger_count_mutex == NULL) {
       free(new_condition->thread_mutex_lock);
       free(new_condition);
@@ -87,7 +89,7 @@ int cl_thread_create_thread_condition(cl_thread_condition_t** condition ) {
    new_condition->trigger_count = 0;
 
 
-   new_condition->thread_cond_var = (pthread_cond_t*)malloc(sizeof(pthread_cond_t));
+   new_condition->thread_cond_var = (pthread_cond_t*)sge_malloc(sizeof(pthread_cond_t));
    if (new_condition->thread_cond_var == NULL) {
       free(new_condition->trigger_count_mutex);
       free(new_condition->thread_mutex_lock);
@@ -434,7 +436,7 @@ int cl_thread_setup(cl_thread_settings_t* thread_config,
    thread_config->thread_user_data = user_data;
 
    if (start_routine != NULL) {
-      thread_config->thread_pointer = (pthread_t*)malloc(sizeof(pthread_t));
+      thread_config->thread_pointer = (pthread_t*)sge_malloc(sizeof(pthread_t));
       if (thread_config->thread_pointer == NULL) {
          return CL_RETVAL_MALLOC;
       }

@@ -36,6 +36,10 @@
 #include "basis_types.h"
 #include "uti/sge_rmon.h"
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 #if 0
 #define SGE_DEBUG_LOCK_TIME 
 #endif
@@ -93,5 +97,9 @@ sge_locker_id(void);
 { \
    sge_unlock(type, mode, __func__, sge_locker_id()); \
 }
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif /* _SGE_LOCK_H_ */

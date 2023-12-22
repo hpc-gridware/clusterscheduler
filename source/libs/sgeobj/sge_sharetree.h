@@ -34,7 +34,6 @@
 
 #include "sgeobj/cull/sge_sharetree_STN_L.h"
 
-
 // make sure that the following enum is in sync with libs/sgeobj/json/STN.json
 enum {
    STN_name_POS = 0,

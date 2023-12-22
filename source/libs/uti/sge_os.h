@@ -39,6 +39,10 @@
 #include "sge_nprocs.h"
 #include "sge_nice.h"
  
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 #ifdef WIN32NATIVE
  
 typedef u_int           SOCKET;
@@ -86,6 +90,10 @@ int sge_get_max_fd(void);
 int sge_dup_fd_above_stderr(int *fd);
  
 int sge_occupy_first_three(void);
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif /* __SGE_PIDS_H */
 

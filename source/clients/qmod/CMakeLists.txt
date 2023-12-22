@@ -1,6 +1,6 @@
 # source/clients/qmod
-add_executable(qmod qmod.c ../../common/sig_handlers.c
-                    ../../common/sge_options.c ../../common/usage.c)
+add_executable(qmod qmod.cc ../../common/sig_handlers.cc
+                    ../../common/sge_options.cc ../../common/usage.cc)
 target_include_directories(qmod PRIVATE ${SGE_INCLUDES})
 target_link_libraries(
   qmod

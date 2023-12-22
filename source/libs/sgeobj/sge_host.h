@@ -106,4 +106,3 @@ bool
 host_merge(lListElem *host, const lListElem *global_host);
 
 #endif /* __SGE_HOST_H */
-

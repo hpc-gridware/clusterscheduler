@@ -34,7 +34,6 @@
 
 #include "basis_types.h"
 
-
 /* 
 ** sge_event_client.c
 */ 

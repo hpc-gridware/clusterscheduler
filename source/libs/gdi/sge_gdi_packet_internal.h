@@ -35,10 +35,6 @@
 #include "basis_types.h"
 #include "uti/sge_tq.h"
 
-#ifdef  __cplusplus
-extern "C" {
-#endif
-
 extern sge_tq_queue_t *Master_Task_Queue;
 
 void
@@ -66,11 +62,4 @@ bool
 sge_gdi_packet_wait_for_result_internal(sge_gdi_ctx_class_t* ctx, lList **answer_list,
                                         sge_gdi_packet_class_t **packet_handle, lList **malpp);
 
-#ifdef  __cplusplus
-}
-#endif
-
 #endif 
-
-
-

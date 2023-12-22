@@ -34,6 +34,10 @@
 
 #include <stdlib.h>
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 /****** uti/stdlib/FREE() *****************************************************
 *  NAME
 *     FREE() -- replacement for sge_free()
@@ -71,5 +75,9 @@ const char *sge_getenv(const char *env_str);
 int sge_putenv(const char *var);
 int sge_setenv(const char *name, const char *value);
 void sge_unsetenv(const char* name);
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif /* __SGE_STDLIB_H */

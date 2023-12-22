@@ -35,6 +35,10 @@
 #include "basis_types.h"
 #include "cull/cull.h"
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 typedef struct sge_error_class_str sge_error_class_t;
 
 
@@ -64,13 +68,17 @@ struct sge_error_class_str {
 
 
 sge_error_class_t* sge_error_class_create(void);
+void sge_error_class_clear(sge_error_class_t* thiz);
 void sge_error_class_destroy(sge_error_class_t **error_handler);
 void sge_error_iterator_class_destroy(sge_error_iterator_class_t** emc);
 
 
 void showError(sge_error_class_t *eh);
-void sge_error_to_answer_list(sge_error_class_t *eh, lList **alpp, bool clear_errors);
 void sge_error_to_dstring(sge_error_class_t *eh, dstring *ds);
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif /* __SGE_ERROR_CLASS_H */
 

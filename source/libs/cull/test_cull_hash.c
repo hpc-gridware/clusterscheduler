@@ -342,7 +342,7 @@ int main(int argc, char *argv[])
    }
 
    /* create name array */
-   names = (const char **) malloc (num_names * sizeof(const char *));
+   names = (const char **) sge_malloc (num_names * sizeof(const char *));
 
    /* build random names */
    for (i = 0; i < num_names; i++) {

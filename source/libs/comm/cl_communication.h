@@ -38,6 +38,10 @@
 #include "comm/cl_xml_parsing.h"
 #include "comm/cl_connection_list.h"
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 #define CL_DEFINE_READ_TIMEOUT                       30
 #define CL_DEFINE_WRITE_TIMEOUT                      30
 #define CL_DEFINE_ACK_TIMEOUT                        60
@@ -199,6 +203,10 @@ int cl_com_malloc_poll_array(cl_com_poll_t* poll_handle, unsigned long nr_of_mal
 
 int cl_com_connection_complete_request(cl_raw_list_t* connection_list, cl_connection_list_elem_t* elem, long timeout, cl_select_method_t select_mode );
 
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif /* __CL_COMMUNICATION_H */
 

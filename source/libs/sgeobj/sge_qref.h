@@ -74,5 +74,3 @@ int
 cull_parse_destination_identifier_list(lList **lpp, const char *dest_str);
 
 #endif /* __SGE_QREF_H__ */
-
-

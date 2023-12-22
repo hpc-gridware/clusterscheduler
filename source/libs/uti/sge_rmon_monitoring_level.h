@@ -34,6 +34,10 @@
 
 #include <sys/types.h>
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 /* different layers for monitoring */
 #define N_LAYER          8
 
@@ -70,5 +74,9 @@ void   rmon_mlcpy(monitoring_level *, monitoring_level *);
 void   rmon_mlclr(monitoring_level *);
 u_long rmon_mlgetl(monitoring_level *, int);
 void   rmon_mlputl(monitoring_level *, int, u_long);
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif /* _RMON_MONITORING_LEVEL_H_ */

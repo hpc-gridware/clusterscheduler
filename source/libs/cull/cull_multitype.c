@@ -423,7 +423,7 @@ lDescr *lCopyDescr(const lDescr *dp)
       goto error;
    }
 
-   if (!(new_descr = (lDescr *) malloc(sizeof(lDescr) * (i + 1)))) {
+   if (!(new_descr = (lDescr *) sge_malloc(sizeof(lDescr) * (i + 1)))) {
       LERROR(LEMALLOC);
       goto error;
    }

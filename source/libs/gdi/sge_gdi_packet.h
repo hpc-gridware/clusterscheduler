@@ -36,10 +36,6 @@
 
 #include "cull/cull.h"
 
-#ifdef  __cplusplus
-extern "C" {
-#endif
-
 #define GDI_PACKET_MUTEX "gdi_pack_mutex"
 
 sge_gdi_packet_class_t *
@@ -66,11 +62,4 @@ sge_gdi_packet_verify_version(sge_gdi_packet_class_t *packet, lList **alpp);
 const char *
 sge_gdi_task_get_operation_name(sge_gdi_task_class_t *task);
 
-#ifdef  __cplusplus
-}
-#endif
-
 #endif 
-
-
-

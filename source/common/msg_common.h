@@ -1127,4 +1127,3 @@
  */
 
 #endif /* __MSG_COMMON_H */
-

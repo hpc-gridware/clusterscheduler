@@ -44,16 +44,7 @@
 #include "cull/cull_list.h"
 #include "uti/sge_dstring.h"
 
-#ifdef	__cplusplus
-extern "C" {
-#endif
-   
 /* Exported function */
 int sge_eval_expression(u_long32 type, const char *, const char *, lList **);
    
-#ifdef	__cplusplus
-}
-#endif
-
 #endif	/* _sge_eval_expression_H */
-

@@ -83,7 +83,7 @@ static char *cl_xml_parse_version(char *charptr, unsigned long buffer_length)
    charptr[buffer_length-1] = '\0';
    if ((sign = strchr(charptr, '"'))) {
       int size = sign - charptr;
-      ret = malloc(sizeof(char) * (size + 1));
+      ret = sge_malloc(sizeof(char) * (size + 1));
       if (ret != NULL) {
          ret = strncpy(ret , charptr, size);
          ret [size] = '\0';
@@ -152,7 +152,7 @@ int cl_com_transformXML2String(const char* input, char** output) {
    
    /* since output is shorter than input we don't calculate the output length */
    output_length = input_length;
-   *output = (char*)malloc((sizeof(char) * (1 + output_length)));
+   *output = sge_malloc((sizeof(char) * (1 + output_length)));
    if (*output == NULL) {
       return CL_RETVAL_MALLOC;
    }
@@ -245,7 +245,7 @@ int cl_com_transformString2XML(const char* input, char** output) {
 
    /* we malloc the double size of the original string and hope that we don't need to realloc */
    malloced_size = input_length * 2;
-   *output = (char*)malloc((sizeof(char) * (malloced_size + 1)));
+   *output = sge_malloc((sizeof(char) * (malloced_size + 1)));
    for (i=0; i < input_length; i++) {
       bool found = false;
       int add_length = 1;
@@ -530,7 +530,7 @@ int cl_xml_parse_CM(unsigned char* buffer, unsigned long buffer_length, cl_com_C
       return CL_RETVAL_PARAMS;
    }
 
-   *message = (cl_com_CM_t*)malloc(sizeof(cl_com_CM_t));
+   *message = (cl_com_CM_t*)sge_malloc(sizeof(cl_com_CM_t));
    if (*message == NULL) {
       return CL_RETVAL_MALLOC;
    }
@@ -685,7 +685,7 @@ int cl_xml_parse_CM(unsigned char* buffer, unsigned long buffer_length, cl_com_C
 
    /* get rdata */
    if (rdata_begin > 0 && rdata_end >= rdata_begin) {
-      (*message)->rdata = (cl_com_endpoint_t*)malloc(sizeof(cl_com_endpoint_t));
+      (*message)->rdata = (cl_com_endpoint_t*)sge_malloc(sizeof(cl_com_endpoint_t));
       if ((*message)->rdata == NULL) {
          return CL_RETVAL_MALLOC;
       }
@@ -764,7 +764,7 @@ int cl_xml_parse_CM(unsigned char* buffer, unsigned long buffer_length, cl_com_C
 
    /* get dst data */
    if (dst_begin > 0 && dst_end >= dst_begin) {
-      (*message)->dst = (cl_com_endpoint_t*)malloc(sizeof(cl_com_endpoint_t));
+      (*message)->dst = (cl_com_endpoint_t*)sge_malloc(sizeof(cl_com_endpoint_t));
       if ((*message)->dst == NULL) {
          return CL_RETVAL_MALLOC;
       }
@@ -901,7 +901,7 @@ int cl_xml_parse_CRM(unsigned char* buffer, unsigned long buffer_length, cl_com_
       return CL_RETVAL_PARAMS;
    }
 
-   *message = (cl_com_CRM_t*)malloc(sizeof(cl_com_CRM_t));
+   *message = (cl_com_CRM_t*)sge_malloc(sizeof(cl_com_CRM_t));
    if (*message == NULL) {
       return CL_RETVAL_MALLOC;
    }
@@ -1016,7 +1016,7 @@ int cl_xml_parse_CRM(unsigned char* buffer, unsigned long buffer_length, cl_com_
 
    /* get rdata */
    if (rdata_begin > 0 && rdata_end >= rdata_begin) {
-      (*message)->rdata = (cl_com_endpoint_t*)malloc(sizeof(cl_com_endpoint_t));
+      (*message)->rdata = (cl_com_endpoint_t*)sge_malloc(sizeof(cl_com_endpoint_t));
       if ((*message)->rdata == NULL) {
          cl_com_free_crm_message(message);
          return CL_RETVAL_MALLOC;
@@ -1165,7 +1165,7 @@ int cl_xml_parse_MIH(unsigned char* buffer, unsigned long buffer_length, cl_com_
       return CL_RETVAL_PARAMS;
    }
 
-   *message = (cl_com_MIH_t*)malloc(sizeof(cl_com_MIH_t));
+   *message = (cl_com_MIH_t*)sge_malloc(sizeof(cl_com_MIH_t));
    if (*message == NULL) {
       return CL_RETVAL_MALLOC;
    }
@@ -1371,7 +1371,7 @@ int cl_xml_parse_SIRM(unsigned char* buffer, unsigned long buffer_length, cl_com
       return CL_RETVAL_PARAMS;
    }
 
-   *message = (cl_com_SIRM_t*)malloc(sizeof(cl_com_SIRM_t));
+   *message = (cl_com_SIRM_t*)sge_malloc(sizeof(cl_com_SIRM_t));
    if (*message == NULL) {
       return CL_RETVAL_MALLOC;
    }
@@ -1547,7 +1547,7 @@ int cl_xml_parse_AM(unsigned char* buffer, unsigned long buffer_length, cl_com_A
       return CL_RETVAL_PARAMS;
    }
 
-   *message = (cl_com_AM_t*)malloc(sizeof(cl_com_AM_t));
+   *message = (cl_com_AM_t*)sge_malloc(sizeof(cl_com_AM_t));
    if (*message == NULL) {
       return CL_RETVAL_MALLOC;
    }
@@ -1635,7 +1635,7 @@ int cl_xml_parse_CCM(unsigned char* buffer, unsigned long buffer_length, cl_com_
       return CL_RETVAL_PARAMS;
    }
 
-   *message = (cl_com_CCM_t*)malloc(sizeof(cl_com_CCM_t));
+   *message = (cl_com_CCM_t*)sge_malloc(sizeof(cl_com_CCM_t));
    if (*message == NULL) {
       return CL_RETVAL_MALLOC;
    }
@@ -1700,7 +1700,7 @@ int cl_xml_parse_CCRM(unsigned char* buffer, unsigned long buffer_length, cl_com
       return CL_RETVAL_PARAMS;
    }
 
-   *message = (cl_com_CCRM_t*)malloc(sizeof(cl_com_CCRM_t));
+   *message = (cl_com_CCRM_t*)sge_malloc(sizeof(cl_com_CCRM_t));
    if (*message == NULL) {
       return CL_RETVAL_MALLOC;
    }
@@ -1767,7 +1767,7 @@ int cl_xml_parse_SIM(unsigned char* buffer, unsigned long buffer_length, cl_com_
       return CL_RETVAL_PARAMS;
    }
 
-   *message = (cl_com_SIM_t*)malloc(sizeof(cl_com_SIM_t));
+   *message = (cl_com_SIM_t*)sge_malloc(sizeof(cl_com_SIM_t));
    if (*message == NULL) {
       return CL_RETVAL_MALLOC;
    }
@@ -1880,7 +1880,7 @@ cl_com_endpoint_t* cl_com_create_endpoint(const char* host, const char* name,
       return NULL;
    }
 
-   endpoint = (cl_com_endpoint_t*)malloc(sizeof(cl_com_endpoint_t));
+   endpoint = (cl_com_endpoint_t*)sge_malloc(sizeof(cl_com_endpoint_t));
    if (endpoint == NULL) {
       CL_LOG(CL_LOG_ERROR,"malloc error");
       return NULL;

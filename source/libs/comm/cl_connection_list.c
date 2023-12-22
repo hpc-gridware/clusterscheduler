@@ -51,7 +51,7 @@
 int cl_connection_list_setup(cl_raw_list_t** list_p, char* list_name, int enable_locking, bool create_hash) {
    cl_connection_list_data_t* ldata = NULL;
    int ret_val;
-   ldata = (cl_connection_list_data_t*) malloc(sizeof(cl_connection_list_data_t));
+   ldata = (cl_connection_list_data_t*) sge_malloc(sizeof(cl_connection_list_data_t));
    if (ldata == NULL) {
       return CL_RETVAL_MALLOC;
    }
@@ -139,7 +139,7 @@ int cl_connection_list_append_connection(cl_raw_list_t* list_p, cl_com_connectio
    ldata = list_p->list_data;
 
    /* add new element list */
-   new_elem = (cl_connection_list_elem_t*) malloc(sizeof(cl_connection_list_elem_t));
+   new_elem = (cl_connection_list_elem_t*) sge_malloc(sizeof(cl_connection_list_elem_t));
    if (new_elem == NULL) {
       return CL_RETVAL_MALLOC;
    }

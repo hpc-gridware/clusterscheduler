@@ -43,10 +43,6 @@
 
 #include "basis_types.h"
 
-#ifdef  __cplusplus
-extern "C" {
-#endif
-
 void lWriteElemXMLTo(const lListElem *ep, FILE *fp, int ingnore_name);
 
 lListElem* xml_getHead(const char *name, lList *liste, lList *attributs); 

@@ -34,6 +34,10 @@
 
 #include "basis_types.h"
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 #ifdef __SGE_COMPILE_WITH_GETTEXT__ 
 #define sge_init_language(x, y) sge_init_languagefunc((x), (y))
 int sge_init_languagefunc(char *package, char *localeDir);
@@ -56,6 +60,10 @@ const char *sge_gettext_(int msg_id, const char *msg_str);
 void sge_set_message_id_output(int flag);
 int sge_get_message_id_output(void);
 
+#endif
+
+#ifdef __cplusplus
+}
 #endif
 
 #endif /* __SGE_LANGUAGE_H */

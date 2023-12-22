@@ -174,4 +174,3 @@ enum {
 const char *sge_schedd_text(int number);
 
 #endif /* __SGE_SCHEDD_TEXT_H */
-

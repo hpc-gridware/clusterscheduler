@@ -37,6 +37,10 @@
 #include "basis_types.h"
 
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 /* 
 ** utilib/sge_afsutil.c
 */ 
@@ -271,6 +275,10 @@
 #define MSG_SYN_EXPLICIT_PAIRSNOTUNIQUE        _MESSAGE(59208, _("<socket,core> pairs are not unique!"))
 
 #define MSG_SYNTAX_DSTRINGBUG                  _MESSAGE(59210, _("BUG detected: dstring not initialized!"))
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif /* __MSG_UTILIB_H */
 

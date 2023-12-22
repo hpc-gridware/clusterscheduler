@@ -33,10 +33,6 @@
 #ifndef _MSG_DRMAA_H
 #define	_MSG_DRMAA_H
 
-#ifdef	__cplusplus
-extern "C" {
-#endif
-
 #include "basis_types.h"
    
 #define MSG_DRMAA_SWITCH_WITH_NO_CAT   _MESSAGE(45001, _("No job category could be found even though -cat was detected"))
@@ -49,9 +45,5 @@ extern "C" {
 
 #define MSG_JDRMAA_BAD_JOB_TEMPLATE    _MESSAGE(45101, _("Requested job template does not exist"))
 #define MSG_JDRMAA_NULL_POINTER_S      _MESSAGE(45102, _("The "SFN" may not be null"))
-
-#ifdef	__cplusplus
-}
-#endif
 
 #endif	/* _MSG_DRMAA_H */

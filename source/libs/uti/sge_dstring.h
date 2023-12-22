@@ -57,8 +57,11 @@
 
 #include "sge_stdlib.h"
 
-#define DSTRING_INIT {NULL, 0, 0, false}
+#ifdef __cplusplus
+extern "C" {
+#endif
 
+#define DSTRING_INIT {NULL, 0, 0, false}
 #define DSTRING_STATIC(n, s) char _buffer_for_##n[s] = "\0"; \
                                     dstring n = {_buffer_for_##n, 0, s, true}
 
@@ -104,6 +107,10 @@ const char *sge_dstring_ulong_to_binstring(dstring *sb, u_long32 number);
 bool sge_dstring_split(dstring *string, char character, dstring *before, dstring *after);
 
 void sge_dstring_strip_white_space_at_eol(dstring *string);
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif /* __SGE_STRING_APPEND_H */
 

@@ -36,10 +36,6 @@
 #include "gdi/sge_gdi_ctx.h"
 #include "sgeobj/sge_conf.h"
 
-#ifdef  __cplusplus
-extern "C" {
-#endif
-
 enum {
    TAG_NONE            = 0,     /* usable e.g. as delimiter in a tag array */
    TAG_OLD_REQUEST,
@@ -105,7 +101,7 @@ lList *gdi2_tsm( sge_gdi_ctx_class_t *thiz, const char *schedd_name, const char 
 
 bool sge_gdi2_check_permission(sge_gdi_ctx_class_t *ctx, lList **alpp, int option);
 bool sge_gdi2_get_mapping_name(sge_gdi_ctx_class_t *ctx, const char *requestedHost, 
-                                 char *buf, int buflen);
+                                 char *buf, size_t buflen);
 
 int gdi2_send_message_pb(sge_gdi_ctx_class_t *ctx, 
                          int synchron, const char *tocomproc, int toid, 
@@ -166,11 +162,4 @@ sge_gdi_extract_answer(lList **alpp, u_long32 cmd, u_long32 target, int id,
 
 void gdi2_default_exit_func(void **ref_ctx, int i); 
 
-#ifdef  __cplusplus
-}
 #endif
-
-#endif
-
-
-

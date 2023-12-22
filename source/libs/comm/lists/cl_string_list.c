@@ -35,6 +35,8 @@
 #include <string.h>
 #include <stdlib.h>
 
+#include "uti/sge_stdlib.h"
+
 #include "comm/lists/cl_string_list.h"
 
 #ifdef __CL_FUNCTION__
@@ -95,7 +97,7 @@ int cl_string_list_append_string(cl_raw_list_t* list_p,char* string, int lock_li
    }
 
    /* add new element list */
-   new_elem = (cl_string_list_elem_t*) malloc(sizeof(cl_string_list_elem_t));
+   new_elem = (cl_string_list_elem_t*) sge_malloc(sizeof(cl_string_list_elem_t));
    if (new_elem == NULL) {
       if (lock_list == 1) {
          cl_raw_list_unlock(list_p);

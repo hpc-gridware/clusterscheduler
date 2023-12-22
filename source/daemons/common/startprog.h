@@ -35,5 +35,3 @@
 int startprog(int out, int err, char *, char *, char *, ...);
 
 #endif /* __STARTPROG_H */
-
-

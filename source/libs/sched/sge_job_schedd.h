@@ -106,7 +106,7 @@ int active_subtasks(lListElem *job, const char *qname);
 
 int active_nslots_granted(lListElem *job, const lList *granted, const char *qhostname);
 
-lListElem *explicit_job_request(lListElem *jep, const char *name);
+//lListElem *explicit_job_request(lListElem *jep, const char *name);
 
 int sge_granted_slots(const lList *gdil);
 
@@ -186,7 +186,7 @@ void
 job_lists_split_with_reference_to_max_running(bool monitor_next_run, lList **job_lists[],
                                               lList **user_list,
                                               const char *user_name,
-                                              int max_jobs_per_user);
+                                              u_long32 max_jobs_per_user);
 
 bool
 job_move_first_pending_to_running(lListElem **pending_job,
@@ -202,4 +202,3 @@ void
 user_list_init_jc(lList **user_list, lList **splitted_job_lists[]);
 
 #endif /* __SGE_JOB_SCHEDD_H */
-

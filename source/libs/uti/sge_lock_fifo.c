@@ -79,7 +79,7 @@ sge_fifo_lock_init(sge_fifo_rw_lock_t *lock)
 
    lret = pthread_mutex_init(&(lock->mutex), NULL);
    if (lret == 0) {
-      lock->array = (sge_fifo_elem_t *)malloc(sizeof(sge_fifo_elem_t) * FIFO_LOCK_QUEUE_LENGTH);
+      lock->array = (sge_fifo_elem_t *)sge_malloc(sizeof(sge_fifo_elem_t) * FIFO_LOCK_QUEUE_LENGTH);
 
       if (lock->array != NULL) {
          int i;

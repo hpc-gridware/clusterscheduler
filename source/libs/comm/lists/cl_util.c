@@ -34,6 +34,8 @@
 #include <string.h>
 #include <stdlib.h>
 
+#include "uti/sge_stdlib.h"
+
 #include "comm/lists/cl_util.h"
 #include "comm/lists/cl_errors.h"
 
@@ -120,7 +122,7 @@ int cl_util_get_ascii_hex_buffer(unsigned char* buffer, unsigned long buf_len, c
    }
    asc_buffer_size = buf_len * (2 + sep_length) + 1;
 
-   asc_buffer = (char*) malloc(sizeof(char)*asc_buffer_size);
+   asc_buffer = sge_malloc(sizeof(char)*asc_buffer_size);
    if (asc_buffer == NULL) {
       return CL_RETVAL_MALLOC;
    }
@@ -167,7 +169,7 @@ int cl_util_get_binary_buffer(char* hex_buffer, unsigned char** buffer, unsigned
       return CL_RETVAL_PARAMS;
    }
    bin_buffer_len = hex_buffer_len / 2;
-   bin_buffer = (unsigned char*) malloc(sizeof(char) * bin_buffer_len);
+   bin_buffer = (unsigned char*) sge_malloc(sizeof(char) * bin_buffer_len);
    if (bin_buffer == NULL) {
       return CL_RETVAL_MALLOC;
    }

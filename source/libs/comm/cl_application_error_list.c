@@ -176,7 +176,7 @@ int cl_application_error_list_push_error(cl_raw_list_t* list_p, cl_log_t cl_err_
    }
 
    /* add new element into application error push list */
-   new_elem = (cl_application_error_list_elem_t*) malloc(sizeof(cl_application_error_list_elem_t));
+   new_elem = (cl_application_error_list_elem_t*) sge_malloc(sizeof(cl_application_error_list_elem_t));
    if (new_elem == NULL) {
       if (lock_list == 1) {
          cl_raw_list_unlock(list_p);

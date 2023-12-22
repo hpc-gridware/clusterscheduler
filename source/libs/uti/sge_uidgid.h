@@ -40,6 +40,10 @@
 #include "sge_dstring.h"
 #include "sge_unistd.h"
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 #if defined(HPUX)
 #  define seteuid(euid) setresuid(-1, euid, -1)
 #  define setegid(egid) setresgid(-1, egid, -1)
@@ -108,6 +112,9 @@ int getgrgid_r(gid_t , struct group *,  char *, size_t, struct group **);
 
 #endif
 
+#ifdef __cplusplus
+}
+#endif
 
 #endif /* __SGE_UIDGID_H */
 

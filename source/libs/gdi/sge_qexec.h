@@ -32,10 +32,6 @@
  ************************************************************************/
 /*___INFO__MARK_END__*/
 
-#ifdef  __cplusplus
-extern "C" {
-#endif
-
 #include "sgeobj/cull/sge_qexec_RT_L.h"
 
 #include "gdi/sge_gdi_ctx.h"
@@ -74,9 +70,5 @@ sge_tid_t sge_qexecve(sge_gdi_ctx_class_t *context,
 int sge_qwaittid(sge_gdi_ctx_class_t *context, sge_tid_t tid, int *status, int options);
 
 const char *qexec_last_err(void);
-
-#ifdef  __cplusplus
-}
-#endif
 
 #endif /* _SGE_QEXEC_H_ */

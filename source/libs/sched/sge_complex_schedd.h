@@ -32,7 +32,6 @@
  ************************************************************************/
 /*___INFO__MARK_END__*/
 
-
 void monitor_dominance(char *str, u_long32 mask);
 
 int host_complexes2scheduler(lList **new_complex_list, lListElem *host, 

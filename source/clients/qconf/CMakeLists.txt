@@ -1,13 +1,13 @@
 # source/clients/qconf
 add_executable(
   qconf
-  qconf.c
-  parse_qconf.c
-  sge_client_access.c
-  ../../common/sig_handlers.c
-  ../../common/sge_options.c
-  ../../common/sge_mt_init.c
-  ../../common/usage.c)
+  qconf.cc
+  parse_qconf.cc
+  sge_client_access.cc
+  ../../common/sig_handlers.cc
+  ../../common/sge_options.cc
+  ../../common/sge_mt_init.cc
+  ../../common/usage.cc)
 target_include_directories(qconf PUBLIC ${SGE_INCLUDES})
 target_link_libraries(
   qconf

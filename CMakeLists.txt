@@ -9,11 +9,11 @@ if(CMAKE_INSTALL_PREFIX_INITIALIZED_TO_DEFAULT)
 endif()
 
 project(
-  gridengine
-  VERSION 9.0.0
-  DESCRIPTION "Open Gridengine Workload Manager"
-  HOMEPAGE_URL "https://www.opengridengine.org"
-  LANGUAGES C CXX)
+        gridengine
+        VERSION 9.0.0
+        DESCRIPTION "Open Gridengine Workload Manager"
+        HOMEPAGE_URL "https://www.opengridengine.org"
+        LANGUAGES C CXX)
 
 message(STATUS "Building project ${PROJECT_NAME} version ${PROJECT_VERSION}")
 

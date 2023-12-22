@@ -83,7 +83,7 @@ sge_err_get_object(sge_err_object_t **object) {
    DENTER(ERR_LAYER);
    *object = pthread_getspecific(sge_err_key);
    if (*object == NULL) {
-      sge_err_object_t *new_object = (sge_err_object_t *)malloc(sizeof(sge_err_object_t));
+      sge_err_object_t *new_object = (sge_err_object_t *)sge_malloc(sizeof(sge_err_object_t));
       int pthread_ret = pthread_setspecific(sge_err_key, (void*)new_object);
 
       if (pthread_ret == 0) {

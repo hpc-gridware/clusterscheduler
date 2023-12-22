@@ -32,6 +32,10 @@
  ************************************************************************/
 /*___INFO__MARK_END__*/
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 #ifndef WIN32NATIVE
 #	include <sys/time.h>
 #else 
@@ -58,6 +62,10 @@ void sge_stopwatch_log(int, const char *);
 u_long32 duration_add_offset(u_long32 duration, u_long32 offset);
 
 void sge_usleep(int);
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif /* __SGE_TIME_H */
 

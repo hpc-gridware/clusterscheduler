@@ -55,7 +55,7 @@ int cl_endpoint_list_setup(cl_raw_list_t** list_p,
    struct timeval now;
    cl_endpoint_list_data_t* ldata = NULL;
 
-   ldata = (cl_endpoint_list_data_t*) malloc(sizeof(cl_endpoint_list_data_t));
+   ldata = (cl_endpoint_list_data_t*) sge_malloc(sizeof(cl_endpoint_list_data_t));
    if (ldata == NULL ) {
       return CL_RETVAL_MALLOC;
    }
@@ -245,7 +245,7 @@ int cl_endpoint_list_define_endpoint(cl_raw_list_t* list_p, cl_com_endpoint_t* e
    }
 
    /* add new element list */
-   new_elem = (cl_endpoint_list_elem_t*) malloc(sizeof(cl_endpoint_list_elem_t));
+   new_elem = (cl_endpoint_list_elem_t*) sge_malloc(sizeof(cl_endpoint_list_elem_t));
    if (new_elem == NULL) {
       cl_com_free_endpoint(&dup_endpoint);
       return CL_RETVAL_MALLOC;

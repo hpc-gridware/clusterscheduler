@@ -566,7 +566,7 @@ lSelectElemPack(const lListElem *slp, const lCondition *cp,
          LERROR(LECOUNTWHAT);
          DRETURN(NULL);
       }
-      if (!(dp = (lDescr *) malloc(sizeof(lDescr) * (n + 1)))) {
+      if (!(dp = (lDescr *) sge_malloc(sizeof(lDescr) * (n + 1)))) {
          LERROR(LEMALLOC);
          DRETURN(NULL);
       }
@@ -728,7 +728,7 @@ lList *lSelectHashPack(const char *name, const lList *slp,
             DRETURN(NULL);
          }
 
-         dp = malloc(sizeof(lDescr) * (n + 1));
+         dp = (lDescr *)sge_malloc(sizeof(lDescr) * (n + 1));
          if (dp == NULL) {
             LERROR(LEMALLOC);
             DRETURN(NULL);
@@ -1042,7 +1042,7 @@ lDescr *lJoinDescr(const lDescr *sdp0, const lDescr *sdp1,
       DRETURN(NULL);
    }
 
-   if (!(ddp = (lDescr *) malloc(sizeof(lDescr) * (n + m + 1)))) {
+   if (!(ddp = (lDescr *) sge_malloc(sizeof(lDescr) * (n + m + 1)))) {
       LERROR(LEMALLOC);
       DRETURN(NULL);
    }
@@ -1074,7 +1074,7 @@ lDescr *lGetReducedDescr(const lDescr *type, const lEnumeration *what) {
       DRETURN(NULL);
    }
    
-   if (!(new_descr= (lDescr *) malloc(sizeof(lDescr) * (n + 1)))) {
+   if (!(new_descr= (lDescr *) sge_malloc(sizeof(lDescr) * (n + 1)))) {
       DRETURN(NULL);
    }
    if (lPartialDescr(what, type, new_descr, &index) != 0){

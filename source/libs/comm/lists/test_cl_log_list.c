@@ -108,7 +108,7 @@ extern int main(int argc, char** argv)
   }
 
   /* setup log thread */
-  log_thread = (cl_thread_settings_t*) malloc(sizeof(cl_thread_settings_t));
+  log_thread = (cl_thread_settings_t*) sge_malloc(sizeof(cl_thread_settings_t));
   cl_thread_setup(log_thread, log_list, "log thread", 1,my_log_thread, NULL, NULL, CL_TT_USER1);
   cl_log_list_set_log_level(log_list,CL_LOG_DEBUG );
 

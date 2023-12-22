@@ -233,7 +233,7 @@ htable sge_htable_create(int size,
                           int (*hash_func)(const void *), 
                           int (*compare_func)(const void *, const void *))
 {
-    htable ht = (htable) malloc(sizeof(htable_rec));
+    htable ht = (htable) sge_malloc(sizeof(htable_rec));
 
     ht->size = size;
     ht->mask = (1<<size)-1;
@@ -342,7 +342,7 @@ void sge_htable_store(htable table, const void* key, const void* data)
             return;
         }
     }
-    bucket = (Bucket *)malloc(sizeof(Bucket));
+    bucket = (Bucket *)sge_malloc(sizeof(Bucket));
     bucket->key = table->dup_func(key);
     bucket->data = data;
     bucket->next = *head;
@@ -534,7 +534,7 @@ const void *dup_func_u_long32(const void *key)
    u_long32 *dup_key = NULL;
    u_long32 *cast = (u_long32 *)key;
 
-   if((dup_key = (u_long32 *)malloc(sizeof(u_long32))) != NULL) {
+   if((dup_key = (u_long32 *)sge_malloc(sizeof(u_long32))) != NULL) {
       *dup_key = *cast;
    }
 
@@ -546,7 +546,7 @@ const void *dup_func_u_long64(const void *key)
    u_long64 *dup_key = NULL;
    u_long64 *cast = (u_long64 *)key;
 
-   if((dup_key = (u_long64 *)malloc(sizeof(u_long64))) != NULL) {
+   if((dup_key = (u_long64 *)sge_malloc(sizeof(u_long64))) != NULL) {
       *dup_key = *cast;
    }
 
@@ -558,7 +558,7 @@ const void *dup_func_long(const void *key)
    long *dup_key  = NULL;
    long *cast = (long*)key;
 
-   if((dup_key = (long*) malloc(sizeof(long))) != NULL) {
+   if((dup_key = (long*) sge_malloc(sizeof(long))) != NULL) {
       *dup_key = *cast;
    }
    return dup_key;
@@ -569,7 +569,7 @@ const void *dup_func_pointer(const void *key)
    char **dup_key  = NULL;
    char **cast = (char **)key;
 
-   if((dup_key = (char **) malloc(sizeof(char *))) != NULL) {
+   if((dup_key = (char **) sge_malloc(sizeof(char *))) != NULL) {
       *dup_key = *cast;
    }
    return dup_key;

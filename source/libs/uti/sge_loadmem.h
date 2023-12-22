@@ -32,6 +32,10 @@
  ************************************************************************/
 /*___INFO__MARK_END__*/
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 #if defined(CRAY) || defined(SOLARIS) || defined(HPUX) || defined(ALPHA) || defined(LINUX) || defined(IRIX) || defined(DARWIN) || defined(FREEBSD) || defined(NETBSD) || defined(HAS_AIX5_PERFLIB)
 
 #define SGE_LOADMEM
@@ -73,5 +77,9 @@ typedef struct {
 
 int sge_loadmem(sge_mem_info_t *mem_info);
 #endif /* SGE_LOADMEM */
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif /* __SGE_LOADMEM_H */

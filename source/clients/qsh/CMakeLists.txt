@@ -1,16 +1,16 @@
 # source/clients/qsh
 add_executable(
   qsh
-  qsh.c
-  parse_job_qsh.c
-  ../../common/parse_job_cull.c
-  ../../common/parse_qsub.c
-  ../../common/sig_handlers.c
-  ../../common/sge_options.c
-  # ../../common/sge_mt_init.c
-  ../../common/usage.c
-  ../../common/sge_ijs_comm.c
-  ../../common/sge_ijs_threads.c)
+  qsh.cc
+  parse_job_qsh.cc
+  ../../common/parse_job_cull.cc
+  ../../common/parse_qsub.cc
+  ../../common/sig_handlers.cc
+  ../../common/sge_options.cc
+  # ../../common/sge_mt_init.cc
+  ../../common/usage.cc
+  ../../common/sge_ijs_comm.cc
+  ../../common/sge_ijs_threads.cc)
 target_include_directories(qsh PRIVATE ${SGE_INCLUDES})
 
 target_link_libraries(

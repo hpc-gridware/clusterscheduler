@@ -35,6 +35,14 @@
 
 #include "sge_dstring.h"
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 char *sge_tmpnam(char *aBuffer, dstring *error_message);
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif /* __SGE_TMPNAM_H */

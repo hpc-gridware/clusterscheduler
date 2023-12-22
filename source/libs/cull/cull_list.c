@@ -519,11 +519,11 @@ const lDescr *lGetListDescr(const lList *lp)
 *  NOTES
 *     MT-NOTE: lGetNumberOfElem() is MT safe
 ******************************************************************************/
-int lGetNumberOfElem(const lList *lp) 
+u_long32 lGetNumberOfElem(const lList *lp) 
 {
    DENTER(CULL_LAYER);
 
-   if (!lp) {
+   if (lp == NULL) {
       LERROR(LELISTNULL);
       DRETURN(0);
    }
@@ -584,13 +584,13 @@ int lGetElemIndex(const lListElem *ep, const lList *lp)
 *  RESULT
 *     int - number of elements 
 ******************************************************************************/
-int lGetNumberOfRemainingElem(const lListElem *ep) 
+u_long32 lGetNumberOfRemainingElem(const lListElem *ep) 
 {
-   int i = 0;
+   u_long32 i = 0;
 
    DENTER(CULL_LAYER);
 
-   if (!ep) {
+   if (ep == NULL) {
       DRETURN(0);
    }
 
@@ -903,7 +903,7 @@ lListElem *lCreateElem(const lDescr *dp)
       DRETURN(NULL);
    }
 
-   ep = (lListElem *) malloc(sizeof(lListElem));
+   ep = (lListElem *) sge_malloc(sizeof(lListElem));
 
    if (ep == NULL) {
       LERROR(LEMALLOC);
@@ -913,7 +913,7 @@ lListElem *lCreateElem(const lDescr *dp)
    ep->next = NULL;
    ep->prev = NULL;
  
-   ep->descr = (lDescr *) malloc(sizeof(lDescr) * (n + 1));
+   ep->descr = (lDescr *) sge_malloc(sizeof(lDescr) * (n + 1));
    if (!ep->descr) {
       LERROR(LEMALLOC);
       sge_free(&ep);
@@ -1009,7 +1009,7 @@ lList *lCreateListHash(const char *listname, const lDescr *descr, bool hash)
       DRETURN(NULL);
    }
 
-   if (!(lp = (lList *) malloc(sizeof(lList)))) {
+   if (!(lp = (lList *) sge_malloc(sizeof(lList)))) {
       LERROR(LEMALLOC);
       DRETURN(NULL);
    }
@@ -1029,7 +1029,7 @@ lList *lCreateListHash(const char *listname, const lDescr *descr, bool hash)
 
    lp->first = NULL;
    lp->last = NULL;
-   if (!(lp->descr = (lDescr *) malloc(sizeof(lDescr) * (n + 1)))) {
+   if (!(lp->descr = (lDescr *) sge_malloc(sizeof(lDescr) * (n + 1)))) {
       sge_free(&(lp->listname));
       sge_free(&lp);
       LERROR(LEMALLOC);
@@ -2396,7 +2396,7 @@ int lSortList(lList *lp, const lSortOrder *sp)
       DRETURN(0);                 /* ok list is sorted */
    }
 
-   if (!(pointer = (lListElem **) malloc(sizeof(lListElem *) * n))) {
+   if (!(pointer = (lListElem **) sge_malloc(sizeof(lListElem *) * n))) {
       DRETURN(-1);                /* low memory */
    }
 

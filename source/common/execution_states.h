@@ -34,8 +34,6 @@
 
 #include <sys/types.h>
 
-
-
 /*
 ** when we dont know more than that
 */
@@ -119,6 +117,3 @@ extern int shepherd_state;
 extern pid_t coshepherd_pid;
 
 #endif /* __EXECUTION_STATES_H */
-
-
-

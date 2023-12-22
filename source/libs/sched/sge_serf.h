@@ -32,8 +32,6 @@
  ************************************************************************/
 /*___INFO__MARK_END__*/
 
-
-
 /****** SERF/-SERF_Interface *******************************************************
 *  NAME
 *     SERF -- Schedule entry recording facility
@@ -84,4 +82,3 @@ void serf_new_interval(u_long32 time);
 void serf_exit(void);
 
 #endif /* __SGE_SERF_H */
-

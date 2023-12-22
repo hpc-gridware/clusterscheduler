@@ -93,5 +93,3 @@ hgroup_list_find_matching(const lList *this_list, lList **answer_list,
                           const char *hgroup_pattern, lList **used_hosts);
 
 #endif /* __SGE_GROUPS_H__ */
-
-

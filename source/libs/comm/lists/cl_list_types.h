@@ -38,6 +38,10 @@
 
 #include "basis_types.h"
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 #define CL_THREAD_LIST 1
 #define CL_LOG_LIST    2
 typedef struct cl_thread_settings_type  cl_thread_settings_t;
@@ -144,6 +148,10 @@ typedef struct cl_log_list_data_type {                      /* list specific dat
 /***********************************************************************/
 
 
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif /* __CL_LIST_TYPES_H */
 

@@ -32,10 +32,7 @@
  ************************************************************************/
 /*___INFO__MARK_END__*/
 
-
 #include "basis_types.h"
-
-
 
 /*
 ** global deamon messages
@@ -210,4 +207,3 @@
 #define MSG_HEART_CANT_SIGNAL               _MESSAGE(27100, _("can't send signal to signal thread"))
 
 #endif /* MSG_DAEMONS_COMMON_H */
-

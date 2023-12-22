@@ -36,6 +36,10 @@
 #include "sge_arch.h"
 #include "sge_env.h"
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 #define SGE_PREFIX      "sge_"
 #define SGE_COMMD       "sge_commd"
 #define SGE_SHEPHERD    "sge_shepherd"
@@ -160,6 +164,10 @@ void uti_state_set_mewho(u_long32 who);
 void uti_state_set_exit_on_error(bool i);
 void uti_state_set_exit_func(sge_exit_func_t f);
 
+#endif
+
+#ifdef __cplusplus
+}
 #endif
 
 #endif /* __SGE_PROGNAMES_H */

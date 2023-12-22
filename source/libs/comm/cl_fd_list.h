@@ -36,6 +36,10 @@
 #include "comm/lists/cl_lists.h"
 #include "comm/cl_data_types.h"
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 typedef struct cl_fd_list_elem_t {
    cl_com_fd_data_t*    data;     /* actual data */
    cl_raw_list_elem_t*  raw_elem; /* needed for list chaining */
@@ -55,5 +59,9 @@ cl_fd_list_elem_t* cl_fd_list_get_first_elem(cl_raw_list_t* list_p);
 cl_fd_list_elem_t* cl_fd_list_get_least_elem(cl_raw_list_t* list_p);
 cl_fd_list_elem_t* cl_fd_list_get_next_elem(cl_fd_list_elem_t* elem);
 cl_fd_list_elem_t* cl_fd_list_get_last_elem(cl_fd_list_elem_t* elem);
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif /* __CL_FD_LIST_H */

@@ -42,4 +42,5 @@ void free_procList (void);
 void fill_procList (void);
 void clear_procList (void);
 void clean_procList (void);
+
 #endif /* __SGE_PROC_H */    

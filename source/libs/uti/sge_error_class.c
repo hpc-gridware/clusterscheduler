@@ -74,7 +74,6 @@ static void sge_error_error(sge_error_class_t* thiz, int error_type, int error_q
                             const char*fmt, ...);
                             
 static void sge_error_clear(sge_error_t* et);
-static void sge_error_class_clear(sge_error_class_t* thiz);
 void sge_error_destroy(sge_error_t **t);
 void sge_error_message_destroy(sge_error_message_t** elem);
 
@@ -124,7 +123,7 @@ void sge_error_class_destroy(sge_error_class_t **ec)
    sge_free(ec);
 }
 
-static void sge_error_class_clear(sge_error_class_t* thiz) {
+void sge_error_class_clear(sge_error_class_t* thiz) {
    if (thiz != NULL) {
       sge_error_t *et = (sge_error_t*)thiz->sge_error_handle;
       sge_error_clear(et);
@@ -360,26 +359,6 @@ void showError(sge_error_class_t *eh) {
    printf("%s\n", sge_dstring_get_string(&ds));
    sge_dstring_free(&ds);
 
-}
-
-void sge_error_to_answer_list(sge_error_class_t *eh, lList **alpp, bool clear_errors) {
-   sge_error_iterator_class_t *iter = NULL;
-   
-   if (eh == NULL || alpp == NULL) {
-      return;
-   }
-   iter = eh->iterator(eh);
-   while (iter && iter->next(iter)) {
-      answer_list_add(alpp, 
-                      iter->get_message(iter), 
-                      iter->get_type(iter), 
-                      (answer_quality_t)iter->get_quality(iter));
-   }
-   if (clear_errors) {
-      sge_error_class_clear(eh);
-   }
-
-   sge_error_iterator_class_destroy(&iter);
 }
 
 void sge_error_to_dstring(sge_error_class_t *eh, dstring *ds) {

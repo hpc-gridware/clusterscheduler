@@ -87,7 +87,7 @@ char ** argv;
    i = dispopen = enter = entersum = DEBUG = 0;
    time(&starttime);
    host = getenv("HOST");
-   dpy_name = (char*)malloc(strlen(host)+3);
+   dpy_name = sge_malloc(strlen(host)+3);
    strcpy(dpy_name, host);
    uti_state_set_qualified_hostname(host);
    strcat(dpy_name, ":0");
@@ -95,7 +95,7 @@ char ** argv;
    for (i=1; i<argc; i++) {
       if (!strcmp("-d",argv[i])) {
          dpy_name = argv[++i];
-         host = (char*)malloc(strlen(dpy_name)-1);
+         host = sge_malloc(strlen(dpy_name)-1);
          strncpy(host, dpy_name, (strchr(dpy_name, ':'))-dpy_name);
       } else if (!strcmp("-debug", argv[i])) {
          DEBUG = 1;

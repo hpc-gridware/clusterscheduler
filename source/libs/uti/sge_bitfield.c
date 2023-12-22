@@ -125,7 +125,7 @@ sge_bitfield_new(unsigned int size)
    bitfield *bf;
 
    /* allocate storage for bitfield object */
-   bf = (bitfield *) malloc(sizeof(bitfield));
+   bf = (bitfield *) sge_malloc(sizeof(bitfield));
    if (bf != NULL) {
       /* initialize bitfield, on errors, free bitfield */
       if (!sge_bitfield_init(bf, size)) {
@@ -174,7 +174,7 @@ sge_bitfield_init(bitfield *bf, unsigned int size)
          /* clear buffer */
          bf->bf.dyn = (char *)0;
       } else {
-         bf->bf.dyn = (char *)malloc(char_size);
+         bf->bf.dyn = sge_malloc(char_size);
          if (bf->bf.dyn == NULL) {
             ret = false;
          } else {

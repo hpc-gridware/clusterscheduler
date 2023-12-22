@@ -198,7 +198,7 @@ char *sge_dirname(const char *name, int delim)
       cp2 = strdup(name);
       DRETURN(cp2);
    } else {
-      if ((cp2 = malloc((cp - name) + 1)) == NULL) {
+      if ((cp2 = sge_malloc((cp - name) + 1)) == NULL) {
          DRETURN(NULL);
       } else {
          strncpy(cp2, name, cp - name);
@@ -250,11 +250,11 @@ char *sge_strtok(const char *str, const char *delimitor)
          if (n > alloc_len) {
             /* need more memory */
             sge_free(&static_str);
-            static_str = malloc(n + 1);
+            static_str = sge_malloc(n + 1);
             alloc_len = n;
          }
       } else {
-         static_str = malloc(n + 1);
+         static_str = sge_malloc(n + 1);
          alloc_len = n;
       }
       strcpy(static_str, str);
@@ -450,11 +450,11 @@ char *sge_strtok_r(const char *str, const char *delimitor,
       if (*context != NULL) {
          ERROR((SGE_EVENT, SFNMAX, MSG_POINTER_INVALIDSTRTOKCALL));
       }
-      *context = (struct saved_vars_s *)malloc(sizeof(struct saved_vars_s));
+      *context = (struct saved_vars_s *)sge_malloc(sizeof(struct saved_vars_s));
       memset(*context, 0, sizeof(struct saved_vars_s));
       saved = *context;
 
-      saved->static_str = malloc(strlen(str) + 1);
+      saved->static_str = sge_malloc(strlen(str) + 1);
 
       strcpy(saved->static_str, str);
       saved_cp = saved->static_str;
@@ -568,7 +568,7 @@ char *sge_strdup(char *old_str, const char *s)
     */
    if (s != NULL) {
       int n = strlen(s);
-      ret = malloc(n + 1);
+      ret = sge_malloc(n + 1);
       if (ret != NULL) {
          strcpy(ret, s);
       }
@@ -1091,7 +1091,7 @@ char **sge_stradup(char **cpp, int n)
    }
  
    /* alloc space */
-   cpp1 = (char **) malloc((count + 1) * sizeof(char **));
+   cpp1 = (char **) sge_malloc((count + 1) * sizeof(char **));
    if (!cpp1)
       return NULL;
  
@@ -1105,7 +1105,7 @@ char **sge_stradup(char **cpp, int n)
       else
          len = strlen(*cpp2) + 1;
  
-      *cpp3 = (char *) malloc(len);
+      *cpp3 = (char *) sge_malloc(len);
       if (!(*cpp3)) {
          while ((--cpp3) >= cpp1) {
             sge_free(cpp3);
@@ -1312,7 +1312,7 @@ stra_from_str(const char *source_str, const char *delim)
        */
 
       /* malloc array memory */
-      ret = (char **) malloc(sizeof(char*) * (number_of_tokens + 1));
+      ret = (char **) sge_malloc(sizeof(char*) * (number_of_tokens + 1));
 
       if (ret != NULL) {
          /*
@@ -1501,7 +1501,7 @@ char **string_list(char *str, char *delis, char **pstr)
     * not more items than length of string is possible
     */
    if (pstr == NULL) {
-      head = malloc((sizeof(void *)) * (strlen(str) + 1));
+      head = (char **)sge_malloc((sizeof(void *)) * (strlen(str) + 1));
       if (head == NULL) {
          DRETURN(NULL);
       }
@@ -1723,7 +1723,7 @@ const char *sge_replace_substring(const char *input, const char *search, const c
    /*
     * Allocate new string and re-shuffle original string.
     */
-   return_string = new_string = malloc(new_len);
+   return_string = new_string = sge_malloc(new_len);
    if (new_string == NULL) {
       return NULL;
    }

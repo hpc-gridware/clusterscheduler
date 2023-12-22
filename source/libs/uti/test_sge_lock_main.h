@@ -33,6 +33,10 @@
  ************************************************************************/
 /*___INFO__MARK_END__*/
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 /* Number of threads needed */
 int get_thrd_demand(void);
 
@@ -45,5 +49,9 @@ void *get_thrd_func_arg(void);
 void set_thread_count(int count); 
 
 int validate(int count);
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif  /* _TEST_SGE_LOCK_MAIN_H_ */

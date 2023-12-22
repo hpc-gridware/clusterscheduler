@@ -77,7 +77,7 @@ int cl_fd_list_register_fd(cl_raw_list_t* list_p, cl_com_fd_data_t* fd, int lock
    }
 
    /* add a new elemt to the list */
-   new_elem = (cl_fd_list_elem_t*) malloc(sizeof(cl_fd_list_elem_t));
+   new_elem = (cl_fd_list_elem_t*) sge_malloc(sizeof(cl_fd_list_elem_t));
    if (new_elem == NULL) {
       if (lock_list == 1) {
          cl_raw_list_unlock(list_p);

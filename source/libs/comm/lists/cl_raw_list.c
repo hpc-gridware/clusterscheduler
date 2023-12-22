@@ -36,6 +36,8 @@
 #include <sys/time.h>
 #include <stdlib.h>
 
+#include "uti/sge_stdlib.h"
+
 #include "comm/lists/cl_lists.h"
 
 /* setup raw list
@@ -69,7 +71,7 @@ int cl_raw_list_setup(cl_raw_list_t** list_p, char* list_name ,int enable_list_l
    }
 
    /* get memory for cl_raw_list_t list object */
-   *list_p = (cl_raw_list_t*) malloc(sizeof (cl_raw_list_t));
+   *list_p = (cl_raw_list_t*) sge_malloc(sizeof (cl_raw_list_t));
    if (*list_p == NULL) {
       return CL_RETVAL_MALLOC;
    }
@@ -83,7 +85,7 @@ int cl_raw_list_setup(cl_raw_list_t** list_p, char* list_name ,int enable_list_l
 
    if (enable_list_locking) {
       /* malloc pthread_mutex_t for the list */
-      (*list_p)->list_mutex = (pthread_mutex_t*)malloc(sizeof(pthread_mutex_t));
+      (*list_p)->list_mutex = (pthread_mutex_t*)sge_malloc(sizeof(pthread_mutex_t));
       if ( (*list_p)->list_mutex == NULL) {
          cl_raw_list_cleanup(list_p);
          return CL_RETVAL_MALLOC;
@@ -217,7 +219,7 @@ cl_raw_list_elem_t* cl_raw_list_append_elem(cl_raw_list_t* list_p, void* data) {
    }
 
    /* malloc memory for new cl_raw_list_elem_t */
-   new_elem = (cl_raw_list_elem_t*)malloc(sizeof(cl_raw_list_elem_t));
+   new_elem = (cl_raw_list_elem_t*)sge_malloc(sizeof(cl_raw_list_elem_t));
    if (new_elem == NULL) {
       return NULL;
    }

@@ -44,6 +44,10 @@
 
 #include "sge_dstring.h"
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 typedef enum {
    SGE_PROF_NONE = -1,
    SGE_PROF_OTHER = 0,
@@ -202,5 +206,8 @@ bool prof_output_info(prof_level level, bool with_sub, const char *info);
 void thread_start_stop_profiling(void);
 void thread_output_profiling(const char *title, time_t *next_prof_output);
 
+#ifdef __cplusplus
+}
+#endif
 
 #endif /* __SGE_PROFILING_H */

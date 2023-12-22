@@ -70,7 +70,7 @@ static void addenv(char *key, char *value)
 {
    char *str;
  
-   str = malloc(strlen(key) + strlen(value) + 2);
+   str = sge_malloc(strlen(key) + strlen(value) + 2);
    if (!str) {
       return;
    }

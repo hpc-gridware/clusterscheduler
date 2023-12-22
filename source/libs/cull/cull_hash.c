@@ -219,7 +219,7 @@ cull_htable cull_hash_create(const lDescr *descr, int size)
  
    /* hashtables OK? Then create cull_htable */
    if (ht != NULL) {
-      ret = (cull_htable)malloc(sizeof(struct _cull_htable));
+      ret = (cull_htable)sge_malloc(sizeof(struct _cull_htable));
 
       /* malloc error? destroy hashtables */
       if (ret == NULL) {
@@ -321,7 +321,7 @@ void cull_hash_insert(const lListElem *ep, void *key, cull_htable ht, bool uniqu
       if(sge_htable_lookup(ht->ht, key, (const void **) &head.p) == True) {
          /* We only have something to do if ep isn't already stored */
          if (sge_htable_lookup(ht->nuht, &ep, (const void **)&nuh.p) == False) {
-            nuh.p = (non_unique_hash *)malloc(sizeof(non_unique_hash));
+            nuh.p = (non_unique_hash *)sge_malloc(sizeof(non_unique_hash));
             nuh.l->data = ep;
             nuh.l->prev = head.l->last;
             nuh.l->next = NULL;
@@ -330,8 +330,8 @@ void cull_hash_insert(const lListElem *ep, void *key, cull_htable ht, bool uniqu
             sge_htable_store(ht->nuht, &ep, nuh.p);
          }
       } else { /* no list of non unique elements for this key, create new */
-         head.p = (non_unique_header *)malloc(sizeof(non_unique_header));
-         nuh.p = (non_unique_hash *)malloc(sizeof(non_unique_hash));
+         head.p = (non_unique_header *)sge_malloc(sizeof(non_unique_header));
+         nuh.p = (non_unique_hash *)sge_malloc(sizeof(non_unique_hash));
          head.l->first = nuh.p;
          head.l->last = nuh.p;
          nuh.l->prev = NULL;

@@ -287,8 +287,8 @@ struct _lDescr {
 /* LIST SPECIFIC FUNCTIONS */
 const char *lGetListName(const lList *lp);
 const lDescr *lGetListDescr(const lList *lp);
-int lGetNumberOfElem(const lList *lp);
-int lGetNumberOfRemainingElem(const lListElem *ep);
+u_long32 lGetNumberOfElem(const lList *lp);
+u_long32 lGetNumberOfRemainingElem(const lListElem *ep);
 int lGetElemIndex(const lListElem *ep, const lList *lp);
 
 const lDescr *lGetElemDescr(const lListElem *ep);
@@ -367,15 +367,6 @@ bool lListElem_clear_changed_info(lListElem *lp);
 #define for_each_rev(ep,lp) for (ep=lLast(lp);ep;ep=lPrev(ep))
 #define for_each_rw(ep,lp) for (ep=lFirstRW(lp);ep;ep=lNextRW(ep))
 #define for_each_rev_rw(ep,lp) for (ep=lLastRW(lp);ep;ep=lPrevRW(ep))
-
-#if 0
-#ifndef __cplusplus
-#define for_each(ep,lp) for (ep = ((lp) ? (lp)->first : (lListElem *) NULL); ep; ep = ep->next)
-#else
-#define for_each_cpp(ep,lp) for (ep = ((lp) ? (lp)->first : (lListElem *) NULL); ep; ep = ep->next)
-#endif
-#define for_each_rev(ep,lp) for (ep = ((lp) ? (lp)->last : (lListElem *) NULL); ep; ep = ep->prev)
-#endif
 
 #define for_each_where(ep,lp,cp) \
    for (ep=lFindFirst(lp,cp);ep;ep=lFindNext(ep,cp))

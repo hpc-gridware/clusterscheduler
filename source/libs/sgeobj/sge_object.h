@@ -167,12 +167,12 @@ typedef enum {
    SGE_TYPE_NONE            /* this must the last entry */
 } sge_object_type;
 
-typedef bool (*commitMasterList)(lList **answer_list);
+typedef bool (*commitMasterList_func_t)(lList **answer_list);
 
 /* Datastructure for internal storage of object/message related information */
 typedef struct {
    lList **list;                          /* master list                    */
-   commitMasterList commitMasterList;     /* commit master list set changes */
+   commitMasterList_func_t commitMasterList;     /* commit master list set changes */
    const char *type_name;                 /* type name, e.g. "JOB"      */
    lDescr *descr;                         /* descriptor, e.g. JB_Type       */
    const int key_nm;                      /* nm of key attribute        */
@@ -215,8 +215,14 @@ object_has_type(const lListElem *object, const lDescr *descr);
 const lDescr *
 object_get_type(const lListElem *object);
 
+#ifdef __cplusplus
+extern "C" {
+#endif
 const lDescr *
 object_get_subtype(int nm);
+#ifdef __cplusplus
+}
+#endif
 
 int 
 object_get_primary_key(const lDescr *descr);

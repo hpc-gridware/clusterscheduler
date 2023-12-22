@@ -35,6 +35,10 @@
 
 #include "basis_types.h"
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 /*
  * sge_mtutil.c
  */
@@ -43,5 +47,9 @@
 
 #define MSG_LCK_RWLOCKFORWRITINGFAILED_SSS _MESSAGE(71003, _(SFQ" failed to lock "SFQ" for writing - error: "SFQ))
 #define MSG_LCK_RWLOCKUNLOCKFAILED_SSS     _MESSAGE(71004, _(SFQ" failed to unlock "SFQ" - error: "SFQ))
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif /* __MSG_LCKLIB_H__ */

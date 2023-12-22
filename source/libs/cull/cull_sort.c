@@ -251,7 +251,7 @@ lSortOrder *lParseSortOrder(const lDescr *dp, const char *fmt, va_list ap)
       }
    }
 
-   if (!(sp = (lSortOrder *) malloc(sizeof(lSortOrder) * (n + 1)))) {
+   if (!(sp = (lSortOrder *) sge_malloc(sizeof(lSortOrder) * (n + 1)))) {
       LERROR(LEMALLOC);
       DRETURN(NULL);
    }
@@ -350,7 +350,7 @@ int n
 ) {
    lSortOrder *sp;
 
-   if (!(sp = (lSortOrder *) malloc(sizeof(lSortOrder) * (n + 1)))) {
+   if (!(sp = (lSortOrder *) sge_malloc(sizeof(lSortOrder) * (n + 1)))) {
       LERROR(LEMALLOC);
       return NULL;
    }

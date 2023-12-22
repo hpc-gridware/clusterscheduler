@@ -45,7 +45,7 @@ int sge_quick_count_num_args (
 const char* args /* The argument string to count by whitespace tokens */
 ) {
    int num_args = 0;
-   char *resreq = (char *)malloc (strlen (args)+1);
+   char *resreq = sge_malloc (strlen (args)+1);
    char *s;
    struct saved_vars_s *context = NULL;
    
@@ -81,7 +81,7 @@ char** pargs /* The array to contain the parsed arguments */
 
    DENTER(TOP_LAYER);
    
-   resreq = malloc(strlen(args) + 1);
+   resreq = sge_malloc(strlen(args) + 1);
    d = resreq;
    s = args;
    start = resreq;
@@ -319,7 +319,7 @@ char ***pargs)
    sge_sl_elem_t *pelem;
 
    count = sge_sl_get_elem_count(sl_args);
-   *pargs = (char**)malloc((count+1)*sizeof(char*));
+   *pargs = (char**)sge_malloc((count+1)*sizeof(char*));
 
    i = 0;
    for_each_sl(pelem, sl_args) {

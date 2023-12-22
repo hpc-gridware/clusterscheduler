@@ -37,5 +37,5 @@
 int sort_host_list(lList *host_list, const lList *complex_list);
 
 double scaled_mixed_load(const char* load_formula, lListElem *global, lListElem *host, const lList *centry_list);
-#endif /* _SORT_HOSTS_H */
 
+#endif /* _SORT_HOSTS_H */

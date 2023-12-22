@@ -38,6 +38,10 @@
 #include "basis_types.h"
 #include "uti/sge_dstring.h"
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 /**
  * Monitoring functionality:
  * -------------------------
@@ -151,7 +155,7 @@ typedef enum {
 typedef struct {
    /*--- init data ------------*/
    const char *thread_name;
-   u_long32    monitor_time;        /* stores the time interval for the mesuring run */
+   time_t      monitor_time;        /* stores the time interval for the mesuring run */
    bool        log_monitor_mes;     /* if true, it logs the monitoring info into the message file */
    /*--- output data ----------*/
    dstring *output_line1;
@@ -379,5 +383,9 @@ typedef struct {
 #define MONITOR_TET_EXEC(monitor)  if ((monitor->monitor_time > 0) && (monitor->ext_type == TET_EXT)) \
                                     ((m_tet_t*)(monitor->ext_data))->exec_count++
 
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif /* _SGE_MONITIR_H */

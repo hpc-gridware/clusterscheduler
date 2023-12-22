@@ -38,6 +38,10 @@
 
 #include <signal.h>
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 #define SGE_SIGHUP                         901
 #define SGE_SIGINT                         902
 #define SGE_SIGQUIT                        903
@@ -97,6 +101,10 @@ void sge_set_def_sig_mask(sigset_t*, err_func_t);
 void sge_unblock_all_signals(void);
 
 int sge_thread_block_all_signals(sigset_t *oldsigmask);
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif /* __SGE_SIGNAL_H */
 

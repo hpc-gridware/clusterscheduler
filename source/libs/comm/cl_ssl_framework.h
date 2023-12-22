@@ -37,6 +37,10 @@
 #include "comm/cl_data_types.h"
 
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 #define CL_COM_SSL_FRAMEWORK_MAX_INT      32767
 #define CL_COM_SSL_FRAMEWORK_MIN_INT_SIZE 4
 
@@ -138,6 +142,10 @@ int cl_com_ssl_open_connection_request_handler(cl_com_handle_t*      handle,
                                                int                   timeout_val_sec,
                                                int                   timeout_val_usec, 
                                                cl_select_method_t    select_mode);
+#endif
+
+#ifdef __cplusplus
+}
 #endif
 
 #endif /* __CL_SSL_FRAMEWORK_H */

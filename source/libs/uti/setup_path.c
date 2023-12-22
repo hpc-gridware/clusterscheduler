@@ -371,7 +371,7 @@ bool sge_setup_paths(u_long32 progid, const char *sge_cell, dstring *error_dstri
       }   
    }
 
-   common_dir = malloc(strlen(cell_root) + strlen(COMMON_DIR) + 2);
+   common_dir = sge_malloc(strlen(cell_root) + strlen(COMMON_DIR) + 2);
    sprintf(common_dir, "%s"PATH_SEPARATOR"%s", cell_root, COMMON_DIR);
    if (SGE_STAT(common_dir, &sbuf)) {
       if (progid != QMASTER) {  

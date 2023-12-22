@@ -259,8 +259,8 @@ main(int argc, char *argv[])
    }
 
    /* create array to hold bitfields, to be used per test loop */
-   b1 = (bitfield *)malloc(test_bf_loops * sizeof (bitfield));
-   b2 = (bitfield *)malloc(test_bf_loops * sizeof (bitfield));
+   b1 = (bitfield *)sge_malloc(test_bf_loops * sizeof (bitfield));
+   b2 = (bitfield *)sge_malloc(test_bf_loops * sizeof (bitfield));
    printf("performing %d loops per action\n", test_bf_loops);
 
    /* test nullpointer actions */

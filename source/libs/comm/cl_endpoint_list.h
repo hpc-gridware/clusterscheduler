@@ -38,6 +38,10 @@
 #include "comm/lists/cl_lists.h"
 #include "comm/cl_data_types.h"
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 #define CL_ENDPOINT_LIST_DEFAULT_LIFE_TIME     60 * 60 * 24  /* 24 h   (without hearing anything from and endpoint) */
 #define CL_ENDPOINT_LIST_DEFAULT_REFRESH_TIME  10            /*   1 s   (refresh list every 10 seconds */
 
@@ -89,6 +93,10 @@ cl_endpoint_list_elem_t* cl_endpoint_list_get_next_elem(cl_endpoint_list_elem_t*
 cl_endpoint_list_elem_t* cl_endpoint_list_get_last_elem(cl_endpoint_list_elem_t* elem);
 cl_endpoint_list_elem_t* cl_endpoint_list_get_elem_endpoint(cl_raw_list_t* list_p, cl_com_endpoint_t *endpoint);
 
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif /* __CL_ENDPOINT_LIST_H */
 

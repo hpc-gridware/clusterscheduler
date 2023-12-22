@@ -40,6 +40,10 @@
 
 #include "basis_types.h"
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 /* On some systems, FOPEN is already defined as value -1 */
 #undef FOPEN
 
@@ -166,5 +170,9 @@ pid_t sge_peopen_r(const char *shell, int login_shell, const char *command,
 #define SGE_DEFAULT_PATH "/usr/local/bin:/bin:/usr/bin"
 #endif
 
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif /* __SGE_STDIO_H */

@@ -545,7 +545,7 @@ static int read_kernel_table(char *name, void **table, long *size,
    tsize = tinfo.head + (tinfo.ent * tinfo.len);
    if (tsize > *size) {
       sge_free(table);
-      *table = malloc(tsize);
+      *table = (void *)sge_malloc(tsize);
       if (*table == NULL) {
 /*          fprintf(stderr, MSG_MEMORY_MALLOCFAILED_D, tsize); */
          return -1;

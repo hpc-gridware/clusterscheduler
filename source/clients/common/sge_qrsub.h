@@ -35,15 +35,7 @@
 #include "cull/cull.h"
 #include "gdi/sge_gdi_ctx.h"
 
-#ifdef  __cplusplus
-extern "C" {
-#endif
-
 bool sge_parse_qrsub(sge_gdi_ctx_class_t *ctx, lList *pcmdline, lList **alpp, lListElem **ar);
-
-#ifdef  __cplusplus
-}
-#endif
 
 #endif
 

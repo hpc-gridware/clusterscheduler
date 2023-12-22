@@ -63,9 +63,9 @@
 *        bool copy_field_names;
 *        bool strip_field_prefix;
 *        const struct spool_instr *sub_instr;
-*     } spool_instr;
+*     } spool_instr_t;
 *     
-*     extern const spool_instr spool_config_instr;
+*     extern const spool_instr_t spool_config_instr;
 *     
 *     typedef struct spooling_field {
 *        int nm;
@@ -111,16 +111,16 @@ typedef struct spool_instr {
    bool strip_field_prefix;
    const struct spool_instr *sub_instr;
    const void *clientdata;
-} spool_instr;
+} spool_instr_t;
 
-extern const spool_instr spool_config_instr;
-extern const spool_instr spool_config_subinstr;
+extern const spool_instr_t spool_config_instr;
+extern const spool_instr_t spool_config_subinstr;
 
-extern const spool_instr spool_complex_instr;
-extern const spool_instr spool_complex_subinstr;
+extern const spool_instr_t spool_complex_instr;
+extern const spool_instr_t spool_complex_subinstr;
 
-extern const spool_instr spool_user_instr;
-extern const spool_instr spool_userprj_subinstr;
+extern const spool_instr_t spool_user_instr;
+extern const spool_instr_t spool_userprj_subinstr;
 
 typedef struct spooling_field {
    int nm;
@@ -134,7 +134,7 @@ typedef struct spooling_field {
 
 spooling_field *
 spool_get_fields_to_spool(lList **answer_list, const lDescr *descr, 
-                          const spool_instr *instr);
+                          const spool_instr_t *instr);
 
 spooling_field *
 spool_free_spooling_fields(spooling_field *fields);

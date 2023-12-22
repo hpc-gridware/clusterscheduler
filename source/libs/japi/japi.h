@@ -70,9 +70,6 @@
 *     JAPI/japi_standard_error()
 *     JAPI/japi_init_mt()
 *******************************************************************************/
-#ifdef  __cplusplus
-extern "C" {
-#endif
 
 /* Bitfield for japi_wait() event flag */
 enum japi_events {
@@ -328,9 +325,5 @@ drmaa_attr_values_t *japi_allocate_string_vector(int type);
 int japi_init_mt(dstring *diag);
 
 bool japi_is_delegated_file_staging_enabled(dstring *diag);
-
-#ifdef  __cplusplus
-}
-#endif
 
 #endif /* __JAPI_H */

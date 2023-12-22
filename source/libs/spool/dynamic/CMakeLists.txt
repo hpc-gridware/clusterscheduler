@@ -1,7 +1,7 @@
 # source/libs/spool/dynamic
 if(${WITH_SPOOL_DYNAMIC})
    set(LIBRARY_NAME spoold)
-   set(LIBRARY_SOURCES sge_spooling_dynamic.c)
+   set(LIBRARY_SOURCES sge_spooling_dynamic.cc)
    set(LIBRARY_INCLUDES "./")
 
    add_library(${LIBRARY_NAME}_objlib OBJECT ${LIBRARY_SOURCES})

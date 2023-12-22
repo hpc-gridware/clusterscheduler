@@ -37,6 +37,10 @@
 #include "comm/cl_data_types.h"
 #include "uti/sge_htable.h"
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 #define CL_HOST_LIST_DEFAULT_RERESOLVE_TIME  1  * 60       /*  1 min */
 #define CL_HOST_LIST_DEFAULT_UPDATE_TIME     2  * 60       /*  2 min */
 #define CL_HOST_LIST_DEFAULT_LIFE_TIME      10  * 60       /* 10 min */ 
@@ -94,6 +98,10 @@ cl_host_list_elem_t* cl_host_list_get_least_elem(cl_raw_list_t* list_p);
 cl_host_list_elem_t* cl_host_list_get_next_elem(cl_host_list_elem_t* elem);
 cl_host_list_elem_t* cl_host_list_get_last_elem(cl_host_list_elem_t* elem);
 
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif /* __CL_HOST_LIST_H */
 

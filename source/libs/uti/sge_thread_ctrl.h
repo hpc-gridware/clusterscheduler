@@ -34,6 +34,10 @@
 
 #include <pthread.h>
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 typedef struct _thread_control_t {
    /* Used to guard 'cond_var' and 'shutdown_started' variable of this structure */
    pthread_mutex_t mutex;
@@ -58,6 +62,10 @@ sge_thread_notify_all_waiting(void);
 
 void
 sge_thread_wait_for_signal(void);
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif
 

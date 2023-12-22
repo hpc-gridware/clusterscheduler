@@ -36,6 +36,8 @@
 #include <string.h>
 #include <sys/time.h>
 
+#include "uti/sge_stdlib.h"
+
 #include "comm/lists/cl_lists.h"
 
 /* this functions must lock / unlock the raw list manually */
@@ -58,7 +60,7 @@ static int cl_thread_list_add_thread(cl_raw_list_t* list_p, cl_thread_settings_t
    }
 
    /* create new cl_thread_list_elem_t element */
-   new_elem = (cl_thread_list_elem_t*) malloc(sizeof(cl_thread_list_elem_t));
+   new_elem = (cl_thread_list_elem_t*) sge_malloc(sizeof(cl_thread_list_elem_t));
    if (new_elem == NULL) {
       return CL_RETVAL_MALLOC;
    }
@@ -138,7 +140,7 @@ int cl_thread_list_create_thread(cl_raw_list_t* list_p,
    }
 
    /* malloc memory for thread settings, freed in cl_thread_list_delete_thread() */
-   thread_p = (cl_thread_settings_t*) malloc(sizeof(cl_thread_settings_t));  
+   thread_p = (cl_thread_settings_t*) sge_malloc(sizeof(cl_thread_settings_t));  
    if (thread_p == NULL) {
       return CL_RETVAL_MALLOC;
    }

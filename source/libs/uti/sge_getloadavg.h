@@ -32,6 +32,10 @@
  ************************************************************************/
 /*___INFO__MARK_END__*/
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 #if defined(LINUX) || defined(SOLARIS) || defined(SOLARIS64) || defined(CRAY) || defined(ALPHA4) || defined(ALPHA5) || defined(IRIX) || defined(DARWIN) || defined(FREEBSD) || defined(NETBSD) || defined(HAS_AIX5_PERFLIB) || defined(INTERIX)
 #  define SGE_LOADAVG
 #endif
@@ -57,6 +61,10 @@ int sge_getcpuload(double *cpu_load);
 #endif
 
 int get_channel_fd(void);  
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif /* __SGE_GETLOADAVG_H */
 

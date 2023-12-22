@@ -132,7 +132,7 @@ sge_tq_task_create(sge_tq_task_t **task, sge_tq_type_t type, void *data) {
       sge_tq_task_t *new_task;
       int size = sizeof(sge_tq_task_t);
 
-      new_task = (sge_tq_task_t *)malloc(size);
+      new_task = (sge_tq_task_t *)sge_malloc(size);
       if (new_task != NULL) {
          new_task->type = type;
          new_task->data = data;
@@ -212,7 +212,7 @@ sge_tq_create(sge_tq_queue_t **queue) {
       sge_tq_queue_t *new_queue;
       int size = sizeof(sge_tq_queue_t);
 
-      new_queue = (sge_tq_queue_t *)malloc(size);
+      new_queue = (sge_tq_queue_t *)sge_malloc(size);
       if (new_queue != NULL) {
          sge_sl_create(&new_queue->list);
          pthread_cond_init(&new_queue->cond, NULL);

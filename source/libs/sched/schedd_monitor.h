@@ -52,4 +52,3 @@ bool schedd_is_monitor_next_run(void);
 void schedd_set_schedd_log_file(sge_gdi_ctx_class_t *ctx);
 
 #endif /* __SCHEDD_MONITOR_H */
-

@@ -37,6 +37,10 @@
 #include "comm/lists/cl_lists.h"
 #include "comm/cl_data_types.h"
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 typedef struct cl_app_message_queue_elem_t {
 
    /* when used as received_message_queue */
@@ -79,6 +83,10 @@ cl_app_message_queue_elem_t* cl_app_message_queue_get_least_elem(cl_raw_list_t* 
 cl_app_message_queue_elem_t* cl_app_message_queue_get_next_elem(cl_app_message_queue_elem_t* elem);
 cl_app_message_queue_elem_t* cl_app_message_queue_get_last_elem(cl_app_message_queue_elem_t* elem);
 
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif /* __CL_APP_MESSAGE_QUEUE_H */
 

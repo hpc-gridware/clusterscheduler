@@ -81,7 +81,7 @@ struct _lListElem {
 };
 
 struct _lList {
-   int nelem;                   /* number of elements in the list            */
+   u_long32 nelem;              /* number of elements in the list            */
    char *listname;              /* name of the list                          */
    bool changed;                /* the list has been changed                 */
    lDescr *descr;               /* pointer to the descriptor array           */

@@ -48,10 +48,21 @@
 #include "uti/sge_dstring.h"
 #include "uti/sge_binding_parse.h"
 
+// plpa header do not contain #ifdef __cplusplus
 #if defined(PLPA_LINUX)
+#ifdef __cplusplus
+extern "C" {
+#endif
 #  include <plpa.h>
 #  include <dlfcn.h>
+#ifdef __cplusplus
+}
+#endif
 #endif 
+
+#ifdef __cplusplus
+extern "C" {
+#endif
 
 /* functions related for parsing command line (see parse_qsub.c) */
 /* shepherd also needs them */
@@ -94,5 +105,9 @@ const char* binding_get_topology_for_job(const char *binding_result);
 
 bool topology_string_to_socket_core_lists(const char* topology, int** sockets,
                                      int** cores, int* amount);
+#ifdef __cplusplus
+}
+#endif
+
 #endif /* __SGE_BINDING_HLP_H */
 

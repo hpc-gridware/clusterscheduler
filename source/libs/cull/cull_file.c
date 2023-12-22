@@ -228,7 +228,7 @@ lListElem *lReadElemFromDisk(const char *prefix, const char *name,
    /* init packing buffer */
    size = statbuf.st_size;
    if (((SGE_OFF_T)size != statbuf.st_size)
-       || !(buf = malloc(statbuf.st_size))) {
+       || !(buf = sge_malloc(statbuf.st_size))) {
       CRITICAL((SGE_EVENT, SFNMAX, MSG_CULL_LEMALLOC));
       clear_packbuffer(&pb);
       DRETURN(NULL);

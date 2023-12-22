@@ -30,6 +30,10 @@
 ************************************************************************/
 /*___INFO__MARK_END__*/
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 #if defined(SOLARIS)
 /* Redefines from libscf.h */
 #define	SCF_PG_RESTARTER		((const char *)"restarter")
@@ -51,3 +55,7 @@ char *sge_smf_get_instance_next_state(void);
 #else
 void dummy(void);
 #endif
+#ifdef __cplusplus
+}
+#endif
+

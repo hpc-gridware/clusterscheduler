@@ -104,4 +104,3 @@ void job_report_init_from_job_with_usage(lListElem *job_report,
                                          u_long32 time_stamp);
 
 #endif /* __SGE_REPORT_H */
-

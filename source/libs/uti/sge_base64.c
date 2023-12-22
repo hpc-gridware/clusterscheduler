@@ -34,6 +34,7 @@
 #include <stdio.h>
 #include <string.h>
 
+#include "uti/sge_stdlib.h"
 #include "uti/sge_base64.h"
 
 
@@ -43,7 +44,7 @@ buffer_encode_hex(unsigned char *input, size_t len, unsigned char **output)
    size_t s;
 
    s = len * 2 + 1;
-   *output = malloc(s);
+   *output = (unsigned char *)sge_malloc(s);
    memset(*output, 0, s);
 
    for (s = 0; s < len; s++) {
@@ -62,7 +63,7 @@ buffer_decode_hex(unsigned char *input, size_t *len, unsigned char **output)
    size_t s;
 
    s = *len / 2 + 1;
-   *output = malloc(s);
+   *output = (unsigned char *)sge_malloc(s);
    memset(*output, 0, s);
 
    for (s = 0; s < *len; s+=2) {

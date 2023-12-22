@@ -98,7 +98,7 @@ main(int argc, char **argv)
    fprintf(stderr, MSG_GSS_READLENGTHOFX_I, (int)client_cred.length);
    fprintf(stderr, "\n");
 
-   if ((client_cred.value = (char *)malloc(client_cred.length)) == 0) {
+   if ((client_cred.value = sge_malloc(client_cred.length)) == 0) {
       fprintf(stderr, MSG_GSS_COULDNOTALLOCATEXBYTESFORCREDENTIALS_I,
               (int)client_cred.length);
       fprintf(stderr, "\n");

@@ -36,6 +36,10 @@
 
 #include "comm/cl_data_types.h"
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 typedef struct cl_handle_list_elem {
    cl_com_handle_t* handle;   /* data */
    cl_raw_list_elem_t*   raw_elem;
@@ -58,6 +62,10 @@ cl_handle_list_elem_t* cl_handle_list_get_first_elem(cl_raw_list_t* list_p);  /*
 cl_handle_list_elem_t* cl_handle_list_get_next_elem(cl_handle_list_elem_t* elem);  /* CR check */
 cl_handle_list_elem_t* cl_handle_list_get_last_elem(cl_handle_list_elem_t* elem);  /* CR check */
 
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif /* __CL_HANDLE_LIST_H */
 

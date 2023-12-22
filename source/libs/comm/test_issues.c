@@ -400,7 +400,7 @@ extern int main(int argc, char** argv)
            main_return = 1;
            break;
         }
-        data = malloc(data_size * sizeof(char));
+        data = sge_malloc(data_size * sizeof(char));
         memset(data, 0, data_size * sizeof(char));
         if (data == NULL) {
            printf("malloc() error: can't malloc(%ld)\n", data_size * sizeof(char) );

@@ -36,6 +36,10 @@
 #include "sge_env.h"
 #include "comm/cl_data_types.h"
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 typedef struct sge_csp_path_class_str sge_csp_path_class_t; 
 
 struct sge_csp_path_class_str {
@@ -69,6 +73,10 @@ struct sge_csp_path_class_str {
 
 sge_csp_path_class_t *sge_csp_path_class_create(sge_env_state_class_t *sge_env, sge_prog_state_class_t *sge_prog, sge_error_class_t *eh);
 void sge_csp_path_class_destroy(sge_csp_path_class_t **pst);
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif /* __SGE_CSP_PATH_H */
 

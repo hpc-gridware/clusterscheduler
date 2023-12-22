@@ -35,6 +35,10 @@
 
 #include "comm/lists/cl_lists.h"
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 typedef struct cl_string_list_elem_t {
    char*   string;     /* data */
    cl_raw_list_elem_t*   raw_elem;
@@ -55,6 +59,10 @@ cl_string_list_elem_t* cl_string_list_get_least_elem(cl_raw_list_t* list_p);
 cl_string_list_elem_t* cl_string_list_get_next_elem(cl_string_list_elem_t* elem);
 cl_string_list_elem_t* cl_string_list_get_last_elem(cl_string_list_elem_t* elem);
 
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif /* __CL_STRING_LIST_H */
 

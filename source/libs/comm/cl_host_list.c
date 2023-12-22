@@ -61,7 +61,7 @@ int cl_host_list_setup(cl_raw_list_t** list_p,
    int ret_val = CL_RETVAL_OK;
    cl_host_list_data_t* ldata = NULL;
 
-   ldata = (cl_host_list_data_t*) malloc(sizeof(cl_host_list_data_t));
+   ldata = (cl_host_list_data_t*) sge_malloc(sizeof(cl_host_list_data_t));
    if (ldata == NULL ) {
       return CL_RETVAL_MALLOC;
    }
@@ -321,7 +321,7 @@ int cl_host_list_copy(cl_raw_list_t** destination, cl_raw_list_t* source, bool c
    while(host_elem) {
       cl_com_host_spec_t* new_host_spec = NULL;
       
-      new_host_spec = ( cl_com_host_spec_t*) malloc( sizeof(cl_com_host_spec_t) );
+      new_host_spec = ( cl_com_host_spec_t*) sge_malloc( sizeof(cl_com_host_spec_t) );
       if (new_host_spec == NULL) {
          cl_raw_list_unlock(source);
          cl_host_list_cleanup(destination);
@@ -564,7 +564,7 @@ int cl_host_list_append_host(cl_raw_list_t* list_p,cl_com_host_spec_t* host, int
    }
 
    /* add new element list */
-   new_elem = (cl_host_list_elem_t*) malloc(sizeof(cl_host_list_elem_t));
+   new_elem = (cl_host_list_elem_t*) sge_malloc(sizeof(cl_host_list_elem_t));
    if (new_elem == NULL) {
       if (lock_list == 1) {
          cl_raw_list_unlock(list_p);
@@ -751,7 +751,7 @@ static struct in_addr* cl_com_copy_in_addr(struct in_addr *addr) {
       return NULL;
    }
 
-   copy = (struct in_addr*) malloc(sizeof(struct in_addr));
+   copy = (struct in_addr*) sge_malloc(sizeof(struct in_addr));
    if (copy != NULL) {
       memcpy((char*) copy , addr, sizeof(struct in_addr));
    }
@@ -769,7 +769,7 @@ static cl_com_hostent_t* cl_com_copy_hostent(cl_com_hostent_t* hostent) {
       return NULL;
    }
 
-   copy = (cl_com_hostent_t*)malloc(sizeof(cl_com_hostent_t));
+   copy = (cl_com_hostent_t*)sge_malloc(sizeof(cl_com_hostent_t));
    if (copy != NULL) {
       copy->he = NULL;
 

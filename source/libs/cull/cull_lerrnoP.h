@@ -35,7 +35,15 @@
 #include "cull/cull_lerrno.h"
 #include "cull/cull_state.h"
 
+#ifdef  __cplusplus
+extern "C" {
+#endif
+
 #define LERROR(x) cull_state_set_lerrno(x);
 
+
+#ifdef  __cplusplus
+}
+#endif
 
 #endif /* __CULL_LERRNOP_H */

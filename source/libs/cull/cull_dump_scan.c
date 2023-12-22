@@ -171,7 +171,7 @@ lDescr *lUndumpDescr(FILE *fp)
       DRETURN(NULL);
    }
 
-   if (!(dp = (lDescr *) malloc(sizeof(lDescr) * (n + 1)))) {
+   if (!(dp = (lDescr *) sge_malloc(sizeof(lDescr) * (n + 1)))) {
       LERROR(LEMALLOC);
       DRETURN(NULL);
    }
@@ -480,7 +480,7 @@ int lDumpList(FILE *fp, const lList *lp, int indent)
 
    ret = fprintf(fp, "%s/* LISTNAME               */ \"%s\"\n", space, 
                  lGetListName(lp));
-   ret = fprintf(fp, "%s/* NUMBER OF ELEMENTS     */ %d\n", space, 
+   ret = fprintf(fp, "%s/* NUMBER OF ELEMENTS     */ "sge_uu32"\n", space, 
                  lGetNumberOfElem(lp));
 
    ret = lDumpDescr(fp, lGetListDescr(lp), indent);
@@ -815,7 +815,7 @@ lList *lUndumpList(FILE *fp, const char *name, const lDescr *dp)
       DRETURN(NULL);
    }
 
-   if (!(found = (int *) malloc(sizeof(int) * n))) {
+   if (!(found = (int *) sge_malloc(sizeof(int) * n))) {
       LERROR(LEMALLOC);
       sge_free(&fdp);
       lFreeList(&lp);

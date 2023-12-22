@@ -34,6 +34,10 @@
 
 #include "basis_types.h"
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 extern char err_msg[]; /* JG: TODO: that is potentially very dangerous! */
 void set_error(const char *err_str);
 
@@ -60,5 +64,9 @@ extern char *prolog_epilog_variables[];
 extern char *pe_alloc_rule_variables[];
 extern char *ckpt_variables[];
 extern char *ctrl_method_variables[];
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif /* __CONFIG_FILE_H */

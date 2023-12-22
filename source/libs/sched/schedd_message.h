@@ -32,10 +32,6 @@
  ************************************************************************/
 /*___INFO__MARK_END__*/
 
-#ifdef  __cplusplus
-extern "C" {
-#endif
-
 #include "cull/cull.h"
 #include "sge_select_queue.h"
 
@@ -67,12 +63,4 @@ lList *schedd_mes_get_tmp_list(void);
 
 void schedd_mes_set_tmp_list(lListElem *category, int name, u_long32 job_number);
 
-#ifdef  __cplusplus
-}
-#endif
-
-
 #endif /* _SCHEDD_MESSAGE_H_ */
-
-
-

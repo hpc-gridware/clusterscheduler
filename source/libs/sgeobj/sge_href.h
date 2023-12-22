@@ -98,5 +98,3 @@ void
 href_list_make_uniq(lList *this_list, lList **answer_list);
 
 #endif /* __SGE_HREF_H__ */
-
-

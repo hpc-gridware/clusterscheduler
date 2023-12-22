@@ -101,7 +101,7 @@ const sig_mapT sig_map[] =
    {SGE_SIGUSR2, SIGUSR2, "USR2"},
    {SGE_SIGBUS, SIGBUS, "BUS"},
    {SGE_MIGRATE, SIGTTOU, "MIGRATE"},
-   {0, 0}
+   {SIGUNKNOWN, 0, NULL}
 };
 
 /****** uti/signal/sge_unmap_signal() *****************************************
@@ -246,8 +246,8 @@ u_long32 sge_sys_str2signal(const char *str)
    u_long32 signum;
 
    /* look for signal names in mapping table */
-   while (mapptr->sge_sig) {
-      if (!strcasecmp(str, mapptr->signame)) {
+   while (mapptr->sge_sig != SIGUNKNOWN) {
+      if (strcasecmp(str, mapptr->signame) == 0) {
          return mapptr->sig;
       }
       mapptr++;
@@ -255,11 +255,11 @@ u_long32 sge_sys_str2signal(const char *str)
 
    /* could not find per name -> look for signal numbers */
    if (sge_strisint(str)) {
-      signum = strtol(str, NULL, 10);
+      signum = SGE_STRTOU_LONG32(str);
       return signum;
    }
 
-   return -1;
+   return SIGUNKNOWN;
 }
 
 /****** uti/signal/sge_sig2str() **********************************************

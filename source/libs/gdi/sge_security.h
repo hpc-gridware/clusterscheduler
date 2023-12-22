@@ -95,4 +95,3 @@ sge_gdi_packet_parse_auth_info(sge_gdi_packet_class_t *packet, lList **answer_li
                                gid_t *gid, char *group, size_t group_len);
 
 #endif /* __SGE_SECURITY_H */
-

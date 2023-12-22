@@ -1,7 +1,11 @@
 # source/daemons/shadowd
-add_executable(
-  sge_shadowd shadowd.c ../../common/sig_handlers.c ../../common/sge_options.c
-              ../../common/sge_mt_init.c ../../common/usage.c)
+add_executable(sge_shadowd
+  shadowd.cc
+  ../../common/sig_handlers.cc
+  ../../common/sge_options.cc
+  ../../common/sge_mt_init.cc
+  ../../common/usage.cc)
+
 target_include_directories(sge_shadowd PRIVATE ${SGE_INCLUDES})
 target_link_libraries(
   sge_shadowd

@@ -50,3 +50,4 @@ int stop_ijs_server(COMM_HANDLE **phandle, dstring *p_err_msg);
 
 int force_ijs_server_shutdown(COMM_HANDLE **phandle,
    const char *this_component, dstring *err_msg);
+

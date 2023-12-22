@@ -128,7 +128,7 @@ int lReduceDescr(lDescr **dst_dpp, lDescr *src_dp, lEnumeration *enp)
    }
 
    /* create new partial descriptor */
-   if (!(*dst_dpp = (lDescr *) malloc(sizeof(lDescr) * (n + 1)))) {
+   if (!(*dst_dpp = (lDescr *) sge_malloc(sizeof(lDescr) * (n + 1)))) {
       DRETURN(-1);
    }
    lPartialDescr(enp, src_dp, *dst_dpp, &index);
@@ -186,7 +186,7 @@ lEnumeration *_lWhat(const char *fmt, const lDescr *dp,
    /* for CULL_ALL and NONE we need one lEnumeration struct */
    if (n > 1)
       n--;
-   if (!(ep = (lEnumeration *) malloc(sizeof(lEnumeration) * (n + 1)))) {
+   if (!(ep = (lEnumeration *) sge_malloc(sizeof(lEnumeration) * (n + 1)))) {
       error_status = LEMALLOC;
       goto error;
    }
@@ -271,7 +271,7 @@ lEnumeration *_lWhat(const char *fmt, const lDescr *dp,
       }
       eat_token(&state);
 
-      if (!(ep2 = (lEnumeration *) malloc(sizeof(lEnumeration) * (size + 1)))) {
+      if (!(ep2 = (lEnumeration *) sge_malloc(sizeof(lEnumeration) * (size + 1)))) {
          error_status = LEMALLOC;
          goto error;
       }
@@ -476,7 +476,7 @@ static lEnumeration *subscope_lWhat(cull_parse_state* state, va_list *app)
    eat_token(state);                 /* eat ) */
 
    /* make copy of local data */
-   enumeration = malloc(sizeof(lEnumeration) * next_id);
+   enumeration = (lEnumeration *)sge_malloc(sizeof(lEnumeration) * next_id);
    if (enumeration == NULL) {
       LERROR(LEMALLOC);
       DRETURN(NULL);
@@ -517,7 +517,7 @@ lEnumeration *lWhatAll(void)
 
    DENTER(CULL_LAYER);
 
-   if (!(ep = (lEnumeration *) malloc(sizeof(lEnumeration) * 2))) {
+   if (!(ep = (lEnumeration *) sge_malloc(sizeof(lEnumeration) * 2))) {
       error_status = LEMALLOC;
       goto error;
    }
@@ -650,7 +650,7 @@ lEnumeration *lCopyWhat(const lEnumeration *ep)
 
    for (n = 0; mt_get_type(ep[n].mt) != lEndT; n++);
 
-   if (!(copy = (lEnumeration *) malloc(sizeof(lEnumeration) * (n + 1)))) {
+   if (!(copy = (lEnumeration *) sge_malloc(sizeof(lEnumeration) * (n + 1)))) {
       LERROR(LEMALLOC);
       DRETURN(NULL);
    }
@@ -802,7 +802,7 @@ int lMergeWhat(lEnumeration **what1, lEnumeration **what2)
       /*
        * create result what 
        */
-      *what1 = malloc(sizeof(lEnumeration) * next_id);
+      *what1 = (lEnumeration *)sge_malloc(sizeof(lEnumeration) * next_id);
       if (*what1 != NULL) {
          for (i = 0; i < next_id; i++) {
             (*what1)[i].pos = tmp_result[i].pos;

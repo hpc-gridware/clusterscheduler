@@ -80,7 +80,7 @@ int main(int argc, char *argv[])
    DENTER_MAIN(TOP_LAYER, "main");
 
    thrd_count = get_thrd_demand();
-   t = (pthread_t *)malloc(thrd_count * sizeof(pthread_t));
+   t = (pthread_t *)sge_malloc(thrd_count * sizeof(pthread_t));
 
    for (i = 1; i <= thrd_count; i++) {
       for(j = 0; j < i; j++) {

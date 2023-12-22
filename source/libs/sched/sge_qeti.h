@@ -46,4 +46,3 @@ void sge_qeti_release(sge_qeti_t **qeti);
 sge_qeti_t *sge_qeti_allocate2(lList *cr_list);
 
 #endif /* __SGE_QETI_H */
-

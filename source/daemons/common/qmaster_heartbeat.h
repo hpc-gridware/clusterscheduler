@@ -32,15 +32,10 @@
  ************************************************************************/
 /*___INFO__MARK_END__*/
 
- 
-
 #define QMASTER_HEARTBEAT_FILE "heartbeat"
 
-int get_qmaster_heartbeat(char *file, int read_timeout );
-int inc_qmaster_heartbeat(char *file, int write_timeout, int* beat_value);
+int get_qmaster_heartbeat(char *file, time_t read_timeout);
+int inc_qmaster_heartbeat(char *file, time_t write_timeout, int* beat_value);
 void set_inc_qmaster_heartbeat_test_mode(int value);
 
-
 #endif /* __QMASTER_HEARTBEAT_H */
-
-

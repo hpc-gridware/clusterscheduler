@@ -35,6 +35,10 @@
 
 /*___INFO__MARK_END__*/
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 typedef enum _binding_type_t {
    BINDING_TYPE_NONE,
    BINDING_TYPE_PE,
@@ -55,6 +59,10 @@ binding_explicit_extract_sockets_cores(const char* parameter, int** list_of_sock
 bool 
 binding_printf_explicit_sockets_cores(dstring *string, int *socket_array, int sockets,
                                       int *core_array, int cores);
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif /* __SGE_BINDING_PARSE_H */
 

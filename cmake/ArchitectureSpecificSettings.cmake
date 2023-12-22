@@ -36,8 +36,8 @@ function(architecture_specific_settings)
   # Linux
   if(SGE_ARCH MATCHES "lx-.*")
     message(STATUS "We are on Linux: ${SGE_ARCH}")
-    add_compile_options(-Wall -Werror -Wstrict-prototypes -Wno-strict-aliasing
-                        -Wstrict-prototypes -pedantic)
+    set(CMAKE_C_FLAGS "-Wall -Werror -Wstrict-prototypes -Wno-strict-aliasing -pedantic" CACHE STRING "" FORCE)
+    set(CMAKE_CXX_FLAGS "-Wall -Werror -Wno-write-strings -Wno-literal-suffix -pedantic" CACHE STRING "" FORCE)
 
     # @todo does -fPIC have any disadvantages when not required (only for shared
     # libs)?

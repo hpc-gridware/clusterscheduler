@@ -36,6 +36,10 @@
 #include "comm/lists/cl_lists.h"
 #include "comm/cl_data_types.h"
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 typedef struct cl_message_list_elem_t {
    cl_com_message_t*     message;   /* data */
    cl_raw_list_elem_t*   raw_elem;
@@ -57,6 +61,10 @@ cl_message_list_elem_t* cl_message_list_get_least_elem(cl_raw_list_t* list_p);
 cl_message_list_elem_t* cl_message_list_get_next_elem(cl_message_list_elem_t* elem); /* CR check */
 cl_message_list_elem_t* cl_message_list_get_last_elem(cl_message_list_elem_t* elem); /* CR check */
 
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif /* __CL_MESSAGE_LIST_H */
 

@@ -44,6 +44,10 @@
 #  include "../wingrid/wingrid.h"
 #endif
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 #if defined(SOLARIS) || defined(LINUX) || defined(IRIX)
 #  define SGE_OPEN2(filename, oflag)       open64(filename, oflag)
 #  define SGE_OPEN3(filename, oflag, mode) open64(filename, oflag, mode)
@@ -158,5 +162,9 @@ typedef enum {
 } sge_sysconf_t;
  
 u_long32 sge_sysconf(sge_sysconf_t id); 
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif /* __SGE_UNISTD_H */

@@ -84,7 +84,7 @@ int sge_split_suspended(bool monitor_next_run, lList **queue_list, lList **suspe
 
 enum { 
    DISPATCH_TIME_NOW = 0, 
-   DISPATCH_TIME_QUEUE_END = LONG32_MAX
+   DISPATCH_TIME_QUEUE_END = LONG32_MAX // shouldn't it be U_LONG32_MAX? We assign it to u_long32 type.
 };
 
 typedef struct {

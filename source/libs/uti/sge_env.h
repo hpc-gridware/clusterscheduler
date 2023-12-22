@@ -34,6 +34,10 @@
 
 #include "sge_error_class.h"
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 typedef struct sge_env_state_class_str sge_env_state_class_t; 
 
 struct sge_env_state_class_str {
@@ -54,6 +58,10 @@ struct sge_env_state_class_str {
 
 sge_env_state_class_t *sge_env_state_class_create(const char *sge_root, const char *sge_cell, int sge_qmaster_port, int sge_execd_port, bool from_services, bool qmaster_internal, sge_error_class_t *eh);
 void sge_env_state_class_destroy(sge_env_state_class_t **pst);
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif /* __SGE_ENV_H */
 

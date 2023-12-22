@@ -36,6 +36,10 @@
 
 #include "basis_types.h"
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 /****** uti/bitfield/BIT_MANIPULATION_MAKROS() ********************************
 *  NAME
 *     ISSET(),VALID(),SETBIT(),CLEARBIT() - Bit manipulation makros 
@@ -112,5 +116,9 @@ sge_bitfield_print(const bitfield *bf, FILE *fd);
 #define sge_bitfield_get_size(bf) ((bf)->size)
 #define sge_bitfield_get_size_bytes(size) ((size) / 8 + (((size) % 8) > 0 ? 1 : 0))
 #define sge_bitfield_get_buffer(source) ((source)->size <= fixed_bits) ? (source)->bf.fix : (source)->bf.dyn
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif /* __SGE_BITFIELD_H */

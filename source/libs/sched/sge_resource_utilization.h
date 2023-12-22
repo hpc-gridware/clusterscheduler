@@ -56,4 +56,3 @@ void prepare_resource_schedules(const lList *running_jobs,
       const lList *hgroup_list, lList *ar_list, bool for_job_scheduling, u_long32 now);
 
 #endif /* __SGE_RESOURCE_UTILIZATION_H */
-

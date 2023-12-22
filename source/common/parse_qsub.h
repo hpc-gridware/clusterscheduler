@@ -74,16 +74,3 @@ lList *cull_parse_cmdline(u_long32 prog_number, char **arg_list, char **envp, lL
 char *reroot_path(lListElem* pjob, const char *path, lList **alpp);
 
 #endif /* PARSE_QSUBL_H */
-
-
-
-
-
-
-
-
-
-
-
-
-

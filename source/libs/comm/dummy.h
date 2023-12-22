@@ -32,7 +32,15 @@
  ************************************************************************/
 /*___INFO__MARK_END__*/       
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 int dummy(char* str); 
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif /* __DUMMY_H */    
 

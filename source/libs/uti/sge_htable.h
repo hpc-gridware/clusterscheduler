@@ -36,6 +36,10 @@
  * Based on the code of David Flanagan's Xmt library
  */
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 #define True   1
 #define False  0 
 
@@ -77,5 +81,9 @@ int hash_compare_long(const void *a, const void *b);
 int hash_compare_pointer(const void *a, const void *b);
 
 int hash_compute_size(int number_of_elem);
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif /* __SGE_HASH_H */

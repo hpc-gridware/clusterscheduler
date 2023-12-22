@@ -34,6 +34,11 @@
 /*___INFO__MARK_END__*/
 
 #include "basis_types.h"
+
+#ifdef  __cplusplus
+extern "C" {
+#endif
+
 /* 
 ** cull/src/cull_file.c
 */ 
@@ -203,7 +208,6 @@
 /*
 ** Messages for lUlong64
 */
-#endif /* __MSG_CULL_H */ 
 #define MSG_CULL_GETULONG64_WRONGTYPEFORFIELDXY_SS         _MESSAGE(41170, _("lGetUlong64: wrong type for field "SFN" ("SFN")"))
 #define MSG_CULL_SETULONG64_WRONGTYPEFORFIELDXY_SS         _MESSAGE(41171, _("lSetUlong64: wrong type for field "SFN" ("SFN")"))
 #define MSG_CULL_ADDSUBULONG64ERRORXRUNTIMETYPE_S          _MESSAGE(41172, _("error: lAddSubUlong64("SFN"): run time type error"))
@@ -212,3 +216,9 @@
 #define MSG_CULL_GETELEMULONG64ERRORXRUNTIMETYPE_S         _MESSAGE(41175, _("error: lGetElemUlong64("SFN"): run time type error"))
 #define MSG_CULL_GETPOSULONG64_GOTINVALIDPOSITION          _MESSAGE(41176, _("!!!!!!!!!! lGetPosUlong64() got an invalid pos !!!!!!!!!!!!"))
 #define MSG_CULL_WHERE_SHOULDBEULONG64T                    _MESSAGE(41177, _("lWhere (should be a lUlong64T)"))
+
+#ifdef  __cplusplus
+}
+#endif
+
+#endif /* __MSG_CULL_H */ 

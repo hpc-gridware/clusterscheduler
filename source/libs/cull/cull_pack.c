@@ -267,7 +267,7 @@ lDescr **dpp
       DRETURN(PACK_ENOMEM);
    }
 
-   if ((dp = (lDescr *) malloc(sizeof(lDescr) * (n+1))) == NULL) {
+   if ((dp = (lDescr *) sge_malloc(sizeof(lDescr) * (n+1))) == NULL) {
       LERROR(LEMALLOC);
       DRETURN(PACK_ENOMEM);
    }
@@ -1277,7 +1277,7 @@ lEnumeration **enpp
       goto error;
 
    if (flag != PackWhatArray) {
-      if (!(enp = (lEnumeration *) malloc(2 * sizeof(lEnumeration)))) {
+      if (!(enp = (lEnumeration *) sge_malloc(2 * sizeof(lEnumeration)))) {
          PROF_STOP_MEASUREMENT(SGE_PROF_PACKING);
          DRETURN(PACK_ENOMEM);
       }
@@ -1310,7 +1310,7 @@ lEnumeration **enpp
          DRETURN(PACK_ENOMEM);
       }
 
-      if (!(enp = (lEnumeration *) malloc(sizeof(lEnumeration) * (n + 1)))) {
+      if (!(enp = (lEnumeration *) sge_malloc(sizeof(lEnumeration) * (n + 1)))) {
          PROF_STOP_MEASUREMENT(SGE_PROF_PACKING);
          DRETURN(PACK_ENOMEM);
       }
@@ -1622,7 +1622,7 @@ void setByteArray(const char *byteArray, int size, lListElem *elem, int name){
    if (!byteArray || !elem)
       return;
       
-   z_stream_str = malloc(target_size);
+   z_stream_str = sge_malloc(target_size);
    memset(z_stream_str, 0, target_size);
 
    for (i=0; i < size; i++){
@@ -1671,7 +1671,7 @@ int getByteArray(char **byte, const lListElem *elem, int name){
 
    string = lGetString(elem, name);
    size = strlen(string) /2;
-   *byte = malloc(size);
+   *byte = sge_malloc(size);
    memset(*byte, 0, size);
 
    for (i=0; i < size; i++){

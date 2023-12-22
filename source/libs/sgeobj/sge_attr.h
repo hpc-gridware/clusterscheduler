@@ -129,5 +129,3 @@ attr_list_append_to_dstring(const lList *this_list, dstring *string,
 #undef ATTR_TYPE_PROTOTYPES 
 
 #endif /* __SGE_ATTR_H__ */
-
-

@@ -1,5 +1,9 @@
 // Copyright Ernst Bablick
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 void fgl_mt_init(void);
 
 void fgl_rsv_sort(void);
@@ -14,4 +18,8 @@ void fgl_dump_stats(dstring *stats_str);
 
 void fgl_lock(void);
 void fgl_unlock(void);
+
+#ifdef __cplusplus
+}
+#endif
 

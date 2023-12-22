@@ -110,7 +110,7 @@ sge_dstring_vsprintf_copy_append(dstring *sb,
       } else if (vsnprintf_ret > BUFSIZ) {
          char *dyn_buffer = NULL;
 
-         dyn_buffer = (char *)malloc((vsnprintf_ret + 1) * sizeof(char));
+         dyn_buffer = sge_malloc((vsnprintf_ret + 1) * sizeof(char));
          if (dyn_buffer != NULL) {
             va_copy(ap_copy, ap);
             vsnprintf(dyn_buffer, vsnprintf_ret + 1, format, ap_copy);
@@ -144,7 +144,7 @@ sge_dstring_allocate(dstring *sb, size_t request)
    if (sb->s != NULL) {
       sb->s = sge_realloc(sb->s, sb->size * sizeof(char), 1);
    } else {
-      sb->s = malloc(sb->size * sizeof(char));
+      sb->s = sge_malloc(sb->size * sizeof(char));
       sb->s[0] = '\0';
    }
 }
@@ -193,6 +193,7 @@ const char* sge_dstring_append(dstring *sb, const char *a)
    len = strlen(a);
  
    if (sb->is_static) {
+      // @todo: what about the 0 byte?
       if ((sb->length + len) > sb->size )
          len = sb->size - sb->length;
 
@@ -277,6 +278,7 @@ const char* sge_dstring_append_char(dstring *sb, const char a)
    }
   
    if (sb->is_static) {
+      // @todo: what about the 0 byte?
       if (sb->length < sb->size ) {
          sb->s[sb->length++] = a;
          sb->s[sb->length] = '\0';

@@ -1,7 +1,7 @@
 # source/libs/spool/berkeleydb
 if(${WITH_SPOOL_BERKELEYDB})
   set(LIBRARY_NAME spoolb)
-  set(LIBRARY_SOURCES sge_bdb.c sge_bdb_types.c sge_spooling_berkeleydb.c)
+  set(LIBRARY_SOURCES sge_bdb.cc sge_bdb_types.cc sge_spooling_berkeleydb.cc)
   set(LIBRARY_INCLUDES "./")
 
   add_library(${LIBRARY_NAME}_objlib OBJECT ${LIBRARY_SOURCES})

@@ -1388,7 +1388,7 @@ error:
 static char* ptr2str(void *ptr, char *str) 
 {
    if (str == NULL)
-      str = malloc(sizeof(void *)*2+4);
+      str = sge_malloc(sizeof(void *)*2+4);
    if (str == NULL || ptr == NULL)
       return NULL;
    sprintf(str, "%p", ptr);
@@ -1417,7 +1417,7 @@ char *str
    int n;
 
    if (str == NULL)
-      str = (char *)malloc(len*2+5);
+      str = sge_malloc(len*2+5);
    if (str == NULL || data == NULL)
       return NULL;
 
@@ -1475,7 +1475,7 @@ int *rlen
       return NULL;
 
    if (data == NULL)
-      data = (char *)malloc(len);
+      data = sge_malloc(len);
    if (data == NULL)
       return NULL;
 
@@ -1901,7 +1901,7 @@ int jobid,
 char *ccname 
 ) {
    if (ccname == NULL) {
-      ccname = (char *)malloc(40);
+      ccname = sge_malloc(40);
       if (ccname == NULL)
          return NULL;
    }

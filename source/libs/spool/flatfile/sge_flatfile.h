@@ -99,13 +99,13 @@ typedef struct recursion_info {
    int id_field; /* The field that is used to id recursive elements for building
                   * a tree structure */
    int supress_field; /* The field to only print for the root element */
-} recursion_info;
+} recursion_info_t;
 
 /* JG: TODO: we need a check function:
  * - delimiters may not contain whitespace, exception \n
  */
 typedef struct spool_flatfile_instr {
-   const spool_instr *spool_instr;
+   const spool_instr_t *spool_instr;
    bool show_field_names;
    bool show_field_header;
    bool show_footer;
@@ -120,7 +120,7 @@ typedef struct spool_flatfile_instr {
    const char record_start;
    const char record_end;
    const struct spool_flatfile_instr *sub_instr;
-   const recursion_info recursion_info;
+   const recursion_info_t recursion_info;
 } spool_flatfile_instr;
 
 typedef struct flatfile_info {

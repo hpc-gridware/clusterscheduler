@@ -68,6 +68,7 @@
  * spooling framework functions
  */
 
+extern "C" {
 #ifdef SPOOLING_classic
 const char *get_spooling_method(void);
 #else
@@ -76,6 +77,7 @@ const char *get_classic_spooling_method(void);
 
 lListElem *
 spool_classic_create_context(lList **answer_list, const char *args);
+}
 
 bool 
 spool_classic_default_startup_func(lList **answer_list, 

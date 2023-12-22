@@ -45,4 +45,3 @@ int
 sge_parse_mail_options(lList **alpp, const char *mail_str, u_long32 prog_number);
 
 #endif /* __SGE_MAILREC_H */
-

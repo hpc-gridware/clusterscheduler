@@ -36,6 +36,10 @@
 #   include <sys/resource.h>
 #endif
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 #ifdef __convex__
 #   define SETPRIORITY(niceval) setpriority(PRIO_PROCESS,getpgrp(),niceval)
 #else
@@ -48,6 +52,10 @@
 #      define SETPRIORITY(niceval) setpriority(PRIO_PROCESS, 0, niceval)
 #   endif
 #endif    
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif /* __SGE_NICE_H */
 

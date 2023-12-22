@@ -1,29 +1,29 @@
 # source/daemons/execd
 add_executable(
   sge_execd
-  execd.c
-  dispatcher.c
-  exec_job.c
-  execd_ck_to_do.c
-  execd_get_new_conf.c
-  execd_job_exec.c
-  execd_kill_execd.c
-  execd_signal_queue.c
-  execd_ticket.c
-  get_path.c
-  job_report_execd.c
-  load_avg.c
-  ptf.c
-  reaper_execd.c
-  setup_execd.c
-  sge_load_sensor.c
-  sge_report_execd.c
-  tmpdir.c
-  ../../common/sig_handlers.c
-  ../../common/sge_options.c
-  ../../common/sge_mt_init.c
-  ../../common/usage.c
-  ../../common/execution_states.c)
+  execd.cc
+  dispatcher.cc
+  exec_job.cc
+  execd_ck_to_do.cc
+  execd_get_new_conf.cc
+  execd_job_exec.cc
+  execd_kill_execd.cc
+  execd_signal_queue.cc
+  execd_ticket.cc
+  get_path.cc
+  job_report_execd.cc
+  load_avg.cc
+  ptf.cc
+  reaper_execd.cc
+  setup_execd.cc
+  sge_load_sensor.cc
+  sge_report_execd.cc
+  tmpdir.cc
+  ../../common/sig_handlers.cc
+  ../../common/sge_options.cc
+  ../../common/sge_mt_init.cc
+  ../../common/usage.cc
+  ../../common/execution_states.cc)
 
 target_include_directories(sge_execd PRIVATE ${SGE_INCLUDES})
 

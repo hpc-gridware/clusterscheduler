@@ -39,6 +39,10 @@
 
 #include "comm/cl_commlib.h"
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 typedef void              (*rmon_print_callback_func_t) (const char *message, unsigned long traceid, unsigned long pid, unsigned long thread_id);
 
 extern monitoring_level RMON_DEBUG_ON;
@@ -82,6 +86,10 @@ rmon_ctx_t* rmon_get_thread_ctx(void);
 rmon_helper_t *rmon_get_helper(void);
 
 #define __CONDITION(x) rmon_condition(TOP_LAYER, x)
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif /* __RMON_H */
 

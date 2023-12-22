@@ -73,4 +73,5 @@ ja_task_verify_granted_destin_identifier(const lListElem *ep, lList **answer_lis
 
 bool
 ja_task_is_tightly_integrated(const lListElem *ja_task, const lList *master_pe_list);
+
 #endif /* __SGE_JA_TASK_H */

@@ -101,7 +101,7 @@ int cl_parameter_list_append_parameter(cl_raw_list_t* list_p, const char* parame
    }
 
    /* add new element list */
-   new_elem = (cl_parameter_list_elem_t*) malloc(sizeof(cl_parameter_list_elem_t));
+   new_elem = (cl_parameter_list_elem_t*) sge_malloc(sizeof(cl_parameter_list_elem_t));
 
    if (new_elem == NULL) {
       if (lock_list == 1) {

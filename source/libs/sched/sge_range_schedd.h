@@ -37,4 +37,3 @@
 u_long32 num_in_range(u_long32 num, lList *r);
 
 #endif /* _SGE_RANGE_SCHEDD_H_ */
-

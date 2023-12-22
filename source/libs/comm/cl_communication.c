@@ -314,7 +314,7 @@ int cl_com_add_debug_message(cl_com_connection_t* connection, const char* messag
             }
             break;
          default: {
-            xml_msg_buffer = (char*) malloc( (ms->message_length + 1) * sizeof(char) );
+            xml_msg_buffer = sge_malloc( (ms->message_length + 1) * sizeof(char) );
             if (xml_msg_buffer != NULL) {
                memcpy(xml_msg_buffer, ms->message, ms->message_length);
                xml_msg_buffer[ms->message_length] = 0;
@@ -348,7 +348,7 @@ int cl_com_add_debug_message(cl_com_connection_t* connection, const char* messag
    dm_buffer_len += strlen(CL_DEBUG_MESSAGE_FORMAT_STRING);
    dm_buffer_len += 1;
 
-   dm_buffer = (char*) malloc(sizeof(char)*dm_buffer_len);
+   dm_buffer = sge_malloc(sizeof(char)*dm_buffer_len);
    if (dm_buffer == NULL) {
       ret_val = CL_RETVAL_MALLOC;
    } else {
@@ -399,7 +399,7 @@ int cl_com_create_debug_client_setup(cl_debug_client_setup_t** new_setup,
    if (*new_setup != NULL) {
       return CL_RETVAL_PARAMS;
    }
-   tmp_setup = (cl_debug_client_setup_t*) malloc(sizeof(cl_debug_client_setup_t));
+   tmp_setup = (cl_debug_client_setup_t*) sge_malloc(sizeof(cl_debug_client_setup_t));
    if (tmp_setup == NULL) {
       return CL_RETVAL_MALLOC;
    }
@@ -484,7 +484,7 @@ int cl_com_create_ssl_setup(cl_ssl_setup_t**     new_setup,
    }
 
 
-   tmp_setup = (cl_ssl_setup_t*) malloc(sizeof(cl_ssl_setup_t));
+   tmp_setup = (cl_ssl_setup_t*) sge_malloc(sizeof(cl_ssl_setup_t));
    if (tmp_setup == NULL) {
       return CL_RETVAL_MALLOC;
    }
@@ -717,7 +717,7 @@ int cl_com_create_message(cl_com_message_t** message) {
       return CL_RETVAL_PARAMS;
    }
    
-   *message = (cl_com_message_t*)malloc(sizeof(cl_com_message_t));
+   *message = (cl_com_message_t*)sge_malloc(sizeof(cl_com_message_t));
    if (*message == NULL) {
       return CL_RETVAL_MALLOC; 
    }
@@ -740,7 +740,7 @@ int cl_com_create_connection(cl_com_connection_t** connection) {
       return CL_RETVAL_PARAMS;
    }
 
-   *connection = (cl_com_connection_t*) malloc(sizeof(cl_com_connection_t));
+   *connection = (cl_com_connection_t*) sge_malloc(sizeof(cl_com_connection_t));
    if (*connection == NULL) {
       return CL_RETVAL_MALLOC;
    }
@@ -791,10 +791,10 @@ int cl_com_create_connection(cl_com_connection_t** connection) {
    memset(&((*connection)->connection_connect_time), 0, sizeof(struct timeval));
    memset(&((*connection)->connection_close_time), 0, sizeof(struct timeval));
 
-   (*connection)->data_read_buffer  = (cl_byte_t*) malloc (sizeof(cl_byte_t) * ((*connection)->data_buffer_size) );
-   (*connection)->data_write_buffer = (cl_byte_t*) malloc (sizeof(cl_byte_t) * ((*connection)->data_buffer_size) );
-   (*connection)->read_gmsh_header = (cl_com_GMSH_t*) malloc (sizeof(cl_com_GMSH_t));
-   (*connection)->statistic = (cl_com_con_statistic_t*) malloc(sizeof(cl_com_con_statistic_t));
+   (*connection)->data_read_buffer  = (cl_byte_t*) sge_malloc (sizeof(cl_byte_t) * ((*connection)->data_buffer_size) );
+   (*connection)->data_write_buffer = (cl_byte_t*) sge_malloc (sizeof(cl_byte_t) * ((*connection)->data_buffer_size) );
+   (*connection)->read_gmsh_header = (cl_com_GMSH_t*) sge_malloc (sizeof(cl_com_GMSH_t));
+   (*connection)->statistic = (cl_com_con_statistic_t*) sge_malloc(sizeof(cl_com_con_statistic_t));
 
    if ( (*connection)->data_read_buffer  == NULL || 
         (*connection)->data_write_buffer == NULL || 
@@ -1822,7 +1822,7 @@ static int cl_com_gethostbyname(const char *hostname_unresolved, cl_com_hostent_
    }
 
    /* get memory for cl_com_hostent_t struct */
-   hostent_p = (cl_com_hostent_t*)malloc(sizeof(cl_com_hostent_t));
+   hostent_p = (cl_com_hostent_t*)sge_malloc(sizeof(cl_com_hostent_t));
    if (hostent_p == NULL) {
       CL_LOG(CL_LOG_ERROR, cl_get_error_text(CL_RETVAL_MALLOC));
       if (do_free_host == true) {
@@ -1881,7 +1881,7 @@ static int cl_com_gethostbyaddr(struct in_addr *addr, cl_com_hostent_t **hostent
    }
 
    /* get memory for cl_com_hostent_t struct */
-   hostent_p = (cl_com_hostent_t*)malloc(sizeof(cl_com_hostent_t));
+   hostent_p = (cl_com_hostent_t*)sge_malloc(sizeof(cl_com_hostent_t));
    if (hostent_p == NULL) {
       CL_LOG(CL_LOG_ERROR, cl_get_error_text(CL_RETVAL_MALLOC));
       return CL_RETVAL_MALLOC;          /* could not get memory */ 
@@ -1932,7 +1932,7 @@ static int cl_com_dup_host(char** host_dest, const char* source, cl_host_resolve
           if ((the_dot = strchr(source, '.')) != NULL) {
             int size = the_dot - source;
             if (is_static_buffer == false) {
-               *host_dest = malloc(sizeof(char) * (size + 1));
+               *host_dest = sge_malloc(sizeof(char) * (size + 1));
             }
             *host_dest = strncpy(*host_dest, source, size);
             (*host_dest)[size] = '\0';
@@ -1955,7 +1955,7 @@ static int cl_com_dup_host(char** host_dest, const char* source, cl_host_resolve
                 CL_LOG(CL_LOG_ERROR,"can't dup host with domain name without default domain");
                 /* error copy host without domain name , host is short */
                 if (is_static_buffer == false) {
-                   *host_dest = (char*) malloc( sizeof(char) * (hostlen + 1) );
+                   *host_dest = (char*) sge_malloc( sizeof(char) * (hostlen + 1) );
                    if (*host_dest == NULL) {
                       return CL_RETVAL_MALLOC;
                    }
@@ -1970,7 +1970,7 @@ static int cl_com_dup_host(char** host_dest, const char* source, cl_host_resolve
                 unsigned long counter = 0;
                 /* we have a short hostname, add the default domain */
                 if (is_static_buffer == false) {
-                   *host_dest = (char*) malloc( sizeof(char) * ( length + 1) );
+                   *host_dest = (char*) sge_malloc( sizeof(char) * ( length + 1) );
                    if (*host_dest == NULL) { 
                       return CL_RETVAL_MALLOC;
                    }
@@ -1987,7 +1987,7 @@ static int cl_com_dup_host(char** host_dest, const char* source, cl_host_resolve
           } else {
              /* we have a long hostname, return original name */
              if (is_static_buffer == false) {
-                *host_dest = (char*) malloc( sizeof(char) * (hostlen + 1));
+                *host_dest = (char*) sge_malloc( sizeof(char) * (hostlen + 1));
                 if (*host_dest == NULL) {
                    return CL_RETVAL_MALLOC;
                 }
@@ -2377,7 +2377,7 @@ int cl_com_cached_gethostbyname(const char *unresolved_host, char **unique_hostn
       }
       cl_raw_list_unlock(hostlist);
 
-      hostspec = (cl_com_host_spec_t*) malloc( sizeof(cl_com_host_spec_t));
+      hostspec = (cl_com_host_spec_t*) sge_malloc( sizeof(cl_com_host_spec_t));
       if (hostspec == NULL) {
          return CL_RETVAL_MALLOC;
       }
@@ -2409,7 +2409,7 @@ int cl_com_cached_gethostbyname(const char *unresolved_host, char **unique_hostn
             cl_com_free_hostspec(&hostspec);
             return CL_RETVAL_MALLOC;
          }
-         hostspec->in_addr = (struct in_addr*) malloc (sizeof(struct in_addr));
+         hostspec->in_addr = (struct in_addr*) sge_malloc (sizeof(struct in_addr));
          if (hostspec->in_addr == NULL) {
             cl_com_free_hostspec(&hostspec);
             return CL_RETVAL_MALLOC;
@@ -2954,13 +2954,13 @@ int cl_com_cached_gethostbyaddr(struct in_addr *addr, char **unique_hostname, st
       CL_LOG(CL_LOG_INFO,"addr NOT found in cache");
       cl_raw_list_unlock(hostlist);
 
-      hostspec = ( cl_com_host_spec_t*) malloc( sizeof(cl_com_host_spec_t) );
+      hostspec = ( cl_com_host_spec_t*) sge_malloc( sizeof(cl_com_host_spec_t) );
       if (hostspec == NULL) {
          return CL_RETVAL_MALLOC;
       }
 
       hostspec->unresolved_name = NULL;
-      hostspec->in_addr = (struct in_addr*) malloc (sizeof(struct in_addr));
+      hostspec->in_addr = (struct in_addr*) sge_malloc (sizeof(struct in_addr));
       if (hostspec->in_addr == NULL) {
          cl_com_free_hostspec(&hostspec);
          return CL_RETVAL_MALLOC;
@@ -3491,13 +3491,13 @@ int cl_com_malloc_poll_array(cl_com_poll_t* poll_handle, unsigned long nr_of_mal
    }
    cl_com_free_poll_array(poll_handle);
 
-   poll_handle->poll_array = (struct pollfd*) malloc(nr_of_malloced_connections * sizeof(struct pollfd));
+   poll_handle->poll_array = (struct pollfd*) sge_malloc(nr_of_malloced_connections * sizeof(struct pollfd));
    if (poll_handle->poll_array == NULL) {
       cl_com_free_poll_array(poll_handle);
       return CL_RETVAL_MALLOC;
    }
 
-   poll_handle->poll_con = (cl_com_connection_t**) malloc(nr_of_malloced_connections * sizeof(cl_com_connection_t*));
+   poll_handle->poll_con = (cl_com_connection_t**) sge_malloc(nr_of_malloced_connections * sizeof(cl_com_connection_t*));
    if (poll_handle->poll_con == NULL) {
       cl_com_free_poll_array(poll_handle);
       return CL_RETVAL_MALLOC;
@@ -3656,7 +3656,7 @@ int cl_com_connection_complete_request(cl_raw_list_t* connection_list, cl_connec
                /* don't add default case for this switch! */
                case CL_DEBUG_CLIENT_ALL:
                case CL_DEBUG_CLIENT_MSG: {
-                  tmp_connect_message_buffer = (cl_byte_t*) malloc(connection->read_gmsh_header->dl * sizeof(cl_byte_t));
+                  tmp_connect_message_buffer = (cl_byte_t*) sge_malloc(connection->read_gmsh_header->dl * sizeof(cl_byte_t));
                   memcpy(tmp_connect_message_buffer, 
                          &(connection->data_read_buffer[(connection->data_read_buffer_processed)]),
                          connection->read_gmsh_header->dl);
@@ -3727,7 +3727,7 @@ int cl_com_connection_complete_request(cl_raw_list_t* connection_list, cl_connec
             }
 
             /* malloc error message text (destroyed when connection is deleted) */
-            connection->crm_state_error = (char*) malloc(sizeof(char) * string_size );
+            connection->crm_state_error = sge_malloc(sizeof(char) * string_size );
 
             /* copy error message into connection->crm_state_error */
             if ( connection->crm_state_error != NULL ) {
@@ -3790,7 +3790,7 @@ int cl_com_connection_complete_request(cl_raw_list_t* connection_list, cl_connec
                }
 
                /* malloc error message text (destroyed when connection is deleted) */
-               connection->crm_state_error = (char*) malloc(sizeof(char) * string_size );
+               connection->crm_state_error = sge_malloc(sizeof(char) * string_size );
 
                /* copy error message into connection->crm_state_error */
                if (connection->crm_state_error != NULL) {
@@ -3931,7 +3931,7 @@ int cl_com_connection_complete_request(cl_raw_list_t* connection_list, cl_connec
             }
             
             /* malloc error message text (destroyed when connection is deleted) */
-            connection->crm_state_error = (char*) malloc(sizeof(char) * string_size );
+            connection->crm_state_error = sge_malloc(sizeof(char) * string_size );
 
             /* copy error message into connection->crm_state_error */
             if (connection->crm_state_error != NULL) {

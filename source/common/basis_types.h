@@ -50,25 +50,8 @@
 #  define _SGE_GETTEXT__(x) (x)
 #endif
 
-#if 0
-#ifndef FALSE
-#   define FALSE                (0)
-#endif
-
-#ifndef TRUE
-#   define TRUE                 (1)
-#endif
-#endif
-
 #if !defined(__cplusplus) 
-#  if defined(DARWIN9) || defined(DARWIN10)
-#     include <stdbool.h>
-#  else
-typedef enum {
-  false = 0,
-  true
-} bool;
-#  endif
+#include <stdbool.h>
 #endif
 
 #define SGE_EPSILON 0.00001
@@ -87,6 +70,8 @@ typedef enum {
 
 #  define sge_X32CFormat "%x"
 #  define sge_x32c(x)  (unsigned int)(x)
+
+#define SGE_STRTOU_LONG32(S) strtoul(S, NULL, 10)
 #else
 #  define sge_U32CFormat "%ld"
 #  define sge_U32CLetter "ld"
@@ -94,6 +79,8 @@ typedef enum {
 
 #  define sge_X32CFormat "%lx"
 #  define sge_x32c(x)  (unsigned long)(x)
+
+#define SGE_STRTOU_LONG32(S) strtoul(S, NULL, 10)
 #endif
 
 
@@ -108,10 +95,6 @@ typedef enum {
 #  if !(defined(WIN32NATIVE) || defined(WINDOWS))
 #     include <sys/param.h>
 #  endif
-#endif
-
-#ifdef  __cplusplus
-extern "C" {
 #endif
 
 #if defined(TARGET_64BIT)
@@ -219,17 +202,13 @@ typedef char stringT[MAX_STRING_SIZE];
 #endif
     
 
-#ifdef  __cplusplus
-}
-#endif
-
 #ifndef TRUE
 #  define TRUE 1
 #  define FALSE !TRUE
 #endif
 
 #define GET_SPECIFIC(type, variable, init_func, key, func_name) \
-   type *variable = pthread_getspecific(key); \
+   type *variable = (type *)pthread_getspecific((pthread_key_t)key); \
    if(variable == NULL) { \
       int ret; \
       variable = (type *)malloc(sizeof(type)); \

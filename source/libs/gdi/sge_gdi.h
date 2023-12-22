@@ -36,9 +36,7 @@
 #include "cull/cull.h"
 #include "uti/sge_hostname.h"
 
-#ifdef  __cplusplus
-extern "C" {
-#endif
+#include "gdi/sge_gdi_packet_type.h"
 
 /* 
  * allowed values for command field of a gdi request 
@@ -142,7 +140,7 @@ enum {
 typedef struct _state_gdi_multi state_gdi_multi;
 
 struct _state_gdi_multi {
-   void *packet; /* TODO: EB: this is a sge_gdi_packet_class_t pointer - fix includes */
+   sge_gdi_packet_class_t *packet;
    lList **malpp;
    state_gdi_multi *next;
 };
@@ -177,9 +175,5 @@ enum {
 #define JOB_KILL          (1<<3)
 #define EVENTCLIENT_KILL  (1<<4)
 #define THREAD_START      (1<<5)
-
-#ifdef  __cplusplus
-}
-#endif
 
 #endif /* __SGE_GDI_H */

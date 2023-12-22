@@ -405,7 +405,7 @@ JNIEXPORT void JNICALL Java_com_sun_grid_drmaa_SessionImpl_nativeSynchronize
    }
    
    length = (*env)->GetArrayLength(env, ids);
-   job_ids = (const char**)malloc ((length + 1) * sizeof (char *));
+   job_ids = (const char**)sge_malloc ((length + 1) * sizeof (char *));
    
    for (count = 0; count < length; count++) {
       tmp_obj = (*env)->GetObjectArrayElement(env, ids, count);
@@ -638,7 +638,7 @@ JNIEXPORT void JNICALL Java_com_sun_grid_drmaa_SessionImpl_nativeSetAttributeVal
    
    /* Get the strings out of the Strings. */
    name = (*env)->GetStringUTFChars (env, nameStr, NULL);
-   value = (const char**)malloc ((length + 1) * sizeof (char *));
+   value = (const char**)sge_malloc ((length + 1) * sizeof (char *));
    
    for (count = 0; count < length; count++) {
       tmp_obj = (*env)->GetObjectArrayElement(env, values, count);
@@ -1060,7 +1060,7 @@ static int insert_into_list (drmaa_job_template_t *jt)
    /* If we haven't initialized the template list yet, do so. */
    if (job_templates == NULL) {
       list_length = TEMPLATE_LIST_LENGTH;
-      job_templates = (drmaa_job_template_t **)malloc
+      job_templates = (drmaa_job_template_t **)sge_malloc
                                 (sizeof (drmaa_job_template_t *) * list_length);
       memset (job_templates, 0, list_length * sizeof (drmaa_job_template_t *));
    }
@@ -1079,7 +1079,7 @@ static int insert_into_list (drmaa_job_template_t *jt)
 
    /* If there are no empty slots, double the size of the list. */
    tmp_length = list_length * 2;
-   tmp_list = (drmaa_job_template_t **)malloc (sizeof(drmaa_job_template_t *) *
+   tmp_list = (drmaa_job_template_t **)sge_malloc (sizeof(drmaa_job_template_t *) *
                                                tmp_length);
    memcpy (tmp_list, job_templates, list_length *
                                                sizeof (drmaa_job_template_t *));

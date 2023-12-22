@@ -37,6 +37,10 @@
 #include "uti/sge_dstring.h"
 #include "uti/sge_env.h"
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 /* These files and directories will be found in COMMON_DIR
  * They must be accessed with an absolute path. Do not use these defines!
  */
@@ -117,5 +121,9 @@ struct sge_path_state_class_str {
 
 sge_path_state_class_t *sge_path_state_class_create(sge_env_state_class_t *sge_env, sge_error_class_t *eh);
 void sge_path_state_class_destroy(sge_path_state_class_t **pst);
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif /* __SETUP_PATH_H */

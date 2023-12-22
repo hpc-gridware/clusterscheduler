@@ -32,8 +32,6 @@
  ************************************************************************/
 /*___INFO__MARK_END__*/
 
- 
-
 #define QMASTER_LOCK_FILE "lock"
 
 int qmaster_lock(char *file);
@@ -41,5 +39,3 @@ int qmaster_unlock(char *file);
 int isLocked(char *file);
 
 #endif /* __LOCK_H */
-
-

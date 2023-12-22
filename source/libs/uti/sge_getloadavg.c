@@ -1084,7 +1084,7 @@ int nelem
 #endif
 
    Krdlist[0].li_offset = nmlist[1].n_value;
-   if ((i_sysinfoa = (struct sysinfo_t *)malloc(sizeof(*i_sysinfoa) * Ncpus))
+   if ((i_sysinfoa = (struct sysinfo_t *)sge_malloc(sizeof(*i_sysinfoa) * Ncpus))
             == NULL) {
       return -1;
       perror("malloc");

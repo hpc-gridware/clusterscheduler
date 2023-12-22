@@ -32,10 +32,6 @@
  ************************************************************************/
 /*___INFO__MARK_END__*/
       
-#ifdef  __cplusplus
-extern "C" {
-#endif
-
 #include "gdi/sge_gdi_ctx.h"
 
 #include "basis_types.h"

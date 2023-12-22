@@ -1,6 +1,5 @@
 #ifndef __SGE_QINSTANCE_STATE_H
 #define __SGE_QINSTANCE_STATE_H
-
 /*___INFO__MARK_BEGIN__*/
 /*************************************************************************
  * 

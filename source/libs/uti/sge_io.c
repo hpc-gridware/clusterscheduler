@@ -355,7 +355,7 @@ char *sge_bin2string(FILE *fp, int size)
    if (size <= 0)       /* no idea about buffer, malloc in chunks */
       size = chunksize;
 
-   dstbuf = (char *) malloc(size+1);
+   dstbuf = sge_malloc(size+1);
    dstbuflen = size;
    lastpos = 0;
 
@@ -534,7 +534,7 @@ char *sge_file2string(const char *fname, int *len)
       DRETURN(NULL);
    }
  
-   if ((str = malloc(size+1)) == NULL) {
+   if ((str = sge_malloc(size+1)) == NULL) {
       FCLOSE(fp);
       DRETURN(NULL);
    }
@@ -617,7 +617,7 @@ char *sge_stream2string(FILE *fp, int *len)
  
    DENTER(TOP_LAYER);
  
-   if (!(str = malloc(FILE_CHUNK))) {
+   if (!(str = sge_malloc(FILE_CHUNK))) {
       DRETURN(NULL);
    }
    malloced_len = FILE_CHUNK;

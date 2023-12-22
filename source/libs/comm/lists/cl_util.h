@@ -36,6 +36,10 @@
 
 #include "basis_types.h"
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 /* This functions return the string length of the paramter */
 int cl_util_get_ulong_number_length(unsigned long id);
 int cl_util_get_int_number_length(int id);
@@ -49,5 +53,9 @@ int cl_util_get_ascii_hex_buffer(unsigned char* buffer, unsigned long buf_len, c
 int cl_util_get_binary_buffer(char* hex_buffer, unsigned char** buffer, unsigned long* buffer_lenght);
 char cl_util_get_ascii_hex_char(unsigned char value);
 int  cl_util_get_hex_value(char hex_char);
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif /* __CL_UTIL_H */

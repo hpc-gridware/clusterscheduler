@@ -35,6 +35,10 @@
 
 #include "comm/lists/cl_lists.h"
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 typedef struct cl_parameter_list_elem_t {
    char*   parameter;     /* data */
    char*   value;         /* data */
@@ -57,6 +61,10 @@ cl_parameter_list_elem_t* cl_parameter_list_get_least_elem(cl_raw_list_t* list_p
 cl_parameter_list_elem_t* cl_parameter_list_get_next_elem(cl_parameter_list_elem_t* elem);
 cl_parameter_list_elem_t* cl_parameter_list_get_last_elem(cl_parameter_list_elem_t* elem);
 
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif /* __CL_PARAMETER_LIST_H */
 

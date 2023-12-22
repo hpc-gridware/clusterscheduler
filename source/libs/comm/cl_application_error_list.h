@@ -36,8 +36,9 @@
 #include "comm/lists/cl_lists.h"
 #include "comm/cl_data_types.h"
 
-
-
+#ifdef __cplusplus
+extern "C" {
+#endif
 
 /* basic functions */
 int cl_application_error_list_setup(cl_raw_list_t** list_p, char* list_name);
@@ -51,6 +52,10 @@ cl_application_error_list_elem_t* cl_application_error_list_get_first_elem(cl_ra
 cl_application_error_list_elem_t* cl_application_error_list_get_least_elem(cl_raw_list_t* list_p);
 cl_application_error_list_elem_t* cl_application_error_list_get_next_elem(cl_application_error_list_elem_t* elem);
 cl_application_error_list_elem_t* cl_application_error_list_get_last_elem(cl_application_error_list_elem_t* elem);
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif /* __CL_APPLICATION_ERROR_LIST_H */
 
