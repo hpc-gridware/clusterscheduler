@@ -43,6 +43,8 @@
 
 #include "basis_types.h"
 
+#include "uti/sge_string.h"
+
 #define CL_DO_XML_DEBUG 0
 
 
@@ -266,8 +268,7 @@ int cl_com_transformString2XML(const char* input, char** output) {
       if (found == false) {
          (*output)[used] = input[i];
       } else {
-         strncpy((char *)&(*output)[used], cl_com_sequence_array[s].sequence,
-                 add_length);
+         sge_strlcpy((char *)&(*output)[used], cl_com_sequence_array[s].sequence, add_length);
       }
       used += add_length;
    }

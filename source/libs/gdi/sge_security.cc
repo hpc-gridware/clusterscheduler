@@ -1286,8 +1286,8 @@ sge_gdi_packet_initialize_auth_info(sge_gdi_ctx_class_t *ctx,
 
    uid = ctx->get_uid(ctx);
    gid = ctx->get_gid(ctx);
-   strncpy(username, ctx->get_username(ctx), sizeof(username));
-   strncpy(groupname, ctx->get_groupname(ctx), sizeof(groupname));
+   sge_strlcpy(username, ctx->get_username(ctx), sizeof(username));
+   sge_strlcpy(groupname, ctx->get_groupname(ctx), sizeof(groupname));
 
 #if defined(INTERIX)
    /*

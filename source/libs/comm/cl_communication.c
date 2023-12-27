@@ -1934,7 +1934,7 @@ static int cl_com_dup_host(char** host_dest, const char* source, cl_host_resolve
             if (is_static_buffer == false) {
                *host_dest = sge_malloc(sizeof(char) * (size + 1));
             }
-            *host_dest = strncpy(*host_dest, source, size);
+            sge_strlcpy(*host_dest, source, size);
             (*host_dest)[size] = '\0';
           } else {
             if (is_static_buffer == false) {
@@ -1961,7 +1961,7 @@ static int cl_com_dup_host(char** host_dest, const char* source, cl_host_resolve
                    }
                 }
 
-                *host_dest = strncpy(*host_dest, source, hostlen);
+                sge_strlcpy(*host_dest, source, hostlen);
                 (*host_dest)[hostlen] = '\0';
              } else {
                 /* length = hostlength + domainlength + '.' */
@@ -1993,7 +1993,7 @@ static int cl_com_dup_host(char** host_dest, const char* source, cl_host_resolve
                 }
              }
 
-             *host_dest = strncpy(*host_dest, source, hostlen);
+             sge_strlcpy(*host_dest, source, hostlen);
              (*host_dest)[hostlen] = '\0';
           }
           retval = CL_RETVAL_OK;
