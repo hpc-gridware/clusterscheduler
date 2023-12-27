@@ -28,9 +28,12 @@ set(CMAKE_CXX_EXTENSIONS OFF)
 #set (CMAKE_C_FLAGS "-arch arm64 -rdynamic -g")
 #set (CMAKE_EXE_LINKER_FLAGS "-arch arm64 -flat_namespace -g")
 
+# if build type has not been specified then do a Debug build by default
+if(NOT CMAKE_BUILD_TYPE)
 set(CMAKE_BUILD_TYPE
-    Debug ON
-    CACHE BOOL "select build type between Debug and Release")
+    "Debug"
+    CACHE STRING "select build type between Debug and Release" FORCE)
+endif()
 
 # berkeleydb might not build on all platforms provide a way to disable it @todo
 # try updating config.guess and config.sub with a current version
@@ -61,6 +64,9 @@ set(INSTALL_SGE_DOC
 set(INSTALL_SGE_TEST
     ON
     CACHE BOOL "install test binaries")
+set(PROJECT_3RDPARTY_HOME
+        "$ENV{HOME}/3rd_party"
+        CACHE STRING "installation directory for 3rdparty tools")
 
 include(cmake/OsReleaseInfo.cmake)
 include(cmake/ArchitectureSpecificSettings.cmake)
@@ -73,8 +79,7 @@ set(CMAKE_INSTALL_RPATH "\$ORIGIN/../../lib/${SGE_ARCH}")
 # 3rdparty packages @todo: better install them into
 # <base_dir>/<pkg>/<version>/<arch>/<os>/<osversion>/<debug|release>
 include(cmake/BuildThirdParty.cmake)
-set(3RD_PARTY ${CMAKE_BINARY_DIR}/3rd_party)
-build_third_party(${3RD_PARTY})
+build_third_party("${CMAKE_BINARY_DIR}/3rd_party" ${PROJECT_3RDPARTY_DIR})
 
 # @todo: we shouldn't need includes - daemons/common, required for err_trace.h
 # in libs/sgeobj/sge_binding.h - daemons/execd, required for get_path.h in
@@ -87,7 +92,7 @@ set(SGE_INCLUDES
     ${PROJECT_SOURCE_DIR}/source/daemons/execd
     ${PROJECT_SOURCE_DIR}/source/daemons/qmaster
     ${PROJECT_SOURCE_DIR}/source/libs
-    ${3RD_PARTY}/include)
+    ${PROJECT_3RDPARTY_DIR}/include)
 
 set(SGE_LIBS jemalloc pthread dl m)
 

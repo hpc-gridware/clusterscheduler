@@ -21,7 +21,15 @@ function(architecture_specific_settings)
                           ${SGE_ARCH} OUTPUT_VARIABLE SGE_TARGETBITS_RAW)
   string(STRIP ${SGE_TARGETBITS_RAW} SGE_TARGETBITS)
 
-  # DARWIN: GETHOSTBYNAME DGETHOSTBYADDR_M 
+  # directory for installing 3rdparty tools once
+  # this allows us to delete the build directory without having to re-build all 3rdparty tools
+  set(PROJECT_3RDPARTY_DIR "${PROJECT_3RDPARTY_HOME}/${SGE_ARCH}/${OS_ID}/${OS_VERSION}/${CMAKE_BUILD_TYPE}")
+  # spaces in file/directory names break the build
+  string(REPLACE " " "_" PROJECT_3RDPARTY_DIR ${PROJECT_3RDPARTY_DIR})
+  message(STATUS "3rdparty tools are installed to ${PROJECT_3RDPARTY_DIR}")
+  set(PROJECT_3RDPARTY_DIR ${PROJECT_3RDPARTY_DIR} PARENT_SCOPE)
+
+  # DARWIN: GETHOSTBYNAME DGETHOSTBYADDR_M
   # SOLARIS: GETHOSTBYNAME_R5 GETHOSTBYADDR_R7 
   # only LINUX: HAS_IN_PORT_T and PLPA
   add_compile_definitions(

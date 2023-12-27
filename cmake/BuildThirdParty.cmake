@@ -6,7 +6,7 @@
 # for cmake projects we use CPM
 set(SGE_PACKAGE_MANAGER none)
 
-function(build_third_party 3rdparty_install_path)
+function(build_third_party 3rdparty_build_path 3rdparty_install_path)
   include(cmake/CPM.cmake)
 
   cpmaddpackage("gh:DaveGamble/cJSON#v1.7.16")
@@ -22,7 +22,7 @@ function(build_third_party 3rdparty_install_path)
       ExternalProject_Add(
         3rd_party_berkeleydb
         EXCLUDE_FROM_ALL TRUE
-        PREFIX ${3rdparty_install_path}/berkeleydb
+        PREFIX ${3rdparty_build_path}/berkeleydb
         INSTALL_DIR ${3rdparty_install_path}
         GIT_REPOSITORY https://github.com/Positeral/libdb5.git
         GIT_TAG master
@@ -52,7 +52,7 @@ function(build_third_party 3rdparty_install_path)
     ExternalProject_Add(
       3rd_party_jemalloc
       EXCLUDE_FROM_ALL TRUE
-      PREFIX ${3rdparty_install_path}/jemalloc
+      PREFIX ${3rdparty_build_path}/jemalloc
       INSTALL_DIR ${3rdparty_install_path}
       GIT_REPOSITORY https://github.com/jemalloc/jemalloc.git
       GIT_TAG 5.3.0
@@ -76,7 +76,7 @@ function(build_third_party 3rdparty_install_path)
       ExternalProject_Add(
         3rd_party_plpa
         EXCLUDE_FROM_ALL TRUE
-        PREFIX ${3rdparty_install_path}/plpa
+        PREFIX ${3rdparty_build_path}/plpa
         INSTALL_DIR ${3rdparty_install_path}
         URL https://download.open-mpi.org/release/plpa/v1.3/plpa-1.3.2.tar.gz
 	# update config.guess and config.sub with current versions of the installed automake
