@@ -22,6 +22,15 @@ Use the cmake -S option to point it to the gridengine repository (the toplevel d
 cmake -S path_to_gridengine_directory
 ```
 
+If private project extensions shall be built as well then specify the path to their root directory.
+This root directory must contain a global CMakeLists.txt file for building the extensions. It can rely
+on all cmake settings from the gridengine CMakeLists.txt file and use all libraries created during the
+gridengine build.
+
+```Shell
+cmake -S path_to_gridengine_directory -DPROJECT_EXTENSIONS=path_to_extensions_directory
+```
+
 #### Setting the installation prefix
 
 If you want to install to a different location than the default (`/opt/ge`) specify
@@ -85,6 +94,9 @@ To switch to Relase build set the CMAKE_BUILD_TYPE variable:
 cmake ... -DCMAKE_BUILD_TYPE=Release
 ```
 
+With the Release build by default link time optimization is active (gcc option -flto).
+It can be disabled with `-DENABLE_LTO=Off`.
+
 ### Build 3rdparty Dependencies
 
 3rdparty dependencies (berkeleydb, jemalloc and plpa) need to be built once:
@@ -138,4 +150,15 @@ cmake ... -DINSTALL_SGE_BIN=ON -DINSTALL_SGE_COMMON=OFF
 make install
 ```
 
+## Sanitizers
+
+Both gcc and clang allow the instrumentation of code with sanitizers.
+cmake option `-DENABLE_SANITIZERS` enables instrumentation (only if it is a Debug build).
+By default sanitizers are disabled.
+
+Enabling sanitizers adds the following compiler and linker flags:
+* `-fno-omit-frame-pointer`
+* `-fsanitize=leak`
+* `-fsanitize=undefined`
+* `-fsanitize=address`
 

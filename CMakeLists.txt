@@ -44,6 +44,9 @@ option(WITH_PLPA              "Enable building with plpa library" ON)
 option(WITH_JEMALLOC          "Enable use of the jemalloc memory allocator"             ON)
 option(WITH_MTMALLOC          "Enable use of the mtmalloc memory allocator on Solaris"  ON)
 
+# private extensions
+set(PROJECT_EXTENSIONS "None" CACHE STRING "directory of private extensions")
+
 # INSTALL OPTIONS
 option(INSTALL_SGE_BIN        "Install binaries"                                        ON)
 option(INSTALL_SGE_COMMON     "Install common files"                                    ON)
@@ -105,6 +108,9 @@ set(SGE_LIBS ${SGE_JEMALLOC_LIB} pthread dl m)
 
 # add_subdirectory(doc)
 add_subdirectory(source)
+if (NOT PROJECT_EXTENSIONS STREQUAL "None")
+  add_subdirectory(${PROJECT_EXTENSIONS} "oge-extensions")
+endif()
 
 # @todo: instead of library "dl" use ${CMAKE_DL_LIBS}? @todo: add virtual
 # targets - for build: similar to --only-core - for install: binaries, common,
