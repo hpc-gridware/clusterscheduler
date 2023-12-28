@@ -35,39 +35,27 @@ set(CMAKE_BUILD_TYPE
     CACHE STRING "select build type between Debug and Release" FORCE)
 endif()
 
+# 3RD_PARTY OPTIONS
 # berkeleydb might not build on all platforms provide a way to disable it @todo
 # try updating config.guess and config.sub with a current version
-set(WITH_SPOOL_BERKELEYDB
-    ON
-    CACHE BOOL "enable berkeleydb spooling")
-set(WITH_SPOOL_DYNAMIC
-    ON
-    CACHE BOOL "enable dynamic spooling configuration")
-set(WITH_PLPA
-    ON
-    CACHE BOOL "enable building with plpa library")
-set(WITH_JEMALLOC
-    ON
-    CACHE BOOL "enable use of the jemalloc memory allocator")
-set(WITH_MTMALLOC
-    ON
-    CACHE BOOL "enable use of the mtmalloc memory allocator on Solaris")
-set(INSTALL_SGE_BIN
-    ON
-    CACHE BOOL "install binaries")
-set(INSTALL_SGE_COMMON
-        ON
-        CACHE BOOL "install common files")
-set(INSTALL_SGE_DOC
-    OFF
-    CACHE BOOL "build and install documentation")
-set(INSTALL_SGE_TEST
-    ON
-    CACHE BOOL "install test binaries")
+option(WITH_SPOOL_BERKELEYDB  "Enable berkeleydb spooling"                              ON)
+option(WITH_SPOOL_DYNAMIC     "Enable dynamic spooling configuration"                   ON)
+option(WITH_PLPA              "Enable building with plpa library" ON)
+option(WITH_JEMALLOC          "Enable use of the jemalloc memory allocator"             ON)
+option(WITH_MTMALLOC          "Enable use of the mtmalloc memory allocator on Solaris"  ON)
+
+# INSTALL OPTIONS
+option(INSTALL_SGE_BIN        "Install binaries"                                        ON)
+option(INSTALL_SGE_COMMON     "Install common files"                                    ON)
+option(INSTALL_SGE_DOC        "Build and install documentation"                         OFF)
+option(INSTALL_SGE_TEST       "Install test binaries"                                   ON)
+
+# BUILD OPTIONS
+option(ENABLE_LTO             "Enable to add Link Time Optimization in Release Build."  ON)
+
 set(PROJECT_3RDPARTY_HOME
         "$ENV{HOME}/3rd_party"
         CACHE STRING "installation directory for 3rdparty tools")
-
 include(cmake/OsReleaseInfo.cmake)
 include(cmake/ArchitectureSpecificSettings.cmake)
 
