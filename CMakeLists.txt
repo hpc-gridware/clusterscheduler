@@ -52,6 +52,7 @@ option(INSTALL_SGE_TEST       "Install test binaries"                           
 
 # BUILD OPTIONS
 option(ENABLE_LTO             "Enable to add Link Time Optimization in Release Build."  ON)
+option(ENABLE_SANITIZERS      "Enable address, leak and undefined behaviour sanitizer"  OFF)
 
 set(PROJECT_3RDPARTY_HOME
         "$ENV{HOME}/3rd_party"
@@ -82,7 +83,11 @@ set(SGE_INCLUDES
     ${PROJECT_SOURCE_DIR}/source/libs
     ${PROJECT_3RDPARTY_DIR}/include)
 
-set(SGE_LIBS jemalloc pthread dl m)
+if(WITH_JEMALLOC)
+  set(SGE_JEMALLOC_LIB "jemalloc")
+else()
+  set(SGE_JEMALLOC_LIB "")
+endif()
 
 if(SGE_ARCH MATCHES "darwin-arm64")
   set(SPOOLING_LIBS spoolloader spoolc_static spool)
@@ -95,6 +100,8 @@ if(WITH_PLPA)
 else()
   set(SGE_TOPO_LIB "")
 endif()
+
+set(SGE_LIBS ${SGE_JEMALLOC_LIB} pthread dl m)
 
 # add_subdirectory(doc)
 add_subdirectory(source)

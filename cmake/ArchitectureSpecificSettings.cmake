@@ -66,9 +66,7 @@ function(architecture_specific_settings)
                             HAS_IN_PORT_T SPOOLING_dynamic __SGE_COMPILE_WITH_GETTEXT__)
     add_link_options(-pthread -rdynamic)
 
-    set(WITH_MTMALLOC
-        OFF
-        PARENT_SCOPE)
+    set(WITH_MTMALLOC OFF PARENT_SCOPE)
 
     # specific linux architectures
     if(SGE_TARGETBITS STREQUAL "TARGET_32BIT")
@@ -77,6 +75,23 @@ function(architecture_specific_settings)
       add_compile_options(-Wno-deprecated-declarations)
     elseif(OS_ID STREQUAL "raspbian" AND OS_VERSION EQUAL 10)
       add_compile_options(-Wno-deprecated-declarations)
+    endif()
+
+    # Sanitizers
+    # -fsanitize=leak - need to disable custom memory allocators
+    # -fsanitize=undefined
+    # -fsanitize=address
+    if (ENABLE_SANITIZERS AND CMAKE_BUILD_TYPE STREQUAL "Debug")
+      message(STATUS "Enabling sanitizers")
+      set(WITH_JEMALLOC OFF PARENT_SCOPE)
+      add_compile_options("-fno-omit-frame-pointer")
+      add_link_options("-fno-omit-frame-pointer")
+      add_compile_options("-fsanitize=leak")
+      add_link_options("-fsanitize=leak")
+      add_compile_options("-fsanitize=undefined")
+      add_link_options("-fsanitize=undefined")
+      add_compile_options("-fsanitize=address")
+      add_link_options("-fsanitize=address")
     endif()
 
     # Solaris
