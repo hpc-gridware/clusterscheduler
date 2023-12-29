@@ -846,7 +846,7 @@ spool_berkeleydb_default_read_keys_func(lList **answer_list,
          /* return all keys starting with the given pattern
           * need to figure out the database
           * only the first letter(s) of the key need to be given, we have in the job database
-          * J(OB), J(ATASK) - no J(C) in Open Gridengine yet
+          * J(OB), J(ATASK) - no J(C) in Open Grid Engine yet
           * PET(ASK) - PE would be in the config database
           * all other keys are in the config db
           */

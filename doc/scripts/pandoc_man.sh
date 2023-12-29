@@ -22,7 +22,7 @@ fi
 PAGE_FILE="${INPUT_DIR}/${PAGE}.md"
 OUTPUT_FILE="${OUTPUT_DIR}/${PAGE}.${SECTION}"
 
-QSNAME="Open Gridengine"
+QSNAME="Open Grid Engine"
 QSPREFIX_LOWER="sge"
 QSPREFIX_UPPER="SGE"
 

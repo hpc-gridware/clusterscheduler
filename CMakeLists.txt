@@ -11,7 +11,7 @@ endif()
 project(
         gridengine
         VERSION 9.0.0
-        DESCRIPTION "Open Gridengine Workload Manager"
+        DESCRIPTION "Open Grid Engine Workload Manager"
         HOMEPAGE_URL "https://www.opengridengine.org"
         LANGUAGES C CXX)
 
