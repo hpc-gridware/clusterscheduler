@@ -108,6 +108,7 @@ set(SGE_LIBS ${SGE_JEMALLOC_LIB} pthread dl m)
 
 if(INSTALL_SGE_DOC)
   include(cmake/BuildMarkdownMan.cmake)
+  include(cmake/BuildMarkdownManual.cmake)
   add_subdirectory(doc)
 endif()
 

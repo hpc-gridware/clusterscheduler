@@ -8,6 +8,10 @@
 * cmake >= 3.0
 * autoconf, automake
 * git
+* for building man pages and documentation pandoc, TeX and related tools are required. On Ubuntu install the packages
+  * pandoc
+  * texlive
+  * texlive-xetex
 
 ## Building Gridengine
 
@@ -129,7 +133,7 @@ make sge_qmaster
 When configuring the project installation targets can be set:
 * INSTALL_SGE_BIN: Install all binaries and libraries including example binaries
 * INSTALL_SGE_COMMON: Install common files (e.g. util, mpi templates, examples)
-* INSTALL_SGE_DOC: Build and install documentation (TBD)
+* INSTALL_SGE_DOC: Build and install documentation
 * INSTALL_SGE_TEST: Install test binaries
 
 When installing to a local directory you'll want to install all of them which is default.
