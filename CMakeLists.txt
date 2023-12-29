@@ -106,8 +106,15 @@ endif()
 
 set(SGE_LIBS ${SGE_JEMALLOC_LIB} pthread dl m)
 
-# add_subdirectory(doc)
-add_subdirectory(source)
+if(INSTALL_SGE_DOC)
+  include(cmake/BuildMarkdownMan.cmake)
+  add_subdirectory(doc)
+endif()
+
+if(INSTALL_SGE_BIN OR INSTALL_SGE_COMMON OR INSTALL_SGE_TEST)
+  add_subdirectory(source)
+endif()
+
 if (NOT PROJECT_EXTENSIONS STREQUAL "None")
   add_subdirectory(${PROJECT_EXTENSIONS} "oge-extensions")
 endif()
