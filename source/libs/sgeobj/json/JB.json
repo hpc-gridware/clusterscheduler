@@ -581,10 +581,11 @@
 				}]
 		}, {
 			"name":	"hard_resource_list",
-			"summary":	"@todo add summary",
-			"description":	[{
-					"line":	"@todo add description"
-				}],
+			"summary":	"Hard resource list",
+			"description":	[
+            { "line":	"Hard resource requirements/limits/restrictions (CE_Type)." },
+            { "line":	"(qsub -l resource_list)" }
+            ],
 			"type":	"lListT",
 			"subClassName":	"CE",
 			"subCullPrefix":	"CE",
@@ -593,10 +594,11 @@
 				}]
 		}, {
 			"name":	"soft_resource_list",
-			"summary":	"@todo add summary",
-			"description":	[{
-					"line":	"@todo add description"
-				}],
+			"summary":	"Soft resource list",
+			"description":	[
+            { "line":	"Soft resource requirements/limits/restrictions (CE_Type)." },
+            { "line":	"(qsub -soft -l resource_list)" }
+            ],
 			"type":	"lListT",
 			"subClassName":	"CE",
 			"subCullPrefix":	"CE",
@@ -605,10 +607,11 @@
 				}]
 		}, {
 			"name":	"hard_queue_list",
-			"summary":	"@todo add summary",
-			"description":	[{
-					"line":	"@todo add description"
-				}],
+			"summary":	"Hard queue list",
+			"description":	[
+            { "line":	"Hard queue list (QR_Type)." },
+            { "line":	"(qsub/qselect -q dest_identifier)" }
+            ],
 			"type":	"lListT",
 			"subClassName":	"QR",
 			"subCullPrefix":	"QR",
@@ -617,10 +620,11 @@
 				}]
 		}, {
 			"name":	"soft_queue_list",
-			"summary":	"@todo add summary",
-			"description":	[{
-					"line":	"@todo add description"
-				}],
+			"summary":	"Soft queue list",
+			"description":	[
+            { "line":	"Soft queue list (QR_Type)." },
+            { "line":	"(qsub/qselect -soft -q dest_identifier)" }
+            ],
 			"type":	"lListT",
 			"subClassName":	"QR",
 			"subCullPrefix":	"QR",
@@ -629,9 +633,9 @@
 				}]
 		}, {
 			"name":	"mail_options",
-			"summary":	"@todo add summary",
+			"summary":	"Mail options",
 			"description":	[{
-					"line":	"@todo add description"
+					"line":	"(qsub/qalter -m mail_options)"
 				}],
 			"type":	"lUlongT",
 			"flags":	[{
@@ -639,10 +643,11 @@
 				}]
 		}, {
 			"name":	"mail_list",
-			"summary":	"@todo add summary",
-			"description":	[{
-					"line":	"@todo add description"
-				}],
+			"summary":	"Mail list",
+			"description":	[
+            { "line":	"Mail recipiants (MR_Type)." },
+            { "line":	"(qsub/qalter -M mail_list)" }
+         ],
 			"type":	"lListT",
 			"subClassName":	"MR",
 			"subCullPrefix":	"MR",
@@ -651,20 +656,22 @@
 				}]
 		}, {
 			"name":	"pe",
-			"summary":	"@todo add summary",
-			"description":	[{
-					"line":	"@todo add description"
-				}],
+			"summary":	"Requested Parallel Environment",
+			"description":	[
+            { "line":	"Name of requested PE or wildcard expression for matching PEs" },
+            { "line":	"(qsub/qalter -pe pe-name slot_range)" }
+         ],
 			"type":	"lStringT",
 			"flags":	[{
 					"name":	"SPOOL"
 				}]
 		}, {
 			"name":	"pe_range",
-			"summary":	"@todo add summary",
-			"description":	[{
-					"line":	"@todo add description"
-				}],
+			"summary":	"Requested Slot Range for Parallel Environment",
+			"description":	[
+            { "line":	"PE slot range (RN_Type). Qmaster will ensure that it is ascending and normalized" },
+            { "line":	"(qsub/qalter -pe pe-name slot_range)" }
+         ],
 			"type":	"lListT",
 			"subClassName":	"RN",
 			"subCullPrefix":	"RN",
@@ -673,10 +680,11 @@
 				}]
 		}, {
 			"name":	"master_hard_queue_list",
-			"summary":	"@todo add summary",
-			"description":	[{
-					"line":	"@todo add description"
-				}],
+			"summary":	"Master Hard Queue List",
+			"description":	[
+            { "line":	"Master queue list (QR_Type)." },
+            { "line":	"qsub -masterq queue_list" }
+         ],
 			"type":	"lListT",
 			"subClassName":	"QR",
 			"subCullPrefix":	"QR",
@@ -685,26 +693,28 @@
 				}]
 		}, {
 			"name":	"tgt",
-			"summary":	"@todo add summary",
+			"summary":	"Kerberos Client TGB",
 			"description":	[{
-					"line":	"@todo add description"
+					"line":	"Kerberos client TGT"
 				}],
 			"type":	"lStringT",
 			"flags":	[]
 		}, {
 			"name":	"cred",
-			"summary":	"@todo add summary",
+			"summary":	"DCE/Kerberos Credentials",
 			"description":	[{
-					"line":	"@todo add description"
+					"line":	"DCE/Kerberos credentials"
 				}],
 			"type":	"lStringT",
 			"flags":	[]
 		}, {
 			"name":	"ja_structure",
-			"summary":	"@todo add summary",
-			"description":	[{
-					"line":	"@todo add description"
-				}],
+			"summary":	"Array Job Structure",
+			"description":	[
+            { "line":	"Elements describe task id range structure during the" },
+            { "line":	"submission time of a (array) job (RN_Type)." },
+            { "line":	"qsub -t tid_range" }
+         ],
 			"type":	"lListT",
 			"subClassName":	"RN",
 			"subCullPrefix":	"RN",
@@ -713,9 +723,9 @@
 				}]
 		}, {
 			"name":	"ja_n_h_ids",
-			"summary":	"@todo add summary",
+			"summary":	"Array Task IDs without Hold",
 			"description":	[{
-					"line":	"@todo add description"
+					"line":	"Just submitted array task without hold state (RN_Type)."
 				}],
 			"type":	"lListT",
 			"subClassName":	"RN",
@@ -725,10 +735,12 @@
 				}]
 		}, {
 			"name":	"ja_u_h_ids",
-			"summary":	"@todo add summary",
-			"description":	[{
-					"line":	"@todo add description"
-				}],
+			"summary":	"Array Task IDs with User Hold",
+			"description":	[
+            { "line":	"Just submitted and user hold applied (RN_Type)." },
+            { "line":	"qsub -h -t tid_range" },
+            { "line":	"qalter -h u/U jid.tid1-tid2:step" }
+         ],
 			"type":	"lListT",
 			"subClassName":	"RN",
 			"subCullPrefix":	"RN",
@@ -737,10 +749,11 @@
 				}]
 		}, {
 			"name":	"ja_s_h_ids",
-			"summary":	"@todo add summary",
-			"description":	[{
-					"line":	"@todo add description"
-				}],
+			"summary":	"Array Task IDs with System Hold",
+			"description":	[
+            { "line":	"Just submitted and system hold applied (RN_Type)." },
+            { "line":	"qalter -h s/S jid.tid1-tid2:step" }
+         ],
 			"type":	"lListT",
 			"subClassName":	"RN",
 			"subCullPrefix":	"RN",
@@ -749,10 +762,11 @@
 				}]
 		}, {
 			"name":	"ja_o_h_ids",
-			"summary":	"@todo add summary",
-			"description":	[{
-					"line":	"@todo add description"
-				}],
+			"summary":	"Array Task IDs with Operator Hold",
+			"description":	[
+            { "line":	"Just submitted and operator hold applied (RN_Type)." },
+            { "line":	"qalter -h o/O jid.tid1-tid2:step" }
+         ],
 			"type":	"lListT",
 			"subClassName":	"RN",
 			"subCullPrefix":	"RN",
@@ -761,10 +775,11 @@
 				}]
 		}, {
 			"name":	"ja_a_h_ids",
-			"summary":	"@todo add summary",
-			"description":	[{
-					"line":	"@todo add description"
-				}],
+			"summary":	"Array Task IDs with Array Hold",
+			"description":	[
+            { "line":	"Just submitted and array hold applied (RN_Type)." },
+            { "line":	"qalter -hold_jid_ad wc_job_list" }
+         ],
 			"type":	"lListT",
 			"subClassName":	"RN",
 			"subCullPrefix":	"RN",
@@ -773,10 +788,11 @@
 				}]
 		}, {
 			"name":	"ja_z_ids",
-			"summary":	"@todo add summary",
-			"description":	[{
-					"line":	"@todo add description"
-				}],
+			"summary":	"Zombie Task IDs",
+			"description":	[
+            { "line":	"Zombie task ids (RN_Type)." },
+            { "line":	"@todo still used?" }
+         ],
 			"type":	"lListT",
 			"subClassName":	"RN",
 			"subCullPrefix":	"RN",
@@ -787,10 +803,11 @@
 				}]
 		}, {
 			"name":	"ja_template",
-			"summary":	"@todo add summary",
-			"description":	[{
-					"line":	"@todo add description"
-				}],
+			"summary":	"Template for new Tasks",
+			"description":	[
+            { "line":	"Template for new tasks. In SGEEE systems the schedd will" },
+            { "line":	"store initial tickets in this element. (JAT_Type)" }
+         ],
 			"type":	"lListT",
 			"subClassName":	"JAT",
 			"subCullPrefix":	"JAT",
@@ -799,10 +816,11 @@
 				}]
 		}, {
 			"name":	"ja_tasks",
-			"summary":	"@todo add summary",
-			"description":	[{
-					"line":	"@todo add description"
-				}],
+			"summary":	"List of Array Tasks",
+			"description":	[
+            { "line":	"List of array tasks (in case of array jobs) or one task" },
+            { "line":	"(in case of a job) (JAT_Type)." }
+         ],
 			"type":	"lListT",
 			"subClassName":	"JAT",
 			"subCullPrefix":	"JAT",
@@ -811,19 +829,21 @@
 				}]
 		}, {
 			"name":	"host",
-			"summary":	"@todo add summary",
-			"description":	[{
-					"line":	"@todo add description"
-				}],
+			"summary":	"Host the job (array task) is executing on",
+			"description":	[
+            { "line":	"SGEEE - host job is executing on. Local to schedd." },
+            { "line":	"Not spooled." },
+            { "line":	"@todo still used?" }
+         ],
 			"type":	"lHostT",
 			"flags":	[{
 					"name":	"JGDI_RO"
 				}]
 		}, {
 			"name":	"category",
-			"summary":	"@todo add summary",
+			"summary":	"Category Reference",
 			"description":	[{
-					"line":	"@todo add description"
+					"line":	"Category string reference used in schedd."
 				}],
 			"type":	"lRefT",
 			"subClassName":	"ANY",
@@ -831,20 +851,25 @@
 			"flags":	[]
 		}, {
 			"name":	"user_list",
-			"summary":	"@todo add summary",
-			"description":	[{
-					"line":	"@todo add description"
-				}],
+			"summary":	"List of users for qalter",
+			"description":	[
+            { "line":	"List of usernames (qsub/qalter -u username_list)." },
+            { "line":	"qsub -u does not exist. Not part of a job, but only" },
+            { "line":	"userd for qalter request as where condition. Could most" },
+            { "line":	"probably be passed via lCondition." },
+            { "line":	"@todo change qalter, remove this attribute from job" }
+         ],
 			"type":	"lListT",
 			"subClassName":	"ST",
 			"subCullPrefix":	"ST",
 			"flags":	[]
 		}, {
 			"name":	"job_identifier_list",
-			"summary":	"@todo add summary",
-			"description":	[{
-					"line":	"@todo add description"
-				}],
+			"summary":	"Job Identifier List for qalter",
+			"description":	[
+            { "line":	"condition for qalter? @todo Then it should better be passed" },
+            { "line":	"via condition. (ID_Type)" }
+         ],
 			"type":	"lListT",
 			"subClassName":	"ID",
 			"subCullPrefix":	"ID",
@@ -853,17 +878,17 @@
 				}]
 		}, {
 			"name":	"verify_suitable_queues",
-			"summary":	"@todo add summary",
+			"summary":	"Verify Suitable Queues",
 			"description":	[{
-					"line":	"@todo add description"
+					"line":	"@todo used in qalter?"
 				}],
 			"type":	"lUlongT",
 			"flags":	[]
 		}, {
 			"name":	"soft_wallclock_gmt",
-			"summary":	"@todo add summary",
+			"summary":	"Soft Wallclock GMT",
 			"description":	[{
-					"line":	"@todo add description"
+					"line":	"@todo the same as complex s_rt?"
 				}],
 			"type":	"lUlongT",
 			"flags":	[{
@@ -873,9 +898,9 @@
 				}]
 		}, {
 			"name":	"hard_wallclock_gmt",
-			"summary":	"@todo add summary",
+			"summary":	"Hard Wallclock GMT",
 			"description":	[{
-					"line":	"@todo add description"
+					"line":	"@todo the same as complex s_rt?"
 				}],
 			"type":	"lUlongT",
 			"flags":	[{
@@ -885,20 +910,22 @@
 				}]
 		}, {
 			"name":	"override_tickets",
-			"summary":	"@todo add summary",
-			"description":	[{
-					"line":	"@todo add description"
-				}],
+			"summary":	"Override Tickets",
+			"description":	[
+            { "line":	"SGEEE - override tickets assigned by admin." },
+            { "line":	"(qalter -ot tickets)." }
+         ],
 			"type":	"lUlongT",
 			"flags":	[{
 					"name":	"SPOOL"
 				}]
 		}, {
 			"name":	"qs_args",
-			"summary":	"@todo add summary",
-			"description":	[{
-					"line":	"@todo add description"
-				}],
+			"summary":	"Queuing System Arguments",
+			"description":	[
+            { "line":	"Arguments for foreign queuing system (qsi?) (ST_Type)." },
+            { "line":	"@todo Either delete it, or recycle it to be used with starter_method." }
+         ],
 			"type":	"lListT",
 			"subClassName":	"ST",
 			"subCullPrefix":	"ST",
@@ -907,9 +934,9 @@
 				}]
 		}, {
 			"name":	"path_aliases",
-			"summary":	"@todo add summary",
+			"summary":	"Path Aliases List",
 			"description":	[{
-					"line":	"@todo add description"
+					"line":	"Path aliases list (PA_Type)."
 				}],
 			"type":	"lListT",
 			"subClassName":	"PA",
@@ -919,67 +946,86 @@
 				}]
 		}, {
 			"name":	"urg",
-			"summary":	"@todo add summary",
-			"description":	[{
-					"line":	"@todo add description"
-				}],
+			"summary":	"Urgency",
+			"description":	[
+            { "line":	"SGEEE. Absolute static urgency importance. The admin can use arbitrary" },
+            { "line":	"weighting factors in the formula used to determine this number. So any" },
+            { "line":	"value is possible. Needed only when scheduling code is run." },
+            { "line":	"Not spooled." }
+         ],
 			"type":	"lDoubleT",
 			"flags":	[]
 		}, {
 			"name":	"nurg",
-			"summary":	"@todo add summary",
-			"description":	[{
-					"line":	"@todo add description"
-				}],
+			"summary":	"Normalised Urgency",
+			"description":	[
+            { "line":	"SGEEE. Relative importance due to static urgency in the range between 0.0" },
+            { "line":	"and 1.0. No need to make this a per task attribute as long as waiting time" },
+            { "line":	"and deadline remain job attributes." },
+            { "line":	"Not spooled." }
+         ],
 			"type":	"lDoubleT",
 			"flags":	[{
 					"name":	"JGDI_RO"
 				}]
 		}, {
 			"name":	"nppri",
-			"summary":	"@todo add summary",
-			"description":	[{
-					"line":	"@todo add description"
-				}],
+			"summary":	"Normalised Posix Priority",
+			"description":	[
+            { "line":	"SGEEE. Relative importance due to Posix priority in the range between 0.0" },
+            { "line":	"and 1.0. No need to make this a per task attribute as long as the POSIX" },
+            { "line":	"priority remains a job attribute." },
+            { "line":	"Not spooled." }
+         ],
 			"type":	"lDoubleT",
 			"flags":	[{
 					"name":	"JGDI_RO"
 				}]
 		}, {
 			"name":	"rrcontr",
-			"summary":	"@todo add summary",
-			"description":	[{
-					"line":	"@todo add description"
-				}],
+			"summary":	"Relative Resource Contribution (?)",
+			"description":	[
+            { "line":	"SGEEE. Combined contribution to static urgency from all resources. This can" },
+            { "line":	"be any value. Actually this is a property of job category. This field is" },
+            { "line":	"needed only to provide it for diagnosis purposes it as per job information" },
+            { "line":	"via GDI." },
+            { "line":	"Not spooled." }
+         ],
 			"type":	"lDoubleT",
 			"flags":	[{
 					"name":	"JGDI_RO"
 				}]
 		}, {
 			"name":	"dlcontr",
-			"summary":	"@todo add summary",
-			"description":	[{
-					"line":	"@todo add description"
-				}],
+			"summary":	"Deadline Contribution",
+			"description":	[
+            { "line":	"SGEEE. Contribution to static urgency from waiting time. This can be any" },
+            { "line":	"value. No need to make this a per task attribute as long as waiting time" },
+            { "line":	"is a job attribute. Increases over time." },
+            { "line":	"Not spooled." }
+         ],
 			"type":	"lDoubleT",
 			"flags":	[{
 					"name":	"JGDI_RO"
 				}]
 		}, {
 			"name":	"wtcontr",
-			"summary":	"@todo add summary",
-			"description":	[{
-					"line":	"@todo add description"
-				}],
+			"summary":	"Waiting Time Contribution",
+			"description":	[
+            { "line":	"SGEEE. Contribution to static urgency from waiting time. This can be any" },
+            { "line":	"value. No need to make this a per task attribute as long as waiting time" },
+            { "line":	"is a job attribute. Increases over time." },
+            { "line":	"Not spooled." }
+         ],
 			"type":	"lDoubleT",
 			"flags":	[{
 					"name":	"JGDI_RO"
 				}]
 		}, {
 			"name":	"ar",
-			"summary":	"AR Number",
+			"summary":	"Advance Reservation ID",
 			"description":	[{
-					"line":	"Uniq advance reservation number, > 0 if the job shall run within an AR"
+					"line":	"Unique advance reservation number."
 				}],
 			"type":	"lUlongT",
 			"flags":	[{
@@ -987,9 +1033,9 @@
 				}]
 		}, {
 			"name":	"pty",
-			"summary":	"@todo add summary",
+			"summary":	"Pty",
 			"description":	[{
-					"line":	"@todo add description"
+					"line":	"Interactive job should be started in a pty. 0=no, 1=yes, 2=use default."
 				}],
 			"type":	"lUlongT",
 			"flags":	[{
@@ -997,9 +1043,9 @@
 				}]
 		}, {
 			"name":	"ja_task_concurrency",
-			"summary":	"@todo add summary",
+			"summary":	"Array Task Concurrency",
 			"description":	[{
-					"line":	"@todo add description"
+					"line":	"The number of concurrent array tasks executing at any given time."
 				}],
 			"type":	"lUlongT",
 			"flags":	[{

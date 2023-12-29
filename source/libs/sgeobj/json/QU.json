@@ -1,8 +1,8 @@
 {
 	"className":	"QU",
-	"summary":	"@todo add summary",
+	"summary":	"Queue Instance",
 	"description":	[{
-			"line":	"@todo add description"
+			"line":	"Queue Instance: Instance of a cluster queue on an execution host"
 		}],
 	"cullPrefix":	"QU",
 	"attributes":	[{
@@ -61,7 +61,7 @@
 			"name":	"available_at",
 			"summary":	"@todo add summary",
 			"description":	[{
-					"line":	"@todo add description"
+					"line":	"scheduling code only"
 				}],
 			"type":	"lUlongT",
 			"flags":	[{
@@ -679,10 +679,14 @@
 				}]
 		}, {
 			"name":	"tagged4schedule",
-			"summary":	"@todo add summary",
-			"description":	[{
-					"line":	"@todo add description"
-				}],
+			"summary":	"Queue Instance Tagged for Schedule",
+			"description":	[
+            { "line":	"used for parallel job scheduling only" },
+            { "line":	"0 - can be used only as slave queue" },
+            { "line":	"1 - can be used as slave queue for now assignment," },
+            { "line":	"    however as master for reservation" },
+            { "line":	"2 - can be used as master for now and reservation" }
+         ],
 			"type":	"lUlongT",
 			"flags":	[{
 					"name":	"JGDI_RO"
@@ -831,9 +835,9 @@
 				}]
 		}, {
 			"name":	"state_changes",
-			"summary":	"@todo add summary",
+			"summary":	"New State Variables",
 			"description":	[{
-					"line":	"@todo add description"
+					"line":	"new state variables, these are needed for the scheduler, to dispach jobs into suitable queues"
 				}],
 			"type":	"lListT",
 			"subClassName":	"CCT",
