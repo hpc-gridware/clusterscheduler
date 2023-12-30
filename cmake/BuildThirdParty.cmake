@@ -9,7 +9,7 @@ set(SGE_PACKAGE_MANAGER none)
 function(build_third_party 3rdparty_build_path 3rdparty_install_path)
   include(cmake/CPM.cmake)
 
-  cpmaddpackage("gh:DaveGamble/cJSON#v1.7.16")
+  cpmaddpackage("gh:Tencent/rapidjson#master")
 
   set(3rdparty_list "")
   if(${SGE_PACKAGE_MANAGER} STREQUAL none)

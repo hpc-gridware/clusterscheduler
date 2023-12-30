@@ -84,7 +84,8 @@ set(SGE_INCLUDES
     ${PROJECT_SOURCE_DIR}/source/daemons/execd
     ${PROJECT_SOURCE_DIR}/source/daemons/qmaster
     ${PROJECT_SOURCE_DIR}/source/libs
-    ${PROJECT_3RDPARTY_DIR}/include)
+    ${PROJECT_3RDPARTY_DIR}/include
+    ${CPM_PACKAGE_rapidjson_SOURCE_DIR}/include)
 
 if(WITH_JEMALLOC)
   set(SGE_JEMALLOC_LIB "jemalloc")
