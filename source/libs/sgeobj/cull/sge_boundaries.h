@@ -42,11 +42,11 @@
  *    defines boundaries of all lists
  *
  * 2. sge_jobL.h ...
- * 
+ *
  *    is used to define a specific list like:
  *    - job list
  *    - ...
- *    
+ *
  *--------------------------------------------------
  */
 
