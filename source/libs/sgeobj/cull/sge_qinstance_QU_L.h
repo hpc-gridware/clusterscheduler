@@ -40,9 +40,9 @@ extern "C" {
 #endif
 
 /**
-* @brief @todo add summary
+* @brief Queue Instance
 *
-* @todo add description
+* Queue Instance: Instance of a cluster queue on an execution host
 *
 *    SGE_HOST(QU_qhostname) - @todo add summary
 *    @todo add description
@@ -57,7 +57,7 @@ extern "C" {
 *    @todo add description
 *
 *    SGE_ULONG(QU_available_at) - @todo add summary
-*    @todo add description
+*    scheduling code only
 *
 *    SGE_ULONG(QU_seq_no) - @todo add summary
 *    @todo add description
@@ -206,8 +206,12 @@ extern "C" {
 *    SGE_ULONG(QU_state) - @todo add summary
 *    @todo add description
 *
-*    SGE_ULONG(QU_tagged4schedule) - @todo add summary
-*    @todo add description
+*    SGE_ULONG(QU_tagged4schedule) - Queue Instance Tagged for Schedule
+*    used for parallel job scheduling only
+*    0 - can be used only as slave queue
+*    1 - can be used as slave queue for now assignment,
+*        however as master for reservation
+*    2 - can be used as master for now and reservation
 *
 *    SGE_ULONG(QU_cache_version) - @todo add summary
 *    @todo add description
@@ -248,8 +252,8 @@ extern "C" {
 *    SGE_ULONG(QU_gdi_do_later) - @todo add summary
 *    @todo add description
 *
-*    SGE_LIST(QU_state_changes) - @todo add summary
-*    @todo add description
+*    SGE_LIST(QU_state_changes) - New State Variables
+*    new state variables, these are needed for the scheduler, to dispach jobs into suitable queues
 *
 */
 

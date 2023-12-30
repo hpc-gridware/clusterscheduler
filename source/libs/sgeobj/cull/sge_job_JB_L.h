@@ -225,122 +225,168 @@ extern "C" {
 *    SGE_BOOL(JB_merge_stderr) - Merge stderr
 *    Merge stdout and stderr? ("qsub/qalter -j y|n")
 *
-*    SGE_LIST(JB_hard_resource_list) - @todo add summary
-*    @todo add description
+*    SGE_LIST(JB_hard_resource_list) - Hard resource list
+*    Hard resource requirements/limits/restrictions (CE_Type).
+*    (qsub -l resource_list)
 *
-*    SGE_LIST(JB_soft_resource_list) - @todo add summary
-*    @todo add description
+*    SGE_LIST(JB_soft_resource_list) - Soft resource list
+*    Soft resource requirements/limits/restrictions (CE_Type).
+*    (qsub -soft -l resource_list)
 *
-*    SGE_LIST(JB_hard_queue_list) - @todo add summary
-*    @todo add description
+*    SGE_LIST(JB_hard_queue_list) - Hard queue list
+*    Hard queue list (QR_Type).
+*    (qsub/qselect -q dest_identifier)
 *
-*    SGE_LIST(JB_soft_queue_list) - @todo add summary
-*    @todo add description
+*    SGE_LIST(JB_soft_queue_list) - Soft queue list
+*    Soft queue list (QR_Type).
+*    (qsub/qselect -soft -q dest_identifier)
 *
-*    SGE_ULONG(JB_mail_options) - @todo add summary
-*    @todo add description
+*    SGE_ULONG(JB_mail_options) - Mail options
+*    (qsub/qalter -m mail_options)
 *
-*    SGE_LIST(JB_mail_list) - @todo add summary
-*    @todo add description
+*    SGE_LIST(JB_mail_list) - Mail list
+*    Mail recipiants (MR_Type).
+*    (qsub/qalter -M mail_list)
 *
-*    SGE_STRING(JB_pe) - @todo add summary
-*    @todo add description
+*    SGE_STRING(JB_pe) - Requested Parallel Environment
+*    Name of requested PE or wildcard expression for matching PEs
+*    (qsub/qalter -pe pe-name slot_range)
 *
-*    SGE_LIST(JB_pe_range) - @todo add summary
-*    @todo add description
+*    SGE_LIST(JB_pe_range) - Requested Slot Range for Parallel Environment
+*    PE slot range (RN_Type). Qmaster will ensure that it is ascending and normalized
+*    (qsub/qalter -pe pe-name slot_range)
 *
-*    SGE_LIST(JB_master_hard_queue_list) - @todo add summary
-*    @todo add description
+*    SGE_LIST(JB_master_hard_queue_list) - Master Hard Queue List
+*    Master queue list (QR_Type).
+*    qsub -masterq queue_list
 *
-*    SGE_STRING(JB_tgt) - @todo add summary
-*    @todo add description
+*    SGE_STRING(JB_tgt) - Kerberos Client TGB
+*    Kerberos client TGT
 *
-*    SGE_STRING(JB_cred) - @todo add summary
-*    @todo add description
+*    SGE_STRING(JB_cred) - DCE/Kerberos Credentials
+*    DCE/Kerberos credentials
 *
-*    SGE_LIST(JB_ja_structure) - @todo add summary
-*    @todo add description
+*    SGE_LIST(JB_ja_structure) - Array Job Structure
+*    Elements describe task id range structure during the
+*    submission time of a (array) job (RN_Type).
+*    qsub -t tid_range
 *
-*    SGE_LIST(JB_ja_n_h_ids) - @todo add summary
-*    @todo add description
+*    SGE_LIST(JB_ja_n_h_ids) - Array Task IDs without Hold
+*    Just submitted array task without hold state (RN_Type).
 *
-*    SGE_LIST(JB_ja_u_h_ids) - @todo add summary
-*    @todo add description
+*    SGE_LIST(JB_ja_u_h_ids) - Array Task IDs with User Hold
+*    Just submitted and user hold applied (RN_Type).
+*    qsub -h -t tid_range
+*    qalter -h u/U jid.tid1-tid2:step
 *
-*    SGE_LIST(JB_ja_s_h_ids) - @todo add summary
-*    @todo add description
+*    SGE_LIST(JB_ja_s_h_ids) - Array Task IDs with System Hold
+*    Just submitted and system hold applied (RN_Type).
+*    qalter -h s/S jid.tid1-tid2:step
 *
-*    SGE_LIST(JB_ja_o_h_ids) - @todo add summary
-*    @todo add description
+*    SGE_LIST(JB_ja_o_h_ids) - Array Task IDs with Operator Hold
+*    Just submitted and operator hold applied (RN_Type).
+*    qalter -h o/O jid.tid1-tid2:step
 *
-*    SGE_LIST(JB_ja_a_h_ids) - @todo add summary
-*    @todo add description
+*    SGE_LIST(JB_ja_a_h_ids) - Array Task IDs with Array Hold
+*    Just submitted and array hold applied (RN_Type).
+*    qalter -hold_jid_ad wc_job_list
 *
-*    SGE_LIST(JB_ja_z_ids) - @todo add summary
-*    @todo add description
+*    SGE_LIST(JB_ja_z_ids) - Zombie Task IDs
+*    Zombie task ids (RN_Type).
+*    @todo still used?
 *
-*    SGE_LIST(JB_ja_template) - @todo add summary
-*    @todo add description
+*    SGE_LIST(JB_ja_template) - Template for new Tasks
+*    Template for new tasks. In SGEEE systems the schedd will
+*    store initial tickets in this element. (JAT_Type)
 *
-*    SGE_LIST(JB_ja_tasks) - @todo add summary
-*    @todo add description
+*    SGE_LIST(JB_ja_tasks) - List of Array Tasks
+*    List of array tasks (in case of array jobs) or one task
+*    (in case of a job) (JAT_Type).
 *
-*    SGE_HOST(JB_host) - @todo add summary
-*    @todo add description
+*    SGE_HOST(JB_host) - Host the job (array task) is executing on
+*    SGEEE - host job is executing on. Local to schedd.
+*    Not spooled.
+*    @todo still used?
 *
-*    SGE_REF(JB_category) - @todo add summary
-*    @todo add description
+*    SGE_REF(JB_category) - Category Reference
+*    Category string reference used in schedd.
 *
-*    SGE_LIST(JB_user_list) - @todo add summary
-*    @todo add description
+*    SGE_LIST(JB_user_list) - List of users for qalter
+*    List of usernames (qsub/qalter -u username_list).
+*    qsub -u does not exist. Not part of a job, but only
+*    userd for qalter request as where condition. Could most
+*    probably be passed via lCondition.
+*    @todo change qalter, remove this attribute from job
 *
-*    SGE_LIST(JB_job_identifier_list) - @todo add summary
-*    @todo add description
+*    SGE_LIST(JB_job_identifier_list) - Job Identifier List for qalter
+*    condition for qalter? @todo Then it should better be passed
+*    via condition. (ID_Type)
 *
-*    SGE_ULONG(JB_verify_suitable_queues) - @todo add summary
-*    @todo add description
+*    SGE_ULONG(JB_verify_suitable_queues) - Verify Suitable Queues
+*    @todo used in qalter?
 *
-*    SGE_ULONG(JB_soft_wallclock_gmt) - @todo add summary
-*    @todo add description
+*    SGE_ULONG(JB_soft_wallclock_gmt) - Soft Wallclock GMT
+*    @todo the same as complex s_rt?
 *
-*    SGE_ULONG(JB_hard_wallclock_gmt) - @todo add summary
-*    @todo add description
+*    SGE_ULONG(JB_hard_wallclock_gmt) - Hard Wallclock GMT
+*    @todo the same as complex s_rt?
 *
-*    SGE_ULONG(JB_override_tickets) - @todo add summary
-*    @todo add description
+*    SGE_ULONG(JB_override_tickets) - Override Tickets
+*    SGEEE - override tickets assigned by admin.
+*    (qalter -ot tickets).
 *
-*    SGE_LIST(JB_qs_args) - @todo add summary
-*    @todo add description
+*    SGE_LIST(JB_qs_args) - Queuing System Arguments
+*    Arguments for foreign queuing system (qsi?) (ST_Type).
+*    @todo Either delete it, or recycle it to be used with starter_method.
 *
-*    SGE_LIST(JB_path_aliases) - @todo add summary
-*    @todo add description
+*    SGE_LIST(JB_path_aliases) - Path Aliases List
+*    Path aliases list (PA_Type).
 *
-*    SGE_DOUBLE(JB_urg) - @todo add summary
-*    @todo add description
+*    SGE_DOUBLE(JB_urg) - Urgency
+*    SGEEE. Absolute static urgency importance. The admin can use arbitrary
+*    weighting factors in the formula used to determine this number. So any
+*    value is possible. Needed only when scheduling code is run.
+*    Not spooled.
 *
-*    SGE_DOUBLE(JB_nurg) - @todo add summary
-*    @todo add description
+*    SGE_DOUBLE(JB_nurg) - Normalised Urgency
+*    SGEEE. Relative importance due to static urgency in the range between 0.0
+*    and 1.0. No need to make this a per task attribute as long as waiting time
+*    and deadline remain job attributes.
+*    Not spooled.
 *
-*    SGE_DOUBLE(JB_nppri) - @todo add summary
-*    @todo add description
+*    SGE_DOUBLE(JB_nppri) - Normalised Posix Priority
+*    SGEEE. Relative importance due to Posix priority in the range between 0.0
+*    and 1.0. No need to make this a per task attribute as long as the POSIX
+*    priority remains a job attribute.
+*    Not spooled.
 *
-*    SGE_DOUBLE(JB_rrcontr) - @todo add summary
-*    @todo add description
+*    SGE_DOUBLE(JB_rrcontr) - Relative Resource Contribution (?)
+*    SGEEE. Combined contribution to static urgency from all resources. This can
+*    be any value. Actually this is a property of job category. This field is
+*    needed only to provide it for diagnosis purposes it as per job information
+*    via GDI.
+*    Not spooled.
 *
-*    SGE_DOUBLE(JB_dlcontr) - @todo add summary
-*    @todo add description
+*    SGE_DOUBLE(JB_dlcontr) - Deadline Contribution
+*    SGEEE. Contribution to static urgency from waiting time. This can be any
+*    value. No need to make this a per task attribute as long as waiting time
+*    is a job attribute. Increases over time.
+*    Not spooled.
 *
-*    SGE_DOUBLE(JB_wtcontr) - @todo add summary
-*    @todo add description
+*    SGE_DOUBLE(JB_wtcontr) - Waiting Time Contribution
+*    SGEEE. Contribution to static urgency from waiting time. This can be any
+*    value. No need to make this a per task attribute as long as waiting time
+*    is a job attribute. Increases over time.
+*    Not spooled.
 *
-*    SGE_ULONG(JB_ar) - AR Number
-*    Uniq advance reservation number, > 0 if the job shall run within an AR
+*    SGE_ULONG(JB_ar) - Advance Reservation ID
+*    Unique advance reservation number.
 *
-*    SGE_ULONG(JB_pty) - @todo add summary
-*    @todo add description
+*    SGE_ULONG(JB_pty) - Pty
+*    Interactive job should be started in a pty. 0=no, 1=yes, 2=use default.
 *
-*    SGE_ULONG(JB_ja_task_concurrency) - @todo add summary
-*    @todo add description
+*    SGE_ULONG(JB_ja_task_concurrency) - Array Task Concurrency
+*    The number of concurrent array tasks executing at any given time.
 *
 *    SGE_LIST(JB_binding) - Binding Strategy
 *    Binding strategy for execution host (and later scheduler)
