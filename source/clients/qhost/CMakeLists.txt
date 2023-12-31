@@ -15,8 +15,7 @@ target_link_libraries(
           cull
           uti
           ${SGE_TOPO_LIB}
-          dl
-          m)
+          ${SGE_LIBS})
 
 if(INSTALL_SGE_BIN)
   install(TARGETS qhost DESTINATION bin/${SGE_ARCH})

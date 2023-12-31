@@ -24,7 +24,7 @@ target_link_libraries(
           uti
           ijs
           ${SGE_TOPO_LIB}
-          dl)
+          ${SGE_LIBS})
 
 if(INSTALL_SGE_BIN)
   install(TARGETS qsh DESTINATION bin/${SGE_ARCH})

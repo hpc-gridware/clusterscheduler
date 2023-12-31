@@ -84,6 +84,7 @@ set(SGE_INCLUDES
     ${PROJECT_SOURCE_DIR}/source/daemons/execd
     ${PROJECT_SOURCE_DIR}/source/daemons/qmaster
     ${PROJECT_SOURCE_DIR}/source/libs
+    ${TIRPC_INCLUDES}
     ${PROJECT_3RDPARTY_DIR}/include
     ${CPM_PACKAGE_rapidjson_SOURCE_DIR}/include)
 
@@ -105,7 +106,7 @@ else()
   set(SGE_TOPO_LIB "")
 endif()
 
-set(SGE_LIBS ${SGE_JEMALLOC_LIB} pthread dl m)
+set(SGE_LIBS ${SGE_JEMALLOC_LIB} pthread ${TIRPC_LIB} ${CMAKE_DL_LIBS} m)
 
 if(INSTALL_SGE_DOC)
   include(cmake/BuildMarkdownMan.cmake)

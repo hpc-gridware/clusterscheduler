@@ -10,7 +10,7 @@ target_link_libraries(
           comm
           commlists
           uti
-          dl)
+          ${SGE_LIBS})
 
 if(INSTALL_SGE_BIN)
   install(TARGETS qmod DESTINATION bin/${SGE_ARCH})

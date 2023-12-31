@@ -21,7 +21,7 @@ target_link_libraries(
          sgeobj
          cull
          uti
-         dl)
+         ${SGE_LIBS})
 
 if(INSTALL_SGE_BIN)
   install(TARGETS qconf DESTINATION bin/${SGE_ARCH})

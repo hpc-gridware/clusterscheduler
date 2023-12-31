@@ -14,7 +14,7 @@ target_link_libraries(
          sgeobj
          cull
          uti
-         dl)
+         ${SGE_LIBS})
 
 if(INSTALL_SGE_TEST)
   install(TARGETS qevent DESTINATION testbin/${SGE_ARCH})

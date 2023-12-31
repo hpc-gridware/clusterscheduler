@@ -3,63 +3,63 @@
 # adminrun
 add_executable(adminrun adminrun.cc)
 target_include_directories(adminrun PRIVATE ${SGE_INCLUDES})
-target_link_libraries(adminrun PRIVATE uti commlists)
+target_link_libraries(adminrun PRIVATE uti commlists ${SGE_LIBS})
 
 # checkprog
 add_executable(checkprog checkprog.cc)
 target_include_directories(checkprog PRIVATE ${SGE_INCLUDES})
-target_link_libraries(checkprog PRIVATE uti commlists dl)
+target_link_libraries(checkprog PRIVATE uti commlists ${SGE_LIBS})
 
 # checkuser
 add_executable(checkuser checkuser.cc)
 target_include_directories(checkuser PRIVATE ${SGE_INCLUDES})
-target_link_libraries(checkuser PRIVATE uti commlists dl)
+target_link_libraries(checkuser PRIVATE uti commlists ${SGE_LIBS})
 
 # echo_raw
 add_executable(echo_raw echo_raw.cc)
 target_include_directories(echo_raw PRIVATE ${SGE_INCLUDES})
-target_link_libraries(echo_raw PRIVATE uti commlists dl)
+target_link_libraries(echo_raw PRIVATE uti commlists ${SGE_LIBS})
 
 # filestat
 add_executable(filestat filestat.cc)
 target_include_directories(filestat PRIVATE ${SGE_INCLUDES})
-target_link_libraries(filestat PRIVATE uti commlists dl)
+target_link_libraries(filestat PRIVATE uti commlists ${SGE_LIBS})
 
 # fstype
 add_executable(fstype fstype.cc)
 target_include_directories(fstype PRIVATE ${SGE_INCLUDES})
-target_link_libraries(fstype PRIVATE uti commlists dl)
+target_link_libraries(fstype PRIVATE uti commlists ${SGE_LIBS})
 
 # gethostbyaddr
 add_executable(gethostbyaddr gethostbyaddr.cc)
 target_include_directories(gethostbyaddr PRIVATE ${SGE_INCLUDES})
-target_link_libraries(gethostbyaddr PRIVATE gdi comm uti commlists dl)
+target_link_libraries(gethostbyaddr PRIVATE gdi comm uti commlists ${SGE_LIBS})
 
 # gethostbyname
 add_executable(gethostbyname gethostbyname.cc)
 target_include_directories(gethostbyname PRIVATE ${SGE_INCLUDES})
-target_link_libraries(gethostbyname PRIVATE gdi comm commlists uti dl)
+target_link_libraries(gethostbyname PRIVATE gdi comm commlists uti ${SGE_LIBS})
 
 # gethostname
 add_executable(gethostname gethostname.cc)
 target_include_directories(gethostname PRIVATE ${SGE_INCLUDES})
-target_link_libraries(gethostname PRIVATE gdi comm commlists uti dl)
+target_link_libraries(gethostname PRIVATE gdi comm commlists uti ${SGE_LIBS})
 
 # getservbyname
 add_executable(getservbyname getservbyname.cc)
 target_include_directories(getservbyname PRIVATE ${SGE_INCLUDES})
-target_link_libraries(getservbyname PRIVATE gdi comm uti commlists dl)
+target_link_libraries(getservbyname PRIVATE gdi comm uti commlists ${SGE_LIBS})
 
 # infotext
 add_executable(infotext infotext.cc)
 target_include_directories(infotext PRIVATE ${SGE_INCLUDES})
-target_link_libraries(infotext PRIVATE gdi uti commlists dl)
+target_link_libraries(infotext PRIVATE gdi uti commlists ${SGE_LIBS})
 
 # loadcheck
 add_executable(loadcheck loadcheck.cc)
 target_include_directories(loadcheck PRIVATE ${SGE_INCLUDES})
 target_link_libraries(loadcheck PRIVATE sgeobj cull uti commlists
-                                        ${SGE_TOPO_LIB} dl)
+                                        ${SGE_TOPO_LIB} ${SGE_LIBS})
 
 # now
 add_executable(now now.cc)
@@ -76,8 +76,7 @@ target_link_libraries(
           comm
           uti
           commlists
-          dl
-          m)
+          ${SGE_LIBS})
 
 # read_raw
 add_executable(read_raw read_raw.cc)
@@ -95,8 +94,7 @@ target_link_libraries(
           comm
           uti
           commlists
-          dl
-          m)
+          ${SGE_LIBS})
 
 # spooldefaults
 add_executable(spooldefaults spooldefaults.cc)
@@ -113,7 +111,7 @@ target_link_libraries(
           comm
           uti
           commlists
-          dl)
+          ${SGE_LIBS})
 
 # spooledit
 add_executable(spooledit spooledit.cc)
@@ -130,7 +128,7 @@ target_link_libraries(
           comm
           uti
           commlists
-          dl)
+          ${SGE_LIBS})
 
 # spoolinit
 add_executable(spoolinit spoolinit.cc ../common/sge_mt_init.cc)
@@ -147,17 +145,17 @@ target_link_libraries(
           comm
           uti
           commlists
-          dl)
+          ${SGE_LIBS})
 
 # testsuidroot
 add_executable(testsuidroot testsuidroot.cc)
 target_include_directories(testsuidroot PRIVATE ${SGE_INCLUDES})
-target_link_libraries(testsuidroot PRIVATE uti commlists dl)
+target_link_libraries(testsuidroot PRIVATE uti commlists ${SGE_LIBS})
 
 # uidgid
 add_executable(uidgid uidgid.cc)
 target_include_directories(uidgid PRIVATE ${SGE_INCLUDES})
-target_link_libraries(uidgid PRIVATE uti commlists dl)
+target_link_libraries(uidgid PRIVATE uti commlists ${SGE_LIBS})
 
 # work
 add_executable(work work.cc)
@@ -170,8 +168,7 @@ target_link_libraries(
           comm
           uti
           commlists
-          dl
-          m)
+          ${SGE_LIBS})
 
 # valid_jvmlib @todo remove
 

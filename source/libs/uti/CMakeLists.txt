@@ -57,63 +57,63 @@ target_include_directories(${LIBRARY_NAME} PUBLIC ${LIBRARY_INCLUDES})
 
 add_executable(test_sge_bitfield test_sge_bitfield.c)
 target_include_directories(test_sge_bitfield PRIVATE "./")
-target_link_libraries(test_sge_bitfield PRIVATE uti commlists)
+target_link_libraries(test_sge_bitfield PRIVATE uti commlists ${SGE_LIBS})
 
 add_executable(test_sge_deadlock test_sge_lock_main.c test_sge_deadlock.c)
 target_include_directories(test_sge_deadlock PRIVATE "./")
-target_link_libraries(test_sge_deadlock PRIVATE uti commlists)
+target_link_libraries(test_sge_deadlock PRIVATE uti commlists ${SGE_LIBS})
 
 add_executable(test_sge_dstring test_sge_dstring.c)
 target_include_directories(test_sge_dstring PRIVATE "./")
-target_link_libraries(test_sge_dstring PRIVATE uti commlists)
+target_link_libraries(test_sge_dstring PRIVATE uti commlists ${SGE_LIBS})
 
 add_executable(test_sge_err test_sge_err.c)
 target_include_directories(test_sge_err PRIVATE "./")
-target_link_libraries(test_sge_err PRIVATE uti commlists)
+target_link_libraries(test_sge_err PRIVATE uti commlists ${SGE_LIBS})
 
 add_executable(test_sge_lock_simple test_sge_lock_main.c test_sge_lock_simple.c)
 target_include_directories(test_sge_lock_simple PRIVATE "./")
-target_link_libraries(test_sge_lock_simple PRIVATE uti commlists)
+target_link_libraries(test_sge_lock_simple PRIVATE uti commlists ${SGE_LIBS})
 
 add_executable(test_sge_lock_multiple test_sge_lock_main.c test_sge_lock_multiple.c)
 target_include_directories(test_sge_lock_multiple PRIVATE "./")
-target_link_libraries(test_sge_lock_multiple PRIVATE uti commlists)
+target_link_libraries(test_sge_lock_multiple PRIVATE uti commlists ${SGE_LIBS})
 
 add_executable(test_sge_lock_fifo test_sge_lock_main.c test_sge_lock_fifo.c)
 target_include_directories(test_sge_lock_fifo PRIVATE "./")
-target_link_libraries(test_sge_lock_fifo PRIVATE uti commlists)
+target_link_libraries(test_sge_lock_fifo PRIVATE uti commlists ${SGE_LIBS})
 
 add_executable(test_sge_profiling test_sge_profiling.c)
 target_include_directories(test_sge_profiling PRIVATE "./")
-target_link_libraries(test_sge_profiling PRIVATE uti commlists m)
+target_link_libraries(test_sge_profiling PRIVATE uti commlists ${SGE_LIBS})
 
 add_executable(test_sge_recursive test_sge_lock_main.c test_sge_recursive.c)
 target_include_directories(test_sge_recursive PRIVATE "./")
-target_link_libraries(test_sge_recursive PRIVATE uti commlists)
+target_link_libraries(test_sge_recursive PRIVATE uti commlists ${SGE_LIBS})
 
 add_executable(test_sge_sl test_sge_sl.c)
 target_include_directories(test_sge_sl PRIVATE "./")
-target_link_libraries(test_sge_sl PRIVATE uti commlists)
+target_link_libraries(test_sge_sl PRIVATE uti commlists ${SGE_LIBS})
 
 add_executable(test_sge_string test_sge_string.c)
 target_include_directories(test_sge_string PRIVATE "./")
-target_link_libraries(test_sge_string PRIVATE uti commlists)
+target_link_libraries(test_sge_string PRIVATE uti commlists ${SGE_LIBS})
 
 add_executable(test_sge_tq test_sge_tq.c)
 target_include_directories(test_sge_tq PRIVATE "./")
-target_link_libraries(test_sge_tq PRIVATE uti commlists)
+target_link_libraries(test_sge_tq PRIVATE uti commlists ${SGE_LIBS})
 
 add_executable(test_sge_uidgid test_sge_uidgid.c)
 target_include_directories(test_sge_uidgid PRIVATE "./")
-target_link_libraries(test_sge_uidgid PRIVATE uti commlists)
+target_link_libraries(test_sge_uidgid PRIVATE uti commlists ${SGE_LIBS})
 
 add_executable(test_thread_local test_thread_local.c)
 target_include_directories(test_thread_local PRIVATE "./")
-target_link_libraries(test_thread_local PRIVATE uti commlists)
+target_link_libraries(test_thread_local PRIVATE uti commlists ${SGE_LIBS})
 
 add_executable(test_threads test_threads.c)
 target_include_directories(test_threads PRIVATE "./")
-target_link_libraries(test_threads PRIVATE uti commlists)
+target_link_libraries(test_threads PRIVATE uti commlists ${SGE_LIBS})
 
 if(INSTALL_SGE_TEST)
     install(TARGETS test_sge_bitfield DESTINATION testbin/${SGE_ARCH})

@@ -67,35 +67,35 @@ target_include_directories(${LIBRARY_NAME} PUBLIC ${LIBRARY_INCLUDES})
 
 add_executable(test_eval_expression test_eval_expression.cc)
 target_include_directories(test_eval_expression PRIVATE "./")
-target_link_libraries(test_eval_expression PRIVATE sgeobj gdi cull commlists uti)
+target_link_libraries(test_eval_expression PRIVATE sgeobj gdi cull commlists uti ${SGE_LIBS})
 
 #add_executable(test_sge_attr test_sge_attr.cc)
 #target_include_directories(test_sge_attr PRIVATE "./")
-#target_link_libraries(test_sge_attr PRIVATE sgeobj cull commlists uti)
+#target_link_libraries(test_sge_attr PRIVATE sgeobj cull commlists uti ${SGE_LIBS})
 
 #add_executable(test_sge_fgl test_sge_fgl.cc)
 #target_include_directories(test_sge_fgl PRIVATE "./")
-#target_link_libraries(test_sge_fgl PRIVATE sgeobj cull commlists uti)
+#target_link_libraries(test_sge_fgl PRIVATE sgeobj cull commlists uti ${SGE_LIBS})
 
 add_executable(test_sge_object test_sge_object.cc)
 target_include_directories(test_sge_object PRIVATE "./")
-target_link_libraries(test_sge_object PRIVATE sgeobj cull comm commlists uti)
+target_link_libraries(test_sge_object PRIVATE sgeobj cull comm commlists uti ${SGE_LIBS})
 
 add_executable(test_sge_range test_sge_range.cc)
 target_include_directories(test_sge_range PRIVATE "./")
-target_link_libraries(test_sge_range PRIVATE sgeobj cull commlists uti)
+target_link_libraries(test_sge_range PRIVATE sgeobj cull commlists uti ${SGE_LIBS})
 
 add_executable(test_sge_resource_quota test_sge_resource_quota.cc)
 target_include_directories(test_sge_resource_quota PRIVATE "./")
-target_link_libraries(test_sge_resource_quota PRIVATE sgeobj cull comm commlists uti)
+target_link_libraries(test_sge_resource_quota PRIVATE sgeobj cull comm commlists uti ${SGE_LIBS})
 
 add_executable(test_sge_schedd_conf test_sge_schedd_conf.cc)
 target_include_directories(test_sge_schedd_conf PRIVATE "./")
-target_link_libraries(test_sge_schedd_conf PRIVATE sgeobj cull comm commlists uti)
+target_link_libraries(test_sge_schedd_conf PRIVATE sgeobj cull comm commlists uti ${SGE_LIBS})
 
 add_executable(test_sge_utility test_sge_utility.cc)
 target_include_directories(test_sge_utility PRIVATE "./")
-target_link_libraries(test_sge_utility PRIVATE sgeobj cull commlists uti)
+target_link_libraries(test_sge_utility PRIVATE sgeobj cull commlists uti ${SGE_LIBS})
 
 if(INSTALL_SGE_TEST)
     install(TARGETS test_eval_expression DESTINATION testbin/${SGE_ARCH})

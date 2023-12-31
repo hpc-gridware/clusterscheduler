@@ -55,8 +55,9 @@ target_include_directories(
   qmake
   PRIVATE ${CMAKE_CURRENT_BINARY_DIR} ${CMAKE_CURRENT_LIST_DIR}
           ${CMAKE_CURRENT_LIST_DIR}/../lib
+          ${SGE_INCLUDES}
 )
-target_link_libraries(qmake PRIVATE dl)
+target_link_libraries(qmake PRIVATE ${SGE_LIBS})
 
 if(INSTALL_SGE_BIN)
   install(TARGETS qmake DESTINATION bin/${SGE_ARCH})

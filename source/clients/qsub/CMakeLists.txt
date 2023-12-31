@@ -22,7 +22,7 @@ target_link_libraries(
           cull
           uti
           ${SGE_TOPO_LIB}
-          dl)
+          ${SGE_LIBS})
 
 if(INSTALL_SGE_BIN)
   install(TARGETS qsub DESTINATION bin/${SGE_ARCH})

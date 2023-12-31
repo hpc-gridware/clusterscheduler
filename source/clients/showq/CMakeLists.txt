@@ -19,8 +19,7 @@ target_link_libraries(
          commlists
          uti
          ${SGE_TOPO_LIB}
-         dl
-         m)
+         ${SGE_LIBS})
 
 if(INSTALL_SGE_BIN)
   install(TARGETS showq DESTINATION examples/jobsbin/${SGE_ARCH})

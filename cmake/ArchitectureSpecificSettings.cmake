@@ -73,7 +73,10 @@ function(architecture_specific_settings)
       add_compile_definitions(_FILE_OFFSET_BITS=64)
       # readdir64_r seems to be deprecated
       add_compile_options(-Wno-deprecated-declarations)
-    elseif(OS_ID STREQUAL "raspbian" AND OS_VERSION EQUAL 10)
+    elseif((OS_ID STREQUAL "raspbian" AND OS_VERSION EQUAL 10) OR
+           (OS_ID STREQUAL "tuxedo" AND OS_VERSION EQUAL 22.04) OR
+           (OS_ID STREQUAL "ubuntu" AND OS_VERSION EQUAL 22.04)
+            )
       add_compile_options(-Wno-deprecated-declarations)
     endif()
 
@@ -92,6 +95,12 @@ function(architecture_specific_settings)
       add_link_options("-fsanitize=undefined")
       add_compile_options("-fsanitize=address")
       add_link_options("-fsanitize=address")
+    endif()
+
+    # newer Linuxes require libtirp
+    if (EXISTS /usr/include/tirpc)
+        set (TIRPC_INCLUDES /usr/include/tirpc PARENT_SCOPE)
+        set (TIRPC_LIB tirpc PARENT_SCOPE)
     endif()
 
     # Solaris

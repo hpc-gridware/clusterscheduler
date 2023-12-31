@@ -9,19 +9,19 @@ target_include_directories(${LIBRARY_NAME} PUBLIC ${SGE_INCLUDES}
 
 add_executable(test_performance test_performance.cc)
 target_include_directories(test_performance PRIVATE "./")
-target_link_libraries(test_performance PRIVATE spool spoolloader spoold sgeobj cull comm uti commlists dl)
+target_link_libraries(test_performance PRIVATE spool spoolloader spoold sgeobj cull comm uti commlists ${SGE_LIBS})
 
 add_executable(test_spooling_mt test_spooling_mt.cc)
 target_include_directories(test_spooling_mt PRIVATE "./")
-target_link_libraries(test_spooling_mt PRIVATE spool spoolloader spoold sgeobj cull comm uti commlists dl)
+target_link_libraries(test_spooling_mt PRIVATE spool spoolloader spoold sgeobj cull comm uti commlists ${SGE_LIBS})
 
 add_executable(test_sge_spooling_utilities test_sge_spooling_utilities.cc)
 target_include_directories(test_sge_spooling_utilities PRIVATE "./")
-target_link_libraries(test_sge_spooling_utilities PRIVATE spool spoolloader spoold sched sgeobj cull comm uti commlists dl)
+target_link_libraries(test_sge_spooling_utilities PRIVATE spool spoolloader spoold sched sgeobj cull comm uti commlists ${SGE_LIBS})
 
 add_executable(test_sge_spooling test_sge_spooling.cc ../../common/sig_handlers.cc)
 target_include_directories(test_sge_spooling PRIVATE "./")
-target_link_libraries(test_sge_spooling PRIVATE spool spoolloader mir evc gdi spoold sgeobj cull comm uti commlists dl)
+target_link_libraries(test_sge_spooling PRIVATE spool spoolloader mir evc gdi spoold sgeobj cull comm uti commlists ${SGE_LIBS})
 
 if(INSTALL_SGE_TEST)
     install(TARGETS test_performance DESTINATION testbin/${SGE_ARCH})
