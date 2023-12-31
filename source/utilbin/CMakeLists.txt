@@ -188,7 +188,6 @@ if(INSTALL_SGE_BIN)
             infotext
             loadcheck
             now
-            qping
             read_raw
             sge_share_mon
             spooldefaults
