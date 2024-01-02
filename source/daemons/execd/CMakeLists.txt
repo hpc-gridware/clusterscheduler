@@ -30,7 +30,7 @@ target_include_directories(sge_execd PRIVATE ${SGE_INCLUDES})
 target_link_libraries(
   sge_execd
   PRIVATE daemonscommon
-          spoolc
+          spoolc_static
           spool
           sched
           gdi

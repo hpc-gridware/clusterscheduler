@@ -12,7 +12,7 @@ target_include_directories(qconf PUBLIC ${SGE_INCLUDES})
 target_link_libraries(
   qconf
   PUBLIC clientscommon
-         spoolc
+         spoolc_static
          spool
          sched
          comm

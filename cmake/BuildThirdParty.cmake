@@ -41,10 +41,7 @@ function(build_third_party 3rdparty_build_path 3rdparty_install_path)
           ${3rdparty_install_path}/lib/${CMAKE_SHARED_LIBRARY_PREFIX}db${CMAKE_SHARED_LIBRARY_SUFFIX}
       )
     endif()
-    # install(FILES berkeleydb DESTINATION lib/${SGE_ARCH}) @todo multiple
-    # files, e.g. libdb.so, libdb.so.5 @todo we build the static lib as well and
-    # apparently the static lib is linked to libspoolb.so - is this an issue?
-    # @todo db_* binaries @todo db_* man pages
+    # @todo @todo db_* man pages
 
     # jemalloc @todo for all platforms? Only lx-amd64?
     message(STATUS "adding 3rdparty jemalloc")
@@ -101,3 +98,30 @@ function(build_third_party 3rdparty_build_path 3rdparty_install_path)
     STATUS "We are building the following 3rdparty libraries: ${3rdparty_list}")
   add_custom_target(3rdparty DEPENDS ${3rdparty_list})
 endfunction(build_third_party)
+
+# copy thirdparty files from their installation directory
+# to the current build directory
+# make sure that they contain the correct rpath
+function(install_third_party_bin 3rdparty_install_path target_dir files)
+  message(STATUS "==================")
+  message(STATUS build bdb files)
+  message(STATUS ${CMAKE_CURRENT_BINARY_DIR})
+  message(STATUS "==================")
+  foreach(file IN LISTS ${files})
+    #file(COPY ${3rdparty_install_path}/bin/${file} DESTINATION ${CMAKE_CURRENT_BINARY_DIR})
+    #file(CHMOD ${CMAKE_CURRENT_BINARY_DIR}/${file} PERMISSIONS OWNER_READ OWNER_WRITE OWNER_EXECUTE GROUP_READ GROUP_EXECUTE WORLD_READ WORLD_EXECUTE)
+    #execute_process(COMMAND patchelf --set-rpath ${CMAKE_INSTALL_RPATH} ${CMAKE_CURRENT_BINARY_DIR}/${file})
+    add_custom_command(
+            OUTPUT ${CMAKE_CURRENT_BINARY_DIR}/${file}
+            COMMAND cp ${3rdparty_install_path}/bin/${file} ${CMAKE_CURRENT_BINARY_DIR}
+            COMMAND chmod 755 ${CMAKE_CURRENT_BINARY_DIR}/${file}
+            COMMAND patchelf --set-rpath ${CMAKE_INSTALL_RPATH} ${CMAKE_CURRENT_BINARY_DIR}/${file}
+            VERBATIM
+    )
+    add_custom_target(${file}
+            ALL
+            DEPENDS ${CMAKE_CURRENT_BINARY_DIR}/${file}
+    )
+  endforeach()
+endfunction()
+
