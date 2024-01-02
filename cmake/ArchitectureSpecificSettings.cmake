@@ -103,6 +103,13 @@ function(architecture_specific_settings)
         set (TIRPC_LIB tirpc PARENT_SCOPE)
     endif()
 
+    if (SGE_ARCH STREQUAL "lx-x86")
+      # we need patchelf for setting the run path in the db_* tools
+      # but patchelf is not available on CentOS 7 x86
+      message(STATUS "Building without Berkeley DB on lx-x86")
+      set (WITH_SPOOL_BERKELEYDB OFF PARENT_SCOPE)
+    endif()
+
     # Solaris
   elseif(SGE_ARCH MATCHES "sol-.*")
     message(STATUS "We are on Solaris: ${SGE_ARCH}")
