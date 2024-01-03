@@ -1,5 +1,5 @@
 {
-	"className":	"CE",
+	"className":	"ComplexEntry",
 	"summary":	"@todo add summary",
 	"description":	[{
 			"line":	"@todo add description"
@@ -102,7 +102,7 @@
 					"name":	"SPOOL"
 				}]
 		}, {
-			"name":	"default",
+			"name":	"defaultval",
 			"summary":	"@todo add summary",
 			"description":	[{
 					"line":	"@todo add description"

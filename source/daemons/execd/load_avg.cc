@@ -172,7 +172,7 @@ void execd_merge_load_report(u_long32 seqno)
 
             if (sge_hostcmp(lGetHost(lr, LR_host), hostname) == 0) {
                found = true;
-               if (lGetUlong(old_lr, LR_static) == 2) {
+               if (lGetUlong(old_lr, LR_is_static) == 2) {
                   lRemoveElem(lr_list, &lr); 
                } else {
                   lSetString(lr, LR_value, lGetString(old_lr, LR_value));
@@ -268,7 +268,7 @@ execd_add_load_report(sge_gdi_ctx_class_t *ctx, lList *report_list, u_long32 now
                /* the load value is no longer reported, tag is as deleted and
                   add it to the report list */
                lListElem *del_report = lCopyElem(lr);     
-               lSetUlong(del_report, LR_static, 2); 
+               lSetUlong(del_report, LR_is_static, 2); 
                lAppendElem(tmp_lr_list, del_report);
             }
          }

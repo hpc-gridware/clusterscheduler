@@ -44,7 +44,7 @@ extern "C" {
 *
 * @todo add description
 *
-*    SGE_BOOL(SPTR_default) - @todo add summary
+*    SGE_BOOL(SPTR_is_default) - @todo add summary
 *    @todo add description
 *
 *    SGE_STRING(SPTR_rule_name) - @todo add summary
@@ -56,19 +56,19 @@ extern "C" {
 */
 
 enum {
-   SPTR_default = SPTR_LOWERBOUND,
+   SPTR_is_default = SPTR_LOWERBOUND,
    SPTR_rule_name,
    SPTR_rule
 };
 
 LISTDEF(SPTR_Type)
-   SGE_BOOL(SPTR_default, CULL_DEFAULT)
+   SGE_BOOL(SPTR_is_default, CULL_DEFAULT)
    SGE_STRING(SPTR_rule_name, CULL_UNIQUE)
    SGE_REF(SPTR_rule, CULL_ANY_SUBTYPE, CULL_DEFAULT)
 LISTEND
 
 NAMEDEF(SPTRN)
-   NAME("SPTR_default")
+   NAME("SPTR_is_default")
    NAME("SPTR_rule_name")
    NAME("SPTR_rule")
 NAMEEND

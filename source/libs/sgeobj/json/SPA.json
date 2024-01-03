@@ -1,5 +1,5 @@
 {
-	"className":	"SPA",
+	"className":	"CommandLineArgument",
 	"summary":	"@todo add summary",
 	"description":	[{
 			"line":	"@todo add description"
@@ -22,7 +22,7 @@
 			"type":	"lUlongT",
 			"flags":	[]
 		}, {
-			"name":	"switch",
+			"name":	"switch_val",
 			"summary":	"@todo add summary",
 			"description":	[{
 					"line":	"@todo add description"

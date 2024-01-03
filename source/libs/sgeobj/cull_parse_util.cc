@@ -1171,7 +1171,7 @@ int soft_field
       soft_list = lCopyList("job_soft_sublist", lGetList(job, soft_field));
    }
 
-   while ((ep = lGetElemStrRW(cmdline, SPA_switch, option))) {
+   while ((ep = lGetElemStrRW(cmdline, SPA_switch_val, option))) {
       lp = NULL;
       lXchgList(ep, SPA_argval_lListT, &lp);
       if (lp) {
@@ -1212,7 +1212,7 @@ parse_list_simple(lList *cmdline, char *option, lListElem *job, int field,
 
    destlist = lCopyList("job_sublist", lGetList(job, field));
 
-   while ((ep = lGetElemStrRW(cmdline, SPA_switch, option))) {
+   while ((ep = lGetElemStrRW(cmdline, SPA_switch_val, option))) {
       DPRINTF(("OPTION: %s\n", option));
       lp = NULL;
       lXchgList(ep, SPA_argval_lListT, &lp);

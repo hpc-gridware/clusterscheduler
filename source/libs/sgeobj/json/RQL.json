@@ -1,5 +1,5 @@
 {
-	"className":	"RQL",
+	"className":	"ResourceQuotaLimit",
 	"summary":	"@todo add summary",
 	"description":	[{
 			"line":	"@todo add description"

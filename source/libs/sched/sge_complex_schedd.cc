@@ -222,7 +222,7 @@ lListElem* get_attribute(const char *attrname, const lList *config_attr, const l
 
    /** check for a load value */
    if (load_attr && (load_el = lGetElemStr(load_attr, HL_name, attrname)) &&
-       (sconf_get_qs_state()==QS_STATE_FULL || lGetBool(load_el, HL_static)) && (!is_attr_prior(cplx_el, cplx_el))) {
+       (sconf_get_qs_state()==QS_STATE_FULL || lGetBool(load_el, HL_is_static)) && (!is_attr_prior(cplx_el, cplx_el))) {
          const lListElem *ep_nproc=NULL;
          int nproc=1;
 

@@ -1506,13 +1506,13 @@ int main(int argc, char **argv)
    }
 
    /* set verbosity */
-   while ((ep = lGetElemStrRW(opts_cmdline, SPA_switch, "-verbose"))) {
+   while ((ep = lGetElemStrRW(opts_cmdline, SPA_switch_val, "-verbose"))) {
       lRemoveElem(opts_cmdline, &ep);
       log_state_set_log_verbose(1);
    }
 
    /* parse -noshell */
-   while ((ep = lGetElemStrRW(opts_cmdline, SPA_switch, "-noshell"))) {
+   while ((ep = lGetElemStrRW(opts_cmdline, SPA_switch_val, "-noshell"))) {
       lRemoveElem(opts_cmdline, &ep);
       noshell = 1;
    }
@@ -1522,7 +1522,7 @@ int main(int argc, char **argv)
       suspend_remote_option = (ternary_t)opt_list_is_X_true(opts_cmdline, "-suspend_remote");
    }
    /* remove the suspend_remote option from commandline before proceeding */
-   while ((ep = lGetElemStrRW(opts_cmdline, SPA_switch, "-suspend_remote"))) {
+   while ((ep = lGetElemStrRW(opts_cmdline, SPA_switch_val, "-suspend_remote"))) {
       lRemoveElem(opts_cmdline, &ep);
    }
 
@@ -1532,7 +1532,7 @@ int main(int argc, char **argv)
    }
    lSetUlong(job, JB_pty, pty_option);
    /* remove the pty option from commandline before proceeding */
-   while ((ep = lGetElemStrRW(opts_cmdline, SPA_switch, "-pty"))) {
+   while ((ep = lGetElemStrRW(opts_cmdline, SPA_switch_val, "-pty"))) {
       lRemoveElem(opts_cmdline, &ep);
    }
 
@@ -1540,12 +1540,12 @@ int main(int argc, char **argv)
    ** if qrsh, parse command to call
    */
    if (is_rsh) {
-      while ((ep = lGetElemStrRW(opts_cmdline, SPA_switch, "-nostdin"))) {
+      while ((ep = lGetElemStrRW(opts_cmdline, SPA_switch_val, "-nostdin"))) {
          lRemoveElem(opts_cmdline, &ep);
          nostdin = 1;
       }
 
-      while ((ep = lGetElemStrRW(opts_cmdline, SPA_switch, "-inherit"))) {
+      while ((ep = lGetElemStrRW(opts_cmdline, SPA_switch_val, "-inherit"))) {
          lRemoveElem(opts_cmdline, &ep);
          inherit_job = 1;
       }
@@ -1572,11 +1572,11 @@ int main(int argc, char **argv)
 
       opts_qrsh = lCreateList("opts_qrsh", lGetListDescr(opts_cmdline));
 
-      if ((ep = lGetElemStrRW(opts_cmdline, SPA_switch, "script"))) {
+      if ((ep = lGetElemStrRW(opts_cmdline, SPA_switch_val, "script"))) {
          if (existing_job) {
             host = strdup(lGetString(ep, SPA_argval_lStringT));
             lRemoveElem(opts_cmdline, &ep);
-            ep = lGetElemStrRW(opts_cmdline, SPA_switch, "jobarg");
+            ep = lGetElemStrRW(opts_cmdline, SPA_switch_val, "jobarg");
          }
 
          if (ep != NULL) {
@@ -1591,7 +1591,7 @@ int main(int argc, char **argv)
                sge_strlcpy(name, new_name, MAX_JOB_NAME); 
             }
 
-            while ((ep = lGetElemStrRW(opts_cmdline, SPA_switch, "jobarg"))) {
+            while ((ep = lGetElemStrRW(opts_cmdline, SPA_switch_val, "jobarg"))) {
                lDechainElem(opts_cmdline, ep);
                lAppendElem(opts_qrsh, ep);
             }   
@@ -1625,10 +1625,10 @@ int main(int argc, char **argv)
       }
 
       /* remove the binary option from commandline before proceeding */
-      while ((ep = lGetElemStrRW(opts_defaults, SPA_switch, "-b"))) {
+      while ((ep = lGetElemStrRW(opts_defaults, SPA_switch_val, "-b"))) {
          lRemoveElem(opts_defaults, &ep);
       }
-      while ((ep = lGetElemStrRW(opts_cmdline, SPA_switch, "-b"))) {
+      while ((ep = lGetElemStrRW(opts_cmdline, SPA_switch_val, "-b"))) {
          lRemoveElem(opts_cmdline, &ep);
       }
 
@@ -1644,11 +1644,11 @@ int main(int argc, char **argv)
          /* move -C directives into opts_qrsh - we need them for parsing 
           * the script 
           */
-         while ((ep = lGetElemStrRW(opts_defaults, SPA_switch, "-C"))) {
+         while ((ep = lGetElemStrRW(opts_defaults, SPA_switch_val, "-C"))) {
             lDechainElem(opts_defaults, ep);
             lAppendElem(opts_qrsh, ep);
          }
-         while ((ep = lGetElemStrRW(opts_cmdline, SPA_switch, "-C"))) {
+         while ((ep = lGetElemStrRW(opts_cmdline, SPA_switch_val, "-C"))) {
             lDechainElem(opts_cmdline, ep);
             lAppendElem(opts_qrsh, ep);
          }
@@ -1664,11 +1664,11 @@ int main(int argc, char **argv)
          }
 
          /* set length and script contents in job */
-         if ((ep = lGetElemStrRW(opts_scriptfile, SPA_switch, STR_PSEUDO_SCRIPTLEN))) {
+         if ((ep = lGetElemStrRW(opts_scriptfile, SPA_switch_val, STR_PSEUDO_SCRIPTLEN))) {
             lSetUlong(job, JB_script_size, lGetUlong(ep, SPA_argval_lUlongT));
             lRemoveElem(opts_scriptfile, &ep);
          }
-         if ((ep = lGetElemStrRW(opts_scriptfile, SPA_switch, STR_PSEUDO_SCRIPTPTR))) {
+         if ((ep = lGetElemStrRW(opts_scriptfile, SPA_switch_val, STR_PSEUDO_SCRIPTPTR))) {
             lSetString(job, JB_script_ptr, lGetString(ep, SPA_argval_lStringT));
             lRemoveElem(opts_scriptfile, &ep);
          }
@@ -2330,7 +2330,7 @@ static void remove_unknown_opts(lList *lp, u_long32 jb_now, int tightly_integrat
       const char *cp;
       
       next = lNextRW(ep);
-      cp = lGetString(ep, SPA_switch);
+      cp = lGetString(ep, SPA_switch_val);
 
       if (cp != NULL) {
          /* these are the options allowed for all flavors of interactive jobs

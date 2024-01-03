@@ -98,7 +98,7 @@ const char *opt_switch_arg
       return NULL;
    }
    lSetUlong(ep, SPA_number, opt_number);
-   lSetString(ep, SPA_switch, opt_switch);
+   lSetString(ep, SPA_switch_val, opt_switch);
    lSetString(ep, SPA_switch_arg, opt_switch_arg);
    lSetUlong(ep, SPA_occurrence, BIT_SPA_OCC_NOARG);
    lAppendElem(*popt_list, ep);
@@ -123,7 +123,7 @@ const char *opt_switch_arg
        DRETURN(NULL);
    }
 
-   ep = lAddElemStr(popt_list, SPA_switch, opt_switch, SPA_Type);
+   ep = lAddElemStr(popt_list, SPA_switch_val, opt_switch, SPA_Type);
 
    if (ep != NULL) {
       lSetUlong(ep, SPA_number, opt_number);
@@ -158,7 +158,7 @@ lList **alpp
    DENTER(TOP_LAYER);
 
    if ( (!strcmp(shortopt, *sp)) || (longopt && !strcmp(longopt, *sp)) ) {
-      if(!lGetElemStr(*ppcmdline, SPA_switch, shortopt)) {
+      if(!lGetElemStr(*ppcmdline, SPA_switch_val, shortopt)) {
          sge_add_noarg(ppcmdline, 0, shortopt, NULL);
       }
       sp++;
@@ -315,12 +315,12 @@ char* actual_opt;
 
    DENTER(BASIS_LAYER);
 
-   if((ep = lGetElemStrLikeRW(*ppcmdline, SPA_switch, opt))) {
-      actual_opt = sge_strdup(NULL, lGetString(ep, SPA_switch));
+   if((ep = lGetElemStrLikeRW(*ppcmdline, SPA_switch_val, opt))) {
+      actual_opt = sge_strdup(NULL, lGetString(ep, SPA_switch_val));
       while(ep) {
          /* remove _all_ flags of same type */
          lRemoveElem(*ppcmdline, &ep);
-         ep = lGetElemStrLikeRW(*ppcmdline, SPA_switch, actual_opt);
+         ep = lGetElemStrLikeRW(*ppcmdline, SPA_switch_val, actual_opt);
       }
       sge_free(&actual_opt);
       *pflag = 1;
@@ -355,14 +355,14 @@ int field
 
    DENTER(TOP_LAYER);
 
-   if((ep = lGetElemStrRW(*ppcmdline, SPA_switch, opt))) {
+   if((ep = lGetElemStrRW(*ppcmdline, SPA_switch_val, opt))) {
       while(ep) {
          /* collect all opts of same type, this is what 'multi' means in funcname!  */
          for_each(sep, lGetList(ep, SPA_argval_lListT)) {
             sge_parse_string_list(ppdestlist, lGetString(sep, ST_name), field, type);
          }
          lRemoveElem(*ppcmdline, &ep);
-         ep = lGetElemStrRW(*ppcmdline, SPA_switch, opt);
+         ep = lGetElemStrRW(*ppcmdline, SPA_switch_val, opt);
       }
       DRETURN(true);
    } else {
@@ -383,7 +383,7 @@ u_long32 action
    bool is_run_once = false;
 
    DENTER(TOP_LAYER);
-   while ((ep = lGetElemStrRW(*ppcmdline, SPA_switch, opt))) {
+   while ((ep = lGetElemStrRW(*ppcmdline, SPA_switch_val, opt))) {
       lListElem *arrayDef = lNextRW(ep);
       const lList *arrayDefList = NULL;
 
@@ -439,7 +439,7 @@ char **str
 
    DENTER(TOP_LAYER);
 
-   if((ep = lGetElemStrRW(*ppcmdline, SPA_switch, opt))) {
+   if((ep = lGetElemStrRW(*ppcmdline, SPA_switch_val, opt))) {
       ep2 = lFirstRW(lGetList(ep, SPA_argval_lListT));
       if (ep2)
          *str = sge_strdup(NULL, lGetString(ep2, ST_name));
@@ -465,7 +465,7 @@ parse_u_long32(lList **ppcmdline, const char *opt, lList **ppal, u_long32 *value
    lListElem *ep = NULL;
 
    DENTER(TOP_LAYER);
-   ep = lGetElemStrRW(*ppcmdline, SPA_switch, opt);
+   ep = lGetElemStrRW(*ppcmdline, SPA_switch_val, opt);
    if(ep != NULL) {
       *value = lGetUlong(ep, SPA_argval_lUlongT); 
 
@@ -482,7 +482,7 @@ parse_u_longlist(lList **ppcmdline, const char *opt, lList **ppal, lList **value
    lListElem *ep = NULL;
 
    DENTER(TOP_LAYER);
-   ep = lGetElemStrRW(*ppcmdline, SPA_switch, opt);
+   ep = lGetElemStrRW(*ppcmdline, SPA_switch_val, opt);
    if(ep != NULL) {
       *value = NULL;
       lXchgList(ep, SPA_argval_lListT, value);

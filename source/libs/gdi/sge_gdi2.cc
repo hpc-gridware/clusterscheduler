@@ -1069,7 +1069,7 @@ bool sge_gdi2_check_permission(sge_gdi_ctx_class_t *ctx, lList **alpp, int optio
        /* manager check */
        if (option & MANAGER_CHECK) {
           value = 0;
-          value = lGetUlong(permList->first, PERM_manager);
+          value = lGetUlong(permList->first, PERM_is_manager);
           if (value != 1) {
              failed_checks++;
           }
@@ -1079,7 +1079,7 @@ bool sge_gdi2_check_permission(sge_gdi_ctx_class_t *ctx, lList **alpp, int optio
        /* operator check */
        if (option & OPERATOR_CHECK) {
           value = 0;
-          value = lGetUlong(permList->first, PERM_operator);
+          value = lGetUlong(permList->first, PERM_is_operator);
           if (value != 1) {
              failed_checks++;
           }

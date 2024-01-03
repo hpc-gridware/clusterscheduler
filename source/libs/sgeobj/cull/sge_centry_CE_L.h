@@ -65,7 +65,7 @@ extern "C" {
 *    SGE_ULONG(CE_consumable) - @todo add summary
 *    @todo add description
 *
-*    SGE_STRING(CE_default) - @todo add summary
+*    SGE_STRING(CE_defaultval) - @todo add summary
 *    @todo add description
 *
 *    SGE_ULONG(CE_dominant) - @todo add summary
@@ -99,7 +99,7 @@ enum {
    CE_doubleval,
    CE_relop,
    CE_consumable,
-   CE_default,
+   CE_defaultval,
    CE_dominant,
    CE_pj_stringval,
    CE_pj_doubleval,
@@ -117,7 +117,7 @@ LISTDEF(CE_Type)
    SGE_DOUBLE(CE_doubleval, CULL_DEFAULT)
    SGE_ULONG(CE_relop, CULL_SPOOL)
    SGE_ULONG(CE_consumable, CULL_SPOOL)
-   SGE_STRING(CE_default, CULL_SPOOL)
+   SGE_STRING(CE_defaultval, CULL_SPOOL)
    SGE_ULONG(CE_dominant, CULL_DEFAULT)
    SGE_STRING(CE_pj_stringval, CULL_DEFAULT)
    SGE_DOUBLE(CE_pj_doubleval, CULL_DEFAULT)
@@ -135,7 +135,7 @@ NAMEDEF(CEN)
    NAME("CE_doubleval")
    NAME("CE_relop")
    NAME("CE_consumable")
-   NAME("CE_default")
+   NAME("CE_defaultval")
    NAME("CE_dominant")
    NAME("CE_pj_stringval")
    NAME("CE_pj_doubleval")

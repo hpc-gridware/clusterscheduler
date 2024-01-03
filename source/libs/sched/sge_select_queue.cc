@@ -1356,7 +1356,7 @@ rc_time_by_slots(const sge_assignment_t *a, lList *requested, const lList *load_
             /* consumable && used in this global/host/queue && not requested */
             if (!is_requested(requested, name)) {
                lListElem *default_request = lGetElemStrRW(a->centry_list, CE_name, name);
-               const char *def_req = lGetString(default_request, CE_default);
+               const char *def_req = lGetString(default_request, CE_defaultval);
                valtype = lGetUlong(default_request, CE_valtype);
                parse_ulong_val(&dval, NULL, valtype, def_req, NULL, 0);
 
@@ -4591,7 +4591,7 @@ parallel_max_host_slots(sge_assignment_t *a, lListElem *host) {
             if ((lc = lGetElemStr(requests, CE_name, name)) != NULL) {
                adj_value = lGetString(lc, CE_stringval);
             } else { /* is default value */
-               adj_value = lGetString(cep, CE_default);
+               adj_value = lGetString(cep, CE_defaultval);
             }
 
             if ((centry = get_attribute_by_name(a->gep, host, qep, name, a->centry_list, a->start, a->duration)) == NULL) {
@@ -6111,7 +6111,7 @@ parallel_rc_slots_by_time(const sge_assignment_t *a, lList *requests,  int *slot
 
       if (!is_requested(requests, name)) {
          double request;
-         const char *def_req = lGetString(cep, CE_default);
+         const char *def_req = lGetString(cep, CE_defaultval);
          if (def_req) {
             parse_ulong_val(&request, NULL, lGetUlong(cep, CE_valtype), def_req, NULL, 0);
 

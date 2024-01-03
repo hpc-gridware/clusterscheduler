@@ -1,12 +1,12 @@
 {
-	"className":	"SPTR",
+	"className":	"SpoolingTypeRule",
 	"summary":	"@todo add summary",
 	"description":	[{
 			"line":	"@todo add description"
 		}],
 	"cullPrefix":	"SPTR",
 	"attributes":	[{
-			"name":	"default",
+			"name":	"is_default",
 			"summary":	"@todo add summary",
 			"description":	[{
 					"line":	"@todo add description"

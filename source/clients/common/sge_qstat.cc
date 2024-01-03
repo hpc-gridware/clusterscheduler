@@ -2273,7 +2273,7 @@ static int sge_handle_job(lListElem *job, lListElem *jatep, lListElem *qep, lLis
                continue;
             }
 
-            parse_ulong_val(&dval, NULL, lGetUlong(ce, CE_valtype), lGetString(ce, CE_default), NULL, 0); 
+            parse_ulong_val(&dval, NULL, lGetUlong(ce, CE_valtype), lGetString(ce, CE_defaultval), NULL, 0); 
             if (dval == 0.0) {
                continue;
             }
@@ -2287,7 +2287,7 @@ static int sge_handle_job(lListElem *job, lListElem *jatep, lListElem *qep, lLis
                   ((hep=host_list_locate(qstat_env->exechost_list, SGE_GLOBAL_NAME)) &&
                   lGetSubStr(hep, CE_name, name, EH_consumable_config_list))) {
 
-                     if ((ret=handler->report_request(handler, name, lGetString(ce, CE_default), alpp)) ) {
+                     if ((ret=handler->report_request(handler, name, lGetString(ce, CE_defaultval), alpp)) ) {
                         DPRINTF(("handler->report_request failed\n"));
                         break;
                      }

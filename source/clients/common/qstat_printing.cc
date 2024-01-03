@@ -1000,7 +1000,7 @@ lList **alpp
                   continue;
                }
 
-               parse_ulong_val(&dval, NULL, lGetUlong(ce, CE_valtype), lGetString(ce, CE_default), NULL, 0); 
+               parse_ulong_val(&dval, NULL, lGetUlong(ce, CE_valtype), lGetString(ce, CE_defaultval), NULL, 0); 
                if (dval == 0.0) {
                   continue;
                }
@@ -1013,7 +1013,7 @@ lList **alpp
                     lGetSubStr(hep, CE_name, name, EH_consumable_config_list)) ||
                      ((hep=host_list_locate(exechost_list, SGE_GLOBAL_NAME)) &&
                          lGetSubStr(hep, CE_name, name, EH_consumable_config_list))) {
-                  printf("%s%s=%s (default)\n", QSTAT_INDENT, name, lGetString(ce, CE_default));      
+                  printf("%s%s=%s (default)\n", QSTAT_INDENT, name, lGetString(ce, CE_defaultval));      
                }
             }
             lFreeList(&attributes);

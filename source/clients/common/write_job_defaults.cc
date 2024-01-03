@@ -128,7 +128,7 @@ do_exit:
 ** DESCRIPTION
 **   this function writes the given options to a file without
 **   unparsing them. The following fields are written:
-**   SPA_switch, then a blank (except for -l) and then
+**   SPA_switch_val, then a blank (except for -l) and then
 **   SPA_switch_arg, if the option had an argument on the commandline.
 **   The switch -l is recognised separately, and no blank is
 **   inserted between -l and the argument. This is a restriction to
@@ -160,7 +160,7 @@ int flags
       }
    }
    for_each(ep, lp) {
-      cp = lGetString(ep, SPA_switch);
+      cp = lGetString(ep, SPA_switch_val);
       /*
       ** only real options are written to file
       ** except if the caller asks for full commandline
@@ -198,7 +198,7 @@ int flags
          cp = lGetString(ep, SPA_switch_arg);
          if (!cp) {
             sprintf(str, MSG_ANSWER_ARGUMENTMISSINGFORX_S , 
-                    lGetString(ep, SPA_switch));
+                    lGetString(ep, SPA_switch_val));
             answer_list_add(&answer, str, STATUS_ESYNTAX, ANSWER_QUALITY_ERROR);
             if (filename) {
                FCLOSE(fp);

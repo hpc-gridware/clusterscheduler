@@ -276,8 +276,8 @@ char **argv
              */
             more = false;
             for_each_rw(ep_2, pfile) {
-               if (strcmp(lGetString(ep_1, SPA_switch),
-                       lGetString(ep_2, SPA_switch)) == 0) {
+               if (strcmp(lGetString(ep_1, SPA_switch_val),
+                       lGetString(ep_2, SPA_switch_val)) == 0) {
                   /*
                    * Bingo: remove dup.
                    */

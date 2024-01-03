@@ -1325,15 +1325,15 @@ static dispatch_t rqs_limitation_reached(sge_assignment_t *a, const lListElem *r
       if (job_centry == NULL) {
          if (strcmp(lGetString(raw_centry, CE_name), SGE_ATTR_SLOTS) == 0) {
             job_centry = implicit_slots_request;
-         } else if (lGetString(raw_centry, CE_default) != NULL && lGetUlong(raw_centry, CE_consumable)) {
+         } else if (lGetString(raw_centry, CE_defaultval) != NULL && lGetUlong(raw_centry, CE_consumable)) {
             double request;
-            parse_ulong_val(&request, NULL, lGetUlong(raw_centry, CE_valtype), lGetString(raw_centry, CE_default), NULL, 0);
+            parse_ulong_val(&request, NULL, lGetUlong(raw_centry, CE_valtype), lGetString(raw_centry, CE_defaultval), NULL, 0);
 
             /* default requests with zero value are ignored */
             if (request == 0.0 && lGetUlong(raw_centry, CE_relop) != CMPLXEXCL_OP) {
                continue;
             }
-            lSetString(raw_centry, CE_stringval, lGetString(raw_centry, CE_default));
+            lSetString(raw_centry, CE_stringval, lGetString(raw_centry, CE_defaultval));
             lSetDouble(raw_centry, CE_doubleval, request);
             job_centry = raw_centry; 
             DPRINTF(("using default request for %s!\n", lGetString(raw_centry, CE_name)));

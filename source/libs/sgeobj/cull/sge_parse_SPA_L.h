@@ -50,7 +50,7 @@ extern "C" {
 *    SGE_ULONG(SPA_argtype) - @todo add summary
 *    @todo add description
 *
-*    SGE_STRING(SPA_switch) - @todo add summary
+*    SGE_STRING(SPA_switch_val) - @todo add summary
 *    @todo add description
 *
 *    SGE_STRING(SPA_switch_arg) - @todo add summary
@@ -88,7 +88,7 @@ extern "C" {
 enum {
    SPA_number = SPA_LOWERBOUND,
    SPA_argtype,
-   SPA_switch,
+   SPA_switch_val,
    SPA_switch_arg,
    SPA_occurrence,
    SPA_argval_lFloatT,
@@ -104,7 +104,7 @@ enum {
 LISTDEF(SPA_Type)
    SGE_ULONG(SPA_number, CULL_DEFAULT)
    SGE_ULONG(SPA_argtype, CULL_DEFAULT)
-   SGE_STRING(SPA_switch, CULL_HASH)
+   SGE_STRING(SPA_switch_val, CULL_HASH)
    SGE_STRING(SPA_switch_arg, CULL_DEFAULT)
    SGE_ULONG(SPA_occurrence, CULL_DEFAULT)
    SGE_FLOAT(SPA_argval_lFloatT, CULL_DEFAULT)
@@ -120,7 +120,7 @@ LISTEND
 NAMEDEF(SPAN)
    NAME("SPA_number")
    NAME("SPA_argtype")
-   NAME("SPA_switch")
+   NAME("SPA_switch_val")
    NAME("SPA_switch_arg")
    NAME("SPA_occurrence")
    NAME("SPA_argval_lFloatT")

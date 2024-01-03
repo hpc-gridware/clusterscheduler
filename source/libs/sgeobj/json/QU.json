@@ -1,5 +1,5 @@
 {
-	"className":	"QU",
+	"className":	"QueueInstance",
 	"summary":	"Queue Instance",
 	"description":	[{
 			"line":	"Queue Instance: Instance of a cluster queue on an execution host"

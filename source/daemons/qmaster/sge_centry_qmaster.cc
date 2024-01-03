@@ -196,10 +196,10 @@ centry_mod(sge_gdi_ctx_class_t *ctx,
    }
 
    /*
-    * Default (CE_default)
+    * Default (CE_defaultval)
     */
    if (ret) {
-      pos = lGetPosViaElem(reduced_elem, CE_default, SGE_NO_ABORT);
+      pos = lGetPosViaElem(reduced_elem, CE_defaultval, SGE_NO_ABORT);
 
       if (pos >= 0) {
          const char *defaultval = lGetPosString(reduced_elem, pos);
@@ -207,8 +207,8 @@ centry_mod(sge_gdi_ctx_class_t *ctx,
          if (is_slots_attr) {
             defaultval = "1";
          }
-         DPRINTF(("Got CE_default: "SFQ"\n", defaultval ? defaultval : "-NA-"));
-         lSetString(centry, CE_default, defaultval);
+         DPRINTF(("Got CE_defaultval: "SFQ"\n", defaultval ? defaultval : "-NA-"));
+         lSetString(centry, CE_defaultval, defaultval);
       }
    }
 
@@ -220,7 +220,7 @@ centry_mod(sge_gdi_ctx_class_t *ctx,
 
       if (pos >= 0) {
          const char *urgency_weight = lGetPosString(reduced_elem, pos);
-         DPRINTF(("Got CE_default: "SFQ"\n", urgency_weight ? urgency_weight : "-NA-"));
+         DPRINTF(("Got CE_defaultval: "SFQ"\n", urgency_weight ? urgency_weight : "-NA-"));
  
          /* Check first that the entry is not NULL */
          if (!pos)  {
@@ -357,8 +357,8 @@ centry_success(sge_gdi_ctx_class_t *ctx, lListElem *ep, lListElem *old_ep, gdi_o
       if (consumable != old_consumable) {
             rebuild_consumables = true;
       } else if (consumable) {
-         const char *default_request = lGetString(ep, CE_default);
-         const char *old_default_request = lGetString(old_ep, CE_default);
+         const char *default_request = lGetString(ep, CE_defaultval);
+         const char *old_default_request = lGetString(old_ep, CE_defaultval);
          if (sge_strnullcmp(default_request, old_default_request) != 0) {
             rebuild_consumables = true;
          }

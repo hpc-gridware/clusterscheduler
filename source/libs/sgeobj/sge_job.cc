@@ -2671,7 +2671,7 @@ job_get_contribution(const lListElem *this_elem, lList **answer_list,
       value_string = lGetString(centry, CE_stringval);
    }
    if (value_string == NULL) {
-      value_string = lGetString(implicit_centry, CE_default); 
+      value_string = lGetString(implicit_centry, CE_defaultval); 
    }
    if (!(parse_ulong_val(value, NULL, TYPE_INT, value_string, 
                          error_str, sizeof(error_str)-1))) {

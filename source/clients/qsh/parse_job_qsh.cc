@@ -126,7 +126,7 @@ lList *cull_parse_qsh_parameter(u_long32 prog_number, u_long32 uid, const char *
    }
 
    while (JOB_TYPE_IS_QRSH(job_now)
-          && (ep = lGetElemStrRW(cmdline, SPA_switch, "-notify"))) {
+          && (ep = lGetElemStrRW(cmdline, SPA_switch_val, "-notify"))) {
       lSetBool(*pjob, JB_notify, true);
       lRemoveElem(cmdline, &ep);
    }  
@@ -143,7 +143,7 @@ lList *cull_parse_qsh_parameter(u_long32 prog_number, u_long32 uid, const char *
    }
 
    /* -binding */
-   while ((ep = lGetElemStrRW(cmdline, SPA_switch, "-binding"))) {
+   while ((ep = lGetElemStrRW(cmdline, SPA_switch_val, "-binding"))) {
       const lList *binding_list = lGetList(ep, SPA_argval_lListT);
       lList *new_binding_list = lCopyList("binding",  binding_list);
 
@@ -156,7 +156,7 @@ lList *cull_parse_qsh_parameter(u_long32 prog_number, u_long32 uid, const char *
    ** kills all options that come before
    ** there might be more than one -clear
    */
-   while ((ep = lGetElemStrRW(cmdline, SPA_switch, "-clear"))) {
+   while ((ep = lGetElemStrRW(cmdline, SPA_switch_val, "-clear"))) {
       lListElem *ep_run;
       const char *cp_switch;
 
@@ -178,7 +178,7 @@ lList *cull_parse_qsh_parameter(u_long32 prog_number, u_long32 uid, const char *
          /*
          ** remove switch only if it is not a pseudo-arg
          */
-         cp_switch = lGetString(lPrev(ep_run), SPA_switch);
+         cp_switch = lGetString(lPrev(ep_run), SPA_switch_val);
          if (cp_switch && (*cp_switch == '-')) {
             lListElem *prev = lPrevRW(ep_run);
             lRemoveElem(cmdline, &prev);
@@ -195,7 +195,7 @@ lList *cull_parse_qsh_parameter(u_long32 prog_number, u_long32 uid, const char *
    **                 or simply ignored.
    */ 
 
-   while ((ep = lGetElemStrRW(cmdline, SPA_switch, "-A"))) {
+   while ((ep = lGetElemStrRW(cmdline, SPA_switch_val, "-A"))) {
       /* the old account string is overwritten */
       lSetString(*pjob, JB_account, lGetString(ep, SPA_argval_lStringT));
       lRemoveElem(cmdline, &ep);
@@ -228,18 +228,18 @@ lList *cull_parse_qsh_parameter(u_long32 prog_number, u_long32 uid, const char *
       DRETURN(answer);
    }
 
-   while ((ep = lGetElemStrRW(cmdline, SPA_switch, "-ar"))) {
+   while ((ep = lGetElemStrRW(cmdline, SPA_switch_val, "-ar"))) {
       /* the old advance reservation is overwritten */
       lSetUlong(*pjob, JB_ar, lGetUlong(ep, SPA_argval_lUlongT));
       lRemoveElem(cmdline, &ep);
    }
 
-   while ((ep = lGetElemStrRW(cmdline, SPA_switch, "-e"))) {
+   while ((ep = lGetElemStrRW(cmdline, SPA_switch_val, "-e"))) {
       lSetList(*pjob, JB_stderr_path_list, lCopyList("stderr_path_list", lGetList(ep, SPA_argval_lListT)));
       lRemoveElem(cmdline, &ep);
    }
 
-   while ((ep = lGetElemStrRW(cmdline, SPA_switch, "-h"))) {
+   while ((ep = lGetElemStrRW(cmdline, SPA_switch_val, "-h"))) {
       if (lGetInt(ep, SPA_argval_lIntT) & MINUS_H_TGT_USER) {
          lSetList(*pjob, JB_ja_u_h_ids, lCopyList("task_id_range",
             lGetList(*pjob, JB_ja_n_h_ids)));
@@ -249,11 +249,11 @@ lList *cull_parse_qsh_parameter(u_long32 prog_number, u_long32 uid, const char *
    }
 
    /* -hold_jid */
-   if (lGetElemStr(cmdline, SPA_switch, "-hold_jid")) {
+   if (lGetElemStr(cmdline, SPA_switch_val, "-hold_jid")) {
       lListElem *ep;
       const lListElem *sep;
       lList *jref_list = NULL;
-      while ((ep = lGetElemStrRW(cmdline, SPA_switch, "-hold_jid"))) {
+      while ((ep = lGetElemStrRW(cmdline, SPA_switch_val, "-hold_jid"))) {
          for_each(sep, lGetList(ep, SPA_argval_lListT)) {
             DPRINTF(("-hold_jid %s\n", lGetString(sep, ST_name)));
             lAddElemStr(&jref_list, JRE_job_name, lGetString(sep, ST_name), JRE_Type);
@@ -264,11 +264,11 @@ lList *cull_parse_qsh_parameter(u_long32 prog_number, u_long32 uid, const char *
    }
 
    /* -hold_jid_ad */
-   if (lGetElemStr(cmdline, SPA_switch, "-hold_jid_ad")) {
+   if (lGetElemStr(cmdline, SPA_switch_val, "-hold_jid_ad")) {
       lListElem *ep;
       const lListElem *sep;
       lList *jref_list = NULL;
-      while ((ep = lGetElemStrRW(cmdline, SPA_switch, "-hold_jid_ad"))) {
+      while ((ep = lGetElemStrRW(cmdline, SPA_switch_val, "-hold_jid_ad"))) {
          for_each(sep, lGetList(ep, SPA_argval_lListT)) {
             DPRINTF(("-hold_jid_ad %s\n", lGetString(sep, ST_name)));
             lAddElemStr(&jref_list, JRE_job_name, lGetString(sep, ST_name), JRE_Type);
@@ -279,11 +279,11 @@ lList *cull_parse_qsh_parameter(u_long32 prog_number, u_long32 uid, const char *
    }
 
    /* not needed in job struct */
-   while ((ep = lGetElemStrRW(cmdline, SPA_switch, "-hard"))) {
+   while ((ep = lGetElemStrRW(cmdline, SPA_switch_val, "-hard"))) {
       lRemoveElem(cmdline, &ep);
    }
 
-   if ((ep = lGetElemStrRW(cmdline, SPA_switch, "-help"))) {
+   if ((ep = lGetElemStrRW(cmdline, SPA_switch_val, "-help"))) {
       lRemoveElem(cmdline, &ep);
       answer_list_add_sprintf(&answer, STATUS_ENOIMP, ANSWER_QUALITY_ERROR,
                               SFNMAX, MSG_ANSWER_HELPNOTALLOWEDINCONTEXT);
@@ -291,12 +291,12 @@ lList *cull_parse_qsh_parameter(u_long32 prog_number, u_long32 uid, const char *
       DRETURN(answer);
    }
 
-   while ((ep = lGetElemStrRW(cmdline, SPA_switch, "-j"))) {
+   while ((ep = lGetElemStrRW(cmdline, SPA_switch_val, "-j"))) {
       lSetBool(*pjob, JB_merge_stderr, lGetInt(ep, SPA_argval_lIntT));
       lRemoveElem(cmdline, &ep);
    }
 
-   while ((ep = lGetElemStrRW(cmdline, SPA_switch, "-jsv"))) {
+   while ((ep = lGetElemStrRW(cmdline, SPA_switch_val, "-jsv"))) {
       const lList *list = lGetList(ep, SPA_argval_lListT);
       const char *file = lGetString(lFirst(list), PN_path);
 
@@ -308,7 +308,7 @@ lList *cull_parse_qsh_parameter(u_long32 prog_number, u_long32 uid, const char *
    centry_list_remove_duplicates(lGetListRW(*pjob, JB_hard_resource_list));
    centry_list_remove_duplicates(lGetListRW(*pjob, JB_soft_resource_list));
 
-   while ((ep = lGetElemStrRW(cmdline, SPA_switch, "-m"))) {
+   while ((ep = lGetElemStrRW(cmdline, SPA_switch_val, "-m"))) {
       u_long32 ul;
       u_long32 old_mail_opts;
 
@@ -330,12 +330,12 @@ lList *cull_parse_qsh_parameter(u_long32 prog_number, u_long32 uid, const char *
       lSetHost(ep, MR_host, qualified_hostname);
    }
 
-   while ((ep = lGetElemStrRW(cmdline, SPA_switch, "-N"))) {
+   while ((ep = lGetElemStrRW(cmdline, SPA_switch_val, "-N"))) {
       lSetString(*pjob, JB_job_name, lGetString(ep, SPA_argval_lStringT));
       lRemoveElem(cmdline, &ep);
    }
    
-   while ((ep = lGetElemStrRW(cmdline, SPA_switch, "-now"))) {
+   while ((ep = lGetElemStrRW(cmdline, SPA_switch_val, "-now"))) {
       u_long32 jb_now = lGetUlong(*pjob, JB_type);
       if(lGetInt(ep, SPA_argval_lIntT)) {
          JOB_TYPE_SET_IMMEDIATE(jb_now);
@@ -348,29 +348,29 @@ lList *cull_parse_qsh_parameter(u_long32 prog_number, u_long32 uid, const char *
       lRemoveElem(cmdline, &ep);
    }
 
-   while ((ep = lGetElemStrRW(cmdline, SPA_switch, "-o"))) {
+   while ((ep = lGetElemStrRW(cmdline, SPA_switch_val, "-o"))) {
       lSetList(*pjob, JB_stdout_path_list, lCopyList("stdout_path_list", lGetList(ep, SPA_argval_lListT))); 
       lRemoveElem(cmdline, &ep);
    }
 
-   while ((ep = lGetElemStrRW(cmdline, SPA_switch, "-P"))) {
+   while ((ep = lGetElemStrRW(cmdline, SPA_switch_val, "-P"))) {
       /* the old project string is overwritten */
       lSetString(*pjob, JB_project, lGetString(ep, SPA_argval_lStringT));
       lRemoveElem(cmdline, &ep);
    }
 
-   while ((ep = lGetElemStrRW(cmdline, SPA_switch, "-p"))) {
+   while ((ep = lGetElemStrRW(cmdline, SPA_switch_val, "-p"))) {
       lSetUlong(*pjob, JB_priority, 
          BASE_PRIORITY + lGetInt(ep, SPA_argval_lIntT));
       lRemoveElem(cmdline, &ep);
    }
 
-   while ((ep = lGetElemStrRW(cmdline, SPA_switch, "-js"))) {
+   while ((ep = lGetElemStrRW(cmdline, SPA_switch_val, "-js"))) {
       lSetUlong(*pjob, JB_jobshare, lGetUlong(ep, SPA_argval_lUlongT));
       lRemoveElem(cmdline, &ep);
    }
 
-   while ((ep = lGetElemStrRW(cmdline, SPA_switch, "-pe"))) {
+   while ((ep = lGetElemStrRW(cmdline, SPA_switch_val, "-pe"))) {
 
       lSetString(*pjob, JB_pe, lGetString(ep, SPA_argval_lStringT));
 
@@ -385,7 +385,7 @@ lList *cull_parse_qsh_parameter(u_long32 prog_number, u_long32 uid, const char *
    parse_list_hardsoft(cmdline, "-masterq", *pjob, 
                         JB_master_hard_queue_list, 0);
 
-   while ((ep = lGetElemStrRW(cmdline, SPA_switch, "-R"))) {
+   while ((ep = lGetElemStrRW(cmdline, SPA_switch_val, "-R"))) {
       lSetBool(*pjob, JB_reserve, lGetInt(ep, SPA_argval_lIntT));
       lRemoveElem(cmdline, &ep);
    }
@@ -395,9 +395,9 @@ lList *cull_parse_qsh_parameter(u_long32 prog_number, u_long32 uid, const char *
    /* context switches are sensitive to order */
    ep = lFirstRW(cmdline);
    while(ep)
-      if(!strcmp(lGetString(ep, SPA_switch), "-ac") ||
-         !strcmp(lGetString(ep, SPA_switch), "-dc") ||
-         !strcmp(lGetString(ep, SPA_switch), "-sc")) {
+      if(!strcmp(lGetString(ep, SPA_switch_val), "-ac") ||
+         !strcmp(lGetString(ep, SPA_switch_val), "-dc") ||
+         !strcmp(lGetString(ep, SPA_switch_val), "-sc")) {
          lListElem* temp;
          if(!lGetList(*pjob, JB_context)) {
             lSetList(*pjob, JB_context, lCopyList("context", lGetList(ep, SPA_argval_lListT)));
@@ -414,15 +414,15 @@ lList *cull_parse_qsh_parameter(u_long32 prog_number, u_long32 uid, const char *
          ep = lNextRW(ep);
 
    /* not needed in job struct */
-   while ((ep = lGetElemStrRW(cmdline, SPA_switch, "-soft"))) {
+   while ((ep = lGetElemStrRW(cmdline, SPA_switch_val, "-soft"))) {
       lRemoveElem(cmdline, &ep);
    }
 
    /*
    ** to be processed in original order, set -V equal to -v
    */
-   while ((ep = lGetElemStrRW(cmdline, SPA_switch, "-V"))) {
-      lSetString(ep, SPA_switch, "-v");
+   while ((ep = lGetElemStrRW(cmdline, SPA_switch_val, "-V"))) {
+      lSetString(ep, SPA_switch_val, "-v");
    }
    parse_list_simple(cmdline, "-v", *pjob, JB_env_list, VA_variable, VA_value, FLG_LIST_MERGE);
 
@@ -430,12 +430,12 @@ lList *cull_parse_qsh_parameter(u_long32 prog_number, u_long32 uid, const char *
    /* JG: changed default behaviour: skip verify to be consistant to qsub */
    lSetUlong(*pjob, JB_verify_suitable_queues, SKIP_VERIFY);
 
-   while ((ep = lGetElemStrRW(cmdline, SPA_switch, "-w"))) {
+   while ((ep = lGetElemStrRW(cmdline, SPA_switch_val, "-w"))) {
       lSetUlong(*pjob, JB_verify_suitable_queues, lGetInt(ep, SPA_argval_lIntT));
       lRemoveElem(cmdline, &ep);
    }
 
-   while ((ep = lGetElemStrRW(cmdline, SPA_switch, "-wd"))) {
+   while ((ep = lGetElemStrRW(cmdline, SPA_switch_val, "-wd"))) {
       const char *path = lGetString(ep, SPA_argval_lStringT);
       bool is_cwd = false;
 
@@ -484,7 +484,7 @@ lList *cull_parse_qsh_parameter(u_long32 prog_number, u_long32 uid, const char *
    * we put the display switch into the variable list
    * otherwise, we'd have to add a field to the job structure
    */
-   while ((ep = lGetElemStrRW(cmdline, SPA_switch, "-display"))) {
+   while ((ep = lGetElemStrRW(cmdline, SPA_switch_val, "-display"))) {
       lList *lp = lGetListRW(*pjob, JB_env_list);
       lListElem *vep = lCreateElem(VA_Type);
 
@@ -501,7 +501,7 @@ lList *cull_parse_qsh_parameter(u_long32 prog_number, u_long32 uid, const char *
    cull_compress_definition_list(lGetListRW(*pjob, JB_env_list), VA_variable, VA_value, 0);
 
 
-   while ((ep = lGetElemStrRW(cmdline, SPA_switch, "-verify"))) {
+   while ((ep = lGetElemStrRW(cmdline, SPA_switch_val, "-verify"))) {
       lSetUlong(*pjob, JB_verify, true);
       lRemoveElem(cmdline, &ep);
    }
@@ -511,7 +511,7 @@ lList *cull_parse_qsh_parameter(u_long32 prog_number, u_long32 uid, const char *
       
       lp = lCopyList("job args", lGetList(*pjob, JB_job_args));
 
-      while ((ep = lGetElemStrRW(cmdline, SPA_switch, STR_PSEUDO_JOBARG))) {
+      while ((ep = lGetElemStrRW(cmdline, SPA_switch_val, STR_PSEUDO_JOBARG))) {
          lAddElemStr(&lp, ST_name, lGetString(ep, SPA_argval_lStringT), ST_Type);
          
          lRemoveElem(cmdline, &ep);
@@ -524,7 +524,7 @@ lList *cull_parse_qsh_parameter(u_long32 prog_number, u_long32 uid, const char *
       char str[1024];
 
       sprintf(str, MSG_ANSWER_UNKOWNOPTIONX_S, 
-         lGetString(ep, SPA_switch));
+         lGetString(ep, SPA_switch_val));
       cp = lGetString(ep, SPA_switch_arg);
       if (cp) {
          strcat(str, " ");

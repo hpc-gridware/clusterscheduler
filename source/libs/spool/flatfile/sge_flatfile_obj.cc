@@ -323,7 +323,7 @@ spooling_field CE_fields[] = {
    {  CE_relop,           11, "relop",         NULL, NULL, NULL, NULL},
    {  CE_requestable,     11, "requestable",   NULL, NULL, NULL, NULL},
    {  CE_consumable,      11, "consumable",    NULL, NULL, NULL, NULL},
-   {  CE_default,         11, "default",       NULL, NULL, NULL, NULL},
+   {  CE_defaultval,      11, "default",       NULL, NULL, NULL, NULL},
    {  CE_urgency_weight,  11, "urgency",       NULL, NULL, NULL, NULL},
    {  NoName,             11, NULL,            NULL, NULL, NULL, NULL}
 };

@@ -290,7 +290,7 @@ static lList *qalter_parse_job_parameter(u_long32 me_who, lList *cmdline, lList 
    ** you dont want the user to be able to make qmon do funny things, do you?
    ** (e.g. by putting -help in a script file)
    */
-   if ((ep = lGetElemStrRW(cmdline, SPA_switch, "-help"))) {
+   if ((ep = lGetElemStrRW(cmdline, SPA_switch_val, "-help"))) {
       lRemoveElem(cmdline, &ep);
       answer_list_add_sprintf(&answer, STATUS_ENOIMP, ANSWER_QUALITY_ERROR,
                               SFNMAX, MSG_ANSWER_HELPNOTALLOWEDINCONTEXT);
@@ -301,31 +301,31 @@ static lList *qalter_parse_job_parameter(u_long32 me_who, lList *cmdline, lList 
    /* ---------------------------------------------------------- */
 
    if (me_who != QRESUB) {
-      while ((ep = lGetElemStrRW(cmdline, SPA_switch, "-a"))) {
+      while ((ep = lGetElemStrRW(cmdline, SPA_switch_val, "-a"))) {
          lSetUlong(job, JB_execution_time, lGetUlong(ep, SPA_argval_lUlongT));
          lRemoveElem(cmdline, &ep);
          nm_set(job_field, JB_execution_time);
       }
 
-      while ((ep = lGetElemStrRW(cmdline, SPA_switch, "-A"))) {
+      while ((ep = lGetElemStrRW(cmdline, SPA_switch_val, "-A"))) {
          lSetString(job, JB_account, lGetString(ep, SPA_argval_lStringT));
          lRemoveElem(cmdline, &ep);
          nm_set(job_field, JB_account);
       }
       
-      while ((ep = lGetElemStrRW(cmdline, SPA_switch, "-ar"))) {
+      while ((ep = lGetElemStrRW(cmdline, SPA_switch_val, "-ar"))) {
          lSetUlong(job, JB_ar, lGetUlong(ep, SPA_argval_lUlongT));
          lRemoveElem(cmdline, &ep);
          nm_set(job_field, JB_ar);
       }
 
-      while ((ep = lGetElemStrRW(cmdline, SPA_switch, "-binding"))) {
+      while ((ep = lGetElemStrRW(cmdline, SPA_switch_val, "-binding"))) {
          lSwapList(ep, SPA_argval_lListT, job, JB_binding);
          lRemoveElem(cmdline, &ep);
          nm_set(job_field, JB_binding);
       }
   
-      while ((ep = lGetElemStrRW(cmdline, SPA_switch, "-cwd"))) {
+      while ((ep = lGetElemStrRW(cmdline, SPA_switch_val, "-cwd"))) {
          char tmp_str[SGE_PATH_MAX + 1];
          char tmp_str2[SGE_PATH_MAX + 1];
          char tmp_str3[SGE_PATH_MAX + 1];
@@ -365,7 +365,7 @@ static lList *qalter_parse_job_parameter(u_long32 me_who, lList *cmdline, lList 
          nm_set(job_field, JB_cwd);
       }
 
-      while ((ep = lGetElemStrRW(cmdline, SPA_switch, "-c"))) {
+      while ((ep = lGetElemStrRW(cmdline, SPA_switch_val, "-c"))) {
          if (lGetUlong(ep, SPA_argtype) == lLongT) {
             lSetUlong(job, JB_checkpoint_interval, 
                         lGetLong(ep, SPA_argval_lLongT));
@@ -379,13 +379,13 @@ static lList *qalter_parse_job_parameter(u_long32 me_who, lList *cmdline, lList 
       }
 
 
-      while ((ep = lGetElemStrRW(cmdline, SPA_switch, "-ckpt"))) {
+      while ((ep = lGetElemStrRW(cmdline, SPA_switch_val, "-ckpt"))) {
          lSetString(job, JB_checkpoint_name, lGetString(ep, SPA_argval_lStringT));
          lRemoveElem(cmdline, &ep);
          nm_set(job_field, JB_checkpoint_name);
       }
 
-      while ((ep = lGetElemStrRW(cmdline, SPA_switch, "-dl"))) {
+      while ((ep = lGetElemStrRW(cmdline, SPA_switch_val, "-dl"))) {
          lSetUlong(job, JB_deadline, lGetUlong(ep, SPA_argval_lUlongT));
          lRemoveElem(cmdline, &ep);
          nm_set(job_field, JB_deadline);
@@ -403,7 +403,7 @@ static lList *qalter_parse_job_parameter(u_long32 me_who, lList *cmdline, lList 
    }
 
    /* STR_PSEUDO_JOBID */
-   if (lGetElemStr(cmdline, SPA_switch, STR_PSEUDO_JOBID)) {
+   if (lGetElemStr(cmdline, SPA_switch_val, STR_PSEUDO_JOBID)) {
       lList *jid_list = NULL;
       if (!parse_multi_jobtaskslist(&cmdline, STR_PSEUDO_JOBID, &answer, &jid_list, true, 0)) {
          lFreeList(&jid_list);
@@ -414,7 +414,7 @@ static lList *qalter_parse_job_parameter(u_long32 me_who, lList *cmdline, lList 
    } 
 
    if (me_who != QRESUB) {
-      while ((ep = lGetElemStrRW(cmdline, SPA_switch, "-u"))) {
+      while ((ep = lGetElemStrRW(cmdline, SPA_switch_val, "-u"))) {
          lList *lp = NULL;
          lList *jid_list = NULL;
 
@@ -430,7 +430,7 @@ static lList *qalter_parse_job_parameter(u_long32 me_who, lList *cmdline, lList 
  
    }                    
    
-   while ((ep = lGetElemStrRW(cmdline, SPA_switch, "-h"))) {
+   while ((ep = lGetElemStrRW(cmdline, SPA_switch_val, "-h"))) {
       lListElem *jid;
       is_hold_option = true;
 
@@ -444,11 +444,11 @@ static lList *qalter_parse_job_parameter(u_long32 me_who, lList *cmdline, lList 
 
    if (me_who != QRESUB) {
       /* -hold_jid */
-      if (lGetElemStrRW(cmdline, SPA_switch, "-hold_jid")) {
+      if (lGetElemStrRW(cmdline, SPA_switch_val, "-hold_jid")) {
          const lListElem *sep;
          lListElem *ep;
          lList *jref_list = NULL;
-         while ((ep = lGetElemStrRW(cmdline, SPA_switch, "-hold_jid"))) {
+         while ((ep = lGetElemStrRW(cmdline, SPA_switch_val, "-hold_jid"))) {
             for_each(sep, lGetList(ep, SPA_argval_lListT)) {
                DPRINTF(("-hold_jid %s\n", lGetString(sep, ST_name)));
                lAddElemStr(&jref_list, JRE_job_name, lGetString(sep, ST_name), JRE_Type);
@@ -461,11 +461,11 @@ static lList *qalter_parse_job_parameter(u_long32 me_who, lList *cmdline, lList 
       }
 
       /* -hold_jid_ad */
-      if (lGetElemStrRW(cmdline, SPA_switch, "-hold_jid_ad")) {
+      if (lGetElemStrRW(cmdline, SPA_switch_val, "-hold_jid_ad")) {
          const lListElem *sep;
          lListElem *ep;
          lList *jref_list = NULL;
-         while ((ep = lGetElemStrRW(cmdline, SPA_switch, "-hold_jid_ad"))) {
+         while ((ep = lGetElemStrRW(cmdline, SPA_switch_val, "-hold_jid_ad"))) {
             for_each(sep, lGetList(ep, SPA_argval_lListT)) {
                DPRINTF(("-hold_jid_ad %s\n", lGetString(sep, ST_name)));
                lAddElemStr(&jref_list, JRE_job_name, lGetString(sep, ST_name), JRE_Type);
@@ -477,13 +477,13 @@ static lList *qalter_parse_job_parameter(u_long32 me_who, lList *cmdline, lList 
          nm_set(job_field, JB_ja_ad_predecessor_list);
       }
 
-      while ((ep = lGetElemStrRW(cmdline, SPA_switch, "-R"))) {
+      while ((ep = lGetElemStrRW(cmdline, SPA_switch_val, "-R"))) {
          lSetBool(job, JB_reserve, lGetInt(ep, SPA_argval_lIntT));
          lRemoveElem(cmdline, &ep);
          nm_set(job_field, JB_reserve);
       }
 
-      while ((ep = lGetElemStrRW(cmdline, SPA_switch, "-j"))) {
+      while ((ep = lGetElemStrRW(cmdline, SPA_switch_val, "-j"))) {
          lSetBool(job, JB_merge_stderr, lGetInt(ep, SPA_argval_lIntT));
          lRemoveElem(cmdline, &ep);
          nm_set(job_field, JB_merge_stderr);
@@ -497,7 +497,7 @@ static lList *qalter_parse_job_parameter(u_long32 me_who, lList *cmdline, lList 
       if (lGetList(job, JB_soft_resource_list))
          nm_set(job_field, JB_soft_resource_list);
 
-      while ((ep = lGetElemStrRW(cmdline, SPA_switch, "-m"))) {
+      while ((ep = lGetElemStrRW(cmdline, SPA_switch_val, "-m"))) {
          u_long32 ul;
          u_long32 old_mail_opts;
     
@@ -517,13 +517,13 @@ static lList *qalter_parse_job_parameter(u_long32 me_who, lList *cmdline, lList 
       if (lGetList(job, JB_mail_list))
          nm_set(job_field, JB_mail_list);
 
-      while ((ep = lGetElemStrRW(cmdline, SPA_switch, "-N"))) {
+      while ((ep = lGetElemStrRW(cmdline, SPA_switch_val, "-N"))) {
          lSetString(job, JB_job_name, lGetString(ep, SPA_argval_lStringT));
          lRemoveElem(cmdline, &ep);
          nm_set(job_field, JB_job_name); 
       }
 
-      while ((ep = lGetElemStrRW(cmdline, SPA_switch, "-notify"))) {
+      while ((ep = lGetElemStrRW(cmdline, SPA_switch_val, "-notify"))) {
          lSetBool(job, JB_notify, true);
          lRemoveElem(cmdline, &ep);
          nm_set(job_field, JB_notify);
@@ -534,26 +534,26 @@ static lList *qalter_parse_job_parameter(u_long32 me_who, lList *cmdline, lList 
       if (lGetList(job, JB_stdout_path_list))
          nm_set(job_field, JB_stdout_path_list);
 
-      while ((ep = lGetElemStrRW(cmdline, SPA_switch, "-p"))) {
+      while ((ep = lGetElemStrRW(cmdline, SPA_switch_val, "-p"))) {
          lSetUlong(job, JB_priority, 
             BASE_PRIORITY + lGetInt(ep, SPA_argval_lIntT));
          lRemoveElem(cmdline, &ep);
          nm_set(job_field, JB_priority);
       }
 
-      while ((ep = lGetElemStrRW(cmdline, SPA_switch, "-js"))) {
+      while ((ep = lGetElemStrRW(cmdline, SPA_switch_val, "-js"))) {
          lSetUlong(job, JB_jobshare, lGetUlong(ep, SPA_argval_lUlongT));
          lRemoveElem(cmdline, &ep);
          nm_set(job_field, JB_jobshare);
       }
 
-      while ((ep = lGetElemStrRW(cmdline, SPA_switch, "-P"))) {
+      while ((ep = lGetElemStrRW(cmdline, SPA_switch_val, "-P"))) {
          lSetString(job, JB_project, lGetString(ep, SPA_argval_lStringT));
          lRemoveElem(cmdline, &ep);
          nm_set(job_field, JB_project);
       }
 
-      while ((ep = lGetElemStrRW(cmdline, SPA_switch, "-pe"))) {
+      while ((ep = lGetElemStrRW(cmdline, SPA_switch_val, "-pe"))) {
          lSetString(job, JB_pe, lGetString(ep, SPA_argval_lStringT));
          /* put sublist from parsing into job */
          lSwapList(job, JB_pe_range, ep, SPA_argval_lListT);
@@ -564,7 +564,7 @@ static lList *qalter_parse_job_parameter(u_long32 me_who, lList *cmdline, lList 
          nm_set(job_field, JB_pe_range);
       }
 
-      while ((ep = lGetElemStrRW(cmdline, SPA_switch, "-ot"))) {
+      while ((ep = lGetElemStrRW(cmdline, SPA_switch_val, "-ot"))) {
          lSetUlong(job, JB_override_tickets, lGetUlong(ep, SPA_argval_lUlongT));
          lRemoveElem(cmdline, &ep);
          nm_set(job_field, JB_override_tickets);
@@ -582,22 +582,22 @@ static lList *qalter_parse_job_parameter(u_long32 me_who, lList *cmdline, lList 
       if (lGetList(job, JB_master_hard_queue_list))
          nm_set(job_field, JB_master_hard_queue_list);
     
-      while ((ep = lGetElemStrRW(cmdline, SPA_switch, "-r"))) {
+      while ((ep = lGetElemStrRW(cmdline, SPA_switch_val, "-r"))) {
          lSetUlong(job, JB_restart, lGetInt(ep, SPA_argval_lIntT));
          lRemoveElem(cmdline, &ep);
          nm_set(job_field, JB_restart);
       }
 
-      while ((ep = lGetElemStrRW(cmdline, SPA_switch, "-w"))) {
+      while ((ep = lGetElemStrRW(cmdline, SPA_switch_val, "-w"))) {
          lSetUlong(job, JB_verify_suitable_queues, lGetInt(ep, SPA_argval_lIntT));
          lRemoveElem(cmdline, &ep);
          nm_set(job_field, JB_verify_suitable_queues);
       }
 
       /* not needed in job struct - they are still used at this point */
-      while ((ep = lGetElemStrRW(cmdline, SPA_switch, "-soft"))) 
+      while ((ep = lGetElemStrRW(cmdline, SPA_switch_val, "-soft"))) 
          lRemoveElem(cmdline, &ep);
-      while ((ep = lGetElemStrRW(cmdline, SPA_switch, "-hard"))) 
+      while ((ep = lGetElemStrRW(cmdline, SPA_switch_val, "-hard"))) 
          lRemoveElem(cmdline, &ep);
 
       parse_list_simple(cmdline, "-S", job, JB_shell_list, 0, 0, FLG_LIST_APPEND);
@@ -605,7 +605,7 @@ static lList *qalter_parse_job_parameter(u_long32 me_who, lList *cmdline, lList 
          nm_set(job_field, JB_shell_list);
 
       
-      while ((ep = lGetElemStrRW(cmdline, SPA_switch, "-wd"))) {
+      while ((ep = lGetElemStrRW(cmdline, SPA_switch_val, "-wd"))) {
          lSetString(job, JB_cwd, lGetString(ep, SPA_argval_lStringT));
          lRemoveElem(cmdline, &ep);
          nm_set(job_field, JB_cwd);
@@ -614,8 +614,8 @@ static lList *qalter_parse_job_parameter(u_long32 me_who, lList *cmdline, lList 
       /*
       ** to be processed in original order, set -V equal to -v
       */
-      while ((ep = lGetElemStrRW(cmdline, SPA_switch, "-V"))) {
-         lSetString(ep, SPA_switch, "-v");
+      while ((ep = lGetElemStrRW(cmdline, SPA_switch_val, "-V"))) {
+         lSetString(ep, SPA_switch_val, "-v");
       }
       parse_list_simple(cmdline, "-v", job, JB_env_list, VA_variable, VA_value, FLG_LIST_MERGE);
       if (lGetList(job, JB_env_list))
@@ -624,19 +624,19 @@ static lList *qalter_parse_job_parameter(u_long32 me_who, lList *cmdline, lList 
       /*
       ** -qs_args ... -qs_end
       */
-      while ((ep = lGetElemStrRW(cmdline, SPA_switch, "-qs_args"))) {
+      while ((ep = lGetElemStrRW(cmdline, SPA_switch_val, "-qs_args"))) {
          lSwapList(job, JB_qs_args, ep, SPA_argval_lListT);
          lRemoveElem(cmdline, &ep);
          nm_set(job_field, JB_qs_args);
       }
 
-      while ((ep = lGetElemStrRW(cmdline, SPA_switch, "-tc"))) {
+      while ((ep = lGetElemStrRW(cmdline, SPA_switch_val, "-tc"))) {
          lSetUlong(job, JB_ja_task_concurrency, lGetUlong(ep, SPA_argval_lUlongT));
          lRemoveElem(cmdline, &ep);
          nm_set(job_field, JB_ja_task_concurrency);
       }
 
-      if ((ep = lGetElemStrRW(cmdline, SPA_switch, "--"))) {
+      if ((ep = lGetElemStrRW(cmdline, SPA_switch_val, "--"))) {
          lRemoveElem(cmdline, &ep);
          nm_set(job_field, JB_job_args);
       }
@@ -645,7 +645,7 @@ static lList *qalter_parse_job_parameter(u_long32 me_who, lList *cmdline, lList 
     
          lp = lCopyList("job args", lGetList(job, JB_job_args));
     
-         while ((ep = lGetElemStrRW(cmdline, SPA_switch, STR_PSEUDO_JOBARG))) {
+         while ((ep = lGetElemStrRW(cmdline, SPA_switch_val, STR_PSEUDO_JOBARG))) {
             lAddElemStr(&lp, ST_name, lGetString(ep, SPA_argval_lStringT), ST_Type);
             lRemoveElem(cmdline, &ep);
             nm_set(job_field, JB_job_args);
@@ -657,9 +657,9 @@ static lList *qalter_parse_job_parameter(u_long32 me_who, lList *cmdline, lList 
       /* context switches are sensitive to order */
       ep = lFirstRW(cmdline);
       while(ep)
-         if(!strcmp(lGetString(ep, SPA_switch), "-ac") ||
-            !strcmp(lGetString(ep, SPA_switch), "-dc") ||
-            !strcmp(lGetString(ep, SPA_switch), "-sc")) {
+         if(!strcmp(lGetString(ep, SPA_switch_val), "-ac") ||
+            !strcmp(lGetString(ep, SPA_switch_val), "-dc") ||
+            !strcmp(lGetString(ep, SPA_switch_val), "-sc")) {
             lListElem* temp;
             if(!lGetList(job, JB_context)) {
                lSetList(job, JB_context, lCopyList("context", lGetList(ep, SPA_argval_lListT)));
@@ -682,7 +682,7 @@ static lList *qalter_parse_job_parameter(u_long32 me_who, lList *cmdline, lList 
       char str[1024];
  
       sprintf(str, MSG_ANSWER_UNKOWNOPTIONX_S,
-         lGetString(ep, SPA_switch));
+         lGetString(ep, SPA_switch_val));
       cp = lGetString(ep, SPA_switch_arg);
       if (cp) {
          strcat(str, " ");
@@ -692,7 +692,7 @@ static lList *qalter_parse_job_parameter(u_long32 me_who, lList *cmdline, lList 
       answer_list_add(&answer, str, STATUS_ENOIMP, ANSWER_QUALITY_ERROR);
    }
 
-   if ((ep = lGetElemStrRW(cmdline, SPA_switch, "-verify"))) {
+   if ((ep = lGetElemStrRW(cmdline, SPA_switch_val, "-verify"))) {
       lRemoveElem(cmdline, &ep);
       verify = 1;
       nm_set(job_field, JB_env_list);

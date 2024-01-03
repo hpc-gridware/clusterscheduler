@@ -84,9 +84,9 @@ static int set_yn_option (lList **opts, u_long32 opt, char *arg, char *value,
 **   flags               - FLG_USE_PSEUDOS: apply the following syntax:
 **                         the first non-switch token is the job script, what
 **                         follows are job arguments, mark the tokens as "script"
-**                         or "jobarg" in the SPA_switch field
+**                         or "jobarg" in the SPA_switch_val field
 **                         0: dont do that, if a non-switch occurs, add it to
-**                         the list with SPA_switch "" (an argument to a non-existing
+**                         the list with SPA_switch_val "" (an argument to a non-existing
 **                         switch)
 **                         FLG_QALTER: change treatment of non-options to qalter-specific
 **                         pseudo options (only if FLG_USE_PSEUDOS is given) and changes
@@ -140,7 +140,7 @@ u_long32 flags
       if (!strcmp("-a", *sp)) {
          u_long32 timeval;
 
-         if (lGetElemStr(*pcmdline, SPA_switch, *sp)) {
+         if (lGetElemStr(*pcmdline, SPA_switch_val, *sp)) {
             answer_list_add_sprintf(&answer, STATUS_EEXIST, ANSWER_QUALITY_WARNING, 
                                     MSG_PARSE_XOPTIONALREADYSETOVERWRITINGSETING_S, *sp);
          }
@@ -172,7 +172,7 @@ u_long32 flags
 
       if (!strcmp("-A", *sp)) {
 
-         if (lGetElemStr(*pcmdline, SPA_switch, *sp)) {
+         if (lGetElemStr(*pcmdline, SPA_switch_val, *sp)) {
             answer_list_add_sprintf(&answer, STATUS_EEXIST, ANSWER_QUALITY_WARNING, 
                                     MSG_PARSE_XOPTIONALREADYSETOVERWRITINGSETING_S, *sp);
          }
@@ -299,7 +299,7 @@ u_long32 flags
       /* "-b y|n" */
 
       if (!is_qalter && !strcmp("-b", *sp)) {
-         if (lGetElemStr(*pcmdline, SPA_switch, *sp)) {
+         if (lGetElemStr(*pcmdline, SPA_switch_val, *sp)) {
             answer_list_add_sprintf(&answer, STATUS_EEXIST, ANSWER_QUALITY_WARNING,
                                     MSG_PARSE_XOPTIONALREADYSETOVERWRITINGSETING_S, *sp);
          }
@@ -493,7 +493,7 @@ u_long32 flags
       /* "-C directive_prefix" */
       if (!strcmp("-C", *sp)) {
 
-         if (lGetElemStr(*pcmdline, SPA_switch, *sp)) {
+         if (lGetElemStr(*pcmdline, SPA_switch_val, *sp)) {
             answer_list_add_sprintf(&answer, STATUS_EEXIST, ANSWER_QUALITY_WARNING,
                                     MSG_PARSE_XOPTIONALREADYSETOVERWRITINGSETING_S, *sp);
          }
@@ -524,7 +524,7 @@ u_long32 flags
          double timeval;
          char tmp[1000];
 
-         if (lGetElemStr(*pcmdline, SPA_switch, *sp)) {
+         if (lGetElemStr(*pcmdline, SPA_switch_val, *sp)) {
             answer_list_add_sprintf(&answer, STATUS_EEXIST, ANSWER_QUALITY_WARNING,
                                     MSG_PARSE_XOPTIONALREADYSETOVERWRITINGSETING_S, *sp);
          }
@@ -590,7 +590,7 @@ u_long32 flags
       /* "-display -- only for qsh " */
 
       if (!strcmp("-display", *sp)) {
-         if (lGetElemStr(*pcmdline, SPA_switch, *sp)) {
+         if (lGetElemStr(*pcmdline, SPA_switch_val, *sp)) {
             answer_list_add_sprintf(&answer, STATUS_EEXIST, ANSWER_QUALITY_WARNING,
                                     MSG_PARSE_XOPTIONALREADYSETOVERWRITINGSETING_S, *sp);
          }
@@ -619,7 +619,7 @@ u_long32 flags
       if (!strcmp("-dl", *sp)) {
          u_long32 timeval;
 
-         if (lGetElemStr(*pcmdline, SPA_switch, *sp)) {
+         if (lGetElemStr(*pcmdline, SPA_switch_val, *sp)) {
             answer_list_add_sprintf(&answer, STATUS_EEXIST, ANSWER_QUALITY_WARNING, 
                                     MSG_PARSE_XOPTIONALREADYSETOVERWRITINGSETING_S, *sp);
          }
@@ -653,7 +653,7 @@ u_long32 flags
          lList *path_list = NULL;
 
          if (prog_number == QRSUB) {
-            if (lGetElemStr(*pcmdline, SPA_switch, *sp)) {
+            if (lGetElemStr(*pcmdline, SPA_switch_val, *sp)) {
                answer_list_add_sprintf(&answer, STATUS_EEXIST, ANSWER_QUALITY_WARNING,
                                        MSG_PARSE_XOPTIONALREADYSETOVERWRITINGSETING_S, *sp);
             }
@@ -733,7 +733,7 @@ u_long32 flags
          is_hold_option = true;
          cmd_switch = *sp;
 
-         if (lGetElemStr(*pcmdline, SPA_switch, *sp)) {
+         if (lGetElemStr(*pcmdline, SPA_switch_val, *sp)) {
             answer_list_add_sprintf(&answer, STATUS_EEXIST, ANSWER_QUALITY_WARNING,
                                     MSG_PARSE_XOPTIONALREADYSETOVERWRITINGSETING_S, *sp);
          }
@@ -784,7 +784,7 @@ u_long32 flags
      /*  -he y[es]|n[o] */
 
       if(!strcmp("-he", *sp)) {
-         if (lGetElemStr(*pcmdline, SPA_switch, *sp)) {
+         if (lGetElemStr(*pcmdline, SPA_switch_val, *sp)) {
             snprintf(str, sizeof(str), MSG_PARSE_XOPTIONALREADYSETOVERWRITINGSETING_S, *sp);
             answer_list_add(&answer, str, STATUS_EEXIST, ANSWER_QUALITY_WARNING);
          }
@@ -879,7 +879,7 @@ u_long32 flags
 
       if (!strcmp("-j", *sp)) {
 
-         if (lGetElemStr(*pcmdline, SPA_switch, *sp)) {
+         if (lGetElemStr(*pcmdline, SPA_switch_val, *sp)) {
             answer_list_add_sprintf(&answer, STATUS_EEXIST, ANSWER_QUALITY_WARNING,
                    MSG_PARSE_XOPTIONALREADYSETOVERWRITINGSETING_S, *sp);
          }
@@ -1109,7 +1109,7 @@ u_long32 flags
 
       if (!strcmp("-N", *sp)) {
 
-         if (lGetElemStr(*pcmdline, SPA_switch, *sp)) {
+         if (lGetElemStr(*pcmdline, SPA_switch_val, *sp)) {
             answer_list_add_sprintf(&answer, STATUS_EEXIST, ANSWER_QUALITY_WARNING,
                   MSG_PARSE_XOPTIONALREADYSETOVERWRITINGSETING_S, *sp);
          }
@@ -1158,7 +1158,7 @@ u_long32 flags
      /*  -now y[es]|n[o] */
 
       if(!strcmp("-now", *sp)) {
-         if (lGetElemStr(*pcmdline, SPA_switch, *sp)) {
+         if (lGetElemStr(*pcmdline, SPA_switch_val, *sp)) {
             answer_list_add_sprintf(&answer, STATUS_EEXIST, ANSWER_QUALITY_WARNING,
                      MSG_PARSE_XOPTIONALREADYSETOVERWRITINGSETING_S, *sp);
          }
@@ -1275,7 +1275,7 @@ u_long32 flags
 
       if (!strcmp("-P", *sp)) {
 
-         if (lGetElemStr(*pcmdline, SPA_switch, *sp)) {
+         if (lGetElemStr(*pcmdline, SPA_switch_val, *sp)) {
             snprintf(str, sizeof(str), MSG_PARSE_XOPTIONALREADYSETOVERWRITINGSETING_S, *sp);
             answer_list_add(&answer, str, STATUS_EEXIST, ANSWER_QUALITY_WARNING);
          }
@@ -1301,7 +1301,7 @@ u_long32 flags
          lList *pe_range = NULL;
          dstring d_arg = DSTRING_INIT;
 
-         if (lGetElemStr(*pcmdline, SPA_switch, *sp)) {
+         if (lGetElemStr(*pcmdline, SPA_switch_val, *sp)) {
             answer_list_add_sprintf(&answer, STATUS_EEXIST, ANSWER_QUALITY_WARNING,
                     MSG_PARSE_XOPTIONALREADYSETOVERWRITINGSETING_S, *sp );
          }
@@ -1379,7 +1379,7 @@ DTRACE;
       if (!strcmp("-r", *sp)) {
 
 
-         if (lGetElemStr(*pcmdline, SPA_switch, *sp)) {
+         if (lGetElemStr(*pcmdline, SPA_switch_val, *sp)) {
             answer_list_add_sprintf(&answer, STATUS_EEXIST, ANSWER_QUALITY_WARNING,
                     MSG_PARSE_XOPTIONALREADYSETOVERWRITINGSETING_S, *sp );
          }
@@ -1416,7 +1416,7 @@ DTRACE;
 
       if (!strcmp("-R", *sp)) {
 
-         if (lGetElemStr(*pcmdline, SPA_switch, *sp)) {
+         if (lGetElemStr(*pcmdline, SPA_switch_val, *sp)) {
             answer_list_add_sprintf(&answer, STATUS_EEXIST, ANSWER_QUALITY_WARNING,
                  MSG_PARSE_XOPTIONALREADYSETOVERWRITINGSETING_S, *sp );
          }
@@ -1489,7 +1489,7 @@ DTRACE;
       /* "-shell y|n" */
 
       if (!is_qalter && !strcmp("-shell", *sp)) {
-         if (lGetElemStr(*pcmdline, SPA_switch, *sp)) {
+         if (lGetElemStr(*pcmdline, SPA_switch_val, *sp)) {
             answer_list_add_sprintf(&answer, STATUS_EEXIST, ANSWER_QUALITY_WARNING,
                     MSG_PARSE_XOPTIONALREADYSETOVERWRITINGSETING_S, *sp );
          }
@@ -1517,7 +1517,7 @@ DTRACE;
      /*  -sync y[es]|n[o] */
 
       if(!strcmp("-sync", *sp)) {
-         if (lGetElemStr(*pcmdline, SPA_switch, *sp)) {
+         if (lGetElemStr(*pcmdline, SPA_switch_val, *sp)) {
             answer_list_add_sprintf(&answer, STATUS_EEXIST, ANSWER_QUALITY_WARNING,
                     MSG_PARSE_XOPTIONALREADYSETOVERWRITINGSETING_S, *sp );
          }
@@ -1750,7 +1750,7 @@ DTRACE;
          int level;
          int lret;
 
-         if (lGetElemStr(*pcmdline, SPA_switch, *sp)) {
+         if (lGetElemStr(*pcmdline, SPA_switch_val, *sp)) {
             answer_list_add_sprintf(&answer,STATUS_EEXIST, ANSWER_QUALITY_WARNING,
                                     MSG_PARSE_XOPTIONALREADYSETOVERWRITINGSETING_S,
                                     *sp);

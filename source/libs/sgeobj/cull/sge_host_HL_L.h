@@ -53,7 +53,7 @@ extern "C" {
 *    SGE_ULONG(HL_last_update) - @todo add summary
 *    @todo add description
 *
-*    SGE_BOOL(HL_static) - @todo add summary
+*    SGE_BOOL(HL_is_static) - @todo add summary
 *    @todo add description
 *
 */
@@ -62,21 +62,21 @@ enum {
    HL_name = HL_LOWERBOUND,
    HL_value,
    HL_last_update,
-   HL_static
+   HL_is_static
 };
 
 LISTDEF(HL_Type)
    SGE_STRING(HL_name, CULL_PRIMARY_KEY | CULL_UNIQUE | CULL_HASH | CULL_SUBLIST)
    SGE_STRING(HL_value, CULL_SUBLIST)
    SGE_ULONG(HL_last_update, CULL_DEFAULT)
-   SGE_BOOL(HL_static, CULL_DEFAULT)
+   SGE_BOOL(HL_is_static, CULL_DEFAULT)
 LISTEND
 
 NAMEDEF(HLN)
    NAME("HL_name")
    NAME("HL_value")
    NAME("HL_last_update")
-   NAME("HL_static")
+   NAME("HL_is_static")
 NAMEEND
 
 #define HL_SIZE sizeof(HLN)/sizeof(char *)

@@ -2705,7 +2705,7 @@ static int drmaa_job2sge_job(lListElem **jtp, const drmaa_job_template_t *drmaa_
       const char *path = NULL;
 
       if (opt_list_has_X(opts_drmaa, "-wd")) {
-         ep = lGetElemStr(opts_drmaa, SPA_switch, "-wd");
+         ep = lGetElemStr(opts_drmaa, SPA_switch_val, "-wd");
          path = lGetString(ep, SPA_argval_lStringT);
          path = drmaa_expand_wd_path(username, path, &alp);
          
@@ -2778,19 +2778,19 @@ static int drmaa_job2sge_job(lListElem **jtp, const drmaa_job_template_t *drmaa_
        * only one that can contain -cat.  However, I expect that at some point
        * -cat will be added as a normal switch to qsub et al, at which point
        * this long series of ifs becomes necessary. */
-      if ((ep = lGetElemStrRW(opts_drmaa, SPA_switch, "-cat")) != NULL) {
+      if ((ep = lGetElemStrRW(opts_drmaa, SPA_switch_val, "-cat")) != NULL) {
          job_cat = strdup(lGetString(ep, SPA_argval_lStringT));
          lRemoveElem(opts_drmaa, &ep);
-      } else if ((ep = lGetElemStrRW(opts_scriptfile, SPA_switch, "-cat")) != NULL) {
+      } else if ((ep = lGetElemStrRW(opts_scriptfile, SPA_switch_val, "-cat")) != NULL) {
          job_cat = strdup(lGetString(ep, SPA_argval_lStringT));
          lRemoveElem(opts_scriptfile, &ep);
-      } else if ((ep = lGetElemStrRW(opts_native, SPA_switch, "-cat")) != NULL) {
+      } else if ((ep = lGetElemStrRW(opts_native, SPA_switch_val, "-cat")) != NULL) {
          job_cat = strdup(lGetString(ep, SPA_argval_lStringT));
          lRemoveElem(opts_native, &ep);
-      } else if ((ep = lGetElemStrRW(opts_defaults, SPA_switch, "-cat")) != NULL) {
+      } else if ((ep = lGetElemStrRW(opts_defaults, SPA_switch_val, "-cat")) != NULL) {
          job_cat = strdup(lGetString(ep, SPA_argval_lStringT));
          lRemoveElem(opts_defaults, &ep);
-      } else if ((ep = lGetElemStrRW(opts_default, SPA_switch, "-cat")) != NULL) {
+      } else if ((ep = lGetElemStrRW(opts_default, SPA_switch_val, "-cat")) != NULL) {
          job_cat = strdup(lGetString(ep, SPA_argval_lStringT));
          lRemoveElem(opts_default, &ep);
       } else {
@@ -3496,21 +3496,21 @@ o   -V                                     export all environment variables
    DENTER(TOP_LAYER);
    
    /* skip arguments that aren't supported */
-   while ((element = lGetElemStrRW(args, SPA_switch, "-help"))) {
+   while ((element = lGetElemStrRW(args, SPA_switch_val, "-help"))) {
       lRemoveElem(args, &element);
    }
    
    /* This one isn't supported because bulk jobs are handled through the
     * drmaa_run_bulk_jobs() method. */
-   while ((element = lGetElemStrRW(args, SPA_switch, "-t"))) {
+   while ((element = lGetElemStrRW(args, SPA_switch_val, "-t"))) {
       lRemoveElem(args, &element);
    }
    
-   while ((element = lGetElemStrRW(args, SPA_switch, "-verify"))) {
+   while ((element = lGetElemStrRW(args, SPA_switch_val, "-verify"))) {
       lRemoveElem(args, &element);
    }
    
-   while ((element = lGetElemStrNextRW(args, SPA_switch, "-w", &i))) {
+   while ((element = lGetElemStrNextRW(args, SPA_switch_val, "-w", &i))) {
       int argval = lGetInt(element, SPA_argval_lIntT);
       
       if ((argval == JUST_VERIFY) || (argval == POKE_VERIFY) || (argval == WARNING_VERIFY)) {      
@@ -3519,12 +3519,12 @@ o   -V                                     export all environment variables
    }
   
    if (sge_getenv(ENABLE_CWD_ENV) == NULL) {
-      while ((element = lGetElemStrRW(args, SPA_switch, "-cwd"))) {
+      while ((element = lGetElemStrRW(args, SPA_switch_val, "-cwd"))) {
          lRemoveElem(args, &element);
       }
    }
 
-   while ((element = lGetElemStrRW(args, SPA_switch, "-sync"))) {
+   while ((element = lGetElemStrRW(args, SPA_switch_val, "-sync"))) {
       lRemoveElem(args, &element);
    }
    

@@ -533,7 +533,7 @@ static int CE_test(void)
    lSetUlong(ep, CE_valtype, 1);
    lSetUlong(ep, CE_relop, 5);
    lSetUlong(ep, CE_consumable, 1);
-   lSetString(ep, CE_default, "10");
+   lSetString(ep, CE_defaultval, "10");
    lSetUlong(ep, CE_requestable, REQU_NO);
    lSetString(ep, CE_urgency_weight, "20");
    
@@ -591,7 +591,7 @@ static int CEL_test(void)
    lSetUlong(ep, CE_valtype, 1);
    lSetUlong(ep, CE_relop, 5);
    lSetUlong(ep, CE_consumable, 2);
-   lSetString(ep, CE_default, "15");
+   lSetString(ep, CE_defaultval, "15");
    lSetUlong(ep, CE_requestable, REQU_NO);
    lSetString(ep, CE_urgency_weight, "25");
    lAppendElem(lp, ep);
@@ -602,7 +602,7 @@ static int CEL_test(void)
    lSetUlong(ep, CE_valtype, 1);
    lSetUlong(ep, CE_relop, 5);
    lSetUlong(ep, CE_consumable, 0);
-   lSetString(ep, CE_default, "15");
+   lSetString(ep, CE_defaultval, "15");
    lSetUlong(ep, CE_requestable, REQU_YES);
    lSetString(ep, CE_urgency_weight, "25");
    lAppendElem(lp, ep);
@@ -1158,7 +1158,7 @@ static int EH_test(void)
    lSetUlong(ep2, CE_valtype, 1);
    lSetUlong(ep2, CE_relop, 5);
    lSetUlong(ep2, CE_consumable, 1);
-   lSetString(ep2, CE_default, "15");
+   lSetString(ep2, CE_defaultval, "15");
    lSetUlong(ep2, CE_requestable, REQU_NO);
    lSetString(ep2, CE_urgency_weight, "25");
    lSetString(ep2, CE_stringval, "stringval");
@@ -1170,7 +1170,7 @@ static int EH_test(void)
    lSetUlong(ep2, CE_valtype, 1);
    lSetUlong(ep2, CE_relop, 5);
    lSetUlong(ep2, CE_consumable, 0);
-   lSetString(ep2, CE_default, "15");
+   lSetString(ep2, CE_defaultval, "15");
    lSetUlong(ep2, CE_requestable, REQU_YES);
    lSetString(ep2, CE_urgency_weight, "25");
    lSetDouble(ep2, CE_doubleval, 6969.9696);
@@ -1186,7 +1186,7 @@ static int EH_test(void)
    lSetUlong(ep2, CE_valtype, 1);
    lSetUlong(ep2, CE_relop, 5);
    lSetUlong(ep2, CE_consumable, 1);
-   lSetString(ep2, CE_default, "15");
+   lSetString(ep2, CE_defaultval, "15");
    lSetUlong(ep2, CE_requestable, REQU_NO);
    lSetString(ep2, CE_urgency_weight, "25");
    lSetString(ep2, CE_stringval, "stringval");
@@ -1198,7 +1198,7 @@ static int EH_test(void)
    lSetUlong(ep2, CE_valtype, 1);
    lSetUlong(ep2, CE_relop, 5);
    lSetUlong(ep2, CE_consumable, 0);
-   lSetString(ep2, CE_default, "15");
+   lSetString(ep2, CE_defaultval, "15");
    lSetUlong(ep2, CE_requestable, REQU_YES);
    lSetString(ep2, CE_urgency_weight, "25");
    lSetDouble(ep2, CE_doubleval, 6969.9696);
@@ -2193,7 +2193,7 @@ static int SC_test(void)
    lSetUlong(ep2, CE_valtype, 1);
    lSetUlong(ep2, CE_relop, 5);
    lSetUlong(ep2, CE_consumable, 1);
-   lSetString(ep2, CE_default, "15");
+   lSetString(ep2, CE_defaultval, "15");
    lSetUlong(ep2, CE_requestable, REQU_NO);
    lSetString(ep2, CE_urgency_weight, "25");
    lSetString(ep2, CE_stringval, "stringval");
@@ -2205,7 +2205,7 @@ static int SC_test(void)
    lSetUlong(ep2, CE_valtype, 1);
    lSetUlong(ep2, CE_relop, 5);
    lSetUlong(ep2, CE_consumable, 0);
-   lSetString(ep2, CE_default, "15");
+   lSetString(ep2, CE_defaultval, "15");
    lSetUlong(ep2, CE_requestable, REQU_YES);
    lSetString(ep2, CE_urgency_weight, "25");
    lSetString(ep2, CE_stringval, "stringval");

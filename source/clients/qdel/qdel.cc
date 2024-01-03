@@ -426,7 +426,7 @@ lList **alpp
       if(parse_flag(ppcmdline, "-f", alpp, pforce)) 
          continue;
 
-      while ((ep = lGetElemStrRW(*ppcmdline, SPA_switch, "-u"))) {
+      while ((ep = lGetElemStrRW(*ppcmdline, SPA_switch_val, "-u"))) {
          lXchgList(ep, SPA_argval_lListT, ppuserlist);
          lRemoveElem(*ppcmdline, &ep);
       } 
@@ -440,7 +440,7 @@ lList **alpp
       }
 
        /* we get to this point, than there are -t options without job names. We have to write an error message */
-      if ((ep = lGetElemStrRW(*ppcmdline, SPA_switch, "-t")) != NULL) {
+      if ((ep = lGetElemStrRW(*ppcmdline, SPA_switch_val, "-t")) != NULL) {
          answer_list_add_sprintf(alpp, STATUS_ESEMANTIC, ANSWER_QUALITY_ERROR, MSG_JOB_LONELY_TOPTION_S, lGetString(ep, SPA_switch_arg));
          break;
       }

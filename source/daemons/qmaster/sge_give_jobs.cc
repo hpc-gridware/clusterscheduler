@@ -1675,7 +1675,7 @@ static void reduce_queue_limit(const lList* master_centry_list, lListElem *qep,
               lGetSubStr(host_list_locate(master_ehost_list, SGE_GLOBAL_NAME), CE_name, rlimit_name, EH_consumable_config_list))
 
             /* managed at queue level, managed at host level or managed at global level */
-            lSetString(qep, nm, lGetString(dcep, CE_default));
+            lSetString(qep, nm, lGetString(dcep, CE_defaultval));
    }
    
    DRETURN_VOID;

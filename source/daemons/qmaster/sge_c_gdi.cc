@@ -879,14 +879,14 @@ static void sge_gdi_do_permcheck(sge_gdi_packet_class_t *packet, sge_gdi_task_cl
       if (manop_is_manager(packet->user, master_manager_list)) {
          value = 1;
       }
-      lSetUlong(ep, PERM_manager, value);
+      lSetUlong(ep, PERM_is_manager, value);
 
       /* check for operator permission */
       value = 0;
       if (manop_is_operator(packet->user, master_manager_list, master_operator_list)) {
          value = 1;
       }
-      lSetUlong(ep, PERM_operator, value);
+      lSetUlong(ep, PERM_is_operator, value);
       if ((task->condition != NULL) && (task->enumeration != NULL)) {
          task->data_list = lSelect("", lp, task->condition, task->enumeration);
          lFreeList(&lp);

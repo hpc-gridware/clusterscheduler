@@ -209,7 +209,7 @@ static bool sge_parse_qrdel(lList **ppcmdline, lList **ppid_list, lList **alpp)
       for_each(ep, *ppcmdline) {
          answer_list_add_sprintf(alpp, STATUS_ESEMANTIC, ANSWER_QUALITY_ERROR,
                                  MSG_PARSE_INVALIDOPTIONARGUMENTX_S,
-                                 lGetString(ep,SPA_switch)); 
+                                 lGetString(ep,SPA_switch_val)); 
 
       }
       break;

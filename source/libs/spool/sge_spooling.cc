@@ -263,7 +263,7 @@ spool_startup_context(lList **answer_list, lListElem *context, bool check)
 
          /* count default rules */
          for_each (type_rule, lGetList(type, SPT_rules)) {
-            if(lGetBool(type_rule, SPTR_default)) {
+            if(lGetBool(type_rule, SPTR_is_default)) {
                default_rules++;
             }
          }
@@ -868,7 +868,7 @@ spool_type_search_default_rule(const lListElem *spool_type)
    const lList *lp = lGetList(spool_type, SPT_rules);
    const lListElem *ep;
    for_each (ep, lp) {
-      if (lGetBool(ep, SPTR_default)) {
+      if (lGetBool(ep, SPTR_is_default)) {
          rule = (lListElem *)lGetRef(ep, SPTR_rule);
          break;
       }
@@ -932,7 +932,7 @@ spool_type_add_rule(lList **answer_list, lListElem *spool_type,
 
       /* create mapping object */
       ep = lCreateElem(SPTR_Type);
-      lSetBool(ep, SPTR_default, is_default);
+      lSetBool(ep, SPTR_is_default, is_default);
       lSetString(ep, SPTR_rule_name, lGetString(rule, SPR_name));
       lSetRef(ep, SPTR_rule, (void *)rule);
 

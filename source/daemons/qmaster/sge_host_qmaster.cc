@@ -158,7 +158,7 @@ static void host_trash_nonstatic_load_values(lListElem *host)
    lListElem *next_load_attr = lFirstRW(load_attr_list);
    while ((load_attr = next_load_attr)) {
       next_load_attr = lNextRW(load_attr);
-      if (!lGetBool(load_attr, HL_static)) {
+      if (!lGetBool(load_attr, HL_is_static)) {
          lRemoveElem(load_attr_list, &load_attr);
       }
    }
@@ -737,7 +737,7 @@ void sge_update_load_values(sge_gdi_ctx_class_t *ctx, const char *rhost, lList *
       const char *value = lGetString(ep, LR_value);
       const char *host  = lGetHost(ep, LR_host);
       u_long32 global = lGetUlong(ep, LR_global);
-      u_long32 is_static = lGetUlong(ep, LR_static);
+      u_long32 is_static = lGetUlong(ep, LR_is_static);
 
       /* erroneous load report */
       if (!name || !value || !host) {
@@ -796,7 +796,7 @@ void sge_update_load_values(sge_gdi_ctx_class_t *ctx, const char *rhost, lList *
          /* copy value */
          lSetString(lep, HL_value, value); 
          lSetUlong(lep, HL_last_update, now);
-         lSetBool(lep, HL_static, is_static);
+         lSetBool(lep, HL_is_static, is_static);
       }
    }
 

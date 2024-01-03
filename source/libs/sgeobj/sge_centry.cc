@@ -238,8 +238,8 @@ centry_fill_and_check(lListElem *this_elem, lList** answer_list, bool allow_empt
             lSetString(this_elem, CE_stringval, str_value);
          }
          
-         /* also the CE_default must be parsable for numeric types */
-         if ((s=lGetString(this_elem, CE_default))
+         /* also the CE_defaultval must be parsable for numeric types */
+         if ((s=lGetString(this_elem, CE_defaultval))
             && !parse_ulong_val(&dval, NULL, type, s, tmp, sizeof(tmp)-1)) {
 /*             ERROR((SGE_EVENT, MSG_CPLX_WRONGTYPE_SSS, name, s, tmp)); */
             answer_list_add_sprintf(answer_list, STATUS_EUNKNOWN, ANSWER_QUALITY_ERROR, MSG_CPLX_WRONGTYPE_SSS, name, s, tmp);
@@ -412,7 +412,7 @@ centry_create(lList **answer_list, const char *name)
          lSetUlong(ret, CE_relop, CMPLXLE_OP);
          lSetUlong(ret, CE_requestable, REQU_NO);
          lSetUlong(ret, CE_consumable, CONSUMABLE_NO);
-         lSetString(ret, CE_default, "1");
+         lSetString(ret, CE_defaultval, "1");
       } else {
          answer_list_add_sprintf(answer_list, STATUS_EMALLOC, 
                                  ANSWER_QUALITY_ERROR,
@@ -1055,7 +1055,7 @@ bool centry_elem_validate(lListElem *centry, const lList *centry_list,
          }
 
          if (lGetUlong(centry, CE_requestable) == REQU_NO) {
-            if(!parse_ulong_val(&dval, NULL, type, lGetString(centry, CE_default), error_msg, 199)){
+            if(!parse_ulong_val(&dval, NULL, type, lGetString(centry, CE_defaultval), error_msg, 199)){
                answer_list_add_sprintf(answer_list, STATUS_EUNKNOWN , ANSWER_QUALITY_ERROR, 
                                        MSG_INVALID_CENTRY_PARSE_DEFAULT_SS, attrname, error_msg);
                ret = false;
@@ -1066,7 +1066,7 @@ bool centry_elem_validate(lListElem *centry, const lList *centry_list,
                ret = false;
             }
          } else if (lGetUlong(centry, CE_requestable) == REQU_FORCED) {
-            if(!parse_ulong_val(&dval, NULL, type, lGetString(centry, CE_default), error_msg, 199)){
+            if(!parse_ulong_val(&dval, NULL, type, lGetString(centry, CE_defaultval), error_msg, 199)){
                answer_list_add_sprintf(answer_list, STATUS_EUNKNOWN , ANSWER_QUALITY_ERROR, 
                                     MSG_INVALID_CENTRY_PARSE_DEFAULT_SS, attrname, error_msg);
                ret = false;
@@ -1077,7 +1077,7 @@ bool centry_elem_validate(lListElem *centry, const lList *centry_list,
                ret = false;
             }
          }
-      } else if ( (temp = lGetString(centry, CE_default)) ) {
+      } else if ( (temp = lGetString(centry, CE_defaultval)) ) {
       
          switch(type){
             case TYPE_INT:

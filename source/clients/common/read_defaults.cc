@@ -463,11 +463,11 @@ void opt_list_append_opts_from_script(u_long32 prog_number,
    const char *scriptfile = NULL;
    const char *prefix = NULL;
  
-   script_option = lGetElemStr(opts_cmdline, SPA_switch, STR_PSEUDO_SCRIPT);
+   script_option = lGetElemStr(opts_cmdline, SPA_switch_val, STR_PSEUDO_SCRIPT);
    if (script_option != NULL) {
       scriptfile = lGetString(script_option, SPA_argval_lStringT);
    }
-   c_option = lGetElemStr(opts_cmdline, SPA_switch, "-C");
+   c_option = lGetElemStr(opts_cmdline, SPA_switch_val, "-C");
    if (c_option != NULL) {
       prefix = lGetString(c_option, SPA_argval_lStringT);
    } else {
@@ -521,7 +521,7 @@ void opt_list_append_opts_from_script_path(u_long32 prog_number,
    char *scriptpath = NULL;
    const char *prefix = NULL;
  
-   script_option = lGetElemStr(opts_cmdline, SPA_switch, STR_PSEUDO_SCRIPT);
+   script_option = lGetElemStr(opts_cmdline, SPA_switch_val, STR_PSEUDO_SCRIPT);
    if (script_option != NULL) {
       scriptfile = lGetString(script_option, SPA_argval_lStringT);
       
@@ -546,7 +546,7 @@ void opt_list_append_opts_from_script_path(u_long32 prog_number,
       }
    }
    
-   c_option = lGetElemStr(opts_cmdline, SPA_switch, "-C");
+   c_option = lGetElemStr(opts_cmdline, SPA_switch_val, "-C");
    
    if (c_option != NULL) {
       prefix = lGetString(c_option, SPA_argval_lStringT);
@@ -612,7 +612,7 @@ void opt_list_merge_command_lines(lList **opts_all,
          *opts_all = *opts_scriptfile;
       } else {
          /* Override the queue (-q) values from defaults */
-         lOverrideStrList(*opts_all, *opts_scriptfile, SPA_switch, "-q");
+         lOverrideStrList(*opts_all, *opts_scriptfile, SPA_switch_val, "-q");
       }
       *opts_scriptfile = NULL;
    }
@@ -621,14 +621,14 @@ void opt_list_merge_command_lines(lList **opts_all,
          *opts_all = *opts_cmdline;
       } else {
          /* Override queue (-q) values from both defaults and scriptfile */
-         lOverrideStrList(*opts_all, *opts_cmdline, SPA_switch, "-q");
+         lOverrideStrList(*opts_all, *opts_cmdline, SPA_switch_val, "-q");
       }
       *opts_cmdline = NULL;
    }
 
    /* If -ar was requested add -w if it was not explicitly set */
-   if (lGetElemStr(*opts_all, SPA_switch, "-ar") != NULL) {
-      if (lGetElemStr(*opts_all, SPA_switch, "-w") == NULL) {
+   if (lGetElemStr(*opts_all, SPA_switch_val, "-ar") != NULL) {
+      if (lGetElemStr(*opts_all, SPA_switch_val, "-w") == NULL) {
          lListElem *ep_opt = sge_add_arg(opts_all, r_OPT, lIntT, "-w", "e");
          lSetInt(ep_opt, SPA_argval_lIntT, ERROR_VERIFY);
       }
@@ -663,7 +663,7 @@ bool opt_list_has_X(lList *opts, const char *option)
    const lListElem *opt;
    bool ret = false;
 
-   opt = lGetElemStr(opts, SPA_switch, option);
+   opt = lGetElemStr(opts, SPA_switch_val, option);
    if (opt != NULL) {
       ret = true;
    }
@@ -700,7 +700,7 @@ bool opt_list_is_X_true(lList *opts, const char *option)
    const lListElem *opt;
    bool ret = false;
 
-   opt = lGetElemStr(opts, SPA_switch, option);
+   opt = lGetElemStr(opts, SPA_switch_val, option);
    if (opt != NULL) {
       ret = (lGetInt(opt, SPA_argval_lIntT) == 1) ? true : false;
    }

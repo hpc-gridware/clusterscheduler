@@ -185,7 +185,7 @@ int sge_add_str2load_report(lList **lpp, const char *name, const char *value, co
       ep = lAddElemStr(lpp, LR_name, name, LR_Type);
       lSetHost(ep, LR_host, host);
       lSetUlong(ep, LR_global, (u_long32)(strcmp(host, SGE_GLOBAL_NAME) == 0 ? 1 : 0));
-      lSetUlong(ep, LR_static, sge_is_static_load_value(name));
+      lSetUlong(ep, LR_is_static, sge_is_static_load_value(name));
    }
 
    lSetString(ep, LR_value, value);

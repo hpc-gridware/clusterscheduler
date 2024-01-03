@@ -551,7 +551,7 @@ sge_event_spool(sge_gdi_ctx_class_t *ctx,
                case sgeE_EXECHOST_MOD:
                   tmp_list = lCreateList("", HL_Type);
                   for_each(load_value, lGetList(object, EH_load_list)) {
-                     if (lGetBool(load_value, HL_static)) {
+                     if (lGetBool(load_value, HL_is_static)) {
                         lAppendElem(tmp_list, lCopyElem(load_value));
                      }
                   }

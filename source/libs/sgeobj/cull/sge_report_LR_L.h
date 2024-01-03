@@ -53,7 +53,7 @@ extern "C" {
 *    SGE_ULONG(LR_global) - @todo add summary
 *    @todo add description
 *
-*    SGE_ULONG(LR_static) - @todo add summary
+*    SGE_ULONG(LR_is_static) - @todo add summary
 *    @todo add description
 *
 *    SGE_HOST(LR_host) - @todo add summary
@@ -65,7 +65,7 @@ enum {
    LR_name = LR_LOWERBOUND,
    LR_value,
    LR_global,
-   LR_static,
+   LR_is_static,
    LR_host
 };
 
@@ -73,7 +73,7 @@ LISTDEF(LR_Type)
    SGE_STRING(LR_name, CULL_HASH)
    SGE_STRING(LR_value, CULL_DEFAULT)
    SGE_ULONG(LR_global, CULL_DEFAULT)
-   SGE_ULONG(LR_static, CULL_DEFAULT)
+   SGE_ULONG(LR_is_static, CULL_DEFAULT)
    SGE_HOST(LR_host, CULL_HASH)
 LISTEND
 
@@ -81,7 +81,7 @@ NAMEDEF(LRN)
    NAME("LR_name")
    NAME("LR_value")
    NAME("LR_global")
-   NAME("LR_static")
+   NAME("LR_is_static")
    NAME("LR_host")
 NAMEEND
 

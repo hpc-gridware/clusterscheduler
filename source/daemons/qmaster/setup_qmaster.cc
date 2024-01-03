@@ -900,7 +900,7 @@ static int setup_qmaster(sge_gdi_ctx_class_t *ctx)
 
             lSetString(new_centry, CE_name, new_complexes[i].name);
             lSetString(new_centry, CE_shortcut, new_complexes[i].shortcut);
-            lSetString(new_centry, CE_default, new_complexes[i].valdefault);
+            lSetString(new_centry, CE_defaultval, new_complexes[i].valdefault);
             lSetString(new_centry, CE_urgency_weight, new_complexes[i].urgency_weight);
             lSetUlong(new_centry, CE_valtype, new_complexes[i].valtype);
             lSetUlong(new_centry, CE_relop, new_complexes[i].relop);

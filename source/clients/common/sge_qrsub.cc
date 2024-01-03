@@ -72,44 +72,44 @@ bool sge_parse_qrsub(sge_gdi_ctx_class_t *ctx, lList *pcmdline, lList **alpp, lL
    DENTER(TOP_LAYER);
 
    /*  -help 	 print this help */
-   if ((ep = lGetElemStrRW(pcmdline, SPA_switch, "-help"))) {
+   if ((ep = lGetElemStrRW(pcmdline, SPA_switch_val, "-help"))) {
       lRemoveElem(pcmdline, &ep);
       sge_usage(QRSUB, stdout);
       SGE_EXIT((void **)&ctx, 0);
    }
 
    /*  -a date_time 	 start time in [[CC]YY]MMDDhhmm[.SS] SGE_ULONG */
-   while ((ep = lGetElemStrRW(pcmdline, SPA_switch, "-a"))) {
+   while ((ep = lGetElemStrRW(pcmdline, SPA_switch_val, "-a"))) {
       lSetUlong(*ar, AR_start_time, lGetUlong(ep, SPA_argval_lUlongT));
       lRemoveElem(pcmdline, &ep);
    }
 
    /*  -e date_time 	 end time in [[CC]YY]MMDDhhmm[.SS] SGE_ULONG*/
-   while ((ep = lGetElemStrRW(pcmdline, SPA_switch, "-e"))) {
+   while ((ep = lGetElemStrRW(pcmdline, SPA_switch_val, "-e"))) {
       lSetUlong(*ar, AR_end_time, lGetUlong(ep, SPA_argval_lUlongT));
       lRemoveElem(pcmdline, &ep);
    }
 
    /*  -d time 	 duration in TIME format SGE_ULONG */
-   while ((ep = lGetElemStrRW(pcmdline, SPA_switch, "-d"))) {
+   while ((ep = lGetElemStrRW(pcmdline, SPA_switch_val, "-d"))) {
       lSetUlong(*ar, AR_duration, lGetUlong(ep, SPA_argval_lUlongT));
       lRemoveElem(pcmdline, &ep);
    }
    
    /*  -w e/v 	 validate availability of AR request, default e SGE_ULONG */
-   while ((ep = lGetElemStrRW(pcmdline, SPA_switch, "-w"))) {
+   while ((ep = lGetElemStrRW(pcmdline, SPA_switch_val, "-w"))) {
       lSetUlong(*ar, AR_verify, lGetInt(ep, SPA_argval_lIntT));
       lRemoveElem(pcmdline, &ep);
    }
   
    /*  -N name 	 AR name SGE_STRING */
-   while ((ep = lGetElemStrRW(pcmdline, SPA_switch, "-N"))) {
+   while ((ep = lGetElemStrRW(pcmdline, SPA_switch_val, "-N"))) {
       lSetString(*ar, AR_name, lGetString(ep, SPA_argval_lStringT));
       lRemoveElem(pcmdline, &ep);
    }
       
    /*  -A account_string 	 AR name in accounting record SGE_STRING */
-   while ((ep = lGetElemStrRW(pcmdline, SPA_switch, "-A"))) {
+   while ((ep = lGetElemStrRW(pcmdline, SPA_switch_val, "-A"))) {
       lSetString(*ar, AR_account, lGetString(ep, SPA_argval_lStringT));
       lRemoveElem(pcmdline, &ep);
    }
@@ -167,7 +167,7 @@ bool sge_parse_qrsub(sge_gdi_ctx_class_t *ctx, lList *pcmdline, lList **alpp, lL
    parse_list_simple(pcmdline, "-q", *ar, AR_queue_list, 0, 0, FLG_LIST_APPEND);
 
   /*    -pe pe_name slot_range reserve slot range for parallel jobs */
-   while ((ep = lGetElemStrRW(pcmdline, SPA_switch, "-pe"))) {
+   while ((ep = lGetElemStrRW(pcmdline, SPA_switch_val, "-pe"))) {
       lSetString(*ar, AR_pe, lGetString(ep, SPA_argval_lStringT)); /* SGE_STRING, */
       lSwapList(*ar, AR_pe_range, ep, SPA_argval_lListT);       /* SGE_LIST */
       lRemoveElem(pcmdline, &ep);
@@ -176,13 +176,13 @@ bool sge_parse_qrsub(sge_gdi_ctx_class_t *ctx, lList *pcmdline, lList **alpp, lL
    parse_list_simple(pcmdline, "-masterq", *ar, AR_master_queue_list, 0, 0, FLG_LIST_APPEND);
 
    /*  -ckpt ckpt-name 	 reserve in queue with ckpt method SGE_STRING */
-   while ((ep = lGetElemStrRW(pcmdline, SPA_switch, "-ckpt"))) {
+   while ((ep = lGetElemStrRW(pcmdline, SPA_switch_val, "-ckpt"))) {
       lSetString(*ar, AR_checkpoint_name, lGetString(ep, SPA_argval_lStringT));
       lRemoveElem(pcmdline, &ep);
    }
    
    /*  -m b/e/a/n 	 define mail notification events SGE_ULONG */
-   while ((ep = lGetElemStrRW(pcmdline, SPA_switch, "-m"))) {
+   while ((ep = lGetElemStrRW(pcmdline, SPA_switch_val, "-m"))) {
       u_long32 ul;
       u_long32 old_mail_opts;
 
@@ -200,13 +200,13 @@ bool sge_parse_qrsub(sge_gdi_ctx_class_t *ctx, lList *pcmdline, lList **alpp, lL
    parse_list_simple(pcmdline, "-M", *ar, AR_mail_list, MR_host, MR_user, FLG_LIST_MERGE);
 
    /*  -he yes/no 	 hard error handling SGE_ULONG */
-   while ((ep = lGetElemStrRW(pcmdline, SPA_switch, "-he"))) {
+   while ((ep = lGetElemStrRW(pcmdline, SPA_switch_val, "-he"))) {
       lSetUlong(*ar, AR_error_handling, lGetUlong(ep, SPA_argval_lUlongT));
       lRemoveElem(pcmdline, &ep);
    }
 
    /*   -now 	 reserve in queues with qtype interactive  SGE_ULONG */
-   while ((ep = lGetElemStrRW(pcmdline, SPA_switch, "-now"))) {
+   while ((ep = lGetElemStrRW(pcmdline, SPA_switch_val, "-now"))) {
       u_long32 ar_now = lGetUlong(*ar, AR_type);
       if(lGetInt(ep, SPA_argval_lIntT)) {
          JOB_TYPE_SET_IMMEDIATE(ar_now);
@@ -220,26 +220,26 @@ bool sge_parse_qrsub(sge_gdi_ctx_class_t *ctx, lList *pcmdline, lList **alpp, lL
    }
 
   /* Remove the script elements. They are not stored in the ar structure */
-  if ((ep = lGetElemStrRW(pcmdline, SPA_switch, STR_PSEUDO_SCRIPT))) {
+  if ((ep = lGetElemStrRW(pcmdline, SPA_switch_val, STR_PSEUDO_SCRIPT))) {
       lRemoveElem(pcmdline, &ep);
    }
 
-   if ((ep = lGetElemStrRW(pcmdline, SPA_switch, STR_PSEUDO_SCRIPTLEN))) {
+   if ((ep = lGetElemStrRW(pcmdline, SPA_switch_val, STR_PSEUDO_SCRIPTLEN))) {
       lRemoveElem(pcmdline, &ep);
    }
 
-   if ((ep = lGetElemStrRW(pcmdline, SPA_switch, STR_PSEUDO_SCRIPTPTR))) {
+   if ((ep = lGetElemStrRW(pcmdline, SPA_switch_val, STR_PSEUDO_SCRIPTPTR))) {
       lRemoveElem(pcmdline, &ep);
    }
 
    ep = lFirstRW(pcmdline);   
    if(ep) {
-      const char *option = lGetString(ep,SPA_switch);
+      const char *option = lGetString(ep,SPA_switch_val);
       /* as jobarg are stored no switch values, need to be filtered */ 
       if(sge_strnullcmp(option, "jobarg") != 0) {
          answer_list_add_sprintf(alpp, STATUS_ESEMANTIC, ANSWER_QUALITY_ERROR,
                               MSG_PARSE_INVALIDOPTIONARGUMENTX_S,
-                              lGetString(ep,SPA_switch)); 
+                              lGetString(ep,SPA_switch_val)); 
       } else {
          answer_list_add_sprintf(alpp, STATUS_ESEMANTIC, ANSWER_QUALITY_ERROR,
                                  SFNMAX, MSG_PARSE_INVALIDOPTIONARGUMENT);

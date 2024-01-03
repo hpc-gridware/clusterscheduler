@@ -1,12 +1,12 @@
 {
-	"className":	"PERM",
+	"className":	"Permission",
 	"summary":	"@todo add summary",
 	"description":	[{
 			"line":	"@todo add description"
 		}],
 	"cullPrefix":	"PERM",
 	"attributes":	[{
-			"name":	"manager",
+			"name":	"is_manager",
 			"summary":	"@todo add summary",
 			"description":	[{
 					"line":	"@todo add description"
@@ -14,7 +14,7 @@
 			"type":	"lUlongT",
 			"flags":	[]
 		}, {
-			"name":	"operator",
+			"name":	"is_operator",
 			"summary":	"@todo add summary",
 			"description":	[{
 					"line":	"@todo add description"
