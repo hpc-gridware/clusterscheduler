@@ -40,111 +40,123 @@ extern "C" {
 #endif
 
 /**
-* @brief @todo add summary
+* @brief Execution Host
 *
-* @todo add description
+* This is a host running an sge_execd.
 *
-*    SGE_HOST(EH_name) - @todo add summary
-*    @todo add description
+*    SGE_HOST(EH_name) - unique name
+*    Unique name of the execution host.
+*    This name must be resolvable on all hosts dealing with it
+*    (master host, the execution host itself, interactive and tightly integrated parallel jobs contacting it)
 *
-*    SGE_LIST(EH_scaling_list) - @todo add summary
-*    @todo add description
+*    SGE_LIST(EH_scaling_list) - instructions for scaling of host load values
+*    Used to scale host load values.
+*    Contains pairs of load value names and doubles.
 *
-*    SGE_LIST(EH_consumable_config_list) - @todo add summary
-*    @todo add description
+*    SGE_LIST(EH_consumable_config_list) - consumable resources
+*    consumable resources of host
 *
-*    SGE_LIST(EH_usage_scaling_list) - @todo add summary
-*    @todo add description
+*    SGE_LIST(EH_usage_scaling_list) - scaling of usage values
+*    defines scaling of job usage values reported by this execution host
 *
-*    SGE_LIST(EH_load_list) - @todo add summary
-*    @todo add description
+*    SGE_LIST(EH_load_list) - list of load values
+*    list of load values (e.g. load_avg) reported by the execution host
 *
-*    SGE_ULONG(EH_lt_heard_from) - @todo add summary
-*    @todo add description
+*    SGE_ULONG(EH_lt_heard_from) - last heard from
+*    timestamp when the sge_execd on the host last communicated with sge_qmaster
 *
-*    SGE_ULONG(EH_processors) - @todo add summary
-*    @todo add description
+*    SGE_ULONG(EH_processors) - number of processors
+*    number of processors of the execution host
+*    actually the number of processor cores (@todo threads?)
 *
-*    SGE_LIST(EH_acl) - @todo add summary
-*    @todo add description
+*    SGE_LIST(EH_acl) - user access list
+*    userset defining who can access the host
 *
-*    SGE_LIST(EH_xacl) - @todo add summary
-*    @todo add description
+*    SGE_LIST(EH_xacl) - user no access list
+*    userset defining who can not access the host
 *
-*    SGE_LIST(EH_prj) - @todo add summary
-*    @todo add description
+*    SGE_LIST(EH_prj) - project access list
+*    project list defining which jobs of which projects can run on the host
 *
-*    SGE_LIST(EH_xprj) - @todo add summary
-*    @todo add description
+*    SGE_LIST(EH_xprj) - project no access list
+*    project list defining jobs of which projects can run not on the host
 *
-*    SGE_DOUBLE(EH_sort_value) - @todo add summary
-*    @todo add description
+*    SGE_DOUBLE(EH_sort_value) - sort value based on load
+*    sort value which is only used in the scheduler thread
 *
-*    SGE_ULONG(EH_reuse_me) - @todo add summary
-*    @todo add description
+*    SGE_ULONG(EH_reuse_me) - to be re-used
+*    @todo field can be reused or removed
 *
-*    SGE_ULONG(EH_tagged) - @todo add summary
-*    @todo add description
+*    SGE_ULONG(EH_tagged) - tagging of hosts
+*    used in scheduler to tag hosts
 *
 *    SGE_ULONG(EH_load_correction_factor) - @todo add summary
+*    a value of 100 (stands for 1)
+*    means the load values of this host
+*    has to be increased fully by all
+*    values from
+*    conf.load_decay_adjustments only
+*    scheduler local not spooled
+*
+*    SGE_ULONG(EH_seq_no) - host sequence number
+*    suitability of this host for a job, scheduler only
+*
+*    SGE_STRING(EH_real_name) - real host name
+*    in case of pseudo host: real name
+*    @todo is this still used? Where?
+*
+*    SGE_ULONG(EH_sge_load) - SGEEE load
+*    calculated from load values, scheduler only
+*
+*    SGE_DOUBLE(EH_sge_ticket_pct) - percentage of tickets
+*    percentage of total SGEEE tickets, scheduler only
+*
+*    SGE_DOUBLE(EH_sge_load_pct) - percentage of load
+*    percentage of total SGEEE tickets, scheduler only
+*
+*    SGE_ULONG(EH_featureset_id) - featureset id
+*    supported feature-set id @todo still used?
+*
+*    SGE_LIST(EH_scaled_usage_list) - scaled usage
+*    scaled usage for jobs on a host - used by sge_host_mon @todo: still used?
+*
+*    SGE_LIST(EH_scaled_usage_pct_list) - scaled usage percentage
+*    scaled usage for jobs on a host - used by sge_host_mon @todo still used?
+*
+*    SGE_ULONG(EH_num_running_jobs) - number of running jobs
+*    number of jobs running on a host - used by sge_host_mon @todo still used?
+*
+*    SGE_ULONG(EH_load_report_interval) - load report interval
+*    used for caching from global/local configuration
+*
+*    SGE_LIST(EH_resource_utilization) - resource utilization
+*    contains per consumable information about resource utilization for this host
+*
+*    SGE_LIST(EH_cached_complexes) - cached complexes
+*    used in scheduler for caching built attributes
+*
+*    SGE_ULONG(EH_cache_version) - cache version
+*    used to decide whether QU_cached_complexes needs a refresh
+*
+*    SGE_ULONG(EH_master_host) - master host
+*    @todo no longer used, remove
+*
+*    SGE_ULONG(EH_reschedule_unknown) - timeout for rescheduling jobs
+*    used for caching from global/local conf; timout after which jobs will be rescheduled automatically
+*
+*    SGE_LIST(EH_reschedule_unknown_list) - jobs which will be rescheduled
+*    after the rundown of reschedule_unknown this list contains all jobs which will be rescheduled automatically
+*
+*    SGE_ULONG(EH_report_seqno) - sequence number of the last report
+*    sequence number of the last report (job/load/..) qmaster received from the execd.
+*    This seqno is used to detect old * reports, because reports are send * asynchronously
+*    and we have no guarantee that they arrive in order at qmaster
+*
+*    SGE_LIST(EH_report_variables) - variables for reporting
 *    @todo add description
 *
-*    SGE_ULONG(EH_seq_no) - @todo add summary
-*    @todo add description
-*
-*    SGE_STRING(EH_real_name) - @todo add summary
-*    @todo add description
-*
-*    SGE_ULONG(EH_sge_load) - @todo add summary
-*    @todo add description
-*
-*    SGE_DOUBLE(EH_sge_ticket_pct) - @todo add summary
-*    @todo add description
-*
-*    SGE_DOUBLE(EH_sge_load_pct) - @todo add summary
-*    @todo add description
-*
-*    SGE_ULONG(EH_featureset_id) - @todo add summary
-*    @todo add description
-*
-*    SGE_LIST(EH_scaled_usage_list) - @todo add summary
-*    @todo add description
-*
-*    SGE_LIST(EH_scaled_usage_pct_list) - @todo add summary
-*    @todo add description
-*
-*    SGE_ULONG(EH_num_running_jobs) - @todo add summary
-*    @todo add description
-*
-*    SGE_ULONG(EH_load_report_interval) - @todo add summary
-*    @todo add description
-*
-*    SGE_LIST(EH_resource_utilization) - @todo add summary
-*    @todo add description
-*
-*    SGE_LIST(EH_cached_complexes) - @todo add summary
-*    @todo add description
-*
-*    SGE_ULONG(EH_cache_version) - @todo add summary
-*    @todo add description
-*
-*    SGE_ULONG(EH_master_host) - @todo add summary
-*    @todo add description
-*
-*    SGE_ULONG(EH_reschedule_unknown) - @todo add summary
-*    @todo add description
-*
-*    SGE_LIST(EH_reschedule_unknown_list) - @todo add summary
-*    @todo add description
-*
-*    SGE_ULONG(EH_report_seqno) - @todo add summary
-*    @todo add description
-*
-*    SGE_LIST(EH_report_variables) - @todo add summary
-*    @todo add description
-*
-*    SGE_LIST(EH_merged_report_variables) - @todo add summary
-*    @todo add description
+*    SGE_LIST(EH_merged_report_variables) - merged variables for reporting
+*    list of variables written to the report file, merged from global host and actual host
 *
 */
 

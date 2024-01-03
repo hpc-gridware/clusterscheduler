@@ -1,16 +1,18 @@
 {
 	"className":	"ExecHost",
-	"summary":	"@todo add summary",
+	"summary":	"Execution Host",
 	"description":	[{
-			"line":	"@todo add description"
+			"line":	"This is a host running an sge_execd."
 		}],
 	"cullPrefix":	"EH",
 	"attributes":	[{
 			"name":	"name",
-			"summary":	"@todo add summary",
-			"description":	[{
-					"line":	"@todo add description"
-				}],
+			"summary":	"unique name",
+			"description":	[
+					{ "line":	"Unique name of the execution host." },
+               { "line":   "This name must be resolvable on all hosts dealing with it"},
+               { "line":   "(master host, the execution host itself, interactive and tightly integrated parallel jobs contacting it)"}
+            ],
 			"type":	"lHostT",
 			"flags":	[{
 					"name":	"PRIMARY_KEY"
@@ -25,9 +27,10 @@
 				}]
 		}, {
 			"name":	"scaling_list",
-			"summary":	"@todo add summary",
-			"description":	[{
-					"line":	"@todo add description"
+			"summary":	"instructions for scaling of host load values",
+			"description":	[
+                  { "line":   "Used to scale host load values."
+               }, { "line":   "Contains pairs of load value names and doubles."
 				}],
 			"type":	"lListT",
 			"subClassName":	"HS",
@@ -39,9 +42,9 @@
 				}]
 		}, {
 			"name":	"consumable_config_list",
-			"summary":	"@todo add summary",
+			"summary":	"consumable resources",
 			"description":	[{
-					"line":	"@todo add description"
+					"line":	"consumable resources of host"
 				}],
 			"type":	"lListT",
 			"subClassName":	"CE",
@@ -53,9 +56,9 @@
 				}]
 		}, {
 			"name":	"usage_scaling_list",
-			"summary":	"@todo add summary",
+			"summary":	"scaling of usage values",
 			"description":	[{
-					"line":	"@todo add description"
+					"line":	"defines scaling of job usage values reported by this execution host"
 				}],
 			"type":	"lListT",
 			"subClassName":	"HS",
@@ -67,9 +70,9 @@
 				}]
 		}, {
 			"name":	"load_list",
-			"summary":	"@todo add summary",
+			"summary":	"list of load values",
 			"description":	[{
-					"line":	"@todo add description"
+					  "line":	"list of load values (e.g. load_avg) reported by the execution host"
 				}],
 			"type":	"lListT",
 			"subClassName":	"HL",
@@ -81,9 +84,9 @@
 				}]
 		}, {
 			"name":	"lt_heard_from",
-			"summary":	"@todo add summary",
+			"summary":	"last heard from",
 			"description":	[{
-					"line":	"@todo add description"
+					"line":	"timestamp when the sge_execd on the host last communicated with sge_qmaster"
 				}],
 			"type":	"lUlongT",
 			"flags":	[{
@@ -91,9 +94,10 @@
 				}]
 		}, {
 			"name":	"processors",
-			"summary":	"@todo add summary",
+			"summary":	"number of processors",
 			"description":	[{
-					"line":	"@todo add description"
+		  	        "line":	"number of processors of the execution host"
+            }, { "line":   "actually the number of processor cores (@todo threads?)"
 				}],
 			"type":	"lUlongT",
 			"flags":	[{
@@ -103,9 +107,9 @@
 				}]
 		}, {
 			"name":	"acl",
-			"summary":	"@todo add summary",
+			"summary":	"user access list",
 			"description":	[{
-					"line":	"@todo add description"
+					"line":	"userset defining who can access the host"
 				}],
 			"type":	"lListT",
 			"subClassName":	"US",
@@ -117,9 +121,9 @@
 				}]
 		}, {
 			"name":	"xacl",
-			"summary":	"@todo add summary",
+			"summary":	"user no access list",
 			"description":	[{
-					"line":	"@todo add description"
+					"line":	"userset defining who can not access the host"
 				}],
 			"type":	"lListT",
 			"subClassName":	"US",
@@ -131,9 +135,9 @@
 				}]
 		}, {
 			"name":	"prj",
-			"summary":	"@todo add summary",
+			"summary":	"project access list",
 			"description":	[{
-					"line":	"@todo add description"
+					"line":	"project list defining which jobs of which projects can run on the host"
 				}],
 			"type":	"lListT",
 			"subClassName":	"PR",
@@ -145,9 +149,9 @@
 				}]
 		}, {
 			"name":	"xprj",
-			"summary":	"@todo add summary",
+			"summary":	"project no access list",
 			"description":	[{
-					"line":	"@todo add description"
+					"line":	"project list defining jobs of which projects can run not on the host"
 				}],
 			"type":	"lListT",
 			"subClassName":	"PR",
@@ -159,9 +163,9 @@
 				}]
 		}, {
 			"name":	"sort_value",
-			"summary":	"@todo add summary",
+			"summary":	"sort value based on load",
 			"description":	[{
-					"line":	"@todo add description"
+					"line":	"sort value which is only used in the scheduler thread"
 				}],
 			"type":	"lDoubleT",
 			"flags":	[{
@@ -169,9 +173,9 @@
 				}]
 		}, {
 			"name":	"reuse_me",
-			"summary":	"@todo add summary",
+			"summary":	"to be re-used",
 			"description":	[{
-					"line":	"@todo add description"
+					"line":	"@todo field can be reused or removed"
 				}],
 			"type":	"lUlongT",
 			"flags":	[{
@@ -179,9 +183,9 @@
 				}]
 		}, {
 			"name":	"tagged",
-			"summary":	"@todo add summary",
+			"summary":	"tagging of hosts",
 			"description":	[{
-					"line":	"@todo add description"
+					"line":	"used in scheduler to tag hosts"
 				}],
 			"type":	"lUlongT",
 			"flags":	[{
@@ -191,7 +195,12 @@
 			"name":	"load_correction_factor",
 			"summary":	"@todo add summary",
 			"description":	[{
-					"line":	"@todo add description"
+					  "line":	"a value of 100 (stands for 1)"
+            }, { "line":   "means the load values of this host"
+            }, { "line":   "has to be increased fully by all"
+            }, { "line":   "values from"
+            }, { "line":   "conf.load_decay_adjustments only"
+            }, { "line":   "scheduler local not spooled"
 				}],
 			"type":	"lUlongT",
 			"flags":	[{
@@ -199,9 +208,9 @@
 				}]
 		}, {
 			"name":	"seq_no",
-			"summary":	"@todo add summary",
+			"summary":	"host sequence number",
 			"description":	[{
-					"line":	"@todo add description"
+					"line":	"suitability of this host for a job, scheduler only"
 				}],
 			"type":	"lUlongT",
 			"flags":	[{
@@ -209,9 +218,10 @@
 				}]
 		}, {
 			"name":	"real_name",
-			"summary":	"@todo add summary",
+			"summary":	"real host name",
 			"description":	[{
-					"line":	"@todo add description"
+					  "line":	"in case of pseudo host: real name"
+            }, { "line":   "@todo is this still used? Where?"
 				}],
 			"type":	"lStringT",
 			"flags":	[{
@@ -219,9 +229,9 @@
 				}]
 		}, {
 			"name":	"sge_load",
-			"summary":	"@todo add summary",
+			"summary":	"SGEEE load",
 			"description":	[{
-					"line":	"@todo add description"
+					"line":	"calculated from load values, scheduler only"
 				}],
 			"type":	"lUlongT",
 			"flags":	[{
@@ -229,9 +239,9 @@
 				}]
 		}, {
 			"name":	"sge_ticket_pct",
-			"summary":	"@todo add summary",
+			"summary":	"percentage of tickets",
 			"description":	[{
-					"line":	"@todo add description"
+					"line":	"percentage of total SGEEE tickets, scheduler only"
 				}],
 			"type":	"lDoubleT",
 			"flags":	[{
@@ -239,9 +249,9 @@
 				}]
 		}, {
 			"name":	"sge_load_pct",
-			"summary":	"@todo add summary",
+			"summary":	"percentage of load",
 			"description":	[{
-					"line":	"@todo add description"
+					"line":	"percentage of total SGEEE tickets, scheduler only"
 				}],
 			"type":	"lDoubleT",
 			"flags":	[{
@@ -249,9 +259,9 @@
 				}]
 		}, {
 			"name":	"featureset_id",
-			"summary":	"@todo add summary",
+			"summary":	"featureset id",
 			"description":	[{
-					"line":	"@todo add description"
+					"line":	"supported feature-set id @todo still used?"
 				}],
 			"type":	"lUlongT",
 			"flags":	[{
@@ -259,9 +269,9 @@
 				}]
 		}, {
 			"name":	"scaled_usage_list",
-			"summary":	"@todo add summary",
+			"summary":	"scaled usage",
 			"description":	[{
-					"line":	"@todo add description"
+					"line":	"scaled usage for jobs on a host - used by sge_host_mon @todo: still used?"
 				}],
 			"type":	"lListT",
 			"subClassName":	"UA",
@@ -271,9 +281,9 @@
 				}]
 		}, {
 			"name":	"scaled_usage_pct_list",
-			"summary":	"@todo add summary",
+			"summary":	"scaled usage percentage",
 			"description":	[{
-					"line":	"@todo add description"
+					"line":	"scaled usage for jobs on a host - used by sge_host_mon @todo still used?"
 				}],
 			"type":	"lListT",
 			"subClassName":	"UA",
@@ -283,9 +293,9 @@
 				}]
 		}, {
 			"name":	"num_running_jobs",
-			"summary":	"@todo add summary",
+			"summary":	"number of running jobs",
 			"description":	[{
-					"line":	"@todo add description"
+					"line":	"number of jobs running on a host - used by sge_host_mon @todo still used?"
 				}],
 			"type":	"lUlongT",
 			"flags":	[{
@@ -293,9 +303,9 @@
 				}]
 		}, {
 			"name":	"load_report_interval",
-			"summary":	"@todo add summary",
+			"summary":	"load report interval",
 			"description":	[{
-					"line":	"@todo add description"
+					"line":	"used for caching from global/local configuration"
 				}],
 			"type":	"lUlongT",
 			"flags":	[{
@@ -303,9 +313,9 @@
 				}]
 		}, {
 			"name":	"resource_utilization",
-			"summary":	"@todo add summary",
+			"summary":	"resource utilization",
 			"description":	[{
-					"line":	"@todo add description"
+					"line":	"contains per consumable information about resource utilization for this host"
 				}],
 			"type":	"lListT",
 			"subClassName":	"RUE",
@@ -315,9 +325,9 @@
 				}]
 		}, {
 			"name":	"cached_complexes",
-			"summary":	"@todo add summary",
+			"summary":	"cached complexes",
 			"description":	[{
-					"line":	"@todo add description"
+					"line":	"used in scheduler for caching built attributes"
 				}],
 			"type":	"lListT",
 			"subClassName":	"CE",
@@ -327,9 +337,9 @@
 				}]
 		}, {
 			"name":	"cache_version",
-			"summary":	"@todo add summary",
+			"summary":	"cache version",
 			"description":	[{
-					"line":	"@todo add description"
+					"line":	"used to decide whether QU_cached_complexes needs a refresh"
 				}],
 			"type":	"lUlongT",
 			"flags":	[{
@@ -337,9 +347,9 @@
 				}]
 		}, {
 			"name":	"master_host",
-			"summary":	"@todo add summary",
+			"summary":	"master host",
 			"description":	[{
-					"line":	"@todo add description"
+					"line":	"@todo no longer used, remove"
 				}],
 			"type":	"lUlongT",
 			"flags":	[{
@@ -347,9 +357,9 @@
 				}]
 		}, {
 			"name":	"reschedule_unknown",
-			"summary":	"@todo add summary",
+			"summary":	"timeout for rescheduling jobs",
 			"description":	[{
-					"line":	"@todo add description"
+					"line":	"used for caching from global/local conf; timout after which jobs will be rescheduled automatically"
 				}],
 			"type":	"lUlongT",
 			"flags":	[{
@@ -357,9 +367,9 @@
 				}]
 		}, {
 			"name":	"reschedule_unknown_list",
-			"summary":	"@todo add summary",
+			"summary":	"jobs which will be rescheduled",
 			"description":	[{
-					"line":	"@todo add description"
+					"line":	"after the rundown of reschedule_unknown this list contains all jobs which will be rescheduled automatically"
 				}],
 			"type":	"lListT",
 			"subClassName":	"RU",
@@ -369,9 +379,11 @@
 				}]
 		}, {
 			"name":	"report_seqno",
-			"summary":	"@todo add summary",
+			"summary":	"sequence number of the last report",
 			"description":	[{
-					"line":	"@todo add description"
+			   	  "line":	"sequence number of the last report (job/load/..) qmaster received from the execd."
+            }, { "line":   "This seqno is used to detect old * reports, because reports are send * asynchronously"
+            }, { "line":   "and we have no guarantee that they arrive in order at qmaster"
 				}],
 			"type":	"lUlongT",
 			"flags":	[{
@@ -379,7 +391,7 @@
 				}]
 		}, {
 			"name":	"report_variables",
-			"summary":	"@todo add summary",
+			"summary":	"variables for reporting",
 			"description":	[{
 					"line":	"@todo add description"
 				}],
@@ -393,9 +405,9 @@
 				}]
 		}, {
 			"name":	"merged_report_variables",
-			"summary":	"@todo add summary",
+			"summary":	"merged variables for reporting",
 			"description":	[{
-					"line":	"@todo add description"
+					"line":	"list of variables written to the report file, merged from global host and actual host"
 				}],
 			"type":	"lListT",
 			"subClassName":	"STU",
