@@ -29,36 +29,36 @@ target_link_libraries(${DRMAA_LIB_NAME} PRIVATE
 # test binaries
 add_executable(test_drmaa test_drmaa.cc)
 target_include_directories(test_drmaa PRIVATE "./")
-# @todo need to get rid of the plpa dependency!!
-target_link_libraries(test_drmaa PRIVATE drmaa plpa ${SGE_LIBS})
+# @todo need to get rid of the plpa dependency (SGE_TOPO_LIB) !!
+target_link_libraries(test_drmaa PRIVATE drmaa ${SGE_TOPO_LIB} ${SGE_LIBS})
 
 add_executable(test_drmaa_issue1768 test_drmaa_issue1768.cc)
 target_include_directories(test_drmaa_issue1768 PRIVATE "./")
-target_link_libraries(test_drmaa_issue1768 PRIVATE drmaa plpa ${SGE_LIBS})
+target_link_libraries(test_drmaa_issue1768 PRIVATE drmaa ${SGE_TOPO_LIB} ${SGE_LIBS})
 
 add_executable(test_drmaa_issue1832 test_drmaa_issue1832.cc)
 target_include_directories(test_drmaa_issue1832 PRIVATE "./")
-target_link_libraries(test_drmaa_issue1832 PRIVATE drmaa plpa ${SGE_LIBS})
+target_link_libraries(test_drmaa_issue1832 PRIVATE drmaa ${SGE_TOPO_LIB} ${SGE_LIBS})
 
 add_executable(test_drmaa_issue1892 test_drmaa_issue1892.cc)
 target_include_directories(test_drmaa_issue1892 PRIVATE "./")
-target_link_libraries(test_drmaa_issue1892 PRIVATE drmaa plpa ${SGE_LIBS})
+target_link_libraries(test_drmaa_issue1892 PRIVATE drmaa ${SGE_TOPO_LIB} ${SGE_LIBS})
 
 add_executable(test_drmaa_mcpu test_drmaa_mcpu.cc)
 target_include_directories(test_drmaa_mcpu PRIVATE "./")
-target_link_libraries(test_drmaa_mcpu PRIVATE drmaa plpa ${SGE_LIBS})
+target_link_libraries(test_drmaa_mcpu PRIVATE drmaa ${SGE_TOPO_LIB} ${SGE_LIBS})
 
 add_executable(test_drmaa_no_bin test_drmaa_no_bin.cc)
 target_include_directories(test_drmaa_no_bin PRIVATE "./")
-target_link_libraries(test_drmaa_no_bin PRIVATE drmaa plpa ${SGE_LIBS})
+target_link_libraries(test_drmaa_no_bin PRIVATE drmaa ${SGE_TOPO_LIB} ${SGE_LIBS})
 
 add_executable(test_drmaa_perf test_drmaa_perf.cc)
 target_include_directories(test_drmaa_perf PRIVATE "./")
-target_link_libraries(test_drmaa_perf PRIVATE drmaa plpa ${SGE_LIBS})
+target_link_libraries(test_drmaa_perf PRIVATE drmaa ${SGE_TOPO_LIB} ${SGE_LIBS})
 
 add_executable(test_drmaa_sync test_drmaa_sync.cc)
 target_include_directories(test_drmaa_sync PRIVATE "./")
-target_link_libraries(test_drmaa_sync PRIVATE drmaa plpa ${SGE_LIBS})
+target_link_libraries(test_drmaa_sync PRIVATE drmaa ${SGE_TOPO_LIB} ${SGE_LIBS})
 
 if(INSTALL_SGE_COMMON)
   install(FILES drmaa.h DESTINATION include)
