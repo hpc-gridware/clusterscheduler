@@ -40,12 +40,12 @@ extern "C" {
 #endif
 
 /**
-* @brief @todo add summary
+* @brief Administrative Host
 *
-* @todo add description
+* host having admin rights
 *
-*    SGE_HOST(AH_name) - @todo add summary
-*    @todo add description
+*    SGE_HOST(AH_name) - host name
+*    name of the admin host. The host name must be resolvable.
 *
 */
 

@@ -1,15 +1,15 @@
 {
 	"className":	"AdminHost",
-	"summary":	"@todo add summary",
+	"summary":	"Administrative Host",
 	"description":	[{
-			"line":	"@todo add description"
+			"line":	"host having admin rights"
 		}],
 	"cullPrefix":	"AH",
 	"attributes":	[{
 			"name":	"name",
-			"summary":	"@todo add summary",
+			"summary":	"host name",
 			"description":	[{
-					"line":	"@todo add description"
+					"line":	"name of the admin host. The host name must be resolvable."
 				}],
 			"type":	"lHostT",
 			"flags":	[{

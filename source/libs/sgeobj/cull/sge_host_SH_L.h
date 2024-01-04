@@ -40,12 +40,12 @@ extern "C" {
 #endif
 
 /**
-* @brief @todo add summary
+* @brief Submission Host
 *
-* @todo add description
+* host which has the right to submit jobs
 *
-*    SGE_HOST(SH_name) - @todo add summary
-*    @todo add description
+*    SGE_HOST(SH_name) - host name
+*    Name of the submission host. It must be resolveable.
 *
 */
 
