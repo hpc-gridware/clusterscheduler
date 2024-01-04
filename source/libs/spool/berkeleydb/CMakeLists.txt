@@ -32,14 +32,9 @@ if(${WITH_SPOOL_BERKELEYDB})
     # they need to contain rpath with ORIGIN
     set(BDB_PROGS db_deadlock db_dump db_load db_printlog db_recover db_stat db_upgrade db_verify)
     install_third_party_bin(${PROJECT_3RDPARTY_DIR} "utilbin" BDB_PROGS)
-    foreach (PROG ${BDB_PROGS})
-      install(PROGRAMS ${CMAKE_CURRENT_BINARY_DIR}/${PROG} DESTINATION utilbin/${SGE_ARCH})
-    endforeach ()
 
     # and we need the libdb installed in $SGE_ROOT/lib/<arch>
-    set(LIBDB ${CMAKE_SHARED_LIBRARY_PREFIX}db${CMAKE_SHARED_LIBRARY_SUFFIX})
-    add_library(${LIBDB} SHARED IMPORTED)
-    install(IMPORTED_RUNTIME_ARTIFACTS ${LIBDB} LIBRARY DESTINATION lib/${SGE_ARCH})
-    set_property(TARGET ${LIBDB} PROPERTY IMPORTED_LOCATION ${PROJECT_3RDPARTY_DIR}/lib/${LIBDB})
+    set(BDB_LIBS db-5.3 db-5 db)
+    install_third_party_lib(${PROJECT_3RDPARTY_DIR} "lib" BDB_LIBS)
   endif()
 endif()

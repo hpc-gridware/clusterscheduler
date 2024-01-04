@@ -103,14 +103,7 @@ endfunction(build_third_party)
 # to the current build directory
 # make sure that they contain the correct rpath
 function(install_third_party_bin 3rdparty_install_path target_dir files)
-  message(STATUS "==================")
-  message(STATUS build bdb files)
-  message(STATUS ${CMAKE_CURRENT_BINARY_DIR})
-  message(STATUS "==================")
   foreach(file IN LISTS ${files})
-    #file(COPY ${3rdparty_install_path}/bin/${file} DESTINATION ${CMAKE_CURRENT_BINARY_DIR})
-    #file(CHMOD ${CMAKE_CURRENT_BINARY_DIR}/${file} PERMISSIONS OWNER_READ OWNER_WRITE OWNER_EXECUTE GROUP_READ GROUP_EXECUTE WORLD_READ WORLD_EXECUTE)
-    #execute_process(COMMAND patchelf --set-rpath ${CMAKE_INSTALL_RPATH} ${CMAKE_CURRENT_BINARY_DIR}/${file})
     add_custom_command(
             OUTPUT ${CMAKE_CURRENT_BINARY_DIR}/${file}
             COMMAND cp ${3rdparty_install_path}/bin/${file} ${CMAKE_CURRENT_BINARY_DIR}
@@ -122,6 +115,23 @@ function(install_third_party_bin 3rdparty_install_path target_dir files)
             ALL
             DEPENDS ${CMAKE_CURRENT_BINARY_DIR}/${file}
     )
+    install(PROGRAMS ${CMAKE_CURRENT_BINARY_DIR}/${file} DESTINATION utilbin/${SGE_ARCH})
+  endforeach()
+endfunction()
+
+function(install_third_party_lib 3rdparty_install_path target_dir files)
+  foreach(file IN LISTS ${files})
+    set(libname ${CMAKE_SHARED_LIBRARY_PREFIX}${file}${CMAKE_SHARED_LIBRARY_SUFFIX})
+    add_custom_command(
+            OUTPUT ${CMAKE_CURRENT_BINARY_DIR}/${libname}
+            COMMAND cp -a ${3rdparty_install_path}/lib/${libname} ${CMAKE_CURRENT_BINARY_DIR}
+            VERBATIM
+    )
+    add_custom_target(${libname}
+            ALL
+            DEPENDS ${CMAKE_CURRENT_BINARY_DIR}/${libname}
+    )
+    install(PROGRAMS ${CMAKE_CURRENT_BINARY_DIR}/${libname} DESTINATION lib/${SGE_ARCH})
   endforeach()
 endfunction()
 
