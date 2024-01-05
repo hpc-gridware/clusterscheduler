@@ -1,31 +1,40 @@
 {
 	"className":	"Answer",
-	"summary":	"@todo add summary",
+	"summary":	"answer element",
 	"description":	[{
-			"line":	"@todo add description"
+			"line":	"element holding information for an answer to a request"
 		}],
 	"cullPrefix":	"AN",
 	"attributes":	[{
 			"name":	"status",
-			"summary":	"@todo add summary",
+			"summary":	"answer status",
 			"description":	[{
-					"line":	"@todo add description"
+					     "line": "status of an answer: a high level error code, e.g."
+               }, { "line": " - STATUS_OK"
+               }, { "line": " - STATUS_ESEMANTIC"
+               }, { "line": " - STATUS_EEXIST"
+               }, { "line": " - STATUS_EUNKNOWN"
+               }, { "line": " - ..."
 				}],
 			"type":	"lUlongT",
 			"flags":	[]
 		}, {
 			"name":	"text",
-			"summary":	"@todo add summary",
+			"summary":	"answer text",
 			"description":	[{
-					"line":	"@todo add description"
+					"line":	"printable answer text, e.g. an error message"
 				}],
 			"type":	"lStringT",
 			"flags":	[]
 		}, {
 			"name":	"quality",
-			"summary":	"@todo add summary",
+			"summary":	"answer quality",
 			"description":	[{
-					"line":	"@todo add description"
+					"line":	"answer quality (level, severity):"
+               }, { "line": " - ANSWER_QUALITY_CRITICAL"
+               }, { "line": " - ANSWER_QUALITY_ERROR"
+               }, { "line": " - ANSWER_QUALITY_WARNING"
+               }, { "line": " - ANSWER_QUALITY_INFO"
 				}],
 			"type":	"lUlongT",
 			"flags":	[]

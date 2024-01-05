@@ -40,18 +40,27 @@ extern "C" {
 #endif
 
 /**
-* @brief @todo add summary
+* @brief answer element
 *
-* @todo add description
+* element holding information for an answer to a request
 *
-*    SGE_ULONG(AN_status) - @todo add summary
-*    @todo add description
+*    SGE_ULONG(AN_status) - answer status
+*    status of an answer: a high level error code, e.g.
+*     - STATUS_OK
+*     - STATUS_ESEMANTIC
+*     - STATUS_EEXIST
+*     - STATUS_EUNKNOWN
+*     - ...
 *
-*    SGE_STRING(AN_text) - @todo add summary
-*    @todo add description
+*    SGE_STRING(AN_text) - answer text
+*    printable answer text, e.g. an error message
 *
-*    SGE_ULONG(AN_quality) - @todo add summary
-*    @todo add description
+*    SGE_ULONG(AN_quality) - answer quality
+*    answer quality (level, severity):
+*     - ANSWER_QUALITY_CRITICAL
+*     - ANSWER_QUALITY_ERROR
+*     - ANSWER_QUALITY_WARNING
+*     - ANSWER_QUALITY_INFO
 *
 */
 
