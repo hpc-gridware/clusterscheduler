@@ -248,8 +248,10 @@ void procfs_kill_addgrpid(gid_t add_grp_id, int sig, tShepherd_trace shepherd_tr
 
    /* find next valid entry in procfs  */
    while ((dent = readdir(cwd))) {
+#ifndef LINUX
       if (!dent->d_name)
          continue;
+#endif
       if (!dent->d_name[0])
          continue;
 
@@ -448,8 +450,10 @@ time_t last_time
    while ((dent = readdir(cwd))) {
       char *pidname;
 
+#ifndef LINUX
       if (!dent->d_name)
          continue;
+#endif
       if (!dent->d_name[0])
          continue;
 
