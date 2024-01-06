@@ -1,15 +1,15 @@
 {
 	"className":	"HostLoad",
-	"summary":	"@todo add summary",
+	"summary":	"host load value",
 	"description":	[{
-			"line":	"@todo add description"
+			"line":	"an object of this type represents a single load value"
 		}],
 	"cullPrefix":	"HL",
 	"attributes":	[{
 			"name":	"name",
-			"summary":	"@todo add summary",
+			"summary":	"name of the load variable",
 			"description":	[{
-					"line":	"@todo add description"
+					"line":	"this is the name of the complex variable representing the load value"
 				}],
 			"type":	"lStringT",
 			"flags":	[{
@@ -23,9 +23,9 @@
 				}]
 		}, {
 			"name":	"value",
-			"summary":	"@todo add summary",
+			"summary":	"value of the load variable",
 			"description":	[{
-					"line":	"@todo add description"
+					"line":	"value of the load variable as string"
 				}],
 			"type":	"lStringT",
 			"flags":	[{
@@ -33,17 +33,22 @@
 				}]
 		}, {
 			"name":	"last_update",
-			"summary":	"@todo add summary",
+			"summary":	"date/time of last update",
 			"description":	[{
-					"line":	"@todo add description"
+					"line":	"timestamp (seconds since epoch) when the load value was last updated"
 				}],
 			"type":	"lUlongT",
 			"flags":	[]
 		}, {
 			"name":	"is_static",
-			"summary":	"@todo add summary",
+			"summary":	"is it a static load value?",
 			"description":	[{
-					"line":	"@todo add description"
+					"line":	"true if it is a static load value, else false"
+               }, { "line": "a static load value is a value which is unlikely to change, e.g."
+               }, { "line": " - arch"
+               }, { "line": " - num_proc"
+               }, { "line": " - mem_total"
+               }, { "line": "static load values are spooled and therefore are available even if an execution host is down"
 				}],
 			"type":	"lBoolT",
 			"flags":	[]

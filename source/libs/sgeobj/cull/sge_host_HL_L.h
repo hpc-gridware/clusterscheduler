@@ -40,21 +40,26 @@ extern "C" {
 #endif
 
 /**
-* @brief @todo add summary
+* @brief host load value
 *
-* @todo add description
+* an object of this type represents a single load value
 *
-*    SGE_STRING(HL_name) - @todo add summary
-*    @todo add description
+*    SGE_STRING(HL_name) - name of the load variable
+*    this is the name of the complex variable representing the load value
 *
-*    SGE_STRING(HL_value) - @todo add summary
-*    @todo add description
+*    SGE_STRING(HL_value) - value of the load variable
+*    value of the load variable as string
 *
-*    SGE_ULONG(HL_last_update) - @todo add summary
-*    @todo add description
+*    SGE_ULONG(HL_last_update) - date/time of last update
+*    timestamp (seconds since epoch) when the load value was last updated
 *
-*    SGE_BOOL(HL_is_static) - @todo add summary
-*    @todo add description
+*    SGE_BOOL(HL_is_static) - is it a static load value?
+*    true if it is a static load value, else false
+*    a static load value is a value which is unlikely to change, e.g.
+*     - arch
+*     - num_proc
+*     - mem_total
+*    static load values are spooled and therefore are available even if an execution host is down
 *
 */
 
