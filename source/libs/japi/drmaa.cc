@@ -3565,7 +3565,7 @@ static char *drmaa_time2sge_time(const char *drmaa_time, dstring *diag)
    int century_set = 0, year_set = 0, month_set = 0, day_set = 0;
    int tz_diff_hours, tz_diff_minutes;
    char *p1, *p2, *start;
-   char tz_sign, tmp[128], sge_time[68]; /* We will always build a string 15 + 1 long (yet printf used below does *not* truncate numbers! */
+   char tz_sign[2], tmp[128], sge_time[68]; /* We will always build a string 15 + 1 long (yet printf used below does *not* truncate numbers! */
    time_t now;
    struct tm gmnow;
    struct tm herenow;
@@ -3584,7 +3584,7 @@ static char *drmaa_time2sge_time(const char *drmaa_time, dstring *diag)
    hour = -1;
    minute = -1;
    second = -1;
-   tz_sign = -1;
+   tz_sign[0] = '\0';
    tz_hours = -1;
    tz_minutes = -1;
    start = strdup(drmaa_time);
@@ -3815,14 +3815,14 @@ static char *drmaa_time2sge_time(const char *drmaa_time, dstring *diag)
    /* We use sscanf to deal with the timezone information because of the potential
     * whitespace between the minute/second and the tz info and because the tz
     * info is either all present or all not present. */
-   if (sscanf(p1, "%1s%2d:%2d", &tz_sign, &tz_hours, &tz_minutes) == 3) {
+   if (sscanf(p1, "%1s%2d:%2d", tz_sign, &tz_hours, &tz_minutes) == 3) {
       /* If we read all three fields, check the sign and adjust the hour and
        * minute accordingly. */
-      if (tz_sign == '+') {
+      if (tz_sign[0] == '+') {
          hour += tz_diff_hours - tz_hours;
          minute += tz_diff_minutes - tz_minutes;
       }
-      else if (tz_sign == '-') {
+      else if (tz_sign[0] == '-') {
          hour += tz_diff_hours + tz_hours;
          minute += tz_diff_minutes + tz_minutes;
       }

@@ -118,7 +118,7 @@ enum {
 };
 
 /*
-** Special target numbers for ´complex requests´ which shall be handled
+** Special target numbers for complex requests which shall be handled
 ** directly at the master in order to reduce network traffic and replication
 ** of master lists. They are only useful for SGE_GDI_GET requests
 ** ATTENTION: the numbers below must not collide with the numbers in the enum

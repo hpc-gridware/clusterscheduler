@@ -41,7 +41,7 @@
 bool
 test_err_has_which_error(void) {
    bool ret = true;
-   sge_err_t id;
+   sge_err_t id = SGE_ERR_SUCCESS;
    char buffer[1024];
    const char message[] = "example for an error message";
 

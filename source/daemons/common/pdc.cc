@@ -1763,7 +1763,7 @@ static int psRetrieveOSJobData(void) {
                      }
                   }
                   if (newprocess) {
-                     proc_elem = sge_malloc(sizeof(proc_elem_t));
+                     proc_elem = (proc_elem_t *)sge_malloc(sizeof(proc_elem_t));
                      if (proc_elem == NULL) {
                         sge_free(&procs_begin);
                         DRETURN(0);

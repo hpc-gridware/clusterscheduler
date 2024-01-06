@@ -82,7 +82,7 @@ void eat_token(cull_parse_state *state) {
    scan() scans a string s for valid tokens 
 
    for getting the first token call scan with s = &string
-   s != ÎNULL initializes scan()
+   s != NULL initializes scan()
    s == NULL uses the previous string for scanning
    if scan is called once again it gets the same token as before if there
    was no call to eat_token() otherwise a new token is delivered
