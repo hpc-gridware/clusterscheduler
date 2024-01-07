@@ -102,7 +102,7 @@ add_executable(test_sge_calendar test_sge_calendar.cc
         sge_follow.cc sge_job_verify.cc setup_qmaster.cc sge_manop_qmaster.cc sge_thread_signaler.cc
         ../../common/execution_states.cc ../../common/sge_options.cc ../../common/sig_handlers.cc ../../common/usage.cc)
 target_include_directories(test_sge_calendar PRIVATE "./")
-target_link_libraries(test_sge_calendar PRIVATE daemonscommon spool spoolloader spoold
+target_link_libraries(test_sge_calendar PRIVATE daemonscommon ${SPOOLING_LIBS}
         sched mir evc evm sgeobj gdi cull comm uti commlists ${SGE_TOPO_LIB} ${SGE_LIBS})
 
 if(INSTALL_SGE_TEST)

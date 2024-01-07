@@ -154,7 +154,9 @@ test_mt_consumer_producer(void) {
    const char *string;
    int i;
    char last = '\0';
+#if 0
    int switches = 0;
+#endif
 
    DENTER(TOP_LAYER);
 
@@ -199,7 +201,9 @@ test_mt_consumer_producer(void) {
    string = sge_dstring_get_string(&global.sequence);
    for (i = 0; i < strlen(string); i++) {
       if (last != string[i]) {
+#if 0
          switches++;
+#endif
       }
       last = string[i];
    }
