@@ -1,71 +1,88 @@
 {
 	"className":	"Event",
-	"summary":	"@todo add summary",
+	"summary":	"Event Type",
 	"description":	[{
-			"line":	"@todo add description"
+			     "line":	"An object of this type represents a single event."
+         }, { "line":   "An event has a key and a value"
+         }, { "line":   "The key can consist of multiple integer or string fields, e.g."
+         }, { "line":   "job id, array task id, pe task id"
+         }, { "line":   "The value represents the new version of data."
+         }, { "line":   "It can be a list of objects or an individual object"
+         }, { "line":   "An event has a unique serial number."
 		}],
 	"cullPrefix":	"ET",
 	"attributes":	[{
 			"name":	"number",
-			"summary":	"@todo add summary",
+			"summary":	"serial number",
 			"description":	[{
-					"line":	"@todo add description"
+					     "line":	"A unique serial number."
+					}, { "line":	"It is used to acknowledge receipt of a list of events"
+					}, { "line":	"(up to a specific event represented by the serial number)"
+					}, { "line":	"and also to detect inconsistencies in the event protocol, e.g. a missing event."
 				}],
 			"type":	"lUlongT",
 			"flags":	[]
 		}, {
 			"name":	"timestamp",
-			"summary":	"@todo add summary",
+			"summary":	"event generation time",
 			"description":	[{
-					"line":	"@todo add description"
+					"line":	"Date and time (seconds since epoch) when the event was generated."
 				}],
 			"type":	"lUlongT",
 			"flags":	[]
 		}, {
 			"name":	"type",
-			"summary":	"@todo add summary",
+			"summary":	"event type",
 			"description":	[{
-					"line":	"@todo add description"
+					     "line":	"The type of the event. Values of enumeration type ev_event (libs/sgeobj/sge_event.h), e.g."
+					}, { "line":	"  - sgeE_ADMIN_HOST_LIST"
+					}, { "line":	"  - sgeE_ADMIN_HOST_ADD"
+					}, { "line":	"  - sgeE_ADMIN_HOST_DEL"
+					}, { "line":	"  - sgeE_ADMIN_HOST_MOD"
+					}, { "line":	"  - sgeE_CALENDAR_LIST"
+					}, { "line":	"  - ..."
 				}],
 			"type":	"lUlongT",
 			"flags":	[]
 		}, {
 			"name":	"intkey",
-			"summary":	"@todo add summary",
+			"summary":	"first integer key",
 			"description":	[{
-					"line":	"@todo add description"
+					"line":	"An int key for use by a specific event type, e.g. job id in a sgeE_JOB_ADD event."
 				}],
 			"type":	"lUlongT",
 			"flags":	[]
 		}, {
 			"name":	"intkey2",
-			"summary":	"@todo add summary",
+			"summary":	"second integer key",
 			"description":	[{
-					"line":	"@todo add description"
+					"line":	"A second int key for use by a specific event type, e.g. ja_task id in a sgeE_JATASK_MOD event."
 				}],
 			"type":	"lUlongT",
 			"flags":	[]
 		}, {
 			"name":	"strkey",
-			"summary":	"@todo add summary",
+			"summary":	"first string key",
 			"description":	[{
-					"line":	"@todo add description"
+					"line":	"A string key for use by a specific event type, e.g. the complex variable name in a sgeE_CENTRY_DEL event."
 				}],
 			"type":	"lStringT",
 			"flags":	[]
 		}, {
 			"name":	"strkey2",
-			"summary":	"@todo add summary",
+			"summary":	"second string key",
 			"description":	[{
-					"line":	"@todo add description"
+					     "line":	"A second string key for use by a specific event type, e.g."
+					}, { "line":	"in a sgeE_QINSTANCE_ADD event the first key is the cluster queue name, the second key is the host name"
 				}],
 			"type":	"lStringT",
 			"flags":	[]
 		}, {
 			"name":	"new_version",
-			"summary":	"@todo add summary",
+			"summary":	"new version of the data",
 			"description":	[{
-					"line":	"@todo add description"
+					     "line":	"A list containing the new object(s). The list type depends on the event type."
+					}, { "line":	"@todo we could split this into two fields, one for lists and one for individual objects"
 				}],
 			"type":	"lListT",
 			"subClassName":	"ANY",

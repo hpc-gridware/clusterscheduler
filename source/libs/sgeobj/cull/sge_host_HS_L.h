@@ -40,15 +40,16 @@ extern "C" {
 #endif
 
 /**
-* @brief @todo add summary
+* @brief scaling of host load values
 *
-* @todo add description
+* used for scaling host load values
+* per load variable a scaling factor can be defined
 *
-*    SGE_STRING(HS_name) - @todo add summary
-*    @todo add description
+*    SGE_STRING(HS_name) - load variable name
+*    The Name of the load variable / the complex variable.
 *
-*    SGE_DOUBLE(HS_value) - @todo add summary
-*    @todo add description
+*    SGE_DOUBLE(HS_value) - scaling factor
+*    A scaling factor as double value. Load values are multiplied by this factor.
 *
 */
 

@@ -1,15 +1,16 @@
 {
 	"className":	"HostScaling",
-	"summary":	"@todo add summary",
+	"summary":	"scaling of host load values",
 	"description":	[{
-			"line":	"@todo add description"
+			     "line":	"used for scaling host load values"
+         }, { "line":   "per load variable a scaling factor can be defined"
 		}],
 	"cullPrefix":	"HS",
 	"attributes":	[{
 			"name":	"name",
-			"summary":	"@todo add summary",
+			"summary":	"load variable name",
 			"description":	[{
-					"line":	"@todo add description"
+					"line":	"The Name of the load variable / the complex variable."
 				}],
 			"type":	"lStringT",
 			"flags":	[{
@@ -19,9 +20,9 @@
 				}]
 		}, {
 			"name":	"value",
-			"summary":	"@todo add summary",
+			"summary":	"scaling factor",
 			"description":	[{
-					"line":	"@todo add description"
+					"line":	"A scaling factor as double value. Load values are multiplied by this factor."
 				}],
 			"type":	"lDoubleT",
 			"flags":	[{
