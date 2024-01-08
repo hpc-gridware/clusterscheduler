@@ -54,7 +54,7 @@ function(build_third_party 3rdparty_build_path 3rdparty_install_path)
       GIT_REPOSITORY https://github.com/jemalloc/jemalloc.git
       GIT_TAG 5.3.0
       CONFIGURE_COMMAND ./autogen.sh --prefix ${3rdparty_install_path}
-                        --disable-shared
+                        --disable-shared --disable-initial-exec-tls
       BUILD_IN_SOURCE TRUE
       BUILD_ALWAYS FALSE
       BUILD_COMMAND make)
