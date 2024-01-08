@@ -714,6 +714,7 @@ spool_context_create_rule(lList **answer_list, lListElem *context,
       lSetRef(ep, SPR_transaction_func, (void *)transaction_func);
       lSetRef(ep, SPR_list_func, (void *)list_func);
       lSetRef(ep, SPR_read_func, (void *)read_func);
+      lSetRef(ep, SPR_read_keys_func, (void *)read_keys_func);
       lSetRef(ep, SPR_write_func, (void *)write_func);
       lSetRef(ep, SPR_delete_func, (void *)delete_func);
       lSetRef(ep, SPR_validate_func, (void *)validate_func);

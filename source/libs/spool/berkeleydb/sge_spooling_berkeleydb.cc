@@ -746,7 +746,6 @@ spool_berkeleydb_default_read_func(lList **answer_list,
    DENTER(BDB_LAYER);
 
    info = (bdb_info)lGetRef(rule, SPR_clientdata);
-
    if (info == NULL) {
       answer_list_add_sprintf(answer_list, STATUS_EUNKNOWN, 
                               ANSWER_QUALITY_WARNING, 
@@ -788,17 +787,24 @@ spool_berkeleydb_default_read_func(lList **answer_list,
             /* no break, further handling in default branch */
          default:
             ep = spool_berkeleydb_read_object(answer_list, info, database, key);
+/* do not do any validation
+ * this function is only called from spooledit dump for reading individual objects
+ * validation will therefore not work as it needs further objects, e.g.
+ * for validating a qinstance the complex list is required
+ */
+#if 0
             if (ep != NULL) {
 #pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Wpedantic"
                spooling_validate_func validate = 
                   (spooling_validate_func)(void *)lGetRef(rule, SPR_validate_func);
 #pragma GCC diagnostic pop
-               bool ret = validate(answer_list, type, rule, ep, object_type);
-               if (!ret) {
+               bool local_ret = validate(answer_list, type, rule, ep, object_type);
+               if (!local_ret) {
                   lFreeElem(&ep);
                }
             }
+#endif
             break;
       }
    }
