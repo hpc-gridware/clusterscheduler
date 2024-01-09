@@ -1,6 +1,3 @@
 # Introduction
 
-
 blah
-
-

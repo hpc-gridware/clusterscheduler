@@ -1,23 +1,33 @@
 % common settings for generating manuals
 % inspired from https://jdhao.github.io/2019/05/30/markdown2pdf_pandoc/
 
+\usepackage[most]{tcolorbox}
+\usepackage{listings}
+
+% general setting for listings
+\lstset{                  
+  columns=fixed,
+  basicstyle=\ttfamily,
+  frame=single,
+  keepspaces=true,
+  showstringspaces=false,
+  numbers=none}
+
 % change background color for inline code in
 % markdown files. The following code does not work well for
 % long text as the text will exceed the page boundary
-\usepackage[most]{tcolorbox}
 
 \definecolor{bgcolor}{HTML}{E0E0E0}
+\definecolor{bgcolor}{RGB}{224,215,188}
 \let\oldtexttt\texttt
 
 \renewcommand{\texttt}[1]{
-  \colorbox{bgcolor}{\oldtexttt{#1}}
-  }
-
-
+    \colorbox{bgcolor}{\oldtexttt{#1}}
+}
 
 % change style of quote, see also https://tex.stackexchange.com/a/436253/114857
 \definecolor{linequote}{RGB}{224,215,188}
-\definecolor{backquote}{RGB}{249,245,233}
+\definecolor{backquote}{RGB}{255,242,204}
 \definecolor{bordercolor}{RGB}{221,221,221}
 
 % change left border: https://tex.stackexchange.com/a/475716/114857
@@ -28,6 +38,7 @@
     size=minimal,
     left=10pt,
     top=5pt,
+    bottom=5pt,
     frame hidden,
     boxrule=0pt,
     sharp corners=all,
@@ -38,7 +49,6 @@
 
 % redefine quote environment to use the myquote environment, see https://tex.stackexchange.com/a/337587/114857
 \renewenvironment{quote}{\begin{myquote}}{\end{myquote}}
-
 
 \usepackage{fancyvrb,newverbs}
 \usepackage[top=2cm, bottom=1.5cm, left=2cm, right=2cm]{geometry}
@@ -82,4 +92,6 @@
 % make sure a section starts on a new page
 \usepackage{titlesec}
 \newcommand{\sectionbreak}{\clearpage}
+
+
 

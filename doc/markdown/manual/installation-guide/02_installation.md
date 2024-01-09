@@ -1,0 +1,620 @@
+# Installation
+
+Once you have gathered the necessary information as outlined in previous chapters, you may proceed with the 
+installation process for xxQS_NAMExx.
+
+## Download Product Packages
+
+For clusters intended for production environments, it is highly recommended to use pre-built packages by xxQS_COMPANY_NAMExx.
+xxQS_COMPANY_NAMExx ensures that all source code components used to build the packages are compatible with each other. 
+The packages are built and carefully tested.
+
+xxQS_COMPANY_NAMExx offers patch releases for pre-built packages, along with support services to ensure that productive
+clusters receive the latest fixes and security enhancements. Professional engineers are available to provide
+assistance in case of any questions.
+
+Additionally, the packages from xxQS_COMPANY_NAMExx contain product enhancements that would not be available in packages 
+that you built yourself.
+
+To receive a quote, please contact us at [[xxQS_COMPANY_MAILxx]{.underline}](mail:xxQS_COMPANY_MAILxx).
+
+The core xxQS_NAMExx code is available on GitHub. You can clone the required repositories and build the core product 
+yourself, or use the nightly build. Please note that we do not provide support for these packages. It is not 
+recommended to use the nightly build for production systems as it contains untested code that is still in development.
+
+For a product installation you need either a set of *tar.gz* files. Required are:
+
+* the common package containing architecture independent files (the file names *oge-`<version>`-common.\** e.g. *oge-9.0.0-bin-common.tar.gz*)
+
+* one architecture specific package for each supported compute platform (files with the names *oge-`<version>`-bin-`<os>`-`<platform>`.\** e.g. *oge-9.0.0-bin-linux-amd64.tar.gz*)
+
+* the oge-checksum.txt file
+
+Once you have downloaded all packages, you can test and install them at the designated installation location. 
+Please note in the instructions below the placeholder `<install-dir>` refers to the absolute path of the 
+installation directory, while `<download-dir>` refers to the directory containing the downloaded files.
+
+1. Copy the packages from your download location into the installation directory
+
+    ```
+    % cp <download-dir>/oge-* <install-dir>
+    ```
+
+2. Check if the downloaded files where downloaded correctly by calculating the MD5 checksum. 
+
+    ```
+    % cd <install-dir>
+    % md5 oge-*
+    ...
+    % cat oge-checksum.txt
+    ...
+    ```
+   
+    Compare the output of the md5 command with that of the cat command. If one or more checksums are not correct then 
+    re-download the faulty files and repeat the previous steps, otherwise continue.
+
+3. Unpack the packages as root set the SGE_ROOT variable manually and execute the script *util/setfileperm.sh* to verify and adapt ownership and file permissions of the unpacked files.
+
+    ```
+    % su
+    # cd <install-dir>
+    # tar xfz oge-*.tar.gz
+    # SGE_ROOT=<install-dir>
+    # util/setfileperm.sh $SGE_ROOT
+    ```
+   
+4. If your `<install-dir>` is located on a shared filesystem available on all hosts in the cluster then you can start the installation process.
+
+## Manual Installation
+
+This sections covers the manual installation process on the command line on Linux hosts. Note the prerequisites are 
+required as outlined in previous chapters. If the hostname setup, usernames and service configuration are correct 
+for all hosts that you intend to include in you cluster, then you can continue with the installation the master service.
+
+### Installation of the Master Service
+
+During the execution the master's installation procedure following steps are processed.
+
+* a cell directory will be created that will contain files that are read by all service components as well as client applications communicating with the service within that cell.
+
+* next installation steps for other services are prepared (e.g. admin hosts are defined that will later on be allowed to run execution services).
+
+* a default configuration is created and user specific changes are applied.
+
+* the master service is started and basic tests of its functionality are executed.
+
+* the master service is integrated into the launch environment of the operating system so that it is automatically started at boot time.
+
+Here are the steps required to complete the installation.
+
+1. Log in as user root on the master host.
+
+2. Set the `$SGE_ROOT` environment variable. That variable has to point to the installation directory where all files have been installed that where part of the product packages. Then switch into that directory.
+
+   ```
+   # export SGE_ROOT=<install_dir>
+   # cd $SGE_ROOT
+   ```
+   
+3. Start the installation process by executing the `install_qmaster` script and read and follow the given instructions.
+
+   ```
+   # ./install_qmaster
+   Welcome to the Grid Engine installation
+   ---------------------------------------
+ 
+   Grid Engine qmaster host installation
+   -------------------------------------
+ 
+   Before you continue with the installation please read these hints:
+ 
+      - Your terminal window should have a size of at least
+        80x24 characters
+   
+      - The INTR character is often bound to the key Ctrl-C.
+        The term >Ctrl-C< is used during the installation if you
+        have the possibility to abort the installation
+   
+   The qmaster installation procedure will take approximately 5-10 minutes.
+   
+   Hit <RETURN> to continue >>
+   ```
+
+4. Admin User: Either accept the suggested admin user or reject it. If you reject the suggestion then you can select a different one.
+
+   ```
+   Grid Engine admin user account
+   ------------------------------ 
+   
+   The current directory
+   
+      /home/ebablick/OGE/oge1/inst
+   
+   is owned by user
+   
+      <admin_user>
+   
+   If user >root< does not have write permissions in this directory on *all*
+   of the machines where Grid Engine will be installed (NFS partitions not
+   exported for user >root< with read/write permissions) it is recommended to
+   install Grid Engine that all spool files will be created under the user id
+   of user >admin_user<.
+
+   IMPORTANT NOTE: The daemons still have to be started by user >root<.
+
+   Do you want to install Grid Engine as admin user >admin_user< (y/n) [y] >> 
+   ```
+   
+5. Installation Location: Specify the installation directory. The suggested default is the directory you set in installation step 2.
+
+   ```
+   Checking $SGE_ROOT directory
+   ---------------------------- 
+   
+   The Grid Engine root directory is:
+   
+      $SGE_ROOT = <installation_directory>
+   
+   If this directory is not correct (e.g. it may contain an automounter
+   prefix) enter the correct path to this directory or hit <RETURN>
+   to use default [<installation_directory>] >> 
+   ```
+
+6. Master Service Port: Specify which service port should be used for the master service. If you have an entry in */etc/services* or if a directory service is available that provides that information for `sge_qmaster` then the installer will show you the configured port number and use that as service port. Alternatively you can specify a different port number via shell environment.
+
+   ```
+   Grid Engine TCP/IP communication service
+   ----------------------------------------
+   
+   The port for sge_qmaster is currently set as service.
+   
+       sge_qmaster service set to port 6444
+ 
+   Now you have the possibility to set/change the communication ports by using the
+   >shell environment< or you may configure it via a network service, configured
+   in local >/etc/service<, >NIS< or >NIS+<, adding an entry in the form
+   
+       sge_qmaster <port_number>/tcp
+  
+   to your services database and make sure to use an unused port number.
+  
+   How do you want to configure the Grid Engine communication ports?
+   
+   Using the >shell environment<:                           [1]
+   
+   Using a network service like >/etc/service<, >NIS/NIS+<: [2]
+   
+   (default: 2) >> 
+   ```
+
+7. Execution Service Port: Specify which service port should be used for the execution service. If you have an entry in */etc/services* or if a directory service is available that provides that information for `sge_execd` then the installer will show you the configured port number and use that as service port. Alternatively you can specify a different port number via shell environment.
+
+   ```
+   Grid Engine TCP/IP communication service
+   ----------------------------------------
+   
+   The port for sge_execd is currently set as service.
+   
+       sge_execd service set to port 6445
+   
+   Now you have the possibility to set/change the communication ports by using the
+   >shell environment< or you may configure it via a network service, configured
+   in local >/etc/service<, >NIS< or >NIS+<, adding an entry in the form
+  
+       sge_execd <port_number>/tcp
+  
+   to your services database and make sure to use an unused port number.
+  
+   How do you want to configure the Grid Engine communication ports?
+   
+   Using the >shell environment<:                           [1]
+   
+   Using a network service like >/etc/service<, >NIS/NIS+<: [2]
+   
+   (default: 2) >> 
+   ```
+
+8. Cluster Cell: Either confirm the *default* cell name for the cluster or specify a different name that does not collide with the cell names of other clusters that you might have installed previously.
+
+   ```
+   Grid Engine cells
+   -----------------
+   
+   Grid Engine supports multiple cells. 
+   
+   If you are not planning to run multiple Grid Engine clusters or if you don't
+   know yet what is a Grid Engine cell it is safe to keep the default cell name
+   
+      default
+   
+   If you want to install multiple cells you can enter a cell name now.
+   
+   The environment variable
+   
+      $SGE_CELL=<your_cell_name>
+   
+   will be set for all further Grid Engine commands.
+   
+   Enter cell name [default] >> 
+   ```
+
+9. Unique Cluster Name: Specify a unique cluster name that does not collide with the cluster names of other clusters that you might have installed previously.
+
+   ```
+   Unique cluster name
+   -------------------
+   
+   The cluster name uniquely identifies a specific Sun Grid Engine cluster.
+   The cluster name must be unique throughout your organization. The name 
+   is not related to the SGE cell.
+   
+   The cluster name must start with a letter ([A-Za-z]), followed by letters, 
+   digits ([0-9]), dashes (-) or underscores (_).
+   
+   Enter new cluster name or hit <RETURN>
+   to use default [p6444] >> 
+   ``` 
+
+10. Master Spool Directory: Specify the spooling location for the master service. The suggested default will be a directory with your specified cell name within the installation directory.
+
+    ```
+    Grid Engine qmaster spool directory
+    -----------------------------------
+    
+    The qmaster spool directory is the place where the qmaster daemon stores
+    the configuration and the state of the queuing system.
+    
+    The admin user >ebablick< must have read/write access
+    to the qmaster spool directory.
+    
+    If you will install shadow master hosts or if you want to be able to start
+    the qmaster daemon on other hosts (see the corresponding section in the
+    Grid Engine Installation and Administration Manual for details) the account
+    on the shadow master hosts also needs read/write access to this directory.
+    
+    Enter a qmaster spool directory [<installation_directory>/<cell_name>] >> 
+    ```
+
+11. Hostname Resolving: Specify if all hosts that should participate in the cluster are part of one single domain.
+
+    ```
+    Select default Grid Engine hostname resolving method
+    ---------------------------------------------------- 
+    
+    Are all hosts of your cluster in one DNS domain? If this is
+    the case the hostnames 
+  
+       >hostA< and >hostA.foo.com<
+    
+    would be treated as equal, because the DNS domain name >foo.com<
+    is ignored when comparing hostnames. 
+   
+    Are all hosts of your cluster in a single DNS domain (y/n) [y] >> 
+    ```
+
+12. Creation of Master Spooling Location: The spool area will then be prepared.
+
+    ```
+    Making directories
+    ------------------
+    
+    creating directory: <install_dir>/<cell_name>/spool/qmaster
+    creating directory: <install_dir>/<cell_name>/spool/qmaster/job_scripts
+    Hit <RETURN> to continue >> 
+    ```
+
+13. Choose Spooling Method: Select classic or BDB spooling. As part of this step the spooling file will be created.
+
+    ```
+    Setup spooling
+    --------------
+    Your SGE binaries are compiled to link the spooling libraries
+    during runtime (dynamically). So you can choose between Berkeley DB 
+    spooling and Classic spooling method.
+    Please choose a spooling method (berkeleydb|classic) [classic] >>
+    ```
+
+14. Job Observation via GID's: Specify an available group ID range.
+
+    ```
+    Grid Engine group id range
+    --------------------------
+  
+    When jobs are started under the control of Grid Engine an additional group id
+    is set on platforms which do not support jobs. This is done to provide maximum
+    control for Grid Engine jobs.
+    
+    This additional UNIX group id range must be unused group id's in your system.
+    Each job will be assigned a unique id during the time it is running.
+    Therefore you need to provide a range of id's which will be assigned
+    dynamically for jobs.
+  
+    The range must be big enough to provide enough numbers for the maximum number
+    of Grid Engine jobs running at a single moment on a single host. E.g. a range
+    like >20000-20100< means, that Grid Engine will use the group ids from
+    20000-20100 and provides a range for 100 Grid Engine jobs at the same time
+    on a single host.
+  
+    You can change at any time the group id range in your cluster configuration.
+  
+    Please enter a range [20000-20100] >> 
+    ```
+
+15. Execution Service Spooling Location: Specify a default spooling location that should be used by all execution nodes.
+
+    ```
+    Grid Engine cluster configuration
+    ---------------------------------
+    
+    Please give the basic configuration parameters of your Grid Engine
+    installation:
+  
+       <execd_spool_dir>
+  
+    The pathname of the spool directory of the execution hosts. User >ebablick<
+    must have the right to create this directory and to write into it. 
+  
+    Default: [<install_dir>/<cell_name>/spool] >> 
+    ```
+
+16. Administrator Mail: Specify the mail address that should receive administrator mail.
+
+    ```
+    Grid Engine cluster configuration (continued)
+    --------------------------------------------- 
+    
+    <administrator_mail>
+  
+    The email address of the administrator to whom problem reports are sent.
+  
+    It is recommended to configure this parameter. You may use >none<
+    if you do not wish to receive administrator mail.
+    
+    Please enter an email address in the form >user@foo.com<.
+    
+    Default: [none] >> 
+    ```
+
+17. Spooling Data will be written: The shown messages during that process depend on the selected spooling method.
+
+    ```
+    Creating local configuration
+    ----------------------------
+    Creating >act_qmaster< file
+    Adding default complex attributes
+    Adding default parallel environments (PE)
+    Adding SGE default usersets
+    Adding >sge_aliases< path aliases file
+    Adding >qtask< qtcsh sample default request file
+    Adding >sge_request< default submit options file
+    Creating >sgemaster< script
+    Creating >sgeexecd< script
+    Creating settings files for >.profile/.cshrc<
+   
+    Hit <RETURN> to continue >> 
+    ```
+
+18. Autostart: Select if the master service should be integrated into the launch environment of the OS.
+
+    ```
+    qmaster startup script
+    ----------------------
+    
+    We can install the startup script that will
+    start qmaster at machine boot (y/n) [y] >> 
+    ```
+
+19. Service Start: Now the master service is started.
+
+    ```
+    Grid Engine qmaster startup
+    --------------------------- 
+    
+    Starting qmaster daemon. Please wait ...
+       starting sge_qmaster
+    Hit <RETURN> to continue >> 
+    ```
+
+20. Host Permissions: Select the hosts that should later on run the execution service. Those host will be administration hosts and submit hosts automatically.
+
+    ```
+    Adding Grid Engine hosts
+    ------------------------
+    
+    Please now add the list of hosts, where you will later install your execution
+    daemons. These hosts will be also added as valid submit hosts.
+    
+    Please enter a blank separated list of your execution hosts. You may
+    press <RETURN> if the line is getting too long. Once you are finished
+    simply press <RETURN> without entering a name.
+    
+    You also may prepare a file with the hostnames of the machines where you plan
+    to install Grid Engine. This may be convenient if you are installing Grid
+    Engine on many hosts. 
+    
+    Do you want to use a file which contains the list of hosts (y/n) [n] >> 
+    ``` 
+
+    If you have no file available you can also add those hostnames manually:
+
+    ```
+    Adding admin and submit hosts
+    -----------------------------
+    
+    Please enter a blank seperated list of hosts. 
+    
+    Stop by entering <RETURN>. You may repeat this step until you are
+    entering an empty list. You will see messages from Grid Engine
+    when the hosts are added.
+    
+    Host(s): 
+    ```
+
+    Optionally you also add your shadow hosts now as administrative hosts:
+ 
+    ```
+    Adding Grid Engine shadow hosts
+    -------------------------------
+    
+    Please now add the list of hosts, where you will later install your shadow
+    daemon. 
+    
+    Please enter a blank separated list of your execution hosts. You may
+    press <RETURN> if the line is getting too long. Once you are finished
+    simply press <RETURN> without entering a name. 
+    
+    You also may prepare a file with the hostnames of the machines where you plan
+    to install Grid Engine. This may be convenient if you are installing Grid
+    Engine on many hosts. 
+    
+    Do you want to use a file which contains the list of hosts (y/n) [n] >> 
+    ```
+
+    Also, this can be done step by step if you have no prepared file with hostnames.
+
+    ```
+    Adding admin hosts
+    ------------------
+    
+    Please enter a blank seperated list of hosts.
+    
+    Stop by entering <RETURN>. You may repeat this step until you are
+    entering an empty list. You will see messages from Grid Engine
+    when the hosts are added.
+    
+    Host(s): 
+    ```
+
+21. Default Configuration Steps: Depending on you host setup and configuration steps some default configuration objects will be created for you cluster.
+
+    ```
+    Creating the default <all.q> queue and <allhosts> hostgroup
+    -----------------------------------------------------------
+   
+    root@<hostname>.<domainname> added "@allhosts" to host group list
+    root@<hostname>.<domainname> added "all.q" to cluster queue list
+   
+    Hit <RETURN> to continue >> 
+    ```
+
+22. Scheduler Configuration: Choose one of the predefined templates for the scheduler configuration.
+
+    ```
+    Scheduler Tuning
+    ----------------
+    
+    The details on the different options are described in the manual. 
+    
+    Configurations
+    --------------
+    1) Normal
+             Fixed interval scheduling, report limited scheduling information,
+             actual + assumed load
+   
+    2) High
+             Fixed interval scheduling, report limited scheduling information,
+             actual load
+   
+    3) Max
+             Immediate Scheduling, report no scheduling information,
+             actual load
+ 
+    Enter the number of your preferred configuration and hit <RETURN>! 
+    Default configuration is [1] >> 
+    ```
+
+23. Installation Summary
+
+    ```
+    Using Grid Engine
+    -----------------
+    
+    You should now enter the command:
+   
+       source <installation_directory>/<cell_name>/common/settings.csh
+    
+    if you are a csh/tcsh user or
+    
+       # . <installation_directory>/<cell_name>/common/settings.sh
+    
+    if you are a sh/ksh user. 
+    
+    This will set or expand the following environment variables:
+   
+       - $SGE_ROOT         (always necessary)
+       - $SGE_CELL         (if you are using a cell other than >default<)
+       - $SGE_CLUSTER_NAME (always necessary)
+       - $SGE_QMASTER_PORT (if you haven't added the service >sge_qmaster<)
+       - $SGE_EXECD_PORT   (if you haven't added the service >sge_execd<)
+       - $PATH/$path       (to find the Grid Engine binaries)
+       - $MANPATH          (to access the manual pages)
+  
+    Hit <RETURN> to see where Grid Engine logs messages >> 
+    ```
+ 
+    Note down the details how you can prepare to use the cluster.
+ 
+    ```
+    Grid Engine messages
+    --------------------
+    
+    Grid Engine messages can be found at:
+    
+       /tmp/qmaster_messages (during qmaster startup)
+       /tmp/execd_messages   (during execution daemon startup)
+    
+    After startup the daemons log their messages in their spool directories.
+  
+       Qmaster:     <install_dir>/<cell_name>/spool/qmaster/messages
+       Exec daemon: <execd_spool_dir>/<hostname>/messages
+   
+ 
+    Grid Engine startup scripts
+    ---------------------------
+    
+    Grid Engine startup scripts can be found at:
+    
+       <install_dir>/<cell_name>/common/sgemaster (qmaster)
+       <install_dir>/<cell_name>/common/sgeexecd (execd)
+ 
+    Do you want to see previous screen about using Grid Engine again (y/n) [n] >>
+    ```
+   
+    Should you have seen error messages during the installation then the mentioned message files will contain more details about them.
+ 
+    ```
+    Your Grid Engine qmaster installation is now completed
+    ------------------------------------------------------ 
+    
+    Please now login to all hosts where you want to run an execution daemon
+    and start the execution host installation procedure.
+    
+    If you want to run an execution daemon on this host, please do not forget
+    to make the execution host installation in this host as well.
+    
+    All execution hosts must be administrative hosts during the installation.
+    All hosts which you added to the list of administrative hosts during this
+    installation procedure can now be installed. 
+    
+    You may verify your administrative hosts with the command
+    
+       # qconf -sh
+   
+    and you may add new administrative hosts with the command
+    
+       # qconf -ah <hostname>
+    ```
+ 
+    You are reaching the end of the manual installation.
+
+## Automatic Installation
+
+## Backup and Restore
+
+## Upgrading Open Grid Engine
+
+## Testing the Installation/Upgrade
+
+## Troubleshooting
+
+

@@ -5,7 +5,7 @@ function(build_markdown_manual file title)
             DEPENDS ${CMAKE_CURRENT_SOURCE_DIR}/*.md
                     ${CMAKE_CURRENT_SOURCE_DIR}/../titlepage.md
                     ${CMAKE_CURRENT_SOURCE_DIR}/../copyright.md
-                    ${CMAKE_CURRENT_SOURCE_DIR}/../definitions.md
+                    ${CMAKE_CURRENT_SOURCE_DIR}/../typographic_conventions.md
                     ${CMAKE_CURRENT_SOURCE_DIR}/../head.tex
             COMMAND ${CMAKE_SOURCE_DIR}/doc/scripts/pandoc_manual.sh ${CMAKE_CURRENT_SOURCE_DIR}
                     ${CMAKE_CURRENT_BINARY_DIR} ${file} ${title} ${CMAKE_PROJECT_VERSION} ${DATETIME}
