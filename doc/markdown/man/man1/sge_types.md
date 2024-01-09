@@ -23,21 +23,21 @@ These types are used for defining xxQS_NAMExx configuration:
 ## **calendar_name**
 
 A calendar name is the name of a xxQS_NAMExx calendar described in
-*calendar_conf* (5).
+*calendar_conf*(5).
 
 *calendar_name* := *object_name*
 
 ## **ckpt_name**
 
 A "ckpt_name" is the name of a xxQS_NAMExx checkpointing interface
-described in *checkpoint* (5).
+described in *checkpoint*(5).
 
 *ckpt_name* := *object_name*
 
 ## **complex_name**
 
 A complex name is the name of a xxQS_NAMExx resource attribute described
-in *complex* (5).
+in *complex*(5).
 
 *complex_name* := *object_name*
 
@@ -50,7 +50,7 @@ A host identifier can be either a host name or a host group name.
 ## **hostgroup_name**
 
 A host group name is the name of a xxQS_NAMExx host group described in
-*hostgroup* (5). Note, to allow host group names easily be differed from
+*hostgroup*(5). Note, to allow host group names easily be differed from
 host names a "@" prefix is used.
 
 *hostgroup_name* := @*object_name*
@@ -61,7 +61,7 @@ A host name is the official name of a host node. Host names with a
 domain specification such as "gridmaster.sun.com" are called
 fully-qualified host names, whereas host names like "gridmaster" are
 called short host names. Note, there are the install time parameters
-default_domain and ignore_fqdn (see *bootstrap* (5)) which affect how
+default_domain and ignore_fqdn (see *bootstrap*(5)) which affect how
 xxQS_NAMExx deals with host names in general.
 
 ## **jsv_url**
@@ -101,21 +101,21 @@ in bytes.
 ## **pe_name**
 
 A "pe_name" is the name of a xxQS_NAMExx parallel environment described
-in *sge_pe* (5).
+in *sge_pe*(5).
 
 *pe_name* := *object_name*
 
 ## **project_name**
 
 A project name is the name of a xxQS_NAMExx project described in
-*project* (5).
+*project*(5).
 
 *project_name* := *object_name*
 
 ## **queue_name**
 
 A queue name is the name of a xxQS_NAMExx queue described in
-*queue_conf* (5).
+*queue_conf*(5).
 
 *queue_name * := *object_name*
 
@@ -131,15 +131,15 @@ and 1 second).
 
 ## **user_name**
 
-A user name can be the name of a *login* (1) user or of the xxQS_NAMExx
-user object described in *user* (5).
+A user name can be the name of a *login*(1) user or of the xxQS_NAMExx
+user object described in *user*(5).
 
 *user_name* := *object_name*
 
 ## **userset_name**
 
 A user set name is the name of an xxQS_NAMExx access list or department
-described in *access_list* (5).
+described in *access_list*(5).
 
 *userset_name* := *object_name*
 
@@ -247,7 +247,7 @@ A wildcard hostgroup specification (*wc_hostgroup*) is a wildcard
 expression which might match one or more hostgroups. The first character
 of that string is always an at-character ('@').
 
-More information concerning hostgroups can be found in *hostgroup* (5)
+More information concerning hostgroups can be found in *hostgroup*(5)
 
     e.g.
     @*	all hostgroups in the cluster
@@ -285,7 +285,7 @@ the following forms:
 
 If present, the *task_range* restricts the effect of the *qmod*
 operation to the array job task range specified as suffix to the job id
-(see the **-t** option to *qsub* (1) for further details on array jobs).
+(see the **-t** option to *qsub*(1) for further details on array jobs).
 
 ## **wc_qdomain**
 
@@ -401,7 +401,7 @@ wc_pe_name := pe_name \| pattern
 Parallel programming environment (PE) to select for an AR. The range
 descriptor behind the PE name specifies the number of parallel processes
 to be run. xxQS_NAMExx will allocate the appropriate resources as
-available. The *xxqs_name_sxx_pe* (5) manual page contains information
+available. The *xxqs_name_sxx_pe*(5) manual page contains information
 about the definition of PEs and about how to obtain a list of currently
 valid PEs.
 
@@ -451,8 +451,8 @@ Use of this option may cause unexpected results if the clocks of the
 hosts in the xxQS_NAMExx pool are out of sync. Also, the proper behavior
 of this option very much depends on the correct setting of the
 appropriate timezone, e.g. in the TZ environment variable (see
-*date* (1) for details), when the xxQS_NAMExx daemons
-*xxqs_name_sxx_qmaster* (8) and *xxqs_name_sxx_execd* (8) are invoked.
+*date*(1) for details), when the xxQS_NAMExx daemons
+*xxqs_name_sxx_qmaster*(8) and *xxqs_name_sxx_execd*(8) are invoked.
 
 ## **name**
 
@@ -461,7 +461,7 @@ contain "\\n", "\\t", "\\r", "/", ":", "@", "\\", "\*", or "?".
 
 # SEE ALSO
 
-*qacct* (1), *qconf* (1), *qquota* (1), *qsub* (1), *qrsub* (1)
+*qacct*(1), *qconf*(1), *qquota*(1), *qsub*(1), *qrsub*(1)
 
 # COPYRIGHT
 

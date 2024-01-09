@@ -15,7 +15,7 @@ xxqs_name_sxx_complex - xxQS_NAMExx complexes configuration file format
 *Complex* reflects the format of the xxQS_NAMExx complex configuration.
 The definition of complex attributes provides all pertinent information
 concerning the resource attributes a user may request for a xxQS_NAMExx
-job via the *qsub* (1) **-l** option and for the interpretation of these
+job via the *qsub*(1) **-l** option and for the interpretation of these
 parameters within the xxQS_NAMExx system.
 
 The xxQS_NAMExx complex object defines all entries which are used for
@@ -29,7 +29,7 @@ relational operator for it.
 ## **defining resource attributes**
 
 The complex configuration should not be accessed directly. In order to
-add or modify complex entries, the *qconf* (1) options -Mc and -mc
+add or modify complex entries, the *qconf*(1) options -Mc and -mc
 should be used instead. While the -Mc option takes a *complex*
 configuration file as an argument and overrides the current
 configuration, the -mc option bring up an editor filled in with the
@@ -62,7 +62,7 @@ attribute.
 ## **Default queue resource attributes**
 
 In its default form it contains a selection of parameters in the queue
-configuration as defined in *queue_conf* (5). The queue configuration
+configuration as defined in *queue_conf*(5). The queue configuration
 parameters being requestable for a job by the user in principal are:
 
     qname
@@ -98,7 +98,7 @@ attributes are:
     s_fsize
     h_fsize
 
-(please refer to *queue_conf* (5) for details).
+(please refer to *queue_conf*(5) for details).
 
 **Note:** Defining these attributes in the host complex is no
 contradiction to having them also in the queue configuration. It allows
@@ -108,12 +108,12 @@ for a host, for example, and a subset of the total amount can be
 associated with a queue on that host.
 
 The second attribute category in the standard host complex are the
-default load values Every *xxqs_name_sxx_execd* (8) periodically reports
-load to *xxqs_name_sxx_qmaster* (8). The reported load values are either
+default load values Every *xxqs_name_sxx_execd*(8) periodically reports
+load to *xxqs_name_sxx_qmaster*(8). The reported load values are either
 the standard xxQS_NAMExx load values such as the CPU load average (see
-*uptime* (1)) or load values defined by the xxQS_NAMExx administration
+*uptime*(1)) or load values defined by the xxQS_NAMExx administration
 (see the **load_sensor** parameter in the cluster configuration
-*xxqs_name_sxx_conf* (5) and the *xxQS_NAMExx Installation and
+*xxqs_name_sxx_conf*(5) and the *xxQS_NAMExx Installation and
 Administration Guide* for details). The characteristics definition for
 the standard load values is part of the default host complex, while
 administrator defined load values require extension of the host complex.
@@ -162,14 +162,14 @@ the order of appearance):
 ## **name**
 
 The name of the complex element to be used to request this attribute for
-a job in the *qsub* (1) **-l** option. A complex attribute name (see
-*complex_name* in *sge_types* (1)) may appear only once across all
+a job in the *qsub*(1) **-l** option. A complex attribute name (see
+*complex_name* in *sge_types*(1)) may appear only once across all
 complexes, i.e. the complex attribute definition is unique.
 
 ## **shortcut**
 
 A shortcut for **name** which may also be used to request this attribute
-for a job in the *qsub* (1) **-l** option. An attribute **shortcut** may
+for a job in the *qsub*(1) **-l** option. An attribute **shortcut** may
 appear only once across all complexes, so as to avoid the possibility of
 ambiguous complex attribute references.
 
@@ -184,18 +184,18 @@ for the load complex entries:
 -   With **DOUBLE** floating point numbers in double precision (decimal
     and scientific notation) can be specified.
 
--   With **TIME** time specifiers are allowed. Refer to *queue_conf* (5)
+-   With **TIME** time specifiers are allowed. Refer to *queue_conf*(5)
     for a format description.
 
 -   With **MEMORY** memory size specifiers are allowed. Refer to
-    *queue_conf* (5) for a format description.
+    *queue_conf*(5) for a format description.
 
 -   With **BOOL** the strings TRUE and FALSE are allowed. When used in a
-    load formula (refer to *sched_conf* (5) ) TRUE and FALSE get mapped
+    load formula (refer to *sched_conf*(5) ) TRUE and FALSE get mapped
     into '1' and '0'.
 
 -   With **STRING** all strings are allowed and is used for wildcard
-    regular boolean expression matching. Please see *sge_types* (1)
+    regular boolean expression matching. Please see *sge_types*(1)
     manpage for **expression** definition.
 
 <!-- -->
@@ -247,7 +247,7 @@ the comparison is also true.
 
 ## **requestable**
 
-The entry can be used in a *qsub* (1) resource request if this field is
+The entry can be used in a *qsub*(1) resource request if this field is
 set to 'y' or 'yes'. If set to 'n' or 'no' this entry cannot be used by
 a user in order to request a queue or a class of queues. If the entry is
 set to 'forced' or 'f' the attribute has to be requested by a job or it
@@ -256,7 +256,7 @@ is rejected.
 To enable resource request enforcement the existence of the resource has
 to be defined. This can be done on a cluster global, per host and per
 queue basis. The definition of resource availability is performed with
-the complex_values entry in *host_conf* (5) and *queue_conf* (5).
+the complex_values entry in *host_conf*(5) and *queue_conf*(5).
 
 ## **consumable**
 
@@ -280,7 +280,7 @@ allocated master queue. The resource needs not be available for the
 slave task queues.
 
 Consumables can be combined with default or user defined load parameters
-(see *xxqs_name_sxx_conf* (5) and *host_conf* (5)), i.e. load values can
+(see *xxqs_name_sxx_conf*(5) and *host_conf*(5)), i.e. load values can
 be reported for consumable attributes or the consumable flag can be set
 for load attributes. The xxQS_NAMExx consumable resource management
 takes both the load (measuring availability of the resource) and the
@@ -293,7 +293,7 @@ host and per queue basis while these categories may supersede each other
 in the given order (i.e. a host can restrict availability of a cluster
 resource and a queue can restrict host and cluster resources). The
 definition of resource availability is performed with the
-**complex_values** entry in *host_conf* (5) and *queue_conf* (5). The
+**complex_values** entry in *host_conf*(5) and *queue_conf*(5). The
 **complex_values** definition of the "global" host specifies cluster
 global consumable settings. To each consumable complex attribute in a
 **complex_values** list a value is assigned which denotes the maximum
@@ -319,7 +319,7 @@ Meaningful only for consumable complex attributes (see **consumable**
 parameter above). xxQS_NAMExx assumes the resource amount denoted in the
 **default** parameter implicitly to be consumed by jobs being dispatched
 to a host or queue managing the consumable attribute. Jobs explicitly
-requesting the attribute via the *-l* option to *qsub* (1) override this
+requesting the attribute via the *-l* option to *qsub*(1) override this
 default value.
 
 ## **urgency**
@@ -329,19 +329,19 @@ base. The urgency value effects the addend for each resource when
 determining the resource request related urgency contribution. For
 numeric type resource requests the addend is the product of the urgency
 value, the jobs assumed slot allocation and the per slot request as
-specified via *-l* option to *qsub* (1). For string type requests the
+specified via *-l* option to *qsub*(1). For string type requests the
 resources urgency value is directly used as addend. Urgency values are
-of type real. See under *sge_priority* (5) for an overview on job
+of type real. See under *sge_priority*(5) for an overview on job
 priorities.
 
 # SEE ALSO
 
-*xxqs_name_sxx_intro* (1), *xxqs_name_sxx_types* (1), *qconf* (1),
-*qsub* (1), *uptime* (1), *xxqs_name_sxx_host_conf* (5), *xxqs_name_sxx_queue_conf* (5),
-*xxqs_name_sxx_execd* (8), *xxqs_name_sxx_qmaster* (8)  
+*xxqs_name_sxx_intro*(1), *xxqs_name_sxx_types*(1), *qconf*(1),
+*qsub*(1), *uptime*(1), *xxqs_name_sxx_host_conf*(5), *xxqs_name_sxx_queue_conf*(5),
+*xxqs_name_sxx_execd*(8), *xxqs_name_sxx_qmaster*(8)  
 *xxQS_NAMExx Installation and Administration Guide.*
 
 # COPYRIGHT
 
-See *xxqs_name_sxx_intro* (1) for a full statement of rights and
+See *xxqs_name_sxx_intro*(1) for a full statement of rights and
 permissions.

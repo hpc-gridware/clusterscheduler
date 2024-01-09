@@ -27,12 +27,12 @@ Note: Jobs requesting an Advance Reservation (AR) are not honored by
 Resource Quotas and are neither subject of the resulting limit, nor are
 debited in the usage consumption.
 
-A list of currently configured rqs can be displayed via the *qconf* (1)
+A list of currently configured rqs can be displayed via the *qconf*(1)
 **-srqsl** option. The contents of each listed rqs definition can be
 shown via the **-srqs** switch. The output follows the
 *xxQS_NAME_Sxx_resource_quota* format description. New rqs can be
 created and existing can be modified via the **-arqs**, **-mrqs** and
-**-drqs** options to *qconf* (1).
+**-drqs** options to *qconf*(1).
 
 A resource quota set defines a maximum resource quota for a particular
 job request. All of the configured rule sets apply all of the time. This
@@ -86,7 +86,7 @@ in one resource quota set.
 
 users  
 Contains a comma separated list of UNIX users or ACLs (see
-*xxqs_name_sxx_access_list* (5)). This parameter filters for jobs by a user in the
+*xxqs_name_sxx_access_list*(5)). This parameter filters for jobs by a user in the
 list or one of the ACLs in the list. Any user not in the list will not
 be considered for the resource quota rule. The default value is '\*',
 which means any user. An ACL is differentiated from a UNIX user name by
@@ -95,7 +95,7 @@ the rule, the name can be prefixed with the '!' sign. Defined UNIX user
 or ACL names need not be known in the xxQS_NAMExx configuration.
 
 projects  
-Contains a comma separated list of projects (see *xxqs_name_sxx_project* (5)). This
+Contains a comma separated list of projects (see *xxqs_name_sxx_project*(5)). This
 parameter filters for jobs requesting a project in the list. Any project
 not in the list will not be considered for the resource quota rule. If
 no project filter is specified, all projects and jobs with no requested
@@ -105,7 +105,7 @@ with the '!' sign. The value '!\*' means only jobs with no project
 requested.
 
 pes  
-Contains a comma separated list of PEs (see *sge_pe* (5)). This
+Contains a comma separated list of PEs (see *sge_pe*(5)). This
 parameter filters for jobs requesting a pe in the list. Any PE not in
 the list will not be considered for the resource quota rule. If no pe
 filter is specified, all pe and jobs with no requested pe matches the
@@ -115,15 +115,15 @@ from the rule, the name can be prefixed with the '!' sign. The value
 
 queues  
 Contains a comma separated list of cluster queues (see
-*xxqs_name_sxx_queue_conf* (5)). This parameter filters for jobs that may be scheduled
+*xxqs_name_sxx_queue_conf*(5)). This parameter filters for jobs that may be scheduled
 in a queue in the list. Any queue not in the list will not be considered
 for the resource quota rule. The default value is '\*', which means any
 queue. To exclude a queue from the rule, the name can be prefixed with
 the '!' sign.
 
 hosts  
-Contains a comma separated list of host or hostgroups (see *xxqs_name_sxx_host_conf* (5)
-and *xxqs_name_sxx_hostgroup* (5)). This parameter filters for jobs that may be
+Contains a comma separated list of host or hostgroups (see *xxqs_name_sxx_host_conf*(5)
+and *xxqs_name_sxx_hostgroup*(5)). This parameter filters for jobs that may be
 scheduled in a host in the list or a host contained in a hostgroup in
 the list. Any host not in the list will not be considered for the
 resource quota rule. The default value is '\*', which means any hosts.
@@ -138,7 +138,7 @@ by commas. The configuration allows two kind of limits definitions
 static limits  
 Static limits sets static values as quotas. Each limits consists of a
 complex attribute followed by an "=" sign and the value specification
-compliant with the complex attribute type (see *xxqs_name_sxx_complex* (5)).
+compliant with the complex attribute type (see *xxqs_name_sxx_complex*(5)).
 
 dynamic limits  
 A dynamic limit is a simple algebraic expression used to derive the
@@ -152,7 +152,7 @@ complex values, that is:
 The weighting factors (w1, ...) are positive integers or floating point
 numbers in double precision. The complex values (complex1, ...) are
 specified by the name defined as type INT or DOUBLE in the complex list
-(see *xxqs_name_sxx_complex* (5)).  
+(see *xxqs_name_sxx_complex*(5)).  
 **Note:** Dynamic limits can only configured for a host-specific rule.
 
 Please note that resource quotas are not enforced as job resource
@@ -203,10 +203,10 @@ users together to a maximum use of the double size of num_proc.
 
 # SEE ALSO
 
-*xxqs_name_sxx_intro* (1), *xxqs_name_sxx_access_list* (5), *xxqs_name_sxx_complex* (5), *xxqs_name_sxx_host_conf* (5),
-*xxqs_name_sxx_hostgroup* (5), *qconf* (1), *qquota* (1), *xxqs_name_sxx_project* (5).
+*xxqs_name_sxx_intro*(1), *xxqs_name_sxx_access_list*(5), *xxqs_name_sxx_complex*(5), *xxqs_name_sxx_host_conf*(5),
+*xxqs_name_sxx_hostgroup*(5), *qconf*(1), *qquota*(1), *xxqs_name_sxx_project*(5).
 
 # COPYRIGHT
 
-See *xxqs_name_sxx_intro* (1) for a full statement of rights and
+See *xxqs_name_sxx_intro*(1) for a full statement of rights and
 permissions.

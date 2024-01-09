@@ -56,7 +56,7 @@ needs to match all resources to be displayed.
 
 -ncb  
 This command line switch can be used in order to get 6.2u5 compatible
-output with other *qhost* (1) command line switches. In that case the
+output with other *qhost*(1) command line switches. In that case the
 output of the corresponding command will suppress information concerning
 the execution host topology. Note that this option will be removed in
 the next major version.
@@ -113,38 +113,38 @@ extra lines for every queue hosted by the host consisting of,
 -   the number of reserved, used and available job slots,
 
 -   the state of the queue - one of u(nknown) if the corresponding
-    *xxqs_name_sxx_execd* (8) cannot be contacted, a(larm), A(larm),
+    *xxqs_name_sxx_execd*(8) cannot be contacted, a(larm), A(larm),
     C(alendar suspended), s(uspended), S(ubordinate), d(isabled),
     D(isabled), E(rror) or combinations thereof.
 
 If the state is a(alarm) at least one of the load thresholds defined in
 the *load_thresholds* list of the queue configuration (see
-*queue_conf* (5)) is currently exceeded, which prevents from scheduling
+*queue_conf*(5)) is currently exceeded, which prevents from scheduling
 further jobs to that queue.
 
 As opposed to this, the state A(larm) indicates that at least one of the
-suspend thresholds of the queue (see *queue_conf* (5)) is currently
+suspend thresholds of the queue (see *queue_conf*(5)) is currently
 exceeded. This will result in jobs running in that queue being
 successively suspended until no threshold is violated.
 
 The states s(uspended) and d(isabled) can be assigned to queues and
-released via the *qmod* (1) command. Suspending a queue will cause all
+released via the *qmod*(1) command. Suspending a queue will cause all
 jobs executing in that queue to be suspended.
 
 The states D(isabled) and C(alendar suspended) indicate that the queue
 has been disabled or suspended automatically via the calendar facility
-of xxQS_NAMExx (see *calendar_conf* (5)), while the S(ubordinate) state
+of xxQS_NAMExx (see *calendar_conf*(5)), while the S(ubordinate) state
 indicates, that the queue has been suspend via subordination to another
-queue (see *queue_conf* (5) for details). When suspending a queue
+queue (see *queue_conf*(5) for details). When suspending a queue
 (regardless of the cause) all jobs executing in that queue are suspended
 too.
 
-If an E(rror) state is displayed for a queue, *xxqs_name_sxx_execd* (8)
-on that host was unable to locate the *xxqs_name_sxx_shepherd* (8)
+If an E(rror) state is displayed for a queue, *xxqs_name_sxx_execd*(8)
+on that host was unable to locate the *xxqs_name_sxx_shepherd*(8)
 executable on that host in order to start a job. Please check the error
-logfile of that *xxqs_name_sxx_execd* (8) for leads on how to resolve
+logfile of that *xxqs_name_sxx_execd*(8) for leads on how to resolve
 the problem. Please enable the queue afterwards via the **-c** option of
-the *qmod* (1) command manually.
+the *qmod*(1) command manually.
 
 If the **-F** option was used, resource availability information is
 printed following the host status line. For each resource (as selected
@@ -163,7 +163,7 @@ format:
     \`**L**' - a load value for the resource after administrator defined
     load scaling has been applied,  
     \`**c**' - availability derived from the consumable resources
-    facility (see *complexes* (5)),  
+    facility (see *complexes*(5)),  
     \`**f**' - a fixed availability definition derived from a
     non-consumable complex attribute or a fixed resource limit.
 
@@ -225,7 +225,7 @@ addition the level of detail in which debug information is generated is
 defined.
 
 xxQS_NAME_Sxx_QMASTER_PORT  
-If set, specifies the tcp port on which *xxqs_name_sxx_qmaster* (8) is
+If set, specifies the tcp port on which *xxqs_name_sxx_qmaster*(8) is
 expected to listen for communication requests. Most installations will
 use a services map entry for the service "sge_qmaster" instead to define
 that port.
@@ -237,12 +237,12 @@ that port.
 
 # SEE ALSO
 
-*xxqs_name_sxx_intro* (1), *qalter* (1), *qconf* (1), *qhold* (1),
-*qmod* (1), *qstat* (1), *qsub* (1), *queue_conf* (5),
-*xxqs_name_sxx_execd* (8), *xxqs_name_sxx_qmaster* (8),
-*xxqs_name_sxx_shepherd* (8).
+*xxqs_name_sxx_intro*(1), *qalter*(1), *qconf*(1), *qhold*(1),
+*qmod*(1), *qstat*(1), *qsub*(1), *queue_conf*(5),
+*xxqs_name_sxx_execd*(8), *xxqs_name_sxx_qmaster*(8),
+*xxqs_name_sxx_shepherd*(8).
 
 # COPYRIGHT
 
-See *xxqs_name_sxx_intro* (1) for a full statement of rights and
+See *xxqs_name_sxx_intro*(1) for a full statement of rights and
 permissions.

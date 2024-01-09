@@ -38,7 +38,7 @@ A job's dispatch priority is affected by a number of factors:
 
 The effect of each of these is governed by the overall policy setup,
 which is split into three top-level contributions. Each of these is
-configured through the *sched_conf* (5) parameters **weight_priority**,
+configured through the *sched_conf*(5) parameters **weight_priority**,
 **weight_ticket** and **weight_urgency**. These three parameters control
 to what degree POSIX priority, ticket policy, and urgency policy are in
 effect. To facilitate interpretation, the raw priorities
@@ -78,15 +78,15 @@ resources. This is expressed by the formula:
 hrr = rurg \* assumed_slot_allocation \* request
 
 where the resource's urgency value ("rurg") is as specified under
-**urgency** in *complex* (5), the job's assumed_slot_allocation
+**urgency** in *complex*(5), the job's assumed_slot_allocation
 represents the number of slots supposedly assigned to the job, and the
-per-slot request is that which was specified using the -l *qsub* (1)
+per-slot request is that which was specified using the -l *qsub*(1)
 option. For string type requests the formula is simply
 
 hrr = "rurg"
 
 and directly assigns the resource urgency value as specified under
-**urgency** in *complex* (5).
+**urgency** in *complex*(5).
 
 The waiting time contribution represents a weighted weighting time of
 the jobs
@@ -94,12 +94,12 @@ the jobs
 wtcontr = waiting_time \* weight_waiting_time
 
 with the waiting time in seconds and the **weight_waiting_time** value
-as specified in *sched_conf* (5).
+as specified in *sched_conf*(5).
 
 The deadline contribution has an increasing effect as jobs approach
-their deadline initiation time (see the -dl option in *qsub* (1)). It is
+their deadline initiation time (see the -dl option in *qsub*(1)). It is
 defined as the quotient of the **weight_deadline** value from
-*sched_conf* (5) and the (steadily decreasing) free time in seconds
+*sched_conf*(5) and the (steadily decreasing) free time in seconds
 until deadline initiation time
 
 dlcontr = weight_deadline / free_time
@@ -124,8 +124,8 @@ Administration Guide for details.
 The run-time priority can be dynamically adjusted in order to meet the
 goals set with the ticket policy. Dynamic run-time priority adjustment
 can be turned off (default) globally using **reprioritize_interval** in
-*sched_conf* (5) If no dynamic run-time priority adjustment is done at a
-host level, the **priority** specification in *queue_conf* (5) is in
+*sched_conf*(5) If no dynamic run-time priority adjustment is done at a
+host level, the **priority** specification in *queue_conf*(5) is in
 effect.
 
 Note that urgency and POSIX priorities do **NOT** affect runtime
@@ -133,11 +133,11 @@ priority.
 
 # SEE ALSO
 
-*xxqs_name_sxx_intro* (1), *xxqs_name_sxx_complex* (5), *qstat* (1), *qsub* (1),
-*xxqs_name_sxx_sched_conf* (5), *sge_conf* (5) *xxQS_NAMExx Installation and
+*xxqs_name_sxx_intro*(1), *xxqs_name_sxx_complex*(5), *qstat*(1), *qsub*(1),
+*xxqs_name_sxx_sched_conf*(5), *sge_conf*(5) *xxQS_NAMExx Installation and
 Administration Guide*
 
 # COPYRIGHT
 
-See *xxqs_name_sxx_intro* (1) for a full statement of rights and
+See *xxqs_name_sxx_intro*(1) for a full statement of rights and
 permissions.

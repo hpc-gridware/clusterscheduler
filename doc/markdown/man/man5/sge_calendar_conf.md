@@ -21,8 +21,8 @@ attached to a queue.
 
 *calendar_conf* entries can be added, modified and displayed with the
 *-Acal*, *-acal*, *-Mcal*, *-mcal*, *-scal* and *-scall* options to
-*qconf* (1) or with the calendar configuration dialog of the graphical
-user interface *qmon* (1).
+*qconf*(1) or with the calendar configuration dialog of the graphical
+user interface *qmon*(1).
 
 Note, xxQS_NAMExx allows backslashes (\\) be used to escape newline
 (\\newline) characters. The backslash and the newline are replaced with
@@ -34,7 +34,7 @@ a space (" ") character before any interpretation.
 
 The name of the calendar to be used when attaching it to queues or when
 administering the calendar definition. See *calendar_name* in
-*sge_types* (1) for a precise definition of valid calendar names.
+*sge_types*(1) for a precise definition of valid calendar names.
 
 ## **year**
 
@@ -210,10 +210,10 @@ Settings are only done on the week basis, no settings on the year basis
 
 # SEE ALSO
 
-*xxqs_name_sxx_intro* (1), *xxqs_name_sxx\_\_types* (1), *qconf* (1),
-*xxqs_name_sxx_queue_conf* (5).
+*xxqs_name_sxx_intro*(1), *xxqs_name_sxx\_\_types*(1), *qconf*(1),
+*xxqs_name_sxx_queue_conf*(5).
 
 # COPYRIGHT
 
-See *xxqs_name_sxx_intro* (1) for a full statement of rights and
+See *xxqs_name_sxx_intro*(1) for a full statement of rights and
 permissions.

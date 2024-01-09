@@ -97,13 +97,13 @@ code is DRMAA_ERRNO_EXIT_TIMEOUT.
 
 The *dispose*** parameter specifies how to treat reaping information. **
 If '0' is passed to this parameter, job finish information will still be
-available when *drmaa_wait* (3) is used. If '1' is passed,
-*drmaa_wait* (3) will be unable to access this job's finish information.
+available when *drmaa_wait*(3) is used. If '1' is passed,
+*drmaa_wait*(3) will be unable to access this job's finish information.
 
 ## drmaa_wait()
 
 The drmaa_wait() function blocks the calling thread until a job fails or
-finishes execution. This routine is modeled on the *wait4* (3) routine.
+finishes execution. This routine is modeled on the *wait4*(3) routine.
 If the special string 'DRMAA_JOB_IDS_SESSION_ANY' is passed as
 *job_id***, this routine ** will wait for any job from the session.
 Otherwise the *job_id*** must be the job identifier** of a job or array
@@ -119,33 +119,33 @@ have completed or** the calling thread received an interrupt. In both
 cases, the return code is DRMAA_ERRNO_EXIT_TIMEOUT.
 
 The routine reaps jobs on a successful call, so any subsequent calls to
-*drmaa_wait* (3) will fail returning a DRMAA_ERRNO_INVALID_JOB error,
+*drmaa_wait*(3) will fail returning a DRMAA_ERRNO_INVALID_JOB error,
 meaning that the job has already been reaped. This error is the same as
 if the job were unknown. Returning due to an elapsed timeout or an
 interrupt does not cause the job information to be reaped. This means
-that, in this case, it is possible to issue *drmaa_wait* (3) multiple
+that, in this case, it is possible to issue *drmaa_wait*(3) multiple
 times for the same *job_id***. **
 
 If *job_id_out*** is not a null pointer, then on return from a
-successful ** *drmaa_wait* (3) call, up to *job_id_out_len*** characters
+successful ** *drmaa_wait*(3) call, up to *job_id_out_len*** characters
 from the job id of the failed ** or finished job are returned.
 
 If *stat*** is not a null pointer, then on return from a successful **
-*drmaa_wait* (3) call, the status of the job is stored in the integer
+*drmaa_wait*(3) call, the status of the job is stored in the integer
 pointed to by *stat***.** *stat*** indicates whether job failed or
 finished and other information. The ** information encoded in the
-integer value can be accessed via *drmaa_wifaborted* (3)
-*drmaa_wifexited* (3) *drmaa_wifsignaled* (3) *drmaa_wcoredump* (3)
-*drmaa_wexitstatus* (3) *drmaa_wtermsig* (3).
+integer value can be accessed via *drmaa_wifaborted*(3)
+*drmaa_wifexited*(3) *drmaa_wifsignaled*(3) *drmaa_wcoredump*(3)
+*drmaa_wexitstatus*(3) *drmaa_wtermsig*(3).
 
 If *rusage*** is not a null pointer, then on return from a successful**
-*drmaa_wait* (3) call, a summary of the resources used by the terminated
+*drmaa_wait*(3) call, a summary of the resources used by the terminated
 job is returned in form of a DRMAA values string vector. The entries in
 the DRMAA values string vector can be extracted using
-*drmaa_get_next_attr_value* (3). Each string returned by
-*drmaa_get_next_attr_value* (3) will be of the format \<name>=\<value>,
+*drmaa_get_next_attr_value*(3). Each string returned by
+*drmaa_get_next_attr_value*(3) will be of the format \<name>=\<value>,
 where \<name> and \<value> specify name and amount of resources consumed
-by the job, respectively. See *accounting* (5) for an explanation of the
+by the job, respectively. See *accounting*(5) for an explanation of the
 resource information.
 
 ## drmaa_wifaborted()
@@ -161,10 +161,10 @@ The drmaa_wifexited() function evaluates into the integer pointed to by
 terminated normally. A ** zero value can also indicate that although the
 job has terminated normally, an exit status is not available, or that it
 is not known whether the job terminated normally. In both cases
-*drmaa_wexitstatus* (3) will not provide exit status information. A
+*drmaa_wexitstatus*(3) will not provide exit status information. A
 non-zero value returned in *exited*** ** indicates more detailed
-diagnosis can be provided by means of *drmaa_wifsignaled* (3),
-*drmaa_wtermsig* (3) and *drmaa_wcoredump* (3).
+diagnosis can be provided by means of *drmaa_wifsignaled*(3),
+*drmaa_wtermsig*(3) and *drmaa_wcoredump*(3).
 
 ## drmaa_wifsignaled()
 
@@ -174,27 +174,27 @@ that terminated due to the receipt of a ** signal. A zero value can also
 indicate that although the job has terminated due to the receipt of a
 signal, the signal is not available, or it is not known whether the job
 terminated due to the receipt of a signal. In both cases
-*drmaa_wtermsig* (3) will not provide signal information. A non-zero
+*drmaa_wtermsig*(3) will not provide signal information. A non-zero
 value returned in *signaled*** ** indicates signal information can be
-retrieved by means of *drmaa_wtermsig* (3).
+retrieved by means of *drmaa_wtermsig*(3).
 
 ## drmaa_wcoredump()
 
-If *drmaa_wifsignaled* (3) returned a non-zero value in the *signaled***
+If *drmaa_wifsignaled*(3) returned a non-zero value in the *signaled***
 parameter, the drmaa_wcoredump() function evaluates into the ** integer
 pointed to by *core_dumped*** a non-zero value if a core image of the
 terminated ** job was created.
 
 ## drmaa_wexitstatus()
 
-If *drmaa_wifexited* (3) returned a non-zero value in the *exited***
+If *drmaa_wifexited*(3) returned a non-zero value in the *exited***
 parameter, the drmaa_wexitstatus() function evaluates into the** integer
 pointed to by *exit_code*** the exit code that the job passed to **
-*exit* (2) or the value that the child process returned from main.
+*exit*(2) or the value that the child process returned from main.
 
 ## drmaa_wtermsig()
 
-If *drmaa_wifsignaled* (3) returned a non-zero value in the *signaled***
+If *drmaa_wifsignaled*(3) returned a non-zero value in the *signaled***
 parameter, the drmaa_wtermsig() function evaluates ** into *signal*** up
 to ***signal_len*** characters of a string representation of the signal
 ** that caused the termination of the job. For signals declared by
@@ -221,7 +221,7 @@ addition the level of detail in which debug information is generated is
 defined.
 
 xxQS_NAME_Sxx_QMASTER_PORT  
-If set, specifies the tcp port on which *xxqs_name_sxx_qmaster* (8) is
+If set, specifies the tcp port on which *xxqs_name_sxx_qmaster*(8) is
 expected to listen for communication requests. Most installations will
 use a services map entry instead to define that port.
 
@@ -283,4 +283,4 @@ no rusage and stat data could be provided.
 
 # SEE ALSO
 
-*drmaa_submit* (3).
+*drmaa_submit*(3).

@@ -18,8 +18,8 @@ xxqs_name_sxx_shadowd - xxQS_NAMExx shadow master daemon
 
 *xxqs_name_sxx_shadowd* is a "light weight" process which can be run on
 so-called shadow master hosts in a xxQS_NAMExx cluster to detect failure
-of the current xxQS_NAMExx master daemon, *xxqs_name_sxx_qmaster* (8),
-and to start-up a new *xxqs_name_sxx_qmaster* (8) on the host on which
+of the current xxQS_NAMExx master daemon, *xxqs_name_sxx_qmaster*(8),
+and to start-up a new *xxqs_name_sxx_qmaster*(8) on the host on which
 the *xxqs_name_sxx_shadowd* runs. If multiple shadow daemons are active
 in a cluster, they run a protocol which ensures that only one of them
 will start-up a new master daemon.
@@ -56,7 +56,7 @@ addition the level of detail in which debug information is generated is
 defined.
 
 xxQS_NAME_Sxx_QMASTER_PORT  
-If set, specifies the tcp port on which *xxqs_name_sxx_qmaster* (8) is
+If set, specifies the tcp port on which *xxqs_name_sxx_qmaster*(8) is
 expected to listen for communication requests. Most installations will
 use a services map entry for the service "sge_qmaster" instead to define
 that port.
@@ -89,11 +89,11 @@ default is 240 seconds.
 
 # SEE ALSO
 
-*xxqs_name_sxx_intro* (1), *xxqs_name_sxx_conf* (5),
-*xxqs_name_sxx_qmaster* (8), *xxQS_NAMExx Installation and
+*xxqs_name_sxx_intro*(1), *xxqs_name_sxx_conf*(5),
+*xxqs_name_sxx_qmaster*(8), *xxQS_NAMExx Installation and
 Administration Guide.*
 
 # COPYRIGHT
 
-See *xxqs_name_sxx_intro* (1) for a full statement of rights and
+See *xxqs_name_sxx_intro*(1) for a full statement of rights and
 permissions.

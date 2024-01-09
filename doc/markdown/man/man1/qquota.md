@@ -33,7 +33,7 @@ sets for the calling user.
 -h wc_host\|wc_hostgroup,...  
 *Display only resource quota sets that matches with the hosts* in the
 given wildcard host or hostgroup list. Find the definition of
-**wc_host** and **wc_hostgroup** in *sge_types* (1).
+**wc_host** and **wc_hostgroup** in *sge_types*(1).
 
 -help  
 Prints a listing of all options.
@@ -45,22 +45,22 @@ given resource list.
 -u wc_user,...  
 Display only resource quota sets being matched with the users in the
 given wildcard user list. Find the definition of **wc_user** in
-*sge_types* (1).
+*sge_types*(1).
 
 -P wc_project,...  
 Display only resource quota sets being matched with the projects in the
 given wildcard project list. Find the definition of **wc_project** in
-*sge_types* (1).
+*sge_types*(1).
 
 -pe wc_pe_name,...  
 Display only resource quota sets being matched with the parallel
 environments (pe) in the given wildcard pe list. Find the definition of
-**wc_pe_name** in *sge_types* (1).
+**wc_pe_name** in *sge_types*(1).
 
 -q wc_cqueue,...  
 Display only resource quota sets being matched with the queues in the
 given wildcard cluster queue list. Find the definition of **wc_cqueue**
-in *sge_types* (1).
+in *sge_types*(1).
 
 -xml  
 This option can be used with all other options and changes the output to
@@ -100,7 +100,7 @@ addition the level of detail in which debug information is generated is
 defined.
 
 xxQS_NAME_Sxx_QMASTER_PORT  
-If set, specifies the tcp port on which *xxqs_name_sxx_qmaster* (8) is
+If set, specifies the tcp port on which *xxqs_name_sxx_qmaster*(8) is
 expected to listen for communication requests. Most installations will
 use a services map entry for the service "sge_qmaster" instead to define
 that port.
@@ -116,12 +116,12 @@ that port.
 
 # SEE ALSO
 
-*xxqs_name_sxx_intro* (1), *qalter* (1), *qconf* (1), *qhold* (1),
-*qmod* (1), *qstat* (1), *qsub* (1), *queue_conf* (5),
-*xxqs_name_sxx_execd* (8), *xxqs_name_sxx_qmaster* (8),
-*xxqs_name_sxx_shepherd* (8).
+*xxqs_name_sxx_intro*(1), *qalter*(1), *qconf*(1), *qhold*(1),
+*qmod*(1), *qstat*(1), *qsub*(1), *queue_conf*(5),
+*xxqs_name_sxx_execd*(8), *xxqs_name_sxx_qmaster*(8),
+*xxqs_name_sxx_shepherd*(8).
 
 # COPYRIGHT
 
-See *xxqs_name_sxx_intro* (1) for a full statement of rights and
+See *xxqs_name_sxx_intro*(1) for a full statement of rights and
 permissions.

@@ -16,14 +16,14 @@ qmake - distributed parallel make, scheduling by xxQS_NAMExx.
 
 # DESCRIPTION
 
-*Qmake* is a parallel, distributed *make* (1) utility. Scheduling of the
+*Qmake* is a parallel, distributed *make*(1) utility. Scheduling of the
 parallel *make* tasks is done by xxQS_NAMExx. It is based on *gmake*
 (GNU make), version 4.4. Both xxQS_NAMExx and *gmake* command line
 options can be specified. They are separated by "--".
 
-All xxQS_NAMExx options valid with *qsub* (1) or *qrsh* (1) can be
-specified with *qmake* - see *submit* (1) for a description of all
-xxQS_NAMExx command line options. The *make* (1) manual page describes
+All xxQS_NAMExx options valid with *qsub*(1) or *qrsh*(1) can be
+specified with *qmake* - see *submit*(1) for a description of all
+xxQS_NAMExx command line options. The *make*(1) manual page describes
 the *gmake* command line syntax.
 
 The syntax of *qmake* makefiles corresponds to *gmake* and is described
@@ -33,7 +33,7 @@ A typical qmake call will use the xxQS_NAMExx command line options -cwd
 to have a scheduled make started in the current working directory on the
 execution host, -v PATH if the xxQS_NAMExx environment is not setup in
 the users .cshrc or .profile shell resource file and request slots in a
-parallel environment (see *sge_pe* (5) ).
+parallel environment (see *sge_pe*(5) ).
 
 If no resource request (xxQS_NAMExx command line option -l) is
 specified, qmake will use the environment variable SGE_ARCH to request
@@ -185,7 +185,7 @@ or
 
 # SEE ALSO
 
-*submit* (1) , *sge_pe* (5) as well as *make* (1) (GNU make manpage) and
+*submit*(1) , *sge_pe*(5) as well as *make*(1) (GNU make manpage) and
 *The GNU Make Manual* in \<xxqs_name_sxx_root>/3rd_party/qmake.
 
 # COPYRIGHT
@@ -193,6 +193,6 @@ or
 *Qmake* contains portions of Gnu Make (*gmake*), which is the copyright
 of the Free Software Foundation, Inc., Boston, MA, and is protected by
 the Gnu General Public License.  
-See *xxqs_name_sxx_intro* (1) and the information provided in
+See *xxqs_name_sxx_intro*(1) and the information provided in
 \<xxqs_name_sxx_root>/3rd_party/qmake for a statement of further rights
 and permissions.

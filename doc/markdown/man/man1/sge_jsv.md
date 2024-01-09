@@ -51,8 +51,8 @@ modifications then the following JSV instance will get the job
 parameters including all modifications as input for the verification
 process. This is done as long as either the job is accepted or rejected.
 
-Find more information how to use Client JSVs in *qsub* (1) and for
-Server JSVs in *sge_conf* (5)
+Find more information how to use Client JSVs in *qsub*(1) and for
+Server JSVs in *sge_conf*(5)
 
 # LIFETIME
 
@@ -147,7 +147,7 @@ param_command := 'PARAM' ' ' param_parameter ' ' value ;
 param_parameter := submit_parameter \| pseudo_parameter ;  
 The **param_command** has two additional arguments which are separated
 by space characters. The first argument is either a **submit_parameter**
-as it is specified in *qsub* (1) or it is a **pseudo_parameters** as
+as it is specified in *qsub*(1) or it is a **pseudo_parameters** as
 documented below. The second parameter is the **value** of the
 corresponding **param_parameter**.
 
@@ -158,14 +158,14 @@ verified.
 
 **submit_parameters** are for example **b** (similar to the **qsub**
 **-b** switch) or **masterq** (similar to **qsub** **-masterq** switch).
-Find a complete list of **submit_parameters** in the *qsub* (1) man
+Find a complete list of **submit_parameters** in the *qsub*(1) man
 page. Please note that not in all cases the **param_parameter** name and
 the corresponding **value** format is equivalent with the qsub switch
 name and its argument format. E.g. the **qsub** **-pe** parameters will
 by available as a set of parameters with the name **pe_name**,
 **pe_min**, **pe_max** or the switch combination **-soft -l** will be
 passed to JSV scripts as **l_soft** parameter. For details concerning
-this differences consult also the *qsub* (1) man page.
+this differences consult also the *qsub*(1) man page.
 
 start_command := 'START' ;  
 The **start_command** has no additional arguments. This command
@@ -340,10 +340,10 @@ line in the communication protocol are omitted.
 
 # SEE ALSO
 
-*xxqs_name_sxx_intro* (1), *qalter* (1), *qlogin* (1), *qmake* (1),
-*qrsh* (1), *qsh* (1), *qsub* (1),
+*xxqs_name_sxx_intro*(1), *qalter*(1), *qlogin*(1), *qmake*(1),
+*qrsh*(1), *qsh*(1), *qsub*(1),
 
 # COPYRIGHT
 
-See *xxqs_name_sxx_intro* (1) for a full statement of rights and
+See *xxqs_name_sxx_intro*(1) for a full statement of rights and
 permissions.

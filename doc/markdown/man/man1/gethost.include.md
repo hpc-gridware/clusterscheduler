@@ -119,9 +119,9 @@ If set, specifies the default xxQS_NAMExx cell.
 
 # SEE ALSO
 
-*xxqs_name_sxx_intro* (1), *host_aliases* (5),
+*xxqs_name_sxx_intro*(1), *host_aliases*(5),
 
 # COPYRIGHT
 
-See *xxqs_name_sxx_intro* (1) for a full statement of rights and
+See *xxqs_name_sxx_intro*(1) for a full statement of rights and
 permissions.

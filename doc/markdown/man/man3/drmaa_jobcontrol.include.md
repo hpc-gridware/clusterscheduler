@@ -40,7 +40,7 @@ return values are **
 >     DRMAA_PS_FAILED              job finished, but failed
 
 Jobs' user hold and user suspend states can be controlled via
-*drmaa_control* (3). For affecting system hold and system suspend states
+*drmaa_control*(3). For affecting system hold and system suspend states
 the appropriate xxQS_NAMExx interfaces must be used.
 
 ## drmaa_control()
@@ -48,7 +48,7 @@ the appropriate xxQS_NAMExx interfaces must be used.
 The drmaa_control() function applies control operations on xxQS_NAMExx
 jobs. *jobid*** may contain either an xxQS_NAMExx jobid or**
 \`DRMAA_JOB_IDS_SESSION_ALL' to refer to all jobs submitted during the
-DRMAA session opened using *drmaa_init* (3). Legal values for *action***
+DRMAA session opened using *drmaa_init*(3). Legal values for *action***
 and their meanings are: **
 
 >     DRMAA_CONTROL_SUSPEND        suspend the job 
@@ -58,11 +58,11 @@ and their meanings are: **
 >     DRMAA_CONTROL_TERMINATE      kill the job
 
 The DRMAA suspend/resume operations are equivalent to the use of \`-sj
-\<jobid>' and \`-usj \<jobid>' options with xxQS_NAMExx *qmod* (1). The
+\<jobid>' and \`-usj \<jobid>' options with xxQS_NAMExx *qmod*(1). The
 DRMAA hold/release operations are equivalent to the use of xxQS_NAMExx
-*qhold* (1) and *qrls* (1). The DRMAA terminate operation is equivalent
-to the use of xxQS_NAMExx *qdel* (1). Only user hold and user suspend
-can be controlled via *drmaa_control* (3). For affecting system hold and
+*qhold*(1) and *qrls*(1). The DRMAA terminate operation is equivalent
+to the use of xxQS_NAMExx *qdel*(1). Only user hold and user suspend
+can be controlled via *drmaa_control*(3). For affecting system hold and
 system suspend states the appropriate xxQS_NAMExx interfaces must be
 used.
 
@@ -86,7 +86,7 @@ addition the level of detail in which debug information is generated is
 defined.
 
 xxQS_NAME_Sxx_QMASTER_PORT  
-If set, specifies the tcp port on which *xxqs_name_sxx_qmaster* (8) is
+If set, specifies the tcp port on which *xxqs_name_sxx_qmaster*(8) is
 expected to listen for communication requests. Most installations will
 use a services map entry instead to define that port.
 
@@ -150,4 +150,4 @@ The job is not in a hold state.
 
 # SEE ALSO
 
-*drmaa_submit* (3)and *drmaa_wait* (3).
+*drmaa_submit*(3)and *drmaa_wait*(3).

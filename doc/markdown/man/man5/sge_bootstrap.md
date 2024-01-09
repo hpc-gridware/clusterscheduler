@@ -67,7 +67,7 @@ running system is not supported. The default for **ignore_fqdn** is
 
 ## **spooling_method**
 
-Defines how *xxqs_name_sxx_qmaster* (8) writes its configuration and the
+Defines how *xxqs_name_sxx_qmaster*(8) writes its configuration and the
 status information of a running cluster.
 
 The available spooling methods are *berkeleydb* and *classic*.
@@ -75,7 +75,7 @@ The available spooling methods are *berkeleydb* and *classic*.
 ## **spooling_lib**
 
 The name of a shared library containing the **spooling_method** to be
-loaded at *xxqs_name_sxx_qmaster* (8) initialization time. The extension
+loaded at *xxqs_name_sxx_qmaster*(8) initialization time. The extension
 characterizing a shared library (.so, .sl, .dylib etc.) is not contained
 in **spooling_lib**.
 
@@ -122,12 +122,12 @@ The default location for the binary path is \<xxqs_name_sxx_root>/bin
 ## **qmaster_spool_dir**
 
 The location where the master spool directory resides. Only the
-*xxqs_name_sxx_qmaster* (8) and *xxqs_name_sxx_shadowd* (8) need to have
+*xxqs_name_sxx_qmaster*(8) and *xxqs_name_sxx_shadowd*(8) need to have
 access to this directory. The master spool directory - in particular the
 job_scripts directory and the messages log file - may become quite large
 depending on the size of the cluster and the number of jobs. Be sure to
 allocate enough disk space and regularly clean off the log files, e.g.
-via a *cron* (8) job.
+via a *cron*(8) job.
 
 Being a parameter set at installation time changing
 **qmaster_spool_dir** in a running system is not supported.
@@ -154,7 +154,7 @@ The number of worker threads (defaults set by installation).
 ## **scheduler_threads**
 
 The number of scheduler threads (allowed: 0-1, default set by
-installation: 1, off: 0). (see *qconf* (1) -kt/-at option)
+installation: 1, off: 0). (see *qconf*(1) -kt/-at option)
 
 ## **jvm_threads**
 
@@ -163,5 +163,5 @@ off: 0).
 
 # COPYRIGHT
 
-See *xxqs_name_sxx_intro* (1) for a full statement of rights and
+See *xxqs_name_sxx_intro*(1) for a full statement of rights and
 permissions.

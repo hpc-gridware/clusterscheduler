@@ -14,11 +14,11 @@ sge_qstat - xxQS_NAMExx default qstat file format
 
 *sge_qstat* defines the command line switches that will be used by qstat
 by default. If available, the default sge_qstat file is read and
-processed by *qstat* (1).
+processed by *qstat*(1).
 
 There is a cluster global and a user private sge_qstat file. The user
 private file has the highest precedence and is followed by the cluster
-global sge_qstat file. Command line switches used with *qstat* (1)
+global sge_qstat file. Command line switches used with *qstat*(1)
 override all switches contained in the user private or cluster global
 sge_qstat file.
 
@@ -26,7 +26,7 @@ The format of the default files is:
 
 -   The default sge_qstat file may contain an arbitrary number of lines.
     Blank lines and lines with a '#' sign at the first column are
-    skipped. Each line not to be skipped may contain any *qstat* (1)
+    skipped. Each line not to be skipped may contain any *qstat*(1)
     option as described in the xxQS_NAMExx Reference Manual. More than
     one option per line is allowed.
 
@@ -56,10 +56,10 @@ has the same effect as if qstat was executed with:
 
 # SEE ALSO
 
-*xxqs_name_sxx_intro* (1), *qstat* (1), *xxQS_NAMExx Installation and
+*xxqs_name_sxx_intro*(1), *qstat*(1), *xxQS_NAMExx Installation and
 Administration Guide*
 
 # COPYRIGHT
 
-See *xxqs_name_sxx_intro* (1) for a full statement of rights and
+See *xxqs_name_sxx_intro*(1) for a full statement of rights and
 permissions.

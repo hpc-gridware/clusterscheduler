@@ -8,8 +8,7 @@ date: __DATE__
 
 # NAME
 
-xxqs_name_sxx_pe - xxQS_NAMExx parallel environment configuration file
-format
+xxqs_name_sxx_pe - xxQS_NAMExx parallel environment configuration file format
 
 # DESCRIPTION
 
@@ -23,10 +22,10 @@ Virtual Machine (PVM) or Message Passing Interface (MPI).
 
 *xxqs_name_sxx_pe* allows for the definition of interfaces to arbitrary
 parallel environments. Once a parallel environment is defined or
-modified with the **-ap** or **-mp** options to *qconf* (1) and linked
-with one or more queues via *pe_list* in *queue_conf* (5) the
+modified with the **-ap** or **-mp** options to *qconf*(1) and linked
+with one or more queues via *pe_list* in *queue_conf*(5) the
 environment can be requested for a job via the **-pe** switch to
-*qsub* (1) together with a request of a range for the number of parallel
+*qsub*(1) together with a request of a range for the number of parallel
 processes to be allocated by the job. Additional **-l** options may be
 used to specify the job requirement to further detail.
 
@@ -41,7 +40,7 @@ The format of a *xxqs_name_sxx_pe* file is defined as follows:
 ## **pe_name**
 
 The name of the parallel environment as defined for *pe_name* in
-*sge_types* (1). To be used in the *qsub* (1) **-pe** switch.
+*sge_types*(1). To be used in the *qsub*(1) **-pe** switch.
 
 ## **slots**
 
@@ -52,7 +51,7 @@ parallel environment concurrently. Type is number, valid values are 0 to
 ## **user_lists**
 
 A comma separated list of user access list names (see
-*xxqs_name_sxx_access_list* (5)). Each user contained in at least one of the enlisted
+*xxqs_name_sxx_access_list*(5)). Each user contained in at least one of the enlisted
 access lists has access to the parallel environment. If the
 **user_lists** parameter is set to NONE (the default) any user has
 access being not explicitly excluded via the **xuser_lists** parameter
@@ -63,7 +62,7 @@ parallel environment.
 ## **xuser_lists**
 
 The **xuser_lists** parameter contains a comma separated list of so
-called user access lists as described in *xxqs_name_sxx_access_list* (5). Each user
+called user access lists as described in *xxqs_name_sxx_access_list*(5). Each user
 contained in at least one of the enlisted access lists is not allowed to
 access the parallel environment. If the **xuser_lists** parameter is set
 to NONE (the default) any user has access. If a user is contained both
@@ -74,13 +73,13 @@ user is denied access to the parallel environment.
 
 The invocation command line of a start-up procedure for the parallel
 environment. The start-up procedure is invoked by
-*xxqs_name_sxx_shepherd* (8) prior to executing the job script. Its
+*xxqs_name_sxx_shepherd*(8) prior to executing the job script. Its
 purpose is to setup the parallel environment correspondingly to its
 needs. An optional prefix "user@" specifies the user under which this
 procedure is to be started. The standard output of the start-up
 procedure is redirected to the file *REQUEST*.po*JID* in the job's
-working directory (see *qsub* (1)), with *REQUEST* being the name of the
-job as displayed by *qstat* (1) and *JID* being the job's identification
+working directory (see *qsub*(1)), with *REQUEST* being the name of the
+job as displayed by *qstat*(1) and *JID* being the job's identification
 number. Likewise, the standard error output is redirected to
 *REQUEST*.pe*JID*  
 The following special variables being expanded at runtime can be used
@@ -117,7 +116,7 @@ Number of slots granted for the job.
 
 $processors  
 The **processors** string as contained in the queue configuration (see
-*xxqs_name_sxx_queue_conf* (5)) of the master queue (the queue in which the start-up
+*xxqs_name_sxx_queue_conf*(5)) of the master queue (the queue in which the start-up
 and stop procedures are started).
 
 $queue  
@@ -127,13 +126,13 @@ The cluster queue of the master queue instance.
 
 The invocation command line of a shutdown procedure for the parallel
 environment. The shutdown procedure is invoked by
-*xxqs_name_sxx_shepherd* (8) after the job script has finished. Its
+*xxqs_name_sxx_shepherd*(8) after the job script has finished. Its
 purpose is to stop the parallel environment and to remove it from all
 participating systems. An optional prefix "user@" specifies the user
 under which this procedure is to be started. The standard output of the
 stop procedure is also redirected to the file *REQUEST*.po*JID* in the
-job's working directory (see *qsub* (1)), with *REQUEST* being the name
-of the job as displayed by *qstat* (1) and *JID* being the job's
+job's working directory (see *qsub*(1)), with *REQUEST* being the name
+of the job as displayed by *qstat*(1) and *JID* being the job's
 identification number. Likewise, the standard error output is redirected
 to *REQUEST*.pe*JID*  
 The same special variables as for **start_proc_args** can be used to
@@ -156,7 +155,7 @@ allocation rules:
 An integer number fixing the number of processes per host. If the number
 is 1, all processes have to reside on different hosts. If the special
 denominator **$pe_slots** is used, the full range of processes as
-specified with the *qsub* (1) **-pe** switch has to be allocated on a
+specified with the *qsub*(1) **-pe** switch has to be allocated on a
 single host (no matter which value belonging to the range is finally
 chosen for the job to be allocated).
 
@@ -176,8 +175,8 @@ best-suitable-first order.
 
 This parameter can be set to TRUE or FALSE (the default). It indicates
 whether xxQS_NAMExx is the creator of the slave tasks of a parallel
-application via *xxqs_name_sxx_execd* (8) and
-*xxqs_name_sxx_shepherd* (8) and thus has full control over all
+application via *xxqs_name_sxx_execd*(8) and
+*xxqs_name_sxx_shepherd*(8) and thus has full control over all
 processes in a parallel application, which enables capabilities such as
 resource limitation and correct accounting. However, to gain control
 over the slave tasks of a parallel application, a sophisticated PE
@@ -214,7 +213,7 @@ to assess the number of slots such jobs might finally get.
 
 The assumed slot allocation has a meaning when determining the
 resource-request-based priority contribution for numeric resources as
-described in *sge_priority* (5) and is displayed when *qstat* (1) is run
+described in *sge_priority*(5) and is displayed when *qstat*(1) is run
 without **-g t** option.
 
 The following methods are supported:
@@ -240,15 +239,15 @@ is assumed.
 
 This parameter is only checked if **control_slaves** (see above) is set
 to TRUE and thus xxQS_NAMExx is the creator of the slave tasks of a
-parallel application via *xxqs_name_sxx_execd* (8) and
-*xxqs_name_sxx_shepherd* (8). In this case, accounting information is
+parallel application via *xxqs_name_sxx_execd*(8) and
+*xxqs_name_sxx_shepherd*(8). In this case, accounting information is
 available for every single slave task started by xxQS_NAMExx.
 
 The **accounting_summary** parameter can be set to TRUE or FALSE. A
 value of TRUE indicates that only a single accounting record is written
-to the *accounting* (5) file, containing the accounting summary of the
+to the *accounting*(5) file, containing the accounting summary of the
 whole job including all slave tasks, while a value of FALSE indicates an
-individual *accounting* (5) record is written for every slave task, as
+individual *accounting*(5) record is written for every slave task, as
 well as for the master task.  
 **Note:** When running tightly integrated jobs with
 *SHARETREE_RESERVED_USAGE* set, and with having *accounting_summary*
@@ -270,11 +269,11 @@ detect this.
 
 # SEE ALSO
 
-*xxqs_name_sxx_intro* (1), *xxqs_name_sxx\_\_types* (1), *qconf* (1),
-*qdel* (1), *qmod* (1), *qsub* (1), *xxqs_name_sxx_access_list* (5),
-*xxqs_name_sxx_qmaster* (8), *xxqs_name_sxx_shepherd* (8).
+*xxqs_name_sxx_intro*(1), *xxqs_name_sxx\_\_types*(1), *qconf*(1),
+*qdel*(1), *qmod*(1), *qsub*(1), *xxqs_name_sxx_access_list*(5),
+*xxqs_name_sxx_qmaster*(8), *xxqs_name_sxx_shepherd*(8).
 
 # COPYRIGHT
 
-See *xxqs_name_sxx_intro* (1) for a full statement of rights and
+See *xxqs_name_sxx_intro*(1) for a full statement of rights and
 permissions.

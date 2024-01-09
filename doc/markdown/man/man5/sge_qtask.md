@@ -13,9 +13,9 @@ xxqs_name_sxx_qtask - file format of the qtask file.
 # DESCRIPTION
 
 A *qtask* file defines which commands are submitted to xxQS_NAMExx for
-remote execution by *qtcsh* (1). The *qtask* file optionally may contain
-*qrsh* (1) command-line parameters. These parameters are passed to the
-*qrsh* (1) command being used by *qtcsh* to submit the commands.
+remote execution by *qtcsh*(1). The *qtask* file optionally may contain
+*qrsh*(1) command-line parameters. These parameters are passed to the
+*qrsh*(1) command being used by *qtcsh* to submit the commands.
 
 A cluster global *qtask* file defining cluster wide defaults and a user
 specific *qtask* file eventually overriding and enhancing those
@@ -32,13 +32,13 @@ Each line starting with a '#' character is a comment line. Each line
 despite comment lines defines a command to be started remotely.
 
 Definition starts with the command name that must match exactly the name
-as typed in a *qtcsh* (1) command-line. Pathnames are not allowed in
-*qtask* files. Hence absolute or relative pathnames in *qtcsh* (1)
+as typed in a *qtcsh*(1) command-line. Pathnames are not allowed in
+*qtask* files. Hence absolute or relative pathnames in *qtcsh*(1)
 command-lines always lead to local execution even if the commands itself
 are the same as defined in the *qtask* files.
 
-The command name can be followed by an arbitrary number of *qrsh* (1)
-option arguments which are passed on to *qrsh* (1) by *qtcsh* (1).
+The command name can be followed by an arbitrary number of *qrsh*(1)
+option arguments which are passed on to *qrsh*(1) by *qtcsh*(1).
 
 An exclamation mark prefixing the command in the cluster global *qtask*
 file prevents overriding by the user supplied *qtask* file.
@@ -60,9 +60,9 @@ remotely.
 
 # SEE ALSO
 
-*xxqs_name_sxx_intro* (1), *qtcsh* (1), *qrsh* (1).
+*xxqs_name_sxx_intro*(1), *qtcsh*(1), *qrsh*(1).
 
 # COPYRIGHT
 
-See *xxqs_name_sxx_intro* (1) for a full statement of rights and
+See *xxqs_name_sxx_intro*(1) for a full statement of rights and
 permissions.

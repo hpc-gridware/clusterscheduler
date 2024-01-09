@@ -14,11 +14,11 @@ xxqs_name_sxx_host_conf - xxQS_NAMExx execution host configuration file format
 
 *Host_conf* reflects the format of the template file for the execution
 host configuration. Via the **-ae** and **-me** options of the
-*qconf* (1) command, you can add execution hosts and modify the
+*qconf*(1) command, you can add execution hosts and modify the
 configuration of any execution host in the cluster. Default execution
 host entries are added automatically as soon as a
-*xxqs_name_sxx_execd* (8) registers to *xxqs_name_sxx_qmaster* (8) for
-the very first time from a certain host. The *qconf* (1) **-sel** switch
+*xxqs_name_sxx_execd*(8) registers to *xxqs_name_sxx_qmaster*(8) for
+the very first time from a certain host. The *qconf*(1) **-sel** switch
 can be used to display a list of execution host being currently
 configured in your xxQS_NAMExx system. Via the **-se** option you can
 print the execution host configuration of a specified host.
@@ -36,14 +36,14 @@ The format of a *host_conf* file is defined as follows:
 
 ## **hostname**
 
-The execution hosts name as defined for *host_name* in *sge_types* (1).
+The execution hosts name as defined for *host_name* in *sge_types*(1).
 
 ## **load_scaling**
 
 A comma separated list of scaling values to be applied to each or part
-of the load values being reported by the *xxqs_name_sxx_execd* (8) on
+of the load values being reported by the *xxqs_name_sxx_execd*(8) on
 the host and being defined in the cluster global "host" complex (see
-*xxqs_name_sxx_complex* (5)). The load scaling factors are intended to level hardware
+*xxqs_name_sxx_complex*(5)). The load scaling factors are intended to level hardware
 or operating system specific differences between execution hosts.
 
 The syntax of a load factor specification is as follows: First the name
@@ -59,10 +59,10 @@ the "global" host.
 **complex_values** defines quotas for resource attributes managed via
 this host. Each complex attribute is followed by an "=" sign and the
 value specification compliant with the complex attribute type (see
-*xxqs_name_sxx_complex* (5)). Quota specifications are separated by commas.
+*xxqs_name_sxx_complex*(5)). Quota specifications are separated by commas.
 
 The quotas are related to the resource consumption of all jobs on a host
-in the case of consumable resources (see *xxqs_name_sxx_complex* (5) for details on
+in the case of consumable resources (see *xxqs_name_sxx_complex*(5) for details on
 consumable resources) or they are interpreted on a per job slot basis in
 the case of non-consumable resources. Consumable resource attributes are
 commonly used to manage free memory, free disk space or available
@@ -81,8 +81,8 @@ the quota. This effectively avoids oversubscription of resources.
 
 **Note:** Load values replacing the quota specifications may have become
 more stringent because they have been scaled (see **load_scaling**
-above) and/or load adjusted (see *xxqs_name_sxx_sched_conf* (5)). The *-F* option of
-*qstat* (1) and the load display in the *qmon* (1) queue control dialog
+above) and/or load adjusted (see *xxqs_name_sxx_sched_conf*(5)). The *-F* option of
+*qstat*(1) and the load display in the *qmon*(1) queue control dialog
 (activated by clicking on a queue icon while the "Shift" key is pressed)
 provide detailed information on the actual availability of consumable
 resources and on the origin of the values taken into account currently.
@@ -90,16 +90,16 @@ resources and on the origin of the values taken into account currently.
 **Note also:** The resource consumption of running jobs (used for the
 availability calculation) as well as the resource requests of the jobs
 waiting to be dispatched either may be derived from explicit user
-requests during job submission (see the *-l* option to *qsub* (1)) or
+requests during job submission (see the *-l* option to *qsub*(1)) or
 from a "default" value configured for an attribute by the administrator
-(see *xxqs_name_sxx_complex* (5)). The *-r* option to *qstat* (1) can be used for
+(see *xxqs_name_sxx_complex*(5)). The *-r* option to *qstat*(1) can be used for
 retrieving full detail on the actual resource requests of all jobs in
 the system.
 
 For non-consumable resources xxQS_NAMExx simply compares the job's
 attribute requests with the corresponding specification in
 **complex_values** taking the relation operator of the complex attribute
-definition into account (see *xxqs_name_sxx_complex* (5)). If the result of the
+definition into account (see *xxqs_name_sxx_complex*(5)). If the result of the
 comparison is "true", the host is suitable for the job with respect to
 the particular attribute. For parallel jobs each job slot to be occupied
 by a parallel task is meant to provide the same resource attribute
@@ -115,8 +115,8 @@ defined resource attribute quotas are associated with the host.
 ## **load_values**
 
 This entry cannot be configured but is only displayed in case of a
-*qconf* (1) **-se** command. All load values are displayed as reported
-by the *xxqs_name_sxx_execd* (8) on the host. The load values are
+*qconf*(1) **-se** command. All load values are displayed as reported
+by the *xxqs_name_sxx_execd*(8) on the host. The load values are
 enlisted in a comma separated list. Each load value start with its name,
 followed by an equal sign and the reported value.
 
@@ -124,8 +124,8 @@ followed by an equal sign and the reported value.
 
 **Note:** Deprecated, may be removed in future release.  
 This entry cannot be configured but is only displayed in case of a
-*qconf* (1) **-se** command. Its value is the number of processors which
-has been detected by *xxqs_name_sxx_execd* (8) on the corresponding
+*qconf*(1) **-se** command. Its value is the number of processors which
+has been detected by *xxqs_name_sxx_execd*(8) on the corresponding
 host.
 
 ## **usage_scaling**
@@ -139,7 +139,7 @@ attributes to be scaled however are **cpu** for CPU time consumption,
 ## **user_lists**
 
 The **user_lists** parameter contains a comma separated list of so
-called user access lists as described in *access_list* (5). Each user
+called user access lists as described in *access_list*(5). Each user
 contained in at least one of the enlisted access lists has access to the
 host. If the **user_lists** parameter is set to NONE (the default) any
 user has access being not explicitly excluded via the **xuser_lists**
@@ -150,7 +150,7 @@ to the host.
 ## **xuser_lists**
 
 The **xuser_lists** parameter contains a comma separated list of so
-called user access lists as described in *access_list* (5). Each user
+called user access lists as described in *access_list*(5). Each user
 contained in at least one of the enlisted access lists is not allowed to
 access the host. If the **xuser_lists** parameter is set to NONE (the
 default) any user has access. If a user is contained both in an access
@@ -187,11 +187,11 @@ for report_variables will override settings from the global host.
 
 # SEE ALSO
 
-*xxqs_name_sxx_intro* (1), *xxqs_name_sxx_types* (1), *qconf* (1),
-*uptime* (1), *xxqs_name_sxx_access_list* (5), *xxqs_name_sxx_complex* (5),
-*xxqs_name_sxx_execd* (8), *xxqs_name_sxx_qmaster* (8).
+*xxqs_name_sxx_intro*(1), *xxqs_name_sxx_types*(1), *qconf*(1),
+*uptime*(1), *xxqs_name_sxx_access_list*(5), *xxqs_name_sxx_complex*(5),
+*xxqs_name_sxx_execd*(8), *xxqs_name_sxx_qmaster*(8).
 
 # COPYRIGHT
 
-See *xxqs_name_sxx_intro* (1) for a full statement of rights and
+See *xxqs_name_sxx_intro*(1) for a full statement of rights and
 permissions.

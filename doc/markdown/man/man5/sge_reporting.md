@@ -173,12 +173,12 @@ job_number
 Job identifier - job number.
 
 account  
-An account string as specified by the *qsub* (1) or *qalter* (1) **-A**
+An account string as specified by the *qsub*(1) or *qalter*(1) **-A**
 option.
 
 priority  
 Priority value assigned to the job corresponding to the **priority**
-parameter in the queue configuration (see *xxqs_name_sxx_queue_conf* (5)).
+parameter in the queue configuration (see *xxqs_name_sxx_queue_conf*(5)).
 
 submission_time  
 Submission time (GMT unix time stamp).
@@ -204,7 +204,7 @@ ru_wallclock
 Difference between **end_time** and **start_time** (see above).
 
 The remainder of the accounting entries follows the contents of the
-standard UNIX rusage structure as described in *getrusage* (2).
+standard UNIX rusage structure as described in *getrusage*(2).
 Depending on the operating system where the job was executed some of the
 fields may be 0. The following entries are provided:
 
@@ -517,9 +517,9 @@ The number of slots which were reserved.
 
 # SEE ALSO
 
-*sge_conf* (5). *xxqs_name_sxx_host_conf* (5).
+*sge_conf*(5). *xxqs_name_sxx_host_conf*(5).
 
 # COPYRIGHT
 
-See *xxqs_name_sxx_intro* (1) for a full statement of rights and
+See *xxqs_name_sxx_intro*(1) for a full statement of rights and
 permissions.

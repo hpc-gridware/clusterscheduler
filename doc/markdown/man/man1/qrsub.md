@@ -22,7 +22,7 @@ slot_range\]** **\[-q wc_queue_list\]** **\[-u wc_user_list\]**
 # DESCRIPTION
 
 *Qrsub* provides a means for operators, managers or users referenced in
-the ACL (see *access_list* (5)) "**arusers**" to create a Advance
+the ACL (see *access_list*(5)) "**arusers**" to create a Advance
 Reservation (AR) in the xxQS_NAMExx queuing system. ARs allow to reserve
 particular consumable resources for future use. These reserved resources
 are only available for jobs requesting the AR and the scheduler ensures
@@ -38,7 +38,7 @@ AR will be granted.
 ARs will be deleted either automatically when the end time is reached,
 or manually using *qrdel .* In both cases, first all jobs requesting the
 AR will be removed and then AR itself. Already granted ARs can be shown
-with *qrstat* (.)
+with *qrstat*(.)
 
 Note: To make AR behavior predictable, it is necessary to have reserved
 resources available at the time of AR start. This is done by keeping
@@ -70,29 +70,29 @@ $HOME/.sge_ar_request (user private defaults file).
 Defines the activation (start) date and time of an AR. The option is not
 mandatory. If omitted, the current date_time is assumed. Either a
 duration or end date_time must also be specified. For details about
-date_time please see *sge_types* (1)
+date_time please see *sge_types*(1)
 
 -A account_string  
 Identifies the account to which the resource reservation of the AR
 should be charged. For "**account_string**" value details please see the
-"**name**" definition in *sge_types* (1). In the absence of this
+"**name**" definition in *sge_types*(1). In the absence of this
 parameter xxQS_NAMExx will place the default account string
 "xxqs_name_sxx" in the accounting record of the AR.
 
 -ckpt ckpt_name  
-Selects the checkpointing environment (see *checkpoint* (5)) the AR jobs
+Selects the checkpointing environment (see *checkpoint*(5)) the AR jobs
 may request. Using this option guarantees queues that only providing
 this checkpoint environment will be reserved.
 
 -d time  
 Defines the duration of the AR. The use of "**-d time**" is optional if
 "**-e date_time**" is requested. For details about "**time**" definition
-please see *sge_types* (1).
+please see *sge_types*(1).
 
 -e date_time  
 Defines the end date and time of an AR. The use of "**-e date_time**" is
 optional if "**-d time**" is requested. For details about
-"**date_time**" definition please see *sge_types* (1).
+"**date_time**" definition please see *sge_types*(1).
 
 -he y\[es\]\|n\[o\]  
 Specifies the behavior when the AR goes into an error state. The AR goes
@@ -109,7 +109,7 @@ Prints a list of all options.
 
 -l resource=value,...  
 Creates an AR in a xxQS_NAMExx queue, providing the given resource
-request list. *complex* (5) describes how a list of available resources
+request list. *complex*(5) describes how a list of available resources
 and their associated valid value specifiers can be obtained.  
 There may be multiple **-l** switches in a single command.
 
@@ -133,7 +133,7 @@ Only meaningful for a parallel AR request together with the -pe option.
 
 This option is used to reserve the proper queues to match this request
 if it would be requested by a qsub. A more detailed description of
-*wc_queue_list* can be found in *sge_types* (1).
+*wc_queue_list* can be found in *sge_types*(1).
 
 -now y\[es\]\|n\[o\]  
 This options impacts the queues selection for reservation.  
@@ -143,7 +143,7 @@ for *qrsub*.
 
 -N name  
 The name of the AR. The name, if requested, must conform to "**name**"
-as defined in *sge_types* (1). Invalid names will be denied at submit
+as defined in *sge_types*(1). Invalid names will be denied at submit
 time.
 
 -w e\|v  
@@ -158,24 +158,24 @@ The specifiers e and v define the following validation modes:
 
 -pe parallel_env n\[-\[m\]\]\|\[-\]m,...  
 Parallel programming environment (PE) to select for the AR queue
-reservation. Please see the details of a PE in *sge_pe* (5).
+reservation. Please see the details of a PE in *sge_pe*(5).
 
 -q wc_queue_list  
 Defines or redefines a list of cluster queues, queue domains or queue
 instances, that may be reserved by the AR. Please find a description of
-*wc_queue_list*** in** *sge_types* (1). This parameter has all the
+*wc_queue_list*** in** *sge_types*(1). This parameter has all the
 properties of a resource request and will be merged with requirements
 derived from the **-l option** described above.
 
 -u \[username\|@access_list\],...  
 Defines the users allowed to submit jobs requesting the AR. The access
 is specified by a comma separated list containing UNIX users or ACLs
-(see *access_list* (5)). prefixing the ACL name with an '@' sign.  
+(see *access_list*(5)). prefixing the ACL name with an '@' sign.  
 By default only the AR owner is allowed to submit jobs requesting the
 AR.
 
 Note: Only queues, where all users specified in the list have access,
-are considered for reservation (see *queue_conf* (5)).
+are considered for reservation (see *queue_conf*(5)).
 
 # ENVIRONMENTAL VARIABLES
 
@@ -198,7 +198,7 @@ addition the level of detail in which debug information is generated is
 defined.
 
 xxQS_NAME_Sxx_QMASTER_PORT  
-If set, specifies the TCP port on which *xxqs_name_sxx_qmaster* (8) is
+If set, specifies the TCP port on which *xxqs_name_sxx_qmaster*(8) is
 expected to listen for communication requests. Most installations will
 use a services map entry for the service "sge_qmaster" instead of
 defining the port.
@@ -212,11 +212,11 @@ defining the port.
 
 # SEE ALSO
 
-*qrdel* (1), *qrstat* (1), *qsub* (1), *sge_types* (1),
-*checkpoint* (5), *complex* (5), *queue_conf* (5), *sge_pe* (5),
-*sge_resource_quota* (5).
+*qrdel*(1), *qrstat*(1), *qsub*(1), *sge_types*(1),
+*checkpoint*(5), *complex*(5), *queue_conf*(5), *sge_pe*(5),
+*sge_resource_quota*(5).
 
 # COPYRIGHT
 
-See *xxqs_name_sxx_intro* (1) for a full statement of rights and
+See *xxqs_name_sxx_intro*(1) for a full statement of rights and
 permissions.

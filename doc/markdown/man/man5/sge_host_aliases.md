@@ -36,9 +36,9 @@ library.
 
 # SEE ALSO
 
-\*xxqs_name_sxx_intro\* (1),
+\*xxqs_name_sxx_intro\*(1),
 
 # COPYRIGHT
 
-See \*xxqs_name_sxx_intro\* (1) for a full statement of rights and
+See \*xxqs_name_sxx_intro\*(1) for a full statement of rights and
 permissions.

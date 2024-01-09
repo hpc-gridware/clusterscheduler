@@ -44,7 +44,7 @@ Similar to **-aattr** (see below) but takes specifications for the
 object attributes to be enhanced from file named **fname**. As opposed
 to **-aattr**, multiple attributes can be enhanced. Their specification
 has to be enlisted in **fname** following the file format of the
-corresponding object (see *queue_conf* (5) for the queue, for
+corresponding object (see *queue_conf*(5) for the queue, for
 example).  
 Requires root/manager privileges.
 
@@ -52,18 +52,18 @@ Requires root/manager privileges.
 Adds a new calendar definition to the xxQS_NAMExx environment. Calendars
 are used in xxQS_NAMExx for defining availability and unavailability
 schedules of queues. The format of a calendar definition is described in
-*calendar_conf* (5).
+*calendar_conf*(5).
 
 The calendar definition is taken from the file **fname**. Requires root/
 manager privileges.
 
 -Ackpt fname \<add ckpt. environment>  
 Add the checkpointing environment as defined in **fname** (see
-*checkpoint* (5)) to the list of supported checkpointing environments.
+*checkpoint*(5)) to the list of supported checkpointing environments.
 Requires root or manager privileges.
 
 -Aconf fname_list \<add configurations>  
-Add the configurations (see *xxqs_name_sxx_conf* (5)) specified in the
+Add the configurations (see *xxqs_name_sxx_conf*(5)) specified in the
 files enlisted in the comma separated **fname_list**. The configuration
 is added for the host that is identical to the file name.  
 Requires root or manager privileges.
@@ -71,11 +71,11 @@ Requires root or manager privileges.
 -Ae fname \<add execution host>  
 Add the execution host defined in **fname** to the xxQS_NAMExx cluster.
 The format of the execution host specification is described in
-*host_conf* (5). Requires root or manager privileges.
+*host_conf*(5). Requires root or manager privileges.
 
 -Ahgrp fname \<add host group configuration>  
 Add the host group configuration defined in **fname**. The file format
-of **fname** must comply to the format specified in *hostgroup* (5).
+of **fname** must comply to the format specified in *hostgroup*(5).
 Requires root or manager privileges.
 
 -Arqs fname \<add RQS configuration>  
@@ -88,7 +88,7 @@ xxQS_NAMExx cluster. Requires root or manager privileges.
 
 -Aprj fname \<add new project>  
 Adds the project description defined in **fname** to the list of
-registered projects (see *project* (5)). Requires root or manager
+registered projects (see *project*(5)). Requires root or manager
 privileges.
 
 -Aq fname \<add new queue>  
@@ -121,7 +121,7 @@ Similar to **-dattr** (see below) but the definition of the list
 attributes from which entries are to be deleted is contained in the file
 named **fname**. As opposed to **-dattr**, multiple attributes can be
 modified. Their specification has to be enlisted in **fname** following
-the file format of the corresponding object (see *queue_conf* (5) for
+the file format of the corresponding object (see *queue_conf*(5) for
 the queue, for example).  
 Requires root/manager privileges.
 
@@ -134,28 +134,28 @@ Similar to **-mattr** (see below) but takes specifications for the
 object attributes to be modified from file named **fname**. As opposed
 to **-mattr**, multiple attributes can be modified. Their specification
 has to be enlisted in **fname** following the file format of the
-corresponding object (see *queue_conf* (5) for the queue, for
+corresponding object (see *queue_conf*(5) for the queue, for
 example).  
 Requires root/manager privileges.
 
 -Mc fname \<modify complex>  
 Overwrites the complex configuration by the contents of **fname**. The
-argument file must comply to the format specified in *complex* (5).
+argument file must comply to the format specified in *complex*(5).
 Requires root or manager privilege.
 
 -Mcal fname \<modify calendar>  
 Overwrites the calendar definition as specified in **fname**. The
 argument file must comply to the format described in
-*calendar_conf* (5). Requires root or manager privilege.
+*calendar_conf*(5). Requires root or manager privilege.
 
 -Mckpt fname \<modify ckpt. environment>  
 Overwrite an existing checkpointing environment with the definitions in
-**fname** (see *checkpoint* (5)). The name attribute in **fname** has to
+**fname** (see *checkpoint*(5)). The name attribute in **fname** has to
 match an existing checkpointing environment. Requires root or manager
 privileges.
 
 -Mconf fname_list \<modify configurations>  
-Modify the configurations (see *xxqs_name_sxx_conf* (5)) specified in
+Modify the configurations (see *xxqs_name_sxx_conf*(5)) specified in
 the files enlisted in the comma separated **fname_list**. The
 configuration is modified for the host that is identical to the file
 name.  
@@ -164,14 +164,14 @@ Requires root or manager privileges.
 -Me fname \<modify execution host>  
 Overwrites the execution host configuration for the specified host with
 the contents of **fname**, which must comply to the format defines in
-*host_conf* (5). Requires root or manager privilege.
+*host_conf*(5). Requires root or manager privilege.
 
 -Mhgrp fname \<modify host group configuration>  
 Allows changing of host group configuration with a single command. All
 host group configuration entries contained in **fname** will be applied.
 Configuration entries not contained in **fname** will be deleted. The
 file format of **fname** must comply to the format specified in
-*hostgroup* (5).
+*hostgroup*(5).
 
 -Mrqs fname \[mrqs_name\] \<modify RQS configuration>  
 Same as **-mrqs** (see below) but instead of invoking an editor to
@@ -179,45 +179,45 @@ modify the RQS configuration, the file **fname** is considered to
 contain a changed configuration. The name of the rule set in **fname**
 must be the same as rqs_name. If rqs_name is not set, all rule sets are
 overwritten by the rule sets in **fname** Refer to
-*xxqs_name_sxx_resource_quota* (5) for details on the RQS configuration
+*xxqs_name_sxx_resource_quota*(5) for details on the RQS configuration
 format. Requires root or manager privilege.
 
 -Mp fname \<modify PE configuration>  
 Same as **-mp** (see below) but instead of invoking an editor to modify
 the PE configuration the file **fname** is considered to contain a
-changed configuration. Refer to *xxqs_name_sxx_pe* (5) for details on
+changed configuration. Refer to *xxqs_name_sxx_pe*(5) for details on
 the PE configuration format. Requires root or manager privilege.
 
 -Mprj fname \<modify project configuration>  
 Same as **-mprj** (see below) but instead of invoking an editor to
 modify the project configuration the file **fname** is considered to
-contain a changed configuration. Refer to *project* (5) for details on
+contain a changed configuration. Refer to *project*(5) for details on
 the project configuration format. Requires root or manager privilege.
 
 -Mq fname \<modify queue configuration>  
 Same as **-mq** (see below) but instead of invoking an editor to modify
 the queue configuration the file **fname** is considered to contain a
-changed configuration. Refer to *queue_conf* (5) for details on the
+changed configuration. Refer to *queue_conf*(5) for details on the
 queue configuration format. Requires root or manager privilege.
 
 -Msconf fname \<modify scheduler configuration from file>  
-The current scheduler configuration (see *sched_conf* (5)) is overridden
+The current scheduler configuration (see *sched_conf*(5)) is overridden
 with the configuration specified in the file. Requires root or manager
 privilege.
 
 -Mstree fname \<modify share tree>  
-Modifies the definition of the share tree (see *share_tree* (5)). The
+Modifies the definition of the share tree (see *share_tree*(5)). The
 modified sharetree is read from file fname. Requires root or manager
 privileges.
 
 -Mu fname \<modify ACL>  
 Takes the user access list (ACL) defined in **fname** to overwrite any
-existing ACL with the same name. See *access_list* (5) for information
+existing ACL with the same name. See *access_list*(5) for information
 on the ACL configuration format. Requires root or manager privilege.
 
 -Muser fname \<modify user>  
 Modify the user defined in **fname** in the xxQS_NAMExx cluster. The
-format of the user specification is described in *user* (5). Requires
+format of the user specification is described in *user*(5). Requires
 root or manager privileges.
 
 -Rattr obj_spec fname obj_instance,...  
@@ -229,7 +229,7 @@ Similar to **-rattr** (see below) but the definition of the list
 attributes whose content is to be replace is contained in the file named
 **fname**. As opposed to **-rattr**, multiple attributes can be
 modified. Their specification has to be enlisted in **fname** following
-the file format of the corresponding object (see *queue_conf* (5) for
+the file format of the corresponding object (see *queue_conf*(5) for
 the queue, for example).  
 Requires root/manager privileges.
 
@@ -246,7 +246,7 @@ configuration being specified as *queue* , *exechost* , *hostgroup* ,
 *pe* , *rqs* or *ckpt* in **obj_spec**. For the obj_spec *queue* the
 obj_instance can be a cluster queue name, a queue domain name or a queue
 instance name. Find more information concerning different queue names in
-*sge_types* (1). Depending on the type of the obj_instance this adds to
+*sge_types*(1). Depending on the type of the obj_instance this adds to
 the cluster queues attribute sublist the cluster queues implicit default
 configuration value or the queue domain configuration value or queue
 instance configuration value. The queue **load_thresholds** parameter is
@@ -263,39 +263,39 @@ separated list of object instances (e.g., the list of queues) to which
 the changes have to be applied are specified at the end of the
 command.  
 The following restriction applies: For the *exechost* object the
-**load_values** attribute cannot be modified (see *host_conf* (5)).  
+**load_values** attribute cannot be modified (see *host_conf*(5)).  
 Requires root or manager privileges.
 
 -acal calendar_name \<add calendar>  
 Adds a new calendar definition to the xxQS_NAMExx environment. Calendars
 are used in xxQS_NAMExx for defining availability and unavailability
 schedules of queues. The format of a calendar definition is described in
-*calendar_conf* (5).
+*calendar_conf*(5).
 
 With the calendar name given in the option argument *qconf* will open a
 temporary file and start up the text editor indicated by the environment
-variable EDITOR (default editor is *vi* (1) if EDITOR is not set). After
+variable EDITOR (default editor is *vi*(1) if EDITOR is not set). After
 entering the calendar definition and closing the editor the new calendar
-is checked and registered with *xxqs_name_sxx_qmaster* (8). Requires
+is checked and registered with *xxqs_name_sxx_qmaster*(8). Requires
 root/manager privileges.
 
 -ackpt ckpt_name \<add ckpt. environment>  
 Adds a checkpointing environment under the name **ckpt_name** to the
 list of checkpointing environments maintained by xxQS_NAMExx and to be
-usable to submit checkpointing jobs (see *checkpoint* (5) for details on
+usable to submit checkpointing jobs (see *checkpoint*(5) for details on
 the format of a checkpointing environment definition). *Qconf* retrieves
-a default checkpointing environment configuration and executes *vi* (1)
+a default checkpointing environment configuration and executes *vi*(1)
 (or $EDITOR if the EDITOR environment variable is set) to allow you to
 customize the checkpointing environment configuration. Upon exit from
 the editor, the checkpointing environment is registered with
-*xxqs_name_sxx_qmaster* (8). Requires root/manager privileges.
+*xxqs_name_sxx_qmaster*(8). Requires root/manager privileges.
 
 -aconf host,... \<add configuration>  
-Successively adds configurations (see *xxqs_name_sxx_conf* (5)) For the
+Successively adds configurations (see *xxqs_name_sxx_conf*(5)) For the
 hosts in the comma separated *fname_list*. For each host, an editor
-($EDITOR indicated or *vi* (1)) is invoked and the configuration for the
+($EDITOR indicated or *vi*(1)) is invoked and the configuration for the
 host can be entered. The configuration is registered with
-*xxqs_name_sxx_qmaster* (8) after saving the file and quitting the
+*xxqs_name_sxx_qmaster*(8) after saving the file and quitting the
 editor.  
 Requires root or manager privileges.
 
@@ -309,27 +309,27 @@ modified (from their defaults) at any later time via the **-me** option
 described below.  
 If the **host_template** argument is present, *qconf* retrieves the
 configuration of the specified execution host from
-*xxqs_name_sxx_qmaster* (8) or a generic template otherwise. The
-template is then stored in a file and *qconf* executes *vi* (1) (or the
+*xxqs_name_sxx_qmaster*(8) or a generic template otherwise. The
+template is then stored in a file and *qconf* executes *vi*(1) (or the
 editor indicated by $EDITOR if the EDITOR environment variable is set)
 to change the entries in the file. The format of the execution host
-specification is described in *host_conf* (5). When the changes are
+specification is described in *host_conf*(5). When the changes are
 saved in the editor and the editor is quit the new execution host is
-registered with *xxqs_name_sxx_qmaster* (8). Requires root/manager
+registered with *xxqs_name_sxx_qmaster*(8). Requires root/manager
 privileges.
 
 -ah hostname,... \<add administrative host>  
 Adds hosts **hostname** to the xxQS_NAMExx trusted host list (a host
 must be in this list to execute administrative xxQS_NAMExx commands, the
 sole exception to this being the execution of *qconf* on the
-*xxqs_name_sxx_qmaster* (8) node). The default xxQS_NAMExx installation
+*xxqs_name_sxx_qmaster*(8) node). The default xxQS_NAMExx installation
 procedures usually add all designated execution hosts (see the **-ae**
 option above) to the xxQS_NAMExx trusted host list automatically.
 Requires root or manager privileges.
 
 -ahgrp group \<add host group configuration>  
 Adds a new host group with the name specified in **group.** This command
-invokes an editor (either *vi* (1) or the editor indicated by the EDITOR
+invokes an editor (either *vi*(1) or the editor indicated by the EDITOR
 environment variable). The new host group entry is registered after
 changing the entry and exiting the editor. Requires root or manager
 privileges.
@@ -337,11 +337,11 @@ privileges.
 -arqs \[rqs_name\] \<add new RQS>  
 Adds one or more *Resource Quota Set* (RQS) description under the names
 **rqs_name** to the list of RQSs maintained by xxQS_NAMExx (see
-*xxqs_name_sxx_resource_quota* (5) for details on the format of a RQS
+*xxqs_name_sxx_resource_quota*(5) for details on the format of a RQS
 definition). *Qconf* retrieves a default RQS configuration and executes
-*vi* (1) (or $EDITOR if the EDITOR environment variable is set) to allow
+*vi*(1) (or $EDITOR if the EDITOR environment variable is set) to allow
 you to customize the RQS configuration. Upon exit from the editor, the
-RQS is registered with *xxqs_name_sxx_qmaster* (8). Requires root or
+RQS is registered with *xxqs_name_sxx_qmaster*(8). Requires root or
 manager privileges.
 
 -am user,... \<add managers>  
@@ -355,12 +355,12 @@ or manager privileges.
 -ap pe_name \<add new PE>  
 Adds a *Parallel Environment* (PE) description under the name
 **pe_name** to the list of PEs maintained by xxQS_NAMExx and to be
-usable to submit parallel jobs (see *xxqs_name_sxx_pe* (5) for details
+usable to submit parallel jobs (see *xxqs_name_sxx_pe*(5) for details
 on the format of a PE definition). *Qconf* retrieves a default PE
-configuration and executes *vi* (1) (or $EDITOR if the EDITOR
+configuration and executes *vi*(1) (or $EDITOR if the EDITOR
 environment variable is set) to allow you to customize the PE
 configuration. Upon exit from the editor, the PE is registered with
-*xxqs_name_sxx_qmaster* (8). Requires root/manager privileges.
+*xxqs_name_sxx_qmaster*(8). Requires root/manager privileges.
 
 -at thread_name \<activates thread in master>  
 Activates an additional thread in the master process. **thread_name**
@@ -371,17 +371,17 @@ time.
 
 -aprj \<add new project>  
 Adds a project description to the list of registered projects (see
-*project* (5)). *Qconf* retrieves a template project configuration and
-executes *vi* (1) (or $EDITOR if the EDITOR environment variable is set)
+*project*(5)). *Qconf* retrieves a template project configuration and
+executes *vi*(1) (or $EDITOR if the EDITOR environment variable is set)
 to allow you to customize the new project. Upon exit from the editor,
-the template is registered with *xxqs_name_sxx_qmaster* (8). Requires
+the template is registered with *xxqs_name_sxx_qmaster*(8). Requires
 root or manager privileges.
 
 -aq \[queue_name\] \<add new queue>  
-*Qconf* retrieves the default queue configuration (see *queue_conf* (5))
-and executes *vi* (1) (or $EDITOR if the EDITOR environment variable is
+*Qconf* retrieves the default queue configuration (see *queue_conf*(5))
+and executes *vi*(1) (or $EDITOR if the EDITOR environment variable is
 set) to allow you to customize the queue configuration. Upon exit from
-the editor, the queue is registered with *xxqs_name_sxx_qmaster* (8). A
+the editor, the queue is registered with *xxqs_name_sxx_qmaster*(8). A
 minimal configuration requires only that the queue name and queue
 hostlist be set. Requires root or manager privileges.
 
@@ -392,7 +392,7 @@ manager privileges.
 
 -astnode node_path=shares,... \<add share tree node>  
 Adds the specified share tree node(s) to the share tree (see
-*share_tree* (5)). The **node_path** is a hierarchical path
+*share_tree*(5)). The **node_path** is a hierarchical path
 (**\[/\]node_name\[\[/.\]node_name...\]**) specifying the location of
 the new node in the share tree. The base name of the node_path is the
 name of the new node. The node is initialized to the number of specified
@@ -400,14 +400,14 @@ shares. Requires root or manager privileges.
 
 -astree \<add share tree>  
 Adds the definition of a share tree to the system (see
-*share_tree* (5)). A template share tree is retrieved and an editor
-(either *vi* (1) or the editor indicated by $EDITOR) is invoked for
+*share_tree*(5)). A template share tree is retrieved and an editor
+(either *vi*(1) or the editor indicated by $EDITOR) is invoked for
 modifying the share tree definition. Upon exiting the editor, the
-modified data is registered with *xxqs_name_sxx_qmaster* (8). Requires
+modified data is registered with *xxqs_name_sxx_qmaster*(8). Requires
 root or manager privileges.
 
 -Astree fname \<add share tree>  
-Adds the definition of a share tree to the system (see *share_tree* (5))
+Adds the definition of a share tree to the system (see *share_tree*(5))
 from the file fname. Requires root or manager privileges.
 
 -au user,... acl_name,... \<add users to ACLs>  
@@ -417,12 +417,12 @@ privileges.
 
 -Auser fname \<add user>  
 Add the user defined in **fname** to the xxQS_NAMExx cluster. The format
-of the user specification is described in *user* (5). Requires root or
+of the user specification is described in *user*(5). Requires root or
 manager privileges.
 
 -auser \<add user>  
-Adds a user to the list of registered users (see *user* (5)). This
-command invokes an editor (either *vi* (1) or the editor indicated by
+Adds a user to the list of registered users (see *user*(5)). This
+command invokes an editor (either *vi*(1) or the editor indicated by
 the EDITOR environment variable) for a template user. The new user is
 registered after changing the entry and exiting the editor. Requires
 root or manager privileges.
@@ -434,7 +434,7 @@ initialized back to zero.
 -cq wc_queue_list \<clean queue>  
 Cleans queue from jobs which haven't been reaped. Primarily a
 development tool. Requires root/manager/operator privileges. Find a
-description of wc_queue_list in *sge_types* (1).
+description of wc_queue_list in *sge_types*(1).
 
 -dattr obj_spec attr_name val obj_instance,...  
 
@@ -464,7 +464,7 @@ manager privileges.
 
 -dh host_name,... \<delete administrative host>  
 Deletes hosts from the xxQS_NAMExx trusted host list. The host on which
-*xxqs_name_sxx_qmaster* (8) is currently running cannot be removed from
+*xxqs_name_sxx_qmaster*(8) is currently running cannot be removed from
 the list of administrative hosts. Requires root or manager privileges.
 
 -dhgrp group \<delete host group configuration>  
@@ -528,18 +528,18 @@ Prints a listing of all options.
 **Note:** The **-ks** switch is deprecated, may be removed in future
 release. Please use the **-kt** switch instead.  
 Used to shutdown xxQS_NAMExx components (daemons). In the form **-km**
-*xxqs_name_sxx_qmaster* (8) is forced to terminate in a controlled
+*xxqs_name_sxx_qmaster*(8) is forced to terminate in a controlled
 fashion. In the same way the **-ks** switch causes termination of the
-scheduler thread. Shutdown of running *xxqs_name_sxx_execd* (8)
+scheduler thread. Shutdown of running *xxqs_name_sxx_execd*(8)
 processes currently registered is initiated by the **-ke** option. If
 **-kej** is specified instead, all jobs running on the execution hosts
 are aborted prior to termination of the corresponding
-*xxqs_name_sxx_execd* (8). The comma separated host list specifies the
+*xxqs_name_sxx_execd*(8). The comma separated host list specifies the
 execution hosts to be addressed by the **-ke** and **-kej** option. If
 the keyword **all** is specified instead of a host list, all running
-*xxqs_name_sxx_execd* (8) processes are shutdown. Job abortion,
+*xxqs_name_sxx_execd*(8) processes are shutdown. Job abortion,
 initiated by the **-kej** option will result in **dr** state for all
-running jobs until *xxqs_name_sxx_execd* (8) is running again.  
+running jobs until *xxqs_name_sxx_execd*(8) is running again.  
 Requires root or manager privileges.
 
 "-kt  
@@ -549,7 +549,7 @@ will only be successful if the corresponding thread is running.
 
 -kec {id,...\|all} \<kill event client>  
 Used to shutdown event clients registered at
-*xxqs_name_sxx_qmaster* (8). The comma separated event client list
+*xxqs_name_sxx_qmaster*(8). The comma separated event client list
 specifies the event clients to be addressed by the **-kec** option. If
 the keyword **all** is specified instead of an event client list, all
 running event clients except special clients like the scheduler thread
@@ -565,113 +565,113 @@ of an object with a single command. Find more information concerning
 obj_spec and obj_instance in the description of **-aattr**
 
 -mc \<modify complex>  
-The complex configuration (see *complex* (5)) is retrieved, an editor is
-executed (either *vi* (1) or the editor indicated by $EDITOR) and the
+The complex configuration (see *complex*(5)) is retrieved, an editor is
+executed (either *vi*(1) or the editor indicated by $EDITOR) and the
 changed complex configuration is registered with
-*xxqs_name_sxx_qmaster* (8) upon exit of the editor. Requires root or
+*xxqs_name_sxx_qmaster*(8) upon exit of the editor. Requires root or
 manager privilege.
 
 -mcal calendar_name \<modify calendar>  
-The specified calendar definition (see *calendar_conf* (5)) is
-retrieved, an editor is executed (either *vi* (1) or the editor
+The specified calendar definition (see *calendar_conf*(5)) is
+retrieved, an editor is executed (either *vi*(1) or the editor
 indicated by $EDITOR) and the changed calendar definition is registered
-with *xxqs_name_sxx_qmaster* (8) upon exit of the editor. Requires root
+with *xxqs_name_sxx_qmaster*(8) upon exit of the editor. Requires root
 or manager privilege.
 
 -mckpt ckpt_name \<modify ckpt. environment>  
 Retrieves the current configuration for the specified checkpointing
-environment, executes an editor (either *vi* (1) or the editor indicated
+environment, executes an editor (either *vi*(1) or the editor indicated
 by the EDITOR environment variable) and registers the new configuration
-with the *xxqs_name_sxx_qmaster* (8). Refer to *checkpoint* (5) for
+with the *xxqs_name_sxx_qmaster*(8). Refer to *checkpoint*(5) for
 details on the checkpointing environment configuration format. Requires
 root or manager privilege.
 
 -mconf \[host,...\|global\] \<modify configuration>  
 The configuration for the specified host is retrieved, an editor is
-executed (either *vi* (1) or the editor indicated by $EDITOR) and the
-changed configuration is registered with *xxqs_name_sxx_qmaster* (8)
+executed (either *vi*(1) or the editor indicated by $EDITOR) and the
+changed configuration is registered with *xxqs_name_sxx_qmaster*(8)
 upon exit of the editor. If the optional host argument is omitted or if
 the special host name **global is specified, the** global configuration
 is modified. The format of the configuration is described in
-*xxqs_name_sxx_conf* (5).  
+*xxqs_name_sxx_conf*(5).  
 Requires root or manager privilege.
 
 -me hostname \<modify execution host>  
 Retrieves the current configuration for the specified execution host,
-executes an editor (either *vi* (1) or the editor indicated by the
+executes an editor (either *vi*(1) or the editor indicated by the
 EDITOR environment variable) and registers the changed configuration
-with *xxqs_name_sxx_qmaster* (8) upon exit from the editor. The format
-of the execution host configuration is described in *host_conf* (5).
+with *xxqs_name_sxx_qmaster*(8) upon exit from the editor. The format
+of the execution host configuration is described in *host_conf*(5).
 Requires root or manager privilege.
 
 -mhgrp group \<modify host group configuration>  
 The host group entries for the host group specified in **group** are
-retrieved and an editor (either *vi* (1) or the editor indicated by the
+retrieved and an editor (either *vi*(1) or the editor indicated by the
 EDITOR environment variable) is invoked for modifying the host group
 configuration. By closing the editor, the modified data is registered.
 The format of the host group configuration is described in
-*hostgroup* (5). Requires root or manager privileges.
+*hostgroup*(5). Requires root or manager privileges.
 
 -mrqs \[rqs_name\] \<modify RQS configuration>  
 Retrieves the resource quota set (RQS)configuration defined in rqs_name,
 or if rqs_name is not given, retrieves all resource quota sets, executes
-an editor (either *vi* (1) or the editor indicated by the EDITOR
+an editor (either *vi*(1) or the editor indicated by the EDITOR
 environment variable) and registers the new configuration with the
-*xxqs_name_sxx_qmaster* (8). Refer to *xxqs_name_sxx_resource_quota* (5)
+*xxqs_name_sxx_qmaster*(8). Refer to *xxqs_name_sxx_resource_quota*(5)
 for details on the RQS configuration format. Requires root or manager
 privilege.
 
 -mp pe_name \<modify PE configuration>  
 Retrieves the current configuration for the specified *parallel
-environment* (PE), executes an editor (either *vi* (1) or the editor
+environment* (PE), executes an editor (either *vi*(1) or the editor
 indicated by the EDITOR environment variable) and registers the new
-configuration with the *xxqs_name_sxx_qmaster* (8). Refer to
-*xxqs_name_sxx_pe* (5) for details on the PE configuration format.
+configuration with the *xxqs_name_sxx_qmaster*(8). Refer to
+*xxqs_name_sxx_pe*(5) for details on the PE configuration format.
 Requires root or manager privilege.
 
 -mprj project \<modify project>  
-Data for the specific project is retrieved (see *project* (5)) and an
-editor (either *vi* (1) or the editor indicated by $EDITOR) is invoked
+Data for the specific project is retrieved (see *project*(5)) and an
+editor (either *vi*(1) or the editor indicated by $EDITOR) is invoked
 for modifying the project definition. Upon exiting the editor, the
 modified data is registered. Requires root or manager privileges.
 
 -mq queuename \<modify queue configuration>  
 Retrieves the current configuration for the specified queue, executes an
-editor (either *vi* (1) or the editor indicated by the EDITOR
+editor (either *vi*(1) or the editor indicated by the EDITOR
 environment variable) and registers the new configuration with the
-*xxqs_name_sxx_qmaster* (8). Refer to *queue_conf* (5) for details on
+*xxqs_name_sxx_qmaster*(8). Refer to *queue_conf*(5) for details on
 the queue configuration format. Requires root or manager privilege.
 
 -msconf \<modify scheduler configuration>  
-The current scheduler configuration (see *sched_conf* (5)) is retrieved,
-an editor is executed (either *vi* (1) or the editor indicated by
+The current scheduler configuration (see *sched_conf*(5)) is retrieved,
+an editor is executed (either *vi*(1) or the editor indicated by
 $EDITOR) and the changed configuration is registered with
-*xxqs_name_sxx_qmaster* (8) upon exit of the editor. Requires root or
+*xxqs_name_sxx_qmaster*(8) upon exit of the editor. Requires root or
 manager privilege.
 
 -mstnode node_path=shares,... \<modify share tree node>  
 Modifies the specified share tree node(s) in the share tree (see
-*share_tree* (5)). The **node_path is a hierarchical path**
+*share_tree*(5)). The **node_path is a hierarchical path**
 (**\[/\]node_name\[\[/.\]node_name...\])** specifying the location of an
 existing node in the share tree. The node is set to the number of
 specified **shares.** Requires root or manager privileges.
 
 -mstree \<modify share tree>  
-Modifies the definition of the share tree (see *share_tree* (5)). The
-present share tree is retrieved and an editor (either *vi* (1) or the
+Modifies the definition of the share tree (see *share_tree*(5)). The
+present share tree is retrieved and an editor (either *vi*(1) or the
 editor indicated by $EDITOR) is invoked for modifying the share tree
 definition. Upon exiting the editor, the modified data is registered
-with *xxqs_name_sxx_qmaster* (8). Requires root or manager privileges.
+with *xxqs_name_sxx_qmaster*(8). Requires root or manager privileges.
 
 -mu acl_name \<modify user access lists>  
 Retrieves the current configuration for the specified user access list,
-executes an editor (either *vi* (1) or the editor indicated by the
+executes an editor (either *vi*(1) or the editor indicated by the
 EDITOR environment variable) and registers the new configuration with
-the *xxqs_name_sxx_qmaster* (8). Requires root or manager privilege.
+the *xxqs_name_sxx_qmaster*(8). Requires root or manager privilege.
 
 -muser user \<modify user>  
-Data for the specific user is retrieved (see *user* (5)) and an editor
-(either *vi* (1) or the editor indicated by the EDITOR environment
+Data for the specific user is retrieved (see *user*(5)) and an editor
+(either *vi*(1) or the editor indicated by the EDITOR environment
 variable) is invoked for modifying the user definition. Upon exiting the
 editor, the modified data is registered. Requires root or manager
 privileges.
@@ -684,7 +684,7 @@ privileges.
 Delete the values of the attributes defined in **attr_nm from the **
 object defined in **obj_spec. Obj_spec can be "queue_instance"** or
 "queue_domain". The names of the attributes are described in
-*queue_conf* (1).  
+*queue_conf*(1).  
 This operation only works on a single queue instance or domain. It
 cannot be used on a cluster queue. In the case where the **obj_spec is**
 "queue@@hostgroup", the attribute values defined in **attr_nm which
@@ -712,7 +712,7 @@ Requires root or manager privilege.
 -rsstnode node_path,... \<show share tree node>  
 Recursively shows the name and shares of the specified share tree
 node(s) and the names and shares of its child nodes. (see
-*share_tree* (5)). The **node_path is a hierarchical path**
+*share_tree*(5)). The **node_path is a hierarchical path**
 (**\[/\]node_name\[\[/.\]node_name...\])** specifying the location of a
 node in the share tree.
 
@@ -738,7 +738,7 @@ comma separated host list argument is omitted or the special string
 **global is** given, the global configuration is displayed. The
 configuration in effect on a certain host is the merger of the global
 configuration and the host specific local configuration. The format of
-the configuration is described in *xxqs_name_sxx_conf* (5).
+the configuration is described in *xxqs_name_sxx_conf*(5).
 
 -sconfl \<show configuration list>  
 Display a list of hosts for which configurations are available. The
@@ -814,7 +814,7 @@ concerning the host group or the execution host. In this case queue
 domain names resp. queue instances are returned.
 
 Attr_name can be any of the configuration file keywords enlisted in
-*queue_conf* (5) or *host_conf* (5). Also wildcards can be used to match
+*queue_conf*(5) or *host_conf*(5). Also wildcards can be used to match
 multiple attributes.
 
 Val can be an arbitrary string or a wildcard expression.
@@ -827,14 +827,14 @@ argument.
 Show a list of all currently defined *parallel environment***s (PEs).**
 
 -sprj project \<show project>  
-Shows the definition of the specified project (see *project* (5)).
+Shows the definition of the specified project (see *project*(5)).
 
 -sprjl \<show project list>  
 Shows the list of all currently defined projects.
 
 -sq wc_queue_list \<show queues>  
 Displays one or multiple cluster queues or queue instances. A
-description of wc_queue_list can be found in *sge_types* (1).
+description of wc_queue_list can be found in *sge_types*(1).
 
 -sql \<show queue list>  
 Show a list of all currently defined cluster queues.
@@ -844,20 +844,20 @@ Displays the xxQS_NAMExx submit host list.
 
 -ssconf \<show scheduler configuration>  
 Displays the current scheduler configuration in the format explained in
-*sched_conf* (5).
+*sched_conf*(5).
 
 -sstnode node_path,... \<show share tree node>  
 Shows the name and shares of the specified share tree node(s) (see
-*share_tree* (5)). The **node_path is a hierarchical path**
+*share_tree*(5)). The **node_path is a hierarchical path**
 (**\[/\]node_name\[\[/.\]node_name...\])** specifying the location of a
 node in the share tree.
 
 -sstree \<show share tree>  
-Shows the definition of the share tree (see *share_tree* (5)).
+Shows the definition of the share tree (see *share_tree*(5)).
 
 -sst \<show formatted share tree>  
 Shows the definition of the share tree in a tree view (see
-*share_tree* (5)).
+*share_tree*(5)).
 
 -sss \<show scheduler status>  
 Currently displays the host on which the xxQS_NAMExx scheduler is active
@@ -871,7 +871,7 @@ Displays a list of names of all currently defined xxQS_NAMExx user
 access lists (ACLs).
 
 -suser user,... \<show user>  
-Shows the definition of the specified user(s) (see *user* (5)).
+Shows the definition of the specified user(s) (see *user*(5)).
 
 -suserl \<show users>  
 Shows the list of all currently defined users.
@@ -885,8 +885,8 @@ Requires root or manager privileges.
 
 Note, that the reasons for job requirements being invalid with respect
 to resource availability of queues are displayed using the format as
-described for the *qstat* (1) **-F option (see description of ** **Full
-Format in section OUTPUT FORMATS of the** *qstat* (1) manual page.
+described for the *qstat*(1) **-F option (see description of ** **Full
+Format in section OUTPUT FORMATS of the** *qstat*(1) manual page.
 
 # ENVIRONMENTAL VARIABLES
 
@@ -908,12 +908,12 @@ addition the level of detail in which debug information is generated is
 defined.
 
 xxQS_NAME_Sxx_QMASTER_PORT  
-If set, specifies the tcp port on which *xxqs_name_sxx_qmaster* (8) is
+If set, specifies the tcp port on which *xxqs_name_sxx_qmaster*(8) is
 expected to listen for communication requests. Most installations will
 use a services map entry instead to define that port.
 
 xxQS_NAME_Sxx_EXECD_PORT  
-If set, specifies the tcp port on which *xxqs_name_sxx_execd* (8) is
+If set, specifies the tcp port on which *xxqs_name_sxx_execd*(8) is
 expected to listen for communication requests. Most installations will
 use a services map entry instead to define that port.
 
@@ -934,12 +934,12 @@ taking effect on next invocation of the queue (i.e., the next job).
 
 # SEE ALSO
 
-*xxqs_name_sxx_intro* (1), *qstat* (1), *checkpoint* (5), *complex* (5),
-*xxqs_name_sxx_conf* (5), *host_conf* (5), *xxqs_name_sxx_pe* (5),
-*queue_conf* (5), *xxqs_name_sxx_execd* (8),
-*xxqs_name_sxx_qmaster* (8), *xxqs_name_sxx_resource_quota* (5)
+*xxqs_name_sxx_intro*(1), *qstat*(1), *checkpoint*(5), *complex*(5),
+*xxqs_name_sxx_conf*(5), *host_conf*(5), *xxqs_name_sxx_pe*(5),
+*queue_conf*(5), *xxqs_name_sxx_execd*(8),
+*xxqs_name_sxx_qmaster*(8), *xxqs_name_sxx_resource_quota*(5)
 
 # COPYRIGHT
 
-See *xxqs_name_sxx_intro* (1) for a full statement of rights and
+See *xxqs_name_sxx_intro*(1) for a full statement of rights and
 permissions.

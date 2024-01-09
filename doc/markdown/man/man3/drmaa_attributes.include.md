@@ -54,12 +54,12 @@ names** string vector containing the set of supported non-vector DRMAA
 job template attribute names. The set includes supported DRMAA reserved
 attribute names and xxQS_NAMExx native attribute names. The names in the
 names string vector can be extracted using
-*drmaa_get_next_attr_name* (3). The number of names in the names string
-vector can be determined using *drmaa_get_num_attr_names* (3). Note that
+*drmaa_get_next_attr_name*(3). The number of names in the names string
+vector can be determined using *drmaa_get_num_attr_names*(3). Note that
 this function is only available in the 1.0 implementation. The caller is
 responsible for releasing the names string vector returned into
-*values*** using ** *drmaa_release_attr_names* (3). Use
-*drmaa_set_attribute* (3) and *drmaa_get_attribute* (3) for setting and
+*values*** using ** *drmaa_release_attr_names*(3). Use
+*drmaa_set_attribute*(3) and *drmaa_get_attribute*(3) for setting and
 inspecting non-vector attributes.
 
 ## drmaa_get_vector_attribute_names()
@@ -69,10 +69,10 @@ a DRMAA names** string vector containing the set of supported vector
 DRMAA job template attribute names. The set includes supported DRMAA
 reserved attribute names and xxQS_NAMExx native attribute names. The
 names in the names string vector can be extracted using
-*drmaa_get_next_attr_name* (3). The caller is responsible for releasing
+*drmaa_get_next_attr_name*(3). The caller is responsible for releasing
 the names string vector returned into *values*** using **
-*drmaa_release_attr_names* (3). Use *drmaa_set_vector_attribute* (3) and
-*drmaa_get_vector_attribute* (3) for setting and inspecting vector
+*drmaa_release_attr_names*(3). Use *drmaa_set_vector_attribute*(3) and
+*drmaa_get_vector_attribute*(3) for setting and inspecting vector
 attributes.
 
 ## drmaa_get_next_attr_name()
@@ -97,7 +97,7 @@ associated with the DRMAA names string vector, *values***.**
 
 DRMAA job template attributes can be set from six different sources. In
 order of precedence, from lowest to highest, these are: options set by
-DRMAA automatically by default, options set in the *sge_request* (5)
+DRMAA automatically by default, options set in the *sge_request*(5)
 file(s), options set in the script file, options set by the
 drmaa_job_category attribute, options set by the
 drmaa_native_specification attribute, and options set through other
@@ -109,21 +109,21 @@ have priority 0, all jobs will be treated as binary, i.e. no scripts
 args will be parsed, all jobs will be executed without a wrapper shell,
 and jobs which are unschedulable will cause a submit error.
 
-The *sge_request* (5) file, found in the
+The *sge_request*(5) file, found in the
 $xxQS_NAME_Sxx_ROOT/$xxQS_NAME_Sxx_CELL/common directory, may contain
 options to be applied to all jobs. The .sge_request file found in the
 user's home directory or the current working directory may also contain
-options to be applied to certain jobs. See *sge_request* (5) for more
+options to be applied to certain jobs. See *sge_request*(5) for more
 information.
 
-If the *sge_request* (5) file contains "-b no" or if the
+If the *sge_request*(5) file contains "-b no" or if the
 drmaa_native_specification attribute is set and contains "-b no", the
 script file will be parsed for in-line arguments. Otherwise, no scripts
-args will be interpreted. See *qsub* (1) for more information.
+args will be interpreted. See *qsub*(1) for more information.
 
 If the drmaa_job_category attribute is set, and the category it points
-to exists in one of the *qtask* (5) files, the options associated with
-that category will be applied to the job template. See *qtask* (5) and
+to exists in one of the *qtask*(5) files, the options associated with
+that category will be applied to the job template. See *qtask*(5) and
 the drmaa_job_category attribute below for more information.
 
 If the drmaa_native_specification attribute is set, all options
@@ -144,7 +144,7 @@ multi-threaded context.
 
 ## Attribute Correlations
 
-The following DRMAA attributes correspond to the following *qsub* (1)
+The following DRMAA attributes correspond to the following *qsub*(1)
 options:
 
 >     DRMAA Attribute                  qsub Option
@@ -182,7 +182,7 @@ user's home directory.
 The file pointed to by remote_command may either be an executable binary
 or an executable script. If a script, it must include the path to the
 shell in a #! line at the beginning of the script. By default, the
-remote command will be executed directly, as by *exec* (2). To have the
+remote command will be executed directly, as by *exec*(2). To have the
 remote command executed in a shell, such as to preserve environment
 settings, use the drmaa_native_specification attribute to include the
 "-shell yes" option. Jobs which are executed by a wrapper shell fail
@@ -200,7 +200,7 @@ and 'drmaa_active' are supported. When 'drmaa_active' is used the job is
 submitted in a runnable state. When 'drmaa_hold' is used the job is
 submitted in user hold state (either DRMAA_PS_USER_ON_HOLD or
 DRMAA_PS_USER_SYSTEM_ON_HOLD). This attribute is largely equivalent to
-the *qsub* (1) submit option '-h'.
+the *qsub*(1) submit option '-h'.
 
 ## drmaa_wd - "\<directory_name>"
 
@@ -209,7 +209,7 @@ Specifies the directory name where the job will be executed. A
 ** denotes the remaining string portion as a relative directory name
 that is resolved relative to the job user's home directory at the
 execution host. When the DRMAA job template is used for bulk job
-submission (see also *drmaa_run_bulk_job* (3)) the '$drmaa_incr_ph$'
+submission (see also *drmaa_run_bulk_job*(3)) the '$drmaa_incr_ph$'
 placeholder can be used at any position within *directory_name*** ** to
 cause a substitution with the parametric job's index. The
 *directory_name*** must be specified in a syntax that is common at the
@@ -228,7 +228,7 @@ hosts.
 ## drmaa_job_name - "\<job_name>"
 
 Specifies the job's name. Setting the job name is equivalent to use of
-*qsub* (1) submit option '-N' with *job_name*** as option argument. **
+*qsub*(1) submit option '-N' with *job_name*** as option argument. **
 
 ## drmaa_input_path - "\[\<hostname>\]:\<file_path>"
 
@@ -246,7 +246,7 @@ input file is always expected at the host where the job is executed
 regardless of any *hostname*** specified. **
 
 If the DRMAA job template will be used for bulk job submission, (See
-also *drmaa_run_bulk_job* (3)) the '$drmaa_incr_ph$' placeholder can be
+also *drmaa_run_bulk_job*(3)) the '$drmaa_incr_ph$' placeholder can be
 used at any position within *file_path*** to cause a substitution with
 the parametric job's index. A '$drmaa_hd_ph$' ** placeholder at the
 beginning of *file_path*** denotes the remaining portion of the **
@@ -275,7 +275,7 @@ output file is always kept at the host where the job is executed
 regardless of any *hostname*** specified. **
 
 If the DRMAA job template will be used for of bulk job submission (see
-also *drmaa_run_bulk_job* (3)) the '$drmaa_incr_ph$' placeholder can be
+also *drmaa_run_bulk_job*(3)) the '$drmaa_incr_ph$' placeholder can be
 used at any position within the *file_path* to cause a substitution with
 the parametric job's index. A '$drmaa_hd_ph$' placeholder at the
 beginning of *file_path*** denotes the remaining portion of the
@@ -305,7 +305,7 @@ error file is always kept at the host where the job is executed
 regardless of any *hostname*** specified. **
 
 If the DRMAA job template will be used for of bulk job submission (see
-also *drmaa_run_bulk_job* (3)) the '$drmaa_incr_ph$' placeholder can be
+also *drmaa_run_bulk_job*(3)) the '$drmaa_incr_ph$' placeholder can be
 used at any position within the *file_path* to cause a substitution with
 the parametric job's index. A '$drmaa_hd_ph$' placeholder at the
 beginning of the *file_path*** denotes the remaining portion of the
@@ -335,7 +335,7 @@ Specifies the arguments to the job.
 ## drmaa_job_category - "\<category>"
 
 Specifies the DRMAA job category. The *category*** string is used ** by
-xxQS_NAMExx as a reference into the *qtask* (5) file. Certain *qsub* (1)
+xxQS_NAMExx as a reference into the *qtask*(5) file. Certain *qsub*(1)
 options used in the referenced qtask file line are applied to the job
 template before submission to allow site-specific resolving of resources
 and/or policies. The cluster qtask file, the local qtask file, and the
@@ -354,14 +354,14 @@ is set.
 
 ## drmaa_native_specification - "\<native_specification>"
 
-Specifies xxQS_NAMExx native *qsub* (1) options which will be
+Specifies xxQS_NAMExx native *qsub*(1) options which will be
 interpreted as part of the DRMAA job template. All options available to
-*qsub* (1) command may be used in the *native_specification***, except
+*qsub*(1) command may be used in the *native_specification***, except
 for -help, -sync,** -t, -verify, and -w w\|v. The -cwd option may only
 be used if the SGE_DRMAA_ALLOW_CWD environment variable is set. This is
 because the current parsing algorithm for -cwd is not thread-safe.
 Options set in the *native* specification** will be overridden by the
-corresponding DRMAA attributes. See** *qsub* (1) for more information on
+corresponding DRMAA attributes. See** *qsub*(1) for more information on
 qsub options.
 
 ## drmaa_v\_env - "\<name1>=\<value1> \<name2>=\<value2> ...
@@ -413,7 +413,7 @@ to "". Any combination of 'e', 'i' and 'o' may be specified. See
 drmaa_input_path, drmaa_output_path and drmaa_error_path for information
 about how to specify the standard input file, standard output file and
 standard error file. The file transfer mechanism itself must be
-configured by the administrator (see *sge_conf* (5) ). When it is
+configured by the administrator (see *sge_conf*(5) ). When it is
 configured, the administrator has to enable drmaa_transfer_files. If it
 is not configured, "drmaa_transfer_files" is not enabled and can't be
 used.
@@ -444,7 +444,7 @@ addition the level of detail in which debug information is generated is
 defined.
 
 xxQS_NAME_Sxx_QMASTER_PORT  
-If set, specifies the tcp port on which *xxqs_name_sxx_qmaster* (8) is
+If set, specifies the tcp port on which *xxqs_name_sxx_qmaster*(8) is
 expected to listen for communication requests. Most installations will
 use a services map entry instead to define that port.
 
@@ -494,4 +494,4 @@ When there are no more entries in the vector.
 
 # SEE ALSO
 
-*drmaa_jobtemplate* (3)and *drmaa_submit* (3).
+*drmaa_jobtemplate*(3)and *drmaa_submit*(3).

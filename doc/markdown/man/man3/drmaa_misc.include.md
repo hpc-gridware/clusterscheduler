@@ -54,12 +54,12 @@ DRMAA error number, *drmaa_errno***. For invalid DRMAA error codes
 
 The drmaa_get_contact() returns an opaque string containing contact
 information related to the current DRMAA session to be used with the
-*drmaa_init* (3) function. The opaque string contains the information
+*drmaa_init*(3) function. The opaque string contains the information
 required by drmaa_init() to reconnect to the current session instead of
-creating a new session. *drmaa_init* (3) function.
+creating a new session. *drmaa_init*(3) function.
 
 The drmaa_get_contact() function returns the same value before and after
-*drmaa_init* (3) is called.
+*drmaa_init*(3) is called.
 
 ## drmaa_version()
 
@@ -75,7 +75,7 @@ The drmaa_get_DRM_system() function returns into *drm_system*** up to **
 and ** version information.
 
 The drmaa_get_DRM_system() function returns the same value before and
-after *drmaa_init* (3) is called.
+after *drmaa_init*(3) is called.
 
 ## drmaa_get_DRMAA_implementation()
 
@@ -86,7 +86,7 @@ In the current implementation, the drmaa_get_DRMAA_implementation()
 function returns the same result as the drmaa_get_DRM_system() function.
 
 The drmaa_get_DRMAA_implementation() function returns the same value
-before and after *drmaa_init* (3) is called.
+before and after *drmaa_init*(3) is called.
 
 # ENVIRONMENTAL VARIABLES
 
@@ -108,7 +108,7 @@ addition the level of detail in which debug information is generated is
 defined.
 
 xxQS_NAME_Sxx_QMASTER_PORT  
-If set, specifies the tcp port on which *xxqs_name_sxx_qmaster* (8) is
+If set, specifies the tcp port on which *xxqs_name_sxx_qmaster*(8) is
 expected to listen for communication requests. Most installations will
 use a services map entry instead to define that port.
 
@@ -153,4 +153,4 @@ Failed because there is no active session.
 
 # SEE ALSO
 
-*drmaa_session* (3).
+*drmaa_session*(3).

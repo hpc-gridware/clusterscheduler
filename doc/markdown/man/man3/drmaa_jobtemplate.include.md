@@ -83,8 +83,8 @@ job template handling
 
 The drmaa_allocate_job_template() function allocates a new DRMAA job
 template into *jt***. DRMAA job templates describe specifics of jobs
-that are submitted** using *drmaa_run_job* (3) and
-*drmaa_run_bulk_jobs* (3).
+that are submitted** using *drmaa_run_job*(3) and
+*drmaa_run_bulk_jobs*(3).
 
 ## drmaa_delete_job_template()
 
@@ -116,9 +116,9 @@ passed. The ***value*** pointer array ** must be *NULL*** terminated.**
 The drmaa_get_vector_attribute() function returns into *values*** a
 DRMAA attribute ** string vector containing all string values stored in
 the vector attribute, *name***. ** The values in the DRMAA values string
-vector can be extracted using *drmaa_get_next_attr_value* (3). The
+vector can be extracted using *drmaa_get_next_attr_value*(3). The
 caller is responsible for releasing the DRMAA values string vector
-returned into *values*** using ** *drmaa_release_attr_values* (3).
+returned into *values*** using ** *drmaa_release_attr_values*(3).
 
 ## drmaa_get_next_attr_value()
 
@@ -158,7 +158,7 @@ addition the level of detail in which debug information is generated is
 defined.
 
 xxQS_NAME_Sxx_QMASTER_PORT  
-If set, specifies the tcp port on which *xxqs_name_sxx_qmaster* (8) is
+If set, specifies the tcp port on which *xxqs_name_sxx_qmaster*(8) is
 expected to listen for communication requests. Most installations will
 use a services map entry instead to define that port.
 
@@ -233,4 +233,4 @@ When there are no more entries in the vector.
 
 # SEE ALSO
 
-*drmaa_submit* (3)and *drmaa_attributes* (3).
+*drmaa_submit*(3)and *drmaa_attributes*(3).

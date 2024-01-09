@@ -18,7 +18,7 @@ xxqs_name_sxx_execd - xxQS_NAMExx job execution agent
 
 *xxqs_name_sxx_execd* controls the xxQS_NAMExx queues local to the
 machine on which *xxqs_name_sxx_execd* is running and executes/controls
-the jobs sent from *xxqs_name_sxx_qmaster* (8) to be run on these
+the jobs sent from *xxqs_name_sxx_qmaster*(8) to be run on these
 queues.  
 
 # OPTIONS
@@ -31,7 +31,7 @@ Prints a listing of all options.
 
 If a **load sensor** is configured for *xxqs_name_sxx_execd* via either
 the global host configuration or the execution-host-specific cluster
-configuration (See *xxqs_name_sxx_conf* (5).), the executable path of
+configuration (See *xxqs_name_sxx_conf*(5).), the executable path of
 the load sensor is invoked by *xxqs_name_sxx_execd* on a regular basis
 and delivers one or multiple load figures for the execution host (e.g.
 users currently logged in) or the complete cluster (e.g. free disk space
@@ -59,7 +59,7 @@ format is as follows:
     host for which load is reported or the special name "global".
 
 -   The second part is the symbolic name of the load value as defined in
-    the host or global complex list (see *complex* (5) for details). If
+    the host or global complex list (see *complex*(5) for details). If
     a load value is reported for which no entry in the host or global
     complex list exists, the reported load value is not used.
 
@@ -87,13 +87,13 @@ addition the level of detail in which debug information is generated is
 defined.
 
 xxQS_NAME_Sxx_QMASTER_PORT  
-If set, specifies the tcp port on which *xxqs_name_sxx_qmaster* (8) is
+If set, specifies the tcp port on which *xxqs_name_sxx_qmaster*(8) is
 expected to listen for communication requests. Most installations will
 use a services map entry for the service "sge_qmaster" instead to define
 that port.
 
 xxQS_NAME_Sxx_EXECD_PORT  
-If set, specifies the tcp port on which *xxqs_name_sxx_execd* (8) is
+If set, specifies the tcp port on which *xxqs_name_sxx_execd*(8) is
 expected to listen for communication requests. Most installations will
 use a services map entry for the service "sge_execd" instead to define
 that port.
@@ -124,10 +124,10 @@ encrypted passwords. If available, the password file will be used by
 
 # SEE ALSO
 
-*xxqs_name_sxx_intro* (1), *xxqs_name_sxx_conf* (5), *complex* (5),
-*xxqs_name_sxx_qmaster* (8).
+*xxqs_name_sxx_intro*(1), *xxqs_name_sxx_conf*(5), *complex*(5),
+*xxqs_name_sxx_qmaster*(8).
 
 # COPYRIGHT
 
-See *xxqs_name_sxx_intro* (1) for a full statement of rights and
+See *xxqs_name_sxx_intro*(1) for a full statement of rights and
 permissions.

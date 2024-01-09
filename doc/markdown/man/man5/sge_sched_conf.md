@@ -14,7 +14,7 @@ xxqs_name_sxx_sched_conf - xxQS_NAMExx default scheduler configuration file
 
 *sched_conf* defines the configuration file format for xxQS_NAMExx's
 scheduler. In order to modify the configuration, use the graphical
-user's interface *qmon* (1) or the *-msconf* option of the *qconf* (1)
+user's interface *qmon*(1) or the *-msconf* option of the *qconf*(1)
 command. A default configuration is provided together with the
 xxQS_NAMExx distribution package.
 
@@ -38,8 +38,8 @@ Currently **default** is the only allowed setting.
 
 A simple algebraic expression used to derive a single weighted load
 value from all or part of the load parameters reported by
-*xxqs_name_sxx_execd* (8) for each host and from all or part of the
-consumable resources (see *xxqs_name_sxx_complex* (5)) being maintained for each host.
+*xxqs_name_sxx_execd*(8) for each host and from all or part of the
+consumable resources (see *xxqs_name_sxx_complex*(5)) being maintained for each host.
 The load formula expression syntax is that of a summation weighted load
 values, that is:
 
@@ -47,10 +47,10 @@ values, that is:
 
 **Note**, no blanks are allowed in the load formula.  
 The load values and consumable resources (load_val1, ...) are specified
-by the name defined in the complex (see *xxqs_name_sxx_complex* (5)).  
+by the name defined in the complex (see *xxqs_name_sxx_complex*(5)).  
 **Note:** Administrator defined load values (see the **load_sensor**
-parameter in *xxqs_name_sxx_conf* (5) for details) and consumable
-resources available for all hosts (see *xxqs_name_sxx_complex* (5)) may be used as
+parameter in *xxqs_name_sxx_conf*(5) for details) and consumable
+resources available for all hosts (see *xxqs_name_sxx_complex*(5)) may be used as
 well as xxQS_NAMExx default load parameters.  
 The weighting factors (w1, ...) are positive integers. After the
 expression is evaluated for each host the results are assigned to the
@@ -84,7 +84,7 @@ performed.
 The adjusted load and consumable values are used to compute the combined
 and weighted load of the hosts with the **load_formula** (see above) and
 to compare the load and consumable values against the load threshold
-lists defined in the queue configurations (see *xxqs_name_sxx_queue_conf* (5)). If the
+lists defined in the queue configurations (see *xxqs_name_sxx_queue_conf*(5)). If the
 **load_formula** consists simply of the default CPU load average
 parameter *np_load_avg*, and if the jobs are very compute intensive, one
 might want to set the **job_load_adjustments** list to
@@ -115,16 +115,16 @@ arbitrary number of jobs.
 ## **schedule_interval**
 
 At the time the scheduler thread initially registers at the event master
-thread in *xxqs_name_sxx_qmaster* (8)process **schedule_interval** is
+thread in *xxqs_name_sxx_qmaster*(8)process **schedule_interval** is
 used to set the time interval in which the event master thread sends
 scheduling event updates to the scheduler thread. A scheduling event is
-a status change that has occurred within *xxqs_name_sxx_qmaster* (8)
+a status change that has occurred within *xxqs_name_sxx_qmaster*(8)
 which may trigger or affect scheduler decisions (e.g. a job has finished
 and thus the allocated resources are available again).  
 In the xxQS_NAMExx default scheduler the arrival of a scheduling event
 report triggers a scheduler run. The scheduler waits for event reports
 otherwise.  
-**Schedule_interval** is a time value (see *xxqs_name_sxx_queue_conf* (5) for a
+**Schedule_interval** is a time value (see *xxqs_name_sxx_queue_conf*(5) for a
 definition of the syntax of time values).
 
 ## **queue_sort_method**
@@ -132,12 +132,12 @@ definition of the syntax of time values).
 This parameter determines in which order several criteria are taken into
 account to product a sorted queue list. Currently, two settings are
 valid: **seqno** and **load**. However in both cases, xxQS_NAMExx
-attempts to maximize the number of soft requests (see *qsub* (1) **-s**
+attempts to maximize the number of soft requests (see *qsub*(1) **-s**
 option) being fulfilled by the queues for a particular as the primary
 criterion.  
 Then, if the **queue_sort_method** parameter is set to **seqno**,
 xxQS_NAMExx will use the **seq_no** parameter as configured in the
-current queue configurations (see *xxqs_name_sxx_queue_conf* (5)) as the next
+current queue configurations (see *xxqs_name_sxx_queue_conf*(5)) as the next
 criterion to sort the queue list. The **load_formula** (see above) has
 only a meaning if two queues have equal sequence numbers. If
 **queue_sort_method** is set to **load** the load according the
@@ -156,7 +156,7 @@ decreases) usage to implement a sliding window for achieving the share
 entitlements as defined by the share tree. The **halftime** defines the
 time interval in which accumulated usage will have been decayed to half
 its original value. Valid values are specified in hours or according to
-the time format as specified in *queue_conf* (5).  
+the time format as specified in *queue_conf*(5).  
 If the value is set to 0, the usage is not decayed.
 
 ## **usage_weight_list**
@@ -203,44 +203,44 @@ Values are of type real.
 
 The maximum number of functional tickets available for distribution by
 xxQS_NAMExx. Determines the relative importance of the functional
-policy. See under *sge_priority* (5) for an overview on job priorities.
+policy. See under *sge_priority*(5) for an overview on job priorities.
 
 ## **weight_tickets_share**
 
 The maximum number of share based tickets available for distribution by
 xxQS_NAMExx. Determines the relative importance of the share tree
-policy. See under *sge_priority* (5) for an overview on job priorities.
+policy. See under *sge_priority*(5) for an overview on job priorities.
 
 ## **weight_deadline**
 
 The weight applied on the remaining time until a jobs latest start time.
 Determines the relative importance of the deadline. See under
-*sge_priority* (5) for an overview on job priorities.
+*sge_priority*(5) for an overview on job priorities.
 
 ## **weight_waiting_time**
 
 The weight applied on the jobs waiting time since submission. Determines
 the relative importance of the waiting time. See under
-*sge_priority* (5) for an overview on job priorities.
+*sge_priority*(5) for an overview on job priorities.
 
 ## **weight_urgency**
 
 The weight applied on jobs normalized urgency when determining priority
 finally used. Determines the relative importance of urgency. See under
-*sge_priority* (5) for an overview on job priorities.
+*sge_priority*(5) for an overview on job priorities.
 
 ## **weight_priority**
 
 The weight applied on jobs normalized POSIX priority when determining
 priority finally used. Determines the relative importance of POSIX
-priority. See under *sge_priority* (5) for an overview on job
+priority. See under *sge_priority*(5) for an overview on job
 priorities.
 
 ## **weight_ticket**
 
 The weight applied on normalized ticket amount when determining priority
 finally used. Determines the relative importance of the ticket policies.
-See under *sge_priority* (5) for an overview on job priorities.
+See under *sge_priority*(5) for an overview on job priorities.
 
 ## **flush_finish_sec**
 
@@ -285,13 +285,13 @@ s_rt=... or **default_duration** always differs from total job runtime
 due to delays before and after actual job start and finish. Among the
 delays before job start is the time until the end of a
 **schedule_interval**, the time it takes to deliver a job to
-*sge_execd* (8) and the delays caused by **prolog** in *queue_conf* (5)
-, **start_proc_args** in *sge_pe* (5) and **starter_method** in
-*queue_conf* (5)
+*sge_execd*(8) and the delays caused by **prolog** in *queue_conf*(5)
+, **start_proc_args** in *sge_pe*(5) and **starter_method** in
+*queue_conf*(5)
 
 (**notify**, **terminate_method** or **checkpointing**), procedures run
-after actual job finish, such as **stop_proc_args** in *sge_pe* (5) or
-**epilog** in *queue_conf* (5) , and the delay until a new
+after actual job finish, such as **stop_proc_args** in *sge_pe*(5) or
+**epilog** in *queue_conf*(5) , and the delay until a new
 **schedule_interval**.  
 If the offset is too low, resource reservations (see
 **max_reservation**) can be delayed repeatedly due to an overly
@@ -447,10 +447,10 @@ When a runnable job can not be started due to a shortage of resources a
 reservation can be scheduled instead. A reservation can cover consumable
 resources with the global host, any execution host and any queue. For
 parallel jobs reservations are done also for slots resource as specified
-in *sge_pe* (5). As job runtime the maximum of the time specified with
+in *sge_pe*(5). As job runtime the maximum of the time specified with
 -l h_rt=... or -l s_rt=... is assumed. For jobs that have neither of
 them the default_duration is assumed. Reservations prevent jobs of lower
-priority as specified in *sge_priority* (5) from utilizing the reserved
+priority as specified in *sge_priority*(5) from utilizing the reserved
 resource quota during the time of reservation. Jobs of lower priority
 are allowed to utilize those reserved resources only if their
 prospective job end is before the start of the reservation
@@ -468,7 +468,7 @@ performance impacts.
 
 ## **default_duration**
 
-When job reservation is enabled through max_reservation *sched_conf* (5)
+When job reservation is enabled through max_reservation *sched_conf*(5)
 parameter the default duration is assumed as runtime for jobs that have
 neither -l h_rt=... nor -l s_rt=... specified. In contrast to a
 h_rt/s_rt time limit the default_duration is not enforced.
@@ -480,12 +480,12 @@ h_rt/s_rt time limit the default_duration is not enforced.
 
 # SEE ALSO
 
-*xxqs_name_sxx_intro* (1), *qalter* (1), *qconf* (1), *qstat* (1),
-*qsub* (1), *xxqs_name_sxx_complex* (5), *xxqs_name_sxx_queue_conf* (5), *xxqs_name_sxx_execd* (8),
-*xxqs_name_sxx_qmaster* (8), *xxQS_NAMExx Installation and
+*xxqs_name_sxx_intro*(1), *qalter*(1), *qconf*(1), *qstat*(1),
+*qsub*(1), *xxqs_name_sxx_complex*(5), *xxqs_name_sxx_queue_conf*(5), *xxqs_name_sxx_execd*(8),
+*xxqs_name_sxx_qmaster*(8), *xxQS_NAMExx Installation and
 Administration Guide*
 
 # COPYRIGHT
 
-See *xxqs_name_sxx_intro* (1) for a full statement of rights and
+See *xxqs_name_sxx_intro*(1) for a full statement of rights and
 permissions.

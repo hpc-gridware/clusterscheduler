@@ -26,20 +26,20 @@ specify the user's name via "-u wc_user_list". A "qdel wc_job_name" will
 delete only the jobs of the calling user by default. *Qdel* deletes jobs
 in the order in which their job identifiers are presented. Find
 additional information concerning *wc_user_list* and *wc_job_list* in
-*sge_types* (1).
+*sge_types*(1).
 
 # OPTIONS
 
 -f  
 Force deletion of job(s). The job(s) are deleted from the list of jobs
-registered at *xxqs_name_sxx_qmaster* (8) even if the
-*xxqs_name_sxx_execd* (8) controlling the job(s) does not respond to the
-delete request sent by *xxqs_name_sxx_qmaster* (8).
+registered at *xxqs_name_sxx_qmaster*(8) even if the
+*xxqs_name_sxx_execd*(8) controlling the job(s) does not respond to the
+delete request sent by *xxqs_name_sxx_qmaster*(8).
 
 Users which are neither xxQS_NAMExx managers nor operators can only use
 the **-f** option (for their own jobs) if the cluster configuration
 entry **qmaster_params** contains the flag ENABLE_FORCED_QDEL (see
-*xxqs_name_sxx_conf* (5)). However, behavior for administrative and
+*xxqs_name_sxx_conf*(5)). However, behavior for administrative and
 non-administrative users differs. Jobs are deleted from the xxQS_NAMExx
 database immediately in case of administrators. Otherwise, a regular
 deletion is attempted first and a forced cancellation is only executed
@@ -47,7 +47,7 @@ if the regular deletion was unsuccessful.
 
 Additionally regular qdel requests can result in a forced deletion of a
 job if **ENABLE_FORCED_QDEL_IF_UNKNOWN** is set in the
-**qmaster_params** (see *xxqs_name_sxx_conf* (5))
+**qmaster_params** (see *xxqs_name_sxx_conf*(5))
 
 -help  
 Prints a listing of all options.
@@ -89,7 +89,7 @@ addition the level of detail in which debug information is generated is
 defined.
 
 xxQS_NAME_Sxx_QMASTER_PORT  
-If set, specifies the tcp port on which *xxqs_name_sxx_qmaster* (8) is
+If set, specifies the tcp port on which *xxqs_name_sxx_qmaster*(8) is
 expected to listen for communication requests. Most installations will
 use a services map entry for the service "sge_qmaster" instead to define
 that port.
@@ -101,10 +101,10 @@ that port.
 
 # SEE ALSO
 
-*xxqs_name_sxx_intro* (1), *qstat* (1), *qsub* (1),
-*xxqs_name_sxx_qmaster* (8), *xxqs_name_sxx_execd* (8).
+*xxqs_name_sxx_intro*(1), *qstat*(1), *qsub*(1),
+*xxqs_name_sxx_qmaster*(8), *xxqs_name_sxx_execd*(8).
 
 # COPYRIGHT
 
-See *xxqs_name_sxx_intro* (1) for a full statement of rights and
+See *xxqs_name_sxx_intro*(1) for a full statement of rights and
 permissions.

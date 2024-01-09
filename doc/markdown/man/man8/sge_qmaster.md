@@ -44,13 +44,13 @@ addition the level of detail in which debug information is generated is
 defined.
 
 xxQS_NAME_Sxx_QMASTER_PORT  
-If set, specifies the tcp port on which *xxqs_name_sxx_qmaster* (8) is
+If set, specifies the tcp port on which *xxqs_name_sxx_qmaster*(8) is
 expected to listen for communication requests. Most installations will
 use a services map entry for the service "sge_qmaster" instead to define
 that port.
 
 xxQS_NAME_Sxx_EXECD_PORT  
-If set, specifies the tcp port on which *xxqs_name_sxx_execd* (8) is
+If set, specifies the tcp port on which *xxqs_name_sxx_execd*(8) is
 expected to listen for communication requests. Most installations will
 use a services map entry for the service "sge_execd" instead to define
 that port.
@@ -78,11 +78,11 @@ handled correctly by the system.
 
 # SEE ALSO
 
-*xxqs_name_sxx_intro* (1), *xxqs_name_sxx_conf* (5),
-*xxqs_name_sxx_execd* (8), *xxqs_name_sxx_shadowd* (8), *xxQS_NAMExx
+*xxqs_name_sxx_intro*(1), *xxqs_name_sxx_conf*(5),
+*xxqs_name_sxx_execd*(8), *xxqs_name_sxx_shadowd*(8), *xxQS_NAMExx
 Installation and Administration Guide*
 
 # COPYRIGHT
 
-See *xxqs_name_sxx_intro* (1) for a full statement of rights and
+See *xxqs_name_sxx_intro*(1) for a full statement of rights and
 permissions.

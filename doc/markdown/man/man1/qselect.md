@@ -22,7 +22,7 @@ pe_name,...** \] \[ **-q wc_queue,...** \] \[ **-s
 selection criteria specified in the *qselect* arguments described below.
 The output of *qselect* can be fed into other xxQS_NAMExx commands to
 apply actions on the selected queue sets. For example together with the
-*-mqattr* option to *qconf* (1), *qselect* can be used to modify queue
+*-mqattr* option to *qconf*(1), *qselect* can be used to modify queue
 attributes on a set of queues.
 
 # OPTIONS
@@ -50,7 +50,7 @@ Directly specifies the wildcard expression queue list to be included in
 the output. This option usually is only meaningful in conjunction with
 another *qselect* option to extract a subset of queue names from a list
 given by **-q**. Description of *wc_queue* can be found in
-*sge_types* (1).
+*sge_types*(1).
 
 -qs {a\|c\|d\|o\|s\|u\|A\|C\|D\|E\|S}  
 This option allows to filter for queue instances in certain states.
@@ -74,8 +74,8 @@ The first example prints the names of those queues residing on Linux
 machines. The second command in addition restricts the output to those
 queues with access permission for the users *andreas* and *shannon*. The
 third command changes the queue attribute *h_vmem* to 1 Gigabyte on
-queues residing on Linux machines (see the *qconf* (1) manual page for
-details on the *-mattr* option and the *queue_conf* (5) manual page on
+queues residing on Linux machines (see the *qconf*(1) manual page for
+details on the *-mattr* option and the *queue_conf*(5) manual page on
 details of queue configuration entries).
 
 # ENVIRONMENTAL VARIABLES
@@ -98,7 +98,7 @@ addition the level of detail in which debug information is generated is
 defined.
 
 xxQS_NAME_Sxx_QMASTER_PORT  
-If set, specifies the tcp port on which *xxqs_name_sxx_qmaster* (8) is
+If set, specifies the tcp port on which *xxqs_name_sxx_qmaster*(8) is
 expected to listen for communication requests. Most installations will
 use a services map entry for the service "sge_qmaster" instead to define
 that port.
@@ -110,10 +110,10 @@ that port.
 
 # SEE ALSO
 
-*xxqs_name_sxx_intro* (1), *qconf* (1), *qmod* (1), *qstat* (1),
-*queue_conf* (5),
+*xxqs_name_sxx_intro*(1), *qconf*(1), *qmod*(1), *qstat*(1),
+*queue_conf*(5),
 
 # COPYRIGHT
 
-See *xxqs_name_sxx_intro* (1) for a full statement of rights and
+See *xxqs_name_sxx_intro*(1) for a full statement of rights and
 permissions.

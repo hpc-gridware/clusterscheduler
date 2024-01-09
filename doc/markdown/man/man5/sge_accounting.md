@@ -14,7 +14,7 @@ xxqs_name_sxx_accounting - xxQS_NAMExx accounting file format
 
 An accounting record is written to the xxQS_NAMExx accounting file for
 each job having finished. The accounting file is processed by
-*qacct* (1) to derive accounting statistics.
+*qacct*(1) to derive accounting statistics.
 
 # FORMAT
 
@@ -49,13 +49,13 @@ Job identifier - job number.
 
 ## **account**
 
-An account string as specified by the *qsub* (1) or *qalter* (1) **-A**
+An account string as specified by the *qsub*(1) or *qalter*(1) **-A**
 option.
 
 ## **priority**
 
 Priority value assigned to the job corresponding to the **priority**
-parameter in the queue configuration (see *xxqs_name_sxx_queue_conf* (5)).
+parameter in the queue configuration (see *xxqs_name_sxx_queue_conf*(5)).
 
 ## **submission_time**
 
@@ -94,7 +94,7 @@ added to the value of the command to make up the exit status.
 Difference between **end_time** and **start_time** (see above).
 
 The remainder of the accounting entries follows the contents of the
-standard UNIX rusage structure as described in *getrusage* (2).
+standard UNIX rusage structure as described in *getrusage*(2).
 Depending on the operating system where the job was executed some of the
 fields may be 0. The following entries are provided:
 
@@ -179,10 +179,10 @@ reservation, otherwise the value is "**0**" .
 
 # SEE ALSO
 
-*xxqs_name_sxx_intro* (1), *qacct* (1), *qalter* (1), *qsub* (1),
-*getrusage* (2), *xxqs_name_sxx_queue_conf* (5).
+*xxqs_name_sxx_intro*(1), *qacct*(1), *qalter*(1), *qsub*(1),
+*getrusage*(2), *xxqs_name_sxx_queue_conf*(5).
 
 # COPYRIGHT
 
-See *xxqs_name_sxx_intro* (1) for a full statement of rights and
+See *xxqs_name_sxx_intro*(1) for a full statement of rights and
 permissions.

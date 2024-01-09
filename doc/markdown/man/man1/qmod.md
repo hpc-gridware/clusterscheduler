@@ -17,12 +17,12 @@ qmod - modify a xxQS_NAMExx queue and running job
 
 # DESCRIPTION
 
-*Qmod* enables users classified as *owners* (see *queue_conf* (5) for
+*Qmod* enables users classified as *owners* (see *queue_conf(5) for
 details) of a workstation to modify the state of xxQS_NAMExx queues for
 his/her machine as well as the state of his/her own jobs. A
 manager/operator or root can execute *qmod* for any queue and job in a
 cluster but only from administrative hosts. Find additional information
-concerning *wc_queue_list* and *wc_job_list* in *sge_types* (1).
+concerning *wc_queue_list* and *wc_job_list* in *sge_types*(1).
 
 # OPTIONS
 
@@ -51,7 +51,7 @@ state of the queue. For example if a queue appears to be suspended but
 the job execution seems to be continuing the manager/operator can force
 a suspend operation which will send a SIGSTOP to the jobs. In any case,
 the queue or job status will be set even if the
-*xxqs_name_sxx_execd* (8) controlling the queues/jobs cannot be reached.
+*xxqs_name_sxx_execd*(8) controlling the queues/jobs cannot be reached.
 Requires manager/operator privileges.
 
 -help  
@@ -64,10 +64,10 @@ If applied to queues, reschedules all jobs currently running in this
 queue. If applied to running jobs, reschedules the jobs. Requires root
 or manager privileges. In order for a job to be rescheduled, it or the
 queue in which it is executing must have the rerun flag activated. (See
--r option in the *qsub* (1) man page and the *rerun* option in the
-*queue_conf* (5) man page for more information.) Additional restrictions
+-r option in the *qsub*(1) man page and the *rerun* option in the
+*queue_conf*(5) man page for more information.) Additional restrictions
 apply for parallel and checkpointing jobs. (See the *reschedule_unknown*
-description in the *sge_conf* (5) man page for details).
+description in the *sge_conf*(5) man page for details).
 
 -rj  
 If applied to running jobs, reschedules the jobs. Requires root or
@@ -127,7 +127,7 @@ addition the level of detail in which debug information is generated is
 defined.
 
 xxQS_NAME_Sxx_QMASTER_PORT  
-If set, specifies the tcp port on which *xxqs_name_sxx_qmaster* (8) is
+If set, specifies the tcp port on which *xxqs_name_sxx_qmaster*(8) is
 expected to listen for communication requests. Most installations will
 use a services map entry for the service "sge_qmaster" instead to define
 that port.
@@ -139,10 +139,10 @@ that port.
 
 # SEE ALSO
 
-*xxqs_name_sxx_intro* (1), *xxqs_name_sxx_ckpt* (1), *qstat* (1),
-*queue_conf* (5), *xxqs_name_sxx_execd* (8), *xxqs_name_sxx_types* (1).
+*xxqs_name_sxx_intro*(1), *xxqs_name_sxx_ckpt*(1), *qstat*(1),
+*queue_conf*(5), *xxqs_name_sxx_execd*(8), *xxqs_name_sxx_types*(1).
 
 # COPYRIGHT
 
-See *xxqs_name_sxx_intro* (1) for a full statement of rights and
+See *xxqs_name_sxx_intro*(1) for a full statement of rights and
 permissions.

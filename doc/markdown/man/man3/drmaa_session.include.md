@@ -26,8 +26,8 @@ drmaa_init, drmaa_exit - Start/finish xxQS_NAMExx DRMAA session
 The drmaa_init() function initializes the xxQS_NAMExx DRMAA API library
 for all threads of the process and creates a new DRMAA session. This
 routine must be called once before any other DRMAA call, except for
-*drmaa_version* (3), *drmaa_get_DRM_system* (3), and
-*drmaa_get_DRMAA_implementation* (3). Except for the above listed
+*drmaa_version*(3), *drmaa_get_DRM_system*(3), and
+*drmaa_get_DRMAA_implementation*(3). Except for the above listed
 functions, no DRMAA functions may be called before the drmaa_init()
 function *completes***. Any DRMAA function which is called** before the
 drmaa_init() function completes will return a
@@ -36,7 +36,7 @@ dependent string which may be used to ** specify which xxQS_NAMExx cell
 to use. If *contact*** ** is NULL, the default xxQS_NAMExx cell will be
 used. In the 1.0 implementation *contact*** may have the following
 value: ***session=\<session_id>***. To** determine the session_id, the
-*drmaa_get_contact* (3) function should be called after the session has
+*drmaa_get_contact*(3) function should be called after the session has
 already been initialized. By passing the *session=\<session_id>***
 string to the drmaa_init() function,** instead of creating a new
 session, DRMAA will attempt to reconnect to the session indicated by the
@@ -52,12 +52,12 @@ The drmaa_exit() function closes the DRMAA session for all threads and
 must be called before process termination. The drmaa_exit() function may
 be called only once by a single thread in the process and may only be
 called after the drmaa_init() function has completed. Any DRMAA
-function, other than *drmaa_init* (3), which is called after the
+function, other than *drmaa_init*(3), which is called after the
 drmaa_exit() function completes will return a
 DRMAA_ERRNO_NO_ACTIVE_SESSION error.
 
 The drmaa_exit() function does necessary clean up of the DRMAA session
-state, including unregistering from the *qmaster* (8). If the
+state, including unregistering from the *qmaster*(8). If the
 drmaa_exit() function is not called, the qmaster will store events for
 the DRMAA client until the connection times out, causing extra work for
 the qmaster and consuming system resources.
@@ -150,4 +150,4 @@ DRM system disengagement failed.
 
 # SEE ALSO
 
-*drmaa_submit* (3).
+*drmaa_submit*(3).

@@ -28,15 +28,15 @@ from the xxQS_NAMExx database will the AR also be removed.
 
 *Qrdel* deletes ARs in the order in which the AR identifiers are
 presented. Find additional information concerning *wc_user_list* and
-*wc_ar_list* in *sge_types* (1).
+*wc_ar_list* in *sge_types*(1).
 
 # OPTIONS
 
 -f  
 Force action for AR. The AR and the jobs using the AR are deleted from
-the xxQS_NAMExx queuing system even if the *xxqs_name_sxx_execd* (8)
+the xxQS_NAMExx queuing system even if the *xxqs_name_sxx_execd*(8)
 controlling the AR jobs does not respond to the delete request sent by
-the *xxqs_name_sxx_qmaster* (8).  
+the *xxqs_name_sxx_qmaster*(8).  
 Users which have neither xxQS_NAMExx manager nor operator status can
 only use the **-f** option for their own ARs.
 
@@ -73,7 +73,7 @@ addition the level of detail in which debug information is generated is
 defined.
 
 xxQS_NAME_Sxx_QMASTER_PORT  
-If set, specifies the tcp port on which the *xxqs_name_sxx_qmaster* (8)
+If set, specifies the tcp port on which the *xxqs_name_sxx_qmaster*(8)
 is expected to listen for communication requests. Most installations
 will use a service map entry for the service "sge_qmaster" instead of
 defining the port.
@@ -85,10 +85,10 @@ defining the port.
 
 # SEE ALSO
 
-*xxqs_name_sxx_intro* (1), *qrstat* (1), *qrsub* (1), *qsub* (1),
-*xxqs_name_sxx_qmaster* (8), *xxqs_name_sxx_execd* (8).
+*xxqs_name_sxx_intro*(1), *qrstat*(1), *qrsub*(1), *qsub*(1),
+*xxqs_name_sxx_qmaster*(8), *xxqs_name_sxx_execd*(8).
 
 # COPYRIGHT
 
-See *xxqs_name_sxx_intro* (1) for a full statement of rights and
+See *xxqs_name_sxx_intro*(1) for a full statement of rights and
 permissions.

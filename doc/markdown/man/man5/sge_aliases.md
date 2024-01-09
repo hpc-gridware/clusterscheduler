@@ -36,11 +36,11 @@ There is a system global path aliasing file and a user local file.
     a '\*' sign which matches any host.
 
 If the *-cwd* flag (and only if - otherwise the user's home directory on
-the execution host is selected to execute the job) to *qsub* (1) was
+the execution host is selected to execute the job) to *qsub*(1) was
 specified, the path aliasing mechanism is activated and the files are
 processed as follows:
 
--   After *qsub* (1) has retrieved the physical current working
+-   After *qsub*(1) has retrieved the physical current working
     directory path, the cluster global path aliasing file is read if
     present. The user path aliases file is read afterwards as if it were
     appended to the global file.
@@ -50,7 +50,7 @@ processed as follows:
     necessary.
 
 -   A translation is stored only if the submit-host entry matches the
-    host *qsub* (1) is executed on and if the source-path forms the
+    host *qsub*(1) is executed on and if the source-path forms the
     initial part either of the current working directory or of the
     source-path replacements already stored.
 
@@ -68,7 +68,7 @@ processed as follows:
 # EXAMPLES
 
 The following is a simple example of a path aliasing file resolving
-problems with in-homogeneous paths if *automount* (8) is used:
+problems with in-homogeneous paths if *automount*(8) is used:
 
 
     =====================================================
@@ -88,10 +88,10 @@ problems with in-homogeneous paths if *automount* (8) is used:
 
 # SEE ALSO
 
-*xxqs_name_sxx_intro* (1), *qsub* (1), *xxQS_NAMExx Installation and
+*xxqs_name_sxx_intro*(1), *qsub*(1), *xxQS_NAMExx Installation and
 Administration Guide*
 
 # COPYRIGHT
 
-See *xxqs_name_sxx_intro* (1) for a full statement of rights and
+See *xxqs_name_sxx_intro*(1) for a full statement of rights and
 permissions.

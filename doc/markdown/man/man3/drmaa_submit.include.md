@@ -54,18 +54,18 @@ of the job identifier are ** returned into the buffer, *job_id***.**
 ## drmaa_run_bulk_jobs()
 
 The drmaa_run_bulk_jobs() submits a xxQS_NAMExx array job very much as
-if the *qsub* (1) option \`-t *start***-***end***:***incr***' had been
+if the *qsub*(1) option \`-t *start***-***end***:***incr***' had been
 used along with the additional** attributes defined in the DRMAA job
 template, *jt***. The same constraints regarding value ranges are also
 in effect** for the parameters *start***, ***end***, and ***incr*** as
-for** *qsub* (5) -t. On success a DRMAA job id string vector containing
+for** *qsub*(5) -t. On success a DRMAA job id string vector containing
 job identifiers for each array job task is returned into *jobids***. **
 The job identifiers in the job id string vector can be extracted using
-*drmaa_get_next_job_id* (3). The number of identifiers in the job id
-string vector can be determined using *drmaa_get_num_job_ids* (3). Note
+*drmaa_get_next_job_id*(3). The number of identifiers in the job id
+string vector can be determined using *drmaa_get_num_job_ids*(3). Note
 that this function is only available in the 1.0 implementation. The
 caller is responsible for releasing the job id string vector returned
-into *jobids*** using** *drmaa_release_job_ids* (3).
+into *jobids*** using** *drmaa_release_job_ids*(3).
 
 ## drmaa_get_next_job_id()
 
@@ -106,7 +106,7 @@ addition the level of detail in which debug information is generated is
 defined.
 
 xxQS_NAME_Sxx_QMASTER_PORT  
-If set, specifies the tcp port on which *xxqs_name_sxx_qmaster* (8) is
+If set, specifies the tcp port on which *xxqs_name_sxx_qmaster*(8) is
 expected to listen for communication requests. Most installations will
 use a services map entry instead to define that port.
 
@@ -168,4 +168,4 @@ When there are no more entries in the vector.
 
 # SEE ALSO
 
-*drmaa_attributes* (3), *drmaa_jobtemplate* (3).
+*drmaa_attributes*(3), *drmaa_jobtemplate*(3).
