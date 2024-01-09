@@ -1,15 +1,17 @@
 {
 	"className":	"EventClient",
-	"summary":	"@todo add summary",
+	"summary":	"Event Client",
 	"description":	[{
-			"line":	"@todo add description"
+			     "line":	"An object of the event client type represents one event client."
+         }, { "line":   "For more information about the event client interface see the documentation in"
+         }, { "line":   "source/libs/evc/sge_event_client.cc"
 		}],
 	"cullPrefix":	"EV",
 	"attributes":	[{
 			"name":	"id",
-			"summary":	"@todo add summary",
+			"summary":	"event client id",
 			"description":	[{
-					"line":	"@todo add description"
+					"line":	"Unique id requested by client or given by qmaster"
 				}],
 			"type":	"lUlongT",
 			"flags":	[{
@@ -21,65 +23,65 @@
 				}]
 		}, {
 			"name":	"name",
-			"summary":	"@todo add summary",
+			"summary":	"event client name",
 			"description":	[{
-					"line":	"@todo add description"
+					"line":	"name of event client (non unique)"
 				}],
 			"type":	"lStringT",
 			"flags":	[]
 		}, {
 			"name":	"host",
-			"summary":	"@todo add summary",
+			"summary":	"event client address: host name",
 			"description":	[{
-					"line":	"@todo add description"
+					"line":	"Commlib address: The host name where the event client is running"
 				}],
 			"type":	"lHostT",
 			"flags":	[]
 		}, {
 			"name":	"commproc",
-			"summary":	"@todo add summary",
+			"summary":	"event client address: commproc",
 			"description":	[{
-					"line":	"@todo add description"
+					"line":	"Commlib address: The process name, e.g. qsub for the qsub -sync y event client"
 				}],
 			"type":	"lStringT",
 			"flags":	[]
 		}, {
 			"name":	"commid",
-			"summary":	"@todo add summary",
+			"summary":	"event client address: commid",
 			"description":	[{
-					"line":	"@todo add description"
+					"line":	"Commlib address: A unique id assigned by the sge_qmaster commlib"
 				}],
 			"type":	"lUlongT",
 			"flags":	[]
 		}, {
 			"name":	"uid",
-			"summary":	"@todo add summary",
+			"summary":	"user id",
 			"description":	[{
-					"line":	"@todo add description"
+					"line":	"The user id of the user who started the event client."
 				}],
 			"type":	"lUlongT",
 			"flags":	[]
 		}, {
 			"name":	"d_time",
-			"summary":	"@todo add summary",
+			"summary":	"event delivery interval",
 			"description":	[{
-					"line":	"@todo add description"
+					"line":	"The time interval in seconds in which an event package is delivered to the client."
 				}],
 			"type":	"lUlongT",
 			"flags":	[]
 		}, {
 			"name":	"flush_delay",
-			"summary":	"@todo add summary",
+			"summary":	"flush delay",
 			"description":	[{
-					"line":	"@todo add description"
+					"line":	"@todo is it actually used? Used for throttling of the event flushing mechanism (?)"
 				}],
 			"type":	"lUlongT",
 			"flags":	[]
 		}, {
 			"name":	"subscribed",
-			"summary":	"@todo add summary",
+			"summary":	"subscribed events",
 			"description":	[{
-					"line":	"@todo add description"
+					"line":	"a list of subscribed events"
 				}],
 			"type":	"lListT",
 			"subClassName":	"EVS",
@@ -87,73 +89,75 @@
 			"flags":	[]
 		}, {
 			"name":	"changed",
-			"summary":	"@todo add summary",
+			"summary":	"event client changed?",
 			"description":	[{
-					"line":	"@todo add description"
+					     "line":	"true, if any configuration information of the event client has been changed."
+					}, { "line":	"Requires then updating the event client information in the event master"
 				}],
 			"type":	"lBoolT",
 			"flags":	[]
 		}, {
 			"name":	"busy_handling",
-			"summary":	"@todo add summary",
+			"summary":	"busy handling",
 			"description":	[{
-					"line":	"@todo add description"
+					"line":	"Defines how the event master shall deal with busy event clients."
 				}],
 			"type":	"lUlongT",
 			"flags":	[]
 		}, {
 			"name":	"session",
-			"summary":	"@todo add summary",
+			"summary":	"session key",
 			"description":	[{
-					"line":	"@todo add description"
+					"line":	"Session key used tfor filtering subscribed events, used with job submission via the DRMAA interface"
 				}],
 			"type":	"lStringT",
 			"flags":	[]
 		}, {
 			"name":	"last_heard_from",
-			"summary":	"@todo add summary",
+			"summary":	"last heard from",
 			"description":	[{
-					"line":	"@todo add description"
+					"line":	"Timestamp (seconds since epoch) of the last communication between event client and event master."
 				}],
 			"type":	"lUlongT",
 			"flags":	[]
 		}, {
 			"name":	"last_send_time",
-			"summary":	"@todo add summary",
+			"summary":	"last send time",
 			"description":	[{
-					"line":	"@todo add description"
+					"line":	"Timestamp (seconds since epoch) when the last event package was sent to the event client."
 				}],
 			"type":	"lUlongT",
 			"flags":	[]
 		}, {
 			"name":	"next_send_time",
-			"summary":	"@todo add summary",
+			"summary":	"next send time",
 			"description":	[{
-					"line":	"@todo add description"
+					"line":	"Timestamp (seconds since epoch) when the next event package shall be sent to the event client."
 				}],
 			"type":	"lUlongT",
 			"flags":	[]
 		}, {
 			"name":	"next_number",
-			"summary":	"@todo add summary",
+			"summary":	"next event serial number",
 			"description":	[{
-					"line":	"@todo add description"
+					"line":	"Serial number of the next event which will be sent to the event client."
 				}],
 			"type":	"lUlongT",
 			"flags":	[]
 		}, {
 			"name":	"busy",
-			"summary":	"@todo add summary",
+			"summary":	"busy",
 			"description":	[{
-					"line":	"@todo add description"
+					     "line":	"true if the event client is considered busy, else false."
+					}, { "line":	"no events will be sent to a busy client"
 				}],
 			"type":	"lUlongT",
 			"flags":	[]
 		}, {
 			"name":	"events",
-			"summary":	"@todo add summary",
+			"summary":	"events to be sent",
 			"description":	[{
-					"line":	"@todo add description"
+					"line":	"List of events which will next be delivered to the event client."
 				}],
 			"type":	"lListT",
 			"subClassName":	"ET",
@@ -161,9 +165,9 @@
 			"flags":	[]
 		}, {
 			"name":	"sub_array",
-			"summary":	"@todo add summary",
+			"summary":	"subscription array",
 			"description":	[{
-					"line":	"@todo add description"
+					"line":	"Subscription information used in event master only."
 				}],
 			"type":	"lRefT",
 			"subClassName":	"ANY",
@@ -171,17 +175,17 @@
 			"flags":	[]
 		}, {
 			"name":	"state",
-			"summary":	"@todo add summary",
+			"summary":	"event client state",
 			"description":	[{
-					"line":	"@todo add description"
+					"line":	"State of the event client, e.g. connected, closing, terminated."
 				}],
 			"type":	"lUlongT",
 			"flags":	[]
 		}, {
 			"name":	"update_function",
-			"summary":	"@todo add summary",
+			"summary":	"update function",
 			"description":	[{
-					"line":	"@todo add description"
+					"line":	"Pointer to an update function used for updating internal event clients (threads in sge_qmaster)."
 				}],
 			"type":	"lRefT",
 			"subClassName":	"ANY",

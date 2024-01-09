@@ -40,72 +40,76 @@ extern "C" {
 #endif
 
 /**
-* @brief @todo add summary
+* @brief Event Client
 *
-* @todo add description
+* An object of the event client type represents one event client.
+* For more information about the event client interface see the documentation in
+* source/libs/evc/sge_event_client.cc
 *
-*    SGE_ULONG(EV_id) - @todo add summary
-*    @todo add description
+*    SGE_ULONG(EV_id) - event client id
+*    Unique id requested by client or given by qmaster
 *
-*    SGE_STRING(EV_name) - @todo add summary
-*    @todo add description
+*    SGE_STRING(EV_name) - event client name
+*    name of event client (non unique)
 *
-*    SGE_HOST(EV_host) - @todo add summary
-*    @todo add description
+*    SGE_HOST(EV_host) - event client address: host name
+*    Commlib address: The host name where the event client is running
 *
-*    SGE_STRING(EV_commproc) - @todo add summary
-*    @todo add description
+*    SGE_STRING(EV_commproc) - event client address: commproc
+*    Commlib address: The process name, e.g. qsub for the qsub -sync y event client
 *
-*    SGE_ULONG(EV_commid) - @todo add summary
-*    @todo add description
+*    SGE_ULONG(EV_commid) - event client address: commid
+*    Commlib address: A unique id assigned by the sge_qmaster commlib
 *
-*    SGE_ULONG(EV_uid) - @todo add summary
-*    @todo add description
+*    SGE_ULONG(EV_uid) - user id
+*    The user id of the user who started the event client.
 *
-*    SGE_ULONG(EV_d_time) - @todo add summary
-*    @todo add description
+*    SGE_ULONG(EV_d_time) - event delivery interval
+*    The time interval in seconds in which an event package is delivered to the client.
 *
-*    SGE_ULONG(EV_flush_delay) - @todo add summary
-*    @todo add description
+*    SGE_ULONG(EV_flush_delay) - flush delay
+*    @todo is it actually used? Used for throttling of the event flushing mechanism (?)
 *
-*    SGE_LIST(EV_subscribed) - @todo add summary
-*    @todo add description
+*    SGE_LIST(EV_subscribed) - subscribed events
+*    a list of subscribed events
 *
-*    SGE_BOOL(EV_changed) - @todo add summary
-*    @todo add description
+*    SGE_BOOL(EV_changed) - event client changed?
+*    true, if any configuration information of the event client has been changed.
+*    Requires then updating the event client information in the event master
 *
-*    SGE_ULONG(EV_busy_handling) - @todo add summary
-*    @todo add description
+*    SGE_ULONG(EV_busy_handling) - busy handling
+*    Defines how the event master shall deal with busy event clients.
 *
-*    SGE_STRING(EV_session) - @todo add summary
-*    @todo add description
+*    SGE_STRING(EV_session) - session key
+*    Session key used tfor filtering subscribed events, used with job submission via the DRMAA interface
 *
-*    SGE_ULONG(EV_last_heard_from) - @todo add summary
-*    @todo add description
+*    SGE_ULONG(EV_last_heard_from) - last heard from
+*    Timestamp (seconds since epoch) of the last communication between event client and event master.
 *
-*    SGE_ULONG(EV_last_send_time) - @todo add summary
-*    @todo add description
+*    SGE_ULONG(EV_last_send_time) - last send time
+*    Timestamp (seconds since epoch) when the last event package was sent to the event client.
 *
-*    SGE_ULONG(EV_next_send_time) - @todo add summary
-*    @todo add description
+*    SGE_ULONG(EV_next_send_time) - next send time
+*    Timestamp (seconds since epoch) when the next event package shall be sent to the event client.
 *
-*    SGE_ULONG(EV_next_number) - @todo add summary
-*    @todo add description
+*    SGE_ULONG(EV_next_number) - next event serial number
+*    Serial number of the next event which will be sent to the event client.
 *
-*    SGE_ULONG(EV_busy) - @todo add summary
-*    @todo add description
+*    SGE_ULONG(EV_busy) - busy
+*    true if the event client is considered busy, else false.
+*    no events will be sent to a busy client
 *
-*    SGE_LIST(EV_events) - @todo add summary
-*    @todo add description
+*    SGE_LIST(EV_events) - events to be sent
+*    List of events which will next be delivered to the event client.
 *
-*    SGE_REF(EV_sub_array) - @todo add summary
-*    @todo add description
+*    SGE_REF(EV_sub_array) - subscription array
+*    Subscription information used in event master only.
 *
-*    SGE_ULONG(EV_state) - @todo add summary
-*    @todo add description
+*    SGE_ULONG(EV_state) - event client state
+*    State of the event client, e.g. connected, closing, terminated.
 *
-*    SGE_REF(EV_update_function) - @todo add summary
-*    @todo add description
+*    SGE_REF(EV_update_function) - update function
+*    Pointer to an update function used for updating internal event clients (threads in sge_qmaster).
 *
 */
 
