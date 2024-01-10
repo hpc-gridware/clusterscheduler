@@ -40,24 +40,38 @@ extern "C" {
 #endif
 
 /**
-* @brief @todo add summary
+* @brief Event Subscription
 *
-* @todo add description
+* An object of the EventSubscription type specifies if a certain event is subscribed
+* and additional information for flushing and filtering
+* see also the documentation in source/libs/evc/sge_event_client.cc
 *
-*    SGE_ULONG(EVS_id) - @todo add summary
-*    @todo add description
+*    SGE_ULONG(EVS_id) - Event Id
+*    The Id of the specific event from enumeration type ev_event (libs/sgeobj/sge_event.h), e.g.
+*      - sgeE_ADMIN_HOST_LIST
+*      - sgeE_ADMIN_HOST_ADD
+*      - sgeE_ADMIN_HOST_DEL
+*      - sgeE_ADMIN_HOST_MOD
+*      - sgeE_CALENDAR_LIST
+*      - ...
 *
-*    SGE_BOOL(EVS_flush) - @todo add summary
-*    @todo add description
+*    SGE_BOOL(EVS_flush) - Flush this Event
+*    Specifies if flushing of the event is enabled. This means that flushing of events is triggered
+*    if this event will be delivered to a specific event client.
+*    Flushing of event data means that the event are sent to the client earlier than forseen
+*    by the event client's event delivery interval.
 *
-*    SGE_ULONG(EVS_interval) - @todo add summary
-*    @todo add description
+*    SGE_ULONG(EVS_interval) - Flushing Interval
+*    Flushing interval in seconds.
+*    Events will be sent to the event client not later than current time + interval.
 *
-*    SGE_OBJECT(EVS_what) - @todo add summary
-*    @todo add description
+*    SGE_OBJECT(EVS_what) - Attribute Filter
+*    Enumeration defining which attributes of an object will be sent to the event client (reduced objects).
+*    We can for example configure: We are only interested in job id, job name and job owner.
 *
-*    SGE_OBJECT(EVS_where) - @todo add summary
-*    @todo add description
+*    SGE_OBJECT(EVS_where) - Object Filter
+*    Condition filtering objects to be sent.
+*    We can for example configure: Send only events for jobs of user xyz.
 *
 */
 
