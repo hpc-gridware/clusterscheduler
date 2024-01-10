@@ -231,6 +231,8 @@ Services will be executed under the administrator user.
 
 You must specify the username during the installation process.
 
+Additionally, you can specify an email address of a user that should receive admministrator mail from Open Grid Engine.
+
 ### What is the name of the cell for this installation?
 
 One product installation can be used to set up multiple compute clusters. Each cluster is identified by a 

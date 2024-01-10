@@ -88,56 +88,56 @@ in capital letters are pseudo parameters.
 
 Find additional information in qsub(1) man page describing the availability and value format.
 
-| param_name  | command line switch/description   |
-|:------------|:----------------------------------|
-| a           |                                   |
-| ac          | combination of -ac, -sc, -dc      |
-| ar          |                                   |
-| A           |                                   |
-| b           |                                   |
-| c           |                                   |
-| ckpt        |                                   |
-| cwd         |                                   |
-| display     |                                   |
-| dl          |                                   |
-| e           |                                   |
-| h           |                                   |
-| hold_jid    |                                   |
-| hold_jid_ad |                                   |
-| i           |                                   |
-| l_hard      | -l or -hard followed by -l        |
-| l_soft      | -soft followed by -l              |
-| j           |                                   |
-| js          |                                   |
-| m           |                                   |
-| M           |                                   |
-| masterq     |                                   |
-| N           |                                   |
-| notify      |                                   |
-| now         |                                   |
-| N           |                                   |
-| o           |                                   |
-| ot          |                                   |
-| P           |                                   |
-| pe          |                                   |
-| q_hard      | -q or -hard followed by -q        |
-| q_soft      | -soft followed by -q              |
-| R           |                                   |
-| r           |                                   |
-| shell       |                                   |
-| S           |                                   |
-| t           |                                   |
-| w           |                                   |
-| wd          |                                   |
-| CLIENT      |                                   |
-| CONTEXT     |                                   |
-| GROUP       |                                   |
-| VERSION     |                                   |
-| JOB_ID      |                                   |
-| SCRIPT      |                                   |
-| CMDARGS     |                                   |
-| CMDARG<i>   | where <i> is a nonnegative number |
-| USER        |                                   |
+| param_name  | command line switch/description    |
+|:------------|:-----------------------------------|
+| a           |                                    |
+| ac          | combination of -ac, -sc, -dc       |
+| ar          |                                    |
+| A           |                                    |
+| b           |                                    |
+| c           |                                    |
+| ckpt        |                                    |
+| cwd         |                                    |
+| display     |                                    |
+| dl          |                                    |
+| e           |                                    |
+| h           |                                    |
+| hold_jid    |                                    |
+| hold_jid_ad |                                    |
+| i           |                                    |
+| l_hard      | -l or -hard followed by -l         |
+| l_soft      | -soft followed by -l               |
+| j           |                                    |
+| js          |                                    |
+| m           |                                    |
+| M           |                                    |
+| masterq     |                                    |
+| N           |                                    |
+| notify      |                                    |
+| now         |                                    |
+| N           |                                    |
+| o           |                                    |
+| ot          |                                    |
+| P           |                                    |
+| pe          |                                    |
+| q_hard      | -q or -hard followed by -q         |
+| q_soft      | -soft followed by -q               |
+| R           |                                    |
+| r           |                                    |
+| shell       |                                    |
+| S           |                                    |
+| t           |                                    |
+| w           |                                    |
+| wd          |                                    |
+| CLIENT      |                                    |
+| CONTEXT     |                                    |
+| GROUP       |                                    |
+| VERSION     |                                    |
+| JOB_ID      |                                    |
+| SCRIPT      |                                    |
+| CMDARGS     |                                    |
+| CMDARG<i>   | where <i> is a non-negative number |
+| USER        |                                    |
 
 The function returns the string *true* if the parameter (*param_name*) exists in the job currently being verified. 
 If it does not exist *false* will be returned.
