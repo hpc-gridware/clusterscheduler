@@ -40,54 +40,77 @@ extern "C" {
 #endif
 
 /**
-* @brief @todo add summary
+* @brief Complex Entry
 *
-* @todo add description
+* A complex entry contains a complex variable, both its definition as well as a possible current value
+* A complex variable is used for defining all types of attributes in Grid Engine
+* as well as defining fixed values of resources and the capacity of consumable resources.
+* @todo should be we better split definition and values into two objects?
 *
-*    SGE_STRING(CE_name) - @todo add summary
+*    SGE_STRING(CE_name) - Full Name
+*    Full name of a complex variable.
+*
+*    SGE_STRING(CE_shortcut) - Shortcut Name
+*    Shortcut for the complex variable name which can be used as an alternative to the name,
+*    e.g. in job submission with qsub or when querying resources with qstat -F.
+*
+*    SGE_ULONG(CE_valtype) - Variable Type
+*    Type of the complex variable defined in common/basis_types.h, e.g.
+*      - TYPE_INT
+*      - TYPE_STR
+*      - TYPE_TIM
+*      - TYPE_MEM
+*      - ...
+*    @todo instead of defines, should we better use an enum?
+*
+*    SGE_STRING(CE_stringval) - String Value
+*    Value of the complex variable as string, from old docs: non overwritten value.
+*
+*    SGE_DOUBLE(CE_doubleval) - Double Value
+*    Value of the complex variable as double, from old docs: parsed CE_stringval
+*
+*    SGE_ULONG(CE_relop) - Relational Operator
+*    Relational operator used in comparison of complex variables (e.g. against requests).
+*    Defined in libs/sgeobj/sge_centry.h, e.g.
+*    CMPLXEQ_OP
+*    CMPLXGE_OP
+*    CMPLXGT_OP
+*    ...
+*
+*    SGE_ULONG(CE_consumable) - Consumable Flag
+*    Defines if a complex variable is consumable and if it is a per job or per slot consumable.
+*    Defined in libs/sgeobj/sge_centry.h, possible values are
+*    CONSUMABLE_NO
+*    CONSUMABLE_YES
+*    CONSUMABLE_JOB
+*
+*    SGE_STRING(CE_defaultval) - Default Value
+*    Default value (default request) as string.
+*
+*    SGE_ULONG(CE_dominant) - Monitoring Facility
 *    @todo add description
 *
-*    SGE_STRING(CE_shortcut) - @todo add summary
-*    @todo add description
+*    SGE_STRING(CE_pj_stringval) - Per Job String Value
+*    Per job string value, @todo add more information
 *
-*    SGE_ULONG(CE_valtype) - @todo add summary
-*    @todo add description
+*    SGE_DOUBLE(CE_pj_doubleval) - Per Job Double Value
+*    Per job double values, parsed from CE_stringval (?)
 *
-*    SGE_STRING(CE_stringval) - @todo add summary
-*    @todo add description
-*
-*    SGE_DOUBLE(CE_doubleval) - @todo add summary
-*    @todo add description
-*
-*    SGE_ULONG(CE_relop) - @todo add summary
-*    @todo add description
-*
-*    SGE_ULONG(CE_consumable) - @todo add summary
-*    @todo add description
-*
-*    SGE_STRING(CE_defaultval) - @todo add summary
-*    @todo add description
-*
-*    SGE_ULONG(CE_dominant) - @todo add summary
-*    @todo add description
-*
-*    SGE_STRING(CE_pj_stringval) - @todo add summary
-*    @todo add description
-*
-*    SGE_DOUBLE(CE_pj_doubleval) - @todo add summary
-*    @todo add description
-*
-*    SGE_ULONG(CE_pj_dominant) - @todo add summary
+*    SGE_ULONG(CE_pj_dominant) - Per Job Monitoring Facility
 *    @todo add description
 *
 *    SGE_ULONG(CE_requestable) - @todo add summary
-*    @todo add description
+*    Defines if a complex variable can be requested and if it is a forced variable (must be requested)
+*    Defined in libs/sgeobj/sge_centry.h, possible values are
+*    REQU_NO
+*    REQU_YES
+*    REQU_FORCED
 *
-*    SGE_ULONG(CE_tagged) - @todo add summary
-*    @todo add description
+*    SGE_ULONG(CE_tagged) - Variable Is Tagged
+*    Used for tagging variables, e.g. during the scheduling process.
 *
-*    SGE_STRING(CE_urgency_weight) - @todo add summary
-*    @todo add description
+*    SGE_STRING(CE_urgency_weight) - Urgency Weighting Factor
+*    Static Urgency Weighting Factor.
 *
 */
 

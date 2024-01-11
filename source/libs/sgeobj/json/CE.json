@@ -1,15 +1,18 @@
 {
 	"className":	"ComplexEntry",
-	"summary":	"@todo add summary",
+	"summary":	"Complex Entry",
 	"description":	[{
-			"line":	"@todo add description"
+			"line":	"A complex entry contains a complex variable, both its definition as well as a possible current value"
+			}, { "line":	"A complex variable is used for defining all types of attributes in Grid Engine"
+			}, { "line":	"as well as defining fixed values of resources and the capacity of consumable resources."
+			}, { "line":	"@todo should be we better split definition and values into two objects?"
 		}],
 	"cullPrefix":	"CE",
 	"attributes":	[{
 			"name":	"name",
-			"summary":	"@todo add summary",
+			"summary":	"Full Name",
 			"description":	[{
-					"line":	"@todo add description"
+					"line":	"Full name of a complex variable."
 				}],
 			"type":	"lStringT",
 			"flags":	[{
@@ -27,9 +30,10 @@
 				}]
 		}, {
 			"name":	"shortcut",
-			"summary":	"@todo add summary",
+			"summary":	"Shortcut Name",
 			"description":	[{
-					"line":	"@todo add description"
+					"line":	"Shortcut for the complex variable name which can be used as an alternative to the name,"
+			}, { "line":	"e.g. in job submission with qsub or when querying resources with qstat -F."
 				}],
 			"type":	"lStringT",
 			"flags":	[{
@@ -43,9 +47,15 @@
 				}]
 		}, {
 			"name":	"valtype",
-			"summary":	"@todo add summary",
+			"summary":	"Variable Type",
 			"description":	[{
-					"line":	"@todo add description"
+					"line":	"Type of the complex variable defined in common/basis_types.h, e.g."
+			}, { "line":	"  - TYPE_INT"
+			}, { "line":	"  - TYPE_STR"
+			}, { "line":	"  - TYPE_TIM"
+			}, { "line":	"  - TYPE_MEM"
+			}, { "line":	"  - ..."
+			}, { "line":	"@todo instead of defines, should we better use an enum?"
 				}],
 			"type":	"lUlongT",
 			"flags":	[{
@@ -55,9 +65,9 @@
 				}]
 		}, {
 			"name":	"stringval",
-			"summary":	"@todo add summary",
+			"summary":	"String Value",
 			"description":	[{
-					"line":	"@todo add description"
+					"line":	"Value of the complex variable as string, from old docs: non overwritten value."
 				}],
 			"type":	"lStringT",
 			"flags":	[{
@@ -69,9 +79,9 @@
 				}]
 		}, {
 			"name":	"doubleval",
-			"summary":	"@todo add summary",
+			"summary":	"Double Value",
 			"description":	[{
-					"line":	"@todo add description"
+					"line":	"Value of the complex variable as double, from old docs: parsed CE_stringval"
 				}],
 			"type":	"lDoubleT",
 			"flags":	[{
@@ -79,9 +89,14 @@
 				}]
 		}, {
 			"name":	"relop",
-			"summary":	"@todo add summary",
+			"summary":	"Relational Operator",
 			"description":	[{
-					"line":	"@todo add description"
+					"line":	"Relational operator used in comparison of complex variables (e.g. against requests)."
+			}, { "line":	"Defined in libs/sgeobj/sge_centry.h, e.g."
+			}, { "line":	"CMPLXEQ_OP"
+			}, { "line":	"CMPLXGE_OP"
+			}, { "line":	"CMPLXGT_OP"
+			}, { "line":	"..."
 				}],
 			"type":	"lUlongT",
 			"flags":	[{
@@ -91,9 +106,13 @@
 				}]
 		}, {
 			"name":	"consumable",
-			"summary":	"@todo add summary",
+			"summary":	"Consumable Flag",
 			"description":	[{
-					"line":	"@todo add description"
+					"line":	"Defines if a complex variable is consumable and if it is a per job or per slot consumable."
+			}, { "line":	"Defined in libs/sgeobj/sge_centry.h, possible values are"
+			}, { "line":	"CONSUMABLE_NO"
+			}, { "line":	"CONSUMABLE_YES"
+			}, { "line":	"CONSUMABLE_JOB"
 				}],
 			"type":	"lUlongT",
 			"flags":	[{
@@ -103,9 +122,9 @@
 				}]
 		}, {
 			"name":	"defaultval",
-			"summary":	"@todo add summary",
+			"summary":	"Default Value",
 			"description":	[{
-					"line":	"@todo add description"
+					"line":	"Default value (default request) as string."
 				}],
 			"type":	"lStringT",
 			"flags":	[{
@@ -115,7 +134,7 @@
 				}]
 		}, {
 			"name":	"dominant",
-			"summary":	"@todo add summary",
+			"summary":	"Monitoring Facility",
 			"description":	[{
 					"line":	"@todo add description"
 				}],
@@ -125,9 +144,9 @@
 				}]
 		}, {
 			"name":	"pj_stringval",
-			"summary":	"@todo add summary",
+			"summary":	"Per Job String Value",
 			"description":	[{
-					"line":	"@todo add description"
+					"line":	"Per job string value, @todo add more information"
 				}],
 			"type":	"lStringT",
 			"flags":	[{
@@ -135,9 +154,9 @@
 				}]
 		}, {
 			"name":	"pj_doubleval",
-			"summary":	"@todo add summary",
+			"summary":	"Per Job Double Value",
 			"description":	[{
-					"line":	"@todo add description"
+					"line":	"Per job double values, parsed from CE_stringval (?)"
 				}],
 			"type":	"lDoubleT",
 			"flags":	[{
@@ -145,7 +164,7 @@
 				}]
 		}, {
 			"name":	"pj_dominant",
-			"summary":	"@todo add summary",
+			"summary":	"Per Job Monitoring Facility",
 			"description":	[{
 					"line":	"@todo add description"
 				}],
@@ -157,7 +176,11 @@
 			"name":	"requestable",
 			"summary":	"@todo add summary",
 			"description":	[{
-					"line":	"@todo add description"
+					"line":	"Defines if a complex variable can be requested and if it is a forced variable (must be requested)"
+			}, { "line":	"Defined in libs/sgeobj/sge_centry.h, possible values are"
+			}, { "line":	"REQU_NO"
+			}, { "line":	"REQU_YES"
+			}, { "line":	"REQU_FORCED"
 				}],
 			"type":	"lUlongT",
 			"flags":	[{
@@ -167,9 +190,9 @@
 				}]
 		}, {
 			"name":	"tagged",
-			"summary":	"@todo add summary",
+			"summary":	"Variable Is Tagged",
 			"description":	[{
-					"line":	"@todo add description"
+					"line":	"Used for tagging variables, e.g. during the scheduling process."
 				}],
 			"type":	"lUlongT",
 			"flags":	[{
@@ -177,9 +200,9 @@
 				}]
 		}, {
 			"name":	"urgency_weight",
-			"summary":	"@todo add summary",
+			"summary":	"Urgency Weighting Factor",
 			"description":	[{
-					"line":	"@todo add description"
+					"line":	"Static Urgency Weighting Factor."
 				}],
 			"type":	"lStringT",
 			"flags":	[{
