@@ -1,15 +1,16 @@
 {
 	"className":	"LoadReport",
-	"summary":	"@todo add summary",
+	"summary":	"Load Report",
 	"description":	[{
-			"line":	"@todo add description"
+			"line":	"A LoadReport object represents the value for a single load variable on a specific host."
 		}],
 	"cullPrefix":	"LR",
 	"attributes":	[{
 			"name":	"name",
-			"summary":	"@todo add summary",
+			"summary":	"Load Variable Name",
 			"description":	[{
-					"line":	"@todo add description"
+					"line":	"Name of the load variable. In order for the load value to be processed in sge_qmaster"
+					}, { "line":	"a complex variable with this name must have been configured."
 				}],
 			"type":	"lStringT",
 			"flags":	[{
@@ -17,33 +18,40 @@
 				}]
 		}, {
 			"name":	"value",
-			"summary":	"@todo add summary",
+			"summary":	"Load Variable Value",
 			"description":	[{
-					"line":	"@todo add description"
+					"line":	"Value of the variable on a specific host."
 				}],
 			"type":	"lStringT",
 			"flags":	[]
 		}, {
 			"name":	"global",
-			"summary":	"@todo add summary",
+			"summary":	"Is Global",
 			"description":	[{
-					"line":	"@todo add description"
+					"line":	"Specifies if it is a global load variable."
+					}, { "line":	"1 means that it is a global load value (host is global in this case),"
+					}, { "line":	"0 means that it is a host specific load value."
+					}, { "line":	"@todo: make it a boolean"
 				}],
 			"type":	"lUlongT",
 			"flags":	[]
 		}, {
 			"name":	"is_static",
-			"summary":	"@todo add summary",
+			"summary":	"Is Static",
 			"description":	[{
-					"line":	"@todo add description"
+					"line":	"Specifies if it is a static load variable."
+					}, { "line":	"Static load variables represent seldomly changing variables, e.g. arch, n_proc, mem_total."
+					}, { "line":	"0 means a non static load value"
+					}, { "line":	"1 means a static load value"
+					}, { "line":	"2 is a special internal value: remove the load value"
 				}],
 			"type":	"lUlongT",
 			"flags":	[]
 		}, {
 			"name":	"host",
-			"summary":	"@todo add summary",
+			"summary":	"Host Name",
 			"description":	[{
-					"line":	"@todo add description"
+					"line":	"Name of the host on which the load value is valid. Specific host name or keyword global for global load values."
 				}],
 			"type":	"lHostT",
 			"flags":	[{

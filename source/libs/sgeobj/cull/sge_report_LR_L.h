@@ -40,24 +40,32 @@ extern "C" {
 #endif
 
 /**
-* @brief @todo add summary
+* @brief Load Report
 *
-* @todo add description
+* A LoadReport object represents the value for a single load variable on a specific host.
 *
-*    SGE_STRING(LR_name) - @todo add summary
-*    @todo add description
+*    SGE_STRING(LR_name) - Load Variable Name
+*    Name of the load variable. In order for the load value to be processed in sge_qmaster
+*    a complex variable with this name must have been configured.
 *
-*    SGE_STRING(LR_value) - @todo add summary
-*    @todo add description
+*    SGE_STRING(LR_value) - Load Variable Value
+*    Value of the variable on a specific host.
 *
-*    SGE_ULONG(LR_global) - @todo add summary
-*    @todo add description
+*    SGE_ULONG(LR_global) - Is Global
+*    Specifies if it is a global load variable.
+*    1 means that it is a global load value (host is global in this case),
+*    0 means that it is a host specific load value.
+*    @todo: make it a boolean
 *
-*    SGE_ULONG(LR_is_static) - @todo add summary
-*    @todo add description
+*    SGE_ULONG(LR_is_static) - Is Static
+*    Specifies if it is a static load variable.
+*    Static load variables represent seldomly changing variables, e.g. arch, n_proc, mem_total.
+*    0 means a non static load value
+*    1 means a static load value
+*    2 is a special internal value: remove the load value
 *
-*    SGE_HOST(LR_host) - @todo add summary
-*    @todo add description
+*    SGE_HOST(LR_host) - Host Name
+*    Name of the host on which the load value is valid. Specific host name or keyword global for global load values.
 *
 */
 
