@@ -123,11 +123,11 @@ information is generated is defined.
 
 ## xxQS_NAME_Sxx_QMASTER_PORT
 If set, specifies the TCP port on which xxqs_name_sxx_qmaster(8) is expected to listen for communication requests. 
-Most installations will use a services map entry for the service *sge_qmaster* instead to define that port.
+Most installations will use a services map entry for the service *xxqs_name_sxx_qmaster* instead to define that port.
 
 ## xxQS_NAME_Sxx_EXECD_PORT
 If set, specifies the tcp port on which xxqs_name_sxx_execd(8) is expected to listen for communication requests. 
-Most installations will use a services map entry for the service *sge_execd* instead to define that port.
+Most installations will use a services map entry for the service *xxqs_name_sxx_execd* instead to define that port.
 
 # FILES
 
