@@ -500,7 +500,7 @@ ErrUsage()
              "       -copycerts <host|hostlist>|-v|-upd|-upd-execd|-upd-rc|-upd-win| \n" \
              "       -post_upd|-start-all|-rccreate|[-host <hostname>] [-resport] [-rsh] \n" \
              "       [-auto <filename>] [-nr] [-winupdate] [-winsvc] [-uwinsvc] [-csp] \n" \
-             "       [-jmx] [-add-jmx] [-oldijs] [-afs] [-noremote] [-nosmf] [-nost]\n" \
+             "       [-oldijs] [-afs] [-noremote] [-nosmf] [-nost]\n" \
              "   -m         install qmaster host\n" \
              "   -um        uninstall qmaster host\n" \
              "   -x         install execution host\n" \
@@ -534,8 +534,6 @@ ErrUsage()
              "   -uwinsvc   uninstall windows helper service\n" \
              "   -csp       install system with security framework protocol\n" \
              "              functionality\n" \
-             "   -jmx       install qmaster with JMX server thread enabled \n" \
-             "   -add-jmx   install and enable JMX server thread for existing qmaster\n" \
              "   -oldijs    configure old interactive job support\n" \
              "   -afs       install system with AFS functionality\n" \
              "   -noremote  supress remote installation during autoinstall\n" \
@@ -543,7 +541,7 @@ ErrUsage()
              "   -nost      do not use Sun Service Tags\n" \
              "   -help      show this help text\n\n" \
              "   Examples:\n" \
-             "   inst_sge -m -x   or   inst_sge -m -jmx -x\n" \
+             "   inst_sge -m -x   or   inst_sge -m -x\n" \
              "                     Installs qmaster with JMX thread enabled\n" \
              "                     and exechost on localhost\n" \
              "   inst_sge -m -x -auto /path/to/config-file\n" \
@@ -779,7 +777,7 @@ AddChangedHost()
 CheckConfigFile()
 {
    CONFIG_FILE=$1
-   KNOWN_CONFIG_FILE_ENTRIES_INSTALL="SGE_ROOT SGE_QMASTER_PORT SGE_EXECD_PORT CELL_NAME ADMIN_USER QMASTER_SPOOL_DIR EXECD_SPOOL_DIR GID_RANGE SPOOLING_METHOD DB_SPOOLING_SERVER DB_SPOOLING_DIR PAR_EXECD_INST_COUNT ADMIN_HOST_LIST SUBMIT_HOST_LIST EXEC_HOST_LIST EXECD_SPOOL_DIR_LOCAL HOSTNAME_RESOLVING SHELL_NAME COPY_COMMAND DEFAULT_DOMAIN ADMIN_MAIL ADD_TO_RC SET_FILE_PERMS RESCHEDULE_JOBS SCHEDD_CONF SHADOW_HOST EXEC_HOST_LIST_RM REMOVE_RC WINDOWS_SUPPORT WIN_ADMIN_NAME WIN_DOMAIN_ACCESS CSP_RECREATE CSP_COPY_CERTS CSP_COUNTRY_CODE CSP_STATE CSP_LOCATION CSP_ORGA CSP_ORGA_UNIT CSP_MAIL_ADDRESS SGE_ENABLE_SMF SGE_CLUSTER_NAME SGE_ENABLE_JMX SGE_JMX_PORT SGE_JVM_LIB_PATH SGE_ADDITIONAL_JVM_ARGS SGE_JMX_SSL SGE_JMX_SSL_CLIENT SGE_JMX_SSL_KEYSTORE SGE_JMX_SSL_KEYSTORE_PW"
+   KNOWN_CONFIG_FILE_ENTRIES_INSTALL="SGE_ROOT SGE_QMASTER_PORT SGE_EXECD_PORT CELL_NAME ADMIN_USER QMASTER_SPOOL_DIR EXECD_SPOOL_DIR GID_RANGE SPOOLING_METHOD DB_SPOOLING_SERVER DB_SPOOLING_DIR PAR_EXECD_INST_COUNT ADMIN_HOST_LIST SUBMIT_HOST_LIST EXEC_HOST_LIST EXECD_SPOOL_DIR_LOCAL HOSTNAME_RESOLVING SHELL_NAME COPY_COMMAND DEFAULT_DOMAIN ADMIN_MAIL ADD_TO_RC SET_FILE_PERMS RESCHEDULE_JOBS SCHEDD_CONF SHADOW_HOST EXEC_HOST_LIST_RM REMOVE_RC WINDOWS_SUPPORT WIN_ADMIN_NAME WIN_DOMAIN_ACCESS CSP_RECREATE CSP_COPY_CERTS CSP_COUNTRY_CODE CSP_STATE CSP_LOCATION CSP_ORGA CSP_ORGA_UNIT CSP_MAIL_ADDRESS SGE_ENABLE_SMF SGE_CLUSTER_NAME"
    KNOWN_CONFIG_FILE_ENTRIES_BACKUP="SGE_ROOT SGE_CELL BACKUP_DIR TAR BACKUP_FILE"
    MAX_GID=2147483647 #unsigned int = 32bit - 1
    MIN_GID=100        #from 0 - 100 may be reserved GIDs
@@ -1017,95 +1015,6 @@ CheckConfigFile()
          is_valid="false"
       fi
       
-      if [ -z "$SGE_ENABLE_JMX" ]; then
-         $INFOTEXT -e "Your >SGE_ENABLE_JMX< flag is not set!"
-         $INFOTEXT -log "Your >SGE_ENABLE_JMX< flag is not set!"
-         is_valid="false"
-      fi
-      if [ "$SGE_ENABLE_JMX" = "1" ]; then
-         SGE_ENABLE_JMX="true"
-      elif [ "$SGE_ENABLE_JMX" = "0" ]; then
-         SGE_ENABLE_JMX="false"
-      fi
-      SGE_ENABLE_JMX=`echo "$SGE_ENABLE_JMX" | tr "[A-Z]" "[a-z]"`
-      if [ "$SGE_ENABLE_JMX" != "true" -a "$SGE_ENABLE_JMX" != "false" ]; then
-         $INFOTEXT -e "Your >SGE_ENABLE_JMX< flag is wrong! Valid values are:0,1,true,false,TRUE,FALSE"
-         $INFOTEXT -log "Your >SGE_ENABLE_JMX< flag is wrong! Valid values are:0,1,true,false,TRUE,FALSE"
-         is_valid="false" 
-      fi
-      
-      if [ "$SGE_ENABLE_JMX" = "true" ]; then
-
-         if [ -z "$SGE_JVM_LIB_PATH" ]; then
-            $INFOTEXT -e "Your >SGE_JVM_LIB_PATH< is empty. It must be a full path!"
-            $INFOTEXT -log "Your >SGE_JVM_LIB_PATH< is empty. It must be a full path!"
-            is_valid="false"
-         else
-            first="`echo "$SGE_JVM_LIB_PATH" | cut -d"/" -f1`"
-            second="`echo "$SGE_JVM_LIB_PATH" | cut -d"/" -f2`"
-            if [ "$first" != "" ]; then
-               $INFOTEXT -e "Your >SGE_JVM_LIB_PATH< does not start with a \"/\". It must be a full path!"
-               $INFOTEXT -log "Your >SGE_JVM_LIB_PATH< does not start with a \"/\". It must be a full path!"
-               is_valid="false"
-            fi
-            if [ "$second" = "" ]; then
-               $INFOTEXT -e "Your >SGE_JVM_LIB_PATH< is set to \"$SGE_JVM_LIB_PATH\" which is not a valid path!"
-               $INFOTEXT -log "Your >SGE_JVM_LIB_PATH< is set to \"$SGE_JVM_LIB_PATH\" which is not a valid path!"
-               is_valid="false"
-            fi
-         fi
-            
-         `IsNumeric "$SGE_JMX_PORT"`
-         if [ "$?" -eq 1 ]; then
-            $INFOTEXT -e "Your >SGE_JMX_PORT< entry is invalid. It must be a number between 1 and 65536!"
-            $INFOTEXT -log "Your >SGE_JMX_PORT< entry is invalid. It must be a number between 1 and 65536!"
-            is_valid="false"
-         elif [ "$SGE_JMX_PORT" -le 1 -a "$SGE_JMX_PORT" -ge 65536 ]; then
-            $INFOTEXT -e "Your >SGE_JMX_PORT< entry is invalid. It must be a number between 1 and 65536!"
-            $INFOTEXT -log "Your >SGE_JMX_PORT< entry is invalid. It must be a number between 1 and 65536!"
-            is_valid="false"
-         fi
-         if [ -z "$SGE_JMX_SSL" ]; then
-            $INFOTEXT -e "Your >SGE_JMX_SSL< flag is not set!"
-            $INFOTEXT -log "Your >SGE_JMX_SSL< flag is not set!"
-            is_valid="false" 
-         fi 
-         if [ "$SGE_JMX_SSL" = "1" ]; then
-            SGE_JMX_SSL="true"
-         elif [ "$SGE_JMX_SSL" = "0" ]; then
-            SGE_JMX_SSL="false"
-         fi
-         SGE_JMX_SSL=`echo "$SGE_JMX_SSL" | tr "[A-Z]" "[a-z]"`
-         if [ "$SGE_JMX_SSL" != "true" -a "$SGE_JMX_SSL" != "false" ]; then
-            $INFOTEXT -e "Your >SGE_JMX_SSL< flag is wrong! Valid values are:0,1,true,false,TRUE,FALSE"
-            $INFOTEXT -log "Your >SGE_JMX_SSL< flag is wrong! Valid values are:0,1,true,false,TRUE,FALSE"
-            is_valid="false" 
-         fi
-         if [ "$SGE_JMX_SSL" = "true" ]; then
-            if [ `echo "$SGE_JMX_SSL_KEYSTORE_PW" | awk '{print length($0)}'` -lt 6 ]; then
-               $INFOTEXT -e "Your SGE_JMX_SSL_KEYSTORE_PW is too short! Password must have at least 6 characters."
-               $INFOTEXT -log "Your SGE_JMX_SSL_KEYSTORE_PW is too short! Password must have at least 6 characters."
-               is_valid="false"
-            fi
-         fi
-         if [ -z "$SGE_JMX_SSL_CLIENT" ]; then
-            $INFOTEXT -e "Your >SGE_JMX_SSL_CLIENT< flag is not set!"
-            $INFOTEXT -log "Your >SGE_JMX_SSL_CLIENT< flag is not set!"
-            is_valid="false" 
-         fi 
-         if [ "$SGE_JMX_SSL_CLIENT" = "1" ]; then
-            SGE_JMX_SSL_CLIENT="true"
-         elif [ "$SGE_JMX_SSL_CLIENT" = "0" ]; then
-            SGE_JMX_SSL_CLIENT="false"
-         fi
-         SGE_JMX_SSL_CLIENT=`echo "$SGE_JMX_SSL_CLIENT" | tr "[A-Z]" "[a-z]"`
-         if [ "$SGE_JMX_SSL_CLIENT" != "true" -a "$SGE_JMX_SSL_CLIENT" != "false" ]; then
-            $INFOTEXT -e "Your >SGE_JMX_SSL_CLIENT< flag is wrong! Valid values are:0,1,true,false,TRUE,FALSE"
-            $INFOTEXT -log "Your >SGE_JMX_SSL_CLIENT< flag is wrong! Valid values are:0,1,true,false,TRUE,FALSE"
-            is_valid="false" 
-         fi
-      fi
-
       if [ -z "$DEFAULT_DOMAIN" ]; then
             $INFOTEXT -e "Your >DEFAULT_DOMAIN< entry is invalid, valid entries are >none< or a domain name"
             $INFOTEXT -log "Your >DEFAULT_DOMAIN< entry is invalid, valid entries are >none< or a domain name"
@@ -1231,14 +1140,6 @@ CheckConfigFile()
          $INFOTEXT -e "Your >REMOVE_RC< flag is wrong! Valid values are: 0, 1, true, false"
          $INFOTEXT -log "Your >REMOVE_RC< flag is wrong! Valid values are: 0, 1, true, false"
          is_valid="false"
-      fi
-
-      if [ "$SGE_ENABLE_JMX" = "true" -a "$QMASTER" = "uninstall" ]; then
-         if [ -z "$SGE_JMX_PORT" -o -z "$SGE_JVM_LIB_PATH" ]; then
-            $INFOTEXT -e "The SGE_JMX_PORT or SGE_JVM_LIB_PATH has not been set in config file!\n"
-            $INFOTEXT -log "The SGE_JMX_PORT or SGE_JVM_LIB_PATH has not been set in config file!\n"
-            is_valid="false"
-         fi
       fi
    fi
 
@@ -2260,14 +2161,6 @@ PrintLocalConf()
    fi
    if [ "$LOADSENSOR_COMMAND" != "undef" ]; then
       $ECHO "load_sensor            $SGE_ROOT/$LOADSENSOR_COMMAND"
-   fi
-   if [ "$2" = "shadowd" -o "$2" = "qmaster" ]; then
-      if [ "$SGE_ENABLE_JMX" = "true" -a "$SGE_JVM_LIB_PATH" != "" ]; then
-         $ECHO "libjvm_path            $SGE_JVM_LIB_PATH"
-      fi
-      if [ "$SGE_ENABLE_JMX" = "true" -a "$SGE_ADDITIONAL_JVM_ARGS" != "" ]; then
-         $ECHO "additional_jvm_args            $SGE_ADDITIONAL_JVM_ARGS"
-      fi
    fi
 }
 
@@ -3985,37 +3878,6 @@ CopyCaFromQmaster()
       $INFOTEXT "The certificate copy failed for host %s!" "$HOST"
       $INFOTEXT -log "The certificate copy failed for host %s!" "$HOST"
    fi
-}
-
-
-#-------------------------------------------------------------------------
-# MakeUserKs - Generate keystore for adminuser (for JMX)
-# $1 - user name
-#
-MakeUserKs()
-{
-   if [ \( "$SGE_ENABLE_JMX" = "true" -a "$SGE_JMX_SSL" = true \) ]; then
-      OLD_ADMINUSER="$ADMINUSER"
-      ADMINUSER=$1
-      $CLEAR
-      tmp_file=/tmp/inst_sge_ks.$$
-      ExecuteAsAdmin touch $tmp_file
-      ExecuteAsAdmin chmod 600 $tmp_file
-      if [ "$AUTO" != "true" ]; then
-         EnterSecurePassword "Choosing password for the administrative user of SGE daemons" \
-                             "Enter password for $ADMINUSER's keystore (at least 6 characters) >> " \
-                             "Retype the password >> " 6 "true"
-         keystore_pw="$secure_pw1"
-         secure_pw1=""
-      else
-         keystore_pw="changeit"
-      fi
-      $INFOTEXT "\nGenerating keystore for $ADMINUSER ..."
-      ExecuteAsAdmin echo "$keystore_pw" > $tmp_file ; keystore_pw=""     
-      $SGE_ROOT/util/sgeCA/sge_ca -ks $ADMINUSER -kspwf $tmp_file
-      ExecuteAsAdmin rm -f $tmp_file
-      ADMINUSER="$OLD_ADMINUSER"
-  fi
 }
 
 #-------------------------------------------------------------------------

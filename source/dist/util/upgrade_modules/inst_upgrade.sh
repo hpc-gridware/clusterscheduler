@@ -184,39 +184,7 @@ dbwriter.conf"
       $ECHO "scheduler_threads       1" >> $SGE_ROOT/$SGE_CELL/common/bootstrap
    fi
    
-   if [ "$SGE_ENABLE_JMX" = "true" ]; then
-      ReplaceOrAddLine "$SGE_ROOT/$SGE_CELL/common/bootstrap" 666 'jvm_threads.*' "jvm_threads             1"
-   else
-      ReplaceOrAddLine "$SGE_ROOT/$SGE_CELL/common/bootstrap" 666 'jvm_threads.*' "jvm_threads             0"
-   fi
    ExecuteAsAdmin $CHMOD 644 "$SGE_ROOT/$SGE_CELL/common/bootstrap"
-}
-
-#-------------------------------------------------------------------------------
-# RestoreJMX: Ask if JMX setting from the backup should be used
-#   $1 - BACKUPED_JMX_DIRECTORY
-RestoreJMX()
-{
-   old_jmx=$1
-   if [ "$SGE_ENABLE_JMX" = "true" -a -d "${old_jmx}" ]; then
-      $CLEAR
-      $INFOTEXT -n "\nFound JMX settings in the backup"
-      $INFOTEXT -auto $AUTO -ask "y" "n" -def "y" -n "\nUse the JMX settings from the backup ('y') or reconfigure ('n') (y/n) [y] >> "
-      if [ $? -eq 0 ]; then
-	      #Use backup
-	      ExecuteAsAdmin cp -r "${old_jmx}" "$SGE_ROOT/$SGE_CELL/common"
-	      #Ensure we have correct file permissions (see AddJMXFiles)
-	      ExecuteAsAdmin chmod 644 "$SGE_ROOT/$SGE_CELL/common/jmx/jmxremote.access"
-	      ExecuteAsAdmin chmod 600 "$SGE_ROOT/$SGE_CELL/common/jmx/jmxremote.password"
-	      ExecuteAsAdmin chmod 644 "$SGE_ROOT/$SGE_CELL/common/jmx/logging.properties"
-	      ExecuteAsAdmin chmod 644 "$SGE_ROOT/$SGE_CELL/common/jmx/java.policy"
-	      ExecuteAsAdmin chmod 644 "$SGE_ROOT/$SGE_CELL/common/jmx/jaas.config"
-	      # ExecuteAsAdmin chmod 600 "$SGE_ROOT/$SGE_CELL/common/jmx/management.properties"
-         ReplaceKeystorePassword "$SGE_ROOT/$SGE_CELL/common/jmx/management.properties"
-
-	      SGE_SKIP_JMX_SETTING=true
-      fi
-   fi
 }
 
 #-------------------------------------------------------------------------------

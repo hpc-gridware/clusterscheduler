@@ -73,7 +73,6 @@ AUTO=false
 RESCHEDULE=true
 RESPORT=false
 CSP=false
-SGE_ENABLE_JMX=false
 AFS=false
 NOREMOTE=false
 START_RPC_SERVICE=false
@@ -85,7 +84,6 @@ UPDATE_WIN=false
 DEL_EXECD_SPOOL=false
 POST_UPDATE=false
 WIN_UPDATE=false
-SGE_SKIP_JMX_SETTING="true"
 COPY_CA="false"
 RECREATE_SETTINGS="false"
 USE_OLD_IJS="false"
@@ -112,7 +110,6 @@ SGE_NOMSG="undef"
 
 
 CERT_COPY_HOST_LIST="undef"
-ONLY_ENABLE_JMX=false
 
 #Save changed host names during resolving
 RESOLVED_CHANGED_HOSTNAMES=""
@@ -298,10 +295,6 @@ while [ $ARGC != 0 ]; do
    -csp)
      CSP=true
      ;;
-   -jmx)
-     SGE_ENABLE_JMX=true
-     SGE_SKIP_JMX_SETTING="false"
-     ;;
    -copycerts)
      if [ "$2" = "" ]; then
         ErrUsage
@@ -325,12 +318,6 @@ while [ $ARGC != 0 ]; do
    -nosmf)
      SGE_ENABLE_SMF="false"
      SMF_FLAGS="-nosmf"
-     ;;
-   -add-jmx)
-     ONLY_ENABLE_JMX=true
-     SGE_ENABLE_JMX=true
-     . ./util/install_modules/inst_qmaster.sh
-     . ./util/upgrade_modules/inst_upgrade.sh
      ;;
    -help)
      ErrUsage
@@ -388,19 +375,7 @@ fi
 #because the commandline switches are completely parsed and we know the selected options.
 #This will influence the configfile parsing and checking mechanism.
 if [ $AUTO = "true" ]; then
-   SGE_JVM_LIB_PATH="undef"
    GetConfigFromFile
-   #Now we check if we want to enable JMX or not based on SGE_JVM_LIB_PATH and/or SGE_JMX_PORT
-   if [ "$SGE_JVM_LIB_PATH" = "undef" -o x"`echo $SGE_JVM_LIB_PATH | tr \"[A-Z]\" \"[a-z]\"`" = "xnone" ]; then
-      $INFOTEXT -log "Disabling JMX since \$SGE_JVM_LIB_PATH=none or is missing in $FILE file."
-      SGE_ENABLE_JMX="false"
-   fi
-   #Since we no longer have JMX flag (SGE_ENABLE_JMX is always true) we set to to false if
-   #SGE_JMX_PORT is missing or is empty in the autoinstall template
-   if [ -z "$SGE_JMX_PORT" ]; then
-      $INFOTEXT -log "Disabling JMX since \$SGE_JMX_PORT=\"$SGE_JMX_PORT\" in $FILE file."
-      SGE_ENABLE_JMX="false"
-   fi
    CheckConfigFile $FILE
 fi
 
@@ -427,73 +402,6 @@ if [ "$START_CLUSTER" = "true" ]; then
    ManipulateOneDaemonType "" qmaster ""
    ManipulateOneDaemonType "" execd ""
    exit
-fi
-
-if [ $ONLY_ENABLE_JMX = "true" ]; then
-   GetAdminUser
-   ProcessSGERoot
-   GetCell
-   #Exit if we already have JMX
-   if [ -d "$SGE_ROOT/$SGE_CELL/common/jmx" ]; then
-      $INFOTEXT "JMX is already enabled. Exiting."
-      exit 2
-   fi
-   #Ensure we are on qmaster   
-   qmaster_host=`cat $SGE_ROOT/$SGE_CELL/common/act_qmaster`
-   if [ "$qmaster_host" != "$HOST" ]; then
-      $INFOTEXT "JMX can be enabled only from qmaster host %s!" $qmaster_host
-      exit 2
-   fi
-   QMDIR=`BootstrapGetValue "$SGE_ROOT/$SGE_CELL/common" qmaster_spool_dir`
-   CheckRunningDaemon sge_qmaster
-   is_running=$?
-   if [ $is_running - ne 0 ]; then
-      $INFOTEXT "Qmaster is not running! Cannot enable JMX." $qmaster_host
-      exit 2
-   fi
-   
-   #Source the settings file
-   . "$SGE_ROOT/$SGE_CELL/common/settings.sh"   
-   GetJMXPort
-   COMMONDIR="$SGE_ROOT/$SGE_CELL/common"
-   AddJMXFiles
-   ReplaceOrAddLine "$SGE_ROOT/$SGE_CELL/common/bootstrap" 666 'jvm_threads.*' "jvm_threads             1"
-   ExecuteAsAdmin $CHMOD 644 "$SGE_ROOT/$SGE_CELL/common/bootstrap"
-   # Do InitCA only when no CSP mode
-   if [ x`BootstrapGetValue "$SGE_ROOT/$SGE_CELL/common" "security_mode" | tr "[A-Z]" "[a-z]"` != xcsp ]; then
-      InitCA
-   elif [ "$SGE_JMX_SSL" = true ]; then
-      if [ ! -f "$SGE_JMX_SSL_KEYSTORE" ]; then
-         InitSysKs
-      fi
-      MakeUserKs $ADMINUSER
-   fi
-   CopyCA execd
-   CopyCA submit
-   #Update the default config
-   dir=/tmp/conf.$$
-   ExecuteAsAdmin mkdir -p $dir
-   #Update global libjvm entry
-   $SGE_ROOT/bin/$SGE_ARCH/qconf -sconf > $dir/global
-   ReplaceOrAddLine "$dir/global" 666 'libjvm_path.*' "libjvm_path $SGE_JVM_LIB_PATH"
-   ReplaceOrAddLine "$dir/global" 666 'additional_jvm_args.*' "additional_jvm_args $SGE_ADDITIONAL_JVM_ARGS"
-   $SGE_ROOT/bin/$SGE_ARCH/qconf -Mconf $dir/global > /dev/null 2>&1
-   rm -rf $dir
-   
-   $INFOTEXT -auto $AUTO -ask "y" "n" -def "y" -n "Do you want to start the JMX thread in qmaster now (y/n) [y] >> "
-   if [ $? = 0 ]; then
-      $SGE_ROOT/bin/$SGE_ARCH/qconf -at jvm
-   fi
-   
-   # shadowds might have no jvmlib path
-   shadow_count=`cat "$SGE_ROOT/$SGE_CELL/common/shadow_masters" 2>/dev/null | grep -v $qmaster_host | wc -l`
-   if [ ${shadow_count:-0} -gt 0 ]; then
-      $INFOTEXT -n "Found configured shadow daemons. Update manually their configuration using \n" \
-                   "qconf -mconf <shadow_hostname> as add the correct libjvm_path entry, if it \n" \
-                   "differs from the value used for qmaster (qconf -sconf global).\n"
-      #TODO: Could offer to autodetect if passwordless access is available
-   fi
-   exit 0
 fi
 
 if [ "$WIN_UPDATE" = "true" ]; then
@@ -641,13 +549,8 @@ if [ "$UPDATE" = true ]; then
       CSP=false
       AFS=false
    fi
-   #Find out if jmx should be used from the backup
-   RestoreJMX "${UPGRADE_BACKUP_DIR}/cell/jmx"
    #Load and upgrade old cell
    RestoreCell "${UPGRADE_BACKUP_DIR}/cell"
-   if [ "$SGE_SKIP_JMX_SETTING" != "true" ]; then
-      GetJMXPort
-   fi
    if [ -d "$QMDIR" ]; then
       ExecuteAsAdmin rm -rf "$QMDIR/*"   # remove old qmaster spool dir
    fi
@@ -655,11 +558,6 @@ if [ "$UPDATE" = true ]; then
 
    if [ "$UPGRADE_MODE" = upgrade ]; then
       SelectNewSpooling `BootstrapGetValue "${UPGRADE_BACKUP_DIR}/cell" "spooling_method"`
-      if [ "$SGE_ENABLE_JMX" = "true" ]; then
-         ReplaceLineWithMatch "$SGE_ROOT/$SGE_CELL/common/bootstrap" 644 'jvm_threads.*' "jvm_threads             1"
-      else
-         ReplaceLineWithMatch "$SGE_ROOT/$SGE_CELL/common/bootstrap" 644 'jvm_threads.*' "jvm_threads             0"
-      fi 
    else
       SetSpoolingOptions `BootstrapGetValue "${UPGRADE_BACKUP_DIR}/cell" "spooling_method"`
       ReplaceLineWithMatch "$SGE_ROOT/$SGE_CELL/common/bootstrap" 644 'spooling_method.*' "spooling_method         $SPOOLING_METHOD"
@@ -676,11 +574,6 @@ if [ "$UPDATE" = true ]; then
       CFG_EXE_SPOOL=""
       CFG_MAIL_ADDR=""
       CFG_GID_RANGE=""
-   fi
-   if [ "$SGE_SKIP_JMX_SETTING" != "true" ]; then
-      #TODO LP: Need add/replace jvm_thread, etc. values to the bootstrap file
-      # + need to adjust the global configuration with the new JMX params
-      AddJMXFiles
    fi
    RestoreSequenceNumberFiles $QMDIR #Restore jobseqnum and arseqnum
    CreateSGEStartUpScripts $euid true master
@@ -886,9 +779,6 @@ if [ "$QMASTER" = "install" -a "$UPDATE" != "true" ]; then
  SetPermissions
  SelectHostNameResolving
  SetProductMode
- if [ "$SGE_SKIP_JMX_SETTING" != "true" ]; then
-    GetJMXPort
- fi
  MakeDirsMaster
  SetSpoolingOptions
  AddBootstrap
@@ -900,9 +790,6 @@ if [ "$QMASTER" = "install" -a "$UPDATE" != "true" ]; then
  AddPEFiles
  AddDefaultUsersets
  AddCommonFiles
- if [ "$SGE_SKIP_JMX_SETTING" != "true" ]; then
-    AddJMXFiles
- fi
  CreateSGEStartUpScripts $euid true master
  CreateSGEStartUpScripts $euid true execd
  CreateSettingsFile
@@ -1358,11 +1245,6 @@ if [ $SHADOW = "install" ]; then
          SHADOW_HOST=`$SGE_UTILBIN/gethostname -aname`
       fi
      
-      if [ "$SGE_SKIP_JMX_SETTING" != "true" ]; then
-         #Detect if JMX needs to be setup
-         GetJMXPort "shadowd"
-      fi
-      
       #check if spooling is supported!
       spooling_method=`cat $SGE_ROOT/$SGE_CELL/common/bootstrap 2>/dev/null | grep "spooling_method" | awk '{ print $2 }'`
       #if spooling_params contains no "/" then we have rpc server spooling
@@ -1448,9 +1330,6 @@ if [ $SHADOW = "install" ]; then
          PORT_DIR="sge_qmaster"
       else
          PORT_DIR="port$SGE_QMASTER_PORT"
-      fi
-      if [ "$SGE_JMX_SSL" = true -a ! -f /var/sgeCA/$PORT_DIR/$SGE_CELL/private/keystore ]; then
-         CopyCaFromQmaster
       fi
 
       $INFOTEXT "Shadowhost installation completed!"

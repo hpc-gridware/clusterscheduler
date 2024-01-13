@@ -183,13 +183,6 @@ UpdateConfiguration()
          ReplaceOrAddLine ${modFile} 'rsh_daemon.*'     "rsh_daemon                   builtin"
       fi
 
-      if [ "$SGE_ENABLE_JMX" = "true" -a "$SGE_JVM_LIB_PATH" != "" ]; then
-         ReplaceOrAddLine ${modFile} 'libjvm_path.*'            "libjvm_path                  $SGE_JVM_LIB_PATH"
-      fi
-      if [ "$SGE_ENABLE_JMX" = "true" -a "$SGE_ADDITIONAL_JVM_ARGS" != "" ]; then
-         ReplaceOrAddLine ${modFile} 'additional_jvm_args.*'    "additional_jvm_args          $SGE_ADDITIONAL_JVM_ARGS"
-      fi
-
       ReplaceOrAddLine ${modFile} 'max_advance_reservations.*'    "max_advance_reservations     0"
 
    else
