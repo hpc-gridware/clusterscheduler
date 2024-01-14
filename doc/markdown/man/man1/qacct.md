@@ -99,43 +99,20 @@ semantics of *task_id_range_list* are identical to that one described under the 
 Please see there also for further information on array jobs.
 
 ## -P \[*project*\]  
-The name of the project for which usage is summarized. If *project* is not given, accounting data is listed for 
+The name of the *project* for which usage is summarized. If *project* is not given, accounting data is listed for 
 each owning project separately.
 
 ## -D \[*department*\]  
-The name of the department for which usage is summarized. If *department* is not given, accounting data is listed 
+The name of the *department* for which usage is summarized. If *department* is not given, accounting data is listed 
 for each owning department separately.
 
 # ENVIRONMENTAL VARIABLES
 
-## xxQS_NAME_Sxx_ROOT
-Specifies the location of the xxQS_NAMExx standard configuration files.
-
-## xxQS_NAME_Sxx_CELL
-If set, specifies the default xxQS_NAMExx cell. To address a xxQS_NAMExx cell `qacct` uses (in the order of precedence):
-
-* The name of the cell specified in the environment variable xxQS_NAME_Sxx_CELL, if it is set.
-* The name of the default cell, i.e. **default**.
-
-## xxQS_NAME_Sxx_DEBUG_LEVEL
-If set, specifies that debug information should be written to stderr. In addition, the level of detail in which debug 
-information is generated is defined.
-
-## xxQS_NAME_Sxx_QMASTER_PORT
-If set, specifies the TCP port on which xxqs_name_sxx_qmaster(8) is expected to listen for communication requests. 
-Most installations will use a services map entry for the service *xxqs_name_sxx_qmaster* instead to define that port.
-
-## xxQS_NAME_Sxx_EXECD_PORT
-If set, specifies the tcp port on which xxqs_name_sxx_execd(8) is expected to listen for communication requests. 
-Most installations will use a services map entry for the service *xxqs_name_sxx_execd* instead to define that port.
+For a complete list of common environment variables used by all xxQS_NAMExx commands, see xxqs_name_sxx_intro(1).
 
 # FILES
 
-## \<xxQS_NAME_Sxx_ROOT\>/\<xxQS_NAME_Sxx_CELL\>/common/accounting
-xxQS_NAMExx default accounting file
-    
-## \<xxQS_NAME_Sxx_ROOT\>/\<xxQS_NAME_Sxx_CELL\>/common/act_qmaster
-xxQS_NAMExx master host file
+For a complete list of files used by all xxQS_NAMExx commands, see xxqs_name_sxx_intro(1).
 
 # SEE ALSO
 

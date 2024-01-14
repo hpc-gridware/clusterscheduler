@@ -8,7 +8,7 @@ date: __DATE__
 
 # NAME
 
-`qconf` - xxQS_NAMExx Queue Configuration
+`qconf` - xxQS_NAMExx command to customise configuration objects and get or change the state of cluster components.  
 
 # SYNTAX
 
@@ -24,7 +24,7 @@ Some *\<options\>* of `qconf` start up an editor indicated by the environment va
 is not set then as default the vi(1) editor will be started.
 
 `Qconf` allows the use of the backslash, '\\', character at the end of a line to indicate that the next line is a 
-continuation of the current line. When displaying settings, such as the output of one of the `-s*` options, `qconf` 
+continuation of the current line. When displaying settings, such as the output of one of the `-s...` options, `qconf` 
 will break up long lines (lines greater than 80 characters) into smaller lines using backslash line continuation 
 where possible. Lines will only be broken up at commas or whitespace. This feature can be disabled by setting the 
 *SGE_SINGLE_LINE* environment variable.
@@ -38,7 +38,6 @@ Unless denoted otherwise, `qconf` *\<options\>* and the corresponding operations
 with a valid account but some of them require root/manager privileges. 
 
 # OPTIONS
-
 
 ## -aattr *obj_spec* *attr_name* *val* *obj_instance*, ...  
 Allows adding specifications to a single configuration list attribute in multiple instances of an object with a 
@@ -677,26 +676,7 @@ displayed using the format as described for the `qstat` *-F* option (see descrip
 
 # ENVIRONMENTAL VARIABLES
 
-## xxQS_NAME_Sxx_ROOT  
-Specifies the location of the xxQS_NAMExx standard configuration files.
-
-## xxQS_NAME_Sxx_CELL
-If set, specifies the default xxQS_NAMExx cell. To address a xxQS_NAMExx cell `qacct` uses (in the order of precedence):
-
-* The name of the cell specified in the environment variable xxQS_NAME_Sxx_CELL, if it is set.
-* The name of the default cell, i.e. **default**.
-
-## xxQS_NAME_Sxx_DEBUG_LEVEL  
-If set, specifies that debug information should be written to stderr. In addition to the level of detail in which 
-debug information is generated is defined.
-
-## xxQS_NAME_Sxx_QMASTER_PORT  
-If set, specifies the TCP port on which xxqs_name_sxx_qmaster(8) is expected to listen for communication requests. 
-Most installations will use a services map entry instead to define that port.
-
-## xxQS_NAME_Sxx_EXECD_PORT  
-If set, specifies the tcp port on which xxqs_name_sxx_execd(8) is expected to listen for communication requests. 
-Most installations will use a services map entry instead to define that port.
+For a complete list of common environment variables used by all xxQS_NAMExx commands, see xxqs_name_sxx_intro(1).
 
 ## xxQS_NAME_Sxx_SINGLE_LINE  
 If set, indicates that long lines should not be broken up using backslashes. This setting is useful for scripts 
@@ -704,11 +684,7 @@ which expect one entry per line.
 
 # FILES
 
-## \<xxQS_NAME_Sxx_ROOT\>/\<xxQS_NAME_Sxx_CELL\>/common/act_qmaster
-xxQS_NAMExx master host file
-
-## \<xxQS_NAME_Sxx_ROOT\>/\<xxQS_NAME_Sxx_CELL\>/common/schedd_runlog
-file containing trace message of the scheduling component after a call of `qconf -tsm`
+For a complete list of files used by all xxQS_NAMExx commands, see xxqs_name_sxx_intro(1).
 
 # SEE ALSO
 
