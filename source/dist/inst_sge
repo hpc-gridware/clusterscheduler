@@ -622,11 +622,6 @@ if [ "$UPDATE" = true ]; then
 	  "        E.g.: (sh, bash) export SGE_WIN_ADMIN=Administrator \n" \
 	  "              (csh,tcsh) setenv SGE_WIN_ADMIN Administrator \n"
       fi
-      $INFOTEXT -n "WARNING:\n" \
-      "   If you have configured shadowd hosts and enabled JMX during upgrading\n" \
-      "   you have to verify and probably adjust the local host configuration parameters\n" \
-      "   libjvm_path and additional_jvm_args to reflect your host specific jvm\n" \
-      "   settings.\n"
       $INFOTEXT -n "OPTIONAL:\n" \
       "inst_sge -upd-rc\n" \
       "   This command creates new autostart scripts for the new cluster\n" \
@@ -1284,7 +1279,6 @@ if [ $SHADOW = "install" ]; then
          fi
        fi
 
-      #creating the local_conf now with new libjvm_path entry
       AddLocalConfiguration_With_Qconf "shadowd"
 
       $INFOTEXT "Creating shadow_masters file for host %s\n" $SHADOW_HOST

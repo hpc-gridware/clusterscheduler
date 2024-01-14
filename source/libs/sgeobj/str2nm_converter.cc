@@ -69,24 +69,6 @@ static int _lStr2Nm(const lNameSpace *nsp, const char *str)
    DRETURN(ret);
 }
 
-
-#ifndef NO_JNI
-JNIEXPORT jint JNICALL Java_com_sun_grid_cull_CullConstantConverter_strToNm
-(JNIEnv *env, jobject obj, jstring nameObj) {
-   
-   const char *name = (*env)->GetStringUTFChars(env, nameObj, 0);
-   
-   jint ret = (jint)lStr2NmGenerator(name, nmv);
-   
-   
-   
-   (*env)->ReleaseStringUTFChars(env, nameObj, name );
-   
-   return ret;
-}
-#endif  
-
-
 int lStr2NmGenerator(const char *str, lNameSpace *ns)
 {
    const lNameSpace *nsp;

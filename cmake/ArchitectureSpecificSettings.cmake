@@ -38,7 +38,6 @@ function(architecture_specific_settings)
     ${SGE_COMPILEARCH}
     ${SGE_TARGETBITS}
     USE_POLL
-    NO_JNI
     COMPILE_DC)
 
   # Linux

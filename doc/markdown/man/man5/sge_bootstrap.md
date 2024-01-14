@@ -156,11 +156,6 @@ The number of worker threads (defaults set by installation).
 The number of scheduler threads (allowed: 0-1, default set by
 installation: 1, off: 0). (see *qconf*(1) -kt/-at option)
 
-## **jvm_threads**
-
-The number of JVM threads (allowed: 0-1, default set by installation,
-off: 0).
-
 # COPYRIGHT
 
 See *xxqs_name_sxx_intro*(1) for a full statement of rights and

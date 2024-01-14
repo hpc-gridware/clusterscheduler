@@ -51,7 +51,7 @@ UTILITYBINARIES="uidgid gethostname gethostbyname gethostbyaddr \
                  getservbyname filestat checkprog loadcheck now checkuser \
                  adminrun qrsh_starter testsuidroot read_raw echo_raw \
                  sge_share_mon infotext spooldefaults spooledit spoolinit \
-                 fstype SGE_Helper_Service.exe SGE_Starter.exe valid_jvmlib"
+                 fstype SGE_Helper_Service.exe SGE_Starter.exe"
 
 BDBUTILITYBINARIES="db_deadlock db_dump db_load db_printlog db_recover db_stat db_upgrade db_verify"
 
@@ -1341,8 +1341,8 @@ for i in $ARCH; do
                if [ "$DSTARCH" = "win32-x86" ]; then
                   InstallProg $prog
                fi
-            elif [ "$DSTARCH" = "win32-x86" -a \( "$prog" = "spooledit" -o "$prog" = "valid_jvmlib" \) ]; then
-               # Don't install spooledit, valid_jvmlib for win32-x86
+            elif [ "$DSTARCH" = "win32-x86" -a "$prog" = "spooledit" ]; then
+               # Don't install spooledit for win32-x86
                :
             else
                InstallProg $prog

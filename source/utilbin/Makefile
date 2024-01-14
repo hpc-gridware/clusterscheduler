@@ -41,15 +41,14 @@ UTILBIN_TARGETS = uidgid gethostname gethostbyname gethostbyaddr \
                  adminrun checkuser languagetest \
                  testsuidroot infotext spooldefaults spooledit spoolinit read_raw echo_raw \
                  tst_pthread_signals fstype qping sgepasswd sge_share_mon \
-                 valid_jvmlib $(LOADCHECK_ALL)
+                 $(LOADCHECK_ALL)
 
 UTILBIN_SRC =  uidgid.c gethostname.c gethostbyname.c gethostbyaddr.c \
                getservbyname.c filestat.c signals.c now.c \
                checkuser.c adminrun.c range.c  \
                languagetest.c infotext.c \
                spooldefaults.c spooledit.c spoolinit.c read_raw.o echo_raw.o \
-               tst_pthread_signals.c fstype.c qping.c sge_share_mon.c \
-               valid_jvmlib.c
+               tst_pthread_signals.c fstype.c qping.c sge_share_mon.c
 
 UTILBIN_OBJS  = $(UTILBIN_SRC:.c=.o) 
 
@@ -281,11 +280,3 @@ sge_share_mon: sge_share_mon.o sge_support.o $(SMON_LIB_DEPENDS)
 
 sge_share_mon.o: $(UTILBIN_DIR)/sge_share_mon.c
 		$(CC) $(CFLAGS) -c $(UTILBIN_DIR)/sge_share_mon.c
-
-#---------------------------------------------------------------------
-valid_jvmlib: valid_jvmlib.o
-		$(CC) $(CFLAGS) -o $@ $(LFLAGS) valid_jvmlib.o $(DLLIB)
-
-valid_jvmlib.o:		$(UTILBIN_DIR)/valid_jvmlib.c
-		$(CC) $(CFLAGS) -c $(UTILBIN_DIR)/valid_jvmlib.c
-

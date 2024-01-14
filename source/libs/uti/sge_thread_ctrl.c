@@ -30,8 +30,6 @@
  ************************************************************************/
 /*___INFO__MARK_END__*/
 
-#include "sge_thread_jvm.h"
-
 #include <signal.h>
 #include <pthread.h>
 #include <string.h>

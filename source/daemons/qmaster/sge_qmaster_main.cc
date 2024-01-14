@@ -60,7 +60,6 @@
 
 #include "basis_types.h"
 #include "sge_qmaster_heartbeat.h"
-#include "sge_thread_jvm.h"
 #include "sge_thread_listener.h"
 #include "sge_thread_signaler.h"
 #include "sge_thread_scheduler.h"
@@ -419,9 +418,6 @@ int main(int argc, char* argv[])
 #endif
    sge_listener_initialize(ctx);
    sge_scheduler_initialize(ctx, NULL);
-#ifndef NO_JNI
-   sge_jvm_initialize(ctx, NULL);
-#endif
 
    INFO((SGE_EVENT, "qmaster startup took "sge_u32" seconds", sge_get_gmt() - start_time));
 
@@ -434,9 +430,6 @@ int main(int argc, char* argv[])
     * Shutdown all threads and shutdown corresponding modules.
     * Order is important!
     */
-#ifndef NO_JNI
-   sge_jvm_terminate(ctx, NULL);
-#endif
    sge_scheduler_terminate(ctx, NULL);
    sge_listener_terminate();
 #if 0

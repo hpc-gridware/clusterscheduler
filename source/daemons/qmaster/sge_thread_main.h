@@ -37,8 +37,6 @@
 #include "gdi/sge_gdi_ctx.h"
 #include "gdi/sge_gdi_packet.h"
 
-#include "sge_thread_jvm.h"
-
 typedef struct {
    /* exit state: 100 = another master took over */
    int exit_state;

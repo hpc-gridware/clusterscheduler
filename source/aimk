@@ -1882,7 +1882,7 @@ else
 endif
 
 set JNI_TARGET = "NJ"
-set CFLAGS = "$CFLAGS -DNO_JNI"
+set CFLAGS = "$CFLAGS"
 
 if ($JAVA_SHAREDEXT == "") then
    set JAVA_SHAREDEXT = "$SHAREDEXT"

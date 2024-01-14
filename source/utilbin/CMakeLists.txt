@@ -170,8 +170,6 @@ target_link_libraries(
           commlists
           ${SGE_LIBS})
 
-# valid_jvmlib @todo remove
-
 if(INSTALL_SGE_BIN)
   install(TARGETS qping DESTINATION bin/${SGE_ARCH})
   install(

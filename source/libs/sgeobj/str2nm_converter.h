@@ -34,19 +34,4 @@
 
 int lStr2NmGenerator(const char *str, lNameSpace *ns);
 
-
-#ifndef NO_JNI
-
-#include <jni.h>
-
-/*
- * Class:     com_sun_grid_cull_CullConstantConverter
- * Method:    strToNm
- * Signature: (Ljava/lang/String;)I
- */
-JNIEXPORT jint JNICALL Java_com_sun_grid_cull_CullConstantConverter_strToNm
-  (JNIEnv *, jobject, jstring);
-
-#endif
-
 #endif

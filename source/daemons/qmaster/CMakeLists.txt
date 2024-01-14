@@ -44,8 +44,7 @@ add_executable(
   sge_subordinate_qmaster.cc
   sge_task_depend.cc
   sge_thread_event_master.cc
-  sge_thread_jvm.cc
-  sge_thread_listener.cc
+        sge_thread_listener.cc
   sge_thread_main.cc
   sge_thread_scheduler.cc
   sge_thread_signaler.cc

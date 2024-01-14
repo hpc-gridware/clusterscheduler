@@ -64,7 +64,6 @@
 #include "sge_follow.h"
 #include "sge_advance_reservation_qmaster.h"
 #include "sge_thread_scheduler.h"
-#include "sge_thread_jvm.h"
 #include "sge_c_gdi.h"
 #include "sge_host_qmaster.h"
 #include "sge_job_qmaster.h"
@@ -1048,18 +1047,6 @@ sge_gdi_tigger_thread_state_transition(sge_gdi_ctx_class_t *ctx,
                answer_list_add(&(task->answer_list), SGE_EVENT,
                                STATUS_EEXIST, ANSWER_QUALITY_WARNING);
             }
-#ifndef NO_JNI
-         } else if (strcasecmp(name, threadnames[JVM_THREAD]) == 0) {
-            if (action == SGE_THREAD_TRIGGER_START) {
-               sge_jvm_initialize(ctx, answer_list);
-            } else if (action == SGE_THREAD_TRIGGER_STOP) {
-               sge_jvm_terminate(ctx, answer_list);
-            } else {
-               ERROR((SGE_EVENT, MSG_TRIGGER_STATENOTSUPPORTED_DS, action, name));
-               answer_list_add(&(task->answer_list), SGE_EVENT,
-                              STATUS_EEXIST, ANSWER_QUALITY_WARNING);
-            }
-#endif
          } else {
             ERROR((SGE_EVENT, MSG_TRIGGER_NOTSUPPORTED_S, name));
             answer_list_add(&(task->answer_list), SGE_EVENT,

@@ -1834,7 +1834,7 @@ int sge_parse_qconf(sge_gdi_ctx_class_t *ctx, char *argv[])
 /*----------------------------------------------------------------------------*/
 
       /* -at <name> ... */
-      /* <name> may be "scheduler", "jvm" */
+      /* <name> may be "scheduler" */
 
       if (strncmp("-at", *spp, 4) == 0) {
          int opt = THREAD_START;
@@ -1856,7 +1856,7 @@ int sge_parse_qconf(sge_gdi_ctx_class_t *ctx, char *argv[])
 /*----------------------------------------------------------------------------*/
 
       /* -kt <name> ... */
-      /* <name> may be "scheduler", "jvm" */
+      /* <name> may be "scheduler" */
 
       if (strncmp("-kt", *spp, 4) == 0) {
          int opt = THREAD_START;

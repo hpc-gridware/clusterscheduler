@@ -113,7 +113,6 @@ struct sge_bootstrap_state_class_str {
    void (*set_listener_thread_count)(sge_bootstrap_state_class_t *thiz, int thread_count);
    void (*set_worker_thread_count)(sge_bootstrap_state_class_t *thiz, int thread_count);
    void (*set_scheduler_thread_count)(sge_bootstrap_state_class_t *thiz, int thread_count);
-   void (*set_jvm_thread_count)(sge_bootstrap_state_class_t *thiz, int thread_count);
 };
 
 sge_bootstrap_state_class_t *sge_bootstrap_state_class_create(sge_path_state_class_t *sge_paths, sge_error_class_t *eh);
