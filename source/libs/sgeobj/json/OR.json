@@ -1,47 +1,54 @@
 {
 	"className":	"Order",
-	"summary":	"@todo add summary",
+	"summary":	"Scheduler Order",
 	"description":	[{
-			"line":	"@todo add description"
+			"line":	"A single scheduler order, e.g. to start a job"
 		}],
 	"cullPrefix":	"OR",
 	"attributes":	[{
 			"name":	"type",
-			"summary":	"@todo add summary",
+			"summary":	"Order Type",
 			"description":	[{
-					"line":	"@todo add description"
+					"line":	"The type of the order. Defined in an enum in libs/sgeobj/sge_order.h, e.g."
+					}, { "line":	"  - ORT_start_job"
+					}, { "line":	"  - ORT_tickets"
+					}, { "line":	"  - ORT_ptickets"
+					}, { "line":	"  - ORT_remove_job"
+					}, { "line":	"  - ORT_..."
 				}],
 			"type":	"lUlongT",
 			"flags":	[]
 		}, {
 			"name":	"job_number",
-			"summary":	"@todo add summary",
+			"summary":	"Job Number",
 			"description":	[{
-					"line":	"@todo add description"
+					"line":	"The job id in case of job related orders."
 				}],
 			"type":	"lUlongT",
 			"flags":	[]
 		}, {
 			"name":	"ja_task_number",
-			"summary":	"@todo add summary",
+			"summary":	"Array Task Number",
 			"description":	[{
-					"line":	"@todo add description"
+					"line":	"The array task id in case of array job related orders."
 				}],
 			"type":	"lUlongT",
 			"flags":	[]
 		}, {
 			"name":	"job_version",
-			"summary":	"@todo add summary",
+			"summary":	"Job Version",
 			"description":	[{
-					"line":	"@todo add description"
+					"line":	"A job version number. Used to detect if a scheduler order is based on an older version of the job."
+					}, { "line":	"When a job is modified, the job version (in the job object) is increased."
+					}, { "line":	"If a scheduling decision has been done on an older version of the job the order is ignored."
 				}],
 			"type":	"lUlongT",
 			"flags":	[]
 		}, {
 			"name":	"queuelist",
-			"summary":	"@todo add summary",
+			"summary":	"Queue Instances",
 			"description":	[{
-					"line":	"@todo add description"
+					"line":	"List of queue instances a job has been scheduled to"
 				}],
 			"type":	"lListT",
 			"subClassName":	"OQ",
@@ -49,17 +56,25 @@
 			"flags":	[]
 		}, {
 			"name":	"ticket",
-			"summary":	"@todo add summary",
+			"summary":	"Number of Tickets",
 			"description":	[{
-					"line":	"@todo add description"
+					"line":	"Number of tickets a job got during scheduling."
 				}],
 			"type":	"lDoubleT",
 			"flags":	[]
 		}, {
 			"name":	"joker",
-			"summary":	"@todo add summary",
+			"summary":	"Order Specific Data",
 			"description":	[{
-					"line":	"@todo add description"
+					"line":	"Sublist with order specific data, depending on the order type:"
+					 }, { "line":	"  - ORT_start_job:              empty"
+					 }, { "line":	"  - ORT_remove_job:             empty"
+					 }, { "line":	"  - ORT_tickets:                reduced job element"
+					 }, { "line":	"  - ORT_update_*_usage:         reduced user or project object"
+					 }, { "line":	"  - ORT_share_tree:             reduced share tree root node"
+					 }, { "line":	"  - ORT_remove_immediate_job:   empty"
+					 }, { "line":	"  - ORT_job_schedd_info:        scheduler messages (SME_Type)"
+					 }, { "line":	"  - ORT_ptickets:               reduced job element"
 				}],
 			"type":	"lListT",
 			"subClassName":	"ANY",
@@ -67,25 +82,25 @@
 			"flags":	[]
 		}, {
 			"name":	"pe",
-			"summary":	"@todo add summary",
+			"summary":	"PE Name",
 			"description":	[{
-					"line":	"@todo add description"
+					"line":	"In case of start order for parallel jobs: The name of the PE the job has been scheduled to."
 				}],
 			"type":	"lStringT",
 			"flags":	[]
 		}, {
 			"name":	"ntix",
-			"summary":	"@todo add summary",
+			"summary":	"Normalized Tickets",
 			"description":	[{
-					"line":	"@todo add description"
+					"line":	"Number of normalized job tickets."
 				}],
 			"type":	"lDoubleT",
 			"flags":	[]
 		}, {
 			"name":	"prio",
-			"summary":	"@todo add summary",
+			"summary":	"Job Priority",
 			"description":	[{
-					"line":	"@todo add description"
+					"line":	"Priority of a scheduled job after applying all policies."
 				}],
 			"type":	"lDoubleT",
 			"flags":	[]

@@ -40,39 +40,54 @@ extern "C" {
 #endif
 
 /**
-* @brief @todo add summary
+* @brief Scheduler Order
 *
-* @todo add description
+* A single scheduler order, e.g. to start a job
 *
-*    SGE_ULONG(OR_type) - @todo add summary
-*    @todo add description
+*    SGE_ULONG(OR_type) - Order Type
+*    The type of the order. Defined in an enum in libs/sgeobj/sge_order.h, e.g.
+*      - ORT_start_job
+*      - ORT_tickets
+*      - ORT_ptickets
+*      - ORT_remove_job
+*      - ORT_...
 *
-*    SGE_ULONG(OR_job_number) - @todo add summary
-*    @todo add description
+*    SGE_ULONG(OR_job_number) - Job Number
+*    The job id in case of job related orders.
 *
-*    SGE_ULONG(OR_ja_task_number) - @todo add summary
-*    @todo add description
+*    SGE_ULONG(OR_ja_task_number) - Array Task Number
+*    The array task id in case of array job related orders.
 *
-*    SGE_ULONG(OR_job_version) - @todo add summary
-*    @todo add description
+*    SGE_ULONG(OR_job_version) - Job Version
+*    A job version number. Used to detect if a scheduler order is based on an older version of the job.
+*    When a job is modified, the job version (in the job object) is increased.
+*    If a scheduling decision has been done on an older version of the job the order is ignored.
 *
-*    SGE_LIST(OR_queuelist) - @todo add summary
-*    @todo add description
+*    SGE_LIST(OR_queuelist) - Queue Instances
+*    List of queue instances a job has been scheduled to
 *
-*    SGE_DOUBLE(OR_ticket) - @todo add summary
-*    @todo add description
+*    SGE_DOUBLE(OR_ticket) - Number of Tickets
+*    Number of tickets a job got during scheduling.
 *
-*    SGE_LIST(OR_joker) - @todo add summary
-*    @todo add description
+*    SGE_LIST(OR_joker) - Order Specific Data
+*    Sublist with order specific data, depending on the order type:
+*      - ORT_start_job:              empty
+*      - ORT_remove_job:             empty
+*      - ORT_tickets:                reduced job element
+*      - ORT_update_*_usage:         reduced user or project object
+*      - ORT_share_tree:             reduced share tree root node
+*      - ORT_remove_immediate_job:   empty
+*      - ORT_job_schedd_info:        scheduler messages (SME_Type)
+*      - ORT_ptickets:               reduced job element
 *
-*    SGE_STRING(OR_pe) - @todo add summary
-*    @todo add description
+*    SGE_STRING(OR_pe) - PE Name
+*    In case of start order for parallel jobs: The name of the PE the job has been scheduled to.
 *
-*    SGE_DOUBLE(OR_ntix) - @todo add summary
-*    @todo add description
+*    SGE_DOUBLE(OR_ntix) - Normalized Tickets
+*    Number of normalized job tickets.
 *
-*    SGE_DOUBLE(OR_prio) - @todo add summary
-*    @todo add description
+*    SGE_DOUBLE(OR_prio) - Job Priority
+*    Priority of a scheduled job after applying all policies.
 *
 */
 
