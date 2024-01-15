@@ -1,6 +1,10 @@
 # source/clients/qconf
 add_executable(
   qconf
+  sge_cqueue_qconf.cc
+  sge_centry_qconf.cc
+  sge_hgroup_qconf.cc
+  sge_resource_quota_qconf.cc
   qconf.cc
   parse_qconf.cc
   sge_client_access.cc
