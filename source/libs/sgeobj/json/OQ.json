@@ -1,63 +1,65 @@
 {
 	"className":	"OrderQueue",
-	"summary":	"@todo add summary",
+	"summary":	"Queue Info in an Order",
 	"description":	[{
-			"line":	"@todo add description"
+			"line":	"Job start orders and also orders for reprioritization contain per queue information."
+			}, { "line":	"One or more objects of type OrderQueue are contained in the queuelist attribute of an order."
 		}],
 	"cullPrefix":	"OQ",
 	"attributes":	[{
 			"name":	"slots",
-			"summary":	"@todo add summary",
+			"summary":	"Slots",
 			"description":	[{
-					"line":	"@todo add description"
+					"line":	"The number of slots a job occupies in the queue / queue instance."
 				}],
 			"type":	"lUlongT",
 			"flags":	[]
 		}, {
 			"name":	"dest_queue",
-			"summary":	"@todo add summary",
+			"summary":	"Qinstance Name",
 			"description":	[{
-					"line":	"@todo add description"
+					"line":	"The full queue instance name (cluster queue name + @ + host name)."
 				}],
 			"type":	"lStringT",
 			"flags":	[]
 		}, {
 			"name":	"dest_version",
-			"summary":	"@todo add summary",
+			"summary":	"Qinstance Version",
 			"description":	[{
-					"line":	"@todo add description"
+					"line":	"Version of the queue instance. Is used to detect if the queue has been modified during scheduling."
+					}, { "line":	"In this case the scheduling result is skipped."
 				}],
 			"type":	"lUlongT",
 			"flags":	[]
 		}, {
 			"name":	"ticket",
-			"summary":	"@todo add summary",
+			"summary":	"Total Tickets",
 			"description":	[{
-					"line":	"@todo add description"
+					"line":	"Total SGEEE tickets for slots."
 				}],
 			"type":	"lDoubleT",
 			"flags":	[]
 		}, {
 			"name":	"oticket",
-			"summary":	"@todo add summary",
+			"summary":	"Override Tickets",
 			"description":	[{
-					"line":	"@todo add description"
+					"line":	"Total SGEEE override tickets."
 				}],
 			"type":	"lDoubleT",
 			"flags":	[]
 		}, {
 			"name":	"fticket",
-			"summary":	"@todo add summary",
+			"summary":	"Functional Tickets",
 			"description":	[{
-					"line":	"@todo add description"
+					"line":	"Total SGEEE functional tickets."
 				}],
 			"type":	"lDoubleT",
 			"flags":	[]
 		}, {
 			"name":	"sticket",
-			"summary":	"@todo add summary",
+			"summary":	"Sharetree Tickets",
 			"description":	[{
-					"line":	"@todo add description"
+					"line":	"Total SGEEE sharetree tickets."
 				}],
 			"type":	"lDoubleT",
 			"flags":	[]

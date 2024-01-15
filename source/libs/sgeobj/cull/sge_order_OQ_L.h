@@ -40,30 +40,32 @@ extern "C" {
 #endif
 
 /**
-* @brief @todo add summary
+* @brief Queue Info in an Order
 *
-* @todo add description
+* Job start orders and also orders for reprioritization contain per queue information.
+* One or more objects of type OrderQueue are contained in the queuelist attribute of an order.
 *
-*    SGE_ULONG(OQ_slots) - @todo add summary
-*    @todo add description
+*    SGE_ULONG(OQ_slots) - Slots
+*    The number of slots a job occupies in the queue / queue instance.
 *
-*    SGE_STRING(OQ_dest_queue) - @todo add summary
-*    @todo add description
+*    SGE_STRING(OQ_dest_queue) - Qinstance Name
+*    The full queue instance name (cluster queue name + @ + host name).
 *
-*    SGE_ULONG(OQ_dest_version) - @todo add summary
-*    @todo add description
+*    SGE_ULONG(OQ_dest_version) - Qinstance Version
+*    Version of the queue instance. Is used to detect if the queue has been modified during scheduling.
+*    In this case the scheduling result is skipped.
 *
-*    SGE_DOUBLE(OQ_ticket) - @todo add summary
-*    @todo add description
+*    SGE_DOUBLE(OQ_ticket) - Total Tickets
+*    Total SGEEE tickets for slots.
 *
-*    SGE_DOUBLE(OQ_oticket) - @todo add summary
-*    @todo add description
+*    SGE_DOUBLE(OQ_oticket) - Override Tickets
+*    Total SGEEE override tickets.
 *
-*    SGE_DOUBLE(OQ_fticket) - @todo add summary
-*    @todo add description
+*    SGE_DOUBLE(OQ_fticket) - Functional Tickets
+*    Total SGEEE functional tickets.
 *
-*    SGE_DOUBLE(OQ_sticket) - @todo add summary
-*    @todo add description
+*    SGE_DOUBLE(OQ_sticket) - Sharetree Tickets
+*    Total SGEEE sharetree tickets.
 *
 */
 
