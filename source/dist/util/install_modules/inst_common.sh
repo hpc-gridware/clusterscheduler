@@ -98,28 +98,26 @@ BasicSettings()
       esac
    fi
 
-   if [ "$SGE_ARCH" != "win32-x86" ]; then
-      # set spooldefaults binary path
-      SPOOLDEFAULTS=$SGE_UTILBIN/spooldefaults
-      if [ ! -f $SPOOLDEFAULTS ]; then
-         $ECHO "can't find \"$SPOOLDEFAULTS\""
-         $ECHO "Installation failed."
-         exit 2
-      fi
-
-      SPOOLINIT=$SGE_UTILBIN/spoolinit
-      if [ ! -f $SPOOLINIT ]; then
-         $ECHO "can't find \"$SPOOLINIT\""
-         $ECHO "Installation failed."
-         exit 2
-      fi
+   # set spooldefaults binary path
+   SPOOLDEFAULTS=$SGE_UTILBIN/spooldefaults
+   if [ ! -f $SPOOLDEFAULTS ]; then
+      $ECHO "can't find \"$SPOOLDEFAULTS\""
+      $ECHO "Installation failed."
+      exit 2
    fi
 
-  HOST=`$SGE_UTILBIN/gethostname -name`
-  if [ "$HOST" = "" ]; then
-     echo "can't get hostname of this machine. Installation failed."
-     exit 2
-  fi
+   SPOOLINIT=$SGE_UTILBIN/spoolinit
+   if [ ! -f $SPOOLINIT ]; then
+      $ECHO "can't find \"$SPOOLINIT\""
+      $ECHO "Installation failed."
+      exit 2
+   fi
+
+   HOST=`$SGE_UTILBIN/gethostname -name`
+   if [ "$HOST" = "" ]; then
+      echo "can't get hostname of this machine. Installation failed."
+      exit 2
+   fi
 
   RM="rm -f"
   TOUCH="touch"
@@ -388,19 +386,13 @@ CheckBinaries()
               gethostname getservbyname loadcheck now qrsh_starter \
               testsuidroot uidgid infotext"
 
-   WINUTILFILES="SGE_Helper_Service.exe adminrun checkprog checkuser filestat \
+   WINUTILFILES="adminrun checkprog checkuser filestat \
                  gethostbyaddr gethostbyname gethostname getservbyname loadcheck.exe \
-                 now qrsh_starter rlogin rsh rshd testsuidroot uidgid \
-                 infotext SGE_Starter.exe"
+                 now qrsh_starter rlogin rsh rshd testsuidroot uidgid infotext"
 
-   #SUIDFILES="rsh rlogin testsuidroot sgepasswd"
+   #SUIDFILES="rsh rlogin testsuidroot"
 
    THIRD_PARTY_FILES="openssl"
-
-   if [ "$SGE_ARCH" = "win32-x86" ]; then
-      BINFILES="$WINBINFILES"
-      UTILFILES="$WINUTILFILES"
-   fi
 
    missing=false
    for f in $BINFILES; do
@@ -432,40 +424,21 @@ CheckBinaries()
    done
 
    if [ $missing = true ]; then
-      if [ "$SGE_ARCH" = "win32-x86" ]; then
-         $INFOTEXT "\nMissing Grid Engine binaries!\n\n" \
-         "A complete installation needs the following binaries in >%s<:\n\n" \
-         "qacct           qlogin          qrsh            sge_shepherd\n" \
-         "qalter          qmake           qselect         sge_coshepherd\n" \
-         "qconf           qmod            qsh             sge_execd\n" \
-         "qdel            qstat           qhold           qquota\n" \
-         "qresub          qsub            qhost           qrls\n" \
-         "qping           qquota          sgepasswd\n" \
-         "qloadsensor.exe\n\n" \
-         "and the binaries in >%s< should be:\n\n" \
-         "adminrun        gethostbyaddr  loadcheck.exe  uidgid\n" \
-         "testsuidroot    checkprog      gethostbyname  now\n" \
-         "infotext        checkuser      gethostname    openssl\n" \
-         "filestat        getservbyname  qrsh_starter   SGE_Helper_Service.exe\n" \
-         "SGE_Starter.exe\n\n" \
-         "Installation failed. Exit.\n" $SGE_BIN $SGE_UTILBIN
-      else
-         $INFOTEXT "\nMissing Grid Engine binaries!\n\n" \
-         "A complete installation needs the following binaries in >%s<:\n\n" \
-         "qacct           qlogin          qrsh            sge_shepherd\n" \
-         "qalter          qmake           qselect         sge_coshepherd\n" \
-         "qconf           qmod            qsh             sge_execd\n" \
-         "qdel            qmon            qstat           sge_qmaster\n" \
-         "qhold           qresub          qsub            qhost\n" \
-         "qrls            sge_shadowd     qping\n" \
-         "qquota\n\n" \
-         "and the binaries in >%s< should be:\n\n" \
-         "adminrun       gethostbyaddr  loadcheck      rlogin         uidgid\n" \
-         "testsuidroot   checkprog      gethostbyname  now            rsh\n" \
-         "infotext       checkuser      gethostname    openssl        rshd\n" \
-         "filestat       getservbyname  qrsh_starter   \n\n" \
-         "Installation failed. Exit.\n" $SGE_BIN $SGE_UTILBIN
-      fi
+      $INFOTEXT "\nMissing Grid Engine binaries!\n\n" \
+      "A complete installation needs the following binaries in >%s<:\n\n" \
+      "qacct           qlogin          qrsh            sge_shepherd\n" \
+      "qalter          qmake           qselect         sge_coshepherd\n" \
+      "qconf           qmod            qsh             sge_execd\n" \
+      "qdel            qmon            qstat           sge_qmaster\n" \
+      "qhold           qresub          qsub            qhost\n" \
+      "qrls            sge_shadowd     qping\n" \
+      "qquota\n\n" \
+      "and the binaries in >%s< should be:\n\n" \
+      "adminrun       gethostbyaddr  loadcheck      rlogin         uidgid\n" \
+      "testsuidroot   checkprog      gethostbyname  now            rsh\n" \
+      "infotext       checkuser      gethostname    openssl        rshd\n" \
+      "filestat       getservbyname  qrsh_starter   \n\n" \
+      "Installation failed. Exit.\n" $SGE_BIN $SGE_UTILBIN
 
       $INFOTEXT -log "\nMissing Grid Engine binaries!\n\n" \
       "A complete installation needs the following binaries in >%s<:\n\n" \
@@ -497,9 +470,9 @@ ErrUsage()
    myname=`basename $0`
    $INFOTEXT -e \
              "Usage: %s -m|-um|-x|-ux [all]|-sm|-usm|-s|-db|-udb|-bup|-rst| \n" \
-             "       -copycerts <host|hostlist>|-v|-upd|-upd-execd|-upd-rc|-upd-win| \n" \
+             "       -copycerts <host|hostlist>|-v|-upd|-upd-execd|-upd-rc| \n" \
              "       -post_upd|-start-all|-rccreate|[-host <hostname>] [-resport] [-rsh] \n" \
-             "       [-auto <filename>] [-nr] [-winupdate] [-winsvc] [-uwinsvc] [-csp] \n" \
+             "       [-auto <filename>] [-nr] [-csp] \n" \
              "       [-oldijs] [-afs] [-noremote] [-nosmf] [-nost]\n" \
              "   -m         install qmaster host\n" \
              "   -um        uninstall qmaster host\n" \
@@ -517,7 +490,6 @@ ErrUsage()
              "   -upd       upgrade cluster from 6.0 or higher to 6.2\n" \
              "   -upd-execd delete/initialize all execd spool directories\n" \
              "   -upd-rc    create new autostart scripts for the whole cluster\n" \
-             "   -upd-win   update/install windows helper service on all Windows hosts\n" \
              "   -post-upd  finish the upgrade procedure (initialize execd spool directories,\n" \
              "              create autostart scripts and update windows helper service)\n" \
              "   -start-all start whole cluster\n" \
@@ -529,9 +501,6 @@ ErrUsage()
              "   -rsh       use rsh instead of ssh (default is ssh)\n" \
              "   -auto      full automatic installation (qmaster and exec hosts)\n" \
              "   -nr        set reschedule to false\n" \
-             "   -winupdate update to add gui features to a existing execd installation\n" \
-             "   -winsvc    install windows helper service\n" \
-             "   -uwinsvc   uninstall windows helper service\n" \
              "   -csp       install system with security framework protocol\n" \
              "              functionality\n" \
              "   -oldijs    configure old interactive job support\n" \
@@ -777,7 +746,7 @@ AddChangedHost()
 CheckConfigFile()
 {
    CONFIG_FILE=$1
-   KNOWN_CONFIG_FILE_ENTRIES_INSTALL="SGE_ROOT SGE_QMASTER_PORT SGE_EXECD_PORT CELL_NAME ADMIN_USER QMASTER_SPOOL_DIR EXECD_SPOOL_DIR GID_RANGE SPOOLING_METHOD DB_SPOOLING_SERVER DB_SPOOLING_DIR PAR_EXECD_INST_COUNT ADMIN_HOST_LIST SUBMIT_HOST_LIST EXEC_HOST_LIST EXECD_SPOOL_DIR_LOCAL HOSTNAME_RESOLVING SHELL_NAME COPY_COMMAND DEFAULT_DOMAIN ADMIN_MAIL ADD_TO_RC SET_FILE_PERMS RESCHEDULE_JOBS SCHEDD_CONF SHADOW_HOST EXEC_HOST_LIST_RM REMOVE_RC WINDOWS_SUPPORT WIN_ADMIN_NAME WIN_DOMAIN_ACCESS CSP_RECREATE CSP_COPY_CERTS CSP_COUNTRY_CODE CSP_STATE CSP_LOCATION CSP_ORGA CSP_ORGA_UNIT CSP_MAIL_ADDRESS SGE_ENABLE_SMF SGE_CLUSTER_NAME"
+   KNOWN_CONFIG_FILE_ENTRIES_INSTALL="SGE_ROOT SGE_QMASTER_PORT SGE_EXECD_PORT CELL_NAME ADMIN_USER QMASTER_SPOOL_DIR EXECD_SPOOL_DIR GID_RANGE SPOOLING_METHOD DB_SPOOLING_SERVER DB_SPOOLING_DIR PAR_EXECD_INST_COUNT ADMIN_HOST_LIST SUBMIT_HOST_LIST EXEC_HOST_LIST EXECD_SPOOL_DIR_LOCAL HOSTNAME_RESOLVING SHELL_NAME COPY_COMMAND DEFAULT_DOMAIN ADMIN_MAIL ADD_TO_RC SET_FILE_PERMS RESCHEDULE_JOBS SCHEDD_CONF SHADOW_HOST EXEC_HOST_LIST_RM REMOVE_RC CSP_RECREATE CSP_COPY_CERTS CSP_COUNTRY_CODE CSP_STATE CSP_LOCATION CSP_ORGA CSP_ORGA_UNIT CSP_MAIL_ADDRESS SGE_ENABLE_SMF SGE_CLUSTER_NAME"
    KNOWN_CONFIG_FILE_ENTRIES_BACKUP="SGE_ROOT SGE_CELL BACKUP_DIR TAR BACKUP_FILE"
    MAX_GID=2147483647 #unsigned int = 32bit - 1
    MIN_GID=100        #from 0 - 100 may be reserved GIDs
@@ -1042,29 +1011,6 @@ CheckConfigFile()
          $INFOTEXT -log "Your >SET_FILE_PERMS< flag is wrong! Valid values are: 0, 1, true, false"
          is_valid="false" 
       fi
-
-      if [ -z "$WINDOWS_SUPPORT" ]; then
-         $INFOTEXT -e "Your >WINDOWS_SUPPORT< flag is not set!"
-         $INFOTEXT -log "Your >WINDOWS_SUPPORT< flag is not set!"
-         is_valid="false" 
-      fi 
-      if [ "$WINDOWS_SUPPORT" = "1" ]; then
-         WINDOWS_SUPPORT="true"
-      elif [ "$WINDOWS_SUPPORT" = "0" ]; then
-         WINDOWS_SUPPORT="false"
-      fi
-      WINDOWS_SUPPORT=`echo $WINDOWS_SUPPORT | tr "[A-Z]" "[a-z]"`
-      if [ "$WINDOWS_SUPPORT" != "true" -a "$WINDOWS_SUPPORT" != "false" ]; then
-         $INFOTEXT -e "Your >WINDOWS_SUPPORT< flag is wrong! Valid values are: 0, 1, true, false"
-         $INFOTEXT -log "Your >WINDOWS_SUPPORT< flag is wrong! Valid values are: 0, 1, true, false"
-         is_valid="false" 
-      fi
-      if [ "$WINDOWS_SUPPORT" = "true" -a -z "$WIN_ADMIN_NAME" ]; then
-         $INFOTEXT -e "Your >WIN_ADMIN_NAME< entry is not set! Please enter a valid WINDOWS Administrator name!"
-         $INFOTEXT -log "Your >WIN_ADMIN_NAME< entry is not set! Please enter a valid WINDOWS Administrator name!"
-         is_valid="false" 
-      fi
-
       if [ "$SCHEDD_CONF" -ne 1 -a "$SCHEDD_CONF" -ne 2 -a "$SCHEDD_CONF" -ne 3 ]; then
          $INFOTEXT -e "Your >SCHEDD_CONF< entry has a wrong value, allowed values are: 1,2 or 3"
          $INFOTEXT -log "Your >SCHEDD_CONF< entry has a wrong value, allowed values are: 1,2 or 3"
@@ -1153,7 +1099,7 @@ CheckConfigFile()
       fi
    fi
 
-   if [ "$CSP" = "true" -o "$WINDOWS_SUPPORT" = "true" ]; then
+   if [ "$CSP" = "true" ]; then
       if [ "$CSP_COUNTRY_CODE" = "" -o `echo $CSP_COUNTRY_CODE | wc -c` != 3 ]; then
          $INFOTEXT -e "The >CSP_COUNTRY_CODE< entry contains more or less than 2 characters!\n"
          $INFOTEXT -log "The >CSP_COUNTRY_CODE< entry contains more or less than 2 characters!\n"
@@ -1254,65 +1200,6 @@ WelcomeTheUser()
    $INFOTEXT -wait -auto $AUTO -n "Hit <RETURN> to continue >> "
    $CLEAR
 }
-
-
-#--------------------------------------------------------------------------
-#
-WelcomeTheUserWinUpdate()
-{
-   if [ "$SGE_ARCH" != "win32-x86" ]; then
-      return
-   fi
-
-   $INFOTEXT -u "\nWelcome to the Grid Engine Win Update"
-   $INFOTEXT "\nBefore you continue with the update please read these hints:\n\n" \
-             "   - Your terminal window should have a size of at least\n" \
-             "     80x24 characters\n\n" \
-             "   - The INTR character is often bound to the key Ctrl-C.\n" \
-             "     The term >Ctrl-C< is used during the udate if you\n" \
-             "     have the possibility to abort the upgrade\n\n" \
-             "The update procedure will take approximately 1-2 minutes.\n" \
-             "After this update you will get a enhanced windows execd\n" \
-             "installation, with gui support."
-   $INFOTEXT -wait -auto $AUTO -n "Hit <RETURN> to continue >> "
-   $CLEAR
-}
-
-
-#--------------------------------------------------------------------------
-#
-WelcomeTheUserWinSvc()
-{
-   mode=$1
-   if [ "$SGE_ARCH" != "win32-x86" ]; then
-      return
-   fi
-
-   if [ "$mode" = "install" ]; then
-      installation_id="installation"   
-      install_id="install"
-   elif [ "$mode" = "uninstall" ]; then 
-      installation_id="uninstallation"
-      install_id="uninstall"
-   else
-      installation_id="process"
-      install_id="process"
-   fi
-
-   $INFOTEXT -u "\nWelcome to the Grid Engine Windows Helper Service %s" $installation_id
-   $INFOTEXT "\nBefore you continue with the %s please read these hints:\n\n" \
-             "   - Your terminal window should have a size of at least\n" \
-             "     80x24 characters\n\n" \
-             "   - The INTR character is often bound to the key Ctrl-C.\n" \
-             "     The term >Ctrl-C< is used during the %s if you\n" \
-             "     have the possibility to abort the %s\n\n" \
-             "The %s procedure will take approximately 1-2 minutes.\n" \
-             "After this %s you will get a enhanced windows execd\n" \
-             "installation, with gui support." $installation_id $install_id $installation_id $install_id $install_id
-   $INFOTEXT -wait -auto $AUTO -n "Hit <RETURN> to continue >> "
-   $CLEAR
-}
-
 
 #-------------------------------------------------------------------------
 # CheckWhoInstallsSGE
@@ -2545,15 +2432,6 @@ MoveLog()
 
    GetAdminUser
 
-   #due to problems with adminrun and ADMINUSER permissions, on windows systems
-   #the auto install log files couldn't be copied to qmaster_spool_dir
-   # leaving log file in /tmp dir. There is a need for a better solution
-   if [ "$SGE_ARCH" = "win32-x86" ]; then
-      RestoreStdout
-      $INFOTEXT "Check %s to get the install log!" /tmp/$LOGSNAME
-      return
-   fi
-
    if [ "$BACKUP" = "true" -a "$AUTO" = "true" ]; then
       ExecuteAsAdmin cp /tmp/$LOGSNAME $backup_dir/backup.log 
       rm -f /tmp/$LOGSNAME 
@@ -3689,10 +3567,9 @@ CheckServiceAndPorts()
    fi
 }
 
-
 CopyCA()
 {
-   if [ "$CSP" = "false" -a \( "$WINDOWS_SUPPORT" = "false" -o "$WIN_DOMAIN_ACCESS" = "false" \) -a "$1" != "copyonly" ]; then
+   if [ "$CSP" = "false" -a "$1" != "copyonly" ]; then
       return 1
    fi
    
@@ -3961,11 +3838,6 @@ GetAdminUser()
          ADMINUSER=`whoami`
       fi
    fi
-
-   if [ "$SGE_ARCH" = "win32-x86" ]; then
-      HOSTNAME=`hostname | tr "[a-z]" "[A-Z]"`
-      ADMINUSER="$HOSTNAME+$ADMINUSER"
-   fi
 }
 
 
@@ -4125,23 +3997,6 @@ DoRemoteActionForHosts()
   for host in $host_list ; do
      user="$src_user"
      $INFOTEXT "\nProcessing $host ..."
-     if [ -f "$SGE_ROOT/$SGE_CELL/win_hosts_to_update" ]; then
-        host_uqdn=`echo $host | sed -e "s%[.].*$%%"`
-        cat $SGE_ROOT/$SGE_CELL/win_hosts_to_update | grep $host > /dev/null 2>&1
-	if [ "$?" -eq 0 -a $HOST != $host ]; then
-	   #We want to connect to a windows host only if not already there (but as who?)
-	   host_str=`echo $host_uqdn | tr "[a-z]" "[A-Z]"`
-	   if [ -n "$SGE_WIN_ADMIN" ]; then
-	      user="${host_str}+$SGE_WIN_ADMIN"
-	   else
-	      #We need to ask
-	      AUTO=false
-	      $INFOTEXT -n "Provide a valid windows administrator user name for host %s \n[%s] >> "  "$host" "$host_str+Administrator"
-	      eval user=`Enter "$host_str+Administrator"`
-	      AUTO=true
-	   fi
-	fi
-     fi
      DoRemoteAction "$host" "$user" "$cmd"
   done
 }
@@ -4249,13 +4104,6 @@ cd $SGE_ROOT ; BasicSettings ; SetUpInfoText ; CheckForSMF ; "
 cd $SGE_ROOT && RemoteExecSpoolDirDelete"
       $INFOTEXT -u "Initializing all local execd spool directories:"
       DoRemoteActionForHosts "$list" default "$cmd"
-   fi
-   
-   if [ "$UPDATE_WIN" = true ]; then                   #UPDATE WINDOWS HELPER SERVICE ON ALL WINDOWS EXECDs
-      cmd=". $SGE_ROOT/$SGE_CELL/common/settings.sh ; . $SGE_ROOT/util/arch_variables ; . $SGE_ROOT/util/install_modules/inst_common.sh ; \
-. $SGE_ROOT/util/install_modules/inst_execd.sh ; cd $SGE_ROOT ; AUTO=true ; ECHO=echo ;BasicSettings ; SetUpInfoText ; SAVED_PATH=$PATH ; SetupWinSvc update"
-      $INFOTEXT -u "Updating windows helper service on all windows hosts:"
-      DoRemoteActionForHosts "$list" $ADMINUSER "$cmd"
    fi
    
    if [ "$REMOVE_RC" = true ]; then                    #REMOVE OLD RCs

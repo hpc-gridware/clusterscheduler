@@ -40,10 +40,6 @@
 
 #include "sge_dstring.h"
 
-#if defined(INTERIX)
-#  include "../wingrid/wingrid.h"
-#endif
-
 #ifdef __cplusplus
 extern "C" {
 #endif
@@ -77,13 +73,6 @@ extern "C" {
 #  define SGE_STRUCT_STAT struct stat64
 #  define SGE_INO_T ino64_t
 #  define SGE_OFF_T off64_t
-#elif defined(INTERIX)
-#  define SGE_STAT(filename, buffer) wl_stat(filename, buffer)
-#  define SGE_LSTAT(filename, buffer) lstat(filename, buffer)
-#  define SGE_FSTAT(filedes, buffer) fstat(filedes, buffer)
-#  define SGE_STRUCT_STAT struct stat
-#  define SGE_INO_T ino_t
-#  define SGE_OFF_T off_t
 #else
 #  define SGE_STAT(filename, buffer) stat(filename, buffer)
 #  define SGE_LSTAT(filename, buffer) lstat(filename, buffer)
@@ -111,8 +100,6 @@ extern "C" {
 #   define SETPGRP setpgrp()
 #elif defined(__sgi)
 #   define SETPGRP BSDsetpgrp(getpid(),getpid())
-#elif defined(WIN32) || defined(INTERIX)
-#   define SETPGRP setsid()
 #else
 #   define SETPGRP setpgrp(getpid(),getpid())
 #endif

@@ -32,11 +32,7 @@
  ************************************************************************/
 /*___INFO__MARK_END__*/
 
-#ifdef WIN32
-#   define DEFAULT_EDITOR     "notepad.exe"
-#else
-#   define DEFAULT_EDITOR     "vi"
-#endif
+#define DEFAULT_EDITOR     "vi"
 
 #define MAX_SEQNUM        9999999
 

@@ -66,11 +66,6 @@ GetBackupedAdminUser()
    if [ \( -z "$TMP_USER" -o "$TMP_USER" = "none" \) -a $euid = 0 ]; then
       ADMINUSER=default
    fi
-
-   if [ "$SGE_ARCH" = "win32-x86" ]; then
-      HOSTNAME=`hostname | tr "[a-z]" "[A-Z]"`
-      ADMINUSER="$HOSTNAME+$ADMINUSER"
-   fi
 }
 
 #-------------------------------------------------------------------------------

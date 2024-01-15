@@ -57,7 +57,6 @@ bool        bootstrap_get_job_spooling(void);
 int         bootstrap_get_listener_thread_count(void);
 int         bootstrap_get_worker_thread_count(void);
 int         bootstrap_get_scheduler_thread_count(void);
-int         bootstrap_get_jvm_thread_count(void);
 
 void bootstrap_set_admin_user(const char *value);
 void bootstrap_set_default_domain(const char *value);

@@ -47,26 +47,12 @@
 #define MSG_LOG_JOBSDROPPEDERRORSTATEREACHED          _MESSAGE(47022, _("jobs dropped because of error state: "))
 #define MSG_LOG_JOBSDROPPEDBECAUSEOFXHOLD             _MESSAGE(47023, _("jobs dropped because of hold: "))
 #define MSG_LOG_JOBSDROPPEDBECAUSEDEPENDENCIES        _MESSAGE(47024, _("jobs dropped because of job dependencies: "))
-/* #define MSG_LOG_JOBSDROPPEDBECAUSEUSRGRPLIMIT         _message(47025, _("jobs dropped because of user limitations: ")) __TS Removed automatically from testsuite!! TS__*/
-/* #define MSG_EVENT_CKPTOBJXFORJOBYNOTFOUND_SI          _message(47026, _("can't find requested CKPT object "SFQ" for job %d")) __TS Removed automatically from testsuite!! TS__*/
 
 /* 
 ** schedd/sge_schedd_text.c
 */ 
 #define MSG_SGETEXT_INVALIDHOSTINQUEUE_SS          _MESSAGE(47028, _("invalid hostname "SFQ" associated with queue instance "SFQ))
 #define MSG_SGETEXT_CONSUMABLE_AS_LOAD             _MESSAGE(47029, _("Consumables as load threshold is disabled"))
-/* #define MSG_SGETEXT_CANTRESOLVEUSER_S           _message(47030, _("unknown user name "SFQ))    __TS Removed automatically from testsuite!! TS__*/
-/* #define MSG_SGETEXT_CANTRESOLVEGROUP_S          _message(47031, _("unknown group name "SFQ))   __TS Removed automatically from testsuite!! TS__*/
-/* #define MSG_SGETEXT_NOCOMMD_SS                  _message(47032, _("unable to contact commd at host "SFN" using service "SFN)) __TS Removed automatically from testsuite!! TS__*/
-/* #define MSG_SGETEXT_NOPERM                      _message(47033, _("no permissions for this operation")) __TS Removed automatically from testsuite!! TS__*/
-/* #define MSG_SGETEXT_CANTFINDACL_S               _message(47034, _("unable to find referenced access list "SFQ)) __TS Removed automatically from testsuite!! TS__*/
-/* #define MSG_SGETEXT_SHOULD_BE_ROOT_S            _message(47035, _("should be root to start "SFN))  __TS Removed automatically from testsuite!! TS__*/
-/* #define MSG_SGETEXT_STILL_REFERENCED_SS         _message(47036, _("remove reference to "SFQ" in subordinates of queue "SFQ" before deletion"))  __TS Removed automatically from testsuite!! TS__*/
-/* #define MSG_SGETEXT_NO_SECURITY_LEVEL_FOR_S           _message(47037, _("denied: missing security level for "SFN)) __TS Removed automatically from testsuite!! TS__*/
-/* #define MSG_SGETEXT_MAY_NOT_CHG_QHOST_S               _message(47038, _("may not change host of queue "SFQ)) __TS Removed automatically from testsuite!! TS__*/
-/* #define MSG_SGETEXT_UP_REFERENCED_TWICE_SS            _message(47039, _("denied: share tree contains reference to unknown "SFN" "SFQ))    __TS Removed automatically from testsuite!! TS__*/
-/* #define MSG_SGETEXT_UNABLETORETRIEVE_I                _message(47041, _("unable to retrieve value for system limit (%d)"))      __TS Removed automatically from testsuite!! TS__*/
-
 
 #define MSG_SCHEDD_INFO_CANNOTRUNATHOST_SSS           _MESSAGE(47042, _("(-l "SFN") cannot run at host "SFQ" because "SFN"" )) 
 #define MSG_SCHEDD_INFO_HASNOPERMISSION_SS            _MESSAGE(47043, _("has no permission for "SFN" "SFQ""))
@@ -189,13 +175,7 @@
 ** schedd/sge_pe_schedd.c
 */ 
 #define MSG_PE_XFAILEDPARSINGALLOCATIONRULEY_SS       _MESSAGE(47168, _("pe >"SFN"<: failed parsing allocation rule "SFQ))
-#define MSG_USER                                      _MESSAGE(47169, _("user"))
 #define MSG_PROJECT                                   _MESSAGE(47170, _("project"))
-#define MSG_NO                                              _MESSAGE(47193, _("NO"))
-/* 
-** schedd/sge_schedd.c
-*/
-#define MSG_SCHEDD_UNKNOWN                                  _MESSAGE(47196, _("<unknown>"))
 
 /* 
 ** schedd/sge_select_queue.c
@@ -219,12 +199,6 @@
 #define MSG_SCHEDD_UNABLE_TO_SETUP_FILTER                   _MESSAGE(47229, _("unable to setup filter objects correctly"))
 #define MSG_SCHEDD_LOGLIST_QUEUESTEMPORARLYNOTAVAILABLEDROPPED _MESSAGE(47230, _("queues dropped because they are temporarily not available: "))
 
-/* 
-** schedd/sge.c
-*/ 
-/* #define MSG_FILE_OPENSTDOUTASFILEFAILED            _message(47229, _("Could not open stdout as file")) __TS Removed automatically from testsuite!! TS__*/
-/* #define MSG_SGE_UNABLETODUMPJOBLIST                _message(47230, _("Unable to dump job list")) __TS Removed automatically from testsuite!! TS__*/
-
 /* NOTE: Id's from 47231 to 47249 are used in msg_smon.h */
 
 /* 
@@ -243,10 +217,6 @@
 #define MSG_READ_PARAM_S                        _MESSAGE(47260, _("using param: "SFQ))
 #define MSG_UNKNOWN_PARAM_S                     _MESSAGE(47261, _("found unknown param: "SFQ))
 #define MSG_ATTRIB_WRONG_SETTING_SS             _MESSAGE(47262, _("invalid setting for param: "SFQ"(should be "SFQ")"))
-/* 
-** schedd/schedd_message.c
-*/ 
-#define MSG_SCHEDDMESSAGE_CREATEJOBINFOFORMESSAGEFAILED_U      _MESSAGE(47270, _("can not create schedd_job_info for message "sge_U32CFormat))
 
 /* 
 ** schedd/sge_select_queue.c
@@ -286,7 +256,6 @@
  * libs/sched/sge_complex_schedd.c
  */
 #define MSG_GDI_NO_ATTRIBUTE_S                        _MESSAGE(47370, _("denied: attribute "SFQ" is no complex attribute"))
-#define MSG_COMPLEX_MISSING                           _MESSAGE(47371, _("name filter in get_attribute_list is not big enought"))
 
 /*
  * sgeobj/sge_schedd_conf.c 

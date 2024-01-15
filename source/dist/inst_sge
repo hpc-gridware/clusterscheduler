@@ -80,10 +80,8 @@ SET_FILE_PERMS=false
 MAKE_RC=false
 ADD_RC=false
 UPDATE_RC=false
-UPDATE_WIN=false
 DEL_EXECD_SPOOL=false
 POST_UPDATE=false
-WIN_UPDATE=false
 COPY_CA="false"
 RECREATE_SETTINGS="false"
 USE_OLD_IJS="false"
@@ -104,7 +102,6 @@ CONFIG_FILE="undef"
 STDOUT2LOG="0"
 PAR_EXECD_INST_COUNT="20"
 JAVA_VERSION="undef"
-WIN_SVC="undef"
 
 SGE_NOMSG="undef"
 
@@ -239,11 +236,6 @@ while [ $ARGC != 0 ]; do
      . ./util/install_modules/inst_common.sh
      . ./util/upgrade_modules/inst_upgrade.sh
      ;;
-   -upd-win)
-     UPDATE_WIN=true
-     . ./util/install_modules/inst_common.sh
-     . ./util/upgrade_modules/inst_upgrade.sh
-     ;;
    -upd-rc)
      UPDATE_RC=true
      ALL_RC=true
@@ -254,24 +246,6 @@ while [ $ARGC != 0 ]; do
    -start-all)
      START_CLUSTER=true
      . ./util/install_modules/inst_common.sh
-     ;;
-   -winupdate)
-     #update to new Gridengine Helper Service
-     WIN_UPDATE="true"
-     . ./util/install_modules/inst_common.sh
-     . ./util/install_modules/inst_execd.sh
-     ;;
-   -winsvc)
-     #install the windows helper service only
-     WIN_SVC="install"
-     . ./util/install_modules/inst_common.sh
-     . ./util/install_modules/inst_execd.sh
-     ;;
-   -uwinsvc)
-     #uninstall the windows helper service only
-     WIN_SVC="uninstall"
-     . ./util/install_modules/inst_common.sh
-     . ./util/install_modules/inst_execd.sh
      ;;
    -rccreate)
      MAKE_RC=true
@@ -348,10 +322,7 @@ if [ -z "$REMOVE_RC" ]; then
    REMOVE_RC="false"
 fi
 
-if [ -z "$WIN_ADMIN_NAME" ]; then
-   WIN_ADMIN_NAME="Administrator"
-fi
-for item in WINDOWS_SUPPORT WIN_DOMAIN_ACCESS CSP_RECREATE CSP_COPY_CERTS; do   
+for item in CSP_RECREATE CSP_COPY_CERTS; do
    if [ x`eval echo '$'$item` = x ]; then
       eval $item="false"
    fi
@@ -402,24 +373,6 @@ if [ "$START_CLUSTER" = "true" ]; then
    ManipulateOneDaemonType "" qmaster ""
    ManipulateOneDaemonType "" execd ""
    exit
-fi
-
-if [ "$WIN_UPDATE" = "true" ]; then
-   WelcomeTheUserWinUpdate
-   SetupWinSvc update #service install due to an update -> param: update
-   # don't exit but continue with installation of execution daemon
-fi
-
-if [ "$WIN_SVC" = "install" ]; then
-   WelcomeTheUserWinSvc install #install text param
-   SetupWinSvc install #service install due to service install switch -> param install
-   # don't exit but continue with installation of execution daemon
-fi
-
-if [ "$WIN_SVC" = "uninstall" ]; then
-   WelcomeTheUserWinSvc uninstall #uninstall text param
-   SetupWinSvc uninstall #service install due to service uninstall switch -> param uninstall
-   # don't exit but continue with uninstallation of execution daemon
 fi
 
 #Upgrade from 6.0+ to 6.2
@@ -526,11 +479,6 @@ if [ "$UPDATE" = true ]; then
    if [ -z "$SGE_CLUSTER_NAME" ]; then
       ProcessSGEClusterName qmaster
    fi
-   if [ -f "$UPGRADE_BACKUP_DIR/win_hosts" ]; then
-      WINDOWS_SUPPORT=true
-      WindowsDomainUserAccess
-      ExecuteAsAdmin cp "$UPGRADE_BACKUP_DIR/win_hosts" "$SGE_ROOT/$SGE_CELL/win_hosts_to_update"
-   fi
    SetPermissions
    #Detect the product mode
    PRODUCT_MODE=`BootstrapGetValue "${UPGRADE_BACKUP_DIR}/cell" "security_mode"`
@@ -609,19 +557,6 @@ if [ "$UPDATE" = true ]; then
       "REQUIRED:\n" \
       "inst_sge -upd-execd\n" \
       "   This command initializes all execd spool directories.\n"
-      if [ "$WINDOWS_SUPPORT" = true ]; then
-          $INFOTEXT -n "inst_sge -upd-win\n" \
-          "   This command connects to all Windows execution hosts and installs \n" \
-          "   the new Windows helper service on each host.\n" \
-          "   WARNING: If a helper service from a previous release is running \n" \
-          "            on this host, the new helper service overwrites it. The \n" \
-          "            host will run only in a 6.2 cluster.\n" \
-	  "   TIP: This action requires to enter a windows administrator user for each \n" \
-	  "        host interactively. If all your systems share the same administrator you \n" \
-	  "        can set the environment variable SGE_WIN_ADMIN to that user name. \n" \
-	  "        E.g.: (sh, bash) export SGE_WIN_ADMIN=Administrator \n" \
-	  "              (csh,tcsh) setenv SGE_WIN_ADMIN Administrator \n"
-      fi
       $INFOTEXT -n "OPTIONAL:\n" \
       "inst_sge -upd-rc\n" \
       "   This command creates new autostart scripts for the new cluster\n" \
@@ -660,28 +595,14 @@ if [ "$POST_UPDATE" = true ]; then
    ManipulateOneDaemonType "" bdb ""
    ManipulateOneDaemonType "" qmaster ""
    ManipulateOneDaemonType "" execd ""
-   #Update win hosts if appropriate
    list=""
-   if [ -f "$SGE_ROOT/$SGE_CELL/win_hosts_to_update" ]; then
-      list=`cat $SGE_ROOT/$SGE_CELL/win_hosts_to_update 2>/dev/null`
-   else
-      exit 0
-   fi
-   if [ -z "$list" ]; then
-      $INFOTEXT -log "Cannot upgrade Windows helper service because there are no Windows\n" \
-                     "hosts in the backup."
-      exit 2
-   fi
-   ALL_RC=false
-   ManipulateOneDaemonType $list execd ""
-   $INFOTEXT -log "After you verify that your Windows hosts work, delete \n%s file." "$SGE_ROOT/$SGE_CELL/win_hosts_to_update"
-   exit
+   exit 0
 fi
 
 #Delete all execd_spool dirs / create non-existing ones
 if [ "$DEL_EXECD_SPOOL" = true ]; then
    ManipulateOneDaemonType "" execd ""
-   if [ "$UPDATE_RC" != true -a "$UPDATE_WIN" != true ]; then
+   if [ "$UPDATE_RC" != true ]; then
       exit
    fi
 fi
@@ -691,30 +612,6 @@ if [ "$UPDATE_RC" = true ]; then
    ManipulateOneDaemonType "" qmaster "61"
    ManipulateOneDaemonType "" execd "61"
    ManipulateOneDaemonType "" bdb "61"
-   if [ "$UPDATE_WIN" != true ]; then
-      exit
-   fi
-fi
-
-#Remove old RC and install new
-if [ "$UPDATE_WIN" = true ]; then
-   if [ -z "$SGE_ROOT" -o -z "$SGE_CELL" ]; then
-      $INFOTEXT "\$SGE_ROOT and \$SGE_CELL must be set!"
-      exit 2
-   fi
-   
-   list=""
-   if [ -f "$SGE_ROOT/$SGE_CELL/win_hosts_to_update" ]; then
-      list=`cat $SGE_ROOT/$SGE_CELL/win_hosts_to_update 2>/dev/null`
-   fi
-   if [ -z "$list" ]; then
-      $INFOTEXT -log "Cannot upgrade Windows helper service because there are no Windows\n" \
-                     "hosts in the backup."
-      exit 2
-   fi
-   ALL_RC=false
-   ManipulateOneDaemonType $list execd ""
-   $INFOTEXT -log "After you verify that your Windows hosts work, delete \n%s file." "$SGE_ROOT/$SGE_CELL/win_hosts_to_update"
    exit
 fi
 
@@ -770,7 +667,6 @@ if [ "$QMASTER" = "install" -a "$UPDATE" != "true" ]; then
  ProcessSGEClusterName qmaster
  GetQmasterSpoolDir $euid
  SetCellDependentVariables
- WindowsSupport
  SetPermissions
  SelectHostNameResolving
  SetProductMode
@@ -791,7 +687,6 @@ if [ "$QMASTER" = "install" -a "$UPDATE" != "true" ]; then
  InitCA
  AddSGEStartUpScript $euid master
  StartQmaster
- AddWindowsAdmin
  AddHosts
  MakeUserKs $ADMINUSER
  CopyCA execd
@@ -956,7 +851,6 @@ if [ "$EXECD" = "install" -a "$UPDATE" != "true" ]; then
       AddLocalConfiguration_With_Qconf
       AddSubmitHostsExecd
       AddSGEStartUpScript $euid execd
-      SetupWinSvc execinst     #service install during execd installation -> param: execinst
       CopyIBMLoadSensor
       StartExecd
       AddQueue
@@ -986,13 +880,11 @@ if [ "$EXECD" = "install" -a "$UPDATE" != "true" ]; then
       . $SGE_ROOT/$SGE_CELL/common/settings.sh
       SearchForExistingInstallations "execd"
       GetAdminUser
-      CheckWinAdminUser
       CheckCSP
       CheckHostNameResolving install
       GetLocalExecdSpoolDir
       AddLocalConfiguration_With_Qconf
       AddSGEStartUpScript $euid execd
-      SetupWinSvc execinst  #service install during execd installation -> param: execinst
       CopyIBMLoadSensor
       StartExecd
       AddQueue
@@ -1090,8 +982,7 @@ if [ "$EXECD" = "uninstall" ]; then
    
    FetchHostname
    uninstall_ret=$?
-   SetupWinSvc uninstall
-   
+
    MoveLog
    
    if [ $QMASTER != "uninstall" ]; then

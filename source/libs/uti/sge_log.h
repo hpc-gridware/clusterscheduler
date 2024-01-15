@@ -56,7 +56,6 @@ u_long32        log_state_get_log_level(void);
 const char*     log_state_get_log_file(void);
 int             log_state_get_log_verbose(void);
 int             log_state_get_log_gui(void);
-int             log_state_get_log_as_admin_user(void);
 
 void log_state_set_log_context(void *context);
 

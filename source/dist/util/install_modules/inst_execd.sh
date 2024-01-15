@@ -197,10 +197,6 @@ CheckCellDirectory()
 #
 CheckCSP()
 {
-   if [ "$SGE_ARCH" = "win32-x86" ]; then
-      util/certtool.sh $SGE_ROOT $SGE_CELL
-   fi
-
    if [ $CSP = false ]; then
       return
    fi
@@ -503,11 +499,7 @@ AddQueue()
       fi
    fi
 
-   if [ "$SGE_ARCH" != "win32-x86" ]; then
-      LOADCHECK_COMMAND="$SGE_UTILBIN/loadcheck"
-   else
-      LOADCHECK_COMMAND="$SGE_UTILBIN/loadcheck.exe"
-   fi
+   LOADCHECK_COMMAND="$SGE_UTILBIN/loadcheck"
    slots=`$LOADCHECK_COMMAND -loadval num_proc < /dev/null 2>/dev/null | sed "s/num_proc *//"`
 
    $INFOTEXT -u "\nAdding a queue for this host"
@@ -547,26 +539,15 @@ GetLocalExecdSpoolDir()
              "Windows system\nwithout a local spool directory, the execution host is unusable." \
              "\n\nThe spool directory is currently set to:\n<<$GLOBAL_EXECD_SPOOL>>\n"
 
-   if [ "$SGE_ARCH" != "win32-x86" ]; then
-      $INFOTEXT -n -auto $AUTO -ask "y" "n" -def "n" "Do you want to configure a different spool directory\n for this host (y/n) [n] >> "
-      ret=$?
-   else
-      ret=0 #windows need it, don't need to ask
-      if [ "$AUTO" = "true" ]; then # but we don't want to wait in infinite while loop
-         ret=1
-      fi
-   fi
+   $INFOTEXT -n -auto $AUTO -ask "y" "n" -def "n" "Do you want to configure a different spool directory\n for this host (y/n) [n] >> "
+   ret=$?
 
    while [ $ret = 0 ]; do 
       $INFOTEXT -n "Enter the spool directory now! >> " 
       LOCAL_EXECD_SPOOL=`Enter`
       if [ "$LOCAL_EXECD_SPOOL" = "" ]; then
-         if [ "$SGE_ARCH" != "win32-x86" ]; then
-            $INFOTEXT -n -auto $AUTO -ask "y" "n" -def "n" "Do you want to configure a different spool directory\n for this host (y/n) [n] >> "
+         $INFOTEXT -n -auto $AUTO -ask "y" "n" -def "n" "Do you want to configure a different spool directory\n for this host (y/n) [n] >> "
          ret=$?
-         else
-            ret=0 #windows need it, don't need to ask
-         fi
          LOCAL_EXECD_SPOOL="undef"
       else
          spooldir_valid=1
@@ -574,22 +555,6 @@ GetLocalExecdSpoolDir()
             $INFOTEXT "execd spool directory [%s] is not a valid name, please try again!" $LOCAL_EXECD_SPOOL
             $INFOTEXT -wait -auto $AUTO -n "Hit <RETURN> to continue >> "
             spooldir_valid=0
-         fi
-         if [ "$SGE_ARCH" = "win32-x86" ]; then
-            #
-            # Special checks for interix: make sure that existing spool directory
-            # (if any) is owned by SGE admin user and mounted locally.
-            #
-            IsLocalDir $LOCAL_EXECD_SPOOL
-            if [ $? != 1 ]; then
-               $INFOTEXT \
-                  "execd spool directory [%s] is not a valid local spool directory, please try again!"  \
-                  $LOCAL_EXECD_SPOOL
-               $INFOTEXT -wait -auto $AUTO -n "Hit <RETURN> to continue >> "
-               spooldir_valid=0
-            else
-               spooldir_valid=1
-            fi
          fi
          if [ $spooldir_valid = 1 ]; then
             $INFOTEXT "Using execd spool directory [%s]" $LOCAL_EXECD_SPOOL
@@ -608,18 +573,6 @@ GetLocalExecdSpoolDir()
    spooldir_valid=1
    if [ $AUTO = "true" -a -n "$EXECD_SPOOL_DIR_LOCAL" ]; then
       execd_spool_dir_local_exists=`echo $EXECD_SPOOL_DIR_LOCAL |  grep "^\/"`
-      if [ "$SGE_ARCH" = "win32-x86" ]; then
-         #
-         # Extra checks required for interix platform (details see above!)
-         #
-         IsLocalDir $EXECD_SPOOL_DIR_LOCAL
-         if [ $? != 1 ]; then
-            #
-            # Indicate error.
-            #
-            spooldir_valid=0
-         fi
-      fi
       if [ "$EXECD_SPOOL_DIR_LOCAL" != "" -a \
            "$execd_spool_dir_local_exists" != "" -a \
            "$spooldir_valid" = 1 ]; then
@@ -639,83 +592,6 @@ GetLocalExecdSpoolDir()
    fi
 }
 
-#--------------------------------------------------------------------------
-# IsLocalDir
-#
-# FOR INTERIX ONLY: 
-#
-#
-# - Check for correct ownership of existing spool directories. This is a 
-#   vital check for Interix platforms because users do mix up local and
-#   fully qualified SGE admin user (i.e. sge_admin vs. MYDOMAIN+sge_admin).
-#   This mismatch will lead to permission conflicts during execd startup 
-#   and failure of the daemon.
-#
-#   
-# - Check for locally accessible spool directory. This is the plan: we first 
-#   convert Interix path name into Windows syntax and then check for drive 
-#   ID (first character followed by colon). If that works out OK, we 
-#   x-check with data from df output. If that drive appears in here as well,
-#   we are OK.
-#
-#   Otherwise, we re-iterate and extract the host name, again following the 
-#   Windows syntax.
-#
-#   In case of a relative path name the root directory of the current working 
-#   directory is evaluated.
-#
-# Input:
-#                 $1: local execd spool directory
-#
-# Return values:
-#                  1: Success
-#                  0: Failure; spool directory not locally accessible or
-#                              incorrect permissions of existing spool
-#                              directory
-#                 -1: Failure: nothing of above
-#
-#
-#
-IsLocalDir()
-{
-   spool_dir=$1
-   #
-   # Check for correct ownership of existing spool directory. 
-   #
-   if [ -d $spool_dir ]; then
-      spool_dir_owner=`$SGE_UTILBIN/filestat -owner $spool_dir | tr "[a-z]" "[A-Z]"`
-      up_adminuser=`echo $ADMINUSER | tr "[a-z]" "[A-Z]"`
-      if [ "$spool_dir_owner" != "$up_adminuser" ]; then
-         $INFOTEXT -log "Existing spool directory [%s] not owned by [%s]" $spool_dir $ADMINUSER
-         return 0
-      fi
-   fi
-   #   
-   # Check for local spool directory.
-   #
-   spool_dir_drive=`unixpath2win $spool_dir | cut -f1 -d:`
-   local_drive=`df | awk '{print $7}' | cut -s -d"/" -f4 | grep -i $spool_dir_drive`
-   if [ "$local_drive" != "" ]; then
-      $INFOTEXT -log "Spool directory %s is mounted on local drive %s" $spool_dir $spool_dir_drive
-      #
-      # Indicate success.
-      #
-      return 1
-   fi
-   spool_dir_remote_host=`unixpath2win $spool_dir | cut -s -d'\' -f3`
-   if [ $spool_dir_remote_host != "" ]; then
-      $INFOTEXT -log "Spool directory %s is mounted on host %s" $spool_dir $spool_dir_remote_host
-      #
-      # Indicate failure.
-      #
-      return 0
-   fi 
-   #
-   # Indicate that something unexpected happened.
-   #
-   return -1
-}
-
 MakeHostSpoolDir()
 {
    MKDIR="mkdir -p"
@@ -724,8 +600,6 @@ MakeHostSpoolDir()
 
    Makedir $spool_dir/$host_dir
 }
-
-
 
 MakeLocalSpoolDir()
 {
@@ -791,198 +665,6 @@ ExecdAlreadyInstalled()
    fi
 }
 
-
-CheckWinAdminUser()
-{
-   if [ "$SGE_ARCH" != "win32-x86" ]; then
-      return
-   fi
-
-   if [ -f $SGE_ROOT/$SGE_CELL/common/bootstrap ]; then
-      win_admin_user=`cat $SGE_ROOT/$SGE_CELL/common/bootstrap | grep admin_user | awk '{ print $2 }'`
-      if [ "$win_admin_user" = "default" -o "$win_admin_user" = "root" -o "$win_admin_user" = "none" ]; then
-         ADMINUSER=default
-      fi
-   else
-      $INFOTEXT "bootstrap file could not be found, please check your installation! Exiting now ..."
-      exit 1
-   fi
-
-   if [ "$win_admin_user" != "default" -a "$win_admin_user" != "root" -a "$win_admin_user" != "none" ]; then
-      WIN_HOST_NAME=`hostname | tr "[a-z]" "[A-Z]"`
-      WIN_HOST_NAME=`echo $WIN_HOST_NAME | cut -d"." -f1`
-
-      ADMINUSER=$WIN_HOST_NAME"+$win_admin_user"
-
-      tmp_path=$PATH
-      PATH=/usr/contrib/win32/bin:/common:$SAVED_PATH
-      export PATH
-      eval net user $win_admin_user < /dev/null > /dev/null 2>&1
-      ret=$?
-      if [ "$ret" = 127 ]; then
-         /usr/contrib/win32/bin/net user $win_admin_user < /dev/null > /dev/null 2>&1
-         ret=$?
-         if [ "$ret" = 127 ]; then
-	         $INFOTEXT "The net binary could not be found!\nPlease, check your $PATH variable or your installation!"
-            exit 1
-         fi
-      fi
-      if [ "$ret" != 0 ]; then
-         while [ "$ret" != 0 ]; do
-            $INFOTEXT -u "Local Admin User"
-            $INFOTEXT "\nThe local admin user %s, does not exist!\n The script tries to create the admin user." $win_admin_user
-            $INFOTEXT "Please enter a password for your admin user >> "
-            stty_orig=`stty -g`
-            stty -echo
-            read SECRET
-            stty $stty_orig
-            $INFOTEXT "Creating admin user %s, now ...\n" $win_admin_user
-            eval net user $win_admin_user $SECRET /add < /dev/null
-            ret=$?
-            unset SECRET
-         done
-         ExecuteAsAdmin regpwd
-         $INFOTEXT -wait "Admin user created, hit <ENTER> to continue!"
-         is_nis=`mapadmin.exe | grep "UNIX Users and Groups Source" | cut -d ":" -f2 | cut -d " " -f2`
-         if [ "$is_nis" = "NIS" ]; then
-            $INFOTEXT "Your system is using NIS Domain setup. To setup the right Windows Domain\n" \
-                      "Unix Domain mapping we need your Unix Nis Domain.\n\n"
-            $INFOTEXT -n "Please enter your Unix Nis Domain now >> "
-            NIS_DOMAIN=`Enter`
-         else
-            NIS_DOMAIN="PCNFS"
-         fi
-         
-         mapadmin.exe ADD -wu "$WIN_HOST_NAME\\$win_admin_user" -uu "$NIS_DOMAIN\\$win_admin_user" -setprimary
-         
-         $SGE_BIN/qconf -am $WIN_HOST_NAME"+"$win_admin_user
-      fi
-      PATH=$tmp_path
-      export PATH 
-   fi
-}
-
-# $1 - only do reinstall with $1=update
-InstWinHelperSvc()
-{
-   tmp_path=$PATH
-   PATH=/usr/contrib/win32/bin:/common:$SAVED_PATH
-   export PATH
-
-   loop=0
-
-   WIN_SVC="SGE_Helper_Service.exe"
-   WIN_DIR=`winpath2unix $SYSTEMROOT`
-
-   $INFOTEXT " Testing, if a service is already installed!\n"
-   $INFOTEXT -log " Testing, if a service is already installed!\n"
-   
-   if [ -f "$WIN_DIR"/SGE_Helper_Service.exe ]; then
-      #Try to stop
-      eval "net stop \"$WIN_SVC\"" < /dev/null > /dev/null 2>&1
-      ret=$?
-      #If stop fails, try start since service might be already registered
-      if [ "$ret" -ne 0 ]; then
-         eval "net start \"$WIN_SVC\"" < /dev/null > /dev/null 2>&1
-	 ret=$?
-         #In any case stop the service
-         eval "net stop \"$WIN_SVC\"" < /dev/null > /dev/null 2>&1
-      fi
-      if [ "$ret" -eq 0 ]; then
-         $INFOTEXT "   ... a service is already installed!"
-         $INFOTEXT -log "   ... a service is already installed!"
-	 $INFOTEXT "   ... uninstalling old service!"
-         $INFOTEXT -log "   ... uninstalling old service!"
-         $WIN_DIR/SGE_Helper_Service.exe -uninstall
-      fi
-      rm $WIN_DIR/SGE_Helper_Service.exe
-   fi
-   
-   ret=1
-   $INFOTEXT "\n   ... moving new service binary!"
-   $INFOTEXT -log "\n   ... moving new service binary!"
-   cp -fR $SGE_UTILBIN/SGE_Helper_Service.exe $WIN_DIR
-   cp -fR $SGE_UTILBIN/SGE_Starter.exe $WIN_DIR
-
-   $INFOTEXT "   ... installing new service!"
-   $INFOTEXT -log "   ... installing new service!"
-   while [ "$ret" -ne "0" -a "$loop" -lt 6 ]; do 
-      $WIN_DIR/SGE_Helper_Service.exe -install
-      ret=$?
-      loop=`expr $loop + 1`
-      sleep 2
-   done
-
-   if [ "$ret" -ne 0 ]; then
-      $INFOTEXT "\n ... service could not be installed!"
-      $INFOTEXT -log "\n ... service could not be installed!"
-      $INFOTEXT " ... exiting installation"
-      $INFOTEXT -log " ... exiting installation"
-      MoveLog
-      exit 1
-   fi
-
-   $INFOTEXT "\n   ... starting new service!"
-   $INFOTEXT -log "\n   ... starting new service!"
-   eval "net start \"$WIN_SVC\"" < /dev/null > /dev/null 2>&1
-
-   if [ "$?" -ne 0 ]; then
-      $INFOTEXT "\n ... service could not be started!"
-      $INFOTEXT -log "\n ... service could not be started!"
-      $INFOTEXT " ... exiting installation"
-      $INFOTEXT -log " ... exiting installation"
-      MoveLog
-      exit 1
-   fi
-
-   PATH=$tmp_path
-   export PATH
-}
-
-UnInstWinHelperSvc()
-{
-   tmp_path=$PATH
-   PATH=/usr/contrib/win32/bin:/common:$SAVED_PATH
-   export PATH
-
-   loop=0
-
-   WIN_SVC="Sun Grid Engine Helper Service"
-   WIN_DIR=`winpath2unix $SYSTEMROOT`
-
-   $INFOTEXT " Testing, if service is installed!\n"
-   $INFOTEXT -log " Testing, if service is installed!\n"
-   eval "net pause \"$WIN_SVC\"" < /dev/null > /dev/null 2>&1
-   ret=$?
-   if [ "$ret" = 0 ]; then
-      ret=2
-      $INFOTEXT "   ... a service is installed!"
-      $INFOTEXT -log "   ... a service is installed!"
-      $INFOTEXT "   ... stopping service!"
-      $INFOTEXT -log "   ... stopping service!"
-
-      while [ "$ret" -ne 0 ]; do
-         eval "net continue \"$WIN_SVC\"" < /dev/null > /dev/null 2>&1
-         ret=$?
-      done
-   else
-      $INFOTEXT "   ... no service installed!"   
-      $INFOTEXT -log "   ... no service installed!"   
-   fi
-
-   if [ -f "$WIN_DIR"/SGE_Helper_Service.exe ]; then
-      $INFOTEXT "   ... found service binary!" 
-      $INFOTEXT -log "   ... found service binary!" 
-      $INFOTEXT "   ... uninstalling service!"
-      $INFOTEXT -log "   ... uninstalling service!"
-      $WIN_DIR/SGE_Helper_Service.exe -uninstall
-      rm $WIN_DIR/SGE_Helper_Service.exe
-   fi
-
-   PATH=$tmp_path
-   export PATH
-}
-
 CopyIBMLoadSensor()
 {
    if [ "$SGE_ARCH" != "aix43" -a "$SGE_ARCH" != "aix51" ]; then 
@@ -1026,57 +708,5 @@ PrintIBMLoadSensorCopyError()
              "$SGE_ROOT/bin/$SGE_ARCH/qloadsensor manually.\n"
 
    $INFOTEXT -wait -auto $AUTO -n "Hit <RETURN> to continue >> "
-   $CLEAR
-}
-
-SetupWinSvc()
-{
-   if [ "$SGE_ARCH" != "win32-x86" ]; then
-      return
-   fi
-
-   if [ "$SGE_ROOT" = "" -o "$SGE_CELL" = "" ]; then
-      $INFOTEXT "Please, source <sge-root>/<sge-cell>/common/settings.[c]sh"
-      $INFOTEXT "file to setup a proper environment."
-      $INFOTEXT "... exiting now!"
-      $INFOTEXT -log "Please, source <sge-root>/<sge-cell>/common/settings.[c]sh"
-      $INFOTEXT -log "file to setup a proper environment."
-      $INFOTEXT -log "... exiting now!"
-
-      MoveLog
-      exit 1 
-   fi
-
-   if [ "$1" = "execinst" ]; then #execinst param is used for service installation during execd install
-      $INFOTEXT -u "SGE Windows Helper Service Installation"
-      $INFOTEXT "\nIf you're going to run Windows job's using GUI support, you have\n to install the" \
-                " Windows Helper Service"
-      $INFOTEXT -n -auto $AUTO -ask "y" "n" -def "n" "Do you want to install the Windows Helper Service? (y/n) [n] >> "
-      if [ "$?" = "1" ]; then
-         return
-      fi 
-      InstWinHelperSvc
-   elif [ "$1" = "install" ]; then #install param is used, if service is installed with -winsvc switch
-      $INFOTEXT -u "SGE Windows Helper Service Installation"
-      $INFOTEXT "\nIf you're going to run Windows job's using GUI support, you have\n to install the" \
-                " Windows Helper Service"
-      $INFOTEXT -n -auto $AUTO -ask "y" "n" -def "y" "Do you want to install the Windows Helper Service? (y/n) [y] >> "
-      if [ "$?" = "1" ]; then
-         return
-      fi 
-      InstWinHelperSvc
-   elif [ "$1" = "update" ]; then #in case of an update, this tree is used
-      InstWinHelperSvc "$1"
-   else
-      UnInstWinHelperSvc
-   fi
-
-   $INFOTEXT -wait -auto $AUTO -n "\nHit <RETURN> to continue >> "
-
-   $CLEAR
-   if [ "$WIN_UPDATE" = "true" ]; then
-      SGE_STARTUP_FILE="$SGE_ROOT/$SGE_CELL/common/sgeexecd"
-      StartExecd
-   fi
    $CLEAR
 }

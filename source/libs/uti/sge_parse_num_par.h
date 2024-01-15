@@ -32,11 +32,8 @@
  ************************************************************************/
 /*___INFO__MARK_END__*/
 
-#ifndef WIN32NATIVE
-#	include <sys/time.h>
-#	include <sys/resource.h>
-#endif
-
+#include <sys/time.h>
+#include <sys/resource.h>
 
 #include "cull/cull_list.h"
 
@@ -49,8 +46,6 @@ extern "C" {
    typedef long sge_rlim_t;
 #elif IRIX
    typedef rlim64_t sge_rlim_t;
-#elif WIN32NATIVE
-   typedef long sge_rlim_t;
 #else
    typedef rlim_t sge_rlim_t;
 #endif

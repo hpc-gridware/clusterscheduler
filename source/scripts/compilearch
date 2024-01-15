@@ -362,10 +362,6 @@ case $buildarch in
       BUILDARCH=ALPHA5
       TARGET_BITS=TARGET_64BIT
       ;;
-   win32-x86)
-      BUILDARCH=WIN32_X86
-      TARGET_BITS=TARGET_32BIT
-      ;;   
    *)
       echo cannot compile - no mapping for architecture \"$buildarch\" defined yet
       exit 1

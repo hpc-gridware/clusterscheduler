@@ -256,19 +256,9 @@ SetPermissions()
       if [ "$AUTO" = "true" -a "$SET_FILE_PERMS" = "true" ]; then
          :
       else
-         if [ "$WINDOWS_SUPPORT" = true ]; then
-            $INFOTEXT -auto $AUTO -ask "y" "n" -def "n" -n \
-                      "Did you install this version with >pkgadd< or did you already\n" \
-                      "verify and set the file permissions of your distribution (enter: y)\n\n" \
-                      "In some cases, eg: the binaries are stored on a NTFS or on any other\n" \
-                      "filesystem, which provides additional file permissions, the UNIX file\n" \
-                      "permissions can be wrong. In this case we would advise to verify and\n" \
-                      "to set the file permissions (enter: n) (y/n) [n] >> "
-         else
-            $INFOTEXT -auto $AUTO -ask "y" "n" -def "y" -n \
-                      "Did you install this version with >pkgadd< or did you already verify\n" \
-                      "and set the file permissions of your distribution (enter: y) (y/n) [y] >> "
-         fi
+         $INFOTEXT -auto $AUTO -ask "y" "n" -def "y" -n \
+                   "Did you install this version with >pkgadd< or did you already verify\n" \
+                   "and set the file permissions of your distribution (enter: y) (y/n) [y] >> "
          if [ $? = 0 ]; then
             $INFOTEXT -wait -auto $AUTO -n "We do not verify file permissions. Hit <RETURN> to continue >> "
             $CLEAR
@@ -807,13 +797,7 @@ PrintConf()
    fi
    $ECHO "shepherd_cmd           none"
    $ECHO "qmaster_params         none"
-   if [ "$WINDOWS_SUPPORT" = "true" -a "$WIN_DOMAIN_ACCESS" = "true" ]; then
-      $ECHO "execd_params           enable_windomacc=true"
-   elif [ "$WINDOWS_SUPPORT" = "true" -a "$WIN_DOMAIN_ACCESS" = "false" ]; then
-      $ECHO "execd_params           enable_windomacc=false"
-   else
-      $ECHO "execd_params           none"
-   fi
+   $ECHO "execd_params           none"
    $ECHO "reporting_params       accounting=true reporting=false flush_time=00:00:15 joblog=false sharelog=00:00:00"
    $ECHO "finished_jobs          100"
    $ECHO "gid_range              $CFG_GID_RANGE"
@@ -1099,7 +1083,7 @@ CreateSettingsFile()
 InitCA()
 {
 
-   if [ "$CSP" = true -o \( "$WINDOWS_SUPPORT" = "true" -a "$WIN_DOMAIN_ACCESS" = "true" \) ]; then
+   if [ "$CSP" = true ]; then
       # Initialize CA, make directories and get DN info
       #
       SGE_CA_CMD=util/sgeCA/sge_ca
@@ -1798,12 +1782,8 @@ IsJavaBinSuitable()
          GetJvmLib $java_bin
          if [ -n "$jvm_lib_path" ]; then
             #Verify we can load it
-            if [ "$SGE_ARCH" != "win32-x86" ]; then
-               $SGE_ROOT/utilbin/$SGE_ARCH/valid_jvmlib "$jvm_lib_path" >/dev/null 2>&1
-               return $?
-            else
-               return 0
-            fi
+            $SGE_ROOT/utilbin/$SGE_ARCH/valid_jvmlib "$jvm_lib_path" >/dev/null 2>&1
+            return $?
          fi
       else
          return 0
@@ -2198,49 +2178,6 @@ GiveBerkelyHints()
             "It must be added to the crontab of the user (%s), who runs the\n" \
             "berkeley_db_svc on the server host. \n\n" \
             "e.g. * * * * * <full path to scripts> <sge-root dir> <sge-cell> <bdb-dir>\n" $ADMINUSER
-}
-
-
-WindowsSupport()
-{
-   $CLEAR
-   $INFOTEXT -u "Windows Execution Host Support"
-   $INFOTEXT -auto $AUTO -ask "y" "n" -def "n" -n "\nAre you going to install Windows Execution Hosts? (y/n) [n] >> "
-
-   if [ $? = 0 ]; then
-      WINDOWS_SUPPORT=true
-      WindowsDomainUserAccess
-   fi
-}
-
-
-WindowsDomainUserAccess()
-{
-   $CLEAR
-   #The windows domain user access handling has changed -> WIN_DOMAIN_ACCESS always has to be true
-   #$INFOTEXT -u "Windows Domain User Access"
-   #$INFOTEXT -auto $AUTO -ask "y" "n" -def "y" -n "\nDo you want to use Windows Domain Users (answer: y)\n" \
-   #                                               "or are you going to use local Windows Users (answer: n) (y/n) [y] >> "
-   #if [ $? = 0 ]; then
-      WIN_DOMAIN_ACCESS=true
-   #fi
-}
-
-
-AddWindowsAdmin()
-{
-   if [ "$WINDOWS_SUPPORT" = "true" ]; then
-      $INFOTEXT -u "Windows Administrator Name"
-      $INFOTEXT "\nFor a later execution host installation it is recommended to add the\n" \
-                "Windows Administrator name to the SGE manager list\n"
-      $INFOTEXT -n "Please, enter the Windows Administrator name [Default: %s] >> " $WIN_ADMIN_NAME
-
-      WIN_ADMIN_NAME=`Enter $WIN_ADMIN_NAME`
-
-      $SGE_BIN/qconf -am $WIN_ADMIN_NAME
-      $INFOTEXT -wait -auto $AUTO -n "Hit <RETURN> to continue >> "
-      $CLEAR
-   fi
 }
 
 #-------------------------------------------------------------------------

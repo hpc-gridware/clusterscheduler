@@ -69,13 +69,6 @@ extern int h_errno;
 
 extern void trace(char *);
 
-
-/* MT-NOTE: hostlist used only in qmaster, commd and some utilities */
-static host *hostlist = NULL;
-
-/* MT-NOTE: localhost used only in commd */
-static host *localhost = NULL;
-
 static pthread_mutex_t get_qmaster_port_mutex = PTHREAD_MUTEX_INITIALIZER;
 static pthread_mutex_t get_execd_port_mutex = PTHREAD_MUTEX_INITIALIZER;
 
@@ -283,11 +276,6 @@ int sge_get_execd_port(void) {
 
 }
 
-static int matches_addr(struct hostent *he, char *addr);
-static host *sge_host_search_pred_alias(host *h);
-
-static int matches_name(struct hostent *he, const char *name);    
-
 /* this globals are used for profiling */
 unsigned long gethostbyname_calls = 0;
 unsigned long gethostbyname_sec = 0;
@@ -308,21 +296,6 @@ static pthread_mutex_t hostbyname_mutex = PTHREAD_MUTEX_INITIALIZER;
 /* guards access to the non-MT-safe gethostbyaddr system call */
 static pthread_mutex_t hostbyaddr_mutex = PTHREAD_MUTEX_INITIALIZER;
 #endif
-
-
-/****** uti/hostname/uti_state_get_localhost() *************************************
-*  NAME
-*     uti_state_get_localhost() - read access to uti lib global variables
-*
-*  FUNCTION
-*     Provides access to either global variable or per thread global variable.
-*
-*******************************************************************************/
-host *uti_state_get_localhost(void)
-{
-   /* so far called only by commd */ 
-   return localhost;
-}
 
 #define MAX_RESOLVER_BLOCKING 15
 
@@ -848,179 +821,6 @@ struct hostent *sge_gethostbyaddr(const struct in_addr *addr, int* system_error_
    DRETURN(he);
 }
 
-/****** uti/hostname/sge_host_search_pred_alias() ******************************
-*  NAME
-*     sge_host_search_pred_alias() -- search host who's aliasptr points to host 
-*
-*  SYNOPSIS
-*     static host* sge_host_search_pred_alias(host *h) 
-*
-*  INPUTS
-*     host *h - host we search for
-*
-*  RESULT
-*     static host* - found host if contained in host list
-*
-*  NOTES
-*     MT-NOTE: sge_host_search_pred_alias() is not MT safe due to access to 
-*     MT-NOTE: global variable
-*
-*  BUGS
-*     ??? 
-*
-*  SEE ALSO
-*     ???/???
-*******************************************************************************/
-static host *sge_host_search_pred_alias(host *h) 
-{
-   host *hl = hostlist;
-
-   while (hl && hl->alias != h)
-      hl = hl->next;
-
-   return hl;
-}
-
-
-static int matches_name(struct hostent *he, const char *name)    
-{
-   if (!name)
-      return 1;
-   if (!strcasecmp(name, he->h_name))
-      return 1;
-   if (sge_stracasecmp(name, he->h_aliases))
-      return 1;
-   return 0;
-}
-
-static int matches_addr(struct hostent *he, char *addr) 
-{
-   if (!addr) {
-      return 1;
-   }
-   if (sge_stramemncpy(addr, he->h_addr_list, he->h_length)) {
-      return 1;
-   }
-   return 0;
-}
-
-/****** uti/hostname/sge_host_search() ****************************************
-*  NAME
-*     sge_host_search() -- Search for host 
-*
-*  SYNOPSIS
-*     host* sge_host_search(const char *name, char *addr) 
-*
-*  FUNCTION
-*     Search for host. If 'name' is not NULL the returned host has 
-*     the given or the alias that matches this name. 'name' is
-*     not case sensitive. 'addr' is in hostorder.
-*     If 'addr' is not NULL the returned host has 'addr' in his
-*     addrlist. If 'addr' is aliased this function returns the
-*     hostname of the first alias (mainname) 
-*
-*  INPUTS
-*     const char *name - hostname 
-*     char *addr       - address 
-*
-*  NOTES
-*     MT-NOTE: sge_host_search() is not MT safe due to access to hostlist 
-*     MT-NOTE: global variable
-*
-*  RESULT
-*     host* - host entry
-******************************************************************************/
-host *sge_host_search(const char *name, char *addr) 
-{
-   host *hl = hostlist, *h1;
-   struct hostent *he;
-
-   while (hl) {
-      he = &hl->he;
-
-      if (((name && !strcasecmp(hl->mainname, name)) || 
-            matches_name(he, name)) && matches_addr(he, addr)) {
-         while ((h1 = sge_host_search_pred_alias(hl)))   /* start of alias chain */
-            hl = h1;
-         return hl;
-      }
-      hl = hl->next;
-   }
-
-   return NULL;
-}
-
-/****** uti/hostname/sge_host_print() *****************************************
-*  NAME
-*     sge_host_print() -- Print host entry info file 
-*
-*  SYNOPSIS
-*     void sge_host_print(host *h, FILE *fp) 
-*
-*  FUNCTION
-*     Print host entry info file  
-*
-*  INPUTS
-*     host *h  - host entry 
-*     FILE *fp - file 
-*
-*  NOTES
-*     MT-NOTE: sge_host_print() is NOT MT safe ( because of inet_ntoa() call)
-******************************************************************************/
-void sge_host_print(host *h, FILE *fp) 
-{
-   struct hostent *he;
-   char **cpp;
-
-   he = &h->he;
-   fprintf(fp, "h_name: %s\n", he->h_name);
-   fprintf(fp, "mainname: %s\n", h->mainname);
-   fprintf(fp, "h_aliases:\n");
-   for (cpp = he->h_aliases; *cpp; cpp++) {
-      fprintf(fp, "  %s\n", *cpp);
-   }
-   fprintf(fp, "h_addrtype: %d\n", he->h_addrtype);
-   fprintf(fp, "h_length: %d\n", he->h_length);
-   fprintf(fp, "h_addr_list:\n");
-   for (cpp = he->h_addr_list; *cpp; cpp++) {
-      fprintf(fp, "  %s\n", inet_ntoa(*(struct in_addr *) *cpp)); /* inet_ntoa() is not MT save */
-   }
-   if (h->alias) {
-      fprintf(fp, "aliased to %s\n", h->alias->he.h_name);
-   }
-}
-
-/****** uti/hostname/sge_host_list_print() ************************************
-*  NAME
-*     sge_host_list_print() -- Print hostlist into file 
-*
-*  SYNOPSIS
-*     void sge_host_list_print(FILE *fp) 
-*
-*  FUNCTION
-*     Print hostlist into file 
-*
-*  INPUTS
-*     FILE *fp - filename 
-*  
-*  NOTES
-*     MT-NOTE: sge_host_list_print() is not MT safe due to access to hostlist 
-*     MT-NOTE: global variable
-******************************************************************************/
-void sge_host_list_print(FILE *fp) 
-{
-   host *hl = hostlist;
-
-   while (hl) {
-      sge_host_print(hl, fp);
-      hl = hl->next;
-      if (hl)
-         fprintf(fp, "\n");
-   }
-}
-
-
-
 void sge_free_hostent( struct hostent** he_to_del ) {
    struct hostent *he = NULL; 
    char** help = NULL;
@@ -1066,43 +866,6 @@ void sge_free_hostent( struct hostent** he_to_del ) {
    /* free hostent struct */
    sge_free(he_to_del);
 }
-
-
-
-/****** uti/hostname/sge_host_get_mainname() **********************************
-*  NAME
-*     sge_host_get_mainname() -- Return mainname considering aliases 
-*
-*  SYNOPSIS
-*     char* sge_host_get_mainname(host *h) 
-*
-*  FUNCTION
-*     Return the mainname of a host considering aliases. 
-*
-*  INPUTS
-*     host *h - host
-*
-*  RESULT
-*     char* - mainname 
-*
-*  NOTES:
-*     MT-NOTE: sge_host_get_mainname() is not MT safe
-******************************************************************************/
-char *sge_host_get_mainname(host *h) 
-{
-   host *h1;
-
-   h1 = h;
-   while ((h = sge_host_search_pred_alias(h)))   /* search start of alias chain */
-      h1 = h;
-
-   if (h1->mainname[0])
-      return h1->mainname;
-
-   return (char *) h1->he.h_name;
-}
-
-
 
 /****** uti/hostname/sge_hostcpy() ********************************************
 *  NAME

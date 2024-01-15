@@ -49,15 +49,8 @@ extern "C" {
 #  define setegid(egid) setresgid(-1, egid, -1)
 #endif 
 
-#if defined(INTERIX) && !defined(INTERIX52)
-#  define seteuid(euid) setreuid(-1, euid)
-#  define setegid(egid) setregid(-1, egid)
-#  define SGE_SUPERUSER_UID wl_get_superuser_id()
-#  define SGE_SUPERUSER_GID wl_get_superuser_gid() 
-#else
-#  define SGE_SUPERUSER_UID 0
-#  define SGE_SUPERUSER_GID 0
-#endif
+#define SGE_SUPERUSER_UID 0
+#define SGE_SUPERUSER_GID 0
 
 #ifndef MAX_NIS_RETRIES
 #  define MAX_NIS_RETRIES 10
@@ -66,8 +59,6 @@ extern "C" {
 void uidgid_mt_init(void);
 
 bool sge_is_start_user_superuser(void);
-int password_read_file(char **users[], char **encryped_pwds[], const char *filename);
-const char* sge_get_file_passwd(void);
 
 int  sge_set_admin_username(const char *username, char *err_str);
 bool sge_is_admin_user(const char *username);
@@ -96,10 +87,6 @@ bool sge_is_user_superuser(const char *name);
 /* getting buffer sizes for getpwnam_r etc. */
 int get_group_buffer_size(void);
 int get_pw_buffer_size(void);
-
-#if defined(INTERIX)
-int uidgid_read_passwd(const char *user, char **pass, char *err_str);
-#endif
 
 #ifdef SGE_THREADSAFE_UTIL
 

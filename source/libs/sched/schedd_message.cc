@@ -354,7 +354,6 @@ lListElem *schedd_mes_obtain_package(int *global_mes_count, int *job_mes_count)
 *******************************************************************************/
 void schedd_mes_add(lList **monitor_alpp, bool monitor_next_run, u_long32 job_id, u_long32 message_number, ...)
 {
-#ifndef WIN32NATIVE
    u_long32 schedd_job_info;
 
    DENTER(TOP_LAYER);
@@ -423,7 +422,6 @@ void schedd_mes_add(lList **monitor_alpp, bool monitor_next_run, u_long32 job_id
    }
 
    DRETURN_VOID;
-#endif
 }
 
 /****** schedd_message/schedd_mes_add_join() ***********************************
@@ -451,7 +449,6 @@ void schedd_mes_add(lList **monitor_alpp, bool monitor_next_run, u_long32 job_id
 *******************************************************************************/
 void schedd_mes_add_join(bool monitor_next_run, u_long32 job_number, u_long32 message_number, ...)
 {
-#ifndef WIN32NATIVE
    u_long32 schedd_job_info;
    int do_logging;
 
@@ -529,7 +526,6 @@ void schedd_mes_add_join(bool monitor_next_run, u_long32 job_number, u_long32 me
    }
 
    DRETURN_VOID;
-#endif
 }
 
 

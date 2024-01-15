@@ -552,18 +552,6 @@ char *sge_file2string(const char *fname, int *len)
    ** size <size> were read.
    */
    if (size > 0) {
-#ifdef WIN32 /* fread call and evaluation of return value is different */
-      i = fread(str, 1, size, fp);
-      if (i == 0) {
-         sge_free(&str);
-         FCLOSE(fp);
-         DRETURN(NULL);
-      }
-      str[i] = '\0';    /* delimit this string */   
-      if (len != NULL) {
-         *len = i;
-      }
-#else
       i = fread(str, size, 1, fp);
       if (i != 1) {
          ERROR((SGE_EVENT, MSG_FILE_FREADFAILED_SS, fname, strerror(errno)));
@@ -575,8 +563,7 @@ char *sge_file2string(const char *fname, int *len)
       if (len != NULL) {
          *len = size;
       }
-#endif
-   } 
+   }
  
    FCLOSE(fp);
 

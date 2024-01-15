@@ -96,13 +96,11 @@ int sge_edit(const char *fname, uid_t myuid, gid_t mygid)
                }
             }
          }
-#ifndef WIN32  /* signals b18 */
          if (WIFSIGNALED(status)) {
             ERROR((SGE_EVENT, MSG_QCONF_EDITORWASTERMINATEDBYSIGX_I,
                    (int) WTERMSIG(status)));
             DRETURN(-1);
          }
-#endif
       }
    } else {
       const char *cp = NULL;

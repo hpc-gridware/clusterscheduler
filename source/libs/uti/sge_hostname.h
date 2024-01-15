@@ -36,14 +36,10 @@
 #include <stdlib.h>
 #include <ctype.h> 
 
-#ifndef WIN32NATIVE
-#  include <netdb.h>
-#  include <sys/socket.h>
-#  include <sys/types.h>
-#  include <netinet/in.h> 
-#else 
-#  include <winsock2.h>
-#endif 
+#include <netdb.h>
+#include <sys/socket.h>
+#include <sys/types.h>
+#include <netinet/in.h>
 
 #include "sge_unistd.h"
 
@@ -78,16 +74,6 @@ extern unsigned long gethostbyname_calls;
 extern unsigned long gethostbyname_sec;
 extern unsigned long gethostbyaddr_calls;
 extern unsigned long gethostbyaddr_sec;
-
-host *uti_state_get_localhost(void);
-
-host *sge_host_search(const char *name, char *addr);
-
-void sge_host_print(host *, FILE *fp);
-
-void sge_host_list_print(FILE *fp);
-
-char *sge_host_get_mainname(host *h);
 
 int sge_hostcmp(const char *h1, const char *h2);
 

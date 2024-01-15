@@ -83,9 +83,7 @@
 #   include "sge_smf.h"
 #endif
 
-#if !defined(INTERIX)
 static void init_sig_action_and_mask(void);
-#endif
 #ifndef USE_POLL
 static int set_file_descriptor_limit(void);
 #endif
@@ -324,9 +322,7 @@ int main(int argc, char* argv[])
 #ifndef USE_POLL
    file_descriptor_settings_result = set_file_descriptor_limit();
 #endif
-#if !defined(INTERIX)
    init_sig_action_and_mask();
-#endif
 
    /* init qmaster threads without becomming admin user */
    sge_qmaster_thread_init(&ctx, QMASTER, MAIN_THREAD, false);
@@ -452,8 +448,6 @@ int main(int argc, char* argv[])
    DRETURN(0);
 } /* main() */
 
-#if !defined(INTERIX)
-
 /****** qmaster/sge_qmaster_main/init_sig_action_and_mask() *******************
 *  NAME
 *     init_sig_action_and_mask() -- initialize signal action and mask 
@@ -490,6 +484,3 @@ static void init_sig_action_and_mask(void)
    
    return;
 }
-
-#endif
-

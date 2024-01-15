@@ -68,11 +68,6 @@
 
 #define IDLE 0
 
-#ifdef WIN32NATIVE
-#	define strcasecmp( a, b) stricmp( a, b)
-#	define strncasecmp( a, b, n) strnicmp( a, b, n)
-#endif
-
 /****** sched/sge_job_schedd/job_get_duration() *******************************************
 *  NAME
 *     job_get_duration() -- Determine a jobs runtime duration

@@ -53,10 +53,6 @@
 #include <nfs/nfs_clnt.h>
 #endif
 
-#if defined(INTERIX)
-#  include "wingrid.h"
-#endif
-
 #define BUF_SIZE 8 * 1024
 
 int main(int argc, char *argv[]) {
@@ -75,47 +71,6 @@ int main(int argc, char *argv[]) {
 #elif defined(DARWIN) || defined(FREEBSD) || (defined(NETBSD) && !defined(ST_RDONLY))
    struct statfs buf;
    ret = statfs(argv[1], &buf);
-#elif defined(INTERIX)
-   struct statvfs buf;
-   ret = wl_statvfs(argv[1], &buf);
-#elif defined(SOLARIS)
-   struct statvfs buf;
-   struct mntinfo_kstat mnt_info;
-   minor_t fsid;
-   kstat_ctl_t    *kc = NULL;
-   kstat_t        *ksp;
-   kstat_named_t  *knp;
-
-   ret = statvfs(argv[1], &buf);
-   /*
-      statfs returns dev_t (32bit - 14bit major + 18bit minor number)
-      the kstat_instance is the minor number
-   */
-   fsid = (minor_t)(buf.f_fsid & 0x3ffff);
-
-   if (strcmp(buf.f_basetype, "nfs") == 0) {
-            kc = kstat_open();
-            for (ksp = kc->kc_chain; ksp; ksp = ksp->ks_next) {
-               if (ksp->ks_type != KSTAT_TYPE_RAW)
-			         continue;
-		         if (strcmp(ksp->ks_module, "nfs") != 0)
-			         continue;
-		         if (strcmp(ksp->ks_name, "mntinfo") != 0)
-			         continue;
-               if (kstat_read(kc, ksp, &mnt_info) == -1) {
-                  kstat_close(kc);
-                  printf("error\n");
-                  return 2;
-               }
-               if (fsid  == ksp->ks_instance) {
-                  if ( mnt_info.mik_vers >= 4 ) {
-                     sprintf(buf.f_basetype, "%s%i", buf.f_basetype, mnt_info.mik_vers);
-                  }
-                  break;
-               }
-            }
-            ret = kstat_close(kc);
-   }
 #else
    struct statvfs buf;
    ret = statvfs(argv[1], &buf);
@@ -188,8 +143,6 @@ int main(int argc, char *argv[]) {
          printf("0x%lx\n", (long unsigned int)buf.f_type);
       }
    }
-#elif defined(INTERIX)
-   printf("%s\n", buf.f_fstypename);
 #else
    printf("%s\n", buf.f_basetype);
 #endif

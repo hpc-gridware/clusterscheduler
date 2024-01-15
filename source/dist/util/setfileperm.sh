@@ -49,7 +49,7 @@
 PATH=/bin:/usr/bin:/usr/sbin
 
 FILELIST="3rd_party bin ckpt dtrace examples inst_sge install_execd install_qmaster \
-          lib mpi pvm util utilbin"
+          lib mpi util utilbin"
 
 OPTFILES="catman doc include man hadoop"
 
@@ -106,14 +106,6 @@ if [ ! -f $SGE_ROOT/util/arch_variables ]; then
 fi
 
 . $SGE_ROOT/util/arch_variables
-
-if [ $ARCH = "win32-x86" ]; then
-   echo
-   echo "ERROR: Using this script on windows is not supported!"
-   echo "Please execute this script on a unix host"
-   echo
-   exit 1
-fi
 
 if [ $# -lt 1 ]; then
    echo
@@ -209,12 +201,7 @@ for f in $FILELIST $OPTFILES; do
 done
 
 for file in $SUIDFILES; do
-   # Windows NFS Server does not like suid files
-   if [ "`echo $file | grep win32-x86`" != "" ]; then
-      chmod 511 $file
-   else
-      chmod 4511 $file
-   fi
+   chmod 4511 $file
 done
 
 $ECHO

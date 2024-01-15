@@ -43,21 +43,6 @@
 extern "C" {
 #endif
 
-#ifdef WIN32NATIVE
- 
-typedef u_int           SOCKET;
- 
-#ifndef FD_SETSIZE
-#define FD_SETSIZE      64
- 
-typedef struct fd_set {
-        u_int fd_count;               /* how many are SET? */
-        SOCKET  fd_array[FD_SETSIZE];   /* an array of SOCKETs */
-} fd_set;
- 
-#endif /* FD_SETSIZE */
-#endif /* WIN32NATIVE */
-
 #if defined(LINUX) || defined(FREEBSD) || defined(NETBSD) || defined(DARWIN)
 #  define PSCMD "/bin/ps -axc"
 #elif defined(ALPHA)

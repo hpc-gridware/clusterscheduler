@@ -52,11 +52,6 @@
 #include "schedd_message.h"
 #include "msg_schedd.h"
 
-#ifdef WIN32NATIVE
-#	define strcasecmp( a, b) stricmp( a, b)
-#	define strncasecmp( a, b, n) strnicmp( a, b, n)
-#endif
-
  /* -------------------------------------------------
    
    get number of slots per host from alloc rule 

@@ -92,15 +92,11 @@
 #if defined(HP11) || defined(HP1164)
 #  include <limits.h>
 #else
-#  if !(defined(WIN32NATIVE) || defined(WINDOWS))
-#     include <sys/param.h>
-#  endif
+#  include <sys/param.h>
 #endif
 
 #if defined(TARGET_64BIT)
 #  define u_long32 u_int
-#elif defined(WIN32NATIVE)
-#  define u_long32 unsigned long
 #elif defined(FREEBSD) || defined(NETBSD)
 #  define u_long32 uint32_t
 #else
@@ -109,8 +105,6 @@
 
 #if defined(TARGET_64BIT)
 #  define u_long64 u_long
-#elif defined(WIN32NATIVE)
-#  define u_long64 unsigned long long
 #elif defined(FREEBSD) || defined(NETBSD)
 #  define u_long64 uint64_t
 #else
@@ -195,12 +189,6 @@ typedef char stringT[MAX_STRING_SIZE];
 #  define seteuid(euid) setresuid(-1, euid, -1)
 #  define setegid(egid) setresgid(-1, egid, -1)
 #endif
-
-#if defined(INTERIX) && !defined(INTERIX52)
-#  define seteuid(euid) setreuid(-1, euid)
-#  define setegid(egid) setregid(-1, egid)
-#endif
-    
 
 #ifndef TRUE
 #  define TRUE 1

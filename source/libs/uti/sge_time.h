@@ -36,11 +36,7 @@
 extern "C" {
 #endif
 
-#ifndef WIN32NATIVE
-#	include <sys/time.h>
-#else 
-#	include "win32nativetypes.h"
-#endif 
+#include <sys/time.h>
 
 #ifndef __BASIS_TYPES_H
 #   include "basis_types.h"

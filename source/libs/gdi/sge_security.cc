@@ -77,10 +77,6 @@
 #include <openssl/evp.h>
 #endif
 
-#ifdef INTERIX
-#include "wingrid/wingrid.h"
-#endif
-
 #define ENCODE_TO_STRING   1
 #define DECODE_FROM_STRING 0
 
@@ -164,9 +160,6 @@ int sge_ssl_setup_security_path(const char *progname, const char *user) {
    bool from_services   = false;
    int  qmaster_port    = -1;
    char *user_name = sge_strdup(NULL, user);
-#ifdef INTERIX
-   user_name = wl_strip_hostname(user_name);
-#endif
 
    DENTER(TOP_LAYER);
 
@@ -1289,16 +1282,6 @@ sge_gdi_packet_initialize_auth_info(sge_gdi_ctx_class_t *ctx,
    sge_strlcpy(username, ctx->get_username(ctx), sizeof(username));
    sge_strlcpy(groupname, ctx->get_groupname(ctx), sizeof(groupname));
 
-#if defined(INTERIX)
-   /*
-    * Map "Administrator" to "root", so the QMaster running on Unix
-    * or Linux will accept us as "root"
-    */
-   if (sge_is_user_superuser(username)==true) {
-      strncpy(username, "root", sizeof(username));
-   }
-#endif  /* defined(INTERIX) */
-  
    DPRINTF(("sge_set_auth_info: username(uid) = %s(%d), groupname = %s(%d)\n",
             username, uid, groupname, gid));
 

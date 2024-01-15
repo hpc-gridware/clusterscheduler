@@ -42,15 +42,6 @@
 
 #include "uti/msg_utilib.h"
 
-#ifdef WIN32
-#   define SIGIOT 6
-#   define SIGURG 16
-#   define SIGIO 23
-#   define SIGVTALRM 26
-#   define SIGPROF 27
-#   define SIGWINCH 28
-#endif
-
 #if defined(CRAY) && !defined(SIGXCPU)
 #   define SIGXCPU SIGCPULIM
 #endif

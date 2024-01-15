@@ -1,5 +1,5 @@
 /* Portions of this code are Copyright 2011 Univa Inc. */
-#if defined(DARWIN) || defined(INTERIX)
+#if defined(DARWIN)
 #  include <termios.h>
 #  include <sys/ioctl.h>
 #  include <grp.h>

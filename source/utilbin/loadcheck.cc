@@ -154,11 +154,7 @@ int main(int argc, char *argv[])
 
    if ((pos && !strcmp("arch", argv[pos])) || !pos) {
       const char *arch = "";
-#if defined(WINDOWS)
-      arch = "win32-x86";
-#else
       arch = sge_get_arch();
-#endif 
       printf("arch            %s\n", arch);
    }
       

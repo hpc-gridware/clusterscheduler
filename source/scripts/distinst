@@ -50,8 +50,7 @@ DEFAULTPROG="sge_qmaster sge_execd sge_shadowd \
 UTILITYBINARIES="uidgid gethostname gethostbyname gethostbyaddr \
                  getservbyname filestat checkprog loadcheck now checkuser \
                  adminrun qrsh_starter testsuidroot read_raw echo_raw \
-                 sge_share_mon infotext spooldefaults spooledit spoolinit \
-                 fstype SGE_Helper_Service.exe SGE_Starter.exe"
+                 sge_share_mon infotext spooldefaults spooledit spoolinit fstype"
 
 BDBUTILITYBINARIES="db_deadlock db_dump db_load db_printlog db_recover db_stat db_upgrade db_verify"
 
@@ -1218,34 +1217,25 @@ for i in $ARCH; do
                echo Installing qmake
                Install 0.0 755 ../3rdparty/qmake/$ARCHBIN/make $DEST_SGE_ROOT/${UTILPREFIX}/$DSTARCH/qmake
                ;;
-            sgepasswd)
-               if [ "$DSTARCH" != "win32-x86" ]; then
-                  InstallProg $prog
-               fi
-               ;;
             sge_qmaster|spoolinit|spooldefaults)
-               if [ "$DSTARCH" != "win32-x86" ]; then
-                  if [ $instclassictargets = false ]; then
-                     InstallProg $prog
+               if [ $instclassictargets = false ]; then
+                  InstallProg $prog
+               else
+                  if [ -f ../${ARCHBIN}_classic/$prog ]; then
+                     InstallProgAs ../${ARCHBIN}_classic/$prog ${prog}.spool_classic
+                     InstallProgAs $prog ${prog}.spool_bdb
+                     ( echo changing to $DEST_SGE_ROOT/bin/$DSTARCH ; \
+                       cd $DEST_SGE_ROOT/bin/$DSTARCH ; \
+                       echo ln -s ${prog}.spool_bdb $prog ; \
+                       ln -s ${prog}.spool_bdb $prog
+                     )
                   else
-                     if [ -f ../${ARCHBIN}_classic/$prog ]; then
-                        InstallProgAs ../${ARCHBIN}_classic/$prog ${prog}.spool_classic
-                        InstallProgAs $prog ${prog}.spool_bdb
-                        ( echo changing to $DEST_SGE_ROOT/bin/$DSTARCH ; \
-                          cd $DEST_SGE_ROOT/bin/$DSTARCH ; \
-                          echo ln -s ${prog}.spool_bdb $prog ; \
-                          ln -s ${prog}.spool_bdb $prog
-                        )
-                     else
-                        InstallProg $prog
-                     fi
+                     InstallProg $prog
                   fi
                fi
                ;;
             sge_shadowd|spooledit)
-               if [ "$DSTARCH" != "win32-x86" ]; then
-                  InstallProg $prog
-               fi
+               InstallProg $prog
                ;;
             sgeinspect)
                if [ -f "$DEST_SGE_ROOT/bin/sgeinspect.sh" ]; then
@@ -1302,48 +1292,33 @@ for i in $ARCH; do
                   echo \"openssl\" binary not found
                fi
             elif [ $prog = testsuidroot ]; then
-                  InstallProgSUID $prog
+               InstallProgSUID $prog
             elif [ $prog = loadcheck ]; then
-               if [ "$DSTARCH" != "win32-x86" ]; then
-                  InstallProg $prog
-               else
-                  InstallProg $prog.exe
-               fi
+               InstallProg $prog
             elif [ $prog = db_deadlock \
                    -o $prog = db_dump -o $prog = db_load \
                    -o $prog = db_printlog -o $prog = db_recover \
                    -o $prog = db_stat -o $prog = db_upgrade \
                    -o $prog = db_verify ]; then
-               if [ "$DSTARCH" != "win32-x86" ]; then
-                  if [ -f $BERKELEYDBBASE/$DSTARCH/bin/$prog ]; then
-                     InstallProg $BERKELEYDBBASE/$DSTARCH/bin/$prog
-                  elif [ -f $BERKELEYDBBASE/bin/$prog ]; then
-                     InstallProg $BERKELEYDBBASE/bin/$prog
-                  fi
+               if [ -f $BERKELEYDBBASE/$DSTARCH/bin/$prog ]; then
+                  InstallProg $BERKELEYDBBASE/$DSTARCH/bin/$prog
+               elif [ -f $BERKELEYDBBASE/bin/$prog ]; then
+                  InstallProg $BERKELEYDBBASE/bin/$prog
                fi
             elif [ $prog = spoolinit -o $prog = spooldefaults ]; then
-               if [ "$DSTARCH" != "win32-x86" ]; then
-                  if [ $instclassictargets = false ]; then
-                     InstallProg $prog
-                  elif [ -f ../${ARCHBIN}_classic/$prog ]; then
-                     InstallProgAs ../${ARCHBIN}_classic/$prog ${prog}.spool_classic
-                     InstallProgAs $prog ${prog}.spool_bdb
-                     ( echo changing to $DEST_SGE_ROOT/utilbin/$DSTARCH ; \
-                       cd $DEST_SGE_ROOT/utilbin/$DSTARCH ; \
-                       echo ln -s ${prog}.spool_bdb $prog ; \
-                       ln -s ${prog}.spool_bdb $prog
-                     )
-                  else
-                     InstallProg $prog
-                  fi
-               fi
-            elif [ "$prog" = "SGE_Helper_Service.exe" -o "$prog" = "SGE_Starter.exe" ]; then
-               if [ "$DSTARCH" = "win32-x86" ]; then
+               if [ $instclassictargets = false ]; then
+                  InstallProg $prog
+               elif [ -f ../${ARCHBIN}_classic/$prog ]; then
+                  InstallProgAs ../${ARCHBIN}_classic/$prog ${prog}.spool_classic
+                  InstallProgAs $prog ${prog}.spool_bdb
+                  ( echo changing to $DEST_SGE_ROOT/utilbin/$DSTARCH ; \
+                    cd $DEST_SGE_ROOT/utilbin/$DSTARCH ; \
+                    echo ln -s ${prog}.spool_bdb $prog ; \
+                    ln -s ${prog}.spool_bdb $prog
+                  )
+               else
                   InstallProg $prog
                fi
-            elif [ "$DSTARCH" = "win32-x86" -a "$prog" = "spooledit" ]; then
-               # Don't install spooledit for win32-x86
-               :
             else
                InstallProg $prog
             fi
@@ -1391,13 +1366,8 @@ for i in $ARCH; do
 
          Execute rm -f $DEST_SGE_ROOT/$UTILPREFIX/$i/*
          for lib in $SHARED_LIBRARIES; do
-            if [ "$DSTARCH" != "win32-x86" \
-                 -o \( "$lib" != "libspool" -a "$lib" != "libspoolb" \
-                    -a "$lib" != "libspoold" -a "$lib" != "libspoolc" \
-                    -a "$lib" != "libspoolf" \) ]; then
-               if [ -f $lib.$shlibext ]; then
-                  InstallProg $lib.$shlibext
-               fi
+            if [ -f $lib.$shlibext ]; then
+               InstallProg $lib.$shlibext
             fi
          done
 
@@ -1435,71 +1405,69 @@ for i in $ARCH; do
             done
          fi
 
-         if [ $DSTARCH != win32-x86 ]; then
-            if [ $instbdb = true ]; then
-               for lib in $BERKELEYDB_SHARED_LIBRARIES; do
-                  libname="$lib.$shlibext"
+         if [ $instbdb = true ]; then
+            for lib in $BERKELEYDB_SHARED_LIBRARIES; do
+               libname="$lib.$shlibext"
 
-                  if [ -f $BERKELEYDBBASE/$DSTARCH/lib/$libname ]; then
-                     libname=$BERKELEYDBBASE/$DSTARCH/lib/$libname
-                  elif [ -f $BERKELEYDBBASE/lib/$libname ]; then
-                     libname=$BERKELEYDBBASE/lib/$libname
-                  fi
+               if [ -f $BERKELEYDBBASE/$DSTARCH/lib/$libname ]; then
+                  libname=$BERKELEYDBBASE/$DSTARCH/lib/$libname
+               elif [ -f $BERKELEYDBBASE/lib/$libname ]; then
+                  libname=$BERKELEYDBBASE/lib/$libname
+               fi
 
-                  if [ -f $libname ]; then
-                     InstallProg $libname
-                  else
-                     echo "\"$libname\" not found. Assuming binaries are statically linked."
-                  fi
-               done
-            fi
-
-            for lib in $DRMAA_SHARED_LIBRARIES; do
-               for version in $DRMAA_SHARED_LIB_VERSIONS; do
-                  libname=$lib.$shlibext.$version
-                  if [ -f $libname ]; then
-                     InstallProg $libname
-                     if [ "$DSTARCH" = "sol-sparc64" ]; then
-                        # Install the 32bit libraries
-                        DSTARCH="sol-sparc"
-                        SetArchBin $DSTARCH
-
-                        Execute mkdir -p $DEST_SGE_ROOT/lib/sol-sparc
-                        InstallProg ../$ARCHBIN/$libname
-
-                        DSTARCH="sol-sparc64"
-                        SetArchBin $DSTARCH
-                     fi
-                  elif [ $exit_on_error = true ]; then
-                     echo "\"$libname\" not found. Installation failed."
-                     exit 1
-                  fi
-               done
-            done
-
-            ( cd $DEST_SGE_ROOT/lib/$DSTARCH
-            ln -s $libname $lib.$shlibext )
-
-            if [ "$DSTARCH" = "sol-sparc64" ]; then
-               ( cd $DEST_SGE_ROOT/lib/sol-sparc
-               ln -s $libname $lib.$shlibext )
-            fi
-
-            for lib in $JNI_SHARED_LIBRARIES; do
-               # On MacOS X, the JVM expects a special JNI extension for shared libraries
-               if [ "$shlibext" != "$jnilibext" -a -f "$lib.$shlibext" ]; then
-                  ( echo Linking $lib.$jnilibext to $lib.$shlibext
-                  cd $DEST_SGE_ROOT/lib/$DSTARCH
-                  if [ -f $lib.$jnilibext ]; then
-                     rm $lib.$jnilibext
-                  fi
-                  ln -s $lib.$shlibext $lib.$jnilibext )
+               if [ -f $libname ]; then
+                  InstallProg $libname
+               else
+                  echo "\"$libname\" not found. Assuming binaries are statically linked."
                fi
             done
+         fi
 
-            if [ -f $CORE_HOME/$DSTARCH/libcore.$shlibext ]; then
-               InstallProg $CORE_HOME/$DSTARCH/libcore.$shlibext
+         for lib in $DRMAA_SHARED_LIBRARIES; do
+            for version in $DRMAA_SHARED_LIB_VERSIONS; do
+               libname=$lib.$shlibext.$version
+               if [ -f $libname ]; then
+                  InstallProg $libname
+                  if [ "$DSTARCH" = "sol-sparc64" ]; then
+                     # Install the 32bit libraries
+                     DSTARCH="sol-sparc"
+                     SetArchBin $DSTARCH
+
+                     Execute mkdir -p $DEST_SGE_ROOT/lib/sol-sparc
+                     InstallProg ../$ARCHBIN/$libname
+
+                     DSTARCH="sol-sparc64"
+                     SetArchBin $DSTARCH
+                  fi
+               elif [ $exit_on_error = true ]; then
+                  echo "\"$libname\" not found. Installation failed."
+                  exit 1
+               fi
+            done
+         done
+
+         ( cd $DEST_SGE_ROOT/lib/$DSTARCH
+         ln -s $libname $lib.$shlibext )
+
+         if [ "$DSTARCH" = "sol-sparc64" ]; then
+            ( cd $DEST_SGE_ROOT/lib/sol-sparc
+            ln -s $libname $lib.$shlibext )
+         fi
+
+         for lib in $JNI_SHARED_LIBRARIES; do
+            # On MacOS X, the JVM expects a special JNI extension for shared libraries
+            if [ "$shlibext" != "$jnilibext" -a -f "$lib.$shlibext" ]; then
+               ( echo Linking $lib.$jnilibext to $lib.$shlibext
+               cd $DEST_SGE_ROOT/lib/$DSTARCH
+               if [ -f $lib.$jnilibext ]; then
+                  rm $lib.$jnilibext
+               fi
+               ln -s $lib.$shlibext $lib.$jnilibext )
             fi
+         done
+
+         if [ -f $CORE_HOME/$DSTARCH/libcore.$shlibext ]; then
+            InstallProg $CORE_HOME/$DSTARCH/libcore.$shlibext
          fi
       fi
       cd ..

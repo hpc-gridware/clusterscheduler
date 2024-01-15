@@ -1631,9 +1631,6 @@ int sge_exec_job(sge_gdi_ctx_class_t *ctx, lListElem *jep, lListElem *jatep,
    /* should the job inherit the execd's environment */
    fprintf(fp, "inherit_env=%d\n", (int)mconf_get_inherit_env());
 
-   /* should a windows exec daemon use domain users */
-   fprintf(fp, "enable_windomacc=%d\n", (int)mconf_get_enable_windomacc());
-
    /* should the addgrp-id be used to kill processes */
    fprintf(fp, "enable_addgrp_kill=%d\n", (int)mconf_get_enable_addgrp_kill());
 
@@ -1642,25 +1639,6 @@ int sge_exec_job(sge_gdi_ctx_class_t *ctx, lListElem *jep, lListElem *jatep,
       csp_mode = true;
    }
    fprintf(fp, "csp=%d\n", (int)csp_mode);
-
-#ifdef INTERIX
-   /* should the job display it's gui to the visible desktop? */
-   {
-      const char *s;
-      ulong      ultemp = 0;
-      lListElem  *ep    = job_get_request(jep, "display_win_gui");
-   
-      if (ep != NULL) {
-         s = lGetString(ep, CE_stringval);
-         if (s == NULL || !parse_ulong_val(NULL, &ultemp, TYPE_BOO, s, err_str, err_length)) {
-            lFreeList(&environmentList);
-            FCLOSE(fp);
-            DRETURN(-3);
-         }
-      }
-      fprintf(fp, "display_win_gui="sge_u32"\n", ultemp);
-   }
-#endif
 
    /* with new interactive job support, shepherd needs ignore_fqdn and default_domain */
    fprintf(fp, "ignore_fqdn=%d\n", bootstrap_get_ignore_fqdn());
@@ -1908,15 +1886,6 @@ int sge_exec_job(sge_gdi_ctx_class_t *ctx, lListElem *jep, lListElem *jatep,
 	      job_id);
       putenv(ccname);
    }
-
-#if defined(INTERIX)
-   /*
-    * In Interix, we have to start the shepherd as Administrator,
-    * because there seems to be some bug with inheriting euid
-    * over a fork.
-    */
-   seteuid(SGE_SUPERUSER_UID);
-#endif
 
    DPRINTF(("**********************CHILD*********************\n"));
    shepherd_name = SGE_SHEPHERD;

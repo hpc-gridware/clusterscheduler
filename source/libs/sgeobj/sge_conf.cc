@@ -174,7 +174,6 @@ static long ptf_max_priority = -999;
 static long ptf_min_priority = -999;
 static int max_dynamic_event_clients = 1000;
 static bool keep_active = false;
-static bool enable_windomacc = false;
 #ifdef LINUX
 static bool enable_binding = true;
 #else
@@ -849,7 +848,6 @@ int merge_configuration(lList **answer_list, u_long32 progid, const char *cell_r
       ptf_max_priority = -999;
       ptf_min_priority = -999;
       keep_active = false;
-      enable_windomacc = false;
 #ifdef LINUX
       enable_binding = true;
 #else
@@ -900,9 +898,6 @@ int merge_configuration(lList **answer_list, u_long32 progid, const char *cell_r
             continue;
          }
          if (parse_bool_param(s, "SIMULATE_JOBS", &simulate_jobs)) {
-            continue;
-         }
-         if (parse_bool_param(s, "ENABLE_WINDOMACC", &enable_windomacc)) {
             continue;
          }
          if (parse_bool_param(s, "ENABLE_BINDING", &enable_binding)) {
@@ -2033,18 +2028,6 @@ bool mconf_get_keep_active(void) {
    SGE_LOCK(LOCK_MASTER_CONF, LOCK_READ);
 
    ret = keep_active;
-
-   SGE_UNLOCK(LOCK_MASTER_CONF, LOCK_READ);
-   DRETURN(ret);
-}
-
-bool mconf_get_enable_windomacc(void) {
-   bool ret;
-
-   DENTER(BASIS_LAYER);
-   SGE_LOCK(LOCK_MASTER_CONF, LOCK_READ);
-
-   ret = enable_windomacc;
 
    SGE_UNLOCK(LOCK_MASTER_CONF, LOCK_READ);
    DRETURN(ret);

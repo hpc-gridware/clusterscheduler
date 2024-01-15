@@ -45,11 +45,7 @@
 #define __CL_FUNCTION__ "cl_util_get_number_length()"
 int cl_util_get_ulong_number_length(unsigned long id) {
    char help[512];
-#if defined(_WIN32)
-   _snprintf(help,512,"%lu",id);
-#else
    snprintf(help,512,"%lu",id);
-#endif
    return (int)strlen(help);
 }
 
@@ -59,11 +55,7 @@ int cl_util_get_ulong_number_length(unsigned long id) {
 #define __CL_FUNCTION__ "cl_util_get_int_number_length()"
 int cl_util_get_int_number_length(int id) {
    char help[512];
-#if defined(_WIN32)
-   _snprintf(help,512,"%d",id);
-#else
    snprintf(help,512,"%d",id);
-#endif
    return (int)strlen(help);
 }
 
@@ -73,11 +65,7 @@ int cl_util_get_int_number_length(int id) {
 #define __CL_FUNCTION__ "cl_util_get_double_number_length()"
 int cl_util_get_double_number_length(double id) {
    char help[512];
-#if defined(_WIN32)
-   _snprintf(help,512,"%f",id);
-#else
    snprintf(help,512,"%f",id);
-#endif
    return (int)strlen(help);
 }
 

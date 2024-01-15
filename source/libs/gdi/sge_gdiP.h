@@ -32,11 +32,6 @@
  ************************************************************************/
 /*___INFO__MARK_END__*/
 
-
-#ifdef WIN32NATIVE
-#	include "win32nativetypes.h"
-#endif
-
 #include "cull/cull.h"
 #include "gdi/sge_gdi.h"
 

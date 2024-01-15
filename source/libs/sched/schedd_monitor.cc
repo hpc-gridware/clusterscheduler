@@ -113,8 +113,6 @@ int schedd_log_list(lList **monitor_alpp, bool monitor_next_run, const char *log
 
    DENTER(TOP_LAYER);
 
-#ifndef WIN32NATIVE
-
    if (monitor_alpp == NULL && !monitor_next_run) {
       DRETURN(0);
    }
@@ -130,21 +128,16 @@ int schedd_log_list(lList **monitor_alpp, bool monitor_next_run, const char *log
          char log_string[2048];
 
          strcpy(log_string, logstr);
-#ifndef WIN32NATIVE
          uni_print_list(NULL,
                         log_string + strlen(log_string),
                         sizeof(log_string) - strlen(log_string) - 1,
                         lp_part,
                         fields, delis, 0);
-#endif
          schedd_log(log_string, monitor_alpp, monitor_next_run);
          lFreeList(&lp_part);
          lp_part = NULL;
       }
    }
-#else
-   DPRINTF(("schedd_log_list does nothing for QMonNT !!!\n"));
-#endif
 
    DRETURN(0);
 }

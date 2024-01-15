@@ -170,13 +170,6 @@ int sge_nprocs(void)
    }
 #endif
 
-#if defined(INTERIX)
-/* TODO: HP: don't set nprocs==-1 to 0, overwrite it with value from
- *       external load sensor.
- */
-   nprocs = -1;
-#endif
-
    if (nprocs <= 0) {
       nprocs = 1;
    }

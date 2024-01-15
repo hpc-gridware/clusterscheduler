@@ -58,10 +58,6 @@
 #include "basis_types.h"
 #include "msg_common.h"
 
-#if defined(INTERIX)
-#  include "wingrid.h"
-#endif
-
 /****** qrsh_starter/delete_qrsh_pid_file() *****************************************
 *  NAME
 *     delete_qrsh_pid_file() -- delete the pid file from $TMPDIR
@@ -444,7 +440,7 @@ int qlogin_starter(const char *cwd, char *daemon, char** env)
    const char *sge_root = NULL;
    const char *arch = NULL;
    
-#if defined(IRIX65) || defined(INTERIX) || defined(DARWIN6) || defined(ALPHA5) || defined(HP1164)
+#if defined(IRIX65) || defined(DARWIN6) || defined(ALPHA5) || defined(HP1164)
    int length;
    int len;
 #else
@@ -574,13 +570,8 @@ int qlogin_starter(const char *cwd, char *daemon, char** env)
    dup2( newsfd, 2 );
    
    /* close all the rest */
-#ifndef WIN32NATIVE
    maxfd = sysconf(_SC_OPEN_MAX);
-#else /* WIN32NATIVE */
-   maxfd = FD_SETSIZE;
-   /* detect maximal number of fds under NT/W2000 (env: Files)*/
-#endif /* WIN32NATIVE */
-   
+
    /* we do not use any FD_SET call it is ok to use _SC_OPEN_MAX */
    for (fd=3; fd<maxfd; fd++) {
       close(fd);

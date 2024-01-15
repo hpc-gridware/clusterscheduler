@@ -180,33 +180,6 @@
 #define MSG_DBSTAT_INVALIDKEY_S     _MESSAGE(57307,         _("invalid key "SFQ))
 
 /*
- * utilbin/sge_passwd
- */
-#define MSG_PWD_ONLY_USER_SS        _MESSAGE(57310,         _(SFN": only the user "SFQ" or \"root\" can change this password"))
-#define MSG_PWD_ONLY_ROOT_S         _MESSAGE(57311,         _(SFN": only \"root\" has the permission to delete entrys"))
-#define MSG_PWD_SWITCH_ADMIN_S      _MESSAGE(57312,         _(SFN": can't switch to admin_user"))
-#define MSG_PWD_CHANGED             _MESSAGE(57313,         _("Password changed"))
-#define MSG_PWD_INVALID_S           _MESSAGE(57314,         _(SFN": Invalid password"))
-#define MSG_PWD_NO_MATCH_S          _MESSAGE(57315,         _(SFN": Passwords do not match."))
-#define MSG_PWD_CHANGE_ABORT_S      _MESSAGE(57316,         _(SFN": password change aborted"))
-#define MSG_PWD_AUTH_FAILURE_S      _MESSAGE(57317,         _(SFN": Authentication failure"))
-#define MSG_PWD_CHANGE_FOR_S        _MESSAGE(57318,         _("Changing password for "SFN""))
-#define MSG_PWD_NO_USERNAME_SU      _MESSAGE(57319,         _(SFN": unable to get name for user with id "sge_U32CFormat" "))
-#define MSG_PWD_LOAD_PRIV_SSS       _MESSAGE(57320,         _(SFN": can't load private key "SFQ" to decrypt password. SSL error: "SFN))
-#define MSG_PWD_DECR_SS             _MESSAGE(57321,         _(SFN": error decrypting password - keylength mismatch. SSL error: "SFN))
-#define MSG_PWD_MALLOC_SS           _MESSAGE(57322,         _(SFN": malloc failed. SSL error: "SFN))
-#define MSG_PWD_LOAD_PUB_SS         _MESSAGE(57323,         _(SFN": can't load public key "SFQ" to ecrypt password"))
-#define MSG_PWD_OPEN_SGEPASSWD_SSI  _MESSAGE(57325,         _(SFN": can't open sgepasswd file: "SFN" (%d)"))
-#define MSG_PWD_WRITE_SGEPASSWD_SSI _MESSAGE(57326,         _(SFN": can't write to sgepasswd file: "SFN" (%d)"))
-#define MSG_PWD_CLOSE_SGEPASSWD_SSI _MESSAGE(57327,         _(SFN": error closing sgepasswd file: "SFN" (%d)"))
-#define MSG_PWD_CANTLOADRANDFILE_SSS _MESSAGE(57328,         _(SFN": can't load rand file "SFN". SSL error: "SFN))
-#define MSG_PWD_FILE_CORRUPTED_S    _MESSAGE(57329,         _(SFN": sgepasswd file corrupted"))
-#define MSG_PWD_FILE_PATH_NULL_S    _MESSAGE(57330,         _(SFN": path to private key file is null"))
-#define MSG_PWD_SSL_ERR_MSG_SS      _MESSAGE(57331,         _(SFN": SSL error message: "SFN))
-#define MSG_PWD_NO_SSL_ERR          _MESSAGE(57332,         _("No SSL error."))
-#define MSG_PWD_CANTOPENSSL         _MESSAGE(57333,         _("Can't open the OpenSSL library."))
-
-/*
  * utilbin/testsuidroot
  */
 #define MSG_SUIDROOT_START_BY_NONROOT       _MESSAGE(213109, _(SFN": must be started with uid != 0"))

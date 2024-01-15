@@ -889,15 +889,6 @@ double get_cpu_load()
    }
    return cpu_load;
 }
-#elif defined(INTERIX)
-
-double get_cpu_load()
-{
-   /* always return -1 (invalid) to indicate that an
-    * external loadsensor has to overwrite the value later.
-    */
-   return -1;
-}
 #endif
 
 #if defined(ALPHA4) || defined(ALPHA5) || defined(IRIX) || defined(HP10) || defined(TEST_AIX51)

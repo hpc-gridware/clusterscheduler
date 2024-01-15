@@ -389,17 +389,11 @@ extern int _insure_is_internal_fd(int);
 *     ???/???
 *******************************************************************************/
 int sge_get_max_fd(void) {
-
-#ifndef WIN32NATIVE
 #ifndef USE_POLL
    return sysconf(_SC_OPEN_MAX) > FD_SETSIZE ? FD_SETSIZE : sysconf(_SC_OPEN_MAX);
 #else
    return sysconf(_SC_OPEN_MAX);
 #endif
-#else /* WIN32NATIVE */
-   return FD_SETSIZE;
-   /* detect maximal number of fds under NT/W2000 (env: Files)*/
-#endif /* WIN32NATIVE */
 }
 
 /****** uti/os/fd_compare() ****************************************************
@@ -484,11 +478,7 @@ static void sge_close_fd(int fd) {
       return;
    }
 #endif
-#ifndef WIN32NATIVE
    close(fd);
-#else
-   closesocket(fd);
-#endif
 }
 
 /****** uti/os/sge_close_all_fds() *********************************************

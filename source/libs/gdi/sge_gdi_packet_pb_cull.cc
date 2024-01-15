@@ -42,9 +42,7 @@
 
 #include <pwd.h>
 
-#ifndef WIN32NATIVE
-#	include <unistd.h>
-#endif
+#include <unistd.h>
 #include <stdlib.h>
 
 #include "sge.h"

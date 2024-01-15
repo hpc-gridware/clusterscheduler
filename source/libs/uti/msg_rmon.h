@@ -41,19 +41,9 @@ extern "C" {
 /*
  * rmon/src/rmon_macros.c 
  */
-#define MSG_RMON_INVALIDERRNO                   "invalid errno"
-#define MSG_RMON_DEBUGLAZERSAREINCONSISTENT     "mpush_layer: debug layers are inconsistent"
-#define MSG_RMON_TRIEDTOSETTOLARGELAYER         "mpush_layer: tried to set too large layer"
-#define MSG_RMON_TRIEDTOPOPHIGHESTLAYER         "mpop_layer: tried to pop highest layer"
-#define MSG_RMON_MKSTDNAMEUNABLETOGETMYHOSTNAME_S  "mkstdname: unable to get my hostname: "SFN
-#define MSG_RMON_MKSTDNAMESTRINGTOOLONG         "mkstdname: string too long"
 #define MSG_RMON_ILLEGALDBUGLEVELFORMAT         "illegal debug level format"
-#define MSG_RMON_ILLEGALDBUGTARGETFORMAT        "illegal debug target format"
 #define MSG_RMON_UNABLETOOPENXFORWRITING_S      "unable to open "SFN" for writing"
 #define MSG_RMON_ERRNOXY_DS                     "    ERRNO: %d, "SFN
-#define MSG_RMON_XERRORINASHAREDMEMOPERATION_I  "(%d) Error in a Shared Memory Operation !"
-#define MSG_RMON_XERRORINASEMAPHOREOPERATION_I  "(%d) Error in a Semaphore Operation !"
-#define MSG_RMON_FILEXLINEY_SI                  "    File: "SFN", Line: %d"
 
 #ifdef __cplusplus
 }

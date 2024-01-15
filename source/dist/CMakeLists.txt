@@ -9,8 +9,6 @@ if(INSTALL_SGE_COMMON)
               examples
               hadoop
               mpi
-              pvm
-              # qmon @todo remove
               util
     DESTINATION .
     USE_SOURCE_PERMISSIONS)

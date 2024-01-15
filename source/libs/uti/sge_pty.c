@@ -40,7 +40,7 @@
 #include <string.h>
 #include <pwd.h>
 
-#if defined(DARWIN) || defined(INTERIX)
+#if defined(DARWIN)
 #  include <termios.h>
 #  include <sys/ioctl.h>
 #  include <grp.h>

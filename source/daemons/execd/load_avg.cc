@@ -698,7 +698,6 @@ static int sge_get_loadavg(const char* qualified_hostname, lList **lpp)
 
    loads = sge_getloadavg(avg, 3);
    nprocs = sge_nprocs();
-#ifndef INTERIX
    if (loads == -1) {
       static u_long32 next_log = 0;
       u_long32 now;
@@ -715,7 +714,6 @@ static int sge_get_loadavg(const char* qualified_hostname, lList **lpp)
          WARNING((SGE_EVENT, MSG_LS_USE_EXTERNAL_LS_S, sge_get_arch()));
    }
    }
-#endif
 
    /* build a list of load values */
    if (loads >= 0) {
@@ -788,9 +786,7 @@ static int sge_get_loadavg(const char* qualified_hostname, lList **lpp)
 
       if (sge_getcpuload(&cpu_percentage) != -1) {
          sge_add_double2load_report(lpp, "cpu", cpu_percentage, qualified_hostname, NULL);
-      }
-#ifndef INTERIX
-      else {
+      } else {
          static u_long32 next_log2 = 0;
 
          u_long32 now = sge_get_gmt();
@@ -799,27 +795,8 @@ static int sge_get_loadavg(const char* qualified_hostname, lList **lpp)
             next_log2 = now + 7200;
          }
       }
-#endif
-         
    }
 #endif /* SGE_LOADCPU */
-
-#ifdef INTERIX
-   {
-      int   svc_running;
-      pid_t pids[1];
-
-      /* look if SGE_Helper_Service.exe is running */
-      svc_running = sge_get_pids(pids, 1, "SGE_Helper_Service.exe", PSCMD);
-      if (svc_running <= 0) {
-         svc_running = 0;
-      }
-
-      /* report if SGE_Helper_Service.exe is running and GUI can be displayed */
-      sge_add_int2load_report(lpp, "display_win_gui", 
-         svc_running, qualified_hostname);
-   }
-#endif
 
    DRETURN(0);
 }

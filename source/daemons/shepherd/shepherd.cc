@@ -96,20 +96,12 @@ struct rusage {
 #  include "sge_processes_irix.h"
 #endif
 
-#if defined(INTERIX)
-#include "../../../utilbin/sge_passwd.h"
-#include "wingrid/windows_gui.h"
-#endif
-
 #if defined(DARWIN)
 #  include <termios.h>
 #  include <sys/ttycom.h>
 #  include <sys/ioctl.h>    
 #elif defined(HP11) || defined(HP1164)
 #  include <termios.h>
-#elif defined(INTERIX)
-#  include <termios.h>
-#  include <sys/ioctl.h>
 #elif defined(FREEBSD) || defined(NETBSD)
 #  include <termios.h>
 #else
@@ -737,9 +729,6 @@ int main(int argc, char **argv)
          return 1;
       }
    }
-#if defined(INTERIX) && defined(SECURE)
-   sge_init_shared_ssl_lib();
-#endif
    shepherd_trace_init( );
 
    sge_dstring_init(&ds, buffer, sizeof(buffer));
@@ -831,10 +820,6 @@ int main(int argc, char **argv)
       config_errfunc = shepherd_error_ptr;
    }
    
-#if defined( INTERIX )
-   wl_set_use_sgepasswd((bool)atoi(get_conf_val("enable_windomacc")));
-#endif
-
    /* init admin user stuff */
    admin_user = get_conf_val("admin_user");
    if (sge_set_admin_username(admin_user, err_str)) {
@@ -2310,26 +2295,7 @@ static void handle_signals_and_methods(
             *kill_job_after_checkpoint = 1; 
          }
       } else if (received_signal != 0 || *postponed_signal != 0) { /* received any other signal */
-#if defined(INTERIX)
-         sge_set_environment();
-         if(strcmp(childname, "job") == 0 &&
-            wl_get_GUI_mode(get_conf_val("display_win_gui")) == true) {
-            /*
-             * forward SIGKILL, swallow all other signals
-             */
-            int sig = map_signal(received_signal);
-            if(sig == SIGKILL) { 
-               char errormsg[MAX_STRING_SIZE];
-               wl_forward_signal_to_job(get_conf_val("job_id"),
-                                     &sig,
-                                     errormsg, MAX_STRING_SIZE);
-            }
-         } else
-#endif
-         {
-            forward_signal_to_job(pid, timeout, postponed_signal, 
-                                  remaining_alarm, ctrl_pid);
-         }
+            forward_signal_to_job(pid, timeout, postponed_signal, remaining_alarm, ctrl_pid);
       } else {
          /*
           * Didn't receive a signal, just continue, 
@@ -2435,7 +2401,7 @@ int fd_std_err             /* fd of stderr. -1 if not set */
    int poll_size = 0;
    struct pollfd* pty_fds = NULL;
 
-#if defined(HPUX) || defined(INTERIX)
+#if defined(HPUX)
    struct rusage rusage_hp10;
 #endif
 #if defined(CRAY) 
@@ -2530,39 +2496,13 @@ int fd_std_err             /* fd of stderr. -1 if not set */
          alarm(rest_ckpt_interval);
       }
 
-#if defined(CRAY) || defined(INTERIX)
+#if defined(CRAY)
       npid = waitpid(-1, &status, wait_options);
 #else
       npid = wait3(&status, wait_options, rusage);
 #endif
 
-#if defined(INTERIX)
-      /* <Windows_GUI> */
-      sge_set_environment();
-      if (strcmp(childname, "job") == 0 &&
-         wl_get_GUI_mode(get_conf_val("display_win_gui")) == true) {
-         if (npid != -1 && npid != 0) {      
-            char errormsg[MAX_STRING_SIZE];
-
-            memset(&rusage_hp10, 0, sizeof(rusage_hp10));
-
-            shepherd_trace("retrieving remote usage");
-            status = 0;
-            if (wl_getrusage_remote(get_conf_val("job_id"),
-                                   &status, &rusage_hp10, errormsg) != 0) {
-               shepherd_trace(errormsg);
-            }
-            shepherd_trace("retrieved remote usage: %ld %ld %ld %ld %d",
-                           rusage_hp10.ru_stime.tv_sec,
-                           rusage_hp10.ru_stime.tv_usec,
-                           rusage_hp10.ru_utime.tv_sec,
-                           rusage_hp10.ru_utime.tv_usec,
-                           status);
-         }
-      } else 
-      /* </Windows_GUI> */
-#endif
-#if defined(HPUX) || defined(INTERIX)
+#if defined(HPUX)
       {
          /* wait3 doesn't return CPU usage */
          getrusage(RUSAGE_CHILDREN, &rusage_hp10);
@@ -2759,7 +2699,7 @@ int fd_std_err             /* fd of stderr. -1 if not set */
    }
 #endif  /* CRAY */
 
-#if defined(HPUX) || defined(INTERIX)
+#if defined(HPUX)
    rusage->ru_utime.tv_sec = rusage_hp10.ru_utime.tv_sec;
    rusage->ru_utime.tv_usec = rusage_hp10.ru_utime.tv_usec;
    rusage->ru_stime.tv_sec = rusage_hp10.ru_stime.tv_sec;

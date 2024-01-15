@@ -45,9 +45,6 @@ extern "C" {
 #else
 #   if defined(_UNICOS) || defined(SINIX)
 #      define SETPRIORITY(niceval) nice(niceval + 20)
-#   elif defined(INTERIX) 
-       /* On Interix the nice range goes from 0 to 2*NZERO-1 */
-#      define SETPRIORITY(niceval) setpriority(PRIO_PROCESS, 0, niceval + NZERO)
 #   else
 #      define SETPRIORITY(niceval) setpriority(PRIO_PROCESS, 0, niceval)
 #   endif

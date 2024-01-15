@@ -50,10 +50,6 @@
 #include "sge_load_sensor.h"
 #include "sge_report_execd.h"
 
-#ifdef INTERIX
-#  include "wingrid.h"
-#endif
-
 #include "msg_execd.h"
 
 static int ls_send_command(lListElem *elem, const char *command);
@@ -454,11 +450,6 @@ static int read_ls(void)
          if (fscanf(file, "%[^\n]\n", input) != 1) {
             break;
          }
-#ifdef INTERIX
-         if (input[strlen(input)-1] == '\r') {
-            input[strlen(input)-1] = '\0';
-         }
-#endif
          DPRINTF(("received: >>%s<<\n", input));
 
          if (!strcmp(input, "begin") || !strcmp(input, "start")) {
@@ -485,20 +476,10 @@ static int read_ls(void)
             DPRINTF(("format error in line: \"%100s\"\n", input));
             ERROR((SGE_EVENT, MSG_LS_FORMAT_ERROR_SS, lGetString(ls_elem, LS_command), input));
          } else {
-#ifdef INTERIX
-            char error_buffer[4 * MAX_STRING_SIZE] = "";
-
-            if (wl_handle_ls_results(name, value, host, error_buffer)) 
-#endif
             {
                lList *tmp_list = lGetListRW(ls_elem, LS_incomplete);
                sge_add_str2load_report(&tmp_list, name, value, host);
             }
-#ifdef INTERIX
-            if (error_buffer[0] != '\0') {
-               ERROR((SGE_EVENT, error_buffer));
-            }
-#endif
          }
       }
    }

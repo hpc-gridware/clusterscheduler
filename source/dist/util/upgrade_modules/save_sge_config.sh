@@ -207,15 +207,7 @@ BackupSgeCell()
    if [ -d "$SGE_ROOT/$SGE_CELL/common/jmx" ]; then
       cp -r "$SGE_ROOT/$SGE_CELL/common/jmx" "${DEST_DIR}/cell/jmx"
    fi
-   
-   #Save cluster's windows host info
-   res=`$QHOST -l "arch=win*" 2>/dev/null`
-   if [ -n "$res" ]; then     # has windows hosts
-      echo "$res" | grep "win*" | awk '{print $1}' > "${DEST_DIR}"/win_hosts
-   fi
 }
-
-
 
 ########
 # MAIN #

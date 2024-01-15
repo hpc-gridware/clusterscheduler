@@ -113,11 +113,7 @@ bool sge_str_is_number(const char *string);
 
 const char *sge_replace_substring(const char *input, const char *search, const char *replace);
 
-#ifndef WIN32NATIVE
 #define SGE_STRCASECMP(a, b) strcasecmp(a, b)
-#else
-#define SGE_STRCASECMP(a, b) stricmp(a, b)
-#endif
 
 #ifdef  __cplusplus
 }

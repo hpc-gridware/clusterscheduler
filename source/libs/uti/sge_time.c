@@ -36,20 +36,12 @@
 #include <sys/types.h>
 #include <sys/times.h> 
 
-#ifndef WIN32NATIVE
-#	include <sys/time.h>
-#else 
-#	include <winsock2.h>
-#endif 
+#include <sys/time.h>
 
 #include "uti/sge_dstring.h"
 #include "uti/sge_time.h"
 #include "uti/sge_unistd.h"
 #include "uti/sge_log.h"
-
-#ifdef WIN32
-int gettimeofday(struct timeval *tz, struct timezone *tzp);
-#endif
 
 #define NESTLEVEL 5
 
@@ -111,40 +103,27 @@ static void sge_stopwatch_stop(int i)
 *     Return current time 
 *
 *  NOTES
-*     MT-NOTE: sge_get_gmt() is MT safe (except for WIN32NATIVE)
+*     MT-NOTE: sge_get_gmt() is MT safe
 *
 *  RESULT
 *     u_long32 - 32 bit time value
 ******************************************************************************/
 u_long32 sge_get_gmt(void)
 {
-#ifndef WIN32NATIVE
-
    struct timeval now;
 
-#  ifdef SOLARIS
+#ifdef SOLARIS
    gettimeofday(&now, NULL);
-#  else
-#     ifdef SINIX
+#else
+#   ifdef SINIX
    gettimeofday(&now);
-#     else
+#   else
    struct timezone tzp;
    gettimeofday(&now, &tzp);
-#     endif
-#  endif
+#   endif
+#endif
 
    return (u_long32)now.tv_sec;
-#else
-   time_t long_time;
-   struct tm *gmtimeval;
-
-	time(&long_time);                  /* Get time as long integer. */
-
-   /* MT-NOTE: gmtime() is not MT safe (WIN32NATIVE) */
-	gmtimeval = gmtime(&long_time);    /* Convert to local time. */
-	long_time = mktime(gmtimeval);
-	return long_time;
-#endif
 }
 
 /****** uti/time/append_time() **************************************************

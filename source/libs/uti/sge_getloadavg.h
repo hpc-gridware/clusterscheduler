@@ -36,7 +36,7 @@
 extern "C" {
 #endif
 
-#if defined(LINUX) || defined(SOLARIS) || defined(SOLARIS64) || defined(CRAY) || defined(ALPHA4) || defined(ALPHA5) || defined(IRIX) || defined(DARWIN) || defined(FREEBSD) || defined(NETBSD) || defined(HAS_AIX5_PERFLIB) || defined(INTERIX)
+#if defined(LINUX) || defined(SOLARIS) || defined(SOLARIS64) || defined(CRAY) || defined(ALPHA4) || defined(ALPHA5) || defined(IRIX) || defined(DARWIN) || defined(FREEBSD) || defined(NETBSD) || defined(HAS_AIX5_PERFLIB)
 #  define SGE_LOADAVG
 #endif
 

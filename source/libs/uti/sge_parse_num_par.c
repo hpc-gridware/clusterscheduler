@@ -54,8 +54,6 @@
 #  define  RLIM_INFINITY  0x7fffffffffffffffLL
 #elif defined(CRAY)
 #  define  RLIM_INFINITY  0
-#elif defined(WIN32NATIVE)
-#	define RLIM_INFINITY 0
 #endif
 
 #if !defined(CRAY) && !defined(SOLARIS64) && !defined(SOLARISAMD64)
@@ -64,12 +62,7 @@
 #  define RLIM_MAX 0x7fffffffffffffff
 #endif
 
-#ifdef WIN32NATIVE
-#	define strcasecmp( a, b) stricmp( a, b)
-#	define strncasecmp( a, b, n) strnicmp( a, b, n)
-#endif
-
-u_long32 sge_parse_num_val(sge_rlim_t *rlimp, double *dvalp, 
+u_long32 sge_parse_num_val(sge_rlim_t *rlimp, double *dvalp,
                            const char *str, const char *where, 
                            char *err_str, int err_len);
 

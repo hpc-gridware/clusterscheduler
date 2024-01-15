@@ -49,13 +49,6 @@ static void sge_terminate(int);
 static void sge_sigpipe_handler(int);
 static void sge_alarmclock(int dummy);
 
-#ifdef WIN32
-#   define SIGURG 16
-#   define SIGIO  23
-#   define SIGVTALRM 26
-#   define SIGPROF 27
-#endif
-
 sigset_t default_mask;
 sigset_t omask;
 sigset_t io_mask;

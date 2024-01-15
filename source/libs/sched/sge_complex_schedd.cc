@@ -34,10 +34,6 @@
 #include <string.h>
 #include <fnmatch.h>
 
-#ifdef WIN32NATIVE
-   #include "win32nativetypes.h"
-#endif
-
 #include "uti/sge_rmon.h"
 #include "uti/sge_log.h"
 #include "uti/sge_parse_num_par.h"

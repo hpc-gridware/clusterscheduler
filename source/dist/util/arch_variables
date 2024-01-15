@@ -244,22 +244,6 @@ case $ARCH in
    ROOTGROUP=wheel
    LOADSENSOR_COMMAND=undef
    ;;
- win32-x86)
-   AWK=/bin/awk
-   ECHO="/bin/echo"
-   RC_FILE=sysv_rc
-   RC_DIR=rc2.d
-   RC_PREFIX=/etc
-   XTERM=/usr/X11/bin/xterm
-   MAILER=/bin/mail
-   QLOGIN_COMMAND=telnet
-   QLOGIN_DAEMON="/usr/sbin/in.telnetd -i"
-   RLOGIN_DAEMON=/usr/sbin/in.rlogind
-   RSH_DAEMON=undef
-   GETTEXT=
-   ROOTGROUP=wheel
-   LOADSENSOR_COMMAND="/util/resources/loadsensors/interix-loadsensor.sh"
-   ;;
  *)
    echo "Architecture $ARCH not supported by this procedure!"
    exit 1

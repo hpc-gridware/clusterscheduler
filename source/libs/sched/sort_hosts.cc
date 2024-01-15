@@ -34,7 +34,7 @@
 #include <string.h>
 #include <stdlib.h>
 
-#if !defined(WIN32) && !defined(DARWIN) && !defined(FREEBSD)
+#if !defined(DARWIN) && !defined(FREEBSD)
 #   include <malloc.h>
 #endif
 

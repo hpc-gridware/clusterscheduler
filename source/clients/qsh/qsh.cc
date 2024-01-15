@@ -44,7 +44,7 @@
 #include <sys/wait.h>
 #include <sys/time.h>
 #include <netinet/in.h>
-#if defined(INTERIX) || defined(HPUX)
+#if defined(HPUX)
 #include <arpa/inet.h>
 #endif
 
@@ -96,9 +96,6 @@
 #  include <sys/ioctl.h>
 #elif defined(HP11) || defined(HP1164)
 #  include <termios.h>
-#elif defined(INTERIX)
-#  include <termios.h>
-#  include <sys/ioctl.h>
 #elif defined(FREEBSD) || defined(NETBSD)
 #  include <termios.h>
 #else
@@ -295,7 +292,7 @@ static void forward_signal(int sig)
 static int open_qrsh_socket(int *port) {
    int sock;
    struct sockaddr_in server;
-#if defined(IRIX65) || defined(INTERIX) || defined(DARWIN6) || defined(ALPHA5) || defined(HP1164)
+#if defined(IRIX65) || defined(DARWIN6) || defined(ALPHA5) || defined(HP1164)
    int length;
 #else
    socklen_t length;
@@ -389,7 +386,7 @@ static int wait_for_qrsh_socket(int sock, int timeout)
       default: 
          if (FD_ISSET(sock, &ready)) {
             /* start accepting connections */
-#if defined(IRIX65) || defined(INTERIX) || defined(DARWIN6) || defined(ALPHA5) || defined(HP1164)
+#if defined(IRIX65) || defined(DARWIN6) || defined(ALPHA5) || defined(HP1164)
             msgsock = accept(sock,(struct sockaddr *) 0,(int *) NULL);
 #else
             msgsock = accept(sock,(struct sockaddr *) 0,(socklen_t *) NULL);

@@ -318,35 +318,6 @@ int log_state_get_log_gui(void)
    return gui_log;
 }
 
-/****** uti/log/log_state_get_log_as_admin_user() ******************************************
-*  NAME
-*     log_state_get_log_as_admin_user() -- Needs sge_log() to change into admin user?
-*
-*  SYNOPSIS
-*     trace_func_type log_state_get_log_as_admin_user(void) 
-*
-*  FUNCTION
-*     Returns whether logging shall be done as admin user.
-*
-*  RESULT
-*     int
-*
-*  SEE ALSO
-*     uti/log/log_state_set_log_as_admin_user()
-******************************************************************************/
-int log_state_get_log_as_admin_user(void)
-{
-   int log_as_admin_user = 0;
-
-   sge_mutex_lock("Log_State_Lock", "log_state_get_log_as_admin_user", __LINE__, &Log_State.mutex);
-   
-   log_as_admin_user = Log_State.log_as_admin_user;
-   
-   sge_mutex_unlock("Log_State_Lock", "log_state_get_log_as_admin_user", __LINE__, &Log_State.mutex);
-
-   return log_as_admin_user;
-}
-
 /****** uti/log/log_state_set_log_level() *****************************************
 *  NAME
 *     log_state_set_log_level() -- Set log level to be used.

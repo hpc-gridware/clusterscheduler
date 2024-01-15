@@ -105,9 +105,7 @@ pid_t sge_peopen(const char *shell, int login_shell, const char *command,
    int i;
    char arg0[256];
    char err_str[256];
-#if !(defined(WIN32) || defined(INTERIX)) /* var not needed */
    int res;
-#endif /* WIN32 */
    uid_t myuid;
  
    DENTER(TOP_LAYER);
@@ -211,7 +209,6 @@ pid_t sge_peopen(const char *shell, int login_shell, const char *command,
             if (write(2, err_str, strlen(err_str)) != strlen(err_str)) {
                /* TODO: required protocol step? If sending fails, exit? */
             }
-#if !(defined(WIN32) || defined(INTERIX))  /* initgroups not called */
             res = initgroups(pw->pw_name, pw->pw_gid);
 #  if defined(SVR3) || defined(sun)
             if (res < 0)
@@ -228,8 +225,7 @@ pid_t sge_peopen(const char *shell, int login_shell, const char *command,
                sge_free(&buffer);
                SGE_EXIT(NULL, 1);
             }
-#endif /* WIN32 */
- 
+
             if (setuid(pw->pw_uid)) {
                sprintf(err_str, MSG_SYSTEM_SWITCHTOUSERFAILED_SS , user,
                      strerror(errno));
@@ -451,9 +447,7 @@ pid_t sge_peopen_r(const char *shell, int login_shell, const char *command,
        * only prepare change of user if target user is different from current one
        */
       if (myuid != pw->pw_uid) {
-#if !(defined(WIN32) || defined(INTERIX)) /* var not needed */
          int res;
-#endif 
 
          if (myuid != SGE_SUPERUSER_UID) {
             DPRINTF(("only root is allowed to switch to a different user\n"));
@@ -464,7 +458,6 @@ pid_t sge_peopen_r(const char *shell, int login_shell, const char *command,
 
          DPRINTF(("Before initgroups\n"));
 
-#if !(defined(WIN32) || defined(INTERIX))  /* initgroups not called */
          res = initgroups(pw->pw_name, pw->pw_gid);
 #  if defined(SVR3) || defined(sun)
          if (res < 0)
@@ -478,8 +471,6 @@ pid_t sge_peopen_r(const char *shell, int login_shell, const char *command,
          }
 
          DPRINTF(("Initgroups was successful\n"));
-
-#endif /* WIN32 */
       }
       DPRINTF(("user = %s\n", user));
       DPRINTF(("myuid = %d\n", (int)myuid));
@@ -669,16 +660,9 @@ int sge_peclose(pid_t pid, FILE *fp_in, FILE *fp_out, FILE *fp_err,
       }
       if (i==0) { /* not yet exited */
          if (timeout->tv_sec == 0) {
-#ifdef WIN32 /* kill not called */
-            /* CygWin has no kill command */
-            DPRINTF(("killing not yet implemented\n"));
-            timeout = NULL;
-            /* kill(pid, SIGKILL); */
-#else
             DPRINTF(("killing\n"));
             timeout = NULL;
             kill(pid, SIGKILL);
-#endif /* WIN32 */
          } else {
             DPRINTF(("%d seconds waiting for exit\n", timeout->tv_sec));
             sleep(1);

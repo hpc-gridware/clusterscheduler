@@ -43,7 +43,7 @@
 #include <sys/socket.h>  
 #include <sys/ioctl.h>
 
-#if defined(DARWIN) || defined(INTERIX)
+#if defined(DARWIN)
 #  include <termios.h>
 #  include <sys/ioctl.h>
 #  include <grp.h>
@@ -683,19 +683,6 @@ sge_gdi_ctx_setup(sge_gdi_ctx_class_t *thiz, int prog_number, const char* compon
    
    es->username = strdup(username);
 
-#if defined( INTERIX )
-   /* Strip Windows domain name from user name */
-   {
-      char *plus_sign;
-
-      plus_sign = strstr(es->username, "+");
-      if (plus_sign!=NULL) {
-         plus_sign++;
-         strcpy(es->username, plus_sign);
-      }
-   }
-#endif
-   
    /*
    ** groupname
    */
@@ -1946,26 +1933,11 @@ sge_setup2(sge_gdi_ctx_class_t **context, u_long32 progid, u_long32 thread_id,
       DRETURN(AE_ERROR);
    }
 
-#if defined(INTERIX)
-   {
-      /*
-       * If we are at boot time on Windows Vista, the primary group ID of the
-       * local Administrator is not yet set correctly, so asking for it doesn't
-       * make sense. We build it on our own, which is possible as it's always
-       * built after the same scheme: hostname+None.
-       */
-      const char *group_none = "+None";
-
-      /* Read the hostname into the group string and add "+None" */
-      gethostname(group, sizeof(group)-strlen(group_none)-1);
-      strcat(group, group_none);
-   }
-#else
    if (sge_gid2group(getegid(), group, sizeof(group), MAX_NIS_RETRIES)) {
       answer_list_add_sprintf(alpp, STATUS_ESEMANTIC, ANSWER_QUALITY_CRITICAL, MSG_SYSTEM_RESOLVEGROUP);
       DRETURN(AE_ERROR);
    }
-#endif
+
    /* a dynamic eh handler is created */
    *context = sge_gdi_ctx_class_create(progid, prognames[progid], thread_id, 
                                        threadnames[thread_id], user, group,
@@ -2084,7 +2056,7 @@ static int reresolve_qualified_hostname(sge_gdi_ctx_class_t *thiz) {
 *******************************************************************************/
 bool sge_daemonize_prepare(sge_gdi_ctx_class_t *ctx) {
    pid_t pid;
-#if !(defined(__hpux) || defined(CRAY) || defined(WIN32) || defined(SINIX) || defined(INTERIX))
+#if !(defined(__hpux) || defined(CRAY))
    int fd;
 #endif
 
@@ -2193,7 +2165,7 @@ bool sge_daemonize_prepare(sge_gdi_ctx_class_t *ctx) {
    /* child */
    SETPGRP;
 
-#if !(defined(__hpux) || defined(CRAY) || defined(WIN32) || defined(SINIX) || defined(INTERIX))
+#if !(defined(__hpux) || defined(CRAY) || defined(SINIX) || defined(INTERIX))
    if ((fd = open("/dev/tty", O_RDWR)) >= 0) {
       /* disassociate contolling tty */
       ioctl(fd, TIOCNOTTY, (char *) NULL);
@@ -2339,7 +2311,7 @@ bool sge_daemonize_finalize(sge_gdi_ctx_class_t *ctx)
 int sge_daemonize(int *keep_open, unsigned long nr_of_fds, sge_gdi_ctx_class_t *ctx)
 {
 
-#if !(defined(__hpux) || defined(CRAY) || defined(WIN32) || defined(SINIX) || defined(INTERIX))
+#if !(defined(__hpux) || defined(CRAY) || defined(SINIX))
    int fd;
 #endif
  
@@ -2373,7 +2345,7 @@ int sge_daemonize(int *keep_open, unsigned long nr_of_fds, sge_gdi_ctx_class_t *
  
    SETPGRP;                      
  
-#if !(defined(__hpux) || defined(CRAY) || defined(WIN32) || defined(SINIX) || defined(INTERIX))
+#if !(defined(__hpux) || defined(CRAY) || defined(SINIX))
    if ((fd = open("/dev/tty", O_RDWR)) >= 0) {
       /* disassociate contolling tty */
       ioctl(fd, TIOCNOTTY, (char *) NULL);

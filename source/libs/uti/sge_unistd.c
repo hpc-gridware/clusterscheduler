@@ -115,14 +115,7 @@ static int sge_domkdir(const char *path_, int fmode, bool exit_on_error, bool ma
          DRETURN(-1);
       }
    }
-#if defined( INTERIX )
-   /*
-    * mkdir is buggy, chown dir manually
-    */
-   /* Flawfinder: ignore */
-   chown(path_, geteuid(), getegid());
-#endif
- 
+
    DRETURN(0);
 }         
 
@@ -445,28 +438,19 @@ int sge_rmdir(const char *cp, dstring *error)
  
          sprintf(fname, "%s/%s", cp, dent->d_name);
  
-#ifndef WIN32 /* lstat not called */
          if (SGE_LSTAT(fname, &statbuf)) {
             sge_dstring_sprintf(error, MSG_FILE_STATFAILED_SS , fname, strerror(errno));
             closedir(dir);
             DRETURN(-1);
          }
-#else
-         /* so symbolic links under Windows */
-         if (SGE_STAT(fname, &statbuf)) {
-            sge_dstring_sprintf(error, MSG_FILE_STATFAILED_SS , fname, strerror(errno));
-            closedir(dir);
-            DRETURN(-1);
-         }
-#endif /* WIN32 */
- 
-    if (S_ISDIR(statbuf.st_mode) && !S_ISLNK(statbuf.st_mode)) {
-       if (sge_rmdir(fname, error)) {
-          sge_dstring_sprintf(error, MSG_FILE_RECURSIVERMDIRFAILED );
-          closedir(dir);
-          DRETURN(-1);
-       }
-    } else {                                                
+
+         if (S_ISDIR(statbuf.st_mode) && !S_ISLNK(statbuf.st_mode)) {
+            if (sge_rmdir(fname, error)) {
+               sge_dstring_sprintf(error, MSG_FILE_RECURSIVERMDIRFAILED );
+               closedir(dir);
+               DRETURN(-1);
+            }
+         } else {
 #ifdef TEST
             printf("unlink %s\n", fname);
 #else

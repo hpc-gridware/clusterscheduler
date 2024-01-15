@@ -5,8 +5,7 @@ set(LIBRARY_SOURCES
     setup_path.c
     sge_afsutil.c
     sge_arch.c
-    sge_base64.c
-    sge_binding_hlp.c
+        sge_binding_hlp.c
     sge_binding_parse.c
     sge_bitfield.c
     sge_bootstrap.c
