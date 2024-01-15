@@ -1,13 +1,13 @@
 # source/clients/qconf
 add_executable(
   qconf
-  sge_cqueue_qconf.cc
-  sge_centry_qconf.cc
+        oge_qconf_cqueue.cc
+        oge_qconf_centry.cc
   sge_hgroup_qconf.cc
-  sge_resource_quota_qconf.cc
-  qconf.cc
-  parse_qconf.cc
-  sge_client_access.cc
+        oge_qconf_rqs.cc
+        oge_qconf.cc
+        oge_qconf_parse.cc
+        oge_qconf_acl.cc
   ../../common/sig_handlers.cc
   ../../common/sge_options.cc
   ../../common/sge_mt_init.cc

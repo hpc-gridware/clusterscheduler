@@ -45,7 +45,7 @@
 #include "spool/flatfile/sge_flatfile.h"
 #include "spool/flatfile/sge_flatfile_obj.h"
 
-#include "sge_resource_quota_qconf.h"
+#include "oge_qconf_rqs.h"
 #include "msg_common.h"
 #include "msg_clients_common.h"
 

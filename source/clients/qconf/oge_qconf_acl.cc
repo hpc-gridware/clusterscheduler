@@ -45,7 +45,7 @@
 
 #include "cull/cull.h"
 
-#include "sge_client_access.h"
+#include "oge_qconf_acl.h"
 #include "msg_qconf.h"
 
 /* - -- -- -- -- -- -- -- -- -- -- -- -- -- -

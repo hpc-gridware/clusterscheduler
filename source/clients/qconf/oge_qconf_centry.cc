@@ -54,7 +54,7 @@
 #include "spool/flatfile/sge_flatfile_obj.h"
 
 #include "sge.h"
-#include "sge_centry_qconf.h"
+#include "oge_qconf_centry.h"
 #include "msg_common.h"
 #include "msg_clients_common.h"
 

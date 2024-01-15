@@ -45,7 +45,7 @@
 #include "comm/commlib.h"
 
 #include "usage.h"
-#include "parse_qconf.h"
+#include "oge_qconf_parse.h"
 #include "sig_handlers.h"
 #include "sge_mt_init.h"
 #include "msg_clients_common.h"
