@@ -90,7 +90,7 @@
 #include "sge_job_qmaster.h"
 #include "tmpdir.h"
 #include "exec_job.h"
-#include "show_job.h"
+#include "oge_client_job.h"
 #include "mail.h"
 #include "basis_types.h"
 #include "sgedefs.h"

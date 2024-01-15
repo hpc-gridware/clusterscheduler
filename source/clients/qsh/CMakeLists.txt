@@ -1,8 +1,9 @@
 # source/clients/qsh
 add_executable(
   qsh
-  qsh.cc
-  parse_job_qsh.cc
+        oge_qsh.cc
+        oge_qsh_parse.cc
+        sge_client_ijs.cc
   ../../common/parse_job_cull.cc
   ../../common/parse_qsub.cc
   ../../common/sig_handlers.cc

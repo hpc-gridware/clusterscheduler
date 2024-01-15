@@ -54,11 +54,11 @@
 #include "comm/commlib.h"
 
 #include "sig_handlers.h"
-#include "show_job.h"
+#include "oge_client_job.h"
 #include "usage.h"
 #include "parse_qsub.h"
 #include "symbols.h"
-#include "read_defaults.h"
+#include "oge_client_parse.h"
 #include "msg_common.h"
 #include "msg_clients_common.h"
 #include "msg_qalter.h"

@@ -1,5 +1,4 @@
-#ifndef __MSG_QQUOTA_H
-#define __MSG_QQUOTA_H
+#pragma once
 /*___INFO__MARK_BEGIN__*/
 /*************************************************************************
  * 
@@ -47,6 +46,3 @@
 
 #define MSG_QQUOTA_HELP_WCPROJECT     _MESSAGE(10010, _("wildcard expression matching a project"))
 #define MSG_QQUOTA_HELP_WCPE          _MESSAGE(10011, _("wildcard expression matching a parallel environment"))
-
-#endif /* __MSG_QQUOTA_H */
-

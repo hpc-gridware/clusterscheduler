@@ -1,5 +1,4 @@
-#ifndef __MSG_CLIENTS_COMMON_H
-#define __MSG_CLIENTS_COMMON_H
+#pragma once
 /*___INFO__MARK_BEGIN__*/
 /*************************************************************************
  * 
@@ -42,7 +41,6 @@
 #define MSG_SRC_USAGE                                    _MESSAGE(1003, _("usage:"))
 #define MSG_QDEL_not_available_OPT_USAGE_S               _MESSAGE(1005, _("no usage for "SFQ" available"))
 #define MSG_WARNING                                      _MESSAGE(1006, _("warning: "))
-#define MSG_SEC_SETJOBCRED                               _MESSAGE(1007, _("\nCannot set job credentials."))
 
 #define MSG_COMMON_help_OPT_USAGE                        _MESSAGE(1015, _("print this help"))
 #define MSG_COMMON_xml_OPT_USAGE                         _MESSAGE(1016, _("display the information in XML format"))
@@ -107,6 +105,3 @@
 #define MSG_HEADER_RULE "resource quota rule"
 #define MSG_HEADER_LIMIT "limit"
 #define MSG_HEADER_FILTER "filter"
-
-#endif /* __MSG_CLIENTS_COMMON_H */
-

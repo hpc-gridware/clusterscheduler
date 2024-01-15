@@ -1,5 +1,4 @@
-#ifndef __MSG_QCONF_H
-#define __MSG_QCONF_H
+#pragma once
 /*___INFO__MARK_BEGIN__*/
 /*************************************************************************
  * 
@@ -57,5 +56,4 @@
 #define MSG_QCONF_MODIFICATIONOFHOSTNOTSUPPORTED_S   _MESSAGE(5020, _("Modification of host "SFQ" not supported"))
 
 #define MSG_QCONF_POSITIVE_SHARE_VALUE    _MESSAGE(5021, _("share value must be positive"))
-#endif /* __MSG_QCONF_H */
 

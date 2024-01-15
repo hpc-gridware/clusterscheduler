@@ -1,5 +1,4 @@
-#ifndef __SGE_RESOURCE_QUOTA_QCONF
-#define __SGE_RESOURCE_QUOTA_QCONF
+#pragma once
 
 /*___INFO__MARK_BEGIN__*/
 /*************************************************************************
@@ -48,6 +47,3 @@ bool rqs_modify_from_file(sge_gdi_ctx_class_t *ctx, lList **answer_list, const c
 
 bool rqs_add_del_mod_via_gdi(sge_gdi_ctx_class_t *ctx, lList *rqs_list, lList **answer_list,
                                         u_long32 gdi_command);
-
-#endif /* __SGE_RESOURCE_QUOTA_QCONF */
-

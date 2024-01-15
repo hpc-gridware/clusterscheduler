@@ -61,7 +61,7 @@
 #include "gdi/sge_gdi2.h"
 #include "gdi/sge_gdi.h"
 
-#include "show_job.h"
+#include "oge_client_job.h"
 #include "msg_common.h"
 
 

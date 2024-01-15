@@ -1,5 +1,4 @@
-#ifndef __PARSE_QCONF_H
-#define __PARSE_QCONF_H
+#pragma once
 /*___INFO__MARK_BEGIN__*/
 /*************************************************************************
  * 
@@ -47,7 +46,3 @@ typedef struct object_info_entry {
 } object_info_entry;
 
 int sge_parse_qconf(sge_gdi_ctx_class_t *ctx, char **argv);
-
-
-#endif /* __PARSE_QCONF_H */
-

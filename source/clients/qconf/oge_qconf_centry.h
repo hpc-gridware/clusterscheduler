@@ -1,6 +1,4 @@
-#ifndef __SGE_CENTRY_QCONF
-#define __SGE_CENTRY_QCONF
-
+#pragma once
 /*___INFO__MARK_BEGIN__*/
 /*************************************************************************
  *
@@ -74,5 +72,3 @@ centry_list_show(sge_gdi_ctx_class_t *ctx, lList **answer_list);
 bool
 centry_list_add_del_mod_via_gdi(sge_gdi_ctx_class_t *ctx, lList **this_list, lList **answer_list,
                                 lList **old_list);
-
-#endif /* __SGE_CENTRY_QCONF */

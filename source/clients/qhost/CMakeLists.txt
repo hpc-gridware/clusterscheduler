@@ -1,7 +1,12 @@
 # source/clients/qhost
 add_executable(
-  qhost qhost.cc ../../common/sig_handlers.cc ../../common/sge_options.cc
-        ../../common/sge_mt_init.cc ../../common/usage.cc)
+    qhost
+        oge_qhost.cc
+        oge_qhost_print.cc
+        ../../common/sig_handlers.cc
+        ../../common/sge_options.cc
+        ../../common/sge_mt_init.cc
+        ../../common/usage.cc)
 target_include_directories(qhost PRIVATE ${SGE_INCLUDES})
 
 target_link_libraries(

@@ -1,5 +1,4 @@
-#ifndef __MSG_QMOD_H
-#define __MSG_QMOD_H
+#pragma once
 /*___INFO__MARK_BEGIN__*/
 /*************************************************************************
  * 
@@ -32,9 +31,7 @@
  ************************************************************************/
 /*___INFO__MARK_END__*/
 
-
 #include "basis_types.h"
-
 
 /*
 ** qmod.c
@@ -62,6 +59,3 @@
 #define MSG_QMOD_du_OPT_ISAGE     _MESSAGE(11028, _("delete unknown state"))
 #define MSG_QMOD_c_OPT_ISAGE      _MESSAGE(11029, _("set ambiguous state"))
 #define MSG_QMOD_dc_OPT_ISAGE     _MESSAGE(11030, _("delete ambiguous state"))
-
-#endif /* __MSG_QMOD_H */
-

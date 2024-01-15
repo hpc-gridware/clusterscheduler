@@ -1,5 +1,4 @@
-#ifndef _SGE_CLIENT_ACCESS_H
-#define _SGE_CLIENT_ACCESS_H
+#pragma once
 /*___INFO__MARK_BEGIN__*/
 /*************************************************************************
  * 
@@ -48,9 +47,3 @@
 int sge_client_get_acls(sge_gdi_ctx_class_t *ctx, lList **alpp, lList *acl_args, lList **dst);
 int sge_client_add_user(sge_gdi_ctx_class_t *ctx, lList **alpp, lList *user_args, lList *acl_args);
 int sge_client_del_user(sge_gdi_ctx_class_t *ctx, lList **alpp, lList *user_args, lList *acl_args);
-
-
-#endif /* _SGE_CLIENT_ACCESS_H */
-
-
-

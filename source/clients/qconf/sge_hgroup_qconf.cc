@@ -32,23 +32,18 @@
 #include "uti/sge_rmon.h"
 #include "uti/sge_log.h"
 #include "uti/sge_unistd.h"
-#include "uti/sge_prog.h"
 #include "uti/sge_edit.h"
 
-#include "sgeobj/sge_conf.h"
 #include "sgeobj/sge_answer.h"
 #include "sgeobj/sge_object.h"
 #include "sgeobj/sge_hgroup.h"
 #include "sgeobj/sge_href.h"
-#include "sgeobj/sge_hgroup.h"
 
 #include "spool/flatfile/sge_flatfile.h"
 #include "spool/flatfile/sge_flatfile_obj.h"
 
-#include "gdi/sge_gdi.h"
 #include "gdi/sge_gdi_ctx.h"
 
-#include "sge.h"
 #include "sge_hgroup_qconf.h"
 #include "msg_common.h"
 #include "msg_clients_common.h"

@@ -30,17 +30,11 @@
  ************************************************************************/
 /* ___INFO__MARK_END__ */
 #include <stdio.h>
-#include <stdlib.h>
-#include <string.h>
-#include <fnmatch.h>
-#include <ctype.h>
 #include <math.h>
 
 #include "uti/sge_rmon.h"
-#include "uti/sge_dstring.h"
 #include "uti/sge_log.h"
 
-#include "sgeobj/sge_host.h"
 #include "sgeobj/sge_str.h"
 #include "sgeobj/sge_job.h"
 #include "sgeobj/parse.h"
@@ -52,7 +46,6 @@
 
 #include "comm/commlib.h"
 
-#include "sge.h"
 #include "sig_handlers.h"
 #include "showq_cmdline_tacc.h"
 #include "showq_support.h"

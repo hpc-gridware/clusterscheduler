@@ -1,5 +1,5 @@
 # source/clients/qrsh
-add_executable(qrsh_starter qrsh_starter.cc)
+add_executable(qrsh_starter oge_qrsh_starter.cc)
 target_include_directories(qrsh_starter PRIVATE ${SGE_INCLUDES})
 target_link_libraries(qrsh_starter PRIVATE uti commlists)
 

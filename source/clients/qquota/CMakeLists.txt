@@ -1,7 +1,8 @@
 # source/clients/qquota
 add_executable(
   qquota
-  qquota.cc
+        oge_qquota.cc
+        oge_qquota_print.cc
   ../../common/parse_job_cull.cc
   ../../common/parse_qsub.cc
   ../../common/sig_handlers.cc

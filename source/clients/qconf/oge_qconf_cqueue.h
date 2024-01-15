@@ -1,6 +1,4 @@
-#ifndef __SGE_CQUEUE_QCONF
-#define __SGE_CQUEUE_QCONF
-
+#pragma once
 /*___INFO__MARK_BEGIN__*/
 /*************************************************************************
  *
@@ -69,5 +67,3 @@ cqueue_modify_from_file(sge_gdi_ctx_class_t *ctx, lList **answer_list, const cha
 
 bool
 cqueue_list_sick(sge_gdi_ctx_class_t *ctx, lList **answer_list);
-
-#endif /* __SGE_CQUEUE_QCONF */

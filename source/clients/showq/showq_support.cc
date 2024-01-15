@@ -30,12 +30,7 @@
  ************************************************************************/
 /* ___INFO__MARK_END__ */
 #include <stdio.h>
-#include <stdlib.h>
 #include <string.h>
-#include <signal.h>
-#include <sys/types.h>
-#include <unistd.h>
-#include <limits.h>
 #include <math.h>
 
 #ifndef NO_SGE_COMPILE_DEBUG

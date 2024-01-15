@@ -1,16 +1,10 @@
 # source/clients/common
 set(LIBRARY_NAME clientscommon)
 set(LIBRARY_SOURCES
-    "qstat_printing.cc"
-    "read_defaults.cc"
-    "sge_client_ijs.cc"
-    "sge_cqueue_qstat.cc"
-    "sge_qhost.cc"
-    "sge_qquota.cc"
-    "sge_qrsub.cc"
-    "sge_qstat.cc"
-    "show_job.cc"
-    "write_job_defaults.cc")
+    "oge_client_print.cc"
+    "oge_client_parse.cc"
+    "oge_client_cqueue.cc"
+    "oge_client_job.cc")
 set(LIBRARY_INCLUDES "./" ${SGE_INCLUDES})
 
 add_library(${LIBRARY_NAME} STATIC ${LIBRARY_SOURCES})

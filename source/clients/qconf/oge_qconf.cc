@@ -33,23 +33,17 @@
 #include "uti/sge_rmon.h"
 #include "uti/sge_unistd.h"
 #include "uti/sge_log.h"
-#include "uti/sge_prog.h"
 
-#include "sgeobj/cull/sge_all_listsL.h"
 #include "sgeobj/sge_answer.h"
 #include "sgeobj/sge_feature.h"
 
-#include "gdi/sge_gdi.h"
 #include "gdi/sge_gdi_ctx.h"
 
 #include "comm/commlib.h"
 
-#include "usage.h"
 #include "oge_qconf_parse.h"
 #include "sig_handlers.h"
-#include "sge_mt_init.h"
 #include "msg_clients_common.h"
-#include "msg_common.h"
 
 extern char **environ;
 

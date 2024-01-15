@@ -1,5 +1,4 @@
-#ifndef __MSG_QALTER_H
-#define __MSG_QALTER_H
+#pragma once
 /*___INFO__MARK_BEGIN__*/
 /*************************************************************************
  * 
@@ -45,6 +44,3 @@
 #define MSG_ANSWER_FAILDTOBUILDREDUCEDDESCRIPTOR        _MESSAGE(3003, _("failed to build reduced descriptor"))
 #define MSG_ANSWER_ALLANDJOBIDSARENOTVALID              _MESSAGE(3004, _("\'all\' AND jobids are not valid"))
 #define MSG_ANSWER_0ISNOTAVALIDJOBID                    _MESSAGE(3005, _("0 is not a valid jobid"))
-
-#endif /* __MSG_QALTER_H */
-

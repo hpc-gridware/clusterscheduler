@@ -1,11 +1,11 @@
 # source/clients/qrstat
 add_executable(
   qrstat
-  qrstat.cc
-  qrstat_filter.cc
-  qrstat_report_handler.cc
-  qrstat_report_handler_stdout.cc
-  qrstat_report_handler_xml.cc
+        oge_qrstat.cc
+        oge_qrstat_filter.cc
+        oge_qrstat_report_handler.cc
+        oge_qrstat_report_handler_stdout.cc
+        oge_qrstat_report_handler_xml.cc
   ../../common/parse_job_cull.cc
   ../../common/parse_qsub.cc
   ../../common/sig_handlers.cc

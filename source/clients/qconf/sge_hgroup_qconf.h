@@ -1,6 +1,4 @@
-#ifndef __SGE_HOSTGROUP_QCONF
-#define __SGE_HOSTGROUP_QCONF
-
+#pragma once
 /*___INFO__MARK_BEGIN__*/
 /*************************************************************************
  *
@@ -53,5 +51,3 @@ bool hgroup_delete(sge_gdi_ctx_class_t *ctx, lList **answer_list, const char *na
 bool hgroup_add_from_file(sge_gdi_ctx_class_t *ctx, lList **answer_list, const char *filename);
 
 bool hgroup_modify_from_file(sge_gdi_ctx_class_t *ctx, lList **answer_list, const char *filename);
-
-#endif /* __SGE_HOSTGROUP_QCONF */

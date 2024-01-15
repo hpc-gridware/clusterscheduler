@@ -1,9 +1,10 @@
 # source/clients/qstat
 add_executable(
   qstat
-  qstat.cc
-  qstat_cmdline.cc
-  qstat_xml.cc
+        oge_qstat.cc
+        oge_qstat_cmdline.cc
+        oge_qstat_filter.cc
+        oge_qstat_xml.cc
   ../../common/parse_job_cull.cc
   ../../common/parse_qsub.cc
   ../../common/sig_handlers.cc

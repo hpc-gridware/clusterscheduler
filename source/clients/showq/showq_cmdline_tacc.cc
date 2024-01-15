@@ -30,20 +30,14 @@
  ************************************************************************/
 /*___INFO__MARK_END__*/
 #include <stdio.h>
-#include <stdlib.h>
 #include <pwd.h>
 
 #include "uti/sge_rmon.h"
 #include "uti/setup_path.h"
 
-#include "cull/cull_list.h"
-
 #include "sgeobj/parse.h"
 #include "sgeobj/sge_answer.h"
 
-#include "gdi/sge_gdi.h"
-
-#include "sge.h"
 #include "showq_cmdline_tacc.h"
 #include "msg_common.h"
 

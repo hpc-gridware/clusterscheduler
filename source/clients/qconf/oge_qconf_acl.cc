@@ -31,7 +31,6 @@
 /*___INFO__MARK_END__*/
 
 #include <stdio.h>
-#include <stdlib.h>
 
 #include "uti/sge_rmon.h"
 #include "uti/sge_log.h"
@@ -40,7 +39,6 @@
 #include "sgeobj/sge_answer.h"
 #include "sgeobj/sge_userset.h"
 
-#include "gdi/sge_gdi.h"
 #include "gdi/sge_gdi_ctx.h"
 
 #include "cull/cull.h"
