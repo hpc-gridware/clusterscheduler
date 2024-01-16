@@ -52,7 +52,7 @@
 
 #include "sched/sgeee.h"
 
-#include "showq_support.h"
+#include "oge_showq_support.h"
 
 static void get_core_binding_string(lListElem *job,const int task_number, dstring* corebinding);
 

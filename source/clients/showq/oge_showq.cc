@@ -47,8 +47,8 @@
 #include "comm/commlib.h"
 
 #include "sig_handlers.h"
-#include "showq_cmdline_tacc.h"
-#include "showq_support.h"
+#include "oge_showq_cmdline_tacc.h"
+#include "oge_showq_support.h"
 #include "msg_common.h"
 
 static bool sge_parse_showq_tacc(lList **alpp, lList ** ppcmdline,

@@ -54,7 +54,7 @@
 
 #include "msg_common.h"
 #include "msg_daemons_common.h"
-#include "msg_qrsh.h"
+#include "msg_qrsh_starter.h"
 
 #define MAKEEXITSTATUS(x) (x << 8)
 

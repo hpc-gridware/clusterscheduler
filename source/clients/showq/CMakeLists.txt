@@ -1,7 +1,7 @@
 # source/clients/showq
 add_executable(
   showq
-  showq.cc showq_cmdline_tacc.cc showq_support.cc ../../common/parse_job_cull.cc
+        oge_showq.cc oge_showq_cmdline_tacc.cc oge_showq_support.cc ../../common/parse_job_cull.cc
   ../../common/parse_qsub.cc ../../common/sig_handlers.cc
   # ../../common/sge_options.cc
   # ../../common/sge_mt_init.cc

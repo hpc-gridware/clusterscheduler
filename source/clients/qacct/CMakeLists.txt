@@ -1,5 +1,5 @@
 # source/clients/qacct
-add_executable(qacct qacct.cc ../../common/execution_states.cc
+add_executable(qacct oge_qacct.cc ../../common/execution_states.cc
                      ../../common/sig_handlers.cc)
 target_include_directories(qacct PRIVATE ${SGE_INCLUDES})
 target_link_libraries(
