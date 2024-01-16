@@ -4372,6 +4372,16 @@ int sge_parse_qconf(sge_gdi_ctx_class_t *ctx, char *argv[])
          spp++;
          continue;
       }
+
+/*-----------------------------------------------------------------------------*/
+      /* "-scel" */
+      if (strcmp("-scel", *spp) == 0) {
+         if (!show_object_list(ctx, SGE_CE_LIST, CE_Type, CE_name, "complex entry")) {
+            sge_parse_return = 1;
+         }
+         spp++;
+         continue;
+      }
 /*----------------------------------------------------------------------------*/
       /* "-so" */
 
