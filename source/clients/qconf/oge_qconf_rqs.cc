@@ -46,6 +46,7 @@
 #include "oge_qconf_rqs.h"
 #include "msg_common.h"
 #include "msg_clients_common.h"
+#include "msg_qconf.h"
 
 static bool rqs_provide_modify_context(sge_gdi_ctx_class_t *ctx,
                                   lList **rqs_list, lList **answer_list,
@@ -558,7 +559,7 @@ bool rqs_modify_from_file(sge_gdi_ctx_class_t *ctx, lList **answer_list, const c
                if (found != NULL) {
                   lAppendElem(found_rqs_list, lCopyElem(found));
                } else {
-                  sprintf(SGE_EVENT, MSG_RQSNOTFOUNDINFILE_SS, lGetString(tmp_rqs, RQS_name), filename);
+                  sprintf(SGE_EVENT, MSG_RQS_NOTFOUNDINFILE_SS, lGetString(tmp_rqs, RQS_name), filename);
                   answer_list_add(answer_list, SGE_EVENT, STATUS_ERROR1, ANSWER_QUALITY_ERROR);
                   lFreeList(&found_rqs_list);
                   break;

@@ -51,7 +51,7 @@
 
 #include "oge_qconf_centry.h"
 #include "msg_common.h"
-#include "msg_clients_common.h"
+#include "msg_qconf.h"
 
 static bool 
 centry_provide_modify_context(sge_gdi_ctx_class_t *ctx, lListElem **this_elem, lList **answer_list);

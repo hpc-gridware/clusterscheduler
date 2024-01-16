@@ -77,6 +77,7 @@
 #include "sge.h"
 
 #include "msg_clients_common.h"
+#include "msg_qstat.h"
 
 static int qstat_env_get_all_lists(qstat_env_t *qstat_env, bool need_job_list, lList** alpp);
 

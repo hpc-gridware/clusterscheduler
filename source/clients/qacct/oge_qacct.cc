@@ -78,7 +78,7 @@
 #include "basis_types.h"
 #include "msg_common.h"
 #include "msg_history.h"
-#include "msg_clients_common.h"
+#include "msg_qacct.h"
 
 
 typedef struct {

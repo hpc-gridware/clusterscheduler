@@ -27,28 +27,15 @@
  *   Copyright: 2001 by Sun Microsystems, Inc.
  * 
  *   All Rights Reserved.
- *
+ * 
  *  Portions of this code are Copyright 2011 Univa Inc.
  *
  ************************************************************************/
 /*___INFO__MARK_END__*/
 
-
 #include "basis_types.h"
 
-#define MSG_HEADER_HOSTNAME   "HOSTNAME"
-#define MSG_HEADER_ARCH       "ARCH"
-#define MSG_HEADER_NPROC      "NCPU"
-#define MSG_HEADER_LOAD       "LOAD"
-#define MSG_HEADER_MEMTOT     "MEMTOT"
-#define MSG_HEADER_MEMUSE     "MEMUSE"
-#define MSG_HEADER_SWAPTO     "SWAPTO"
-#define MSG_HEADER_SWAPUS     "SWAPUS"
+#define MSG_QINSTANCE_NOQUEUES   _MESSAGE(2000, _("No queues remaining after -q queue selection"))
+#define MSG_USER_ABORT           _MESSAGE(2001, _("error: aborted by user"))
 
-#define MSG_QHOST_h_OPT_USAGE       _MESSAGE(9001, _("display only selected hosts"))
-#define MSG_QHOST_q_OPT_USAGE       _MESSAGE(9002, _("display queues hosted by host"))
-#define MSG_QHOST_j_OPT_USAGE       _MESSAGE(9003, _("display jobs hosted by host"))
-#define MSG_QHOST_l_OPT_USAGE       _MESSAGE(9004, _("request the given resources"))
-#define MSG_QHOST_F_OPT_USAGE       _MESSAGE(9005, _("show (selected) resources"))
-#define MSG_QHOST_u_OPT_USAGE       _MESSAGE(9006, _("show only jobs for user"))
-#define MSG_QHOST_ncb_OPT_USAGE     _MESSAGE(9007, _("suppress host topology based information"))
+

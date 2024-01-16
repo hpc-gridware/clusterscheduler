@@ -3,7 +3,7 @@ add_executable(
   qconf
         oge_qconf_cqueue.cc
         oge_qconf_centry.cc
-  sge_hgroup_qconf.cc
+        sge_qconf_hgroup.cc
         oge_qconf_rqs.cc
         oge_qconf.cc
         oge_qconf_parse.cc

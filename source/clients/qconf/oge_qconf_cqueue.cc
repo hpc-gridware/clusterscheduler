@@ -58,6 +58,7 @@
 #include "gdi/sge_gdi_ctx.h"
 
 #include "oge_qconf_cqueue.h"
+#include "msg_qconf.h"
 
 static void insert_custom_complex_values_writer(spooling_field *fields);
 static int write_QU_consumable_config_list(const lListElem *ep, int nm,

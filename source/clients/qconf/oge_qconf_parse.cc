@@ -93,7 +93,7 @@
 #include "usage.h"
 #include "oge_qconf_acl.h"
 #include "oge_qconf_parse.h"
-#include "sge_hgroup_qconf.h"
+#include "sge_qconf_hgroup.h"
 #include "oge_qconf_centry.h"
 #include "oge_qconf_cqueue.h"
 #include "oge_qconf_rqs.h"
@@ -140,7 +140,7 @@ static char **sge_parser_get_next(sge_gdi_ctx_class_t *ctx, char **arg)
 {
    DENTER(TOP_LAYER);
    if (!*(arg+1)) {
-      ERROR((SGE_EVENT, MSG_PARSE_NOOPTIONARGPROVIDEDTOX_S , *arg));
+      ERROR((SGE_EVENT, MSG_QCONF_NOOPTIONARGPROVIDEDTOX_S , *arg));
       sge_usage(QCONF, stderr);
       SGE_EXIT((void **)&ctx, 1);
    }
@@ -1900,7 +1900,7 @@ int sge_parse_qconf(sge_gdi_ctx_class_t *ctx, char *argv[])
          if (!sge_next_is_an_opt(spp)) {
             spp = sge_parser_get_next(ctx, spp);
          } else {
-            if (sge_error_and_exit(ctx, MSG_HOST_NEEDAHOSTNAMEORALL))
+            if (sge_error_and_exit(ctx, MSG_QCONF_NEEDAHOSTNAMEORALL))
                continue;
          }
 
@@ -3127,7 +3127,7 @@ int sge_parse_qconf(sge_gdi_ctx_class_t *ctx, char *argv[])
       if (cqueue_purge_host(cqueue, &alp, lp, hgroup_or_hostname) == true) {
          cqueue_add_del_mod_via_gdi(ctx, cqueue, &alp, SGE_GDI_MOD | SGE_GDI_SET_ALL);
       } else {
-         WARNING((SGE_EVENT, MSG_PARSE_ATTR_ARGS_NOT_FOUND, attr, hgroup_or_hostname));
+         WARNING((SGE_EVENT, MSG_QCONF_ATTR_ARGS_NOT_FOUND, attr, hgroup_or_hostname));
       }
       lFreeList(&lp);
 
@@ -6825,7 +6825,7 @@ static int qconf_modify_attribute(sge_gdi_ctx_class_t *ctx,
          for_each_rw(aep, *alpp) {
             if (answer_has_quality(aep, ANSWER_QUALITY_ERROR) &&
                 (answer_get_status(aep) == STATUS_ESYNTAX)) {
-               sprintf(SGE_EVENT, MSG_PARSE_BAD_ATTR_ARGS_SS, name, value);
+               sprintf(SGE_EVENT, MSG_QCONF_BAD_ATTR_ARGS_SS, name, value);
                lSetString(aep, AN_text, SGE_EVENT);
             }
          }

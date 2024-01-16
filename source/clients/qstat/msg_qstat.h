@@ -69,5 +69,11 @@
 #define MSG_QSTAT_URGENCYINFO                         _MESSAGE(19044, _("display job urgency information"))
 #define MSG_QSTAT_PRIORITYINFO                        _MESSAGE(19045, _("display job priority information"))
 
+#define MSG_QSTAT_PRT_JOBSWAITINGFORACCOUNTING  _MESSAGE(19047, _(" -----   JOBS WAITING FOR ACCOUNTING  -  JOBS WAITING FOR ACCOUNTING   ----- "))
+#define MSG_QSTAT_PRT_ERRORJOBS                 _MESSAGE(19048, _("  -  ERROR JOBS  -  ERROR JOBS  -  ERROR JOBS  -  ERROR JOBS  -  ERROR JOBS  -"))
+
+#define MSG_QSTAT_NOQUEUESREMAININGAFTERXQUEUESELECTION_S    _MESSAGE(19050, _("no queues remaining after "SFN" queue selection"))
+#define MSG_OPTIONS_WRONGARGUMENTTOSOPT _MESSAGE(19051, _("ERROR! wrong argument to -s option"))
+
 #endif /* __MSG_QSTAT_H */
 

@@ -33,9 +33,6 @@
 
 #include "basis_types.h"
 
-/*
-** qmod.c
-*/
 #define MSG_QMOD_c_OPT_USAGE      _MESSAGE(11008, _("clear error state"))
 #define MSG_QMOD_c_OPT_USAGE_Q    _MESSAGE(11009, _("clear queue error state"))
 #define MSG_QMOD_c_OPT_USAGE_J    _MESSAGE(11010, _("clear job error state"))

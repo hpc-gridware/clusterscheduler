@@ -44,9 +44,9 @@
 
 #include "gdi/sge_gdi_ctx.h"
 
-#include "sge_hgroup_qconf.h"
+#include "sge_qconf_hgroup.h"
 #include "msg_common.h"
-#include "msg_clients_common.h"
+#include "msg_qconf.h"
 
 
 static void 
