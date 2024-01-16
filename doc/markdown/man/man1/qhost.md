@@ -12,7 +12,7 @@ date: __DATE__
 
 # SYNTAX
 
-`qhost` \[`-F` \[*resource_name*, ...\]\] \[*-help*\] \[*-h host_list*\] \[*-j*\] \[-l *resource*=*val*, ...\] 
+`qhost` \[`-F` \[*resource_name*, ...\]\] \[`-help`\] \[`-h` *host_list*\] \[`-j`\] \[`-l` *resource*=*val*, ...\] 
 \[`-ncb`\] \[`-u` *user*, ...\] \[`-xml`\].
 
 # DESCRIPTION
