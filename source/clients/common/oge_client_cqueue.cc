@@ -31,65 +31,43 @@
 
 #include <string.h>
 
+#include "uti/sge_parse_num_par.h"
 #include "uti/sge_rmon.h"
 #include "uti/sge_time.h"
-#include "uti/sge_parse_num_par.h"
 
+#include "sgeobj/cull/sge_resource_utilization_RUE_L.h"
+#include "sgeobj/sge_centry.h"
+#include "sgeobj/sge_conf.h"
+#include "sgeobj/sge_cqueue.h"
 #include "sgeobj/sge_host.h"
 #include "sgeobj/sge_pe.h"
-#include "sgeobj/sge_qref.h"
-#include "sgeobj/sge_str.h"
-#include "sgeobj/sge_userprj.h"
-#include "sgeobj/sge_cqueue.h"
 #include "sgeobj/sge_qinstance.h"
 #include "sgeobj/sge_qinstance_state.h"
 #include "sgeobj/sge_qinstance_type.h"
-#include "sgeobj/sge_pe.h"
-#include "sgeobj/sge_host.h"
-#include "sgeobj/sge_conf.h"
 #include "sgeobj/sge_qref.h"
-#include "sgeobj/sge_centry.h"
-#include "sgeobj/sge_cqueue.h"
 #include "sgeobj/sge_schedd_conf.h"
-#include "sgeobj/cull/sge_resource_utilization_RUE_L.h"
+#include "sgeobj/sge_str.h"
+#include "sgeobj/sge_userprj.h"
 
-#include "sched/sge_select_queue.h"
-#include "sched/valid_queue_user.h"
 #include "sched/sge_complex_schedd.h"
 #include "sched/sge_resource_utilization.h"
+#include "sched/sge_select_queue.h"
+#include "sched/valid_queue_user.h"
 
-#include "sge.h"
-#include "oge_client_print.h"
-#include "oge_client_cqueue.h"
 #include "msg_clients_common.h"
+#include "oge_client_cqueue.h"
+#include "oge_client_print.h"
+#include "sge.h"
 
-
-bool cqueue_calculate_summary(const lListElem *cqueue, 
-                                     const lList *exechost_list,
-                                     const lList *centry_list,
-                                     double *load, 
-                                     bool *is_load_available, 
-                                     u_long32 *used,
-                                     u_long32 *resv,
-                                     u_long32 *total,
-                                     u_long32 *suspend_manual, 
-                                     u_long32 *suspend_threshold,
-                                     u_long32 *suspend_on_subordinate,
-                                     u_long32 *suspend_calendar,
-                                     u_long32 *unknown,
-                                     u_long32 *load_alarm, 
-                                     u_long32 *disabled_manual,
-                                     u_long32 *disabled_calendar,
-                                     u_long32 *ambiguous,
-                                     u_long32 *orphaned,
-                                     u_long32 *error,
-                                     u_long32 *available,
-                                     u_long32 *temp_disabled,
-                                     u_long32 *manual_intervention)
-
-{
+bool cqueue_calculate_summary(const lListElem *cqueue, const lList *exechost_list, const lList *centry_list,
+                              double *load, bool *is_load_available, u_long32 *used, u_long32 *resv, u_long32 *total,
+                              u_long32 *suspend_manual, u_long32 *suspend_threshold, u_long32 *suspend_on_subordinate,
+                              u_long32 *suspend_calendar, u_long32 *unknown, u_long32 *load_alarm,
+                              u_long32 *disabled_manual, u_long32 *disabled_calendar, u_long32 *ambiguous,
+                              u_long32 *orphaned, u_long32 *error, u_long32 *available, u_long32 *temp_disabled,
+                              u_long32 *manual_intervention) {
    bool ret = true;
-   
+
    DENTER(TOP_LAYER);
    if (cqueue != NULL) {
       const lList *qinstance_list = lGetList(cqueue, CQ_qinstances);
@@ -107,7 +85,7 @@ bool cqueue_calculate_summary(const lListElem *cqueue,
       *suspend_manual = *suspend_threshold = *suspend_on_subordinate = 0;
       *suspend_calendar = *unknown = *load_alarm = 0;
       *disabled_manual = *disabled_calendar = *ambiguous = 0;
-      *orphaned = *error = 0; 
+      *orphaned = *error = 0;
       for_each(qinstance, qinstance_list) {
          u_long32 slots = lGetUlong(qinstance, QU_job_slots);
          bool has_value_from_object;
@@ -118,31 +96,25 @@ bool cqueue_calculate_summary(const lListElem *cqueue,
          (*resv) += resv_slots;
          (*total) += slots;
 
-         if (!sge_get_double_qattr(&host_load_avg, LOAD_ATTR_NP_LOAD_AVG, 
-                                   qinstance, exechost_list, centry_list, 
+         if (!sge_get_double_qattr(&host_load_avg, LOAD_ATTR_NP_LOAD_AVG, qinstance, exechost_list, centry_list,
                                    &has_value_from_object)) {
             if (has_value_from_object) {
                load_slots += slots;
                *load += host_load_avg * slots;
-            } 
-         } 
+            }
+         }
 
          /*
           * manual_intervention: cdsuE
           * temp_disabled: aoACDS
           */
-         if (qinstance_state_is_manual_suspended(qinstance) ||
-             qinstance_state_is_unknown(qinstance) ||
-             qinstance_state_is_manual_disabled(qinstance) ||
-             qinstance_state_is_ambiguous(qinstance) ||
+         if (qinstance_state_is_manual_suspended(qinstance) || qinstance_state_is_unknown(qinstance) ||
+             qinstance_state_is_manual_disabled(qinstance) || qinstance_state_is_ambiguous(qinstance) ||
              qinstance_state_is_error(qinstance)) {
             *manual_intervention += slots;
-         } else if (qinstance_state_is_alarm(qinstance) ||
-                    qinstance_state_is_cal_disabled(qinstance) ||
-                    qinstance_state_is_orphaned(qinstance) ||
-                    qinstance_state_is_susp_on_sub(qinstance) ||
-                    qinstance_state_is_cal_suspended(qinstance) ||
-                    qinstance_state_is_suspend_alarm(qinstance)) {
+         } else if (qinstance_state_is_alarm(qinstance) || qinstance_state_is_cal_disabled(qinstance) ||
+                    qinstance_state_is_orphaned(qinstance) || qinstance_state_is_susp_on_sub(qinstance) ||
+                    qinstance_state_is_cal_suspended(qinstance) || qinstance_state_is_suspend_alarm(qinstance)) {
             *temp_disabled += slots;
          } else {
             *available += slots;
@@ -181,7 +153,7 @@ bool cqueue_calculate_summary(const lListElem *cqueue,
          if (qinstance_state_is_error(qinstance)) {
             *error += slots;
          }
-      }  
+      }
       if (load_slots > 0) {
          *is_load_available = true;
          *load /= load_slots;
@@ -191,15 +163,13 @@ bool cqueue_calculate_summary(const lListElem *cqueue,
    DRETURN(ret);
 }
 
-int 
-select_by_qref_list(lList *cqueue_list, const lList *hgrp_list, const lList *qref_list)
-{
+int select_by_qref_list(lList *cqueue_list, const lList *hgrp_list, const lList *qref_list) {
    int ret = 0;
    lList *queueref_list = NULL;
 
    DENTER(TOP_LAYER);
 
-   /* 
+   /*
     * Resolve queue pattern
     */
    {
@@ -207,8 +177,7 @@ select_by_qref_list(lList *cqueue_list, const lList *hgrp_list, const lList *qre
       bool found_something = true;
       queueref_list = lCopyList("", qref_list);
 
-      qref_list_resolve(queueref_list, NULL, &tmp_list, 
-                        &found_something, cqueue_list, hgrp_list, true, true);
+      qref_list_resolve(queueref_list, NULL, &tmp_list, &found_something, cqueue_list, hgrp_list, true, true);
       if (!found_something) {
          lFreeList(&queueref_list);
          DRETURN(-1);
@@ -218,7 +187,6 @@ select_by_qref_list(lList *cqueue_list, const lList *hgrp_list, const lList *qre
       tmp_list = NULL;
    }
 
-   
    if (cqueue_list != NULL && queueref_list != NULL) {
       const lListElem *cqueue = NULL;
       const lListElem *qref = NULL;
@@ -228,10 +196,9 @@ select_by_qref_list(lList *cqueue_list, const lList *hgrp_list, const lList *qre
          dstring hostname_buffer = DSTRING_INIT;
          const char *full_name = NULL;
 
-         full_name = lGetString(qref, QR_name); 
+         full_name = lGetString(qref, QR_name);
 
-         if (cqueue_name_split(full_name, &cqueue_buffer, &hostname_buffer, NULL, 
-                           NULL)) {
+         if (cqueue_name_split(full_name, &cqueue_buffer, &hostname_buffer, NULL, NULL)) {
             const char *cqueue_name = sge_dstring_get_string(&cqueue_buffer);
             const char *hostname = sge_dstring_get_string(&hostname_buffer);
             const lListElem *cqueue = lGetElemStr(cqueue_list, CQ_name, cqueue_name);
@@ -240,11 +207,11 @@ select_by_qref_list(lList *cqueue_list, const lList *hgrp_list, const lList *qre
 
             u_long32 tag = lGetUlong(qinstance, QU_tag);
             lSetUlong(qinstance, QU_tag, tag | TAG_SELECT_IT);
-          }  
+         }
 
          sge_dstring_free(&cqueue_buffer);
          sge_dstring_free(&hostname_buffer);
-      } 
+      }
 
       for_each(cqueue, cqueue_list) {
          const lList *qinstance_list = lGetList(cqueue, CQ_qinstances);
@@ -261,27 +228,23 @@ select_by_qref_list(lList *cqueue_list, const lList *hgrp_list, const lList *qre
                ret++;
             }
          }
-      } 
+      }
    }
 
    lFreeList(&queueref_list);
-
    DRETURN(ret);
 }
 
-/* 
+/*
    untag all queues not selected by a -pe
 
-   returns 
+   returns
       0 ok
-      -1 error 
+      -1 error
 
 */
-int select_by_pe_list(
-lList *queue_list,
-lList *peref_list,   /* ST_Type */
-lList *pe_list 
-) {
+int select_by_pe_list(lList *queue_list, lList *peref_list, /* ST_Type */
+                      lList *pe_list) {
    int nqueues = 0;
    lList *pe_selected = NULL;
    const lListElem *pe;
@@ -290,13 +253,13 @@ lList *pe_list
 
    DENTER(TOP_LAYER);
 
-  /*
-   * iterate through peref_list and build up a new pe_list
-   * containing only those pe's referenced in peref_list
-   */
+   /*
+    * iterate through peref_list and build up a new pe_list
+    * containing only those pe's referenced in peref_list
+    */
    for_each(pe, peref_list) {
-      lListElem *ref_pe;   /* PE_Type */
-      lListElem *copy_pe;  /* PE_Type */
+      lListElem *ref_pe;  /* PE_Type */
+      lListElem *copy_pe; /* PE_Type */
 
       ref_pe = pe_list_locate(pe_list, lGetString(pe, ST_name));
       copy_pe = lCopyElem(ref_pe);
@@ -307,26 +270,26 @@ lList *pe_list
       }
       lAppendElem(pe_selected, copy_pe);
    }
-   if (lGetNumberOfElem(pe_selected)==0) {
+   if (lGetNumberOfElem(pe_selected) == 0) {
       fprintf(stderr, "%s\n", MSG_PE_NOSUCHPARALLELENVIRONMENT);
       return -1;
    }
 
-   /* 
-    * untag all non-parallel queues and queues not referenced 
-    * by a pe in the selected pe list entry of a queue 
+   /*
+    * untag all non-parallel queues and queues not referenced
+    * by a pe in the selected pe list entry of a queue
     */
    for_each(cqueue, queue_list) {
       const lList *qinstance_list = lGetList(cqueue, CQ_qinstances);
 
       for_each_rw(qep, qinstance_list) {
-         lListElem* found = NULL;
+         lListElem *found = NULL;
 
          if (!qinstance_is_parallel_queue(qep)) {
             lSetUlong(qep, QU_tag, 0);
             continue;
          }
-         for_each (pe, pe_selected) {
+         for_each(pe, pe_selected) {
             const char *pe_name = lGetString(pe, PE_name);
 
             found = lGetSubStr(qep, ST_name, pe_name, QU_pe_list);
@@ -348,21 +311,16 @@ lList *pe_list
    DRETURN(nqueues);
 }
 
-/* 
+/*
    untag all queues not selected by a -pe
 
-   returns 
+   returns
       0 ok
-      -1 error 
+      -1 error
 
 */
-int select_by_queue_user_list(
-lList *exechost_list,
-lList *cqueue_list,
-lList *queue_user_list,
-lList *acl_list, 
-lList *project_list
-) {
+int select_by_queue_user_list(lList *exechost_list, lList *cqueue_list, lList *queue_user_list, lList *acl_list,
+                              lList *project_list) {
    int nqueues = 0;
    const lListElem *qu = NULL;
    lListElem *qep = NULL;
@@ -385,13 +343,13 @@ lList *project_list
 
    /* untag all queues where no of the users has access */
 
-   ehep = host_list_locate(exechost_list, "global"); 
-   global_acl  = lGetList(ehep, EH_acl);
+   ehep = host_list_locate(exechost_list, "global");
+   global_acl = lGetList(ehep, EH_acl);
    global_xacl = lGetList(ehep, EH_xacl);
    global_prj = lGetList(ehep, EH_prj);
    global_xprj = lGetList(ehep, EH_xprj);
 
-   config_acl  = mconf_get_user_lists();
+   config_acl = mconf_get_user_lists();
    config_xacl = mconf_get_xuser_lists();
 
    for_each(cqueue, cqueue_list) {
@@ -404,18 +362,18 @@ lList *project_list
          prj = lGetList(qep, QU_projects);
          xprj = lGetList(qep, QU_xprojects);
 
-         /* get exec host list element for current queue 
+         /* get exec host list element for current queue
             and its access lists */
          host_name = lGetHost(qep, QU_qhostname);
          ehep = host_list_locate(exechost_list, host_name);
          if (ehep != NULL) {
-            h_acl  = lGetList(ehep, EH_acl);
+            h_acl = lGetList(ehep, EH_acl);
             h_xacl = lGetList(ehep, EH_xacl);
             h_prj = lGetList(ehep, EH_prj);
             h_xprj = lGetList(ehep, EH_xprj);
          }
 
-         for_each (qu, queue_user_list) {
+         for_each(qu, queue_user_list) {
             const lListElem *pep = NULL;
             int q_access = 0;
             int h_access = 0;
@@ -426,147 +384,149 @@ lList *project_list
             if (name == NULL)
                continue;
 
-            DPRINTF(("-----> checking queue user: %s\n", name )); 
+            DPRINTF(("-----> checking queue user: %s\n", name));
 
             DPRINTF(("testing queue access lists\n"));
-            q_access = (name[0]=='@')?
-                  sge_has_access(NULL, &name[1], qep, acl_list): 
-                  sge_has_access(name, NULL, qep, acl_list); 
+            q_access = (name[0] == '@') ? sge_has_access(NULL, &name[1], qep, acl_list)
+                                        : sge_has_access(name, NULL, qep, acl_list);
             if (!q_access) {
                DPRINTF(("no access\n"));
             } else {
                DPRINTF(("ok\n"));
             }
             if (project_list != NULL) {
-                DPRINTF(("testing queue projects lists\n"));
-                for_each(pep, prj) {
-                   const char *prj_name;
-                   lListElem *prj;
-                   if ((prj_name = lGetString(pep, PR_name))!=NULL) {
-                      if ((prj = prj_list_locate(project_list, prj_name)) != NULL) {
-                         q_access &= (name[0]=='@')?
-                            sge_has_access_(NULL, &name[1], lGetList(prj, PR_acl), lGetList(prj, PR_xacl), acl_list): 
-                            sge_has_access_(name, NULL, lGetList(prj, PR_acl), lGetList(prj, PR_xacl), acl_list); 
-                      } else {
+               DPRINTF(("testing queue projects lists\n"));
+               for_each(pep, prj) {
+                  const char *prj_name;
+                  lListElem *prj;
+                  if ((prj_name = lGetString(pep, PR_name)) != NULL) {
+                     if ((prj = prj_list_locate(project_list, prj_name)) != NULL) {
+                        q_access &= (name[0] == '@') ? sge_has_access_(NULL, &name[1], lGetList(prj, PR_acl),
+                                                                       lGetList(prj, PR_xacl), acl_list)
+                                                     : sge_has_access_(name, NULL, lGetList(prj, PR_acl),
+                                                                       lGetList(prj, PR_xacl), acl_list);
+                     } else {
                         DPRINTF(("no reference object for project %s\n", prj_name));
-                      }   
-                    } 
-                }
-                for_each(pep, xprj) {
-                   const char *prj_name;
-                   lListElem *prj;
-                   if ((prj_name = lGetString(pep, PR_name))!=NULL) {
-                      if ((prj = prj_list_locate(project_list, prj_name)) != NULL) {
-                         q_access &= (name[0]=='@')?
-                            !sge_has_access_(NULL, &name[1], lGetList(prj, PR_acl), lGetList(prj, PR_xacl), acl_list): 
-                            !sge_has_access_(name, NULL, lGetList(prj, PR_acl), lGetList(prj, PR_xacl), acl_list); 
-                      } else {
+                     }
+                  }
+               }
+               for_each(pep, xprj) {
+                  const char *prj_name;
+                  lListElem *prj;
+                  if ((prj_name = lGetString(pep, PR_name)) != NULL) {
+                     if ((prj = prj_list_locate(project_list, prj_name)) != NULL) {
+                        q_access &= (name[0] == '@') ? !sge_has_access_(NULL, &name[1], lGetList(prj, PR_acl),
+                                                                        lGetList(prj, PR_xacl), acl_list)
+                                                     : !sge_has_access_(name, NULL, lGetList(prj, PR_acl),
+                                                                        lGetList(prj, PR_xacl), acl_list);
+                     } else {
                         DPRINTF(("no reference object for project %s\n", prj_name));
-                      }   
-                    }
-                }
-                if (!q_access) {
-                   DPRINTF(("no access\n"));
-                } else {
-                   DPRINTF(("ok\n"));
-                }
+                     }
+                  }
+               }
+               if (!q_access) {
+                  DPRINTF(("no access\n"));
+               } else {
+                  DPRINTF(("ok\n"));
+               }
             }
 
             DPRINTF(("testing host access lists\n"));
-            h_access = (name[0]=='@')?
-                  sge_has_access_(NULL, &name[1], h_acl, h_xacl , acl_list):
-                  sge_has_access_(name, NULL, h_acl, h_xacl , acl_list); 
+            h_access = (name[0] == '@') ? sge_has_access_(NULL, &name[1], h_acl, h_xacl, acl_list)
+                                        : sge_has_access_(name, NULL, h_acl, h_xacl, acl_list);
             if (!h_access) {
                DPRINTF(("no access\n"));
-            }else {
+            } else {
                DPRINTF(("ok\n"));
             }
             if (project_list != NULL) {
-                DPRINTF(("testing host projects lists\n"));
-                for_each(pep, h_prj) {
-                   const char *prj_name;
-                   lListElem *prj;
-                   if ((prj_name = lGetString(pep, PR_name))!=NULL) {
-                      if ((prj = prj_list_locate(project_list, prj_name)) != NULL) {
-                         q_access &= (name[0]=='@')?
-                            sge_has_access_(NULL, &name[1], lGetList(prj, PR_acl), lGetList(prj, PR_xacl), acl_list): 
-                            sge_has_access_(name, NULL, lGetList(prj, PR_acl), lGetList(prj, PR_xacl), acl_list); 
-                      } else {
+               DPRINTF(("testing host projects lists\n"));
+               for_each(pep, h_prj) {
+                  const char *prj_name;
+                  lListElem *prj;
+                  if ((prj_name = lGetString(pep, PR_name)) != NULL) {
+                     if ((prj = prj_list_locate(project_list, prj_name)) != NULL) {
+                        q_access &= (name[0] == '@') ? sge_has_access_(NULL, &name[1], lGetList(prj, PR_acl),
+                                                                       lGetList(prj, PR_xacl), acl_list)
+                                                     : sge_has_access_(name, NULL, lGetList(prj, PR_acl),
+                                                                       lGetList(prj, PR_xacl), acl_list);
+                     } else {
                         DPRINTF(("no reference object for project %s\n", prj_name));
-                      }   
-                    }
-                }
-                for_each(pep, h_xprj) {
-                   const char *prj_name;
-                   lListElem *prj;
-                   if ((prj_name = lGetString(pep, PR_name))!=NULL) {
-                      if ((prj = prj_list_locate(project_list, prj_name)) != NULL) {
-                         q_access &= (name[0]=='@')?
-                            !sge_has_access_(NULL, &name[1], lGetList(prj, PR_acl), lGetList(prj, PR_xacl), acl_list): 
-                            !sge_has_access_(name, NULL, lGetList(prj, PR_acl), lGetList(prj, PR_xacl), acl_list); 
-                      } else {
+                     }
+                  }
+               }
+               for_each(pep, h_xprj) {
+                  const char *prj_name;
+                  lListElem *prj;
+                  if ((prj_name = lGetString(pep, PR_name)) != NULL) {
+                     if ((prj = prj_list_locate(project_list, prj_name)) != NULL) {
+                        q_access &= (name[0] == '@') ? !sge_has_access_(NULL, &name[1], lGetList(prj, PR_acl),
+                                                                        lGetList(prj, PR_xacl), acl_list)
+                                                     : !sge_has_access_(name, NULL, lGetList(prj, PR_acl),
+                                                                        lGetList(prj, PR_xacl), acl_list);
+                     } else {
                         DPRINTF(("no reference object for project %s\n", prj_name));
-                      }   
-                    }
-                }
-                if (!q_access) {
-                   DPRINTF(("no access\n"));
-                } else {
-                   DPRINTF(("ok\n"));
-                }
+                     }
+                  }
+               }
+               if (!q_access) {
+                  DPRINTF(("no access\n"));
+               } else {
+                  DPRINTF(("ok\n"));
+               }
             }
 
             DPRINTF(("testing global host access lists\n"));
-            gh_access = (name[0]=='@')?
-                  sge_has_access_(NULL, &name[1], global_acl , global_xacl , acl_list):
-                  sge_has_access_(name, NULL,global_acl , global_xacl , acl_list);
+            gh_access = (name[0] == '@') ? sge_has_access_(NULL, &name[1], global_acl, global_xacl, acl_list)
+                                         : sge_has_access_(name, NULL, global_acl, global_xacl, acl_list);
             if (!gh_access) {
                DPRINTF(("no access\n"));
-            }else {
+            } else {
                DPRINTF(("ok\n"));
             }
             if (project_list != NULL) {
-                DPRINTF(("testing host projects lists\n"));
-                for_each(pep, global_prj) {
-                   const char *prj_name;
-                   lListElem *prj;
-                   if ((prj_name = lGetString(pep, PR_name))!=NULL) {
-                      if ((prj = prj_list_locate(project_list, prj_name)) != NULL) {
-                         q_access &= (name[0]=='@')?
-                            sge_has_access_(NULL, &name[1], lGetList(prj, PR_acl), lGetList(prj, PR_xacl), acl_list): 
-                            sge_has_access_(name, NULL, lGetList(prj, PR_acl), lGetList(prj, PR_xacl), acl_list); 
-                      } else {
+               DPRINTF(("testing host projects lists\n"));
+               for_each(pep, global_prj) {
+                  const char *prj_name;
+                  lListElem *prj;
+                  if ((prj_name = lGetString(pep, PR_name)) != NULL) {
+                     if ((prj = prj_list_locate(project_list, prj_name)) != NULL) {
+                        q_access &= (name[0] == '@') ? sge_has_access_(NULL, &name[1], lGetList(prj, PR_acl),
+                                                                       lGetList(prj, PR_xacl), acl_list)
+                                                     : sge_has_access_(name, NULL, lGetList(prj, PR_acl),
+                                                                       lGetList(prj, PR_xacl), acl_list);
+                     } else {
                         DPRINTF(("no reference object for project %s\n", prj_name));
-                      }   
-                    }
-                }
-                for_each(pep, global_xprj) {
-                   const char *prj_name;
-                   lListElem *prj;
-                   if ((prj_name = lGetString(pep, PR_name))!=NULL) {
-                      if ((prj = prj_list_locate(project_list, prj_name)) != NULL) {
-                         q_access &= (name[0]=='@')?
-                            !sge_has_access_(NULL, &name[1], lGetList(prj, PR_acl), lGetList(prj, PR_xacl), acl_list): 
-                            !sge_has_access_(name, NULL, lGetList(prj, PR_acl), lGetList(prj, PR_xacl), acl_list); 
-                      } else {
+                     }
+                  }
+               }
+               for_each(pep, global_xprj) {
+                  const char *prj_name;
+                  lListElem *prj;
+                  if ((prj_name = lGetString(pep, PR_name)) != NULL) {
+                     if ((prj = prj_list_locate(project_list, prj_name)) != NULL) {
+                        q_access &= (name[0] == '@') ? !sge_has_access_(NULL, &name[1], lGetList(prj, PR_acl),
+                                                                        lGetList(prj, PR_xacl), acl_list)
+                                                     : !sge_has_access_(name, NULL, lGetList(prj, PR_acl),
+                                                                        lGetList(prj, PR_xacl), acl_list);
+                     } else {
                         DPRINTF(("no reference object for project %s\n", prj_name));
-                      }   
-                    }
-                }
-                if (!q_access) {
-                   DPRINTF(("no access\n"));
-                } else {
-                   DPRINTF(("ok\n"));
-                }
+                     }
+                  }
+               }
+               if (!q_access) {
+                  DPRINTF(("no access\n"));
+               } else {
+                  DPRINTF(("ok\n"));
+               }
             }
 
             DPRINTF(("testing cluster config access lists\n"));
-            conf_access = (name[0]=='@')?
-                  sge_has_access_(NULL, &name[1],config_acl , config_xacl , acl_list): 
-                  sge_has_access_(name, NULL, config_acl , config_xacl  , acl_list); 
+            conf_access = (name[0] == '@') ? sge_has_access_(NULL, &name[1], config_acl, config_xacl, acl_list)
+                                           : sge_has_access_(name, NULL, config_acl, config_xacl, acl_list);
             if (!conf_access) {
                DPRINTF(("no access\n"));
-            }else {
+            } else {
                DPRINTF(("ok\n"));
             }
 
@@ -576,11 +536,10 @@ lList *project_list
             }
          }
          if (!access) {
-            DPRINTF(("no access for queue %s\n", lGetString(qep,QU_qname) ));
+            DPRINTF(("no access for queue %s\n", lGetString(qep, QU_qname)));
             lSetUlong(qep, QU_tag, 0);
-         }
-         else {
-            DPRINTF(("access for queue %s\n", lGetString(qep,QU_qname) ));
+         } else {
+            DPRINTF(("access for queue %s\n", lGetString(qep, QU_qname)));
             nqueues++;
          }
       }
@@ -591,21 +550,16 @@ lList *project_list
    DRETURN(nqueues);
 }
 
-/* 
-   untag all queues not in a specific state 
+/*
+   untag all queues not in a specific state
 
-   returns 
+   returns
       0 ok
-      -1 error 
+      -1 error
 
 */
-int select_by_queue_state(
-u_long32 queue_states,
-lList *exechost_list,
-lList *queue_list,
-lList *centry_list 
-) {
-   bool has_value_from_object; 
+int select_by_queue_state(u_long32 queue_states, lList *exechost_list, lList *queue_list, lList *centry_list) {
+   bool has_value_from_object;
    double load_avg;
    char *load_avg_str;
    const lListElem *cqueue = NULL;
@@ -615,10 +569,10 @@ lList *centry_list
 
    /* only show queues in the requested state */
    /* make it possible to display any load value in qstat output */
-   if (!(load_avg_str=getenv("SGE_LOAD_AVG")) || !strlen(load_avg_str))
+   if (!(load_avg_str = getenv("SGE_LOAD_AVG")) || !strlen(load_avg_str))
       load_avg_str = LOAD_ATTR_LOAD_AVG;
 
-   for_each(cqueue, queue_list){
+   for_each(cqueue, queue_list) {
       const lList *qinstance_list = lGetList(cqueue, CQ_qinstances);
       lListElem *qep = NULL;
       for_each_rw(qep, qinstance_list) {
@@ -628,46 +582,38 @@ lList *centry_list
          if (sge_load_alarm(NULL, qep, lGetList(qep, QU_load_thresholds), exechost_list, centry_list, NULL, true)) {
             qinstance_state_set_alarm(qep, true);
          }
-         parse_ulong_val(NULL, &interval, TYPE_TIM,
-                         lGetString(qep, QU_suspend_interval), NULL, 0);
-         if (lGetUlong(qep, QU_nsuspend) != 0 &&
-             interval != 0 &&
+         parse_ulong_val(NULL, &interval, TYPE_TIM, lGetString(qep, QU_suspend_interval), NULL, 0);
+         if (lGetUlong(qep, QU_nsuspend) != 0 && interval != 0 &&
              sge_load_alarm(NULL, qep, lGetList(qep, QU_suspend_thresholds), exechost_list, centry_list, NULL, false)) {
             qinstance_state_set_suspend_alarm(qep, true);
          }
 
-      
          if (!qinstance_has_state(qep, queue_states)) {
             lSetUlong(qep, QU_tag, 0);
-         }   
+         }
       }
    }
    DRETURN(0);
-}   
+}
 
-/* 
-   untag all queues not covered by -l  
+/*
+   untag all queues not covered by -l
 
-   returns 
+   returns
       0  successfully untagged qinstances if necessary
-     -1  error 
+     -1  error
 
 */
-int select_by_resource_list(
-lList *resource_list,
-lList *exechost_list,
-lList *queue_list,
-lList *centry_list,
-u_long32 empty_qs
-) {
+int select_by_resource_list(lList *resource_list, lList *exechost_list, lList *queue_list, lList *centry_list,
+                            u_long32 empty_qs) {
    const lListElem *cqueue = NULL;
 
    DENTER(TOP_LAYER);
 
    if (centry_list_fill_request(resource_list, NULL, centry_list, true, true, false)) {
-      /* 
-      ** error message gets written by centry_list_fill_request into 
-      ** SGE_EVENT 
+      /*
+      ** error message gets written by centry_list_fill_request into
+      ** SGE_EVENT
       */
       DRETURN(-1);
    }
@@ -692,16 +638,15 @@ u_long32 empty_qs
    }
 
    DRETURN(0);
-}   
+}
 
-bool is_cqueue_selected(lList *queue_list)
-{
+bool is_cqueue_selected(lList *queue_list) {
    lListElem *cqueue;
    bool a_qinstance_is_selected = false;
    bool a_cqueue_is_selected = false;
 
    DENTER(TOP_LAYER);
-   
+
    for_each_rw(cqueue, queue_list) {
       const lListElem *qep;
       const lList *qinstance_list = lGetList(cqueue, CQ_qinstances);
@@ -714,7 +659,7 @@ bool is_cqueue_selected(lList *queue_list)
          }
       }
       a_qinstance_is_selected = a_qinstance_is_selected | tmp_a_qinstance_is_selected;
-      if (!tmp_a_qinstance_is_selected && (lGetNumberOfElem(lGetList(cqueue,CQ_qinstances)) > 0)) {
+      if (!tmp_a_qinstance_is_selected && (lGetNumberOfElem(lGetList(cqueue, CQ_qinstances)) > 0)) {
          lSetUlong(cqueue, CQ_tag, TAG_DEFAULT);
       } else {
          a_cqueue_is_selected |= true;
@@ -725,39 +670,38 @@ bool is_cqueue_selected(lList *queue_list)
 }
 
 /****** sge_cqueue_qstat/qinstance_slots_reserved_now() ************************
-*  NAME
-*     qinstance_slots_reserved_now() -- get current reserved slots
-*
-*  SYNOPSIS
-*     int qinstance_slots_reserved_now(const lListElem *this_elem) 
-*
-*  FUNCTION
-*     returns the current number of reserved slots
-*
-*  INPUTS
-*     const lListElem *this_elem - queue elem (QU_Type)
-*
-*  RESULT
-*     int - number of currently reserved slots
-*
-*  NOTES
-*     MT-NOTE: qinstance_slots_reserved_now() is MT safe 
-*
-*  SEE ALSO
-*     qinstance_slots_reserved()
-*******************************************************************************/
-int qinstance_slots_reserved_now(const lListElem *this_elem)
-{
+ *  NAME
+ *     qinstance_slots_reserved_now() -- get current reserved slots
+ *
+ *  SYNOPSIS
+ *     int qinstance_slots_reserved_now(const lListElem *this_elem)
+ *
+ *  FUNCTION
+ *     returns the current number of reserved slots
+ *
+ *  INPUTS
+ *     const lListElem *this_elem - queue elem (QU_Type)
+ *
+ *  RESULT
+ *     int - number of currently reserved slots
+ *
+ *  NOTES
+ *     MT-NOTE: qinstance_slots_reserved_now() is MT safe
+ *
+ *  SEE ALSO
+ *     qinstance_slots_reserved()
+ *******************************************************************************/
+int qinstance_slots_reserved_now(const lListElem *this_elem) {
    int ret = 0;
    lListElem *slots;
    u_long32 now = sge_get_gmt();
-   
+
    DENTER(TOP_LAYER);
 
    slots = lGetSubStr(this_elem, RUE_name, SGE_ATTR_SLOTS, QU_resource_utilization);
    if (slots != NULL) {
       ret = utilization_max(slots, now, 0, false);
-   } 
+   }
 
    DRETURN(ret);
 }
