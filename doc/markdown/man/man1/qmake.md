@@ -12,7 +12,7 @@ date: __DATE__
 
 # SYNTAX
 
-`qmake` \[ *\<options\>\* ] -- \[ *\<gmake_options\>* \]
+`qmake` \[ *\<options\>* ] -- \[ *\<gmake_options\>* \]
 
 # DESCRIPTION
 
