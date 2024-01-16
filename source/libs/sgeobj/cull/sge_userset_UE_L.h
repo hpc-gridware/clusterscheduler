@@ -40,12 +40,12 @@ extern "C" {
 #endif
 
 /**
-* @brief @todo add summary
+* @brief UserSet Entry
 *
-* @todo add description
+* An object of this type represents one entry in an user set.
 *
-*    SGE_STRING(UE_name) - @todo add summary
-*    @todo add description
+*    SGE_STRING(UE_name) - User or Group name
+*    Name of an user or a UNIX user group. Groups have the prefix @, e.g. @tape
 *
 */
 
