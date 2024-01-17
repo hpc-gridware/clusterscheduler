@@ -1,15 +1,58 @@
 {
 	"className":	"Range",
-	"summary":	"@todo add summary",
+	"summary":	"Range Element",
 	"description":	[{
-			"line":	"@todo add description"
+			"line":	""
+			}, { "line":	"Object holding values which define an id range"
+			}, { "line":	"(e.g. 1-9:2 => 1, 3, 5, 7, 9)."
+			}, { "line":	"Lists of such objects are held within job objects"
+			}, { "line":	"(JB_Type) to hold job array task ids."
+			}, { "line":	"Several functions may be used to access/modify/delete range"
+			}, { "line":	"elements and range lists. You may find them in the 'SEE ALSO'"
+			}, { "line":	"section below. It is highly advised to use these access functions"
+			}, { "line":	"because they assure and require a defined structure of"
+			}, { "line":	"elements and lists."
+			}, { "line":	""
+			}, { "line":	"Range elements and lists stored in other objects fullfill"
+			}, { "line":	"following conditions:"
+			}, { "line":	""
+			}, { "line":	"   - min <= max"
+			}, { "line":	"   - step >= 1"
+			}, { "line":	"   - real range elements (e.g. 1-9:2 instead of 1-10:2)"
+			}, { "line":	"   - min-ids within range elements part of the same"
+			}, { "line":	"     list are in ascending order: min_id(n) < min_id(n+1)"
+			}, { "line":	"     (e.g. NOT 11-20:1; 1-9:2)"
+			}, { "line":	"   - ids within range elements part of the same"
+			}, { "line":	"     list are non-overlapping: max_id(n) < min_id(n+1)"
+			}, { "line":	"     (e.g. 1-9:2; 11-20:1; 25-28:3)"
+			}, { "line":	""
+         }, { "line":   "@see gdi/range/range_list_calculate_union_set()"
+         }, { "line":   "@see gdi/range/range_list_calculate_difference_set()"
+         }, { "line":   "@see gdi/range/range_list_calculate_intersection_set() "
+         }, { "line":   "@see gdi/range/range_list_compress()"
+         }, { "line":   "@see gdi/range/range_list_get_first_id()"
+         }, { "line":   "@see gdi/range/range_list_get_last_id()"
+         }, { "line":   "@see gdi/range/range_list_get_number_of_ids()"
+         }, { "line":   "@see gdi/range/range_list_initialize()"
+         }, { "line":   "@see gdi/range/range_list_insert_id()"
+         }, { "line":   "@see gdi/range/range_list_is_id_within()"
+         }, { "line":   "@see gdi/range/range_list_move_first_n_ids()"
+         }, { "line":   "@see gdi/range/range_list_print_to_string()"
+         }, { "line":   "@see gdi/range/range_list_remove_id()"
+         }, { "line":   "@see gdi/range/range_correct_end()"
+         }, { "line":   "@see gdi/range/range_get_all_ids()"
+         }, { "line":   "@see gdi/range/range_get_number_of_ids()"
+         }, { "line":   "@see gdi/range/range_is_overlapping()"
+         }, { "line":   "@see gdi/range/range_is_id_within()"
+         }, { "line":   "@see gdi/range/range_set_all_ids()"
+         }, { "line":   "@see gdi/range/range_sort_uniq_compress()"
 		}],
 	"cullPrefix":	"RN",
 	"attributes":	[{
 			"name":	"min",
-			"summary":	"@todo add summary",
+			"summary":	"Lower Bound",
 			"description":	[{
-					"line":	"@todo add description"
+					"line":	"minimum or start value of an id range (e.g. 1)"
 				}],
 			"type":	"lUlongT",
 			"flags":	[{
@@ -19,9 +62,9 @@
 				}]
 		}, {
 			"name":	"max",
-			"summary":	"@todo add summary",
+			"summary":	"Upper Bound",
 			"description":	[{
-					"line":	"@todo add description"
+					"line":	"maximum or end value of an id range (e.g. 9)"
 				}],
 			"type":	"lUlongT",
 			"flags":	[{
@@ -29,9 +72,9 @@
 				}]
 		}, {
 			"name":	"step",
-			"summary":	"@todo add summary",
+			"summary":	"Step Size",
 			"description":	[{
-					"line":	"@todo add description"
+					"line":	"stepsize (e.g. 2)"
 				}],
 			"type":	"lUlongT",
 			"flags":	[{
