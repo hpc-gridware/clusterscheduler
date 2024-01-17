@@ -18,26 +18,6 @@ modify a pending or running batch job of xxQS_NAMExx.
 qresub -  
 submit a copy of an existing xxQS_NAMExx job.
 
-# TEST
-
-Text in *italics*, **bold**, ...
-
-* blah
-* blub
-
-```Java
-class Test implements Logger extends Integer {
-   double blah;
-
-   public Test() {
-      blah = 1.1;
-   }
-}
-```
-
-See also [[qsub]] and [[submit]] man pages.
-
-
 # SYNTAX
 
 **qsub** \[ **options** \] \[ **command** \[ **command_args** \] \| --
