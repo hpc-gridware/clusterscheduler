@@ -412,7 +412,8 @@ centry_create(lList **answer_list, const char *name)
          lSetUlong(ret, CE_relop, CMPLXLE_OP);
          lSetUlong(ret, CE_requestable, REQU_NO);
          lSetUlong(ret, CE_consumable, CONSUMABLE_NO);
-         lSetString(ret, CE_defaultval, "1");
+         lSetString(ret, CE_defaultval, "0");
+         lSetString(ret, CE_urgency_weight, "0");
       } else {
          answer_list_add_sprintf(answer_list, STATUS_EMALLOC, 
                                  ANSWER_QUALITY_ERROR,
