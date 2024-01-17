@@ -247,12 +247,11 @@ done
 
 #--- END-OF-COMMANDLINE-PARSING------------------------------------------
 
-DOC_PACKAGE=""
-COMMON_DOCS="doc/*.txt doc/*.asc doc/javadocs doc/berkeleydb"
-COMMON_PACKAGE="3rd_party catman ckpt dtrace examples/jobs \
+DOC_PACKAGE="doc man"
+COMMON_PACKAGE="3rd_party ckpt dtrace examples/jobs \
                 examples/drmaa hadoop include inst_sge \
                 install_qmaster install_execd \
-		          man mpi pvm util lib/drmaa.jar"
+		          mpi util lib/drmaa.jar"
 ARCO_PACKAGE="dbwriter"
 
 if [ "$VERSION" = "" -o "$VDIR" = "" ]; then
@@ -273,12 +272,12 @@ if [ $makecommon = true ]; then
    fi
 
    if [ $makerpm = true ]; then
-      CreateRpm common noarch $COMMON_PACKAGE $COMMON_DOCS
+      CreateRpm common noarch $COMMON_PACKAGE
    else
      cd $VDIR
      filename=$BASEDIR/${PRODUCT}-${VERSION}-common.tar.gz
-     echo Command: $TAR cvzf $filename $COMMON_PACKAGE $COMMON_DOCS
-                  $TAR cvzf $filename $COMMON_PACKAGE $COMMON_DOCS
+     echo Command: $TAR cvzf $filename $COMMON_PACKAGE
+                  $TAR cvzf $filename $COMMON_PACKAGE
      cd ..
    fi
 fi
