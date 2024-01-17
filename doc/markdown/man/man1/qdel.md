@@ -8,7 +8,7 @@ date: __DATE__
 
 # NAME
 
-qdel - delete xxQS_NAMExx jobs from queues
+`qdel` - delete xxQS_NAMExx jobs from queues
 
 # SYNTAX
 

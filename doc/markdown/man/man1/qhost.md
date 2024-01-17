@@ -12,7 +12,7 @@ date: __DATE__
 
 # SYNTAX
 
-`qhost` \[`-F` \[*resource_name*, ...\]\] \[*-help*\] \[*-h host_list*\] \[*-j*\] \[-l *resource*=*val*, ...\] 
+`qhost` \[`-F` \[*resource_name*, ...\]\] \[`-help`\] \[`-h` *host_list*\] \[`-j`\] \[`-l` *resource*=*val*, ...\] 
 \[`-ncb`\] \[`-u` *user*, ...\] \[`-xml`\].
 
 # DESCRIPTION
@@ -24,7 +24,7 @@ display a list of all hosts without queue or job information.
 
 # OPTIONS
 
-## -F \[*resource_name*, ... \]  
+## -F \[*resource_name*, ...\]  
 `qhost` will present a detailed listing of the current resource availability per host with respect to all resources 
 (if the option argument is omitted) or with respect to those resources contained in the *resource_name* list. 
 Please refer to the description of the *Full Format* in section *OUTPUT FORMATS* below for further detail.
@@ -70,14 +70,17 @@ Depending on the presence or absence of the `-q` or `-F` and `-j` option three o
 
 For each host one line is printed. The output consists of consisting of:
 
-* the Hostname 
-* the Architecture. 
-* the Number of processors. 
-* the Load. 
-* the Total Memory. 
-* the Used Memory. 
-* the Total Swapspace. 
-* the Used Swapspace.
+* the hostname 
+* the architecture. 
+* the number of total cores.
+* the number of sockets.
+* the number of cores.
+* the number of threads.
+* the load. 
+* the total memory. 
+* the used memory. 
+* the total swap space. 
+* the Used swap space.
 
 If the `-q` option is supplied, each host status line also contains extra lines for every queue hosted by the host 
 consisting of,
@@ -85,7 +88,7 @@ consisting of,
 * the queue name. 
 * the queue type - one of B(atch), I(nteractive), C(heckpointing), P(arallel) or combinations thereof, 
 * the number of reserved, used and available job slots, 
-* the state of the queue - one of u(nknown) if the corresponding *xxqs_name_sxx_execd*(8) cannot be contacted, 
+* the state of the queue - one of u(nknown) if the corresponding xxqs_name_sxx_execd(8) cannot be contacted, 
   a(larm), A(larm), C(alendar suspended), s(uspended), S(ubordinate), d(isabled), D(isabled), E(rror)
   or combinations thereof.
 
@@ -101,10 +104,10 @@ Suspending a queue will cause all jobs executing in that queue to be suspended.
 
 The states D(isabled) and C(alendar suspended) indicate that the queue has been disabled or suspended automatically 
 via the calendar facility of xxQS_NAMExx (see xxqs_name_sxx_calendar_conf(5)), while the S(ubordinate) state
-indicates, that the queue has been suspend via subordination to another queue (see xxqs_name_sxx_queue_conf(5) 
+indicates, that the queue has been suspended via subordination to another queue (see xxqs_name_sxx_queue_conf(5) 
 for details). When suspending a queue (regardless of the cause) all jobs executing in that queue are suspended too.
 
-If an E(rror) state is displayed for a queue, *xxqs_name_sxx_execd*(8) on that host was unable to locate the 
+If an E(rror) state is displayed for a queue, xxqs_name_sxx_execd(8) on that host was unable to locate the 
 xxqs_name_sxx_shepherd(8) executable on that host in order to start a job. Please check the error logfile of that 
 xxqs_name_sxx_execd(8) for leads on how to resolve the problem. Please enable the queue afterward via the 
 `-c` option of the qmod(1) command manually.
@@ -119,7 +122,7 @@ single line is displayed with the following format:
 * a second one letter specifier indicating the source for the current resource availability value, being one of  
     * **l** - a load value reported for the resource,  
     * **L** - a load value for the resource after administrator defined load scaling has been applied,  
-    * **c** - availability derived from the consumable resources facility (see *complexes*(5)),  
+    * **c** - availability derived from the consumable resources facility (see xxqs_name_sxx_complexes(5)),  
     * **f** - a fixed availability definition derived from a non-consumable complex attribute or a fixed resource limit. 
 * after a colon the name of the resource on which information is displayed.
 * after an equal sign the current resource availability value.

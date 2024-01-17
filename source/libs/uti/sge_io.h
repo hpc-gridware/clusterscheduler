@@ -59,6 +59,8 @@ extern "C" {
 *  SEE ALSO
 *     uti/io/sge_copy_append();
 ******************************************************************************/
+#include <stdio.h>
+
 typedef enum {
    SGE_MODE_APPEND = 1,
    SGE_MODE_COPY = 2
