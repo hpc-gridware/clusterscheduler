@@ -372,52 +372,6 @@ FCLOSE_ERROR:
    return false;
 }
 
-#if defined(IRIX) || defined(CRAY)
-bool 
-shepherd_read_osjobid_file(
-#if (IRIX)
-   ash_t *return_code,
-#elif defined(CRAY)
-   int *return_code,
-#endif
-   bool is_error
-)
-{
-   bool ret = true;
-   FILE *fp = NULL;
-   const char *const filename = "osjobid";
-
-   fp = fopen(filename, "r");
-   if (fp != NULL) {
-      int arguments = 0;
-
-#if defined(IRIX)
-      arguments = fscanf(fp, "%lld\n", return_code);
-#else
-      arguments = fscanf(fp, "%d\n", return_code);
-#endif
-
-      if (arguments != 1) {
-         shepherd_trace("could not read osjobid file");
-         *return_code = 0;
-         ret = false;
-      }
-      FCLOSE(fp);
-   } else {
-      if (is_error == true) {
-         shepherd_error(1, MSG_FILE_NOOPEN_SS, filename, strerror(errno));
-      } else {
-         shepherd_trace(MSG_FILE_NOOPEN_SS, filename, strerror(errno));
-      }
-      ret = false;
-   }
-   return ret;
-FCLOSE_ERROR:
-   shepherd_error(1, MSG_FILE_NOCLOSE_SS, filename, strerror(errno));
-   return false;
-}
-#endif
-
 void 
 create_checkpointed_file(int ckpt_is_in_arena)
 {

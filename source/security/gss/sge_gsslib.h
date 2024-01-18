@@ -34,11 +34,7 @@
 /*___INFO__MARK_END__*/
 
 #define GSSLIB_INTSIZE 4
-#if defined(_UNICOS)
-#define GSSLIB_INTOFF 4 /* sizeof(int) = 8 */
-#else
 #define GSSLIB_INTOFF 0 /* everybody else */
-#endif
 
 void gsslib_packint(u_long hostlong, char *buf);
 u_long gsslib_unpackint(char *buf);

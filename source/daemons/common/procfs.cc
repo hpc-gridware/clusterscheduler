@@ -44,9 +44,7 @@ int verydummyprocfs;
 #include <sys/types.h>
 #include <sys/signal.h>
 
-#if !defined(CRAY) && !defined(AIX)
 #include <sys/syscall.h>
-#endif
 
 #include <unistd.h>
 #include <sys/times.h>
@@ -60,13 +58,7 @@ int verydummyprocfs;
 #include <string.h>
 #include <signal.h>
 
-#if defined(ALPHA) 
-#  include <sys/user.h>
-#  include <sys/table.h>   
-#  include <sys/procfs.h>   
-#endif
-
-#if defined(SOLARIS) 
+#if defined(SOLARIS)
 #  include <sys/procfs.h>   
 #endif
 
@@ -92,12 +84,8 @@ int verydummyprocfs;
 #include "procfs.h"
 #endif
 
-#if defined(LINUX) || defined(ALPHA) || defined(SOLARIS)
-#   if defined(SVR3)
-#      define PROC_DIR "/debug"
-#   else
-#      define PROC_DIR "/proc"
-#   endif
+#if defined(LINUX) || defined(SOLARIS)
+#   define PROC_DIR "/proc"
 #endif
 
 #if defined(LINUX)
@@ -108,7 +96,7 @@ int verydummyprocfs;
 
 
 /*-----------------------------------------------------------------------*/
-#if defined(LINUX) || defined(ALPHA) || defined(SOLARIS)
+#if defined(LINUX) || defined(SOLARIS)
 
 static DIR *cwd;
 static struct dirent *dent;
@@ -208,7 +196,7 @@ void procfs_kill_addgrpid(gid_t add_grp_id, int sig, tShepherd_trace shepherd_tr
    int groups=0;
    u_long32 max_groups;
    gid_t *list;
-#if defined(SOLARIS) || defined(ALPHA)
+#if defined(SOLARIS)
    int fd;
    prcred_t proc_cred;
 #elif defined(LINUX)
@@ -261,7 +249,7 @@ void procfs_kill_addgrpid(gid_t add_grp_id, int sig, tShepherd_trace shepherd_tr
       if (atoi(dent->d_name) == 0)
          continue;
 
-#if defined(SOLARIS) || defined(ALPHA)
+#if defined(SOLARIS)
       sprintf(procnam, "%s/%s", PROC_DIR, dent->d_name);
       if ((fd = open(procnam, O_RDONLY, 0)) == -1) {
          DPRINTF(("open(%s) failed: %s\n", procnam, strerror(errno)));
@@ -276,7 +264,7 @@ void procfs_kill_addgrpid(gid_t add_grp_id, int sig, tShepherd_trace shepherd_tr
          continue;
 #endif
 
-#if defined(SOLARIS) || defined(ALPHA)
+#if defined(SOLARIS)
       /* get number of groups */
       if (ioctl(fd, PIOCCRED, &proc_cred) == -1) {
          close(fd);
@@ -328,7 +316,7 @@ void procfs_kill_addgrpid(gid_t add_grp_id, int sig, tShepherd_trace shepherd_tr
       }
 #endif
 
-#if defined(SOLARIS) || defined(ALPHA)
+#if defined(SOLARIS)
       close(fd);
 #elif defined(LINUX)
       FCLOSE(fp);
@@ -347,7 +335,7 @@ FCLOSE_ERROR:
              */
             if (!(uids[0] == 0 && gids[0] == 0 &&
                   uids[1] == 0 && gids[1] == 0)) {
-#elif defined(SOLARIS) || defined(ALPHA)
+#elif defined(SOLARIS)
             if (!(proc_cred.pr_ruid == 0 && proc_cred.pr_rgid == 0 &&
                   proc_cred.pr_euid == 0 && proc_cred.pr_egid == 0)) {
 #endif
@@ -416,7 +404,7 @@ time_t last_time
    prpsinfo_t pri;
 #endif
 
-#if defined(SOLARIS) || defined(ALPHA)   
+#if defined(SOLARIS)
    prcred_t proc_cred;
 #endif
 
@@ -618,7 +606,7 @@ time_t last_time
             fclose(f);
          }
       } 
-#  elif defined(SOLARIS) || defined(ALPHA)
+#  elif defined(SOLARIS)
       
       /* 
        * get prstatus 
@@ -846,22 +834,6 @@ time_t last_time
    proc_elem->mem = 
          ((proc_elem->proc.pd_stime + proc_elem->proc.pd_utime) - old_time) * 
          (( old_vmem + proc_elem->vmem)/2);
-
-#if defined(ALPHA)
-#define BLOCKSIZE 512
-   {
-      struct user ua;
-      uint64 old_ru_ioblock = proc_elem->ru_ioblock;
-
-      /* need to do a table(2) call for each process to retrieve io usage data */   
-      /* get user area stuff */
-      if (table(TBL_UAREA, proc_elem->proc.pd_pid, (char *)&ua, 1, sizeof ua) == 1) {
-         proc_elem->ru_ioblock = (uint64)(ua.u_ru.ru_inblock + ua.u_ru.ru_oublock);
-         proc_elem->delta_chars = (proc_elem->ru_ioblock - old_ru_ioblock)* BLOCKSIZE;
-      }
-   }
-#endif
-
 
    close(fd);
    DRETURN(0);

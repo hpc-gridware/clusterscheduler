@@ -41,43 +41,11 @@
 
 #include <sys/types.h>
 
-#if defined(IRIX)
-#  include <sys/types.h>
-#  include <sys/time.h>
-
-   /* define some IRIX 6.[23] stuff not available in IRIX 6.4 */
-   struct sched_deadline {
-        timespec_t             dl_period;      /* size of deadline interval */
-        timespec_t             dl_alloc;       /* cpu wanted in interval */
-        /*
-         * These fields are placeholders for future functionality.
-         * They currently should be set to zero.
-         */
-        timespec_t              dl_deadline;    /* if deadline/period differ */
-        int                     dl_flags;       /* control flags */
-   };
-#  define DEADLINE 15
-#endif
-
 #define PTF_COMPENSATION_FACTOR 2.0
 
-#if defined(IRIX)
-   typedef ash_t osjobid_t;
-   typedef unsigned long long u_osjobid_t;
-#  define OSJOBID_FMT "%lld"
-#elif defined(CRAY)
-   typedef unsigned long long osjobid_t;
-   typedef unsigned long long u_osjobid_t;
-#  define OSJOBID_FMT "%ld"
-/*#elif defined(ALPHA5)
-   typedef unsigned long osjobid_t;
-   typedef unsigned long u_osjobid_t;
-#  define OSJOBID_FMT "%ld"       */
-#else
-   typedef pid_t osjobid_t;
-   typedef unsigned int u_osjobid_t;
-#  define OSJOBID_FMT pid_t_fmt
-#endif
+typedef pid_t osjobid_t;
+typedef unsigned int u_osjobid_t;
+#define OSJOBID_FMT pid_t_fmt
 
 typedef gid_t addgrpid_t;
 #define ADDGRPID_FMT gid_t_fmt  
@@ -106,20 +74,7 @@ typedef gid_t addgrpid_t;
 #define PTF_DIFF_DECAY_CONSTANT 0.8
 
 #ifdef PTF_NICE_BASED
-#  if defined(IRIX)
-#    define ENFORCE_PRI_RANGE     1
-#    define PTF_MIN_PRIORITY      (TS_PRIO_MIN)
-#    define PTF_MAX_PRIORITY      (TS_PRIO_MAX)
-#    define PTF_OS_MIN_PRIORITY   (TS_PRIO_MIN)
-#    define PTF_OS_MAX_PRIORITY   (TS_PRIO_MAX)
-#    define PTF_BACKGROUND_NICE_VALUE 20
-#  elif defined(SOLARIS)
-#    define ENFORCE_PRI_RANGE     1
-#    define PTF_MIN_PRIORITY      20
-#    define PTF_MAX_PRIORITY     -10
-#    define PTF_OS_MIN_PRIORITY   20
-#    define PTF_OS_MAX_PRIORITY  -20
-#  elif defined(ALPHA)
+#  if defined(SOLARIS)
 #    define ENFORCE_PRI_RANGE     1
 #    define PTF_MIN_PRIORITY      20
 #    define PTF_MAX_PRIORITY     -10
@@ -130,12 +85,6 @@ typedef gid_t addgrpid_t;
 #    define PTF_MIN_PRIORITY      20
 #    define PTF_MAX_PRIORITY      0
 #    define PTF_OS_MIN_PRIORITY   20
-#    define PTF_OS_MAX_PRIORITY  -20
-#  elif defined(CRAY)
-#    define ENFORCE_PRI_RANGE     1
-#    define PTF_MIN_PRIORITY      39
-#    define PTF_MAX_PRIORITY      1
-#    define PTF_OS_MIN_PRIORITY   39
 #    define PTF_OS_MAX_PRIORITY  -20
 #  elif defined(DARWIN)
 #    define ENFORCE_PRI_RANGE     1
@@ -149,34 +98,12 @@ typedef gid_t addgrpid_t;
 #    define PTF_MAX_PRIORITY     -10
 #    define PTF_OS_MIN_PRIORITY   20
 #    define PTF_OS_MAX_PRIORITY  -20
-#  elif defined(AIX)
-#    define ENFORCE_PRI_RANGE     1
-#    define PTF_MIN_PRIORITY      20
-#    define PTF_MAX_PRIORITY      0
-#    define PTF_OS_MIN_PRIORITY   20
-#    define PTF_OS_MAX_PRIORITY  -20
-#  elif defined(HP1164)
-#    define ENFORCE_PRI_RANGE     1
-#    define PTF_MIN_PRIORITY      39
-#    define PTF_MAX_PRIORITY      0
-#    define PTF_OS_MIN_PRIORITY   39
-#    define PTF_OS_MAX_PRIORITY   0
 #  endif
 #  define PTF_BACKGROUND_JOB_PROPORTION 0.015
 #  define PTF_BACKGROUND_JOB_PRIORITY NDPLOMAX
 #endif
 
-#ifdef IRIX
-   /*
-    * transform the priority value which will be accepted by
-    * setpriority into a value which will be accepted by
-    * schedctl
-    */
-#  define PTF_PRIORITY_TO_NATIVE_PRIORITY(priority) (priority+20)
-#else
-#  define PTF_PRIORITY_TO_NATIVE_PRIORITY(priority) (priority)
-#endif
-
+#define PTF_PRIORITY_TO_NATIVE_PRIORITY(priority) (priority)
 
 #ifdef PTF_NDPRI_BASED
 #define PTF_MIN_PRIORITY NDPNORMMIN

@@ -36,7 +36,7 @@
 extern "C" {
 #endif
 
-#if defined(CRAY) || defined(SOLARIS) || defined(HPUX) || defined(ALPHA) || defined(LINUX) || defined(IRIX) || defined(DARWIN) || defined(FREEBSD) || defined(NETBSD) || defined(HAS_AIX5_PERFLIB)
+#if defined(SOLARIS) || defined(LINUX) || defined(DARWIN) || defined(FREEBSD) || defined(NETBSD)
 
 #define SGE_LOADMEM
 
@@ -50,9 +50,6 @@ extern "C" {
 *        double mem_free;  
 *        double swap_total; 
 *        double swap_free;   
-*     #ifdef IRIX
-*        double swap_rsvd;   
-*     #endif
 *     } sge_mem_info_t;
 *
 *  FUNCTION
@@ -70,9 +67,6 @@ typedef struct {
    double mem_free;    
    double swap_total;  
    double swap_free; 
-#ifdef IRIX
-   double swap_rsvd;  
-#endif
 } sge_mem_info_t;
 
 int sge_loadmem(sge_mem_info_t *mem_info);

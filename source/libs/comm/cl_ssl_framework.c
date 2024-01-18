@@ -67,15 +67,6 @@
 #ifdef SOLARIS
 #include <link.h>
 #endif /* SOLARIS */
-#else /* LOAD_OPENSSL */
-/*
- * Disable the warning "The variable ... is set but never used."
- * We set a lot of function pointers we don't use currently, but we want
- * to have them ready when we need them.
- */
-#if defined (IRIX65)
-#pragma set woff 1552 
-#endif
 #endif /* LOAD_OPENSSL */
 
 #include <openssl/err.h> 
@@ -127,8 +118,8 @@
         cl_com_ssl_func__SSL_ctrl((ssl),SSL_CTRL_OPTIONS,0,NULL)
 
 /*
- * bugfix for HP and AIX:
- * =====================
+ * bugfix exotic architectures
+ * ===========================
  *
  * On some operating systems the open ssl error may return an
  * error when calling ssl functions from a thread. A second call
@@ -142,7 +133,7 @@
  * after commlib case specific timeouts.
  *
  */
-#if defined(HPUX) || defined(AIX)
+#if 0
 #define CL_COM_ENABLE_SSL_THREAD_RETRY_BUGFIX
 #endif
 
@@ -874,13 +865,6 @@ static void cl_com_ssl_locking_callback(int mode, int type, const char *file, in
       }
    } else {
       CL_LOG(CL_LOG_ERROR,"global ssl config object not initalized");
-
-      /* this two debug messages are only used to prevent compiler 
-         warnings on IRIX65 compiler (when -Werror is set) 
-         (unused symbols line and tmp_filename) when the if-endif parts
-         above are disabled */
-      CL_LOG_INT(CL_LOG_DEBUG,"dummy debug:", line);
-      CL_LOG_STR(CL_LOG_DEBUG,"dummy debug:", tmp_filename);
    }
 }
 
@@ -1081,15 +1065,7 @@ static int cl_com_ssl_build_symbol_table(void) {
       cl_com_ssl_crypto_handle = dlopen (ssl_lib, RTLD_LAZY | RTLD_GLOBAL);
 #endif /* RTLD_NODELETE */
 
-#elif defined(HPUX)
-      sge_strlcat(ssl_lib, "/libssl.sl", BUFSIZ);
-#ifdef RTLD_NODELETE
-      cl_com_ssl_crypto_handle = dlopen (ssl_lib, RTLD_LAZY | RTLD_NODELETE);
 #else
-      cl_com_ssl_crypto_handle = dlopen (ssl_lib, RTLD_LAZY );
-#endif /* RTLD_NODELETE */
-
-#else   
       sge_strlcat(ssl_lib, "/libssl.so", BUFSIZ);
 
 #ifdef RTLD_NODELETE
@@ -3328,11 +3304,7 @@ int cl_com_ssl_open_connection(cl_com_connection_t* connection, int timeout) {
       struct timeval now;
       int socket_error = 0;
 
-#if defined(IRIX65) || defined(DARWIN6) || defined(ALPHA5) || defined(HPUX)
-      int socklen = sizeof(socket_error);
-#else
       socklen_t socklen = sizeof(socket_error);
-#endif
 
       CL_LOG(CL_LOG_DEBUG,"connection_sub_state is CL_COM_OPEN_CONNECT_IN_PROGRESS");
 
@@ -3714,12 +3686,8 @@ int cl_com_ssl_connection_request_handler_setup(cl_com_connection_t* connection,
    }
 
    if (private->server_port == 0) {
-#if defined(IRIX65) || defined(DARWIN6) || defined(ALPHA5) || defined(HPUX)
-      int length;
-#else
-      socklen_t length;
-#endif
-      length = sizeof(serv_addr);
+      socklen_t length = sizeof(serv_addr);
+
       /* find out assigned port number and pass it to caller */
       if (getsockname(sockfd,(struct sockaddr *) &serv_addr, &length ) == -1) {
          shutdown(sockfd, 2);
@@ -3752,11 +3720,7 @@ int cl_com_ssl_connection_request_handler(cl_com_connection_t* connection,cl_com
    struct sockaddr_in cli_addr;
    int new_sfd = 0;
    int sso;
-#if defined(IRIX65) || defined(DARWIN6) || defined(ALPHA5) || defined(HPUX)
-   int fromlen = 0;
-#else
    socklen_t fromlen = 0;
-#endif
    int retval;
    int server_fd = -1;
    cl_com_ssl_private_t* private = NULL;
@@ -3822,7 +3786,7 @@ int cl_com_ssl_connection_request_handler(cl_com_connection_t* connection,cl_com
          CL_LOG(CL_LOG_WARNING,"could not resolve incoming hostname");
       }
 
-      fcntl(new_sfd, F_SETFL, O_NONBLOCK);         /* HP needs O_NONBLOCK, was O_NDELAY */
+      fcntl(new_sfd, F_SETFL, O_NONBLOCK);
       sso = 1;
 #if defined(SOLARIS) && !defined(SOLARIS64)
       if (setsockopt(new_sfd, IPPROTO_TCP, TCP_NODELAY, (const char *) &sso, sizeof(int)) == -1) {
@@ -3921,12 +3885,7 @@ int cl_com_ssl_open_connection_request_handler(cl_com_handle_t* handle, cl_raw_l
    int socket_error = 0;
    int get_sock_opt_error = 0;
    char tmp_string[1024];
-
-#if defined(IRIX65) || defined(DARWIN6) || defined(ALPHA5) || defined(HPUX)
-   int socklen = sizeof(socket_error);
-#else
    socklen_t socklen = sizeof(socket_error);
-#endif
 
 #ifdef USE_POLL
    struct pollfd* ufds = NULL;

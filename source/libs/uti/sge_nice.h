@@ -43,12 +43,8 @@ extern "C" {
 #ifdef __convex__
 #   define SETPRIORITY(niceval) setpriority(PRIO_PROCESS,getpgrp(),niceval)
 #else
-#   if defined(_UNICOS) || defined(SINIX)
-#      define SETPRIORITY(niceval) nice(niceval + 20)
-#   else
-#      define SETPRIORITY(niceval) setpriority(PRIO_PROCESS, 0, niceval)
-#   endif
-#endif    
+#  define SETPRIORITY(niceval) setpriority(PRIO_PROCESS, 0, niceval)
+#endif
 
 #ifdef __cplusplus
 }

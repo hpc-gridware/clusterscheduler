@@ -42,13 +42,7 @@ extern "C" {
 #endif
 
 /* type wrapper */
-#if defined(CRAY)
-   typedef long sge_rlim_t;
-#elif IRIX
-   typedef rlim64_t sge_rlim_t;
-#else
-   typedef rlim_t sge_rlim_t;
-#endif
+typedef rlim_t sge_rlim_t;
 
 sge_rlim_t mul_infinity(sge_rlim_t rlim, sge_rlim_t muli);
 

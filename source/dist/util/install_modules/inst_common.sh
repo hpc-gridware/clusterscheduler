@@ -1747,11 +1747,6 @@ SearchForExistingInstallations()
       return
    fi
    
-   #MacOS overwrites the files (all services share single file)
-   if [ "$ARCH" = darwin -o "$ARCH" = darwin-ppc -o "$ARCH" = darwin-x86 ]; then
-      return
-   fi
-    
    TMP_DAEMON_LIST=$1
    exists=0
    for TMP_DAEMON in $TMP_DAEMON_LIST; do

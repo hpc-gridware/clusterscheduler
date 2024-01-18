@@ -181,8 +181,7 @@ the parameter is only passed through *xxqs_name_sxx_qmaster*(8) as a
 string.
 
 Currently, support is only provided for multiprocessor machines running
-Solaris, SGI multiprocessor machines running IRIX 6.2 and Digital UNIX
-multiprocessor machines. In the case of Solaris the processor set must
+Solaris. In the case of Solaris the processor set must
 already exist, when this processors parameter is configured. So the
 processor set has to be created manually. In the case of Digital UNIX
 only one job per processor set is allowed to execute at the same time,
@@ -816,35 +815,6 @@ support *setrlimit*(2).
 **Note also:** s_vmem and h_vmem (virtual memory) are only available on
 systems supporting RLIMIT_VMEM (see *setrlimit*(2) on your operating
 system).
-
-The UNICOS operating system supplied by SGI/Cray does not support the
-*setrlimit*(2) system call, using their own resource limit-setting
-system call instead. For UNICOS systems only, the following meanings
-apply:
-
-s_cpu  
-The per-process CPU time limit in seconds.
-
-s_core  
-The per-process maximum core file size in bytes.
-
-s_data  
-The per-process maximum memory limit in bytes.
-
-s_vmem  
-The same as s_data (if both are set the minimum is used).
-
-h_cpu  
-The per-job CPU time limit in seconds.
-
-h_data  
-The per-job maximum memory limit in bytes.
-
-h_vmem  
-The same as h_data (if both are set the minimum is used).
-
-h_fsize  
-The total number of disk blocks that this job can create.
 
 # SEE ALSO
 

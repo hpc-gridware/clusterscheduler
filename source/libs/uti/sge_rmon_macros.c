@@ -51,12 +51,6 @@
 define RMON_USE_CTX
 #endif 
 
-/* ALPHA (osf4 and tru64) have f(un)lockfile, but prototype is missing */
-#if defined (ALPHA)
-extern void flockfile(FILE *);
-extern void funlockfile(FILE *);
-#endif
-
 enum {
    RMON_NONE     = 0,   /* monitoring off */
    RMON_LOCAL    = 1,   /* monitoring on */
@@ -598,9 +592,7 @@ static void mwrite(char *message, const char *thread_name)
    unsigned long tmp_pid    = (unsigned long) getpid();
    unsigned long tmp_thread = (unsigned long) pthread_self();
 
-#if !defined(DARWIN6)
    flockfile(rmon_fp);
-#endif
 
 #ifdef DEBUG_CLIENT_SUPPORT
    /* if there is a callback function, don't call standard function */
@@ -620,9 +612,7 @@ static void mwrite(char *message, const char *thread_name)
    fflush(rmon_fp);
 
    traceid++;
-#if !defined(DARWIN6)
    funlockfile(rmon_fp);
-#endif
 
    return;
 } /* mwrite() */

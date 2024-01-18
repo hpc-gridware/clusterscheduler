@@ -838,7 +838,7 @@ const lListElem *pe_task
    char id_buffer[MAX_STRING_SIZE]; /* static dstring for job id string */
    dstring id_dstring;
 
-#if defined(SOLARIS) || defined(ALPHA) || defined(LINUX) || defined(HP1164) || defined(AIX) || defined(FREEBSD) || defined(DARWIN)
+#if defined(SOLARIS) || defined(LINUX) || defined(FREEBSD) || defined(DARWIN)
    gid_t addgrpid;
    dstring addgrpid_path = DSTRING_INIT;
 #else   
@@ -855,15 +855,11 @@ const lListElem *pe_task
       pe_task_id = lGetString(pe_task, PET_id);
    }
 
-#if defined(SOLARIS) || defined(ALPHA) || defined(LINUX) || defined(HP1164) || defined(AIX) || defined(FREEBSD) || defined(DARWIN)
+#if defined(SOLARIS) || defined(LINUX) || defined(FREEBSD) || defined(DARWIN)
    /**
     ** read additional group id and use it as osjobid 
     **/
 
-   /**
-    ** we use the process group ID as osjobid on HP-UX and AIX
-    **/
-   
    /* open addgrpid file */
    sge_get_active_job_file_path(&addgrpid_path,
                                 job_id, ja_task_id, pe_task_id, ADDGRPID);

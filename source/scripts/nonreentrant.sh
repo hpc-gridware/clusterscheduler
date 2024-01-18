@@ -50,15 +50,6 @@ lx2*)
 darwin)
    Filter3
    ;;
-irix65)
-   Filter1
-   ;;
-aix43)
-   Filter4
-   ;;
-tru64)
-   Filter4
-   ;;
 esac
 }
 

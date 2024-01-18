@@ -86,21 +86,12 @@ spool_dynamic_create_context(lList **answer_list, const char *method,
     * shlib postfix 
     */
    shlib_fullname = sge_dstring_sprintf(&shlib_dstring, "%s.%s", shlib_name, 
-#if defined(HP11) || defined(HP1164)
-                                        "sl"
-#elif defined(DARWIN)
+#if defined(DARWIN)
                                         "dylib"
 #else
                                         "so"
 #endif
                                        );
-
-#if defined(HP1164)   
-   /*
-   ** need to switch to start user for HP
-   */
-   sge_switch2start_user();
-#endif   
 
    /* open the shared lib */
    # if defined(DARWIN)
@@ -116,13 +107,6 @@ spool_dynamic_create_context(lList **answer_list, const char *method,
    shlib_handle = dlopen(shlib_fullname, RTLD_NOW);
    # endif /* RTLD_NODELETE */
    #endif
-
-#if defined(HP1164)
-   /*
-   ** switch back to admin user for HP
-   */
-   sge_switch2admin_user();
-#endif
 
    if (shlib_handle == NULL) {
       answer_list_add_sprintf(answer_list, STATUS_EUNKNOWN, 

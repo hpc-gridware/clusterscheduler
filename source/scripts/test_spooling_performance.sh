@@ -300,10 +300,6 @@ if [ $createdist = true ]; then
          echo "---------------------------"
          UTILPREFIX="lib"
          case $i in 
-         hp10|hp11|hp11-64)
-            shlibext="sl"
-            jnilibext="sl"
-            ;;
          darwin-*)
             shlibext="dylib"
             jnilibext="jnilib"

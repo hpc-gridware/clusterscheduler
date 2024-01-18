@@ -83,17 +83,7 @@
 #define SGE_STRTOU_LONG32(S) strtoul(S, NULL, 10)
 #endif
 
-
-#if defined(IRIX)
-#define sge_u64 "%lld"
-#define sge_u64c(x)  (unsigned long long)(x)
-#endif
-
-#if defined(HP11) || defined(HP1164)
-#  include <limits.h>
-#else
-#  include <sys/param.h>
-#endif
+#include <sys/param.h>
 
 #if defined(TARGET_64BIT)
 #  define u_long32 u_int
@@ -143,11 +133,7 @@ typedef char stringT[MAX_STRING_SIZE];
 #define MAX_VERIFY_STRING 512
 
 #define INTSIZE     4           /* (4) 8 bit bytes */
-#if defined(_UNICOS)
-#define INTOFF      4           /* big endian 64-bit machines where sizeof(int) = 8 */
-#else
 #define INTOFF      0           /* the rest of the world; see comments in request.c */
-#endif
 
 #ifndef MIN
 #define MIN(a,b) ((a)<(b)?(a):(b))
@@ -184,11 +170,6 @@ typedef char stringT[MAX_STRING_SIZE];
 #define PFNMAX "%-.1023s"  /* write to buffer of size SGE_PATH_MAX */
 /* non-quoted string not limited intentionally */
 #define SN_UNLIMITED  "%s"
-
-#if defined(HPUX)
-#  define seteuid(euid) setresuid(-1, euid, -1)
-#  define setegid(egid) setresgid(-1, egid, -1)
-#endif
 
 #ifndef TRUE
 #  define TRUE 1

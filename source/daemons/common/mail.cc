@@ -58,8 +58,8 @@
 #   include "sge_smf.h"
 #endif
 
-#if defined(SOLARIS) || defined(ALPHA)
-/* ALPHA only has wait3() prototype if _XOPEN_SOURCE_EXTENDED is defined */
+#if defined(SOLARIS)
+/* wait3() prototype is available only if _XOPEN_SOURCE_EXTENDED is defined */
 pid_t wait3(int *, int, struct rusage *);
 #endif
 
@@ -140,16 +140,8 @@ const char *buf
    FILE *fp;
    stringT user_str;
    bool done;
-
-#if !defined(CRAY)
    struct rusage rusage;
-#endif
-
-#if defined(SVR3) || defined(_BSD)
-   union wait status;
-#else
    int status;
-#endif
 
    DENTER(TOP_LAYER);
 
@@ -239,11 +231,7 @@ const char *buf
       sigprocmask(SIG_SETMASK, &io_mask, &omask);
       sigaction(SIGALRM, &sigalrm_vec, &sigalrm_ovec);
 
-#if defined(CRAY)
-      pid2 = waitpid(pid, &status, 0);
-#else
       pid2 = wait3(&status, 0, &rusage);
-#endif
 
       alarm(0);
       if (pid2 == 0) {          /* how could this happen? */
@@ -264,11 +252,7 @@ const char *buf
          exit(1);
       }
 
-#if defined(SVR3) || defined(_BSD)
-      exit_status = status.w_retcode;
-#else
       exit_status = status;
-#endif
       DPRINTF(("mailer exited with exit status %d\n", exit_status));
       exit(exit_status);
    }

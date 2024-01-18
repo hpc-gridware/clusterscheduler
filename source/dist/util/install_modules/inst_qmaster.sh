@@ -624,17 +624,7 @@ SetProductMode()
    fi
 
    if [ $CSP = true ]; then
-
-      case $SGE_ARCH in
-
-      aix* | hp11*)
-          SEC_COUNT=`strings -a $SGE_BIN/sge_qmaster | grep "AIMK_SECURE_OPTION_ENABLED" | wc -l`
-          ;;
-         *)
-          SEC_COUNT=`strings $SGE_BIN/sge_qmaster | grep "AIMK_SECURE_OPTION_ENABLED" | wc -l`
-          ;;
-      esac
-
+      SEC_COUNT=`strings $SGE_BIN/sge_qmaster | grep "AIMK_SECURE_OPTION_ENABLED" | wc -l`
       if [ $SEC_COUNT -ne 1 ]; then
          $INFOTEXT "\n>sge_qmaster< binary is not compiled with >-secure< option!\n"
          $INFOTEXT -wait -auto $AUTO -n "Hit <RETURN> to cancel the installation >> "
@@ -1829,11 +1819,7 @@ GetDefaultJavaForPlatform()
          java_homes="/usr/java
 /usr/jdk/latest"
          ;;
-      sol-x86)     
-         java_homes="/usr/java
-/usr/jdk/latest"
-         ;;
-      lx*-amd64)   
+      lx*-amd64)
          java_homes="/usr/java
 /usr/jdk/latest
 /usr/java/latest
@@ -1845,19 +1831,10 @@ GetDefaultJavaForPlatform()
 /usr/java/latest
 /etc/alternatives/jre"
          ;;
-      darwin-ppc)
+      darwin-x64)
          java_homes="/Library/Java/Home
 /System/Library/Frameworks/JavaVM.framework/Home"
          ;;
-      darwin-x86)  
-         java_homes="/Library/Java/Home
-/System/Library/Frameworks/JavaVM.framework/Home"
-         ;;
-      darwin-x64)  
-         java_homes="/Library/Java/Home
-/System/Library/Frameworks/JavaVM.framework/Home"
-         ;;
-   #TODO: Missing HP, AIX platforms
    esac
    for java_home in $java_homes; do
       if [ -x $java_home/bin/java ]; then
@@ -1967,13 +1944,7 @@ GetJvmLibFromJavaHome() {
       lx*-x86)     
          suffix=lib/i386/server/libjvm.so
          ;;
-      darwin-ppc)
-         suffix=../Libraries/libjvm.dylib
-         ;;
-      darwin-x86)  
-         suffix=../Libraries/libjvm.dylib
-         ;;
-      darwin-x64)  
+      darwin-x64)
          suffix=../Libraries/libjvm.dylib
          ;;
    #TODO: Missing HP, AIX platforms

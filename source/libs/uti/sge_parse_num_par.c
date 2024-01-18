@@ -47,16 +47,7 @@
 
 #include "symbols.h"
 
-
-#if defined(IRIX)
-   /* to be independent from irix' compiler options */
-#  undef RLIM_INFINITY
-#  define  RLIM_INFINITY  0x7fffffffffffffffLL
-#elif defined(CRAY)
-#  define  RLIM_INFINITY  0
-#endif
-
-#if !defined(CRAY) && !defined(SOLARIS64) && !defined(SOLARISAMD64)
+#if !defined(SOLARIS64) && !defined(SOLARISAMD64)
 #  define RLIM_MAX RLIM_INFINITY
 #else
 #  define RLIM_MAX 0x7fffffffffffffff
@@ -398,11 +389,7 @@ sge_parse_num_val(sge_rlim_t *rlimp, double *dvalp,
    } else if (!strcasecmp(str, "infinity")) {
       *dvalp = DBL_MAX;       /* use this for comparing limits */
       *rlimp = RLIM_INFINITY; /* use this for limit setting */
-#ifndef CRAY      
       return 0xFFFFFFFF;      /* return max ulong in 32 bit */
-#else
-      return RLIM_MAX;
-#endif            
    } else if (strchr(str, ':')) {
       /* This is a time value in the format hr:min:sec */
 

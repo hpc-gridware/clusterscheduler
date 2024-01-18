@@ -50,8 +50,6 @@
 #  include <termios.h>
 #  include <sys/ttycom.h>
 #  include <sys/ioctl.h>
-#elif defined(HP11) || defined(HP1164)
-#  include <termios.h>
 #elif defined(FREEBSD) || defined(NETBSD)
 #  include <sys/ioctl.h>
 #  include <termios.h>
@@ -359,7 +357,7 @@ static void* pty_to_commlib(void *t_conf)
       errno = 0;
       ret = select(fd_max+1, &read_fds, NULL, NULL, &timeout);
       thread_testcancel(t_conf);
-/* This is a workaround for Darwin and HP11, where thread_testcancel() doesn't work.
+/* This is a workaround for Darwin, where thread_testcancel() doesn't work.
  * TODO: Find the reason why it doesn't work and remove the workaround
  */
       if (g_raised_event > 0) {

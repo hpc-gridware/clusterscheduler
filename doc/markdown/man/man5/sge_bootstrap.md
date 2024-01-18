@@ -114,7 +114,7 @@ The path name given here is searched for binaries as well as any
 directory below with a directory name equal to the current operating
 system architecture. Therefore, /usr/xxQS_NAME_Sxx/bin will work for all
 architectures, if the corresponding binaries are located in
-subdirectories named aix43, lx-amd64, lx-x86, hp11, hp11-64, sol-amd64,
+subdirectories named lx-amd64, lx-x86, sol-amd64,
 sol-sparc etc.
 
 The default location for the binary path is \<xxqs_name_sxx_root>/bin

@@ -68,7 +68,7 @@ static void  sge_infotext_welcome(void);
 static void  sge_infotext_raw(char *format_string);
 static void  sge_infotext_usage(void);
 static int   sge_infotext_get_nr_of_substrings(const char* buffer, const char* substring);
-#if defined(ALPHA) || defined(SOLARISAMD64) || defined(ALPHA5) || defined(ALINUX) || defined(HPUX) || __GNUC__ >= 3 || defined(NETBSD)
+#if defined(SOLARISAMD64) || __GNUC__ >= 3 || defined(NETBSD)
 static char *sge_infotext_string_replace(dstring* buf, const char *arg, const char *what, const char *with, int only_first );
 #endif
 static char* sge_infotext_string_input_parsing(dstring* buf,char* string);
@@ -548,7 +548,7 @@ static char* sge_infotext_string_output_parsing(dstring* string_buffer,char* str
 }
 
 
-#if defined(ALPHA) || defined(SOLARISAMD64) || defined(ALPHA5) || defined(ALINUX) || defined(HPUX) || defined(IRIX65) || __GNUC__ >= 3 || defined(NETBSD)
+#if defined(SOLARISAMD64) || __GNUC__ >= 3 || defined(NETBSD)
 static char *sge_infotext_string_replace(dstring* tmp_buf, const char *arg, const char *what, const char *with, int only_first) {
    size_t i;
    char *p1;
@@ -1052,7 +1052,7 @@ int main( int argc, char* argv[] ) {
    DPRINTF(("pass 4\n"));
    {
       if (real_args > 0) {
-#if defined(SOLARISAMD64) || defined(ALPHA) || defined(ALPHA5) || defined(ALINUX) || defined(HPUX) || defined(IRIX65) || __GNUC__ >= 3 || defined(NETBSD)
+#if defined(SOLARISAMD64) || __GNUC__ >= 3 || defined(NETBSD)
       for(i=0;i<real_args;i++) {
 /*      printf("argument[%d]: \"%s\"\n",i,argv[first_arg +i]); */
          sge_dstring_copy_string(&buffer, sge_infotext_string_replace(&tmp_buf, (char*)sge_dstring_get_string(&buffer2),"%s",argv[first_arg +i],1));

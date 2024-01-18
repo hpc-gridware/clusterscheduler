@@ -57,15 +57,6 @@ DISK=/tmp
 oslevel=0
 
 case "$ARCH" in 
-   aix*)
-      oslevel=`uname -v`.`uname -r`
-      ;;
-   hp*)
-      oslevel=`uname -r | cut -f 2- -d .`
-      ;;
-   tru64)
-      oslevel=`uname -r | cut -c 2-`
-      ;;
    ?linux)
       oslevel=`uname -r | cut -f 1 -d '-'`
       ;;

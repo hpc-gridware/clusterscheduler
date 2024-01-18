@@ -44,9 +44,6 @@
 #include <sys/wait.h>
 #include <sys/time.h>
 #include <netinet/in.h>
-#if defined(HPUX)
-#include <arpa/inet.h>
-#endif
 
 #include "uti/sge_rmon.h"
 #include "uti/sge_hostname.h"
@@ -94,8 +91,6 @@
 #  include <termios.h>
 #  include <sys/ttycom.h>
 #  include <sys/ioctl.h>
-#elif defined(HP11) || defined(HP1164)
-#  include <termios.h>
 #elif defined(FREEBSD) || defined(NETBSD)
 #  include <termios.h>
 #else
@@ -110,10 +105,6 @@
 
 #include "sgeobj/cull_parse_util.h"
 #include "sgeobj/sge_jsv.h"
-
-#if defined(DARWIN6)
-#   define sigignore(x) signal(x,SIG_IGN)
-#endif
 
 /* global variables */
 sge_gdi_ctx_class_t *ctx = NULL;
@@ -292,12 +283,8 @@ static void forward_signal(int sig)
 static int open_qrsh_socket(int *port) {
    int sock;
    struct sockaddr_in server;
-#if defined(IRIX65) || defined(DARWIN6) || defined(ALPHA5) || defined(HP1164)
-   int length;
-#else
    socklen_t length;
-#endif
- 
+
    DENTER(TOP_LAYER);
 
    /* create socket */
@@ -386,11 +373,7 @@ static int wait_for_qrsh_socket(int sock, int timeout)
       default: 
          if (FD_ISSET(sock, &ready)) {
             /* start accepting connections */
-#if defined(IRIX65) || defined(DARWIN6) || defined(ALPHA5) || defined(HP1164)
-            msgsock = accept(sock,(struct sockaddr *) 0,(int *) NULL);
-#else
             msgsock = accept(sock,(struct sockaddr *) 0,(socklen_t *) NULL);
-#endif
 
             if (msgsock == -1) {
                ERROR((SGE_EVENT, MSG_QSH_ERRORINACCEPTONSOCKET_S, strerror(errno)));

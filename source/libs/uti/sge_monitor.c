@@ -35,7 +35,7 @@
 #include <pthread.h>
 #include <dlfcn.h>
 
-#if defined(LINUX) || defined(AIX43) || defined(AIX51) || defined(IRIX) || defined(SOLARIS) || defined(HP11)
+#if defined(LINUX) || defined(SOLARIS)
 #  include <malloc.h>
 #endif
 
@@ -87,7 +87,7 @@ static pthread_mutex_t global_mutex = PTHREAD_MUTEX_INITIALIZER;
 static dstring Info_Line= DSTRING_INIT;
 
 /* mallinfo related data */
-#if defined(LINUX) || defined(AIX43) || defined(AIX51) || defined(IRIX) || defined(SOLARIS) || defined(HP11)
+#if defined(LINUX) || defined(SOLARIS)
 static bool mallinfo_initialized = false;
 static void *mallinfo_shlib_handle = NULL;
 static struct mallinfo (*mallinfo_func_pointer)(void) = NULL;
@@ -156,7 +156,7 @@ void sge_monitor_free(monitoring_t *monitor)
    monitor->work_line = NULL;
    monitor->thread_name = NULL;
 
-#if defined(LINUX) || defined(AIX43) || defined(AIX51) || defined(IRIX) || defined(SOLARIS) || defined(HP11)
+#if defined(LINUX) || defined(SOLARIS)
    sge_mutex_lock("sge_monitor_status", __func__, __LINE__, &global_mutex);
    if (mallinfo_shlib_handle != NULL) {  
       dlclose(mallinfo_shlib_handle);
@@ -201,7 +201,7 @@ sge_monitor_init(monitoring_t *monitor, const char *thread_name, extension_t ext
    /*
     * initialize the mallinfo function pointer if it is available
     */
-#if defined(LINUX) || defined(AIX43) || defined(AIX51) || defined(IRIX) || defined(SOLARIS) || defined(HP11)
+#if defined(LINUX) || defined(SOLARIS)
    sge_mutex_lock("sge_monitor_status", __func__, __LINE__, &global_mutex);
    if (mallinfo_initialized == false) {
       const char *function_name = "mallinfo";
@@ -440,7 +440,7 @@ u_long32 sge_monitor_status(char **info_message, u_long32 monitor_time)
       sge_dstring_append(&Info_Line, "\n");
    }
 
-#if defined(LINUX) || defined(AIX43) || defined(AIX51) || defined(IRIX) || defined(SOLARIS) || defined(HP11)
+#if defined(LINUX) || defined(SOLARIS)
    if (mallinfo_func_pointer != NULL) {
       struct mallinfo mallinfo_data = mallinfo_func_pointer();
 

@@ -757,10 +757,6 @@ static int sge_get_loadavg(const char* qualified_hostname, lList **lpp)
    sge_add_double2load_report(lpp, LOAD_ATTR_VIRTUAL_USED,    (mem_info.mem_total + mem_info.swap_total)- 
                                           (mem_info.mem_free  + mem_info.swap_free), qualified_hostname, "M");
 
-#ifdef IRIX
-   sge_add_double2load_report(lpp, LOAD_ATTR_SWAP_RSVD,        mem_info.swap_rsvd, qualified_hostname, "M");
-#endif
-
 #if 0
    /* identical to "virtual_free" */
    if (!getenv("SGE_MAP_LOADVALUE")) {

@@ -183,10 +183,6 @@ if [ $catch_rsh = 1 ]; then
    fi
 
    rshcmd=rsh
-   case "$ARC" in
-      hp|hp10|hp11) rshcmd=remsh ;;
-      *) ;;
-   esac
    # note: This could also be done using rcp, ftp or s.th.
    #       else. We use a symbolic link since it is the
    #       cheapest in case of a shared filesystem

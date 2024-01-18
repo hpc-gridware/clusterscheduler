@@ -69,38 +69,6 @@ osmachine="`$UNAME -m`"
 osrelease="`$UNAME -r`"
 
 case $ossysname in
-AIX)
-   osversion=`$UNAME -v`
-   case $osversion in
-   3)
-      ARCH=UNSUPPORTED-rs6000
-      ;;
-   4)
-      case $osrelease in
-      1)
-         ARCH=UNSUPPORTED-aix41
-         ;;
-      2)
-         ARCH=UNSUPPORTED-aix42
-         ;;
-      3)
-         ARCH=aix43
-         ;;
-      esac
-      ;;
-   5|6|7)
-      ARCH=aix51
-      ;;
-   *)
-      ARCH=UNSUPPORTED-aix-$osrelease
-      ;;
-   esac
-   ;;
-CRSOS)
-   if [ $osmachine = smp ]; then
-      ARCH=craysmp
-   fi
-   ;;
 Darwin)
    case $osmachine in
       i386)
@@ -140,53 +108,6 @@ NetBSD)
     osprocessor="`$UNAME -p`"
     ARCH=nbsd-$osprocessor
     ;;
-IRIX*)
-   case $osrelease in
-   4*)
-      ARCH=UNSUPPORTED-irix4
-      ;;
-   5*)
-      ARCH=UNSUPPORTED-irix5
-      ;;
-   6.5)
-      ARCH=irix65
-      ;;
-   6.*)
-      ARCH=UNSUPPORTED-irix-$osrelease
-      ;;
-   esac
-   ;;
-HP-UX)
-   case $osmachine in
-   ia64)
-      ARCH=hp11
-      ;;
-   9000/*)
-      case $osrelease in
-      *.09.*)
-         ARCH=UNSUPPORTED-hp
-         ;;
-      *.10.10)
-         ARCH=UNSUPPORTED-hp1010
-         ;;
-      *.10.*)
-         ARCH=hp10
-         ;;
-      *.11.*)
-      if [ -x /usr/bin/getconf ]; then
-         bits="`/usr/bin/getconf KERNEL_BITS`"
-         if [ $bits -eq 64 ]; then
-            ARCH=hp11-64
-         else
-            ARCH=hp11
-         fi
-      else
-         ARCH=hp11
-      fi
-      ;;
-      esac
-   esac
-   ;;
 Linux)
    unsupported=""
 
@@ -282,19 +203,6 @@ Linux)
    fi
    ARCH=${unsupported}lx-${lxmachine}
    ;;
-OSF1)
-   case $osrelease in
-   V4*)
-      ARCH=osf4
-      ;;
-    V5*|T5*)
-       ARCH=tru64
-       ;;
-    *)
-       ARCH=UNSUPPORTED-osf1-$osrelease
-       ;;
-    esac
-    ;;
 SunOS)
    case $osmachine in
    sun4)
@@ -341,36 +249,8 @@ SunOS)
       ;;
    esac
    ;;
-SUPER-UX)
-   case $osmachine in
-   SX-4*)
-      ARCH=UNSUPPORTED-necsx4
-      ;;
-   SX-[56]*)
-      ARCH=sx
-      ;;
-   *)
-      ARCH=UNSUPPORTED-SUPER-UX-$osmachine
-      ;;
-   esac
-   ;;
-Interix)
-   ARCH=win32-x86
-   ;;
 *)
-   if [ -f /unicos ]; then
-      if [ "`$UNAME -m`" = "CRAY TS" ]; then
-         if [ `/bin/target|/bin/grep ieee` = noieee ]; then
-            ARCH=crayts
-         else
-            ARCH=craytsieee
-         fi
-      else
-         ARCH=cray
-      fi
-   else
-      ARCH=UNSUPPORTED-${ossysname}-${osmachine}-${osrelease}
-   fi
+   ARCH=UNSUPPORTED-${ossysname}-${osmachine}-${osrelease}
    ;;
 esac
 
@@ -379,10 +259,6 @@ if [ "$1" = "-m" -o "$1" = "-mt" -o "$1" = "-lib" ]; then
    SHARED_LIBRARY_PATH="LD_LIBRARY_PATH"
    DEFAULTMANPATH=/usr/man
    case $ARCH in
-   aix*)
-      DEFAULTMANPATH=/usr/man
-      SHARED_LIBRARY_PATH="LIBPATH"
-      ;;
    darwin-*)
       DEFAULTMANPATH=`/usr/bin/manpath -q`
       SHARED_LIBRARY_PATH="DYLD_LIBRARY_PATH"
@@ -396,14 +272,6 @@ if [ "$1" = "-m" -o "$1" = "-mt" -o "$1" = "-lib" ]; then
       PATH=$OLD_PATH
       DEFAULTMANPATH=/usr/pkg/man:/usr/local/man:/usr/X11R6/man:/usr/share/man
       PATH=$SAFE_PATH
-      ;;
-   hp*)
-      DEFAULTMANPATH=/usr/man:/usr/contrib/man:/usr/local/man
-      SHARED_LIBRARY_PATH="SHLIB_PATH"
-      ;;
-   irix65)
-      DEFAULTMANPATH=/usr/share/catman:/usr/share/man:/usr/catman:/usr/man
-      MANTYPE=catman
       ;;
    lx*)
       if [ "`which manpath 2>/dev/null`" != "" ]; then
@@ -419,13 +287,6 @@ if [ "$1" = "-m" -o "$1" = "-mt" -o "$1" = "-lib" ]; then
       if eval [ x\$$SHARED_LIBRARY_PATH_BITS != x ]; then
 	      SHARED_LIBRARY_PATH=$SHARED_LIBRARY_PATH_BITS
       fi
-      ;;
-   tru64)
-      DEFAULTMANPATH=/usr/share/man:/usr/dt/share/man:/usr/local/man
-      ;;
-   win32*)
-      DEFAULTMANPATH=/usr/share/man
-      MANTYPE=catman/cat
       ;;
    esac
 

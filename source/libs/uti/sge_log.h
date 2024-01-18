@@ -264,16 +264,6 @@ int sge_log(int log_level, const char *mesg, const char *file__,
 *  INPUTS
 *     expression   - a logical expression 
 ******************************************************************************/
-#if defined(_AIX) || defined(SVR3)
-#  define SGE_ASSERT(x) \
-   if (x) { \
-      ; \
-   } else { \
-      sge_log(LOG_CRIT, # x ,__FILE__,__func__,__LINE__); \
-      sge_log(LOG_CRIT, MSG_UNREC_ERROR,__FILE__,__func__,__LINE__); \
-      abort(); \
-   }
-#else
 #  define SGE_ASSERT(x) \
    if (x) { \
       ; \
@@ -281,7 +271,6 @@ int sge_log(int log_level, const char *mesg, const char *file__,
       sge_log(LOG_CRIT, MSG_UNREC_ERROR,__FILE__,__func__,__LINE__); \
       abort(); \
    }
-#endif
 
 #ifdef __cplusplus
 }

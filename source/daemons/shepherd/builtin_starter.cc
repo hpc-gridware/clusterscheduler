@@ -56,22 +56,6 @@
 
 #include "msg_common.h"
 
-#if defined(CRAY)
-#   if !defined(SIGXCPU)
-#       define SIGXCPU SIGCPULIM
-#   endif
-    /* for killm category on Crays */
-#   include <sys/category.h>
-struct rusage {
-   struct timeval ru_stime;
-   struct timeval ru_utime;
-};
-    /* for job/session stuff */
-#   include <sys/session.h>
-    /* times() */
-#   include <sys/times.h>
-#endif
-
 #include "builtin_starter.h"
 #include "err_trace.h"
 #include "setrlimits.h"
@@ -296,18 +280,6 @@ void son(const char *childname, char *script_file, int truncate_stderr_out)
        */
       intermediate_user = get_conf_val("job_owner");
    }
-
-#if defined(ALPHA)
-   /* setlogin() stuff */
-   sge_switch2start_user();
-   if (!geteuid()) {
-      if (setlogin(target_user)) {
-         sge_switch2admin_user();
-         shepherd_error(1, "setlogin(%s) failed: %s", target_user, strerror(errno));
-      }
-      sge_switch2admin_user();
-   }
-#endif
 
    shepherd_trace("pid="pid_t_fmt" pgrp="pid_t_fmt" sid="pid_t_fmt" old pgrp="
                   pid_t_fmt" getlogin()=%s", pid, newpgrp, newpgrp, pgrp, 
@@ -881,14 +853,6 @@ int sge_set_environment()
    FILE *fp;
    char buf[10000], *name, *value, err_str[10000];
    int line=0;
-#if defined(IRIX) || defined(CRAY) 
-   char help_str[100] = "";
-#if (IRIX)
-   ash_t jobid;
-#elif defined(CRAY)
-   int jobid;
-#endif
-#endif
    const char *new_value = NULL;
 
    setup_environment();
@@ -896,17 +860,6 @@ int sge_set_environment()
    if (!(fp = fopen(filename, "r"))) {
       shepherd_error(1, "can't open environment file: %s", strerror(errno));
    }
-
-#if defined(IRIX) || defined(CRAY)
-   if (shepherd_read_osjobid_file(&jobid, false)) {
-#  if defined(IRIX)
-      snprintf(help_str, 100, "%lld", jobid);
-#  elif defined(CRAY)
-      snprintf(help_str, 100, "%d", jobid);
-#  endif
-      sge_set_env_value("OSJOBID", help_str);
-   }
-#endif
 
    while (fgets(buf, sizeof(buf), fp)) {
 
@@ -1826,7 +1779,7 @@ static void start_qlogin_job(const char *shell_path)
    }
 
 
-#if defined(LINUX86) || defined(LINUXAMD64) || defined(LINUXARM64) || defined(LINUXIA64) || defined(LINUXPPC) || defined (LINUXSPARC) || defined(LINUXSPARC64) || defined(ALINUX) || defined(DARWIN_PPC) || defined(DARWIN_X86) || defined(DARWIN_X64)
+#if defined(LINUX86) || defined(LINUXAMD64) || defined(LINUXARM64) || defined(LINUXIA64) || defined (LINUXSPARC) || defined(LINUXSPARC64) || defined(DARWIN_X64)
    my_env[i++] = strcat(path, "/bin:/usr/bin");
 #else
    my_env[i++] = strcat(path, "/usr/bin");

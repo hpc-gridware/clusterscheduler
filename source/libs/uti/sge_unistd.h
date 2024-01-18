@@ -44,7 +44,7 @@
 extern "C" {
 #endif
 
-#if defined(SOLARIS) || defined(LINUX) || defined(IRIX)
+#if defined(SOLARIS) || defined(LINUX)
 #  define SGE_OPEN2(filename, oflag)       open64(filename, oflag)
 #  define SGE_OPEN3(filename, oflag, mode) open64(filename, oflag, mode)
 #else
@@ -52,21 +52,9 @@ extern "C" {
 #  define SGE_OPEN3(filename, oflag, mode) open(filename, oflag, mode)
 #endif
 
-#if defined (IRIX)
-#  define SGE_CLOSE(fd) fsync(fd); close(fd)
-#else
-#  define SGE_CLOSE(fd) close(fd);
-#endif
+#define SGE_CLOSE(fd) close(fd);
 
-
-#ifdef IRIX
-#  define SGE_STAT(filename, buffer) stat64(filename, buffer)
-#  define SGE_LSTAT(filename, buffer) lstat64(filename, buffer)
-#  define SGE_FSTAT(filename, buffer) fstat64(filename, buffer)
-#  define SGE_STRUCT_STAT struct stat64
-#  define SGE_INO_T ino64_t
-#  define SGE_OFF_T off64_t
-#elif defined(SOLARIS)
+#if defined(SOLARIS)
 #  define SGE_STAT(filename, buffer) stat64(filename, buffer)
 #  define SGE_LSTAT(filename, buffer) lstat64(filename, buffer)
 #  define SGE_FSTAT(filename, buffer) fstat64(filename, buffer)
@@ -82,7 +70,7 @@ extern "C" {
 #  define SGE_OFF_T off_t
 #endif                
 
-#if defined(IRIX) || defined(SOLARIS) || defined(LINUX)
+#if defined(SOLARIS) || defined(LINUX)
 #  define SGE_READDIR(directory) readdir64(directory)
 #  define SGE_READDIR_R(directory, entry, result) readdir64_r(directory, entry, result)
 #  define SGE_TELLDIR(directory) telldir64(directory)
@@ -96,10 +84,8 @@ extern "C" {
 #  define SGE_STRUCT_DIRENT struct dirent
 #endif       
 
-#if defined(_UNICOS) || defined(SOLARIS) || defined(__hpux) || defined(LINUX) || defined(AIX) || defined(SINIX) || defined(DARWIN9) || defined(DARWIN10)
+#if defined(SOLARIS) || defined(LINUX) || defined(DARWIN10)
 #   define SETPGRP setpgrp()
-#elif defined(__sgi)
-#   define SETPGRP BSDsetpgrp(getpid(),getpid())
 #else
 #   define SETPGRP setpgrp(getpid(),getpid())
 #endif

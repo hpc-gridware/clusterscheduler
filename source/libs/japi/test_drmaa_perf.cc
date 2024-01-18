@@ -471,12 +471,8 @@ static void get_gmt(struct timeval *now)
 #  ifdef SOLARIS
    gettimeofday(now, NULL);
 #  else
-#     ifdef SINIX
-   gettimeofday(now);
-#     else
    struct timezone tzp;
    gettimeofday(now, &tzp);
-#     endif
 #  endif
    return;
 }

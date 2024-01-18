@@ -42,16 +42,7 @@
 
 #include "uti/msg_utilib.h"
 
-#if defined(CRAY) && !defined(SIGXCPU)
-#   define SIGXCPU SIGCPULIM
-#endif
-
-#if defined(ALPHA)
-#  undef NSIG
-#  define NSIG (SIGUSR2+1)
-#endif
-
-const sig_mapT sig_map[] = 
+const sig_mapT sig_map[] =
 {
    {SGE_SIGHUP, SIGHUP, "HUP"},
    {SGE_SIGINT, SIGINT, "INT"},
@@ -80,13 +71,9 @@ const sig_mapT sig_map[] =
    {SGE_SIGTTOU, SIGTTOU, "TTOU"},
    {SGE_SIGIO, SIGIO, "IO"},
    {SGE_SIGXCPU, SIGXCPU, "XCPU"},
-#ifndef CRAY
    {SGE_SIGXFSZ, SIGXFSZ, "XFSZ"},
-#endif
-#if !defined(CRAY) 
    {SGE_SIGVTALRM, SIGVTALRM, "VTALRM"},
    {SGE_SIGPROF, SIGPROF, "PROF"},
-#endif
    {SGE_SIGWINCH, SIGWINCH, "WINCH"},
    {SGE_SIGUSR1, SIGUSR1, "USR1"},
    {SGE_SIGUSR2, SIGUSR2, "USR2"},
@@ -355,17 +342,6 @@ void sge_set_def_sig_mask(sigset_t* sig_num, err_func_t err_func)
          i++;
          continue;
       }
-
-      /*
-       * on HPUX don't set default handler for
-       * _SIGRESERVE and SIGDIL
-       */
-#if defined(HPUX)
-      if ((i == _SIGRESERVE) || (i == SIGDIL)) {
-         i++;
-         continue;
-      }
-#endif     
 
       /*
        * never set default handler for signals set

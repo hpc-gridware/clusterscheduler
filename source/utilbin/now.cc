@@ -45,11 +45,7 @@ int main(int argc, char *argv[])
 #else
    struct timezone tzp;
 
-#ifdef SINIX
-   gettimeofday(&now);
-#else
    gettimeofday(&now, &tzp);
-#endif
 #endif
 
  printf("%d\n", (int) now.tv_sec);

@@ -20,9 +20,7 @@ restart files at certain times or algorithmic steps and by properly
 processing these restart files when restarted.
 
 Transparent checkpointing has to be provided by the operating system and
-is usually integrated in the operating system kernel. An example for a
-kernel integrated checkpointing facility is the Hibernator package from
-Softway for SGI IRIX platforms.
+is usually integrated in the operating system kernel. 
 
 Checkpointing jobs need to be identified to the xxQS_NAMExx system by
 using the *-ckpt* option of the *qsub1*() command. The argument to this

@@ -998,28 +998,17 @@ static int _sge_set_uid_gid_addgrp(const char *user, const char *intermediate_us
       on error heres what I get:
       (subject to change with OS releases)
       OS      return       errno
-      AIX     1            1
-      ULTRIX  1            1
-      OSF/1   1            1
-      IRIX   -1            1   (returns #groups if successful)
       SUNOS  -1            1
       SOLARIS-1
       UGH!!!
     */      
 
-#if defined(SVR3) || defined(sun)
-   if (status < 0) {
-      sprintf(err_str, MSG_SYSTEM_INITGROUPSFAILED_I , status);
-      return 1;
-   }
-#else
    if (status) {
       sprintf(err_str, MSG_SYSTEM_INITGROUPSFAILED_I , status);
       return 1;
    }
-#endif
 
-#if defined(SOLARIS) || defined(ALPHA) || defined(LINUX) || defined(FREEBSD) || defined(DARWIN)
+#if defined(SOLARIS) || defined(LINUX) || defined(FREEBSD) || defined(DARWIN)
    /* add Additional group id to current list of groups */
    if (add_grp) {
       if (sge_add_group(add_grp, err_str, skip_silently) == -1) {

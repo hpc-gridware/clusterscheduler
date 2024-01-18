@@ -97,36 +97,8 @@ TARGET_BITS=
 # Map buildarch into uppercase BUILDARCH
 #
 case $buildarch in
-   aix43):
-      BUILDARCH=AIX43
-      TARGET_BITS=TARGET_32BIT
-      ;;
-   aix51)
-      BUILDARCH=AIX51
-      TARGET_BITS=TARGET_32BIT
-      ;;
-   cray)
-      BUILDARCH=UNICOS
-      TARGET_BITS=TARGET_64BIT
-      ;;
-   crayts)
-      BUILDARCH=UNICOS_TS
-      TARGET_BITS=TARGET_32BIT
-      ;;
-   craytsieee)
-      BUILDARCH=UNICOS_TS_IEEE
-      TARGET_BITS=TARGET_32BIT
-      ;;
    darwin)
       BUILDARCH=DARWIN
-      TARGET_BITS=TARGET_32BIT
-      ;;
-   darwin-x86)
-      BUILDARCH=DARWIN_X86
-      TARGET_BITS=TARGET_32BIT
-      ;;
-   darwin-ppc)
-      BUILDARCH=DARWIN_PPC
       TARGET_BITS=TARGET_32BIT
       ;;
    darwin-x64)
@@ -159,27 +131,6 @@ case $buildarch in
       ;;
    fbsd-sparc64)
       BUILDARCH=FREEBSD_SPARC64
-      ;;
-   hp10)
-      BUILDARCH=HP10
-      TARGET_BITS=TARGET_32BIT
-      ;;
-   hp11)
-      BUILDARCH=HP11
-      TARGET_BITS=TARGET_32BIT
-      ;;
-   hp11-64)
-      BUILDARCH=HP1164
-      TARGET_BITS=TARGET_64BIT
-      ;;
-   irix65)
-      BUILDARCH=IRIX65
-      TARGET_BITS=TARGET_64BIT
-      ;;
-   lx-alpha)
-      BUILDARCH=ALINUX
-      COMPILE_ARCH=ALINUX
-      TARGET_BITS=TARGET_64BIT
       ;;
    lx-amd64)
       BUILDARCH=LINUXAMD64
@@ -216,16 +167,6 @@ case $buildarch in
       COMPILE_ARCH=LINUXMIPS64
       TARGET_BITS=TARGET_64BIT
       ;;
-   lx-ppc)
-      BUILDARCH=LINUXPPC
-      COMPILE_ARCH=LINUXPPC
-      TARGET_BITS=TARGET_32BIT
-      ;;
-   lx-ppc64)
-      BUILDARCH=LINUXPPC64
-      COMPILE_ARCH=LINUXPPC64
-      TARGET_BITS=TARGET_64BIT
-      ;;
    lx-s390)
       BUILDARCH=LINUXS390
       COMPILE_ARCH=LINUXS390
@@ -251,30 +192,10 @@ case $buildarch in
       COMPILE_ARCH=LINUX86
       TARGET_BITS=TARGET_32BIT
       ;;
-   ulx-alpha)
-      BUILDARCH=ALINUX
-      COMPILE_ARCH=UALINUX
-      TARGET_BITS=TARGET_64BIT
-      ;;
    ulx-amd64)
       BUILDARCH=LINUXAMD64
       COMPILE_ARCH=ULINUXAMD64
       TARGET_BITS=TARGET_64BIT
-      ;;
-   ulx-ia64)
-      BUILDARCH=LINUXIA64
-      COMPILE_ARCH=ULINUXIA64
-      TARGET_BITS=TARGET_64BIT
-      ;;
-   ulx-ppc)
-      BUILDARCH=LINUXPPC
-      COMPILE_ARCH=ULINUXPPC
-      TARGET_BITS=TARGET_32BIT
-      ;;
-   ulx-sparc)
-      BUILDARCH=LINUXSPARC
-      COMPILE_ARCH=ULINUXSPARC
-      TARGET_BITS=TARGET_32BIT
       ;;
    ulx-sparc64)
       BUILDARCH=LINUXSPARC64
@@ -285,22 +206,6 @@ case $buildarch in
       BUILDARCH=LINUX86
       COMPILE_ARCH=ULINUX86
       TARGET_BITS=TARGET_32BIT
-      ;;
-   necsx4)
-      BUILDARCH=NECSX4
-      TARGET_BITS=TARGET_64BIT
-      ;;
-   necsx5)
-      BUILDARCH=NECSX5
-      TARGET_BITS=TARGET_64BIT
-      ;;
-   necsx6)
-      BUILDARCH=NECSX5
-      TARGET_BITS=TARGET_64BIT
-      ;;
-   sx)
-      BUILDARCH=NECSX5
-      TARGET_BITS=TARGET_64BIT
       ;;
    nbsd-alpha)
       BUILDARCH=NETBSD_ALPHA
@@ -356,10 +261,6 @@ case $buildarch in
    usol-amd64)
       BUILDARCH=SOLARISAMD64
       COMPILE_ARCH=USOLARISAMD64
-      TARGET_BITS=TARGET_64BIT
-      ;;
-   tru64)
-      BUILDARCH=ALPHA5
       TARGET_BITS=TARGET_64BIT
       ;;
    *)

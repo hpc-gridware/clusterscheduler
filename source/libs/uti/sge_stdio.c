@@ -210,11 +210,7 @@ pid_t sge_peopen(const char *shell, int login_shell, const char *command,
                /* TODO: required protocol step? If sending fails, exit? */
             }
             res = initgroups(pw->pw_name, pw->pw_gid);
-#  if defined(SVR3) || defined(sun)
-            if (res < 0)
-#  else
             if (res)
-#  endif
             {
                sprintf(err_str, MSG_SYSTEM_INITGROUPSFORUSERFAILED_ISS ,
                      res, user, strerror(errno));
@@ -459,11 +455,7 @@ pid_t sge_peopen_r(const char *shell, int login_shell, const char *command,
          DPRINTF(("Before initgroups\n"));
 
          res = initgroups(pw->pw_name, pw->pw_gid);
-#  if defined(SVR3) || defined(sun)
-         if (res < 0)
-#  else
          if (res)
-#  endif
          {
             ERROR((SGE_EVENT, MSG_SYSTEM_INITGROUPSFORUSERFAILED_ISS, res, user, strerror(errno)));
             sge_free(&buffer);

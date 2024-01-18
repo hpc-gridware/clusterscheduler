@@ -39,10 +39,6 @@
 #include <sys/time.h>
 #include <unistd.h>
 
-#ifdef DARWIN6
-#include <netinet/in.h>
-#endif
-
 #include "basis_types.h"
 #include "comm/lists/cl_lists.h"
 #include "comm/cl_xml_parsing.h"

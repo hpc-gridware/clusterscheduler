@@ -38,28 +38,7 @@
 #   include <mach/machine.h>
 #endif
 
-#if defined(__sgi)
-#   include <sys/types.h>
-#   include <sys/sysmp.h>
-#endif
-
-#if defined(ALPHA)
-#   include <sys/sysinfo.h>
-#   include <machine/hal_sysinfo.h>
-#endif
-
-#if defined(SOLARIS) || defined(AIX) || defined(LINUX)
-#   include <unistd.h>
-#endif
-
-#if defined(__hpux)
-    /* needs to be copiled with std C compiler ==> no -Aa switch no gcc */
-#   include <stdlib.h>
-#   include <sys/pstat.h>
-#   include <unistd.h>
-#endif
-
-#if defined(CRAY)
+#if defined(SOLARIS) || defined(LINUX)
 #   include <unistd.h>
 #endif
 
@@ -100,7 +79,7 @@ int sge_nprocs (void);
 *     int - number of procs
 * 
 *  NOTES
-*     MT-NOTE: sge_nprocs() is MT safe (SOLARIS, NEC, IRIX, ALPHA, HPUX, LINUX)
+*     MT-NOTE: sge_nprocs() is MT safe (SOLARIS, LINUX)
 ******************************************************************************/
 int sge_nprocs(void)
 {
@@ -118,35 +97,8 @@ int sge_nprocs(void)
 
 #endif
 
-
-#ifdef __sgi
-   nprocs = sysmp(MP_NPROCS);
-#endif
-
-#if defined(ALPHA)
-   int start=0;
-
-   getsysinfo(GSI_CPUS_IN_BOX,(char*)&nprocs,sizeof(nprocs),&start);
-#endif
-
-#if defined(SOLARIS) || defined(AIX) || defined(LINUX)
+#if defined(SOLARIS) || defined(LINUX)
    nprocs = sysconf(_SC_NPROCESSORS_ONLN);
-#endif
-
-#if defined(__hpux)
-   union pstun pstatbuf;
-   struct pst_dynamic dinfo;
-
-   pstatbuf.pst_dynamic = &dinfo;
-   if (pstat(PSTAT_DYNAMIC,pstatbuf,sizeof(dinfo),NULL,NULL)==-1) {
-          perror(MSG_PERROR_PSTATDYNAMIC);
-          exit(1);
-   }
-   nprocs = dinfo.psd_proc_cnt;
-#endif
-
-#ifdef CRAY
-   nprocs = sysconf(_SC_CRAY_NCPU);
 #endif
 
 #if defined(FREEBSD)

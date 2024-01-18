@@ -120,59 +120,6 @@ set DTOR = ""
 
 switch ($ARCH)
 
-case aix41:
-case aix42:
-   set CFLAGS = "-DAIX41 -DUSE_STDARG $DEBUG_FLAG $CFLAGS"
-   set LFLAGS = "$DEBUG_FLAG $LFLAGS"
-   set LIBS = "$LIBS"
-   breaksw
-
-case cray:
-   set CFLAGS   = "-DCRAY $DEBUG_FLAG $CFLAGS"
-   set LFLAGS   = "$DEBUG_FLAG $LFLAGS"
-   set LIBS = "$LIBS"
-   breaksw
-
-case irix5:
-   if ( $CC == gcc ) then
-      set CFLAGS = "-Wall -Wstrict-prototypes -DIRIX5 $DEBUG_FLAG $CFLAGS"
-   else
-      set CFLAGS = "-DIRIX5 $DEBUG_FLAG $CFLAGS"
-   endif
-   set LFLAGS = "$DEBUG_FLAG $LFLAGS"
-   set LIBS = "$LIBS"
-   breaksw
-
-case irix6*:
-   set CFLAGS = "-DIRIX6 $DEBUG_FLAG $CFLAGS"
-   set LFLAGS = "$DEBUG_FLAG $LFLAGS"
-   set LIBS = "$LIBS"
-   set DTOR = "/usr/lib/crt1.o"
-   set DTOR = "/usr/lib/crtn.o"
-	set STATIC   = "-nostartfiles"
-   breaksw
-
-case hp:
-   if ( $CC == gcc ) then
-      set CFLAGS = "-Wall -Wstrict-prototypes -DHPUX $DEBUG_FLAG $CFLAGS"
-   else
-      set CFLAGS = "-Aa -D_HPUX_SOURCE -DHPUX $DEBUG_FLAG $CFLAGS"
-   endif
-   set LFLAGS = "$DEBUG_FLAG $LFLAGS"
-   set LIBS = "$LIBS"
-   breaksw
-
-case hp10:
-   if ( $CC == gcc ) then
-      set CFLAGS = "-O -Wall -Wstrict-prototypes -DHP10 $DEBUG_FLAG $CFLAGS"
-   else
-      set CFLAGS = "-Ae -O -DHP10 $DEBUG_FLAG $CFLAGS"
-   endif
-   set LFLAGS = "$DEBUG_FLAG $LFLAGS"
-   set LIBS = "$LIBS"
-   breaksw
-
-
 case *linux:
    set CC = gcc
    set CFLAGS = "-O -Wall -DLINUX $DEBUG_FLAG $CFLAGS"
@@ -181,28 +128,6 @@ case *linux:
    set START_FILE = "/usr/lib/crti.o /usr/lib/crtbegin.o"
    set CTOR = "/usr/lib/crti.o /usr/lib/crtbegin.o"
    set DTOR = "/usr/lib/crtend.o /usr/lib/crtn.o"
-   breaksw
-
-case osf:
-case osf4:
-case tru64:
-   if ( $CC == gcc ) then
-      set CFLAGS = "-Wall -Wstrict-prototypes -D_BSD -DALPHA $DEBUG_FLAG $CFLAGS"
-   else
-      set CFLAGS = "-std1 -warnprotos -D_BSD -DALPHA $DEBUG_FLAG $CFLAGS -Olimit 1500"
-   endif
-   set LFLAGS = "$DEBUG_FLAG $LFLAGS"
-   set LIBS = "$LIBS"
-   breaksw
-
-case rs6000:
-   if ( $CC == gcc ) then
-      set CFLAGS = "-Wall -Wstrict-prototypes -DAIX32 $DEBUG_FLAG $CFLAGS"
-   else
-      set CFLAGS = "-DAIX32 -DUSE_STDARG $DEBUG_FLAG $CFLAGS"
-   endif
-   set LFLAGS = "$DEBUG_FLAG $LFLAGS"
-   set LIBS = "$LIBS"
    breaksw
 
 case solaris:

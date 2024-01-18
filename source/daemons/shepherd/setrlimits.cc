@@ -39,21 +39,10 @@
 #   include <sys/time.h>
 #endif
 
-#if defined(CRAY)
-#   include <sys/param.h>
-#   include <sys/unistd.h>
-#   include <sys/category.h>
-#endif
-
 #include <sys/resource.h>
 
-#if defined(IRIX)
-#   define RLIMIT_STRUCT_TAG rlimit64
-#   define RLIMIT_INFINITY RLIM64_INFINITY
-#else
-#   define RLIMIT_STRUCT_TAG rlimit
-#   define RLIMIT_INFINITY RLIM_INFINITY
-#endif
+#define RLIMIT_STRUCT_TAG rlimit
+#define RLIMIT_INFINITY RLIM_INFINITY
 
 /* Format the value, if val == INFINITY, print INFINITY for logs sake */
 #define FORMAT_LIMIT(x) (x==RLIMIT_INFINITY)?0:x, (x==RLIMIT_INFINITY)?"\bINFINITY":""
@@ -74,11 +63,9 @@
 #include "uti/sge_os.h"
 #include "sgeobj/sge_conf.h"
 
-#ifndef CRAY
 static void pushlimit(int, struct RLIMIT_STRUCT_TAG *, int trace_rlimit);
 
 static int get_resource_info(u_long32 resource, const char **name, int *resource_type);
-#endif
 
 static int rlimcmp(sge_rlim_t r1, sge_rlim_t r2);
 static int sge_parse_limit(sge_rlim_t *rlvalp, char *s, char *error_str,
@@ -161,19 +148,12 @@ void setrlimits(int trace_rlimit) {
    sge_rlim_t s_locks;
    sge_rlim_t h_locks;
 
-#ifndef SINIX
-   sge_rlim_t s_rss; 
+   sge_rlim_t s_rss;
    sge_rlim_t h_rss; 
-#endif
 
    int host_slots, priority;
    char *s, error_str[1024];
-
-#ifdef CRAY
-   long clock_tick;
-#else
    struct RLIMIT_STRUCT_TAG rlp;
-#endif
 
 #define PARSE_IT(dstp, attr) \
    s = get_conf_val(attr); \
@@ -345,28 +325,6 @@ void setrlimits(int trace_rlimit) {
       h_locks = mul_infinity(h_locks, host_slots);
    }
 
-#if defined(CRAY)
-
-   /* Let's play a game: UNICOS doesn't support hard and soft limits */
-   /* but it has job and process limits. Let the soft limit setting  */
-   /* in the queue configuration represent the per-process limit     */
-   /* while the hard limit is the per-job limit. OK, so it's crude.  */
-
-   /* Per-process limits */
-   clock_tick = sysconf(_SC_CLK_TCK);
-   limit(C_PROC, 0, L_CPU, s_cpu * clock_tick);
-   limit(C_PROC, 0, L_CORE, s_core / NBPC);
-   limit(C_PROC, 0, L_MEM, s_data / NBPC);
-
-   /* Per-job limits */
-   limit(C_JOB, 0, L_CPU, h_cpu * clock_tick);
-   limit(C_JOB, 0, L_MEM, h_data / NBPC);
-   limit(C_JOB, 0, L_FSBLK, h_fsize / (NBPC * NCPD));
-
-   /* Too bad they didn't have a sysconf call to get bytes/click */
-   /* and clicks/disk block. */
-
-#else
    rlp.rlim_cur = s_cpu;
    rlp.rlim_max = h_cpu;
    pushlimit(RLIMIT_CPU, &rlp, trace_rlimit);
@@ -458,11 +416,8 @@ void setrlimits(int trace_rlimit) {
    rlp.rlim_max = h_rss;
    pushlimit(RLIMIT_RSS, &rlp, trace_rlimit);
 #  endif
-
-#endif
 }
 
-#ifndef CRAY
 /* *INDENT-OFF* */
 /* resource           resource_name              resource_type
                                                  NECSX 4/5
@@ -520,25 +475,8 @@ static int get_resource_info(u_long32 resource, const char **name,
    *name = unknown_string;
    return 1;       
 }
-#endif
 
-/* The following is due to problems with parallel jobs on 5.x IRIXes (and
- * possibly above): On such  systems  the  upper  bounds  for  resource
- * limits are set by the kernel. If  limits  are  set  above  the  kernel
- * boundaries (e.g. unlimited) multiprocessing applications may be aborted
- * ("memory too low to grow stack" was one of the messages we saw).
- *
- * For such systems pushlimit doesn't set limits above the hard limit
- * boundaries retrieved by a preceeding getrlimit call. Note that, as a
- * consequence, the limits must be set appropriately at the start of the
- * daemons calling mkprivileged.
- *
- * For other systems pushlimit just calls setrlimit.
- */
-
-
-#if !defined(CRAY)
-static void pushlimit(int resource, struct RLIMIT_STRUCT_TAG *rlp, 
+static void pushlimit(int resource, struct RLIMIT_STRUCT_TAG *rlp,
                       int trace_rlimit) 
 {
    const char *limit_str;
@@ -556,46 +494,30 @@ static void pushlimit(int resource, struct RLIMIT_STRUCT_TAG *rlp,
 
    /* Process limit */
    if ((resource_type & RES_PROC)) {
-#if defined(IRIX6)
-      getrlimit64(resource,&dlp);
-      if (rlp->rlim_cur>dlp.rlim_max)
-         rlp->rlim_cur=dlp.rlim_max;
-      if (rlp->rlim_max>dlp.rlim_max)
-         rlp->rlim_max=dlp.rlim_max;
-#endif
-
       /* hard limit must be greater or equal to soft limit */
       if (rlp->rlim_max < rlp->rlim_cur)
          rlp->rlim_cur = rlp->rlim_max;
 
 #if defined(NETBSD_ALPHA) || defined(NETBSD_X86_64) || defined(NETBSD_SPARC64)
 #  define limit_fmt "%ld%s"
-#elif defined(IRIX) || defined(HPUX) || defined(DARWIN) || defined(FREEBSD) || defined(NETBSD) || defined(LINUX86) || defined(LINUXARM6) || defined(LINUXARM7)
+#elif defined(DARWIN) || defined(FREEBSD) || defined(NETBSD) || defined(LINUX86) || defined(LINUXARM6) || defined(LINUXARM7)
 #  define limit_fmt "%lld%s"
-#elif defined(ALPHA) || defined(SOLARIS) || defined(LINUX)
+#elif defined(SOLARIS) || defined(LINUX)
 #  define limit_fmt "%lu%s"
 #else
 #  define limit_fmt "%d%s"
 #endif
 
       sge_switch2start_user();
-#if defined(IRIX)
-      ret = setrlimit64(resource, rlp);
-#else
       ret = setrlimit(resource,rlp);
-#endif
-      sge_switch2admin_user();  
+      sge_switch2admin_user();
       if (ret) {
          /* exit or not exit ? */
          sprintf(trace_str, "setrlimit(%s, {"limit_fmt", "limit_fmt"}) failed: %s",
             limit_str, FORMAT_LIMIT(rlp->rlim_cur), FORMAT_LIMIT(rlp->rlim_max), strerror(errno));
             shepherd_trace(trace_str);
       } else {
-#if defined(IRIX)
-         getrlimit64(resource,&dlp);
-#else
          getrlimit(resource,&dlp);
-#endif
       }
 
       if (trace_rlimit) {
@@ -628,4 +550,3 @@ static void pushlimit(int resource, struct RLIMIT_STRUCT_TAG *rlp,
       }
    }
 }
-#endif 

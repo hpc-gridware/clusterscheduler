@@ -51,14 +51,6 @@
 #   include <sys/termios.h>
 #endif
  
-#if defined(__sgi) || defined(ALPHA)
-#   include <rpcsvc/ypclnt.h>
-#endif
- 
-#if defined(AIX)
-#   include <sys/select.h>
-#endif    
-
 #include "uti/sge_rmon.h"
 #include "uti/sge_unistd.h"
 #include "uti/sge_string.h"

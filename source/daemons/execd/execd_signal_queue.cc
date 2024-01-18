@@ -75,10 +75,6 @@
 #include "msg_execd.h"
 #include "msg_daemons_common.h"
 
-#if defined(CRAY) && !defined(SIGXCPU)
-#   define SIGXCPU SIGCPULIM
-#endif
-
 extern volatile int shut_me_down;
 
 /**************************************************************************

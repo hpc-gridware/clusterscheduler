@@ -45,8 +45,6 @@ extern "C" {
 
 #if defined(LINUX) || defined(FREEBSD) || defined(NETBSD) || defined(DARWIN)
 #  define PSCMD "/bin/ps -axc"
-#elif defined(ALPHA)
-#  define PSCMD "/bin/ps axo pid,ucomm"
 #elif defined(SOLARIS)
 #  define PSCMD "/bin/ps -eo pid,fname"
 #else

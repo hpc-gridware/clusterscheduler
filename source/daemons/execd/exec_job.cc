@@ -39,10 +39,6 @@
 #include <stdlib.h>
 #include <signal.h>
 
-#ifdef __sgi
-#   include <sys/schedctl.h>
-#endif
-
 #include "uti/sge_rmon.h"
 #include "uti/sge_bootstrap.h"
 #include "uti/sge_log.h"
@@ -160,7 +156,7 @@ static bool parse_job_accounting_and_create_logical_list(const char* binding_str
 
 
 #if COMPILE_DC
-#if defined(SOLARIS) || defined(ALPHA) || defined(LINUX) || defined(FREEBSD) || defined(FREEBSD)
+#if defined(SOLARIS) || defined(LINUX) || defined(FREEBSD) || defined(FREEBSD)
 /* local functions */
 static int addgrpid_already_in_use(long);
 static long get_next_addgrpid(lList *, long);
@@ -191,7 +187,7 @@ lListElem* responsible_queue(lListElem *jep, lListElem *jatep, lListElem *petep)
 }
 
 #if COMPILE_DC
-#if defined(SOLARIS) || defined(ALPHA) || defined(LINUX) || defined(FREEBSD) || defined(DARWIN)
+#if defined(SOLARIS) || defined(LINUX) || defined(FREEBSD) || defined(DARWIN)
 static long get_next_addgrpid(lList *rlp, long last_addgrpid)
 {
    const lListElem *rep;
@@ -285,7 +281,7 @@ int sge_exec_job(sge_gdi_ctx_class_t *ctx, lListElem *jep, lListElem *jatep,
    char dce_wrapper_cmd[128];
 
 #if COMPILE_DC
-#if defined(SOLARIS) || defined(ALPHA) || defined(LINUX) || defined(FREEBSD) || defined(DARWIN)
+#if defined(SOLARIS) || defined(LINUX) || defined(FREEBSD) || defined(DARWIN)
    static gid_t last_addgrpid;
 #endif
 #endif   
@@ -944,11 +940,6 @@ int sge_exec_job(sge_gdi_ctx_class_t *ctx, lListElem *jep, lListElem *jatep,
             }
          }
          var_list_set_sharedlib_path(&environmentList);
-#if defined(HP1164)
-         if (mconf_get_inherit_env() != true) {
-            var_list_delete_string(&environmentList, "SHLIB_PATH");
-         }
-#endif
       }
 
       /* set final of variables whose value shall be replaced */ 
@@ -980,7 +971,7 @@ int sge_exec_job(sge_gdi_ctx_class_t *ctx, lListElem *jep, lListElem *jatep,
 
 #ifdef COMPILE_DC
 
-#  if defined(SOLARIS) || defined(ALPHA) || defined(LINUX) || defined(FREEBSD) || defined(DARWIN)
+#  if defined(SOLARIS) || defined(LINUX) || defined(FREEBSD) || defined(DARWIN)
 
       {
          lList *rlp = NULL;
@@ -1259,17 +1250,6 @@ int sge_exec_job(sge_gdi_ctx_class_t *ctx, lListElem *jep, lListElem *jatep,
       }
       fprintf(fp, "cwd=%s\n", cwd);
    }
-#if defined(IRIX)
-   {
-      const char *env_value = job_get_env_string(jep, VAR_PREFIX "O_HOST");
-
-      if (env_value) {
-         fprintf(fp, "spi_initiator=%s\n", env_value);
-      } else {
-         fprintf(fp, "spi_initiator=%s\n", "unknown");
-      }
-   }
-#endif
 
    /* do not start prolog/epilog in case of pe tasks */
    if(petep == NULL) {
@@ -1866,13 +1846,6 @@ int sge_exec_job(sge_gdi_ctx_class_t *ctx, lListElem *jep, lListElem *jatep,
       sge_close_all_fds(keep_open, 3);
    }
    
-#ifdef __sgi
-
-   /* turn off non-degrading priority */
-   schedctl(NDPRI, 0, 0);
-
-#endif
-
    /*
     * set KRB5CCNAME so shepherd assumes user's identify for
     * access to DFS or AFS file systems

@@ -11,7 +11,6 @@ set(LIBRARY_SOURCES
     qlogin_starter.cc
     qmaster_heartbeat.cc
     setosjobid.cc
-    sge_processes_irix.cc
     shutdown.cc
     startprog.cc
     unparse_job_cull.cc)

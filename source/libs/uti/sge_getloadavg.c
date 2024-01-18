@@ -52,66 +52,6 @@
 #  include <sys/loadavg.h> 
 #elif defined(LINUX)
 #  include <ctype.h>
-#elif defined(ALPHA4) || defined(ALPHA5)
-#  include <nlist.h>
-#  include <sys/table.h>
-#elif defined(IRIX)
-#  include <sys/sysmp.h> 
-#  include <sys/sysinfo.h> 
-#elif defined(HP10) 
-#  include <nlist.h> 
-#  include <sys/time.h>
-#  include <sys/dk.h>
-#  include <sys/file.h>
-#  include <errno.h>
-#  include <unistd.h> 
-#elif defined(HP11) || defined(HP1164)
-#  include <sys/param.h>
-#  include <sys/pstat.h>
-#elif defined(CRAY)
-#  include <nlist.h>
-#  include <sys/listio.h>
-#  include <sys/param.h>
-#  include <sys/sysmacros.h>
-#  include <sys/sysent.h>
-#  include <sys/var.h>
-#  include <sys/buf.h>
-#  include <sys/map.h>
-#  include <sys/iobuf.h>
-#  include <sys/stat.h>
-#  include <sys/jtab.h>
-#  include <sys/session.h>
-#  include <sys/dir.h>
-#  include <sys/ssd.h>
-#  include <sys/schedv.h>
-#  include <sys/signal.h>
-#  include <sys/aoutdata.h>
-
-#  define KERNEL
-#  include <sys/sysinfo.h>
-#  undef KERNEL
-
-#  include <sys/iosw.h>
-#  include <sys/mbuf.h>
-#  include <sys/cnt.h>
-#  include <sys/ddcntl.h>
-#  include <sys/hpm.h>
-#  include <sys/ios.h>
-#  include <sys/machcons.h>
-#  include <sys/pdd.h>
-#  include <sys/pws.h>
-#  include <sys/sema.h>
-#  include <sys/semmacros.h>
-#  include <sys/swap.h>
-#  include <sys/epack.h>
-#  include <sys/epackt.h>
-#  include <sys/er90_cmdpkt.h>
-
-#  include <sys/acct.h>
-#  include <acct/dacct.h>
-#  include <sys/cred.h>
-#  include <sys/proc.h>
-#  include <sys/user.h>         
 #elif defined(DARWIN)
 # include <mach/host_info.h>
 # include <mach/mach_host.h>
@@ -128,15 +68,6 @@
 #  include <sys/sched.h>
 #  include <sys/param.h>
 #  include <sys/sysctl.h>
-#elif defined(AIX51)
-#  include <sys/sysinfo.h>
-#  include <nlist.h>
-
-#if defined(HAS_AIX5_PERFLIB)
-#  include <sys/proc.h>
-#  include <libperfstat.h>
-#endif
-
 #endif
 
 #define KERNEL_TO_USER_AVG(x) ((double)x/SGE_FSCALE)
@@ -157,34 +88,6 @@
 #  define LINUX_LOAD_SOURCE "/proc/loadavg"
 #  define CPUSTATES 4
 #  define PROCFS "/proc" 
-#elif defined(ALPHA4) || defined(ALPHA5)
-#  define MP_KERNADDR 8
-#  define MPKA_AVENRUN 19
-#  define KERNEL_NAME_FILE "/vmunix"
-#  define KERNEL_AVG_NAME "_avenrun"
-#  define SGE_FSCALE 1000.0
-#  define KERNEL_AVG_TYPE long
-#  define CPUSTATES 4
-#elif defined(IRIX)
-#  define SGE_FSCALE 1024.0
-#  define KERNEL_AVG_TYPE long
-#  define KERNEL_AVG_NAME "avenrun"
-#  define CPUSTATES 6
-#elif defined(HP10) 
-#  define KERNEL_NAME_FILE "/stand/vmunix"
-#  define KERNEL_AVG_NAME "avenrun"
-#  define MP_KERNADDR 8
-#  define MPKA_AVENRUN 19
-#  define SGE_FSCALE 1.0
-#  define KERNEL_AVG_TYPE double 
-#  define VMUNIX "/stand/vmunix"
-#  define X_CP_TIME 0 
-#elif defined(AIX51)
-#  define KERNEL_NAME_FILE "/unix"
-#  define KERNEL_AVG_NAME "avenrun"
-#  define KERNEL_AVG_TYPE long long
-#  define CPUSTATES 4 /* CPU_IDLE, CPU_USER, CPU_KERNEL, CPU_WAIT */
-#  define SGE_FSCALE 1024.0
 #endif
 
 #if defined(FREEBSD)
@@ -197,7 +100,7 @@ typedef int kernel_fd_type;
 static long percentages(int cnt, double *out, long *new_value, long *old_value, long *diffs);
 #endif
 
-#if defined(ALPHA4) || defined(ALPHA5) || defined(HPUX) || defined(IRIX) || defined(LINUX) || defined(DARWIN) || defined(HAS_AIX5_PERFLIB)
+#if defined(LINUX) || defined(DARWIN)
 
 #ifndef DARWIN
 static int get_load_avg(double loadv[], int nelem);    
@@ -211,7 +114,7 @@ static double get_cpu_load(void);
 static char* skip_token(char *p); 
 #endif
 
-#if defined(ALPHA4) || defined(ALPHA5) || defined(IRIX) || defined(HP10) || defined(FREEBSD)
+#if defined(FREEBSD)
 
 static int sge_get_kernel_fd(kernel_fd_type *kernel_fd);
 
@@ -228,51 +131,28 @@ static kernel_fd_type kernel_fd;
 /* MT-NOTE: code basing on kernel_initialized global variable needs not to be MT safe */
 static int kernel_initialized = 0;
 
-#if defined(ALPHA4) || defined(ALPHA5) || defined(IRIX) || defined(HP10) || defined(FREEBSD)
+#if defined(FREEBSD)
 
 static int sge_get_kernel_address(
 char *name,
 long *address 
 ) {
    int ret = 0;
+   struct nlist kernel_nlist[2];
 
    DENTER(TOP_LAYER);
 
-#if defined(IRIX)
-   if (!strcmp(KERNEL_AVG_NAME, name)) {
-      *address = sysmp(MP_KERNADDR, MPKA_AVENRUN); 
+   kernel_nlist[0].n_name = name;
+   kernel_nlist[1].n_name = NULL;
+   if (kernel_initialized && (kvm_nlist(kernel_fd, kernel_nlist) >= 0))
+   {
+      *address = kernel_nlist[0].n_value;
       ret = 1;
    } else {
+      DPRINTF(("nlist(%s) failed: %s\n", name, strerror(errno)));
       *address = 0;
-      ret = 0; 
+      ret = 0;
    }
-#else
-   {
-#  if defined(AIX51)
-      struct nlist64 kernel_nlist[2];
-#  else
-      struct nlist kernel_nlist[2];
-#  endif
-
-      kernel_nlist[0].n_name = name;
-      kernel_nlist[1].n_name = NULL;
-#  if defined(ALPHA4) || defined(ALPHA5) || defined(HPUX)
-      if (nlist(KERNEL_NAME_FILE, kernel_nlist) >= 0)
-#  elif defined(AIX51)
-      if (nlist64(KERNEL_NAME_FILE, kernel_nlist) >= 0)
-#  else
-      if (kernel_initialized && (kvm_nlist(kernel_fd, kernel_nlist) >= 0)) 
-#  endif
-      {
-         *address = kernel_nlist[0].n_value;
-         ret = 1;
-      } else {
-         DPRINTF(("nlist(%s) failed: %s\n", name, strerror(errno)));
-         *address = 0;
-         ret = 0;
-      }
-   }
-#endif
    DRETURN(ret);
 }    
 
@@ -280,21 +160,13 @@ long *address
 static int sge_get_kernel_fd(
 kernel_fd_type *fd 
 ) {
-#if !(defined(IRIX) || defined(HP10) || defined(ALPHA4) || defined(ALPHA5) || defined(AIX51))
    char prefix[256] = "my_error:";
-#endif   
 
    DENTER(TOP_LAYER);
 
    if (!kernel_initialized) {
-
-#if defined(IRIX) || defined(HP10) || defined(ALPHA4) || defined(ALPHA5) || defined(AIX51)
-      kernel_fd = open("/dev/kmem", 0);
-      if (kernel_fd != -1) 
-#else 
       kernel_fd = kvm_open(NULL, NULL, NULL, O_RDONLY, prefix);
       if (kernel_fd != NULL) 
-#endif
       {
          kernel_initialized = 1;
       } else {
@@ -366,22 +238,7 @@ long *freememp
 }
 
 
-#elif defined(CRAY)
-
-struct nlist nmlist[] = {
-   { "cpuw" },
-   { "sysinfoa" },
-   { 0 }
-};
-static struct listreq iolist[1];
-static struct iosw iosw[1];
-struct listreq Krdlist[] = {
-   LO_READ, 0, LF_LSEEK, 0, 0, (char *)0, 0, &iosw[0], 0, 1, 0, 0
-};
-struct sysinfo_t *i_sysinfoa;
-int Ncpus;
-
-#endif 
+#endif
 
 
 #if defined(SOLARIS)
@@ -610,75 +467,7 @@ static double get_cpu_load()
    return cpu_load;
 }                  
 
-#elif defined(ALPHA4) || defined(ALPHA5)
-
-double get_cpu_load() {
-   static long cpu_old_ticks[CPUSTATES];
-   long cpu_new_ticks[CPUSTATES];
-   long cpu_diff_ticks[CPUSTATES];
-   double cpu_states[CPUSTATES];
-   long delta_ticks;
-   double cpu_load;
-   struct tbl_sysinfo sys_info;
-   int i;
-
-   if (table(TBL_SYSINFO,0, &sys_info, 1, sizeof(struct tbl_sysinfo)) < 0) {
-      return -1.0;
-   }  
-   cpu_new_ticks[0] = sys_info.si_user;
-   cpu_new_ticks[1] = sys_info.si_nice;
-   cpu_new_ticks[2] = sys_info.si_sys;
-   cpu_new_ticks[3] = sys_info.si_idle;
-   delta_ticks = 0;
-   for (i=0; i<CPUSTATES; i++) {
-      cpu_diff_ticks[i] = cpu_new_ticks[i] - cpu_old_ticks[i];
-      delta_ticks += cpu_diff_ticks[i];
-      cpu_old_ticks[i] = cpu_new_ticks[i]; 
-   }
-   cpu_load = 0.0;
-   if (delta_ticks) {
-      for(i=0; i<CPUSTATES; i++) {
-         cpu_states[i] = ((double)cpu_diff_ticks[i] / delta_ticks) * 100.0;
-      }
-   }
-   cpu_load += cpu_states[0] + cpu_states[1] + cpu_states[2];
-   if (cpu_load < 0.0) {
-      cpu_load = -1.0;
-   }
-   return cpu_load;
-}
-
-#elif defined(IRIX)
-
-double get_cpu_load() 
-{
-   static long cpu_new[CPUSTATES];
-   static long cpu_old[CPUSTATES];
-   static long cpu_diff[CPUSTATES]; 
-   double cpu_states[CPUSTATES];
-   double cpu_load;
-   struct sysinfo sys_info;
-   int i;
-
-   if (sysmp(MP_SAGET, MPSA_SINFO, &sys_info, sizeof(struct sysinfo)) == -1) {
-      return -1.0;
-   }
-
-   for (i = 0; i < CPUSTATES; i++) {
-      cpu_new[i] = sys_info.cpu[i];
-   }
-
-   percentages(CPUSTATES, cpu_states, cpu_new, cpu_old, cpu_diff);
-
-   cpu_load = cpu_states[1] + cpu_states[2] + cpu_states[3] 
-      + cpu_states[4] + cpu_states[5];
-   if (cpu_load < 0.0) {
-      cpu_load = -1.0;
-   }
-   return cpu_load;
-}
-
-#elif defined(HP10) || defined(FREEBSD)
+#elif defined(FREEBSD)
 
 static double get_cpu_load()
 {
@@ -703,98 +492,6 @@ static double get_cpu_load()
    }
    return cpu_load;
 }    
-
-#elif defined(HP11) || defined(HP1164)
-static long percentages_new(int cnt, double *out, long *new_value, long *old_value, long *diffs, bool first)
-{
-   int i;
-   long total_change = 0;
-
-   DENTER(CULL_LAYER);
-
-   /* 
-    * In the first call of this function, 
-    * we will just remember the values for use in the subsequent calls 
-    */
-   if (first) {
-      for (i = 0; i < cnt; i++) {
-         *old_value++ = *new_value++;
-         *out++ = 0.0;
-      }
-   } else {
-      long change;
-      long *dp;
-
-      /* initialization */
-      total_change = 0;
-      dp = diffs;
-
-      /* calculate changes for each state and the overall change */
-      for (i = 0; i < cnt; i++) {
-         change = *new_value - *old_value;
-
-         /* when the counter wraps, we get a negative value */
-         if (change < 0) {
-            change = (long)
-            ((unsigned long)*new_value-(unsigned long)*old_value);
-         }
-         *dp++ = change;
-         total_change += change;
-         *old_value++ = *new_value++;
-      }
-
-      /* 
-       * If total change is 0, then all the diffs are 0,
-       * then the result will be 0.
-       */
-      if (total_change == 0) {
-         for (i = 0; i < cnt; i++) {
-            *out++ = 0.0;
-         }
-      } else {
-         /* calculate percentages based on overall change */
-         for (i = 0; i < cnt; i++) {
-            *out = (*diffs++) * 100.0 / (double)total_change;
-            DPRINTF(("diffs: %lu total_change: %lu -> %f",
-                  *diffs, total_change, *out));
-            out++;
-         }
-      }
-   }
-
-   DRETURN(total_change);
-}       
-
-
-static double get_cpu_load()
-{  
-   struct pst_processor cpu_buffer;
-   struct pst_dynamic dynamic_buffer;
-   int ret, i, cpus;
-   static long cpu_time[PST_MAX_CPUSTATES];
-   static long cpu_old[PST_MAX_CPUSTATES];
-   static long cpu_diff[PST_MAX_CPUSTATES];
-   double cpu_states[PST_MAX_CPUSTATES];
-   double cpu_load;
-   static bool first = true;
-
-   ret = pstat_getdynamic(&dynamic_buffer, sizeof(dynamic_buffer), 1, 0);
-   if (ret != -1) {
-      cpus = dynamic_buffer.psd_max_proc_cnt;
-      for (i = 0; i < cpus; i++) {
-         ret = pstat_getprocessor(&cpu_buffer, sizeof(cpu_buffer), 1, i);
-         if (ret != -1) {
-            percentages_new(PST_MAX_CPUSTATES, cpu_states, 
-               (long *)cpu_buffer.psp_cpu_time, cpu_old, cpu_diff, first);
-            cpu_load = cpu_states[0] + cpu_states[1] + cpu_states[2];
-         }
-      }
-      first = false;
-      return cpu_load;
-   } else {
-      return -1.0;
-   }
-}
 
 #elif defined(DARWIN)
 
@@ -861,113 +558,9 @@ double get_cpu_load()
   return cpu_load;
 
 }
-
-#elif defined(TEST_AIX51)
-
-double get_cpu_load()
-{
-   static long cpu_time[CPUSTATES];
-   static long cpu_old[CPUSTATES];
-   static long cpu_diff[CPUSTATES];
-   double cpu_states[CPUSTATES];
-   double cpu_load;
-   struct sysinfo sys_info;
-   long address = 0;
-   int i;
-
-   if (sge_get_kernel_fd(&kernel_fd)
-       && sge_get_kernel_address("sysinfo", &address)) {
-      getkval(address, (long*)&cpu_time, sizeof(cpu_time), "sysinfo");
-      percentages(CPUSTATES, cpu_states, cpu_time, cpu_old, cpu_diff);
-
-      cpu_load = cpu_states[CPU_USER] + cpu_states[CPU_KERNEL];
-      if (cpu_load < 0.0) {
-         cpu_load = -1.0;
-      }
-   } else {
-      cpu_load = -1.0;
-   }
-   return cpu_load;
-}
 #endif
 
-#if defined(ALPHA4) || defined(ALPHA5) || defined(IRIX) || defined(HP10) || defined(TEST_AIX51)
-
-static int get_load_avg(
-double loadavg[],
-int nelem 
-) {
-   kernel_fd_type kernel_fd;
-   long address;
-   KERNEL_AVG_TYPE avg[3];
-   int elements = 0;
-
-   if (sge_get_kernel_fd(&kernel_fd)
-       && sge_get_kernel_address(KERNEL_AVG_NAME, &address)) {
-      getkval(address, (int*)&avg, sizeof(avg), KERNEL_AVG_NAME);
-
-      while (elements < nelem) {
-         loadavg[elements] = KERNEL_TO_USER_AVG(avg[elements]);
-
-         elements++;
-      }
-   } else {
-      elements = -1;
-   }
-   return elements;
-}
-
-#elif defined(HP11) || defined(HP1164)
-
-static int get_load_avg(
-double loadavg[],
-int nelem 
-) {
-   struct pst_processor cpu_buffer;
-   struct pst_dynamic dynamic_buffer;
-   int ret, i, cpus;
-
-   ret = pstat_getdynamic(&dynamic_buffer, sizeof(dynamic_buffer), 1, 0);
-   if (ret != -1) {
-      cpus = dynamic_buffer.psd_max_proc_cnt;
-      loadavg[0] = 0.0;
-      loadavg[1] = 0.0;
-      loadavg[2] = 0.0;
-      for (i = 0; i < cpus; i++) {
-         ret = pstat_getprocessor(&cpu_buffer, sizeof(cpu_buffer), 1, i);
-         if (ret != -1) {
-            loadavg[0] += cpu_buffer.psp_avg_1_min;
-            loadavg[1] += cpu_buffer.psp_avg_5_min;
-            loadavg[2] += cpu_buffer.psp_avg_15_min;
-         }
-      }
-
-      loadavg[0] /= (double)cpus;
-      loadavg[1] /= (double)cpus;
-      loadavg[2] /= (double)cpus;
-
-      return 3;
-   } else {
-      return -1;
-   }
-}
-
-#elif defined(HAS_AIX5_PERFLIB)
-
-static int get_load_avg(double loadv[], int nelem)
-{
-   perfstat_cpu_total_t    cpu_total_buffer;
-
-   perfstat_cpu_total(NULL, &cpu_total_buffer, sizeof(perfstat_cpu_total_t), 1);
-
-   loadv[0] = cpu_total_buffer.loadavg[0]/(float)(1<< SBITS);
-   loadv[1] = cpu_total_buffer.loadavg[1]/(float)(1<< SBITS);
-   loadv[2] = cpu_total_buffer.loadavg[2]/(float)(1<< SBITS);
-
-   return 0;
-}
-
-#elif defined(LINUX)
+#if defined(LINUX)
 
 static int get_load_avg(
 double loadv[],
@@ -993,125 +586,13 @@ int nelem
    return 0;
 }
 
-#elif defined(CRAY)
-
-void KmemRead(struct listreq *iolist, int size, int k_fd)
-{
-   struct listreq *lp;
-   struct iosw *sp;
-   int n;
-
-   lp = iolist;
-   for (n = 0; n < size; n++) {
-      sp = iolist[n].li_status;
-      *(word *)sp = 0;
-      iolist[n].li_fildes = k_fd;
-   }
-   if (listio(LC_WAIT, iolist, size) < 0) {
-          perror("listio:");
-          exit(1);
-   }
-   lp = iolist;
-   for (n = 0; n < size; n++) {
-          sp = iolist[n].li_status;
-          sp = lp->li_status;
-          lp++;
-   }
-}
-
-static int get_load_avg(
-double loadv[],
-int nelem 
-) {
-   struct listreq *lp;
-   struct iosw *sp;
-   struct pw cpuw;
-   int i;
-   double avenrun1=0, avenrun2=0, avenrun3=0;
-   int highest;
-
-   if (nlist("/unicos", nmlist) == -1) {
-      return -1;
-      perror("nlist()");
-      exit(1);
-   }
-
-   if (kernel_fd == -1) {
-      if ((kernel_fd = open("/dev/kmem", 0)) < 0) {
-         return -1;
-         perror("open(/dev/kmem)");
-         exit(1);
-      }
-   }
-
-   lp = &iolist[0];
-   sp = &iosw[0];
-
-   lp->li_offset = nmlist[0].n_value;
-   lp->li_buf = (char *)&cpuw;
-   lp->li_nbyte = sizeof(struct pw);
-   lp->li_fildes = kernel_fd;
-   lp->li_opcode = LO_READ;
-   lp->li_flags = LF_LSEEK;
-   lp->li_nstride = 1;
-   lp->li_filstride = lp->li_memstride = lp->li_nbyte;
-   lp->li_status = sp;
-
-   if (listio(LC_WAIT, iolist, 1) < 0) {
-      return -1;
-      perror("listio()");
-      exit(1);
-   }
-
-   /* cpuw now shold contain some data */
-   Ncpus = cpuw.pw_ccpu;
-   if (Ncpus < 1)
-      return -1;
-
-#if O
-   printf("Ncpus=%d\n", Ncpus);
-   printf("started cpus = %d\n", cpuw.pw_scpu);
-   printf("name = %x\n", cpuw.pw_name);
 #endif
-
-   Krdlist[0].li_offset = nmlist[1].n_value;
-   if ((i_sysinfoa = (struct sysinfo_t *)sge_malloc(sizeof(*i_sysinfoa) * Ncpus))
-            == NULL) {
-      return -1;
-      perror("malloc");
-      exit(1);
-   }
-   Krdlist[0].li_nbyte = sizeof(*i_sysinfoa) * Ncpus;
-   Krdlist[0].li_buf = (char *)i_sysinfoa;
-
-   KmemRead(Krdlist, 1, kernel_fd);
-   highest = 0;
-   for (i = 0; i < Ncpus; i++) {
-      if (i_sysinfoa[i].avenrun[0] ||
-          i_sysinfoa[i].avenrun[1] ||
-          i_sysinfoa[i].avenrun[2])
-         highest++;	/* Ncpus may not be correct */
-      avenrun1 += i_sysinfoa[i].avenrun[0];
-      avenrun2 += i_sysinfoa[i].avenrun[1];
-      avenrun3 += i_sysinfoa[i].avenrun[2];
-   }
-   if (!highest)
-      highest = 1;
-   if (nelem > 0)
-      loadv[0] = ((double)avenrun1)/highest;
-   if (nelem > 1)
-      loadv[1] = ((double)avenrun2)/highest;
-   if (nelem > 2)
-      loadv[2] = ((double)avenrun3)/highest;
-   return 0;
-}
-#endif 
 
 
 int get_channel_fd(void)
 {
    if (kernel_initialized) {
-#if defined(SOLARIS) || defined(LINUX) || defined(HP11) || defined(HP1164) || defined(FREEBSD)
+#if defined(SOLARIS) || defined(LINUX) || defined(FREEBSD)
       return -1;
 #else
       return kernel_fd;
@@ -1127,7 +608,7 @@ int sge_getloadavg(double loadavg[], int nelem)
 
 #if defined(SOLARIS) || defined(FREEBSD) || defined(NETBSD) || defined(DARWIN)
    elem = getloadavg(loadavg, nelem); /* <== library function */
-#elif defined(ALPHA4) || defined(ALPHA5) || defined(IRIX) || defined(HPUX) || defined(CRAY) || defined(LINUX) || defined(HAS_AIX5_PERFLIB)
+#elif defined(LINUX)
    elem = get_load_avg(loadavg, nelem); 
 #else
    elem = -2;

@@ -1774,11 +1774,7 @@ int cl_com_gethostname(char **unique_hostname, struct in_addr *copy_addr, struct
 #endif
 #define __CL_FUNCTION__ "cl_com_gethostbyname()"
 static int cl_com_gethostbyname(const char *hostname_unresolved, cl_com_hostent_t **hostent, int* system_error) {
-#if defined(CRAY)  
-   struct sockaddr_in  tmp_addr;
-#else
    struct in_addr tmp_addr;
-#endif
    struct hostent* he = NULL;
    char* hostname = NULL;
    cl_com_hostent_t *hostent_p = NULL;   

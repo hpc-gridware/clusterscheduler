@@ -47,14 +47,7 @@
 #  include <termios.h>
 #  include <sys/ioctl.h>
 #  include <grp.h>
-#elif defined(HP1164) || defined(HP11)
-#  include <termios.h>
-#  include <stropts.h>
 #elif defined(SOLARIS64) || defined(SOLARIS86) || defined(SOLARISAMD64)
-#  include <stropts.h>
-#  include <termio.h>
-#elif defined(IRIX65)
-#  include <sys/ioctl.h>
 #  include <stropts.h>
 #  include <termio.h>
 #elif defined(FREEBSD) || defined(NETBSD)
@@ -2056,16 +2049,7 @@ static int reresolve_qualified_hostname(sge_gdi_ctx_class_t *thiz) {
 *******************************************************************************/
 bool sge_daemonize_prepare(sge_gdi_ctx_class_t *ctx) {
    pid_t pid;
-#if !(defined(__hpux) || defined(CRAY))
    int fd;
-#endif
-
-#if defined(__sgi) || defined(ALPHA) || defined(HP1164)
-#  if defined(ALPHA)
-   extern int getdomainname(char *, int);
-#  endif
-   char domname[256];
-#endif
 
    int is_daemonized = ctx->is_daemonized(ctx);
 
@@ -2165,14 +2149,12 @@ bool sge_daemonize_prepare(sge_gdi_ctx_class_t *ctx) {
    /* child */
    SETPGRP;
 
-#if !(defined(__hpux) || defined(CRAY) || defined(SINIX) || defined(INTERIX))
    if ((fd = open("/dev/tty", O_RDWR)) >= 0) {
       /* disassociate contolling tty */
       ioctl(fd, TIOCNOTTY, (char *) NULL);
       close(fd);
    }
-#endif
-   
+
 
    /* second fork */
    pid=fork();
@@ -2192,17 +2174,6 @@ bool sge_daemonize_prepare(sge_gdi_ctx_class_t *ctx) {
    /* close read pipe */
    close(fd_pipe[0]);
 
-#if defined(__sgi) || defined(ALPHA) || defined(HP1164)
-   /* The yp library may have open sockets
-      when closing all fds also the socket fd of the yp library gets closed
-      when called again yp library functions are confused since they
-      assume fds are already open. Thus we shutdown the yp library regularly
-      before closing all sockets */
-   getdomainname(domname, sizeof(domname));
-   yp_unbind(domname);
-#endif
-
-   
    DRETURN(true);
 }
 
@@ -2311,16 +2282,7 @@ bool sge_daemonize_finalize(sge_gdi_ctx_class_t *ctx)
 int sge_daemonize(int *keep_open, unsigned long nr_of_fds, sge_gdi_ctx_class_t *ctx)
 {
 
-#if !(defined(__hpux) || defined(CRAY) || defined(SINIX))
    int fd;
-#endif
- 
-#if defined(__sgi) || defined(ALPHA) || defined(HP1164)
-#  if defined(ALPHA)
-   extern int getdomainname(char *, int);
-#  endif
-   char domname[256];
-#endif
    pid_t pid;
    int failed_fd;
  
@@ -2345,30 +2307,18 @@ int sge_daemonize(int *keep_open, unsigned long nr_of_fds, sge_gdi_ctx_class_t *
  
    SETPGRP;                      
  
-#if !(defined(__hpux) || defined(CRAY) || defined(SINIX))
    if ((fd = open("/dev/tty", O_RDWR)) >= 0) {
       /* disassociate contolling tty */
       ioctl(fd, TIOCNOTTY, (char *) NULL);
       close(fd);
    }
-#endif
- 
+
    if ((pid=fork())!= 0) {
       if (pid<0) {
          CRITICAL((SGE_EVENT, MSG_PROC_SECONDFORKFAILED_S , strerror(errno)));
       }
       exit(0);
    }
- 
-#if defined(__sgi) || defined(ALPHA) || defined(HP1164)
-   /* The yp library may have open sockets
-      when closing all fds also the socket fd of the yp library gets closed
-      when called again yp library functions are confused since they
-      assume fds are already open. Thus we shutdown the yp library regularly
-      before closing all sockets */
-  getdomainname(domname, sizeof(domname));
-  yp_unbind(domname);
-#endif
  
    /* close all file descriptors */
    sge_close_all_fds(keep_open, nr_of_fds);

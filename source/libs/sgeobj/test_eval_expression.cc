@@ -139,9 +139,8 @@ int main(int argc, char *argv[]) {
       ret=ret|test_match(TYPE_CSTR, "solaris", "solaris", T);
       ret=ret|test_match(TYPE_CSTR, "!solaris", "solaris", F);
       ret=ret|test_match(TYPE_CSTR, "*amd64&sol*", "sol-amd64", T);
-      ret=ret|test_match(TYPE_CSTR, "(sol-*64|linux|hp*)&!sol-sparc", "hp11", T);
-      ret=ret|test_match(TYPE_CSTR, "(sol-*64|linux|hp*)&!sol-sparc", "sol-sparc64", T);
-      ret=ret|test_match(TYPE_CSTR, "(sol-*64|linux|hp*)&!sol-sparc", "sol-sparc", F);
+      ret=ret|test_match(TYPE_CSTR, "(sol-*64|linux*)&!sol-sparc", "sol-sparc64", T);
+      ret=ret|test_match(TYPE_CSTR, "(sol-*64|linux*)&!sol-sparc", "sol-sparc", F);
       
       ret=ret|test_match(TYPE_CSTR, "!(sola*|lin*|hp*)&!sola*&!*sparc64&(!sole*|!lin*|!hp*)", "sol-sparc", T);
       

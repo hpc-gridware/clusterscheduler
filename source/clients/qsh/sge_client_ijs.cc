@@ -40,8 +40,6 @@
 #if defined(DARWIN)
 #  include <sys/ttycom.h>
 #  include <sys/ioctl.h>
-#elif defined(HP11) || defined(HP1164)
-#  include <termios.h>
 #elif defined(FREEBSD) || defined(NETBSD)
 #  include <termios.h>
 #  include <sys/ioctl.h>

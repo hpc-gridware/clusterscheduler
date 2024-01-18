@@ -36,28 +36,6 @@
 #include <pwd.h>
 
 /* for service provider info (SPI) entries and projects */
-#if defined(IRIX)
-#   include <sys/extacct.h>
-#   include <proj.h>
-#endif
-
-#if defined(CRAY)
-#include <sys/time.h>
-#include <errno.h>
-#   if !defined(SIGXCPU)
-#       define SIGXCPU SIGCPULIM
-#   endif
-    /* for killm category on Crays */
-#   include <sys/category.h>
-struct rusage {
-   struct timeval ru_stime;
-   struct timeval ru_utime;
-};
-    /* for job/session stuff */
-#   include <sys/session.h>
-    /* times() */
-#   include <sys/times.h>
-#endif
 
 #include "uti/config_file.h"
 #include "uti/sge_uidgid.h"
@@ -73,7 +51,7 @@ void setosjobid(pid_t sid, gid_t *add_grp_id_ptr, struct passwd *pw)
 
    shepherd_trace("setosjobid: uid = "pid_t_fmt", euid = "pid_t_fmt, getuid(), geteuid());
 
-#  if defined(SOLARIS) || defined(ALPHA) || defined(LINUX) || defined(FREEBSD) || defined(DARWIN)
+#  if defined(SOLARIS) || defined(LINUX) || defined(FREEBSD) || defined(DARWIN)
       /* Read SgeId from config-File and create Addgrpid-File */
       {  
          char *cp;
@@ -87,14 +65,6 @@ void setosjobid(pid_t sid, gid_t *add_grp_id_ptr, struct passwd *pw)
       }
       fprintf(fp, gid_t_fmt"\n", *add_grp_id_ptr);
       FCLOSE(fp);   
-# elif defined(HP1164) || defined(AIX)
-    {
-      if ((fp = fopen("addgrpid", "w")) == NULL) {
-         shepherd_error(1, "can't open \"addgrpid\" file");
-      }
-      fprintf(fp, pid_t_fmt"\n", getpgrp());
-      FCLOSE(fp);
-    }
 #  else
    {
       char osjobid[100];
@@ -103,86 +73,8 @@ void setosjobid(pid_t sid, gid_t *add_grp_id_ptr, struct passwd *pw)
       }
 
       if(sge_switch2start_user() == 0) {
-#     if defined(IRIX)
-      {
-         /* The following block contains the operations necessary for
-          * IRIX6.2 (and later) to set array session handles (ASHs) and
-          * service provider info (SPI) records
-          */
-         struct acct_spi spi;
-         int ret;
-         char *cp;
-
-         shepherd_trace("in irix code");
-         /* get _local_ array session id */
-         if ((ret=newarraysess())) {
-            shepherd_error(1, "error: can't create ASH; errno=%d", ret);
-         }
-
-         /* retrieve array session id we just assigned to the process and
-          * write it to the os-jobid file
-          */
-         sprintf(osjobid, "%lld", getash());
-         shepherd_trace(osjobid); 
-         /* set service provider information (spi) record */
-         strncpy(spi.spi_company, "SGE", 8);
-         strncpy(spi.spi_initiator, get_conf_val("spi_initiator"), 8);
-         strncpy(spi.spi_origin, get_conf_val("queue"),16);
-         strcpy(spi.spi_spi, "Job ");
-         strncat(spi.spi_spi, get_conf_val("job_id"),11);
-         if ((ret=setspinfo(&spi))) {
-            shepherd_error(1, "error: can't set SPI; errno=%d", ret);
-         }
-         
-         if ((cp = search_conf_val("acct_project"))) {
-            prid_t proj; 
-            if (strcasecmp(cp, "none") && ((proj = projid(cp)) >= 0)) {
-               shepherd_trace("setting project \"%s\" to id %lld", cp, proj);
-               if (setprid(proj) == -1)
-                  shepherd_trace("failed setting project id");
-            }
-            else {   
-               shepherd_trace("can't get id for project \"%s\"", cp);
-            }
-         } else {
-            shepherd_trace("can't get configuration entry for projects");
-         }
-      }
-#     elif defined(CRAY)
-      {
-         char *cp;
-	      {
-	         int jobid;
-
-	         if ((jobid=setjob(pw->pw_uid, 0)) < 0) {
-	            shepherd_error(1, "error: can't set job ID; errno = %d", errno);
-	         }
-
-	         if (sesscntl(jobid, S_ADDFL, S_BATCH) == -1) {
-	            shepherd_error(1, "error: sesscntl(%d, S_ADDFL, S_BATCH) failed,"
-		                        " errno = %d", sid, errno);
-	         } 
-	         sprintf(osjobid, "%d", jobid);
-	      }
-
-	      if ((cp = search_conf_val("acct_project"))) {
-	         int proj; 
-	         if (strcasecmp(cp, "none") && ((proj = nam2acid(cp)) >= 0)) {
-	            shephed_trace("setting project \"%s\" to acid %d", cp, proj);
-	            if (acctid(0, proj) == -1) {
-		            shepherd_trace("failed setting project id (acctid)");
-               }
-	         } else {   
-	            shepherd_trace("can't get id for project \"%s\"", cp);
-	         }
-	      } else {
-	         shepherd_trace("can't get configuration entry for projects");
-         }
-      }
-#     else
          /* write a default os-jobid to file */
          sprintf(osjobid, pid_t_fmt, sid);
-#     endif
          sge_switch2admin_user();
       } 
       else /* not running as super user --> we want a default os-jobid */

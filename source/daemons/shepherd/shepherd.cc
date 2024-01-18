@@ -57,22 +57,6 @@
 #  include <grp.h>
 #endif
 
-#if defined(CRAY)
-#   if !defined(SIGXCPU)
-#       define SIGXCPU SIGCPULIM
-#   endif
-    /* for killm category on Crays */
-#   include <sys/category.h>
-struct rusage {
-   struct timeval ru_stime;
-   struct timeval ru_utime;
-};
-    /* for job/session stuff */
-#   include <sys/session.h>
-    /* times() */
-#   include <sys/times.h>
-#endif
-
 #include "uti/config_file.h"
 #include "uti/sge_dstring.h"
 #include "uti/sge_stdlib.h"
@@ -92,16 +76,10 @@ struct rusage {
 #include "sgeobj/sge_report.h"
 #include "sgeobj/sge_feature.h"
 
-#if defined(IRIX)
-#  include "sge_processes_irix.h"
-#endif
-
 #if defined(DARWIN)
 #  include <termios.h>
 #  include <sys/ttycom.h>
 #  include <sys/ioctl.h>    
-#elif defined(HP11) || defined(HP1164)
-#  include <termios.h>
 #elif defined(FREEBSD) || defined(NETBSD)
 #  include <termios.h>
 #else
@@ -129,12 +107,12 @@ struct rusage {
 #include "execution_states.h"
 #include "msg_common.h"
 
-#if defined(SOLARIS) || defined(ALPHA)
-/* ALPHA4 only has wait3() prototype if _XOPEN_SOURCE_EXTENDED is defined */
+#if defined(SOLARIS)
+/* wait3() prototype only available if _XOPEN_SOURCE_EXTENDED is defined */
 pid_t wait3(int *, int, struct rusage *);
 #endif
 
-#if defined(FREEBSD) || defined(DARWIN6)
+#if defined(FREEBSD)
 #   define sigignore(x) signal(x,SIG_IGN)
 #endif
 
@@ -1090,7 +1068,7 @@ int ckpt_type
    int pid, status, core_dumped, ret;
    int child_signal = 0;
    int exit_status = 0;
-   int wexit_flag_true = 1; /* to please IRIX compiler */
+   int wexit_flag_true = 1;
    int fd_pipe_in[2] = {-1, -1};
    int fd_pipe_out[2] = {-1, -1};
    int fd_pipe_err[2] = {-1, -1};
@@ -1100,11 +1078,6 @@ int ckpt_type
    dstring err_msg = DSTRING_INIT;
    bool is_interactive = false;
    ckpt_info_t ckpt_info = {0, 0, 0};
-#if defined(IRIX)
-   ash_t ash = 0;
-#elif defined(CRAY)
-   int jobid = 0;
-#endif
 
    ckpt_info.type = ckpt_type;
 
@@ -1141,19 +1114,6 @@ int ckpt_type
       set_ckpt_restart_command(childname, ckpt_info.type,
                                rest_command, sizeof(rest_command) -1);
       shepherd_trace("restarting job from checkpoint arena");
-
-#if defined(IRIX) || defined(CRAY) 
-      /* reuse old osjobid for the migrated job and forward this one to ptf */
-      shepherd_write_osjobid_file(get_conf_val("ckpt_osjobid"));
-
-#if defined(IRIX)
-      sscanf(get_conf_val("ckpt_osjobid"), "%lld", &ash);
-      shepherd_trace("reusing old array session handle %lld", ash);
-#elif defined(CRAY)
-      sscanf(get_conf_val("ckpt_osjobid"),  "%d", &jobid);
-      shepherd_trace("reusing old unicos jobid %d", jobid);
-#endif
-#endif
 
       shepherd_trace("restarting job from checkpoint arena");
       pid = start_async_command("restart", rest_command);
@@ -2401,13 +2361,6 @@ int fd_std_err             /* fd of stderr. -1 if not set */
    int poll_size = 0;
    struct pollfd* pty_fds = NULL;
 
-#if defined(HPUX)
-   struct rusage rusage_hp10;
-#endif
-#if defined(CRAY) 
-   struct tms t1, t2;
-#endif
-
    /* handle qsub -pty */
    if (fd_pty_master != -1) {
       char* job_owner = NULL;
@@ -2487,27 +2440,12 @@ int fd_std_err             /* fd of stderr. -1 if not set */
       inArena = 0;
    }
 
-#if defined(CRAY) 
-   times(&t1);
-#endif
-   
    do {
       if (p_ckpt_info->interval != 0 && rest_ckpt_interval != 0) {
          alarm(rest_ckpt_interval);
       }
 
-#if defined(CRAY)
-      npid = waitpid(-1, &status, wait_options);
-#else
       npid = wait3(&status, wait_options, rusage);
-#endif
-
-#if defined(HPUX)
-      {
-         /* wait3 doesn't return CPU usage */
-         getrusage(RUSAGE_CHILDREN, &rusage_hp10);
-      }
-#endif
 
       if (npid == -1) {
          shepherd_trace("wait3 returned -1");
@@ -2682,29 +2620,6 @@ int fd_std_err             /* fd of stderr. -1 if not set */
       
    } while ((job_pid > 0) || (migr_cmd_pid > 0) || (ckpt_cmd_pid > 0) ||
             (ctrl_pid[0] > 0) || (ctrl_pid[1] > 0) || (ctrl_pid[2] > 0));
-
-#if defined(CRAY) 
-   times(&t2);
-   {
-      /* compute utime and stime (seconds and micro seconds) */
-      clock_t u_ticks  = t2.tms_cutime - t1.tms_cutime; /* user time in clock ticks */
-      clock_t s_ticks  = t2.tms_cstime - t1.tms_cstime; /* system time in clock ticks */
-      clock_t clk_tck  = sysconf(_SC_CLK_TCK);          /* clock ticks per second */
-      clock_t tck_usec = 1000000 / clk_tck;             /* length of a clock tick in micro seconds */
-
-      rusage->ru_utime.tv_sec  = u_ticks / clk_tck;
-      rusage->ru_utime.tv_usec  = (u_ticks % clk_tck) * tck_usec;
-      rusage->ru_stime.tv_sec  = s_ticks / clk_tck;
-      rusage->ru_stime.tv_usec  = (s_ticks % clk_tck) * tck_usec;
-   }
-#endif  /* CRAY */
-
-#if defined(HPUX)
-   rusage->ru_utime.tv_sec = rusage_hp10.ru_utime.tv_sec;
-   rusage->ru_utime.tv_usec = rusage_hp10.ru_utime.tv_usec;
-   rusage->ru_stime.tv_sec = rusage_hp10.ru_stime.tv_sec;
-   rusage->ru_stime.tv_usec = rusage_hp10.ru_stime.tv_usec;
-#endif
 
    if (fdout != -1) {
       SGE_CLOSE(fdout);
@@ -2966,41 +2881,7 @@ static void start_clean_command(char *cmd)
  ****************************************************************/
 void 
 shepherd_signal_job(pid_t pid, int sig) {
-#if defined(IRIX) || defined(CRAY) 
-   static int first = 1;
-#  if defined(IRIX)
-   static ash_t osjobid = 0;
-#  elif defined(CRAY)
-   static int osjobid = 0;
-#  endif
-# endif
-
-#if defined(CRAY)
-   /* 980708 SVD - I moved the normal kill code below the special job
-      killing code for the Cray and NEC because killing the process first
-      may cause the job to be removed which can cause the job kill code
-      to fail */
-
-   /* Only root can setup job */
-   if (getuid() == 0) {
-      if (first == 1) {
-         shepherd_read_osjobid_file(&osjobid, false)
-         first = 0;
-      }
-
-      if (osjobid == 0) {
-        shepherd_trace("value in \"osjobid\" file = 0, not using kill_ash/killm");
-      } else {
-        sge_switch2start_user();
-#     if defined(CRAY)
-        killm(C_JOB, osjobid, sig);
-#     endif
-         sge_switch2admin_user();
-      }
-    }
-# endif
-
-   /* 
+   /*
     * Normal signaling for OSes without reliable grouping mechanisms and if
     * special signaling fails (e.g. not running as root)
     */
@@ -3047,9 +2928,9 @@ shepherd_signal_job(pid_t pid, int sig) {
         kill(pid, sig);
         sge_switch2admin_user();
 
-#if defined(SOLARIS) || defined(LINUX) || defined(ALPHA) || defined(IRIX) || defined(FREEBSD) || defined(DARWIN)
+#if defined(SOLARIS) || defined(LINUX) || defined(FREEBSD) || defined(DARWIN)
         if (first_kill == 0 || sig != SIGKILL || is_qrsh == false) {
-#   if defined(SOLARIS) || defined(LINUX) || defined(ALPHA) || defined(FREEBSD) || defined(DARWIN)
+#   if defined(SOLARIS) || defined(LINUX) || defined(FREEBSD) || defined(DARWIN)
 #      ifdef COMPILE_DC
             if (atoi(get_conf_val("enable_addgrp_kill")) == 1) {
                 gid_t add_grp_id;
@@ -3067,18 +2948,6 @@ shepherd_signal_job(pid_t pid, int sig) {
                 sge_switch2admin_user();
             }
 #      endif
-#   elif defined(IRIX)
-            if (first == 1) {
-                shepherd_read_osjobid_file(&osjobid, false);
-                first = 0;
-            }
-            if (osjobid == 0) {
-                shepherd_trace("value in \"osjobid\" file = 0, not using kill_ash/killm");
-            } else {
-                sge_switch2start_user();
-                kill_ash(osjobid, sig, sig == 9);
-                sge_switch2admin_user();
-            }
 #   endif
         }
 # endif

@@ -122,21 +122,21 @@ Content
    Examples:
    ---------
 
-   Install all tru64 and Linux binaries:
+   Install all lx-amd64 and lx-arm64 binaries:
 
-      ./myinst -bin tru64 glinux      
+      ./myinst -bin lx-amd64 lx-arm64
 
-   Install sge_qmaster for tru64 and solaris:
+   Install sge_qmaster for lx-amd64:
 
-      ./myinst tru64 solaris -- sge_qmaster
+      ./myinst lx-amd64 -- sge_qmaster
    
-   Install only architecture independ files
+   Install only architecture independent files
 
       ./myinst -allall
 
-   Install only MPI and PVM directories
+   Install only MPI directories
 
-      ./myinst -mpi -pvm
+      ./myinst -mpi
 
 
 3) Copyright

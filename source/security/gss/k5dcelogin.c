@@ -102,10 +102,6 @@
 #define DEEDEBUG2(A,B)
 #endif
 
-#ifdef __hpux
-#define seteuid(A)		setresuid(-1,A,-1);
-#endif
-
 char *progname = "k5dcelogin";
 char *username;
 char *defrealm;
@@ -471,24 +467,6 @@ main(int argc, char *argv[])
     for (i = 2; i<argc; i++) {
         *ap++ = argv[i];
     }
-#ifdef hpux
-    /* if calling the HP login program, we need to get the KRB5CCNAME
-     * since it does not appear to accept the -p option. 
-     * and pass it as an environment variable in the parmeter list.
-     * The k5dcelogin program may have changed it. 
-     */
-	ccname = getenv("KRB5CCNAME"); /* get new version */
-
-    if (ccname && (strcmp(cp,"login") == 0)) {
-        if ((ccenv = sge_malloc(11 + strlen(ccname) + 1)) == 0) {
-            fprintf(stderr,"Malloc failed for new ccname\n");
-            exit(EXIT_STATUS);
-        }
-        strcpy(ccenv,"KRB5CCNAME=");
-        strcat(ccenv,ccname);
-        *ap++ = ccenv;
-    }
-#endif
 
     *ap = 0;   /* null as last */
 

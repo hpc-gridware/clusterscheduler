@@ -54,6 +54,22 @@
 #include "sge_bootstrap.h"
 #include "sge_reportL.h"
 
+#if 0
+Qidle contains a small C-program which reports whether there is interactive
+usage on a host. The reports are in a format compliant with the Grid Engine
+load sensor interface (see the Grid Engine manual), so qidle can be used
+to withdraw a host from a batch cluster if it is used interactively and
+to make it available for batch jobs if the host has not been used by interactive
+users for a while. Qidle also can be used to trigger suspend/resume events
+for batch jobs or even checkpointing and migration. Interactive usage is
+detected via monitoring the X-Server activity on the host. See the README
+file included in the module for some important information in this context.
+There is no further documentation besides the README.
+<p>The module is relatively independent of the Grid Engine version, so
+it should be possible to get qidle working, at least with a small bit of
+effort.
+#endif
+
 struct times {
    int sek;
    int min;

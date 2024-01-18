@@ -31,7 +31,7 @@
  ************************************************************************/
 /*___INFO__MARK_END__*/
 
-#if defined(ALPHA) || defined(SOLARIS)
+#if defined(SOLARIS)
 #  include <sys/param.h>        /* for MAX() macro */
 #endif
 
@@ -39,7 +39,7 @@
 
 #if defined(COMPILE_DC) || defined(MODULE_TEST)
 
-#if defined(IRIX) || defined(ALPHA) || defined(LINUX) || defined(SOLARIS) || !defined(MODULE_TEST) || defined(HP1164) || defined(HP1164) || defined(FREEBSD) || defined(DARWIN)
+#if defined(LINUX) || defined(SOLARIS) || !defined(MODULE_TEST) || defined(FREEBSD) || defined(DARWIN)
 #   define USE_DC
 #endif
 
@@ -53,23 +53,7 @@
 #include <limits.h>
 #include <math.h>
 
-#ifdef __sgi
-#  include <sys/resource.h>
-#  include <sys/systeminfo.h>
-#  include <sys/sched.h>
-#  include <sys/sysmp.h>
-#  include <sys/schedctl.h>
-#endif
-
-#ifdef CRAY
-#  include <sys/category.h>
-#endif
-
-#ifdef DARWIN6
-#include <sys/time.h>
-#endif
-
-#if defined(ALPHA) || defined(SOLARIS) || defined(LINUX) || defined(FREEBSD) || defined(DARWIN)
+#if defined(SOLARIS) || defined(LINUX) || defined(FREEBSD) || defined(DARWIN)
 #  include <sys/resource.h>
 #endif
 
@@ -77,7 +61,7 @@
 #   include <sys/stat.h>
 #   include <fcntl.h>
 #   include <sys/signal.h>
-#   if ( IRIX || ALPHA || SOLARIS )
+#   ifdef SOLARIS
 #      include <sys/fault.h>
 #   endif
 #   include <sys/syscall.h>
@@ -200,15 +184,7 @@ static lList *ptf_build_usage_list(char *name, lList *old_usage_list);
 
 static lListElem *ptf_get_job(u_long job_id);
 
-#if defined(__sgi)
-
-static void ptf_setpriority_ash(lListElem *job, lListElem *osjob, long pri);
-
-#elif defined(CRAY) 
-
-static void ptf_setpriority_jobid(lListElem *job, lListElem *osjob, long pri);
-
-#elif defined(ALPHA) || defined(SOLARIS) || defined(LINUX) || defined(FREEBSD) || defined(DARWIN)
+#if defined(SOLARIS) || defined(LINUX) || defined(FREEBSD) || defined(DARWIN)
 
 static void ptf_setpriority_addgrpid(const lListElem *job, const lListElem *osjob,
                                      long pri);
@@ -218,14 +194,6 @@ static void ptf_setpriority_addgrpid(const lListElem *job, const lListElem *osjo
 static lList *ptf_jobs = NULL;
 
 static int is_ptf_running = 0;
-
-#if defined(__sgi)
-
-static char irix_release[257] = "6.2";
-
-static int got_release = 0;
-
-#endif
 
 /****** execd/ptf/ptf_get_osjobid() *******************************************
 *  NAME
@@ -247,7 +215,7 @@ static osjobid_t ptf_get_osjobid(lListElem *osjob)
 {
    osjobid_t osjobid;
 
-#if !defined(LINUX) && !defined(SOLARIS) && !defined(ALPHA5) && !defined(DARWIN) && !defined(FREEBSD) && !defined(NETBSD) && !defined(HP1164) && !defined(AIX)
+#if !defined(LINUX) && !defined(SOLARIS) && !defined(DARWIN) && !defined(FREEBSD) && !defined(NETBSD)
 
    osjobid = lGetUlong(osjob, JO_OS_job_ID2);
    osjobid = (osjobid << 32) + lGetUlong(osjob, JO_OS_job_ID);
@@ -277,7 +245,7 @@ static osjobid_t ptf_get_osjobid(lListElem *osjob)
 ******************************************************************************/
 static void ptf_set_osjobid(lListElem *osjob, osjobid_t osjobid)
 {
-#if !defined(LINUX) && !defined(SOLARIS) && !defined(ALPHA5) && !defined(DARWIN) && !defined(FREEBSD) && !defined(NETBSD) && !defined(HP1164) && !defined(AIX)
+#if !defined(LINUX) && !defined(SOLARIS) && !defined(DARWIN) && !defined(FREEBSD) && !defined(NETBSD)
 
    lSetUlong(osjob, JO_OS_job_ID2, ((u_osjobid_t) osjobid) >> 32);
    lSetUlong(osjob, JO_OS_job_ID, osjobid & 0xffffffff);
@@ -342,7 +310,7 @@ static lList *ptf_build_usage_list(char *name, lList *old_usage_list)
       lSetDouble(usage, UA_value, 0);
       lAppendElem(usage_list, usage);
 
-#if defined(ALPHA) || defined(LINUX) || defined(SOLARIS) || defined(HP1164) || defined(AIX) || defined(FREEBSD) || defined(DARWIN)
+#if defined(LINUX) || defined(SOLARIS) || defined(FREEBSD) || defined(DARWIN)
       usage = lCreateElem(UA_Type);
       lSetString(usage, UA_name, USAGE_ATTR_VMEM);
       lSetDouble(usage, UA_value, 0);
@@ -465,169 +433,12 @@ static void ptf_set_job_priority(lListElem *job)
 static void ptf_set_native_job_priority(lListElem *job, const lListElem *osjob,
                                         long pri)
 {
-#if defined(__sgi)
-   ptf_setpriority_ash(job, osjob, pri);
-#elif defined(CRAY) 
-   ptf_setpriority_jobid(job, osjob, pri);
-#elif defined(ALPHA) || defined(SOLARIS) || defined(LINUX) || defined(FREEBSD) || defined(DARWIN)
+#if defined(SOLARIS) || defined(LINUX) || defined(FREEBSD) || defined(DARWIN)
    ptf_setpriority_addgrpid(job, osjob, pri);
 #endif
 }
 
-#if defined(__sgi)
-
-/****** execd/ptf/ptf_setpriority_ash() ***************************************
-*  NAME
-*     ptf_setpriority_ash() -- Change priority of processes 
-*
-*  SYNOPSIS
-*     static void ptf_setpriority_ash(lListElem *job, lListElem *osjob, 
-*        long *pri) 
-*
-*  FUNCTION
-*     This function is only available for the architecture IRIX.
-*     All processes belonging to "job" and "osjob" will get a new priority.
-*
-*  INPUTS
-*     lListElem *job   - job  
-*     lListElem *osjob - one of the os jobs of "job" 
-*     long pri         - new priority 
-******************************************************************************/
-static void ptf_setpriority_ash(lListElem *job, lListElem *osjob, long pri)
-{
-   static int got_bg_flag = 0;
-   static int bg_flag;
-   lListElem *pid;
-
-#  if defined(IRIX)
-   int nprocs;
-   static int first = 1;
-#  endif
-
-   DENTER(TOP_LAYER);
-
-#  if defined(IRIX)
-   if (first) {
-      nprocs = sysmp(MP_NPROCS);
-      if (nprocs <= 0)
-         nprocs = 1;
-      first = 0;
-   }
-#  endif
-
-   if (!got_bg_flag) {
-      bg_flag = (getenv("PTF_NO_BACKGROUND_PRI") == NULL);
-      got_bg_flag = 1;
-   }
-#  if defined(__sgi)
-
-   if (!got_release) {
-      if (sysinfo(SI_RELEASE, irix_release, sizeof(irix_release)) < 0) {
-         ERROR((SGE_EVENT, MSG_SYSTEM_SYSINFO_SI_RELEASE_CALL_FAILED_S,
-                strerror(errno)));
-      }
-      got_release = 1;
-   }
-#  endif
-#  if defined(__sgi)
-   for_each(pid, lGetList(osjob, JO_pid_list)) {
-#     ifdef PTF_NICE_BASED
-      /* IRIX 6.4 also has some scheduler bugs.  Namely, when you use
-       * setpriority and assign a "weightless" priority of 20, setting
-       * a new priority doesn't bring the process out of the "weightless"
-       * class.  The only way to bring the process out is to force a
-       * reset of its scheduling class using sched_setscheduler. 
-       */
-      if (bg_flag && lGetUlong(job, JL_interactive) == 0 &&
-          lGetDouble(job, JL_adjusted_current_proportion) <
-          (PTF_BACKGROUND_JOB_PROPORTION / (double) nprocs)) {
-
-         /* set the background "weightless" priority */
-
-         if (setpriority(PRIO_PROCESS, (id_t)lGetUlong(pid, JP_pid),
-                         PTF_BACKGROUND_NICE_VALUE) < 0 && errno != ESRCH) {
-
-            ERROR((SGE_EVENT, MSG_PRIO_JOBXPIDYSETPRIORITYFAILURE_UUS,
-                   sge_u32c(lGetUlong(job, JL_job_ID)),
-                   sge_u32c(lGetUlong(pid, JP_pid)), strerror(errno)));
-         }
-
-         lSetUlong(pid, JP_background, 1);
-
-      } else {
-
-         struct sched_param sp;
-
-         sp.sched_priority = pri;
-
-         if (sched_setscheduler((id_t)lGetUlong(pid, JP_pid), SCHED_TS, &sp) < 0 
-             && errno != ESRCH) {
-            ERROR((SGE_EVENT, MSG_SCHEDD_JOBXPIDYSCHEDSETSCHEDULERFAILURE_UUS,
-                   sge_u32c(lGetUlong(job, JL_job_ID)),
-                   sge_u32c(lGetUlong(pid, JP_pid)), strerror(errno)));
-         }
-
-         lSetUlong(pid, JP_background, 0);
-      }
-#     endif
-#     ifdef PTF_NDPRI_BASED
-      if (schedctl(NDPRI, lGetUlong(pid, JP_pid), pri) < 0 && errno != ESRCH) {
-         ERROR((SGE_EVENT, MSG_SCHEDD_JOBXPIDYSCHEDCTLFAILUREX_UUS,
-                sge_u32c(lGetUlong(job, JL_job_ID)), sge_u32c(lGetUlong(pid, JP_pid)),
-                strerror(errno)));
-      }
-#     endif
-   }
-#  endif
-   DRETURN_VOID;
-}
-
-#elif defined(CRAY)
-
-/****** execd/ptf/ptf_setpriority_jobid() *************************************
-*  NAME
-*     ptf_setpriority_ash() -- Change priority of processes 
-*
-*  SYNOPSIS
-*     static void ptf_setpriority_jobid(lListElem *job, lListElem *osjob, 
-*                                       long *pri) 
-*
-*  FUNCTION
-*     This function is only available for the architecture CRAY.
-*     All processes belonging to "job" and "osjob" will get a new priority.
-*
-*  INPUTS
-*     lListElem *job   - job  
-*     lListElem *osjob - one of the os jobs of "job" 
-*     long pri         - new priority 
-******************************************************************************/
-static void ptf_setpriority_jobid(lListElem *job, lListElem *osjob, long pri)
-{
-   int nice;
-   DENTER(TOP_LAYER);
-
-#  ifdef CRAY
-   nice = nicem(C_JOB, ptf_get_osjobid(osjob), 0);
-   if (nice >= 0) {
-      /* for interactive jobs, don't set "background" priority */
-      if (lGetUlong(job, JL_interactive) && pri == PTF_MIN_PRIORITY) {
-         pri--;
-      }
-      if (nicem(C_JOB, ptf_get_osjobid(osjob), pri - nice) < 0) {
-         ERROR((SGE_EVENT, MSG_PRIO_JOBXNICEMFAILURE_S,
-                sge_u32c(lGetUlong(job, JL_job_ID)), strerror(errno)));
-
-      }
-   } else {
-      ERROR((SGE_EVENT, MSG_PRIO_JOBXNICEMFAILURE_S,
-             sge_u32c(lGetUlong(job, JL_job_ID)), strerror(errno)));
-   }
-#  endif
-
-   DRETURN_VOID;
-}
-
-#elif defined(ALPHA) || defined(SOLARIS) || defined(LINUX) || defined(FREEBSD) || defined(DARWIN)
+#if defined(SOLARIS) || defined(LINUX) || defined(FREEBSD) || defined(DARWIN)
 
 /****** execd/ptf/ptf_setpriority_addgrpid() **********************************
 *  NAME
@@ -638,7 +449,7 @@ static void ptf_setpriority_jobid(lListElem *job, lListElem *osjob, long pri)
 *                                       long *pri)
 *
 *  FUNCTION
-*     This function is only available for the architecture SOLARIS, ALPHA,
+*     This function is only available for the architecture SOLARIS,
 *     LINUX, DARWIN and FREEBSD. All processes belonging to "job" and "osjob" will
 *     get a new priority.
 *
@@ -657,19 +468,6 @@ static void ptf_setpriority_addgrpid(const lListElem *job, const lListElem *osjo
 
    DENTER(TOP_LAYER);
 
-#  ifdef USE_ALPHA_PGRPS
-
-   /*
-    * set the priority for the entire process group
-    */
-   if (setpriority(PRIO_PGRP, ptf_get_osjobid(osjob), pri) < 0 &&
-       errno != ESRCH) {
-      ERROR((SGE_EVENT, MSG_PRIO_JOBXSETPRIORITYFAILURE_DS,
-             sge_u32c(lGetUlong(job, JL_job_ID)), strerror(errno)));
-   }
-   DRETURN_VOID;
-#  else
-
    /*
     * set the priority for each active process
     */
@@ -685,7 +483,6 @@ static void ptf_setpriority_addgrpid(const lListElem *job, const lListElem *osjo
       }
    }
    DRETURN_VOID;
-#  endif
 }
 
 #endif
@@ -754,7 +551,7 @@ static lListElem *ptf_get_job_os(const lList *job_list, osjobid_t os_job_id,
 
    DENTER(TOP_LAYER);
 
-#if defined(LINUX) || defined(SOLARIS) || defined(ALPHA5) || defined(DARWIN) || defined(FREEBSD) || defined(NETBSD) || defined(HP1164) || defined(AIX)
+#if defined(LINUX) || defined(SOLARIS) || defined(DARWIN) || defined(FREEBSD) || defined(NETBSD)
    where = lWhere("%T(%I == %u)", JO_Type, JO_OS_job_ID, (u_long32) os_job_id);
 #else
    where = lWhere("%T(%I == %u && %I == %u)", JO_Type,
@@ -1794,20 +1591,7 @@ int ptf_init(void)
       sge_switch2admin_user();
       DRETURN(-1);
    }
-#if defined(__sgi)
-   schedctl(RENICE, 0, 0);
-#elif defined(CRAY)
-
-   if (getuid() == 0) {
-      int nice;
-
-      if ((nice = nicem(C_PGRP, 0, 0)) > 0) {
-         if (nicem(C_PGRP, 0, 0 - nice) < 0) {
-            ERROR((SGE_EVENT, MSG_PRIO_NICEMFAILED_S, strerror(errno)));
-         }
-      }
-   }
-#elif defined(ALPHA) || defined(SOLARIS) || defined(LINUX) || defined(FREEBSD) || defined(DARWIN)
+#if defined(SOLARIS) || defined(LINUX) || defined(FREEBSD) || defined(DARWIN)
    if (getuid() == 0) {
       if (setpriority(PRIO_PROCESS, getpid(), PTF_MAX_PRIORITY) < 0) {
          ERROR((SGE_EVENT, MSG_PRIO_SETPRIOFAILED_S, strerror(errno)));
@@ -1996,13 +1780,6 @@ int main(int argc, char **argv)
    sge_init_language(NULL, NULL);
 #endif /* __SGE_COMPILE_WITH_GETTEXT__  */
 
-
-#if defined(ALPHA) && defined(notdef)
-   if (setsid() < 0) {
-      perror("setsid");
-   }
-#endif
-
    ptf_init();
 
 #ifdef USE_DC
@@ -2060,50 +1837,18 @@ int main(int argc, char **argv)
    for_each(jte, job_ticket_list) {
       pid_t pid;
 
-#if defined(IRIX)
-
-      if (newarraysess() < 0) {
-         perror("newarraysess");
-         exit(1);
-      }
-
-      os_job_id = getash();
-      printf(MSG_JOB_THEASHFORJOBXISY_DX,
-             sge_u32c(lGetUlong(jte, JB_job_number)), u64c(os_job_id));
-
-#endif
-
       pid = fork();
       if (pid == 0) {
          char *jobname = lGetString(jte, JB_script_file);
 
          /* schedctl(NDPRI, 0, 0); */
-#if defined(ALPHA)
-         if (setsid() < 0) {
-            perror("setsid");
-            exit(1);
-         }
-#endif
          execl(jobname, jobname, NULL);
          perror("exec");
          exit(1);
       } else {
-#if defined(ALPHA)
-         os_job_id = pid;
-#endif
          ptf_job_started(os_job_id, jte, 0);
       }
    }
-
-#if defined(IRIX)
-
-   if (newarraysess() < 0) {
-      perror("newarraysess");
-      exit(2);
-   }
-   printf("My ash is "u64"\n", u64c(getash()));
-
-#endif
 
    ptf_process_job_ticket_list(job_ticket_list);
 
@@ -2138,11 +1883,7 @@ int main(int argc, char **argv)
          sum_of_last_usage += lGetDouble(job, JL_last_usage);
       }
 
-#       if defined(CRAY) || defined(ALPHA)
-#         define XFMT "%20d"
-#       else
-#         define XFMT "%20lld"
-#       endif
+#     define XFMT "%20lld"
 
       puts("                                           adj    total     curr"
            "                      last     next     prev");

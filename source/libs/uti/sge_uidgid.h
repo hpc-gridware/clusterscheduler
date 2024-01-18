@@ -44,11 +44,6 @@
 extern "C" {
 #endif
 
-#if defined(HPUX)
-#  define seteuid(euid) setresuid(-1, euid, -1)
-#  define setegid(egid) setresgid(-1, egid, -1)
-#endif 
-
 #define SGE_SUPERUSER_UID 0
 #define SGE_SUPERUSER_GID 0
 

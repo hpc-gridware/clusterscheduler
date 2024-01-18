@@ -31,7 +31,7 @@
  * 
  ************************************************************************/
 /*___INFO__MARK_END__*/
-#if defined(LINUX) || defined(ALPHA) || defined(SOLARIS)
+#if defined(LINUX) || defined(SOLARIS)
 
 #include "err_trace.h"
 
@@ -39,7 +39,7 @@ int pt_open(void);
 void pt_close(void);
 int pt_dispatch_proc_to_job(lnk_link_t *job_list, int time_stamp, time_t last_time);
 
-#if defined(LINUX) || defined(SOLARIS) || defined(ALPHA)
+#if defined(LINUX) || defined(SOLARIS)
 void procfs_kill_addgrpid(gid_t add_grp_id, int sig,
    tShepherd_trace shepherd_trace);
 #endif

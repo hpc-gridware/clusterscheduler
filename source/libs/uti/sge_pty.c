@@ -44,14 +44,7 @@
 #  include <termios.h>
 #  include <sys/ioctl.h>
 #  include <grp.h>
-#elif defined(HP1164) || defined(HP11)
-#  include <termios.h>
-#  include <stropts.h>
 #elif defined(SOLARIS64) || defined(SOLARIS86) || defined(SOLARISAMD64)
-#  include <stropts.h>
-#  include <termio.h>
-#elif defined(IRIX65)
-#  include <sys/ioctl.h>
 #  include <stropts.h>
 #  include <termio.h>
 #elif defined(FREEBSD) || defined(NETBSD)
@@ -132,11 +125,7 @@ int ptym_open(char *pts_name)
 {
    char *ptr;
    int  fdm;
-#if defined(AIX43) || defined(AIX51)
-   char default_pts_name[] = "/dev/ptc";
-#else
    char default_pts_name[] = "/dev/ptmx";
-#endif
 
    strcpy(pts_name, default_pts_name);   /* in case open fails */
    if ((fdm = open(pts_name, O_RDWR)) < 0) {
@@ -225,7 +214,7 @@ int ptys_open(int fdm, char *pts_name)
       close(fdm);
       return -5;
    }
-#if defined(SOLARIS64) || defined(SOLARIS86) || defined(SOLARISAMD64) || defined(HP11) || defined(HP1164) || defined(IRIX65)
+#if defined(SOLARIS64) || defined(SOLARIS86) || defined(SOLARISAMD64)
    if (ioctl(fds, I_PUSH, "ptem") < 0) {
       close(fdm);
       close(fds);
@@ -236,13 +225,11 @@ int ptys_open(int fdm, char *pts_name)
       close(fds);
       return -7;
    }
-#if !defined(HP11) && !defined(HP1164) && !defined(IRIX65)
    if (ioctl(fds, I_PUSH, "ttcompat") < 0) {
       close(fdm);
       close(fds);
       return -8;
    }
-#endif
 #endif
 
    return fds;

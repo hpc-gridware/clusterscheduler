@@ -44,11 +44,6 @@
 
 /* #define USE_FOPEN */
 
-#if defined(ALPHA)
-   extern void flockfile(FILE *);
-   extern void funlockfile(FILE *);
-#endif
-
 #include <errno.h>
 #include <string.h>
 #include <ctype.h>
@@ -1117,9 +1112,7 @@ spool_flatfile_open_file(lList **answer_list,
          fd = 1;
 #endif
 
-#if !defined(DARWIN6)
          flockfile(stdout);
-#endif
          fflush(stdout);
          *filepath_out = strdup("<stdout>");
          break;
@@ -1128,9 +1121,7 @@ spool_flatfile_open_file(lList **answer_list,
          fd = 2;
 #endif
 
-#if !defined(DARWIN6)
          flockfile(stderr);
-#endif
          fflush(stderr);
          *filepath_out = strdup("<stderr>");
          break;
@@ -1194,15 +1185,11 @@ spool_flatfile_close_file(lList **answer_list, int fd, const char *filepath,
          break;
       case SP_DEST_STDOUT:
          fflush(stdout);
-         #if !defined(DARWIN6)
          funlockfile(stdout);
-         #endif
          break;
       case SP_DEST_STDERR:
          fflush(stderr);
-         #if !defined(DARWIN6)
          funlockfile(stderr);
-         #endif
          break;
    }
 

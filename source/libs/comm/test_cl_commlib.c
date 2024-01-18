@@ -238,7 +238,6 @@ extern int main(int argc, char** argv)
 
 
   printf("commlib setup ...\n");
-  /* this is for compiler warning on irix65 */
   if (pipe_signal) {
      printf("pipe\n");
   }

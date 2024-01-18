@@ -43,10 +43,6 @@ rm -f $TMPDIR/machines
 rm -f $TMPDIR/mpirun.sge
 
 rshcmd=rsh
-case "$ARC" in
-   hp|hp10|hp11) rshcmd=remsh ;;
-   *) ;;
-esac
 rm -f $TMPDIR/$rshcmd
 
 exit 0
