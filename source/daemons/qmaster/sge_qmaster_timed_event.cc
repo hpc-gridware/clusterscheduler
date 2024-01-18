@@ -36,14 +36,11 @@
 
 #include "uti/sge_rmon.h"
 #include "uti/sge_log.h"
-#include "uti/sge_prog.h"
-#include "uti/sge_profiling.h"
 #include "uti/sge_time.h"
 #include "uti/sge_mtutil.h"
 
 #include "cull/cull.h"
 
-#include "sgeobj/sge_conf.h"
 #include "sgeobj/cull/sge_all_listsL.h"
 
 #include "sge_qmaster_timed_event.h"

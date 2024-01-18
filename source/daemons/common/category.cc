@@ -29,25 +29,17 @@
  * 
  ************************************************************************/
 /*___INFO__MARK_END__*/
-#include <stdlib.h>
 #include <stdio.h>
-#include <unistd.h>
 
 #include "uti/sge_rmon.h"
 #include "uti/sge_log.h"
-#include "uti/sge_prog.h"
 #include "uti/sge_dstring.h"
 
-#include "sgeobj/sge_event.h"
 #include "sgeobj/sge_job.h"
 #include "sgeobj/sge_userprj.h"
 #include "sgeobj/sge_ja_task.h"
-#include "sgeobj/sge_qref.h"
 
-#include "sched/schedd_monitor.h"
-#include "sched/sge_select_queue.h"
 #include "sched/sge_resource_quota_schedd.h"
-
 
 #if 0 /* TODO: EB: ST: should this be enabled again? */
 

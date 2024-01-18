@@ -33,9 +33,6 @@
 
 #include "basis_types.h"
 
-/* 
-** sge_event_client.c
-*/ 
 #define MSG_COMMD_FAILEDTOSENDACKEVENTDELIVERY        _MESSAGE(65000, _("failed to send ACK_EVENT_DELIVERY"))
 #define MSG_EVENT_HIGHESTEVENTISXWHILEWAITINGFORY_UU  _MESSAGE(65001, _("highest event number is "sge_U32CFormat" while waiting for "sge_U32CFormat))
 #define MSG_EVENT_SMALLESTEVENTXISGRTHYWAITFOR_UU     _MESSAGE(65002, _("smallest event number "sge_U32CFormat" is greater than number "sge_U32CFormat" i'm waiting for"))

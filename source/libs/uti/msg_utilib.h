@@ -40,9 +40,6 @@
 extern "C" {
 #endif
 
-/* 
-** utilib/sge_afsutil.c
-*/ 
 #define MSG_TOKEN_NOSTART_S         _MESSAGE(49000, _("can't start set_token_command "SFQ))
 #define MSG_TOKEN_NOWRITEAFS_S      _MESSAGE(49001, _("can't write AFS token to set_token_command "SFQ))
 #define MSG_TOKEN_NOSETAFS_SI       _MESSAGE(49002, _("failed to set AFS token - set_token_command "SFQ" returned with exit status %d"))
@@ -50,33 +47,14 @@ extern "C" {
 #define MSG_COMMAND_NOFILESTATUS_S  _MESSAGE(49004, _("can't determine file status of command "SFQ))
 #define MSG_COMMAND_NOTEXECUTABLE_S _MESSAGE(49005, _("command "SFQ" is not executable"))
 
-/*
-** utilib/sge_arch.c
-*/       
 #define MSG_SGEROOTNOTSET           _MESSAGE(49006, _("Please set the environment variable SGE_ROOT."))
 #define MSG_MEMORY_MALLOCFAILEDFORPATHTOHOSTALIASFILE _MESSAGE(49011, _("can't malloc() for path to host alias file"))
 
-/* 
-** utilib/sge_nprocs.c
-*/ 
-#define MSG_PERROR_PSTATDYNAMIC     _MESSAGE(49012, _("Pstat: PSTAT_DYNAMIC"))
 #define MSG_INFO_NUMBOFPROCESSORS_I _MESSAGE(49013, _("Number of Processors '%d'"))
 
-/* 
-** utilib/sge_unistd.c
-*/ 
 #define MSG_FILE_NOCDTODIRECTORY_S           _MESSAGE(49016, _("can't change to directory "SFQ))
-
-
-/* 
-** utilib/sge_daemonize.c
-*/ 
 #define MSG_PROC_FIRSTFORKFAILED_S           _MESSAGE(49017, _("1st fork() failed while daemonizing: "SFN))
 #define MSG_PROC_SECONDFORKFAILED_S          _MESSAGE(49018, _("2nd fork() failed while daemonizing: "SFN))
-
-/* 
-** utilib/sge_dir.c
-*/ 
 #define MSG_POINTER_NULLPARAMETER            _MESSAGE(49019, _("NULL parameter"))
 #define MSG_FILE_OPENDIRFAILED_SS            _MESSAGE(49020, _("opendir("SFN") failed: "SFN))
 #define MSG_FILE_STATFAILED_SS               _MESSAGE(49021, _("stat("SFN") failed: "SFN))
@@ -84,25 +62,12 @@ extern "C" {
 #define MSG_FILE_UNLINKFAILED_SS             _MESSAGE(49023, _("unlink("SFN") failed: "SFN))
 #define MSG_FILE_RMDIRFAILED_SS              _MESSAGE(49024, _("rmdir("SFN") failed: "SFN))
 
-/* 
-** utilib/sge_loadmem.c
-*/ 
-#define MSG_SYSTEM_NOPAGESIZEASSUME8192      _MESSAGE(49030, _("can't determine system page size - assuming 8192"))
-#define MSG_SYSTEM_TABINFO_FAILED_SS         _MESSAGE(49031, _("tabinfo("SFQ", ...) failed, "SFN))            
-#define MSG_MEMORY_MALLOCFAILED_D            _MESSAGE(49032, _("malloc("sge_U32CFormat") failed"))
-
-/* 
-** utilib/sge_log.c
-*/ 
 #define MSG_LOG_CRITICALERROR                _MESSAGE(49033, _("critical error: "))
 #define MSG_LOG_ERROR                        _MESSAGE(49034, _("error: "))
 #define MSG_LOG_CALLEDLOGGINGSTRING_S        _MESSAGE(49035, _("logging called with "SFN" logging string"))
 #define MSG_LOG_ZEROLENGTH                   _MESSAGE(49036, _("zero length"))
 #define MSG_POINTER_NULL                     _MESSAGE(49037, _("NULL"))
 
-/* 
-** utilib/sge_peopen.c
-*/ 
 #define MSG_SYSTEM_EXECBINSHFAILED              _MESSAGE(49038, _("can't exec /bin/sh"))
 #define MSG_SYSTEM_NOROOTRIGHTSTOSWITCHUSER     _MESSAGE(49039, _("you have to be root to become another user" ))
 #define MSG_SYSTEM_NOUSERFOUND_SS               _MESSAGE(49040, _("can't get user "SFN": "SFN))
@@ -110,43 +75,20 @@ extern "C" {
 #define MSG_SYSTEM_SWITCHTOUSERFAILED_SS        _MESSAGE(49042, _("can't change to user "SFN": "SFN))
 #define MSG_SYSTEM_FAILOPENPIPES_SS             _MESSAGE(49043, _("failed opening pipes for "SFN": "SFN))
 
-/* 
-** utilib/sge_signal.c
-*/ 
 #define MSG_PROC_UNKNOWNSIGNAL                  _MESSAGE(49046, _("unknown signal"))
 #define MSG_PROC_SIGACTIONFAILED_IS             _MESSAGE(49047, _("sigaction for signal %d failed: "SFN""))
-
-/* 
-** utilib/sge_str_from_file.c
-*/ 
 #define MSG_FILE_FOPENFAILED_SS                 _MESSAGE(49048, _("fopen("SFQ") failed: "SFN))
 #define MSG_FILE_FREADFAILED_SS                 _MESSAGE(49049, _("fread("SFQ") failed: "SFN))
 #define MSG_FILE_OPENFAILED_S                   _MESSAGE(49050, _("cant open file "SFQ))
 #define MSG_FILE_WRITEBYTESFAILED_IS            _MESSAGE(49051, _("cant write %d bytes into file "SFQ))
-
-/* 
-** utilib/sge_string.c
-*/ 
 #define MSG_POINTER_INVALIDSTRTOKCALL           _MESSAGE(49052, _("Invalid sge_strtok_r call, last is not NULL"))
-
-/* 
-** utilib/sge_switch_user.c
-*/ 
 #define MSG_POINTER_SETADMINUSERNAMEFAILED      _MESSAGE(49053, _("set_admin_username() with zero length username"))
 #define MSG_SYSTEM_ADMINUSERNOTEXIST_S          _MESSAGE(49054, _("admin_user "SFQ" does not exist"))
 #define MSG_SWITCH_USER_NOT_INITIALIZED         _MESSAGE(49055, _("Module 'sge_switch_user' not initialized"))
 #define MSG_SWITCH_USER_NOT_ROOT                _MESSAGE(49056, _("User 'root' did not start the application"))
-
-/* 
-** utilib/sge_sysconf.c
-*/
-#define MSG_SYSCONF_UNABLETORETRIEVE_I          _MESSAGE(49057, _("unable to retrieve value for system limit (%d)"))   
+#define MSG_SYSCONF_UNABLETORETRIEVE_I          _MESSAGE(49057, _("unable to retrieve value for system limit (%d)"))
 #define MSG_FILE_FCLOSEFAILED_SS                _MESSAGE(49058, _("fclose("SFQ") failed: "SFN))
-
-/* 
-** utilib/sge_uidgid.c
-*/ 
-#define MSG_SYSTEM_GETPWUIDFAILED_US               _MESSAGE(49059, _("getpwuid("sge_U32CFormat") failed: "SFN))
+#define MSG_SYSTEM_GETPWUIDFAILED_US            _MESSAGE(49059, _("getpwuid("sge_U32CFormat") failed: "SFN))
 #define MSG_SYSTEM_CHANGEUIDORGIDFAILED         _MESSAGE(49061, _("tried to change uid/gid without being root"))
 #define MSG_SYSTEM_GIDLESSTHANMINIMUM_SUI       _MESSAGE(49062, _("gid of user "SFN" ("sge_U32CFormat") less than minimum allowed in conf (%d)"))
 #define MSG_SYSTEM_UIDLESSTHANMINIMUM_SUI       _MESSAGE(49063, _("uid of user "SFN" ("sge_U32CFormat") less than minimum allowed in conf (%d)"))
@@ -158,28 +100,16 @@ extern "C" {
 #define MSG_SYSTEM_ADDGROUPIDFORSGEFAILED_UUS   _MESSAGE(49069, _("can't set additional group id (uid="sge_U32CFormat", euid="sge_U32CFormat"): "SFN))
 #define MSG_SYSTEM_INVALID_NGROUPS_MAX          _MESSAGE(49070, _("invalid value for NGROUPS_MAX"))
 #define MSG_SYSTEM_USER_HAS_TOO_MANY_GIDS       _MESSAGE(49071, _("the user already has too many group ids"))
-#define MSG_SYSTEM_SETUSERFAILED_UU             _MESSAGE(49115, _("setuser("sge_U32CFormat","sge_U32CFormat") failed"))
-#define MSG_SYSTEM_READ_SGEPASSWD_SSI           _MESSAGE(49116, _("can't open sgepasswd file \"%s\": %s (%d)"))
-#define MSG_SYSTEM_NO_PASSWD_ENTRY_SS           _MESSAGE(49117, _("can't find password entry for user %s in sgepasswd file %s"))
 #define MSG_SYSTEM_RESOLVEUSER                  _MESSAGE(49118, _("can't resolve user"))
 #define MSG_SYSTEM_RESOLVEGROUP                 _MESSAGE(49119, _("can't resolve group"))
 
-/* 
-** utilib/sge_stdlib.c
-*/ 
-#define MSG_MEMORY_MALLOCFAILED                    _MESSAGE(49072, _("malloc() failure"))
-#define MSG_MEMORY_REALLOCFAILED                   _MESSAGE(49073, _("realloc() failure")) 
+#define MSG_MEMORY_MALLOCFAILED                 _MESSAGE(49072, _("malloc() failure"))
+#define MSG_MEMORY_REALLOCFAILED                _MESSAGE(49073, _("realloc() failure"))
 
-/* 
-** utilib/sge_unistd.c
-*/ 
-#define MSG_POINTER_SUFFIXISNULLINSGEUNLINK        _MESSAGE(49075, _("suffix == NULL in sge_unlink()")) 
+#define MSG_POINTER_SUFFIXISNULLINSGEUNLINK     _MESSAGE(49075, _("suffix == NULL in sge_unlink()"))
 #define MSG_VAR_PATHISNULLINSGEMKDIR            _MESSAGE(49076, _("path == NULL in sge_mkdir()"))
 #define MSG_FILE_CREATEDIRFAILED_SS             _MESSAGE(49077, _("can't create directory "SFQ": "SFN))
 
-/*
- * 
- */
 #define MSG_GDI_NUMERICALVALUENOTPOSITIVE               _MESSAGE(49081, _("Error! value not positive"))
 #define MSG_UNREC_ERROR                                 _MESSAGE(49082, _("unrecoverable error - contact systems manager"))
 #define MSG_GDI_VALUETHATCANBESETTOINF                  _MESSAGE(49083, _("value that can be set to infinity"))
@@ -191,9 +121,6 @@ extern "C" {
 #define MSG_GDI_NUMERICALVALUEINVALIDNONUMBER_SS        _MESSAGE(49089, _("Error! numerical value near %20s invalid.\n>%20s< contains no valid decimal or fixed float number"))
 #define MSG_GDI_NUMERICALVALUEINVALIDNOHEXOCTNUMBER_SS  _MESSAGE(49090, _("Error! numerical value near "SFN" invalid.\n'"SFN"' contains no valid hex or octal number"))
 
-/*
- * sge_profiling.c
- */
 #define MSG_PROF_INVALIDLEVEL_SD                _MESSAGE(49091, _(SFN": invalid profiling level %d"))
 #define MSG_PROF_ALREADYACTIVE_S                _MESSAGE(49092, _(SFN": profiling is already active"))
 #define MSG_PROF_NOTACTIVE_S                    _MESSAGE(49093, _(SFN": profiling is not active"))
@@ -202,26 +129,17 @@ extern "C" {
 #define MSG_PROF_MAXTHREADSEXCEEDED_S           _MESSAGE(49096, _(SFN": maximum number of threads mas been exceeded"))
 #define MSG_PROF_NULLLEVELNAME_S                _MESSAGE(49097, _(SFN": the assigned level name is NULL"))
 #define MSG_LOG_PROFILING                       _MESSAGE(49098, _("profiling: "))                                                                                                                                                 
-/*
- * libs/uti/sge_bootstrap
- */
-#define MSG_UTI_CANNOTRESOLVEBOOTSTRAPFILE     _MESSAGE(49100, _("cannot resolve name of bootstrap file"))
-#define MSG_UTI_CANNOTLOCATEATTRIBUTE_SS       _MESSAGE(49102, _("cannot read attribute <"SFN"> from bootstrap file "SFN))
-#define MSG_UTI_CANNOTLOCATEATTRIBUTEMAN_SS    _MESSAGE(49103, _("cannot read attribute <"SFN"> from management.properties file "SFN))
+#define MSG_UTI_CANNOTRESOLVEBOOTSTRAPFILE      _MESSAGE(49100, _("cannot resolve name of bootstrap file"))
+#define MSG_UTI_CANNOTLOCATEATTRIBUTE_SS        _MESSAGE(49102, _("cannot read attribute <"SFN"> from bootstrap file "SFN))
+#define MSG_UTI_CANNOTLOCATEATTRIBUTEMAN_SS     _MESSAGE(49103, _("cannot read attribute <"SFN"> from management.properties file "SFN))
 
-/* 
-** libs/uti/setup_path.c
-*/
-#define MSG_UTI_SGEROOTNOTADIRECTORY_S         _MESSAGE(49110, _("$SGE_ROOT="SFN" is not a directory"))
-#define MSG_UTI_DIRECTORYNOTEXIST_S            _MESSAGE(49111, _("directory doesn't exist: "SFN))
-#define MSG_SGETEXT_NOSGECELL_S                _MESSAGE(49112, _("cell directory "SFQ" doesn't exist"))
+#define MSG_UTI_SGEROOTNOTADIRECTORY_S          _MESSAGE(49110, _("$SGE_ROOT="SFN" is not a directory"))
+#define MSG_UTI_DIRECTORYNOTEXIST_S             _MESSAGE(49111, _("directory doesn't exist: "SFN))
+#define MSG_SGETEXT_NOSGECELL_S                 _MESSAGE(49112, _("cell directory "SFQ" doesn't exist"))
 
-#define MSG_UTI_CANT_GET_ENV_OR_PORT_SS        _MESSAGE(49113, _("could not get environment variable "SFN" or service "SFQ))
-#define MSG_UTI_USING_CACHED_PORT_SU           _MESSAGE(49114, _("using cached "SFQ" port value "sge_U32CFormat))
+#define MSG_UTI_CANT_GET_ENV_OR_PORT_SS         _MESSAGE(49113, _("could not get environment variable "SFN" or service "SFQ))
+#define MSG_UTI_USING_CACHED_PORT_SU            _MESSAGE(49114, _("using cached "SFQ" port value "sge_U32CFormat))
 
-/*
-** libs/uti/sge_monitor.c
-*/
 #define MSG_UTI_MONITOR_DEFLINE_SF             _MESSAGE(59120, _(SFN": runs: %.2fr/s"))
 #define MSG_UTI_MONITOR_DEFLINE_FFFFF          _MESSAGE(59121, _(" out: %.2fm/s APT: %.4fs/m idle: %.2f%% wait: %.2f%% time: %.2fs"))
 #define MSG_UTI_MONITOR_GDIEXT_FFFFFFFFFFFFI   _MESSAGE(59122, _("EXECD (l:%.2f,j:%.2f,c:%.2f,p:%.2f,a:%.2f)/s GDI (a:%.2f,g:%.2f,m:%.2f,d:%.2f,c:%.2f,t:%.2f,p:%.2f)/s OTHER (ql:"sge_U32CFormat")"))
@@ -262,7 +180,6 @@ extern "C" {
 #define MSG_TMPNAM_SGE_MAX_PATH_LENGTH_US      _MESSAGE(59162, _("reached max path length of "sge_U32CFormat" bytes for file "SFQ))
 #define MSG_TMPNAM_GOT_SYSTEM_ERROR_SS         _MESSAGE(59163, _("got system error "SFQ" while checking file in "SFQ))
 
-/* libs/uti/sge_binding_hlp.c */
 #define MSG_SYN_EXPLICIT_NOTFOUND              _MESSAGE(59200, _("'explicit:' not found in string!"))
 #define MSG_SYN_EXPLICIT_NOPAIR                _MESSAGE(59201, _("No <socket,core> pair given!"))
 #define MSG_SYN_EXPLICIT_FIRSTSOCKNONUMBER     _MESSAGE(59202, _("First socket is not a number!"))
@@ -274,6 +191,16 @@ extern "C" {
 #define MSG_SYN_EXPLICIT_PAIRSNOTUNIQUE        _MESSAGE(59208, _("<socket,core> pairs are not unique!"))
 
 #define MSG_SYNTAX_DSTRINGBUG                  _MESSAGE(59210, _("BUG detected: dstring not initialized!"))
+
+#define MSG_RMON_ILLEGALDBUGLEVELFORMAT        _MESSAGE(59211, "illegal debug level format")
+#define MSG_RMON_UNABLETOOPENXFORWRITING_S     _MESSAGE(59212, "unable to open "SFN" for writing")
+#define MSG_RMON_ERRNOXY_DS                    _MESSAGE(59213, "    ERRNO: %d, "SFN)
+
+#define MSG_LCK_MUTEXLOCKFAILED_SSS             _MESSAGE(59214, _(SFQ" failed to lock "SFQ" - error: "SFQ))
+#define MSG_LCK_MUTEXUNLOCKFAILED_SSS           _MESSAGE(59215, _(SFQ" failed to unlock "SFQ" - error: "SFQ))
+
+#define MSG_LCK_RWLOCKFORWRITINGFAILED_SSS      _MESSAGE(59216, _(SFQ" failed to lock "SFQ" for writing - error: "SFQ))
+#define MSG_LCK_RWLOCKUNLOCKFAILED_SSS          _MESSAGE(59217, _(SFQ" failed to unlock "SFQ" - error: "SFQ))
 
 #ifdef __cplusplus
 }

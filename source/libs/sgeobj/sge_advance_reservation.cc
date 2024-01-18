@@ -29,21 +29,14 @@
  * 
  ************************************************************************/
 /*___INFO__MARK_END__*/
-#include <stdlib.h>
+
 #include <string.h>
-#include <errno.h>
-#include <limits.h>
-#include <fnmatch.h>
 #include <ctype.h>
 
 #include "uti/sge_rmon.h"
-#include "uti/sge_stdlib.h"
-#include "uti/sge_stdio.h"
 #include "uti/sge_time.h"
 #include "uti/sge_log.h"
-#include "uti/sge_time.h"
 
-#include "sgeobj/sge_str.h"
 #include "sgeobj/sge_advance_reservation.h"
 #include "sgeobj/sge_answer.h"
 #include "sgeobj/sge_utility.h"
@@ -52,18 +45,12 @@
 #include "sgeobj/sge_qref.h"
 #include "sgeobj/sge_pe.h"
 #include "sgeobj/sge_ckpt.h"
-#include "sgeobj/sge_range.h"
 #include "sgeobj/sge_userset.h"
-#include "sgeobj/sge_str.h"
-#include "sgeobj/sge_hgroup.h"
 #include "sgeobj/sge_job.h"
-#include "sgeobj/sge_qinstance_state.h"
-#include "sgeobj/sge_qinstance.h"
 #include "sgeobj/sge_cqueue.h"
 #include "sgeobj/msg_sgeobjlib.h"
 
 #include "sge.h"
-#include "symbols.h"
 #include "msg_qmaster.h"
 
 /****** sge_advance_reservation/ar_list_locate() *******************************

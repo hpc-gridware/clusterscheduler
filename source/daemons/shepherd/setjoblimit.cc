@@ -30,8 +30,6 @@
  ************************************************************************/
 /*___INFO__MARK_END__*/
 
-#include "cull/cull.h"
-#include "ptf.h"
 #include "setjoblimit.h"
 
 static osjobid_t os_job_id = 0;

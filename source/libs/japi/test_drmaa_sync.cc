@@ -5,7 +5,6 @@
  * @author  dan.templeton@sun.com
  */
 
-#include <stdio.h>
 #include <unistd.h>
 #include <string.h>
 #include <pthread.h>

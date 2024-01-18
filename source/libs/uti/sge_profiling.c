@@ -30,12 +30,9 @@
  ************************************************************************/
 /*___INFO__MARK_END__*/
 
-#include <stdarg.h>
 #include <time.h>
-#include <sys/time.h>
 #include <sys/times.h>
 #include <string.h>
-#include <limits.h>
 #include <unistd.h>
 #include <pthread.h>
 

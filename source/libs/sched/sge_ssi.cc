@@ -32,14 +32,11 @@
 
 #include <stdlib.h>
 #include <string.h>
-#include <strings.h>
 
 #include "uti/sge_rmon.h"
 #include "uti/sge_log.h"
 
 #include "cull/cull.h"
-
-#include "gdi/sge_gdi.h"
 
 #include "sgeobj/sge_answer.h"
 #include "sgeobj/sge_job.h"

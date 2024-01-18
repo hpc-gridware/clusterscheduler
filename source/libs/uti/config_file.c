@@ -30,19 +30,16 @@
  ************************************************************************/
 /*___INFO__MARK_END__*/
 #include <stdio.h>
-#include <stdlib.h>
 #include <string.h>
 #include <ctype.h>
 
 #include "uti/sge_rmon.h"
 #include "uti/sge_string.h"
 #include "uti/sge_stdio.h"
-#include "uti/sge_log.h"
 #include "uti/sge_parse_num_par.h"
 #include "uti/config_file.h"
 
 #include "basis_types.h"
-#include "err_trace.h"
 
 #include "msg_daemons_common.h"
 

@@ -35,26 +35,17 @@
  */
 
 #include <stdio.h>
-#include <stdlib.h>
 #include <string.h>
-#include <unistd.h>
-#include <errno.h>
-#include <limits.h>
 
 #include "uti/sge_rmon.h"
 #include "uti/sge_log.h"
 
-#include "sgeobj/sge_usage.h"
 #include "sgeobj/sge_sharetree.h"
 #include "sgeobj/cull_parse_util.h"
 #include "sgeobj/sge_answer.h"
 #include "sgeobj/sge_userprj.h"
 
-#include "spool/sge_spooling.h"
-
-#include "sge.h"
 #include "sge_persistence_qmaster.h"
-#include "evm/sge_event_master.h"
 #include "sge_sharetree_qmaster.h"
 #include "sge_userprj_qmaster.h"
 

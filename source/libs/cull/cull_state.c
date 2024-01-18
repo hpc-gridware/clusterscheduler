@@ -37,8 +37,6 @@
 #include <pthread.h>
 
 #include "uti/sge_stdlib.h"
-#include "uti/sge_htable.h"
-#include "uti/sge_dstring.h"
 
 #include "cull/pack.h"
 

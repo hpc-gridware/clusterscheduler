@@ -33,7 +33,6 @@
 #include <stdio.h>
 #include <string.h>
 #include <strings.h>
-#include <stdlib.h>
 
 #include "cull/cull.h"
 #include "cull/cull_list.h"
@@ -42,16 +41,11 @@
 #include "uti/sge_stdio.h"
 #include "uti/sge_string.h"
 
-#include "gdi/sge_gdi.h"
-#include "gdi/sge_gdi_packet_type.h"
 #include "gdi/sge_gdi_ctx.h"
-
-#include "sched/sge_resource_utilization.h"
 
 #include "sgeobj/cull_parse_util.h"
 #include "sgeobj/sge_job.h"
 #include "sgeobj/sge_centry.h"
-#include "sgeobj/sge_range.h"
 #include "sgeobj/sge_str.h"
 #include "sgeobj/cull/sge_parse_SPA_L.h"
 #include "sgeobj/cull/sge_resource_utilization_RUE_L.h"

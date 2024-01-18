@@ -34,18 +34,12 @@
 #include <string.h>
 #include <stdlib.h>
 #include <ctype.h>
-#include <math.h>
 #include <float.h>
 
-#include "uti/sge_rmon.h"
 #include "uti/sge_log.h"
 #include "uti/sge_string.h"
 #include "uti/sge_parse_num_par.h"
 #include "uti/msg_utilib.h"
-
-#include "sgeobj/sge_answer.h"
-
-#include "symbols.h"
 
 #if !defined(SOLARIS64) && !defined(SOLARISAMD64)
 #  define RLIM_MAX RLIM_INFINITY

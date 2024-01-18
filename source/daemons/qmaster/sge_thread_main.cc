@@ -30,29 +30,13 @@
  ************************************************************************/
 /*___INFO__MARK_END__*/
 
-#include <signal.h>
 #include <fcntl.h>
 
 #include "uti/sge_rmon.h"
-#include "uti/sge_prog.h"
-#include "uti/sge_log.h"
-#include "uti/setup_path.h"
-#include "uti/sge_bootstrap.h"
-
-#include "sgeobj/sge_answer.h"
-#include "sgeobj/sge_manop.h"
-#include "sgeobj/sge_conf.h"
-
-#include "gdi/sge_security.h"
 
 #include "comm/cl_commlib.h"
 
 #include "basis_types.h"
-#include "evm/sge_event_master.h"
-#include "sge_reporting_qmaster.h"
-#include "sge_qmaster_timed_event.h"
-#include "sge_host_qmaster.h"
-#include "sge_qmaster_threads.h"
 #include "sge_thread_main.h"
 #include "sge_thread_signaler.h"
 

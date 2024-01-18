@@ -30,33 +30,23 @@
  ************************************************************************/
 /*___INFO__MARK_END__*/
 #include <stdio.h>
-#include <stdlib.h>
 #include <string.h>
-#include <errno.h>
 
 #include "uti/sge_rmon.h"
 #include "uti/sge_log.h"
 #include "uti/setup_path.h"
 
 #include "sgeobj/sge_schedd_conf.h"
-#include "sgeobj/sge_usage.h"
 #include "sgeobj/sge_conf.h"
 #include "sgeobj/sge_answer.h"
-#include "sgeobj/sge_centry.h"
-#include "sgeobj/sge_conf.h"
-
-#include "sched/sge_sched.h"
 
 #include "spool/sge_spooling.h"
 
 #include "sched_conf_qmaster.h"
-#include "evm/sge_event_master.h"
 #include "configuration_qmaster.h"
 #include "sge_persistence_qmaster.h"
 #include "msg_qmaster.h"
 #include "msg_common.h"
-
-
 
 static void check_reprioritize_interval(sge_gdi_ctx_class_t *ctx, lList **alpp, char *ruser, char *rhost);
 

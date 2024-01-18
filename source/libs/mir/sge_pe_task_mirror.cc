@@ -41,8 +41,6 @@
 #include "mir/msg_mirlib.h"
 #include "mir/sge_pe_task_mirror.h"
 
-#include "sge.h"
-
 /****** Eventmirror/pe_task/pe_task_update_master_list_usage() *****************
 *  NAME
 *     pe_task_update_master_list_usage() -- update a parallel tasks usage

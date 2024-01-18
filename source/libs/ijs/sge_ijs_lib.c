@@ -1,8 +1,6 @@
 /* Portions of this code are Copyright 2011 Univa Inc. */
 #if defined(DARWIN)
-#  include <termios.h>
 #  include <sys/ioctl.h>
-#  include <grp.h>
 #elif defined(SOLARIS64) || defined(SOLARIS86) || defined(SOLARISAMD64)
 #  include <stropts.h>
 #  include <termio.h>

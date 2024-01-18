@@ -36,14 +36,8 @@
 
 #include "basis_types.h"
 
-/*
-** sge_ckptobj.c
-*/
 #define MSG_OBJ_CKPT                  _MESSAGE(33005, _("checkpointing environment"))
 
-/*
-** sge_follow.c
-*/
 #define MSG_JOB_IGNORE_DELETED_TASK_UU _MESSAGE(33013, _("ignoring obtained start order for deleted task: "sge_U32CFormat"."sge_U32CFormat))
 #define MSG_JOB_NOJOBID                _MESSAGE(33014, _("can't get job id"))
 #define MSG_JOB_NOORDERTASK_US         _MESSAGE(33015, _("invalid task number 0 for job "sge_U32CFormat" in "SFQ" order"))
@@ -77,20 +71,13 @@
 #define MSG_JOB_REMOVENONIMMEDIATE_U  _MESSAGE(33039, _("scheduler tried to remove non immediate job "sge_U32CFormat" by use of a ORT_remove_immediate_job order"))
 #define MSG_JOB_REMOVENOTIDLEIA_U     _MESSAGE(33040, _("scheduler tried to remove interactive job "sge_U32CFormat" but it is not in JIDLE state"))
 #define MSG_JOB_NOFREERESOURCEIA_UU   _MESSAGE(33041, _("no free resource for interactive job "sge_U32CFormat"."sge_U32CFormat" for user "SFQ))
-#define MSG_MAIL_CREDITLOWSUBJ_SUS    SFN": Credit low for job " sge_U32CFormat " ("SFN")"
 #define MSG_JOB_ORDERDELINCOMPLETEJOB_UU  _MESSAGE(33042, _("scheduler tried to remove a incomplete job "sge_U32CFormat"."sge_U32CFormat))
 #define MSG_JOB_SUSPOTNOTRUN_UU       _MESSAGE(33043, _("got ORT_suspend_on_threshold order for non running task "sge_U32CFormat"."sge_U32CFormat))
 #define MSG_JOB_UNSUSPOTNOTRUN_UU     _MESSAGE(33044, _("got ORT_unsuspend_on_threshold order for non running task "sge_U32CFormat"."sge_U32CFormat))
 #define MSG_JOB_UNSUSPOT_UUS          _MESSAGE(33045, _("unsuspending job "sge_U32CFormat"."sge_U32CFormat" according to suspend threshold of queue "SFQ))
 #define MSG_JOB_UNABLE2FINDMQ_SU      _MESSAGE(33046, _("unable to find master queue "SFN" of job "sge_U32CFormat))
 #define MSG_JOB_SUSPTQ_UUS            _MESSAGE(33047, _("suspending job "sge_U32CFormat"."sge_U32CFormat" according to suspend threshold of queue "SFQ))
-#define MSG_JOB_MISSINGJOBTASK_UU     _MESSAGE(33048, _("missing job "sge_U32CFormat"."sge_U32CFormat" appeared in ticket orders list"))
-#define MSG_ORD_UNABLE2FINDHOST_S     _MESSAGE(33049, _("unable to lookup host for queue "SFN" in parallel job ticket order"))
 
-
-/*
-** parse_onoff.c
-*/
 #define MSG_TOKEN_UNRECOGNIZEDSTRING_S                  _MESSAGE(33050, _("unrecognized string "SFQ))
 #define MSG_ANSWER_ERRORINDISABLYEAROFCALENDARXY_SS     _MESSAGE(33051, _("error in disabled_year of calendar "SFQ": "SFN))
 #define MSG_ANSWER_GOTEQUALWITHOUTDAYTIMERANGEORSTATE   _MESSAGE(33052, _("got \"=\" without daytime_range/state"))
@@ -113,15 +100,6 @@
 #define MSG_PARSE_XISNOTAWEEKDAY_S          _MESSAGE(33069, _(SFQ" is not a weekday"))
 #define MSG_PARSE_OVERFLOWERRORWHILEPARSING _MESSAGE(33070, _("overflow error while parsing"))
 
-
-/*
-** global qmaster messages
-*/ 
-
-
-/* 
-** gdi_utility_qmaster.c 
-*/
 #define MSG_GDI_SIG_DIGIT_SS         _MESSAGE(33071, _("denied: attribute "SFQ" contains invalid value "SFQ))
 #define MSG_GDI_APATH_S              _MESSAGE(33073, _("denied: path given for "SFQ" must start with an \"/\""))
 #define MSG_GDI_VARS_SS              _MESSAGE(33074, _("parameter "SFQ": "SFN))
@@ -155,27 +133,15 @@
 #define MSG_GDI_KEYSTR_PERCENT         _MESSAGE(33103, _("Percent"))
 #define MSG_GDI_KEYSTR_ASTERISK        _MESSAGE(33104, _("Asterisk"))
 
-
-/*
-** ck_to_do_qmaster.c
-*/
-
-/*
-** sge_c_ack.c
-*/
-#define MSG_COM_ACK_S                _MESSAGE(33105, _("ack event from "SFN))     
+#define MSG_COM_ACK_S                _MESSAGE(33105, _("ack event from "SFN))
 #define MSG_COM_ACKEVENTFORUNKOWNJOB_U _MESSAGE(33106, _("ack event for unknown job "sge_U32CFormat))
 #define MSG_COM_ACKEVENTFORUNKNOWNTASKOFJOB_UU _MESSAGE(33107, _("ack event for unknown task "sge_U32CFormat" of job "sge_U32CFormat))
 #define MSG_COM_UNKNOWN_TAG          _MESSAGE(33108, _("received unknown ack tag "sge_U32CFormat))
 
 #define MSG_COM_ACK_U                _MESSAGE(33109, _("signalling acknowledged for unknown job "sge_U32CFormat))
-/* #define MSG_COM_ACK_UU               _message(33110, _("signalling acknowledged for unknown task "sge_U32CFormat" of job "sge_U32CFormat)) __TS Removed automatically from testsuite!! TS__*/
 #define MSG_COM_ACK_QUEUE_S          _MESSAGE(33112, _("ack event for unknown queue "SFQ))
 #define MSG_COM_ACK_UNKNOWN          _MESSAGE(33113, _("unknown ack event"))
 
-/*
-** sge_c_gdi.c
-*/
 #define MSG_GDI_WRONG_GDI_SSISS  _MESSAGE(33115, _("denied: client ("SFN"/"SFN"/%d) uses old GDI version "SFN" while qmaster uses newer version "SFN))
 #define MSG_GDI_WRONG_GDI_SSIUS  _MESSAGE(33116, _("denied: client ("SFN"/"SFN"/%d) uses newer GDI version "sge_U32CFormat" while qmaster uses older version "SFN))
 
@@ -192,21 +158,12 @@
 #define MSG_SGETEXT_JOBINFOMESSAGESOUTDATED            _MESSAGE(33130, _("Can not get job info messages, scheduler is not available"))
 #define MSG_GDI_EVENTCLIENTIDFORMAT_S      _MESSAGE(33131, _("invalid event client id format "SFQ))
 
-
-/*
-** sge_calendar_qmaster.c
-*/
 #define MSG_OBJ_CALENDAR              _MESSAGE(33132, _("calendar"))
 #define MSG_EVE_TE4CAL_S              _MESSAGE(33133, _("got timer event for unknown calendar "SFQ))
 #define MSG_EVE_TE4AR_U               _MESSAGE(33134, _("got timer event for unknown AR "sge_U32CFormat))
 #define MSG_SGETEXT_REMOVEDFROMLIST_SSSS        _MESSAGE(33135, _(""SFN"@"SFN" removed "SFQ" from "SFN" list"))
 #define MSG_INVALID_CENTRY_DEL_S                _MESSAGE(33136, _("The built-in complex "SFQ" cannot be deleted"))
 
-
-
-/*
-** sge_give_jobs.c
-*/
 #define MSG_COM_CANT_DELIVER_UNHEARD_SSU _MESSAGE(33137, _("got max. unheard timeout for target "SFQ" on host "SFQ", can't deliver job \""sge_U32CFormat"\""))
   
 #define MSG_OBJ_UNABLE2FINDCKPT_S     _MESSAGE(33138, _("can't find checkpointing object "SFQ))
@@ -226,8 +183,6 @@
  */
 #define MSG_RU_MAILSUB_SS             "Pushed rescheduling of "SFN" "SFN
 
-
-
 #define MSG_RU_REAPING_NOT_RESTARTABLE_SS _MESSAGE(33162, _("Reaping not restartable "SFN" "SFN))
 #define MSG_RU_MAILBODY_SSSS          _MESSAGE(33163, _("Your "SFN" "SFN" is was running on host "SFN". "SFN" manually/automatic rescheduling for this "SFN"."))
 #define MSG_RU_MAILTYPE               _MESSAGE(33164, _("job rescheduling"))
@@ -244,9 +199,6 @@
 #define MSG_RU_INDELETEDSTATE_SS      _MESSAGE(33175, _("The "SFN" "SFN" is already in deleted state. No rescheduling!"))
 #define MSG_RU_NORERUNQUEUE_SSS       _MESSAGE(33176, _("The "SFN" "SFN" is running in queue "SFN" where jobs are not rerunable."))
 
-/*
-** sge_host_qmaster.c
-*/
 #define MSG_OBJ_DELGLOBALHOST         _MESSAGE(33177, _("denied: pseudo host \"global\" may not be deleted"))
 #define MSG_OBJ_LOADREPORTIVAL_SS     _MESSAGE(33178, _("host "SFQ": "SFQ" is not a valid time value for \"load_report_time\" - assuming 120 seconds"))  
 #define MSG_OBJ_RESCHEDULEUNKN_SS     _MESSAGE(33179, _("host "SFQ": "SFQ" is not a valid time value for \"reschedule_unknown\" - assuming 0 => no auto rescheduling"))
@@ -283,9 +235,6 @@
 #define MSG_MAIL_ARERRORBODY_USSS     _MESSAGE(33200, _("Advance Reservation "sge_U32CFormat" ("SFN") Error\n User       = "SFN"\n Error Time = "SFN)) 
 #define MSG_CANT_ASSOCIATE_LOAD_SS    _MESSAGE(33201, _("got load report from host "SFQ" - reports load value for host "SFQ))
 
-/*
-** sge_job.c
-*/
 #define MSG_JOB_NORESUBPERMS_SSS      _MESSAGE(33202, _("job rejected: "SFN"@"SFN" is not allowed to resubmit jobs of user "SFN))
 #define MSG_JOB_NOPERMS_SS            _MESSAGE(33203, _("job rejected: "SFN"@"SFN" is not allowed to submit jobs"))
 #define MSG_JOB_MORETASKSTHAN_U       _MESSAGE(33204, _("job rejected: You try to submit a job with more than "sge_U32CFormat" tasks"))

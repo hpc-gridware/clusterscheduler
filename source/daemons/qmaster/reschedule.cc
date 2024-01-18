@@ -37,7 +37,6 @@
 #include "uti/sge_time.h"
 #include "uti/sge_string.h"
 #include "uti/sge_hostname.h"
-#include "uti/sge_prog.h"
 #include "uti/sge_lock.h"
 
 #include "sgeobj/sge_object.h"
@@ -52,14 +51,9 @@
 #include "sgeobj/sge_ckpt.h"
 #include "sgeobj/sge_cqueue.h"
 
-#include "spool/sge_spooling.h"
-
 #include "sge.h"
 #include "basis_types.h"
 #include "job_exit.h"
-#include "evm/sge_event_master.h"
-#include "sge_ckpt_qmaster.h"
-#include "sge_host_qmaster.h"
 #include "execution_states.h"
 #include "mail.h"
 #include "symbols.h"

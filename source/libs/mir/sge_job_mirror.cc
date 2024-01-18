@@ -41,8 +41,6 @@
 #include "mir/sge_ja_task_mirror.h"
 #include "mir/sge_pe_task_mirror.h"
 
-#include "sge.h"
-
 static bool job_update_master_list_usage(lList *job_list, lListElem *event);
 
 /****** Eventmirror/job/job_update_master_list_usage() *************************

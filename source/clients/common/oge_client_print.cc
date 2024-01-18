@@ -50,8 +50,9 @@
 #include "sgeobj/sge_ulong.h"
 #include "sgeobj/sge_usage.h"
 
-#include "sched/sge_sched.h"
 #include "sched/sge_urgency.h"
+#include "sched/sge_job_schedd.h"
+#include "sched/sge_complex_schedd.h"
 
 #include "msg_clients_common.h"
 #include "oge_client_job.h"

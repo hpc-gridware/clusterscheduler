@@ -30,13 +30,7 @@
  ************************************************************************/
 /*___INFO__MARK_END__*/
 
-#include <stdio.h>
-#include <stdlib.h>
 #include <string.h>
-#include <signal.h>
-#include <sys/types.h>
-#include <unistd.h>
-#include <limits.h>
 #include <math.h>
 
 #ifndef NO_SGE_COMPILE_DEBUG   
@@ -44,10 +38,7 @@
 #endif
 
 #include "uti/sge_rmon.h"
-#include "uti/sge_prog.h"
 #include "uti/sge_time.h"
-
-#include "comm/commlib.h"
 
 #include "sgeobj/sge_schedd_conf.h"
 #include "sgeobj/sge_usage.h"
@@ -56,8 +47,6 @@
 #include "sgeobj/sge_job.h"
 #include "sgeobj/sge_ja_task.h"
 
-#include "sge_orders.h"
-#include "sge_job_schedd.h"
 #include "sgeee.h"
 #include "sge_support.h"
 #include "valid_queue_user.h"

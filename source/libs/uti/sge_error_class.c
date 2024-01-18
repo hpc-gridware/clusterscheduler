@@ -37,10 +37,6 @@
 #include "uti/sge_error_class.h"
 #include "uti/sge_string.h"
 
-#include "sgeobj/sge_answer.h"
-
-#include "sge.h"
-
 typedef struct sge_error_message_str sge_error_message_t;
 
 

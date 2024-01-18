@@ -1,7 +1,4 @@
 #pragma once
-
-#ifndef JGDI_GENERATE
-
 /*___INFO__MARK_BEGIN__*/
 /*************************************************************************
  * 
@@ -375,5 +372,3 @@ bool lListElem_clear_changed_info(lListElem *lp);
 #ifdef  __cplusplus
 }
 #endif
-
-#endif /* JGDI_GENERATE */

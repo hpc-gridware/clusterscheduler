@@ -30,14 +30,9 @@
  ************************************************************************/
 /*___INFO__MARK_END__*/
 #include <stdio.h>
-#include <limits.h>
-#include <sys/types.h>
-#include <sys/time.h>
-#include <sys/resource.h>
 #include <sys/wait.h>
 #include <string.h>
 #include <stdlib.h>
-#include <fcntl.h> 
 #include <errno.h>
 
 #include "uti/sge_rmon.h"

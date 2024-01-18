@@ -29,7 +29,6 @@
  * 
  ************************************************************************/
 /*___INFO__MARK_END__*/
-#include <stdio.h>
 #include <string.h>
 #include <time.h>
 
@@ -39,15 +38,12 @@
 
 #include "cull/cull.h"
 
-#include "sgeobj/sge_conf.h"
 #include "sgeobj/sge_job.h"
 #include "sgeobj/sge_ja_task.h"
 #include "sgeobj/sge_qinstance.h"
 #include "sgeobj/sge_qinstance_state.h"
 #include "sgeobj/sge_order.h"
 
-#include "sge_select_queue.h"
-#include "schedd_monitor.h"
 #include "sge_orders.h"
 #include "suspend_thresholds.h"
 

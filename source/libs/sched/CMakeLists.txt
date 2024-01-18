@@ -11,7 +11,6 @@ set(LIBRARY_SOURCES
     sge_orders.cc
     sge_pe_schedd.cc
     sge_qeti.cc
-    sge_range_schedd.cc
     sge_resource_quota_schedd.cc
     sge_resource_utilization.cc
     sge_schedd_text.cc

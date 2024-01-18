@@ -44,7 +44,6 @@
 #include "sgeobj/sge_ja_task.h"
 #include "exec_job.h"
 
-#include "dispatcher.h"
 #include "execd_get_new_conf.h"
 #include "sge_load_sensor.h"
 #include "admin_mail.h"

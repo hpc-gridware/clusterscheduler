@@ -33,9 +33,6 @@
 
 #include "basis_types.h"
 
-/*
-** sge_event_master.c
-*/
 #define MSG_EVE_REINITEVENTCLIENT_S   _MESSAGE(66000, _("reinitialization of "SFQ))
 #define MSG_EVE_UNKNOWNEVCLIENT_US    _MESSAGE(66001, _("no event client known with id "sge_U32CFormat" to %s"))
 #define MSG_EVE_CLIENTREREGISTERED_SSSU _MESSAGE(66002, _("event client "SFQ" (%s/%s/"sge_U32CFormat") reregistered - it will need a total update"))

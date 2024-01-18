@@ -1,7 +1,5 @@
 #pragma once
-
 /*___INFO__MARK_BEGIN__*/
-
 /*************************************************************************
  * 
  *  The Contents of this file are made available subject to the terms of
@@ -33,7 +31,6 @@
  *   Portions of this code are Copyright 2011 Univa Inc.
  *
  ************************************************************************/
-
 /*___INFO__MARK_END__*/
 
 #if ( defined(LINUXAMD64) || defined(LINUXARM64) || defined(LINUX86) ) && !defined(ULINUX86_24) && !defined(LINUXIA64_24) && !defined(ULINUXAMD64_24) && defined(PLPA)

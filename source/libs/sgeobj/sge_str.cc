@@ -30,22 +30,16 @@
  ************************************************************************/
 /*___INFO__MARK_END__*/                                   
 
-
 #include <string.h>
-#include <errno.h>
 
 #include "uti/sge_rmon.h"
 #include "uti/sge_string.h"
-#include "uti/sge_uidgid.h"
-#include "uti/sge_log.h"
 
 #include "cull/cull_list.h"
 
 #include "sgeobj/sge_answer.h"
 #include "sgeobj/sge_str.h"
 #include "sgeobj/msg_sgeobjlib.h"
-
-#include "msg_common.h"
 
 #define STR_LAYER BASIS_LAYER
 

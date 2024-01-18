@@ -30,7 +30,6 @@
  ************************************************************************/
 /*___INFO__MARK_END__*/
 
-#include <signal.h>
 #include <pthread.h>
 #include <string.h>
 #include <errno.h>
@@ -43,8 +42,6 @@
 #include "uti/sge_prog.h"
 #include "uti/sge_log.h"
 #include "uti/sge_time.h"
-#include "uti/sge_bootstrap.h"
-#include "uti/setup_path.h"
 #include "uti/sge_os.h"
 #include "uti/sge_stdio.h"
 #include "uti/sge_profiling.h"
@@ -56,7 +53,6 @@
 #include "sgeobj/sge_conf.h"
 #include "sgeobj/sge_schedd_conf.h"
 
-#include "gdi/sge_security.h"
 #include "gdi/sge_gdi_packet.h"
 
 #include "sched/sge_serf.h"

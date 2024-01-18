@@ -30,8 +30,6 @@
  ************************************************************************/
 /*___INFO__MARK_END__*/
 
-#include "sge.h"
-
 #include "uti/sge_rmon.h"
 
 #include "sgeobj/sge_cqueue.h"

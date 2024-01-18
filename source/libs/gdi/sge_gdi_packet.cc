@@ -35,7 +35,6 @@
 
 /* ___INFO__MARK_END__ */
 
-#include <stdlib.h>
 #include <string.h>
 
 #ifdef KERBEROS
@@ -46,9 +45,7 @@
 
 #include "comm/commlib.h"
 
-#include "uti/sge_mtutil.h"
 #include "uti/sge_rmon.h"
-#include "uti/sge_prog.h"
 #include "uti/sge_log.h"
 #include "uti/sge_stdlib.h"
 #include "uti/sge_string.h"
@@ -56,7 +53,6 @@
 
 #include "sgeobj/sge_answer.h"
 #include "sgeobj/sge_feature.h"
-#include "sgeobj/cull/sge_multi_MA_L.h"
 
 #include "gdi/sge_gdi2.h"
 #include "gdi/sge_gdiP.h"
@@ -64,7 +60,6 @@
 #include "gdi/sge_gdi_packet_pb_cull.h"
 #include "gdi/version.h"
 #include "gdi/sge_security.h"
-#include "gdi/msg_gdilib.h"
 
 #include "msg_common.h"
 #include "msg_qmaster.h"

@@ -33,13 +33,9 @@
 #include <stdio.h>
 #include <unistd.h>
 #include <string.h>
-#include <strings.h>
 
 #include "uti/sge_rmon.h"
-#include "uti/sge_bootstrap.h"
 #include "uti/sge_profiling.h"
-
-#include "sgeobj/sge_feature.h"
 
 #include "qmaster_heartbeat.h"
  

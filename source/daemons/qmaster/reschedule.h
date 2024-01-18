@@ -35,7 +35,6 @@
 #include "uti/sge_monitor.h"
 #include "gdi/sge_gdi_ctx.h"
 
-
 #define RESCHEDULE_SKIP_JR_REMOVE      0x00000000
 #define RESCHEDULE_SKIP_JR_SEND_ACK    0x00000001
 #define RESCHEDULE_SKIP_JR             0x00000002

@@ -29,7 +29,6 @@
  * 
  ************************************************************************/
 /*___INFO__MARK_END__*/
-#include <stdio.h>
 #include <string.h>
 
 /* do not compile in monitoring code */
@@ -43,8 +42,6 @@
 #include "cull/msg_cull.h"
 
 #include "basis_types.h"
-
-
 
 /* global lerrno */
 int lerrno = 0;

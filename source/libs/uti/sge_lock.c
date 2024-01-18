@@ -33,14 +33,11 @@
 #include <stdlib.h>
 #include <pthread.h>
 #include <string.h>
-#include <float.h>
-#include <stdio.h>
 
 #include "uti/sge_rmon.h"
 #include "uti/sge_lock.h"
 #include "uti/sge_lock_fifo.h"
-#include "uti/sge_mtutil.h"
-#include "uti/msg_lcklib.h"
+#include "uti/msg_utilib.h"
 
 
 #ifdef SGE_DEBUG_LOCK_TIME

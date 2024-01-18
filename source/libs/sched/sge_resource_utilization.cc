@@ -34,7 +34,6 @@
 
 #include "uti/sge_rmon.h"
 #include "uti/sge_log.h"
-#include "uti/sge_hostname.h"
 #include "uti/sge_time.h"
 
 #include "cull/cull.h"
@@ -52,7 +51,6 @@
 #include "sgeobj/sge_calendar.h"
 #include "sgeobj/sge_cqueue.h"
 #include "sgeobj/sge_advance_reservation.h"
-#include "sgeobj/sge_object.h"
 
 #include "sge.h"
 #include "sge_select_queue.h"

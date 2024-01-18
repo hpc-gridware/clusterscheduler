@@ -60,9 +60,10 @@
 #include "sgeobj/sge_cqueue.h"
 #include "sgeobj/sge_advance_reservation.h"
 
-#include "sched/sge_sched.h"
 #include "sched/sgeee.h"
 #include "sched/sge_support.h"
+#include "sched/valid_queue_user.h"
+#include "sched/debit.h"
 
 #include "gdi/sge_gdi2.h"
 

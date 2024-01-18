@@ -35,11 +35,8 @@
 #include "uti/sge_rmon.h"
 #include "uti/sge_string.h"
 #include "uti/sge_log.h"
-#include "uti/sge_unistd.h"
 
 #include "cull/cull_list.h"
-
-#include "sched/sge_support.h"
 
 #include "sgeobj/sge_sharetree.h"
 #include "sgeobj/sge_answer.h"

@@ -38,9 +38,6 @@
 extern "C" {
 #endif
 
-/* 
-** cull/src/cull_file.c
-*/ 
 #define MSG_CULL_NOPREFIXANDNOFILENAMEINWRITEELMTODISK   _MESSAGE(41000, _("no prefix and no filename in lWriteElemToDisk"))
 #define MSG_CULL_NOPREFIXANDNOFILENAMEINREADELEMFROMDISK _MESSAGE(41001, _("no prefix and no filename in lReadElemFromDisk"))
 #define MSG_CULL_NOTENOUGHMEMORYFORPACKINGXY_SS          _MESSAGE(41002, _("not enough memory for packing "SFN" "SFQ))
@@ -59,10 +56,6 @@ extern "C" {
 #define MSG_CULL_ERRORININITPACKBUFFER_S                 _MESSAGE(41015, _("error in init_packbuffer: "SFN))
 #define MSG_CULL_NOTENOUGHMEMORY_D                       _MESSAGE(41016, _("not enough memory to allocate %d bytes in init_packbuffer"))
 
-
-/* 
-** cull/src/cull_multitype.c
-*/ 
 #define MSG_CULL_GETINT_WRONGTYPEFORFIELDXY_SS           _MESSAGE(41025, _("lGetInt: wrong type for field "SFN" ("SFN")"))
 #define MSG_CULL_GETULONG_WRONGTYPEFORFIELDXY_SS         _MESSAGE(41029, _("lGetUlong: wrong type for field "SFN" ("SFN")"))
 #define MSG_CULL_GETSTRING_WRONGTYPEFORFILEDXY_SS        _MESSAGE(41030, _("lGetString: wrong type for field "SFN" ("SFN")"))
@@ -99,9 +92,6 @@ extern "C" {
 #define MSG_CULL_GETPOSULONG_GOTINVALIDPOSITION          _MESSAGE(41077, _("!!!!!!!!!! lGetPosUlong() got an invalid pos !!!!!!!!!!!!"))
 #define MSG_CULL_GETPOSLIST_GOTANINVALIDPOS              _MESSAGE(41078, _("!!!!!!!!!!!11 lGetPosList() got an invalid pos !!!!!!!!"))
 
-/* 
-** cull/src/cull_where.c
-*/ 
 #define MSG_CULL_WHERE_SHOULDBEINTT                      _MESSAGE(41079, _("lWhere (should be a lIntT)"))
 #define MSG_CULL_WHERE_SHOULDBESTRINGT                   _MESSAGE(41080, _("lWhere (should be a lStringT or lHostT)"))
 #define MSG_CULL_WHERE_SHOULDBEULONGT                    _MESSAGE(41081, _("lWhere (should be a lUlongT)"))
@@ -112,9 +102,6 @@ extern "C" {
 #define MSG_CULL_WHERE_SHOULDBEREFT                      _MESSAGE(41086, _("lWhere (should be a lRefT)"))
 #define MSG_CULL_WHERE_OPERANDHITNOTOPERATORERROR        _MESSAGE(41087, _("operand does not match to operator"))
 
-/* 
-** cull/src/cull_lerrno.c
-*/ 
 #define MSG_CULL_LEMALLOC                _MESSAGE(41088, _("malloc failure"))
 #define MSG_CULL_LEINCTYPE               _MESSAGE(41089, _("incompatible type"))
 #define MSG_CULL_LEUNKTYPE               _MESSAGE(41090, _("unknown type"))
@@ -171,25 +158,15 @@ extern "C" {
 #define MSG_CULL_LEFORMAT                _MESSAGE(41141, _("wrong packing format"))
 #define MSG_CULL_LEOPEN                  _MESSAGE(41142, _("could not open file"))
 
-/*
-** cull_hash.c
-*/
 #define MSG_CULL_HASHTABLEALREADYEXISTS_S    _MESSAGE(41151, _("hash table already exists for field "SFQ))
 
-/*
-** cull_pack.c
-*/
 #define MSG_CULL_PACK_WRONG_VERSION_XX    _MESSAGE(41152, _("wrong cull version, read 0x%08x, but expected actual version 0x%08x"))
 
-/*
-** cull_pack.c, macros for cull_pack_strerror()
-*/
 #define MSG_CULL_PACK_SUCCESS             _MESSAGE(41153, _("packing successfull"))
 #define MSG_CULL_PACK_ENOMEM              _MESSAGE(41154, _("can't allocate memory"))
 #define MSG_CULL_PACK_FORMAT              _MESSAGE(41155, _("invalid input parameter"))
 #define MSG_CULL_PACK_BADARG              _MESSAGE(41156, _("bad argument"))
 #define MSG_CULL_PACK_VERSION             _MESSAGE(41157, _("wrong cull version"))
-
 
 #define MSG_CULL_GETPOSOBJECT_GOTANINVALIDPOS              _MESSAGE(41158, _("!!!!!!!!!!!11 lGetPosObject() got an invalid pos !!!!!!!!"))
 #define MSG_CULL_GETOBJECT_WRONGTYPEFORFIELDXY_SS          _MESSAGE(41161, _("lGetObject: wrong type for field "SFN" ("SFN")"))
@@ -200,9 +177,6 @@ extern "C" {
 #define MSG_CULL_XNOTFOUNDINELEMENT_S                      _MESSAGE(41068, _("!!!!!!!!!! "SFN" not found in element !!!!!!!!!!"))
 #define MSG_CULL_POINTER_NULLELEMENTFORX_S                 _MESSAGE(41069, _("!!!!!!!!!! got NULL element for "SFN" !!!!!!!!!!"))
 
-/*
-** Messages for lUlong64
-*/
 #define MSG_CULL_GETULONG64_WRONGTYPEFORFIELDXY_SS         _MESSAGE(41170, _("lGetUlong64: wrong type for field "SFN" ("SFN")"))
 #define MSG_CULL_SETULONG64_WRONGTYPEFORFIELDXY_SS         _MESSAGE(41171, _("lSetUlong64: wrong type for field "SFN" ("SFN")"))
 #define MSG_CULL_ADDSUBULONG64ERRORXRUNTIMETYPE_S          _MESSAGE(41172, _("error: lAddSubUlong64("SFN"): run time type error"))

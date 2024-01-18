@@ -33,18 +33,11 @@
 #include <string.h>
 
 #include "uti/sge_rmon.h"
-#include "uti/sge_string.h"
-#include "uti/sge_log.h"
 
 #include "cull/cull_list.h"
 
-#include "sgeobj/sge_answer.h"
 #include "sgeobj/sge_mesobj.h"
 #include "sgeobj/msg_sgeobjlib.h"
-
-#include "sge.h"
-
-/* EB: ADOC: add commets */
 
 static bool
 qim_list_add(lList **this_list, u_long32 type, const char *message);

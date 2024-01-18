@@ -32,6 +32,8 @@
 /*___INFO__MARK_END__*/
 
 #include "sge_select_queue.h"
+#include "sgeobj/cull/sge_resource_utilization_RDE_L.h"
+#include "sgeobj/cull/sge_resource_utilization_RUE_L.h"
 
 /* those are for treating resource utilization */
 bool utilization_print_to_dstring(const lListElem *this_elem, dstring *string);

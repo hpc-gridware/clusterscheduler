@@ -30,7 +30,6 @@
  ************************************************************************/
 /*___INFO__MARK_END__*/
 #include <string.h>
-#include <sys/types.h>
 #include <fnmatch.h>
 
 #include "uti/sge_rmon.h"
@@ -54,7 +53,6 @@
 
 #include "sge_userprj_qmaster.h"
 #include "sge_userset_qmaster.h"
-#include "sge_host_qmaster.h"
 #include "sge_persistence_qmaster.h"
 #include "sge_utility_qmaster.h"
 #include "sge.h"

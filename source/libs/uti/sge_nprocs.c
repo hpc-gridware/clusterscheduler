@@ -35,7 +35,6 @@
 #   include <mach/host_info.h>
 #   include <mach/mach_host.h>
 #   include <mach/mach_init.h>
-#   include <mach/machine.h>
 #endif
 
 #if defined(SOLARIS) || defined(LINUX)

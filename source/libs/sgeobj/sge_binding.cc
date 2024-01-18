@@ -42,10 +42,7 @@
 #  include <sys/statfs.h>
 #endif 
 
-#include <pthread.h>
-
 #include "uti/sge_rmon.h"
-#include "uti/sge_log.h"
 
 #include "sgeobj/sge_binding.h" 
 #include "sgeobj/sge_answer.h"

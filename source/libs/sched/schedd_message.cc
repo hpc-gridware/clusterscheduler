@@ -33,7 +33,6 @@
 #include <stdio.h>
 
 #include "uti/sge_rmon.h"
-#include "uti/sge_log.h"
 
 #include "cull/cull.h"
 

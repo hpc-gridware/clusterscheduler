@@ -30,7 +30,6 @@
  ************************************************************************/
 /*___INFO__MARK_END__*/
 #include <string.h>
-#include <sys/types.h>
 
 #include "uti/sge_rmon.h"
 #include "uti/sge_log.h"
@@ -38,7 +37,6 @@
 
 #include "sgeobj/sge_pe.h"
 #include "sgeobj/sge_userset.h"
-#include "sgeobj/sge_feature.h"
 #include "sgeobj/sge_conf.h"
 #include "sgeobj/sge_answer.h"
 #include "sgeobj/sge_qinstance.h"
@@ -50,7 +48,6 @@
 #include "sgeobj/sge_attr.h"
 #include "sgeobj/sge_resource_quota.h"
 #include "sgeobj/sge_advance_reservation.h"
-#include "sgeobj/sge_str.h"
 #include "sgeobj/msg_sgeobjlib.h"
 
 #include "spool/sge_spooling.h"

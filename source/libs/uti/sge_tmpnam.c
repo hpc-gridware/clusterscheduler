@@ -35,11 +35,8 @@
 #include <stdlib.h>
 #include <stdio.h>
 #include <unistd.h>
-#include <fcntl.h>
 #include <string.h>
 #include <errno.h>
-#include <sys/stat.h>
-#include <sys/time.h>
 
 #include "uti/sge_rmon.h"
 #include "uti/sge_dstring.h"

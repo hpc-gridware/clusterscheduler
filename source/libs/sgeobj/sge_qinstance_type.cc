@@ -31,11 +31,9 @@
 /*___INFO__MARK_END__*/
 
 #include "uti/sge_rmon.h"
-#include "uti/sge_log.h"
 
 #include "cull/cull.h"
 
-#include "sgeobj/cull_parse_util.h"
 #include "sgeobj/parse.h"
 #include "sgeobj/sge_answer.h"
 #include "sgeobj/sge_qinstance.h"

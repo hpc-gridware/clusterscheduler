@@ -40,8 +40,6 @@
 #include "mir/msg_mirlib.h"
 #include "mir/sge_ja_task_mirror.h"
 
-#include "sge.h"
-
 /****** Eventmirror/ja_task/ja_task_update_master_list_usage() *****************
 *  NAME
 *     ja_task_update_master_list_usage() -- update an array tasks usage

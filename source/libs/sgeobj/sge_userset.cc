@@ -31,8 +31,6 @@
 /*___INFO__MARK_END__*/
 #include <stdio.h>
 #include <string.h>
-#include <stdlib.h>
-#include <errno.h>
 #include <fnmatch.h>
 
 #include "uti/sge_rmon.h"
@@ -43,7 +41,6 @@
 #include "sgeobj/sge_answer.h"
 #include "sgeobj/parse.h"
 #include "sgeobj/sge_utility.h"
-#include "sgeobj/sge_hgroup.h"
 #include "sgeobj/sge_userset.h"
 #include "sgeobj/sge_object.h"
 #include "sgeobj/msg_sgeobjlib.h"

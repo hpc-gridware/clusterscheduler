@@ -34,24 +34,19 @@
 #include <stdlib.h>
 #include <unistd.h>
 
-#include <sys/types.h>
 #include <sys/wait.h>
 
 #include "uti/sge_rmon.h"
 #include "uti/sge_unistd.h"
-#include "uti/sge_prog.h"
 
 #include "cull/cull_multitype.h"
 #include "cull/cull_list.h"
 
 #include "comm/commlib.h"
 
-#include "gdi/sge_gdi.h"
-
 #include "sgeobj/sge_answer.h"
 
 #include "sgeobj/cull/sge_all_listsL.h"
-#include "sgeobj/sge_answer.h"
 #include "sgeobj/sge_centry.h"
 #include "spool/sge_spooling_utilities.h"
 #include "spool/flatfile/sge_flatfile.h"

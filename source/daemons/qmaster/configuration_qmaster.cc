@@ -76,8 +76,6 @@
 #include "msg_common.h"
 #include "msg_qmaster.h"
 
-
-
 /* Static configuration entries may be changed at runtime with a warning */
 static char *Static_Conf_Entries[] = { "execd_spool_dir", NULL };
 

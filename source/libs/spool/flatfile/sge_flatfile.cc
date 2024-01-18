@@ -38,8 +38,6 @@
 
 /* system */
 #include <stdio.h>
-#include <sys/types.h>
-#include <sys/stat.h>
 #include <fcntl.h>
 
 /* #define USE_FOPEN */
@@ -63,7 +61,6 @@
 #include "sgeobj/sge_utility.h"
 #include "sgeobj/sge_feature.h"
 #include "sgeobj/sge_sharetree.h"
-#include "sgeobj/cull/sge_all_listsL.h"
 
 #include "spool/sge_spooling_utilities.h"
 #include "spool/msg_spoollib.h"

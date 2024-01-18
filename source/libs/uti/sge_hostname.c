@@ -51,16 +51,13 @@
 #include "uti/sge_bootstrap.h"
 #include "uti/sge_hostname.h"
 #include "uti/sge_log.h"
-#include "uti/sge_language.h"
-#include "uti/sge_time.h" 
+#include "uti/sge_time.h"
 #include "uti/sge_unistd.h"
 #include "uti/sge_string.h"
-#include "uti/sge_prog.h"
 #include "uti/sge_uidgid.h"
 #include "uti/msg_utilib.h"
 #include "uti/sge_mtutil.h"
 
-#define ALIAS_DELIMITER "\n\t ,;"
 #define SGE_MAXNISRETRY 5
 
 #ifndef h_errno

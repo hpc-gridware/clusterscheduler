@@ -30,18 +30,13 @@
  ************************************************************************/
 /*___INFO__MARK_END__*/
 
-
 #include "uti/sge_rmon.h"
 #include "uti/sge_log.h"
 
-#include "sgeobj/sge_ja_task.h"
-#include "sgeobj/sge_answer.h"
 #include "sgeobj/sge_suser.h"
 #include "sgeobj/sge_job.h"
-#include "sgeobj/sge_suser.h"
 #include "sgeobj/sge_object.h"
 
-#include "sge.h"
 #include "basis_types.h"
 #include "msg_qmaster.h"
 

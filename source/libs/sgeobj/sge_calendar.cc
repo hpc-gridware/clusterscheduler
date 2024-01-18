@@ -34,7 +34,6 @@
 #include <string.h>
 #include <ctype.h>
 #include <time.h>
-#include <sys/time.h>
 
 #include "cull/cull_list.h"
 
@@ -42,21 +41,14 @@
 #include "uti/sge_log.h"
 #include "uti/sge_string.h"
 #include "uti/sge_time.h"
-#include "uti/sge_unistd.h"
 
 #include "sgeobj/sge_answer.h"
-#include "sgeobj/sge_utility.h"
 #include "sgeobj/sge_cqueue.h"
 #include "sgeobj/sge_attr.h"
-#include "sgeobj/sge_qinstance.h"
 #include "sgeobj/sge_qinstance_state.h"
 #include "sgeobj/sge_calendar.h"
 #include "sgeobj/msg_sgeobjlib.h"
 
-#include "sge.h"
-#include "sge_c_gdi.h"
-#include "sge_calendar_qmaster.h"
-#include "sge_qmod_qmaster.h"
 #include "msg_common.h"
 #include "msg_qmaster.h"
 

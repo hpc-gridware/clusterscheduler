@@ -36,11 +36,9 @@
 
 #include "cull/cull.h"
 
-#include "sgeobj/sge_ulong.h"
 #include "sgeobj/sge_schedd_conf.h"
 
 #include "sge_serf.h"
-#include "sge.h"
 
 /****** SERF/-SERF_Implementation *******************************************
 *  NAME

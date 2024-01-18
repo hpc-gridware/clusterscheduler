@@ -30,26 +30,19 @@
  ************************************************************************/
 /*___INFO__MARK_END__*/
 
-#include <stdlib.h>
 #include <stdio.h>
 #include <string.h>
-#include <unistd.h>
 
 #include "uti/sge_rmon.h"
-#include "uti/sge_profiling.h"
 #include "uti/sge_string.h"
 #include "uti/sge_log.h"
-#include "uti/sge_prog.h"
 #include "uti/sge_dstring.h"
 
 #include "sgeobj/sge_schedd_conf.h"
-#include "sgeobj/sge_event.h"
 #include "sgeobj/sge_ja_task.h"
 #include "sgeobj/sge_pe_task.h"
 #include "sgeobj/sge_pe.h"
-#include "sgeobj/parse.h"
 #include "sgeobj/sge_job.h"
-#include "sgeobj/sge_conf.h"
 #include "sgeobj/sge_userprj.h"
 #include "sgeobj/sge_host.h"
 #include "sgeobj/sge_userset.h"

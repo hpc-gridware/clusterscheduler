@@ -40,7 +40,6 @@
 #include "uti/sge_log.h"
 #include "uti/sge_parse_num_par.h"
 #include "uti/sge_hostname.h"
-#include "uti/sge_bootstrap.h"
 #include "uti/sge_lock.h"
 
 #include "sgeobj/sge_conf.h"
@@ -81,7 +80,6 @@
 #include "configuration_qmaster.h"
 #include "sge_c_gdi.h"
 #include "mail.h"
-#include "configuration_qmaster.h"
 #include "sge_cqueue_qmaster.h"
 #include "sge_userset_qmaster.h"
 #include "sge_userprj_qmaster.h"

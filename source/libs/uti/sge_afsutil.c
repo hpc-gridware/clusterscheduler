@@ -31,9 +31,7 @@
 /*___INFO__MARK_END__*/
 
 #include <stdio.h>
-#include <stdlib.h>
 #include <fcntl.h>
-#include <sys/types.h>
 #include <unistd.h>
 #include <string.h>
 

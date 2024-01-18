@@ -29,18 +29,14 @@
  * 
  ************************************************************************/
 /*___INFO__MARK_END__*/
-#include <sys/types.h>
-#include <signal.h>
 #include <float.h>
 #include <string.h>
 #include <errno.h>
 #include <stdlib.h>
-#include <fcntl.h>
 
 #include "uti/sge_rmon.h"
 #include "uti/sge_unistd.h"
 #include "uti/sge_hostname.h"
-#include "uti/sge_prog.h"
 #include "uti/sge_log.h"
 #include "uti/sge_time.h"
 #include "uti/sge_parse_num_par.h"
@@ -56,28 +52,20 @@
 #include "sgeobj/sge_pe.h"
 #include "sgeobj/sge_qinstance.h"
 #include "sgeobj/sge_usage.h"
-#include "sgeobj/sge_feature.h"
 #include "sgeobj/sge_report.h"
 #include "sgeobj/sge_object.h"
 #include "sgeobj/sge_str.h"
 
-#include "sched/sge_job_schedd.h"
-
-#include "gdi/sge_security.h"
-
 #include "spool/classic/read_write_job.h"
 
-#include "dispatcher.h"
 #include "reaper_execd.h"
 #include "job_report_execd.h"
 #include "load_avg.h"
 #include "execd_ck_to_do.h"
 #include "execd_signal_queue.h"
-#include "symbols.h"
 #include "exec_job.h"
 #include "execution_states.h"
 #include "msg_execd.h"
-#include "get_path.h"
 #include "sig_handlers.h"
 #include "sge.h"
 

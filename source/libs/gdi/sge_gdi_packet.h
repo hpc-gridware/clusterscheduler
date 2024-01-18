@@ -35,6 +35,9 @@
 
 #include "cull/cull.h"
 
+#include "gdi/sge_gdi_packet_type.h"
+#include "gdi/sge_gdi_ctx_type.h"
+
 #define GDI_PACKET_MUTEX "gdi_pack_mutex"
 
 sge_gdi_packet_class_t *

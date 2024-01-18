@@ -46,17 +46,12 @@
 #include "uti/sge_rmon.h"
 #include "uti/sge_string.h"
 #include "uti/sge_hostname.h"
-#include "uti/sge_log.h"
 
 #include "cull/msg_cull.h"
 #include "cull/cull_listP.h"
 #include "cull/cull_whereP.h"
 #include "cull/cull_parse.h"
 #include "cull/cull_lerrnoP.h"
-#include "cull/pack.h"
-#include "cull/cull_pack.h"
-
-#include "gdi/msg_gdilib.h"
 
 static lCondition *read_val(lDescr *dp, cull_parse_state *state, va_list *app);
 static lCondition *factor(lDescr *dp, cull_parse_state *state, va_list *app);

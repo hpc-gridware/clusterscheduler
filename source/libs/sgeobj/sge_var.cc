@@ -42,7 +42,6 @@
 #include <string.h>
 
 #include "uti/sge_rmon.h"
-#include "uti/sge_time.h"
 #include "uti/sge_log.h"
 #include "uti/sge_prog.h"
 #include "uti/sge_stdlib.h"
@@ -51,7 +50,6 @@
 #include "cull/cull.h"
 
 #include "sgeobj/sge_var.h"
-#include "sgeobj/sge_centry.h"
 #include "sgeobj/sge_answer.h"
 #include "sgeobj/sge_conf.h"
 #include "sgeobj/msg_sgeobjlib.h"

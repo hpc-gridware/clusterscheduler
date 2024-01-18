@@ -30,13 +30,8 @@
  ************************************************************************/
 /*___INFO__MARK_END__*/
 #include <stdio.h>
-#include <stdlib.h>
-#include <unistd.h>
-#include <sys/types.h>
 
 #include "uti/sge_rmon.h"
-#include "uti/sge_log.h"
-#include "uti/sge_profiling.h"
 
 #include "sgeobj/sge_answer.h"
 #include "sgeobj/sge_order.h"
@@ -49,7 +44,6 @@
 #include "schedd_message.h"
 
 #include "msg_schedd.h"
-#include "msg_common.h"
 
 /****** sge_orders/sge_add_schedd_info() ***************************************
 *  NAME

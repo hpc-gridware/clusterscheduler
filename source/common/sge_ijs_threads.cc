@@ -30,7 +30,6 @@
  ************************************************************************/
 /*___INFO__MARK_END__*/
 
-
 #include "sge_ijs_threads.h"
 
 int thread_init_lib(THREAD_LIB_HANDLE **thread_lib_handle)

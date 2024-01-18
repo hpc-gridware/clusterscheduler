@@ -29,41 +29,30 @@
  *
  ************************************************************************/
 /*___INFO__MARK_END__*/
-#include <stdlib.h>
 #include <stdio.h>
 #include <string.h>
-#include <unistd.h>
 
 #include "uti/sge_rmon.h"
 #include "uti/sge_log.h"
-#include "uti/sge_prog.h"
-#include "uti/sge_time.h"
 #include "uti/sge_dstring.h"
 
 #include "cull/cull_sort.h"
 
 #include "sgeobj/sge_job.h"
-#include "sgeobj/sge_pe.h"
-#include "sgeobj/sge_event.h"
-#include "sgeobj/parse.h"
 #include "sgeobj/sge_qinstance.h"
 #include "sgeobj/sge_range.h"
 #include "sgeobj/sge_qinstance_state.h"
 #include "sgeobj/sge_order.h"
 #include "sgeobj/sge_centry.h"
 #include "sgeobj/sge_schedd_conf.h"
-#include "sgeobj/sge_ja_task.h"
 
 #include "comm/commlib.h"
 
-#include "sched/sge_job_schedd.h"
-#include "sched/schedd_monitor.h"
 #include "sched/schedd_message.h"
 #include "sched/sge_schedd_text.h"
 #include "sched/sge_orders.h"
 #include "sched/msg_schedd.h"
 
-#include "unparse_job_cull.h"
 #include "sge_sched_job_category.h"
 #include "category.h"
 

@@ -37,7 +37,6 @@
 #include <time.h>
 
 #include "uti/sge_rmon.h"
-#include "uti/setup_path.h"
 #include "uti/sge_dstring.h"
 #include "uti/sge_log.h"
 #include "uti/sge_spool.h"
@@ -63,12 +62,8 @@
 #include "sgeobj/sge_qinstance_state.h"
 #include "sgeobj/sge_report.h"
 #include "sgeobj/sge_str.h"
-#include "sgeobj/sge_sharetree.h"
 #include "sgeobj/sge_usage.h"
-#include "sgeobj/sge_userprj.h"
-#include "sgeobj/sge_userset.h"
 #include "sgeobj/sge_cqueue.h"
-#include "sgeobj/cull/sge_resource_utilization_RUE_L.h"
 
 #include "sched/sge_resource_utilization.h"
 #include "sched/sge_sharetree_printing.h"

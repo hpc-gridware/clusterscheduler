@@ -41,24 +41,17 @@
 #include "sge.h"
 
 #include "uti/sge_rmon.h"
-#include "uti/sge_unistd.h"
 #include "uti/sge_mtutil.h"
 
 #include "sgeobj/sge_conf.h"
 #include "sgeobj/sge_report.h"
 #include "sgeobj/sge_schedd_conf.h"
-#include "sgeobj/sge_centry.h"
-
-#include "sched/sge_orders.h"
-#include "sched/schedd_message.h"
 
 #include "mir/sge_mirror.h"
 #include "evc/sge_event_client.h"
 
 #include "gdi/sge_gdi2.h"
 
-#include "sge_follow.h"
-#include "sge_qmaster_threads.h"
 #include "setup_qmaster.h"
 #include "sge_sched_process_events.h"
 #include "sge_sched_prepare_data.h"

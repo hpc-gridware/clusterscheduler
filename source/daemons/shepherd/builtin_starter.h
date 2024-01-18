@@ -31,7 +31,6 @@
  ************************************************************************/
 /*___INFO__MARK_END__*/
 
-
 void son(const char *childname, char *script_file, int truncate_stderr_out);
 int sge_set_environment(void);
 char** sge_get_environment(void);

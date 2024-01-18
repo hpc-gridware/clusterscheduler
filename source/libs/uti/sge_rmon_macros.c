@@ -38,8 +38,7 @@
 #include <errno.h>
 
 #include "uti/rmon.h"
-#include "uti/msg_rmon.h"
-#include "uti/sge_mtutil.h"
+#include "uti/msg_utilib.h"
 
 #define DEBUG RMON_LOCAL
 

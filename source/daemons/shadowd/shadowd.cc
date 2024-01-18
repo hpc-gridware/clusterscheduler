@@ -32,22 +32,17 @@
 #include <stdio.h>
 #include <string.h>
 #include <stdlib.h>
-#include <sys/types.h>
 #include <sys/stat.h>
 #include <time.h>
-#include <sys/socket.h>
 #include <netdb.h>
 #include <fcntl.h>
 
 #include "uti/sge_rmon.h"
-#include "uti/sge_bootstrap.h"
 #include "uti/sge_stdio.h"
 #include "uti/sge_unistd.h"
 #include "uti/sge_prog.h"
-#include "uti/setup_path.h"
 #include "uti/sge_os.h"
 #include "uti/sge_uidgid.h"
-#include "uti/sge_language.h"
 #include "uti/sge_string.h"
 #include "uti/sge_io.h"
 #include "uti/sge_spool.h"
@@ -55,7 +50,6 @@
 #include "uti/sge_time.h"
 #include "uti/sge_hostname.h"
 
-#include "sgeobj/cull/sge_all_listsL.h"
 #include "sgeobj/sge_feature.h"
 #include "sgeobj/sge_answer.h"
 
@@ -70,11 +64,8 @@
 #include "qmaster_heartbeat.h"
 #include "lock.h"
 #include "startprog.h"
-#include "sge_mt_init.h"
 #include "shutdown.h"
-#include "usage.h"
 #include "msg_common.h"
-#include "msg_daemons_common.h"
 #include "msg_shadowd.h"
 
 #if defined(SOLARIS)

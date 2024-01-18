@@ -45,7 +45,6 @@
 #include "sgeobj/sge_job.h"
 #include "sgeobj/sge_cqueue.h"
 #include "sgeobj/sge_attr.h"
-#include "sgeobj/sge_qinstance.h"
 #include "sgeobj/sge_utility.h"
 #include "sgeobj/sge_ckpt.h"
 #include "sgeobj/sge_str.h"

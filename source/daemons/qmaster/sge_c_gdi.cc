@@ -37,7 +37,6 @@
 #include "uti/sge_rmon.h"
 #include "uti/sge_prog.h"
 #include "uti/sge_log.h"
-#include "uti/sge_bootstrap.h"
 
 #include "cull/cull.h"
 
@@ -53,14 +52,12 @@
 #include "sgeobj/sge_job.h"
 #include "sgeobj/sge_userset.h"
 #include "sgeobj/sge_manop.h"
-#include "sgeobj/sge_order.h"
 
 #include "gdi/version.h"
 #include "gdi/sge_gdi_ctx.h"
 #include "gdi/sge_gdi_packet_pb_cull.h"
 #include "gdi/sge_gdi_packet.h"
 
-#include "sge.h"
 #include "sge_follow.h"
 #include "sge_advance_reservation_qmaster.h"
 #include "sge_thread_scheduler.h"

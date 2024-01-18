@@ -31,8 +31,6 @@
  ************************************************************************/
 /*___INFO__MARK_END__*/
 
-#ifndef JGDI_GENERATE
-
 #include "cull/cull_listP.h"
 #include "cull/cull_list.h"
 #include "cull/cull_where.h"
@@ -49,5 +47,3 @@
 #include "cull/cull_hash.h"
 #include "cull/cull_state.h"
 #include "cull/pack.h"
-
-#endif /* JGDI_GENERATE */

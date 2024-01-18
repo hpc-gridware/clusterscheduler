@@ -34,18 +34,9 @@
 /*___INFO__MARK_END__*/
 
 #include <string.h>
-#include <errno.h>
-#include <sys/types.h>
-#include <sys/stat.h>
-#include <fcntl.h>
-#include <pthread.h>
 
 #include <pwd.h>
 
-#include <unistd.h>
-#include <stdlib.h>
-
-#include "sge.h"
 #ifdef KERBEROS
 #  include "krb_lib.h"
 #endif
@@ -54,7 +45,6 @@
 
 #include "cull/pack.h"
 
-#include "uti/sge_mtutil.h"
 #include "uti/sge_rmon.h"
 #include "uti/sge_log.h"
 
@@ -64,10 +54,7 @@
 #include "gdi/msg_gdilib.h"
 
 #include "sgeobj/sge_answer.h"
-#include "sgeobj/sge_event.h"
-#include "sgeobj/sge_object.h"
 
-#include "msg_common.h"
 #include "msg_qmaster.h"
 
 static bool

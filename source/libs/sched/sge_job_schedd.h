@@ -31,9 +31,6 @@
  ************************************************************************/
 /*___INFO__MARK_END__*/
 
-#define running_status(x) ((x)!=0 && (x)!=JFINISHED)
-#define finished_status(x) ((x)==JFINISHED)
-
 bool job_get_duration(u_long32 *duration, const lListElem *jep);
 bool task_get_duration(u_long32 *duration, const lListElem *ja_task);
 

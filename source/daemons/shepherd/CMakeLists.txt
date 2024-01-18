@@ -1,6 +1,5 @@
 # source/daemons/shepherd
 add_executable(sge_shepherd
-  am_chdir.cc
   builtin_starter.cc
   setjoblimit.cc
   setrlimits.cc

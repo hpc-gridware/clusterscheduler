@@ -39,7 +39,6 @@
 #include "sge.h"
 
 #include "uti/sge_rmon.h"
-#include "uti/sge_log.h"
 #include "uti/sge_stdlib.h"
 #include "uti/sge_string.h"
 
@@ -57,19 +56,14 @@
 #include "sgeobj/sge_host.h"
 #include "sgeobj/sge_pe.h"
 #include "sgeobj/sge_qinstance.h"
-#include "sgeobj/sge_qinstance_state.h"
 #include "sgeobj/sge_userset.h"
 #include "sgeobj/sge_userprj.h"
 
-#include "sched/sort_hosts.h"
-#include "sched/sge_complex_schedd.h"
-#include "sched/sge_select_queue.h"
 #include "sched/debit.h"
 
 #include "spool/sge_spooling.h"
 #include "spool/sge_spooling_utilities.h"
 #include "spool/msg_spoollib.h"
-#include "spool/flatfile/msg_spoollib_flatfile.h"
 
 #include "sgeobj/sge_resource_quota.h"
 #include "sgeobj/sge_advance_reservation.h"

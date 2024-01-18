@@ -32,7 +32,6 @@
 /*___INFO__MARK_END__*/
 
 #include <stdio.h>
-#include <stdlib.h>
 
 /* do not compile in monitoring code */
 #ifndef NO_SGE_COMPILE_DEBUG

@@ -31,15 +31,10 @@
 /*___INFO__MARK_END__*/
 
 #include "uti/sge_rmon.h"
-#include "uti/sge_log.h"
-
-#include "sgeobj/sge_sharetree.h"
 
 #include "mir/msg_mirlib.h"
 #include "mir/sge_mirror.h"
 #include "mir/sge_sharetree_mirror.h"
-
-#include "sge.h"
 
 /****** Eventmirror/sharetree/sharetree_update_master_list() *******************
 *  NAME

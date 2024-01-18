@@ -38,7 +38,6 @@
 #include "uti/sge_prog.h"
 
 #include "sgeobj/sge_answer.h"
-#include "sgeobj/sge_job.h"
 #include "sgeobj/sge_mailrec.h"
 
 #include "symbols.h"

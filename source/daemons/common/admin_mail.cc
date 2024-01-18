@@ -29,7 +29,6 @@
  * 
  ************************************************************************/
 /*___INFO__MARK_END__*/
-#include <stdlib.h>
 #include <string.h>
 #include <errno.h>
 

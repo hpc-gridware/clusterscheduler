@@ -49,10 +49,7 @@
 #include "uti/sge_stdlib.h"
 #include "uti/sge_log.h"
 
-#include "cull/cull_listP.h"
 #include "cull/msg_cull.h"
-#include "cull/cull_state.h"
-
 
 #include "basis_types.h"
 

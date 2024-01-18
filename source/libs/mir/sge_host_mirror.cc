@@ -30,13 +30,10 @@
  ************************************************************************/
 /*___INFO__MARK_END__*/
 
-#include "sge.h"
-
 #include "uti/sge_rmon.h"
 #include "uti/sge_log.h"
 
-#include "sgeobj/sge_host.h"
-#include "sgeobj/sge_hgroup.h" 
+#include "sgeobj/sge_hgroup.h"
 
 #include "mir/sge_mirror.h"
 #include "mir/sge_host_mirror.h"

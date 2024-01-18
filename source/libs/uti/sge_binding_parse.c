@@ -1,5 +1,4 @@
 /*___INFO__MARK_BEGIN__*/
-
 /*************************************************************************
  * 
  *  The Contents of this file are made available subject to the terms of
@@ -29,14 +28,12 @@
  *   All Rights Reserved.
  * 
  ************************************************************************/
-
 /*___INFO__MARK_END__*/
 
 /* this code is used by shepherd */
 #include <ctype.h>
 #include <pthread.h>
 
-#include "uti/sge_mtutil.h"
 #include "uti/sge_rmon.h"
 #include "uti/sge_string.h"
 #include "uti/sge_log.h"

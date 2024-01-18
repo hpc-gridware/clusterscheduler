@@ -30,7 +30,6 @@
  ************************************************************************/
 /* Portions of this code are Copyright (c) 2011 Univa Corporation. */
 /*___INFO__MARK_END__*/
-#include <stdio.h>
 #include <string.h>
 #include <ctype.h>
 
@@ -41,9 +40,7 @@
 
 #include "uti/sge_rmon.h"
 
-#include "cull/cull_listP.h"
 #include "cull/cull_parse.h"
-#include "cull/cull_lerrnoP.h"
 
 /* ---------- static funcs --------------------------------- */
 static const char *eatws(const char *s);

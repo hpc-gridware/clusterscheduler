@@ -40,7 +40,6 @@
 #include "sgeobj/sge_qinstance.h"
 #include "sgeobj/sge_answer.h"
 #include "sgeobj/sge_centry.h"
-#include "sgeobj/sge_load.h"
 #include "sgeobj/sge_str.h"
 #include "sgeobj/sge_object.h"
 #include "sgeobj/sge_conf.h"

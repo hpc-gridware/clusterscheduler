@@ -1,7 +1,5 @@
 #pragma once
-
 /*___INFO__MARK_BEGIN__*/
-
 /*************************************************************************
  * 
  *  The Contents of this file are made available subject to the terms of
@@ -33,7 +31,6 @@
  *   Portions of this code are Copyright 2011 Univa Inc.
  *
  ************************************************************************/
-
 /*___INFO__MARK_END__*/
 
 #include <stdlib.h>

@@ -33,13 +33,10 @@
 #include <unistd.h>
 #include <string.h>
 #include <stdlib.h>
-#include <sys/types.h>
-#include <sys/time.h>
 #include <sys/wait.h>
 #include <errno.h>
 
 #include "comm/commlib.h"
-#include "comm/commd_message_flags.h"
 
 #include "cull/cull.h"
 
@@ -48,17 +45,12 @@
 #include "uti/sge_uidgid.h"
 #include "uti/sge_time.h"
 
-#include "gdi/sge_security.h"
-#include "gdi/sge_gdi.h"
-#include "gdi/pack_job_delivery.h"   
+#include "gdi/pack_job_delivery.h"
 #include "gdi/sge_qexec.h"
 #include "gdi/sge_gdi2.h"
 #include "gdi/msg_gdilib.h"
 
-#include "sgeobj/sge_ja_task.h"
 #include "sgeobj/sge_pe_task.h"
-#include "sgeobj/sge_str.h"
-#include "sgeobj/sge_var.h"
 
 #include "msg_common.h"
 

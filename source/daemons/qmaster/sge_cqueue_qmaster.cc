@@ -33,21 +33,14 @@
 /*___INFO__MARK_END__*/
 
 #include <stdio.h>
-#include <stdlib.h>
 #include <ctype.h>
 #include <string.h>
-#include <unistd.h>
-#include <errno.h>
-#include <limits.h>
-#include <pthread.h>
 
 #include "uti/sge_rmon.h"
-#include "uti/sge_time.h"
 #include "uti/sge_signal.h"
 #include "uti/sge_log.h"
 #include "uti/sge_unistd.h"
 #include "uti/sge_string.h"
-#include "uti/sge_mtutil.h"
 
 #include "sgeobj/sge_hgroup.h"
 #include "sgeobj/sge_cqueue.h"
@@ -58,18 +51,13 @@
 #include "sgeobj/sge_userset.h"
 #include "sgeobj/sge_host.h"
 #include "sgeobj/sge_href.h"
-#include "sgeobj/sge_str.h"
 #include "sgeobj/sge_answer.h"
 #include "sgeobj/sge_utility.h"
-#include "sgeobj/sge_conf.h"
 #include "sgeobj/sge_attr.h"
 #include "sgeobj/sge_userprj.h"
-#include "sgeobj/sge_feature.h"
-#include "sgeobj/sge_load.h"
 #include "sgeobj/sge_advance_reservation.h"
 #include "sgeobj/msg_sgeobjlib.h"
 
-#include "sched/sge_select_queue.h"
 #include "sched/valid_queue_user.h"
 
 #include "spool/sge_spooling.h"

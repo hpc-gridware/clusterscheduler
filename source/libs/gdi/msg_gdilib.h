@@ -33,9 +33,6 @@
 
 #include "basis_types.h"
 
-/*
-** sge_security.c
-*/
 #define MSG_QSH_GET_CREDSTDERR_S      _MESSAGE(43000, _("get_cred stderr: "SFN))
 #define MSG_QSH_QSUBFAILED            _MESSAGE(43001, _("qsub failed"))
 #define MSG_QSUB_CANTSTARTCOMMANDXTOGETTOKENQSUBFAILED_S    _MESSAGE(43002, _("can't start command "SFQ" to get token - qsub failed"))
@@ -51,9 +48,6 @@
 #define MSG_REQUEST_DENIED_FOR_USER_S _MESSAGE(43023, _("request denied for user "SFN))
 #define MSG_ADMIN_REQUEST_DENIED_FOR_USER_S _MESSAGE(43024, _("admin request denied for user "SFN))
 
-/* 
-** gdilib/sge_any_request.c
-*/ 
 #define MSG_GDI_NO_VALID_PROGRAMM_NAME                _MESSAGE(43047, _("got no valid program name"))
 #define MSG_GDI_RHOSTISNULLFORSENDREQUEST             _MESSAGE(43050, _("parameter rhost = NULL for sge_send_any_request()"))
 #define MSG_GDI_SENDMESSAGETOCOMMPROCFAILED_SSISS     _MESSAGE(43051, _("can't send "SFN"synchronous message to commproc ("SFN":%d) on host "SFQ": "SFN))
@@ -61,9 +55,6 @@
 #define MSG_GDI_RECEIVEMESSAGEFROMCOMMPROCFAILED_SISS _MESSAGE(43053, _("can't receive message from commproc ("SFN":%d) on host "SFQ": "SFN))
 #define MSG_GDI_NOCOMMHANDLE                          _MESSAGE(43054, _("can't get communication handle"))
 
-/* 
-** gdilib/sge_qexec.c
-*/
 #define MSG_GDI_INVALIDPARAMETER_SS                      _MESSAGE(43066, _("invalid paramter to "SFQ": "SFQ))
 #define MSG_GDI_RESOLVINGUIDTOUSERNAMEFAILED_IS          _MESSAGE(43067, _("failed resolving uid %d to username: "SFN))
 #define MSG_GDI_MISSINGINENVIRONMENT_S                   _MESSAGE(43068, _("missing "SFQ" in environment"))
@@ -75,16 +66,10 @@
 #define MSG_GDI_TASKNOTFOUNDNOIDGIVEN_S                  _MESSAGE(43078, _("cannot find task without taskid - should become task "SFQ))
 #define MSG_GDI_EXECDONHOSTDIDNTACCEPTTASK_S             _MESSAGE(43079, _("execution daemon on host "SFQ" didn't accept task"))
 
-/* 
-** gdilib/sge_report.c
-*/
 #define MSG_GDI_REPORTNOMEMORY_I                         _MESSAGE(43080, _("not enough memory for packing report: %d bytes"))
 #define MSG_GDI_REPORTFORMATERROR                        _MESSAGE(43081, _("format error while packing report"))
 #define MSG_GDI_REPORTUNKNOWERROR                        _MESSAGE(43082, _("unexpected error while packing report"))
 
-/* 
-** gdilib/qm_name.c
-*/
 #define MSG_GDI_NULLPOINTERPASSED                        _MESSAGE(43099, _("NULL pointer passed to \"master_host\" or \"master_file\""))
 #define MSG_GDI_OPENMASTERFILEFAILED_S                   _MESSAGE(43100, _("can't open "SFQ" for reading qmaster hostname"))
 #define MSG_GDI_READMASTERHOSTNAMEFAILED_S               _MESSAGE(43101, _("can't read qmaster hostname in "SFQ))
@@ -94,17 +79,8 @@
 #define MSG_GDI_WRITEMASTERHOSTNAMEFAILED_S              _MESSAGE(43105, _("can't write qmaster hostname into "SFQ))
 #define MSG_GDI_FOPEN_FAILED                             _MESSAGE(43106, _("fopen("SFQ") failed: "SFN))
 
-
-/* 
-** gdilib/resolve.c
-*/
 #define MSG_GDI_READMASTERNAMEFAILED_S                   _MESSAGE(43107, _("unable to read qmaster name: "SFN))
 
-
-
-/* 
-** gdilib/...
-*/
 #define MSG_GDI_CANT_SEND_MSG_TO_PORT_ON_HOST_SUSS       _MESSAGE(43118, _("unable to send message to "SFN" using port "sge_U32CFormat" on host "SFQ": "SFN))
 #define MSG_GDI_UNABLE_TO_CONNECT_SUS                    _MESSAGE(43119, _("unable to contact "SFN" using port "sge_U32CFormat" on host "SFQ))
 #define MSG_GDI_GETGRGIDXFAILEDERRORX_U                  _MESSAGE(43120, _("unable to resolve group name for group ID, "sge_U32CFormat))
@@ -119,11 +95,7 @@
 #define MSG_GDI_GDI_VERIFY_REQUEST_FAILED                _MESSAGE(43130, _("verification of request failed"))
 #define MSG_GDI_MISMATCH_SEND_RECEIVE                    _MESSAGE(43131, _("GDI mismatch"))
 #define MSG_GDI_MEMORY_NOTENOUGHMEMORYFORPACKINGGDIREQUEST        _MESSAGE(43132, _("not enough memory for packing gdi request"))
-#define MSG_GDI_SYNCRECEIVETIMEOUT                       _MESSAGE(43133, _("got gdi request receive timeout"))
 
-/*
- * common/usage.c
- */
 #define MSG_GDI_USAGE_SILENT          _MESSAGE(43293, _("startup silently"))
 
 #define MSG_GDI_GENERAL_COM_ERROR_SS   _MESSAGE(43294, _("commlib error: "SFN" ("SFN2")"))
@@ -137,8 +109,6 @@
 #define MSG_GDI_ENDPOINT_UPTIME_UU           _MESSAGE(43303, _("endpoint is up since "sge_U32CFormat" seconds and has status "sge_U32CFormat))
 #define MSG_GDI_CANT_CREATE_HANDLE_TOEXECD_S _MESSAGE(43306, _("can't create handle to execd \"%s\""))
 
-
-
 #define MSG_SEC_CAROOTNOTFOUND_S         _MESSAGE(55000, _("CA_ROOT directory "SFQ" doesn't exist"))
 #define MSG_SEC_CALOCALROOTNOTFOUND_S    _MESSAGE(55001, _("CA_LOCAL_ROOT directory "SFQ" doesn't exist"))
 #define MSG_SEC_CAKEYFILENOTFOUND_S      _MESSAGE(55002, _("CA private key "SFQ" doesn't exist"))
@@ -148,7 +118,6 @@
 #define MSG_SEC_CERTFILENOTFOUND_S       _MESSAGE(55006, _("certificate "SFQ" doesn't exist"))
 #define MSG_SEC_RANDFILENOTFOUND_S       _MESSAGE(55005, _("random data file "SFQ" doesn't exist"))
 #define MSG_SEC_CERT_VERIFY_FUNC_NO_VAL  _MESSAGE(55011, _("certificate verify callback function called without value"))
-
 
 #define MSG_GDI_MASTER_ON_HOST_X_RUNINNG_TERMINATE_S _MESSAGE(55013, _("qmaster on host "SFQ" is still running - terminating"))
 

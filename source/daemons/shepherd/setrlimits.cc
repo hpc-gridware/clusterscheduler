@@ -47,12 +47,6 @@
 /* Format the value, if val == INFINITY, print INFINITY for logs sake */
 #define FORMAT_LIMIT(x) (x==RLIMIT_INFINITY)?0:x, (x==RLIMIT_INFINITY)?"\bINFINITY":""
 
-#if defined(DARWIN)
-#   include <sys/time.h>
-#   include <sys/types.h>
-#endif
-
-
 #include "basis_types.h"
 #include "setrlimits.h"
 #include "err_trace.h"

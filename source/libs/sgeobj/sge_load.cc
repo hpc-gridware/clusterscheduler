@@ -33,19 +33,11 @@
 #include <string.h>
 
 #include "uti/sge_rmon.h" 
-#include "uti/sge_string.h"
-#include "uti/sge_log.h"
 
-#include "sgeobj/sge_str.h"
-#include "sgeobj/sge_answer.h"
 #include "sgeobj/sge_host.h"
 #include "sgeobj/sge_load.h"
-#include "sgeobj/msg_sgeobjlib.h"
 
-#include "basis_types.h"
-#include "msg_common.h"
-
-bool 
+bool
 sge_is_static_load_value(const char *name) 
 {
    bool ret = false;

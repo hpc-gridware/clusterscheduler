@@ -31,7 +31,6 @@
 /*___INFO__MARK_END__*/
 
 #include <sys/time.h>
-#include <unistd.h>
 #include <stdio.h>
 #include <pthread.h>
 #include <stdlib.h>

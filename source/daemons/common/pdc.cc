@@ -29,11 +29,6 @@
  * 
  ************************************************************************/
 /*___INFO__MARK_END__*/
-/*
- *
- * pdc.c - Portable Data Collector Library and Test Module
- * 
- */
 
 #if !defined(COMPILE_DC)
 

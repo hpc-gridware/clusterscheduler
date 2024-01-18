@@ -33,23 +33,14 @@
 
 #include "basis_types.h"
 
-/* 
-** schedd/sge_complex_schedd.c
-*/ 
 #define MSG_ATTRIB_ACTUALELEMENTTOATTRIBXMISSING_S    _MESSAGE(47014, _("missing actual element to attrib "SFN))
 #define MSG_SCHEDD_LOADADJUSTMENTSVALUEXNOTNUMERIC_S  _MESSAGE(47020, _("load adjustments value "SFQ" must be of numeric type"))
 
-/* 
-** schedd/sge_job_schedd.c
-*/ 
 #define MSG_LOG_JOBSDROPPEDEXECUTIONTIMENOTREACHED    _MESSAGE(47021, _("jobs dropped because execution time not reached: "))
 #define MSG_LOG_JOBSDROPPEDERRORSTATEREACHED          _MESSAGE(47022, _("jobs dropped because of error state: "))
 #define MSG_LOG_JOBSDROPPEDBECAUSEOFXHOLD             _MESSAGE(47023, _("jobs dropped because of hold: "))
 #define MSG_LOG_JOBSDROPPEDBECAUSEDEPENDENCIES        _MESSAGE(47024, _("jobs dropped because of job dependencies: "))
 
-/* 
-** schedd/sge_schedd_text.c
-*/ 
 #define MSG_SGETEXT_INVALIDHOSTINQUEUE_SS          _MESSAGE(47028, _("invalid hostname "SFQ" associated with queue instance "SFQ))
 #define MSG_SGETEXT_CONSUMABLE_AS_LOAD             _MESSAGE(47029, _("Consumables as load threshold is disabled"))
 
@@ -168,17 +159,9 @@
 #define MSG_SCHEDD_INFO_ARISINERROR_I                 _MESSAGE(47150, _("cannot run because requested advance reservation "sge_U32CFormat" is in error state"))  
 #define MSG_SCHEDD_INFO_ARISINERROR                   _MESSAGE(47151, _("Jobs can not run because requested advance reservation is in error state"))  
 
-
-
-/* 
-** schedd/sge_pe_schedd.c
-*/ 
 #define MSG_PE_XFAILEDPARSINGALLOCATIONRULEY_SS       _MESSAGE(47168, _("pe >"SFN"<: failed parsing allocation rule "SFQ))
 #define MSG_PROJECT                                   _MESSAGE(47170, _("project"))
 
-/* 
-** schedd/sge_select_queue.c
-*/ 
 #define MSG_SCHEDD_MON_NOPENDJOBSTOPERFORMSCHEDULINGON      _MESSAGE(47208, _("no pending jobs to perform scheduling on"))
 #define MSG_SCHEDD_SHOULDHAVEFINISHED_UUU                   _MESSAGE(47209, _("job "sge_U32CFormat"."sge_U32CFormat" should have finished since "sge_U32CFormat"s"))
 
@@ -200,9 +183,6 @@
 
 /* NOTE: Id's from 47231 to 47249 are used in msg_smon.h */
 
-/* 
-** schedd/schedd_conf.c
-*/ 
 #define MSG_ATTRIB_ALGORITHMNOVALIDNAME_S       _MESSAGE(47250, _("attribute " SFQ " is not a valid algorithm name."))
 #define MSG_ATTRIB_SCHEDDJOBINFONOVALIDPARAM    _MESSAGE(47251, _("attribute \"schedd_job_info \" is not a valid parameter"))
 #define MSG_ATTRIB_SCHEDDJOBINFONOVALIDJOBLIST  _MESSAGE(47252, _("attribute \"schedd_job_info\" is not a valid job_list"))
@@ -217,9 +197,6 @@
 #define MSG_UNKNOWN_PARAM_S                     _MESSAGE(47261, _("found unknown param: "SFQ))
 #define MSG_ATTRIB_WRONG_SETTING_SS             _MESSAGE(47262, _("invalid setting for param: "SFQ"(should be "SFQ")"))
 
-/* 
-** schedd/sge_select_queue.c
-*/
 #define MSG_SCHEDD_WHYEXCEEDINVALIDLOAD_SS            _MESSAGE(47310, _("invalid load value "SFQ" for theshold "SFN))
 #define MSG_SCHEDD_WHYEXCEEDINVALIDTHRESHOLD_SS       _MESSAGE(47311, _("invalid threshold value "SFN"="SFN))
 #define MSG_SCHEDD_WHYEXCEEDINVALIDLOADADJUST_SS      _MESSAGE(47312, _("invalid load adjustment value "SFN"="SFN))
@@ -238,27 +215,15 @@
 #define MSG_SCHEDD_LCDIAGNONE                         _MESSAGE(47335, _("no load adjustment"))
 #define MSG_SCHEDD_LCDIAGNOLOAD                       _MESSAGE(47336, _("no load value"))
 
-/* 
- * libs/sched/sge_ssi.c
- */
 #define MSG_SSI_ERRORPARSINGJOBIDENTIFIER_S           _MESSAGE(47350, _("error parsing job identifier "SFQ))
 #define MSG_SSI_MISSINGHOSTNAMEINTASKLIST             _MESSAGE(47351, _("missing hostname in task list"))
 #define MSG_SSI_COULDNOTFINDQUEUEFORHOST_S            _MESSAGE(47352, _("could not find a queue for host "SFQ))
 
-/*
- * daemons/sched/sge_process_events.c
- */
-#define MSG_CANTFINDJOBINMASTERLIST_S                 _MESSAGE(47360, _("could not find job "SFQ" in master list")) 
+#define MSG_CANTFINDJOBINMASTERLIST_S                 _MESSAGE(47360, _("could not find job "SFQ" in master list"))
 #define MSG_CANTFINDTASKINJOB_UU                      _MESSAGE(47361, _("could not find task "sge_U32CFormat" in job "sge_U32CFormat)) 
 
-/* 
- * libs/sched/sge_complex_schedd.c
- */
 #define MSG_GDI_NO_ATTRIBUTE_S                        _MESSAGE(47370, _("denied: attribute "SFQ" is no complex attribute"))
 
-/*
- * sgeobj/sge_schedd_conf.c 
- */
 #define MSG_RR_REQUIRES_DEFAULT_DURATION              _MESSAGE(47295, _("denied: resource reservation requires valid default duration"))
 #define MSG_SCHEDD_NOVALUEFORATTR_S                   _MESSAGE(47296, _("no value for complex attribute "SFQ))
 #define MSG_SCHEDD_JOB_LOAD_ADJUSTMENTS_S             _MESSAGE(47297, _("cannot parse job load adjustment list "SFQ))  

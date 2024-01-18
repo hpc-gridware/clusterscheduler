@@ -30,7 +30,6 @@
  ************************************************************************/
 /*___INFO__MARK_END__*/
 #include <stdio.h>
-#include <stdlib.h>
 #include <fcntl.h>
 #include <string.h>
 #include <errno.h>
@@ -47,13 +46,10 @@
 #include "uti/sge_profiling.h"
 
 #include "cull/cull_list.h"
-#include "cull/cull_lerrnoP.h"
 #include "cull/cull_listP.h"
 #include "cull/cull_multitypeP.h"
-#include "cull/cull_whatP.h"
 #include "cull/cull_whereP.h"
 #include "cull/cull_pack.h"
-#include "cull/cull_parse.h"
 #include "cull/cull_file.h"
 #include "cull/msg_cull.h"
 

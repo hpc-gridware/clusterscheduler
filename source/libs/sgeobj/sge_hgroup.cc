@@ -34,34 +34,25 @@
  */
 
 #include <stdio.h>
-#include <stdlib.h>
 #include <ctype.h>
 #include <string.h>
-#include <unistd.h>
-#include <errno.h>
-#include <fnmatch.h>
 
 #include "uti/sge_rmon.h" 
-#include "uti/sge_string.h"
 #include "uti/sge_log.h"
 #include "uti/sge_hostname.h"
 
 #include "comm/commlib.h"
 
-#include "sgeobj/sge_str.h"
 #include "sgeobj/sge_answer.h"
 #include "sgeobj/sge_cqueue.h"
 #include "sgeobj/sge_eval_expression.h"
 #include "sgeobj/sge_hgroup.h"
 #include "sgeobj/sge_href.h"
-#include "sgeobj/sge_object.h"
 #include "sgeobj/sge_utility.h"
 #include "sgeobj/msg_sgeobjlib.h"
 
 #include "basis_types.h"
-#include "sge.h"
 #include "msg_common.h"
-
 
 #define HGROUP_LAYER TOP_LAYER
 

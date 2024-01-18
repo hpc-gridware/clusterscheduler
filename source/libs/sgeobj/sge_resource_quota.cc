@@ -47,8 +47,6 @@
 #include "sgeobj/sge_centry.h"
 #include "sgeobj/sge_qref.h"
 #include "sgeobj/sge_job.h"
-#include "sgeobj/sge_ja_task.h"
-#include "sgeobj/sge_pe.h"
 #include "sgeobj/sge_hgroup.h"
 #include "sgeobj/sge_userset.h"
 #include "sgeobj/sge_href.h"

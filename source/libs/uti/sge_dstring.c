@@ -48,7 +48,6 @@
 #include "symbols.h"
 
 #define REALLOC_CHUNK   1024
-#define BUFFER_SIZE 20000
 
 #define DSTRING_LAYER BASIS_LAYER
 

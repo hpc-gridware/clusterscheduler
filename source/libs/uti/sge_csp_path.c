@@ -56,7 +56,6 @@
 #include "gdi/msg_gdilib.h"
 
 
-#define SGE_QMASTER_PORT_ENVIRONMENT_NAME "SGE_QMASTER_PORT"
 #define SGE_COMMD_SERVICE "sge_qmaster"
 #define CA_DIR          "common/sgeCA"
 #define CA_LOCAL_ROOTUSER_DIR    "/var/sgeCA"
@@ -70,7 +69,6 @@
 #define CrlFile         "ca-crl.pem"
 #define ReconnectFile   "private/reconnect.dat"
 #define VALID_MINUTES    7          /* expiry of connection        */
-
 
 typedef struct {
    char* ca_root;                /* path of ca_root directory */

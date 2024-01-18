@@ -47,7 +47,6 @@
 
 #include "schedd_monitor.h"
 #include "load_correction.h"
-#include "sge_complex_schedd.h"
 
 int correct_load(lList *running_jobs, lList *queue_list, lList *host_list,
                   u_long32 decay_time, bool monitor_next_run) 

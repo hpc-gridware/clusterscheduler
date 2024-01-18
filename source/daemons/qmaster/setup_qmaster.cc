@@ -77,7 +77,7 @@
 #include "gdi/qm_name.h"
 #include "gdi/sge_gdi2.h"
 
-#include "sched/sge_sched.h"
+#include "sched/debit.h"
 
 #include "spool/sge_spooling.h"
 

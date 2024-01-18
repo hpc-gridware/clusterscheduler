@@ -31,23 +31,16 @@
 /*___INFO__MARK_END__*/
 
 #include <stdio.h>
-#include <stdlib.h>
 #include <ctype.h>
 #include <string.h>
-#include <unistd.h>
-#include <errno.h>
-#include <limits.h>
 
 #include "uti/sge_rmon.h"
-#include "uti/sge_unistd.h"
 #include "uti/sge_hostname.h"
 #include "uti/sge_log.h"
 #include "uti/sge_string.h"
 
-#include "sgeobj/sge_conf.h"
 #include "sgeobj/sge_str.h"
 #include "sgeobj/sge_answer.h"
-#include "sgeobj/sge_utility.h"
 #include "sgeobj/sge_cqueue.h"
 #include "sgeobj/sge_qinstance.h"
 #include "sgeobj/sge_hgroup.h"
@@ -65,9 +58,6 @@
 #include "sge_persistence_qmaster.h"
 #include "msg_common.h"
 #include "msg_qmaster.h"
-
-
-/* EB: ADOC: add comments */
 
 static bool
 hgroup_mod_hostlist(lListElem *hgroup, lList **answer_list,

@@ -31,23 +31,19 @@
 /*___INFO__MARK_END__*/
 
 #include <signal.h>
-#include <pthread.h>
 #include <string.h>
 #include <errno.h>
-#include <fcntl.h>
 
 #include "uti/sge_rmon.h"
 #include "uti/sge_prog.h"
 #include "uti/sge_log.h"
 #include "uti/sge_unistd.h"
 #include "uti/sge_uidgid.h"
-#include "uti/sge_bootstrap.h"
 #include "uti/msg_utilib.h"  /* remove once 'sge_daemonize_qmaster' did become 'sge_daemonize' */
 #include "uti/setup_path.h"
 #include "uti/sge_os.h"
 #include "uti/sge_string.h"
 
-#include "sgeobj/sge_conf.h"
 #include "sgeobj/sge_manop.h"
 #include "sgeobj/sge_answer.h"
 
@@ -59,11 +55,7 @@
 #include "basis_types.h"
 #include "sge_qmaster_threads.h"
 #include "sge_thread_main.h"
-#include "evm/sge_event_master.h"
 #include "sge_reporting_qmaster.h"
-#include "sge_qmaster_timed_event.h"
-#include "sge_host_qmaster.h"
-#include "sge_advance_reservation_qmaster.h"
 #include "msg_common.h"
 #include "msg_qmaster.h"
 #include "msg_daemons_common.h"

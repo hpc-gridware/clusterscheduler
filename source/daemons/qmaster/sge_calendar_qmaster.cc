@@ -38,11 +38,9 @@
 #include "uti/sge_rmon.h"
 #include "uti/sge_log.h"
 #include "uti/sge_time.h"
-#include "uti/sge_unistd.h"
 #include "uti/sge_lock.h"
 
 #include "sgeobj/sge_object.h"
-#include "sgeobj/sge_qinstance_state.h"
 #include "sgeobj/sge_answer.h"
 #include "sgeobj/sge_cqueue.h"
 #include "sgeobj/sge_qinstance.h"
@@ -51,7 +49,6 @@
 
 #include "spool/sge_spooling.h"
 
-#include "sge.h"
 #include "evm/sge_event_master.h"
 #include "sge_c_gdi.h"
 #include "sge_calendar_qmaster.h"

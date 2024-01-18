@@ -79,7 +79,6 @@
 #include "sge_resource_utilization.h"
 #include "valid_queue_user.h"
 #include "subordinate_schedd.h"
-#include "sge_range_schedd.h"
 #include "sge_pe_schedd.h"
 #include "sge_qeti.h"
 #include "sort_hosts.h"

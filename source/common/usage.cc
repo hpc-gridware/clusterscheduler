@@ -31,7 +31,6 @@
 /* Portions of this code are Copyright 2011 Univa Inc. */
 /*___INFO__MARK_END__*/
 #include <stdio.h>
-#include <stdlib.h>
 #include <string.h>
 
 #include "uti/sge_rmon.h"

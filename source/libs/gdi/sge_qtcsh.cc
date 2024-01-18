@@ -31,20 +31,14 @@
 /*___INFO__MARK_END__*/
 #include <stdio.h>
 #include <string.h>
-#include <stdlib.h>
-#include <unistd.h>
-#include <ctype.h>
-#include <sys/types.h>
 #include <pwd.h>
 #include <errno.h>
 #include <pthread.h>
 
 #include "uti/sge_mtutil.h"
 #include "uti/sge_rmon.h"
-#include "uti/setup_path.h"
 #include "uti/sge_log.h"
 #include "uti/sge_uidgid.h"
-#include "uti/sge_prog.h"
 #include "uti/sge_stdio.h"
 #include "uti/sge_string.h"
 #include "uti/sge_parse_args.h"
@@ -53,12 +47,10 @@
 #include "sgeobj/config.h"
 #include "sgeobj/sge_conf.h"
 
-#include "gdi/sge_gdi.h"
 #include "gdi/sge_gdi_ctx.h"
 #include "gdi/sge_qtcsh.h"
 
 #include "msg_common.h"
-
 
 /* module global variables */
 static pthread_mutex_t qtask_mutex = PTHREAD_MUTEX_INITIALIZER;

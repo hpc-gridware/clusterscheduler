@@ -31,14 +31,11 @@
 /*___INFO__MARK_END__*/
 #include <stdio.h>
 #include <stdlib.h>
-#include <sys/types.h>
-#include <sys/stat.h>
 #include <pwd.h>
 
 /* for service provider info (SPI) entries and projects */
 
 #include "uti/config_file.h"
-#include "uti/sge_uidgid.h"
 #include "uti/sge_stdio.h"
 
 #include "basis_types.h"

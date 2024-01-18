@@ -38,7 +38,6 @@
 
 #include "sgeobj/sge_qinstance.h"
 #include "sgeobj/sge_qinstance_state.h"
-#include "sgeobj/sge_subordinate.h"
 
 #include "subordinate_schedd.h"
 

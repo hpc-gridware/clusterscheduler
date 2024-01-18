@@ -30,22 +30,13 @@
  ************************************************************************/
 /*___INFO__MARK_END__*/
 
-#include <netdb.h>
-#include <stdlib.h>
-#include <stdio.h>
 #include <string.h>
 #include <pwd.h>
-#include <errno.h>
-#include <pthread.h>
-#include <sys/types.h>
-#include <sys/socket.h>  
 
 #include "uti/sge_rmon.h"
-#include "uti/sge_hostname.h"
 #include "uti/sge_log.h"
 #include "uti/sge_stdlib.h"
 #include "uti/sge_string.h"
-#include "uti/sge_unistd.h"
 #include "uti/sge_env.h"
 
 #include "sgeobj/sge_answer.h"

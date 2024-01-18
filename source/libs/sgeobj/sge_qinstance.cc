@@ -36,14 +36,9 @@
 
 #include "uti/sge_rmon.h"
 #include "uti/sge_log.h"
-#include "uti/sge_hostname.h"
-#include "uti/sge_parse_num_par.h"
 #include "uti/sge_dstring.h"
 
 #include "cull/cull_list.h"
-
-
-#include "sched/sge_select_queue.h"
 
 #include "sgeobj/sge_manop.h"
 #include "sgeobj/sge_answer.h"
@@ -55,7 +50,6 @@
 #include "sgeobj/sge_qinstance.h"
 #include "sgeobj/sge_qinstance_state.h"
 #include "sgeobj/sge_mesobj.h"
-#include "sgeobj/sge_object.h"
 #include "sgeobj/sge_pe.h"
 #include "sgeobj/sge_qref.h"
 #include "sgeobj/sge_str.h"

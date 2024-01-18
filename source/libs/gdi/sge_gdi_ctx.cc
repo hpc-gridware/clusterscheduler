@@ -30,22 +30,16 @@
  ************************************************************************/
 /*___INFO__MARK_END__*/
 
-#include <netdb.h>
 #include <stdlib.h>
 #include <stdio.h>
 #include <string.h>
 #include <pwd.h>
-#include <grp.h>
 #include <errno.h>
 #include <fcntl.h>
 #include <pthread.h>
-#include <sys/types.h>
-#include <sys/socket.h>  
 #include <sys/ioctl.h>
 
 #if defined(DARWIN)
-#  include <termios.h>
-#  include <sys/ioctl.h>
 #  include <grp.h>
 #elif defined(SOLARIS64) || defined(SOLARIS86) || defined(SOLARISAMD64)
 #  include <stropts.h>

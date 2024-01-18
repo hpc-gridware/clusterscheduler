@@ -65,11 +65,11 @@
 
 #include "comm/commlib.h"
 
-#include "sched/sge_sched.h"
-
 #include "gdi/qm_name.h"
 #include "gdi/sge_gdi.h"
 #include "gdi/sge_gdi_ctx.h"
+
+#include "sched/sge_select_queue.h"
 
 #include "sge.h"
 #include "sig_handlers.h"

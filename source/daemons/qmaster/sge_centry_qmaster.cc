@@ -31,46 +31,32 @@
  *
  ************************************************************************/
 /*___INFO__MARK_END__*/
-#include <sys/types.h>
-#include <sys/stat.h>
-#include <fcntl.h>
-#include <unistd.h>
 #include <string.h>
-#include <errno.h>
 
 #include "uti/sge_rmon.h"
-#include "uti/sge_stdio.h"
-#include "uti/sge_unistd.h"
-#include "uti/sge_spool.h"
 #include "uti/sge_log.h"
 #include "uti/sge_parse_num_par.h"
 #include "uti/sge_string.h"
 #include "uti/sge_time.h"
 
 #include "sgeobj/sge_ja_task.h"
-#include "sgeobj/sge_schedd_conf.h"
 #include "sgeobj/sge_host.h"
 #include "sgeobj/sge_answer.h"
 #include "sgeobj/sge_qinstance.h"
 #include "sgeobj/sge_job.h"
 #include "sgeobj/sge_centry.h"
 #include "sgeobj/sge_cqueue.h"
-#include "sgeobj/sge_utility.h"
 #include "sgeobj/sge_str.h"
 #include "sgeobj/msg_sgeobjlib.h"
 
 #include "comm/commlib.h"
 
-#include "sched/sge_complex_schedd.h"
-#include "sched/sort_hosts.h"
-#include "sched/sge_select_queue.h"
 #include "sched/debit.h"
 
 #include "spool/sge_spooling.h"
 
 #include "evm/sge_event_master.h"
 #include "sge_c_gdi.h"
-#include "sge.h"
 #include "sge_persistence_qmaster.h"
 #include "sge_reporting_qmaster.h"
 #include "msg_common.h"

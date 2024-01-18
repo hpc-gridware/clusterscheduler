@@ -4,7 +4,6 @@
 #define __SGE_GDI_LIBRARY_HOME_OBJECT_FILE__
 #include "uti/sge_rmon.h"
 
-#include "cull/cull.h"
 #include "cull/cull_list.h"
 
 #ifdef OBSERVE

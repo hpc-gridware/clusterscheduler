@@ -33,34 +33,23 @@
 /*___INFO__MARK_END__*/
 
 #include <string.h>
-#include <errno.h>
-#include <sys/types.h>
-#include <sys/stat.h>
-#include <fcntl.h>
 #include <pthread.h>
 
 #include <pwd.h>
 
 #include <unistd.h>
-#include <stdlib.h>
 
 #include "comm/commlib.h"
 
 #include "uti/sge_mtutil.h"
 #include "uti/sge_rmon.h"
-#include "uti/sge_stdlib.h"
 #include "uti/sge_prog.h"
 #include "uti/sge_log.h"
-#include "uti/sge_uidgid.h"
 #include "uti/sge_parse_num_par.h"
 #include "uti/sge_profiling.h"
 #include "uti/sge_spool.h"
-#include "uti/sge_unistd.h"
 #include "uti/sge_hostname.h"
-#include "uti/setup_path.h"
-#include "uti/sge_env.h"
 #include "uti/sge_time.h"
-#include "uti/sge_bootstrap.h"
 
 #include "sgeobj/sge_feature.h"
 #include "sgeobj/cull/sge_multi_MA_L.h"
@@ -70,11 +59,7 @@
 #include "sgeobj/sge_host.h"
 #include "sgeobj/sge_conf.h"
 #include "sgeobj/cull/sge_permission_PERM_L.h"
-#include "sgeobj/sge_conf.h"
 
-#include "gdi/qm_name.h"
-#include "gdi/sge_gdiP.h"
-#include "gdi/version.h"
 #include "gdi/sge_gdi2.h"
 #include "gdi/sge_security.h"
 #include "gdi/sge_gdi.h"

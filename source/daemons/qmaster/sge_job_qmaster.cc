@@ -34,7 +34,6 @@
 #include <stdlib.h>
 #include <string.h>
 #include <errno.h>
-#include <limits.h>
 #include <ctype.h>
 
 #include "uti/sge_rmon.h"
@@ -44,11 +43,8 @@
 #include "uti/sge_log.h"
 #include "uti/sge_prog.h"
 #include "uti/sge_signal.h"
-#include "uti/setup_path.h"
 #include "uti/sge_string.h"
 #include "uti/sge_profiling.h"
-#include "uti/sge_bootstrap.h"
-#include "uti/sge_string.h"
 #include "uti/sge_lock.h"
 #include "uti/sge_mtutil.h"
 
@@ -86,10 +82,11 @@
 #include "sgeobj/sge_jsv_script.h"
 #include "sgeobj/sge_ack.h"
 
-#include "sched/sge_sched.h"
 #include "sched/sge_job_schedd.h"
 #include "sched/schedd_message.h"
 #include "sched/sge_schedd_text.h"
+#include "sched/sge_complex_schedd.h"
+#include "sched/valid_queue_user.h"
 
 #include "gdi/sge_gdi2.h"
 
@@ -106,7 +103,6 @@
 #include "sge_qmaster_main.h"
 #include "symbols.h"
 #include "mail.h"
-#include "sge_job_qmaster.h"
 #include "sge_cqueue_qmaster.h"
 #include "sge_give_jobs.h"
 #include "sge_qmod_qmaster.h"

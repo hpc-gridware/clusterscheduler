@@ -31,12 +31,9 @@
 /*___INFO__MARK_END__*/
 
 #include <string.h>
-#include <errno.h>
 #include <pthread.h>
 
 #include "uti/sge_rmon.h"
-#include "uti/config_file.h"
-#include "uti/sge_prog.h"
 #include "uti/sge_log.h"
 
 #include "cull/cull.h"
@@ -44,16 +41,9 @@
 #include "gdi/version.h"
 
 #include "sgeobj/sge_feature.h"         
-#include "sgeobj/sge_answer.h"
-#include "sgeobj/sge_utility.h"
 #include "sgeobj/msg_sgeobjlib.h"
 
-#include "sge.h"
 #include "basis_types.h"
-#include "msg_common.h"
-
-#define FEATURESET_DEFAULT FEATURESET_SGE
-
 
 struct feature_state_t {
     int    already_read_from_file;

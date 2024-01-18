@@ -31,13 +31,11 @@
 /*___INFO__MARK_END__*/
 #include <pwd.h>
 #include <string.h>
-#include <sys/stat.h>
 #include <errno.h>
 
 #include "uti/sge_rmon.h"
 #include "uti/sge_log.h"
 #include "uti/sge_uidgid.h"
-#include "uti/sge_prog.h"
 #include "uti/sge_dstring.h"
 #include "uti/sge_unistd.h"
 #include "uti/sge_string.h"
@@ -50,7 +48,6 @@
 
 #include "get_path.h"
 #include "msg_execd.h"
-#include "sge.h"
 
 static int
 getHomeDir(dstring *dstr_exp_path, const char *user)

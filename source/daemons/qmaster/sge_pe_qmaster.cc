@@ -31,13 +31,10 @@
 /*___INFO__MARK_END__*/
 #include <stdio.h>
 #include <string.h>
-#include <fnmatch.h>
 
 #include "uti/sge_rmon.h"
 #include "uti/config_file.h"
-#include "uti/sge_prog.h"
 #include "uti/sge_log.h"
-#include "uti/sge_unistd.h"
 #include "uti/sge_string.h"
 
 #include "sgeobj/sge_pe.h"
@@ -46,8 +43,6 @@
 #include "sgeobj/sge_job.h"
 #include "sgeobj/sge_userset.h"
 #include "sgeobj/sge_utility.h"
-#include "sgeobj/sge_advance_reservation.h"
-#include "sgeobj/sge_qinstance.h"
 
 #include "sched/sge_job_schedd.h"
 
@@ -55,10 +50,8 @@
 
 #include "sge.h"
 #include "sge_pe_qmaster.h"
-#include "sge_host_qmaster.h"
 #include "evm/sge_event_master.h"
 #include "sge_userset_qmaster.h"
-#include "sge_ckpt_qmaster.h"
 #include "sge_utility_qmaster.h"
 #include "sge_advance_reservation_qmaster.h"
 #include "sge_persistence_qmaster.h"

@@ -29,7 +29,7 @@
  * 
  ************************************************************************/
 /*___INFO__MARK_END__*/
-#include <sys/types.h>
+
 #include <string.h>
 #include <errno.h>
 
@@ -41,7 +41,6 @@
 #include "uti/sge_unistd.h"
 #include "uti/msg_utilib.h"
 
-#include "sgeobj/sge_conf.h"
 #include "sgeobj/sge_str.h"
 
 #include "spool/sge_dirent.h"

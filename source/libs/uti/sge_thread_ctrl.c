@@ -30,11 +30,8 @@
  ************************************************************************/
 /*___INFO__MARK_END__*/
 
-#include <signal.h>
 #include <pthread.h>
 #include <string.h>
-#include <errno.h>
-#include <fcntl.h>
 
 #include "uti/sge_mtutil.h"
 #include "uti/sge_rmon.h"

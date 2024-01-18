@@ -31,40 +31,20 @@
 /*___INFO__MARK_END__*/
 
 #include <stdio.h>
-#include <unistd.h>
-#include <string.h>
 #include <ctype.h>
 #include <time.h>
-#include <sys/time.h>
 
-#include "uti/sge_rmon.h"
 #include "uti/sge_time.h"
-#include "uti/sge_unistd.h"
-#include "uti/sge_log.h"
-#include "uti/sge_lock.h"
 
 #include "sgeobj/cull/sge_all_listsL.h"
-#include "sgeobj/sge_answer.h"
-#include "sgeobj/sge_cqueue.h"
-#include "sgeobj/sge_qinstance.h"
 #include "sgeobj/sge_calendar.h"
-#include "sgeobj/sge_utility.h"
 #include "sgeobj/sge_qinstance_state.h"
 
 #include "gdi/sge_gdi_ctx_type.h"
 
-#include "spool/sge_spooling.h"
-
-#include "sge.h"
-#include "sge_utility_qmaster.h"
-#include "sge_persistence_qmaster.h"
-#include "evm/sge_event_master.h"
 #include "sge_c_gdi.h"
 #include "sge_calendar_qmaster.h"
-#include "sge_qmod_qmaster.h"
-#include "sge_qinstance_qmaster.h"
 #include "msg_common.h"
-#include "msg_qmaster.h"
 
 /* new data types */
 

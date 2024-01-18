@@ -31,7 +31,6 @@
 /*___INFO__MARK_END__*/
 #include <stdio.h>
 #include <string.h>
-#include <stdlib.h>
 #include <errno.h>
 
 #include "comm/commd.h"
@@ -39,10 +38,8 @@
 #include "uti/sge_rmon.h"
 #include "uti/sge_stdio.h"
 #include "uti/sge_log.h"
-#include "uti/setup_path.h"
 
 #include "gdi/qm_name.h"
-#include "gdi/sge_gdiP.h"
 
 #include "basis_types.h"
 #include "msg_gdilib.h"

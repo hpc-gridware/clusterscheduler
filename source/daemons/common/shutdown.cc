@@ -34,7 +34,6 @@
 #include "uti/sge_rmon.h"
 #include "uti/sge_unistd.h"
 #include "uti/sge_log.h"
-#include "uti/setup_path.h"
 #include "uti/sge_arch.h"
 
 #include "sgeobj/sge_feature.h"

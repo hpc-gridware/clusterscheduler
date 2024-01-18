@@ -33,12 +33,8 @@
 /*___INFO__MARK_END__*/
 
 #include <stdio.h>
-#include <stdlib.h>
 #include <ctype.h>
 #include <string.h>
-#include <unistd.h>
-#include <errno.h>
-#include <limits.h>
 
 #include "uti/sge_rmon.h"
 #include "uti/sge_log.h"
@@ -58,15 +54,11 @@
 #include "sgeobj/sge_cqueue.h"
 #include "sgeobj/sge_object.h"
 #include "sgeobj/sge_subordinate.h"
-#include "sgeobj/sge_advance_reservation.h"
-#include "sgeobj/sge_advance_reservation.h"
 #include "sgeobj/sge_conf.h"
 
 #include "sched/sge_resource_utilization.h"
 #include "sched/sge_serf.h"
 
-#include "sge.h"
-#include "evm/sge_event_master.h"
 #include "sge_persistence_qmaster.h"
 #include "evm/sge_queue_event_master.h"
 #include "sge_qinstance_qmaster.h"
@@ -74,7 +66,6 @@
 #include "sge_qmod_qmaster.h"
 #include "sge_reporting_qmaster.h"
 #include "sge_advance_reservation_qmaster.h"
-#include "sge_calendar_qmaster.h"
 #include "msg_qmaster.h"
 
 typedef struct {

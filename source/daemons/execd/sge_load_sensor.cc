@@ -32,11 +32,9 @@
 /*___INFO__MARK_END__*/
 #include <fcntl.h>
 #include <errno.h>
-#include <stdlib.h>
 #include <string.h>
 
 #include "uti/sge_rmon.h"
-#include "uti/sge_bootstrap.h"
 #include "uti/sge_unistd.h"
 #include "uti/sge_log.h"
 #include "uti/sge_string.h"

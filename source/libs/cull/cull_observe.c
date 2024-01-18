@@ -6,7 +6,7 @@
 
 /* do not compile in monitoring code */
 #ifndef NO_SGE_COMPILE_DEBUG
-#define NO_SGE_COMPILE_DEBUGXXXXX
+#define NO_SGE_COMPILE_DEBUG
 #endif
 
 #include "uti/sge_rmon.h"

@@ -35,8 +35,6 @@
 #  include <sys/param.h>        /* for MAX() macro */
 #endif
 
-#include <sys/types.h>
-
 #if defined(COMPILE_DC) || defined(MODULE_TEST)
 
 #if defined(LINUX) || defined(SOLARIS) || !defined(MODULE_TEST) || defined(FREEBSD) || defined(DARWIN)

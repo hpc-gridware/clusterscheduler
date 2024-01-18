@@ -34,13 +34,9 @@
 
 #include <stdio.h>
 #include <string.h>
-#include <sys/types.h>
-#include <sys/time.h>
-#include <sys/resource.h>
 #include <fcntl.h>
 #include <pwd.h>
 #include <errno.h>
-#include <ctype.h>
 
 #include "uti/sge_string.h"
 #include "uti/sge_stdio.h"
@@ -52,7 +48,6 @@
 #include "uti/sge_uidgid.h"
 
 #include "setosjobid.h"
-#include "sge_fileio.h"
 
 #include "msg_common.h"
 

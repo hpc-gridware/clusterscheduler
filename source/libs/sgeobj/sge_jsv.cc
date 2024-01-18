@@ -48,12 +48,9 @@
 #include "uti/sge_dstring.h"
 #include "uti/sge_log.h"
 #include "uti/sge_stdio.h"
-#include "uti/sge_string.h"
 #include "uti/sge_stdlib.h"
-#include "uti/sge_time.h"
 #include "uti/sge_unistd.h"
 
-#include "gdi/sge_gdi.h"
 #include "gdi/sge_gdi_ctx.h"
 
 #include "sgeobj/sge_conf.h"
@@ -61,7 +58,6 @@
 #include "sgeobj/sge_job.h"
 #include "sgeobj/sge_jsv.h"
 #include "sgeobj/sge_jsv_script.h"
-#include "sgeobj/sge_str.h"
 #include "sgeobj/msg_sgeobjlib.h"
 
 /*

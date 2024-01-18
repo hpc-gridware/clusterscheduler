@@ -33,7 +33,6 @@
 /*___INFO__MARK_END__*/
 #include <errno.h>
 #include <pwd.h>
-#include <sys/types.h>
 #include <fcntl.h>
 #include <unistd.h>
 #include <stdlib.h>
@@ -42,19 +41,15 @@
 #include "uti/sge_rmon.h"
 #include "uti/sge_unistd.h"
 #include "uti/sge_hostname.h"
-#include "uti/sge_bootstrap.h"
 #include "uti/sge_string.h"
 #include "uti/sge_parse_num_par.h"
 #include "uti/sge_prog.h"
 #include "uti/sge_log.h"
 #include "uti/sge_io.h"
-#include "uti/sge_afsutil.h"
-#include "uti/setup_path.h"
 
 #include "sgeobj/sge_pe.h"
 #include "sgeobj/sge_ja_task.h"
 #include "sgeobj/sge_pe_task.h"
-#include "sgeobj/sge_feature.h"
 #include "sgeobj/sge_conf.h"
 #include "sgeobj/sge_job.h"
 #include "sgeobj/sge_var.h"
@@ -64,19 +59,16 @@
 #include "sgeobj/sge_ckpt.h"
 #include "sgeobj/sge_report.h"
 
-#include "gdi/msg_gdilib.h"
 #include "gdi/sge_security.h"
 
 #include "spool/classic/read_write_job.h"
 
-#include "dispatcher.h"
 #include "execd.h"
 #include "reaper_execd.h"
 #include "job_report_execd.h"
 #include "execd_job_exec.h"
 #include "execution_states.h"
 #include "get_path.h"
-#include "sge.h"
 #include "msg_common.h"
 #include "msg_execd.h"
 

@@ -35,14 +35,11 @@
 #include <stdio.h>
 #include <pthread.h>
 #include <errno.h>
-#include <sys/types.h>
-#include <sys/stat.h>
 
 #include "uti/sge_rmon.h"
 #include "uti/sge_log.h"
 #include "uti/sge_time.h"
 #include "uti/sge_dstring.h"
-#include "uti/sge_prog.h"
 #include "uti/sge_uidgid.h"
 #include "uti/sge_mtutil.h"
 

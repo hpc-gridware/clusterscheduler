@@ -40,9 +40,8 @@
 #include "sgeobj/parse.h"
 #include "sgeobj/sge_answer.h"
 
-#include "sched/sge_sched.h"
-
 #include "gdi/sge_gdi.h"
+#include "gdi/sge_gdi_ctx.h"
 
 #include "comm/commlib.h"
 

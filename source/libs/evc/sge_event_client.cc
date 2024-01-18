@@ -31,9 +31,7 @@
 /*___INFO__MARK_END__*/
 
 #include <stdio.h>
-#include <stdlib.h>
 #include <string.h>
-#include <strings.h>
 
 #include "uti/sge_rmon.h"
 #include "uti/sge_unistd.h"
@@ -45,15 +43,11 @@
 #include "uti/sge_mtutil.h"
 
 #include "comm/commlib.h"
-#include "comm/commproc.h"
 
-#include "gdi/qm_name.h"
 #include "gdi/sge_gdi2.h"
-#include "gdi/msg_gdilib.h"
 
 #include "sgeobj/sge_answer.h"
 #include "sgeobj/sge_report.h"
-#include "sgeobj/sge_conf.h"
 #include "sgeobj/sge_ack.h"
 
 #include "sgeobj/sge_event.h"

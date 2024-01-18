@@ -33,12 +33,10 @@
 #include <string.h>
 #include <stdlib.h>
 #include <unistd.h>
-#include <fnmatch.h>
 
 #include "uti/sge_rmon.h"
 #include "uti/sge_parse_num_par.h"
 #include "uti/sge_dstring.h"
-#include "uti/sge_binding_hlp.h"
 #include "uti/sge_stdlib.h"
 #include "uti/sge_string.h"
 #include "uti/sge_log.h"

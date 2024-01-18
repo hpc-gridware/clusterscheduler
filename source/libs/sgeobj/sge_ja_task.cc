@@ -31,7 +31,6 @@
 /*___INFO__MARK_END__*/
 
 #include <string.h>
-#include <strings.h>
 #include <stdlib.h>
 #include <ctype.h>
 
@@ -47,13 +46,11 @@
 #include "sgeobj/sge_mesobj.h"
 #include "sgeobj/sge_job.h"
 #include "sgeobj/sge_id.h"
-#include "sgeobj/sge_str.h"
 #include "sgeobj/sge_object.h"
 #include "sgeobj/sge_answer.h"
 #include "sgeobj/sge_pe.h"
 #include "sgeobj/sge_qinstance.h"
 #include "sgeobj/sge_utility.h"
-#include "sgeobj/sge_usage.h"
 #include "sgeobj/msg_sgeobjlib.h"
 
 #include "msg_common.h"

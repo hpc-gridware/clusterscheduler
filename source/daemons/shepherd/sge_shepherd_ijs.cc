@@ -31,23 +31,16 @@
  ************************************************************************/
 /*___INFO__MARK_END__*/
 
-#include <stdlib.h>
 #include <stdio.h>
-#include <sys/types.h>
-#include <sys/stat.h>
-#include <fcntl.h>
 #include <errno.h>
 #include <signal.h>
 #include <string.h>
 #include <unistd.h>
 
-#include <sys/wait.h>
 #include <sys/time.h>
-#include <sys/timeb.h>
 #include <sys/resource.h>
 
 #if defined(DARWIN)
-#  include <termios.h>
 #  include <sys/ttycom.h>
 #  include <sys/ioctl.h>
 #elif defined(FREEBSD) || defined(NETBSD)
@@ -61,13 +54,11 @@
 #include "uti/sge_dstring.h"
 #include "uti/sge_pty.h"
 #include "uti/sge_io.h"
-#include "uti/sge_uidgid.h"
 #include "uti/sge_unistd.h"
 #include "uti/sge_signal.h"
 
 #include "sge_ijs_comm.h"
 #include "sge_ijs_threads.h"
-#include "sge_fileio.h"
 #include "basis_types.h"
 #include "err_trace.h"
 #include "shepherd.h"

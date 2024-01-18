@@ -64,9 +64,6 @@
 #include "oge_client_job.h"
 #include "msg_common.h"
 
-
-
-
 #define JOB_CHUNK 8
 #define NTHREADS 3
 #define NBULKS 3

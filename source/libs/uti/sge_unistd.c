@@ -45,7 +45,6 @@
 #include "uti/sge_log.h"
 #include "uti/sge_dstring.h"
 #include "uti/msg_utilib.h"
-#include "uti/sge_prog.h"
 
 #include "gdi/sge_gdi_ctx.h"
 

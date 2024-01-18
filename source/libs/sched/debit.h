@@ -33,6 +33,8 @@
  ************************************************************************/
 /*___INFO__MARK_END__*/
 
+#include "sched/sge_select_queue.h"
+
 /* responsible for all debitations that have to be done */
 int debit_scheduled_job(const sge_assignment_t *a, int *sort_hostlist, order_t *orders,
     bool now, const char *type, bool for_job_scheduling);

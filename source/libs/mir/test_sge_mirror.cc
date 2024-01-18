@@ -36,9 +36,7 @@
 #include "uti/sge_rmon.h"
 #include "uti/sge_unistd.h"
 #include "uti/sge_prog.h"
-#include "uti/sge_log.h"
 
-#include "sgeobj/cull/sge_all_listsL.h"
 #include "sgeobj/sge_event.h"
 #include "sgeobj/sge_answer.h"
 
@@ -46,9 +44,6 @@
 
 #include "mir/sge_mirror.h"
 
-#include "gdi/sge_gdiP.h"
-
-#include "usage.h"
 #include "sig_handlers.h"
 #include "msg_clients_common.h"
 

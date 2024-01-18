@@ -33,15 +33,11 @@
 #include <string.h>
 
 #include "uti/sge_rmon.h"
-#include "uti/sge_string.h"
-#include "uti/sge_log.h"
 
 #include "cull/cull_list.h"
 
 #include "sgeobj/sge_object.h"
 #include "sgeobj/sge_answer.h"
-#include "sgeobj/sge_job.h"
-#include "sgeobj/sge_ja_task.h"
 #include "sgeobj/sge_path_alias.h"
 #include "sgeobj/sge_pe_task.h"
 #include "sgeobj/sge_var.h"

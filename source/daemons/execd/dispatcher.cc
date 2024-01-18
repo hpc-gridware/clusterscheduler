@@ -30,33 +30,23 @@
  ************************************************************************/
 /*___INFO__MARK_END__*/
 #include <stdio.h>
-#include <stdlib.h>
 #include <unistd.h>
 #include <string.h>
-#include <signal.h>
 
 #include "uti/sge_rmon.h"
 #include "uti/sge_log.h"
-#include "uti/sge_string.h"
-#include "uti/sge_hostname.h"
-#include "uti/sge_profiling.h"
 #include "uti/sge_time.h"
 #include "uti/sge_monitor.h"
 #include "uti/sge_bootstrap.h"
 #include "uti/sge_prog.h"
 
 #include "gdi/sge_gdi2.h"
-#include "gdi/sge_security.h"
-#include "gdi/qm_name.h"
-
-#include "sgeobj/sge_ack.h"
 
 #include "comm/commlib.h"
 
 #include "basis_types.h"
 #include "dispatcher.h"
 #include "msg_execd.h"
-#include "sig_handlers.h"
 #include "execd.h"
 #include "execd_job_exec.h"
 #include "execd_ticket.h"

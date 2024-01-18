@@ -31,39 +31,18 @@
 /*___INFO__MARK_END__*/
 
 #include <stdlib.h>
-#include <sys/types.h>
 #include <pthread.h>
 #include <stdio.h>
-#include <errno.h>
-#include <signal.h>
 #include <string.h>
 
 #include "uti/sge_rmon.h"
 #include "uti/sge_time.h"
 #include "uti/sge_profiling.h"
-#include "uti/sge_unistd.h"
 #include "uti/sge_log.h"
 
 #include "cull/cull_list.h"
 
 #include "sgeobj/sge_event.h"
-#include "sgeobj/sge_calendar.h"
-#include "sgeobj/sge_ckpt.h"
-#include "sgeobj/sge_conf.h"
-#include "sgeobj/sge_host.h"
-#include "sgeobj/sge_hgroup.h"
-#include "sgeobj/sge_job.h"
-#include "sgeobj/sge_ja_task.h"
-#include "sgeobj/sge_pe_task.h"
-#include "sgeobj/sge_manop.h"
-#include "sgeobj/sge_pe.h"
-#include "sgeobj/sge_schedd_conf.h"
-#include "sgeobj/sge_sharetree.h"
-#include "sgeobj/sge_userprj.h"
-#include "sgeobj/sge_userset.h"
-#include "sgeobj/sge_answer.h"
-#include "sgeobj/sge_hgroup.h"
-#include "sgeobj/sge_host.h"
 
 #include "evc/msg_evclib.h"
 #include "mir/msg_mirlib.h"
@@ -75,8 +54,6 @@
 #include "mir/sge_sharetree_mirror.h"
 #include "mir/sge_sched_conf_mirror.h"
 #include "mir/sge_mirror.h"
-
-#include "gdi/sge_gdi_ctx.h"
 
 #include "sig_handlers.h"
 

@@ -56,8 +56,6 @@
 #include "sgeobj/cull/sge_multi_MA_L.h"
 #include "sgeobj/sge_jsv.h"
 
-#include "msg_common.h"
-
 #define CLIENT_WAIT_TIME_S 1
 
 sge_tq_queue_t *Master_Task_Queue = NULL;

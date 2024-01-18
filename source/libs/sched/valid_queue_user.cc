@@ -29,12 +29,9 @@
  * 
  ************************************************************************/
 /*___INFO__MARK_END__*/
-#include <stdio.h>
 #include <string.h>
 
 #include "uti/sge_rmon.h"
-#include "uti/sge_log.h"
-#include "uti/sge_string.h"
 #include "uti/sge_hostname.h"
 
 #include "cull/cull.h"
@@ -43,12 +40,9 @@
 #include "sgeobj/sge_qinstance.h"
 #include "sgeobj/sge_userset.h"
 #include "sgeobj/sge_advance_reservation.h"
-#include "sgeobj/sge_hgroup.h"
-#include "sgeobj/cull/sge_all_listsL.h"
 
 #include "valid_queue_user.h"
 #include "msg_qmaster.h"
-#include "msg_schedd.h"
 
 /* - -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -
 

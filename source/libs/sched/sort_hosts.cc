@@ -29,8 +29,6 @@
  * 
  ************************************************************************/
 /*___INFO__MARK_END__*/
-#include <sys/types.h>
-#include <stdio.h>
 #include <string.h>
 #include <stdlib.h>
 
@@ -46,9 +44,11 @@
 #include "sgeobj/sge_centry.h"
 #include "sgeobj/sge_schedd_conf.h"
 
+#include "sched/sge_select_queue.h"
+#include "sched/sge_complex_schedd.h"
+
 #include "sge.h"
 #include "sort_hosts.h"
-#include "sge_sched.h"
 
 static const char load_ops[]={
         '+',

@@ -36,14 +36,11 @@
 #include <ctype.h>
 #include <errno.h>
 #include <fcntl.h>
-#include <sys/types.h>
-#include <sys/stat.h>  
 
 #include "uti/sge_rmon.h"
 #include "uti/sge_log.h"
 #include "uti/sge_spool.h"
 #include "uti/sge_stdio.h" 
-#include "uti/sge_unistd.h"
 #include "uti/sge_string.h"
 #include "uti/msg_utilib.h"
 

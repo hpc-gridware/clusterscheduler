@@ -41,7 +41,6 @@
 #include "comm/commlib.h"
 
 #include "dispatcher.h"
-#include "reaper_execd.h"
 #include "sge_load_sensor.h"
 #include "execd_kill_execd.h"
 #include "execd_signal_queue.h"

@@ -31,12 +31,8 @@
  ************************************************************************/
 /*___INFO__MARK_END__*/
 
-
 #include "basis_types.h"
 
-/*
-** shadowd.c
-*/
 #define MSG_SHADOWD_CANTREADQMASTERSPOOLDIRFROMX_S       _MESSAGE(35000, _("can't read qmaster_spool_dir from "SFQ))
 #define MSG_SHADOWD_FOUNDRUNNINGSHADOWDWITHPIDXNOTSTARTING_I   _MESSAGE(35001, _("found running shadowd with pid %d - not starting"))
 #define MSG_SHADOWD_CANTCHANGETOQMASTERSPOOLDIRX_S       _MESSAGE(35002, _("can't change to qmaster spool directory: "SFN))

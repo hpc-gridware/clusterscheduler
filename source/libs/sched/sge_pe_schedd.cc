@@ -38,16 +38,11 @@
 #include "uti/sge_log.h"
 
 #include "cull/cull.h"
-#include "cull/cull_list.h"
 
 #include "sgeobj/sge_pe.h"
-#include "sgeobj/sge_job.h"
-#include "sgeobj/sge_host.h"
 
 #include "sge_pe_schedd.h"
 #include "valid_queue_user.h"
-#include "sge_range_schedd.h"
-#include "schedd_monitor.h"
 #include "sge_schedd_text.h"
 #include "schedd_message.h"
 #include "msg_schedd.h"

@@ -35,7 +35,6 @@
 
 #include "sgeobj/sge_feature.h"
 #include "sgeobj/sge_job.h"
-#include "sgeobj/sge_pe.h"
 #include "sgeobj/sge_ja_task.h"
 
 #include "dispatcher.h"

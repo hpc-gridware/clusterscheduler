@@ -1,5 +1,4 @@
-#ifndef __MSG_SPOOLLIB_CLASSIC_H
-#define __MSG_SPOOLLIB_CLASSIC_H
+#pragma once
 /*___INFO__MARK_BEGIN__*/
 /*************************************************************************
  * 
@@ -34,9 +33,6 @@
 
 #include "basis_types.h"
 
-/*
- * libs/spool/read_write_job.c
- */
 #define MSG_CONFIG_READINGIN_S                        _MESSAGE(61000, _("Reading in "SFN"."))
 #define MSG_CONFIG_FAILEDREMOVINGSCRIPT_SS            _MESSAGE(61001, _("failed removing script of bad jobfile (reason: "SFN"): please delete "SFQ" manually"))
 #define MSG_CONFIG_REMOVEDSCRIPTOFBADJOBFILEX_S       _MESSAGE(61002, _("removed script of bad jobfile "SFQ))
@@ -44,5 +40,3 @@
 #define MSG_CONFIG_CANTFINDSCRIPTFILE_U               _MESSAGE(61004, _("can't find script file for job " sge_U32CFormat " - deleting"))
 #define MSG_CONFIG_JOBFILEXHASWRONGFILENAMEDELETING_U _MESSAGE(61005, _("job file \""sge_U32CFormat"\" has wrong file name - deleting"))
 #define MSG_CONFIG_JOBSPOOLINGLONGDELAY_UUI           _MESSAGE(61006, _("spooling job "sge_U32CFormat"."sge_U32CFormat" took %d seconds")) 
-
-#endif /* __MSG_SPOOLLIB_CLASSIC_H */

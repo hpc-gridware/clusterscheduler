@@ -35,16 +35,13 @@
 #include <string.h>
 
 #include "uti/sge_rmon.h"
-#include "uti/sge_time.h"
 #include "uti/sge_prog.h"
 #include "uti/sge_log.h"
-#include "uti/sge_lock.h"
 
 #include "sgeobj/sge_ack.h"
 #include "sgeobj/sge_centry.h"
 #include "sgeobj/sge_report.h"
 #include "sgeobj/sge_host.h"
-#include "sgeobj/sge_report.h"
 #include "sgeobj/sge_conf.h"
 #include "sgeobj/sge_answer.h"
 
@@ -57,7 +54,6 @@
 #include "qmaster_to_execd.h"
 #include "job_report_qmaster.h"
 #include "sge_persistence_qmaster.h"
-#include "evm/sge_event_master.h"
 #include "reschedule.h"
 
 static int update_license_data(sge_gdi_ctx_class_t *ctx, lListElem *hep, lList *lp_lic); 

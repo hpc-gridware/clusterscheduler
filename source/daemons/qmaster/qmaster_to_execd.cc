@@ -41,7 +41,6 @@
 
 #include "gdi/sge_gdi2.h"
 
-#include "sge.h"
 #include "qmaster_to_execd.h"
 #include "msg_qmaster.h"
 

@@ -35,8 +35,6 @@
 #include <string.h>
 #include <unistd.h>
 
-#include <fnmatch.h>
-
 #include "sge.h"
 
 #include "uti/sge_rmon.h"
@@ -50,11 +48,7 @@
 
 #include "cull/cull_list.h"
 
-#include "gdi/sge_gdi.h"
-#include "gdi/msg_gdilib.h"
-
 #include "sgeobj/sge_ja_task.h"
-#include "sgeobj/sge_pe_task.h"
 #include "sgeobj/sge_manop.h"
 #include "sgeobj/sge_range.h"
 #include "sgeobj/sge_var.h"
@@ -66,14 +60,12 @@
 #include "sgeobj/sge_centry.h"
 #include "sgeobj/sge_qinstance.h"
 #include "sgeobj/sge_host.h"
-#include "sgeobj/sge_mesobj.h"
 #include "sgeobj/sge_advance_reservation.h"
 #include "sgeobj/sge_userset.h"
 #include "sgeobj/sge_qref.h"
 #include "sgeobj/sge_utility.h"
 #include "sgeobj/sge_binding.h"
 #include "sgeobj/sge_job.h"
-#include "sgeobj/sge_conf.h"
 #include "sgeobj/msg_sgeobjlib.h"
 
 #include "symbols.h"

@@ -33,7 +33,6 @@
 #include <string.h>
 
 #include "uti/sge_rmon.h"
-#include "uti/sge_hostname.h"
 
 #include "cull/cull.h"
 
@@ -42,16 +41,12 @@
 #include "sgeobj/sge_host.h"
 #include "sgeobj/sge_qinstance.h"
 #include "sgeobj/sge_centry.h"
-#include "sgeobj/sge_schedd_conf.h"
 #include "sgeobj/sge_advance_reservation.h"
 
 #include "sge.h"
 #include "sge_select_queue.h"
 #include "sge_qeti.h"
 #include "sge_resource_utilization.h"
-#include "sge_select_queue.h"
-#include "sgeobj/cull/sge_resource_utilization_RDE_L.h"
-#include "sgeobj/cull/sge_resource_utilization_RUE_L.h"
 
 /* At that point in time we only keep references to in the iterator that
  * allow for efficiently iterating trough relevant queue end times in 

@@ -43,8 +43,6 @@
 #include "sgeobj/sge_answer.h"
 #include "sgeobj/msg_sgeobjlib.h"
 
-#include "sge.h"
-
 #define ANSWER_LAYER CULL_LAYER
 
 static bool answer_is_recoverable(const lListElem *answer);

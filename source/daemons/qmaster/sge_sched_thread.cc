@@ -98,11 +98,6 @@
 #include "sge_sched_thread.h"
 #include "sge_sched_order.h"
 
-#if 0
-#define SCHEDULER_TIMEOUT_S 10
-#define SCHEDULER_TIMEOUT_N 0
-#endif
-
 scheduler_control_t Scheduler_Control = {
    PTHREAD_MUTEX_INITIALIZER, 
    PTHREAD_COND_INITIALIZER, 

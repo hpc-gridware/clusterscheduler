@@ -31,7 +31,6 @@
  ************************************************************************/
 /*___INFO__MARK_END__*/
 
-
 #include "evc/sge_event_client.h"
 
 /****** schedlib/ssi/-Simple-Scheduler-Interface-Typedefs ***************************************

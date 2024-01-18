@@ -34,13 +34,9 @@
  * Based on David Flanagan's Xmt libary's Hash.c
  */
 
-#include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include <strings.h>
 #include <time.h>
-#include <limits.h>
-#include <unistd.h>
 #include <sys/times.h>
 
 #include "uti/sge_rmon.h"

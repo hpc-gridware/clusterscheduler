@@ -36,28 +36,19 @@
  */
 
 #include <stdio.h>
-#include <stdlib.h>
 #include <ctype.h>
 #include <string.h>
 #include <unistd.h>
-#include <errno.h>
-#include <limits.h>
 
 #include "uti/sge_rmon.h"
-#include "uti/sge_prog.h"
 #include "uti/sge_time.h"
 #include "uti/sge_log.h"
-#include "uti/sge_bootstrap.h"
 #include "uti/sge_lock.h"
 
-#include "sgeobj/sge_manop.h"
 #include "sgeobj/sge_conf.h"
-#include "sgeobj/sge_usage.h"
 #include "sgeobj/sge_attr.h"
 #include "sgeobj/cull_parse_util.h"
-#include "sgeobj/config.h"
 #include "sgeobj/sge_answer.h"
-#include "sgeobj/sge_qinstance.h"
 #include "sgeobj/sge_userprj.h"
 #include "sgeobj/sge_host.h"
 #include "sgeobj/sge_userset.h"
@@ -67,9 +58,6 @@
 #include "sgeobj/sge_suser.h"
 #include "sgeobj/sge_resource_quota.h"
 
-#include "gdi/sge_gdi.h"
-
-#include "sge.h"
 #include "sge_utility_qmaster.h"
 #include "sge_userprj_qmaster.h"
 #include "sge_userset_qmaster.h"

@@ -45,15 +45,11 @@
 
 #include "cull/cull_list.h"
 
-#include "sched/sge_resource_utilization.h"
-
 #include "sgeobj/sge_object.h"
-#include "sgeobj/sge_feature.h"
 #include "sgeobj/sge_answer.h"
 #include "sgeobj/sge_job.h"
 #include "sgeobj/sge_cqueue.h"
 #include "sgeobj/sge_attr.h"
-#include "sgeobj/sge_qinstance.h"
 #include "sgeobj/sge_range.h"
 #include "sgeobj/sge_userset.h"
 #include "sgeobj/sge_utility.h"

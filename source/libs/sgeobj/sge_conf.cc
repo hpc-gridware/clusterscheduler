@@ -32,10 +32,8 @@
  ************************************************************************/
 /*___INFO__MARK_END__*/
 #include <stdio.h>
-#include <errno.h>
 #include <string.h>
 #include <stdlib.h>
-#include <unistd.h>
 
 #ifdef LINUX
 #include <mcheck.h>
@@ -49,29 +47,20 @@
 #include "uti/sge_log.h"
 #include "uti/sge_string.h"
 #include "uti/sge_prog.h"
-#include "uti/setup_path.h"
-#include "uti/sge_hostname.h"
-#include "uti/sge_time.h"
 #include "uti/sge_profiling.h"
 #include "uti/config_file.h"
 #include "uti/sge_lock.h"
 
 #include "comm/commlib.h"
 
-#include "gdi/sge_gdi.h"
-
 #include "sgeobj/msg_sgeobjlib.h"
 #include "sgeobj/sge_conf.h"
-#include "sgeobj/sge_feature.h"
-#include "sgeobj/sge_usage.h"
-#include "sgeobj/sge_host.h"
 #include "sgeobj/sge_answer.h"
 #include "sgeobj/sge_userprj.h"
 #include "sgeobj/sge_userset.h"
 
 #include "sge.h"
 #include "basis_types.h"
-#include "sge_userset_qmaster.h"
 
 #define SGE_BIN "bin"
 #define STREESPOOLTIMEDEF 240

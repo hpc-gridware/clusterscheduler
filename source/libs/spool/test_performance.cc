@@ -34,32 +34,17 @@
 
 #include <stdio.h>
 #include <stdlib.h>
-#include <string.h>
-#include <unistd.h>
-#include <errno.h>
 #include <time.h>
 
 #include "uti/sge_rmon.h"
 #include "uti/sge_unistd.h"
 #include "uti/sge_profiling.h"
-#include "uti/sge_prog.h"
 #include "uti/sge_log.h"
 
 #include "sgeobj/sge_answer.h"
 #include "sgeobj/cull/sge_all_listsL.h"
-#include "sgeobj/sge_host.h"
-#include "sgeobj/sge_calendar.h"
 #include "sgeobj/sge_ckpt.h"
-#include "sgeobj/sge_conf.h"
 #include "sgeobj/sge_job.h"
-#include "sgeobj/sge_manop.h"
-#include "sgeobj/sge_sharetree.h"
-#include "sgeobj/sge_pe.h"
-#include "sgeobj/sge_schedd_conf.h"
-#include "sgeobj/sge_userprj.h"
-#include "sgeobj/sge_userset.h"
-#include "sgeobj/sge_event.h"
-#include "sgeobj/sge_hgroup.h"
 
 #include "mir/sge_mirror.h"
 
@@ -68,8 +53,6 @@
 #include "spool/sge_spooling.h"
 #include "spool/loader/sge_spooling_loader.h"
 
-#include "sig_handlers.h"
-#include "usage.h"
 #include "msg_clients_common.h"
 
 #ifndef TEST_READ_ONLY

@@ -43,9 +43,6 @@
  *----------------------------------------------------*/
 #include <stdio.h>
 #include <string.h>
-#include <strings.h>
-#include <stdlib.h>
-#include <string.h>
 
 #include "uti/sge_rmon.h"
 #include "uti/sge_time.h"

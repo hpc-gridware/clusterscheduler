@@ -37,8 +37,6 @@
 #include <pwd.h>
 #include <errno.h>
 #include <pthread.h>
-#include <sys/types.h>
-#include <sys/socket.h>  
 
 #include "uti/sge_rmon.h"
 #include "uti/sge_hostname.h"
@@ -52,8 +50,6 @@
 #include "uti/msg_utilib.h"
 
 #include "sgeobj/sge_answer.h"
-
-#include "sge.h"
 
 /* Must match Qxxx defines in sge_prog.h */
 const char *prognames[] =

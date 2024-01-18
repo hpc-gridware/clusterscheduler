@@ -41,7 +41,6 @@
 
 #include "sge_task_depend.h"
 #include "sge_job_qmaster.h"
-#include "evm/sge_event_master.h"
 
 static u_long32 task_depend_div_floor(u_long32 a, u_long32 b)
 {

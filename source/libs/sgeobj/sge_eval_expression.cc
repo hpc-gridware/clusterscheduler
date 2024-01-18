@@ -33,9 +33,7 @@
 #include <stdio.h>
 #include <string.h>
 #include <strings.h>
-#include <stdlib.h>
 #include <fnmatch.h>
-#include <string.h>
 #include <ctype.h>
 
 #include "uti/sge_rmon.h"
@@ -46,8 +44,6 @@
 #include "sgeobj/sge_answer.h"
 #include "sgeobj/sge_eval_expression.h"
 #include "sgeobj/msg_sgeobjlib.h"
-
-#include "msg_common.h"
 
 /* Local variables and definitions  */
 typedef struct _s_token {

@@ -36,8 +36,6 @@
 #include <stdlib.h>
 #include <string.h>
 #include <ctype.h>
-#include <errno.h>
-#include <stdarg.h>
 
 #include "uti/sge_rmon.h"
 #include "uti/sge_dstring.h"

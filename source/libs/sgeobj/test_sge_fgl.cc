@@ -2,17 +2,10 @@
 
 #include <stdlib.h>
 #include <stdio.h>
-#include <fnmatch.h>
 #include <pthread.h>
-#include <unistd.h>
-
-#include "cull/cull_list.h"
 
 #include "uti/sge_rmon.h"
 #include "uti/sge_fgl.h"
-#include "uti/sge_err.h"
-#include "uti/sge_thread_ctrl.h"
-#include "uti/sge_mtutil.h"
 #include "uti/sge_dstring.h"
 #include "uti/sge_bootstrap.h"
 

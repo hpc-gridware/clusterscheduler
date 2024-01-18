@@ -36,7 +36,6 @@
 #include "uti/sge_bootstrap.h"
 #include "uti/sge_profiling.h"
 #include "uti/sge_err.h"
-#include "uti/sge_lock.h"
 
 #include "sgeobj/sge_feature.h"
 #include "sgeobj/sge_object.h"

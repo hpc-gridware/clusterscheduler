@@ -30,8 +30,6 @@
  ************************************************************************/
 /*___INFO__MARK_END__*/
 
-#include "sge.h"
-
 #include <time.h>
 #include <ctype.h>
 
@@ -43,11 +41,9 @@
 #include "uti/sge_parse_num_par.h"
 #include "uti/sge_binding_parse.h"
 
-#include "gdi/sge_gdi.h"
 #include "gdi/sge_gdi_ctx.h"
 
 #include "sgeobj/cull_parse_util.h"
-#include "sgeobj/sge_advance_reservation.h"
 #include "sgeobj/sge_answer.h"
 #include "sgeobj/sge_ckpt.h"
 #include "sgeobj/sge_centry.h"

@@ -40,14 +40,12 @@
 
 #include "sgeobj/sge_pe.h"
 #include "sgeobj/sge_job.h"
-#include "sgeobj/sge_centry.h"
 #include "sgeobj/sge_qinstance.h"
 #include "sgeobj/sge_subordinate.h"
 #include "sgeobj/sge_order.h"
 #include "sgeobj/sge_schedd_conf.h"
 #include "sgeobj/sge_host.h"
 #include "sgeobj/sge_advance_reservation.h"
-#include "sgeobj/sge_sharetree.h"
 
 #include "sge_resource_quota_schedd.h"
 #include "sge_resource_utilization.h"

@@ -45,13 +45,10 @@
 #include "sgeobj/sge_schedd_conf.h"
 #include "sgeobj/sge_job.h"
 #include "sgeobj/sge_centry.h"
-#include "sgeobj/sge_feature.h"
 #include "sgeobj/sge_range.h"
 #include "sgeobj/sge_pe.h"
 
 #include "sge_urgency.h"
-#include "sge_sched_process_events.h"
-
 
 static void sge_normalize_urgency(lList *job_list, double min_urgency, 
    double max_urgency);

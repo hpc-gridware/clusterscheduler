@@ -30,18 +30,14 @@
  ************************************************************************/
 /*___INFO__MARK_END__*/
 #include <string.h>
-#include <strings.h>
 
 #include "uti/sge_rmon.h"
 #include "uti/sge_prog.h"
 #include "uti/sge_log.h"
 
 #include "sgeobj/sge_usage.h"
-#include "sgeobj/sge_host.h"
 #include "sgeobj/sge_report.h"
 #include "sgeobj/sge_load.h"
-
-#include "gdi/qm_name.h"
 
 #include "comm/commlib.h"
 

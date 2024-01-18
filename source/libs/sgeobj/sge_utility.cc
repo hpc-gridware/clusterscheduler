@@ -33,25 +33,16 @@
 #include <ctype.h>
 #include <string.h>
 
-#include "cull/cull_list.h"
+#include "comm/cl_communication.h"
 
-#include "comm/cl_communication.h" 
-
-#include "uti/sge_rmon.h"
 #include "uti/sge_log.h"
-#include "uti/sge_string.h"
 
 #include "sgeobj/parse.h"
-#include "sgeobj/sge_str.h"
-#include "sgeobj/sge_id.h"
 #include "sgeobj/sge_answer.h"
 #include "sgeobj/sge_utility.h"
 #include "sgeobj/msg_sgeobjlib.h"
 
-#include "msg_common.h"
 #include "msg_qmaster.h"
-
-
 
 /****** sge_utility/verify_str_key() *******************************************
 *  NAME

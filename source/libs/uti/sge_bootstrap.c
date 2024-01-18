@@ -31,7 +31,6 @@
 /*___INFO__MARK_END__*/
 
 #include <string.h>
-#include <errno.h>
 #include <pthread.h>
 
 #include "basis_types.h"
@@ -41,7 +40,6 @@
 #include "uti/sge_string.h"
 #include "uti/sge_dstring.h"
 #include "uti/sge_parse_num_par.h"
-#include "uti/sge_hostname.h"
 #include "uti/sge_spool.h"
 #include "uti/setup_path.h"
 #include "uti/msg_utilib.h"

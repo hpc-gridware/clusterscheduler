@@ -30,15 +30,10 @@
  ************************************************************************/
 /*___INFO__MARK_END__*/
 #include <string.h>
-#include <stdlib.h>
 
 #include "uti/sge_rmon.h"
-#include "uti/sge_prog.h"
 #include "uti/sge_log.h"
-#include "uti/setup_path.h"
-#include "uti/sge_unistd.h"
 #include "uti/sge_time.h"
-#include "uti/sge_hostname.h"
 
 #include "sgeobj/sge_host.h"
 #include "sgeobj/sge_ja_task.h"
@@ -49,8 +44,6 @@
 #include "sgeobj/sge_cqueue.h"
 #include "sgeobj/sge_answer.h"
 
-#include "sge.h"
-#include "sge_job_qmaster.h"
 #include "sge_pe_qmaster.h"
 #include "sge_give_jobs.h"
 #include "execution_states.h"

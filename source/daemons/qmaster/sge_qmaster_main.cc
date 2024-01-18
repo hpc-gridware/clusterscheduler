@@ -33,8 +33,6 @@
 #include <signal.h>
 #include <fcntl.h>
 
-#include <sys/resource.h>
-
 #include "uti/sge_rmon.h"
 #include "uti/sge_prog.h"
 #include "uti/sge_log.h"
@@ -42,12 +40,9 @@
 #include "uti/sge_profiling.h"
 #include "uti/sge_time.h"
 #include "uti/sge_monitor.h"
-#include "uti/sge_bootstrap.h"
 #include "uti/sge_thread_ctrl.h"
 
 #include "sgeobj/sge_conf.h"
-#include "sgeobj/sge_answer.h"
-#include "sgeobj/sge_manop.h"
 
 #include "comm/cl_commlib.h"
 
@@ -64,11 +59,7 @@
 #include "sge_thread_worker.h"
 #include "sge_thread_event_master.h"
 #include "setup_qmaster.h"
-#include "sge_qmaster_process_message.h"
 #include "evm/sge_event_master.h"
-#include "sge_persistence_qmaster.h"
-#include "sge_reporting_qmaster.h"
-#include "sge_qmaster_timed_event.h"
 #include "sge_host_qmaster.h"
 #include "qmaster_heartbeat.h"
 #include "shutdown.h"

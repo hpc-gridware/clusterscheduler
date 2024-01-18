@@ -31,12 +31,10 @@
 /*___INFO__MARK_END__*/
 
 #include <string.h>
-#include <fnmatch.h>
 
 #include "uti/sge_rmon.h" 
 #include "uti/sge_string.h"
 #include "uti/sge_log.h"
-#include "uti/sge_hostname.h"
 
 #include "comm/commlib.h"
 
@@ -47,10 +45,8 @@
 #include "sgeobj/sge_eval_expression.h"
 #include "sgeobj/sge_href.h"
 #include "sgeobj/sge_hgroup.h"
-#include "sgeobj/sge_object.h"
 #include "sgeobj/sge_qinstance.h"
 #include "sgeobj/sge_qref.h"
-#include "sgeobj/sge_str.h"
 #include "sgeobj/msg_sgeobjlib.h"
 
 #include "basis_types.h"

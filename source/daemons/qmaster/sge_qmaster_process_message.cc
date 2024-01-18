@@ -35,14 +35,12 @@
 #include <string.h>
 #include <unistd.h>
 
-#include "uti/sge_mtutil.h"
 #include "uti/sge_lock.h"
 #include "uti/sge_rmon.h"
 #include "uti/sge_time.h"
 #include "uti/sge_log.h"
 #include "uti/sge_string.h"
 #include "uti/sge_prog.h"
-#include "uti/sge_bootstrap.h"
 
 #include "sgeobj/sge_conf.h"
 #include "sgeobj/sge_ja_task.h"
@@ -63,7 +61,6 @@
 
 #include "evm/sge_event_master.h"
 
-#include "sig_handlers.h"
 #include "sge_c_gdi.h"
 #include "sge_c_report.h"
 #include "sge_qmaster_main.h"
