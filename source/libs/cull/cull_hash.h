@@ -1,5 +1,4 @@
-#ifndef __CULL_HASH_H
-#define __CULL_HASH_H
+#pragma once
 /*___INFO__MARK_BEGIN__*/
 /*************************************************************************
  * 
@@ -60,6 +59,3 @@ void cull_hash_recreate_after_sort(lList *lp);
 #ifdef  __cplusplus
 }
 #endif
-
-#endif /* #ifndef __CULL_HASH_H */
-

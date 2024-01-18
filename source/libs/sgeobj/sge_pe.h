@@ -1,5 +1,4 @@
-#ifndef __SGE_PE_H 
-#define __SGE_PE_H 
+#pragma once
 /*___INFO__MARK_BEGIN__*/
 /*************************************************************************
  *
@@ -89,5 +88,3 @@ pe_validate_qsort_args(lList **alpp, const char *qsort_args,
 
 bool
 pe_do_accounting_summary(const lListElem *pe);
-
-#endif /* __SGE_PE_H */

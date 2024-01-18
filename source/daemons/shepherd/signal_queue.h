@@ -1,5 +1,4 @@
-#ifndef __SIGNAL_QUEUE_H
-#define __SIGNAL_QUEUE_H
+#pragma once
 /*___INFO__MARK_BEGIN__*/
 /*************************************************************************
  *
@@ -41,6 +40,3 @@ void clear_queued_signals(void);
 void report_signal_queue(void);
 
 int shepherd_sys_str2signal(char *override_signal);
-
-
-#endif /* __SIGNAL_QUEUE_H */

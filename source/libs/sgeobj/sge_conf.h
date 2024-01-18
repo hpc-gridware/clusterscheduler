@@ -1,5 +1,4 @@
-#ifndef __SGE_CONF_H
-#define __SGE_CONF_H
+#pragma once
 /*___INFO__MARK_BEGIN__*/
 /*************************************************************************
  * 
@@ -163,5 +162,3 @@ int mconf_get_jsv_timeout(void);
 int mconf_get_jsv_threshold(void);
 bool mconf_get_ignore_ngroups_max_limit(void);
 bool mconf_get_enable_submit_lib_path(void);
-
-#endif /* __SGE_CONF_H */

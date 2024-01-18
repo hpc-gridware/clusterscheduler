@@ -1,5 +1,4 @@
-#ifndef __CULL_PARSE_UTIL_H
-#define __CULL_PARSE_UTIL_H
+#pragma once
 /*___INFO__MARK_BEGIN__*/
 /*************************************************************************
  * 
@@ -82,5 +81,3 @@ int cull_parse_path_list(lList **lpp, const char *path_str);
 int cull_parse_jid_hold_list(lList **lpp, const char *str);
 
 int sge_parse_hold_list(const char *hold_str, u_long32 prog_number);
-
-#endif /* __CULL_PARSE_UTIL_H */

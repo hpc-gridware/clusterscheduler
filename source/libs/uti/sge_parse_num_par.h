@@ -1,5 +1,4 @@
-#ifndef __SGE_PARSE_NUM_PAR_H
-#define __SGE_PARSE_NUM_PAR_H
+#pragma once
 /*___INFO__MARK_BEGIN__*/
 /*************************************************************************
  * 
@@ -67,6 +66,3 @@ u_long32 sge_parse_num_val(sge_rlim_t *rlimp, double *dvalp,
 #ifdef __cplusplus
 }
 #endif
-
-#endif /* __SGE_PARSE_NUM_PAR_H */
-

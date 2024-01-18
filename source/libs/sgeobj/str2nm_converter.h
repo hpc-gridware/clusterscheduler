@@ -1,5 +1,4 @@
-#ifndef _STR2NM_CONVERTER_H_
-#define _STR2NM_CONVERTER_H_
+#pragma once
 /*___INFO__MARK_BEGIN__*/
 /*************************************************************************
  * 
@@ -33,5 +32,3 @@
 /*___INFO__MARK_END__*/
 
 int lStr2NmGenerator(const char *str, lNameSpace *ns);
-
-#endif

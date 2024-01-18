@@ -1,5 +1,4 @@
-#ifndef _SGE_LOCK_H_
-#define _SGE_LOCK_H_
+#pragma once
 
 /*___INFO__MARK_BEGIN__*/
 /*************************************************************************
@@ -101,5 +100,3 @@ sge_locker_id(void);
 #ifdef __cplusplus
 }
 #endif
-
-#endif /* _SGE_LOCK_H_ */

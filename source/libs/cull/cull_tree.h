@@ -1,5 +1,4 @@
-#ifndef __CULL_TREE_H
-#define __CULL_TREE_H
+#pragma once
 /*___INFO__MARK_BEGIN__*/
 /*************************************************************************
  * 
@@ -44,6 +43,3 @@ int lGetNumberOfLeafs(const lListElem *ep, const lList *lp, int nm);
 #ifdef  __cplusplus
 }
 #endif
-
-#endif /* __CULL_TREE_H */
-

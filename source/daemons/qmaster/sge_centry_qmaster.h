@@ -1,5 +1,4 @@
-#ifndef __SGE_CENTRY_QMASTER_H
-#define __SGE_CENTRY_QMASTER_H
+#pragma once
 /*___INFO__MARK_BEGIN__*/
 /*************************************************************************
  *
@@ -53,6 +52,3 @@ centry_mod(sge_gdi_ctx_class_t *ctx,
 
 void
 centry_redebit_consumables(sge_gdi_ctx_class_t *ctx, const lList *centries);
-
-#endif /* __SGE_CENTRY_QMASTER_H */
-

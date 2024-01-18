@@ -1,5 +1,4 @@
-#ifndef _REPORT_H
-#define _REPORT_H
+#pragma once
 /*___INFO__MARK_BEGIN__*/
 /*************************************************************************
  * 
@@ -48,6 +47,3 @@ int sge_send_all_reports(sge_gdi_ctx_class_t *ctx, u_long32 now, int which, repo
 int sge_add_double2load_report(lList **lpp, char *name, double value, const char *host, char *units);
 int sge_add_int2load_report(lList **lpp, const char *name, int value, const char *host);
 int sge_add_str2load_report(lList **lpp, const char *name, const char *value, const char *host);
-
-#endif /* _REPORT_H */
-

@@ -1,5 +1,4 @@
-#ifndef __SGE_QUEUE_EVENT_MASTER_H
-#define __SGE_QUEUE_EVENT_MASTER_H
+#pragma once
 /*___INFO__MARK_BEGIN__*/
 /*************************************************************************
  *
@@ -39,5 +38,3 @@ qinstance_add_event(lListElem *this_elem, ev_event type);
 
 void
 cqueue_add_event(lListElem *this_elem, ev_event type);
-
-#endif /* __SGE_QUEUE_EVENT_MASTER_H */

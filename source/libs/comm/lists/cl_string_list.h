@@ -1,6 +1,4 @@
-#ifndef __CL_STRING_LIST_H
-#define __CL_STRING_LIST_H
-
+#pragma once
 /*___INFO__MARK_BEGIN__*/
 /*************************************************************************
  *
@@ -63,6 +61,3 @@ cl_string_list_elem_t* cl_string_list_get_last_elem(cl_string_list_elem_t* elem)
 #ifdef __cplusplus
 }
 #endif
-
-#endif /* __CL_STRING_LIST_H */
-

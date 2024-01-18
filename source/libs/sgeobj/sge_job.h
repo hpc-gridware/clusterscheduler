@@ -1,5 +1,4 @@
-#ifndef __SGE_JOB_H 
-#define __SGE_JOB_H 
+#pragma once
 /*___INFO__MARK_BEGIN__*/
 /*************************************************************************
  *
@@ -462,5 +461,3 @@ job_is_requesting_consumable(lListElem *jep, const char *resource_name);
 
 bool
 job_init_binding_elem(lListElem *jep);
-
-#endif /* __SGE_JOB_H */    

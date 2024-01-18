@@ -1,5 +1,4 @@
-#ifndef __SGE_BDB_H 
-#define __SGE_BDB_H 
+#pragma once
 /*___INFO__MARK_BEGIN__*/
 /*************************************************************************
  *
@@ -127,5 +126,3 @@ char *
 spool_berkeleydb_read_string(lList **answer_list, bdb_info info,
                              const bdb_database database,
                              const char *key);
-                             
-#endif /* __SGE_BDB_H */    

@@ -1,5 +1,4 @@
-#ifndef __CULL_MULTITYPEP_H
-#define __CULL_MULTITYPEP_H
+#pragma once
 /*___INFO__MARK_BEGIN__*/
 /*************************************************************************
  * 
@@ -60,4 +59,3 @@ union _lMultiType {
 #ifdef  __cplusplus
 }
 #endif
-#endif /* #ifndef __CULL_MULTITYPEP_H */

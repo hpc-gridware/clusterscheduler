@@ -1,5 +1,4 @@
-#ifndef __SGE_BINDING_HLP_H
-#define __SGE_BINDING_HLP_H
+#pragma once
 
 /*___INFO__MARK_BEGIN__*/
 
@@ -108,6 +107,4 @@ bool topology_string_to_socket_core_lists(const char* topology, int** sockets,
 #ifdef __cplusplus
 }
 #endif
-
-#endif /* __SGE_BINDING_HLP_H */
 

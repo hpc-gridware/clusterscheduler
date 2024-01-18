@@ -1,5 +1,4 @@
-#ifndef __SGE_SERF_H 
-#define __SGE_SERF_H 
+#pragma once
 /*___INFO__MARK_BEGIN__*/
 /*************************************************************************
  *
@@ -80,5 +79,3 @@ void serf_record_entry(u_long32 job_id, u_long32 ja_taskid,
             const char *object_name, const char *name, double utilization);
 void serf_new_interval(u_long32 time);
 void serf_exit(void);
-
-#endif /* __SGE_SERF_H */

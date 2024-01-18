@@ -1,5 +1,4 @@
-#ifndef _SGE_LOCK_FIFO_H_
-#define _SGE_LOCK_FIFO_H_
+#pragma once
 
 #include <pthread.h>
 
@@ -108,6 +107,4 @@ sge_debug_time(sge_locktype_t aType);
 
 #ifdef __cplusplus
 }
-#endif
-
 #endif

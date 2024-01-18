@@ -1,5 +1,4 @@
-#ifndef __SGE_RESOURCE_UTILIZATION_H 
-#define __SGE_RESOURCE_UTILIZATION_H 
+#pragma once
 /*___INFO__MARK_BEGIN__*/
 /*************************************************************************
  *
@@ -54,5 +53,3 @@ void prepare_resource_schedules(const lList *running_jobs,
       const lList *suspended_jobs, lList *pe_list, lList *host_list,
       lList *queue_list, lList *rqs_list, const lList *centry_list, const lList *acl_list,
       const lList *hgroup_list, lList *ar_list, bool for_job_scheduling, u_long32 now);
-
-#endif /* __SGE_RESOURCE_UTILIZATION_H */

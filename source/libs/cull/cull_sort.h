@@ -1,5 +1,4 @@
-#ifndef __CULL_SORT_H
-#define __CULL_SORT_H
+#pragma once
 /*___INFO__MARK_BEGIN__*/
 /*************************************************************************
  * 
@@ -60,6 +59,3 @@ int lAddSortCriteria(const lDescr *dp, lSortOrder *so, int nm, int up_down_flag)
 #ifdef  __cplusplus
 }
 #endif
-
-#endif /* __CULL_SORT_H */
-

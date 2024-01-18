@@ -1,5 +1,4 @@
-#ifndef __REAPER_EXECD_H
-#define __REAPER_EXECD_H
+#pragma once
 /*___INFO__MARK_BEGIN__*/
 /*************************************************************************
  * 
@@ -46,4 +45,3 @@ void reaper_sendmail(sge_gdi_ctx_class_t *ctx, lListElem *jep, lListElem *jr);
 
 void execd_slave_job_exit(u_long32 job_id, u_long32 ja_task_id);
 int count_master_tasks(const lList *lp, u_long32 job_id);
-#endif

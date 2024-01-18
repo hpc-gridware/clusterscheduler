@@ -1,5 +1,4 @@
-#ifndef __SUSPEND_THRESHOLDS_H
-#define __SUSPEND_THRESHOLDS_H
+#pragma once
 /*___INFO__MARK_BEGIN__*/
 /*************************************************************************
  * 
@@ -37,5 +36,3 @@
 void suspend_job_in_queues(lList *susp_queues, lList *job_list, order_t *orders);
 
 void unsuspend_job_in_queues(lList *queue_list, lList *job_list, order_t *orders);
-
-#endif /* __SUSPEND_THRESHOLDS_H */

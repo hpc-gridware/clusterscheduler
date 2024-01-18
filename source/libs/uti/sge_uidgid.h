@@ -1,5 +1,4 @@
-#ifndef __SGE_UIDGID_H
-#define __SGE_UIDGID_H
+#pragma once
 /*___INFO__MARK_BEGIN__*/
 /*************************************************************************
  * 
@@ -97,6 +96,3 @@ int getgrgid_r(gid_t , struct group *,  char *, size_t, struct group **);
 #ifdef __cplusplus
 }
 #endif
-
-#endif /* __SGE_UIDGID_H */
-

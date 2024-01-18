@@ -1,5 +1,4 @@
-#ifndef __SGE_PACKET_INTERNAL_H
-#define __SGE_PACKET_INTERNAL_H
+#pragma once
 /*___INFO__MARK_BEGIN__*/
 /*************************************************************************
  * 
@@ -61,5 +60,3 @@ sge_gdi_packet_wait_for_result_external(sge_gdi_ctx_class_t* ctx, lList **answer
 bool 
 sge_gdi_packet_wait_for_result_internal(sge_gdi_ctx_class_t* ctx, lList **answer_list,
                                         sge_gdi_packet_class_t **packet_handle, lList **malpp);
-
-#endif 

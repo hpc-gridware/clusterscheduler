@@ -1,5 +1,4 @@
-#ifndef __SGERMON_H
-#define __SGERMON_H
+#pragma once
 /*___INFO__MARK_BEGIN__*/
 /*************************************************************************
  * 
@@ -209,5 +208,3 @@ extern "C" {
 #define SGE_EXIT(x, y)     sge_exit((x), (y))
 
 #endif /* NO_SGE_COMPILE_DEBUG */
-
-#endif /* __SGERMON_H */

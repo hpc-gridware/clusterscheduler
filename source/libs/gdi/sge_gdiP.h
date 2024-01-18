@@ -1,5 +1,4 @@
-#ifndef __SGE_GDIP_H
-#define __SGE_GDIP_H
+#pragma once
 /*___INFO__MARK_BEGIN__*/
 /*************************************************************************
  * 
@@ -37,5 +36,3 @@
 
 u_long32 
 gdi_state_get_next_request_id(void);
-
-#endif /* __SGE_GDI_INTERN_H */

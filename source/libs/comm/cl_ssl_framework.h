@@ -1,6 +1,4 @@
-#ifndef __CL_SSL_FRAMEWORK_H
-#define __CL_SSL_FRAMEWORK_H
-
+#pragma once
 /*___INFO__MARK_BEGIN__*/
 /*************************************************************************
  *
@@ -147,6 +145,3 @@ int cl_com_ssl_open_connection_request_handler(cl_com_handle_t*      handle,
 #ifdef __cplusplus
 }
 #endif
-
-#endif /* __CL_SSL_FRAMEWORK_H */
-

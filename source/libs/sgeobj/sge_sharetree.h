@@ -1,5 +1,4 @@
-#ifndef __SGE_SHARETREE_H 
-#define __SGE_SHARETREE_H 
+#pragma once
 /*___INFO__MARK_BEGIN__*/
 /*************************************************************************
  *
@@ -96,5 +95,3 @@ lListElem *search_ancestor_list ( lListElem *ep, char *name, ancestors_t *ancest
 #endif
 lListElem *search_ancestors(lListElem *ep, char *name,
                                    ancestors_t *ancestors, int depth);
-
-#endif /* __SGE_SHARETREE_H */

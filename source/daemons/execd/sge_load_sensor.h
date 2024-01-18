@@ -1,5 +1,4 @@
-#ifndef __SGE_LOAD_SENSOR_H
-#define __SGE_LOAD_SENSOR_H
+#pragma once
 /*___INFO__MARK_BEGIN__*/
 /*************************************************************************
  * 
@@ -58,6 +57,3 @@ void sge_ls_gnu_ls(int);
 void set_ls_fds(fd_set *fds);
 
 int sge_ls_stop_if_pid(pid_t pid);
-
-#endif /* __SGE_LOAD_SENSOR_H */
-

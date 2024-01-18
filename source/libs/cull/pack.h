@@ -1,5 +1,4 @@
-#ifndef __PACK_H
-#define __PACK_H
+#pragma once
 /*___INFO__MARK_BEGIN__*/
 /*************************************************************************
  * 
@@ -155,8 +154,3 @@ const char *cull_pack_strerror(int errnum);
 #ifdef  __cplusplus
 }
 #endif
-
-#endif /* __PACK_H */
-
-
-

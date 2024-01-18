@@ -1,8 +1,5 @@
-#ifndef __SGE_BINDING_PARSE_H
-#define __SGE_BINDING_PARSE_H
-
+#pragma once
 /*___INFO__MARK_BEGIN__*/
-
 /*************************************************************************
  * 
  *  The Contents of this file are made available subject to the terms of
@@ -63,6 +60,3 @@ binding_printf_explicit_sockets_cores(dstring *string, int *socket_array, int so
 #ifdef __cplusplus
 }
 #endif
-
-#endif /* __SGE_BINDING_PARSE_H */
-

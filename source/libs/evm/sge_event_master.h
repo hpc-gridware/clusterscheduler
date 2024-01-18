@@ -1,5 +1,4 @@
-#ifndef __SGE_M_EVENT_H
-#define __SGE_M_EVENT_H
+#pragma once
 /*___INFO__MARK_BEGIN__*/
 /*************************************************************************
  * 
@@ -147,5 +146,3 @@ void sge_event_master_shutdown(void);
 void sge_event_master_init(void);
 bool sge_commit(void);
 void sge_set_commit_required(void);
-
-#endif /* __SGE_M_EVENT_H */

@@ -1,5 +1,4 @@
-#ifndef __ERR_TRACE_H
-#define __ERR_TRACE_H
+#pragma once
 /*___INFO__MARK_BEGIN__*/
 /*************************************************************************
  * 
@@ -51,5 +50,3 @@ void shepherd_write_exit_status( const char *exit_status );
 
 int  is_shepherd_trace_fd( int fd );
 int  count_exit_status(void);
-
-#endif /* __ERR_TRACE_H */

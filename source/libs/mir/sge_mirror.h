@@ -1,5 +1,4 @@
-#ifndef __SGE_MIRROR_H
-#define __SGE_MIRROR_H
+#pragma once
 /*___INFO__MARK_BEGIN__*/
 /*************************************************************************
  * 
@@ -211,5 +210,3 @@ sge_mirror_update_master_list_str_key(lList **list, const lDescr *list_descr,
 
 /* Error Handling */
 const char *sge_mirror_strerror(sge_mirror_error num);
-
-#endif /* __SGE_MIRROR_H */

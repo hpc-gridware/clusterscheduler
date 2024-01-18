@@ -33,6 +33,8 @@
 
 #include "basis_types.h"
 
+// clang-format off
+
 #define MSG_QCONF_NEEDAHOSTNAMEORALL                  _MESSAGE(5000, _("Need a hostname or the keyword \"all\""))
 #define MSG_QCONF_NOOPTIONARGPROVIDEDTOX_S            _MESSAGE(5001, _("no option argument provided to "SFQ""))
 #define MSG_QCONF_BAD_ATTR_ARGS_SS                    _MESSAGE(5002, _("The attribute name ("SFQ") and/or value ("SFQ") is invalid"))
@@ -42,7 +44,7 @@
 #define MSG_QCONF_NOATTRIBUTEGIVEN                    _MESSAGE(5006, _("No attribute given"))
 #define MSG_QCONF_GIVENOBJECTINSTANCEINCOMPLETE_S     _MESSAGE(5007, _("Given object_instance "SFQ" is incomplete"))
 #define MSG_QCONF_MODIFICATIONOFHOSTNOTSUPPORTED_S    _MESSAGE(5008, _("Modification of host "SFQ" not supported"))
-#define MSG_QCONF_POSITIVE_SHARE_VALUE                _MESSAGE(5008, _("share value must be positive"))
+#define MSG_QCONF_POSITIVE_SHARE_VALUE                _MESSAGE(5009, _("share value must be positive"))
 
 #define MSG_ACL_USERINACL_SS                          _MESSAGE(5050, _(SFQ" is already in access list "SFQ))
 #define MSG_ACL_CANTADDTOACL_SS                       _MESSAGE(5051, _("can't add "SFQ" to access list "SFQ))
@@ -68,5 +70,5 @@
 
 #define MSG_RQS_NOTFOUNDINFILE_SS                     _MESSAGE(5251, _("resource quota set "SFQ" not found in file "SFQ))
 
-
+// clang-format on
 

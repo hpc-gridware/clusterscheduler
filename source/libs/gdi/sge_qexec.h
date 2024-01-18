@@ -1,5 +1,4 @@
-#ifndef _SGE_QEXEC_H_
-#define _SGE_QEXEC_H_
+#pragma once
 /*___INFO__MARK_BEGIN__*/
 /*************************************************************************
  * 
@@ -70,5 +69,3 @@ sge_tid_t sge_qexecve(sge_gdi_ctx_class_t *context,
 int sge_qwaittid(sge_gdi_ctx_class_t *context, sge_tid_t tid, int *status, int options);
 
 const char *qexec_last_err(void);
-
-#endif /* _SGE_QEXEC_H_ */

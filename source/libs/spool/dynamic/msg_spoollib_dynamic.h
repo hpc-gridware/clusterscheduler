@@ -1,5 +1,4 @@
-#ifndef __MSG_SPOOLLIB_DYNAMIC_H
-#define __MSG_SPOOLLIB_DYNAMIC_H
+#pragma once
 /*___INFO__MARK_BEGIN__*/
 /*************************************************************************
  * 
@@ -39,6 +38,4 @@
 #define MSG_SPOOL_LOADINGSPOOLINGMETHOD_SS   _MESSAGE(68002, _("loading spooling method "SFQ" from shared library "SFQ))
 #define MSG_SPOOL_SHLIBGETMETHODRETURNSNULL_S   _MESSAGE(68003, _("spooling shared library "SFQ" returns NULL as spooling method"))
 #define MSG_SPOOL_SHLIBCONTAINSXWENEEDY_SSS   _MESSAGE(68004, _("spooling shared library "SFQ" contains spooling method "SFQ", requested spooling method is "SFQ))
-
-#endif /* __MSG_SPOOLLIB_DYNAMIC_H */
 

@@ -1,6 +1,4 @@
-#ifndef __CL_CONNECTION_LIST_H
-#define __CL_CONNECTION_LIST_H
-
+#pragma once
 /*___INFO__MARK_BEGIN__*/
 /*************************************************************************
  *
@@ -78,6 +76,3 @@ char *cl_create_endpoint_string(cl_com_endpoint_t *endpoint);
 #ifdef __cplusplus
 }
 #endif
-
-#endif /* __CL_CONNECTION_LIST_H */
-

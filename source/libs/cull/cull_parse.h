@@ -1,5 +1,4 @@
-#ifndef __CULL_PARSE_H
-#define __CULL_PARSE_H
+#pragma once
 /*___INFO__MARK_BEGIN__*/
 /*************************************************************************
  * 
@@ -97,6 +96,3 @@ enum {
 #ifdef  __cplusplus
 }
 #endif
-
-#endif /* __CULL_PARSE_H */
-

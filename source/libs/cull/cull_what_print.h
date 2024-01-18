@@ -1,5 +1,4 @@
-#ifndef __CULL_WHAT_PRINT_H
-#define __CULL_WHAT_PRINT_H
+#pragma once
 /*___INFO__MARK_BEGIN__*/
 /*************************************************************************
  * 
@@ -47,6 +46,3 @@ void lWriteWhatToDString(const lEnumeration *ep, dstring *buffer);
 #ifdef  __cplusplus
 }
 #endif
-
-#endif /* __CULL_WHAT_PRINT_H */
-

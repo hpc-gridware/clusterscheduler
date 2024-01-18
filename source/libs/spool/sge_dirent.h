@@ -1,5 +1,4 @@
-#ifndef __UTILITY_DAEMON_H
-#define __UTILITY_DAEMON_H
+#pragma once
 /*___INFO__MARK_BEGIN__*/
 /*************************************************************************
  * 
@@ -37,5 +36,3 @@ lList *sge_get_dirents(const char *path);
 u_long32 sge_count_dirents(char *path);
 
 int has_more_dirents(char *directory_name, u_long32 number_of_entries);
-
-#endif /* __UTILITY_DAEMON_H */

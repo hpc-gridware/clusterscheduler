@@ -1,6 +1,4 @@
-#ifndef __CL_XML_PARSING_H
-#define __CL_XML_PARSING_H
-
+#pragma once
 /*___INFO__MARK_BEGIN__*/
 /*************************************************************************
  *
@@ -457,6 +455,3 @@ int cl_com_transformXML2String(const char* input, char** output);
 #ifdef __cplusplus
 }
 #endif
-
-#endif /* __CL_XML_PARSING_H */
-

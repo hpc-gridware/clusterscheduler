@@ -1,5 +1,4 @@
-#ifndef __MSG_HISTORY_H
-#define __MSG_HISTORY_H
+#pragma once
 /*___INFO__MARK_BEGIN__*/
 /*************************************************************************
  * 
@@ -125,5 +124,3 @@
 #define MSG_HISTORY_SHOWJOB_IOW               "iow"
 #define MSG_HISTORY_SHOWJOB_MAXVMEM           "maxvmem"
 #define MSG_HISTORY_SHOWJOB_ARID              "arid"
-
-#endif /* __MSG_HISTORY_H   */

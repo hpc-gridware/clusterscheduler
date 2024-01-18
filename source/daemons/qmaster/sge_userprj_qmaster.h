@@ -1,5 +1,4 @@
-#ifndef _SGE_USERPRJ_QMASTER_H_
-#define _SGE_USERPRJ_QMASTER_H_
+#pragma once
 /*___INFO__MARK_BEGIN__*/
 /*************************************************************************
  *
@@ -59,6 +58,3 @@ void sge_automatic_user_cleanup_handler(sge_gdi_ctx_class_t *ctx, te_event_t anE
 int sge_add_auto_user(sge_gdi_ctx_class_t *ctx, const char *user, lList **alpp, monitoring_t *monitor);
 
 void project_update_categories(const lList *added, const lList *removed);
-
-#endif /* _SGE_USERPRJ_QMASTER_H_ */
-

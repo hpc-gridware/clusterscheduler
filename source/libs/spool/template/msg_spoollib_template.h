@@ -1,5 +1,4 @@
-#ifndef __MSG_SPOOLLIB_TEMPLATE_H
-#define __MSG_SPOOLLIB_TEMPLATE_H
+#pragma once
 /*___INFO__MARK_BEGIN__*/
 /*************************************************************************
  * 
@@ -31,8 +30,3 @@
  * 
  ************************************************************************/
 /*___INFO__MARK_END__*/
-
-/* 
- * libs/spool/sge_spooling_template.c
- */
-#endif /* __MSG_SPOOLLIB_TEMPLATE_H */

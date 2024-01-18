@@ -1,5 +1,4 @@
-#ifndef _SGE_SHARETREE_QMASTER_H_
-#define _SGE_SHARETREE_QMASTER_H_
+#pragma once
 /*___INFO__MARK_BEGIN__*/
 /*************************************************************************
  *
@@ -43,6 +42,3 @@ int update_sharetree(lList *dst, const lList *src);
 lListElem *getNode(const lList *share_tree, const char *name, int node_type, int recurse);
 
 int check_sharetree(lList **alpp, lListElem *node, const lList *user_list, const lList *project_list, lListElem *project, lList **found);
-
-#endif /*  _SGE_SHARETREE_QMASTER_H_ */
-

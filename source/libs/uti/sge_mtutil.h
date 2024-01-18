@@ -1,6 +1,4 @@
-#ifndef __SGE_MTUTIL_H
-#define __SGE_MTUTIL_H
-
+#pragma once
 /*___INFO__MARK_BEGIN__*/
 /*************************************************************************
  *
@@ -45,5 +43,3 @@ extern void sge_relative_timespec(signed long, struct timespec*);
 #ifdef  __cplusplus
 }
 #endif
-
-#endif /* __SGE_MTUTIL_H */

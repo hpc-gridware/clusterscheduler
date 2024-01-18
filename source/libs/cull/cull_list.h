@@ -1,5 +1,4 @@
-#ifndef __CULL_LIST_H
-#define __CULL_LIST_H
+#pragma once
 
 #ifndef JGDI_GENERATE
 
@@ -378,6 +377,3 @@ bool lListElem_clear_changed_info(lListElem *lp);
 #endif
 
 #endif /* JGDI_GENERATE */
-
-#endif /* #ifndef __CULL_LIST_H */
-

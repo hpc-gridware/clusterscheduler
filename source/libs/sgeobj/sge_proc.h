@@ -1,5 +1,4 @@
-#ifndef __SGE_PROC_H 
-#define __SGE_PROC_H 
+#pragma once
 /*___INFO__MARK_BEGIN__*/
 /*************************************************************************
  *
@@ -42,5 +41,3 @@ void free_procList (void);
 void fill_procList (void);
 void clear_procList (void);
 void clean_procList (void);
-
-#endif /* __SGE_PROC_H */    

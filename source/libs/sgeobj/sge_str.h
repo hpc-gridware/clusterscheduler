@@ -1,5 +1,4 @@
-#ifndef __SGE_STR_H
-#define __SGE_STR_H
+#pragma once
 /*___INFO__MARK_BEGIN__*/
 /*************************************************************************
  *
@@ -50,5 +49,3 @@ str_list_is_valid(const lList *this_list, lList **answer_list);
 
 bool
 str_list_transform_user_list(lList **this_list, lList **answer_list, const char *username);
-
-#endif /* __SGE_STR_H */

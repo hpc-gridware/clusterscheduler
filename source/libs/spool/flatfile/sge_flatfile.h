@@ -1,5 +1,4 @@
-#ifndef __SGE_FLATFILE_H 
-#define __SGE_FLATFILE_H 
+#pragma once
 /*___INFO__MARK_BEGIN__*/
 /*************************************************************************
  *
@@ -187,5 +186,3 @@ spool_flatfile_align_list(lList **answer_list, const lList *list,
 
 int spool_get_unprocessed_field(spooling_field in[], int out[], lList **alpp);
 int spool_get_number_of_fields(const spooling_field fields[]);
-
-#endif /* __SGE_FLATFILE_H */

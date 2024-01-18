@@ -1,6 +1,4 @@
-#ifndef __SGE_CQUEUE_VERIFY_H
-#define __SGE_CQUEUE_VERIFY_H
-
+#pragma once
 /*___INFO__MARK_BEGIN__*/
 /*************************************************************************
  * 
@@ -94,4 +92,3 @@ cqueue_verify_memory_value(lListElem *cqueue, lList **answer_list,
 bool
 cqueue_verify_time_value(lListElem *cqueue, lList **answer_list,
                         lListElem *attr_elem, const lList *master_list);
-#endif

@@ -1,6 +1,4 @@
-#ifndef __SGE_TQ_H
-#define __SGE_TQ_H
-
+#pragma once
 /*___INFO__MARK_BEGIN__*/
 /*************************************************************************
  * 
@@ -96,6 +94,4 @@ sge_tq_wait_for_task(sge_tq_queue_t *queue, int seconds, sge_tq_type_t type, voi
 
 #ifdef __cplusplus
 }
-#endif
-
 #endif

@@ -1,5 +1,4 @@
-#ifndef __SGE_HOST_H
-#define __SGE_HOST_H
+#pragma once
 /*___INFO__MARK_BEGIN__*/
 /*************************************************************************
  * 
@@ -104,5 +103,3 @@ host_list_merge(lList *this_list);
 
 bool 
 host_merge(lListElem *host, const lListElem *global_host);
-
-#endif /* __SGE_HOST_H */

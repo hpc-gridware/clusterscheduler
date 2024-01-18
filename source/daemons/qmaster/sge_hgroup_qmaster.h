@@ -1,5 +1,4 @@
-#ifndef _SGE_HOSTGROUP_QMASTER_H_
-#define _SGE_HOSTGROUP_QMASTER_H_
+#pragma once
 /*___INFO__MARK_BEGIN__*/
 /*************************************************************************
  *
@@ -46,6 +45,3 @@ int hgroup_mod(sge_gdi_ctx_class_t *ctx,
 int hgroup_spool(sge_gdi_ctx_class_t *ctx, lList **alpp, lListElem *upe, gdi_object_t *object);
 
 int hgroup_del(sge_gdi_ctx_class_t *ctx, lListElem *cep, lList **alpp, char *ruser, char *rhost);
-
-#endif /* _SGE_HOSTGROUP_QMASTER_H_ */
-

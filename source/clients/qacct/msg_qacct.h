@@ -35,7 +35,9 @@
 
 #include "basis_types.h"
 
+// clang-format off
+
 #define MSG_QINSTANCE_NOQUEUES   _MESSAGE(2000, _("No queues remaining after -q queue selection"))
 #define MSG_USER_ABORT           _MESSAGE(2001, _("error: aborted by user"))
 
-
+// clang-format on

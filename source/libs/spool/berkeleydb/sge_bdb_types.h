@@ -1,5 +1,4 @@
-#ifndef __SGE_BDB_TYPES_H 
-#define __SGE_BDB_TYPES_H 
+#pragma once
 /*___INFO__MARK_BEGIN__*/
 /*************************************************************************
  *
@@ -122,5 +121,3 @@ bdb_unlock_info(bdb_info info);
 
 const char *
 bdb_get_database_name(const bdb_database database);
-
-#endif /* __SGE_BDB_TYPES_H */    

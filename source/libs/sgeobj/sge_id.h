@@ -1,5 +1,4 @@
-#ifndef __SGE_ID_H
-#define __SGE_ID_H
+#pragma once
 /*___INFO__MARK_BEGIN__*/
 /*************************************************************************
  *
@@ -41,5 +40,3 @@ id_list_build_from_str_list(lList **id_list,
                             const lList *str_list,
                             u_long32 transition,
                             u_long32 option);
-
-#endif /* __SGE_ID_H */

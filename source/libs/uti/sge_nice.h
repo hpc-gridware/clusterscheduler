@@ -1,5 +1,4 @@
-#ifndef __SGE_NICE_H
-#define __SGE_NICE_H
+#pragma once
 /*___INFO__MARK_BEGIN__*/
 /*************************************************************************
  * 
@@ -49,6 +48,3 @@ extern "C" {
 #ifdef __cplusplus
 }
 #endif
-
-#endif /* __SGE_NICE_H */
-

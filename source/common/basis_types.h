@@ -1,5 +1,4 @@
-#ifndef __BASIS_TYPES_H
-#define __BASIS_TYPES_H
+#pragma once
 /*___INFO__MARK_BEGIN__*/
 /*************************************************************************
  * 
@@ -60,9 +59,7 @@
 #define TRUE_STR  "TRUE"
 
 #define NONE_STR  "NONE"
-#define NONE_LEN  4
 
-//#if defined(FREEBSD) || defined(NETBSD) || defined(LINUXAMD64) || defined(LINUXIA64) || defined(LINUXS390X)
 #if defined(TARGET_64BIT)
 #  define sge_U32CFormat "%u"  
 #  define sge_U32CLetter "u"
@@ -203,5 +200,3 @@ typedef enum {
    YES   = 1,
    UNSET = 2
 } ternary_t;
-
-#endif /* __BASIS_TYPES_H */

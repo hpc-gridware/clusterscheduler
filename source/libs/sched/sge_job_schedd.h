@@ -1,5 +1,4 @@
-#ifndef __SGE_JOB_SCHEDD_H
-#define __SGE_JOB_SCHEDD_H
+#pragma once
 /*___INFO__MARK_BEGIN__*/
 /*************************************************************************
  * 
@@ -200,5 +199,3 @@ job_lists_print(lList **job_list[]);
 
 void 
 user_list_init_jc(lList **user_list, lList **splitted_job_lists[]);
-
-#endif /* __SGE_JOB_SCHEDD_H */

@@ -1,5 +1,4 @@
-#ifndef __SGE_TASK_DEPEND_H
-#define __SGE_TASK_DEPEND_H
+#pragma once
 /*___INFO__MARK_BEGIN__*/
 /*************************************************************************
  *
@@ -51,5 +50,3 @@ sge_task_depend_init(lListElem *jep, lList **alpp);
 
 bool
 sge_task_depend_flush(lListElem *jep, lList **alpp);
-
-#endif /* __SGE_TASK_DEPEND_H */

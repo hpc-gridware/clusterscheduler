@@ -1,5 +1,4 @@
-#ifndef __SGE_ACK_H 
-#define __SGE_ACK_H 
+#pragma once
 /*___INFO__MARK_BEGIN__*/
 /*************************************************************************
  *
@@ -51,5 +50,3 @@ int pack_ack(sge_pack_buffer *pb, u_long32 type, u_long32 id, u_long32 id2, cons
 
 int sge_send_ack_to_qmaster(sge_gdi_ctx_class_t *ctx, u_long32 type, u_long32 ulong_val, 
                             u_long32 ulong_val_2, const char *str, lList **alpp);
-
-#endif /* __SGE_ACK_H */

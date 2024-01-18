@@ -1,5 +1,4 @@
-#ifndef _SGE_MANOP_QMASTER_H_
-#define _SGE_MANOP_QMASTER_H_
+#pragma once
 /*___INFO__MARK_BEGIN__*/
 /*************************************************************************
  *
@@ -38,6 +37,3 @@
 int sge_add_manop(sge_gdi_ctx_class_t *ctx, lListElem *ep, lList **alpp, char *ruser, char *rhost, u_long32 target);
 
 int sge_del_manop(sge_gdi_ctx_class_t *ctx, lListElem *ep, lList **alpp, char *ruser, char *rhost, u_long32 target);
-
-#endif /* _SGE_MANOP_QMASTER_H_ */
-

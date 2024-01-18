@@ -1,5 +1,4 @@
-#ifndef _DISPATCHER_H
-#define _DISPATCHER_H
+#pragma once
 /*___INFO__MARK_BEGIN__*/
 /*************************************************************************
  * 
@@ -37,5 +36,3 @@
 #define EXECD_MAX_RECONNECT_TIMEOUT 30
 
 int sge_execd_process_messages(sge_gdi_ctx_class_t *ctx);
-
-#endif /* _DISPATCHER_H */

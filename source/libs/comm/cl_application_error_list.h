@@ -1,6 +1,4 @@
-#ifndef __CL_APPLICATION_ERROR_LIST_H
-#define __CL_APPLICATION_ERROR_LIST_H
-
+#pragma once
 /*___INFO__MARK_BEGIN__*/
 /*************************************************************************
  *
@@ -56,6 +54,3 @@ cl_application_error_list_elem_t* cl_application_error_list_get_last_elem(cl_app
 #ifdef __cplusplus
 }
 #endif
-
-#endif /* __CL_APPLICATION_ERROR_LIST_H */
-

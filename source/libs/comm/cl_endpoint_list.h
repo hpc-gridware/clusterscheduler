@@ -1,6 +1,4 @@
-#ifndef __CL_ENDPOINT_LIST_H
-#define __CL_ENDPOINT_LIST_H
-
+#pragma once
 /*___INFO__MARK_BEGIN__*/
 /*************************************************************************
  *
@@ -97,6 +95,4 @@ cl_endpoint_list_elem_t* cl_endpoint_list_get_elem_endpoint(cl_raw_list_t* list_
 #ifdef __cplusplus
 }
 #endif
-
-#endif /* __CL_ENDPOINT_LIST_H */
 

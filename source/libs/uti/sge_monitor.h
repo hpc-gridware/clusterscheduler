@@ -1,6 +1,4 @@
-#ifndef _SGE_MONITOR_H
-#define _SGE_MONITOR_H
-
+#pragma once
 /*___INFO__MARK_BEGIN__*/
 /*************************************************************************
  * 
@@ -387,5 +385,3 @@ typedef struct {
 #ifdef __cplusplus
 }
 #endif
-
-#endif /* _SGE_MONITIR_H */

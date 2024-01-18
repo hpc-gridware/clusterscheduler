@@ -1,5 +1,4 @@
-#ifndef __SGE_PROFILING_H
-#define __SGE_PROFILING_H
+#pragma once
 /*___INFO__MARK_BEGIN__*/
 /*************************************************************************
  * 
@@ -209,5 +208,3 @@ void thread_output_profiling(const char *title, time_t *next_prof_output);
 #ifdef __cplusplus
 }
 #endif
-
-#endif /* __SGE_PROFILING_H */

@@ -1,5 +1,4 @@
-#ifndef _SGE_TIMER_THREAD_H_
-#define _SGE_TIMER_THREAD_H_
+#pragma once
 /*___INFO__MARK_BEGIN__*/
 /*************************************************************************
  *
@@ -49,6 +48,3 @@ sge_timer_terminate(void);
 
 void *
 sge_timer_main(void *arg);
-
-#endif 
-

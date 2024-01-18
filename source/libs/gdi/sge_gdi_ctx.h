@@ -1,5 +1,4 @@
-#ifndef __SGE_GDI_CTX_H
-#define __SGE_GDI_CTX_H
+#pragma once
 /*___INFO__MARK_BEGIN__*/
 /*************************************************************************
  * 
@@ -93,5 +92,3 @@ bool sge_daemonize_prepare(sge_gdi_ctx_class_t *context);
 bool sge_daemonize_finalize(sge_gdi_ctx_class_t *context);
 
 int sge_daemonize(int *keep_open, unsigned long nr_of_fds, sge_gdi_ctx_class_t *context);
-
-#endif /* __SGE_GDI_CTX_H */

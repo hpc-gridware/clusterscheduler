@@ -1,5 +1,4 @@
-#ifndef __SGE_SECURITY_H
-#define __SGE_SECURITY_H
+#pragma once
 /*___INFO__MARK_BEGIN__*/
 /*************************************************************************
  * 
@@ -93,5 +92,3 @@ bool
 sge_gdi_packet_parse_auth_info(sge_gdi_packet_class_t *packet, lList **answer_list,
                                uid_t *uid, char *user, size_t user_len,
                                gid_t *gid, char *group, size_t group_len);
-
-#endif /* __SGE_SECURITY_H */

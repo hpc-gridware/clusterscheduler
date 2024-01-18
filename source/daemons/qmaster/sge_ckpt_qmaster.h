@@ -1,5 +1,4 @@
-#ifndef __SGE_CKPT_QMASTER_H
-#define __SGE_CKPT_QMASTER_H
+#pragma once
 /*___INFO__MARK_BEGIN__*/
 /*************************************************************************
  *
@@ -53,6 +52,3 @@ int sge_del_ckpt(sge_gdi_ctx_class_t *ctx, lListElem *, lList **, char *, char *
 const char *get_checkpoint_when(int bitmask);
 
 int is_checkpoint_when_valid(int bitmask);
-
-#endif /* __SGE_CKPT_QMASTER_H */
-

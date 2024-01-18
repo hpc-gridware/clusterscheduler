@@ -1,5 +1,4 @@
-#ifndef __DRMAA_H
-#define __DRMAA_H
+#pragma once
 
 /*___INFO__MARK_BEGIN__*/
 /*************************************************************************
@@ -757,5 +756,3 @@ int drmaa_get_DRMAA_implementation(char *drmaa_impl, size_t drmaa_impl_len,
 #ifdef  __cplusplus
 }
 #endif
-
-#endif /* __DRMAA_H */

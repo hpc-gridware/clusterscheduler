@@ -1,5 +1,4 @@
-#ifndef __JOB_REPORT_QMASTER_H
-#define __JOB_REPORT_QMASTER_H
+#pragma once
 /*___INFO__MARK_BEGIN__*/
 /*************************************************************************
  *
@@ -37,5 +36,3 @@
 
 void process_job_report(sge_gdi_ctx_class_t *ctx, lListElem *report, lListElem *hep, char *rhost, 
                         char *commproc, sge_pack_buffer *pb, monitoring_t *monitor);
-
-#endif /* __JOB_REPORT_QMASTER_H */

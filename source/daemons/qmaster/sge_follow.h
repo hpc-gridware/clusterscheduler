@@ -1,5 +1,4 @@
-#ifndef __SGE_FOLLOW_H
-#define __SGE_FOLLOW_H
+#pragma once
 /*___INFO__MARK_BEGIN__*/
 /*************************************************************************
  *
@@ -52,5 +51,3 @@ sge_set_next_spooling_time(void);
 /* EB: TODO: ST: remove this ? */
 void sge_process_order_event(sge_gdi_ctx_class_t *ctx, te_event_t anEvent, 
                         monitoring_t *monitor);
-
-#endif /* __SGE_FOLLOW_H */

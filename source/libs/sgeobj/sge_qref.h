@@ -1,5 +1,4 @@
-#ifndef __SGE_QREF_H__
-#define __SGE_QREF_H__
+#pragma once
 /*___INFO__MARK_BEGIN__*/
 /*************************************************************************
  * 
@@ -72,5 +71,3 @@ qref_list_host_rejected(const char *href, const char *hostname,
 
 int 
 cull_parse_destination_identifier_list(lList **lpp, const char *dest_str);
-
-#endif /* __SGE_QREF_H__ */

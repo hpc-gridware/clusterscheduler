@@ -1,5 +1,4 @@
-#ifndef __KRB_LIB_H
-#define __KRB_LIB_H
+#pragma once
 /*___INFO__MARK_BEGIN__*/
 /*************************************************************************
  * 
@@ -62,8 +61,4 @@ krb5_context krb_context(void);
 int krb_renew_tgts(lList *joblist);
 void krb_set_tgt_id(u_long tgt_id);
 
-
 #define KRB_FORWARD_TGT 0x0001
-
-#endif /* __KRB_LIB_H */
-

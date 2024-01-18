@@ -1,5 +1,4 @@
-#ifndef __SGE_RESOURCE_QUOTA_QMASTER_H
-#define __SGE_RESOURCE_QUOTA_QMASTER_H
+#pragma once
 /*___INFO__MARK_BEGIN__*/
 /*************************************************************************
  *
@@ -56,5 +55,3 @@ bool rqs_diff_projects(const lListElem *new_rqs, const lListElem *old_rqs, lList
                        lList **old_acl, const lList *master_project_list);
 
 bool scope_is_referenced_rqs(const lListElem *rqs, int filter_type, const char *name);
-
-#endif

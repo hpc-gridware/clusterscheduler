@@ -1,5 +1,4 @@
-#ifndef __SGE_JSV_SCRIPT_H 
-#define __SGE_JSV_SCRIPT_H 
+#pragma once
 /*___INFO__MARK_BEGIN__*/
 /*************************************************************************
  *
@@ -39,5 +38,3 @@ jsv_do_communication(sge_gdi_ctx_class_t *ctx, lListElem *jsv, lList **answer_li
 
 bool
 jsv_is_modify_rejected(sge_gdi_ctx_class_t *ctx, lList **answer_list, lListElem *job);
-
-#endif /* __SGE_JSV_SCRIPT_H */    

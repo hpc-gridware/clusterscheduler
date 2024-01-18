@@ -1,5 +1,4 @@
-#ifndef __SGE_SUPPORT_H
-#define __SGE_SUPPORT_H
+#pragma once
 /*___INFO__MARK_BEGIN__*/
 /*************************************************************************
  * 
@@ -72,5 +71,3 @@ void sge_add_default_user_nodes(lListElem *root, const lList *user_list, const l
 
 void sgeee_sort_jobs(lList **job_list);
 void sgeee_sort_jobs_by(lList **job_list , int by_SGEJ_field, int field_ascending, int jobnum_ascending);
-
-#endif /* __SGE_SUPPORT_H */

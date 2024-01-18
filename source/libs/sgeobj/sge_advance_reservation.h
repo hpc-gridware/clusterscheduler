@@ -1,5 +1,4 @@
-#ifndef __SGE_ADVANCE_RESERVATION_H
-#define __SGE_ADVANCE_RESERVATION_H 
+#pragma once
 /*___INFO__MARK_BEGIN__*/
 /*************************************************************************
  *
@@ -93,5 +92,3 @@ ar_get_string_from_event(ar_state_event_t event);
 void ar_state2dstring(ar_state_t state, dstring *state_as_string);
 
 bool sge_ar_has_errors(lListElem *ar);
-
-#endif /* __SGE_ADVANCE_RESERVATION_H */

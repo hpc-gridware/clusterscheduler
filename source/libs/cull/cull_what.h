@@ -1,5 +1,4 @@
-#ifndef __CULL_WHAT_H
-#define __CULL_WHAT_H
+#pragma once
 /*___INFO__MARK_BEGIN__*/
 /*************************************************************************
  * 
@@ -61,6 +60,3 @@ int lWhatSetSubWhat(lEnumeration *what1, int nm, lEnumeration **what2);
 #ifdef  __cplusplus
 }
 #endif
-
-#endif /* __CULL_WHAT_H */
-

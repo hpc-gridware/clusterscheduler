@@ -1,5 +1,4 @@
-#ifndef __SGE_GDI2_H
-#define __SGE_GDI2_H
+#pragma once
 /*___INFO__MARK_BEGIN__*/
 /*************************************************************************
  * 
@@ -161,5 +160,3 @@ sge_gdi_extract_answer(lList **alpp, u_long32 cmd, u_long32 target, int id,
 
 
 void gdi2_default_exit_func(void **ref_ctx, int i); 
-
-#endif

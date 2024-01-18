@@ -1,5 +1,4 @@
-#ifndef __SGE_ENV_H
-#define __SGE_ENV_H
+#pragma once
 /*___INFO__MARK_BEGIN__*/
 /*************************************************************************
  * 
@@ -62,7 +61,3 @@ void sge_env_state_class_destroy(sge_env_state_class_t **pst);
 #ifdef __cplusplus
 }
 #endif
-
-#endif /* __SGE_ENV_H */
-
-

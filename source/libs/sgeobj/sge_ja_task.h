@@ -1,5 +1,4 @@
-#ifndef __SGE_JA_TASK_H 
-#define __SGE_JA_TASK_H 
+#pragma once
 /*___INFO__MARK_BEGIN__*/
 /*************************************************************************
  *
@@ -73,5 +72,3 @@ ja_task_verify_granted_destin_identifier(const lListElem *ep, lList **answer_lis
 
 bool
 ja_task_is_tightly_integrated(const lListElem *ja_task, const lList *master_pe_list);
-
-#endif /* __SGE_JA_TASK_H */

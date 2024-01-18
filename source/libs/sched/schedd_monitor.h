@@ -1,5 +1,4 @@
-#ifndef __SCHEDD_MONITOR_H
-#define __SCHEDD_MONITOR_H
+#pragma once
 /*___INFO__MARK_BEGIN__*/
 /*************************************************************************
  * 
@@ -50,5 +49,3 @@ void schedd_set_monitor_next_run(bool set);
 bool schedd_is_monitor_next_run(void);
 
 void schedd_set_schedd_log_file(sge_gdi_ctx_class_t *ctx);
-
-#endif /* __SCHEDD_MONITOR_H */

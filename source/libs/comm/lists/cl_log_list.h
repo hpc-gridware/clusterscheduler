@@ -1,6 +1,4 @@
-#ifndef __CL_LOG_LIST_H
-#define __CL_LOG_LIST_H
-
+#pragma once
 /*___INFO__MARK_BEGIN__*/
 /*************************************************************************
  *
@@ -86,6 +84,3 @@ cl_log_list_elem_t* cl_log_list_get_first_elem(cl_raw_list_t* list_p);  /* CR ch
 #ifdef __cplusplus
 }
 #endif
-
-#endif /* __CL_LOG_LIST_H */
-

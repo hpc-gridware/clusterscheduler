@@ -1,5 +1,4 @@
-#ifndef __SGE_ATTR_H__
-#define __SGE_ATTR_H__
+#pragma once
 /*___INFO__MARK_BEGIN__*/
 /*************************************************************************
  * 
@@ -127,5 +126,3 @@ attr_list_append_to_dstring(const lList *this_list, dstring *string,
                             int value_nm);
 
 #undef ATTR_TYPE_PROTOTYPES 
-
-#endif /* __SGE_ATTR_H__ */

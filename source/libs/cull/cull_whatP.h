@@ -1,5 +1,4 @@
-#ifndef __CULL_WHATP_H
-#define __CULL_WHATP_H
+#pragma once
 /*___INFO__MARK_BEGIN__*/
 /*************************************************************************
  * 
@@ -55,5 +54,3 @@ struct _lEnumeration {
 #ifdef  __cplusplus
 }
 #endif
-
-#endif /* __CULL_WHATP_H */

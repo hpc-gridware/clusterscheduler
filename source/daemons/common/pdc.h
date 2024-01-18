@@ -1,5 +1,4 @@
-#ifndef _PDC_H_
-#define _PDC_H_
+#pragma once
 /*___INFO__MARK_BEGIN__*/
 /*************************************************************************
  * 
@@ -202,5 +201,3 @@ struct psStat_s	*psStatus(void);
 struct psJob_s *psGetOneJob(JobID_t JobID);
 struct psJob_s *psGetAllJobs(void);
 struct psSys_s *psGetSysdata(void);
-
-#endif /* _PDC_H_ */

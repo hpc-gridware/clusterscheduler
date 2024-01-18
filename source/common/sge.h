@@ -1,5 +1,4 @@
-#ifndef __SGE_H
-#define __SGE_H
+#pragma once
 /*___INFO__MARK_BEGIN__*/
 /*************************************************************************
  * 
@@ -209,5 +208,3 @@
 #define USERSET_DIR               "usersets"
 #define PROJECT_DIR               "projects"
 #define AFS                       FALSE
-
-#endif /* __SGE_H */

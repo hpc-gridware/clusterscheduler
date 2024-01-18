@@ -1,6 +1,4 @@
-#ifndef __CL_THREAD_LIST_H
-#define __CL_THREAD_LIST_H
-
+#pragma once
 /*___INFO__MARK_BEGIN__*/
 /*************************************************************************
  *
@@ -72,6 +70,3 @@ cl_thread_list_elem_t* cl_thread_list_get_next_elem(cl_thread_list_elem_t* elem)
 #ifdef __cplusplus
 }
 #endif
-
-#endif /* __CL_THREAD_LIST_H */
-

@@ -1,5 +1,4 @@
-#ifndef __SGE_GROUPS_H__
-#define __SGE_GROUPS_H__
+#pragma once
 /*___INFO__MARK_BEGIN__*/
 /*************************************************************************
  * 
@@ -91,5 +90,3 @@ hgroup_list_find_matching_and_resolve(const lList *this_list,
 bool
 hgroup_list_find_matching(const lList *this_list, lList **answer_list,
                           const char *hgroup_pattern, lList **used_hosts);
-
-#endif /* __SGE_GROUPS_H__ */

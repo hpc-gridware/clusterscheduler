@@ -1,5 +1,4 @@
-#ifndef __CULL_SORTP_H
-#define __CULL_SORTP_H
+#pragma once
 /*___INFO__MARK_BEGIN__*/
 /*************************************************************************
  * 
@@ -50,5 +49,4 @@ int lSortCompareUsingGlobal(const void *ep0, const void *ep1);
 #ifdef  __cplusplus
 }
 #endif
-#endif /* __CULL_SORTP_H */
 

@@ -1,5 +1,4 @@
-#ifndef _SGE_MT_INIT_H_
-#define _SGE_MT_INIT_H_
+#pragma once
 
 /*___INFO__MARK_BEGIN__*/
 /*************************************************************************
@@ -34,5 +33,3 @@
 /*___INFO__MARK_END__*/
 
 void sge_mt_init(void);
-
-#endif /* _SGE_MT_INIT_H_ */

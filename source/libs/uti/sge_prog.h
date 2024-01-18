@@ -1,5 +1,4 @@
-#ifndef __SGE_PROGNAMES_H
-#define __SGE_PROGNAMES_H
+#pragma once
 /*___INFO__MARK_BEGIN__*/
 /*************************************************************************
  * 
@@ -169,7 +168,3 @@ void uti_state_set_exit_func(sge_exit_func_t f);
 #ifdef __cplusplus
 }
 #endif
-
-#endif /* __SGE_PROGNAMES_H */
-
-

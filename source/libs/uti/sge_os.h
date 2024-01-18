@@ -1,5 +1,4 @@
-#ifndef __SGE_PIDS_H
-#define __SGE_PIDS_H
+#pragma once
 /*___INFO__MARK_BEGIN__*/
 /*************************************************************************
  * 
@@ -77,6 +76,3 @@ int sge_occupy_first_three(void);
 #ifdef __cplusplus
 }
 #endif
-
-#endif /* __SGE_PIDS_H */
-

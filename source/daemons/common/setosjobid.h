@@ -1,5 +1,4 @@
-#ifndef __SETOSJOBID_H
-#define __SETOSJOBID_H
+#pragma once
 /*___INFO__MARK_BEGIN__*/
 /*************************************************************************
  * 
@@ -37,5 +36,3 @@
 #include "basis_types.h"
 
 void setosjobid(pid_t sid, gid_t *add_grp_id_ptr, struct passwd *pw);
-
-#endif /* __SETOSJOBID_H */

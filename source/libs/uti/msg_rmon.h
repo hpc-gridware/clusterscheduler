@@ -1,5 +1,4 @@
-#ifndef __MSG_RMON_H
-#define __MSG_RMON_H
+#pragma once
 /*___INFO__MARK_BEGIN__*/
 /*************************************************************************
  * 
@@ -38,9 +37,6 @@
 extern "C" {
 #endif
 
-/*
- * rmon/src/rmon_macros.c 
- */
 #define MSG_RMON_ILLEGALDBUGLEVELFORMAT         "illegal debug level format"
 #define MSG_RMON_UNABLETOOPENXFORWRITING_S      "unable to open "SFN" for writing"
 #define MSG_RMON_ERRNOXY_DS                     "    ERRNO: %d, "SFN
@@ -48,5 +44,3 @@ extern "C" {
 #ifdef __cplusplus
 }
 #endif
-
-#endif /* __MSG_RMON_H   */

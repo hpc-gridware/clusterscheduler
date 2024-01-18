@@ -33,9 +33,13 @@
 
 #include "basis_types.h"
 
+// clang-format off
+
 #define MSG_QALTER                                 _MESSAGE(3000, _("qalter: "))
 #define MSG_QALTERWARNING                          _MESSAGE(3001, _("qalter: warning: "))
 #define MSG_JOB_NOJOBATTRIBUTESELECTED             _MESSAGE(3002, _("no job attribute selected"))
 #define MSG_ANSWER_FAILDTOBUILDREDUCEDDESCRIPTOR   _MESSAGE(3003, _("failed to build reduced descriptor"))
 #define MSG_ANSWER_ALLANDJOBIDSARENOTVALID         _MESSAGE(3004, _("\'all\' AND jobids are not valid"))
 #define MSG_ANSWER_0ISNOTAVALIDJOBID               _MESSAGE(3005, _("0 is not a valid jobid"))
+
+// clang-format on

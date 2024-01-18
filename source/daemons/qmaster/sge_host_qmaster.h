@@ -1,5 +1,4 @@
-#ifndef __SGE_HOST_QMASTER_H
-#define __SGE_HOST_QMASTER_H
+#pragma once
 /*___INFO__MARK_BEGIN__*/
 /*************************************************************************
  *
@@ -84,6 +83,3 @@ void host_diff_usersets(const lListElem *new_host, const lListElem *old, lList *
 
 void        
 host_initalitze_timer(void);
-
-#endif /* __SGE_HOST_QMASTER_H */
-

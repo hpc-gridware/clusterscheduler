@@ -1,5 +1,4 @@
-#ifndef __SGE_IO_H
-#define __SGE_IO_H
+#pragma once
 /*___INFO__MARK_BEGIN__*/
 /*************************************************************************
  * 
@@ -88,6 +87,3 @@ int sge_string2file(const char *str, int len, const char *fname);
 #ifdef __cplusplus
 }
 #endif
-
-#endif /* __SGE_IO_H */
-

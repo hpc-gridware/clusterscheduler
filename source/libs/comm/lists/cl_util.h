@@ -1,5 +1,4 @@
-#ifndef __CL_UTIL_H
-#define __CL_UTIL_H
+#pragma once
 /*___INFO__MARK_BEGIN__*/
 /*************************************************************************
  *
@@ -57,5 +56,3 @@ int  cl_util_get_hex_value(char hex_char);
 #ifdef __cplusplus
 }
 #endif
-
-#endif /* __CL_UTIL_H */

@@ -1,5 +1,4 @@
-#ifndef __CULL_WHERE_H
-#define __CULL_WHERE_H
+#pragma once
 /*___INFO__MARK_BEGIN__*/
 /*************************************************************************
  * 
@@ -51,6 +50,3 @@ lListElem *lWhereToElem(const lCondition *where);
 #ifdef  __cplusplus
 }
 #endif
-
-#endif /* __CULL_WHERE_H */
-

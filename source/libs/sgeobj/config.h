@@ -1,5 +1,4 @@
-#ifndef _CONFIG_H_
-#define _CONFIG_H_
+#pragma once
 /*___INFO__MARK_BEGIN__*/
 /*************************************************************************
  * 
@@ -132,5 +131,3 @@ bool set_conf_centry_relop(lList **alpp, lList **clpp, int fields[],
 
 bool set_conf_centry_requestable(lList **alpp, lList **clpp, int fields[], 
                            const char *key, lListElem *ep, int name_nm);
-
-#endif /* _CONFIG_H_ */

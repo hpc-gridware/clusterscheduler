@@ -1,6 +1,4 @@
-#ifndef _SGE_QMASTER_PROCESS_MESSAGE_H_
-#define _SGE_QMASTER_PROCESS_MESSAGE_H_
-
+#pragma once
 /*___INFO__MARK_BEGIN__*/
 /*************************************************************************
  *
@@ -40,5 +38,3 @@
 
 void 
 sge_qmaster_process_message(sge_gdi_ctx_class_t *ctx, monitoring_t *monitor);
-
-#endif /* _SGE_QMASTER_PROCESS_MESSAGE_H_ */

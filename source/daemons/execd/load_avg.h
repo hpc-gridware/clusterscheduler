@@ -1,5 +1,4 @@
-#ifndef __LOAD_AVG_H
-#define __LOAD_AVG_H
+#pragma once
 /*___INFO__MARK_BEGIN__*/
 /*************************************************************************
  * 
@@ -56,6 +55,3 @@ void sge_set_qmrestart_time(u_long32 qmr);
 
 void build_reserved_usage(const u_long32 now, const lListElem *ja_task, const lListElem *pe_task,
                           double *wallclock, double *cpu, double *mem, double *maxvmem);
-
-#endif /* __LOAD_AVG_H */
-

@@ -1,5 +1,4 @@
-#ifndef __SGE_STATIC_URGENCY_H
-#define __SGE_STATIC_URGENCY_H
+#pragma once
 /*___INFO__MARK_BEGIN__*/
 /*************************************************************************
  *
@@ -40,6 +39,3 @@ void sge_do_urgency(u_long32 now, lList *running_jobs, lList *pending_jobs,
                     scheduler_all_data_t *lists);
 
 int sge_job_slot_request(const lListElem *job, const lList *pe_list);
-
-
-#endif /*  __SGE_STATIC_URGENCY_H */

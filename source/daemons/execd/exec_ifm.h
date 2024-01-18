@@ -1,17 +1,4 @@
-/*
- *	File:		execd_ifm.h
- *
- *	Subsystem:	Archive Workstation Data Collection Supervisor.
- *
- *	Description:
- *	Definitions for the Data Collection Supervisor.
- *
- *	References:
- *
- */
-
-#ifndef EXEC_IFM_H
-#define EXEC_IFM_H
+#pragma once
 /*___INFO__MARK_BEGIN__*/
 /*************************************************************************
  * 
@@ -217,5 +204,3 @@ struct psStat_s
 
 #define	PS_IFM_ACK	'A'	/* ACK string (seldom used) */
 #define	PS_IFM_NACK	'N'	/* ACK string (seldom used) */
-
-#endif /* EXEC_IFM_H */

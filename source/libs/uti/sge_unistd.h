@@ -1,5 +1,4 @@
-#ifndef __SGE_UNISTD_H
-#define __SGE_UNISTD_H
+#pragma once
 /*___INFO__MARK_BEGIN__*/
 /*************************************************************************
  *
@@ -139,5 +138,3 @@ u_long32 sge_sysconf(sge_sysconf_t id);
 #ifdef __cplusplus
 }
 #endif
-
-#endif /* __SGE_UNISTD_H */

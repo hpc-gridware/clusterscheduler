@@ -1,5 +1,4 @@
-#ifndef __K5DCE_H
-#define __K5DCE_H
+#pragma once
 /*___INFO__MARK_BEGIN__*/
 /*************************************************************************
  * 
@@ -195,5 +194,3 @@ typedef krb5_pointer krb5_principal;
 #define krb5_cc_end_seq_get(cache, cursor) (*(cache)->ops->end_get)(cache, cursor)
 
 /* end of k5 dummy typedefs */
-
-#endif /* __K5DCE_H */

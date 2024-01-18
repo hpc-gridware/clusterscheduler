@@ -1,5 +1,4 @@
-#ifndef __SGE_CSP_PATH_H
-#define __SGE_CSP_PATH_H
+#pragma once
 /*___INFO__MARK_BEGIN__*/
 /*************************************************************************
  * 
@@ -77,7 +76,3 @@ void sge_csp_path_class_destroy(sge_csp_path_class_t **pst);
 #ifdef __cplusplus
 }
 #endif
-
-#endif /* __SGE_CSP_PATH_H */
-
-

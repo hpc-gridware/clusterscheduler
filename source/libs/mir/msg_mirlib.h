@@ -1,5 +1,4 @@
-#ifndef __MSG_MIRLIB_H
-#define __MSG_MIRLIB_H
+#pragma once
 /*___INFO__MARK_BEGIN__*/
 /*************************************************************************
  * 
@@ -54,5 +53,3 @@
 #define MSG_JOB_CANTFINDPETASKFORUPDATEIN_SS       _MESSAGE(67016, _("can't find parallel task "SFN" for update in function "SFN))
 #define MSG_CQUEUE_CANTFINDFORUPDATEIN_SS          _MESSAGE(67017, _("can't find cluster queue "SFN" for update in function "SFN))
 #define MSG_QINSTANCE_CANTFINDFORUPDATEIN_SS       _MESSAGE(67018, _("can't find queue instance "SFN" for update in function "SFN))
-
-#endif /* __MSG_MIRLIB_H */

@@ -1,5 +1,4 @@
-#ifndef _SGE_TEST_THREAD_H_
-#define _SGE_TEST_THREAD_H_
+#pragma once
 /*___INFO__MARK_BEGIN__*/
 /*************************************************************************
  *
@@ -48,6 +47,3 @@ sge_test_wait_for_new_packet(sge_gdi_packet_class_t **packet);
 
 void *
 sge_test_main(void *arg);
-
-#endif 
-

@@ -1,5 +1,4 @@
-#ifndef __SGE_PERSISTENCE_QMASTER_H
-#define __SGE_PERSISTENCE_QMASTER_H
+#pragma once
 /*___INFO__MARK_BEGIN__*/
 /*************************************************************************
  *
@@ -56,5 +55,3 @@ sge_event_spool(sge_gdi_ctx_class_t *ctx, lList **answer_list, u_long32 timestam
                 const char *strkey2, const char *session, lListElem *object, 
                 lListElem *sub_object1, lListElem *sub_object2, 
                 bool send_event, bool spool);
-
-#endif /* __SGE_PERSISTENCE_QMASTER_H */

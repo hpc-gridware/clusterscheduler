@@ -1,5 +1,4 @@
-#ifndef __VALID_QUEUE_USER_H
-#define __VALID_QUEUE_USER_H
+#pragma once
 /*___INFO__MARK_BEGIN__*/
 /*************************************************************************
  * 
@@ -41,5 +40,3 @@ int sge_has_access_(const char *user, const char *group, const lList *q_acl,
                     const lList *q_xacl, const lList *acl_list);
 
 bool sge_ar_have_users_access(lList **alpp, lListElem *ar, const char *name, const lList *acl_list, const lList *xacl_list, const lList *master_userset_list);
-
-#endif /* __VALID_QUEUE_USER_H */

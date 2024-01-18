@@ -1,5 +1,4 @@
-#ifndef __CATEGORY_H
-#define __CATEGORY_H
+#pragma once
 /*___INFO__MARK_BEGIN__*/
 /*************************************************************************
  * 
@@ -37,5 +36,3 @@ sge_build_job_category_dstring(dstring *category_str, lListElem *job, const lLis
 
 const char* 
 sge_build_job_cs_category(dstring *category_str, lListElem *job, lListElem *cat_obj, bool did_project); 
-
-#endif /* __CATEGORY_H */

@@ -1,5 +1,4 @@
-#ifndef __QMASTER_HEARTBEAT_H
-#define __QMASTER_HEARTBEAT_H
+#pragma once
 /*___INFO__MARK_BEGIN__*/
 /*************************************************************************
  * 
@@ -37,5 +36,3 @@
 int get_qmaster_heartbeat(char *file, time_t read_timeout);
 int inc_qmaster_heartbeat(char *file, time_t write_timeout, int* beat_value);
 void set_inc_qmaster_heartbeat_test_mode(int value);
-
-#endif /* __QMASTER_HEARTBEAT_H */

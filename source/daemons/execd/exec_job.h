@@ -1,5 +1,4 @@
-#ifndef __EXEC_JOB_H
-#define __EXEC_JOB_H
+#pragma once
 /*___INFO__MARK_BEGIN__*/
 /*************************************************************************
  * 
@@ -36,5 +35,3 @@
 
 int sge_exec_job(sge_gdi_ctx_class_t *ctx, lListElem *jep, lListElem *jatep, lListElem *petep, char *err_str, int err_length);
 lListElem* responsible_queue(lListElem *jep, lListElem *, lListElem *petep);
-
-#endif /* __EXEC_JOB_H */

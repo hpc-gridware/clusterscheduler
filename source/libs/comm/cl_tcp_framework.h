@@ -1,6 +1,4 @@
-#ifndef __CL_TCP_FRAMEWORK_H
-#define __CL_TCP_FRAMEWORK_H
-
+#pragma once
 /*___INFO__MARK_BEGIN__*/
 /*************************************************************************
  *
@@ -87,13 +85,6 @@ int cl_com_tcp_read_GMSH(cl_com_connection_t* connection, unsigned long *only_on
 int cl_com_tcp_write(cl_com_connection_t* connection, cl_byte_t* message, unsigned long size, unsigned long *only_one_write);
 int cl_com_tcp_read(cl_com_connection_t* connection, cl_byte_t* message, unsigned long size, unsigned long *only_one_read);
 
-
-
-
-
 #ifdef __cplusplus
 }
 #endif
-
-#endif /* __CL_TCP_FRAMEWORK_H */
-

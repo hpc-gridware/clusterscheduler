@@ -1,5 +1,4 @@
-#ifndef _SGE_QMASTER_THREADS_H_
-#define _SGE_QMASTER_THREADS_H_
+#pragma once
 /*___INFO__MARK_BEGIN__*/
 /*************************************************************************
  *
@@ -56,6 +55,3 @@ void sge_start_periodic_tasks(void);
 void sge_register_event_handler(void); 
 
 int sge_shutdown_qmaster_via_signal_thread(int i);
-
-#endif /* _SGE_QMASTER_THREADS_H_ */
-

@@ -1,5 +1,4 @@
-#ifndef __CULL_LISTP_H
-#define __CULL_LISTP_H
+#pragma once
 /*___INFO__MARK_BEGIN__*/
 /*************************************************************************
  * 
@@ -92,5 +91,3 @@ struct _lList {
 #ifdef  __cplusplus
 }
 #endif
-
-#endif /* __CULL_LISTP_H */

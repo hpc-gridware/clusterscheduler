@@ -1,5 +1,4 @@
-#ifndef __MSG_QMASTER_H
-#define __MSG_QMASTER_H
+#pragma once
 /*___INFO__MARK_BEGIN__*/
 /*************************************************************************
  *
@@ -805,5 +804,3 @@
 #define MSG_PARSE_LOOP_IN_SSOS_TREE_SS      _MESSAGE(33959, _("denied: adding "SFQ" to the subordinate_list of "SFQ" would create a loop in the slotwise preemption configuration!"))
 
 #define MSG_JOB_RESOURCESNOLONGERAVAILABLE_UU   _MESSAGE(33960, _("resources no longer available for start of job "sge_U32CFormat"."sge_U32CFormat))
-
-#endif

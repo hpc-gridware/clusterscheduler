@@ -1,5 +1,4 @@
-#ifndef __SGE_QRSUB_H
-#define __SGE_QRSUB_H
+#pragma once
 /*___INFO__MARK_BEGIN__*/
 /*************************************************************************
  * 
@@ -36,7 +35,3 @@
 #include "gdi/sge_gdi_ctx.h"
 
 bool sge_parse_qrsub(sge_gdi_ctx_class_t *ctx, lList *pcmdline, lList **alpp, lListElem **ar);
-
-#endif
-
-

@@ -33,6 +33,8 @@
 
 #include "basis_types.h"
 
+// clang-format off
+
 #define MSG_QRSH_STARTER_CANNOTOPENFILE_SS   _MESSAGE(15000, _("qrsh_starter: cannot open file "SFN": "SFN))
 #define MSG_QRSH_STARTER_CANNOTREADCONFIGFROMFILE_S _MESSAGE(15001, _("qrsh_starter: cannot read job configuration from file "SFN))
 #define MSG_QRSH_STARTER_CANNOTCHANGEDIR_SS  _MESSAGE(15002, _("qrsh_starter: cannot change to directory "SFN": "SFN))
@@ -46,3 +48,5 @@
 #define MSG_QRSH_STARTER_EXECCHILDFAILED_S   _MESSAGE(15011, _("qrsh_starter: executing child process "SFN" failed: "SFN))
 #define MSG_QRSH_STARTER_INVALIDCOMMAND      _MESSAGE(15012, _("qrsh_starter: received invalid command to execute"))
 #define MSG_QRSH_STARTER_NOCWDINCONFIG       _MESSAGE(15013, _("qrsh_starter: can't get cwd from config"))
+
+// clang-format on

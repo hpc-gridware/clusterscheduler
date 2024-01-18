@@ -1,5 +1,4 @@
-#ifndef _PACK_JOB_DELIVERY_H_
-#define _PACK_JOB_DELIVERY_H_
+#pragma once
 /*___INFO__MARK_BEGIN__*/
 /*************************************************************************
  * 
@@ -33,5 +32,3 @@
 /*___INFO__MARK_END__*/
 
 int pack_job_delivery(sge_pack_buffer *pb, lListElem *jep);
-
-#endif /* _PACK_JOB_DELIVERY_H_ */

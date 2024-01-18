@@ -1,5 +1,4 @@
-#ifndef __EXECUTION_STATES_H
-#define __EXECUTION_STATES_H
+#pragma once
 /*___INFO__MARK_BEGIN__*/
 /*************************************************************************
  * 
@@ -115,5 +114,3 @@ char *get_sstate_description(int sstate);
 
 extern int shepherd_state;
 extern pid_t coshepherd_pid;
-
-#endif /* __EXECUTION_STATES_H */

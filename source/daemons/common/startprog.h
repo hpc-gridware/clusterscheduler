@@ -1,5 +1,4 @@
-#ifndef __STARTPROG_H
-#define __STARTPROG_H
+#pragma once
 /*___INFO__MARK_BEGIN__*/
 /*************************************************************************
  * 
@@ -33,5 +32,3 @@
 /*___INFO__MARK_END__*/
 
 int startprog(int out, int err, char *, char *, char *, ...);
-
-#endif /* __STARTPROG_H */

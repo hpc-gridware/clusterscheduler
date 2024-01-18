@@ -1,5 +1,4 @@
-#ifndef __SGE_TIME_H
-#define __SGE_TIME_H
+#pragma once
 /*___INFO__MARK_BEGIN__*/
 /*************************************************************************
  * 
@@ -62,6 +61,3 @@ void sge_usleep(int);
 #ifdef __cplusplus
 }
 #endif
-
-#endif /* __SGE_TIME_H */
-

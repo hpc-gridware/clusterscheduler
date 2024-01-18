@@ -1,5 +1,4 @@
-#ifndef __SGE_LOAD_H__
-#define __SGE_LOAD_H__
+#pragma once
 /*___INFO__MARK_BEGIN__*/
 /*************************************************************************
  * 
@@ -34,7 +33,3 @@
 
 bool 
 sge_is_static_load_value(const char *name);
-
-#endif /* __SGE_LOAD_H__ */
-
-

@@ -1,5 +1,4 @@
-#ifndef __MSG_SGEOBJLIB_H
-#define __MSG_SGEOBJLIB_H
+#pragma once
 /*___INFO__MARK_BEGIN__*/
 /*************************************************************************
  *
@@ -360,5 +359,3 @@
 
 #define MSG_CAPACITYEXCEEDED_FSSSIF    _MESSAGE(64555, _("debiting %f of "SFN" on "SFN" "SFN" for %d slots would exceed remaining capacity of %f"))
 #define MSG_EXCLCAPACITYEXCEEDED_FSSSI _MESSAGE(64556, _("debiting (implicit exclusive) %f of "SFN" on "SFN" "SFN" for %d slots would exceed capacity"))
-
-#endif /* __MSG_SGEOBJLIB_H */

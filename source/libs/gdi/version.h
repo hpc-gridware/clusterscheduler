@@ -1,5 +1,4 @@
-#ifndef __VERSION_H
-#define __VERSION_H
+#pragma once
 /*___INFO__MARK_BEGIN__*/
 /*************************************************************************
  * 
@@ -50,5 +49,3 @@ extern const char GE_LONGNAME[]; /* set in version.c */
 extern const char GE_SHORTNAME[]; /* set in version.c */
 extern const gdi_ulong32 GRM_GDI_VERSION; /* set in version.c */
 extern vdict_t GRM_GDI_VERSION_ARRAY[]; /* set in version.c */
-
-#endif /* __VERISON_H */

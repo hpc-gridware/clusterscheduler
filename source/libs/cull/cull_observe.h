@@ -1,3 +1,4 @@
+#pragma once
 #include "cull/cull_list.h"
 
 #ifdef  __cplusplus
@@ -26,4 +27,3 @@ long lObserveGetSize(void);
 #ifdef  __cplusplus
 }
 #endif
-

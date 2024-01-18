@@ -1,5 +1,4 @@
-#ifndef __SGE_SCHEDD_TEXT_H
-#define __SGE_SCHEDD_TEXT_H
+#pragma once
 /*___INFO__MARK_BEGIN__*/
 /*************************************************************************
  * 
@@ -172,5 +171,3 @@ enum {
 #define SCHEDD_INFO_OFFSET (SCHEDD_INFO_CANNOTRUNATHOST-SCHEDD_INFO_CANNOTRUNATHOST_SSS)
 
 const char *sge_schedd_text(int number);
-
-#endif /* __SGE_SCHEDD_TEXT_H */

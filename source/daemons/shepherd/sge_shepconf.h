@@ -1,6 +1,4 @@
-#ifndef __SGE_SHEPCONF_H
-#define __SGE_SHEPCONF_H
-
+#pragma once
 /*___INFO__MARK_BEGIN__*/
 /*************************************************************************
  *
@@ -42,5 +40,3 @@ int shepconf_has_userdef_signal(const char *method_name, int *signal);
 int shepconf_has_notify_signal(const char *notify_name, int *signal);
 
 int shepconf_has_to_notify_before_signal(int *seconds);
-
-#endif /* __SGE_SHEPCONF_H */

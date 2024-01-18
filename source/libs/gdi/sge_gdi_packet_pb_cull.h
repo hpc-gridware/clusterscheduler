@@ -1,5 +1,4 @@
-#ifndef __SGE_PACKET_PB_CULL_H
-#define __SGE_PACKET_PB_CULL_H
+#pragma once
 /*___INFO__MARK_BEGIN__*/
 /*************************************************************************
  * 
@@ -47,5 +46,3 @@ sge_gdi_packet_pack(sge_gdi_packet_class_t *packet, lList **answer_list, sge_pac
 bool
 sge_gdi_packet_pack_task(sge_gdi_packet_class_t *packet, sge_gdi_task_class_t *task,
                          lList **answer_list, sge_pack_buffer *pb);
-
-#endif 

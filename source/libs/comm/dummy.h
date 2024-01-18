@@ -1,5 +1,4 @@
-#ifndef __DUMMY_H 
-#define __DUMMY_H 
+#pragma once
 /*___INFO__MARK_BEGIN__*/
 /*************************************************************************
  *
@@ -41,6 +40,3 @@ int dummy(char* str);
 #ifdef __cplusplus
 }
 #endif
-
-#endif /* __DUMMY_H */    
-

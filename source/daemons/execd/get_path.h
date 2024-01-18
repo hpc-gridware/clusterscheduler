@@ -1,5 +1,4 @@
-#ifndef __GET_PATH_H
-#define __GET_PATH_H
+#pragma once
 /*___INFO__MARK_BEGIN__*/
 /*************************************************************************
  * 
@@ -58,6 +57,3 @@ const char *sge_make_pe_task_active_dir(const lListElem *job, const lListElem *j
 const char *
 expand_path(dstring *dstr_exp_path, const char *path_in, u_long32 job_id, u_long32 ja_task_id,
             const char *job_name, const char *user, const char *fqhost);
-
-#endif /* __GET_PATH_H */
-

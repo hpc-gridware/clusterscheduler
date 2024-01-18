@@ -1,5 +1,4 @@
-#ifndef _SGE_QINSTANCE_QMASTER_H_
-#define _SGE_QINSTANCE_QMASTER_H_
+#pragma once
 /*___INFO__MARK_BEGIN__*/
 /*************************************************************************
  *
@@ -114,5 +113,3 @@ sge_qmaster_qinstance_set_initial_state(lListElem *this_elem);
 bool
 qinstance_reinit_consumable_actual_list(lListElem *this_elem,
                                         lList **answer_list);
-
-#endif /* _SGE_QINSTANCE_QMASTER_H_ */

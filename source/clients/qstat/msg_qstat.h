@@ -1,5 +1,4 @@
-#ifndef __MSG_QSTAT_H
-#define __MSG_QSTAT_H
+#pragma once
 /*___INFO__MARK_BEGIN__*/
 /*************************************************************************
  * 
@@ -35,6 +34,8 @@
 /*___INFO__MARK_END__*/
 
 #include "basis_types.h"
+
+// clang-format off
 
 #define MSG_QSTAT_USAGE_VIEWALSOSCHEDULINGATTRIBUTES     _MESSAGE(19010, _("view additional attributes"))
 #define MSG_QSTAT_USAGE_EXPLAINOPT                       _MESSAGE(19011, _("show reason for queue c(onfiguration ambiguous), a(larm), suspend A(larm), E(rror) state"))
@@ -75,5 +76,4 @@
 #define MSG_QSTAT_NOQUEUESREMAININGAFTERXQUEUESELECTION_S    _MESSAGE(19050, _("no queues remaining after "SFN" queue selection"))
 #define MSG_OPTIONS_WRONGARGUMENTTOSOPT _MESSAGE(19051, _("ERROR! wrong argument to -s option"))
 
-#endif /* __MSG_QSTAT_H */
-
+// clang-format on

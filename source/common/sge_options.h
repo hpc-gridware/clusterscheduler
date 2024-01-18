@@ -1,5 +1,4 @@
-#ifndef __SGE_OPTIONS_H
-#define __SGE_OPTIONS_H
+#pragma once
 /*___INFO__MARK_BEGIN__*/
 /*************************************************************************
  * 
@@ -289,5 +288,3 @@ enum {
 #define VALID_OPT(opt,who) (sge_options[opt][who])
 
 extern unsigned short sge_options[][ALL_OPT + 1]; 
-
-#endif /* __SGE_OPTIONS_H */

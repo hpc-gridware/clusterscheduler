@@ -1,5 +1,4 @@
-#ifndef __CULL_LERRNO_H
-#define __CULL_LERRNO_H
+#pragma once
 /*___INFO__MARK_BEGIN__*/
 /*************************************************************************
  * 
@@ -102,6 +101,3 @@ int lerror(void);
 #ifdef  __cplusplus
 }
 #endif
-
-#endif /* __CULL_LERRNO_H */
-

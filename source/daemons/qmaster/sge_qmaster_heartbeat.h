@@ -1,5 +1,4 @@
-#ifndef _SGE_QMASTER_HEARTBEAT_H_
-#define _SGE_QMASTER_HEARTBEAT_H_
+#pragma once
 /*___INFO__MARK_BEGIN__*/
 /*************************************************************************
  *
@@ -43,6 +42,3 @@ heartbeat_initialize(void);
 
 void       
 increment_heartbeat(sge_gdi_ctx_class_t *ctx, te_event_t anEvent, monitoring_t *monitor);
-
-#endif
-

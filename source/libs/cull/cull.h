@@ -1,5 +1,4 @@
-#ifndef __CULL_H
-#define __CULL_H
+#pragma once
 /*___INFO__MARK_BEGIN__*/
 /*************************************************************************
  * 
@@ -52,5 +51,3 @@
 #include "cull/pack.h"
 
 #endif /* JGDI_GENERATE */
-
-#endif /* __CULL_H */

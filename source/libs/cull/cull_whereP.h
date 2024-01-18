@@ -1,5 +1,4 @@
-#ifndef __CULL_WHEREP_H
-#define __CULL_WHEREP_H
+#pragma once
 /*___INFO__MARK_BEGIN__*/
 /*************************************************************************
  * 
@@ -68,6 +67,3 @@ struct _WhereArg {
 #ifdef  __cplusplus
 }
 #endif
-
-#endif /* __CULL_WHEREP_H */
-

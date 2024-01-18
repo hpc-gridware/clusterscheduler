@@ -1,5 +1,4 @@
-#ifndef __SGE_HREF_H__
-#define __SGE_HREF_H__
+#pragma once
 /*___INFO__MARK_BEGIN__*/
 /*************************************************************************
  * 
@@ -96,5 +95,3 @@ href_list_debug_print(const lList *this_list, const char *prefix);
 
 void
 href_list_make_uniq(lList *this_list, lList **answer_list);
-
-#endif /* __SGE_HREF_H__ */

@@ -1,6 +1,4 @@
-#ifndef __SGE_SUBORDINATE_H
-#define __SGE_SUBORDINATE_H
-
+#pragma once
 /*___INFO__MARK_BEGIN__*/
 /*************************************************************************
  * 
@@ -54,5 +52,3 @@ bool
 so_list_resolve(const lList *so_list, lList **answer_list,
                 lList **resolved_so_list, const char *qinstance_name,
                 const char *hostname, const lList *master_cqueue_list);
-
-#endif /* __SGE_SUBORDINATE_H */

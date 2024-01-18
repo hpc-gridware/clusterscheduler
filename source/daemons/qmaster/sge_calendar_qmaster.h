@@ -1,5 +1,4 @@
-#ifndef __SGE_CALENDAR_QMASTER_H
-#define __SGE_CALENDAR_QMASTER_H
+#pragma once
 /*___INFO__MARK_BEGIN__*/
 /*************************************************************************
  *
@@ -53,7 +52,3 @@ void sge_calendar_event_handler(sge_gdi_ctx_class_t *ctx, te_event_t anEvent, mo
 
 void
 calendar_initalize_timer(sge_gdi_ctx_class_t *ctx, monitoring_t *monitor);
-
-
-#endif /* __SGE_CALENDAR_QMASTER_H */
-

@@ -1,5 +1,4 @@
-#ifndef _SGE_ORDERS_H_
-#define _SGE_ORDERS_H_
+#pragma once
 /*___INFO__MARK_BEGIN__*/
 /*************************************************************************
  * 
@@ -65,5 +64,3 @@ int sge_send_orders2master(sge_evc_class_t *evc, lList **orders);
 #if 0
 int sge_send_job_start_orders(sge_evc_class_t *evc, order_t *orders);
 #endif
-
-#endif /* _SGE_ORDERS_H_ */

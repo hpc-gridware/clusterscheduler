@@ -1,5 +1,4 @@
-#ifndef __SGE_FEATURE_H
-#define __SGE_FEATURE_H
+#pragma once
 /*___INFO__MARK_BEGIN__*/
 /*************************************************************************
  * 
@@ -74,5 +73,3 @@ const char*     feature_get_featureset_name(feature_id_t id);
 feature_id_t    feature_get_active_featureset_id(void);
 bool            feature_is_enabled(feature_id_t id);
 const char*     feature_get_product_name(featureset_product_name_id_t style, dstring *buffer);
- 
-#endif

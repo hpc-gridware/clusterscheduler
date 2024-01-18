@@ -1,5 +1,4 @@
-#ifndef _SGE_WORKER_THREAD_H_
-#define _SGE_WORKER_THREAD_H_
+#pragma once
 /*___INFO__MARK_BEGIN__*/
 /*************************************************************************
  *
@@ -48,6 +47,3 @@ sge_worker_wait_for_new_packet(sge_gdi_packet_class_t **packet);
 
 void *
 sge_worker_main(void *arg);
-
-#endif 
-

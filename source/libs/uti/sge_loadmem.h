@@ -1,5 +1,4 @@
-#ifndef __SGE_LOADMEM_H
-#define __SGE_LOADMEM_H
+#pragma once
 /*___INFO__MARK_BEGIN__*/
 /*************************************************************************
  * 
@@ -75,5 +74,3 @@ int sge_loadmem(sge_mem_info_t *mem_info);
 #ifdef __cplusplus
 }
 #endif
-
-#endif /* __SGE_LOADMEM_H */

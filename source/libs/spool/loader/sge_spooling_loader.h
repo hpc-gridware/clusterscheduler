@@ -1,5 +1,4 @@
-#ifndef __SGE_SPOOLING_LOADER_H 
-#define __SGE_SPOOLING_LOADER_H 
+#pragma once
 /*___INFO__MARK_BEGIN__*/
 /*************************************************************************
  *
@@ -36,5 +35,3 @@
 lListElem *
 spool_create_dynamic_context(lList **answer_list, const char *method,
                              const char *shlib_name, const char *args);
-
-#endif /* __SGE_SPOOLING_LOADER_H */    

@@ -1,5 +1,4 @@
-#ifndef __CULL_PACK_H
-#define __CULL_PACK_H
+#pragma once
 /*___INFO__MARK_BEGIN__*/
 /*************************************************************************
  * 
@@ -97,6 +96,3 @@ void cull_dump_pack_buffer(sge_pack_buffer *pb, FILE *fp);
 #ifdef  __cplusplus
 }
 #endif
-
-#endif /* #ifndef __CULL_PACK_H */
-

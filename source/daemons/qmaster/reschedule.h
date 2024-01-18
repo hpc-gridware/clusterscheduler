@@ -1,5 +1,4 @@
-#ifndef __RESCHEDULE_H
-#define __RESCHEDULE_H
+#pragma once
 /*___INFO__MARK_BEGIN__*/
 /*************************************************************************
  *
@@ -74,5 +73,3 @@ void
 remove_from_reschedule_unknown_lists(sge_gdi_ctx_class_t *ctx,
                                      u_long32 job_number,
                                      u_long32 task_number);
-
-#endif /* __RESCHEDULE_H */

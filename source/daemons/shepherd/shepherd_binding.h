@@ -1,5 +1,4 @@
-#ifndef __SHEPHERD_BINDING_H
-#define __SHEPHERD_BINDING_H
+#pragma once
 /*___INFO__MARK_BEGIN__*/
 /*************************************************************************
  *
@@ -41,5 +40,3 @@
 #include "uti/config_file.h"
 
 int do_core_binding(void);
-
-#endif /* __SHEPHERD_BINDING_H */

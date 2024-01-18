@@ -1,5 +1,4 @@
-#ifndef __SGE_QMOD_QMASTER_H
-#define __SGE_QMOD_QMASTER_H
+#pragma once
 /*___INFO__MARK_BEGIN__*/
 /*************************************************************************
  *
@@ -52,6 +51,3 @@ sge_gdi_qmod(sge_gdi_ctx_class_t *ctx, sge_gdi_packet_class_t *packet, sge_gdi_t
              monitoring_t *monitor);
 
 int sge_signal_queue(sge_gdi_ctx_class_t *ctx, int how, lListElem *qep, lListElem *jep, lListElem *jatep, monitoring_t *monitor);
-
-#endif /* __SGE_QMOD_QMASTER_H */
-

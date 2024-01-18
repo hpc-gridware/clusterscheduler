@@ -1,5 +1,4 @@
-#ifndef __SGE_HASH_H
-#define __SGE_HASH_H
+#pragma once
 /*___INFO__MARK_BEGIN__*/
 /*************************************************************************
  * 
@@ -85,5 +84,3 @@ int hash_compute_size(int number_of_elem);
 #ifdef __cplusplus
 }
 #endif
-
-#endif /* __SGE_HASH_H */

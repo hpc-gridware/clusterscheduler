@@ -1,5 +1,4 @@
-#ifndef __SGE_QSTAT_H
-#define __SGE_QSTAT_H
+#pragma once
 /*___INFO__MARK_BEGIN__*/
 /*************************************************************************
  * 
@@ -375,6 +374,3 @@ void qstat_filter_add_t_attributes(qstat_env_t *qstat_env);
 void qstat_filter_add_U_attributes(qstat_env_t *qstat_env);
 
 int build_job_state_filter(qstat_env_t *qstat_env, const char* job_state, lList **alpp);
-
-#endif
-

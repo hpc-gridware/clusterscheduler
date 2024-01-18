@@ -1,5 +1,4 @@
-#ifndef _SGE_THREAD_CONTROL_H_
-#define _SGE_THREAD_CONTROL_H_
+#pragma once
 /*___INFO__MARK_BEGIN__*/
 /*************************************************************************
  * 
@@ -66,6 +65,3 @@ sge_thread_wait_for_signal(void);
 #ifdef __cplusplus
 }
 #endif
-
-#endif
-

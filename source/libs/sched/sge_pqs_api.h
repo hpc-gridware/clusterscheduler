@@ -1,5 +1,4 @@
-#ifndef _SGE_PQS_API_H_
-#define _SGE_PQS_API_H_
+#pragma once
 
 /*___INFO__MARK_BEGIN__*/
 /*************************************************************************

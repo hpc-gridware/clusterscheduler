@@ -1,5 +1,4 @@
-#ifndef __CONFIGURATION_QMASTER_H
-#define __CONFIGURATION_QMASTER_H
+#pragma once
 /*___INFO__MARK_BEGIN__*/
 /*************************************************************************
  *
@@ -46,5 +45,3 @@ int sge_mod_configuration(sge_gdi_ctx_class_t *ctx, lListElem *aConf, lList **an
 int sge_compare_configuration(const lListElem *aHost, const lList *aConf);
 
 void sge_set_conf_reprioritize(lListElem *aConf, bool aFlag);
-
-#endif /* __CONFIGURATION_QMASTER_H */

@@ -1,5 +1,4 @@
-#ifndef __SGE_STRING_H
-#define __SGE_STRING_H
+#pragma once
 /*___INFO__MARK_BEGIN__*/
 /*************************************************************************
  * 
@@ -118,6 +117,4 @@ const char *sge_replace_substring(const char *input, const char *search, const c
 #ifdef  __cplusplus
 }
 #endif
- 
-#endif /* __SGE_STRING_H */
 

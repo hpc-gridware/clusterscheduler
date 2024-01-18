@@ -1,5 +1,4 @@
-#ifndef __SGE_RUSAGE_H
-#define __SGE_RUSAGE_H
+#pragma once
 /*___INFO__MARK_BEGIN__*/
 /*************************************************************************
  *
@@ -164,5 +163,3 @@ sge_write_rusage(dstring *buffer,
                  lListElem *jr, lListElem *job, lListElem *ja_task, 
                  const char *category_str, const char delimiter,
                  bool intermediate);
-
-#endif /* __SGE_RUSAGE_H */

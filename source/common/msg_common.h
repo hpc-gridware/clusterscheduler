@@ -1,5 +1,4 @@
-#ifndef __MSG_COMMON_H
-#define __MSG_COMMON_H
+#pragma once
 /*___INFO__MARK_BEGIN__*/
 /*************************************************************************
  * 
@@ -1108,14 +1107,3 @@
 #define MSG_PACK_ERRORUNPACKING_S      _MESSAGE(60714, _("error unpacking: "SFN))
 #define MSG_PACK_INVALIDPACKDATA       _MESSAGE(60715, _("the pack string contained invalid characters"))
 #define MSG_PACK_WRONGPACKTYPE_UI      _MESSAGE(60716, _("wrong pack type (got: "sge_U32CFormat" / expected %d"))
-
-/* =================================================
- * please do not enter new messages after this point,
- * if they are global messages (meaningfull for all modules)
- * enter them in the section global error messages
- * else above global messages, or better move your module
- * to some library!
- * =================================================
- */
-
-#endif /* __MSG_COMMON_H */

@@ -1,5 +1,4 @@
-#ifndef _SORT_HOSTS_H_
-#define _SORT_HOSTS_H_
+#pragma once
 /*___INFO__MARK_BEGIN__*/
 /*************************************************************************
  * 
@@ -37,5 +36,3 @@
 int sort_host_list(lList *host_list, const lList *complex_list);
 
 double scaled_mixed_load(const char* load_formula, lListElem *global, lListElem *host, const lList *centry_list);
-
-#endif /* _SORT_HOSTS_H */

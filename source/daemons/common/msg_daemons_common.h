@@ -1,5 +1,4 @@
-#ifndef MSG_DAEMONS_COMMON_H
-#define MSG_DAEMONS_COMMON_H
+#pragma once
 /*___INFO__MARK_BEGIN__*/
 /*************************************************************************
  * 
@@ -205,5 +204,3 @@
 #define MSG_HEART_ACT_QMASTER_FILE_CHANGED  _MESSAGE(27098, _("act_qmaster file has been changed by another qmaster"))
 #define MSG_HEART_READ_TIMEOUT_S            _MESSAGE(27099, _("got timeout error while read data from heartbeat file "SFQ))
 #define MSG_HEART_CANT_SIGNAL               _MESSAGE(27100, _("can't send signal to signal thread"))
-
-#endif /* MSG_DAEMONS_COMMON_H */

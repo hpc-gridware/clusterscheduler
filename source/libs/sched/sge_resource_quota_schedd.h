@@ -1,5 +1,4 @@
-#ifndef __SGE_RESOURCE_QUOTA_SCHEDD_H
-#define __SGE_RESOURCE_QUOTA_SCHEDD_H
+#pragma once
 /*___INFO__MARK_BEGIN__*/
 /*************************************************************************
  * 
@@ -52,5 +51,3 @@ void parallel_revert_rqs_slot_debitation(sge_assignment_t *a, const char *host, 
 /* sequential assignments */
 dispatch_t rqs_by_slots(sge_assignment_t *a, const char *queue, const char *host, 
   u_long32 *tt_rqs_all, bool *is_global, dstring *rue_string, dstring *limit_name, dstring *rule_name, u_long32 tt_best);
-
-#endif /* __SGE_RESOURCE_QUOTA_SCHEDD_H*/

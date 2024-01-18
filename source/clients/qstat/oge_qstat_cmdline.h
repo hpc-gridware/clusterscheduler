@@ -1,5 +1,4 @@
-#ifndef __MSG_QSTAT_COMMANDLINE_H
-#define __MSG_QSTAT_COMMANDLINE_H
+#pragma once
 /*___INFO__MARK_BEGIN__*/
 /*************************************************************************
  * 
@@ -42,6 +41,3 @@ switch_list_qstat_parse_from_file(lList **switch_list, lList **answer_list,
 bool
 switch_list_qstat_parse_from_cmdline(lList **ppcmdline, lList **answer_list,
                                      int qselect_mode, char **argv);
-
-
-#endif /* __MSG_QSTAT_COMMANDLINE_H */

@@ -1,5 +1,4 @@
-#ifndef _SGE_MANOP_H
-#define _SGE_MANOP_H
+#pragma once
 /*___INFO__MARK_BEGIN__*/
 /*************************************************************************
  * 
@@ -37,5 +36,3 @@
 
 bool manop_is_manager(const char *user_name, const lList *master_manager_list);
 bool manop_is_operator(const char *cp, const lList *master_manager_list, const lList *master_operator_list);
-
-#endif /* _SGE_MANOP_H */

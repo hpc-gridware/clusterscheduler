@@ -1,5 +1,4 @@
-#ifndef __SGE_PE_QMASTER_H
-#define __SGE_PE_QMASTER_H
+#pragma once
 /*___INFO__MARK_BEGIN__*/
 /*************************************************************************
  *
@@ -58,6 +57,3 @@ void debit_job_from_pe(lListElem *pep, int slots, u_long32 job_id);
 void reverse_job_from_pe(lListElem *pep, int slots, u_long32 job_id);
 
 void pe_diff_usersets(const lListElem *new_pe, const lListElem *old, lList **new_acl, lList **old_acl);
-
-#endif /* __SGE_PE_QMASTER_H */
-

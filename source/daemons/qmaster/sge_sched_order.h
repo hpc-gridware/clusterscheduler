@@ -1,5 +1,4 @@
-#ifndef _SGE_SCHED_ORDER_H_
-#define _SGE_SCHED_ORDER_H_
+#pragma once
 /*___INFO__MARK_BEGIN__*/
 /*************************************************************************
  *
@@ -57,5 +56,3 @@ sge_schedd_send_orders(sge_gdi_ctx_class_t *ctx, order_t *orders, lList **order_
 
 bool
 sge_schedd_block_until_orders_processed(sge_gdi_ctx_class_t *ctx, lList **answer_list);
-
-#endif

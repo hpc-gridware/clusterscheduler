@@ -1,5 +1,4 @@
-#ifndef __EXECD_JOB_EXEC_H
-#define __EXECD_JOB_EXEC_H
+#pragma once
 /*___INFO__MARK_BEGIN__*/
 /*************************************************************************
  * 
@@ -39,5 +38,3 @@ int do_job_exec(sge_gdi_ctx_class_t *ctx, struct_msg_t *aMsg, sge_pack_buffer *a
 int do_job_slave(sge_gdi_ctx_class_t *ctx, struct_msg_t *aMsg);
 
 bool job_verify_execd_job(const lListElem *job, lList **answer_list, const char *qualified_hostname);
-
-#endif /* __EXECD_JOB_EXEC_H */

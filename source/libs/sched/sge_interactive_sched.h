@@ -1,5 +1,4 @@
-#ifndef _INTERACTIVE_SCHED_H_
-#define _INTERACTIVE_SCHED_H_
+#pragma once
 /*___INFO__MARK_BEGIN__*/
 /*************************************************************************
  * 
@@ -40,5 +39,3 @@ int remove_immediate_jobs(lList *pending_job_list, lList *running_job_list,
                           order_t *orders);
 
 int order_remove_immediate(const lListElem *job, const lListElem *ja_task, order_t *orders);
-
-#endif /* _INTERACTIVE_SCHED_H_ */

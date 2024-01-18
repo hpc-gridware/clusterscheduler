@@ -1,5 +1,4 @@
-#ifndef __SGE_QINSTANCE_STATE_H
-#define __SGE_QINSTANCE_STATE_H
+#pragma once
 /*___INFO__MARK_BEGIN__*/
 /*************************************************************************
  * 
@@ -192,5 +191,3 @@ qinstance_state_append_to_dstring(const lListElem *this_elem, dstring *string);
 
 bool
 qinstance_set_state(lListElem *this_elem, bool set_state, u_long32 bit);
-
-#endif /* __SGE_QINSTANCE_STATE_H */

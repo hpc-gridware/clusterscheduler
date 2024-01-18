@@ -1,6 +1,4 @@
-#ifndef __SGE_TMPNAM_H
-#define __SGE_TMPNAM_H
-
+#pragma once
 /*___INFO__MARK_BEGIN__*/
 /*************************************************************************
  * 
@@ -44,5 +42,3 @@ char *sge_tmpnam(char *aBuffer, dstring *error_message);
 #ifdef __cplusplus
 }
 #endif
-
-#endif /* __SGE_TMPNAM_H */

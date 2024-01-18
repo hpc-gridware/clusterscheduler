@@ -1,5 +1,4 @@
-#ifndef __SGE_SPOOLING_FLATFILE_H 
-#define __SGE_SPOOLING_FLATFILE_H 
+#pragma once
 /*___INFO__MARK_BEGIN__*/
 /*************************************************************************
  *
@@ -111,4 +110,3 @@ spool_classic_default_delete_func(lList **answer_list,
                                    const lListElem *rule,
                                    const char *key, 
                                    const sge_object_type object_type);
-#endif /* __SGE_SPOOLING_FLATFILE_H */    

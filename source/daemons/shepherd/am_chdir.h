@@ -1,5 +1,4 @@
-#ifndef __AM_CHDIR_H
-#define __AM_CHDIR_H
+#pragma once
 /*___INFO__MARK_BEGIN__*/
 /*************************************************************************
  *
@@ -34,5 +33,3 @@
 
 
 int sge_cwd_chdir(char *dir);
-
-#endif /* __AM_CHDIR_H */

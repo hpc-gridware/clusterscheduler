@@ -1,5 +1,4 @@
-#ifndef __SGE_ARCH_H
-#define __SGE_ARCH_H
+#pragma once
 /*___INFO__MARK_BEGIN__*/
 /*************************************************************************
  * 
@@ -49,6 +48,4 @@ const char *sge_get_alias_path(void);
 #ifdef __cplusplus
 }
 #endif
-
-#endif /* __SGE_ARCH_H */
 

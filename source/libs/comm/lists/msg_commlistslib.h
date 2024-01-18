@@ -1,5 +1,4 @@
-#ifndef __MSG_COMMLISTSLIB_H
-#define __MSG_COMMLISTSLIB_H
+#pragma once
 /*___INFO__MARK_BEGIN__*/
 /*************************************************************************
  *
@@ -168,5 +167,3 @@ extern "C" {
 #ifdef __cplusplus
 }
 #endif
-
-#endif /* __MSG_COMMLISTSLIB_H */

@@ -1,5 +1,4 @@
-#ifndef __CULL_WHAT_ELEM_H
-#define __CULL_WHAT_ELEM_H
+#pragma once
 /*___INFO__MARK_BEGIN__*/
 /*************************************************************************
  * 
@@ -44,6 +43,3 @@ lEnumeration *lWhatFromElem(const lListElem *what);
 #ifdef  __cplusplus
 }
 #endif
-
-#endif /* __CULL_WHAT_ELEM_H */
-

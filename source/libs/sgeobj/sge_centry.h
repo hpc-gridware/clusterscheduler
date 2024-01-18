@@ -1,5 +1,4 @@
-#ifndef __SGE_CENTRY_H 
-#define __SGE_CENTRY_H 
+#pragma once
 /*___INFO__MARK_BEGIN__*/
 /*************************************************************************
  *
@@ -203,6 +202,3 @@ validate_load_formula(const char *formula, lList **answer_list, const lList *cen
 bool load_formula_is_centry_referenced(const char *load_formula, const lListElem *centry);
 
 const char* sge_get_dominant_stringval(lListElem *rep, u_long32 *dominant_p, dstring *resource_string_p);
-
-#endif /* __SGE_CENTRY_H */
-

@@ -1,5 +1,4 @@
-#ifndef __MSG_KRB_H
-#define __MSG_KRB_H
+#pragma once
 /*___INFO__MARK_BEGIN__*/
 /*************************************************************************
  * 
@@ -119,6 +118,3 @@
 #define MSG_KRB_COULDNOTECRYPTTGTFORJOBXY_DS    _MESSAGE(53076, _("could not encrypt TGT for job "sge_U32CFormat" - "SFN))
 #define MSG_KRB_COULDNOTSTORERENEWEDTGTFORXJOBY_SD _MESSAGE(53077, _("could not store renewed TGT for "SFN" - job "sge_U32CFormat))
 #define MSG_KRB_COULDNOTGETUSERIDFORXY_SD       _MESSAGE(53078, _("could not get user ID for "SFN" - job "sge_U32CFormat))
-
-
-#endif /* __MSG_KRB_H  */ 

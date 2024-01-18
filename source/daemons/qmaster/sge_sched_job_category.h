@@ -1,5 +1,4 @@
-#ifndef __SGE_CATEGORY_H
-#define __SGE_CATEGORY_H
+#pragma once
 /*___INFO__MARK_BEGIN__*/
 /*************************************************************************
  *
@@ -58,6 +57,3 @@ void sge_set_job_category_message_added( lRef cat );
 void sge_print_categories(void);
 int sge_category_count(void);
 int sge_cs_category_count(void); 
-
-#endif /* __SGE_CATEGORY_H */
-

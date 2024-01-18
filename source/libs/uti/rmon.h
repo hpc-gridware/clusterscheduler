@@ -1,5 +1,4 @@
-#ifndef __RMON_H
-#define __RMON_H
+#pragma once
 /*___INFO__MARK_BEGIN__*/
 /*************************************************************************
  * 
@@ -90,6 +89,4 @@ rmon_helper_t *rmon_get_helper(void);
 #ifdef __cplusplus
 }
 #endif
-
-#endif /* __RMON_H */
 

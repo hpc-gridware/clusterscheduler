@@ -1,5 +1,4 @@
-#ifndef __CULL_MULTITYPE_H
-#define __CULL_MULTITYPE_H
+#pragma once
 /*___INFO__MARK_BEGIN__*/
 /*************************************************************************
  * 
@@ -266,5 +265,3 @@ const lListElem *lGetElemHostNext(const lList *lp, int nm, const char *str, cons
 #ifdef  __cplusplus
 }
 #endif
-
-#endif /* __CULL_MULTITYPE_H */

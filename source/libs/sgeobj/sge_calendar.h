@@ -1,5 +1,4 @@
-#ifndef __SGE_CALENDAR_H 
-#define __SGE_CALENDAR_H 
+#pragma once
 /*___INFO__MARK_BEGIN__*/
 /*************************************************************************
  *
@@ -60,5 +59,3 @@ void cullify_tm(lListElem *tm_ep, struct tm *tm_now);
 void uncullify_tm(const lListElem *tm_ep, struct tm *tm_now);
 
 bool calendar_open_in_time_frame(const lListElem *cep, u_long32 start_time, u_long32 duration);
-
-#endif /* __SGE_CALENDAR_H */

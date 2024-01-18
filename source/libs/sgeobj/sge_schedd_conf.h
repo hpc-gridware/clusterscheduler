@@ -1,6 +1,4 @@
-#ifndef __SGE_SCHEDCONFL_H
-#define __SGE_SCHEDCONFL_H
-
+#pragma once
 /*___INFO__MARK_BEGIN__*/
 /*************************************************************************
  * 
@@ -246,5 +244,3 @@ void sconf_set_tmp_sme(lListElem *sme);
 void sconf_reset_jobs(void);
 
 void sconf_get_weight_ticket_urgency_priority(double *ticket, double *urgency, double *priority);
-
-#endif                          /* __SGE_SCHEDCONFL_H */

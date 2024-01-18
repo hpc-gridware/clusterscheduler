@@ -1,5 +1,4 @@
-#ifndef __UNPARSE_JOB_CULL_H
-#define __UNPARSE_JOB_CULL_H
+#pragma once
 /*___INFO__MARK_BEGIN__*/
 /*************************************************************************
  * 
@@ -37,5 +36,3 @@
 #define FLG_FULL_CMDLINE 1
 
 lList *cull_unparse_job_parameter(sge_gdi_ctx_class_t *ctx, lList **pcmdline, lListElem *job, int flags);
-
-#endif /* __UNPARSE_JOB_CULL_H */

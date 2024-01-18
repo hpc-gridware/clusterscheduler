@@ -1,5 +1,4 @@
-#ifndef __SGE_PACKET_TYPE_H
-#define __SGE_PACKET_TYPE_H
+#pragma once
 /*___INFO__MARK_BEGIN__*/
 /*************************************************************************
  * 
@@ -185,5 +184,3 @@ struct _sge_gdi_packet_class_t {
     */
    sge_gdi_packet_class_t *next;
 };
-
-#endif 

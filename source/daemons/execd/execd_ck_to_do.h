@@ -1,5 +1,4 @@
-#ifndef __EXECD_CK_TO_DO_H
-#define __EXECD_CK_TO_DO_H
+#pragma once
 /*___INFO__MARK_BEGIN__*/
 /*************************************************************************
  * 
@@ -36,5 +35,3 @@
 
 int do_ck_to_do(sge_gdi_ctx_class_t *ctx, bool is_qmaster_down);
 int register_at_ptf(const lListElem *jep, const lListElem *jatep, const lListElem *petep);
-
-#endif /* __EXECD_CK_TO_DO_H */

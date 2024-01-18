@@ -1,5 +1,4 @@
-#ifndef __SGE_USERPRJ_H 
-#define __SGE_USERPRJ_H 
+#pragma once
 /*___INFO__MARK_BEGIN__*/
 /*************************************************************************
  *
@@ -95,5 +94,3 @@ bool prj_list_do_all_exist(const lList *this_list, lList **answer_list,
 
 lListElem *getUserTemplate(void);
 lListElem *getPrjTemplate(void);
-
-#endif /* __SGE_USERPRJ_H */

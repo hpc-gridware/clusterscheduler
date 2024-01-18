@@ -1,5 +1,4 @@
-#ifndef __SGE_REPORT_H
-#define __SGE_REPORT_H
+#pragma once
 /*___INFO__MARK_BEGIN__*/
 /*************************************************************************
  * 
@@ -102,5 +101,3 @@ void job_report_init_from_job_with_usage(lListElem *job_report,
                                          lListElem *ja_task,
                                          lListElem *pe_task,
                                          u_long32 time_stamp);
-
-#endif /* __SGE_REPORT_H */

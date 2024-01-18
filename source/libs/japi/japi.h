@@ -1,6 +1,4 @@
-#ifndef __JAPI_H
-#define __JAPI_H
-
+#pragma once
 /*___INFO__MARK_BEGIN__*/
 /*************************************************************************
  *
@@ -325,5 +323,3 @@ drmaa_attr_values_t *japi_allocate_string_vector(int type);
 int japi_init_mt(dstring *diag);
 
 bool japi_is_delegated_file_staging_enabled(dstring *diag);
-
-#endif /* __JAPI_H */

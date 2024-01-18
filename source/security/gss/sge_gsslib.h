@@ -1,6 +1,4 @@
-
-#ifndef __SGE_GSSLIB_H
-#define __SGE_GSSLIB_H
+#pragma once
 /*___INFO__MARK_BEGIN__*/
 /*************************************************************************
  * 
@@ -74,6 +72,4 @@ sec_login_set_context_flags(sec_login_handle_t *login_context,
 #else
 #define GSSAPI_INT int
 #endif
-
-#endif /* __SGE_GSSLIB_H */
 

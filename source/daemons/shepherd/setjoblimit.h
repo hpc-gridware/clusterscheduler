@@ -1,5 +1,4 @@
-#ifndef __SETJOBLIMIT_H
-#define __SETJOBLIMIT_H
+#pragma once
 /*___INFO__MARK_BEGIN__*/
 /*************************************************************************
  *
@@ -37,9 +36,3 @@
 
 osjobid_t get_rlimits_os_job_id (void);
 void set_rlimits_os_job_id(osjobid_t new_os_job_id); 
-
-#endif /* __SETJOBLIMIT_H */
-
-
-
-

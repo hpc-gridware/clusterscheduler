@@ -1,5 +1,4 @@
-#ifndef _sge_flatfile_obj_H
-#define	_sge_flatfile_obj_H
+#pragma once
 /*___INFO__MARK_BEGIN__*/
 /*************************************************************************
  *
@@ -57,5 +56,3 @@ spooling_field *sge_build_EH_field_list(bool spool, bool to_stdout,
                                             bool history);
 spooling_field *sge_build_CONF_field_list(bool spool_config);
 spooling_field *sge_build_QU_field_list(bool to_stdout, bool to_file);
-
-#endif	/* _sge_flatfile_obj_H */

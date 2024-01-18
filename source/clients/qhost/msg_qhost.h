@@ -36,6 +36,8 @@
 
 #include "basis_types.h"
 
+// clang-format off
+
 #define MSG_HEADER_HOSTNAME   "HOSTNAME"
 #define MSG_HEADER_ARCH       "ARCH"
 #define MSG_HEADER_NPROC      "NCPU"
@@ -52,3 +54,5 @@
 #define MSG_QHOST_F_OPT_USAGE       _MESSAGE(9005, _("show (selected) resources"))
 #define MSG_QHOST_u_OPT_USAGE       _MESSAGE(9006, _("show only jobs for user"))
 #define MSG_QHOST_ncb_OPT_USAGE     _MESSAGE(9007, _("suppress host topology based information"))
+
+// clang-format on

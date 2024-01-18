@@ -1,5 +1,4 @@
-#ifndef SGE_SCHEDD_PREPARE_DATA
-#define SGE_SCHEDD_PREPARE_DATA
+#pragma once
 /*___INFO__MARK_BEGIN__*/
 /*************************************************************************
  *
@@ -102,8 +101,3 @@ sge_callback_result
 sge_process_userset_event_before(sge_evc_class_t *evc, 
                                  sge_object_type type, sge_event_action action, 
                                  lListElem *event, void *clientdata);
-
-#endif /* SGE_SCHEDD_PREPARE_DATA */
-
-
-

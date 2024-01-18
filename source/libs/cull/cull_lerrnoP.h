@@ -1,5 +1,4 @@
-#ifndef __CULL_LERRNOP_H
-#define __CULL_LERRNOP_H
+#pragma once
 /*___INFO__MARK_BEGIN__*/
 /*************************************************************************
  * 
@@ -45,5 +44,3 @@ extern "C" {
 #ifdef  __cplusplus
 }
 #endif
-
-#endif /* __CULL_LERRNOP_H */

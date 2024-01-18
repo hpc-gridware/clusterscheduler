@@ -1,5 +1,4 @@
-#ifndef _EXEC_WRAPPER_H_
-#define _EXEC_WRAPPER_H_
+#pragma once
 /*___INFO__MARK_BEGIN__*/
 /*************************************************************************
  * 
@@ -34,5 +33,3 @@
 
 typedef void (*print_func_t)(char *fmt, ...);
 char** sge_get_qtask_args(void *context, char *taskname, lList **answer_list);
-
-#endif /* _EXEC_WRAPPER_H_ */

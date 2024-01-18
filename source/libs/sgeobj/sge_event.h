@@ -1,5 +1,4 @@
-#ifndef __SGE_EVENT_H
-#define __SGE_EVENT_H
+#pragma once
 /*___INFO__MARK_BEGIN__*/
 /*************************************************************************
  * 
@@ -315,5 +314,3 @@ typedef bool (*evm_ack_func_t)(
 const char *event_text(const lListElem *event, dstring *buffer);
 
 bool event_client_verify(const lListElem *event_client, lList **answer_list, bool add);
-
-#endif /* __SGE_EVENT_H */

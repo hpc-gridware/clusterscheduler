@@ -1,5 +1,4 @@
-#ifndef __SETUP_PATH_H
-#define __SETUP_PATH_H
+#pragma once
 /*___INFO__MARK_BEGIN__*/
 /*************************************************************************
  * 
@@ -125,5 +124,3 @@ void sge_path_state_class_destroy(sge_path_state_class_t **pst);
 #ifdef __cplusplus
 }
 #endif
-
-#endif /* __SETUP_PATH_H */

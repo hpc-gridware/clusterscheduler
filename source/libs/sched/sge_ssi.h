@@ -1,5 +1,4 @@
-#ifndef _SGE_SSI_H_
-#define _SGE_SSI_H_
+#pragma once
 /*___INFO__MARK_BEGIN__*/
 /*************************************************************************
  * 
@@ -90,5 +89,3 @@ typedef struct {
 
 bool sge_ssi_job_start(sge_evc_class_t *evc, const char *job_identifier, const char *pe, task_map tasks[]);
 bool sge_ssi_job_cancel(sge_evc_class_t *evc, const char *job_identifier, bool reschedule); 
-
-#endif /* _SGE_SSI_H_ */

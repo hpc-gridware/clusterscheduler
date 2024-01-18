@@ -1,5 +1,4 @@
-#ifndef __SGE_QINSTANCE_TYPE_H
-#define __SGE_QINSTANCE_TYPE_H
+#pragma once
 
 /*___INFO__MARK_BEGIN__*/
 /*************************************************************************
@@ -59,5 +58,3 @@ qinstance_print_qtype_to_dstring(const lListElem *this_elem,
 bool
 qinstance_parse_qtype_from_string(lListElem *queue, lList **answer_list,
                                   const char *value);
-
-#endif /* __SGE_QINSTANCE_TYPE_H */

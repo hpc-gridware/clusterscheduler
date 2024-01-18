@@ -1,4 +1,4 @@
-#ifndef __JAPIP_H
+#pragma once
 
 #include "cull/cull.h"
 
@@ -58,5 +58,3 @@ struct drmaa_job_ids_s {
       struct drmaa_string_array_iterator_s si;
    } it;
 };
-
-#endif /* __JAPIP_H */

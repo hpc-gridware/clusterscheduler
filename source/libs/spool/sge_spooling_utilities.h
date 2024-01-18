@@ -1,5 +1,4 @@
-#ifndef __SGE_SPOOLING_UTILITIES_H 
-#define __SGE_SPOOLING_UTILITIES_H 
+#pragma once
 /*___INFO__MARK_BEGIN__*/
 /*************************************************************************
  *
@@ -150,5 +149,3 @@ bool
 spool_default_validate_list_func(lList **answer_list, 
                           const lListElem *type, const lListElem *rule,
                           const sge_object_type object_type);
-
-#endif /* __SGE_SPOOLING_UTILITIES_H */

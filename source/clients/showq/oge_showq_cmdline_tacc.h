@@ -1,3 +1,4 @@
+#pragma once
 /*___INFO__MARK_BEGIN__*/
 /*************************************************************************
  * 
@@ -30,13 +31,9 @@
  ************************************************************************/
 /*___INFO__MARK_END__*/
 
-#ifndef __MSG_QSTAT_COMMANDLINE_H
-#define __MSG_QSTAT_COMMANDLINE_H
-
 bool showq_usage(FILE *fp);
 
 bool switch_list_showq_parse_from_cmdline_tacc(lList **ppcmdline,
                                                lList **answer_list,
                                                char **argv);
 
-#endif /* __MSG_QSTAT_COMMANDLINE_H */

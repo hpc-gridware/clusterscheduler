@@ -1,5 +1,4 @@
-#ifndef __CULL_DB_H
-#define __CULL_DB_H
+#pragma once
 /*___INFO__MARK_BEGIN__*/
 /*************************************************************************
  * 
@@ -80,6 +79,3 @@ int lDiffListUlong(int nm, lList **lpp1, lList **lpp2);
 #ifdef  __cplusplus
 }
 #endif
-
-#endif /* __CULL_DB_H */
-

@@ -33,9 +33,7 @@
 
 #include "basis_types.h"
 
-/*
-** qquota.c
-*/
+// clang-format off
 
 #define MSG_QQUOTA_h_OPT_USAGE        _MESSAGE(10000, _("display only selected hosts"))
 #define MSG_QQUOTA_l_OPT_USAGE        _MESSAGE(10001, _("request the given resources"))
@@ -46,3 +44,5 @@
 
 #define MSG_QQUOTA_HELP_WCPROJECT     _MESSAGE(10010, _("wildcard expression matching a project"))
 #define MSG_QQUOTA_HELP_WCPE          _MESSAGE(10011, _("wildcard expression matching a parallel environment"))
+
+// clang-format on

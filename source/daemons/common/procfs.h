@@ -1,5 +1,4 @@
-#ifndef __PROCFS_H
-#define __PROCFS_H
+#pragma once
 /*___INFO__MARK_BEGIN__*/
 /*************************************************************************
  * 
@@ -49,4 +48,3 @@ int groups_in_proc (void);
 #endif
 
 #endif
-#endif /* __PROCFS_H */

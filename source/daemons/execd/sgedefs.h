@@ -1,5 +1,4 @@
-#ifndef SGEDEFS_H
-#define SGEDEFS_H
+#pragma once
 /*___INFO__MARK_BEGIN__*/
 /*************************************************************************
  * 
@@ -43,5 +42,3 @@ typedef uint64 JobID_t;
 #else
 typedef pid_t JobID_t;
 #endif
-
-#endif /* SGEDEFS_H */

@@ -1,5 +1,4 @@
-#ifndef __SGE_STRING_APPEND_H
-#define __SGE_STRING_APPEND_H
+#pragma once
 /*___INFO__MARK_BEGIN__*/
 /*************************************************************************
  * 
@@ -111,6 +110,3 @@ void sge_dstring_strip_white_space_at_eol(dstring *string);
 #ifdef __cplusplus
 }
 #endif
-
-#endif /* __SGE_STRING_APPEND_H */
-

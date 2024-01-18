@@ -1,5 +1,4 @@
-#ifndef __SGE_QMASTER_TIMED_EVENT_H__
-#define __SGE_QMASTER_TIMED_EVENT_H__
+#pragma once
 /*___INFO__MARK_BEGIN__*/
 /*************************************************************************
  *
@@ -139,6 +138,3 @@ extern u_long32    te_get_first_numeric_key(te_event_t);
 extern u_long32    te_get_second_numeric_key(te_event_t);
 extern char*       te_get_alphanumeric_key(te_event_t);
 extern u_long32    te_get_sequence_number(te_event_t);
-
-#endif /* __SGE_QMASTER_TIMED_EVENT_H__ */
-

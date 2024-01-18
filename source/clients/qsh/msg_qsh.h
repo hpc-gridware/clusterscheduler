@@ -1,5 +1,4 @@
-#ifndef __MSG_QSH_H
-#define __MSG_QSH_H
+#pragma once
 /*___INFO__MARK_BEGIN__*/
 /*************************************************************************
  * 
@@ -34,6 +33,8 @@
 
 
 #include "basis_types.h"
+
+// clang-format off
 
 #define MSG_QSH_WAITINGFORINTERACTIVEJOBTOBESCHEDULED    _MESSAGE(17000, _("waiting for interactive job to be scheduled ..."))
 #define MSG_QSH_REQUESTFORINTERACTIVEJOBHASBEENCANCELED    _MESSAGE(17001, _("\nRequest for interactive job has been canceled."))
@@ -74,7 +75,6 @@
 #define MSG_QSH_SETTINGCONNECTIONPARAMS_S _MESSAGE(17036, _("setting connection parameters: "SFQ))
 #define MSG_QSH_UNMATCHED_C _MESSAGE(17037, _("unmatched quote %c."))
 #define MSG_QSH_ERRORRUNNINGIJSSERVER_S _MESSAGE(17038, _("error running IJS server: "SFQ))
-#define MSG_QSH_ERRORWHILEWAITINGFORBUILTINIJSCONNECTION_S _MESSAGE(17039, _("error while waiting for builtin IJS connection: "SFQ))
-
-#endif /* __MSG_QSH_H */
-
+#define MSG_QSH_ERRORWHILEWAITINGFORBUILTINIJSCONNECTION_S _MESSAGE(17039, _("error while waiting for builtin IJS connection: "SFQ)) \
+                                                                                                                                     \
+// clang-format on

@@ -1,5 +1,4 @@
-#ifndef __SGE_ORDER_H
-#define __SGE_ORDER_H
+#pragma once
 /*___INFO__MARK_BEGIN__*/
 /*************************************************************************
  * 
@@ -99,4 +98,3 @@ sge_free_cull_order_pos(order_pos_t **cull_order_pos);
 void 
 sge_create_cull_order_pos(order_pos_t **cull_order_pos, const lListElem *jep, const lListElem *jatp,
                           const lListElem *joker, const lListElem *joker_task); 
-#endif /* __SGE_ORDER_H */

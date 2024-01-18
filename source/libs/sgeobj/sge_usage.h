@@ -1,5 +1,4 @@
-#ifndef __SGE_USAGE_H 
-#define __SGE_USAGE_H 
+#pragma once
 /*___INFO__MARK_BEGIN__*/
 /*************************************************************************
  *
@@ -82,5 +81,3 @@ void
 usage_list_sum(lList *usage_list, const lList *add_usage_list);
 
 lList *scale_usage(const lList *scaling, const lList *prev_usage, lList *scaled_usage);
- 
-#endif /* __SGE_USAGE_H */

@@ -1,5 +1,4 @@
-#ifndef _SGE_THREAD_CONTROL_OLD_H_
-#define _SGE_THREAD_CONTROL_OLD_H_
+#pragma once
 /*___INFO__MARK_BEGIN__*/
 /*************************************************************************
  *
@@ -79,7 +78,3 @@ sge_qmaster_set_exit_state(int new_state);
 
 bool
 sge_qmaster_do_final_spooling(void);
-
-
-#endif 
-

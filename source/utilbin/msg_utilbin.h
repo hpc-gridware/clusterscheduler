@@ -1,5 +1,4 @@
-#ifndef __MSG_UTILBIN_H
-#define __MSG_UTILBIN_H
+#pragma once
 /*___INFO__MARK_BEGIN__*/
 /*************************************************************************
  * 
@@ -185,5 +184,3 @@
 #define MSG_SUIDROOT_START_BY_NONROOT       _MESSAGE(213109, _(SFN": must be started with uid != 0"))
 #define MSG_SUIDROOT_EFFECTIVE_USER_ROOT    _MESSAGE(213110, _(SFN": effective uid should be 0"))
 #define MSG_SUIDROOT_BIND_PRIV_SOCK_FAILED  _MESSAGE(213111, _(SFN": binding a privileged socket fails"))
-
-#endif /* __MSG_UTILBIN_H */

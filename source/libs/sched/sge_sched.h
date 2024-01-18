@@ -1,5 +1,4 @@
-#ifndef __SGE_SCHED_H_
-#define __SGE_SCHED_H_
+#pragma once
 /*___INFO__MARK_BEGIN__*/
 /*************************************************************************
  * 
@@ -46,5 +45,3 @@
 /* Temporary SGE switches */
 #define project_enforcement 0
 #define sort_by_load 0
-
-#endif /* __SGE_SCHED_H_ */

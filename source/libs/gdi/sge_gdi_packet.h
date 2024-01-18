@@ -1,5 +1,4 @@
-#ifndef __SGE_PACKET_H
-#define __SGE_PACKET_H
+#pragma once
 /*___INFO__MARK_BEGIN__*/
 /*************************************************************************
  * 
@@ -61,5 +60,3 @@ sge_gdi_packet_verify_version(sge_gdi_packet_class_t *packet, lList **alpp);
 
 const char *
 sge_gdi_task_get_operation_name(sge_gdi_task_class_t *task);
-
-#endif 

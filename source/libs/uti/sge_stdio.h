@@ -1,5 +1,4 @@
-#ifndef __SGE_STDIO_H
-#define __SGE_STDIO_H
+#pragma once
 /*___INFO__MARK_BEGIN__*/
 /*************************************************************************
  * 
@@ -158,9 +157,6 @@ pid_t sge_peopen_r(const char *shell, int login_shell, const char *command,
 #define SGE_DEFAULT_PATH "/usr/local/bin:/bin:/usr/bin"
 #endif
 
-
 #ifdef __cplusplus
 }
 #endif
-
-#endif /* __SGE_STDIO_H */

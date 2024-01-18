@@ -1,5 +1,4 @@
-#ifndef __SGE_GETLOADAVG_H
-#define __SGE_GETLOADAVG_H
+#pragma once
 /*___INFO__MARK_BEGIN__*/
 /*************************************************************************
  * 
@@ -65,7 +64,3 @@ int get_channel_fd(void);
 #ifdef __cplusplus
 }
 #endif
-
-#endif /* __SGE_GETLOADAVG_H */
-
-

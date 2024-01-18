@@ -1,5 +1,4 @@
-#ifndef _SGE_REPORTING_QMASTER_H_
-#define _SGE_REPORTING_QMASTER_H_
+#pragma once
 /*___INFO__MARK_BEGIN__*/
 /*************************************************************************
  *
@@ -145,6 +144,3 @@ bool
 reporting_create_ar_acct_records(lList **answer_list,
                                 const lListElem *ar,
                                 u_long32 report_time);
-
-#endif /* _SGE_REPORTING_QMASTER_H_ */
-

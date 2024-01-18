@@ -1,5 +1,4 @@
-#ifndef __QUEUEL_H
-#define __QUEUEL_H
+#pragma once
 /*___INFO__MARK_BEGIN__*/
 /*************************************************************************
  * 
@@ -78,6 +77,3 @@ NAMEEND
 
 #define QueueS sizeof(QueueN)/sizeof(char*)
 #define QmonQueueS sizeof(QmonQueueN)/sizeof(char*)
-
-#endif /* __QUEUEL_H */
-

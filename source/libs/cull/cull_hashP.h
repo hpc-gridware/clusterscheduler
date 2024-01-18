@@ -1,5 +1,4 @@
-#ifndef __CULL_HASHP_H
-#define __CULL_HASHP_H
+#pragma once
 /*___INFO__MARK_BEGIN__*/
 /*************************************************************************
  * 
@@ -41,6 +40,3 @@ typedef struct _cull_htable *cull_htable;
 #ifdef  __cplusplus
 }
 #endif
-
-#endif /* #ifndef __CULL_HASHP_H */
-

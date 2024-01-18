@@ -1,5 +1,4 @@
-#ifndef __HOST_H
-#define __HOST_H
+#pragma once
 /*___INFO__MARK_BEGIN__*/
 /*************************************************************************
  * 
@@ -98,5 +97,3 @@ int sge_get_execd_port(void);
 #ifdef __cplusplus
 }
 #endif
-
-#endif /* __HOST_H */

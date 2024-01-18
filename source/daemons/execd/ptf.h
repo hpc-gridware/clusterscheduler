@@ -1,5 +1,4 @@
-#ifndef __PTF_H
-#define __PTF_H
+#pragma once
 /*___INFO__MARK_BEGIN__*/
 /*************************************************************************
  * 
@@ -174,6 +173,3 @@ void ptf_show_registered_jobs(void);
 #define PTF_ERROR_NONE                  0
 #define PTF_ERROR_JOB_NOT_FOUND         1
 #define PTF_ERROR_INVALID_ARGUMENT      2
-
-#endif /* __PTF_H */
-

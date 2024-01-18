@@ -1,5 +1,4 @@
-#ifndef _SGE_THREAD_SCHEDULER_H_
-#define _SGE_THREAD_SCHEDULER_H_
+#pragma once
 /*___INFO__MARK_BEGIN__*/
 /*************************************************************************
  *
@@ -70,6 +69,3 @@ sge_scheduler_terminate(sge_gdi_ctx_class_t *ctx, lList **answer_list);
 
 void *
 sge_scheduler_main(void *arg);
-
-#endif 
-

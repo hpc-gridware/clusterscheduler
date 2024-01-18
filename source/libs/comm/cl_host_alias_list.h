@@ -1,6 +1,4 @@
-#ifndef __CL_HOST_ALIAS_LIST_H
-#define __CL_HOST_ALIAS_LIST_H
-
+#pragma once
 /*___INFO__MARK_BEGIN__*/
 /*************************************************************************
  *
@@ -68,6 +66,3 @@ cl_host_alias_list_elem_t* cl_host_alias_list_get_last_elem(cl_host_alias_list_e
 #ifdef __cplusplus
 }
 #endif
-
-#endif /* __CL_HOST_ALIAS_LIST_H */
-

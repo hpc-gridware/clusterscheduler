@@ -1,5 +1,4 @@
-#ifndef __CL_DATA_TYPES_H
-#define __CL_DATA_TYPES_H
+#pragma once
 /*___INFO__MARK_BEGIN__*/
 /*************************************************************************
  *
@@ -534,10 +533,6 @@ struct cl_com_connection_type {
    void*         com_private;
 };
 
-
-
 #ifdef __cplusplus
 }
 #endif
-
-#endif /* __CL_DATA_TYPES_H */

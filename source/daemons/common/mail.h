@@ -1,5 +1,4 @@
-#ifndef __MAIL_H
-#define __MAIL_H
+#pragma once
 /*___INFO__MARK_BEGIN__*/
 /*************************************************************************
  * 
@@ -33,5 +32,3 @@
 /*___INFO__MARK_END__*/
 
 void cull_mail(u_long32 progid, const lList *user_list, const char *subj, const char *buf, const char *mail_type);
-
-#endif /* __MAIL_H */

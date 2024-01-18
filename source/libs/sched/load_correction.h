@@ -1,5 +1,4 @@
-#ifndef __LOAD_CORRECTION_H
-#define __LOAD_CORRECTION_H
+#pragma once
 /*___INFO__MARK_BEGIN__*/
 /*************************************************************************
  * 
@@ -35,5 +34,3 @@
 int correct_load(lList *lp_job, lList *lp_queue, lList *lpp_host, u_long32 decay_time, bool monitor_next_run);
 
 int correct_capacities(lList *host_list, const lList *complex_list);
-
-#endif /* __LOAD_CORRECTION_H */

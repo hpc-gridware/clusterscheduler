@@ -1,5 +1,4 @@
-#ifndef _TEST_SGE_LOCK_MAIN_H_
-#define _TEST_SGE_LOCK_MAIN_H_
+#pragma once
 
 /*___INFO__MARK_BEGIN__*/
 /*************************************************************************
@@ -53,5 +52,3 @@ int validate(int count);
 #ifdef __cplusplus
 }
 #endif
-
-#endif  /* _TEST_SGE_LOCK_MAIN_H_ */

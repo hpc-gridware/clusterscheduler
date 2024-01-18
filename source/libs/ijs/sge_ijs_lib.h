@@ -1,3 +1,4 @@
+#pragma once
 /* Portions of this code are Copyright 2011 Univa Inc. */
 
 #ifdef __cplusplus

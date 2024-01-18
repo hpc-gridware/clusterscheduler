@@ -1,5 +1,4 @@
-#ifndef _READ_WRITE_JOB_H_
-#define _READ_WRITE_JOB_H_
+#pragma once
 /*___INFO__MARK_BEGIN__*/
 /*************************************************************************
  * 
@@ -49,5 +48,3 @@ int job_list_read_from_disk(lList **job_list, char *list_name, int check,
 
 int job_write_common_part(lListElem *job, u_long32 ja_task_id,
                           sge_spool_flags_t flags);
-
-#endif /* _READ_WRITE_JOB_H_ */

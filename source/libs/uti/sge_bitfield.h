@@ -1,5 +1,4 @@
-#ifndef __SGE_BITFIELD_H
-#define __SGE_BITFIELD_H
+#pragma once
 /*___INFO__MARK_BEGIN__*/
 /*************************************************************************
  * 
@@ -120,5 +119,3 @@ sge_bitfield_print(const bitfield *bf, FILE *fd);
 #ifdef __cplusplus
 }
 #endif
-
-#endif /* __SGE_BITFIELD_H */

@@ -1,6 +1,4 @@
-#ifndef __SGE_JOB_VERIFY_H
-#define __SGE_JOB_VERIFY_H
-
+#pragma once
 /*___INFO__MARK_BEGIN__*/
 /*************************************************************************
  *
@@ -38,5 +36,3 @@ sge_job_verify_adjust(sge_gdi_ctx_class_t *ctx, lListElem *jep, lList **alpp,
                       lList **lpp, char *ruser, char *rhost, uid_t uid, gid_t gid, char *group,
                       sge_gdi_packet_class_t *packet, sge_gdi_task_class_t *task,
                       monitoring_t *monitor);
-
-#endif /* __SGE_JOB_VERIFY_H */

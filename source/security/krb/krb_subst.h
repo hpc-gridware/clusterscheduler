@@ -1,6 +1,4 @@
-
-#ifndef __KRB_SUBST_H
-#define __KRB_SUBST_H
+#pragma once
 /*___INFO__MARK_BEGIN__*/
 /*************************************************************************
  * 
@@ -40,5 +38,3 @@
 	#define receive_message(a,b,c,d,e,f,g) \
 		krb_receive_message(a,b,c,d,e,f,g)
 #endif
-
-#endif /* __KRB_SUBST_H */

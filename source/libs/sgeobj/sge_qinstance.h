@@ -1,5 +1,4 @@
-#ifndef __SGE_QINSTANCE_H
-#define __SGE_QINSTANCE_H
+#pragma once
 /*___INFO__MARK_BEGIN__*/
 /*************************************************************************
  * 
@@ -153,5 +152,3 @@ qinstance_verify_full_name(lList **answer_list, const char *full_name);
 
 void
 qinstance_set_error(lListElem *qinstance, u_long32 type, const char *message, bool set_error);
-
-#endif /* __SGE_QINSTANCE_H */

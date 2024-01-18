@@ -1,5 +1,4 @@
-#ifndef __ADMIN_MAIL_H
-#define __ADMIN_MAIL_H
+#pragma once
 /*___INFO__MARK_BEGIN__*/
 /*************************************************************************
  * 
@@ -42,8 +41,5 @@
 #define BIT_ADM_QCHANGE  4
 #define BIT_ADM_HOUR     8
 
-
 int adm_mail_reset(int state);
 void job_related_adminmail(u_long32 progid, lListElem *jr, int is_array, const char *job_owner);
-
-#endif /* __ADMIN_MAIL_H */

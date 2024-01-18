@@ -1,3 +1,4 @@
+#pragma once
 /*___INFO__MARK_BEGIN__*/
 /*************************************************************************
  *
@@ -30,15 +31,6 @@
  ************************************************************************/
 /*___INFO__MARK_END__*/
 
-/*
- * File:   sge_eval_expression.h
- * Author: pj198843
- *
- * Created on October 27, 2006, 2:48 PM
- */
-
-#ifndef _sge_eval_expression_H
-#define	_sge_eval_expression_H
 #include "basis_types.h"
 #include "cull/cull.h"
 #include "cull/cull_list.h"
@@ -46,5 +38,3 @@
 
 /* Exported function */
 int sge_eval_expression(u_long32 type, const char *, const char *, lList **);
-   
-#endif	/* _sge_eval_expression_H */

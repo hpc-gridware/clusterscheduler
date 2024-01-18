@@ -1,5 +1,4 @@
-#ifndef __SETUP_EXECD_H
-#define __SETUP_EXECD_H
+#pragma once
 /*___INFO__MARK_BEGIN__*/
 /*************************************************************************
  * 
@@ -37,8 +36,3 @@
 void sge_setup_sge_execd(sge_gdi_ctx_class_t *ctx, const char* tmp_err_file_name);
 int daemonize_execd(void *context);
 int job_initialize_job(lListElem *job);
-
-#endif /* __SETUP_EXECD_H */
-
-
-

@@ -1,5 +1,4 @@
-#ifndef __SUBORDINATE_SCHEDD_H
-#define __SUBORDINATE_SCHEDD_H
+#pragma once
 /*___INFO__MARK_BEGIN__*/
 /*************************************************************************
  * 
@@ -33,5 +32,3 @@
 /*___INFO__MARK_END__*/
 
 int sos_schedd(const char *qname, lList *qlist);
-
-#endif /* __SUBORDINATE_SCHEDD_H */

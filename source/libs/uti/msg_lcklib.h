@@ -1,6 +1,4 @@
-#ifndef __MSG_LCKLIB_H__
-#define __MSG_LCKLIB_H__
-
+#pragma once
 /*___INFO__MARK_BEGIN__*/
 /*************************************************************************
  * 
@@ -51,5 +49,3 @@ extern "C" {
 #ifdef __cplusplus
 }
 #endif
-
-#endif /* __MSG_LCKLIB_H__ */

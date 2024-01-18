@@ -1,5 +1,4 @@
-#ifndef __SYMBOLS_H
-#define __SYMBOLS_H
+#pragma once
 /*___INFO__MARK_BEGIN__*/
 /*************************************************************************
  * 
@@ -97,5 +96,3 @@
 #define NO_MAIL                            0x00200000
 #define MAIL_AT_SUSPENSION_SYM             's'  /* NOT PART OF P1003.15D12! */
 #define MAIL_AT_SUSPENSION                 0x00400000
-
-#endif /* __SYMBOLS_H */

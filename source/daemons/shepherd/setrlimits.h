@@ -1,5 +1,4 @@
-#ifndef __SETRLIMITS_H
-#define __SETRLIMITS_H
+#pragma once
 /*___INFO__MARK_BEGIN__*/
 /*************************************************************************
  *
@@ -52,4 +51,3 @@ struct resource_table_entry {
 };
 
 void setrlimits(int trace_limits);
-#endif /* __SETRLIMITS_H */

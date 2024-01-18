@@ -1,5 +1,4 @@
-#ifndef __SGE_MESOBJ_H
-#define __SGE_MESOBJ_H
+#pragma once
 
 /*___INFO__MARK_BEGIN__*/
 /*************************************************************************
@@ -46,5 +45,3 @@ object_message_add(lListElem *this_elem, int name,
 bool
 object_message_trash_all_of_type_X(lListElem *this_elem, int name,
                                    u_long32 type);
-
-#endif /* __SGE_MESOBJ_H */

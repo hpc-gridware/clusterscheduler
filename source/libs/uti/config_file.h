@@ -1,5 +1,4 @@
-#ifndef __CONFIG_FILE_H
-#define __CONFIG_FILE_H
+#pragma once
 /*___INFO__MARK_BEGIN__*/
 /*************************************************************************
  * 
@@ -68,5 +67,3 @@ extern char *ctrl_method_variables[];
 #ifdef __cplusplus
 }
 #endif
-
-#endif /* __CONFIG_FILE_H */

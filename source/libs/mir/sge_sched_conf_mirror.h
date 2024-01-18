@@ -1,5 +1,4 @@
-#ifndef __SGE_SCHED_CONF_MIRROR_H
-#define __SGE_SCHED_CONF_MIRROR_H
+#pragma once
 /*___INFO__MARK_BEGIN__*/
 /*************************************************************************
  *
@@ -37,5 +36,3 @@
 sge_callback_result
 schedd_conf_update_master_list(sge_evc_class_t *evc, sge_object_type type, 
                                sge_event_action action, lListElem *event, void *clientdata);
-
-#endif /* __SGE_SCHED_CONF_MIRROR_H */

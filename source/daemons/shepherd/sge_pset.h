@@ -1,5 +1,4 @@
-#ifndef __SGE_PSET_H
-#define __SGE_PSET_H
+#pragma once
 /*___INFO__MARK_BEGIN__*/
 /*************************************************************************
  *
@@ -35,5 +34,3 @@
 void sge_pset_create_processor_set(void);
 
 void sge_pset_free_processor_set(void);
-
-#endif /* __SGE_PSET_H */

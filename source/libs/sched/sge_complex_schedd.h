@@ -1,5 +1,4 @@
-#ifndef __SGE_COMPLEX_SCHEDD_H
-#define __SGE_COMPLEX_SCHEDD_H
+#pragma once
 /*___INFO__MARK_BEGIN__*/
 /*************************************************************************
  * 
@@ -64,6 +63,3 @@ int string_base_cmp_old(u_long32 type, const char *s1, const char *s2);
 
 bool request_cq_rejected(const lList* hard_resource_list, const lListElem *cq,
       const lList *centry_list, bool single_slot, dstring *unsatisfied);
-
-
-#endif /* __SGE_COMPLEX_SCHEDD_H */

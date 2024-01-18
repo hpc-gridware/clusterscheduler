@@ -33,6 +33,8 @@
 
 #include "basis_types.h"
 
+// clang-format off
+
 #define MSG_QMOD_c_OPT_USAGE      _MESSAGE(11008, _("clear error state"))
 #define MSG_QMOD_c_OPT_USAGE_Q    _MESSAGE(11009, _("clear queue error state"))
 #define MSG_QMOD_c_OPT_USAGE_J    _MESSAGE(11010, _("clear job error state"))
@@ -56,3 +58,5 @@
 #define MSG_QMOD_du_OPT_ISAGE     _MESSAGE(11028, _("delete unknown state"))
 #define MSG_QMOD_c_OPT_ISAGE      _MESSAGE(11029, _("set ambiguous state"))
 #define MSG_QMOD_dc_OPT_ISAGE     _MESSAGE(11030, _("delete ambiguous state"))
+
+// clang-format on

@@ -1,5 +1,4 @@
-#ifndef _CULL_STATE_H_
-#define _CULL_STATE_H_
+#pragma once
 
 /*___INFO__MARK_BEGIN__*/
 /*************************************************************************
@@ -62,5 +61,3 @@ bool cull_state_get_observe_started(void);
 #ifdef  __cplusplus
 }
 #endif
-
-#endif  /* _CULL_STATE_H_ */

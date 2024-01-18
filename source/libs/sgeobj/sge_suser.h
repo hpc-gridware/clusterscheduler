@@ -1,5 +1,4 @@
-#ifndef __SGE_SUSER_H
-#define __SGE_SUSER_H
+#pragma once
 /*___INFO__MARK_BEGIN__*/
 /*************************************************************************
  *
@@ -56,5 +55,3 @@ int suser_job_count(const lListElem *job, const lList *master_suser_list);
 int suser_register_new_job(const lListElem *job, u_long32 max_u_jobs, int force_registration, lList *master_suser_list);
 
 void suser_unregister_job(const lListElem *job, const lList *master_suser_list);
-
-#endif /* __SGE_SUSER_H */

@@ -1,5 +1,4 @@
-#ifndef __SGE_SPOOLING_H 
-#define __SGE_SPOOLING_H 
+#pragma once
 /*___INFO__MARK_BEGIN__*/
 /*************************************************************************
  *
@@ -343,5 +342,3 @@ spool_compare_objects(lList **answer_list, const lListElem *context,
 extern "C" { 
 const char *get_spooling_method(void);
 }
-
-#endif /* __SGE_SPOOLING_H */    

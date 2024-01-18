@@ -1,6 +1,4 @@
-#ifndef _SGE_THREAD_LISTENER_H_
-#define _SGE_THREAD_LISTENER_H_
-
+#pragma once
 /*___INFO__MARK_BEGIN__*/
 /*************************************************************************
  *
@@ -45,6 +43,3 @@ sge_listener_terminate(void);
 
 void *
 sge_listener_main(void *arg);
-
-#endif 
-

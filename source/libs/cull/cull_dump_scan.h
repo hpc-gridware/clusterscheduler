@@ -1,5 +1,4 @@
-#ifndef __CULL_DUMP_SCAN_H
-#define __CULL_DUMP_SCAN_H
+#pragma once
 /*___INFO__MARK_BEGIN__*/
 /*************************************************************************
  * 
@@ -53,5 +52,3 @@ lDescr *lUndumpDescr(FILE *fp);
 #ifdef  __cplusplus
 }
 #endif
-
-#endif /* __CULL_DUMP_SCAN_H */

@@ -1,5 +1,4 @@
-#ifndef __SGE_CQUEUE_H
-#define __SGE_CQUEUE_H
+#pragma once
 
 /*___INFO__MARK_BEGIN__*/
 /*************************************************************************
@@ -151,5 +150,3 @@ cqueue_purge_host(lListElem *this_elem, lList **answer_list, lList *attr_list, c
 
 bool
 cqueue_sick(lListElem *cqueue, lList **answer_list, lList *hgroup_list, dstring *ds);
-
-#endif /* __SGE_CQUEUE_H */

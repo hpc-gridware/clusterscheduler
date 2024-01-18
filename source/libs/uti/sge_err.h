@@ -1,6 +1,4 @@
-#ifndef __SGE_ERR_H
-#define __SGE_ERR_H
-
+#pragma once
 /*___INFO__MARK_BEGIN__*/
 /*************************************************************************
  * 
@@ -67,7 +65,3 @@ sge_err_clear(void);
 #ifdef __cplusplus
 }
 #endif
-
-#endif
-
-

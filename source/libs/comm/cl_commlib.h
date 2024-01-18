@@ -1,7 +1,4 @@
-#ifndef __CL_COMMLIB_H
-#define __CL_COMMLIB_H
-
-
+#pragma once
 /*___INFO__MARK_BEGIN__*/
 /*************************************************************************
  *
@@ -222,6 +219,3 @@ int getuniquehostname(const char *hostin, char *hostout, int refresh_aliases);
 #ifdef __cplusplus
 }
 #endif
-
-#endif /* __CL_COMMLIB_H */
-

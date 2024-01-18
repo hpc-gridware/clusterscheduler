@@ -1,5 +1,4 @@
-#ifndef __SGE_CKPT_H 
-#define __SGE_CKPT_H 
+#pragma once
 /*___INFO__MARK_BEGIN__*/
 /*************************************************************************
  *
@@ -52,5 +51,3 @@ ckpt_list_do_all_exist(const lList *ckpt_list, lList **answer_list,
                        const lList *ckpt_ref_list);
 
 lListElem* sge_generic_ckpt(char *ckpt_name);
-
-#endif /* __SGE_CKPT_H */

@@ -1,5 +1,4 @@
-#ifndef __SGE_JOB_ENFORCE_LIMIT_H
-#define __SGE_JOB_ENFORCE_LIMIT_H
+#pragma once
 /*___INFO__MARK_BEGIN__*/
 /*************************************************************************
  *
@@ -49,6 +48,3 @@ sge_job_add_enforce_limit_trigger(lListElem *jep, lListElem *jatep);
 
 void 
 sge_job_remove_enforce_limit_trigger(u_long32 jid, u_long32 ja_task_id);
-
-#endif /* __SGE_JOB_ENFORCE_LIMIT_H */
-

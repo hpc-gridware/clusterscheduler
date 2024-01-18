@@ -1,5 +1,4 @@
-#ifndef __CULL_XML_H
-#define __CULL_XML_H
+#pragma once
 /*___INFO__MARK_BEGIN__*/
 /*************************************************************************
  * 
@@ -57,5 +56,3 @@ lListElem *xml_append_Attr_D8(lList *attributeList, const char *name, double val
 lListElem *xml_append_Attr_S(lList *attributeList, const char *name, const char *value);
 lListElem *xml_append_Attr_I(lList *attributeList, const char *name, int value);
 bool escape_string(const char *string, dstring *target);
-
-#endif /* #ifndef __CULL_XML_H */

@@ -1,5 +1,4 @@
-#ifndef __SGE_BOOTSTRAP_H
-#define __SGE_BOOTSTRAP_H
+#pragma once
 /*___INFO__MARK_BEGIN__*/
 /*************************************************************************
  * 
@@ -123,5 +122,3 @@ void sge_bootstrap_state_set_thread_local(sge_bootstrap_state_class_t* ctx);
 #ifdef __cplusplus
 }
 #endif
-
-#endif /* __SGE_BOOTSTRAP_H */

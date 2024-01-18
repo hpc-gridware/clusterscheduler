@@ -1,6 +1,4 @@
-#ifndef __CL_RAW_LIST_H
-#define __CL_RAW_LIST_H
-
+#pragma once
 /*___INFO__MARK_BEGIN__*/
 /*************************************************************************
  *
@@ -56,6 +54,3 @@ cl_raw_list_elem_t* cl_raw_list_get_last_elem           (cl_raw_list_elem_t* ele
 #ifdef __cplusplus
 }
 #endif
-
-#endif /* __CL_RAW_LIST_H */
-

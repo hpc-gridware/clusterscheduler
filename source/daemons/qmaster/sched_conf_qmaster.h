@@ -1,5 +1,4 @@
-#ifndef _SCHED_CONF_QMASTER_H_
-#define _SCHED_CONF_QMASTER_H_
+#pragma once
 /*___INFO__MARK_BEGIN__*/
 /*************************************************************************
  *
@@ -36,5 +35,3 @@
 
 int sge_read_sched_configuration(sge_gdi_ctx_class_t *ctx, const lListElem *aSpoolContext, lList **anAnswer);
 int sge_mod_sched_configuration(sge_gdi_ctx_class_t *ctx, lListElem *confp, lList **alpp, char *ruser, char *rhost);
-
-#endif /* _SCHED_CONF_QMASTER_H_ */

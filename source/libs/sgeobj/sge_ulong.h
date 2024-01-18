@@ -1,5 +1,4 @@
-#ifndef __SGE_ULONG_H 
-#define __SGE_ULONG_H 
+#pragma once
 /*___INFO__MARK_BEGIN__*/
 /*************************************************************************
  *
@@ -78,5 +77,3 @@ ulong_parse_value_from_string(u_long32 *this_ulong,
 
 bool
 ulong_parse_task_concurrency(lList **alpp, int *valp, const char *task_concurrency_str);
-
-#endif /* __SGE_ULONG_H */

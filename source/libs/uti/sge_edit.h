@@ -1,5 +1,4 @@
-#ifndef __SGE_EDIT_H
-#define __SGE_EDIT_H
+#pragma once
 /*___INFO__MARK_BEGIN__*/
 /*************************************************************************
  * 
@@ -41,7 +40,3 @@ int sge_edit(const char *fname, uid_t uid, gid_t gid);
 #ifdef __cplusplus
 }
 #endif
-
-#endif /* __SGE_EDIT_H */
-
-

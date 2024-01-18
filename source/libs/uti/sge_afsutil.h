@@ -1,5 +1,4 @@
-#ifndef __SGE_AFSUTIL_H
-#define __SGE_AFSUTIL_H
+#pragma once
 /*___INFO__MARK_BEGIN__*/
 /*************************************************************************
  * 
@@ -48,6 +47,4 @@ int sge_get_token_cmd(const char *tokencmdname, char *buf);
 #ifdef __cplusplus
 }
 #endif
-
-#endif /* __SGE_AFSUTIL_H */
 

@@ -1,6 +1,4 @@
-#ifndef __CL_MESSAGE_LIST_H
-#define __CL_MESSAGE_LIST_H
-
+#pragma once
 /*___INFO__MARK_BEGIN__*/
 /*************************************************************************
  *
@@ -65,6 +63,3 @@ cl_message_list_elem_t* cl_message_list_get_last_elem(cl_message_list_elem_t* el
 #ifdef __cplusplus
 }
 #endif
-
-#endif /* __CL_MESSAGE_LIST_H */
-

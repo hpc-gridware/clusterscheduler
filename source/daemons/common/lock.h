@@ -1,5 +1,4 @@
-#ifndef __LOCK_H
-#define __LOCK_H
+#pragma once
 /*___INFO__MARK_BEGIN__*/
 /*************************************************************************
  * 
@@ -37,5 +36,3 @@
 int qmaster_lock(char *file);
 int qmaster_unlock(char *file);
 int isLocked(char *file);
-
-#endif /* __LOCK_H */

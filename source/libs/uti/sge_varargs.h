@@ -1,3 +1,4 @@
+#pragma once
 /*___INFO__MARK_BEGIN__*/
 /*************************************************************************
  * 
@@ -30,9 +31,6 @@
  ************************************************************************/
 /*___INFO__MARK_END__*/
 
-#ifndef __SGE_VARARGS_H__
-#define __SGE_VARARGS_H__
-
 #include <stdarg.h>
 
 #ifdef __cplusplus
@@ -46,5 +44,3 @@ extern "C" {
 #ifdef __cplusplus
 }
 #endif
-
-#endif /* __SGE_VARARGS_H__ */

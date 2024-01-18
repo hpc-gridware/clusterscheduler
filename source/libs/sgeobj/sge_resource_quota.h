@@ -1,5 +1,4 @@
-#ifndef __SGE_RESOURCE_QUOTA_H 
-#define __SGE_RESOURCE_QUOTA_H 
+#pragma once
 /*___INFO__MARK_BEGIN__*/
 /*************************************************************************
  *
@@ -85,5 +84,3 @@ bool sge_centry_referenced_in_rqs(const lListElem *rqs, const lListElem *centry)
 bool rqs_replace_request_verify(lList **answer_list, const lList *request);
 
 bool rqs_filter_match(lListElem *filter, int filter_type, const char *value, const lList *master_userset_list, const lList *master_hgroup_list, const char *group);
-
-#endif /* __SGE_RESOURCE_QUOTA_H */

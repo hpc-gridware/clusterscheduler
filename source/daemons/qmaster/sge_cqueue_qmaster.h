@@ -1,5 +1,4 @@
-#ifndef _SGE_CQUEUE_QMASTER_H_
-#define _SGE_CQUEUE_QMASTER_H_
+#pragma once
 /*___INFO__MARK_BEGIN__*/
 /*************************************************************************
  *
@@ -82,6 +81,3 @@ cqueue_list_set_unknown_state(lList *this_list, const char *hostname,
 
 void cqueue_diff_projects(const lListElem *new_cqueue, const lListElem *old_cqueue, lList **new_prj, lList **old_prj);
 void cqueue_diff_usersets(const lListElem *new_cqueue, const lListElem *old_cqueue, lList **new_acl, lList **old_acl);
-
-#endif /* _SGE_CQUEUE_QMASTER_H_ */
-

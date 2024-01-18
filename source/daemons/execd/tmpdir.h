@@ -1,5 +1,4 @@
-#ifndef __TMPDIR_H
-#define __TMPDIR_H
+#pragma once
 /*___INFO__MARK_BEGIN__*/
 /*************************************************************************
  * 
@@ -43,5 +42,3 @@ char *sge_get_tmpdir(lListElem *qep, u_long32 jobid, u_long32 jataskid,
 
 int sge_remove_tmpdir(const char *dir, const char *job_owner, u_long32 jobid, 
                       u_long32 jataskid, const char *queue_name);
-
-#endif /* __TMPDIR_H */

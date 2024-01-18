@@ -1,5 +1,4 @@
-#ifndef __SGE_LOG_H
-#define __SGE_LOG_H
+#pragma once
 /*___INFO__MARK_BEGIN__*/
 /*************************************************************************
  * 
@@ -275,6 +274,3 @@ int sge_log(int log_level, const char *mesg, const char *file__,
 #ifdef __cplusplus
 }
 #endif
-
-#endif /* __SGE_LOG_H */
-

@@ -1,5 +1,4 @@
-#ifndef __PARSE_JOB_QSH_H
-#define __PARSE_JOB_QSH_H
+#pragma once
 /*___INFO__MARK_BEGIN__*/
 /*************************************************************************
  * 
@@ -34,6 +33,3 @@
 
 lList *cull_parse_qsh_parameter(u_long32 prog_name, u_long32 uid, const char *username, const char *cell_root,
                                 const char *unqualified_hostname, const char *qualified_hostname, lList *cmdline, lListElem **pjob);
-
-#endif /* __PARSE_JOB_QSH_H */
-

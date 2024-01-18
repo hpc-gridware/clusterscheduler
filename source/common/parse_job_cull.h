@@ -1,5 +1,4 @@
-#ifndef __PARSE_JOB_CULL_H
-#define __PARSE_JOB_CULL_H
+#pragma once
 /*___INFO__MARK_BEGIN__*/
 /*************************************************************************
  * 
@@ -48,5 +47,3 @@ extern const char *default_prefix;
 lList *cull_parse_job_parameter(u_long32 uid, const char *username, const char *cell_root, const char *unqualified_hostname, 
                                 const char *qualified_hostname, lList *cmdline, lListElem **pjob);
 lList *parse_script_file(u_long32 prog_number, const char *script_file, const char *directive_prefix, lList **option_list_ref, char **envp, u_long32 flags);
-
-#endif /* __PARSE_JOB_CULL_H */

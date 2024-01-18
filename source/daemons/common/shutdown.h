@@ -1,5 +1,4 @@
-#ifndef __SHUTDOWN_H
-#define __SHUTDOWN_H
+#pragma once
 /*___INFO__MARK_BEGIN__*/
 /*************************************************************************
  * 
@@ -34,5 +33,3 @@
 
 void starting_up(void);
 void sge_shutdown(void **context, int i);
-
-#endif /* __SHUTDOWN_H */

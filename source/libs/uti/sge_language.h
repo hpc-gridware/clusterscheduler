@@ -1,5 +1,4 @@
-#ifndef __SGE_LANGUAGE_H
-#define __SGE_LANGUAGE_H
+#pragma once
 /*___INFO__MARK_BEGIN__*/
 /*************************************************************************
  * 
@@ -65,6 +64,3 @@ int sge_get_message_id_output(void);
 #ifdef __cplusplus
 }
 #endif
-
-#endif /* __SGE_LANGUAGE_H */
-

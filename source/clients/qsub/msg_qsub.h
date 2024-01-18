@@ -1,5 +1,4 @@
-#ifndef __MSG_QSUB_H
-#define __MSG_QSUB_H
+#pragma once
 /*___INFO__MARK_BEGIN__*/
 /*************************************************************************
  * 
@@ -35,6 +34,8 @@
 
 #include "basis_types.h"
 
+// clang-format off
+
 #define MSG_QSUB_WARNING_S    _MESSAGE(21000, _("qsub: warning: "))
 #define MSG_QSUB_WAITINGFORIMMEDIATEJOBTOBESCHEDULED    _MESSAGE(21001, _("Waiting for immediate job to be scheduled."))
 #define MSG_QSUB_YOURQSUBREQUESTCOULDNOTBESCHEDULEDDTRYLATER    _MESSAGE(21003, _("Your qsub request could not be scheduled; try again later."))
@@ -52,5 +53,4 @@
 #define MSG_QSUB_TERMINATING    _MESSAGE(210016, _("Please wait while qsub shuts down."))
 #define MSG_QSUB_COULDNOTREADSCRIPT_S    _MESSAGE(210017, _("Unable to read script file because of error: "))
 
-#endif /* __MSG_QSUB_H */
-
+// clang-format on

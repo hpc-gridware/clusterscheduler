@@ -1,6 +1,4 @@
-#ifndef __SGE_SL_H
-#define __SGE_SL_H
-
+#pragma once
 /*___INFO__MARK_BEGIN__*/
 /*************************************************************************
  * 
@@ -234,6 +232,4 @@ sge_sl_sort(sge_sl_list_t *list, sge_sl_compare_f compare);
 
 #ifdef __cplusplus
 }
-#endif
-
 #endif

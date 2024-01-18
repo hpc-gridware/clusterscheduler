@@ -1,5 +1,4 @@
-#ifndef __KRB_DATA_H
-#define __KRB_DATA_H
+#pragma once
 /*___INFO__MARK_BEGIN__*/
 /*************************************************************************
  * 
@@ -82,6 +81,3 @@ typedef struct {
 } krb_global_data_t;
 
 krb_global_data_t *krb_gsd(void);
-
-#endif /* __KRB_DATA_H */
-

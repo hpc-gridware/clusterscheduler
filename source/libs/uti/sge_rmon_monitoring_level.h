@@ -1,5 +1,4 @@
-#ifndef _RMON_MONITORING_LEVEL_H_
-#define _RMON_MONITORING_LEVEL_H_
+#pragma once
 /*___INFO__MARK_BEGIN__*/
 /*************************************************************************
  * 
@@ -78,5 +77,3 @@ void   rmon_mlputl(monitoring_level *, int, u_long);
 #ifdef __cplusplus
 }
 #endif
-
-#endif /* _RMON_MONITORING_LEVEL_H_ */

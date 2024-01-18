@@ -1,6 +1,4 @@
-#ifndef __CL_COMMUNICATION_H
-#define __CL_COMMUNICATION_H
-
+#pragma once
 /*___INFO__MARK_BEGIN__*/
 /*************************************************************************
  *
@@ -207,6 +205,3 @@ int cl_com_connection_complete_request(cl_raw_list_t* connection_list, cl_connec
 #ifdef __cplusplus
 }
 #endif
-
-#endif /* __CL_COMMUNICATION_H */
-

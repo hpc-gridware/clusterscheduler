@@ -1,5 +1,4 @@
-#ifndef __SGE_GDI_H
-#define __SGE_GDI_H
+#pragma once
 /*___INFO__MARK_BEGIN__*/
 /*************************************************************************
  * 
@@ -175,5 +174,3 @@ enum {
 #define JOB_KILL          (1<<3)
 #define EVENTCLIENT_KILL  (1<<4)
 #define THREAD_START      (1<<5)
-
-#endif /* __SGE_GDI_H */

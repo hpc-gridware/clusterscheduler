@@ -1,5 +1,4 @@
-#ifndef __DEBIT_H
-#define __DEBIT_H
+#pragma once
 /*___INFO__MARK_BEGIN__*/
 /*************************************************************************
  * 
@@ -41,5 +40,3 @@ int debit_scheduled_job(const sge_assignment_t *a, int *sort_hostlist, order_t *
 int
 debit_host_consumable(lListElem *jep, lListElem *hep, const lList *complex_list, int slots,
                       bool is_master_task, bool *just_check);
-
-#endif /* __DEBIT_H */

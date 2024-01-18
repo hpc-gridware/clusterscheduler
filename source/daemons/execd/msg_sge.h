@@ -1,5 +1,4 @@
-#ifndef __MSG_SGE_H
-#define __MSG_SGE_H
+#pragma once
 /*___INFO__MARK_BEGIN__*/
 /*************************************************************************
  * 
@@ -68,8 +67,3 @@
 #define MSG_SGE_DONOTKILLROOTPROCESSXY_UI                _MESSAGE(31051, _("do not kill root process "sge_U32CFormat"/%d"   ))
 #define MSG_SGE_PTDISPATCHPROCTOJOBMALLOCFAILED          _MESSAGE(31052, _("pt_dispatch_proc_to_job: malloc failed" ))
 /* #define MSG_SGE_PIOCPSINFOFAILED                         _message(31053, _("PIOCPSINFO failed")) __TS Removed automatically from testsuite!! TS__*/
-
-
-
-
-#endif /* __MSG_SGE_H */

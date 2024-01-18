@@ -1,5 +1,4 @@
-#ifndef __SGE_ERROR_CLASS_H
-#define __SGE_ERROR_CLASS_H
+#pragma once
 /*___INFO__MARK_BEGIN__*/
 /*************************************************************************
  * 
@@ -79,7 +78,3 @@ void sge_error_to_dstring(sge_error_class_t *eh, dstring *ds);
 #ifdef __cplusplus
 }
 #endif
-
-#endif /* __SGE_ERROR_CLASS_H */
-
-

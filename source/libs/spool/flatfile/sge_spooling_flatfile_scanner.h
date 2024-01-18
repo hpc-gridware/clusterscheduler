@@ -1,5 +1,4 @@
-#ifndef __SGE_SPOOLING_FLATFILE_SCANNER_H 
-#define __SGE_SPOOLING_FLATFILE_SCANNER_H 
+#pragma once
 /*___INFO__MARK_BEGIN__*/
 /*************************************************************************
  *
@@ -65,5 +64,3 @@ void spool_scanner_shutdown(void);
 #ifdef __cplusplus
 }
 #endif
-
-#endif /* __SGE_SPOOLING_FLATFILE_SCANNER_H */    

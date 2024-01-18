@@ -1,6 +1,4 @@
-#ifndef __CL_APP_MESSAGE_QUEUE_H
-#define __CL_APP_MESSAGE_QUEUE_H
-
+#pragma once
 /*___INFO__MARK_BEGIN__*/
 /*************************************************************************
  *
@@ -87,6 +85,3 @@ cl_app_message_queue_elem_t* cl_app_message_queue_get_last_elem(cl_app_message_q
 #ifdef __cplusplus
 }
 #endif
-
-#endif /* __CL_APP_MESSAGE_QUEUE_H */
-

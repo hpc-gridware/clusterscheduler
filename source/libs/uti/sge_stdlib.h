@@ -1,5 +1,4 @@
-#ifndef __SGE_STDLIB_H
-#define __SGE_STDLIB_H
+#pragma once
 /*___INFO__MARK_BEGIN__*/
 /*************************************************************************
  *
@@ -79,5 +78,3 @@ void sge_unsetenv(const char* name);
 #ifdef __cplusplus
 }
 #endif
-
-#endif /* __SGE_STDLIB_H */

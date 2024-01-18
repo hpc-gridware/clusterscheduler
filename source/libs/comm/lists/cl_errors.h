@@ -1,5 +1,4 @@
-#ifndef __CL_ERROR_H
-#define __CL_ERROR_H
+#pragma once
 /*___INFO__MARK_BEGIN__*/
 /*************************************************************************
  *
@@ -175,5 +174,3 @@ const char* cl_get_error_text(int error_id);
 #ifdef __cplusplus
 }
 #endif
-
-#endif /* __CL_ERROR_H */

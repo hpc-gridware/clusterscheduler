@@ -1,5 +1,4 @@
-#ifndef __MSG_SPOOLLIB_BERKELEYDB_H
-#define __MSG_SPOOLLIB_BERKELEYDB_H
+#pragma once
 /*___INFO__MARK_BEGIN__*/
 /*************************************************************************
  * 
@@ -85,5 +84,3 @@
  * sge_bdb_types.c
  */
 #define MSG_BERKELEY_DBNOTINITIALIZED _MESSAGE(70200, _("database not initialized"))
-
-#endif /* __MSG_SPOOLLIB_BERKELEYDB_H */

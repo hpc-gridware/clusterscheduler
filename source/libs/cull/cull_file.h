@@ -1,5 +1,4 @@
-#ifndef __CULL_FILE_H
-#define __CULL_FILE_H
+#pragma once
 /*___INFO__MARK_BEGIN__*/
 /*************************************************************************
  * 
@@ -46,6 +45,3 @@ lListElem *lReadElemFromDisk(const char *prefix, const char *name, const lDescr 
 #ifdef  __cplusplus
 }
 #endif
-
-#endif /* #ifndef __CULL_PACK_H */
-

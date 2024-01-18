@@ -1,5 +1,4 @@
-#ifndef _SGE_FILE_PATH_H_
-#define _SGE_FILE_PATH_H_
+#pragma once
 /*___INFO__MARK_BEGIN__*/
 /*************************************************************************
  *
@@ -263,5 +262,3 @@ const char *sge_get_active_job_file_path(dstring *buffer, u_long32 job_id,
 #ifdef __cplusplus
 }
 #endif
-
-#endif /* _SGE_FILE_PATH_H_ */

@@ -1,5 +1,4 @@
-#ifndef __SGE_SCHED_THREAD_H
-#define __SGE_SCHED_THREAD_H
+#pragma once
 /*___INFO__MARK_BEGIN__*/
 /*************************************************************************
  *
@@ -82,5 +81,3 @@ int subscribe_scheduler(sge_evc_class_t *evc, sge_where_what_t *where_what);
 void *scheduler_thread(void* anArg);
 
 int scheduler_method(sge_evc_class_t *evc, lList **answer_list, scheduler_all_data_t *lists, lList **order);
-
-#endif /* __SGE_SCHED_THREAD_H */

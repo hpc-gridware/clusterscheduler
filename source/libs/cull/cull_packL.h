@@ -1,5 +1,4 @@
-#ifndef __PACKL_H
-#define __PACKL_H
+#pragma once
 /*___INFO__MARK_BEGIN__*/
 /*************************************************************************
  * 
@@ -68,4 +67,3 @@ NAMEEND
 #ifdef  __cplusplus
 }
 #endif
-#endif /* __PACKL_H */

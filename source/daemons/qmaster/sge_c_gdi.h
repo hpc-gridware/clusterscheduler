@@ -1,5 +1,4 @@
-#ifndef __SGE_C_GDI_H
-#define __SGE_C_GDI_H
+#pragma once
 /*___INFO__MARK_BEGIN__*/
 /*************************************************************************
  *
@@ -112,6 +111,3 @@ int verify_request_version(lList **alpp, u_long32 version, char *host,
                            char *commproc, int id);
 
 int sge_chck_mod_perm_host(lList **alpp, u_long32 target, char *host, char *commproc, int mod, lListElem *ep, monitoring_t *monitor);
-
-#endif /* __SGE_C_GDI_H */
-

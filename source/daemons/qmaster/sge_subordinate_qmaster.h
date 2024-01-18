@@ -1,5 +1,4 @@
-#ifndef __SUBORDINATE_QMASTER_H
-#define __SUBORDINATE_QMASTER_H
+#pragma once
 /*___INFO__MARK_BEGIN__*/
 /*************************************************************************
  *
@@ -68,6 +67,3 @@ check_new_slotwise_subordinate_tree(lListElem *qinstance,
 
 bool do_slotwise_subordinate_lists_differ(const lList *old_so_list,
       const lList *new_so_list);
-
-#endif /* __SUBORDINATE_QMASTER_H */
-

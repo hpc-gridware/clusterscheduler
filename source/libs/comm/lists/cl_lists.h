@@ -1,6 +1,4 @@
-#ifndef __CL_LISTS_H
-#define __CL_LISTS_H
-
+#pragma once
 /*___INFO__MARK_BEGIN__*/
 /*************************************************************************
  *
@@ -43,6 +41,3 @@
 #include "comm/lists/cl_thread_list.h"
 #include "comm/lists/cl_log_list.h"
 #include "comm/lists/cl_string_list.h"
-
-#endif /* __CL_LISTS_H */
-

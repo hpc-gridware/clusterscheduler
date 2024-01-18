@@ -1,5 +1,4 @@
-#ifndef __SGE_JOB_QMASTER_H
-#define __SGE_JOB_QMASTER_H
+#pragma once
 /*___INFO__MARK_BEGIN__*/
 /*************************************************************************
  *
@@ -106,5 +105,3 @@ int job_verify_predecessors(lListElem *job, lList **alpp);
 int verify_suitable_queues(lList **alpp, lListElem *jep, int *trigger, bool is_modify);
 
 int job_verify_predecessors_ad(lListElem *job, lList **alpp);
-
-#endif /* __SGE_JOB_QMASTER_H */

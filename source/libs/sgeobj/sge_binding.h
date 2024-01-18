@@ -1,5 +1,4 @@
-#ifndef __SGE_BINDING_H
-#define __SGE_BINDING_H
+#pragma once
 
 /*___INFO__MARK_BEGIN__*/
 
@@ -160,5 +159,3 @@ binding_parse_from_string(lListElem *this_elem, lList **answer_list, dstring *st
 
 bool
 binding_type_to_string(binding_type_t type, dstring *string);
-
-#endif /* __SGE_BINDING_H */

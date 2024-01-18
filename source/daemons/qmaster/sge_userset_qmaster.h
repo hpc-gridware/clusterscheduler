@@ -1,5 +1,4 @@
-#ifndef __SGE_USERSET_QMASTER_H
-#define __SGE_USERSET_QMASTER_H
+#pragma once
 /*___INFO__MARK_BEGIN__*/
 /*************************************************************************
  *
@@ -54,5 +53,3 @@ int userset_mod(sge_gdi_ctx_class_t *ctx, lList **alpp, lListElem *new_userset,
 
 int userset_spool(sge_gdi_ctx_class_t *ctx, lList **alpp, lListElem *userset, gdi_object_t *object);
 int userset_success(sge_gdi_ctx_class_t *ctx, lListElem *ep, lListElem *old_ep, gdi_object_t *object, lList **ppList, monitoring_t *monitor); 
-
-#endif

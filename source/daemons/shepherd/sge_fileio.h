@@ -1,5 +1,4 @@
-#ifndef __SGE_FILEIO_H
-#define __SGE_FILEIO_H
+#pragma once
 /*___INFO__MARK_BEGIN__*/
 /*************************************************************************
  *
@@ -73,5 +72,3 @@ shepherd_write_processor_set_number_file(int proc_set);
 
 bool
 shepherd_read_processor_set_number_file(int *proc_set);
-
-#endif /* __SGE_FILEIO_H */

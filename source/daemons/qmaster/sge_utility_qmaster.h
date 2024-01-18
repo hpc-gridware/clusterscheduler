@@ -1,5 +1,4 @@
-#ifndef __GDI_UTILITY_QMASTER_H
-#define __GDI_UTILITY_QMASTER_H
+#pragma once
 /*___INFO__MARK_BEGIN__*/
 /*************************************************************************
  *
@@ -71,6 +70,3 @@ bool attr_mod_sub_list(lList **alpp, lListElem *this_elem, int this_elem_name,
                   int sub_command, const char *sub_list_name,
                   const char *object_name,
                   int no_info, bool *changed);
-
-#endif /* __GDI_UTILITY_QMASTER_H  */
-

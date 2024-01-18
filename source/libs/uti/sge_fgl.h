@@ -1,3 +1,4 @@
+#pragma once
 // Copyright Ernst Bablick
 
 #ifdef __cplusplus

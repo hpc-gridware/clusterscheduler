@@ -1,5 +1,4 @@
-#ifndef __SGE_PE_TASK_MIRROR_H
-#define __SGE_PE_TASK_MIRROR_H
+#pragma once
 /*___INFO__MARK_BEGIN__*/
 /*************************************************************************
  *
@@ -40,5 +39,3 @@ pe_task_update_master_list(sge_evc_class_t *evc, sge_object_type type,
 
 sge_callback_result
 pe_task_update_master_list_usage(lList *job_list, lListElem *event);
-
-#endif /* __SGE_PE_TASK_MIRROR_H */

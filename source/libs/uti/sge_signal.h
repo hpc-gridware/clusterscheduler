@@ -1,5 +1,4 @@
-#ifndef __SGE_SIGNAL_H
-#define __SGE_SIGNAL_H
+#pragma once
 /*___INFO__MARK_BEGIN__*/
 /*************************************************************************
  * 
@@ -105,6 +104,3 @@ int sge_thread_block_all_signals(sigset_t *oldsigmask);
 #ifdef __cplusplus
 }
 #endif
-
-#endif /* __SGE_SIGNAL_H */
-

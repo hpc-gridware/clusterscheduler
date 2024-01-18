@@ -1,5 +1,4 @@
-#ifndef _JOB_EXIT_H_
-#define _JOB_EXIT_H_
+#pragma once
 /*___INFO__MARK_BEGIN__*/
 /*************************************************************************
  *
@@ -36,5 +35,3 @@
 #include "gdi/sge_gdi_ctx.h"
 
 void sge_job_exit(sge_gdi_ctx_class_t *ctx, lListElem *jr, lListElem *jep, lListElem *jatep, monitoring_t *monitor);
-
-#endif /* _JOB_EXIT_H_ */

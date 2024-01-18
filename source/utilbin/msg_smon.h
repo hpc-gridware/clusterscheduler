@@ -1,5 +1,4 @@
-#ifndef __MSG_SMON_H
-#define __MSG_SMON_H
+#pragma once
 /*___INFO__MARK_BEGIN__*/
 /*************************************************************************
  * 
@@ -53,6 +52,3 @@
 #define MSG_ERROR_XISNOTAVALIDINTERVAL_S        _MESSAGE(47247, _(""SFN" is not a valid interval"))
 #define MSG_ERROR_XISNOTAVALIDCOUNT_S           _MESSAGE(47248, _(""SFN" is not a valid count"))
 #define MSG_FILE_COULDNOTOPENXFORY_SS           _MESSAGE(47249, _("could not open "SFN" for "SFN))
-
-#endif /* __MSG_SMON_H */
-

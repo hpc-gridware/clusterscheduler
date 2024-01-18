@@ -1,5 +1,4 @@
-#ifndef __SIG_HANDLERS_H
-#define __SIG_HANDLERS_H
+#pragma once
 /*___INFO__MARK_BEGIN__*/
 /*************************************************************************
  * 
@@ -49,5 +48,3 @@ extern volatile int shut_me_down;
 extern volatile int sge_sig_handler_dead_children;
 extern volatile int sge_sig_handler_in_main_loop;
 extern volatile int sge_sig_handler_sigpipe_received;
-
-#endif /* __SIG_HANDLERS_H */

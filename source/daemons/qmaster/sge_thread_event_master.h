@@ -1,5 +1,4 @@
-#ifndef _SGE_DELIVERER_THREAD_H_
-#define _SGE_DELIVERER_THREAD_H_
+#pragma once
 /*___INFO__MARK_BEGIN__*/
 /*************************************************************************
  *
@@ -44,6 +43,3 @@ sge_event_master_terminate(void);
 
 void *
 sge_event_master_main(void *arg);
-
-#endif 
-

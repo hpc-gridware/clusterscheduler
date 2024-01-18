@@ -1,5 +1,4 @@
-#ifndef _SGE_THREAD_SIGNALER_H_
-#define _SGE_THREAD_SIGNALER_H_
+#pragma once
 /*___INFO__MARK_BEGIN__*/
 /*************************************************************************
  *
@@ -48,6 +47,3 @@ sge_signaler_initiate_termination(void);
 
 void* 
 sge_signaler_main(void* arg);
-
-#endif 
-

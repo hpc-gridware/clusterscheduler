@@ -1,5 +1,4 @@
-#ifndef _SCHEDD_MESSAGE_H_
-#define _SCHEDD_MESSAGE_H_
+#pragma once
 /*___INFO__MARK_BEGIN__*/
 /*************************************************************************
  * 
@@ -62,5 +61,3 @@ void schedd_mes_rollback(void);
 lList *schedd_mes_get_tmp_list(void);
 
 void schedd_mes_set_tmp_list(lListElem *category, int name, u_long32 job_number);
-
-#endif /* _SCHEDD_MESSAGE_H_ */

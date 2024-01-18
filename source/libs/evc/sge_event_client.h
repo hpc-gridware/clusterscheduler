@@ -1,5 +1,4 @@
-#ifndef __SGE_C_EVENT2_H
-#define __SGE_C_EVENT2_H
+#pragma once
 /*___INFO__MARK_BEGIN__*/
 /*************************************************************************
  * 
@@ -133,5 +132,3 @@ sge_evc_class_destroy(sge_evc_class_t **pst);
 bool 
 sge_gdi2_evc_setup(sge_evc_class_t **evc_ref, sge_gdi_ctx_class_t *sge_gdi_ctx,
                    ev_registration_id reg_id, lList **alpp, const char * name);
-
-#endif /* __SGE_C_EVENT2_H */

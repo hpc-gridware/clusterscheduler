@@ -1,5 +1,4 @@
-#ifndef __CL_THREAD_H
-#define __CL_THREAD_H
+#pragma once
 /*___INFO__MARK_BEGIN__*/
 /*************************************************************************
  *
@@ -205,5 +204,3 @@ void cl_thread_default_cleanup_function(cl_thread_settings_t* thread_config);
 #ifdef __cplusplus
 }
 #endif
-
-#endif /* __CL_THREAD_H */

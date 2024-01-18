@@ -1,5 +1,4 @@
-#ifndef __SGE_PACK_H 
-#define __SGE_PACK_H 
+#pragma once
 /*___INFO__MARK_BEGIN__*/
 /*************************************************************************
  *
@@ -42,5 +41,3 @@ enum {
 lListElem *lWhereToElem(const lCondition *where);
 
 lCondition *lWhereFromElem(const lListElem *where);
-
-#endif 

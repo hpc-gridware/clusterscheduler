@@ -1,5 +1,4 @@
-#ifndef __MSG_SGE_HOST_MON_H
-#define __MSG_SGE_HOST_MON_H
+#pragma once
 /*___INFO__MARK_BEGIN__*/
 /*************************************************************************
  * 
@@ -52,7 +51,3 @@
 #define MSG_SGEHOSTMON_t_OPT_USAGE              _MESSAGE(37015, _("show formatted times"))
 #define MSG_SGEHOSTMON_u_OPT_USAGE              _MESSAGE(37016, _("show decayed usage (since timestamp) in nodes"))
 #define MSG_SGEHOSTMON_x_OPT_USAGE              _MESSAGE(37017, _("exclude non-leaf nodes"))
-
-
-
-#endif /* __MSG_SGE_HOST_MON_H */

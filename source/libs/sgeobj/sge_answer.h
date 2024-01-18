@@ -1,5 +1,4 @@
-#ifndef __SGE_ANSWER_H
-#define __SGE_ANSWER_H
+#pragma once
 /*___INFO__MARK_BEGIN__*/
 /*************************************************************************
  * 
@@ -143,6 +142,3 @@ int show_answer(lList *alp);
 int show_answer_list(lList *alp);
 
 void answer_list_from_sge_error(sge_error_class_t *eh, lList **alpp, bool clear_errors);
-
-
-#endif /* __SGE_ANSWER_H */

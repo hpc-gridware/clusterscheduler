@@ -1,5 +1,4 @@
-#ifndef __SGE_GIVE_JOBS_H
-#define __SGE_GIVE_JOBS_H
+#pragma once
 /*___INFO__MARK_BEGIN__*/
 /*************************************************************************
  *
@@ -76,5 +75,3 @@ void sge_job_resend_event_handler(sge_gdi_ctx_class_t *ctx, te_event_t anEvent, 
 void trigger_job_resend(u_long32 now, lListElem *hep, u_long32 jid, u_long32 tid, int delta);
 
 void cancel_job_resend(u_long32 jid, u_long32 tid);
-
-#endif /* __SGE_GIVE_JOBS_H */

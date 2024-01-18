@@ -1,5 +1,4 @@
-#ifndef __SGE_NPROCS_H 
-#define __SGE_NPROCS_H
+#pragma once
 /*___INFO__MARK_BEGIN__*/
 /*************************************************************************
  * 
@@ -41,6 +40,3 @@ int sge_nprocs(void);
 #ifdef __cplusplus
 }
 #endif
-
-#endif /* __SGE_NPROCS_H */
-

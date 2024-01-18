@@ -1,8 +1,5 @@
-#ifndef __SGE_RANGE_H
-#define __SGE_RANGE_H
-
+#pragma once
 /*___INFO__MARK_BEGIN__*/
-
 /*************************************************************************
  * 
  *  The Contents of this file are made available subject to the terms of
@@ -32,7 +29,6 @@
  *   All Rights Reserved.
  * 
  ************************************************************************/
-
 /*___INFO__MARK_END__*/
 
 #include "uti/sge_dstring.h"
@@ -131,5 +127,3 @@ range_list_calculate_difference_set(lList **this_list, lList **answer_list,
 void
 range_list_calculate_intersection_set(lList **this_list, lList **answer_list,
                                       const lList *list1, const lList *list2);
-
-#endif /* __SGE_RANGE_H */

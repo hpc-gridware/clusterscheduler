@@ -1,5 +1,4 @@
-#ifndef _SGE_QMASTER_MAIN_H_
-#define _SGE_QMASTER_MAIN_H_
+#pragma once
 /*___INFO__MARK_BEGIN__*/
 /*************************************************************************
  *
@@ -39,6 +38,3 @@ main(int argc, char* argv[]);
 
 unsigned long 
 sge_qmaster_application_status(char** info_message);
-
-#endif /* _SGE_QMASTER_MAIN_H_ */
-
