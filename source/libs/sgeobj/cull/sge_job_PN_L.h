@@ -40,21 +40,25 @@ extern "C" {
 #endif
 
 /**
-* @brief @todo add summary
+* @brief Path Name
 *
-* @todo add description
+* An object of the PathName type specifies a certain path on a host.
+* It is used for specifying stdin/stdout/stderr paths via submit options -i/-o/-e/-j.
+* For different hosts different paths can be specified in the form [host:]path[,[host:]path...].
+* There is some simple file staging facility, to be evaluated.
 *
-*    SGE_STRING(PN_path) - @todo add summary
-*    @todo add description
+*    SGE_STRING(PN_path) - Path
+*    Path to a file or directory.
 *
-*    SGE_HOST(PN_host) - @todo add summary
-*    @todo add description
+*    SGE_HOST(PN_host) - Host Name
+*    Name of the host where this specification is valid.
+*    If it is left empty (NULL), then the path is valid on all hosts (default).
 *
-*    SGE_HOST(PN_file_host) - @todo add summary
-*    @todo add description
+*    SGE_HOST(PN_file_host) - File Host
+*    @todo for file staging, the host where the file is available?
 *
-*    SGE_BOOL(PN_file_staging) - @todo add summary
-*    @todo add description
+*    SGE_BOOL(PN_file_staging) - Do File Staging
+*    Do file staging when set to true. @todo status of filestaging?
 *
 */
 

@@ -1,15 +1,18 @@
 {
 	"className":	"PathName",
-	"summary":	"@todo add summary",
+	"summary":	"Path Name",
 	"description":	[{
-			"line":	"@todo add description"
+			"line":	"An object of the PathName type specifies a certain path on a host."
+			}, { "line":	"It is used for specifying stdin/stdout/stderr paths via submit options -i/-o/-e/-j."
+			}, { "line":	"For different hosts different paths can be specified in the form [host:]path[,[host:]path...]."
+			}, { "line":	"There is some simple file staging facility, to be evaluated."
 		}],
 	"cullPrefix":	"PN",
 	"attributes":	[{
 			"name":	"path",
-			"summary":	"@todo add summary",
+			"summary":	"Path",
 			"description":	[{
-					"line":	"@todo add description"
+					"line":	"Path to a file or directory."
 				}],
 			"type":	"lStringT",
 			"flags":	[{
@@ -19,25 +22,26 @@
 				}]
 		}, {
 			"name":	"host",
-			"summary":	"@todo add summary",
+			"summary":	"Host Name",
 			"description":	[{
-					"line":	"@todo add description"
+					"line":	"Name of the host where this specification is valid."
+					}, { "line":	"If it is left empty (NULL), then the path is valid on all hosts (default)."
 				}],
 			"type":	"lHostT",
 			"flags":	[]
 		}, {
 			"name":	"file_host",
-			"summary":	"@todo add summary",
+			"summary":	"File Host",
 			"description":	[{
-					"line":	"@todo add description"
+					"line":	"@todo for file staging, the host where the file is available?"
 				}],
 			"type":	"lHostT",
 			"flags":	[]
 		}, {
 			"name":	"file_staging",
-			"summary":	"@todo add summary",
+			"summary":	"Do File Staging",
 			"description":	[{
-					"line":	"@todo add description"
+					"line":	"Do file staging when set to true. @todo status of filestaging?"
 				}],
 			"type":	"lBoolT",
 			"flags":	[]
