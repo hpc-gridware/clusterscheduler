@@ -40,15 +40,16 @@ extern "C" {
 #endif
 
 /**
-* @brief @todo add summary
+* @brief Variable Object
 *
-* @todo add description
+* One variable objects holds a name/value pair (variable=[value]).
+* @see libs/sgeobj/sge_var.h
 *
-*    SGE_STRING(VA_variable) - @todo add summary
-*    @todo add description
+*    SGE_STRING(VA_variable) - Variable Name
+*    Name of the Variable.
 *
-*    SGE_STRING(VA_value) - @todo add summary
-*    @todo add description
+*    SGE_STRING(VA_value) - Variable Value
+*    Value of the Variable as String.
 *
 */
 
