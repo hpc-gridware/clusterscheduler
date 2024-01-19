@@ -35,6 +35,8 @@
 
 #include "basis_types.h"
 
+// clang-format off
+
 #define MSG_ANSWER_NOANSWERLIST     _MESSAGE(64000, _("no answer list - gdi request failed"))
 #define MSG_CKPTREFINJOB_SU         _MESSAGE(64001, _("Checkpointing object "SFQ" is still referenced in job "sge_U32CFormat"."))
 #define MSG_GDI_INVALIDPRODUCTMODESTRING_S   _MESSAGE(64005, _("invalid security mode string "SFQ))
@@ -359,3 +361,5 @@
 
 #define MSG_CAPACITYEXCEEDED_FSSSIF    _MESSAGE(64555, _("debiting %f of "SFN" on "SFN" "SFN" for %d slots would exceed remaining capacity of %f"))
 #define MSG_EXCLCAPACITYEXCEEDED_FSSSI _MESSAGE(64556, _("debiting (implicit exclusive) %f of "SFN" on "SFN" "SFN" for %d slots would exceed capacity"))
+
+// clang-format on

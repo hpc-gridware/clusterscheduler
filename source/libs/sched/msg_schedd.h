@@ -33,6 +33,8 @@
 
 #include "basis_types.h"
 
+// clang-format off
+
 #define MSG_ATTRIB_ACTUALELEMENTTOATTRIBXMISSING_S    _MESSAGE(47014, _("missing actual element to attrib "SFN))
 #define MSG_SCHEDD_LOADADJUSTMENTSVALUEXNOTNUMERIC_S  _MESSAGE(47020, _("load adjustments value "SFQ" must be of numeric type"))
 
@@ -234,3 +236,5 @@
 #define MSG_INVALID_PARAM_SETTING_S                   _MESSAGE(47402, _("Invalid scheduler param setting: "SFQ)) 
 #define MSG_SCONF_NO_CONFIG                           _MESSAGE(47403, _("sconf_printf_config: no config to validate"))
 #define MSG_QINSTANCE_VALUEMISSINGMASTERDOWN_S        _MESSAGE(47404, _("error: no value for "SFQ" because execd is in unknown state"))
+
+// clang-format on

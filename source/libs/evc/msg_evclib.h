@@ -33,6 +33,8 @@
 
 #include "basis_types.h"
 
+// clang-format off
+
 #define MSG_COMMD_FAILEDTOSENDACKEVENTDELIVERY        _MESSAGE(65000, _("failed to send ACK_EVENT_DELIVERY"))
 #define MSG_EVENT_HIGHESTEVENTISXWHILEWAITINGFORY_UU  _MESSAGE(65001, _("highest event number is "sge_U32CFormat" while waiting for "sge_U32CFormat))
 #define MSG_EVENT_SMALLESTEVENTXISGRTHYWAITFOR_UU     _MESSAGE(65002, _("smallest event number "sge_U32CFormat" is greater than number "sge_U32CFormat" i'm waiting for"))
@@ -44,3 +46,5 @@
 #define MSG_EVENT_ILLEGALFLUSHTIME_I                  _MESSAGE(65008, _("illegal flush time %d - must be in the range [0:63]"))
 #define MSG_EVENT_NOTREGISTERED                       _MESSAGE(65009, _("event client not registered"))
 #define MSG_EVENT_HAVETOHANDLEEVENTS                  _MESSAGE(65010, _("you have to handle the events sgeE_QMASTER_GOES_DOWN, sgeE_SHUTDOWN and sgeE_ACK_TIMEOUT"))
+
+// clang-format on

@@ -33,6 +33,8 @@
 
 #include "basis_types.h"
 
+// clang-format off
+
 #define MSG_USAGE                               _MESSAGE(47231, _("usage:"))
 #define MSG_SGESHAREMON_NOSHARETREE             _MESSAGE(47232, _("No share tree"))
 #define MSG_SGESHAREMON_c_OPT_USAGE             _MESSAGE(47233, _("number of collections (default is infinite)"))
@@ -52,3 +54,5 @@
 #define MSG_ERROR_XISNOTAVALIDINTERVAL_S        _MESSAGE(47247, _(""SFN" is not a valid interval"))
 #define MSG_ERROR_XISNOTAVALIDCOUNT_S           _MESSAGE(47248, _(""SFN" is not a valid count"))
 #define MSG_FILE_COULDNOTOPENXFORY_SS           _MESSAGE(47249, _("could not open "SFN" for "SFN))
+
+// clang-format on

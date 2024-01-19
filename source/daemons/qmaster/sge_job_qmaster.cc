@@ -895,13 +895,14 @@ char *ruser
       DRETURN(STATUS_EUNKNOWN);
    }
 
+#if 0
    /* case 2,5 */
-/*   if ((all_users_flag || user_list_flag) && jid_flag) {
+   if ((all_users_flag || user_list_flag) && jid_flag) {
       ERROR((SGE_EVENT, SFNMAX, MSG_SGETEXT_NOTALLOWEDTOSPECUSERANDJID));
       answer_list_add(alpp, SGE_EVENT, STATUS_EUNKNOWN, ANSWER_QUALITY_ERROR);
       DRETURN(STATUS_EUNKNOWN);
-   } */                           
-
+   }
+#endif
 
    /* case 1,3: Only manager can modify all jobs of all users */
    if (all_users_flag && !jid_flag && !manop_is_manager(ruser, master_manager_list)) {

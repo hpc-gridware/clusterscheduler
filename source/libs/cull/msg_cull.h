@@ -38,6 +38,8 @@
 extern "C" {
 #endif
 
+// clang-format off
+
 #define MSG_CULL_NOPREFIXANDNOFILENAMEINWRITEELMTODISK   _MESSAGE(41000, _("no prefix and no filename in lWriteElemToDisk"))
 #define MSG_CULL_NOPREFIXANDNOFILENAMEINREADELEMFROMDISK _MESSAGE(41001, _("no prefix and no filename in lReadElemFromDisk"))
 #define MSG_CULL_NOTENOUGHMEMORYFORPACKINGXY_SS          _MESSAGE(41002, _("not enough memory for packing "SFN" "SFQ))
@@ -184,6 +186,8 @@ extern "C" {
 #define MSG_CULL_GETELEMULONG64ERRORXRUNTIMETYPE_S         _MESSAGE(41175, _("error: lGetElemUlong64("SFN"): run time type error"))
 #define MSG_CULL_GETPOSULONG64_GOTINVALIDPOSITION          _MESSAGE(41176, _("!!!!!!!!!! lGetPosUlong64() got an invalid pos !!!!!!!!!!!!"))
 #define MSG_CULL_WHERE_SHOULDBEULONG64T                    _MESSAGE(41177, _("lWhere (should be a lUlong64T)"))
+
+// clang-format on
 
 #ifdef  __cplusplus
 }

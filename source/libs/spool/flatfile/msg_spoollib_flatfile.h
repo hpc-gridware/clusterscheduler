@@ -31,6 +31,8 @@
  ************************************************************************/
 /*___INFO__MARK_END__*/
 
+// clang-format off
+
 /* 
  * libs/spool/sge_spooling_flatfile.c
  */
@@ -55,3 +57,5 @@
 #define MSG_SPOOL_GLOBALCONFIGNOTDELETED     _MESSAGE(62017, _("the global configuration must not be deleted"))
 #define MSG_SPOOL_SCHEDDCONFIGNOTDELETED     _MESSAGE(62018, _("the scheduler configuration must not be deleted"))
 #define MSG_MUST_BE_POSITIVE_VALUE_S         _MESSAGE(62019, _("parameter "SFQ" must be a positive number"))
+
+// clang-format on

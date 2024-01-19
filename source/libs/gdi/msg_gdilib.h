@@ -33,6 +33,8 @@
 
 #include "basis_types.h"
 
+// clang-format off
+
 #define MSG_QSH_GET_CREDSTDERR_S      _MESSAGE(43000, _("get_cred stderr: "SFN))
 #define MSG_QSH_QSUBFAILED            _MESSAGE(43001, _("qsub failed"))
 #define MSG_QSUB_CANTSTARTCOMMANDXTOGETTOKENQSUBFAILED_S    _MESSAGE(43002, _("can't start command "SFQ" to get token - qsub failed"))
@@ -122,3 +124,5 @@
 #define MSG_GDI_MASTER_ON_HOST_X_RUNINNG_TERMINATE_S _MESSAGE(55013, _("qmaster on host "SFQ" is still running - terminating"))
 
 #define MSG_GDI_CONTEXT_NULL             _MESSAGE(55015, _("context is NULL"))
+
+// clang-format on

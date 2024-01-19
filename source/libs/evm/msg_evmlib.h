@@ -33,6 +33,8 @@
 
 #include "basis_types.h"
 
+// clang-format off
+
 #define MSG_EVE_REINITEVENTCLIENT_S   _MESSAGE(66000, _("reinitialization of "SFQ))
 #define MSG_EVE_UNKNOWNEVCLIENT_US    _MESSAGE(66001, _("no event client known with id "sge_U32CFormat" to %s"))
 #define MSG_EVE_CLIENTREREGISTERED_SSSU _MESSAGE(66002, _("event client "SFQ" (%s/%s/"sge_U32CFormat") reregistered - it will need a total update"))
@@ -56,3 +58,5 @@
 #define MSG_SET_MAXDYNEVENTCLIENT_U       _MESSAGE(66018, _("max dynamic event clients is set to "sge_U32CFormat))
 #define MSG_EVE_INCOMPLETEEVENTCLIENT     _MESSAGE(66020, _("wrong event client version"))
 #define MSG_COM_ACKTIMEOUT4EV_SIS         _MESSAGE(66021, _("removing event client ("SFN":%d) on host "SFQ" after acknowledge timeout from event client list"))
+
+// clang-format on

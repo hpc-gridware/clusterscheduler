@@ -116,7 +116,7 @@ int getpagesize(void);
 
 #include "sgeobj/sge_feature.h"
 
-#include "msg_sge.h"
+#include "msg_execd.h"
 #include "sgedefs.h"
 #include "exec_ifm.h"
 #include "pdc.h"
