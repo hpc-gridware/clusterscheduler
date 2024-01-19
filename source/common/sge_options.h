@@ -279,9 +279,16 @@ enum {
 
    tc_OPT,        /* task concurrency */
 
-   /* added for job to core binding */
-   binding_OPT,   /* requests job binding strategy */
-   suspend_remote_OPT   /* parameter for qrsh to toggle the suspend behavior */
+   binding_OPT,          /* requests job binding strategy */
+   suspend_remote_OPT,   /* parameter for qrsh to toggle the suspend behavior */
+
+   ace_OPT, /* add ce object */
+   Ace_OPT, /* add ce object */
+   mce_OPT, /* mod ce object */
+   Mce_OPT, /* mod ce object */
+   dce_OPT, /* del ce object */
+   sce_OPT, /* show ce object */
+   scel_OPT /* show ce object list */
 };
 
 /* macros used in parsing */

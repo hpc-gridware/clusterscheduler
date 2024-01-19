@@ -1027,5 +1027,19 @@
 #define MSG_PACK_ERRORUNPACKING_S         _MESSAGE(60714, _("error unpacking: "SFN))
 #define MSG_PACK_INVALIDPACKDATA          _MESSAGE(60715, _("the pack string contained invalid characters"))
 #define MSG_PACK_WRONGPACKTYPE_UI         _MESSAGE(60716, _("wrong pack type (got: "sge_U32CFormat" / expected %d"))
+#define MSG_GDI_USAGE_ace_OPT_NAME        "[-ace ce_name]"
+#define MSG_GDI_UTEXT_ace_OPT_NAME        _MESSAGE(60717, _("add a new complex entry"))
+#define MSG_GDI_USAGE_dce_OPT_NAME        "[-dce ce_name]"
+#define MSG_GDI_UTEXT_dce_OPT_NAME        _MESSAGE(60718, _("delete a complex entry"))
+#define MSG_GDI_USAGE_Ace_OPT_FNAME       "[-Ace fname]"
+#define MSG_GDI_UTEXT_Ace_OPT_FNAME       _MESSAGE(60719, _("add a new complex entry from file"))
+#define MSG_GDI_USAGE_mce_OPT_NAME        "[-mce ce_name]"
+#define MSG_GDI_UTEXT_mce_OPT_NAME        _MESSAGE(60720, _("modify a complex entry"))
+#define MSG_GDI_USAGE_Mce_OPT_FNAME       "[-Mce fname]"
+#define MSG_GDI_UTEXT_Mce_OPT_FNAME       _MESSAGE(60721, _("modify a complex entry from file"))
+#define MSG_GDI_USAGE_sce_OPT_NAME        "[-sce ce_name]"
+#define MSG_GDI_UTEXT_sce_OPT_NAME        _MESSAGE(60722, _("show a complex entry"))
+#define MSG_GDI_USAGE_scel_OPT            "[-scel]"
+#define MSG_GDI_UTEXT_scel_OPT            _MESSAGE(60723, _("show all complex entry names"))
 
 // clang-format on

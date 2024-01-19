@@ -291,6 +291,14 @@ void sge_usage(u_long32 prog_number, FILE *fp) {
       PRINTITD(MSG_GDI_USAGE_Acal_OPT_FNAME, MSG_GDI_UTEXT_Acal_OPT_FNAME);
    }
 
+   if (VALID_OPT(ace_OPT, prog_number)) {
+      PRINTITD(MSG_GDI_USAGE_ace_OPT_NAME , MSG_GDI_UTEXT_ace_OPT_NAME);
+   }
+
+   if (VALID_OPT(Ace_OPT, prog_number)) {
+      PRINTITD(MSG_GDI_USAGE_Ace_OPT_FNAME, MSG_GDI_UTEXT_Ace_OPT_FNAME);
+   }
+
    if (VALID_OPT(ackpt_OPT, prog_number)) {
       PRINTITD(MSG_GDI_USAGE_ackpt_OPT_CKPT_NAME, 
          MSG_GDI_UTEXT_ackpt_OPT_CKPT_NAME);
@@ -515,6 +523,10 @@ void sge_usage(u_long32 prog_number, FILE *fp) {
 
    if (VALID_OPT(dcal_OPT, prog_number)) {
       PRINTITD(MSG_GDI_USAGE_dcal_OPT_CALENDAR_NAME , MSG_GDI_UTEXT_dcal_OPT_CALENDAR_NAME );
+   }
+
+   if (VALID_OPT(dce_OPT, prog_number)) {
+      PRINTITD(MSG_GDI_USAGE_dce_OPT_NAME , MSG_GDI_UTEXT_dce_OPT_NAME);
    }
 
    if (VALID_OPT(dckpt_OPT, prog_number)) {
@@ -755,6 +767,14 @@ void sge_usage(u_long32 prog_number, FILE *fp) {
 
    if (VALID_OPT(mc_OPT, prog_number)) {
       PRINTITD(MSG_GDI_USAGE_mc_OPT_COMPLEX, MSG_GDI_UTEXT_mc_OPT_COMPLEX);
+   }
+
+   if (VALID_OPT(mce_OPT, prog_number)) {
+      PRINTITD(MSG_GDI_USAGE_mce_OPT_NAME , MSG_GDI_UTEXT_mce_OPT_NAME);
+   }
+
+   if (VALID_OPT(Mce_OPT, prog_number)) {
+      PRINTITD(MSG_GDI_USAGE_Mce_OPT_FNAME, MSG_GDI_UTEXT_Mce_OPT_FNAME);
    }
 
    if (VALID_OPT(mckpt_OPT, prog_number)) {
@@ -1017,6 +1037,14 @@ void sge_usage(u_long32 prog_number, FILE *fp) {
             MSG_GDI_UTEXT_sc_OPT_CONTEXT_LIST_SET);
          MARK(OA_CONTEXT_LIST);
       }
+   }
+
+   if (VALID_OPT(sce_OPT, prog_number)) {
+      PRINTITD(MSG_GDI_USAGE_sce_OPT_NAME , MSG_GDI_UTEXT_sce_OPT_NAME);
+   }
+
+   if (VALID_OPT(scel_OPT, prog_number)) {
+      PRINTITD(MSG_GDI_USAGE_scel_OPT , MSG_GDI_UTEXT_scel_OPT);
    }
 
    if (VALID_OPT(scal_OPT, prog_number)) {

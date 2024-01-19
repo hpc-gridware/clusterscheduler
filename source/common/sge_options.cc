@@ -489,8 +489,22 @@ unsigned short sge_options[][ALL_OPT + 1] =
 /* binding_OPT */
  {0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0},
 /* suspend_remote_OPT - qrsh */ 
- {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1}
-/*               
+ {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1},
+/* ace_OPT, dd ce object */
+ {0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1},
+/* Ace_OPT, add ce object */
+ {0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1},
+/* mce_OPT, mod ce object */
+ {0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1},
+/* Mce_OPT, mod ce object from file */
+ {0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1},
+/* dce_OPT, del ce object */
+ {0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1},
+/* sce_OPT, show ce object */
+ {0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1},
+/* scel_OPT show ce object list */
+ {0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1}
+/*
   n  q  q  q  q  q  q  q  q  q  q  q  q  q  q  e  q  q  q  q  n  A
   o  a  c  d  h  m  m  r  r  s  s  r  l  s  s  x  e  r  r  r  o  L
   n  l  o  e  o  a  o  e  l  e  h  s  o  t  u  e  v  s  d  s  n  L

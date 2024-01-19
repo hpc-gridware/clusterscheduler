@@ -85,6 +85,21 @@ Adds a new calendar definition to the xxQS_NAMExx environment. Calendars are use
 availability and unavailability schedules of queues. The format of a calendar definition is described in
 calendar_conf(5). The calendar definition is taken from the file *fname*. Requires root/manager privileges.
 
+## -ace *ce_name*
+Adds a new complex entry to the complex list of the xxQS_NAMExx environment. Complex entries are used to define
+resources that can be requested by jobs. The different attributes define the characteristics of that resource and
+the way how xxQS_NAMExx should handle them. Find more information in xxqs_name_sxx_complex(5).  
+
+With the *ce_name* given in the option argument `qconf` will open a temporary file and start up an editor.
+After entering the resource definition and closing the editor the new complex entry is checked and registered with
+xxqs_name_sxx_qmaster(8). Requires root/manager privileges.
+
+## -Ace *fname*
+Adds a new complex entry to the complex list of the xxQS_NAMExx environment. Complex entries are used to define
+resources that can be requested by jobs. The different attributes define the characteristics of that resource and
+the way how xxQS_NAMExx should handle them. Find more information in xxqs_name_sxx_complex(5).  
+The complex definition is taken from the file *fname*. Requires root/manager privileges.
+
 ## -ackpt *ckpt_name*
 Adds a checkpointing environment under the name *ckpt_name* to the list of checkpointing environments maintained
 by xxQS_NAMExx and to be usable to submit checkpointing jobs (see xxqs_name_sxx_checkpoint(5) for details on
@@ -253,6 +268,9 @@ Requires root/manager privileges.
 ## -dcal *calendar_name*,...
 Deletes the specified calendar definition from xxQS_NAMExx. Requires root/manager privileges.
 
+## -dce *ce_name*
+Deletes the specified complex fro the set of complex definitions from xxQS_NAMExx. Requires root/manager privileges. 
+
 ## -dckpt *ckpt_name*
 Deletes the specified checkpointing environment. Requires root/manager privileges.
 
@@ -357,6 +375,15 @@ root/manager privilege.
 ## -Mc *fname*
 Overwrites the complex configuration by the contents of *fname*. The argument file must comply to the format
 specified in xxqs_name_sxx_complex(5). Requires root or manager privilege.
+
+## -mce *ce_name*
+Retrieves the current configuration for the specified complex entry, executes an editor
+and on exit it registers the new configuration with the xxqs_name_sxx_qmaster(8). Refer to xxqs_name_sxx_complex(5) for
+details on the complex entry configuration format. Requires root/manager privilege.
+
+## -Mce *fname*
+Overwrite an existing complex entry with the definitions in *fname* (see xxqs_name_sxx_complex(5)).
+Requires root/manager privileges. 
 
 ## -mckpt *ckpt_name*
 Retrieves the current configuration for the specified checkpointing environment, executes an editor
@@ -526,6 +553,12 @@ specifying the location of a node in the share tree.
 
 ## -sc
 Display the complex configuration.
+
+## -sce *ce_name*
+Show the definition of the complex entry specified by *ce_name*.
+
+## -scel
+Show a list of all currently defined complex entry names. To get the full complex configuration use `-sc'`
 
 ## -scal *calendar_name*
 Display the configuration of the specified calendar.
