@@ -1,15 +1,18 @@
 {
 	"className":	"MailReceiver",
-	"summary":	"@todo add summary",
+	"summary":	"Mail Receiver",
 	"description":	[{
-			"line":	"@todo add description"
+			"line":	"One object of this type specifies a mail receiver, meaning an email address"
+			}, { "line":	"in the form user@host."
+			}, { "line":	"It is used e.g. when submitting jobs via qsub -M user[@host][,user[@host],...]"
+			}, { "line":	"@todo why do we split it into user and host? We could just have a single string holding an email address."
 		}],
 	"cullPrefix":	"MR",
 	"attributes":	[{
 			"name":	"user",
-			"summary":	"@todo add summary",
+			"summary":	"User Name",
 			"description":	[{
-					"line":	"@todo add description"
+					"line":	"User name of the mail receipient"
 				}],
 			"type":	"lStringT",
 			"flags":	[{
@@ -19,9 +22,9 @@
 				}]
 		}, {
 			"name":	"host",
-			"summary":	"@todo add summary",
+			"summary":	"Host Name",
 			"description":	[{
-					"line":	"@todo add description"
+					"line":	"Host / Domain part of a mail receipient."
 				}],
 			"type":	"lHostT",
 			"flags":	[{

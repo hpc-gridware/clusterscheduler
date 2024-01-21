@@ -40,15 +40,18 @@ extern "C" {
 #endif
 
 /**
-* @brief @todo add summary
+* @brief Mail Receiver
 *
-* @todo add description
+* One object of this type specifies a mail receiver, meaning an email address
+* in the form user@host.
+* It is used e.g. when submitting jobs via qsub -M user[@host][,user[@host],...]
+* @todo why do we split it into user and host? We could just have a single string holding an email address.
 *
-*    SGE_STRING(MR_user) - @todo add summary
-*    @todo add description
+*    SGE_STRING(MR_user) - User Name
+*    User name of the mail receipient
 *
-*    SGE_HOST(MR_host) - @todo add summary
-*    @todo add description
+*    SGE_HOST(MR_host) - Host Name
+*    Host / Domain part of a mail receipient.
 *
 */
 
