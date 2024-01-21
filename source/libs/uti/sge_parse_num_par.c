@@ -457,7 +457,7 @@ sge_parse_num_val(sge_rlim_t *rlimp, double *dvalp,
       dummy =    (u_long32) (dummy * muli);
       *dvalp =              t * muli;
 
-      if (t > RLIM_MAX || rlmuli>= RLIM_MAX || (double)(RLIM_MAX/muli)<t)
+      if (t > (double)RLIM_MAX || rlmuli>= RLIM_MAX || ((double)RLIM_MAX/muli)<t)
          *rlimp = RLIM_INFINITY;
       else 
          *rlimp = (sge_rlim_t)(t*rlmuli);

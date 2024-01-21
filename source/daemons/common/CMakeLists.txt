@@ -26,7 +26,7 @@ target_link_libraries(test_category PRIVATE daemonscommon sched sgeobj cull comm
 
 add_executable(test_heartbeat test_heartbeat.cc)
 target_include_directories(test_heartbeat PRIVATE "./")
-target_link_libraries(test_heartbeat PRIVATE daemonscommon uti commlists)
+target_link_libraries(test_heartbeat PRIVATE daemonscommon uti commlists ${SGE_LIBS})
 
 if(INSTALL_SGE_TEST)
     install(TARGETS test_category DESTINATION testbin/${SGE_ARCH})

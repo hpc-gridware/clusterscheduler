@@ -12,5 +12,5 @@ set(LIBRARY_SOURCES
 set(LIBRARY_INCLUDES "./")
 
 add_library(${LIBRARY_NAME} STATIC ${LIBRARY_SOURCES})
-target_include_directories(${LIBRARY_NAME} PUBLIC ${SGE_INCLUDES}
-                                                  ${LIBRARY_INCLUDES})
+target_include_directories(${LIBRARY_NAME} PUBLIC ${SGE_INCLUDES} ${LIBRARY_INCLUDES})
+target_link_libraries(test_cl_com_parameter_list PRIVATE ${SGE_LIBS})

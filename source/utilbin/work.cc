@@ -58,7 +58,7 @@ int nproc = 0;
 int stack_mb = 0;
 int stack_kb = 0;
 
-#if defined(DARWIN) || defined(LINUX)
+#if defined(DARWIN) || defined(LINUX) || defined(FREEBSD)
 int malloc_mb = 0;
 #else
 size_t malloc_mb = 0;

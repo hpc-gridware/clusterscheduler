@@ -27,7 +27,7 @@ function(build_third_party 3rdparty_build_path 3rdparty_install_path)
         GIT_REPOSITORY https://github.com/Positeral/libdb5.git
         GIT_TAG master
 	# update config.guess and config.sub with current versions of the installed automake
-	PATCH_COMMAND /bin/sh -c "cp /usr/share/automake-*/config.* dist"
+	PATCH_COMMAND /bin/sh -c "cp ${PROJECT_AUTOMAKE_SRC} dist"
         CONFIGURE_COMMAND dist/configure --prefix ${3rdparty_install_path}
         BUILD_IN_SOURCE TRUE
         BUILD_ALWAYS FALSE
@@ -43,28 +43,30 @@ function(build_third_party 3rdparty_build_path 3rdparty_install_path)
     endif()
     # @todo @todo db_* man pages
 
-    # jemalloc @todo for all platforms? Only lx-amd64?
-    message(STATUS "adding 3rdparty jemalloc")
-    list(APPEND 3rdparty_list 3rd_party_jemalloc)
-    ExternalProject_Add(
-      3rd_party_jemalloc
-      EXCLUDE_FROM_ALL TRUE
-      PREFIX ${3rdparty_build_path}/jemalloc
-      INSTALL_DIR ${3rdparty_install_path}
-      GIT_REPOSITORY https://github.com/jemalloc/jemalloc.git
-      GIT_TAG 5.3.0
-      CONFIGURE_COMMAND ./autogen.sh --prefix ${3rdparty_install_path}
-                        --disable-shared --disable-initial-exec-tls
-      BUILD_IN_SOURCE TRUE
-      BUILD_ALWAYS FALSE
-      BUILD_COMMAND make)
-    add_library(jemalloc STATIC IMPORTED GLOBAL)
-    set_target_properties(
-      jemalloc
-      PROPERTIES
-        IMPORTED_LOCATION
-        ${3rdparty_install_path}/lib/${CMAKE_STATIC_LIBRARY_PREFIX}jemalloc_pic${CMAKE_STATIC_LIBRARY_SUFFIX}
-    )
+    # jemalloc
+    if(${WITH_PLPA})
+      message(STATUS "adding 3rdparty jemalloc")
+      list(APPEND 3rdparty_list 3rd_party_jemalloc)
+      ExternalProject_Add(
+        3rd_party_jemalloc
+        EXCLUDE_FROM_ALL TRUE
+        PREFIX ${3rdparty_build_path}/jemalloc
+        INSTALL_DIR ${3rdparty_install_path}
+        GIT_REPOSITORY https://github.com/jemalloc/jemalloc.git
+        GIT_TAG 5.3.0
+        CONFIGURE_COMMAND ./autogen.sh --prefix ${3rdparty_install_path}
+                          --disable-shared --disable-initial-exec-tls
+        BUILD_IN_SOURCE TRUE
+        BUILD_ALWAYS FALSE
+        BUILD_COMMAND make)
+      add_library(jemalloc STATIC IMPORTED GLOBAL)
+      set_target_properties(
+        jemalloc
+        PROPERTIES
+          IMPORTED_LOCATION
+          ${3rdparty_install_path}/lib/${CMAKE_STATIC_LIBRARY_PREFIX}jemalloc_pic${CMAKE_STATIC_LIBRARY_SUFFIX}
+      )
+    endif()
 
     # plpa
     if(${WITH_PLPA})
@@ -77,7 +79,7 @@ function(build_third_party 3rdparty_build_path 3rdparty_install_path)
         INSTALL_DIR ${3rdparty_install_path}
         URL https://download.open-mpi.org/release/plpa/v1.3/plpa-1.3.2.tar.gz
 	# update config.guess and config.sub with current versions of the installed automake
-	PATCH_COMMAND /bin/sh -c "cp /usr/share/automake-*/config.* config"
+	PATCH_COMMAND /bin/sh -c "cp ${PROJECT_AUTOMAKE_SRC} config"
         CONFIGURE_COMMAND ./configure --prefix ${3rdparty_install_path}
                           --disable-shared
         BUILD_IN_SOURCE TRUE

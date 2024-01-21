@@ -45,7 +45,7 @@
 #  include <stropts.h>
 #  include <termio.h>
 #elif defined(FREEBSD) || defined(NETBSD)
-#  include <termios.h>
+//#  include <termios.h>
 #else
 #  include <termio.h>
 #endif

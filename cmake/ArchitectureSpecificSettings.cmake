@@ -28,6 +28,7 @@ function(architecture_specific_settings)
   string(REPLACE " " "_" PROJECT_3RDPARTY_DIR ${PROJECT_3RDPARTY_DIR})
   message(STATUS "3rdparty tools are installed to ${PROJECT_3RDPARTY_DIR}")
   set(PROJECT_3RDPARTY_DIR ${PROJECT_3RDPARTY_DIR} PARENT_SCOPE)
+  set(PROJECT_AUTOMAKE_SRC "/usr/share/automake-*/config.*" PARENT_SCOPE)
 
   # DARWIN: GETHOSTBYNAME DGETHOSTBYADDR_M
   # SOLARIS: GETHOSTBYNAME_R5 GETHOSTBYADDR_R7 
@@ -40,8 +41,8 @@ function(architecture_specific_settings)
     USE_POLL
     COMPILE_DC)
 
-  # Linux
   if(SGE_ARCH MATCHES "lx-.*")
+    # Linux
     message(STATUS "We are on Linux: ${SGE_ARCH}")
     set(CMAKE_C_FLAGS "-Wall -Werror -Wno-deprecated-declarations -Wstrict-prototypes -Wno-strict-aliasing -pedantic" CACHE STRING "" FORCE)
     set(CMAKE_CXX_FLAGS "-Wall -Werror -Wno-deprecated-declarations -Wno-write-strings -Wno-literal-suffix -pedantic" CACHE STRING "" FORCE)
@@ -66,6 +67,7 @@ function(architecture_specific_settings)
     add_link_options(-pthread -rdynamic)
 
     set(WITH_MTMALLOC OFF PARENT_SCOPE)
+    set(WITH_JEMALLOC ON PARENT_SCOPE)
 
     # specific linux architectures
     if(SGE_TARGETBITS STREQUAL "TARGET_32BIT")
@@ -109,36 +111,39 @@ function(architecture_specific_settings)
       set (WITH_SPOOL_BERKELEYDB OFF PARENT_SCOPE)
     endif()
 
-    # Solaris
+  elseif(SGE_ARCH MATCHES "fbsd-amd64")
+    # FreeBSD
+    message(STATUS "We are on FreeBSD: ${SGE_ARCH}")
+    set(PROJECT_AUTOMAKE_SRC "/usr/local/share/automake-*/config.*" PARENT_SCOPE)
+    set(CMAKE_C_FLAGS "-Wall -Werror -Wno-reserved-user-defined-literal -Wno-writable-strings -Wno-format-pedantic -Wno-unused-const-variable -Wno-pointer-to-int-cast -pedantic" CACHE STRING "" FORCE)
+    set(CMAKE_CXX_FLAGS "-Wall -Werror -Wno-reserved-user-defined-literal -Wno-writable-strings -Wno-format-pedantic -Wno-unused-const-variable -Wno-pointer-to-int-cast -pedantic" CACHE STRING "" FORCE)
+    add_compile_definitions(FREEBSD GETHOSTBYNAME GETHOSTBYADDR_M SPOOLING_classic)
+    add_compile_options(-fPIC)
+
+    set(WITH_JEMALLOC OFF PARENT_SCOPE)
+    set(WITH_SPOOL_BERKELEYDB OFF PARENT_SCOPE)
+    set(WITH_SPOOL_DYNAMIC OFF PARENT_SCOPE)
+    set(WITH_PLPA OFF PARENT_SCOPE)
   elseif(SGE_ARCH MATCHES "sol-.*")
+    # Solaris
     message(STATUS "We are on Solaris: ${SGE_ARCH}")
     add_compile_definitions(SOLARIS GETHOSTBYNAME_R5 GETHOSTBYADDR_R7 SPOOLING_dynamic __SGE_COMPILE_WITH_GETTEXT__)
-    set(WITH_PLPA
-        OFF
-        PARENT_SCOPE)
-    set(WITH_JEMALLOC
-        OFF
-        PARENT_SCOPE)
 
-    # Darwin M1/M2/M2Max/M2Pro (arm64) platform
+    set(WITH_PLPA OFF PARENT_SCOPE)
+    set(WITH_JEMALLOC OFF PARENT_SCOPE)
+
   elseif(SGE_ARCH MATCHES "darwin-arm64")
+    # Darwin M1/M2/M2Max/M2Pro (arm64) platform
     message(STATUS "We are on macOS: ${SGE_ARCH}")
     set(CMAKE_C_FLAGS "-Wall -Werror -Wno-unused-const-variable -Wno-format-pedantic -Wno-pointer-to-int-cast -Wno-strict-prototypes -Wno-reserved-user-defined-literal -Wno-deprecated-declarations -Wno-strict-aliasing -pedantic" CACHE STRING "" FORCE)
     set(CMAKE_CXX_FLAGS "-Wall -Werror -Wno-unused-const-variable -Wno-format-pedantic -Wno-pointer-to-int-cast -Wno-strict-prototypes -Wno-reserved-user-defined-literal -Wno-deprecated-declarations -Wno-write-strings -pedantic" CACHE STRING "" FORCE)
     SET(CMAKE_OSX_ARCHITECTURES "arm64" CACHE STRING "Build architectures for Mac OS X" FORCE)
     add_compile_definitions(DARWIN DARWIN10 GETHOSTBYNAME GETHOSTBYADDR_M SPOOLING_classic)
-    set(WITH_PLPA
-        OFF
-        PARENT_SCOPE)
-    set(WITH_SPOOL_BERKELEYDB
-        OFF
-        PARENT_SCOPE)
-    set(WITH_SPOOL_DYNAMIC
-        OFF
-        PARENT_SCOPE)
-
-    # unknown platform
+    set(WITH_PLPA OFF PARENT_SCOPE)
+    set(WITH_SPOOL_BERKELEYDB OFF PARENT_SCOPE)
+    set(WITH_SPOOL_DYNAMIC OFF PARENT_SCOPE)
   else()
+    # unknown platform
     message(WARNING "no arch specific compiler options for ${SGE_ARCH}")
   endif()
 

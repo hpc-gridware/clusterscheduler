@@ -1,10 +1,13 @@
 # source/3rdparty/qmake-4.4/src
 
 if(SGE_ARCH MATCHES "darwin-arm64")
-  add_custom_command(
-    OUTPUT glob.h COMMAND cp ${CMAKE_CURRENT_SOURCE_DIR}/../lib/glob.h.${SGE_ARCH} glob.h)
+  add_custom_command(OUTPUT glob.h COMMAND cp ${CMAKE_CURRENT_SOURCE_DIR}/../lib/glob.h.${SGE_ARCH} glob.h)
 
   set(ADD_QMAKE_SOURCES glob.h ../lib/concat-filename.c ../lib/findprog-in.c ../lib/fnmatch.c)
+elseif(SGE_ARCH MATCHES "fbsd-amd64")
+  add_custom_command(OUTPUT glob.h COMMAND cp ${CMAKE_CURRENT_SOURCE_DIR}/../lib/glob.h.${SGE_ARCH} glob.h)
+
+  set(ADD_QMAKE_SOURCES glob.h ../lib/concat-filename.c ../lib/findprog-in.c)
 else()
   set(ADD_QMAKE_SOURCES "")
 endif()
@@ -55,7 +58,7 @@ target_include_directories(
   qmake
   PRIVATE ${CMAKE_CURRENT_BINARY_DIR} ${CMAKE_CURRENT_LIST_DIR}
           ${CMAKE_CURRENT_LIST_DIR}/../lib
-          ${SGE_INCLUDES}
+          ${SGE_INCLUDES} /usr/local/include
 )
 target_link_libraries(qmake PRIVATE ${SGE_LIBS})
 
