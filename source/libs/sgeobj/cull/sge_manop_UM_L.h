@@ -40,12 +40,15 @@ extern "C" {
 #endif
 
 /**
-* @brief @todo add summary
+* @brief Manager
 *
-* @todo add description
+* An object of this type names a user with manager rights.
 *
-*    SGE_STRING(UM_name) - @todo add summary
-*    @todo add description
+*    SGE_STRING(UM_name) - Manager Name
+*    User name of the manager.
+*    Gives the user manager rights - manager is the highest role, it is for example required
+*    to create or delete queues.
+*    The necessary user rights per operation are listed in the corresponding man pages, e.g. qconf.1
 *
 */
 

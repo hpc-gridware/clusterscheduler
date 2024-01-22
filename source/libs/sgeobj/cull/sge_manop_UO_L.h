@@ -40,12 +40,14 @@ extern "C" {
 #endif
 
 /**
-* @brief @todo add summary
+* @brief Operator
 *
-* @todo add description
+* An object of this type names a user with operator rights.
+* Gives the user operator rights - he is for example allowed to disable/enable queues.
+* The necessary user rights per operation are listed in the corresponding man pages, e.g. qconf.1
 *
-*    SGE_STRING(UO_name) - @todo add summary
-*    @todo add description
+*    SGE_STRING(UO_name) - Operator Name
+*    User name of the operator
 *
 */
 

@@ -1,15 +1,17 @@
 {
 	"className":	"Operator",
-	"summary":	"@todo add summary",
+	"summary":	"Operator",
 	"description":	[{
-			"line":	"@todo add description"
+			"line":	"An object of this type names a user with operator rights."
+			}, { "line":	"Gives the user operator rights - he is for example allowed to disable/enable queues."
+			}, { "line":	"The necessary user rights per operation are listed in the corresponding man pages, e.g. qconf.1"
 		}],
 	"cullPrefix":	"UO",
 	"attributes":	[{
 			"name":	"name",
-			"summary":	"@todo add summary",
+			"summary":	"Operator Name",
 			"description":	[{
-					"line":	"@todo add description"
+					"line":	"User name of the operator"
 				}],
 			"type":	"lStringT",
 			"flags":	[{

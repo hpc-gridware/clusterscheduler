@@ -1,15 +1,18 @@
 {
 	"className":	"Manager",
-	"summary":	"@todo add summary",
+	"summary":	"Manager",
 	"description":	[{
-			"line":	"@todo add description"
+			"line":	"An object of this type names a user with manager rights."
 		}],
 	"cullPrefix":	"UM",
 	"attributes":	[{
 			"name":	"name",
-			"summary":	"@todo add summary",
+			"summary":	"Manager Name",
 			"description":	[{
-					"line":	"@todo add description"
+					"line":	"User name of the manager."
+			}, { "line":	"Gives the user manager rights - manager is the highest role, it is for example required"
+			}, { "line":	"to create or delete queues."
+			}, { "line":	"The necessary user rights per operation are listed in the corresponding man pages, e.g. qconf.1"
 				}],
 			"type":	"lStringT",
 			"flags":	[{
