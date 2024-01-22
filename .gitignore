@@ -12,28 +12,3 @@ cvs_update.*
 ._*
 .idea
 .clion.source.upload.marker
-
-# C build directories
-source/[DARWIN_|LINUX86_|SOLARIS|FREEBSD]*
-source/3rdparty/qmon/[DARWIN_|LINUX86_|SOLARIS|FREEBSD]*
-source/3rdparty/qmake/[DARWIN_|LINUX86_|SOLARIS|FREEBSD]*
-source/3rdparty/qtcsh/[DARWIN_|LINUX86_|SOLARIS|FREEBSD]*
-source/3rdparty/sge_depend/[DARWIN_|LINUX86_|SOLARIS|FREEBSD]*
-source/3rdparty/remote/[DARWIN_|LINUX86_|SOLARIS|FREEBSD]*
-source/3rdparty/adoc/[DARWIN_|LINUX86_|SOLARIS|FREEBSD]*
-
-# man build directories
-source/*MANSBUILD*
-source/JAVADOCS
-
-# java build directories and generated code
-source/CLASSES/*
-source/dist/qmon/Qmon
-source/dist/DetectJvmLibrary/build/*
-source/clients/gui-installer/build/*
-source/clients/gui-installer/bin/*
-source/clients/gui-installer/dist/*
-source/libs/jgdi/cullconv/build/*
-source/libs/jgdi/build/gensrc/*
-source/libs/jgdi/build/*
-
