@@ -11,6 +11,7 @@ tags
 cvs_update.*
 ._*
 .idea
+.clion.source.upload.marker
 
 # C build directories
 source/[DARWIN_|LINUX86_|SOLARIS|FREEBSD]*
