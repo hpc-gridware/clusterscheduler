@@ -428,13 +428,13 @@ static void qevent_parse_command_line(int argc, char **argv, qevent_options *opt
       }
 
 
-      /* unkown option */
+      /* unknown option */
       if ( *argv[0] == '-' ) {  
-         sge_dstring_append(option_struct->error_message,"unkown option: ");
+         sge_dstring_append(option_struct->error_message,"unknown option: ");
          sge_dstring_append(option_struct->error_message,*argv);
          sge_dstring_append(option_struct->error_message,"\n");
       } else {
-         sge_dstring_append(option_struct->error_message,"unkown argument: ");
+         sge_dstring_append(option_struct->error_message,"unknown argument: ");
          sge_dstring_append(option_struct->error_message,*argv);
          sge_dstring_append(option_struct->error_message,"\n");
       }
