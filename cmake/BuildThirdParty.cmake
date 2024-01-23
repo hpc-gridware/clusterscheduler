@@ -44,7 +44,7 @@ function(build_third_party 3rdparty_build_path 3rdparty_install_path)
     # @todo @todo db_* man pages
 
     # jemalloc
-    if(${WITH_PLPA})
+    if(${WITH_JEMALLOC})
       message(STATUS "adding 3rdparty jemalloc")
       list(APPEND 3rdparty_list 3rd_party_jemalloc)
       ExternalProject_Add(
@@ -78,8 +78,9 @@ function(build_third_party 3rdparty_build_path 3rdparty_install_path)
         PREFIX ${3rdparty_build_path}/plpa
         INSTALL_DIR ${3rdparty_install_path}
         URL https://download.open-mpi.org/release/plpa/v1.3/plpa-1.3.2.tar.gz
-	# update config.guess and config.sub with current versions of the installed automake
-	PATCH_COMMAND /bin/sh -c "cp ${PROJECT_AUTOMAKE_SRC} config"
+        #DOWNLOAD_EXTRACT_TIMESTAMP TRUE
+        # update config.guess and config.sub with current versions of the installed automake
+        PATCH_COMMAND /bin/sh -c "cp ${PROJECT_AUTOMAKE_SRC} config"
         CONFIGURE_COMMAND ./configure --prefix ${3rdparty_install_path}
                           --disable-shared
         BUILD_IN_SOURCE TRUE
