@@ -1,5 +1,4 @@
-add_subdirectory(admin-guide)
+# gridengine/doc/markdown/manual
 add_subdirectory(development-guide)
 add_subdirectory(installation-guide)
 add_subdirectory(release-notes)
-add_subdirectory(user-guide)
