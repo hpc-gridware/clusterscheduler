@@ -43,6 +43,7 @@
 #endif 
 
 #include "uti/sge_rmon.h"
+#include "uti/oge_topology.h"
 
 #include "sgeobj/sge_binding.h" 
 #include "sgeobj/sge_answer.h"
@@ -59,7 +60,7 @@ static char* logical_used_topology = NULL;
 
 static int logical_used_topology_length = 0;
 
-#if defined(PLPA_LINUX) || defined(BINDING_SOLARIS)
+#if defined(OGE_HWLOC) || defined(BINDING_SOLARIS)
 
 /* creates a string with the topology used from a single job */
 static bool create_topology_used_per_job(char** accounted_topology, 
@@ -165,8 +166,8 @@ static void create_environment_string_solaris(const processorid_t* pid_list,
 *
 *******************************************************************************/
 int get_execd_amount_of_threads() {
-#if defined(PLPA_LINUX) 
-      return get_total_amount_of_plpa_threads();
+#if defined(OGE_HWLOC)
+      return oge::topo_get_total_amount_of_threads();
 #elif defined(BINDING_SOLARIS) 
       /* TODO implement this also for Solaris */
       return get_total_amount_of_cores_solaris();
@@ -194,8 +195,8 @@ int get_execd_amount_of_threads() {
 *******************************************************************************/
 int get_execd_amount_of_cores() 
 {
-#if defined(PLPA_LINUX) 
-      return get_total_amount_of_plpa_cores();
+#if defined(OGE_HWLOC)
+      return oge::topo_get_total_amount_of_cores();
 #elif defined(BINDING_SOLARIS) 
       return get_total_amount_of_cores_solaris();
 #else   
@@ -224,8 +225,8 @@ int get_execd_amount_of_cores()
 *******************************************************************************/
 int get_execd_amount_of_sockets()
 {
-#if defined(PLPA_LINUX) 
-   return get_amount_of_plpa_sockets();
+#if defined(OGE_HWLOC)
+   return oge::topo_get_total_amount_of_sockets();
 #elif defined(BINDING_SOLARIS) 
    return get_total_amount_of_sockets_solaris();
 #else
@@ -240,8 +241,8 @@ bool get_execd_topology(char** topology, int* length)
 
    /* topology must be a NULL pointer */
    if (topology != NULL && (*topology) == NULL) {
-#if defined(PLPA_LINUX)  
-      if (get_topology_linux(topology, length) == true) {
+#if defined(OGE_HWLOC)
+      if (oge::topo_get_topology(topology, length) == true) {
          success = true;
       } else {
          success = false;
@@ -297,10 +298,10 @@ bool get_execd_topology_in_use(char** topology)
    }   
 
    if (logical_used_topology_length == 0 || logical_used_topology == NULL) {
-#if defined(PLPA_LINUX) 
+#if defined(OGE_HWLOC)
       /* initialize without any usage */
-      get_topology_linux(&logical_used_topology, 
-              &logical_used_topology_length); 
+      oge::topo_get_topology(&logical_used_topology,
+                             &logical_used_topology_length);
 #elif defined(BINDING_SOLARIS) 
       get_topology_solaris(&logical_used_topology, 
                &logical_used_topology_length);
@@ -316,7 +317,7 @@ bool get_execd_topology_in_use(char** topology)
    return retval;   
 }
 
-#if defined(PLPA_LINUX) || defined(BINDING_SOLARIS) 
+#if defined(OGE_HWLOC) || defined(BINDING_SOLARIS)
 /* gets the positions in the topology string from a given <socket>,<core> pair */
 static int get_position_in_topology(const int socket, const int core, const char* topology, 
    const int topology_length);
@@ -1133,7 +1134,7 @@ static bool bind_current_process_to_pset(psetid_t pset_id)
 
 #endif 
 
-#if defined(PLPA_LINUX) || defined(BINDING_SOLARIS)  
+#if defined(OGE_HWLOC) || defined(BINDING_SOLARIS)
 
 
 /****** sge_binding/account_job() **********************************************
@@ -1163,10 +1164,10 @@ bool account_job(const char* job_topology)
    
    if (logical_used_topology_length == 0 || logical_used_topology == NULL) {
 
-#if defined(PLPA_LINUX) 
+#if defined(OGE_HWLOC)
       /* initialize without any usage */
-      get_topology_linux(&logical_used_topology, 
-              &logical_used_topology_length); 
+      oge::topo_get_topology(&logical_used_topology,
+                             &logical_used_topology_length);
 #elif defined(BINDING_SOLARIS) 
       get_topology_solaris(&logical_used_topology, 
                &logical_used_topology_length);
@@ -2594,7 +2595,7 @@ static int get_core_id_from_logical_core_number_solaris(const int** matrix,
 /* ---------------------------------------------------------------------------*/
 /*                   Bookkeeping of cores in use by SGE                       */ 
 /* ---------------------------------------------------------------------------*/
-#if defined(PLPA_LINUX) || defined(BINDING_SOLARIS)
+#if defined(OGE_HWLOC) || defined(BINDING_SOLARIS)
 
 bool get_linear_automatic_socket_core_list_and_account(const int amount, 
       int** list_of_sockets, int* samount, int** list_of_cores, int* camount, 

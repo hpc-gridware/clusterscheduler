@@ -32,9 +32,20 @@
  ************************************************************************/
 /*___INFO__MARK_END__*/
 
+#include <sys/types.h>
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+#include <errno.h>
+
+#include "basis_types.h"
+#include "uti/config_file.h"
+
+
 #include "uti/sge_binding_hlp.h"
 #include "uti/sge_dstring.h"
 #include "uti/sge_string.h"
+#include "uti/oge_topology.h"
 
 #include "shepherd_binding.h"
 #include "err_trace.h"
@@ -44,34 +55,33 @@
 #  include <sys/pset.h>
 #endif
 
-#if defined(PLPA_LINUX)
+namespace oge {
+#if defined(OGE_HWLOC)
 
-static bool binding_set_linear_linux(int first_socket, int first_core, 
-               int amount_of_cores, int offset, const binding_type_t type);
+   static bool binding_set_linear_linux(int first_socket, int first_core,
+                                        int amount_of_cores, int offset, const binding_type_t type);
 
-static bool binding_set_striding_linux(int first_socket, int first_core, 
-               int amount_of_cores, int offset, int n, const binding_type_t type);
+   static bool binding_set_striding_linux(int first_socket, int first_core,
+                                          int amount_of_cores, int offset, int n, const binding_type_t type);
 
-static bool set_processor_binding_mask(plpa_cpu_set_t* cpuset, const int processor_ids[], 
-                  const int no_of_ids);
+   static bool bind_process_to_mask(hwloc_const_bitmap_t cpuset);
 
-/* DG TODO BETTER WITH POINTER */
-static bool bind_process_to_mask(const pid_t pid, const plpa_cpu_set_t cpuset);
+   static bool binding_explicit(const int *list_of_sockets, const int samount,
+                                const int *list_of_cores, const int camount, const binding_type_t type);
 
-static bool binding_explicit(const int* list_of_sockets, const int samount, 
-         const int* list_of_cores, const int camount, const binding_type_t type);
-
-static bool create_binding_env_linux(const int* proc_id, const int amount);
-
-static bool add_proc_ids_linux(int socket, int core, int** proc_id, int* proc_id_size);
+   static bool create_binding_env_linux(hwloc_const_bitmap_t cpuset);
+#if 0
+   static bool add_proc_ids_linux(int socket, int core, int **proc_id, int *proc_id_size);
+#endif
 
 #endif
 
 #if defined(BINDING_SOLARIS)
-   static bool bind_shepherd_to_pset(int pset_id); 
+   static bool bind_shepherd_to_pset(int pset_id);
 #endif
 
-#if defined(PLPA_LINUX)
+#if defined(OGE_HWLOC)
+
 /****** shepherd_binding/do_core_binding() *************************************
 *  NAME
 *     do_core_binding() -- Performs the core binding task for the Linux OS. 
@@ -101,317 +111,316 @@ static bool add_proc_ids_linux(int socket, int core, int** proc_id, int* proc_id
 *     MT-NOTE: do_core_binding() is not MT safe 
 *
 *******************************************************************************/
-int do_core_binding(void) 
-{
-   /* Check if "binding" parameter in 'config' file 
-    * is available and not set to "binding=no_job_binding".
-    * If so, we do an early abortion. 
-    */
-   char *binding = get_conf_val("binding");
-   binding_type_t type;
+   int do_core_binding(void) {
+      /* Check if "binding" parameter in 'config' file
+       * is available and not set to "binding=no_job_binding".
+       * If so, we do an early abortion.
+       */
+      char *binding = get_conf_val("binding");
+      binding_type_t type;
 
-   if (binding == NULL || strcasecmp("NULL", binding) == 0) {
-      shepherd_trace("do_core_binding: \"binding\" parameter not found in config file");
-      return -1;
-   }
-   
-   if (strcasecmp("no_job_binding", binding) == 0) {
-      shepherd_trace("do_core_binding: skip binding - no core binding configured");
-      return -1;
-   }
-   
-   /* get the binding type (set = 0 | env = 1 | pe = 2) where default is 0 */
-   type = binding_parse_type(binding); 
-
-   /* do a binding accorting the strategy */
-   if (strstr(binding, "linear") != NULL) {
-      /* do a linear binding */ 
-      int amount;
-      int socket;
-      int core;
-
-      shepherd_trace("do_core_binding: do linear");
-   
-      /* get the amount of cores to bind on */
-      if ((amount = binding_linear_parse_amount(binding)) < 0) {
-         shepherd_trace("do_core_binding: couldn't parse the amount of cores from config file");
-         return -1;
-      } 
-
-      /* get the socket to begin binding with (choosen by execution daemon) */
-      if ((socket = binding_linear_parse_socket_offset(binding)) < 0) {
-         shepherd_trace("do_core_binding: couldn't get the socket number from config file");
+      if (binding == NULL || strcasecmp("NULL", binding) == 0) {
+         shepherd_trace("do_core_binding: \"binding\" parameter not found in config file");
          return -1;
       }
 
-      /* get the core to begin binding with (choosen by execution daemon)   */
-      if ((core = binding_linear_parse_core_offset(binding)) < 0) {
-         shepherd_trace("do_core_binding: couldn't get the core number from config file");
+      if (strcasecmp("no_job_binding", binding) == 0) {
+         shepherd_trace("do_core_binding: skip binding - no core binding configured");
          return -1;
       }
 
-      /* perform core binding on current process */
-      if (binding_set_linear_linux(socket, core, amount, 1, type) == false) {
-         /* core binding was not successful */
-         if (type == BINDING_TYPE_SET) {
-            shepherd_trace("do_core_binding: linear binding was not successful");
-         } else if (type == BINDING_TYPE_ENV) {
-            shepherd_trace("do_core_binding: couldn't set SGE_BINDING environment variable");
-         } else if (type == BINDING_TYPE_PE) {
-            shepherd_trace("do_core_binding: couldn't produce rankfile");
+      /* get the binding type (set = 0 | env = 1 | pe = 2) where default is 0 */
+      type = binding_parse_type(binding);
+
+      /* do a binding accorting the strategy */
+      if (strstr(binding, "linear") != NULL) {
+         /* do a linear binding */
+         int amount;
+         int socket;
+         int core;
+
+         shepherd_trace("do_core_binding: do linear");
+
+         /* get the amount of cores to bind on */
+         if ((amount = binding_linear_parse_amount(binding)) < 0) {
+            shepherd_trace("do_core_binding: couldn't parse the amount of cores from config file");
+            return -1;
          }
-      } else {
-         if (type == BINDING_TYPE_SET) {
-            shepherd_trace("do_core_binding: job successfully bound");
-         } else if (type == BINDING_TYPE_ENV) {
-            shepherd_trace("do_core_binding: SGE_BINDING environment variable created");
-         } else if (type == BINDING_TYPE_PE) {
-            shepherd_trace("do_core_binding: rankefile produced");
+
+         /* get the socket to begin binding with (choosen by execution daemon) */
+         if ((socket = binding_linear_parse_socket_offset(binding)) < 0) {
+            shepherd_trace("do_core_binding: couldn't get the socket number from config file");
+            return -1;
          }
-      }
 
-   } else if (strstr(binding, "striding") != NULL) {
-      int amount = binding_striding_parse_amount(binding);
-      int stepsize = binding_striding_parse_step_size(binding);
-      
-      /* these are the real start parameters */
-      int first_socket = 0, first_core = 0;
-      
-      shepherd_trace("do_core_binding: striding");
+         /* get the core to begin binding with (choosen by execution daemon)   */
+         if ((core = binding_linear_parse_core_offset(binding)) < 0) {
+            shepherd_trace("do_core_binding: couldn't get the core number from config file");
+            return -1;
+         }
 
-      if (amount <= 0) {
-         shepherd_trace("do_core_binding: error parsing <amount>");
-         return -1;
-      }
-
-      if (stepsize < 0) {
-         shepherd_trace("do_core_binding: error parsing <stepsize>");
-         return -1;
-      }
-      
-      first_socket = binding_striding_parse_first_socket(binding);
-      if (first_socket < 0) {
-         shepherd_trace("do_core_binding: error parsing <socket>");
-         return -1;
-      }
-      
-      first_core   = binding_striding_parse_first_core(binding);
-      if (first_core < 0) {
-         shepherd_trace("do_core_binding: error parsing <core>");
-         return -1;
-      }
-
-      /* last core has to be incremented because core 0 is first core to be used */
-      if (stepsize == 0) {
-         /* stepsize must be >= 1 */
-         stepsize = 1;
-      }
-
-      shepherd_trace("do_core_binding: striding set binding: first_core: %d first_socket %d amount %d stepsize %d", 
-         first_core, first_socket, amount, stepsize);
-
-      /* get the first core and first socket which is available for striding    */
-
-      /* perform core binding on current process                */
-
-      if (binding_set_striding_linux(first_socket, first_core, amount, 0, stepsize, type)) {
-         shepherd_trace("do_core_binding: striding: binding done");
-      } else {
-         shepherd_trace("do_core_binding: striding: binding not done");
-      }
-
-   } else if (strstr(binding, "explicit") != NULL) {
-
-      /* list with the sockets (first part of the <socket>,<core> tuples) */
-      int* sockets = NULL;
-      /* length of sockets list */
-      int nr_of_sockets = 0;
-      /* list with the cores to be bound on the sockets */
-      int* cores = NULL;
-      /* length of cores list */
-      int nr_of_cores = 0;
-
-      shepherd_trace("do_core_binding: explicit");
-      
-      /* get <socket>,<core> pairs out of binding string */ 
-      if (binding_explicit_extract_sockets_cores(binding, &sockets, &nr_of_sockets,
-            &cores, &nr_of_cores) == true) {
-
-         if (nr_of_sockets == 0 && nr_of_cores == 0) {
-            /* no cores and no sockets are found */
-            shepherd_trace("do_core_binding: explicit: no socket or no core was specified");
-         } else if (nr_of_sockets != nr_of_cores) {
-            shepherd_trace("do_core_binding: explicit: unequal amount of specified sockets and cores");
+         /* perform core binding on current process */
+         if (binding_set_linear_linux(socket, core, amount, 1, type) == false) {
+            /* core binding was not successful */
+            if (type == BINDING_TYPE_SET) {
+               shepherd_trace("do_core_binding: linear binding was not successful");
+            } else if (type == BINDING_TYPE_ENV) {
+               shepherd_trace("do_core_binding: couldn't set SGE_BINDING environment variable");
+            } else if (type == BINDING_TYPE_PE) {
+               shepherd_trace("do_core_binding: couldn't produce rankfile");
+            }
          } else {
-            /* do core binding according the <socket>,<core> tuples */
-            if (binding_explicit(sockets, nr_of_sockets, cores, nr_of_cores, type) == true) {
-               shepherd_trace("do_core_binding: explicit: binding done");
-            } else {
-               shepherd_trace("do_core_binding: explicit: no core binding done");
+            if (type == BINDING_TYPE_SET) {
+               shepherd_trace("do_core_binding: job successfully bound");
+            } else if (type == BINDING_TYPE_ENV) {
+               shepherd_trace("do_core_binding: SGE_BINDING environment variable created");
+            } else if (type == BINDING_TYPE_PE) {
+               shepherd_trace("do_core_binding: rankefile produced");
             }
          }
-         
-         sge_free(&sockets);
-         sge_free(&cores);
+
+      } else if (strstr(binding, "striding") != NULL) {
+         int amount = binding_striding_parse_amount(binding);
+         int stepsize = binding_striding_parse_step_size(binding);
+
+         /* these are the real start parameters */
+         int first_socket = 0, first_core = 0;
+
+         shepherd_trace("do_core_binding: striding");
+
+         if (amount <= 0) {
+            shepherd_trace("do_core_binding: error parsing <amount>");
+            return -1;
+         }
+
+         if (stepsize < 0) {
+            shepherd_trace("do_core_binding: error parsing <stepsize>");
+            return -1;
+         }
+
+         first_socket = binding_striding_parse_first_socket(binding);
+         if (first_socket < 0) {
+            shepherd_trace("do_core_binding: error parsing <socket>");
+            return -1;
+         }
+
+         first_core = binding_striding_parse_first_core(binding);
+         if (first_core < 0) {
+            shepherd_trace("do_core_binding: error parsing <core>");
+            return -1;
+         }
+
+         /* last core has to be incremented because core 0 is first core to be used */
+         if (stepsize == 0) {
+            /* stepsize must be >= 1 */
+            stepsize = 1;
+         }
+
+         shepherd_trace("do_core_binding: striding set binding: first_core: %d first_socket %d amount %d stepsize %d",
+                        first_core, first_socket, amount, stepsize);
+
+         /* get the first core and first socket which is available for striding    */
+
+         /* perform core binding on current process                */
+
+         if (binding_set_striding_linux(first_socket, first_core, amount, 0, stepsize, type)) {
+            shepherd_trace("do_core_binding: striding: binding done");
+         } else {
+            shepherd_trace("do_core_binding: striding: binding not done");
+         }
+
+      } else if (strstr(binding, "explicit") != NULL) {
+
+         /* list with the sockets (first part of the <socket>,<core> tuples) */
+         int *sockets = NULL;
+         /* length of sockets list */
+         int nr_of_sockets = 0;
+         /* list with the cores to be bound on the sockets */
+         int *cores = NULL;
+         /* length of cores list */
+         int nr_of_cores = 0;
+
+         shepherd_trace("do_core_binding: explicit");
+
+         /* get <socket>,<core> pairs out of binding string */
+         if (binding_explicit_extract_sockets_cores(binding, &sockets, &nr_of_sockets,
+                                                    &cores, &nr_of_cores) == true) {
+
+            if (nr_of_sockets == 0 && nr_of_cores == 0) {
+               /* no cores and no sockets are found */
+               shepherd_trace("do_core_binding: explicit: no socket or no core was specified");
+            } else if (nr_of_sockets != nr_of_cores) {
+               shepherd_trace("do_core_binding: explicit: unequal amount of specified sockets and cores");
+            } else {
+               /* do core binding according the <socket>,<core> tuples */
+               if (binding_explicit(sockets, nr_of_sockets, cores, nr_of_cores, type) == true) {
+                  shepherd_trace("do_core_binding: explicit: binding done");
+               } else {
+                  shepherd_trace("do_core_binding: explicit: no core binding done");
+               }
+            }
+
+            sge_free(&sockets);
+            sge_free(&cores);
+
+         } else {
+            sge_free(&sockets);
+            sge_free(&cores);
+            shepherd_trace("do_core_binding: explicit: couldn't extract <socket>,<core> pair");
+         }
 
       } else {
-         sge_free(&sockets);
-         sge_free(&cores);    
-         shepherd_trace("do_core_binding: explicit: couldn't extract <socket>,<core> pair");
+
+         if (binding != NULL) {
+            shepherd_trace("do_core_binding: WARNING: unknown \"binding\" parameter: %s",
+                           binding);
+         } else {
+            shepherd_trace("do_core_binding: WARNING: binding was null!");
+         }
+
       }
 
-   } else {
-   
-      if (binding != NULL) {
-         shepherd_trace("do_core_binding: WARNING: unknown \"binding\" parameter: %s", 
-            binding);
-      } else {
-         shepherd_trace("do_core_binding: WARNING: binding was null!");
-      }   
+      shepherd_trace("do_core_binding: finishing");
 
+      return 0;
    }
-   
-   shepherd_trace("do_core_binding: finishing");
 
-   return 0;
-}
-
-#endif 
+#endif
 
 #if defined(BINDING_SOLARIS)
-/****** shepherd_binding/do_core_binding() ******************
-*******************
-*  NAME
-*     do_core_binding() -- Performs the core binding task for the Solaris OS. 
-*
-*  SYNOPSIS
-*     int do_core_binding(void) 
-*
-*  FUNCTION
-*     Performs core binding on shepherd side. All information required for  
-*     the binding is communicated from execd to shepherd in the config 
-*     file value "binding". If there is "NULL" no core binding is done. 
-*
-*     This function is Solaris specific.
-*
-*     DG TODO change return value to bool
-*
-*  RESULT
-*     int - Returns 0 in case of success and a negative value in case of problems.  
-*
-*  NOTES
-*     MT-NOTE: do_core_binding() is not MT safe 
-*
-*******************************************************************************/
-int do_core_binding(void)
-{
-   int retval = 0; 
+   /****** shepherd_binding/do_core_binding() ******************
+   *******************
+   *  NAME
+   *     do_core_binding() -- Performs the core binding task for the Solaris OS.
+   *
+   *  SYNOPSIS
+   *     int do_core_binding(void)
+   *
+   *  FUNCTION
+   *     Performs core binding on shepherd side. All information required for
+   *     the binding is communicated from execd to shepherd in the config
+   *     file value "binding". If there is "NULL" no core binding is done.
+   *
+   *     This function is Solaris specific.
+   *
+   *     DG TODO change return value to bool
+   *
+   *  RESULT
+   *     int - Returns 0 in case of success and a negative value in case of problems.
+   *
+   *  NOTES
+   *     MT-NOTE: do_core_binding() is not MT safe
+   *
+   *******************************************************************************/
+   int do_core_binding(void)
+   {
+      int retval = 0;
 
-   /* just read out what is in "config" file and attach to the given psrset if 
-      it is specified */
-   char *binding = get_conf_val("binding");
-   
-   if (binding == NULL) {
-      shepherd_trace("do_core_binding: \"binding\" parameter not found in config file");
-      retval = -1;
-   } else if (strcasecmp("no_job_binding", binding) == 0 || strcasecmp("NULL", binding) == 0) {
-      shepherd_trace("do_core_binding: skip binding - no core binding configured");
-      retval = -1;
-   }
+      /* just read out what is in "config" file and attach to the given psrset if
+         it is specified */
+      char *binding = get_conf_val("binding");
 
-   if (retval == 0 && strstr(binding, "psrset:") != NULL) {
-      int processor_set_id = 0;
-      shepherd_trace("do_core_binding: psrset found - attaching to it!");
-
-      /* parse the psrset number right after "psrset:" */
-      if (sge_strtok(binding, ":") != NULL) {
-         /* parse the rest of the line */
-         char* pset_id;
-         if ((pset_id = sge_strtok(NULL, ":")) != NULL) {
-            /* finally get the processor set id */
-            processor_set_id = atoi(pset_id);
-         } else {
-            shepherd_trace("do_core_binding: couldn't find the psrset id after \"psrset:\" in config file (binding)");
-            retval = -1;
-         }
-      } else {
-         shepherd_trace("do_core_binding: found string \"psrset:\" but no \":\" - almost impossible");
+      if (binding == NULL) {
+         shepherd_trace("do_core_binding: \"binding\" parameter not found in config file");
+         retval = -1;
+      } else if (strcasecmp("no_job_binding", binding) == 0 || strcasecmp("NULL", binding) == 0) {
+         shepherd_trace("do_core_binding: skip binding - no core binding configured");
          retval = -1;
       }
 
-      if (retval == 0) {
-         if (processor_set_id == -1) {            
-            /* prcoessor_set_id == -1: Check here for a special processor_set_id (negative; 0)
-               which does show that no binding is needed since this processor set
-               would require (exactly) all of the remaining cores. Creating 
-               such a processor set is not possible because one processor must 
-               left for the OS. But the job is implicitly bound to the processors 
-               since it can not use any onther processor from the other processor 
-               sets. */
-            shepherd_trace("do_core_binding: psrset not created since all remaining processors would be used");
-            shepherd_trace("do_core_binding: binding is done implicitly");
-         } else {
-            /* start user rights (root) are required for creating processor sets */
-            sge_switch2start_user();
-            
-            if (bind_shepherd_to_pset(processor_set_id) == false) {
-               shepherd_trace("do_core_binding: couldn't bind to existing processor set!");
+      if (retval == 0 && strstr(binding, "psrset:") != NULL) {
+         int processor_set_id = 0;
+         shepherd_trace("do_core_binding: psrset found - attaching to it!");
+
+         /* parse the psrset number right after "psrset:" */
+         if (sge_strtok(binding, ":") != NULL) {
+            /* parse the rest of the line */
+            char* pset_id;
+            if ((pset_id = sge_strtok(NULL, ":")) != NULL) {
+               /* finally get the processor set id */
+               processor_set_id = atoi(pset_id);
             } else {
-               shepherd_trace("do_core_binding: successfully bound to existing processor set!");
+               shepherd_trace("do_core_binding: couldn't find the psrset id after \"psrset:\" in config file (binding)");
+               retval = -1;
             }
-   
-            /* switch back to admin user */
-            sge_switch2admin_user();
+         } else {
+            shepherd_trace("do_core_binding: found string \"psrset:\" but no \":\" - almost impossible");
+            retval = -1;
          }
+
+         if (retval == 0) {
+            if (processor_set_id == -1) {
+               /* prcoessor_set_id == -1: Check here for a special processor_set_id (negative; 0)
+                  which does show that no binding is needed since this processor set
+                  would require (exactly) all of the remaining cores. Creating
+                  such a processor set is not possible because one processor must
+                  left for the OS. But the job is implicitly bound to the processors
+                  since it can not use any onther processor from the other processor
+                  sets. */
+               shepherd_trace("do_core_binding: psrset not created since all remaining processors would be used");
+               shepherd_trace("do_core_binding: binding is done implicitly");
+            } else {
+               /* start user rights (root) are required for creating processor sets */
+               sge_switch2start_user();
+
+               if (bind_shepherd_to_pset(processor_set_id) == false) {
+                  shepherd_trace("do_core_binding: couldn't bind to existing processor set!");
+               } else {
+                  shepherd_trace("do_core_binding: successfully bound to existing processor set!");
+               }
+
+               /* switch back to admin user */
+               sge_switch2admin_user();
+            }
+         }
+
+      } else {  /* "psrset" is not in config file defined */
+         shepherd_trace("do_core_binding: no processor set found in config file! do nothing");
+         retval = -1;
       }
 
-   } else {  /* "psrset" is not in config file defined */
-      shepherd_trace("do_core_binding: no processor set found in config file! do nothing");
-      retval = -1;
+      shepherd_trace("do_core_binding: finishing");
+
+      return retval;
    }
 
-   shepherd_trace("do_core_binding: finishing");
+   /****** shepherd_binding/bind_shepherd_to_pset() *******************************
+   *  NAME
+   *     bind_shepherd_to_pset() -- Binds the current process to a processor set.
+   *
+   *  SYNOPSIS
+   *     static bool bind_shepherd_to_pset(int pset_id)
+   *
+   *  FUNCTION
+   *     Binds the current shepherd process to an existing processor set.
+   *
+   *  INPUTS
+   *     int pset_id - Existing processor set id.
+   *
+   *  RESULT
+   *     static bool - true in case the process was bound false otherwise
+   *
+   *  NOTES
+   *     MT-NOTE: bind_shepherd_to_pset() is MT safe
+   *
+   *******************************************************************************/
+   static bool bind_shepherd_to_pset(int pset_id)
+   {
+      /* try to bind current process to processor set */
+      if (pset_bind((psetid_t)pset_id, P_PID, P_MYID, NULL) != 0) {
+         /* binding was not successful */
+         return false;
+      }
 
-   return retval;
-}
-
-/****** shepherd_binding/bind_shepherd_to_pset() *******************************
-*  NAME
-*     bind_shepherd_to_pset() -- Binds the current process to a processor set. 
-*
-*  SYNOPSIS
-*     static bool bind_shepherd_to_pset(int pset_id) 
-*
-*  FUNCTION
-*     Binds the current shepherd process to an existing processor set. 
-*
-*  INPUTS
-*     int pset_id - Existing processor set id. 
-*
-*  RESULT
-*     static bool - true in case the process was bound false otherwise 
-*
-*  NOTES
-*     MT-NOTE: bind_shepherd_to_pset() is MT safe 
-*
-*******************************************************************************/
-static bool bind_shepherd_to_pset(int pset_id) 
-{
-   /* try to bind current process to processor set */
-   if (pset_bind((psetid_t)pset_id, P_PID, P_MYID, NULL) != 0) {
-      /* binding was not successful */
-      return false;
+      /* successfully bound current process to processor set */
+      return true;
    }
-
-   /* successfully bound current process to processor set */
-   return true;
-}
-#endif 
+#endif
 
 
 /* helper for core_binding */
 
-#if defined(PLPA_LINUX)
+#if defined(OGE_HWLOC)
 
 /****** shepherd_binding/add_proc_ids_linux() **********************************
 *  NAME
@@ -443,44 +452,58 @@ static bool bind_shepherd_to_pset(int pset_id)
 *     MT-NOTE: add_proc_ids_linux() is MT safe 
 *
 *******************************************************************************/
-static bool add_proc_ids_linux(int socket, int core, int** proc_id, int* proc_id_size)
-{
-   /* OS internal processor IDs for a given logical socket, core pair */
-   int* pids      = NULL;
-   int pids_size  = 0;
-   int retval     = true;
+#if 0
+   static bool add_proc_ids_linux(int socket, int core, int **proc_id, int *proc_id_size) {
+      /* OS internal processor IDs for a given logical socket, core pair */
+      int *pids = NULL;
+      int pids_size = 0;
+      int retval = true;
 
-   if (proc_id_size == NULL || proc_id == NULL)
-      return false;
+      if (proc_id_size == NULL || proc_id == NULL)
+         return false;
 
-   /* get processor ids */
-   if (get_processor_ids_linux(socket, core, &pids, &pids_size) && pids_size > 0 && pids != NULL) {
-      
-      /* append the processor ids to the given proc_id array */
-      
-      /* grow proc_id array */
-      (*proc_id) = (int*) realloc((*proc_id), ((*proc_id_size) + pids_size) * sizeof(int));
-      
-      if (*proc_id != NULL) {
-         int i = 0;
-         /* copy all processor ids */
-         for (i = (*proc_id_size); i < (*proc_id_size) + pids_size; i++) {
-            (*proc_id)[i] = pids[i-(*proc_id_size)];
+      /* get processor ids */
+      if (topo_get_processor_ids(socket, core, &pids, &pids_size) && pids_size > 0 && pids != NULL) {
+
+         /* append the processor ids to the given proc_id array */
+
+         /* grow proc_id array */
+         (*proc_id) = (int *) realloc((*proc_id), ((*proc_id_size) + pids_size) * sizeof(int));
+
+         if (*proc_id != NULL) {
+            int i = 0;
+            /* copy all processor ids */
+            for (i = (*proc_id_size); i < (*proc_id_size) + pids_size; i++) {
+               (*proc_id)[i] = pids[i - (*proc_id_size)];
+            }
+         } else {
+            retval = false;
          }
+
+         /* update output size */
+         (*proc_id_size) += pids_size;
+
       } else {
          retval = false;
-      }   
-      
-      /* update output size */ 
-      (*proc_id_size) += pids_size;
+      }
 
-   } else {
-      retval = false;
+      sge_free(&pids);
+
+      return retval;
+   }
+#endif
+
+bool binding_add_core_to_cpuset(hwloc_bitmap_t cpuset, int socket, int core) {
+   bool ret = false;
+   hwloc_obj_t current_core = hwloc_get_obj_below_by_type(topo_get_hwloc_topology(),
+                                              HWLOC_OBJ_SOCKET, socket,
+                                              HWLOC_OBJ_CORE, core);
+   if (current_core != nullptr) {
+      hwloc_bitmap_or(cpuset, cpuset, current_core->cpuset);
+      ret = true;
    }
 
-   sge_free(&pids);
-
-   return retval;
+   return ret;
 }
 
 /****** shepherd_binding/binding_set_linear_linux() ***************************************
@@ -517,132 +540,113 @@ static bool add_proc_ids_linux(int socket, int core, int** proc_id, int* proc_id
 *     MT-NOTE: binding_set_linear() is not MT safe 
 *
 *******************************************************************************/
-static bool binding_set_linear_linux(int first_socket, int first_core, 
-               int amount_of_cores, int offset, const binding_type_t type)
-{
+   static bool binding_set_linear_linux(int first_socket, int first_core,
+                                        int amount_of_cores, int offset, const binding_type_t type) {
 
-   /* sets bitmask in a linear manner        */ 
-   /* first core is on exclusive host 0      */ 
-   /* first core could be set from scheduler */ 
-   /* offset is the first core to start with (make sense only with exclusive host) */
-   dstring error = DSTRING_INIT;
+      /* sets bitmask in a linear manner        */
+      /* first core is on exclusive host 0      */
+      /* first core could be set from scheduler */
+      /* offset is the first core to start with (make sense only with exclusive host) */
 
-   if (_has_core_binding(&error) == true) {
+      if (topo_has_core_binding()) {
+         /* bitmask for processors to turn on and off */
+         hwloc_bitmap_t cpuset = hwloc_bitmap_alloc();
 
-      sge_dstring_clear(&error);
-      
-      /* bitmask for processors to turn on and off */
-      plpa_cpu_set_t cpuset;
-      /* turn off all processors */
-      PLPA_CPU_ZERO(&cpuset);
-         
-      sge_dstring_free(&error);
-         
-      if (_has_topology_information()) {
-         /* amount of cores set in processor binding mask */ 
-         int cores_set;
-         /* next socket to use */
-         int next_socket = first_socket;
-         /* the amount of cores of the next socket */
-         int socket_amount_of_cores;
-         /* next core to use */
-         int next_core = first_core + offset;
-         /* all the processor ids selected for the mask */
-         int* proc_id = NULL; 
-         /* size of proc_id array */
-         int proc_id_size = 0;
+         if (topo_has_topology_information()) {
+            /* next socket to use */
+            int next_socket = first_socket;
+            /* the amount of cores of the next socket */
+            int socket_amount_of_cores;
+            /* next core to use */
+            int next_core = first_core + offset;
+            /* maximal amount of sockets on this system */
+            int max_amount_of_sockets = topo_get_total_amount_of_sockets();
 
-         /* maximal amount of sockets on this system */
-         int max_amount_of_sockets = get_amount_of_plpa_sockets();
+            /* strategy: go to the first_socket and the first_core + offset and
+               fill up socket and go to the next one. */
 
-         /* strategy: go to the first_socket and the first_core + offset and 
-            fill up socket and go to the next one. */ 
-               
-         /* TODO maybe better to search for using a core exclusively? */
-            
-         while (get_amount_of_plpa_cores(next_socket) <= next_core) {
-            /* TODO which kind of warning when first socket does not offer this? */
-            /* move on to next socket - could be that we have to deal only with cores 
-               instead of <socket><core> tuples */
-            next_core -= get_amount_of_plpa_cores(next_socket); 
-            next_socket++;
-            if (next_socket >= max_amount_of_sockets) {
-               /* we are out of sockets - we do nothing */
-               return false;
-            }
-         }  
-         
-         add_proc_ids_linux(next_socket, next_core, &proc_id, &proc_id_size);
+            /* TODO maybe better to search for using a core exclusively? */
 
-         /* collect the other processor ids with the strategy */
-         for (cores_set = 1; cores_set < amount_of_cores; cores_set++) {
-            next_core++;
-            /* jump to next socket when it is needed */
-            /* maybe the next socket could offer 0 cores (I can' see when, 
-               but just to be sure) */
-            while ((socket_amount_of_cores = get_amount_of_plpa_cores(next_socket)) 
-                        <= next_core) {
+            while (topo_get_amount_of_cores_for_socket(next_socket) <= next_core) {
+               /* TODO which kind of warning when first socket does not offer this? */
+               /* move on to next socket - could be that we have to deal only with cores
+                  instead of <socket><core> tuples */
+               next_core -= topo_get_amount_of_cores_for_socket(next_socket);
                next_socket++;
-               next_core = next_core - socket_amount_of_cores;
                if (next_socket >= max_amount_of_sockets) {
                   /* we are out of sockets - we do nothing */
-                  sge_free(&proc_id);
+                  hwloc_bitmap_free(cpuset);
                   return false;
                }
             }
-            /* get processor ids */
-            add_proc_ids_linux(next_socket, next_core, &proc_id, &proc_id_size);
-         }
-            
-         /* set the mask for all processor ids */
-         set_processor_binding_mask(&cpuset, proc_id, proc_id_size);
-            
-         /* check what to do with the processor ids (set, env or pe) */
-         if (type == BINDING_TYPE_PE) {
-               
-            /* is done outside */
-
-         } else if (type == BINDING_TYPE_ENV) {
-               
-            /* set the environment variable                    */
-            /* this does not show up in "environment" file !!! */
-            if (create_binding_env_linux(proc_id, proc_id_size) == true) {
-               shepherd_trace("binding_set_linear_linux: SGE_BINDING env var created");
-            } else {
-               shepherd_trace("binding_set_linear_linux: problems while creating SGE_BINDING env");
-            }
-             
-         } else {
-
-             /* bind SET process to mask */ 
-            if (bind_process_to_mask((pid_t) 0, cpuset) == false) {
-               /* there was an error while binding */ 
-               sge_free(&proc_id);
+            // add current core to cpuset
+            if (!binding_add_core_to_cpuset(cpuset, next_socket, next_core)) {
+               hwloc_bitmap_free(cpuset);
                return false;
             }
+
+            /* collect the other processo r ids with the strategy */
+            for (int cores_set = 1; cores_set < amount_of_cores; ++cores_set) {
+               next_core++;
+               /* jump to next socket when it is needed */
+               /* maybe the next socket could offer 0 cores (I can' see when,
+                  but just to be sure) */
+               while ((socket_amount_of_cores = topo_get_amount_of_cores_for_socket(next_socket))
+                      <= next_core) {
+                  next_socket++;
+                  next_core = next_core - socket_amount_of_cores;
+                  if (next_socket >= max_amount_of_sockets) {
+                     /* we are out of sockets - we do nothing */
+                     hwloc_bitmap_free(cpuset);
+                     return false;
+                  }
+               }
+               // add current core to cpuset
+               if (!binding_add_core_to_cpuset(cpuset, next_socket, next_core)) {
+                  hwloc_bitmap_free(cpuset);
+                  return false;
+               }
+            }
+
+            /* check what to do with the processor ids (set, env or pe) */
+            if (type == BINDING_TYPE_PE) {
+
+               /* is done outside */
+
+            } else if (type == BINDING_TYPE_ENV) {
+
+               /* set the environment variable                    */
+               /* this does not show up in "environment" file !!! */
+               if (create_binding_env_linux(cpuset)) {
+                  shepherd_trace("binding_set_linear_linux: SGE_BINDING env var created");
+               } else {
+                  shepherd_trace("binding_set_linear_linux: problems while creating SGE_BINDING env");
+               }
+
+            } else {
+
+               /* bind SET process to mask */
+               if (!bind_process_to_mask(cpuset)) {
+                  /* there was an error while binding */
+                  hwloc_bitmap_free(cpuset);
+                  return false;
+               }
+            }
+         } else {
+
+            /* TODO DG strategy without topology information but with
+               working library? */
+            shepherd_trace("binding_set_linear_linux: no information about topology");
+            return false;
          }
 
-         sge_free(&proc_id);
-
+         hwloc_bitmap_free(cpuset);
       } else {
-            
-         /* TODO DG strategy without topology information but with 
-            working library? */
-         shepherd_trace("binding_set_linear_linux: no information about topology");
-         return false;
+         shepherd_trace("binding_set_linear_linux: HWLOC binding not supported");
       }
-         
 
-   } else {
-
-      shepherd_trace("binding_set_linear_linux: PLPA binding not supported: %s", 
-                        sge_dstring_get_string(&error));
-
-      sge_dstring_free(&error);
+      return true;
    }
-
-   return true;
-}
 
 /****** shepherd_binding/binding_set_striding_linux() *************************************
 *  NAME
@@ -683,22 +687,14 @@ static bool binding_set_linear_linux(int first_socket, int first_core,
 *     MT-NOTE: binding_set_striding() is MT safe 
 *
 *******************************************************************************/
-bool binding_set_striding_linux(int first_socket, int first_core, int amount_of_cores,
-                          int offset, int stepsize, const binding_type_t type)
-{
-   /* n := take every n-th core */ 
-   bool bound = false;
+   bool binding_set_striding_linux(int first_socket, int first_core, int amount_of_cores,
+                                   int offset, int stepsize, const binding_type_t type) {
+      /* n := take every n-th core */
+      bool bound = false;
 
-   dstring error = DSTRING_INIT;
-
-   if (_has_core_binding(&error) == true) {
-
-      sge_dstring_free(&error);
-
+      if (topo_has_core_binding() == true) {
          /* bitmask for processors to turn on and off */
-         plpa_cpu_set_t cpuset;  
-         /* turn off all processors */
-         PLPA_CPU_ZERO(&cpuset);
+         hwloc_bitmap_t cpuset = hwloc_bitmap_alloc();
 
          /* when library offers architecture: 
             - get virtual processor ids in the following manner:
@@ -706,173 +702,120 @@ bool binding_set_striding_linux(int first_socket, int first_core, int amount_of_
               * then add n: if core is not available go to next socket
               * ...
          */
-         if (_has_topology_information()) {
-            /* amount of cores set in processor binding mask */ 
+         if (topo_has_topology_information()) {
+            /* amount of cores set in processor binding mask */
             int cores_set = 0;
             /* next socket to use */
             int next_socket = first_socket;
             /* next core to use */
             int next_core = first_core + offset;
-            /* all the processor ids selected for the mask */
-            int* proc_id = NULL; 
-            int proc_id_size = 0;
             /* maximal amount of sockets on this system */
-            int max_amount_of_sockets = get_amount_of_plpa_sockets();
-            
+            int max_amount_of_sockets = topo_get_total_amount_of_sockets();
+
             /* check if we are already out of range */
             if (next_socket >= max_amount_of_sockets) {
                shepherd_trace("binding_set_striding_linux: already out of sockets");
+               hwloc_bitmap_free(cpuset);
                return false;
-            }   
+            }
 
-            while (get_amount_of_plpa_cores(next_socket) <= next_core) {
+            while (topo_get_amount_of_cores_for_socket(next_socket) <= next_core) {
                /* move on to next socket - could be that we have to deal only with cores 
                   instead of <socket><core> tuples */
-               next_core -= get_amount_of_plpa_cores(next_socket); 
+               next_core -= topo_get_amount_of_cores_for_socket(next_socket);
                next_socket++;
                if (next_socket >= max_amount_of_sockets) {
                   /* we are out of sockets - we do nothing */
                   shepherd_trace("binding_set_striding_linux: first core: out of sockets");
+                  hwloc_bitmap_free(cpuset);
                   return false;
                }
-            }  
-            
-            add_proc_ids_linux(next_socket, next_core, &proc_id, &proc_id_size);
-            
-            /* turn on processor id in mask */ 
-            
-            /* collect the rest of the processor ids */ 
+            }
+
+            // add current core to cpuset
+            if (!binding_add_core_to_cpuset(cpuset, next_socket, next_core)) {
+               hwloc_bitmap_free(cpuset);
+               return false;
+            }
+
+            /* collect the rest of the processor ids */
             for (cores_set = 1; cores_set < amount_of_cores; cores_set++) {
-               /* calculate next_core number */ 
+               /* calculate next_core number */
                next_core += stepsize;
-               
+
                /* check if we are already out of range */
                if (next_socket >= max_amount_of_sockets) {
                   shepherd_trace("binding_set_striding_linux: out of sockets");
-                  sge_free(&proc_id);
+                  hwloc_bitmap_free(cpuset);
                   return false;
-               }   
+               }
 
-               while (get_amount_of_plpa_cores(next_socket) <= next_core) {
+               while (topo_get_amount_of_cores_for_socket(next_socket) <= next_core) {
                   /* move on to next socket - could be that we have to deal only with cores 
                      instead of <socket><core> tuples */
-                  next_core -= get_amount_of_plpa_cores(next_socket); 
+                  next_core -= topo_get_amount_of_cores_for_socket(next_socket);
                   next_socket++;
                   if (next_socket >= max_amount_of_sockets) {
                      /* we are out of sockets - we do nothing */
                      shepherd_trace("binding_set_striding_linux: out of sockets!");
-                     sge_free(&proc_id);
+                     hwloc_bitmap_free(cpuset);
                      return false;
                   }
-               }    
+               }
 
-               /* add processor ids for core */
-               add_proc_ids_linux(next_socket, next_core, &proc_id, &proc_id_size);
-                
+               // add current core to cpuset
+               if (!binding_add_core_to_cpuset(cpuset, next_socket, next_core)) {
+                  hwloc_bitmap_free(cpuset);
+                  return false;
+               }
             } /* collecting processor ids */
 
-            /* set the mask for all processor ids */ 
-            set_processor_binding_mask(&cpuset, proc_id, proc_id_size);
-           
             if (type == BINDING_TYPE_PE) {
-            
+
                /* rankfile is created: do nothing */
 
             } else if (type == BINDING_TYPE_ENV) {
-
                /* set the environment variable */
-               if (create_binding_env_linux(proc_id, proc_id_size) == true) {
+               if (create_binding_env_linux(cpuset)) {
                   shepherd_trace("binding_set_striding_linux: SGE_BINDING env var created");
                } else {
                   shepherd_trace("binding_set_striding_linux: problems while creating SGE_BINDING env");
                }
-
             } else {
-               
-               /* bind process to mask */ 
-               if (bind_process_to_mask((pid_t) 0, cpuset) == true) {
-                  /* there was an error while binding */ 
+               /* bind process to mask */
+               if (bind_process_to_mask(cpuset)) {
+                  /* there was an error while binding */
                   bound = true;
                }
             }
-         
-            sge_free(&proc_id);
-            
          } else {
             /* setting bitmask without topology information which could 
                not be right? */
             shepherd_trace("binding_set_striding_linux: bitmask without topology information");
             return false;
          }
+         hwloc_bitmap_free(cpuset);
+      } else {
+         /* has no core binding feature */
+         return false;
+      }
 
-   } else {
-      /* has no core binding feature */
-      sge_dstring_free(&error);
-      
-      return false;
+
+      return bound;
    }
-   
-   
-   return bound;
-}
-
-/****** shepherd_binding/set_processor_binding_mask() *******************************
-*  NAME
-*     set_processor_binding_mask() -- Sets the processor binding mask with processor ids. 
-*
-*  SYNOPSIS
-*     static bool set_processor_binding_mask(plpa_cpu_set_t* cpuset, const int* 
-*     processor_ids)
-*
-*  FUNCTION
-*     Turns on all given processors on a processor id mask.
-*
-*  INPUTS
-*     const int* processor_ids - An array with all processor ids to turn on.
-*     const int no_of_ids)     - The length of the array.
-*
-*  OUTPUTS
-*     plpa_cpu_set_t* cpuset   - The processor id mask 
-*
-*  RESULT
-*     static bool - false when errors occured otherwise true
-*
-*  NOTES
-*     MT-NOTE: set_processor_binding_mask() is MT safe 
-*
-*******************************************************************************/
-static bool set_processor_binding_mask(plpa_cpu_set_t* cpuset, const int processor_ids[], 
-                  const int no_of_ids)
-{
-   int proc_num;
-
-   if (processor_ids == NULL || cpuset == NULL) {
-      return false;
-   }
-
-   /* turns on all processors from processor_ids array */
-   for (proc_num = 0; proc_num < no_of_ids; proc_num++) {
-      PLPA_CPU_SET(processor_ids[proc_num], cpuset);
-   }
-  
-   return true;
-}
-
 
 /****** shepherd_binding/bind_process_to_mask() *************************************
 *  NAME
 *     bind_process_to_mask() -- Binds a process to a given cpuset (mask). 
 *
 *  SYNOPSIS
-*     static bool bind_process_to_mask(const pid_t pid, const plpa_cpu_set_t 
-*     cpuset) 
+*     static bool bind_process_to_mask(const hwloc_bitmap_t  cpuset)
 *
 *  FUNCTION
 *     Binds a process to a given cpuset. 
 *
 *  INPUTS
-*     const pid_t pid             - Process to bind 
-*     const plpa_cpu_set_t cpuset - Processors to bind processes to 
+*     const plpa_cpu_set_t cpuset - Processors to bind processes to
 *
 *  RESULT
 *     static bool - true if successful, false otherwise
@@ -881,21 +824,29 @@ static bool set_processor_binding_mask(plpa_cpu_set_t* cpuset, const int process
 *     MT-NOTE: bind_process_to_mask() is not MT safe 
 *
 *******************************************************************************/
-static bool bind_process_to_mask(const pid_t pid, const plpa_cpu_set_t cpuset)
-{
-   if (has_core_binding()) {
-      /* we only need core binding capabilites, no topology is required */
-      
-      /* DG TODO delete addres and change header in order to make cputset to pointer */ 
-      if (plpa_sched_setaffinity(pid, sizeof(plpa_cpu_set_t), &cpuset) != 0) {
-         return false;
-      } else {
-         return true;
+   static bool bind_process_to_mask(hwloc_const_bitmap_t cpuset) {
+      bool ret = false;
+
+      if (topo_has_core_binding()) {
+         // we only need core binding capabilites, no topology is required
+         hwloc_topology_t topology = topo_get_hwloc_topology();
+         if (hwloc_set_cpubind(topology, cpuset, HWLOC_CPUBIND_STRICT) == 0) {
+            shepherd_trace("strict cpu binding succeeded");
+            ret = true;
+         } else {
+            shepherd_trace("strict cpu binding is not available");
+            if (hwloc_set_cpubind(topology, cpuset, 0) == 0) {
+               shepherd_trace("non strict cpu binding succeeded");
+               return true;
+            } else {
+               // @todo do we somehow get an error description?
+               shepherd_trace("cpu binding failed");
+            }
+         }
       }
+
+      return ret;
    }
-   
-   return false;
-}
 
 /****** shepherd_binding/binding_explicit() *****************************************
 *  NAME
@@ -912,7 +863,7 @@ static bool bind_process_to_mask(const pid_t pid, const plpa_cpu_set_t cpuset)
 *     a tuple. Therefore the length of the lists must be the same.
 *
 *     Binding is currently done on Linux hosts only where the machine topology 
-*     can be retrieved with PLPA library. It also does require this library.
+*     can be retrieved with HWLOC library. It also does require this library.
 *
 *  INPUTS
 *     int* list_of_sockets - List of sockets in the same order as list of cores. 
@@ -929,91 +880,78 @@ static bool bind_process_to_mask(const pid_t pid, const plpa_cpu_set_t cpuset)
 *     MT-NOTE: binding_explicit() is not MT safe 
 *
 *******************************************************************************/
-static bool binding_explicit(const int* list_of_sockets, const int samount, 
-   const int* list_of_cores, const int camount, const binding_type_t type)
-{
-   /* return value: successful bound or not */ 
-   bool bound = false;
+   static bool binding_explicit(const int *list_of_sockets, const int samount,
+                                const int *list_of_cores, const int camount, const binding_type_t type) {
+      /* return value: successful bound or not */
+      bool bound = false;
 
-   /* check if we have exactly the same amount of sockets as cores */
-   if (camount != samount) {
-      shepherd_trace("binding_explicit: bug: amount of sockets != amount of cores");
-      return false;
-   }
+      /* check if we have exactly the same amount of sockets as cores */
+      if (camount != samount) {
+         shepherd_trace("binding_explicit: bug: amount of sockets != amount of cores");
+         return false;
+      }
 
-   if (list_of_sockets == NULL || list_of_cores == NULL) {
-      shepherd_trace("binding_explicit: wrong input values");
-   }   
-   
-   /* do only on linux when we have core binding feature in kernel */
-   if (has_core_binding() == true) {
-      
-      if (_has_topology_information()) {
-         /* bitmask for processors to turn on and off */
-         plpa_cpu_set_t cpuset;  
-         /* turn off all processors */
-         PLPA_CPU_ZERO(&cpuset);
-         /* the internal processor ids selected for the binding mask */
-         int* proc_id = NULL;
-         int proc_id_size = 0;
+      if (list_of_sockets == NULL || list_of_cores == NULL) {
+         shepherd_trace("binding_explicit: wrong input values");
+      }
 
-         /* processor id counter */
-         int pr_id_ctr;
+      /* do only on linux when we have core binding feature in kernel */
+      if (topo_has_core_binding() == true) {
 
-         /* Fetch for each socket,core tuple the processor id. 
-            If this is not possible for one do nothing and return false. */ 
+         if (topo_has_topology_information()) {
+            /* bitmask for processors to turn on and off */
+            hwloc_bitmap_t cpuset = hwloc_bitmap_alloc();
+            /* processor id counter */
+            int pr_id_ctr;
 
-         /* go through all socket,core tuples and get the processor id */
-         for (pr_id_ctr = 0; pr_id_ctr < camount; pr_id_ctr++) { 
+            /* Fetch for each socket,core tuple the processor id.
+               If this is not possible for one do nothing and return false. */
 
-            /* get the processor id */
-            /* get the OS internal processor ids */ 
-            if (add_proc_ids_linux(list_of_sockets[pr_id_ctr], list_of_cores[pr_id_ctr], 
-                                    &proc_id, &proc_id_size) != true) {
-               sge_free(&proc_id);
-               return false;
-            }                       
-
-         }
-         /* generate the core binding mask out of the processor id array */
-         set_processor_binding_mask(&cpuset, proc_id, proc_id_size); 
-
-         if (type == BINDING_TYPE_PE) {
-            
-            /* rankfile is created */
-
-         } else if (type == BINDING_TYPE_ENV) {
-            /* set the environment variable */
-            if (create_binding_env_linux(proc_id, proc_id_size) == true) {
-               shepherd_trace("binding_explicit: SGE_BINDING env var created");
-            } else {
-               shepherd_trace("binding_explicit: problems while creating SGE_BINDING env");
+            /* go through all socket,core tuples and get the processor id */
+            for (pr_id_ctr = 0; pr_id_ctr < camount; pr_id_ctr++) {
+               /* get the processor id */
+               /* get the OS internal processor ids */
+               // add current core to cpuset
+               if (!binding_add_core_to_cpuset(cpuset, list_of_sockets[pr_id_ctr], list_of_cores[pr_id_ctr])) {
+                  hwloc_bitmap_free(cpuset);
+                  return false;
+               }
             }
-         } else {
-            /* do the core binding for the current process with the mask */
-            if (bind_process_to_mask((pid_t) 0, cpuset) == true) {
-               /* there was an error while binding */ 
-               bound = true;
+
+            if (type == BINDING_TYPE_PE) {
+
+               /* rankfile is created */
+
+            } else if (type == BINDING_TYPE_ENV) {
+               /* set the environment variable */
+               if (create_binding_env_linux(cpuset)) {
+                  shepherd_trace("binding_explicit: SGE_BINDING env var created");
+               } else {
+                  shepherd_trace("binding_explicit: problems while creating SGE_BINDING env");
+               }
             } else {
-               /* couldn't be bound return false */
-               shepherd_trace("binding_explicit: bind_process_to_mask was not successful");
-            }   
+               /* do the core binding for the current process with the mask */
+               if (bind_process_to_mask(cpuset)) {
+                  bound = true;
+               } else {
+                  /* couldn't be bound return false */
+                  shepherd_trace("binding_explicit: bind_process_to_mask was not successful");
+               }
+            }
+
+            hwloc_bitmap_free(cpuset);
+         } else {
+            /* has no topology information */
+            shepherd_trace("binding_explicit: Linux does not offer topology information");
          }
 
-         sge_free(&proc_id);
-          
       } else {
-         /* has no topology information */
-         shepherd_trace("binding_explicit: Linux does not offer topology information");
-      }  
+         /* has no core binding ability */
+         shepherd_trace("binding_explicit: host does not support core binding");
+      }
 
-   } else {
-      /* has no core binding ability */
-      shepherd_trace("binding_explicit: host does not support core binding");
-   }   
-
-   return bound;
-}
+      return bound;
+   }
 
 /****** shepherd_binding/create_binding_env_linux() ****************************
 *  NAME
@@ -1038,32 +976,32 @@ static bool binding_explicit(const int* list_of_sockets, const int samount,
 *     MT-NOTE: create_binding_env_linux() is MT safe 
 *
 *******************************************************************************/
-bool create_binding_env_linux(const int* proc_id, const int amount)
-{
-   bool retval          = true;
-   dstring sge_binding  = DSTRING_INIT;
-   dstring proc         = DSTRING_INIT;
-   int i;
+   bool create_binding_env_linux(hwloc_const_bitmap_t cpuset) {
+      bool ret = true;
+      std::string str_binding;
+      unsigned i;
+      bool first = true;
 
-   for (i = 0; i < amount; i++) {
-      sge_dstring_clear(&proc);
-      /* DG TODO env ends with whitespace char */
-      sge_dstring_sprintf(&proc, "%d ", proc_id[i]);
-      sge_dstring_append_dstring(&sge_binding, &proc);
+      hwloc_bitmap_foreach_begin(i, cpuset)
+         if (first) {
+           first = false;
+           str_binding += std::to_string(i);
+         } else {
+            str_binding += " ";
+            str_binding += std::to_string(i);
+         }
+      hwloc_bitmap_foreach_end();
+
+      shepherd_trace("setting SGE_BINDING to %s", str_binding.c_str());
+      if (sge_setenv("SGE_BINDING", str_binding.c_str()) != 1) {
+         /* setting env var was not successful */
+         ret = false;
+         shepherd_trace("create_binding_env_linux: Couldn't set environment variable!");
+      }
+
+      return ret;
    }
-
-   if (sge_setenv("SGE_BINDING", sge_dstring_get_string(&sge_binding)) != 1) {
-      /* settting env var was not successful */
-      retval = false;
-      shepherd_trace("create_binding_env_linux: Couldn't set environment variable!");
-   }
-
-   sge_dstring_free(&sge_binding);
-   sge_dstring_free(&proc);
-
-   return retval;
-}
 
 #endif
-
+}
 

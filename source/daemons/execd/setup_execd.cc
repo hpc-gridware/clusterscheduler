@@ -141,10 +141,10 @@ void sge_setup_sge_execd(sge_gdi_ctx_class_t *ctx, const char* tmp_err_file_name
    sge_mkdir(JOB_DIR, 0775, true, false);
    sge_mkdir(ACTIVE_DIR,  0775, true, false);
 
-#if defined(PLPA_LINUX) || defined(SOLARIS86) || defined(SOLARISAMD64)
+#if defined(OGE_HWLOC) || defined(SOLARIS86) || defined(SOLARISAMD64)
    /* initialize processor topology */
    if (initialize_topology() != true) {
-      DPRINTF(("Couldn't initizalize topology-----------------------\n"));
+      DPRINTF(("Couldn't initialize topology-----------------------\n"));
    }
 #endif
 

@@ -32,7 +32,7 @@ function(architecture_specific_settings)
 
   # DARWIN: GETHOSTBYNAME DGETHOSTBYADDR_M
   # SOLARIS: GETHOSTBYNAME_R5 GETHOSTBYADDR_R7 
-  # only LINUX: HAS_IN_PORT_T and PLPA
+  # only LINUX: HAS_IN_PORT_T
   add_compile_definitions(
     SGE_ARCH_STRING="${SGE_ARCH}"
     ${SGE_BUILDARCH}
@@ -129,7 +129,6 @@ function(architecture_specific_settings)
     message(STATUS "We are on Solaris: ${SGE_ARCH}")
     add_compile_definitions(SOLARIS GETHOSTBYNAME_R5 GETHOSTBYADDR_R7 SPOOLING_dynamic __SGE_COMPILE_WITH_GETTEXT__)
 
-    set(WITH_PLPA OFF PARENT_SCOPE)
     set(WITH_JEMALLOC OFF PARENT_SCOPE)
 
   elseif(SGE_ARCH MATCHES "darwin-arm64")
@@ -148,7 +147,7 @@ function(architecture_specific_settings)
     message(WARNING "no arch specific compiler options for ${SGE_ARCH}")
   endif()
 
-  if(WITH_PLPA)
-    add_compile_definitions(PLPA)
+  if(WITH_HWLOC)
+    add_compile_definitions(OGE_HWLOC)
   endif()
 endfunction(architecture_specific_settings)

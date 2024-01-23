@@ -68,30 +68,26 @@ function(build_third_party 3rdparty_build_path 3rdparty_install_path)
       )
     endif()
 
-    # plpa
-    if(${WITH_PLPA})
-      message(STATUS "adding 3rdparty plpa")
-      list(APPEND 3rdparty_list 3rd_party_plpa)
+    if(${WITH_HWLOC})
+      message(STATUS "adding 3rdparty hwloc")
+      list(APPEND 3rdparty_list 3rd_party_hwloc)
       ExternalProject_Add(
-        3rd_party_plpa
+        3rd_party_hwloc
         EXCLUDE_FROM_ALL TRUE
-        PREFIX ${3rdparty_build_path}/plpa
+        PREFIX ${3rdparty_build_path}/hwloc
         INSTALL_DIR ${3rdparty_install_path}
-        URL https://download.open-mpi.org/release/plpa/v1.3/plpa-1.3.2.tar.gz
-        #DOWNLOAD_EXTRACT_TIMESTAMP TRUE
-        # update config.guess and config.sub with current versions of the installed automake
-        PATCH_COMMAND /bin/sh -c "cp ${PROJECT_AUTOMAKE_SRC} config"
-        CONFIGURE_COMMAND ./configure --prefix ${3rdparty_install_path}
-                          --disable-shared
+        URL https://download.open-mpi.org/release/hwloc/v2.10/hwloc-2.10.0.tar.gz
+        DOWNLOAD_EXTRACT_TIMESTAMP TRUE
+        CONFIGURE_COMMAND ./configure --prefix ${3rdparty_install_path} --enable-static
         BUILD_IN_SOURCE TRUE
         BUILD_ALWAYS FALSE
         BUILD_COMMAND make)
-      add_library(plpa STATIC IMPORTED GLOBAL)
+      add_library(hwloc STATIC IMPORTED GLOBAL)
       set_target_properties(
-        plpa
-        PROPERTIES
-          IMPORTED_LOCATION
-          ${3rdparty_install_path}/lib/${CMAKE_STATIC_LIBRARY_PREFIX}plpa${CMAKE_STATIC_LIBRARY_SUFFIX}
+              hwloc
+              PROPERTIES
+              IMPORTED_LOCATION
+              ${3rdparty_install_path}/lib/${CMAKE_STATIC_LIBRARY_PREFIX}hwloc${CMAKE_STATIC_LIBRARY_SUFFIX}
       )
     endif()
   endif()

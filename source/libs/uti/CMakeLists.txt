@@ -46,6 +46,7 @@ set(LIBRARY_SOURCES
     sge_thread_ctrl.c
     sge_time.c
     sge_tmpnam.c
+    oge_topology.cc
     sge_tq.c
     sge_uidgid.c
     sge_unistd.c)
@@ -113,6 +114,10 @@ target_link_libraries(test_thread_local PRIVATE uti commlists ${SGE_LIBS})
 add_executable(test_threads test_threads.c)
 target_include_directories(test_threads PRIVATE "./")
 target_link_libraries(test_threads PRIVATE uti commlists ${SGE_LIBS})
+
+add_executable(test_hwloc test_hwloc.cc)
+target_include_directories(test_hwloc PRIVATE "./" ${LIBRARY_INCLUDES})
+target_link_libraries(test_hwloc PRIVATE ${SGE_TOPO_LIB} -ludev ${SGE_LIBS})
 
 if(INSTALL_SGE_TEST)
     install(TARGETS test_sge_bitfield DESTINATION testbin/${SGE_ARCH})
