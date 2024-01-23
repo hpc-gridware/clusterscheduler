@@ -21,8 +21,10 @@ namespace oge {
       if (hwloc_topology_init(&topo_hwloc_topology) == 0) {
          if (hwloc_topology_load(topo_hwloc_topology) == 0) {
             ret = true;
-         } // @todo error handling
-      } // @todo error handling
+         } else {
+            hwloc_topology_destroy(topo_hwloc_topology);
+         }
+      }
 
       // even if initialization failed, treat it as initialized
       // we expect it to either succeed or always fail
@@ -58,10 +60,9 @@ namespace oge {
       }
 
       // @todo: do this only once?
-      // @todo: just check: hwloc_topology_get_depth(topology) != -1?;
       if (topo_hwloc_topology != nullptr) {
          auto support = hwloc_topology_get_support(topo_hwloc_topology);
-         if (support->discovery->pu) { // @todo != nullptr ?
+         if (support->discovery->pu != 0) {
             ret = true;
          }
       }
@@ -80,7 +81,7 @@ namespace oge {
       // @todo: do this only once?
       if (topo_hwloc_topology != nullptr) {
          auto support = hwloc_topology_get_support(topo_hwloc_topology);
-         if (support->cpubind->set_proc_cpubind) { // @todo != nullptr ?
+         if (support->cpubind->set_proc_cpubind != 0) {
             ret = true;
          }
       }
