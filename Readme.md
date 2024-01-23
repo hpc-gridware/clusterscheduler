@@ -1,3 +1,5 @@
+# Open Grid Engine Project
+
 # Building with cmake
 
 ## Prerequisits
@@ -165,4 +167,7 @@ Enabling sanitizers adds the following compiler and linker flags:
 * `-fsanitize=leak`
 * `-fsanitize=undefined`
 * `-fsanitize=address`
+
+![Build Instructions](https://github.com/opengridengine/gridengine/blob/master/doc/markdown/manual/development-guide/01_prepare_dev_env.md)
+
 

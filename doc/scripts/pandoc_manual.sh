@@ -42,7 +42,8 @@ OPTIONS="$OPTIONS --number-sections"
 OPTIONS="$OPTIONS -V subparagraph"
 
 cat ${TITLE_PAGE} ${COPYRIGHT_PAGE} ${DEFINITIONS_PAGE} ${MANUAL_FILES} | \
-    sed -e "s/__RELEASE__/${QSNAME} ${RELEASE}/g" \
+    sed -e "s~__IMAGE_DIR__~${INPUT_DIR}~g" \
+        -e "s/__RELEASE__/${QSNAME} ${RELEASE}/g" \
         -e "s/__DATE__/${DATE}/g" \
         -e "s/__TITLE__/${TITLE}/g" \
         -e "s/xxQS_NAMExx/${QSNAME}/g" \
