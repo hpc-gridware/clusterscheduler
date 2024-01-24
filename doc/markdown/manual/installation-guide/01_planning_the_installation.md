@@ -4,20 +4,20 @@ Open Grid Engine is a workload management system used in data centres to connect
 into a compute cluster. 
 It acts as the operating system of this cluster, connecting the underlying hardware according to user-configurable 
 policies, scheduling its use, and providing computing power.
-This section provides an overview of the Open Grid Engine architecture to assist with planning the cluster setup for 
+This section provides an overview of the xxQS_NAMExx architecture to assist with planning the cluster setup for 
 your environment. The following questions are included to aid in decision-making and installation.
 
 ## UNIX Services
 
-Open Grid Engine is a distributed software system that requires a number of services to run on different hosts in a 
+xxQS_NAMExx is a distributed software system that requires a number of services to run on different hosts in a 
 network. When these services are running, users of a cluster can interact with these service components to submit 
 workloads to the system as jobs, monitor their execution, and finally retrieve the computed results of these jobs.
 A number of generic UNIX services are recommended, which will avoid problems and configuration effort if they are 
-configured and tested in advance, before the Open Grid Engine is installed.
+configured and tested in advance, before the xxQS_NAMExx is installed.
 
 ### Host Names
 
-For the Open Grid Engine service components and all client applications, it is essential that hosts have a correct 
+For the xxQS_NAMExx service components and all client applications, it is essential that hosts have a correct 
 hostname setup. This requires each host to have a unique name for identification and communication purposes.
 
 It is recommended to centrally manage hostnames using a DNS service or directory service like LDAP or NIS, rather 
@@ -29,7 +29,7 @@ defined as needed. Each participating host must have *localhost* pointing to the
 IPv6 is enabled. It *must not* point to a specific NIC.
 
 If a host has multiple NIC's, it is recommended that the primary hostname of each host points to the same NIC on all
-cluster hosts. If this is not possible, *host aliasing* must be enabled for Open Grid Engine after the installation 
+cluster hosts. If this is not possible, *host aliasing* must be enabled for xxQS_NAMExx after the installation 
 process is complete.
 
 ### User Account and Group Configuration
@@ -42,14 +42,14 @@ information across the compute cluster.
 To avoid manual changes to */etc/services* on each host, it is recommended to set up network services using a 
 directory service such as LDAP or NIS.
 
-Open Grid Engine suggests using predefined port numbers for the master service and execution service:
+xxQS_NAMExx suggests using predefined port numbers for the master service and execution service:
 
 	sge_qmaster 6444/tcp
 	sge_execd 6445/tcp
 
 ### File Systems
 
-The installation of Open Grid Engine binaries, libraries, documentation and scripts can be done on a shared file 
+The installation of xxQS_NAMExx binaries, libraries, documentation and scripts can be done on a shared file 
 system such as NFSv3, NFSv4 or Lustre.
 
 Each cluster has a cell directory containing details of the cluster setup. The information in this directory must be 
@@ -62,14 +62,14 @@ for spooling.
 
 ## Product Component Overview
 
-The image below displays the components of a complete Open Grid Engine setup. The subsequent sections provide 
+The image below displays the components of a complete xxQS_NAMExx setup. The subsequent sections provide 
 detailed explanations of these components.
 
 TODO: image
 
 ### Master Service
 
-The master service of an Open Grid Engine cluster is a central component that stores information about connected hosts 
+The master service of an xxQS_NAMExx cluster is a central component that stores information about connected hosts 
 and services, their configuration, and state. It is the brain of the cluster, knowing both the available computing 
 resources of all hosts (such as GPU, CPU, memory, hard disk, and software licenses) and the requirements of jobs 
 submitted by users. The master service's scheduling algorithm dispatches jobs to the necessary resources within 
@@ -119,7 +119,7 @@ specify them individually when installing the master service.
 
 ### Administrative Commands
 
-Administrative commands can be triggered from any host registered as an admin host in the Open Grid Engine system.
+Administrative commands can be triggered from any host registered as an admin host in the xxQS_NAMExx system.
 
 A cluster must have at least one admin host. The master host is automatically an admin host after a default 
 installation. Admin hosts generally do not need to run a service component. 
@@ -129,7 +129,7 @@ Users with the manager role can add and remove admin hosts in a cluster.
 ### User Commands
 
 Users wishing to submit workloads to a cluster must do so on hosts registered as submit hosts in the 
-Open Grid Engine system.
+xxQS_NAMExx system.
 
 A cluster must have at least one submit host. The master host is automatically mad a submit host during a 
 default installation. There is no need to run a service component for submit hosts in general.
@@ -138,16 +138,16 @@ Users with the manager role can add and remove submit hosts in a cluster.
 
 ## User Roles
 
-The Open Grid Engine uses Linux/Unix user account information to check whether a person has access to a certain 
+The xxQS_NAMExx uses Linux/Unix user account information to check whether a person has access to a certain 
 functionality. The user must have identical usernames on all hosts that allow them to interact with the system 
 (submit and admin hosts) and on hosts that run the execution service (execution hosts).
 
-Within the Open Grid Engine system, Linux/Unix users can be assigned a specific role (operator/manager role) 
+Within the xxQS_NAMExx system, Linux/Unix users can be assigned a specific role (operator/manager role) 
 which then defines the access rights of that user.
 
 ### Root / Admin-User
 
-The Open Grid Engine software must be installed as root. 
+The xxQS_NAMExx software must be installed as root. 
 
 An admin-user must be specified during the installation process. Service components are then started as the root 
 user and subsequently drop privileges to match those of the admin-user. 
@@ -155,7 +155,7 @@ user and subsequently drop privileges to match those of the admin-user.
 Files and directories created during the installation process or by any of the OGE service components are owned 
 by the admin-user.
 
-Using the root user as the admin user is not recommended due to security concerns. Installing Open Grid Engine or 
+Using the root user as the admin user is not recommended due to security concerns. Installing xxQS_NAMExx or 
 locating one of the master spool areas on a shared network file system, where the root user typically 
 has fewer privileges than a dedicated admin user account, can also cause problems.
 
@@ -176,7 +176,7 @@ Users with the Manager role can customise the list of Operator usernames in a cl
 
 ### Users
 
-Regular users can submit and monitor their own workload in an Open Grid Engine cluster. Additionally, 
+Regular users can submit and monitor their own workload in an xxQS_NAMExx cluster. Additionally, 
 regular users are permitted to execute certain administrative commands, provided that these commands 
 do not alter the cluster configuration or disrupt general cluster operations.
 
@@ -185,7 +185,7 @@ which requires manager privileges.
 
 ## Installation Methods
 
-The initial installation of an Open Grid Engine cluster can be performed manually or automatically without any 
+The initial installation of an xxQS_NAMExx cluster can be performed manually or automatically without any 
 intervention.
 
 If you are installing OGE for the first time, it is recommended that you choose manual installation.
@@ -198,11 +198,11 @@ This file is used by the installer to set up a cluster without the need to answe
 
 Regardless of which installation method you choose, you need to answer a few questions according to your IT 
 environment. The next sections will tell you these questions and your answers will be required during the 
-installation of Open Grid Engine.
+installation of xxQS_NAMExx.
 
 ### What operating systems are installed on the cluster hosts?
 
-Open Grid Engine supports the following operating systems.
+xxQS_NAMExx supports the following operating systems.
 
 TODO: Table
 
@@ -211,7 +211,7 @@ that platform.
 
 ### Where should OGE packages be installed?
 
-The binaries, libraries, applications, scripts and documentation for Open Grid Engine are typically installed in 
+The binaries, libraries, applications, scripts and documentation for xxQS_NAMExx are typically installed in 
 a directory hierarchy located below an installation directory (e.g. */opt/oge*).
 
 This installation directory can be on a shared network filesystem or on each participating host in the cluster 
@@ -231,7 +231,7 @@ Services will be executed under the administrator user.
 
 You must specify the username during the installation process.
 
-Additionally, you can specify an email address of a user that should receive admministrator mail from Open Grid Engine.
+Additionally, you can specify an email address of a user that should receive admministrator mail from xxQS_NAMExx.
 
 ### What is the name of the cell for this installation?
 
@@ -320,7 +320,7 @@ filenames.
 
 Determine which hosts should allow administrative commands or job submission/observation. It is possible for hosts to 
 serve as both administration and submission hosts. Hosts that do not serve as either administration or submission 
-hosts cannot be used to execute Open Grid Engine commands.
+hosts cannot be used to execute xxQS_NAMExx commands.
 
 During installation, you can specify a file containing hostnames that should be configured as administration hosts, 
 but it is also possible to define these hosts manually if such a file is not present.
@@ -329,7 +329,7 @@ but it is also possible to define these hosts manually if such a file is not pre
 
 You need to specify an unused range of GIDs for monitoring and accounting of jobs. Each process that belongs 
 to an executed job will be tagged with a unique supplementary GID, which allows for process filtering for 
-specific jobs. GIDs used by the Open Grid Engine system to tag processes cannot be used for groups on hosts that 
+specific jobs. GIDs used by the xxQS_NAMExx system to tag processes cannot be used for groups on hosts that 
 run the execution service. 
 
 The maximum number of jobs that can be run simultaneously on a single execution node depends on the number of 
@@ -359,7 +359,7 @@ collection capabilities.
 
 ### Which installation method would you like to use?
 
-If this is your first time installing Open Grid Engine, we suggest a manual installation.
+If this is your first time installing xxQS_NAMExx, we suggest a manual installation.
 
 Automatic installation is recommended if you need to install or reinstall a cluster multiple times or if you plan 
 to install multiple clusters with slightly different settings.

@@ -1,15 +1,15 @@
 {
 	"className":	"QueueReference",
-	"summary":	"@todo add summary",
+	"summary":	"Queue Reference",
 	"description":	[{
-			"line":	"@todo add description"
+			"line":	"Reference to a queue instance by name."
 		}],
 	"cullPrefix":	"QR",
 	"attributes":	[{
 			"name":	"name",
-			"summary":	"@todo add summary",
+			"summary":	"Queue Instance Name",
 			"description":	[{
-					"line":	"@todo add description"
+					"line":	"Name of the Queue Instance in the form cluster_queue_name@host_name."
 				}],
 			"type":	"lStringT",
 			"flags":	[{

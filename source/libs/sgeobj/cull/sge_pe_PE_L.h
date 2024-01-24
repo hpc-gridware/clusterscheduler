@@ -40,45 +40,67 @@ extern "C" {
 #endif
 
 /**
-* @brief @todo add summary
+* @brief Parallel Environment
 *
-* @todo add description
+* Defines the runtime environment for running shared memory or distributed memory parallelized applications
 *
-*    SGE_STRING(PE_name) - @todo add summary
-*    @todo add description
+*    SGE_STRING(PE_name) - Name
+*    Name of the pe.
 *
-*    SGE_ULONG(PE_slots) - @todo add summary
-*    @todo add description
+*    SGE_ULONG(PE_slots) - Total Slots
+*    Total number of slots which can be occupied by jobs running in the PE.
 *
-*    SGE_LIST(PE_user_list) - @todo add summary
-*    @todo add description
+*    SGE_LIST(PE_user_list) - User List
+*    US_type; list of allowed users.
 *
-*    SGE_LIST(PE_xuser_list) - @todo add summary
-*    @todo add description
+*    SGE_LIST(PE_xuser_list) - XUser List
+*    US_Type; list of not allowed users.
 *
-*    SGE_STRING(PE_start_proc_args) - @todo add summary
-*    @todo add description
+*    SGE_STRING(PE_start_proc_args) - Start Procedure
+*    Cmd line sequence for starting the pe.
 *
-*    SGE_STRING(PE_stop_proc_args) - @todo add summary
-*    @todo add description
+*    SGE_STRING(PE_stop_proc_args) - Stop Procedure
+*    Cmd line sequence for stopping the pe.
 *
-*    SGE_STRING(PE_allocation_rule) - @todo add summary
-*    @todo add description
+*    SGE_STRING(PE_allocation_rule) - Allocation Rule
+*    Defines how a job is distributed over multiple host.
+*    This can be a fixed number of processors (slots) per machine
+*    or one of the following special allocation rules:
+*    $pe_slots: Allocate only slots on a single host.
+*    $fill_up: Fill up slots on one host, then switch to the next host, ...
+*    $round_robin. Occupy one slot of a host, then switch to the next one, ...
 *
-*    SGE_BOOL(PE_control_slaves) - @todo add summary
-*    @todo add description
+*    SGE_BOOL(PE_control_slaves) - Control Slaves
+*    Defines whether (false) the job is executed in so called loose integration
+*    (slave execution daemons do not know about the job, no job control, no accounting)
+*    or (true) if it is executed in the tight integration, where execution daemons know about slave tasks
+*    and slave tasks are started under OGE control (vial qrsh -inherit).
+*    Tight integration provides full job control and we get accounting information for the whole job
+*    including slave tasks on remote hosts.
 *
-*    SGE_BOOL(PE_job_is_first_task) - @todo add summary
-*    @todo add description
+*    SGE_BOOL(PE_job_is_first_task) - Job Is First Task
+*    
+*    When set to true then the job script also counts as task (a 4 times parallel job can then
+*    comprise of the master task plus 3 slave tasks.
+*    When set to true then the master task does not consume a slot. This is used to take into
+*    account that the master task in many cases consumes very little resources, e.g.
+*    it just does an mpirun call spawning slave tasks and then waits for the slave tasks to finish.
+*    A 4 times parallel job can then comprise of the master task plus 4 slave tasks.
 *
-*    SGE_LIST(PE_resource_utilization) - @todo add summary
-*    @todo add description
+*    SGE_LIST(PE_resource_utilization) - Resource Utilization
+*    Sub list of RUE_Type used to store resources (slots) currently in use by running parallel jobs.
 *
-*    SGE_STRING(PE_urgency_slots) - @todo add summary
-*    @todo add description
+*    SGE_STRING(PE_urgency_slots) - Urgency Slots
+*    Specifies what slot amount shall be used when computing jobs
+*    static urgency in case of jobs with slot range PE requests.
+*    The actual problem is that when determining the urgency number
+*    the number of slots finally assigned is not yet known. The following
+*    settings are supported: min/max/avg/<fixed integer>
 *
-*    SGE_BOOL(PE_accounting_summary) - @todo add summary
-*    @todo add description
+*    SGE_BOOL(PE_accounting_summary) - Accounting Summary
+*    For tightly integrated parallel jobs.
+*    Specifies if a single accounting record is written for the whole job,
+*    or if every task (master task and slave tasks) gets an individual accounting record.
 *
 */
 

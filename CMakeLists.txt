@@ -52,6 +52,7 @@ option(INSTALL_SGE_BIN "Install binaries" ON)
 option(INSTALL_SGE_COMMON "Install common files" ON)
 option(INSTALL_SGE_DOC "Build and install documentation" OFF)
 option(INSTALL_SGE_TEST "Install test binaries" ON)
+option(INSTALL_SGE_SRCDOC "Build and install source code documentation" OFF)
 
 # BUILD OPTIONS
 option(ENABLE_LTO "Enable to add Link Time Optimization in Release Build." ON)

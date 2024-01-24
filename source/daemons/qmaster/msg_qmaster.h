@@ -523,7 +523,7 @@
 #define MSG_CONFIG_CANTFINDARXREFERENCEDINJOBY_UU     _MESSAGE(33647, _("can't find advance reservation "sge_U32CFormat" referenced in job "sge_U32CFormat))
 
 #define MSG_SYSTEM_SYSTEMHASBEENMODIFIEDXSECONDS_I _MESSAGE(33663, _("system clock has been put back (%d seconds)"))
-#define MSG_SYSTEM_RECEIVEDUNKNOWNEVENT_I          _MESSAGE(33664, _("received unkown event: %d"))
+#define MSG_SYSTEM_RECEIVEDUNKNOWNEVENT_I          _MESSAGE(33664, _("received unknown event: %d"))
 
 #define MSG_SEC_CRED_SSSI                          _MESSAGE(33673, _("denied: request for user "SFQ" does not match credentials for connection <"SFN","SFN",%d>"))
 #define MSG_JOB_STDINPATHLIST                      _MESSAGE(33676, _("stdin path list"))

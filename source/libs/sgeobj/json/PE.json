@@ -1,15 +1,15 @@
 {
 	"className":	"ParallelEnvironment",
-	"summary":	"@todo add summary",
+	"summary":	"Parallel Environment",
 	"description":	[{
-			"line":	"@todo add description"
+			"line":	"Defines the runtime environment for running shared memory or distributed memory parallelized applications"
 		}],
 	"cullPrefix":	"PE",
 	"attributes":	[{
 			"name":	"name",
-			"summary":	"@todo add summary",
+			"summary":	"Name",
 			"description":	[{
-					"line":	"@todo add description"
+					"line":	"Name of the pe."
 				}],
 			"type":	"lStringT",
 			"flags":	[{
@@ -25,9 +25,9 @@
 				}]
 		}, {
 			"name":	"slots",
-			"summary":	"@todo add summary",
+			"summary":	"Total Slots",
 			"description":	[{
-					"line":	"@todo add description"
+					"line":	"Total number of slots which can be occupied by jobs running in the PE."
 				}],
 			"type":	"lUlongT",
 			"flags":	[{
@@ -37,9 +37,9 @@
 				}]
 		}, {
 			"name":	"user_list",
-			"summary":	"@todo add summary",
+			"summary":	"User List",
 			"description":	[{
-					"line":	"@todo add description"
+					"line":	"US_type; list of allowed users."
 				}],
 			"type":	"lListT",
 			"subClassName":	"US",
@@ -51,9 +51,9 @@
 				}]
 		}, {
 			"name":	"xuser_list",
-			"summary":	"@todo add summary",
+			"summary":	"XUser List",
 			"description":	[{
-					"line":	"@todo add description"
+					"line":	"US_Type; list of not allowed users."
 				}],
 			"type":	"lListT",
 			"subClassName":	"US",
@@ -65,9 +65,9 @@
 				}]
 		}, {
 			"name":	"start_proc_args",
-			"summary":	"@todo add summary",
+			"summary":	"Start Procedure",
 			"description":	[{
-					"line":	"@todo add description"
+					"line":	"Cmd line sequence for starting the pe."
 				}],
 			"type":	"lStringT",
 			"flags":	[{
@@ -77,9 +77,9 @@
 				}]
 		}, {
 			"name":	"stop_proc_args",
-			"summary":	"@todo add summary",
+			"summary":	"Stop Procedure",
 			"description":	[{
-					"line":	"@todo add description"
+					"line":	"Cmd line sequence for stopping the pe."
 				}],
 			"type":	"lStringT",
 			"flags":	[{
@@ -89,9 +89,14 @@
 				}]
 		}, {
 			"name":	"allocation_rule",
-			"summary":	"@todo add summary",
+			"summary":	"Allocation Rule",
 			"description":	[{
-					"line":	"@todo add description"
+					"line":	"Defines how a job is distributed over multiple host."
+					}, { "line":	"This can be a fixed number of processors (slots) per machine"
+					}, { "line":	"or one of the following special allocation rules:"
+					}, { "line":	"$pe_slots: Allocate only slots on a single host."
+					}, { "line":	"$fill_up: Fill up slots on one host, then switch to the next host, ..."
+					}, { "line":	"$round_robin. Occupy one slot of a host, then switch to the next one, ..."
 				}],
 			"type":	"lStringT",
 			"flags":	[{
@@ -101,9 +106,14 @@
 				}]
 		}, {
 			"name":	"control_slaves",
-			"summary":	"@todo add summary",
+			"summary":	"Control Slaves",
 			"description":	[{
-					"line":	"@todo add description"
+					"line":	"Defines whether (false) the job is executed in so called loose integration"
+					}, { "line":	"(slave execution daemons do not know about the job, no job control, no accounting)"
+					}, { "line":	"or (true) if it is executed in the tight integration, where execution daemons know about slave tasks"
+					}, { "line":	"and slave tasks are started under OGE control (vial qrsh -inherit)."
+					}, { "line":	"Tight integration provides full job control and we get accounting information for the whole job"
+					}, { "line":	"including slave tasks on remote hosts."
 				}],
 			"type":	"lBoolT",
 			"flags":	[{
@@ -113,9 +123,15 @@
 				}]
 		}, {
 			"name":	"job_is_first_task",
-			"summary":	"@todo add summary",
+			"summary":	"Job Is First Task",
 			"description":	[{
-					"line":	"@todo add description"
+					"line":	""
+					}, { "line":	"When set to true then the job script also counts as task (a 4 times parallel job can then"
+					}, { "line":	"comprise of the master task plus 3 slave tasks."
+					}, { "line":	"When set to true then the master task does not consume a slot. This is used to take into"
+					}, { "line":	"account that the master task in many cases consumes very little resources, e.g."
+					}, { "line":	"it just does an mpirun call spawning slave tasks and then waits for the slave tasks to finish."
+					}, { "line":	"A 4 times parallel job can then comprise of the master task plus 4 slave tasks."
 				}],
 			"type":	"lBoolT",
 			"flags":	[{
@@ -125,9 +141,9 @@
 				}]
 		}, {
 			"name":	"resource_utilization",
-			"summary":	"@todo add summary",
+			"summary":	"Resource Utilization",
 			"description":	[{
-					"line":	"@todo add description"
+					"line":	"Sub list of RUE_Type used to store resources (slots) currently in use by running parallel jobs."
 				}],
 			"type":	"lListT",
 			"subClassName":	"RUE",
@@ -137,9 +153,13 @@
 				}]
 		}, {
 			"name":	"urgency_slots",
-			"summary":	"@todo add summary",
+			"summary":	"Urgency Slots",
 			"description":	[{
-					"line":	"@todo add description"
+					"line":	"Specifies what slot amount shall be used when computing jobs"
+					}, { "line":	"static urgency in case of jobs with slot range PE requests."
+					}, { "line":	"The actual problem is that when determining the urgency number"
+					}, { "line":	"the number of slots finally assigned is not yet known. The following"
+					}, { "line":	"settings are supported: min/max/avg/<fixed integer>"
 				}],
 			"type":	"lStringT",
 			"flags":	[{
@@ -149,9 +169,11 @@
 				}]
 		}, {
 			"name":	"accounting_summary",
-			"summary":	"@todo add summary",
+			"summary":	"Accounting Summary",
 			"description":	[{
-					"line":	"@todo add description"
+					"line":	"For tightly integrated parallel jobs."
+					}, { "line":	"Specifies if a single accounting record is written for the whole job,"
+					}, { "line":	"or if every task (master task and slave tasks) gets an individual accounting record."
 				}],
 			"type":	"lBoolT",
 			"flags":	[{

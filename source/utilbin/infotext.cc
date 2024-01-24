@@ -849,7 +849,7 @@ int main( int argc, char* argv[] ) {
                }
                continue;
             }
-            printf("unkown option \"-%c\"\n",option[h] );
+            printf("unknown option \"-%c\"\n",option[h] );
             args_ok = 0;
          }
 
