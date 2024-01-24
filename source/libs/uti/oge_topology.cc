@@ -11,9 +11,18 @@ namespace oge {
    bool topo_initialized = false;
    hwloc_topology_t topo_hwloc_topology = nullptr;
 
-   /* @todo: the AGE/UGE code did this for every operation over and over again
-    *        init + load topology, do some operation, hwloc_topology_destroy()
-    *        what was the reason?
+   /* @todo: We might want to do the initialization for every operation, e.g.
+    *        in execd retrieving topology as load value:
+    *          - initialize hwloc
+    *          - retrieve topology
+    *          - destroy hwloc
+    *         Reason: The topology might change, e.g. by disabling a core.
+    *         See issue OGE-111.
+    */
+
+   /**
+    * Initialize hwloc.
+    * @return true if the initialization succeeded, else false
     */
    static bool topo_init() {
       bool ret = false;
@@ -33,26 +42,13 @@ namespace oge {
    }
 
 
-/****** sge_binding_hlp/has_topology_information() *********************************
-*  NAME
-*     has_topology_information() -- Checks if current arch offers topology.
-*
-*  SYNOPSIS
-*     bool has_topology_information()
-*
-*  FUNCTION
-*     Checks if current architecture (on which this function is called)
-*     offers processor topology information or not.
-*
-*  RESULT
-*     bool - true if the arch offers topology information false if not
-*
-*  NOTES
-*     MT-NOTE: has_topology_information() is not MT safe
-*
-*******************************************************************************/
-   bool topo_has_topology_information()
-   {
+/**
+ * Checks if current architecture (on which this function is called)
+ * offers processor topology information or not.
+ *
+ * @return true if the arch offers topology information, false if not
+ */
+   bool topo_has_topology_information() {
       bool ret = false;
 
       if (!topo_initialized) {
@@ -70,8 +66,12 @@ namespace oge {
       return ret;
    }
 
-   bool topo_has_core_binding()
-   {
+   /**
+    * Checks if core binding is possible on the current host / architecture.
+    *
+    * @return true, if core binding is possible, else false
+    */
+   bool topo_has_core_binding() {
       bool ret = false;
 
       if (!topo_initialized) {
@@ -93,26 +93,14 @@ namespace oge {
       return topo_hwloc_topology;
    }
 
-/****** sge_binding_hlp/topo_get_total_amount_of_threads() ***********************
-*  NAME
-*     topo_get_total_amount_of_threads() -- The total amount of hw supported threads.
-*
-*  SYNOPSIS
-*     int topo_get_total_amount_of_threads()
-*
-*  FUNCTION
-*     Returns the total amount of threads all CPUs on the host do
-*     support.
-*
-*  RESULT
-*     int - Total amount of harware supported threads the system supports.
-*
-*  NOTES
-*     MT-NOTE: topo_get_total_amount_of_threads() is MT safe
-*
-*******************************************************************************/
-   static int topo_get_total_amount_of_type(hwloc_obj_type_t type)
-   {
+/**
+ * Returns the total amount of a certain hwloc object type, e.g.
+ * the total amount of sockets, cores, pus (threads).
+ *
+ * @param[in] type e.g. HWLOC_OBJ_PACKAGE, HWLOC_OBJ_CORE, HWLOC_OBJ_PU
+ * @return total number of given objects
+ */
+   static int topo_get_total_amount_of_type(hwloc_obj_type_t type) {
       int amount = 0;
       if (topo_has_core_binding() && topo_has_topology_information()) {
          amount = hwloc_get_nbobjs_by_type(topo_hwloc_topology, type);
@@ -121,76 +109,54 @@ namespace oge {
       return amount;
    }
 
+   /**
+    * @return total number of sockets
+    */
    int topo_get_total_amount_of_sockets() {
       return topo_get_total_amount_of_type(HWLOC_OBJ_PACKAGE);
    }
 
-   int topo_get_total_amount_of_threads() {
-      return topo_get_total_amount_of_type(HWLOC_OBJ_PU);
-   }
-
-/****** sge_binding_hlp/topo_get_total_amount_of_cores() ********************************
-*  NAME
-*     get_total_amount_of_cores() -- Fetches the total amount of cores on system.
-*
-*  SYNOPSIS
-*     int get_total_amount_of_cores()
-*
-*  FUNCTION
-*     Returns the total amount of cores per socket.
-*
-*  RESULT
-*     int - Total amount of cores installed on the system.
-*
-*  NOTES
-*     MT-NOTE: get_total_amount_of_cores() is MT safe
-*
-*******************************************************************************/
+   /**
+    * @return total number of cores
+    */
    int topo_get_total_amount_of_cores() {
       return topo_get_total_amount_of_type(HWLOC_OBJ_PU);
    }
 
-static int topo_count_type_in_object(const hwloc_obj_t object, const hwloc_obj_type_t type)
-{
-   int ret = 0;
-
-   if (object != nullptr) {
-      if (object->type == type) {
-         ++ret;
-      }
-      // recursively search for type in sub objects
-      for (unsigned int i = 0; i < object->arity; ++i) {
-         ret += topo_count_type_in_object(object->children[i], type);
-      }
+   /**
+    * @return total number of cores
+    */
+   int topo_get_total_amount_of_threads() {
+      return topo_get_total_amount_of_type(HWLOC_OBJ_PU);
    }
 
-    return ret;
-}
+   /**
+    * @param[in] object a hwloc object, e.g. a package (socket)
+    * @param[in] type the type we are searching for, e.g. core (HWLOC_OBJ_CORE)
+    * @return the number of subobjects within an object, e.g. the number of cores within a specific package
+    */
+   static int topo_count_type_in_object(const hwloc_obj_t object, const hwloc_obj_type_t type) {
+      int ret = 0;
 
+      if (object != nullptr) {
+         if (object->type == type) {
+            ++ret;
+         }
+         // recursively search for type in sub objects
+         for (unsigned int i = 0; i < object->arity; ++i) {
+            ret += topo_count_type_in_object(object->children[i], type);
+         }
+      }
 
+      return ret;
+   }
 
-/****** sge_binding_hlp/get_amount_of_cores() **************************************
-*  NAME
-*     topo_get_amount_of_cores_for_socket() -- Get amount of cores per socket.
-*
-*  SYNOPSIS
-*     int topo_get_amount_of_cores_for_socket(int socket_number)
-*
-*  FUNCTION
-*     Returns the amount of cores for a specific socket.
-*
-*  INPUTS
-*     int socket_number - Physical socket number starting at 0.
-*
-*  RESULT
-*     int - Amount of cores for the given socket or 0.
-*
-*  NOTES
-*     MT-NOTE: topo_get_amount_of_cores_for_socket() is MT safe
-*
-*******************************************************************************/
-   int topo_get_amount_of_cores_for_socket(int socket_number)
-   {
+   /**
+    * @param[in] socket_number
+    * @see topo_count_type_in_object
+    * @return the number of cores in the specified socket
+    */
+   int topo_get_amount_of_cores_for_socket(int socket_number) {
       int ret = 0;
 
       if (topo_has_core_binding() && topo_has_topology_information()) {
@@ -204,27 +170,12 @@ static int topo_count_type_in_object(const hwloc_obj_t object, const hwloc_obj_t
       return ret;
    }
 
-/****** sge_binding_hlp/topo_get_amount_of_threads_for_core() **************************************
-*  NAME
-*     topo_get_amount_of_threads_for_core() -- Get amount of threads a specific core supports.
-*
-*  SYNOPSIS
-*     int topo_get_amount_of_threads_for_core(int socket_number, int core_number)
-*
-*  FUNCTION
-*     Returns the amount of threads a specific core supports.
-*
-*  INPUTS
-*     int socket_number - Physical socket number starting at 0.
-*     int core_number   - Physical core number on socket starting at 0.
-*
-*  RESULT
-*     int - Amount of threads a specific core supports.
-*
-*  NOTES
-*     MT-NOTE: topo_get_amount_of_threads_for_core() is MT safe
-*
-*******************************************************************************/
+   /**
+    * @param[in] socket_number
+    * @param[in] core_number
+    * @see topo_count_type_in_object
+    * @return the number of threads in the specified core (on specified socket)
+    */
    int topo_get_amount_of_threads_for_core(int socket_number, int core_number) {
       int ret = 0;
 
@@ -240,35 +191,19 @@ static int topo_count_type_in_object(const hwloc_obj_t object, const hwloc_obj_t
       return ret;
    }
 
-/****** sge_binding_hlp/topo_get_processor_ids() ******************************
-*  NAME
-*     topo_get_processor_ids() -- Get internal processor ids for a specific core.
-*
-*  SYNOPSIS
-*     bool topo_get_processor_ids(int socket_number, int core_number, int**
-*     proc_ids, int* amount)
-*
-*  FUNCTION
-*     Get the Linux internal processor ids for a given core (specified by a socket,
-*     core pair).
-*
-*  INPUTS
-*     int socket_number - Logical socket number (starting at 0 without holes)
-*     int core_number   - Logical core number on the socket (starting at 0 without holes)
-*
-*  OUTPUTS
-*     int** proc_ids    - Array of Linux internal processor ids.
-*     int* amount       - Size of the proc_ids array.
-*
-*  RESULT
-*     bool - Returns true when processor ids where found otherwise false.
-*
-*  NOTES
-*     MT-NOTE: topo_get_processor_ids() is MT safe
-*
-*******************************************************************************/
-   bool topo_get_processor_ids(int socket_number, int core_number, int** proc_ids, int* amount)
-   {
+   /**
+    * Allocates and fills in an integer array proc_ids with the physical index numbers
+    * of threads (PUs) for a specific socket and core.
+    *
+    * @note The caller is responsible for freeing (delete[]) the proc_ids array.
+    *
+    * @param[in] socket_number logical socket number (0..n)
+    * @param[in] core_number  logical core number (0..n)
+    * @param[out] proc_ids integer array with processor ids
+    * @param[out] amount  number of entries in proc_ids
+    * @return true if the processor ids could be retrieved, else false
+    */
+   bool topo_get_processor_ids(int socket_number, int core_number, int **proc_ids, int *amount) {
       bool ret = false;
 
       if (topo_has_core_binding() && topo_has_topology_information()) {
@@ -284,52 +219,34 @@ static int topo_count_type_in_object(const hwloc_obj_t object, const hwloc_obj_t
              * is returned. For example, per the above reported PPC topology, it is not safe to assume
              * that PUs will always be descendants of cores.
              *
-             * Therefore, we fetch the first PU, get its parent (usually the core)
-             * and iterate over its children (the PUs).
+             * Therefore, we search recursively for PUs under the core.
              */
-            hwloc_obj_t pu;
-            pu = hwloc_get_obj_below_by_type(topo_hwloc_topology, HWLOC_OBJ_CORE,
-                                             core->logical_index, HWLOC_OBJ_PU, 0);
-            if (pu != nullptr) {
-               hwloc_obj_t parent = pu->parent;
-               *amount = parent->arity;
-               *proc_ids = new int[*amount];
-               for (int i = 0; i < *amount; ++i) {
-                  (*proc_ids)[i] = parent->children[i]->os_index;
+            *amount = topo_get_amount_of_threads_for_core(socket_number, core_number);
+            *proc_ids = new int[*amount];
+            for (int i = 0; i < *amount; i++) {
+               hwloc_obj_t pu;
+               pu = hwloc_get_obj_below_by_type(topo_hwloc_topology, HWLOC_OBJ_CORE,
+                                                core->logical_index, HWLOC_OBJ_PU, i);
+               if (pu != nullptr) {
+                  (*proc_ids)[i] = pu->os_index;
                }
-               ret = true;
             }
+            ret = true;
          }
       }
 
       return ret;
    }
 
-/****** sge_binding_hlp/topo_get_topology() ***********************************
-*  NAME
-*     topo_get_topology() -- Creates the topology string for the current host.
-*
-*  SYNOPSIS
-*     bool topo_get_topology(char** topology, int* length)
-*
-*  FUNCTION
-*     Creates the topology string for the current host. When it was created
-*     it has top be freed from outside.
-*
-*  INPUTS
-*     char** topology - The topology string for the current host.
-*     int* length     - The length of the topology string.
-*
-*  RESULT
-*     bool - when true the topology string could be generated (and memory
-*            is allocated otherwise false
-*
-*  NOTES
-*     MT-NOTE: topo_get_topology() is MT safe
-*
-*******************************************************************************/
-   bool topo_get_topology(std::string &str_topology)
-   {
+   /**
+    * Returns a topology string with the topology of the current machine.
+    * Sockets are printed as "S", cores as "C", threads as "T", e.g.
+    * a 2 socket machine with 4 cores each and each core having 2 threads has
+    * the toploogy "SCTTCTTCTTCTTSCTTCTTCTTCTT".
+    * @param[out] str_topology reference to a string object which will hold the topology
+    * @return true if the topology could be retrieved, else false
+    */
+   bool topo_get_topology(std::string &str_topology) {
       bool ret = false;
 
       if (topo_has_topology_information()) {
@@ -363,8 +280,18 @@ static int topo_count_type_in_object(const hwloc_obj_t object, const hwloc_obj_t
       return ret;
    }
 
-   bool topo_get_topology(char** topology, int* length)
-   {
+   /**
+    * Returns a topology string with the topology of the current machine.
+    * Sockets are printed as "S", cores as "C", threads as "T", e.g.
+    * a 2 socket machine with 4 cores each and each core having 2 threads has
+    * the toploogy "SCTTCTTCTTCTTSCTTCTTCTTCTT".
+    * @note The topology string gets dynamically allocated. It is in the responsibility
+    *       of the caller to free it!
+    * @param[out] topology pointer to the topology c-string
+    * @param[out] length  length of the topology c-string
+    * @return true if the topology could be retrieved, else false
+    */
+   bool topo_get_topology(char **topology, int *length) {
       std::string str_topology;
       bool ret = topo_get_topology(str_topology);
 

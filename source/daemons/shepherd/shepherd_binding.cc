@@ -70,10 +70,6 @@ namespace oge {
                                 const int *list_of_cores, const int camount, const binding_type_t type);
 
    static bool create_binding_env_linux(hwloc_const_bitmap_t cpuset);
-#if 0
-   static bool add_proc_ids_linux(int socket, int core, int **proc_id, int *proc_id_size);
-#endif
-
 #endif
 
 #if defined(BINDING_SOLARIS)
@@ -421,77 +417,6 @@ namespace oge {
 /* helper for core_binding */
 
 #if defined(OGE_HWLOC)
-
-/****** shepherd_binding/add_proc_ids_linux() **********************************
-*  NAME
-*     add_proc_ids_linux() -- Adds the processor ids of a core to an existing array. 
-*
-*  SYNOPSIS
-*     static bool add_proc_ids_linux(int socket, int core, int** proc_id, int* 
-*     proc_id_size) 
-*
-*  FUNCTION
-*     Adds the Linux internal processor ids of a specific core (which is described 
-*     via the logicial socket and core number) to an array. The length of the array 
-*     is updated. If the array point to NULL then a new array is allocated. The array 
-*     has to be freed from outside. 
-*
-*  INPUTS
-*     int socket        - Logical socket number (beginning with 0 without holes) 
-*     int core          - Logical core number on the given socket (beginning with 0) 
-*
-*  OUTPUTS
-*     int** proc_id     - Array of Linux internal processor ids. 
-*     int* proc_id_size - Size of the array. 
-*
-*  RESULT
-*     static bool - Returns true when the proc_id array was updated successfuly, 
-*                   false when something went wrong (like not finding the core).
-*
-*  NOTES
-*     MT-NOTE: add_proc_ids_linux() is MT safe 
-*
-*******************************************************************************/
-#if 0
-   static bool add_proc_ids_linux(int socket, int core, int **proc_id, int *proc_id_size) {
-      /* OS internal processor IDs for a given logical socket, core pair */
-      int *pids = NULL;
-      int pids_size = 0;
-      int retval = true;
-
-      if (proc_id_size == NULL || proc_id == NULL)
-         return false;
-
-      /* get processor ids */
-      if (topo_get_processor_ids(socket, core, &pids, &pids_size) && pids_size > 0 && pids != NULL) {
-
-         /* append the processor ids to the given proc_id array */
-
-         /* grow proc_id array */
-         (*proc_id) = (int *) realloc((*proc_id), ((*proc_id_size) + pids_size) * sizeof(int));
-
-         if (*proc_id != NULL) {
-            int i = 0;
-            /* copy all processor ids */
-            for (i = (*proc_id_size); i < (*proc_id_size) + pids_size; i++) {
-               (*proc_id)[i] = pids[i - (*proc_id_size)];
-            }
-         } else {
-            retval = false;
-         }
-
-         /* update output size */
-         (*proc_id_size) += pids_size;
-
-      } else {
-         retval = false;
-      }
-
-      sge_free(&pids);
-
-      return retval;
-   }
-#endif
 
 bool binding_add_core_to_cpuset(hwloc_bitmap_t cpuset, int socket, int core) {
    bool ret = false;

@@ -115,10 +115,6 @@ add_executable(test_threads test_threads.c)
 target_include_directories(test_threads PRIVATE "./")
 target_link_libraries(test_threads PRIVATE uti commlists ${SGE_LIBS})
 
-add_executable(test_hwloc test_hwloc.cc)
-target_include_directories(test_hwloc PRIVATE "./" ${LIBRARY_INCLUDES})
-target_link_libraries(test_hwloc PRIVATE ${SGE_TOPO_LIB} -ludev ${SGE_LIBS})
-
 if(INSTALL_SGE_TEST)
     install(TARGETS test_sge_bitfield DESTINATION testbin/${SGE_ARCH})
     install(TARGETS test_sge_deadlock DESTINATION testbin/${SGE_ARCH})

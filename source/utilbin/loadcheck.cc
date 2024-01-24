@@ -307,7 +307,6 @@ void check_core_binding()
 #if defined(OGE_HWLOC)
 void test_linux_hwloc()
 {
-   dstring error  = DSTRING_INIT;
    char* topology = NULL;
    int length     = 0;
    int s, c;
@@ -318,8 +317,7 @@ void test_linux_hwloc()
    }
 
    if (!oge::topo_has_core_binding()) {
-      printf("Your Linux kernel seems not to offer core binding capabilities for HWLOC!\nReason: %s\n",
-               sge_dstring_get_string(&error));
+      printf("Your Linux kernel seems not to offer core binding capabilities for HWLOC!\n");
    }
 
    if (!oge::topo_has_topology_information()) {
@@ -357,8 +355,6 @@ void test_linux_hwloc()
          }
       }
    }   
-
-   sge_dstring_free(&error);
 }
 #endif
 
