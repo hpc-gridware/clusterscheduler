@@ -40,12 +40,12 @@ extern "C" {
 #endif
 
 /**
-* @brief @todo add summary
+* @brief Queue Reference
 *
-* @todo add description
+* Reference to a queue instance by name.
 *
-*    SGE_STRING(QR_name) - @todo add summary
-*    @todo add description
+*    SGE_STRING(QR_name) - Queue Instance Name
+*    Name of the Queue Instance in the form cluster_queue_name@host_name.
 *
 */
 
