@@ -951,7 +951,8 @@ WARN_LOGFILE           =
 
 # Paths have to be relative to the doc/doxygen directory
 #INPUT                  = @CMAKE_CURRENT_SOURCE_DIR@/../../../gridengine/source/  @CMAKE_CURRENT_SOURCE_DIR@/../../../oge-extensions/source/
-INPUT                  = ./gridengine/source/ ./oge-extensions/source/
+#INPUT                  = ./gridengine/source/ ./oge-extensions/source/
+INPUT                  = ./oge-extensions/source/
 
 # This tag can be used to specify the character encoding of the source files
 # that doxygen parses. Internally doxygen uses the UTF-8 encoding. Doxygen uses
