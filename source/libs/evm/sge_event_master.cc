@@ -942,7 +942,7 @@ u_long32 sge_set_max_dynamic_event_clients(u_long32 new_value)
       lAppendElem(Event_Master_Control.client_ids, new_range);
 
       /* and we have to remove the ids of our existing event clients from the range */
-      for_each(event_client, Event_Master_Control.clients) {
+      for_each_ep(event_client, Event_Master_Control.clients) {
          u_long32 event_client_id = lGetUlong(event_client, EV_id);
          /* only for dynamic event clients */
          if (event_client_id >= EV_ID_FIRST_DYNAMIC) {
@@ -1199,7 +1199,7 @@ int sge_shutdown_dynamic_event_clients(const char *anUser, lList **alpp, monitor
    }
 
    sge_mutex_lock("event_master_mutex", __func__, __LINE__, &Event_Master_Control.mutex);
-   for_each (client, Event_Master_Control.clients) {
+   for_each_ep(client, Event_Master_Control.clients) {
       id = lGetUlong(client, EV_id);
 
       /* Ignore clients with static ids. */
@@ -2383,7 +2383,7 @@ static void build_subscription(lListElem *event_el)
       sub_array[i].blocked = false;
    }
 
-   for_each(sub_el, subscription) {
+   for_each_ep(sub_el, subscription) {
       const lListElem *temp = NULL;
       u_long32 event = lGetUlong(sub_el, EVS_id);
  

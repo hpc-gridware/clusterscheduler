@@ -1099,7 +1099,7 @@ void sge_commit_job(sge_gdi_ctx_class_t *ctx,
             if (pe && lGetBool(pe, PE_control_slaves)) { 
                bool is_master = true;
 
-               for_each(granted_queue, lGetList(jatep, JAT_granted_destin_identifier_list)) { 
+               for_each_ep(granted_queue, lGetList(jatep, JAT_granted_destin_identifier_list)) {
                   if (!is_master) {
                      lListElem *host = host_list_locate(master_exechost_list, lGetHost(granted_queue, JG_qhostname)); 
                      
@@ -1379,7 +1379,7 @@ static void release_successor_jobs(const lListElem *jep)
 
    DENTER(TOP_LAYER);
 
-   for_each(jid, lGetList(jep, JB_jid_successor_list)) {
+   for_each_ep(jid, lGetList(jep, JB_jid_successor_list)) {
       suc_jep = lGetElemUlongRW(master_job_list, JB_job_number, lGetUlong(jid, JRE_job_number));
       if (suc_jep) {
          /* if we don't find it by job id we try it with the name */
@@ -1413,7 +1413,7 @@ static void release_successor_jobs_ad(const lListElem *jep)
 
    DENTER(TOP_LAYER);
 
-   for_each(jid, lGetList(jep, JB_ja_ad_successor_list)) {
+   for_each_ep(jid, lGetList(jep, JB_ja_ad_successor_list)) {
       suc_jep = lGetElemUlongRW(master_job_list, JB_job_number, lGetUlong(jid, JRE_job_number));
       if (suc_jep) {
          int Modified = 0;
@@ -1456,7 +1456,7 @@ static void release_successor_tasks_ad(lListElem *jep, u_long32 task_id)
    DENTER(TOP_LAYER);
 
    /* every successor job of this job might have tasks to be released */
-   for_each(jid, lGetList(jep, JB_ja_ad_successor_list)) {
+   for_each_ep(jid, lGetList(jep, JB_ja_ad_successor_list)) {
       u_long32 job_ident = lGetUlong(jid, JRE_job_number);
       lListElem *suc_range = NULL;
       lListElem *suc_jep = NULL;
@@ -1540,7 +1540,7 @@ static void sge_clear_granted_resources(sge_gdi_ctx_class_t *ctx,
    global_host_ep = host_list_locate(master_exechost_list, SGE_GLOBAL_NAME);
 
    /* free granted resources of the queue */
-   for_each(ep, gdi_list) {
+   for_each_ep(ep, gdi_list) {
       u_long32 ar_id = lGetUlong(job, JB_ar);
       const char *queue_name = lGetString(ep, JG_qname);
       lListElem *queue = NULL;
@@ -1975,7 +1975,7 @@ bool gdil_del_all_orphaned(sge_gdi_ctx_class_t *ctx, const lList *gdil_list, lLi
    dstring cqueue_name = DSTRING_INIT;
    dstring host_name = DSTRING_INIT;
    bool has_hostname, has_domain;
-   for_each (gdil_ep, gdil_list) {
+   for_each_ep(gdil_ep, gdil_list) {
       cqueue_name_split(lGetString(gdil_ep, JG_qname), &cqueue_name, &host_name, &has_hostname, &has_domain);
       ret &= cqueue_list_del_all_orphaned(ctx, master_cqueue_list, alpp, sge_dstring_get_string(&cqueue_name), sge_dstring_get_string(&host_name));
    }

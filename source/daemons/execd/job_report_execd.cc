@@ -87,7 +87,7 @@ void trace_jr()
    DENTER(TOP_LAYER);
 
    DPRINTF(("--- JOB REPORT LIST ----------------\n"));
-   for_each (jr, jr_list) {
+   for_each_ep(jr, jr_list) {
       const char *s;
 
       if ((s=lGetString(jr, JR_pe_task_id_str))) {
@@ -401,8 +401,8 @@ void modify_queue_limits_flag_for_job(const char *qualified_hostname, lListElem 
    const lListElem *jatep;
    const lListElem *gdil_ep;
 
-   for_each(jatep, lGetList(jep, JB_ja_tasks)) {
-      for_each (gdil_ep, lGetList(jatep, JAT_granted_destin_identifier_list)) {
+   for_each_ep(jatep, lGetList(jep, JB_ja_tasks)) {
+      for_each_ep(gdil_ep, lGetList(jatep, JAT_granted_destin_identifier_list)) {
          double lim;
          lListElem *q;
 

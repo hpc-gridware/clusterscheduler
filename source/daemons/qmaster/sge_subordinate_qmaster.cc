@@ -300,7 +300,7 @@ get_slotwise_suspend_superordinate(const char *queue_name, const char *hostname)
 
    DENTER(TOP_LAYER);
 
-   for_each(cqueue, master_cqueue_list) {
+   for_each_ep(cqueue, master_cqueue_list) {
       qinstance = cqueue_locate_qinstance(cqueue, hostname);
 
       if (qinstance != NULL) {
@@ -823,7 +823,7 @@ get_slotwise_sos_sub_tree_qinstances(lListElem *qinstance,
    }
 
    so_list = lGetList(qinstance, QU_subordinate_list);
-   for_each(so, so_list) {
+   for_each_ep(so, so_list) {
       const char *so_name = NULL;
       const char *so_full_name = NULL;
       dstring dstr_so_full_name = DSTRING_INIT;
@@ -880,7 +880,7 @@ count_running_jobs_in_slotwise_sos_tree(sge_sl_list_t *qinstances_in_slotwise_so
       sge_sl_data(qinstances_in_slotwise_sos_tree, (void**)&first_qinstance, SGE_SL_FORWARD);
       host_name = lGetHost(first_qinstance->qinstance, QU_qhostname);
 
-      for_each(job, master_job_list) {
+      for_each_ep(job, master_job_list) {
          const lList     *task_list = NULL;
          lListElem *task = NULL;
 
@@ -1099,7 +1099,7 @@ check_new_slotwise_subordinate_tree(lListElem *qinstance, lList *new_so_list, lL
          get_slotwise_sos_sub_tree_qinstances(root_qinstance,
             &qinstances_in_slotwise_sos_tree, 0);
 
-         for_each(new_so, new_so_list) {
+         for_each_ep(new_so, new_so_list) {
             const char *new_so_name = NULL;
 
             new_so_name = lGetString(new_so, SO_name);
@@ -1272,7 +1272,7 @@ bool do_slotwise_subordinate_lists_differ(const lList* old_so_list, const lList 
    const lListElem *old_so = NULL; /* SO_Type */
    const lListElem *new_so = NULL; /* SO_Type */
 
-   for_each(old_so, old_so_list) {
+   for_each_ep(old_so, old_so_list) {
       new_so = lGetElemStr(new_so_list, SO_name, lGetString(old_so, SO_name));
       /* find all queues that are in the old list but not in the new list */
       if (new_so == NULL) {
@@ -1297,7 +1297,7 @@ bool do_slotwise_subordinate_lists_differ(const lList* old_so_list, const lList 
 
    /* find all queues that are in the new list but weren't in the old list */
    if (ret == false) {
-      for_each(new_so, new_so_list) {
+      for_each_ep(new_so, new_so_list) {
          old_so = lGetElemStr(old_so_list, SO_name, lGetString(new_so, SO_name));
          if (old_so == NULL) {
             ret = true;
@@ -1325,7 +1325,7 @@ cqueue_list_x_on_subordinate_gdil(sge_gdi_ctx_class_t *ctx,
 
    DENTER(TOP_LAYER);
 
-   for_each(gdi, gdil) {
+   for_each_ep(gdi, gdil) {
       const char *full_name = lGetString(gdi, JG_qname);
       const char *hostname = lGetHost(gdi, JG_qhostname);
       lListElem *qinstance = cqueue_list_locate_qinstance(master_cqueue_list, full_name);
@@ -1350,7 +1350,7 @@ cqueue_list_x_on_subordinate_gdil(sge_gdi_ctx_class_t *ctx,
              */
             so_list_resolve(so_list, NULL, &resolved_so_list, NULL, hostname, master_cqueue_list);
 
-            for_each(so, resolved_so_list) {
+            for_each_ep(so, resolved_so_list) {
                const char *so_queue_name = lGetString(so, SO_name);
                
                /* We have to check this because so_list_resolve() didn't. */
@@ -1493,7 +1493,7 @@ cqueue_list_x_on_subordinate_so(sge_gdi_ctx_class_t *ctx,
     * Locate all qinstances which are mentioned in resolved_so_list and 
     * (un)suspend them
     */
-   for_each(so, resolved_so_list) {
+   for_each_ep(so, resolved_so_list) {
       const char *full_name = lGetString(so, SO_name);
       lListElem *qinstance = cqueue_list_locate_qinstance(master_cqueue_list, full_name);
 
@@ -1571,7 +1571,7 @@ qinstance_initialize_sos_attr(sge_gdi_ctx_class_t *ctx, lListElem *this_elem, mo
    qinstance_name = lGetString(this_elem, QU_qname);
    hostname = lGetHost(this_elem, QU_qhostname);
    
-   for_each(cqueue, master_cqueue_list) {
+   for_each_ep(cqueue, master_cqueue_list) {
       const lListElem *qinstance = lGetSubHost(cqueue, QU_qhostname, hostname, CQ_qinstances);
 
       if (qinstance != NULL) {
@@ -1593,7 +1593,7 @@ qinstance_initialize_sos_attr(sge_gdi_ctx_class_t *ctx, lListElem *this_elem, mo
              */
             so_list_resolve(so_list, NULL, &resolved_so_list, qinstance_name, hostname, master_cqueue_list);
 
-            for_each(so, resolved_so_list) {
+            for_each_ep(so, resolved_so_list) {
                const char *so_full_name = lGetString(so, SO_name);
 
                if (!strcmp(full_name, so_full_name)) {

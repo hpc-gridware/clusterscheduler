@@ -172,7 +172,7 @@ static bool task_depend_is_finished(const lListElem *job, u_long32 task_id)
       if (lGetUlong(ja_task, JAT_status) != JFINISHED) {
          DRETURN(false);
       }
-      for_each(task, lGetList(ja_task, JAT_task_list)) {
+      for_each_ep(task, lGetList(ja_task, JAT_task_list)) {
          if (lGetUlong(lFirst(lGetList(task, JB_ja_tasks)), JAT_status)
                !=JFINISHED) {
             DRETURN(false);
@@ -245,7 +245,7 @@ bool sge_task_depend_update(lListElem *jep, lList **alpp, u_long32 task_id)
    }
 
    /* process the resolved predecessor list */
-   for_each(pre, lGetList(jep, JB_ja_ad_predecessor_list)) {
+   for_each_ep(pre, lGetList(jep, JB_ja_ad_predecessor_list)) {
       u_long32 sa, sa_task_id, amin, amax;
       const lListElem *pred_jep = NULL; /* JB_Type */
       lListElem *dep_range = NULL;      /* RN_Type */
@@ -417,7 +417,7 @@ bool sge_task_depend_flush(lListElem *jep, lList **alpp)
       if (lGetList(jep, JB_ja_a_h_ids)) {
          const lListElem *range;
          lList *a_h_ids = lCopyList("", lGetList(jep, JB_ja_a_h_ids));
-         for_each(range, a_h_ids) {
+         for_each_ep(range, a_h_ids) {
             u_long32 rmin, rmax, rstep, hold_state;
             range_get_all_ids(range, &rmin, &rmax, &rstep);
             for ( ; rmin <= rmax; rmin += rstep) {

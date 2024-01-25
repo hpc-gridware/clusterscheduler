@@ -361,7 +361,7 @@ void var_list_dump_to_file(const lList *varl, FILE *file)
       return;
    }
 
-   for_each(elem, varl) {
+   for_each_ep(elem, varl) {
       /*
        * Replace <LF> by \n sequence for multiline environment
        * variable support.
@@ -452,7 +452,7 @@ void var_list_copy_prefix_vars(lList **varl,
    lList *var_list2 = NULL;
 
    DENTER(TOP_LAYER);
-   for_each(var_elem, src_varl) {
+   for_each_ep(var_elem, src_varl) {
       const char *prefix_name = lGetString(var_elem, VA_variable);
 
       if (strncmp(prefix_name, prefix, prefix_len) == 0) {
@@ -510,7 +510,7 @@ void var_list_copy_prefix_vars_undef(lList **varl,
    lList *var_list2 = NULL;
 
    DENTER(TOP_LAYER);
-   for_each(var_elem, src_varl) {
+   for_each_ep(var_elem, src_varl) {
       const char *prefix_name = lGetString(var_elem, VA_variable);
 
       if (!strncmp(prefix_name, prefix, prefix_len)) {
@@ -560,7 +560,7 @@ void var_list_copy_env_vars_and_value(lList **varl,
 {
    const lListElem *env;
 
-   for_each(env, src_varl) {
+   for_each_ep(env, src_varl) {
       const char *s, *name;
 
       name = lGetString(env, VA_variable);
@@ -763,7 +763,7 @@ var_list_verify(const lList *lp, lList **answer_list)
    bool ret = true;
    const lListElem *ep;
 
-   for_each (ep, lp) {
+   for_each_ep(ep, lp) {
       const char *variable = lGetString(ep, VA_variable);
       if (variable == NULL || variable[0] == '\0') {
          answer_list_add_sprintf(answer_list, STATUS_ESYNTAX, ANSWER_QUALITY_ERROR, 

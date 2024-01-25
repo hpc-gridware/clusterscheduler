@@ -445,7 +445,7 @@ static int krb_delete_client(lListElem *client)
 
    /* free the TGTs */
 
-   for_each(tgt_ep, lGetList(client, KRB_tgt_list))
+   for_each_ep(tgt_ep, lGetList(client, KRB_tgt_list))
       if ((creds = (krb5_creds **)str2ptr(lGetString(tgt_ep, KTGT_tgt))))
          krb5_free_tgt_creds(gsd.context, creds);
 

@@ -192,7 +192,7 @@ int main(int argc, char **argv) {
       gdi_cmd |= SGE_GDI_ALL_USERS;
 
    alp = ctx->gdi(ctx, SGE_JB_LIST, gdi_cmd, &request_list, NULL, NULL); 
-   for_each (aep, alp) {
+   for_each_ep(aep, alp) {
       printf("%s\n", lGetString(aep, AN_text));
       if (ret == STATUS_OK) {
          ret = lGetUlong(aep, AN_status);
@@ -449,7 +449,7 @@ static lList *qalter_parse_job_parameter(u_long32 me_who, lList *cmdline, lList 
          lListElem *ep;
          lList *jref_list = NULL;
          while ((ep = lGetElemStrRW(cmdline, SPA_switch_val, "-hold_jid"))) {
-            for_each(sep, lGetList(ep, SPA_argval_lListT)) {
+            for_each_ep(sep, lGetList(ep, SPA_argval_lListT)) {
                DPRINTF(("-hold_jid %s\n", lGetString(sep, ST_name)));
                lAddElemStr(&jref_list, JRE_job_name, lGetString(sep, ST_name), JRE_Type);
             }
@@ -466,7 +466,7 @@ static lList *qalter_parse_job_parameter(u_long32 me_who, lList *cmdline, lList 
          lListElem *ep;
          lList *jref_list = NULL;
          while ((ep = lGetElemStrRW(cmdline, SPA_switch_val, "-hold_jid_ad"))) {
-            for_each(sep, lGetList(ep, SPA_argval_lListT)) {
+            for_each_ep(sep, lGetList(ep, SPA_argval_lListT)) {
                DPRINTF(("-hold_jid_ad %s\n", lGetString(sep, ST_name)));
                lAddElemStr(&jref_list, JRE_job_name, lGetString(sep, ST_name), JRE_Type);
             }
@@ -820,7 +820,7 @@ static lList *qalter_parse_job_parameter(u_long32 me_who, lList *cmdline, lList 
          lSetUlong(task, JAT_hold, lGetUlong(ep, ID_force));
       } else if (lGetList(ep, ID_ja_structure)) {
          const lListElem *range;
-         for_each(range, lGetList(ep, ID_ja_structure)) {
+         for_each_ep(range, lGetList(ep, ID_ja_structure)) {
             u_long32 start = lGetUlong(range, RN_min);
             u_long32 end = lGetUlong(range, RN_max);
             u_long32 step = lGetUlong(range, RN_step);

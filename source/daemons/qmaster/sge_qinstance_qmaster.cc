@@ -910,7 +910,7 @@ bool qinstance_change_state_on_calendar_all(sge_gdi_ctx_class_t *ctx,
 
    DENTER(TOP_LAYER);
 
-   for_each (cqueue, *object_type_get_master_list(SGE_TYPE_CQUEUE)) {
+   for_each_ep(cqueue, *object_type_get_master_list(SGE_TYPE_CQUEUE)) {
       const lList *qinstance_list = lGetList(cqueue, CQ_qinstances);
       lListElem *qinstance = NULL;
 
@@ -1221,7 +1221,7 @@ qinstance_reinit_consumable_actual_list(lListElem *this_elem,
          const lList *ja_task_list = lGetList(ep, JB_ja_tasks);
          const lListElem *ja_task = NULL;
 
-         for_each(ja_task, ja_task_list) {
+         for_each_ep(ja_task, ja_task_list) {
             const lList *gdil = lGetList(ja_task, JAT_granted_destin_identifier_list);
             const lListElem *gdil_ep = lGetElemStr(gdil, JG_qname, name);
 

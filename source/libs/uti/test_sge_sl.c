@@ -587,7 +587,7 @@ test_delete_search(void) {
 }
 
 bool
-test_for_each(void) {
+test_for_each_ep(void) {
    bool ret = true;
    sge_sl_list_t *list = NULL;
    int sum = 0;
@@ -780,7 +780,7 @@ int main(int argc, char *argv[]) {
    ret &= test_delete_forward_backward();
    ret &= test_delete_search();
    ret &= test_dechain_before_after();
-   ret &= test_for_each();
+   ret &= test_for_each_ep();
    ret &= test_mt_support();
 
    DRETURN(ret == true ? 0 : 1);

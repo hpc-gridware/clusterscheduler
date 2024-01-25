@@ -817,7 +817,7 @@ static time_t compute_limit(bool today, bool active, const lList *year_time, con
    if (is_full_day || !today) {
       if (active) { /* a calendar is active */
          if (year_time != NULL) {
-            for_each(time, year_time) {
+            for_each_ep(time, year_time) {
                if (in_range(now, time, tm_yday_cmp)) {
                   lep = lCopyElem(lFirst(lGetList(time, TMR_end))); 
                   if (lep == NULL) {
@@ -830,7 +830,7 @@ static time_t compute_limit(bool today, bool active, const lList *year_time, con
          else if (week_time != NULL) {
             bool is_allways_inactive = true;
             
-            for_each(time, week_time) {
+            for_each_ep(time, week_time) {
                const lList *endList = lGetList(time, TMR_end);
                const lList *beginList = lGetList(time, TMR_begin);
                if (is_full_day && (endList != NULL) && (beginList != NULL) 
@@ -875,7 +875,7 @@ static time_t compute_limit(bool today, bool active, const lList *year_time, con
          const lListElem *begin = NULL;
 
          if (year_time != NULL) {   /* year calenar */
-            for_each(time, year_time) {
+            for_each_ep(time, year_time) {
                begin = lFirst(lGetList(time, TMR_begin));
                if (tm_yday_cmp(now, begin) < 0 && 
                   (!lep || tm_yday_cmp(lep, begin) > 0)) {  
@@ -889,7 +889,7 @@ static time_t compute_limit(bool today, bool active, const lList *year_time, con
          }
          else if (week_time != NULL) { /* week calendar */
             bool is_next_week = false;
-            for_each(time, week_time) {
+            for_each_ep(time, week_time) {
                begin = lFirst(lGetList(time, TMR_begin));
                if (tm_wday_cmp(now, begin) < 0 && 
                   (!lep || tm_wday_cmp(lep, begin) > 0)) {     
@@ -899,7 +899,7 @@ static time_t compute_limit(bool today, bool active, const lList *year_time, con
             }   
             if (lep == NULL) {
                is_next_week = true;
-               for_each(time, week_time) {
+               for_each_ep(time, week_time) {
                   begin = lFirst(lGetList(time, TMR_begin));
                   if (!lep || tm_wday_cmp(lep, begin) > 0) {     
                      lFreeElem(&lep);
@@ -949,7 +949,7 @@ static time_t compute_limit(bool today, bool active, const lList *year_time, con
       if (active) {
          /* inside of range - seek nearest end of range */
          /* seek end of active daytime range */ 
-         for_each (time, day_time) {
+         for_each_ep(time, day_time) {
             if (in_range(new_now, time, tm_daytime_cmp)) {
                lep = lCopyElem(lFirst(lGetList(time, TMR_end))); 
                break;
@@ -958,7 +958,7 @@ static time_t compute_limit(bool today, bool active, const lList *year_time, con
       } else {
          const lListElem *begin;
          /* outside of range - seek nearest begin of range */
-         for_each (time, day_time) {
+         for_each_ep(time, day_time) {
             begin = lFirst(lGetList(time, TMR_begin));
             if (year_time != NULL) {
                if (tm_daytime_cmp(new_now, begin) < 0 && 
@@ -1141,7 +1141,7 @@ static bool in_range_list(const lListElem *tm, const lList *rl, cmp_func_t cmp_f
       DRETURN(true);
    }
 
-   for_each(r, rl) {
+   for_each_ep(r, rl) {
       if (in_range(tm, r, cmp_func)) {
          DRETURN(true);
       }
@@ -2526,8 +2526,8 @@ calendar_is_referenced(const lListElem *calendar, lList **answer_list,
     */
    const char *calendar_name = lGetString(calendar, CAL_name);     
    if (calendar_name != NULL) {
-      for_each (cqueue, master_cqueue_list) {
-         for_each (cal, lGetList(cqueue, CQ_calendar)) {
+      for_each_ep(cqueue, master_cqueue_list) {
+         for_each_ep(cal, lGetList(cqueue, CQ_calendar)) {
             const char *qcal_name = lGetString(cal, ASTR_value);
             if (qcal_name && !strcmp(qcal_name, calendar_name)) {
                answer_list_add_sprintf(answer_list, STATUS_EUNKNOWN,

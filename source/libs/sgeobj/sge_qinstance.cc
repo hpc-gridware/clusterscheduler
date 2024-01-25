@@ -310,7 +310,7 @@ qinstance_is_pe_referenced(const lListElem *this_elem, const lListElem *pe)
    const lListElem *re_ref_elem;
 
    DENTER(TOP_LAYER);
-   for_each(re_ref_elem, lGetList(this_elem, QU_pe_list)) {
+   for_each_ep(re_ref_elem, lGetList(this_elem, QU_pe_list)) {
       if (pe_is_matching(pe, lGetString(re_ref_elem, ST_name))) {
          ret = true;
          break;
@@ -558,7 +558,7 @@ qinstance_list_find_matching(const lList *this_list, lList **answer_list,
          hostname_pattern = host;
       }
 
-      for_each(qinstance, this_list) {
+      for_each_ep(qinstance, this_list) {
          const char *hostname = lGetHost(qinstance, QU_qhostname);
          /* use qinstance expression */
          if (!sge_eval_expression(TYPE_HOST, hostname_pattern, hostname, answer_list)) { 
@@ -640,7 +640,7 @@ qinstance_slots_reserved(const lListElem *this_elem)
 
    slots = lGetSubStr(this_elem, RUE_name, SGE_ATTR_SLOTS, QU_resource_utilization);
    if (slots != NULL) {
-      for_each(utilized, lGetList(slots, RUE_utilized)) {
+      for_each_ep(utilized, lGetList(slots, RUE_utilized)) {
          ret = MAX(ret, lGetDouble(utilized, RDE_amount));
       }
    }
@@ -1026,7 +1026,7 @@ rc_debit_consumable(lListElem *jep, lListElem *ep, const lList *centry_list,
       *just_check = true;
    }
 
-   for_each (cr_config, lGetList(ep, config_nm)) {
+   for_each_ep(cr_config, lGetList(ep, config_nm)) {
       int debit_slots = slots;
       u_long32 consumable;
       name = lGetString(cr_config, CE_name);
@@ -1183,7 +1183,7 @@ qinstance_list_verify_execd_job(const lList *queue_list, lList **answer_list)
    } else {
       const lListElem *qep;
 
-      for_each (qep, queue_list) {
+      for_each_ep(qep, queue_list) {
          if (!qinstance_verify(qep, answer_list)) {
             DRETURN(false);
          }

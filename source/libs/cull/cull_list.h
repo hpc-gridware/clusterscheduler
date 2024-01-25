@@ -359,7 +359,7 @@ bool lListElem_is_changed(const lListElem *ep);
 bool lList_clear_changed_info(lList *lp);
 bool lListElem_clear_changed_info(lListElem *lp);
 
-#define for_each(ep,lp) for (ep=lFirst(lp);ep;ep=lNext(ep))
+#define for_each_ep(ep,lp) for (ep=lFirst(lp);ep;ep=lNext(ep))
 #define for_each_rev(ep,lp) for (ep=lLast(lp);ep;ep=lPrev(ep))
 #define for_each_rw(ep,lp) for (ep=lFirstRW(lp);ep;ep=lNextRW(ep))
 #define for_each_rev_rw(ep,lp) for (ep=lLastRW(lp);ep;ep=lPrevRW(ep))

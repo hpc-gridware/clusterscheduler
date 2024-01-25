@@ -151,8 +151,8 @@ bool test_scenario2(void) {
    lAppendElem(ep2_lp, ep22);
    lAppendElem(ep2_lp, ep23);
 
-   for_each(ep0, master_list0) {
-      for_each(ep1, lGetList(ep0, TEST_list)) {
+   for_each_ep(ep0, master_list0) {
+      for_each_ep(ep1, lGetList(ep0, TEST_list)) {
          lSetUlong(ep1, TEST_ulong, 0);
       }
       lSetUlong(ep0, TEST_ulong, 0);
@@ -168,10 +168,10 @@ bool test_scenario2(void) {
    if (ret) {
       lObserveStart();
       lListElem *ep, *ep1;
-      for_each(ep, master_list0) {
+      for_each_ep(ep, master_list0) {
          lList *lp = lGetListRW(ep, TEST_list);
 
-         for_each(ep1, lp) {
+         for_each_ep(ep1, lp) {
             u_long32 val = lGetUlong(ep1, TEST_ulong);
 
             lSetUlong(ep1, TEST_ulong, val + 1);
@@ -218,10 +218,10 @@ bool test_scenario3(void) {
    if (ret) {
       lObserveStart();
       lListElem *ep, *ep1;
-      for_each(ep, master_list0) {
+      for_each_ep(ep, master_list0) {
          lList *lp = lGetListRW(ep, TEST_list);
 
-         for_each(ep1, lp) {
+         for_each_ep(ep1, lp) {
             u_long32 val = lGetUlong(ep1, TEST_ulong);
 
             lSetUlong(ep1, TEST_ulong, val + 1);

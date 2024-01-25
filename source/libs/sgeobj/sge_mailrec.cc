@@ -176,7 +176,7 @@ int mailrec_unparse(const lList *head, char *mail_str, unsigned int mail_str_len
 
    *mail_str = '\0';
 
-   for_each(elem,head) {
+   for_each_ep(elem,head) {
       if (!(u = lGetString(elem, MR_user)))
          u = MSG_SMALLNULL;
 

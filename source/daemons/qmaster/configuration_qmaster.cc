@@ -420,7 +420,7 @@ static int check_config(lList **alpp, lListElem *conf)
  
    conf_name = lGetHost(conf, CONF_name);
  
-   for_each(ep, lGetList(conf, CONF_entries)) {
+   for_each_ep(ep, lGetList(conf, CONF_entries)) {
       name = lGetString(ep, CF_name);
       value = lGetString(ep, CF_value);
  
@@ -645,7 +645,7 @@ int sge_compare_configuration(const lListElem *aHost, const lList *aConf)
       DRETURN(1);
    }
    
-   for_each(conf_entry, aConf) {
+   for_each_ep(conf_entry, aConf) {
       const char *host_name = NULL;
       u_long32 conf_version;
       u_long32 master_version;

@@ -203,7 +203,7 @@ static long get_next_addgrpid(lList *rlp, long last_addgrpid)
    } 
 
    /* search range and return next id */
-   for_each (rep, rlp) {
+   for_each_ep(rep, rlp) {
       long min, max;
 
       min = lGetUlong(rep, RN_min);
@@ -230,14 +230,14 @@ static int addgrpid_already_in_use(long add_grp_id)
    const lListElem *ja_task = NULL;
    const lListElem *pe_task = NULL;
    
-   for_each (job, *object_type_get_master_list(SGE_TYPE_JOB)) {
-      for_each (ja_task, lGetList(job, JB_ja_tasks)) {
+   for_each_ep(job, *object_type_get_master_list(SGE_TYPE_JOB)) {
+      for_each_ep(ja_task, lGetList(job, JB_ja_tasks)) {
          const char *id = lGetString(ja_task, JAT_osjobid);
          if (id != NULL && atol(id) == add_grp_id) {
             return 1;
          }
 
-         for_each (pe_task, lGetList(ja_task, JAT_task_list)) {
+         for_each_ep(pe_task, lGetList(ja_task, JAT_task_list)) {
             id = lGetString(pe_task, PET_osjobid);
             if (id != NULL && atol(id) == add_grp_id) {
                return 1;
@@ -429,7 +429,7 @@ int sge_exec_job(sge_gdi_ctx_class_t *ctx, lListElem *jep, lListElem *jatep,
 
       nhosts = get_nhosts(gdil);
       pe_slots = 0;
-      for_each (gdil_ep, gdil) {
+      for_each_ep(gdil_ep, gdil) {
          pe_slots += (int)lGetUlong(gdil_ep, JG_slots);
       }
       
@@ -536,7 +536,7 @@ int sge_exec_job(sge_gdi_ctx_class_t *ctx, lListElem *jep, lListElem *jatep,
             They need to get passed to shepherd
          */
          host_slots = 0;
-         for_each (gdil_ep, gdil) {
+         for_each_ep(gdil_ep, gdil) {
             int slots;
             lList *alp = NULL;
             /* this is the processor set id in case when when using 
@@ -1442,7 +1442,7 @@ int sge_exec_job(sge_gdi_ctx_class_t *ctx, lListElem *jep, lListElem *jatep,
 
       fprintf(fp, "njob_args="sge_uu32"\n", lGetNumberOfElem(args));
 
-      for_each(se, args) {
+      for_each_ep(se, args) {
          const char *arg = lGetString(se, ST_name);
          if(arg != NULL) {
             fprintf(fp, "job_arg%d=%s\n", nargs++, arg);
@@ -1980,7 +1980,7 @@ get_nhosts(const lList *gdil_orig) {
    const char *hostname;
 
    DENTER(TOP_LAYER);
-   for_each(ep, gdil_orig) {
+   for_each_ep(ep, gdil_orig) {
       hostname = lGetHost(ep, JG_qhostname);
       if (lGetElemStr(cache, STU_name, hostname) == NULL) {
          nhosts++;

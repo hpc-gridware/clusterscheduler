@@ -129,7 +129,7 @@ hgroup_mod_hostlist(lListElem *hgroup, lList **answer_list,
                if (*occupant_groups != NULL && add_groups != NULL) {
                   const lListElem *add_group = NULL;
 
-                  for_each(add_group, add_groups) {
+                  for_each_ep(add_group, add_groups) {
                      const char *name = lGetHost(add_group, HR_name);
 
                      if (href_list_has_member(*occupant_groups, name)) {
@@ -247,7 +247,7 @@ hgroup_mod(sge_gdi_ctx_class_t *ctx,
             lSetHost(hgroup, HGRP_name, name); 
          } else {
             const lListElem *aep;
-            for_each(aep, *answer_list) {
+            for_each_ep(aep, *answer_list) {
                ERROR((SGE_EVENT, SFNMAX, lGetString(aep, AN_text)));
             }
             ret = false;
@@ -292,7 +292,7 @@ hgroup_mod(sge_gdi_ctx_class_t *ctx,
          if (ret) {
             const lListElem *cqueue;
 
-            for_each (cqueue, master_cqueue_list) {
+            for_each_ep(cqueue, master_cqueue_list) {
                if (cqueue_is_a_href_referenced(cqueue, occupant_groups, true)) {
                   lListElem *new_cqueue = NULL;
                   lList *real_add_hosts = NULL;
@@ -581,12 +581,12 @@ hgroup_spool(sge_gdi_ctx_class_t *ctx, lList **answer_list, lListElem *this_elem
    }
   
    if (tmp_ret) {
-      for_each (cqueue, cqueue_list) {
+      for_each_ep(cqueue, cqueue_list) {
          const lList *qinstance_list = lGetList(cqueue, CQ_qinstances);
          const lListElem *qinstance = NULL;
          const char *cqname = lGetString(cqueue, CQ_name);
 
-         for_each(qinstance, qinstance_list) {
+         for_each_ep(qinstance, qinstance_list) {
             u_long32 tag = lGetUlong(qinstance, QU_tag);
 
             if (tag == SGE_QI_TAG_ADD || tag == SGE_QI_TAG_MOD) {

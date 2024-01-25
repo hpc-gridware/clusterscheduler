@@ -558,7 +558,7 @@ int lGetElemIndex(const lListElem *ep, const lList *lp)
       DRETURN(-1);
    }
 
-   for_each(ep2, lp) {
+   for_each_ep(ep2, lp) {
       i++;
       if (ep2 == ep)
          break;
@@ -868,7 +868,7 @@ static void lWriteList_(const lList *lp, dstring *buffer, int nesting_level)
    sge_dstring_sprintf_append(buffer, "\n%sList: <%s> %c #Elements: %d\n",    
                               indent, (lGetListName(lp) != NULL) ? lGetListName(lp) : "NULL", 
                               lp->changed ? '*' : ' ', lGetNumberOfElem(lp));
-   for_each(ep, lp) {
+   for_each_ep(ep, lp) {
       lWriteElem_(ep, buffer, nesting_level);
    }
    DRETURN_VOID;
@@ -1921,7 +1921,7 @@ lDechainList(lList *source, lList **target, lListElem *ep)
 
 #ifdef OBSERVE
    lListElem *elem;
-   for_each(elem, *target) {
+   for_each_ep(elem, *target) {
       lObserveChangeOwner(elem, *target, source, NoName);
    }
 #endif

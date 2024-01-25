@@ -422,7 +422,7 @@ int sge_gdi_del_job(sge_gdi_ctx_class_t *ctx, lListElem *idep, lList **alpp, cha
    /* Did we get a user list? */
    if (user_list && lGetNumberOfElem(user_list) > 0) {
        const lListElem *user = NULL;
-       for_each(user, user_list) {
+       for_each_ep(user, user_list) {
           if (strcmp(lGetString(user, ST_name), "*") == 0) {
              all_users_flag = true;
           }
@@ -543,7 +543,7 @@ is_pe_master_task_send(lListElem *jatep)
    bool all_slaves_arrived = true;
    const lListElem *gdil_ep = NULL;
    
-   for_each (gdil_ep, lGetList(jatep, JAT_granted_destin_identifier_list)) {
+   for_each_ep(gdil_ep, lGetList(jatep, JAT_granted_destin_identifier_list)) {
       if (lGetUlong(gdil_ep, JG_tag_slave_job) != 0) {
          all_slaves_arrived = false;
          break;
@@ -591,7 +591,7 @@ bool all_slave_jobs_finished(lListElem *jatep)
     * Only the first gdil_ep of a host is tagged.
     */
    gdil = lGetList(jatep, JAT_granted_destin_identifier_list);
-   for_each (gdil_ep, gdil) {
+   for_each_ep(gdil_ep, gdil) {
       const char *host = lGetHost(gdil_ep, JG_qhostname);
       const lListElem *first_at_host = lGetElemHost(gdil, JG_qhostname, host);
       if (gdil_ep == first_at_host && gdil_ep != lFirst(gdil)) {
@@ -669,7 +669,7 @@ ack_all_slaves(sge_gdi_ctx_class_t *ctx, u_long32 job_id, u_long32 ja_task_id,
    const lList *gdil = lGetList(ja_task, JAT_granted_destin_identifier_list);
    const lListElem *gdil_ep;
 
-   for_each (gdil_ep, gdil) {
+   for_each_ep(gdil_ep, gdil) {
       const char *host = lGetHost(gdil_ep, JG_qhostname);
       /* we only signal a slave host once
        * if the pe job spawns multiple queues there might be multiple entries per host
@@ -722,7 +722,7 @@ u_long32 step
          bool first = true;
          int umax = 20;
 
-         for_each(user, user_list) {
+         for_each_ep(user, user_list) {
             if (!first) {
                sge_dstring_append(&user_list_string, ",");
             } else {
@@ -819,7 +819,7 @@ static void job_list_filter( lList *user_list, const char* jobid,
       const lListElem *user;
 
       DPRINTF(("Add all users given in userlist to filter\n"));
-      for_each(user, user_list) {
+      for_each_ep(user, user_list) {
 
          new_where = lWhere("%T(%I p= %s)", JB_Type, JB_owner, 
                lGetString(user, ST_name));
@@ -1257,7 +1257,7 @@ int sub_command
       if (job_get_not_enrolled_ja_tasks(jobep) == 0) {
          const lListElem *ja_task;
          bool all_finished = true;
-         for_each (ja_task, lGetList(jobep, JB_ja_tasks)) {
+         for_each_ep(ja_task, lGetList(jobep, JB_ja_tasks)) {
             if (lGetUlong(ja_task, JAT_status) != JFINISHED) {
                all_finished = false;
                break;
@@ -1480,12 +1480,12 @@ static void job_suc_pre_doit(lListElem *jep, bool array_deps)
             Exited = false;
          }
          if (Exited) {
-            for_each(ja_task, lGetList(parent_jep, JB_ja_tasks)) {
+            for_each_ep(ja_task, lGetList(parent_jep, JB_ja_tasks)) {
                if (lGetUlong(ja_task, JAT_status) != JFINISHED) {
                   Exited = false;
                   break;
                }
-               for_each(task, lGetList(ja_task, JAT_task_list)) {
+               for_each_ep(task, lGetList(ja_task, JAT_task_list)) {
                   /* skip the pseudo pe task used for summing up the usage
                    * of already finished tasks
                    */
@@ -1773,7 +1773,7 @@ static bool is_changes_consumables(lList **alpp, const lList* new_lp, const lLis
 
    /* ensure all old resource requests implying consumables 
       debitation are still contained in new resource request list */
-   for_each(old_entry, old_lp) { 
+   for_each_ep(old_entry, old_lp) {
 
       /* ignore non-consumables */
       if (!lGetUlong(old_entry, CE_consumable)) {
@@ -1792,7 +1792,7 @@ static bool is_changes_consumables(lList **alpp, const lList* new_lp, const lLis
    /* ensure all new resource requests implying consumable 
       debitation were also contained in old resource request list
       AND have not changed the requested amount */ 
-   for_each(new_entry, new_lp) { 
+   for_each_ep(new_entry, new_lp) {
 
       /* ignore non-consumables */
       if (!lGetUlong(new_entry, CE_consumable)) {
@@ -1851,7 +1851,7 @@ int deny_soft_consumables(lList **alpp, const lList *srl, const lList *master_ce
    DENTER(TOP_LAYER);
 
    /* ensure no consumables are requested in JB_soft_resource_list */
-   for_each(entry, srl) {
+   for_each_ep(entry, srl) {
       name = lGetString(entry, CE_name);
 
       if (!(dcep = centry_list_locate(master_centry_list, name))) {
@@ -1898,7 +1898,7 @@ int *trigger
    /* is job running ? */
    {
       const lListElem *ja_task;
-      for_each(ja_task, lGetList(new_job, JB_ja_tasks)) {
+      for_each_ep(ja_task, lGetList(new_job, JB_ja_tasks)) {
          if (lGetUlong(ja_task, JAT_status) & JTRANSFERING ||
              lGetUlong(ja_task, JAT_status) & JRUNNING) {
             is_running = 1;
@@ -1962,7 +1962,7 @@ int *trigger
                const lListElem *range = NULL;
                u_long32 id;
  
-               for_each(range, range_list) {
+               for_each_ep(range, range_list) {
                   for(id = lGetUlong(range, RN_min); 
                       id <= lGetUlong(range, RN_max); 
                       id += lGetUlong(range, RN_step)) {
@@ -2806,7 +2806,7 @@ static bool contains_dependency_cycles(const lListElem * new_job, u_long32 job_n
 
    DENTER(TOP_LAYER);
    
-   for_each(pre_elem, predecessor_list) {
+   for_each_ep(pre_elem, predecessor_list) {
       pre_nr = lGetUlong(pre_elem, JRE_job_number);
       if (pre_nr == job_number) {
          u_long32 temp = lGetUlong(new_job, JB_job_number);
@@ -2822,7 +2822,7 @@ static bool contains_dependency_cycles(const lListElem * new_job, u_long32 job_n
          break;
    }
 
-   for_each(pre_elem, predecessor_list_ad) {
+   for_each_ep(pre_elem, predecessor_list_ad) {
       pre_nr = lGetUlong(pre_elem, JRE_job_number);
       if (pre_nr == job_number) {
          u_long32 temp = lGetUlong(new_job, JB_job_number);
@@ -2883,7 +2883,7 @@ int job_verify_predecessors(lListElem *job, lList **alpp)
       DRETURN(STATUS_EUNKNOWN);
    }
 
-   for_each(pre, predecessors_req) {
+   for_each_ep(pre, predecessors_req) {
       const char *pre_ident = lGetString(pre, JRE_job_name);
 
       if (isdigit(pre_ident[0])) {
@@ -2999,7 +2999,7 @@ int job_verify_predecessors_ad(lListElem *job, lList **alpp)
       }
    }
 
-   for_each(pre, predecessors_req) {
+   for_each_ep(pre, predecessors_req) {
       const char *pre_ident = lGetString(pre, JRE_job_name);
       if (isdigit(pre_ident[0])) {
          if (strchr(pre_ident, '.')) {
@@ -3060,7 +3060,7 @@ int job_verify_predecessors_ad(lListElem *job, lList **alpp)
    }
 
    /* verify the predecessor list before we try to calculate dependency info */
-   for_each(pre, predecessors_id) {
+   for_each_ep(pre, predecessors_id) {
       /* locate the job id in the master list, if not found we can't do much here */
       const lListElem *pred_job = lGetElemUlong(master_job_list, JB_job_number, lGetUlong(pre, JRE_job_number));
       if (!pred_job) continue;
@@ -3214,7 +3214,7 @@ static u_long32 guess_highest_job_number()
    if (jep) { 
       pos = lGetPosViaElem(jep, JB_job_number, SGE_NO_ABORT); 
       
-      for_each(jep, master_job_list) {
+      for_each_ep(jep, master_job_list) {
          maxid = MAX(maxid, lGetPosUlong(jep, pos));
       }   
    }
@@ -3323,7 +3323,7 @@ int verify_suitable_queues(lList **alpp, lListElem *jep, int *trigger, bool is_m
             sconf_set_qs_state(QS_STATE_EMPTY);
          }
 
-         for_each(cqueue, master_cqueue_list) {
+         for_each_ep(cqueue, master_cqueue_list) {
             const char *cqname = lGetString(cqueue, CQ_name);
             const lList *qinstance_list = lGetList(cqueue, CQ_qinstances);
             const lListElem *qinstance;
@@ -3333,7 +3333,7 @@ int verify_suitable_queues(lList **alpp, lListElem *jep, int *trigger, bool is_m
                continue;
             }
 
-            for_each(qinstance, qinstance_list) {
+            for_each_ep(qinstance, qinstance_list) {
                /*
                 * When we are in POKE_VERIFY mode (qalter -w p) we may work on
                 * a reduced set of queues (the actual status of the cluster).
@@ -3379,7 +3379,7 @@ int verify_suitable_queues(lList **alpp, lListElem *jep, int *trigger, bool is_m
                   bool found = false;
                   const lListElem *pe_ref;
 
-                  for_each(pe_ref, lGetList(qinstance, QU_pe_list)) {
+                  for_each_ep(pe_ref, lGetList(qinstance, QU_pe_list)) {
                      if (pe_name_is_matching(lGetString(pe_ref, ST_name), pe_name)) {
                         found = true;
                         break;

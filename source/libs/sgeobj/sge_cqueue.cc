@@ -508,7 +508,7 @@ cqueue_is_a_href_referenced(const lListElem *this_elem,
    if (this_elem != NULL && href_list != NULL) { 
       const lListElem *href;
 
-      for_each(href, href_list) {
+      for_each_ep(href, href_list) {
          if (cqueue_is_href_referenced(this_elem, href, only_hostlist)) {
             ret = true;
             break;
@@ -1156,7 +1156,7 @@ cqueue_list_find_all_matching_references(const lList *this_list,
    if (this_list != NULL && cqueue_pattern != NULL && qref_list != NULL) {
       const lListElem *cqueue;
 
-      for_each(cqueue, this_list) {
+      for_each_ep(cqueue, this_list) {
          const char *cqueue_name = lGetString(cqueue, CQ_name);
          /* use cqueue expression */         
          if (!sge_eval_expression(TYPE_STR, cqueue_pattern, cqueue_name, NULL)) {
@@ -1301,7 +1301,7 @@ cqueue_is_used_in_subordinate(const char *cqueue_name, const lListElem *cqueue)
       const lListElem *sub_el;
       const lListElem *so;
 
-      for_each(sub_el, sub_list) {
+      for_each_ep(sub_el, sub_list) {
          so = lGetSubStr(sub_el, SO_name, cqueue_name, ASOLIST_value);
 
          if (so != NULL) { /* we found a reference */
@@ -1353,7 +1353,7 @@ cqueue_list_find_hgroup_references(const lList *this_list, lList **answer_list,
 
    DENTER(CQUEUE_LAYER);
    if (this_list != NULL && hgroup != NULL && string_list != NULL) {
-      for_each(cqueue, this_list) {
+      for_each_ep(cqueue, this_list) {
          if (cqueue_is_hgroup_referenced(cqueue, hgroup)) {
             const char *name = lGetString(cqueue, CQ_name);
 
@@ -1543,7 +1543,7 @@ cqueue_find_used_href(lListElem *this_elem, lList **answer_list,
             lList *list = lGetPosList(this_elem, pos);
             const lListElem *elem = NULL;
 
-            for_each(elem, list) {
+            for_each_ep(elem, list) {
                const char *attr_hostname = lGetHost(elem, 
                                  cqueue_attribute_array[index].href_attr);
 
@@ -1662,7 +1662,7 @@ cqueue_purge_host(lListElem *this_elem, lList **answer_list,
    DENTER(CQUEUE_LAYER);
 
    if (this_elem != NULL) {
-      for_each (ep, attr_list) {
+      for_each_ep(ep, attr_list) {
          attr_name = lGetString(ep, US_name);
          DPRINTF((SFQ"\n", attr_name));
       

@@ -273,7 +273,7 @@ sge_c_gdi(sge_gdi_ctx_class_t *ctx, sge_gdi_packet_class_t *packet,
       sge_dstring_sprintf(&target_dstr, "%s", target_name);
 
       lListElem *order;
-      for_each (order, task->data_list) {
+      for_each_ep(order, task->data_list) {
          switch (lGetUlong(order, OR_type)) {
             case ORT_start_job:
                sge_dstring_sprintf_append(&target_dstr, " %s", "ORT_start_job");

@@ -358,7 +358,7 @@ int field
    if((ep = lGetElemStrRW(*ppcmdline, SPA_switch_val, opt))) {
       while(ep) {
          /* collect all opts of same type, this is what 'multi' means in funcname!  */
-         for_each(sep, lGetList(ep, SPA_argval_lListT)) {
+         for_each_ep(sep, lGetList(ep, SPA_argval_lListT)) {
             sge_parse_string_list(ppdestlist, lGetString(sep, ST_name), field, type);
          }
          lRemoveElem(*ppcmdline, &ep);
@@ -502,7 +502,7 @@ parse_group_options(lList *string_list, lList **answer_list)
 
    DENTER(TOP_LAYER);
 
-   for_each(str_elem, string_list) {
+   for_each_ep(str_elem, string_list) {
       const char *letter_string = lGetString(str_elem, ST_name);
       size_t i, len;
       len = strlen(letter_string);

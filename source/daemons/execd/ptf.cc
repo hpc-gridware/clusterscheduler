@@ -405,7 +405,7 @@ static void ptf_set_job_priority(lListElem *job)
 
    DENTER(TOP_LAYER);
 
-   for_each(osjob, lGetList(job, JL_OS_job_list)) {
+   for_each_ep(osjob, lGetList(job, JL_OS_job_list)) {
       ptf_set_native_job_priority(job, osjob, pri);
    }
    DRETURN_VOID;
@@ -469,7 +469,7 @@ static void ptf_setpriority_addgrpid(const lListElem *job, const lListElem *osjo
    /*
     * set the priority for each active process
     */
-   for_each(pid, lGetList(osjob, JO_pid_list)) {
+   for_each_ep(pid, lGetList(osjob, JO_pid_list)) {
       if (setpriority(PRIO_PROCESS, lGetUlong(pid, JP_pid), pri) < 0 &&
           errno != ESRCH) {
          ERROR((SGE_EVENT, MSG_PRIO_JOBXPIDYSETPRIORITYFAILURE_UUS,
@@ -871,7 +871,7 @@ static void ptf_get_usage_from_data_collector(void)
    DENTER(TOP_LAYER);
 
    j = 0;
-   for_each(job, ptf_jobs) {
+   for_each_ep(job, ptf_jobs) {
 
       lListElem *osjob = lFirst(lGetList(job, JL_OS_job_list));
 
@@ -883,7 +883,7 @@ static void ptf_get_usage_from_data_collector(void)
 
       /* add to usage */
 
-      for_each(usage, usage_list) {
+      for_each_ep(usage, usage_list) {
          double value;
 
          value = lGetDouble(usage, UA_value);
@@ -1631,13 +1631,13 @@ void ptf_show_registered_jobs(void)
    DENTER(TOP_LAYER);
 
    job_list = ptf_jobs;
-   for_each(job_elem, job_list) {
+   for_each_ep(job_elem, job_list) {
       const lList *os_job_list;
       const lListElem *os_job;
 
       DPRINTF(("\tjob id: " sge_u32 "\n", lGetUlong(job_elem, JL_job_ID)));
       os_job_list = lGetList(job_elem, JL_OS_job_list);
-      for_each(os_job, os_job_list) {
+      for_each_ep(os_job, os_job_list) {
          const lList *process_list;
          const lListElem *process;
          const char *pe_task_id_str;
@@ -1651,7 +1651,7 @@ void ptf_show_registered_jobs(void)
                   lGetUlong(os_job, JO_OS_job_ID), ja_task_id,
                   pe_task_id_str));
          process_list = lGetList(os_job, JO_pid_list);
-         for_each(process, process_list) {
+         for_each_ep(process, process_list) {
             u_long32 pid;
 
             pid = lGetUlong(process, JP_pid);
@@ -1707,7 +1707,7 @@ void ptf_unregister_registered_jobs(void)
 
    DENTER(TOP_LAYER);
 
-   for_each(job, ptf_jobs) {
+   for_each_ep(job, ptf_jobs) {
       lListElem *os_job;
       for_each_rw(os_job, lGetList(job, JL_OS_job_list)) {
          psIgnoreJob(ptf_get_osjobid(os_job));
@@ -1832,7 +1832,7 @@ int main(int argc, char **argv)
 
    /* Start jobs and tell PTF jobs have started */
 
-   for_each(jte, job_ticket_list) {
+   for_each_ep(jte, job_ticket_list) {
       pid_t pid;
 
       pid = fork();
@@ -1875,7 +1875,7 @@ int main(int argc, char **argv)
 
       ptf_adjust_job_priorities();
 
-      for_each(job, ptf_jobs) {
+      for_each_ep(job, ptf_jobs) {
          sum_of_tickets += lGetUlong(job, JL_tickets);
          sum_of_usage += lGetDouble(job, JL_usage);
          sum_of_last_usage += lGetDouble(job, JL_last_usage);
@@ -1887,7 +1887,7 @@ int main(int argc, char **argv)
            "                      last     next     prev");
       puts("job_id              os_job_id tickets    usage    usage    usage"
            "  target%  actual%  actual%  target%    diff% curr_pri   pri");
-      for_each(job, ptf_jobs) {
+      for_each_ep(job, ptf_jobs) {
          printf("%6d   " XFMT " %7d %8.3lf %8.3lf %8.3lf %8.3lf"
                 " %8.3lf %8.3lf %8.3lf %8.3lf %8.3lf %5d\n",
                 lGetUlong(job, JL_job_ID), ptf_get_osjobid(job),
@@ -1929,7 +1929,7 @@ int main(int argc, char **argv)
       sleep(10);
    }
 
-   for_each(job, ptf_jobs) {
+   for_each_ep(job, ptf_jobs) {
       ptf_kill(ptf_get_jobid(job), SIGTERM);
    }
 

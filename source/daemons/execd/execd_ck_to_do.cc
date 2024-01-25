@@ -183,10 +183,10 @@ static void force_job_rlimit(const char* qualified_hostname)
 
    DENTER(TOP_LAYER);
 
-   for_each (jep, *object_type_get_master_list(SGE_TYPE_JOB)) {
+   for_each_ep(jep, *object_type_get_master_list(SGE_TYPE_JOB)) {
       const lListElem *jatep;
 
-      for_each (jatep, lGetList(jep, JB_ja_tasks)) {
+      for_each_ep(jatep, lGetList(jep, JB_ja_tasks)) {
          const lListElem *q=NULL, *cpu_ep, *vmem_ep, *gdil_ep;
          double cpu_val, vmem_val;
          double s_cpu, h_cpu;
@@ -222,7 +222,7 @@ static void force_job_rlimit(const char* qualified_hostname)
          lFreeList(&usage_list);
          cpu_ep = vmem_ep = NULL;
 
-         for_each (gdil_ep, lGetList(jatep, JAT_granted_destin_identifier_list)) {
+         for_each_ep(gdil_ep, lGetList(jatep, JAT_granted_destin_identifier_list)) {
             int nslots=0;
             double lim;
             char err_str[128];
@@ -623,7 +623,7 @@ sge_kill_petasks(const lListElem *job, const lListElem *ja_task)
    if (job != NULL && ja_task != NULL) {
       const lListElem *pe_task;
 
-      for_each(pe_task, lGetList(ja_task, JAT_task_list)) {
+      for_each_ep(pe_task, lGetList(ja_task, JAT_task_list)) {
          if (sge_kill(lGetUlong(pe_task, PET_pid), SGE_SIGKILL,
                       lGetUlong(job, JB_job_number),
                       lGetUlong(ja_task, JAT_task_number),

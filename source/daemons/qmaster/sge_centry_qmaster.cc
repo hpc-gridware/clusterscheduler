@@ -449,7 +449,7 @@ sge_change_queue_version_centry(sge_gdi_ctx_class_t *ctx)
 
    DENTER(TOP_LAYER);
 
-   for_each(cqueue, master_cqueue_list) {
+   for_each_ep(cqueue, master_cqueue_list) {
       const lList *qinstance_list = lGetList(cqueue, CQ_qinstances);
       lListElem *qinstance = NULL;
 
@@ -510,7 +510,7 @@ void centry_redebit_consumables(sge_gdi_ctx_class_t *ctx, const lList *centries)
    const lList *master_job_list = *object_type_get_master_list(SGE_TYPE_JOB);
 
    /* throw away all old actual values lists and rebuild them from scratch */
-   for_each(cqueue, master_cqueue_list) {
+   for_each_ep(cqueue, master_cqueue_list) {
       const lList *qinstance_list = lGetList(cqueue, CQ_qinstances);
       lListElem *qinstance = NULL;
 
@@ -537,7 +537,7 @@ void centry_redebit_consumables(sge_gdi_ctx_class_t *ctx, const lList *centries)
          const lListElem *gdil;
          lListElem *qep = NULL;
          int slots = 0;
-         for_each (gdil, lGetList(jatep, JAT_granted_destin_identifier_list)) {
+         for_each_ep(gdil, lGetList(jatep, JAT_granted_destin_identifier_list)) {
             int qslots;
 
             if (!(qep = cqueue_list_locate_qinstance(master_cqueue_list, lGetString(gdil, JG_qname)))) {
@@ -568,11 +568,11 @@ void centry_redebit_consumables(sge_gdi_ctx_class_t *ctx, const lList *centries)
       u_long32 now = sge_get_gmt();
       
       /* dump all queue consumables */
-      for_each(cqueue, master_cqueue_list) {
+      for_each_ep(cqueue, master_cqueue_list) {
          const lList *qinstance_list = lGetList(cqueue, CQ_qinstances);
          const lListElem *qinstance = NULL;
 
-         for_each(qinstance, qinstance_list) {
+         for_each_ep(qinstance, qinstance_list) {
             const char *hostname = lGetHost(qinstance, QU_qhostname);
             const lListElem *host = lGetElemHost(master_ehost_list, EH_name, hostname);
             reporting_create_queue_consumable_record(&answer_list, host, qinstance, NULL, now);

@@ -114,7 +114,7 @@ void sge_print_categories(void)
 
    DENTER(TOP_LAYER);
 
-   for_each (cat, CATEGORY_LIST) {
+   for_each_ep(cat, CATEGORY_LIST) {
       DPRINTF(("PTR: %p CAT: %s REJECTED: "sge_u32" REFCOUNT: "sge_u32"\n", 
          cat,
          lGetString(cat, CT_str), 
@@ -248,7 +248,7 @@ int sge_delete_job_category(lListElem *job)
          DPRINTF(("############## Removing %s from category list (refcount: " sge_u32 ")\n", 
                   lGetString(cat, CT_str), lGetUlong(cat, CT_refcount)));
 
-         for_each(cache, cache_list) {
+         for_each_ep(cache, cache_list) {
             int *range = (int *)lGetRef(cache, CCT_pe_job_slots);
             sge_free(&range); 
          }
@@ -454,7 +454,7 @@ int sge_reset_job_category()
    for_each_rw (cat, CATEGORY_LIST) {
       const lListElem *cache;
 
-      for_each(cache, lGetList(cat, CT_cache)) {
+      for_each_ep(cache, lGetList(cat, CT_cache)) {
          int *range = (int *)lGetRef(cache, CCT_pe_job_slots);
          sge_free(&range); 
       }
@@ -506,7 +506,7 @@ lList *sge_category_job_copy(lList *queue_list, lList **orders, bool monitor_nex
 
    INFO((SGE_EVENT, "the job category filter is enabled"));
 
-   for_each (queue, queue_list) {
+   for_each_ep(queue, queue_list) {
       u_long32 state = lGetUlong(queue, QU_state);
           
       switch (state) {
@@ -529,12 +529,12 @@ lList *sge_category_job_copy(lList *queue_list, lList **orders, bool monitor_nex
       jobPerCategory = maxJobPerCategory;
    }
   
-   for_each(category, CS_CATEGORY_LIST) {
+   for_each_ep(category, CS_CATEGORY_LIST) {
       const lListElem *job_ref = NULL;
       int copy_counter = 0;
 
       /* copy running jobs and others maybe pending */   
-      for_each(job_ref, lGetList(category, SCT_job_ref)) {
+      for_each_ep(job_ref, lGetList(category, SCT_job_ref)) {
          lListElem *job = (lListElem *)lGetRef(job_ref, REF_ref);
          if (jobListCopy == NULL) {
             jobListCopy = lCreateListHash("copy_job_list", lGetElemDescr(job), false);
@@ -543,7 +543,7 @@ lList *sge_category_job_copy(lList *queue_list, lList **orders, bool monitor_nex
       }
 
       /* copy pending jobs, only pending till max is reached */
-      for_each(job_ref, lGetList(category, SCT_job_pending_ref)) {
+      for_each_ep(job_ref, lGetList(category, SCT_job_pending_ref)) {
          lListElem *job = (lListElem *)lGetRef(job_ref, REF_ref); 
 
          /* only copy, if we have free slots left, or the jobs needs a reservation */

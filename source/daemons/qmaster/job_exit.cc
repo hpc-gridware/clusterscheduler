@@ -174,7 +174,7 @@ void sge_job_exit(sge_gdi_ctx_class_t *ctx, lListElem *jr, lListElem *jep, lList
             const lListElem *ar_queue;
             u_long32 ar_id = lGetUlong(ar, AR_id);
 
-            for_each(ar_queue, lGetList(ar, AR_reserved_queues)) {
+            for_each_ep(ar_queue, lGetList(ar, AR_reserved_queues)) {
                if (qinstance_slots_used(ar_queue) != 0) {
                   break;
                }
@@ -293,7 +293,7 @@ void sge_job_exit(sge_gdi_ctx_class_t *ctx, lListElem *jr, lListElem *jep, lList
 
             found_host = true;
 
-            for_each(cqueue, *object_type_get_master_list(SGE_TYPE_CQUEUE)) {
+            for_each_ep(cqueue, *object_type_get_master_list(SGE_TYPE_CQUEUE)) {
                const lList *qinstance_list = lGetList(cqueue, CQ_qinstances);
                lListElem *qinstance = lGetElemHostRW(qinstance_list, QU_qhostname, host);
 

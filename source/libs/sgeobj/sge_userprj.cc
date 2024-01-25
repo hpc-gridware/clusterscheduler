@@ -123,7 +123,7 @@ const char *prj_list_append_to_dstring(const lList *this_list, dstring *string)
       const lListElem *elem = NULL;
       bool printed = false;
 
-      for_each(elem, this_list) {
+      for_each_ep(elem, this_list) {
          sge_dstring_append(string, lGetString(elem, PR_name));
          if (lNext(elem)) {
             sge_dstring_append(string, " ");
@@ -146,7 +146,7 @@ prj_list_do_all_exist(const lList *this_list, lList **answer_list,
    const lListElem *prj = NULL;
 
    DENTER(TOP_LAYER);
-   for_each(prj, prj_list) {
+   for_each_ep(prj, prj_list) {
       const char *name = lGetString(prj, PR_name);
 
       if (prj_list_locate(this_list, name) == NULL) {

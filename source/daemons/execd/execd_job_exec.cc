@@ -488,7 +488,7 @@ static lList *job_get_queue_with_task_about_to_exit(lListElem *jep,
    
    DENTER(TOP_LAYER);
    
-   for_each(petask, lGetList(jatep, JAT_task_list)) {
+   for_each_ep(petask, lGetList(jatep, JAT_task_list)) {
       const lListElem *pe_task_queue = lFirst(lGetList(petask, PET_granted_destin_identifier_list));
       if (pe_task_queue != NULL) {
          /* if a certain queue is requested, skip non matching tasks */
@@ -563,7 +563,7 @@ job_get_queue_for_task(lListElem *jatep, lListElem *petep,
 
    DENTER(TOP_LAYER);
 
-   for_each (gdil_ep, lGetList(jatep, JAT_granted_destin_identifier_list)) {
+   for_each_ep(gdil_ep, lGetList(jatep, JAT_granted_destin_identifier_list)) {
       /* if a certain queuename is requested, check only this queue */
       if (queuename != NULL && 
           strcmp(queuename, lGetString(gdil_ep, JG_qname)) != 0) {

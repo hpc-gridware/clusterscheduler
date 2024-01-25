@@ -673,7 +673,7 @@ static int sge_print_job(lListElem *job, lListElem *jatep, lListElem *qep, int p
       /* sum pe-task usage based on queue slots */
       if (job_usage_list) {
          int subtask_ndx = 1;
-         for_each(task, lGetList(jatep, JAT_task_list)) {
+         for_each_ep(task, lGetList(jatep, JAT_task_list)) {
             const lListElem *src, *ep;
             lListElem *dst;
             const char *qname;
@@ -681,7 +681,7 @@ static int sge_print_job(lListElem *job, lListElem *jatep, lListElem *qep, int p
             if (!slots || (queue_name && ((ep = lFirst(lGetList(task, PET_granted_destin_identifier_list)))) &&
                            ((qname = lGetString(ep, JG_qname))) && !strcmp(qname, queue_name) &&
                            ((subtask_ndx++ % slots) == slot))) {
-               for_each(src, lGetList(task, PET_scaled_usage)) {
+               for_each_ep(src, lGetList(task, PET_scaled_usage)) {
                   if ((dst = lGetElemStrRW(job_usage_list, UA_name, lGetString(src, UA_name)))) {
                      lSetDouble(dst, UA_value, lGetDouble(dst, UA_value) + lGetDouble(src, UA_value));
                   } else {
@@ -849,7 +849,7 @@ static int sge_print_job(lListElem *job, lListElem *jatep, lListElem *qep, int p
       }
 
       /* print sub-tasks belonging to this queue */
-      for_each(task, task_list) {
+      for_each_ep(task, task_list) {
          if (!slots || (queue_name && ((ep = lFirst(lGetList(task, PET_granted_destin_identifier_list)))) &&
                         ((qname = lGetString(ep, JG_qname))) && !strcmp(qname, queue_name) &&
                         ((subtask_ndx++ % slots) == slot))) {
@@ -895,7 +895,7 @@ static int sge_print_job(lListElem *job, lListElem *jatep, lListElem *qep, int p
       if (lGetString(jatep, JAT_granted_pe)) {
          const lListElem *gdil_ep;
          u_long32 pe_slots = 0;
-         for_each(gdil_ep, lGetList(jatep, JAT_granted_destin_identifier_list)) pe_slots +=
+         for_each_ep(gdil_ep, lGetList(jatep, JAT_granted_destin_identifier_list)) pe_slots +=
              lGetUlong(gdil_ep, JG_slots);
          printf(QSTAT_INDENT "Granted PE:       %s " sge_u32 "\n", lGetString(jatep, JAT_granted_pe), pe_slots);
       }
@@ -914,7 +914,7 @@ static int sge_print_job(lListElem *job, lListElem *jatep, lListElem *qep, int p
          lListElem *hep;
 
          queue_complexes2scheduler(&attributes, qep, exechost_list, centry_list);
-         for_each(ce, attributes) {
+         for_each_ep(ce, attributes) {
             double dval;
 
             name = lGetString(ce, CE_name);
@@ -947,7 +947,7 @@ static int sge_print_job(lListElem *job, lListElem *jatep, lListElem *qep, int p
       ql = lGetList(job, JB_hard_queue_list);
       if (ql) {
          printf(QSTAT_INDENT "Hard requested queues: ");
-         for_each(qrep, ql) {
+         for_each_ep(qrep, ql) {
             printf("%s", lGetString(qrep, QR_name));
             printf("%s", lNext(qrep) ? ", " : "\n");
          }
@@ -956,7 +956,7 @@ static int sge_print_job(lListElem *job, lListElem *jatep, lListElem *qep, int p
       ql = lGetList(job, JB_soft_queue_list);
       if (ql) {
          printf(QSTAT_INDENT "Soft requested queues: ");
-         for_each(qrep, ql) {
+         for_each_ep(qrep, ql) {
             printf("%s", lGetString(qrep, QR_name));
             printf("%s", lNext(qrep) ? ", " : "\n");
          }
@@ -964,7 +964,7 @@ static int sge_print_job(lListElem *job, lListElem *jatep, lListElem *qep, int p
       ql = lGetList(job, JB_master_hard_queue_list);
       if (ql) {
          printf(QSTAT_INDENT "Master task hard requested queues: ");
-         for_each(qrep, ql) {
+         for_each_ep(qrep, ql) {
             printf("%s", lGetString(qrep, QR_name));
             printf("%s", lNext(qrep) ? ", " : "\n");
          }
@@ -972,7 +972,7 @@ static int sge_print_job(lListElem *job, lListElem *jatep, lListElem *qep, int p
       ql = lGetList(job, JB_jid_request_list);
       if (ql) {
          printf(QSTAT_INDENT "Predecessor Jobs (request): ");
-         for_each(qrep, ql) {
+         for_each_ep(qrep, ql) {
             printf("%s", lGetString(qrep, JRE_job_name));
             printf("%s", lNext(qrep) ? ", " : "\n");
          }
@@ -980,7 +980,7 @@ static int sge_print_job(lListElem *job, lListElem *jatep, lListElem *qep, int p
       ql = lGetList(job, JB_jid_predecessor_list);
       if (ql) {
          printf(QSTAT_INDENT "Predecessor Jobs: ");
-         for_each(qrep, ql) {
+         for_each_ep(qrep, ql) {
             printf(sge_u32, lGetUlong(qrep, JRE_job_number));
             printf("%s", lNext(qrep) ? ", " : "\n");
          }
@@ -988,7 +988,7 @@ static int sge_print_job(lListElem *job, lListElem *jatep, lListElem *qep, int p
       ql = lGetList(job, JB_ja_ad_request_list);
       if (ql) {
          printf(QSTAT_INDENT "Predecessor Array Jobs (request): ");
-         for_each(qrep, ql) {
+         for_each_ep(qrep, ql) {
             printf("%s", lGetString(qrep, JRE_job_name));
             printf("%s", lNext(qrep) ? ", " : "\n");
          }
@@ -996,7 +996,7 @@ static int sge_print_job(lListElem *job, lListElem *jatep, lListElem *qep, int p
       ql = lGetList(job, JB_ja_ad_predecessor_list);
       if (ql) {
          printf(QSTAT_INDENT "Predecessor Array Jobs: ");
-         for_each(qrep, ql) {
+         for_each_ep(qrep, ql) {
             printf(sge_u32, lGetUlong(qrep, JRE_job_number));
             printf("%s", lNext(qrep) ? ", " : "\n");
          }

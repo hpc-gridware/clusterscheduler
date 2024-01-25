@@ -527,7 +527,7 @@ attr_list_find_value(const lList *this_list, lList **answer_list,
           * Exit the loop as soon as possible! This will be the case if
           * an ambiguous value for the concerned host will be found.
           */
-         for_each(href, this_list) {
+         for_each_ep(href, this_list) {
             const char *href_name = lGetHost(href, href_nm);
 
             if (strcmp(href_name, HOSTREF_DEFAULT) && 
@@ -665,7 +665,7 @@ attr_list_append_to_dstring(const lList *this_list, dstring *string,
       object_append_field_to_dstring(attr, NULL, string, value_nm, '\0');
    }
    
-   for_each(attr, this_list) {
+   for_each_ep(attr, this_list) {
       const char *href;
 
       href = lGetHost(attr, href_nm);

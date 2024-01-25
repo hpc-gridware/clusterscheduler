@@ -895,7 +895,7 @@ lList *gdi2_kill(sge_gdi_ctx_class_t *thiz, lList *id_list, const char *cell,
          ** we have to convert the EH_Type to ID_Type
          ** It would be better to change the call to use ID_Type!
          */
-         for_each(hep, id_list) {
+         for_each_ep(hep, id_list) {
             hlep = lAddElemStr(&hlp, ID_str, lGetHost(hep, EH_name), ID_Type);
             lSetUlong(hlep, ID_force, (action_flag & JOB_KILL)?1:0);
          }

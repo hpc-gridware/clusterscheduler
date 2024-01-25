@@ -262,7 +262,7 @@ char **argv
        * Walk option list given by command line and check
        * for matching options from file.
        */
-      for_each(ep_1, pcmdline) {
+      for_each_ep(ep_1, pcmdline) {
          do {
             /*
              * Need that logic to handle multiple SPA
@@ -307,7 +307,7 @@ char **argv
       /*
       ** high level parsing error! show answer list
       */
-      for_each(aep, alp) {
+      for_each_ep(aep, alp) {
          fprintf(stderr, "%s\n", lGetString(aep, AN_text));
       }
       lFreeList(&alp);
@@ -323,7 +323,7 @@ char **argv
       /*
       ** low level parsing error! show answer list
       */
-      for_each(aep, alp) {
+      for_each_ep(aep, alp) {
          fprintf(stderr, "%s\n", lGetString(aep, AN_text));
       }
       lFreeList(&alp);
@@ -359,7 +359,7 @@ char **argv
          qselect_handler_t handler;
          if (isXML) {
             if(qselect_xml_init(&handler, &answer_list)) {
-               for_each(aep, answer_list) {
+               for_each_ep(aep, answer_list) {
                   fprintf(stderr, "%s\n", lGetString(aep, AN_text));
                }
                lFreeList(&answer_list);
@@ -1887,7 +1887,7 @@ qstat_show_job(sge_gdi_ctx_class_t *ctx, lList *jid_list, u_long32 isXML, qstat_
    lFreeWhat(&what);
 
    if (!isXML){
-      for_each(aep, alp) {
+      for_each_ep(aep, alp) {
          if (lGetUlong(aep, AN_status) != STATUS_OK) {
             fprintf(stderr, "%s\n", lGetString(aep, AN_text));
             schedd_info = false;
@@ -1898,7 +1898,7 @@ qstat_show_job(sge_gdi_ctx_class_t *ctx, lList *jid_list, u_long32 isXML, qstat_
 
    /* build 'where' for all jobs */
    where = NULL;
-   for_each(j_elem, jid_list) {
+   for_each_ep(j_elem, jid_list) {
       const char *job_name = lGetString(j_elem, ST_name);
 
       if (isdigit(job_name[0])) {
@@ -1958,7 +1958,7 @@ qstat_show_job(sge_gdi_ctx_class_t *ctx, lList *jid_list, u_long32 isXML, qstat_
          jbList. Then remove all entries (job_number_list, message_number and 
          message) from the message_list that have no jobs in them. 
       */
-      for_each (tmpElem, ilp) {
+      for_each_ep(tmpElem, ilp) {
          lList *msgList = NULL;
          lListElem *msgElem = NULL;
          lListElem *tmp_msgElem = NULL;
@@ -1995,7 +1995,7 @@ qstat_show_job(sge_gdi_ctx_class_t *ctx, lList *jid_list, u_long32 isXML, qstat_
       DRETURN(0);
    }
 
-   for_each(aep, alp) {
+   for_each_ep(aep, alp) {
       if (lGetUlong(aep, AN_status) != STATUS_OK) {
          fprintf(stderr, "%s\n", lGetString(aep, AN_text));
          jobs_exist = false;
@@ -2035,7 +2035,7 @@ qstat_show_job(sge_gdi_ctx_class_t *ctx, lList *jid_list, u_long32 isXML, qstat_
    }
 
    /* print scheduler job information and global scheduler info */
-   for_each (j_elem, jlp) {
+   for_each_ep(j_elem, jlp) {
       u_long32 jid = lGetUlong(j_elem, JB_job_number);
       const lListElem *sme;
 
@@ -2049,7 +2049,7 @@ qstat_show_job(sge_gdi_ctx_class_t *ctx, lList *jid_list, u_long32 isXML, qstat_
 
          if (sme) {
             /* global schduling info */
-            for_each (mes, lGetList(sme, SME_global_message_list)) {
+            for_each_ep(mes, lGetList(sme, SME_global_message_list)) {
                if (first_run) {
                   printf("%s:            ",MSG_SCHEDD_SCHEDULINGINFO);
                   first_run = 0;
@@ -2060,10 +2060,10 @@ qstat_show_job(sge_gdi_ctx_class_t *ctx, lList *jid_list, u_long32 isXML, qstat_
             }
 
             /* job scheduling info */
-            for_each(mes, lGetList(sme, SME_message_list)) {
+            for_each_ep(mes, lGetList(sme, SME_message_list)) {
                const lListElem *mes_jid;
 
-               for_each(mes_jid, lGetList(mes, MES_job_number_list)) {
+               for_each_ep(mes_jid, lGetList(mes, MES_job_number_list)) {
                   if (lGetUlong(mes_jid, ULNG_value) == jid) {
                      if (first_run) {
                         printf("%s:            ",MSG_SCHEDD_SCHEDULINGINFO);
@@ -2113,7 +2113,7 @@ static int qstat_show_job_info(sge_gdi_ctx_class_t *ctx, u_long32 isXML, qstat_e
       xml_qstat_show_job_info(&ilp, &alp, qstat_env);
    }
    else {
-      for_each(aep, alp) {
+      for_each_ep(aep, alp) {
          if (lGetUlong(aep, AN_status) != STATUS_OK) {
             fprintf(stderr, "%s\n", lGetString(aep, AN_text));
             schedd_info = false;
@@ -2128,7 +2128,7 @@ static int qstat_show_job_info(sge_gdi_ctx_class_t *ctx, u_long32 isXML, qstat_e
       if (sme) {
          /* print global schduling info */
          first_run = 1;
-         for_each (mes, lGetList(sme, SME_global_message_list)) {
+         for_each_ep(mes, lGetList(sme, SME_global_message_list)) {
             if (first_run) {
                printf("%s:            ",MSG_SCHEDD_SCHEDULINGINFO);
                first_run = 0;
@@ -2164,7 +2164,7 @@ static int qstat_show_job_info(sge_gdi_ctx_class_t *ctx, u_long32 isXML, qstat_e
 
                flt_nxt_msg = lNextRW(flt_msg);
                found_msg = 0;
-               for_each(ref_msg, new_list) {
+               for_each_ep(ref_msg, new_list) {
                   if (lGetUlong(ref_msg, MES_message_number) == 
                       lGetUlong(flt_msg, MES_message_number)) {
                  
@@ -2173,7 +2173,7 @@ static int qstat_show_job_info(sge_gdi_ctx_class_t *ctx, u_long32 isXML, qstat_e
                      flt_nxt_jid = lNextRW(flt_jid);
                     
                      found_jid = 0; 
-                     for_each(ref_jid, lGetList(ref_msg, MES_job_number_list)) {
+                     for_each_ep(ref_jid, lGetList(ref_msg, MES_job_number_list)) {
                         if (lGetUlong(ref_jid, ULNG_value) == 
                             lGetUlong(flt_jid, ULNG_value)) {
                            lRemoveElem(lGetListRW(flt_msg, MES_job_number_list), &flt_jid);
@@ -2199,10 +2199,10 @@ static int qstat_show_job_info(sge_gdi_ctx_class_t *ctx, u_long32 isXML, qstat_e
       }
 
       text[0]=0;
-      for_each(mes, mlp) {
+      for_each_ep(mes, mlp) {
          lPSortList(lGetListRW(mes, MES_job_number_list), "I+", ULNG_value);
 
-         for_each(jid_ulng, lGetList(mes, MES_job_number_list)) {
+         for_each_ep(jid_ulng, lGetList(mes, MES_job_number_list)) {
             u_long32 mid;
             u_long32 jid = 0;
             int skip = 0;

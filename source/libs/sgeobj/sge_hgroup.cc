@@ -210,7 +210,7 @@ hgroup_add_references(lListElem *this_elem, lList **answer_list,
       const lListElem *href;           /* HR_Type */
 
       lXchgList(this_elem, HGRP_host_list, &href_list);
-      for_each(href, href_or_groupref) {
+      for_each_ep(href, href_or_groupref) {
          const char *name = lGetHost(href, HR_name);
    
          ret &= href_list_add(&href_list, answer_list, name);
@@ -491,7 +491,7 @@ hgroup_list_exists(const lList *this_list, lList **answer_list,
    if (href_list != NULL && this_list != NULL) {
       const lListElem *href;
 
-      for_each(href, href_list) {
+      for_each_ep(href, href_list) {
          const char *name = lGetHost(href, HR_name);
 
          if (is_hgroup_name(name)) {
@@ -550,7 +550,7 @@ hgroup_list_find_matching_and_resolve(const lList *this_list,
    if (this_list != NULL && hgroup_pattern != NULL) {
       const lListElem *hgroup;
 
-      for_each(hgroup, this_list) {
+      for_each_ep(hgroup, this_list) {
          const char *hgroup_name = lGetHost(hgroup, HGRP_name);
          
          /* use hostgroup expression */
@@ -560,7 +560,7 @@ hgroup_list_find_matching_and_resolve(const lList *this_list,
 
             ret = hgroup_find_all_references(hgroup, NULL, this_list,
                                              &tmp_used_hosts, NULL);
-            for_each(tmp_href, tmp_used_hosts) {
+            for_each_ep(tmp_href, tmp_used_hosts) {
                if (used_hosts != NULL) {
                   const char *hostname = lGetHost(tmp_href, HR_name);
 
@@ -611,7 +611,7 @@ hgroup_list_find_matching(const lList *this_list, lList **answer_list,
    if (this_list != NULL && hgroup_pattern != NULL) {
       const lListElem *hgroup;
 
-      for_each(hgroup, this_list) {
+      for_each_ep(hgroup, this_list) {
          const char *hgroup_name = lGetHost(hgroup, HGRP_name);
 
    /* use hostgroup expression */

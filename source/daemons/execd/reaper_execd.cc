@@ -222,7 +222,7 @@ int sge_reap_children_execd(int max_count, bool is_qmaster_down)
       reap_count++;
 
       /* search whether it was a job or one of its tasks */
-      for_each (jep, *object_type_get_master_list(SGE_TYPE_JOB)) {
+      for_each_ep(jep, *object_type_get_master_list(SGE_TYPE_JOB)) {
          int Break = 0;
    
          petep = NULL;
@@ -1679,7 +1679,7 @@ read_dusage(lListElem *jr, const char *jobdir, u_long32 jobid, u_long32 jataskid
          DPRINTF(("empty usage list\n"));
       }   
 
-      for_each (ep, lGetList(jr, JR_usage)) {
+      for_each_ep(ep, lGetList(jr, JR_usage)) {
          DPRINTF(("    \"%s\" = %f\n",
             lGetString(ep, UA_name),
             lGetDouble(ep, UA_value)));

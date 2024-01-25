@@ -178,7 +178,7 @@ bool pe_is_referenced(const lListElem *pe, lList **answer_list,
    {
       const lListElem *job = NULL;
 
-      for_each(job, master_job_list) {
+      for_each_ep(job, master_job_list) {
          if (job_is_pe_referenced(job, pe)) {
             const char *pe_name = lGetString(pe, PE_name);
             u_long32 job_id = lGetUlong(job, JB_job_number);
@@ -199,8 +199,8 @@ bool pe_is_referenced(const lListElem *pe, lList **answer_list,
        */
       const char *pe_name = lGetString(pe, PE_name);
 
-      for_each(cqueue, master_cqueue_list) {
-         for_each(cpl, lGetList(cqueue, CQ_pe_list)){
+      for_each_ep(cqueue, master_cqueue_list) {
+         for_each_ep(cpl, lGetList(cqueue, CQ_pe_list)){
             if (lGetSubStr(cpl, ST_name, pe_name, ASTRLIST_value))  {
                answer_list_add_sprintf(answer_list, STATUS_EUNKNOWN,
                                        ANSWER_QUALITY_INFO, 
@@ -472,7 +472,7 @@ bool pe_list_do_all_exist(const lList *pe_list, lList **answer_list,
    const lListElem *pe_ref_elem = NULL;
 
    DENTER(TOP_LAYER);
-   for_each(pe_ref_elem, pe_ref_list) {
+   for_each_ep(pe_ref_elem, pe_ref_list) {
       const char *pe_ref_string = lGetString(pe_ref_elem, ST_name);
 
       if (ignore_make_pe && !strcmp(pe_ref_string, "make")) { 

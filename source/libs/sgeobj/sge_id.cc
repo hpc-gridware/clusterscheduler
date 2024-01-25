@@ -60,7 +60,7 @@ id_list_build_from_str_list(lList **id_list,
    if (transition_is_valid_for_qinstance(transition, answer_list) &&
        transition_option_is_valid_for_qinstance(option, answer_list) &&
        str_list_is_valid(str_list, answer_list)) {
-      for_each(elem, str_list) {
+      for_each_ep(elem, str_list) {
          const char *string = lGetString(elem, ST_name);
          lListElem *new_id = NULL;
 

@@ -547,7 +547,7 @@ path_alias_verify(const lList *path_aliases, lList **answer_list)
    bool ret = true;
    const lListElem *ep;
 
-   for_each (ep, path_aliases) {
+   for_each_ep(ep, path_aliases) {
       /* 
        * PA_origin and PA_translation may not be NULL or empty string 
        * they have to be valid paths.
@@ -608,7 +608,7 @@ path_list_verify(const lList *path_list, lList **answer_list, const char *name)
    bool ret = true;
    const lListElem *ep;
 
-   for_each (ep, path_list) {
+   for_each_ep(ep, path_list) {
       const char *host;
 
       ret = path_verify(lGetString(ep, PN_path), answer_list, name, false);

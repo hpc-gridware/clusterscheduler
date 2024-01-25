@@ -176,7 +176,7 @@ static lList *build_usage_list( char *name, lList *old_usage_list )
        *-------------------------------------------------------------*/
 
       usage_list = lCopyList(name, old_usage_list);
-      for_each(usage, usage_list)
+      for_each_ep(usage, usage_list)
          lSetDouble(usage, UA_value, 0);
 
    } else {
@@ -284,7 +284,7 @@ FILE *fpdchu;
    fprintf(fpdchu, "finished_jobs \n");
    lDumpList(fpdchu, finished_jobs, 5);
 #endif
-   for_each (hep, hosts) {    
+   for_each_ep(hep, hosts) {
       host_name = lGetHost(hep, EH_name);
       if (strcmp(host_name,"global")) { /* don't treat global */
 
@@ -299,9 +299,9 @@ FILE *fpdchu;
 
 /* Calculate host usages for running jobs */
 
-       for_each (running_job_elem, running_jobs) {
+       for_each_ep(running_job_elem, running_jobs) {
 
-        for_each (rjq, lGetList(running_job_elem, JB_granted_destin_identifier_list)) {
+        for_each_ep(rjq, lGetList(running_job_elem, JB_granted_destin_identifier_list)) {
 
 #ifdef TEST_CALC_HOST_USAGE
           fprintf(fpdchu, "Job %u is on host %s\n", lGetUlong(running_job_elem, JB_job_number), lGetHost(rjq, JG_qhostname));
@@ -319,7 +319,7 @@ FILE *fpdchu;
             fprintf(fpdchu, "job_usage_list \n");
             lDumpList(fpdchu, job_usage_list, 5);
 #endif
-            for_each(job_usage_elem, job_usage_list)  {
+            for_each_ep(job_usage_elem, job_usage_list)  {
                if (strcmp(lGetString(job_usage_elem, UA_name), "cpu") == 0)  {
                   host_cpu_usage += lGetDouble(job_usage_elem, UA_value);
                   total_host_cpu_usage += lGetDouble(job_usage_elem, UA_value);
@@ -336,11 +336,11 @@ FILE *fpdchu;
 
                     } /* if (lGetString(job_usage_elem, UA_name)=="io")*/
                   } /* if (lGetString(job_usage_elem, UA_name)=="mem")*/                }  /* if (lGetString(job_usage_elem, UA_name)=="cpu")*/
-             }  /*for_each(job_usage_elem, job_usage_list)*/
+             }  /*for_each_ep(job_usage_elem, job_usage_list)*/
           }  /* if (sge_hostcmp(lGetHost(rjq, JG_qhostname), host_name) ==
 0) */
-        } /* for_each (rjq, lGetList(running_job_elem, JB_granted_destin_identifier_list))*/
-      }  /* for_each (running_job_elem, running_jobs) */
+        } /* for_each_ep(rjq, lGetList(running_job_elem, JB_granted_destin_identifier_list))*/
+      }  /* for_each_ep(running_job_elem, running_jobs) */
 
       /* Calculate the number of running jobs on the host -- This code
 was added here because it was a convenient place to gather the information */
@@ -355,9 +355,9 @@ was added here because it was a convenient place to gather the information */
 
 /* Calculate host usages for finished jobs */
 
-      for_each (finished_job_elem, finished_jobs) {
+      for_each_ep(finished_job_elem, finished_jobs) {
 
-        for_each (fjq, lGetList(finished_job_elem, JB_granted_destin_identifier_list)) {
+        for_each_ep(fjq, lGetList(finished_job_elem, JB_granted_destin_identifier_list)) {
 #ifdef TEST_CALC_HOST_USAGE
           fprintf(fpdchu, "Job %u is on host %s\n", lGetUlong(finished_job_elem, JB_job_number), lGetHost(fjq, JG_qhostname));
 #endif
@@ -371,7 +371,7 @@ was added here because it was a convenient place to gather the information */
             fprintf(fpdchu, "job_usage_list \n");
             lDumpList(fpdchu, job_usage_list, 5);
 #endif
-            for_each(job_usage_elem, job_usage_list)  {
+            for_each_ep(job_usage_elem, job_usage_list)  {
                if (strcmp(lGetString(job_usage_elem, UA_name), "cpu") == 0)  {
                   host_cpu_usage += lGetDouble(job_usage_elem, UA_value);
                   total_host_cpu_usage += lGetDouble(job_usage_elem, UA_value);
@@ -387,11 +387,11 @@ was added here because it was a convenient place to gather the information */
                       total_host_io_usage += lGetDouble(job_usage_elem, UA_value);
                     } /* if (lGetString(job_usage_elem, UA_name)=="io")*/
                   } /* if (lGetString(job_usage_elem, UA_name)=="mem")*/                }  /* if (lGetString(job_usage_elem, UA_name)=="cpu")*/
-            }  /*for_each(job_usage_elem, job_usage_list)*/
+            }  /*for_each_ep(job_usage_elem, job_usage_list)*/
           }  /* if (sge_hostcmp(lGetHost(fjq, JG_qhostname), host_name) ==
 0) */
-        } /* for_each (fjq, lGetList(finished_job_elem, JB_granted_destin_identifier_list))*/
-      }  /* for_each (finished_job_elem, finished_jobs) */
+        } /* for_each_ep(fjq, lGetList(finished_job_elem, JB_granted_destin_identifier_list))*/
+      }  /* for_each_ep(finished_job_elem, finished_jobs) */
 
 
 
@@ -399,7 +399,7 @@ was added here because it was a convenient place to gather the information */
 
    lSetList(hep, EH_scaled_usage_list, build_usage_list("hostusagelist", NULL));
 
-   for_each(host_usage_elem, lGetList(hep, EH_scaled_usage_list))  {
+   for_each_ep(host_usage_elem, lGetList(hep, EH_scaled_usage_list))  {
       if (strcmp(lGetString(host_usage_elem, UA_name), "cpu") == 0)  {
          lSetDouble(host_usage_elem, UA_value, host_cpu_usage);
       }
@@ -414,9 +414,9 @@ was added here because it was a convenient place to gather the information */
             } /* if (lGetString(host_usage_elem, UA_name)=="io")*/
          } /* if (lGetString(host_usage_elem, UA_name)=="mem")*/
       }  /* if (lGetString(host_usage_elem, UA_name)=="cpu")*/
-   }  /*for_each(host_usage_elem, lGetList(hep, EH_scaled_usage_list)*/
+   }  /*for_each_ep(host_usage_elem, lGetList(hep, EH_scaled_usage_list)*/
    }  /* if (strcmp(host,"global")) */
-}  /* for_each (hep, hosts) */
+}  /* for_each_ep(hep, hosts) */
 
 
 /*****************************************************************/
@@ -425,7 +425,7 @@ was added here because it was a convenient place to gather the information */
    /*  EH_scaled_usage_pct_list is comprised of the individual usage 
        percentages for cpu, mem, and io on a host basis */
 
-   for_each (hep, hosts)  {   
+   for_each_ep(hep, hosts)  {
       host_name = lGetHost(hep, EH_name);
       if (strcmp(host_name,"global")) { /* don't treat global */
          lList *hep_EH_scaled_usage_list = NULL;
@@ -434,7 +434,7 @@ was added here because it was a convenient place to gather the information */
 
          hep_EH_scaled_usage_list = lGetList(hep, EH_scaled_usage_list);        
  
-         for_each(host_usage_pct_elem, lGetList(hep, EH_scaled_usage_pct_list)) {
+         for_each_ep(host_usage_pct_elem, lGetList(hep, EH_scaled_usage_pct_list)) {
             if (strcmp(lGetString(host_usage_pct_elem, UA_name), "cpu") == 0)  {
                if (total_host_cpu_usage != 0)  {
                   host_cpu_usage = lGetDouble(lGetElemStr(hep_EH_scaled_usage_list, UA_name, "cpu"), UA_value);
@@ -464,22 +464,22 @@ was added here because it was a convenient place to gather the information */
                   } /* if (lGetString(host_usage_elem, UA_name)=="io")*/
                } /* if (lGetString(host_usage_elem, UA_name)=="mem")  (else) */
             }  /* if (lGetString(host_usage_elem, UA_name)=="cpu")*/
-         }  /*for_each(host_usage_elem, lGetList(hep, EH_scaled_usage_pct_list)*/
+         }  /*for_each_ep(host_usage_elem, lGetList(hep, EH_scaled_usage_pct_list)*/
       } /* if (strcmp(host_name,"global")) */
-   }  /* for_each (hep, hosts) */
+   }  /* for_each_ep(hep, hosts) */
 
 
 
 
 /*****************************************************************/
 /* Calculate host tickets    */
-   for_each (hep, hosts) { 
+   for_each_ep(hep, hosts) {
       host_name = lGetHost(hep, EH_name);
       if (strcmp(host_name,"global"))  {
          lSetUlong(hep, EH_sge_tickets, 0);
          host_sge_tickets = 0;
-         for_each (running_job_elem, running_jobs) {
-            for_each (rjq, lGetList(running_job_elem, JB_granted_destin_identifier_list)) {
+         for_each_ep(running_job_elem, running_jobs) {
+            for_each_ep(rjq, lGetList(running_job_elem, JB_granted_destin_identifier_list)) {
                if (strcmp(lGetHost(rjq, JG_qhostname), host_name) == 0) {
                   host_sge_tickets += lGetUlong(running_job_elem, JB_ticket);
                }
@@ -488,11 +488,11 @@ was added here because it was a convenient place to gather the information */
          lSetUlong(hep, EH_sge_tickets, host_sge_tickets);
          total_host_tickets += host_sge_tickets;
       } /* if (strcmp(host_name,"global")) */
-   }  /* for_each (hep, hosts) */
+   }  /* for_each_ep(hep, hosts) */
 
 /* Calculate percentage of tickets for each host */
 
-   for_each (hep, hosts) {  
+   for_each_ep(hep, hosts) {
       host_name = lGetHost(hep, EH_name);
       if (strcmp(host_name,"global"))  {
          if (total_host_tickets != 0)  {
@@ -501,7 +501,7 @@ was added here because it was a convenient place to gather the information */
             lSetDouble(hep, EH_sge_ticket_pct, 0.0);
          }  /* (total_host_tickets != 0) */
       }   /* if (strcmp(host_name,"global"))  */
-   }    /* for_each (hep, hosts) */
+   }    /* for_each_ep(hep, hosts) */
 
 
 
@@ -543,18 +543,18 @@ lListElem *hep, *running_job_elem, *rjq;
    }
 
   if (!running) {
-      for_each (hep, *hosts) {
+      for_each_ep(hep, *hosts) {
          lSetUlong(hep, EH_sge_tickets, 0);
       }
       DRETURN(0);
    }
 
-   for_each (hep, hosts) {         
+   for_each_ep(hep, hosts) {
       host_name = lGetHost(hep, EH_name);
       lSetUlong(hep, EH_sge_tickets, 0);
       host_sge_tickets = 0;
-      for_each (running_job_elem, *running) {
-         for_each (rjq, lGetList(running_job_elem,
+      for_each_ep(running_job_elem, *running) {
+         for_each_ep(rjq, lGetList(running_job_elem,
                                  JB_granted_destin_identifier_list)) {
             if (strcmp(lGetHost(rjq, JG_qhostname), host_name) == 0)
                host_sge_tickets += lGetUlong(running_job_elem, JB_ticket);
@@ -563,10 +563,10 @@ lListElem *hep, *running_job_elem, *rjq;
       lSetUlong(hep, EH_sge_tickets, host_sge_tickets);
       total_host_tickets += host_sge_tickets;
 
-   }  /* for_each (hep, hosts) */
-   for_each (hep, hosts) {       
+   }  /* for_each_ep(hep, hosts) */
+   for_each_ep(hep, hosts) {
      lSetDouble(hep, EH_sge_ticket_pct, double(lGetUlong(hep, EH_sge_tickets))/total_host_tickets);
-   }   /* for_each (hep, hosts) */
+   }   /* for_each_ep(hep, hosts) */
    DRETURN(0);
 }
 
@@ -603,7 +603,7 @@ int calculate_host_pcts(lList *hosts, lList *centry)
  
 /*  Calculate the total_resource_capability_factor and the total_sge_load */
 
-   for_each (hep, hosts)  {     
+   for_each_ep(hep, hosts)  {
       host_name = lGetHost(hep, EH_name);
       if (strcmp(host_name,"global"))  {
 
@@ -612,11 +612,11 @@ int calculate_host_pcts(lList *hosts, lList *centry)
 
       total_sge_load += lGetDouble(hep, EH_sort_value);
       }  /*  if (strcmp(host_name,"global")) */
-   }  /* for_each (hep, hosts) */
+   }  /* for_each_ep(hep, hosts) */
 
 /*  Calculate the percentages of resource_capability_factor and sge load for each host */
 
-   for_each (hep, hosts)  {     
+   for_each_ep(hep, hosts)  {
       host_name = lGetHost(hep, EH_name);
       if (strcmp(host_name,"global"))  {
          if (total_resource_capability_factor != 0.0)  {
@@ -632,7 +632,7 @@ int calculate_host_pcts(lList *hosts, lList *centry)
             lSetDouble(hep, EH_sge_load_pct, 0.0);
          }
       } /* if (strcmp(host_name,"global")) */
-   }  /* for_each (hep, hosts) */
+   }  /* for_each_ep(hep, hosts) */
 
    DRETURN(0);
 }
@@ -843,7 +843,7 @@ int
 print_hosts(FILE *out, lList *hosts,  char **names, format_t *format)
 {
 lListElem *hep;
-   for_each(hep, hosts) {
+   for_each_ep(hep, hosts) {
        print_host(out, hep, names, format);
    }
 

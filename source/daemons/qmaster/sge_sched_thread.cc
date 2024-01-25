@@ -220,14 +220,14 @@ int scheduler_method(sge_evc_class_t *evc, lList **answer_list, scheduler_all_da
       } else {
          qlp = lSelect("", lists->all_queue_list, where, what);
 
-         for_each(mes_queues, qlp) {
+         for_each_ep(mes_queues, qlp) {
             schedd_mes_add_global(NULL, evc->monitor_next_run, SCHEDD_INFO_QUEUENOTAVAIL_,
                                       lGetString(mes_queues, QU_full_name));
          }
 
       }
 
-      for_each(mes_queues, lists->dis_queue_list) {
+      for_each_ep(mes_queues, lists->dis_queue_list) {
          schedd_mes_add_global(NULL, evc->monitor_next_run, SCHEDD_INFO_QUEUENOTAVAIL_,
                                    lGetString(mes_queues, QU_full_name));
       }
@@ -270,7 +270,7 @@ int scheduler_method(sge_evc_class_t *evc, lList **answer_list, scheduler_all_da
 
       for (i = 0; i < max; i++) {
          /* clear SGEEE fields for queued jobs */
-         for_each(job, *(splitted_job_lists[clean_jobs[i]])) {
+         for_each_ep(job, *(splitted_job_lists[clean_jobs[i]])) {
             orders.pendingOrderList = sge_create_orders(orders.pendingOrderList,
                                                         ORT_clear_pri_info,
                                                         job, NULL, NULL, false);
@@ -445,7 +445,7 @@ static int dispatch_jobs(sge_evc_class_t *evc, scheduler_all_data_t *lists, orde
          {
             const lListElem *gep, *lcep;
             if ((gep = host_list_locate(lists->host_list, "global"))) {
-               for_each (lcep, job_load_adjustments) {
+               for_each_ep(lcep, job_load_adjustments) {
                   const char *attr = lGetString(lcep, CE_name);
                   if (lGetSubStr(gep, HL_name, attr, EH_load_list)) {
                      DPRINTF(("GLOBAL LOAD CORRECTION \"%s\"\n", attr));

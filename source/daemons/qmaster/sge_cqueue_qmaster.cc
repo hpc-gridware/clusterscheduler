@@ -203,7 +203,7 @@ cqueue_add_qinstances(sge_gdi_ctx_class_t *ctx, lListElem *cqueue, lList **answe
    if (cqueue != NULL && add_hosts != NULL) {
       const lListElem *href = NULL;
 
-      for_each(href, add_hosts) {
+      for_each_ep(href, add_hosts) {
          const char *hostname = lGetHost(href, HR_name);
          lList *list = lGetListRW(cqueue, CQ_qinstances);
          lListElem* qinstance = lGetElemHostRW(list, QU_qhostname, hostname);
@@ -942,7 +942,7 @@ int cqueue_del(sge_gdi_ctx_class_t *ctx, lListElem *this_elem, lList **answer_li
             if (do_del) {
                const lListElem *tmp_cqueue;
                
-               for_each(tmp_cqueue, master_cqueue_list) {
+               for_each_ep(tmp_cqueue, master_cqueue_list) {
                
                   if (cqueue_is_used_in_subordinate(name, tmp_cqueue)) {
                      ERROR((SGE_EVENT, MSG_CQUEUE_DEL_ISREFASSUBORDINATE_SS, 
@@ -1122,7 +1122,7 @@ cqueue_list_set_unknown_state(lList *this_list, const char *hostname,
 {
    const lListElem *cqueue = NULL;
 
-   for_each(cqueue, this_list) {
+   for_each_ep(cqueue, this_list) {
       if (hostname != NULL) {
          const lList *qinstance_list = lGetList(cqueue, CQ_qinstances);
          lListElem *qinstance = lGetElemHostRW(qinstance_list, QU_qhostname, hostname);
@@ -1186,15 +1186,15 @@ static void cqueue_diff_sublist(const lListElem *new_cqueue, const lListElem *ol
 
    /* collect 'old' entries in 'old_sublist' */
    if (old_cqueue && old_sublist) {
-      for_each (qc, lGetList(old_cqueue, snm1)) {
-         for_each (ep, lGetList(qc, sublist_nm)) {
+      for_each_ep(qc, lGetList(old_cqueue, snm1)) {
+         for_each_ep(ep, lGetList(qc, sublist_nm)) {
             p = lGetString(ep, key_nm);
             if (!lGetElemStr(*old_sublist, key_nm, p))
                lAddElemStr(old_sublist, key_nm, p, dp);
          }
       }
-      for_each (qc, lGetList(old_cqueue, snm2)) {
-         for_each (ep, lGetList(qc, sublist_nm)) {
+      for_each_ep(qc, lGetList(old_cqueue, snm2)) {
+         for_each_ep(ep, lGetList(qc, sublist_nm)) {
             p = lGetString(ep, key_nm);
             if (!lGetElemStr(*old_sublist, key_nm, p))
                lAddElemStr(old_sublist, key_nm, p, dp);
@@ -1204,15 +1204,15 @@ static void cqueue_diff_sublist(const lListElem *new_cqueue, const lListElem *ol
 
    /* collect 'new' entries in 'new_sublist' */
    if (new_cqueue && new_sublist) {
-      for_each (qc, lGetList(new_cqueue, snm1)) {
-         for_each (ep, lGetList(qc, sublist_nm)) {
+      for_each_ep(qc, lGetList(new_cqueue, snm1)) {
+         for_each_ep(ep, lGetList(qc, sublist_nm)) {
             p = lGetString(ep, key_nm);
             if (!lGetElemStr(*new_sublist, key_nm, p))
                lAddElemStr(new_sublist, key_nm, p, dp);
          }
       }
-      for_each (qc, lGetList(new_cqueue, snm2)) {
-         for_each (ep, lGetList(qc, sublist_nm)) {
+      for_each_ep(qc, lGetList(new_cqueue, snm2)) {
+         for_each_ep(ep, lGetList(qc, sublist_nm)) {
             p = lGetString(ep, key_nm);
             if (!lGetElemStr(*new_sublist, key_nm, p))
                lAddElemStr(new_sublist, key_nm, p, dp);

@@ -164,7 +164,7 @@ int sort_dj_list(lList *djobs, lList *field_list, bool sort_waiting)
 
    if (lGetNumberOfElem(field_list) != 0) {
 
-      for_each(field_elem, field_list) {
+      for_each_ep(field_elem, field_list) {
          field_str = lGetString(field_elem, ST_name);
          /* pull out +/- if it is there */
          if ((strncmp(field_str, "+", 1) == 0)) {
@@ -286,7 +286,7 @@ int extract_dj_lists(lList *job_list, lList **active_jobs, lList **waiting_jobs,
       if (lGetPosViaElem(job, JB_ja_tasks, SGE_NO_ABORT) >= 0) {
          const lListElem      *jatep, *granted_destination;
 
-         for_each(jatep, lGetList(job, JB_ja_tasks)) {
+         for_each_ep(jatep, lGetList(job, JB_ja_tasks)) {
 
             job_state = lGetUlong(jatep, JAT_status);
             if ((job_state == JRUNNING) | (job_state == JTRANSFERING)) {
@@ -307,7 +307,7 @@ int extract_dj_lists(lList *job_list, lList **active_jobs, lList **waiting_jobs,
                 * as ranges, let's cut through the poo by drilling straight
                 * down to granted slots
                 */
-               for_each(granted_destination, lGetList(jatep, JAT_granted_destin_identifier_list)) {
+               for_each_ep(granted_destination, lGetList(jatep, JAT_granted_destin_identifier_list)) {
                   running_slots = running_slots + lGetUlong(granted_destination, JG_slots);
                }
 
@@ -395,7 +395,7 @@ int extract_dj_lists(lList *job_list, lList **active_jobs, lList **waiting_jobs,
       }
       /* process this job for waiting tasks */
       if (lGetPosViaElem(job, JB_ja_n_h_ids, SGE_NO_ABORT) >= 0) {
-         for_each(range_spec, lGetList(job, JB_ja_n_h_ids)) {
+         for_each_ep(range_spec, lGetList(job, JB_ja_n_h_ids)) {
             unf_task_range_min = lGetUlong(range_spec, RN_min);
             unf_task_range_max = lGetUlong(range_spec, RN_max);
             unf_task_range_step = lGetUlong(range_spec, RN_step);
@@ -587,7 +587,7 @@ int sum_slots(lList *dj_list)
    int             sum = 0;
    const lListElem      *entry;
 
-   for_each(entry, dj_list) {
+   for_each_ep(entry, dj_list) {
       sum += (int)lGetUlong(entry, TACCDJ_core);
    }
 
@@ -610,7 +610,7 @@ void show_active_jobs(lList *joblist, int flags, const bool binding)
    /* lList* req_queue_list = NULL; */
    const lListElem      *job;
 
-   for_each(job, joblist) {
+   for_each_ep(job, joblist) {
 
       if (lGetUlong(job, TACCDJ_jobid)) {
          printf("%-10d", (int) lGetUlong(job, TACCDJ_jobid));
@@ -718,7 +718,7 @@ void show_waiting_jobs(lList *joblist, int flags)
 
    const lListElem *job;
 
-   for_each(job, joblist) {
+   for_each_ep(job, joblist) {
 
       /*
        * display waiting tasks of this job in a summary fashion: If any tasks
@@ -808,7 +808,7 @@ static void get_core_binding_string(lListElem *job, const int task_number, dstri
       return;
    } 
 
-   for_each (jatep, lGetList(job, JB_ja_tasks)) {
+   for_each_ep(jatep, lGetList(job, JB_ja_tasks)) {
       /* int first_task = 1; */
       const lListElem *usage_elem;
       const char *binding_inuse = NULL; 
@@ -824,7 +824,7 @@ static void get_core_binding_string(lListElem *job, const int task_number, dstri
          continue;
       }
 
-      for_each (usage_elem, lGetList(jatep, JAT_scaled_usage_list)) {
+      for_each_ep(usage_elem, lGetList(jatep, JAT_scaled_usage_list)) {
          const char *binding_name = "binding_inuse";
          const char *usage_name = lGetString(usage_elem, UA_name);
 

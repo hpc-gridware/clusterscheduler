@@ -345,7 +345,7 @@ static int spool_object_list(const char *directory,
    DENTER(TOP_LAYER);
 
    direntries = sge_get_dirents(directory);
-   for_each(direntry, direntries) {
+   for_each_ep(direntry, direntries) {
       name = lGetString(direntry, ST_name);
       if (name[0] != '.') {
          sge_dstring_sprintf(&file, "%s/%s", directory, name);

@@ -370,7 +370,7 @@ static void rqs_excluded_cqueues(const lListElem *rule, sge_assignment_t *a)
 
    DENTER(TOP_LAYER);
 
-   for_each (cq, *object_type_get_master_list(SGE_TYPE_CQUEUE)) {
+   for_each_ep(cq, *object_type_get_master_list(SGE_TYPE_CQUEUE)) {
       const char *cqname = lGetString(cq, CQ_name);
       bool exclude = true;
 
@@ -431,7 +431,7 @@ static void rqs_excluded_hosts(const lListElem *rule, sge_assignment_t *a)
 
    DENTER(TOP_LAYER);
 
-   for_each (eh, a->host_list) {
+   for_each_ep(eh, a->host_list) {
       const char *hname = lGetHost(eh, EH_name);
       bool exclude = true;
 
@@ -488,7 +488,7 @@ static void rqs_expand_cqueues(const lListElem *rule, sge_assignment_t *a)
 
    DENTER(TOP_LAYER);
 
-   for_each (cq, *object_type_get_master_list(SGE_TYPE_CQUEUE)) {
+   for_each_ep(cq, *object_type_get_master_list(SGE_TYPE_CQUEUE)) {
       cqname = lGetString(cq, CQ_name);
       if (lGetElemStr(a->skip_cqueue_list, CTI_name, cqname))
          continue;
@@ -524,7 +524,7 @@ static void rqs_expand_hosts(const lListElem *rule, sge_assignment_t *a)
    const char *hname;
    lListElem *hfilter = lGetObject(rule, RQR_filter_hosts);
 
-   for_each (eh, a->host_list) {
+   for_each_ep(eh, a->host_list) {
       hname = lGetHost(eh, EH_name);
       if (lGetElemStr(a->skip_host_list, CTI_name, hname))
          continue;
@@ -838,11 +838,11 @@ bool sge_user_is_referenced_in_rqs(const lList *rqs, const char *user, const cha
    bool ret = false;
    const lListElem *ep;
 
-   for_each(ep, rqs) {
+   for_each_ep(ep, rqs) {
       const lList *rule_list = lGetList(ep, RQS_rule);
       const lListElem *rule;
 
-      for_each(rule, rule_list) {
+      for_each_ep(rule, rule_list) {
          /* there may be no per-user limitation and also not limitation that is special for this user */
          if ((is_expand(rule, RQR_filter_users) || !is_global(rule, RQR_filter_users)) &&
              rqs_filter_match(lGetObject(rule, RQR_filter_users), FILTER_USERS, user, acl_list, NULL, group)) {
@@ -898,7 +898,7 @@ void parallel_check_and_debit_rqs_slots(sge_assignment_t *a, const char *host, c
    DENTER(TOP_LAYER);
 
    /* first step - see how many slots are left */
-   for_each(rqs, a->rqs_list) {
+   for_each_ep(rqs, a->rqs_list) {
 
       /* ignore disabled rule sets */
       if (!lGetBool(rqs, RQS_enabled)) {
@@ -925,7 +925,7 @@ void parallel_check_and_debit_rqs_slots(sge_assignment_t *a, const char *host, c
 
    /* second step - reduce number of remaining slots  */
    if (*slots != 0 || *slots_qend != 0) {
-      for_each(rqs, a->rqs_list) {
+      for_each_ep(rqs, a->rqs_list) {
 
          /* ignore disabled rule sets */
          if (!lGetBool(rqs, RQS_enabled)) {
@@ -960,7 +960,7 @@ void parallel_revert_rqs_slot_debitation(sge_assignment_t *a, const char *host, 
 
    DENTER(TOP_LAYER);
 
-   for_each(rqs, a->rqs_list) {
+   for_each_ep(rqs, a->rqs_list) {
 
       /* ignore disabled rule sets */
       if (!lGetBool(rqs, RQS_enabled)) {
@@ -1048,13 +1048,13 @@ parallel_limit_slots_by_time(const sge_assignment_t *a, lList *requests,
    DPRINTF(("resource utilization: %s \"%s\" %f utilized now\n", 
          object_name?object_name:"<unknown_object>", lGetString(tmp_rue_elem, RUE_name),
             lGetDouble(tmp_rue_elem, RUE_utilized_now)));
-   for_each (rde, lGetList(tmp_rue_elem, RUE_utilized)) {
+   for_each_ep(rde, lGetList(tmp_rue_elem, RUE_utilized)) {
       DPRINTF(("\t"sge_U32CFormat"  %f\n", lGetUlong(rde, RDE_time), lGetDouble(rde, RDE_amount))); 
    }
    DPRINTF(("resource utilization: %s \"%s\" %f utilized now non-exclusive\n", 
          object_name?object_name:"<unknown_object>", lGetString(tmp_rue_elem, RUE_name),
             lGetDouble(tmp_rue_elem, RUE_utilized_now_nonexclusive)));
-   for_each (rde, lGetList(tmp_rue_elem, RUE_utilized_nonexclusive)) {
+   for_each_ep(rde, lGetList(tmp_rue_elem, RUE_utilized_nonexclusive)) {
       DPRINTF(("\t"sge_U32CFormat"  %f\n", lGetUlong(rde, RDE_time), lGetDouble(rde, RDE_amount))); 
    }
 }
@@ -1130,7 +1130,7 @@ parallel_rqs_slots_by_time(sge_assignment_t *a, int *slots, int *slots_qend, lLi
       if (a->pi)
          a->pi->par_rqs++;
 
-      for_each(rqs, a->rqs_list) {
+      for_each_ep(rqs, a->rqs_list) {
          lListElem *rule = NULL;
 
          /* ignore disabled rule sets */
@@ -1450,7 +1450,7 @@ dispatch_t rqs_by_slots(sge_assignment_t *a, const char *queue, const char *host
       a->pi->seq_rqs++;
    }
 
-   for_each(rqs, a->rqs_list) {
+   for_each_ep(rqs, a->rqs_list) {
       u_long32 tt_rqs = a->start;
       const char *user = a->user;
       const char *group = a->group;

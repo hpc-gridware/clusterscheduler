@@ -117,7 +117,7 @@ int schedd_log_list(lList **monitor_alpp, bool monitor_next_run, const char *log
 
    fields[0] = nm;
 
-   for_each(ep, lp) {
+   for_each_ep(ep, lp) {
       if (!lp_part) {
          lp_part = lCreateList("partial list", lGetListDescr(lp));
       }

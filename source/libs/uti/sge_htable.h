@@ -55,7 +55,7 @@ void sge_htable_destroy(htable ht);
 void sge_htable_store(htable ht, const void* key, const void* data);
 int sge_htable_lookup(htable ht, const void* key, const void** data);
 void sge_htable_delete(htable ht, const void* key);
-void sge_htable_for_each(htable ht, sge_htable_for_each_proc proc);
+void sge_htable_for_each_ep(htable ht, sge_htable_for_each_proc proc);
 long sge_htable_get_size(htable ht);
 
 const char *sge_htable_statistics(htable ht, dstring *buffer);

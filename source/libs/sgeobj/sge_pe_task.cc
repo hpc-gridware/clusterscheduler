@@ -149,7 +149,7 @@ lListElem *pe_task_sum_past_usage_all(lList *pe_task_list)
    }
 
    /* loop over all pe tasks and sum up usage */
-   for_each(pe_task, pe_task_list) {
+   for_each_ep(pe_task, pe_task_list) {
       if (container == NULL) {
          container = pe_task_sum_past_usage_list(pe_task_list, pe_task);
       } else {

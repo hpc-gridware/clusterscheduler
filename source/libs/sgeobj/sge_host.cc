@@ -138,7 +138,7 @@ bool host_is_referenced(const lListElem *host,
 
       /* look at all the queue instances and figure out, if one still references
          the host we are looking for */
-      for_each(cqueue, queue_list) { 
+      for_each_ep(cqueue, queue_list) {
          queue = lGetSubHost(cqueue, QU_qhostname, hostname, CQ_qinstances); 
 
          if (queue != NULL) {
@@ -158,7 +158,7 @@ bool host_is_referenced(const lListElem *host,
          const lListElem *hgrp_elem = NULL;
          lList *host_list = NULL;
 
-         for_each (hgrp_elem, hgrp_list) {
+         for_each_ep(hgrp_elem, hgrp_list) {
             hgroup_find_all_references(hgrp_elem, NULL, hgrp_list, &host_list, NULL);
             if (host_list != NULL) {
                if (lGetElemHost(host_list, HR_name, hostname) != NULL) {

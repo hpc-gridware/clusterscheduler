@@ -63,14 +63,14 @@ qrstat_print(lList **answer_list, qrstat_report_handler_t *handler, qrstat_env_t
 
           ret = false;
 
-          for_each(ar, qrstat_env->ar_id_list) {
+          for_each_ep(ar, qrstat_env->ar_id_list) {
             handler->report_start_unknown_ar(handler, qrstat_env, answer_list);
             handler->report_ar_node_ulong_unknown(handler, qrstat_env, answer_list, "id", lGetUlong(ar, ULNG_value));
             handler->report_finish_unknown_ar(handler, answer_list);
           }
           handler->report_newline(handler, answer_list);
       } else {
-         for_each(ar, qrstat_env->ar_list) {
+         for_each_ep(ar, qrstat_env->ar_list) {
 
             handler->report_start_ar(handler, qrstat_env, answer_list);
             handler->report_ar_node_ulong(handler, qrstat_env, answer_list, "id", lGetUlong(ar, AR_id));
@@ -85,9 +85,9 @@ qrstat_print(lList **answer_list, qrstat_report_handler_t *handler, qrstat_env_t
 
             if (qrstat_env->is_explain || handler->show_summary == false) {
                const lListElem *qinstance;
-               for_each(qinstance, lGetList(ar, AR_reserved_queues)) {
+               for_each_ep(qinstance, lGetList(ar, AR_reserved_queues)) {
                   const lListElem *qim = NULL;
-                  for_each(qim, lGetList(qinstance, QU_message_list)) {
+                  for_each_ep(qim, lGetList(qinstance, QU_message_list)) {
                      const char *message = lGetString(qim, QIM_message);
                      handler->report_ar_node_string(handler, answer_list, "message", message);
                   }
@@ -103,7 +103,7 @@ qrstat_print(lList **answer_list, qrstat_report_handler_t *handler, qrstat_env_t
                   const lListElem *resource = NULL;
 
                   handler->report_start_resource_list(handler, answer_list);            
-                  for_each(resource, lGetList(ar, AR_resource_list)) {
+                  for_each_ep(resource, lGetList(ar, AR_resource_list)) {
                      dstring string_value = DSTRING_INIT;
 
                      if (lGetString(resource, CE_stringval)) {
@@ -128,7 +128,7 @@ qrstat_print(lList **answer_list, qrstat_report_handler_t *handler, qrstat_env_t
                   const lListElem *resource = NULL;
 
                   handler->report_start_granted_slots_list(handler, answer_list);
-                  for_each(resource, lGetList(ar, AR_granted_slots)) {
+                  for_each_ep(resource, lGetList(ar, AR_granted_slots)) {
                      handler->report_granted_slots_list_node(handler, answer_list,
                                                              lGetString(resource, JG_qname),
                                                              lGetUlong(resource, JG_slots));
@@ -174,7 +174,7 @@ qrstat_print(lList **answer_list, qrstat_report_handler_t *handler, qrstat_env_t
                   const lListElem *mail = NULL;
 
                   handler->report_start_mail_list(handler, answer_list);
-                  for_each(mail, lGetList(ar, AR_mail_list)) {
+                  for_each_ep(mail, lGetList(ar, AR_mail_list)) {
                      const char *host=NULL;
                      host=lGetHost(mail, MR_host);
                      handler->report_mail_list_node(handler, answer_list,
@@ -187,7 +187,7 @@ qrstat_print(lList **answer_list, qrstat_report_handler_t *handler, qrstat_env_t
                   const lListElem *acl = NULL;
 
                   handler->report_start_acl_list(handler, answer_list);
-                  for_each(acl, lGetList(ar, AR_acl_list)) {
+                  for_each_ep(acl, lGetList(ar, AR_acl_list)) {
                      handler->report_acl_list_node(handler, answer_list,
                                                     lGetString(acl, ARA_name));
                   }
@@ -197,7 +197,7 @@ qrstat_print(lList **answer_list, qrstat_report_handler_t *handler, qrstat_env_t
                   const lListElem *xacl = NULL;
 
                   handler->report_start_xacl_list(handler, answer_list);
-                  for_each(xacl, lGetList(ar, AR_xacl_list)) {
+                  for_each_ep(xacl, lGetList(ar, AR_xacl_list)) {
                      handler->report_xacl_list_node(handler, answer_list,
                                                     lGetString(xacl, ARA_name));
                   }

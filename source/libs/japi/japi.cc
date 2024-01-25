@@ -1277,7 +1277,7 @@ static int japi_send_job(lListElem **sge_job_template, u_long32 *jobid, dstring 
     *  Each single answer message is at first added without newline 
     *  characters. Then a newline is added to delimit two messages.
     */
-   for_each(aep, alp) {
+   for_each_ep(aep, alp) {
       u_long32 quality;
       quality = lGetUlong(aep, AN_quality);
       
@@ -1727,7 +1727,7 @@ int japi_control(const char *jobid_str, int drmaa_action, dstring *diag)
          if (!strcmp(jobid_str, DRMAA_JOB_IDS_SESSION_ALL)) {
             const lListElem *japi_job;
             JAPI_LOCK_JOB_LIST();    
-            for_each (japi_job, Master_japi_job_list) {
+            for_each_ep(japi_job, Master_japi_job_list) {
                jobid = lGetUlong(japi_job, JJ_jobid);   
                if (!JOB_TYPE_IS_ARRAY(lGetUlong(japi_job, JJ_type))) {
                   char buffer[1024];
@@ -1740,7 +1740,7 @@ int japi_control(const char *jobid_str, int drmaa_action, dstring *diag)
                               ST_Type);
                } else {
                   const lListElem *range;
-                  for_each (range, lGetList(japi_job, JJ_not_yet_finished_ids)) {
+                  for_each_ep(range, lGetList(japi_job, JJ_not_yet_finished_ids)) {
                      char buffer[1024];
                      dstring job_task_specifier;
                      u_long32 start, end, step;
@@ -1818,7 +1818,7 @@ int japi_control(const char *jobid_str, int drmaa_action, dstring *diag)
             const lListElem *japi_job = NULL;
 
             JAPI_LOCK_JOB_LIST();    
-            for_each (japi_job, Master_japi_job_list) {
+            for_each_ep(japi_job, Master_japi_job_list) {
                jobid = lGetUlong(japi_job, JJ_jobid);
 
                if (!JOB_TYPE_IS_ARRAY(lGetUlong(japi_job, JJ_type))) {
@@ -1836,7 +1836,7 @@ int japi_control(const char *jobid_str, int drmaa_action, dstring *diag)
                } else {
                   const lListElem *range = NULL;
 
-                  for_each (range, lGetList(japi_job, JJ_not_yet_finished_ids)) {
+                  for_each_ep(range, lGetList(japi_job, JJ_not_yet_finished_ids)) {
                      u_long32 min, max, step;
 
                      range_get_all_ids(range, &min, &max, &step);
@@ -2229,7 +2229,7 @@ int japi_synchronize(const char *job_ids[], signed long timeout, bool dispose, d
       int count = 0;
       sync_list = lCreateList ("Synchronize Job List", ST_Type);
       
-      for_each (ep, Master_japi_job_list) {
+      for_each_ep(ep, Master_japi_job_list) {
          const lList *not_yet_finished = NULL;
          const lListElem *range;
          u_long32 task_id = 0;
@@ -2254,7 +2254,7 @@ int japi_synchronize(const char *job_ids[], signed long timeout, bool dispose, d
          id = lGetUlong(ep, JJ_jobid);
          
          /* handle all unfinished tasks */
-         for_each (range, not_yet_finished) {
+         for_each_ep(range, not_yet_finished) {
             range_get_all_ids(range, &min, &max, &step);
             
             for (task_id = min; task_id <= max; task_id += step) {
@@ -2273,7 +2273,7 @@ int japi_synchronize(const char *job_ids[], signed long timeout, bool dispose, d
       sync_job_ids = (const char**)sge_malloc (sizeof (char *) *
                                            (lGetNumberOfElem (sync_list) + 1));
       
-      for_each (ep, sync_list) {
+      for_each_ep(ep, sync_list) {
          sync_job_ids[count] = lGetString (ep, ST_name);
          count++;
       }
@@ -2638,7 +2638,7 @@ int japi_wait(const char *job_id, dstring *waited_job, int *stat,
 
             *rusage = japi_allocate_string_vector (JAPI_ITERATOR_STRINGS);
 
-            for_each (uep, rusagep) {
+            for_each_ep(uep, rusagep) {
                sep = lCreateElem (ST_Type);
                lAppendElem (slp, sep);
 
@@ -4185,7 +4185,7 @@ static void *japi_implementation_thread(void * a_user_data_pointer)
 
          DTRACE;
          
-         for_each (event, event_list) {
+         for_each_ep(event, event_list) {
             u_long32 type, intkey, intkey2;
             type = lGetUlong(event, ET_type);
             intkey = lGetUlong(event, ET_intkey);
@@ -4525,7 +4525,7 @@ static int japi_sync_job_tasks(lListElem *japi_job, lListElem *sge_job)
 
    /* keep all tasks in 'not yet finished list' if tasks are 
       still running or not yet running */
-   for_each (range, range_list_copy) {
+   for_each_ep(range, range_list_copy) {
       range_get_all_ids(range, &min, &max, &step);
       
       for (taskid = min; taskid <= max; taskid += step) {

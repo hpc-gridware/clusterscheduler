@@ -364,13 +364,13 @@ void user_list_init_jc(lList **user_list, lList **splitted_job_lists[])
    const lListElem *job;   /* JB_Type */
 
    if (splitted_job_lists[SPLIT_RUNNING] != NULL) {
-      for_each(job, *(splitted_job_lists[SPLIT_RUNNING])) {
+      for_each_ep(job, *(splitted_job_lists[SPLIT_RUNNING])) {
          sge_inc_jc(user_list, lGetString(job, JB_owner), 
                     job_get_ja_tasks(job));
       }
    }
    if (splitted_job_lists[SPLIT_SUSPENDED] != NULL) {
-      for_each(job, *(splitted_job_lists[SPLIT_SUSPENDED])) {
+      for_each_ep(job, *(splitted_job_lists[SPLIT_SUSPENDED])) {
          sge_inc_jc(user_list, lGetString(job, JB_owner), 
                     job_get_ja_tasks(job));
       }
@@ -936,7 +936,7 @@ void trash_splitted_jobs(bool monitor_next_run, lList **splitted_job_lists[])
       const lListElem *job = NULL;
       int is_first_of_category = 1;
 
-      for_each (job, *job_list) {
+      for_each_ep(job, *job_list) {
          u_long32 job_id = lGetUlong(job, JB_job_number);
 
          switch (split_id_a[i]) {
@@ -1013,7 +1013,7 @@ void job_lists_print(lList **job_list[])
       u_long32 ids = 0;
 
       if (job_list[i] && *(job_list[i])) {
-         for_each(job, *(job_list[i])) {
+         for_each_ep(job, *(job_list[i])) {
             ids += job_get_enrolled_ja_tasks(job);
             ids += job_get_not_enrolled_ja_tasks(job);
          }
@@ -1076,7 +1076,7 @@ int nslots_granted(const lList *granted, const char *qhostname)
    const void *iterator = NULL;
 
    if (qhostname == NULL) {
-      for_each (gdil_ep, granted) {   
+      for_each_ep(gdil_ep, granted) {
          nslots += lGetUlong(gdil_ep, JG_slots);
       }
    } else {
@@ -1103,14 +1103,14 @@ const char *qname
    const char *task_qname;
    const char *master_qname;
 
-   for_each(jatask, lGetList(job, JB_ja_tasks)) {
+   for_each_ep(jatask, lGetList(job, JB_ja_tasks)) {
       master_qname = lGetString(jatask, JAT_master_queue);
 
       /* always consider the master queue to have active sub-tasks */
       if (master_qname && !strcmp(qname, master_qname))
          return 1;
 
-      for_each(petask, lGetList(jatask, JAT_task_list)) {
+      for_each_ep(petask, lGetList(jatask, JAT_task_list)) {
          if (qname &&
              lGetUlong(petask, PET_status) != JFINISHED &&
              ((ep=lFirst(lGetList(petask, PET_granted_destin_identifier_list)))) &&
@@ -1133,8 +1133,8 @@ active_nslots_granted(lListElem *job, const lList *granted, const char *qhostnam
 
 
    if (qhostname == NULL) {
-      for_each (gdil_ep, granted) {   /* for all hosts */
-         for_each (jatask, lGetList(job, JB_ja_tasks)) {
+      for_each_ep(gdil_ep, granted) {   /* for all hosts */
+         for_each_ep(jatask, lGetList(job, JB_ja_tasks)) {
             task_list = lGetList(jatask, JAT_task_list);
             if (task_list == NULL || active_subtasks(job, lGetString(gdil_ep, JG_qname)))
                nslots += lGetUlong(gdil_ep, JG_slots);
@@ -1144,7 +1144,7 @@ active_nslots_granted(lListElem *job, const lList *granted, const char *qhostnam
       /* only for qhostname */
       gdil_ep = lGetElemHostFirstRW(granted, JG_qhostname, qhostname, &iterator);
       while (gdil_ep != NULL) {
-         for_each (jatask, lGetList(job, JB_ja_tasks)) {
+         for_each_ep(jatask, lGetList(job, JB_ja_tasks)) {
             task_list = lGetList(jatask, JAT_task_list);
             if (task_list == NULL || active_subtasks(job, lGetString(gdil_ep, JG_qname)))
                nslots += lGetUlong(gdil_ep, JG_slots);
@@ -1167,7 +1167,7 @@ const lList *gdil
    const lListElem *ep;
    int slots = 0;
 
-   for_each(ep, gdil) 
+   for_each_ep(ep, gdil)
       slots += lGetUlong(ep, JG_slots);
 
    return slots;

@@ -383,7 +383,7 @@ static void process_cmdline(char **anArgv)
       /*
       ** high level parsing error! show answer list
       */
-      for_each(aep, alp) {
+      for_each_ep(aep, alp) {
          fprintf(stderr, "%s", lGetString(aep, AN_text));
       }
       lFreeList(&alp);
@@ -396,7 +396,7 @@ static void process_cmdline(char **anArgv)
       /*
       ** low level parsing error! show answer list
       */
-      for_each(aep, alp) {
+      for_each_ep(aep, alp) {
          fprintf(stderr, "%s", lGetString(aep, AN_text));
       }
       lFreeList(&alp);
@@ -724,7 +724,7 @@ static void sge_propagate_queue_suspension(lListElem *jep, dstring *cqueue_name,
       u_long32 jstate = lGetUlong(jatep, JAT_state); 
       bool is_suspended = false;
 
-      for_each (gdil_ep, lGetList(jatep, JAT_granted_destin_identifier_list)) {
+      for_each_ep(gdil_ep, lGetList(jatep, JAT_granted_destin_identifier_list)) {
 
          if (!cqueue_name_split(lGetString(gdil_ep, JG_qname), cqueue_name, host_domain, NULL, NULL)) {
             continue;
@@ -1264,7 +1264,7 @@ remove_invalid_job_references(bool job_spooling, int user)
       debited_job_usage_key = UU_debited_job_usage;
    }
 
-   for_each(up, object_list) {
+   for_each_ep(up, object_list) {
       int spool_me = 0;
       next = lFirstRW(lGetList(up, debited_job_usage_key));
       while ((upu=next)) {
@@ -1322,7 +1322,7 @@ static int debit_all_jobs_from_qs()
          /* don't look at states - we only trust in 
             "granted destin. ident. list" */
 
-         for_each (gdi, lGetList(jatep, JAT_granted_destin_identifier_list)) {
+         for_each_ep(gdi, lGetList(jatep, JAT_granted_destin_identifier_list)) {
             u_long32 ar_id = lGetUlong(jep, JB_ar);
             const lListElem *ar   = NULL;
 
@@ -1396,7 +1396,7 @@ static void init_categories(void)
     * collect a list of references to usersets/projects used in
     * the resource quota sets
     */
-   for_each (rqs, *object_type_get_master_list(SGE_TYPE_RQS)) {
+   for_each_ep(rqs, *object_type_get_master_list(SGE_TYPE_RQS)) {
       if (!all_projects && !rqs_diff_projects(rqs, NULL, &p_list, NULL, master_project_list)) {
          all_projects = true;
       }
@@ -1412,16 +1412,16 @@ static void init_categories(void)
     * collect list of references to usersets/projects used as ACL
     * with queue_conf(5), host_conf(5) and sge_pe(5)
     */
-   for_each (cq, *object_type_get_master_list(SGE_TYPE_CQUEUE)) {
+   for_each_ep(cq, *object_type_get_master_list(SGE_TYPE_CQUEUE)) {
       cqueue_diff_projects(cq, NULL, &p_list, NULL);
       cqueue_diff_usersets(cq, NULL, &u_list, NULL);
    }
 
-   for_each (pe, *object_type_get_master_list(SGE_TYPE_PE)) {
+   for_each_ep(pe, *object_type_get_master_list(SGE_TYPE_PE)) {
       pe_diff_usersets(pe, NULL, &u_list, NULL);
    }
 
-   for_each (hep, *object_type_get_master_list(SGE_TYPE_EXECHOST)) {
+   for_each_ep(hep, *object_type_get_master_list(SGE_TYPE_EXECHOST)) {
       host_diff_projects(hep, NULL, &p_list, NULL);
       host_diff_usersets(hep, NULL, &u_list, NULL);
    }
@@ -1429,11 +1429,11 @@ static void init_categories(void)
    /*
     * now set categories flag with usersets/projects used as ACL
     */
-   for_each(ep, p_list)
+   for_each_ep(ep, p_list)
       if ((prj = prj_list_locate(master_project_list, lGetString(ep, PR_name))))
          lSetBool(prj, PR_consider_with_categories, true);
 
-   for_each(ep, u_list)
+   for_each_ep(ep, u_list)
       if ((acl = userset_list_locate(master_userset_list, lGetString(ep, US_name))))
          lSetBool(acl, US_consider_with_categories, true);
    

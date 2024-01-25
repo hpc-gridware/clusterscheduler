@@ -66,7 +66,7 @@
 *
 *     void sge_htable_delete(htable ht, const void* key);
 *
-*     void sge_htable_for_each(htable ht, 
+*     void sge_htable_for_each_ep(htable ht,
 *                              sge_htable_for_each_proc proc);
 *
 *  FUNCTION
@@ -276,12 +276,12 @@ void sge_htable_destroy(htable ht)
     sge_free(&ht);
 }
 
-/****** uti/htable/sge_htable_for_each() **************************************
+/****** uti/htable/sge_htable_for_each_ep() **************************************
 *  NAME
-*     sge_htable_for_each() -- Apply an action on all elements
+*     sge_htable_for_each_ep() -- Apply an action on all elements
 *
 *  SYNOPSIS
-*     void sge_htable_for_each(htable table, 
+*     void sge_htable_for_each_ep(htable table,
 *                              sge_htable_for_each_proc proc) 
 *
 *  FUNCTION
@@ -291,7 +291,7 @@ void sge_htable_destroy(htable ht)
 *     htable table                  - the hash table
 *     sge_htable_for_each_proc proc - func to call for each element 
 ******************************************************************************/
-void sge_htable_for_each(htable table, sge_htable_for_each_proc proc)
+void sge_htable_for_each_ep(htable table, sge_htable_for_each_proc proc)
 {
     int i;
     Bucket *bucket;

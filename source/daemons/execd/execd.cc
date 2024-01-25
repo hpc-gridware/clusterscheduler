@@ -551,7 +551,7 @@ static void parse_cmdline_execd(char **argv)
       /* 
       ** high level parsing error! show answer list
       */
-      for_each(aep, alp) {
+      for_each_ep(aep, alp) {
          fprintf(stderr, "%s", lGetString(aep, AN_text));
       }
       lFreeList(&alp);
@@ -568,7 +568,7 @@ static void parse_cmdline_execd(char **argv)
       /*
       ** low level parsing error! show answer list
       */
-      for_each(aep, alp) {
+      for_each_ep(aep, alp) {
          fprintf(stderr, "%s", lGetString(aep, AN_text));
       }
       lFreeList(&alp);

@@ -149,7 +149,7 @@ bool rqs_get_via_gdi(sge_gdi_ctx_class_t *ctx, lList **answer_list, const lList 
 
       what = lWhat("%T(ALL)", RQS_Type);
 
-      for_each(rqsref, rqsref_list) {
+      for_each_ep(rqsref, rqsref_list) {
          lCondition *add_where = NULL;
          add_where = lWhere("%T(%I p= %s)", RQS_Type, RQS_name, lGetString(rqsref, RQS_name));
          if (where == NULL) {
@@ -554,7 +554,7 @@ bool rqs_modify_from_file(sge_gdi_ctx_class_t *ctx, lList **answer_list, const c
             gdi_command = SGE_GDI_MOD | SGE_GDI_SET_ALL;
 
             lString2List(name, &selected_rqs_list, RQS_Type, RQS_name, ", ");
-            for_each(tmp_rqs, selected_rqs_list) {
+            for_each_ep(tmp_rqs, selected_rqs_list) {
                lListElem *found = rqs_list_locate(rqs_list, lGetString(tmp_rqs, RQS_name));
                if (found != NULL) {
                   lAppendElem(found_rqs_list, lCopyElem(found));

@@ -107,7 +107,7 @@ int sge_get_path(const char *qualified_hostname, const lList *lp, const char *cw
       /* 
        * hostname: wasn't set, look for a default 
        */
-      for_each(ep, lp) {
+      for_each_ep(ep, lp) {
          path = expand_path(&dstr_exp_path, lGetString(ep, PN_path), job_number, ja_task_number, job_name, owner, qualified_hostname);
          host = lGetHost(ep, PN_host);
          if (host == NULL) {

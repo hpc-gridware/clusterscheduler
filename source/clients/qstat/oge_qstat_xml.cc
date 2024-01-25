@@ -1078,7 +1078,7 @@ void xml_qstat_show_job_info(lList **list, lList **answer_list, qstat_env_t *qst
    lListElem *jid_ulng = NULL; 
    DENTER(TOP_LAYER);
 
-   for_each(answer, *answer_list) {
+   for_each_ep(answer, *answer_list) {
       if (lGetUlong(answer, AN_status) != STATUS_OK) {
          error = true;
          break;
@@ -1132,7 +1132,7 @@ void xml_qstat_show_job(lList **job_list, lList **msg_list, lList **answer_list,
 
    DENTER(TOP_LAYER);
    
-   for_each(answer, *answer_list) {
+   for_each_ep(answer, *answer_list) {
       if (lGetUlong(answer, AN_status) != STATUS_OK) {
          error = true;
          break;

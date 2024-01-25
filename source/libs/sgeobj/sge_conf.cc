@@ -604,7 +604,7 @@ int merge_configuration(lList **answer_list, u_long32 progid, const char *cell_r
    */
    if (global) {
       cl = lGetList(global, CONF_entries); 
-      for_each(elem, cl) {
+      for_each_ep(elem, cl) {
          ep2 = lGetElemCaseStr(*lpp, CF_name, lGetString(elem, CF_name));
          if (ep2) {
             lSetString(ep2, CF_value, lGetString(elem, CF_value));
@@ -616,7 +616,7 @@ int merge_configuration(lList **answer_list, u_long32 progid, const char *cell_r
    /* Merge in local configuration */
    if (local) {
       cl = lGetList(local, CONF_entries); 
-      for_each(elem, cl) {
+      for_each_ep(elem, cl) {
          ep2 = lGetElemCaseStr(*lpp, CF_name, lGetString(elem, CF_name));
          if (ep2 && lGetUlong(ep2, CF_local)) {
             lSetString(ep2, CF_value, lGetString(elem, CF_value));
@@ -1131,23 +1131,23 @@ void sge_show_conf()
    DPRINTF(("conf.libjvm_path >%s<\n", Master_Config.libjvm_path));
    DPRINTF(("conf.additional_jvm_args >%s<\n", Master_Config.additional_jvm_args));
 
-   for_each (ep, Master_Config.user_lists) {
+   for_each_ep(ep, Master_Config.user_lists) {
       DPRINTF(("%s             >%s<\n", 
               lPrev(ep)?"             ":"conf.user_lists", 
               lGetString(ep, US_name)));
    }
-   for_each (ep, Master_Config.xuser_lists) {
+   for_each_ep(ep, Master_Config.xuser_lists) {
       DPRINTF(("%s            >%s<\n", 
               lPrev(ep)?"              ":"conf.xuser_lists", 
               lGetString(ep, US_name)));
    }
 
-   for_each (ep, Master_Config.projects) {
+   for_each_ep(ep, Master_Config.projects) {
       DPRINTF(("%s             >%s<\n", 
               lPrev(ep)?"             ":"conf.projects", 
               lGetString(ep, PR_name)));
    }
-   for_each (ep, Master_Config.xprojects) {
+   for_each_ep(ep, Master_Config.xprojects) {
       DPRINTF(("%s            >%s<\n", 
               lPrev(ep)?"              ":"conf.xprojects", 
               lGetString(ep, PR_name)));

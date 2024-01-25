@@ -394,7 +394,7 @@ void answer_list_to_dstring(const lList *alp, dstring *diag)
          
          sge_dstring_clear(diag);
          
-         for_each(aep, alp) {
+         for_each_ep(aep, alp) {
             const char *s;
 
             s = lGetString(aep, AN_text);
@@ -501,7 +501,7 @@ bool answer_list_has_quality(lList **answer_list, answer_quality_t quality)
    if (answer_list != NULL) {
       const lListElem *answer;   /* AN_Type */
 
-      for_each(answer, *answer_list) {
+      for_each_ep(answer, *answer_list) {
          if (answer_has_quality(answer, quality)) {
             ret = true;
             break;
@@ -579,7 +579,7 @@ bool answer_list_has_status(lList **answer_list, u_long32 status)
    if (answer_list != NULL) {
       const lListElem *answer;   /* AN_Type */
 
-      for_each(answer, *answer_list) {
+      for_each_ep(answer, *answer_list) {
          if (answer_get_status(answer) == status) {
             ret = true;
             break;
@@ -646,7 +646,7 @@ void answer_list_on_error_print_or_exit(lList **answer_list, FILE *stream)
    const lListElem *answer;   /* AN_Type */
 
    DENTER(ANSWER_LAYER);
-   for_each(answer, *answer_list) {
+   for_each_ep(answer, *answer_list) {
       answer_exit_if_not_recoverable(answer);
       answer_print_text(answer, stream, NULL, NULL);
    }
@@ -695,7 +695,7 @@ int answer_list_print_err_warn(lList **answer_list,
    u_long32 status = 0;
 
    DENTER(ANSWER_LAYER);
-   for_each(answer, *answer_list) {
+   for_each_ep(answer, *answer_list) {
       if (answer_has_quality(answer, ANSWER_QUALITY_CRITICAL)) {
          answer_print_text(answer, stderr, critical_prefix, NULL);
          if (do_exit == 0) {
@@ -751,7 +751,7 @@ int answer_list_handle_request_answer_list(lList **answer_list, FILE *stream) {
    if(answer_list != NULL && *answer_list != NULL) {
       const lListElem *answer;
 
-      for_each(answer, *answer_list) {
+      for_each_ep(answer, *answer_list) {
          if(answer_has_quality(answer, ANSWER_QUALITY_CRITICAL) ||
             answer_has_quality(answer, ANSWER_QUALITY_ERROR) ||
             answer_has_quality(answer, ANSWER_QUALITY_WARNING)) {
@@ -960,7 +960,7 @@ bool answer_list_log(lList **answer_list, bool is_free_list, bool show_info) {
    DENTER(ANSWER_LAYER);
 
    if (answer_list != NULL && *answer_list != NULL) {
-      for_each(answer, *answer_list) {
+      for_each_ep(answer, *answer_list) {
          ret = answer_log(answer, show_info);
       }
       if (is_free_list) {
@@ -1066,7 +1066,7 @@ int show_answer(lList *alp)
    
    if (alp != NULL) {
     
-      for_each(aep,alp) {
+      for_each_ep(aep,alp) {
          answer_exit_if_not_recoverable(aep);
          if (lGetUlong(aep, AN_status) != STATUS_OK) {
             ret = 1;
@@ -1089,7 +1089,7 @@ int show_answer_list(lList *alp)
    DENTER(TOP_LAYER);
    
    if (alp != NULL) {
-      for_each(aep,alp) {
+      for_each_ep(aep,alp) {
          if (lGetUlong(aep, AN_quality) == ANSWER_QUALITY_END) {
             continue;
          }

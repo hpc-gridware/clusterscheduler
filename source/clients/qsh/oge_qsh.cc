@@ -584,7 +584,7 @@ static int parse_result_list(lList *alp, int *alp_error)
 
    *alp_error = 0;
 
-   for_each(aep, alp) {
+   for_each_ep(aep, alp) {
       u_long32 status  = lGetUlong(aep, AN_status);
       u_long32 quality = lGetUlong(aep, AN_quality);
       if (quality == ANSWER_QUALITY_ERROR) {
@@ -1933,7 +1933,7 @@ int main(int argc, char **argv)
 
       status = 0; 
       
-      for_each(aep, alp) {
+      for_each_ep(aep, alp) {
          quality = lGetUlong(aep, AN_quality);
          if (quality == ANSWER_QUALITY_ERROR) {
             fprintf(stderr, "%s\n", lGetString(aep, AN_text));

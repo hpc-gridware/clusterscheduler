@@ -292,7 +292,7 @@ sge_callback_result spool_event_before(sge_evc_class_t *evc, sge_object_type typ
          case SGE_TYPE_SUBMITHOST:
          case SGE_TYPE_CONFIG:
          case SGE_TYPE_HGROUP:
-            for_each(ep, *master_list) {
+            for_each_ep(ep, *master_list) {
                const lListElem *new_ep = lGetElemHost(new_list, key_nm, lGetHost(ep, key_nm));
 
                if (new_ep == NULL) {
@@ -302,7 +302,7 @@ sge_callback_result spool_event_before(sge_evc_class_t *evc, sge_object_type typ
                }
             }   
 
-            for_each(ep, new_list) {
+            for_each_ep(ep, new_list) {
                const char *key = lGetHost(ep, key_nm);
                const lListElem *old_ep = lGetElemHost(*master_list, key_nm, key);
 
@@ -325,7 +325,7 @@ sge_callback_result spool_event_before(sge_evc_class_t *evc, sge_object_type typ
          case SGE_TYPE_CQUEUE:
          case SGE_TYPE_USER:
          case SGE_TYPE_USERSET:
-            for_each(ep, *master_list) {
+            for_each_ep(ep, *master_list) {
                const lListElem *new_ep = lGetElemStr(new_list, key_nm, lGetString(ep, key_nm));
                if (new_ep == NULL) {
                   /* object not contained in new list, delete it */
@@ -334,7 +334,7 @@ sge_callback_result spool_event_before(sge_evc_class_t *evc, sge_object_type typ
                }
             }
 
-            for_each(ep, new_list) {
+            for_each_ep(ep, new_list) {
                const char *key = lGetString(ep, key_nm);
                const lListElem *old_ep = lGetElemStr(*master_list, key_nm, key);
 
@@ -350,7 +350,7 @@ sge_callback_result spool_event_before(sge_evc_class_t *evc, sge_object_type typ
             break;
 
          case SGE_TYPE_JOB:
-            for_each(ep, *master_list) {
+            for_each_ep(ep, *master_list) {
                const lListElem *new_ep = lGetElemUlong(new_list, key_nm, lGetUlong(ep, key_nm));
                if (new_ep == NULL) {
                   const char *job_key;
@@ -361,7 +361,7 @@ sge_callback_result spool_event_before(sge_evc_class_t *evc, sge_object_type typ
                }
             }
 
-            for_each(ep, new_list) {
+            for_each_ep(ep, new_list) {
                u_long32 key = lGetUlong(ep, key_nm);
                const lListElem *old_ep = lGetElemUlong(*master_list, key_nm, key);
 

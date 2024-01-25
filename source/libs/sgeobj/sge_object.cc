@@ -2475,7 +2475,7 @@ object_list_verify_cull(const lList *lp, const lDescr *descr)
    /* recursively check sublists and subobjects */
    if (ret) {
       const lListElem *ep;
-      for_each (ep, lp) {
+      for_each_ep(ep, lp) {
          if (!object_verify_cull(ep, NULL)) {
             ret = false;
             break;
@@ -2869,7 +2869,7 @@ int object_verify_pe_range(lList **alpp, const char *pe_name, lList *pe_range,
    /* ensure jobs PE range list request is normalized and ascending */
    range_list_sort_uniq_compress(pe_range, NULL, true);
    
-   for_each(relem, pe_range) {
+   for_each_ep(relem, pe_range) {
       pe_range_min = lGetUlong(relem, RN_min);
       pe_range_max = lGetUlong(relem, RN_max);
       DPRINTF(("pe max = %ld, pe min = %ld\n", pe_range_max, pe_range_min));
@@ -2888,7 +2888,7 @@ int object_verify_pe_range(lList **alpp, const char *pe_name, lList *pe_range,
       const lListElem *reference_pe = pe_list_find_matching(master_pe_list, pe_name);
       const lListElem *pe;
       int nslots = pe_urgency_slots(reference_pe, lGetString(reference_pe, PE_urgency_slots), pe_range);
-      for_each(pe, master_pe_list) {
+      for_each_ep(pe, master_pe_list) {
          if (pe_is_matching(pe, pe_name) &&
              nslots != pe_urgency_slots(pe, lGetString(pe, PE_urgency_slots), pe_range))
          {

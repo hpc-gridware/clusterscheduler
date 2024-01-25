@@ -161,7 +161,7 @@ int rqs_mod(sge_gdi_ctx_class_t *ctx,
          const lList *rule_list = lGetList(rqs, RQS_rule);
          const lListElem *rule = NULL;
 
-         for_each(rule, rule_list) {
+         for_each_ep(rule, rule_list) {
             lList *new_rule_list = lGetListRW(new_rqs, RQS_rule);
             lListElem *new_rule = NULL;
 
@@ -413,7 +413,7 @@ rqs_reinit_consumable_actual_list(lListElem *rqs, lList **answer_list) {
       lListElem *job;
       const lListElem * rule = NULL;
 
-      for_each(rule, lGetList(rqs, RQS_rule)) {
+      for_each_ep(rule, lGetList(rqs, RQS_rule)) {
          lListElem *limit = NULL;
          for_each_rw(limit, lGetList(rule, RQR_limit)) {
             lList *usage = NULL;
@@ -430,12 +430,12 @@ rqs_reinit_consumable_actual_list(lListElem *rqs, lList **answer_list) {
          const lList *ja_task_list = lGetList(job, JB_ja_tasks);
          const lListElem *ja_task = NULL;
 
-         for_each(ja_task, ja_task_list) {
+         for_each_ep(ja_task, ja_task_list) {
             const lListElem *granted = NULL;
             const lList *gdi_list = lGetList(ja_task, JAT_granted_destin_identifier_list);
             bool is_master_task = true;
 
-            for_each(granted, gdi_list) {
+            for_each_ep(granted, gdi_list) {
                int tmp_slot = lGetUlong(granted, JG_slots);
                rqs_debit_consumable(rqs, job, granted, lGetString(ja_task, JAT_granted_pe), master_centry_list,
                                      master_userset_list, master_hgroup_list, tmp_slot, is_master_task);
@@ -490,7 +490,7 @@ static bool filter_diff_usersets_or_projects_scope(lList *filter_scope, int filt
 
    DENTER(TOP_LAYER);
 
-   for_each(scope_ep, filter_scope) {
+   for_each_ep(scope_ep, filter_scope) {
       scope = lGetString(scope_ep, ST_name);
       if (filter_nm == RQR_filter_users) {
          if (!is_hgroup_name(scope)) {
@@ -516,7 +516,7 @@ static bool filter_diff_usersets_or_projects_scope(lList *filter_scope, int filt
       } else {
          if (sge_is_pattern(scope)) {
             const lListElem *ep;
-            for_each(ep, master_list) {
+            for_each_ep(ep, master_list) {
                const char* ep_entry = lGetString(ep, nm);
                if (fnmatch(scope, ep_entry, 0) == 0) {
                   if (lGetElemStr(*scope_ref, nm, scope) == NULL) {
@@ -631,7 +631,7 @@ bool rqs_diff_usersets(const lListElem *new_rqs, const lListElem *old_rqs, lList
    DENTER(TOP_LAYER);
 
    if (old_rqs && old_list) {
-      for_each(rule, lGetList(old_rqs, RQS_rule)) {
+      for_each_ep(rule, lGetList(old_rqs, RQS_rule)) {
          if (!filter_diff_usersets_or_projects(rule, RQR_filter_users, old_list, US_name, US_Type, master_userset_list)) {
             break;
          } 
@@ -639,7 +639,7 @@ bool rqs_diff_usersets(const lListElem *new_rqs, const lListElem *old_rqs, lList
    }
 
    if (new_rqs && new_list) {
-      for_each(rule, lGetList(new_rqs, RQS_rule)) {
+      for_each_ep(rule, lGetList(new_rqs, RQS_rule)) {
          if (!filter_diff_usersets_or_projects(rule, RQR_filter_users, new_list, US_name, US_Type, master_userset_list)) {
             if (!old_rqs || lGetNumberOfElem(*old_list) == 0) {
                ret = false;
@@ -691,7 +691,7 @@ bool rqs_diff_projects(const lListElem *new_rqs, const lListElem *old_rqs, lList
 
    if (old_rqs && old_list) {
       const lListElem *rule;
-      for_each(rule, lGetList(old_rqs, RQS_rule)) {
+      for_each_ep(rule, lGetList(old_rqs, RQS_rule)) {
          if (!filter_diff_usersets_or_projects(rule, RQR_filter_projects, old_list, PR_name, PR_Type, master_project_list)) {
             break;
          } 
@@ -700,7 +700,7 @@ bool rqs_diff_projects(const lListElem *new_rqs, const lListElem *old_rqs, lList
 
    if (new_rqs && new_list) {
       const lListElem *rule;
-      for_each(rule, lGetList(new_rqs, RQS_rule)) {
+      for_each_ep(rule, lGetList(new_rqs, RQS_rule)) {
          if (!filter_diff_usersets_or_projects(rule, RQR_filter_projects, new_list, PR_name, PR_Type, master_project_list)) {
             if (!old_rqs || lGetNumberOfElem(*old_list) == 0) {
                ret = false;
@@ -800,11 +800,11 @@ scope_is_referenced_rqs(const lListElem *rqs, int nm, const char *name) {
       DRETURN(ret);
    }
 
-   for_each (rule, lGetList(rqs, RQS_rule)) {
+   for_each_ep(rule, lGetList(rqs, RQS_rule)) {
       lListElem *filter = lGetObject(rule, nm);
       if (filter != NULL) {
          const lListElem *scope_ep;
-         for_each(scope_ep, lGetList(filter, RQRF_scope)) {
+         for_each_ep(scope_ep, lGetList(filter, RQRF_scope)) {
             const char* scope = lGetString(scope_ep, ST_name);
             if (fnmatch(scope, name, 0) == 0) {
                ret = true;
@@ -814,7 +814,7 @@ scope_is_referenced_rqs(const lListElem *rqs, int nm, const char *name) {
          if (ret) {
             break;
          }
-         for_each(scope_ep, lGetList(filter, RQRF_xscope)) {
+         for_each_ep(scope_ep, lGetList(filter, RQRF_xscope)) {
             const char* scope = lGetString(scope_ep, ST_name);
             if (fnmatch(scope, name, 0) == 0) {
                ret = true;

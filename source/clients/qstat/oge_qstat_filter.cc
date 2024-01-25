@@ -171,10 +171,10 @@ int qselect(qstat_env_t* qstat_env, qselect_handler_t* handler, lList **alpp) {
    if (handler->report_started != NULL) {
       handler->report_started(handler, alpp);
    }
-   for_each(cqueue, qstat_env->queue_list) {
+   for_each_ep(cqueue, qstat_env->queue_list) {
       const lList *qinstance_list = lGetList(cqueue, CQ_qinstances);
 
-      for_each(qep, qinstance_list) {
+      for_each_ep(qep, qinstance_list) {
          if ((lGetUlong(qep, QU_tag) & TAG_SHOW_IT)!=0) {
             if (handler->report_queue != NULL) {
                handler->report_queue(handler, lGetString(qep, QU_full_name), alpp);
@@ -225,7 +225,7 @@ int qstat_cqueue_summary(qstat_env_t *qstat_env, cqueue_summary_handler_t *handl
    }
    
 
-   for_each (cqueue, qstat_env->queue_list) {
+   for_each_ep(cqueue, qstat_env->queue_list) {
       if (lGetUlong(cqueue, CQ_tag) != TAG_DEFAULT) {
          cqueue_summary_t summary;
          
@@ -391,7 +391,7 @@ static void calc_longest_queue_length(qstat_env_t *qstat_env) {
    if ((env = getenv("SGE_LONG_QNAMES")) != NULL){
       qstat_env->longest_queue_length = atoi(env);
       if (qstat_env->longest_queue_length == -1) {
-         for_each(qep, qstat_env->queue_list) {
+         for_each_ep(qep, qstat_env->queue_list) {
             int length;
             const char *queue_name =lGetString(qep, name);
             if ((length = strlen(queue_name)) > qstat_env->longest_queue_length){
@@ -758,7 +758,7 @@ static int filter_jobs(qstat_env_t *qstat_env, lList **alpp) {
 
          show_job = 0;
 
-         for_each(cqueue, qstat_env->queue_list) {
+         for_each_ep(cqueue, qstat_env->queue_list) {
             const lList *qinstance_list = lGetList(cqueue, CQ_qinstances);
 
             for_each_rw(qep, qinstance_list) {
@@ -944,11 +944,11 @@ int filter_queues(lList **filtered_queue_list,
 
    if (rmon_mlgetl(&RMON_DEBUG_ON, GDI_LAYER) & INFOPRINT) {
       const lListElem *cqueue;
-      for_each(cqueue, queue_list) {
+      for_each_ep(cqueue, queue_list) {
          const lListElem *qep;
          const lList *qinstance_list = lGetList(cqueue, CQ_qinstances);
 
-         for_each(qep, qinstance_list) {
+         for_each_ep(qep, qinstance_list) {
             if ((lGetUlong(qep, QU_tag) & TAG_SHOW_IT)!=0) {
                DPRINTF(("++ %s\n", lGetString(qep, QU_full_name)));
             } else {
@@ -1050,7 +1050,7 @@ static int qstat_env_get_all_lists(qstat_env_t* qstat_env, bool need_job_list, l
    ** job zombies
    */
    if (zombie_l && show_zombies) {
-      for_each(ep, user_list) {
+      for_each_ep(ep, user_list) {
          nw = lWhere("%T(%I p= %s)", JB_Type, JB_owner, lGetString(ep, ST_name));
          if (!zw)
             zw = nw;
@@ -1226,7 +1226,7 @@ static int qstat_env_get_all_lists(qstat_env_t* qstat_env, bool need_job_list, l
       {
          lListElem *elem = NULL;
 
-         for_each(elem, *job_l) {
+         for_each_ep(elem, *job_l) {
             lListElem *task = lFirst(lGetList(elem, JB_ja_tasks));
 
             fprintf(stderr, "jid="sge_u32" ", lGetUlong(elem, JB_job_number));
@@ -1479,7 +1479,7 @@ static int handle_queue(lListElem *q, qstat_env_t *qstat_env, qstat_handler_t *h
       const lList *qim_list = lGetList(q, QU_message_list);
       const lListElem *qim = NULL;
 
-      for_each(qim, qim_list) {
+      for_each_ep(qim, qim_list) {
          u_long32 type = lGetUlong(qim, QIM_type);
 
          if ((qstat_env->explain_bits & QI_AMBIGUOUS) == type || 
@@ -1899,7 +1899,7 @@ static int handle_jobs_not_enrolled(lListElem *job, bool print_jobid, char *mast
          } else {
             const lListElem *range; /* RN_Type */
             
-            for_each(range, range_list[i]) {
+            for_each_ep(range, range_list[i]) {
                u_long32 start, end, step;
                range_get_all_ids(range, &start, &end, &step);
                for (; start <= end; start += step) { 
@@ -2038,7 +2038,7 @@ static int sge_handle_job(lListElem *job, lListElem *jatep, lListElem *qep, lLis
       /* sum pe-task usage based on queue slots */
       if (job_usage_list) {
          int subtask_ndx=1;
-         for_each(task, lGetList(jatep, JAT_task_list)) {
+         for_each_ep(task, lGetList(jatep, JAT_task_list)) {
             lListElem *dst;
             const lListElem *src;
             const lListElem *ep;
@@ -2049,7 +2049,7 @@ static int sge_handle_job(lListElem *job, lListElem *jatep, lListElem *qep, lLis
                  ((ep=lFirst(lGetList(task, PET_granted_destin_identifier_list)))) &&
                  ((qname=lGetString(ep, JG_qname))) &&
                  !strcmp(qname, summary.queue) && ((subtask_ndx++%slots)==slot))) {
-               for_each(src, lGetList(task, PET_scaled_usage)) {
+               for_each_ep(src, lGetList(task, PET_scaled_usage)) {
                   if ((dst=lGetElemStrRW(job_usage_list, UA_name, lGetString(src, UA_name))))
                      lSetDouble(dst, UA_value, lGetDouble(dst, UA_value) + lGetDouble(src, UA_value));
                   else
@@ -2231,7 +2231,7 @@ static int sge_handle_job(lListElem *job, lListElem *jatep, lListElem *qep, lLis
       if (lGetString(jatep, JAT_granted_pe) && handler->report_granted_pe) {
          const lListElem *gdil_ep;
          u_long32 pe_slots = 0;
-         for_each (gdil_ep, lGetList(jatep, JAT_granted_destin_identifier_list)) {
+         for_each_ep(gdil_ep, lGetList(jatep, JAT_granted_destin_identifier_list)) {
             pe_slots += lGetUlong(gdil_ep, JG_slots);
          }
          
@@ -2267,7 +2267,7 @@ static int sge_handle_job(lListElem *job, lListElem *jatep, lListElem *qep, lLis
          lListElem *hep;
 
          queue_complexes2scheduler(&attributes, qep, qstat_env->exechost_list, qstat_env->centry_list);
-         for_each (ce, attributes) {
+         for_each_ep(ce, attributes) {
             double dval;
 
             name = lGetString(ce, CE_name);
@@ -2321,7 +2321,7 @@ static int sge_handle_job(lListElem *job, lListElem *jatep, lListElem *qep, lLis
                DPRINTF(("handler->report_hard_requested_queues_started failed\n"));
                goto error;
             }
-            for_each(qrep, ql) {
+            for_each_ep(qrep, ql) {
                if ((ret=handler->report_hard_requested_queue(handler, lGetString(qrep, QR_name), alpp))) {
                   DPRINTF(("handler->report_hard_requested_queue failed\n"));
                   goto error;
@@ -2341,7 +2341,7 @@ static int sge_handle_job(lListElem *job, lListElem *jatep, lListElem *qep, lLis
                DPRINTF(("handler->report_soft_requested_queue_started failed\n"));
                goto error;
             }
-            for_each(qrep, ql) {
+            for_each_ep(qrep, ql) {
                if ((ret=handler->report_soft_requested_queue(handler, lGetString(qrep, QR_name), alpp))) {
                   DPRINTF(("handler->report_soft_requested_queue failed\n"));
                   goto error;
@@ -2361,7 +2361,7 @@ static int sge_handle_job(lListElem *job, lListElem *jatep, lListElem *qep, lLis
                DPRINTF(("handler->report_master_hard_requested_queues_started failed\n"));
                goto error;
             }
-            for_each(qrep, ql) {
+            for_each_ep(qrep, ql) {
                if ((ret=handler->report_master_hard_requested_queue(handler, lGetString(qrep, QR_name), alpp))) {
                   DPRINTF(("handler->report_master_hard_requested_queue failed\n"));
                   goto error;
@@ -2383,7 +2383,7 @@ static int sge_handle_job(lListElem *job, lListElem *jatep, lListElem *qep, lLis
                goto error;
             }
             
-            for_each(qrep, ql) {
+            for_each_ep(qrep, ql) {
                if ((ret=handler->report_predecessor_requested(handler, lGetString(qrep, JRE_job_name), alpp))) {
                   DPRINTF(("handler->report_predecessor_requested failed\n"));
                   goto error;
@@ -2406,7 +2406,7 @@ static int sge_handle_job(lListElem *job, lListElem *jatep, lListElem *qep, lLis
                goto error;
             }
             
-            for_each(qrep, ql) {
+            for_each_ep(qrep, ql) {
                if ((ret=handler->report_predecessor(handler, lGetUlong(qrep, JRE_job_number), alpp))) {
                   DPRINTF(("handler->report_predecessor failed\n"));
                   goto error;
@@ -2429,7 +2429,7 @@ static int sge_handle_job(lListElem *job, lListElem *jatep, lListElem *qep, lLis
                goto error;
             }
             
-            for_each(qrep, ql) {
+            for_each_ep(qrep, ql) {
                if ((ret=handler->report_ad_predecessor_requested(handler, lGetString(qrep, JRE_job_name), alpp))) {
                   DPRINTF(("handler->report_ad_predecessor_requested failed\n"));
                   goto error;
@@ -2452,7 +2452,7 @@ static int sge_handle_job(lListElem *job, lListElem *jatep, lListElem *qep, lLis
                goto error;
             }
             
-            for_each(qrep, ql) {
+            for_each_ep(qrep, ql) {
                if ((ret=handler->report_ad_predecessor(handler, lGetUlong(qrep, JRE_job_number), alpp))) {
                   DPRINTF(("handler->report_ad_predecessor failed\n"));
                   goto error;
@@ -2523,7 +2523,7 @@ static int job_handle_resources(const lList* cel, lList* centry_list, int slots,
       DRETURN(ret);
    }
    /* walk through complex entries */
-   for_each (ce, cel) {
+   for_each_ep(ce, cel) {
       name = lGetString(ce, CE_name);
       if ((centry = centry_list_locate(centry_list, name))) {
          uc = centry_urgency_contribution(slots, name, lGetDouble(ce, CE_doubleval), centry);
@@ -2661,7 +2661,7 @@ lCondition *qstat_get_JB_Type_selection(lList *user_list, u_long32 show)
       const lListElem *ep = NULL;
       lCondition *tmp_nw = NULL;
 
-      for_each(ep, user_list) {
+      for_each_ep(ep, user_list) {
          tmp_nw = lWhere("%T(%I p= %s)", JB_Type, JB_owner, lGetString(ep, ST_name));
          if (jw == NULL) {
             jw = tmp_nw;

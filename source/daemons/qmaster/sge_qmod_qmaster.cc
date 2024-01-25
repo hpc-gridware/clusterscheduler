@@ -166,7 +166,7 @@ sge_gdi_qmod(sge_gdi_ctx_class_t *ctx, sge_gdi_packet_class_t *packet, sge_gdi_t
    ** loop over the ids and change queue or job state and signal them
    ** if necessary
    */
-   for_each(dep, task->data_list) {
+   for_each_ep(dep, task->data_list) {
       lList *tmp_list = NULL;
       lList *qref_list = NULL;
       bool found_something = true;
@@ -186,7 +186,7 @@ sge_gdi_qmod(sge_gdi_ctx_class_t *ctx, sge_gdi_packet_class_t *packet, sge_gdi_t
 
             id_action = (id_action & (~QUEUE_DO_ACTION));
 
-            for_each(qref, tmp_list) {
+            for_each_ep(qref, tmp_list) {
                const char *full_name = NULL;
                const char *cqueue_name = NULL;
                const char *hostname = NULL;
@@ -291,7 +291,7 @@ sge_gdi_qmod(sge_gdi_ctx_class_t *ctx, sge_gdi_packet_class_t *packet, sge_gdi_t
                   u_long32 taskid;
 
                   /* handle all pending tasks */
-                  for_each (range, lGetList(job, JB_ja_n_h_ids)) {
+                  for_each_ep(range, lGetList(job, JB_ja_n_h_ids)) {
                      range_get_all_ids(range, &min, &max, &step);
                      for (taskid=min; taskid<=max; taskid+= step) {
                         if ((taskid >= start && taskid <= end &&
@@ -306,7 +306,7 @@ sge_gdi_qmod(sge_gdi_ctx_class_t *ctx, sge_gdi_packet_class_t *packet, sge_gdi_t
                   }
 
                   /* handle all tasks in user hold */
-                  for_each (range, lGetList(job, JB_ja_u_h_ids)) {
+                  for_each_ep(range, lGetList(job, JB_ja_u_h_ids)) {
                      range_get_all_ids(range, &min, &max, &step);
                      for (taskid=min; taskid<=max; taskid+= step) {
                         if ((taskid >= start && taskid <= end &&
@@ -321,7 +321,7 @@ sge_gdi_qmod(sge_gdi_ctx_class_t *ctx, sge_gdi_packet_class_t *packet, sge_gdi_t
                   }
 
                   /* handle all tasks in system hold that are not in user hold */
-                  for_each (range, lGetList(job, JB_ja_s_h_ids)) {
+                  for_each_ep(range, lGetList(job, JB_ja_s_h_ids)) {
                      range_get_all_ids(range, &min, &max, &step);
                      for (taskid=min; taskid<=max; taskid+= step) {
                         if (range_list_is_id_within(lGetList(job, JB_ja_u_h_ids), taskid)) {
@@ -339,7 +339,7 @@ sge_gdi_qmod(sge_gdi_ctx_class_t *ctx, sge_gdi_packet_class_t *packet, sge_gdi_t
                   }
 
                   /* handle all tasks in operator hold that are not in user hold or system hold */
-                  for_each (range, lGetList(job, JB_ja_o_h_ids)) {
+                  for_each_ep(range, lGetList(job, JB_ja_o_h_ids)) {
                      range_get_all_ids(range, &min, &max, &step);
                      for (taskid=min; taskid<=max; taskid+= step) {
                         if (range_list_is_id_within(lGetList(job, JB_ja_u_h_ids), taskid) ||
@@ -369,7 +369,7 @@ sge_gdi_qmod(sge_gdi_ctx_class_t *ctx, sge_gdi_packet_class_t *packet, sge_gdi_t
             const char *job_name = lGetString(dep, ID_str);
             const lListElem *job;
             lListElem *mod = NULL;
-            for_each(job, master_job_list) {
+            for_each_ep(job, master_job_list) {
                if (!fnmatch(job_name, lGetString(job, JB_job_name), 0)) {
                   char job_id[40];
                   mod = lCopyElem(dep);
@@ -1014,9 +1014,9 @@ void rebuild_signal_events()
    DENTER(TOP_LAYER);
 
    /* J O B */
-   for_each(jep, master_job_list)
+   for_each_ep(jep, master_job_list)
    {
-      for_each (jatep, lGetList(jep, JB_ja_tasks))
+      for_each_ep(jatep, lGetList(jep, JB_ja_tasks))
       {
          time_t when = (time_t)lGetUlong(jatep, JAT_pending_signal_delivery_time);
 
@@ -1034,12 +1034,12 @@ void rebuild_signal_events()
    }
 
    /* Q U E U E */
-   for_each(cqueue, master_cqueue_list)
+   for_each_ep(cqueue, master_cqueue_list)
    {
       const lList *qinstance_list = lGetList(cqueue, CQ_qinstances);
       const lListElem *qinstance;
 
-      for_each(qinstance, qinstance_list)
+      for_each_ep(qinstance, qinstance_list)
       {
          time_t when = (time_t)lGetUlong(qinstance, QU_pending_signal_delivery_time);
 
@@ -1110,7 +1110,7 @@ static void sge_propagate_queue_suspension(const char *qnm, int how)
    DENTER(TOP_LAYER);
 
    DPRINTF(("searching for all jobs in queue %s due to %s\n", qnm, sge_sig2str(how)));
-   for_each (jep, master_job_list) {
+   for_each_ep(jep, master_job_list) {
       for_each_rw (jatep, lGetList(jep, JB_ja_tasks)) {
          if (lGetElemStr(lGetList(jatep, JAT_granted_destin_identifier_list), JG_qname, qnm)) {
             u_long32 jstate;

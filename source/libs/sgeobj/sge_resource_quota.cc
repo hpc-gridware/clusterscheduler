@@ -115,7 +115,7 @@ bool rqs_parse_filter_from_string(lListElem **filter, const char* buffer, lList 
 
    lString2List(buffer, &lp, ST_Type, ST_name, delims); 
 
-   for_each(scope, lp) {
+   for_each_ep(scope, lp) {
       const char *name = lGetString(scope, ST_name);
       if ( name[0] == '!' ) {
          lAddElemStr(&xscope_list, ST_name, name+1, ST_Type);
@@ -176,7 +176,7 @@ bool rqs_append_filter_to_dstring(const lListElem *filter, dstring *buffer, lLis
    }
 
    tlp = lGetList(filter, RQRF_scope);
-   for_each(scope, tlp) {
+   for_each_ep(scope, tlp) {
       ret = true;
       if (!first) {
          sge_dstring_append_char(buffer, ',');
@@ -187,7 +187,7 @@ bool rqs_append_filter_to_dstring(const lListElem *filter, dstring *buffer, lLis
    }
 
    tlp = lGetList(filter, RQRF_xscope);
-   for_each(scope, tlp) {
+   for_each_ep(scope, tlp) {
       ret = true;
       if (!first) {
          sge_dstring_append_char(buffer, ',');
@@ -305,14 +305,14 @@ rqs_verify_filter(const lListElem *rule, lList **answer_list, int nm, const char
       if (filter != NULL) {
          const lListElem *ep;
 
-         for_each(ep, lGetList(filter, RQRF_scope)) {
+         for_each_ep(ep, lGetList(filter, RQRF_scope)) {
             if (lGetString(ep, ST_name) == NULL) {
                answer_list_add(answer_list, message, STATUS_ESYNTAX, ANSWER_QUALITY_ERROR);
                ret = false;
                break;
             }
          }
-         for_each(ep, lGetList(filter, RQRF_xscope)) {
+         for_each_ep(ep, lGetList(filter, RQRF_xscope)) {
             if (lGetString(ep, ST_name) == NULL) {
                answer_list_add(answer_list, message, STATUS_ESYNTAX, ANSWER_QUALITY_ERROR);
                ret = false;
@@ -1109,7 +1109,7 @@ rqs_match_user_host_scope(const lList *scope, int filter_type, const char *value
                         lFreeList(&host_list);
                      }
                   } else {
-                     for_each(group_ep, master_hgroup_list) {
+                     for_each_ep(group_ep, master_hgroup_list) {
                         if (fnmatch(group_name, lGetHost(group_ep, HGRP_name), 0) == 0) {
                            hgroup_find_all_references(group_ep, NULL, master_hgroup_list, &host_list, NULL);
                            if (host_list != NULL && lGetElemHost(host_list, HR_name, query) != NULL) {
@@ -1118,7 +1118,7 @@ rqs_match_user_host_scope(const lList *scope, int filter_type, const char *value
                               break;
                            } else if (sge_is_pattern(query)) {
                               const lListElem *host_ep;
-                              for_each(host_ep, host_list) {
+                              for_each_ep(host_ep, host_list) {
                                  if (fnmatch(query, lGetHost(host_ep, HR_name), 0) == 0) {
                                     lFreeList(&host_list);
                                     found = true;
@@ -1139,7 +1139,7 @@ rqs_match_user_host_scope(const lList *scope, int filter_type, const char *value
       }
    } else {
       /* only used in qquota */ 
-      for_each(ep, scope) {
+      for_each_ep(ep, scope) {
          const char *cp = lGetString(ep, ST_name);
          const char *group_name = NULL;
          const char *query = NULL;
@@ -1179,7 +1179,7 @@ rqs_match_user_host_scope(const lList *scope, int filter_type, const char *value
             if (filter_type == FILTER_USERS) {
                /* the userset name does not contain the preattached \@ sign */
                group_name++;
-               for_each(group_ep, master_userset_list) {
+               for_each_ep(group_ep, master_userset_list) {
                   if (fnmatch(group_name, lGetString(group_ep, US_name), 0) == 0) {
                      if (sge_contained_in_access_list(query, group, group_ep, NULL) == 1) {
                         found = true;
@@ -1192,11 +1192,11 @@ rqs_match_user_host_scope(const lList *scope, int filter_type, const char *value
                }
             } else {
                lList *host_list = NULL;
-               for_each(group_ep, master_hgroup_list) {
+               for_each_ep(group_ep, master_hgroup_list) {
                   if (fnmatch(group_name, lGetHost(group_ep, HGRP_name), 0) == 0) {
                      const lListElem *host_ep;
                      hgroup_find_all_references(group_ep, NULL, master_hgroup_list, &host_list, NULL);
-                     for_each(host_ep, host_list) {
+                     for_each_ep(host_ep, host_list) {
                         if (fnmatch(query, lGetHost(host_ep, HR_name), 0) == 0) {
                            found = true;
                            break;
@@ -1322,7 +1322,7 @@ rqs_match_host_scope(const lList *scope, const char *name, const lList *master_h
    }
 
    /* at this stage we know 'name' is a simple hostname */
-   for_each(ep, scope) {
+   for_each_ep(ep, scope) {
       if (!qref_list_host_rejected(lGetString(ep, ST_name), name, master_hgroup_list)) {
          DRETURN(true);
       }
@@ -1402,7 +1402,7 @@ rqs_filter_match(lListElem *filter, int filter_type, const char *value, const lL
             if (lGetElemStr(xscope, ST_name, value) != NULL) {
                ret = false;
             } else {
-               for_each(ep, xscope) {
+               for_each_ep(ep, xscope) {
                   const char *cp = lGetString(ep, ST_name);
                   if (value == NULL || (strcmp(value, "*") == 0)) {
                      break;
@@ -1421,7 +1421,7 @@ rqs_filter_match(lListElem *filter, int filter_type, const char *value, const lL
                if (lGetElemStr(scope, ST_name, value) != NULL) {
                   found = true;
                } else {
-                  for_each(ep, scope) {
+                  for_each_ep(ep, scope) {
                      const char *cp = lGetString(ep, ST_name);
 
                      if (value == NULL) {
@@ -1477,9 +1477,9 @@ bool sge_centry_referenced_in_rqs(const lListElem *rqs, const lListElem *centry)
 
    DENTER(TOP_LAYER);
 
-   for_each(rule, lGetList(rqs, RQS_rule)) {
+   for_each_ep(rule, lGetList(rqs, RQS_rule)) {
       const lListElem *limit;
-      for_each(limit, lGetList(rule, RQR_limit)) {
+      for_each_ep(limit, lGetList(rule, RQR_limit)) {
          const char *limit_name = lGetString(limit, RQRL_name);
          DPRINTF(("limit name %s\n", limit_name));
          if (strchr(limit_name, '$') != NULL) {
@@ -1533,7 +1533,7 @@ bool rqs_replace_request_verify(lList **answer_list, const lList *request)
    DENTER(TOP_LAYER);
 
    /* search for duplicate rqs names in the request */
-   for_each(ep, request) {
+   for_each_ep(ep, request) {
       const char *name = lGetString(ep, RQS_name);
       const lListElem *second = lNext(ep);
       while (second != NULL) {

@@ -164,7 +164,7 @@ bool qquota_output(sge_gdi_ctx_class_t *ctx, lList *host_list, lList *resource_m
          }
       }
 
-      for_each(rqs, rqs_list) {
+      for_each_ep(rqs, rqs_list) {
          lListElem *rule = NULL;
          int rule_count = 1;
 
@@ -204,7 +204,7 @@ bool qquota_output(sge_gdi_ctx_class_t *ctx, lList *host_list, lList *resource_m
                                                      qquota_filter.queue, userset_list, hgroup_list)) {
                               const lListElem *limit = NULL;
 
-                              for_each(limit, lGetList(rule, RQR_limit)) {
+                              for_each_ep(limit, lGetList(rule, RQR_limit)) {
                                  const char *limit_name = lGetString(limit, RQRL_name);
                                  const lList *rue_list = lGetList(limit, RQRL_usage);
                                  lListElem *raw_centry = centry_list_locate(centry_list, limit_name);
@@ -232,7 +232,7 @@ bool qquota_output(sge_gdi_ctx_class_t *ctx, lList *host_list, lList *resource_m
                                  if (lGetUlong(raw_centry, CE_consumable)) {
                                     /* for consumables we need to walk through the utilization and search for matching values */
                                     DPRINTF(("found centry %s - consumable\n", limit_name));
-                                    for_each(rue_elem, rue_list) {
+                                    for_each_ep(rue_elem, rue_list) {
                                        u_long32 dominant = 0;
                                        const char *rue_name = lGetString(rue_elem, RUE_name);
                                        char *cp = NULL;
@@ -453,7 +453,7 @@ get_all_lists(sge_gdi_ctx_class_t *ctx, lList **rqs_l, lList **centry_l, lList *
    /*
    ** exec hosts
    */
-   for_each(ep, hostref_l) {
+   for_each_ep(ep, hostref_l) {
       nw = lWhere("%T(%I h= %s)", EH_Type, EH_name, lGetString(ep, ST_name));
       if (!where)
          where = nw;
@@ -703,10 +703,10 @@ qquota_print_out_filter(lListElem *filter, const char *name, const char *value,
    if (filter != NULL) {
       if (!lGetBool(filter, RQRF_expand) || value == NULL) {
          if (report_handler != NULL) {
-            for_each(scope, lGetList(filter, RQRF_scope)) {
+            for_each_ep(scope, lGetList(filter, RQRF_scope)) {
                report_handler->report_limit_string_value(report_handler, name, lGetString(scope, ST_name), false, alpp);
             }
-            for_each(scope, lGetList(filter, RQRF_xscope)) {
+            for_each_ep(scope, lGetList(filter, RQRF_xscope)) {
                report_handler->report_limit_string_value(report_handler, name, lGetString(scope, ST_name), true, alpp);
             }
          } else {

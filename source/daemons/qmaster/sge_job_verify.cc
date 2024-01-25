@@ -490,11 +490,11 @@ sge_job_verify_adjust(sge_gdi_ctx_class_t *ctx, lListElem *jep, lList **alpp,
       const lListElem *cqueue = NULL;
       int has_permissions = 0;
 
-      for_each (cqueue, master_cqueue_list) {
+      for_each_ep(cqueue, master_cqueue_list) {
          const lList *qinstance_list = lGetList(cqueue, CQ_qinstances);
          const lListElem *qinstance = NULL;
 
-         for_each(qinstance, qinstance_list) {
+         for_each_ep(qinstance, qinstance_list) {
             if (sge_has_access(ruser, lGetString(jep, JB_group), qinstance, master_userset_list)) {
                DPRINTF(("job has access to queue "SFQ"\n", lGetString(qinstance, QU_qname)));
                has_permissions = 1;

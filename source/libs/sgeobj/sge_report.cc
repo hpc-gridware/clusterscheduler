@@ -68,7 +68,7 @@ void job_report_print_usage(const lListElem *job_report, FILE *fp)
       DRETURN_VOID;
    }
 
-   for_each(uep, lGetList(job_report, JR_usage)) {
+   for_each_ep(uep, lGetList(job_report, JR_usage)) {
       if (fp) {
          fprintf(fp, "   \"%s\" =   %.99g\n", lGetString(uep, UA_name),
                  lGetDouble(uep, UA_value));

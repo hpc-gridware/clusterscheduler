@@ -1126,7 +1126,7 @@ sge_select_queue(lList *requested_attr, lListElem *queue, lListElem *host,
    if (acl_list != NULL) {
       /* check if job owner has access rights to the queue */
       DPRINTF(("testing queue access lists\n"));
-      for_each(qu, queue_user_list) {
+      for_each_ep(qu, queue_user_list) {
          const char *name = lGetString(qu, ST_name);
          DPRINTF(("-----> checking queue user: %s\n", name ));
          q_access |= (name[0]=='@')?
@@ -1743,7 +1743,7 @@ job_is_forced_centry_missing(const sge_assignment_t *a, const lListElem *queue_o
       /* Optimization: Have a forced_centry_list in the assignment structure
        * and only iterate over this list.
        */
-      for_each(centry, a->centry_list) {
+      for_each_ep(centry, a->centry_list) {
          const char *name = lGetString(centry, CE_name);
          bool is_forced = lGetUlong(centry, CE_requestable) == REQU_FORCED ? true : false;
 
@@ -1865,7 +1865,7 @@ compute_soft_violations(const sge_assignment_t *a, lListElem *queue, int violati
 
          qinstance_name = lGetString(queue, QU_full_name);
 
-         for_each (qr, qref_list) {
+         for_each_ep(qr, qref_list) {
             if (qref_cq_rejected(lGetString(qr, QR_name), lGetString(queue, QU_qname), lGetHost(queue, QU_qhostname), a->hgrp_list)) {
                DPRINTF(("Queue \"%s\" is not contained in the soft queue list (-q) that was requested by job %d\n",
                         qinstance_name, (int) job_id));
@@ -1966,7 +1966,7 @@ sge_host_match_static(const sge_assignment_t *a, const lListElem *host)
       u_long32 task_id = lGetUlong(a->ja_task, JAT_task_number);
       const lList *rulp = lGetList(host, EH_reschedule_unknown_list);
 
-      for_each (ruep, rulp) {
+      for_each_ep(ruep, rulp) {
          if (lGetUlong(ruep, RU_job_number) == a->job_id
              && lGetUlong(ruep, RU_task_number) == task_id) {
             DPRINTF(("RU: Job "sge_u32"."sge_u32" Host "SFN"\n", a->job_id,
@@ -2265,7 +2265,7 @@ sge_load_alarm(char *reason, const lListElem *qep, const lList *threshold,
          lc_global = ((double)ulc_factor)/100;
    }
 
-   for_each (tep, threshold) {
+   for_each_ep(tep, threshold) {
       lListElem *hlep = NULL, *glep = NULL, *queue_ep = NULL, *cep  = NULL;
       bool need_free_cep = false;
       const char *name;
@@ -2370,7 +2370,7 @@ char *sge_load_alarm_reason(lListElem *qep, lList *threshold,
       queue_complexes2scheduler(&rlp, qep, exechost_list, centry_list);
 
       /* check all thresholds */
-      for_each (tep, threshold) {
+      for_each_ep(tep, threshold) {
          const char *name;             /* complex attrib name */
          const lListElem *cep;               /* actual complex attribute */
          char dom_str[5];              /* dominance as string */
@@ -2811,7 +2811,7 @@ static bool pe_cq_rejected(const char *pe_name, const lListElem *cq)
    }
 
    rejected = true;
-   for_each (alist, lGetList(cq, CQ_pe_list)) {
+   for_each_ep(alist, lGetList(cq, CQ_pe_list)) {
       if (lGetSubStr(alist, ST_name, pe_name, ASTRLIST_value)) {
          rejected = false;
          break;
@@ -2853,7 +2853,7 @@ static bool project_cq_rejected(const char *project, const lListElem *cq)
    if (!project) {
       /* without project: rejected, if each "project" profile
          does contain project references */
-      for_each (alist, lGetList(cq, CQ_projects)) {
+      for_each_ep(alist, lGetList(cq, CQ_projects)) {
          if (!lGetList(alist, APRJLIST_value)) {
             DRETURN(false);
          }
@@ -2864,7 +2864,7 @@ static bool project_cq_rejected(const char *project, const lListElem *cq)
 
    /* with project: rejected, if project is excluded by each "xproject" profile */
    rejected = true;
-   for_each (alist, lGetList(cq, CQ_xprojects)) {
+   for_each_ep(alist, lGetList(cq, CQ_xprojects)) {
       projects = lGetList(alist, APRJLIST_value);
       if (!projects || !prj_list_locate(projects, project)) {
          rejected = false;
@@ -2877,7 +2877,7 @@ static bool project_cq_rejected(const char *project, const lListElem *cq)
 
    /* with project: rejected, if project is not included with each "project" profile */
    rejected = true;
-   for_each (alist, lGetList(cq, CQ_projects)) {
+   for_each_ep(alist, lGetList(cq, CQ_projects)) {
       projects = lGetList(alist, APRJLIST_value);
       if (!projects || prj_list_locate(projects, project)) {
          rejected = false;
@@ -2918,7 +2918,7 @@ static bool interactive_cq_rejected(const lListElem *cq)
    DENTER(TOP_LAYER);
 
    rejected = true;
-   for_each (alist, lGetList(cq, CQ_qtype)) {
+   for_each_ep(alist, lGetList(cq, CQ_qtype)) {
       if ((lGetUlong(alist, AQTLIST_value) & IQ)) {
          rejected = false;
          break;
@@ -2961,7 +2961,7 @@ static bool access_cq_rejected(const char *user, const char *group,
 
    /* rejected, if user/group is excluded by each "xacl" profile */
    rejected = true;
-   for_each (alist, lGetList(cq, CQ_xacl)) {
+   for_each_ep(alist, lGetList(cq, CQ_xacl)) {
       if (!sge_contained_in_access_list_(user, group, lGetList(alist, AUSRLIST_value), acl_list)) {
          rejected = false;
          break;
@@ -2973,7 +2973,7 @@ static bool access_cq_rejected(const char *user, const char *group,
 
    /* rejected, if user/group is not included in any "acl" profile */
    rejected = true;
-   for_each (alist, lGetList(cq, CQ_acl)) {
+   for_each_ep(alist, lGetList(cq, CQ_acl)) {
       const lList *t = lGetList(alist, AUSRLIST_value);
       if (!t || sge_contained_in_access_list_(user, group, t, acl_list)) {
          rejected = false;
@@ -3035,7 +3035,7 @@ dispatch_t cqueue_match_static(const char *cqname, sge_assignment_t *a)
       if (ar_ep != NULL) {
          const lListElem *gep = NULL;
 
-         for_each(gep, lGetList(ar_ep, AR_granted_slots)) {
+         for_each_ep(gep, lGetList(ar_ep, AR_granted_slots)) {
             char *ar_cqueue = cqueue_get_name_from_qinstance(lGetString(gep, JG_qname));
 
             if (strcmp(cqname, ar_cqueue) == 0) {
@@ -4164,7 +4164,7 @@ parallel_tag_queues_suitable4job(sge_assignment_t *a, category_use_t *use_catego
 #if 0
       if (best_result != DISPATCH_OK) {
          dstring sched_info = DSTRING_INIT;
-         for_each (gdil_ep, a->gdil) {
+         for_each_ep(gdil_ep, a->gdil) {
             sge_dstring_sprintf(&sched_info, "   HOST: %s QUEUE: %s SLOTS %d",
                lGetHost(gdil_ep, JG_qhostname), lGetString(gdil_ep, JG_qname), (int)lGetUlong(gdil_ep, JG_slots));
             schedd_log(sge_dstring_get_string(&sched_info));
@@ -4562,7 +4562,7 @@ parallel_max_host_slots(sge_assignment_t *a, lListElem *host) {
       const lList *load_thresholds = lGetList(qep, QU_load_thresholds);
       avail_q = INT_MAX;
 
-      for_each(tr, load_thresholds) {
+      for_each_ep(tr, load_thresholds) {
          double load, threshold, adjustment;
          const char *name = lGetString(tr, CE_name);
          if ((cep = centry_list_locate(a->centry_list, name)) == NULL) {
@@ -4763,7 +4763,7 @@ dispatch_t sge_sequential_assignment(sge_assignment_t *a)
       const lListElem *best_queue = NULL;
 
       if (a->is_reservation) {
-         for_each (qep, a->queue_list) {
+         for_each_ep(qep, a->queue_list) {
             if (lGetUlong(qep, QU_tag) != 0) {
                u_long32 temp_job_start_time = lGetUlong(qep, QU_available_at);
 
@@ -4790,7 +4790,7 @@ dispatch_t sge_sequential_assignment(sge_assignment_t *a)
          }
       } else {
 
-         for_each (qep, a->queue_list) {
+         for_each_ep(qep, a->queue_list) {
             if (lGetUlong(qep, QU_tag)) {
                job_start_time = lGetUlong(qep, QU_available_at);
                best_queue = qep;
@@ -6101,7 +6101,7 @@ parallel_rc_slots_by_time(const sge_assignment_t *a, lList *requests,  int *slot
 
 
    /* --- default request */
-   for_each (actual, rue_list) {
+   for_each_ep(actual, rue_list) {
       name = lGetString(actual, RUE_name);
       if (!strcmp(name, SGE_ATTR_SLOTS)) {
          continue;
@@ -6582,7 +6582,7 @@ void sge_remove_queue_from_load_list(lList **load_list, const lList *queue_list)
       DRETURN_VOID;
    }
 
-   for_each(queue, queue_list) {
+   for_each_ep(queue, queue_list) {
       bool is_found = false;
       lList *queue_ref_list = NULL;
       lListElem *queue_ref = NULL;
@@ -6895,7 +6895,7 @@ sge_call_pe_qsort(sge_assignment_t *a, const char *qsort_args)
       pqs_params.qlist = (pqs_queue_t *)sge_malloc(num_queues * sizeof(pqs_queue_t));
 
       qp = pqs_params.qlist;
-      for_each(q, a->queue_list) {
+      for_each_ep(q, a->queue_list) {
          qp->queue_name = lGetString(q, QU_qname);
          qp->host_name = lGetHost(q, QU_qhostname);
          qp->host_seqno = lGetUlong(q, QU_host_seq_no);
@@ -6932,7 +6932,7 @@ sge_call_pe_qsort(sge_assignment_t *a, const char *qsort_args)
 
       if (ret == PQS_ASSIGNED) {
          qp = pqs_params.qlist;
-         for_each(q, a->queue_list) {
+         for_each_ep(q, a->queue_list) {
             lSetUlong(q, QU_host_seq_no, qp->new_seqno);
             qp++;
          }
@@ -7008,7 +7008,7 @@ static dispatch_t match_static_advance_reservation(const sge_assignment_t *a)
          /* has user access? */
          if ((acl_list = lGetList(ar, AR_xacl_list))) {
             const lListElem *acl_ep;
-            for_each(acl_ep, acl_list) {
+            for_each_ep(acl_ep, acl_list) {
                const char* user = lGetString(acl_ep, ARA_name);
 
                if (!is_hgroup_name(user)) {
@@ -7038,7 +7038,7 @@ static dispatch_t match_static_advance_reservation(const sge_assignment_t *a)
 
          if ((acl_list = lGetList(ar, AR_acl_list))) {
             const lListElem *acl_ep;
-            for_each(acl_ep, acl_list) {
+            for_each_ep(acl_ep, acl_list) {
                const char *user = lGetString(acl_ep, ARA_name);
 
                if (!is_hgroup_name(user)) {

@@ -246,7 +246,7 @@ spool_startup_context(lList **answer_list, lListElem *context, bool check)
       const lListElem *type;
 
       /* each type needs at least one rule and exactly one default rule */
-      for_each(type, lGetList(context, SPC_types)) {
+      for_each_ep(type, lGetList(context, SPC_types)) {
          const lListElem *type_rule;
          int default_rules = 0;
          
@@ -261,7 +261,7 @@ spool_startup_context(lList **answer_list, lListElem *context, bool check)
          }
 
          /* count default rules */
-         for_each (type_rule, lGetList(type, SPT_rules)) {
+         for_each_ep(type_rule, lGetList(type, SPT_rules)) {
             if(lGetBool(type_rule, SPTR_is_default)) {
                default_rules++;
             }
@@ -298,7 +298,7 @@ spool_startup_context(lList **answer_list, lListElem *context, bool check)
          goto error;
       }
       
-      for_each (rule, lGetList(context, SPC_rules)) {
+      for_each_ep(rule, lGetList(context, SPC_rules)) {
          spooling_startup_func func = (spooling_startup_func)
                                       lGetRef(rule, SPR_startup_func);
          if (func != NULL) {
@@ -370,7 +370,7 @@ spool_maintain_context(lList **answer_list, lListElem *context,
    } else {
       const lListElem *rule;
 
-      for_each(rule, lGetList(context, SPC_rules)) {
+      for_each_ep(rule, lGetList(context, SPC_rules)) {
          spooling_maintenance_func func = (spooling_maintenance_func)
                                        lGetRef(rule, SPR_maintenance_func);
          if (func != NULL) {
@@ -437,7 +437,7 @@ spool_shutdown_context(lList **answer_list, const lListElem *context)
    } else {
       const lListElem *rule;
 
-      for_each (rule, lGetList(context, SPC_rules)) {
+      for_each_ep(rule, lGetList(context, SPC_rules)) {
          spooling_shutdown_func func = (spooling_shutdown_func)
                                        lGetRef(rule, SPR_shutdown_func);
          if (func != NULL) {
@@ -475,7 +475,7 @@ spool_trigger_context(lList **answer_list, const lListElem *context,
    } else {
       const lListElem *rule;
 
-      for_each(rule, lGetList(context, SPC_rules)) {
+      for_each_ep(rule, lGetList(context, SPC_rules)) {
          spooling_trigger_func func = (spooling_trigger_func)
                                        lGetRef(rule, SPR_trigger_func);
          if (func != NULL) {
@@ -512,7 +512,7 @@ bool spool_transaction(lList **answer_list, const lListElem *context,
    } else {
       const lListElem *rule;
 
-      for_each (rule, lGetList(context, SPC_rules)) {
+      for_each_ep(rule, lGetList(context, SPC_rules)) {
          spooling_transaction_func func = (spooling_transaction_func)
                                        lGetRef(rule, SPR_transaction_func);
          if (func != NULL) {
@@ -867,7 +867,7 @@ spool_type_search_default_rule(const lListElem *spool_type)
 
    const lList *lp = lGetList(spool_type, SPT_rules);
    const lListElem *ep;
-   for_each (ep, lp) {
+   for_each_ep(ep, lp) {
       if (lGetBool(ep, SPTR_is_default)) {
          rule = (lListElem *)lGetRef(ep, SPTR_rule);
          break;
@@ -1140,7 +1140,7 @@ spool_read_keys(lList **answer_list, const lListElem *context,
       const lListElem *rule;
 
       /* use the default rule to read object */
-      for_each (rule, rules) {
+      for_each_ep(rule, rules) {
          spooling_read_keys_func func;
 
          /* retrieve and execute the read callback */
@@ -1248,7 +1248,7 @@ spool_write_object(lList **answer_list, const lListElem *context,
             ret = true;
 
             /* spool using multiple rules */
-            for_each (type_rule, type_rules) {
+            for_each_ep(type_rule, type_rules) {
                lListElem *rule;
                spooling_write_func func;
 
@@ -1364,7 +1364,7 @@ spool_delete_object(lList **answer_list, const lListElem *context,
             ret = true;
 
             /* delete object using all spooling rules */
-            for_each (type_rule, type_rules) {
+            for_each_ep(type_rule, type_rules) {
                lListElem *rule;
                spooling_delete_func func;
 

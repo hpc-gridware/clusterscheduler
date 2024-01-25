@@ -209,7 +209,7 @@ int main(int argc, char **argv) {
             }
             alp = ctx->gdi(ctx, SGE_JB_LIST, SGE_GDI_DEL, &part_ref_list, NULL, NULL);
 
-            for_each(aep, alp) {
+            for_each_ep(aep, alp) {
                status = lGetUlong(aep, AN_status);
 
                if (lGetUlong(aep, AN_quality) == ANSWER_QUALITY_ERROR) {
@@ -362,7 +362,7 @@ lList **alpp
          lListElem *ep = NULL;
          str_list_parse_from_string(&del_list, *sp, ",");
         
-         for_each(job, del_list) {
+         for_each_ep(job, del_list) {
             const char *job_name;
             job_name = lGetString(job, ST_name);
             if(ep == NULL) {

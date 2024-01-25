@@ -134,7 +134,7 @@ decay_userprj_usage( lListElem *userprj,
 
          decay_usage(lGetPosList(userprj, obj_usage_POS), decay_list, interval);
 
-         for_each(upp, lGetPosList(userprj, obj_project_POS)) {
+         for_each_ep(upp, lGetPosList(userprj, obj_project_POS)) {
             decay_usage(lGetPosList(upp, UPP_usage_POS), decay_list, interval);
          }
 
@@ -357,7 +357,7 @@ sge_calc_node_usage( lListElem *node,
       if (sconf_is()) {
          usage_weight_list = sconf_get_usage_weight_list();
          if (usage_weight_list) {
-            for_each(usage_weight, usage_weight_list)
+            for_each_ep(usage_weight, usage_weight_list)
                sum_of_usage_weights +=
                      lGetPosDouble(usage_weight, UA_value_POS);
          }
@@ -368,7 +368,7 @@ sge_calc_node_usage( lListElem *node,
        *-------------------------------------------------------------*/
 
       if (usage_weight_list) {
-         for_each(usage_elem, usage_list) {
+         for_each_ep(usage_elem, usage_list) {
             usage_name = lGetPosString(usage_elem, UA_name_POS);
             usage_weight = lGetElemStr(usage_weight_list, UA_name, usage_name);
             if (usage_weight && sum_of_usage_weights>0) {
@@ -383,7 +383,7 @@ sge_calc_node_usage( lListElem *node,
        * Store other usage values in node usage list
        *-------------------------------------------------------------*/
 
-      for_each(usage_elem, usage_list) {
+      for_each_ep(usage_elem, usage_list) {
          const char *nm = lGetPosString(usage_elem, UA_name_POS);
          lListElem *u;
          if (strcmp(nm, USAGE_ATTR_CPU) != 0 &&
@@ -619,7 +619,7 @@ sge_add_default_user_nodes( lListElem *root_node,
 
    set_share_tree_project_flags(project_list, root_node);
 
-   for_each(project, project_list) {
+   for_each_ep(project, project_list) {
       /*
       ** check acl and xacl of project for the temp users
       ** only users that are allowed for the project are shown
@@ -630,7 +630,7 @@ sge_add_default_user_nodes( lListElem *root_node,
       proj_name = lGetString(project, PR_name);
 
       if (search_userprj_node(root_node, "default", proj_name, NULL)) {
-         for_each(user, user_list) {
+         for_each_ep(user, user_list) {
             int has_access = 1;
             
             user_name = lGetString(user, UU_name);
@@ -661,7 +661,7 @@ sge_add_default_user_nodes( lListElem *root_node,
 
    proj_name = NULL;
    if (search_userprj_node(root_node, "default", proj_name, NULL)) {
-      for_each(user, user_list) {
+      for_each_ep(user, user_list) {
          user_name = lGetString(user, UU_name);
          if (((dnode=search_userprj_node(root_node, user_name, proj_name, &pnode))) &&
              strcmp("default", lGetString(dnode, STN_name)) == 0) {

@@ -635,7 +635,7 @@ spool_flatfile_align_list(lList **answer_list, const lList *list,
       fields[i].width = sge_strlen(fields[i].name);
    }
 
-   for_each(object, list) {
+   for_each_ep(object, list) {
       for (i = 0; fields[i].nm != NoName; i++) {
          const char *value;
          
@@ -1475,7 +1475,7 @@ spool_flatfile_write_list_fields(lList **answer_list, const lList *list,
       my_fields = get_recursion_field_list(instr);
    }
 
-   for_each(ep, list) {
+   for_each_ep(ep, list) {
       /* from second record on write record delimiter */
       if (!first) {
          if (ignore_list_name && list_name != NULL) {
@@ -1520,7 +1520,7 @@ spool_flatfile_write_list_fields(lList **answer_list, const lList *list,
    if (recurse) {
 
       if (ret && instr->recursion_info.recursion_field != NoName) {
-         for_each(ep, list) {         
+         for_each_ep(ep, list) {
             if (!spool_flatfile_write_object_fields(answer_list, ep, buffer, 
                                                     instr, fields, true, false)) {
                sge_dstring_free(buffer); 

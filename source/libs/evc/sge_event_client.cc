@@ -2937,7 +2937,7 @@ static bool ec2_get(sge_evc_class_t *thiz, lList **event_list, bool exit_on_qmas
       const lListElem *event;
       lUlong tmp_type;
 
-      for_each(event, *event_list) {
+      for_each_ep(event, *event_list) {
          tmp_type = lGetUlong(event, ET_type);
          if (tmp_type == sgeE_QMASTER_GOES_DOWN || 
              tmp_type == sgeE_ACK_TIMEOUT) {

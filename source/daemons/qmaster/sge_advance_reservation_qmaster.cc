@@ -513,7 +513,7 @@ int ar_del(sge_gdi_ctx_class_t *ctx, lListElem *ep, lList **alpp, lList **master
       lCondition *new_where = NULL;
       const lListElem *user;
 
-      for_each(user, user_list) {
+      for_each_ep(user, user_list) {
          if (sge_is_pattern(lGetString(user, ST_name)) && !manop_is_manager(ruser, master_manager_list)) {
             ERROR((SGE_EVENT, MSG_SGETEXT_MUST_BE_MGR_TO_SS, ruser, "modify all advance reservations"));
             answer_list_add(alpp, SGE_EVENT, STATUS_EUNKNOWN, ANSWER_QUALITY_ERROR);
@@ -663,7 +663,7 @@ int ar_del(sge_gdi_ctx_class_t *ctx, lListElem *ep, lList **alpp, lList **master
          int umax = 5;
 
          sge_dstring_sprintf(&buffer, "%s", "");
-         for_each(user, user_list) {
+         for_each_ep(user, user_list) {
             if (!first) {
                sge_dstring_append(&buffer, ",");
             } else {
@@ -876,7 +876,7 @@ static u_long32 guess_highest_ar_id(void)
       int pos;
       pos = lGetPosViaElem(ar, AR_id, SGE_NO_ABORT); 
       
-      for_each(ar, master_ar_list) {
+      for_each_ep(ar, master_ar_list) {
          maxid = MAX(maxid, lGetPosUlong(ar, pos));
       }   
    }
@@ -1085,7 +1085,7 @@ static bool ar_reserve_queues(lList **alpp, lListElem *ar)
       a.monitor_alpp = &talp;
    }
 
-   for_each(cqueue, master_cqueue_list) {
+   for_each_ep(cqueue, master_cqueue_list) {
       const char *cqname = lGetString(cqueue, CQ_name);
       const lList *qinstance_list = lGetList(cqueue, CQ_qinstances);
       const lListElem *qinstance;
@@ -1094,7 +1094,7 @@ static bool ar_reserve_queues(lList **alpp, lListElem *ar)
          continue;
       }
 
-      for_each(qinstance, qinstance_list) {
+      for_each_ep(qinstance, qinstance_list) {
          const char *cal_name;
 
          /* skip orphaned queues */
@@ -1115,7 +1115,7 @@ static bool ar_reserve_queues(lList **alpp, lListElem *ar)
             bool found = false;
             const lListElem *pe_ref;
 
-            for_each(pe_ref, lGetList(qinstance, QU_pe_list)) {
+            for_each_ep(pe_ref, lGetList(qinstance, QU_pe_list)) {
                if (pe_name_is_matching(lGetString(pe_ref, ST_name), ar_pe_request)) {
                   found = true;
                   break;
@@ -1298,7 +1298,7 @@ int ar_do_reservation(lListElem *ar, bool incslots)
 
    global_host_ep = host_list_locate(master_exechost_list, SGE_GLOBAL_NAME);
 
-   for_each(qep, lGetList(ar, AR_granted_slots)) {
+   for_each_ep(qep, lGetList(ar, AR_granted_slots)) {
       lListElem *host_ep = NULL;
       const char *queue_hostname = NULL;
       const char *queue_name = lGetString(qep, JG_qname);
@@ -1420,7 +1420,7 @@ ar_list_has_reservation_due_to_ckpt(const lList *ar_master_list, lList **answer_
 
    DENTER(TOP_LAYER);
 
-   for_each(ar, ar_master_list) {
+   for_each_ep(ar, ar_master_list) {
       const char *ckpt_string = lGetString(ar, AR_checkpoint_name);
 
       if (ckpt_string != NULL && lGetElemStr(lGetList(ar, AR_granted_slots), JG_qname, qinstance_name)) {
@@ -1481,7 +1481,7 @@ ar_list_has_reservation_due_to_pe(const lList *ar_master_list, lList **answer_li
 
    DENTER(TOP_LAYER);
 
-   for_each(ar, ar_master_list) {
+   for_each_ep(ar, ar_master_list) {
       const char *pe_string = lGetString(ar, AR_pe);
 
       if (pe_string != NULL && lGetElemStr(lGetList(ar, AR_granted_slots), JG_qname, qinstance_name)) {
@@ -1548,11 +1548,11 @@ ar_list_has_reservation_for_pe_with_slots(const lList *ar_master_list,
 
    DENTER(TOP_LAYER);
 
-   for_each(ar, ar_master_list) {
+   for_each_ep(ar, ar_master_list) {
       const char *pe_string = lGetString(ar, AR_pe);
 
       if (pe_name != NULL && pe_string != NULL && strcmp(pe_string, pe_name) == 0) {
-         for_each(gs, lGetList(ar, AR_granted_slots)) {
+         for_each_ep(gs, lGetList(ar, AR_granted_slots)) {
             u_long32 slots = lGetUlong(gs, JG_slots);
          
             max_res_slots += slots;
@@ -1641,7 +1641,7 @@ void ar_initialize_reserved_queue_list(lListElem *ar)
 
    queue_list = lCreateList("", rdp);
 
-   for_each(gep, gdil) {
+   for_each_ep(gep, gdil) {
       int index = 0;
       u_long32 slots = lGetUlong(gep, JG_slots);
       lListElem *queue = lCreateElem(rdp);
@@ -1671,7 +1671,7 @@ void ar_initialize_reserved_queue_list(lListElem *ar)
 
       lSetUlong(queue, QU_job_slots, slots);
 
-      for_each(cr, lGetList(ar, AR_resource_list)) {
+      for_each_ep(cr, lGetList(ar, AR_resource_list)) {
          u_long32 consumable = lGetUlong(cr, CE_consumable);
          if (consumable != CONSUMABLE_NO) {
             double newval;
@@ -1887,7 +1887,7 @@ sge_ar_list_conflicts_with_calendar(lList **answer_list, const char *qinstance_n
 
    DENTER(TOP_LAYER);
 
-   for_each(ar, master_ar_list) {
+   for_each_ep(ar, master_ar_list) {
       if (lGetElemStr(lGetList(ar, AR_granted_slots), JG_qname, qinstance_name)) {
          u_long32 start_time = lGetUlong(ar, AR_start_time);
          u_long32 duration = lGetUlong(ar, AR_duration);
@@ -2258,7 +2258,7 @@ ar_list_has_reservation_due_to_qinstance_complex_attr(const lList *ar_master_lis
 
    DENTER(TOP_LAYER);
 
-   for_each(ar, ar_master_list) {
+   for_each_ep(ar, ar_master_list) {
       const char *qinstance_name = lGetString(qinstance, QU_full_name);
 
       if ((gs =lGetElemStr(lGetList(ar, AR_granted_slots), JG_qname, qinstance_name))) {
@@ -2301,7 +2301,7 @@ ar_list_has_reservation_due_to_qinstance_complex_attr(const lList *ar_master_lis
          qinstance_reinit_consumable_actual_list(qinstance, answer_list);
          rue_list = lGetList(qinstance, QU_resource_utilization);
 
-         for_each(rue, rue_list) {
+         for_each_ep(rue, rue_list) {
             const char *ce_name = lGetString(rue, RUE_name);
             const lListElem *ce = lGetElemStr(ce_master_list, CE_name, ce_name);
             bool is_consumable = (lGetUlong(ce, CE_consumable) > 0) ? true : false;
@@ -2320,7 +2320,7 @@ ar_list_has_reservation_due_to_qinstance_complex_attr(const lList *ar_master_lis
                } else {
                   double configured = lGetDouble(cv, CE_doubleval);
 
-                  for_each(rde, rde_list) {
+                  for_each_ep(rde, rde_list) {
                      double amount = lGetDouble(rde, RDE_amount);
 
                      if (amount > configured) {
@@ -2379,10 +2379,10 @@ ar_list_has_reservation_due_to_host_complex_attr(const lList *ar_master_list, lL
 
    DENTER(TOP_LAYER);
 
-   for_each(ar, ar_master_list) {
+   for_each_ep(ar, ar_master_list) {
       const lListElem *gs = NULL;
 
-      for_each(gs, lGetList(ar, AR_granted_slots)) {
+      for_each_ep(gs, lGetList(ar, AR_granted_slots)) {
          const char *gh = lGetHost(gs, JG_qhostname);
 
          if (!sge_hostcmp(gh, hostname)) {
@@ -2418,7 +2418,7 @@ ar_list_has_reservation_due_to_host_complex_attr(const lList *ar_master_list, lL
                   }
                }
             }
-            for_each(rue, rue_list) {
+            for_each_ep(rue, rue_list) {
                const char *ce_name = lGetString(rue, RUE_name);
                const lListElem *ce = lGetElemStr(ce_master_list, CE_name, ce_name);
                bool is_consumable = (lGetUlong(ce, CE_consumable) > 0) ? true : false;
@@ -2437,7 +2437,7 @@ ar_list_has_reservation_due_to_host_complex_attr(const lList *ar_master_list, lL
                   } else {
                      double configured = lGetDouble(cv, CE_doubleval);
 
-                     for_each(rde, rde_list) {
+                     for_each_ep(rde, rde_list) {
                         double amount = lGetDouble(rde, RDE_amount);
 
                         if (amount > configured) {

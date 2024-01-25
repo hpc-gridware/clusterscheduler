@@ -1781,7 +1781,7 @@ int sge_parse_qconf(sge_gdi_ctx_class_t *ctx, char *argv[])
          /* no adminhost/manager check needed here */
 
          alp = ctx->kill(ctx, NULL, default_cell, 0, SCHEDD_KILL);
-         for_each(aep, alp) {
+         for_each_ep(aep, alp) {
             answer_exit_if_not_recoverable(aep);
             if (answer_get_status(aep) != STATUS_OK)
                sge_parse_return = 1;
@@ -2879,7 +2879,7 @@ int sge_parse_qconf(sge_gdi_ctx_class_t *ctx, char *argv[])
                   const lListElem *attribute;
 
                   already_handled = false;
-                  for_each(attribute, attribute_list) {
+                  for_each_ep(attribute, attribute_list) {
                      const lDescr *descr = lGetListDescr(attribute_list);
                      lList *tmp_attribute_list = lCreateList("", descr);
                      lListElem *tmp_attribute = lCopyElem(attribute);
@@ -3017,7 +3017,7 @@ int sge_parse_qconf(sge_gdi_ctx_class_t *ctx, char *argv[])
       if (ret || lGetNumberOfElem(alp)) {
          int exit = 0;
 
-         for_each(aep, alp) {
+         for_each_ep(aep, alp) {
             FILE *std_x = NULL;
             
             if (lGetUlong(aep, AN_status) != STATUS_OK) {
@@ -3132,7 +3132,7 @@ int sge_parse_qconf(sge_gdi_ctx_class_t *ctx, char *argv[])
       lFreeList(&lp);
 
       /* Error handling */
-      for_each(aep, alp) {
+      for_each_ep(aep, alp) {
             FILE *std_x = NULL;
             
             if (lGetUlong(aep, AN_status) != STATUS_OK) {
@@ -5109,7 +5109,7 @@ int sge_parse_qconf(sge_gdi_ctx_class_t *ctx, char *argv[])
          spp = sge_parser_get_next(ctx, spp);
 
          lString2List(*spp, &uList, ST_Type, ST_name , ", ");
-         for_each(uep, uList) {
+         for_each_ep(uep, uList) {
             user = lGetString(uep, ST_name);
             /* get user */
             where = lWhere("%T( %I==%s )", UU_Type, UU_name, user);
@@ -6010,7 +6010,7 @@ static int show_eventclients(sge_gdi_ctx_class_t *ctx)
    
       printf("%8s %-15s %-25s\n",MSG_TABLE_EV_ID, MSG_TABLE_EV_NAME, MSG_TABLE_HOST);
       printf("--------------------------------------------------\n");
-      for_each(ep, lp) {
+      for_each_ep(ep, lp) {
          printf("%8d ", (int)lGetUlong(ep, EV_id));
          printf("%-15s ", lGetString(ep, EV_name));
          printf("%-25s\n", (lGetHost(ep, EV_host) != NULL) ? lGetHost(ep, EV_host) : "-");
@@ -6069,7 +6069,7 @@ static int show_processors(sge_gdi_ctx_class_t *ctx, bool has_binding_param)
          printf("============");
       }
       printf("\n");
-      for_each(ep, lp) {
+      for_each_ep(ep, lp) {
          lListElem *arch_elem = lGetSubStr(ep, HL_name, "arch", EH_load_list); 
          u_long32 sockets = 0;
          u_long32 cores = 0;
@@ -6160,7 +6160,7 @@ lList *arglp
       DRETURN(-1);
    }
 
-   for_each(argep, arglp) {
+   for_each_ep(argep, arglp) {
       acl_name = lGetString(argep, US_name);
 
       ep = lGetElemStrRW(acls, US_name, acl_name);
@@ -6224,7 +6224,7 @@ static int edit_usersets(sge_gdi_ctx_class_t *ctx, lList *arglp)
       DRETURN(-1);
    }
 
-   for_each(argep, arglp) {
+   for_each_ep(argep, arglp) {
       alp = NULL;
       userset_name = lGetString(argep, US_name);
 
@@ -6292,7 +6292,7 @@ static int edit_usersets(sge_gdi_ctx_class_t *ctx, lList *arglp)
       alp = ctx->gdi(ctx, SGE_US_LIST, cmd, &lp, NULL, NULL);
       lFreeList(&lp);
 
-      for_each(aep, alp) {
+      for_each_ep(aep, alp) {
          fprintf(stderr, "%s\n", lGetString(aep, AN_text));
       }
       lFreeList(&alp);

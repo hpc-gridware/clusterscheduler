@@ -1813,7 +1813,7 @@ DTRACE;
          DPRINTF(("\"-@ %s\"\n", *sp));
 
          alp = parse_script_file(prog_number, *sp, "", pcmdline, envp, FLG_USE_NO_PSEUDOS); /* MT-NOTE: !!!! */
-         for_each(aep, alp) {
+         for_each_ep(aep, alp) {
             u_long32 quality;
 
             quality = lGetUlong(aep, AN_quality);

@@ -95,7 +95,7 @@ char **argv
       /*
       ** high level parsing error! show answer list
       */
-      for_each(aep, alp) {
+      for_each_ep(aep, alp) {
          fprintf(stderr, "%s\n", lGetString(aep, AN_text));
       }
       lFreeList(&alp);
@@ -109,7 +109,7 @@ char **argv
       /*
       ** low level parsing error! show answer list
       */
-      for_each(aep, alp) {
+      for_each_ep(aep, alp) {
          fprintf(stderr, "%s\n", lGetString(aep, AN_text));
       }
       lFreeList(&alp);
@@ -134,7 +134,7 @@ char **argv
    /*
    ** show answer list
    */
-   for_each(aep, alp) {
+   for_each_ep(aep, alp) {
       fprintf(stdout, "%s\n", lGetString(aep, AN_text));
    }
 
@@ -188,7 +188,7 @@ static bool answer_list_has_exit_code_error(lList **answer_list)
       const lListElem *answer;   /* AN_Type */
       /* check each ERROR if the status is really != 1 (STATUS_OK) */
       u_long32 status;
-      for_each(answer, *answer_list) {
+      for_each_ep(answer, *answer_list) {
          if (answer_has_quality(answer, ANSWER_QUALITY_ERROR)) {
             status = answer_get_status(answer);       
             if (status != STATUS_OK) {

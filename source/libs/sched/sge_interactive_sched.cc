@@ -154,7 +154,7 @@ remove_immediate_job(lList *job_list, lListElem *job, order_t *orders, int remov
 
    DENTER(TOP_LAYER);
 
-   for_each (ja_task, lGetList(job, JB_ja_tasks)) {
+   for_each_ep(ja_task, lGetList(job, JB_ja_tasks)) {
       if (remove_orders) {
          order_remove_order_and_immediate(job, ja_task, orders);
       }
@@ -165,7 +165,7 @@ remove_immediate_job(lList *job_list, lListElem *job, order_t *orders, int remov
    
    range_list = lGetList(job, JB_ja_n_h_ids);
    
-   for_each(range, range_list) {
+   for_each_ep(range, range_list) {
       for(ja_task_id = lGetUlong(range, RN_min);
           ja_task_id <= lGetUlong(range, RN_max);
           ja_task_id += lGetUlong(range, RN_step)) {  

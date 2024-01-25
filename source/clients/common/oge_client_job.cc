@@ -520,7 +520,7 @@ void cull_show_job(const lListElem *job, int flags, bool show_binding) {
    if (lGetPosViaElem(job, JB_ja_tasks, SGE_NO_ABORT) >= 0) {
       const lListElem *uep, *jatep, *pe_task_ep;
 
-      for_each(jatep, lGetList(job, JB_ja_tasks)) {
+      for_each_ep(jatep, lGetList(job, JB_ja_tasks)) {
          int first_task = 1;
          double cpu, mem, io, vmem, maxvmem;
 
@@ -546,7 +546,7 @@ void cull_show_job(const lListElem *job, int flags, bool show_binding) {
          SUM_UP_JATASK_USAGE(jatep, maxvmem, USAGE_ATTR_MAXVMEM);
 
          /* slave tasks */
-         for_each(pe_task_ep, lGetList(jatep, JAT_task_list)) {
+         for_each_ep(pe_task_ep, lGetList(jatep, JAT_task_list)) {
             SUM_UP_PETASK_USAGE(pe_task_ep, cpu, USAGE_ATTR_CPU);
             SUM_UP_PETASK_USAGE(pe_task_ep, vmem, USAGE_ATTR_VMEM);
             SUM_UP_PETASK_USAGE(pe_task_ep, mem, USAGE_ATTR_MEM);
@@ -578,7 +578,7 @@ void cull_show_job(const lListElem *job, int flags, bool show_binding) {
    if (lGetPosViaElem(job, JB_ja_tasks, SGE_NO_ABORT) >= 0 && show_binding) {
       const lListElem *jatep;
 
-      for_each(jatep, lGetList(job, JB_ja_tasks)) {
+      for_each_ep(jatep, lGetList(job, JB_ja_tasks)) {
          int first_task = 1;
          const lListElem *usage_elem;
          const char *binding_inuse = NULL;
@@ -586,7 +586,7 @@ void cull_show_job(const lListElem *job, int flags, bool show_binding) {
          if (lGetUlong(jatep, JAT_status) != JRUNNING && lGetUlong(jatep, JAT_status) != JTRANSFERING) {
             continue;
          }
-         for_each(usage_elem, lGetList(jatep, JAT_scaled_usage_list)) {
+         for_each_ep(usage_elem, lGetList(jatep, JAT_scaled_usage_list)) {
             const char *binding_name = "binding_inuse";
             const char *usage_name = lGetString(usage_elem, UA_name);
 
@@ -608,11 +608,11 @@ void cull_show_job(const lListElem *job, int flags, bool show_binding) {
    if (lGetPosViaElem(job, JB_ja_tasks, SGE_NO_ABORT) >= 0) {
       const lListElem *jatep;
 
-      for_each(jatep, lGetList(job, JB_ja_tasks)) {
+      for_each_ep(jatep, lGetList(job, JB_ja_tasks)) {
          bool first_task = true;
          const lListElem *mesobj;
 
-         for_each(mesobj, lGetList(jatep, JAT_message_list)) {
+         for_each_ep(mesobj, lGetList(jatep, JAT_message_list)) {
             const char *message = lGetString(mesobj, QIM_message);
 
             if (message != NULL) {
@@ -691,7 +691,7 @@ static void show_ce_type_list(const lList *cel, const char *indent, const char *
    DENTER(TOP_LAYER);
 
    /* walk through complex entries */
-   for_each(ce, cel) {
+   for_each_ep(ce, cel) {
       if (first) {
          first = false;
       } else {

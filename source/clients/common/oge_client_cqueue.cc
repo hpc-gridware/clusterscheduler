@@ -86,7 +86,7 @@ bool cqueue_calculate_summary(const lListElem *cqueue, const lList *exechost_lis
       *suspend_calendar = *unknown = *load_alarm = 0;
       *disabled_manual = *disabled_calendar = *ambiguous = 0;
       *orphaned = *error = 0;
-      for_each(qinstance, qinstance_list) {
+      for_each_ep(qinstance, qinstance_list) {
          u_long32 slots = lGetUlong(qinstance, QU_job_slots);
          bool has_value_from_object;
 
@@ -191,7 +191,7 @@ int select_by_qref_list(lList *cqueue_list, const lList *hgrp_list, const lList 
       const lListElem *cqueue = NULL;
       const lListElem *qref = NULL;
 
-      for_each(qref, queueref_list) {
+      for_each_ep(qref, queueref_list) {
          dstring cqueue_buffer = DSTRING_INIT;
          dstring hostname_buffer = DSTRING_INIT;
          const char *full_name = NULL;
@@ -213,7 +213,7 @@ int select_by_qref_list(lList *cqueue_list, const lList *hgrp_list, const lList 
          sge_dstring_free(&hostname_buffer);
       }
 
-      for_each(cqueue, cqueue_list) {
+      for_each_ep(cqueue, cqueue_list) {
          const lList *qinstance_list = lGetList(cqueue, CQ_qinstances);
          lListElem *qinstance = NULL;
 
@@ -257,7 +257,7 @@ int select_by_pe_list(lList *queue_list, lList *peref_list, /* ST_Type */
     * iterate through peref_list and build up a new pe_list
     * containing only those pe's referenced in peref_list
     */
-   for_each(pe, peref_list) {
+   for_each_ep(pe, peref_list) {
       lListElem *ref_pe;  /* PE_Type */
       lListElem *copy_pe; /* PE_Type */
 
@@ -279,7 +279,7 @@ int select_by_pe_list(lList *queue_list, lList *peref_list, /* ST_Type */
     * untag all non-parallel queues and queues not referenced
     * by a pe in the selected pe list entry of a queue
     */
-   for_each(cqueue, queue_list) {
+   for_each_ep(cqueue, queue_list) {
       const lList *qinstance_list = lGetList(cqueue, CQ_qinstances);
 
       for_each_rw(qep, qinstance_list) {
@@ -289,7 +289,7 @@ int select_by_pe_list(lList *queue_list, lList *peref_list, /* ST_Type */
             lSetUlong(qep, QU_tag, 0);
             continue;
          }
-         for_each(pe, pe_selected) {
+         for_each_ep(pe, pe_selected) {
             const char *pe_name = lGetString(pe, PE_name);
 
             found = lGetSubStr(qep, ST_name, pe_name, QU_pe_list);
@@ -352,7 +352,7 @@ int select_by_queue_user_list(lList *exechost_list, lList *cqueue_list, lList *q
    config_acl = mconf_get_user_lists();
    config_xacl = mconf_get_xuser_lists();
 
-   for_each(cqueue, cqueue_list) {
+   for_each_ep(cqueue, cqueue_list) {
       const lList *qinstance_list = lGetList(cqueue, CQ_qinstances);
 
       for_each_rw(qep, qinstance_list) {
@@ -373,7 +373,7 @@ int select_by_queue_user_list(lList *exechost_list, lList *cqueue_list, lList *q
             h_xprj = lGetList(ehep, EH_xprj);
          }
 
-         for_each(qu, queue_user_list) {
+         for_each_ep(qu, queue_user_list) {
             const lListElem *pep = NULL;
             int q_access = 0;
             int h_access = 0;
@@ -396,7 +396,7 @@ int select_by_queue_user_list(lList *exechost_list, lList *cqueue_list, lList *q
             }
             if (project_list != NULL) {
                DPRINTF(("testing queue projects lists\n"));
-               for_each(pep, prj) {
+               for_each_ep(pep, prj) {
                   const char *prj_name;
                   lListElem *prj;
                   if ((prj_name = lGetString(pep, PR_name)) != NULL) {
@@ -410,7 +410,7 @@ int select_by_queue_user_list(lList *exechost_list, lList *cqueue_list, lList *q
                      }
                   }
                }
-               for_each(pep, xprj) {
+               for_each_ep(pep, xprj) {
                   const char *prj_name;
                   lListElem *prj;
                   if ((prj_name = lGetString(pep, PR_name)) != NULL) {
@@ -441,7 +441,7 @@ int select_by_queue_user_list(lList *exechost_list, lList *cqueue_list, lList *q
             }
             if (project_list != NULL) {
                DPRINTF(("testing host projects lists\n"));
-               for_each(pep, h_prj) {
+               for_each_ep(pep, h_prj) {
                   const char *prj_name;
                   lListElem *prj;
                   if ((prj_name = lGetString(pep, PR_name)) != NULL) {
@@ -455,7 +455,7 @@ int select_by_queue_user_list(lList *exechost_list, lList *cqueue_list, lList *q
                      }
                   }
                }
-               for_each(pep, h_xprj) {
+               for_each_ep(pep, h_xprj) {
                   const char *prj_name;
                   lListElem *prj;
                   if ((prj_name = lGetString(pep, PR_name)) != NULL) {
@@ -486,7 +486,7 @@ int select_by_queue_user_list(lList *exechost_list, lList *cqueue_list, lList *q
             }
             if (project_list != NULL) {
                DPRINTF(("testing host projects lists\n"));
-               for_each(pep, global_prj) {
+               for_each_ep(pep, global_prj) {
                   const char *prj_name;
                   lListElem *prj;
                   if ((prj_name = lGetString(pep, PR_name)) != NULL) {
@@ -500,7 +500,7 @@ int select_by_queue_user_list(lList *exechost_list, lList *cqueue_list, lList *q
                      }
                   }
                }
-               for_each(pep, global_xprj) {
+               for_each_ep(pep, global_xprj) {
                   const char *prj_name;
                   lListElem *prj;
                   if ((prj_name = lGetString(pep, PR_name)) != NULL) {
@@ -572,7 +572,7 @@ int select_by_queue_state(u_long32 queue_states, lList *exechost_list, lList *qu
    if (!(load_avg_str = getenv("SGE_LOAD_AVG")) || !strlen(load_avg_str))
       load_avg_str = LOAD_ATTR_LOAD_AVG;
 
-   for_each(cqueue, queue_list) {
+   for_each_ep(cqueue, queue_list) {
       const lList *qinstance_list = lGetList(cqueue, CQ_qinstances);
       lListElem *qep = NULL;
       for_each_rw(qep, qinstance_list) {
@@ -619,7 +619,7 @@ int select_by_resource_list(lList *resource_list, lList *exechost_list, lList *q
    }
 
    /* prepare request */
-   for_each(cqueue, queue_list) {
+   for_each_ep(cqueue, queue_list) {
       lListElem *qep;
       bool selected;
       const lList *qinstance_list = lGetList(cqueue, CQ_qinstances);
@@ -652,7 +652,7 @@ bool is_cqueue_selected(lList *queue_list) {
       const lList *qinstance_list = lGetList(cqueue, CQ_qinstances);
       bool tmp_a_qinstance_is_selected = false;
 
-      for_each(qep, qinstance_list) {
+      for_each_ep(qep, qinstance_list) {
          if (lGetUlong(qep, QU_tag) & TAG_SHOW_IT) {
             tmp_a_qinstance_is_selected = true;
             break;

@@ -107,7 +107,7 @@ int sge_contained_in_access_list_(const char *user, const char *group,
 
    DENTER(TOP_LAYER);
 
-   for_each (acl_search, acl) {
+   for_each_ep(acl_search, acl) {
       if ((acl_found=lGetElemStr(acl_list, US_name, lGetString(acl_search, US_name)))) {
          /* ok - there is such an access list */
          if (sge_contained_in_access_list(user, group, acl_found, NULL)) {
@@ -155,7 +155,7 @@ bool sge_ar_have_users_access(lList **alpp, lListElem *ar, const char *name, con
 
    DENTER(TOP_LAYER);
 
-   for_each(acl_entry, lGetList(ar, AR_acl_list)) {
+   for_each_ep(acl_entry, lGetList(ar, AR_acl_list)) {
       user = lGetString(acl_entry, ARA_name);
 
       DPRINTF(("check permissions for user %s\n", user));

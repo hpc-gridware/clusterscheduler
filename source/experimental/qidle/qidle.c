@@ -221,7 +221,7 @@ void getextloadsensor(const char *qualified_hostname, const char *binary_path,
    lList *lpp = NULL;
    lListElem *ep = NULL;
    sge_ls_get(qualified_hostname, binary_path, &lpp);
-   for_each (ep, lpp) {
+   for_each_ep(ep, lpp) {
       printf("%s:%s:%s\n", 
       lGetHost(ep, LR_host),
       lGetString(ep, LR_name),

@@ -312,7 +312,7 @@ feature_id_t feature_get_active_featureset_id(void)
 
    featurelist_pp = feature_get_master_featureset_list();
    if (featurelist_pp != NULL) {
-      for_each(feature, *featurelist_pp) {
+      for_each_ep(feature, *featurelist_pp) {
          if (lGetUlong(feature, FES_active)) {
             ret = (feature_id_t)lGetUlong(feature, FES_id);
             break;

@@ -420,7 +420,7 @@ href_list_find_references(const lList *this_list, lList **answer_list,
       /*
        * Handle each reference which was given by the calling context
        */
-      for_each(href, this_list) {
+      for_each_ep(href, this_list) {
          const char *name = lGetHost(href, HR_name);
          bool is_group = is_hgroup_name(name);
          lListElem *hgroup = NULL;  /* HGRP_name */
@@ -445,7 +445,7 @@ href_list_find_references(const lList *this_list, lList **answer_list,
              * Add each element contained in the sublist of the hostgroup
              * we found previously to one of the result lists.
              */
-            for_each(href2, href_list2) {
+            for_each_ep(href2, href_list2) {
                const char *name2 = lGetHost(href2, HR_name);
 
                if (is_hgroup_name(name2)) {
@@ -597,13 +597,13 @@ href_list_find_referencees(const lList *this_list, lList **answer_list,
    if (this_list != NULL && occupant_groups != NULL) {
       const lListElem *href;  /* HR_Type */
 
-      for_each(href, this_list) {
+      for_each_ep(href, this_list) {
          const char *name = lGetHost(href, HR_name);
 
          if (is_hgroup_name(name)) {
             const lListElem *hgroup;   /* HGRP_Type */
 
-            for_each(hgroup, master_list) {
+            for_each_ep(hgroup, master_list) {
                const lList *href_list = lGetList(hgroup, HGRP_host_list);
                lListElem *href = href_list_locate(href_list, name);
 
@@ -784,7 +784,7 @@ href_list_append_to_dstring(const lList *this_list, dstring *string)
       const lListElem *href;  /* HR_Type */
       bool is_first = true;
 
-      for_each(href, this_list) {
+      for_each_ep(href, this_list) {
          const char *name = lGetHost(href, HR_name);
 
          if (!is_first) {
@@ -832,7 +832,7 @@ href_list_remove_existing(lList **this_list, lList **answer_list,
    if (this_list != NULL && *this_list != NULL && list != NULL) {
       const lListElem * href = NULL;
 
-      for_each(href, list) {
+      for_each_ep(href, list) {
          const char *hostname = lGetHost(href, HR_name);
          lListElem *existing_href = lGetElemHostRW(*this_list, HR_name, hostname);
 
@@ -873,7 +873,7 @@ href_list_debug_print(const lList *this_list, const char *prefix)
    bool is_first_hostname = true;
    DENTER(TOP_LAYER);
 
-   for_each(href, this_list) {
+   for_each_ep(href, this_list) {
       const char *hostname = lGetHost(href, HR_name);
 
       if (is_first_hostname) {

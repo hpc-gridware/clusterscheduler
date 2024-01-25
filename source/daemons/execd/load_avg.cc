@@ -159,7 +159,7 @@ void execd_merge_load_report(u_long32 seqno)
    } else {
       const lListElem *old_lr;
 
-      for_each(old_lr, lGetList(last_lr, REP_list)) {
+      for_each_ep(old_lr, lGetList(last_lr, REP_list)) {
          const void *iterator = NULL;
          const char *hostname = lGetHost(old_lr, LR_host);
          const char *name = lGetString(old_lr, LR_name);
@@ -856,13 +856,13 @@ void update_job_usage(const char* qualified_hostname)
 #endif
 
    /* replace existing usage in the job report with the new one */
-   for_each(usage, usage_list) {
+   for_each_ep(usage, usage_list) {
       u_long32 job_id;
       const lListElem *ja_task;
 
       job_id = lGetUlong(usage, JB_job_number);
 
-      for_each(ja_task, lGetList(usage, JB_ja_tasks)) {
+      for_each_ep(ja_task, lGetList(usage, JB_ja_tasks)) {
          u_long32 ja_task_id;
          lListElem *uep;
          const lListElem *pe_task;
@@ -908,7 +908,7 @@ void update_job_usage(const char* qualified_hostname)
          DPRINTF(("---> updating job report usage for job "sge_u32"."sge_u32"\n",
              job_id, ja_task_id));
 
-         for_each(pe_task, lGetList(ja_task, JAT_task_list)) {
+         for_each_ep(pe_task, lGetList(ja_task, JAT_task_list)) {
             const char *pe_task_id = lGetString(pe_task, PET_id);
 
             /* search matching job report */
@@ -1129,14 +1129,14 @@ static void get_reserved_usage(const char *qualified_hostname, lList **job_usage
 
    temp_job_usage_list = lCreateList("JobResUsageList", JB_Type);
 
-   for_each (job, *object_type_get_master_list(SGE_TYPE_JOB)) {
+   for_each_ep(job, *object_type_get_master_list(SGE_TYPE_JOB)) {
       u_long32 job_id;
       const lListElem *pe, *ja_task;
       lListElem *new_job = NULL;
 
       job_id = lGetUlong(job, JB_job_number);
 
-      for_each (ja_task, lGetList(job, JB_ja_tasks)) {
+      for_each_ep(ja_task, lGetList(job, JB_ja_tasks)) {
          u_long32 ja_task_id;
          const lListElem *pe_task;
 
@@ -1162,7 +1162,7 @@ static void get_reserved_usage(const char *qualified_hostname, lList **job_usage
           * Do not report reserved usage, if accounting_summary is activated!
           */
          if (!(pe != NULL && lGetBool(pe, PE_accounting_summary))) {
-            for_each(pe_task, lGetList(ja_task, JAT_task_list)) {
+            for_each_ep(pe_task, lGetList(ja_task, JAT_task_list)) {
                const char *pe_task_id;
 
                pe_task_id = lGetString(pe_task, PET_id);
@@ -1303,7 +1303,7 @@ void build_reserved_usage(const u_long32 now, const lListElem *ja_task, const lL
          if (pe == NULL || !lGetBool(pe, PE_control_slaves) || lGetBool(pe, PE_accounting_summary)) {
             /* account for all gdil */
             const lListElem *master_gdil_ep = lFirst(gdil);
-            for_each(gdil_ep, gdil) {
+            for_each_ep(gdil_ep, gdil) {
                slots = lGetUlong(gdil_ep, JG_slots);
                /* respect job_is_first_task, only once (for the master task gdil) */
                if (pe != NULL && gdil_ep == master_gdil_ep && !lGetBool(pe, PE_job_is_first_task)) {

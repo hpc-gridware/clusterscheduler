@@ -298,7 +298,7 @@ sge_follow_order(sge_gdi_ctx_class_t *ctx,
          lSetDouble(jatp, JAT_sticket, lGetDouble(oep, OQ_sticket));
       }
 
-      for_each(oep, lGetList(ep, OR_queuelist)) {
+      for_each_ep(oep, lGetList(ep, OR_queuelist)) {
          lListElem *gdil_ep;
 
          q_name    = lGetString(oep, OQ_dest_queue);
@@ -402,7 +402,7 @@ sge_follow_order(sge_gdi_ctx_class_t *ctx,
             const lListElem *ruep;
 
             /* host not yet clean after reschedule unknown? */
-            for_each(ruep, lGetList(hep, EH_reschedule_unknown_list)) {
+            for_each_ep(ruep, lGetList(hep, EH_reschedule_unknown_list)) {
                if (job_number == lGetUlong(ruep, RU_job_number)
                    && task_number == lGetUlong(ruep, RU_task_number)) {
                   ERROR((SGE_EVENT, MSG_JOB_UNABLE2STARTJOB_US, sge_u32c(lGetUlong(ruep, RU_job_number)),
@@ -914,7 +914,7 @@ sge_follow_order(sge_gdi_ctx_class_t *ctx,
                if (lGetList(ep, OR_queuelist)) {
                   lList *host_tickets_cache = lCreateList("", UA_Type); /* cashed temporary hash list */
                   /* set granted slot tickets */
-                  for_each(oep, lGetList(ep, OR_queuelist)) {
+                  for_each_ep(oep, lGetList(ep, OR_queuelist)) {
                      lListElem *gdil_ep;
                      lListElem *chost_ep;
 
@@ -938,7 +938,7 @@ sge_follow_order(sge_gdi_ctx_class_t *ctx,
                   }
 
                   /* map cached tickets back to RTIC_Type list */
-                  for_each(oep, host_tickets_cache) {
+                  for_each_ep(oep, host_tickets_cache) {
                      const char *hostname = lGetString(oep, UA_name);
                      lListElem *rtic_ep;
                      lList *host_tickets;
@@ -1560,7 +1560,7 @@ int distribute_ticket_orders(sge_gdi_ctx_class_t *ctx, lList *ticket_orders, mon
 
    DENTER(TOP_LAYER);
    
-   for_each(ep, ticket_orders) {
+   for_each_ep(ep, ticket_orders) {
       const lList *to_send = lGetList(ep, RTIC_tickets);
       const char *host_name = lGetHost(ep, RTIC_host);
       const lListElem *hep = host_list_locate(master_ehost_list, host_name);
@@ -1577,7 +1577,7 @@ int distribute_ticket_orders(sge_gdi_ctx_class_t *ctx, lList *ticket_orders, mon
          if (init_packbuffer(&pb, sizeof(u_long32)*3*n, 0)==PACK_SUCCESS) {
             u_long32 dummyid = 0;
             const lListElem *ep2;
-            for_each (ep2, to_send) {
+            for_each_ep(ep2, to_send) {
                packint(&pb, lGetUlong(ep2, OR_job_number));
                packint(&pb, lGetUlong(ep2, OR_ja_task_number));
                packdouble(&pb, lGetDouble(ep2, OR_ticket));

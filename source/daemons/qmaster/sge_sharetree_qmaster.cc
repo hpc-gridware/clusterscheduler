@@ -425,11 +425,11 @@ int update_sharetree(lList *dst, const lList *src)
 
    /* seek matching node for each of the masters node on that level */
 #ifdef notdef
-   for_each (dnode, dst) {
+   for_each_ep(dnode, dst) {
       d_name = lGetString(dnode, STN_name);
       if (!(snode = lGetElemStr(src, STN_name, d_name))) {
 #endif
-   for_each (snode, src) {
+   for_each_ep(snode, src) {
       s_name = lGetString(snode, STN_name);
       if (!(dnode = lGetElemStrRW(dst, STN_name, s_name))) {
          ERROR((SGE_EVENT, MSG_STREE_MISSINGNODE_S, s_name));

@@ -740,7 +740,7 @@ static int job_count_rescheduled_ja_tasks(const lListElem *job, bool count_all)
    u_long32 state;
    int n = 0;
 
-   for_each(ja_task, lGetList(job, JB_ja_tasks)) {
+   for_each_ep(ja_task, lGetList(job, JB_ja_tasks)) {
       state = lGetUlong(ja_task, JAT_state);
       if ((lGetUlong(ja_task, JAT_status) == JIDLE) && ((state & JQUEUED) != 0) && ((state & JWAITING) != 0)) {
          n++;
@@ -1269,7 +1269,7 @@ bool job_is_tight_parallel(const lListElem *job, const lList *pe_list)
       int all_are_tight = 1;
       const lListElem *pe;
 
-      for_each(pe, pe_list) {
+      for_each_ep(pe, pe_list) {
          if (pe_is_matching(pe, pe_name)) {
             found_pe = 1;
             all_are_tight &= lGetBool(pe, PE_control_slaves);
@@ -1321,7 +1321,7 @@ bool job_might_be_tight_parallel(const lListElem *job, const lList *pe_list)
    if (pe_name != NULL) {
       const lListElem *pe;
 
-      for_each(pe, pe_list) {
+      for_each_ep(pe, pe_list) {
          if (pe_is_matching(pe, pe_name) && lGetBool(pe, PE_control_slaves)) {
             ret = true;
             break;
@@ -2708,7 +2708,7 @@ bool sge_unparse_acl_dstring(dstring *category_str, const char *owner, const cha
   
    DENTER(TOP_LAYER);  
 
-   for_each (elem, acl_list) {
+   for_each_ep(elem, acl_list) {
       if (lGetBool(elem, US_consider_with_categories) &&
           sge_contained_in_access_list(owner, group, elem, NULL)) {
          if (first) {      
@@ -2766,7 +2766,7 @@ bool sge_unparse_queue_list_dstring(dstring *category_str, lListElem *job_elem,
   
    if ((print_list = lGetPosList(job_elem, nm)) != NULL) {
       lPSortList(print_list, "%I+", QR_name);
-      for_each (sub_elem, print_list) {
+      for_each_ep(sub_elem, print_list) {
          if (first) {      
             if (sge_dstring_strlen(category_str) > 0) {
                sge_dstring_append_char(category_str, ' ');
@@ -2822,7 +2822,7 @@ bool sge_unparse_resource_list_dstring(dstring *category_str, lListElem *job_ele
    if ((print_list = lGetPosList(job_elem, nm)) != NULL) {
       lPSortList(print_list, "%I+", CE_name);
 
-       for_each (sub_elem, print_list) {
+       for_each_ep(sub_elem, print_list) {
          if (first) {
             if (sge_dstring_strlen(category_str) > 0) {
                sge_dstring_append(category_str, " ");
@@ -3641,7 +3641,7 @@ set_context(lList *jbctx, lListElem *job)
       }
    }
 
-   for_each(jbctxep, jbctx) {
+   for_each_ep(jbctxep, jbctx) {
       switch(*(lGetString(jbctxep, VA_variable))) {
          case '+':
             mode = '+';

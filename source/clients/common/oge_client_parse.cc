@@ -290,7 +290,7 @@ static void append_opts_from_default_files(u_long32 prog_number, lList **pcmdlin
 
       alp = parse_script_file(prog_number, *pstr, "", pcmdline, envp, FLG_HIGHER_PRIOR | FLG_USE_NO_PSEUDOS);
 
-      for_each(aep, alp) {
+      for_each_ep(aep, alp) {
          u_long32 status;
          answer_quality_t quality;
 

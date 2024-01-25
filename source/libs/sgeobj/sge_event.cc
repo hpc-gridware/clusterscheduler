@@ -451,7 +451,7 @@ static bool event_client_verify_subscription(const lListElem *event_client, lLis
 
    DENTER(TOP_LAYER);
 
-   for_each (ep, lGetList(event_client, EV_subscribed)) {
+   for_each_ep(ep, lGetList(event_client, EV_subscribed)) {
       u_long32 id = lGetUlong(ep, EVS_id);
       if (id <= sgeE_ALL_EVENTS || id >= sgeE_EVENTSIZE) {
          answer_list_add_sprintf(answer_list, STATUS_ESYNTAX, ANSWER_QUALITY_ERROR, 

@@ -74,11 +74,11 @@ lList *acl_args
 
    what = lWhat("%T(ALL)", US_Type);
 
-   for_each(aclarg,acl_args) {
+   for_each_ep(aclarg,acl_args) {
       acl_name = lGetString(aclarg, US_name);
       where = lWhere("%T(%I==%s)", US_Type, US_name, acl_name);
 
-      for_each(userarg, user_args) {
+      for_each_ep(userarg, user_args) {
 
          already = 0;
          user_name=lGetString(userarg, UE_name);
@@ -166,11 +166,11 @@ lList *acl_args
 
    what = lWhat("%T(ALL)", US_Type);
 
-   for_each(aclarg,acl_args) {
+   for_each_ep(aclarg,acl_args) {
       acl_name = lGetString(aclarg, US_name);
       where = lWhere("%T(%I==%s)", US_Type, US_name, acl_name);
 
-      for_each(userarg, user_args) {
+      for_each_ep(userarg, user_args) {
          int breakit = 0;
          char *cp = NULL;
          user_name=lGetString(userarg, UE_name);
@@ -259,7 +259,7 @@ lList **dst
    DENTER(TOP_LAYER);
 
    where = NULL;
-   for_each(aclarg, acl_args) {
+   for_each_ep(aclarg, acl_args) {
       acl_name = lGetString(aclarg, US_name);
       newcp = lWhere("%T(%I==%s)", US_Type, US_name, acl_name);
       if (where == NULL) {

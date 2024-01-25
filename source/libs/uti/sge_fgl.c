@@ -330,7 +330,7 @@ void fgl_dump_stats_entry(htable fgl_stats, const void *key_data, const void **v
 void fgl_dump_stats(dstring *stats_str) {
 #if COLLECT_STATS
    pthread_mutex_lock(&fgl_stats_mtx);
-   sge_htable_for_each(fgl_stats, fgl_dump_stats_entry);
+   sge_htable_for_each_ep(fgl_stats, fgl_dump_stats_entry);
    sge_dstring_sprintf(stats_str, "%s", sge_dstring_get_string(&fgl_stats_str));
    sge_dstring_clear(&fgl_stats_str);
    pthread_mutex_unlock(&fgl_stats_mtx);

@@ -98,7 +98,7 @@ void cull_mail(u_long32 progid, const lList *user_list, const char *subj, const 
    }
 
    if (user_list) {
-      for_each(ep, user_list) {
+      for_each_ep(ep, user_list) {
          user = lGetString(ep, MR_user);
          host = lGetHost(ep, MR_host);
          if (!user && !host) {

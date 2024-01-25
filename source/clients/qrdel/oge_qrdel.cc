@@ -194,7 +194,7 @@ static bool sge_parse_qrdel(lList **ppcmdline, lList **ppid_list, lList **alpp)
       }
      
       if (parse_multi_stringlist(ppcmdline, "ars", alpp, &plist, ST_Type, ST_name)) {
-         for_each(ep, plist) {
+         for_each_ep(ep, plist) {
             const char *id = lGetString(ep, ST_name);
             lAddElemStr(ppid_list, ID_str, id, ID_Type);
          }
@@ -202,7 +202,7 @@ static bool sge_parse_qrdel(lList **ppcmdline, lList **ppid_list, lList **alpp)
          continue;
       }
     
-      for_each(ep, *ppcmdline) {
+      for_each_ep(ep, *ppcmdline) {
          answer_list_add_sprintf(alpp, STATUS_ESEMANTIC, ANSWER_QUALITY_ERROR,
                                  MSG_PARSE_INVALIDOPTIONARGUMENTX_S,
                                  lGetString(ep,SPA_switch_val)); 

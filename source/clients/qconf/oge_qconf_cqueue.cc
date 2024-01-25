@@ -148,7 +148,7 @@ static bool cqueue_hgroup_get_via_gdi(sge_gdi_ctx_class_t *ctx, lList **answer_l
       int hgrp_id = 0; 
       int cq_id = 0;
 
-      for_each(qref, qref_list) {
+      for_each_ep(qref, qref_list) {
          dstring cqueue_name = DSTRING_INIT;
          dstring host_domain = DSTRING_INIT;
          const char *name = lGetString(qref, QR_name);
@@ -588,7 +588,7 @@ cqueue_show(sge_gdi_ctx_class_t *ctx, lList **answer_list, const lList *qref_pat
 
                hgroup_list_find_matching_and_resolve(hgroup_list, NULL,
                                                      d_pattern, &href_list);
-               for_each(qref, qref_list) {
+               for_each_ep(qref, qref_list) {
                   const char *cqueue_name = lGetString(qref, QR_name);
                   const lListElem *cqueue = NULL;
 
@@ -598,7 +598,7 @@ cqueue_show(sge_gdi_ctx_class_t *ctx, lList **answer_list, const lList *qref_pat
                      const lListElem *href = NULL;
 
                      qinstance_list = lGetList(cqueue, CQ_qinstances);
-                     for_each(href, href_list) {
+                     for_each_ep(href, href_list) {
                         const char *hostname = lGetHost(href, HR_name);
                         const lListElem *qinstance;
 
@@ -651,7 +651,7 @@ cqueue_show(sge_gdi_ctx_class_t *ctx, lList **answer_list, const lList *qref_pat
                const char *h_pattern = sge_dstring_get_string(&host_domain);
                bool is_first = true;
 
-               for_each(qref, qref_list) {
+               for_each_ep(qref, qref_list) {
                   const char *cqueue_name = NULL;
                   const lListElem *cqueue = NULL;
 
@@ -662,7 +662,7 @@ cqueue_show(sge_gdi_ctx_class_t *ctx, lList **answer_list, const lList *qref_pat
                      const lListElem *qinstance = NULL;
 
                      qinstance_list = lGetList(cqueue, CQ_qinstances);
-                     for_each(qinstance, qinstance_list) {
+                     for_each_ep(qinstance, qinstance_list) {
                         const char *hostname = NULL;
 
                         hostname = lGetHost(qinstance, QU_qhostname);
@@ -704,7 +704,7 @@ cqueue_show(sge_gdi_ctx_class_t *ctx, lList **answer_list, const lList *qref_pat
             } else {
                bool is_first = true;
 
-               for_each(qref, qref_list) {
+               for_each_ep(qref, qref_list) {
                   const char *cqueue_name = lGetString(qref, QR_name);
                   const lListElem *cqueue = lGetElemStr(cqueue_list, CQ_name, cqueue_name);
 
@@ -873,7 +873,7 @@ static int write_QU_consumable_config_list(const lListElem *ep, int nm,
     * use a new sub-instruction, this function will have to be changed to
     * to reflect this.  Otherwise, the complex values will be printed in a
     * different format from the other attributes. */
-   for_each(vep, lp) {
+   for_each_ep(vep, lp) {
       const char *name = lGetString(vep, CE_name);
 
       if (strcmp(name, "slots") != 0) {

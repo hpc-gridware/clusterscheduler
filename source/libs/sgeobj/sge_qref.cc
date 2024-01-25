@@ -94,7 +94,7 @@ qref_list_resolve_cqueue_names(const lList *cq_qref_list,
    const lListElem *cq_qref = NULL;
 
    DENTER(QREF_LAYER);
-   for_each(cq_qref, cq_qref_list) {
+   for_each_ep(cq_qref, cq_qref_list) {
       const char *cq_name = lGetString(cq_qref, QR_name);
 
       if (resolve_cqueue) {
@@ -104,7 +104,7 @@ qref_list_resolve_cqueue_names(const lList *cq_qref_list,
         
          cqueue = lGetElemStr(cqueue_list, CQ_name, cq_name); 
          qinstance_list = lGetList(cqueue, CQ_qinstances);
-         for_each(qinstance, qinstance_list) {
+         for_each_ep(qinstance, qinstance_list) {
             lAddElemStr(qref_list, QR_name, lGetString(qinstance, QU_full_name), QR_Type);
             *found_something = true;
          }
@@ -127,7 +127,7 @@ qref_list_resolve_qinstance_names(const lList *cq_qref_list,
    const lListElem *cq_qref = NULL;
 
    DENTER(QREF_LAYER);
-   for_each(cq_qref, cq_qref_list) {
+   for_each_ep(cq_qref, cq_qref_list) {
       const char *cqueue_name = NULL;
       const char *hostname_pattern = NULL;
       const lListElem *cqueue = NULL;
@@ -142,7 +142,7 @@ qref_list_resolve_qinstance_names(const lList *cq_qref_list,
       qinstance_list_find_matching(qinstance_list, answer_list,
                                    hostname_pattern, &qi_ref_list);
 
-      for_each(qi_qref, qi_ref_list) {
+      for_each_ep(qi_qref, qi_ref_list) {
          const char *qi_name = lGetString(qi_qref, QR_name);
 
          lAddElemStr(qref_list, QR_name, qi_name, QR_Type);
@@ -182,7 +182,7 @@ qref_list_resolve_qdomain_names(const lList *cq_qref_list,
       hgroup_list_find_matching(hgroup_list, answer_list,
                                 hgroup_pattern, &href_list);
    }
-   for_each(cq_qref, cq_qref_list) {
+   for_each_ep(cq_qref, cq_qref_list) {
       const char *cqueue_name = lGetString(cq_qref, QR_name);
       const lListElem *cqueue = NULL;
       const lList *qinstance_list = NULL;
@@ -190,7 +190,7 @@ qref_list_resolve_qdomain_names(const lList *cq_qref_list,
 
       cqueue = lGetElemStr(cqueue_list, CQ_name, cqueue_name);
       qinstance_list = lGetList(cqueue, CQ_qinstances);
-      for_each(href, href_list) {
+      for_each_ep(href, href_list) {
          if (resolve_qdomain) {
             const char *hostname = lGetHost(href, HR_name);
             const lListElem *qinstance = NULL;
@@ -346,7 +346,7 @@ qref_list_resolve(const lList *src_qref_list, lList **answer_list,
       const lListElem *qref_pattern = NULL;
 
       *found_something = false;
-      for_each(qref_pattern, src_qref_list) {
+      for_each_ep(qref_pattern, src_qref_list) {
          const char *name = NULL;
          bool has_hostname;
          bool has_domain;
@@ -520,7 +520,7 @@ qref_list_eh_rejected(const lList *qref_list, const char *hostname, const lList 
       DRETURN(false);
    }
 
-   for_each(qref_pattern, qref_list) {
+   for_each_ep(qref_pattern, qref_list) {
       const char *name = lGetString(qref_pattern, QR_name);
       if (qref_eh_rejected(name, hostname, hgroup_list)==false) {
          DRETURN(false);
@@ -547,7 +547,7 @@ qref_list_cq_rejected(const lList *qref_list, const char *cqname,
       DRETURN(false);
    }
 
-   for_each(qref_pattern, qref_list) {
+   for_each_ep(qref_pattern, qref_list) {
       const char *name = lGetString(qref_pattern, QR_name);
       if (qref_cq_rejected(name, cqname, hostname, hgroup_list)==false) {
          DRETURN(false);
@@ -589,14 +589,14 @@ qref_list_host_rejected(const char *href, const char *hostname, const lList *hgr
    if (href[0] == '@') { /* wc_hostgroup */
       const char *wc_hostgroup = &href[1];
       const lListElem *hgroup;
-      for_each(hgroup, hgroup_list) {
+      for_each_ep(hgroup, hgroup_list) {
          const char *hgroup_name = lGetHost(hgroup, HGRP_name);
          DPRINTF(("found hostgroup \"%s\" wc_hostgroup: \"%s\"\n",
                hgroup_name, wc_hostgroup));
          /* use hostgroup expression */
          if (sge_eval_expression(TYPE_HOST, wc_hostgroup, &hgroup_name[1], NULL) == 0) {         
             const lListElem *h;
-            for_each (h, lGetList(hgroup, HGRP_host_list)) {
+            for_each_ep(h, lGetList(hgroup, HGRP_host_list)) {
                if (!qref_list_host_rejected(lGetHost(h, HR_name), hostname, hgroup_list)) {
                   DRETURN(false);
                }
@@ -764,7 +764,7 @@ qref_list_is_valid(const lList *this_list, lList **answer_list, const lList *mas
             /* queue name expression support */
             qref_list_resolve(qref_list, answer_list, &resolved_qref_list,
                               &found_something, master_cqueue_list, master_hgroup_list, true, true);
-            for_each(resolved_qref, resolved_qref_list) {
+            for_each_ep(resolved_qref, resolved_qref_list) {
                const char *resolved_qref_name = lGetString(resolved_qref, QR_name);
 
                if (cqueue_list_locate_qinstance(master_cqueue_list, resolved_qref_name) != NULL) {

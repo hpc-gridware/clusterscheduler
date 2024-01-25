@@ -212,7 +212,7 @@ static int showq_show_job_tacc(sge_gdi_ctx_class_t * ctx, lList * user_list, int
 
    /* if the user_list is empty, display all users' jobs */
    if (lGetNumberOfElem(user_list) != 0) {
-      for_each(j_elem, user_list) {
+      for_each_ep(j_elem, user_list) {
          newcp = lWhere("%T(%I p= %s)", JB_Type, JB_owner, lGetString(j_elem, ST_name));
          if (newcp != NULL) {
             if (where == NULL) {

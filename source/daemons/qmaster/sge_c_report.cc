@@ -107,7 +107,7 @@ void sge_c_report(sge_gdi_ctx_class_t *ctx, char *rhost, char *commproc, int id,
 
 #ifdef OBSERVE
    dstring rep_str = DSTRING_INIT;
-   for_each(report, report_list) {
+   for_each_ep(report, report_list) {
       rep_type = lGetUlong(report, REP_type);
 
       switch (rep_type) {
@@ -202,7 +202,7 @@ void sge_c_report(sge_gdi_ctx_class_t *ctx, char *rhost, char *commproc, int id,
                const lListElem *shep;
                lListElem *simhostElem=NULL; 
 
-               for_each(shep, master_exechost_list) {
+               for_each_ep(shep, master_exechost_list) {
                   simhostElem = lGetSubStr(shep, CE_name, "load_report_host", EH_consumable_config_list);
                   if (simhostElem != NULL) {
                      const char *real_host = lGetString(simhostElem, CE_stringval);

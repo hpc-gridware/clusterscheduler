@@ -87,7 +87,7 @@ int correct_load(lList *running_jobs, lList *queue_list, lList *host_list,
             continue;
          }
          granted_list = lGetList(ja_task, JAT_granted_destin_identifier_list);
-         for_each (granted_queue, granted_list) {   
+         for_each_ep(granted_queue, granted_list) {
             const char *qnm = NULL;
             const char *hnm = NULL;
             lListElem *qep = NULL;

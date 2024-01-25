@@ -1191,7 +1191,7 @@ combine_usage( sge_ref_t *ref )
 
       usage_weight_list = sconf_get_usage_weight_list();
       if (usage_weight_list) {
-          for_each(usage_weight, usage_weight_list)
+          for_each_ep(usage_weight, usage_weight_list)
              sum_of_usage_weights += lGetDouble(usage_weight, UA_value);
       }
 
@@ -1216,7 +1216,7 @@ combine_usage( sge_ref_t *ref )
             usage_list = lGetList(ref->project, PR_usage);
          }
 
-         for_each(usage_elem, usage_list) {
+         for_each_ep(usage_elem, usage_list) {
             usage_name = lGetString(usage_elem, UA_name);
             usage_weight = lGetElemStr(usage_weight_list, UA_name, usage_name);
             if (usage_weight && sum_of_usage_weights>0) {
@@ -4504,7 +4504,7 @@ main(int argc, char **argv)
    lSetUlong(config, SC_halftime, 60*60);
    lSetList(config, SC_usage_weight_list,
        build_usage_list("usageweightlist", NULL));
-   for_each(usage, lGetList(config, SC_usage_weight_list))
+   for_each_ep(usage, lGetList(config, SC_usage_weight_list))
       lSetDouble(usage, UA_value, 1.0/3.0);
    lSetDouble(config, SC_compensation_factor, 2);
    lSetDouble(config, SC_weight_user, 0.25);
@@ -4597,7 +4597,7 @@ main(int argc, char **argv)
    lSetHost(job, JB_host, "racerx");
    lSetUlong(job, JB_override_tickets, 0);
    lSetList(job, JB_scaled_usage_list, build_usage_list("jobusagelist", NULL));
-   for_each(usage, lGetList(job, JB_scaled_usage_list))
+   for_each_ep(usage, lGetList(job, JB_scaled_usage_list))
       lSetDouble(usage, UA_value, rand());
 
    job = lAddElemUlong(&(lists->job_list), JB_job_number, job_number++, 
@@ -4611,7 +4611,7 @@ main(int argc, char **argv)
    lSetHost(job, JB_host, "racerx");
    lSetUlong(job, JB_override_tickets, 0);
    lSetList(job, JB_scaled_usage_list, build_usage_list("jobusagelist", NULL));
-   for_each(usage, lGetList(job, JB_scaled_usage_list))
+   for_each_ep(usage, lGetList(job, JB_scaled_usage_list))
       lSetDouble(usage, UA_value, rand());
 
    job = lAddElemUlong(&(lists->job_list), JB_job_number, job_number++, 
@@ -4626,7 +4626,7 @@ main(int argc, char **argv)
    lSetHost(job, JB_host, "racerx");
    lSetUlong(job, JB_override_tickets, 0);
    lSetList(job, JB_scaled_usage_list, build_usage_list("jobusagelist", NULL));
-   for_each(usage, lGetList(job, JB_scaled_usage_list))
+   for_each_ep(usage, lGetList(job, JB_scaled_usage_list))
       lSetDouble(usage, UA_value, rand());
 
    job = lAddElemUlong(&(lists->job_list), JB_job_number, job_number++, 
@@ -4640,7 +4640,7 @@ main(int argc, char **argv)
    lSetHost(job, JB_host, "racerx");
    lSetUlong(job, JB_override_tickets, 0);
    lSetList(job, JB_scaled_usage_list, build_usage_list("jobusagelist", NULL));
-   for_each(usage, lGetList(job, JB_scaled_usage_list))
+   for_each_ep(usage, lGetList(job, JB_scaled_usage_list))
       lSetDouble(usage, UA_value, rand());
 
 

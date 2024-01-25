@@ -181,7 +181,7 @@ sge_host_add_remove_enforce_limit_trigger(const char *hostname, bool add)
                   } else {
                      const lListElem *pe_task;
 
-                     for_each (pe_task, lGetList(ja_task, JAT_task_list)) {
+                     for_each_ep(pe_task, lGetList(ja_task, JAT_task_list)) {
                         const lList *gdil = lGetList(pe_task, PET_granted_destin_identifier_list);
                         const lListElem *gdil_ep = lFirst(gdil);
          
@@ -205,11 +205,11 @@ sge_host_add_remove_enforce_limit_trigger(const char *hostname, bool add)
                      } else {
                         const lListElem *pe_task;
 
-                        for_each (pe_task, lGetList(ja_task, JAT_task_list)) {
+                        for_each_ep(pe_task, lGetList(ja_task, JAT_task_list)) {
                            const lList *gdil = lGetList(pe_task, PET_granted_destin_identifier_list);
                            const lListElem *gdil_ep;
 
-                           for_each(gdil_ep, gdil) {
+                           for_each_ep(gdil_ep, gdil) {
                               qinstance = cqueue_list_locate_qinstance(master_cqueue_list, lGetString(gdil_ep, JG_qname));
                               if (qinstance != NULL && qinstance_state_is_unknown(qinstance)) {
                                  do_action = true;
@@ -395,7 +395,7 @@ sge_job_enfoce_limit_handler(sge_gdi_ctx_class_t *ctx, te_event_t event, monitor
                         const lList *pe_tasks = lGetList(ja_task, JAT_task_list);
                         const lListElem *pe_task;
 
-                        for_each(pe_task, pe_tasks) {
+                        for_each_ep(pe_task, pe_tasks) {
                            const lList *gdil = NULL;
                            const lListElem *gdil_ep;
                            lListElem *qinstance;
@@ -666,7 +666,7 @@ sge_job_add_enforce_limit_trigger(lListElem *job, lListElem *ja_task)
                   u_long32 current_qi_h_rt = U_LONG32_MAX;
                   const lListElem *gdil_ep;
 
-                  for_each(gdil_ep, gdil) {
+                  for_each_ep(gdil_ep, gdil) {
                      const char *qname = lGetString(gdil_ep, JG_qname);
                      lListElem *qi = cqueue_list_locate_qinstance(master_cqueue_list, qname);
 

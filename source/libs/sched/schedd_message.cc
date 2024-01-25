@@ -116,7 +116,7 @@ static lList *schedd_mes_get_same_category_jids(lRef category,
 
    DENTER(TOP_LAYER);
    if (job_list != NULL && category != NULL) {
-      for_each(job, job_list) {
+      for_each_ep(job, job_list) {
          if (ignore_category || lGetRef(job, JB_category) == category) {
             lAddElemUlong(&ret, ULNG_value, lGetUlong(job, JB_job_number), ULNG_Type);
          }

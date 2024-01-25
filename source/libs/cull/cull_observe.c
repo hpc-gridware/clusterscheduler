@@ -76,7 +76,7 @@ void lObserveDumpAccess(void) {
 }
 
 void _lObserveDumpAccess(void) {
-   sge_htable_for_each(ob_ht, lObserveDumpEntry);
+   sge_htable_for_each_ep(ob_ht, lObserveDumpEntry);
 }
 #endif
 
@@ -97,7 +97,7 @@ static void lObserveClearEntry(htable ht, const void *key, const void **e) {
  */
 static void lObserveClear(void) {
    pthread_mutex_lock(&ob_mtx);
-   sge_htable_for_each(ob_ht, lObserveClearEntry);
+   sge_htable_for_each_ep(ob_ht, lObserveClearEntry);
    pthread_mutex_unlock(&ob_mtx);
 
    dstring *ob_dstring = cull_state_get_observe_dstring();

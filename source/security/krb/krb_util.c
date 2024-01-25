@@ -101,7 +101,7 @@ lList *joblist
 
    /* renew job TGT's */
 
-   for_each(job, joblist) {
+   for_each_ep(job, joblist) {
 
       krb5_error_code rc;
       krb5_creds ** tgt_creds = NULL;

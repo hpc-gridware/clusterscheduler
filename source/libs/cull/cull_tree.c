@@ -77,7 +77,7 @@ int lGetNumberOfNodes(const lListElem *ep, const lList *lp, int nm)
       }
       DRETURN(n);
    } else {
-      for_each(ep, lp) {
+      for_each_ep(ep, lp) {
          n += lGetNumberOfNodes(ep, NULL, nm);
       }
       DRETURN(n);
@@ -120,7 +120,7 @@ int lGetNumberOfLeafs(const lListElem *ep, const lList *lp, int nm)
       DRETURN(n);
    }
    else {
-      for_each(ep, lp) {
+      for_each_ep(ep, lp) {
          n += lGetNumberOfLeafs(ep, NULL, nm);
       }
       DRETURN(n);

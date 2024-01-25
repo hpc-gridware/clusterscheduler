@@ -191,7 +191,7 @@ list_objects(const char *key)
        * Sucess: print out data.
        */
       const lListElem *stu_elem = NULL;
-      for_each(stu_elem, stu_list) {
+      for_each_ep(stu_elem, stu_list) {
          fprintf(stdout, "%s\n", lGetString(stu_elem, STU_name));
       }
    } else {

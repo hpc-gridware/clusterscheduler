@@ -251,7 +251,7 @@ int userprj_success(sge_gdi_ctx_class_t *ctx, lListElem *ep, lListElem *old_ep, 
       obj_mod_event = sgeE_USER_MOD;
    }
 
-   for_each(rqs, *(object_type_get_master_list(SGE_TYPE_RQS))) {
+   for_each_ep(rqs, *(object_type_get_master_list(SGE_TYPE_RQS))) {
       if (scope_is_referenced_rqs(rqs, obj_filter, lGetString(ep, obj_key))) {
          lSetBool(ep, obj_consider, true);
          break;
@@ -350,8 +350,8 @@ int user        /* =1 user, =0 project */
        * fix for bug 6422335
        * check the cq configuration for project references instead of qinstances
        */
-      for_each(cqueue, *(object_type_get_master_list(SGE_TYPE_CQUEUE))) {
-         for_each(prj, lGetList(cqueue, CQ_projects)) {
+      for_each_ep(cqueue, *(object_type_get_master_list(SGE_TYPE_CQUEUE))) {
+         for_each_ep(prj, lGetList(cqueue, CQ_projects)) {
             if (lGetSubStr(prj, PR_name, name, APRJLIST_value))  {
                ERROR((SGE_EVENT, MSG_SGETEXT_PROJECTSTILLREFERENCED_SSSS, name, 
                      MSG_OBJ_PRJS, MSG_OBJ_QUEUE, 
@@ -361,7 +361,7 @@ int user        /* =1 user, =0 project */
                DRETURN(STATUS_EEXIST);
             }
          }
-         for_each(prj, lGetList(cqueue, CQ_xprojects)) {
+         for_each_ep(prj, lGetList(cqueue, CQ_xprojects)) {
             if (lGetSubStr(prj, PR_name, name, APRJLIST_value))  {
                ERROR((SGE_EVENT, MSG_SGETEXT_PROJECTSTILLREFERENCED_SSSS, name, 
                      MSG_OBJ_XPRJS, MSG_OBJ_QUEUE, 
@@ -374,7 +374,7 @@ int user        /* =1 user, =0 project */
       }
 
       /* check hosts */
-      for_each(host, *object_type_get_master_list(SGE_TYPE_EXECHOST)) {
+      for_each_ep(host, *object_type_get_master_list(SGE_TYPE_EXECHOST)) {
          if (prj_list_locate(lGetList(host, EH_prj), name)) {
             ERROR((SGE_EVENT, MSG_SGETEXT_PROJECTSTILLREFERENCED_SSSS, name, 
                   MSG_OBJ_PRJS, MSG_OBJ_EH, lGetHost(host, EH_name)));
@@ -446,7 +446,7 @@ const char *obj_name   /* e.g. "fangorn"  */
 
    DENTER(TOP_LAYER);
 
-   for_each(up, name_list) {
+   for_each_ep(up, name_list) {
       if (!lGetElemStr(prj_list, PR_name, lGetString(up, PR_name))) {
          ERROR((SGE_EVENT, MSG_SGETEXT_UNKNOWNPROJECT_SSSS, lGetString(up, PR_name), 
                attr_name, obj_descr, obj_name));
@@ -482,7 +482,7 @@ sge_automatic_user_cleanup_handler(sge_gdi_ctx_class_t *ctx, te_event_t anEvent,
       lList **master_user_list = object_type_get_master_list_rw(SGE_TYPE_USER);
 
       /*
-       * Check each user for deletion time. We don't use for_each()
+       * Check each user for deletion time. We don't use for_each_ep()
        * because we are deleting entries.
        */
       for (user=lFirstRW(*master_user_list); user; user=next) {
@@ -713,22 +713,22 @@ static bool project_still_used(const char *p)
 {
    const lListElem *qc, *cq, *hep, *rqs;
 
-   for_each (rqs, *object_type_get_master_list(SGE_TYPE_RQS)) {
+   for_each_ep(rqs, *object_type_get_master_list(SGE_TYPE_RQS)) {
       if (scope_is_referenced_rqs(rqs, RQR_filter_projects, p)) {
          return true;
       }
    }
 
-   for_each (hep, *object_type_get_master_list(SGE_TYPE_EXECHOST))
+   for_each_ep(hep, *object_type_get_master_list(SGE_TYPE_EXECHOST))
       if (lGetSubStr(hep, PR_name, p, EH_prj) ||
           lGetSubStr(hep, PR_name, p, EH_xprj))
          return true;
 
-   for_each (cq, *object_type_get_master_list(SGE_TYPE_CQUEUE)) {
-      for_each (qc, lGetList(cq, CQ_projects))
+   for_each_ep(cq, *object_type_get_master_list(SGE_TYPE_CQUEUE)) {
+      for_each_ep(qc, lGetList(cq, CQ_projects))
          if (lGetSubStr(qc, PR_name, p, APRJLIST_value))
             return true;
-      for_each (qc, lGetList(cq, CQ_xprojects))
+      for_each_ep(qc, lGetList(cq, CQ_xprojects))
          if (lGetSubStr(qc, PR_name, p, APRJLIST_value))
             return true;
    }
@@ -764,7 +764,7 @@ void project_update_categories(const lList *added, const lList *removed)
 
    DENTER(TOP_LAYER);
 
-   for_each (ep, added) {
+   for_each_ep(ep, added) {
       p = lGetString(ep, PR_name);
       DPRINTF(("added project: \"%s\"\n", p));
       prj = lGetElemStrRW(*object_type_get_master_list(SGE_TYPE_PROJECT), PR_name, p);
@@ -774,7 +774,7 @@ void project_update_categories(const lList *added, const lList *removed)
       }
    }
 
-   for_each (ep, removed) {
+   for_each_ep(ep, removed) {
       p = lGetString(ep, PR_name);
       DPRINTF(("removed project: \"%s\"\n", p));
       prj = lGetElemStrRW(*object_type_get_master_list(SGE_TYPE_PROJECT), PR_name, p);

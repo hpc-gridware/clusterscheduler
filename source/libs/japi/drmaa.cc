@@ -3077,7 +3077,7 @@ static int opt_list_append_opts_from_drmaa_attr(lList **args, const lList *attrs
       
       DPRINTF(("processing %s\n", DRMAA_V_ENV));
       
-      for_each(oep, olp) {
+      for_each_ep(oep, olp) {
          struct saved_vars_s *context = NULL;
          const char *str = lGetString(oep, ST_name);
 
@@ -3126,7 +3126,7 @@ static int opt_list_append_opts_from_drmaa_attr(lList **args, const lList *attrs
       
       DPRINTF(("processing %s = ", DRMAA_V_EMAIL));
       
-      for_each(oep, olp) {
+      for_each_ep(oep, olp) {
          struct saved_vars_s *context = NULL;
          const char *str = lGetString(oep, ST_name);
          
@@ -3233,7 +3233,7 @@ static int opt_list_append_opts_from_drmaa_attr(lList **args, const lList *attrs
 
          DPRINTF(("processing %s\n", DRMAA_V_ARGV));
 
-         for_each(aep, lp) {
+         for_each_ep(aep, lp) {
             DPRINTF(("arg: \"%s\"\n", lGetString(aep, ST_name)));
             ep_opt = sge_add_arg(args, 0, lStringT, STR_PSEUDO_JOBARG, NULL);
             lSetString(ep_opt, SPA_argval_lStringT, lGetString(aep, ST_name));

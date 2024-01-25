@@ -224,7 +224,7 @@ host_list_add_missing_href(sge_gdi_ctx_class_t *ctx,
    const lListElem *href = NULL;
 
    DENTER(TOP_LAYER);
-   for_each(href, href_list) {
+   for_each_ep(href, href_list) {
       const char *hostname = lGetHost(href, HR_name);
       lListElem *host = host_list_locate(this_list, hostname);
 
@@ -531,7 +531,7 @@ int host_mod(sge_gdi_ctx_class_t *ctx, lList **alpp, lListElem *new_host, lListE
                            SGE_OBJ_EXECHOST, 0, NULL);
 
          /* check if all report_variables are valid complex variables */
-         for_each(var, lGetList(ep, EH_report_variables)) {
+         for_each_ep(var, lGetList(ep, EH_report_variables)) {
             const char *name = lGetString(var, STU_name);
             if (centry_list_locate(master_centry_list, name) == NULL) {
                ERROR((SGE_EVENT, MSG_SGETEXT_UNKNOWN_RESOURCE_S, name));
@@ -947,7 +947,7 @@ static void exec_host_change_queue_version(sge_gdi_ctx_class_t *ctx, const char 
 
    DENTER(TOP_LAYER);
 
-   for_each(cqueue, master_cqueue_list) {
+   for_each_ep(cqueue, master_cqueue_list) {
       const lList *qinstance_list = lGetList(cqueue, CQ_qinstances);
       lListElem *qinstance = NULL;
       lListElem *next_qinstance = NULL;
@@ -1055,7 +1055,7 @@ sge_gdi_ctx_class_t *ctx, sge_gdi_packet_class_t *packet, sge_gdi_task_class_t *
       /* only specified exechosts should be killed. */
       
       /* walk over list with execd's to kill */
-      for_each(rep, task->data_list) {
+      for_each_ep(rep, task->data_list) {
          if ((getuniquehostname(lGetString(rep, ID_str), host, 0)) != CL_RETVAL_OK)
          {
             WARNING((SGE_EVENT, MSG_SGETEXT_CANTRESOLVEHOST_S, lGetString(rep, ID_str)));
@@ -1136,7 +1136,7 @@ notify(sge_gdi_ctx_class_t *ctx, lListElem *lel, sge_gdi_packet_class_t *packet,
       char sge_mail_body[1024];
 
       /* mark killed jobs as deleted */
-      for_each(jep, master_job_list) {   
+      for_each_ep(jep, master_job_list) {
          lListElem *jatep;
          mail_users = NULL;
          mail_options = 0;
@@ -1284,7 +1284,7 @@ static int verify_scaling_list(lList **answer_list, lListElem *host)
    const lList *master_centry_list = *object_type_get_master_list(SGE_TYPE_CENTRY);
 
    DENTER(TOP_LAYER);
-   for_each (hs_elem, lGetList(host, EH_scaling_list)) {
+   for_each_ep(hs_elem, lGetList(host, EH_scaling_list)) {
       const char *name = lGetString(hs_elem, HS_name);
       lListElem *centry = centry_list_locate(master_centry_list, name);
    
@@ -1333,12 +1333,12 @@ static void host_diff_sublist(const lListElem *new_host, const lListElem *old_ho
 
    /* collect 'old' entries in 'old_sublist' */
    if (old_host && old_sublist) {
-      for_each (ep, lGetList(old_host, snm1)) {
+      for_each_ep(ep, lGetList(old_host, snm1)) {
          p = lGetString(ep, key_nm);
          if (!lGetElemStr(*old_sublist, key_nm, p))
             lAddElemStr(old_sublist, key_nm, p, dp);
       }
-      for_each (ep, lGetList(old_host, snm2)) {
+      for_each_ep(ep, lGetList(old_host, snm2)) {
          p = lGetString(ep, key_nm);
          if (!lGetElemStr(*old_sublist, key_nm, p))
             lAddElemStr(old_sublist, key_nm, p, dp);
@@ -1347,12 +1347,12 @@ static void host_diff_sublist(const lListElem *new_host, const lListElem *old_ho
 
    /* collect 'new' entries in 'new_sublist' */
    if (new_host && new_sublist) {
-      for_each (ep, lGetList(new_host, snm1)) {
+      for_each_ep(ep, lGetList(new_host, snm1)) {
          p = lGetString(ep, key_nm);
          if (!lGetElemStr(*new_sublist, key_nm, p))
             lAddElemStr(new_sublist, key_nm, p, dp);
       }
-      for_each (ep, lGetList(new_host, snm2)) {
+      for_each_ep(ep, lGetList(new_host, snm2)) {
          p = lGetString(ep, key_nm);
          if (!lGetElemStr(*new_sublist, key_nm, p))
             lAddElemStr(new_sublist, key_nm, p, dp);
@@ -1533,7 +1533,7 @@ static int attr_mod_threshold(sge_gdi_ctx_class_t *ctx, lList **alpp, lListElem 
          for_each_rw (jep, master_job_list) {
             const lListElem *jatep = NULL;
 
-            for_each (jatep, lGetList(jep, JB_ja_tasks)) {
+            for_each_ep(jatep, lGetList(jep, JB_ja_tasks)) {
                const lList *gdil = lGetList(jatep, JAT_granted_destin_identifier_list);
                int slots;
                bool is_master_task = false;
@@ -1552,7 +1552,7 @@ static int attr_mod_threshold(sge_gdi_ctx_class_t *ctx, lList **alpp, lListElem 
             }
          }
 
-         for_each(ar_ep, master_ar_list) {
+         for_each_ep(ar_ep, master_ar_list) {
             const lList *gdil = lGetList(ar_ep, AR_granted_slots);
             const lListElem *gdil_ep = lGetElemHost(gdil, JG_qhostname, host);
             bool is_master_task = false;

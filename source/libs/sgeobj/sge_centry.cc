@@ -475,8 +475,8 @@ centry_is_referenced(const lListElem *centry, lList **answer_list,
       /* fix for bug 6422335
        * check the cq configuration for centry references instead of qinstances
        */
-      for_each(cqueue, master_cqueue_list) {
-         for_each(cel, lGetList(cqueue, CQ_consumable_config_list)) {
+      for_each_ep(cqueue, master_cqueue_list) {
+         for_each_ep(cel, lGetList(cqueue, CQ_consumable_config_list)) {
             if(lGetSubStr(cel, CE_name, centry_name, ACELIST_value)) {
                answer_list_add_sprintf(answer_list, STATUS_EUNKNOWN,
                                        ANSWER_QUALITY_INFO, 
@@ -495,7 +495,7 @@ centry_is_referenced(const lListElem *centry, lList **answer_list,
    if (!ret) {
       const lListElem *host = NULL;    /* EH_Type */
 
-      for_each(host, master_exechost_list) {
+      for_each_ep(host, master_exechost_list) {
          if (host_is_centry_referenced(host, centry)) {
             const char *host_name = lGetHost(host, EH_name);
 
@@ -510,7 +510,7 @@ centry_is_referenced(const lListElem *centry, lList **answer_list,
    }
    if (!ret) {
       const lListElem *rqs = NULL;
-      for_each(rqs, master_rqs_list) {
+      for_each_ep(rqs, master_rqs_list) {
          if (sge_centry_referenced_in_rqs(rqs, centry)) {
             answer_list_add_sprintf(answer_list, STATUS_EUNKNOWN,
                                     ANSWER_QUALITY_INFO, 
@@ -801,7 +801,7 @@ centry_list_append_to_dstring(const lList *this_list, dstring *string)
       const lListElem *elem = NULL;
       bool printed = false;
 
-      for_each(elem, this_list) {
+      for_each_ep(elem, this_list) {
          if (printed) {
             sge_dstring_append(string, ",");
          }
@@ -1284,7 +1284,7 @@ centry_list_do_all_exists(const lList *this_list, lList **answer_list,
    const lListElem *centry = NULL;
    
    DENTER(TOP_LAYER);
-   for_each(centry, centry_list) {
+   for_each_ep(centry, centry_list) {
       const char *name = lGetString(centry, CE_name);
 
       if (centry_list_locate(this_list, name) == NULL) {
@@ -1324,7 +1324,7 @@ centry_list_is_correct(lList *this_list, lList **answer_list)
 /* do complex attributes syntax verification */
   if (ret) {  
     const lListElem *elem;
-    for_each(elem, this_list){
+    for_each_ep(elem, this_list){
       ret = object_verify_expression_syntax(elem, answer_list);
       if(!ret) break;
     }

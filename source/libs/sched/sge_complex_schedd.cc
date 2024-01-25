@@ -648,7 +648,7 @@ static lList *get_attribute_list_by_names(lListElem *global, lListElem *host,
    const lListElem *elem;
    lList *list = NULL;
 
-   for_each (elem, attrnames) {
+   for_each_ep(elem, attrnames) {
       attr = get_attribute_by_name(global, host, queue, lGetString(elem, ST_name), centry_list, DISPATCH_TIME_NOW, 0);
       if (attr) {
          if (!list )
@@ -748,7 +748,7 @@ static void build_name_filter(lList *filter, const lList *list, int t_name){
       return;
    }
 
-   for_each(current,list){
+   for_each_ep(current,list){
       const char* name = lGetString(current, t_name);
 
       if (lGetElemStr(filter, ST_name, name) == NULL) {
@@ -1301,7 +1301,7 @@ bool request_cq_rejected(const lList* hard_resource_list, const lListElem *cq,
 
    DENTER(TOP_LAYER);
 
-   for_each (req, hard_resource_list) {
+   for_each_ep(req, hard_resource_list) {
       int cqfld, valfld;
       name = lGetString(req, CE_name);
 
@@ -1328,7 +1328,7 @@ bool request_cq_rejected(const lList* hard_resource_list, const lListElem *cq,
          continue;
 
       rejected = true;
-      for_each (alist, lGetList(cq, cqfld)) {
+      for_each_ep(alist, lGetList(cq, cqfld)) {
          if (valfld == ACELIST_value) {
             /* complex_values upper limit */ 
             val_ce = lGetSubStr(alist, CE_name, name, valfld);

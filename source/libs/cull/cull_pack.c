@@ -988,7 +988,7 @@ int cull_pack_list_partial(sge_pack_buffer *pb, const lList *lp,
    if (lp != NULL) {
       /* pack each list element */
 
-      for_each(ep, lp) {
+      for_each_ep(ep, lp) {
          if((ret = cull_pack_elem_partial(pb, ep, what, flags)) != PACK_SUCCESS) {
             PROF_STOP_MEASUREMENT(SGE_PROF_PACKING);
             DRETURN(ret);

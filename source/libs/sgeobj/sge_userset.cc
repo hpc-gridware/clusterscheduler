@@ -169,7 +169,7 @@ userset_list_validate_acl_list(const lList *acl_list, lList **alpp, const lList 
 
    DENTER(TOP_LAYER);
 
-   for_each (usp, acl_list) {
+   for_each_ep(usp, acl_list) {
       if (!lGetElemStr(master_userset_list, US_name, lGetString(usp, US_name))) {
          ERROR((SGE_EVENT, MSG_CQUEUE_UNKNOWNUSERSET_S, lGetString(usp, US_name) ? lGetString(usp, US_name) : "<NULL>"));
          answer_list_add(alpp, SGE_EVENT, STATUS_EUNKNOWN, ANSWER_QUALITY_ERROR);
@@ -211,7 +211,7 @@ int userset_list_validate_access(const lList *acl_list, int nm, lList **alpp, co
 
    DENTER(TOP_LAYER);
 
-   for_each (usp, acl_list) {
+   for_each_ep(usp, acl_list) {
       user = (char *) lGetString(usp, nm);
       if (is_hgroup_name(user) == true){
          user++;  /* jump ower the @ sign */
@@ -260,7 +260,7 @@ int userset_validate_entries(lListElem *userset, lList **alpp, int start_up)
 
    name_pos = lGetPosInDescr(UE_Type, UE_name);
 
-   for_each(ep, lGetList(userset, US_entries)) {
+   for_each_ep(ep, lGetList(userset, US_entries)) {
       if (!lGetPosString(ep, name_pos)) {
          ERROR((SGE_EVENT, SFNMAX, MSG_US_INVALIDUSERNAME));
          answer_list_add(alpp, SGE_EVENT, STATUS_ESEMANTIC, 
@@ -389,7 +389,7 @@ userset_list_append_to_dstring(const lList *this_list, dstring *string)
       const lListElem *elem = NULL;
       bool printed = false;
 
-      for_each(elem, this_list) {
+      for_each_ep(elem, this_list) {
          sge_dstring_append(string, lGetString(elem, US_name));
          if (lNext(elem)) {
             sge_dstring_append(string, " ");
@@ -428,7 +428,7 @@ int sge_contained_in_access_list(const char *user, const char *group,
       } else if (sge_is_pattern(group)) {
          const lListElem *acl_entry;
          const char *entry_name;
-         for_each(acl_entry, user_list) {
+         for_each_ep(acl_entry, user_list) {
             entry_name = lGetString(acl_entry, UE_name);
             if (entry_name != NULL && fnmatch(sge_dstring_get_string(&group_entry), entry_name, 0) == 0) {
                found = true;
@@ -444,7 +444,7 @@ int sge_contained_in_access_list(const char *user, const char *group,
       } else if (sge_is_pattern(user)) {
          const lListElem *acl_entry;
          const char *entry_name;
-         for_each(acl_entry, user_list) {
+         for_each_ep(acl_entry, user_list) {
             entry_name = lGetString(acl_entry, UE_name);
             if (entry_name != NULL && fnmatch(user, entry_name, 0) == 0) {
                found = true;

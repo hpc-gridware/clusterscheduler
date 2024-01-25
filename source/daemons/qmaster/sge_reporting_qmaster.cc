@@ -695,7 +695,7 @@ reporting_write_consumables(lList **answer_list, dstring *buffer,
    
    DENTER(TOP_LAYER);
 
-   for_each (cep, actual) {
+   for_each_ep(cep, actual) {
       const char *name = lGetString(cep, RUE_name);
       bool log_variable = true;
 
@@ -1240,7 +1240,7 @@ reporting_write_load_values(lList **answer_list, dstring *buffer,
 
    DENTER(TOP_LAYER);
 
-   for_each (variable, variables) {
+   for_each_ep(variable, variables) {
       const char *name;
       const lListElem *load;
 
@@ -1780,7 +1780,7 @@ bool reporting_create_ar_acct_records(lList **answer_list, const lListElem *ar, 
    const lListElem *elem;
    bool ret = true;
 
-   for_each(elem, lGetList(ar, AR_granted_slots)) {
+   for_each_ep(elem, lGetList(ar, AR_granted_slots)) {
       const char *queue_name = lGetString(elem, JG_qname);
       u_long32 slots = lGetUlong(elem, JG_slots);
       dstring cqueue_name = DSTRING_INIT;

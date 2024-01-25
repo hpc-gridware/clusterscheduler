@@ -175,7 +175,7 @@ static void lWriteListXML_(const lList *lp, int nesting_level, FILE *fp, int ign
       indent[i] = '\0';
    }
 
-   for_each(ep, lp) {
+   for_each_ep(ep, lp) {
       is_XML_elem = false;
       is_attr = false;
 
@@ -548,7 +548,7 @@ static bool lAttributesToString_(const lList *attr_list, dstring *attr){
       return false;
    }
    else {
-      for_each(attr_elem, attr_list) {
+      for_each_ep(attr_elem, attr_list) {
          const char *name = lGetString(attr_elem, XMLA_Name);
          const char *value = lGetString(attr_elem, XMLA_Value);
 
@@ -576,7 +576,7 @@ static void lWriteXMLHead_(const lListElem *ep, int nesting_level, FILE *fp, int
    if (!fp) {
       DPRINTF(("%s\n", lGetString(ep, XMLH_Version)));
       
-      for_each(elem, lGetList(ep, XMLH_Stylesheet)) {
+      for_each_ep(elem, lGetList(ep, XMLH_Stylesheet)) {
          DPRINTF(("<xsl:stylesheet %s=\"%s\" version=\"%s\">\n", 
                   lGetString(elem, XMLS_Name),
                   lGetString(elem, XMLS_Value),
@@ -588,7 +588,7 @@ static void lWriteXMLHead_(const lListElem *ep, int nesting_level, FILE *fp, int
    }
    else {
       fprintf(fp, "%s\n", lGetString(ep, XMLH_Version));
-      for_each(elem, lGetList(ep, XMLH_Stylesheet)) {
+      for_each_ep(elem, lGetList(ep, XMLH_Stylesheet)) {
          fprintf(fp, "<xsl:stylesheet %s=\"%s\" version=\"%s\">\n", 
                   lGetString(elem, XMLS_Name),
                   lGetString(elem, XMLS_Value),

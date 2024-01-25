@@ -110,7 +110,7 @@ void ja_task_list_print_to_string(const lList *ja_task_list,
    lList *range_list = NULL;     /* RN_Type */
 
    DENTER(TOP_LAYER);
-   for_each(ja_task, ja_task_list) {
+   for_each_ep(ja_task, ja_task_list) {
       u_long32 tid = lGetUlong(ja_task, JAT_task_number);
 
       range_list_insert_id(&range_list, NULL, tid);      
@@ -608,7 +608,7 @@ ja_task_verify_granted_destin_identifier_list(const lList *gdil, lList **answer_
    if (ret) {
       const lListElem *ep;
 
-      for_each (ep, gdil) {
+      for_each_ep(ep, gdil) {
          ret = ja_task_verify_granted_destin_identifier(ep, answer_list);
          if (!ret) {
             break;

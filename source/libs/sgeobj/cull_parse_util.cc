@@ -518,7 +518,7 @@ int double_keys
 
    DENTER(BASIS_LAYER);
 
-   for_each(ep_one, lp) {
+   for_each_ep(ep_one, lp) {
       for (ep_other = lFirstRW(lp); ep_other; ) {
          if (ep_one == ep_other) {
             break;
@@ -982,7 +982,7 @@ int fprint_cull_list(FILE *fp, char *str, lList *lp, int fi)
       FPRINTF((fp, "NONE\n"));
    }
    else {
-      for_each(ep, lp) {
+      for_each_ep(ep, lp) {
          FPRINTF((fp, "%s", lGetString(ep, fi)));
          if (lNext(ep))
             FPRINTF((fp, " "));
@@ -1119,7 +1119,7 @@ int nm_doubleval
 
    FPRINTF((fp, "%s", name));
 
-   for_each(lep, thresholds) {
+   for_each_ep(lep, thresholds) {
       if (print_slots || strcmp("slots", lGetString(lep, nm_name))) {
          if (printed) {
             FPRINTF((fp, ","));

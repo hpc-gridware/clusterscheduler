@@ -575,7 +575,7 @@ int main(int argc, char **argv)
       bool has_hostname = false;
       bool has_domain = true;
 
-      for_each(qref_pattern, queueref_list) {
+      for_each_ep(qref_pattern, queueref_list) {
          name = lGetString(qref_pattern, QR_name); 
          cqueue_name_split(name, &cqueue_name, &host_or_hgroup,
                            &has_hostname, &has_domain);
@@ -590,7 +590,7 @@ int main(int argc, char **argv)
          from the qmaster, but we have to work on the user input and generate the
          same data structure, that we would have gotten with the qmaster functions*/
       if (!has_domain) {
-         for_each(qref_pattern, queueref_list) {
+         for_each_ep(qref_pattern, queueref_list) {
             dstring qi_name = DSTRING_INIT;
             const char *tmp_str = NULL;
             name = lGetString(qref_pattern, QR_name); 
@@ -1636,7 +1636,7 @@ sge_read_rusage(FILE *f, sge_rusage_type *d, sge_qacct_options *options, char *s
 
       queue = sge_dstring_sprintf(&qi,"%s@%s", d->qname, d->hostname);
 
-      for_each(elem, options->queue_name_list) {
+      for_each_ep(elem, options->queue_name_list) {
          if (fnmatch(lGetString(elem, QR_name), queue, 0) == 0) {
             found = true;
             break;

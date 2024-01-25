@@ -849,7 +849,7 @@ const char *obj_name
       DRETURN(0);
    }
 
-   for_each (ep1, lp1) {
+   for_each_ep(ep1, lp1) {
       s = lGetString(ep1, nm);
       if (lGetElemStr(lp2, nm, s)) {
          SGE_ADD_MSG_ID(sprintf(SGE_EVENT, MSG_GDI_MULTIPLE_OCCUR_SSSS, 

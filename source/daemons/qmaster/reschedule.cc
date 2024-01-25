@@ -160,7 +160,7 @@ void reschedule_unknown_event(sge_gdi_ctx_class_t *ctx, te_event_t anEvent, moni
    /*
     * Check if host is still in unknown state
     */
-   for_each(qep, master_list) {
+   for_each_ep(qep, master_list) {
       const lListElem *qinstance = lGetElemHost(lGetList(qep, CQ_qinstances), QU_qhostname, hostname); 
 
       if (qinstance != NULL) {
@@ -376,7 +376,7 @@ int reschedule_job(sge_gdi_ctx_class_t *ctx, lListElem *jep, lListElem *jatep, l
             const lListElem *granted_q;
             bool one_matched = false;
 
-            for_each(granted_q, granted_qs) {
+            for_each_ep(granted_q, granted_qs) {
                if ((qep != NULL && strcmp(lGetString(granted_q, JG_qname), the_queuename) == 0) ||
                    (hep != NULL && sge_hostcmp(lGetHost(granted_q, JG_qhostname), the_hostname) == 0)) {
                   one_matched = true; 

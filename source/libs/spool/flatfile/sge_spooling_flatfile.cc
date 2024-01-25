@@ -654,7 +654,7 @@ spool_classic_default_list_func(lList **answer_list,
 
             direntries = sge_get_dirents(abs_dir);
 
-            for_each(direntry, direntries) {
+            for_each_ep(direntry, direntries) {
                const char *key = lGetString(direntry, ST_name);
 
                if (key[0] != '.') {
@@ -1377,7 +1377,7 @@ static bool write_manop(int spool, int target) {
    }
    sge_dstring_free(&ds);
 
-   for_each(ep, lp) {
+   for_each_ep(ep, lp) {
       FPRINTF((fp, "%s\n", lGetString(ep, key)));
    }
 

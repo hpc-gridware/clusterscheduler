@@ -176,7 +176,7 @@ static void sge_urgency(u_long32 now, double *min_urgency, double *max_urgency,
          rrc += contribution;
 
          /* contribution for all explicit requests */
-         for_each (rr, lGetList(jep, JB_hard_resource_list)) {
+         for_each_ep(rr, lGetList(jep, JB_hard_resource_list)) {
             if (!(centry = centry_list_locate(centry_list, lGetString(rr, CE_name)))) {
                continue;
             } 

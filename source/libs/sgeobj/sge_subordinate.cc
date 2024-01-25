@@ -128,7 +128,7 @@ so_list_append_to_dstring(const lList *this_list, dstring *string)
              */
             sge_dstring_sprintf_append(string, "slots="sge_u32"(", slots_sum);
 
-            for_each(elem, this_list) {
+            for_each_ep(elem, this_list) {
                char *action_str = "sr";
 
                if (lGetUlong(elem, SO_action) == SO_ACTION_LR) {
@@ -147,7 +147,7 @@ so_list_append_to_dstring(const lList *this_list, dstring *string)
             /*
              * queue instance-wise suspend on subordinate
              */
-            for_each(elem, this_list) {
+            for_each_ep(elem, this_list) {
                if (printed) {
                   sge_dstring_append (string, " ");
                }
@@ -274,7 +274,7 @@ so_list_resolve(const lList *so_list, lList **answer_list,
       }
       
       /* Get the list of resolved qinstances for each subordinate. */
-      for_each (so, so_list) {
+      for_each_ep(so, so_list) {
          const char *qinstance_name = NULL;
          const char *cq_name_str = lGetString (so, SO_name);
 

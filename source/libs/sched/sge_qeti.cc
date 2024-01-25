@@ -180,7 +180,7 @@ sge_add_qeti_resource_container(lList **qeti_to_add, const lList* rue_list,
    }
 
    /* explicit requests */
-   for_each(req, requests) {
+   for_each_ep(req, requests) {
       name = lGetString(req, CE_name);
       centry_config = lGetElemStr(centry_list, CE_name, name);
 
@@ -243,7 +243,7 @@ sge_qeti_t *sge_qeti_allocate(sge_assignment_t *a)
 
    /* add references to per host resource utilization entries 
       that might affect jobs queue end time */
-   for_each (hep, a->host_list) {
+   for_each_ep(hep, a->host_list) {
       const char *eh_name;
       int is_relevant;
       const void *queue_iterator = NULL;
@@ -350,7 +350,7 @@ static void sge_qeti_max_end_time(u_long32 *max_time, const lList *cref_lp)
 
    DENTER(TOP_LAYER);
 
-   for_each (cr_ep, cref_lp) {
+   for_each_ep(cr_ep, cref_lp) {
       rue_ep = (lListElem *)lGetRef(cr_ep, QETI_resource_instance);
       if (!(ref = (lListElem *)lGetRef(cr_ep, QETI_queue_end_next))) {
          DPRINTF(("   QETI END: %s\n", lGetString(rue_ep, RUE_name)));

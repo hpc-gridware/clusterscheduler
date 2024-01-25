@@ -353,7 +353,7 @@ u_long32 range_list_get_number_of_ids(const lList *this_list)
    const lListElem *range;
 
    DENTER(RANGE_LAYER);
-   for_each(range, this_list) {
+   for_each_ep(range, this_list) {
       ret += range_get_number_of_ids(range);
    }
    DRETURN(ret);
@@ -430,7 +430,7 @@ range_list_print_to_string(const lList *this_list,
       if (this_list != NULL) {
          const lListElem *range;
 
-         for_each(range, this_list) {
+         for_each_ep(range, this_list) {
             u_long32 start, end, step;
 
             range_get_all_ids(range, &start, &end, &step);
@@ -561,7 +561,7 @@ double range_list_get_average(const lList *this_list, u_long32 upperbound)
    u_long32 id, min, max, step;
    int n = 0;
 
-   for_each (range, this_list) {
+   for_each_ep(range, this_list) {
       range_get_all_ids(range, &min, &max, &step);
       if (upperbound != 0) {
          max = MIN(max, upperbound);
@@ -780,7 +780,7 @@ bool range_list_is_id_within(const lList *range_list, u_long32 id)
    bool ret = false;
 
    DENTER(RANGE_LAYER);
-   for_each(range, range_list) {
+   for_each_ep(range, range_list) {
       if (range_is_id_within(range, id)) {
          ret = true;
          break;
@@ -813,7 +813,7 @@ bool range_list_containes_id_less_than(const lList *range_list, u_long32 id)
    bool ret = false;
 
    DENTER(RANGE_LAYER);
-   for_each(range, range_list) {
+   for_each_ep(range, range_list) {
       if (range_containes_id_less_than(range, id)) {
          ret = true;
          break;
@@ -1024,7 +1024,7 @@ void range_list_move_first_n_ids(lList **range_list, lList **answer_list,
       const lListElem *range = NULL;
       u_long32 id;
 
-      for_each(range, *range_list) {
+      for_each_ep(range, *range_list) {
          for (id = lGetUlong(range, RN_min);
               id <= lGetUlong(range, RN_max);
               id += lGetUlong(range, RN_step)) {
@@ -1036,7 +1036,7 @@ void range_list_move_first_n_ids(lList **range_list, lList **answer_list,
             }
          }
       }
-      for_each(range, *range_list2) {
+      for_each_ep(range, *range_list2) {
          for (id = lGetUlong(range, RN_min);
               id <= lGetUlong(range, RN_max);
               id += lGetUlong(range, RN_step)) {
@@ -1320,7 +1320,7 @@ void range_list_calculate_union_set(lList **range_list,
       if (range_list1 != NULL && range_list2 != NULL) {
          const lListElem *range2 = NULL;
 
-         for_each(range2, range_list2) {
+         for_each_ep(range2, range_list2) {
             u_long32 start2, end2, step2;
 
             range_get_all_ids(range2, &start2, &end2, &step2);
@@ -1384,7 +1384,7 @@ void range_list_calculate_difference_set(lList **range_list,
       if (range_list2 != NULL) {
          const lListElem *range2 = NULL;
 
-         for_each(range2, range_list2) {
+         for_each_ep(range2, range_list2) {
             u_long32 start2, end2, step2;
 
             range_get_all_ids(range2, &start2, &end2, &step2);
@@ -1440,7 +1440,7 @@ void range_list_calculate_intersection_set(lList **range_list,
    if (range_list1 && range_list2) {
       const lListElem *range;
 
-      for_each(range, range_list1) {
+      for_each_ep(range, range_list1) {
          u_long32 start, end, step;
 
          range_get_all_ids(range, &start, &end, &step);

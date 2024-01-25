@@ -556,7 +556,7 @@ jsv_handle_param_command(sge_gdi_ctx_class_t *ctx, lListElem *jsv, lList **answe
                   ret = false;
                }
             }
-            for_each(jid_str, hold_list) {
+            for_each_ep(jid_str, hold_list) {
                lAddElemStr(&jref_list, JRE_job_name, lGetString(jid_str, ST_name), JRE_Type);
             }
             lSetList(new_job, JB_jid_request_list, jref_list);
@@ -580,7 +580,7 @@ jsv_handle_param_command(sge_gdi_ctx_class_t *ctx, lListElem *jsv, lList **answe
                   ret = false;
                }
             }
-            for_each(jid_str, hold_list) {
+            for_each_ep(jid_str, hold_list) {
                lAddElemStr(&jref_list, JRE_job_name, lGetString(jid_str, ST_name), JRE_Type);
             }
             lSetList(new_job, JB_ja_ad_request_list, jref_list);
@@ -1381,7 +1381,7 @@ jsv_handle_started_command(sge_gdi_ctx_class_t *ctx, lListElem *jsv, lList **ans
       sge_dstring_sprintf(&buffer, "%s CMDARGS "sge_u32, prefix, lGetNumberOfElem(list));
       jsv_send_command(jsv, answer_list, sge_dstring_get_string(&buffer));
 
-      for_each(elem, list) {
+      for_each_ep(elem, list) {
          sge_dstring_clear(&buffer);
          sge_dstring_sprintf(&buffer, "%s CMDARG%d %s", prefix, i, lGetString(elem, ST_name));
          jsv_send_command(jsv, answer_list, sge_dstring_get_string(&buffer));
@@ -1428,7 +1428,7 @@ jsv_handle_started_command(sge_gdi_ctx_class_t *ctx, lListElem *jsv, lList **ans
 
             sge_dstring_clear(&buffer);
             sge_dstring_sprintf(&buffer, "PARAM ac");
-            for_each(context, context_list) {
+            for_each_ep(context, context_list) {
                const char *name = lGetString(context, VA_variable);
                const char *value = lGetString(context, VA_value);
 
@@ -1579,7 +1579,7 @@ jsv_handle_started_command(sge_gdi_ctx_class_t *ctx, lListElem *jsv, lList **ans
  
          sge_dstring_clear(&buffer);
          sge_dstring_sprintf(&buffer, "%s e", prefix);
-         for_each(shell, shell_list) {
+         for_each_ep(shell, shell_list) {
             const char *hostname = lGetHost(shell, PN_host);
             const char *path = lGetString(shell, PN_path);
            
@@ -1613,7 +1613,7 @@ jsv_handle_started_command(sge_gdi_ctx_class_t *ctx, lListElem *jsv, lList **ans
 
          sge_dstring_clear(&buffer); 
          sge_dstring_sprintf(&buffer, "%s hold_jid", prefix);
-         for_each(hold_jid, hold_jid_list) {
+         for_each_ep(hold_jid, hold_jid_list) {
             const char *name = lGetString(hold_jid, JRE_job_name);
             u_long32 jid = lGetUlong(hold_jid, JRE_job_number);
 
@@ -1642,7 +1642,7 @@ jsv_handle_started_command(sge_gdi_ctx_class_t *ctx, lListElem *jsv, lList **ans
 
          sge_dstring_clear(&buffer);
          sge_dstring_sprintf(&buffer, "%s hold_jid_ad", prefix);
-         for_each(hold_jid, hold_jid_list) {
+         for_each_ep(hold_jid, hold_jid_list) {
             const char *name = lGetString(hold_jid, JRE_job_name);
             u_long32 jid = lGetUlong(hold_jid, JRE_job_number);
 
@@ -1690,7 +1690,7 @@ jsv_handle_started_command(sge_gdi_ctx_class_t *ctx, lListElem *jsv, lList **ans
  
          sge_dstring_clear(&buffer);
          sge_dstring_sprintf(&buffer, "%s i", prefix);
-         for_each(shell, shell_list) {
+         for_each_ep(shell, shell_list) {
             const char *hostname = lGetHost(shell, PN_host);
             const char *path = lGetString(shell, PN_path);
            
@@ -1789,7 +1789,7 @@ jsv_handle_started_command(sge_gdi_ctx_class_t *ctx, lListElem *jsv, lList **ans
       
       sge_dstring_clear(&buffer);
       sge_dstring_sprintf(&buffer, "%s M", prefix);
-      for_each(mail, mail_list) {
+      for_each_ep(mail, mail_list) {
          const char *user = lGetString(mail, MR_user);
          const char *host = lGetHost(mail, MR_host); 
 
@@ -1815,7 +1815,7 @@ jsv_handle_started_command(sge_gdi_ctx_class_t *ctx, lListElem *jsv, lList **ans
 
          sge_dstring_clear(&buffer);
          sge_dstring_sprintf(&buffer, "%s masterq", prefix);
-         for_each(queue, master_hard_queue_list) {
+         for_each_ep(queue, master_hard_queue_list) {
             const char *queue_pattern = lGetString(queue, QR_name);
 
             sge_dstring_append_char(&buffer, first ? ' ' : ','); 
@@ -1867,7 +1867,7 @@ jsv_handle_started_command(sge_gdi_ctx_class_t *ctx, lListElem *jsv, lList **ans
  
          sge_dstring_clear(&buffer);
          sge_dstring_sprintf(&buffer, "%s o ", prefix);
-         for_each(shell, shell_list) {
+         for_each_ep(shell, shell_list) {
             const char *hostname = lGetHost(shell, PN_host);
             const char *path = lGetString(shell, PN_path);
            
@@ -2090,7 +2090,7 @@ jsv_handle_started_command(sge_gdi_ctx_class_t *ctx, lListElem *jsv, lList **ans
 
          sge_dstring_clear(&buffer);
          sge_dstring_sprintf(&buffer, "%s q_hard", prefix);
-         for_each(queue, hard_queue_list) {
+         for_each_ep(queue, hard_queue_list) {
             const char *queue_pattern = lGetString(queue, QR_name);
 
             sge_dstring_append_char(&buffer, first ? ' ' : ','); 
@@ -2109,7 +2109,7 @@ jsv_handle_started_command(sge_gdi_ctx_class_t *ctx, lListElem *jsv, lList **ans
 
          sge_dstring_clear(&buffer);
          sge_dstring_sprintf(&buffer, "%s q_soft", prefix);
-         for_each(queue, soft_queue_list) {
+         for_each_ep(queue, soft_queue_list) {
             const char *queue_pattern = lGetString(queue, QR_name);
 
             sge_dstring_append_char(&buffer, first ? ' ' : ','); 
@@ -2181,7 +2181,7 @@ jsv_handle_started_command(sge_gdi_ctx_class_t *ctx, lListElem *jsv, lList **ans
  
          sge_dstring_clear(&buffer);
          sge_dstring_sprintf(&buffer, "%s S", prefix);
-         for_each(shell, shell_list) {
+         for_each_ep(shell, shell_list) {
             const char *hostname = lGetHost(shell, PN_host);
             const char *path = lGetString(shell, PN_path);
            
@@ -2295,7 +2295,7 @@ jsv_handle_started_command(sge_gdi_ctx_class_t *ctx, lListElem *jsv, lList **ans
 
       /* send the varaibles to the JSV but only if it was requested */
       if (lGetBool(jsv, JSV_send_env) == true) {
-         for_each(env, env_list) {
+         for_each_ep(env, env_list) {
             const char *value = lGetString(env, VA_value);
             const char *name = lGetString(env, VA_variable);
             size_t length, i;
@@ -2846,7 +2846,7 @@ jsv_is_modify_rejected(sge_gdi_ctx_class_t *context, lList **answer_list, lListE
              * Remove the allowed switches from the list of switches which were
              * applied to the job we got.
              */
-            for_each(allowed, allowed_switches) {
+            for_each_ep(allowed, allowed_switches) {
                const char *name = lGetString(allowed, ST_name);
                const void *iterator = NULL;
                lListElem *got;
@@ -2869,7 +2869,7 @@ jsv_is_modify_rejected(sge_gdi_ctx_class_t *context, lList **answer_list, lListE
                dstring switches = DSTRING_INIT;
                bool first = true;
 
-               for_each (not_allowed, got_switches) {
+               for_each_ep(not_allowed, got_switches) {
                   if (first) {
                      first = false;
                   } else {

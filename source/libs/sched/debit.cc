@@ -199,7 +199,7 @@ debit_job_from_queues(lListElem *job, lList *granted, lList *global_queue_list,
    DENTER(TOP_LAYER);
 
    /* use each entry in sel_q_list as reference into the global_queue_list */
-   for_each(gel, granted) {
+   for_each_ep(gel, granted) {
 
       tagged = lGetUlong(gel, JG_slots);
       if (tagged) {
@@ -215,7 +215,7 @@ debit_job_from_queues(lListElem *job, lList *granted, lList *global_queue_list,
 
          /* precompute suspensions for subordinated queues */
          total = lGetUlong(qep, QU_job_slots);
-         for_each (so, lGetList(qep, QU_subordinate_list)) {
+         for_each_ep(so, lGetList(qep, QU_subordinate_list)) {
             if (!tst_sos(qslots,        total, so)  &&  /* not suspended till now */
                  tst_sos(qslots+tagged, total, so)) {   /* but now                */
                const lListElem *order = NULL;
@@ -226,7 +226,7 @@ debit_job_from_queues(lListElem *job, lList *granted, lList *global_queue_list,
 
                /* warn on jobs that were dispatched into that queue in
                   the same scheduling interval based on the orders list */
-               for_each (order, orders->jobStartOrderList) {
+               for_each_ep(order, orders->jobStartOrderList) {
                   if (lGetUlong(order, OR_type) != ORT_start_job) {
                      continue;
                   }   
@@ -236,7 +236,7 @@ debit_job_from_queues(lListElem *job, lList *granted, lList *global_queue_list,
                   }
                }
                
-               for_each (order, orders->sentOrderList) {
+               for_each_ep(order, orders->sentOrderList) {
                   if (lGetUlong(order, OR_type) != ORT_start_job) {
                      continue;
                   }  
@@ -288,7 +288,7 @@ int *sort_hostlist
    load_formula = sconf_get_load_formula(); 
 
    /* debit from hosts */
-   for_each(gel, granted) {  
+   for_each_ep(gel, granted) {
       u_long32 ulc_factor;
       int slots = lGetUlong(gel, JG_slots);
 
@@ -383,7 +383,7 @@ debit_job_from_rqs(lListElem *job, lList *granted, lList *rqs_list, lListElem* p
    }
   
    /* debit for all hosts */
-   for_each(gel, granted) {
+   for_each_ep(gel, granted) {
       const char* pe_name = NULL;
       lListElem *rqs = NULL;
       int slots = lGetUlong(gel, JG_slots);
@@ -409,7 +409,7 @@ debit_job_from_ar(lListElem *job, lList *granted, lList *ar_list, const lList *c
 
    DENTER(TOP_LAYER);
 
-   for_each(gel, granted) {
+   for_each_ep(gel, granted) {
       const lListElem *ar = NULL;
       int slots = lGetUlong(gel, JG_slots);
       

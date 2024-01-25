@@ -282,7 +282,7 @@ lList *cull_unparse_job_parameter(sge_gdi_ctx_class_t *ctx, lList **pcmdline, lL
       /*
       ** or rather take all if there are more than one elements?
       */
-      for_each(ep, lp) {
+      for_each_ep(ep, lp) {
          user = lGetString(ep, MR_user);
          host = lGetHost(ep, MR_host);
          if (sge_strnullcmp(user, username) || 

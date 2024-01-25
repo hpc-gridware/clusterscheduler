@@ -167,7 +167,7 @@ int job_initialize_job(lListElem *job)
 
       add_job_report(job_id, ja_task_id, NULL, job);
                                                                                       /* add also job reports for tasks */
-      for_each (pe_task, lGetList(ja_task, JAT_task_list)) {
+      for_each_ep(pe_task, lGetList(ja_task, JAT_task_list)) {
          add_job_report(job_id, ja_task_id, lGetString(pe_task, PET_id), job);
       }
 
@@ -203,7 +203,7 @@ int job_initialize_job(lListElem *job)
                      (ret == 1 ? MSG_DELAYED : MSG_FAILED), sge_u32c(job_id)));
             }
          }
-         for_each(pe_task, lGetList(ja_task, JAT_task_list)) {
+         for_each_ep(pe_task, lGetList(ja_task, JAT_task_list)) {
             if (lGetUlong(pe_task, PET_status) == JRUNNING) {
                ret=register_at_ptf(job, ja_task, pe_task);
                if (ret) {

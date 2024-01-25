@@ -171,7 +171,7 @@ lList
 
    /* build sublist of granted */
    if (update_execd) {
-      for_each(gel, granted) {
+      for_each_ep(gel, granted) {
          qslots = lGetUlong(gel, JG_slots);
          if (qslots) { /* ignore Qs with slots==0 */
             ep2=lCreateElem(OQ_Type);
@@ -372,8 +372,8 @@ lList *order_list
 
    DENTER(TOP_LAYER);
 
-   for_each(job, finished_jobs) {
-      for_each(ja_task, lGetList(job, JB_ja_tasks)) {
+   for_each_ep(job, finished_jobs) {
+      for_each_ep(ja_task, lGetList(job, JB_ja_tasks)) {
          DPRINTF(("DELETE JOB "sge_u32"."sge_u32"\n", lGetUlong(job, JB_job_number),
             lGetUlong(ja_task, JAT_task_number)));
          order_list = sge_create_orders(order_list, ORT_remove_job, job, 

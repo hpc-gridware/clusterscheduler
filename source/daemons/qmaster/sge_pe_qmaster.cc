@@ -339,12 +339,12 @@ void debit_all_jobs_from_pes(lList *pe_list) {
       pe_name = lGetString(pep, PE_name);
       DPRINTF(("debiting from pe %s:\n", pe_name));
 
-      for_each(jep, master_job_list) {
+      for_each_ep(jep, master_job_list) {
          const lListElem *jatep;
 
          if (lGetString(jep, JB_pe) != NULL) { /* is job  parallel */
             slots = 0;
-            for_each (jatep, lGetList(jep, JB_ja_tasks)) {
+            for_each_ep(jatep, lGetList(jep, JB_ja_tasks)) {
                if ((ISSET(lGetUlong(jatep, JAT_status), JRUNNING) ||      /* is job running  */
                     ISSET(lGetUlong(jatep, JAT_status), JTRANSFERING)) && /* or transfering  */
                     !sge_strnullcmp(pe_name, lGetString(jatep, JAT_granted_pe))) {/* this pe         */
@@ -386,12 +386,12 @@ void pe_diff_usersets(const lListElem *new_pe,
    const char *u;
 
    if (old_pe && old_acl) {
-      for_each (ep, lGetList(old_pe, PE_user_list)) {
+      for_each_ep(ep, lGetList(old_pe, PE_user_list)) {
          u = lGetString(ep, US_name);
          if (!lGetElemStr(*old_acl, US_name, u))
             lAddElemStr(old_acl, US_name, u, US_Type);
       }
-      for_each (ep, lGetList(old_pe, PE_xuser_list)) {
+      for_each_ep(ep, lGetList(old_pe, PE_xuser_list)) {
          u = lGetString(ep, US_name);
          if (!lGetElemStr(*old_acl, US_name, u))
             lAddElemStr(old_acl, US_name, u, US_Type);
@@ -399,12 +399,12 @@ void pe_diff_usersets(const lListElem *new_pe,
    }
 
    if (new_pe && new_acl) {
-      for_each (ep, lGetList(new_pe, PE_user_list)) {
+      for_each_ep(ep, lGetList(new_pe, PE_user_list)) {
          u = lGetString(ep, US_name);
          if (!lGetElemStr(*new_acl, US_name, u))
             lAddElemStr(new_acl, US_name, u, US_Type);
       }
-      for_each (ep, lGetList(new_pe, PE_xuser_list)) {
+      for_each_ep(ep, lGetList(new_pe, PE_xuser_list)) {
          u = lGetString(ep, US_name);
          if (!lGetElemStr(*new_acl, US_name, u))
             lAddElemStr(new_acl, US_name, u, US_Type);

@@ -270,7 +270,7 @@ void cull_hash_create_hashtables(lList *lp)
       }
    
       /* create hash entries for all objects */
-      for_each (ep, lp) {
+      for_each_ep(ep, lp) {
          cull_hash_elem(ep);
       }
    }
@@ -600,7 +600,7 @@ lListElem *cull_hash_next(cull_htable ht, const void **iterator)
 *     const void **data - pointer to the sublist
 *
 *  SEE ALSO
-*     uti/hash/sge_htable_for_each()
+*     uti/hash/sge_htable_for_each_ep()
 ******************************************************************************/
 void cull_hash_delete_non_unique_chain(htable table, const void *key, 
                                        const void **data)
@@ -645,7 +645,7 @@ void cull_hash_free_descr(lDescr *descr)
       if (ht != NULL) {
          if(!mt_is_unique(descr[i].mt)) {
             /* delete chain of non unique elements */
-            sge_htable_for_each(ht->ht, cull_hash_delete_non_unique_chain);
+            sge_htable_for_each_ep(ht->ht, cull_hash_delete_non_unique_chain);
             sge_htable_destroy(ht->nuht);
          }
          sge_htable_destroy(ht->ht);
@@ -780,7 +780,7 @@ int cull_hash_new(lList *lp, int nm, bool unique)
    }
 
    /* insert all elements into the new hash table */
-   for_each(ep, lp) {
+   for_each_ep(ep, lp) {
       cull_hash_insert(ep, cull_hash_key(ep, pos, host_key), descr[pos].ht, 
                        unique);
    }
@@ -862,7 +862,7 @@ void cull_hash_recreate_after_sort(lList *lp)
          if (ht != NULL) {
             if (!mt_is_unique(descr[i].mt)) {
                /* free memory of non unique elements */
-               sge_htable_for_each(ht->ht, cull_hash_delete_non_unique_chain);
+               sge_htable_for_each_ep(ht->ht, cull_hash_delete_non_unique_chain);
                sge_htable_destroy(ht->nuht);
                sge_htable_destroy(ht->ht);
                sge_free(&ht);
@@ -881,7 +881,7 @@ void cull_hash_recreate_after_sort(lList *lp)
          const lListElem *ep;
 
          /* now insert into the cleared hash list */
-         for_each (ep, lp) {
+         for_each_ep(ep, lp) {
             for (i = 0; i < hash_index; i++) {
                int index = cleared_hash_index[i];
                cull_hash_insert(ep, cull_hash_key(ep, index, host_key), descr[index].ht, false);

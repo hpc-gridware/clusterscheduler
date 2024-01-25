@@ -82,7 +82,7 @@ str_list_append_to_dstring(const lList *this_list, dstring *string,
       const lListElem *elem = NULL;
       bool printed = false;
 
-      for_each(elem, this_list) {
+      for_each_ep(elem, this_list) {
          sge_dstring_append(string, lGetString(elem, ST_name));
          if (lNext(elem) != NULL) {
             sge_dstring_sprintf_append(string, "%c", delimiter);
@@ -178,7 +178,7 @@ str_list_is_valid(const lList *this_list, lList **answer_list)
    if (this_list != NULL) {
       const lListElem *elem;
 
-      for_each(elem, this_list) {
+      for_each_ep(elem, this_list) {
          if (lGetString(elem, ST_name) == NULL) {
             answer_list_add(answer_list, MSG_STR_INVALIDSTR, 
                             STATUS_ENOKEY, ANSWER_QUALITY_ERROR);
