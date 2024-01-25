@@ -1,25 +1,25 @@
 # source/libs/comm
 set(LIBRARY_NAME comm)
 set(LIBRARY_SOURCES
-    cl_app_message_queue.c
-    cl_application_error_list.c
-    cl_commlib.c
-    cl_communication.c
-    cl_connection_list.c
-    cl_endpoint_list.c
-    cl_fd_list.c
-    cl_handle_list.c
-    cl_host_alias_list.c
-    cl_host_list.c
-    cl_message_list.c
-    cl_ssl_framework.c
-    cl_tcp_framework.c
-    cl_xml_parsing.c)
+      cl_app_message_queue.c
+      cl_application_error_list.c
+      cl_commlib.c
+      cl_communication.c
+      cl_connection_list.c
+      cl_endpoint_list.c
+      cl_fd_list.c
+      cl_handle_list.c
+      cl_host_alias_list.c
+      cl_host_list.c
+      cl_message_list.c
+      cl_ssl_framework.c
+      cl_tcp_framework.c
+      cl_xml_parsing.c)
 set(LIBRARY_INCLUDES "./")
 
 add_library(${LIBRARY_NAME} STATIC ${LIBRARY_SOURCES})
 target_include_directories(${LIBRARY_NAME} PUBLIC ${SGE_INCLUDES}
-                                                  ${LIBRARY_INCLUDES})
+      ${LIBRARY_INCLUDES})
 
 add_executable(test_cl_com_parameter_list test_cl_com_parameter_list.c)
 target_include_directories(test_cl_com_parameter_list PRIVATE "./")
@@ -106,28 +106,28 @@ add_executable(test_virtual_qmaster test_virtual_qmaster.c)
 target_include_directories(test_virtual_qmaster PRIVATE "./")
 target_link_libraries(test_virtual_qmaster PRIVATE comm uti commlists ${SGE_LIBS})
 
-if(INSTALL_SGE_TEST)
-    install(TARGETS test_cl_com_parameter_list DESTINATION testbin/${SGE_ARCH})
-    install(TARGETS test_cl_commlib DESTINATION testbin/${SGE_ARCH})
-    install(TARGETS test_cl_commlib_client DESTINATION testbin/${SGE_ARCH})
-    install(TARGETS test_cl_endpoint_list DESTINATION testbin/${SGE_ARCH})
-    install(TARGETS test_cl_hostalias_list DESTINATION testbin/${SGE_ARCH})
-    install(TARGETS test_cl_hostname_list DESTINATION testbin/${SGE_ARCH})
-    install(TARGETS test_cl_issue_2747_client DESTINATION testbin/${SGE_ARCH})
-    install(TARGETS test_cl_issue_2747_server DESTINATION testbin/${SGE_ARCH})
-#    install(TARGETS test_cl_tcp_framework DESTINATION testbin/${SGE_ARCH})
-    install(TARGETS test_commlib_issue DESTINATION testbin/${SGE_ARCH})
-    install(TARGETS test_debug_client DESTINATION testbin/${SGE_ARCH})
-#    install(TARGETS test_dummy DESTINATION testbin/${SGE_ARCH})
-    install(TARGETS test_general DESTINATION testbin/${SGE_ARCH})
-    install(TARGETS test_issues DESTINATION testbin/${SGE_ARCH})
-    install(TARGETS test_multithread_io DESTINATION testbin/${SGE_ARCH})
-    install(TARGETS test_server_connection DESTINATION testbin/${SGE_ARCH})
-    install(TARGETS test_status_info DESTINATION testbin/${SGE_ARCH})
-    install(TARGETS test_thread_throughput DESTINATION testbin/${SGE_ARCH})
-    install(TARGETS test_virtual_event_client DESTINATION testbin/${SGE_ARCH})
-    install(TARGETS test_virtual_gdi_client DESTINATION testbin/${SGE_ARCH})
-    install(TARGETS test_virtual_qmaster DESTINATION testbin/${SGE_ARCH})
-endif()
+if (INSTALL_SGE_TEST)
+   install(TARGETS test_cl_com_parameter_list DESTINATION testbin/${SGE_ARCH})
+   install(TARGETS test_cl_commlib DESTINATION testbin/${SGE_ARCH})
+   install(TARGETS test_cl_commlib_client DESTINATION testbin/${SGE_ARCH})
+   install(TARGETS test_cl_endpoint_list DESTINATION testbin/${SGE_ARCH})
+   install(TARGETS test_cl_hostalias_list DESTINATION testbin/${SGE_ARCH})
+   install(TARGETS test_cl_hostname_list DESTINATION testbin/${SGE_ARCH})
+   install(TARGETS test_cl_issue_2747_client DESTINATION testbin/${SGE_ARCH})
+   install(TARGETS test_cl_issue_2747_server DESTINATION testbin/${SGE_ARCH})
+   #    install(TARGETS test_cl_tcp_framework DESTINATION testbin/${SGE_ARCH})
+   install(TARGETS test_commlib_issue DESTINATION testbin/${SGE_ARCH})
+   install(TARGETS test_debug_client DESTINATION testbin/${SGE_ARCH})
+   #    install(TARGETS test_dummy DESTINATION testbin/${SGE_ARCH})
+   install(TARGETS test_general DESTINATION testbin/${SGE_ARCH})
+   install(TARGETS test_issues DESTINATION testbin/${SGE_ARCH})
+   install(TARGETS test_multithread_io DESTINATION testbin/${SGE_ARCH})
+   install(TARGETS test_server_connection DESTINATION testbin/${SGE_ARCH})
+   install(TARGETS test_status_info DESTINATION testbin/${SGE_ARCH})
+   install(TARGETS test_thread_throughput DESTINATION testbin/${SGE_ARCH})
+   install(TARGETS test_virtual_event_client DESTINATION testbin/${SGE_ARCH})
+   install(TARGETS test_virtual_gdi_client DESTINATION testbin/${SGE_ARCH})
+   install(TARGETS test_virtual_qmaster DESTINATION testbin/${SGE_ARCH})
+endif ()
 
 add_subdirectory(lists)

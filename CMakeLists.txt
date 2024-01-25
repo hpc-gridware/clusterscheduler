@@ -5,7 +5,7 @@ cmake_minimum_required(VERSION 3.0...3.27.0)
 # adapt to your needs or specify -DCMAKE_INSTALL_PREFIX=<path> !!
 # CMAKE_INSTALL_PREFIX must be set BEFORE project!!
 if (CMAKE_INSTALL_PREFIX_INITIALIZED_TO_DEFAULT)
-    set(CMAKE_INSTALL_PREFIX /opt/sge)
+   set(CMAKE_INSTALL_PREFIX /opt/sge)
 endif ()
 
 project(
@@ -30,19 +30,19 @@ set(CMAKE_CXX_EXTENSIONS OFF)
 
 # if build type has not been specified then do a Debug build by default
 if (NOT CMAKE_BUILD_TYPE)
-    set(CMAKE_BUILD_TYPE
-          "Debug"
-          CACHE STRING "select build type between Debug and Release" FORCE)
+   set(CMAKE_BUILD_TYPE
+         "Debug"
+         CACHE STRING "select build type between Debug and Release" FORCE)
 endif ()
 
 # 3RD_PARTY OPTIONS
 # berkeleydb might not build on all platforms provide a way to disable it @todo
 # try updating config.guess and config.sub with a current version
-option(WITH_SPOOL_BERKELEYDB  "Enable berkeleydb spooling"                              ON)
-option(WITH_SPOOL_DYNAMIC     "Enable dynamic spooling configuration"                   ON)
-option(WITH_HWLOC             "Enable building with hwloc library"                      ON)
-option(WITH_JEMALLOC          "Enable use of the jemalloc memory allocator"             ON)
-option(WITH_MTMALLOC          "Enable use of the mtmalloc memory allocator on Solaris"  ON)
+option(WITH_SPOOL_BERKELEYDB "Enable berkeleydb spooling" ON)
+option(WITH_SPOOL_DYNAMIC "Enable dynamic spooling configuration" ON)
+option(WITH_HWLOC "Enable building with hwloc library" ON)
+option(WITH_JEMALLOC "Enable use of the jemalloc memory allocator" ON)
+option(WITH_MTMALLOC "Enable use of the mtmalloc memory allocator on Solaris" ON)
 
 # private extensions
 set(PROJECT_EXTENSIONS "None" CACHE STRING "directory of private extensions")
@@ -90,54 +90,54 @@ set(SGE_INCLUDES
       ${CPM_PACKAGE_rapidjson_SOURCE_DIR}/include)
 
 if (WITH_JEMALLOC)
-    set(SGE_JEMALLOC_LIB "jemalloc")
+   set(SGE_JEMALLOC_LIB "jemalloc")
 else ()
-    set(SGE_JEMALLOC_LIB "")
+   set(SGE_JEMALLOC_LIB "")
 endif ()
 
 if (SGE_ARCH MATCHES "darwin-arm64" OR SGE_ARCH MATCHES "fbsd-amd64")
-    set(SPOOLING_LIBS spoolloader spoolc_static spool)
+   set(SPOOLING_LIBS spoolloader spoolc_static spool)
 else ()
-    set(SPOOLING_LIBS spoolloader spoold spool)
+   set(SPOOLING_LIBS spoolloader spoold spool)
 endif ()
 
 if (WITH_HWLOC)
-    if (SGE_ARCH MATCHES "darwin-arm64")
-        set(SGE_TOPO_LIB hwloc CoreFoundation Core)
-        set(SGE_TOPO_LIB_PATH "")
-    elseif(SGE_ARCH MATCHES "fbsd-amd64")
-        set(SGE_TOPO_LIB hwloc udev)
-        set(SGE_TOPO_LIB_PATH /usr/local/lib)
-    else()
-        set(SGE_TOPO_LIB hwloc udev)
-        set(SGE_TOPO_LIB_PATH "")
-    endif()
-    if (SGE_TOPO_LIB_PATH)
-        link_directories(/usr/local/lib)
-    endif()
-    add_compile_definitions(OGE_HWLOC)
-else()
-    set(SGE_TOPO_LIB "")
-endif()
+   if (SGE_ARCH MATCHES "darwin-arm64")
+      set(SGE_TOPO_LIB hwloc CoreFoundation Core)
+      set(SGE_TOPO_LIB_PATH "")
+   elseif (SGE_ARCH MATCHES "fbsd-amd64")
+      set(SGE_TOPO_LIB hwloc udev)
+      set(SGE_TOPO_LIB_PATH /usr/local/lib)
+   else ()
+      set(SGE_TOPO_LIB hwloc udev)
+      set(SGE_TOPO_LIB_PATH "")
+   endif ()
+   if (SGE_TOPO_LIB_PATH)
+      link_directories(/usr/local/lib)
+   endif ()
+   add_compile_definitions(OGE_HWLOC)
+else ()
+   set(SGE_TOPO_LIB "")
+endif ()
 
 if (SGE_ARCH MATCHES "fbsd-amd64")
-    set(SGE_LIBS ${SGE_JEMALLOC_LIB} pthread ${TIRPC_LIB} kvm ${CMAKE_DL_LIBS} m)
+   set(SGE_LIBS ${SGE_JEMALLOC_LIB} pthread ${TIRPC_LIB} kvm ${CMAKE_DL_LIBS} m)
 else ()
-    set(SGE_LIBS ${SGE_JEMALLOC_LIB} pthread ${TIRPC_LIB} ${CMAKE_DL_LIBS} m)
+   set(SGE_LIBS ${SGE_JEMALLOC_LIB} pthread ${TIRPC_LIB} ${CMAKE_DL_LIBS} m)
 endif ()
 
 if (INSTALL_SGE_DOC)
-    include(cmake/BuildMarkdownMan.cmake)
-    include(cmake/BuildMarkdownManual.cmake)
-    add_subdirectory(doc)
+   include(cmake/BuildMarkdownMan.cmake)
+   include(cmake/BuildMarkdownManual.cmake)
+   add_subdirectory(doc)
 endif ()
 
 if (INSTALL_SGE_BIN OR INSTALL_SGE_COMMON OR INSTALL_SGE_TEST)
-    add_subdirectory(source)
+   add_subdirectory(source)
 endif ()
 
 if (NOT PROJECT_EXTENSIONS STREQUAL "None")
-    add_subdirectory(${PROJECT_EXTENSIONS} "oge-extensions")
+   add_subdirectory(${PROJECT_EXTENSIONS} "oge-extensions")
 endif ()
 
 # @todo: instead of library "dl" use ${CMAKE_DL_LIBS}? @todo: add virtual

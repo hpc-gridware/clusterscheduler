@@ -1,55 +1,55 @@
 # source/libs/uti
 set(LIBRARY_NAME uti)
 set(LIBRARY_SOURCES
-    config_file.c
-    setup_path.c
-    sge_afsutil.c
-    sge_arch.c
-        sge_binding_hlp.c
-    sge_binding_parse.c
-    sge_bitfield.c
-    sge_bootstrap.c
-    sge_csp_path.c
-    sge_dstring.c
-    sge_edit.c
-    sge_env.c
-    sge_err.c
-    sge_error_class.c
-    sge_fgl.c
-    sge_getloadavg.c
-    sge_hostname.c
-    sge_htable.c
-    sge_io.c
-    sge_language.c
-    sge_loadmem.c
-    sge_lock.c
-    sge_lock_fifo.c
-    sge_log.c
-    sge_monitor.c
-    sge_mtutil.c
-    sge_nprocs.c
-    sge_os.c
-    sge_parse_args.c
-    sge_parse_num_par.c
-    sge_profiling.c
-    sge_prog.c
-    sge_pty.c
-    sge_rmon_macros.c
-    sge_rmon_monitoring_level.c
-    sge_signal.c
-    sge_sl.c
-    sge_smf.c
-    sge_spool.c
-    sge_stdio.c
-    sge_stdlib.c
-    sge_string.c
-    sge_thread_ctrl.c
-    sge_time.c
-    sge_tmpnam.c
-    oge_topology.cc
-    sge_tq.c
-    sge_uidgid.c
-    sge_unistd.c)
+      config_file.c
+      setup_path.c
+      sge_afsutil.c
+      sge_arch.c
+      sge_binding_hlp.c
+      sge_binding_parse.c
+      sge_bitfield.c
+      sge_bootstrap.c
+      sge_csp_path.c
+      sge_dstring.c
+      sge_edit.c
+      sge_env.c
+      sge_err.c
+      sge_error_class.c
+      sge_fgl.c
+      sge_getloadavg.c
+      sge_hostname.c
+      sge_htable.c
+      sge_io.c
+      sge_language.c
+      sge_loadmem.c
+      sge_lock.c
+      sge_lock_fifo.c
+      sge_log.c
+      sge_monitor.c
+      sge_mtutil.c
+      sge_nprocs.c
+      sge_os.c
+      sge_parse_args.c
+      sge_parse_num_par.c
+      sge_profiling.c
+      sge_prog.c
+      sge_pty.c
+      sge_rmon_macros.c
+      sge_rmon_monitoring_level.c
+      sge_signal.c
+      sge_sl.c
+      sge_smf.c
+      sge_spool.c
+      sge_stdio.c
+      sge_stdlib.c
+      sge_string.c
+      sge_thread_ctrl.c
+      sge_time.c
+      sge_tmpnam.c
+      oge_topology.cc
+      sge_tq.c
+      sge_uidgid.c
+      sge_unistd.c)
 set(LIBRARY_INCLUDES "./" ${SGE_INCLUDES})
 
 add_library(${LIBRARY_NAME} STATIC ${LIBRARY_SOURCES})
@@ -115,20 +115,20 @@ add_executable(test_threads test_threads.c)
 target_include_directories(test_threads PRIVATE "./")
 target_link_libraries(test_threads PRIVATE uti commlists ${SGE_LIBS})
 
-if(INSTALL_SGE_TEST)
-    install(TARGETS test_sge_bitfield DESTINATION testbin/${SGE_ARCH})
-    install(TARGETS test_sge_deadlock DESTINATION testbin/${SGE_ARCH})
-    install(TARGETS test_sge_dstring DESTINATION testbin/${SGE_ARCH})
-    install(TARGETS test_sge_err DESTINATION testbin/${SGE_ARCH})
-    install(TARGETS test_sge_lock_simple DESTINATION testbin/${SGE_ARCH})
-    install(TARGETS test_sge_lock_multiple DESTINATION testbin/${SGE_ARCH})
-    install(TARGETS test_sge_lock_fifo DESTINATION testbin/${SGE_ARCH})
-    install(TARGETS test_sge_profiling DESTINATION testbin/${SGE_ARCH})
-    install(TARGETS test_sge_recursive DESTINATION testbin/${SGE_ARCH})
-    install(TARGETS test_sge_sl DESTINATION testbin/${SGE_ARCH})
-    install(TARGETS test_sge_string DESTINATION testbin/${SGE_ARCH})
-    install(TARGETS test_sge_tq DESTINATION testbin/${SGE_ARCH})
-    install(TARGETS test_sge_uidgid DESTINATION testbin/${SGE_ARCH})
-    install(TARGETS test_thread_local DESTINATION testbin/${SGE_ARCH})
-    install(TARGETS test_threads DESTINATION testbin/${SGE_ARCH})
-endif()
+if (INSTALL_SGE_TEST)
+   install(TARGETS test_sge_bitfield DESTINATION testbin/${SGE_ARCH})
+   install(TARGETS test_sge_deadlock DESTINATION testbin/${SGE_ARCH})
+   install(TARGETS test_sge_dstring DESTINATION testbin/${SGE_ARCH})
+   install(TARGETS test_sge_err DESTINATION testbin/${SGE_ARCH})
+   install(TARGETS test_sge_lock_simple DESTINATION testbin/${SGE_ARCH})
+   install(TARGETS test_sge_lock_multiple DESTINATION testbin/${SGE_ARCH})
+   install(TARGETS test_sge_lock_fifo DESTINATION testbin/${SGE_ARCH})
+   install(TARGETS test_sge_profiling DESTINATION testbin/${SGE_ARCH})
+   install(TARGETS test_sge_recursive DESTINATION testbin/${SGE_ARCH})
+   install(TARGETS test_sge_sl DESTINATION testbin/${SGE_ARCH})
+   install(TARGETS test_sge_string DESTINATION testbin/${SGE_ARCH})
+   install(TARGETS test_sge_tq DESTINATION testbin/${SGE_ARCH})
+   install(TARGETS test_sge_uidgid DESTINATION testbin/${SGE_ARCH})
+   install(TARGETS test_thread_local DESTINATION testbin/${SGE_ARCH})
+   install(TARGETS test_threads DESTINATION testbin/${SGE_ARCH})
+endif ()

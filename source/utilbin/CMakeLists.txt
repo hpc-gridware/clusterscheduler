@@ -59,7 +59,7 @@ target_link_libraries(infotext PRIVATE gdi uti commlists ${SGE_LIBS})
 add_executable(loadcheck loadcheck.cc)
 target_include_directories(loadcheck PRIVATE ${SGE_INCLUDES})
 target_link_libraries(loadcheck PRIVATE sgeobj cull uti commlists
-                                        ${SGE_TOPO_LIB} ${SGE_LIBS})
+      ${SGE_TOPO_LIB} ${SGE_LIBS})
 
 # now
 add_executable(now now.cc)
@@ -69,14 +69,14 @@ target_include_directories(now PRIVATE ${SGE_INCLUDES})
 add_executable(qping qping.cc)
 target_include_directories(qping PRIVATE $SGE_INCLUDES)
 target_link_libraries(
-  qping
-  PRIVATE gdi
-          sgeobj
-          cull
-          comm
-          uti
-          commlists
-          ${SGE_LIBS})
+      qping
+      PRIVATE gdi
+      sgeobj
+      cull
+      comm
+      uti
+      commlists
+      ${SGE_LIBS})
 
 # read_raw
 add_executable(read_raw read_raw.cc)
@@ -86,66 +86,66 @@ target_include_directories(read_raw PRIVATE ${SGE_INCLUDES})
 add_executable(sge_share_mon sge_share_mon.cc)
 target_include_directories(sge_share_mon PRIVATE ${SGE_INCLUDES})
 target_link_libraries(
-  sge_share_mon
-  PRIVATE sched
-          gdi
-          sgeobj
-          cull
-          comm
-          uti
-          commlists
-          ${SGE_LIBS})
+      sge_share_mon
+      PRIVATE sched
+      gdi
+      sgeobj
+      cull
+      comm
+      uti
+      commlists
+      ${SGE_LIBS})
 
 # spooldefaults
 add_executable(spooldefaults spooldefaults.cc)
 target_include_directories(spooldefaults PRIVATE ${SGE_INCLUDES})
 target_link_libraries(
-  spooldefaults
-  PRIVATE
-          spoolc
-          ${SPOOLING_LIBS}
-          sched
-          gdi
-          sgeobj
-          cull
-          comm
-          uti
-          commlists
-          ${SGE_LIBS})
+      spooldefaults
+      PRIVATE
+      spoolc
+      ${SPOOLING_LIBS}
+      sched
+      gdi
+      sgeobj
+      cull
+      comm
+      uti
+      commlists
+      ${SGE_LIBS})
 
 # spooledit
 add_executable(spooledit spooledit.cc)
 target_include_directories(spooledit PRIVATE ${SGE_INCLUDES})
 target_link_libraries(
-  spooledit
-  PRIVATE
-          #spoolc
-          ${SPOOLING_LIBS}
-          sched
-          gdi
-          sgeobj
-          cull
-          comm
-          uti
-          commlists
-          ${SGE_LIBS})
+      spooledit
+      PRIVATE
+      #spoolc
+      ${SPOOLING_LIBS}
+      sched
+      gdi
+      sgeobj
+      cull
+      comm
+      uti
+      commlists
+      ${SGE_LIBS})
 
 # spoolinit
 add_executable(spoolinit spoolinit.cc ../common/sge_mt_init.cc)
 target_include_directories(spoolinit PRIVATE ${SGE_INCLUDES})
 target_link_libraries(
-  spoolinit
-  PRIVATE
-          #spoolc
-          ${SPOOLING_LIBS}
-          sched
-          gdi
-          sgeobj
-          cull
-          comm
-          uti
-          commlists
-          ${SGE_LIBS})
+      spoolinit
+      PRIVATE
+      #spoolc
+      ${SPOOLING_LIBS}
+      sched
+      gdi
+      sgeobj
+      cull
+      comm
+      uti
+      commlists
+      ${SGE_LIBS})
 
 # testsuidroot
 add_executable(testsuidroot testsuidroot.cc)
@@ -161,38 +161,38 @@ target_link_libraries(uidgid PRIVATE uti commlists ${SGE_LIBS})
 add_executable(work work.cc)
 target_include_directories(work PRIVATE ${SGE_INCLUDES})
 target_link_libraries(
-  work
-  PRIVATE gdi
-          sgeobj
-          cull
-          comm
-          uti
-          commlists
-          ${SGE_LIBS})
+      work
+      PRIVATE gdi
+      sgeobj
+      cull
+      comm
+      uti
+      commlists
+      ${SGE_LIBS})
 
-if(INSTALL_SGE_BIN)
-  install(TARGETS qping DESTINATION bin/${SGE_ARCH})
-  install(
-    TARGETS adminrun
-            checkprog
-            checkuser
-            echo_raw
-            filestat
-            fstype
-            gethostbyaddr
-            gethostbyname
-            gethostname
-            getservbyname
-            infotext
-            loadcheck
-            now
-            read_raw
-            sge_share_mon
-            spooldefaults
-            spooledit
-            spoolinit
-            testsuidroot
-            uidgid
-    DESTINATION utilbin/${SGE_ARCH})
-  install(TARGETS work DESTINATION examples/jobsbin/${SGE_ARCH})
-endif()
+if (INSTALL_SGE_BIN)
+   install(TARGETS qping DESTINATION bin/${SGE_ARCH})
+   install(
+         TARGETS adminrun
+         checkprog
+         checkuser
+         echo_raw
+         filestat
+         fstype
+         gethostbyaddr
+         gethostbyname
+         gethostname
+         getservbyname
+         infotext
+         loadcheck
+         now
+         read_raw
+         sge_share_mon
+         spooldefaults
+         spooledit
+         spoolinit
+         testsuidroot
+         uidgid
+         DESTINATION utilbin/${SGE_ARCH})
+   install(TARGETS work DESTINATION examples/jobsbin/${SGE_ARCH})
+endif ()
