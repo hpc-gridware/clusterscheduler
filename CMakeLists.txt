@@ -9,11 +9,11 @@ if (CMAKE_INSTALL_PREFIX_INITIALIZED_TO_DEFAULT)
 endif ()
 
 project(
-        gridengine
-        VERSION 9.0.0
-        DESCRIPTION "Open Grid Engine Workload Manager"
-        HOMEPAGE_URL "https://www.opengridengine.org"
-        LANGUAGES C CXX)
+      gridengine
+      VERSION 9.0.0
+      DESCRIPTION "Open Grid Engine Workload Manager"
+      HOMEPAGE_URL "https://www.opengridengine.org"
+      LANGUAGES C CXX)
 
 message(STATUS "Building project ${PROJECT_NAME} version ${PROJECT_VERSION}")
 
@@ -31,8 +31,8 @@ set(CMAKE_CXX_EXTENSIONS OFF)
 # if build type has not been specified then do a Debug build by default
 if (NOT CMAKE_BUILD_TYPE)
     set(CMAKE_BUILD_TYPE
-            "Debug"
-            CACHE STRING "select build type between Debug and Release" FORCE)
+          "Debug"
+          CACHE STRING "select build type between Debug and Release" FORCE)
 endif ()
 
 # 3RD_PARTY OPTIONS
@@ -59,8 +59,8 @@ option(ENABLE_LTO "Enable to add Link Time Optimization in Release Build." ON)
 option(ENABLE_SANITIZERS "Enable address, leak and undefined behaviour sanitizer" OFF)
 
 set(PROJECT_3RDPARTY_HOME
-        "$ENV{HOME}/3rd_party"
-        CACHE STRING "installation directory for 3rdparty tools")
+      "$ENV{HOME}/3rd_party"
+      CACHE STRING "installation directory for 3rdparty tools")
 include(cmake/OsReleaseInfo.cmake)
 include(cmake/ArchitectureSpecificSettings.cmake)
 
@@ -79,15 +79,15 @@ build_third_party("${CMAKE_BINARY_DIR}/3rd_party" ${PROJECT_3RDPARTY_DIR})
 # clients/common/show_job.c - daemons/qmaster, required for sge_sched_thread.h
 # in libs/sched/sge_urgency.h
 set(SGE_INCLUDES
-        ${PROJECT_SOURCE_DIR}/source/common
-        ${PROJECT_SOURCE_DIR}/source/clients/common
-        ${PROJECT_SOURCE_DIR}/source/daemons/common
-        ${PROJECT_SOURCE_DIR}/source/daemons/execd
-        ${PROJECT_SOURCE_DIR}/source/daemons/qmaster
-        ${PROJECT_SOURCE_DIR}/source/libs
-        ${TIRPC_INCLUDES}
-        ${PROJECT_3RDPARTY_DIR}/include
-        ${CPM_PACKAGE_rapidjson_SOURCE_DIR}/include)
+      ${PROJECT_SOURCE_DIR}/source/common
+      ${PROJECT_SOURCE_DIR}/source/clients/common
+      ${PROJECT_SOURCE_DIR}/source/daemons/common
+      ${PROJECT_SOURCE_DIR}/source/daemons/execd
+      ${PROJECT_SOURCE_DIR}/source/daemons/qmaster
+      ${PROJECT_SOURCE_DIR}/source/libs
+      ${TIRPC_INCLUDES}
+      ${PROJECT_3RDPARTY_DIR}/include
+      ${CPM_PACKAGE_rapidjson_SOURCE_DIR}/include)
 
 if (WITH_JEMALLOC)
     set(SGE_JEMALLOC_LIB "jemalloc")
@@ -102,9 +102,22 @@ else ()
 endif ()
 
 if (WITH_HWLOC)
-  set(SGE_TOPO_LIB hwloc udev)
+    if (SGE_ARCH MATCHES "darwin-arm64")
+        set(SGE_TOPO_LIB hwloc CoreFoundation Core)
+        set(SGE_TOPO_LIB_PATH "")
+    elseif(SGE_ARCH MATCHES "fbsd-amd64")
+        set(SGE_TOPO_LIB hwloc udev)
+        set(SGE_TOPO_LIB_PATH /usr/local/lib)
+    else()
+        set(SGE_TOPO_LIB hwloc udev)
+        set(SGE_TOPO_LIB_PATH "")
+    endif()
+    if (SGE_TOPO_LIB_PATH)
+        link_directories(/usr/local/lib)
+    endif()
+    add_compile_definitions(OGE_HWLOC)
 else()
-  set(SGE_TOPO_LIB "")
+    set(SGE_TOPO_LIB "")
 endif()
 
 if (SGE_ARCH MATCHES "fbsd-amd64")

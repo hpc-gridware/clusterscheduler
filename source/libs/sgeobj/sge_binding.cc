@@ -3250,7 +3250,6 @@ static int get_position_in_topology(const int socket, const int core,
    /* current position */
    int s = -1;
    int c = -1;
-   int t = -1;
 
    if (topology_length <= 0 || socket < 0 || core < 0 || topology == NULL) {
       return false;
@@ -3266,10 +3265,8 @@ static int get_position_in_topology(const int socket, const int core,
          /* we've got a new core */
          c++;
          /* invalidate thread counter */
-         t = -1;
       } else if (topology[i] == 'T') {
          /* we've got a new thread */
-         t++;
       }
       /* check if we are at the position seeking for */
       if (socket == s && core == c) {

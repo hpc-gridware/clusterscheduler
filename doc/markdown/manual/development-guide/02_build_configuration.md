@@ -56,11 +56,11 @@ definitions. Some dependencies may be optional for a platform that can be enable
    ```
    If BDB spooling is not available then classic (file based) spooling will be used.
 
-2. Currently, *PLPA* is used for detecting a host's topology (it will be replaced soon by *hwloc* or *boost* compute).
+2. Currently, *hwloc* is used for detecting a host's topology.
    It's use can be switched off, in this case no topology information is available within xxQS_NAMExx.
 
    ```
-   cmake ... -DWITH_PLPA=OFF
+   cmake ... -DWITH_HWLOC=OFF
    ```
 
 3. The *memory allocators* we do use by default is usually not that one coming with the OS but an optimized library.
