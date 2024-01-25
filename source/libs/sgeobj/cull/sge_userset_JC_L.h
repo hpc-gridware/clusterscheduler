@@ -40,15 +40,17 @@ extern "C" {
 #endif
 
 /**
-* @brief @todo add summary
+* @brief User Job Count
 *
-* @todo add description
+* Job count per user or user group.
+* this list is used by scheduler thread to keep the number
+* of running jobs per user/group efficiently
 *
-*    SGE_STRING(JC_name) - @todo add summary
-*    @todo add description
+*    SGE_STRING(JC_name) - User Name
+*    User or user group name
 *
-*    SGE_ULONG(JC_jobs) - @todo add summary
-*    @todo add description
+*    SGE_ULONG(JC_jobs) - Number of Jobs
+*    Number of running jobs of this user / this user group.
 *
 */
 
