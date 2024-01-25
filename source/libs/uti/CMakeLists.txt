@@ -46,6 +46,7 @@ set(LIBRARY_SOURCES
     sge_thread_ctrl.c
     sge_time.c
     sge_tmpnam.c
+    oge_topology.cc
     sge_tq.c
     sge_uidgid.c
     sge_unistd.c)

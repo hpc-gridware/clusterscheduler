@@ -156,7 +156,7 @@ static int start_child(const char *childname, char *script_file, pid_t *pidp,
                        int timeout, int ckpt_type);
 static int wait_my_builtin_ijs_child(int pid, const char *childname, int timeout,
    ckpt_info_t *p_ckpt_info, ijs_fds_t *p_ijs_fds, struct rusage *rusage,
-   dstring *err_msg);
+   dstring *dstr_error);
 static int do_wait(pid_t pid);
 
 /* checkpointing functions */
@@ -711,7 +711,7 @@ int main(int argc, char **argv)
 
    sge_dstring_init(&ds, buffer, sizeof(buffer));
 
-   shepherd_trace("shepherd called with uid = "uid_t_fmt", euid = "uid_t_fmt, 
+   shepherd_trace("shepherd called with uid = " uid_t_fmt ", euid = " uid_t_fmt,
                   getuid(), geteuid());
 
    shepherd_state = SSTATE_BEFORE_PROLOG;
@@ -846,7 +846,7 @@ int main(int argc, char **argv)
 
    /* Shepherd in own process group */
    i = setpgid(pid, pid);
-   shepherd_trace("setpgid("pid_t_fmt", "pid_t_fmt") returned %d", pid, pid, i);
+   shepherd_trace("setpgid(" pid_t_fmt ", " pid_t_fmt ") returned %d", pid, pid, i);
 
    if ((ckpt_type = check_ckpttype()) == -1) {
       shepherd_error(1, "checkpointing with incomplete specification or "
@@ -864,11 +864,11 @@ int main(int argc, char **argv)
    /* 
     * Perform core binding (do not use processor set together with core binding) 
     */ 
-#if defined(PLPA_LINUX)
-   do_core_binding();
+#if defined(OGE_HWLOC)
+   oge::do_core_binding();
 #elif defined(BINDING_SOLARIS)
    /*switch later to startuser */
-   do_core_binding();
+   oge::do_core_binding();
 #endif    
 
    /*
@@ -1075,7 +1075,7 @@ int ckpt_type
    int fd_pipe_to_child[2] = {-1, -1};
    int fd_pty_master = -1;
    ternary_t use_pty = UNSET;
-   dstring err_msg = DSTRING_INIT;
+   dstring dstr_error = DSTRING_INIT;
    bool is_interactive = false;
    ckpt_info_t ckpt_info = {0, 0, 0};
 
@@ -1122,7 +1122,7 @@ int ckpt_type
       if (g_new_interactive_job_support == false || !is_interactive) {
          if (use_pty == YES && strcasecmp(script_file, JOB_TYPE_STR_QSH) != 0) {
             shepherd_trace("calling fork_pty()");
-            pid = fork_pty(&fd_pty_master, fd_pipe_err, &err_msg);
+            pid = fork_pty(&fd_pty_master, fd_pipe_err, &dstr_error);
          } else {
             pid = fork();
          }
@@ -1147,10 +1147,10 @@ int ckpt_type
           */
          if (use_pty == YES) {
             shepherd_trace("calling fork_pty()");
-            pid = fork_pty(&fd_pty_master, fd_pipe_err, &err_msg);
+            pid = fork_pty(&fd_pty_master, fd_pipe_err, &dstr_error);
          } else {
             shepherd_trace("calling fork_no_pty()");
-            pid = fork_no_pty(fd_pipe_in, fd_pipe_out, fd_pipe_err, &err_msg);
+            pid = fork_no_pty(fd_pipe_in, fd_pipe_out, fd_pipe_err, &dstr_error);
          }
       } 
 
@@ -1171,7 +1171,7 @@ int ckpt_type
          shepherd_error(1, "can't fork \"%s\"", childname);
       } else {
          shepherd_error(1, "can't fork \"%s\": %s", 
-            childname, sge_dstring_get_string(&err_msg));
+            childname, sge_dstring_get_string(&dstr_error));
       }
    }
 
@@ -1251,7 +1251,7 @@ int ckpt_type
 
       /* wait blocking until the child process has ended */
       status = wait_my_builtin_ijs_child(pid, childname, timeout,
-                  &ckpt_info, &ijs_fds, &rusage, &err_msg);
+                  &ckpt_info, &ijs_fds, &rusage, &dstr_error);
    }
    alarm(0);
    end_time = sge_get_gmt();
@@ -1389,7 +1389,7 @@ int ckpt_type
 
                qrsh_error = get_error_of_qrsh_starter();
                if (qrsh_error != NULL) {
-                  shepherd_error(1, "startup of qrsh job failed: "SFN, qrsh_error);
+                  shepherd_error(1, "startup of qrsh job failed: " SFN, qrsh_error);
                   sge_free(&qrsh_error);
                } else {
                   shepherd_trace("job exited normally, exit code is %d", exit_status);
@@ -1443,7 +1443,7 @@ int ckpt_type
 *
 *  SYNOPSIS
 *     static int get_remote_host_and_port_from_config(char **hostname, int 
-*     *port, dstring *err_msg) 
+*     *port, dstring *dstr_error)
 *
 *  FUNCTION
 *     Reads the hostname and the port of the builtin ijs server (in the
@@ -1455,12 +1455,12 @@ int ckpt_type
 *                        gets allocated in this function, it has to be freed
 *                        after use.
 *     int *port        - The port of the builtin ijs server.
-*     dstring *err_msg - Gets filled with an error message in case of error.
+*     dstring *dstr_error - Gets filled with an error message in case of error.
 *                        Doesn't get modified if this function succeeds.
 *
 *  RESULT
 *     int - 0: OK
-*           1: err_msg points to NULL
+*           1: dstr_error points to NULL
 *           2: "qrsh_control_port" not set in config
 *           3: "qrsh_control_port" value is invalid
 *
@@ -1470,18 +1470,18 @@ int ckpt_type
 static int get_remote_host_and_port_from_config(
 char **hostname,
 int *port,
-dstring *err_msg)
+dstring *dstr_error)
 {
    char *address;
    char *separator;
 
-   if (err_msg == NULL) {
+   if (dstr_error == NULL) {
       return 1;
    }
 
    address = get_conf_val("qrsh_control_port");
    if (address == NULL) {
-      sge_dstring_sprintf(err_msg, "config does not contain entry for qrsh_control_port");
+      sge_dstring_sprintf(dstr_error, "config does not contain entry for qrsh_control_port");
       return 2;
    }
    /* address now points to the configuration buffer, but we want to keep it
@@ -1490,7 +1490,7 @@ dstring *err_msg)
    address = strdup(address);
    separator = strchr(address, ':');
    if (separator == NULL) {
-      sge_dstring_sprintf(err_msg, "illegal value for qrsh_control_port: "
+      sge_dstring_sprintf(dstr_error, "illegal value for qrsh_control_port: "
                         "\"%s\". Should be host:port", address);
       sge_free(&address);
       return 3;
@@ -1510,7 +1510,7 @@ dstring *err_msg)
 *  SYNOPSIS
 *     static int wait_my_builtin_ijs_child(int pid, const char *childname, int 
 *     timeout, ckpt_info_t *p_ckpt_info, ijs_fds_t *p_ijs_fds, struct rusage 
-*     *rusage, dstring *err_msg) 
+*     *rusage, dstring *dstr_error)
 *
 *  FUNCTION
 *     Waits until the builtin ijs job has finished.
@@ -1525,7 +1525,7 @@ dstring *err_msg)
 *
 *  OUTPUTS
 *     struct rusage *rusage      - Gets filled with the usage of the job
-*     dstring       *err_msg     - Gets filled with an error message if an
+*     dstring       *dstr_error     - Gets filled with an error message if an
 *                                  error happens
 *
 *  RESULT
@@ -1544,7 +1544,7 @@ int           timeout,       /* IN: used for prolog/epilog script, 0 for job */
 ckpt_info_t   *p_ckpt_info,  /* IN: data for checkpointing handling */
 ijs_fds_t     *p_ijs_fds,    /* IN: file descriptors needed for IJS */
 struct rusage *rusage,       /* OUT: accounting information */
-dstring       *err_msg       /* OUT: error message - if any */
+dstring       *dstr_error       /* OUT: error message - if any */
 ) {
    char    *job_owner;
    char    *remote_host = NULL;
@@ -1557,10 +1557,10 @@ dstring       *err_msg       /* OUT: error message - if any */
    shepherd_trace("parent: closing childs end of the pipe");
 
    /* read destination host and port from config */
-   ret = get_remote_host_and_port_from_config(&remote_host, &remote_port, err_msg);
+   ret = get_remote_host_and_port_from_config(&remote_host, &remote_port, dstr_error);
    if (ret != 0 || remote_host == NULL || remote_port == 0) {
-      shepherd_error(1, "startup of qrsh job failed: "SFN"",
-                     sge_dstring_get_string(err_msg));
+      shepherd_error(1, "startup of qrsh job failed: " SFN,
+                     sge_dstring_get_string(dstr_error));
    }
    job_owner = get_conf_val("job_owner");
 
@@ -1576,11 +1576,11 @@ dstring       *err_msg       /* OUT: error message - if any */
    shepherd_trace("csp = %d", csp_mode);
 
    ret = parent_loop(pid, childname, timeout, p_ckpt_info, p_ijs_fds, job_owner,
-            remote_host, remote_port, csp_mode, &exit_status, rusage, err_msg);
+            remote_host, remote_port, csp_mode, &exit_status, rusage, dstr_error);
    sge_free(&remote_host);
    if (ret != 0) {
-      shepherd_error(1, "startup of qrsh job failed: "SFN"",
-                     sge_dstring_get_string(err_msg));
+      shepherd_error(1, "startup of qrsh job failed: " SFN,
+                     sge_dstring_get_string(dstr_error));
    }
 
    /*shepherd_signal_job(-pid, SIGKILL);*/
@@ -1985,7 +1985,7 @@ static void shepconf_deliver_signal_or_method(int sig, int pid, pid_t *ctrl_pid)
          *ctrl_pid = start_async_command(method_name, command);
       } else {
          shepherd_trace("Skipped start of suspend: previous command "
-                        "(pid= "pid_t_fmt") is still active", *ctrl_pid);
+                        "(pid= " pid_t_fmt ") is still active", *ctrl_pid);
       }
    } else {
       shepherd_trace("kill(%d, %s)", -pid, sge_sys_sig2str(sig));
@@ -2909,7 +2909,7 @@ shepherd_signal_job(pid_t pid, int sig) {
             if (shepherd_read_qrsh_file(pid_file_name, &qrsh_pid)) {
                is_qrsh = true;
                pid = -qrsh_pid;
-               shepherd_trace("found pid of qrsh client command: "pid_t_fmt, pid);
+               shepherd_trace("found pid of qrsh client command: " pid_t_fmt, pid);
             }
             sge_switch2admin_user();
          }
@@ -2923,7 +2923,7 @@ shepherd_signal_job(pid_t pid, int sig) {
       * qrsh_exit_code file is written (see Issue: 1679)
       */
       if ((first_kill == 1) || (sge_get_gmt() - first_kill_ts > 10) || (sig != SIGKILL)) {
-        shepherd_trace("now sending signal %s to pid "pid_t_fmt, sge_sys_sig2str(sig), pid);
+        shepherd_trace("now sending signal %s to pid " pid_t_fmt, sge_sys_sig2str(sig), pid);
         sge_switch2start_user();
         kill(pid, sig);
         sge_switch2admin_user();
@@ -2952,7 +2952,7 @@ shepherd_signal_job(pid_t pid, int sig) {
         }
 # endif
       } else {
-        shepherd_trace("ignored signal %s to pid "pid_t_fmt, sge_sys_sig2str(sig), pid);
+        shepherd_trace("ignored signal %s to pid " pid_t_fmt, sge_sys_sig2str(sig), pid);
       }
 
       if (sig == SIGKILL) {
@@ -3044,7 +3044,7 @@ static int notify_tasker(u_long32 exit_status)
       sge_free(&buffer);
    }
 
-   shepherd_trace("signalling tasker with pid #"pid_t_fmt, tasker_pid);
+   shepherd_trace("signalling tasker with pid #" pid_t_fmt, tasker_pid);
 
    sge_switch2start_user();
    kill(tasker_pid, SIGCHLD);

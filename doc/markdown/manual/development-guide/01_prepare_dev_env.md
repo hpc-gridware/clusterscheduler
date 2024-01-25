@@ -6,9 +6,9 @@ In order to do development for the xxQS_NAMExx you need a host or virtual machin
 
 For the xxQS_NAMExx core product the environment has to provide:
 
-* cmake >= 3.0 
+* cmake >= 3.24 
 * git
-* devtoolset-11 (gcc/g++ >= 11.2 or similar to support C++11) 
+* devtoolset-11 (gcc/g++ >= 11.2 or similar to support C++17) 
 * autoconf
 * automake
 * patchelf
@@ -58,14 +58,14 @@ brew install doxygen graphviz
 ### Raspian
 
 ```
-apt-get install cmake git autoconf automake gcc g++ patchelf libntirpc-dev 
+apt-get install cmake git autoconf automake gcc g++ patchelf libntirpc-dev libudev-dev
 apt-get install expect xterm gnuplot tdom
 ```
 
 ### Rocky 8
 
 ```
-dnf install cmake automake autoconf gcc-toolset-11 patchelf git libtirpc-devel
+dnf install cmake automake autoconf gcc-toolset-11 patchelf git libtirpc-devel systemd-devel
 dnf install -y expect tcl gnuplot xterm libcgroup-tools perl-Env
 dnf --enablerepo=devel install -y doxygen graphviz pandoc
 ```

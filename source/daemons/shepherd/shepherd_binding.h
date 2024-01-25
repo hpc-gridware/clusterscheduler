@@ -30,13 +30,11 @@
  *
  ************************************************************************/
 /*___INFO__MARK_END__*/
-#include <sys/types.h>
-#include <stdio.h>
-#include <stdlib.h>
-#include <string.h>
-#include <errno.h>
 
-#include "basis_types.h"
-#include "uti/config_file.h"
+namespace oge {
+#if defined(OGE_HWLOC)
 
-int do_core_binding(void);
+   int do_core_binding(void);
+
+#endif
+}

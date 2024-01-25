@@ -36,7 +36,6 @@
 #include <string.h>
 #include <stdlib.h>
 
-#ifndef WINDOWS
 #include <unistd.h>
 
 #include "uti/sge_rmon.h"
@@ -44,36 +43,34 @@
 #include "uti/sge_language.h"
 #include "uti/sge_prog.h"
 #include "uti/sge_binding_hlp.h"
+#include "uti/oge_topology.h"
 
 #include "sgeobj/sge_host.h"
 #include "sgeobj/sge_binding.h"
 
 #include "basis_types.h"
 #include "msg_utilbin.h"
-#else
-#include "msg_utilbin.h"
-#include <windows.h>
-#include <io.h>
-#endif
 
-#if defined(PLPA_LINUX)
-/* for linux kernel version */
+#if defined(OGE_HWLOC)
+// for linux kernel version
 #include <sys/utsname.h>
+#include "uti/oge_topology.h"
 #endif
 
 void usage(void);
 void print_mem_load(char *, char *, int, double, char*);
 void check_core_binding(void);
 
+// @todo do we still need BINDING_SOLARIS or can it be covered by hwloc?
 #if defined(BINDING_SOLARIS)
 void test_solaris_binding(void);
 #endif 
 
-#if defined(PLPA_LINUX)
-void test_linux_plpa(void);
+#if defined(OGE_HWLOC)
+void test_linux_hwloc(void);
 #endif 
 
-#if defined(BINDING_SOLARIS) || defined(PLPA_LINUX)
+#if defined(BINDING_SOLARIS) || defined(OGE_HWLOC)
 void fill_socket_core_topology(dstring* msocket, dstring* mcore, dstring* mthread, dstring* mtopology);
 #endif
 
@@ -91,7 +88,7 @@ int main(int argc, char *argv[])
    double avg[3];
    int loads;
    char *name = NULL;
-#if defined(PLPA_LINUX) || defined(BINDING_SOLARIS)
+#if defined(OGE_HWLOC) || defined(BINDING_SOLARIS)
    dstring msocket   = DSTRING_INIT;
    dstring mcore     = DSTRING_INIT;
    dstring mthread   = DSTRING_INIT;
@@ -109,9 +106,7 @@ int main(int argc, char *argv[])
    int i, pos = 0, print_as_int = 0, precision = 0, core_binding = 0;
    char *m = "";
 
-#ifndef WINDOWS
    DENTER_MAIN(TOP_LAYER, "loadcheck");
-#endif
 
 #ifdef __SGE_COMPILE_WITH_GETTEXT__   
    /* init language output for gettext() , it will use the right language */
@@ -160,23 +155,11 @@ int main(int argc, char *argv[])
       
    if ((pos && !strcmp("num_proc", argv[pos])) || !pos) {
       int nprocs = 1;
-#if defined(WINDOWS)
-      SYSTEM_INFO system_info;
-      char        buf[100];
-
-      GetSystemInfo(&system_info);
-      nprocs = system_info.dwNumberOfProcessors;
-      sprintf(buf, "num_proc        %d\n", nprocs);
-      fflush(stdout);
-      _write(1, (const void*)buf, (unsigned int)strlen(buf));
-      _write(1, (const void*)"\0x0a", (unsigned int)1);
-#else
       nprocs = sge_nprocs();
       printf("num_proc        %d\n", nprocs);
-#endif
    }
 
-#if defined(PLPA_LINUX) || defined(BINDING_SOLARIS)
+#if defined(OGE_HWLOC) || defined(BINDING_SOLARIS)
    fill_socket_core_topology(&msocket, &mcore, &mthread, &mtopology);
    if ((pos && !strcmp("m_socket", argv[pos])) || !pos) {
       printf("m_socket        %s\n", sge_dstring_get_string(&msocket));
@@ -205,12 +188,7 @@ int main(int argc, char *argv[])
    }   
 #endif 
 
-#if defined(WINDOWS)
-   loads = 0;
-   avg[0] = avg[1] = avg[2] = 0;
-#else
 	loads = sge_getloadavg(avg, 3);
-#endif
 
    if (loads>0 && ((pos && !strcmp("load_short", argv[pos])) || !pos)) 
       printf("load_short      %.2f\n", avg[0]);
@@ -229,10 +207,7 @@ int main(int argc, char *argv[])
    memset(&mem_info, 0, sizeof(sge_mem_info_t));
    if (sge_loadmem(&mem_info)) {
       fprintf(stderr, "%s\n", MSG_SYSTEM_RETMEMORYINDICESFAILED);
-#ifndef WINDOWS
-      DRETURN(1);
-#endif
-#if defined(PLPA_LINUX) || defined(BINDING_SOLARIS)
+#if defined(OGE_HWLOC) || defined(BINDING_SOLARIS)
       sge_dstring_free(&mcore);
       sge_dstring_free(&msocket);
       sge_dstring_free(&mthread);
@@ -264,10 +239,8 @@ int main(int argc, char *argv[])
       print_mem_load("cpu", name,  1, total, "%");
    }
 #endif /* SGE_LOADCPU */
-#ifndef WINDOWS
-   DRETURN(0);
-#endif
-#if defined(PLPA_LINUX) || defined(BINDING_SOLARIS)
+
+#if defined(OGE_HWLOC) || defined(BINDING_SOLARIS)
    sge_dstring_free(&mcore);
    sge_dstring_free(&msocket);
    sge_dstring_free(&mthread);
@@ -306,35 +279,34 @@ char *m
 *******************************************************************************/
 void check_core_binding()
 {
-   /* try if it is possible to use plpa in case of Linux */
+   /* try if it is possible to use hwloc in case of Linux */
    
    #if defined(LINUX) 
    
-      #if !defined(PLPA_LINUX)
-      printf("Your UGE Linux version has no built-in core binding functionality!\n");
+      #if !defined(OGE_HWLOC)
+      printf("Your OGE Linux version has no built-in core binding functionality!\n");
       #else
-      printf("Your UGE Linux version has built-in core binding functionality!\n");   
-      test_linux_plpa();
+      printf("Your OGE Linux version has built-in core binding functionality!\n");
+      test_linux_hwloc();
       #endif
 
    #elif defined(SOLARIS)
 
       #if defined(BINDING_SOLARIS)
-      printf("Your UGE Solaris version has built-in core binding functionality!\n");
+      printf("Your OGE Solaris version has built-in core binding functionality!\n");
       test_solaris_binding();
       #else
-      printf("Your UGE Solaris version has no built-in core binding functionality!\n");
+      printf("Your OGE Solaris version has no built-in core binding functionality!\n");
       #endif
 
    #else 
-      printf("Your UGE does currently not support core binding on this platform!\n");
+      printf("Your OGE does currently not support core binding on this platform!\n");
    #endif
 }
 
-#if defined(PLPA_LINUX)
-void test_linux_plpa()
+#if defined(OGE_HWLOC)
+void test_linux_hwloc()
 {
-   dstring error  = DSTRING_INIT;
    char* topology = NULL;
    int length     = 0;
    int s, c;
@@ -344,33 +316,32 @@ void test_linux_plpa()
       printf("Your Linux kernel version is: %s\n", name.release);
    }
 
-   if (!_has_core_binding(&error)) {
-      printf("Your Linux kernel seems not to offer core binding capabilities for PLPA!\nReason: %s\n", 
-               sge_dstring_get_string(&error));
+   if (!oge::topo_has_core_binding()) {
+      printf("Your Linux kernel seems not to offer core binding capabilities for HWLOC!\n");
    }
 
-   if (!_has_topology_information()) {
-      printf("No topology information could by retrieved by PLPA!\n");
+   if (!oge::topo_has_topology_information()) {
+      printf("No topology information could by retrieved by HWLOC!\n");
    } else {
       /* get amount of sockets */
-      printf("Amount of sockets:\t\t%d\n", get_amount_of_plpa_sockets());
+      printf("Amount of sockets:\t\t%d\n", oge::topo_get_total_amount_of_sockets());
       /* get amount of cores   */
-      printf("Amount of cores:\t\t%d\n", get_total_amount_of_plpa_cores());
+      printf("Amount of cores:\t\t%d\n", oge::topo_get_total_amount_of_cores());
       /* the amount of threads must be shown as well */
-      printf("Amount of threads:\t\t%d\n", get_total_amount_of_plpa_threads());
+      printf("Amount of threads:\t\t%d\n", oge::topo_get_total_amount_of_threads());
       /* get topology */
-      get_topology_linux(&topology, &length);
+      oge::topo_get_topology(&topology, &length);
       printf("Topology:\t\t\t%s\n", topology);
       sge_free(&topology); 
       printf("Mapping of logical socket and core numbers to internal\n");
 
       /* for each socket,core pair get the internal processor number */
       /* try multi-mapping */
-      for (s = 0; s < get_amount_of_plpa_sockets(); s++) {
-         for (c = 0; c < get_amount_of_plpa_cores(s); c++) {
+      for (s = 0; s < oge::topo_get_total_amount_of_sockets(); s++) {
+         for (c = 0; c < oge::topo_get_amount_of_cores_for_socket(s); c++) {
             int* proc_ids  = NULL;
             int amount     = 0;
-            if (get_processor_ids_linux(s, c, &proc_ids, &amount)) {
+            if (oge::topo_get_processor_ids(s, c, &proc_ids, &amount)) {
                int i = 0;
                printf("Internal processor ids for socket %5d core %5d: ", s , c);
                for (i = 0; i < amount; i++) {
@@ -384,10 +355,6 @@ void test_linux_plpa()
          }
       }
    }   
-
-   sge_dstring_free(&error);
-
-   return;
 }
 #endif
 
@@ -447,11 +414,10 @@ void test_solaris_binding()
    } else {
       printf("Couldn't get the topology string!\n");
    }
-  
 }
 #endif
 
-#if defined(PLPA_LINUX) || defined(BINDING_SOLARIS)
+#if defined(OGE_HWLOC) || defined(BINDING_SOLARIS)
 /****** loadcheck/fill_socket_core_topology() **********************************
 *  NAME
 *     fill_socket_core_topology() -- Get load values regarding processor topology. 

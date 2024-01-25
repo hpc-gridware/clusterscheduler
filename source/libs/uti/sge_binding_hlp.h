@@ -33,10 +33,7 @@
  ************************************************************************/
 /*___INFO__MARK_END__*/
 
-#if ( defined(LINUXAMD64) || defined(LINUXARM64) || defined(LINUX86) ) && !defined(ULINUX86_24) && !defined(LINUXIA64_24) && !defined(ULINUXAMD64_24) && defined(PLPA)
-#  define PLPA_LINUX
-#endif
-
+// @todo can we replace this by hwloc?
 #if defined(SOLARIS86) || defined(SOLARISAMD64) || defined(SOLARIS64)
 #   define BINDING_SOLARIS
 #endif 
@@ -44,17 +41,10 @@
 #include "uti/sge_dstring.h"
 #include "uti/sge_binding_parse.h"
 
-// plpa header do not contain #ifdef __cplusplus
-#if defined(PLPA_LINUX)
-#ifdef __cplusplus
-extern "C" {
+#if defined(OGE_HWLOC)
+#  include <hwloc.h>
+#  include <dlfcn.h> // @todo still required?
 #endif
-#  include <plpa.h>
-#  include <dlfcn.h>
-#ifdef __cplusplus
-}
-#endif
-#endif 
 
 #ifdef __cplusplus
 extern "C" {
@@ -80,22 +70,6 @@ int binding_striding_parse_step_size(const char* parameter);
 bool binding_explicit_has_correct_syntax(const char* parameter, dstring* error);
 int get_explicit_amount(const char* expl, const bool with_explicit_prefix);
 bool check_explicit_binding_string(const char* expl, const int amount, const bool with_explicit_prefix);
-
-#if defined(PLPA_LINUX)
-
-bool _has_topology_information(void);
-bool _has_core_binding(dstring* error);
-bool get_topology_linux(char** topology, int* length);
-int get_processor_id(int socket_number, int core_number);
-bool get_processor_ids_linux(int socket_number, int core_number, int** proc_ids, int* amount);
-int get_amount_of_plpa_cores(int socket_number);
-int get_amount_of_plpa_threads(int socket_number, int core_number);
-int get_total_amount_of_plpa_cores(void);
-int get_total_amount_of_plpa_threads(void);
-int get_amount_of_plpa_sockets(void);
-bool has_core_binding(void);
-
-#endif
 
 const char* binding_get_topology_for_job(const char *binding_result);
 
