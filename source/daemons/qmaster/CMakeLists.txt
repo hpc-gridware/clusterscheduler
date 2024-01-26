@@ -53,6 +53,7 @@ add_executable(
       sge_userprj_qmaster.cc
       sge_userset_qmaster.cc
       sge_utility_qmaster.cc
+      ../../../../${PROJECT_FEATURES}/source/daemons/qmaster/TestClass.cc
       ../../common/sig_handlers.cc
       ../../common/sge_options.cc
       ../../common/sge_mt_init.cc

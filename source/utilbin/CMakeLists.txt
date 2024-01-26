@@ -56,7 +56,10 @@ target_include_directories(infotext PRIVATE ${SGE_INCLUDES})
 target_link_libraries(infotext PRIVATE gdi uti commlists ${SGE_LIBS})
 
 # loadcheck
-add_executable(loadcheck loadcheck.cc)
+add_executable(loadcheck
+      loadcheck.cc
+      ../../../${PROJECT_FEATURES}/source/daemons/qmaster/TestClass.cc
+)
 target_include_directories(loadcheck PRIVATE ${SGE_INCLUDES})
 target_link_libraries(loadcheck PRIVATE sgeobj cull uti commlists
       ${SGE_TOPO_LIB} ${SGE_LIBS})

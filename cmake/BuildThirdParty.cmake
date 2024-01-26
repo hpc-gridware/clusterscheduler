@@ -8,7 +8,6 @@ set(SGE_PACKAGE_MANAGER none)
 
 function(build_third_party 3rdparty_build_path 3rdparty_install_path)
    include(cmake/CPM.cmake)
-
    cpmaddpackage("gh:Tencent/rapidjson#master")
 
    set(3rdparty_list "")
@@ -76,12 +75,13 @@ function(build_third_party 3rdparty_build_path 3rdparty_install_path)
                EXCLUDE_FROM_ALL TRUE
                PREFIX ${3rdparty_build_path}/hwloc
                INSTALL_DIR ${3rdparty_install_path}
-               URL https://download.open-mpi.org/release/hwloc/v2.10/hwloc-2.10.0.tar.gz
                DOWNLOAD_EXTRACT_TIMESTAMP TRUE
                CONFIGURE_COMMAND ./configure --prefix ${3rdparty_install_path} --enable-static
                BUILD_IN_SOURCE TRUE
                BUILD_ALWAYS FALSE
-               BUILD_COMMAND make)
+               BUILD_COMMAND make
+               # put URL last to avoid the "At least one entry of URL is a path (invalid in a list)"-problem
+               URL https://download.open-mpi.org/release/hwloc/v2.10/hwloc-2.10.0.tar.gz)
          add_library(hwloc STATIC IMPORTED GLOBAL)
          set_target_properties(
                hwloc

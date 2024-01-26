@@ -2,24 +2,23 @@ function(architecture_specific_settings)
    get_os_release_info(OS_ID OS_VERSION OS_CODENAME)
    message(STATUS "We are on OS: ${OS_ID}; ${OS_VERSION}; ${OS_CODENAME}")
 
-   execute_process(COMMAND ${CMAKE_SOURCE_DIR}/source/dist/util/arch
-         OUTPUT_VARIABLE SGE_ARCH_RAW)
+   # Find the OGE architecture string
+   execute_process(COMMAND ${CMAKE_SOURCE_DIR}/source/dist/util/arch OUTPUT_VARIABLE SGE_ARCH_RAW)
    string(STRIP ${SGE_ARCH_RAW} SGE_ARCH)
-   set(SGE_ARCH
-         ${SGE_ARCH}
-         PARENT_SCOPE)
+   set(SGE_ARCH ${SGE_ARCH} PARENT_SCOPE)
+   message(STATUS "Architecture: ${SGE_ARCH}")
 
-   execute_process(COMMAND ${CMAKE_SOURCE_DIR}/source/scripts/compilearch -b
-         ${SGE_ARCH} OUTPUT_VARIABLE SGE_BUILDARCH_RAW)
+   # Find build and compile architecture and target bits
+   set(SGE_COMPILE_ARCH_SCRIPT ${CMAKE_SOURCE_DIR}/source/scripts/compilearch)
+   execute_process(COMMAND ${SGE_COMPILE_ARCH_SCRIPT} -b ${SGE_ARCH} OUTPUT_VARIABLE SGE_BUILDARCH_RAW)
+   execute_process(COMMAND ${SGE_COMPILE_ARCH_SCRIPT} -c ${SGE_ARCH} OUTPUT_VARIABLE SGE_COMPILEARCH_RAW)
+   execute_process(COMMAND ${SGE_COMPILE_ARCH_SCRIPT} -t ${SGE_ARCH} OUTPUT_VARIABLE SGE_TARGETBITS_RAW)
    string(STRIP ${SGE_BUILDARCH_RAW} SGE_BUILDARCH)
-
-   execute_process(COMMAND ${CMAKE_SOURCE_DIR}/source/scripts/compilearch -c
-         ${SGE_ARCH} OUTPUT_VARIABLE SGE_COMPILEARCH_RAW)
    string(STRIP ${SGE_COMPILEARCH_RAW} SGE_COMPILEARCH)
-
-   execute_process(COMMAND ${CMAKE_SOURCE_DIR}/source/scripts/compilearch -t
-         ${SGE_ARCH} OUTPUT_VARIABLE SGE_TARGETBITS_RAW)
    string(STRIP ${SGE_TARGETBITS_RAW} SGE_TARGETBITS)
+   message(STATUS "Buildarch: ${SGE_BUILDARCH}")
+   message(STATUS "Compilearch: ${SGE_COMPILEARCH}")
+   message(STATUS "Targetbits: ${SGE_TARGETBITS}")
 
    # directory for installing 3rdparty tools once
    # this allows us to delete the build directory without having to re-build all 3rdparty tools
@@ -74,10 +73,9 @@ function(architecture_specific_settings)
          add_compile_definitions(_FILE_OFFSET_BITS=64)
          # readdir64_r seems to be deprecated
          add_compile_options(-Wno-deprecated-declarations)
-      elseif ((OS_ID STREQUAL "raspbian" AND OS_VERSION EQUAL 10) OR
-      (OS_ID STREQUAL "tuxedo" AND OS_VERSION EQUAL 22.04) OR
-      (OS_ID STREQUAL "ubuntu" AND OS_VERSION EQUAL 22.04)
-      )
+      elseif ((OS_ID STREQUAL "raspbian" AND OS_VERSION EQUAL 10)
+            OR (OS_ID STREQUAL "tuxedo" AND OS_VERSION EQUAL 22.04)
+            OR (OS_ID STREQUAL "ubuntu" AND OS_VERSION EQUAL 22.04))
          add_compile_options(-Wno-deprecated-declarations)
       endif ()
 
@@ -129,7 +127,6 @@ function(architecture_specific_settings)
       add_compile_definitions(SOLARIS GETHOSTBYNAME_R5 GETHOSTBYADDR_R7 SPOOLING_dynamic __SGE_COMPILE_WITH_GETTEXT__)
 
       set(WITH_JEMALLOC OFF PARENT_SCOPE)
-
    elseif (SGE_ARCH MATCHES "darwin-arm64")
       # Darwin M1/M2/M2Max/M2Pro (arm64) platform
       message(STATUS "We are on macOS: ${SGE_ARCH}")
@@ -138,8 +135,8 @@ function(architecture_specific_settings)
       set(CMAKE_OSX_ARCHITECTURES "arm64" CACHE STRING "Build architectures for Mac OS X" FORCE)
       add_compile_definitions(DARWIN DARWIN10 GETHOSTBYNAME GETHOSTBYADDR_M SPOOLING_classic)
 
-      set(WITH_JEMALLOC OFF PARENT_SCOPE)
       set(WITH_HWLOC OFF PARENT_SCOPE)
+      set(WITH_JEMALLOC OFF PARENT_SCOPE)
       set(WITH_SPOOL_BERKELEYDB OFF PARENT_SCOPE)
       set(WITH_SPOOL_DYNAMIC OFF PARENT_SCOPE)
    else ()

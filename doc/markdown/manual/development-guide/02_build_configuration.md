@@ -32,10 +32,11 @@ cmake -S $OGE_BASE/gridengine
 ```
 
 If closed source extensions shall be built as well, then specify the path to their root directory
-with *PROJECT_EXTENSIONS*:
+with *PROJECT_EXTENSIONS*. The *PROJECT_FEATURES* variable can then be set to "oge-extensions" to overwrite
+the default value of "gridengine" to enforce that the product is built with enterprise features.
 
 ```
-cmake ... -DPROJECT_EXTENSIONS=$OGE_BASE/oge-extensions
+cmake ... -DPROJECT_EXTENSIONS=$OGE_BASE/oge-extensions -DPROJECT_FEATURES="oge-extension"
 ```
 
 If you want to install to a different location than the default */opt/ge* specify *CMAKE_INSTALL_PREFIX*:
@@ -130,15 +131,16 @@ documentation.
 
 ```
 cd /usr/local/testsuite/8004/build/lx-amd64
-cmake -S /home/ebablick/OGE/ge2/gridengine
+cmake -S /home/ebablick/OGE/ge2/gridengine \
       -DPROJECT_3RDPARTY_HOME=/usr/local/testsuite/8004/build_3rdparty \
-      -DPROJECT_EXTENSIONS=/home/ebablick/OGE/ge2/oge-extensions
-      -DCMAKE_INSTALL_PREFIX=/home/ebablick/OGE/ge2/inst
-      -DCMAKE_BUILD_TYPE=Debug
-      -DINSTALL_SGE_BIN=ON
-      -DINSTALL_SGE_COMMON=ON
-      -DINSTALL_SGE_DOC=ON
-      -DINSTALL_SGE_TEST=ON
+      -DPROJECT_EXTENSIONS=/home/ebablick/OGE/ge2/oge-extensions \
+      -DPROJECT_FEATURES="oge-extension" \
+      -DCMAKE_INSTALL_PREFIX=/home/ebablick/OGE/ge2/inst \
+      -DCMAKE_BUILD_TYPE=Debug \
+      -DINSTALL_SGE_BIN=ON \
+      -DINSTALL_SGE_COMMON=ON \
+      -DINSTALL_SGE_DOC=ON \
+      -DINSTALL_SGE_TEST=ON \
       -DINSTALL_SGE_SRCDOC=OFF
 ```
 
@@ -150,14 +152,15 @@ Here we use *CLion* as example because it provides full integration with CMake t
    xxQS_NAMExx related repositories   
 2) Choose "CLion" => "Settings" to open the "Settings" Dialog
 3) Goto section "Build, Execution, Deployment" => "CMake"
-4) Set up a new profile (see the picture below). Omit the `-S` switch in the CMake options and accept your changes.
+4) Set up a new profile (see the picture below). Set the build type. Omit the `-S` switch and the `-DMAKE_BUILD_TYPE` 
+   in the *CMake options*. They are implicitly defined by the IDE. Accept your changes and close the dialog window.
  
    ![Clion's CMake Settings](file://__IMAGE_DIR__/clion_settings_cmake.png)
 
 5) In the *Project Browser* select the *CMakeLists.txt* file within the
    *gridengine* folder, open the context menu and select "Load CMake Project". This step tells Clion the location of 
    the source code.
-6) Add make options as needed (e.g. -j for a parallel build or VERBOSE=1 to see the individual build commands
+6) Add make options as needed (e.g. `-j` for a parallel build or *VERBOSE=1* to see the individual build commands
    during the build step)
 7) Wait a moment. In the status line of the IDE you can find the background activities. CLion executes `cmake` and
    will load the project.

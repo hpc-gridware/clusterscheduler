@@ -10,9 +10,10 @@ xxQS_NAMExx components on the other axis.
 | Rocky Linux      | 8/9     | x86-64       | x                         | x                 | x                        |
 | Ubuntu Linux     | 22/24   | x86-64       | x                         | x                 | x                        |
 |                  |         |              |                           |                   |                          |
+| Free BSD         | 13/14   | ARM64        |                           |                   | x                        |
+| macOS Sonoma     | 14      | ARM64        |                           |                   | x                        |
 | Rocky Linux      | 8/9     | ARM64        | x                         | x                 | x                        |
 | Raspbian Linux   | 11      | ARM64        |                           |                   | x                        |
-| macOS Sonoma     | 14.2    | ARM64        |                           |                   | x                        |
 
 > **Note**
 > 

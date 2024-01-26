@@ -51,6 +51,8 @@
 #include "basis_types.h"
 #include "msg_utilbin.h"
 
+#include <TestClass.h>
+
 #if defined(OGE_HWLOC)
 // for linux kernel version
 #include <sys/utsname.h>
@@ -88,6 +90,10 @@ int main(int argc, char *argv[])
    double avg[3];
    int loads;
    char *name = NULL;
+   oge::TestClass tst("troete");
+
+   tst.method("rhabarberkuchen");
+
 #if defined(OGE_HWLOC) || defined(BINDING_SOLARIS)
    dstring msocket   = DSTRING_INIT;
    dstring mcore     = DSTRING_INIT;

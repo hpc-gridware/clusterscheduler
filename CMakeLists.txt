@@ -46,6 +46,7 @@ option(WITH_MTMALLOC "Enable use of the mtmalloc memory allocator on Solaris" ON
 
 # private extensions
 set(PROJECT_EXTENSIONS "None" CACHE STRING "directory of private extensions")
+set(PROJECT_FEATURES "gridengine" CACHE STRING "gridengine or oge-extensions")
 
 # INSTALL OPTIONS
 option(INSTALL_SGE_BIN "Install binaries" ON)
@@ -95,7 +96,8 @@ else ()
    set(SGE_JEMALLOC_LIB "")
 endif ()
 
-if (SGE_ARCH MATCHES "darwin-arm64" OR SGE_ARCH MATCHES "fbsd-amd64")
+#if (SGE_ARCH MATCHES "darwin-arm64" OR SGE_ARCH MATCHES "fbsd-amd64")
+if (NOT WITH_SPOOL_BERKELEYDB AND NOT WITH_SPOOL_DYNAMIC)
    set(SPOOLING_LIBS spoolloader spoolc_static spool)
 else ()
    set(SPOOLING_LIBS spoolloader spoold spool)
