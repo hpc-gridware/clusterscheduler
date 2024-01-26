@@ -1,15 +1,20 @@
 {
 	"className":	"ConfigurationElement",
-	"summary":	"@todo add summary",
+	"summary":	"Configuration Element",
 	"description":	[{
-			"line":	"@todo add description"
+			"line":	"A configuration element contains one line of a configuration, see qconf -sconf, e.g."
+			}, { "line":	"- execd_spool_dir"
+			}, { "line":	"- mailer"
+			}, { "line":	"- xterm"
+			}, { "line":	"- load_sensor"
+			}, { "line":	"- ..."
 		}],
 	"cullPrefix":	"CF",
 	"attributes":	[{
 			"name":	"name",
-			"summary":	"@todo add summary",
+			"summary":	"Configuration Name",
 			"description":	[{
-					"line":	"@todo add description"
+					"line":	"Name of the configuration element (the left column of qconf -sconf)."
 				}],
 			"type":	"lStringT",
 			"flags":	[{
@@ -25,9 +30,9 @@
 				}]
 		}, {
 			"name":	"value",
-			"summary":	"@todo add summary",
+			"summary":	"Configuration Value",
 			"description":	[{
-					"line":	"@todo add description"
+					"line":	"The value of a configuration element (the right column of qconf -sconf)."
 				}],
 			"type":	"lStringT",
 			"flags":	[{
@@ -37,9 +42,9 @@
 				}]
 		}, {
 			"name":	"sublist",
-			"summary":	"@todo add summary",
+			"summary":	"Configuration Sublist",
 			"description":	[{
-					"line":	"@todo add description"
+					"line":	"Recursive Sublist of CF_Type. @todo is it still required? It is only used in libs/gdi/sge_qtcsh.cc."
 				}],
 			"type":	"lListT",
 			"subClassName":	"ANY",
@@ -49,9 +54,9 @@
 				}]
 		}, {
 			"name":	"local",
-			"summary":	"@todo add summary",
+			"summary":	"Local Configuration",
 			"description":	[{
-					"line":	"@todo add description"
+					"line":	"Is it a local configuration (true) or the global configuration (false)."
 				}],
 			"type":	"lUlongT",
 			"flags":	[{

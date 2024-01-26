@@ -40,18 +40,20 @@ extern "C" {
 #endif
 
 /**
-* @brief @todo add summary
+* @brief Host Configuration
 *
-* @todo add description
+* Contains configuration options for hosts (execution hosts but also a global configuration for the sge_qmaster).
+* Host specific configurations inherit values from the global configuration.
+* @todo there is an overlap with the exec host type (EH_Type), can this be unified?
 *
-*    SGE_HOST(CONF_name) - @todo add summary
-*    @todo add description
+*    SGE_HOST(CONF_name) - Host Name
+*    Name of the host the configuration object refers to, or global for the global configuration.
 *
-*    SGE_ULONG(CONF_version) - @todo add summary
-*    @todo add description
+*    SGE_ULONG(CONF_version) - Configuration Version
+*    Each configuration object has a version number which is increased with every change.
 *
-*    SGE_LIST(CONF_entries) - @todo add summary
-*    @todo add description
+*    SGE_LIST(CONF_entries) - Configuration Entries
+*    A configuration consists of multiple configuration entries of CF_Type.
 *
 */
 

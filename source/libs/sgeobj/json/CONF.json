@@ -1,15 +1,17 @@
 {
 	"className":	"Configuration",
-	"summary":	"@todo add summary",
+	"summary":	"Host Configuration",
 	"description":	[{
-			"line":	"@todo add description"
+			"line":	"Contains configuration options for hosts (execution hosts but also a global configuration for the sge_qmaster)."
+         }, { "line": "Host specific configurations inherit values from the global configuration."
+         }, { "line": "@todo there is an overlap with the exec host type (EH_Type), can this be unified?"
 		}],
 	"cullPrefix":	"CONF",
 	"attributes":	[{
 			"name":	"name",
-			"summary":	"@todo add summary",
+			"summary":	"Host Name",
 			"description":	[{
-					"line":	"@todo add description"
+					"line":	"Name of the host the configuration object refers to, or global for the global configuration."
 				}],
 			"type":	"lHostT",
 			"flags":	[{
@@ -25,9 +27,9 @@
 				}]
 		}, {
 			"name":	"version",
-			"summary":	"@todo add summary",
+			"summary":	"Configuration Version",
 			"description":	[{
-					"line":	"@todo add description"
+					"line":	"Each configuration object has a version number which is increased with every change."
 				}],
 			"type":	"lUlongT",
 			"flags":	[{
@@ -37,9 +39,9 @@
 				}]
 		}, {
 			"name":	"entries",
-			"summary":	"@todo add summary",
+			"summary":	"Configuration Entries",
 			"description":	[{
-					"line":	"@todo add description"
+					"line":	"A configuration consists of multiple configuration entries of CF_Type."
 				}],
 			"type":	"lListT",
 			"subClassName":	"CF",

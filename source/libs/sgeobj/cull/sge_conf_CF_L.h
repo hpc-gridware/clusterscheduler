@@ -40,21 +40,26 @@ extern "C" {
 #endif
 
 /**
-* @brief @todo add summary
+* @brief Configuration Element
 *
-* @todo add description
+* A configuration element contains one line of a configuration, see qconf -sconf, e.g.
+* - execd_spool_dir
+* - mailer
+* - xterm
+* - load_sensor
+* - ...
 *
-*    SGE_STRING(CF_name) - @todo add summary
-*    @todo add description
+*    SGE_STRING(CF_name) - Configuration Name
+*    Name of the configuration element (the left column of qconf -sconf).
 *
-*    SGE_STRING(CF_value) - @todo add summary
-*    @todo add description
+*    SGE_STRING(CF_value) - Configuration Value
+*    The value of a configuration element (the right column of qconf -sconf).
 *
-*    SGE_LIST(CF_sublist) - @todo add summary
-*    @todo add description
+*    SGE_LIST(CF_sublist) - Configuration Sublist
+*    Recursive Sublist of CF_Type. @todo is it still required? It is only used in libs/gdi/sge_qtcsh.cc.
 *
-*    SGE_ULONG(CF_local) - @todo add summary
-*    @todo add description
+*    SGE_ULONG(CF_local) - Local Configuration
+*    Is it a local configuration (true) or the global configuration (false).
 *
 */
 
