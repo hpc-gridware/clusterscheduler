@@ -1,13 +1,13 @@
 # Prepare a Host as Development Machine
 
 In order to do development for the xxQS_NAMExx you need a host or virtual machine that provides following prerequisites.
+Recommended build platform is Rocky Linux 8.x.
 
 ## Software Prerequisites
 
 For the xxQS_NAMExx core product the environment has to provide:
 
-* cmake >= 3.24 (if you need to install cmake yourself because the OS package does not fulfill the requirements then 
-  install version 3.27.9)
+* cmake >= 3.24 
 * git
 * devtoolset-11 (gcc/g++ >= 11.2 or similar to support C++17) 
 * autoconf
@@ -17,9 +17,11 @@ For the xxQS_NAMExx core product the environment has to provide:
 Depending on the OS additional packages are required:
 
 * libtirpc-devel (Linux)
-* systemd-devel (Linux)
+* systemd-devel or libudev-dev (Linux), libudev-devd (FreeBSD)
+* some cmake versions delivered with the OS are either too old or to new, and you need to install cmake yourself
+  In such a case we recommend to install version 3.27.9.
 
-Documentation is written in markdown. To be able to generate product man pages and pdf manual you need:
+Documentation is written in markdown. To be able to generate product man pages and pdf manuals you need:
 
 * pandoc
 * texlive
@@ -28,6 +30,7 @@ Documentation is written in markdown. To be able to generate product man pages a
 Source code documentation can be extracted via:
 
 * Doxygen
+* graphviz, ... (Dependencies depend also on the platform)
 
 In order to test your changes you need to be able to run the automated testsuite which requires:
 
@@ -41,8 +44,9 @@ Certain tests of the automated test environment require:
 * mailx
 * perl 
 * python3
+* ...
 
-An IDE is optional but might have addition prerequisites (e.g. rsync to support remote compilation).
+An IDE (e.g. Clion) is optional but might have addition prerequisites (e.g. rsync to support remote compilation). 
 
 ### FreeBSD 13/14
 
@@ -52,21 +56,22 @@ pkg install expect xterm gnuplot vim mailx
 pkg install hs-pandoc texlive-full tex-xetex
 ```
 
-If you want to use *CLion* as development environment on Linux or macOS and remote compile of FreeBSD, then 
-you need to downgrade the `cmake` version to *3.27.9*. The default `cmake` package provides *3.28.1* which suites 
-a manual build but is not supported by the *CLion IDE 2023.3.2*.
+If you want to use *CLion* as development environment on Linux or macOS and remote compile for FreeBSD, then 
+you need to downgrade the `cmake` version to *3.27.9* on FreeBSD. The default `cmake` package provides *3.28.1* 
+which suites a manual build but is not supported by the *CLion IDE 2023.3.2*.
 
-### macOS
+### macOS 14
 
 ```
-XCode XQuartz
+XCode
+XQuartz (for some tesuite tests)
 brew install cmake git autoconf automake gettext
 brew install expect tcl-tk gnuplot perl
 brew install pandoc texlive
 brew install doxygen graphviz
 ```
 
-### Raspian
+### Raspian 11
 
 ```
 apt-get install git autoconf automake gcc g++ patchelf libntirpc-dev libudev-dev
@@ -87,7 +92,9 @@ dnf --enablerepo=devel install -y doxygen graphviz pandoc
 
 ### Ubuntu 22
 ```
-apt-get install -y ... libudev-dev
+apt-get install -y git autoconf automake build-essential manpages-dev libudev-dev
+apt-get install -y expect tcl tdom gnuplot xterm
+apt-get install -y doxygen graphviz pandoc 
 ```
     
 ## Clone the Required Repositories

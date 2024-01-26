@@ -110,6 +110,7 @@ function(install_third_party_bin 3rdparty_install_path target_dir files)
             COMMAND patchelf --set-rpath ${CMAKE_INSTALL_RPATH} ${CMAKE_CURRENT_BINARY_DIR}/${file}
             VERBATIM
       )
+      message(STATUS "adding 3rdparty bin ${file}")
       add_custom_target(${file}
             ALL
             DEPENDS ${CMAKE_CURRENT_BINARY_DIR}/${file}
@@ -120,12 +121,13 @@ endfunction()
 
 function(install_third_party_lib 3rdparty_install_path target_dir files)
    foreach (file IN LISTS ${files})
-      set(libname ${CMAKE_SHARED_LIBRARY_PREFIX} ${file} ${CMAKE_SHARED_LIBRARY_SUFFIX})
+      set(libname "${CMAKE_SHARED_LIBRARY_PREFIX}${file}${CMAKE_SHARED_LIBRARY_SUFFIX}")
       add_custom_command(
             OUTPUT ${CMAKE_CURRENT_BINARY_DIR}/${libname}
             COMMAND cp -a ${3rdparty_install_path}/lib/${libname} ${CMAKE_CURRENT_BINARY_DIR}
             VERBATIM
       )
+      message(STATUS "adding 3rdparty lib ${libname}")
       add_custom_target(${libname}
             ALL
             DEPENDS ${CMAKE_CURRENT_BINARY_DIR}/${libname}
