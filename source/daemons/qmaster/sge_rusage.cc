@@ -102,8 +102,7 @@ sge_u32"%c"sge_u32"%c"sge_u32"%c"sge_u32"%c"sge_u32"%c"sge_u32"%c%s%c%s%c%s%c%d%
 *******************************************************************************/
 static u_long32
 reporting_get_ulong_usage(const lList *usage_list, lList *reported_list,
-                           const char *name, const char *rname, u_long32 def)
-{
+                          const char *name, const char *rname, u_long32 def) {
    /* total usage */
    u_long32 usage = usage_list_get_ulong_usage(usage_list, name, def);
 
@@ -172,10 +171,8 @@ reporting_get_ulong_usage(const lList *usage_list, lList *reported_list,
 *     sge_rusage/reporting_get_ulong_usage()
 *******************************************************************************/
 static u_long32
-reporting_get_ulong_usage_sum(const lList *usage_list, lList *reported_list,
-                               bool accounting_summary, const lListElem *ja_task,
-                               const char *name, const char *rname, u_long32 def)
-{
+reporting_get_ulong_usage_sum(const lList *usage_list, lList *reported_list, bool accounting_summary,
+                              const lListElem *ja_task, const char *name, const char *rname, u_long32 def) {
    u_long32 usage = reporting_get_ulong_usage(usage_list, reported_list, name, rname, def);
 
    /* when we do an accounting summary, we also have to sum up the pe task usage */
@@ -239,9 +236,8 @@ reporting_get_ulong_usage_sum(const lList *usage_list, lList *reported_list,
 *     sgeobj/usage/usage_list_get_double_usage()
 *******************************************************************************/
 static double
-reporting_get_double_usage(const lList *usage_list, lList *reported_list,
-                           const char *name, const char *rname, double def) 
-{
+reporting_get_double_usage(const lList *usage_list, lList *reported_list, const char *name, const char *rname,
+                           double def) {
    /* total usage */
    double usage = usage_list_get_double_usage(usage_list, name, def);
 
@@ -310,10 +306,8 @@ reporting_get_double_usage(const lList *usage_list, lList *reported_list,
 *     sge_rusage/reporting_get_double_usage()
 *******************************************************************************/
 static double
-reporting_get_double_usage_sum(const lList *usage_list, lList *reported_list,
-                               bool accounting_summary, const lListElem *ja_task,
-                               const char *name, const char *rname, double def)
-{
+reporting_get_double_usage_sum(const lList *usage_list, lList *reported_list, bool accounting_summary,
+                               const lListElem *ja_task, const char *name, const char *rname, double def) {
    double usage = reporting_get_double_usage(usage_list, reported_list, name, rname, def);
 
    /* when we do an accounting summary, we also have to sum up the pe task usage */
@@ -348,8 +342,7 @@ reporting_get_double_usage_sum(const lList *usage_list, lList *reported_list,
 */
 
 static const char *
-none_string(const char *str)
-{
+none_string(const char *str) {
    const char *ret = str;
 
    if (str == NULL || strlen(str) == 0) {
@@ -360,25 +353,22 @@ none_string(const char *str)
 }
 
 const char *
-sge_write_rusage(dstring *buffer, 
-                 lListElem *jr, lListElem *job, lListElem *ja_task, 
-                 const char *category_str, const char delimiter, 
-                 bool intermediate)
-{
-   const lList *usage_list        = NULL; /* usage list of ja_task or pe_task */
-   lList *reported_list     = NULL; /* already reported usage of ja_task or pe_task */
+sge_write_rusage(dstring *buffer, lListElem *jr, lListElem *job, lListElem *ja_task, const char *category_str,
+                 const char delimiter, bool intermediate) {
+   const lList *usage_list = NULL; /* usage list of ja_task or pe_task */
+   lList *reported_list = NULL; /* already reported usage of ja_task or pe_task */
    const char *pe_task_id;
    const char *ret = NULL;
    char *qname = NULL;
    char *hostname = NULL;
    lListElem *pe_task = NULL;
    u_long32 submission_time = 0;
-   u_long32 start_time      = 0;
-   u_long32 end_time        = 0;
-   u_long32 now             = sge_get_gmt();
-   u_long32 ar_id           = 0;
+   u_long32 start_time = 0;
+   u_long32 end_time = 0;
+   u_long32 now = sge_get_gmt();
+   u_long32 ar_id = 0;
    lListElem *ar = NULL;
-   u_long32 exit_status     = 0;
+   u_long32 exit_status = 0;
    bool do_accounting_summary = false;
    const lList *master_pe_list = *object_type_get_master_list(SGE_TYPE_PE);
    const lList *master_ar_list = *object_type_get_master_list(SGE_TYPE_AR);
@@ -415,9 +405,9 @@ sge_write_rusage(dstring *buffer,
       if (pe_task == NULL) {
          dstring err_buffer = DSTRING_INIT;
          ERROR((SGE_EVENT, MSG_GOTUSAGEREPORTFORUNKNOWNPETASK_S,
-                           job_get_id_string(lGetUlong(job, JB_job_number), 
-                                             lGetUlong(ja_task, JAT_task_number), 
-                                             pe_task_id, &err_buffer)));
+                 job_get_id_string(lGetUlong(job, JB_job_number),
+                                   lGetUlong(ja_task, JAT_task_number),
+                                   pe_task_id, &err_buffer)));
          sge_dstring_free(&err_buffer);
          DRETURN(ret);
       }
@@ -448,8 +438,8 @@ sge_write_rusage(dstring *buffer,
        */
       start_time = usage_list_get_ulong_usage(reported_list, LAST_INTERMEDIATE, 0),
 
-      /* now set actual time as time of last intermediate usage report */
-      usage_list_set_ulong_usage(reported_list, LAST_INTERMEDIATE, now);
+              /* now set actual time as time of last intermediate usage report */
+              usage_list_set_ulong_usage(reported_list, LAST_INTERMEDIATE, now);
    }
 
    SET_STR_DEFAULT(jr, JR_queue_name, "UNKNOWN@UNKNOWN");
@@ -457,18 +447,18 @@ sge_write_rusage(dstring *buffer,
    /* job name and account get taken from local job structure */
    if (lGetString(job, JB_job_name) == NULL) {
       lSetString(job, JB_job_name, "UNKNOWN");
-   }   
+   }
    if (lGetString(job, JB_account) == NULL) {
       lSetString(job, JB_account, "UNKNOWN");
-   }   
+   }
 
    /* figure out queue name and host name */
    {
       dstring cqueue = DSTRING_INIT;
       dstring hname = DSTRING_INIT;
 
-      cqueue_name_split(lGetString(jr, JR_queue_name), &cqueue, &hname, NULL, 
-         NULL);
+      cqueue_name_split(lGetString(jr, JR_queue_name), &cqueue, &hname, NULL,
+                        NULL);
 
       qname = strdup(sge_dstring_get_string(&cqueue));
       hostname = strdup(sge_dstring_get_string(&hname));
@@ -523,7 +513,7 @@ sge_write_rusage(dstring *buffer,
    if (ar_id != 0) {
       ar = ar_list_locate(master_ar_list, ar_id);
    }
-   
+
    /*
     * Output all the usage information.
     * For cpu, mem, io, iow we have to take into account,
@@ -533,58 +523,80 @@ sge_write_rusage(dstring *buffer,
     * see man page getrusage(2), so nothing to be done for intermediate
     * records.
     */
-   ret = sge_dstring_sprintf(buffer, ACTFILE_FPRINTF_FORMAT, 
-          qname, delimiter,
-          hostname, delimiter,
-          lGetString(job, JB_group), delimiter,
-          lGetString(job, JB_owner), delimiter,
-          lGetString(job, JB_job_name), delimiter,
-          lGetUlong(jr, JR_job_number), delimiter,
-          lGetString(job, JB_account), delimiter,
-          usage_list_get_ulong_usage(usage_list, "priority", 0),  delimiter,
-          submission_time, delimiter,
-          start_time, delimiter,
-          end_time, delimiter,
-          lGetUlong(jr, JR_failed), delimiter,
-          exit_status, delimiter,
-          usage_list_get_ulong_usage(usage_list, "ru_wallclock", 0), delimiter,
-          reporting_get_double_usage_sum(usage_list, reported_list, do_accounting_summary, ja_task, "ru_utime", "ru_utime", 0), delimiter,
-          reporting_get_double_usage_sum(usage_list, reported_list, do_accounting_summary, ja_task, "ru_stime", "ru_stime", 0), delimiter,
-          reporting_get_double_usage_sum(usage_list, reported_list, do_accounting_summary, ja_task, "ru_maxrss", "ru_maxrss", 0), delimiter,
-          reporting_get_ulong_usage_sum(usage_list, reported_list, do_accounting_summary, ja_task, "ru_ixrss", "ru_ixrss", 0), delimiter,
-          reporting_get_ulong_usage_sum(usage_list, reported_list, do_accounting_summary, ja_task, "ru_ismrss", "ru_ismrss", 0), delimiter,
-          reporting_get_ulong_usage_sum(usage_list, reported_list, do_accounting_summary, ja_task, "ru_idrss", "ru_idrss", 0), delimiter,
-          reporting_get_ulong_usage_sum(usage_list, reported_list, do_accounting_summary, ja_task, "ru_isrss", "ru_isrss", 0), delimiter,
-          reporting_get_ulong_usage_sum(usage_list, reported_list, do_accounting_summary, ja_task, "ru_minflt", "ru_minflt", 0), delimiter,
-          reporting_get_ulong_usage_sum(usage_list, reported_list, do_accounting_summary, ja_task, "ru_majflt", "ru_majflt", 0), delimiter,
-          reporting_get_ulong_usage_sum(usage_list, reported_list, do_accounting_summary, ja_task, "ru_nswap", "ru_nswap", 0), delimiter,
-          reporting_get_double_usage_sum(usage_list, reported_list, do_accounting_summary, ja_task, "ru_inblock", "ru_inblock", 0), delimiter,
-          reporting_get_ulong_usage_sum(usage_list, reported_list, do_accounting_summary, ja_task, "ru_oublock", "ru_oublock", 0), delimiter,
-          reporting_get_ulong_usage_sum(usage_list, reported_list, do_accounting_summary, ja_task, "ru_msgsnd", "ru_msgsnd", 0), delimiter,
-          reporting_get_ulong_usage_sum(usage_list, reported_list, do_accounting_summary, ja_task, "ru_msgrcv", "ru_msgrcv", 0), delimiter,
-          reporting_get_ulong_usage_sum(usage_list, reported_list, do_accounting_summary, ja_task, "ru_nsignals", "ru_nsignals", 0), delimiter,
-          reporting_get_ulong_usage_sum(usage_list, reported_list, do_accounting_summary, ja_task, "ru_nvcsw", "ru_nvcsw", 0), delimiter,
-          reporting_get_ulong_usage_sum(usage_list, reported_list, do_accounting_summary, ja_task, "ru_nivcsw", "ru_nivcsw", 0), delimiter,
-          none_string(lGetString(job, JB_project)), delimiter,
-          none_string(lGetString(job, JB_department)), delimiter,
-          none_string(lGetString(ja_task, JAT_granted_pe)), delimiter,
-          sge_granted_slots(lGetList(ja_task, JAT_granted_destin_identifier_list)), delimiter,
-          job_is_array(job) ? lGetUlong(ja_task, JAT_task_number) : 0, delimiter,
-          reporting_get_double_usage_sum(usage_list, reported_list, do_accounting_summary, ja_task,
-                                         intermediate ? USAGE_ATTR_CPU : USAGE_ATTR_CPU_ACCT, USAGE_ATTR_CPU, 0), delimiter,
-          reporting_get_double_usage_sum(usage_list, reported_list, do_accounting_summary, ja_task,
-                                         intermediate ? USAGE_ATTR_MEM : USAGE_ATTR_MEM_ACCT, USAGE_ATTR_MEM, 0), delimiter,
-          reporting_get_double_usage_sum(usage_list, reported_list, do_accounting_summary, ja_task,
-                                         intermediate ? USAGE_ATTR_IO : USAGE_ATTR_IO_ACCT, USAGE_ATTR_IO, 0), delimiter,
-          none_string(category_str), delimiter,
-          reporting_get_double_usage_sum(usage_list, reported_list, do_accounting_summary, ja_task,
-                                         intermediate ? USAGE_ATTR_IOW : USAGE_ATTR_IOW_ACCT, USAGE_ATTR_IOW, 0), delimiter,
-          none_string(pe_task_id), delimiter,
-          reporting_get_double_usage_sum(usage_list, NULL, do_accounting_summary, ja_task,
-                                         intermediate ? USAGE_ATTR_MAXVMEM : USAGE_ATTR_MAXVMEM_ACCT, USAGE_ATTR_MAXVMEM, 0), delimiter,
-          lGetUlong(job, JB_ar), delimiter,
-          (ar != NULL) ? lGetUlong(ar, AR_submission_time): 0
-             );
+   ret = sge_dstring_sprintf(buffer, ACTFILE_FPRINTF_FORMAT,
+                             qname, delimiter,
+                             hostname, delimiter,
+                             lGetString(job, JB_group), delimiter,
+                             lGetString(job, JB_owner), delimiter,
+                             lGetString(job, JB_job_name), delimiter,
+                             lGetUlong(jr, JR_job_number), delimiter,
+                             lGetString(job, JB_account), delimiter,
+                             usage_list_get_ulong_usage(usage_list, "priority", 0), delimiter,
+                             submission_time, delimiter,
+                             start_time, delimiter,
+                             end_time, delimiter,
+                             lGetUlong(jr, JR_failed), delimiter,
+                             exit_status, delimiter,
+                             usage_list_get_ulong_usage(usage_list, "ru_wallclock", 0), delimiter,
+                             reporting_get_double_usage_sum(usage_list, reported_list, do_accounting_summary, ja_task,
+                                                            "ru_utime", "ru_utime", 0), delimiter,
+                             reporting_get_double_usage_sum(usage_list, reported_list, do_accounting_summary, ja_task,
+                                                            "ru_stime", "ru_stime", 0), delimiter,
+                             reporting_get_double_usage_sum(usage_list, reported_list, do_accounting_summary, ja_task,
+                                                            "ru_maxrss", "ru_maxrss", 0), delimiter,
+                             reporting_get_ulong_usage_sum(usage_list, reported_list, do_accounting_summary, ja_task,
+                                                           "ru_ixrss", "ru_ixrss", 0), delimiter,
+                             reporting_get_ulong_usage_sum(usage_list, reported_list, do_accounting_summary, ja_task,
+                                                           "ru_ismrss", "ru_ismrss", 0), delimiter,
+                             reporting_get_ulong_usage_sum(usage_list, reported_list, do_accounting_summary, ja_task,
+                                                           "ru_idrss", "ru_idrss", 0), delimiter,
+                             reporting_get_ulong_usage_sum(usage_list, reported_list, do_accounting_summary, ja_task,
+                                                           "ru_isrss", "ru_isrss", 0), delimiter,
+                             reporting_get_ulong_usage_sum(usage_list, reported_list, do_accounting_summary, ja_task,
+                                                           "ru_minflt", "ru_minflt", 0), delimiter,
+                             reporting_get_ulong_usage_sum(usage_list, reported_list, do_accounting_summary, ja_task,
+                                                           "ru_majflt", "ru_majflt", 0), delimiter,
+                             reporting_get_ulong_usage_sum(usage_list, reported_list, do_accounting_summary, ja_task,
+                                                           "ru_nswap", "ru_nswap", 0), delimiter,
+                             reporting_get_double_usage_sum(usage_list, reported_list, do_accounting_summary, ja_task,
+                                                            "ru_inblock", "ru_inblock", 0), delimiter,
+                             reporting_get_ulong_usage_sum(usage_list, reported_list, do_accounting_summary, ja_task,
+                                                           "ru_oublock", "ru_oublock", 0), delimiter,
+                             reporting_get_ulong_usage_sum(usage_list, reported_list, do_accounting_summary, ja_task,
+                                                           "ru_msgsnd", "ru_msgsnd", 0), delimiter,
+                             reporting_get_ulong_usage_sum(usage_list, reported_list, do_accounting_summary, ja_task,
+                                                           "ru_msgrcv", "ru_msgrcv", 0), delimiter,
+                             reporting_get_ulong_usage_sum(usage_list, reported_list, do_accounting_summary, ja_task,
+                                                           "ru_nsignals", "ru_nsignals", 0), delimiter,
+                             reporting_get_ulong_usage_sum(usage_list, reported_list, do_accounting_summary, ja_task,
+                                                           "ru_nvcsw", "ru_nvcsw", 0), delimiter,
+                             reporting_get_ulong_usage_sum(usage_list, reported_list, do_accounting_summary, ja_task,
+                                                           "ru_nivcsw", "ru_nivcsw", 0), delimiter,
+                             none_string(lGetString(job, JB_project)), delimiter,
+                             none_string(lGetString(job, JB_department)), delimiter,
+                             none_string(lGetString(ja_task, JAT_granted_pe)), delimiter,
+                             sge_granted_slots(lGetList(ja_task, JAT_granted_destin_identifier_list)), delimiter,
+                             job_is_array(job) ? lGetUlong(ja_task, JAT_task_number) : 0, delimiter,
+                             reporting_get_double_usage_sum(usage_list, reported_list, do_accounting_summary, ja_task,
+                                                            intermediate ? USAGE_ATTR_CPU : USAGE_ATTR_CPU_ACCT,
+                                                            USAGE_ATTR_CPU, 0), delimiter,
+                             reporting_get_double_usage_sum(usage_list, reported_list, do_accounting_summary, ja_task,
+                                                            intermediate ? USAGE_ATTR_MEM : USAGE_ATTR_MEM_ACCT,
+                                                            USAGE_ATTR_MEM, 0), delimiter,
+                             reporting_get_double_usage_sum(usage_list, reported_list, do_accounting_summary, ja_task,
+                                                            intermediate ? USAGE_ATTR_IO : USAGE_ATTR_IO_ACCT,
+                                                            USAGE_ATTR_IO, 0), delimiter,
+                             none_string(category_str), delimiter,
+                             reporting_get_double_usage_sum(usage_list, reported_list, do_accounting_summary, ja_task,
+                                                            intermediate ? USAGE_ATTR_IOW : USAGE_ATTR_IOW_ACCT,
+                                                            USAGE_ATTR_IOW, 0), delimiter,
+                             none_string(pe_task_id), delimiter,
+                             reporting_get_double_usage_sum(usage_list, NULL, do_accounting_summary, ja_task,
+                                                            intermediate ? USAGE_ATTR_MAXVMEM : USAGE_ATTR_MAXVMEM_ACCT,
+                                                            USAGE_ATTR_MAXVMEM, 0), delimiter,
+                             lGetUlong(job, JB_ar), delimiter,
+                             (ar != NULL) ? lGetUlong(ar, AR_submission_time) : 0
+   );
 
    sge_free(&qname);
    sge_free(&hostname);

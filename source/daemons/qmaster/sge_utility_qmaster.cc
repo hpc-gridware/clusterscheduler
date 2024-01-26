@@ -85,33 +85,33 @@
 *     MT-NOTE: attr_mod_procedure() is MT safe 
 *
 *******************************************************************************/
-int attr_mod_procedure( lList **alpp, lListElem *qep, lListElem *new_ep, int nm, char *attr_name, char *variables[])
-{
+int
+attr_mod_procedure(lList **alpp, lListElem *qep, lListElem *new_ep, int nm, char *attr_name, char *variables[]) {
    DENTER(TOP_LAYER);
 
    /* ---- attribute nm */
-   if (lGetPosViaElem(qep, nm, SGE_NO_ABORT)>=0) {
-      const char *s; 
+   if (lGetPosViaElem(qep, nm, SGE_NO_ABORT) >= 0) {
+      const char *s;
       DPRINTF(("got new %s\n", attr_name));
 
       s = lGetString(qep, nm);
       if (s) {
-         char *t; 
-         char *script = (char *)s;
+         char *t;
+         char *script = (char *) s;
 
          /* skip user name */
          if ((t = strpbrk(script, "@ ")) && *t == '@')
             script = &t[1];
 
-         /* force use of absolut pathes */ 
-         if (script[0] != '/' ) { 
+         /* force use of absolut pathes */
+         if (script[0] != '/') {
             ERROR((SGE_EVENT, MSG_GDI_APATH_S, attr_name));
             answer_list_add(alpp, SGE_EVENT, STATUS_EUNKNOWN, ANSWER_QUALITY_ERROR);
             DRETURN(STATUS_EEXIST);
-         } 
-        
+         }
+
          /* ensure that variables are valid */
-         if (replace_params(script, NULL, 0, variables )) {
+         if (replace_params(script, NULL, 0, variables)) {
             ERROR((SGE_EVENT, MSG_GDI_VARS_SS, attr_name, err_msg));
             answer_list_add(alpp, SGE_EVENT, STATUS_EEXIST, ANSWER_QUALITY_ERROR);
             DRETURN(STATUS_EEXIST);
@@ -148,12 +148,12 @@ int attr_mod_procedure( lList **alpp, lListElem *qep, lListElem *new_ep, int nm,
 *     MT-NOTE: attr_mod_zerostr() is MT safe 
 *
 *******************************************************************************/
-int attr_mod_zerostr( lListElem *qep, lListElem *new_ep, int nm, char *attr_name )
-{
+int
+attr_mod_zerostr(lListElem *qep, lListElem *new_ep, int nm, char *attr_name) {
    DENTER(TOP_LAYER);
 
    /* ---- attribute nm */
-   if (lGetPosViaElem(qep, nm, SGE_NO_ABORT)>=0) {
+   if (lGetPosViaElem(qep, nm, SGE_NO_ABORT) >= 0) {
       DPRINTF(("got new %s\n", attr_name));
       lSetString(new_ep, nm, lGetString(qep, nm));
    }
@@ -187,20 +187,20 @@ int attr_mod_zerostr( lListElem *qep, lListElem *new_ep, int nm, char *attr_name
 *     MT-NOTE: attr_mod_str() is MT safe 
 *     
 *******************************************************************************/
-int attr_mod_str(lList **alpp, lListElem *qep, lListElem *new_ep, int nm, char *attr_name)
-{
+int
+attr_mod_str(lList **alpp, lListElem *qep, lListElem *new_ep, int nm, char *attr_name) {
    int dataType;
    int pos;
-  
+
    DENTER(TOP_LAYER);
 
    /* ---- attribute nm */
-   if ((pos=lGetPosViaElem(qep, nm, SGE_NO_ABORT))>=0) {
+   if ((pos = lGetPosViaElem(qep, nm, SGE_NO_ABORT)) >= 0) {
       const char *s;
 
       DPRINTF(("got new %s\n", attr_name));
 
-      dataType = lGetPosType(lGetElemDescr(qep),pos);
+      dataType = lGetPosType(lGetElemDescr(qep), pos);
       switch (dataType) {
          case lStringT:
             if (!(s = lGetString(qep, nm))) {
@@ -251,12 +251,12 @@ int attr_mod_str(lList **alpp, lListElem *qep, lListElem *new_ep, int nm, char *
 *     MT-NOTE: attr_mod_bool() is MT safe 
 *
 *******************************************************************************/
-int attr_mod_bool( lListElem *qep, lListElem *new_ep, int nm, char *attr_name)
-{
+int
+attr_mod_bool(lListElem *qep, lListElem *new_ep, int nm, char *attr_name) {
    DENTER(TOP_LAYER);
 
    /* ---- attribute nm */
-   if (lGetPosViaElem(qep, nm, SGE_NO_ABORT)>=0) {
+   if (lGetPosViaElem(qep, nm, SGE_NO_ABORT) >= 0) {
       DPRINTF(("got new %s\n", attr_name));
       lSetBool(new_ep, nm, lGetBool(qep, nm));
    }
@@ -288,12 +288,11 @@ int attr_mod_bool( lListElem *qep, lListElem *new_ep, int nm, char *attr_name)
 *     MT-NOTE: attr_mod_ulong() is MT safe 
 *    
 *******************************************************************************/
-int attr_mod_ulong(lListElem *qep, lListElem *new_ep, int nm, char *attr_name)
-{
+int attr_mod_ulong(lListElem *qep, lListElem *new_ep, int nm, char *attr_name) {
    DENTER(TOP_LAYER);
 
    /* ---- attribute nm */
-   if (lGetPosViaElem(qep, nm, SGE_NO_ABORT)>=0) {
+   if (lGetPosViaElem(qep, nm, SGE_NO_ABORT) >= 0) {
       DPRINTF(("got new %s\n", attr_name));
       lSetUlong(new_ep, nm, lGetUlong(qep, nm));
    }
@@ -325,12 +324,12 @@ int attr_mod_ulong(lListElem *qep, lListElem *new_ep, int nm, char *attr_name)
 *     MT-NOTE: attr_mod_double() is MT safe 
 *
 *******************************************************************************/
-int attr_mod_double(lListElem *qep, lListElem *new_ep, int nm, char *attr_name)
-{
+int
+attr_mod_double(lListElem *qep, lListElem *new_ep, int nm, char *attr_name) {
    DENTER(TOP_LAYER);
 
    /* ---- attribute nm */
-   if (lGetPosViaElem(qep, nm, SGE_NO_ABORT)>=0) {
+   if (lGetPosViaElem(qep, nm, SGE_NO_ABORT) >= 0) {
       DPRINTF(("got new %s\n", attr_name));
       lSetDouble(new_ep, nm, lGetDouble(qep, nm));
    }
@@ -364,19 +363,19 @@ int attr_mod_double(lListElem *qep, lListElem *new_ep, int nm, char *attr_name)
 *     MT-NOTE: attr_mod_mem_str() is MT safe 
 *
 *******************************************************************************/
-int attr_mod_mem_str(lList **alpp, lListElem *qep, lListElem *new_ep, int nm, char *attr_name)
-{
+int
+attr_mod_mem_str(lList **alpp, lListElem *qep, lListElem *new_ep, int nm, char *attr_name) {
    DENTER(TOP_LAYER);
 
    /* ---- attribute nm */
-   if (lGetPosViaElem(qep, nm, SGE_NO_ABORT)>=0) {
+   if (lGetPosViaElem(qep, nm, SGE_NO_ABORT) >= 0) {
       const char *str;
 
       str = lGetString(qep, nm);
       DPRINTF(("got new %s\n", attr_name));
 
-      if(!parse_ulong_val(NULL, NULL, TYPE_MEM, str, NULL, 0)) {
-         SGE_ADD_MSG_ID(sprintf(SGE_EVENT, MSG_GDI_TYPE_MEM_SS, attr_name, str?str:"(null)"));
+      if (!parse_ulong_val(NULL, NULL, TYPE_MEM, str, NULL, 0)) {
+         SGE_ADD_MSG_ID(sprintf(SGE_EVENT, MSG_GDI_TYPE_MEM_SS, attr_name, str ? str : "(null)"));
          answer_list_add(alpp, SGE_EVENT, STATUS_ESYNTAX, ANSWER_QUALITY_ERROR);
          DRETURN(STATUS_ESYNTAX);
       }
@@ -414,29 +413,29 @@ int attr_mod_mem_str(lList **alpp, lListElem *qep, lListElem *new_ep, int nm, ch
 *     MT-NOTE: attr_mod_time_str() is MT safe 
 *
 *******************************************************************************/
-int attr_mod_time_str(lList **alpp, lListElem *qep, lListElem *new_ep, int nm, char *attr_name, int enable_infinity)
-{
+int
+attr_mod_time_str(lList **alpp, lListElem *qep, lListElem *new_ep, int nm, char *attr_name, int enable_infinity) {
    DENTER(TOP_LAYER);
 
    /* ---- attribute nm */
-   if (lGetPosViaElem(qep, nm, SGE_NO_ABORT)>=0) {
-      const char *str; 
+   if (lGetPosViaElem(qep, nm, SGE_NO_ABORT) >= 0) {
+      const char *str;
 
       str = lGetString(qep, nm);
       DPRINTF(("got new %s\n", attr_name));
 
-      if (str != NULL ) {
+      if (str != NULL) {
          /* don't allow infinity for these parameters */
-         if ((strcasecmp(str, "infinity") == 0) && (enable_infinity == 0)) { 
-              DPRINTF(("ERROR! Infinity value for \"%s\"\n",attr_name));
-              SGE_ADD_MSG_ID(sprintf(SGE_EVENT, MSG_GDI_SIG_DIGIT_SS, attr_name, str));
-              answer_list_add(alpp, SGE_EVENT, STATUS_ESYNTAX, ANSWER_QUALITY_ERROR);
-              DRETURN(STATUS_ESYNTAX);
+         if ((strcasecmp(str, "infinity") == 0) && (enable_infinity == 0)) {
+            DPRINTF(("ERROR! Infinity value for \"%s\"\n", attr_name));
+            SGE_ADD_MSG_ID(sprintf(SGE_EVENT, MSG_GDI_SIG_DIGIT_SS, attr_name, str));
+            answer_list_add(alpp, SGE_EVENT, STATUS_ESYNTAX, ANSWER_QUALITY_ERROR);
+            DRETURN(STATUS_ESYNTAX);
          }
       }
 
-      if(!parse_ulong_val(NULL, NULL, TYPE_TIM, str, NULL, 0)) {
-         SGE_ADD_MSG_ID(sprintf(SGE_EVENT, MSG_GDI_TYPE_TIME_SS, attr_name, str?str:"(null)"));
+      if (!parse_ulong_val(NULL, NULL, TYPE_TIM, str, NULL, 0)) {
+         SGE_ADD_MSG_ID(sprintf(SGE_EVENT, MSG_GDI_TYPE_TIME_SS, attr_name, str ? str : "(null)"));
          answer_list_add(alpp, SGE_EVENT, STATUS_ESYNTAX, ANSWER_QUALITY_ERROR);
          DRETURN(STATUS_ESYNTAX);
       }
@@ -482,12 +481,10 @@ int attr_mod_time_str(lList **alpp, lListElem *qep, lListElem *new_ep, int nm, c
 *     MT-NOTE: attr_mod_sub_list() is MT safe 
 *
 *******************************************************************************/
-bool attr_mod_sub_list(lList **alpp, lListElem *this_elem, int this_elem_name,
-                  int this_elem_primary_key, const lListElem *delta_elem,
-                  int sub_command, const char *sub_list_name,
-                  const char *object_name,
-                  int no_info, bool *changed)
-{
+bool
+attr_mod_sub_list(lList **alpp, lListElem *this_elem, int this_elem_name, int this_elem_primary_key,
+                  const lListElem *delta_elem, int sub_command, const char *sub_list_name, const char *object_name,
+                  int no_info, bool *changed) {
    bool ret = true;
    bool did_changes = false;
 
@@ -538,7 +535,7 @@ bool attr_mod_sub_list(lList **alpp, lListElem *this_elem, int this_elem_name,
 
                if (ret &&
                    (((type == lStringT) && strcmp(rstring, fstring) == 0) ||
-                   ((type == lHostT) && sge_hostcmp(rstring, fstring) == 0))) {
+                    ((type == lHostT) && sge_hostcmp(rstring, fstring) == 0))) {
                   lListElem *new_sub_elem;
                   lListElem *old_sub_elem;
 
@@ -594,9 +591,9 @@ bool attr_mod_sub_list(lList **alpp, lListElem *this_elem, int this_elem_name,
 
          /* now we process elements which have not been found in the first step above */
          if (ret && (SGE_GDI_IS_SUBCOMMAND_SET(sub_command, SGE_GDI_CHANGE) ||
-             SGE_GDI_IS_SUBCOMMAND_SET(sub_command, SGE_GDI_APPEND) ||
-             SGE_GDI_IS_SUBCOMMAND_SET(sub_command, SGE_GDI_REMOVE))) {
-             next_reduced_element = lFirstRW(reduced_sublist);
+                     SGE_GDI_IS_SUBCOMMAND_SET(sub_command, SGE_GDI_APPEND) ||
+                     SGE_GDI_IS_SUBCOMMAND_SET(sub_command, SGE_GDI_REMOVE))) {
+            next_reduced_element = lFirstRW(reduced_sublist);
 
             while ((reduced_element = next_reduced_element)) {
                int pos, type;
@@ -623,13 +620,13 @@ bool attr_mod_sub_list(lList **alpp, lListElem *this_elem, int this_elem_name,
                if (ret) {
                   if (!no_info && SGE_GDI_IS_SUBCOMMAND_SET(sub_command, SGE_GDI_REMOVE)) {
                      INFO((SGE_EVENT, SFQ" does not exist in "SFQ" of "SFQ"\n",
-                           rstring, sub_list_name, object_name));
+                             rstring, sub_list_name, object_name));
                      answer_list_add(alpp, SGE_EVENT, STATUS_OK, ANSWER_QUALITY_INFO);
                   } else {
                      if (!full_sublist) {
                         if (!no_info && SGE_GDI_IS_SUBCOMMAND_SET(sub_command, SGE_GDI_CHANGE)) {
                            INFO((SGE_EVENT, SFQ" of "SFQ" is empty - Adding new element(s).\n",
-                                 sub_list_name, object_name));
+                                   sub_list_name, object_name));
                            answer_list_add(alpp, SGE_EVENT, STATUS_OK, ANSWER_QUALITY_INFO);
                         }
                         lSetList(this_elem, this_elem_name, lCopyList("", lGetList(delta_elem, this_elem_name)));
@@ -640,7 +637,7 @@ bool attr_mod_sub_list(lList **alpp, lListElem *this_elem, int this_elem_name,
                      } else {
                         if (!no_info && SGE_GDI_IS_SUBCOMMAND_SET(sub_command, SGE_GDI_CHANGE)) {
                            INFO((SGE_EVENT, "Unable to find "SFQ" in "SFQ" of "SFQ" - Adding new element.\n",
-                                 rstring, sub_list_name, object_name));
+                                   rstring, sub_list_name, object_name));
                            answer_list_add(alpp, SGE_EVENT, STATUS_OK, ANSWER_QUALITY_INFO);
                         }
                         new_sub_elem = lDechainElem(reduced_sublist, reduced_element);
@@ -727,18 +724,14 @@ bool attr_mod_sub_list(lList **alpp, lListElem *this_elem, int this_elem_name,
 *     MT-NOTE: cqueue_mod_sublist() is MT safe 
 *******************************************************************************/
 bool
-cqueue_mod_sublist(lListElem *this_elem, lList **answer_list,
-                   lListElem *reduced_elem, int sub_command,
-                   int attribute_name, int sublist_host_name,
-                   int sublist_value_name, int subsub_key,
-                   const char *attribute_name_str, 
-                   const char *object_name_str) 
-{
+cqueue_mod_sublist(lListElem *this_elem, lList **answer_list, lListElem *reduced_elem, int sub_command,
+                   int attribute_name, int sublist_host_name, int sublist_value_name, int subsub_key,
+                   const char *attribute_name_str, const char *object_name_str) {
    bool ret = true;
    int pos;
 
    DENTER(CQUEUE_LAYER);
- 
+
    pos = lGetPosViaElem(reduced_elem, attribute_name, SGE_NO_ABORT);
    if (pos >= 0) {
       lList *mod_list = lGetPosList(reduced_elem, pos);
@@ -756,7 +749,7 @@ cqueue_mod_sublist(lListElem *this_elem, lList **answer_list,
          while ((elem = next_elem)) {
             const char *name = lGetHost(elem, sublist_host_name);
 
-            next_elem = lNextRW(elem); 
+            next_elem = lNextRW(elem);
             mod_elem = lGetElemHostRW(mod_list, sublist_host_name, name);
             if (mod_elem == NULL) {
                DPRINTF(("Removing attribute list for "SFQ"\n", name));
@@ -771,9 +764,9 @@ cqueue_mod_sublist(lListElem *this_elem, lList **answer_list,
        */
       for_each_rw(mod_elem, mod_list) {
          const char *name = lGetHost(mod_elem, sublist_host_name);
-         char resolved_name[CL_MAXHOSTLEN+1];
+         char resolved_name[CL_MAXHOSTLEN + 1];
          lListElem *org_elem = NULL;
-         
+
          if (name == NULL) {
             ERROR((SGE_EVENT, MSG_SGETEXT_INVALIDHOST_S, ""));
             answer_list_add(answer_list, SGE_EVENT,
@@ -799,7 +792,7 @@ cqueue_mod_sublist(lListElem *this_elem, lList **answer_list,
                 */
             }
          }
-         
+
          org_elem = lGetElemHostRW(org_list, sublist_host_name, name);
 
          /*
@@ -809,7 +802,7 @@ cqueue_mod_sublist(lListElem *this_elem, lList **answer_list,
             if (org_list == NULL) {
                org_list = lCreateList("", lGetElemDescr(mod_elem));
                lSetList(this_elem, attribute_name, org_list);
-            } 
+            }
             org_elem = lCreateElem(lGetElemDescr(mod_elem));
             lSetHost(org_elem, sublist_host_name, name);
             lAppendElem(org_list, org_elem);
@@ -832,14 +825,8 @@ cqueue_mod_sublist(lListElem *this_elem, lList **answer_list,
    DRETURN(ret);
 }
 
-int multiple_occurances(
-lList **alpp,
-const lList *lp1,
-const lList *lp2,
-int nm,
-const char *name,
-const char *obj_name 
-) {
+int
+multiple_occurances(lList **alpp, const lList *lp1, const lList *lp2, int nm, const char *name, const char *obj_name) {
    const lListElem *ep1;
    const char *s;
 
@@ -852,8 +839,8 @@ const char *obj_name
    for_each_ep(ep1, lp1) {
       s = lGetString(ep1, nm);
       if (lGetElemStr(lp2, nm, s)) {
-         SGE_ADD_MSG_ID(sprintf(SGE_EVENT, MSG_GDI_MULTIPLE_OCCUR_SSSS, 
-                  (nm==US_name)?MSG_OBJ_USERSET:MSG_JOB_PROJECT, s, obj_name, name));
+         SGE_ADD_MSG_ID(sprintf(SGE_EVENT, MSG_GDI_MULTIPLE_OCCUR_SSSS,
+                                (nm == US_name) ? MSG_OBJ_USERSET : MSG_JOB_PROJECT, s, obj_name, name));
          answer_list_add(alpp, SGE_EVENT, STATUS_ESYNTAX, ANSWER_QUALITY_ERROR);
          DRETURN(-1);
       }
@@ -862,13 +849,11 @@ const char *obj_name
    DRETURN(0);
 }
 
-void normalize_sublist(
-lListElem *ep,
-int nm 
-) {
+void
+normalize_sublist(lListElem *ep, int nm) {
    const lList *lp;
 
-   if ((lp=lGetList(ep, nm)) && lGetNumberOfElem(lp)==0)
+   if ((lp = lGetList(ep, nm)) && lGetNumberOfElem(lp) == 0)
       lSetList(ep, nm, NULL);
 }
 

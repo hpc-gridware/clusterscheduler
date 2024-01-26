@@ -69,8 +69,7 @@
 #include "sge_job_qmaster.h"
 
 static void
-sge_timer_cleanup_monitor(monitoring_t *monitor)
-{
+sge_timer_cleanup_monitor(monitoring_t *monitor) {
    DENTER(TOP_LAYER);
    sge_monitor_free(monitor);
    DRETURN_VOID;
@@ -86,47 +85,43 @@ sge_timer_cleanup_monitor(monitoring_t *monitor)
 *  FUNCTION
 *    registers event handlers
 *
-*  NOTES
-*     MT-NOTE: sge_register_event_handler() is MT safe 
-*
 *  SEE ALSO
 *     sge_thread_timer/sge_timer_start_periodic_tasks
 *******************************************************************************/
 void
-sge_timer_register_event_handler(void)
-{
+sge_timer_register_event_handler(void) {
    DENTER(TOP_LAYER);
-   
+
    /* 
     * recurring events 
     */
 
    te_register_event_handler(sge_store_job_number, TYPE_JOB_NUMBER_EVENT);
-      
+
    te_register_event_handler(sge_store_ar_id, TYPE_AR_ID_EVENT);
 
    te_register_event_handler(sge_load_value_cleanup_handler, TYPE_LOAD_VALUE_CLEANUP_EVENT);
-         
+
    te_register_event_handler(sge_zombie_job_cleanup_handler, TYPE_ZOMBIE_JOB_CLEANUP_EVENT);
-          
-   te_register_event_handler(sge_automatic_user_cleanup_handler, TYPE_AUTOMATIC_USER_CLEANUP_EVENT);      
+
+   te_register_event_handler(sge_automatic_user_cleanup_handler, TYPE_AUTOMATIC_USER_CLEANUP_EVENT);
 
    te_register_event_handler(sge_security_event_handler, TYPE_SECURITY_EVENT);
 
    /* 
     * one time events
-    */ 
+    */
 
    te_register_event_handler(sge_job_resend_event_handler, TYPE_JOB_RESEND_EVENT);
 
    te_register_event_handler(sge_job_enfoce_limit_handler, TYPE_ENFORCE_LIMIT_EVENT);
-    
+
    te_register_event_handler(sge_calendar_event_handler, TYPE_CALENDAR_EVENT);
 
    te_register_event_handler(resend_signal_event, TYPE_SIGNAL_RESEND_EVENT);
-    
+
    te_register_event_handler(reschedule_unknown_event, TYPE_RESCHEDULE_UNKNOWN_EVENT);
-    
+
    te_register_event_handler(sge_ar_event_handler, TYPE_AR_EVENT);
 
 
@@ -151,11 +146,8 @@ sge_timer_register_event_handler(void)
 *     void - none 
 *
 *  NOTES
-*     MT-NOTE: sge_start_periodic_tasks() is not MT safe 
-*
 *******************************************************************************/
-void sge_timer_start_periodic_tasks(void)
-{
+void sge_timer_start_periodic_tasks(void) {
    te_event_t ev = NULL;
 
    DENTER(TOP_LAYER);
@@ -186,12 +178,11 @@ void sge_timer_start_periodic_tasks(void)
    te_free_event(&ev);
 
    DRETURN_VOID;
-} 
+}
 
-void 
-sge_timer_initialize(sge_gdi_ctx_class_t *ctx, monitoring_t *monitor)
-{
-   cl_thread_settings_t* dummy_thread_p = NULL;
+void
+sge_timer_initialize(sge_gdi_ctx_class_t *ctx, monitoring_t *monitor) {
+   cl_thread_settings_t *dummy_thread_p = NULL;
    lList *answer_list = NULL;
    dstring thread_name = DSTRING_INIT;
 
@@ -223,17 +214,15 @@ sge_timer_initialize(sge_gdi_ctx_class_t *ctx, monitoring_t *monitor)
 
    sge_dstring_sprintf(&thread_name, "%s%03d", threadnames[TIMER_THREAD], 0);
    cl_thread_list_setup(&(Main_Control.timer_thread_pool), "timer thread pool");
-   cl_thread_list_create_thread(Main_Control.timer_thread_pool, &dummy_thread_p,
-                                cl_com_get_log_list(), sge_dstring_get_string(&thread_name), 0, 
-                                sge_timer_main, NULL, NULL, CL_TT_TIMER);
+   cl_thread_list_create_thread(Main_Control.timer_thread_pool, &dummy_thread_p, cl_com_get_log_list(),
+                                sge_dstring_get_string(&thread_name), 0, sge_timer_main, NULL, NULL, CL_TT_TIMER);
    sge_dstring_free(&thread_name);
    DRETURN_VOID;
 }
 
 void
-sge_timer_terminate(void)
-{
-   cl_thread_settings_t* thread = NULL;
+sge_timer_terminate(void) {
+   cl_thread_settings_t *thread = NULL;
 
    DENTER(TOP_LAYER);
 
@@ -243,7 +232,7 @@ sge_timer_terminate(void)
       cl_thread_list_delete_thread(Main_Control.timer_thread_pool, thread);
 
       thread = cl_thread_list_get_first_thread(Main_Control.timer_thread_pool);
-   }  
+   }
    DPRINTF(("all "SFN" threads terminated\n", threadnames[TIMER_THREAD]));
 
    te_shutdown();
@@ -299,10 +288,9 @@ sge_timer_terminate(void)
 *
 *******************************************************************************/
 void *
-sge_timer_main(void *arg)
-{
+sge_timer_main(void *arg) {
    bool do_endlessly = true;
-   cl_thread_settings_t *thread_config = (cl_thread_settings_t*)arg;
+   cl_thread_settings_t *thread_config = (cl_thread_settings_t *) arg;
    sge_gdi_ctx_class_t *ctx = NULL;
    monitoring_t monitor;
    monitoring_t *p_monitor = &monitor;
@@ -322,18 +310,18 @@ sge_timer_main(void *arg)
    /* register at profiling module */
    set_thread_name(pthread_self(), "TEvent Thread");
    conf_update_thread_profiling("TEvent Thread");
- 
+
    while (do_endlessly) {
       int execute = 0;
 
       thread_start_stop_profiling();
 
       sge_mutex_lock("event_control_mutex", __func__, __LINE__, &Event_Control.mutex);
-      
+
       te_check_time(time(NULL));
-      
+
       Event_Control.last = time(NULL);
-      
+
       MONITOR_IDLE_TIME(te_wait_empty(), p_monitor, mconf_get_monitor_time(),
                         mconf_is_monitor_message());
       MONITOR_MESSAGES(p_monitor);
@@ -346,16 +334,15 @@ sge_timer_main(void *arg)
       now = Event_Control.next = time(NULL);
 
       if (te->when > now) {
-         
+
          Event_Control.next = te->when;
          Event_Control.deleted = false;
          MONITOR_IDLE_TIME(te_wait_next(te, now), p_monitor, mconf_get_monitor_time(),
                            mconf_is_monitor_message());
 
-         if ((Event_Control.next < te->when) || (Event_Control.deleted == true))
-         {
+         if ((Event_Control.next < te->when) || (Event_Control.deleted == true)) {
             DPRINTF(("%s: event list changed - next:"sge_u32" --> start over\n", __func__,
-                     Event_Control.next));
+                    Event_Control.next));
 
             sge_mutex_unlock("event_control_mutex", __func__, __LINE__, &Event_Control.mutex);
 
@@ -381,10 +368,10 @@ sge_timer_main(void *arg)
 
       /* pthread cancelation point */
       do {
-         pthread_cleanup_push((void (*)(void *))sge_timer_cleanup_monitor,
-                              (void *)p_monitor);
-         cl_thread_func_testcancel(thread_config);
-         pthread_cleanup_pop(execute); 
+         pthread_cleanup_push((void (*)(void *)) sge_timer_cleanup_monitor,
+                              (void *) p_monitor);
+            cl_thread_func_testcancel(thread_config);
+         pthread_cleanup_pop(execute);
          if (sge_thread_has_shutdown_started()) {
             DPRINTF(("waiting for termination\n"));
             sleep(1);

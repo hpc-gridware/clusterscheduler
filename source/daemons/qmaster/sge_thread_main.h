@@ -56,22 +56,22 @@ typedef struct {
    cl_raw_list_t *event_master_thread_pool;
 
    /* Scheduler thread */
-   cl_raw_list_t *scheduler_thread_pool; 
+   cl_raw_list_t *scheduler_thread_pool;
 
-   /* JVM thread */ 
-   cl_raw_list_t *jvm_thread_pool;        
+   /* JVM thread */
+   cl_raw_list_t *jvm_thread_pool;
 
-   /* intern GDI test thread */ 
-   cl_raw_list_t *test_thread_pool;        
+   /* intern GDI test thread */
+   cl_raw_list_t *test_thread_pool;
 } main_control_t;
 
 extern main_control_t Main_Control;
 
-int 
+int
 sge_qmaster_shutdown_via_signal_thread(int i);
 
 int
-sge_qmaster_get_exit_state(void); 
+sge_qmaster_get_exit_state(void);
 
 void
 sge_qmaster_set_exit_state(int new_state);

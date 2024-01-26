@@ -42,21 +42,17 @@
 #include "sge_task_depend.h"
 #include "sge_job_qmaster.h"
 
-static u_long32 task_depend_div_floor(u_long32 a, u_long32 b)
-{
+static u_long32 task_depend_div_floor(u_long32 a, u_long32 b) {
    return a / b;
 }
 
 
-static u_long32 nearest_index_in_A(u_long32 i, u_long32 t0, u_long32 sa) 
-{
+static u_long32 nearest_index_in_A(u_long32 i, u_long32 t0, u_long32 sa) {
    return t0 + task_depend_div_floor(i - t0, sa) * sa;
 }
 
 
-static void task_depend(u_long32 *lb, u_long32 *ub, u_long32 t0, 
-                        u_long32 sa, u_long32 sb, u_long32 step_b_id)
-{
+static void task_depend(u_long32 *lb, u_long32 *ub, u_long32 t0, u_long32 sa, u_long32 sb, u_long32 step_b_id) {
    /* simulate the equation i = t0 + n * sb, n in {0, 1, ..., N-1}. */
 
    u_long32 i = step_b_id;
@@ -105,17 +101,16 @@ static void task_depend(u_long32 *lb, u_long32 *ub, u_long32 t0,
 *     MT-NOTE: sge_task_depend_get_range() is MT safe
 *
 ******************************************************************************/
-int sge_task_depend_get_range(lListElem **range, lList **alpp, 
-                              const lListElem *pre_jep, 
-                              const lListElem *suc_jep, u_long32 task_id) 
-{
+int
+sge_task_depend_get_range(lListElem **range, lList **alpp, const lListElem *pre_jep, const lListElem *suc_jep,
+                          u_long32 task_id) {
    u_long32 a0, a1, b0, b1, sa, sb, rmin, rmax;
 
    DENTER(TOP_LAYER);
 
-   if (range == NULL || 
-         pre_jep == NULL || 
-         suc_jep == NULL) {
+   if (range == NULL ||
+       pre_jep == NULL ||
+       suc_jep == NULL) {
       DRETURN(STATUS_EUNKNOWN);
    }
 
@@ -156,8 +151,8 @@ int sge_task_depend_get_range(lListElem **range, lList **alpp,
 /*****************************************************************************
  Tasks matching this profile are considered finished for dependence purposes
  *****************************************************************************/
-static bool task_depend_is_finished(const lListElem *job, u_long32 task_id)
-{
+static bool
+task_depend_is_finished(const lListElem *job, u_long32 task_id) {
    const lListElem *ja_task = NULL;
 
    DENTER(TOP_LAYER);
@@ -174,7 +169,7 @@ static bool task_depend_is_finished(const lListElem *job, u_long32 task_id)
       }
       for_each_ep(task, lGetList(ja_task, JAT_task_list)) {
          if (lGetUlong(lFirst(lGetList(task, JB_ja_tasks)), JAT_status)
-               !=JFINISHED) {
+             != JFINISHED) {
             DRETURN(false);
          }
       }
@@ -223,8 +218,8 @@ static bool task_depend_is_finished(const lListElem *job, u_long32 task_id)
 *     MT-NOTE: Is not thread safe. Reads from the global Job-List
 *
 ******************************************************************************/
-bool sge_task_depend_update(lListElem *jep, lList **alpp, u_long32 task_id)
-{
+bool
+sge_task_depend_update(lListElem *jep, lList **alpp, u_long32 task_id) {
    const lListElem *pre = NULL;  /* JRE_Type */
    u_long32 hold_state, new_state;
    int Depend = 0;
@@ -334,8 +329,8 @@ bool sge_task_depend_update(lListElem *jep, lList **alpp, u_long32 task_id)
 *     MT-NOTE: sge_task_depend_init() is not MT safe (calls MT unsafe method)
 *
 ******************************************************************************/
-bool sge_task_depend_init(lListElem *jep, lList **alpp)
-{
+bool
+sge_task_depend_init(lListElem *jep, lList **alpp) {
    bool ret = false;
 
    DENTER(TOP_LAYER);
@@ -347,7 +342,7 @@ bool sge_task_depend_init(lListElem *jep, lList **alpp)
 
    if (lGetNumberOfElem(lGetList(jep, JB_ja_ad_request_list)) > 0) {
       if (lGetNumberOfElem(lGetList(jep, JB_ja_ad_predecessor_list)) == 0) {
-         /* fast case where all predecessors are "gone" */         
+         /* fast case where all predecessors are "gone" */
          if (sge_task_depend_flush(jep, alpp))
             ret = true;
       } else {
@@ -359,7 +354,7 @@ bool sge_task_depend_init(lListElem *jep, lList **alpp)
          }
       }
    }
-   
+
    DRETURN(ret);
 }
 
@@ -397,8 +392,8 @@ bool sge_task_depend_init(lListElem *jep, lList **alpp)
 *     MT-NOTE: sge_task_depend_flush() is MT safe
 *
 ******************************************************************************/
-bool sge_task_depend_flush(lListElem *jep, lList **alpp)
-{
+bool
+sge_task_depend_flush(lListElem *jep, lList **alpp) {
    bool ret = false;
 
    DENTER(TOP_LAYER);
@@ -420,7 +415,7 @@ bool sge_task_depend_flush(lListElem *jep, lList **alpp)
          for_each_ep(range, a_h_ids) {
             u_long32 rmin, rmax, rstep, hold_state;
             range_get_all_ids(range, &rmin, &rmax, &rstep);
-            for ( ; rmin <= rmax; rmin += rstep) {
+            for (; rmin <= rmax; rmin += rstep) {
                hold_state = job_get_hold_state(jep, rmin);
                hold_state &= ~MINUS_H_TGT_JA_AD;
                job_set_hold_state(jep, alpp, rmin, hold_state);
@@ -474,9 +469,8 @@ bool sge_task_depend_flush(lListElem *jep, lList **alpp)
 *    sge_task_depend_is_same_range() is MT safe
 *
 ******************************************************************************/
-bool sge_task_depend_is_same_range(const lListElem *pre_jep, 
-                                   const lListElem *suc_jep)
-{
+bool
+sge_task_depend_is_same_range(const lListElem *pre_jep, const lListElem *suc_jep) {
    u_long32 a0, a1, b0, b1, sa, sb;
 
    DENTER(TOP_LAYER);
@@ -486,12 +480,12 @@ bool sge_task_depend_is_same_range(const lListElem *pre_jep,
       DPRINTF(("got NULL pre_jep or suc_jep job argument\n"));
       DRETURN(false);
    }
-   
+
    /* equivalent jobs must be array jobs (-t option) */
    if (!job_is_array(pre_jep) || !job_is_array(suc_jep)) {
       DRETURN(false);
    }
-   
+
    /* fetch job submit ranges */
    job_get_submit_task_ids(pre_jep, &a0, &a1, &sa);
    job_get_submit_task_ids(suc_jep, &b0, &b1, &sb);

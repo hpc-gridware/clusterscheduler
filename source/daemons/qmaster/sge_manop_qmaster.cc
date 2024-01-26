@@ -58,15 +58,10 @@
    if the invoking process is the qmaster 
    the added manop list is spooled in the MANAGER_FILE/OPERATOR_FILE
 
+   target may be SGE_UM_LIST or SGE_UO_LIST
 */
-int sge_add_manop(
-sge_gdi_ctx_class_t *ctx,
-lListElem *ep,
-lList **alpp,
-char *ruser,
-char *rhost,
-u_long32 target  /* may be SGE_UM_LIST or SGE_UO_LIST */
-) {
+int
+sge_add_manop(sge_gdi_ctx_class_t *ctx, lListElem *ep, lList **alpp, char *ruser, char *rhost, u_long32 target) {
    const char *manop_name;
    const char *object_name;
    lList **lpp = NULL;
@@ -74,40 +69,40 @@ u_long32 target  /* may be SGE_UM_LIST or SGE_UO_LIST */
    int pos;
    int key;
    lDescr *descr = NULL;
-   ev_event eve = sgeE_EVENTSIZE; 
+   ev_event eve = sgeE_EVENTSIZE;
 
    DENTER(TOP_LAYER);
 
-   if ( !ep || !ruser || !rhost ) {
+   if (!ep || !ruser || !rhost) {
       CRITICAL((SGE_EVENT, MSG_SGETEXT_NULLPTRPASSED_S, __func__));
       answer_list_add(alpp, SGE_EVENT, STATUS_EUNKNOWN, ANSWER_QUALITY_ERROR);
       DRETURN(STATUS_EUNKNOWN);
    }
 
    switch (target) {
-   case SGE_UM_LIST:
-      lpp = object_type_get_master_list_rw(SGE_TYPE_MANAGER);
-      object_name = MSG_OBJ_MANAGER;
-      key = UM_name;
-      descr = UM_Type;
-      eve = sgeE_MANAGER_ADD;
-      break;
-   case SGE_UO_LIST:
-      lpp = object_type_get_master_list_rw(SGE_TYPE_OPERATOR);
-      object_name = MSG_OBJ_OPERATOR;
-      key = UO_name;
-      descr = UO_Type;
-      eve = sgeE_OPERATOR_ADD;
-      break;
-   default :
-      DPRINTF(("unknown target passed to %s\n", __func__));
-      DRETURN(STATUS_EUNKNOWN);
+      case SGE_UM_LIST:
+         lpp = object_type_get_master_list_rw(SGE_TYPE_MANAGER);
+         object_name = MSG_OBJ_MANAGER;
+         key = UM_name;
+         descr = UM_Type;
+         eve = sgeE_MANAGER_ADD;
+         break;
+      case SGE_UO_LIST:
+         lpp = object_type_get_master_list_rw(SGE_TYPE_OPERATOR);
+         object_name = MSG_OBJ_OPERATOR;
+         key = UO_name;
+         descr = UO_Type;
+         eve = sgeE_OPERATOR_ADD;
+         break;
+      default :
+         DPRINTF(("unknown target passed to %s\n", __func__));
+         DRETURN(STATUS_EUNKNOWN);
    }
 
    /* ep is no acl element, if ep has no UM_name/UO_name */
    if ((pos = lGetPosViaElem(ep, key, SGE_NO_ABORT)) < 0) {
       CRITICAL((SGE_EVENT, MSG_SGETEXT_MISSINGCULLFIELD_SS,
-            lNm2Str(key), __func__));
+              lNm2Str(key), __func__));
       answer_list_add(alpp, SGE_EVENT, STATUS_EUNKNOWN, ANSWER_QUALITY_ERROR);
       DRETURN(STATUS_EUNKNOWN);
    }
@@ -129,12 +124,12 @@ u_long32 target  /* may be SGE_UM_LIST or SGE_UO_LIST */
    added = lAddElemStr(lpp, key, manop_name, descr);
 
    /* update on file */
-   if(!sge_event_spool(ctx, alpp, 0, eve, 
-                       0, 0, manop_name, NULL, NULL,
-                       added, NULL, NULL, true, true)) {
+   if (!sge_event_spool(ctx, alpp, 0, eve,
+                        0, 0, manop_name, NULL, NULL,
+                        added, NULL, NULL, true, true)) {
       ERROR((SGE_EVENT, MSG_CANTSPOOL_SS, object_name, manop_name));
       answer_list_add(alpp, SGE_EVENT, STATUS_EDISK, ANSWER_QUALITY_ERROR);
-   
+
       /* remove element from list */
       lRemoveElem(*lpp, &added);
 
@@ -142,7 +137,7 @@ u_long32 target  /* may be SGE_UM_LIST or SGE_UO_LIST */
    }
 
    INFO((SGE_EVENT, MSG_SGETEXT_ADDEDTOLIST_SSSS,
-            ruser, rhost, manop_name, object_name));
+           ruser, rhost, manop_name, object_name));
    answer_list_add(alpp, SGE_EVENT, STATUS_OK, ANSWER_QUALITY_INFO);
    DRETURN(STATUS_OK);
 }
@@ -173,8 +168,8 @@ u_long32 target  /* may be SGE_UM_LIST or SGE_UO_LIST */
 *  NOTES
 *     MT-NOTE: sge_del_manop() is MT safe - if we hold the global lock.
 *******************************************************************************/
-int sge_del_manop(sge_gdi_ctx_class_t *ctx, lListElem *ep, lList **alpp, char *ruser, char *rhost, u_long32 target)
-{
+int
+sge_del_manop(sge_gdi_ctx_class_t *ctx, lListElem *ep, lList **alpp, char *ruser, char *rhost, u_long32 target) {
    lListElem *found;
    int pos;
    const char *manop_name;
@@ -225,7 +220,7 @@ int sge_del_manop(sge_gdi_ctx_class_t *ctx, lListElem *ep, lList **alpp, char *r
 
    /* prevent removing of root from man/op-list */
    if (strcmp(manop_name, "root") == 0) {
-      ERROR((SGE_EVENT, MSG_SGETEXT_MAY_NOT_REMOVE_USER_FROM_LIST_SS, "root", object_name));  
+      ERROR((SGE_EVENT, MSG_SGETEXT_MAY_NOT_REMOVE_USER_FROM_LIST_SS, "root", object_name));
       answer_list_add(alpp, SGE_EVENT, STATUS_EEXIST, ANSWER_QUALITY_ERROR);
       DRETURN(STATUS_EEXIST);
    }
@@ -233,7 +228,7 @@ int sge_del_manop(sge_gdi_ctx_class_t *ctx, lListElem *ep, lList **alpp, char *r
    /* prevent removing the admin user from man/op-list */
    if (strcmp(manop_name, ctx->get_admin_user(ctx)) == 0) {
       ERROR((SGE_EVENT, MSG_SGETEXT_MAY_NOT_REMOVE_USER_FROM_LIST_SS,
-             ctx->get_admin_user(ctx), object_name));  
+              ctx->get_admin_user(ctx), object_name));
       answer_list_add(alpp, SGE_EVENT, STATUS_EEXIST, ANSWER_QUALITY_ERROR);
       DRETURN(STATUS_EEXIST);
    }
@@ -244,7 +239,7 @@ int sge_del_manop(sge_gdi_ctx_class_t *ctx, lListElem *ep, lList **alpp, char *r
       answer_list_add(alpp, SGE_EVENT, STATUS_EEXIST, ANSWER_QUALITY_ERROR);
       DRETURN(STATUS_EEXIST);
    }
-   
+
    lDechainElem(*lpp, found);
 
    /* update on file */
@@ -253,7 +248,7 @@ int sge_del_manop(sge_gdi_ctx_class_t *ctx, lListElem *ep, lList **alpp, char *r
                         NULL, NULL, NULL, true, true)) {
       ERROR((SGE_EVENT, MSG_CANTSPOOL_SS, object_name, manop_name));
       answer_list_add(alpp, SGE_EVENT, STATUS_EDISK, ANSWER_QUALITY_ERROR);
-   
+
       /* chain in again */
       lAppendElem(*lpp, found);
 

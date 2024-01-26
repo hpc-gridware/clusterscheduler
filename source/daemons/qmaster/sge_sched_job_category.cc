@@ -94,7 +94,7 @@
 static lList *CATEGORY_LIST = NULL;   /* Category list, which contains the categories referenced
                                        * in the job structure. It is used for the resource matching 
                                        * type = CT_Type
-                                       */  
+                                       */
 static lList *CS_CATEGORY_LIST = NULL;/* Category list, which contains the categories for the
                                        * category scheduler. The categories are not referenced in
                                        * the job and only used at the beginning, before a scheduling
@@ -104,26 +104,10 @@ static lList *CS_CATEGORY_LIST = NULL;/* Category list, which contains the categ
 
 static bool reb_cat = true;
 
-static bool is_job_pending(lListElem *job); 
+static bool is_job_pending(lListElem *job);
 
 /*-------------------------------------------------------------------------*/
 
-void sge_print_categories(void)
-{
-   const lListElem *cat;
-
-   DENTER(TOP_LAYER);
-
-   for_each_ep(cat, CATEGORY_LIST) {
-      DPRINTF(("PTR: %p CAT: %s REJECTED: "sge_u32" REFCOUNT: "sge_u32"\n", 
-         cat,
-         lGetString(cat, CT_str), 
-         lGetUlong(cat, CT_rejected), 
-         lGetUlong(cat, CT_refcount))); 
-   }
-
-   DRETURN_VOID;
-}
 /*-------------------------------------------------------------------------*/
 /*    add jobs' category to the global category list, if it doesn't        */
 /*    already exist, and reference the category in the job element         */
@@ -133,8 +117,8 @@ void sge_print_categories(void)
 /*                                                                         */
 /* SG: TODO: split this into seperate functions                            */
 /*-------------------------------------------------------------------------*/
-int sge_add_job_category(lListElem *job, const lList *acl_list, const lList *prj_list, const lList *rqs_list)
-{
+int
+sge_add_job_category(lListElem *job, const lList *acl_list, const lList *prj_list, const lList *rqs_list) {
 
    lListElem *cat = NULL;
    const char *cstr = NULL;
@@ -144,11 +128,11 @@ int sge_add_job_category(lListElem *job, const lList *acl_list, const lList *prj
    bool did_project;
 
    DENTER(TOP_LAYER);
-  
+
    /* First part:
       Builds the category for the resource matching
-   */   
-   
+   */
+
    sge_build_job_category_dstring(&category_str, job, acl_list, prj_list, &did_project, rqs_list);
 
    if (sge_dstring_strlen(&category_str) == 0) {
@@ -164,7 +148,7 @@ int sge_add_job_category(lListElem *job, const lList *acl_list, const lList *prj
    }
 
    if (cat == NULL) {
-       cat = lAddElemStr(&CATEGORY_LIST, CT_str, cstr, CT_Type);
+      cat = lAddElemStr(&CATEGORY_LIST, CT_str, cstr, CT_Type);
    }
 
    /* increment ref counter and set reference to this element */
@@ -177,7 +161,7 @@ int sge_add_job_category(lListElem *job, const lList *acl_list, const lList *prj
       resource category for it. All variables are reused.
    */
    if (sconf_is_job_category_filtering()) {
-      lListElem *job_ref = NULL; 
+      lListElem *job_ref = NULL;
       lList *job_ref_list = NULL;
 
       /* 
@@ -185,13 +169,13 @@ int sge_add_job_category(lListElem *job, const lList *acl_list, const lList *prj
       */
       sge_dstring_clear(&category_str);
 
-      
+
       cstr = sge_build_job_cs_category(&category_str, job, cat, did_project);
 
-      cat = NULL; 
-      if (cstr == NULL)  {
+      cat = NULL;
+      if (cstr == NULL) {
          cstr = sge_dstring_copy_string(&category_str, no_requests);
-      }   
+      }
 
       if (CS_CATEGORY_LIST == NULL) {
          CS_CATEGORY_LIST = lCreateList("category_list", SCT_Type);
@@ -200,12 +184,12 @@ int sge_add_job_category(lListElem *job, const lList *acl_list, const lList *prj
       }
 
       if (cat == NULL) {
-          cat = lAddElemStr(&CS_CATEGORY_LIST, SCT_str, cstr, SCT_Type);
-          lSetList(cat, SCT_job_pending_ref, lCreateList("pending_jobs", REF_Type));
-          lSetList(cat, SCT_job_ref, lCreateList("jobs", REF_Type));
+         cat = lAddElemStr(&CS_CATEGORY_LIST, SCT_str, cstr, SCT_Type);
+         lSetList(cat, SCT_job_pending_ref, lCreateList("pending_jobs", REF_Type));
+         lSetList(cat, SCT_job_ref, lCreateList("jobs", REF_Type));
       }
 
-      if (is_job_pending(job))  {
+      if (is_job_pending(job)) {
          job_ref_list = lGetListRW(cat, SCT_job_pending_ref);
       } else {
          job_ref_list = lGetListRW(cat, SCT_job_ref);
@@ -214,7 +198,7 @@ int sge_add_job_category(lListElem *job, const lList *acl_list, const lList *prj
       job_ref = lCreateElem(REF_Type);
       lSetRef(job_ref, REF_ref, job);
       lAppendElem(job_ref_list, job_ref);
-      
+
    }
 
    /* 
@@ -228,15 +212,15 @@ int sge_add_job_category(lListElem *job, const lList *acl_list, const lList *prj
 /*-------------------------------------------------------------------------*/
 /*    delete jobs category if CT_refcount gets 0                          */
 /*-------------------------------------------------------------------------*/
-int sge_delete_job_category(lListElem *job)
-{
+int
+sge_delete_job_category(lListElem *job) {
    lListElem *cat = NULL;
    u_long32 rc = 0;
 
    DENTER(TOP_LAYER);
-   
+
    /* First part */
-   cat = (lListElem *)lGetRef(job, JB_category);
+   cat = (lListElem *) lGetRef(job, JB_category);
    if (CATEGORY_LIST && cat) {
       rc = lGetUlong(cat, CT_refcount);
       if (rc > 1) {
@@ -245,29 +229,29 @@ int sge_delete_job_category(lListElem *job)
          const lListElem *cache = NULL;
          const lList *cache_list = lGetList(cat, CT_cache);
 
-         DPRINTF(("############## Removing %s from category list (refcount: " sge_u32 ")\n", 
-                  lGetString(cat, CT_str), lGetUlong(cat, CT_refcount)));
+         DPRINTF(("############## Removing %s from category list (refcount: " sge_u32 ")\n",
+                 lGetString(cat, CT_str), lGetUlong(cat, CT_refcount)));
 
          for_each_ep(cache, cache_list) {
-            int *range = (int *)lGetRef(cache, CCT_pe_job_slots);
-            sge_free(&range); 
+            int *range = (int *) lGetRef(cache, CCT_pe_job_slots);
+            sge_free(&range);
          }
 
          lRemoveElem(CATEGORY_LIST, &cat);
       }
    }
    lSetRef(job, JB_category, NULL);
-  
+
    /* Second part */
    /* Removes a job from the category scheduler categories. */
    if (sconf_is_job_category_filtering()) {
       lListElem *ref = NULL;
       bool found = false;
       int i;
-      int max=2;
+      int max = 2;
       lList *refs[2] = {NULL, NULL};
       bool is_job_pending_ = is_job_pending(job);
-      
+
       for_each_rw(cat, CS_CATEGORY_LIST) {
          if (is_job_pending_) {
             refs[0] = lGetListRW(cat, SCT_job_pending_ref);
@@ -277,7 +261,7 @@ int sge_delete_job_category(lListElem *job)
             refs[1] = lGetListRW(cat, SCT_job_pending_ref);
          }
 
-         for(i=0; (i < max && !found); i++) {
+         for (i = 0; (i < max && !found); i++) {
             for_each_rw(ref, refs[i]) {
                if (lGetRef(ref, REF_ref) == job) {
                   lRemoveElem(refs[i], &ref);
@@ -285,7 +269,7 @@ int sge_delete_job_category(lListElem *job)
                   break;
                }
             }
-            
+
             if (found) { /* is category empty? */
                if ((lGetNumberOfElem(lGetList(cat, SCT_job_pending_ref)) == 0) &&
                    (lGetNumberOfElem(lGetList(cat, SCT_job_ref)) == 0)) {
@@ -307,88 +291,73 @@ int sge_delete_job_category(lListElem *job)
 
 
 static bool
-is_job_pending(lListElem *job)
-{
-         /* SG: TODO:
-         this is a very simple evaluation of the job state. It is not accurat
-         and should be addopted to the real state model, but for now it is good
-         enough to go with the ja_task as an identifier, if we have a pending job
-         or not. Jobs, which need to be rescheduled break the accouting here, because
-         they have a ja_task and they are pending....
-         
-         We have also a problem with array jobs, one of them might be running, but not
-         all, which means that there is a JB_ja_tasks list....
+is_job_pending(lListElem *job) {
+   /* SG: TODO:
+   this is a very simple evaluation of the job state. It is not accurat
+   and should be addopted to the real state model, but for now it is good
+   enough to go with the ja_task as an identifier, if we have a pending job
+   or not. Jobs, which need to be rescheduled break the accouting here, because
+   they have a ja_task and they are pending....
 
-         We can do this simple check here, because all we loos is a bit of performance, but
-         no wrong decissions will be made later... 
-       */  
+   We have also a problem with array jobs, one of them might be running, but not
+   all, which means that there is a JB_ja_tasks list....
+
+   We can do this simple check here, because all we loos is a bit of performance, but
+   no wrong decissions will be made later...
+ */
    return (lFirst(lGetList(job, JB_ja_tasks)) == NULL) ? true : false;
 }
 
 /*-------------------------------------------------------------------------*/
-int 
-sge_is_job_category_rejected(const lListElem *job) 
-{
+int
+sge_is_job_category_rejected(const lListElem *job) {
    int ret;
    lListElem *cat = NULL;
 
    DENTER(TOP_LAYER);
-   cat = (lListElem *)lGetRef(job, JB_category); 
-   ret = sge_is_job_category_rejected_(cat);  
+   cat = (lListElem *) lGetRef(job, JB_category);
+   ret = sge_is_job_category_rejected_(cat);
    DRETURN(ret);
 }
 
 /*-------------------------------------------------------------------------*/
-int 
-sge_is_job_category_reservation_rejected(const lListElem *job) 
-{
+int
+sge_is_job_category_reservation_rejected(const lListElem *job) {
    int ret;
    lListElem *cat = NULL;
 
    DENTER(TOP_LAYER);
-   cat = (lListElem *)lGetRef(job, JB_category); 
-   ret = sge_is_job_category_reservation_rejected_(cat);  
+   cat = (lListElem *) lGetRef(job, JB_category);
+   ret = sge_is_job_category_reservation_rejected_(cat);
    DRETURN(ret);
 }
 
 /*-------------------------------------------------------------------------*/
-bool sge_is_job_category_rejected_(lRef cat) 
-{
-   return lGetUlong((lListElem *)cat, CT_rejected) ? true : false;
+bool
+sge_is_job_category_rejected_(lRef cat) {
+   return lGetUlong((lListElem *) cat, CT_rejected) ? true : false;
 }
 
 /*-------------------------------------------------------------------------*/
-bool sge_is_job_category_reservation_rejected_(lRef cat) 
-{
-   return lGetUlong((lListElem *)cat, CT_reservation_rejected) ? true : false;
+bool
+sge_is_job_category_reservation_rejected_(lRef cat) {
+   return lGetUlong((lListElem *) cat, CT_reservation_rejected) ? true : false;
 }
 
 /*-------------------------------------------------------------------------*/
-void sge_reject_category(lRef cat, bool with_reservation)
-{
-   lSetUlong((lListElem *)cat, CT_rejected, 1);
+void
+sge_reject_category(lRef cat, bool with_reservation) {
+   lSetUlong((lListElem *) cat, CT_rejected, 1);
    if (with_reservation) {
-      lSetUlong((lListElem *)cat, CT_reservation_rejected, 1);
+      lSetUlong((lListElem *) cat, CT_reservation_rejected, 1);
    }
 }
-
-bool sge_is_job_category_message_added(lRef cat)
-{
-   return lGetBool((lListElem *)cat, CT_messages_added) ? true : false;
-}
-
-/*-------------------------------------------------------------------------*/
-void sge_set_job_category_message_added(lRef cat)
-{
-   lSetBool((lListElem *)cat, CT_messages_added, true);
-}
-
 
 /*-------------------------------------------------------------------------*/
 /* rebuild the category references                                         */
 /*-------------------------------------------------------------------------*/
-int sge_rebuild_job_category(const lList *job_list, const lList *acl_list, const lList *prj_list, const lList *rqs_list)
-{
+int
+sge_rebuild_job_category(const lList *job_list, const lList *acl_list, const lList *prj_list, const lList *rqs_list) {
    lListElem *job;
 
    DENTER(TOP_LAYER);
@@ -404,23 +373,22 @@ int sge_rebuild_job_category(const lList *job_list, const lList *acl_list, const
 
    for_each_rw (job, job_list) {
       sge_add_job_category(job, acl_list, prj_list, rqs_list);
-   } 
+   }
 
    reb_cat = false;
 
    DRETURN(0);
 }
 
-int sge_category_count(void)
-{
+int
+sge_category_count(void) {
    return lGetNumberOfElem(CATEGORY_LIST);
 }
 
-int sge_cs_category_count(void)
-{
+int
+sge_cs_category_count(void) {
    return lGetNumberOfElem(CS_CATEGORY_LIST);
 }
-
 
 
 /****** sge_category/sge_reset_job_category() **********************************
@@ -446,8 +414,8 @@ int sge_cs_category_count(void)
 *     MT-NOTE: sge_reset_job_category() is not MT safe 
 *
 *******************************************************************************/
-int sge_reset_job_category()
-{
+int
+sge_reset_job_category() {
    lListElem *cat;
    DENTER(TOP_LAYER);
 
@@ -455,10 +423,10 @@ int sge_reset_job_category()
       const lListElem *cache;
 
       for_each_ep(cache, lGetList(cat, CT_cache)) {
-         int *range = (int *)lGetRef(cache, CCT_pe_job_slots);
-         sge_free(&range); 
+         int *range = (int *) lGetRef(cache, CCT_pe_job_slots);
+         sge_free(&range);
       }
-      
+
       lSetUlong(cat, CT_rejected, 0);
       lSetInt(cat, CT_count, -1);
       lSetList(cat, CT_cache, NULL);
@@ -493,25 +461,26 @@ int sge_reset_job_category()
 *     MT-NOTE: sge_reset_job_category() is not MT safe 
 *
 *******************************************************************************/
-lList *sge_category_job_copy(lList *queue_list, lList **orders, bool monitor_next_run) {
+lList *
+sge_category_job_copy(lList *queue_list, lList **orders, bool monitor_next_run) {
    const int minJobPerCategory = 5;
    const int maxJobPerCategory = 300;
-   
+
    lList *jobListCopy = NULL;
    const lListElem *queue = NULL;
    const lListElem *category = NULL;
-   int jobPerCategory = 0; 
-   
+   int jobPerCategory = 0;
+
    DENTER(TOP_LAYER);
 
    INFO((SGE_EVENT, "the job category filter is enabled"));
 
    for_each_ep(queue, queue_list) {
       u_long32 state = lGetUlong(queue, QU_state);
-          
+
       switch (state) {
-         case QI_UNKNOWN :   
-         case QI_ERROR :      
+         case QI_UNKNOWN :
+         case QI_ERROR :
          case QI_CAL_SUSPENDED :
          case QI_AMBIGUOUS :
          case QI_ORPHANED :
@@ -519,7 +488,7 @@ lList *sge_category_job_copy(lList *queue_list, lList **orders, bool monitor_nex
          case QI_CAL_DISABLED:
             continue;
          default:
-            jobPerCategory+= (lGetUlong(queue, QU_job_slots) - qinstance_slots_used(queue)); 
+            jobPerCategory += (lGetUlong(queue, QU_job_slots) - qinstance_slots_used(queue));
       }
    }
 
@@ -528,14 +497,14 @@ lList *sge_category_job_copy(lList *queue_list, lList **orders, bool monitor_nex
    } else if (jobPerCategory > maxJobPerCategory) {
       jobPerCategory = maxJobPerCategory;
    }
-  
+
    for_each_ep(category, CS_CATEGORY_LIST) {
       const lListElem *job_ref = NULL;
       int copy_counter = 0;
 
-      /* copy running jobs and others maybe pending */   
+      /* copy running jobs and others maybe pending */
       for_each_ep(job_ref, lGetList(category, SCT_job_ref)) {
-         lListElem *job = (lListElem *)lGetRef(job_ref, REF_ref);
+         lListElem *job = (lListElem *) lGetRef(job_ref, REF_ref);
          if (jobListCopy == NULL) {
             jobListCopy = lCreateListHash("copy_job_list", lGetElemDescr(job), false);
          }
@@ -544,46 +513,46 @@ lList *sge_category_job_copy(lList *queue_list, lList **orders, bool monitor_nex
 
       /* copy pending jobs, only pending till max is reached */
       for_each_ep(job_ref, lGetList(category, SCT_job_pending_ref)) {
-         lListElem *job = (lListElem *)lGetRef(job_ref, REF_ref); 
+         lListElem *job = (lListElem *) lGetRef(job_ref, REF_ref);
 
          /* only copy, if we have free slots left, or the jobs needs a reservation */
-         if ((copy_counter < jobPerCategory)  || (lGetBool(job, JB_reserve))) {   
-            
+         if ((copy_counter < jobPerCategory) || (lGetBool(job, JB_reserve))) {
+
             lListElem *ja_structure = lFirstRW(lGetList(job, JB_ja_structure)); /* get array job size */
-            int amount = lGetUlong(ja_structure, RN_max); 
+            int amount = lGetUlong(ja_structure, RN_max);
             const lList *pe_range = lGetList(job, JB_pe_range); /* get pe requests */
 
             if (jobListCopy == NULL) {
                jobListCopy = lCreateListHash("copy_job_list", lGetElemDescr(job), false);
             }
-            
-            /*compute array job size */ 
+
+            /*compute array job size */
             if (amount != 1) {
-               amount = ((amount  - lGetUlong( ja_structure, RN_min)) / lGetUlong(ja_structure, RN_step)) + 1;
+               amount = ((amount - lGetUlong(ja_structure, RN_min)) / lGetUlong(ja_structure, RN_step)) + 1;
             }
-         
+
             /* compute pe job size (puting the array size into account) */
             if (pe_range != NULL) {
                const lListElem *pe = lFirst(pe_range);
-               amount *= lGetUlong(pe, RN_min); 
+               amount *= lGetUlong(pe, RN_min);
             }
-             
+
             lAppendElem(jobListCopy, lCopyElem(job));
-            copy_counter+=amount;
+            copy_counter += amount;
          } else {
-             schedd_mes_add_join(monitor_next_run, lGetUlong(job, JB_job_number), SCHEDD_INFO_JOB_CATEGORY_FILTER_);
-             *orders = sge_create_orders(*orders, ORT_clear_pri_info, job, NULL, NULL, false);
+            schedd_mes_add_join(monitor_next_run, lGetUlong(job, JB_job_number), SCHEDD_INFO_JOB_CATEGORY_FILTER_);
+            *orders = sge_create_orders(*orders, ORT_clear_pri_info, job, NULL, NULL, false);
          }
       }
    }
 
-   schedd_mes_commit(NULL, false, NULL); 
+   schedd_mes_commit(NULL, false, NULL);
    cull_hash_create_hashtables(jobListCopy);
- 
+
    DRETURN(jobListCopy);
 }
 
-void set_rebuild_categories(bool new_value) 
-{
-   reb_cat = new_value; 
+void
+set_rebuild_categories(bool new_value) {
+   reb_cat = new_value;
 }

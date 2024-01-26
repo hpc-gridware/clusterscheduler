@@ -56,7 +56,8 @@
 #include "sge_persistence_qmaster.h"
 #include "reschedule.h"
 
-static int update_license_data(sge_gdi_ctx_class_t *ctx, lListElem *hep, lList *lp_lic); 
+static int
+update_license_data(sge_gdi_ctx_class_t *ctx, lListElem *hep, lList *lp_lic);
 
 
 /****** sge_c_report() *******************************************************
@@ -81,15 +82,15 @@ static int update_license_data(sge_gdi_ctx_class_t *ctx, lListElem *hep, lList *
 *     MT-NOTE: sge_c_report() is MT safe
 *
 ******************************************************************************/
-void sge_c_report(sge_gdi_ctx_class_t *ctx, char *rhost, char *commproc, int id, lList *report_list, monitoring_t *monitor)
-{
+void
+sge_c_report(sge_gdi_ctx_class_t *ctx, char *rhost, char *commproc, int id, lList *report_list, monitoring_t *monitor) {
    lListElem *hep = NULL;
    u_long32 rep_type;
    lListElem *report;
    int ret = 0;
    u_long32 this_seqno, last_seqno;
    u_long32 rversion;
-   sge_pack_buffer pb;   
+   sge_pack_buffer pb;
    bool is_pb_used = false;
    bool send_tag_new_conf = false;
 
@@ -146,7 +147,7 @@ void sge_c_report(sge_gdi_ctx_class_t *ctx, char *rhost, char *commproc, int id,
    if (verify_request_version(NULL, rversion, rhost, commproc, id)) {
       DRETURN_VOID;
    }
-   
+
    this_seqno = lGetUlong(lFirst(report_list), REP_seqno);
 
    /* need exec host for all types of reports */
@@ -157,17 +158,17 @@ void sge_c_report(sge_gdi_ctx_class_t *ctx, char *rhost, char *commproc, int id,
 
    /* prevent old reports being proceeded 
       frequent loggings of outdated reports can be an indication 
-      of too high message traffic arriving at qmaster */ 
+      of too high message traffic arriving at qmaster */
    last_seqno = lGetUlong(hep, EH_report_seqno);
 
    if ((this_seqno < last_seqno && (last_seqno - this_seqno) <= 9000) &&
-      !(last_seqno > 9990 && this_seqno < 10)) {
+       !(last_seqno > 9990 && this_seqno < 10)) {
       /* this must be an old report, log and then ignore it */
-      INFO((SGE_EVENT, MSG_QMASTER_RECEIVED_OLD_LOAD_REPORT_UUS, 
-               sge_u32c(this_seqno), sge_u32c(last_seqno), rhost));
+      INFO((SGE_EVENT, MSG_QMASTER_RECEIVED_OLD_LOAD_REPORT_UUS,
+              sge_u32c(this_seqno), sge_u32c(last_seqno), rhost));
       DRETURN_VOID;
    }
-   
+
    lSetUlong(hep, EH_report_seqno, this_seqno);
 
    /* RU: */
@@ -184,92 +185,92 @@ void sge_c_report(sge_gdi_ctx_class_t *ctx, char *rhost, char *commproc, int id,
       rep_type = lGetUlong(report, REP_type);
 
       switch (rep_type) {
-      case NUM_REP_REPORT_LOAD:
-      case NUM_REP_FULL_REPORT_LOAD:
-         MONITOR_ELOAD(monitor); 
-         /* Now handle execds load reports */
-         if (lGetUlong(hep, EH_lt_heard_from) == 0 && rep_type != NUM_REP_FULL_REPORT_LOAD) {
-            host_notify_about_full_load_report(ctx, hep);
-         } else {
+         case NUM_REP_REPORT_LOAD:
+         case NUM_REP_FULL_REPORT_LOAD:
+            MONITOR_ELOAD(monitor);
+            /* Now handle execds load reports */
+            if (lGetUlong(hep, EH_lt_heard_from) == 0 && rep_type != NUM_REP_FULL_REPORT_LOAD) {
+               host_notify_about_full_load_report(ctx, hep);
+            } else {
+               if (!is_pb_used) {
+                  is_pb_used = true;
+                  init_packbuffer(&pb, 1024, 0);
+               }
+               sge_update_load_values(ctx, rhost, lGetListRW(report, REP_list));
+
+               if (mconf_get_simulate_execds()) {
+                  const lList *master_exechost_list = *object_type_get_master_list(SGE_TYPE_EXECHOST);
+                  const lListElem *shep;
+                  lListElem *simhostElem = NULL;
+
+                  for_each_ep(shep, master_exechost_list) {
+                     simhostElem = lGetSubStr(shep, CE_name, "load_report_host", EH_consumable_config_list);
+                     if (simhostElem != NULL) {
+                        const char *real_host = lGetString(simhostElem, CE_stringval);
+                        if (real_host != NULL && sge_hostcmp(real_host, rhost) == 0) {
+                           const char *sim_host = lGetHost(shep, EH_name);
+                           lListElem *clp = NULL;
+
+                           DPRINTF(("Copy load values of %s to simulated host %s\n",
+                                   rhost, sim_host));
+
+                           for_each_rw(clp, lGetList(report, REP_list)) {
+                              if (strcmp(lGetHost(clp, LR_host), SGE_GLOBAL_NAME) != 0) {
+                                 lSetHost(clp, LR_host, sim_host);
+                              }
+                           }
+                           sge_update_load_values(ctx, sim_host, lGetListRW(report, REP_list));
+                        }
+                     }
+                  }
+               }
+
+               pack_ack(&pb, ACK_LOAD_REPORT, this_seqno, 0, NULL);
+            }
+            break;
+         case NUM_REP_REPORT_CONF:
+            MONITOR_ECONF(monitor);
+            if (sge_compare_configuration(hep, lGetList(report, REP_list)) != 0) {
+               DPRINTF(("%s: configuration on host %s is not up to date\n", __func__, rhost));
+               send_tag_new_conf = true;
+            }
+            break;
+
+         case NUM_REP_REPORT_PROCESSORS:
+            /*
+            ** save number of processors
+            */
+            MONITOR_EPROC(monitor);
+            ret = update_license_data(ctx, hep, lGetListRW(report, REP_list));
+            if (ret) {
+               ERROR((SGE_EVENT, MSG_LICENCE_ERRORXUPDATINGLICENSEDATA_I, ret));
+            }
+            break;
+
+         case NUM_REP_REPORT_JOB:
+            MONITOR_EJOB(monitor);
             if (!is_pb_used) {
                is_pb_used = true;
                init_packbuffer(&pb, 1024, 0);
             }
-            sge_update_load_values(ctx, rhost, lGetListRW(report, REP_list));
+            process_job_report(ctx, report, hep, rhost, commproc, &pb, monitor);
+            break;
 
-            if (mconf_get_simulate_execds()) {
-               const lList *master_exechost_list = *object_type_get_master_list(SGE_TYPE_EXECHOST);
-               const lListElem *shep;
-               lListElem *simhostElem=NULL; 
-
-               for_each_ep(shep, master_exechost_list) {
-                  simhostElem = lGetSubStr(shep, CE_name, "load_report_host", EH_consumable_config_list);
-                  if (simhostElem != NULL) {
-                     const char *real_host = lGetString(simhostElem, CE_stringval);
-                     if (real_host != NULL && sge_hostcmp(real_host, rhost) == 0) {
-                        const char* sim_host = lGetHost(shep, EH_name);
-                        lListElem *clp = NULL;
-
-                        DPRINTF(("Copy load values of %s to simulated host %s\n",
-                                rhost, sim_host));
-
-                        for_each_rw(clp, lGetList(report, REP_list)) {
-                           if (strcmp(lGetHost(clp, LR_host), SGE_GLOBAL_NAME) != 0) {
-                              lSetHost(clp, LR_host, sim_host);
-                           }
-                        }
-                        sge_update_load_values(ctx, sim_host, lGetListRW(report, REP_list));
-                     }
-                  }
-               }
-            }
-
-            pack_ack(&pb, ACK_LOAD_REPORT, this_seqno, 0, NULL);
-         }
-         break;
-      case NUM_REP_REPORT_CONF: 
-         MONITOR_ECONF(monitor); 
-         if (sge_compare_configuration(hep, lGetList(report, REP_list)) != 0) {
-            DPRINTF(("%s: configuration on host %s is not up to date\n", __func__, rhost));
-            send_tag_new_conf = true;
-         }
-         break;
-         
-      case NUM_REP_REPORT_PROCESSORS:
-         /*
-         ** save number of processors
-         */
-         MONITOR_EPROC(monitor);
-         ret = update_license_data(ctx, hep, lGetListRW(report, REP_list)); 
-         if (ret) {
-            ERROR((SGE_EVENT, MSG_LICENCE_ERRORXUPDATINGLICENSEDATA_I, ret));
-         }
-         break;
-
-      case NUM_REP_REPORT_JOB:
-         MONITOR_EJOB(monitor);
-         if (!is_pb_used) {
-            is_pb_used = true;
-            init_packbuffer(&pb, 1024, 0);
-         }
-         process_job_report(ctx, report, hep, rhost, commproc, &pb, monitor);
-         break;
-
-      default:   
-         DPRINTF(("received invalid report type %ld\n", rep_type));
+         default:
+            DPRINTF(("received invalid report type %ld\n", rep_type));
       }
    } /* end for_each */
 
    /* RU: */
    /* delete reschedule unknown list entries we heard about */
    delete_from_reschedule_unknown_list(ctx, hep);
-  
+
    if (is_pb_used) {
       if (pb_filled(&pb)) {
          lList *alp = NULL;
          /* send all stuff packed during processing to execd */
          sge_gdi2_send_any_request(ctx, 0, NULL, rhost, commproc, id, &pb, TAG_ACK_REQUEST, 0, &alp);
-         MONITOR_MESSAGES_OUT(monitor); 
+         MONITOR_MESSAGES_OUT(monitor);
          answer_list_output(&alp);
       }
       clear_packbuffer(&pb);
@@ -280,7 +281,7 @@ void sge_c_report(sge_gdi_ctx_class_t *ctx, char *rhost, char *commproc, int id,
          ERROR((SGE_EVENT, MSG_CONF_CANTNOTIFYEXECHOSTXOFNEWCONF_S, rhost));
       }
    }
-   
+
    DRETURN_VOID;
 } /* sge_c_report */
 
@@ -301,8 +302,8 @@ void sge_c_report(sge_gdi_ctx_class_t *ctx, char *rhost, char *commproc, int id,
 **   updates the number of processors in the host element
 **   spools if it has changed
 */
-static int update_license_data(sge_gdi_ctx_class_t *ctx, lListElem *hep, lList *lp_lic)
-{
+static int
+update_license_data(sge_gdi_ctx_class_t *ctx, lListElem *hep, lList *lp_lic) {
    u_long32 processors;
 
    DENTER(TOP_LAYER);
@@ -332,9 +333,9 @@ static int update_license_data(sge_gdi_ctx_class_t *ctx, lListElem *hep, lList *
       lSetUlong(hep, EH_processors, processors);
 
       DPRINTF(("%s has " sge_u32 " processors\n",
-         lGetHost(hep, EH_name), processors));
+              lGetHost(hep, EH_name), processors));
       sge_event_spool(ctx,
-                      &answer_list, 0, sgeE_EXECHOST_MOD, 
+                      &answer_list, 0, sgeE_EXECHOST_MOD,
                       0, 0, lGetHost(hep, EH_name), NULL, NULL,
                       hep, NULL, NULL, true, true);
       answer_list_output(&answer_list);

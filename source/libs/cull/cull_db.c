@@ -156,7 +156,7 @@ lList *lJoinSublist(const char *name, int nm0, const lList *lp,
                     const lEnumeration *enp1) 
 {
    lList *dlp, *tlp, *joinedlist, *sublist;
-   lListElem *ep;
+   const lListElem *ep;
    lDescr *dp; 
    const lDescr *tdp;
    int i, pos;

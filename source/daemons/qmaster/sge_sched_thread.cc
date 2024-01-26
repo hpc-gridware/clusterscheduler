@@ -34,7 +34,7 @@
 
 #ifdef SOLARISAMD64
 #  include <sys/stream.h>
-#endif  
+#endif
 
 #include "uti/sge_rmon.h"
 #include "uti/sge_unistd.h"
@@ -85,8 +85,8 @@
 
 #include "sge_sched_prepare_data.h"
 #include "sge_sched_job_category.h"
-#include "basis_types.h" 
-#include "sge_mt_init.h" 
+#include "basis_types.h"
+#include "sge_mt_init.h"
 #include "sge.h"
 #include "setup_qmaster.h"
 #include "sge_sched_process_events.h"
@@ -99,11 +99,11 @@
 #include "sge_sched_order.h"
 
 scheduler_control_t Scheduler_Control = {
-   PTHREAD_MUTEX_INITIALIZER, 
-   PTHREAD_COND_INITIALIZER, 
-   false, false, NULL, 
-   true,  /* rebuild_categories */
-   false /* new_global_config */
+        PTHREAD_MUTEX_INITIALIZER,
+        PTHREAD_COND_INITIALIZER,
+        false, false, NULL,
+        true,  /* rebuild_categories */
+        false /* new_global_config */
 };
 
 #if 0
@@ -112,8 +112,8 @@ static void rest_busy(sge_evc_class_t *evc);
 static void wait_for_events(void);
 #endif
 
-static int dispatch_jobs(sge_evc_class_t *evc, scheduler_all_data_t *lists, order_t *orders,
-                         lList **splitted_job_lists[]);
+static int
+dispatch_jobs(sge_evc_class_t *evc, scheduler_all_data_t *lists, order_t *orders, lList **splitted_job_lists[]);
 
 static dispatch_t
 select_assign_debit(lList **queue_list, lList **dis_queue_list, lListElem *job, lListElem *ja_task,
@@ -123,17 +123,17 @@ select_assign_debit(lList **queue_list, lList **dis_queue_list, lListElem *job, 
                     bool is_reserve, bool is_schedule_based, lList **load_list, const lList *hgrp_list, lList *rqs_list,
                     lList *ar_list, sched_prof_t *pi, bool monitor_next_run, u_long32 now);
 
-void st_set_flag_new_global_conf(bool new_value)
-{
+void
+st_set_flag_new_global_conf(bool new_value) {
    DENTER(TOP_LAYER);
    sge_mutex_lock("event_control_mutex", __func__, __LINE__, &Scheduler_Control.mutex);
    Scheduler_Control.new_global_conf = new_value;
    sge_mutex_unlock("event_control_mutex", __func__, __LINE__, &Scheduler_Control.mutex);
    DRETURN_VOID;
-} 
+}
 
-bool st_get_flag_new_global_conf(void)
-{
+bool
+st_get_flag_new_global_conf(void) {
    bool ret = false;
 
    DENTER(TOP_LAYER);
@@ -141,10 +141,9 @@ bool st_get_flag_new_global_conf(void)
    ret = Scheduler_Control.new_global_conf;
    sge_mutex_unlock("event_control_mutex", __func__, __LINE__, &Scheduler_Control.mutex);
    DRETURN(ret);
-} 
+}
 
-int scheduler_method(sge_evc_class_t *evc, lList **answer_list, scheduler_all_data_t *lists, lList **order)
-{
+int scheduler_method(sge_evc_class_t *evc, lList **answer_list, scheduler_all_data_t *lists, lList **order) {
    order_t orders = ORDER_INIT;
    lList **splitted_job_lists[SPLIT_LAST];         /* JB_Type */
    lList *waiting_due_to_pedecessor_list = NULL;   /* JB_Type */
@@ -204,16 +203,16 @@ int scheduler_method(sge_evc_class_t *evc, lList **answer_list, scheduler_all_da
 
       what = lWhat("%T(ALL)", dp);
       where = lWhere("%T(%I m= %u "
-         "|| %I m= %u "
-         "|| %I m= %u "
-         "|| %I m= %u "
-         "|| %I m= %u)",
-         dp,
-         QU_state, QI_SUSPENDED,        /* only not suspended queues      */
-         QU_state, QI_SUSPENDED_ON_SUBORDINATE,
-         QU_state, QI_ERROR,            /* no queues in error state       */
-         QU_state, QI_AMBIGUOUS,
-         QU_state, QI_UNKNOWN);         /* only known queues              */
+                     "|| %I m= %u "
+                     "|| %I m= %u "
+                     "|| %I m= %u "
+                     "|| %I m= %u)",
+                     dp,
+                     QU_state, QI_SUSPENDED,        /* only not suspended queues      */
+                     QU_state, QI_SUSPENDED_ON_SUBORDINATE,
+                     QU_state, QI_ERROR,            /* no queues in error state       */
+                     QU_state, QI_AMBIGUOUS,
+                     QU_state, QI_UNKNOWN);         /* only known queues              */
 
       if (what == NULL || where == NULL) {
          DPRINTF(("failed creating where or what describing non available queues\n"));
@@ -222,14 +221,14 @@ int scheduler_method(sge_evc_class_t *evc, lList **answer_list, scheduler_all_da
 
          for_each_ep(mes_queues, qlp) {
             schedd_mes_add_global(NULL, evc->monitor_next_run, SCHEDD_INFO_QUEUENOTAVAIL_,
-                                      lGetString(mes_queues, QU_full_name));
+                                  lGetString(mes_queues, QU_full_name));
          }
 
       }
 
       for_each_ep(mes_queues, lists->dis_queue_list) {
          schedd_mes_add_global(NULL, evc->monitor_next_run, SCHEDD_INFO_QUEUENOTAVAIL_,
-                                   lGetString(mes_queues, QU_full_name));
+                               lGetString(mes_queues, QU_full_name));
       }
 
       schedd_log_list(NULL, evc->monitor_next_run, MSG_SCHEDD_LOGLIST_QUEUESTEMPORARLYNOTAVAILABLEDROPPED,
@@ -253,7 +252,8 @@ int scheduler_method(sge_evc_class_t *evc, lList **answer_list, scheduler_all_da
    if (sge_thread_has_shutdown_started() == false) {
       sge_schedd_send_orders(evc->get_gdi_ctx(evc), &orders, &(orders.configOrderList), NULL, "C: config orders");
       sge_schedd_send_orders(evc->get_gdi_ctx(evc), &orders, &(orders.jobStartOrderList), NULL, "C: job start orders");
-      sge_schedd_send_orders(evc->get_gdi_ctx(evc), &orders, &(orders.pendingOrderList), NULL, "C: pending ticket orders");
+      sge_schedd_send_orders(evc->get_gdi_ctx(evc), &orders, &(orders.pendingOrderList), NULL,
+                             "C: pending ticket orders");
    }
 
    PROF_START_MEASUREMENT(SGE_PROF_SCHEDLIB4);
@@ -279,70 +279,74 @@ int scheduler_method(sge_evc_class_t *evc, lList **answer_list, scheduler_all_da
       }
 
    }
-   sge_build_sgeee_orders(lists, NULL,*(splitted_job_lists[SPLIT_PENDING]), NULL,
+   sge_build_sgeee_orders(lists, NULL, *(splitted_job_lists[SPLIT_PENDING]), NULL,
                           &orders, false, 0, false);
 
-   sge_build_sgeee_orders(lists, NULL,*(splitted_job_lists[SPLIT_NOT_STARTED]), NULL,
+   sge_build_sgeee_orders(lists, NULL, *(splitted_job_lists[SPLIT_NOT_STARTED]), NULL,
                           &orders, false, 0, false);
 
    /* generated scheduler messages, thus we have to call it */
    trash_splitted_jobs(evc->monitor_next_run, splitted_job_lists);
 
-   orders.jobStartOrderList= sge_add_schedd_info(orders.jobStartOrderList, &global_mes_count, &job_mes_count);
+   orders.jobStartOrderList = sge_add_schedd_info(orders.jobStartOrderList, &global_mes_count, &job_mes_count);
 
    if (prof_is_active(SGE_PROF_SCHEDLIB4)) {
       prof_stop_measurement(SGE_PROF_SCHEDLIB4, NULL);
       PROFILING((SGE_EVENT, "PROF: create pending job orders: %.3f s",
-               prof_get_measurement_utime(SGE_PROF_SCHEDLIB4,false, NULL)));
+              prof_get_measurement_utime(SGE_PROF_SCHEDLIB4, false, NULL)));
    }
 
    sge_schedd_send_orders(evc->get_gdi_ctx(evc), &orders, &(orders.configOrderList), answer_list, "D: config orders");
-   sge_schedd_send_orders(evc->get_gdi_ctx(evc), &orders, &(orders.jobStartOrderList), answer_list, "D: job start orders");
-   sge_schedd_send_orders(evc->get_gdi_ctx(evc), &orders, &(orders.pendingOrderList), answer_list, "D: pending ticket orders");
+   sge_schedd_send_orders(evc->get_gdi_ctx(evc), &orders, &(orders.jobStartOrderList), answer_list,
+                          "D: job start orders");
+   sge_schedd_send_orders(evc->get_gdi_ctx(evc), &orders, &(orders.pendingOrderList), answer_list,
+                          "D: pending ticket orders");
 
    if (Master_Request_Queue.order_list != NULL) {
       sge_schedd_add_gdi_order_request(evc->get_gdi_ctx(evc), &orders, answer_list, &Master_Request_Queue.order_list);
    }
 
-   if(prof_is_active(SGE_PROF_CUSTOM0)) {
+   if (prof_is_active(SGE_PROF_CUSTOM0)) {
       prof_stop_measurement(SGE_PROF_CUSTOM0, NULL);
 
-      PROFILING((SGE_EVENT, "PROF: scheduled in %.3f (u %.3f + s %.3f = %.3f): %d sequential, %d parallel, "sge_uu32" orders, "sge_uu32" H, "sge_uu32" Q, "sge_uu32" QA, "sge_uu32" J(qw), "sge_uu32" J(r), "sge_uu32" J(s), "sge_uu32" J(h), "sge_uu32" J(e), "sge_uu32" J(x), %d J(all), "sge_uu32" C, "sge_uu32" ACL, "sge_uu32" PE, "sge_uu32" U, "sge_uu32" D, "sge_uu32" PRJ, "sge_uu32" ST, "sge_uu32" CKPT, "sge_uu32" RU, %d gMes, %d jMes, "sge_uu32"/"sge_uu32" pre-send, %d/%d/%d pe-alg\n",
-         prof_get_measurement_wallclock(SGE_PROF_CUSTOM0, true, NULL),
-         prof_get_measurement_utime(SGE_PROF_CUSTOM0, true, NULL),
-         prof_get_measurement_stime(SGE_PROF_CUSTOM0, true, NULL),
-         prof_get_measurement_utime(SGE_PROF_CUSTOM0, true, NULL) +
-         prof_get_measurement_stime(SGE_PROF_CUSTOM0, true, NULL),
-         sconf_get_fast_jobs(),
-         sconf_get_pe_jobs(),
-         orders.numberSendOrders,
-         lGetNumberOfElem(lists->host_list),
-         lGetNumberOfElem(lists->queue_list),
-         lGetNumberOfElem(lists->all_queue_list),
-         (lGetNumberOfElem(*(splitted_job_lists[SPLIT_PENDING])) + lGetNumberOfElem(*(splitted_job_lists[SPLIT_NOT_STARTED]))),
-         lGetNumberOfElem(*(splitted_job_lists[SPLIT_RUNNING])),
-         lGetNumberOfElem(*(splitted_job_lists[SPLIT_SUSPENDED])),
-         lGetNumberOfElem(*(splitted_job_lists[SPLIT_HOLD])),
-         lGetNumberOfElem(*(splitted_job_lists[SPLIT_ERROR])),
-         lGetNumberOfElem(*(splitted_job_lists[SPLIT_FINISHED])),
-         prof_job_count,
-         lGetNumberOfElem(lists->centry_list),
-         lGetNumberOfElem(lists->acl_list),
-         lGetNumberOfElem(lists->pe_list),
-         lGetNumberOfElem(lists->user_list),
-         lGetNumberOfElem(lists->dept_list),
-         lGetNumberOfElem(lists->project_list),
-         lGetNumberOfElem(lists->share_tree),
-         lGetNumberOfElem(lists->ckpt_list),
-         lGetNumberOfElem(lists->running_per_user),
-         global_mes_count,
-         job_mes_count,
-         orders.numberSendOrders,
-         orders.numberSendPackages,
-         sconf_get_pe_alg_value(SCHEDD_PE_LOW_FIRST),
-         sconf_get_pe_alg_value(SCHEDD_PE_BINARY),
-         sconf_get_pe_alg_value(SCHEDD_PE_HIGH_FIRST)
-      ));
+      PROFILING(
+              (SGE_EVENT, "PROF: scheduled in %.3f (u %.3f + s %.3f = %.3f): %d sequential, %d parallel, "sge_uu32" orders, "sge_uu32" H, "sge_uu32" Q, "sge_uu32" QA, "sge_uu32" J(qw), "sge_uu32" J(r), "sge_uu32" J(s), "sge_uu32" J(h), "sge_uu32" J(e), "sge_uu32" J(x), %d J(all), "sge_uu32" C, "sge_uu32" ACL, "sge_uu32" PE, "sge_uu32" U, "sge_uu32" D, "sge_uu32" PRJ, "sge_uu32" ST, "sge_uu32" CKPT, "sge_uu32" RU, %d gMes, %d jMes, "sge_uu32"/"sge_uu32" pre-send, %d/%d/%d pe-alg\n",
+                      prof_get_measurement_wallclock(SGE_PROF_CUSTOM0, true, NULL),
+                      prof_get_measurement_utime(SGE_PROF_CUSTOM0, true, NULL),
+                      prof_get_measurement_stime(SGE_PROF_CUSTOM0, true, NULL),
+                      prof_get_measurement_utime(SGE_PROF_CUSTOM0, true, NULL) +
+                      prof_get_measurement_stime(SGE_PROF_CUSTOM0, true, NULL),
+                      sconf_get_fast_jobs(),
+                      sconf_get_pe_jobs(),
+                      orders.numberSendOrders,
+                      lGetNumberOfElem(lists->host_list),
+                      lGetNumberOfElem(lists->queue_list),
+                      lGetNumberOfElem(lists->all_queue_list),
+                      (lGetNumberOfElem(*(splitted_job_lists[SPLIT_PENDING])) +
+                       lGetNumberOfElem(*(splitted_job_lists[SPLIT_NOT_STARTED]))),
+                      lGetNumberOfElem(*(splitted_job_lists[SPLIT_RUNNING])),
+                      lGetNumberOfElem(*(splitted_job_lists[SPLIT_SUSPENDED])),
+                      lGetNumberOfElem(*(splitted_job_lists[SPLIT_HOLD])),
+                      lGetNumberOfElem(*(splitted_job_lists[SPLIT_ERROR])),
+                      lGetNumberOfElem(*(splitted_job_lists[SPLIT_FINISHED])),
+                      prof_job_count,
+                      lGetNumberOfElem(lists->centry_list),
+                      lGetNumberOfElem(lists->acl_list),
+                      lGetNumberOfElem(lists->pe_list),
+                      lGetNumberOfElem(lists->user_list),
+                      lGetNumberOfElem(lists->dept_list),
+                      lGetNumberOfElem(lists->project_list),
+                      lGetNumberOfElem(lists->share_tree),
+                      lGetNumberOfElem(lists->ckpt_list),
+                      lGetNumberOfElem(lists->running_per_user),
+                      global_mes_count,
+                      job_mes_count,
+                      orders.numberSendOrders,
+                      orders.numberSendPackages,
+                      sconf_get_pe_alg_value(SCHEDD_PE_LOW_FIRST),
+                      sconf_get_pe_alg_value(SCHEDD_PE_BINARY),
+                      sconf_get_pe_alg_value(SCHEDD_PE_HIGH_FIRST)
+              ));
    }
 
    PROF_START_MEASUREMENT(SGE_PROF_CUSTOM5);
@@ -359,9 +363,9 @@ int scheduler_method(sge_evc_class_t *evc, lList **answer_list, scheduler_all_da
       prof_stop_measurement(SGE_PROF_CUSTOM5, NULL);
 
       PROFILING((SGE_EVENT, "PROF: send orders and cleanup took: %.3f (u %.3f,s %.3f) s",
-         prof_get_measurement_wallclock(SGE_PROF_CUSTOM5, true, NULL),
-         prof_get_measurement_utime(SGE_PROF_CUSTOM5, true, NULL),
-         prof_get_measurement_stime(SGE_PROF_CUSTOM5, true, NULL) ));
+              prof_get_measurement_wallclock(SGE_PROF_CUSTOM5, true, NULL),
+              prof_get_measurement_utime(SGE_PROF_CUSTOM5, true, NULL),
+              prof_get_measurement_stime(SGE_PROF_CUSTOM5, true, NULL)));
    }
 
    DRETURN(0);
@@ -390,11 +394,10 @@ int scheduler_method(sge_evc_class_t *evc, lList **answer_list, scheduler_all_da
 *     -1  got inconsistent data
 ******************************************************************************/
 static int dispatch_jobs(sge_evc_class_t *evc, scheduler_all_data_t *lists, order_t *orders,
-                         lList **splitted_job_lists[])
-{
-   lList *user_list=NULL, *group_list=NULL;
+                         lList **splitted_job_lists[]) {
+   lList *user_list = NULL, *group_list = NULL;
    lListElem *orig_job;
-   lListElem *cat=NULL;
+   lListElem *cat = NULL;
    lList *none_avail_queues = NULL;
    lList *consumable_load_list = NULL;
    sched_prof_t pi;
@@ -402,7 +405,7 @@ static int dispatch_jobs(sge_evc_class_t *evc, scheduler_all_data_t *lists, orde
    u_long32 queue_sort_method;
    u_long32 maxujobs;
    lList *job_load_adjustments = NULL;
-   double total_running_job_tickets=0;
+   double total_running_job_tickets = 0;
    int nreservation = 0;
    int fast_runs = 0;         /* sequential jobs */
    int fast_soft_runs = 0;    /* sequential jobs with soft requests */
@@ -411,15 +414,15 @@ static int dispatch_jobs(sge_evc_class_t *evc, scheduler_all_data_t *lists, orde
 
    int global_lc = 0;
    int sort_hostlist = 1;       /* hostlist has to be sorted. Info returned by select_assign_debit */
-                                /* e.g. if load correction was computed */
-   u_long32 nr_pending_jobs=0;
+   /* e.g. if load correction was computed */
+   u_long32 nr_pending_jobs = 0;
    int max_reserve = sconf_get_max_reservations();
-   bool is_schedule_based = (max_reserve > 0) ? true: false;
+   bool is_schedule_based = (max_reserve > 0) ? true : false;
    u_long32 now = sge_get_gmt();
 
    DENTER(TOP_LAYER);
 
-   queue_sort_method =  sconf_get_queue_sort_method();
+   queue_sort_method = sconf_get_queue_sort_method();
    maxujobs = sconf_get_maxujobs();
    job_load_adjustments = sconf_get_job_load_adjustments();
    sconf_set_host_order_changed(false);
@@ -433,11 +436,11 @@ static int dispatch_jobs(sge_evc_class_t *evc, scheduler_all_data_t *lists, orde
     *---------------------------------------------------------------------*/
    {
       u_long32 decay_time = sconf_get_load_adjustment_decay_time();
-      if ( decay_time ) {
+      if (decay_time) {
          correct_load(*(splitted_job_lists[SPLIT_RUNNING]),
-            lists->queue_list,
-            lists->host_list,
-            decay_time, evc->monitor_next_run);
+                      lists->queue_list,
+                      lists->host_list,
+                      decay_time, evc->monitor_next_run);
 
          /* is there a "global" load value in the job_load_adjustments?
             if so this will make it necessary to check load thresholds
@@ -490,14 +493,14 @@ static int dispatch_jobs(sge_evc_class_t *evc, scheduler_all_data_t *lists, orde
     * KEEP SUSPEND THRESHOLD QUEUES
     *---------------------------------------------------------------------*/
    if (sge_split_queue_load(
-         evc->monitor_next_run,
-         &(lists->queue_list),    /* queue list                             */
-         &none_avail_queues,            /* list of queues in suspend alarm state  */
-         lists->host_list,
-         lists->centry_list,
-         job_load_adjustments,
-         NULL, false, false,
-         QU_suspend_thresholds)) {
+           evc->monitor_next_run,
+           &(lists->queue_list),    /* queue list                             */
+           &none_avail_queues,            /* list of queues in suspend alarm state  */
+           lists->host_list,
+           lists->centry_list,
+           job_load_adjustments,
+           NULL, false, false,
+           QU_suspend_thresholds)) {
       lFreeList(&none_avail_queues);
       lFreeList(&job_load_adjustments);
       DPRINTF(("couldn't split queue list with regard to suspend thresholds\n"));
@@ -517,8 +520,8 @@ static int dispatch_jobs(sge_evc_class_t *evc, scheduler_all_data_t *lists, orde
     *---------------------------------------------------------------------*/
    /* split queues into overloaded and non-overloaded queues */
    if (sge_split_queue_load(evc->monitor_next_run, &(lists->queue_list), NULL,
-         lists->host_list, lists->centry_list, job_load_adjustments,
-         NULL, false, true, QU_load_thresholds)) {
+                            lists->host_list, lists->centry_list, job_load_adjustments,
+                            NULL, false, true, QU_load_thresholds)) {
       lFreeList(&job_load_adjustments);
       DPRINTF(("couldn't split queue list concerning load\n"));
       DRETURN(-1);
@@ -559,13 +562,13 @@ static int dispatch_jobs(sge_evc_class_t *evc, scheduler_all_data_t *lists, orde
     *---------------------------------------------------------------------*/
 
    DPRINTF(("STARTING PASS 1 WITH "sge_uu32" PENDING JOBS\n",
-            lGetNumberOfElem(*(splitted_job_lists[SPLIT_PENDING]))));
+           lGetNumberOfElem(*(splitted_job_lists[SPLIT_PENDING]))));
 
    user_list_init_jc(&user_list, splitted_job_lists);
 
    nr_pending_jobs = lGetNumberOfElem(*(splitted_job_lists[SPLIT_PENDING]));
 
-   DPRINTF(("STARTING PASS 2 WITH %d PENDING JOBS\n",nr_pending_jobs ));
+   DPRINTF(("STARTING PASS 2 WITH %d PENDING JOBS\n", nr_pending_jobs));
 
    /*--------------------------------------------------------------------
     * CALL SGEEE SCHEDULER TO
@@ -577,20 +580,21 @@ static int dispatch_jobs(sge_evc_class_t *evc, scheduler_all_data_t *lists, orde
       PROF_START_MEASUREMENT(SGE_PROF_CUSTOM1);
 
       ret = sgeee_scheduler(lists,
-                    *(splitted_job_lists[SPLIT_RUNNING]),
-                    *(splitted_job_lists[SPLIT_FINISHED]),
-                    *(splitted_job_lists[SPLIT_PENDING]),
-                    orders);
+                            *(splitted_job_lists[SPLIT_RUNNING]),
+                            *(splitted_job_lists[SPLIT_FINISHED]),
+                            *(splitted_job_lists[SPLIT_PENDING]),
+                            orders);
 
       sge_schedd_send_orders(evc->get_gdi_ctx(evc), orders, &(orders->configOrderList), NULL, "A: config orders");
       sge_schedd_send_orders(evc->get_gdi_ctx(evc), orders, &(orders->jobStartOrderList), NULL, "A: job start orders");
-      sge_schedd_send_orders(evc->get_gdi_ctx(evc), orders, &(orders->pendingOrderList), NULL, "A: pending ticket orders");
+      sge_schedd_send_orders(evc->get_gdi_ctx(evc), orders, &(orders->pendingOrderList), NULL,
+                             "A: pending ticket orders");
 
       if (prof_is_active(SGE_PROF_CUSTOM1)) {
          prof_stop_measurement(SGE_PROF_CUSTOM1, NULL);
 
          PROFILING((SGE_EVENT, "PROF: job-order calculation took %.3f s",
-               prof_get_measurement_wallclock(SGE_PROF_CUSTOM1, true, NULL)));
+                 prof_get_measurement_wallclock(SGE_PROF_CUSTOM1, true, NULL)));
       }
 
       if (ret != 0) {
@@ -601,8 +605,9 @@ static int dispatch_jobs(sge_evc_class_t *evc, scheduler_all_data_t *lists, orde
       }
    }
 
-   if ( ((max_reserve == 0) && (lGetNumberOfElem(lists->queue_list) == 0)) || /* no reservation and no queues avail */
-        ((lGetNumberOfElem(lists->queue_list) == 0) && (lGetNumberOfElem(lists->dis_queue_list) == 0))) { /* reservation and no queues avail */
+   if (((max_reserve == 0) && (lGetNumberOfElem(lists->queue_list) == 0)) || /* no reservation and no queues avail */
+       ((lGetNumberOfElem(lists->queue_list) == 0) &&
+        (lGetNumberOfElem(lists->dis_queue_list) == 0))) { /* reservation and no queues avail */
       DPRINTF(("queues dropped because of overload or full: ALL\n"));
       schedd_mes_add_global(NULL, evc->monitor_next_run, SCHEDD_INFO_ALLALARMOVERLOADED_);
       lFreeList(&user_list);
@@ -639,7 +644,7 @@ static int dispatch_jobs(sge_evc_class_t *evc, scheduler_all_data_t *lists, orde
       prof_stop_measurement(SGE_PROF_CUSTOM3, NULL);
 
       PROFILING((SGE_EVENT, "PROF: job sorting took %.3f s",
-            prof_get_measurement_wallclock(SGE_PROF_CUSTOM3, false, NULL)));
+              prof_get_measurement_wallclock(SGE_PROF_CUSTOM3, false, NULL)));
    }
 
    /*---------------------------------------------------------------------
@@ -661,14 +666,14 @@ static int dispatch_jobs(sge_evc_class_t *evc, scheduler_all_data_t *lists, orde
 
    */
    switch (queue_sort_method) {
-   case QSM_LOAD:
-   case QSM_SEQNUM:
-   default:
+      case QSM_LOAD:
+      case QSM_SEQNUM:
+      default:
 
-      DPRINTF(("sorting hosts by load\n"));
-      sort_host_list(lists->host_list, lists->centry_list);
+         DPRINTF(("sorting hosts by load\n"));
+         sort_host_list(lists->host_list, lists->centry_list);
 
-      break;
+         break;
    }
 
    /* generate a consumable load list structure. It stores which queues
@@ -724,7 +729,7 @@ static int dispatch_jobs(sge_evc_class_t *evc, scheduler_all_data_t *lists, orde
 
          /* Don't need to look for a 'now' assignment if the last job 
             of this category got no 'now' assignement either */
-         is_start = (sge_is_job_category_rejected(orig_job))?false:true;
+         is_start = (sge_is_job_category_rejected(orig_job)) ? false : true;
 
          if (is_start || is_reserve) {
             lListElem *job = NULL;
@@ -735,15 +740,15 @@ static int dispatch_jobs(sge_evc_class_t *evc, scheduler_all_data_t *lists, orde
             /* sort the hostlist */
             if (sort_hostlist) {
                lPSortList(lists->host_list, "%I+", EH_sort_value);
-               sort_hostlist      = 0;
+               sort_hostlist = 0;
                sconf_set_host_order_changed(true);
             } else {
                sconf_set_host_order_changed(false);
-            } 
+            }
 
             is_immediate_array_job = (is_immediate_array_job ||
-                                    (JOB_TYPE_IS_ARRAY(lGetUlong(orig_job, JB_type)) &&
-                                     JOB_TYPE_IS_IMMEDIATE(lGetUlong(orig_job, JB_type)))) ? true : false;
+                                      (JOB_TYPE_IS_ARRAY(lGetUlong(orig_job, JB_type)) &&
+                                       JOB_TYPE_IS_IMMEDIATE(lGetUlong(orig_job, JB_type)))) ? true : false;
 
 
             if ((job = lCopyElem(orig_job)) == NULL) {
@@ -754,52 +759,56 @@ static int dispatch_jobs(sge_evc_class_t *evc, scheduler_all_data_t *lists, orde
                DPRINTF(("Found job "sge_u32" with no job array tasks\n", job_id));
             } else {
                DPRINTF(("Found pending job "sge_u32"."sge_u32". Try %sto start and %sto reserve\n",
-                     job_id, ja_task_id, is_start?"":"not ", is_reserve?"":"not "));
+                       job_id, ja_task_id, is_start ? "" : "not ", is_reserve ? "" : "not "));
                DPRINTF(("-----------------------------------------\n"));
 
                result = select_assign_debit(
-                  &(lists->queue_list),
-                  &(lists->dis_queue_list),
-                  job, ja_task,
-                  lists->pe_list,
-                  lists->ckpt_list,
-                  lists->centry_list,
-                  lists->host_list,
-                  lists->acl_list,
-                  &user_list,
-                  &group_list,
-                  orders,
-                  &total_running_job_tickets,
-                  &sort_hostlist,
-                  is_start,
-                  is_reserve,
-                  is_schedule_based,
-                  &consumable_load_list,
-                  lists->hgrp_list,
-                  lists->rqs_list,
-                  lists->ar_list, 
-                  do_prof?&pi:NULL,
-                  evc->monitor_next_run,
-                  now);
+                       &(lists->queue_list),
+                       &(lists->dis_queue_list),
+                       job, ja_task,
+                       lists->pe_list,
+                       lists->ckpt_list,
+                       lists->centry_list,
+                       lists->host_list,
+                       lists->acl_list,
+                       &user_list,
+                       &group_list,
+                       orders,
+                       &total_running_job_tickets,
+                       &sort_hostlist,
+                       is_start,
+                       is_reserve,
+                       is_schedule_based,
+                       &consumable_load_list,
+                       lists->hgrp_list,
+                       lists->rqs_list,
+                       lists->ar_list,
+                       do_prof ? &pi : NULL,
+                       evc->monitor_next_run,
+                       now);
             }
             lFreeElem(&job);
-         }    
+         }
 
          /* collect profiling data */
          switch (sconf_get_last_dispatch_type()) {
-            case DISPATCH_TYPE_FAST : fast_runs++;
+            case DISPATCH_TYPE_FAST :
+               fast_runs++;
                break;
-            case DISPATCH_TYPE_FAST_SOFT_REQ : fast_soft_runs++;
+            case DISPATCH_TYPE_FAST_SOFT_REQ :
+               fast_soft_runs++;
                break;
-            case DISPATCH_TYPE_PE : pe_runs++;
+            case DISPATCH_TYPE_PE :
+               pe_runs++;
                break;
-            case DISPATCH_TYPE_PE_SOFT_REQ: pe_soft_runs++;
+            case DISPATCH_TYPE_PE_SOFT_REQ:
+               pe_soft_runs++;
                break;
          }
 
 
          switch (result) {
-         case DISPATCH_OK: /* now assignment */
+            case DISPATCH_OK: /* now assignment */
             {
                char *owner = strdup(lGetString(orig_job, JB_owner));
                /* here the job got an assignment that will cause it be started immediately */
@@ -825,9 +834,9 @@ static int dispatch_jobs(sge_evc_class_t *evc, scheduler_all_data_t *lists, orde
                 * should be done after resort_job() 'cause job is referenced 
                 */
                job_lists_split_with_reference_to_max_running(evc->monitor_next_run, splitted_job_lists,
-                                                   &user_list,
-                                                   owner,
-                                                   maxujobs);
+                                                             &user_list,
+                                                             owner,
+                                                             maxujobs);
                sge_free(&owner);
 
                /* do not send job start orders inbetween, if we have an immediate array
@@ -839,88 +848,93 @@ static int dispatch_jobs(sge_evc_class_t *evc, scheduler_all_data_t *lists, orde
 
                   if (time > 0.5) {
                      lList *answer_list = NULL;
-                     sge_schedd_send_orders(evc->get_gdi_ctx(evc), orders, &(orders->configOrderList), &answer_list, "B: config orders");
-                     sge_schedd_send_orders(evc->get_gdi_ctx(evc), orders, &(orders->jobStartOrderList), &answer_list, "B: job start orders");
-                     sge_schedd_send_orders(evc->get_gdi_ctx(evc), orders, &(orders->pendingOrderList), &answer_list, "B: pending ticket orders");
+                     sge_schedd_send_orders(evc->get_gdi_ctx(evc), orders, &(orders->configOrderList), &answer_list,
+                                            "B: config orders");
+                     sge_schedd_send_orders(evc->get_gdi_ctx(evc), orders, &(orders->jobStartOrderList), &answer_list,
+                                            "B: job start orders");
+                     sge_schedd_send_orders(evc->get_gdi_ctx(evc), orders, &(orders->pendingOrderList), &answer_list,
+                                            "B: pending ticket orders");
                      answer_list_output(&answer_list);
                      gettimeofday(&tnow, NULL);
                   }
                }
             }
-            break;
+               break;
 
-         case DISPATCH_NOT_AT_TIME: /* reservation */
-            /* here the job got a reservation but can't be started now */
-            DPRINTF(("Got a RESERVATION\n"));
-            nreservation++;
+            case DISPATCH_NOT_AT_TIME: /* reservation */
+               /* here the job got a reservation but can't be started now */
+               DPRINTF(("Got a RESERVATION\n"));
+               nreservation++;
 
-            /* mark the category as rejected */
-            if ((cat = (lListElem *)lGetRef(orig_job, JB_category))) {
-               DPRINTF(("SKIP JOB (R)" sge_u32 " of category '%s' (rc: "sge_u32 ")\n", job_id,
-                           lGetString(cat, CT_str), lGetUlong(cat, CT_refcount)));
-               sge_reject_category(cat, false);
-            }
-            /* here no reservation was made for a job that couldn't be started now 
-               or the job is not dispatchable at all */
-            schedd_mes_commit(*(splitted_job_lists[SPLIT_PENDING]), 0, cat);
-
-            /* Remove pending job if there are no pending tasks anymore (including the current) */
-            if (job_count_pending_tasks(orig_job, true) < 2 || (nreservation >= max_reserve )) {
-
-               lDechainElem(*(splitted_job_lists[SPLIT_PENDING]), orig_job);
-               if ((*(splitted_job_lists[SPLIT_NOT_STARTED])) == NULL) {
-                  *(splitted_job_lists[SPLIT_NOT_STARTED]) = lCreateList("", lGetListDescr(*(splitted_job_lists[SPLIT_PENDING])));
+               /* mark the category as rejected */
+               if ((cat = (lListElem *) lGetRef(orig_job, JB_category))) {
+                  DPRINTF(("SKIP JOB (R)" sge_u32 " of category '%s' (rc: "sge_u32 ")\n", job_id,
+                          lGetString(cat, CT_str), lGetUlong(cat, CT_refcount)));
+                  sge_reject_category(cat, false);
                }
-               lAppendElem(*(splitted_job_lists[SPLIT_NOT_STARTED]), orig_job);
-               is_pjob_resort = false;
-            } else {
-               u_long32 ja_task_number = range_list_get_first_id(lGetList(orig_job, JB_ja_n_h_ids), NULL);
-               object_delete_range_id(orig_job, NULL, JB_ja_n_h_ids, ja_task_number);
-               is_pjob_resort = true;
-            }
-            orig_job = NULL;
-            break;
+               /* here no reservation was made for a job that couldn't be started now
+                  or the job is not dispatchable at all */
+               schedd_mes_commit(*(splitted_job_lists[SPLIT_PENDING]), 0, cat);
 
-         case DISPATCH_NEVER_CAT: /* never this category */
-            /* before deleting the element mark the category as rejected */
-            if ((cat = (lListElem *)lGetRef(orig_job, JB_category))) {
-               DPRINTF(("SKIP JOB (N)" sge_u32 " of category '%s' (rc: "sge_u32 ")\n", job_id,
-                        lGetString(cat, CT_str), lGetUlong(cat, CT_refcount)));
-               sge_reject_category(cat, is_reserve);
-            }
-            /* fall through to DISPATCH_NEVER_JOB */
+               /* Remove pending job if there are no pending tasks anymore (including the current) */
+               if (job_count_pending_tasks(orig_job, true) < 2 || (nreservation >= max_reserve)) {
 
-         case DISPATCH_NEVER_JOB: /* never this particular job */
-            DPRINTF(("SKIP JOB (J)" sge_u32 "\n", job_id));
-            /* here no reservation was made for a job that couldn't be started now 
-               or the job is not dispatchable at all */
-            schedd_mes_commit(*(splitted_job_lists[SPLIT_PENDING]), 0, cat);
-
-            if (JOB_TYPE_IS_IMMEDIATE(lGetUlong(orig_job, JB_type))) { /* immediate job */
-               lCondition *where = NULL;
-               lListElem *rjob;
-               /* remove job from pending list and generate remove immediate orders 
-                  for all tasks including alreaedy assigned ones */
-               where = lWhere("%T(%I==%u)", JB_Type, JB_job_number, job_id);
-               remove_immediate_job(*(splitted_job_lists[SPLIT_PENDING]), orig_job, orders, 0);
-               if ((rjob = lFindFirst(*(splitted_job_lists[SPLIT_RUNNING]), where)) != NULL)
-                  remove_immediate_job(*(splitted_job_lists[SPLIT_RUNNING]), rjob, orders, 1);
-               lFreeWhere(&where);
-            } else {
-            /* prevent that we get the same job next time again */
-               lDechainElem(*(splitted_job_lists[SPLIT_PENDING]),orig_job);
-               if ((*(splitted_job_lists[SPLIT_NOT_STARTED])) == NULL) {
-                  *(splitted_job_lists[SPLIT_NOT_STARTED]) = lCreateList("", lGetListDescr(*(splitted_job_lists[SPLIT_PENDING])));
+                  lDechainElem(*(splitted_job_lists[SPLIT_PENDING]), orig_job);
+                  if ((*(splitted_job_lists[SPLIT_NOT_STARTED])) == NULL) {
+                     *(splitted_job_lists[SPLIT_NOT_STARTED]) = lCreateList("", lGetListDescr(
+                             *(splitted_job_lists[SPLIT_PENDING])));
+                  }
+                  lAppendElem(*(splitted_job_lists[SPLIT_NOT_STARTED]), orig_job);
+                  is_pjob_resort = false;
+               } else {
+                  u_long32 ja_task_number = range_list_get_first_id(lGetList(orig_job, JB_ja_n_h_ids), NULL);
+                  object_delete_range_id(orig_job, NULL, JB_ja_n_h_ids, ja_task_number);
+                  is_pjob_resort = true;
                }
-               lAppendElem(*(splitted_job_lists[SPLIT_NOT_STARTED]), orig_job);
-            }
-            orig_job = NULL;
-            break;
+               orig_job = NULL;
+               break;
 
-         case DISPATCH_MISSING_ATTR :  /* should not happen */
-            DPRINTF(("DISPATCH_MISSING_ATTR\n"));
-         default:
-            break;
+            case DISPATCH_NEVER_CAT: /* never this category */
+               /* before deleting the element mark the category as rejected */
+               if ((cat = (lListElem *) lGetRef(orig_job, JB_category))) {
+                  DPRINTF(("SKIP JOB (N)" sge_u32 " of category '%s' (rc: "sge_u32 ")\n", job_id,
+                          lGetString(cat, CT_str), lGetUlong(cat, CT_refcount)));
+                  sge_reject_category(cat, is_reserve);
+               }
+               /* fall through to DISPATCH_NEVER_JOB */
+
+            case DISPATCH_NEVER_JOB: /* never this particular job */
+               DPRINTF(("SKIP JOB (J)" sge_u32 "\n", job_id));
+               /* here no reservation was made for a job that couldn't be started now
+                  or the job is not dispatchable at all */
+               schedd_mes_commit(*(splitted_job_lists[SPLIT_PENDING]), 0, cat);
+
+               if (JOB_TYPE_IS_IMMEDIATE(lGetUlong(orig_job, JB_type))) { /* immediate job */
+                  lCondition *where = NULL;
+                  lListElem *rjob;
+                  /* remove job from pending list and generate remove immediate orders
+                     for all tasks including alreaedy assigned ones */
+                  where = lWhere("%T(%I==%u)", JB_Type, JB_job_number, job_id);
+                  remove_immediate_job(*(splitted_job_lists[SPLIT_PENDING]), orig_job, orders, 0);
+                  if ((rjob = lFindFirstRW(*(splitted_job_lists[SPLIT_RUNNING]), where)) != NULL)
+                     remove_immediate_job(*(splitted_job_lists[SPLIT_RUNNING]), rjob, orders, 1);
+                  lFreeWhere(&where);
+               } else {
+                  /* prevent that we get the same job next time again */
+                  lDechainElem(*(splitted_job_lists[SPLIT_PENDING]), orig_job);
+                  if ((*(splitted_job_lists[SPLIT_NOT_STARTED])) == NULL) {
+                     *(splitted_job_lists[SPLIT_NOT_STARTED]) = lCreateList("", lGetListDescr(
+                             *(splitted_job_lists[SPLIT_PENDING])));
+                  }
+                  lAppendElem(*(splitted_job_lists[SPLIT_NOT_STARTED]), orig_job);
+               }
+               orig_job = NULL;
+               break;
+
+            case DISPATCH_MISSING_ATTR :  /* should not happen */
+               DPRINTF(("DISPATCH_MISSING_ATTR\n"));
+            default:
+               break;
          }
 
          /*------------------------------------------------------------------ 
@@ -933,7 +947,7 @@ static int dispatch_jobs(sge_evc_class_t *evc, scheduler_all_data_t *lists, orde
          /* no more free queues - then exit */
          if (lGetNumberOfElem(lists->queue_list) == 0) {
             break;
-         }  
+         }
 
          if (is_pjob_resort) {
             sgeee_resort_pending_jobs(splitted_job_lists[SPLIT_PENDING]);
@@ -946,28 +960,28 @@ static int dispatch_jobs(sge_evc_class_t *evc, scheduler_all_data_t *lists, orde
       static bool first_time = true;
       prof_stop_measurement(SGE_PROF_CUSTOM4, NULL);
       PROFILING((SGE_EVENT, "PROF: job dispatching took %.3f s (%d fast, %d fast_soft, %d pe, %d pe_soft, %d res)",
-                 prof_get_measurement_wallclock(SGE_PROF_CUSTOM4, false, NULL),
-                 fast_runs,
-                 fast_soft_runs,
-                 pe_runs,
-                 pe_soft_runs,
-                 nreservation));
+              prof_get_measurement_wallclock(SGE_PROF_CUSTOM4, false, NULL),
+              fast_runs,
+              fast_soft_runs,
+              pe_runs,
+              pe_soft_runs,
+              nreservation));
 
       if (first_time) {
-         PROFILING((SGE_EVENT, "PROF: parallel matching   %12.12s %12.12s %12.12s %12.12s %12.12s %12.12s %12.12s", 
-            "global", "rqs", "cqstatic", "hstatic", 
-               "qstatic", "hdynamic", "qdyn"));
-         PROFILING((SGE_EVENT, "PROF: sequential matching %12.12s %12.12s %12.12s %12.12s %12.12s %12.12s %12.12s", 
-            "global", "rqs", "cqstatic", "hstatic", 
-               "qstatic", "hdynamic", "qdyn"));
+         PROFILING((SGE_EVENT, "PROF: parallel matching   %12.12s %12.12s %12.12s %12.12s %12.12s %12.12s %12.12s",
+                 "global", "rqs", "cqstatic", "hstatic",
+                 "qstatic", "hdynamic", "qdyn"));
+         PROFILING((SGE_EVENT, "PROF: sequential matching %12.12s %12.12s %12.12s %12.12s %12.12s %12.12s %12.12s",
+                 "global", "rqs", "cqstatic", "hstatic",
+                 "qstatic", "hdynamic", "qdyn"));
          first_time = false;
       }
       PROFILING((SGE_EVENT, "PROF: parallel matching   %12d %12d %12d %12d %12d %12d %12d",
-         pi.par_global, pi.par_rqs, pi.par_cqstat, pi.par_hstat, 
-         pi.par_qstat, pi.par_hdyn, pi.par_qdyn));
+              pi.par_global, pi.par_rqs, pi.par_cqstat, pi.par_hstat,
+              pi.par_qstat, pi.par_hdyn, pi.par_qdyn));
       PROFILING((SGE_EVENT, "PROF: sequential matching %12d %12d %12d %12d %12d %12d %12d",
-         pi.seq_global, pi.seq_rqs, pi.seq_cqstat, pi.seq_hstat, 
-         pi.seq_qstat, pi.seq_hdyn, pi.seq_qdyn));
+              pi.seq_global, pi.seq_rqs, pi.seq_cqstat, pi.seq_hstat,
+              pi.seq_qstat, pi.seq_hdyn, pi.seq_qdyn));
    }
 
    lFreeList(&user_list);
@@ -1008,9 +1022,9 @@ static dispatch_t
 select_assign_debit(lList **queue_list, lList **dis_queue_list, lListElem *job, lListElem *ja_task,
                     lList *pe_list, const lList *ckpt_list, const lList *centry_list, lList *host_list, lList *acl_list,
                     lList **user_list, lList **group_list, order_t *orders, double *total_running_job_tickets,
-                    int *sort_hostlist, bool is_start,  bool is_reserve, bool is_schedule_based, lList **load_list, const lList *hgrp_list,
-                    lList *rqs_list, lList *ar_list, sched_prof_t *pi, bool monitor_next_run, u_long32 now)
-{
+                    int *sort_hostlist, bool is_start, bool is_reserve, bool is_schedule_based, lList **load_list,
+                    const lList *hgrp_list,
+                    lList *rqs_list, lList *ar_list, sched_prof_t *pi, bool monitor_next_run, u_long32 now) {
    lListElem *granted_el;
    dispatch_t result = DISPATCH_NOT_AT_TIME;
    const char *pe_name, *ckpt_name;
@@ -1020,24 +1034,24 @@ select_assign_debit(lList **queue_list, lList **dis_queue_list, lListElem *job, 
    DENTER(TOP_LAYER);
 
    assignment_init(&a, job, ja_task, true);
-   a.queue_list       = *queue_list;
-   a.host_list        = host_list;
-   a.centry_list      = centry_list;
-   a.acl_list         = acl_list;
-   a.hgrp_list        = hgrp_list;
-   a.rqs_list         = rqs_list;
-   a.ar_list          = ar_list;
-   a.pi               = pi;
+   a.queue_list = *queue_list;
+   a.host_list = host_list;
+   a.centry_list = centry_list;
+   a.acl_list = acl_list;
+   a.hgrp_list = hgrp_list;
+   a.rqs_list = rqs_list;
+   a.ar_list = ar_list;
+   a.pi = pi;
    a.monitor_next_run = monitor_next_run;
-   a.now              = now;
+   a.now = now;
 
    /* in reservation scheduling mode a non-zero duration always must be defined */
    job_get_duration(&a.duration, job);
 
    if (is_reserve) {
-      if (*queue_list == NULL) { 
+      if (*queue_list == NULL) {
          *queue_list = lCreateList("temp queue", lGetListDescr(*dis_queue_list));
-         a.queue_list       = *queue_list;
+         a.queue_list = *queue_list;
       }
       a.care_reservation = is_computed_reservation = true;
       lAppendList(*queue_list, *dis_queue_list);
@@ -1066,15 +1080,15 @@ select_assign_debit(lList **queue_list, lList **dis_queue_list, lListElem *job, 
    a.gep = host_list_locate(host_list, SGE_GLOBAL_NAME);
 
    if ((pe_name = lGetString(job, JB_pe)) != NULL) {
-   /*------------------------------------------------------------------
-    * SELECT POSSIBLE QUEUE(S) FOR THIS PE JOB
-    *------------------------------------------------------------------*/
+      /*------------------------------------------------------------------
+       * SELECT POSSIBLE QUEUE(S) FOR THIS PE JOB
+       *------------------------------------------------------------------*/
 
       if (is_start) {
 
          DPRINTF(("looking for immediate parallel assignment for job "
-                  sge_U32CFormat"."sge_U32CFormat" requesting pe \"%s\" duration "sge_U32CFormat"\n",
-                  a.job_id, a.ja_task_id, pe_name, a.duration));
+                         sge_U32CFormat"."sge_U32CFormat" requesting pe \"%s\" duration "sge_U32CFormat"\n",
+                         a.job_id, a.ja_task_id, pe_name, a.duration));
 
          a.start = DISPATCH_TIME_NOW;
          a.is_reservation = false;
@@ -1084,8 +1098,8 @@ select_assign_debit(lList **queue_list, lList **dis_queue_list, lListElem *job, 
       if (result == DISPATCH_NOT_AT_TIME) {
          if (is_reserve) {
             DPRINTF(("looking for parallel reservation for job "
-               sge_U32CFormat"."sge_U32CFormat" requesting pe \"%s\" duration "sge_U32CFormat"\n",
-                  a.job_id, a.ja_task_id, pe_name, a.duration));
+                            sge_U32CFormat"."sge_U32CFormat" requesting pe \"%s\" duration "sge_U32CFormat"\n",
+                            a.job_id, a.ja_task_id, pe_name, a.duration));
             is_computed_reservation = true;
             a.start = DISPATCH_TIME_QUEUE_END;
             a.is_reservation = true;
@@ -1095,10 +1109,10 @@ select_assign_debit(lList **queue_list, lList **dis_queue_list, lListElem *job, 
 
             if (result == DISPATCH_OK) {
                result = DISPATCH_NOT_AT_TIME; /* this job got a reservation */
-            }  
+            }
          } else {
             result = DISPATCH_NEVER_CAT;
-         }  
+         }
       }
 
    } else {
@@ -1111,8 +1125,8 @@ select_assign_debit(lList **queue_list, lList **dis_queue_list, lListElem *job, 
       if (is_start) {
 
          DPRINTF(("looking for immediate sequential assignment for job "
-                  sge_U32CFormat"."sge_U32CFormat" duration "sge_U32CFormat"\n", a.job_id,
-                  a.ja_task_id, a.duration));
+                         sge_U32CFormat"."sge_U32CFormat" duration "sge_U32CFormat"\n", a.job_id,
+                         a.ja_task_id, a.duration));
 
          a.start = DISPATCH_TIME_NOW;
          a.is_reservation = false;
@@ -1125,8 +1139,8 @@ select_assign_debit(lList **queue_list, lList **dis_queue_list, lListElem *job, 
       if (result == DISPATCH_NOT_AT_TIME) {
          if (is_reserve) {
             DPRINTF(("looking for sequential reservation for job "
-               sge_U32CFormat"."sge_U32CFormat" duration "sge_U32CFormat"\n",
-                  a.job_id, a.ja_task_id, a.duration));
+                            sge_U32CFormat"."sge_U32CFormat" duration "sge_U32CFormat"\n",
+                            a.job_id, a.ja_task_id, a.duration));
             a.start = DISPATCH_TIME_QUEUE_END;
             a.is_reservation = true;
             assignment_clear_cache(&a);
@@ -1134,10 +1148,10 @@ select_assign_debit(lList **queue_list, lList **dis_queue_list, lListElem *job, 
             result = sge_sequential_assignment(&a);
             if (result == DISPATCH_OK) {
                result = DISPATCH_NOT_AT_TIME; /* this job got a reservation */
-            }  
+            }
          } else {
             result = DISPATCH_NEVER_CAT;
-         }  
+         }
       }
    }
 
@@ -1162,17 +1176,17 @@ select_assign_debit(lList **queue_list, lList **dis_queue_list, lListElem *job, 
          double job_otickets_per_slot;
          double job_stickets_per_slot;
 
-         job_tickets_per_slot =(double)lGetDouble(ja_task, JAT_tix)/a.slots;
-         job_ftickets_per_slot =(double)lGetDouble(ja_task, JAT_fticket)/a.slots;
-         job_otickets_per_slot =(double)lGetDouble(ja_task, JAT_oticket)/a.slots;
-         job_stickets_per_slot =(double)lGetDouble(ja_task, JAT_sticket)/a.slots;
+         job_tickets_per_slot = (double) lGetDouble(ja_task, JAT_tix) / a.slots;
+         job_ftickets_per_slot = (double) lGetDouble(ja_task, JAT_fticket) / a.slots;
+         job_otickets_per_slot = (double) lGetDouble(ja_task, JAT_oticket) / a.slots;
+         job_stickets_per_slot = (double) lGetDouble(ja_task, JAT_sticket) / a.slots;
 
          for_each_rw(granted_el, a.gdil) {
             u_long32 granted_slots = lGetUlong(granted_el, JG_slots);
             lSetDouble(granted_el, JG_ticket, job_tickets_per_slot * granted_slots);
-            lSetDouble(granted_el, JG_oticket, job_otickets_per_slot  * granted_slots);
-            lSetDouble(granted_el, JG_fticket, job_ftickets_per_slot  * granted_slots);
-            lSetDouble(granted_el, JG_sticket, job_stickets_per_slot  * granted_slots);
+            lSetDouble(granted_el, JG_oticket, job_otickets_per_slot * granted_slots);
+            lSetDouble(granted_el, JG_fticket, job_ftickets_per_slot * granted_slots);
+            lSetDouble(granted_el, JG_sticket, job_stickets_per_slot * granted_slots);
          }
          *total_running_job_tickets += lGetDouble(ja_task, JAT_tix);
       }
@@ -1183,7 +1197,7 @@ select_assign_debit(lList **queue_list, lList **dis_queue_list, lListElem *job, 
       }
 
       orders->jobStartOrderList = sge_create_orders(orders->jobStartOrderList, ORT_start_job,
-            job, ja_task, a.gdil, true);
+                                                    job, ja_task, a.gdil, true);
 
       /* increase the number of jobs a user/group has running */
       sge_inc_jc(user_list, lGetString(job, JB_owner), 1);
@@ -1202,13 +1216,13 @@ select_assign_debit(lList **queue_list, lList **dis_queue_list, lListElem *job, 
    if (result == DISPATCH_OK) {
       if (a.start == DISPATCH_TIME_NOW) {
          a.start = now;
-      }  
+      }
       debit_scheduled_job(&a, sort_hostlist, orders, true,
-               SCHEDULING_RECORD_ENTRY_TYPE_STARTING, true);
+                          SCHEDULING_RECORD_ENTRY_TYPE_STARTING, true);
    } else {
       debit_scheduled_job(&a, sort_hostlist, orders, false,
-            SCHEDULING_RECORD_ENTRY_TYPE_RESERVING, true);
-   }  
+                          SCHEDULING_RECORD_ENTRY_TYPE_RESERVING, true);
+   }
 
    /*------------------------------------------------------------------
     * REMOVE QUEUES THAT ARE NO LONGER USEFUL FOR FURTHER SCHEDULING
@@ -1220,18 +1234,16 @@ select_assign_debit(lList **queue_list, lList **dis_queue_list, lListElem *job, 
       if (*load_list == NULL) {
          sge_split_suspended(monitor_next_run, queue_list, dis_queue_list);
          sge_split_queue_slots_free(monitor_next_run, queue_list, dis_queue_list);
-      }
-      else {
+      } else {
          sge_split_suspended(monitor_next_run, queue_list, &disabled_queues);
          sge_split_queue_slots_free(monitor_next_run, queue_list, &disabled_queues);
 
          sge_remove_queue_from_load_list(load_list, disabled_queues);
          if (*dis_queue_list == NULL) {
             *dis_queue_list = disabled_queues;
-         }
-         else {
+         } else {
             lAddList(*dis_queue_list, &disabled_queues);
-         }  
+         }
          disabled_queues = NULL;
       }
 
@@ -1241,15 +1253,15 @@ select_assign_debit(lList **queue_list, lList **dis_queue_list, lListElem *job, 
 
       /* split queues into overloaded and non-overloaded queues */
       if (sge_split_queue_load(
-            monitor_next_run,
-            queue_list,                                     /* source list                              */
-            &disabled_queues,
-            host_list,                                      /* host list contains load values           */
-            centry_list,
-            a.load_adjustments,
-            a.gdil,
-            is_consumable_load_alarm,
-            false, QU_load_thresholds)) {   /* use load thresholds here */
+              monitor_next_run,
+              queue_list,                                     /* source list                              */
+              &disabled_queues,
+              host_list,                                      /* host list contains load values           */
+              centry_list,
+              a.load_adjustments,
+              a.gdil,
+              is_consumable_load_alarm,
+              false, QU_load_thresholds)) {   /* use load thresholds here */
 
          DPRINTF(("couldn't split queue list concerning load\n"));
          assignment_release(&a);

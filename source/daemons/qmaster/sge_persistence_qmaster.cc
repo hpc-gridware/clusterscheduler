@@ -51,8 +51,7 @@
 static unsigned long spooling_wait_time = 0;
 
 bool
-sge_initialize_persistence(sge_gdi_ctx_class_t *ctx, lList **answer_list)
-{
+sge_initialize_persistence(sge_gdi_ctx_class_t *ctx, lList **answer_list) {
    bool ret = true;
 
    lListElem *spooling_context;
@@ -63,14 +62,11 @@ sge_initialize_persistence(sge_gdi_ctx_class_t *ctx, lList **answer_list)
    DENTER(TOP_LAYER);
 
    if (getenv("SGE_TEST_SPOOLING_WAIT_TIME") != NULL) {
-         spooling_wait_time=atoi(getenv("SGE_TEST_SPOOLING_WAIT_TIME"));
+      spooling_wait_time = atoi(getenv("SGE_TEST_SPOOLING_WAIT_TIME"));
    }
 
    /* create spooling context */
-   spooling_context = spool_create_dynamic_context(answer_list, 
-                           spooling_method,
-                           spooling_lib, 
-                           spooling_params);
+   spooling_context = spool_create_dynamic_context(answer_list, spooling_method, spooling_lib, spooling_params);
    if (spooling_context == NULL) {
       /* error message created in spool_create_dynamic_context */
       ret = false;
@@ -92,8 +88,7 @@ sge_initialize_persistence(sge_gdi_ctx_class_t *ctx, lList **answer_list)
 }
 
 void
-sge_initialize_persistance_timer(void)
-{
+sge_initialize_persistance_timer(void) {
    te_event_t ev = NULL;
 
    DENTER(TOP_LAYER);
@@ -108,11 +103,10 @@ sge_initialize_persistance_timer(void)
 }
 
 bool
-sge_shutdown_persistence(lList **answer_list)
-{
+sge_shutdown_persistence(lList **answer_list) {
    bool ret = true;
    time_t time = 0;
-   lList* alp = NULL;
+   lList *alp = NULL;
    lListElem *context;
 
    DENTER(TOP_LAYER);
@@ -144,8 +138,7 @@ sge_shutdown_persistence(lList **answer_list)
 }
 
 void
-spooling_trigger_handler(sge_gdi_ctx_class_t *ctx, te_event_t anEvent, monitoring_t *monitor)
-{
+spooling_trigger_handler(sge_gdi_ctx_class_t *ctx, te_event_t anEvent, monitoring_t *monitor) {
    time_t next_trigger = 0;
    time_t now;
    lList *answer_list = NULL;
@@ -154,7 +147,7 @@ spooling_trigger_handler(sge_gdi_ctx_class_t *ctx, te_event_t anEvent, monitorin
    DENTER(TOP_LAYER);
 
    /* trigger spooling regular actions */
-   if (!spool_trigger_context(&answer_list, spool_get_default_context(), 
+   if (!spool_trigger_context(&answer_list, spool_get_default_context(),
                               te_get_when(anEvent), &next_trigger)) {
       answer_list_output(&answer_list);
    }
@@ -220,14 +213,10 @@ spooling_trigger_handler(sge_gdi_ctx_class_t *ctx, te_event_t anEvent, monitorin
 *  SEE ALSO
 *     
 *******************************************************************************/
-bool 
-sge_event_spool(sge_gdi_ctx_class_t *ctx,
-                lList **answer_list, u_long32 timestamp, ev_event event, 
-                u_long32 intkey1, u_long32 intkey2, const char *strkey, 
-                const char *strkey2, const char *session, 
-                lListElem *object, lListElem *sub_object1, 
-                lListElem *sub_object2, bool send_event, bool spool)
-{
+bool
+sge_event_spool(sge_gdi_ctx_class_t *ctx, lList **answer_list, u_long32 timestamp, ev_event event, u_long32 intkey1,
+                u_long32 intkey2, const char *strkey, const char *strkey2, const char *session, lListElem *object,
+                lListElem *sub_object1, lListElem *sub_object2, bool send_event, bool spool) {
    bool ret = true;
    const char *key = NULL;
    sge_object_type object_type;
@@ -239,15 +228,15 @@ sge_event_spool(sge_gdi_ctx_class_t *ctx,
    DENTER(TOP_LAYER);
 
    /*for testing a fixed gid_error, this has been introduced. We need it to slowdown*/
-   /*the spooling mechanism, to simulate the situation where this error appears*/ 
+   /*the spooling mechanism, to simulate the situation where this error appears*/
    if (spooling_wait_time != 0) {
       unsigned long sleep_time = spooling_wait_time;
       bool do_sleep = false;
       do {
          /* 
           * find out if there is a qping -dump client connected to qmaster
-          */         
-         cl_com_handle_t* handle = cl_com_get_handle("qmaster",1);
+          */
+         cl_com_handle_t *handle = cl_com_get_handle("qmaster", 1);
          if (handle != NULL) {
             if (handle->debug_client_setup != NULL) {
                if (handle->debug_client_setup->dc_mode != CL_DEBUG_CLIENT_OFF) {
@@ -488,7 +477,7 @@ sge_event_spool(sge_gdi_ctx_class_t *ctx,
          ret = false;
          break;
    }
-  
+
    /* only continue in case of valid event */
    if (ret) {
       switch (event) {
@@ -533,7 +522,7 @@ sge_event_spool(sge_gdi_ctx_class_t *ctx,
           */
          lList *spool_answer_list = NULL;
          if (do_delete) {
-            ret = spool_delete_object(&spool_answer_list, spool_get_default_context(), 
+            ret = spool_delete_object(&spool_answer_list, spool_get_default_context(),
                                       object_type, key, job_spooling);
          } else {
             lList *tmp_list = NULL;
@@ -559,7 +548,7 @@ sge_event_spool(sge_gdi_ctx_class_t *ctx,
                   break;
             }
 
-            ret = spool_write_object(&spool_answer_list, spool_get_default_context(), 
+            ret = spool_write_object(&spool_answer_list, spool_get_default_context(),
                                      element, key, object_type, job_spooling);
 
             switch (event) {
@@ -578,13 +567,13 @@ sge_event_spool(sge_gdi_ctx_class_t *ctx,
 
          /* in case of error: generate error message for caller */
          if (!ret) {
-            answer_list_add_sprintf(answer_list, STATUS_EUNKNOWN, 
-                                    ANSWER_QUALITY_ERROR, 
-                                    do_delete ? 
-                                    MSG_PERSISTENCE_DELETE_FAILED_S : 
+            answer_list_add_sprintf(answer_list, STATUS_EUNKNOWN,
+                                    ANSWER_QUALITY_ERROR,
+                                    do_delete ?
+                                    MSG_PERSISTENCE_DELETE_FAILED_S :
                                     MSG_PERSISTENCE_WRITE_FAILED_S,
                                     key);
-            
+
          }
       }
    }
@@ -592,7 +581,7 @@ sge_event_spool(sge_gdi_ctx_class_t *ctx,
    /* send event only, if spooling succeeded */
    if (ret) {
       if (send_event) {
-         sge_add_event(timestamp, event, 
+         sge_add_event(timestamp, event,
                        intkey1, intkey2, strkey, strkey2,
                        session, element);
       }

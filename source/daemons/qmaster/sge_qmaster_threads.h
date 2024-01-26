@@ -44,14 +44,7 @@ enum { INVALID_THREAD = 0 };
 
 void sge_gdi_kill_master(sge_gdi_packet_class_t *packet, sge_gdi_task_class_t *task);
 
-/* thread management */
-void sge_create_and_join_threads(sge_gdi_ctx_class_t *ctx);
-
 /* misc functions */
 bool sge_daemonize_qmaster(void);
 void sge_become_admin_user(const char *admin_user);
 void sge_exit_func(void **ctx_ref, int);
-void sge_start_periodic_tasks(void);
-void sge_register_event_handler(void); 
-
-int sge_shutdown_qmaster_via_signal_thread(int i);

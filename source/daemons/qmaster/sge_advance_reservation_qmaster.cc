@@ -102,15 +102,20 @@ typedef struct {
 
 ar_id_t ar_id_control = {0, false, PTHREAD_MUTEX_INITIALIZER};
 
-static bool ar_reserve_queues(lList **alpp, lListElem *ar);
-static u_long32 sge_get_ar_id(sge_gdi_ctx_class_t *ctx, monitoring_t *monitor);
-static u_long32 guess_highest_ar_id(void);
+static bool
+ar_reserve_queues(lList **alpp, lListElem *ar);
 
-static void sge_ar_send_mail(lListElem *ar, int type);
+static u_long32
+sge_get_ar_id(sge_gdi_ctx_class_t *ctx, monitoring_t *monitor);
+
+static u_long32
+guess_highest_ar_id(void);
+
+static void
+sge_ar_send_mail(lListElem *ar, int type);
 
 void
-ar_initialize_timer(sge_gdi_ctx_class_t *ctx, lList **answer_list, monitoring_t *monitor) 
-{
+ar_initialize_timer(sge_gdi_ctx_class_t *ctx, lList **answer_list, monitoring_t *monitor) {
    lListElem *ar, *next_ar;
    u_long32 now = sge_get_gmt();
 
@@ -120,7 +125,7 @@ ar_initialize_timer(sge_gdi_ctx_class_t *ctx, lList **answer_list, monitoring_t 
 
    next_ar = lFirstRW(ar_master_list);
 
-   while((ar = next_ar)) {
+   while ((ar = next_ar)) {
       te_event_t ev = NULL;
 
       next_ar = lNextRW(ar);
@@ -128,8 +133,8 @@ ar_initialize_timer(sge_gdi_ctx_class_t *ctx, lList **answer_list, monitoring_t 
       if (now < lGetUlong(ar, AR_start_time)) {
          sge_ar_state_set_waiting(ar);
 
-         ev = te_new_event((time_t)lGetUlong(ar, AR_start_time), TYPE_AR_EVENT,
-                     ONE_TIME_EVENT, lGetUlong(ar, AR_id), AR_RUNNING, NULL);
+         ev = te_new_event((time_t) lGetUlong(ar, AR_start_time), TYPE_AR_EVENT,
+                           ONE_TIME_EVENT, lGetUlong(ar, AR_id), AR_RUNNING, NULL);
          te_add_event(ev);
          te_add_event(ev);
          te_free_event(&ev);
@@ -137,8 +142,8 @@ ar_initialize_timer(sge_gdi_ctx_class_t *ctx, lList **answer_list, monitoring_t 
       } else if (now < lGetUlong(ar, AR_end_time)) {
          sge_ar_state_set_running(ar);
 
-         ev = te_new_event((time_t)lGetUlong(ar, AR_end_time), TYPE_AR_EVENT,
-                     ONE_TIME_EVENT, lGetUlong(ar, AR_id), AR_EXITED, NULL);
+         ev = te_new_event((time_t) lGetUlong(ar, AR_end_time), TYPE_AR_EVENT,
+                           ONE_TIME_EVENT, lGetUlong(ar, AR_id), AR_EXITED, NULL);
          te_add_event(ev);
          te_free_event(&ev);
       } else {
@@ -152,8 +157,8 @@ ar_initialize_timer(sge_gdi_ctx_class_t *ctx, lList **answer_list, monitoring_t 
          ar_do_reservation(ar, false);
 
          reporting_create_ar_log_record(NULL, ar, ARL_TERMINATED,
-                                  "end time of AR reached",
-                                  now);
+                                        "end time of AR reached",
+                                        now);
          reporting_create_ar_acct_records(NULL, ar, now);
 
          sge_dstring_sprintf(&buffer, sge_U32CFormat, ar_id);
@@ -212,13 +217,10 @@ ar_initialize_timer(sge_gdi_ctx_class_t *ctx, lList **answer_list, monitoring_t 
 *  NOTES
 *     MT-NOTE: ar_mod() is not MT safe 
 *******************************************************************************/
-int ar_mod(sge_gdi_ctx_class_t *ctx, lList **alpp, lListElem *new_ar,
-           lListElem *ar, int add, const char *ruser, 
-           const char *rhost, gdi_object_t *object, int sub_command,
-           monitoring_t *monitor)
-{
+int ar_mod(sge_gdi_ctx_class_t *ctx, lList **alpp, lListElem *new_ar, lListElem *ar, int add, const char *ruser,
+           const char *rhost, gdi_object_t *object, int sub_command, monitoring_t *monitor) {
    u_long32 ar_id;
-   u_long32 max_advance_reservations =  mconf_get_max_advance_reservations();
+   u_long32 max_advance_reservations = mconf_get_max_advance_reservations();
    const lList *master_cqueue_list = *object_type_get_master_list(SGE_TYPE_CQUEUE);
    const lList *master_hgroup_list = *object_type_get_master_list(SGE_TYPE_HGROUP);
    const lList *master_centry_list = *object_type_get_master_list(SGE_TYPE_CENTRY);
@@ -229,7 +231,8 @@ int ar_mod(sge_gdi_ctx_class_t *ctx, lList **alpp, lListElem *new_ar,
 
    DENTER(TOP_LAYER);
 
-   if (!ar_validate(ar, alpp, true, false, master_cqueue_list, master_hgroup_list, master_centry_list, master_ckpt_list, master_pe_list, master_userset_list)) {
+   if (!ar_validate(ar, alpp, true, false, master_cqueue_list, master_hgroup_list, master_centry_list, master_ckpt_list,
+                    master_pe_list, master_userset_list)) {
       goto ERROR;
    }
 
@@ -248,14 +251,14 @@ int ar_mod(sge_gdi_ctx_class_t *ctx, lList **alpp, lListElem *new_ar,
    } else {
       ERROR((SGE_EVENT, MSG_NOTYETIMPLEMENTED_S, "advance reservation modification"));
       answer_list_add(alpp, SGE_EVENT, STATUS_ESEMANTIC, ANSWER_QUALITY_ERROR);
-      goto ERROR; 
+      goto ERROR;
    }
 
    if (max_advance_reservations > 0 &&
-       max_advance_reservations <= (u_long32)lGetNumberOfElem(master_ar_list)) {
+       max_advance_reservations <= (u_long32) lGetNumberOfElem(master_ar_list)) {
       ERROR((SGE_EVENT, MSG_AR_MAXARSPERCLUSTER_U, sge_u32c(max_advance_reservations)));
       answer_list_add(alpp, SGE_EVENT, STATUS_NOTOK_DOAGAIN, ANSWER_QUALITY_ERROR);
-      goto DOITAGAIN; 
+      goto DOITAGAIN;
    }
 
    /*    AR_name, SGE_STRING */
@@ -263,7 +266,7 @@ int ar_mod(sge_gdi_ctx_class_t *ctx, lList **alpp, lListElem *new_ar,
    /*   AR_account, SGE_STRING */
    attr_mod_zerostr(ar, new_ar, AR_account, object->object_name);
    /*   AR_submission_time, SGE_ULONG */
-   lSetUlong(new_ar, AR_submission_time, sge_get_gmt());   
+   lSetUlong(new_ar, AR_submission_time, sge_get_gmt());
    /*   AR_start_time, SGE_ULONG          required */
    attr_mod_ulong(ar, new_ar, AR_start_time, object->object_name);
    /*   AR_end_time, SGE_ULONG            required */
@@ -279,7 +282,8 @@ int ar_mod(sge_gdi_ctx_class_t *ctx, lList **alpp, lListElem *new_ar,
    /*   AR_checkpoint_name, SGE_STRING    Named checkpoint */
    attr_mod_zerostr(ar, new_ar, AR_checkpoint_name, object->object_name);
    /*   AR_resource_list, SGE_LIST */
-   attr_mod_sub_list(alpp, new_ar, AR_resource_list, AR_name, ar, sub_command, SGE_ATTR_COMPLEX_VALUES, SGE_OBJ_AR, 0, NULL);
+   attr_mod_sub_list(alpp, new_ar, AR_resource_list, AR_name, ar, sub_command, SGE_ATTR_COMPLEX_VALUES, SGE_OBJ_AR, 0,
+                     NULL);
    /*   AR_queue_list, SGE_LIST */
    attr_mod_sub_list(alpp, new_ar, AR_queue_list, AR_name, ar, sub_command, SGE_ATTR_QUEUE_LIST, SGE_OBJ_AR, 0, NULL);
    /*   AR_mail_options, SGE_ULONG   */
@@ -289,7 +293,8 @@ int ar_mod(sge_gdi_ctx_class_t *ctx, lList **alpp, lListElem *new_ar,
    /*   AR_pe, SGE_STRING */
    attr_mod_zerostr(ar, new_ar, AR_pe, object->object_name);
    /*   AR_master_queue_list, SGE_LIST */
-   attr_mod_sub_list(alpp, new_ar ,AR_master_queue_list, AR_name, ar, sub_command, SGE_ATTR_QUEUE_LIST, SGE_OBJ_AR, 0, NULL);
+   attr_mod_sub_list(alpp, new_ar, AR_master_queue_list, AR_name, ar, sub_command, SGE_ATTR_QUEUE_LIST, SGE_OBJ_AR, 0,
+                     NULL);
    /*   AR_pe_range, SGE_LIST */
    attr_mod_sub_list(alpp, new_ar, AR_pe_range, AR_name, ar, sub_command, SGE_ATTR_PE_LIST, SGE_OBJ_AR, 0, NULL);
    /*   AR_acl_list, SGE_LIST */
@@ -308,10 +313,10 @@ int ar_mod(sge_gdi_ctx_class_t *ctx, lList **alpp, lListElem *new_ar,
    answer_list_add(alpp, SGE_EVENT, STATUS_OK, ANSWER_QUALITY_INFO);
    DRETURN(0);
 
-ERROR:
-   DRETURN(STATUS_EUNKNOWN);
-DOITAGAIN:
-   DRETURN(STATUS_NOTOK_DOAGAIN);
+   ERROR:
+DRETURN(STATUS_EUNKNOWN);
+   DOITAGAIN:
+DRETURN(STATUS_NOTOK_DOAGAIN);
 }
 
 /****** sge_advance_reservation_qmaster/ar_spool() *****************************
@@ -342,8 +347,7 @@ DOITAGAIN:
 *  NOTES
 *     MT-NOTE: ar_spool() is MT safe 
 *******************************************************************************/
-int ar_spool(sge_gdi_ctx_class_t *ctx, lList **alpp, lListElem *ep, gdi_object_t *object)
-{
+int ar_spool(sge_gdi_ctx_class_t *ctx, lList **alpp, lListElem *ep, gdi_object_t *object) {
    lList *answer_list = NULL;
    bool dbret;
    bool job_spooling = ctx->get_job_spooling(ctx);
@@ -352,17 +356,17 @@ int ar_spool(sge_gdi_ctx_class_t *ctx, lList **alpp, lListElem *ep, gdi_object_t
    DENTER(TOP_LAYER);
 
    sge_dstring_sprintf(&buffer, sge_U32CFormat, lGetUlong(ep, AR_id));
-   dbret = spool_write_object(&answer_list, spool_get_default_context(), ep, 
+   dbret = spool_write_object(&answer_list, spool_get_default_context(), ep,
                               sge_dstring_get_string(&buffer), SGE_TYPE_AR,
                               job_spooling);
    answer_list_output(&answer_list);
 
    if (!dbret) {
-      answer_list_add_sprintf(alpp, STATUS_EUNKNOWN, 
-                              ANSWER_QUALITY_ERROR, 
+      answer_list_add_sprintf(alpp, STATUS_EUNKNOWN,
+                              ANSWER_QUALITY_ERROR,
                               MSG_PERSISTENCE_WRITE_FAILED_S,
                               sge_dstring_get_string(&buffer));
-   } 
+   }
    sge_dstring_free(&buffer);
 
    DRETURN(dbret ? 0 : 1);
@@ -399,12 +403,12 @@ int ar_spool(sge_gdi_ctx_class_t *ctx, lList **alpp, lListElem *ep, gdi_object_t
 *  NOTES
 *     MT-NOTE: ar_success() is not MT safe 
 *******************************************************************************/
-int ar_success(sge_gdi_ctx_class_t *ctx, lListElem *ep, lListElem *old_ep,
-               gdi_object_t *object, lList **ppList, monitoring_t *monitor)
-{
+int
+ar_success(sge_gdi_ctx_class_t *ctx, lListElem *ep, lListElem *old_ep, gdi_object_t *object, lList **ppList,
+           monitoring_t *monitor) {
    te_event_t ev;
    dstring buffer = DSTRING_INIT;
-   u_long32 timestamp = 0; 
+   u_long32 timestamp = 0;
 
    DENTER(TOP_LAYER);
 
@@ -423,8 +427,8 @@ int ar_success(sge_gdi_ctx_class_t *ctx, lListElem *ep, lListElem *old_ep,
    if (ppList != NULL) {
       if (*ppList == NULL) {
          *ppList = lCreateList("", AR_Type);
-      }   
-      lAppendElem(*ppList, lCopyElem(ep)); 
+      }
+      lAppendElem(*ppList, lCopyElem(ep));
    }
 
    sge_ar_state_set_waiting(ep);
@@ -433,7 +437,7 @@ int ar_success(sge_gdi_ctx_class_t *ctx, lListElem *ep, lListElem *old_ep,
    ** send sgeE_AR_MOD/sgeE_AR_ADD event
    */
    sge_dstring_sprintf(&buffer, sge_U32CFormat, lGetUlong(ep, AR_id));
-   sge_add_event(0, old_ep?sgeE_AR_MOD:sgeE_AR_ADD, lGetUlong(ep, AR_id), 0, 
+   sge_add_event(0, old_ep ? sgeE_AR_MOD : sgeE_AR_ADD, lGetUlong(ep, AR_id), 0,
                  sge_dstring_get_string(&buffer), NULL, NULL, ep);
    lListElem_clear_changed_info(ep);
    sge_dstring_free(&buffer);
@@ -441,7 +445,8 @@ int ar_success(sge_gdi_ctx_class_t *ctx, lListElem *ep, lListElem *old_ep,
    /*
    ** add the timer to trigger the state change
     */
-   ev = te_new_event((time_t)lGetUlong(ep, AR_start_time), TYPE_AR_EVENT, ONE_TIME_EVENT, lGetUlong(ep, AR_id), AR_RUNNING, NULL);
+   ev = te_new_event((time_t) lGetUlong(ep, AR_start_time), TYPE_AR_EVENT, ONE_TIME_EVENT, lGetUlong(ep, AR_id),
+                     AR_RUNNING, NULL);
    te_add_event(ev);
    te_free_event(&ev);
 
@@ -476,9 +481,9 @@ int ar_success(sge_gdi_ctx_class_t *ctx, lListElem *ep, lListElem *old_ep,
 *  NOTES
 *     MT-NOTE: ar_del() is not MT safe 
 *******************************************************************************/
-int ar_del(sge_gdi_ctx_class_t *ctx, lListElem *ep, lList **alpp, lList **master_ar_list, 
-           const char *ruser, const char *rhost, monitoring_t *monitor)
-{
+int
+ar_del(sge_gdi_ctx_class_t *ctx, lListElem *ep, lList **alpp, lList **master_ar_list, const char *ruser,
+       const char *rhost, monitoring_t *monitor) {
    const char *id_str = NULL;
    const lList *user_list = NULL;
    lListElem *ar, *nxt;
@@ -501,14 +506,14 @@ int ar_del(sge_gdi_ctx_class_t *ctx, lListElem *ep, lList **alpp, lList **master
    /* ep is no ar_del element, if ep has no ID_str */
    if (lGetPosViaElem(ep, ID_str, SGE_NO_ABORT) < 0) {
       CRITICAL((SGE_EVENT, MSG_SGETEXT_MISSINGCULLFIELD_SS,
-            lNm2Str(ID_str), __func__));
+              lNm2Str(ID_str), __func__));
       answer_list_add(alpp, SGE_EVENT, STATUS_EUNKNOWN, ANSWER_QUALITY_ERROR);
       sge_dstring_free(&buffer);
       DRETURN(STATUS_EUNKNOWN);
    }
 
    id_str = lGetString(ep, ID_str);
-   
+
    if ((user_list = lGetList(ep, ID_user_list)) != NULL) {
       lCondition *new_where = NULL;
       const lListElem *user;
@@ -527,7 +532,7 @@ int ar_del(sge_gdi_ctx_class_t *ctx, lListElem *ep, lList **alpp, lList **master
             ar_where = new_where;
          } else {
             ar_where = lOrWhere(ar_where, new_where);
-         }   
+         }
       }
    } else if (sge_is_pattern(id_str)) {
       /* if no userlist and wildcard jobs was requested only delete the own ars */
@@ -537,7 +542,7 @@ int ar_del(sge_gdi_ctx_class_t *ctx, lListElem *ep, lList **alpp, lList **master
          ar_where = new_where;
       } else {
          ar_where = lOrWhere(ar_where, new_where);
-      }   
+      }
    }
 
    if (id_str != NULL && (strcmp(id_str, "0") != 0)) {
@@ -547,7 +552,7 @@ int ar_del(sge_gdi_ctx_class_t *ctx, lListElem *ep, lList **alpp, lList **master
       u_long32 value = strtol(id_str, &dptr, 0);
       if (dptr[0] == '\0') {
          /* is numeric value */
-         new_where = lWhere("%T(%I==%u)", AR_Type, AR_id, value); 
+         new_where = lWhere("%T(%I==%u)", AR_Type, AR_id, value);
       } else {
          bool error = false;
          if (isdigit(id_str[0])) {
@@ -555,7 +560,7 @@ int ar_del(sge_gdi_ctx_class_t *ctx, lListElem *ep, lList **alpp, lList **master
             answer_list_add(alpp, SGE_EVENT, STATUS_EUNKNOWN, ANSWER_QUALITY_ERROR);
             error = true;
          } else if (verify_str_key(alpp, id_str, MAX_VERIFY_STRING,
-                    lNm2Str(AR_name), KEY_TABLE) != STATUS_OK) {
+                                   lNm2Str(AR_name), KEY_TABLE) != STATUS_OK) {
             error = true;
          } else {
             new_where = lWhere("%T(%I p= %s)", AR_Type, AR_name, id_str);
@@ -592,7 +597,7 @@ int ar_del(sge_gdi_ctx_class_t *ctx, lListElem *ep, lList **alpp, lList **master
 
    now = sge_get_gmt();
    nxt = lFirstRW(*master_ar_list);
-   while ((ar=nxt)) {
+   while ((ar = nxt)) {
       u_long32 ar_id = lGetUlong(ar, AR_id);
       sge_dstring_sprintf(&buffer, sge_U32CFormat, sge_u32c(ar_id));
 
@@ -606,7 +611,7 @@ int ar_del(sge_gdi_ctx_class_t *ctx, lListElem *ep, lList **alpp, lList **master
 
       if (!has_manager_privileges && strcmp(ruser, lGetString(ar, AR_owner))) {
          ERROR((SGE_EVENT, MSG_DELETEPERMS_SSU,
-                  ruser, SGE_OBJ_AR, sge_u32c(ar_id)));
+                 ruser, SGE_OBJ_AR, sge_u32c(ar_id)));
          answer_list_add(alpp, SGE_EVENT, STATUS_ENOTOWNER, ANSWER_QUALITY_ERROR);
          continue;
       }
@@ -626,32 +631,32 @@ int ar_del(sge_gdi_ctx_class_t *ctx, lListElem *ep, lList **alpp, lList **master
          /* unblock reserved queues */
          ar_do_reservation(ar, false);
 
-         reporting_create_ar_log_record(NULL, ar, ARL_DELETED, 
+         reporting_create_ar_log_record(NULL, ar, ARL_DELETED,
                                         "AR deleted",
-                                        now);  
-         reporting_create_ar_acct_records(NULL, ar, now); 
+                                        now);
+         reporting_create_ar_acct_records(NULL, ar, now);
 
          gdil_del_all_orphaned(ctx, lGetList(ar, AR_granted_slots), alpp);
 
          lRemoveElem(*master_ar_list, &ar);
 
          INFO((SGE_EVENT, MSG_JOB_DELETEX_SSU,
-                  ruser, SGE_OBJ_AR, sge_u32c(ar_id)));
+                 ruser, SGE_OBJ_AR, sge_u32c(ar_id)));
          answer_list_add(alpp, SGE_EVENT, STATUS_OK, ANSWER_QUALITY_INFO);
-         
-         sge_event_spool(ctx, alpp, 0, sgeE_AR_DEL, 
+
+         sge_event_spool(ctx, alpp, 0, sgeE_AR_DEL,
                          ar_id, 0, sge_dstring_get_string(&buffer), NULL, NULL,
                          NULL, NULL, NULL, true, true);
       } else {
          INFO((SGE_EVENT, MSG_JOB_REGDELX_SSU,
-                  ruser, SGE_OBJ_AR, sge_u32c(ar_id)));
+                 ruser, SGE_OBJ_AR, sge_u32c(ar_id)));
          answer_list_add(alpp, SGE_EVENT, STATUS_OK, ANSWER_QUALITY_INFO);
-         sge_event_spool(ctx, alpp, 0, sgeE_AR_MOD, 
+         sge_event_spool(ctx, alpp, 0, sgeE_AR_MOD,
                          ar_id, 0, sge_dstring_get_string(&buffer), NULL, NULL,
                          ar, NULL, NULL, true, true);
       }
 
-    }
+   }
 
    if (!removed_one) {
       if (id_str != NULL) {
@@ -677,8 +682,8 @@ int ar_del(sge_gdi_ctx_class_t *ctx, lListElem *ep, lList **alpp, lList **master
             umax--;
          }
          ERROR((SGE_EVENT, MSG_SGETEXT_THEREARENOXFORUSERS_SS, SGE_OBJ_AR, sge_dstring_get_string(&buffer)));
-      } 
-  
+      }
+
       answer_list_add(alpp, SGE_EVENT, STATUS_EEXIST, ANSWER_QUALITY_ERROR);
       sge_dstring_free(&buffer);
       lFreeWhere(&ar_where);
@@ -711,16 +716,16 @@ int ar_del(sge_gdi_ctx_class_t *ctx, lListElem *ep, lList **alpp, lList **master
 *  NOTES
 *     MT-NOTE: sge_get_ar_id() is MT safe 
 *******************************************************************************/
-static u_long32 sge_get_ar_id(sge_gdi_ctx_class_t *ctx, monitoring_t *monitor)
-{
+static u_long32
+sge_get_ar_id(sge_gdi_ctx_class_t *ctx, monitoring_t *monitor) {
    u_long32 ar_id;
    bool is_store_ar = false;
 
    DENTER(TOP_LAYER);
 
-   sge_mutex_lock("ar_id_mutex", "sge_get_ar_id", __LINE__, 
+   sge_mutex_lock("ar_id_mutex", "sge_get_ar_id", __LINE__,
                   &ar_id_control.ar_id_mutex);
- 
+
    ar_id_control.ar_id++;
    ar_id_control.changed = true;
    if (ar_id_control.ar_id > MAX_SEQNUM) {
@@ -730,13 +735,13 @@ static u_long32 sge_get_ar_id(sge_gdi_ctx_class_t *ctx, monitoring_t *monitor)
    }
    ar_id = ar_id_control.ar_id;
 
-   sge_mutex_unlock("ar_id_mutex", "sge_get_ar_id", __LINE__, 
-                  &ar_id_control.ar_id_mutex);
-  
+   sge_mutex_unlock("ar_id_mutex", "sge_get_ar_id", __LINE__,
+                    &ar_id_control.ar_id_mutex);
+
    if (is_store_ar) {
       sge_store_ar_id(ctx, NULL, monitor);
    }
-  
+
    DRETURN(ar_id);
 }
 
@@ -761,24 +766,25 @@ static u_long32 sge_get_ar_id(sge_gdi_ctx_class_t *ctx, monitoring_t *monitor)
 *  NOTES
 *     MT-NOTE: sge_store_ar_id() is not MT safe 
 *******************************************************************************/
-void sge_store_ar_id(sge_gdi_ctx_class_t *ctx, te_event_t anEvent, monitoring_t *monitor) {
+void
+sge_store_ar_id(sge_gdi_ctx_class_t *ctx, te_event_t anEvent, monitoring_t *monitor) {
    u_long32 ar_id = 0;
    bool changed = false;
 
    DENTER(TOP_LAYER);
-   
-   sge_mutex_lock("ar_id_mutex", "sge_store_ar_id", __LINE__, 
+
+   sge_mutex_lock("ar_id_mutex", "sge_store_ar_id", __LINE__,
                   &ar_id_control.ar_id_mutex);
    if (ar_id_control.changed) {
       ar_id = ar_id_control.ar_id;
       ar_id_control.changed = false;
       changed = true;
-   }   
-   sge_mutex_unlock("ar_id_mutex", "sge_store_ar_id", __LINE__, 
-                  &ar_id_control.ar_id_mutex);     
+   }
+   sge_mutex_unlock("ar_id_mutex", "sge_store_ar_id", __LINE__,
+                    &ar_id_control.ar_id_mutex);
 
    /* here we got a race condition that can (very unlikely)
-      cause concurrent writing of the sequence number file  */ 
+      cause concurrent writing of the sequence number file  */
    if (changed) {
       FILE *fp = fopen(ARSEQ_NUM_FILE, "w");
 
@@ -787,12 +793,12 @@ void sge_store_ar_id(sge_gdi_ctx_class_t *ctx, te_event_t anEvent, monitoring_t 
       } else {
          FPRINTF((fp, sge_u32"\n", ar_id));
          FCLOSE(fp);
-      }   
+      }
    }
    DRETURN_VOID;
 
-FPRINTF_ERROR:
-FCLOSE_ERROR:
+   FPRINTF_ERROR:
+   FCLOSE_ERROR:
    ERROR((SGE_EVENT, MSG_NOSEQFILECLOSE_SSS, "ar", ARSEQ_NUM_FILE, strerror(errno)));
    DRETURN_VOID;
 }
@@ -810,35 +816,35 @@ FCLOSE_ERROR:
 *  NOTES
 *     MT-NOTE: sge_init_ar_id() is MT safe 
 *******************************************************************************/
-void sge_init_ar_id(void) 
-{
+void
+sge_init_ar_id(void) {
    FILE *fp = NULL;
    u_long32 ar_id = 0;
    u_long32 guess_ar_id = 0;
-  
+
    DENTER(TOP_LAYER);
-   
+
    if ((fp = fopen(ARSEQ_NUM_FILE, "r"))) {
       if (fscanf(fp, sge_uu32, &ar_id) != 1) {
          ERROR((SGE_EVENT, MSG_NOSEQNRREAD_SSS, "ar", ARSEQ_NUM_FILE, strerror(errno)));
       }
       FCLOSE(fp);
-FCLOSE_ERROR:
+      FCLOSE_ERROR:
       fp = NULL;
    } else {
       WARNING((SGE_EVENT, MSG_NOSEQFILEOPEN_SSS, "ar", ARSEQ_NUM_FILE, strerror(errno)));
-   }  
-   
+   }
+
    guess_ar_id = guess_highest_ar_id();
    ar_id = MAX(ar_id, guess_ar_id);
-   
-   sge_mutex_lock("ar_id_mutex", "sge_init_ar_id", __LINE__, 
+
+   sge_mutex_lock("ar_id_mutex", "sge_init_ar_id", __LINE__,
                   &ar_id_control.ar_id_mutex);
    ar_id_control.ar_id = ar_id;
    ar_id_control.changed = true;
-   sge_mutex_unlock("ar_id_mutex", "sge_init_ar_id", __LINE__, 
-                  &ar_id_control.ar_id_mutex);   
-                  
+   sge_mutex_unlock("ar_id_mutex", "sge_init_ar_id", __LINE__,
+                    &ar_id_control.ar_id_mutex);
+
    DRETURN_VOID;
 }
 
@@ -859,32 +865,32 @@ FCLOSE_ERROR:
 *  NOTES
 *     MT-NOTE: guess_highest_ar_id() is MT safe 
 *******************************************************************************/
-static u_long32 guess_highest_ar_id(void)
-{
+static u_long32
+guess_highest_ar_id(void) {
    const lListElem *ar;
    u_long32 maxid = 0;
-   const lList *master_ar_list = *object_type_get_master_list(SGE_TYPE_AR); 
+   const lList *master_ar_list = *object_type_get_master_list(SGE_TYPE_AR);
 
-   DENTER(TOP_LAYER);   
+   DENTER(TOP_LAYER);
 
    /* this function is called during qmaster startup and not while it is running,
       we do not need to monitor this lock */
    SGE_LOCK(LOCK_GLOBAL, LOCK_READ);
-   
+
    ar = lFirst(master_ar_list);
-   if (ar) { 
+   if (ar) {
       int pos;
-      pos = lGetPosViaElem(ar, AR_id, SGE_NO_ABORT); 
-      
+      pos = lGetPosViaElem(ar, AR_id, SGE_NO_ABORT);
+
       for_each_ep(ar, master_ar_list) {
          maxid = MAX(maxid, lGetPosUlong(ar, pos));
-      }   
+      }
    }
 
    SGE_UNLOCK(LOCK_GLOBAL, LOCK_READ);
 
    DRETURN(maxid);
-}   
+}
 
 /****** sge_advance_reservation_qmaster/sge_ar_event_handler() *****************
 *  NAME
@@ -908,8 +914,8 @@ static u_long32 guess_highest_ar_id(void)
 *  NOTES
 *     MT-NOTE: sge_ar_event_handler() is MT safe 
 *******************************************************************************/
-void sge_ar_event_handler(sge_gdi_ctx_class_t *ctx, te_event_t anEvent, monitoring_t *monitor)
-{
+void
+sge_ar_event_handler(sge_gdi_ctx_class_t *ctx, te_event_t anEvent, monitoring_t *monitor) {
    lListElem *ar;
    u_long32 ar_id = te_get_first_numeric_key(anEvent);
    u_long32 state = te_get_second_numeric_key(anEvent);
@@ -917,7 +923,7 @@ void sge_ar_event_handler(sge_gdi_ctx_class_t *ctx, te_event_t anEvent, monitori
    dstring buffer = DSTRING_INIT;
 
    DENTER(TOP_LAYER);
-   
+
    /*
     To guarantee all jobs are removed from the cluster when AR end time is
     reached it is necessary to consider the DURATION_OFFSET for Advance Reservation also.
@@ -930,13 +936,13 @@ void sge_ar_event_handler(sge_gdi_ctx_class_t *ctx, te_event_t anEvent, monitori
    lList *master_ar_list = *object_type_get_master_list_rw(SGE_TYPE_AR);
 
    if (!(ar = ar_list_locate(master_ar_list, ar_id))) {
-      ERROR((SGE_EVENT, MSG_EVE_TE4AR_U, sge_u32c(ar_id)));   
-      SGE_UNLOCK(LOCK_GLOBAL, LOCK_WRITE);      
+      ERROR((SGE_EVENT, MSG_EVE_TE4AR_U, sge_u32c(ar_id)));
+      SGE_UNLOCK(LOCK_GLOBAL, LOCK_WRITE);
       DRETURN_VOID;
    }
 
    sge_dstring_sprintf(&buffer, sge_U32CFormat, ar_id);
-   
+
    if (state == AR_EXITED) {
       time_t timestamp = (time_t) sge_get_gmt();
 
@@ -948,10 +954,10 @@ void sge_ar_event_handler(sge_gdi_ctx_class_t *ctx, te_event_t anEvent, monitori
       /* unblock reserved queues */
       ar_do_reservation(ar, false);
 
-      reporting_create_ar_log_record(NULL, ar, ARL_TERMINATED, 
+      reporting_create_ar_log_record(NULL, ar, ARL_TERMINATED,
                                      "end time of AR reached",
-                                     timestamp);  
-      reporting_create_ar_acct_records(NULL, ar, timestamp); 
+                                     timestamp);
+      reporting_create_ar_acct_records(NULL, ar, timestamp);
 
       sge_ar_send_mail(ar, MAIL_AT_EXIT);
 
@@ -961,7 +967,7 @@ void sge_ar_event_handler(sge_gdi_ctx_class_t *ctx, te_event_t anEvent, monitori
       /* remove the AR itself */
       DPRINTF(("AR: exited, removing AR %s\n", sge_dstring_get_string(&buffer)));
       lRemoveElem(master_ar_list, &ar);
-      sge_event_spool(ctx, NULL, 0, sgeE_AR_DEL, 
+      sge_event_spool(ctx, NULL, 0, sgeE_AR_DEL,
                       ar_id, 0, sge_dstring_get_string(&buffer), NULL, NULL,
                       NULL, NULL, NULL, true, true);
 
@@ -971,16 +977,16 @@ void sge_ar_event_handler(sge_gdi_ctx_class_t *ctx, te_event_t anEvent, monitori
 
       sge_ar_state_set_running(ar);
 
-      ev = te_new_event((time_t)lGetUlong(ar, AR_end_time), TYPE_AR_EVENT, ONE_TIME_EVENT, ar_id, AR_EXITED, NULL);
+      ev = te_new_event((time_t) lGetUlong(ar, AR_end_time), TYPE_AR_EVENT, ONE_TIME_EVENT, ar_id, AR_EXITED, NULL);
       te_add_event(ev);
       te_free_event(&ev);
 
       /* this info is not spooled */
-      sge_add_event(0, sgeE_AR_MOD, ar_id, 0, 
+      sge_add_event(0, sgeE_AR_MOD, ar_id, 0,
                     sge_dstring_get_string(&buffer), NULL, NULL, ar);
       lListElem_clear_changed_info(ar);
 
-      reporting_create_ar_log_record(NULL, ar, ARL_STARTTIME_REACHED, 
+      reporting_create_ar_log_record(NULL, ar, ARL_STARTTIME_REACHED,
                                      "start time of AR reached",
                                      sge_get_gmt());
 
@@ -1016,8 +1022,8 @@ void sge_ar_event_handler(sge_gdi_ctx_class_t *ctx, te_event_t anEvent, monitori
 *  NOTES
 *     MT-NOTE: ar_reserve_queues() is not MT safe, needs GLOBAL_LOCK
 *******************************************************************************/
-static bool ar_reserve_queues(lList **alpp, lListElem *ar)
-{
+static bool
+ar_reserve_queues(lList **alpp, lListElem *ar) {
    lList **splitted_job_lists[SPLIT_LAST];
    lList *suspended_list = NULL;                   /* JB_Type */
    lList *running_list = NULL;                     /* JB_Type */
@@ -1057,16 +1063,16 @@ static bool ar_reserve_queues(lList **alpp, lListElem *ar)
    }
 
    assignment_init(&a, dummy_job, NULL, false);
-   a.host_list        = master_exechost_list;
-   a.centry_list      = master_centry_list;
-   a.acl_list         = master_userset_list;
-   a.hgrp_list        = master_hgroup_list;
-   a.gep              = host_list_locate(master_exechost_list, SGE_GLOBAL_NAME);
-   a.start            = lGetUlong(ar, AR_start_time);
-   a.duration         = lGetUlong(ar, AR_duration);
-   a.is_reservation   = true;
+   a.host_list = master_exechost_list;
+   a.centry_list = master_centry_list;
+   a.acl_list = master_userset_list;
+   a.hgrp_list = master_hgroup_list;
+   a.gep = host_list_locate(master_exechost_list, SGE_GLOBAL_NAME);
+   a.start = lGetUlong(ar, AR_start_time);
+   a.duration = lGetUlong(ar, AR_duration);
+   a.is_reservation = true;
    a.is_advance_reservation = true;
-   a.now              = sge_get_gmt();
+   a.now = sge_get_gmt();
 
    /* 
     * Current scheduler code expects all queue instances in a plain list. We use 
@@ -1076,8 +1082,8 @@ static bool ar_reserve_queues(lList **alpp, lListElem *ar)
     */
    a.queue_list = lCreateList("", QU_Type);
 
-    /* imagine qs is empty */
-    sconf_set_qs_state(QS_STATE_EMPTY);
+   /* imagine qs is empty */
+   sconf_set_qs_state(QS_STATE_EMPTY);
 
    /* redirect scheduler monitoring into answer list */
    if (verify_mode == AR_JUST_VERIFY) {
@@ -1101,13 +1107,13 @@ static bool ar_reserve_queues(lList **alpp, lListElem *ar)
          if (qinstance_state_is_orphaned(qinstance)) {
             continue;
          }
-      
+
          /* we only have to consider requested queues */
          if (ar_queue_request != NULL) {
             if (qref_list_cq_rejected(ar_queue_request, cqname,
-                     lGetHost(qinstance, QU_qhostname), master_hgroup_list)) {
-               continue; 
-            } 
+                                      lGetHost(qinstance, QU_qhostname), master_hgroup_list)) {
+               continue;
+            }
          }
 
          /* we only have to consider queues containing the requested pe */
@@ -1136,21 +1142,21 @@ static bool ar_reserve_queues(lList **alpp, lListElem *ar)
 
          /* sort out queue that are calendar disabled in requested time frame */
          if ((cal_name = lGetString(qinstance, QU_calendar)) != NULL) {
-            const lListElem *cal_ep = lGetElemStrRW(master_cal_list, CAL_name, cal_name); 
+            const lListElem *cal_ep = lGetElemStrRW(master_cal_list, CAL_name, cal_name);
 
             if (!calendar_open_in_time_frame(cal_ep, lGetUlong(ar, AR_start_time), lGetUlong(ar, AR_duration))) {
                /* skip queue */
                answer_list_add_sprintf(alpp, STATUS_OK, ANSWER_QUALITY_INFO, MSG_AR_QUEUEDISABLEDINTIMEFRAME,
-                                       lGetString(qinstance, QU_full_name)); 
+                                       lGetString(qinstance, QU_full_name));
                continue;
             }
-         } 
+         }
          /* sort out queues where not all users have access */
          if (lGetList(ar, AR_acl_list) != NULL) {
-            if (!sge_ar_have_users_access(alpp, ar, lGetString(qinstance, QU_full_name), 
-                                                lGetList(qinstance, QU_acl),
-                                                lGetList(qinstance, QU_xacl),
-                                                master_userset_list)) {
+            if (!sge_ar_have_users_access(alpp, ar, lGetString(qinstance, QU_full_name),
+                                          lGetList(qinstance, QU_acl),
+                                          lGetList(qinstance, QU_xacl),
+                                          master_userset_list)) {
                continue;
             }
          }
@@ -1179,7 +1185,7 @@ static bool ar_reserve_queues(lList **alpp, lListElem *ar)
     */
    prepare_resource_schedules(*(splitted_job_lists[SPLIT_RUNNING]),
                               *(splitted_job_lists[SPLIT_SUSPENDED]),
-                              master_pe_list, a.host_list, a.queue_list, 
+                              master_pe_list, a.host_list, a.queue_list,
                               NULL, a.centry_list, a.acl_list,
                               a.hgrp_list, NULL, false, a.now);
 
@@ -1216,12 +1222,13 @@ static bool ar_reserve_queues(lList **alpp, lListElem *ar)
 
       if (result == DISPATCH_OK) {
          if (!a.pe) {
-            answer_list_add_sprintf(alpp, STATUS_OK, ANSWER_QUALITY_INFO, MSG_JOB_VERIFYFOUNDQ); 
+            answer_list_add_sprintf(alpp, STATUS_OK, ANSWER_QUALITY_INFO, MSG_JOB_VERIFYFOUNDQ);
          } else {
             answer_list_add_sprintf(alpp, STATUS_OK, ANSWER_QUALITY_INFO, MSG_JOB_VERIFYFOUNDSLOTS_I, a.slots);
          }
       } else {
-         answer_list_add_sprintf(alpp, STATUS_ESEMANTIC, ANSWER_QUALITY_INFO, MSG_JOB_NOSUITABLEQ_S, MSG_JOB_VERIFYVERIFY);
+         answer_list_add_sprintf(alpp, STATUS_ESEMANTIC, ANSWER_QUALITY_INFO, MSG_JOB_NOSUITABLEQ_S,
+                                 MSG_JOB_VERIFYVERIFY);
       }
       /* ret has to be false in verify mode, otherwise the framework adds the object to the master list */
       ret = false;
@@ -1275,8 +1282,8 @@ static bool ar_reserve_queues(lList **alpp, lListElem *ar)
 *  SEE ALSO
 *     sge_resource_utilization/rqs_add_job_utilization()
 *******************************************************************************/
-int ar_do_reservation(lListElem *ar, bool incslots)
-{
+int
+ar_do_reservation(lListElem *ar, bool incslots) {
    lListElem *dummy_job = lCreateElem(JB_Type);
    const lListElem *qep;
    lListElem *global_host_ep = NULL;
@@ -1311,7 +1318,7 @@ int ar_do_reservation(lListElem *ar, bool incslots)
       }
 
       queue_hostname = lGetHost(queue, QU_qhostname);
-      
+
       if (!incslots) {
          tmp_slots = -lGetUlong(qep, JG_slots);
       } else {
@@ -1327,7 +1334,7 @@ int ar_do_reservation(lListElem *ar, bool incslots)
                                  SGE_GLOBAL_NAME, start_time, duration, GLOBAL_TAG,
                                  false, is_master_task) != 0) {
          /* this info is not spooled */
-         sge_add_event(0, sgeE_EXECHOST_MOD, 0, 0, 
+         sge_add_event(0, sgeE_EXECHOST_MOD, 0, 0,
                        SGE_GLOBAL_NAME, NULL, NULL, global_host_ep);
          lListElem_clear_changed_info(global_host_ep);
       }
@@ -1339,7 +1346,7 @@ int ar_do_reservation(lListElem *ar, bool incslots)
                                  EH_resource_utilization, queue_hostname, start_time,
                                  duration, HOST_TAG, false, is_master_task) != 0) {
          /* this info is not spooled */
-         sge_add_event(0, sgeE_EXECHOST_MOD, 0, 0, 
+         sge_add_event(0, sgeE_EXECHOST_MOD, 0, 0,
                        queue_hostname, NULL, NULL, host_ep);
          lListElem_clear_changed_info(host_ep);
       }
@@ -1363,8 +1370,8 @@ int ar_do_reservation(lListElem *ar, bool incslots)
          ERROR((SGE_EVENT, MSG_OBJ_UNABLE2FINDPE_S, granted_pe));
       } else {
          utilization_add(lFirstRW(lGetList(pe, PE_resource_utilization)), start_time,
-                                duration, pe_slots, 0, 0, PE_TAG, granted_pe,
-                                SCHEDULING_RECORD_ENTRY_TYPE_RESERVING, false, false);
+                         duration, pe_slots, 0, 0, PE_TAG, granted_pe,
+                         SCHEDULING_RECORD_ENTRY_TYPE_RESERVING, false, false);
          sge_add_event(0, sgeE_PE_MOD, 0, 0, granted_pe, NULL, NULL, pe);
          lListElem_clear_changed_info(pe);
       }
@@ -1412,10 +1419,9 @@ int ar_do_reservation(lListElem *ar, bool incslots)
 *  NOTES
 *     MT-NOTE: ar_get_string_from_event() is MT safe 
 *******************************************************************************/
-bool 
-ar_list_has_reservation_due_to_ckpt(const lList *ar_master_list, lList **answer_list, 
-                                    const char *qinstance_name, lList *ckpt_string_list) 
-{
+bool
+ar_list_has_reservation_due_to_ckpt(const lList *ar_master_list, lList **answer_list,
+                                    const char *qinstance_name, lList *ckpt_string_list) {
    const lListElem *ar;
 
    DENTER(TOP_LAYER);
@@ -1425,9 +1431,9 @@ ar_list_has_reservation_due_to_ckpt(const lList *ar_master_list, lList **answer_
 
       if (ckpt_string != NULL && lGetElemStr(lGetList(ar, AR_granted_slots), JG_qname, qinstance_name)) {
          if (lGetElemStr(ckpt_string_list, ST_name, ckpt_string) == NULL) {
-            ERROR((SGE_EVENT, MSG_PARSE_MOD_REJECTED_DUE_TO_AR_SSU, ckpt_string, 
-                   SGE_ATTR_CKPT_LIST, sge_u32c(lGetUlong(ar, AR_id))));
-            answer_list_add(answer_list, SGE_EVENT, 
+            ERROR((SGE_EVENT, MSG_PARSE_MOD_REJECTED_DUE_TO_AR_SSU, ckpt_string,
+                    SGE_ATTR_CKPT_LIST, sge_u32c(lGetUlong(ar, AR_id))));
+            answer_list_add(answer_list, SGE_EVENT,
                             STATUS_ESYNTAX, ANSWER_QUALITY_ERROR);
             DRETURN(true);
          }
@@ -1473,10 +1479,9 @@ ar_list_has_reservation_due_to_ckpt(const lList *ar_master_list, lList **answer_
 *  NOTES
 *     MT-NOTE: ar_get_string_from_event() is MT safe 
 *******************************************************************************/
-bool 
-ar_list_has_reservation_due_to_pe(const lList *ar_master_list, lList **answer_list, 
-                                  const char *qinstance_name, lList *pe_string_list) 
-{
+bool
+ar_list_has_reservation_due_to_pe(const lList *ar_master_list, lList **answer_list, const char *qinstance_name,
+                                  lList *pe_string_list) {
    const lListElem *ar;
 
    DENTER(TOP_LAYER);
@@ -1486,9 +1491,9 @@ ar_list_has_reservation_due_to_pe(const lList *ar_master_list, lList **answer_li
 
       if (pe_string != NULL && lGetElemStr(lGetList(ar, AR_granted_slots), JG_qname, qinstance_name)) {
          if (lGetElemStr(pe_string_list, ST_name, pe_string) == NULL) {
-            ERROR((SGE_EVENT, MSG_PARSE_MOD_REJECTED_DUE_TO_AR_SSU, pe_string, 
-                   SGE_ATTR_PE_LIST, sge_u32c(lGetUlong(ar, AR_id))));
-            answer_list_add(answer_list, SGE_EVENT, 
+            ERROR((SGE_EVENT, MSG_PARSE_MOD_REJECTED_DUE_TO_AR_SSU, pe_string,
+                    SGE_ATTR_PE_LIST, sge_u32c(lGetUlong(ar, AR_id))));
+            answer_list_add(answer_list, SGE_EVENT,
                             STATUS_ESYNTAX, ANSWER_QUALITY_ERROR);
             DRETURN(true);
          }
@@ -1536,11 +1541,8 @@ ar_list_has_reservation_due_to_pe(const lList *ar_master_list, lList **answer_li
 *     MT-NOTE: ar_list_has_reservation_for_pe_with_slots() is MT safe 
 *******************************************************************************/
 bool
-ar_list_has_reservation_for_pe_with_slots(const lList *ar_master_list, 
-                                          lList **answer_list,
-                                          const char *pe_name, 
-                                          u_long32 new_slots) 
-{
+ar_list_has_reservation_for_pe_with_slots(const lList *ar_master_list, lList **answer_list, const char *pe_name,
+                                          u_long32 new_slots) {
    bool ret = false;
    const lListElem *ar;
    const lListElem *gs;
@@ -1554,14 +1556,14 @@ ar_list_has_reservation_for_pe_with_slots(const lList *ar_master_list,
       if (pe_name != NULL && pe_string != NULL && strcmp(pe_string, pe_name) == 0) {
          for_each_ep(gs, lGetList(ar, AR_granted_slots)) {
             u_long32 slots = lGetUlong(gs, JG_slots);
-         
+
             max_res_slots += slots;
          }
       }
    }
    if (max_res_slots > new_slots) {
       ERROR((SGE_EVENT, MSG_PARSE_MOD_REJECTED_DUE_TO_AR_PE_SLOTS_U,
-             sge_u32c(max_res_slots)));
+              sge_u32c(max_res_slots)));
       answer_list_add(answer_list, SGE_EVENT,
                       STATUS_ESYNTAX, ANSWER_QUALITY_ERROR);
       ret = true;
@@ -1587,8 +1589,8 @@ ar_list_has_reservation_for_pe_with_slots(const lList *ar_master_list,
 *  NOTES
 *     MT-NOTE: ar_initialize_reserved_queue_list() is not MT safe 
 *******************************************************************************/
-void ar_initialize_reserved_queue_list(lListElem *ar)
-{
+void
+ar_initialize_reserved_queue_list(lListElem *ar) {
    const lListElem *gep;
    const lList *gdil = lGetList(ar, AR_granted_slots);
    const lList *master_centry_list = *object_type_get_master_list(SGE_TYPE_CENTRY);
@@ -1596,41 +1598,41 @@ void ar_initialize_reserved_queue_list(lListElem *ar)
    dstring buffer = DSTRING_INIT;
    bool is_master_queue = true;
 
-   static int queue_field[] = { QU_qhostname,
-                                QU_qname,
-                                QU_full_name,
-                                QU_job_slots,
-                                QU_consumable_config_list,
-                                QU_tagged4schedule,
-                                QU_resource_utilization,
-                                QU_message_list,
-                                QU_state,
-                                QU_s_rt,
-                                QU_h_rt,
-                                QU_s_cpu,
-                                QU_h_cpu,
-                                QU_s_fsize,
-                                QU_h_fsize,
-                                QU_s_data,
-                                QU_h_data,
-                                QU_s_stack,
-                                QU_h_stack,
-                                QU_s_core,
-                                QU_h_core,
-                                QU_s_rss,
-                                QU_h_rss,
-                                QU_s_vmem,
-                                QU_h_vmem,
-                                NoName };
-    static char *value = "INFINITY";
-    static int attr[] = {
-      QU_s_cpu, QU_h_cpu, QU_s_fsize, QU_h_fsize, QU_s_data,
-      QU_h_data, QU_s_stack, QU_h_stack, QU_s_core, QU_h_core,
-      QU_s_rss, QU_h_rss, QU_s_vmem, QU_h_vmem, NoName
-    };
+   static int queue_field[] = {QU_qhostname,
+                               QU_qname,
+                               QU_full_name,
+                               QU_job_slots,
+                               QU_consumable_config_list,
+                               QU_tagged4schedule,
+                               QU_resource_utilization,
+                               QU_message_list,
+                               QU_state,
+                               QU_s_rt,
+                               QU_h_rt,
+                               QU_s_cpu,
+                               QU_h_cpu,
+                               QU_s_fsize,
+                               QU_h_fsize,
+                               QU_s_data,
+                               QU_h_data,
+                               QU_s_stack,
+                               QU_h_stack,
+                               QU_s_core,
+                               QU_h_core,
+                               QU_s_rss,
+                               QU_h_rss,
+                               QU_s_vmem,
+                               QU_h_vmem,
+                               NoName};
+   static char *value = "INFINITY";
+   static int attr[] = {
+           QU_s_cpu, QU_h_cpu, QU_s_fsize, QU_h_fsize, QU_s_data,
+           QU_h_data, QU_s_stack, QU_h_stack, QU_s_core, QU_h_core,
+           QU_s_rss, QU_h_rss, QU_s_vmem, QU_h_vmem, NoName
+   };
 
    lDescr *rdp = NULL;
-   lEnumeration *what; 
+   lEnumeration *what;
    lList *queue_list;
 
    DENTER(TOP_LAYER);
@@ -1648,10 +1650,10 @@ void ar_initialize_reserved_queue_list(lListElem *ar)
       lList *crl = NULL;
       const lListElem *cr;
       lListElem *new_cr;
-      
+
       const char *queue_name = lGetString(gep, JG_qname);
       char *cqueue_name = cqueue_get_name_from_qinstance(queue_name);
-       
+
       lSetHost(queue, QU_qhostname, lGetHost(gep, JG_qhostname));
       lSetString(queue, QU_full_name, queue_name);
       lSetString(queue, QU_qname, cqueue_name);
@@ -1675,7 +1677,7 @@ void ar_initialize_reserved_queue_list(lListElem *ar)
          u_long32 consumable = lGetUlong(cr, CE_consumable);
          if (consumable != CONSUMABLE_NO) {
             double newval;
-           
+
             if (lGetUlong(cr, CE_consumable) == CONSUMABLE_YES) {
                newval = lGetDouble(cr, CE_doubleval) * slots;
             } else {
@@ -1715,41 +1717,41 @@ void ar_initialize_reserved_queue_list(lListElem *ar)
          master_cqueue = lGetElemStr(master_cqueue_list, CQ_name, cqueue_name);
          if (master_cqueue != NULL) {
             if ((master_queue = lGetSubStr(master_cqueue, QU_full_name,
-                  queue_name, CQ_qinstances)) != NULL){
+                                           queue_name, CQ_qinstances)) != NULL) {
                if (qinstance_state_is_ambiguous(master_queue)) {
                   lAddUlong(ar, AR_qi_errors, 1);
                   sge_dstring_sprintf(&buffer, "reserved queue %s is %s", queue_name,
-                                qinstance_state_as_string(QI_AMBIGUOUS));
+                                      qinstance_state_as_string(QI_AMBIGUOUS));
                   qinstance_set_error(queue, QI_AMBIGUOUS, sge_dstring_get_string(&buffer), true);
                }
                if (qinstance_state_is_alarm(master_queue)) {
                   lAddUlong(ar, AR_qi_errors, 1);
                   sge_dstring_sprintf(&buffer, "reserved queue %s is %s", queue_name,
-                                qinstance_state_as_string(QI_ALARM));
+                                      qinstance_state_as_string(QI_ALARM));
                   qinstance_set_error(queue, QI_ALARM, sge_dstring_get_string(&buffer), true);
                }
                if (qinstance_state_is_suspend_alarm(master_queue)) {
                   lAddUlong(ar, AR_qi_errors, 1);
                   sge_dstring_sprintf(&buffer, "reserved queue %s is %s", queue_name,
-                                qinstance_state_as_string(QI_SUSPEND_ALARM));
+                                      qinstance_state_as_string(QI_SUSPEND_ALARM));
                   qinstance_set_error(queue, QI_SUSPEND_ALARM, sge_dstring_get_string(&buffer), true);
                }
                if (qinstance_state_is_manual_disabled(master_queue)) {
                   lAddUlong(ar, AR_qi_errors, 1);
                   sge_dstring_sprintf(&buffer, "reserved queue %s is %s", queue_name,
-                                qinstance_state_as_string(QI_DISABLED));
+                                      qinstance_state_as_string(QI_DISABLED));
                   qinstance_set_error(queue, QI_DISABLED, sge_dstring_get_string(&buffer), true);
                }
                if (qinstance_state_is_unknown(master_queue)) {
                   lAddUlong(ar, AR_qi_errors, 1);
                   sge_dstring_sprintf(&buffer, "reserved queue %s is %s", queue_name,
-                                qinstance_state_as_string(QI_UNKNOWN));
-                  qinstance_set_error(queue,QI_UNKNOWN, sge_dstring_get_string(&buffer), true);
+                                      qinstance_state_as_string(QI_UNKNOWN));
+                  qinstance_set_error(queue, QI_UNKNOWN, sge_dstring_get_string(&buffer), true);
                }
                if (qinstance_state_is_error(master_queue)) {
                   lAddUlong(ar, AR_qi_errors, 1);
                   sge_dstring_sprintf(&buffer, "reserved queue %s is %s", queue_name,
-                                qinstance_state_as_string(QI_ERROR));
+                                      qinstance_state_as_string(QI_ERROR));
                   qinstance_set_error(queue, QI_ERROR, sge_dstring_get_string(&buffer), true);
                }
             }
@@ -1764,7 +1766,7 @@ void ar_initialize_reserved_queue_list(lListElem *ar)
    sge_free(&rdp);
    sge_dstring_free(&buffer);
 
-   DRETURN_VOID; 
+   DRETURN_VOID;
 }
 
 /****** sge_advance_reservation_qmaster/sge_ar_remove_all_jobs() ***************
@@ -1787,8 +1789,8 @@ void ar_initialize_reserved_queue_list(lListElem *ar)
 *  NOTES
 *     MT-NOTE: sge_ar_remove_all_jobs() is not MT safe 
 *******************************************************************************/
-bool sge_ar_remove_all_jobs(sge_gdi_ctx_class_t *ctx, u_long32 ar_id, int forced, monitoring_t *monitor)
-{
+bool
+sge_ar_remove_all_jobs(sge_gdi_ctx_class_t *ctx, u_long32 ar_id, int forced, monitoring_t *monitor) {
    lListElem *nextjep, *jep;
    lListElem *tmp_task;
    bool ret = true;
@@ -1796,7 +1798,7 @@ bool sge_ar_remove_all_jobs(sge_gdi_ctx_class_t *ctx, u_long32 ar_id, int forced
    DENTER(TOP_LAYER);
 
    nextjep = lFirstRW(*object_type_get_master_list(SGE_TYPE_JOB));
-   while ((jep=nextjep)) {
+   while ((jep = nextjep)) {
       u_long32 task_number;
       u_long32 start = MIN(job_get_smallest_unenrolled_task_id(jep), job_get_smallest_enrolled_task_id(jep));
       u_long32 end = MAX(job_get_biggest_unenrolled_task_id(jep), job_get_biggest_enrolled_task_id(jep));
@@ -1809,8 +1811,8 @@ bool sge_ar_remove_all_jobs(sge_gdi_ctx_class_t *ctx, u_long32 ar_id, int forced
       DPRINTF(("removing job %d\n", lGetUlong(jep, JB_job_number)));
       DPRINTF((" ----> task_start = %d, task_end = %d\n", start, end));
 
-      for (task_number = start; 
-           task_number <= end; 
+      for (task_number = start;
+           task_number <= end;
            task_number++) {
 
          if (job_is_ja_task_defined(jep, task_number)) {
@@ -1818,7 +1820,7 @@ bool sge_ar_remove_all_jobs(sge_gdi_ctx_class_t *ctx, u_long32 ar_id, int forced
             if (job_is_enrolled(jep, task_number)) {
                /* delete all enrolled pending tasks */
                DPRINTF(("removing enrolled task %d.%d\n", lGetUlong(jep, JB_job_number), task_number));
-               tmp_task = lGetSubUlong(jep, JAT_task_number, task_number, JB_ja_tasks); 
+               tmp_task = lGetSubUlong(jep, JAT_task_number, task_number, JB_ja_tasks);
 
                /* 
                 * if task is already in status deleted and was signaled
@@ -1880,9 +1882,8 @@ bool sge_ar_remove_all_jobs(sge_gdi_ctx_class_t *ctx, u_long32 ar_id, int forced
 *     MT-NOTE: sge_ar_list_conflicts_with_calendar() is MT safe 
 *******************************************************************************/
 bool
-sge_ar_list_conflicts_with_calendar(lList **answer_list, const char *qinstance_name,
-                                    const lListElem *cal_ep, const lList *master_ar_list)
-{
+sge_ar_list_conflicts_with_calendar(lList **answer_list, const char *qinstance_name, const lListElem *cal_ep,
+                                    const lList *master_ar_list) {
    const lListElem *ar;
 
    DENTER(TOP_LAYER);
@@ -1893,9 +1894,9 @@ sge_ar_list_conflicts_with_calendar(lList **answer_list, const char *qinstance_n
          u_long32 duration = lGetUlong(ar, AR_duration);
 
          if (!calendar_open_in_time_frame(cal_ep, start_time, duration)) {
-            ERROR((SGE_EVENT, MSG_PARSE_MOD2_REJECTED_DUE_TO_AR_SSU, lGetString(cal_ep, CAL_name), 
-                   SGE_ATTR_CALENDAR, sge_u32c(lGetUlong(ar, AR_id))));
-            answer_list_add(answer_list, SGE_EVENT, 
+            ERROR((SGE_EVENT, MSG_PARSE_MOD2_REJECTED_DUE_TO_AR_SSU, lGetString(cal_ep, CAL_name),
+                    SGE_ATTR_CALENDAR, sge_u32c(lGetUlong(ar, AR_id))));
+            answer_list_add(answer_list, SGE_EVENT,
                             STATUS_ESYNTAX, ANSWER_QUALITY_ERROR);
             DRETURN(true);
          }
@@ -1927,8 +1928,8 @@ sge_ar_list_conflicts_with_calendar(lList **answer_list, const char *qinstance_n
 *     sge_advance_reservation_qmaster/sge_ar_state_set_deleted()
 *     sge_advance_reservation_qmaster/sge_ar_state_set_waiting()
 *******************************************************************************/
-void sge_ar_state_set_running(lListElem *ar)
-{
+void
+sge_ar_state_set_running(lListElem *ar) {
    u_long32 old_state = lGetUlong(ar, AR_state);
 
    if (old_state == AR_DELETED || old_state == AR_EXITED) {
@@ -1978,8 +1979,8 @@ void sge_ar_state_set_running(lListElem *ar)
 *     sge_advance_reservation_qmaster/sge_ar_state_set_deleted()
 *     sge_advance_reservation_qmaster/sge_ar_state_set_running()
 *******************************************************************************/
-void sge_ar_state_set_waiting(lListElem *ar)
-{
+void
+sge_ar_state_set_waiting(lListElem *ar) {
    u_long32 old_state = lGetUlong(ar, AR_state);
 
    if (old_state == AR_DELETED || old_state == AR_EXITED) {
@@ -2020,7 +2021,8 @@ void sge_ar_state_set_waiting(lListElem *ar)
 *     sge_advance_reservation_qmaster/sge_ar_state_set_waiting()
 *     sge_advance_reservation_qmaster/sge_ar_state_set_running()
 *******************************************************************************/
-void sge_ar_state_set_deleted(lListElem *ar) {
+void
+sge_ar_state_set_deleted(lListElem *ar) {
    lSetUlong(ar, AR_state, AR_DELETED);
 }
 
@@ -2045,7 +2047,8 @@ void sge_ar_state_set_deleted(lListElem *ar) {
 *     sge_advance_reservation_qmaster/sge_ar_state_set_waiting()
 *     sge_advance_reservation_qmaster/sge_ar_state_set_running()
 *******************************************************************************/
-void sge_ar_state_set_exited(lListElem *ar) {
+void
+sge_ar_state_set_exited(lListElem *ar) {
    lSetUlong(ar, AR_state, AR_EXITED);
 }
 
@@ -2073,8 +2076,8 @@ void sge_ar_state_set_exited(lListElem *ar) {
 *  NOTES
 *     MT-NOTE: sge_ar_list_set_error_state() is MT safe 
 *******************************************************************************/
-void sge_ar_list_set_error_state(lList *ar_list, const char *qname, u_long32 error_type, bool set_error)
-{
+void
+sge_ar_list_set_error_state(lList *ar_list, const char *qname, u_long32 error_type, bool set_error) {
    lListElem *ar;
    dstring buffer = DSTRING_INIT;
 
@@ -2084,7 +2087,7 @@ void sge_ar_list_set_error_state(lList *ar_list, const char *qname, u_long32 err
       lListElem *qinstance;
       const lList *granted_slots = lGetList(ar, AR_reserved_queues);
 
-      if ((qinstance =lGetElemStrRW(granted_slots, QU_full_name, qname)) != NULL) {
+      if ((qinstance = lGetElemStrRW(granted_slots, QU_full_name, qname)) != NULL) {
          u_long32 old_errors = lGetUlong(ar, AR_qi_errors);
          u_long32 new_errors;
 
@@ -2108,7 +2111,7 @@ void sge_ar_list_set_error_state(lList *ar_list, const char *qname, u_long32 err
             }
             /* this info is not spooled */
             sge_dstring_sprintf(&buffer, sge_U32CFormat, lGetUlong(ar, AR_id));
-            sge_add_event(0, sgeE_AR_MOD, 0, 0, 
+            sge_add_event(0, sgeE_AR_MOD, 0, 0,
                           sge_dstring_get_string(&buffer), NULL, NULL, ar);
             lListElem_clear_changed_info(ar);
          }
@@ -2136,8 +2139,8 @@ void sge_ar_list_set_error_state(lList *ar_list, const char *qname, u_long32 err
 *  NOTES
 *     MT-NOTE: sge_ar_send_mail() is MT safe 
 *******************************************************************************/
-static void sge_ar_send_mail(lListElem *ar, int type)
-{
+static void
+sge_ar_send_mail(lListElem *ar, int type) {
    dstring buffer = DSTRING_INIT;
    dstring subject = DSTRING_INIT;
    dstring body = DSTRING_INIT;
@@ -2154,51 +2157,56 @@ static void sge_ar_send_mail(lListElem *ar, int type)
       sge_dstring_free(&body);
       sge_dstring_free(&buffer);
       DRETURN_VOID;
-   } 
+   }
 
    ar_id = lGetUlong(ar, AR_id);
    ar_name = lGetString(ar, AR_name);
 
-   switch(type) {
+   switch (type) {
       case MAIL_AT_BEGINNING:
-         sge_ctime((time_t)lGetUlong(ar, AR_start_time), &buffer);
+         sge_ctime((time_t) lGetUlong(ar, AR_start_time), &buffer);
          sge_dstring_sprintf(&subject, MSG_MAIL_ARSTARTEDSUBJ_US,
-                 sge_u32c(ar_id), ar_name?ar_name:"none");
+                             sge_u32c(ar_id), ar_name ? ar_name : "none");
          sge_dstring_sprintf(&body, MSG_MAIL_ARSTARTBODY_USSS,
-                 sge_u32c(ar_id), ar_name?ar_name:"none", lGetString(ar, AR_owner), sge_dstring_get_string(&buffer));
+                             sge_u32c(ar_id), ar_name ? ar_name : "none", lGetString(ar, AR_owner),
+                             sge_dstring_get_string(&buffer));
          mail_type = MSG_MAIL_TYPE_ARSTART;
          break;
       case MAIL_AT_EXIT:
          if (lGetUlong(ar, AR_state) == AR_DELETED) {
-            sge_ctime((time_t)sge_get_gmt(), &buffer);
+            sge_ctime((time_t) sge_get_gmt(), &buffer);
             sge_dstring_sprintf(&subject, MSG_MAIL_ARDELETEDSUBJ_US,
-                    sge_u32c(ar_id), ar_name?ar_name:"none");
+                                sge_u32c(ar_id), ar_name ? ar_name : "none");
             sge_dstring_sprintf(&body, MSG_MAIL_ARDELETETBODY_USSS,
-                    sge_u32c(ar_id), ar_name?ar_name:"none", lGetString(ar, AR_owner), sge_dstring_get_string(&buffer));
+                                sge_u32c(ar_id), ar_name ? ar_name : "none", lGetString(ar, AR_owner),
+                                sge_dstring_get_string(&buffer));
             mail_type = MSG_MAIL_TYPE_ARDELETE;
          } else {
-            sge_ctime((time_t)lGetUlong(ar, AR_end_time), &buffer);
+            sge_ctime((time_t) lGetUlong(ar, AR_end_time), &buffer);
             sge_dstring_sprintf(&subject, MSG_MAIL_AREXITEDSUBJ_US,
-                    sge_u32c(ar_id), ar_name?ar_name:"none");
+                                sge_u32c(ar_id), ar_name ? ar_name : "none");
             sge_dstring_sprintf(&body, MSG_MAIL_AREXITBODY_USSS,
-                    sge_u32c(ar_id), ar_name?ar_name:"none", lGetString(ar, AR_owner), sge_dstring_get_string(&buffer));
+                                sge_u32c(ar_id), ar_name ? ar_name : "none", lGetString(ar, AR_owner),
+                                sge_dstring_get_string(&buffer));
             mail_type = MSG_MAIL_TYPE_AREND;
          }
          break;
       case MAIL_AT_ABORT:
          if (lGetUlong(ar, AR_state) == AR_ERROR) {
-            sge_ctime((time_t)sge_get_gmt(), &buffer);
+            sge_ctime((time_t) sge_get_gmt(), &buffer);
             sge_dstring_sprintf(&subject, MSG_MAIL_ARERRORSUBJ_US,
-                    sge_u32c(ar_id), ar_name?ar_name:"none");
+                                sge_u32c(ar_id), ar_name ? ar_name : "none");
             sge_dstring_sprintf(&body, MSG_MAIL_ARERRORBODY_USSS,
-                    sge_u32c(ar_id), ar_name?ar_name:"none", lGetString(ar, AR_owner), sge_dstring_get_string(&buffer));
+                                sge_u32c(ar_id), ar_name ? ar_name : "none", lGetString(ar, AR_owner),
+                                sge_dstring_get_string(&buffer));
             mail_type = MSG_MAIL_TYPE_ARERROR;
          } else {
-            sge_ctime((time_t)sge_get_gmt(), &buffer);
+            sge_ctime((time_t) sge_get_gmt(), &buffer);
             sge_dstring_sprintf(&subject, MSG_MAIL_AROKSUBJ_US,
-                    sge_u32c(ar_id), ar_name?ar_name:"none");
+                                sge_u32c(ar_id), ar_name ? ar_name : "none");
             sge_dstring_sprintf(&body, MSG_MAIL_AROKBODY_USSS,
-                    sge_u32c(ar_id), ar_name?ar_name:"none", lGetString(ar, AR_owner), sge_dstring_get_string(&buffer));
+                                sge_u32c(ar_id), ar_name ? ar_name : "none", lGetString(ar, AR_owner),
+                                sge_dstring_get_string(&buffer));
             mail_type = MSG_MAIL_TYPE_AROK;
          }
          break;
@@ -2207,7 +2215,8 @@ static void sge_ar_send_mail(lListElem *ar, int type)
          break;
    }
 
-   cull_mail(QMASTER, lGetList(ar, AR_mail_list), sge_dstring_get_string(&subject), sge_dstring_get_string(&body), mail_type);
+   cull_mail(QMASTER, lGetList(ar, AR_mail_list), sge_dstring_get_string(&subject), sge_dstring_get_string(&body),
+             mail_type);
 
    sge_dstring_free(&buffer);
    sge_dstring_free(&subject);
@@ -2247,12 +2256,9 @@ static void sge_ar_send_mail(lListElem *ar, int type)
 *     MT-NOTE: ar_list_has_reservation_due_to_qinstance_complex_attr() is  
 *     MT safe 
 *******************************************************************************/
-bool 
-ar_list_has_reservation_due_to_qinstance_complex_attr(const lList *ar_master_list, 
-                                                      lList **answer_list,
-                                                      lListElem *qinstance, 
-                                                      const lList *ce_master_list)
-{  
+bool
+ar_list_has_reservation_due_to_qinstance_complex_attr(const lList *ar_master_list, lList **answer_list,
+                                                      lListElem *qinstance, const lList *ce_master_list) {
    const lListElem *ar = NULL;
    const lListElem *gs;
 
@@ -2261,7 +2267,7 @@ ar_list_has_reservation_due_to_qinstance_complex_attr(const lList *ar_master_lis
    for_each_ep(ar, ar_master_list) {
       const char *qinstance_name = lGetString(qinstance, QU_full_name);
 
-      if ((gs =lGetElemStr(lGetList(ar, AR_granted_slots), JG_qname, qinstance_name))) {
+      if ((gs = lGetElemStr(lGetList(ar, AR_granted_slots), JG_qname, qinstance_name))) {
 
          const lListElem *rue = NULL;
          lListElem *request = NULL;
@@ -2275,9 +2281,9 @@ ar_list_has_reservation_due_to_qinstance_complex_attr(const lList *ar_master_lis
             if (!is_consumable) {
                char text[2048];
                u_long32 slots = lGetUlong(gs, JG_slots);
-               lListElem *current = lGetSubStr(qinstance, CE_name, 
+               lListElem *current = lGetSubStr(qinstance, CE_name,
                                                ce_name, QU_consumable_config_list);
-               if (current != NULL) {                                  
+               if (current != NULL) {
                   current = lCopyElem(current);
                   lSetUlong(current, CE_relop, lGetUlong(ce, CE_relop));
                   lSetDouble(current, CE_pj_doubleval, lGetDouble(current, CE_doubleval));
@@ -2285,8 +2291,8 @@ ar_list_has_reservation_due_to_qinstance_complex_attr(const lList *ar_master_lis
 
                   if (compare_complexes(slots, request, current, text, false, true) == 0) {
                      ERROR((SGE_EVENT, MSG_QUEUE_MODCMPLXDENYDUETOAR_SS, ce_name,
-                            SGE_ATTR_COMPLEX_VALUES));
-                     answer_list_add(answer_list, SGE_EVENT, 
+                             SGE_ATTR_COMPLEX_VALUES));
+                     answer_list_add(answer_list, SGE_EVENT,
                                      STATUS_ESYNTAX, ANSWER_QUALITY_ERROR);
                      lFreeElem(&current);
                      DRETURN(true);
@@ -2308,13 +2314,13 @@ ar_list_has_reservation_due_to_qinstance_complex_attr(const lList *ar_master_lis
 
             if (is_consumable) {
                const lListElem *rde = NULL;
-               const lList * rde_list = lGetList(rue, RUE_utilized);
+               const lList *rde_list = lGetList(rue, RUE_utilized);
                lListElem *cv = lGetSubStr(qinstance, CE_name, ce_name, QU_consumable_config_list);
 
                if (cv == NULL) {
-                  ERROR((SGE_EVENT, MSG_QUEUE_MODNOCMPLXDENYDUETOAR_SS, 
-                         ce_name, SGE_ATTR_COMPLEX_VALUES));
-                  answer_list_add(answer_list, SGE_EVENT, 
+                  ERROR((SGE_EVENT, MSG_QUEUE_MODNOCMPLXDENYDUETOAR_SS,
+                          ce_name, SGE_ATTR_COMPLEX_VALUES));
+                  answer_list_add(answer_list, SGE_EVENT,
                                   STATUS_ESYNTAX, ANSWER_QUALITY_ERROR);
                   DRETURN(true);
                } else {
@@ -2325,19 +2331,19 @@ ar_list_has_reservation_due_to_qinstance_complex_attr(const lList *ar_master_lis
 
                      if (amount > configured) {
                         ERROR((SGE_EVENT, MSG_QUEUE_MODCMPLXDENYDUETOAR_SS, ce_name,
-                               SGE_ATTR_COMPLEX_VALUES));
-                        answer_list_add(answer_list, SGE_EVENT, 
+                                SGE_ATTR_COMPLEX_VALUES));
+                        answer_list_add(answer_list, SGE_EVENT,
                                         STATUS_ESYNTAX, ANSWER_QUALITY_ERROR);
                         DRETURN(true);
                      }
                   }
                }
-            } 
-         } 
+            }
+         }
       }
    }
    DRETURN(false);
-}  
+}
 
 /****** sge_advance_reservation_qmaster/ar_list_has_reservation_due_to_host_complex_attr() ******
 *  NAME
@@ -2370,10 +2376,9 @@ ar_list_has_reservation_due_to_qinstance_complex_attr(const lList *ar_master_lis
 *     MT-NOTE: ar_list_has_reservation_due_to_host_complex_attr() is MT 
 *     safe 
 *******************************************************************************/
-bool 
+bool
 ar_list_has_reservation_due_to_host_complex_attr(const lList *ar_master_list, lList **answer_list,
-                                                 lListElem *host, const lList *ce_master_list)
-{  
+                                                 lListElem *host, const lList *ce_master_list) {
    const lListElem *ar = NULL;
    const char *hostname = lGetHost(host, EH_name);
 
@@ -2394,22 +2399,22 @@ ar_list_has_reservation_due_to_host_complex_attr(const lList *ar_master_list, lL
                const char *ce_name = lGetString(request, CE_name);
                const lListElem *ce = lGetElemStr(ce_master_list, CE_name, ce_name);
                bool is_consumable = (lGetUlong(ce, CE_consumable) > 0) ? true : false;
-  
+
                if (!is_consumable) {
                   char text[2048];
                   u_long32 slots = lGetUlong(gs, JG_slots);
-                  lListElem *current = lGetSubStr(host, CE_name, 
+                  lListElem *current = lGetSubStr(host, CE_name,
                                                   ce_name, EH_consumable_config_list);
                   if (current != NULL) {
                      current = lCopyElem(current);
                      lSetUlong(current, CE_relop, lGetUlong(ce, CE_relop));
                      lSetDouble(current, CE_pj_doubleval, lGetDouble(current, CE_doubleval));
                      lSetString(current, CE_pj_stringval, lGetString(current, CE_stringval));
-                  
+
                      if (compare_complexes(slots, request, current, text, false, true) == 0) {
                         ERROR((SGE_EVENT, MSG_QUEUE_MODCMPLXDENYDUETOAR_SS, ce_name,
-                               SGE_ATTR_COMPLEX_VALUES));
-                        answer_list_add(answer_list, SGE_EVENT, 
+                                SGE_ATTR_COMPLEX_VALUES));
+                        answer_list_add(answer_list, SGE_EVENT,
                                         STATUS_ESYNTAX, ANSWER_QUALITY_ERROR);
                         lFreeElem(&current);
                         DRETURN(true);
@@ -2429,9 +2434,9 @@ ar_list_has_reservation_due_to_host_complex_attr(const lList *ar_master_list, lL
                   lListElem *cv = lGetSubStr(host, CE_name, ce_name, EH_consumable_config_list);
 
                   if (cv == NULL) {
-                     ERROR((SGE_EVENT, MSG_QUEUE_MODNOCMPLXDENYDUETOAR_SS, 
-                            ce_name, SGE_ATTR_COMPLEX_VALUES));
-                     answer_list_add(answer_list, SGE_EVENT, 
+                     ERROR((SGE_EVENT, MSG_QUEUE_MODNOCMPLXDENYDUETOAR_SS,
+                             ce_name, SGE_ATTR_COMPLEX_VALUES));
+                     answer_list_add(answer_list, SGE_EVENT,
                                      STATUS_ESYNTAX, ANSWER_QUALITY_ERROR);
                      DRETURN(true);
                   } else {
@@ -2441,18 +2446,18 @@ ar_list_has_reservation_due_to_host_complex_attr(const lList *ar_master_list, lL
                         double amount = lGetDouble(rde, RDE_amount);
 
                         if (amount > configured) {
-                           ERROR((SGE_EVENT, MSG_QUEUE_MODCMPLXDENYDUETOAR_SS, 
-                                  ce_name, SGE_ATTR_COMPLEX_VALUES));
-                           answer_list_add(answer_list, SGE_EVENT, 
+                           ERROR((SGE_EVENT, MSG_QUEUE_MODCMPLXDENYDUETOAR_SS,
+                                   ce_name, SGE_ATTR_COMPLEX_VALUES));
+                           answer_list_add(answer_list, SGE_EVENT,
                                            STATUS_ESYNTAX, ANSWER_QUALITY_ERROR);
                            DRETURN(true);
                         }
                      }
                   }
-               } 
-            } 
-         } 
-      } 
+               }
+            }
+         }
+      }
    }
    DRETURN(false);
 }  

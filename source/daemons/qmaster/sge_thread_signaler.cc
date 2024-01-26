@@ -57,26 +57,24 @@
 #endif
 
 void
-sge_signaler_initialize(sge_gdi_ctx_class_t *ctx)
-{
-   cl_thread_settings_t* dummy_thread_p = NULL;
-   dstring thread_name = DSTRING_INIT; 
+sge_signaler_initialize(sge_gdi_ctx_class_t *ctx) {
+   cl_thread_settings_t *dummy_thread_p = NULL;
+   dstring thread_name = DSTRING_INIT;
 
    DENTER(TOP_LAYER);
 
    sge_dstring_sprintf(&thread_name, "%s%03d", threadnames[SIGNALER_THREAD], 0);
    cl_thread_list_setup(&(Main_Control.signal_thread_pool), "signal thread pool");
    cl_thread_list_create_thread(Main_Control.signal_thread_pool, &dummy_thread_p,
-                                cl_com_get_log_list(), sge_dstring_get_string(&thread_name), 0, 
+                                cl_com_get_log_list(), sge_dstring_get_string(&thread_name), 0,
                                 sge_signaler_main, NULL, NULL, CL_TT_SIGNALER);
    sge_dstring_free(&thread_name);
    DRETURN_VOID;
 }
 
-void 
-sge_signaler_initiate_termination(void)
-{
-   cl_thread_settings_t* thread = NULL;
+void
+sge_signaler_initiate_termination(void) {
+   cl_thread_settings_t *thread = NULL;
    DENTER(TOP_LAYER);
 
    thread = cl_thread_list_get_first_thread(Main_Control.signal_thread_pool);
@@ -88,9 +86,8 @@ sge_signaler_initiate_termination(void)
 }
 
 void
-sge_signaler_terminate(void)
-{
-   cl_thread_settings_t* thread = NULL;
+sge_signaler_terminate(void) {
+   cl_thread_settings_t *thread = NULL;
    DENTER(TOP_LAYER);
 
    thread = cl_thread_list_get_first_thread(Main_Control.signal_thread_pool);
@@ -129,9 +126,9 @@ sge_signaler_terminate(void)
 *     MT-NOTE: in any other way!
 *
 *******************************************************************************/
-void* sge_signaler_main(void* arg)
-{
-   cl_thread_settings_t *thread_config = (cl_thread_settings_t*)arg;
+void *
+sge_signaler_main(void *arg) {
+   cl_thread_settings_t *thread_config = (cl_thread_settings_t *) arg;
    bool is_continue = true;
    sigset_t sig_set;
    int sig_num;
@@ -182,7 +179,7 @@ void* sge_signaler_main(void* arg)
                   sge_smf_temporary_disable_instance();
                }
             }
-#endif   
+#endif
             /*
              * Now this thread can exit. The main thread does the remaining
              * shutdown activities
@@ -195,8 +192,7 @@ void* sge_signaler_main(void* arg)
 
       sge_monitor_output(&monitor);
 
-      thread_output_profiling("signal thread profiling summary:\n",
-                              &next_prof_output);
+      thread_output_profiling("signal thread profiling summary:\n", &next_prof_output);
 
    }
 

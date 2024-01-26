@@ -1238,8 +1238,8 @@ int lCompare(const lListElem *ep, const lCondition *cp)
                            cp->operand.cmp.val.ul64);
          break;
       case lListT:
-         result = (lFindFirst(lGetPosList(ep, cp->operand.cmp.pos), 
-                              cp->operand.cmp.val.cp) != NULL);
+         result = (lFindFirstRW(lGetPosList(ep, cp->operand.cmp.pos),
+                                cp->operand.cmp.val.cp) != NULL);
          DRETURN(result);
       case lFloatT:
          result = floatcmp(lGetPosFloat(ep, cp->operand.cmp.pos), 

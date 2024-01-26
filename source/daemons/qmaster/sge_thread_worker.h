@@ -42,8 +42,5 @@ sge_worker_initialize(sge_gdi_ctx_class_t *ctx);
 void
 sge_worker_terminate(sge_gdi_ctx_class_t *ctx);
 
-bool
-sge_worker_wait_for_new_packet(sge_gdi_packet_class_t **packet);
-
 void *
 sge_worker_main(void *arg);

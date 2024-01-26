@@ -107,7 +107,7 @@ int remove_immediate_jobs(lList *pending_job_list, lList *running_job_list, orde
       
       /* If the job also exists in the running list, we need to remove it there
        * as well since array jobs are all or nothing. */
-      if ((job = lFindFirst(running_job_list, where)) != NULL) {
+      if ((job = lFindFirstRW(running_job_list, where)) != NULL) {
          remove_immediate_job(running_job_list, job, orders, 1);
       }
       
@@ -226,7 +226,7 @@ order_remove_order_and_immediate(const lListElem *job, const lListElem *ja_task,
                       OR_type, ORT_start_job,
                       OR_job_number, lGetUlong(job, JB_job_number),
                       OR_ja_task_number, lGetUlong(ja_task, JAT_task_number));
-   lListElem *ep = lFindFirst (orderList, where);
+   lListElem *ep = lFindFirstRW(orderList, where);
    
    DENTER(TOP_LAYER);
    

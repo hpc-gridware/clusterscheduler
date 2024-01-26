@@ -77,7 +77,8 @@
 *     MT-NOTE: is MT safe. 
 *
 *******************************************************************************/
-void event_update_func(u_long32 ec_id, lList **alpp, lList *event_list) 
+void
+event_update_func(u_long32 ec_id, lList **alpp, lList *event_list)
 {
    DENTER(TOP_LAYER);
 
@@ -99,7 +100,6 @@ void event_update_func(u_long32 ec_id, lList **alpp, lList *event_list)
 
    sge_mutex_unlock("event_control_mutex", __func__, __LINE__, &Scheduler_Control.mutex);
 
-
    DRETURN_VOID;
 }
 
@@ -107,7 +107,8 @@ void event_update_func(u_long32 ec_id, lList **alpp, lList *event_list)
 /*  event client registration stuff          */
 /*********************************************/
 
-void set_job_flushing(sge_evc_class_t *evc)
+void
+set_job_flushing(sge_evc_class_t *evc)
 {
    int interval;
    bool flush;
@@ -125,7 +126,8 @@ void set_job_flushing(sge_evc_class_t *evc)
    evc->ec_set_flush(evc, sgeE_JATASK_DEL, flush, interval);
 }
 
-int subscribe_scheduler(sge_evc_class_t *evc, sge_where_what_t *where_what)
+int
+subscribe_scheduler(sge_evc_class_t *evc, sge_where_what_t *where_what)
 {
    DENTER(TOP_LAYER);
 
@@ -171,7 +173,8 @@ int subscribe_scheduler(sge_evc_class_t *evc, sge_where_what_t *where_what)
 
 /* do everything that needs to be done in common for all schedulers 
    between processing events and dispatching */
-int sge_before_dispatch(sge_evc_class_t *evc)
+int
+sge_before_dispatch(sge_evc_class_t *evc)
 {     
    sge_gdi_ctx_class_t *ctx = evc->get_gdi_ctx(evc);
    const char *cell_root = ctx->get_cell_root(ctx);

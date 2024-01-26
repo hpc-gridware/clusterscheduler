@@ -92,41 +92,53 @@
 #include "sge_advance_reservation_qmaster.h"
 #include "sge_job_enforce_limit.h"
 
-static void exec_host_change_queue_version(sge_gdi_ctx_class_t *ctx, const char *exechost_name);
-static void master_kill_execds(sge_gdi_ctx_class_t *ctx, sge_gdi_packet_class_t *packet, sge_gdi_task_class_t *task);
-static void host_trash_nonstatic_load_values(lListElem *host);
-static void notify(sge_gdi_ctx_class_t *ctx, lListElem *lel, sge_gdi_packet_class_t *packet, sge_gdi_task_class_t *task, int kill_jobs, int force); 
+static void
+exec_host_change_queue_version(sge_gdi_ctx_class_t *ctx, const char *exechost_name);
 
-static int verify_scaling_list(lList **alpp, lListElem *host); 
-static void host_update_categories(const lListElem *new_hep, const lListElem *old_hep);
-static int attr_mod_threshold(sge_gdi_ctx_class_t *ctx, lList **alpp, lListElem *ep, lListElem *new_ep,
-                              int sub_command, char *attr_name, char *object_name);
+static void
+master_kill_execds(sge_gdi_ctx_class_t *ctx, sge_gdi_packet_class_t *packet, sge_gdi_task_class_t *task);
 
-void 
-host_initalitze_timer(void)
-{
+static void
+host_trash_nonstatic_load_values(lListElem *host);
+
+static void
+notify(sge_gdi_ctx_class_t *ctx, lListElem *lel, sge_gdi_packet_class_t *packet, sge_gdi_task_class_t *task,
+       int kill_jobs, int force);
+
+static int
+verify_scaling_list(lList **alpp, lListElem *host);
+
+static void
+host_update_categories(const lListElem *new_hep, const lListElem *old_hep);
+
+static int
+attr_mod_threshold(sge_gdi_ctx_class_t *ctx, lList **alpp, lListElem *ep, lListElem *new_ep, int sub_command,
+                   char *attr_name, char *object_name);
+
+void
+host_initalitze_timer(void) {
    DENTER(TOP_LAYER);
    const lList *master_ehost_list = *object_type_get_master_list(SGE_TYPE_EXECHOST);
 
    /* initiate timer for all hosts because they start in 'unknown' state */
    if (master_ehost_list) {
-      lListElem *host               = NULL;
-      lListElem *global_host_elem   = NULL;
+      lListElem *host = NULL;
+      lListElem *global_host_elem = NULL;
       lListElem *template_host_elem = NULL;
 
       /* get "global" element pointer */
-      global_host_elem   = host_list_locate(master_ehost_list, SGE_GLOBAL_NAME);
+      global_host_elem = host_list_locate(master_ehost_list, SGE_GLOBAL_NAME);
 
       /* get "template" element pointer */
       template_host_elem = host_list_locate(master_ehost_list, SGE_TEMPLATE_NAME);
-      
+
       for_each_rw(host, master_ehost_list) {
          if ((host != global_host_elem) && (host != template_host_elem)) {
             reschedule_add_additional_time(load_report_interval(host));
             reschedule_unknown_trigger(host);
             reschedule_add_additional_time(0);
          }
-      }  
+      }
    }
    DRETURN_VOID;
 }
@@ -148,8 +160,8 @@ host_initalitze_timer(void)
 *  RESULT
 *     void - None
 *******************************************************************************/
-static void host_trash_nonstatic_load_values(lListElem *host) 
-{
+static void
+host_trash_nonstatic_load_values(lListElem *host) {
    lListElem *load_attr;
 
    lList *load_attr_list = lGetListRW(host, EH_load_list);
@@ -171,9 +183,8 @@ static void host_trash_nonstatic_load_values(lListElem *host)
    1 host does exist
 
  */
-int sge_add_host_of_type(sge_gdi_ctx_class_t *ctx, const char *hostname,
-                         u_long32 target, monitoring_t *monitor)
-{
+int
+sge_add_host_of_type(sge_gdi_ctx_class_t *ctx, const char *hostname, u_long32 target, monitoring_t *monitor) {
    int ret;
    int dataType;
    int pos;
@@ -188,13 +199,13 @@ int sge_add_host_of_type(sge_gdi_ctx_class_t *ctx, const char *hostname,
    if (hostname == NULL) {
       DRETURN(-1);
    }
-  
+
    object = get_gdi_object(target);
-   
+
    /* prepare template */
    ep = lCreateElem(object->type);
-   pos = lGetPosInDescr(object->type,object->key_nm);
-   dataType = lGetPosType(object->type , pos);
+   pos = lGetPosInDescr(object->type, object->key_nm);
+   dataType = lGetPosType(object->type, pos);
    switch (dataType) {
       case lStringT:
          lSetString(ep, object->key_nm, hostname);
@@ -205,8 +216,8 @@ int sge_add_host_of_type(sge_gdi_ctx_class_t *ctx, const char *hostname,
       default:
          DPRINTF(("sge_add_host_of_type: unexpected datatype\n"));
    }
-   ret = sge_gdi_add_mod_generic(ctx, NULL, ep, 1, object, username, 
-      qualified_hostname, 0, &ppList, monitor);
+   ret = sge_gdi_add_mod_generic(ctx, NULL, ep, 1, object, username,
+                                 qualified_hostname, 0, &ppList, monitor);
    lFreeElem(&ep);
    lFreeList(&ppList);
 
@@ -214,12 +225,8 @@ int sge_add_host_of_type(sge_gdi_ctx_class_t *ctx, const char *hostname,
 }
 
 bool
-host_list_add_missing_href(sge_gdi_ctx_class_t *ctx,
-                           const lList *this_list, 
-                           lList **answer_list, 
-                           const lList *href_list, 
-                           monitoring_t *monitor)
-{
+host_list_add_missing_href(sge_gdi_ctx_class_t *ctx, const lList *this_list, lList **answer_list,
+                           const lList *href_list, monitoring_t *monitor) {
    bool ret = true;
    const lListElem *href = NULL;
 
@@ -243,10 +250,8 @@ host_list_add_missing_href(sge_gdi_ctx_class_t *ctx,
    spooled to disk
 
 */
-int sge_del_host(sge_gdi_ctx_class_t *ctx, lListElem *hep, lList **alpp,
-                 char *ruser, char *rhost, u_long32 target,
-                 const lList* master_hgroup_list)
-{
+int sge_del_host(sge_gdi_ctx_class_t *ctx, lListElem *hep, lList **alpp, char *ruser, char *rhost, u_long32 target,
+                 const lList *master_hgroup_list) {
    int pos;
    lListElem *ep;
    const char *host;
@@ -263,35 +268,35 @@ int sge_del_host(sge_gdi_ctx_class_t *ctx, lListElem *hep, lList **alpp,
 
    DENTER(TOP_LAYER);
 
-   if ( !hep || !ruser || !rhost ) {
+   if (!hep || !ruser || !rhost) {
       CRITICAL((SGE_EVENT, MSG_SGETEXT_NULLPTRPASSED_S, __func__));
       answer_list_add(alpp, SGE_EVENT, STATUS_EUNKNOWN, ANSWER_QUALITY_ERROR);
       DRETURN(STATUS_EUNKNOWN);
    }
 
-   switch ( target ) {
-   case SGE_EH_LIST:
-      host_list = master_ehost_list;
-      nm = EH_name;
-      name = "execution host";
-      break;
-   case SGE_AH_LIST:
-      host_list = master_ahost_list;
-      nm = AH_name;
-      name = "administrative host";
-      break;
-   case SGE_SH_LIST:
-      host_list = master_shost_list;
-      nm = SH_name;
-      name = "submit host";
-      break;
-   default:
-     DRETURN(STATUS_EUNKNOWN);
+   switch (target) {
+      case SGE_EH_LIST:
+         host_list = master_ehost_list;
+         nm = EH_name;
+         name = "execution host";
+         break;
+      case SGE_AH_LIST:
+         host_list = master_ahost_list;
+         nm = AH_name;
+         name = "administrative host";
+         break;
+      case SGE_SH_LIST:
+         host_list = master_shost_list;
+         nm = SH_name;
+         name = "submit host";
+         break;
+      default:
+      DRETURN(STATUS_EUNKNOWN);
    }
    /* ep is no host element, if ep has no nm */
    if ((pos = lGetPosViaElem(hep, nm, SGE_NO_ABORT)) < 0) {
       ERROR((SGE_EVENT, MSG_SGETEXT_MISSINGCULLFIELD_SS,
-            lNm2Str(nm), __func__));
+              lNm2Str(nm), __func__));
       answer_list_add(alpp, SGE_EVENT, STATUS_EUNKNOWN, ANSWER_QUALITY_ERROR);
       DRETURN(STATUS_EUNKNOWN);
    }
@@ -304,7 +309,7 @@ int sge_del_host(sge_gdi_ctx_class_t *ctx, lListElem *hep, lList **alpp,
    }
 
    ret = sge_resolve_hostname(host, unique, EH_name);
-   if (ret  != CL_RETVAL_OK) {
+   if (ret != CL_RETVAL_OK) {
       /* 
        * Due to CR 6319231, IZ 1760 this is allowed 
        */
@@ -312,18 +317,17 @@ int sge_del_host(sge_gdi_ctx_class_t *ctx, lListElem *hep, lList **alpp,
    }
 
    /* check if host is in host list */
-   if ((ep=host_list_locate(*host_list, unique))==NULL) {
+   if ((ep = host_list_locate(*host_list, unique)) == NULL) {
       /* may be host was not the unique hostname.
          Get the unique hostname and try to find it again. */
-      if (getuniquehostname(host, unique, 0)!=CL_RETVAL_OK)
-      {
+      if (getuniquehostname(host, unique, 0) != CL_RETVAL_OK) {
          ERROR((SGE_EVENT, MSG_SGETEXT_CANTRESOLVEHOST_S, host));
          answer_list_add(alpp, SGE_EVENT, STATUS_EUNKNOWN, ANSWER_QUALITY_ERROR);
          DRETURN(STATUS_EUNKNOWN);
       }
       /* again check if host is in host list. This time use the unique
          hostname */
-      if ((ep=host_list_locate(*host_list, unique))==NULL) {
+      if ((ep = host_list_locate(*host_list, unique)) == NULL) {
          ERROR((SGE_EVENT, MSG_SGETEXT_DOESNOTEXIST_SS, name, host));
          answer_list_add(alpp, SGE_EVENT, STATUS_EEXIST, ANSWER_QUALITY_ERROR);
          DRETURN(STATUS_EEXIST);
@@ -334,74 +338,71 @@ int sge_del_host(sge_gdi_ctx_class_t *ctx, lListElem *hep, lList **alpp,
       check if someone tries to delete 
       the qmaster host from admin host list
    */
-   if (target==SGE_AH_LIST && 
-         !sge_hostcmp(unique, qualified_hostname)) {
-      ERROR((SGE_EVENT, MSG_SGETEXT_CANTDELADMINQMASTER_S, 
-          qualified_hostname));
+   if (target == SGE_AH_LIST &&
+       !sge_hostcmp(unique, qualified_hostname)) {
+      ERROR((SGE_EVENT, MSG_SGETEXT_CANTDELADMINQMASTER_S,
+              qualified_hostname));
       answer_list_add(alpp, SGE_EVENT, STATUS_EEXIST, ANSWER_QUALITY_ERROR);
       DRETURN(STATUS_EEXIST);
    }
 
-   if (target == SGE_EH_LIST && 
+   if (target == SGE_EH_LIST &&
        host_is_referenced(hep, alpp, master_cqueue_list, master_hgroup_list)) {
-      answer_list_log(alpp, false, true);                    
+      answer_list_log(alpp, false, true);
       DRETURN(STATUS_ESEMANTIC);
    }
 
-   if (target==SGE_EH_LIST && !strcasecmp(unique, "global")) {
+   if (target == SGE_EH_LIST && !strcasecmp(unique, "global")) {
       ERROR((SGE_EVENT, SFNMAX, MSG_OBJ_DELGLOBALHOST));
       answer_list_add(alpp, SGE_EVENT, STATUS_ESEMANTIC, ANSWER_QUALITY_ERROR);
       DRETURN(STATUS_ESEMANTIC);
    }
 
    /* remove host file and send event */
-   switch(target) {
-      case SGE_AH_LIST:
-         {
-            lList *answer_list = NULL;
-            sge_event_spool(ctx, &answer_list, 0, sgeE_ADMINHOST_DEL, 
-                            0, 0, lGetHost(ep, nm), NULL, NULL,
-                            NULL, NULL, NULL, true, true);
-            answer_list_output(&answer_list);
-         }
+   switch (target) {
+      case SGE_AH_LIST: {
+         lList *answer_list = NULL;
+         sge_event_spool(ctx, &answer_list, 0, sgeE_ADMINHOST_DEL,
+                         0, 0, lGetHost(ep, nm), NULL, NULL,
+                         NULL, NULL, NULL, true, true);
+         answer_list_output(&answer_list);
+      }
          break;
-      case SGE_EH_LIST:
-         {
-            lList *answer_list = NULL;
-            sge_event_spool(ctx, &answer_list, 0, sgeE_EXECHOST_DEL, 
-                            0, 0, lGetHost(ep, nm), NULL, NULL,
-                            NULL, NULL, NULL, true, true);
-            answer_list_output(&answer_list);
-         }
-	 host_update_categories(NULL, ep);
+      case SGE_EH_LIST: {
+         lList *answer_list = NULL;
+         sge_event_spool(ctx, &answer_list, 0, sgeE_EXECHOST_DEL,
+                         0, 0, lGetHost(ep, nm), NULL, NULL,
+                         NULL, NULL, NULL, true, true);
+         answer_list_output(&answer_list);
+      }
+         host_update_categories(NULL, ep);
 
          break;
-      case SGE_SH_LIST:
-         {
-            lList *answer_list = NULL;
-            sge_event_spool(ctx, &answer_list, 0, sgeE_SUBMITHOST_DEL, 
-                            0, 0, lGetHost(ep, nm), NULL, NULL,
-                            NULL, NULL, NULL, true, true);
-            answer_list_output(&answer_list);
-         }
+      case SGE_SH_LIST: {
+         lList *answer_list = NULL;
+         sge_event_spool(ctx, &answer_list, 0, sgeE_SUBMITHOST_DEL,
+                         0, 0, lGetHost(ep, nm), NULL, NULL,
+                         NULL, NULL, NULL, true, true);
+         answer_list_output(&answer_list);
+      }
          break;
    }
 
    /* delete found host element */
    lRemoveElem(*host_list, &ep);
 
-   INFO((SGE_EVENT, MSG_SGETEXT_REMOVEDFROMLIST_SSSS, 
-         ruser, rhost, unique, name));
+   INFO((SGE_EVENT, MSG_SGETEXT_REMOVEDFROMLIST_SSSS,
+           ruser, rhost, unique, name));
    answer_list_add(alpp, SGE_EVENT, STATUS_OK, ANSWER_QUALITY_INFO);
    DRETURN(STATUS_OK);
 }
 
 /* ------------------------------------------------------------ */
 
-int host_mod(sge_gdi_ctx_class_t *ctx, lList **alpp, lListElem *new_host, lListElem *ep, int add,
-             const char *ruser, const char *rhost, gdi_object_t *object, int sub_command,
-             monitoring_t *monitor)
-{
+int
+host_mod(sge_gdi_ctx_class_t *ctx, lList **alpp, lListElem *new_host, lListElem *ep, int add,
+         const char *ruser, const char *rhost, gdi_object_t *object, int sub_command,
+         monitoring_t *monitor) {
    const char *host;
    int nm;
    int pos;
@@ -424,7 +425,7 @@ int host_mod(sge_gdi_ctx_class_t *ctx, lList **alpp, lListElem *new_host, lListE
       }
    }
    pos = lGetPosViaElem(new_host, nm, SGE_NO_ABORT);
-   dataType = lGetPosType(lGetElemDescr(new_host),pos);
+   dataType = lGetPosType(lGetElemDescr(new_host), pos);
    if (dataType == lHostT) {
       host = lGetHost(new_host, nm);
    } else {
@@ -434,10 +435,10 @@ int host_mod(sge_gdi_ctx_class_t *ctx, lList **alpp, lListElem *new_host, lListE
       bool acl_changed = false;
 
       /* ---- EH_scaling_list */
-      if (lGetPosViaElem(ep, EH_scaling_list, SGE_NO_ABORT)>=0) {
+      if (lGetPosViaElem(ep, EH_scaling_list, SGE_NO_ABORT) >= 0) {
          attr_mod_sub_list(alpp, new_host, EH_scaling_list, HS_name, ep,
                            sub_command, SGE_ATTR_LOAD_SCALING, SGE_OBJ_EXECHOST, 0, &changed);
-         if (verify_scaling_list(alpp, new_host)!=STATUS_OK) {
+         if (verify_scaling_list(alpp, new_host) != STATUS_OK) {
             goto ERROR;
          }
          if (changed) {
@@ -453,7 +454,7 @@ int host_mod(sge_gdi_ctx_class_t *ctx, lList **alpp, lListElem *new_host, lListE
       }
 
       /* ---- EH_acl */
-      if (lGetPosViaElem(ep, EH_acl, SGE_NO_ABORT)>=0) {
+      if (lGetPosViaElem(ep, EH_acl, SGE_NO_ABORT) >= 0) {
          DPRINTF(("got new EH_acl\n"));
          /* check acl list */
          if (userset_list_validate_acl_list(lGetList(ep, EH_acl), alpp, master_userset_list) != STATUS_OK) {
@@ -468,7 +469,7 @@ int host_mod(sge_gdi_ctx_class_t *ctx, lList **alpp, lListElem *new_host, lListE
       }
 
       /* ---- EH_xacl */
-      if (lGetPosViaElem(ep, EH_xacl, SGE_NO_ABORT)>=0) {
+      if (lGetPosViaElem(ep, EH_xacl, SGE_NO_ABORT) >= 0) {
          DPRINTF(("got new EH_xacl\n"));
          /* check xacl list */
          if (userset_list_validate_acl_list(lGetList(ep, EH_xacl), alpp, master_userset_list) != STATUS_OK) {
@@ -485,10 +486,11 @@ int host_mod(sge_gdi_ctx_class_t *ctx, lList **alpp, lListElem *new_host, lListE
 
 
       /* ---- EH_prj */
-      if (lGetPosViaElem(ep, EH_prj, SGE_NO_ABORT)>=0) {
+      if (lGetPosViaElem(ep, EH_prj, SGE_NO_ABORT) >= 0) {
          DPRINTF(("got new EH_prj\n"));
          /* check prj list */
-         if (verify_project_list(alpp, lGetList(ep, EH_prj), master_project_list, "projects", object->object_name, host)!=STATUS_OK) {
+         if (verify_project_list(alpp, lGetList(ep, EH_prj), master_project_list, "projects", object->object_name,
+                                 host) != STATUS_OK) {
             goto ERROR;
          }
          attr_mod_sub_list(alpp, new_host, EH_prj, PR_name, ep,
@@ -500,10 +502,11 @@ int host_mod(sge_gdi_ctx_class_t *ctx, lList **alpp, lListElem *new_host, lListE
       }
 
       /* ---- EH_xprj */
-      if (lGetPosViaElem(ep, EH_xprj, SGE_NO_ABORT)>=0) {
+      if (lGetPosViaElem(ep, EH_xprj, SGE_NO_ABORT) >= 0) {
          DPRINTF(("got new EH_xprj\n"));
          /* check xprj list */
-         if (verify_project_list(alpp, lGetList(ep, EH_xprj), master_project_list, "xprojects", object->object_name, host)!=STATUS_OK) {
+         if (verify_project_list(alpp, lGetList(ep, EH_xprj), master_project_list, "xprojects", object->object_name,
+                                 host) != STATUS_OK) {
             goto ERROR;
          }
          attr_mod_sub_list(alpp, new_host, EH_xprj, PR_name, ep,
@@ -515,15 +518,15 @@ int host_mod(sge_gdi_ctx_class_t *ctx, lList **alpp, lListElem *new_host, lListE
       }
 
       /* ---- EH_usage_scaling_list */
-      if (lGetPosViaElem(ep, EH_usage_scaling_list, SGE_NO_ABORT)>=0) {
+      if (lGetPosViaElem(ep, EH_usage_scaling_list, SGE_NO_ABORT) >= 0) {
          attr_mod_sub_list(alpp, new_host, EH_usage_scaling_list, HS_name, ep,
-         sub_command, SGE_ATTR_USAGE_SCALING, SGE_OBJ_EXECHOST, 0, &changed);
+                           sub_command, SGE_ATTR_USAGE_SCALING, SGE_OBJ_EXECHOST, 0, &changed);
          if (changed) {
             update_qversion = true;
          }
       }
 
-      if (lGetPosViaElem(ep, EH_report_variables, SGE_NO_ABORT)>=0) {
+      if (lGetPosViaElem(ep, EH_report_variables, SGE_NO_ABORT) >= 0) {
          const lListElem *var;
 
          attr_mod_sub_list(alpp, new_host, EH_report_variables, STU_name, ep,
@@ -550,7 +553,7 @@ int host_mod(sge_gdi_ctx_class_t *ctx, lList **alpp, lListElem *new_host, lListE
                                              lGetList(ep, EH_xacl),
                                              master_userset_list)) {
                   ERROR((SGE_EVENT, MSG_PARSE_MOD3_REJECTED_DUE_TO_AR_SU,
-                         SGE_ATTR_USER_LISTS, sge_u32c(lGetUlong(ar, AR_id))));
+                          SGE_ATTR_USER_LISTS, sge_u32c(lGetUlong(ar, AR_id))));
                   answer_list_add(alpp, SGE_EVENT, STATUS_ESYNTAX, ANSWER_QUALITY_ERROR);
                   goto ERROR;
                }
@@ -564,12 +567,12 @@ int host_mod(sge_gdi_ctx_class_t *ctx, lList **alpp, lListElem *new_host, lListE
    }
 
    DRETURN(0);
-ERROR:
-   DRETURN(STATUS_EUNKNOWN);
+   ERROR:
+DRETURN(STATUS_EUNKNOWN);
 }
 
-int host_spool(sge_gdi_ctx_class_t *ctx, lList **alpp, lListElem *ep, gdi_object_t *object)
-{
+int
+host_spool(sge_gdi_ctx_class_t *ctx, lList **alpp, lListElem *ep, gdi_object_t *object) {
    int pos;
    int dataType;
    const char *key;
@@ -581,14 +584,14 @@ int host_spool(sge_gdi_ctx_class_t *ctx, lList **alpp, lListElem *ep, gdi_object
 
    DENTER(TOP_LAYER);
 
-   pos = lGetPosViaElem(ep, object->key_nm, SGE_NO_ABORT );
-   dataType = lGetPosType(lGetElemDescr(ep),pos);
-   if (dataType == lHostT ) { 
+   pos = lGetPosViaElem(ep, object->key_nm, SGE_NO_ABORT);
+   dataType = lGetPosType(lGetElemDescr(ep), pos);
+   if (dataType == lHostT) {
       key = lGetHost(ep, object->key_nm);
    } else {
       key = lGetString(ep, object->key_nm);
    }
-     
+
    switch (object->key_nm) {
       case AH_name:
          host_type = SGE_TYPE_ADMINHOST;
@@ -600,10 +603,10 @@ int host_spool(sge_gdi_ctx_class_t *ctx, lList **alpp, lListElem *ep, gdi_object
          host_type = SGE_TYPE_SUBMITHOST;
          break;
    }
-     
+
    if (!spool_write_object(alpp, spool_get_default_context(), ep, key, host_type, job_spooling)) {
-      answer_list_add_sprintf(alpp, STATUS_EUNKNOWN, 
-                              ANSWER_QUALITY_ERROR, 
+      answer_list_add_sprintf(alpp, STATUS_EUNKNOWN,
+                              ANSWER_QUALITY_ERROR,
                               MSG_PERSISTENCE_WRITE_FAILED_S,
                               key);
       ret = 1;
@@ -613,14 +616,14 @@ int host_spool(sge_gdi_ctx_class_t *ctx, lList **alpp, lListElem *ep, gdi_object
    DRETURN(ret);
 }
 
-int host_success(sge_gdi_ctx_class_t *ctx, lListElem *ep, lListElem *old_ep, gdi_object_t *object, lList **ppList, monitoring_t *monitor) 
-{
+int
+host_success(sge_gdi_ctx_class_t *ctx, lListElem *ep, lListElem *old_ep, gdi_object_t *object, lList **ppList,
+             monitoring_t *monitor) {
    DENTER(TOP_LAYER);
    lList *master_ehost_list = *object_type_get_master_list_rw(SGE_TYPE_EXECHOST);
 
-   switch(object->key_nm) {
-      case EH_name:
-      {
+   switch (object->key_nm) {
+      case EH_name: {
          const char *host = lGetHost(ep, EH_name);
          int global_host = !strcmp(SGE_GLOBAL_NAME, host);
 
@@ -634,22 +637,22 @@ int host_success(sge_gdi_ctx_class_t *ctx, lListElem *ep, lListElem *old_ep, gdi
          }
 
          host_update_categories(ep, old_ep);
-         sge_add_event( 0, old_ep?sgeE_EXECHOST_MOD:sgeE_EXECHOST_ADD, 0, 0, host, NULL, NULL, ep);
+         sge_add_event(0, old_ep ? sgeE_EXECHOST_MOD : sgeE_EXECHOST_ADD, 0, 0, host, NULL, NULL, ep);
          lListElem_clear_changed_info(ep);
       }
-      break;
+         break;
 
       case AH_name:
-         sge_add_event( 0, old_ep?sgeE_ADMINHOST_MOD:sgeE_ADMINHOST_ADD, 
+         sge_add_event(0, old_ep ? sgeE_ADMINHOST_MOD : sgeE_ADMINHOST_ADD,
                        0, 0, lGetHost(ep, AH_name), NULL, NULL, ep);
          lListElem_clear_changed_info(ep);
-      break;
+         break;
 
       case SH_name:
-         sge_add_event( 0, old_ep?sgeE_SUBMITHOST_MOD:sgeE_SUBMITHOST_ADD, 
+         sge_add_event(0, old_ep ? sgeE_SUBMITHOST_MOD : sgeE_SUBMITHOST_ADD,
                        0, 0, lGetHost(ep, SH_name), NULL, NULL, ep);
          lListElem_clear_changed_info(ep);
-      break;
+         break;
    }
 
    DRETURN(0);
@@ -657,7 +660,8 @@ int host_success(sge_gdi_ctx_class_t *ctx, lListElem *ep, lListElem *old_ep, gdi
 
 /* ------------------------------------------------------------ */
 
-void sge_mark_unheard(lListElem *hep) {
+void
+sge_mark_unheard(lListElem *hep) {
    const char *host;
    lList *master_cqueue_list = *object_type_get_master_list_rw(SGE_TYPE_CQUEUE);
 
@@ -690,8 +694,8 @@ void sge_mark_unheard(lListElem *hep) {
    updates global and host specific load values
    using the load report list lp
 */
-void sge_update_load_values(sge_gdi_ctx_class_t *ctx, const char *rhost, lList *lp)
-{
+void
+sge_update_load_values(sge_gdi_ctx_class_t *ctx, const char *rhost, lList *lp) {
    u_long32 now;
    lListElem *ep, **hepp = NULL;
    lListElem *lep;
@@ -733,14 +737,14 @@ void sge_update_load_values(sge_gdi_ctx_class_t *ctx, const char *rhost, lList *
       /* get name, value and other info */
       const char *name = lGetString(ep, LR_name);
       const char *value = lGetString(ep, LR_value);
-      const char *host  = lGetHost(ep, LR_host);
+      const char *host = lGetHost(ep, LR_host);
       u_long32 global = lGetUlong(ep, LR_global);
       u_long32 is_static = lGetUlong(ep, LR_is_static);
 
       /* erroneous load report */
       if (!name || !value || !host) {
          continue;
-      }   
+      }
 
       /* handle global or exec host? */
       if (global) {
@@ -753,7 +757,7 @@ void sge_update_load_values(sge_gdi_ctx_class_t *ctx, const char *rhost, lList *
       if (*hepp == NULL || sge_hostcmp(host, lGetHost(*hepp, EH_name)) != 0) {
          if (*hepp != NULL) {
             /* we have a host change, send events for the previous one */
-            sge_event_spool(ctx, &answer_list, 0, sgeE_EXECHOST_MOD, 
+            sge_event_spool(ctx, &answer_list, 0, sgeE_EXECHOST_MOD,
                             0, 0, lGetHost(*hepp, EH_name), NULL, NULL,
                             host_ep, NULL, NULL, true, statics_changed);
             reporting_create_host_record(&answer_list, *hepp, now);
@@ -766,16 +770,16 @@ void sge_update_load_values(sge_gdi_ctx_class_t *ctx, const char *rhost, lList *
             INFO((SGE_EVENT, MSG_CANT_ASSOCIATE_LOAD_SS, rhost, host));
             continue;
          }
-      } 
+      }
 
       if (is_static == 2) {
          /* remove old load value */
-         lep = lGetSubStr(*hepp, HL_name, name, EH_load_list);  
+         lep = lGetSubStr(*hepp, HL_name, name, EH_load_list);
 
          lRemoveElem(lGetListRW(*hepp, EH_load_list), &lep);
       } else {
          /* add a new load value */
-         lep = lGetSubStr(*hepp, HL_name, name, EH_load_list);  
+         lep = lGetSubStr(*hepp, HL_name, name, EH_load_list);
          if (lep == NULL) {
             lep = lAddSubStr(*hepp, HL_name, name, EH_load_list, HL_Type);
             DPRINTF(("%s: adding load value: "SFQ" = "SFQ"\n", host, name, value));
@@ -792,7 +796,7 @@ void sge_update_load_values(sge_gdi_ctx_class_t *ctx, const char *rhost, lList *
          }
 
          /* copy value */
-         lSetString(lep, HL_value, value); 
+         lSetString(lep, HL_value, value);
          lSetUlong(lep, HL_last_update, now);
          lSetBool(lep, HL_is_static, is_static);
       }
@@ -803,7 +807,7 @@ void sge_update_load_values(sge_gdi_ctx_class_t *ctx, const char *rhost, lList *
    ** then spool
    */
    if (hepp != NULL && *hepp != NULL) {
-      sge_event_spool(ctx, &answer_list, 0, sgeE_EXECHOST_MOD, 
+      sge_event_spool(ctx, &answer_list, 0, sgeE_EXECHOST_MOD,
                       0, 0, lGetHost(*hepp, EH_name), NULL, NULL,
                       *hepp, NULL, NULL, true, statics_changed);
 
@@ -811,7 +815,7 @@ void sge_update_load_values(sge_gdi_ctx_class_t *ctx, const char *rhost, lList *
    }
 
    if (global_ep) {
-      sge_event_spool(ctx, &answer_list, 0, sgeE_EXECHOST_MOD, 
+      sge_event_spool(ctx, &answer_list, 0, sgeE_EXECHOST_MOD,
                       0, 0, SGE_GLOBAL_NAME, NULL, NULL,
                       global_ep, NULL, NULL, true, false);
       reporting_create_host_record(&answer_list, global_ep, now);
@@ -826,12 +830,12 @@ void sge_update_load_values(sge_gdi_ctx_class_t *ctx, const char *rhost, lList *
    trash old load values 
    
 */
-void sge_load_value_cleanup_handler(sge_gdi_ctx_class_t *ctx, te_event_t anEvent, monitoring_t *monitor)
-{
+void
+sge_load_value_cleanup_handler(sge_gdi_ctx_class_t *ctx, te_event_t anEvent, monitoring_t *monitor) {
    lListElem *hep;
    const char *host;
-   u_long32 timeout; 
-   lListElem *global_host_elem   = NULL;
+   u_long32 timeout;
+   lListElem *global_host_elem = NULL;
    lListElem *template_host_elem = NULL;
    u_long32 now = sge_get_gmt();
    u_long32 max_unheard = mconf_get_max_unheard();
@@ -844,15 +848,15 @@ void sge_load_value_cleanup_handler(sge_gdi_ctx_class_t *ctx, te_event_t anEvent
    MONITOR_WAIT_TIME(SGE_LOCK(LOCK_GLOBAL, LOCK_WRITE), monitor);
 
    /* get "global" element pointer */
-   global_host_elem   = host_list_locate(master_exechost_list, SGE_GLOBAL_NAME);    
+   global_host_elem = host_list_locate(master_exechost_list, SGE_GLOBAL_NAME);
    /* get "template" element pointer */
-   template_host_elem = host_list_locate(master_exechost_list, SGE_TEMPLATE_NAME); 
+   template_host_elem = host_list_locate(master_exechost_list, SGE_TEMPLATE_NAME);
    /* take each host including the "global" host */
    for_each_rw(hep, master_exechost_list) {
       unsigned long last_heard;
       if (hep == template_host_elem || hep == global_host_elem) {
          continue;
-      }   
+      }
 
       host = lGetHost(hep, EH_name);
 
@@ -873,11 +877,11 @@ void sge_load_value_cleanup_handler(sge_gdi_ctx_class_t *ctx, te_event_t anEvent
          continue;
       }
 
-      cl_commlib_get_last_message_time((cl_com_get_handle(prognames[QMASTER],0)),
-                                     (char*)host, (char*)prognames[EXECD], 1, &last_heard);
-      
+      cl_commlib_get_last_message_time((cl_com_get_handle(prognames[QMASTER], 0)),
+                                       (char *) host, (char *) prognames[EXECD], 1, &last_heard);
 
-      timeout = MAX(load_report_interval(hep)*3, max_unheard); 
+
+      timeout = MAX(load_report_interval(hep) * 3, max_unheard);
       if (now <= last_heard + timeout) {
          continue;
          /* host is known, nothing to trash */
@@ -898,7 +902,7 @@ void sge_load_value_cleanup_handler(sge_gdi_ctx_class_t *ctx, te_event_t anEvent
       sge_add_event(0, sgeE_EXECHOST_MOD, 0, 0, host, NULL, NULL, hep);
 
       /* initiate timer for this host because they turn into 'unknown' state */
-      reschedule_unknown_trigger(hep); 
+      reschedule_unknown_trigger(hep);
    }
 
    mconf_set_new_config(false);
@@ -908,9 +912,9 @@ void sge_load_value_cleanup_handler(sge_gdi_ctx_class_t *ctx, te_event_t anEvent
    DRETURN_VOID;
 }
 
-u_long32 load_report_interval(lListElem *hep)
-{
-   u_long32 timeout; 
+u_long32
+load_report_interval(lListElem *hep) {
+   u_long32 timeout;
    const char *host;
 
    DENTER(TOP_LAYER);
@@ -921,26 +925,26 @@ u_long32 load_report_interval(lListElem *hep)
    timeout = lGetUlong(hep, EH_load_report_interval);
    if (mconf_is_new_config() || timeout == 0) {
       lListElem *conf_entry = NULL;
-      
+
       if ((conf_entry = sge_get_configuration_entry_by_name(host, "load_report_time")) != NULL) {
          if (parse_ulong_val(NULL, &timeout, TYPE_TIM, lGetString(conf_entry, CF_value), NULL, 0) == 0) {
             ERROR((SGE_EVENT, MSG_OBJ_LOADREPORTIVAL_SS, host, lGetString(conf_entry, CF_value)));
             timeout = 120;
          }
-         
+
          lFreeElem(&conf_entry);
       }
-   
+
       DPRINTF(("%s: load value timeout for host %s is "sge_u32"\n", __func__, host, timeout));
-      
+
       lSetUlong(hep, EH_load_report_interval, timeout);
    }
-    
+
    DRETURN(timeout);
 }
 
-static void exec_host_change_queue_version(sge_gdi_ctx_class_t *ctx, const char *exechost_name)
-{
+static void
+exec_host_change_queue_version(sge_gdi_ctx_class_t *ctx, const char *exechost_name) {
    const lListElem *cqueue = NULL;
    bool change_all = (strcasecmp(exechost_name, SGE_GLOBAL_NAME) == 0) ? true : false;
    lList *master_cqueue_list = *object_type_get_master_list_rw(SGE_TYPE_CQUEUE);
@@ -970,7 +974,7 @@ static void exec_host_change_queue_version(sge_gdi_ctx_class_t *ctx, const char 
             name = exechost_name;
          }
          DPRINTF((SFQ" has changed. Increasing qversion of"SFQ"\n",
-                  name, lGetString(qinstance, QU_full_name)));
+                 name, lGetString(qinstance, QU_full_name)));
          qinstance_increase_qversion(qinstance);
          sge_event_spool(ctx, &answer_list, 0, sgeE_QINSTANCE_MOD,
                          0, 0, lGetString(qinstance, QU_qname),
@@ -990,16 +994,15 @@ static void exec_host_change_queue_version(sge_gdi_ctx_class_t *ctx, const char 
  **** Actutally only the permission is checked here
  **** and master_kill_execds is called to do the work.
  ****/
-void sge_gdi_kill_exechost(sge_gdi_ctx_class_t *ctx, 
-                           sge_gdi_packet_class_t *packet, sge_gdi_task_class_t *task)
-{
+void
+sge_gdi_kill_exechost(sge_gdi_ctx_class_t *ctx, sge_gdi_packet_class_t *packet, sge_gdi_task_class_t *task) {
    const lList *master_manager_list = *object_type_get_master_list(SGE_TYPE_MANAGER);
 
    DENTER(GDI_LAYER);
 
    if (!manop_is_manager(packet->user, master_manager_list)) {
       ERROR((SGE_EVENT, SFNMAX, MSG_OBJ_SHUTDOWNPERMS));
-      answer_list_add(&(task->answer_list), SGE_EVENT, STATUS_ENOMGR, 
+      answer_list_add(&(task->answer_list), SGE_EVENT, STATUS_ENOMGR,
                       ANSWER_QUALITY_ERROR);
       DRETURN_VOID;
    }
@@ -1017,9 +1020,8 @@ void sge_gdi_kill_exechost(sge_gdi_ctx_class_t *ctx,
       If ID_force is 1, we have to kill jobs, too.
       If ID_force is 0, we don't kill jobs.
  *******************************************************************/
-static void master_kill_execds(
-sge_gdi_ctx_class_t *ctx, sge_gdi_packet_class_t *packet, sge_gdi_task_class_t *task) 
-{
+static void
+master_kill_execds(sge_gdi_ctx_class_t *ctx, sge_gdi_packet_class_t *packet, sge_gdi_task_class_t *task) {
    int kill_jobs;
    lListElem *lel;
    const lListElem *rep;
@@ -1032,13 +1034,13 @@ sge_gdi_ctx_class_t *ctx, sge_gdi_packet_class_t *packet, sge_gdi_task_class_t *
    if (lGetString(lFirst(task->data_list), ID_str) == NULL) {
       /* this means, we have to kill every execd. */
 
-      kill_jobs = lGetUlong(lFirst(task->data_list), ID_force)?1:0;
+      kill_jobs = lGetUlong(lFirst(task->data_list), ID_force) ? 1 : 0;
       /* walk over exechost list and send every exechosts execd a
          notification */
       for_each_rw(lel, master_ehost_list) {
          hostname = lGetHost(lel, EH_name);
          if (strcmp(hostname, SGE_TEMPLATE_NAME) && strcmp(hostname, SGE_GLOBAL_NAME)) {
-            notify(ctx, lel, packet, task, kill_jobs, 0); 
+            notify(ctx, lel, packet, task, kill_jobs, 0);
 
             /* RU: */
             /* initiate timer for this host which turns into unknown state */
@@ -1053,16 +1055,15 @@ sge_gdi_ctx_class_t *ctx, sge_gdi_packet_class_t *packet, sge_gdi_task_class_t *
       }
    } else {
       /* only specified exechosts should be killed. */
-      
+
       /* walk over list with execd's to kill */
       for_each_ep(rep, task->data_list) {
-         if ((getuniquehostname(lGetString(rep, ID_str), host, 0)) != CL_RETVAL_OK)
-         {
+         if ((getuniquehostname(lGetString(rep, ID_str), host, 0)) != CL_RETVAL_OK) {
             WARNING((SGE_EVENT, MSG_SGETEXT_CANTRESOLVEHOST_S, lGetString(rep, ID_str)));
             answer_list_add(&(task->answer_list), SGE_EVENT, STATUS_ESEMANTIC, ANSWER_QUALITY_WARNING);
          } else {
             if ((lel = host_list_locate(master_ehost_list, host))) {
-               kill_jobs = lGetUlong(rep, ID_force)?1:0;
+               kill_jobs = lGetUlong(rep, ID_force) ? 1 : 0;
                /*
                ** if a host name is given, then a kill is forced
                ** this means that even if the host is unheard we try
@@ -1070,7 +1071,7 @@ sge_gdi_ctx_class_t *ctx, sge_gdi_packet_class_t *packet, sge_gdi_task_class_t *
                */
                notify(ctx, lel, packet, task, kill_jobs, 1);
                /* RU: */
-               /* initiate timer for this host which turns into unknown state */ 
+               /* initiate timer for this host which turns into unknown state */
                reschedule_unknown_trigger(lel);
             } else {
                WARNING((SGE_EVENT, MSG_SGETEXT_ISNOEXECHOST_S, host));
@@ -1086,10 +1087,9 @@ sge_gdi_ctx_class_t *ctx, sge_gdi_packet_class_t *packet, sge_gdi_task_class_t *
 /********************************************************************
  Notify execd on a host to shutdown
  ********************************************************************/
-static void 
-notify(sge_gdi_ctx_class_t *ctx, lListElem *lel, sge_gdi_packet_class_t *packet, 
-       sge_gdi_task_class_t *task, int kill_jobs, int force) 
-{
+static void
+notify(sge_gdi_ctx_class_t *ctx, lListElem *lel, sge_gdi_packet_class_t *packet, sge_gdi_task_class_t *task,
+       int kill_jobs, int force) {
    const char *hostname;
    u_long execd_alive;
    const char *action_str;
@@ -1105,27 +1105,27 @@ notify(sge_gdi_ctx_class_t *ctx, lListElem *lel, sge_gdi_packet_class_t *packet,
 
    DENTER(TOP_LAYER);
 
-   action_str = kill_jobs ? MSG_NOTIFY_SHUTDOWNANDKILL:MSG_NOTIFY_SHUTDOWN;
+   action_str = kill_jobs ? MSG_NOTIFY_SHUTDOWNANDKILL : MSG_NOTIFY_SHUTDOWN;
 
    hostname = lGetHost(lel, EH_name);
 
    cl_commlib_get_last_message_time((cl_com_get_handle(prognames[QMASTER], 0)),
-                                        (char*)hostname, (char*)prognames[EXECD],1, &last_heard_from);
+                                    (char *) hostname, (char *) prognames[EXECD], 1, &last_heard_from);
    execd_alive = last_heard_from;
 
    if (!force && !execd_alive) {
       WARNING((SGE_EVENT, MSG_OBJ_NOEXECDONHOST_S, hostname));
-      answer_list_add(&(task->answer_list), SGE_EVENT, STATUS_ESEMANTIC, 
-                     ANSWER_QUALITY_WARNING);
+      answer_list_add(&(task->answer_list), SGE_EVENT, STATUS_ESEMANTIC,
+                      ANSWER_QUALITY_WARNING);
    } else {
       result = host_notify_about_kill(ctx, lel, kill_jobs);
       if (result != 0) {
-         INFO((SGE_EVENT, MSG_COM_NONOTIFICATION_SSS, action_str, 
-               (execd_alive ? "" : MSG_OBJ_UNKNOWN), hostname));
-         answer_list_add(&(task->answer_list), SGE_EVENT, STATUS_EDENIED2HOST, ANSWER_QUALITY_ERROR);         
+         INFO((SGE_EVENT, MSG_COM_NONOTIFICATION_SSS, action_str,
+                 (execd_alive ? "" : MSG_OBJ_UNKNOWN), hostname));
+         answer_list_add(&(task->answer_list), SGE_EVENT, STATUS_EDENIED2HOST, ANSWER_QUALITY_ERROR);
       } else {
-         INFO((SGE_EVENT, MSG_COM_NOTIFICATION_SSS, action_str, 
-               (execd_alive ? "" : MSG_OBJ_UNKNOWN), hostname));
+         INFO((SGE_EVENT, MSG_COM_NOTIFICATION_SSS, action_str,
+                 (execd_alive ? "" : MSG_OBJ_UNKNOWN), hostname));
          answer_list_add(&(task->answer_list), SGE_EVENT, STATUS_OK, ANSWER_QUALITY_INFO);
       }
       DPRINTF((SGE_EVENT));
@@ -1144,7 +1144,7 @@ notify(sge_gdi_ctx_class_t *ctx, lListElem *lel, sge_gdi_packet_class_t *packet,
          for_each_rw(jatep, lGetList(jep, JB_ja_tasks)) {
             gdil = lGetList(jatep, JAT_granted_destin_identifier_list);
             if (gdil) {
-               if(!(sge_hostcmp(lGetHost(lFirst(gdil), JG_qhostname), hostname))) {
+               if (!(sge_hostcmp(lGetHost(lFirst(gdil), JG_qhostname), hostname))) {
                   /*   send mail to users if requested                  */
                   if (mail_users == NULL) {
                      mail_users = lGetList(jep, JB_mail_list);
@@ -1152,24 +1152,24 @@ notify(sge_gdi_ctx_class_t *ctx, lListElem *lel, sge_gdi_packet_class_t *packet,
                   if (mail_options == 0) {
                      mail_options = lGetUlong(jep, JB_mail_options);
                   }
-                  
+
                   if (VALID(MAIL_AT_ABORT, mail_options) && !(lGetUlong(jatep, JAT_state) & JDELETED)) {
                      lUlong jep_JB_job_number;
-                     const char* jep_JB_job_name;
+                     const char *jep_JB_job_name;
 
                      jep_JB_job_number = lGetUlong(jep, JB_job_number);
-                     jep_JB_job_name   = lGetString(jep, JB_job_name);
+                     jep_JB_job_name = lGetString(jep, JB_job_name);
 
-                     sprintf(sge_mail_subj, MSG_MAIL_JOBKILLEDSUBJ_US, 
-                             sge_u32c(jep_JB_job_number), 
+                     sprintf(sge_mail_subj, MSG_MAIL_JOBKILLEDSUBJ_US,
+                             sge_u32c(jep_JB_job_number),
                              jep_JB_job_name);
-                     sprintf(sge_mail_body, MSG_MAIL_JOBKILLEDBODY_USS, 
-                             sge_u32c(jep_JB_job_number), 
-                             jep_JB_job_name, 
+                     sprintf(sge_mail_body, MSG_MAIL_JOBKILLEDBODY_USS,
+                             sge_u32c(jep_JB_job_number),
+                             jep_JB_job_name,
                              hostname);
                      cull_mail(QMASTER, mail_users, sge_mail_subj, sge_mail_body, "job abortion");
                   }
-    
+
                   /* this job has the killed exechost as master host */
                   state = lGetUlong(jatep, JAT_state);
                   SETBIT(JDELETED, state);
@@ -1178,11 +1178,11 @@ notify(sge_gdi_ctx_class_t *ctx, lListElem *lel, sge_gdi_packet_class_t *packet,
                   {
                      lList *answer_list = NULL;
                      dstring buffer = DSTRING_INIT;
-                     spool_write_object(&answer_list, 
+                     spool_write_object(&answer_list,
                                         spool_get_default_context(), jep,
-                                        job_get_key(lGetUlong(jep, JB_job_number), 
-                                            lGetUlong(jatep, JAT_task_number), 
-                                            NULL, &buffer), 
+                                        job_get_key(lGetUlong(jep, JB_job_number),
+                                                    lGetUlong(jatep, JAT_task_number),
+                                                    NULL, &buffer),
                                         SGE_TYPE_JOB,
                                         job_spooling);
                      lListElem_clear_changed_info(jatep);
@@ -1207,9 +1207,8 @@ notify(sge_gdi_ctx_class_t *ctx, lListElem *lel, sge_gdi_packet_class_t *packet,
  ****
  **** gdi call for old request starting_up.
  ****/
-int 
-sge_execd_startedup(sge_gdi_ctx_class_t *ctx, lListElem *host, lList **alpp,
-                    char *ruser, char *rhost, u_long32 target,
+int
+sge_execd_startedup(sge_gdi_ctx_class_t *ctx, lListElem *host, lList **alpp, char *ruser, char *rhost, u_long32 target,
                     monitoring_t *monitor, bool is_restart) {
    lListElem *hep, *cqueue;
    dstring ds;
@@ -1221,19 +1220,19 @@ sge_execd_startedup(sge_gdi_ctx_class_t *ctx, lListElem *host, lList **alpp,
 
    sge_dstring_init(&ds, buffer, sizeof(buffer));
 
-   if( !host || !ruser || !rhost) {
+   if (!host || !ruser || !rhost) {
       CRITICAL((SGE_EVENT, MSG_SGETEXT_NULLPTRPASSED_S, __func__));
       answer_list_add(alpp, SGE_EVENT, STATUS_EUNKNOWN, ANSWER_QUALITY_ERROR);
       DRETURN(STATUS_EUNKNOWN);
    }
-   
+
    hep = host_list_locate(master_ehost_list, rhost);
    if (!hep) {
       if (sge_add_host_of_type(ctx, rhost, SGE_EH_LIST, monitor) < 0) {
          ERROR((SGE_EVENT, MSG_OBJ_INVALIDHOST_S, rhost));
          answer_list_add(alpp, SGE_EVENT, STATUS_DENIED, ANSWER_QUALITY_ERROR);
          DRETURN(STATUS_DENIED);
-      } 
+      }
 
       hep = host_list_locate(master_ehost_list, rhost);
       if (!hep) {
@@ -1259,16 +1258,16 @@ sge_execd_startedup(sge_gdi_ctx_class_t *ctx, lListElem *host, lList **alpp,
                lList *answer_list = NULL;
 
                qinstance_increase_qversion(qinstance);
-               sge_event_spool(ctx, &answer_list, 0, sgeE_QINSTANCE_MOD, 0, 0, lGetString(qinstance, QU_qname), 
+               sge_event_spool(ctx, &answer_list, 0, sgeE_QINSTANCE_MOD, 0, 0, lGetString(qinstance, QU_qname),
                                rhost, NULL, qinstance, NULL, NULL, true, true);
-               answer_list_output(&answer_list); 
+               answer_list_output(&answer_list);
             }
          }
       }
    }
-   
-   DPRINTF(("=====>STARTING_UP: %s %s on >%s< is starting up\n", 
-            feature_get_product_name(FS_SHORT_VERSION, &ds), "execd", rhost));
+
+   DPRINTF(("=====>STARTING_UP: %s %s on >%s< is starting up\n",
+           feature_get_product_name(FS_SHORT_VERSION, &ds), "execd", rhost));
 
    INFO((SGE_EVENT, MSG_LOG_REGISTER_SS, "execd", rhost));
    answer_list_add(alpp, SGE_EVENT, STATUS_OK, ANSWER_QUALITY_ERROR);
@@ -1277,8 +1276,8 @@ sge_execd_startedup(sge_gdi_ctx_class_t *ctx, lListElem *host, lList **alpp,
 }
 
 
-static int verify_scaling_list(lList **answer_list, lListElem *host) 
-{
+static int
+verify_scaling_list(lList **answer_list, lListElem *host) {
    bool ret = true;
    const lListElem *hs_elem = NULL;
    const lList *master_centry_list = *object_type_get_master_list(SGE_TYPE_CENTRY);
@@ -1287,10 +1286,10 @@ static int verify_scaling_list(lList **answer_list, lListElem *host)
    for_each_ep(hs_elem, lGetList(host, EH_scaling_list)) {
       const char *name = lGetString(hs_elem, HS_name);
       lListElem *centry = centry_list_locate(master_centry_list, name);
-   
+
       if (centry == NULL) {
          ERROR((SGE_EVENT, MSG_OBJ_NOSCALING4HOST_SS, name, lGetHost(host, EH_name)));
-         answer_list_add(answer_list, SGE_EVENT, 
+         answer_list_add(answer_list, SGE_EVENT,
                          STATUS_EUNKNOWN, ANSWER_QUALITY_ERROR);
          ret = false;
          break;
@@ -1324,10 +1323,9 @@ static int verify_scaling_list(lList **answer_list, lListElem *host)
 *  NOTES
 *     MT-NOTE: host_diff_sublist() is MT safe
 *******************************************************************************/
-static void host_diff_sublist(const lListElem *new_host, const lListElem *old_host,
-      int snm1, int snm2, int key_nm, const lDescr *dp,
-      lList **new_sublist, lList **old_sublist)
-{
+static void
+host_diff_sublist(const lListElem *new_host, const lListElem *old_host, int snm1, int snm2, int key_nm,
+                  const lDescr *dp, lList **new_sublist, lList **old_sublist) {
    const lListElem *ep;
    const char *p;
 
@@ -1384,11 +1382,9 @@ static void host_diff_sublist(const lListElem *new_host, const lListElem *old_ho
 *  NOTES
 *     MT-NOTE: host_diff_projects() is not MT safe
 *******************************************************************************/
-void host_diff_projects(const lListElem *new_host,
-         const lListElem *old_host, lList **new_prj, lList **old_prj)
-{
-   host_diff_sublist(new_host, old_host, EH_prj, EH_xprj,
-         PR_name, PR_Type, new_prj, old_prj);
+void
+host_diff_projects(const lListElem *new_host, const lListElem *old_host, lList **new_prj, lList **old_prj) {
+   host_diff_sublist(new_host, old_host, EH_prj, EH_xprj, PR_name, PR_Type, new_prj, old_prj);
    lDiffListStr(PR_name, new_prj, old_prj);
 }
 
@@ -1413,14 +1409,11 @@ void host_diff_projects(const lListElem *new_host,
 *  NOTES
 *     MT-NOTE: host_diff_usersets() is not MT safe
 *******************************************************************************/
-void host_diff_usersets(const lListElem *new_host,
-      const lListElem *old_host, lList **new_acl, lList **old_acl)
-{
-   host_diff_sublist(new_host, old_host, EH_acl, EH_xacl,
-         US_name, US_Type, new_acl, old_acl);
+void
+host_diff_usersets(const lListElem *new_host, const lListElem *old_host, lList **new_acl, lList **old_acl) {
+   host_diff_sublist(new_host, old_host, EH_acl, EH_xacl, US_name, US_Type, new_acl, old_acl);
    lDiffListStr(US_name, new_acl, old_acl);
 }
-
 
 
 /****** sge_host_qmaster/host_update_categories() ******************************
@@ -1444,8 +1437,8 @@ void host_diff_usersets(const lListElem *new_host,
 *  NOTES
 *     MT-NOTE: host_update_categories() is not MT safe
 *******************************************************************************/
-static void host_update_categories(const lListElem *new_hep, const lListElem *old_hep)
-{
+static void
+host_update_categories(const lListElem *new_hep, const lListElem *old_hep) {
    lList *old_lp = NULL, *new_lp = NULL;
 
    host_diff_projects(new_hep, old_hep, &new_lp, &old_lp);
@@ -1488,8 +1481,9 @@ static void host_update_categories(const lListElem *new_hep, const lListElem *ol
 *     MT-NOTE: attr_mod_threshold() is MT safe 
 *
 *******************************************************************************/
-static int attr_mod_threshold(sge_gdi_ctx_class_t *ctx, lList **alpp, lListElem *ep, lListElem *new_ep,
-                              int sub_command, char *attr_name, char *object_name) {
+static int
+attr_mod_threshold(sge_gdi_ctx_class_t *ctx, lList **alpp, lListElem *ep, lListElem *new_ep, int sub_command,
+                   char *attr_name, char *object_name) {
 
    DENTER(TOP_LAYER);
    const lList *master_centry_list = *object_type_get_master_list(SGE_TYPE_CENTRY);
@@ -1512,13 +1506,14 @@ static int attr_mod_threshold(sge_gdi_ctx_class_t *ctx, lList **alpp, lListElem 
 
       /* the attr_mod_sub_list return boolean and there is stored in the int value, attention true=1 */
       if (!attr_mod_sub_list(alpp, tmp_elem, EH_consumable_config_list, CE_name, ep,
-                              sub_command, attr_name, object_name, 0, NULL)) {
+                             sub_command, attr_name, object_name, 0, NULL)) {
          lFreeElem(&tmp_elem);
          DRETURN(STATUS_EUNKNOWN);
       }
 
       /* the centry_list_fill_request returns 0 if success */
-      if (centry_list_fill_request(lGetListRW(tmp_elem, EH_consumable_config_list), alpp, master_centry_list, true, false, false)) {
+      if (centry_list_fill_request(lGetListRW(tmp_elem, EH_consumable_config_list), alpp, master_centry_list, true,
+                                   false, false)) {
          lFreeElem(&tmp_elem);
          DRETURN(STATUS_EUNKNOWN);
       }
@@ -1544,8 +1539,8 @@ static int attr_mod_threshold(sge_gdi_ctx_class_t *ctx, lList **alpp, lListElem 
                }
 
                slots = nslots_granted(lGetList(jatep, JAT_granted_destin_identifier_list),
-                  global_host?NULL:host);
-            
+                                      global_host ? NULL : host);
+
                if (slots > 0) {
                   debit_host_consumable(jep, tmp_elem, master_centry_list, slots, is_master_task, NULL);
                }

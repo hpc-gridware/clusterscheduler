@@ -38,8 +38,6 @@
 
 int attr_mod_procedure(lList **alpp, lListElem *qep, lListElem *new_queue, int nm, char *attr_name, char *variables[]);
 
-int attr_mod_ctrl_method(lList **alpp, lListElem *qep, lListElem *new_queue, int nm, char *attr_name);
-
 int attr_mod_zerostr(lListElem *qep, lListElem *new_queue, int nm, char *attr_name);
 
 int attr_mod_str(lList **alpp, lListElem *qep, lListElem *new_queue, int nm, char *attr_name);
@@ -54,19 +52,15 @@ int attr_mod_mem_str(lList **alpp, lListElem *qep, lListElem *new_queue, int nm,
 
 int attr_mod_time_str(lList **alpp, lListElem *qep, lListElem *new_queue, int nm, char *attr_name, int enable_infinity);
 
-bool cqueue_mod_sublist(lListElem *this_elem, lList **answer_list,
-                   lListElem *reduced_elem, int sub_command,
-                   int attribute_name, int sublist_host_name,
-                   int sublist_value_name, int subsub_key,
-                   const char *attribute_name_str,
-                   const char *object_name_str);
+bool cqueue_mod_sublist(lListElem *this_elem, lList **answer_list, lListElem *reduced_elem, int sub_command,
+                        int attribute_name, int sublist_host_name, int sublist_value_name, int subsub_key,
+                        const char *attribute_name_str, const char *object_name_str);
 
-int multiple_occurances(lList **alpp, const lList *lp1, const lList *lp2, int nm, const char *name, const char *obj_name);
+int
+multiple_occurances(lList **alpp, const lList *lp1, const lList *lp2, int nm, const char *name, const char *obj_name);
 
 void normalize_sublist(lListElem *ep, int nm);
 
-bool attr_mod_sub_list(lList **alpp, lListElem *this_elem, int this_elem_name,
-                  int this_elem_primary_key, const lListElem *delta_elem,
-                  int sub_command, const char *sub_list_name,
-                  const char *object_name,
-                  int no_info, bool *changed);
+bool attr_mod_sub_list(lList **alpp, lListElem *this_elem, int this_elem_name, int this_elem_primary_key,
+                       const lListElem *delta_elem, int sub_command, const char *sub_list_name, const char *object_name,
+                       int no_info, bool *changed);

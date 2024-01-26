@@ -37,40 +37,40 @@
 #include "uti/sge_dstring.h"
 
 struct all_drsuage {
-   char        *arch;
+   char *arch;
 };
 
 typedef struct all_drsuage sge_all_rusage_type;
 
 struct necsx_drusage {
-   char        *arch;
-   u_long32    base_prty;            /* base priority */
-   u_long32    time_slice;           /* timeslice value */
-   u_long32    num_procs;            /* number of processes */
-   u_long32    kcore_min;            /* amount of memory usage */
-   u_long32    mean_size;            /* mean memory size */
-   u_long32    maxmem_size;          /* maximum memory size */
-   u_long32    chars_trnsfd;         /* number of characters transfered */
-   u_long32    blocks_rw;            /* total blocks read and written */
-   u_long32    inst;                 /* number of instructions */
-   u_long32    vector_inst;          /* number of vector instructions */
-   u_long32    vector_elmt;          /* number of vector elements */
-   u_long32    vec_exe;              /* execution time of vector instr */
-   u_long32    flops;                /* FLOPS value */
-   u_long32    concurrent_flops;     /* concurrent FLOPS value */
-   u_long32    fpec;                 /* floating point data execution element
+   char *arch;
+   u_long32 base_prty;            /* base priority */
+   u_long32 time_slice;           /* timeslice value */
+   u_long32 num_procs;            /* number of processes */
+   u_long32 kcore_min;            /* amount of memory usage */
+   u_long32 mean_size;            /* mean memory size */
+   u_long32 maxmem_size;          /* maximum memory size */
+   u_long32 chars_trnsfd;         /* number of characters transfered */
+   u_long32 blocks_rw;            /* total blocks read and written */
+   u_long32 inst;                 /* number of instructions */
+   u_long32 vector_inst;          /* number of vector instructions */
+   u_long32 vector_elmt;          /* number of vector elements */
+   u_long32 vec_exe;              /* execution time of vector instr */
+   u_long32 flops;                /* FLOPS value */
+   u_long32 concurrent_flops;     /* concurrent FLOPS value */
+   u_long32 fpec;                 /* floating point data execution element
                                        count */
-   u_long32    cmcc;                 /* cache miss time */
-   u_long32    bccc;                 /* bank conflict time */
-   u_long32    mt_open;              /* MT open counts */
-   u_long32    io_blocks; /* device  I/O blocks (DSK, ADK (array disk),  XMU,
+   u_long32 cmcc;                 /* cache miss time */
+   u_long32 bccc;                 /* bank conflict time */
+   u_long32 mt_open;              /* MT open counts */
+   u_long32 io_blocks; /* device  I/O blocks (DSK, ADK (array disk),  XMU,
                            MASSDPS (mass data processing system disk),
                            SCD (SCSI  disk), QT (1/4" CGMT), HCT (1/2" CGMT),
                            DT (DAT), ET (8mm CGMT), MT (1/2" MT),
                            SMT (SCSI tape), IMT (other MT device connected
                            to IOX) and HMT (HIPPI MT). */
-   u_long32    multi_single;         /* multitask or single task */
-   u_long32    max_nproc;            /* maximum process counts */
+   u_long32 multi_single;         /* multitask or single task */
+   u_long32 max_nproc;            /* maximum process counts */
 };
 
 typedef struct necsx_drusage sge_necsx_rusage_type;
@@ -79,19 +79,19 @@ typedef struct necsx_drusage sge_necsx_rusage_type;
  Structure used for reporting about the end of a job.
  ****************************************************************/
 struct drusage {
-   char     *qname;
-   char     *hostname;
-   char     *group;   /* the user's UNIX group on the exec host */
-   char     *owner;    /* owner of the job we report about */
-   char     *project;  /* project of the job we report about */
-   char     *department; /* department of the job we report about */
-   char     *job_name; /* -N switch or script_file or "STDIN" */
-   char     *account;         /* accounting string see -A switch */
+   char *qname;
+   char *hostname;
+   char *group;   /* the user's UNIX group on the exec host */
+   char *owner;    /* owner of the job we report about */
+   char *project;  /* project of the job we report about */
+   char *department; /* department of the job we report about */
+   char *job_name; /* -N switch or script_file or "STDIN" */
+   char *account;         /* accounting string see -A switch */
    u_long32 failed;           /* != 0 -> this job failed, 
                                  see states in execution_states.h */
    u_long32 general_failure;  /* != 0 execd reports "can execute no job", 
                                  also see above header */
-   char     *err_str;         /* error string if this job is canceled
+   char *err_str;         /* error string if this job is canceled
                                  abnormaly */
    u_long32 priority;         /* priority of job */
    u_long32 job_number;
@@ -100,9 +100,9 @@ struct drusage {
    u_long32 end_time;
    u_long32 exit_status;
    u_long32 signal;
-   double   ru_wallclock;
-   double   ru_utime;      /* user time used */
-   double   ru_stime;      /* system time used */
+   double ru_wallclock;
+   double ru_utime;      /* user time used */
+   double ru_stime;      /* system time used */
    u_long32 ru_maxrss;
    u_long32 ru_ixrss;      /* integral shared text size */
    u_long32 ru_ismrss;     /* integral shared memory size*/
@@ -119,21 +119,21 @@ struct drusage {
    u_long32 ru_nvcsw;      /* voluntary context switches */
    u_long32 ru_nivcsw;     /* involuntary " */
    u_long32 pid;
-   char     *granted_pe;
+   char *granted_pe;
    u_long32 slots;
-   char     *hard_resources_list;
-   char     *hard_queue_list;
+   char *hard_resources_list;
+   char *hard_queue_list;
    u_long32 task_number;   /* job-array task number */
-   double   cpu;
-   double   mem;
-   double   io;
-   double   iow;
-   double   maxvmem;
+   double cpu;
+   double mem;
+   double io;
+   double iow;
+   double maxvmem;
    u_long32 ar;
    sge_all_rusage_type *arch_dep_usage;/* pointer to a structure with
                                           architecture dependend usage
                                           information */
-                                              
+
 };
 
 typedef struct drusage sge_rusage_type;
@@ -159,7 +159,5 @@ typedef struct drusage sge_rusage_type;
 #define INTERMEDIATE_MIN_RUNTIME 60
 
 const char *
-sge_write_rusage(dstring *buffer, 
-                 lListElem *jr, lListElem *job, lListElem *ja_task, 
-                 const char *category_str, const char delimiter,
-                 bool intermediate);
+sge_write_rusage(dstring *buffer, lListElem *jr, lListElem *job, lListElem *ja_task, const char *category_str,
+                 const char delimiter, bool intermediate);

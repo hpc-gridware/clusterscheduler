@@ -72,6 +72,7 @@
 #endif
 
 static void init_sig_action_and_mask(void);
+
 #ifndef USE_POLL
 static int set_file_descriptor_limit(void);
 #endif
@@ -112,8 +113,8 @@ static int set_file_descriptor_limit(void);
 *     This function is MT save
 * 
 *******************************************************************************/
-unsigned long sge_qmaster_application_status(char** info_message) 
-{
+unsigned long
+sge_qmaster_application_status(char **info_message) {
 
    return sge_monitor_status(info_message, mconf_get_monitor_time());
 }
@@ -236,8 +237,7 @@ static int set_file_descriptor_limit(void) {
 *     called reserved port (requires root privileges) if configured to do so.
 *
 *******************************************************************************/
-int main(int argc, char* argv[])
-{
+int main(int argc, char *argv[]) {
    int max_enroll_tries;
    int ret_val;
 #ifndef USE_POLL
@@ -254,11 +254,11 @@ int main(int argc, char* argv[])
    prof_mt_init();
 
    sge_get_root_dir(true, NULL, 0, true);
-   
-#ifdef __SGE_COMPILE_WITH_GETTEXT__  
+
+#ifdef __SGE_COMPILE_WITH_GETTEXT__
    sge_init_language_func((gettext_func_type)gettext, (setlocale_func_type)setlocale, (bindtextdomain_func_type)bindtextdomain, (textdomain_func_type)textdomain);
-   sge_init_language(NULL,NULL);   
-#endif 
+   sge_init_language(NULL,NULL);
+#endif
 
    /* 
     * qmaster doesn't support any commandline anymore,
@@ -270,7 +270,7 @@ int main(int argc, char* argv[])
       pthread_sigmask(SIG_SETMASK, &sig_set, NULL);
       sge_qmaster_thread_init(&ctx, QMASTER, MAIN_THREAD, true);
       sge_process_qmaster_cmdline(argv);
-      SGE_EXIT((void**)&ctx, 1);
+      SGE_EXIT((void **) &ctx, 1);
    }
 
    /*
@@ -293,17 +293,17 @@ int main(int argc, char* argv[])
 
    /* this must be done as root user to be able to bind ports < 1024 */
    max_enroll_tries = 30;
-   while (cl_com_get_handle(prognames[QMASTER],1) == NULL) {
+   while (cl_com_get_handle(prognames[QMASTER], 1) == NULL) {
       ctx->prepare_enroll(ctx);
       max_enroll_tries--;
       if (max_enroll_tries <= 0) {
          /* exit after 30 seconds */
          CRITICAL((SGE_EVENT, SFNMAX, MSG_QMASTER_COMMUNICATION_ERRORS));
-         SGE_EXIT((void**)&ctx, 1);
+         SGE_EXIT((void **) &ctx, 1);
       }
-      if (cl_com_get_handle(prognames[QMASTER],1) == NULL) {
-        /* sleep when prepare_enroll() failed */
-        sleep(1);
+      if (cl_com_get_handle(prognames[QMASTER], 1) == NULL) {
+         /* sleep when prepare_enroll() failed */
+         sleep(1);
       }
    }
 
@@ -340,7 +340,7 @@ int main(int argc, char* argv[])
     * is setup during the initialisazion of the timer thread.
     */
    inc_qmaster_heartbeat(QMASTER_HEARTBEAT_FILE, HEARTBEAT_INTERVAL, NULL);
-     
+
    /*
     * Event master module has to be initialized already here because
     * sge_setup_qmaster() might already access it although event delivery
@@ -350,7 +350,7 @@ int main(int argc, char* argv[])
     *
     * EB: In my opinion the init function should called in
     * sge_event_master_initialize(). Is it possible to move that call?
-    */ 
+    */
    sge_event_master_init();
 
    sge_setup_qmaster(ctx, argv);
@@ -404,7 +404,7 @@ int main(int argc, char* argv[])
    sge_clean_lists();
    sge_monitor_free(&monitor);
 
-   sge_shutdown((void**)&ctx, sge_qmaster_get_exit_state());
+   sge_shutdown((void **) &ctx, sge_qmaster_get_exit_state());
    sge_prof_cleanup();
 
    DRETURN(0);
@@ -431,18 +431,17 @@ int main(int argc, char* argv[])
 *     none
 *
 *******************************************************************************/
-static void init_sig_action_and_mask(void)
-{
+static void init_sig_action_and_mask(void) {
    struct sigaction sa;
    sigset_t sig_set;
-   
+
    sa.sa_handler = SIG_IGN;
    sigemptyset(&sa.sa_mask);
    sa.sa_flags = SA_NOCLDWAIT;
    sigaction(SIGCHLD, &sa, NULL);
-   
+
    sigfillset(&sig_set);
    pthread_sigmask(SIG_SETMASK, &sig_set, NULL);
-   
+
    return;
 }

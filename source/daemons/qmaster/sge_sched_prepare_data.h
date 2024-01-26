@@ -82,10 +82,6 @@ sge_process_job_event_after(sge_evc_class_t *evc, sge_object_type type,
                             sge_event_action action, lListElem *event, void *clientdata);
 
 sge_callback_result
-sge_process_ja_task_event_before(sge_evc_class_t *evc, sge_object_type type,
-                                 sge_event_action action, lListElem *event, void *clientdata);
-
-sge_callback_result
 sge_process_ja_task_event_after(sge_evc_class_t *evc, sge_object_type type,
                                 sge_event_action action, lListElem *event, void *clientdata);
 

@@ -109,21 +109,6 @@ int slots
    DRETURN(0);
 }
 
-
-
-
-int sge_debit_job_from_pe(lListElem *pep, lListElem *jep, int slots)
-{
-   int n; 
-  
-   n = pe_get_slots_used(pep);
-   n += slots;
-   pe_set_slots_used(pep, n);
-
-   return 0;
-}
-
-
 /****** sge_pe_schedd/pe_restricted() ******************************************
 *  NAME
 *     pe_match_static() -- Why not job to PE?

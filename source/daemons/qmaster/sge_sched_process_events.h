@@ -36,17 +36,13 @@
 #include "sge_sched_prepare_data.h"
 #include "sge_sched_thread.h"
 
-void st_start_scheduler_thread(pthread_t *thread, const char* name); 
-void st_shutdown(pthread_t schedd_thread);
-
 void st_set_flag_new_global_conf(bool new_value);
+
 bool st_get_flag_new_global_conf(void);
 
 int subscribe_scheduler(sge_evc_class_t *evc, sge_where_what_t *where_what);
 
 int sge_before_dispatch(sge_evc_class_t *evc);
-
-void *scheduler_thread(void* anArg);
 
 void event_update_func(u_long32 ec_id, lList **alpp, lList *event_list);
 

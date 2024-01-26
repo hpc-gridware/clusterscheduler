@@ -218,7 +218,7 @@ int do_qhost(sge_gdi_ctx_class_t *ctx, lList *host_list, lList *user_list, lList
    lPSortList(ehl, "%I+", EH_name);
    ep = NULL;
    where = lWhere("%T(%I == %s)", EH_Type, EH_name, SGE_GLOBAL_NAME );
-   ep = lDechainElem(ehl, lFindFirst(ehl, where));
+   ep = lDechainElem(ehl, lFindFirstRW(ehl, where));
    lFreeWhere(&where);
    if (ep) {
       lInsertElem(ehl, NULL, ep); 

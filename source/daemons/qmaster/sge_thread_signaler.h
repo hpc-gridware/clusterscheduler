@@ -45,5 +45,5 @@ sge_signaler_terminate(void);
 void
 sge_signaler_initiate_termination(void);
 
-void* 
-sge_signaler_main(void* arg);
+void *
+sge_signaler_main(void *arg);

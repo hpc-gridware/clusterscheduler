@@ -345,10 +345,10 @@ const lListElem *lNext(const lListElem *ep);
 lListElem *lPrevRW(const lListElem *ep);
 const lListElem *lPrev(const lListElem *ep);
 
-lListElem *lFindNext(const lListElem *ep, const lCondition *cp);
-lListElem *lFindPrev(const lListElem *ep, const lCondition *cp);
-lListElem *lFindFirst(const lList *lp, const lCondition *cp);
-lListElem *lFindLast(const lList *lp, const lCondition *cp);
+lListElem *lFindNextRW(const lListElem *ep, const lCondition *cp);
+lListElem *lFindPrevRW(const lListElem *ep, const lCondition *cp);
+lListElem *lFindFirstRW(const lList *lp, const lCondition *cp);
+lListElem *lFindLastRW(const lList *lp, const lCondition *cp);
 
 #define mt_get_type(mt) ((mt) & 0x000000FF)
 #define mt_do_hashing(mt) (((mt) & CULL_HASH) ? true : false)
@@ -365,7 +365,7 @@ bool lListElem_clear_changed_info(lListElem *lp);
 #define for_each_rev_rw(ep,lp) for (ep=lLastRW(lp);ep;ep=lPrevRW(ep))
 
 #define for_each_where(ep,lp,cp) \
-   for (ep=lFindFirst(lp,cp);ep;ep=lFindNext(ep,cp))
+   for (ep=lFindFirstRW(lp,cp);ep;ep=lFindNextRW(ep,cp))
 #define for_each_where_rev(ep,lp,cp) \
    for (ep=lFindLast(lp,cp);ep;ep=lFindPrev(ep,cp))
 

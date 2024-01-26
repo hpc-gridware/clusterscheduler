@@ -56,41 +56,36 @@
 #include "msg_qmaster.h"
 
 static void
-sge_test_cleanup_monitor(monitoring_t *monitor)
-{
+sge_test_cleanup_monitor(monitoring_t *monitor) {
    DENTER(TOP_LAYER);
    sge_monitor_free(monitor);
    DRETURN_VOID;
 }
 
-void 
-sge_test_initialize(sge_gdi_ctx_class_t *ctx)
-{
+void
+sge_test_initialize(sge_gdi_ctx_class_t *ctx) {
    const u_long32 max_initial_test_threads = 1;
-   cl_thread_settings_t* dummy_thread_p = NULL;
-   int i;   
+   cl_thread_settings_t *dummy_thread_p = NULL;
+   int i;
 
    DENTER(TOP_LAYER);
 
-   INFO((SGE_EVENT, MSG_QMASTER_THREADCOUNT_US, 
-         sge_u32c(max_initial_test_threads), threadnames[TESTER_THREAD]));
+   INFO((SGE_EVENT, MSG_QMASTER_THREADCOUNT_US, sge_u32c(max_initial_test_threads), threadnames[TESTER_THREAD]));
    cl_thread_list_setup(&(Main_Control.test_thread_pool), "thread pool");
    for (i = 0; i < max_initial_test_threads; i++) {
       dstring thread_name = DSTRING_INIT;
 
       sge_dstring_sprintf(&thread_name, "%s%03d", threadnames[TESTER_THREAD], i);
-      cl_thread_list_create_thread(Main_Control.test_thread_pool, &dummy_thread_p,
-                                   cl_com_get_log_list(), sge_dstring_get_string(&thread_name), i, 
-                                   sge_test_main, NULL, NULL, CL_TT_TESTER);
+      cl_thread_list_create_thread(Main_Control.test_thread_pool, &dummy_thread_p, cl_com_get_log_list(),
+                                   sge_dstring_get_string(&thread_name), i, sge_test_main, NULL, NULL, CL_TT_TESTER);
       sge_dstring_free(&thread_name);
    }
    DRETURN_VOID;
 }
 
 void
-sge_test_terminate(sge_gdi_ctx_class_t *ctx)
-{
-   cl_thread_settings_t* thread = NULL;
+sge_test_terminate(sge_gdi_ctx_class_t *ctx) {
+   cl_thread_settings_t *thread = NULL;
 
    DENTER(TOP_LAYER);
 
@@ -100,17 +95,16 @@ sge_test_terminate(sge_gdi_ctx_class_t *ctx)
       cl_thread_list_delete_thread(Main_Control.test_thread_pool, thread);
 
       thread = cl_thread_list_get_first_thread(Main_Control.test_thread_pool);
-   }  
+   }
    DPRINTF(("all "SFN" threads terminated\n", threadnames[TESTER_THREAD]));
 
    DRETURN_VOID;
 }
 
 void *
-sge_test_main(void *arg)
-{
+sge_test_main(void *arg) {
    bool do_endlessly = true;
-   cl_thread_settings_t *thread_config = (cl_thread_settings_t*)arg;
+   cl_thread_settings_t *thread_config = (cl_thread_settings_t *) arg;
    sge_gdi_ctx_class_t *ctx = NULL;
    monitoring_t monitor;
 
@@ -124,11 +118,11 @@ sge_test_main(void *arg)
    /* register at profiling module */
    set_thread_name(pthread_self(), thread_config->thread_name);
    conf_update_thread_profiling(thread_config->thread_name);
- 
+
    while (do_endlessly) {
       int execute = 0;
-     
-      DPRINTF((SFN " is looping\n", thread_config->thread_name)); 
+
+      DPRINTF((SFN " is looping\n", thread_config->thread_name));
 
       {
          lList *answer_list = NULL;
@@ -142,8 +136,8 @@ sge_test_main(void *arg)
          if (answer_list_has_error(&answer_list)) {
             lWriteListTo(answer_list, stderr);
          } else {
-            DPRINTF(("got data list with "sge_U32CFormat" and answer list with "sge_U32CFormat" elements.\n", 
-                     lGetNumberOfElem(data_list), lGetNumberOfElem(answer_list)));
+            DPRINTF(("got data list with "sge_U32CFormat" and answer list with "sge_U32CFormat" elements.\n",
+                    lGetNumberOfElem(data_list), lGetNumberOfElem(answer_list)));
          }
 
          lFreeWhat(&what);
@@ -160,38 +154,36 @@ sge_test_main(void *arg)
          int cqueue_request_id;
          int job_request_id;
 
-         cqueue_request_id = ctx->gdi_multi(ctx, &local_answer_list, SGE_GDI_RECORD, 
-                                           SGE_CQ_LIST, SGE_GDI_GET, NULL,
-                                           where_cqueue, what_cqueue, &state, true);
-         job_request_id = ctx->gdi_multi(ctx, &local_answer_list, SGE_GDI_SEND, 
+         cqueue_request_id = ctx->gdi_multi(ctx, &local_answer_list, SGE_GDI_RECORD,
+                                            SGE_CQ_LIST, SGE_GDI_GET, NULL,
+                                            where_cqueue, what_cqueue, &state, true);
+         job_request_id = ctx->gdi_multi(ctx, &local_answer_list, SGE_GDI_SEND,
                                          SGE_JB_LIST, SGE_GDI_GET, NULL,
                                          where_job, what_job, &state, true);
-         if (cqueue_request_id != -1 && job_request_id != -1 && 
-             answer_list_has_error(&local_answer_list) == false) {
+         if (cqueue_request_id != -1 && job_request_id != -1 && answer_list_has_error(&local_answer_list) == false) {
             lList *multi_answer_list = NULL;
             lList *list_cqueue = NULL;
             lList *list_job = NULL;
             lList *answer_cqueue = NULL;
             lList *answer_job = NULL;
-     
+
             ctx->gdi_wait(ctx, &local_answer_list, &multi_answer_list, &state);
-            sge_gdi_extract_answer(&answer_cqueue, SGE_GDI_GET, SGE_CQ_LIST, 
-                                   cqueue_request_id, multi_answer_list, &list_cqueue);
-            sge_gdi_extract_answer(&answer_job, SGE_GDI_GET, SGE_CQ_LIST, 
-                                   job_request_id, multi_answer_list, &list_job);
+            sge_gdi_extract_answer(&answer_cqueue, SGE_GDI_GET, SGE_CQ_LIST, cqueue_request_id,
+                                   multi_answer_list, &list_cqueue);
+            sge_gdi_extract_answer(&answer_job, SGE_GDI_GET, SGE_CQ_LIST, job_request_id,
+                                   multi_answer_list, &list_job);
 
             if (answer_list_has_error(&answer_cqueue) || answer_list_has_error(&answer_job) ||
                 answer_list_has_error(&local_answer_list)) {
                ERROR((SGE_EVENT, "QMASTER INTERNAL MULTI GDI TEST FAILED"));
-               ERROR((SGE_EVENT, "get response for intern gdi request but request had error")); 
+               ERROR((SGE_EVENT, "get response for intern gdi request but request had error"));
             } else {
                INFO((SGE_EVENT, "QMASTER INTERNAL MULTI GDI TEST WAS SUCCESSFULL"));
-               INFO((SGE_EVENT, "got cqueue list with "sge_U32CFormat" and cqueue answer "
-                     "list with "sge_U32CFormat" elements.", sge_u32c(lGetNumberOfElem(list_cqueue)), 
-                     sge_u32c(lGetNumberOfElem(answer_cqueue))));
-               INFO((SGE_EVENT, "got job list with "sge_U32CFormat" and job answer "
-                     "list with "sge_U32CFormat" elements.", sge_u32c(lGetNumberOfElem(list_job)), 
-                     sge_u32c(lGetNumberOfElem(answer_job))));
+               INFO((SGE_EVENT, "got cqueue list with "sge_U32CFormat" and cqueue answer list with "sge_U32CFormat
+                       " elements.", sge_u32c(lGetNumberOfElem(list_cqueue)), sge_u32c(
+                       lGetNumberOfElem(answer_cqueue))));
+               INFO((SGE_EVENT, "got job list with "sge_U32CFormat" and job answer list with "sge_U32CFormat
+                       " elements.", sge_u32c(lGetNumberOfElem(list_job)), sge_u32c(lGetNumberOfElem(answer_job))));
             }
             lFreeList(&multi_answer_list);
             lFreeList(&answer_cqueue);
@@ -200,21 +192,20 @@ sge_test_main(void *arg)
             lFreeList(&list_job);
          } else {
             ERROR((SGE_EVENT, "QMASTER INTERNAL MULTI GDI TEST FAILED"));
-            ERROR((SGE_EVENT, "unable to send intern gdi request (cqueue_request_id=%d, "
-                   "job_request_id=%d", cqueue_request_id, job_request_id));
+            ERROR((SGE_EVENT, "unable to send intern gdi request (cqueue_request_id=%d, job_request_id=%d",
+                    cqueue_request_id, job_request_id));
          }
 
          lFreeList(&local_answer_list);
       }
 
       do {
-         pthread_cleanup_push((void (*)(void *))sge_test_cleanup_monitor,
-                              (void *)&monitor);
-         cl_thread_func_testcancel(thread_config);
-         pthread_cleanup_pop(execute); 
+         pthread_cleanup_push((void (*)(void *)) sge_test_cleanup_monitor, (void *) &monitor);
+            cl_thread_func_testcancel(thread_config);
+         pthread_cleanup_pop(execute);
          if (sge_thread_has_shutdown_started()) {
             DPRINTF((SFN" is waiting for termination\n", thread_config->thread_name));
-            sleep(1);   
+            sleep(1);
          }
       } while (sge_thread_has_shutdown_started());
    }

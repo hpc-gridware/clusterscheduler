@@ -81,14 +81,13 @@
 #include "msg_qmaster.h"
 #include "msg_daemons_common.h"
 
-static bool check_binding_param_consistency(const lListElem* binding_elem);
+static bool
+check_binding_param_consistency(const lListElem *binding_elem);
 
 int
-sge_job_verify_adjust(sge_gdi_ctx_class_t *ctx, lListElem *jep, lList **alpp, 
-                      lList **lpp, char *ruser, char *rhost, uid_t uid, gid_t gid, char *group, 
-                      sge_gdi_packet_class_t *packet, sge_gdi_task_class_t *task,
-                      monitoring_t *monitor)
-{
+sge_job_verify_adjust(sge_gdi_ctx_class_t *ctx, lListElem *jep, lList **alpp, lList **lpp, char *ruser, char *rhost,
+                      uid_t uid, gid_t gid, char *group, sge_gdi_packet_class_t *packet, sge_gdi_task_class_t *task,
+                      monitoring_t *monitor) {
    int ret = STATUS_OK;
 
    DENTER(TOP_LAYER);
@@ -106,7 +105,7 @@ sge_job_verify_adjust(sge_gdi_ctx_class_t *ctx, lListElem *jep, lList **alpp,
    const lList *master_ar_list = *object_type_get_master_list(SGE_TYPE_AR);
    lList *master_suser_list = *object_type_get_master_list_rw(SGE_TYPE_SUSER);
 
-   if (jep == NULL || ruser == NULL || rhost == NULL ) {
+   if (jep == NULL || ruser == NULL || rhost == NULL) {
       CRITICAL((SGE_EVENT, MSG_SGETEXT_NULLPTRPASSED_S, __func__));
       answer_list_add(alpp, SGE_EVENT, STATUS_EUNKNOWN, ANSWER_QUALITY_ERROR);
       ret = STATUS_EUNKNOWN;
@@ -115,7 +114,7 @@ sge_job_verify_adjust(sge_gdi_ctx_class_t *ctx, lListElem *jep, lList **alpp,
    /* check min_uid */
    if (ret == STATUS_OK) {
       if (uid < mconf_get_min_uid()) {
-         ERROR((SGE_EVENT, MSG_JOB_UID2LOW_II, (int)uid, (int)mconf_get_min_uid()));
+         ERROR((SGE_EVENT, MSG_JOB_UID2LOW_II, (int) uid, (int) mconf_get_min_uid()));
          answer_list_add(alpp, SGE_EVENT, STATUS_EUNKNOWN, ANSWER_QUALITY_ERROR);
          ret = STATUS_EUNKNOWN;
       }
@@ -124,7 +123,7 @@ sge_job_verify_adjust(sge_gdi_ctx_class_t *ctx, lListElem *jep, lList **alpp,
    /* check min_gid */
    if (ret == STATUS_OK) {
       if (gid < mconf_get_min_gid()) {
-         ERROR((SGE_EVENT, MSG_JOB_GID2LOW_II, (int)gid, (int)mconf_get_min_gid()));
+         ERROR((SGE_EVENT, MSG_JOB_GID2LOW_II, (int) gid, (int) mconf_get_min_gid()));
          answer_list_add(alpp, SGE_EVENT, STATUS_EUNKNOWN, ANSWER_QUALITY_ERROR);
          ret = STATUS_EUNKNOWN;
       }
@@ -156,7 +155,7 @@ sge_job_verify_adjust(sge_gdi_ctx_class_t *ctx, lListElem *jep, lList **alpp,
    if (ret == STATUS_OK) {
       if (JOB_TYPE_IS_QSH(lGetUlong(jep, JB_type))) {
          ret = job_check_qsh_display(jep, alpp, false);
-      }   
+      }
    }
 
    /*
@@ -169,17 +168,17 @@ sge_job_verify_adjust(sge_gdi_ctx_class_t *ctx, lListElem *jep, lList **alpp,
       if (answer_list_has_error(alpp)) {
          ret = STATUS_EUNKNOWN;
       }
-   }  
+   }
 
    /*
     * resolve host names contained in path names
-    */ 
+    */
    if (ret == STATUS_OK) {
       int s1, s2, s3, s4;
-      
+
       s1 = job_resolve_host_for_path_list(jep, alpp, JB_stdout_path_list);
       s2 = job_resolve_host_for_path_list(jep, alpp, JB_stdin_path_list);
-      s3 = job_resolve_host_for_path_list(jep, alpp,JB_shell_list);
+      s3 = job_resolve_host_for_path_list(jep, alpp, JB_shell_list);
       s4 = job_resolve_host_for_path_list(jep, alpp, JB_stderr_path_list);
       if (s1 != STATUS_OK || s2 != STATUS_OK || s3 != STATUS_OK || s4 != STATUS_OK) {
          ret = STATUS_EUNKNOWN;
@@ -189,7 +188,7 @@ sge_job_verify_adjust(sge_gdi_ctx_class_t *ctx, lListElem *jep, lList **alpp,
    /* take care that non-binary jobs have a script */
    if (ret == STATUS_OK) {
       if ((!JOB_TYPE_IS_BINARY(lGetUlong(jep, JB_type)) &&
-          !lGetString(jep, JB_script_ptr) && lGetString(jep, JB_script_file))) {
+           !lGetString(jep, JB_script_ptr) && lGetString(jep, JB_script_file))) {
          ERROR((SGE_EVENT, SFNMAX, MSG_JOB_NOSCRIPT));
          answer_list_add(alpp, SGE_EVENT, STATUS_EUNKNOWN, ANSWER_QUALITY_ERROR);
          ret = STATUS_EUNKNOWN;
@@ -209,11 +208,11 @@ sge_job_verify_adjust(sge_gdi_ctx_class_t *ctx, lListElem *jep, lList **alpp,
       if (lGetList(jep, JB_ja_template) == NULL) {
          lAddSubUlong(jep, JAT_task_number, 0, JB_ja_template, JAT_Type);
       }
-   } 
+   }
 
    if (ret == STATUS_OK) {
       const lListElem *binding_elem = lFirst(lGetList(jep, JB_binding));
-               
+
       if (binding_elem == NULL) {
          bool lret = job_init_binding_elem(jep);
 
@@ -221,12 +220,12 @@ sge_job_verify_adjust(sge_gdi_ctx_class_t *ctx, lListElem *jep, lList **alpp,
             ret = STATUS_EUNKNOWN;
          }
       } else {
-         /* verify if binding parameters are consistent (bugster 6903956) */ 
+         /* verify if binding parameters are consistent (bugster 6903956) */
          if (check_binding_param_consistency(binding_elem) == false) {
             /* TODO add to answer list */
             answer_list_add(alpp, SGE_EVENT, STATUS_ESYNTAX, ANSWER_QUALITY_ERROR);
             ret = STATUS_EUNKNOWN;
-         } 
+         }
       }
    }
 
@@ -236,17 +235,17 @@ sge_job_verify_adjust(sge_gdi_ctx_class_t *ctx, lListElem *jep, lList **alpp,
          lSetString(jep, JB_account, DEFAULT_ACCOUNT);
       } else {
          if (verify_str_key(alpp, lGetString(jep, JB_account), MAX_VERIFY_STRING,
-                            "account string", QSUB_TABLE) != STATUS_OK) { 
+                            "account string", QSUB_TABLE) != STATUS_OK) {
             ret = STATUS_EUNKNOWN;
          }
       }
-   } 
+   }
 
    /* verify the job name */
    if (ret == STATUS_OK) {
       if (object_verify_name(jep, alpp, JB_job_name, SGE_OBJ_JOB)) {
          ret = STATUS_EUNKNOWN;
-      }     
+      }
    }
 
    /* is the max. size of array jobs exceeded? */
@@ -256,7 +255,7 @@ sge_job_verify_adjust(sge_gdi_ctx_class_t *ctx, lListElem *jep, lList **alpp,
       if (max_aj_tasks > 0) {
          const lList *range_list = lGetList(jep, JB_ja_structure);
          u_long32 submit_size = range_list_get_number_of_ids(range_list);
-      
+
          if (submit_size > max_aj_tasks) {
             ERROR((SGE_EVENT, MSG_JOB_MORETASKSTHAN_U, sge_u32c(max_aj_tasks)));
             answer_list_add(alpp, SGE_EVENT, STATUS_EUNKNOWN, ANSWER_QUALITY_ERROR);
@@ -271,12 +270,12 @@ sge_job_verify_adjust(sge_gdi_ctx_class_t *ctx, lListElem *jep, lList **alpp,
     * again, processed. 
     */
    if (ret == STATUS_OK) {
-      lList* temp = NULL;
+      lList *temp = NULL;
 
       lXchgList(jep, JB_context, &temp);
       set_context(temp, jep);
       lFreeList(&temp);
-   } 
+   }
 
    /*
     * Following block should only be executed once, when the job has no job id.
@@ -291,17 +290,17 @@ sge_job_verify_adjust(sge_gdi_ctx_class_t *ctx, lListElem *jep, lList **alpp,
 
       do {
          jid = sge_get_job_number(ctx, monitor);
-      } while (lGetElemUlong(master_job_list, JB_job_number, jid));      
+      } while (lGetElemUlong(master_job_list, JB_job_number, jid));
       lSetUlong(jep, JB_job_number, jid);
       lSetUlong(jep, JB_submission_time, sge_get_gmt());
    }
 
    /*      
     * with interactive jobs, JB_exec_file is not set
-    */      
+    */
    if (lGetString(jep, JB_script_file)) {
       dstring string = DSTRING_INIT;
-      sge_dstring_sprintf(&string, "%s/%d", EXEC_DIR, (int)lGetUlong(jep, JB_job_number));
+      sge_dstring_sprintf(&string, "%s/%d", EXEC_DIR, (int) lGetUlong(jep, JB_job_number));
       lSetString(jep, JB_exec_file, sge_dstring_get_string(&string));
       sge_dstring_free(&string);
    }
@@ -310,14 +309,14 @@ sge_job_verify_adjust(sge_gdi_ctx_class_t *ctx, lListElem *jep, lList **alpp,
    if (job_list_register_new_job(master_job_list, mconf_get_max_jobs(), 0)) {
       INFO((SGE_EVENT, MSG_JOB_ALLOWEDJOBSPERCLUSTER, sge_u32c(mconf_get_max_jobs())));
       answer_list_add(alpp, SGE_EVENT, STATUS_NOTOK_DOAGAIN, ANSWER_QUALITY_ERROR);
-      DRETURN(STATUS_NOTOK_DOAGAIN);      
+      DRETURN(STATUS_NOTOK_DOAGAIN);
    }
 
    if (lGetUlong(jep, JB_verify_suitable_queues) != JUST_VERIFY &&
        lGetUlong(jep, JB_verify_suitable_queues) != POKE_VERIFY) {
-      if (suser_check_new_job(jep, mconf_get_max_u_jobs(), master_suser_list) != 0) { 
+      if (suser_check_new_job(jep, mconf_get_max_u_jobs(), master_suser_list) != 0) {
          INFO((SGE_EVENT, MSG_JOB_ALLOWEDJOBSPERUSER_UU, sge_u32c(mconf_get_max_u_jobs()),
-                                                         sge_u32c(suser_job_count(jep, master_suser_list))));
+                 sge_u32c(suser_job_count(jep, master_suser_list))));
          answer_list_add(alpp, SGE_EVENT, STATUS_NOTOK_DOAGAIN, ANSWER_QUALITY_ERROR);
          DRETURN(STATUS_NOTOK_DOAGAIN);
       }
@@ -328,7 +327,7 @@ sge_job_verify_adjust(sge_gdi_ctx_class_t *ctx, lListElem *jep, lList **alpp,
       lList *xuser_lists = mconf_get_xuser_lists();
 
       if (!sge_has_access_(ruser, lGetString(jep, JB_group), /* read */
-            user_lists, xuser_lists, master_userset_list)) {
+                           user_lists, xuser_lists, master_userset_list)) {
          ERROR((SGE_EVENT, MSG_JOB_NOPERMS_SS, ruser, rhost));
          answer_list_add(alpp, SGE_EVENT, STATUS_EUNKNOWN, ANSWER_QUALITY_ERROR);
          lFreeList(&user_lists);
@@ -374,13 +373,16 @@ sge_job_verify_adjust(sge_gdi_ctx_class_t *ctx, lListElem *jep, lList **alpp,
       }
    }
 
-   if (!qref_list_is_valid(lGetList(jep, JB_hard_queue_list), alpp, master_cqueue_list, master_hgroup_list, master_centry_list)) {
+   if (!qref_list_is_valid(lGetList(jep, JB_hard_queue_list), alpp, master_cqueue_list, master_hgroup_list,
+                           master_centry_list)) {
       DRETURN(STATUS_EUNKNOWN);
    }
-   if (!qref_list_is_valid(lGetList(jep, JB_soft_queue_list), alpp, master_cqueue_list, master_hgroup_list, master_centry_list)) {
+   if (!qref_list_is_valid(lGetList(jep, JB_soft_queue_list), alpp, master_cqueue_list, master_hgroup_list,
+                           master_centry_list)) {
       DRETURN(STATUS_EUNKNOWN);
    }
-   if (!qref_list_is_valid(lGetList(jep, JB_master_hard_queue_list), alpp, master_cqueue_list, master_hgroup_list, master_centry_list)) {
+   if (!qref_list_is_valid(lGetList(jep, JB_master_hard_queue_list), alpp, master_cqueue_list, master_hgroup_list,
+                           master_centry_list)) {
       DRETURN(STATUS_EUNKNOWN);
    }
 
@@ -404,7 +406,7 @@ sge_job_verify_adjust(sge_gdi_ctx_class_t *ctx, lListElem *jep, lList **alpp,
          }
          /* check pe_range */
          pe_range = lGetListRW(jep, JB_pe_range);
-         if (object_verify_pe_range(alpp, pe_name, pe_range, SGE_OBJ_JOB)!=STATUS_OK) {
+         if (object_verify_pe_range(alpp, pe_name, pe_range, SGE_OBJ_JOB) != STATUS_OK) {
             DRETURN(STATUS_EUNKNOWN);
          }
 
@@ -451,34 +453,31 @@ sge_job_verify_adjust(sge_gdi_ctx_class_t *ctx, lListElem *jep, lList **alpp,
       if (!ckpt_err) {
          if ((ckpt_attr & NO_CHECKPOINT) && (ckpt_attr & ~NO_CHECKPOINT)) {
             ckpt_err = 2;
-         }
-         else if (ckpt_name && (ckpt_attr & NO_CHECKPOINT)) {
+         } else if (ckpt_name && (ckpt_attr & NO_CHECKPOINT)) {
             ckpt_err = 3;
-         }
-         else if ((!ckpt_name && (ckpt_attr & ~NO_CHECKPOINT))) {
+         } else if ((!ckpt_name && (ckpt_attr & ~NO_CHECKPOINT))) {
             ckpt_err = 4;
-         }
-         else if (!ckpt_name && ckpt_inter) {
+         } else if (!ckpt_name && ckpt_inter) {
             ckpt_err = 5;
          }
       }
 
       if (ckpt_err) {
          switch (ckpt_err) {
-         case 1:
-            ERROR((SGE_EVENT, MSG_JOB_CKPTUNKNOWN_S, ckpt_name));
-          break;
-         case 2:
-         case 3:
-            ERROR((SGE_EVENT, "%s", MSG_JOB_CKPTMINUSC));
-            break;
-         case 4:
-         case 5:
-            ERROR((SGE_EVENT, "%s", MSG_JOB_CKPTDENIED));
-          break;
-         default:
-            ERROR((SGE_EVENT, "%s", MSG_JOB_CKPTDENIED));
-            break;
+            case 1:
+               ERROR((SGE_EVENT, MSG_JOB_CKPTUNKNOWN_S, ckpt_name));
+               break;
+            case 2:
+            case 3:
+               ERROR((SGE_EVENT, "%s", MSG_JOB_CKPTMINUSC));
+               break;
+            case 4:
+            case 5:
+               ERROR((SGE_EVENT, "%s", MSG_JOB_CKPTDENIED));
+               break;
+            default:
+               ERROR((SGE_EVENT, "%s", MSG_JOB_CKPTDENIED));
+               break;
          }
          answer_list_add(alpp, SGE_EVENT, STATUS_ESEMANTIC, ANSWER_QUALITY_ERROR);
          DRETURN(STATUS_ESEMANTIC);
@@ -513,7 +512,7 @@ sge_job_verify_adjust(sge_gdi_ctx_class_t *ctx, lListElem *jep, lList **alpp,
 
    /* if enforce_user flag is "auto", add or update the user */
    {
-      char* enforce_user = mconf_get_enforce_user();
+      char *enforce_user = mconf_get_enforce_user();
 
       if (enforce_user && !strcasecmp(enforce_user, "auto")) {
          int status = sge_add_auto_user(ctx, ruser, alpp, monitor);
@@ -526,7 +525,7 @@ sge_job_verify_adjust(sge_gdi_ctx_class_t *ctx, lListElem *jep, lList **alpp,
 
       /* ensure user exists if enforce_user flag is set */
       if (enforce_user && !strcasecmp(enforce_user, "true") &&
-               !user_list_locate(master_user_list, ruser)) {
+          !user_list_locate(master_user_list, ruser)) {
          ERROR((SGE_EVENT, MSG_JOB_USRUNKNOWN_S, ruser));
          answer_list_add(alpp, SGE_EVENT, STATUS_EUNKNOWN, ANSWER_QUALITY_ERROR);
          sge_free(&enforce_user);
@@ -574,11 +573,11 @@ sge_job_verify_adjust(sge_gdi_ctx_class_t *ctx, lListElem *jep, lList **alpp,
 
       if (ar_id != 0) {
          lListElem *ar;
-         u_long32 ar_start_time, ar_end_time, job_execution_time, job_duration, now_time; 
+         u_long32 ar_start_time, ar_end_time, job_execution_time, job_duration, now_time;
 
          DPRINTF(("job -ar "sge_u32"\n", sge_u32c(ar_id)));
 
-         ar=ar_list_locate(master_ar_list, ar_id);
+         ar = ar_list_locate(master_ar_list, ar_id);
          if (ar == NULL) {
             ERROR((SGE_EVENT, MSG_JOB_NOAREXISTS_U, sge_u32c(ar_id)));
             answer_list_add(alpp, SGE_EVENT, STATUS_EUNKNOWN, ANSWER_QUALITY_ERROR);
@@ -589,7 +588,7 @@ sge_job_verify_adjust(sge_gdi_ctx_class_t *ctx, lListElem *jep, lList **alpp,
             answer_list_add(alpp, SGE_EVENT, STATUS_EUNKNOWN, ANSWER_QUALITY_ERROR);
             DRETURN(STATUS_EEXIST);
          }
-         /* fill the job and ar values */         
+         /* fill the job and ar values */
          ar_start_time = lGetUlong(ar, AR_start_time);
          ar_end_time = lGetUlong(ar, AR_end_time);
          now_time = sge_get_gmt();
@@ -608,9 +607,9 @@ sge_job_verify_adjust(sge_gdi_ctx_class_t *ctx, lListElem *jep, lList **alpp,
          /* hard_resources h_rt limit */
          if (job_get_wallclock_limit(&job_duration, jep) == true) {
             DPRINTF(("job -ar "sge_u32", ar_start_time "sge_u32", ar_end_time "sge_u32
-                     ", job_execution_time "sge_u32", job duration "sge_u32" \n",
-                     sge_u32c(ar_id),sge_u32c( ar_start_time),sge_u32c(ar_end_time),
-                     sge_u32c(job_execution_time),sge_u32c(job_duration)));
+                    ", job_execution_time "sge_u32", job duration "sge_u32" \n",
+                    sge_u32c(ar_id), sge_u32c(ar_start_time), sge_u32c(ar_end_time),
+                    sge_u32c(job_execution_time), sge_u32c(job_duration)));
 
             /* fit the timeframe */
             if (job_duration > (ar_end_time - ar_start_time)) {
@@ -630,7 +629,7 @@ sge_job_verify_adjust(sge_gdi_ctx_class_t *ctx, lListElem *jep, lList **alpp,
    /* verify schedulability */
    {
       int ret = verify_suitable_queues(alpp, jep, NULL, false);
-      if (lGetUlong(jep, JB_verify_suitable_queues) == JUST_VERIFY  ||
+      if (lGetUlong(jep, JB_verify_suitable_queues) == JUST_VERIFY ||
           lGetUlong(jep, JB_verify_suitable_queues) == POKE_VERIFY || ret != 0) {
          DRETURN(ret);
       }
@@ -640,7 +639,8 @@ sge_job_verify_adjust(sge_gdi_ctx_class_t *ctx, lListElem *jep, lList **alpp,
     * only operators and managers are allowed to submit
     * jobs with higher priority than 0 (=BASE_PRIORITY)
     */
-   if (lGetUlong(jep, JB_priority) > BASE_PRIORITY && !manop_is_operator(ruser, master_manager_list, master_operator_list)) {
+   if (lGetUlong(jep, JB_priority) > BASE_PRIORITY &&
+       !manop_is_operator(ruser, master_manager_list, master_operator_list)) {
       ERROR((SGE_EVENT, SFNMAX, MSG_JOB_NONADMINPRIO));
       answer_list_add(alpp, SGE_EVENT, STATUS_EUNKNOWN, ANSWER_QUALITY_ERROR);
       DRETURN(STATUS_EUNKNOWN);
@@ -677,7 +677,7 @@ sge_job_verify_adjust(sge_gdi_ctx_class_t *ctx, lListElem *jep, lList **alpp,
    DRETURN(ret);
 }
 
-             
+
 /****** sge_job_verify/check_binding_param_consistency() ***********************
 *  NAME
 *     check_binding_param_consistency() -- Semantic check of JSV binding parameter change.
@@ -702,10 +702,10 @@ sge_job_verify_adjust(sge_gdi_ctx_class_t *ctx, lListElem *jep, lList **alpp,
 *     MT-NOTE: check_binding_param_consistency() is MT safe 
 *
 *******************************************************************************/
-static bool check_binding_param_consistency(const lListElem* binding_elem)
-{
-   const char* strategy;
-   
+static bool
+check_binding_param_consistency(const lListElem *binding_elem) {
+   const char *strategy;
+
    DENTER(TOP_LAYER);
 
    if (binding_elem == NULL) {
@@ -720,8 +720,8 @@ static bool check_binding_param_consistency(const lListElem* binding_elem)
 
    /* check according strategy linear */
    if ((strcmp(strategy, "linear") == 0)
-         || (strcmp(strategy, "linear_automatic") == 0)) {
-      
+       || (strcmp(strategy, "linear_automatic") == 0)) {
+
       /* amount must be > 0 */
       if (lGetUlong(binding_elem, BN_parameter_n) == 0) {
          ERROR((SGE_EVENT, MSG_JSV_BINDING_REJECTED_SS, "BN_parameter", "n"));
@@ -729,7 +729,7 @@ static bool check_binding_param_consistency(const lListElem* binding_elem)
       }
 
       /* socket and core values are implicitly 0 */
-      
+
       /* check if step_size > 0 */
       if (lGetUlong(binding_elem, BN_parameter_striding_step_size) > 0) {
          ERROR((SGE_EVENT, MSG_JSV_BINDING_REJECTED_SS, "BN_parameter_striding_step_size", "> 0"));
@@ -755,17 +755,17 @@ static bool check_binding_param_consistency(const lListElem* binding_elem)
          }
       }
    }
-   
+
    /* check according strategy striding */
    if ((strcmp(strategy, "striding") == 0)
-         || (strcmp(strategy, "striding_automatic") == 0)) {
+       || (strcmp(strategy, "striding_automatic") == 0)) {
 
       /* the amount of cores requested must be > 0 */
       if (lGetUlong(binding_elem, BN_parameter_n) == 0) {
          ERROR((SGE_EVENT, MSG_JSV_BINDING_REJECTED_SS, "BN_parameter_n", "0"));
          DRETURN(false);
       }
-      
+
       /* socket and core values are implicitly 0 */
 
       /* check explicit socket core list */
@@ -778,7 +778,7 @@ static bool check_binding_param_consistency(const lListElem* binding_elem)
 
    /* check according strategy explicit */
    if (strcmp(strategy, "explicit") == 0) {
-      const char* expl;
+      const char *expl;
       int amount;
 
       /* the explicit parameter must be set */
@@ -786,7 +786,7 @@ static bool check_binding_param_consistency(const lListElem* binding_elem)
          ERROR((SGE_EVENT, MSG_JSV_BINDING_REJECTED_SS, "BN_parameter_explicit", "== NULL"));
          DRETURN(false);
       }
-      
+
       /* amount makes no sense */
       if (lGetUlong(binding_elem, BN_parameter_n) > 0) {
          ERROR((SGE_EVENT, MSG_JSV_BINDING_REJECTED_SS, "BN_parameter_n", "> 0"));
@@ -798,7 +798,7 @@ static bool check_binding_param_consistency(const lListElem* binding_elem)
          ERROR((SGE_EVENT, MSG_JSV_BINDING_REJECTED_SS, "BN_parameter_striding_step_size", "> 0"));
          DRETURN(false);
       }
-     
+
       /* check if socket offset was set */
       if (lGetUlong(binding_elem, BN_parameter_socket_offset) > 0) {
          ERROR((SGE_EVENT, MSG_JSV_BINDING_REJECTED_SS, "BN_parameter_socket_offset", "> 0"));

@@ -68,19 +68,17 @@
 #include "msg_qmaster.h"
 
 static void
-sge_worker_cleanup_monitor(monitoring_t *monitor)
-{
+sge_worker_cleanup_monitor(monitoring_t *monitor) {
    DENTER(TOP_LAYER);
    sge_monitor_free(monitor);
    DRETURN_VOID;
 }
 
-void 
-sge_worker_initialize(sge_gdi_ctx_class_t *ctx)
-{
+void
+sge_worker_initialize(sge_gdi_ctx_class_t *ctx) {
    const u_long32 max_initial_worker_threads = ctx->get_worker_thread_count(ctx);
-   cl_thread_settings_t* dummy_thread_p = NULL;
-   u_long32 i;   
+   cl_thread_settings_t *dummy_thread_p = NULL;
+   u_long32 i;
 
    DENTER(TOP_LAYER);
 
@@ -96,24 +94,21 @@ sge_worker_initialize(sge_gdi_ctx_class_t *ctx)
    reporting_initialize(NULL);
    DPRINTF(("accounting and reporting modlue has been initialized\n"));
 
-   INFO((SGE_EVENT, MSG_QMASTER_THREADCOUNT_US, 
-         sge_u32c(max_initial_worker_threads), threadnames[WORKER_THREAD]));
+   INFO((SGE_EVENT, MSG_QMASTER_THREADCOUNT_US, sge_u32c(max_initial_worker_threads), threadnames[WORKER_THREAD]));
    cl_thread_list_setup(&(Main_Control.worker_thread_pool), "thread pool");
    for (i = 0; i < max_initial_worker_threads; i++) {
       dstring thread_name = DSTRING_INIT;
 
       sge_dstring_sprintf(&thread_name, "%s%03d", threadnames[WORKER_THREAD], i);
-      cl_thread_list_create_thread(Main_Control.worker_thread_pool, &dummy_thread_p,
-                                   cl_com_get_log_list(), sge_dstring_get_string(&thread_name), i, 
-                                   sge_worker_main, NULL, NULL, CL_TT_WORKER);
+      cl_thread_list_create_thread(Main_Control.worker_thread_pool, &dummy_thread_p, cl_com_get_log_list(),
+                                   sge_dstring_get_string(&thread_name), i, sge_worker_main, NULL, NULL, CL_TT_WORKER);
       sge_dstring_free(&thread_name);
    }
    DRETURN_VOID;
 }
 
 void
-sge_worker_terminate(sge_gdi_ctx_class_t *ctx)
-{
+sge_worker_terminate(sge_gdi_ctx_class_t *ctx) {
    bool do_final_spooling;
 
    DENTER(TOP_LAYER);
@@ -132,7 +127,7 @@ sge_worker_terminate(sge_gdi_ctx_class_t *ctx)
       while ((thr = thr_nxt) != NULL) {
          thr_nxt = cl_thread_list_get_next_elem(thr);
 
-         cl_thread_shutdown(thr->thread_config); 
+         cl_thread_shutdown(thr->thread_config);
       }
    }
 
@@ -148,7 +143,7 @@ sge_worker_terminate(sge_gdi_ctx_class_t *ctx)
          cl_thread_list_delete_thread(Main_Control.worker_thread_pool, thread);
 
          thread = cl_thread_list_get_first_thread(Main_Control.worker_thread_pool);
-      }  
+      }
       DPRINTF(("all "SFN" threads terminated\n", threadnames[WORKER_THREAD]));
    }
 
@@ -184,10 +179,9 @@ sge_worker_terminate(sge_gdi_ctx_class_t *ctx)
 }
 
 void *
-sge_worker_main(void *arg)
-{
+sge_worker_main(void *arg) {
    bool do_endlessly = true;
-   cl_thread_settings_t *thread_config = (cl_thread_settings_t*)arg;
+   cl_thread_settings_t *thread_config = (cl_thread_settings_t *) arg;
    sge_gdi_ctx_class_t *ctx = NULL;
    monitoring_t monitor;
    monitoring_t *p_monitor = &monitor;
@@ -203,19 +197,18 @@ sge_worker_main(void *arg)
    /* register at profiling module */
    set_thread_name(pthread_self(), "Worker Thread");
    conf_update_thread_profiling("Worker Thread");
- 
+
    while (do_endlessly) {
       sge_gdi_packet_class_t *packet = NULL;
 
       /*
-       * Wait for packets. As long as packets are available cancelation 
+       * Wait for packets. As long as packets are available cancellation
        * of this thread is ignored. The shutdown procedure in the main 
        * thread takes care that packet producers will be terminated 
        * before all worker threads so that this won't be a problem.
        */
-      MONITOR_IDLE_TIME(
-         sge_tq_wait_for_task(Master_Task_Queue, 1, SGE_TQ_GDI_PACKET, (void **)&packet),
-         p_monitor, mconf_get_monitor_time(), mconf_is_monitor_message());
+      MONITOR_IDLE_TIME(sge_tq_wait_for_task(Master_Task_Queue, 1, SGE_TQ_GDI_PACKET, (void **) &packet),
+                        p_monitor, mconf_get_monitor_time(), mconf_is_monitor_message());
 
       MONITOR_SET_QLEN(p_monitor, sge_tq_get_task_count(Master_Task_Queue));
 
@@ -225,31 +218,28 @@ sge_worker_main(void *arg)
 
          thread_start_stop_profiling();
 
-#ifdef SEND_ANSWER_IN_LISTENER
-#else
          /*
           * prepare buffer for sending an answer 
           */
          if (packet->is_intern_request == false && packet->is_gdi_request == true) {
             init_packbuffer(&(packet->pb), 0, 0);
          }
-#endif
 
          MONITOR_MESSAGES(p_monitor);
 
          if (packet->is_gdi_request == true) {
             /*
-             * test if a write lock is neccessary
+             * test if a write lock is necessary
              */
             task = packet->first_task;
             while (task != NULL) {
-               u_long32 command = SGE_GDI_GET_OPERATION(task->command); 
+               u_long32 command = SGE_GDI_GET_OPERATION(task->command);
 
                if (command != SGE_GDI_GET) {
                   is_only_read_request = false;
                   break;
                }
-               task = task->next;            
+               task = task->next;
             }
          } else {
             is_only_read_request = false;
@@ -259,7 +249,7 @@ sge_worker_main(void *arg)
           * acquire the correct lock
           */
          if (is_only_read_request) {
-            MONITOR_WAIT_TIME(SGE_LOCK(LOCK_GLOBAL, LOCK_READ), p_monitor); 
+            MONITOR_WAIT_TIME(SGE_LOCK(LOCK_GLOBAL, LOCK_READ), p_monitor);
          } else {
             MONITOR_WAIT_TIME(SGE_LOCK(LOCK_GLOBAL, LOCK_WRITE), p_monitor);
          }
@@ -281,7 +271,7 @@ sge_worker_main(void *arg)
             }
          } else {
             task = packet->first_task;
-            sge_c_report(ctx, packet->host, packet->commproc, packet->commproc_id, 
+            sge_c_report(ctx, packet->host, packet->commproc, packet->commproc_id,
                          task->data_list, p_monitor);
          }
 
@@ -311,24 +301,15 @@ sge_worker_main(void *arg)
          }
 
          if (packet->is_gdi_request == true) {
-#ifdef SEND_ANSWER_IN_LISTENER
-            sge_gdi_packet_broadcast_that_handled(packet);
-#else
             /*
              * Send the answer to the client
              */
             if (packet->is_intern_request == false) {
                MONITOR_MESSAGES_OUT(p_monitor);
-               sge_gdi2_send_any_request(ctx, 0, NULL,
-                                         packet->host, packet->commproc, packet->commproc_id, 
-                                         &(packet->pb), TAG_GDI_REQUEST, 
-                                         packet->response_id, NULL);
+               sge_gdi2_send_any_request(ctx, 0, NULL, packet->host, packet->commproc, packet->commproc_id,
+                                         &(packet->pb), TAG_GDI_REQUEST, packet->response_id, NULL);
                clear_packbuffer(&(packet->pb));
-#  ifdef BLOCK_LISTENER
-               sge_gdi_packet_broadcast_that_handled(packet);
-#  else
                sge_gdi_packet_free(&packet);
-#  endif
                /*
                 * Code only for TS: 
                 *
@@ -351,25 +332,22 @@ sge_worker_main(void *arg)
                 */
                packet = NULL;
             }
-#endif
          } else {
             sge_gdi_packet_free(&packet);
          }
-     
-         thread_output_profiling("worker thread profiling summary:\n",
-                                 &next_prof_output);
+
+         thread_output_profiling("worker thread profiling summary:\n", &next_prof_output);
 
          sge_monitor_output(p_monitor);
-      } else { 
+      } else {
          int execute = 0;
 
          /* 
-          * pthread cancelation point
+          * pthread cancellation point
           */
-         pthread_cleanup_push((void (*)(void *))sge_worker_cleanup_monitor,
-                              (void *)p_monitor);
-         cl_thread_func_testcancel(thread_config);
-         pthread_cleanup_pop(execute); 
+         pthread_cleanup_push((void (*)(void *)) sge_worker_cleanup_monitor, (void *) p_monitor);
+            cl_thread_func_testcancel(thread_config);
+         pthread_cleanup_pop(execute);
       }
    }
 

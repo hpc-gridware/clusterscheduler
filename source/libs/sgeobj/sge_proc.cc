@@ -118,12 +118,12 @@ void clean_procList()
    lCondition *cp = lWhere("%T(%I == %b)", PRO_Type, PRO_run, false); 
    int pos = lGetPosInDescr(PRO_Type, PRO_run);
 
-   next = lFindFirst(procList, cp);
+   next = lFindFirstRW(procList, cp);
 
    /* free all finished jobs */
 
    while (next != NULL) {
-      ep = lFindNext(next, cp);
+      ep = lFindNextRW(next, cp);
       lRemoveElem(procList, &next);
       next = ep;
    }

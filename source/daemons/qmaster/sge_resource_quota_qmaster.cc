@@ -67,12 +67,12 @@ static void
 rqs_update_categories(const lListElem *new_rqs, const lListElem *old_rqs);
 
 static bool
-filter_diff_usersets_or_projects(const lListElem *rule, int filter_nm, lList **scope_l,
-                              int nm, const lDescr *dp, const lList *master_list);
+filter_diff_usersets_or_projects(const lListElem *rule, int filter_nm, lList **scope_l, int nm, const lDescr *dp,
+                                 const lList *master_list);
 
 static bool
-filter_diff_usersets_or_projects_scope(lList *filter_scope, int filter_nm, 
-            lList **scope_ref, int nm, const lDescr *dp, const lList *master_list);
+filter_diff_usersets_or_projects_scope(lList *filter_scope, int filter_nm, lList **scope_ref, int nm, const lDescr *dp,
+                                       const lList *master_list);
 
 /****** sge_resource_quota_qmaster/rqs_mod() **************************************
 *  NAME
@@ -119,13 +119,12 @@ filter_diff_usersets_or_projects_scope(lList *filter_scope, int filter_nm,
 *  NOTES
 *     MT-NOTE: rqs_mod() is MT safe 
 *******************************************************************************/
-int rqs_mod(sge_gdi_ctx_class_t *ctx,
-             lList **alpp, lListElem *new_rqs, lListElem *rqs, int add, const char *ruser, 
-             const char *rhost, gdi_object_t *object, int sub_command, monitoring_t *monitor)
-{
-   const char *rqs_name = NULL; 
+int
+rqs_mod(sge_gdi_ctx_class_t *ctx, lList **alpp, lListElem *new_rqs, lListElem *rqs, int add, const char *ruser,
+        const char *rhost, gdi_object_t *object, int sub_command, monitoring_t *monitor) {
+   const char *rqs_name = NULL;
    bool rules_changed = false;
-   bool previous_enabled = (bool)lGetBool(new_rqs, RQS_enabled);
+   bool previous_enabled = (bool) lGetBool(new_rqs, RQS_enabled);
    const lList *master_centry_list = *object_type_get_master_list(SGE_TYPE_CENTRY);
 
    DENTER(TOP_LAYER);
@@ -150,7 +149,7 @@ int rqs_mod(sge_gdi_ctx_class_t *ctx,
    attr_mod_bool(rqs, new_rqs, RQS_enabled, "enabled");
 
    /* ---- RQS_rule */
-   if (lGetPosViaElem(rqs, RQS_rule, SGE_NO_ABORT)>=0) {
+   if (lGetPosViaElem(rqs, RQS_rule, SGE_NO_ABORT) >= 0) {
       rules_changed = true;
       if (SGE_GDI_IS_SUBCOMMAND_SET(sub_command, SGE_GDI_SET_ALL)) {
          normalize_sublist(rqs, RQS_rule);
@@ -174,7 +173,7 @@ int rqs_mod(sge_gdi_ctx_class_t *ctx,
                ERROR((SGE_EVENT, SFNMAX, MSG_RESOURCEQUOTA_NORULEDEFINED));
                answer_list_add(alpp, SGE_EVENT, STATUS_ESEMANTIC,
                                ANSWER_QUALITY_ERROR);
-               goto ERROR;                 
+               goto ERROR;
             }
          }
       }
@@ -186,11 +185,11 @@ int rqs_mod(sge_gdi_ctx_class_t *ctx,
    if (rules_changed || (lGetBool(new_rqs, RQS_enabled) != previous_enabled)) {
       rqs_reinit_consumable_actual_list(new_rqs, alpp);
    }
-  
+
    DRETURN(0);
 
-ERROR:
-   DRETURN(STATUS_EUNKNOWN);
+   ERROR:
+DRETURN(STATUS_EUNKNOWN);
 }
 
 /****** sge_resource_quota_qmaster/rqs_spool() ************************************
@@ -221,22 +220,22 @@ ERROR:
 *  NOTES
 *     MT-NOTE: rqs_spool() is MT safe 
 *******************************************************************************/
-int rqs_spool(sge_gdi_ctx_class_t *ctx, lList **alpp, lListElem *ep, gdi_object_t *object)
-{
+int
+rqs_spool(sge_gdi_ctx_class_t *ctx, lList **alpp, lListElem *ep, gdi_object_t *object) {
    lList *answer_list = NULL;
    bool dbret;
    bool job_spooling = ctx->get_job_spooling(ctx);
 
    DENTER(TOP_LAYER);
 
-   dbret = spool_write_object(&answer_list, spool_get_default_context(), ep, 
+   dbret = spool_write_object(&answer_list, spool_get_default_context(), ep,
                               lGetString(ep, RQS_name), SGE_TYPE_RQS,
                               job_spooling);
    answer_list_output(&answer_list);
 
    if (!dbret) {
-      answer_list_add_sprintf(alpp, STATUS_EUNKNOWN, 
-                              ANSWER_QUALITY_ERROR, 
+      answer_list_add_sprintf(alpp, STATUS_EUNKNOWN,
+                              ANSWER_QUALITY_ERROR,
                               MSG_PERSISTENCE_WRITE_FAILED_S,
                               lGetString(ep, RQS_name));
    }
@@ -276,8 +275,9 @@ int rqs_spool(sge_gdi_ctx_class_t *ctx, lList **alpp, lListElem *ep, gdi_object_
 *  NOTES
 *     MT-NOTE: rqs() is MT safe 
 *******************************************************************************/
-int rqs_success(sge_gdi_ctx_class_t *ctx, lListElem *ep, lListElem *old_ep, gdi_object_t *object, lList **ppList, monitoring_t *monitor)
-{
+int
+rqs_success(sge_gdi_ctx_class_t *ctx, lListElem *ep, lListElem *old_ep, gdi_object_t *object, lList **ppList,
+            monitoring_t *monitor) {
    const char *rqs_name = NULL;
 
    DENTER(TOP_LAYER);
@@ -286,7 +286,7 @@ int rqs_success(sge_gdi_ctx_class_t *ctx, lListElem *ep, lListElem *old_ep, gdi_
 
    rqs_update_categories(ep, old_ep);
 
-   sge_add_event(0, old_ep?sgeE_RQS_MOD:sgeE_RQS_ADD, 0, 0, 
+   sge_add_event(0, old_ep ? sgeE_RQS_MOD : sgeE_RQS_ADD, 0, 0,
                  rqs_name, NULL, NULL, ep);
    lListElem_clear_changed_info(ep);
 
@@ -320,17 +320,15 @@ int rqs_success(sge_gdi_ctx_class_t *ctx, lListElem *ep, lListElem *old_ep, gdi_
 *  NOTES
 *     MT-NOTE: rqs_del() is MT safe 
 *******************************************************************************/
-int rqs_del(sge_gdi_ctx_class_t *ctx,
-                    lListElem *ep, lList **alpp, lList **rqs_list, 
-                    char *ruser, char *rhost)
-{
+int
+rqs_del(sge_gdi_ctx_class_t *ctx, lListElem *ep, lList **alpp, lList **rqs_list, char *ruser, char *rhost) {
    const char *rqs_name;
    int pos;
    lListElem *found;
 
    DENTER(TOP_LAYER);
 
-   if ( !ep || !ruser || !rhost ) {
+   if (!ep || !ruser || !rhost) {
       CRITICAL((SGE_EVENT, MSG_SGETEXT_NULLPTRPASSED_S, __func__));
       answer_list_add(alpp, SGE_EVENT, STATUS_EUNKNOWN, ANSWER_QUALITY_ERROR);
       DRETURN(STATUS_EUNKNOWN);
@@ -339,7 +337,7 @@ int rqs_del(sge_gdi_ctx_class_t *ctx,
    /* ep is no rqs element, if ep has no RQS_name */
    if ((pos = lGetPosViaElem(ep, RQS_name, SGE_NO_ABORT)) < 0) {
       CRITICAL((SGE_EVENT, MSG_SGETEXT_MISSINGCULLFIELD_SS,
-            lNm2Str(RQS_name), __func__));
+              lNm2Str(RQS_name), __func__));
       answer_list_add(alpp, SGE_EVENT, STATUS_EUNKNOWN, ANSWER_QUALITY_ERROR);
       DRETURN(STATUS_EUNKNOWN);
    }
@@ -363,12 +361,12 @@ int rqs_del(sge_gdi_ctx_class_t *ctx,
    rqs_update_categories(NULL, found);
 
    sge_event_spool(ctx,
-                   alpp, 0, sgeE_RQS_DEL, 
+                   alpp, 0, sgeE_RQS_DEL,
                    0, 0, rqs_name, NULL, NULL,
                    NULL, NULL, NULL, true, true);
 
    INFO((SGE_EVENT, MSG_SGETEXT_REMOVEDFROMLIST_SSSS,
-            ruser, rhost, rqs_name, MSG_OBJ_RQS));
+           ruser, rhost, rqs_name, MSG_OBJ_RQS));
    answer_list_add(alpp, SGE_EVENT, STATUS_OK, ANSWER_QUALITY_INFO);
 
    lFreeElem(&found);
@@ -411,7 +409,7 @@ rqs_reinit_consumable_actual_list(lListElem *rqs, lList **answer_list) {
 
    if (rqs != NULL) {
       lListElem *job;
-      const lListElem * rule = NULL;
+      const lListElem *rule = NULL;
 
       for_each_ep(rule, lGetList(rqs, RQS_rule)) {
          lListElem *limit = NULL;
@@ -421,7 +419,7 @@ rqs_reinit_consumable_actual_list(lListElem *rqs, lList **answer_list) {
             lFreeList(&usage);
          }
       }
-      
+
       if (lGetBool(rqs, RQS_enabled) == false) {
          DRETURN(ret);
       }
@@ -438,7 +436,7 @@ rqs_reinit_consumable_actual_list(lListElem *rqs, lList **answer_list) {
             for_each_ep(granted, gdi_list) {
                int tmp_slot = lGetUlong(granted, JG_slots);
                rqs_debit_consumable(rqs, job, granted, lGetString(ja_task, JAT_granted_pe), master_centry_list,
-                                     master_userset_list, master_hgroup_list, tmp_slot, is_master_task);
+                                    master_userset_list, master_hgroup_list, tmp_slot, is_master_task);
                is_master_task = false;
             }
          }
@@ -482,8 +480,9 @@ rqs_reinit_consumable_actual_list(lListElem *rqs, lList **answer_list) {
 *  SEE ALSO
 *     sge_resource_quota_qmaster/filter_diff_usersets_or_projects()
 *******************************************************************************/
-static bool filter_diff_usersets_or_projects_scope(lList *filter_scope, int filter_nm, 
-            lList **scope_ref, int nm, const lDescr *dp, const lList *master_list) {
+static bool
+filter_diff_usersets_or_projects_scope(lList *filter_scope, int filter_nm, lList **scope_ref, int nm, const lDescr *dp,
+                                       const lList *master_list) {
    const lListElem *scope_ep;
    const char *scope;
    bool ret = true;
@@ -496,14 +495,14 @@ static bool filter_diff_usersets_or_projects_scope(lList *filter_scope, int filt
          if (!is_hgroup_name(scope)) {
             continue;
          } else {
-           scope++; /* sge intern usergroups don't have the preleading @ sign */
+            scope++; /* sge intern usergroups don't have the preleading @ sign */
          }
       }
-   
+
       if (strcmp("*", scope) == 0) {
          lEnumeration *what = lWhat("%T(%I)", dp, nm);
 
-         lFreeList(scope_ref); 
+         lFreeList(scope_ref);
          /* 
           * that looks strange: list is simply sge_free()'d 
           * however this is no bug since any entry contained 
@@ -511,13 +510,13 @@ static bool filter_diff_usersets_or_projects_scope(lList *filter_scope, int filt
           */
          *scope_ref = lSelect("", master_list, NULL, what);
          lFreeWhat(&what);
-         ret = false;               
+         ret = false;
          break;
       } else {
          if (sge_is_pattern(scope)) {
             const lListElem *ep;
             for_each_ep(ep, master_list) {
-               const char* ep_entry = lGetString(ep, nm);
+               const char *ep_entry = lGetString(ep, nm);
                if (fnmatch(scope, ep_entry, 0) == 0) {
                   if (lGetElemStr(*scope_ref, nm, scope) == NULL) {
                      lAddElemStr(scope_ref, nm, ep_entry, dp);
@@ -567,8 +566,9 @@ static bool filter_diff_usersets_or_projects_scope(lList *filter_scope, int filt
 *     MT-NOTE: filter_diff_usersets_or_projects() is MT safe 
 *
 *******************************************************************************/
-static bool filter_diff_usersets_or_projects(const lListElem *rule, int filter_nm, lList **scope_l, int nm, const lDescr *dp, const lList* master_list)
-{
+static bool
+filter_diff_usersets_or_projects(const lListElem *rule, int filter_nm, lList **scope_l, int nm, const lDescr *dp,
+                                 const lList *master_list) {
    lListElem *filter;
    bool ret = true;
 
@@ -582,12 +582,14 @@ static bool filter_diff_usersets_or_projects(const lListElem *rule, int filter_n
       DRETURN(ret);
    }
 
-   if ((filter = lGetObject(rule, filter_nm))==NULL) {
+   if ((filter = lGetObject(rule, filter_nm)) == NULL) {
       DRETURN(ret);
    }
 
-   if ((ret = filter_diff_usersets_or_projects_scope(lGetListRW(filter, RQRF_scope), filter_nm, scope_l, nm, dp, master_list))) {
-      ret = filter_diff_usersets_or_projects_scope(lGetListRW(filter, RQRF_xscope), filter_nm, scope_l, nm, dp, master_list); 
+   if ((ret = filter_diff_usersets_or_projects_scope(lGetListRW(filter, RQRF_scope), filter_nm, scope_l, nm, dp,
+                                                     master_list))) {
+      ret = filter_diff_usersets_or_projects_scope(lGetListRW(filter, RQRF_xscope), filter_nm, scope_l, nm, dp,
+                                                   master_list);
    }
 
    DRETURN(ret);
@@ -622,9 +624,9 @@ static bool filter_diff_usersets_or_projects(const lListElem *rule, int filter_n
 *  SEE ALSO
 *     sge_resource_quota_qmaster/rqs_diff_projects()
 *******************************************************************************/
-bool rqs_diff_usersets(const lListElem *new_rqs, const lListElem *old_rqs, lList **new_list,
-                        lList **old_list, const lList *master_userset_list)
-{
+bool
+rqs_diff_usersets(const lListElem *new_rqs, const lListElem *old_rqs, lList **new_list, lList **old_list,
+                  const lList *master_userset_list) {
    const lListElem *rule;
    bool ret = true;
 
@@ -632,20 +634,22 @@ bool rqs_diff_usersets(const lListElem *new_rqs, const lListElem *old_rqs, lList
 
    if (old_rqs && old_list) {
       for_each_ep(rule, lGetList(old_rqs, RQS_rule)) {
-         if (!filter_diff_usersets_or_projects(rule, RQR_filter_users, old_list, US_name, US_Type, master_userset_list)) {
+         if (!filter_diff_usersets_or_projects(rule, RQR_filter_users, old_list, US_name, US_Type,
+                                               master_userset_list)) {
             break;
-         } 
+         }
       }
    }
 
    if (new_rqs && new_list) {
       for_each_ep(rule, lGetList(new_rqs, RQS_rule)) {
-         if (!filter_diff_usersets_or_projects(rule, RQR_filter_users, new_list, US_name, US_Type, master_userset_list)) {
+         if (!filter_diff_usersets_or_projects(rule, RQR_filter_users, new_list, US_name, US_Type,
+                                               master_userset_list)) {
             if (!old_rqs || lGetNumberOfElem(*old_list) == 0) {
                ret = false;
             }
             break;
-         } 
+         }
       }
    }
    lDiffListStr(US_name, new_list, old_list);
@@ -682,9 +686,9 @@ bool rqs_diff_usersets(const lListElem *new_rqs, const lListElem *old_rqs, lList
 *  SEE ALSO
 *     sge_resource_quota_qmaster/rqs_diff_usersets()
 *******************************************************************************/
-bool rqs_diff_projects(const lListElem *new_rqs, const lListElem *old_rqs, lList **new_list,
-                        lList **old_list, const lList *master_project_list)
-{
+bool
+rqs_diff_projects(const lListElem *new_rqs, const lListElem *old_rqs, lList **new_list, lList **old_list,
+                  const lList *master_project_list) {
    bool ret = true;
 
    DENTER(TOP_LAYER);
@@ -692,21 +696,23 @@ bool rqs_diff_projects(const lListElem *new_rqs, const lListElem *old_rqs, lList
    if (old_rqs && old_list) {
       const lListElem *rule;
       for_each_ep(rule, lGetList(old_rqs, RQS_rule)) {
-         if (!filter_diff_usersets_or_projects(rule, RQR_filter_projects, old_list, PR_name, PR_Type, master_project_list)) {
+         if (!filter_diff_usersets_or_projects(rule, RQR_filter_projects, old_list, PR_name, PR_Type,
+                                               master_project_list)) {
             break;
-         } 
+         }
       }
    }
 
    if (new_rqs && new_list) {
       const lListElem *rule;
       for_each_ep(rule, lGetList(new_rqs, RQS_rule)) {
-         if (!filter_diff_usersets_or_projects(rule, RQR_filter_projects, new_list, PR_name, PR_Type, master_project_list)) {
+         if (!filter_diff_usersets_or_projects(rule, RQR_filter_projects, new_list, PR_name, PR_Type,
+                                               master_project_list)) {
             if (!old_rqs || lGetNumberOfElem(*old_list) == 0) {
                ret = false;
             }
             break;
-         } 
+         }
       }
    }
 
@@ -736,8 +742,8 @@ bool rqs_diff_projects(const lListElem *new_rqs, const lListElem *old_rqs, lList
 *     MT-NOTE: rqs_update_categories() is not MT safe 
 *
 *******************************************************************************/
-static void rqs_update_categories(const lListElem *new_rqs, const lListElem *old_rqs)
-{
+static void
+rqs_update_categories(const lListElem *new_rqs, const lListElem *old_rqs) {
    lList *old_lp = NULL, *new_lp = NULL;
    const lList *master_userset_list = *object_type_get_master_list(SGE_TYPE_USERSET);
    const lList *master_project_list = *object_type_get_master_list(SGE_TYPE_PROJECT);
@@ -805,7 +811,7 @@ scope_is_referenced_rqs(const lListElem *rqs, int nm, const char *name) {
       if (filter != NULL) {
          const lListElem *scope_ep;
          for_each_ep(scope_ep, lGetList(filter, RQRF_scope)) {
-            const char* scope = lGetString(scope_ep, ST_name);
+            const char *scope = lGetString(scope_ep, ST_name);
             if (fnmatch(scope, name, 0) == 0) {
                ret = true;
                break;
@@ -815,7 +821,7 @@ scope_is_referenced_rqs(const lListElem *rqs, int nm, const char *name) {
             break;
          }
          for_each_ep(scope_ep, lGetList(filter, RQRF_xscope)) {
-            const char* scope = lGetString(scope_ep, ST_name);
+            const char *scope = lGetString(scope_ep, ST_name);
             if (fnmatch(scope, name, 0) == 0) {
                ret = true;
                break;

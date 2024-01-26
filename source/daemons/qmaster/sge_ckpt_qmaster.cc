@@ -98,12 +98,10 @@
 *     [alpp] - error messages will be added to this list
 *     0 - success
 *     STATUS_EUNKNOWN - an error occured
-******************************************************************************/ 
-int ckpt_mod(sge_gdi_ctx_class_t *ctx,
-             lList **alpp, lListElem *new_ckpt, lListElem *ckpt, int add,
-             const char *ruser, const char *rhost, gdi_object_t *object, 
-             int sub_command, monitoring_t *monitor) 
-{
+******************************************************************************/
+int
+ckpt_mod(sge_gdi_ctx_class_t *ctx, lList **alpp, lListElem *new_ckpt, lListElem *ckpt, int add, const char *ruser,
+         const char *rhost, gdi_object_t *object, int sub_command, monitoring_t *monitor) {
    const char *ckpt_name;
 
    DENTER(TOP_LAYER);
@@ -117,16 +115,16 @@ int ckpt_mod(sge_gdi_ctx_class_t *ctx,
       }
       ckpt_name = lGetString(new_ckpt, CK_name);
       if (add && verify_str_key(
-            alpp, ckpt_name, MAX_VERIFY_STRING, SGE_ATTR_CKPT_NAME, KEY_TABLE) != STATUS_OK) {
+              alpp, ckpt_name, MAX_VERIFY_STRING, SGE_ATTR_CKPT_NAME, KEY_TABLE) != STATUS_OK) {
          DRETURN(STATUS_EUNKNOWN);
       }
    } else {
       ERROR((SGE_EVENT, MSG_SGETEXT_MISSINGCULLFIELD_SS,
-            lNm2Str(CK_name), __func__));
-      answer_list_add(alpp, SGE_EVENT, STATUS_EUNKNOWN, ANSWER_QUALITY_ERROR); 
+              lNm2Str(CK_name), __func__));
+      answer_list_add(alpp, SGE_EVENT, STATUS_EUNKNOWN, ANSWER_QUALITY_ERROR);
       goto ERROR;
    }
-   
+
    /* ---- CK_interface */
    attr_mod_str(alpp, ckpt, new_ckpt, CK_interface, SGE_ATTR_INTERFACE);
 
@@ -137,12 +135,12 @@ int ckpt_mod(sge_gdi_ctx_class_t *ctx,
    attr_mod_str(alpp, ckpt, new_ckpt, CK_migr_command, SGE_ATTR_MIGR_COMMAND);
 
    /* ---- CK_rest_command */
-   attr_mod_str(alpp, ckpt, new_ckpt, CK_rest_command, 
-         SGE_ATTR_RESTART_COMMAND);
+   attr_mod_str(alpp, ckpt, new_ckpt, CK_rest_command,
+                SGE_ATTR_RESTART_COMMAND);
 
    /* ---- CK_ckpt_dir */
    attr_mod_str(alpp, ckpt, new_ckpt, CK_ckpt_dir, SGE_ATTR_CKPT_DIR);
-  
+
    /* ---- CK_when */
    if (lGetPosViaElem(ckpt, CK_when, SGE_NO_ABORT) >= 0) {
       int new_flags, flags;
@@ -150,7 +148,7 @@ int ckpt_mod(sge_gdi_ctx_class_t *ctx,
       new_flags = sge_parse_checkpoint_attr(lGetString(new_ckpt, CK_when));
       flags = sge_parse_checkpoint_attr(lGetString(ckpt, CK_when));
 
-      if (SGE_GDI_IS_SUBCOMMAND_SET(sub_command, SGE_GDI_APPEND) 
+      if (SGE_GDI_IS_SUBCOMMAND_SET(sub_command, SGE_GDI_APPEND)
           || SGE_GDI_IS_SUBCOMMAND_SET(sub_command, SGE_GDI_CHANGE)) {
          new_flags |= flags;
       } else if (SGE_GDI_IS_SUBCOMMAND_SET(sub_command, SGE_GDI_REMOVE)) {
@@ -158,14 +156,14 @@ int ckpt_mod(sge_gdi_ctx_class_t *ctx,
       } else {
          new_flags = flags;
       }
-      if (is_checkpoint_when_valid(new_flags)) { 
+      if (is_checkpoint_when_valid(new_flags)) {
          lSetString(new_ckpt, CK_when, get_checkpoint_when(new_flags));
       } else {
          ERROR((SGE_EVENT, MSG_CKPT_INVALIDWHENATTRIBUTE_S, ckpt_name));
          answer_list_add(alpp, SGE_EVENT, STATUS_EUNKNOWN, ANSWER_QUALITY_ERROR);
          goto ERROR;
       }
-   } 
+   }
 
    /* ---- CK_signal */
    attr_mod_str(alpp, ckpt, new_ckpt, CK_signal, SGE_ATTR_SIGNAL);
@@ -174,7 +172,7 @@ int ckpt_mod(sge_gdi_ctx_class_t *ctx,
    attr_mod_str(alpp, ckpt, new_ckpt, CK_clean_command, SGE_ATTR_CLEAN_COMMAND);
 
    /* ---- CK_job_pid */
-   attr_mod_ulong(ckpt, new_ckpt, CK_job_pid, "job_pid"); 
+   attr_mod_ulong(ckpt, new_ckpt, CK_job_pid, "job_pid");
 
    /* validate ckpt data */
    if (ckpt_validate(new_ckpt, alpp) != STATUS_OK) {
@@ -183,8 +181,8 @@ int ckpt_mod(sge_gdi_ctx_class_t *ctx,
 
    DRETURN(0);
 
-ERROR:
-   DRETURN(STATUS_EUNKNOWN);
+   ERROR:
+DRETURN(STATUS_EUNKNOWN);
 }
 
 /****** qmaster/ckpt/ckpt_spool() *********************************************
@@ -214,22 +212,21 @@ ERROR:
 *     0 - success
 *     STATUS_EEXIST - an error occured
 ******************************************************************************/
-int ckpt_spool(sge_gdi_ctx_class_t *ctx, lList **alpp, lListElem *ep, gdi_object_t *object) 
-{  
+int ckpt_spool(sge_gdi_ctx_class_t *ctx, lList **alpp, lListElem *ep, gdi_object_t *object) {
    lList *answer_list = NULL;
    bool dbret;
    bool job_spooling = ctx->get_job_spooling(ctx);
 
    DENTER(TOP_LAYER);
 
-   dbret = spool_write_object(&answer_list, spool_get_default_context(), ep, 
+   dbret = spool_write_object(&answer_list, spool_get_default_context(), ep,
                               lGetString(ep, CK_name), SGE_TYPE_CKPT,
                               job_spooling);
    answer_list_output(&answer_list);
 
    if (!dbret) {
-      answer_list_add_sprintf(alpp, STATUS_EUNKNOWN, 
-                              ANSWER_QUALITY_ERROR, 
+      answer_list_add_sprintf(alpp, STATUS_EUNKNOWN,
+                              ANSWER_QUALITY_ERROR,
                               MSG_PERSISTENCE_WRITE_FAILED_S,
                               lGetString(ep, CK_name));
    }
@@ -264,16 +261,17 @@ int ckpt_spool(sge_gdi_ctx_class_t *ctx, lList **alpp, lListElem *ep, gdi_object
 *
 *  RESULT
 *     0 - success
-******************************************************************************/ 
-int ckpt_success(sge_gdi_ctx_class_t *ctx, lListElem *ep, lListElem *old_ep, gdi_object_t *object, lList **ppList, monitoring_t *monitor) 
-{
+******************************************************************************/
+int
+ckpt_success(sge_gdi_ctx_class_t *ctx, lListElem *ep, lListElem *old_ep, gdi_object_t *object, lList **ppList,
+             monitoring_t *monitor) {
    const char *ckpt_name;
 
    DENTER(TOP_LAYER);
 
    ckpt_name = lGetString(ep, CK_name);
 
-   sge_add_event( 0, old_ep ? sgeE_CKPT_MOD : sgeE_CKPT_ADD, 0, 0, 
+   sge_add_event(0, old_ep ? sgeE_CKPT_MOD : sgeE_CKPT_ADD, 0, 0,
                  ckpt_name, NULL, NULL, ep);
    lListElem_clear_changed_info(ep);
 
@@ -304,9 +302,9 @@ int ckpt_success(sge_gdi_ctx_class_t *ctx, lListElem *ep, lListElem *old_ep, gdi
 *     [alpp] - error messages will be added to this list
 *     0 - success
 *     STATUS_EUNKNOWN - an error occured
-******************************************************************************/ 
-int sge_del_ckpt(sge_gdi_ctx_class_t *ctx, lListElem *ep, lList **alpp, char *ruser, char *rhost) 
-{
+******************************************************************************/
+int
+sge_del_ckpt(sge_gdi_ctx_class_t *ctx, lListElem *ep, lList **alpp, char *ruser, char *rhost) {
    lListElem *found;
    int pos;
    const char *ckpt_name;
@@ -314,7 +312,7 @@ int sge_del_ckpt(sge_gdi_ctx_class_t *ctx, lListElem *ep, lList **alpp, char *ru
 
    DENTER(TOP_LAYER);
 
-   if ( !ep || !ruser || !rhost ) {
+   if (!ep || !ruser || !rhost) {
       CRITICAL((SGE_EVENT, MSG_SGETEXT_NULLPTRPASSED_S, __func__));
       answer_list_add(alpp, SGE_EVENT, STATUS_EUNKNOWN, ANSWER_QUALITY_ERROR);
       DRETURN(STATUS_EUNKNOWN);
@@ -323,7 +321,7 @@ int sge_del_ckpt(sge_gdi_ctx_class_t *ctx, lListElem *ep, lList **alpp, char *ru
    /* ep is no ckpt element, if ep has no CK_name */
    if ((pos = lGetPosViaElem(ep, CK_name, SGE_NO_ABORT)) < 0) {
       CRITICAL((SGE_EVENT, MSG_SGETEXT_MISSINGCULLFIELD_SS,
-            lNm2Str(CK_name), __func__));
+              lNm2Str(CK_name), __func__));
       answer_list_add(alpp, SGE_EVENT, STATUS_EUNKNOWN, ANSWER_QUALITY_ERROR);
       DRETURN(STATUS_EUNKNOWN);
    }
@@ -333,7 +331,7 @@ int sge_del_ckpt(sge_gdi_ctx_class_t *ctx, lListElem *ep, lList **alpp, char *ru
       CRITICAL((SGE_EVENT, MSG_SGETEXT_NULLPTRPASSED_S, __func__));
       answer_list_add(alpp, SGE_EVENT, STATUS_EUNKNOWN, ANSWER_QUALITY_ERROR);
       DRETURN(STATUS_EUNKNOWN);
-   }                    
+   }
    found = ckpt_list_locate(*lpp, ckpt_name);
 
    if (!found) {
@@ -372,13 +370,13 @@ int sge_del_ckpt(sge_gdi_ctx_class_t *ctx, lListElem *ep, lList **alpp, char *ru
    lRemoveElem(*lpp, &found);
 
    INFO((SGE_EVENT, MSG_SGETEXT_REMOVEDFROMLIST_SSSS,
-            ruser, rhost, ckpt_name, MSG_OBJ_CKPT));
+           ruser, rhost, ckpt_name, MSG_OBJ_CKPT));
    answer_list_add(alpp, SGE_EVENT, STATUS_OK, ANSWER_QUALITY_INFO);
    DRETURN(STATUS_OK);
-}                     
+}
 
-const char *get_checkpoint_when(int bitmask)
-{
+const char *
+get_checkpoint_when(int bitmask) {
    int i = 0;
    static char when[32];
    DENTER(TOP_LAYER);
@@ -404,14 +402,14 @@ const char *get_checkpoint_when(int bitmask)
    DRETURN(when);
 }
 
-int is_checkpoint_when_valid(int bitmask)
-{
+int
+is_checkpoint_when_valid(int bitmask) {
    int ret = 0;
    int mask = 0;
 
    DENTER(TOP_LAYER);
    mask = CHECKPOINT_SUSPEND | CHECKPOINT_AT_SHUTDOWN
-      | CHECKPOINT_AT_MINIMUM_INTERVAL | CHECKPOINT_AT_AUTO_RES;
+          | CHECKPOINT_AT_MINIMUM_INTERVAL | CHECKPOINT_AT_AUTO_RES;
 
    if (bitmask == NO_CHECKPOINT
        || ((bitmask & mask) == bitmask)) {

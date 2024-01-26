@@ -2161,12 +2161,12 @@ const lListElem *lPrev(const lListElem *sep) {
    return lPrevRW(sep);
 }
 
-/****** cull/list/lFindFirst() ************************************************
+/****** cull/list/lFindFirstRW() ************************************************
 *  NAME
-*     lFindFirst() -- Returns first element fulfilling condition 
+*     lFindFirstRW() -- Returns first element fulfilling condition
 *
 *  SYNOPSIS
-*     lListElem* lFindFirst(const lList *slp, const lCondition *cp) 
+*     lListElem* lFindFirstRW(const lList *slp, const lCondition *cp)
 *
 *  FUNCTION
 *     Returns the first element fulfilling the condition 'cp' or
@@ -2180,29 +2180,29 @@ const lListElem *lPrev(const lListElem *sep) {
 *  RESULT
 *     lListElem* - element or NULL 
 ******************************************************************************/
-lListElem *lFindFirst(const lList *slp, const lCondition *cp) 
+lListElem *lFindFirstRW(const lList *lp, const lCondition *cp)
 {
    lListElem *ep;
 
    DENTER(CULL_LAYER);
 
-   if (!slp) {
+   if (!lp) {
       LERROR(LELISTNULL);
       DRETURN(NULL);
    }
 
    /* ep->next=NULL for the last element */
-   for (ep = slp->first; ep && !lCompare(ep, cp); ep = ep->next);
+   for (ep = lp->first; ep && !lCompare(ep, cp); ep = ep->next);
 
    DRETURN(ep);
 }
 
-/****** cull/list/lFindLast() *************************************************
+/****** cull/list/lFindLastRW() *************************************************
 *  NAME
-*     lFindLast() -- Returns last element fulfilling condition 
+*     lFindLastRW() -- Returns last element fulfilling condition
 *
 *  SYNOPSIS
-*     lListElem* lFindLast(const lList *slp, const lCondition *cp) 
+*     lListElem* lFindLastRW(const lList *slp, const lCondition *cp)
 *
 *  FUNCTION
 *     Retruns the last element fulfilling the condition 'cp' or NULL
@@ -2216,19 +2216,19 @@ lListElem *lFindFirst(const lList *slp, const lCondition *cp)
 *  RESULT
 *     lListElem* - element or NULL
 ******************************************************************************/
-lListElem *lFindLast(const lList *slp, const lCondition *cp) 
+lListElem *lFindLastRW(const lList *lp, const lCondition *cp)
 {
    lListElem *ep;
 
    DENTER(CULL_LAYER);
 
-   if (!slp) {
+   if (!lp) {
       LERROR(LELISTNULL);
       DRETURN(NULL);
    }
 
    /* ep->prev=NULL for the first element */
-   for (ep = slp->last; ep && !lCompare(ep, cp); ep = ep->prev);
+   for (ep = lp->last; ep && !lCompare(ep, cp); ep = ep->prev);
 
    DRETURN(ep);
 }
@@ -2252,7 +2252,7 @@ lListElem *lFindLast(const lList *slp, const lCondition *cp)
 *  RESULT
 *     lListElem* - element or NULL 
 *******************************************************************************/
-lListElem *lFindNext(const lListElem *ep, const lCondition *cp) 
+lListElem *lFindNextRW(const lListElem *ep, const lCondition *cp)
 {
    DENTER(CULL_LAYER);
 
@@ -2268,12 +2268,12 @@ lListElem *lFindNext(const lListElem *ep, const lCondition *cp)
    DRETURN((lListElem *)ep);
 }
 
-/****** cull/list/lFindPrev() *************************************************
+/****** cull/list/lFindPrevRW() *************************************************
 *  NAME
-*     lFindPrev() -- Returns previous element fulfilling condition 
+*     lFindPrevRW() -- Returns previous element fulfilling condition
 *
 *  SYNOPSIS
-*     lListElem* lFindPrev(const lListElem *ep, const lCondition *cp) 
+*     lListElem* lFindPrevRW(const lListElem *ep, const lCondition *cp)
 *
 *  FUNCTION
 *     Returns the previous element fulfilling the condition 'cp' or
@@ -2287,7 +2287,7 @@ lListElem *lFindNext(const lListElem *ep, const lCondition *cp)
 *  RESULT
 *     lListElem* - element or NULL 
 ******************************************************************************/
-lListElem *lFindPrev(const lListElem *ep, const lCondition *cp) 
+lListElem *lFindPrevRW(const lListElem *ep, const lCondition *cp)
 {
    DENTER(CULL_LAYER);
 

@@ -34,13 +34,11 @@
 #include "sgeobj/sge_object.h"
 
 bool
-sge_task_depend_is_same_range(const lListElem *pre_jep, 
-                              const lListElem *suc_jep);
+sge_task_depend_is_same_range(const lListElem *pre_jep, const lListElem *suc_jep);
 
 int
-sge_task_depend_get_range(lListElem **range, lList **alpp, 
-                          const lListElem *pre_jep, 
-                          const lListElem *suc_jep, u_long32 task_id);
+sge_task_depend_get_range(lListElem **range, lList **alpp, const lListElem *pre_jep, const lListElem *suc_jep,
+                          u_long32 task_id);
 
 bool
 sge_task_depend_update(lListElem *jep, lList **alpp, u_long32 task_id);

@@ -41,34 +41,45 @@
 #define RESCHEDULE_HANDLE_JR_REMOVE    0x00000004
 #define RESCHEDULE_HANDLE_JR_WAIT      0x00000008
 
-void reschedule_unknown_event(sge_gdi_ctx_class_t *ctx, te_event_t anEvent, monitoring_t *monitor);
- 
-u_long32 skip_restarted_job(lListElem *host, lListElem *job_report, u_long32 job_number, u_long32 task_number);
- 
-int reschedule_jobs(sge_gdi_ctx_class_t *ctx, lListElem *ep, u_long32 force, lList **answer, monitoring_t *monitor, bool is_manual);
- 
-int reschedule_job(sge_gdi_ctx_class_t *ctx, lListElem *jep, lListElem *jatep, lListElem *qep, u_long32 force, lList **answer, monitoring_t *monitor, bool is_manual);
- 
-lListElem* add_to_reschedule_unknown_list(sge_gdi_ctx_class_t *ctx, lListElem *hostr, u_long32 job_number, u_long32 task_number, u_long32 state);
- 
-void delete_from_reschedule_unknown_list(sge_gdi_ctx_class_t *ctx, lListElem *host);
- 
-void update_reschedule_unknown_list(sge_gdi_ctx_class_t *ctx, lListElem *host);
- 
-void update_reschedule_unknown_list_for_job(lListElem *host, u_long32 job_number, u_long32 task_number);        
+void
+reschedule_unknown_event(sge_gdi_ctx_class_t *ctx, te_event_t anEvent, monitoring_t *monitor);
 
-void update_reschedule_unknown_timout_values(const char *config_name);
+u_long32
+skip_restarted_job(lListElem *host, lListElem *job_report, u_long32 job_number, u_long32 task_number);
 
-void reschedule_unknown_trigger(lListElem *hep); 
+int
+reschedule_jobs(sge_gdi_ctx_class_t *ctx, lListElem *ep, u_long32 force, lList **answer, monitoring_t *monitor,
+                bool is_manual);
 
-void reschedule_add_additional_time(u_long32 time); 
+int
+reschedule_job(sge_gdi_ctx_class_t *ctx, lListElem *jep, lListElem *jatep, lListElem *qep, u_long32 force,
+               lList **answer, monitoring_t *monitor, bool is_manual);
+
+lListElem *
+add_to_reschedule_unknown_list(sge_gdi_ctx_class_t *ctx, lListElem *hostr, u_long32 job_number, u_long32 task_number,
+                               u_long32 state);
 
 void
-remove_from_reschedule_unknown_list(sge_gdi_ctx_class_t *ctx,
-                                    lListElem *host, u_long32 job_number,
+delete_from_reschedule_unknown_list(sge_gdi_ctx_class_t *ctx, lListElem *host);
+
+void
+update_reschedule_unknown_list(sge_gdi_ctx_class_t *ctx, lListElem *host);
+
+void
+update_reschedule_unknown_list_for_job(lListElem *host, u_long32 job_number, u_long32 task_number);
+
+void
+update_reschedule_unknown_timout_values(const char *config_name);
+
+void
+reschedule_unknown_trigger(lListElem *hep);
+
+void
+reschedule_add_additional_time(u_long32 time);
+
+void
+remove_from_reschedule_unknown_list(sge_gdi_ctx_class_t *ctx, lListElem *host, u_long32 job_number,
                                     u_long32 task_number);
 
 void
-remove_from_reschedule_unknown_lists(sge_gdi_ctx_class_t *ctx,
-                                     u_long32 job_number,
-                                     u_long32 task_number);
+remove_from_reschedule_unknown_lists(sge_gdi_ctx_class_t *ctx, u_long32 job_number, u_long32 task_number);

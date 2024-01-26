@@ -79,15 +79,15 @@ static const char *schedule_log_file = "schedule";
 static int SGE_TEST_DELAY_SCHEDULING = 0;
 
 master_scheduler_class_t Master_Scheduler = {
-   PTHREAD_MUTEX_INITIALIZER,
-   false,
-   0,
-   true 
+        PTHREAD_MUTEX_INITIALIZER,
+        false,
+        0,
+        true
 };
 
 
-static void schedd_set_serf_log_file(sge_gdi_ctx_class_t *ctx)
-{
+static void
+schedd_set_serf_log_file(sge_gdi_ctx_class_t *ctx) {
    const char *cell_root = ctx->get_cell_root(ctx);
 
    DENTER(TOP_LAYER);
@@ -102,11 +102,8 @@ static void schedd_set_serf_log_file(sge_gdi_ctx_class_t *ctx)
 
 /* MT-NOTE: schedd_serf_record_func() is not MT safe */
 static void
-schedd_serf_record_func(u_long32 job_id, u_long32 ja_taskid, const char *state,
-                        u_long32 start_time, u_long32 end_time,
-                        char level_char, const char *object_name,
-                        const char *name, double utilization)
-{
+schedd_serf_record_func(u_long32 job_id, u_long32 ja_taskid, const char *state, u_long32 start_time, u_long32 end_time,
+                        char level_char, const char *object_name, const char *name, double utilization) {
    FILE *fp;
 
    DENTER(TOP_LAYER);
@@ -116,22 +113,20 @@ schedd_serf_record_func(u_long32 job_id, u_long32 ja_taskid, const char *state,
    }
 
    /* a new record */
-   fprintf(fp, sge_U32CFormat":"sge_U32CFormat":%s:"sge_U32CFormat":"
-           sge_U32CFormat":%c:%s:%s:%f\n", sge_u32c(job_id),
-           sge_u32c(ja_taskid), state, sge_u32c(start_time),
-           sge_u32c(end_time - start_time),
-           level_char, object_name, name, utilization);
+   fprintf(fp, sge_U32CFormat":"sge_U32CFormat":%s:"sge_U32CFormat":"sge_U32CFormat":%c:%s:%s:%f\n", sge_u32c(job_id),
+           sge_u32c(ja_taskid), state, sge_u32c(start_time), sge_u32c(end_time - start_time), level_char, object_name,
+           name, utilization);
    FCLOSE(fp);
 
    DRETURN_VOID;
-FCLOSE_ERROR:
+   FCLOSE_ERROR:
    DPRINTF((MSG_FILE_ERRORCLOSEINGXY_SS, schedule_log_path, strerror(errno)));
    DRETURN_VOID;
 }
 
 /* MT-NOTE: schedd_serf_newline() is not MT safe */
-static void schedd_serf_newline(u_long32 time)
-{
+static void
+schedd_serf_newline(u_long32 time) {
    FILE *fp;
 
    DENTER(TOP_LAYER);
@@ -142,30 +137,27 @@ static void schedd_serf_newline(u_long32 time)
       FCLOSE(fp);
    }
    DRETURN_VOID;
-FCLOSE_ERROR:
+   FCLOSE_ERROR:
    DPRINTF((MSG_FILE_ERRORCLOSEINGXY_SS, schedule_log_path, strerror(errno)));
    DRETURN_VOID;
 }
 
 
 static void
-sge_scheduler_cleanup_monitor(monitoring_t *monitor)
-{
+sge_scheduler_cleanup_monitor(monitoring_t *monitor) {
    DENTER(TOP_LAYER);
    sge_monitor_free(monitor);
    DRETURN_VOID;
 }
 
 static void
-sge_scheduler_cleanup_event_client(sge_evc_class_t *evc)
-{
+sge_scheduler_cleanup_event_client(sge_evc_class_t *evc) {
    DENTER(TOP_LAYER);
    sge_mirror_shutdown(evc);
    DRETURN_VOID;
 }
 
-static void sge_scheduler_wait_for_event(sge_evc_class_t *evc, lList **event_list)
-{
+static void sge_scheduler_wait_for_event(sge_evc_class_t *evc, lList **event_list) {
    int wait_ret;
    bool do_ack = false;
 
@@ -248,9 +240,8 @@ static void sge_scheduler_wait_for_event(sge_evc_class_t *evc, lList **event_lis
 *     qmaster/threads/sge_scheduler_terminate() 
 *     qmaster/threads/sge_scheduler_main() 
 *******************************************************************************/
-void 
-sge_scheduler_initialize(sge_gdi_ctx_class_t *ctx, lList **answer_list)
-{
+void
+sge_scheduler_initialize(sge_gdi_ctx_class_t *ctx, lList **answer_list) {
    DENTER(TOP_LAYER);
 
    /* initialize debugging instrumentation */
@@ -272,31 +263,31 @@ sge_scheduler_initialize(sge_gdi_ctx_class_t *ctx, lList **answer_list)
        * otherwise we have to start the thread due to a manual request through GDI.
        * There is no option. We have to start it.
        */
-      if (Master_Scheduler.use_bootstrap == true) { 
+      if (Master_Scheduler.use_bootstrap == true) {
          start_thread = ((ctx->get_scheduler_thread_count(ctx) > 0) ? true : false);
-         Master_Scheduler.use_bootstrap = false; 
-      } 
+         Master_Scheduler.use_bootstrap = false;
+      }
 
-      if (start_thread == true) { 
-         cl_thread_settings_t* dummy_thread_p = NULL;
+      if (start_thread == true) {
+         cl_thread_settings_t *dummy_thread_p = NULL;
          dstring thread_name = DSTRING_INIT;
 
          /*
           * initialize the thread pool
           */
          cl_thread_list_setup(&(Main_Control.scheduler_thread_pool), "thread pool");
-   
+
          /* 
           * prepare a unique scheduler thread name for each instance of an scheduler 
           */
-         sge_dstring_sprintf(&thread_name, "%s%03d", threadnames[SCHEDD_THREAD], 
+         sge_dstring_sprintf(&thread_name, "%s%03d", threadnames[SCHEDD_THREAD],
                              Master_Scheduler.thread_id);
 
          /*
           * start the scheduler
           */
          cl_thread_list_create_thread(Main_Control.scheduler_thread_pool, &dummy_thread_p,
-                                      cl_com_get_log_list(), sge_dstring_get_string(&thread_name), 
+                                      cl_com_get_log_list(), sge_dstring_get_string(&thread_name),
                                       Master_Scheduler.thread_id, sge_scheduler_main, NULL, NULL, CL_TT_SCHEDULER);
          sge_dstring_free(&thread_name);
 
@@ -353,14 +344,13 @@ sge_scheduler_initialize(sge_gdi_ctx_class_t *ctx, lList **answer_list)
 *     qmaster/threads/sge_scheduler_main() 
 *******************************************************************************/
 void
-sge_scheduler_cleanup_thread(void *ctx_ref)
-{
+sge_scheduler_cleanup_thread(void *ctx_ref) {
    DENTER(TOP_LAYER);
-   
+
    sge_mutex_lock("master scheduler struct", __func__, __LINE__, &(Master_Scheduler.mutex));
 
    if (Master_Scheduler.is_running) {
-      cl_thread_settings_t* thread = NULL;
+      cl_thread_settings_t *thread = NULL;
 
       /* 
        * The scheduler thread itself executes this function (sge_scheduler_cleanup_thread())
@@ -376,7 +366,7 @@ sge_scheduler_cleanup_thread(void *ctx_ref)
        */
       thread = cl_thread_list_get_first_thread(Main_Control.scheduler_thread_pool);
       cl_thread_list_delete_thread_without_join(Main_Control.scheduler_thread_pool, thread);
-      
+
       /* 
        * Trash the thread pool 
        */
@@ -390,7 +380,7 @@ sge_scheduler_cleanup_thread(void *ctx_ref)
       /*
       ** free the ctx too
       */
-      sge_gdi_ctx_class_destroy((sge_gdi_ctx_class_t **)ctx_ref);
+      sge_gdi_ctx_class_destroy((sge_gdi_ctx_class_t **) ctx_ref);
    }
 
    sge_mutex_unlock("master scheduler struct", __func__, __LINE__, &(Master_Scheduler.mutex));
@@ -428,15 +418,14 @@ sge_scheduler_cleanup_thread(void *ctx_ref)
 *     qmaster/threads/sge_scheduler_main() 
 *******************************************************************************/
 void
-sge_scheduler_terminate(sge_gdi_ctx_class_t *ctx, lList **answer_list)
-{
+sge_scheduler_terminate(sge_gdi_ctx_class_t *ctx, lList **answer_list) {
    DENTER(TOP_LAYER);
-   
+
    sge_mutex_lock("master scheduler struct", __func__, __LINE__, &(Master_Scheduler.mutex));
 
    if (Master_Scheduler.is_running) {
       pthread_t thread_id;
-      cl_thread_settings_t* thread = NULL;
+      cl_thread_settings_t *thread = NULL;
 
       /* 
        * store thread id to use it later on 
@@ -448,7 +437,7 @@ sge_scheduler_terminate(sge_gdi_ctx_class_t *ctx, lList **answer_list)
        * send cancel signal 
        */
       pthread_cancel(thread_id);
-     
+
       /*
        * wakeup scheduler thread which might be blocked by wait for events
        */
@@ -504,15 +493,14 @@ sge_scheduler_terminate(sge_gdi_ctx_class_t *ctx, lList **answer_list)
 *     qmaster/threads/sge_scheduler_main() 
 *******************************************************************************/
 void *
-sge_scheduler_main(void *arg)
-{
+sge_scheduler_main(void *arg) {
    time_t next_prof_output = 0;
    monitoring_t monitor;
    sge_gdi_ctx_class_t *ctx = NULL;
    sge_evc_class_t *evc = NULL;
    lList *alp = NULL;
    sge_where_what_t where_what;
-   cl_thread_settings_t *thread_config = (cl_thread_settings_t*)arg;
+   cl_thread_settings_t *thread_config = (cl_thread_settings_t *) arg;
    bool do_shutdown = false;
    bool do_endlessly = true;
    bool local_ret = true;
@@ -637,7 +625,7 @@ sge_scheduler_main(void *arg)
          /*
           * Wait for new events
           */
-         MONITOR_IDLE_TIME(sge_scheduler_wait_for_event(evc, &event_list), (&monitor), mconf_get_monitor_time(), 
+         MONITOR_IDLE_TIME(sge_scheduler_wait_for_event(evc, &event_list), (&monitor), mconf_get_monitor_time(),
                            mconf_is_monitor_message());
 
          /* If we lost connection we have to register again */
@@ -661,7 +649,7 @@ sge_scheduler_main(void *arg)
             }
             lFreeList(&event_list);
          }
- 
+
          /* if we actually got events, start the scheduling run and further event processing */
          if (handled_events == true) {
             lList *answer_list = NULL;
@@ -670,8 +658,8 @@ sge_scheduler_main(void *arg)
             const lList *master_job_list = *object_type_get_master_list(SGE_TYPE_JOB);
             const lList *master_userset_list = *object_type_get_master_list(SGE_TYPE_USERSET);
             const lList *master_project_list = *object_type_get_master_list(SGE_TYPE_PROJECT);
-            const lList *master_exechost_list= *object_type_get_master_list(SGE_TYPE_EXECHOST);
-            const lList *master_rqs_list= *object_type_get_master_list(SGE_TYPE_RQS);
+            const lList *master_exechost_list = *object_type_get_master_list(SGE_TYPE_EXECHOST);
+            const lList *master_rqs_list = *object_type_get_master_list(SGE_TYPE_RQS);
             const lList *master_centry_list = *object_type_get_master_list(SGE_TYPE_CENTRY);
             const lList *master_ckpt_list = *object_type_get_master_list(SGE_TYPE_CKPT);
             const lList *master_user_list = *object_type_get_master_list(SGE_TYPE_USER);
@@ -694,7 +682,7 @@ sge_scheduler_main(void *arg)
 
                sge_dstring_init(&ds, buffer, sizeof(buffer));
                DPRINTF(("================[SCHEDULING-EPOCH %s]==================\n",
-                        sge_at_time(0, &ds)));
+                       sge_at_time(0, &ds)));
                sge_dstring_free(&ds);
             }
 
@@ -710,21 +698,21 @@ sge_scheduler_main(void *arg)
 
             DPRINTF(("RAW CQ:%d, J:%d, H:%d, C:%d, A:%d, D:%d, P:%d, CKPT:%d,"
                      " US:%d, PR:%d, RQS:%d, AR:%d, S:nd:%d/lf:%d\n",
-               lGetNumberOfElem(master_cqueue_list),
-               lGetNumberOfElem(master_job_list),
-               lGetNumberOfElem(master_exechost_list),
-               lGetNumberOfElem(master_centry_list),
-               lGetNumberOfElem(copy.acl_list),
-               lGetNumberOfElem(copy.dept_list),
-               lGetNumberOfElem(master_project_list),
-               lGetNumberOfElem(master_ckpt_list),
-               lGetNumberOfElem(master_user_list),
-               lGetNumberOfElem(master_project_list),
-               lGetNumberOfElem(master_rqs_list),
-               lGetNumberOfElem(master_ar_list),
-               lGetNumberOfNodes(NULL, master_sharetree_list, STN_children),
-               lGetNumberOfLeafs(NULL, master_sharetree_list, STN_children)
-            ));
+                    lGetNumberOfElem(master_cqueue_list),
+                    lGetNumberOfElem(master_job_list),
+                    lGetNumberOfElem(master_exechost_list),
+                    lGetNumberOfElem(master_centry_list),
+                    lGetNumberOfElem(copy.acl_list),
+                    lGetNumberOfElem(copy.dept_list),
+                    lGetNumberOfElem(master_project_list),
+                    lGetNumberOfElem(master_ckpt_list),
+                    lGetNumberOfElem(master_user_list),
+                    lGetNumberOfElem(master_project_list),
+                    lGetNumberOfElem(master_rqs_list),
+                    lGetNumberOfElem(master_ar_list),
+                    lGetNumberOfNodes(NULL, master_sharetree_list, STN_children),
+                    lGetNumberOfLeafs(NULL, master_sharetree_list, STN_children)
+                    ));
 
             sge_rebuild_job_category(master_job_list, master_userset_list,
                                      master_project_list, master_rqs_list);
@@ -763,7 +751,7 @@ sge_scheduler_main(void *arg)
                         copy.all_queue_list = lCreateList("all", lGetListDescr(t));
                      }
                      lAppendList(copy.all_queue_list, t);
-                     lFreeList (&t);
+                     lFreeList(&t);
                   }
 
                   t = lSelect("t", qinstance_list, where_what.where_queue, where_what.what_queue2);
@@ -772,7 +760,7 @@ sge_scheduler_main(void *arg)
                         copy.queue_list = lCreateList("enabled", lGetListDescr(t));
                      }
                      lAppendList(copy.queue_list, t);
-                     lFreeList (&t);
+                     lFreeList(&t);
                   }
 
                   t = lSelect("t", qinstance_list, where_what.where_queue2, where_what.what_queue2);
@@ -781,7 +769,7 @@ sge_scheduler_main(void *arg)
                         copy.dis_queue_list = lCreateList("disabled", lGetListDescr(t));
                      }
                      lAppendList(copy.dis_queue_list, t);
-                     lFreeList (&t);
+                     lFreeList(&t);
                   }
                }
                if (what_queue3) {
@@ -810,48 +798,48 @@ sge_scheduler_main(void *arg)
 
             /* report number of reduced and raw (in brackets) lists */
             DPRINTF(("Q:"sge_uu32", AQ:"sge_uu32" J:"sge_uu32"("sge_uu32"), H:"sge_uu32"("sge_uu32"), C:"sge_uu32", A:"sge_uu32", "
-                     "D:"sge_uu32", P:"sge_uu32", CKPT:"sge_uu32","
-                     " US:"sge_uu32", PR:"sge_uu32", RQS:"sge_uu32", AR:"sge_uu32", S:nd:%d/lf:%d\n",
-               lGetNumberOfElem(copy.queue_list),
-               lGetNumberOfElem(copy.all_queue_list),
-               lGetNumberOfElem(copy.job_list),
-               lGetNumberOfElem(master_job_list),
-               lGetNumberOfElem(copy.host_list),
-               lGetNumberOfElem(master_exechost_list),
-               lGetNumberOfElem(copy.centry_list),
-               lGetNumberOfElem(copy.acl_list),
-               lGetNumberOfElem(copy.dept_list),
-               lGetNumberOfElem(copy.pe_list),
-               lGetNumberOfElem(copy.ckpt_list),
-               lGetNumberOfElem(copy.user_list),
-               lGetNumberOfElem(copy.project_list),
-               lGetNumberOfElem(copy.rqs_list),
-               lGetNumberOfElem(copy.ar_list),
-               lGetNumberOfNodes(NULL, copy.share_tree, STN_children),
-               lGetNumberOfLeafs(NULL, copy.share_tree, STN_children)
-            ));
+                                                                                                                               "D:"sge_uu32", P:"sge_uu32", CKPT:"sge_uu32","
+                                                                                                                                                                          " US:"sge_uu32", PR:"sge_uu32", RQS:"sge_uu32", AR:"sge_uu32", S:nd:%d/lf:%d\n",
+                    lGetNumberOfElem(copy.queue_list),
+                    lGetNumberOfElem(copy.all_queue_list),
+                    lGetNumberOfElem(copy.job_list),
+                    lGetNumberOfElem(master_job_list),
+                    lGetNumberOfElem(copy.host_list),
+                    lGetNumberOfElem(master_exechost_list),
+                    lGetNumberOfElem(copy.centry_list),
+                    lGetNumberOfElem(copy.acl_list),
+                    lGetNumberOfElem(copy.dept_list),
+                    lGetNumberOfElem(copy.pe_list),
+                    lGetNumberOfElem(copy.ckpt_list),
+                    lGetNumberOfElem(copy.user_list),
+                    lGetNumberOfElem(copy.project_list),
+                    lGetNumberOfElem(copy.rqs_list),
+                    lGetNumberOfElem(copy.ar_list),
+                    lGetNumberOfNodes(NULL, copy.share_tree, STN_children),
+                    lGetNumberOfLeafs(NULL, copy.share_tree, STN_children)
+                    ));
 
             if (getenv("SGE_ND")) {
                printf("Q:"sge_uu32", AQ:"sge_uu32" J:"sge_uu32"("sge_uu32"), H:"sge_uu32"("sge_uu32"), C:"sge_uu32", A:"sge_uu32", D:"sge_uu32", "
-                  "P:"sge_uu32", CKPT:"sge_uu32", US:"sge_uu32", PR:"sge_uu32", RQS:"sge_uu32", AR:"sge_uu32", S:nd:%d/lf:%d\n",
-                  lGetNumberOfElem(copy.queue_list),
-                  lGetNumberOfElem(copy.all_queue_list),
-                  lGetNumberOfElem(copy.job_list),
-                  lGetNumberOfElem(master_job_list),
-                  lGetNumberOfElem(copy.host_list),
-                  lGetNumberOfElem(master_exechost_list),
-                  lGetNumberOfElem(copy.centry_list),
-                  lGetNumberOfElem(copy.acl_list),
-                  lGetNumberOfElem(copy.dept_list),
-                  lGetNumberOfElem(copy.pe_list),
-                  lGetNumberOfElem(copy.ckpt_list),
-                  lGetNumberOfElem(copy.user_list),
-                  lGetNumberOfElem(copy.project_list),
-                  lGetNumberOfElem(copy.rqs_list),
-                  lGetNumberOfElem(copy.ar_list),
-                  lGetNumberOfNodes(NULL, copy.share_tree, STN_children),
-                  lGetNumberOfLeafs(NULL, copy.share_tree, STN_children)
-                 );
+                                                                                                                                              "P:"sge_uu32", CKPT:"sge_uu32", US:"sge_uu32", PR:"sge_uu32", RQS:"sge_uu32", AR:"sge_uu32", S:nd:%d/lf:%d\n",
+                      lGetNumberOfElem(copy.queue_list),
+                      lGetNumberOfElem(copy.all_queue_list),
+                      lGetNumberOfElem(copy.job_list),
+                      lGetNumberOfElem(master_job_list),
+                      lGetNumberOfElem(copy.host_list),
+                      lGetNumberOfElem(master_exechost_list),
+                      lGetNumberOfElem(copy.centry_list),
+                      lGetNumberOfElem(copy.acl_list),
+                      lGetNumberOfElem(copy.dept_list),
+                      lGetNumberOfElem(copy.pe_list),
+                      lGetNumberOfElem(copy.ckpt_list),
+                      lGetNumberOfElem(copy.user_list),
+                      lGetNumberOfElem(copy.project_list),
+                      lGetNumberOfElem(copy.rqs_list),
+                      lGetNumberOfElem(copy.ar_list),
+                      lGetNumberOfNodes(NULL, copy.share_tree, STN_children),
+                      lGetNumberOfLeafs(NULL, copy.share_tree, STN_children)
+               );
             } else {
                schedd_log("-------------START-SCHEDULER-RUN-------------", NULL, evc->monitor_next_run);
             }
@@ -892,7 +880,7 @@ sge_scheduler_main(void *arg)
             if (sconf_is_new_config()) {
                /* set scheduler interval / event delivery interval */
                u_long32 interval = sconf_get_schedule_interval();
-               if ((u_long32)evc->ec_get_edtime(evc) != interval) {
+               if ((u_long32) evc->ec_get_edtime(evc) != interval) {
                   evc->ec_set_edtime(evc, interval);
                }
 
@@ -917,10 +905,10 @@ sge_scheduler_main(void *arg)
 
             if (prof_is_active(SGE_PROF_CUSTOM6)) {
                PROFILING((SGE_EVENT, "PROF: schedd run took: %.3f s (init: %.3f s, copy: %.3f s, "
-                          "run:%.3f, free: %.3f s, jobs: "sge_uu32", categories: %d/%d)",
-                           prof_total, prof_init, prof_copy, prof_run, prof_free,
-                           lGetNumberOfElem(*object_type_get_master_list(SGE_TYPE_JOB)), sge_category_count(),
-                           sge_cs_category_count() ));
+                                     "run:%.3f, free: %.3f s, jobs: "sge_uu32", categories: %d/%d)",
+                       prof_total, prof_init, prof_copy, prof_run, prof_free,
+                       lGetNumberOfElem(*object_type_get_master_list(SGE_TYPE_JOB)), sge_category_count(),
+                       sge_cs_category_count()));
             }
             if (getenv("SGE_ND") != NULL) {
                printf("--------------STOP-SCHEDULER-RUN-------------\n");
@@ -947,13 +935,13 @@ sge_scheduler_main(void *arg)
           * be called so it is pushed first
           */
          pthread_cleanup_push(sge_scheduler_cleanup_thread, (void *) &ctx);
-         pthread_cleanup_push((void (*)(void *))sge_scheduler_cleanup_monitor,
-                              (void *)&monitor);
-         pthread_cleanup_push((void (*)(void *))sge_scheduler_cleanup_event_client,
-                              (void *)evc);
-         cl_thread_func_testcancel(thread_config);
-         pthread_cleanup_pop(execute);
-         pthread_cleanup_pop(execute);
+            pthread_cleanup_push((void (*)(void *)) sge_scheduler_cleanup_monitor,
+                                 (void *) &monitor);
+               pthread_cleanup_push((void (*)(void *)) sge_scheduler_cleanup_event_client,
+                                    (void *) evc);
+                  cl_thread_func_testcancel(thread_config);
+               pthread_cleanup_pop(execute);
+            pthread_cleanup_pop(execute);
          pthread_cleanup_pop(execute);
          DPRINTF(("passed cancelation point\n"));
       }

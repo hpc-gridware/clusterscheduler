@@ -32,7 +32,9 @@
 /*___INFO__MARK_END__*/
 
 #ifndef __SGE_GDIP_H
+
 #   include "gdi/sge_gdiP.h"
+
 #endif
 
 #include "uti/sge_monitor.h"
@@ -43,11 +45,16 @@
 #include "sge_qmaster_timed_event.h"
 
 
-void resend_signal_event(sge_gdi_ctx_class_t *ctx, te_event_t anEvent, monitoring_t *monitor);
-void rebuild_signal_events(void);
+void
+resend_signal_event(sge_gdi_ctx_class_t *ctx, te_event_t anEvent, monitoring_t *monitor);
 
-void        
+void
+rebuild_signal_events(void);
+
+void
 sge_gdi_qmod(sge_gdi_ctx_class_t *ctx, sge_gdi_packet_class_t *packet, sge_gdi_task_class_t *task,
              monitoring_t *monitor);
 
-int sge_signal_queue(sge_gdi_ctx_class_t *ctx, int how, lListElem *qep, lListElem *jep, lListElem *jatep, monitoring_t *monitor);
+int
+sge_signal_queue(sge_gdi_ctx_class_t *ctx, int how, lListElem *qep, lListElem *jep, lListElem *jatep,
+                 monitoring_t *monitor);

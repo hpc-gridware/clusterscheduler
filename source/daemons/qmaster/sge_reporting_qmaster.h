@@ -76,71 +76,41 @@ reporting_trigger_handler(sge_gdi_ctx_class_t *ctx, te_event_t anEvent, monitori
 bool
 reporting_create_new_job_record(lList **answer_list, const lListElem *job);
 
-bool 
-reporting_create_job_log(lList **answer_list,
-                         u_long32 event_time,
-                         const job_log_t,
-                         const char *user,
-                         const char *host,
-                         const lListElem *job_report,
-                         const lListElem *job, const lListElem *ja_task,
-                         const lListElem *pe_task,
-                         const char *message);
+bool
+reporting_create_job_log(lList **answer_list, u_long32 event_time, const job_log_t, const char *user, const char *host,
+                         const lListElem *job_report, const lListElem *job, const lListElem *ja_task,
+                         const lListElem *pe_task, const char *message);
 
 bool
-reporting_create_acct_record(sge_gdi_ctx_class_t *ctx,
-                             lList **answer_list, 
-                             lListElem *job_report, 
-                             lListElem *job, 
-                             lListElem *ja_task, 
-                             bool intermediate);
+reporting_create_acct_record(sge_gdi_ctx_class_t *ctx, lList **answer_list, lListElem *job_report, lListElem *job,
+                             lListElem *ja_task, bool intermediate);
 
 bool
-reporting_create_host_record(lList **answer_list,
-                             const lListElem *host,
-                             u_long32 report_time);
+reporting_create_host_record(lList **answer_list, const lListElem *host, u_long32 report_time);
 
 bool
-reporting_create_host_consumable_record(lList **answer_list,
-                                        const lListElem *host,
-                                        const lListElem *job,
+reporting_create_host_consumable_record(lList **answer_list, const lListElem *host, const lListElem *job,
                                         u_long32 report_time);
 
 bool
-reporting_create_queue_record(lList **answer_list,
-                              const lListElem *queue,
-                              u_long32 report_time);
+reporting_create_queue_record(lList **answer_list, const lListElem *queue, u_long32 report_time);
 
 bool
-reporting_create_queue_consumable_record(lList **answer_list,
-                                         const lListElem *host,
-                                         const lListElem *queue,
-                                         const lListElem *job,
-                                         u_long32 report_time);
+reporting_create_queue_consumable_record(lList **answer_list, const lListElem *host, const lListElem *queue,
+                                         const lListElem *job, u_long32 report_time);
 
 bool
-reporting_is_intermediate_acct_required(const lListElem *job, 
-                                        const lListElem *ja_task, 
-                                        const lListElem *pe_task);
+reporting_is_intermediate_acct_required(const lListElem *job, const lListElem *ja_task, const lListElem *pe_task);
 
 bool
-reporting_create_new_ar_record(lList **answer_list, 
-                               const lListElem *ar,
-                               u_long32 report_time);
+reporting_create_new_ar_record(lList **answer_list, const lListElem *ar, u_long32 report_time);
 
 bool
-reporting_create_ar_attribute_record(lList **answer_list,
-                                     const lListElem *ar,
-                                     u_long32 report_time);
+reporting_create_ar_attribute_record(lList **answer_list, const lListElem *ar, u_long32 report_time);
 
 bool
-reporting_create_ar_log_record(lList **answer_list,
-                               const lListElem *ar,
-                               ar_state_event_t state,
-                               const char *ar_description,
-                               u_long32 report_time);
+reporting_create_ar_log_record(lList **answer_list, const lListElem *ar, ar_state_event_t state,
+                               const char *ar_description, u_long32 report_time);
 
 bool
-reporting_create_ar_acct_records(lList **answer_list,
-                                const lListElem *ar,
-                                u_long32 report_time);
+reporting_create_ar_acct_records(lList **answer_list, const lListElem *ar, u_long32 report_time);

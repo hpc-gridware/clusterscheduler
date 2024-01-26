@@ -65,12 +65,10 @@
 
 /* ------------------------------------------------------------ */
 
-int 
-centry_mod(sge_gdi_ctx_class_t *ctx,
-           lList **answer_list, lListElem *centry, lListElem *reduced_elem, 
-           int add, const char *remote_user, const char *remote_host, 
-           gdi_object_t *object, int sub_command, monitoring_t *monitor) 
-{
+int
+centry_mod(sge_gdi_ctx_class_t *ctx, lList **answer_list, lListElem *centry, lListElem *reduced_elem, int add,
+           const char *remote_user, const char *remote_host, gdi_object_t *object, int sub_command,
+           monitoring_t *monitor) {
    bool ret = true;
    bool is_slots_attr = false;
    int pos;
@@ -96,7 +94,7 @@ centry_mod(sge_gdi_ctx_class_t *ctx,
          if (!strcmp("slots", name)) {
             is_slots_attr = true;
          }
-      } 
+      }
    }
 
    /*
@@ -112,7 +110,7 @@ centry_mod(sge_gdi_ctx_class_t *ctx,
          lSetString(centry, CE_shortcut, shortcut);
       }
    }
-   
+
    /*
     * Type (CE_valtype)
     */
@@ -129,7 +127,7 @@ centry_mod(sge_gdi_ctx_class_t *ctx,
          lSetUlong(centry, CE_valtype, type);
       }
    }
-   
+
    /*
     * Operator (CE_relop)
     */
@@ -207,11 +205,11 @@ centry_mod(sge_gdi_ctx_class_t *ctx,
       if (pos >= 0) {
          const char *urgency_weight = lGetPosString(reduced_elem, pos);
          DPRINTF(("Got CE_defaultval: "SFQ"\n", urgency_weight ? urgency_weight : "-NA-"));
- 
+
          /* Check first that the entry is not NULL */
-         if (!pos)  {
+         if (!pos) {
             ERROR((SGE_EVENT, MSG_SGETEXT_MISSINGCULLFIELD_SS,
-                  lNm2Str(CE_urgency_weight), "urgency_weight"));
+                    lNm2Str(CE_urgency_weight), "urgency_weight"));
             answer_list_add(answer_list, SGE_EVENT, STATUS_EEXIST, ANSWER_QUALITY_ERROR);
             DRETURN(STATUS_EEXIST);
          }
@@ -219,8 +217,10 @@ centry_mod(sge_gdi_ctx_class_t *ctx,
 
          attrname = lGetString(reduced_elem, CE_name);
          temp = lGetString(reduced_elem, CE_urgency_weight);
-         if(!parse_ulong_val(&dval, NULL, TYPE_DOUBLE, temp, error_msg, 199)){answer_list_add_sprintf(answer_list, STATUS_EUNKNOWN , ANSWER_QUALITY_ERROR, MSG_INVALID_CENTRY_PARSE_URGENCY_SS, attrname, error_msg);
-               ret = false;
+         if (!parse_ulong_val(&dval, NULL, TYPE_DOUBLE, temp, error_msg, 199)) {
+            answer_list_add_sprintf(answer_list, STATUS_EUNKNOWN, ANSWER_QUALITY_ERROR,
+                                    MSG_INVALID_CENTRY_PARSE_URGENCY_SS, attrname, error_msg);
+            ret = false;
          }
 
          lSetString(centry, CE_urgency_weight, urgency_weight);
@@ -240,27 +240,26 @@ centry_mod(sge_gdi_ctx_class_t *ctx,
 
 /* ------------------------------------------------------------ */
 
-int 
-centry_spool(sge_gdi_ctx_class_t *ctx, lList **alpp, lListElem *cep, gdi_object_t *object) 
-{
+int
+centry_spool(sge_gdi_ctx_class_t *ctx, lList **alpp, lListElem *cep, gdi_object_t *object) {
    lList *answer_list = NULL;
    bool dbret;
    bool job_spooling = ctx->get_job_spooling(ctx);
 
    DENTER(TOP_LAYER);
 
-   dbret = spool_write_object(&answer_list, spool_get_default_context(), cep, 
+   dbret = spool_write_object(&answer_list, spool_get_default_context(), cep,
                               lGetString(cep, CE_name), SGE_TYPE_CENTRY,
                               job_spooling);
    answer_list_output(&answer_list);
 
    if (!dbret) {
-      answer_list_add_sprintf(alpp, STATUS_EUNKNOWN, 
-                              ANSWER_QUALITY_ERROR, 
+      answer_list_add_sprintf(alpp, STATUS_EUNKNOWN,
+                              ANSWER_QUALITY_ERROR,
                               MSG_PERSISTENCE_WRITE_FAILED_S,
                               lGetString(cep, CE_name));
-   } 
-   
+   }
+
    DRETURN(dbret ? 0 : 1);
 }
 
@@ -320,14 +319,14 @@ centry_spool(sge_gdi_ctx_class_t *ctx, lList **alpp, lListElem *cep, gdi_object_
 *                 - soft requests on consumables could be enabled
 *
 *******************************************************************************/
-int 
-centry_success(sge_gdi_ctx_class_t *ctx, lListElem *ep, lListElem *old_ep, gdi_object_t *object, lList **ppList, monitoring_t *monitor) 
-{
+int
+centry_success(sge_gdi_ctx_class_t *ctx, lListElem *ep, lListElem *old_ep, gdi_object_t *object, lList **ppList,
+               monitoring_t *monitor) {
    bool rebuild_consumables = false;
 
    DENTER(TOP_LAYER);
 
-   sge_add_event( 0, old_ep?sgeE_CENTRY_MOD:sgeE_CENTRY_ADD, 0, 0, 
+   sge_add_event(0, old_ep ? sgeE_CENTRY_MOD : sgeE_CENTRY_ADD, 0, 0,
                  lGetString(ep, CE_name), NULL, NULL, ep);
    lListElem_clear_changed_info(ep);
 
@@ -341,7 +340,7 @@ centry_success(sge_gdi_ctx_class_t *ctx, lListElem *ep, lListElem *old_ep, gdi_o
       u_long32 consumable = lGetUlong(ep, CE_consumable);
       u_long32 old_consumable = lGetUlong(old_ep, CE_consumable);
       if (consumable != old_consumable) {
-            rebuild_consumables = true;
+         rebuild_consumables = true;
       } else if (consumable) {
          const char *default_request = lGetString(ep, CE_defaultval);
          const char *old_default_request = lGetString(old_ep, CE_defaultval);
@@ -358,9 +357,8 @@ centry_success(sge_gdi_ctx_class_t *ctx, lListElem *ep, lListElem *old_ep, gdi_o
    DRETURN(0);
 }
 
-int sge_del_centry(sge_gdi_ctx_class_t *ctx, lListElem *centry, lList **answer_list, 
-                   char *remote_user, char *remote_host) 
-{
+int
+sge_del_centry(sge_gdi_ctx_class_t *ctx, lListElem *centry, lList **answer_list, char *remote_user, char *remote_host) {
    bool ret = true;
    lList *master_centry_list = *object_type_get_master_list_rw(SGE_TYPE_CENTRY);
    const lList *master_cqueue_list = *object_type_get_master_list(SGE_TYPE_CQUEUE);
@@ -370,7 +368,7 @@ int sge_del_centry(sge_gdi_ctx_class_t *ctx, lListElem *centry, lList **answer_l
    DENTER(TOP_LAYER);
 
    if (centry != NULL || remote_user != NULL || remote_host != NULL) {
-      const char* name = lGetString(centry, CE_name);
+      const char *name = lGetString(centry, CE_name);
 
       if (name != NULL) {
          lList *local_answer_list = NULL;
@@ -379,28 +377,29 @@ int sge_del_centry(sge_gdi_ctx_class_t *ctx, lListElem *centry, lList **answer_l
          /* check if its a build in value */
          if (get_rsrc(name, true, NULL, NULL, NULL, NULL) == 0 ||
              get_rsrc(name, false, NULL, NULL, NULL, NULL) == 0) {
-            answer_list_add_sprintf(answer_list, STATUS_EUNKNOWN , ANSWER_QUALITY_ERROR, 
+            answer_list_add_sprintf(answer_list, STATUS_EUNKNOWN, ANSWER_QUALITY_ERROR,
                                     MSG_INVALID_CENTRY_DEL_S, name);
             ret = false;
          }
 
          if (ret) {
             if (tmp_centry != NULL) {
-               if (!centry_is_referenced(tmp_centry, &local_answer_list, master_cqueue_list, master_ehost_list, master_rqs_list)) {
-                  if (sge_event_spool(ctx, answer_list, 0, sgeE_CENTRY_DEL, 
+               if (!centry_is_referenced(tmp_centry, &local_answer_list, master_cqueue_list, master_ehost_list,
+                                         master_rqs_list)) {
+                  if (sge_event_spool(ctx, answer_list, 0, sgeE_CENTRY_DEL,
                                       0, 0, name, NULL, NULL,
                                       NULL, NULL, NULL, true, true)) {
 
                      lRemoveElem(master_centry_list, &tmp_centry);
-                     INFO((SGE_EVENT, MSG_SGETEXT_REMOVEDFROMLIST_SSSS, 
-                           remote_user, remote_host, name, MSG_OBJ_CPLX));
-                     answer_list_add(answer_list, SGE_EVENT, 
+                     INFO((SGE_EVENT, MSG_SGETEXT_REMOVEDFROMLIST_SSSS,
+                             remote_user, remote_host, name, MSG_OBJ_CPLX));
+                     answer_list_add(answer_list, SGE_EVENT,
                                      STATUS_OK, ANSWER_QUALITY_INFO);
                   } else {
                      ERROR((SGE_EVENT, MSG_CANTSPOOL_SS,
-                           "complex entry", name ));
+                             "complex entry", name));
                      answer_list_add(answer_list, SGE_EVENT, STATUS_EEXIST,
-                                    ANSWER_QUALITY_ERROR);
+                                     ANSWER_QUALITY_ERROR);
                      ret = false;
                   }
                } else {
@@ -408,20 +407,20 @@ int sge_del_centry(sge_gdi_ctx_class_t *ctx, lListElem *centry, lList **answer_l
 
                   ERROR((SGE_EVENT, "denied: %s", lGetString(answer, AN_text)));
                   answer_list_add(answer_list, SGE_EVENT, STATUS_EUNKNOWN,
-                                 ANSWER_QUALITY_ERROR);
+                                  ANSWER_QUALITY_ERROR);
                   lFreeList(&local_answer_list);
                   ret = false;
                }
             } else {
-               ERROR((SGE_EVENT, MSG_SGETEXT_DOESNOTEXIST_SS, 
-                     MSG_OBJ_CPLX, name));
+               ERROR((SGE_EVENT, MSG_SGETEXT_DOESNOTEXIST_SS,
+                       MSG_OBJ_CPLX, name));
                answer_list_add(answer_list, SGE_EVENT, STATUS_EEXIST, ANSWER_QUALITY_ERROR);
                ret = false;
             }
          }
       } else {
          CRITICAL((SGE_EVENT, MSG_SGETEXT_MISSINGCULLFIELD_SS,
-                   lNm2Str(CE_name), __func__));
+                 lNm2Str(CE_name), __func__));
          answer_list_add(answer_list, SGE_EVENT, STATUS_EUNKNOWN, ANSWER_QUALITY_ERROR);
          ret = false;
       }
@@ -439,8 +438,7 @@ int sge_del_centry(sge_gdi_ctx_class_t *ctx, lListElem *centry, lList **answer_l
 }
 
 static void
-sge_change_queue_version_centry(sge_gdi_ctx_class_t *ctx)
-{
+sge_change_queue_version_centry(sge_gdi_ctx_class_t *ctx) {
    lListElem *ep;
    const lListElem *cqueue;
    lList *answer_list = NULL;
@@ -499,8 +497,7 @@ sge_change_queue_version_centry(sge_gdi_ctx_class_t *ctx)
 *     affected queues instead of all), but also reduce the number of scheduling 
 *     decisions trashed due to a changed queue version number.
 *******************************************************************************/
-void centry_redebit_consumables(sge_gdi_ctx_class_t *ctx, const lList *centries)
-{
+void centry_redebit_consumables(sge_gdi_ctx_class_t *ctx, const lList *centries) {
    const lListElem *cqueue = NULL;
    lListElem *hep = NULL;
    lListElem *jep = NULL;
@@ -528,9 +525,9 @@ void centry_redebit_consumables(sge_gdi_ctx_class_t *ctx, const lList *centries)
     * completely rebuild resource utilization of 
     * all queues and execution hosts
     * change versions of corresponding queues 
-    */ 
+    */
    for_each_rw (jep, master_job_list) {
-      lListElem* jatep;
+      lListElem *jatep;
 
       for_each_rw (jatep, lGetList(jep, JB_ja_tasks)) {
          bool master_task = true;
@@ -544,17 +541,18 @@ void centry_redebit_consumables(sge_gdi_ctx_class_t *ctx, const lList *centries)
                /* should never happen */
                master_task = false;
                continue;
-            }   
+            }
 
             qslots = lGetUlong(gdil, JG_slots);
             debit_host_consumable(jep, host_list_locate(master_ehost_list,
-                                  lGetHost(qep, QU_qhostname)), master_centry_list, qslots, master_task, NULL);
+                                                        lGetHost(qep, QU_qhostname)), master_centry_list, qslots,
+                                  master_task, NULL);
             qinstance_debit_consumable(qep, jep, master_centry_list, qslots, master_task, NULL);
             slots += qslots;
             master_task = false;
          }
          debit_host_consumable(jep, host_list_locate(master_ehost_list,
-                               "global"), master_centry_list, slots, true, NULL);
+                                                     "global"), master_centry_list, slots, true, NULL);
       }
    }
 
@@ -566,7 +564,7 @@ void centry_redebit_consumables(sge_gdi_ctx_class_t *ctx, const lList *centries)
    {
       lList *answer_list = NULL;
       u_long32 now = sge_get_gmt();
-      
+
       /* dump all queue consumables */
       for_each_ep(cqueue, master_cqueue_list) {
          const lList *qinstance_list = lGetList(cqueue, CQ_qinstances);

@@ -31,20 +31,20 @@
  ************************************************************************/
 /*___INFO__MARK_END__*/
 
-void 
+void
 sge_job_enfoce_limit_handler(sge_gdi_ctx_class_t *ctx, te_event_t event, monitoring_t *monitor);
 
 void
 sge_add_check_limit_trigger(void);
 
-void 
+void
 sge_host_add_enforce_limit_trigger(const char *hostname);
 
 void
 sge_host_remove_enforce_limit_trigger(const char *hostname);
 
-void 
+void
 sge_job_add_enforce_limit_trigger(lListElem *jep, lListElem *jatep);
 
-void 
+void
 sge_job_remove_enforce_limit_trigger(u_long32 jid, u_long32 ja_task_id);

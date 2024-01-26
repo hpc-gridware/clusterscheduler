@@ -73,7 +73,8 @@
 
  for functions regarding rusage see sge_rusage.c
  ************************************************************************/
-void sge_job_exit(sge_gdi_ctx_class_t *ctx, lListElem *jr, lListElem *jep, lListElem *jatep, monitoring_t *monitor) 
+void
+sge_job_exit(sge_gdi_ctx_class_t *ctx, lListElem *jr, lListElem *jep, lListElem *jatep, monitoring_t *monitor)
 {
    lListElem *queueep = NULL;
    const char *err_str = NULL;

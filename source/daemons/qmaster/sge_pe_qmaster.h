@@ -36,22 +36,30 @@
 #include "gdi/sge_gdi_ctx.h"
 
 /* funtions called from within gdi framework in qmaster */
-int pe_mod(sge_gdi_ctx_class_t *ctx,
-           lList **alpp, lListElem *new_pe, lListElem *pe, int add, const char *ruser, 
-           const char *rhost, gdi_object_t *object, int sub_command, monitoring_t *monitor);
+int
+pe_mod(sge_gdi_ctx_class_t *ctx, lList **alpp, lListElem *new_pe, lListElem *pe, int add, const char *ruser,
+       const char *rhost, gdi_object_t *object, int sub_command, monitoring_t *monitor);
 
-int pe_spool(sge_gdi_ctx_class_t *ctx, lList **alpp, lListElem *pep, gdi_object_t *object);
+int
+pe_spool(sge_gdi_ctx_class_t *ctx, lList **alpp, lListElem *pep, gdi_object_t *object);
 
-int pe_success(sge_gdi_ctx_class_t *ctx, lListElem *ep, lListElem *old_ep, gdi_object_t *object, lList **ppList, monitoring_t *monitor);
+int
+pe_success(sge_gdi_ctx_class_t *ctx, lListElem *ep, lListElem *old_ep, gdi_object_t *object, lList **ppList,
+           monitoring_t *monitor);
 
 /* funtions called via gdi and inside the qmaster */
-int sge_del_pe(sge_gdi_ctx_class_t *ctx, lListElem *, lList **, char *, char *);
+int
+sge_del_pe(sge_gdi_ctx_class_t *ctx, lListElem *, lList **, char *, char *);
 
 /* to do at qmasters startup */
-void debit_all_jobs_from_pes(lList *pe_list);
+void
+debit_all_jobs_from_pes(lList *pe_list);
 
-void debit_job_from_pe(lListElem *pep, int slots, u_long32 job_id);
+void
+debit_job_from_pe(lListElem *pep, int slots, u_long32 job_id);
 
-void reverse_job_from_pe(lListElem *pep, int slots, u_long32 job_id);
+void
+reverse_job_from_pe(lListElem *pep, int slots, u_long32 job_id);
 
-void pe_diff_usersets(const lListElem *new_pe, const lListElem *old, lList **new_acl, lList **old_acl);
+void
+pe_diff_usersets(const lListElem *new_pe, const lListElem *old, lList **new_acl, lList **old_acl);

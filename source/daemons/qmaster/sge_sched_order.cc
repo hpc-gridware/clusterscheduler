@@ -44,7 +44,7 @@
 
 #include "msg_common.h"
 
-gdi_request_queue_t Master_Request_Queue; 
+gdi_request_queue_t Master_Request_Queue;
 
 bool
 schedd_order_initialize(void) {
@@ -60,15 +60,15 @@ bool
 schedd_order_destroy(void) {
    bool ret = true;
 
-   DENTER(TOP_LAYER);   
+   DENTER(TOP_LAYER);
    ret &= sge_sl_destroy(&Master_Request_Queue.request_list, NULL);
    DRETURN(ret);
 }
 
 
 bool
-sge_schedd_send_orders(sge_gdi_ctx_class_t *ctx, order_t *orders, lList **order_list, lList **answer_list, const char *name)
-{
+sge_schedd_send_orders(sge_gdi_ctx_class_t *ctx, order_t *orders, lList **order_list, lList **answer_list,
+                       const char *name) {
    bool ret = true;
 
    DENTER(TOP_LAYER);
@@ -92,13 +92,12 @@ sge_schedd_send_orders(sge_gdi_ctx_class_t *ctx, order_t *orders, lList **order_
 }
 
 bool
-sge_schedd_add_gdi_order_request(sge_gdi_ctx_class_t *ctx, order_t *orders, lList **answer_list, lList **order_list) 
-{
+sge_schedd_add_gdi_order_request(sge_gdi_ctx_class_t *ctx, order_t *orders, lList **answer_list, lList **order_list) {
    bool ret = true;
    state_gdi_multi *state = NULL;
 
    DENTER(TOP_LAYER);
-   state = (state_gdi_multi *)sge_malloc(sizeof(state_gdi_multi));
+   state = (state_gdi_multi *) sge_malloc(sizeof(state_gdi_multi));
    if (state != NULL) {
       int order_id;
 
@@ -114,7 +113,7 @@ sge_schedd_add_gdi_order_request(sge_gdi_ctx_class_t *ctx, order_t *orders, lLis
 
       if (order_id != -1) {
          sge_sl_insert(Master_Request_Queue.request_list, state, SGE_SL_BACKWARD);
-         
+
          /* EB: TODO: Why is this needed? */
          state->next = NULL;
       } else {
@@ -124,14 +123,13 @@ sge_schedd_add_gdi_order_request(sge_gdi_ctx_class_t *ctx, order_t *orders, lLis
    } else {
       answer_list_add(answer_list, MSG_SGETEXT_NOMEM, STATUS_EMALLOC, ANSWER_QUALITY_ERROR);
       ret = false;
-   } 
+   }
    DRETURN(ret);
 }
 
 bool
-sge_schedd_block_until_orders_processed(sge_gdi_ctx_class_t *ctx, 
-                                        lList **answer_list)
-{
+sge_schedd_block_until_orders_processed(sge_gdi_ctx_class_t *ctx,
+                                        lList **answer_list) {
    bool ret = true;
    sge_sl_elem_t *next_elem = NULL;
    sge_sl_elem_t *current_elem = NULL;
@@ -141,15 +139,15 @@ sge_schedd_block_until_orders_processed(sge_gdi_ctx_class_t *ctx,
    /*
     * wait till all GDI order requests are finished
     */
-   sge_sl_elem_next(Master_Request_Queue.request_list, &next_elem, SGE_SL_FORWARD); 
+   sge_sl_elem_next(Master_Request_Queue.request_list, &next_elem, SGE_SL_FORWARD);
    while ((current_elem = next_elem) != NULL) {
-      state_gdi_multi *current_state = (state_gdi_multi *)sge_sl_elem_data(current_elem);
+      state_gdi_multi *current_state = (state_gdi_multi *) sge_sl_elem_data(current_elem);
       lList *request_answer_list = NULL;
       lList *multi_answer_list = NULL;
       int order_id;
 
       /* get next element, dechain current and destroy it */
-      sge_sl_elem_next(Master_Request_Queue.request_list, &next_elem, SGE_SL_FORWARD); 
+      sge_sl_elem_next(Master_Request_Queue.request_list, &next_elem, SGE_SL_FORWARD);
       sge_sl_dechain(Master_Request_Queue.request_list, current_elem);
       sge_sl_elem_destroy(&current_elem, NULL);
 

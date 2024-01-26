@@ -45,11 +45,8 @@
 #include "msg_qmaster.h"
 
 
-static int host_notify_about_X(sge_gdi_ctx_class_t *ctx,
-                               lListElem *host,
-                               u_long32 x,
-                               int tag,
-                               int progname_id);
+static int
+host_notify_about_X(sge_gdi_ctx_class_t *ctx, lListElem *host, u_long32 x, int tag, int progname_id);
 
 /****** qmaster/host/host_notify_about_X() *************************************
 *  NAME
@@ -92,12 +89,8 @@ static int host_notify_about_X(sge_gdi_ctx_class_t *ctx,
 *  SEE ALSO
 *     qmaster/host/host_notify_about_featureset()
 *******************************************************************************/
-static int host_notify_about_X(sge_gdi_ctx_class_t *ctx, 
-                               lListElem *host,
-                               u_long32 x,
-                               int tag,
-                               int progname_id)
-{
+static int
+host_notify_about_X(sge_gdi_ctx_class_t *ctx, lListElem *host, u_long32 x, int tag, int progname_id) {
    const char *hostname = NULL;
    sge_pack_buffer pb;
    int ret = -1;
@@ -110,11 +103,11 @@ static int host_notify_about_X(sge_gdi_ctx_class_t *ctx,
       u_short id = 1;
       const char *commproc = prognames[progname_id];
       cl_commlib_get_last_message_time(cl_com_get_handle(prognames[QMASTER], 0),
-                                        (char*)hostname, (char*)commproc,id, 
-                                        &last_heard_from);
+                                       (char *) hostname, (char *) commproc, id,
+                                       &last_heard_from);
       if (!last_heard_from) {
          ERROR((SGE_EVENT, MSG_NOXKNOWNONHOSTYTOSENDCONFNOTIFICATION_SS,
-                commproc, hostname));
+                 commproc, hostname));
          DRETURN(-2);
       }
    }
@@ -152,8 +145,7 @@ static int host_notify_about_X(sge_gdi_ctx_class_t *ctx,
 *  SEE ALSO
 *     qmaster/host/host_notify_about_X()
 *******************************************************************************/
-int host_notify_about_new_conf(sge_gdi_ctx_class_t *ctx, lListElem *host) 
-{
+int host_notify_about_new_conf(sge_gdi_ctx_class_t *ctx, lListElem *host) {
    return host_notify_about_X(ctx, host, 0, TAG_GET_NEW_CONF, EXECD);
 }
 
@@ -177,13 +169,11 @@ int host_notify_about_new_conf(sge_gdi_ctx_class_t *ctx, lListElem *host)
 *  SEE ALSO
 *     qmaster/host/host_notify_about_X()
 *******************************************************************************/
-int host_notify_about_kill(sge_gdi_ctx_class_t *ctx, lListElem *host, int kill_command)
-{
+int host_notify_about_kill(sge_gdi_ctx_class_t *ctx, lListElem *host, int kill_command) {
    return host_notify_about_X(ctx, host, kill_command, TAG_KILL_EXECD, EXECD);
 }
 
-int host_notify_about_full_load_report(sge_gdi_ctx_class_t *ctx, lListElem *host)
-{
+int host_notify_about_full_load_report(sge_gdi_ctx_class_t *ctx, lListElem *host) {
    return host_notify_about_X(ctx, host, 0, TAG_FULL_LOAD_REPORT, EXECD);
 }
 

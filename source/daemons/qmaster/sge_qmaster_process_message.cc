@@ -68,26 +68,21 @@
 #include "msg_qmaster.h"
 #include "msg_common.h"
 
-static void 
-do_gdi_packet(sge_gdi_ctx_class_t *ctx, lList **answer_list, 
-              struct_msg_t *aMsg, monitoring_t *monitor);
+static void
+do_gdi_packet(sge_gdi_ctx_class_t *ctx, lList **answer_list, struct_msg_t *aMsg, monitoring_t *monitor);
 
-static void do_c_ack(sge_gdi_ctx_class_t *ctx, struct_msg_t *aMsg, monitoring_t *monitor);
+static void
+do_c_ack(sge_gdi_ctx_class_t *ctx, struct_msg_t *aMsg, monitoring_t *monitor);
 
-static void 
-do_report_request(sge_gdi_ctx_class_t *ctx, struct_msg_t*, monitoring_t *monitor);
+static void
+do_report_request(sge_gdi_ctx_class_t *ctx, struct_msg_t *, monitoring_t *monitor);
 
-static void 
+static void
 do_event_client_exit(sge_gdi_ctx_class_t *ctx, struct_msg_t *aMsg, monitoring_t *monitor);
 
-static void sge_c_job_ack(sge_gdi_ctx_class_t *ctx,
-                          const char *host,
-                          const char *commproc,
-                          u_long32 ack_tag, 
-                          u_long32 ack_ulong,
-                          u_long32 ack_ulong2, 
-                          const char *ack_str,
-                          monitoring_t *monitor);
+static void
+sge_c_job_ack(sge_gdi_ctx_class_t *ctx, const char *host, const char *commproc, u_long32 ack_tag, u_long32 ack_ulong,
+              u_long32 ack_ulong2, const char *ack_str, monitoring_t *monitor);
 
 /*
  * Prevent these functions made inline by compiler. This is 
@@ -119,14 +114,14 @@ static void sge_c_job_ack(sge_gdi_ctx_class_t *ctx,
 *     MT-NOTE: This function should only be used as a 'thread function'
 *
 *******************************************************************************/
-void sge_qmaster_process_message(sge_gdi_ctx_class_t *ctx, monitoring_t *monitor)
-{
+void
+sge_qmaster_process_message(sge_gdi_ctx_class_t *ctx, monitoring_t *monitor) {
    int res;
    struct_msg_t msg;
 
    DENTER(TOP_LAYER);
-   
-   memset((void*)&msg, 0, sizeof(struct_msg_t));
+
+   memset((void *) &msg, 0, sizeof(struct_msg_t));
 
    /*
     * INFO (CR)  
@@ -141,16 +136,16 @@ void sge_qmaster_process_message(sge_gdi_ctx_class_t *ctx, monitoring_t *monitor
 
    MONITOR_IDLE_TIME((
 
-   res = sge_gdi2_get_any_request(ctx, msg.snd_host, msg.snd_name, 
-                                  &msg.snd_id, &msg.buf, &msg.tag, 1, 0, &msg.request_mid)
+                             res = sge_gdi2_get_any_request(ctx, msg.snd_host, msg.snd_name,
+                                                            &msg.snd_id, &msg.buf, &msg.tag, 1, 0, &msg.request_mid)
 
-   ), monitor, mconf_get_monitor_time(), mconf_is_monitor_message());
+                     ), monitor, mconf_get_monitor_time(), mconf_is_monitor_message());
 
-   MONITOR_MESSAGES(monitor);      
-   
+   MONITOR_MESSAGES(monitor);
+
    if (res == CL_RETVAL_OK) {
       switch (msg.tag) {
-         case TAG_GDI_REQUEST: 
+         case TAG_GDI_REQUEST:
             MONITOR_INC_GDI(monitor);
             do_gdi_packet(ctx, NULL, &msg, monitor);
             break;
@@ -162,23 +157,21 @@ void sge_qmaster_process_message(sge_gdi_ctx_class_t *ctx, monitoring_t *monitor
             MONITOR_INC_ECE(monitor);
             do_event_client_exit(ctx, &msg, monitor);
             break;
-         case TAG_REPORT_REQUEST: 
+         case TAG_REPORT_REQUEST:
             MONITOR_INC_REP(monitor);
             do_report_request(ctx, &msg, monitor);
             break;
-         default: 
+         default:
             DPRINTF(("***** UNKNOWN TAG TYPE %d\n", msg.tag));
       }
       clear_packbuffer(&(msg.buf));
    }
- 
-   DRETURN_VOID; 
+
+   DRETURN_VOID;
 } /* sge_qmaster_process_message */
 
-static void 
-do_gdi_packet(sge_gdi_ctx_class_t *ctx, lList **answer_list, 
-              struct_msg_t *aMsg, monitoring_t *monitor)
-{
+static void
+do_gdi_packet(sge_gdi_ctx_class_t *ctx, lList **answer_list, struct_msg_t *aMsg, monitoring_t *monitor) {
    sge_pack_buffer *pb_in = &(aMsg->buf);
    sge_gdi_packet_class_t *packet = NULL;
    bool local_ret;
@@ -207,19 +200,19 @@ do_gdi_packet(sge_gdi_ctx_class_t *ctx, lList **answer_list,
    }
    if (local_ret) {
       local_ret = sge_gdi_packet_parse_auth_info(packet, &(packet->first_task->answer_list),
-                                         &(packet->uid), packet->user, sizeof(packet->user), 
-                                      &(packet->gid), packet->group, sizeof(packet->group));
+                                                 &(packet->uid), packet->user, sizeof(packet->user),
+                                                 &(packet->gid), packet->group, sizeof(packet->group));
    }
    if (local_ret) {
       const char *admin_user = ctx->get_admin_user(ctx);
       const char *progname = ctx->get_progname(ctx);
 
-      if (!sge_security_verify_user(packet->host, packet->commproc, 
+      if (!sge_security_verify_user(packet->host, packet->commproc,
                                     packet->commproc_id, admin_user, packet->user, progname)) {
-         CRITICAL((SGE_EVENT, MSG_SEC_CRED_SSSI, packet->user, packet->host, 
-                   packet->commproc, (int)packet->commproc_id));
-         answer_list_add(&(packet->first_task->answer_list), SGE_EVENT, 
-                         STATUS_ENOSUCHUSER, ANSWER_QUALITY_ERROR); 
+         CRITICAL((SGE_EVENT, MSG_SEC_CRED_SSSI, packet->user, packet->host,
+                 packet->commproc, (int) packet->commproc_id));
+         answer_list_add(&(packet->first_task->answer_list), SGE_EVENT,
+                         STATUS_ENOSUCHUSER, ANSWER_QUALITY_ERROR);
       }
    }
 
@@ -232,52 +225,10 @@ do_gdi_packet(sge_gdi_ctx_class_t *ctx, lList **answer_list,
     * packbuffer to a worker thread.
     */
 
-   /* 
-    * handle GDI packet and send response 
-    */
-  
-#ifdef SEND_ANSWER_IN_LISTENER
-   /*
-    * Due to the GDI-GET optimization it is neccessary to initialize a pb
-    * that is passed to and filled by the worker thread
-    *
-    * EB: TODO: CLEANUP: Don't pass packbuffer to worker thread.
-    * 
-    * Better solution would be that the packbuffer is only used here
-    * by the listener thread. This would be possible if GDI get
-    * requests would be handled by read-only threads.
-    */
-   init_packbuffer(&(packet->pb), 0, 0);
-#endif
-
    /*
     * Put the packet into the queue so that a worker can handle it
     */
    sge_tq_store_notify(Master_Task_Queue, SGE_TQ_GDI_PACKET, packet);
-
-#ifdef SEND_ANSWER_IN_LISTENER
-   sge_gdi_packet_wait_till_handled(packet);
-
-   /*
-    * Send the answer to the client
-    */
-   MONITOR_MESSAGES_OUT(monitor);
-   sge_gdi2_send_any_request(ctx, 0, NULL,
-                             aMsg->snd_host, aMsg->snd_name, aMsg->snd_id, &(packet->pb),
-                             TAG_GDI_REQUEST, aMsg->request_mid, answer_list);
-
-   /*
-    * Cleanup
-    */
-   clear_packbuffer(&(packet->pb));
-   sge_gdi_packet_free(&packet);
-#else
-#  ifdef BLOCK_LISTENER
-   sge_gdi_packet_wait_till_handled(packet);
-   sge_gdi_packet_free(&packet);
-#  endif
-#endif
-
    DRETURN_VOID;
 }
 
@@ -300,9 +251,8 @@ do_gdi_packet(sge_gdi_ctx_class_t *ctx, lList **answer_list,
 *     void - none 
 *
 *******************************************************************************/
-static void 
-do_report_request(sge_gdi_ctx_class_t *ctx, struct_msg_t *aMsg, monitoring_t *monitor)
-{
+static void
+do_report_request(sge_gdi_ctx_class_t *ctx, struct_msg_t *aMsg, monitoring_t *monitor) {
    lList *rep = NULL;
    const char *admin_user = ctx->get_admin_user(ctx);
    const char *myprogname = ctx->get_progname(ctx);
@@ -312,9 +262,9 @@ do_report_request(sge_gdi_ctx_class_t *ctx, struct_msg_t *aMsg, monitoring_t *mo
 
    /* Load reports are only accepted from admin/root user */
    if (!sge_security_verify_unique_identifier(true, admin_user, myprogname, 0,
-                                            aMsg->snd_host, aMsg->snd_name, aMsg->snd_id)) {
+                                              aMsg->snd_host, aMsg->snd_name, aMsg->snd_id)) {
       DRETURN_VOID;
-    }
+   }
 
    if (cull_unpack_list(&(aMsg->buf), &rep)) {
       ERROR((SGE_EVENT, SFNMAX, MSG_CULL_FAILEDINCULLUNPACKLISTREPORT));
@@ -324,7 +274,7 @@ do_report_request(sge_gdi_ctx_class_t *ctx, struct_msg_t *aMsg, monitoring_t *mo
    /*
     * create a GDI packet to transport the list to the worker where
     * it will be handled
-    */   
+    */
    packet = sge_gdi_packet_create_base(NULL);
    packet->host = sge_strdup(NULL, aMsg->snd_host);
    packet->commproc = sge_strdup(NULL, aMsg->snd_name);
@@ -335,7 +285,7 @@ do_report_request(sge_gdi_ctx_class_t *ctx, struct_msg_t *aMsg, monitoring_t *mo
 
    /* 
     * Append a pseudo GDI task
-    */ 
+    */
    sge_gdi_packet_append_task(packet, NULL, 0, 0, &rep, NULL, NULL, NULL, false, false);
 
    /*
@@ -370,14 +320,13 @@ do_report_request(sge_gdi_ctx_class_t *ctx, struct_msg_t *aMsg, monitoring_t *mo
 *     MT-NOTE: do_event_client_exit() is NOT MT safe. 
 *
 *******************************************************************************/
-static void do_event_client_exit(sge_gdi_ctx_class_t *ctx, struct_msg_t *aMsg, monitoring_t *monitor)
-{
+static void
+do_event_client_exit(sge_gdi_ctx_class_t *ctx, struct_msg_t *aMsg, monitoring_t *monitor) {
    u_long32 client_id = 0;
 
    DENTER(TOP_LAYER);
 
-   if (unpackint(&(aMsg->buf), &client_id) != PACK_SUCCESS)
-   {
+   if (unpackint(&(aMsg->buf), &client_id) != PACK_SUCCESS) {
       ERROR((SGE_EVENT, MSG_COM_UNPACKINT_I, 1));
       DPRINTF(("%s: client id unpack failed - host %s - sender %s\n", __func__, aMsg->snd_host, aMsg->snd_name));
       DRETURN_VOID;
@@ -394,11 +343,11 @@ static void do_event_client_exit(sge_gdi_ctx_class_t *ctx, struct_msg_t *aMsg, m
       const char *admin_user = ctx->get_admin_user(ctx);
       const char *myprogname = ctx->get_progname(ctx);
       if (false == sge_security_verify_unique_identifier(true, admin_user, myprogname, 0,
-                                               aMsg->snd_host, aMsg->snd_name, aMsg->snd_id)) {
+                                                         aMsg->snd_host, aMsg->snd_name, aMsg->snd_id)) {
          DRETURN_VOID;
-       }
+      }
    }
-   
+
    sge_remove_event_client(client_id);
 
    DRETURN_VOID;
@@ -418,8 +367,8 @@ static void do_event_client_exit(sge_gdi_ctx_class_t *ctx, struct_msg_t *aMsg, m
  if the counterpart uses the dispatcher ack_tag is the
  TAG we sent to the counterpart.
  ****************************************************/
-static void do_c_ack(sge_gdi_ctx_class_t *ctx, struct_msg_t *aMsg, monitoring_t *monitor) 
-{
+static void
+do_c_ack(sge_gdi_ctx_class_t *ctx, struct_msg_t *aMsg, monitoring_t *monitor) {
    u_long32 ack_tag, ack_ulong, ack_ulong2;
    const char *admin_user = ctx->get_admin_user(ctx);
    const char *myprogname = ctx->get_progname(ctx);
@@ -442,32 +391,33 @@ static void do_c_ack(sge_gdi_ctx_class_t *ctx, struct_msg_t *aMsg, monitoring_t 
 
       DPRINTF(("ack_ulong = %ld, ack_ulong2 = %ld\n", ack_ulong, ack_ulong2));
       switch (ack_tag) { /* send by dispatcher */
-      case ACK_SIGJOB:
-      case ACK_SIGQUEUE:
-         MONITOR_EACK(monitor);
-         /* 
-         ** accept only ack requests from admin or root
-         */
-         if (false == sge_security_verify_unique_identifier(true, admin_user, myprogname, 0,
-                                                  aMsg->snd_host, aMsg->snd_name, aMsg->snd_id)) {
-            SGE_UNLOCK(LOCK_GLOBAL, LOCK_WRITE)
-            DRETURN_VOID;
-         }
-         /* an execd sends a job specific acknowledge ack_ulong == jobid of received job */
-         sge_c_job_ack(ctx, aMsg->snd_host, aMsg->snd_name, ack_tag, ack_ulong, ack_ulong2, lGetString(ack, ACK_str), monitor);
-         break;
+         case ACK_SIGJOB:
+         case ACK_SIGQUEUE:
+            MONITOR_EACK(monitor);
+            /*
+            ** accept only ack requests from admin or root
+            */
+            if (false == sge_security_verify_unique_identifier(true, admin_user, myprogname, 0,
+                                                               aMsg->snd_host, aMsg->snd_name, aMsg->snd_id)) {
+               SGE_UNLOCK(LOCK_GLOBAL, LOCK_WRITE)
+               DRETURN_VOID;
+            }
+            /* an execd sends a job specific acknowledge ack_ulong == jobid of received job */
+            sge_c_job_ack(ctx, aMsg->snd_host, aMsg->snd_name, ack_tag, ack_ulong, ack_ulong2, lGetString(ack, ACK_str),
+                          monitor);
+            break;
 
-      case ACK_EVENT_DELIVERY:
-         /* 
-         ** TODO: in this case we should check if the event belongs to the user
-         **       who send the request
-         */
-         sge_handle_event_ack(ack_ulong2, (ev_event)ack_ulong);
-         break;
+         case ACK_EVENT_DELIVERY:
+            /*
+            ** TODO: in this case we should check if the event belongs to the user
+            **       who send the request
+            */
+            sge_handle_event_ack(ack_ulong2, (ev_event) ack_ulong);
+            break;
 
-      default:
-         WARNING((SGE_EVENT, MSG_COM_UNKNOWN_TAG, sge_u32c(ack_tag)));
-         break;
+         default:
+            WARNING((SGE_EVENT, MSG_COM_UNKNOWN_TAG, sge_u32c(ack_tag)));
+            break;
       }
       lFreeElem(&ack);
    }
@@ -477,10 +427,9 @@ static void do_c_ack(sge_gdi_ctx_class_t *ctx, struct_msg_t *aMsg, monitoring_t 
 }
 
 /***************************************************************/
-static void sge_c_job_ack(sge_gdi_ctx_class_t *ctx, const char *host, const char *commproc, u_long32 ack_tag, 
-                          u_long32 ack_ulong, u_long32 ack_ulong2, const char *ack_str,
-                          monitoring_t *monitor) 
-{
+static void
+sge_c_job_ack(sge_gdi_ctx_class_t *ctx, const char *host, const char *commproc, u_long32 ack_tag,
+              u_long32 ack_ulong, u_long32 ack_ulong2, const char *ack_str, monitoring_t *monitor) {
    lList *answer_list = NULL;
    bool job_spooling = ctx->get_job_spooling(ctx);
 
@@ -492,8 +441,7 @@ static void sge_c_job_ack(sge_gdi_ctx_class_t *ctx, const char *host, const char
    }
 
    switch (ack_tag) {
-   case ACK_SIGJOB:
-      {
+      case ACK_SIGJOB: {
          lListElem *jep = NULL;
          lListElem *jatep = NULL;
          const lList *master_job_list = *object_type_get_master_list(SGE_TYPE_JOB);
@@ -501,7 +449,7 @@ static void sge_c_job_ack(sge_gdi_ctx_class_t *ctx, const char *host, const char
          DPRINTF(("TAG_SIGJOB\n"));
          /* ack_ulong is the jobid */
          if (!(jep = lGetElemUlongRW(master_job_list, JB_job_number, ack_ulong))) {
-            ERROR((SGE_EVENT, MSG_COM_ACKEVENTFORUNKOWNJOB_U, sge_u32c(ack_ulong) ));
+            ERROR((SGE_EVENT, MSG_COM_ACKEVENTFORUNKOWNJOB_U, sge_u32c(ack_ulong)));
             DRETURN_VOID;
          }
          jatep = job_search_task(jep, NULL, ack_ulong2);
@@ -515,17 +463,17 @@ static void sge_c_job_ack(sge_gdi_ctx_class_t *ctx, const char *host, const char
          te_delete_one_time_event(TYPE_SIGNAL_RESEND_EVENT, ack_ulong, ack_ulong2, NULL);
          {
             dstring buffer = DSTRING_INIT;
-            spool_write_object(&answer_list, spool_get_default_context(), jep, job_get_key(lGetUlong(jep, JB_job_number), 
-                               ack_ulong2, NULL, &buffer), SGE_TYPE_JOB, job_spooling);
+            spool_write_object(&answer_list, spool_get_default_context(), jep,
+                               job_get_key(lGetUlong(jep, JB_job_number),
+                                           ack_ulong2, NULL, &buffer), SGE_TYPE_JOB, job_spooling);
             sge_dstring_free(&buffer);
          }
          answer_list_output(&answer_list);
-         
+
          break;
       }
 
-   case ACK_SIGQUEUE:
-      {
+      case ACK_SIGQUEUE: {
          lListElem *qinstance = NULL;
          const lListElem *cqueue = NULL;
          dstring cqueue_name = DSTRING_INIT;
@@ -533,7 +481,7 @@ static void sge_c_job_ack(sge_gdi_ctx_class_t *ctx, const char *host, const char
          const lList *master_cqueue_list = *object_type_get_master_list(SGE_TYPE_CQUEUE);
 
          cqueue_name_split(ack_str, &cqueue_name, &host_domain, NULL, NULL);
-            
+
          cqueue = lGetElemStr(master_cqueue_list, CQ_name, sge_dstring_get_string(&cqueue_name));
 
          sge_dstring_free(&cqueue_name);
@@ -549,19 +497,19 @@ static void sge_c_job_ack(sge_gdi_ctx_class_t *ctx, const char *host, const char
             ERROR((SGE_EVENT, MSG_COM_ACK_QUEUE_S, ack_str));
             DRETURN_VOID;
          }
-      
+
          DPRINTF(("QUEUE %s: SIGNAL ACK\n", lGetString(qinstance, QU_full_name)));
 
          lSetUlong(qinstance, QU_pending_signal, 0);
          te_delete_one_time_event(TYPE_SIGNAL_RESEND_EVENT, 0, 0, lGetString(qinstance, QU_full_name));
-         spool_write_object(&answer_list, spool_get_default_context(), qinstance, 
+         spool_write_object(&answer_list, spool_get_default_context(), qinstance,
                             lGetString(qinstance, QU_full_name), SGE_TYPE_QINSTANCE, job_spooling);
          answer_list_output(&answer_list);
          break;
       }
 
-   default:
-      ERROR((SGE_EVENT, SFNMAX, MSG_COM_ACK_UNKNOWN));
+      default:
+         ERROR((SGE_EVENT, SFNMAX, MSG_COM_ACK_UNKNOWN));
    }
    DRETURN_VOID;
 }

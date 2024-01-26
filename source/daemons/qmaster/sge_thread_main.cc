@@ -41,20 +41,19 @@
 #include "sge_thread_signaler.h"
 
 main_control_t Main_Control = {
-   0,
-   NULL,
-   NULL,
-   NULL,
-   NULL,
-   NULL,
-   NULL,
-   NULL,
-   NULL
+        0,
+        NULL,
+        NULL,
+        NULL,
+        NULL,
+        NULL,
+        NULL,
+        NULL,
+        NULL
 };
 
-int 
-sge_qmaster_shutdown_via_signal_thread(int i)
-{
+int
+sge_qmaster_shutdown_via_signal_thread(int i) {
    int ret = 0;
 
    DENTER(TOP_LAYER);
@@ -66,20 +65,17 @@ sge_qmaster_shutdown_via_signal_thread(int i)
 }
 
 int
-sge_qmaster_get_exit_state(void) 
-{
+sge_qmaster_get_exit_state(void) {
    return Main_Control.exit_state;
 }
 
 void
-sge_qmaster_set_exit_state(int new_state) 
-{
+sge_qmaster_set_exit_state(int new_state) {
    Main_Control.exit_state = new_state;
 }
 
 bool
-sge_qmaster_do_final_spooling(void) 
-{
+sge_qmaster_do_final_spooling(void) {
    /*
     * If the exit_state is 100 than another qmaster has taken over!
     * and final spooling should not be done

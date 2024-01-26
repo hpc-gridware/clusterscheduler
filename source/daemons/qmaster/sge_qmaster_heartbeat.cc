@@ -65,7 +65,8 @@
 *     MT-NOTE: sge_start_heartbeat() is MT safe 
 *
 *******************************************************************************/
-void heartbeat_initialize(void)
+void
+heartbeat_initialize(void)
 {
    te_event_t ev     = NULL;
 

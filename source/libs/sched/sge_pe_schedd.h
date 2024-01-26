@@ -42,8 +42,4 @@ enum {
 
 int sge_pe_slots_per_host(const lListElem *pep, int slots);
 
-int or_sge_pe_slots_per_host(lListElem *pep, lList *hosts, lListElem *h_elem, int *sm);
-
-int sge_debit_job_from_pe(lListElem *pep, lListElem *jep, int slots);
-
 dispatch_t pe_match_static(const sge_assignment_t *a);

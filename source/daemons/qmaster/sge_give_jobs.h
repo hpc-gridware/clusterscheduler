@@ -37,18 +37,18 @@
 #define MAX_JOB_DELIVER_TIME (5*60)
 
 typedef enum {
-   COMMIT_DEFAULT          = 0x0000,
-   COMMIT_NO_SPOOLING      = 0x0001,   /* don't spool the job */
-   COMMIT_NO_EVENTS        = 0x0002,   /* don't create events */
-   COMMIT_UNENROLLED_TASK  = 0x0004,   /* handle unenrolled pending tasks */ 
-   COMMIT_NEVER_RAN        = 0x0008    /* job never ran */
-} sge_commit_flags_t; 
+   COMMIT_DEFAULT = 0x0000,
+   COMMIT_NO_SPOOLING = 0x0001,   /* don't spool the job */
+   COMMIT_NO_EVENTS = 0x0002,   /* don't create events */
+   COMMIT_UNENROLLED_TASK = 0x0004,   /* handle unenrolled pending tasks */
+   COMMIT_NEVER_RAN = 0x0008    /* job never ran */
+} sge_commit_flags_t;
 
 /* sge_commit_job() state transitions */
 typedef enum {
    COMMIT_ST_SENT = 0,               /* job was sent and is now transfering */
    COMMIT_ST_ARRIVED = 1,            /* job was reported as running by execd */
-   COMMIT_ST_RESCHEDULED = 2,        /* job gets rescheduled */             
+   COMMIT_ST_RESCHEDULED = 2,        /* job gets rescheduled */
    COMMIT_ST_FINISHED_FAILED = 3,    /* GE job finished or failed (FINISH/ABORT) */
    COMMIT_ST_FINISHED_FAILED_EE = 4, /* GEEE job finished or failed (FINISH/ABORT) */
    COMMIT_ST_DEBITED_EE = 5,         /* remove after GEEE scheduler debited usage */
@@ -59,11 +59,11 @@ typedef enum {
 } sge_commit_mode_t;
 
 int sge_give_job(sge_gdi_ctx_class_t *ctx,
-                 lListElem *jep, lListElem *jatep, const lListElem *master_qep, 
+                 lListElem *jep, lListElem *jatep, const lListElem *master_qep,
                  const lListElem *pep, lListElem *hep, monitoring_t *monitor);
 
 void sge_commit_job(sge_gdi_ctx_class_t *ctx,
-                    lListElem *jep, lListElem *jatep, lListElem *jr, sge_commit_mode_t mode, 
+                    lListElem *jep, lListElem *jatep, lListElem *jr, sge_commit_mode_t mode,
                     int commit_flags, monitoring_t *monitor);
 
 bool gdil_del_all_orphaned(sge_gdi_ctx_class_t *ctx, const lList *gdil_list, lList **alpp);

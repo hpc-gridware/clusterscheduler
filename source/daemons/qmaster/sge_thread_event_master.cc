@@ -143,8 +143,7 @@ sge_event_master_main(void *arg)
       /*
        * did a new event arrive which has a flush time of 0 seconds?
        */
-      MONITOR_IDLE_TIME(sge_event_master_wait_next(), p_monitor, mconf_get_monitor_time(), 
-                        mconf_is_monitor_message());
+      MONITOR_IDLE_TIME(sge_event_master_wait_next(), p_monitor, mconf_get_monitor_time(), mconf_is_monitor_message());
 
       MONITOR_MESSAGES(p_monitor);
       MONITOR_EDT_COUNT(p_monitor);
@@ -158,10 +157,8 @@ sge_event_master_main(void *arg)
                               &next_prof_output);
 
       /* pthread cancelation point */
-      pthread_cleanup_push((void (*)(void *))sge_event_master_cleanup_monitor,
-                           (void *)&monitor);
-      pthread_cleanup_push((void (*)(void *))sge_event_master_cleanup_report_list,
-                           (void *)&report_list);
+      pthread_cleanup_push((void (*)(void *))sge_event_master_cleanup_monitor, (void *)&monitor);
+      pthread_cleanup_push((void (*)(void *))sge_event_master_cleanup_report_list, (void *)&report_list);
       cl_thread_func_testcancel(thread_config);
       pthread_cleanup_pop(execute); 
       pthread_cleanup_pop(execute); 

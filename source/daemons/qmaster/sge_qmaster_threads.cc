@@ -88,8 +88,8 @@
 *     TODO-AD  safe.
 *
 *******************************************************************************/
-void sge_gdi_kill_master(sge_gdi_packet_class_t *packet, sge_gdi_task_class_t *task)
-{
+void
+sge_gdi_kill_master(sge_gdi_packet_class_t *packet, sge_gdi_task_class_t *task) {
    uid_t uid;
    gid_t gid;
    char username[128];
@@ -98,8 +98,8 @@ void sge_gdi_kill_master(sge_gdi_packet_class_t *packet, sge_gdi_task_class_t *t
 
    DENTER(GDI_LAYER);
 
-   if (sge_gdi_packet_parse_auth_info(packet, &(task->answer_list), &uid, username, sizeof(username), 
-                                  &gid, groupname, sizeof(groupname)) == false) {
+   if (sge_gdi_packet_parse_auth_info(packet, &(task->answer_list), &uid, username, sizeof(username),
+                                      &gid, groupname, sizeof(groupname)) == false) {
       ERROR((SGE_EVENT, SFNMAX, MSG_GDI_FAILEDTOEXTRACTAUTHINFO));
       answer_list_add(&(task->answer_list), SGE_EVENT, STATUS_ENOMGR, ANSWER_QUALITY_ERROR);
       DRETURN_VOID;
@@ -169,8 +169,8 @@ void sge_gdi_kill_master(sge_gdi_packet_class_t *packet, sge_gdi_task_class_t *t
 *     MT-NOTE: sge_daemonize_qmaster() is not MT safe 
 *
 *******************************************************************************/
-bool sge_daemonize_qmaster()
-{
+bool
+sge_daemonize_qmaster() {
    pid_t pid = -1;
    int failed_fd;
 
@@ -181,9 +181,9 @@ bool sge_daemonize_qmaster()
       DRETURN(false);
    }
 
-   if((pid = fork()) != 0) {
+   if ((pid = fork()) != 0) {
       if (pid < 0) {
-         CRITICAL((SGE_EVENT, MSG_PROC_FIRSTFORKFAILED_S , strerror(errno)));
+         CRITICAL((SGE_EVENT, MSG_PROC_FIRSTFORKFAILED_S, strerror(errno)));
       }
       exit(0); /* parent terminates */
    }
@@ -192,9 +192,9 @@ bool sge_daemonize_qmaster()
 
    signal(SIGHUP, SIG_IGN);
 
-   if((pid = fork()) != 0) {
+   if ((pid = fork()) != 0) {
       if (pid < 0) {
-         CRITICAL((SGE_EVENT, MSG_PROC_SECONDFORKFAILED_S , strerror(errno)));
+         CRITICAL((SGE_EVENT, MSG_PROC_SECONDFORKFAILED_S, strerror(errno)));
       }
       exit(0); /* child 1 terminates */
    }
@@ -202,7 +202,7 @@ bool sge_daemonize_qmaster()
    sge_close_all_fds(NULL, 0);
 
    failed_fd = sge_occupy_first_three();
-   if (failed_fd  != -1) {
+   if (failed_fd != -1) {
       CRITICAL((SGE_EVENT, MSG_CANNOT_REDIRECT_STDINOUTERR_I, failed_fd));
       SGE_EXIT(NULL, 0);
    }
@@ -233,8 +233,8 @@ bool sge_daemonize_qmaster()
 *     MT-NOTE: sge_become_admin_user() is not MT safe 
 *
 *******************************************************************************/
-void sge_become_admin_user(const char *admin_user)
-{
+void
+sge_become_admin_user(const char *admin_user) {
    char str[MAX_STRING_SIZE];
 
    DENTER(TOP_LAYER);
@@ -277,8 +277,8 @@ void sge_become_admin_user(const char *admin_user)
 *     MT-NOTE: sge_exit_func() is MT safe.
 *
 *******************************************************************************/
-void sge_exit_func(void **ctx_ref, int anExitValue)
-{
+void
+sge_exit_func(void **ctx_ref, int anExitValue) {
    DENTER(TOP_LAYER);
    sge_gdi2_shutdown(ctx_ref);
 

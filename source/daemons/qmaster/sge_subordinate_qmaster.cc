@@ -81,10 +81,9 @@ qinstance_x_on_subordinate(sge_gdi_ctx_class_t *ctx,
 *     MT-NOTE: get_slotwise_sos_threshold() is MT safe 
 *******************************************************************************/
 static u_long32
-get_slotwise_sos_threshold(const lListElem *qinstance)
-{
-   u_long32  slots_sum = 0;
-   const lList     *so_list = NULL;
+get_slotwise_sos_threshold(const lListElem *qinstance) {
+   u_long32 slots_sum = 0;
+   const lList *so_list = NULL;
    const lListElem *so = NULL;
 
    if (qinstance != NULL) {
@@ -133,15 +132,12 @@ get_slotwise_sos_threshold(const lListElem *qinstance)
 *     ???/???
 *******************************************************************************/
 static bool
-slotwise_x_on_subordinate(sge_gdi_ctx_class_t *ctx,
-                          lListElem *qinstance_where_task_is_running,
-                          u_long32 job_id, u_long32 task_id, bool suspend,
-                          monitoring_t *monitor)
-{
-   bool      ret = false;
+slotwise_x_on_subordinate(sge_gdi_ctx_class_t *ctx, lListElem *qinstance_where_task_is_running, u_long32 job_id,
+                          u_long32 task_id, bool suspend, monitoring_t *monitor) {
+   bool ret = false;
    lListElem *jep = NULL;
    lListElem *jatep = NULL;
-   u_long32  state = 0;
+   u_long32 state = 0;
    const lList *master_job_list = *object_type_get_master_list(SGE_TYPE_JOB);
 
    DENTER(TOP_LAYER);
@@ -150,19 +146,19 @@ slotwise_x_on_subordinate(sge_gdi_ctx_class_t *ctx,
    if (jep != NULL) {
       jatep = lGetSubUlong(jep, JAT_task_number, task_id, JB_ja_tasks);
       if (jatep != NULL) {
-         sge_signal_queue(ctx, suspend?SGE_SIGSTOP:SGE_SIGCONT,
-               qinstance_where_task_is_running, jep, jatep, monitor);
+         sge_signal_queue(ctx, suspend ? SGE_SIGSTOP : SGE_SIGCONT,
+                          qinstance_where_task_is_running, jep, jatep, monitor);
          /* Set status */
          state = lGetUlong(jatep, JAT_state);
 
          if (suspend == true) {
             SETBIT(JSUSPENDED_ON_SLOTWISE_SUBORDINATE, state);
             DPRINTF(("Setting status JSUSPENDED_ON_SLOTWISE_SUBORDINATE for job %lu.%lu\n",
-                     job_id, task_id));
+                    job_id, task_id));
          } else {
             CLEARBIT(JSUSPENDED_ON_SLOTWISE_SUBORDINATE, state);
             DPRINTF(("Clearing status JSUSPENDED_ON_SLOTWISE_SUBORDINATE for job %lu.%lu\n",
-                     job_id, task_id)); 
+                    job_id, task_id));
          }
          lSetUlong(jatep, JAT_state, state);
          ret = true;
@@ -208,9 +204,8 @@ slotwise_x_on_subordinate(sge_gdi_ctx_class_t *ctx,
 *     ???/???
 *******************************************************************************/
 /* TODO: HP: Use get_slotwise_super_qinstance() recursively instead of this function */
-static lListElem*
-get_slotwise_sos_tree_root(lListElem *node_queue_instance)
-{
+static lListElem *
+get_slotwise_sos_tree_root(lListElem *node_queue_instance) {
    const char *node_queue_name = NULL;
    const char *node_host_name = NULL;
    lListElem *cqueue = NULL;
@@ -233,7 +228,7 @@ get_slotwise_sos_tree_root(lListElem *node_queue_instance)
        * node_queue_instance, while there might be one on another host.
        */
       node_queue_name = lGetString(node_queue_instance, QU_qname);
-      node_host_name  = lGetHost(node_queue_instance, QU_qhostname);
+      node_host_name = lGetHost(node_queue_instance, QU_qhostname);
 
       for_each_rw(cqueue, master_cqueue_list) {
          lListElem *qinstance;
@@ -289,9 +284,8 @@ get_slotwise_sos_tree_root(lListElem *node_queue_instance)
 *  SEE ALSO
 *     ???/???
 *******************************************************************************/
-static lListElem*
-get_slotwise_suspend_superordinate(const char *queue_name, const char *hostname)
-{
+static lListElem *
+get_slotwise_suspend_superordinate(const char *queue_name, const char *hostname) {
    const lListElem *cqueue = NULL;
    lListElem *qinstance = NULL;
    lListElem *super_qinstance = NULL;
@@ -344,10 +338,9 @@ get_slotwise_suspend_superordinate(const char *queue_name, const char *hostname)
 *  SEE ALSO
 *     ???/???
 *******************************************************************************/
-static lListElem* 
-get_slotwise_sos_super_qinstance(lListElem *qinstance)
-{
-   lListElem  *super_qinstance = NULL;
+static lListElem *
+get_slotwise_sos_super_qinstance(lListElem *qinstance) {
+   lListElem *super_qinstance = NULL;
    const char *qinstance_name = NULL;
    const char *qinstance_host = NULL;
 
@@ -360,16 +353,16 @@ get_slotwise_sos_super_qinstance(lListElem *qinstance)
 }
 
 typedef struct {
-   u_long32  job_id;
+   u_long32 job_id;
    lListElem *task; /* JAT_Type */
 } ssos_task_t;
 
 typedef struct {
-   u_long32      depth;
-   u_long32      seq_no;     /* from the parents QU_subordinate_list */
-   u_long32      action;     /* from the parents QU_subordinate_list */
-   lListElem     *qinstance; /* QU_Type */
-   lListElem     *parent;    /* QU_Type */
+   u_long32 depth;
+   u_long32 seq_no;     /* from the parents QU_subordinate_list */
+   u_long32 action;     /* from the parents QU_subordinate_list */
+   lListElem *qinstance; /* QU_Type */
+   lListElem *parent;    /* QU_Type */
    sge_sl_list_t *tasks;
 } ssos_qinstance_t;
 
@@ -397,8 +390,7 @@ typedef struct {
 *     ???/???
 *******************************************************************************/
 static bool
-destroy_slotwise_sos_task_elem(ssos_task_t **ssos_task)
-{
+destroy_slotwise_sos_task_elem(ssos_task_t **ssos_task) {
    if (ssos_task != NULL && *ssos_task != NULL) {
       sge_free(ssos_task);
    }
@@ -434,15 +426,14 @@ destroy_slotwise_sos_task_elem(ssos_task_t **ssos_task)
 *     ???/???
 *******************************************************************************/
 static bool
-destroy_slotwise_sos_tree_elem(ssos_qinstance_t **ssos_qinstance)
-{
+destroy_slotwise_sos_tree_elem(ssos_qinstance_t **ssos_qinstance) {
    if (ssos_qinstance != NULL && *ssos_qinstance != NULL) {
       if ((*ssos_qinstance)->tasks != NULL) {
-         sge_sl_destroy(&((*ssos_qinstance)->tasks), (sge_sl_destroy_f)destroy_slotwise_sos_task_elem);
+         sge_sl_destroy(&((*ssos_qinstance)->tasks), (sge_sl_destroy_f) destroy_slotwise_sos_task_elem);
       }
       sge_free(ssos_qinstance);
    }
-   
+
    return true;
 }
 
@@ -481,23 +472,22 @@ destroy_slotwise_sos_tree_elem(ssos_qinstance_t **ssos_qinstance)
 *     MT-NOTE: is_ssos() is MT safe 
 *******************************************************************************/
 static bool
-is_ssos(bool only_ssos, lListElem *task)
-{
-   bool     ret = false;
+is_ssos(bool only_ssos, lListElem *task) {
+   bool ret = false;
    u_long32 state = 0;
 
    if (task != NULL) {
       state = lGetUlong(task, JAT_state);
       if (only_ssos == true) {
-         ret = (bool)(ISSET(state, JSUSPENDED) == false &&
-               ISSET(state, JSUSPENDED_ON_THRESHOLD) == false &&
-               ISSET(state, JSUSPENDED_ON_SUBORDINATE) == false &&
-               ISSET(state, JSUSPENDED_ON_SLOTWISE_SUBORDINATE) == true);
+         ret = (bool) (ISSET(state, JSUSPENDED) == false &&
+                       ISSET(state, JSUSPENDED_ON_THRESHOLD) == false &&
+                       ISSET(state, JSUSPENDED_ON_SUBORDINATE) == false &&
+                       ISSET(state, JSUSPENDED_ON_SLOTWISE_SUBORDINATE) == true);
       } else {
-         ret = (bool)ISSET(state, JSUSPENDED_ON_SLOTWISE_SUBORDINATE);
+         ret = (bool) ISSET(state, JSUSPENDED_ON_SLOTWISE_SUBORDINATE);
       }
    }
-   return ret; 
+   return ret;
 }
 
 /****** sge_subordinate_qmaster/has_ssos_task() ********************************
@@ -539,14 +529,13 @@ is_ssos(bool only_ssos, lListElem *task)
 *     sge_subordinate_qmaster/is_ssos()
 *******************************************************************************/
 static bool
-has_ssos_task(bool only_ssos_task, ssos_qinstance_t *ssos_qinstance)
-{
-   bool          ret = false;
+has_ssos_task(bool only_ssos_task, ssos_qinstance_t *ssos_qinstance) {
+   bool ret = false;
    sge_sl_elem_t *ssos_task_elem = NULL;
-   ssos_task_t   *ssos_task = NULL;
+   ssos_task_t *ssos_task = NULL;
 
    for_each_sl(ssos_task_elem, ssos_qinstance->tasks) {
-      ssos_task = (ssos_task_t *)sge_sl_elem_data(ssos_task_elem);
+      ssos_task = (ssos_task_t *) sge_sl_elem_data(ssos_task_elem);
       ret = is_ssos(only_ssos_task, ssos_task->task);
       if (ret == true) {
          break;
@@ -599,18 +588,17 @@ has_ssos_task(bool only_ssos_task, ssos_qinstance_t *ssos_qinstance)
 *     ???/???
 *******************************************************************************/
 static void
-get_task_to_x_in_depth(sge_sl_list_t *slotwise_sos_tree_qinstances,
-      u_long32 depth, bool suspend, bool only_slotwise_suspended,
-      ssos_qinstance_t **ssos_qinstance_to_x, ssos_task_t **ssos_task_to_x)
-{
+get_task_to_x_in_depth(sge_sl_list_t *slotwise_sos_tree_qinstances, u_long32 depth, bool suspend,
+                       bool only_slotwise_suspended, ssos_qinstance_t **ssos_qinstance_to_x,
+                       ssos_task_t **ssos_task_to_x) {
    sge_sl_elem_t *ssos_tree_elem = NULL;
-   u_long32      extreme_seq_no     = (suspend==true) ? 0 : (u_long32)-1;
-   u_long32      oldest_start_time = (u_long32)-1;
-   u_long32      youngest_start_time = 0;
+   u_long32 extreme_seq_no = (suspend == true) ? 0 : (u_long32) -1;
+   u_long32 oldest_start_time = (u_long32) -1;
+   u_long32 youngest_start_time = 0;
 
    for_each_sl(ssos_tree_elem, slotwise_sos_tree_qinstances) {
-      ssos_qinstance_t *ssos_qinstance = (ssos_qinstance_t *)sge_sl_elem_data(ssos_tree_elem);
-     
+      ssos_qinstance_t *ssos_qinstance = (ssos_qinstance_t *) sge_sl_elem_data(ssos_tree_elem);
+
       /* Get highest/lowest seq_no of queues with running/suspended tasks
        * jobs among all queues of current depth
        */
@@ -622,30 +610,30 @@ get_task_to_x_in_depth(sge_sl_list_t *slotwise_sos_tree_qinstances,
          extreme_seq_no = ssos_qinstance->seq_no;
       }
    }
-   
+
    for_each_sl(ssos_tree_elem, slotwise_sos_tree_qinstances) {
-      ssos_qinstance_t *ssos_qinstance = (ssos_qinstance_t *)sge_sl_elem_data(ssos_tree_elem);
-      
-      
+      ssos_qinstance_t *ssos_qinstance = (ssos_qinstance_t *) sge_sl_elem_data(ssos_tree_elem);
+
+
       /* Search in all queues in current depth, with highest/lowest seq_no
        * and with running/suspended tasks for the oldest/youngest task
        */
       if (ssos_qinstance->depth == depth &&
           ssos_qinstance->seq_no == extreme_seq_no) {
          sge_sl_elem_t *ssos_task_elem = NULL;
-         bool oldest = (bool)(ssos_qinstance->action == SO_ACTION_LR);
+         bool oldest = (bool) (ssos_qinstance->action == SO_ACTION_LR);
 
          /* If we have to unsuspend and if we would look for the youngest job
           * for suspend, we have to look for the oldest job to unsuspend.
           */
          if (suspend == false) {
-            oldest = (bool)!oldest;
+            oldest = (bool) !oldest;
          }
 
          for_each_sl(ssos_task_elem, ssos_qinstance->tasks) {
-            u_long32    start_time = 0;
-            ssos_task_t *ssos_task = (ssos_task_t *)sge_sl_elem_data(ssos_task_elem);
-           
+            u_long32 start_time = 0;
+            ssos_task_t *ssos_task = (ssos_task_t *) sge_sl_elem_data(ssos_task_elem);
+
             if (suspend == true ||
                 (suspend == false &&
                  is_ssos(only_slotwise_suspended, ssos_task->task) == true)) {
@@ -696,44 +684,41 @@ get_task_to_x_in_depth(sge_sl_list_t *slotwise_sos_tree_qinstances,
 *     ???/???
 *******************************************************************************/
 static void
-remove_task_from_slotwise_sos_tree(sge_sl_list_t *slotwise_sos_tree_qinstances,
-                                   u_long32 job_id, u_long32 task_id)
-{
-   sge_sl_elem_t    *ssos_tree_elem = NULL;
-   sge_sl_elem_t    *ssos_task_elem = NULL;
+remove_task_from_slotwise_sos_tree(sge_sl_list_t *slotwise_sos_tree_qinstances, u_long32 job_id, u_long32 task_id) {
+   sge_sl_elem_t *ssos_tree_elem = NULL;
+   sge_sl_elem_t *ssos_task_elem = NULL;
    ssos_qinstance_t *ssos_qinstance = NULL;
-   ssos_task_t      *ssos_task = NULL;
+   ssos_task_t *ssos_task = NULL;
 
    for_each_sl(ssos_tree_elem, slotwise_sos_tree_qinstances) {
-      ssos_qinstance = (ssos_qinstance_t *)sge_sl_elem_data(ssos_tree_elem);
+      ssos_qinstance = (ssos_qinstance_t *) sge_sl_elem_data(ssos_tree_elem);
       for_each_sl(ssos_task_elem, ssos_qinstance->tasks) {
-         ssos_task = (ssos_task_t *)sge_sl_elem_data(ssos_task_elem);
+         ssos_task = (ssos_task_t *) sge_sl_elem_data(ssos_task_elem);
          if (ssos_task->job_id == job_id &&
              lGetUlong(ssos_task->task, JAT_task_number) == task_id) {
             sge_sl_dechain(ssos_qinstance->tasks, ssos_task_elem);
             if (sge_sl_get_elem_count(ssos_qinstance->tasks) == 0) {
                sge_sl_destroy(&(ssos_qinstance->tasks), NULL);
             }
-            sge_sl_elem_destroy(&ssos_task_elem, (sge_sl_destroy_f)destroy_slotwise_sos_task_elem);
+            sge_sl_elem_destroy(&ssos_task_elem, (sge_sl_destroy_f) destroy_slotwise_sos_task_elem);
          }
       }
    }
 }
 
 static bool
-x_most_extreme_task(sge_gdi_ctx_class_t *ctx, sge_sl_list_t *slotwise_sos_tree_qinstances,
-      bool suspend, monitoring_t *monitor)
-{
-   bool             suspended_a_task = false;
-   u_long32         depth = 0;
-   u_long32         i;
-   sge_sl_elem_t    *ssos_tree_elem = NULL;
+x_most_extreme_task(sge_gdi_ctx_class_t *ctx, sge_sl_list_t *slotwise_sos_tree_qinstances, bool suspend,
+                    monitoring_t *monitor) {
+   bool suspended_a_task = false;
+   u_long32 depth = 0;
+   u_long32 i;
+   sge_sl_elem_t *ssos_tree_elem = NULL;
    ssos_qinstance_t *ssos_qinstance = NULL;
-   ssos_task_t      *ssos_task = NULL;
+   ssos_task_t *ssos_task = NULL;
 
    /* Walk over the whole list and find biggest depth */
    for_each_sl(ssos_tree_elem, slotwise_sos_tree_qinstances) {
-      ssos_qinstance = (ssos_qinstance_t *)sge_sl_elem_data(ssos_tree_elem);
+      ssos_qinstance = (ssos_qinstance_t *) sge_sl_elem_data(ssos_tree_elem);
       depth = MAX(ssos_qinstance->depth, depth);
    }
 
@@ -743,10 +728,10 @@ x_most_extreme_task(sge_gdi_ctx_class_t *ctx, sge_sl_list_t *slotwise_sos_tree_q
       /* If there was no running job in one of the qinstances of biggest depth, repeat
        * with qinstances of max_depth-1, and so on.
        */
-      for (i=depth; i>0 && ssos_task==NULL; i--) {
+      for (i = depth; i > 0 && ssos_task == NULL; i--) {
          /* find youngest running task to suspend */
          get_task_to_x_in_depth(slotwise_sos_tree_qinstances, i, suspend, true,
-               &ssos_qinstance, &ssos_task);
+                                &ssos_qinstance, &ssos_task);
       }
    } else {
       /* First we look for the best task to unsuspend that is only slotwise
@@ -760,37 +745,35 @@ x_most_extreme_task(sge_gdi_ctx_class_t *ctx, sge_sl_list_t *slotwise_sos_tree_q
  *           candidate for the second case, so the second loop could be
  *           removed.
  */
-      for (i=1; i<=depth && ssos_task==NULL; i++) {
+      for (i = 1; i <= depth && ssos_task == NULL; i++) {
          /* find oldest only slotwise suspended task to unsuspend */
          get_task_to_x_in_depth(slotwise_sos_tree_qinstances, i, suspend, true,
-               &ssos_qinstance, &ssos_task);
+                                &ssos_qinstance, &ssos_task);
       }
       if (ssos_task == NULL) {
-         for (i=1; i<=depth && ssos_task==NULL; i++) {
+         for (i = 1; i <= depth && ssos_task == NULL; i++) {
             /* find oldest also otherwise suspended task to unsuspend */
             get_task_to_x_in_depth(slotwise_sos_tree_qinstances, i, suspend, false,
-                  &ssos_qinstance, &ssos_task);
+                                   &ssos_qinstance, &ssos_task);
          }
       }
    }
 
    if (ssos_task != NULL && ssos_qinstance != NULL) {
-       /* (un)suspend this task */
-       suspended_a_task = slotwise_x_on_subordinate(ctx, ssos_qinstance->qinstance,
-                     ssos_task->job_id, lGetUlong(ssos_task->task, JAT_task_number),
-                     suspend, monitor);
-       if (suspended_a_task == true) {
-          remove_task_from_slotwise_sos_tree(slotwise_sos_tree_qinstances, ssos_task->job_id,
-                lGetUlong(ssos_task->task, JAT_task_number));
-       }
+      /* (un)suspend this task */
+      suspended_a_task = slotwise_x_on_subordinate(ctx, ssos_qinstance->qinstance,
+                                                   ssos_task->job_id, lGetUlong(ssos_task->task, JAT_task_number),
+                                                   suspend, monitor);
+      if (suspended_a_task == true) {
+         remove_task_from_slotwise_sos_tree(slotwise_sos_tree_qinstances, ssos_task->job_id,
+                                            lGetUlong(ssos_task->task, JAT_task_number));
+      }
    }
    return suspended_a_task;
 }
 
 static void
-get_slotwise_sos_sub_tree_qinstances(lListElem *qinstance,
-      sge_sl_list_t **tree_qinstances, u_long32 depth)
-{
+get_slotwise_sos_sub_tree_qinstances(lListElem *qinstance, sge_sl_list_t **tree_qinstances, u_long32 depth) {
    const lList *so_list = NULL;
    const lListElem *so = NULL;
    lListElem *sub_qinstance = NULL;
@@ -810,13 +793,13 @@ get_slotwise_sos_sub_tree_qinstances(lListElem *qinstance,
       sge_sl_create(tree_qinstances);
 
       /* first add the super qinstance to the list */
-      ssos_qinstance = (ssos_qinstance_t*)calloc(1, sizeof(ssos_qinstance_t));
-      ssos_qinstance->seq_no    = 0;    /* the super qinstance has always top priority */
-      ssos_qinstance->depth     = 0;    /* the super qinstance is on top */
-      ssos_qinstance->action    = 0;    /* the super qinstances tasks don't get modified */
+      ssos_qinstance = (ssos_qinstance_t *) calloc(1, sizeof(ssos_qinstance_t));
+      ssos_qinstance->seq_no = 0;    /* the super qinstance has always top priority */
+      ssos_qinstance->depth = 0;    /* the super qinstance is on top */
+      ssos_qinstance->action = 0;    /* the super qinstances tasks don't get modified */
       ssos_qinstance->qinstance = qinstance;
-      ssos_qinstance->parent    = NULL; /* the super qinstance has no parent */
-      ssos_qinstance->tasks     = NULL; /* gets filled later */ 
+      ssos_qinstance->parent = NULL; /* the super qinstance has no parent */
+      ssos_qinstance->tasks = NULL; /* gets filled later */
 
       sge_sl_insert(*tree_qinstances, ssos_qinstance, SGE_SL_FORWARD);
       depth++;
@@ -828,9 +811,9 @@ get_slotwise_sos_sub_tree_qinstances(lListElem *qinstance,
       const char *so_full_name = NULL;
       dstring dstr_so_full_name = DSTRING_INIT;
       ssos_qinstance_t *ssos_qinstance = NULL;
-     
+
       /* if it is slotwise subordinated, get the pointer to this qinstance list elem */
-      if (lGetUlong(so, SO_slots_sum) > 0 ) {
+      if (lGetUlong(so, SO_slots_sum) > 0) {
          so_name = lGetString(so, SO_name);
          if (strstr(so_name, "@") == NULL) {
             const char *host_name = NULL;
@@ -845,49 +828,47 @@ get_slotwise_sos_sub_tree_qinstances(lListElem *qinstance,
          sge_dstring_free(&dstr_so_full_name);
 
          if (sub_qinstance != NULL) {
-             ssos_qinstance = (ssos_qinstance_t*)calloc(1, sizeof(ssos_qinstance_t));
-             ssos_qinstance->seq_no    = lGetUlong(so, SO_seq_no);
-             ssos_qinstance->action    = lGetUlong(so, SO_action);
-             ssos_qinstance->depth     = depth;
-             ssos_qinstance->qinstance = sub_qinstance;
-             ssos_qinstance->parent    = qinstance;
-             ssos_qinstance->tasks     = NULL; /* gets filled later */
+            ssos_qinstance = (ssos_qinstance_t *) calloc(1, sizeof(ssos_qinstance_t));
+            ssos_qinstance->seq_no = lGetUlong(so, SO_seq_no);
+            ssos_qinstance->action = lGetUlong(so, SO_action);
+            ssos_qinstance->depth = depth;
+            ssos_qinstance->qinstance = sub_qinstance;
+            ssos_qinstance->parent = qinstance;
+            ssos_qinstance->tasks = NULL; /* gets filled later */
 
-             sge_sl_insert(*tree_qinstances, ssos_qinstance, SGE_SL_FORWARD);
+            sge_sl_insert(*tree_qinstances, ssos_qinstance, SGE_SL_FORWARD);
 
-             get_slotwise_sos_sub_tree_qinstances(sub_qinstance, tree_qinstances, depth+1);
+            get_slotwise_sos_sub_tree_qinstances(sub_qinstance, tree_qinstances, depth + 1);
          }
       }
    }
 }
 
 static u_long32
-count_running_jobs_in_slotwise_sos_tree(sge_sl_list_t *qinstances_in_slotwise_sos_tree,
-      bool suspend)
-{
+count_running_jobs_in_slotwise_sos_tree(sge_sl_list_t *qinstances_in_slotwise_sos_tree, bool suspend) {
    /* Walk over job list and get the tasks that are running in the qinstances
     * of the slotwise sos tree. Store informations about these tasks in the tree list.
     */
    const lList *master_job_list = *object_type_get_master_list(SGE_TYPE_JOB);
    const lListElem *job = NULL;
-   u_long32  sum = 0;
+   u_long32 sum = 0;
 
    if (qinstances_in_slotwise_sos_tree != NULL &&
        sge_sl_get_elem_count(qinstances_in_slotwise_sos_tree) > 0) {
       const char *host_name = NULL;
       ssos_qinstance_t *first_qinstance = NULL;
 
-      sge_sl_data(qinstances_in_slotwise_sos_tree, (void**)&first_qinstance, SGE_SL_FORWARD);
+      sge_sl_data(qinstances_in_slotwise_sos_tree, (void **) &first_qinstance, SGE_SL_FORWARD);
       host_name = lGetHost(first_qinstance->qinstance, QU_qhostname);
 
       for_each_ep(job, master_job_list) {
-         const lList     *task_list = NULL;
+         const lList *task_list = NULL;
          lListElem *task = NULL;
 
          task_list = lGetList(job, JB_ja_tasks);
          for_each_rw(task, task_list) {
-            u_long32   state = 0;
-            const lListElem  *task_gdi = NULL;
+            u_long32 state = 0;
+            const lListElem *task_gdi = NULL;
             const lList *task_gdi_list = NULL;
             const void *iterator = NULL;
 
@@ -897,9 +878,9 @@ count_running_jobs_in_slotwise_sos_tree(sge_sl_list_t *qinstances_in_slotwise_so
              */
             task_gdi = lGetElemHostFirst(task_gdi_list, JG_qhostname, host_name, &iterator);
             while (task_gdi != NULL) {
-               const char    *qinstance_name = NULL;
-               const char    *task_gdi_qname = NULL;
-               u_long32       status = 0;
+               const char *qinstance_name = NULL;
+               const char *task_gdi_qname = NULL;
+               u_long32 status = 0;
                sge_sl_elem_t *sl_elem = NULL;
 
                /* Count all tasks in state JRUNNING and store tasks to suspend. */
@@ -911,7 +892,7 @@ count_running_jobs_in_slotwise_sos_tree(sge_sl_list_t *qinstances_in_slotwise_so
                    ISSET(state, JSUSPENDED_ON_THRESHOLD) == false &&
                    ISSET(state, JSUSPENDED_ON_SUBORDINATE) == false &&
                    ISSET(state, JSUSPENDED_ON_SLOTWISE_SUBORDINATE) == false &&
-                   ISSET(state, JDELETED) == false && 
+                   ISSET(state, JDELETED) == false &&
                    ISSET(status, JEXITING) == false &&
                    ISSET(status, JFINISHED) == false) {
                   /* The current task is in state JRUNNING and not suspended in
@@ -924,7 +905,7 @@ count_running_jobs_in_slotwise_sos_tree(sge_sl_list_t *qinstances_in_slotwise_so
                   for_each_sl(sl_elem, qinstances_in_slotwise_sos_tree) {
                      ssos_qinstance_t *ssos_qinstance = NULL;
 
-                     ssos_qinstance = (ssos_qinstance_t *)sge_sl_elem_data(sl_elem);
+                     ssos_qinstance = (ssos_qinstance_t *) sge_sl_elem_data(sl_elem);
                      qinstance_name = lGetString(ssos_qinstance->qinstance, QU_full_name);
                      if (strcmp(task_gdi_qname, qinstance_name) == 0) {
                         /* The qinstance of the current task is in our ssos tree, now
@@ -933,14 +914,14 @@ count_running_jobs_in_slotwise_sos_tree(sge_sl_list_t *qinstances_in_slotwise_so
                         sum++;
                         if (suspend == true) {
                            /* Store the running tasks in our ssos tree list. */
-                           ssos_task_t *ssos_task = (ssos_task_t*)calloc(1, sizeof(ssos_task_t));
+                           ssos_task_t *ssos_task = (ssos_task_t *) calloc(1, sizeof(ssos_task_t));
 
                            if (ssos_qinstance->tasks == NULL) {
                               sge_sl_create(&(ssos_qinstance->tasks));
                            }
-                          
+
                            ssos_task->job_id = lGetUlong(job, JB_job_number);
-                           ssos_task->task   = task;
+                           ssos_task->task = task;
                            sge_sl_insert(ssos_qinstance->tasks, ssos_task, SGE_SL_FORWARD);
                            break;
                         }
@@ -965,19 +946,19 @@ count_running_jobs_in_slotwise_sos_tree(sge_sl_list_t *qinstances_in_slotwise_so
                   for_each_sl(sl_elem, qinstances_in_slotwise_sos_tree) {
                      ssos_qinstance_t *ssos_qinstance = NULL;
 
-                     ssos_qinstance = (ssos_qinstance_t *)sge_sl_elem_data(sl_elem);
+                     ssos_qinstance = (ssos_qinstance_t *) sge_sl_elem_data(sl_elem);
                      qinstance_name = lGetString(ssos_qinstance->qinstance, QU_full_name);
                      if (strcmp(task_gdi_qname, qinstance_name) == 0) {
                         /* The qinstance of the current task is in our ssos tree, so
                          * we can store this task in our ssos tree list.
                          */
-                        ssos_task_t *ssos_task = (ssos_task_t*)calloc(1, sizeof(ssos_task_t));
+                        ssos_task_t *ssos_task = (ssos_task_t *) calloc(1, sizeof(ssos_task_t));
                         if (ssos_qinstance->tasks == NULL) {
                            sge_sl_create(&(ssos_qinstance->tasks));
                         }
-                       
+
                         ssos_task->job_id = lGetUlong(job, JB_job_number);
-                        ssos_task->task   = task;
+                        ssos_task->task = task;
                         sge_sl_insert(ssos_qinstance->tasks, ssos_task, SGE_SL_FORWARD);
                         break;
                      }
@@ -1016,15 +997,13 @@ count_running_jobs_in_slotwise_sos_tree(sge_sl_list_t *qinstances_in_slotwise_so
 *     MT-NOTE: unsuspend_all_tasks_in_slotwise_sub_tree() is MT safe 
 *******************************************************************************/
 void
-unsuspend_all_tasks_in_slotwise_sub_tree(sge_gdi_ctx_class_t *ctx,
-                                         lListElem *qinstance, monitoring_t *monitor)
-{
-   const bool       suspend = false;
-   sge_sl_list_t    *qinstances_in_slotwise_sos_tree = NULL;
-   sge_sl_elem_t    *ssos_qinstance_elem = NULL;
+unsuspend_all_tasks_in_slotwise_sub_tree(sge_gdi_ctx_class_t *ctx, lListElem *qinstance, monitoring_t *monitor) {
+   const bool suspend = false;
+   sge_sl_list_t *qinstances_in_slotwise_sos_tree = NULL;
+   sge_sl_elem_t *ssos_qinstance_elem = NULL;
    ssos_qinstance_t *ssos_qinstance = NULL;
-   sge_sl_elem_t    *ssos_task_elem = NULL;
-   ssos_task_t      *ssos_task = NULL;
+   sge_sl_elem_t *ssos_task_elem = NULL;
+   ssos_task_t *ssos_task = NULL;
 
    if (qinstance != NULL) {
       /* get the slotwise sos sub tree of this qinstance as a list */
@@ -1034,14 +1013,14 @@ unsuspend_all_tasks_in_slotwise_sub_tree(sge_gdi_ctx_class_t *ctx,
       count_running_jobs_in_slotwise_sos_tree(qinstances_in_slotwise_sos_tree, suspend);
 
       for_each_sl(ssos_qinstance_elem, qinstances_in_slotwise_sos_tree) {
-         ssos_qinstance = (ssos_qinstance_t *)sge_sl_elem_data(ssos_qinstance_elem);
+         ssos_qinstance = (ssos_qinstance_t *) sge_sl_elem_data(ssos_qinstance_elem);
          for_each_sl(ssos_task_elem, ssos_qinstance->tasks) {
-            ssos_task = (ssos_task_t *)sge_sl_elem_data(ssos_task_elem);
+            ssos_task = (ssos_task_t *) sge_sl_elem_data(ssos_task_elem);
             slotwise_x_on_subordinate(ctx, ssos_qinstance->qinstance, ssos_task->job_id,
-               lGetUlong(ssos_task->task, JAT_task_number), suspend, monitor);
+                                      lGetUlong(ssos_task->task, JAT_task_number), suspend, monitor);
          }
       }
-      sge_sl_destroy(&qinstances_in_slotwise_sos_tree, (sge_sl_destroy_f)destroy_slotwise_sos_tree_elem);
+      sge_sl_destroy(&qinstances_in_slotwise_sos_tree, (sge_sl_destroy_f) destroy_slotwise_sos_tree_elem);
    }
 }
 
@@ -1072,10 +1051,9 @@ unsuspend_all_tasks_in_slotwise_sub_tree(sge_gdi_ctx_class_t *ctx,
 *     MT-NOTE: check_new_slotwise_subordinate_tree() is MT safe 
 *******************************************************************************/
 bool
-check_new_slotwise_subordinate_tree(lListElem *qinstance, lList *new_so_list, lList **answer_list)
-{
-   bool          success = true;
-   lListElem     *root_qinstance = NULL; /* QU_Type */
+check_new_slotwise_subordinate_tree(lListElem *qinstance, lList *new_so_list, lList **answer_list) {
+   bool success = true;
+   lListElem *root_qinstance = NULL; /* QU_Type */
 
    DENTER(TOP_LAYER);
    /*
@@ -1085,19 +1063,19 @@ check_new_slotwise_subordinate_tree(lListElem *qinstance, lList *new_so_list, lL
     */
    root_qinstance = get_slotwise_sos_tree_root(qinstance);
    if (root_qinstance != NULL) {
-      u_long32      slots_sum = 0;
+      u_long32 slots_sum = 0;
 
       slots_sum = get_slotwise_sos_threshold(root_qinstance);
       if (slots_sum > 0) {
-         sge_sl_list_t    *qinstances_in_slotwise_sos_tree = NULL;
-         sge_sl_elem_t    *ssos_qinstance_elem = NULL;
+         sge_sl_list_t *qinstances_in_slotwise_sos_tree = NULL;
+         sge_sl_elem_t *ssos_qinstance_elem = NULL;
          ssos_qinstance_t *ssos_qinstance = NULL;
-         const char       *cqueue_name = NULL;
-         const lListElem        *new_so = NULL; /* SO_Type */
+         const char *cqueue_name = NULL;
+         const lListElem *new_so = NULL; /* SO_Type */
 
          /* get the slotwise sos tree as a list */
          get_slotwise_sos_sub_tree_qinstances(root_qinstance,
-            &qinstances_in_slotwise_sos_tree, 0);
+                                              &qinstances_in_slotwise_sos_tree, 0);
 
          for_each_ep(new_so, new_so_list) {
             const char *new_so_name = NULL;
@@ -1105,7 +1083,7 @@ check_new_slotwise_subordinate_tree(lListElem *qinstance, lList *new_so_list, lL
             new_so_name = lGetString(new_so, SO_name);
             if (new_so_name != NULL) {
                for_each_sl(ssos_qinstance_elem, qinstances_in_slotwise_sos_tree) {
-                  ssos_qinstance = (ssos_qinstance_t *)sge_sl_elem_data(ssos_qinstance_elem);
+                  ssos_qinstance = (ssos_qinstance_t *) sge_sl_elem_data(ssos_qinstance_elem);
                   cqueue_name = lGetString(ssos_qinstance->qinstance, QU_qname);
 
                   if (strcmp(cqueue_name, new_so_name) == 0) {
@@ -1114,9 +1092,9 @@ check_new_slotwise_subordinate_tree(lListElem *qinstance, lList *new_so_list, lL
                       * there will be a loop in the tree -> error!
                       */
                      ERROR((SGE_EVENT, MSG_PARSE_LOOP_IN_SSOS_TREE_SS,
-                        new_so_name, lGetString(qinstance, QU_qname)));
+                             new_so_name, lGetString(qinstance, QU_qname)));
                      answer_list_add(answer_list, SGE_EVENT, STATUS_ESYNTAX,
-                        ANSWER_QUALITY_ERROR);
+                                     ANSWER_QUALITY_ERROR);
                      success = false;
                      break;
                   }
@@ -1127,7 +1105,7 @@ check_new_slotwise_subordinate_tree(lListElem *qinstance, lList *new_so_list, lL
             }
          }
          sge_sl_destroy(&qinstances_in_slotwise_sos_tree,
-            (sge_sl_destroy_f)destroy_slotwise_sos_tree_elem);
+                        (sge_sl_destroy_f) destroy_slotwise_sos_tree_elem);
       }
    }
    DRETURN(success);
@@ -1167,14 +1145,13 @@ check_new_slotwise_subordinate_tree(lListElem *qinstance, lList *new_so_list, lL
 *     MT-NOTE: do_slotwise_x_on_subordinate_check() is MT safe 
 *******************************************************************************/
 bool
-do_slotwise_x_on_subordinate_check(sge_gdi_ctx_class_t *ctx, lListElem *qinstance,
-      bool suspend, bool check_subtree_only, monitoring_t *monitor)
-{
+do_slotwise_x_on_subordinate_check(sge_gdi_ctx_class_t *ctx, lListElem *qinstance, bool suspend,
+                                   bool check_subtree_only, monitoring_t *monitor) {
    sge_sl_list_t *qinstances_in_slotwise_sos_tree = NULL;
-   lListElem     *super_qinstance = NULL;
-   lListElem     *super_super = NULL;
-   u_long32      running_jobs = 0;
-   u_long32      slots_sum    = 0;
+   lListElem *super_qinstance = NULL;
+   lListElem *super_super = NULL;
+   u_long32 running_jobs = 0;
+   u_long32 slots_sum = 0;
 
    if (check_subtree_only == false) {
       if (suspend == true) {
@@ -1200,7 +1177,7 @@ do_slotwise_x_on_subordinate_check(sge_gdi_ctx_class_t *ctx, lListElem *qinstanc
    }
 
    if (super_qinstance == NULL) {
-      return false; 
+      return false;
    }
 
    slots_sum = get_slotwise_sos_threshold(super_qinstance);
@@ -1214,10 +1191,10 @@ do_slotwise_x_on_subordinate_check(sge_gdi_ctx_class_t *ctx, lListElem *qinstanc
 
    /* count the number and store informations about all running tasks in the list */
    running_jobs = count_running_jobs_in_slotwise_sos_tree(qinstances_in_slotwise_sos_tree, suspend);
-   if ((suspend == true  && running_jobs > slots_sum) ||
+   if ((suspend == true && running_jobs > slots_sum) ||
        (suspend == false && running_jobs < slots_sum)) {
-      bool   ret = false;
-      int    diff = 0;
+      bool ret = false;
+      int diff = 0;
       /* we have to (un)suspend as many running/suspended jobs as new jobs
        * were scheduled/finished or (un)suspended by other ways.
        */
@@ -1227,15 +1204,15 @@ do_slotwise_x_on_subordinate_check(sge_gdi_ctx_class_t *ctx, lListElem *qinstanc
          /* suspend/unsuspend the highest/lowest running/suspended task */
          ret = x_most_extreme_task(ctx, qinstances_in_slotwise_sos_tree, suspend, monitor);
       } while (ret == true && (--diff) > 0);
-   } 
-   sge_sl_destroy(&qinstances_in_slotwise_sos_tree, (sge_sl_destroy_f)destroy_slotwise_sos_tree_elem);
+   }
+   sge_sl_destroy(&qinstances_in_slotwise_sos_tree, (sge_sl_destroy_f) destroy_slotwise_sos_tree_elem);
 
    if (suspend == true && check_subtree_only == false) {
       /* Walk the tree from the leaves to the root */
       super_super = get_slotwise_sos_super_qinstance(super_qinstance);
       if (super_super != NULL) {
          do_slotwise_x_on_subordinate_check(ctx, super_super, suspend,
-            check_subtree_only, monitor);
+                                            check_subtree_only, monitor);
       }
    }
    return true;
@@ -1266,8 +1243,8 @@ do_slotwise_x_on_subordinate_check(sge_gdi_ctx_class_t *ctx, lListElem *qinstanc
 *  NOTES
 *     MT-NOTE: do_slotwise_subordinate_lists_differ() is MT safe 
 *******************************************************************************/
-bool do_slotwise_subordinate_lists_differ(const lList* old_so_list, const lList *new_so_list)
-{
+bool
+do_slotwise_subordinate_lists_differ(const lList *old_so_list, const lList *new_so_list) {
    bool ret = false;
    const lListElem *old_so = NULL; /* SO_Type */
    const lListElem *new_so = NULL; /* SO_Type */
@@ -1316,10 +1293,8 @@ bool do_slotwise_subordinate_lists_differ(const lList* old_so_list, const lList 
       debited on all the queues that are referenced in gdil
 */
 bool
-cqueue_list_x_on_subordinate_gdil(sge_gdi_ctx_class_t *ctx,
-                                  const lList *master_cqueue_list, bool suspend,
-                                  const lList *gdil, monitoring_t *monitor)
-{
+cqueue_list_x_on_subordinate_gdil(sge_gdi_ctx_class_t *ctx, const lList *master_cqueue_list, bool suspend,
+                                  const lList *gdil, monitoring_t *monitor) {
    bool ret = true;
    const lListElem *gdi = NULL;
 
@@ -1352,14 +1327,14 @@ cqueue_list_x_on_subordinate_gdil(sge_gdi_ctx_class_t *ctx,
 
             for_each_ep(so, resolved_so_list) {
                const char *so_queue_name = lGetString(so, SO_name);
-               
+
                /* We have to check this because so_list_resolve() didn't. */
                if (strcmp(full_name, so_queue_name) == 0) {
                   /* Queue can't be subordinate to itself. */
                   DPRINTF (("Removing circular reference.\n"));
                   continue;
                }
-                  
+
                /*
                 * suspend:
                 *    no sos before this job came on this queue AND
@@ -1372,7 +1347,7 @@ cqueue_list_x_on_subordinate_gdil(sge_gdi_ctx_class_t *ctx,
                if (tst_sos(slots_used - slots_granted, slots, so) == false &&
                    tst_sos(slots_used, slots, so) == true) {
                   lListElem *so_queue =
-                            cqueue_list_locate_qinstance(master_cqueue_list, so_queue_name);
+                          cqueue_list_locate_qinstance(master_cqueue_list, so_queue_name);
 
                   if (so_queue != NULL) {
                      /* Suspend/unsuspend the subordinated queue instance */
@@ -1382,10 +1357,10 @@ cqueue_list_x_on_subordinate_gdil(sge_gdi_ctx_class_t *ctx,
                       * queuewise suspend, it must be a slotwise unsuspend,
                       * and vice versa.
                       */
-                     do_slotwise_x_on_subordinate_check(ctx, so_queue, (bool)!suspend, false, monitor);
+                     do_slotwise_x_on_subordinate_check(ctx, so_queue, (bool) !suspend, false, monitor);
                   } else {
-                     ERROR((SGE_EVENT, MSG_QINSTANCE_NQIFOUND_SS, 
-                            so_queue_name, __func__));
+                     ERROR((SGE_EVENT, MSG_QINSTANCE_NQIFOUND_SS,
+                             so_queue_name, __func__));
                      ret = false;
                   }
                }
@@ -1396,16 +1371,14 @@ cqueue_list_x_on_subordinate_gdil(sge_gdi_ctx_class_t *ctx,
          /* should never happen */
          ERROR((SGE_EVENT, MSG_QINSTANCE_NQIFOUND_SS, full_name, __func__));
          ret = false;
-      } 
+      }
    }
    DRETURN(ret);
 }
 
 static bool
-qinstance_x_on_subordinate(sge_gdi_ctx_class_t *ctx,
-                           lListElem *this_elem, bool suspend,
-                           bool send_event, monitoring_t *monitor)
-{
+qinstance_x_on_subordinate(sge_gdi_ctx_class_t *ctx, lListElem *this_elem, bool suspend, bool send_event,
+                           monitoring_t *monitor) {
    bool ret = true;
    u_long32 sos_counter;
    bool do_action;
@@ -1455,11 +1428,11 @@ qinstance_x_on_subordinate(sge_gdi_ctx_class_t *ctx,
     * do operation
     */
    DPRINTF(("qinstance "SFQ" "SFN" "SFN" on subordinate\n", full_name,
-            (do_action ? "" : "already"),
-            (suspend ? "suspended" : "unsuspended")));
+           (do_action ? "" : "already"),
+           (suspend ? "suspended" : "unsuspended")));
    if (do_action) {
       DPRINTF(("Due to other suspend states signal will %sbe delivered\n",
-               send_qinstance_signal ? "NOT " : "")); 
+              send_qinstance_signal ? "NOT " : ""));
       if (send_qinstance_signal) {
          ret = (sge_signal_queue(ctx, signal, this_elem, NULL, NULL, monitor) == 0) ? true : false;
       }
@@ -1473,17 +1446,14 @@ qinstance_x_on_subordinate(sge_gdi_ctx_class_t *ctx,
        * this queue instance was (un)suspended by queue wise suspend on subordinate,
        * now check if it has slotwise subordinates that must be handled.
        */
-      do_slotwise_x_on_subordinate_check(ctx, this_elem, (bool)!suspend, false, monitor);
+      do_slotwise_x_on_subordinate_check(ctx, this_elem, (bool) !suspend, false, monitor);
    }
    DRETURN(ret);
 }
 
 bool
-cqueue_list_x_on_subordinate_so(sge_gdi_ctx_class_t *ctx,
-                                lList *master_cqueue_list, lList **answer_list,
-                                bool suspend, const lList *resolved_so_list,
-                                monitoring_t *monitor)
-{
+cqueue_list_x_on_subordinate_so(sge_gdi_ctx_class_t *ctx, lList *master_cqueue_list, lList **answer_list, bool suspend,
+                                const lList *resolved_so_list, monitoring_t *monitor) {
    bool ret = true;
    const lListElem *so = NULL;
 
@@ -1509,10 +1479,10 @@ cqueue_list_x_on_subordinate_so(sge_gdi_ctx_class_t *ctx,
 }
 
 void
-qinstance_find_suspended_subordinates(const lListElem *this_elem, lList **answer_list, lList **resolved_so_list, const lList *master_cqueue_list)
-{
+qinstance_find_suspended_subordinates(const lListElem *this_elem, lList **answer_list, lList **resolved_so_list,
+                                      const lList *master_cqueue_list) {
    DENTER(TOP_LAYER);
-   
+
    if (this_elem != NULL && resolved_so_list != NULL) {
       /* Temporary storage for subordinates */
       const lList *so_list = NULL;
@@ -1546,7 +1516,7 @@ qinstance_find_suspended_subordinates(const lListElem *this_elem, lList **answer
             next_so = lNextRW(so);
             if (!tst_sos(slots_used, slots, so)) {
                DPRINTF (("Removing %s because it's not suspended\n",
-                         lGetString (so, SO_name)));
+                       lGetString(so, SO_name)));
                lRemoveElem(*resolved_so_list, &so);
             }
          }
@@ -1557,8 +1527,8 @@ qinstance_find_suspended_subordinates(const lListElem *this_elem, lList **answer
 }
 
 bool
-qinstance_initialize_sos_attr(sge_gdi_ctx_class_t *ctx, lListElem *this_elem, monitoring_t *monitor, const lList *master_cqueue_list) 
-{
+qinstance_initialize_sos_attr(sge_gdi_ctx_class_t *ctx, lListElem *this_elem, monitoring_t *monitor,
+                              const lList *master_cqueue_list) {
    bool ret = true;
    const lListElem *cqueue = NULL;
    const char *full_name = NULL;
@@ -1566,11 +1536,11 @@ qinstance_initialize_sos_attr(sge_gdi_ctx_class_t *ctx, lListElem *this_elem, mo
    const char *hostname = NULL;
 
    DENTER(TOP_LAYER);
-   
+
    full_name = lGetString(this_elem, QU_full_name);
    qinstance_name = lGetString(this_elem, QU_qname);
    hostname = lGetHost(this_elem, QU_qhostname);
-   
+
    for_each_ep(cqueue, master_cqueue_list) {
       const lListElem *qinstance = lGetSubHost(cqueue, QU_qhostname, hostname, CQ_qinstances);
 
@@ -1599,9 +1569,9 @@ qinstance_initialize_sos_attr(sge_gdi_ctx_class_t *ctx, lListElem *this_elem, mo
                if (!strcmp(full_name, so_full_name)) {
                   /* suspend the queue if neccessary */
                   if (tst_sos(slots_used, slots, so)) {
-                     qinstance_x_on_subordinate(ctx, this_elem, true, false, monitor); 
+                     qinstance_x_on_subordinate(ctx, this_elem, true, false, monitor);
                   }
-               } 
+               }
             }
             lFreeList(&resolved_so_list);
          }

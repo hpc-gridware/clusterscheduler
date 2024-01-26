@@ -33,12 +33,21 @@
 
 #include "gdi/sge_gdi_ctx.h"
 
-int sge_add_sharetree(sge_gdi_ctx_class_t *ctx, lListElem *ep, lList **lpp, lList **alpp, char *ruser, char *rhost);
-int sge_mod_sharetree(sge_gdi_ctx_class_t *ctx, lListElem *ep, lList **lpp, lList **alpp, char *ruser, char *rhost);
-int sge_del_sharetree(sge_gdi_ctx_class_t *ctx, lList **lpp, lList **alpp, char *ruser, char *rhost);
+int
+sge_add_sharetree(sge_gdi_ctx_class_t *ctx, lListElem *ep, lList **lpp, lList **alpp, char *ruser, char *rhost);
 
-int update_sharetree(lList *dst, const lList *src);
+int
+sge_mod_sharetree(sge_gdi_ctx_class_t *ctx, lListElem *ep, lList **lpp, lList **alpp, char *ruser, char *rhost);
 
-lListElem *getNode(const lList *share_tree, const char *name, int node_type, int recurse);
+int
+sge_del_sharetree(sge_gdi_ctx_class_t *ctx, lList **lpp, lList **alpp, char *ruser, char *rhost);
 
-int check_sharetree(lList **alpp, lListElem *node, const lList *user_list, const lList *project_list, lListElem *project, lList **found);
+int
+update_sharetree(lList *dst, const lList *src);
+
+lListElem *
+getNode(const lList *share_tree, const char *name, int node_type, int recurse);
+
+int
+check_sharetree(lList **alpp, lListElem *node, const lList *user_list, const lList *project_list, lListElem *project,
+                lList **found);

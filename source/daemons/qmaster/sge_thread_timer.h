@@ -36,7 +36,9 @@
 #include "gdi/sge_gdi_ctx.h"
 #include "gdi/sge_gdi_packet.h"
 
-void sge_timer_start_periodic_tasks(void);
+void
+sge_timer_start_periodic_tasks(void);
+
 void
 sge_timer_register_event_handler(void);
 

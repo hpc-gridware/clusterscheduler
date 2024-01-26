@@ -35,13 +35,14 @@
 #include "uti/sge_monitor.h"
 #include "gdi/sge_gdi_ctx.h"
 
-int hgroup_success(sge_gdi_ctx_class_t *ctx, lListElem *ep, lListElem *old_ep, gdi_object_t *object, lList **ppList, monitoring_t *monitor);
+int
+hgroup_success(sge_gdi_ctx_class_t *ctx, lListElem *ep, lListElem *old_ep, gdi_object_t *object, lList **ppList, monitoring_t *monitor);
 
-int hgroup_mod(sge_gdi_ctx_class_t *ctx,
-               lList **alpp, lListElem *modp, lListElem *ep, int add, 
-               const char *ruser, const char *rhost, gdi_object_t *object, 
-               int sub_command, monitoring_t *monitor);
+int
+hgroup_mod(sge_gdi_ctx_class_t *ctx, lList **alpp, lListElem *modp, lListElem *ep, int add, const char *ruser, const char *rhost, gdi_object_t *object, int sub_command, monitoring_t *monitor);
 
-int hgroup_spool(sge_gdi_ctx_class_t *ctx, lList **alpp, lListElem *upe, gdi_object_t *object);
+int
+hgroup_spool(sge_gdi_ctx_class_t *ctx, lList **alpp, lListElem *upe, gdi_object_t *object);
 
-int hgroup_del(sge_gdi_ctx_class_t *ctx, lListElem *cep, lList **alpp, char *ruser, char *rhost);
+int
+hgroup_del(sge_gdi_ctx_class_t *ctx, lListElem *cep, lList **alpp, char *ruser, char *rhost);

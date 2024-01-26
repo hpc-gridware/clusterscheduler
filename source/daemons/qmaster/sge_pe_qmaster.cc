@@ -63,10 +63,10 @@ static char object_name[] = "parallel environment";
 
 static void pe_update_categories(const lListElem *new_pe, const lListElem *old_pe);
 
-int pe_mod(sge_gdi_ctx_class_t *ctx, lList **alpp, lListElem *new_pe, lListElem *pe, /* reduced */
-           int add, const char *ruser, const char *rhost, gdi_object_t *object, int sub_command,
-           monitoring_t *monitor)
-{
+int
+pe_mod(sge_gdi_ctx_class_t *ctx, lList **alpp, lListElem *new_pe, lListElem *pe, /* reduced */
+       int add, const char *ruser, const char *rhost, gdi_object_t *object, int sub_command,
+       monitoring_t *monitor) {
    int ret;
    const char *s, *pe_name;
    const lList *master_userset_list = *object_type_get_master_list(SGE_TYPE_USERSET);
@@ -134,7 +134,8 @@ int pe_mod(sge_gdi_ctx_class_t *ctx, lList **alpp, lListElem *new_pe, lListElem 
 
    if (lGetPosViaElem(pe, PE_xuser_list, SGE_NO_ABORT) >= 0 ||
        lGetPosViaElem(pe, PE_user_list, SGE_NO_ABORT) >= 0) {
-      if (multiple_occurances(alpp, lGetList(new_pe, PE_user_list), lGetList(new_pe, PE_xuser_list), US_name, pe_name, object_name)) {
+      if (multiple_occurances(alpp, lGetList(new_pe, PE_user_list), lGetList(new_pe, PE_xuser_list), US_name, pe_name,
+                              object_name)) {
          goto ERROR;
       }
    }
@@ -149,13 +150,13 @@ int pe_mod(sge_gdi_ctx_class_t *ctx, lList **alpp, lListElem *new_pe, lListElem 
    /* -------- PE_allocation_rule */
    if (lGetPosViaElem(pe, PE_allocation_rule, SGE_NO_ABORT) >= 0) {
       s = lGetString(pe, PE_allocation_rule);
-      if (s == NULL)  {
+      if (s == NULL) {
          ERROR((SGE_EVENT, MSG_SGETEXT_MISSINGCULLFIELD_SS, lNm2Str(PE_allocation_rule), "validate_pe"));
          answer_list_add(alpp, SGE_EVENT, STATUS_EEXIST, ANSWER_QUALITY_ERROR);
          DRETURN(STATUS_EEXIST);
       }
 
-      if (replace_params(s, NULL, 0, pe_alloc_rule_variables )) {
+      if (replace_params(s, NULL, 0, pe_alloc_rule_variables)) {
          ERROR((SGE_EVENT, MSG_PE_ALLOCRULE_SS, pe_name, err_msg));
          answer_list_add(alpp, SGE_EVENT, STATUS_EEXIST, ANSWER_QUALITY_ERROR);
          DRETURN(STATUS_EEXIST);
@@ -172,7 +173,7 @@ int pe_mod(sge_gdi_ctx_class_t *ctx, lList **alpp, lListElem *new_pe, lListElem 
          DRETURN(STATUS_EEXIST);
       }
 
-      if ((ret=pe_validate_urgency_slots(alpp, s)) != STATUS_OK) {
+      if ((ret = pe_validate_urgency_slots(alpp, s)) != STATUS_OK) {
          DRETURN(ret);
       }
       lSetString(new_pe, PE_urgency_slots, s);
@@ -207,26 +208,26 @@ int pe_mod(sge_gdi_ctx_class_t *ctx, lList **alpp, lListElem *new_pe, lListElem 
 
    DRETURN(0);
 
-ERROR:
+   ERROR:
    DRETURN(STATUS_EUNKNOWN);
 }
 
-int pe_spool(sge_gdi_ctx_class_t *ctx, lList **alpp, lListElem *pep, gdi_object_t *object) 
-{
+int
+pe_spool(sge_gdi_ctx_class_t *ctx, lList **alpp, lListElem *pep, gdi_object_t *object) {
    lList *answer_list = NULL;
    bool dbret;
    bool job_spooling = ctx->get_job_spooling(ctx);
 
    DENTER(TOP_LAYER);
 
-   dbret = spool_write_object(&answer_list, spool_get_default_context(), pep, 
+   dbret = spool_write_object(&answer_list, spool_get_default_context(), pep,
                               lGetString(pep, PE_name), SGE_TYPE_PE,
                               job_spooling);
    answer_list_output(&answer_list);
 
    if (!dbret) {
-      answer_list_add_sprintf(alpp, STATUS_EUNKNOWN, 
-                              ANSWER_QUALITY_ERROR, 
+      answer_list_add_sprintf(alpp, STATUS_EUNKNOWN,
+                              ANSWER_QUALITY_ERROR,
                               MSG_PERSISTENCE_WRITE_FAILED_S,
                               lGetString(pep, PE_name));
    }
@@ -234,8 +235,8 @@ int pe_spool(sge_gdi_ctx_class_t *ctx, lList **alpp, lListElem *pep, gdi_object_
    DRETURN(dbret ? 0 : 1);
 }
 
-int pe_success(sge_gdi_ctx_class_t *ctx, lListElem *ep, lListElem *old_ep, gdi_object_t *object, lList **ppList, monitoring_t *monitor) 
-{
+int pe_success(sge_gdi_ctx_class_t *ctx, lListElem *ep, lListElem *old_ep, gdi_object_t *object, lList **ppList,
+               monitoring_t *monitor) {
    const char *pe_name;
 
    DENTER(TOP_LAYER);
@@ -244,15 +245,15 @@ int pe_success(sge_gdi_ctx_class_t *ctx, lListElem *ep, lListElem *old_ep, gdi_o
 
    pe_update_categories(ep, old_ep);
 
-   sge_add_event( 0, old_ep?sgeE_PE_MOD:sgeE_PE_ADD, 0, 0, 
+   sge_add_event(0, old_ep ? sgeE_PE_MOD : sgeE_PE_ADD, 0, 0,
                  pe_name, NULL, NULL, ep);
    lListElem_clear_changed_info(ep);
 
    DRETURN(0);
 }
 
-int sge_del_pe(sge_gdi_ctx_class_t *ctx, lListElem *pep, lList **alpp, char *ruser, char *rhost) 
-{
+int
+sge_del_pe(sge_gdi_ctx_class_t *ctx, lListElem *pep, lList **alpp, char *ruser, char *rhost) {
    int pos;
    lListElem *ep = NULL;
    const char *pe = NULL;
@@ -262,7 +263,7 @@ int sge_del_pe(sge_gdi_ctx_class_t *ctx, lListElem *pep, lList **alpp, char *rus
 
    DENTER(TOP_LAYER);
 
-   if ( !pep || !ruser || !rhost ) {
+   if (!pep || !ruser || !rhost) {
       CRITICAL((SGE_EVENT, MSG_SGETEXT_NULLPTRPASSED_S, __func__));
       answer_list_add(alpp, SGE_EVENT, STATUS_EUNKNOWN, ANSWER_QUALITY_ERROR);
       DRETURN(STATUS_EUNKNOWN);
@@ -270,7 +271,7 @@ int sge_del_pe(sge_gdi_ctx_class_t *ctx, lListElem *pep, lList **alpp, char *rus
 
    if ((pos = lGetPosViaElem(pep, PE_name, SGE_NO_ABORT)) < 0) {
       ERROR((SGE_EVENT, MSG_SGETEXT_MISSINGCULLFIELD_SS,
-            lNm2Str(PE_name), __func__));
+              lNm2Str(PE_name), __func__));
       answer_list_add(alpp, SGE_EVENT, STATUS_EUNKNOWN, ANSWER_QUALITY_ERROR);
       DRETURN(STATUS_EUNKNOWN);
    }
@@ -282,7 +283,7 @@ int sge_del_pe(sge_gdi_ctx_class_t *ctx, lListElem *pep, lList **alpp, char *rus
       DRETURN(STATUS_EUNKNOWN);
    }
 
-   if ((ep=pe_list_locate(master_pe_list, pe))==NULL) {
+   if ((ep = pe_list_locate(master_pe_list, pe)) == NULL) {
       ERROR((SGE_EVENT, MSG_SGETEXT_DOESNOTEXIST_SS, object_name, pe));
       answer_list_add(alpp, SGE_EVENT, STATUS_EEXIST, ANSWER_QUALITY_ERROR);
       DRETURN(STATUS_EEXIST);
@@ -298,7 +299,7 @@ int sge_del_pe(sge_gdi_ctx_class_t *ctx, lListElem *pep, lList **alpp, char *rus
          const lListElem *answer = lFirst(local_answer_list);
 
          ERROR((SGE_EVENT, "denied: %s", lGetString(answer, AN_text)));
-         answer_list_add(alpp, SGE_EVENT, STATUS_EUNKNOWN, 
+         answer_list_add(alpp, SGE_EVENT, STATUS_EUNKNOWN,
                          ANSWER_QUALITY_ERROR);
          lFreeList(&local_answer_list);
          DRETURN(STATUS_EUNKNOWN);
@@ -318,13 +319,14 @@ int sge_del_pe(sge_gdi_ctx_class_t *ctx, lListElem *pep, lList **alpp, char *rus
    /* delete found pe element */
    lRemoveElem(master_pe_list, &ep);
 
-   INFO((SGE_EVENT, MSG_SGETEXT_REMOVEDFROMLIST_SSSS, 
-         ruser, rhost, pe, object_name ));
+   INFO((SGE_EVENT, MSG_SGETEXT_REMOVEDFROMLIST_SSSS,
+           ruser, rhost, pe, object_name));
    answer_list_add(alpp, SGE_EVENT, STATUS_OK, ANSWER_QUALITY_INFO);
    DRETURN(STATUS_OK);
 }
 
-void debit_all_jobs_from_pes(lList *pe_list) {
+void
+debit_all_jobs_from_pes(lList *pe_list) {
    const char *pe_name;
    const lListElem *jep;
    lListElem *pep;
@@ -333,23 +335,26 @@ void debit_all_jobs_from_pes(lList *pe_list) {
 
    DENTER(TOP_LAYER);
 
-   for_each_rw (pep, pe_list) {
-   
+   for_each_rw(pep, pe_list)
+   {
+
       pe_set_slots_used(pep, 0);
       pe_name = lGetString(pep, PE_name);
       DPRINTF(("debiting from pe %s:\n", pe_name));
 
-      for_each_ep(jep, master_job_list) {
+      for_each_ep(jep, master_job_list)
+      {
          const lListElem *jatep;
 
          if (lGetString(jep, JB_pe) != NULL) { /* is job  parallel */
             slots = 0;
-            for_each_ep(jatep, lGetList(jep, JB_ja_tasks)) {
+            for_each_ep(jatep, lGetList(jep, JB_ja_tasks))
+            {
                if ((ISSET(lGetUlong(jatep, JAT_status), JRUNNING) ||      /* is job running  */
                     ISSET(lGetUlong(jatep, JAT_status), JTRANSFERING)) && /* or transfering  */
-                    !sge_strnullcmp(pe_name, lGetString(jatep, JAT_granted_pe))) {/* this pe         */
+                   !sge_strnullcmp(pe_name, lGetString(jatep, JAT_granted_pe))) {/* this pe         */
                   slots += sge_granted_slots(lGetList(jatep, JAT_granted_destin_identifier_list));
-               }  
+               }
             }
             pe_debit_slots(pep, slots, lGetUlong(jep, JB_job_number));
          }
@@ -379,19 +384,20 @@ void debit_all_jobs_from_pes(lList *pe_list) {
 *  NOTES
 *     MT-NOTE: pe_diff_usersets() is not MT safe
 *******************************************************************************/
-void pe_diff_usersets(const lListElem *new_pe,
-      const lListElem *old_pe, lList **new_acl, lList **old_acl)
-{
+void
+pe_diff_usersets(const lListElem *new_pe, const lListElem *old_pe, lList **new_acl, lList **old_acl) {
    const lListElem *ep;
    const char *u;
 
    if (old_pe && old_acl) {
-      for_each_ep(ep, lGetList(old_pe, PE_user_list)) {
+      for_each_ep(ep, lGetList(old_pe, PE_user_list))
+      {
          u = lGetString(ep, US_name);
          if (!lGetElemStr(*old_acl, US_name, u))
             lAddElemStr(old_acl, US_name, u, US_Type);
       }
-      for_each_ep(ep, lGetList(old_pe, PE_xuser_list)) {
+      for_each_ep(ep, lGetList(old_pe, PE_xuser_list))
+      {
          u = lGetString(ep, US_name);
          if (!lGetElemStr(*old_acl, US_name, u))
             lAddElemStr(old_acl, US_name, u, US_Type);
@@ -399,12 +405,14 @@ void pe_diff_usersets(const lListElem *new_pe,
    }
 
    if (new_pe && new_acl) {
-      for_each_ep(ep, lGetList(new_pe, PE_user_list)) {
+      for_each_ep(ep, lGetList(new_pe, PE_user_list))
+      {
          u = lGetString(ep, US_name);
          if (!lGetElemStr(*new_acl, US_name, u))
             lAddElemStr(new_acl, US_name, u, US_Type);
       }
-      for_each_ep(ep, lGetList(new_pe, PE_xuser_list)) {
+      for_each_ep(ep, lGetList(new_pe, PE_xuser_list))
+      {
          u = lGetString(ep, US_name);
          if (!lGetElemStr(*new_acl, US_name, u))
             lAddElemStr(new_acl, US_name, u, US_Type);
@@ -434,8 +442,8 @@ void pe_diff_usersets(const lListElem *new_pe,
 *  NOTES
 *     MT-NOTE: pe_update_categories() is not MT safe
 *******************************************************************************/
-static void pe_update_categories(const lListElem *new_pe, const lListElem *old_pe)
-{
+static void
+pe_update_categories(const lListElem *new_pe, const lListElem *old_pe) {
    lList *old_lp = NULL, *new_lp = NULL;
 
    pe_diff_usersets(new_pe, old_pe, &new_lp, &old_lp);

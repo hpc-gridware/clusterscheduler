@@ -507,7 +507,7 @@ static lListElem *ptf_get_job(u_long job_id)
    lCondition *where;
 
    where = lWhere("%T(%I == %u)", JL_Type, JL_job_ID, job_id);
-   job = lFindFirst(ptf_jobs, where);
+   job = lFindFirstRW(ptf_jobs, where);
    lFreeWhere(&where);
    return job;
 }
@@ -563,10 +563,10 @@ static lListElem *ptf_get_job_os(const lList *job_list, osjobid_t os_job_id,
    }
 
    if (job_elem && (*job_elem)) {
-      osjob = lFindFirst(lGetList(*job_elem, JL_OS_job_list), where);
+      osjob = lFindFirstRW(lGetList(*job_elem, JL_OS_job_list), where);
    } else {
       for_each_rw(job, job_list) {
-         osjob = lFindFirst(lGetList(job, JL_OS_job_list), where);
+         osjob = lFindFirstRW(lGetList(job, JL_OS_job_list), where);
          if (osjob) {
             break;
          }

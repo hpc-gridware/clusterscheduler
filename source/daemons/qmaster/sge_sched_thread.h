@@ -58,26 +58,24 @@ typedef struct {
 
 typedef struct {
    pthread_mutex_t mutex;      /* used for mutual exclusion                         */
-   pthread_cond_t  cond_var;   /* used for waiting                                  */
-   bool            exit;       /* true -> exit event delivery                       */
-   bool            triggered;  /* new events addded, a scheduling run is triggered  */
-   lList           *new_events; /* the storage for new events                       */
-   bool            rebuild_categories;
-   bool            new_global_conf;
+   pthread_cond_t cond_var;   /* used for waiting                                  */
+   bool exit;       /* true -> exit event delivery                       */
+   bool triggered;  /* new events addded, a scheduling run is triggered  */
+   lList *new_events; /* the storage for new events                       */
+   bool rebuild_categories;
+   bool new_global_conf;
 } scheduler_control_t;
 
 extern scheduler_control_t Scheduler_Control;
 
-#if 0
-void st_start_scheduler_thread(pthread_t *thread, const char* name); 
-void st_shutdown(pthread_t schedd_thread);
-#endif
+void
+st_set_flag_new_global_conf(bool new_value);
 
-void st_set_flag_new_global_conf(bool new_value);
-bool st_get_flag_new_global_conf(void);
+bool
+st_get_flag_new_global_conf(void);
 
-int subscribe_scheduler(sge_evc_class_t *evc, sge_where_what_t *where_what);
+int
+subscribe_scheduler(sge_evc_class_t *evc, sge_where_what_t *where_what);
 
-void *scheduler_thread(void* anArg);
-
-int scheduler_method(sge_evc_class_t *evc, lList **answer_list, scheduler_all_data_t *lists, lList **order);
+int
+scheduler_method(sge_evc_class_t *evc, lList **answer_list, scheduler_all_data_t *lists, lList **order);

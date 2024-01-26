@@ -66,8 +66,8 @@
 #include "msg_common.h"
 #include "msg_qmaster.h"
 
-static bool is_module_enabled(void) 
-{
+static bool
+is_module_enabled(void) {
    static bool old_setting = false;
    bool ret = mconf_get_enable_enforce_master_limit();
 
@@ -132,9 +132,8 @@ static bool is_module_enabled(void)
 *     qmaster/qmaster-execd/sge_host_add_enforce_limit_trigger() 
 *     qmaster/qmaster-execd/sge_host_remove_enforce_limit_trigger() 
 *******************************************************************************/
-static void 
-sge_host_add_remove_enforce_limit_trigger(const char *hostname, bool add) 
-{
+static void
+sge_host_add_remove_enforce_limit_trigger(const char *hostname, bool add) {
    lListElem *job;
    lListElem *ja_task;
    const lList *master_job_list = *object_type_get_master_list(SGE_TYPE_JOB);
@@ -150,7 +149,7 @@ sge_host_add_remove_enforce_limit_trigger(const char *hostname, bool add)
        * Add/Remove a timer for those jobs/ja_tasks currently running on the given host 
        * and remove a flag which prevents the qmaster<->execd protocol from waiting
        * for a certain pe task waiting on that host
-       */ 
+       */
       for_each_rw (job, master_job_list) {
          for_each_rw (ja_task, lGetList(job, JB_ja_tasks)) {
             bool do_action = false;
@@ -160,8 +159,8 @@ sge_host_add_remove_enforce_limit_trigger(const char *hostname, bool add)
             /* 
              * Is the job really running?
              */
-            if (gdil_ep != NULL) { 
-               
+            if (gdil_ep != NULL) {
+
                /*
                 * Either we got a hostname. Than we can add triggers for jobs running on that host.
                 * Or we get NULL as hostname. In that case we have to check the qinstance state where the
@@ -184,7 +183,7 @@ sge_host_add_remove_enforce_limit_trigger(const char *hostname, bool add)
                      for_each_ep(pe_task, lGetList(ja_task, JAT_task_list)) {
                         const lList *gdil = lGetList(pe_task, PET_granted_destin_identifier_list);
                         const lListElem *gdil_ep = lFirst(gdil);
-         
+
                         if (gdil_ep != NULL && sge_hostcmp(lGetHost(gdil_ep, JG_qhostname), hostname) == 0) {
                            do_action = true;
                            break;
@@ -195,10 +194,10 @@ sge_host_add_remove_enforce_limit_trigger(const char *hostname, bool add)
                   const lList *master_cqueue_list = *object_type_get_master_list(SGE_TYPE_CQUEUE);
                   lListElem *qinstance = cqueue_list_locate_qinstance(master_cqueue_list,
                                                                       lGetString(gdil_ep, JG_qname));
-           
+
                   /*
                    * is master queue or at least one of the slave queues in unknown state?
-                   */ 
+                   */
                   if (qinstance != NULL) {
                      if (qinstance_state_is_unknown(qinstance) == true) {
                         do_action = true;
@@ -210,7 +209,8 @@ sge_host_add_remove_enforce_limit_trigger(const char *hostname, bool add)
                            const lListElem *gdil_ep;
 
                            for_each_ep(gdil_ep, gdil) {
-                              qinstance = cqueue_list_locate_qinstance(master_cqueue_list, lGetString(gdil_ep, JG_qname));
+                              qinstance = cqueue_list_locate_qinstance(master_cqueue_list,
+                                                                       lGetString(gdil_ep, JG_qname));
                               if (qinstance != NULL && qinstance_state_is_unknown(qinstance)) {
                                  do_action = true;
                                  break;
@@ -229,14 +229,14 @@ sge_host_add_remove_enforce_limit_trigger(const char *hostname, bool add)
                      sge_job_add_enforce_limit_trigger(job, ja_task);
                   } else {
                      u_long32 job_id = lGetUlong(job, JB_job_number);
-                     u_long32 ja_task_id = lGetUlong(ja_task, JAT_task_number); 
+                     u_long32 ja_task_id = lGetUlong(ja_task, JAT_task_number);
 
                      sge_job_remove_enforce_limit_trigger(job_id, ja_task_id);
                   }
-               } 
+               }
             }
          }
-      } 
+      }
    }
    DRETURN_VOID;
 }
@@ -274,8 +274,7 @@ sge_host_add_remove_enforce_limit_trigger(const char *hostname, bool add)
 *     qmaster/qmaster-execd/sge_job_enfoce_limit_handler() 
 *******************************************************************************/
 void
-sge_add_check_limit_trigger(void)
-{
+sge_add_check_limit_trigger(void) {
    const lList *master_host_list = *object_type_get_master_list(SGE_TYPE_EXECHOST);
    u_long32 now = sge_get_gmt();
    u_long32 max_time = 0;
@@ -286,10 +285,10 @@ sge_add_check_limit_trigger(void)
    DENTER(TOP_LAYER);
 
    for_each_rw (host, master_host_list) {
-      max_time = MAX(max_time,  2 * load_report_interval(host));
+      max_time = MAX(max_time, 2 * load_report_interval(host));
    }
 
-   ev = te_new_event((time_t)(now + max_time + reconnect_timeout),
+   ev = te_new_event((time_t) (now + max_time + reconnect_timeout),
                      TYPE_ENFORCE_LIMIT_EVENT, ONE_TIME_EVENT,
                      0, 0, NULL);
 
@@ -339,9 +338,8 @@ sge_add_check_limit_trigger(void)
 *     qmaster/qmaster-execd/sge_host_add_enforce_limit_trigger() 
 *     qmaster/qmaster-execd/sge_host_remove_enforce_limit_trigger() 
 *******************************************************************************/
-void 
-sge_job_enfoce_limit_handler(sge_gdi_ctx_class_t *ctx, te_event_t event, monitoring_t *monitor)
-{
+void
+sge_job_enfoce_limit_handler(sge_gdi_ctx_class_t *ctx, te_event_t event, monitoring_t *monitor) {
    DENTER(TOP_LAYER);
 
    if (is_module_enabled()) {
@@ -367,7 +365,7 @@ sge_job_enfoce_limit_handler(sge_gdi_ctx_class_t *ctx, te_event_t event, monitor
           * does the job and the task structure still exist. The job might have been deleted by qdel -f
           */
          if (job != NULL && ja_task != NULL) {
-            const lList *gdil = lGetList(ja_task, JAT_granted_destin_identifier_list); 
+            const lList *gdil = lGetList(ja_task, JAT_granted_destin_identifier_list);
             const lListElem *gdil_ep = lFirst(gdil);
 
             /*
@@ -403,10 +401,11 @@ sge_job_enfoce_limit_handler(sge_gdi_ctx_class_t *ctx, te_event_t event, monitor
                            gdil = lGetList(pe_task, PET_granted_destin_identifier_list);
                            gdil_ep = lFirst(gdil);
                            if (gdil_ep != NULL) {
-                              qinstance = cqueue_list_locate_qinstance(master_cqueue_list, lGetString(gdil_ep, JG_qname));
+                              qinstance = cqueue_list_locate_qinstance(master_cqueue_list,
+                                                                       lGetString(gdil_ep, JG_qname));
 
                               if (qinstance != NULL && qinstance_state_is_unknown(qinstance) == true) {
-                                 do_action = true;   
+                                 do_action = true;
                                  break;
                               }
                            }
@@ -432,7 +431,7 @@ sge_job_enfoce_limit_handler(sge_gdi_ctx_class_t *ctx, te_event_t event, monitor
                            job_report_init_from_job_with_usage(dummy_jr, job, ja_task, pe_task, now);
                            reporting_create_acct_record(ctx, NULL, dummy_jr, job, ja_task, false);
                            lFreeElem(&dummy_jr);
-                        } 
+                        }
                      }
                   }
 
@@ -443,14 +442,14 @@ sge_job_enfoce_limit_handler(sge_gdi_ctx_class_t *ctx, te_event_t event, monitor
                   job_report_init_from_job_with_usage(dummy_jr, job, ja_task, NULL, now);
                   reporting_create_acct_record(ctx, NULL, dummy_jr, job, ja_task, false);
                   lFreeElem(&dummy_jr);
-                  reporting_create_job_log(NULL, now, JL_DELETED, MSG_SCHEDD, 
-                                           lGetHost(gdil_ep, JG_qhostname), 
+                  reporting_create_job_log(NULL, now, JL_DELETED, MSG_SCHEDD,
+                                           lGetHost(gdil_ep, JG_qhostname),
                                            NULL, job, ja_task, NULL, MSG_LOG_DELFORCED);
 
                   /*
                    * Assassinate the job (qdel -f)
                    */
-                  sge_commit_job(ctx, job, ja_task, NULL, COMMIT_ST_FINISHED_FAILED_EE, 
+                  sge_commit_job(ctx, job, ja_task, NULL, COMMIT_ST_FINISHED_FAILED_EE,
                                  COMMIT_DEFAULT | COMMIT_NEVER_RAN, monitor);
                   job = NULL;
                   ja_task = NULL;
@@ -461,8 +460,8 @@ sge_job_enfoce_limit_handler(sge_gdi_ctx_class_t *ctx, te_event_t event, monitor
                   INFO((SGE_EVENT, MSG_JOB_TERMJOBDUETOLIMIT_UU, sge_u32c(job_id), sge_u32c(ja_task_id)));
                   cancel_job_resend(job_id, ja_task_id);
                }
-            } 
-         } 
+            }
+         }
       }
 
       SGE_UNLOCK(LOCK_GLOBAL, LOCK_WRITE);
@@ -498,9 +497,8 @@ sge_job_enfoce_limit_handler(sge_gdi_ctx_class_t *ctx, te_event_t event, monitor
 *     qmaster/qmaster-execd/sge_host_add_enforce_limit_trigger() 
 *     qmaster/qmaster-execd/sge_host_remove_enforce_limit_trigger() 
 *******************************************************************************/
-void 
-sge_host_add_enforce_limit_trigger(const char *hostname) 
-{
+void
+sge_host_add_enforce_limit_trigger(const char *hostname) {
    DENTER(TOP_LAYER);
    sge_host_add_remove_enforce_limit_trigger(hostname, true);
    DRETURN_VOID;
@@ -536,8 +534,7 @@ sge_host_add_enforce_limit_trigger(const char *hostname)
 *     qmaster/qmaster-execd/sge_host_remove_enforce_limit_trigger() 
 *******************************************************************************/
 void
-sge_host_remove_enforce_limit_trigger(const char *hostname) 
-{
+sge_host_remove_enforce_limit_trigger(const char *hostname) {
    DENTER(TOP_LAYER);
    sge_host_add_remove_enforce_limit_trigger(hostname, false);
    DRETURN_VOID;
@@ -576,9 +573,8 @@ sge_host_remove_enforce_limit_trigger(const char *hostname)
 *  SEE ALSO
 *     qmaster/qmaster-execd/sge_job_remove_enforce_limit_trigger() 
 *******************************************************************************/
-void 
-sge_job_add_enforce_limit_trigger(lListElem *job, lListElem *ja_task) 
-{
+void
+sge_job_add_enforce_limit_trigger(lListElem *job, lListElem *ja_task) {
    DENTER(TOP_LAYER);
 
    /*
@@ -612,7 +608,7 @@ sge_job_add_enforce_limit_trigger(lListElem *job, lListElem *ja_task)
                gdil_ep = lFirst(gdil);
                if (gdil_ep != NULL) {
                   qinstance = cqueue_list_locate_qinstance(master_cqueue_list, lGetString(gdil_ep, JG_qname));
-   
+
                   if (qinstance != NULL && qinstance_state_is_unknown(qinstance) == true) {
                      lSetBool(pe_task, PET_do_contact, false);
                   }
@@ -639,7 +635,7 @@ sge_job_add_enforce_limit_trigger(lListElem *job, lListElem *ja_task)
             {
                u_long32 job_h_rt = U_LONG32_MAX;
                u_long32 qi_h_rt = U_LONG32_MAX;
-               u_long32 max_running = 0; 
+               u_long32 max_running = 0;
 
                /*
                 * Find the jobs wallclock limit
@@ -677,31 +673,31 @@ sge_job_add_enforce_limit_trigger(lListElem *job, lListElem *ja_task)
                            parse_ulong_val(NULL, &current_qi_h_rt, TYPE_TIM, qi_limit, NULL, 0);
                            has_rt_limit = true;
                            qi_h_rt = MIN(current_qi_h_rt, qi_h_rt);
-                        } 
+                        }
                      }
                   }
                }
 
-               max_running = MIN(qi_h_rt, job_h_rt); 
+               max_running = MIN(qi_h_rt, job_h_rt);
                already_running = now - lGetUlong(ja_task, JAT_start_time);
                if (already_running <= max_running) {
                   delta_seconds = MAX(max_running - already_running, 0);
-               } 
+               }
             }
 
             /*
              * add the event to the timed event thread if there was a limit defined in queue or job
              */
             if (has_rt_limit) {
-               te_event_t ev = te_new_event((time_t)(now + delta_seconds + duration_offset), 
-                                            TYPE_ENFORCE_LIMIT_EVENT, ONE_TIME_EVENT, 
-                                            job_id, ja_task_id, NULL); 
+               te_event_t ev = te_new_event((time_t) (now + delta_seconds + duration_offset),
+                                            TYPE_ENFORCE_LIMIT_EVENT, ONE_TIME_EVENT,
+                                            job_id, ja_task_id, NULL);
                te_add_event(ev);
                te_free_event(&ev);
 
-               INFO((SGE_EVENT, MSG_JOB_ADDJOBTRIGGER_UUUU, 
-                     sge_u32c(job_id), sge_u32c(ja_task_id), 
-                     sge_u32c(delta_seconds), sge_u32c(duration_offset)));
+               INFO((SGE_EVENT, MSG_JOB_ADDJOBTRIGGER_UUUU,
+                       sge_u32c(job_id), sge_u32c(ja_task_id),
+                       sge_u32c(delta_seconds), sge_u32c(duration_offset)));
             }
          }
       }
@@ -735,9 +731,8 @@ sge_job_add_enforce_limit_trigger(lListElem *job, lListElem *ja_task)
 *  SEE ALSO
 *     qmaster/qmaster-execd/sge_job_add_enforce_limit_trigger()
 *******************************************************************************/
-void 
-sge_job_remove_enforce_limit_trigger(u_long32 job_id, u_long32 ja_task_id)
-{
+void
+sge_job_remove_enforce_limit_trigger(u_long32 job_id, u_long32 ja_task_id) {
    const lList *master_cqueue_list = *object_type_get_master_list(SGE_TYPE_CQUEUE);
    const lList *master_job_list = *object_type_get_master_list(SGE_TYPE_JOB);
    const lList *master_pe_list = *object_type_get_master_list(SGE_TYPE_PE);
