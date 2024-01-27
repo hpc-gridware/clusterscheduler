@@ -40,12 +40,12 @@ extern "C" {
 #endif
 
 /**
-* @brief @todo add summary
+* @brief Unique String
 *
-* @todo add description
+* An object of this type holds a string which is unique in a List of STU_Type.
 *
-*    SGE_STRING(STU_name) - @todo add summary
-*    @todo add description
+*    SGE_STRING(STU_name) - String Name
+*    String contents.
 *
 */
 

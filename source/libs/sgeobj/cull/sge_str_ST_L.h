@@ -40,12 +40,13 @@ extern "C" {
 #endif
 
 /**
-* @brief @todo add summary
+* @brief String Object
 *
-* @todo add description
+* An Object of this type stores a string.
 *
-*    SGE_STRING(ST_name) - @todo add summary
-*    @todo add description
+*    SGE_STRING(ST_name) - String Name
+*    This field holds the string contents.
+*    @todo The primary key property is misleading. The string needn't be unique - we have STU_Type for that.
 *
 */
 
