@@ -45,6 +45,7 @@
 #include "sgeobj/sge_pe_task.h"
 #include "sgeobj/sge_job.h"
 #include "sgeobj/sge_binding.h"
+#include "sgeobj/sge_utility.h"
 
 #include "spool/classic/read_write_job.h"
 
@@ -69,7 +70,7 @@ void sge_setup_sge_execd(sge_gdi_ctx_class_t *ctx, const char* tmp_err_file_name
    char err_str[MAX_STRING_SIZE];
    int allowed_get_conf_errors     = 5;
    char* spool_dir = NULL;
-   const char *unqualified_hostname = ctx->get_unqualified_hostname(ctx);
+   const char *unqualified_hostname = uti_state_get_unqualified_hostname();
    const char *admin_user = ctx->get_admin_user(ctx);
 
    DENTER(TOP_LAYER);
@@ -105,7 +106,7 @@ void sge_setup_sge_execd(sge_gdi_ctx_class_t *ctx, const char* tmp_err_file_name
 
    /* get aliased hostname */
    /* TODO: is this call needed ? */
-   ctx->reresolve_qualified_hostname(ctx);
+   reresolve_qualified_hostname();
    spool_dir = mconf_get_execd_spool_dir();
 
    DPRINTF(("chdir(\"/\")----------------------------\n"));

@@ -178,7 +178,7 @@ sge_before_dispatch(sge_evc_class_t *evc)
 {     
    sge_gdi_ctx_class_t *ctx = evc->get_gdi_ctx(evc);
    const char *cell_root = ctx->get_cell_root(ctx);
-   u_long32 progid = ctx->get_who(ctx);
+   u_long32 progid = uti_state_get_mewho();
    
    DENTER(TOP_LAYER);
 

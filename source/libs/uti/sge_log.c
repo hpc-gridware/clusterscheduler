@@ -518,10 +518,10 @@ int sge_log(int log_level, const char *mesg, const char *file__, const char *fun
    ctx = log_state_get_log_context();
    
    if (ctx != NULL) {
-      me = ctx->get_who(ctx);
+      me = uti_state_get_mewho();
       threadname = ctx->get_thread_name(ctx);
-      unqualified_hostname = ctx->get_unqualified_hostname(ctx);
-      is_daemonized = ctx->is_daemonized(ctx);
+      unqualified_hostname = uti_state_get_unqualified_hostname();
+      is_daemonized = uti_state_get_daemonized();
    } else {
       DPRINTF(("sge_log: ctx is NULL\n"));
    }   

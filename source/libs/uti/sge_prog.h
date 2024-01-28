@@ -158,6 +158,8 @@ void uti_state_set_mewho(u_long32 who);
 void uti_state_set_exit_on_error(bool i);
 void uti_state_set_exit_func(sge_exit_func_t f);
 
+int uti_state_reresolve_qualified_hostname(void);
+
 #endif
 
 #ifdef __cplusplus

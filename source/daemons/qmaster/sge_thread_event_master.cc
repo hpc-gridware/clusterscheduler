@@ -132,7 +132,7 @@ sge_event_master_main(void *arg)
    report_list = lCreateListHash("report list", REP_Type, false);
    report = lCreateElem(REP_Type);
    lSetUlong(report, REP_type, NUM_REP_REPORT_EVENTS);
-   lSetHost(report, REP_host, ctx->get_qualified_hostname(ctx));
+   lSetHost(report, REP_host, uti_state_get_qualified_hostname());
    lAppendElem(report_list, report);
  
    while (do_endlessly) {

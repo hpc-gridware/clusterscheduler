@@ -46,6 +46,7 @@
 #include "sgeobj/sge_job.h"
 #include "sgeobj/sge_sharetree.h"
 #include "sgeobj/sge_schedd_conf.h"
+#include "sgeobj/sge_utility.h"
 
 #include "comm/commlib.h"
 
@@ -92,8 +93,8 @@ static int sge_read_configuration(sge_gdi_ctx_class_t *ctx, const lListElem *aSp
    lListElem *global = NULL;
    int ret = -1;
    const char *cell_root = ctx->get_cell_root(ctx);
-   const char *qualified_hostname = ctx->get_qualified_hostname(ctx);
-   u_long32 progid = ctx->get_who(ctx);
+   const char *qualified_hostname = uti_state_get_qualified_hostname();
+   u_long32 progid = uti_state_get_mewho();
    lList *cluster_config = *object_type_get_master_list_rw(SGE_TYPE_CONFIG);
 
    DENTER(TOP_LAYER);
@@ -625,7 +626,7 @@ int main(int argc, char *argv[])
    
    sge_setup_sig_handlers(QEVENT);
 
-   if (ctx->reresolve_qualified_hostname(ctx) != CL_RETVAL_OK) {
+   if (reresolve_qualified_hostname() != CL_RETVAL_OK) {
       SGE_EXIT((void**)&ctx, 1);
    }
 

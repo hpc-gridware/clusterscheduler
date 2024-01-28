@@ -289,7 +289,7 @@ int main(int argc, char *argv[]) {
    /* init qmaster threads without becomming admin user */
    sge_qmaster_thread_init(&ctx, QMASTER, MAIN_THREAD, false);
 
-   ctx->set_daemonized(ctx, has_daemonized);
+   uti_state_set_daemonized(has_daemonized);
 
    /* this must be done as root user to be able to bind ports < 1024 */
    max_enroll_tries = 30;
@@ -324,7 +324,7 @@ int main(int argc, char *argv[]) {
    sge_become_admin_user(ctx->get_admin_user(ctx));
    sge_chdir_exit(ctx->get_qmaster_spool_dir(ctx), 1);
    log_state_set_log_file(ERR_FILE);
-   ctx->set_exit_func(ctx, sge_exit_func);
+   uti_state_set_exit_func(sge_exit_func);
 
 #if defined(SOLARIS)
    /* Init shared SMF libs if necessary */

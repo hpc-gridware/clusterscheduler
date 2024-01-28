@@ -205,7 +205,7 @@ do_gdi_packet(sge_gdi_ctx_class_t *ctx, lList **answer_list, struct_msg_t *aMsg,
    }
    if (local_ret) {
       const char *admin_user = ctx->get_admin_user(ctx);
-      const char *progname = ctx->get_progname(ctx);
+      const char *progname = uti_state_get_sge_formal_prog_name();
 
       if (!sge_security_verify_user(packet->host, packet->commproc,
                                     packet->commproc_id, admin_user, packet->user, progname)) {
@@ -255,7 +255,7 @@ static void
 do_report_request(sge_gdi_ctx_class_t *ctx, struct_msg_t *aMsg, monitoring_t *monitor) {
    lList *rep = NULL;
    const char *admin_user = ctx->get_admin_user(ctx);
-   const char *myprogname = ctx->get_progname(ctx);
+   const char *myprogname = uti_state_get_sge_formal_prog_name();
    sge_gdi_packet_class_t *packet = NULL;
 
    DENTER(TOP_LAYER);
@@ -341,7 +341,7 @@ do_event_client_exit(sge_gdi_ctx_class_t *ctx, struct_msg_t *aMsg, monitoring_t 
    */
    if (client_id == 1) {
       const char *admin_user = ctx->get_admin_user(ctx);
-      const char *myprogname = ctx->get_progname(ctx);
+      const char *myprogname = uti_state_get_sge_formal_prog_name();
       if (false == sge_security_verify_unique_identifier(true, admin_user, myprogname, 0,
                                                          aMsg->snd_host, aMsg->snd_name, aMsg->snd_id)) {
          DRETURN_VOID;
@@ -371,7 +371,7 @@ static void
 do_c_ack(sge_gdi_ctx_class_t *ctx, struct_msg_t *aMsg, monitoring_t *monitor) {
    u_long32 ack_tag, ack_ulong, ack_ulong2;
    const char *admin_user = ctx->get_admin_user(ctx);
-   const char *myprogname = ctx->get_progname(ctx);
+   const char *myprogname = uti_state_get_sge_formal_prog_name();
    lListElem *ack = NULL;
 
    DENTER(TOP_LAYER);

@@ -206,7 +206,7 @@ int main(int argc, char **argv)
       answer_list_output(&alp);
       SGE_EXIT((void**)&ctx, 1);
    }
-   ctx->set_exit_func(ctx, execd_exit_func);
+   uti_state_set_exit_func(execd_exit_func);
    
 #if defined(SOLARIS)
    /* Init shared SMF libs if necessary */
@@ -300,7 +300,7 @@ int main(int argc, char **argv)
 
    /* test load sensor (internal or external) */
    {
-      lList *report_list = sge_build_load_report(ctx->get_qualified_hostname(ctx), ctx->get_binary_path(ctx));
+      lList *report_list = sge_build_load_report(uti_state_get_qualified_hostname(), ctx->get_binary_path(ctx));
       lFreeList(&report_list);
    }
    

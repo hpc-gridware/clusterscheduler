@@ -545,7 +545,7 @@ int japi_init(const char *contact, const char *session_key_in,
    
    if (enable_wait) {
       const char *username = ctx->get_username(ctx);
-      const char *unqualified_hostname = ctx->get_unqualified_hostname(ctx);
+      const char *unqualified_hostname = uti_state_get_unqualified_hostname();
 
       /* spawn implementation thread japi_implementation_thread() */
       ret = japi_enable_job_wait(username, unqualified_hostname, session_key_in, session_key_out, handler,
@@ -891,7 +891,7 @@ int japi_exit(int flag, dstring *diag)
    JAPI_UNLOCK_SESSION();
 
    /* be sure that the context exists, therefore after test for active session */
-   default_cell = ctx->get_default_cell(ctx);
+   default_cell = uti_state_get_default_cell();
 
    /* do not destroy session state until last japi call 
       depending on it is finished */
@@ -4132,7 +4132,6 @@ static void *japi_implementation_thread(void * a_user_data_pointer)
    japi_ec_id = evc->ec_get_id(evc);
    JAPI_UNLOCK_EC_STATE();
 
-   DPRINTF(("my formal prog name is \"%s\"\n",(char*)evc_ctx->get_progname(evc_ctx)));
    cl_com_set_synchron_receive_timeout(evc_ctx->get_com_handle(evc_ctx),ed_time*2);
 
    while (!stop_ec) {

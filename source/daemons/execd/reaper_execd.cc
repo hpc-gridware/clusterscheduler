@@ -1004,7 +1004,7 @@ void remove_acked_job_exit(sge_gdi_ctx_class_t *ctx, u_long32 job_id, u_long32 j
          }
       } else {
          /* check if job has queue limits and decrease global flag if necessary */
-         modify_queue_limits_flag_for_job(ctx->get_qualified_hostname(ctx), jep, false);
+         modify_queue_limits_flag_for_job(uti_state_get_qualified_hostname(), jep, false);
 
          if (used_slots == 0 || mconf_get_simulate_jobs()) {
             /* remove the jep element only if all slave tasks are gone, we need to job object to remove the tmpdir */
@@ -1439,7 +1439,7 @@ examine_job_task_from_file(sge_gdi_ctx_class_t *ctx, int startup, char *dir, lLi
    }
    if (startup) {
       INFO((SGE_EVENT, SFNMAX, err_str));
-      modify_queue_limits_flag_for_job(ctx->get_qualified_hostname(ctx), jep, true);
+      modify_queue_limits_flag_for_job(uti_state_get_qualified_hostname(), jep, true);
    } else {
       DPRINTF((err_str));
    }
@@ -1874,7 +1874,7 @@ lListElem *jr
    char buffer[128];
    dstring cpu_string = DSTRING_INIT;
    dstring maxvmem_string = DSTRING_INIT;
-   const char *qualified_hostname = ctx->get_qualified_hostname(ctx);
+   const char *qualified_hostname = uti_state_get_qualified_hostname();
 
    DENTER(TOP_LAYER);
 

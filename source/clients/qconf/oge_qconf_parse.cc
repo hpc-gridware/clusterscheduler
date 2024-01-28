@@ -168,10 +168,10 @@ int sge_parse_qconf(sge_gdi_ctx_class_t *ctx, char *argv[])
    const char *filename_stdout;
    int fields_out[MAX_NUM_FIELDS];
    int missing_field = NoName;
-   const char* qualified_hostname = ctx->get_qualified_hostname(ctx);
+   const char* qualified_hostname = uti_state_get_qualified_hostname();
    const char* username = ctx->get_username(ctx);
-   const char* default_cell = ctx->get_default_cell(ctx);
-   u_long32 prog_number = ctx->get_who(ctx);
+   const char* default_cell = uti_state_get_default_cell();
+   u_long32 prog_number = uti_state_get_mewho();
    uid_t uid = ctx->get_uid(ctx);
    gid_t gid = ctx->get_gid(ctx);
    bool has_binding_param = false;

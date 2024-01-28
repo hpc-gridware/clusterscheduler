@@ -597,7 +597,7 @@ int main(int argc, char *argv[])
       SGE_EXIT(&ctx, 1);
    }
 
-   if (ctx && (ctx->reresolve_qualified_hostname(ctx) != CL_RETVAL_OK)) {
+   if (ctx && (uti_state_reresolve_qualified_hostname() != CL_RETVAL_OK)) {
       SGE_EXIT(&ctx, 1);
    }   
 

@@ -51,6 +51,8 @@
 
 #include "sgeobj/sge_answer.h"
 
+#include "comm/cl_commlib.h"
+
 /* Must match Qxxx defines in sge_prog.h */
 const char *prognames[] =
 {

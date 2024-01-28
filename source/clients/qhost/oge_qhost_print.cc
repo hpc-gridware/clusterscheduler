@@ -883,7 +883,7 @@ u_long32 show
    int q_id = 0, j_id = 0, ce_id, eh_id, pe_id, gc_id;
    state_gdi_multi state = STATE_GDI_MULTI_INIT;
    const char *cell_root = ctx->get_cell_root(ctx);
-   u_long32 progid = ctx->get_who(ctx);
+   u_long32 progid = uti_state_get_mewho();
 
    DENTER(TOP_LAYER);
    
