@@ -88,6 +88,8 @@ struct sge_csp_path_class_str {
 };
 
 sge_csp_path_class_t *
-sge_csp_path_class_create(sge_env_state_class_t *sge_env, sge_prog_state_class_t *sge_prog, sge_error_class_t *eh);
+sge_csp_path_class_create(sge_env_state_class_t *sge_env, sge_error_class_t *eh);
+
+void sge_csp_path_class_destroy(sge_csp_path_class_t **pst);
 
 void sge_csp_path_class_destroy(sge_csp_path_class_t **pst);

@@ -85,9 +85,8 @@ typedef struct {
    cl_ssl_verify_func_t verify_func; /* cert verify function */
 } sge_csp_path_t;
 
-static bool sge_csp_path_setup(sge_csp_path_class_t *thiz,
-                               sge_env_state_class_t *sge_env,
-                               sge_prog_state_class_t *sge_prog,
+static bool sge_csp_path_setup(sge_csp_path_class_t *thiz, 
+                               sge_env_state_class_t *sge_env, 
                                sge_error_class_t *eh);
 
 static void sge_csp_path_destroy(void *theState);
@@ -144,8 +143,8 @@ static void set_verify_func(sge_csp_path_class_t *thiz, cl_ssl_verify_func_t fun
 
 static bool ssl_cert_verify_func(cl_ssl_verify_mode_t mode, bool service_mode, const char *value);
 
-static bool is_daemon(sge_env_state_class_t *sge_env, sge_prog_state_class_t *sge_prog) {
-   const char *progname = sge_prog->get_sge_formal_prog_name(sge_prog);
+static bool is_daemon(void) {
+   const char *progname = uti_state_get_sge_formal_prog_name();
    if (progname != NULL) {
       if (!strcmp(prognames[QMASTER], progname) || !strcmp(prognames[EXECD], progname) ||
           !strcmp(prognames[SCHEDD], progname)) {
@@ -227,7 +226,8 @@ static bool ssl_cert_verify_func(cl_ssl_verify_mode_t mode, bool service_mode, c
 
 
 sge_csp_path_class_t *
-sge_csp_path_class_create(sge_env_state_class_t *sge_env, sge_prog_state_class_t *sge_prog, sge_error_class_t *eh) {
+sge_csp_path_class_create(sge_env_state_class_t *sge_env, sge_error_class_t *eh)
+{
    sge_csp_path_class_t *ret = NULL;
 
    DENTER(TOP_LAYER);
@@ -272,7 +272,7 @@ sge_csp_path_class_create(sge_env_state_class_t *sge_env, sge_prog_state_class_t
    }
    memset(ret->sge_csp_path_handle, 0, sizeof(sge_csp_path_t));
 
-   if (!sge_csp_path_setup(ret, sge_env, sge_prog, eh)) {
+   if (!sge_csp_path_setup(ret, sge_env, eh)) {
       sge_csp_path_class_destroy(&ret);
       DRETURN(NULL);
    }
@@ -291,10 +291,10 @@ void sge_csp_path_class_destroy(sge_csp_path_class_t **pst) {
    DRETURN_VOID;
 }
 
-static bool
-sge_csp_path_setup(sge_csp_path_class_t *thiz, sge_env_state_class_t *sge_env, sge_prog_state_class_t *sge_prog,
-                   sge_error_class_t *eh) {
-   char buffer[2 * 1024];
+static bool 
+sge_csp_path_setup(sge_csp_path_class_t *thiz, sge_env_state_class_t *sge_env, sge_error_class_t *eh)
+{
+   char buffer[2*1024];
    dstring bw;
    const char *sge_root = NULL;
    const char *sge_cell = NULL;
@@ -322,7 +322,7 @@ sge_csp_path_setup(sge_csp_path_class_t *thiz, sge_env_state_class_t *sge_env, s
    sge_cell = sge_env->get_sge_cell(sge_env);
    sge_qmaster_port = sge_env->get_sge_qmaster_port(sge_env);
    is_from_services = sge_env->is_from_services(sge_env);
-   username = sge_prog->get_user_name(sge_prog);
+   username = uti_state_get_user_name();
 
    DTRACE;
 
@@ -368,7 +368,7 @@ sge_csp_path_setup(sge_csp_path_class_t *thiz, sge_env_state_class_t *sge_env, s
    **   and as fallback
    **   /var/sgeCA/{port$COMMD_PORT|SGE_COMMD_SERVICE}/$SGE_CELL/userkeys/$USER/{cert.pem,key.pem}
    */
-   if (is_daemon(sge_env, sge_prog)) {
+   if (is_daemon()) {
       user_dir = strdup(get_ca_root(thiz));
       user_local_dir = strdup(get_ca_local_root(thiz));
    } else {
@@ -408,8 +408,8 @@ sge_csp_path_setup(sge_csp_path_class_t *thiz, sge_env_state_class_t *sge_env, s
 
    if ((sge_certfile = getenv("SGE_CERTFILE"))) {
       thiz->set_cert_file(thiz, sge_certfile);
-   } else {
-      if (is_daemon(sge_env, sge_prog)) {
+   } else {   
+      if (is_daemon()) {
          sge_dstring_sprintf(&bw, "%s/certs/%s", user_dir, UserCert);
       } else {
          sge_dstring_sprintf(&bw, "%s/userkeys/%s/%s", get_ca_local_root(thiz), username, UserCert);
@@ -418,10 +418,10 @@ sge_csp_path_setup(sge_csp_path_class_t *thiz, sge_env_state_class_t *sge_env, s
    }
 
    if ((sge_keyfile = getenv("SGE_KEYFILE"))) {
-      thiz->set_key_file(thiz, sge_keyfile);
-   } else {
-      if (is_daemon(sge_env, sge_prog)) {
-         sge_dstring_sprintf(&bw, "%s/private/%s", user_local_dir, UserKey);
+      thiz->set_key_file(thiz, sge_keyfile); 
+   } else {   
+      if (is_daemon()) {
+         sge_dstring_sprintf(&bw, "%s/private/%s", user_local_dir, UserKey);   
       } else {
          sge_dstring_sprintf(&bw, "%s/userkeys/%s/%s", get_ca_local_root(thiz), username, UserKey);
       }
@@ -430,9 +430,9 @@ sge_csp_path_setup(sge_csp_path_class_t *thiz, sge_env_state_class_t *sge_env, s
 
    sge_dstring_sprintf(&bw, "%s/%s", user_dir, RandFile);
    thiz->set_rand_file(thiz, sge_dstring_get_string(&bw));
-   if (SGE_STAT(thiz->get_rand_file(thiz), &sbuf)) {
-      if (is_daemon(sge_env, sge_prog)) {
-         sge_dstring_sprintf(&bw, "%s/private/%s", user_local_dir, RandFile);
+   if (SGE_STAT(thiz->get_rand_file(thiz), &sbuf)) { 
+      if (is_daemon()) {
+         sge_dstring_sprintf(&bw, "%s/private/%s", user_local_dir, RandFile);   
       } else {
          sge_dstring_sprintf(&bw, "%s/userkeys/%s/%s", get_ca_local_root(thiz), username, RandFile);
       }
@@ -452,8 +452,6 @@ sge_csp_path_setup(sge_csp_path_class_t *thiz, sge_env_state_class_t *sge_env, s
 
    sge_free(&user_dir);
    sge_free(&user_local_dir);
-
-/*    thiz->dprintf(thiz); */
 
    DRETURN(true);
 }

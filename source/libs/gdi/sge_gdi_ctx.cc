@@ -51,9 +51,7 @@
 #endif
 
 #include "comm/commlib.h"
-#include "comm/lists/cl_util.h"
 
-#include "uti/sge_lock.h"
 #include "uti/sge_rmon.h"
 #include "uti/sge_hostname.h"
 #include "uti/sge_fgl.h"
@@ -68,8 +66,6 @@
 #include "uti/sge_uidgid.h"
 #include "uti/sge_profiling.h"
 #include "uti/msg_utilib.h"
-#include "uti/sge_language.h"
-#include "uti/sge_spool.h"
 #include "uti/sge_time.h"
 #include "uti/sge_csp_path.h"
 #include "uti/sge_os.h"
@@ -81,7 +77,6 @@
 #include "gdi/msg_gdilib.h"
 
 #include "sgeobj/sge_feature.h"
-#include "sgeobj/sge_conf.h"
 #include "sgeobj/sge_object.h"
 
 #include "sge.h"
@@ -98,8 +93,6 @@ static int fd_pipe[2];
 
 #if  1
 /* TODO: throw this out asap */
-#include "gdi/sge_gdi.h"
-
 void gdi_once_init(void);
 void feature_mt_init(void);
 void sc_mt_init(void);
@@ -111,9 +104,10 @@ void sc_mt_init(void);
 
 typedef struct {
    sge_env_state_class_t* sge_env_state_obj;
-   sge_prog_state_class_t* sge_prog_state_obj;
    sge_path_state_class_t* sge_path_state_obj;
+#if 1
    sge_bootstrap_state_class_t* sge_bootstrap_state_obj;
+#endif
    sge_csp_path_class_t* sge_csp_path_obj;
    
    char* component_name;
@@ -230,17 +224,6 @@ static void sge_gdi_thread_local_ctx_init(sge_gdi_ctx_thread_local_t* theState)
    memset(theState, 0, sizeof(sge_gdi_ctx_thread_local_t));
 }
 
-
-sge_gdi_ctx_class_t* sge_gdi_get_thread_local_ctx(void) {
-
-   pthread_once(&sge_gdi_ctx_once, sge_gdi_thread_local_ctx_once_init);
-   {
-      GET_SPECIFIC(sge_gdi_ctx_thread_local_t, tl, sge_gdi_thread_local_ctx_init, sge_gdi_ctx_key,
-                "sge_gdi_get_thread_local_ctx");
-      return tl->ctx;
-   }   
-}
-
 void sge_gdi_set_thread_local_ctx(sge_gdi_ctx_class_t* ctx) {
  
    DENTER(TOP_LAYER);
@@ -276,7 +259,6 @@ static bool sge_gdi_ctx_is_setup(sge_gdi_ctx_class_t *thiz);
 static void sge_gdi_ctx_class_get_errors(sge_gdi_ctx_class_t *thiz, lList **alpp, bool clear_errors);
 static void sge_gdi_ctx_class_error(sge_gdi_ctx_class_t *thiz, int error_type, int error_quality, const char* fmt, ...);
 static sge_env_state_class_t* get_sge_env_state(sge_gdi_ctx_class_t *thiz);
-static sge_prog_state_class_t* get_sge_prog_state(sge_gdi_ctx_class_t *thiz);
 static sge_path_state_class_t* get_sge_path_state(sge_gdi_ctx_class_t *thiz);
 static sge_csp_path_class_t* get_sge_csp_path(sge_gdi_ctx_class_t *thiz);
 static sge_bootstrap_state_class_t* get_sge_bootstrap_state(sge_gdi_ctx_class_t *thiz);
@@ -364,7 +346,6 @@ sge_gdi_ctx_class_create(int prog_number, const char *component_name,
    ret->kill = sge_gdi_ctx_class_gdi_kill;
 
    ret->get_sge_env_state = get_sge_env_state;
-   ret->get_sge_prog_state = get_sge_prog_state;
    ret->get_sge_path_state = get_sge_path_state;
    ret->get_sge_bootstrap_state = get_sge_bootstrap_state;
    ret->get_component_name = get_component_name;
@@ -563,28 +544,32 @@ sge_gdi_ctx_setup(sge_gdi_ctx_class_t *thiz, int prog_number, const char* compon
    es->sge_env_state_obj = sge_env_state_class_create(sge_root, sge_cell, sge_qmaster_port, sge_execd_port, from_services, qmaster_internal_client, eh);
    if (!es->sge_env_state_obj) {
       DRETURN(false);
-   }   
+   }
 
-   es->sge_prog_state_obj = sge_prog_state_class_create(es->sge_env_state_obj, prog_number, eh);
-   if (!es->sge_prog_state_obj) {
-      DRETURN(false);
-   }   
+   {
+      sge_prog_state_class_t *p = sge_prog_state_class_create(es->sge_env_state_obj, prog_number, eh);
+      if (!p) {
+         DRETURN(false);
+      }
+   }
 
    es->sge_path_state_obj = sge_path_state_class_create(es->sge_env_state_obj, eh);
    if (!es->sge_path_state_obj) {
       DRETURN(false);
    }
 
+#if 1
    es->sge_bootstrap_state_obj = sge_bootstrap_state_class_create(es->sge_path_state_obj, eh);
    if (!es->sge_bootstrap_state_obj) {
       DRETURN(false);
    }
-   
+
    if (feature_initialize_from_string(es->sge_bootstrap_state_obj->get_security_mode(es->sge_bootstrap_state_obj))) {
       DRETURN(false);
-   }   
-   
-   es->sge_csp_path_obj = sge_csp_path_class_create(es->sge_env_state_obj, es->sge_prog_state_obj, eh);
+   }
+#endif
+
+   es->sge_csp_path_obj = sge_csp_path_class_create(es->sge_env_state_obj, eh);
    if (!es->sge_csp_path_obj) {
       DRETURN(false);
    }   
@@ -688,98 +673,6 @@ sge_gdi_ctx_setup(sge_gdi_ctx_class_t *thiz, int prog_number, const char* compon
    DRETURN(true);
 }
 
-sge_gdi_ctx_class_t *
-sge_gdi_ctx_class_create_from_bootstrap(int prog_number, const char* component_name,
-                                        int thread_number, const char *thread_name,
-                                        const char* url, const char* username, lList **alpp)
-{
-   char sge_root[BUFSIZ];
-   char sge_cell[BUFSIZ];
-   char sge_qmaster_port[BUFSIZ];
-   char *token = NULL;
-   char sge_url[BUFSIZ];
-   
-   struct  saved_vars_s *url_ctx = NULL;
-   int sge_qmaster_p = 0;
-   int sge_execd_p = 0;
-   bool is_qmaster_internal_client = false;
-   bool from_services = false;
-
-   sge_gdi_ctx_class_t * ret = NULL;
-   
-   DENTER(TOP_LAYER);
-
-   /* determine the connection type: local/remote */
-   if (!strncmp(url, "internal://", (sizeof("internal://")-1))) {
-      DPRINTF(("**** Using internal context for %s ****\n", component_name));   
-      is_qmaster_internal_client = true;
-   }
-   
-   /* parse the url */
-   DPRINTF(("url = %s\n", url));
-   if (is_qmaster_internal_client) {
-      sscanf(url, "internal://%s", sge_url);
-   } else {
-      sscanf(url, "bootstrap://%s", sge_url);
-   }
-   DPRINTF(("sge_url = %s\n", sge_url));
-   
-   /* search for sge_root */
-   token = sge_strtok_r(sge_url, "@", &url_ctx);   
-   if (token == NULL ) {
-      answer_list_add_sprintf(alpp, STATUS_EUNKNOWN, ANSWER_QUALITY_ERROR, "invalid url, sge_root not found");
-      sge_free_saved_vars(url_ctx);
-      DRETURN(NULL);
-   }   
-   strcpy(sge_root, token);
-   
-   /* search for sge_cell */
-   token = sge_strtok_r(NULL, ":", &url_ctx);
-   
-   if (token == NULL ) {
-      answer_list_add_sprintf(alpp, STATUS_EUNKNOWN, ANSWER_QUALITY_ERROR, "invalid url, sge_cell not found");
-      sge_free_saved_vars(url_ctx);
-      DRETURN(NULL);
-   }
-   strcpy(sge_cell, token);
-   
-   /* get the qmaster port */
-   token = sge_strtok_r(NULL, NULL, &url_ctx);
-
-   if (token == NULL ) {
-      answer_list_add_sprintf(alpp, STATUS_EUNKNOWN, ANSWER_QUALITY_ERROR, "invalid url, qmaster_port not found");
-      sge_free_saved_vars(url_ctx);
-      DRETURN(NULL);
-   }
-   strcpy(sge_qmaster_port, token);
-   
-   if (is_qmaster_internal_client) {
-      sge_qmaster_p = sge_get_qmaster_port(&from_services);
-      sge_execd_p = sge_get_execd_port();
-      DPRINTF(("**** from_services %s ****\n", from_services ? "true" : "false"));
-   } else {
-      sge_qmaster_p = atoi(sge_qmaster_port);
-   } 
-   if (sge_qmaster_p <= 0 ) {
-      answer_list_add_sprintf(alpp, STATUS_EUNKNOWN, ANSWER_QUALITY_ERROR, "invalid url, invalid sge_qmaster_port port %s", sge_qmaster_port);
-      sge_free_saved_vars(url_ctx);
-      DRETURN(NULL);
-   }
-   sge_free_saved_vars(url_ctx);
-   
-   /* 
-    * TODO we need a way to define the execd port, from_services is always false (certs from keystore) for bootstrap:* mode 
-    *      for internal:* mode the master port and the execd port can be fetched from env as for other master threads here also the
-    *      from_services flag can be set
-    */
-   ret = sge_gdi_ctx_class_create(prog_number, component_name, thread_number, thread_name,
-                                  username, NULL, sge_root, sge_cell, sge_qmaster_p, sge_execd_p, 
-                                  from_services, is_qmaster_internal_client, alpp);
-   
-   DRETURN(ret); 
-}
-
-
 static void sge_gdi_ctx_destroy(void *theState)
 {
    sge_gdi_ctx_t *s = (sge_gdi_ctx_t *)theState;
@@ -787,9 +680,10 @@ static void sge_gdi_ctx_destroy(void *theState)
    DENTER(TOP_LAYER);
 
    sge_env_state_class_destroy(&(s->sge_env_state_obj));
-   sge_prog_state_class_destroy(&(s->sge_prog_state_obj));
    sge_path_state_class_destroy(&(s->sge_path_state_obj));
+#if 1
    sge_bootstrap_state_class_destroy(&(s->sge_bootstrap_state_obj));
+#endif
    sge_csp_path_class_destroy(&(s->sge_csp_path_obj));
    sge_free(&(s->master));
    sge_free(&(s->username));
@@ -852,7 +746,6 @@ static int sge_gdi_ctx_class_prepare_enroll(sge_gdi_ctx_class_t *thiz) {
       char* env_sge_commlib_debug = getenv("SGE_DEBUG_LEVEL");
       switch (uti_state_get_mewho()) {
          case QMASTER:
-         case QMON:
          case DRMAA:
          case SCHEDD:
          case EXECD:
@@ -1149,31 +1042,6 @@ static int sge_gdi_ctx_class_prepare_enroll(sge_gdi_ctx_class_t *thiz) {
             }
             break;
 
-         case QMON:
-            DPRINTF(("creating QMON GDI handle\n"));
-            handle = cl_com_create_handle(&cl_ret, 
-                                          communication_framework, 
-                                          CL_CM_CT_MESSAGE, 
-                                          false, 
-                                          sge_qmaster_port, 
-                                          CL_TCP_DEFAULT,
-                                          (char*)thiz->get_component_name(thiz), 
-                                          my_component_id, 
-                                          1, 
-                                          0);
-            cl_com_set_auto_close_mode(handle, CL_CM_AC_ENABLED);
-            if (handle == NULL) {
-               if (cl_ret != CL_RETVAL_OK && cl_ret != ctx_get_last_commlib_error(thiz)) {
-                  ERROR((SGE_EVENT, MSG_GDI_CANT_CONNECT_HANDLE_SSUUS, 
-                                       qualified_hostname,
-                                       (char*)thiz->get_component_name(thiz),
-                                       sge_u32c(my_component_id), 
-                                       sge_u32c(sge_qmaster_port),
-                                       cl_get_error_text(cl_ret)));
-               }
-            }
-            break;
-
          default:
             /* this is for "normal" gdi clients of qmaster */
             DPRINTF(("creating %s GDI handle\n", thiz->get_component_name(thiz)));
@@ -1306,9 +1174,10 @@ static void sge_gdi_ctx_class_dprintf(sge_gdi_ctx_class_t *ctx)
    DPRINTF(("vvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvv\n"));   
       
    (ctx->get_sge_env_state(ctx))->dprintf(ctx->get_sge_env_state(ctx)); 
-   (ctx->get_sge_prog_state(ctx))->dprintf(ctx->get_sge_prog_state(ctx)); 
-   (ctx->get_sge_path_state(ctx))->dprintf(ctx->get_sge_path_state(ctx)); 
-   (ctx->get_sge_bootstrap_state(ctx))->dprintf(ctx->get_sge_bootstrap_state(ctx)); 
+   (ctx->get_sge_path_state(ctx))->dprintf(ctx->get_sge_path_state(ctx));
+#if 1
+   (ctx->get_sge_bootstrap_state(ctx))->dprintf(ctx->get_sge_bootstrap_state(ctx));
+#endif
 
    DPRINTF(("master: %s\n", ctx->get_master(ctx, false)));
    DPRINTF(("uid/username: %d/%s\n", (int) ctx->get_uid(ctx), ctx->get_username(ctx)));
@@ -1333,13 +1202,7 @@ static sge_env_state_class_t* get_sge_env_state(sge_gdi_ctx_class_t *thiz)
    return es->sge_env_state_obj;
 }
 
-static sge_prog_state_class_t* get_sge_prog_state(sge_gdi_ctx_class_t *thiz) 
-{
-   sge_gdi_ctx_t *es = (sge_gdi_ctx_t *) thiz->sge_gdi_ctx_handle;
-   return es->sge_prog_state_obj;
-}
-
-static sge_path_state_class_t* get_sge_path_state(sge_gdi_ctx_class_t *thiz) 
+static sge_path_state_class_t* get_sge_path_state(sge_gdi_ctx_class_t *thiz)
 {
    sge_gdi_ctx_t *es = (sge_gdi_ctx_t *) thiz->sge_gdi_ctx_handle;
    return es->sge_path_state_obj;
@@ -1349,12 +1212,6 @@ static sge_csp_path_class_t* get_sge_csp_path(sge_gdi_ctx_class_t *thiz)
 {
    sge_gdi_ctx_t *es = (sge_gdi_ctx_t *) thiz->sge_gdi_ctx_handle;
    return es->sge_csp_path_obj;
-}
-
-static sge_bootstrap_state_class_t* get_sge_bootstrap_state(sge_gdi_ctx_class_t *thiz)
-{
-   sge_gdi_ctx_t *es = (sge_gdi_ctx_t *) thiz->sge_gdi_ctx_handle;
-   return es->sge_bootstrap_state_obj;
 }
 
 static const char* get_master(sge_gdi_ctx_class_t *thiz, bool reread) {
@@ -1412,78 +1269,57 @@ static const char* get_thread_name(sge_gdi_ctx_class_t *thiz) {
    DENTER(BASIS_LAYER);
    ret = es->thread_name;
    DRETURN(ret);
-}  
- 
+}
+
+#if 1
+
+static sge_bootstrap_state_class_t* get_sge_bootstrap_state(sge_gdi_ctx_class_t *thiz)
+{
+   sge_gdi_ctx_t *es = (sge_gdi_ctx_t *) thiz->sge_gdi_ctx_handle;
+   return es->sge_bootstrap_state_obj;
+}
 
 static bool get_job_spooling(sge_gdi_ctx_class_t *thiz) {
    sge_bootstrap_state_class_t* bootstrap_state = thiz->get_sge_bootstrap_state(thiz);
-   bool job_spooling = true;
-   
-   DENTER(BASIS_LAYER);
-   job_spooling = bootstrap_state->get_job_spooling(bootstrap_state);
-   DRETURN(job_spooling);
+   return bootstrap_state->get_job_spooling(bootstrap_state);
 }
 
 static void set_job_spooling(sge_gdi_ctx_class_t *thiz, bool job_spooling) {
    sge_bootstrap_state_class_t* bootstrap_state = thiz->get_sge_bootstrap_state(thiz);
 
-   DENTER(BASIS_LAYER);
    bootstrap_state->set_job_spooling(bootstrap_state, job_spooling);
-   DRETURN_VOID;
 }
 
 static const char* get_spooling_method(sge_gdi_ctx_class_t *thiz) {
    sge_bootstrap_state_class_t* bootstrap_state = thiz->get_sge_bootstrap_state(thiz);
-   const char *spooling_method = NULL;
-   
-   DENTER(BASIS_LAYER);
-   spooling_method = bootstrap_state->get_spooling_method(bootstrap_state);
-   DRETURN(spooling_method);
+   return bootstrap_state->get_spooling_method(bootstrap_state);
 }
 
 static const char* get_spooling_lib(sge_gdi_ctx_class_t *thiz) {
    sge_bootstrap_state_class_t* bootstrap_state = thiz->get_sge_bootstrap_state(thiz);
-   const char *spooling_lib = NULL;
-   
-   DENTER(BASIS_LAYER);
-   spooling_lib = bootstrap_state->get_spooling_lib(bootstrap_state);
-   DRETURN(spooling_lib);
+   return bootstrap_state->get_spooling_lib(bootstrap_state);
 }
 
 static const char* get_spooling_params(sge_gdi_ctx_class_t *thiz) {
    sge_bootstrap_state_class_t* bootstrap_state = thiz->get_sge_bootstrap_state(thiz);
-   const char *spooling_params = NULL;
-   
-   DENTER(BASIS_LAYER);
-   spooling_params = bootstrap_state->get_spooling_params(bootstrap_state);
-   DRETURN(spooling_params);
+
+   return bootstrap_state->get_spooling_params(bootstrap_state);
 }
 
 static u_long32 get_listener_thread_count(sge_gdi_ctx_class_t *thiz) {
    sge_bootstrap_state_class_t* bootstrap_state = thiz->get_sge_bootstrap_state(thiz);
-   u_long32 thread_count = 0;
-   
-   DENTER(BASIS_LAYER);
-   thread_count = bootstrap_state->get_listener_thread_count(bootstrap_state);
-   DRETURN(thread_count);
+
+   return bootstrap_state->get_listener_thread_count(bootstrap_state);
 }
 
 static u_long32 get_worker_thread_count(sge_gdi_ctx_class_t *thiz) {
    sge_bootstrap_state_class_t* bootstrap_state = thiz->get_sge_bootstrap_state(thiz);
-   u_long32 thread_count = 0;
-   
-   DENTER(BASIS_LAYER);
-   thread_count = bootstrap_state->get_worker_thread_count(bootstrap_state);
-   DRETURN(thread_count);
+   return bootstrap_state->get_worker_thread_count(bootstrap_state);
 }
 
 static u_long32 get_scheduler_thread_count(sge_gdi_ctx_class_t *thiz) {
    sge_bootstrap_state_class_t* bootstrap_state = thiz->get_sge_bootstrap_state(thiz);
-   u_long32 thread_count = 0;
-   
-   DENTER(BASIS_LAYER);
-   thread_count = bootstrap_state->get_scheduler_thread_count(bootstrap_state);
-   DRETURN(thread_count);
+   return bootstrap_state->get_scheduler_thread_count(bootstrap_state);
 }
 
 static const char* get_admin_user(sge_gdi_ctx_class_t *thiz) {
@@ -1500,6 +1336,8 @@ static const char* get_qmaster_spool_dir(sge_gdi_ctx_class_t *thiz) {
    sge_bootstrap_state_class_t * bootstrap_state = thiz->get_sge_bootstrap_state(thiz);
    return bootstrap_state->get_qmaster_spool_dir(bootstrap_state);
 }
+
+#endif
 
 static const char* get_private_key(sge_gdi_ctx_class_t *thiz) {
    sge_gdi_ctx_t *es = (sge_gdi_ctx_t *) thiz->sge_gdi_ctx_handle;
@@ -2037,10 +1875,6 @@ bool sge_daemonize_finalize(sge_gdi_ctx_class_t *ctx)
 
    DRETURN(true);
 }
-
-
-
-
 
 /****** uti/os/sge_daemonize() ************************************************
 *  NAME

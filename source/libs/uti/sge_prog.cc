@@ -878,11 +878,6 @@ static bool sge_prog_state_setup(sge_prog_state_class_t *thiz, sge_env_state_cla
       sge_free(&buffer);
    }
 
-   /*
-   if (ret) {
-      thiz->dprintf(thiz);
-   }*/
-
    DRETURN(ret);
 }
 

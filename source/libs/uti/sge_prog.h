@@ -70,16 +70,16 @@ enum {
 
    /* programs with numbers > ALL_OPT do not use the old parsing */
 
-   QMON,       /* 22 */
-   SCHEDD,       /* 23 */
-   QACCT,       /* 24 */
-   SHADOWD,       /* 25 */
-   QHOST,       /* 26 */
-   SPOOLDEFAULTS,       /* 27 */
-   JAPI,       /* 28 */
-   DRMAA,       /* 29 */
-   QPING,       /* 30 */
-   QQUOTA,       /* 31 */
+   UNUSED          ,       /* 22 */
+   SCHEDD          ,       /* 23 */
+   QACCT           ,       /* 24 */
+   SHADOWD         ,       /* 25 */
+   QHOST           ,       /* 26 */
+   SPOOLDEFAULTS   ,       /* 27 */
+   JAPI            ,       /* 28 */
+   DRMAA           ,       /* 29 */
+   QPING           ,       /* 30 */
+   QQUOTA          ,       /* 31 */
    SGE_SHARE_MON           /* 32 */
 };
 

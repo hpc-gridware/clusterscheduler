@@ -62,28 +62,8 @@ sge_gdi_ctx_class_create(int prog_number, const char *component_name,
                          bool from_services, bool is_qmaster_intern_client,
                          lList **alpp);
 
-
-
-/*
-   create an instance of sge_gdi_ctx_class_t and initialize it
-   with the information of the bootstrap file
-
-   @param prog_number  number of the program which uses the context
-   @param url          url to the bootstrap file
-   @param username     name of the user which uses the context
-   @param alpp         answer list reference
-   @return the gdi context
-
-   TODO we need a answer list to transport error messages to the caller
-*/
-sge_gdi_ctx_class_t *
-sge_gdi_ctx_class_create_from_bootstrap(int prog_number, const char* component_name,
-                                        int thread_number, const char *thread_name,
-                                        const char* url, const char* username, lList **alpp);
-
 void sge_gdi_ctx_class_destroy(sge_gdi_ctx_class_t **pst);
 
-sge_gdi_ctx_class_t* sge_gdi_get_thread_local_ctx(void);
 void sge_gdi_set_thread_local_ctx(sge_gdi_ctx_class_t* ctx);
 
 void gdi_mt_init(void);

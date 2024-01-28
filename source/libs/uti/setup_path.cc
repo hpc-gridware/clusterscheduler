@@ -666,8 +666,6 @@ static bool sge_path_state_setup(sge_path_state_class_t *thiz, sge_env_state_cla
    sge_dstring_sprintf(&bw, "%s"PATH_SEPARATOR"%s"PATH_SEPARATOR"%s", cell_root, COMMON_DIR, ALIAS_FILE);
    thiz->set_alias_file(thiz, sge_dstring_get_string(&bw));
 
-   /*thiz->dprintf(thiz);*/
-
    DRETURN(true);
 }
 

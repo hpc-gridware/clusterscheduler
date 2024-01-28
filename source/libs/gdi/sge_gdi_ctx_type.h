@@ -66,7 +66,6 @@ struct sge_gdi_ctx_class_str {
                                           state_gdi_multi *state, bool do_copy);
   
    sge_env_state_class_t* (*get_sge_env_state)(sge_gdi_ctx_class_t *thiz);
-   sge_prog_state_class_t* (*get_sge_prog_state)(sge_gdi_ctx_class_t *thiz);
    sge_path_state_class_t* (*get_sge_path_state)(sge_gdi_ctx_class_t *thiz);
    sge_bootstrap_state_class_t* (*get_sge_bootstrap_state)(sge_gdi_ctx_class_t *thiz);
 

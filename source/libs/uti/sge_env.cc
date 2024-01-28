@@ -154,8 +154,6 @@ sge_env_state_setup(sge_env_state_class_t *thiz, const char *sge_root, const cha
    set_from_services(thiz, from_services);
    set_qmaster_internal(thiz, qmaster_internal);
 
-   /*thiz->dprintf(thiz);*/
-
    DRETURN(true);
 }
 

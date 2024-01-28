@@ -808,10 +808,6 @@ sge_bootstrap_state_setup(sge_bootstrap_state_class_t *thiz, sge_path_state_clas
       thiz->set_scheduler_thread_count(thiz, uval);
    }
 
-#if 0
-   thiz->dprintf(thiz);
-#endif
-
    DRETURN(true);
 }
 
