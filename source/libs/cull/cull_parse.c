@@ -101,7 +101,6 @@ cull_parse_state *state
       "%s",                     /* STRING                  */
       "%u",                     /* ULONG                   */
       "%lu",                    /* ULONG64                 */
-      "%l",                     /* SUBLIST                 */
       "%f",                     /* FLOAT                   */
       "%g",                     /* DOUBLE                  */
       "%o",                     /* LONG                    */

@@ -889,7 +889,6 @@ static int sge_gdi_ctx_class_prepare_enroll(sge_gdi_ctx_class_t *thiz) {
          case QMASTER:
          case QMON:
          case DRMAA:
-         case JGDI:
          case SCHEDD:
          case EXECD:
             {

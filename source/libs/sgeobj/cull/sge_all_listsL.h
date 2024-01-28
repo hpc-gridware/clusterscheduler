@@ -318,8 +318,7 @@ lNameSpace nmv[] = {
 #endif
 
 #else
-#ifdef __SGE_GDI_LIBRARY_SUBLIST_FILE__
-#else
+
 #ifdef __cplusplus
 extern "C" {
 #endif
@@ -331,7 +330,5 @@ extern lNameSpace nmv[];
 #endif
 
 #endif /* __SGE_GDI_LIBRARY_HOME_OBJECT_FILE__ */
-
-#endif /* __SGE_GDI_LIBRARY_SUBLIST_FILE__     */
 
 #endif /* __SGE_ALL_LISTSL_H */

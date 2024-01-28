@@ -83,13 +83,10 @@ const char *prognames[] =
    "qhost"		,       /* 26  */
    "spoolinit" ,       /* 27  */
    "japi"      ,       /* 28  */
-   "japi_ec"   ,       /* 29  */
-   "drmaa"     ,       /* 30  */
-   "qping"     ,       /* 31  */ 
-   "sgepasswd" ,       /* 32  */
-   "qquota"    ,       /* 33  */
-   "jgdi"      ,       /* 34  */
-   "sge_share_mon"     /* 35  */
+   "drmaa"     ,       /* 29  */
+   "qping"     ,       /* 30  */
+   "qquota"    ,       /* 31  */
+   "sge_share_mon"     /* 32  */
 };
 
 const char *threadnames[] = {
@@ -99,9 +96,8 @@ const char *threadnames[] = {
    "timer",             /* 4 */
    "worker",            /* 5 */
    "signaler",          /* 6 */
-   "jvm",               /* 7 */
-   "scheduler",         /* 8 */
-   "tester"             /* 9 */
+   "scheduler",         /* 7 */
+   "tester"             /* 8 */
 };
 
  

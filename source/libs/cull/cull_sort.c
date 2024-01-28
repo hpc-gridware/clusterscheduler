@@ -289,10 +289,6 @@ lSortOrder *lParseSortOrder(const lDescr *dp, const char *fmt, va_list ap)
          incompatibleType("lSortList (should be a lUlongT)\n");
          break;
 
-         case SUBLIST:
-         if (mt_get_type(sp[i].mt) !=lListT )
-         incompatibleType("lSortList (should be a lListT)\n");
-         break;
          case FLOAT:
          if (mt_get_type(sp[i].mt) !=lFloatT )
          incompatibleType("lSortList (should be a lFloatT)\n");

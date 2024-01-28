@@ -49,7 +49,6 @@ set(LIBRARY_SOURCES
       sge_schedd_conf.cc
       sge_sharetree.cc
       sge_str.cc
-      # sge_sub_object_cpp.c
       sge_subordinate.cc
       sge_suser.cc
       sge_ulong.cc

@@ -120,11 +120,7 @@ static bool ssl_cert_verify_func(cl_ssl_verify_mode_t mode, bool service_mode, c
 static bool is_daemon(sge_env_state_class_t *sge_env, sge_prog_state_class_t *sge_prog) {
    const char *progname = sge_prog->get_sge_formal_prog_name(sge_prog);
    if (progname != NULL) {
-      if ( !strcmp(prognames[QMASTER], progname) ||
-           !strcmp(prognames[EXECD], progname) ||
-           (!strcmp(prognames[JGDI], progname) &&
-           sge_env->is_qmaster_internal(sge_env)) ||
-           !strcmp(prognames[SCHEDD] , progname)) {
+      if (!strcmp(prognames[QMASTER], progname) || !strcmp(prognames[EXECD], progname) || !strcmp(prognames[SCHEDD] , progname)) {
          return true;
       }
    }
