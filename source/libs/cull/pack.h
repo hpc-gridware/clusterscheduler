@@ -38,10 +38,6 @@
 #   include "basis_types.h"
 #endif
 
-#ifdef  __cplusplus
-extern "C" {
-#endif
-
 #include "uti/sge_bitfield.h"
 
 #define CHUNK  (1024*1024)
@@ -150,7 +146,3 @@ enum {
 };
 
 const char *cull_pack_strerror(int errnum);
-
-#ifdef  __cplusplus
-}
-#endif

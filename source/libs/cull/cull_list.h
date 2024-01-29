@@ -39,11 +39,6 @@
 #include "cull/pack.h"
 #include "uti/sge_dstring.h"
 
-#ifdef  __cplusplus
-extern "C" {
-#endif
-
-
 #define NoName -1
 
 typedef struct _lDescr lDescr;
@@ -307,7 +302,3 @@ bool lListElem_clear_changed_info(lListElem *lp);
    for (ep=lFindFirstRW(lp,cp);ep;ep=lFindNextRW(ep,cp))
 #define for_each_where_rev(ep,lp,cp) \
    for (ep=lFindLast(lp,cp);ep;ep=lFindPrev(ep,cp))
-
-#ifdef  __cplusplus
-}
-#endif

@@ -31,12 +31,4 @@
  ************************************************************************/
 /*___INFO__MARK_END__*/
 
-#ifdef  __cplusplus
-extern "C" {
-#endif
-
 typedef struct _cull_htable *cull_htable;
-
-#ifdef  __cplusplus
-}
-#endif

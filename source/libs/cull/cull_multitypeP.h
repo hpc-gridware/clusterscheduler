@@ -35,10 +35,6 @@
 #include "cull/cull_list.h"
 #include "cull/cull_multitype.h"
 
-#ifdef  __cplusplus
-extern "C" {
-#endif
-
 union _lMultiType {
    lFloat fl;
    lDouble db;
@@ -55,7 +51,3 @@ union _lMultiType {
    lHost host;
    lCondition *cp;
 };
-
-#ifdef  __cplusplus
-}
-#endif

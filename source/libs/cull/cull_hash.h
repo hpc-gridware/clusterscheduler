@@ -37,10 +37,6 @@
 #include "cull/cull_list.h"
 #include "cull/cull_hashP.h"
 
-#ifdef  __cplusplus
-extern "C" {
-#endif
-
 cull_htable cull_hash_create(const lDescr *descr, int size);
 int cull_hash_new(lList *lp, int name, bool unique);
 int cull_hash_new_check(lList *lp, int nm, bool unique);
@@ -56,6 +52,3 @@ void *cull_hash_key(const lListElem *ep, int pos, char *host_key);
 
 const char *cull_hash_statistics(cull_htable ht, dstring *buffer);
 void cull_hash_recreate_after_sort(lList *lp);
-#ifdef  __cplusplus
-}
-#endif

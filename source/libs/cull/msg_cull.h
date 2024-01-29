@@ -34,10 +34,6 @@
 
 #include "basis_types.h"
 
-#ifdef  __cplusplus
-extern "C" {
-#endif
-
 // clang-format off
 
 #define MSG_CULL_NOPREFIXANDNOFILENAMEINWRITEELMTODISK   _MESSAGE(41000, _("no prefix and no filename in lWriteElemToDisk"))
@@ -188,7 +184,3 @@ extern "C" {
 #define MSG_CULL_WHERE_SHOULDBEULONG64T                    _MESSAGE(41177, _("lWhere (should be a lUlong64T)"))
 
 // clang-format on
-
-#ifdef  __cplusplus
-}
-#endif

@@ -34,10 +34,6 @@
 #include "cull/cull_list.h"
 #include "uti/sge_bitfield.h"
 
-#ifdef  __cplusplus
-extern "C" {
-#endif
-
 /****** cull/list/-Cull-List-defines ***************************************
 *
 *  NAME
@@ -87,7 +83,3 @@ struct _lList {
    lListElem *first;            /* pointer to the first element of the list  */
    lListElem *last;             /* pointer to the last element of the list   */
 };
-
-#ifdef  __cplusplus
-}
-#endif

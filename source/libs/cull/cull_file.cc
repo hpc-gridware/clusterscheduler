@@ -192,7 +192,7 @@ lListElem *lReadElemFromDisk(const char *prefix, const char *name,
    SGE_STRUCT_STAT statbuf;
    lListElem *ep;
    int ret, fd;
-   void* buf;
+   char* buf;
    size_t size;
 
    DENTER(TOP_LAYER);

@@ -33,10 +33,6 @@
 
 #include "cull/cull_what.h"
 
-#ifdef  __cplusplus
-extern "C" {
-#endif
-
 struct _lEnumeration {
    int pos;          /* 
                       * position in the old cont/descr array 
@@ -50,7 +46,3 @@ struct _lEnumeration {
    int nm;           /* name of selected column */
    lEnumeration *ep; /* sub enumeration; only used for objects and lists */
 };
-
-#ifdef  __cplusplus
-}
-#endif

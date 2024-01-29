@@ -320,24 +320,24 @@ void cull_hash_insert(const lListElem *ep, void *key, cull_htable ht, bool uniqu
       if(sge_htable_lookup(ht->ht, key, (const void **) &head.p) == True) {
          /* We only have something to do if ep isn't already stored */
          if (sge_htable_lookup(ht->nuht, &ep, (const void **)&nuh.p) == False) {
-            nuh.p = (non_unique_hash *)sge_malloc(sizeof(non_unique_hash));
+            nuh.l = (non_unique_hash *)sge_malloc(sizeof(non_unique_hash));
             nuh.l->data = ep;
             nuh.l->prev = head.l->last;
             nuh.l->next = NULL;
-            nuh.l->prev->next = nuh.p;
-            head.l->last = nuh.p;
+            nuh.l->prev->next = nuh.l;
+            head.l->last = nuh.l;
             sge_htable_store(ht->nuht, &ep, nuh.p);
          }
       } else { /* no list of non unique elements for this key, create new */
-         head.p = (non_unique_header *)sge_malloc(sizeof(non_unique_header));
-         nuh.p = (non_unique_hash *)sge_malloc(sizeof(non_unique_hash));
-         head.l->first = nuh.p;
-         head.l->last = nuh.p;
+         head.l = (non_unique_header *)sge_malloc(sizeof(non_unique_header));
+         nuh.l = (non_unique_hash *)sge_malloc(sizeof(non_unique_hash));
+         head.l->first = nuh.l;
+         head.l->last = nuh.l;
          nuh.l->prev = NULL;
          nuh.l->next = NULL;
          nuh.l->data = ep;
-         sge_htable_store(ht->ht, key, head.p);
-         sge_htable_store(ht->nuht, &ep, nuh.p);
+         sge_htable_store(ht->ht, key, head.l);
+         sge_htable_store(ht->nuht, &ep, nuh.l);
       }
    }
 }
@@ -508,7 +508,7 @@ lListElem *cull_hash_first(cull_htable ht, const void *key, bool unique,
    if (unique) {
       *iterator = NULL;
       if (sge_htable_lookup(ht->ht, key, (const void **)&ep.p) == True) {
-         return ep.p;
+         return (lListElem *)ep.p;
       } else {
          return NULL;
       }
@@ -522,7 +522,7 @@ lListElem *cull_hash_first(cull_htable ht, const void *key, bool unique,
       if (sge_htable_lookup(ht->ht, key, (const void **)&head.p) == True) {
          ep.p = (lListElem *)head.l->first->data;
          *iterator = head.l->first;
-         return ep.p;
+         return (lListElem *)ep.p;
       } else {
          *iterator = NULL;
          return NULL;

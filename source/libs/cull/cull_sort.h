@@ -35,10 +35,6 @@
 
 #include "cull/cull_list.h"
 
-#ifdef  __cplusplus
-extern "C" {
-#endif
-
 int lSortCompare(const lListElem *ep0, const lListElem *ep1, const lSortOrder *sp);
 
 int lInsertSorted(const lSortOrder *so, lListElem *ep, lList *lp);
@@ -54,8 +50,3 @@ void lWriteSortOrder(const lSortOrder *sp);
 
 lSortOrder * lCreateSortOrder(int n);
 int lAddSortCriteria(const lDescr *dp, lSortOrder *so, int nm, int up_down_flag);
-
-/* ------------ */
-#ifdef  __cplusplus
-}
-#endif

@@ -31,10 +31,6 @@
  ************************************************************************/
 /*___INFO__MARK_END__*/
 
-#ifdef  __cplusplus
-extern "C" {
-#endif
-
 #define  LEMALLOC       1       /* malloc failure                         */
 #define  LEINCTYPE      2       /* incompatible type                      */
 #define  LEUNKTYPE      3       /* unknown type                           */
@@ -96,7 +92,3 @@ extern "C" {
 /* prototypes */
 
 int lerror(void);
-
-#ifdef  __cplusplus
-}
-#endif

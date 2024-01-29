@@ -33,13 +33,5 @@
 
 #include "cull/cull_list.h"
 
-#ifdef  __cplusplus
-extern "C" {
-#endif
-
 int lGetNumberOfNodes(const lListElem *ep, const lList *lp, int nm);
 int lGetNumberOfLeafs(const lListElem *ep, const lList *lp, int nm);
-
-#ifdef  __cplusplus
-}
-#endif

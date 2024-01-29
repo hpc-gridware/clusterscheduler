@@ -33,10 +33,6 @@
 
 #include "cull/cull_list.h"
 
-#ifdef  __cplusplus
-extern "C" {
-#endif
-
 #include "uti/sge_dstring.h"
 
 #define WHAT_ALL                        -1
@@ -56,7 +52,3 @@ void nm_set(int job_field[], int nm);
 
 int lMergeWhat(lEnumeration **what1, lEnumeration **what2);
 int lWhatSetSubWhat(lEnumeration *what1, int nm, lEnumeration **what2);
-
-#ifdef  __cplusplus
-}
-#endif

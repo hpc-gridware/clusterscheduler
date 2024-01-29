@@ -34,10 +34,6 @@
 #include "cull/cull_list.h"
 #include "cull/pack.h"
 
-#ifdef  __cplusplus
-extern "C" {
-#endif
-
 int lSplit(lList **slp, lList **ulp, const char *ulp_name, const lCondition *cp);
 
 lListElem *
@@ -75,7 +71,3 @@ int lString2ListNone(const char *s, lList **lpp, const lDescr *dp, int nm, const
 
 int lDiffListStr(int nm, lList **lpp1, lList **lpp2);
 int lDiffListUlong(int nm, lList **lpp1, lList **lpp2);
-
-#ifdef  __cplusplus
-}
-#endif

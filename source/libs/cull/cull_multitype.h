@@ -36,10 +36,6 @@
 
 #include "cull/cull_list.h"
 
-#ifdef  __cplusplus
-extern "C" {
-#endif
-
 #define SGE_NO_ABORT    0
 #define SGE_DO_ABORT    1
 
@@ -261,7 +257,3 @@ lListElem *lGetElemHostFirstRW(const lList *lp, int nm, const char *str, const v
 const lListElem *lGetElemHostFirst(const lList *lp, int nm, const char *str, const void **iterator);
 lListElem *lGetElemHostNextRW(const lList *lp, int nm, const char *str, const void **iterator);
 const lListElem *lGetElemHostNext(const lList *lp, int nm, const char *str, const void **iterator);
-
-#ifdef  __cplusplus
-}
-#endif

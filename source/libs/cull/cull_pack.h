@@ -34,10 +34,6 @@
 #include "cull/cull_list.h" 
 #include "cull/pack.h"
 
-#ifdef  __cplusplus
-extern "C" {
-#endif
-
 /*
  *
  *   lListElem
@@ -91,8 +87,3 @@ int cull_unpack_cond(sge_pack_buffer *pb, lCondition **cpp);
 int cull_pack_cond(sge_pack_buffer *pb, const lCondition *cp);
 
 void cull_dump_pack_buffer(sge_pack_buffer *pb, FILE *fp);
-
-
-#ifdef  __cplusplus
-}
-#endif

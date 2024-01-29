@@ -35,10 +35,6 @@
 #include "cull/cull_list.h"
 #include "uti/sge_dstring.h"
 
-#ifdef  __cplusplus
-extern "C" {
-#endif
-
 void cull_state_set_lerrno(int i);
 void cull_state_set_noinit(char *s);
 void cull_state_set_global_sort_order(const lSortOrder *so);
@@ -54,8 +50,4 @@ const lNameSpace *cull_state_get_name_space(void);
 void cull_state_set_observe_started(bool started);
 dstring *cull_state_get_observe_dstring(void);
 bool cull_state_get_observe_started(void);
-#endif
-
-#ifdef  __cplusplus
-}
 #endif

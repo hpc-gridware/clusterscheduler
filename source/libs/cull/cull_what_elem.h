@@ -33,13 +33,5 @@
 
 #include "cull/cull_list.h"
 
-#ifdef  __cplusplus
-extern "C" {
-#endif
-
 lListElem *lWhatToElem(const lEnumeration *where);
 lEnumeration *lWhatFromElem(const lListElem *what);
-
-#ifdef  __cplusplus
-}
-#endif

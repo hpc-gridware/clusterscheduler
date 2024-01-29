@@ -33,16 +33,8 @@
 
 #include "cull/cull_list.h"
 
-#ifdef  __cplusplus
-extern "C" {
-#endif
-
 #include "uti/sge_dstring.h"
 
 void lWriteWhatTo(const lEnumeration *ep, FILE *fp);
 
 void lWriteWhatToDString(const lEnumeration *ep, dstring *buffer);
-
-#ifdef  __cplusplus
-}
-#endif

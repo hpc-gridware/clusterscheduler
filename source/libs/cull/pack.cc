@@ -297,7 +297,7 @@ int packint(sge_pack_buffer *pb, u_long32 i)
       if (pb->bytes_used + INTSIZE > pb->mem_size) {
          DPRINTF(("realloc(%d + %d)\n", pb->mem_size, CHUNK));
          pb->mem_size += CHUNK;
-         pb->head_ptr = sge_realloc(pb->head_ptr, pb->mem_size, 0);
+         pb->head_ptr = (char *)sge_realloc(pb->head_ptr, pb->mem_size, 0);
          if (!pb->head_ptr) {
             DRETURN(PACK_ENOMEM);
          }
@@ -339,7 +339,7 @@ int packint64(sge_pack_buffer *pb, u_long64 i)
       if (pb->bytes_used + (INTSIZE * 2) > pb->mem_size) {
          DPRINTF(("realloc(%d + %d)\n", pb->mem_size, CHUNK));
          pb->mem_size += CHUNK;
-         pb->head_ptr = sge_realloc(pb->head_ptr, pb->mem_size, 0);
+         pb->head_ptr = (char *)sge_realloc(pb->head_ptr, pb->mem_size, 0);
          if (!pb->head_ptr) {
             DRETURN(PACK_ENOMEM);
          }
@@ -374,7 +374,7 @@ int packdouble(sge_pack_buffer *pb, double d) {
       if (pb->bytes_used + DOUBLESIZE > pb->mem_size) {
          DPRINTF(("realloc(%d + %d)\n", pb->mem_size, CHUNK));
          pb->mem_size += CHUNK;
-         pb->head_ptr = sge_realloc(pb->head_ptr, pb->mem_size, 0);
+         pb->head_ptr = (char *)sge_realloc(pb->head_ptr, pb->mem_size, 0);
          if (!pb->head_ptr) {
             DRETURN(PACK_ENOMEM);
          }
@@ -427,7 +427,7 @@ int packstr(sge_pack_buffer *pb, const char *str)
             /* realloc */
             DPRINTF(("realloc(%d + %d)\n", pb->mem_size, CHUNK));
             pb->mem_size += CHUNK;
-            pb->head_ptr = sge_realloc(pb->head_ptr, pb->mem_size, 0);
+            pb->head_ptr = (char *)sge_realloc(pb->head_ptr, pb->mem_size, 0);
             if (!pb->head_ptr) {
                DRETURN(PACK_ENOMEM);
             }
@@ -450,7 +450,7 @@ int packstr(sge_pack_buffer *pb, const char *str)
             DPRINTF(("realloc(%d + %d)\n", pb->mem_size, CHUNK));
             while ((pb->bytes_used + n) > pb->mem_size)
                pb->mem_size += CHUNK;
-            pb->head_ptr = sge_realloc(pb->head_ptr, pb->mem_size, 0);
+            pb->head_ptr = (char *)sge_realloc(pb->head_ptr, pb->mem_size, 0);
             if (!pb->head_ptr) {
                DRETURN(PACK_ENOMEM);
             }
@@ -539,7 +539,7 @@ u_long32 buf_size
          /* realloc */
          DPRINTF(("realloc(%d + %d)\n", pb->mem_size, CHUNK));
          pb->mem_size += CHUNK;
-         pb->head_ptr = sge_realloc(pb->head_ptr, pb->mem_size, 0);
+         pb->head_ptr = (char *)sge_realloc(pb->head_ptr, pb->mem_size, 0);
          if (!(pb->head_ptr)) {
             DRETURN(PACK_ENOMEM);
          }
@@ -797,7 +797,7 @@ int unpackbitfield(sge_pack_buffer *pb, bitfield *bitfield, int descr_size)
    }
 
    /* size may not be bigger than bitfield initialized from descr information */
-   if (size > descr_size) {
+   if (size > (u_int)descr_size) {
       DRETURN(PACK_ENOMEM);
    }
 
@@ -887,7 +887,7 @@ pb_are_equivalent(sge_pack_buffer *pb1, sge_pack_buffer *pb2)
 void
 pb_print_to(sge_pack_buffer *pb, bool only_header, FILE* file)
 {
-   int i;
+   size_t i;
 
    fprintf(file, "head_ptr: %p\n", pb->head_ptr);
    fprintf(file, "cur_ptr: %p\n", pb->cur_ptr);

@@ -303,7 +303,7 @@ lList *lJoin(const char *name, int nm0, const lList *lp0,
    lList *dlp = NULL;
    lDescr *dp;
    int lp0_pos = 0, lp1_pos = 0;
-   int i, j;
+   u_int i, j;
    int needed;
 
    DENTER(CULL_LAYER);

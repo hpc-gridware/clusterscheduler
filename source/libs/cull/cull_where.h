@@ -31,10 +31,6 @@
  ************************************************************************/
 /*___INFO__MARK_END__*/
 
-#ifdef  __cplusplus
-extern "C" {
-#endif
-
 int lCompare(const lListElem *ep, const lCondition *cp);
 void lWriteWhereTo(const lCondition *cp, FILE *fp);
 lCondition *lWhere(const char *fmt, ...);
@@ -46,7 +42,3 @@ lCondition *lAndWhere(const lCondition *cp0, const lCondition *cp1);
 
 lCondition *lWhereFromElem(const lListElem *where);
 lListElem *lWhereToElem(const lCondition *where);
-
-#ifdef  __cplusplus
-}
-#endif

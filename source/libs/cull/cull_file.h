@@ -34,14 +34,7 @@
 #include "cull/cull_list.h" 
 #include "cull/pack.h"
 
-#ifdef  __cplusplus
-extern "C" {
-#endif
-
 int lWriteElemToDisk(const lListElem *ep, const char *prefix, const char *name, const char *obj_name);
 
 lListElem *lReadElemFromDisk(const char *prefix, const char *name, const lDescr *type, const char *obj_name);
 
-#ifdef  __cplusplus
-}
-#endif

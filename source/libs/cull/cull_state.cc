@@ -290,7 +290,7 @@ static void cull_state_destroy(void* theState)
 *******************************************************************************/
 static cull_state_t* cull_state_getspecific(pthread_key_t aKey)
 {
-   cull_state_t *cull_state = pthread_getspecific(aKey);
+   cull_state_t *cull_state = (cull_state_t *)pthread_getspecific(aKey);
 
    if (cull_state == NULL) { 
       int res = EINVAL;

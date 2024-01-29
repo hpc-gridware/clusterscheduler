@@ -33,10 +33,6 @@
 /*___INFO__MARK_END__*/
 
 
-#ifdef  __cplusplus
-extern "C" {
-#endif
-
 /* to make cull parsing reentrant */
 typedef struct {
    int         token_is_valid;       /* state of cull token parser    */
@@ -91,7 +87,3 @@ enum {
    BRA,
    KET
 };
-
-#ifdef  __cplusplus
-}
-#endif
