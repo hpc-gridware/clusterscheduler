@@ -12,3 +12,6 @@ cvs_update.*
 ._*
 .idea
 .clion.source.upload.marker
+
+# clion build
+cmake-build-debug
