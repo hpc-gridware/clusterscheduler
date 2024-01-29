@@ -55,7 +55,7 @@ check_reprioritize_interval(sge_gdi_ctx_class_t *ctx, lList **alpp, char *ruser,
 int
 sge_read_sched_configuration(sge_gdi_ctx_class_t *ctx, const lListElem *aSpoolContext, lList **anAnswer) {
    lList *sched_conf = NULL;
-   bool job_spooling = ctx->get_job_spooling(ctx);
+   bool job_spooling = bootstrap_get_job_spooling();
 
    DENTER(TOP_LAYER);
 

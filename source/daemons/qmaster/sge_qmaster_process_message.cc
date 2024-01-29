@@ -204,7 +204,7 @@ do_gdi_packet(sge_gdi_ctx_class_t *ctx, lList **answer_list, struct_msg_t *aMsg,
                                                  &(packet->gid), packet->group, sizeof(packet->group));
    }
    if (local_ret) {
-      const char *admin_user = ctx->get_admin_user(ctx);
+      const char *admin_user = bootstrap_get_admin_user();
       const char *progname = uti_state_get_sge_formal_prog_name();
 
       if (!sge_security_verify_user(packet->host, packet->commproc,
@@ -254,7 +254,7 @@ do_gdi_packet(sge_gdi_ctx_class_t *ctx, lList **answer_list, struct_msg_t *aMsg,
 static void
 do_report_request(sge_gdi_ctx_class_t *ctx, struct_msg_t *aMsg, monitoring_t *monitor) {
    lList *rep = NULL;
-   const char *admin_user = ctx->get_admin_user(ctx);
+   const char *admin_user = bootstrap_get_admin_user();
    const char *myprogname = uti_state_get_sge_formal_prog_name();
    sge_gdi_packet_class_t *packet = NULL;
 
@@ -340,7 +340,7 @@ do_event_client_exit(sge_gdi_ctx_class_t *ctx, struct_msg_t *aMsg, monitoring_t 
    **       with the request owner
    */
    if (client_id == 1) {
-      const char *admin_user = ctx->get_admin_user(ctx);
+      const char *admin_user = bootstrap_get_admin_user();
       const char *myprogname = uti_state_get_sge_formal_prog_name();
       if (false == sge_security_verify_unique_identifier(true, admin_user, myprogname, 0,
                                                          aMsg->snd_host, aMsg->snd_name, aMsg->snd_id)) {
@@ -370,7 +370,7 @@ do_event_client_exit(sge_gdi_ctx_class_t *ctx, struct_msg_t *aMsg, monitoring_t 
 static void
 do_c_ack(sge_gdi_ctx_class_t *ctx, struct_msg_t *aMsg, monitoring_t *monitor) {
    u_long32 ack_tag, ack_ulong, ack_ulong2;
-   const char *admin_user = ctx->get_admin_user(ctx);
+   const char *admin_user = bootstrap_get_admin_user();
    const char *myprogname = uti_state_get_sge_formal_prog_name();
    lListElem *ack = NULL;
 
@@ -431,7 +431,7 @@ static void
 sge_c_job_ack(sge_gdi_ctx_class_t *ctx, const char *host, const char *commproc, u_long32 ack_tag,
               u_long32 ack_ulong, u_long32 ack_ulong2, const char *ack_str, monitoring_t *monitor) {
    lList *answer_list = NULL;
-   bool job_spooling = ctx->get_job_spooling(ctx);
+   bool job_spooling = bootstrap_get_job_spooling();
 
    DENTER(TOP_LAYER);
 

@@ -554,7 +554,7 @@ hgroup_spool(sge_gdi_ctx_class_t *ctx, lList **answer_list, lListElem *this_elem
    const lListElem *cqueue = NULL;
    dstring key_dstring = DSTRING_INIT;
    lList *spool_answer_list = NULL;
-   bool job_spooling = ctx->get_job_spooling(ctx);
+   bool job_spooling = bootstrap_get_job_spooling();
 
    DENTER(TOP_LAYER);
 

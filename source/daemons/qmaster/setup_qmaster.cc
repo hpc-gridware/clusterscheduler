@@ -247,7 +247,6 @@ sge_qmaster_thread_init(sge_gdi_ctx_class_t **ctx_ref, u_long32 prog_id, u_long3
                         bool switch_to_admin_user) {
    const char *admin_user = NULL;
    lList *alp = NULL;
-   sge_gdi_ctx_class_t *ctx = NULL;
 
    DENTER(TOP_LAYER);
 
@@ -257,10 +256,9 @@ sge_qmaster_thread_init(sge_gdi_ctx_class_t **ctx_ref, u_long32 prog_id, u_long3
       answer_list_output(&alp);
       SGE_EXIT((void **) ctx_ref, 1);
    }
-   ctx = *ctx_ref;
    reresolve_qualified_hostname();
    DEBUG((SGE_EVENT, "%s: qualified hostname \"%s\"\n", __func__, uti_state_get_qualified_hostname()));
-   admin_user = ctx->get_admin_user(ctx);
+   admin_user = bootstrap_get_admin_user();
 
    if (switch_to_admin_user == true) {
       char str[MAX_STRING_SIZE];
@@ -606,7 +604,7 @@ communication_setup(sge_gdi_ctx_class_t *ctx) {
 
    const char *qualified_hostname = uti_state_get_qualified_hostname();
    u_long32 qmaster_port = ctx->get_sge_qmaster_port(ctx);
-   const char *qmaster_spool_dir = ctx->get_qmaster_spool_dir(ctx);
+   const char *qmaster_spool_dir = bootstrap_get_qmaster_spool_dir();
 
    DENTER(TOP_LAYER);
 
@@ -821,7 +819,7 @@ setup_qmaster(sge_gdi_ctx_class_t *ctx) {
    monitoring_t monitor;
    const char *qualified_hostname = NULL;
 
-   bool job_spooling = ctx->get_job_spooling(ctx);
+   bool job_spooling = bootstrap_get_job_spooling();
    DENTER(TOP_LAYER);
 
    if (first) {
@@ -1150,13 +1148,13 @@ setup_qmaster(sge_gdi_ctx_class_t *ctx) {
       sge_dstring_free(&host_domain);
    }
 
-   if (!ctx->get_job_spooling(ctx)) {
+   if (!bootstrap_get_job_spooling()) {
       lList *answer_list = NULL;
       dstring buffer = DSTRING_INIT;
 
       INFO((SGE_EVENT, "job spooling is disabled - removing spooled jobs"));
 
-      ctx->set_job_spooling(ctx, true);
+      bootstrap_set_job_spooling(true);
 
       for_each_rw(jep, *object_type_get_master_list(SGE_TYPE_JOB)) {
          u_long32 job_id = lGetUlong(jep, JB_job_number);
@@ -1176,7 +1174,7 @@ setup_qmaster(sge_gdi_ctx_class_t *ctx) {
       }
       answer_list_output(&answer_list);
       sge_dstring_free(&buffer);
-      ctx->set_job_spooling(ctx, true);
+      bootstrap_set_job_spooling(true);
    }
 
    /* 

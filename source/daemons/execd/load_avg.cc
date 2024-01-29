@@ -196,7 +196,7 @@ static int
 execd_add_load_report(sge_gdi_ctx_class_t *ctx, lList *report_list, u_long32 now, u_long32 *next_send) 
 {
    const char* qualified_hostname = uti_state_get_qualified_hostname();
-   const char* binary_path = ctx->get_binary_path(ctx);
+   const char* binary_path = bootstrap_get_binary_path();
 
    DENTER(TOP_LAYER);
 

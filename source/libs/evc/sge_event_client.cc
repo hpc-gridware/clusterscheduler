@@ -1401,7 +1401,7 @@ ec2_register_local(sge_evc_class_t *thiz, bool exit_on_qmaster_down, lList** alp
          const char *rhost = NULL;
          sge_gdi_ctx_class_t *gdi_ctx = thiz->get_gdi_ctx(thiz); 
          if (gdi_ctx != NULL) {
-            ruser = gdi_ctx->get_admin_user(gdi_ctx);
+            ruser = bootstrap_get_admin_user();
             rhost = gdi_ctx->get_master(gdi_ctx, false);
          }
          /*
@@ -2505,7 +2505,7 @@ static bool ec2_commit_local(sge_evc_class_t *thiz, lList **alpp)
       local_t *evc_local = &(thiz->ec_local);
       sge_gdi_ctx_class_t *gdi_ctx = thiz->get_gdi_ctx(thiz); 
       if (gdi_ctx != NULL) {
-         ruser = gdi_ctx->get_admin_user(gdi_ctx);
+         ruser = bootstrap_get_admin_user();
          rhost = gdi_ctx->get_master(gdi_ctx, false);
       }
       lSetRef(sge_evc->ec, EV_update_function, (void *)evc_local->update_func);

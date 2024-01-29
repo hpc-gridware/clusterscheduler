@@ -271,7 +271,7 @@ userprj_spool(sge_gdi_ctx_class_t *ctx, lList **alpp, lListElem *upe, gdi_object
    lList *answer_list = NULL;
    bool dbret;
    int user_flag = (object->target == SGE_UU_LIST) ? 1 : 0;
-   bool job_spooling = ctx->get_job_spooling(ctx);
+   bool job_spooling = bootstrap_get_job_spooling();
 
    DENTER(TOP_LAYER);
 
@@ -443,7 +443,7 @@ verify_project_list(lList **alpp, const lList *name_list, const lList *prj_list,
 void
 sge_automatic_user_cleanup_handler(sge_gdi_ctx_class_t *ctx, te_event_t anEvent, monitoring_t *monitor) {
    u_long32 auto_user_delete_time = mconf_get_auto_user_delete_time();
-   const char *admin = ctx->get_admin_user(ctx);
+   const char *admin = bootstrap_get_admin_user();
    const char *qmaster_host = uti_state_get_qualified_hostname();
 
    DENTER(TOP_LAYER);
@@ -577,7 +577,7 @@ static int do_add_auto_user(sge_gdi_ctx_class_t *ctx, lListElem *anUser, lList *
    gdi_object_t *userList = NULL;
    lList *tmpAnswer = NULL;
    lList *ppList = NULL;
-   const char *admin_user = ctx->get_admin_user(ctx);
+   const char *admin_user = bootstrap_get_admin_user();
    const char *qualified_hostname = uti_state_get_qualified_hostname();
 
    DENTER(TOP_LAYER);

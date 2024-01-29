@@ -238,11 +238,11 @@ main(int argc, char **argv) {
    }
 #endif
 
-   if (ctx->get_qmaster_spool_dir(ctx) != NULL) {
+   if (bootstrap_get_qmaster_spool_dir() != NULL) {
       char *shadowd_name = SGE_SHADOWD;
 
       /* is there a running shadowd on this host (with unqualified name) */
-      sprintf(shadowd_pidfile, "%s/"SHADOWD_PID_FILE, ctx->get_qmaster_spool_dir(ctx), uti_state_get_unqualified_hostname());
+      sprintf(shadowd_pidfile, "%s/"SHADOWD_PID_FILE, bootstrap_get_qmaster_spool_dir(), uti_state_get_unqualified_hostname());
 
       DPRINTF(("pidfilename: %s\n", shadowd_pidfile));
       if ((shadowd_pid = sge_readpid(shadowd_pidfile))) {
@@ -256,7 +256,7 @@ main(int argc, char **argv) {
       ctx->prepare_enroll(ctx);
 
       /* is there a running shadowd on this host (with aliased name) */
-      sprintf(shadowd_pidfile, "%s/"SHADOWD_PID_FILE, ctx->get_qmaster_spool_dir(ctx), uti_state_get_qualified_hostname());
+      sprintf(shadowd_pidfile, "%s/"SHADOWD_PID_FILE, bootstrap_get_qmaster_spool_dir(), uti_state_get_qualified_hostname());
       DPRINTF(("pidfilename: %s\n", shadowd_pidfile));
       if ((shadowd_pid = sge_readpid(shadowd_pidfile))) {
          DPRINTF(("shadowd_pid: "sge_U32CFormat"\n", sge_u32c(shadowd_pid)));
@@ -273,17 +273,17 @@ main(int argc, char **argv) {
       SGE_EXIT((void **) &ctx, 0);
    }
 
-   if (ctx->get_qmaster_spool_dir(ctx) == NULL) {
+   if (bootstrap_get_qmaster_spool_dir() == NULL) {
       CRITICAL((SGE_EVENT, MSG_SHADOWD_CANTREADQMASTERSPOOLDIRFROMX_S, ctx->get_bootstrap_file(ctx)));
       SGE_EXIT((void **) &ctx, 1);
    }
 
-   if (chdir(ctx->get_qmaster_spool_dir(ctx))) {
-      CRITICAL((SGE_EVENT, MSG_SHADOWD_CANTCHANGETOQMASTERSPOOLDIRX_S, ctx->get_qmaster_spool_dir(ctx)));
+   if (chdir(bootstrap_get_qmaster_spool_dir())) {
+      CRITICAL((SGE_EVENT, MSG_SHADOWD_CANTCHANGETOQMASTERSPOOLDIRX_S, bootstrap_get_qmaster_spool_dir()));
       SGE_EXIT((void **) &ctx, 1);
    }
 
-   if (sge_set_admin_username(ctx->get_admin_user(ctx), err_str)) {
+   if (sge_set_admin_username(bootstrap_get_admin_user(), err_str)) {
       CRITICAL((SGE_EVENT, SFNMAX, err_str));
       SGE_EXIT((void **) &ctx, 1);
    }
@@ -360,7 +360,7 @@ main(int argc, char **argv) {
                                            ctx->get_act_qmaster_file(ctx),
                                            ctx->get_shadow_master_file(ctx),
                                            uti_state_get_qualified_hostname(),
-                                           ctx->get_binary_path(ctx));
+                                           bootstrap_get_binary_path());
 
                if (ret == 0) {
                   /* we can start a qmaster on this host */

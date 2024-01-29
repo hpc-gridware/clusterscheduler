@@ -1220,10 +1220,7 @@ int main(int argc, char *argv[]) {
       sge_dstring_init(&bw, buffer, sizeof(buffer)); 
 
       sge_setup_paths(QPING, sge_get_default_cell(), &bw);
-      if (sge_bootstrap(path_state_get_bootstrap_file(), NULL) != true) {
-         fprintf(stderr,"please use option -ssl or -tcp to bypass bootstrap file read\n");
-         exit(1);
-      }
+      bootstrap_mt_init();
 #ifdef SECURE
       got_no_framework = 1;
 #endif

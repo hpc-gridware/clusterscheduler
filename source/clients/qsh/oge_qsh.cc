@@ -1383,9 +1383,7 @@ int main(int argc, char **argv)
    const char* username = NULL;
    const char* mastername = NULL;
    COMM_HANDLE *comm_handle = NULL;
-
    sge_gdi_ctx_class_t *ctx = NULL;
-   sge_bootstrap_state_class_t *bootstrap_state = NULL;
 
    DENTER_MAIN(TOP_LAYER, "qsh");
 
@@ -1421,8 +1419,7 @@ int main(int argc, char **argv)
    username = ctx->get_username(ctx);
    mastername = ctx->get_master(ctx, false);
 
-   bootstrap_state = ctx->get_sge_bootstrap_state(ctx);
-   if (strcasecmp(bootstrap_state->get_security_mode(bootstrap_state), "csp") == 0) {
+   if (strcasecmp(bootstrap_get_security_mode(), "csp") == 0) {
       csp_mode = true;
    }
 

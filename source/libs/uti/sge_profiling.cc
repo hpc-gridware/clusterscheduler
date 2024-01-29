@@ -2009,7 +2009,7 @@ thread_output_profiling(const char *title, time_t *next_prof_output) {
       time_t now = (time_t) sge_get_gmt();
 
       if (*next_prof_output == 0) {
-         unsigned int seed = (unsigned int) pthread_self();
+         unsigned int seed = (unsigned int)(unsigned long)(pthread_self());
          *next_prof_output = now + (rand_r(&seed) % 20);
       } else {
          if (now >= *next_prof_output) {

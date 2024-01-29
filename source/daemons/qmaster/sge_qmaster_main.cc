@@ -321,8 +321,8 @@ int main(int argc, char *argv[]) {
     * now we become admin user change into the correct root directory set the
     * the target for logging messages
     */
-   sge_become_admin_user(ctx->get_admin_user(ctx));
-   sge_chdir_exit(ctx->get_qmaster_spool_dir(ctx), 1);
+   sge_become_admin_user(bootstrap_get_admin_user());
+   sge_chdir_exit(bootstrap_get_qmaster_spool_dir(), 1);
    log_state_set_log_file(ERR_FILE);
    uti_state_set_exit_func(sge_exit_func);
 

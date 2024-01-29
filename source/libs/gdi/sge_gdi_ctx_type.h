@@ -67,7 +67,6 @@ struct sge_gdi_ctx_class_str {
   
    sge_env_state_class_t* (*get_sge_env_state)(sge_gdi_ctx_class_t *thiz);
    sge_path_state_class_t* (*get_sge_path_state)(sge_gdi_ctx_class_t *thiz);
-   sge_bootstrap_state_class_t* (*get_sge_bootstrap_state)(sge_gdi_ctx_class_t *thiz);
 
    int (*prepare_enroll)(sge_gdi_ctx_class_t *thiz);
    int (*connect)(sge_gdi_ctx_class_t *thiz);
@@ -79,9 +78,6 @@ struct sge_gdi_ctx_class_str {
    u_long32 (*get_sge_execd_port)(sge_gdi_ctx_class_t *thiz);
    const char* (*get_component_name)(sge_gdi_ctx_class_t *thiz);
    const char* (*get_thread_name)(sge_gdi_ctx_class_t *thiz);
-   const char* (*get_admin_user)(sge_gdi_ctx_class_t *thiz);
-   const char* (*get_binary_path)(sge_gdi_ctx_class_t *thiz);
-   const char* (*get_qmaster_spool_dir)(sge_gdi_ctx_class_t *thiz);
    const char* (*get_bootstrap_file)(sge_gdi_ctx_class_t *thiz);
    const char* (*get_act_qmaster_file)(sge_gdi_ctx_class_t *thiz);
    const char* (*get_shadow_master_file)(sge_gdi_ctx_class_t *thiz);
@@ -89,14 +85,7 @@ struct sge_gdi_ctx_class_str {
    const char* (*get_reporting_file)(sge_gdi_ctx_class_t *thiz);
    const char* (*get_cell_root)(sge_gdi_ctx_class_t *thiz);
    const char* (*get_sge_root)(sge_gdi_ctx_class_t *thiz);
-   bool (*get_job_spooling)(sge_gdi_ctx_class_t *thiz);
-   void (*set_job_spooling)(sge_gdi_ctx_class_t *thiz, bool job_spooling);
-   u_long32 (*get_listener_thread_count)(sge_gdi_ctx_class_t *thiz);
-   u_long32 (*get_worker_thread_count)(sge_gdi_ctx_class_t *thiz);
-   u_long32 (*get_scheduler_thread_count)(sge_gdi_ctx_class_t *thiz);
-   const char* (*get_spooling_method)(sge_gdi_ctx_class_t *thiz);
-   const char* (*get_spooling_lib)(sge_gdi_ctx_class_t *thiz);
-   const char* (*get_spooling_params)(sge_gdi_ctx_class_t *thiz);
+
    const char* (*get_username)(sge_gdi_ctx_class_t *thiz);
    const char* (*get_groupname)(sge_gdi_ctx_class_t *thiz);
    uid_t (*get_uid)(sge_gdi_ctx_class_t *thiz);

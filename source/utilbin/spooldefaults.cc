@@ -100,9 +100,9 @@ static int init_framework(sge_gdi_ctx_class_t *ctx)
 
    lList *answer_list = NULL;
    lListElem *spooling_context = NULL;
-   const char *spooling_method = ctx->get_spooling_method(ctx);
-   const char *spooling_lib = ctx->get_spooling_lib(ctx);
-   const char *spooling_params = ctx->get_spooling_params(ctx);
+   const char *spooling_method = bootstrap_get_spooling_method();
+   const char *spooling_lib = bootstrap_get_spooling_lib();
+   const char *spooling_params = bootstrap_get_spooling_params();
 
    DENTER(TOP_LAYER);
 

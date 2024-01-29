@@ -56,8 +56,8 @@
          rmon_menter (SGE_FUNC, NULL);                                       \
       }                                                                      \
    }
-
-#define DENTER(layer)                                              \
+ 
+#define DENTER(layer)                                                        \
    static const int xaybzc = layer;                                          \
                                                                              \
    if (rmon_condition(xaybzc, TRACE)) {                                      \

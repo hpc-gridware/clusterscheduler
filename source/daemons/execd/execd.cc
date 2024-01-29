@@ -300,7 +300,7 @@ int main(int argc, char **argv)
 
    /* test load sensor (internal or external) */
    {
-      lList *report_list = sge_build_load_report(uti_state_get_qualified_hostname(), ctx->get_binary_path(ctx));
+      lList *report_list = sge_build_load_report(uti_state_get_qualified_hostname(), bootstrap_get_binary_path());
       lFreeList(&report_list);
    }
    

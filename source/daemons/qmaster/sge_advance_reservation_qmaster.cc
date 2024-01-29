@@ -168,7 +168,7 @@ ar_initialize_timer(sge_gdi_ctx_class_t *ctx, lList **answer_list, monitoring_t 
          spool_delete_object(answer_list, spool_get_default_context(),
                              SGE_TYPE_AR,
                              sge_dstring_get_string(&buffer),
-                             ctx->get_job_spooling(ctx));
+                             bootstrap_get_job_spooling());
 
          sge_dstring_free(&buffer);
       }
@@ -350,7 +350,7 @@ DRETURN(STATUS_NOTOK_DOAGAIN);
 int ar_spool(sge_gdi_ctx_class_t *ctx, lList **alpp, lListElem *ep, gdi_object_t *object) {
    lList *answer_list = NULL;
    bool dbret;
-   bool job_spooling = ctx->get_job_spooling(ctx);
+   bool job_spooling = bootstrap_get_job_spooling();
    dstring buffer = DSTRING_INIT;
 
    DENTER(TOP_LAYER);

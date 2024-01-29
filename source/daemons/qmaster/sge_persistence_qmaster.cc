@@ -55,9 +55,9 @@ sge_initialize_persistence(sge_gdi_ctx_class_t *ctx, lList **answer_list) {
    bool ret = true;
 
    lListElem *spooling_context;
-   const char *spooling_method = ctx->get_spooling_method(ctx);
-   const char *spooling_lib = ctx->get_spooling_lib(ctx);
-   const char *spooling_params = ctx->get_spooling_params(ctx);
+   const char *spooling_method = bootstrap_get_spooling_method();
+   const char *spooling_lib = bootstrap_get_spooling_lib();
+   const char *spooling_params = bootstrap_get_spooling_params();
 
    DENTER(TOP_LAYER);
 
@@ -223,7 +223,7 @@ sge_event_spool(sge_gdi_ctx_class_t *ctx, lList **answer_list, u_long32 timestam
    lListElem *element = NULL;
    bool do_delete = false;
    dstring buffer = DSTRING_INIT;
-   bool job_spooling = ctx->get_job_spooling(ctx);
+   bool job_spooling = bootstrap_get_job_spooling();
 
    DENTER(TOP_LAYER);
 

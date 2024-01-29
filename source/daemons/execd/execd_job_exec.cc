@@ -83,7 +83,7 @@ int do_job_exec(sge_gdi_ctx_class_t *ctx, struct_msg_t *aMsg, sge_pack_buffer *a
 {
    int ret = 1;
    u_long32 feature_set;
-   const char *admin_user = ctx->get_admin_user(ctx);
+   const char *admin_user = bootstrap_get_admin_user();
    const char *progname = uti_state_get_sge_formal_prog_name();
 
    DENTER(TOP_LAYER);

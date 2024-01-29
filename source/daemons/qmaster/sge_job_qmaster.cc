@@ -219,7 +219,7 @@ sge_gdi_add_job(sge_gdi_ctx_class_t *ctx, lListElem **jep, lList **alpp, lList *
    u_long32 start;
    u_long32 end;
    u_long32 step;
-   bool job_spooling = ctx->get_job_spooling(ctx);
+   bool job_spooling = bootstrap_get_job_spooling();
    cl_thread_settings_t *tc = cl_thread_get_thread_config();
    lList **master_job_list = object_type_get_master_list_rw(SGE_TYPE_JOB);
    lList **master_suser_list = object_type_get_master_list_rw(SGE_TYPE_SUSER);
@@ -1076,7 +1076,7 @@ void get_rid_of_job_due_to_qdel(sge_gdi_ctx_class_t *ctx,
 void job_mark_job_as_deleted(sge_gdi_ctx_class_t *ctx,
                              lListElem *j,
                              lListElem *t) {
-   bool job_spooling = ctx->get_job_spooling(ctx);
+   bool job_spooling = bootstrap_get_job_spooling();
 
    DENTER(TOP_LAYER);
    if (j && t) {
@@ -1148,7 +1148,7 @@ int sge_gdi_mod_job(
    bool job_name_flag = false;
    char *job_mod_name = NULL;
    const char *job_name = NULL;
-   bool job_spooling = ctx->get_job_spooling(ctx);
+   bool job_spooling = bootstrap_get_job_spooling();
    const lList *master_manager_list = *object_type_get_master_list(SGE_TYPE_MANAGER);
    const lList *master_operator_list = *object_type_get_master_list(SGE_TYPE_OPERATOR);
    lList **master_job_list = object_type_get_master_list_rw(SGE_TYPE_JOB);
@@ -3455,7 +3455,7 @@ int sge_gdi_copy_job(sge_gdi_ctx_class_t *ctx,
    const lListElem *old_jep;
    lListElem *new_jep;
    int dummy_trigger = 0;
-   bool job_spooling = ctx->get_job_spooling(ctx);
+   bool job_spooling = bootstrap_get_job_spooling();
    const lList *master_manager_list = *object_type_get_master_list(SGE_TYPE_MANAGER);
    const lList *master_job_list = *object_type_get_master_list(SGE_TYPE_JOB);
 
@@ -3533,7 +3533,7 @@ int sge_gdi_copy_job(sge_gdi_ctx_class_t *ctx,
 void sge_job_spool(sge_gdi_ctx_class_t *ctx) {
    lListElem *jep = NULL;
    lList *answer_list = NULL;
-   bool job_spooling = ctx->get_job_spooling(ctx);
+   bool job_spooling = bootstrap_get_job_spooling();
    lList *master_job_list = *object_type_get_master_list_rw(SGE_TYPE_JOB);
 
    DENTER(TOP_LAYER);
@@ -3541,7 +3541,7 @@ void sge_job_spool(sge_gdi_ctx_class_t *ctx) {
    if (!job_spooling) {
 
       /* the job spooling is disabled, we have to force the spooling */
-      ctx->set_job_spooling(ctx, true);
+      bootstrap_set_job_spooling(true);
 
       INFO((SGE_EVENT, "job spooling is disabled - spooling the jobs"));
 
@@ -3627,7 +3627,7 @@ void sge_job_spool(sge_gdi_ctx_class_t *ctx) {
       SGE_UNLOCK(LOCK_GLOBAL, LOCK_READ);
 
       /* reset spooling */
-      ctx->set_job_spooling(ctx, false);
+      bootstrap_set_job_spooling(false);
       answer_list_output(&answer_list);
    }
 
@@ -3936,7 +3936,7 @@ static int sge_delete_all_tasks_of_job(sge_gdi_ctx_class_t *ctx, lList **alpp, c
             spool_write_object(&answer_list, spool_get_default_context(),
                                job, job_get_job_key(job_number, &buffer),
                                SGE_TYPE_JOB,
-                               ctx->get_job_spooling(ctx));
+                               bootstrap_get_job_spooling());
             answer_list_output(&answer_list);
             lListElem_clear_changed_info(job);
             sge_dstring_free(&buffer);

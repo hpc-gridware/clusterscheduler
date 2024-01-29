@@ -226,9 +226,9 @@ sge_del_manop(sge_gdi_ctx_class_t *ctx, lListElem *ep, lList **alpp, char *ruser
    }
 
    /* prevent removing the admin user from man/op-list */
-   if (strcmp(manop_name, ctx->get_admin_user(ctx)) == 0) {
+   if (strcmp(manop_name, bootstrap_get_admin_user()) == 0) {
       ERROR((SGE_EVENT, MSG_SGETEXT_MAY_NOT_REMOVE_USER_FROM_LIST_SS,
-              ctx->get_admin_user(ctx), object_name));
+              bootstrap_get_admin_user(), object_name));
       answer_list_add(alpp, SGE_EVENT, STATUS_EEXIST, ANSWER_QUALITY_ERROR);
       DRETURN(STATUS_EEXIST);
    }

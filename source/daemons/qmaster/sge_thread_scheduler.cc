@@ -264,7 +264,7 @@ sge_scheduler_initialize(sge_gdi_ctx_class_t *ctx, lList **answer_list) {
        * There is no option. We have to start it.
        */
       if (Master_Scheduler.use_bootstrap == true) {
-         start_thread = ((ctx->get_scheduler_thread_count(ctx) > 0) ? true : false);
+         start_thread = ((bootstrap_get_scheduler_thread_count() > 0) ? true : false);
          Master_Scheduler.use_bootstrap = false;
       }
 

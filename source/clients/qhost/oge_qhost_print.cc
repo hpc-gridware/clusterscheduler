@@ -300,8 +300,7 @@ sge_print_host(sge_gdi_ctx_class_t *gdi_ctx, lListElem *hep, lList *centry_list,
    dstring rs = DSTRING_INIT;
    u_long32 dominant = 0;
    int ret = QHOST_SUCCESS;
-   sge_bootstrap_state_class_t *bootstrap_state = gdi_ctx->get_sge_bootstrap_state(gdi_ctx);
-   bool ignore_fqdn = bootstrap_state->get_ignore_fqdn(bootstrap_state); 
+   bool ignore_fqdn = bootstrap_get_ignore_fqdn();
    bool show_binding = ((show & QHOST_DISPLAY_BINDING) == QHOST_DISPLAY_BINDING) ? true : false;
 
    DENTER(TOP_LAYER);

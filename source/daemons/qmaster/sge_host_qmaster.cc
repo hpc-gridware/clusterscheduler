@@ -580,7 +580,7 @@ host_spool(sge_gdi_ctx_class_t *ctx, lList **alpp, lListElem *ep, gdi_object_t *
 
    int ret = 0;
    lList *answer_list = NULL;
-   bool job_spooling = ctx->get_job_spooling(ctx);
+   bool job_spooling = bootstrap_get_job_spooling();
 
    DENTER(TOP_LAYER);
 
@@ -1099,7 +1099,7 @@ notify(sge_gdi_ctx_class_t *ctx, lListElem *lel, sge_gdi_packet_class_t *packet,
    const lList *gdil;
    int mail_options;
    unsigned long last_heard_from;
-   bool job_spooling = ctx->get_job_spooling(ctx);
+   bool job_spooling = bootstrap_get_job_spooling();
    int result;
    lList *master_job_list = *object_type_get_master_list_rw(SGE_TYPE_JOB);
 

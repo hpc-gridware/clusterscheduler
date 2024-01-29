@@ -71,7 +71,7 @@ void sge_setup_sge_execd(sge_gdi_ctx_class_t *ctx, const char* tmp_err_file_name
    int allowed_get_conf_errors     = 5;
    char* spool_dir = NULL;
    const char *unqualified_hostname = uti_state_get_unqualified_hostname();
-   const char *admin_user = ctx->get_admin_user(ctx);
+   const char *admin_user = bootstrap_get_admin_user();
 
    DENTER(TOP_LAYER);
 

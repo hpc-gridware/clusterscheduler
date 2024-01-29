@@ -105,9 +105,6 @@ void sc_mt_init(void);
 typedef struct {
    sge_env_state_class_t* sge_env_state_obj;
    sge_path_state_class_t* sge_path_state_obj;
-#if 1
-   sge_bootstrap_state_class_t* sge_bootstrap_state_obj;
-#endif
    sge_csp_path_class_t* sge_csp_path_obj;
    
    char* component_name;
@@ -235,10 +232,8 @@ void sge_gdi_set_thread_local_ctx(sge_gdi_ctx_class_t* ctx) {
       tl->ctx = ctx;
 
       if (ctx != NULL) {
-         sge_bootstrap_state_set_thread_local(ctx->get_sge_bootstrap_state(ctx));
          log_state_set_log_context(ctx);
       } else {
-         sge_bootstrap_state_set_thread_local(NULL);
          log_state_set_log_context(NULL);
       }
    }   
@@ -261,30 +256,18 @@ static void sge_gdi_ctx_class_error(sge_gdi_ctx_class_t *thiz, int error_type, i
 static sge_env_state_class_t* get_sge_env_state(sge_gdi_ctx_class_t *thiz);
 static sge_path_state_class_t* get_sge_path_state(sge_gdi_ctx_class_t *thiz);
 static sge_csp_path_class_t* get_sge_csp_path(sge_gdi_ctx_class_t *thiz);
-static sge_bootstrap_state_class_t* get_sge_bootstrap_state(sge_gdi_ctx_class_t *thiz);
 static cl_com_handle_t* get_com_handle(sge_gdi_ctx_class_t *thiz);
 static const char* get_component_name(sge_gdi_ctx_class_t *thiz);
 static const char* get_thread_name(sge_gdi_ctx_class_t *thiz);
-static bool get_job_spooling(sge_gdi_ctx_class_t *thiz);
-static void set_job_spooling(sge_gdi_ctx_class_t *thiz, bool job_spooling);
-static u_long32 get_listener_thread_count(sge_gdi_ctx_class_t *thiz);
-static u_long32 get_worker_thread_count(sge_gdi_ctx_class_t *thiz);
-static u_long32 get_scheduler_thread_count(sge_gdi_ctx_class_t *thiz);
 static const char* get_master(sge_gdi_ctx_class_t *thiz, bool reread);
 static u_long32 get_sge_qmaster_port(sge_gdi_ctx_class_t *thiz);
 static u_long32 get_sge_execd_port(sge_gdi_ctx_class_t *thiz);
-static const char* get_spooling_method(sge_gdi_ctx_class_t *thiz);
-static const char* get_spooling_lib(sge_gdi_ctx_class_t *thiz);
-static const char* get_spooling_params(sge_gdi_ctx_class_t *thiz);
 static const char* get_username(sge_gdi_ctx_class_t *thiz);
 static const char* get_cell_root(sge_gdi_ctx_class_t *thiz);
 static const char* get_sge_root(sge_gdi_ctx_class_t *thiz);
 static const char* get_groupname(sge_gdi_ctx_class_t *thiz);
 static uid_t ctx_get_uid(sge_gdi_ctx_class_t *thiz);
 static gid_t ctx_get_gid(sge_gdi_ctx_class_t *thiz);
-static const char* get_admin_user(sge_gdi_ctx_class_t *thiz);
-static const char* get_binary_path(sge_gdi_ctx_class_t *thiz);
-static const char* get_qmaster_spool_dir(sge_gdi_ctx_class_t *thiz);
 static const char* get_bootstrap_file(sge_gdi_ctx_class_t *thiz);
 static const char* get_act_qmaster_file(sge_gdi_ctx_class_t *thiz);
 static const char* get_acct_file(sge_gdi_ctx_class_t *thiz);
@@ -347,24 +330,13 @@ sge_gdi_ctx_class_create(int prog_number, const char *component_name,
 
    ret->get_sge_env_state = get_sge_env_state;
    ret->get_sge_path_state = get_sge_path_state;
-   ret->get_sge_bootstrap_state = get_sge_bootstrap_state;
    ret->get_component_name = get_component_name;
    ret->get_thread_name = get_thread_name;
-   ret->get_job_spooling = get_job_spooling;
-   ret->set_job_spooling = set_job_spooling;
-   ret->get_listener_thread_count = get_listener_thread_count;
-   ret->get_worker_thread_count = get_worker_thread_count;
-   ret->get_scheduler_thread_count = get_scheduler_thread_count;
+
    ret->get_master = get_master;
    ret->get_sge_qmaster_port = get_sge_qmaster_port;
    ret->get_sge_execd_port = get_sge_execd_port;
    ret->get_username = get_username;
-   ret->get_spooling_method = get_spooling_method;
-   ret->get_spooling_lib = get_spooling_lib;
-   ret->get_spooling_params = get_spooling_params;
-   ret->get_admin_user = get_admin_user;
-   ret->get_binary_path = get_binary_path;
-   ret->get_qmaster_spool_dir = get_qmaster_spool_dir;
    ret->get_bootstrap_file = get_bootstrap_file;
    ret->get_act_qmaster_file = get_act_qmaster_file;
    ret->get_acct_file = get_acct_file;
@@ -405,7 +377,7 @@ sge_gdi_ctx_class_create(int prog_number, const char *component_name,
    }
 
 
-   if (!sge_gdi_ctx_setup(ret, prog_number, component_name, thread_number, thread_name, 
+   if (!sge_gdi_ctx_setup(ret, prog_number, component_name, thread_number, thread_name,
                           username, groupname, sge_root, sge_cell, sge_qmaster_port, 
                           sge_execd_port, from_services, is_qmaster_internal_client)) {
       sge_gdi_ctx_class_get_errors(ret, alpp, true);
@@ -543,34 +515,32 @@ sge_gdi_ctx_setup(sge_gdi_ctx_class_t *thiz, int prog_number, const char* compon
 
    es->sge_env_state_obj = sge_env_state_class_create(sge_root, sge_cell, sge_qmaster_port, sge_execd_port, from_services, qmaster_internal_client, eh);
    if (!es->sge_env_state_obj) {
+      CRITICAL((SGE_EVENT, "sge_env_state_class_create() failed"));
       DRETURN(false);
    }
 
    {
       sge_prog_state_class_t *p = sge_prog_state_class_create(es->sge_env_state_obj, prog_number, eh);
       if (!p) {
+         CRITICAL((SGE_EVENT, "sge_prog_state_class_create() failed"));
          DRETURN(false);
       }
    }
 
    es->sge_path_state_obj = sge_path_state_class_create(es->sge_env_state_obj, eh);
    if (!es->sge_path_state_obj) {
+      CRITICAL((SGE_EVENT, "sge_path_state_class_create() failed"));
       DRETURN(false);
    }
 
-#if 1
-   es->sge_bootstrap_state_obj = sge_bootstrap_state_class_create(es->sge_path_state_obj, eh);
-   if (!es->sge_bootstrap_state_obj) {
+   if (feature_initialize_from_string(bootstrap_get_security_mode())) {
+      CRITICAL((SGE_EVENT, "feature_initialize_from_string() failed"));
       DRETURN(false);
    }
-
-   if (feature_initialize_from_string(es->sge_bootstrap_state_obj->get_security_mode(es->sge_bootstrap_state_obj))) {
-      DRETURN(false);
-   }
-#endif
 
    es->sge_csp_path_obj = sge_csp_path_class_create(es->sge_env_state_obj, eh);
    if (!es->sge_csp_path_obj) {
+      CRITICAL((SGE_EVENT, "sge_csp_path_class_create() failed"));
       DRETURN(false);
    }   
 
@@ -681,9 +651,6 @@ static void sge_gdi_ctx_destroy(void *theState)
 
    sge_env_state_class_destroy(&(s->sge_env_state_obj));
    sge_path_state_class_destroy(&(s->sge_path_state_obj));
-#if 1
-   sge_bootstrap_state_class_destroy(&(s->sge_bootstrap_state_obj));
-#endif
    sge_csp_path_class_destroy(&(s->sge_csp_path_obj));
    sge_free(&(s->master));
    sge_free(&(s->username));
@@ -726,7 +693,6 @@ static int sge_gdi_ctx_class_connect(sge_gdi_ctx_class_t *thiz)
 static int sge_gdi_ctx_class_prepare_enroll(sge_gdi_ctx_class_t *thiz) {
    
    sge_path_state_class_t* path_state = thiz->get_sge_path_state(thiz);
-   sge_bootstrap_state_class_t * bootstrap_state = thiz->get_sge_bootstrap_state(thiz);
    cl_host_resolve_method_t resolve_method = CL_SHORT;
    cl_framework_t  communication_framework = CL_CT_TCP;
    cl_com_handle_t* handle = NULL;
@@ -793,10 +759,10 @@ static int sge_gdi_ctx_class_prepare_enroll(sge_gdi_ctx_class_t *thiz) {
 
    /* setup the resolve method */
       
-   if( bootstrap_state->get_ignore_fqdn(bootstrap_state) == false ) {
+   if (!bootstrap_get_ignore_fqdn()) {
       resolve_method = CL_LONG;
    }
-   if ((help = bootstrap_state->get_default_domain(bootstrap_state)) != NULL) {
+   if ((help = bootstrap_get_default_domain()) != NULL) {
       if (SGE_STRCASECMP(help, NONE_STR) != 0) {
          default_domain = help;
       }
@@ -868,7 +834,7 @@ static int sge_gdi_ctx_class_prepare_enroll(sge_gdi_ctx_class_t *thiz) {
       /*
       ** CSP initialize
       */
-      if (strcasecmp(bootstrap_state->get_security_mode(bootstrap_state), "csp") == 0) {
+      if (strcasecmp(bootstrap_get_security_mode(), "csp") == 0) {
          cl_ssl_setup_t *sec_ssl_setup_config = NULL;
          cl_ssl_cert_mode_t ssl_cert_mode = CL_SSL_PEM_FILE;
          sge_csp_path_class_t *sge_csp = get_sge_csp_path(thiz);
@@ -1176,7 +1142,7 @@ static void sge_gdi_ctx_class_dprintf(sge_gdi_ctx_class_t *ctx)
    (ctx->get_sge_env_state(ctx))->dprintf(ctx->get_sge_env_state(ctx)); 
    (ctx->get_sge_path_state(ctx))->dprintf(ctx->get_sge_path_state(ctx));
 #if 1
-   (ctx->get_sge_bootstrap_state(ctx))->dprintf(ctx->get_sge_bootstrap_state(ctx));
+   bootstrap_log_parameter();
 #endif
 
    DPRINTF(("master: %s\n", ctx->get_master(ctx, false)));
@@ -1270,74 +1236,6 @@ static const char* get_thread_name(sge_gdi_ctx_class_t *thiz) {
    ret = es->thread_name;
    DRETURN(ret);
 }
-
-#if 1
-
-static sge_bootstrap_state_class_t* get_sge_bootstrap_state(sge_gdi_ctx_class_t *thiz)
-{
-   sge_gdi_ctx_t *es = (sge_gdi_ctx_t *) thiz->sge_gdi_ctx_handle;
-   return es->sge_bootstrap_state_obj;
-}
-
-static bool get_job_spooling(sge_gdi_ctx_class_t *thiz) {
-   sge_bootstrap_state_class_t* bootstrap_state = thiz->get_sge_bootstrap_state(thiz);
-   return bootstrap_state->get_job_spooling(bootstrap_state);
-}
-
-static void set_job_spooling(sge_gdi_ctx_class_t *thiz, bool job_spooling) {
-   sge_bootstrap_state_class_t* bootstrap_state = thiz->get_sge_bootstrap_state(thiz);
-
-   bootstrap_state->set_job_spooling(bootstrap_state, job_spooling);
-}
-
-static const char* get_spooling_method(sge_gdi_ctx_class_t *thiz) {
-   sge_bootstrap_state_class_t* bootstrap_state = thiz->get_sge_bootstrap_state(thiz);
-   return bootstrap_state->get_spooling_method(bootstrap_state);
-}
-
-static const char* get_spooling_lib(sge_gdi_ctx_class_t *thiz) {
-   sge_bootstrap_state_class_t* bootstrap_state = thiz->get_sge_bootstrap_state(thiz);
-   return bootstrap_state->get_spooling_lib(bootstrap_state);
-}
-
-static const char* get_spooling_params(sge_gdi_ctx_class_t *thiz) {
-   sge_bootstrap_state_class_t* bootstrap_state = thiz->get_sge_bootstrap_state(thiz);
-
-   return bootstrap_state->get_spooling_params(bootstrap_state);
-}
-
-static u_long32 get_listener_thread_count(sge_gdi_ctx_class_t *thiz) {
-   sge_bootstrap_state_class_t* bootstrap_state = thiz->get_sge_bootstrap_state(thiz);
-
-   return bootstrap_state->get_listener_thread_count(bootstrap_state);
-}
-
-static u_long32 get_worker_thread_count(sge_gdi_ctx_class_t *thiz) {
-   sge_bootstrap_state_class_t* bootstrap_state = thiz->get_sge_bootstrap_state(thiz);
-   return bootstrap_state->get_worker_thread_count(bootstrap_state);
-}
-
-static u_long32 get_scheduler_thread_count(sge_gdi_ctx_class_t *thiz) {
-   sge_bootstrap_state_class_t* bootstrap_state = thiz->get_sge_bootstrap_state(thiz);
-   return bootstrap_state->get_scheduler_thread_count(bootstrap_state);
-}
-
-static const char* get_admin_user(sge_gdi_ctx_class_t *thiz) {
-   sge_bootstrap_state_class_t * bootstrap_state = thiz->get_sge_bootstrap_state(thiz);
-   return bootstrap_state->get_admin_user(bootstrap_state);
-}
-
-static const char* get_binary_path(sge_gdi_ctx_class_t *thiz) {
-   sge_bootstrap_state_class_t * bootstrap_state = thiz->get_sge_bootstrap_state(thiz);
-   return bootstrap_state->get_binary_path(bootstrap_state);
-}
-
-static const char* get_qmaster_spool_dir(sge_gdi_ctx_class_t *thiz) {
-   sge_bootstrap_state_class_t * bootstrap_state = thiz->get_sge_bootstrap_state(thiz);
-   return bootstrap_state->get_qmaster_spool_dir(bootstrap_state);
-}
-
-#endif
 
 static const char* get_private_key(sge_gdi_ctx_class_t *thiz) {
    sge_gdi_ctx_t *es = (sge_gdi_ctx_t *) thiz->sge_gdi_ctx_handle;

@@ -61,7 +61,7 @@ sge_listener_cleanup_monitor(monitoring_t *monitor) {
 
 void
 sge_listener_initialize(sge_gdi_ctx_class_t *ctx) {
-   const u_long32 max_initial_listener_threads = ctx->get_listener_thread_count(ctx);
+   const u_long32 max_initial_listener_threads = bootstrap_get_listener_thread_count();
    cl_thread_settings_t *dummy_thread_p = NULL;
    u_long32 i;
 
