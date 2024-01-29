@@ -40,51 +40,54 @@ extern "C" {
 #endif
 
 /**
-* @brief @todo add summary
+* @brief Job Granted Destination Identifier
 *
-* @todo add description
+* A list of such objects defines to which queue instance(s) a job has been scheduled.
+* For sequential jobs / tasks of an array job there is a single object of JG_Type.
+* In case of tightly integrated parallel jobs there is an object per queue instance.
+* The first object defines where the master task of the job is running.
 *
-*    SGE_STRING(JG_qname) - @todo add summary
-*    @todo add description
+*    SGE_STRING(JG_qname) - Queue Instance Name
+*    The queue instance name.
 *
-*    SGE_ULONG(JG_qversion) - @todo add summary
-*    @todo add description
+*    SGE_ULONG(JG_qversion) - Queue Version
+*    The qinstance's version. Is used to detect when a qinstance was changed during scheduling.
 *
-*    SGE_HOST(JG_qhostname) - @todo add summary
-*    @todo add description
+*    SGE_HOST(JG_qhostname) - Qualified Hostname
+*    The qualified host name of the queue instance.
+*    It is redundand (cached) information also contained in qname.
 *
-*    SGE_ULONG(JG_slots) - @todo add summary
-*    @todo add description
+*    SGE_ULONG(JG_slots) - Number of Slots
+*    The amount of slots the job occupies in the queue instance.
+*    Always 1 for sequential jobs / tasks of array jobs, >= 1 for parallel jobs
 *
-*    SGE_OBJECT(JG_queue) - @todo add summary
-*    @todo add description
+*    SGE_OBJECT(JG_queue) - Queue Object
+*    The queue instance definition with information required in sge_execd,
+*    like limits, the tmp directory, ...
 *
-*    SGE_ULONG(JG_tag_slave_job) - @todo add summary
-*    @todo add description
+*    SGE_ULONG(JG_tag_slave_job) - Tag for Slave Job Delivery
+*    Tag used in the job delivery protocol, is set when a slave host acknowledged receipt of the start order.
 *
-*    SGE_ULONG(JG_task_id_range) - @todo add summary
-*    @todo add description
+*    SGE_DOUBLE(JG_ticket) - Total Tickets
+*    Total amount of tickets assigned to slots.
 *
-*    SGE_DOUBLE(JG_ticket) - @todo add summary
-*    @todo add description
+*    SGE_DOUBLE(JG_oticket) - Override Tickets
+*    Override tickets assigned to slots.
 *
-*    SGE_DOUBLE(JG_oticket) - @todo add summary
-*    @todo add description
+*    SGE_DOUBLE(JG_fticket) - Functional Tickets
+*    Functional tickets assigned to slots.
 *
-*    SGE_DOUBLE(JG_fticket) - @todo add summary
-*    @todo add description
+*    SGE_DOUBLE(JG_sticket) - Sharetree Tickets
+*    Sharetree tickets assigned to slots.
 *
-*    SGE_DOUBLE(JG_sticket) - @todo add summary
-*    @todo add description
+*    SGE_DOUBLE(JG_jcoticket) - Job Class Override Tickets
+*    Job class override tickets.
 *
-*    SGE_DOUBLE(JG_jcoticket) - @todo add summary
-*    @todo add description
+*    SGE_DOUBLE(JG_jcfticket) - Job Class Functional Tickets
+*    Job class functional tickets.
 *
-*    SGE_DOUBLE(JG_jcfticket) - @todo add summary
-*    @todo add description
-*
-*    SGE_STRING(JG_processors) - @todo add summary
-*    @todo add description
+*    SGE_STRING(JG_processors) - Processor Set
+*    Processor set the job is supposed to run on (Solaris only?)
 *
 */
 
@@ -95,7 +98,6 @@ enum {
    JG_slots,
    JG_queue,
    JG_tag_slave_job,
-   JG_task_id_range,
    JG_ticket,
    JG_oticket,
    JG_fticket,
@@ -112,7 +114,6 @@ LISTDEF(JG_Type)
    SGE_ULONG(JG_slots, CULL_SUBLIST)
    SGE_OBJECT(JG_queue, CULL_ANY_SUBTYPE, CULL_DEFAULT)
    SGE_ULONG(JG_tag_slave_job, CULL_DEFAULT)
-   SGE_ULONG(JG_task_id_range, CULL_DEFAULT)
    SGE_DOUBLE(JG_ticket, CULL_DEFAULT)
    SGE_DOUBLE(JG_oticket, CULL_DEFAULT)
    SGE_DOUBLE(JG_fticket, CULL_DEFAULT)
@@ -129,7 +130,6 @@ NAMEDEF(JGN)
    NAME("JG_slots")
    NAME("JG_queue")
    NAME("JG_tag_slave_job")
-   NAME("JG_task_id_range")
    NAME("JG_ticket")
    NAME("JG_oticket")
    NAME("JG_fticket")

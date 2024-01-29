@@ -1,15 +1,18 @@
 {
 	"className":	"JobGrantedDestinationIdentifier",
-	"summary":	"@todo add summary",
+	"summary":	"Job Granted Destination Identifier",
 	"description":	[{
-			"line":	"@todo add description"
+			"line":	"A list of such objects defines to which queue instance(s) a job has been scheduled."
+			}, { "line":	"For sequential jobs / tasks of an array job there is a single object of JG_Type."
+			}, { "line":	"In case of tightly integrated parallel jobs there is an object per queue instance."
+			}, { "line":	"The first object defines where the master task of the job is running."
 		}],
 	"cullPrefix":	"JG",
 	"attributes":	[{
 			"name":	"qname",
-			"summary":	"@todo add summary",
+			"summary":	"Queue Instance Name",
 			"description":	[{
-					"line":	"@todo add description"
+					"line":	"The queue instance name."
 				}],
 			"type":	"lStringT",
 			"flags":	[{
@@ -23,9 +26,9 @@
 				}]
 		}, {
 			"name":	"qversion",
-			"summary":	"@todo add summary",
+			"summary":	"Queue Version",
 			"description":	[{
-					"line":	"@todo add description"
+					"line":	"The qinstance's version. Is used to detect when a qinstance was changed during scheduling."
 				}],
 			"type":	"lUlongT",
 			"flags":	[{
@@ -33,9 +36,10 @@
 				}]
 		}, {
 			"name":	"qhostname",
-			"summary":	"@todo add summary",
+			"summary":	"Qualified Hostname",
 			"description":	[{
-					"line":	"@todo add description"
+					"line":	"The qualified host name of the queue instance."
+					}, { "line":	"It is redundand (cached) information also contained in qname."
 				}],
 			"type":	"lHostT",
 			"flags":	[{
@@ -45,9 +49,10 @@
 				}]
 		}, {
 			"name":	"slots",
-			"summary":	"@todo add summary",
+			"summary":	"Number of Slots",
 			"description":	[{
-					"line":	"@todo add description"
+					"line":	"The amount of slots the job occupies in the queue instance."
+					}, { "line":	"Always 1 for sequential jobs / tasks of array jobs, >= 1 for parallel jobs"
 				}],
 			"type":	"lUlongT",
 			"flags":	[{
@@ -55,9 +60,10 @@
 				}]
 		}, {
 			"name":	"queue",
-			"summary":	"@todo add summary",
+			"summary":	"Queue Object",
 			"description":	[{
-					"line":	"@todo add description"
+					"line":	"The queue instance definition with information required in sge_execd,"
+					}, { "line":	"like limits, the tmp directory, ..."
 				}],
 			"type":	"lObjectT",
 			"subClassName":	"ANY",
@@ -69,19 +75,9 @@
 				}]
 		}, {
 			"name":	"tag_slave_job",
-			"summary":	"@todo add summary",
+			"summary":	"Tag for Slave Job Delivery",
 			"description":	[{
-					"line":	"@todo add description"
-				}],
-			"type":	"lUlongT",
-			"flags":	[{
-					"name":	"JGDI_HIDDEN"
-				}]
-		}, {
-			"name":	"task_id_range",
-			"summary":	"@todo add summary",
-			"description":	[{
-					"line":	"@todo add description"
+					"line":	"Tag used in the job delivery protocol, is set when a slave host acknowledged receipt of the start order."
 				}],
 			"type":	"lUlongT",
 			"flags":	[{
@@ -89,9 +85,9 @@
 				}]
 		}, {
 			"name":	"ticket",
-			"summary":	"@todo add summary",
+			"summary":	"Total Tickets",
 			"description":	[{
-					"line":	"@todo add description"
+					"line":	"Total amount of tickets assigned to slots."
 				}],
 			"type":	"lDoubleT",
 			"flags":	[{
@@ -99,9 +95,9 @@
 				}]
 		}, {
 			"name":	"oticket",
-			"summary":	"@todo add summary",
+			"summary":	"Override Tickets",
 			"description":	[{
-					"line":	"@todo add description"
+					"line":	"Override tickets assigned to slots."
 				}],
 			"type":	"lDoubleT",
 			"flags":	[{
@@ -109,9 +105,9 @@
 				}]
 		}, {
 			"name":	"fticket",
-			"summary":	"@todo add summary",
+			"summary":	"Functional Tickets",
 			"description":	[{
-					"line":	"@todo add description"
+					"line":	"Functional tickets assigned to slots."
 				}],
 			"type":	"lDoubleT",
 			"flags":	[{
@@ -119,9 +115,9 @@
 				}]
 		}, {
 			"name":	"sticket",
-			"summary":	"@todo add summary",
+			"summary":	"Sharetree Tickets",
 			"description":	[{
-					"line":	"@todo add description"
+					"line":	"Sharetree tickets assigned to slots."
 				}],
 			"type":	"lDoubleT",
 			"flags":	[{
@@ -129,9 +125,9 @@
 				}]
 		}, {
 			"name":	"jcoticket",
-			"summary":	"@todo add summary",
+			"summary":	"Job Class Override Tickets",
 			"description":	[{
-					"line":	"@todo add description"
+					"line":	"Job class override tickets."
 				}],
 			"type":	"lDoubleT",
 			"flags":	[{
@@ -139,9 +135,9 @@
 				}]
 		}, {
 			"name":	"jcfticket",
-			"summary":	"@todo add summary",
+			"summary":	"Job Class Functional Tickets",
 			"description":	[{
-					"line":	"@todo add description"
+					"line":	"Job class functional tickets."
 				}],
 			"type":	"lDoubleT",
 			"flags":	[{
@@ -149,9 +145,9 @@
 				}]
 		}, {
 			"name":	"processors",
-			"summary":	"@todo add summary",
+			"summary":	"Processor Set",
 			"description":	[{
-					"line":	"@todo add description"
+					"line":	"Processor set the job is supposed to run on (Solaris only?)"
 				}],
 			"type":	"lStringT",
 			"flags":	[{
