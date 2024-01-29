@@ -81,13 +81,10 @@ enum {
    QHOST           ,       /* 26 */
    SPOOLDEFAULTS   ,       /* 27 */
    JAPI            ,       /* 28 */
-   JAPI_EC         ,       /* 29 */
-   DRMAA           ,       /* 30 */
-   QPING           ,       /* 31 */
-   SGE_PASSWD      ,       /* 32 */
-   QQUOTA          ,       /* 33 */
-   JGDI            ,       /* 34 */
-   SGE_SHARE_MON           /* 35 */
+   DRMAA           ,       /* 29 */
+   QPING           ,       /* 30 */
+   QQUOTA          ,       /* 31 */
+   SGE_SHARE_MON           /* 32 */
 };
 
 enum {
@@ -97,10 +94,8 @@ enum {
    TIMER_THREAD,        /* 4 */
    WORKER_THREAD,       /* 5 */        
    SIGNALER_THREAD,     /* 6 */
-   JVM_THREAD,          /* 7 */
-   SCHEDD_THREAD,       /* 8 */
-   TESTER_THREAD        /* 9 */
-   
+   SCHEDD_THREAD,       /* 7 */
+   TESTER_THREAD        /* 8 */
 };
 
 typedef void (*sge_exit_func_t)(void **ctx_ref, int);
@@ -162,6 +157,8 @@ void uti_state_set_daemonized(int daemonized);
 void uti_state_set_mewho(u_long32 who);
 void uti_state_set_exit_on_error(bool i);
 void uti_state_set_exit_func(sge_exit_func_t f);
+
+int uti_state_reresolve_qualified_hostname(void);
 
 #endif
 

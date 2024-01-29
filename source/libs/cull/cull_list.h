@@ -105,19 +105,6 @@ enum _enum_lMultiType {
 #define CULL_UNUSED2       0x00100000
 #define CULL_IS_REDUCED    0x00200000
 
-/*
-** JGDI specific defines
-*/
-#define JGDI_ROOT_OBJ( idlname, listname, operators )
-#define JGDI_EVENT_OBJ(eventtypes)
-#define JGDI_OBJ(idlname)
-#define JGDI_MAPPED_OBJ(impl_class_name)
-#define JGDI_PRIMITIVE_OBJ(primitive_attribute)
-#define JGDI_PRIMITIVE_ROOT_OBJ(idlname, primitive_attribute, listname, operators)
-#define JGDI_INHERITED_ROOT_OBJ(idlname, listname, operators)
-#define JGDI_MAP_OBJ(key_field, value_field)
-
-
 #define BASIC_UNIT 50         /* Don't touch */
 #define MAX_DESCR_SIZE  4*BASIC_UNIT
 
@@ -175,53 +162,6 @@ enum _enum_lMultiType {
 
 #else
 
-#ifdef __SGE_GDI_LIBRARY_SUBLIST_FILE__
-
-#define LISTDEF( name )
-#define LISTEND
-
-#define DERIVED_LISTDEF( name, parent )
-#define DERIVED_LISTEND
-
-
-#define SGE_INT(name,flags)
-#define SGE_HOST(name,flags)
-#define SGE_STRING(name,flags)
-#define SGE_FLOAT(name,flags)
-#define SGE_DOUBLE(name,flags)
-#define SGE_CHAR(name,flags)
-#define SGE_LONG(name,flags)
-#define SGE_ULONG(name,flags)
-#define SGE_ULONG64(name,flags)
-#define SGE_BOOL(name,flags)
-#define SGE_LIST(name,type,flags) __SUBTYPE_MAPPING__ name type
-#define SGE_MAP(name,type,flags) __SUBTYPE_MAPPING__ name type
-#define SGE_MAPLIST(name,type,flags) __SUBTYPE_MAPPING__ name type
-#define SGE_OBJECT(name,type,flags)
-#define SGE_REF(name,type,flags)
-
-#define SGE_INT_D(name,flags,def)
-#define SGE_HOST_D(name,flags,def)
-#define SGE_STRING_D(name,flags,def)
-#define SGE_FLOAT_D(name,flags,def)
-#define SGE_DOUBLE_D(name,flags,def)
-#define SGE_CHAR_D(name,flags,def)
-#define SGE_LONG_D(name,flags,def)
-#define SGE_LONG64_D(name,flags,def)
-#define SGE_ULONG_D(name,flags,def)
-#define SGE_BOOL_D(name,flags,def)
-#define SGE_LIST_D(name,type,flags,def)
-#define SGE_MAP_D(name,type,flags,defkey,keyvalue,jgdi_keyname,jgdi_valuename)
-#define SGE_MAPLIST_D(name,type,flags,defkey,defvalue,jgdi_keyname,jgdi_valuename)
-#define SGE_OBJECT_D(name,type,flags,def)
-#define SGE_REF_D(name,type,flags,def)
-
-#define NAMEDEF( name ) 
-#define NAME( name )
-#define NAMEEND
-
-#else
-
 #define LISTDEF( name ) extern lDescr name[];
 #define LISTEND
 
@@ -264,7 +204,6 @@ enum _enum_lMultiType {
 #define NAME( name )
 #define NAMEEND
 
-#endif
 #endif
 
 struct _lNameSpace {

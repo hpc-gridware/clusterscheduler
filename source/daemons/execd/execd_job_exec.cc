@@ -84,7 +84,7 @@ int do_job_exec(sge_gdi_ctx_class_t *ctx, struct_msg_t *aMsg, sge_pack_buffer *a
    int ret = 1;
    u_long32 feature_set;
    const char *admin_user = ctx->get_admin_user(ctx);
-   const char *progname = ctx->get_progname(ctx);
+   const char *progname = uti_state_get_sge_formal_prog_name();
 
    DENTER(TOP_LAYER);
 
@@ -112,7 +112,7 @@ int do_job_exec(sge_gdi_ctx_class_t *ctx, struct_msg_t *aMsg, sge_pack_buffer *a
          DRETURN(0);
       }
 
-      if (!job_verify_execd_job(job, &answer_list, ctx->get_qualified_hostname(ctx))) {
+      if (!job_verify_execd_job(job, &answer_list, uti_state_get_qualified_hostname())) {
          const char *err_str = lGetString(lFirst(answer_list), AN_text);
          ja_task = lFirstRW(lGetList(job, JB_ja_tasks));
 
@@ -363,7 +363,7 @@ static int handle_job(sge_gdi_ctx_class_t *ctx, lListElem *jelem, lListElem *jat
    */
    if (mconf_get_do_credentials()) {
       const char *sge_root = ctx->get_sge_root(ctx);
-      const char *unqualified_hostname = ctx->get_unqualified_hostname(ctx);
+      const char *unqualified_hostname = uti_state_get_unqualified_hostname();
 
       if (store_sec_cred2(sge_root, unqualified_hostname, jelem, mconf_get_do_authentication(), &general, &err_str) != 0) {
          goto Error;
@@ -390,7 +390,7 @@ static int handle_job(sge_gdi_ctx_class_t *ctx, lListElem *jelem, lListElem *jat
    }   
 
    /* check if job has queue limits and increase global flag if necessary */
-   modify_queue_limits_flag_for_job(ctx->get_qualified_hostname(ctx), jelem, true);
+   modify_queue_limits_flag_for_job(uti_state_get_qualified_hostname(), jelem, true);
 
    /* put into job list */
    lAppendElem(*object_type_get_master_list_rw(SGE_TYPE_JOB), jelem);
@@ -606,9 +606,9 @@ static int handle_task(sge_gdi_ctx_class_t *ctx, lListElem *petrep, char *commpr
    char new_task_id[1024];
    lList *gdil = NULL;
    int tid = 0;
-   const char *progname = ctx->get_progname(ctx);
-   const char *qualified_hostname = ctx->get_qualified_hostname(ctx);
-   const char *unqualified_hostname = ctx->get_unqualified_hostname(ctx);
+   const char *progname = uti_state_get_sge_formal_prog_name();
+   const char *qualified_hostname = uti_state_get_qualified_hostname();
+   const char *unqualified_hostname = uti_state_get_unqualified_hostname();
 
    DENTER(TOP_LAYER);
 

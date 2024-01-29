@@ -61,3 +61,5 @@ an_status_t
    verify_str_key(lList **alpp, const char *str, size_t str_length, const char *name, int table);
 
 bool verify_host_name(lList **answer_list, const char *host_name);
+
+int reresolve_qualified_hostname(void);

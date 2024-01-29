@@ -73,6 +73,7 @@
 #include "sgeobj/sge_userset.h"
 #include "sgeobj/sge_conf.h"
 #include "sgeobj/sge_resource_quota.h"
+#include "sgeobj/sge_utility.h"
 
 #include "gdi/qm_name.h"
 #include "gdi/sge_gdi2.h"
@@ -191,7 +192,7 @@ init_categories(void);
 int
 sge_setup_qmaster(sge_gdi_ctx_class_t *ctx, char *anArgv[]) {
    char err_str[1024];
-   const char *qualified_hostname = ctx->get_qualified_hostname(ctx);
+   const char *qualified_hostname = uti_state_get_qualified_hostname();
    const char *act_qmaster_file = ctx->get_act_qmaster_file(ctx);
 
    DENTER(TOP_LAYER);
@@ -257,8 +258,8 @@ sge_qmaster_thread_init(sge_gdi_ctx_class_t **ctx_ref, u_long32 prog_id, u_long3
       SGE_EXIT((void **) ctx_ref, 1);
    }
    ctx = *ctx_ref;
-   ctx->reresolve_qualified_hostname(ctx);
-   DEBUG((SGE_EVENT, "%s: qualified hostname \"%s\"\n", __func__, ctx->get_qualified_hostname(ctx)));
+   reresolve_qualified_hostname();
+   DEBUG((SGE_EVENT, "%s: qualified hostname \"%s\"\n", __func__, uti_state_get_qualified_hostname()));
    admin_user = ctx->get_admin_user(ctx);
 
    if (switch_to_admin_user == true) {
@@ -561,7 +562,7 @@ qmaster_init(sge_gdi_ctx_class_t *ctx, char **anArgv) {
       SGE_EXIT(NULL, 1);
    }
 
-   ctx->set_exit_func(ctx, qmaster_lock_and_shutdown);
+   uti_state_set_exit_func(qmaster_lock_and_shutdown);
 
    communication_setup(ctx);
 
@@ -603,7 +604,7 @@ communication_setup(sge_gdi_ctx_class_t *ctx) {
    char *qmaster_params = NULL;
    struct rlimit qmaster_rlimits;
 
-   const char *qualified_hostname = ctx->get_qualified_hostname(ctx);
+   const char *qualified_hostname = uti_state_get_qualified_hostname();
    u_long32 qmaster_port = ctx->get_sge_qmaster_port(ctx);
    const char *qmaster_spool_dir = ctx->get_qmaster_spool_dir(ctx);
 
@@ -869,9 +870,9 @@ setup_qmaster(sge_gdi_ctx_class_t *ctx) {
    mconf_set_new_config(true);
 
    /* get aliased hostname from commd */
-   ctx->reresolve_qualified_hostname(ctx);
-   qualified_hostname = ctx->get_qualified_hostname(ctx);
-   DEBUG((SGE_EVENT, "ctx->get_qualified_hostname(ctx) returned \"%s\"\n", qualified_hostname));
+   reresolve_qualified_hostname();
+   qualified_hostname = uti_state_get_qualified_hostname();
+   DEBUG((SGE_EVENT, "uti_state_get_qualified_hostname() returned \"%s\"\n", qualified_hostname));
 
    /*
    ** read in all objects and check for correctness

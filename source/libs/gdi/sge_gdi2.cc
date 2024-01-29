@@ -1137,7 +1137,7 @@ gdi2_send_message(sge_gdi_ctx_class_t *sge_ctx, int synchron, const char *tocomp
    unsigned long dummy_mid;
    unsigned long* mid_pointer = NULL;
    int use_execd_handle = 0;
-   u_long32 progid = sge_ctx->get_who(sge_ctx);
+   u_long32 progid = uti_state_get_mewho();
    
    DENTER(GDI_LAYER);
 
@@ -1231,7 +1231,7 @@ gdi2_receive_message(sge_gdi_ctx_class_t *sge_ctx, char *fromcommproc, u_short *
    cl_com_endpoint_t* sender = NULL;
    int use_execd_handle = 0;
 
-   u_long32 progid = sge_ctx->get_who(sge_ctx);
+   u_long32 progid = uti_state_get_mewho();
    u_long32 sge_execd_port = sge_ctx->get_sge_execd_port(sge_ctx);
 
 
@@ -1385,7 +1385,7 @@ int gdi2_get_configuration(sge_gdi_ctx_class_t *ctx, const char *config_name,
    int success;
    static int already_logged = 0;
    u_long32 status;
-   u_long32 me = ctx->get_who(ctx);
+   u_long32 me = uti_state_get_mewho();
 
    DENTER(GDI_LAYER);
 
@@ -1512,9 +1512,9 @@ int gdi2_wait_for_conf(sge_gdi_ctx_class_t *ctx, lList **conf_list) {
    int ret;
    static u_long32 last_qmaster_file_read = 0;
    u_long32 now = sge_get_gmt();
-   const char *qualified_hostname = ctx->get_qualified_hostname(ctx);
+   const char *qualified_hostname = uti_state_get_qualified_hostname();
    const char *cell_root = ctx->get_cell_root(ctx);
-   u_long32 progid = ctx->get_who(ctx);
+   u_long32 progid = uti_state_get_mewho();
    
    /* TODO: move this function to execd */
    DENTER(GDI_LAYER);
@@ -1592,9 +1592,9 @@ lList **conf_list
 ) {
    lListElem *global = NULL;
    lListElem *local = NULL;
-   const char *qualified_hostname = ctx->get_qualified_hostname(ctx);
+   const char *qualified_hostname = uti_state_get_qualified_hostname();
    const char *cell_root = ctx->get_cell_root(ctx);
-   u_long32 progid = ctx->get_who(ctx);
+   u_long32 progid = uti_state_get_mewho();
    int ret;
 
    DENTER(GDI_LAYER);

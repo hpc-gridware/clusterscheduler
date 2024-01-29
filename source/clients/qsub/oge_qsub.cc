@@ -129,13 +129,13 @@ main(int argc, char **argv)
       SGE_EXIT((void**)&ctx, 1);
    }
 
-   prog_number = ctx->get_who(ctx);
+   prog_number = uti_state_get_mewho();
    myuid = ctx->get_uid(ctx);
    sge_root = ctx->get_sge_root(ctx);
    cell_root = ctx->get_cell_root(ctx);
    username = ctx->get_username(ctx);
-   qualified_hostname = ctx->get_qualified_hostname(ctx);
-   unqualified_hostname = ctx->get_unqualified_hostname(ctx);
+   qualified_hostname = uti_state_get_qualified_hostname();
+   unqualified_hostname = uti_state_get_unqualified_hostname();
    mastername = ctx->get_master(ctx, false);
 
    /*

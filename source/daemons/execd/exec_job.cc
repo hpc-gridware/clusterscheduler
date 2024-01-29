@@ -319,8 +319,8 @@ int sge_exec_job(sge_gdi_ctx_class_t *ctx, lListElem *jep, lListElem *jatep,
    lList *environmentList = NULL;
    const char *arch = sge_get_arch();
    const char *sge_root = ctx->get_sge_root(ctx);
-   const char *qualified_hostname = ctx->get_qualified_hostname(ctx);
-   const char *default_cell = ctx->get_default_cell(ctx);
+   const char *qualified_hostname = uti_state_get_qualified_hostname();
+   const char *default_cell = uti_state_get_default_cell();
    const char *binary_path = ctx->get_binary_path(ctx);
    const char *admin_user = ctx->get_admin_user(ctx);
    const char *masterhost = ctx->get_master(ctx, false);

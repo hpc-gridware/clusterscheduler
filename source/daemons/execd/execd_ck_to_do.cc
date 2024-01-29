@@ -357,7 +357,7 @@ int do_ck_to_do(sge_gdi_ctx_class_t *ctx, bool is_qmaster_down) {
    static u_long last_report_send = 0;
    lListElem *jep, *jatep;
    int return_value = 0;
-   const char *qualified_hostname = ctx->get_qualified_hostname(ctx);
+   const char *qualified_hostname = uti_state_get_qualified_hostname();
 
    DENTER(TOP_LAYER);
 
@@ -682,7 +682,7 @@ static int exec_job_or_task(sge_gdi_ctx_class_t *ctx, lListElem *jep, lListElem 
    u_long32 now;
    u_long32 job_id, ja_task_id;
    const char *pe_task_id = NULL;
-   const char *qualified_hostname = ctx->get_qualified_hostname(ctx);
+   const char *qualified_hostname = uti_state_get_qualified_hostname();
 
    DENTER(TOP_LAYER);
 

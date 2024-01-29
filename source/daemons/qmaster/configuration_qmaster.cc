@@ -122,8 +122,8 @@ sge_read_configuration(sge_gdi_ctx_class_t *ctx, const lListElem *aSpoolContext,
    lListElem *global = NULL;
    int ret = -1;
    const char *cell_root = ctx->get_cell_root(ctx);
-   const char *qualified_hostname = ctx->get_qualified_hostname(ctx);
-   u_long32 progid = ctx->get_who(ctx);
+   const char *qualified_hostname = uti_state_get_qualified_hostname();
+   u_long32 progid = uti_state_get_mewho();
 
    DENTER(TOP_LAYER);
 
@@ -319,8 +319,8 @@ sge_mod_configuration(sge_gdi_ctx_class_t *ctx, lListElem *aConf, lList **anAnsw
    char unique_name[CL_MAXHOSTLEN];
    int ret = -1;
    const char *cell_root = ctx->get_cell_root(ctx);
-   const char *qualified_hostname = ctx->get_qualified_hostname(ctx);
-   u_long32 progid = ctx->get_who(ctx);
+   const char *qualified_hostname = uti_state_get_qualified_hostname();
+   u_long32 progid = uti_state_get_mewho();
 
    DENTER(TOP_LAYER);
 

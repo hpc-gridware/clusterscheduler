@@ -69,25 +69,17 @@ struct sge_gdi_ctx_class_str {
    sge_prog_state_class_t* (*get_sge_prog_state)(sge_gdi_ctx_class_t *thiz);
    sge_path_state_class_t* (*get_sge_path_state)(sge_gdi_ctx_class_t *thiz);
    sge_bootstrap_state_class_t* (*get_sge_bootstrap_state)(sge_gdi_ctx_class_t *thiz);
-   int (*reresolve_qualified_hostname)(sge_gdi_ctx_class_t *thiz);
-   void (*get_errors)(sge_gdi_ctx_class_t *thiz, lList **alpp, bool clear_errors);
-   
+
    int (*prepare_enroll)(sge_gdi_ctx_class_t *thiz);
    int (*connect)(sge_gdi_ctx_class_t *thiz);
    int (*is_alive)(sge_gdi_ctx_class_t *thiz);
    lList* (*tsm)(sge_gdi_ctx_class_t *thiz, const char *schedd_name, const char *cell);
    lList* (*kill)(sge_gdi_ctx_class_t *thiz, lList *id_list, const char *cell, u_long32 option_flags, u_long32 action_flag);
-   bool (*gdi_check_permission)(sge_gdi_ctx_class_t *thiz, lList **alpp, int option);
-   bool (*gdi_get_mapping_name)(sge_gdi_ctx_class_t *thiz, const char *requestedHost, char *buf, int buflen);
    const char* (*get_master)(sge_gdi_ctx_class_t *thiz, bool reread);
    u_long32 (*get_sge_qmaster_port)(sge_gdi_ctx_class_t *thiz);
    u_long32 (*get_sge_execd_port)(sge_gdi_ctx_class_t *thiz);
    const char* (*get_component_name)(sge_gdi_ctx_class_t *thiz);
    const char* (*get_thread_name)(sge_gdi_ctx_class_t *thiz);
-   const char* (*get_progname)(sge_gdi_ctx_class_t *thiz);
-   const char* (*get_qualified_hostname)(sge_gdi_ctx_class_t *thiz);
-   const char* (*get_unqualified_hostname)(sge_gdi_ctx_class_t *thiz);
-   const char* (*get_default_cell)(sge_gdi_ctx_class_t *thiz);
    const char* (*get_admin_user)(sge_gdi_ctx_class_t *thiz);
    const char* (*get_binary_path)(sge_gdi_ctx_class_t *thiz);
    const char* (*get_qmaster_spool_dir)(sge_gdi_ctx_class_t *thiz);
@@ -96,11 +88,6 @@ struct sge_gdi_ctx_class_str {
    const char* (*get_shadow_master_file)(sge_gdi_ctx_class_t *thiz);
    const char* (*get_acct_file)(sge_gdi_ctx_class_t *thiz);
    const char* (*get_reporting_file)(sge_gdi_ctx_class_t *thiz);
-   u_long32 (*get_who)(sge_gdi_ctx_class_t *thiz);
-   bool (*is_daemonized)(sge_gdi_ctx_class_t *thiz);
-   void (*set_daemonized)(sge_gdi_ctx_class_t *thiz, bool daemonized);
-   sge_exit_func_t (*get_exit_func)(sge_gdi_ctx_class_t *thiz);
-   void (*set_exit_func)(sge_gdi_ctx_class_t *thiz, sge_exit_func_t exit_func);
    const char* (*get_cell_root)(sge_gdi_ctx_class_t *thiz);
    const char* (*get_sge_root)(sge_gdi_ctx_class_t *thiz);
    bool (*get_job_spooling)(sge_gdi_ctx_class_t *thiz);
@@ -108,7 +95,6 @@ struct sge_gdi_ctx_class_str {
    u_long32 (*get_listener_thread_count)(sge_gdi_ctx_class_t *thiz);
    u_long32 (*get_worker_thread_count)(sge_gdi_ctx_class_t *thiz);
    u_long32 (*get_scheduler_thread_count)(sge_gdi_ctx_class_t *thiz);
-   u_long32 (*get_jvm_thread_count)(sge_gdi_ctx_class_t *thiz);
    const char* (*get_spooling_method)(sge_gdi_ctx_class_t *thiz);
    const char* (*get_spooling_lib)(sge_gdi_ctx_class_t *thiz);
    const char* (*get_spooling_params)(sge_gdi_ctx_class_t *thiz);
@@ -117,12 +103,8 @@ struct sge_gdi_ctx_class_str {
    uid_t (*get_uid)(sge_gdi_ctx_class_t *thiz);
    gid_t (*get_gid)(sge_gdi_ctx_class_t *thiz);
    bool (*is_qmaster_internal_client)(sge_gdi_ctx_class_t *thiz);
-   const char* (*get_ca_root)(sge_gdi_ctx_class_t *thiz);
-   const char* (*get_ca_local_root)(sge_gdi_ctx_class_t *thiz);
 
    /* credentials */
-   void (*set_private_key)(sge_gdi_ctx_class_t *thiz, const char* pkey);
-   void (*set_certificate)(sge_gdi_ctx_class_t *thiz, const char* cert);
    const char* (*get_private_key)(sge_gdi_ctx_class_t *thiz);
    const char* (*get_certificate)(sge_gdi_ctx_class_t *thiz);
 

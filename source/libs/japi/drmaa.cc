@@ -2326,7 +2326,7 @@ static int drmaa_path2path_opt(const lList *attrs, lList **args, int is_bulk,
    const char *new_path = NULL;
    int drmaa_errno;
    lList *path_list = lCreateList("path_list", PN_Type);
-   const char *unqualified_hostname = ctx->get_unqualified_hostname(ctx);
+   const char *unqualified_hostname = uti_state_get_unqualified_hostname();
    
    DENTER(TOP_LAYER);
 
@@ -2568,12 +2568,12 @@ static int drmaa_job2sge_job(lListElem **jtp, const drmaa_job_template_t *drmaa_
    int read_scriptfile = 0;
    u_long32 jb_now = 0;
 
-   u_long32 prog_number = ctx->get_who(ctx);
+   u_long32 prog_number = uti_state_get_mewho();
    u_long32 myuid = ctx->get_uid(ctx);
    const char *cell_root = ctx->get_cell_root(ctx);
    const char *username = ctx->get_username(ctx);
-   const char *unqualified_hostname = ctx->get_unqualified_hostname(ctx);
-   const char *qualified_hostname = ctx->get_qualified_hostname(ctx);
+   const char *unqualified_hostname = uti_state_get_unqualified_hostname();
+   const char *qualified_hostname = uti_state_get_qualified_hostname();
 
    DENTER(TOP_LAYER);
    

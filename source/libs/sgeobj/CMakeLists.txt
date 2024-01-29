@@ -49,7 +49,6 @@ set(LIBRARY_SOURCES
       sge_schedd_conf.cc
       sge_sharetree.cc
       sge_str.cc
-      # sge_sub_object_cpp.c
       sge_subordinate.cc
       sge_suser.cc
       sge_ulong.cc
@@ -79,23 +78,23 @@ target_link_libraries(test_eval_expression PRIVATE sgeobj gdi cull commlists uti
 
 add_executable(test_sge_object test_sge_object.cc)
 target_include_directories(test_sge_object PRIVATE "./")
-target_link_libraries(test_sge_object PRIVATE sgeobj cull comm commlists uti ${SGE_LIBS})
+target_link_libraries(test_sge_object PRIVATE sgeobj cull comm uti commlists ${SGE_LIBS})
 
 add_executable(test_sge_range test_sge_range.cc)
 target_include_directories(test_sge_range PRIVATE "./")
-target_link_libraries(test_sge_range PRIVATE sgeobj cull commlists uti ${SGE_LIBS})
+target_link_libraries(test_sge_range PRIVATE sgeobj cull comm uti commlists ${SGE_LIBS})
 
 add_executable(test_sge_resource_quota test_sge_resource_quota.cc)
 target_include_directories(test_sge_resource_quota PRIVATE "./")
-target_link_libraries(test_sge_resource_quota PRIVATE sgeobj cull comm commlists uti ${SGE_LIBS})
+target_link_libraries(test_sge_resource_quota PRIVATE sgeobj cull comm uti commlists ${SGE_LIBS})
 
 add_executable(test_sge_schedd_conf test_sge_schedd_conf.cc)
 target_include_directories(test_sge_schedd_conf PRIVATE "./")
-target_link_libraries(test_sge_schedd_conf PRIVATE sgeobj cull comm commlists uti ${SGE_LIBS})
+target_link_libraries(test_sge_schedd_conf PRIVATE sgeobj cull comm uti commlists ${SGE_LIBS})
 
 add_executable(test_sge_utility test_sge_utility.cc)
 target_include_directories(test_sge_utility PRIVATE "./")
-target_link_libraries(test_sge_utility PRIVATE sgeobj cull commlists uti ${SGE_LIBS})
+target_link_libraries(test_sge_utility PRIVATE sgeobj cull comm uti commlists ${SGE_LIBS})
 
 if (INSTALL_SGE_TEST)
    install(TARGETS test_eval_expression DESTINATION testbin/${SGE_ARCH})

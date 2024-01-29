@@ -228,7 +228,7 @@ main(int argc, char **argv) {
    }
 
    /* AA: TODO: change this */
-   ctx->set_exit_func(ctx, shadowd_exit_func);
+   uti_state_set_exit_func(shadowd_exit_func);
    sge_setup_sig_handlers(SHADOWD);
 
 #if defined(SOLARIS)
@@ -242,8 +242,7 @@ main(int argc, char **argv) {
       char *shadowd_name = SGE_SHADOWD;
 
       /* is there a running shadowd on this host (with unqualified name) */
-      sprintf(shadowd_pidfile, "%s/"SHADOWD_PID_FILE, ctx->get_qmaster_spool_dir(ctx),
-              ctx->get_unqualified_hostname(ctx));
+      sprintf(shadowd_pidfile, "%s/"SHADOWD_PID_FILE, ctx->get_qmaster_spool_dir(ctx), uti_state_get_unqualified_hostname());
 
       DPRINTF(("pidfilename: %s\n", shadowd_pidfile));
       if ((shadowd_pid = sge_readpid(shadowd_pidfile))) {
@@ -257,8 +256,7 @@ main(int argc, char **argv) {
       ctx->prepare_enroll(ctx);
 
       /* is there a running shadowd on this host (with aliased name) */
-      sprintf(shadowd_pidfile, "%s/"SHADOWD_PID_FILE, ctx->get_qmaster_spool_dir(ctx),
-              ctx->get_qualified_hostname(ctx));
+      sprintf(shadowd_pidfile, "%s/"SHADOWD_PID_FILE, ctx->get_qmaster_spool_dir(ctx), uti_state_get_qualified_hostname());
       DPRINTF(("pidfilename: %s\n", shadowd_pidfile));
       if ((shadowd_pid = sge_readpid(shadowd_pidfile))) {
          DPRINTF(("shadowd_pid: "sge_U32CFormat"\n", sge_u32c(shadowd_pid)));
@@ -295,8 +293,8 @@ main(int argc, char **argv) {
       SGE_EXIT((void **) &ctx, 1);
    }
 
-   sprintf(shadow_err_file, "messages_shadowd.%s", ctx->get_unqualified_hostname(ctx));
-   sprintf(qmaster_out_file, "messages_qmaster.%s", ctx->get_unqualified_hostname(ctx));
+   sprintf(shadow_err_file, "messages_shadowd.%s", uti_state_get_unqualified_hostname());
+   sprintf(qmaster_out_file, "messages_qmaster.%s", uti_state_get_unqualified_hostname());
    sge_copy_append(TMP_ERR_FILE_SHADOWD, shadow_err_file, SGE_MODE_APPEND);
    unlink(TMP_ERR_FILE_SHADOWD);
    log_state_set_log_as_admin_user(1);
@@ -361,7 +359,7 @@ main(int argc, char **argv) {
                ret = check_if_valid_shadow(binpath, oldqmaster,
                                            ctx->get_act_qmaster_file(ctx),
                                            ctx->get_shadow_master_file(ctx),
-                                           ctx->get_qualified_hostname(ctx),
+                                           uti_state_get_qualified_hostname(),
                                            ctx->get_binary_path(ctx));
 
                if (ret == 0) {

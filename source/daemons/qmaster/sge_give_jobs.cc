@@ -491,7 +491,7 @@ send_job(sge_gdi_ctx_class_t *ctx, const char *rhost, lListElem *jep, lListElem 
    lListElem *gdil_ep;
    unsigned long last_heard_from;
    const char *sge_root = ctx->get_sge_root(ctx);
-   const char *myprogname = ctx->get_progname(ctx);
+   const char *myprogname = uti_state_get_sge_formal_prog_name();
    bool job_spooling = ctx->get_job_spooling(ctx);
    bool simulate_execd = mconf_get_simulate_execds();
    lDescr *rdp = NULL;
@@ -920,7 +920,7 @@ sge_commit_job(sge_gdi_ctx_class_t *ctx, lListElem *jep, lListElem *jatep, lList
    const lList *master_rqs_list = *object_type_get_master_list(SGE_TYPE_RQS);
 
    /* need hostname for job_log */
-   const char *qualified_hostname = ctx->get_qualified_hostname(ctx);
+   const char *qualified_hostname = uti_state_get_qualified_hostname();
    const char *sge_root = ctx->get_sge_root(ctx);
    bool job_spooling = ctx->get_job_spooling(ctx);
    u_long32 task_wallclock = U_LONG32_MAX;

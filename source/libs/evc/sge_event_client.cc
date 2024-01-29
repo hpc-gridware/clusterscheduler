@@ -858,7 +858,7 @@ static bool sge_evc_setup(sge_evc_class_t *thiz,
    if (ec_name != NULL) {
       name = ec_name;
    } else {
-      name = sge_gdi_ctx->get_progname(sge_gdi_ctx);
+      name = uti_state_get_sge_formal_prog_name();
    }
 
    if (id >= EV_ID_FIRST_DYNAMIC || name == NULL || *name == 0) {

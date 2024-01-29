@@ -64,7 +64,6 @@ enum {
    STRING,
    ULONG,
    ULONG64,
-   SUBLIST,
    FLOAT,
    DOUBLE,
    LONG,

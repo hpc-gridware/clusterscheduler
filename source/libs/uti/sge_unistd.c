@@ -294,8 +294,7 @@ void sge_exit(void **ref_ctx, int i)
    sge_exit_func_t exit_func = NULL;
 
    if (ref_ctx && *ref_ctx) {
-      sge_gdi_ctx_class_t *ctx = *ref_ctx;
-      exit_func = ctx->get_exit_func(ctx);
+      exit_func = uti_state_get_exit_func();
    }   
    if (exit_func) {
       exit_func(ref_ctx, i);

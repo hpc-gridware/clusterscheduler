@@ -36,11 +36,15 @@
 #include "comm/cl_communication.h"
 
 #include "uti/sge_log.h"
+#include "uti/sge_prog.h"
+#include "uti/sge_hostname.h"
 
 #include "sgeobj/parse.h"
 #include "sgeobj/sge_answer.h"
 #include "sgeobj/sge_utility.h"
 #include "sgeobj/msg_sgeobjlib.h"
+
+#include "comm/cl_commlib.h"
 
 #include "msg_qmaster.h"
 
@@ -272,3 +276,35 @@ bool verify_host_name(lList **answer_list, const char *host_name)
 
    return ret;
 }
+
+int reresolve_qualified_hostname(void) {
+   int ret = CL_RETVAL_OK;
+
+   char unique_hostname[256];
+   const char *qh = uti_state_get_qualified_hostname();
+
+#if 1
+   // lazy initialize of the qualified hostname store in uti_state
+   if (qh == NULL) {
+      stringT tmp_str;
+      struct hostent *hent = NULL;
+
+      SGE_ASSERT((gethostname(tmp_str, sizeof(tmp_str)) == 0));
+      SGE_ASSERT(((hent = sge_gethostbyname(tmp_str,NULL)) != NULL));
+      uti_state_set_qualified_hostname(hent->h_name);
+      sge_free_hostent(&hent);
+      qh = uti_state_get_qualified_hostname();
+   }
+#endif
+
+   // (re)resolve
+   ret = getuniquehostname(qh, unique_hostname, 0);
+   if (ret != CL_RETVAL_OK) {
+      return ret;
+   }
+
+   // store the re(resolved) name
+   uti_state_set_qualified_hostname(unique_hostname);
+   return ret;
+}
+
