@@ -28,7 +28,7 @@
  *   All Rights Reserved.
  * 
  ************************************************************************/
-/* Portions of this code are Copyright (c) 2011 Univa Corporation. */ 
+/* Portions of this code are Copyright (c) 2011 Univa Corporation. */
 /*___INFO__MARK_END__*/
 #include <string.h>
 
@@ -50,10 +50,10 @@
 #include "cull/cull_pack.h"
 #include "cull/pack.h"
 
-static lListElem *lJoinCopyElem(const lDescr *dp, 
-                                const lListElem *sep0, 
-                                const lEnumeration *ep0, 
-                                const lListElem *sep1, 
+static lListElem *lJoinCopyElem(const lDescr *dp,
+                                const lListElem *sep0,
+                                const lEnumeration *ep0,
+                                const lListElem *sep1,
                                 const lEnumeration *ep1);
 
 /****** cull/db/lJoinCopyElem() ***********************************************
@@ -81,12 +81,11 @@ static lListElem *lJoinCopyElem(const lDescr *dp,
 *  RESULT
 *     static lListElem* - combined element 
 ******************************************************************************/
-static lListElem *lJoinCopyElem(const lDescr *dp, 
+static lListElem *lJoinCopyElem(const lDescr *dp,
                                 const lListElem *src0,
                                 const lEnumeration *enp0,
                                 const lListElem *src1,
-                                const lEnumeration *enp1) 
-{
+                                const lEnumeration *enp1) {
    lListElem *dst;
    int i;
 
@@ -150,14 +149,13 @@ static lListElem *lJoinCopyElem(const lDescr *dp,
 *  RESULT
 *     lList* - Joined list 
 ******************************************************************************/
-lList *lJoinSublist(const char *name, int nm0, const lList *lp, 
+lList *lJoinSublist(const char *name, int nm0, const lList *lp,
                     const lCondition *cp0, const lEnumeration *enp0,
-                    const lDescr *sldp, const lCondition *cp1, 
-                    const lEnumeration *enp1) 
-{
+                    const lDescr *sldp, const lCondition *cp1,
+                    const lEnumeration *enp1) {
    lList *dlp, *tlp, *joinedlist, *sublist;
    const lListElem *ep;
-   lDescr *dp; 
+   lDescr *dp;
    const lDescr *tdp;
    int i, pos;
 
@@ -294,10 +292,9 @@ lList *lJoinSublist(const char *name, int nm0, const lList *lp,
 *  RESULT
 *     lList* - Joined list 
 ******************************************************************************/
-lList *lJoin(const char *name, int nm0, const lList *lp0, 
+lList *lJoin(const char *name, int nm0, const lList *lp0,
              const lCondition *cp0, const lEnumeration *enp0, int nm1,
-             const lList *lp1, const lCondition *cp1, const lEnumeration *enp1)
-{
+             const lList *lp1, const lCondition *cp1, const lEnumeration *enp1) {
    lListElem *ep0, *ep1;
    lListElem *ep;
    lList *dlp = NULL;
@@ -352,42 +349,42 @@ lList *lJoin(const char *name, int nm0, const lList *lp0,
          if (nm1 != NoName) {   /* in this case take it always */
             /* This is a comparison of the join fields nm0 , nm1 */
             switch (mt_get_type(lp0->descr[lp0_pos].mt)) {
-            case lIntT:
-               needed = (ep0->cont[lp0_pos].i == ep1->cont[lp1_pos].i);
-               break;
-            case lUlongT:
-               needed = (ep0->cont[lp0_pos].ul == ep1->cont[lp1_pos].ul);
-               break;
-            case lUlong64T:
-               needed = (ep0->cont[lp0_pos].ul64 == ep1->cont[lp1_pos].ul64);
-               break;
-            case lStringT:
-               needed = !strcmp(ep0->cont[lp0_pos].str, ep1->cont[lp1_pos].str);
-               break;
-            case lHostT:
-               needed = !strcmp(ep0->cont[lp0_pos].str, ep1->cont[lp1_pos].str);
-               break;
-            case lLongT:
-               needed = (ep0->cont[lp0_pos].l == ep1->cont[lp1_pos].l);
-               break;
-            case lFloatT:
-               needed = (ep0->cont[lp0_pos].fl == ep1->cont[lp1_pos].fl);
-               break;
-            case lDoubleT:
-               needed = (ep0->cont[lp0_pos].db == ep1->cont[lp1_pos].db);
-               break;
-            case lCharT:
-               needed = (ep0->cont[lp0_pos].c == ep1->cont[lp1_pos].c);
-               break;
-            case lBoolT:
-               needed = (ep0->cont[lp0_pos].b == ep1->cont[lp1_pos].b);
-               break;
-            case lRefT:
-               needed = (ep0->cont[lp0_pos].ref == ep1->cont[lp1_pos].ref);
-               break;
-            default:
-               unknownType("lJoin");
-               DRETURN(NULL);
+               case lIntT:
+                  needed = (ep0->cont[lp0_pos].i == ep1->cont[lp1_pos].i);
+                  break;
+               case lUlongT:
+                  needed = (ep0->cont[lp0_pos].ul == ep1->cont[lp1_pos].ul);
+                  break;
+               case lUlong64T:
+                  needed = (ep0->cont[lp0_pos].ul64 == ep1->cont[lp1_pos].ul64);
+                  break;
+               case lStringT:
+                  needed = !strcmp(ep0->cont[lp0_pos].str, ep1->cont[lp1_pos].str);
+                  break;
+               case lHostT:
+                  needed = !strcmp(ep0->cont[lp0_pos].str, ep1->cont[lp1_pos].str);
+                  break;
+               case lLongT:
+                  needed = (ep0->cont[lp0_pos].l == ep1->cont[lp1_pos].l);
+                  break;
+               case lFloatT:
+                  needed = (ep0->cont[lp0_pos].fl == ep1->cont[lp1_pos].fl);
+                  break;
+               case lDoubleT:
+                  needed = (ep0->cont[lp0_pos].db == ep1->cont[lp1_pos].db);
+                  break;
+               case lCharT:
+                  needed = (ep0->cont[lp0_pos].c == ep1->cont[lp1_pos].c);
+                  break;
+               case lBoolT:
+                  needed = (ep0->cont[lp0_pos].b == ep1->cont[lp1_pos].b);
+                  break;
+               case lRefT:
+                  needed = (ep0->cont[lp0_pos].ref == ep1->cont[lp1_pos].ref);
+                  break;
+               default:
+                  unknownType("lJoin");
+                  DRETURN(NULL);
             }
             if (!needed)
                continue;
@@ -396,8 +393,7 @@ lList *lJoin(const char *name, int nm0, const lList *lp0,
             LERROR(LEJOINCOPYELEM);
             lFreeList(&dlp);
             DRETURN(NULL);
-         }
-         else {
+         } else {
             if (lAppendElem(dlp, ep) == -1) {
                LERROR(LEAPPENDELEM);
                lFreeList(&dlp);
@@ -440,9 +436,8 @@ lList *lJoin(const char *name, int nm0, const lList *lp0,
 *         0 - OK
 *        -1 - Error 
 ******************************************************************************/
-int lSplit(lList **slp, lList **ulp, const char *ulp_name, 
-           const lCondition *cp) 
-{
+int lSplit(lList **slp, lList **ulp, const char *ulp_name,
+           const lCondition *cp) {
 
    lListElem *ep, *next;
    int has_been_allocated = 0;
@@ -506,8 +501,7 @@ int lSplit(lList **slp, lList **ulp, const char *ulp_name,
 *  RESULT
 *     lList* - List with the remaining elements 
 ******************************************************************************/
-lList *lSelectDestroy(lList *slp, const lCondition *cp) 
-{
+lList *lSelectDestroy(lList *slp, const lCondition *cp) {
 
    DENTER(CULL_LAYER);
 
@@ -545,8 +539,7 @@ lList *lSelectDestroy(lList *slp, const lCondition *cp)
 ******************************************************************************/
 lListElem *
 lSelectElemPack(const lListElem *slp, const lCondition *cp,
-                const lEnumeration *enp, bool isHash, sge_pack_buffer *pb) 
-{
+                const lEnumeration *enp, bool isHash, sge_pack_buffer *pb) {
    lListElem *new_ep = NULL;
 
    DENTER(CULL_LAYER);
@@ -615,10 +608,9 @@ lSelectElemPack(const lListElem *slp, const lCondition *cp,
 *     lListElem* - list containing the extracted elements
 ******************************************************************************/
 lListElem *
-lSelectElemDPack(const lListElem *slp, const lCondition *cp, const lDescr *dp, 
+lSelectElemDPack(const lListElem *slp, const lCondition *cp, const lDescr *dp,
                  const lEnumeration *enp, bool isHash, sge_pack_buffer *pb,
-                 u_long32 *elements) 
-{
+                 u_long32 *elements) {
    lListElem *new_ep = NULL;
    int index = 0;
 
@@ -635,7 +627,7 @@ lSelectElemDPack(const lListElem *slp, const lCondition *cp, const lDescr *dp,
          if (!(new_ep = lCreateElem(dp))) {
             DRETURN(NULL);
          }
-         
+
          if (lCopyElemPartialPack(new_ep, &index, slp, enp, isHash, NULL)) {
             lFreeElem(&new_ep);
          }
@@ -675,7 +667,7 @@ lSelectElemDPack(const lListElem *slp, const lCondition *cp, const lDescr *dp,
 lList *lSelect(const char *name, const lList *slp, const lCondition *cp,
                const lEnumeration *enp) {
    return lSelectHashPack(name, slp, cp, enp, true, NULL);
-}               
+}
 
 /****** cull/db/lSelectHashPack() *********************************************
 *  NAME
@@ -703,10 +695,9 @@ lList *lSelect(const char *name, const lList *slp, const lCondition *cp,
 *  RESULT
 *     lList* - list containing the extracted elements
 ******************************************************************************/
-lList *lSelectHashPack(const char *name, const lList *slp, 
-                       const lCondition *cp, const lEnumeration *enp, 
-                       bool isHash, sge_pack_buffer *pb) 
-{
+lList *lSelectHashPack(const char *name, const lList *slp,
+                       const lCondition *cp, const lEnumeration *enp,
+                       bool isHash, sge_pack_buffer *pb) {
    lList *ret = NULL;
 
    DENTER(CULL_LAYER);
@@ -726,7 +717,7 @@ lList *lSelectHashPack(const char *name, const lList *slp,
             DRETURN(NULL);
          }
 
-         dp = (lDescr *)sge_malloc(sizeof(lDescr) * (n + 1));
+         dp = (lDescr *) sge_malloc(sizeof(lDescr) * (n + 1));
          if (dp == NULL) {
             LERROR(LEMALLOC);
             DRETURN(NULL);
@@ -763,9 +754,9 @@ lList *lSelectHashPack(const char *name, const lList *slp,
             DRETURN(NULL);
          }
 
-         lSelectDPack(name, slp, cp, NULL, enp, isHash, pb, 
+         lSelectDPack(name, slp, cp, NULL, enp, isHash, pb,
                       &number_of_packed_elements);
-  
+
          /*
           * change number of elements contained in the packbuffer 
           */
@@ -779,13 +770,13 @@ lList *lSelectHashPack(const char *name, const lList *slp,
             pb->bytes_used = used;
 
             local_ret = repackint(pb, number_of_packed_elements);
-            if(local_ret != PACK_SUCCESS) {
+            if (local_ret != PACK_SUCCESS) {
                LERROR(LEMALLOC);
                DRETURN(NULL);
             }
             pb->cur_ptr = old_cur_ptr;
             pb->bytes_used = old_used;
-         } 
+         }
       }
    } else {
       if (pb == NULL) {
@@ -828,8 +819,7 @@ lList *lSelectHashPack(const char *name, const lList *slp,
 *******************************************************************************/
 lList *lSelectDPack(const char *name, const lList *slp, const lCondition *cp,
                     const lDescr *dp, const lEnumeration *enp, bool isHash,
-                    sge_pack_buffer *pb, u_long32 *elements) 
-{
+                    sge_pack_buffer *pb, u_long32 *elements) {
 
    lListElem *ep, *new_ep;
    lList *dlp = (lList *) NULL;
@@ -865,7 +855,7 @@ lList *lSelectDPack(const char *name, const lList *slp, const lCondition *cp,
          }
       }
    }
-   
+
    if (pb == NULL && isHash) {
       /* now create the hash tables */
       cull_hash_create_hashtables(dlp);
@@ -907,8 +897,7 @@ lList *lSelectDPack(const char *name, const lList *slp, const lCondition *cp,
 *        -1 - Error 
 *******************************************************************************/
 int lPartialDescr(const lEnumeration *ep, const lDescr *sdp, lDescr *ddp,
-                  int *indexp) 
-{
+                  int *indexp) {
    int i;
    bool reduced = false;
 
@@ -928,19 +917,18 @@ int lPartialDescr(const lEnumeration *ep, const lDescr *sdp, lDescr *ddp,
    }
 
    switch (ep[0].pos) {
-   case WHAT_NONE:
-      DRETURN(0);
-   case WHAT_ALL:
-      for (i = 0; mt_get_type(sdp[i].mt) != lEndT; i++) {
-         ddp[*indexp].mt = sdp[i].mt;
-         ddp[*indexp].nm = sdp[i].nm;
-         ddp[*indexp].ht = NULL;
+      case WHAT_NONE:
+         DRETURN(0);
+      case WHAT_ALL:
+         for (i = 0; mt_get_type(sdp[i].mt) != lEndT; i++) {
+            ddp[*indexp].mt = sdp[i].mt;
+            ddp[*indexp].nm = sdp[i].nm;
+            ddp[*indexp].ht = NULL;
 
-         (*indexp)++;
-      }
-      break;
-   default:
-      {
+            (*indexp)++;
+         }
+         break;
+      default: {
          int maxpos = 0;
          maxpos = lCountDescr(sdp);
 
@@ -958,7 +946,7 @@ int lPartialDescr(const lEnumeration *ep, const lDescr *sdp, lDescr *ddp,
                ddp[*indexp].ht = NULL;
                ddp[*indexp].mt |= CULL_IS_REDUCED;
                reduced = true;
-    
+
                (*indexp)++;
             } else {
                LERROR(LEENUMDESCR);
@@ -1007,9 +995,8 @@ int lPartialDescr(const lEnumeration *ep, const lDescr *sdp, lDescr *ddp,
 *  RESULT
 *     lDescr* - new descriptor
 ******************************************************************************/
-lDescr *lJoinDescr(const lDescr *sdp0, const lDescr *sdp1, 
-                   const lEnumeration *ep0, const lEnumeration *ep1) 
-{
+lDescr *lJoinDescr(const lDescr *sdp0, const lDescr *sdp1,
+                   const lEnumeration *ep0, const lEnumeration *ep1) {
    int n, m, index;
    lDescr *ddp;
 
@@ -1067,19 +1054,19 @@ lDescr *lGetReducedDescr(const lDescr *type, const lEnumeration *what) {
    int index = 0;
    int n = 0;
    DENTER(CULL_LAYER);
-  
+
    if ((n = lCountWhat(what, type)) <= 0) {
       DRETURN(NULL);
    }
-   
-   if (!(new_descr= (lDescr *) sge_malloc(sizeof(lDescr) * (n + 1)))) {
+
+   if (!(new_descr = (lDescr *) sge_malloc(sizeof(lDescr) * (n + 1)))) {
       DRETURN(NULL);
    }
-   if (lPartialDescr(what, type, new_descr, &index) != 0){
+   if (lPartialDescr(what, type, new_descr, &index) != 0) {
       sge_free(&new_descr);
-      DRETURN(NULL);      
+      DRETURN(NULL);
    }
-  
+
    DRETURN(new_descr);
 }
 
@@ -1108,9 +1095,8 @@ lDescr *lGetReducedDescr(const lDescr *type, const lEnumeration *what) {
 *         1 - OK
 *         0 - On error
 ******************************************************************************/
-int lString2List(const char *s, lList **lpp, const lDescr *dp, int nm, 
-                 const char *dlmt) 
-{
+int lString2List(const char *s, lList **lpp, const lDescr *dp, int nm,
+                 const char *dlmt) {
    int pos;
    int dataType;
    struct saved_vars_s *context = NULL;
@@ -1159,7 +1145,7 @@ int lString2List(const char *s, lList **lpp, const lDescr *dp, int nm,
          break;
    }
 
-   if (context)   
+   if (context)
       sge_free_saved_vars(context);
 
    DRETURN(0);
@@ -1194,8 +1180,7 @@ int lString2List(const char *s, lList **lpp, const lDescr *dp, int nm,
 *  SEE ALSO
 ******************************************************************************/
 int lString2ListNone(const char *s, lList **lpp, const lDescr *dp,
-                     int nm, const char *dlmt) 
-{
+                     int nm, const char *dlmt) {
    int pos;
    int dataType;
    if (lString2List(s, lpp, dp, nm, dlmt))
@@ -1204,7 +1189,7 @@ int lString2ListNone(const char *s, lList **lpp, const lDescr *dp,
 
    pos = lGetPosInDescr(dp, nm);
    dataType = lGetPosType(dp, pos);
-   switch(dataType) {
+   switch (dataType) {
       case lStringT:
          DPRINTF(("lString2ListNone: got lStringT data type\n"));
          if (lGetNumberOfElem(*lpp) > 1 && lGetElemCaseStr(*lpp, nm, "none")) {
@@ -1255,8 +1240,7 @@ int lString2ListNone(const char *s, lList **lpp, const lDescr *dp,
 *         0 - OK
 *        -1 - Error
 ******************************************************************************/
-int lDiffListStr(int nm, lList **lpp1, lList **lpp2) 
-{
+int lDiffListStr(int nm, lList **lpp1, lList **lpp2) {
    const char *key;
    const lListElem *ep, *to_check;
 
@@ -1286,8 +1270,7 @@ int lDiffListStr(int nm, lList **lpp1, lList **lpp2)
    DRETURN(0);
 }
 
-int lDiffListUlong(int nm, lList **lpp1, lList **lpp2)
-{
+int lDiffListUlong(int nm, lList **lpp1, lList **lpp2) {
    u_long32 key;
    const lListElem *ep, *to_check;
 

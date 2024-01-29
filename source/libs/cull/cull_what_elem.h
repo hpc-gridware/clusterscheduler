@@ -34,4 +34,5 @@
 #include "cull/cull_list.h"
 
 lListElem *lWhatToElem(const lEnumeration *where);
+
 lEnumeration *lWhatFromElem(const lListElem *what);

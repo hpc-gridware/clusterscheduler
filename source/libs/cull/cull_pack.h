@@ -31,7 +31,7 @@
  ************************************************************************/
 /*___INFO__MARK_END__*/
 
-#include "cull/cull_list.h" 
+#include "cull/cull_list.h"
 #include "cull/pack.h"
 
 /*
@@ -43,13 +43,13 @@ int cull_unpack_elem(sge_pack_buffer *pb, lListElem **epp, const lDescr *dp);
 
 int cull_pack_elem(sge_pack_buffer *pb, const lListElem *ep);
 
-int 
-cull_unpack_elem_partial(sge_pack_buffer *pb, lListElem **epp, 
+int
+cull_unpack_elem_partial(sge_pack_buffer *pb, lListElem **epp,
                          const lDescr *dp, int flags);
 
 int
 cull_pack_list_summary(sge_pack_buffer *pb, const lList *lp,
-                       const lEnumeration *what, const char *name, 
+                       const lEnumeration *what, const char *name,
                        size_t *offset, size_t *used);
 
 int
@@ -64,10 +64,12 @@ int getByteArray(char **byte, const lListElem *elem, int name);
  *   lList
  */
 int cull_unpack_list(sge_pack_buffer *pb, lList **lpp);
+
 int cull_pack_list(sge_pack_buffer *pb, const lList *lp);
 
 int cull_unpack_list_partial(sge_pack_buffer *pb, lList **lpp, int flags);
-int cull_pack_list_partial(sge_pack_buffer *pb, const lList *lp, 
+
+int cull_pack_list_partial(sge_pack_buffer *pb, const lList *lp,
                            lEnumeration *what, int flags);
 
 /*
@@ -76,6 +78,7 @@ int cull_pack_list_partial(sge_pack_buffer *pb, const lList *lp,
  *
  */
 int cull_unpack_enum(sge_pack_buffer *pb, lEnumeration **epp);
+
 int cull_pack_enum(sge_pack_buffer *pb, const lEnumeration *ep);
 
 /*
@@ -84,6 +87,7 @@ int cull_pack_enum(sge_pack_buffer *pb, const lEnumeration *ep);
  *
  */
 int cull_unpack_cond(sge_pack_buffer *pb, lCondition **cpp);
+
 int cull_pack_cond(sge_pack_buffer *pb, const lCondition *cp);
 
 void cull_dump_pack_buffer(sge_pack_buffer *pb, FILE *fp);

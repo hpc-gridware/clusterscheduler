@@ -38,15 +38,19 @@
 int lSortCompare(const lListElem *ep0, const lListElem *ep1, const lSortOrder *sp);
 
 int lInsertSorted(const lSortOrder *so, lListElem *ep, lList *lp);
+
 int lResortElem(const lSortOrder *so, lListElem *ep, lList *lp);
 
 lSortOrder *lParseSortOrderVarArg(const lDescr *dp, const char *fmt, ...);
+
 lSortOrder *lParseSortOrder(const lDescr *dp, const char *fmt, va_list ap);
+
 void lFreeSortOrder(lSortOrder **so);
 
 /* for debugging purposes */
 void lWriteSortOrder(const lSortOrder *sp);
 
 
-lSortOrder * lCreateSortOrder(int n);
+lSortOrder *lCreateSortOrder(int n);
+
 int lAddSortCriteria(const lDescr *dp, lSortOrder *so, int nm, int up_down_flag);

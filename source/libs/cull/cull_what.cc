@@ -52,7 +52,7 @@
 
 #include "gdi/msg_gdilib.h"
 
-static lEnumeration *subscope_lWhat(cull_parse_state* state, va_list *app);
+static lEnumeration *subscope_lWhat(cull_parse_state *state, va_list *app);
 
 /****** cull/what/nm_set() ****************************************************
 *  NAME
@@ -68,14 +68,13 @@ static lEnumeration *subscope_lWhat(cull_parse_state* state, va_list *app);
 *     int job_field[] - int vector 
 *     int nm          - field name id  
 ******************************************************************************/
-void nm_set(int job_field[], int nm) 
-{
+void nm_set(int job_field[], int nm) {
    int i;
 
    DENTER(TOP_LAYER);
 
    /* seek it */
-   for (i=0; job_field[i]!=NoName; i++)
+   for (i = 0; job_field[i] != NoName; i++)
       if (job_field[i] == nm) {
          DRETURN_VOID; /*found*/
       }
@@ -109,8 +108,7 @@ void nm_set(int job_field[], int nm)
 *         0 - OK
 *        -1 - Error
 *******************************************************************************/
-int lReduceDescr(lDescr **dst_dpp, lDescr *src_dp, lEnumeration *enp) 
-{
+int lReduceDescr(lDescr **dst_dpp, lDescr *src_dp, lEnumeration *enp) {
    int n, index = 0;
 
    DENTER(TOP_LAYER);
@@ -138,9 +136,8 @@ int lReduceDescr(lDescr **dst_dpp, lDescr *src_dp, lEnumeration *enp)
    _lWhat creates an enumeration array. This is used in lWhat
    to choose special fields of a list element.
  */
-lEnumeration *_lWhat(const char *fmt, const lDescr *dp, 
-                     const int *nm_list, int nr_nm) 
-{
+lEnumeration *_lWhat(const char *fmt, const lDescr *dp,
+                     const int *nm_list, int nr_nm) {
    int neg = 0;
    int i, j, k, n, size = 0;
    const char *s;
@@ -193,32 +190,32 @@ lEnumeration *_lWhat(const char *fmt, const lDescr *dp,
    /* Normally the arguments nm_list and nr_nm should be NULL(0)     */
    switch (scan(NULL, &state)) {
 
-   case CULL_ALL:
-      ep[0].pos = WHAT_ALL;
-      ep[0].nm = -99;
-      ep[0].mt = -99;
-      ep[0].ep = NULL;
-      eat_token(&state);
-      ep[1].pos = 0;
-      ep[1].nm = NoName;
-      ep[1].mt = lEndT;
-      ep[1].ep = NULL;
-      DRETURN(ep);
+      case CULL_ALL:
+         ep[0].pos = WHAT_ALL;
+         ep[0].nm = -99;
+         ep[0].mt = -99;
+         ep[0].ep = NULL;
+         eat_token(&state);
+         ep[1].pos = 0;
+         ep[1].nm = NoName;
+         ep[1].mt = lEndT;
+         ep[1].ep = NULL;
+         DRETURN(ep);
 
-   case CULL_NONE:
-      ep[0].pos = WHAT_NONE;
-      ep[0].nm = -99;
-      ep[0].mt = -99;
-      ep[0].ep = NULL;
-      eat_token(&state);
-      ep[1].pos = 0;
-      ep[1].nm = NoName;
-      ep[1].mt = lEndT;
-      ep[1].ep = NULL;
-      DRETURN(ep);
+      case CULL_NONE:
+         ep[0].pos = WHAT_NONE;
+         ep[0].nm = -99;
+         ep[0].mt = -99;
+         ep[0].ep = NULL;
+         eat_token(&state);
+         ep[1].pos = 0;
+         ep[1].nm = NoName;
+         ep[1].mt = lEndT;
+         ep[1].ep = NULL;
+         DRETURN(ep);
 
-   default:
-      break;
+      default:
+         break;
    }
 
    if (scan(NULL, &state) == NEG) {
@@ -234,8 +231,7 @@ lEnumeration *_lWhat(const char *fmt, const lDescr *dp,
          /* ( expected */
          error_status = LESYNTAX;
          goto error;
-      }
-      else
+      } else
          eat_token(&state);           /* eat_token BRA, if it was a BRA */
    }
 
@@ -246,7 +242,7 @@ lEnumeration *_lWhat(const char *fmt, const lDescr *dp,
          error_status = LENAMENOT;
          goto error;
       }
-      ep[i].mt = dp[ep[i].pos].mt; 
+      ep[i].mt = dp[ep[i].pos].mt;
       ep[i].ep = NULL;
 
       if (scan(NULL, &state) != FIELD) {
@@ -302,7 +298,7 @@ lEnumeration *_lWhat(const char *fmt, const lDescr *dp,
 
    DRETURN(ep);
 
- error:
+   error:
    LERROR(error_status);
    lFreeWhat(&ep);
    DPRINTF(("error_status = %d\n", error_status));
@@ -350,8 +346,7 @@ lEnumeration *_lWhat(const char *fmt, const lDescr *dp,
 *     "%I" is equivalent with "%I->%T(ALL)" 
 *     "" is NOT equivalent with "%I->%T(NONE)"
 *******************************************************************************/
-lEnumeration *lWhat(const char *fmt, ...)
-{
+lEnumeration *lWhat(const char *fmt, ...) {
    lEnumeration *enumeration = NULL;
    va_list ap;
    cull_parse_state state;
@@ -369,7 +364,7 @@ lEnumeration *lWhat(const char *fmt, ...)
     */
    memset(&state, 0, sizeof(state));
    scan(fmt, &state);
-   
+
    /* parse */
    va_start(ap, fmt);
    enumeration = subscope_lWhat(&state, &ap);
@@ -383,8 +378,7 @@ lEnumeration *lWhat(const char *fmt, ...)
    DRETURN(enumeration);
 }
 
-static lEnumeration *subscope_lWhat(cull_parse_state* state, va_list *app)
-{
+static lEnumeration *subscope_lWhat(cull_parse_state *state, va_list *app) {
    lDescr *dp = NULL;
    lEnumeration *enumeration = NULL;
    int token;
@@ -431,20 +425,20 @@ static lEnumeration *subscope_lWhat(cull_parse_state* state, va_list *app)
          int nm;
 
          if (token != FIELD) {
-            LERROR(LESYNTAX);         
+            LERROR(LESYNTAX);
             DRETURN(NULL);
          }
          eat_token(state);                 /* eat %I */
 
-         /* find field in current descriptor */ 
-         nm = va_arg(*app, int);     
-         for (i = 0; dp[i].nm != NoName; i++) { 
+         /* find field in current descriptor */
+         nm = va_arg(*app, int);
+         for (i = 0; dp[i].nm != NoName; i++) {
             if (dp[i].nm == nm) {
                ep[next_id].pos = i;
                ep[next_id].nm = nm;
                ep[next_id].mt = dp[i].mt;
                break;
-            } 
+            }
          }
 
          token = scan(NULL, state);
@@ -474,13 +468,13 @@ static lEnumeration *subscope_lWhat(cull_parse_state* state, va_list *app)
    eat_token(state);                 /* eat ) */
 
    /* make copy of local data */
-   enumeration = (lEnumeration *)sge_malloc(sizeof(lEnumeration) * next_id);
+   enumeration = (lEnumeration *) sge_malloc(sizeof(lEnumeration) * next_id);
    if (enumeration == NULL) {
       LERROR(LEMALLOC);
       DRETURN(NULL);
    }
 
-   for (i = 0; i < next_id; i++) {  
+   for (i = 0; i < next_id; i++) {
       enumeration[i].pos = ep[i].pos;
       enumeration[i].nm = ep[i].nm;
       enumeration[i].mt = ep[i].mt;
@@ -508,8 +502,7 @@ static lEnumeration *subscope_lWhat(cull_parse_state* state, va_list *app)
 *  RESULT
 *     lEnumeration* - enumeration 
 ******************************************************************************/
-lEnumeration *lWhatAll(void)
-{
+lEnumeration *lWhatAll(void) {
    lEnumeration *ep;
    int error_status;
 
@@ -531,7 +524,7 @@ lEnumeration *lWhatAll(void)
 
    DRETURN(ep);
 
- error:
+   error:
    LERROR(error_status);
    DPRINTF(("error_status = %d\n", error_status));
    DRETURN(NULL);
@@ -551,8 +544,7 @@ lEnumeration *lWhatAll(void)
 *     lEnumeration **ep - enumeration, will be set to NULL 
 *
 ******************************************************************************/
-void lFreeWhat(lEnumeration **ep) 
-{
+void lFreeWhat(lEnumeration **ep) {
    int i;
 
    DENTER(CULL_LAYER);
@@ -586,8 +578,7 @@ void lFreeWhat(lEnumeration **ep)
 *  RESULT
 *     int - number of fields in enumeration 
 ******************************************************************************/
-int lCountWhat(const lEnumeration *enp, const lDescr *dp) 
-{
+int lCountWhat(const lEnumeration *enp, const lDescr *dp) {
    int n;
 
    DENTER(CULL_LAYER);
@@ -601,18 +592,17 @@ int lCountWhat(const lEnumeration *enp, const lDescr *dp)
       DRETURN(-1);
    }
    switch (enp[0].pos) {
-   case WHAT_NONE:
-      n = 0;
-      break;
-   case WHAT_ALL:
-      if ((n = lCountDescr(dp)) == -1) {
-         LERROR(LECOUNTDESCR);
-         DRETURN(-1);
-      }
-      break;
-   default:
-      for (n = 0; enp[n].nm != NoName; n++)
-         ;
+      case WHAT_NONE:
+         n = 0;
+         break;
+      case WHAT_ALL:
+         if ((n = lCountDescr(dp)) == -1) {
+            LERROR(LECOUNTDESCR);
+            DRETURN(-1);
+         }
+         break;
+      default:
+         for (n = 0; enp[n].nm != NoName; n++);
    }
 
    DRETURN(n);
@@ -634,8 +624,7 @@ int lCountWhat(const lEnumeration *enp, const lDescr *dp)
 *  RESULT
 *     lEnumeration* - new copy of enumeration 
 ******************************************************************************/
-lEnumeration *lCopyWhat(const lEnumeration *ep) 
-{
+lEnumeration *lCopyWhat(const lEnumeration *ep) {
    int i, n;
    lEnumeration *copy = NULL;
 
@@ -680,8 +669,7 @@ lEnumeration *lCopyWhat(const lEnumeration *ep)
 *  RESULT
 *     lEnumeration* - enumeration 
 ******************************************************************************/
-lEnumeration *lIntVector2What(const lDescr *dp, const int intv[]) 
-{
+lEnumeration *lIntVector2What(const lDescr *dp, const int intv[]) {
    lEnumeration *what;
    char fmtstr[2000];
    int i;
@@ -705,12 +693,11 @@ lEnumeration *lIntVector2What(const lDescr *dp, const int intv[])
    DRETURN(what);
 }
 
-int lMergeWhat(lEnumeration **what1, lEnumeration **what2)
-{
+int lMergeWhat(lEnumeration **what1, lEnumeration **what2) {
    int ret = 0;
 
    DENTER(CULL_LAYER);
-   if (*what1 == NULL || 
+   if (*what1 == NULL ||
        (*what1)[0].pos == WHAT_NONE ||
        (*what2)[0].pos == WHAT_ALL) {
       /*
@@ -732,7 +719,7 @@ int lMergeWhat(lEnumeration **what1, lEnumeration **what2)
       /*
        * Add all elements of what1 
        */
-      for (i = 0; mt_get_type((*what1)[i].mt) != lEndT; i++) { 
+      for (i = 0; mt_get_type((*what1)[i].mt) != lEndT; i++) {
          tmp_result[next_id].pos = (*what1)[i].pos;
          tmp_result[next_id].mt = (*what1)[i].mt;
          tmp_result[next_id].nm = (*what1)[i].nm;
@@ -774,12 +761,12 @@ int lMergeWhat(lEnumeration **what1, lEnumeration **what2)
             tmp_result[next_id].pos = (*what2)[i].pos;
             tmp_result[next_id].mt = (*what2)[i].mt;
             tmp_result[next_id].nm = (*what2)[i].nm;
-            
+
             /*TODO: SG is this correct? what happens, if we have a new subfilter
               in what2 but none in temp? */
             if (tmp_result[next_id].ep != NULL && (*what2)[i].ep != NULL) {
                lMergeWhat(&(tmp_result[next_id].ep), &((*what2)[i].ep));
-            } else { 
+            } else {
                tmp_result[next_id].ep = NULL;
             }
             /* add last element */
@@ -800,7 +787,7 @@ int lMergeWhat(lEnumeration **what1, lEnumeration **what2)
       /*
        * create result what 
        */
-      *what1 = (lEnumeration *)sge_malloc(sizeof(lEnumeration) * next_id);
+      *what1 = (lEnumeration *) sge_malloc(sizeof(lEnumeration) * next_id);
       if (*what1 != NULL) {
          for (i = 0; i < next_id; i++) {
             (*what1)[i].pos = tmp_result[i].pos;
@@ -817,8 +804,7 @@ int lMergeWhat(lEnumeration **what1, lEnumeration **what2)
    DRETURN(ret);
 }
 
-int lWhatSetSubWhat(lEnumeration *what1, int nm, lEnumeration **what2)
-{
+int lWhatSetSubWhat(lEnumeration *what1, int nm, lEnumeration **what2) {
    int ret = -1;
    int i;
 
@@ -830,10 +816,10 @@ int lWhatSetSubWhat(lEnumeration *what1, int nm, lEnumeration **what2)
                lFreeWhat(&(what1[i].ep));
             }
             what1[i].ep = *what2;
-            *what2 = NULL; 
+            *what2 = NULL;
             ret = 0;
             break;
-         } 
+         }
       }
       lFreeWhat(what2);
    }

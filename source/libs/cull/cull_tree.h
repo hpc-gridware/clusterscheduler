@@ -34,4 +34,5 @@
 #include "cull/cull_list.h"
 
 int lGetNumberOfNodes(const lListElem *ep, const lList *lp, int nm);
+
 int lGetNumberOfLeafs(const lListElem *ep, const lList *lp, int nm);

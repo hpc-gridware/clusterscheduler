@@ -2,6 +2,7 @@
 #include <stdlib.h>
 
 #define __SGE_GDI_LIBRARY_HOME_OBJECT_FILE__
+
 #include "uti/sge_rmon.h"
 
 #include "cull/cull_list.h"
@@ -246,21 +247,20 @@ bool test_scenario3(void) {
 }
 #endif
 
-int main(int argc, char *argv[])
-{
+int main(int argc, char *argv[]) {
    bool ret = true;
    DENTER_MAIN(TOP_LAYER, "main")
 
 #ifdef OBSERVE
-   lInit(nmv);
+      lInit(nmv);
 
-   ret &= test_scenario1();
-   if (ret) {
-      ret &= test_scenario2();
-   }
-   if (ret) {
-      ret &= test_scenario3();
-   }
+      ret &= test_scenario1();
+      if (ret) {
+         ret &= test_scenario2();
+      }
+      if (ret) {
+         ret &= test_scenario3();
+      }
 #endif
 
    DRETURN(ret ? EXIT_SUCCESS : EXIT_FAILURE);

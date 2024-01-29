@@ -55,7 +55,7 @@ struct _lCondition {
 /* new data structure for dynamically buildable args for lWhere         */
 /* the var_args model requires the knowledge of the fields at run time  */
 struct _WhereArg {
-   lDescr      *descriptor;
-   int         field;
-   lMultiType  value;
+   lDescr *descriptor;
+   int field;
+   lMultiType value;
 }; 

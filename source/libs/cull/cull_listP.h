@@ -72,7 +72,7 @@ struct _lListElem {
    lDescr *descr;               /* pointer to the descriptor array           */
    lMultiType *cont;            /* pointer to the lMultiType array           */
    bitfield changed;            /* bitfield describing which fields have     */
-                                /* changed since last spooling               */
+   /* changed since last spooling               */
 };
 
 struct _lList {

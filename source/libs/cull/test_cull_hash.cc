@@ -47,6 +47,7 @@
 #include "basis_types.h"
 
 #define __SGE_GDI_LIBRARY_HOME_OBJECT_FILE__
+
 #include "cull/cull.h"
 
 #include "uti/sge_profiling.h"
@@ -69,29 +70,28 @@ enum {
 };
 
 LISTDEF(TEST_Type)
-   SGE_ULONG (TEST_ulong, CULL_DEFAULT)
-   SGE_STRING (TEST_string, CULL_DEFAULT)
+                SGE_ULONG (TEST_ulong, CULL_DEFAULT)
+                SGE_STRING (TEST_string, CULL_DEFAULT)
 LISTEND
 
 NAMEDEF(TEST_Name)
-   NAME("TEST_ulong")
-   NAME("TEST_string")
+                NAME("TEST_ulong")
+                NAME("TEST_string")
 NAMEEND
 
 #define TEST_Size sizeof(TEST_Name) / sizeof(char *)
 
-int NM_ULONG  = TEST_ulong;
+int NM_ULONG = TEST_ulong;
 int NM_STRING = TEST_string;
 lDescr *DESCR = TEST_Type;
 
 lNameSpace my_nmv[] = {
-   {1, TEST_Size, TEST_Name },
-   {0, 0, NULL}
+        {1, TEST_Size, TEST_Name},
+        {0, 0, NULL}
 };
 #endif
 
-static void usage(const char *argv0) 
-{
+static void usage(const char *argv0) {
    fprintf(stderr, "usage: %s [<num_objects> <num_names> <uh> <nuh>]\n", argv0);
    fprintf(stderr, "<num_objects> = number of objects to be created\n");
    fprintf(stderr, "<num_names>   = number of entries in non unique hash\n");
@@ -100,8 +100,7 @@ static void usage(const char *argv0)
    exit(EXIT_FAILURE);
 }
 
-static const char *random_string(int length)
-{
+static const char *random_string(int length) {
    static char buf[1000];
    int i;
 
@@ -117,11 +116,10 @@ long clk_tck = 0;
 const char **names = NULL;
 
 const char *HEADER_FORMAT = "%s %s %8s %8s %8s %8s %8s %8s %8s %8s %8s %8s %8s\n";
-const char *DATA_FORMAT   = "%s %s %8.3lf %8.3lf %8.3lf %8.3lf %8.3lf %8.3lf %8.3lf (%6d) %8.3lf (%6d) %8ld\n";
+const char *DATA_FORMAT = "%s %s %8.3lf %8.3lf %8.3lf %8.3lf %8.3lf %8.3lf %8.3lf (%6d) %8.3lf (%6d) %8ld\n";
 
-static void do_test(bool unique_hash, bool non_unique_hash, 
-                    int num_objects, int num_names)
-{
+static void do_test(bool unique_hash, bool non_unique_hash,
+                    int num_objects, int num_names) {
    lList *lp = NULL;
    lList *copy;
    lListElem *ep;
@@ -137,16 +135,16 @@ static void do_test(bool unique_hash, bool non_unique_hash,
 #endif
 
    /* measurement data */
-   double  prof_create,  /* create objects */
-           prof_copy,    /* copy list including all hashtables */
-           prof_rau,     /* random access by unique attrib */
-           prof_inu,     /* iterate by non unique attrib */
-           prof_curo,    /* change unique attrib of random object */
-           prof_cnuro,   /* change non unique attrib of random object */
-           prof_dru,     /* delete random object by unique attribute */
-           prof_dinu;    /* delete by iterating over non unique attrib */
-   int     objs_dru,     /* objects deleted by random unique */
-           objs_dinu;    /* objects deleted by iterate non unique */
+   double prof_create,  /* create objects */
+   prof_copy,    /* copy list including all hashtables */
+   prof_rau,     /* random access by unique attrib */
+   prof_inu,     /* iterate by non unique attrib */
+   prof_curo,    /* change unique attrib of random object */
+   prof_cnuro,   /* change non unique attrib of random object */
+   prof_dru,     /* delete random object by unique attribute */
+   prof_dinu;    /* delete by iterating over non unique attrib */
+   int objs_dru,     /* objects deleted by random unique */
+   objs_dinu;    /* objects deleted by iterate non unique */
 
    /* create list and hash tables */
    lp = lCreateList("test list ", DESCR);
@@ -180,7 +178,7 @@ static void do_test(bool unique_hash, bool non_unique_hash,
 #ifdef MALLINFO
    meminfo = mallinfo();
 #endif
-  
+
    /* TEST: copy list */
    start = times(&tms_buffer);
    copy = lCopyList("copy", lp);
@@ -262,7 +260,7 @@ static void do_test(bool unique_hash, bool non_unique_hash,
          lRemoveElem(lp, &ep);
          objs_dru++;
       }
-   }   
+   }
    /* measure time */
    now = times(&tms_buffer);
    prof_dru = (now - start) * 1.0 / clk_tck;
@@ -287,30 +285,29 @@ static void do_test(bool unique_hash, bool non_unique_hash,
    prof_dinu = (now - start) * 1.0 / clk_tck;
    start = now;
 
-   printf(DATA_FORMAT, 
+   printf(DATA_FORMAT,
           unique_hash ? " * " : "   ",
           non_unique_hash ? " * " : "   ",
-          prof_create, 
-          prof_copy, 
-          prof_rau, prof_inu, 
+          prof_create,
+          prof_copy,
+          prof_rau, prof_inu,
           prof_curo, prof_cnuro,
           prof_dru, objs_dru, prof_dinu, objs_dinu,
 #ifdef MALLINFO
-          (meminfo.usmblks + meminfo.uordblks) / 1024
+           (meminfo.usmblks + meminfo.uordblks) / 1024
 #else
           0L
 #endif
-          );
+   );
 
 #ifdef HASH_STATISTICS
-printf("%s\n", cull_hash_statistics(cht, &stat_dstring));
-   sge_dstring_free(&stat_dstring);
+   printf("%s\n", cull_hash_statistics(cht, &stat_dstring));
+      sge_dstring_free(&stat_dstring);
 #endif
    lFreeList(&lp);
 }
 
-int main(int argc, char *argv[])
-{
+int main(int argc, char *argv[]) {
    int num_objects;
    int num_names;
    int i;
@@ -330,19 +327,19 @@ int main(int argc, char *argv[])
 
    if (argc == 1) {
       num_objects = 1000;
-      num_names   = 10;
-      uh          = true;
-      nuh         = true;
+      num_names = 10;
+      uh = true;
+      nuh = true;
    } else {
       /* parse commandline options */
       num_objects = atoi(argv[1]);
-      num_names   = atoi(argv[2]);
-      uh          = atoi(argv[3]) == 0 ? false : true;
-      nuh         = atoi(argv[4]) == 0 ? false : true;
+      num_names = atoi(argv[2]);
+      uh = atoi(argv[3]) == 0 ? false : true;
+      nuh = atoi(argv[4]) == 0 ? false : true;
    }
 
    /* create name array */
-   names = (const char **) sge_malloc (num_names * sizeof(const char *));
+   names = (const char **) sge_malloc(num_names * sizeof(const char *));
 
    /* build random names */
    for (i = 0; i < num_names; i++) {
@@ -351,13 +348,13 @@ int main(int argc, char *argv[])
    }
 
    /* output header */
-   printf(HEADER_FORMAT, "uh ", "nuh", 
-          "create", "copy", "rau", "inu", "curo", "cnuro", 
+   printf(HEADER_FORMAT, "uh ", "nuh",
+          "create", "copy", "rau", "inu", "curo", "cnuro",
           "dru", "(objs)", "dinu", "(objs)", "mem(kB)");
 
    /* do tests */
    do_test(uh, nuh, num_objects, num_names);
-   
+
    /* free names */
    for (i = 0; i < num_names; i++) {
       sge_free(&(names[i]));

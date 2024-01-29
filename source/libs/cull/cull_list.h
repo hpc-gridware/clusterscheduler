@@ -32,7 +32,7 @@
 /* Portions of this code are Copyright (c) 2011 Univa Corporation. */
 /*___INFO__MARK_END__*/
 
-#include <stdio.h> 
+#include <stdio.h>
 
 #include "basis_types.h"
 #include "cull/cull_hashP.h"
@@ -62,7 +62,7 @@ typedef int lInt;
 typedef char *lString;
 typedef char *lHost;
 typedef lListElem *lObject;
-typedef void*  lRef;
+typedef void *lRef;
 
 /* IF YOU CHANGE THIS ENUM, CHANGE cull_multitype.c/multitypes[] */
 enum _enum_lMultiType {
@@ -157,46 +157,46 @@ enum _enum_lMultiType {
 
 #else
 
-#define LISTDEF( name ) extern lDescr name[];
+#define LISTDEF(name) extern lDescr name[];
 #define LISTEND
 
-#define DERIVED_LISTDEF(name,parent) extern lDescr *name
-#define DERIVED_LISTEND ; 
+#define DERIVED_LISTDEF(name, parent) extern lDescr *name
+#define DERIVED_LISTEND ;
 
-#define SGE_INT(name,flags)
-#define SGE_HOST(name,flags)
-#define SGE_STRING(name,flags)
-#define SGE_FLOAT(name,flags)
-#define SGE_DOUBLE(name,flags)
-#define SGE_CHAR(name,flags)
-#define SGE_LONG(name,flags)
-#define SGE_ULONG(name,flags)
-#define SGE_ULONG64(name,flags)
-#define SGE_BOOL(name,flags)
-#define SGE_LIST(name,type,flags)
-#define SGE_MAP(name,type,flags)
-#define SGE_MAPLIST(name,type,flags)
-#define SGE_OBJECT(name,type,flags)
-#define SGE_REF(name,type,flags)
+#define SGE_INT(name, flags)
+#define SGE_HOST(name, flags)
+#define SGE_STRING(name, flags)
+#define SGE_FLOAT(name, flags)
+#define SGE_DOUBLE(name, flags)
+#define SGE_CHAR(name, flags)
+#define SGE_LONG(name, flags)
+#define SGE_ULONG(name, flags)
+#define SGE_ULONG64(name, flags)
+#define SGE_BOOL(name, flags)
+#define SGE_LIST(name, type, flags)
+#define SGE_MAP(name, type, flags)
+#define SGE_MAPLIST(name, type, flags)
+#define SGE_OBJECT(name, type, flags)
+#define SGE_REF(name, type, flags)
 
-#define SGE_INT_D(name,flags,def)
-#define SGE_HOST_D(name,flags,def)
-#define SGE_STRING_D(name,flags,def)
-#define SGE_FLOAT_D(name,flags,def)
-#define SGE_DOUBLE_D(name,flags,def)
-#define SGE_CHAR_D(name,flags,def)
-#define SGE_LONG_D(name,flags,def)
-#define SGE_ULONG_D(name,flags,def)
-#define SGE_ULONG64_D(name,flags,def)
-#define SGE_BOOL_D(name,flags,def)
-#define SGE_LIST_D(name,type,flags,def)
-#define SGE_MAP_D(name,type,flags,defkey,keyvalue,jgdi_keyname,jgdi_valuename)
-#define SGE_MAPLIST_D(name,type,flags,defkey,defvalue,jgdi_keyname,jgdi_valuename)
-#define SGE_OBJECT_D(name,type,flags,def)
-#define SGE_REF_D(name,type,flags,def)
+#define SGE_INT_D(name, flags, def)
+#define SGE_HOST_D(name, flags, def)
+#define SGE_STRING_D(name, flags, def)
+#define SGE_FLOAT_D(name, flags, def)
+#define SGE_DOUBLE_D(name, flags, def)
+#define SGE_CHAR_D(name, flags, def)
+#define SGE_LONG_D(name, flags, def)
+#define SGE_ULONG_D(name, flags, def)
+#define SGE_ULONG64_D(name, flags, def)
+#define SGE_BOOL_D(name, flags, def)
+#define SGE_LIST_D(name, type, flags, def)
+#define SGE_MAP_D(name, type, flags, defkey, keyvalue, jgdi_keyname, jgdi_valuename)
+#define SGE_MAPLIST_D(name, type, flags, defkey, defvalue, jgdi_keyname, jgdi_valuename)
+#define SGE_OBJECT_D(name, type, flags, def)
+#define SGE_REF_D(name, type, flags, def)
 
-#define NAMEDEF( name ) extern char *name[];
-#define NAME( name )
+#define NAMEDEF(name) extern char *name[];
+#define NAME(name)
 #define NAMEEND
 
 #endif
@@ -216,72 +216,111 @@ struct _lDescr {
 
 /* LIST SPECIFIC FUNCTIONS */
 const char *lGetListName(const lList *lp);
+
 const lDescr *lGetListDescr(const lList *lp);
+
 u_long32 lGetNumberOfElem(const lList *lp);
+
 u_long32 lGetNumberOfRemainingElem(const lListElem *ep);
+
 int lGetElemIndex(const lListElem *ep, const lList *lp);
 
 const lDescr *lGetElemDescr(const lListElem *ep);
+
 void lWriteElem(const lListElem *ep);
+
 void lWriteElemTo(const lListElem *ep, FILE *fp);
+
 void lWriteElemToStr(const lListElem *ep, dstring *buffer);
 
 void lWriteList(const lList *lp);
+
 void lWriteListTo(const lList *lp, FILE *fp);
-void lWriteListToStr(const lList* lp, dstring* buffer);
+
+void lWriteListToStr(const lList *lp, dstring *buffer);
 
 lListElem *lCreateElem(const lDescr *dp);
+
 lList *lCreateList(const char *listname, const lDescr *descr);
+
 lList *lCreateListHash(const char *listname, const lDescr *descr, bool hash);
+
 lList *lCreateElemList(const char *listname, const lDescr *descr, int nr_elem);
 
 void lFreeElem(lListElem **ep);
+
 void lFreeList(lList **ilp);
 
 int lAddList(lList *lp0, lList **lp1);
+
 int lAppendList(lList *lp0, lList *lp1);
+
 int lOverrideStrList(lList *lp0, lList *lp1, int nm, const char *str);
+
 lList *lAddSubList(lListElem *ep, int nm, lList *to_add);
+
 int lCompListDescr(const lDescr *dp0, const lDescr *dp1);
+
 lList *lCopyList(const char *name, const lList *src);
+
 lList *lCopyListHash(const char *name, const lList *src, bool hash);
+
 lListElem *lCopyElem(const lListElem *src);
+
 lListElem *lCopyElemHash(const lListElem *src, bool isHash);
 
 int lModifyWhat(lListElem *dst, const lListElem *src, const lEnumeration *enp);
 
-int 
-lCopyElemPartialPack(lListElem *dst, int *jp, const lListElem *src, 
+int
+lCopyElemPartialPack(lListElem *dst, int *jp, const lListElem *src,
                      const lEnumeration *ep, bool isHash, sge_pack_buffer *pb);
 
-int 
+int
 lCopySwitchPack(const lListElem *sep, lListElem *dep, int src_idx, int dst_idx,
                 bool isHash, lEnumeration *ep, sge_pack_buffer *pb);
 
 int lAppendElem(lList *lp, lListElem *ep);
+
 lListElem *lDechainElem(lList *lp, lListElem *ep);
+
 void lDechainList(lList *source, lList **target, lListElem *ep);
+
 lListElem *lDechainObject(lListElem *parent, int name);
+
 int lRemoveElem(lList *lp, lListElem **ep);
+
 int lInsertElem(lList *lp, lListElem *ep, lListElem *new_elem);
 
 int lPSortList(lList *lp, const char *fmt, ...);
+
 int lSortList(lList *lp, const lSortOrder *sp);
+
 int lUniqStr(lList *lp, int keyfield);
+
 int lUniqHost(lList *lp, int keyfield);
 
 lListElem *lFirstRW(const lList *lp);
+
 const lListElem *lFirst(const lList *lp);
+
 lListElem *lLastRW(const lList *lp);
+
 const lListElem *lLast(const lList *lp);
+
 lListElem *lNextRW(const lListElem *ep);
+
 const lListElem *lNext(const lListElem *ep);
+
 lListElem *lPrevRW(const lListElem *ep);
+
 const lListElem *lPrev(const lListElem *ep);
 
 lListElem *lFindNextRW(const lListElem *ep, const lCondition *cp);
+
 lListElem *lFindPrevRW(const lListElem *ep, const lCondition *cp);
+
 lListElem *lFindFirstRW(const lList *lp, const lCondition *cp);
+
 lListElem *lFindLastRW(const lList *lp, const lCondition *cp);
 
 #define mt_get_type(mt) ((mt) & 0x000000FF)
@@ -289,16 +328,19 @@ lListElem *lFindLastRW(const lList *lp, const lCondition *cp);
 #define mt_is_unique(mt) (((mt) & CULL_UNIQUE) ? true : false)
 
 bool lListElem_is_pos_changed(const lListElem *ep, int pos);
+
 bool lListElem_is_changed(const lListElem *ep);
+
 bool lList_clear_changed_info(lList *lp);
+
 bool lListElem_clear_changed_info(lListElem *lp);
 
-#define for_each_ep(ep,lp) for (ep=lFirst(lp);ep;ep=lNext(ep))
-#define for_each_rev(ep,lp) for (ep=lLast(lp);ep;ep=lPrev(ep))
-#define for_each_rw(ep,lp) for (ep=lFirstRW(lp);ep;ep=lNextRW(ep))
-#define for_each_rev_rw(ep,lp) for (ep=lLastRW(lp);ep;ep=lPrevRW(ep))
+#define for_each_ep(ep, lp) for (ep=lFirst(lp);ep;ep=lNext(ep))
+#define for_each_rev(ep, lp) for (ep=lLast(lp);ep;ep=lPrev(ep))
+#define for_each_rw(ep, lp) for (ep=lFirstRW(lp);ep;ep=lNextRW(ep))
+#define for_each_rev_rw(ep, lp) for (ep=lLastRW(lp);ep;ep=lPrevRW(ep))
 
-#define for_each_where(ep,lp,cp) \
+#define for_each_where(ep, lp, cp) \
    for (ep=lFindFirstRW(lp,cp);ep;ep=lFindNextRW(ep,cp))
-#define for_each_where_rev(ep,lp,cp) \
+#define for_each_where_rev(ep, lp, cp) \
    for (ep=lFindLast(lp,cp);ep;ep=lFindPrev(ep,cp))

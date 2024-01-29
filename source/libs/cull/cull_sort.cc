@@ -51,8 +51,7 @@
    insert ep into sorted list lp using so as sort order
 
  */
-int lInsertSorted(const lSortOrder * so, lListElem * ep, lList * lp)
-{
+int lInsertSorted(const lSortOrder *so, lListElem *ep, lList *lp) {
    lListElem *tmp;
 
    DENTER(TOP_LAYER);
@@ -61,9 +60,8 @@ int lInsertSorted(const lSortOrder * so, lListElem * ep, lList * lp)
       DRETURN(-1);
    }
 
-   for_each_rw(tmp, lp)
-      if (lSortCompare(ep, tmp, so) <= 0)
-      break;                    /* insert before tmp */
+   for_each_rw(tmp, lp)if (lSortCompare(ep, tmp, so) <= 0)
+         break;                    /* insert before tmp */
 
    if (tmp) {
       /* insert before tmp */
@@ -78,8 +76,7 @@ int lInsertSorted(const lSortOrder * so, lListElem * ep, lList * lp)
    DRETURN(0);
 }
 
-int lResortElem(const lSortOrder * so, lListElem * ep, lList * lp)
-{
+int lResortElem(const lSortOrder *so, lListElem *ep, lList *lp) {
    lDechainElem(lp, ep);
    lInsertSorted(so, ep, lp);
    DRETURN(0);
@@ -91,7 +88,7 @@ int lResortElem(const lSortOrder * so, lListElem * ep, lList * lp)
 
  */
 void lWriteSortOrder(
-const lSortOrder *sp 
+        const lSortOrder *sp
 ) {
    int i;
 
@@ -104,7 +101,7 @@ const lSortOrder *sp
 
    for (i = 0; mt_get_type(sp[i].mt) != lEndT; i++) {
       DPRINTF(("nm: %d mt: %d pos: %d asc/desc: %d\n", sp[i].nm, sp[i].mt,
-               sp[i].pos, sp[i].ad));
+              sp[i].pos, sp[i].ad));
    }
 
    DRETURN_VOID;
@@ -117,8 +114,7 @@ const lSortOrder *sp
    lSortCompare()
 
  */
-int lSortCompareUsingGlobal(const void *ep0, const void *ep1)
-{
+int lSortCompareUsingGlobal(const void *ep0, const void *ep1) {
    return lSortCompare(*(lListElem **) ep0, *(lListElem **) ep1, cull_state_get_global_sort_order());
 }
 
@@ -135,9 +131,9 @@ int lSortCompareUsingGlobal(const void *ep0, const void *ep1)
 
  */
 int lSortCompare(
-const lListElem *ep0,
-const lListElem *ep1,
-const lSortOrder *sp 
+        const lListElem *ep0,
+        const lListElem *ep1,
+        const lSortOrder *sp
 ) {
    int i, result = 0;
 
@@ -146,41 +142,41 @@ const lSortOrder *sp
    for (i = 0; !result && sp[i].nm != NoName; i++) {
 
       switch (mt_get_type(sp[i].mt)) {
-      case lIntT:
-         result = intcmp(lGetPosInt(ep0, sp[i].pos), lGetPosInt(ep1, sp[i].pos));
-         break;
-      case lStringT:
-         result = sge_strnullcmp(lGetPosString(ep0, sp[i].pos), lGetPosString(ep1, sp[i].pos));
-         break;
-      case lHostT:
-         result = sge_strnullcmp(lGetPosHost(ep0, sp[i].pos), lGetPosHost(ep1, sp[i].pos));
-         break;
-      case lUlongT:
-         result = ulongcmp(lGetPosUlong(ep0, sp[i].pos), lGetPosUlong(ep1, sp[i].pos));
-         break;
-      case lUlong64T:
-         result = ulong64cmp(lGetPosUlong64(ep0, sp[i].pos), lGetPosUlong64(ep1, sp[i].pos));
-         break;
-      case lFloatT:
-         result = floatcmp(lGetPosFloat(ep0, sp[i].pos), lGetPosFloat(ep1, sp[i].pos));
-         break;
-      case lDoubleT:
-         result = doublecmp(lGetPosDouble(ep0, sp[i].pos), lGetPosDouble(ep1, sp[i].pos));
-         break;
-      case lLongT:
-         result = longcmp(lGetPosLong(ep0, sp[i].pos), lGetPosLong(ep1, sp[i].pos));
-         break;
-      case lBoolT:
-         result = boolcmp(lGetPosBool(ep0, sp[i].pos), lGetPosBool(ep1, sp[i].pos));
-         break;
-      case lCharT:
-         result = charcmp(lGetPosChar(ep0, sp[i].pos), lGetPosChar(ep1, sp[i].pos));
-         break;
-      case lRefT:
-         result = refcmp(lGetPosRef(ep0, sp[i].pos), lGetPosRef(ep1, sp[i].pos));
-         break;
-      default:
-         unknownType("lSortCompare");
+         case lIntT:
+            result = intcmp(lGetPosInt(ep0, sp[i].pos), lGetPosInt(ep1, sp[i].pos));
+            break;
+         case lStringT:
+            result = sge_strnullcmp(lGetPosString(ep0, sp[i].pos), lGetPosString(ep1, sp[i].pos));
+            break;
+         case lHostT:
+            result = sge_strnullcmp(lGetPosHost(ep0, sp[i].pos), lGetPosHost(ep1, sp[i].pos));
+            break;
+         case lUlongT:
+            result = ulongcmp(lGetPosUlong(ep0, sp[i].pos), lGetPosUlong(ep1, sp[i].pos));
+            break;
+         case lUlong64T:
+            result = ulong64cmp(lGetPosUlong64(ep0, sp[i].pos), lGetPosUlong64(ep1, sp[i].pos));
+            break;
+         case lFloatT:
+            result = floatcmp(lGetPosFloat(ep0, sp[i].pos), lGetPosFloat(ep1, sp[i].pos));
+            break;
+         case lDoubleT:
+            result = doublecmp(lGetPosDouble(ep0, sp[i].pos), lGetPosDouble(ep1, sp[i].pos));
+            break;
+         case lLongT:
+            result = longcmp(lGetPosLong(ep0, sp[i].pos), lGetPosLong(ep1, sp[i].pos));
+            break;
+         case lBoolT:
+            result = boolcmp(lGetPosBool(ep0, sp[i].pos), lGetPosBool(ep1, sp[i].pos));
+            break;
+         case lCharT:
+            result = charcmp(lGetPosChar(ep0, sp[i].pos), lGetPosChar(ep1, sp[i].pos));
+            break;
+         case lRefT:
+            result = refcmp(lGetPosRef(ep0, sp[i].pos), lGetPosRef(ep1, sp[i].pos));
+            break;
+         default:
+            unknownType("lSortCompare");
       }
       result *= sp[i].ad;
    }
@@ -188,8 +184,7 @@ const lSortOrder *sp
    DRETURN(result);
 }
 
-lSortOrder *lParseSortOrderVarArg(const lDescr *dp, const char *fmt,...)
-{
+lSortOrder *lParseSortOrderVarArg(const lDescr *dp, const char *fmt, ...) {
    va_list ap;
    lSortOrder *ret;
 
@@ -229,8 +224,7 @@ lSortOrder *lParseSortOrderVarArg(const lDescr *dp, const char *fmt,...)
 *     Returns a sort order array which can be used for sorting an list
 *     with ascending H_hostname and descending H_memsize. 
 *******************************************************************************/
-lSortOrder *lParseSortOrder(const lDescr *dp, const char *fmt, va_list ap) 
-{
+lSortOrder *lParseSortOrder(const lDescr *dp, const char *fmt, va_list ap) {
    const char *s = NULL;
    lSortOrder *sp = NULL;
    int i, n;
@@ -313,17 +307,17 @@ lSortOrder *lParseSortOrder(const lDescr *dp, const char *fmt, va_list ap)
        */
       eat_token(&state);              /* eat %I */
       switch (scan(NULL, &state)) {
-      case PLUS:
-         sp[i].ad = 1;
-         break;
-      case MINUS:
-         sp[i].ad = -1;
-         break;
-      default:
-         /* +/- is missing */
-         sge_free(&sp);
-         LERROR(LESYNTAX);
-         DRETURN(NULL);
+         case PLUS:
+            sp[i].ad = 1;
+            break;
+         case MINUS:
+            sp[i].ad = -1;
+            break;
+         default:
+            /* +/- is missing */
+            sge_free(&sp);
+            LERROR(LESYNTAX);
+            DRETURN(NULL);
       }
       eat_token(&state);
    }
@@ -333,14 +327,13 @@ lSortOrder *lParseSortOrder(const lDescr *dp, const char *fmt, va_list ap)
    DRETURN(sp);
 }
 
-void lFreeSortOrder(lSortOrder **so) 
-{
+void lFreeSortOrder(lSortOrder **so) {
    sge_free(so);
 }
 
 
 lSortOrder *lCreateSortOrder(
-int n 
+        int n
 ) {
    lSortOrder *sp;
 
@@ -357,16 +350,15 @@ int n
 
 
 int lAddSortCriteria(
-const lDescr *dp,
-lSortOrder *so,
-int nm,
-int up_down_flag 
+        const lDescr *dp,
+        lSortOrder *so,
+        int nm,
+        int up_down_flag
 ) {
    int i;
 
    /* search next index for insert */
-   for (i=0; so[i].nm != NoName; i++)
-      ;
+   for (i = 0; so[i].nm != NoName; i++);
 
    /* use nm to get type and and pos of field in descr dp of list and append new sort criteria */
    so[i].nm = nm;

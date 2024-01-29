@@ -60,8 +60,7 @@
 *  RESULT
 *     int - number of elements
 *******************************************************************************/
-int lGetNumberOfNodes(const lListElem *ep, const lList *lp, int nm) 
-{
+int lGetNumberOfNodes(const lListElem *ep, const lList *lp, int nm) {
    int n = 0;
 
    DENTER(CULL_LAYER);
@@ -102,8 +101,7 @@ int lGetNumberOfNodes(const lListElem *ep, const lList *lp, int nm)
 *  RESULT
 *     int - number of leaves 
 ******************************************************************************/
-int lGetNumberOfLeafs(const lListElem *ep, const lList *lp, int nm) 
-{
+int lGetNumberOfLeafs(const lListElem *ep, const lList *lp, int nm) {
    int n = 0;
 
    DENTER(CULL_LAYER);
@@ -118,8 +116,7 @@ int lGetNumberOfLeafs(const lListElem *ep, const lList *lp, int nm)
             n = lGetNumberOfLeafs(NULL, lp, nm);
       }
       DRETURN(n);
-   }
-   else {
+   } else {
       for_each_ep(ep, lp) {
          n += lGetNumberOfLeafs(ep, NULL, nm);
       }

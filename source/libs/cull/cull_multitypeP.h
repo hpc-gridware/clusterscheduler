@@ -47,7 +47,7 @@ union _lMultiType {
    lString str;
    lList *glp;
    lListElem *obj;
-   lRef  ref;
+   lRef ref;
    lHost host;
    lCondition *cp;
 };

@@ -51,6 +51,7 @@
 #include "cull/cull_whatP.h"
 #include "cull/cull_lerrnoP.h"
 #include "cull/cull_hash.h"
+
 #ifdef OBSERVE
 #  include "cull/cull_observe.h"
 #endif
@@ -60,45 +61,44 @@
 /* ---------- global variable --------------------------------- */
 
 static char *_lNm2Str(const lNameSpace *nsp, int nm);
+
 static int _lStr2Nm(const lNameSpace *nsp, const char *str);
 
 
 const char *multitypes[] =
-{
-   "lEndT",
-   "lFloatT",
-   "lDoubleT",
-   "lUlongT",
-   "lLongT",
-   "lCharT",
-   "lBoolT",
-   "lIntT",
-   "lStringT",
-   "lListT",
-   "lObjectT",
-   "lRefT",
-   "lHostT",
-   "lUlong64T"
-};
+        {
+                "lEndT",
+                "lFloatT",
+                "lDoubleT",
+                "lUlongT",
+                "lLongT",
+                "lCharT",
+                "lBoolT",
+                "lIntT",
+                "lStringT",
+                "lListT",
+                "lObjectT",
+                "lRefT",
+                "lHostT",
+                "lUlong64T"
+        };
 
-int incompatibleType(const char *str) 
-{
+int incompatibleType(const char *str) {
    int i;
 
    DENTER(TOP_LAYER);
 
    for (i = 0; i < 5; i++)
-      DPRINTF(("!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!\n"));
+           DPRINTF(("!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!\n"));
    DPRINTF(("incompatible type in function %s()\n", str));
    for (i = 0; i < 5; i++)
-      DPRINTF(("!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!\n"));
+           DPRINTF(("!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!\n"));
 
    abort();
    DRETURN(-1);
 }
 
-int incompatibleType2(const char *fmt,...)
-{
+int incompatibleType2(const char *fmt, ...) {
    va_list ap;
    char buf[MAX_STRING_SIZE];
 
@@ -115,8 +115,7 @@ int incompatibleType2(const char *fmt,...)
 }
 
 /* ------------------------------------------------------------ */
-int unknownType(const char *str)
-{
+int unknownType(const char *str) {
    DENTER(CULL_LAYER);
 
    /* abort is used, so we don't free any memory; if you change this
@@ -145,8 +144,7 @@ int unknownType(const char *str)
 *  RESULT
 *     int - position or -1 in case of an error
 *******************************************************************************/
-int lGetPosViaElem(const lListElem *element, int name, int do_abort) 
-{
+int lGetPosViaElem(const lListElem *element, int name, int do_abort) {
    int pos = -1;
 
    DENTER(CULL_BASIS_LAYER);
@@ -154,7 +152,7 @@ int lGetPosViaElem(const lListElem *element, int name, int do_abort)
    if (!element) {
       if (do_abort) {
          CRITICAL((SGE_EVENT, MSG_CULL_POINTER_NULLELEMENTFORX_S,
-                  lNm2Str(name)));
+                 lNm2Str(name)));
          abort();
       }
       DRETURN(-1);
@@ -163,8 +161,8 @@ int lGetPosViaElem(const lListElem *element, int name, int do_abort)
 
    if (do_abort && (pos < 0)) {
       /* someone has called lGetPosViaElem() with invalid name */
-      CRITICAL((SGE_EVENT, MSG_CULL_XNOTFOUNDINELEMENT_S ,
-               lNm2Str(name)));
+      CRITICAL((SGE_EVENT, MSG_CULL_XNOTFOUNDINELEMENT_S,
+              lNm2Str(name)));
       abort();
    }
 
@@ -188,9 +186,8 @@ int lGetPosViaElem(const lListElem *element, int name, int do_abort)
 *     char* - string representation of mt 
 *  
 ******************************************************************************/
-const char *lMt2Str(int mt) 
-{
-   if (mt >= 0 && mt < (int)(sizeof(multitypes)/sizeof(char*))) {
+const char *lMt2Str(int mt) {
+   if (mt >= 0 && mt < (int) (sizeof(multitypes) / sizeof(char *))) {
       return multitypes[mt];
    } else {
       return "unknown multitype";
@@ -218,8 +215,7 @@ const char *lMt2Str(int mt)
 *               Could be improved by using a hash table that will be 
 *               dynamically built as names are looked up.
 ******************************************************************************/
-const char *lNm2Str(int nm) 
-{
+const char *lNm2Str(int nm) {
    const lNameSpace *nsp;
    char stack_noinit[50];
    char *cp;
@@ -238,15 +234,14 @@ const char *lNm2Str(int nm)
       }
    }
 
-Error:
+   Error:
    sprintf(stack_noinit, "Nameindex = %d", nm);
    cull_state_set_noinit(stack_noinit);
    LERROR(LENAMENOT);
    DRETURN(cull_state_get_noinit());
 }
 
-static char *_lNm2Str(const lNameSpace *nsp, int nm) 
-{
+static char *_lNm2Str(const lNameSpace *nsp, int nm) {
    DENTER(CULL_BASIS_LAYER);
 
    if (!nsp) {
@@ -282,8 +277,7 @@ static char *_lNm2Str(const lNameSpace *nsp, int nm)
 *               Should have a hash table that will be extended whenever
 *               a new name has to be resolved.
 ******************************************************************************/
-int lStr2Nm(const char *str) 
-{
+int lStr2Nm(const char *str) {
    const lNameSpace *nsp, *ns;
    int ret;
 
@@ -305,8 +299,7 @@ int lStr2Nm(const char *str)
    DRETURN(NoName);
 }
 
-static int _lStr2Nm(const lNameSpace *nsp, const char *str) 
-{
+static int _lStr2Nm(const lNameSpace *nsp, const char *str) {
    int i;
    int ret = NoName;
    int found = 0;
@@ -344,8 +337,7 @@ static int _lStr2Nm(const lNameSpace *nsp, const char *str)
 *  INPUTS
 *     const lNameSpace *namev - Namespace 
 *******************************************************************************/
-void lInit(const lNameSpace *namev) 
-{
+void lInit(const lNameSpace *namev) {
    cull_state_set_name_space(namev);
 #ifdef OBSERVE
    lObserveInit();
@@ -371,10 +363,9 @@ void lInit(const lNameSpace *namev)
 *  NOTES
 *     MT-NOTE: lCountDescr() is MT safe
 ******************************************************************************/
-int lCountDescr(const lDescr *dp) 
-{
+int lCountDescr(const lDescr *dp) {
    const lDescr *p;
-   
+
    DENTER(CULL_BASIS_LAYER);
 
    if (!dp) {
@@ -406,8 +397,7 @@ int lCountDescr(const lDescr *dp)
 *  RESULT
 *     lDescr* - descriptor pointer or NULL in case of error 
 ******************************************************************************/
-lDescr *lCopyDescr(const lDescr *dp) 
-{
+lDescr *lCopyDescr(const lDescr *dp) {
    int i;
    lDescr *new_descr = NULL;
 
@@ -430,13 +420,13 @@ lDescr *lCopyDescr(const lDescr *dp)
    memcpy(new_descr, dp, sizeof(lDescr) * (i + 1));
 
    /* copy hashing information */
-   for(i = 0; mt_get_type(dp[i].mt) != lEndT; i++) {
+   for (i = 0; mt_get_type(dp[i].mt) != lEndT; i++) {
       new_descr[i].ht = NULL;
    }
 
    DRETURN(new_descr);
 
- error:
+   error:
    DPRINTF(("lCopyDescr failed\n"));
    DRETURN(NULL);
 }
@@ -455,8 +445,7 @@ lDescr *lCopyDescr(const lDescr *dp)
 *     const lDescr *dp - descriptor 
 *     FILE *fp         - output stream 
 ******************************************************************************/
-void lWriteDescrTo(const lDescr *dp, FILE *fp) 
-{
+void lWriteDescrTo(const lDescr *dp, FILE *fp) {
    int i;
 
    DENTER(CULL_LAYER);
@@ -509,8 +498,7 @@ void lWriteDescrTo(const lDescr *dp, FILE *fp)
 *  RESULT
 *     int - position or -1 if not found 
 ******************************************************************************/
-int _lGetPosInDescr(const lDescr *dp, int name) 
-{
+int _lGetPosInDescr(const lDescr *dp, int name) {
    const lDescr *ldp;
 
    if (!dp) {
@@ -518,8 +506,7 @@ int _lGetPosInDescr(const lDescr *dp, int name)
       return -1;
    }
 
-   for (ldp = dp; ldp->nm != name && ldp->nm != NoName; ldp++) {
-      ;
+   for (ldp = dp; ldp->nm != name && ldp->nm != NoName; ldp++) { ;
    }
 
    if (ldp->nm == NoName) {
@@ -561,11 +548,10 @@ int lGetPosInDescr(const lDescr *dp, int name) {
       if (pos < 0 || pos > MAX_DESCR_SIZE) {
          pos = -1;
       }
-      return pos; 
+      return pos;
    }
 
-   for (ldp = dp; ldp->nm != name && ldp->nm != NoName; ldp++) {
-      ;
+   for (ldp = dp; ldp->nm != name && ldp->nm != NoName; ldp++) { ;
    }
 
    if (ldp->nm == NoName) {
@@ -595,20 +581,18 @@ int lGetPosInDescr(const lDescr *dp, int name) {
 *  RESULT
 *     int - Type 
 ******************************************************************************/
-int lGetPosType(const lDescr *dp, int pos) 
-{
-   if (!dp ) {
+int lGetPosType(const lDescr *dp, int pos) {
+   if (!dp) {
       LERROR(LEDESCRNULL);
       return (int) NoName;
    }
    if (pos < 0) {
       return (int) NoName;
-   } 
+   }
    return mt_get_type(dp[pos].mt);
 }
 
-lList **lGetListRef(const lListElem *ep, int name) 
-{
+lList **lGetListRef(const lListElem *ep, int name) {
    int pos;
 
    DENTER(CULL_BASIS_LAYER);
@@ -621,8 +605,7 @@ lList **lGetListRef(const lListElem *ep, int name)
    DRETURN(&(ep->cont[pos].glp));
 }
 
-char **lGetPosStringRef(const lListElem *ep, int pos) 
-{
+char **lGetPosStringRef(const lListElem *ep, int pos) {
    DENTER(CULL_BASIS_LAYER);
 
    if (mt_get_type(ep->descr[pos].mt) != lStringT)
@@ -631,8 +614,7 @@ char **lGetPosStringRef(const lListElem *ep, int pos)
    DRETURN(&(ep->cont[pos].str));
 }
 
-char **lGetPosHostRef(const lListElem *ep, int pos) 
-{
+char **lGetPosHostRef(const lListElem *ep, int pos) {
    DENTER(CULL_BASIS_LAYER);
 
    if (mt_get_type(ep->descr[pos].mt) != lHostT)
@@ -668,8 +650,7 @@ char **lGetPosHostRef(const lListElem *ep, int pos)
 *  RESULT
 *     lInt - int
 ******************************************************************************/
-lInt lGetPosInt(const lListElem *ep, int pos) 
-{
+lInt lGetPosInt(const lListElem *ep, int pos) {
    DENTER(CULL_BASIS_LAYER);
 
    if (mt_get_type(ep->descr[pos].mt) != lIntT)
@@ -695,15 +676,14 @@ lInt lGetPosInt(const lListElem *ep, int pos)
 *  RESULT
 *     lInt - int 
 ******************************************************************************/
-lInt lGetInt(const lListElem *ep, int name) 
-{
+lInt lGetInt(const lListElem *ep, int name) {
    int pos;
    DENTER(CULL_BASIS_LAYER);
 
    pos = lGetPosViaElem(ep, name, SGE_DO_ABORT);
-   
+
    if (mt_get_type(ep->descr[pos].mt) != lIntT)
-      incompatibleType2(MSG_CULL_GETINT_WRONGTYPEFORFIELDXY_SS , 
+      incompatibleType2(MSG_CULL_GETINT_WRONGTYPEFORFIELDXY_SS,
                         lNm2Str(name), multitypes[mt_get_type(ep->descr[pos].mt)]);
 
    DRETURN((lInt) ep->cont[pos].i);
@@ -726,14 +706,13 @@ lInt lGetInt(const lListElem *ep, int name)
 *  RESULT
 *     lUlong - ulong
 ******************************************************************************/
-lUlong lGetPosUlong(const lListElem *ep, int pos) 
-{
+lUlong lGetPosUlong(const lListElem *ep, int pos) {
    DENTER(CULL_BASIS_LAYER);
 
    if (pos < 0) {
       /* someone has called lGetPosUlong() */
       /* makro with an invalid nm        */
-      CRITICAL((SGE_EVENT, SFNMAX, MSG_CULL_GETPOSULONG_GOTINVALIDPOSITION ));
+      CRITICAL((SGE_EVENT, SFNMAX, MSG_CULL_GETPOSULONG_GOTINVALIDPOSITION));
       abort();
    }
 
@@ -761,15 +740,14 @@ lUlong lGetPosUlong(const lListElem *ep, int pos)
 *  RESULT
 *     lUlong - u_long32 value
 ******************************************************************************/
-lUlong lGetUlong(const lListElem *ep, int name) 
-{
+lUlong lGetUlong(const lListElem *ep, int name) {
    int pos;
    DENTER(CULL_BASIS_LAYER);
 
    pos = lGetPosViaElem(ep, name, SGE_DO_ABORT);
 
    if (mt_get_type(ep->descr[pos].mt) != lUlongT)
-      incompatibleType2(MSG_CULL_GETULONG_WRONGTYPEFORFIELDXY_SS, 
+      incompatibleType2(MSG_CULL_GETULONG_WRONGTYPEFORFIELDXY_SS,
                         lNm2Str(name), multitypes[mt_get_type(ep->descr[pos].mt)]);
 
    DRETURN((lUlong) ep->cont[pos].ul);
@@ -792,14 +770,13 @@ lUlong lGetUlong(const lListElem *ep, int name)
 *  RESULT
 *     lUlong64 - ulong64
 ******************************************************************************/
-lUlong64 lGetPosUlong64(const lListElem *ep, int pos) 
-{
+lUlong64 lGetPosUlong64(const lListElem *ep, int pos) {
    DENTER(CULL_BASIS_LAYER);
 
    if (pos < 0) {
       /* someone has called lGetPosUlong64() */
       /* makro with an invalid nm        */
-      CRITICAL((SGE_EVENT, SFNMAX, MSG_CULL_GETPOSULONG64_GOTINVALIDPOSITION ));
+      CRITICAL((SGE_EVENT, SFNMAX, MSG_CULL_GETPOSULONG64_GOTINVALIDPOSITION));
       abort();
    }
 
@@ -827,15 +804,14 @@ lUlong64 lGetPosUlong64(const lListElem *ep, int pos)
 *  RESULT
 *     lUlong64 - u_long64 value
 ******************************************************************************/
-lUlong64 lGetUlong64(const lListElem *ep, int name) 
-{
+lUlong64 lGetUlong64(const lListElem *ep, int name) {
    int pos;
    DENTER(CULL_BASIS_LAYER);
 
    pos = lGetPosViaElem(ep, name, SGE_DO_ABORT);
 
    if (mt_get_type(ep->descr[pos].mt) != lUlong64T)
-      incompatibleType2(MSG_CULL_GETULONG64_WRONGTYPEFORFIELDXY_SS, 
+      incompatibleType2(MSG_CULL_GETULONG64_WRONGTYPEFORFIELDXY_SS,
                         lNm2Str(name), multitypes[mt_get_type(ep->descr[pos].mt)]);
 
    DRETURN((lUlong64) ep->cont[pos].ul64);
@@ -858,8 +834,7 @@ lUlong64 lGetUlong64(const lListElem *ep, int name)
 *  RESULT
 *     const char* - string pointer 
 *******************************************************************************/
-const char *lGetPosString(const lListElem *ep, int pos) 
-{
+const char *lGetPosString(const lListElem *ep, int pos) {
    DENTER(CULL_BASIS_LAYER);
 
    if (pos < 0) {
@@ -892,8 +867,7 @@ const char *lGetPosString(const lListElem *ep, int pos)
 *  RESULT
 *     const char* - Hostname  
 ******************************************************************************/
-const char *lGetPosHost(const lListElem *ep, int pos) 
-{
+const char *lGetPosHost(const lListElem *ep, int pos) {
    DENTER(CULL_BASIS_LAYER);
 
    if (pos < 0) {
@@ -925,8 +899,7 @@ const char *lGetPosHost(const lListElem *ep, int pos)
 *  RESULT
 *     int - Type id or lEndT
 ******************************************************************************/
-int lGetType(const lDescr *dp, int nm) 
-{
+int lGetType(const lDescr *dp, int nm) {
    int pos;
 
    DENTER(CULL_BASIS_LAYER);
@@ -958,15 +931,14 @@ int lGetType(const lDescr *dp, int nm)
 *  RESULT
 *     const char* - string pointer (no copy) 
 ******************************************************************************/
-const char *lGetString(const lListElem *ep, int name) 
-{
+const char *lGetString(const lListElem *ep, int name) {
    int pos;
    DENTER(CULL_BASIS_LAYER);
 
    pos = lGetPosViaElem(ep, name, SGE_DO_ABORT);
 
    if (mt_get_type(ep->descr[pos].mt) != lStringT) {
-      incompatibleType2(MSG_CULL_GETSTRING_WRONGTYPEFORFILEDXY_SS ,
+      incompatibleType2(MSG_CULL_GETSTRING_WRONGTYPEFORFILEDXY_SS,
                         lNm2Str(name), multitypes[mt_get_type(ep->descr[pos].mt)]);
    }
 
@@ -991,15 +963,14 @@ const char *lGetString(const lListElem *ep, int name)
 *  RESULT
 *     const char* - value of list entry 
 *******************************************************************************/
-const char *lGetHost(const lListElem *ep, int name) 
-{
+const char *lGetHost(const lListElem *ep, int name) {
    int pos;
    DENTER(CULL_BASIS_LAYER);
 
    pos = lGetPosViaElem(ep, name, SGE_DO_ABORT);
 
    if (mt_get_type(ep->descr[pos].mt) != lHostT)
-      incompatibleType2(MSG_CULL_GETHOST_WRONGTYPEFORFILEDXY_SS ,
+      incompatibleType2(MSG_CULL_GETHOST_WRONGTYPEFORFILEDXY_SS,
                         lNm2Str(name), multitypes[mt_get_type(ep->descr[pos].mt)]);
 
    DRETURN((lHost) ep->cont[pos].host);
@@ -1022,8 +993,7 @@ const char *lGetHost(const lListElem *ep, int name)
 *  RESULT
 *     lListElem* - CULL list element pointer
 ******************************************************************************/
-lListElem *lGetPosObject(const lListElem *ep, int pos) 
-{
+lListElem *lGetPosObject(const lListElem *ep, int pos) {
    DENTER(CULL_BASIS_LAYER);
 
    if (pos < 0) {
@@ -1056,8 +1026,7 @@ lListElem *lGetPosObject(const lListElem *ep, int pos)
 *  RESULT
 *     lList* - CULL list pointer
 ******************************************************************************/
-lList *lGetPosList(const lListElem *ep, int pos) 
-{
+lList *lGetPosList(const lListElem *ep, int pos) {
    DENTER(CULL_BASIS_LAYER);
 
    if (pos < 0) {
@@ -1090,15 +1059,14 @@ lList *lGetPosList(const lListElem *ep, int pos)
 *  RESULT
 *     lListElem* - CULL list element pointer 
 ******************************************************************************/
-lListElem *lGetObject(const lListElem *ep, int name) 
-{
+lListElem *lGetObject(const lListElem *ep, int name) {
    int pos;
    DENTER(CULL_BASIS_LAYER);
 
    pos = lGetPosViaElem(ep, name, SGE_DO_ABORT);
 
    if (mt_get_type(ep->descr[pos].mt) != lObjectT)
-      incompatibleType2(MSG_CULL_GETOBJECT_WRONGTYPEFORFIELDXY_SS ,
+      incompatibleType2(MSG_CULL_GETOBJECT_WRONGTYPEFORFIELDXY_SS,
                         lNm2Str(name), multitypes[mt_get_type(ep->descr[pos].mt)]);
    DRETURN((lListElem *) ep->cont[pos].obj);
 }
@@ -1120,22 +1088,21 @@ lListElem *lGetObject(const lListElem *ep, int name)
 *  RESULT
 *     lList* - CULL list pointer 
 ******************************************************************************/
-lList* lGetListRW(const lListElem *ep, int name) 
-{
+lList *lGetListRW(const lListElem *ep, int name) {
    int pos;
    DENTER(CULL_BASIS_LAYER);
 
    pos = lGetPosViaElem(ep, name, SGE_DO_ABORT);
 
    if (mt_get_type(ep->descr[pos].mt) != lListT) {
-      incompatibleType2(MSG_CULL_GETLIST_WRONGTYPEFORFIELDXY_SS ,
+      incompatibleType2(MSG_CULL_GETLIST_WRONGTYPEFORFIELDXY_SS,
                         lNm2Str(name), multitypes[mt_get_type(ep->descr[pos].mt)]);
    }
-  
+
    DRETURN((lList *) ep->cont[pos].glp);
 }
 
-const lList* lGetList(const lListElem *ep, int nm) {
+const lList *lGetList(const lListElem *ep, int nm) {
    return lGetListRW(ep, nm);
 }
 
@@ -1168,9 +1135,8 @@ const lList* lGetList(const lListElem *ep, int nm) {
 *     cull/multitype/lGetList()
 *     cull/list/lCreateList()
 *******************************************************************************/
-lList* lGetOrCreateList(lListElem *ep, int name, 
-                        const char *list_name, const lDescr *descr)
-{
+lList *lGetOrCreateList(lListElem *ep, int name,
+                        const char *list_name, const lDescr *descr) {
    lList *list = NULL;
 
    if (ep != NULL) {
@@ -1201,8 +1167,7 @@ lList* lGetOrCreateList(lListElem *ep, int name,
 *  RESULT
 *     lFloat - float 
 ******************************************************************************/
-lFloat lGetPosFloat(const lListElem *ep, int pos) 
-{
+lFloat lGetPosFloat(const lListElem *ep, int pos) {
    DENTER(CULL_BASIS_LAYER);
    if (mt_get_type(ep->descr[pos].mt) != lFloatT)
       incompatibleType("lGetPosFloat");
@@ -1226,15 +1191,15 @@ lFloat lGetPosFloat(const lListElem *ep, int pos)
 *  RESULT
 *     lFloat - float
 ******************************************************************************/
-lFloat lGetFloat(const lListElem *ep, int name) 
-{
+lFloat lGetFloat(const lListElem *ep, int name) {
    int pos;
    DENTER(CULL_BASIS_LAYER);
 
    pos = lGetPosViaElem(ep, name, SGE_DO_ABORT);
 
    if (mt_get_type(ep->descr[pos].mt) != lFloatT)
-      incompatibleType2(MSG_CULL_GETFLOAT_WRONGTYPEFORFIELDXY_SS , lNm2Str(name), multitypes[mt_get_type(ep->descr[pos].mt)]);
+      incompatibleType2(MSG_CULL_GETFLOAT_WRONGTYPEFORFIELDXY_SS, lNm2Str(name),
+                        multitypes[mt_get_type(ep->descr[pos].mt)]);
    DRETURN(ep->cont[pos].fl);
 }
 
@@ -1255,8 +1220,7 @@ lFloat lGetFloat(const lListElem *ep, int name)
 *  RESULT
 *     lDouble - double value 
 *******************************************************************************/
-lDouble lGetPosDouble(const lListElem *ep, int pos) 
-{
+lDouble lGetPosDouble(const lListElem *ep, int pos) {
    DENTER(CULL_BASIS_LAYER);
    if (mt_get_type(ep->descr[pos].mt) != lDoubleT)
       incompatibleType("lGetPosDouble");
@@ -1280,15 +1244,15 @@ lDouble lGetPosDouble(const lListElem *ep, int pos)
 *  RESULT
 *     lDouble - double value 
 ******************************************************************************/
-lDouble lGetDouble(const lListElem *ep, int name) 
-{
+lDouble lGetDouble(const lListElem *ep, int name) {
    int pos;
    DENTER(CULL_BASIS_LAYER);
 
    pos = lGetPosViaElem(ep, name, SGE_DO_ABORT);
 
    if (mt_get_type(ep->descr[pos].mt) != lDoubleT)
-      incompatibleType2(MSG_CULL_GETDOUBLE_WRONGTYPEFORFIELDXY_SS , lNm2Str(name), multitypes[mt_get_type(ep->descr[pos].mt)]);
+      incompatibleType2(MSG_CULL_GETDOUBLE_WRONGTYPEFORFIELDXY_SS, lNm2Str(name),
+                        multitypes[mt_get_type(ep->descr[pos].mt)]);
    DRETURN(ep->cont[pos].db);
 }
 
@@ -1309,8 +1273,7 @@ lDouble lGetDouble(const lListElem *ep, int name)
 *  RESULT
 *     lLong - long 
 *******************************************************************************/
-lLong lGetPosLong(const lListElem *ep, int pos) 
-{
+lLong lGetPosLong(const lListElem *ep, int pos) {
    DENTER(CULL_BASIS_LAYER);
    if (mt_get_type(ep->descr[pos].mt) != lLongT)
       incompatibleType("lGetPosLong");
@@ -1334,8 +1297,7 @@ lLong lGetPosLong(const lListElem *ep, int pos)
 *  RESULT
 *     lLong - long 
 ******************************************************************************/
-lLong lGetLong(const lListElem *ep, int name) 
-{
+lLong lGetLong(const lListElem *ep, int name) {
    int pos;
    DENTER(CULL_BASIS_LAYER);
    pos = lGetPosViaElem(ep, name, SGE_DO_ABORT);
@@ -1363,8 +1325,7 @@ lLong lGetLong(const lListElem *ep, int name)
 *  RESULT
 *     lBool - boolean 
 ******************************************************************************/
-lBool lGetPosBool(const lListElem *ep, int pos) 
-{
+lBool lGetPosBool(const lListElem *ep, int pos) {
    DENTER(CULL_BASIS_LAYER);
 
    if (mt_get_type(ep->descr[pos].mt) != lBoolT)
@@ -1389,14 +1350,14 @@ lBool lGetPosBool(const lListElem *ep, int pos)
 *  RESULT
 *     lBool - boolean
 ******************************************************************************/
-lBool lGetBool(const lListElem *ep, int name) 
-{
+lBool lGetBool(const lListElem *ep, int name) {
    int pos;
    DENTER(CULL_BASIS_LAYER);
    pos = lGetPosViaElem(ep, name, SGE_DO_ABORT);
 
    if (mt_get_type(ep->descr[pos].mt) != lBoolT)
-      incompatibleType2(MSG_CULL_GETBOOL_WRONGTYPEFORFIELDXY_SS , lNm2Str(name), multitypes[mt_get_type(ep->descr[pos].mt)]);
+      incompatibleType2(MSG_CULL_GETBOOL_WRONGTYPEFORFIELDXY_SS, lNm2Str(name),
+                        multitypes[mt_get_type(ep->descr[pos].mt)]);
    DRETURN(ep->cont[pos].b);
 }
 
@@ -1417,8 +1378,7 @@ lBool lGetBool(const lListElem *ep, int name)
 *  RESULT
 *     lChar - character 
 ******************************************************************************/
-lChar lGetPosChar(const lListElem *ep, int pos) 
-{
+lChar lGetPosChar(const lListElem *ep, int pos) {
    DENTER(CULL_BASIS_LAYER);
 
    if (mt_get_type(ep->descr[pos].mt) != lCharT)
@@ -1443,14 +1403,14 @@ lChar lGetPosChar(const lListElem *ep, int pos)
 *  RESULT
 *     lChar - character
 ******************************************************************************/
-lChar lGetChar(const lListElem *ep, int name) 
-{
+lChar lGetChar(const lListElem *ep, int name) {
    int pos;
    DENTER(CULL_BASIS_LAYER);
    pos = lGetPosViaElem(ep, name, SGE_DO_ABORT);
 
    if (mt_get_type(ep->descr[pos].mt) != lCharT)
-      incompatibleType2(MSG_CULL_GETCHAR_WRONGTYPEFORFIELDXY_SS , lNm2Str(name), multitypes[mt_get_type(ep->descr[pos].mt)]);
+      incompatibleType2(MSG_CULL_GETCHAR_WRONGTYPEFORFIELDXY_SS, lNm2Str(name),
+                        multitypes[mt_get_type(ep->descr[pos].mt)]);
    DRETURN(ep->cont[pos].c);
 }
 
@@ -1471,8 +1431,7 @@ lChar lGetChar(const lListElem *ep, int name)
 *  RESULT
 *     lRef - reference (pointer) 
 ******************************************************************************/
-lRef lGetPosRef(const lListElem *ep, int pos) 
-{
+lRef lGetPosRef(const lListElem *ep, int pos) {
    DENTER(CULL_BASIS_LAYER);
    if (mt_get_type(ep->descr[pos].mt) != lRefT) {
       incompatibleType("lGetPosRef");
@@ -1497,15 +1456,14 @@ lRef lGetPosRef(const lListElem *ep, int pos)
 *  RESULT
 *     lRef - reference 
 ******************************************************************************/
-lRef lGetRef(const lListElem *ep, int name) 
-{
+lRef lGetRef(const lListElem *ep, int name) {
    int pos;
-   DENTER(CULL_BASIS_LAYER);   
-   
+   DENTER(CULL_BASIS_LAYER);
+
    pos = lGetPosViaElem(ep, name, SGE_DO_ABORT);
 
    if (mt_get_type(ep->descr[pos].mt) != lRefT)
-      incompatibleType2(MSG_CULL_GETREF_WRONGTYPEFORFIELDXY_SS, lNm2Str(name), 
+      incompatibleType2(MSG_CULL_GETREF_WRONGTYPEFORFIELDXY_SS, lNm2Str(name),
                         multitypes[mt_get_type(ep->descr[pos].mt)]);
    DRETURN(ep->cont[pos].ref);
 }
@@ -1530,8 +1488,7 @@ lRef lGetRef(const lListElem *ep, int name)
 *         0 - OK
 *        -1 - Error
 ******************************************************************************/
-int lSetPosInt(lListElem *ep, int pos, int value) 
-{
+int lSetPosInt(lListElem *ep, int pos, int value) {
    DENTER(CULL_BASIS_LAYER);
 
    if (!ep) {
@@ -1553,7 +1510,7 @@ int lSetPosInt(lListElem *ep, int pos, int value)
    lObserveChangeValue(ep, false, lGetPosName(ep->descr, pos));
 #endif
 
-   if(ep->cont[pos].i != value) {
+   if (ep->cont[pos].i != value) {
       ep->cont[pos].i = value;
 
       /* remember that field changed */
@@ -1583,8 +1540,7 @@ int lSetPosInt(lListElem *ep, int pos, int value)
 *         0 - OK
 *        -1 - Error
 ******************************************************************************/
-int lSetInt(lListElem *ep, int name, int value) 
-{
+int lSetInt(lListElem *ep, int name, int value) {
    int pos;
    DENTER(CULL_BASIS_LAYER);
 
@@ -1600,7 +1556,7 @@ int lSetInt(lListElem *ep, int name, int value)
    }
 
    if (mt_get_type(ep->descr[pos].mt) != lIntT) {
-      incompatibleType2(MSG_CULL_SETINT_WRONGTYPEFORFIELDXY_SS, lNm2Str(name), 
+      incompatibleType2(MSG_CULL_SETINT_WRONGTYPEFORFIELDXY_SS, lNm2Str(name),
                         multitypes[mt_get_type(ep->descr[pos].mt)]);
       DRETURN(-1);
    }
@@ -1609,12 +1565,12 @@ int lSetInt(lListElem *ep, int name, int value)
    lObserveChangeValue(ep, false, name);
 #endif
 
-   if(value != ep->cont[pos].i) {
+   if (value != ep->cont[pos].i) {
       ep->cont[pos].i = value;
 
       /* remember that field changed */
       sge_bitfield_set(&(ep->changed), pos);
-   }   
+   }
 
    DRETURN(0);
 }
@@ -1639,8 +1595,7 @@ int lSetInt(lListElem *ep, int name, int value)
 *         0 - OK
 *        -1 - Error
 *******************************************************************************/
-int lSetPosUlong(lListElem *ep, int pos, lUlong value) 
-{
+int lSetPosUlong(lListElem *ep, int pos, lUlong value) {
    DENTER(CULL_BASIS_LAYER);
    if (!ep) {
       LERROR(LEELEMNULL);
@@ -1663,21 +1618,21 @@ int lSetPosUlong(lListElem *ep, int pos, lUlong value)
 
    if (value != ep->cont[pos].ul) {
       /* remove old hash entry */
-      if(ep->descr[pos].ht != NULL) {
+      if (ep->descr[pos].ht != NULL) {
          cull_hash_remove(ep, pos);
       }
-      
+
       ep->cont[pos].ul = value;
 
       /* create entry in hash table */
-      if(ep->descr[pos].ht != NULL) {
-         cull_hash_insert(ep, (void *)&(ep->cont[pos].ul), ep->descr[pos].ht, 
+      if (ep->descr[pos].ht != NULL) {
+         cull_hash_insert(ep, (void *) &(ep->cont[pos].ul), ep->descr[pos].ht,
                           mt_is_unique(ep->descr[pos].mt));
       }
 
       /* remember that field changed */
       sge_bitfield_set(&(ep->changed), pos);
-   }   
+   }
 
    DRETURN(0);
 }
@@ -1702,8 +1657,7 @@ int lSetPosUlong(lListElem *ep, int pos, lUlong value)
 *         0 - OK
 *        -1 - Error
 ******************************************************************************/
-int lSetUlong(lListElem *ep, int name, lUlong value) 
-{
+int lSetUlong(lListElem *ep, int name, lUlong value) {
    int pos;
 
    DENTER(CULL_BASIS_LAYER);
@@ -1716,12 +1670,13 @@ int lSetUlong(lListElem *ep, int name, lUlong value)
    pos = lGetPosViaElem(ep, name, SGE_NO_ABORT);
    if (pos < 0) {
       DPRINTF(("!!!!!!!!!! lSetUlong(): %s not found in element !!!!!!!!!!\n",
-               lNm2Str(name)));
+              lNm2Str(name)));
       DRETURN(-1);
    }
 
    if (mt_get_type(ep->descr[pos].mt) != lUlongT) {
-      incompatibleType2(MSG_CULL_SETULONG_WRONGTYPEFORFIELDXY_SS , lNm2Str(name), multitypes[mt_get_type(ep->descr[pos].mt)]);
+      incompatibleType2(MSG_CULL_SETULONG_WRONGTYPEFORFIELDXY_SS, lNm2Str(name),
+                        multitypes[mt_get_type(ep->descr[pos].mt)]);
       DRETURN(-1);
    }
 
@@ -1731,15 +1686,15 @@ int lSetUlong(lListElem *ep, int name, lUlong value)
 
    if (value != ep->cont[pos].ul) {
       /* remove old hash entry */
-      if(ep->descr[pos].ht != NULL) {
+      if (ep->descr[pos].ht != NULL) {
          cull_hash_remove(ep, pos);
       }
 
       ep->cont[pos].ul = value;
 
       /* create entry in hash table */
-      if(ep->descr[pos].ht != NULL) {
-         cull_hash_insert(ep, (void *)&(ep->cont[pos].ul), ep->descr[pos].ht, 
+      if (ep->descr[pos].ht != NULL) {
+         cull_hash_insert(ep, (void *) &(ep->cont[pos].ul), ep->descr[pos].ht,
                           mt_is_unique(ep->descr[pos].mt));
       }
 
@@ -1774,8 +1729,7 @@ int lSetUlong(lListElem *ep, int name, lUlong value)
 *         0 - OK
 *        -1 - Error
 *******************************************************************************/
-int lAddUlong(lListElem *ep, int name, lUlong offset) 
-{
+int lAddUlong(lListElem *ep, int name, lUlong offset) {
    int pos;
 
    DENTER(CULL_BASIS_LAYER);
@@ -1788,12 +1742,13 @@ int lAddUlong(lListElem *ep, int name, lUlong offset)
    pos = lGetPosViaElem(ep, name, SGE_NO_ABORT);
    if (pos < 0) {
       DPRINTF(("!!!!!!!!!! lSetUlong(): %s not found in element !!!!!!!!!!\n",
-               lNm2Str(name)));
+              lNm2Str(name)));
       DRETURN(-1);
    }
 
    if (mt_get_type(ep->descr[pos].mt) != lUlongT) {
-      incompatibleType2(MSG_CULL_SETULONG_WRONGTYPEFORFIELDXY_SS , lNm2Str(name), multitypes[mt_get_type(ep->descr[pos].mt)]);
+      incompatibleType2(MSG_CULL_SETULONG_WRONGTYPEFORFIELDXY_SS, lNm2Str(name),
+                        multitypes[mt_get_type(ep->descr[pos].mt)]);
       DRETURN(-1);
    }
 
@@ -1803,15 +1758,15 @@ int lAddUlong(lListElem *ep, int name, lUlong offset)
 
    if (offset != 0) {
       /* remove old hash entry */
-      if(ep->descr[pos].ht != NULL) {
+      if (ep->descr[pos].ht != NULL) {
          cull_hash_remove(ep, pos);
       }
-      
+
       ep->cont[pos].ul += offset;
 
       /* create entry in hash table */
-      if(ep->descr[pos].ht != NULL) {
-         cull_hash_insert(ep, (void *)&(ep->cont[pos].ul), ep->descr[pos].ht, 
+      if (ep->descr[pos].ht != NULL) {
+         cull_hash_insert(ep, (void *) &(ep->cont[pos].ul), ep->descr[pos].ht,
                           mt_is_unique(ep->descr[pos].mt));
       }
 
@@ -1842,8 +1797,7 @@ int lAddUlong(lListElem *ep, int name, lUlong offset)
 *         0 - OK
 *        -1 - Error
 ******************************************************************************/
-int lSetUlong64(lListElem *ep, int name, lUlong64 value) 
-{
+int lSetUlong64(lListElem *ep, int name, lUlong64 value) {
    int pos;
 
    DENTER(CULL_BASIS_LAYER);
@@ -1856,12 +1810,13 @@ int lSetUlong64(lListElem *ep, int name, lUlong64 value)
    pos = lGetPosViaElem(ep, name, SGE_NO_ABORT);
    if (pos < 0) {
       DPRINTF(("!!!!!!!!!! lSetUlong64(): %s not found in element !!!!!!!!!!\n",
-               lNm2Str(name)));
+              lNm2Str(name)));
       DRETURN(-1);
    }
 
    if (mt_get_type(ep->descr[pos].mt) != lUlong64T) {
-      incompatibleType2(MSG_CULL_SETULONG64_WRONGTYPEFORFIELDXY_SS , lNm2Str(name), multitypes[mt_get_type(ep->descr[pos].mt)]);
+      incompatibleType2(MSG_CULL_SETULONG64_WRONGTYPEFORFIELDXY_SS, lNm2Str(name),
+                        multitypes[mt_get_type(ep->descr[pos].mt)]);
       DRETURN(-1);
    }
 
@@ -1871,15 +1826,15 @@ int lSetUlong64(lListElem *ep, int name, lUlong64 value)
 
    if (value != ep->cont[pos].ul64) {
       /* remove old hash entry */
-      if(ep->descr[pos].ht != NULL) {
+      if (ep->descr[pos].ht != NULL) {
          cull_hash_remove(ep, pos);
       }
-      
+
       ep->cont[pos].ul64 = value;
 
       /* create entry in hash table */
-      if(ep->descr[pos].ht != NULL) {
-         cull_hash_insert(ep, (void *)&(ep->cont[pos].ul64), ep->descr[pos].ht, 
+      if (ep->descr[pos].ht != NULL) {
+         cull_hash_insert(ep, (void *) &(ep->cont[pos].ul64), ep->descr[pos].ht,
                           mt_is_unique(ep->descr[pos].mt));
       }
 
@@ -1914,8 +1869,7 @@ int lSetUlong64(lListElem *ep, int name, lUlong64 value)
 *         0 - OK
 *        -1 - Error
 *******************************************************************************/
-int lAddUlong64(lListElem *ep, int name, lUlong64 offset) 
-{
+int lAddUlong64(lListElem *ep, int name, lUlong64 offset) {
    int pos;
 
    DENTER(CULL_BASIS_LAYER);
@@ -1928,30 +1882,31 @@ int lAddUlong64(lListElem *ep, int name, lUlong64 offset)
    pos = lGetPosViaElem(ep, name, SGE_NO_ABORT);
    if (pos < 0) {
       DPRINTF(("!!!!!!!!!! lSetUlong64(): %s not found in element !!!!!!!!!!\n",
-               lNm2Str(name)));
+              lNm2Str(name)));
       DRETURN(-1);
    }
 
    if (mt_get_type(ep->descr[pos].mt) != lUlong64T) {
-      incompatibleType2(MSG_CULL_SETULONG64_WRONGTYPEFORFIELDXY_SS , lNm2Str(name), multitypes[mt_get_type(ep->descr[pos].mt)]);
+      incompatibleType2(MSG_CULL_SETULONG64_WRONGTYPEFORFIELDXY_SS, lNm2Str(name),
+                        multitypes[mt_get_type(ep->descr[pos].mt)]);
       DRETURN(-1);
    }
- 
-#ifdef OBSERVE 
+
+#ifdef OBSERVE
    lObserveChangeValue(ep, ep->descr[pos].ht != NULL, name);
 #endif
 
    if (offset != 0) {
       /* remove old hash entry */
-      if(ep->descr[pos].ht != NULL) {
+      if (ep->descr[pos].ht != NULL) {
          cull_hash_remove(ep, pos);
       }
-      
+
       ep->cont[pos].ul64 += offset;
 
       /* create entry in hash table */
-      if(ep->descr[pos].ht != NULL) {
-         cull_hash_insert(ep, (void *)&(ep->cont[pos].ul64), ep->descr[pos].ht, 
+      if (ep->descr[pos].ht != NULL) {
+         cull_hash_insert(ep, (void *) &(ep->cont[pos].ul64), ep->descr[pos].ht,
                           mt_is_unique(ep->descr[pos].mt));
       }
 
@@ -1982,8 +1937,7 @@ int lAddUlong64(lListElem *ep, int name, lUlong64 offset)
 *         0 - OK
 *        -1 - Error
 *******************************************************************************/
-int lSetPosUlong64(lListElem *ep, int pos, lUlong64 value) 
-{
+int lSetPosUlong64(lListElem *ep, int pos, lUlong64 value) {
    DENTER(CULL_BASIS_LAYER);
    if (!ep) {
       LERROR(LEELEMNULL);
@@ -2006,21 +1960,21 @@ int lSetPosUlong64(lListElem *ep, int pos, lUlong64 value)
 
    if (value != ep->cont[pos].ul64) {
       /* remove old hash entry */
-      if(ep->descr[pos].ht != NULL) {
+      if (ep->descr[pos].ht != NULL) {
          cull_hash_remove(ep, pos);
       }
-      
+
       ep->cont[pos].ul64 = value;
 
       /* create entry in hash table */
-      if(ep->descr[pos].ht != NULL) {
-         cull_hash_insert(ep, (void *)&(ep->cont[pos].ul64), ep->descr[pos].ht, 
+      if (ep->descr[pos].ht != NULL) {
+         cull_hash_insert(ep, (void *) &(ep->cont[pos].ul64), ep->descr[pos].ht,
                           mt_is_unique(ep->descr[pos].mt));
       }
 
       /* remember that field changed */
       sge_bitfield_set(&(ep->changed), pos);
-   }   
+   }
 
    DRETURN(0);
 }
@@ -2045,8 +1999,7 @@ int lSetPosUlong64(lListElem *ep, int pos, lUlong64 value)
 *         0 - OK
 *        -1 - Error 
 ******************************************************************************/
-int lSetPosString(lListElem *ep, int pos, const char *value) 
-{
+int lSetPosString(lListElem *ep, int pos, const char *value) {
    char *str = NULL;
    int changed;
 
@@ -2073,10 +2026,10 @@ int lSetPosString(lListElem *ep, int pos, const char *value)
    ** else do a string compare
    */
    str = ep->cont[pos].str;
-   if(value == NULL && str == NULL) {
+   if (value == NULL && str == NULL) {
       changed = 0;
    } else {
-      if(value == NULL || str == NULL) {
+      if (value == NULL || str == NULL) {
          changed = 1;
       } else {
          changed = strcmp(value, str);
@@ -2089,10 +2042,10 @@ int lSetPosString(lListElem *ep, int pos, const char *value)
 
    if (changed) {
       /* remove old hash entry */
-      if(ep->descr[pos].ht != NULL) {
+      if (ep->descr[pos].ht != NULL) {
          cull_hash_remove(ep, pos);
       }
-      
+
       /* strdup new string value */
       if (value) {
          if (!(str = strdup(value))) {
@@ -2108,15 +2061,15 @@ int lSetPosString(lListElem *ep, int pos, const char *value)
       ep->cont[pos].str = str;
 
       /* create entry in hash table */
-      if(ep->descr[pos].ht != NULL) {
-         cull_hash_insert(ep, ep->cont[pos].str, ep->descr[pos].ht, 
+      if (ep->descr[pos].ht != NULL) {
+         cull_hash_insert(ep, ep->cont[pos].str, ep->descr[pos].ht,
                           mt_is_unique(ep->descr[pos].mt));
       }
 
       /* remember that field changed */
       sge_bitfield_set(&(ep->changed), pos);
-   }   
-   
+   }
+
    DRETURN(0);
 }
 
@@ -2140,8 +2093,7 @@ int lSetPosString(lListElem *ep, int pos, const char *value)
 *         0 - OK
 *        -1 - Error
 *******************************************************************************/
-int lSetPosHost(lListElem *ep, int pos, const char *value) 
-{
+int lSetPosHost(lListElem *ep, int pos, const char *value) {
    char *str = NULL;
    int changed;
 
@@ -2169,10 +2121,10 @@ int lSetPosHost(lListElem *ep, int pos, const char *value)
    ** but most probably not neccessary and too expensive
    */
    str = ep->cont[pos].host;
-   if(value == NULL && str == NULL) {
+   if (value == NULL && str == NULL) {
       changed = 0;
    } else {
-      if(value == NULL || str == NULL) {
+      if (value == NULL || str == NULL) {
          changed = 1;
       } else {
          changed = strcmp(value, str);
@@ -2185,10 +2137,10 @@ int lSetPosHost(lListElem *ep, int pos, const char *value)
 
    if (changed) {
       /* remove old hash entry */
-      if(ep->descr[pos].ht != NULL) {
+      if (ep->descr[pos].ht != NULL) {
          cull_hash_remove(ep, pos);
       }
-      
+
       /* strdup new string value */
       if (value) {
          if (!(str = strdup(value))) {
@@ -2204,16 +2156,16 @@ int lSetPosHost(lListElem *ep, int pos, const char *value)
       ep->cont[pos].host = str;
 
       /* create entry in hash table */
-      if(ep->descr[pos].ht != NULL) {
+      if (ep->descr[pos].ht != NULL) {
          char host_key[CL_MAXHOSTLEN + 1];
-         cull_hash_insert(ep, cull_hash_key(ep, pos, host_key), 
+         cull_hash_insert(ep, cull_hash_key(ep, pos, host_key),
                           ep->descr[pos].ht, mt_is_unique(ep->descr[pos].mt));
       }
 
       /* remember that field changed */
       sge_bitfield_set(&(ep->changed), pos);
-   }   
-   
+   }
+
    DRETURN(0);
 }
 
@@ -2237,8 +2189,7 @@ int lSetPosHost(lListElem *ep, int pos, const char *value)
 *         0 - OK
 *        -1 - Error 
 *******************************************************************************/
-int lSetString(lListElem *ep, int name, const char *value) 
-{
+int lSetString(lListElem *ep, int name, const char *value) {
    char *str;
    int pos;
    int changed;
@@ -2252,13 +2203,14 @@ int lSetString(lListElem *ep, int name, const char *value)
 
    pos = lGetPosViaElem(ep, name, SGE_NO_ABORT);
    if (pos < 0) {
-      incompatibleType2(MSG_CULL_SETSTRING_NOSUCHNAMEXYINDESCRIPTOR_IS ,
+      incompatibleType2(MSG_CULL_SETSTRING_NOSUCHNAMEXYINDESCRIPTOR_IS,
                         name, lNm2Str(name));
       DRETURN(-1);
    }
 
    if (mt_get_type(ep->descr[pos].mt) != lStringT) {
-      incompatibleType2(MSG_CULL_SETSTRING_WRONGTYPEFORFIELDXY_SS , lNm2Str(name), multitypes[mt_get_type(ep->descr[pos].mt)]);
+      incompatibleType2(MSG_CULL_SETSTRING_WRONGTYPEFORFIELDXY_SS, lNm2Str(name),
+                        multitypes[mt_get_type(ep->descr[pos].mt)]);
       DRETURN(-1);
    }
 
@@ -2284,10 +2236,10 @@ int lSetString(lListElem *ep, int name, const char *value)
 
    if (changed) {
       /* remove old hash entry */
-      if(ep->descr[pos].ht != NULL) {
+      if (ep->descr[pos].ht != NULL) {
          cull_hash_remove(ep, pos);
       }
-      
+
       /* strdup new string value */
       /* do so before freeing the old one - they could point to the same object! */
       if (value) {
@@ -2304,8 +2256,8 @@ int lSetString(lListElem *ep, int name, const char *value)
       ep->cont[pos].str = str;
 
       /* create entry in hash table */
-      if(ep->descr[pos].ht != NULL) {
-         cull_hash_insert(ep, ep->cont[pos].str, ep->descr[pos].ht, 
+      if (ep->descr[pos].ht != NULL) {
+         cull_hash_insert(ep, ep->cont[pos].str, ep->descr[pos].ht,
                           mt_is_unique(ep->descr[pos].mt));
       }
 
@@ -2339,8 +2291,7 @@ int lSetString(lListElem *ep, int name, const char *value)
 *         -1 - Error 
 *          0 - OK 
 ******************************************************************************/
-int lSetHost(lListElem *ep, int name, const char *value) 
-{
+int lSetHost(lListElem *ep, int name, const char *value) {
    char *str;
    int pos;
    int changed;
@@ -2353,13 +2304,13 @@ int lSetHost(lListElem *ep, int name, const char *value)
 
    pos = lGetPosViaElem(ep, name, SGE_NO_ABORT);
    if (pos < 0) {
-      incompatibleType2(MSG_CULL_SETHOST_NOSUCHNAMEXYINDESCRIPTOR_IS ,
+      incompatibleType2(MSG_CULL_SETHOST_NOSUCHNAMEXYINDESCRIPTOR_IS,
                         name, lNm2Str(name));
       DRETURN(-1);
    }
 
    if (mt_get_type(ep->descr[pos].mt) != lHostT) {
-      incompatibleType2(MSG_CULL_SETHOST_WRONGTYPEFORFIELDXY_SS, 
+      incompatibleType2(MSG_CULL_SETHOST_WRONGTYPEFORFIELDXY_SS,
                         lNm2Str(name), multitypes[mt_get_type(ep->descr[pos].mt)]);
       DRETURN(-1);
    }
@@ -2371,10 +2322,10 @@ int lSetHost(lListElem *ep, int name, const char *value)
    ** but most probably not neccessary and too expensive
    */
    str = ep->cont[pos].host;
-   if(value == NULL && str == NULL) {
+   if (value == NULL && str == NULL) {
       changed = 0;
    } else {
-      if(value == NULL || str == NULL) {
+      if (value == NULL || str == NULL) {
          changed = 1;
       } else {
          changed = strcmp(value, str);
@@ -2387,7 +2338,7 @@ int lSetHost(lListElem *ep, int name, const char *value)
 
    if (changed) {
       /* remove old hash entry */
-      if(ep->descr[pos].ht != NULL) {
+      if (ep->descr[pos].ht != NULL) {
          cull_hash_remove(ep, pos);
       }
       /* strdup new string value */
@@ -2404,9 +2355,9 @@ int lSetHost(lListElem *ep, int name, const char *value)
       ep->cont[pos].host = str;
 
       /* create entry in hash table */
-      if(ep->descr[pos].ht != NULL) {
+      if (ep->descr[pos].ht != NULL) {
          char host_key[CL_MAXHOSTLEN + 1];
-         cull_hash_insert(ep, cull_hash_key(ep, pos, host_key), 
+         cull_hash_insert(ep, cull_hash_key(ep, pos, host_key),
                           ep->descr[pos].ht, mt_is_unique(ep->descr[pos].mt));
       }
       /* remember that field changed */
@@ -2436,15 +2387,14 @@ int lSetHost(lListElem *ep, int name, const char *value)
 *         0 - OK
 *        -1 - Error
 *******************************************************************************/
-int lSetPosObject(lListElem *ep, int pos, lListElem *value) 
-{
+int lSetPosObject(lListElem *ep, int pos, lListElem *value) {
    DENTER(CULL_BASIS_LAYER);
 
    if (!ep) {
       LERROR(LEELEMNULL);
       DRETURN(-1);
    }
-   
+
    if (pos < 0) {
       LERROR(LENEGPOS);
       DRETURN(-1);
@@ -2454,13 +2404,13 @@ int lSetPosObject(lListElem *ep, int pos, lListElem *value)
       incompatibleType("lSetPosObject");
       DRETURN(-1);
    }
-   
-   if(value != NULL && value->status != FREE_ELEM && value->status != TRANS_BOUND_ELEM) {
+
+   if (value != NULL && value->status != FREE_ELEM && value->status != TRANS_BOUND_ELEM) {
       LERROR(LEBOUNDELEM);
       DRETURN(-1);
    }
- 
-#ifdef OBSERVE 
+
+#ifdef OBSERVE
    lObserveChangeOwner(ep->cont[pos].obj, NULL, ep, lGetPosName(ep->descr, pos));
    lObserveChangeOwner(value, ep, NULL, lGetPosName(ep->descr, pos));
 #endif
@@ -2505,8 +2455,7 @@ int lSetPosObject(lListElem *ep, int pos, lListElem *value)
 *         0 - OK
 *        -1 - Error
 *******************************************************************************/
-int lSetPosList(lListElem *ep, int pos, lList *value) 
-{
+int lSetPosList(lListElem *ep, int pos, lList *value) {
    DENTER(CULL_BASIS_LAYER);
 
    if (!ep) {
@@ -2522,8 +2471,8 @@ int lSetPosList(lListElem *ep, int pos, lList *value)
       incompatibleType("lSetPosList");
       DRETURN(-1);
    }
- 
-#ifdef OBSERVE 
+
+#ifdef OBSERVE
    lObserveChangeOwner(ep->cont[pos].glp, NULL, ep, lGetPosName(ep->descr, pos));
    lObserveChangeOwner(value, ep, NULL, lGetPosName(ep->descr, pos));
 #endif
@@ -2564,8 +2513,7 @@ int lSetPosList(lListElem *ep, int pos, lList *value)
 *         0 - OK
 *        -1 - Error
 ******************************************************************************/
-int lXchgString(lListElem *ep, int name, char **str) 
-{
+int lXchgString(lListElem *ep, int name, char **str) {
    int pos;
    char *tmp;
 
@@ -2582,7 +2530,7 @@ int lXchgString(lListElem *ep, int name, char **str)
    }
 
    if (mt_get_type(ep->descr[pos].mt) != lStringT) {
-      incompatibleType2(MSG_CULL_XCHGLIST_WRONGTYPEFORFIELDXY_SS, 
+      incompatibleType2(MSG_CULL_XCHGLIST_WRONGTYPEFORFIELDXY_SS,
                         lNm2Str(name), multitypes[mt_get_type(ep->descr[pos].mt)]);
       DRETURN(-1);
    }
@@ -2624,8 +2572,7 @@ int lXchgString(lListElem *ep, int name, char **str)
 *         0 - OK
 *        -1 - Error
 ******************************************************************************/
-int lXchgList(lListElem *ep, int name, lList **lpp) 
-{
+int lXchgList(lListElem *ep, int name, lList **lpp) {
    int pos;
    lList *tmp;
 
@@ -2642,7 +2589,7 @@ int lXchgList(lListElem *ep, int name, lList **lpp)
    }
 
    if (mt_get_type(ep->descr[pos].mt) != lListT) {
-      incompatibleType2(MSG_CULL_XCHGLIST_WRONGTYPEFORFIELDXY_SS, 
+      incompatibleType2(MSG_CULL_XCHGLIST_WRONGTYPEFORFIELDXY_SS,
                         lNm2Str(name), multitypes[mt_get_type(ep->descr[pos].mt)]);
       DRETURN(-1);
    }
@@ -2685,8 +2632,7 @@ int lXchgList(lListElem *ep, int name, lList **lpp)
 *         0 - OK
 *        -1 - Error 
 ******************************************************************************/
-int lSwapList(lListElem *to, int nm_to, lListElem *from, int nm_from) 
-{
+int lSwapList(lListElem *to, int nm_to, lListElem *from, int nm_from) {
    lList *tmp = NULL;
 
    DENTER(CULL_BASIS_LAYER);
@@ -2725,8 +2671,7 @@ int lSwapList(lListElem *to, int nm_to, lListElem *from, int nm_from)
 *         0 - OK
 *        -1 - Error 
 ******************************************************************************/
-int lSetObject(lListElem *ep, int name, lListElem *value) 
-{
+int lSetObject(lListElem *ep, int name, lListElem *value) {
    int pos;
 
    DENTER(CULL_BASIS_LAYER);
@@ -2739,16 +2684,17 @@ int lSetObject(lListElem *ep, int name, lListElem *value)
    pos = lGetPosViaElem(ep, name, SGE_NO_ABORT);
    if (pos < 0) {
       DPRINTF(("!!!!!!!!!! lSetObject(): %s not found in element !!!!!!!!!!\n",
-               lNm2Str(name)));
+              lNm2Str(name)));
       DRETURN(-1);
    }
 
    if (mt_get_type(ep->descr[pos].mt) != lObjectT) {
-      incompatibleType2(MSG_CULL_SETLIST_WRONGTYPEFORFIELDXY_SS , lNm2Str(name), multitypes[mt_get_type(ep->descr[pos].mt)]);
+      incompatibleType2(MSG_CULL_SETLIST_WRONGTYPEFORFIELDXY_SS, lNm2Str(name),
+                        multitypes[mt_get_type(ep->descr[pos].mt)]);
       DRETURN(-1);
    }
 
-   if(value != NULL && value->status != FREE_ELEM && value->status != TRANS_BOUND_ELEM) {
+   if (value != NULL && value->status != FREE_ELEM && value->status != TRANS_BOUND_ELEM) {
       LERROR(LEBOUNDELEM);
       DRETURN(-1);
    }
@@ -2757,7 +2703,7 @@ int lSetObject(lListElem *ep, int name, lListElem *value)
    lObserveChangeOwner(ep->cont[pos].obj, NULL, ep, name);
    lObserveChangeOwner(value, ep, NULL, name);
 #endif
-   
+
    if (value != ep->cont[pos].obj) {
       /* free old element */
       if (ep->cont[pos].obj) {
@@ -2800,8 +2746,7 @@ int lSetObject(lListElem *ep, int name, lListElem *value)
 *  NOTES
 *     MT-NOTE: lAddSubList() is MT safe
 ******************************************************************************/
-int lSetList(lListElem *ep, int name, lList *value) 
-{
+int lSetList(lListElem *ep, int name, lList *value) {
    int pos;
 
    DENTER(CULL_BASIS_LAYER);
@@ -2813,16 +2758,17 @@ int lSetList(lListElem *ep, int name, lList *value)
    pos = lGetPosViaElem(ep, name, SGE_NO_ABORT);
    if (pos < 0) {
       DPRINTF(("!!!!!!!!!! lSetList(): %s not found in element !!!!!!!!!!\n",
-               lNm2Str(name)));
+              lNm2Str(name)));
       DRETURN(-1);
    }
 
    if (mt_get_type(ep->descr[pos].mt) != lListT) {
-      incompatibleType2(MSG_CULL_SETLIST_WRONGTYPEFORFIELDXY_SS , lNm2Str(name), multitypes[mt_get_type(ep->descr[pos].mt)]);
+      incompatibleType2(MSG_CULL_SETLIST_WRONGTYPEFORFIELDXY_SS, lNm2Str(name),
+                        multitypes[mt_get_type(ep->descr[pos].mt)]);
       DRETURN(-1);
    }
 
-#ifdef OBSERVE 
+#ifdef OBSERVE
    lObserveChangeOwner(ep->cont[pos].glp, ep, NULL, name);
    lObserveChangeOwner(value, ep, NULL, name);
 #endif
@@ -2861,8 +2807,7 @@ int lSetList(lListElem *ep, int name, lList *value)
 *         0 - OK
 *        -1 - Error 
 ******************************************************************************/
-int lSetPosFloat(lListElem * ep, int pos, lFloat value)
-{
+int lSetPosFloat(lListElem *ep, int pos, lFloat value) {
    DENTER(CULL_BASIS_LAYER);
    if (!ep) {
       LERROR(LEELEMNULL);
@@ -2913,8 +2858,7 @@ int lSetPosFloat(lListElem * ep, int pos, lFloat value)
 *         0 - OK
 *        -1 - Error 
 ******************************************************************************/
-int lSetFloat(lListElem * ep, int name, lFloat value)
-{
+int lSetFloat(lListElem *ep, int name, lFloat value) {
    int pos;
 
    DENTER(CULL_BASIS_LAYER);
@@ -2930,7 +2874,8 @@ int lSetFloat(lListElem * ep, int name, lFloat value)
    }
 
    if (mt_get_type(ep->descr[pos].mt) != lFloatT) {
-      incompatibleType2(MSG_CULL_SETFLOAT_WRONGTYPEFORFIELDXY_SS , lNm2Str(name), multitypes[mt_get_type(ep->descr[pos].mt)]);
+      incompatibleType2(MSG_CULL_SETFLOAT_WRONGTYPEFORFIELDXY_SS, lNm2Str(name),
+                        multitypes[mt_get_type(ep->descr[pos].mt)]);
       DRETURN(-1);
    }
 
@@ -2938,7 +2883,7 @@ int lSetFloat(lListElem * ep, int name, lFloat value)
    lObserveChangeValue(ep, false, name);
 #endif
 
-   if(value != ep->cont[pos].fl) {
+   if (value != ep->cont[pos].fl) {
       ep->cont[pos].fl = value;
 
       /* remember that field changed */
@@ -2968,8 +2913,7 @@ int lSetFloat(lListElem * ep, int name, lFloat value)
 *         0 - OK
 *        -1 - Error 
 ******************************************************************************/
-int lSetPosDouble(lListElem *ep, int pos, lDouble value) 
-{
+int lSetPosDouble(lListElem *ep, int pos, lDouble value) {
    DENTER(CULL_BASIS_LAYER);
    if (!ep) {
       LERROR(LEELEMNULL);
@@ -3021,8 +2965,7 @@ int lSetPosDouble(lListElem *ep, int pos, lDouble value)
 *         0 - OK
 *        -1 - Error 
 *******************************************************************************/
-int lSetDouble(lListElem *ep, int name, lDouble value) 
-{
+int lSetDouble(lListElem *ep, int name, lDouble value) {
    int pos;
 
    DENTER(CULL_BASIS_LAYER);
@@ -3038,7 +2981,8 @@ int lSetDouble(lListElem *ep, int name, lDouble value)
    }
 
    if (mt_get_type(ep->descr[pos].mt) != lDoubleT) {
-      incompatibleType2(MSG_CULL_SETDOUBLE_WRONGTYPEFORFIELDXY_SS , lNm2Str(name), multitypes[mt_get_type(ep->descr[pos].mt)]);
+      incompatibleType2(MSG_CULL_SETDOUBLE_WRONGTYPEFORFIELDXY_SS, lNm2Str(name),
+                        multitypes[mt_get_type(ep->descr[pos].mt)]);
       DRETURN(-1);
    }
 
@@ -3077,8 +3021,7 @@ int lSetDouble(lListElem *ep, int name, lDouble value)
 *         0 - OK
 *        -1 - Error 
 *******************************************************************************/
-int lAddDouble(lListElem *ep, int name, lDouble value)
-{
+int lAddDouble(lListElem *ep, int name, lDouble value) {
    int pos;
 
    DENTER(CULL_BASIS_LAYER);
@@ -3094,7 +3037,8 @@ int lAddDouble(lListElem *ep, int name, lDouble value)
    }
 
    if (mt_get_type(ep->descr[pos].mt) != lDoubleT) {
-      incompatibleType2(MSG_CULL_SETDOUBLE_WRONGTYPEFORFIELDXY_SS , lNm2Str(name), multitypes[mt_get_type(ep->descr[pos].mt)]);
+      incompatibleType2(MSG_CULL_SETDOUBLE_WRONGTYPEFORFIELDXY_SS, lNm2Str(name),
+                        multitypes[mt_get_type(ep->descr[pos].mt)]);
       DRETURN(-1);
    }
 
@@ -3132,8 +3076,7 @@ int lAddDouble(lListElem *ep, int name, lDouble value)
 *         0 - OK
 *        -1 - Error 
 ******************************************************************************/
-int lSetPosLong(lListElem *ep, int pos, lLong value) 
-{
+int lSetPosLong(lListElem *ep, int pos, lLong value) {
    DENTER(CULL_BASIS_LAYER);
    if (!ep) {
       LERROR(LEELEMNULL);
@@ -3149,8 +3092,8 @@ int lSetPosLong(lListElem *ep, int pos, lLong value)
       incompatibleType("lSetPosLong");
       DRETURN(-1);
    }
-  
-#ifdef OBSERVE 
+
+#ifdef OBSERVE
    lObserveChangeValue(ep, false, lGetPosName(ep->descr, pos));
 #endif
 
@@ -3184,8 +3127,7 @@ int lSetPosLong(lListElem *ep, int pos, lLong value)
 *         0 - OK
 *        -1 - Error 
 ******************************************************************************/
-int lSetLong(lListElem *ep, int name, lLong value) 
-{
+int lSetLong(lListElem *ep, int name, lLong value) {
    int pos;
 
    DENTER(CULL_BASIS_LAYER);
@@ -3201,11 +3143,12 @@ int lSetLong(lListElem *ep, int name, lLong value)
    }
 
    if (mt_get_type(ep->descr[pos].mt) != lLongT) {
-      incompatibleType2(MSG_CULL_SETLONG_WRONGTYPEFORFIELDXY_SS , lNm2Str(name), multitypes[mt_get_type(ep->descr[pos].mt)]);
+      incompatibleType2(MSG_CULL_SETLONG_WRONGTYPEFORFIELDXY_SS, lNm2Str(name),
+                        multitypes[mt_get_type(ep->descr[pos].mt)]);
       DRETURN(-1);
    }
-  
-#ifdef OBSERVE 
+
+#ifdef OBSERVE
    lObserveChangeValue(ep, false, name);
 #endif
 
@@ -3239,8 +3182,7 @@ int lSetLong(lListElem *ep, int name, lLong value)
 *         0 - OK
 *        -1 - Error 
 ******************************************************************************/
-int lSetPosBool(lListElem *ep, int pos, lBool value)
-{
+int lSetPosBool(lListElem *ep, int pos, lBool value) {
    DENTER(CULL_BASIS_LAYER);
    if (!ep) {
       LERROR(LEELEMNULL);
@@ -3291,8 +3233,7 @@ int lSetPosBool(lListElem *ep, int pos, lBool value)
 *         0 - OK
 *        -1 - Error 
 ******************************************************************************/
-int lSetBool(lListElem * ep, int name, lBool value)
-{
+int lSetBool(lListElem *ep, int name, lBool value) {
    int pos;
 
    DENTER(CULL_BASIS_LAYER);
@@ -3308,7 +3249,8 @@ int lSetBool(lListElem * ep, int name, lBool value)
    }
 
    if (mt_get_type(ep->descr[pos].mt) != lBoolT) {
-      incompatibleType2(MSG_CULL_SETBOOL_WRONGTYPEFORFIELDXY_SS , lNm2Str(name), multitypes[mt_get_type(ep->descr[pos].mt)]);
+      incompatibleType2(MSG_CULL_SETBOOL_WRONGTYPEFORFIELDXY_SS, lNm2Str(name),
+                        multitypes[mt_get_type(ep->descr[pos].mt)]);
       DRETURN(-1);
    }
 
@@ -3346,8 +3288,7 @@ int lSetBool(lListElem * ep, int name, lBool value)
 *         0 - OK
 *        -1 - Error 
 ******************************************************************************/
-int lSetPosChar(lListElem *ep, int pos, lChar value)
-{
+int lSetPosChar(lListElem *ep, int pos, lChar value) {
    DENTER(CULL_BASIS_LAYER);
    if (!ep) {
       LERROR(LEELEMNULL);
@@ -3398,8 +3339,7 @@ int lSetPosChar(lListElem *ep, int pos, lChar value)
 *         0 - OK
 *        -1 - Error 
 ******************************************************************************/
-int lSetChar(lListElem * ep, int name, lChar value)
-{
+int lSetChar(lListElem *ep, int name, lChar value) {
    int pos;
 
    DENTER(CULL_BASIS_LAYER);
@@ -3415,7 +3355,8 @@ int lSetChar(lListElem * ep, int name, lChar value)
    }
 
    if (mt_get_type(ep->descr[pos].mt) != lCharT) {
-      incompatibleType2(MSG_CULL_SETCHAR_WRONGTYPEFORFIELDXY_SS , lNm2Str(name), multitypes[mt_get_type(ep->descr[pos].mt)]);
+      incompatibleType2(MSG_CULL_SETCHAR_WRONGTYPEFORFIELDXY_SS, lNm2Str(name),
+                        multitypes[mt_get_type(ep->descr[pos].mt)]);
       DRETURN(-1);
    }
 
@@ -3453,8 +3394,7 @@ int lSetChar(lListElem * ep, int name, lChar value)
 *         0 - OK
 *        -1 - Error
 ******************************************************************************/
-int lSetPosRef(lListElem * ep, int pos, lRef value)
-{
+int lSetPosRef(lListElem *ep, int pos, lRef value) {
    DENTER(CULL_BASIS_LAYER);
    if (!ep) {
       LERROR(LEELEMNULL);
@@ -3505,8 +3445,7 @@ int lSetPosRef(lListElem * ep, int pos, lRef value)
 *         0 - OK
 *        -1 - Error 
 ******************************************************************************/
-int lSetRef(lListElem * ep, int name, lRef value)
-{
+int lSetRef(lListElem *ep, int name, lRef value) {
    int pos;
 
    DENTER(CULL_BASIS_LAYER);
@@ -3522,7 +3461,8 @@ int lSetRef(lListElem * ep, int name, lRef value)
    }
 
    if (mt_get_type(ep->descr[pos].mt) != lRefT) {
-      incompatibleType2(MSG_CULL_SETREF_WRONGTYPEFORFIELDXY_SS , lNm2Str(name), multitypes[mt_get_type(ep->descr[pos].mt)]);
+      incompatibleType2(MSG_CULL_SETREF_WRONGTYPEFORFIELDXY_SS, lNm2Str(name),
+                        multitypes[mt_get_type(ep->descr[pos].mt)]);
       DRETURN(-1);
    }
 
@@ -3544,8 +3484,7 @@ int lSetRef(lListElem * ep, int name, lRef value)
    compares two int values i0 and i1 
    return values like strcmp
  */
-int intcmp(int i0, int i1) 
-{
+int intcmp(int i0, int i1) {
    return i0 == i1 ? 0 : (i0 < i1 ? -1 : 1);
 }
 
@@ -3553,13 +3492,11 @@ int intcmp(int i0, int i1)
    compares two ulong values u0 and u1 
    return values like strcmp
  */
-int ulongcmp(lUlong u0, lUlong u1) 
-{
+int ulongcmp(lUlong u0, lUlong u1) {
    return u0 == u1 ? 0 : (u0 < u1 ? -1 : 1);
 }
 
-int bitmaskcmp(lUlong bm0, lUlong bm1) 
-{
+int bitmaskcmp(lUlong bm0, lUlong bm1) {
    return ((bm0 & bm1) == bm1) ? 1 : 0;
 }
 
@@ -3567,8 +3504,7 @@ int bitmaskcmp(lUlong bm0, lUlong bm1)
    compares two ulong64 values u0 and u1 
    return values like strcmp
  */
-int ulong64cmp(lUlong64 u0, lUlong64 u1) 
-{
+int ulong64cmp(lUlong64 u0, lUlong64 u1) {
    return u0 == u1 ? 0 : (u0 < u1 ? -1 : 1);
 }
 
@@ -3576,8 +3512,7 @@ int ulong64cmp(lUlong64 u0, lUlong64 u1)
    compares two lFloat values f0 and f1 
    return values like strcmp
  */
-int floatcmp(lFloat f0, lFloat f1)
-{
+int floatcmp(lFloat f0, lFloat f1) {
    return f0 == f1 ? 0 : (f0 < f1 ? -1 : 1);
 }
 
@@ -3585,8 +3520,7 @@ int floatcmp(lFloat f0, lFloat f1)
    compares two double values d0 and d1 
    return values like strcmp
  */
-int doublecmp(lDouble d0, lDouble d1) 
-{
+int doublecmp(lDouble d0, lDouble d1) {
    return d0 == d1 ? 0 : (d0 < d1 ? -1 : 1);
 }
 
@@ -3594,8 +3528,7 @@ int doublecmp(lDouble d0, lDouble d1)
    compares two long values l0 and l1 
    return values like strcmp
  */
-int longcmp(lLong l0, lLong l1) 
-{
+int longcmp(lLong l0, lLong l1) {
    return l0 == l1 ? 0 : (l0 < l1 ? -1 : 1);
 }
 
@@ -3603,8 +3536,7 @@ int longcmp(lLong l0, lLong l1)
    compares two bool values c0 and c1 
    return values like strcmp
  */
-int boolcmp(lBool b0, lBool b1)
-{
+int boolcmp(lBool b0, lBool b1) {
    return b0 == b1 ? 0 : (b0 < b1 ? -1 : 1);
 }
 
@@ -3612,8 +3544,7 @@ int boolcmp(lBool b0, lBool b1)
    compares two char values c0 and c1 
    return values like strcmp
  */
-int charcmp(lChar c0, lChar c1)
-{
+int charcmp(lChar c0, lChar c1) {
    return c0 == c1 ? 0 : (c0 < c1 ? -1 : 1);
 }
 
@@ -3621,8 +3552,7 @@ int charcmp(lChar c0, lChar c1)
    compares two lRef values c0 and c1 
    return values like strcmp
  */
-int refcmp(lRef c0, lRef c1)
-{
+int refcmp(lRef c0, lRef c1) {
    return c0 == c1 ? 0 : (c0 < c1 ? -1 : 1);
 }
 
@@ -3652,8 +3582,7 @@ int refcmp(lRef c0, lRef c1)
 *     otherwise pointer to the added element 
 ******************************************************************************/
 lListElem *lAddSubStr(lListElem *ep, int nm, const char *str, int snm,
-                      const lDescr *dp) 
-{
+                      const lDescr *dp) {
    lListElem *ret;
    int sublist_pos;
 
@@ -3671,7 +3600,7 @@ lListElem *lAddSubStr(lListElem *ep, int nm, const char *str, int snm,
 
    /* run time type checking */
    if ((sublist_pos = lGetPosViaElem(ep, snm, SGE_NO_ABORT)) < 0) {
-      CRITICAL((SGE_EVENT, MSG_CULL_ADDSUBSTRERRORXRUNTIMETYPE_S , lNm2Str(snm)));
+      CRITICAL((SGE_EVENT, MSG_CULL_ADDSUBSTRERRORXRUNTIMETYPE_S, lNm2Str(snm)));
       DRETURN(NULL);
    }
 
@@ -3711,8 +3640,7 @@ lListElem *lAddSubStr(lListElem *ep, int nm, const char *str, int snm,
 *     otherwise pointer to the added element 
 ******************************************************************************/
 lListElem *lAddSubHost(lListElem *ep, int nm, const char *str, int snm,
-                       const lDescr *dp) 
-{
+                       const lDescr *dp) {
    lListElem *ret;
    int sublist_pos;
 
@@ -3730,7 +3658,7 @@ lListElem *lAddSubHost(lListElem *ep, int nm, const char *str, int snm,
 
    /* run time type checking */
    if ((sublist_pos = lGetPosViaElem(ep, snm, SGE_NO_ABORT)) < 0) {
-      CRITICAL((SGE_EVENT, MSG_CULL_ADDSUBHOSTERRORXRUNTIMETYPE_S , lNm2Str(snm)));
+      CRITICAL((SGE_EVENT, MSG_CULL_ADDSUBHOSTERRORXRUNTIMETYPE_S, lNm2Str(snm)));
       DRETURN(NULL);
    }
 
@@ -3766,8 +3694,7 @@ lListElem *lAddSubHost(lListElem *ep, int nm, const char *str, int snm,
 *  RESULT
 *     lListElem* - 
 ******************************************************************************/
-lListElem *lAddElemStr(lList **lpp, int nm, const char *str, const lDescr *dp) 
-{
+lListElem *lAddElemStr(lList **lpp, int nm, const char *str, const lDescr *dp) {
    lListElem *sep;
    int pos;
    int data_type;
@@ -3784,13 +3711,13 @@ lListElem *lAddElemStr(lList **lpp, int nm, const char *str, const lDescr *dp)
 
    /* run time type checking */
    if (pos < 0) {
-      CRITICAL((SGE_EVENT, MSG_CULL_ADDELEMSTRERRORXRUNTIMETYPE_S , lNm2Str(nm)));
+      CRITICAL((SGE_EVENT, MSG_CULL_ADDELEMSTRERRORXRUNTIMETYPE_S, lNm2Str(nm)));
       DRETURN(NULL);
    }
-   data_type = lGetPosType(dp , pos);
+   data_type = lGetPosType(dp, pos);
    if (data_type != lStringT) {
       DPRINTF(("error: lAddElemStr called to field which is no lStringT type\n"));
-      CRITICAL((SGE_EVENT, MSG_CULL_ADDELEMSTRERRORXRUNTIMETYPE_S , lNm2Str(nm)));
+      CRITICAL((SGE_EVENT, MSG_CULL_ADDELEMSTRERRORXRUNTIMETYPE_S, lNm2Str(nm)));
       DRETURN(NULL);
    }
 
@@ -3827,8 +3754,7 @@ lListElem *lAddElemStr(lList **lpp, int nm, const char *str, const lDescr *dp)
 *  RESULT
 *     lListElem* - new element or NULL
 ******************************************************************************/
-lListElem *lAddElemHost(lList **lpp, int nm, const char *str, const lDescr *dp)
-{
+lListElem *lAddElemHost(lList **lpp, int nm, const char *str, const lDescr *dp) {
    lListElem *sep;
    int pos;
    int data_type;
@@ -3845,13 +3771,13 @@ lListElem *lAddElemHost(lList **lpp, int nm, const char *str, const lDescr *dp)
 
    /* run time type checking */
    if (pos < 0) {
-      CRITICAL((SGE_EVENT, MSG_CULL_ADDELEMHOSTERRORXRUNTIMETYPE_S , lNm2Str(nm)));
+      CRITICAL((SGE_EVENT, MSG_CULL_ADDELEMHOSTERRORXRUNTIMETYPE_S, lNm2Str(nm)));
       DRETURN(NULL);
    }
-   data_type = lGetPosType(dp , pos);
+   data_type = lGetPosType(dp, pos);
    if (data_type != lHostT) {
       DPRINTF(("error: lAddElemHost called to field which is no lHostT type\n"));
-      CRITICAL((SGE_EVENT, MSG_CULL_ADDELEMHOSTERRORXRUNTIMETYPE_S , lNm2Str(nm)));
+      CRITICAL((SGE_EVENT, MSG_CULL_ADDELEMHOSTERRORXRUNTIMETYPE_S, lNm2Str(nm)));
       DRETURN(NULL);
    }
 
@@ -3889,8 +3815,7 @@ lListElem *lAddElemHost(lList **lpp, int nm, const char *str, const lDescr *dp)
 *     1 element was found and removed
 *     0 in case of an error 
 ******************************************************************************/
-int lDelSubStr(lListElem *ep, int nm, const char *str, int snm) 
-{
+int lDelSubStr(lListElem *ep, int nm, const char *str, int snm) {
    int ret, sublist_pos;
 
    DENTER(CULL_LAYER);
@@ -3928,8 +3853,7 @@ int lDelSubStr(lListElem *ep, int nm, const char *str, int snm)
 *     1 if the element was found and removed
 *     0 in case of an error 
 ******************************************************************************/
-int lDelElemStr(lList **lpp, int nm, const char *str) 
-{
+int lDelElemStr(lList **lpp, int nm, const char *str) {
    lListElem *ep;
 
    DENTER(CULL_LAYER);
@@ -3941,7 +3865,7 @@ int lDelElemStr(lList **lpp, int nm, const char *str)
 
    /* empty list ? */
    if (!*lpp) {
-      DRETURN(1); 
+      DRETURN(1);
    }
 
    /* seek element */
@@ -3981,8 +3905,7 @@ int lDelElemStr(lList **lpp, int nm, const char *str)
 *     NULL if element was not found or in case of an error 
 *     otherwise pointer to an element
 ******************************************************************************/
-lListElem *lGetSubStr(const lListElem *ep, int nm, const char *str, int snm) 
-{
+lListElem *lGetSubStr(const lListElem *ep, int nm, const char *str, int snm) {
    int sublist_pos;
    lListElem *ret = NULL;
 
@@ -4017,12 +3940,11 @@ lListElem *lGetSubStr(const lListElem *ep, int nm, const char *str, int snm)
 *     NULL when element was not found or if an error occured
 *     otherwise pointer to element 
 ******************************************************************************/
-lListElem *lGetElemStrRW(const lList *lp, int nm, const char *str) 
-{
+lListElem *lGetElemStrRW(const lList *lp, int nm, const char *str) {
    const void *iterator = NULL;
    lListElem *ret = NULL;
    DENTER(CULL_LAYER);
-   
+
    ret = lGetElemStrFirstRW(lp, nm, str, &iterator);
    DRETURN(ret);
 }
@@ -4057,15 +3979,14 @@ const lListElem *lGetElemStr(const lList *lp, int nm, const char *str) {
 *  RESULT
 *     lListElem* - first element or NULL 
 ******************************************************************************/
-lListElem *lGetElemStrFirstRW(const lList *lp, int nm, const char *str, const void **iterator)
-{
+lListElem *lGetElemStrFirstRW(const lList *lp, int nm, const char *str, const void **iterator) {
    lListElem *ep;
-   int pos; 
+   int pos;
    int data_type;
    const lDescr *listDescriptor;
 
 
-   DENTER(CULL_LAYER); 
+   DENTER(CULL_LAYER);
    if (!str) {
       DPRINTF(("error: NULL ptr passed to lGetElemStrFirst\n"));
       DRETURN(NULL);
@@ -4083,14 +4004,14 @@ lListElem *lGetElemStrFirstRW(const lList *lp, int nm, const char *str, const vo
 
    /* run time type checking */
    if (pos < 0) {
-      CRITICAL((SGE_EVENT, MSG_CULL_GETELEMSTRERRORXRUNTIMETYPE_S , lNm2Str(nm)));
+      CRITICAL((SGE_EVENT, MSG_CULL_GETELEMSTRERRORXRUNTIMETYPE_S, lNm2Str(nm)));
       DRETURN(NULL);
    }
 
-   data_type = lGetPosType(listDescriptor,pos);
+   data_type = lGetPosType(listDescriptor, pos);
    if (data_type != lStringT) {
       DPRINTF(("error: lGetElemStrFirst called to field which is no lStringT type\n"));
-      CRITICAL((SGE_EVENT, MSG_CULL_GETELEMSTRERRORXRUNTIMETYPE_S , lNm2Str(nm)));
+      CRITICAL((SGE_EVENT, MSG_CULL_GETELEMSTRERRORXRUNTIMETYPE_S, lNm2Str(nm)));
       DRETURN(NULL);
    }
 
@@ -4098,7 +4019,7 @@ lListElem *lGetElemStrFirstRW(const lList *lp, int nm, const char *str, const vo
 
    if (lp->descr[pos].ht != NULL) {
       /* hash access */
-      ep = cull_hash_first(lp->descr[pos].ht, str, 
+      ep = cull_hash_first(lp->descr[pos].ht, str,
                            mt_is_unique(lp->descr[pos].mt), iterator);
       DRETURN(ep);
    } else {
@@ -4145,8 +4066,7 @@ const lListElem *lGetElemStrFirst(const lList *lp, int nm, const char *str, cons
 *  RESULT
 *     lListElem* - next element or NULL
 ******************************************************************************/
-lListElem *lGetElemStrNextRW(const lList *lp, int nm, const char *str, const void **iterator)
-{
+lListElem *lGetElemStrNextRW(const lList *lp, int nm, const char *str, const void **iterator) {
    lListElem *ep;
    int pos, data_type;
    const lDescr *listDescriptor;
@@ -4154,10 +4074,10 @@ lListElem *lGetElemStrNextRW(const lList *lp, int nm, const char *str, const voi
 
    DENTER(CULL_LAYER);
 
-   if(*iterator == NULL) {
+   if (*iterator == NULL) {
       return NULL;
    }
-   
+
    if (!str) {
       DPRINTF(("error: NULL ptr passed to lGetElemStr\n"));
       DRETURN(NULL);
@@ -4174,22 +4094,22 @@ lListElem *lGetElemStrNextRW(const lList *lp, int nm, const char *str, const voi
    pos = lGetPosInDescr(listDescriptor, nm);
    /* run time type checking */
    if (pos < 0) {
-      CRITICAL((SGE_EVENT, MSG_CULL_GETELEMSTRERRORXRUNTIMETYPE_S , lNm2Str(nm)));
+      CRITICAL((SGE_EVENT, MSG_CULL_GETELEMSTRERRORXRUNTIMETYPE_S, lNm2Str(nm)));
       DRETURN(NULL);
    }
-   data_type = lGetPosType(listDescriptor,pos);
+   data_type = lGetPosType(listDescriptor, pos);
    if (data_type != lStringT) {
       DPRINTF(("error: lGetElemStrNext called to field which is no lStringT type\n"));
       DRETURN(NULL);
    }
 
-   if(lp->descr[pos].ht != NULL) {
+   if (lp->descr[pos].ht != NULL) {
       /* hash access */
       ep = cull_hash_next(lp->descr[pos].ht, iterator);
       DRETURN(ep);
    } else {
       /* seek for element */
-      for (ep = ((lListElem *)*iterator)->next; ep; ep = ep->next) {
+      for (ep = ((lListElem *) *iterator)->next; ep; ep = ep->next) {
          const char *s = lGetPosString(ep, pos);
          if (s && !strcmp(s, str)) {
             *iterator = ep;
@@ -4228,8 +4148,7 @@ const lListElem *lGetElemStrNext(const lList *lp, int nm, const char *str, const
 *     NULL if element was not found or in case of error
 *     otherwise pointer to element 
 ******************************************************************************/
-lListElem *lGetElemStrLikeRW(const lList *lp, int nm, const char *str) 
-{
+lListElem *lGetElemStrLikeRW(const lList *lp, int nm, const char *str) {
    lListElem *ep;
    int pos;
    const char *s;
@@ -4254,22 +4173,22 @@ lListElem *lGetElemStrLikeRW(const lList *lp, int nm, const char *str)
    pos = lGetPosInDescr(listDescriptor, nm);
    /* run time type checking */
    if (pos < 0) {
-      CRITICAL((SGE_EVENT, MSG_CULL_GETELEMSTRERRORXRUNTIMETYPE_S , lNm2Str(nm)));
+      CRITICAL((SGE_EVENT, MSG_CULL_GETELEMSTRERRORXRUNTIMETYPE_S, lNm2Str(nm)));
       DRETURN(NULL);
    }
-   data_type = lGetPosType(listDescriptor,pos);
+   data_type = lGetPosType(listDescriptor, pos);
    if (data_type != lStringT) {
       DPRINTF(("error: lGetElemStrLike called to field which is no lStringT type\n"));
-      CRITICAL((SGE_EVENT, MSG_CULL_GETELEMSTRERRORXRUNTIMETYPE_S , lNm2Str(nm)));
+      CRITICAL((SGE_EVENT, MSG_CULL_GETELEMSTRERRORXRUNTIMETYPE_S, lNm2Str(nm)));
       DRETURN(NULL);
    }
 
    /* seek for element */
-   str_pos = strlen(str)-1;
+   str_pos = strlen(str) - 1;
    for_each_rw(ep, lp) {
       s = lGetPosString(ep, pos);
       if (s && (!strcmp(s, str) ||
-            (str[str_pos] == '*' && !strncmp(s, str, str_pos)))) {
+                (str[str_pos] == '*' && !strncmp(s, str, str_pos)))) {
          DRETURN(ep);
       }
    }
@@ -4306,9 +4225,8 @@ const lListElem *lGetElemStrLike(const lList *lp, int nm, const char *str) {
 *     NULL in case of error
 *     or the pointer to the new element 
 ******************************************************************************/
-lListElem *lAddSubUlong(lListElem *ep, int nm, lUlong val, int snm, 
-                        const lDescr *dp) 
-{
+lListElem *lAddSubUlong(lListElem *ep, int nm, lUlong val, int snm,
+                        const lDescr *dp) {
    lListElem *ret;
    int sublist_pos;
 
@@ -4326,7 +4244,7 @@ lListElem *lAddSubUlong(lListElem *ep, int nm, lUlong val, int snm,
 
    /* run time type checking */
    if ((sublist_pos = lGetPosViaElem(ep, snm, SGE_NO_ABORT)) < 0) {
-      CRITICAL((SGE_EVENT, MSG_CULL_ADDSUBULONGERRORXRUNTIMETYPE_S , lNm2Str(snm)));
+      CRITICAL((SGE_EVENT, MSG_CULL_ADDSUBULONGERRORXRUNTIMETYPE_S, lNm2Str(snm)));
       DRETURN(NULL);
    }
 
@@ -4363,8 +4281,7 @@ lListElem *lAddSubUlong(lListElem *ep, int nm, lUlong val, int snm,
 *     NULL on error
 *     or pointer to the added element 
 ******************************************************************************/
-lListElem *lAddElemUlong(lList **lpp, int nm, lUlong val, const lDescr *dp) 
-{
+lListElem *lAddElemUlong(lList **lpp, int nm, lUlong val, const lDescr *dp) {
    lListElem *sep;
    int pos;
 
@@ -4380,8 +4297,8 @@ lListElem *lAddElemUlong(lList **lpp, int nm, lUlong val, const lDescr *dp)
 
    /* run time type checking */
    if (pos < 0) {
-      CRITICAL((SGE_EVENT, MSG_CULL_ADDELEMULONGERRORXRUNTIMETYPE_S, 
-         lNm2Str(nm)));
+      CRITICAL((SGE_EVENT, MSG_CULL_ADDELEMULONGERRORXRUNTIMETYPE_S,
+              lNm2Str(nm)));
       DRETURN(NULL);
    }
 
@@ -4420,8 +4337,7 @@ lListElem *lAddElemUlong(lList **lpp, int nm, lUlong val, const lDescr *dp)
 *     1 element was found and removed
 *     0 in case of an error 
 ******************************************************************************/
-int lDelSubUlong(lListElem *ep, int nm, lUlong val, int snm) 
-{
+int lDelSubUlong(lListElem *ep, int nm, lUlong val, int snm) {
    int ret, sublist_pos;
 
    DENTER(CULL_LAYER);
@@ -4459,8 +4375,7 @@ int lDelSubUlong(lListElem *ep, int nm, lUlong val, int snm)
 *     1 element was found and removed 
 *     0 an error occured
 ******************************************************************************/
-int lDelElemUlong(lList **lpp, int nm, lUlong val) 
-{
+int lDelElemUlong(lList **lpp, int nm, lUlong val) {
    lListElem *ep;
 
    DENTER(CULL_LAYER);
@@ -4510,8 +4425,7 @@ int lDelElemUlong(lList **lpp, int nm, lUlong val)
 *     NULL if element was not found or in case of an error
 *     otherwise pointer to the element 
 ******************************************************************************/
-lListElem *lGetSubUlong(const lListElem *ep, int nm, lUlong val, int snm) 
-{
+lListElem *lGetSubUlong(const lListElem *ep, int nm, lUlong val, int snm) {
    int sublist_pos;
    lListElem *ret;
 
@@ -4545,8 +4459,7 @@ lListElem *lGetSubUlong(const lListElem *ep, int nm, lUlong val, int snm)
 *    NULL if element was not found or an error occured
 *    otherwise pointer to element 
 ******************************************************************************/
-lListElem *lGetElemUlongRW(const lList *lp, int nm, lUlong val) 
-{
+lListElem *lGetElemUlongRW(const lList *lp, int nm, lUlong val) {
    const void *iterator = NULL;
    return lGetElemUlongFirstRW(lp, nm, val, &iterator);
 }
@@ -4602,9 +4515,9 @@ lListElem *lGetElemUlongFirstRW(const lList *lp, int nm, lUlong val, const void 
 
    *iterator = NULL;
 
-   if(lp->descr[pos].ht != NULL) {
+   if (lp->descr[pos].ht != NULL) {
       /* hash access */
-      ep = cull_hash_first(lp->descr[pos].ht, &val, 
+      ep = cull_hash_first(lp->descr[pos].ht, &val,
                            mt_is_unique(lp->descr[pos].mt), iterator);
       DRETURN(ep);
    } else {
@@ -4657,10 +4570,10 @@ lListElem *lGetElemUlongNextRW(const lList *lp, int nm, lUlong val, const void *
 
    DENTER(CULL_LAYER);
 
-   if(*iterator == NULL) {
+   if (*iterator == NULL) {
       return NULL;
    }
-  
+
    /* get position of nm in sdp */
    pos = lGetPosInDescr(lGetListDescr(lp), nm);
 
@@ -4670,13 +4583,13 @@ lListElem *lGetElemUlongNextRW(const lList *lp, int nm, lUlong val, const void *
       DRETURN(NULL);
    }
 
-   if(lp->descr[pos].ht != NULL) {
+   if (lp->descr[pos].ht != NULL) {
       /* hash access */
       ep = cull_hash_next(lp->descr[pos].ht, iterator);
       DRETURN(ep);
    } else {
       /* seek for element */
-      for (ep = ((lListElem *)*iterator)->next; ep; ep = ep->next) {
+      for (ep = ((lListElem *) *iterator)->next; ep; ep = ep->next) {
          lUlong s = lGetPosUlong(ep, pos);
          if (s == val) {
             *iterator = ep;
@@ -4718,9 +4631,8 @@ const lListElem *lGetElemUlongNext(const lList *lp, int nm, lUlong val, const vo
 *     NULL in case of error
 *     or the pointer to the new element 
 ******************************************************************************/
-lListElem *lAddSubUlong64(lListElem *ep, int nm, lUlong64 val, int snm, 
-                        const lDescr *dp) 
-{
+lListElem *lAddSubUlong64(lListElem *ep, int nm, lUlong64 val, int snm,
+                          const lDescr *dp) {
    lListElem *ret;
    int sublist_pos;
 
@@ -4738,7 +4650,7 @@ lListElem *lAddSubUlong64(lListElem *ep, int nm, lUlong64 val, int snm,
 
    /* run time type checking */
    if ((sublist_pos = lGetPosViaElem(ep, snm, SGE_NO_ABORT)) < 0) {
-      CRITICAL((SGE_EVENT, MSG_CULL_ADDSUBULONG64ERRORXRUNTIMETYPE_S , lNm2Str(snm)));
+      CRITICAL((SGE_EVENT, MSG_CULL_ADDSUBULONG64ERRORXRUNTIMETYPE_S, lNm2Str(snm)));
       DRETURN(NULL);
    }
 
@@ -4775,8 +4687,7 @@ lListElem *lAddSubUlong64(lListElem *ep, int nm, lUlong64 val, int snm,
 *     NULL on error
 *     or pointer to the added element 
 ******************************************************************************/
-lListElem *lAddElemUlong64(lList **lpp, int nm, lUlong64 val, const lDescr *dp) 
-{
+lListElem *lAddElemUlong64(lList **lpp, int nm, lUlong64 val, const lDescr *dp) {
    lListElem *sep;
    int pos;
 
@@ -4792,8 +4703,8 @@ lListElem *lAddElemUlong64(lList **lpp, int nm, lUlong64 val, const lDescr *dp)
 
    /* run time type checking */
    if (pos < 0) {
-      CRITICAL((SGE_EVENT, MSG_CULL_ADDELEMULONG64ERRORXRUNTIMETYPE_S, 
-         lNm2Str(nm)));
+      CRITICAL((SGE_EVENT, MSG_CULL_ADDELEMULONG64ERRORXRUNTIMETYPE_S,
+              lNm2Str(nm)));
       DRETURN(NULL);
    }
 
@@ -4832,8 +4743,7 @@ lListElem *lAddElemUlong64(lList **lpp, int nm, lUlong64 val, const lDescr *dp)
 *     1 element was found and removed
 *     0 in case of an error 
 ******************************************************************************/
-int lDelSubUlong64(lListElem *ep, int nm, lUlong64 val, int snm) 
-{
+int lDelSubUlong64(lListElem *ep, int nm, lUlong64 val, int snm) {
    int ret, sublist_pos;
 
    DENTER(CULL_LAYER);
@@ -4871,8 +4781,7 @@ int lDelSubUlong64(lListElem *ep, int nm, lUlong64 val, int snm)
 *     1 element was found and removed 
 *     0 an error occured
 ******************************************************************************/
-int lDelElemUlong64(lList **lpp, int nm, lUlong64 val) 
-{
+int lDelElemUlong64(lList **lpp, int nm, lUlong64 val) {
    lListElem *ep;
 
    DENTER(CULL_LAYER);
@@ -4922,8 +4831,7 @@ int lDelElemUlong64(lList **lpp, int nm, lUlong64 val)
 *     NULL if element was not found or in case of an error
 *     otherwise pointer to the element 
 ******************************************************************************/
-lListElem *lGetSubUlong64(const lListElem *ep, int nm, lUlong64 val, int snm) 
-{
+lListElem *lGetSubUlong64(const lListElem *ep, int nm, lUlong64 val, int snm) {
    int sublist_pos;
    lListElem *ret;
 
@@ -4957,14 +4865,12 @@ lListElem *lGetSubUlong64(const lListElem *ep, int nm, lUlong64 val, int snm)
 *    NULL if element was not found or an error occured
 *    otherwise pointer to element 
 ******************************************************************************/
-lListElem *lGetElemUlong64RW(const lList *lp, int nm, lUlong64 val)
-{
+lListElem *lGetElemUlong64RW(const lList *lp, int nm, lUlong64 val) {
    const void *iterator = NULL;
    return lGetElemUlong64FirstRW(lp, nm, val, &iterator);
 }
 
-const lListElem *lGetElemUlong64(const lList *lp, int nm, lUlong64 val)
-{
+const lListElem *lGetElemUlong64(const lList *lp, int nm, lUlong64 val) {
    return lGetElemUlong64RW(lp, nm, val);
 }
 
@@ -4993,8 +4899,7 @@ const lListElem *lGetElemUlong64(const lList *lp, int nm, lUlong64 val)
 *  RESULT
 *     lListElem* - element or NULL 
 ******************************************************************************/
-lListElem *lGetElemUlong64FirstRW(const lList *lp, int nm, lUlong64 val, const void **iterator)
-{
+lListElem *lGetElemUlong64FirstRW(const lList *lp, int nm, lUlong64 val, const void **iterator) {
    lListElem *ep = NULL;
    int pos;
 
@@ -5016,9 +4921,9 @@ lListElem *lGetElemUlong64FirstRW(const lList *lp, int nm, lUlong64 val, const v
 
    *iterator = NULL;
 
-   if(lp->descr[pos].ht != NULL) {
+   if (lp->descr[pos].ht != NULL) {
       /* hash access */
-      ep = cull_hash_first(lp->descr[pos].ht, &val, 
+      ep = cull_hash_first(lp->descr[pos].ht, &val,
                            mt_is_unique(lp->descr[pos].mt), iterator);
       DRETURN(ep);
    } else {
@@ -5035,8 +4940,7 @@ lListElem *lGetElemUlong64FirstRW(const lList *lp, int nm, lUlong64 val, const v
    DRETURN(NULL);
 }
 
-const lListElem *lGetElemUlong64First(const lList *lp, int nm, lUlong64 val, const void **iterator)
-{
+const lListElem *lGetElemUlong64First(const lList *lp, int nm, lUlong64 val, const void **iterator) {
    return lGetElemUlong64FirstRW(lp, nm, val, iterator);
 }
 
@@ -5066,17 +4970,16 @@ const lListElem *lGetElemUlong64First(const lList *lp, int nm, lUlong64 val, con
 *  RESULT
 *     lListElem* - next element or NULL 
 ******************************************************************************/
-lListElem *lGetElemUlong64NextRW(const lList *lp, int nm, lUlong64 val, const void **iterator)
-{
+lListElem *lGetElemUlong64NextRW(const lList *lp, int nm, lUlong64 val, const void **iterator) {
    lListElem *ep;
    int pos;
 
    DENTER(CULL_LAYER);
 
-   if(*iterator == NULL) {
+   if (*iterator == NULL) {
       return NULL;
    }
-  
+
    /* get position of nm in sdp */
    pos = lGetPosInDescr(lGetListDescr(lp), nm);
 
@@ -5086,13 +4989,13 @@ lListElem *lGetElemUlong64NextRW(const lList *lp, int nm, lUlong64 val, const vo
       DRETURN(NULL);
    }
 
-   if(lp->descr[pos].ht != NULL) {
+   if (lp->descr[pos].ht != NULL) {
       /* hash access */
       ep = cull_hash_next(lp->descr[pos].ht, iterator);
       DRETURN(ep);
    } else {
       /* seek for element */
-      for (ep = ((lListElem *)*iterator)->next; ep; ep = ep->next) {
+      for (ep = ((lListElem *) *iterator)->next; ep; ep = ep->next) {
          lUlong64 s = lGetPosUlong64(ep, pos);
          if (s == val) {
             *iterator = ep;
@@ -5105,8 +5008,7 @@ lListElem *lGetElemUlong64NextRW(const lList *lp, int nm, lUlong64 val, const vo
    DRETURN(NULL);
 }
 
-const lListElem *lGetElemUlong64Next(const lList *lp, int nm, lUlong64 val, const void **iterator)
-{
+const lListElem *lGetElemUlong64Next(const lList *lp, int nm, lUlong64 val, const void **iterator) {
    return lGetElemUlong64NextRW(lp, nm, val, iterator);
 }
 
@@ -5132,8 +5034,7 @@ const lListElem *lGetElemUlong64Next(const lList *lp, int nm, lUlong64 val, cons
 *     1 if the element was found an removed 
 *     0 in case of error
 ******************************************************************************/
-int lDelSubCaseStr(lListElem *ep, int nm, const char *str, int snm) 
-{
+int lDelSubCaseStr(lListElem *ep, int nm, const char *str, int snm) {
    int ret, sublist_pos;
 
    DENTER(CULL_LAYER);
@@ -5174,8 +5075,7 @@ int lDelSubCaseStr(lListElem *ep, int nm, const char *str, int snm)
 *     1 if the element was found and removed
 *     0 in case of error 
 ******************************************************************************/
-int lDelElemCaseStr(lList **lpp, int nm, const char *str) 
-{
+int lDelElemCaseStr(lList **lpp, int nm, const char *str) {
    lListElem *ep;
 
    DENTER(CULL_LAYER);
@@ -5187,7 +5087,7 @@ int lDelElemCaseStr(lList **lpp, int nm, const char *str)
 
    /* empty list ? */
    if (!*lpp) {
-      DRETURN(1); 
+      DRETURN(1);
    }
 
    /* seek elemtent */
@@ -5225,9 +5125,8 @@ int lDelElemCaseStr(lList **lpp, int nm, const char *str)
 *     NULL if element was not found or in case of an error
 *     otherwise pointer to element 
 ******************************************************************************/
-lListElem *lGetSubCaseStr(const lListElem *ep, int nm, const char *str, 
-                          int snm) 
-{
+lListElem *lGetSubCaseStr(const lListElem *ep, int nm, const char *str,
+                          int snm) {
    int sublist_pos;
    lListElem *ret;
 
@@ -5264,8 +5163,7 @@ lListElem *lGetSubCaseStr(const lListElem *ep, int nm, const char *str,
 *     otherwise the pointer to an element 
 *
 ******************************************************************************/
-lListElem *lGetElemCaseStr(const lList *lp, int nm, const char *str) 
-{
+lListElem *lGetElemCaseStr(const lList *lp, int nm, const char *str) {
    lListElem *ep;
    int pos;
    const char *s;
@@ -5290,14 +5188,14 @@ lListElem *lGetElemCaseStr(const lList *lp, int nm, const char *str)
 
    /* run time type checking */
    if (pos < 0) {
-      CRITICAL((SGE_EVENT, MSG_CULL_GETELEMCASESTRERRORXRUNTIMETYPE_S , lNm2Str(nm)));
+      CRITICAL((SGE_EVENT, MSG_CULL_GETELEMCASESTRERRORXRUNTIMETYPE_S, lNm2Str(nm)));
       DRETURN(NULL);
    }
 
    data_type = lGetPosType(listDescriptor, pos);
    if (data_type != lStringT) {
       DPRINTF((":::::::::::::::: lGetElemCaseStr - data type is not lStringT !!! :::::::"));
-      CRITICAL((SGE_EVENT, MSG_CULL_GETELEMCASESTRERRORXRUNTIMETYPE_S , lNm2Str(nm)));
+      CRITICAL((SGE_EVENT, MSG_CULL_GETELEMCASESTRERRORXRUNTIMETYPE_S, lNm2Str(nm)));
       DRETURN(NULL);
    }
 
@@ -5332,8 +5230,7 @@ lListElem *lGetElemCaseStr(const lList *lp, int nm, const char *str)
 *     NULL when the list does not contain the element or in case of 
 *     error otherwise pointer to an element
 ******************************************************************************/
-lListElem *lGetElemHostRW(const lList *lp, int nm, const char *str) 
-{
+lListElem *lGetElemHostRW(const lList *lp, int nm, const char *str) {
    const void *iterator = NULL;
    return lGetElemHostFirstRW(lp, nm, str, &iterator);
 }
@@ -5367,36 +5264,36 @@ lListElem *lGetElemHostFirstRW(const lList *lp, int nm, const char *str, const v
    int data_type;
    lListElem *ep = NULL;
    const lDescr *listDescriptor = NULL;
-   char uhost[CL_MAXHOSTLEN+1];
-   char cmphost[CL_MAXHOSTLEN+1];
+   char uhost[CL_MAXHOSTLEN + 1];
+   char cmphost[CL_MAXHOSTLEN + 1];
    const char *s = NULL;
 
    DENTER(TOP_LAYER);
 
    /* check for null pointers */
-   if ( (str == NULL) || (lp == NULL) ) {
+   if ((str == NULL) || (lp == NULL)) {
       DPRINTF(("error: NULL ptr passed to lGetElemHostFirst\n"));
       DRETURN(NULL);
    }
-   
+
    /* run time type checking */
    listDescriptor = lGetListDescr(lp);
    pos = lGetPosInDescr(listDescriptor, nm);
    data_type = lGetPosType(listDescriptor, pos);
-   if ( (pos < 0) || (data_type != lHostT) ) {
+   if ((pos < 0) || (data_type != lHostT)) {
       if (data_type != lHostT) {
          DPRINTF((":::::::::::::::: lGetElemHostFirst - data type is not lHostT !!! :::::::\n"));
       }
-      CRITICAL((SGE_EVENT, MSG_CULL_GETELEMHOSTERRORXRUNTIMETYPE_S , lNm2Str(nm)));
+      CRITICAL((SGE_EVENT, MSG_CULL_GETELEMHOSTERRORXRUNTIMETYPE_S, lNm2Str(nm)));
       DRETURN(NULL);
    }
-  
+
    *iterator = NULL;
    if (lp->descr[pos].ht != NULL) {
       /* we have a hash table */
-      char host_key[CL_MAXHOSTLEN+1];
-      sge_hostcpy(host_key,str);
-      sge_strtoupper(host_key,CL_MAXHOSTLEN);
+      char host_key[CL_MAXHOSTLEN + 1];
+      sge_hostcpy(host_key, str);
+      sge_strtoupper(host_key, CL_MAXHOSTLEN);
       ep = cull_hash_first(lp->descr[pos].ht, host_key,
                            mt_is_unique(lp->descr[pos].mt), iterator);
       DRETURN(ep);
@@ -5404,23 +5301,23 @@ lListElem *lGetElemHostFirstRW(const lList *lp, int nm, const char *str, const v
       /* expensive host search algorithm */
 
       /* copy searched hostname */
-      sge_hostcpy(uhost, str); 
-  
-      /* sequence search */ 
+      sge_hostcpy(uhost, str);
+
+      /* sequence search */
       for_each_rw(ep, lp) {
          s = lGetPosHost(ep, pos);
          if (s != NULL) {
             sge_hostcpy(cmphost, s);
-            if ( !SGE_STRCASECMP(cmphost, uhost) ) {
+            if (!SGE_STRCASECMP(cmphost, uhost)) {
                *iterator = ep;
-               DRETURN(ep); 
+               DRETURN(ep);
             }
-         } 
+         }
       }
    }
 
    DRETURN(NULL);
-} 
+}
 
 const lListElem *lGetElemHostFirst(const lList *lp, int nm, const char *str, const void **iterator) {
    return lGetElemHostFirstRW(lp, nm, str, iterator);
@@ -5452,27 +5349,27 @@ lListElem *lGetElemHostNextRW(const lList *lp, int nm, const char *str, const vo
    int pos;
    lListElem *ep = NULL;
    const lDescr *listDescriptor = NULL;
-   char uhost[CL_MAXHOSTLEN+1];
-   char cmphost[CL_MAXHOSTLEN+1];
+   char uhost[CL_MAXHOSTLEN + 1];
+   char cmphost[CL_MAXHOSTLEN + 1];
    const char *s = NULL;
 
    DENTER(TOP_LAYER);
 
    /* check for null *iterator and */
    /* check for null pointers */
-   if ( (str == NULL) || (lp == NULL) || (*iterator == NULL) ) {
+   if ((str == NULL) || (lp == NULL) || (*iterator == NULL)) {
       DPRINTF(("error: NULL ptr passed to lGetElemHostNext\n"));
       DRETURN(NULL);
    }
-  
+
    /* run time type checking */
    listDescriptor = lGetListDescr(lp);
    pos = lGetPosInDescr(listDescriptor, nm);
    if (pos < 0) {
-      CRITICAL((SGE_EVENT, MSG_CULL_GETELEMHOSTERRORXRUNTIMETYPE_S , lNm2Str(nm)));
+      CRITICAL((SGE_EVENT, MSG_CULL_GETELEMHOSTERRORXRUNTIMETYPE_S, lNm2Str(nm)));
       DRETURN(NULL);
    }
-  
+
    if (lp->descr[pos].ht != NULL) {
       /* we have a hash table */
       ep = cull_hash_next(lp->descr[pos].ht, iterator);
@@ -5481,18 +5378,18 @@ lListElem *lGetElemHostNextRW(const lList *lp, int nm, const char *str, const vo
       /* expensive host search algorithm */
 
       /* copy searched hostname */
-      sge_hostcpy(uhost, str); 
-  
-      /* sequence search */ 
-      for (ep = ((lListElem *)*iterator)->next; ep ; ep = ep->next) {
+      sge_hostcpy(uhost, str);
+
+      /* sequence search */
+      for (ep = ((lListElem *) *iterator)->next; ep; ep = ep->next) {
          s = lGetPosHost(ep, pos);
          if (s != NULL) {
             sge_hostcpy(cmphost, s);
-            if ( !SGE_STRCASECMP(cmphost, uhost) ) {
+            if (!SGE_STRCASECMP(cmphost, uhost)) {
                *iterator = ep;
-               DRETURN(ep); 
+               DRETURN(ep);
             }
-         } 
+         }
       }
    }
    *iterator = NULL;
@@ -5526,8 +5423,7 @@ const lListElem *lGetElemHostNext(const lList *lp, int nm, const char *str, cons
 *     NULL if element was not found or in case of error
 *     otherwise pointer to element 
 ******************************************************************************/
-lListElem *lGetSubHostRW(const lListElem *ep, int nm, const char *str, int snm) 
-{
+lListElem *lGetSubHostRW(const lListElem *ep, int nm, const char *str, int snm) {
    int sublist_pos;
    lListElem *ret;
 
@@ -5567,8 +5463,7 @@ const lListElem *lGetSubHost(const lListElem *ep, int nm, const char *str, int s
 *     1 if the host element was found and removed 
 *     0 in case of an error
 ******************************************************************************/
-int lDelElemHost(lList **lpp, int nm, const char *str) 
-{
+int lDelElemHost(lList **lpp, int nm, const char *str) {
    lListElem *ep;
 
    DENTER(CULL_LAYER);
@@ -5616,14 +5511,14 @@ int lDelElemHost(lList **lpp, int nm, const char *str)
 *     int - Name 
 ******************************************************************************/
 int lGetPosName(const lDescr *dp, int pos) {
-   
-   if (!dp ) {
+
+   if (!dp) {
       LERROR(LEDESCRNULL);
       return (int) NoName;
    }
    if (pos < 0) {
       return (int) NoName;
-   } 
+   }
    return dp[pos].nm;
 }
 

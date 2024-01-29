@@ -50,8 +50,7 @@
 
 static void _lWriteWhatTo(const lEnumeration *ep, dstring *buffer, int level);
 
-static void _lWriteWhatTo(const lEnumeration *ep, dstring *buffer, int level) 
-{
+static void _lWriteWhatTo(const lEnumeration *ep, dstring *buffer, int level) {
    int i;
 
    DENTER(CULL_LAYER);
@@ -66,28 +65,28 @@ static void _lWriteWhatTo(const lEnumeration *ep, dstring *buffer, int level)
       for (j = 0; j < level; j++) {
          sge_dstring_sprintf_append(buffer, "   ");
       }
-      
+
       switch (ep[i].pos) {
-      case WHAT_NONE:
-         sge_dstring_sprintf_append(buffer, "nm: %6d %-20.20s mt: %7d "
-                                    "pos: %3d\n", ep[i].nm, "NONE", 
-                                    ep[i].mt, ep[i].pos);
-         break;
-      case WHAT_ALL:
-         sge_dstring_sprintf_append(buffer, "nm: %6d %-20.20s mt: %7d "
-                                    "pos: %3d\n", ep[i].nm, "ALL", 
-                                    ep[i].mt, ep[i].pos);
-         break;
-      default:
-         sge_dstring_sprintf_append(buffer, "nm: %6d %-20.20s mt: %7d "
-                                    "pos: %3d\n", ep[i].nm, 
-                                    lNm2Str(ep[i].nm), 
-                                    ep[i].mt, ep[i].pos);
-         break;
+         case WHAT_NONE:
+            sge_dstring_sprintf_append(buffer, "nm: %6d %-20.20s mt: %7d "
+                                               "pos: %3d\n", ep[i].nm, "NONE",
+                                       ep[i].mt, ep[i].pos);
+            break;
+         case WHAT_ALL:
+            sge_dstring_sprintf_append(buffer, "nm: %6d %-20.20s mt: %7d "
+                                               "pos: %3d\n", ep[i].nm, "ALL",
+                                       ep[i].mt, ep[i].pos);
+            break;
+         default:
+            sge_dstring_sprintf_append(buffer, "nm: %6d %-20.20s mt: %7d "
+                                               "pos: %3d\n", ep[i].nm,
+                                       lNm2Str(ep[i].nm),
+                                       ep[i].mt, ep[i].pos);
+            break;
       }
 
       if (ep[i].ep != NULL) {
-         _lWriteWhatTo(ep[i].ep, buffer, level+1);
+         _lWriteWhatTo(ep[i].ep, buffer, level + 1);
       }
    }
 
@@ -108,8 +107,7 @@ static void _lWriteWhatTo(const lEnumeration *ep, dstring *buffer, int level)
 *     const lEnumeration *ep - enumeration 
 *     FILE *fp               - file stream 
 ******************************************************************************/
-void lWriteWhatTo(const lEnumeration *ep, FILE *fp) 
-{
+void lWriteWhatTo(const lEnumeration *ep, FILE *fp) {
    dstring buffer = DSTRING_INIT;
 
    _lWriteWhatTo(ep, &buffer, 0);
@@ -138,8 +136,7 @@ void lWriteWhatTo(const lEnumeration *ep, FILE *fp)
 *  RESULT
 *     void - NONE
 *******************************************************************************/
-void lWriteWhatToDString(const lEnumeration *ep, dstring *buffer)
-{
+void lWriteWhatToDString(const lEnumeration *ep, dstring *buffer) {
    _lWriteWhatTo(ep, buffer, 0);
 }
 

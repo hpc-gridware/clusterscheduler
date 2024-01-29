@@ -89,6 +89,7 @@
 #define  LEOPEN         55      /* error opening file                     */
 #define  LECLOSE        56      /* error closeing file                    */
 #define  LEBOUNDELEM    57      /* lListElem is already bound             */
+
 /* prototypes */
 
 int lerror(void);

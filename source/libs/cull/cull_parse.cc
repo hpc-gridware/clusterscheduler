@@ -57,7 +57,7 @@ static const char *eatws(const char *s);
 
  */
 static const char *eatws(
-const char *s 
+        const char *s
 ) {
    while (*s && isspace((int) *s))
       s++;
@@ -86,47 +86,47 @@ void eat_token(cull_parse_state *state) {
 
  */
 int scan(
-const char *s,
-cull_parse_state *state
+        const char *s,
+        cull_parse_state *state
 ) {
    static char *opv[] =
-   {
-      "%T",                     /* DESCRIPTOR TYPE OF LIST */
-      "%I",                     /* FIELD                   */
+           {
+                   "%T",                     /* DESCRIPTOR TYPE OF LIST */
+                   "%I",                     /* FIELD                   */
 
-      "->",                     /* SUBSCOPE                */
-      "+",                      /* PLUS                    */
-      "-",                      /* MINUS                   */
-      "%d",                     /* INT                     */
-      "%s",                     /* STRING                  */
-      "%u",                     /* ULONG                   */
-      "%lu",                    /* ULONG64                 */
-      "%f",                     /* FLOAT                   */
-      "%g",                     /* DOUBLE                  */
-      "%o",                     /* LONG                    */
-      "%c",                     /* CHAR                    */
-      "%b",                     /* BOOL                    */
-      "%p",                     /* REF                     */
+                   "->",                     /* SUBSCOPE                */
+                   "+",                      /* PLUS                    */
+                   "-",                      /* MINUS                   */
+                   "%d",                     /* INT                     */
+                   "%s",                     /* STRING                  */
+                   "%u",                     /* ULONG                   */
+                   "%lu",                    /* ULONG64                 */
+                   "%f",                     /* FLOAT                   */
+                   "%g",                     /* DOUBLE                  */
+                   "%o",                     /* LONG                    */
+                   "%c",                     /* CHAR                    */
+                   "%b",                     /* BOOL                    */
+                   "%p",                     /* REF                     */
 
-      "ALL",                    /* CULL_ALL                */
-      "NONE",                   /* CULL_NONE               */
-      "==",                     /* EQUAL                   */
-      "!=",                     /* NOT_EQUAL               */
-      "<=",                     /* LOWER_EQUAL             */
-      "<",                      /* LOWER                   */
-      ">=",                     /* GREATER_EQUAL           */
-      ">",                      /* GREATER                 */
-      "m=",                     /* BITMASK                 */
-      "c=",                     /* STRCASECMP              */
-      "p=",                     /* PATTERNCMP              */
-      "h=",                     /* HOSTNAMECMP             */
+                   "ALL",                    /* CULL_ALL                */
+                   "NONE",                   /* CULL_NONE               */
+                   "==",                     /* EQUAL                   */
+                   "!=",                     /* NOT_EQUAL               */
+                   "<=",                     /* LOWER_EQUAL             */
+                   "<",                      /* LOWER                   */
+                   ">=",                     /* GREATER_EQUAL           */
+                   ">",                      /* GREATER                 */
+                   "m=",                     /* BITMASK                 */
+                   "c=",                     /* STRCASECMP              */
+                   "p=",                     /* PATTERNCMP              */
+                   "h=",                     /* HOSTNAMECMP             */
 
-      "&&",                     /* AND */
-      "||",                     /* OR  */
-      "!",                      /* NEG */
-      "(",                      /* BRA */
-      ")"                       /* KET */
-   };
+                   "&&",                     /* AND */
+                   "||",                     /* OR  */
+                   "!",                      /* NEG */
+                   "(",                      /* BRA */
+                   ")"                       /* KET */
+           };
 
    int i, j, len;
    int n = sizeof(opv) / sizeof(char *);

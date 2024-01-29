@@ -35,7 +35,9 @@
 
 
 #ifndef __BASIS_TYPES_H
+
 #   include "basis_types.h"
+
 #endif
 
 #include "uti/sge_bitfield.h"
@@ -92,46 +94,60 @@
 #define CULL_VERSION 0x10020000
 
 typedef struct {
-      char *head_ptr;
-      char *cur_ptr; 
-      size_t mem_size;
-      size_t bytes_used;
-      int just_count;
-      int  version;
-} sge_pack_buffer;   
+   char *head_ptr;
+   char *cur_ptr;
+   size_t mem_size;
+   size_t bytes_used;
+   int just_count;
+   int version;
+} sge_pack_buffer;
 
-int 
-init_packbuffer(sge_pack_buffer *pb, int initial_size, int just_count);     
+int
+init_packbuffer(sge_pack_buffer *pb, int initial_size, int just_count);
 
-int 
+int
 init_packbuffer_from_buffer(sge_pack_buffer *pb, char *buf, u_long32 buflen);
 
-void 
+void
 clear_packbuffer(sge_pack_buffer *pb);
 
 int pb_filled(sge_pack_buffer *pb);
+
 int pb_unused(sge_pack_buffer *pb);
-int pb_used(sge_pack_buffer *pb);  
+
+int pb_used(sge_pack_buffer *pb);
 
 bool pb_are_equivalent(sge_pack_buffer *pb1, sge_pack_buffer *pb2);
-void pb_print_to(sge_pack_buffer *pb, bool only_header, FILE*);
+
+void pb_print_to(sge_pack_buffer *pb, bool only_header, FILE *);
 
 int repackint(sge_pack_buffer *, u_long32);
+
 int packint(sge_pack_buffer *, u_long32);
+
 int packint64(sge_pack_buffer *, u_long64);
+
 int packdouble(sge_pack_buffer *, double);
+
 int packstr(sge_pack_buffer *, const char *);
+
 int packbuf(sge_pack_buffer *, const char *, u_long32);
+
 int packbitfield(sge_pack_buffer *, const bitfield *);
 
 int unpackint(sge_pack_buffer *, u_long32 *);
+
 int unpackint64(sge_pack_buffer *, u_long64 *);
+
 int unpackdouble(sge_pack_buffer *, double *);
+
 int unpackstr(sge_pack_buffer *, char **);
+
 int unpackbuf(sge_pack_buffer *, char **, int);
+
 int unpackbitfield(sge_pack_buffer *, bitfield *, int descr_size);
 
-void debugpack(int on_off); 
+void debugpack(int on_off);
 
 /*
    these return values should be supported by all
@@ -141,7 +157,7 @@ enum {
    PACK_SUCCESS = 0,
    PACK_ENOMEM = -1,
    PACK_FORMAT = -2,
-   PACK_BADARG = -3, 
+   PACK_BADARG = -3,
    PACK_VERSION = -4
 };
 

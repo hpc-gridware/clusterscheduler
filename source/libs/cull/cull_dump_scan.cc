@@ -58,20 +58,35 @@
 static int space_comment(char *s);
 
 static int fGetLine(FILE *fp, char *line, int max_line);
+
 static int fGetBra(FILE *fp);
+
 static int fGetKet(FILE *fp);
+
 static int fGetDescr(FILE *fp, lDescr *dp);
+
 static int fGetInt(FILE *fp, lInt *value);
+
 static int fGetUlong(FILE *fp, lUlong *value);
+
 static int fGetUlong64(FILE *fp, lUlong64 *value);
+
 static int fGetString(FILE *fp, lString *value);
+
 static int fGetHost(FILE *fp, lHost *value);
+
 static int fGetFloat(FILE *fp, lFloat *value);
+
 static int fGetDouble(FILE *fp, lDouble *value);
+
 static int fGetLong(FILE *fp, lLong *value);
+
 static int fGetChar(FILE *fp, lChar *value);
+
 static int fGetBool(FILE *fp, lBool *value);
+
 static int fGetList(FILE *fp, lList **value);
+
 static int fGetObject(FILE *fp, lListElem **value);
 
 /****** cull/dump_scan/lDumpDescr() ****************************************
@@ -94,8 +109,7 @@ static int fGetObject(FILE *fp, lListElem **value);
 *         0 - OK
 *        -1 - Error
 ******************************************************************************/
-int lDumpDescr(FILE *fp, const lDescr *dp, int indent) 
-{
+int lDumpDescr(FILE *fp, const lDescr *dp, int indent) {
    int i, ret = ~EOF;
    char space[256];
 
@@ -115,11 +129,11 @@ int lDumpDescr(FILE *fp, const lDescr *dp, int indent)
       LERROR(LEDESCRNULL);
       DRETURN(-1);
    }
-   ret = fprintf(fp, "%s/* NUMBER OF DESCR FIELDS */ %d\n", space, 
+   ret = fprintf(fp, "%s/* NUMBER OF DESCR FIELDS */ %d\n", space,
                  lCountDescr(dp));
 
    for (i = 0; mt_get_type(dp[i].mt) != lEndT && ret != EOF; i++) {
-      ret = fprintf(fp, "%s/* %-20.20s */ { %d, %d }\n", space, 
+      ret = fprintf(fp, "%s/* %-20.20s */ { %d, %d }\n", space,
                     lNm2Str(dp[i].nm), dp[i].nm, dp[i].mt);
    }
 
@@ -144,8 +158,7 @@ int lDumpDescr(FILE *fp, const lDescr *dp, int indent)
 *  RESULT
 *     lDescr* - descriptor 
 *******************************************************************************/
-lDescr *lUndumpDescr(FILE *fp) 
-{
+lDescr *lUndumpDescr(FILE *fp) {
    int n, i;
    lDescr *dp = NULL;
 
@@ -220,8 +233,7 @@ lDescr *lUndumpDescr(FILE *fp)
 *  NOTES
 *     MT-NOTE: lDumpElem() is not MT safe
 ******************************************************************************/
-int lDumpElem(const char *fname, const lListElem *ep, int indent) 
-{
+int lDumpElem(const char *fname, const lListElem *ep, int indent) {
    int ret;
    FILE *fp;
 
@@ -234,7 +246,7 @@ int lDumpElem(const char *fname, const lListElem *ep, int indent)
       ret = -1;
    }
    return ret;
-FCLOSE_ERROR:
+   FCLOSE_ERROR:
    LERROR(LECLOSE);
    return -1;
 }
@@ -262,8 +274,7 @@ FCLOSE_ERROR:
 *  NOTES
 *     MT-NOTE: lDumpElemFp() is not MT safe
 ******************************************************************************/
-int lDumpElemFp(FILE *fp, const lListElem *ep, int indent) 
-{
+int lDumpElemFp(FILE *fp, const lListElem *ep, int indent) {
    int i, ret = ~EOF;
    lList *tlp;
    lListElem *tep;
@@ -291,84 +302,84 @@ int lDumpElemFp(FILE *fp, const lListElem *ep, int indent)
       char *tok = NULL;
 
       switch (mt_get_type(ep->descr[i].mt)) {
-      case lIntT:
-         ret = fprintf(fp, "%s/* %-20.20s */ %d\n",
-                     space, lNm2Str(ep->descr[i].nm), lGetPosInt(ep, i));
-         break;
-      case lUlongT:
-         ret = fprintf(fp, "%s/* %-20.20s */ " sge_u32 "\n",
-                   space, lNm2Str(ep->descr[i].nm), lGetPosUlong(ep, i));
-         break;
-      case lUlong64T:
-         ret = fprintf(fp, "%s/* %-20.20s */ " sge_u64 "\n",
-                   space, lNm2Str(ep->descr[i].nm), lGetPosUlong64(ep, i));
-         break;
-      case lStringT:
-         str = lGetPosString(ep, i);
-         /* quote " inside str */
-         if ((tok = sge_strtok(str, "\"")) != NULL) {
-            sge_dstring_append(&dstr, tok);
-            while ((tok=sge_strtok(NULL, "\"")) != NULL) {
-               sge_dstring_append(&dstr, "\\\"");
+         case lIntT:
+            ret = fprintf(fp, "%s/* %-20.20s */ %d\n",
+                          space, lNm2Str(ep->descr[i].nm), lGetPosInt(ep, i));
+            break;
+         case lUlongT:
+            ret = fprintf(fp, "%s/* %-20.20s */ " sge_u32 "\n",
+                          space, lNm2Str(ep->descr[i].nm), lGetPosUlong(ep, i));
+            break;
+         case lUlong64T:
+            ret = fprintf(fp, "%s/* %-20.20s */ " sge_u64 "\n",
+                          space, lNm2Str(ep->descr[i].nm), lGetPosUlong64(ep, i));
+            break;
+         case lStringT:
+            str = lGetPosString(ep, i);
+            /* quote " inside str */
+            if ((tok = sge_strtok(str, "\"")) != NULL) {
                sge_dstring_append(&dstr, tok);
+               while ((tok = sge_strtok(NULL, "\"")) != NULL) {
+                  sge_dstring_append(&dstr, "\\\"");
+                  sge_dstring_append(&dstr, tok);
+               }
             }
-         }
-         str = sge_dstring_get_string(&dstr);
-         ret = fprintf(fp, "%s/* %-20.20s */ \"%s\"\n",
-                  space, lNm2Str(ep->descr[i].nm), str != NULL ? str : "");
-         sge_dstring_clear(&dstr);
-         break;
-      case lHostT:
-         str = lGetPosHost(ep, i);
-         ret = fprintf(fp, "%s/* %-20.20s */ \"%s\"\n",
-                  space, lNm2Str(ep->descr[i].nm), str != NULL ? str : "");
-         break;
-      case lFloatT:
-         ret = fprintf(fp, "%s/* %-20.20s */ %f\n",
-                   space, lNm2Str(ep->descr[i].nm), lGetPosFloat(ep, i));
-         break;
-      case lDoubleT:
-         ret = fprintf(fp, "%s/* %-20.20s */ %f\n",
-                  space, lNm2Str(ep->descr[i].nm), lGetPosDouble(ep, i));
-         break;
-      case lLongT:
-         ret = fprintf(fp, "%s/* %-20.20s */%ld \n",
-                    space, lNm2Str(ep->descr[i].nm), lGetPosLong(ep, i));
-         break;
-      case lCharT:
-         ret = fprintf(fp, "%s/* %-20.20s */ %c\n",
-                    space, lNm2Str(ep->descr[i].nm), lGetPosChar(ep, i));
-         break;
-      case lBoolT:
-         ret = fprintf(fp, "%s/* %-20.20s */ %d\n",
-                    space, lNm2Str(ep->descr[i].nm), lGetPosBool(ep, i));
-         break;
-      case lRefT:
-         ret = fprintf(fp, "%s/* %-20.20s */ %ld\n",
-                    space, lNm2Str(ep->descr[i].nm), (long)lGetPosRef(ep, i));
-         break;
-      case lObjectT:
-         if ((tep = lGetPosObject(ep, i)) == NULL)
-            ret = fprintf(fp, "%s/* %-20.20s */ none\n",
-                          space, lNm2Str(ep->descr[i].nm));
-         else {
-            ret = fprintf(fp, "%s/* %-20.20s */ object\n",
-                          space, lNm2Str(ep->descr[i].nm));
-            if (ret != EOF)
-               ret = lDumpObject(fp, tep, indent + 1);
-         }
-         break;
-      case lListT:
-         if ((tlp = lGetPosList(ep, i)) == NULL)
-            ret = fprintf(fp, "%s/* %-20.20s */ empty\n",
-                          space, lNm2Str(ep->descr[i].nm));
-         else {
-            ret = fprintf(fp, "%s/* %-20.20s */ full\n",
-                          space, lNm2Str(ep->descr[i].nm));
-            if (ret != EOF)
-               ret = lDumpList(fp, tlp, indent + 1);
-         }
-         break;
+            str = sge_dstring_get_string(&dstr);
+            ret = fprintf(fp, "%s/* %-20.20s */ \"%s\"\n",
+                          space, lNm2Str(ep->descr[i].nm), str != NULL ? str : "");
+            sge_dstring_clear(&dstr);
+            break;
+         case lHostT:
+            str = lGetPosHost(ep, i);
+            ret = fprintf(fp, "%s/* %-20.20s */ \"%s\"\n",
+                          space, lNm2Str(ep->descr[i].nm), str != NULL ? str : "");
+            break;
+         case lFloatT:
+            ret = fprintf(fp, "%s/* %-20.20s */ %f\n",
+                          space, lNm2Str(ep->descr[i].nm), lGetPosFloat(ep, i));
+            break;
+         case lDoubleT:
+            ret = fprintf(fp, "%s/* %-20.20s */ %f\n",
+                          space, lNm2Str(ep->descr[i].nm), lGetPosDouble(ep, i));
+            break;
+         case lLongT:
+            ret = fprintf(fp, "%s/* %-20.20s */%ld \n",
+                          space, lNm2Str(ep->descr[i].nm), lGetPosLong(ep, i));
+            break;
+         case lCharT:
+            ret = fprintf(fp, "%s/* %-20.20s */ %c\n",
+                          space, lNm2Str(ep->descr[i].nm), lGetPosChar(ep, i));
+            break;
+         case lBoolT:
+            ret = fprintf(fp, "%s/* %-20.20s */ %d\n",
+                          space, lNm2Str(ep->descr[i].nm), lGetPosBool(ep, i));
+            break;
+         case lRefT:
+            ret = fprintf(fp, "%s/* %-20.20s */ %ld\n",
+                          space, lNm2Str(ep->descr[i].nm), (long) lGetPosRef(ep, i));
+            break;
+         case lObjectT:
+            if ((tep = lGetPosObject(ep, i)) == NULL)
+               ret = fprintf(fp, "%s/* %-20.20s */ none\n",
+                             space, lNm2Str(ep->descr[i].nm));
+            else {
+               ret = fprintf(fp, "%s/* %-20.20s */ object\n",
+                             space, lNm2Str(ep->descr[i].nm));
+               if (ret != EOF)
+                  ret = lDumpObject(fp, tep, indent + 1);
+            }
+            break;
+         case lListT:
+            if ((tlp = lGetPosList(ep, i)) == NULL)
+               ret = fprintf(fp, "%s/* %-20.20s */ empty\n",
+                             space, lNm2Str(ep->descr[i].nm));
+            else {
+               ret = fprintf(fp, "%s/* %-20.20s */ full\n",
+                             space, lNm2Str(ep->descr[i].nm));
+               if (ret != EOF)
+                  ret = lDumpList(fp, tlp, indent + 1);
+            }
+            break;
       }
    }
    sge_dstring_free(&dstr);
@@ -398,8 +409,7 @@ int lDumpElemFp(FILE *fp, const lListElem *ep, int indent)
 *         0 - OK
 *        -1 - Error
 *******************************************************************************/
-int lDumpObject(FILE *fp, const lListElem *ep, int indent) 
-{
+int lDumpObject(FILE *fp, const lListElem *ep, int indent) {
    int i, ret = ~EOF;
 
    char space[256];
@@ -430,6 +440,7 @@ int lDumpObject(FILE *fp, const lListElem *ep, int indent)
    DRETURN((ret == EOF) ? -1 : 0);
 
 }
+
 /****** cull/dump_scan/lDumpList() ********************************************
 *  NAME
 *     lDumpList() -- Writes a list to a FILE stream
@@ -453,8 +464,7 @@ int lDumpObject(FILE *fp, const lListElem *ep, int indent)
 *  NOTES
 *     MT-NOTE: lDumpList() is not MT safe
 *******************************************************************************/
-int lDumpList(FILE *fp, const lList *lp, int indent) 
-{
+int lDumpList(FILE *fp, const lList *lp, int indent) {
    const lListElem *ep;
    int i, ret = ~EOF;
 
@@ -477,9 +487,9 @@ int lDumpList(FILE *fp, const lList *lp, int indent)
 
    ret = fprintf(fp, "%s{ /* LIST BEGIN */\n", space);
 
-   ret = fprintf(fp, "%s/* LISTNAME               */ \"%s\"\n", space, 
+   ret = fprintf(fp, "%s/* LISTNAME               */ \"%s\"\n", space,
                  lGetListName(lp));
-   ret = fprintf(fp, "%s/* NUMBER OF ELEMENTS     */ "sge_uu32"\n", space, 
+   ret = fprintf(fp, "%s/* NUMBER OF ELEMENTS     */ "sge_uu32"\n", space,
                  lGetNumberOfElem(lp));
 
    ret = lDumpDescr(fp, lGetListDescr(lp), indent);
@@ -492,6 +502,7 @@ int lDumpList(FILE *fp, const lList *lp, int indent)
    DRETURN((ret == EOF) ? -1 : 0);
 
 }
+
 /****** cull/dump_scan/lUndumpElem() ******************************************
 *  NAME
 *     lUndumpElem() -- Read element from FILE stream 
@@ -509,8 +520,7 @@ int lDumpList(FILE *fp, const lList *lp, int indent)
 *  RESULT
 *     lListElem* - Read element 
 ******************************************************************************/
-lListElem *lUndumpElem(const char *fname, const lDescr *dp) 
-{
+lListElem *lUndumpElem(const char *fname, const lDescr *dp) {
    lListElem *ep = NULL;
    FILE *fp;
 
@@ -543,8 +553,7 @@ lListElem *lUndumpElem(const char *fname, const lDescr *dp)
 *  RESULT
 *     lListElem* - Read element 
 ******************************************************************************/
-lListElem *lUndumpElemFp(FILE *fp, const lDescr *dp) 
-{
+lListElem *lUndumpElemFp(FILE *fp, const lDescr *dp) {
    lListElem *ep;
    int n, i;
    int ret = 0;
@@ -582,58 +591,58 @@ lListElem *lUndumpElemFp(FILE *fp, const lDescr *dp)
 
    for (i = 0; i < n && ret == 0; i++) {
       switch (mt_get_type(dp[i].mt)) {
-      case lIntT:
-         ret = fGetInt(fp, &(ep->cont[i].i));
-         break;
-      case lUlongT:
-         ret = fGetUlong(fp, &(ep->cont[i].ul));
-         break;
-      case lUlong64T:
-         ret = fGetUlong64(fp, &(ep->cont[i].ul64));
-         break;
-      case lStringT:
-         ret = fGetString(fp, &str);
-         if (ret == 0) {
-            lSetPosString(ep, i, str);
-            sge_free(&str);             /* fGetString strdup's */
-         }
-         break;
-      case lHostT:
-         ret = fGetHost(fp, &str);
-         if (ret == 0) {
-            lSetPosHost(ep, i, str);
-            sge_free(&str);             /* fGetHost strdup's */
-         }
-         break;
-      case lFloatT:
-         ret = fGetFloat(fp, &(ep->cont[i].fl));
-         break;
-      case lDoubleT:
-         ret = fGetDouble(fp, &(ep->cont[i].db));
-         break;
-      case lLongT:
-         ret = fGetLong(fp, &(ep->cont[i].l));
-         break;
-      case lCharT:
-         ret = fGetChar(fp, &(ep->cont[i].c));
-         break;
-      case lBoolT:
-         ret = fGetBool(fp, &(ep->cont[i].b));
-         break;
-      case lRefT:
-         /* we will not undump references! But we have to skip the line! */
-         ret = fGetUlong(fp, &dummy);
-         ep->cont[i].ref = NULL;
-         break;
-      case lObjectT:
-         ret = fGetObject(fp, &(ep->cont[i].obj));
-         break;
-      case lListT:
-         ret = fGetList(fp, &(ep->cont[i].glp));
-         break;
-      default:
-         lFreeElem(&ep);
-         unknownType("lUndumpElemFp");
+         case lIntT:
+            ret = fGetInt(fp, &(ep->cont[i].i));
+            break;
+         case lUlongT:
+            ret = fGetUlong(fp, &(ep->cont[i].ul));
+            break;
+         case lUlong64T:
+            ret = fGetUlong64(fp, &(ep->cont[i].ul64));
+            break;
+         case lStringT:
+            ret = fGetString(fp, &str);
+            if (ret == 0) {
+               lSetPosString(ep, i, str);
+               sge_free(&str);             /* fGetString strdup's */
+            }
+            break;
+         case lHostT:
+            ret = fGetHost(fp, &str);
+            if (ret == 0) {
+               lSetPosHost(ep, i, str);
+               sge_free(&str);             /* fGetHost strdup's */
+            }
+            break;
+         case lFloatT:
+            ret = fGetFloat(fp, &(ep->cont[i].fl));
+            break;
+         case lDoubleT:
+            ret = fGetDouble(fp, &(ep->cont[i].db));
+            break;
+         case lLongT:
+            ret = fGetLong(fp, &(ep->cont[i].l));
+            break;
+         case lCharT:
+            ret = fGetChar(fp, &(ep->cont[i].c));
+            break;
+         case lBoolT:
+            ret = fGetBool(fp, &(ep->cont[i].b));
+            break;
+         case lRefT:
+            /* we will not undump references! But we have to skip the line! */
+            ret = fGetUlong(fp, &dummy);
+            ep->cont[i].ref = NULL;
+            break;
+         case lObjectT:
+            ret = fGetObject(fp, &(ep->cont[i].obj));
+            break;
+         case lListT:
+            ret = fGetList(fp, &(ep->cont[i].glp));
+            break;
+         default:
+            lFreeElem(&ep);
+            unknownType("lUndumpElemFp");
       }
    }
 
@@ -674,8 +683,7 @@ lListElem *lUndumpElemFp(FILE *fp, const lDescr *dp)
 *  NOTES
 *
 ******************************************************************************/
-lListElem *lUndumpObject(FILE *fp) 
-{
+lListElem *lUndumpObject(FILE *fp) {
    lListElem *ep;
    lDescr *dp = NULL;
 
@@ -754,8 +762,7 @@ lListElem *lUndumpObject(FILE *fp)
 *     or write a wrapper around lUndumpList which parses this format and 
 *     hands over the varargs list to lUndumpList
 ******************************************************************************/
-lList *lUndumpList(FILE *fp, const char *name, const lDescr *dp) 
-{
+lList *lUndumpList(FILE *fp, const char *name, const lDescr *dp) {
    lList *lp = NULL;
    lListElem *fep, *ep;
    lDescr *fdp = NULL;
@@ -831,19 +838,19 @@ lList *lUndumpList(FILE *fp, const char *name, const lDescr *dp)
          if (dp[i].nm == fdp[j].nm &&
              dp[i].mt == fdp[j].mt) {
             if (found[i] != -1)
-               DPRINTF(("lUndumpList: field %s found twice\n",
-                        lNm2Str(dp[i].nm)));
+                    DPRINTF(("lUndumpList: field %s found twice\n",
+                            lNm2Str(dp[i].nm)));
             found[i] = j;
             break;
          }
       }
       if (i == n)
-         DPRINTF(("lUndumpList: field %s not needed\n", lNm2Str(fdp[j].nm)));
+              DPRINTF(("lUndumpList: field %s not needed\n", lNm2Str(fdp[j].nm)));
    }
 
    for (i = 0; i < n; i++)
       if (found[i] == -1)
-         DPRINTF(("lUndumpList: field %s not found\n", lNm2Str(dp[i].nm)));
+              DPRINTF(("lUndumpList: field %s not found\n", lNm2Str(dp[i].nm)));
 
    /* LOOP OVER THE LIST ELEMENTS */
    for (k = 0; k < nelem; k++) {
@@ -899,8 +906,7 @@ lList *lUndumpList(FILE *fp, const char *name, const lDescr *dp)
    DRETURN(lp);
 }
 
-static int space_comment(char *s) 
-{
+static int space_comment(char *s) {
    char *p, *t;
 
    DENTER(CULL_LAYER);
@@ -916,8 +922,7 @@ static int space_comment(char *s)
 
 }
 
-static int fGetLine(FILE *fp, char *line, int max_line) 
-{
+static int fGetLine(FILE *fp, char *line, int max_line) {
    DENTER(CULL_LAYER);
 
    if (!fp) {
@@ -937,8 +942,7 @@ static int fGetLine(FILE *fp, char *line, int max_line)
    DRETURN(0);
 }
 
-static int fGetBra(FILE *fp) 
-{
+static int fGetBra(FILE *fp) {
    char s[READ_LINE_LENGHT + 1];
 
    DENTER(CULL_LAYER);
@@ -951,8 +955,7 @@ static int fGetBra(FILE *fp)
    DRETURN(strstr(s, "{") ? 0 : -1);
 }
 
-static int fGetKet(FILE *fp) 
-{
+static int fGetKet(FILE *fp) {
    char s[READ_LINE_LENGHT + 1];
 
    DENTER(CULL_LAYER);
@@ -965,8 +968,7 @@ static int fGetKet(FILE *fp)
    DRETURN(strstr(s, "}") ? 0 : -1);
 }
 
-static int fGetDescr(FILE *fp, lDescr *dp) 
-{
+static int fGetDescr(FILE *fp, lDescr *dp) {
    char s[READ_LINE_LENGHT + 1];
    int mt, nm;
    char bra[2], comma[2], ket[2];
@@ -1009,8 +1011,7 @@ static int fGetDescr(FILE *fp, lDescr *dp)
    DRETURN(0);
 }
 
-static int fGetInt(FILE *fp, int *ip) 
-{
+static int fGetInt(FILE *fp, int *ip) {
    char s[READ_LINE_LENGHT + 1];
 
    DENTER(CULL_LAYER);
@@ -1033,8 +1034,7 @@ static int fGetInt(FILE *fp, int *ip)
    DRETURN(0);
 }
 
-static int fGetUlong(FILE *fp, lUlong *up) 
-{
+static int fGetUlong(FILE *fp, lUlong *up) {
    char s[READ_LINE_LENGHT + 1];
 
    DENTER(CULL_LAYER);
@@ -1057,8 +1057,7 @@ static int fGetUlong(FILE *fp, lUlong *up)
    DRETURN(0);
 }
 
-static int fGetUlong64(FILE *fp, lUlong64 *up) 
-{
+static int fGetUlong64(FILE *fp, lUlong64 *up) {
    char s[READ_LINE_LENGHT + 1];
 
    DENTER(CULL_LAYER);
@@ -1081,8 +1080,7 @@ static int fGetUlong64(FILE *fp, lUlong64 *up)
    DRETURN(0);
 }
 
-static int fGetString(FILE *fp, lString *tp) 
-{
+static int fGetString(FILE *fp, lString *tp) {
    int i, j;
    char line[READ_LINE_LENGHT + 1];
    dstring sp = DSTRING_INIT;
@@ -1116,7 +1114,7 @@ static int fGetString(FILE *fp, lString *tp)
    if (s[i] != '"') {
       bool done = false;
       /* String is diveded by a newline */
-      while ( !done ) {
+      while (!done) {
          if (fGetLine(fp, line, READ_LINE_LENGHT)) {
             sge_dstring_free(&sp);
             LERROR(LEFGETLINE);
@@ -1135,7 +1133,7 @@ static int fGetString(FILE *fp, lString *tp)
 
    s = sge_dstring_get_string(&sp);
    if (s == NULL) {
-      *tp = strdup(""); 
+      *tp = strdup("");
    } else {
       *tp = strdup(s);
    }
@@ -1150,8 +1148,7 @@ static int fGetString(FILE *fp, lString *tp)
    DRETURN(0);
 }
 
-static int fGetHost(FILE *fp, lHost *tp) 
-{
+static int fGetHost(FILE *fp, lHost *tp) {
    int i;
    char line[READ_LINE_LENGHT + 1];
    char sp[READ_LINE_LENGHT + 1];
@@ -1192,8 +1189,7 @@ static int fGetHost(FILE *fp, lHost *tp)
    DRETURN(0);
 }
 
-static int fGetFloat(FILE *fp, lFloat *flp) 
-{
+static int fGetFloat(FILE *fp, lFloat *flp) {
    char s[READ_LINE_LENGHT + 1];
 
    DENTER(CULL_LAYER);
@@ -1216,8 +1212,7 @@ static int fGetFloat(FILE *fp, lFloat *flp)
    DRETURN(0);
 }
 
-static int fGetDouble(FILE *fp, lDouble *dp) 
-{
+static int fGetDouble(FILE *fp, lDouble *dp) {
    char s[READ_LINE_LENGHT + 1];
 
    DENTER(CULL_LAYER);
@@ -1240,8 +1235,7 @@ static int fGetDouble(FILE *fp, lDouble *dp)
    DRETURN(0);
 }
 
-static int fGetLong(FILE *fp, lLong *lp) 
-{
+static int fGetLong(FILE *fp, lLong *lp) {
    char s[READ_LINE_LENGHT + 1];
 
    DENTER(CULL_LAYER);
@@ -1264,8 +1258,7 @@ static int fGetLong(FILE *fp, lLong *lp)
    DRETURN(0);
 }
 
-static int fGetChar(FILE *fp, lChar *cp) 
-{
+static int fGetChar(FILE *fp, lChar *cp) {
    char s[READ_LINE_LENGHT + 1];
 
    DENTER(CULL_LAYER);
@@ -1288,8 +1281,7 @@ static int fGetChar(FILE *fp, lChar *cp)
    DRETURN(0);
 }
 
-static int fGetBool(FILE *fp, lBool *cp) 
-{
+static int fGetBool(FILE *fp, lBool *cp) {
    char s[READ_LINE_LENGHT + 1];
    int i = 0;
 
@@ -1315,8 +1307,7 @@ static int fGetBool(FILE *fp, lBool *cp)
    DRETURN(0);
 }
 
-static int fGetList(FILE *fp, lList **lpp) 
-{
+static int fGetList(FILE *fp, lList **lpp) {
    char s[READ_LINE_LENGHT + 1];
 
    DENTER(CULL_LAYER);
@@ -1330,7 +1321,7 @@ static int fGetList(FILE *fp, lList **lpp)
       LERROR(LEFGETLINE);
       DRETURN(-1);
    }
-   
+
    if (strstr(s, "empty") != NULL)
       *lpp = NULL;              /* empty sublist */
    else {
@@ -1349,8 +1340,7 @@ static int fGetList(FILE *fp, lList **lpp)
    DRETURN(0);
 }
 
-static int fGetObject(FILE *fp, lListElem **epp) 
-{
+static int fGetObject(FILE *fp, lListElem **epp) {
    char s[READ_LINE_LENGHT + 1];
 
    DENTER(CULL_LAYER);

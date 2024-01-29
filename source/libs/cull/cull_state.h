@@ -36,14 +36,21 @@
 #include "uti/sge_dstring.h"
 
 void cull_state_set_lerrno(int i);
+
 void cull_state_set_noinit(char *s);
+
 void cull_state_set_global_sort_order(const lSortOrder *so);
+
 void cull_state_set_name_space(const lNameSpace *ns);
+
 void cull_state_set_observe_started(bool started);
 
-int               cull_state_get_lerrno(void);
-const char *      cull_state_get_noinit(void);
+int cull_state_get_lerrno(void);
+
+const char *cull_state_get_noinit(void);
+
 const lSortOrder *cull_state_get_global_sort_order(void);
+
 const lNameSpace *cull_state_get_name_space(void);
 
 #ifdef OBSERVE

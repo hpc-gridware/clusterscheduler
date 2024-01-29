@@ -41,14 +41,21 @@
 lEnumeration *lWhat(const char *fmt, ...);
 
 lEnumeration *_lWhat(const char *fmt, const lDescr *dp, const int *nm_list, int nm);
+
 lEnumeration *lWhatAll(void);
+
 void lFreeWhat(lEnumeration **ep);
+
 lEnumeration *lCopyWhat(const lEnumeration *ep);
+
 int lCountWhat(const lEnumeration *ep, const lDescr *dp);
 
 int lReduceDescr(lDescr **dst_dpp, lDescr *src_dp, lEnumeration *enp);
+
 lEnumeration *lIntVector2What(const lDescr *dp, const int intv[]);
+
 void nm_set(int job_field[], int nm);
 
 int lMergeWhat(lEnumeration **what1, lEnumeration **what2);
+
 int lWhatSetSubWhat(lEnumeration *what1, int nm, lEnumeration **what2);

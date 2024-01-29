@@ -31,7 +31,7 @@
  ************************************************************************/
 /*___INFO__MARK_END__*/
 
-#include "cull/cull_list.h" 
+#include "cull/cull_list.h"
 #include "cull/pack.h"
 
 int lWriteElemToDisk(const lListElem *ep, const char *prefix, const char *name, const char *obj_name);

@@ -2,6 +2,7 @@
 #include <stdlib.h>
 
 #define __SGE_GDI_LIBRARY_HOME_OBJECT_FILE__
+
 #include "cull/cull.h"
 #include "cull/cull_list.h"
 
@@ -21,44 +22,43 @@ enum {
 };
 
 LISTDEF(TEST_Type)
-   SGE_INT    (TEST_int,               CULL_DEFAULT)
-   SGE_HOST   (TEST_host,              CULL_DEFAULT)
-   SGE_STRING (TEST_string,            CULL_DEFAULT)
-   SGE_FLOAT  (TEST_float,             CULL_DEFAULT)
-   SGE_DOUBLE (TEST_double,            CULL_DEFAULT)
-   SGE_CHAR   (TEST_char,              CULL_DEFAULT)
-   SGE_LONG   (TEST_long,              CULL_DEFAULT)
-   SGE_ULONG  (TEST_ulong,             CULL_DEFAULT)
-   SGE_BOOL   (TEST_bool,              CULL_DEFAULT)
-   SGE_LIST   (TEST_list, TEST_Type,   CULL_DEFAULT)
-   SGE_OBJECT (TEST_object, TEST_Type, CULL_DEFAULT)
-   SGE_REF    (TEST_ref, TEST_Type,    CULL_DEFAULT)
+                SGE_INT    (TEST_int, CULL_DEFAULT)
+                SGE_HOST   (TEST_host, CULL_DEFAULT)
+                SGE_STRING (TEST_string, CULL_DEFAULT)
+                SGE_FLOAT  (TEST_float, CULL_DEFAULT)
+                SGE_DOUBLE (TEST_double, CULL_DEFAULT)
+                SGE_CHAR   (TEST_char, CULL_DEFAULT)
+                SGE_LONG   (TEST_long, CULL_DEFAULT)
+                SGE_ULONG  (TEST_ulong, CULL_DEFAULT)
+                SGE_BOOL   (TEST_bool, CULL_DEFAULT)
+                SGE_LIST   (TEST_list, TEST_Type, CULL_DEFAULT)
+                SGE_OBJECT (TEST_object, TEST_Type, CULL_DEFAULT)
+                SGE_REF    (TEST_ref, TEST_Type, CULL_DEFAULT)
 LISTEND
 
 NAMEDEF(TEST_Name)
-   NAME("TEST_int")
-   NAME("TEST_host")
-   NAME("TEST_string")
-   NAME("TEST_float")
-   NAME("TEST_double")
-   NAME("TEST_char")
-   NAME("TEST_long")
-   NAME("TEST_ulong")
-   NAME("TEST_bool")
-   NAME("TEST_list")
-   NAME("TEST_object")
-   NAME("TEST_ref")
-NAMEEND   
+                NAME("TEST_int")
+                NAME("TEST_host")
+                NAME("TEST_string")
+                NAME("TEST_float")
+                NAME("TEST_double")
+                NAME("TEST_char")
+                NAME("TEST_long")
+                NAME("TEST_ulong")
+                NAME("TEST_bool")
+                NAME("TEST_list")
+                NAME("TEST_object")
+                NAME("TEST_ref")
+NAMEEND
 
 #define TEST_Size sizeof(TEST_Name) / sizeof(char *)
 
 lNameSpace nmv[] = {
-   {1, TEST_Size, TEST_Name},
-   {0, 0, NULL}
+        {1, TEST_Size, TEST_Name},
+        {0, 0, NULL}
 };
 
-int main(int argc, char *argv[])
-{
+int main(int argc, char *argv[]) {
    lListElem *ep, *obj, *copy;
    lEnumeration *enp;
    int index;
@@ -102,9 +102,9 @@ int main(int argc, char *argv[])
 
    lSetInt(obj, TEST_int, 50);
 
-   lAddSubStr(obj, TEST_string, "sub list element in sub object", 
+   lAddSubStr(obj, TEST_string, "sub list element in sub object",
               TEST_list, TEST_Type);
-   
+
    printf("element after setting fields\n");
    lWriteElemTo(ep, stdout);
 
@@ -119,7 +119,7 @@ int main(int argc, char *argv[])
    copy = lCreateElem(TEST_Type);
    enp = lWhat("%T(ALL)", TEST_Type);
    index = 0;
-   lCopyElemPartialPack(copy, &index, ep, enp, true, NULL); 
+   lCopyElemPartialPack(copy, &index, ep, enp, true, NULL);
    printf("complete copy of element\n");
    lWriteElemTo(copy, stdout);
    lFreeElem(&copy);
@@ -128,7 +128,7 @@ int main(int argc, char *argv[])
    copy = lCreateElem(TEST_Type);
    enp = lWhat("%T(%I %I %I)", TEST_Type, TEST_string, TEST_float, TEST_double);
    index = lGetPosInDescr(TEST_Type, TEST_string);
-   lCopyElemPartialPack(copy, &index, ep, enp, true, NULL); 
+   lCopyElemPartialPack(copy, &index, ep, enp, true, NULL);
    printf("partial copy of element\n");
    lWriteElemTo(copy, stdout);
    lFreeElem(&copy);
@@ -142,7 +142,7 @@ int main(int argc, char *argv[])
    lWriteElemTo(ep, stdout);
 
    /* cleanup and exit */
-   lFreeElem(&ep);                  
+   lFreeElem(&ep);
    return EXIT_SUCCESS;
 }
 

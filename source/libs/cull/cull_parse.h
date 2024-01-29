@@ -35,12 +35,13 @@
 
 /* to make cull parsing reentrant */
 typedef struct {
-   int         token_is_valid;       /* state of cull token parser    */
-   const char  *t;                   /* position of cull token parser */
-   int         token;                /* token last recognized         */
+   int token_is_valid;       /* state of cull token parser    */
+   const char *t;                   /* position of cull token parser */
+   int token;                /* token last recognized         */
 } cull_parse_state;
 
 void eat_token(cull_parse_state *state);
+
 int scan(const char *s, cull_parse_state *state);
 
 

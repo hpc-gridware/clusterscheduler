@@ -1,4 +1,5 @@
 #pragma once
+
 #include "cull/cull_list.h"
 
 #ifdef OBSERVE

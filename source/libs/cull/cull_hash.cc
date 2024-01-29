@@ -173,9 +173,8 @@ struct _cull_htable {
 *  RESULT
 *     cull_htable - initialized hash description
 *******************************************************************************/
-cull_htable cull_hash_create(const lDescr *descr, int size)
-{
-   htable ht   = NULL;   /* hash table for keys */
+cull_htable cull_hash_create(const lDescr *descr, int size) {
+   htable ht = NULL;   /* hash table for keys */
    htable nuht = NULL;   /* hash table for non unique access */
    cull_htable ret = NULL;
 
@@ -185,7 +184,7 @@ cull_htable cull_hash_create(const lDescr *descr, int size)
    }
 
    /* create hash table for object keys */
-   switch(mt_get_type(descr->mt)) {
+   switch (mt_get_type(descr->mt)) {
       case lStringT:
          ht = sge_htable_create(size, dup_func_string, hash_func_string, hash_compare_string);
          break;
@@ -207,7 +206,7 @@ cull_htable cull_hash_create(const lDescr *descr, int size)
    /* (optionally) create hash table for non unique hash access */
    if (ht != NULL) {
       if (!mt_is_unique(descr->mt)) {
-         nuht = sge_htable_create(size, dup_func_pointer, 
+         nuht = sge_htable_create(size, dup_func_pointer,
                                   hash_func_pointer, hash_compare_pointer);
          if (nuht == NULL) {
             sge_htable_destroy(ht);
@@ -215,10 +214,10 @@ cull_htable cull_hash_create(const lDescr *descr, int size)
          }
       }
    }
- 
+
    /* hashtables OK? Then create cull_htable */
    if (ht != NULL) {
-      ret = (cull_htable)sge_malloc(sizeof(struct _cull_htable));
+      ret = (cull_htable) sge_malloc(sizeof(struct _cull_htable));
 
       /* malloc error? destroy hashtables */
       if (ret == NULL) {
@@ -252,23 +251,22 @@ cull_htable cull_hash_create(const lDescr *descr, int size)
 *     If the list already contains elements, these elements are not 
 *     inserted into the hash lists.
 *******************************************************************************/
-void cull_hash_create_hashtables(lList *lp) 
-{
-   if(lp != NULL) {
+void cull_hash_create_hashtables(lList *lp) {
+   if (lp != NULL) {
       int i, size;
       const lListElem *ep;
-      lDescr * descr = lp->descr;
+      lDescr *descr = lp->descr;
 
       /* compute final size of hashtables when all elements are inserted */
       size = hash_compute_size(lGetNumberOfElem(lp));
 
       /* create hashtables, pass final size */
-      for(i = 0; mt_get_type(descr[i].mt) != lEndT; i++) {
-         if(mt_do_hashing(descr[i].mt) && descr[i].ht == NULL) {
+      for (i = 0; mt_get_type(descr[i].mt) != lEndT; i++) {
+         if (mt_do_hashing(descr[i].mt) && descr[i].ht == NULL) {
             descr[i].ht = cull_hash_create(&descr[i], size);
          }
       }
-   
+
       /* create hash entries for all objects */
       for_each_ep(ep, lp) {
          cull_hash_elem(ep);
@@ -294,9 +292,8 @@ void cull_hash_create_hashtables(lList *lp)
 *     const int pos       - describes the data field of the objects that
 *                           is to be hashed
 *******************************************************************************/
-void cull_hash_insert(const lListElem *ep, void *key, cull_htable ht, bool unique)
-{
-   if(ht == NULL || ep == NULL || key == NULL) {
+void cull_hash_insert(const lListElem *ep, void *key, cull_htable ht, bool unique) {
+   if (ht == NULL || ep == NULL || key == NULL) {
       return;
    }
 
@@ -306,7 +303,7 @@ void cull_hash_insert(const lListElem *ep, void *key, cull_htable ht, bool uniqu
       union {
          non_unique_header *l;
          void *p;
-      } head; 
+      } head;
 
       union {
          non_unique_hash *l;
@@ -317,10 +314,10 @@ void cull_hash_insert(const lListElem *ep, void *key, cull_htable ht, bool uniqu
       nuh.l = NULL;
 
       /* do we already have a list of elements with this key? */
-      if(sge_htable_lookup(ht->ht, key, (const void **) &head.p) == True) {
+      if (sge_htable_lookup(ht->ht, key, (const void **) &head.p) == True) {
          /* We only have something to do if ep isn't already stored */
-         if (sge_htable_lookup(ht->nuht, &ep, (const void **)&nuh.p) == False) {
-            nuh.l = (non_unique_hash *)sge_malloc(sizeof(non_unique_hash));
+         if (sge_htable_lookup(ht->nuht, &ep, (const void **) &nuh.p) == False) {
+            nuh.l = (non_unique_hash *) sge_malloc(sizeof(non_unique_hash));
             nuh.l->data = ep;
             nuh.l->prev = head.l->last;
             nuh.l->next = NULL;
@@ -329,8 +326,8 @@ void cull_hash_insert(const lListElem *ep, void *key, cull_htable ht, bool uniqu
             sge_htable_store(ht->nuht, &ep, nuh.p);
          }
       } else { /* no list of non unique elements for this key, create new */
-         head.l = (non_unique_header *)sge_malloc(sizeof(non_unique_header));
-         nuh.l = (non_unique_hash *)sge_malloc(sizeof(non_unique_hash));
+         head.l = (non_unique_header *) sge_malloc(sizeof(non_unique_header));
+         nuh.l = (non_unique_hash *) sge_malloc(sizeof(non_unique_hash));
          head.l->first = nuh.l;
          head.l->last = nuh.l;
          nuh.l->prev = NULL;
@@ -356,27 +353,26 @@ void cull_hash_insert(const lListElem *ep, void *key, cull_htable ht, bool uniqu
 *     const lListElem *ep - the cull object to be removed
 *     const int pos       - position of the data field 
 *******************************************************************************/
-void cull_hash_remove(const lListElem *ep, const int pos)
-{
-   char host_key[CL_MAXHOSTLEN+1];
+void cull_hash_remove(const lListElem *ep, const int pos) {
+   char host_key[CL_MAXHOSTLEN + 1];
    cull_htable ht;
    void *key;
 
-   if(ep == NULL || pos < 0) {
+   if (ep == NULL || pos < 0) {
       return;
    }
 
    ht = ep->descr[pos].ht;
-   
 
-   if(ht == NULL) {
+
+   if (ht == NULL) {
       return;
    }
 
    key = cull_hash_key(ep, pos, host_key);
-   if(key != NULL) {
-      if(mt_is_unique(ep->descr[pos].mt)) {
-        sge_htable_delete(ht->ht, key);
+   if (key != NULL) {
+      if (mt_is_unique(ep->descr[pos].mt)) {
+         sge_htable_delete(ht->ht, key);
       } else {
          union {
             non_unique_header *l;
@@ -391,9 +387,9 @@ void cull_hash_remove(const lListElem *ep, const int pos)
          nuh.l = NULL;
 
          /* search element in key hashtable */
-         if(sge_htable_lookup(ht->ht, key, (const void **)&head.p) == True) {
+         if (sge_htable_lookup(ht->ht, key, (const void **) &head.p) == True) {
             /* search element in non unique access hashtable */
-            if (sge_htable_lookup(ht->nuht, &ep, (const void **)&nuh.p) == True) {
+            if (sge_htable_lookup(ht->nuht, &ep, (const void **) &nuh.p) == True) {
                if (head.l->first == nuh.p) {
                   head.l->first = nuh.l->next;
                   if (head.l->last == nuh.p) {
@@ -408,20 +404,20 @@ void cull_hash_remove(const lListElem *ep, const int pos)
                   nuh.l->prev->next = nuh.l->next;
                   nuh.l->next->prev = nuh.l->prev;
                }
-               
+
                sge_htable_delete(ht->nuht, &ep);
-               sge_free(&(nuh.p)); 
+               sge_free(&(nuh.p));
             } else {
-             /* JG: TODO: error output */
+               /* JG: TODO: error output */
             }
 
             if (head.l->first == NULL && head.l->last == NULL) {
                sge_free(&head.p);
                sge_htable_delete(ht->ht, key);
             }
-         }   
+         }
       }
-   }   
+   }
 }
 
 /****** cull/hash/cull_hash_elem() *********************************************
@@ -442,16 +438,16 @@ void cull_hash_elem(const lListElem *ep) {
    int i;
    lDescr *descr;
    char host_key[CL_MAXHOSTLEN];
-  
+
    if (ep == NULL) {
       return;
    }
 
    descr = ep->descr;
-  
+
    for (i = 0; mt_get_type(descr[i].mt) != lEndT; i++) {
       if (descr[i].ht != NULL) {
-         cull_hash_insert(ep, cull_hash_key(ep, i, host_key), descr[i].ht, 
+         cull_hash_insert(ep, cull_hash_key(ep, i, host_key), descr[i].ht,
                           mt_is_unique(descr[i].mt));
       }
    }
@@ -487,9 +483,8 @@ void cull_hash_elem(const lListElem *ep) {
 *  SEE ALSO
 *     cull/hash/cull_hash_next()
 ******************************************************************************/
-lListElem *cull_hash_first(cull_htable ht, const void *key, bool unique, 
-                           const void **iterator)
-{
+lListElem *cull_hash_first(cull_htable ht, const void *key, bool unique,
+                           const void **iterator) {
    union {
       lListElem *l;
       void *p;
@@ -500,15 +495,15 @@ lListElem *cull_hash_first(cull_htable ht, const void *key, bool unique,
       return NULL;
    }
 
-   if(ht == NULL || key == NULL) {
+   if (ht == NULL || key == NULL) {
       *iterator = NULL;
       return NULL;
    }
 
    if (unique) {
       *iterator = NULL;
-      if (sge_htable_lookup(ht->ht, key, (const void **)&ep.p) == True) {
-         return (lListElem *)ep.p;
+      if (sge_htable_lookup(ht->ht, key, (const void **) &ep.p) == True) {
+         return (lListElem *) ep.p;
       } else {
          return NULL;
       }
@@ -519,10 +514,10 @@ lListElem *cull_hash_first(cull_htable ht, const void *key, bool unique,
       } head;
       head.l = NULL;
 
-      if (sge_htable_lookup(ht->ht, key, (const void **)&head.p) == True) {
-         ep.p = (lListElem *)head.l->first->data;
+      if (sge_htable_lookup(ht->ht, key, (const void **) &head.p) == True) {
+         ep.p = (lListElem *) head.l->first->data;
          *iterator = head.l->first;
-         return (lListElem *)ep.p;
+         return (lListElem *) ep.p;
       } else {
          *iterator = NULL;
          return NULL;
@@ -558,18 +553,17 @@ lListElem *cull_hash_first(cull_htable ht, const void *key, bool unique,
 *  SEE ALSO
 *     cull/hash/cull_hash_first()
 *******************************************************************************/
-lListElem *cull_hash_next(cull_htable ht, const void **iterator)
-{
+lListElem *cull_hash_next(cull_htable ht, const void **iterator) {
    lListElem *ep = NULL;
-   non_unique_hash *nuh = (non_unique_hash *)*iterator;
-  
+   non_unique_hash *nuh = (non_unique_hash *) *iterator;
+
    if (ht == NULL) {
       return NULL;
    }
 
    nuh = nuh->next;
-   if(nuh != NULL) {
-      ep = (lListElem *)nuh->data;
+   if (nuh != NULL) {
+      ep = (lListElem *) nuh->data;
       *iterator = nuh;
    } else {
       *iterator = NULL;
@@ -602,13 +596,12 @@ lListElem *cull_hash_next(cull_htable ht, const void **iterator)
 *  SEE ALSO
 *     uti/hash/sge_htable_for_each_ep()
 ******************************************************************************/
-void cull_hash_delete_non_unique_chain(htable table, const void *key, 
-                                       const void **data)
-{
-   non_unique_header *head = (non_unique_header *)*data;
+void cull_hash_delete_non_unique_chain(htable table, const void *key,
+                                       const void **data) {
+   non_unique_header *head = (non_unique_header *) *data;
    if (head != NULL) {
       non_unique_hash *nuh = head->first;
-      while(nuh != NULL) {
+      while (nuh != NULL) {
          non_unique_hash *del = nuh;
          nuh = nuh->next;
          sge_free(&del);
@@ -636,14 +629,13 @@ void cull_hash_delete_non_unique_chain(htable table, const void *key,
 *     cull/hash/cull_hash_delete_non_unique()
 *     uti/hash/sge_htable_destroy()
 ******************************************************************************/
-void cull_hash_free_descr(lDescr *descr)
-{
+void cull_hash_free_descr(lDescr *descr) {
    int i;
-   for(i = 0; mt_get_type(descr[i].mt) != lEndT; i++) {
+   for (i = 0; mt_get_type(descr[i].mt) != lEndT; i++) {
       cull_htable ht = descr[i].ht;
 
       if (ht != NULL) {
-         if(!mt_is_unique(descr[i].mt)) {
+         if (!mt_is_unique(descr[i].mt)) {
             /* delete chain of non unique elements */
             sge_htable_for_each_ep(ht->ht, cull_hash_delete_non_unique_chain);
             sge_htable_destroy(ht->nuht);
@@ -692,13 +684,12 @@ void cull_hash_free_descr(lDescr *descr)
 *     cull/hash/cull_hash_new()
 *
 *******************************************************************************/
-int cull_hash_new_check(lList *lp, int nm, bool unique)
-{
+int cull_hash_new_check(lList *lp, int nm, bool unique) {
    const lDescr *descr = lGetListDescr(lp);
    int pos = lGetPosInDescr(descr, nm);
-  
+
    if (descr != NULL && pos >= 0) {
-      if (descr[pos].ht == NULL)  {
+      if (descr[pos].ht == NULL) {
          return cull_hash_new(lp, nm, unique);
       }
    }
@@ -738,8 +729,7 @@ int cull_hash_new_check(lList *lp, int nm, bool unique)
 *     cull_hash_new(job_list, JB_owner, 0);
 *
 *******************************************************************************/
-int cull_hash_new(lList *lp, int nm, bool unique)
-{
+int cull_hash_new(lList *lp, int nm, bool unique) {
    lDescr *descr;
    const lListElem *ep;
    int pos, size;
@@ -747,27 +737,27 @@ int cull_hash_new(lList *lp, int nm, bool unique)
 
    DENTER(CULL_LAYER);
 
-   if(lp == NULL) {
+   if (lp == NULL) {
       DRETURN(0);
    }
- 
+
    descr = lp->descr;
- 
+
    pos = lGetPosInDescr(descr, nm);
 
-   if(pos < 0) {
-      CRITICAL((SGE_EVENT, MSG_CULL_GETELEMSTRERRORXRUNTIMETYPE_S , lNm2Str(nm)));
+   if (pos < 0) {
+      CRITICAL((SGE_EVENT, MSG_CULL_GETELEMSTRERRORXRUNTIMETYPE_S, lNm2Str(nm)));
       DRETURN(0);
    }
 
-   if(descr[pos].ht != NULL) {
+   if (descr[pos].ht != NULL) {
       WARNING((SGE_EVENT, MSG_CULL_HASHTABLEALREADYEXISTS_S, lNm2Str(nm)));
       DRETURN(0);
    }
 
    /* copy hashing information */
    descr[pos].mt |= CULL_HASH;
-   if(unique) {
+   if (unique) {
       descr[pos].mt |= CULL_UNIQUE;
    }
 
@@ -781,35 +771,34 @@ int cull_hash_new(lList *lp, int nm, bool unique)
 
    /* insert all elements into the new hash table */
    for_each_ep(ep, lp) {
-      cull_hash_insert(ep, cull_hash_key(ep, pos, host_key), descr[pos].ht, 
+      cull_hash_insert(ep, cull_hash_key(ep, pos, host_key), descr[pos].ht,
                        unique);
    }
 
    DRETURN(1);
 }
 
-void *cull_hash_key(const lListElem *ep, int pos, char *host_key)
-{
+void *cull_hash_key(const lListElem *ep, int pos, char *host_key) {
    void *key = NULL;
 
    lDescr *descr = &(ep->descr[pos]);
 
-   switch(mt_get_type(descr->mt)) {
+   switch (mt_get_type(descr->mt)) {
       case lUlongT:
-         key = (void *)&(ep->cont[pos].ul);
+         key = (void *) &(ep->cont[pos].ul);
          break;
 
       case lUlong64T:
-         key = (void *)&(ep->cont[pos].ul64);
+         key = (void *) &(ep->cont[pos].ul64);
          break;
 
       case lStringT:
          key = ep->cont[pos].str;
          break;
-  
+
       case lHostT:
          if (ep->cont[pos].host != NULL && host_key != NULL) {
-            sge_hostcpy(host_key,ep->cont[pos].host);
+            sge_hostcpy(host_key, ep->cont[pos].host);
             sge_strtoupper(host_key, CL_MAXHOSTLEN);
             key = host_key;
          }
@@ -826,8 +815,7 @@ void *cull_hash_key(const lListElem *ep, int pos, char *host_key)
 
 
 const char *
-cull_hash_statistics(cull_htable ht, dstring *buffer)
-{
+cull_hash_statistics(cull_htable ht, dstring *buffer) {
    const char *ret = NULL;
 
    sge_dstring_clear(buffer);
@@ -835,7 +823,7 @@ cull_hash_statistics(cull_htable ht, dstring *buffer)
    if (ht != NULL) {
       sge_dstring_copy_string(buffer, "Keys:\n");
       ret = sge_htable_statistics(ht->ht, buffer);
-      
+
       if (ht->nuht != NULL) {
          sge_dstring_append(buffer, "\nNon Unique Hash Access:\n");
          ret = sge_htable_statistics(ht->nuht, buffer);
@@ -843,16 +831,15 @@ cull_hash_statistics(cull_htable ht, dstring *buffer)
    } else {
       ret = sge_dstring_copy_string(buffer, "no hash table");
    }
-   
+
    return ret;
 }
 
-void cull_hash_recreate_after_sort(lList *lp)
-{
+void cull_hash_recreate_after_sort(lList *lp) {
    if (lp != NULL) {
       lDescr *descr = lp->descr;
       int cleared_hash_index[32];
-      int i, hash_index=0;
+      int i, hash_index = 0;
 
       int size = hash_compute_size(lGetNumberOfElem(lp));
 
@@ -869,8 +856,8 @@ void cull_hash_recreate_after_sort(lList *lp)
 
                /* recreate empty hash */
                descr[i].ht = cull_hash_create(&descr[i], size);
-               
-               cleared_hash_index[hash_index]=i;
+
+               cleared_hash_index[hash_index] = i;
                hash_index++;
             }
          }
