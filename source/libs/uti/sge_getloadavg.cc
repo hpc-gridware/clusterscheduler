@@ -488,7 +488,7 @@ static double get_cpu_load()
 
    if (sge_get_kernel_fd(&kernel_fd)
        && sge_get_kernel_address("cp_time", &address)) {
-      getkval(address, (void*)&cpu_time, sizeof(cpu_time), "cp_time"); 
+      getkval(address, (int *)&cpu_time, sizeof(cpu_time), "cp_time");
       percentages(CPUSTATES, cpu_states, cpu_time, cpu_old, cpu_diff);
       cpu_load = cpu_states[0] + cpu_states[1] + cpu_states[2];
       if (cpu_load < 0.0) {

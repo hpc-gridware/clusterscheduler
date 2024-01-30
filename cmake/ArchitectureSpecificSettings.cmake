@@ -113,8 +113,8 @@ function(architecture_specific_settings)
       # FreeBSD
       message(STATUS "We are on FreeBSD: ${SGE_ARCH}")
       set(PROJECT_AUTOMAKE_SRC "/usr/local/share/automake-*/config.*" PARENT_SCOPE)
-      set(CMAKE_C_FLAGS "-Wall -Werror -Wno-reserved-user-defined-literal -Wno-writable-strings -Wno-format-pedantic -Wno-unused-const-variable -Wno-pointer-to-int-cast -pedantic" CACHE STRING "" FORCE)
-      set(CMAKE_CXX_FLAGS "-Wall -Werror -Wno-reserved-user-defined-literal -Wno-writable-strings -Wno-format-pedantic -Wno-unused-const-variable -Wno-pointer-to-int-cast -pedantic" CACHE STRING "" FORCE)
+      set(CMAKE_C_FLAGS "-Wall -Werror -Wno-unneeded-internal-declaration -Wno-reserved-user-defined-literal -Wno-writable-strings -Wno-format-pedantic -Wno-unused-const-variable -Wno-pointer-to-int-cast -pedantic" CACHE STRING "" FORCE)
+      set(CMAKE_CXX_FLAGS "-Wall -Werror -Wno-unneeded-internal-declaration -Wno-reserved-user-defined-literal -Wno-writable-strings -Wno-format-pedantic -Wno-unused-const-variable -Wno-pointer-to-int-cast -pedantic" CACHE STRING "" FORCE)
       add_compile_definitions(FREEBSD GETHOSTBYNAME GETHOSTBYADDR_M SPOOLING_classic)
       add_compile_options(-fPIC)
 
@@ -130,8 +130,8 @@ function(architecture_specific_settings)
    elseif (SGE_ARCH MATCHES "darwin-arm64")
       # Darwin M1/M2/M2Max/M2Pro (arm64) platform
       message(STATUS "We are on macOS: ${SGE_ARCH}")
-      set(CMAKE_C_FLAGS "-Wall -Werror -Wno-unused-const-variable -Wno-format-pedantic -Wno-pointer-to-int-cast -Wno-strict-prototypes -Wno-reserved-user-defined-literal -Wno-deprecated-declarations -Wno-strict-aliasing -pedantic" CACHE STRING "" FORCE)
-      set(CMAKE_CXX_FLAGS "-Wall -Werror -Wno-unused-const-variable -Wno-format-pedantic -Wno-pointer-to-int-cast -Wno-strict-prototypes -Wno-reserved-user-defined-literal -Wno-deprecated-declarations -Wno-write-strings -pedantic" CACHE STRING "" FORCE)
+      set(CMAKE_C_FLAGS "-Wall -Werror -Wno-unneeded-internal-declaration -Wno-unused-const-variable -Wno-format-pedantic -Wno-pointer-to-int-cast -Wno-strict-prototypes -Wno-reserved-user-defined-literal -Wno-deprecated-declarations -Wno-strict-aliasing -pedantic" CACHE STRING "" FORCE)
+      set(CMAKE_CXX_FLAGS "-Wall -Werror -Wno-unneeded-internal-declaration -Wno-unused-const-variable -Wno-format-pedantic -Wno-pointer-to-int-cast -Wno-strict-prototypes -Wno-reserved-user-defined-literal -Wno-deprecated-declarations -Wno-write-strings -pedantic" CACHE STRING "" FORCE)
       set(CMAKE_OSX_ARCHITECTURES "arm64" CACHE STRING "Build architectures for Mac OS X" FORCE)
       add_compile_definitions(DARWIN DARWIN10 GETHOSTBYNAME GETHOSTBYADDR_M SPOOLING_classic)
 
