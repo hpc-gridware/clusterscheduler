@@ -31,11 +31,7 @@
  ************************************************************************/
 /*___INFO__MARK_END__*/
 
-#ifdef __cplusplus
-extern "C" {
-#endif
-
-/* 
+/*
    thread states 
    =============
 
@@ -63,7 +59,7 @@ extern "C" {
 */
 
 /* define cleanup functio type */
-typedef void  (*cl_thread_cleanup_func_t) (cl_thread_settings_t* thread_config);
+typedef void  (*cl_thread_cleanup_func_t)(cl_thread_settings_t *thread_config);
 
 typedef enum cl_thread_type_def {
    CL_TT_UNDEFINED = 0,  /* free */
@@ -91,25 +87,25 @@ struct cl_thread_settings_type {
 #ifdef CL_DO_COMMLIB_DEBUG
    struct timeval           thread_last_cancel_test_time; /* time when thread did the last cl_thread_func_testcancel() call */
 #endif
-   char*                    thread_name;                  /* name of thread */
-   int                      thread_id;                    /* thread id */
-   int                      thread_state;                 /* thread state, e.g. CL_THREAD_WAITING */
-   unsigned long            thread_event_count;           /* number of cl_thread_wait_for_event() calls */
-   cl_raw_list_t*           thread_log_list;              /* list for log ( can be NULL ) */
-   pthread_t*               thread_pointer;               /* pointer to thread (pthread lib) */
-   cl_thread_condition_t*   thread_event_condition;       /* event call conditions */
-   cl_thread_condition_t*   thread_startup_condition;     /* startup condition ( used by cl_thread_setup() ) */
+   char *thread_name;                  /* name of thread */
+   int thread_id;                    /* thread id */
+   int thread_state;                 /* thread state, e.g. CL_THREAD_WAITING */
+   unsigned long thread_event_count;           /* number of cl_thread_wait_for_event() calls */
+   cl_raw_list_t *thread_log_list;              /* list for log ( can be NULL ) */
+   pthread_t *thread_pointer;               /* pointer to thread (pthread lib) */
+   cl_thread_condition_t *thread_event_condition;       /* event call conditions */
+   cl_thread_condition_t *thread_startup_condition;     /* startup condition ( used by cl_thread_setup() ) */
    cl_thread_cleanup_func_t thread_cleanup_func;          /* thread cleanup function pointer */
-   cl_thread_type_t         thread_type;                  /* thread type identifier */
-   void*                    thread_user_data;             /* any user data ( e.g.: a pointer to a struct ) ) */
+   cl_thread_type_t thread_type;                  /* thread type identifier */
+   void *thread_user_data;             /* any user data ( e.g.: a pointer to a struct ) ) */
 };
 
 struct cl_thread_condition_type {
-   pthread_mutex_t*   thread_mutex_lock;    /* mutex and condition variable for thread's */
-   pthread_cond_t*    thread_cond_var;      /* event wait/trigger :     */
+   pthread_mutex_t *thread_mutex_lock;    /* mutex and condition variable for thread's */
+   pthread_cond_t *thread_cond_var;      /* event wait/trigger :     */
 
-   pthread_mutex_t*   trigger_count_mutex;  /* used to lock trigger_count */
-   unsigned long      trigger_count;        /* counts nr of cl_thread_trigger_thread_condition() calls for this condition */
+   pthread_mutex_t *trigger_count_mutex;  /* used to lock trigger_count */
+   unsigned long trigger_count;        /* counts nr of cl_thread_trigger_thread_condition() calls for this condition */
 };
 
 
@@ -119,42 +115,59 @@ struct cl_thread_condition_type {
 
    This functions are more used more or less internal
 */
-int cl_thread_setup(cl_thread_settings_t* thread_config,
-                    cl_raw_list_t* log_list,
-                    const char* name,
+int cl_thread_setup(cl_thread_settings_t *thread_config,
+                    cl_raw_list_t *log_list,
+                    const char *name,
                     int id,
-                    void * (*start_routine)(void *),
+                    void *(*start_routine)(void *),
                     cl_thread_cleanup_func_t cleanup_func,
-                    void* user_data,
-                    cl_thread_type_t thread_type); 
-int cl_thread_cleanup(cl_thread_settings_t* thread_config); 
-cl_thread_settings_t* cl_thread_get_thread_config(void);
-int cl_thread_set_thread_config(cl_thread_settings_t* thread_config);
+                    void *user_data,
+                    cl_thread_type_t thread_type);
+
+int cl_thread_cleanup(cl_thread_settings_t *thread_config);
+
+cl_thread_settings_t *cl_thread_get_thread_config(void);
+
+int cl_thread_set_thread_config(cl_thread_settings_t *thread_config);
+
 int cl_thread_unset_thread_config(void);
-int cl_thread_shutdown(cl_thread_settings_t* thread_config);
-const char* cl_thread_get_state(cl_thread_settings_t* thread_config);
-const char* cl_thread_convert_state_id(int thread_state);
-int cl_thread_join(cl_thread_settings_t* thread_config);
+
+int cl_thread_shutdown(cl_thread_settings_t *thread_config);
+
+const char *cl_thread_get_state(cl_thread_settings_t *thread_config);
+
+const char *cl_thread_convert_state_id(int thread_state);
+
+int cl_thread_join(cl_thread_settings_t *thread_config);
+
 void cl_thread_cleanup_global_thread_config_key(void);
 
 int cl_thread_wait_for_event(cl_thread_settings_t *thread_config, long sec, long micro_sec);
+
 int cl_thread_trigger_event(cl_thread_settings_t *thread_config);
+
 int cl_thread_clear_events(cl_thread_settings_t *thread_config);
 
 
-int cl_thread_create_thread_condition(cl_thread_condition_t** condition );
-int cl_thread_delete_thread_condition(cl_thread_condition_t** condition );
-int cl_thread_wait_for_thread_condition(cl_thread_condition_t* condition, long sec, long micro_sec);
-int cl_thread_trigger_thread_condition(cl_thread_condition_t* condition, int do_broadcast);
-int cl_thread_clear_triggered_conditions(cl_thread_condition_t* condition);
+int cl_thread_create_thread_condition(cl_thread_condition_t **condition);
 
+int cl_thread_delete_thread_condition(cl_thread_condition_t **condition);
+
+int cl_thread_wait_for_thread_condition(cl_thread_condition_t *condition, long sec, long micro_sec);
+
+int cl_thread_trigger_thread_condition(cl_thread_condition_t *condition, int do_broadcast);
+
+int cl_thread_clear_triggered_conditions(cl_thread_condition_t *condition);
 
 
 /* thread_func functions  */
-int cl_thread_func_startup(cl_thread_settings_t* thread_config);
-int cl_thread_func_testcancel(cl_thread_settings_t* thread_config);
-int cl_thread_func_cleanup(cl_thread_settings_t* thread_config);
-void cl_thread_default_cleanup_function(cl_thread_settings_t* thread_config);
+int cl_thread_func_startup(cl_thread_settings_t *thread_config);
+
+int cl_thread_func_testcancel(cl_thread_settings_t *thread_config);
+
+int cl_thread_func_cleanup(cl_thread_settings_t *thread_config);
+
+void cl_thread_default_cleanup_function(cl_thread_settings_t *thread_config);
 
 
 
@@ -200,7 +213,3 @@ void cl_thread_default_cleanup_function(cl_thread_settings_t* thread_config);
        return (NULL);
     }
 */
-
-#ifdef __cplusplus
-}
-#endif

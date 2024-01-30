@@ -33,34 +33,30 @@
 
 #include "comm/lists/cl_lists.h"
 
-#ifdef __cplusplus
-extern "C" {
-#endif
-
 typedef struct cl_parameter_list_elem_t {
-   char*   parameter;     /* data */
-   char*   value;         /* data */
-   cl_raw_list_elem_t*   raw_elem;
+   char *parameter;     /* data */
+   char *value;         /* data */
+   cl_raw_list_elem_t *raw_elem;
 } cl_parameter_list_elem_t;
 
 
 /* basic functions */
-int cl_parameter_list_setup(cl_raw_list_t** list_p, char* list_name );
-int cl_parameter_list_cleanup(cl_raw_list_t** list_p);
+int cl_parameter_list_setup(cl_raw_list_t **list_p, char *list_name);
+
+int cl_parameter_list_cleanup(cl_raw_list_t **list_p);
 
 /* thread list functions that will lock the list */
-int cl_parameter_list_append_parameter(cl_raw_list_t* list_p, const char* parameter, char* value, int lock_list);
-int cl_parameter_list_remove_parameter(cl_raw_list_t* list_p, const char* parameter, int lock_list);
-int cl_parameter_list_get_param_string(cl_raw_list_t* list_p, char** param_string, int lock_list);
+int cl_parameter_list_append_parameter(cl_raw_list_t *list_p, const char *parameter, char *value, int lock_list);
+
+int cl_parameter_list_remove_parameter(cl_raw_list_t *list_p, const char *parameter, int lock_list);
+
+int cl_parameter_list_get_param_string(cl_raw_list_t *list_p, char **param_string, int lock_list);
 
 /* thread functions that will not lock the list */
-cl_parameter_list_elem_t* cl_parameter_list_get_first_elem(cl_raw_list_t* list_p);
-cl_parameter_list_elem_t* cl_parameter_list_get_least_elem(cl_raw_list_t* list_p);
-cl_parameter_list_elem_t* cl_parameter_list_get_next_elem(cl_parameter_list_elem_t* elem);
-cl_parameter_list_elem_t* cl_parameter_list_get_last_elem(cl_parameter_list_elem_t* elem);
+cl_parameter_list_elem_t *cl_parameter_list_get_first_elem(cl_raw_list_t *list_p);
 
+cl_parameter_list_elem_t *cl_parameter_list_get_least_elem(cl_raw_list_t *list_p);
 
-#ifdef __cplusplus
-}
-#endif
+cl_parameter_list_elem_t *cl_parameter_list_get_next_elem(cl_parameter_list_elem_t *elem);
 
+cl_parameter_list_elem_t *cl_parameter_list_get_last_elem(cl_parameter_list_elem_t *elem);

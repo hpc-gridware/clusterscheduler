@@ -31,10 +31,6 @@
  ************************************************************************/
 /*___INFO__MARK_END__*/
 
-#ifdef __cplusplus
-extern "C" {
-#endif
-
 #if defined(SOLARIS) || defined(LINUX) || defined(DARWIN) || defined(FREEBSD) || defined(NETBSD)
 
 #define SGE_LOADMEM
@@ -62,15 +58,12 @@ extern "C" {
 *     uti/os/sge_loadmem()
 ******************************************************************************/
 typedef struct {
-   double mem_total;  
-   double mem_free;    
-   double swap_total;  
-   double swap_free; 
+   double mem_total;
+   double mem_free;
+   double swap_total;
+   double swap_free;
 } sge_mem_info_t;
 
 int sge_loadmem(sge_mem_info_t *mem_info);
-#endif /* SGE_LOADMEM */
 
-#ifdef __cplusplus
-}
 #endif

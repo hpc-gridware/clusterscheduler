@@ -29,14 +29,10 @@
  *   All Rights Reserved.
  *
  ************************************************************************/
-/*___INFO__MARK_END__*/  
+/*___INFO__MARK_END__*/
 
 #include "basis_types.h"
 #include "sge_dstring.h"
-
-#ifdef __cplusplus
-extern "C" {
-#endif
 
 #define COMMENT_CHAR '#'
 
@@ -111,7 +107,7 @@ typedef enum {
    PE_TASK_SPOOL_FILE,
    JOB_SCRIPT_DIR,
    JOB_SCRIPT_FILE,
-   JOB_ACTIVE_DIR 
+   JOB_ACTIVE_DIR
 } sge_file_path_id_t;
 
 /****** uti/spool/sge_spool_flags_t *******************************************
@@ -153,14 +149,14 @@ typedef enum {
 *     SPOOL_ONLY_PETASK - spool only the pe_task, neither job nor ja_task
 ******************************************************************************/
 typedef enum {
-   SPOOL_DEFAULT               = 0x0000,
-   SPOOL_HANDLE_AS_ZOMBIE      = 0x0001,
-   SPOOL_WITHIN_EXECD          = 0x0002,
+   SPOOL_DEFAULT = 0x0000,
+   SPOOL_HANDLE_AS_ZOMBIE = 0x0001,
+   SPOOL_WITHIN_EXECD = 0x0002,
    SPOOL_IGNORE_TASK_INSTANCES = 0x0004,
    SPOOL_HANDLE_PARALLEL_TASKS = 0x0008,
-   SPOOL_ONLY_JATASK           = 0x0010,
-   SPOOL_ONLY_PETASK           = 0x0020
-} sge_spool_flags_t; 
+   SPOOL_ONLY_JATASK = 0x0010,
+   SPOOL_ONLY_PETASK = 0x0020
+} sge_spool_flags_t;
 
 /****** uti/spool/sge_file_path_format_t **************************************
 *  NAME
@@ -192,17 +188,17 @@ typedef enum {
 *     FORMAT_THIRD_PART   - (e.g /path/part2/part3)
 ******************************************************************************/
 typedef enum {
-   FORMAT_DEFAULT      = 0x0000,
+   FORMAT_DEFAULT = 0x0000,
    FORMAT_DOT_FILENAME = 0x0001,
-   FORMAT_FIRST_PART   = 0x0002,
-   FORMAT_SECOND_PART  = 0x0004,
-   FORMAT_THIRD_PART   = 0x0008
+   FORMAT_FIRST_PART = 0x0002,
+   FORMAT_SECOND_PART = 0x0004,
+   FORMAT_THIRD_PART = 0x0008
 } sge_file_path_format_t;
 
 typedef enum {
    STATUS_ROTATING_BAR,
    STATUS_DOTS
-} washing_machine_t; 
+} washing_machine_t;
 
 typedef struct {
    const char *name;
@@ -219,7 +215,7 @@ char *sge_get_file_path(char *buffer, sge_file_path_id_t,
                         u_long32 ulong_val1, u_long32 ulong_val2,
                         const char *string_val1);
 
-int sge_is_valid_filename2(const char *fname); 
+int sge_is_valid_filename2(const char *fname);
 
 int sge_is_valid_filename(const char *fname);
 
@@ -230,16 +226,16 @@ void sge_spoolmsg_append(dstring *ds, const char comment_char, const char *versi
 
 char *sge_get_confval(const char *conf_val, const char *file);
 
-int sge_get_confval_array(const char *fname, 
-                          int n, 
+int sge_get_confval_array(const char *fname,
+                          int n,
                           int nmissing,
-                          bootstrap_entry_t name[], 
+                          bootstrap_entry_t name[],
                           char value[][1025],
                           dstring *error_dstring
-                          );
- 
+);
+
 pid_t sge_readpid(const char *fname);
- 
+
 void sge_write_pid(const char *pid_log_file);
 
 void sge_status_set_type(washing_machine_t type);
@@ -250,15 +246,11 @@ void sge_status_end_turn(void);
 
 void sge_silent_set(int i);
 
-int sge_silent_get(void); 
+int sge_silent_get(void);
 
 int sge_get_management_entry(const char *fname, int n, int nmissing, bootstrap_entry_t name[],
-                          char value[][SGE_PATH_MAX], dstring *error_dstring);
+                             char value[][SGE_PATH_MAX], dstring *error_dstring);
 
 /* get path to active_jobs directory (just for execd and shepherd) */
-const char *sge_get_active_job_file_path(dstring *buffer, u_long32 job_id, 
-   u_long32 ja_task_id, const char *pe_task_id, const char *filename);
-
-#ifdef __cplusplus
-}
-#endif
+const char *sge_get_active_job_file_path(dstring *buffer, u_long32 job_id,
+                                         u_long32 ja_task_id, const char *pe_task_id, const char *filename);

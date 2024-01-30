@@ -6,10 +6,6 @@
 
 #include "uti/sge_lock.h"
 
-#ifdef __cplusplus
-extern "C" {
-#endif
-
 typedef struct sge_fifo_elem_t__ {
    /*
     * is the waiting thread a reader or writer
@@ -47,28 +43,28 @@ typedef struct sge_fifo_rw_lock_t__ {
    /* 
     * position of the next thread which gets the lock 
     */
-   int head;            
+   int head;
 
    /* 
     * position in the array where the next thread will be placed which has to wait 
     */
-   int tail;          
+   int tail;
 
    /* 
     * maximum array size 
-    */ 
-   int size;            
+    */
+   int size;
 
    /* 
     * number of reader threads currently active 
     */
-   int reader_active;   
+   int reader_active;
 
    /* 
     * number of waiting threads in the queue which try to get a read lock 
     */
-   int reader_waiting;  
-   
+   int reader_waiting;
+
    /*
     * number of writer threads currently active (maximum is 1)
     */
@@ -77,12 +73,12 @@ typedef struct sge_fifo_rw_lock_t__ {
    /*
     * number of waiting threads in the queue which try to get the write lock
     */
-   int writer_waiting;  
+   int writer_waiting;
 
    /*
     * number of threads which do neither get a lock nor get a free position in the array
     */
-   int waiting;       
+   int waiting;
 
    /*
     * number of waiting threads which have been signaled so that they wake up (maximum is 1)
@@ -90,21 +86,17 @@ typedef struct sge_fifo_rw_lock_t__ {
    int signaled;
 } sge_fifo_rw_lock_t;
 
-bool 
+bool
 sge_fifo_lock_init(sge_fifo_rw_lock_t *lock);
 
-bool 
+bool
 sge_fifo_lock(sge_fifo_rw_lock_t *lock, bool is_reader);
 
-bool 
+bool
 sge_fifo_ulock(sge_fifo_rw_lock_t *lock, bool is_reader);
 
-void 
+void
 sge_fifo_debug(sge_locktype_t aType);
 
-void 
+void
 sge_debug_time(sge_locktype_t aType);
-
-#ifdef __cplusplus
-}
-#endif

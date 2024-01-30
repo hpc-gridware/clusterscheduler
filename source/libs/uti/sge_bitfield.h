@@ -35,10 +35,6 @@
 
 #include "basis_types.h"
 
-#ifdef __cplusplus
-extern "C" {
-#endif
-
 /****** uti/bitfield/BIT_MANIPULATION_MAKROS() ********************************
 *  NAME
 *     ISSET(),VALID(),SETBIT(),CLEARBIT() - Bit manipulation makros 
@@ -62,10 +58,10 @@ extern "C" {
 *  NOTE
 *     These Makros can't be used in combination with the bitfield type.
 *******************************************************************************/
-#define ISSET(a,b)      ((a&b)==b)
-#define VALID(a,b)      ((a|b)==b)
-#define SETBIT(a,b)     (b=(a)|b);
-#define CLEARBIT(a,b)   (b &= (~(a)));
+#define ISSET(a, b)      ((a&b)==b)
+#define VALID(a, b)      ((a|b)==b)
+#define SETBIT(a, b)     (b=(a)|b);
+#define CLEARBIT(a, b)   (b &= (~(a)));
 
 typedef struct {
    unsigned int size;
@@ -81,41 +77,37 @@ sge_bitfield_new(unsigned int size);
 bitfield *
 sge_bitfield_free(bitfield *bf);
 
-bool 
+bool
 sge_bitfield_init(bitfield *bf, unsigned int size);
 
-bool 
+bool
 sge_bitfield_free_data(bitfield *bf);
 
-bool 
+bool
 sge_bitfield_copy(const bitfield *source, bitfield *target);
 
-bool 
+bool
 sge_bitfield_bitwise_copy(const bitfield *source, bitfield *target);
 
-bool 
+bool
 sge_bitfield_set(bitfield *bf, unsigned int bit);
 
-bool 
+bool
 sge_bitfield_get(const bitfield *bf, unsigned int bit);
 
-bool 
+bool
 sge_bitfield_clear(bitfield *bf, unsigned int bit);
 
-bool 
+bool
 sge_bitfield_reset(bitfield *source);
 
-bool 
+bool
 sge_bitfield_changed(const bitfield *source);
 
-void 
-sge_bitfield_print(const bitfield *bf, FILE *fd); 
+void
+sge_bitfield_print(const bitfield *bf, FILE *fd);
 
 #define fixed_bits (sizeof(char *) * 8)
 #define sge_bitfield_get_size(bf) ((bf)->size)
 #define sge_bitfield_get_size_bytes(size) ((size) / 8 + (((size) % 8) > 0 ? 1 : 0))
 #define sge_bitfield_get_buffer(source) ((source)->size <= fixed_bits) ? (source)->bf.fix : (source)->bf.dyn
-
-#ifdef __cplusplus
-}
-#endif

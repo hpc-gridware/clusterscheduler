@@ -33,27 +33,30 @@
 
 #include "basis_types.h"
 
-#ifdef __cplusplus
-extern "C" {
-#endif
-
 extern char err_msg[]; /* JG: TODO: that is potentially very dangerous! */
 void set_error(const char *err_str);
 
 int read_config(const char *fname);
 
 char *get_conf_val(const char *name);
+
 char *search_conf_val(const char *name);
+
 char *search_nonone_conf_val(const char *name);
 
 int replace_params(const char *src, char *dst, int dst_len, char **allowed);
+
 void delete_config(void);
+
 int add_config_entry(const char *name, const char *value);
-void set_conf_val(const char* name, const char* value);
+
+void set_conf_val(const char *name, const char *value);
 
 bool parse_bool_param(const char *string, const char *variable, bool *value);
-bool parse_int_param(const char *input, const char *variable, 
+
+bool parse_int_param(const char *input, const char *variable,
                      int *value, int type);
+
 bool parse_time_param(const char *input, const char *variable, u_long32 *value);
 
 extern void (*config_errfunc)(const char *);
@@ -63,7 +66,3 @@ extern char *prolog_epilog_variables[];
 extern char *pe_alloc_rule_variables[];
 extern char *ckpt_variables[];
 extern char *ctrl_method_variables[];
-
-#ifdef __cplusplus
-}
-#endif

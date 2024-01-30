@@ -31,10 +31,6 @@
  ************************************************************************/
 /*___INFO__MARK_END__*/
 
-#ifdef __cplusplus
-extern "C" {
-#endif
-
 #ifndef __CL_FUNCTION__
 #define __CL_FUNCTION__ ""
 #endif
@@ -58,29 +54,29 @@ extern "C" {
 #endif
 
 
-
-
 /* basic functions */
-const char* cl_log_list_convert_type_id(cl_log_t id);   /* CR check */
-int cl_log_list_setup(cl_raw_list_t** list_p, const char* creator_name, int creator_id, cl_log_list_flush_method_t flush_type,cl_log_func_t flush_func  );   /* CR check */
+const char *cl_log_list_convert_type_id(cl_log_t id);   /* CR check */
+int cl_log_list_setup(cl_raw_list_t **list_p, const char *creator_name, int creator_id,
+                      cl_log_list_flush_method_t flush_type, cl_log_func_t flush_func);   /* CR check */
 #if 0
 cl_thread_settings_t* cl_log_list_get_creator_thread(cl_thread_settings_t* thread_config); /* CR check */
 #endif
-int cl_log_list_cleanup(cl_raw_list_t** list_p);   /* CR check */
-int cl_log_list_set_log_level(cl_raw_list_t* list_p, cl_log_t log_level); /* CR check */
+
+int cl_log_list_cleanup(cl_raw_list_t **list_p);   /* CR check */
+int cl_log_list_set_log_level(cl_raw_list_t *list_p, cl_log_t log_level); /* CR check */
 
 
 /* thread list function that will lock the list */
 int cl_log_list_flush(void);   /* CR check */
-int cl_log_list_flush_list(cl_raw_list_t* list_p); /* CR check */
-int cl_log_list_log(cl_log_t log_type,int line, const char* function_name,const char* module_name, const char* log_text, const char* log_param); /* CR check */
-int cl_log_list_log_int(cl_log_t log_type,int line, const char* function_name,const char* module_name, const char* log_text, int param); /* CR check */
-int cl_log_list_log_ssi(cl_log_t log_type,int line, const char* function_name,const char* module_name, const char* log_text,
-                        const char* log_1 , const char* log_2 ,int log_3 );
-int cl_log_list_del_log(cl_raw_list_t* list_p);   /* CR check */
-cl_log_list_elem_t* cl_log_list_get_first_elem(cl_raw_list_t* list_p);  /* CR check */
+int cl_log_list_flush_list(cl_raw_list_t *list_p); /* CR check */
+int
+cl_log_list_log(cl_log_t log_type, int line, const char *function_name, const char *module_name, const char *log_text,
+                const char *log_param); /* CR check */
+int cl_log_list_log_int(cl_log_t log_type, int line, const char *function_name, const char *module_name,
+                        const char *log_text, int param); /* CR check */
+int cl_log_list_log_ssi(cl_log_t log_type, int line, const char *function_name, const char *module_name,
+                        const char *log_text,
+                        const char *log_1, const char *log_2, int log_3);
 
-
-#ifdef __cplusplus
-}
-#endif
+int cl_log_list_del_log(cl_raw_list_t *list_p);   /* CR check */
+cl_log_list_elem_t *cl_log_list_get_first_elem(cl_raw_list_t *list_p);  /* CR check */

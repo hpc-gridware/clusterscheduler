@@ -33,31 +33,36 @@
 
 #include "sge_error_class.h"
 
-#ifdef __cplusplus
-extern "C" {
-#endif
-
-typedef struct sge_env_state_class_str sge_env_state_class_t; 
+typedef struct sge_env_state_class_str sge_env_state_class_t;
 
 struct sge_env_state_class_str {
    void *sge_env_state_handle;
 
    void (*dprintf)(sge_env_state_class_t *thiz);
-   const char* (*get_sge_root)(sge_env_state_class_t *thiz);
-   const char* (*get_sge_cell)(sge_env_state_class_t *thiz);
+
+   const char *(*get_sge_root)(sge_env_state_class_t *thiz);
+
+   const char *(*get_sge_cell)(sge_env_state_class_t *thiz);
+
    bool (*is_from_services)(sge_env_state_class_t *thiz);
+
    bool (*is_qmaster_internal)(sge_env_state_class_t *thiz);
+
    u_long32 (*get_sge_qmaster_port)(sge_env_state_class_t *thiz);
+
    u_long32 (*get_sge_execd_port)(sge_env_state_class_t *thiz);
+
    void (*set_sge_root)(sge_env_state_class_t *thiz, const char *sge_root);
+
    void (*set_sge_cell)(sge_env_state_class_t *thiz, const char *sge_cell);
+
    void (*set_sge_qmaster_port)(sge_env_state_class_t *thiz, u_long32 sge_qmaster_port);
+
    void (*set_sge_execd_port)(sge_env_state_class_t *thiz, u_long32 sge_qmaster_port);
 };
 
-sge_env_state_class_t *sge_env_state_class_create(const char *sge_root, const char *sge_cell, int sge_qmaster_port, int sge_execd_port, bool from_services, bool qmaster_internal, sge_error_class_t *eh);
-void sge_env_state_class_destroy(sge_env_state_class_t **pst);
+sge_env_state_class_t *
+sge_env_state_class_create(const char *sge_root, const char *sge_cell, int sge_qmaster_port, int sge_execd_port,
+                           bool from_services, bool qmaster_internal, sge_error_class_t *eh);
 
-#ifdef __cplusplus
-}
-#endif
+void sge_env_state_class_destroy(sge_env_state_class_t **pst);

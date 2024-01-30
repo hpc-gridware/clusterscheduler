@@ -37,10 +37,6 @@
 #include "sge_loadmem.h"
 #include "sge_nprocs.h"
 #include "sge_nice.h"
- 
-#ifdef __cplusplus
-extern "C" {
-#endif
 
 #if defined(LINUX) || defined(FREEBSD) || defined(NETBSD) || defined(DARWIN)
 #  define PSCMD "/bin/ps -axc"
@@ -55,9 +51,9 @@ extern "C" {
  * max. supported number = 999 
  */
 typedef enum uti_deamonize_state_type {
-   SGE_DEAMONIZE_OK           = 0,
-   SGE_DAEMONIZE_DEAD_CHILD   = 100,
-   SGE_DAEMONIZE_TIMEOUT      = 101
+   SGE_DEAMONIZE_OK = 0,
+   SGE_DAEMONIZE_DEAD_CHILD = 100,
+   SGE_DAEMONIZE_TIMEOUT = 101
 } uti_deamonize_state_t;
 
 
@@ -67,12 +63,10 @@ int sge_contains_pid(pid_t, pid_t *, int);
 
 int sge_checkprog(pid_t, const char *, const char *);
 
-void sge_close_all_fds(int* keep_open, unsigned long nr_of_fds);
-int sge_get_max_fd(void);
-int sge_dup_fd_above_stderr(int *fd);
- 
-int sge_occupy_first_three(void);
+void sge_close_all_fds(int *keep_open, unsigned long nr_of_fds);
 
-#ifdef __cplusplus
-}
-#endif
+int sge_get_max_fd(void);
+
+int sge_dup_fd_above_stderr(int *fd);
+
+int sge_occupy_first_three(void);

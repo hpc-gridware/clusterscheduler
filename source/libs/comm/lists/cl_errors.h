@@ -31,10 +31,6 @@
  ************************************************************************/
 /*___INFO__MARK_END__*/
 
-#ifdef __cplusplus
-extern "C" {
-#endif
-
 #define CL_RETVAL_START_ID 1000
 #define CL_RETVAL_OK                          (CL_RETVAL_START_ID + 0)
 #define CL_RETVAL_MALLOC                      (CL_RETVAL_START_ID + 1)
@@ -168,9 +164,6 @@ extern "C" {
 #define CL_RETVAL_LAST_ID                     (CL_RETVAL_START_ID + 127)  /* this must be the last number + 1 */
 #define CL_RETVAL_UNDEFINED_STR "undefined commlib error code"
 
-int         cl_is_commlib_error(int error_id);
-const char* cl_get_error_text(int error_id);
+int cl_is_commlib_error(int error_id);
 
-#ifdef __cplusplus
-}
-#endif
+const char *cl_get_error_text(int error_id);

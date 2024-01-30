@@ -34,30 +34,27 @@
 #include "comm/lists/cl_lists.h"
 #include "comm/cl_data_types.h"
 
-#ifdef __cplusplus
-extern "C" {
-#endif
-
 typedef struct cl_fd_list_elem_t {
-   cl_com_fd_data_t*    data;     /* actual data */
-   cl_raw_list_elem_t*  raw_elem; /* needed for list chaining */
+   cl_com_fd_data_t *data;     /* actual data */
+   cl_raw_list_elem_t *raw_elem; /* needed for list chaining */
 } cl_fd_list_elem_t;
 
 /* basic functions */
-int cl_fd_list_setup(cl_raw_list_t** list_p, char* list_name); 
-int cl_fd_list_cleanup(cl_raw_list_t** list_p);
+int cl_fd_list_setup(cl_raw_list_t **list_p, char *list_name);
+
+int cl_fd_list_cleanup(cl_raw_list_t **list_p);
 
 /* thread list functions that will lock the list */
-int cl_fd_list_register_fd(cl_raw_list_t* list_p, cl_com_fd_data_t* regfd, int lock_list);
-int cl_fd_list_unregister_fd(cl_raw_list_t* list_p, cl_fd_list_elem_t* elem, int lock_list);
+int cl_fd_list_register_fd(cl_raw_list_t *list_p, cl_com_fd_data_t *regfd, int lock_list);
+
+int cl_fd_list_unregister_fd(cl_raw_list_t *list_p, cl_fd_list_elem_t *elem, int lock_list);
 
 
 /* thread functions that will not lock the list */
-cl_fd_list_elem_t* cl_fd_list_get_first_elem(cl_raw_list_t* list_p);
-cl_fd_list_elem_t* cl_fd_list_get_least_elem(cl_raw_list_t* list_p);
-cl_fd_list_elem_t* cl_fd_list_get_next_elem(cl_fd_list_elem_t* elem);
-cl_fd_list_elem_t* cl_fd_list_get_last_elem(cl_fd_list_elem_t* elem);
+cl_fd_list_elem_t *cl_fd_list_get_first_elem(cl_raw_list_t *list_p);
 
-#ifdef __cplusplus
-}
-#endif
+cl_fd_list_elem_t *cl_fd_list_get_least_elem(cl_raw_list_t *list_p);
+
+cl_fd_list_elem_t *cl_fd_list_get_next_elem(cl_fd_list_elem_t *elem);
+
+cl_fd_list_elem_t *cl_fd_list_get_last_elem(cl_fd_list_elem_t *elem);

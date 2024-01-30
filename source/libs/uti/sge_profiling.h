@@ -43,10 +43,6 @@
 
 #include "sge_dstring.h"
 
-#ifdef __cplusplus
-extern "C" {
-#endif
-
 typedef enum {
    SGE_PROF_NONE = -1,
    SGE_PROF_OTHER = 0,
@@ -108,21 +104,31 @@ typedef struct {
 } sge_prof_info_t;
 
 void sge_prof_set_enabled(bool enabled);
+
 void prof_mt_init(void);
+
 void sge_prof_cleanup(void);
+
 bool thread_prof_active_by_id(pthread_t thread_id);
-bool thread_prof_active_by_name(const char* thread_name);
-void set_thread_name(pthread_t thread_id, const char* thread_name);
+
+bool thread_prof_active_by_name(const char *thread_name);
+
+void set_thread_name(pthread_t thread_id, const char *thread_name);
+
 void set_thread_prof_status_by_id(pthread_t thread_id, bool prof_status);
-int  set_thread_prof_status_by_name(const char* thread_name, bool prof_status);
+
+int set_thread_prof_status_by_name(const char *thread_name, bool prof_status);
+
 bool prof_set_level_name(prof_level level, const char *name, dstring *error);
 
 bool prof_is_active(prof_level level);
 
 bool prof_start(prof_level level, dstring *error);
+
 bool prof_stop(prof_level level, dstring *error);
 
 bool prof_start_measurement(prof_level level, dstring *error);
+
 bool prof_stop_measurement(prof_level level, dstring *error);
 
 /****** uti/profiling/PROF_START_MEASUREMENT() ******************************
@@ -154,7 +160,7 @@ bool prof_stop_measurement(prof_level level, dstring *error);
 #define PROF_START_MEASUREMENT(level) \
    if(prof_is_active(level)) {\
       prof_start_measurement(level,NULL);\
-   }   
+   }
 
 /****** uti/profiling/PROF_STOP_MEASUREMENT() ******************************
 *  NAME
@@ -185,17 +191,22 @@ bool prof_stop_measurement(prof_level level, dstring *error);
 #define PROF_STOP_MEASUREMENT(level) \
    if(prof_is_active(level)) {\
       prof_stop_measurement(level, NULL);\
-   }   
+   }
 
 bool prof_reset(prof_level level, dstring *error);
 
 double prof_get_measurement_wallclock(prof_level level, bool with_sub, dstring *error);
+
 double prof_get_measurement_utime(prof_level level, bool with_sub, dstring *error);
+
 double prof_get_measurement_stime(prof_level level, bool with_sub, dstring *error);
 
 double prof_get_total_wallclock(prof_level level, dstring *error);
+
 double prof_get_total_busy(prof_level level, bool with_sub, dstring *error);
+
 double prof_get_total_utime(prof_level level, bool with_sub, dstring *error);
+
 double prof_get_total_stime(prof_level level, bool with_sub, dstring *error);
 
 const char *prof_get_info_string(prof_level level, bool with_sub, dstring *error);
@@ -203,8 +214,5 @@ const char *prof_get_info_string(prof_level level, bool with_sub, dstring *error
 bool prof_output_info(prof_level level, bool with_sub, const char *info);
 
 void thread_start_stop_profiling(void);
-void thread_output_profiling(const char *title, time_t *next_prof_output);
 
-#ifdef __cplusplus
-}
-#endif
+void thread_output_profiling(const char *title, time_t *next_prof_output);

@@ -33,10 +33,6 @@
 
 #include <pthread.h>
 
-#ifdef __cplusplus
-extern "C" {
-#endif
-
 /****** uti/sl/--SimpleList() **********************************************
 *
 *  NAME
@@ -153,7 +149,7 @@ struct _sge_sl_elem_t {
 
 struct _sge_sl_list_t {
    /* mutex to secure other elements in the struct */
-   pthread_mutex_t mutex; 
+   pthread_mutex_t mutex;
 
    /* fist last element pointer and number of elements */
    sge_sl_elem_t *first;
@@ -167,16 +163,16 @@ sge_sl_elem_create(sge_sl_elem_t **elem, void *data);
 bool
 sge_sl_elem_destroy(sge_sl_elem_t **elem, sge_sl_destroy_f destroy);
 
-void * 
+void *
 sge_sl_elem_data(sge_sl_elem_t *elem);
 
 bool
-sge_sl_elem_next(sge_sl_list_t *list, 
+sge_sl_elem_next(sge_sl_list_t *list,
                  sge_sl_elem_t **elem, sge_sl_direction_t direction);
 
 
 bool
-sge_sl_elem_search(sge_sl_list_t *list, sge_sl_elem_t **elem, void *data, 
+sge_sl_elem_search(sge_sl_list_t *list, sge_sl_elem_t **elem, void *data,
                    sge_sl_compare_f compare, sge_sl_direction_t direction);
 
 bool
@@ -210,15 +206,15 @@ bool
 sge_sl_data(sge_sl_list_t *list, void **data, sge_sl_direction_t direction);
 
 bool
-sge_sl_data_search(sge_sl_list_t *list, void *key, void **data, 
+sge_sl_data_search(sge_sl_list_t *list, void *key, void **data,
                    sge_sl_compare_f compare, sge_sl_direction_t direction);
 
 bool
-sge_sl_delete(sge_sl_list_t *list, 
+sge_sl_delete(sge_sl_list_t *list,
               sge_sl_destroy_f destroy, sge_sl_direction_t direction);
-  
+
 bool
-sge_sl_delete_search(sge_sl_list_t *list, void *key, sge_sl_destroy_f destroy, 
+sge_sl_delete_search(sge_sl_list_t *list, void *key, sge_sl_destroy_f destroy,
                      sge_sl_compare_f compare, sge_sl_direction_t direction);
 
 u_long32
@@ -229,7 +225,3 @@ sge_sl_get_mutex(sge_sl_list_t *list);
 
 bool
 sge_sl_sort(sge_sl_list_t *list, sge_sl_compare_f compare);
-
-#ifdef __cplusplus
-}
-#endif

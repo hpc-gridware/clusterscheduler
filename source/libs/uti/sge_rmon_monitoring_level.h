@@ -33,10 +33,6 @@
 
 #include <sys/types.h>
 
-#ifdef __cplusplus
-extern "C" {
-#endif
-
 /* different layers for monitoring */
 #define N_LAYER          8
 
@@ -53,14 +49,14 @@ extern "C" {
 #define TRACE            1 /* t */
 #define INFOPRINT        2 /* i */
 #define JOBTRACE         4 /* j */
-#define SPECIAL	         8 /* s */
+#define SPECIAL            8 /* s */
 #define TIMING          16 /* m */
 
-#define LOCK	        32 /* X */
-#define FREE_CLASS_Y	64 /* Y */
+#define LOCK           32 /* X */
+#define FREE_CLASS_Y   64 /* Y */
 #define FREE_CLASS_Z   128 /* Z */
 
-#define NO_LEVEL  256  
+#define NO_LEVEL  256
 
 #define ALL_CLASSES (TRACE|INFOPRINT|JOBTRACE|SPECIAL|TIMING|LOCK|FREE_CLASS_Y|FREE_CLASS_Z)
 
@@ -68,12 +64,12 @@ typedef struct _monitoring_level {
    u_long ml[N_LAYER];
 } monitoring_level;
 
-int    rmon_mliszero(monitoring_level *);
-void   rmon_mlcpy(monitoring_level *, monitoring_level *);
-void   rmon_mlclr(monitoring_level *);
-u_long rmon_mlgetl(monitoring_level *, int);
-void   rmon_mlputl(monitoring_level *, int, u_long);
+int rmon_mliszero(monitoring_level *);
 
-#ifdef __cplusplus
-}
-#endif
+void rmon_mlcpy(monitoring_level *, monitoring_level *);
+
+void rmon_mlclr(monitoring_level *);
+
+u_long rmon_mlgetl(monitoring_level *, int);
+
+void rmon_mlputl(monitoring_level *, int, u_long);

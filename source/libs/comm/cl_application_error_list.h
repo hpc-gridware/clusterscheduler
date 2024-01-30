@@ -34,23 +34,20 @@
 #include "comm/lists/cl_lists.h"
 #include "comm/cl_data_types.h"
 
-#ifdef __cplusplus
-extern "C" {
-#endif
-
 /* basic functions */
-int cl_application_error_list_setup(cl_raw_list_t** list_p, char* list_name);
-int cl_application_error_list_cleanup(cl_raw_list_t** list_p);
+int cl_application_error_list_setup(cl_raw_list_t **list_p, char *list_name);
+
+int cl_application_error_list_cleanup(cl_raw_list_t **list_p);
 
 /* thread list functions that will lock the list */
-int cl_application_error_list_push_error(cl_raw_list_t* list_p, cl_log_t cl_err_type, int cl_error, const char* cl_info, int lock_list);
+int cl_application_error_list_push_error(cl_raw_list_t *list_p, cl_log_t cl_err_type, int cl_error, const char *cl_info,
+                                         int lock_list);
 
 /* thread functions that will not lock the list */
-cl_application_error_list_elem_t* cl_application_error_list_get_first_elem(cl_raw_list_t* list_p);
-cl_application_error_list_elem_t* cl_application_error_list_get_least_elem(cl_raw_list_t* list_p);
-cl_application_error_list_elem_t* cl_application_error_list_get_next_elem(cl_application_error_list_elem_t* elem);
-cl_application_error_list_elem_t* cl_application_error_list_get_last_elem(cl_application_error_list_elem_t* elem);
+cl_application_error_list_elem_t *cl_application_error_list_get_first_elem(cl_raw_list_t *list_p);
 
-#ifdef __cplusplus
-}
-#endif
+cl_application_error_list_elem_t *cl_application_error_list_get_least_elem(cl_raw_list_t *list_p);
+
+cl_application_error_list_elem_t *cl_application_error_list_get_next_elem(cl_application_error_list_elem_t *elem);
+
+cl_application_error_list_elem_t *cl_application_error_list_get_last_elem(cl_application_error_list_elem_t *elem);

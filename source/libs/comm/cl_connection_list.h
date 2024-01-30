@@ -36,43 +36,42 @@
 #include "comm/lists/cl_lists.h"
 #include "comm/cl_data_types.h"
 
-#ifdef __cplusplus
-extern "C" {
-#endif
-
 typedef struct cl_connection_list_elem_t {
-   cl_com_connection_t* connection;   /* data */
-   cl_raw_list_elem_t*   raw_elem;
+   cl_com_connection_t *connection;   /* data */
+   cl_raw_list_elem_t *raw_elem;
 } cl_connection_list_elem_t;
 
 typedef struct cl_connection_list_data_type {                      /* list specific data */
    /* this is for tcp/ip */
    int last_nr_of_descriptors;
    int select_not_called_count;
-   htable         r_ht;                /* receiver endpoint hashtable */
+   htable r_ht;                /* receiver endpoint hashtable */
 } cl_connection_list_data_t;
 
 
-
 /* basic functions */
-int cl_connection_list_setup(cl_raw_list_t** list_p, char* list_name, int enable_locking, bool create_hash);
-int cl_connection_list_cleanup(cl_raw_list_t** list_p);
+int cl_connection_list_setup(cl_raw_list_t **list_p, char *list_name, int enable_locking, bool create_hash);
+
+int cl_connection_list_cleanup(cl_raw_list_t **list_p);
 
 
 /* thread list functions that will lock the list */
-int cl_connection_list_append_connection(cl_raw_list_t* list_p, cl_com_connection_t* connection, int do_lock);
-int cl_connection_list_remove_connection(cl_raw_list_t* list_p, cl_com_connection_t* connection, int do_lock);
-int cl_connection_list_destroy_connections_to_close(cl_com_handle_t* handle);
+int cl_connection_list_append_connection(cl_raw_list_t *list_p, cl_com_connection_t *connection, int do_lock);
+
+int cl_connection_list_remove_connection(cl_raw_list_t *list_p, cl_com_connection_t *connection, int do_lock);
+
+int cl_connection_list_destroy_connections_to_close(cl_com_handle_t *handle);
 
 
 /* thread functions that will not lock the list */
-cl_connection_list_elem_t* cl_connection_list_get_elem_endpoint(cl_raw_list_t*, cl_com_endpoint_t *endpoint);
-cl_connection_list_elem_t* cl_connection_list_get_first_elem(cl_raw_list_t* list_p);
-cl_connection_list_elem_t* cl_connection_list_get_least_elem(cl_raw_list_t* list_p);
-cl_connection_list_elem_t* cl_connection_list_get_next_elem(cl_connection_list_elem_t* elem);
-cl_connection_list_elem_t* cl_connection_list_get_last_elem(cl_connection_list_elem_t* elem);
-char *cl_create_endpoint_string(cl_com_endpoint_t *endpoint);
+cl_connection_list_elem_t *cl_connection_list_get_elem_endpoint(cl_raw_list_t *, cl_com_endpoint_t *endpoint);
 
-#ifdef __cplusplus
-}
-#endif
+cl_connection_list_elem_t *cl_connection_list_get_first_elem(cl_raw_list_t *list_p);
+
+cl_connection_list_elem_t *cl_connection_list_get_least_elem(cl_raw_list_t *list_p);
+
+cl_connection_list_elem_t *cl_connection_list_get_next_elem(cl_connection_list_elem_t *elem);
+
+cl_connection_list_elem_t *cl_connection_list_get_last_elem(cl_connection_list_elem_t *elem);
+
+char *cl_create_endpoint_string(cl_com_endpoint_t *endpoint);

@@ -31,15 +31,8 @@
  ************************************************************************/
 /*___INFO__MARK_END__*/
 
-#ifdef  __cplusplus
-extern "C" {
-#endif
+extern void sge_mutex_lock(const char *, const char *, int, pthread_mutex_t *);
 
-extern void sge_mutex_lock(const char*, const char*, int, pthread_mutex_t*);
-extern void sge_mutex_unlock(const char*, const char*, int, pthread_mutex_t*);
+extern void sge_mutex_unlock(const char *, const char *, int, pthread_mutex_t *);
 
-extern void sge_relative_timespec(signed long, struct timespec*);
-
-#ifdef  __cplusplus
-}
-#endif
+extern void sge_relative_timespec(signed long, struct timespec *);

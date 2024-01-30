@@ -33,10 +33,6 @@
 
 #include "basis_types.h"
 
-#ifdef __cplusplus
-extern "C" {
-#endif
-
 // clang-format off
 
 #define MSG_CL_RETVAL_OK                          _MESSAGE(80000, _("no error happened"))
@@ -94,7 +90,7 @@ extern "C" {
 #define MSG_CL_RETVAL_LIST_DATA_NOT_EMPTY         _MESSAGE(80053, _("list data is not empty"))
 #define MSG_CL_RETVAL_LIST_NOT_EMPTY              _MESSAGE(80054, _("list is not empty"))
 #define MSG_CL_RETVAL_LIST_DATA_IS_NULL           _MESSAGE(80055, _("list data is not initalized"))
-#define MSG_CL_RETVAL_THREAD_SETSPECIFIC_ERROR    _MESSAGE(80056, _("got error setting thread specific data")) 
+#define MSG_CL_RETVAL_THREAD_SETSPECIFIC_ERROR    _MESSAGE(80056, _("got error setting thread specific data"))
 #define MSG_CL_RETVAL_NOT_THREAD_SPECIFIC_INIT    _MESSAGE(80057, _("could not initialize thread specific data"))
 #define MSG_CL_RETVAL_ALLREADY_CONNECTED          _MESSAGE(80058, _("already connected error"))
 #define MSG_CL_RETVAL_STREAM_BUFFER_OVERFLOW      _MESSAGE(80059, _("got stream buffer overflow"))
@@ -108,7 +104,7 @@ extern "C" {
 #define MSG_CL_RETVAL_IP_NOT_RESOLVED_ERROR       _MESSAGE(80067, _("can't resolve ip address"))
 #define MSG_CL_RETVAL_MESSAGE_IN_BUFFER           _MESSAGE(80068, _("still messages in buffer"))
 #define MSG_CL_RETVAL_CONNECTION_GOING_DOWN       _MESSAGE(80069, _("connection is going down"))
-#define MSG_CL_RETVAL_CONNECTION_STATE_ERROR      _MESSAGE(80070, _("general connection state error")) 
+#define MSG_CL_RETVAL_CONNECTION_STATE_ERROR      _MESSAGE(80070, _("general connection state error"))
 #define MSG_CL_RETVAL_SELECT_TIMEOUT              _MESSAGE(80071, _("got select timeout"))
 #define MSG_CL_RETVAL_SELECT_INTERRUPT            _MESSAGE(80072, _("select was interrupted"))
 #define MSG_CL_RETVAL_NO_SELECT_DESCRIPTORS       _MESSAGE(80073, _("no file descriptors for select available"))
@@ -118,7 +114,7 @@ extern "C" {
 #define MSG_CL_RETVAL_OPEN_ALIAS_FILE_FAILED      _MESSAGE(80077, _("could not open alias file"))
 #define MSG_CL_RETVAL_ALIAS_VERSION_ERROR         _MESSAGE(80078, _("wrong alias file version"))
 #define MSG_CL_RETVAL_SECURITY_ANNOUNCE_FAILED    _MESSAGE(80079, _("security announce failed"))
-#define MSG_CL_RETVAL_SECURITY_SEND_FAILED        _MESSAGE(80080, _("security send failed")) 
+#define MSG_CL_RETVAL_SECURITY_SEND_FAILED        _MESSAGE(80080, _("security send failed"))
 #define MSG_CL_RETVAL_SECURITY_RECEIVE_FAILED     _MESSAGE(80081, _("security receive failed"))
 #define MSG_CL_RETVAL_ACCESS_DENIED               _MESSAGE(80082, _("access denied"))
 #define MSG_CL_RETVAL_MAX_CON_COUNT_REACHED       _MESSAGE(80083, _("max. connection count reached"))
@@ -167,7 +163,3 @@ extern "C" {
 #define MSG_CL_RETVAL_UNKNOWN_PARAMETER                _MESSAGE(80125, _("parameter not found"))
 
 // clang-format on
-
-#ifdef __cplusplus
-}
-#endif

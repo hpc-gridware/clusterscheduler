@@ -37,34 +37,37 @@
 #include "basis_types.h"
 #include "msg_utilib.h"
 
-#ifdef __cplusplus
-extern "C" {
-#endif
-
 #define LOG_PROF       0      /* no action, but it has to be printed allways */
 
 void log_state_set_log_level(u_long32);
+
 void log_state_set_log_file(char *file);
+
 void log_state_set_log_verbose(int i);
+
 void log_state_set_log_gui(int i);
+
 void log_state_set_log_as_admin_user(int i);
 
-char*           log_get_log_buffer(void);
+char *log_get_log_buffer(void);
 
-u_long32        log_state_get_log_level(void);
-const char*     log_state_get_log_file(void);
-int             log_state_get_log_verbose(void);
-int             log_state_get_log_gui(void);
+u_long32 log_state_get_log_level(void);
+
+const char *log_state_get_log_file(void);
+
+int log_state_get_log_verbose(void);
+
+int log_state_get_log_gui(void);
 
 void log_state_set_log_context(void *context);
 
-int sge_log(int log_level, const char *mesg, const char *file__, 
+int sge_log(u_long32 log_level, const char *mesg, const char *file__,
             const char *func__, int line__);
 
 /* extern stringTlong SGE_EVENT; */
 #define SGE_EVENT log_get_log_buffer()
 
-#define SGE_LOG(level,msg) sge_log(level, msg, __FILE__, __func__, __LINE__ );
+#define SGE_LOG(level, msg) sge_log(level, msg, __FILE__, __func__, __LINE__ );
 
 #if defined(__INSURE__)
 #   define PROFILING(x)     (sprintf x,sge_log(LOG_PROF,   SGE_EVENT,__FILE__,__func__,__LINE__)) ? 1 : 0
@@ -91,7 +94,7 @@ int sge_log(int log_level, const char *mesg, const char *file__,
 *     buffer       - e.g SGE_EVENT
 *     formatstring - printf formatstring
 *     ...
-******************************************************************************/ 
+******************************************************************************/
 #ifdef __SGE_COMPILE_WITH_GETTEXT__
 #   define PROFILING(x) (sge_set_message_id_output(1), \
                         sprintf x, \
@@ -117,7 +120,7 @@ int sge_log(int log_level, const char *mesg, const char *file__,
 *     buffer       - e.g SGE_EVENT
 *     formatstring - printf formatstring
 *     ...
-******************************************************************************/ 
+******************************************************************************/
 #ifdef __SGE_COMPILE_WITH_GETTEXT__
 #   define CRITICAL(x) (sge_set_message_id_output(1), \
                         sprintf x, \
@@ -143,7 +146,7 @@ int sge_log(int log_level, const char *mesg, const char *file__,
 *     buffer       - e.g SGE_EVENT
 *     formatstring - printf formatstring
 *     ...
-******************************************************************************/ 
+******************************************************************************/
 #ifdef __SGE_COMPILE_WITH_GETTEXT__
 #   define ERROR(x) ( sge_set_message_id_output(1),                          \
                         sprintf x,                                             \
@@ -169,7 +172,7 @@ int sge_log(int log_level, const char *mesg, const char *file__,
 *     buffer       - e.g SGE_EVENT
 *     formatstring - printf formatstring
 *     ...
-******************************************************************************/ 
+******************************************************************************/
 #ifdef __SGE_COMPILE_WITH_GETTEXT__
 #   define WARNING(x) ( sge_set_message_id_output(1), \
                         sprintf x,       \
@@ -195,7 +198,7 @@ int sge_log(int log_level, const char *mesg, const char *file__,
 *     buffer       - e.g SGE_EVENT
 *     formatstring - printf formatstring
 *     ...
-******************************************************************************/ 
+******************************************************************************/
 #   define NOTICE(x)  (sprintf x,  \
                        sge_log(LOG_NOTICE, SGE_EVENT,__FILE__,__func__,__LINE__))
 
@@ -214,7 +217,7 @@ int sge_log(int log_level, const char *mesg, const char *file__,
 *     buffer       - e.g SGE_EVENT
 *     formatstring - printf formatstring
 *     ...
-******************************************************************************/ 
+******************************************************************************/
 #   define INFO(x)   (sprintf x,  \
                       sge_log(LOG_INFO, SGE_EVENT,__FILE__,__func__,__LINE__))
 
@@ -233,7 +236,7 @@ int sge_log(int log_level, const char *mesg, const char *file__,
 *     buffer       - e.g SGE_EVENT
 *     formatstring - printf formatstring
 *     ...
-******************************************************************************/ 
+******************************************************************************/
 #ifdef __SGE_COMPILE_WITH_GETTEXT__
 #   define DEBUG(x)  ((LOG_DEBUG <= MAX(log_state_get_log_level(), LOG_WARNING)) ? (sge_set_message_id_output(1), \
                       sprintf x, \
@@ -270,7 +273,3 @@ int sge_log(int log_level, const char *mesg, const char *file__,
       sge_log(LOG_CRIT, MSG_UNREC_ERROR,__FILE__,__func__,__LINE__); \
       abort(); \
    }
-
-#ifdef __cplusplus
-}
-#endif

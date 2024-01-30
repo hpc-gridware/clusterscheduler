@@ -29,19 +29,15 @@
  *   All Rights Reserved.
  *
  ************************************************************************/
-/*___INFO__MARK_END__*/   
+/*___INFO__MARK_END__*/
 
 #include <unistd.h>
-#include <dirent.h>      
-#include <sys/stat.h> 
+#include <dirent.h>
+#include <sys/stat.h>
 
-#include "basis_types.h"  
+#include "basis_types.h"
 
 #include "sge_dstring.h"
-
-#ifdef __cplusplus
-extern "C" {
-#endif
 
 #if defined(SOLARIS) || defined(LINUX)
 #  define SGE_OPEN2(filename, oflag)       open64(filename, oflag)
@@ -67,7 +63,7 @@ extern "C" {
 #  define SGE_STRUCT_STAT struct stat
 #  define SGE_INO_T ino_t
 #  define SGE_OFF_T off_t
-#endif                
+#endif
 
 #if defined(SOLARIS) || defined(LINUX)
 #  define SGE_READDIR(directory) readdir64(directory)
@@ -81,7 +77,7 @@ extern "C" {
 #  define SGE_TELLDIR(directory) telldir(directory)
 #  define SGE_SEEKDIR(directory, offset) seekdir(directory, offset)
 #  define SGE_STRUCT_DIRENT struct dirent
-#endif       
+#endif
 
 #if defined(SOLARIS) || defined(LINUX) || defined(DARWIN10)
 #   define SETPGRP setpgrp()
@@ -93,22 +89,23 @@ extern "C" {
 
 void sge_exit(void **ctx_ref, int i);
 
-int sge_chdir_exit(const char *path, int exit_on_error);  
+int sge_chdir_exit(const char *path, int exit_on_error);
 
 int sge_chdir(const char *dir);
 
-int sge_mkdir(const char *path, int fmode, bool exit_on_error, bool may_not_exist);    
-int sge_mkdir2(const char *base_dir, const char *name, int fmode, bool exit_on_error);    
+int sge_mkdir(const char *path, int fmode, bool exit_on_error, bool may_not_exist);
+
+int sge_mkdir2(const char *base_dir, const char *name, int fmode, bool exit_on_error);
 
 int sge_rmdir(const char *cp, dstring *err_str);
 
-bool sge_unlink(const char *prefix, const char *suffix); 
- 
+bool sge_unlink(const char *prefix, const char *suffix);
+
 int sge_is_directory(const char *name);
- 
+
 int sge_is_file(const char *name);
 
-int sge_is_executable(const char *name); 
+int sge_is_executable(const char *name);
 
 
 void sge_sleep(int sec, int usec);
@@ -132,9 +129,5 @@ void sge_sleep(int sec, int usec);
 typedef enum {
    SGE_SYSCONF_NGROUPS_MAX
 } sge_sysconf_t;
- 
-u_long32 sge_sysconf(sge_sysconf_t id); 
 
-#ifdef __cplusplus
-}
-#endif
+u_long32 sge_sysconf(sge_sysconf_t id); 

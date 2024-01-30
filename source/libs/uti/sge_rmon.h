@@ -41,10 +41,6 @@
 #  include <note.h>
 #endif
 
-#ifdef __cplusplus
-extern "C" {
-#endif
-
 /* EB: TODO: ST: add adoc comments */
 
 #define DENTER_MAIN(layer, program)                                          \
@@ -60,7 +56,7 @@ extern "C" {
          rmon_menter (SGE_FUNC, NULL);                                       \
       }                                                                      \
    }
- 
+
 #define DENTER(layer)                                              \
    static const int xaybzc = layer;                                          \
                                                                              \
@@ -71,14 +67,14 @@ extern "C" {
       } else {                                                               \
          rmon_menter (__func__, NULL);                                       \
       }                                                                      \
-   } 
+   }
 
 #define DENTER_(layer)                                             \
    static const int xaybzc = layer;                                          \
                                                                              \
    if (rmon_condition(xaybzc, TRACE)) {                                      \
       rmon_menter (__func__, NULL);                                          \
-   }        
+   }
 
 #define DRETURN(ret)                                                             \
    if (rmon_condition(xaybzc, TRACE)) {                                          \
@@ -106,13 +102,13 @@ extern "C" {
          rmon_mexit(__func__, __FILE__, __LINE__, NULL);                         \
       }                                                                          \
    }                                                                             \
-   return 
+   return
 
 #define DRETURN_VOID_                                                            \
    if (rmon_condition(xaybzc, TRACE)) {                                          \
       rmon_mexit(__func__, __FILE__, __LINE__, NULL);   \
    }                                                                             \
-   return 
+   return
 
 #define DTRACE                                                                     \
    if (rmon_condition(xaybzc, TRACE)) {                                            \
@@ -186,10 +182,6 @@ extern "C" {
 #define DCLOSE
 
 #define SGE_EXIT(x, y) sge_exit((x), (y))
-
-#ifdef __cplusplus
-}
-#endif
 
 #else /* NO_SGE_COMPILE_DEBUG */
 

@@ -35,53 +35,50 @@
 #include "comm/lists/cl_lists.h"
 #include "comm/cl_data_types.h"
 
-#ifdef __cplusplus
-extern "C" {
-#endif
-
 typedef struct cl_app_message_queue_elem_t {
 
    /* when used as received_message_queue */
-   cl_com_connection_t*  rcv_connection;  
+   cl_com_connection_t *rcv_connection;
 
    /* when used as send_message_queue */
-   cl_com_endpoint_t*    snd_destination;
-   cl_xml_ack_type_t     snd_ack_type;
-   cl_byte_t*            snd_data;
-   unsigned long         snd_size;
-   unsigned long         snd_response_mid;
-   unsigned long         snd_tag;
-   
+   cl_com_endpoint_t *snd_destination;
+   cl_xml_ack_type_t snd_ack_type;
+   cl_byte_t *snd_data;
+   unsigned long snd_size;
+   unsigned long snd_response_mid;
+   unsigned long snd_tag;
+
    /* common data */
-   cl_raw_list_elem_t*   raw_elem;
+   cl_raw_list_elem_t *raw_elem;
 } cl_app_message_queue_elem_t;
 
 
 /* basic functions */
-int cl_app_message_queue_setup(cl_raw_list_t** list_p, char* list_name, int enable_locking);
-int cl_app_message_queue_cleanup(cl_raw_list_t** list_p);
+int cl_app_message_queue_setup(cl_raw_list_t **list_p, char *list_name, int enable_locking);
+
+int cl_app_message_queue_cleanup(cl_raw_list_t **list_p);
 
 
 /* thread list functions that will lock the list */
-int cl_app_message_queue_append(cl_raw_list_t*        list_p,
-                                cl_com_connection_t*  rcv_connection,
-                                cl_com_endpoint_t*    snd_destination,
-                                cl_xml_ack_type_t     snd_ack_type,
-                                cl_byte_t*            snd_data,
-                                unsigned long         snd_size,
-                                unsigned long         snd_response_mid,
-                                unsigned long         snd_tag,
-                                int                   do_lock);
-int cl_app_message_queue_remove(cl_raw_list_t* list_p, cl_com_connection_t* connection, int do_lock, bool remove_all_elements);
+int cl_app_message_queue_append(cl_raw_list_t *list_p,
+                                cl_com_connection_t *rcv_connection,
+                                cl_com_endpoint_t *snd_destination,
+                                cl_xml_ack_type_t snd_ack_type,
+                                cl_byte_t *snd_data,
+                                unsigned long snd_size,
+                                unsigned long snd_response_mid,
+                                unsigned long snd_tag,
+                                int do_lock);
+
+int cl_app_message_queue_remove(cl_raw_list_t *list_p, cl_com_connection_t *connection, int do_lock,
+                                bool remove_all_elements);
 
 
 /* thread functions that will not lock the list */
-cl_app_message_queue_elem_t* cl_app_message_queue_get_first_elem(cl_raw_list_t* list_p);
-cl_app_message_queue_elem_t* cl_app_message_queue_get_least_elem(cl_raw_list_t* list_p);
-cl_app_message_queue_elem_t* cl_app_message_queue_get_next_elem(cl_app_message_queue_elem_t* elem);
-cl_app_message_queue_elem_t* cl_app_message_queue_get_last_elem(cl_app_message_queue_elem_t* elem);
+cl_app_message_queue_elem_t *cl_app_message_queue_get_first_elem(cl_raw_list_t *list_p);
 
+cl_app_message_queue_elem_t *cl_app_message_queue_get_least_elem(cl_raw_list_t *list_p);
 
-#ifdef __cplusplus
-}
-#endif
+cl_app_message_queue_elem_t *cl_app_message_queue_get_next_elem(cl_app_message_queue_elem_t *elem);
+
+cl_app_message_queue_elem_t *cl_app_message_queue_get_last_elem(cl_app_message_queue_elem_t *elem);

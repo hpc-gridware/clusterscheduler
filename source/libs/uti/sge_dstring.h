@@ -56,10 +56,6 @@
 
 #include "sge_stdlib.h"
 
-#ifdef __cplusplus
-extern "C" {
-#endif
-
 #define DSTRING_INIT {NULL, 0, 0, false}
 #define DSTRING_STATIC(n, s) char _buffer_for_##n[s] = "\0"; \
                                     dstring n = {_buffer_for_##n, 0, s, true}
@@ -75,27 +71,36 @@ typedef struct {
 
 /* DSTRING_INIT counterpart when static buffers are wrapped with dstring */
 void sge_dstring_init(dstring *sb, char *buffer, size_t size);
+
 dstring *sge_dstring_init_dynamic(dstring *sb, size_t size);
 
-const char* sge_dstring_append(dstring *sb, const char *a);
-const char* sge_dstring_nappend(dstring *sb, const char *a, size_t n);
-const char* sge_dstring_append_dstring(dstring *sb, const dstring *a);
-const char* sge_dstring_append_char(dstring *sb, const char a);
-const char* sge_dstring_append_time(dstring *sb, time_t time, bool as_xml);
-const char* sge_dstring_append_mailopt(dstring *sb, u_long32 mailopt);
+const char *sge_dstring_append(dstring *sb, const char *a);
 
-const char* sge_dstring_sprintf(dstring *sb, const char *fmt, ...);
-const char* sge_dstring_vsprintf(dstring *sb, const char *fmt, va_list ap);
-const char* sge_dstring_sprintf_append(dstring *sb, const char *fmt, ...);
+const char *sge_dstring_nappend(dstring *sb, const char *a, size_t n);
+
+const char *sge_dstring_append_dstring(dstring *sb, const dstring *a);
+
+const char *sge_dstring_append_char(dstring *sb, const char a);
+
+const char *sge_dstring_append_time(dstring *sb, time_t time, bool as_xml);
+
+const char *sge_dstring_append_mailopt(dstring *sb, u_long32 mailopt);
+
+const char *sge_dstring_sprintf(dstring *sb, const char *fmt, ...);
+
+const char *sge_dstring_vsprintf(dstring *sb, const char *fmt, va_list ap);
+
+const char *sge_dstring_sprintf_append(dstring *sb, const char *fmt, ...);
 
 void sge_dstring_clear(dstring *sb);
+
 void sge_dstring_free(dstring *sb);
 
 const char *sge_dstring_get_string(const dstring *string);
 
-const char* sge_dstring_copy_string(dstring *sb, const char* str);
+const char *sge_dstring_copy_string(dstring *sb, const char *str);
 
-const char* sge_dstring_copy_dstring(dstring *sb1, const dstring *sb2);
+const char *sge_dstring_copy_dstring(dstring *sb1, const dstring *sb2);
 
 size_t sge_dstring_strlen(const dstring *string);
 
@@ -106,7 +111,3 @@ const char *sge_dstring_ulong_to_binstring(dstring *sb, u_long32 number);
 bool sge_dstring_split(dstring *string, char character, dstring *before, dstring *after);
 
 void sge_dstring_strip_white_space_at_eol(dstring *string);
-
-#ifdef __cplusplus
-}
-#endif

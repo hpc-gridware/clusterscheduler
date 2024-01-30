@@ -33,31 +33,27 @@
 
 #include "comm/lists/cl_lists.h"
 
-#ifdef __cplusplus
-extern "C" {
-#endif
-
 typedef struct cl_string_list_elem_t {
-   char*   string;     /* data */
-   cl_raw_list_elem_t*   raw_elem;
+   char *string;     /* data */
+   cl_raw_list_elem_t *raw_elem;
 } cl_string_list_elem_t;
 
 
 /* basic functions */
-int cl_string_list_setup(cl_raw_list_t** list_p, char* list_name );
-int cl_string_list_cleanup(cl_raw_list_t** list_p);
+int cl_string_list_setup(cl_raw_list_t **list_p, char *list_name);
+
+int cl_string_list_cleanup(cl_raw_list_t **list_p);
 
 /* thread list functions that will lock the list */
-int cl_string_list_append_string(cl_raw_list_t* list_p, char* string, int lock_list);
-int cl_string_list_remove_string(cl_raw_list_t* list_p, char* string, int lock_list);
+int cl_string_list_append_string(cl_raw_list_t *list_p, char *string, int lock_list);
+
+int cl_string_list_remove_string(cl_raw_list_t *list_p, char *string, int lock_list);
 
 /* thread functions that will not lock the list */
-cl_string_list_elem_t* cl_string_list_get_first_elem(cl_raw_list_t* list_p);
-cl_string_list_elem_t* cl_string_list_get_least_elem(cl_raw_list_t* list_p);
-cl_string_list_elem_t* cl_string_list_get_next_elem(cl_string_list_elem_t* elem);
-cl_string_list_elem_t* cl_string_list_get_last_elem(cl_string_list_elem_t* elem);
+cl_string_list_elem_t *cl_string_list_get_first_elem(cl_raw_list_t *list_p);
 
+cl_string_list_elem_t *cl_string_list_get_least_elem(cl_raw_list_t *list_p);
 
-#ifdef __cplusplus
-}
-#endif
+cl_string_list_elem_t *cl_string_list_get_next_elem(cl_string_list_elem_t *elem);
+
+cl_string_list_elem_t *cl_string_list_get_last_elem(cl_string_list_elem_t *elem);

@@ -1,7 +1,7 @@
 # source/libs/spool/flatfile it is the classic spooling lib libspoolc.so
 set(LIBRARY_NAME spoolc)
 set(LIBRARY_SOURCES sge_flatfile.cc sge_flatfile_obj.cc sge_spooling_flatfile.cc
-      sge_spooling_flatfile_scanner.c ../classic/read_write_job.cc)
+      sge_spooling_flatfile_scanner.cc ../classic/read_write_job.cc)
 set(LIBRARY_INCLUDES "./")
 
 # sge_spooling_flatfile_scanner is generated from flex it will produce compiler

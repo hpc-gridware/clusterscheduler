@@ -32,10 +32,6 @@
 
 /*___INFO__MARK_END__*/
 
-#ifdef __cplusplus
-extern "C" {
-#endif
-
 typedef enum _binding_type_t {
    BINDING_TYPE_NONE,
    BINDING_TYPE_PE,
@@ -43,20 +39,16 @@ typedef enum _binding_type_t {
    BINDING_TYPE_SET
 } binding_type_t;
 
-binding_type_t 
-binding_type_to_enum(const char* parameter);
+binding_type_t
+binding_type_to_enum(const char *parameter);
 
 bool
 binding_type_to_string(binding_type_t type, dstring *string);
 
-bool 
-binding_explicit_extract_sockets_cores(const char* parameter, int** list_of_sockets, int* samount,
-                                       int** list_of_cores, int* camount);
+bool
+binding_explicit_extract_sockets_cores(const char *parameter, int **list_of_sockets, int *samount,
+                                       int **list_of_cores, int *camount);
 
-bool 
+bool
 binding_printf_explicit_sockets_cores(dstring *string, int *socket_array, int sockets,
                                       int *core_array, int cores);
-
-#ifdef __cplusplus
-}
-#endif

@@ -36,46 +36,47 @@
 // @todo can we replace this by hwloc?
 #if defined(SOLARIS86) || defined(SOLARISAMD64) || defined(SOLARIS64)
 #   define BINDING_SOLARIS
-#endif 
+#endif
 
 #include "uti/sge_dstring.h"
 #include "uti/sge_binding_parse.h"
 
 #if defined(OGE_HWLOC)
+
 #  include <hwloc.h>
 #  include <dlfcn.h> // @todo still required?
-#endif
 
-#ifdef __cplusplus
-extern "C" {
 #endif
 
 /* functions related for parsing command line (see parse_qsub.c) */
 /* shepherd also needs them */
-bool parse_binding_parameter_string(const char* parameter, binding_type_t* type, 
-      dstring* strategy, int* amount, int* stepsize, int* firstsocket, 
-      int* firstcore, dstring* socketcorelist, dstring* error);
+bool parse_binding_parameter_string(const char *parameter, binding_type_t *type,
+                                    dstring *strategy, int *amount, int *stepsize, int *firstsocket,
+                                    int *firstcore, dstring *socketcorelist, dstring *error);
 
-binding_type_t binding_parse_type(const char* parameter);
+binding_type_t binding_parse_type(const char *parameter);
 
-int binding_linear_parse_amount(const char* parameter);
-int binding_linear_parse_core_offset(const char* parameter);
-int binding_linear_parse_socket_offset(const char* parameter);
+int binding_linear_parse_amount(const char *parameter);
 
-int binding_striding_parse_amount(const char* parameter);
-int binding_striding_parse_first_core(const char* parameter);
-int binding_striding_parse_first_socket(const char* parameter);
-int binding_striding_parse_step_size(const char* parameter);
+int binding_linear_parse_core_offset(const char *parameter);
 
-bool binding_explicit_has_correct_syntax(const char* parameter, dstring* error);
-int get_explicit_amount(const char* expl, const bool with_explicit_prefix);
-bool check_explicit_binding_string(const char* expl, const int amount, const bool with_explicit_prefix);
+int binding_linear_parse_socket_offset(const char *parameter);
 
-const char* binding_get_topology_for_job(const char *binding_result);
+int binding_striding_parse_amount(const char *parameter);
 
-bool topology_string_to_socket_core_lists(const char* topology, int** sockets,
-                                     int** cores, int* amount);
-#ifdef __cplusplus
-}
-#endif
+int binding_striding_parse_first_core(const char *parameter);
 
+int binding_striding_parse_first_socket(const char *parameter);
+
+int binding_striding_parse_step_size(const char *parameter);
+
+bool binding_explicit_has_correct_syntax(const char *parameter, dstring *error);
+
+int get_explicit_amount(const char *expl, const bool with_explicit_prefix);
+
+bool check_explicit_binding_string(const char *expl, const int amount, const bool with_explicit_prefix);
+
+const char *binding_get_topology_for_job(const char *binding_result);
+
+bool topology_string_to_socket_core_lists(const char *topology, int **sockets,
+                                          int **cores, int *amount);

@@ -35,11 +35,6 @@
 
 #include "basis_types.h"
 
-
-#ifdef __cplusplus
-extern "C" {
-#endif
-
 // clang-format off
 
 #define MSG_TOKEN_NOSTART_S         _MESSAGE(49000, _("can't start set_token_command "SFQ))
@@ -130,7 +125,7 @@ extern "C" {
 #define MSG_PROF_RESETWHILEMEASUREMENT_S        _MESSAGE(49095, _(SFN": cannot reset profiling while a measurement is active"))
 #define MSG_PROF_MAXTHREADSEXCEEDED_S           _MESSAGE(49096, _(SFN": maximum number of threads mas been exceeded"))
 #define MSG_PROF_NULLLEVELNAME_S                _MESSAGE(49097, _(SFN": the assigned level name is NULL"))
-#define MSG_LOG_PROFILING                       _MESSAGE(49098, _("profiling: "))                                                                                                                                                 
+#define MSG_LOG_PROFILING                       _MESSAGE(49098, _("profiling: "))
 #define MSG_UTI_CANNOTRESOLVEBOOTSTRAPFILE      _MESSAGE(49100, _("cannot resolve name of bootstrap file"))
 #define MSG_UTI_CANNOTLOCATEATTRIBUTE_SS        _MESSAGE(49102, _("cannot read attribute <"SFN"> from bootstrap file "SFN))
 #define MSG_UTI_CANNOTLOCATEATTRIBUTEMAN_SS     _MESSAGE(49103, _("cannot read attribute <"SFN"> from management.properties file "SFN))
@@ -201,7 +196,3 @@ extern "C" {
 #define MSG_LCK_RWLOCKUNLOCKFAILED_SSS          _MESSAGE(59217, _(SFQ" failed to unlock "SFQ" - error: "SFQ))
 
 // clang-format on
-
-#ifdef __cplusplus
-}
-#endif

@@ -32,25 +32,20 @@
 /*___INFO__MARK_END__*/
 
 
-#ifdef __cplusplus
-extern "C" {
-#endif
+int cl_raw_list_setup(cl_raw_list_t **list_p, char *list_name, int enable_list_locking);         /* CR check */
+int cl_raw_list_cleanup(cl_raw_list_t **list_p);                                 /* CR check */
+cl_raw_list_elem_t *cl_raw_list_append_elem(cl_raw_list_t *list_p, void *data);                      /* CR check */
+void *cl_raw_list_remove_elem(cl_raw_list_t *list_p, cl_raw_list_elem_t *delete_elem); /* CR check */
+int cl_raw_list_dechain_elem(cl_raw_list_t *list_p, cl_raw_list_elem_t *dechain_elem);
 
-int                 cl_raw_list_setup                   (cl_raw_list_t** list_p, char* list_name, int enable_list_locking);         /* CR check */
-int                 cl_raw_list_cleanup                 (cl_raw_list_t** list_p);                                 /* CR check */
-cl_raw_list_elem_t* cl_raw_list_append_elem             (cl_raw_list_t* list_p, void* data);                      /* CR check */
-void*               cl_raw_list_remove_elem             (cl_raw_list_t* list_p, cl_raw_list_elem_t* delete_elem); /* CR check */
-int                 cl_raw_list_dechain_elem            (cl_raw_list_t* list_p, cl_raw_list_elem_t* dechain_elem);
-int                 cl_raw_list_append_dechained_elem   (cl_raw_list_t* list_p, cl_raw_list_elem_t* dechain_elem);
-int                 cl_raw_list_lock                    (cl_raw_list_t* list_p);                                  /* CR check */
-int                 cl_raw_list_unlock                  (cl_raw_list_t* list_p);                                  /* CR check */
-unsigned long       cl_raw_list_get_elem_count          (cl_raw_list_t* list_p);                                  /* CR check */
-cl_raw_list_elem_t* cl_raw_list_search_elem             (cl_raw_list_t* list_p, void* data);                      /* CR check */
-cl_raw_list_elem_t* cl_raw_list_get_first_elem          (cl_raw_list_t* list_p);                                  /* CR check */
-cl_raw_list_elem_t* cl_raw_list_get_least_elem          (cl_raw_list_t* list_p);
-cl_raw_list_elem_t* cl_raw_list_get_next_elem           (cl_raw_list_elem_t* elem);                               /* CR check */
-cl_raw_list_elem_t* cl_raw_list_get_last_elem           (cl_raw_list_elem_t* elem);                               /* CR check */
+int cl_raw_list_append_dechained_elem(cl_raw_list_t *list_p, cl_raw_list_elem_t *dechain_elem);
 
-#ifdef __cplusplus
-}
-#endif
+int cl_raw_list_lock(cl_raw_list_t *list_p);                                  /* CR check */
+int cl_raw_list_unlock(cl_raw_list_t *list_p);                                  /* CR check */
+unsigned long cl_raw_list_get_elem_count(cl_raw_list_t *list_p);                                  /* CR check */
+cl_raw_list_elem_t *cl_raw_list_search_elem(cl_raw_list_t *list_p, void *data);                      /* CR check */
+cl_raw_list_elem_t *cl_raw_list_get_first_elem(cl_raw_list_t *list_p);                                  /* CR check */
+cl_raw_list_elem_t *cl_raw_list_get_least_elem(cl_raw_list_t *list_p);
+
+cl_raw_list_elem_t *cl_raw_list_get_next_elem(cl_raw_list_elem_t *elem);                               /* CR check */
+cl_raw_list_elem_t *cl_raw_list_get_last_elem(cl_raw_list_elem_t *elem);                               /* CR check */

@@ -33,10 +33,6 @@
 
 #include "sge_sl.h"
 
-#ifdef __cplusplus
-extern "C" {
-#endif
-
 struct _sge_tq_queue_t {
    /*
     * List that stores tasks.
@@ -54,10 +50,10 @@ struct _sge_tq_queue_t {
 typedef struct _sge_tq_queue_t sge_tq_queue_t;
 
 enum _sge_tq_type_t {
-   SGE_TQ_UNKNOWN = 0, 
-   
+   SGE_TQ_UNKNOWN = 0,
+
    SGE_TQ_GDI_PACKET,    /* GDI packets */
- 
+
    SGE_TQ_TYPE1,  /* used for module tests */
    SGE_TQ_TYPE2   /* used for module tests */
 };
@@ -91,7 +87,3 @@ sge_tq_wakeup_waiting(sge_tq_queue_t *queue);
 
 bool
 sge_tq_wait_for_task(sge_tq_queue_t *queue, int seconds, sge_tq_type_t type, void **data);
-
-#ifdef __cplusplus
-}
-#endif

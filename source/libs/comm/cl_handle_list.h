@@ -34,33 +34,22 @@
 
 #include "comm/cl_data_types.h"
 
-#ifdef __cplusplus
-extern "C" {
-#endif
-
 typedef struct cl_handle_list_elem {
-   cl_com_handle_t* handle;   /* data */
-   cl_raw_list_elem_t*   raw_elem;
+   cl_com_handle_t *handle;   /* data */
+   cl_raw_list_elem_t *raw_elem;
 } cl_handle_list_elem_t;
 
 
-
-
 /* basic functions */
-int cl_handle_list_setup(cl_raw_list_t** list_p, char* list_name);  /* CR check */
-int cl_handle_list_cleanup(cl_raw_list_t** list_p);   /* CR check */
+int cl_handle_list_setup(cl_raw_list_t **list_p, char *list_name);  /* CR check */
+int cl_handle_list_cleanup(cl_raw_list_t **list_p);   /* CR check */
 
 
 /* thread list functions that will lock the list */
-int cl_handle_list_append_handle(cl_raw_list_t* list_p, cl_com_handle_t* handle, int do_lock);  /* CR check */
-int cl_handle_list_remove_handle(cl_raw_list_t* list_p, cl_com_handle_t* handle, int do_lock);  /* CR check */
+int cl_handle_list_append_handle(cl_raw_list_t *list_p, cl_com_handle_t *handle, int do_lock);  /* CR check */
+int cl_handle_list_remove_handle(cl_raw_list_t *list_p, cl_com_handle_t *handle, int do_lock);  /* CR check */
 
 /* thread functions that will not lock the list */
-cl_handle_list_elem_t* cl_handle_list_get_first_elem(cl_raw_list_t* list_p);  /* CR check */
-cl_handle_list_elem_t* cl_handle_list_get_next_elem(cl_handle_list_elem_t* elem);  /* CR check */
-cl_handle_list_elem_t* cl_handle_list_get_last_elem(cl_handle_list_elem_t* elem);  /* CR check */
-
-
-#ifdef __cplusplus
-}
-#endif
+cl_handle_list_elem_t *cl_handle_list_get_first_elem(cl_raw_list_t *list_p);  /* CR check */
+cl_handle_list_elem_t *cl_handle_list_get_next_elem(cl_handle_list_elem_t *elem);  /* CR check */
+cl_handle_list_elem_t *cl_handle_list_get_last_elem(cl_handle_list_elem_t *elem);  /* CR check */

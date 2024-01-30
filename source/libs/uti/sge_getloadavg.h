@@ -31,10 +31,6 @@
  ************************************************************************/
 /*___INFO__MARK_END__*/
 
-#ifdef __cplusplus
-extern "C" {
-#endif
-
 #if defined(LINUX) || defined(SOLARIS) || defined(SOLARIS64) || defined(DARWIN) || defined(FREEBSD) || defined(NETBSD)
 #  define SGE_LOADAVG
 #endif
@@ -60,7 +56,3 @@ int sge_getcpuload(double *cpu_load);
 #endif
 
 int get_channel_fd(void);  
-
-#ifdef __cplusplus
-}
-#endif

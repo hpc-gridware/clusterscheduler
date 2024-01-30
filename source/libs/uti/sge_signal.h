@@ -32,14 +32,12 @@
 /*___INFO__MARK_END__*/
 
 #ifndef __BASIS_TYPES_H
+
 #   include "basis_types.h"
+
 #endif
 
 #include <signal.h>
-
-#ifdef __cplusplus
-extern "C" {
-#endif
 
 #define SGE_SIGHUP                         901
 #define SGE_SIGINT                         902
@@ -71,7 +69,7 @@ extern "C" {
 #define SGE_SIGWINCH                       929
 #define SGE_SIGUSR1                        931
 #define SGE_SIGUSR2                        932
-#define SGE_MIGRATE			   933
+#define SGE_MIGRATE            933
 
 /* Not all systems have all signals. Fill this in if not known. */
 #define SIGUNKNOWN                         0
@@ -95,12 +93,9 @@ const char *sge_sys_sig2str(u_long32 sig);
 u_long32 sge_sys_str2signal(const char *str);
 
 typedef void (*err_func_t)(char *s);
- 
-void sge_set_def_sig_mask(sigset_t*, err_func_t);
+
+void sge_set_def_sig_mask(sigset_t *, err_func_t);
+
 void sge_unblock_all_signals(void);
 
 int sge_thread_block_all_signals(sigset_t *oldsigmask);
-
-#ifdef __cplusplus
-}
-#endif

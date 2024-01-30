@@ -34,35 +34,33 @@
 #include "comm/lists/cl_lists.h"
 #include "comm/cl_data_types.h"
 
-
-#ifdef __cplusplus
-extern "C" {
-#endif
-
 typedef struct cl_host_alias_list_elem_t {
-   cl_raw_list_elem_t*   raw_elem;
-   char*                 local_resolved_hostname;
-   char*                 alias_name;
+   cl_raw_list_elem_t *raw_elem;
+   char *local_resolved_hostname;
+   char *alias_name;
 } cl_host_alias_list_elem_t;
 
 
 /* basic functions */
-int cl_host_alias_list_setup(cl_raw_list_t** list_p, char* list_name);
-int cl_host_alias_list_cleanup(cl_raw_list_t** list_p);
+int cl_host_alias_list_setup(cl_raw_list_t **list_p, char *list_name);
+
+int cl_host_alias_list_cleanup(cl_raw_list_t **list_p);
 
 /* thread list functions that will lock the list */
-int cl_host_alias_list_append_host(cl_raw_list_t* list_p, char* local_resolved_name, char* alias_name, int lock_list);
-int cl_host_alias_list_remove_host(cl_raw_list_t* list_p, cl_host_alias_list_elem_t* element, int lock_list);
-int cl_host_alias_list_get_alias_name(cl_raw_list_t* list_p, char* local_resolved_name,char** alias_name);
-int cl_host_alias_list_get_local_resolved_name(cl_raw_list_t* list_p, char* alias_name,char** local_resolved_name );
+int cl_host_alias_list_append_host(cl_raw_list_t *list_p, char *local_resolved_name, char *alias_name, int lock_list);
+
+int cl_host_alias_list_remove_host(cl_raw_list_t *list_p, cl_host_alias_list_elem_t *element, int lock_list);
+
+int cl_host_alias_list_get_alias_name(cl_raw_list_t *list_p, char *local_resolved_name, char **alias_name);
+
+int cl_host_alias_list_get_local_resolved_name(cl_raw_list_t *list_p, char *alias_name, char **local_resolved_name);
 
 
 /* thread functions that will not lock the list */
-cl_host_alias_list_elem_t* cl_host_alias_list_get_first_elem(cl_raw_list_t* list_p);
-cl_host_alias_list_elem_t* cl_host_alias_list_get_least_elem(cl_raw_list_t* list_p);
-cl_host_alias_list_elem_t* cl_host_alias_list_get_next_elem(cl_host_alias_list_elem_t* elem);
-cl_host_alias_list_elem_t* cl_host_alias_list_get_last_elem(cl_host_alias_list_elem_t* elem);
+cl_host_alias_list_elem_t *cl_host_alias_list_get_first_elem(cl_raw_list_t *list_p);
 
-#ifdef __cplusplus
-}
-#endif
+cl_host_alias_list_elem_t *cl_host_alias_list_get_least_elem(cl_raw_list_t *list_p);
+
+cl_host_alias_list_elem_t *cl_host_alias_list_get_next_elem(cl_host_alias_list_elem_t *elem);
+
+cl_host_alias_list_elem_t *cl_host_alias_list_get_last_elem(cl_host_alias_list_elem_t *elem);

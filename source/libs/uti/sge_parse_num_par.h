@@ -36,21 +36,17 @@
 
 #include "cull/cull_list.h"
 
-#ifdef __cplusplus
-extern "C" {
-#endif
-
 /* type wrapper */
 typedef rlim_t sge_rlim_t;
 
 sge_rlim_t mul_infinity(sge_rlim_t rlim, sge_rlim_t muli);
 
-int parse_ulong_val(double *dvalp, u_long32 *uvalp, u_long32 type, 
+int parse_ulong_val(double *dvalp, u_long32 *uvalp, u_long32 type,
                     const char *s, char *err_str, int err_len);
 
 
-int extended_parse_ulong_val(double *dvalp, u_long32 *uvalp, u_long32 type, 
-                             const char *s, char *err_str, int err_len, 
+int extended_parse_ulong_val(double *dvalp, u_long32 *uvalp, u_long32 type,
+                             const char *s, char *err_str, int err_len,
                              int enable_infinity, bool only_positive);
 
 char *resource_descr(double dval, u_long32 type, char *buffer);
@@ -62,7 +58,3 @@ bool sge_parse_loglevel_val(u_long32 *uval, const char *s);
 u_long32 sge_parse_num_val(sge_rlim_t *rlimp, double *dvalp,
                            const char *str, const char *where,
                            char *err_str, int err_len);
-
-#ifdef __cplusplus
-}
-#endif

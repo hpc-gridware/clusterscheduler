@@ -33,10 +33,6 @@
 
 #include <pthread.h>
 
-#ifdef __cplusplus
-extern "C" {
-#endif
-
 typedef struct _thread_control_t {
    /* Used to guard 'cond_var' and 'shutdown_started' variable of this structure */
    pthread_mutex_t mutex;
@@ -45,7 +41,7 @@ typedef struct _thread_control_t {
     * Used for thread waiting. If a thread wants to wait for shutdown of qmaster it can
     * wait for this condition.
     */
-   pthread_cond_t  cond_var;
+   pthread_cond_t cond_var;
 
    /* flag thats indicates that the shutdown process has already started */
    bool shutdown_started;
@@ -61,7 +57,3 @@ sge_thread_notify_all_waiting(void);
 
 void
 sge_thread_wait_for_signal(void);
-
-#ifdef __cplusplus
-}
-#endif

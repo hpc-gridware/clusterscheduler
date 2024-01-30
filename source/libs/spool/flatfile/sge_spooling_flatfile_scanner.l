@@ -29,10 +29,11 @@
  ************************************************************************/
 /* scanner for Grid Engine ascii spool format
  *
- * !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
- * !! when you change this file, remove sge_spooling_flatfile_scanner.c !!
- * !! before building Grid Engine                                       !!
- * !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+ * !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+ * !! when you change this file, re-generate the c/c++ code of the scanner:                  !!
+ * !! cd into the source/libs/spool/flatfile directory and call                              !!
+ * !! flex -fi8 -Pspool_ -o sge_spooling_flatfile_scanner.cc sge_spooling_flatfile_scanner.l !!
+ * !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
  */
 
 %option noyywrap

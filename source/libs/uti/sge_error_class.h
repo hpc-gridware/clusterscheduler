@@ -34,10 +34,6 @@
 #include "basis_types.h"
 #include "cull/cull.h"
 
-#ifdef __cplusplus
-extern "C" {
-#endif
-
 typedef struct sge_error_class_str sge_error_class_t;
 
 
@@ -45,36 +41,44 @@ typedef struct sge_error_iterator_class_str sge_error_iterator_class_t;
 
 struct sge_error_iterator_class_str {
    void *sge_error_iterator_handle;
-   
-   const char* (*get_message)(sge_error_iterator_class_t *thiz);
-   u_long32    (*get_quality)(sge_error_iterator_class_t *thiz);
-   u_long32    (*get_type)(sge_error_iterator_class_t *thiz);
-   bool        (*next)(sge_error_iterator_class_t *thiz);
+
+   const char *(*get_message)(sge_error_iterator_class_t *thiz);
+
+   u_long32 (*get_quality)(sge_error_iterator_class_t *thiz);
+
+   u_long32 (*get_type)(sge_error_iterator_class_t *thiz);
+
+   bool (*next)(sge_error_iterator_class_t *thiz);
 };
 
 struct sge_error_class_str {
    void *sge_error_handle;
-   void (*error)(sge_error_class_t* thiz, int error_type, int error_quality, const char*fmt, ...);
-   void (*verror)(sge_error_class_t* thiz, int error_type, int error_quality, const char*fmt, va_list ap);
-   
+
+   void (*error)(sge_error_class_t *thiz, int error_type, int error_quality, const char *fmt, ...);
+
+   void (*verror)(sge_error_class_t *thiz, int error_type, int error_quality, const char *fmt, va_list ap);
+
    void (*clear)(sge_error_class_t *thiz);
-   
+
    bool (*has_error)(sge_error_class_t *thiz);
+
    bool (*has_quality)(sge_error_class_t *thiz, int error_quality);
-   bool (*has_type)(sge_error_class_t *thiz, int error_type);   
-   sge_error_iterator_class_t* (*iterator)(sge_error_class_t *thiz);
+
+   bool (*has_type)(sge_error_class_t *thiz, int error_type);
+
+   sge_error_iterator_class_t *(*iterator)(sge_error_class_t *thiz);
 };
 
 
-sge_error_class_t* sge_error_class_create(void);
-void sge_error_class_clear(sge_error_class_t* thiz);
+sge_error_class_t *sge_error_class_create(void);
+
+void sge_error_class_clear(sge_error_class_t *thiz);
+
 void sge_error_class_destroy(sge_error_class_t **error_handler);
-void sge_error_iterator_class_destroy(sge_error_iterator_class_t** emc);
+
+void sge_error_iterator_class_destroy(sge_error_iterator_class_t **emc);
 
 
 void showError(sge_error_class_t *eh);
-void sge_error_to_dstring(sge_error_class_t *eh, dstring *ds);
 
-#ifdef __cplusplus
-}
-#endif
+void sge_error_to_dstring(sge_error_class_t *eh, dstring *ds);

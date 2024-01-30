@@ -33,7 +33,7 @@
 
 #include <stdio.h>
 #include <stdlib.h>
-#include <ctype.h> 
+#include <ctype.h>
 
 #include <netdb.h>
 #include <sys/socket.h>
@@ -42,17 +42,13 @@
 
 #include "sge_unistd.h"
 
-#ifdef __cplusplus
-extern "C" {
-#endif
-
 /* compare hosts with FQDN or not */
 #if !defined(CL_MAXHOSTLEN) && defined(MAXHOSTNAMELEN)
-   #define CL_MAXHOSTLEN MAXHOSTNAMELEN
+#define CL_MAXHOSTLEN MAXHOSTNAMELEN
 #endif
 
 #if !defined(CL_MAXHOSTLEN) && !defined(MAXHOSTNAMELEN)
-   #define CL_MAXHOSTLEN 256
+#define CL_MAXHOSTLEN 256
 #endif
 
 /* char introducing a hostgroup name */
@@ -60,12 +56,12 @@ extern "C" {
 
 /* host information based on the hostent structure */
 typedef struct host {
-    struct hostent he;		/* copy of what we got from gethostbyname */
-    char mainname[CL_MAXHOSTLEN];  /* This is what the administrator think it is
+   struct hostent he;      /* copy of what we got from gethostbyname */
+   char mainname[CL_MAXHOSTLEN];  /* This is what the administrator think it is
                                    the mainname */
-    int deleted;                /* if we can no longer resolve this host */
-    struct host *alias;		/* chain aliases */
-    struct host *next;
+   int deleted;                /* if we can no longer resolve this host */
+   struct host *alias;      /* chain aliases */
+   struct host *next;
 } host;
 
 /* These external variables are used for profiling */
@@ -77,23 +73,23 @@ extern unsigned long gethostbyaddr_sec;
 int sge_hostcmp(const char *h1, const char *h2);
 
 int sge_hostmatch(const char *h1, const char *h2);
- 
-void sge_hostcpy(char *dst, const char *raw);       
+
+void sge_hostcpy(char *dst, const char *raw);
 
 bool is_hgroup_name(const char *name);
 
 /* resolver library wrappers */
 struct hostent *sge_gethostbyname_retry(const char *name);
-struct hostent *sge_gethostbyname(const char *name, int* system_error_retval);
-struct hostent *sge_gethostbyaddr(const struct in_addr *addr, int* system_error_retval);
 
-void sge_free_hostent( struct hostent** he );
-struct hostent *sge_copy_hostent (struct hostent *orig);
+struct hostent *sge_gethostbyname(const char *name, int *system_error_retval);
+
+struct hostent *sge_gethostbyaddr(const struct in_addr *addr, int *system_error_retval);
+
+void sge_free_hostent(struct hostent **he);
+
+struct hostent *sge_copy_hostent(struct hostent *orig);
 
 
 int sge_get_qmaster_port(bool *from_services);
-int sge_get_execd_port(void);
 
-#ifdef __cplusplus
-}
-#endif
+int sge_get_execd_port(void);

@@ -38,39 +38,51 @@
 
 #include "comm/cl_commlib.h"
 
-#ifdef __cplusplus
-extern "C" {
-#endif
-
-typedef void              (*rmon_print_callback_func_t) (const char *message, unsigned long traceid, unsigned long pid, unsigned long thread_id);
+typedef void              (*rmon_print_callback_func_t)(const char *message, unsigned long traceid, unsigned long pid,
+                                                        unsigned long thread_id);
 
 extern monitoring_level RMON_DEBUG_ON;
 
-int  rmon_condition(int layer, int debug_class);
-int  rmon_is_enabled(void);
+int rmon_condition(int layer, int debug_class);
+
+int rmon_is_enabled(void);
+
 void rmon_mopen(int *argc, char *argv[], char *programname);
+
 void rmon_menter(const char *func, const char *thread_name);
+
 void rmon_mtrace(const char *func, const char *file, int line, const char *thread_name);
+
 void rmon_mprintf(int debug_class, const char *fmt, ...);
+
 void rmon_mexit(const char *func, const char *file, int line, const char *thread_name);
+
 void rmon_debug_client_callback(int dc_connected, int debug_level);
+
 void rmon_set_print_callback(rmon_print_callback_func_t function_p);
 
-void rmon_mprintf_lock(const char* fmt, ...);
-void rmon_mprintf_info(const char* fmt, ...);
-void rmon_mprintf_timing(const char* fmt, ...);
-void rmon_mprintf_special(const char* fmt, ...);
+void rmon_mprintf_lock(const char *fmt, ...);
+
+void rmon_mprintf_info(const char *fmt, ...);
+
+void rmon_mprintf_timing(const char *fmt, ...);
+
+void rmon_mprintf_special(const char *fmt, ...);
 
 typedef struct rmon_ctx_str rmon_ctx_t;
 
 struct rmon_ctx_str {
-  void *ctx;
-  
-  int  (*is_loggable)(rmon_ctx_t *ctx, int layer, int debug_class);
-  void (*menter)(rmon_ctx_t *ctx, const char* func);
-  void (*mexit)(rmon_ctx_t *ctx, const char* func, const char *file, int line);
-  void (*mtrace)(rmon_ctx_t *ctx, const char *func, const char *file, int line);
-  void (*mprintf)(rmon_ctx_t *ctx, int debug_class, const char* fmt, va_list args);
+   void *ctx;
+
+   int (*is_loggable)(rmon_ctx_t *ctx, int layer, int debug_class);
+
+   void (*menter)(rmon_ctx_t *ctx, const char *func);
+
+   void (*mexit)(rmon_ctx_t *ctx, const char *func, const char *file, int line);
+
+   void (*mtrace)(rmon_ctx_t *ctx, const char *func, const char *file, int line);
+
+   void (*mprintf)(rmon_ctx_t *ctx, int debug_class, const char *fmt, va_list args);
 };
 
 typedef struct rmon_helper_str rmon_helper_t;
@@ -79,14 +91,10 @@ struct rmon_helper_str {
    char thread_name[32];
 };
 
-void rmon_set_thread_ctx(rmon_ctx_t* ctx);
-rmon_ctx_t* rmon_get_thread_ctx(void);
+void rmon_set_thread_ctx(rmon_ctx_t *ctx);
+
+rmon_ctx_t *rmon_get_thread_ctx(void);
 
 rmon_helper_t *rmon_get_helper(void);
 
 #define __CONDITION(x) rmon_condition(TOP_LAYER, x)
-
-#ifdef __cplusplus
-}
-#endif
-

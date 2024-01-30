@@ -33,10 +33,6 @@
 
 #include "basis_types.h"
 
-#ifdef __cplusplus
-extern "C" {
-#endif
-
 // clang-format off
 
 #define MSG_CL_CRM_ERROR_MESSAGE2_SS                                          _MESSAGE(85001, _("server host resolves destination host "SFQ" as "SFQ""))
@@ -111,7 +107,3 @@ extern "C" {
 #define MSG_CL_COMMLIB_SSL_ERROR_336105650            _MESSAGE(85503, _("the used certificate is expired or invalid"))
 
 // clang-format on
-
-#ifdef __cplusplus
-}
-#endif

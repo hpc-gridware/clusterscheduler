@@ -31,10 +31,6 @@
  ************************************************************************/
 /*___INFO__MARK_END__*/
 
-#ifdef  __cplusplus
-extern "C" {
-#endif
-
 #include "sge_dstring.h"
 
 struct saved_vars_s {
@@ -52,7 +48,7 @@ char *sge_dirname(const char *name, int delim);
 
 char *sge_strdup(char *old, const char *src);
 
-int sge_strlen(const char *str);
+size_t sge_strlen(const char *str);
 
 char *sge_strtok(const char *str, const char *delimitor);
 
@@ -60,7 +56,7 @@ bool sge_is_pattern(const char *p);
 
 bool sge_is_expression(const char *p);
 
-char *sge_strtok_r(const char *str, const char *delimitor, 
+char *sge_strtok_r(const char *str, const char *delimitor,
                    struct saved_vars_s **last);
 
 void sge_free_saved_vars(struct saved_vars_s *last);
@@ -71,7 +67,7 @@ int sge_strnullcasecmp(const char *a, const char *b);
 
 int sge_strnullcmp(const char *a, const char *b);
 
-int sge_patternnullcmp(const char *str, const char *pattern); 
+int sge_patternnullcmp(const char *str, const char *pattern);
 
 void sge_strip_blanks(char *str);
 
@@ -87,11 +83,12 @@ int sge_strisint(const char *str);
 
 char **sge_stradup(char **cpp, int n);
 
-void sge_strafree(char ***cpp); 
+void sge_strafree(char ***cpp);
 
 char **sge_stramemncpy(const char *cp, char **cpp, int n);
 
 size_t sge_strlcat(char *dst, const char *src, size_t dstsize);
+
 size_t sge_strlcpy(char *dst, const char *src, size_t dstsize);
 
 char **sge_stracasecmp(const char *cp, char **cpp);
@@ -113,8 +110,3 @@ bool sge_str_is_number(const char *string);
 const char *sge_replace_substring(const char *input, const char *search, const char *replace);
 
 #define SGE_STRCASECMP(a, b) strcasecmp(a, b)
-
-#ifdef  __cplusplus
-}
-#endif
-

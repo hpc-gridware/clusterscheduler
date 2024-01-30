@@ -33,10 +33,6 @@
 
 #include <arpa/inet.h>
 
-#ifdef __cplusplus
-extern "C" {
-#endif
-
 #define CL_DEFINE_MAX_MESSAGE_LENGTH                 1024 * 1024 * 1024 /* 1GB max message length */
 
 
@@ -257,7 +253,7 @@ extern "C" {
 
  */
 #define CL_SIRM_MESSAGE            "<sirm version=\"%s\"><mid>%ld</mid><starttime>%ld</starttime><runtime>%ld</runtime><application><messages><brm>%ld</brm><bwm>%ld</bwm></messages><connections><noc>%ld</noc></connections><status>%ld</status></application><info>%s</info></sirm>"
-#define CL_SIRM_MESSAGE_VERSION    "0.1" 
+#define CL_SIRM_MESSAGE_VERSION    "0.1"
 #define CL_SIRM_MESSAGE_SIZE       218  /* sizeof(CL_SIRM_MESSAGE) + sizeof(CL_SIRM_MESSAGE_VERSION) */
 
 
@@ -271,7 +267,7 @@ extern "C" {
 
 
  */
-#define CL_CCM_MESSAGE                              "<ccm version=\"%s\"></ccm>" 
+#define CL_CCM_MESSAGE                              "<ccm version=\"%s\"></ccm>"
 #define CL_CCM_MESSAGE_VERSION                      "0.1"
 #define CL_CCM_MESSAGE_SIZE                         25 /* sizeof(CL_CCM_MESSAGE) + sizeof(CL_CCM_MESSAGE_VERSION) */
 
@@ -289,16 +285,14 @@ extern "C" {
 #define CL_CCRM_MESSAGE_SIZE                         27 /* sizeof(CL_CCRM_MESSAGE) + sizeof(CL_CCRM_MESSAGE_VERSION) */
 
 
-
 typedef struct cl_com_endpoint {
    /* internal identification tripple */
-   char*         comp_host;           
-   char*         comp_name;
+   char *comp_host;
+   char *comp_name;
    unsigned long comp_id;
    struct in_addr addr;
-   char*         hash_id;
-} cl_com_endpoint_t ;
-
+   char *hash_id;
+} cl_com_endpoint_t;
 
 
 typedef enum cl_xml_data_format_def {
@@ -330,13 +324,13 @@ typedef enum cl_xml_connection_type_def {
    CL_CM_CT_UNDEFINED = 1,
    CL_CM_CT_STREAM,
    CL_CM_CT_MESSAGE
-}cl_xml_connection_type_t ;
+} cl_xml_connection_type_t;
 
 typedef enum cl_xml_connection_autoclose_def {
    CL_CM_AC_UNDEFINED = 1,
    CL_CM_AC_ENABLED,
    CL_CM_AC_DISABLED
-}cl_xml_connection_autoclose_t;
+} cl_xml_connection_autoclose_t;
 
 typedef enum cl_xml_connection_status_def {
    CL_CRM_CS_UNDEFINED = 1,         /* 1 */
@@ -344,114 +338,130 @@ typedef enum cl_xml_connection_status_def {
    CL_CRM_CS_DENIED,                /* 3 */
    CL_CRM_CS_ENDPOINT_NOT_UNIQUE,   /* 4 */
    CL_CRM_CS_UNSUPPORTED            /* 5 */
-}cl_xml_connection_status_t ;
+} cl_xml_connection_status_t;
 
 
 /* XML data types */
 typedef struct cl_com_GMSH_type {
-   unsigned long   dl;
+   unsigned long dl;
 } cl_com_GMSH_t;
 
 typedef struct cl_com_CM_type {
-   char*                          version;
-   cl_xml_data_format_t           df;
-   cl_xml_connection_type_t       ct;
-   cl_xml_connection_autoclose_t  ac;
-   unsigned long                  port;  
-   cl_com_endpoint_t*             dst;   /* destination (=endpoint where clients want to connect to) */
-   cl_com_endpoint_t*             rdata; /* remote */
+   char *version;
+   cl_xml_data_format_t df;
+   cl_xml_connection_type_t ct;
+   cl_xml_connection_autoclose_t ac;
+   unsigned long port;
+   cl_com_endpoint_t *dst;   /* destination (=endpoint where clients want to connect to) */
+   cl_com_endpoint_t *rdata; /* remote */
 } cl_com_CM_t;
 
 
 typedef struct cl_com_CRM_type {
-   char*                         version;
-   cl_xml_connection_status_t    cs_condition;
-   char*                         cs_text;
-   char*                         formats;   /* each format is seperated with "," not supported TODO  */
-   cl_com_endpoint_t*            rdata;
-   char*                         params;
+   char *version;
+   cl_xml_connection_status_t cs_condition;
+   char *cs_text;
+   char *formats;   /* each format is seperated with "," not supported TODO  */
+   cl_com_endpoint_t *rdata;
+   char *params;
 } cl_com_CRM_t;
 
 typedef struct cl_com_MIH_type {
-   char*                      version;
-   unsigned long              mid;
-   unsigned long              dl;
-   cl_xml_mih_data_format_t   df;
-   cl_xml_ack_type_t          mat;
-   unsigned long              tag;
-   unsigned long              rid;
+   char *version;
+   unsigned long mid;
+   unsigned long dl;
+   cl_xml_mih_data_format_t df;
+   cl_xml_ack_type_t mat;
+   unsigned long tag;
+   unsigned long rid;
 } cl_com_MIH_t;
 
 typedef struct cl_com_AM_type {
-   char*            version;
-   unsigned long    mid;
+   char *version;
+   unsigned long mid;
 } cl_com_AM_t;
 
 typedef struct cl_com_SIM_type {
-   char*            version;
+   char *version;
 } cl_com_SIM_t;
 
 typedef struct cl_com_SIRM_type {
-   char*            version;
-   unsigned long    mid;
-   unsigned long    starttime;
-   unsigned long    runtime;
-   unsigned long    application_messages_brm;
-   unsigned long    application_messages_bwm;
-   unsigned long    application_connections_noc;
-   unsigned long    application_status;
-   char*            info;
+   char *version;
+   unsigned long mid;
+   unsigned long starttime;
+   unsigned long runtime;
+   unsigned long application_messages_brm;
+   unsigned long application_messages_bwm;
+   unsigned long application_connections_noc;
+   unsigned long application_status;
+   char *info;
 } cl_com_SIRM_t;
 
 typedef struct cl_com_CCM_type {
-   char*            version;
+   char *version;
 } cl_com_CCM_t;
 
 typedef struct cl_com_CCRM_type {
-   char*            version;
+   char *version;
 } cl_com_CCRM_t;
 
 
+const char *cl_com_get_mih_df_string(cl_xml_mih_data_format_t df);
 
-const char* cl_com_get_mih_df_string(cl_xml_mih_data_format_t df);
-const char* cl_com_get_mih_mat_string(cl_xml_ack_type_t mat);
+const char *cl_com_get_mih_mat_string(cl_xml_ack_type_t mat);
 
 
 /* endpoint helper functions */
-cl_com_endpoint_t* cl_com_create_endpoint(const char* comp_host,
-                                          const char* comp_name,
+cl_com_endpoint_t *cl_com_create_endpoint(const char *comp_host,
+                                          const char *comp_name,
                                           unsigned long comp_id,
                                           const struct in_addr *in_addr);
-cl_com_endpoint_t* cl_com_dup_endpoint(cl_com_endpoint_t* endpoint);
-int  cl_com_free_endpoint(cl_com_endpoint_t** endpoint);
 
+cl_com_endpoint_t *cl_com_dup_endpoint(cl_com_endpoint_t *endpoint);
+
+int cl_com_free_endpoint(cl_com_endpoint_t **endpoint);
 
 
 /* message functions */
-int cl_com_free_gmsh_header(cl_com_GMSH_t** header);
-int cl_com_free_cm_message(cl_com_CM_t** message);
-int cl_com_free_crm_message(cl_com_CRM_t** message);
-int cl_com_free_mih_message(cl_com_MIH_t** message);
-int cl_com_free_am_message(cl_com_AM_t** message);
-int cl_com_free_sim_message(cl_com_SIM_t** message);
-int cl_com_free_sirm_message(cl_com_SIRM_t** message);
-int cl_com_free_ccm_message(cl_com_CCM_t** message);
-int cl_com_free_ccrm_message(cl_com_CCRM_t** message);
+int cl_com_free_gmsh_header(cl_com_GMSH_t **header);
+
+int cl_com_free_cm_message(cl_com_CM_t **message);
+
+int cl_com_free_crm_message(cl_com_CRM_t **message);
+
+int cl_com_free_mih_message(cl_com_MIH_t **message);
+
+int cl_com_free_am_message(cl_com_AM_t **message);
+
+int cl_com_free_sim_message(cl_com_SIM_t **message);
+
+int cl_com_free_sirm_message(cl_com_SIRM_t **message);
+
+int cl_com_free_ccm_message(cl_com_CCM_t **message);
+
+int cl_com_free_ccrm_message(cl_com_CCRM_t **message);
 
 
 /* xml parsing functions */
-int cl_xml_parse_GMSH(unsigned char* buffer, unsigned long buffer_length, cl_com_GMSH_t* header,unsigned long *used_buffer_length );
-int cl_xml_parse_CM(unsigned char* buffer, unsigned long buffer_length, cl_com_CM_t** connection_message );
-int cl_xml_parse_CRM(unsigned char* buffer, unsigned long buffer_length, cl_com_CRM_t** connection_message );
-int cl_xml_parse_MIH(unsigned char* buffer, unsigned long buffer_length, cl_com_MIH_t** message );
-int cl_xml_parse_AM(unsigned char* buffer, unsigned long buffer_length, cl_com_AM_t** message );
-int cl_xml_parse_SIM(unsigned char* buffer, unsigned long buffer_length, cl_com_SIM_t** message );
-int cl_xml_parse_SIRM(unsigned char* buffer, unsigned long buffer_length, cl_com_SIRM_t** message );
-int cl_xml_parse_CCM(unsigned char* buffer, unsigned long buffer_length, cl_com_CCM_t** message );
-int cl_xml_parse_CCRM(unsigned char* buffer, unsigned long buffer_length, cl_com_CCRM_t** message );
+int cl_xml_parse_GMSH(unsigned char *buffer, unsigned long buffer_length, cl_com_GMSH_t *header,
+                      unsigned long *used_buffer_length);
 
-int cl_com_transformString2XML(const char* input, char** output);
-int cl_com_transformXML2String(const char* input, char** output);
-#ifdef __cplusplus
-}
-#endif
+int cl_xml_parse_CM(unsigned char *buffer, unsigned long buffer_length, cl_com_CM_t **connection_message);
+
+int cl_xml_parse_CRM(unsigned char *buffer, unsigned long buffer_length, cl_com_CRM_t **connection_message);
+
+int cl_xml_parse_MIH(unsigned char *buffer, unsigned long buffer_length, cl_com_MIH_t **message);
+
+int cl_xml_parse_AM(unsigned char *buffer, unsigned long buffer_length, cl_com_AM_t **message);
+
+int cl_xml_parse_SIM(unsigned char *buffer, unsigned long buffer_length, cl_com_SIM_t **message);
+
+int cl_xml_parse_SIRM(unsigned char *buffer, unsigned long buffer_length, cl_com_SIRM_t **message);
+
+int cl_xml_parse_CCM(unsigned char *buffer, unsigned long buffer_length, cl_com_CCM_t **message);
+
+int cl_xml_parse_CCRM(unsigned char *buffer, unsigned long buffer_length, cl_com_CCRM_t **message);
+
+int cl_com_transformString2XML(const char *input, char **output);
+
+int cl_com_transformXML2String(const char *input, char **output);

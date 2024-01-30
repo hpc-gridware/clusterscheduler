@@ -34,32 +34,24 @@
 #include "comm/lists/cl_lists.h"
 #include "comm/cl_data_types.h"
 
-#ifdef __cplusplus
-extern "C" {
-#endif
-
 typedef struct cl_message_list_elem_t {
-   cl_com_message_t*     message;   /* data */
-   cl_raw_list_elem_t*   raw_elem;
+   cl_com_message_t *message;   /* data */
+   cl_raw_list_elem_t *raw_elem;
 } cl_message_list_elem_t;
 
 
 /* basic functions */
-int cl_message_list_setup(cl_raw_list_t** list_p, char* list_name);   /* CR check */
-int cl_message_list_cleanup(cl_raw_list_t** list_p);   /* CR check */
+int cl_message_list_setup(cl_raw_list_t **list_p, char *list_name);   /* CR check */
+int cl_message_list_cleanup(cl_raw_list_t **list_p);   /* CR check */
 
 
 /* thread list functions that will lock the list */
-int cl_message_list_append_message(cl_raw_list_t* list_p, cl_com_message_t* message, int lock_list);  /* CR check */
-int cl_message_list_remove_message(cl_raw_list_t* list_p, cl_com_message_t* message, int lock_list);  /* CR check */
+int cl_message_list_append_message(cl_raw_list_t *list_p, cl_com_message_t *message, int lock_list);  /* CR check */
+int cl_message_list_remove_message(cl_raw_list_t *list_p, cl_com_message_t *message, int lock_list);  /* CR check */
 
 /* thread functions that will not lock the list */
-cl_message_list_elem_t* cl_message_list_get_first_elem(cl_raw_list_t* list_p);   /* CR check */
-cl_message_list_elem_t* cl_message_list_get_least_elem(cl_raw_list_t* list_p);
-cl_message_list_elem_t* cl_message_list_get_next_elem(cl_message_list_elem_t* elem); /* CR check */
-cl_message_list_elem_t* cl_message_list_get_last_elem(cl_message_list_elem_t* elem); /* CR check */
+cl_message_list_elem_t *cl_message_list_get_first_elem(cl_raw_list_t *list_p);   /* CR check */
+cl_message_list_elem_t *cl_message_list_get_least_elem(cl_raw_list_t *list_p);
 
-
-#ifdef __cplusplus
-}
-#endif
+cl_message_list_elem_t *cl_message_list_get_next_elem(cl_message_list_elem_t *elem); /* CR check */
+cl_message_list_elem_t *cl_message_list_get_last_elem(cl_message_list_elem_t *elem); /* CR check */

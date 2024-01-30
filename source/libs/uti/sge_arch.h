@@ -31,21 +31,12 @@
  ************************************************************************/
 /*___INFO__MARK_END__*/
 
-#ifdef __cplusplus
-extern "C" {
-#endif
-
 const char *sge_get_arch(void);
 
 const char *sge_get_root_dir(int do_exit, char *buffer, size_t size, int do_error_log);
 
-int sge_get_lib_dir(char* buffer, size_t size);
+int sge_get_lib_dir(char *buffer, size_t size);
 
-const char *sge_get_default_cell(void); 
+const char *sge_get_default_cell(void);
 
 const char *sge_get_alias_path(void);
-
-#ifdef __cplusplus
-}
-#endif
-

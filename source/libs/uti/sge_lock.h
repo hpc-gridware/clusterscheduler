@@ -35,10 +35,6 @@
 #include "basis_types.h"
 #include "uti/sge_rmon.h"
 
-#ifdef __cplusplus
-extern "C" {
-#endif
-
 #if 0
 #define SGE_DEBUG_LOCK_TIME 
 #endif
@@ -53,7 +49,7 @@ extern "C" {
 #endif
 
 typedef enum {
-   LOCK_READ  = 1, /* shared  */
+   LOCK_READ = 1, /* shared  */
    LOCK_WRITE = 2  /* exclusive */
 } sge_lockmode_t;
 
@@ -63,20 +59,20 @@ typedef enum {
    /* 
     * global lock 
     */
-   LOCK_GLOBAL  = 0, 
+   LOCK_GLOBAL = 0,
 
    LOCK_MASTER_CONF = 1,
 
    NUM_OF_LOCK_TYPES = 2
 } sge_locktype_t;
 
-void 
+void
 sge_lock(sge_locktype_t aType, sge_lockmode_t aMode, const char *func, sge_locker_t anID);
 
-void 
+void
 sge_unlock(sge_locktype_t aType, sge_lockmode_t aMode, const char *func, sge_locker_t anID);
 
-sge_locker_t 
+sge_locker_t
 sge_locker_id(void);
 
 #if defined(SGE_LOCK)
@@ -96,7 +92,3 @@ sge_locker_id(void);
 { \
    sge_unlock(type, mode, __func__, sge_locker_id()); \
 }
-
-#ifdef __cplusplus
-}
-#endif

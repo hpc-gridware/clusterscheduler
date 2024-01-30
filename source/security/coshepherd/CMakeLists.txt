@@ -1,6 +1,6 @@
 # security/coshepherd
 
-add_executable(sge_coshepherd coshepherd.c)
+add_executable(sge_coshepherd coshepherd.cc)
 
 target_include_directories(sge_coshepherd PRIVATE ${SGE_INCLUDES})
 

@@ -31,33 +31,32 @@
  ************************************************************************/
 /*___INFO__MARK_END__*/
 
-#ifdef __cplusplus
-extern "C" {
-#endif
-
 #include <sys/time.h>
 
 #ifndef __BASIS_TYPES_H
+
 #   include "basis_types.h"
+
 #endif
+
 #include "sge_dstring.h"
 
 u_long32 sge_get_gmt(void);
 
-const char *sge_ctime(time_t, dstring *buffer); 
+const char *sge_ctime(time_t, dstring *buffer);
+
 const char *sge_ctimeXML(time_t i, dstring *buffer);
-const char *sge_ctime32(u_long32 *, dstring *buffer); 
+
+const char *sge_ctime32(u_long32 *, dstring *buffer);
+
 const char *sge_at_time(time_t, dstring *buffer);
 
 void append_time(time_t i, dstring *buffer, bool is_xml);
 
 void sge_stopwatch_start(int);
-void sge_stopwatch_log(int, const char *);  
+
+void sge_stopwatch_log(int, const char *);
 
 u_long32 duration_add_offset(u_long32 duration, u_long32 offset);
 
 void sge_usleep(int);
-
-#ifdef __cplusplus
-}
-#endif

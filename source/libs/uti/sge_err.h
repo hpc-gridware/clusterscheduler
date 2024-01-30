@@ -31,10 +31,6 @@
  ************************************************************************/
 /*___INFO__MARK_END__*/
 
-#ifdef __cplusplus
-extern "C" {
-#endif
-
 enum _sge_err_t {
    SGE_ERR_SUCCESS = 0,
    SGE_ERR_MEMORY,
@@ -44,7 +40,7 @@ enum _sge_err_t {
 
 typedef enum _sge_err_t sge_err_t;
 
-void 
+void
 sge_err_init(void);
 
 void
@@ -61,7 +57,3 @@ sge_err_has_error(void);
 
 void
 sge_err_clear(void); 
-
-#ifdef __cplusplus
-}
-#endif

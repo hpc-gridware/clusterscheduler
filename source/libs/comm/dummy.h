@@ -29,14 +29,6 @@
  *  All Rights Reserved.
  *
  ************************************************************************/
-/*___INFO__MARK_END__*/       
+/*___INFO__MARK_END__*/
 
-#ifdef __cplusplus
-extern "C" {
-#endif
-
-int dummy(char* str); 
-
-#ifdef __cplusplus
-}
-#endif
+int dummy(char *str);

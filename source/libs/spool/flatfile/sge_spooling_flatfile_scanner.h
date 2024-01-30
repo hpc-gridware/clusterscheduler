@@ -29,14 +29,10 @@
  *   All Rights Reserved.
  *
  ************************************************************************/
-/*___INFO__MARK_END__*/       
+/*___INFO__MARK_END__*/
 
 #include <sys/types.h>
 #include <stdio.h>
-
-#ifdef __cplusplus
-extern "C" {
-#endif
 
 typedef enum {
    SPFT_INT = 1,
@@ -58,9 +54,7 @@ extern int spool_finish_line;
 extern char *spool_text;
 
 int spool_lex(void);
-int spool_scanner_initialize(FILE *input);
-void spool_scanner_shutdown(void);
 
-#ifdef __cplusplus
-}
-#endif
+int spool_scanner_initialize(FILE *input);
+
+void spool_scanner_shutdown(void);

@@ -34,19 +34,15 @@
 #include <stdio.h>
 #include <sys/time.h>
 #include <sys/types.h>
-#include <time.h>  
+#include <time.h>
 #include <unistd.h>
 
 #include "basis_types.h"
 
-#ifdef __cplusplus
-extern "C" {
-#endif
-
 /* On some systems, FOPEN is already defined as value -1 */
 #undef FOPEN
 
-#define FOPEN(var,fname,fmode) \
+#define FOPEN(var, fname, fmode) \
    if((var = fopen(fname,fmode)) == NULL) { \
       goto FOPEN_ERROR; \
    }
@@ -134,29 +130,25 @@ extern "C" {
       } \
    }
 
-#define FCLOSE_IGNORE_ERROR(x) fclose(x) 
+#define FCLOSE_IGNORE_ERROR(x) fclose(x)
 
-pid_t sge_peopen(const char *shell, int login_shell, const char *command, 
-                 const char *user, char **env, FILE **fp_in, FILE **fp_out, 
+pid_t sge_peopen(const char *shell, int login_shell, const char *command,
+                 const char *user, char **env, FILE **fp_in, FILE **fp_out,
                  FILE **fp_err, bool null_stderr);
- 
-int sge_peclose(pid_t pid, FILE *fp_in, FILE *fp_out, FILE *fp_err, 
-                struct timeval *timeout); 
+
+int sge_peclose(pid_t pid, FILE *fp_in, FILE *fp_out, FILE *fp_err,
+                struct timeval *timeout);
 
 void print_option_syntax(FILE *fp, const char *option, const char *meaning);
 
 bool sge_check_stdout_stream(FILE *file, int fd);
 
 pid_t sge_peopen_r(const char *shell, int login_shell, const char *command,
-                 const char *user, char **env,  FILE **fp_in, FILE **fp_out,
-                 FILE **fp_err, bool null_stderr);
+                   const char *user, char **env, FILE **fp_in, FILE **fp_out,
+                   FILE **fp_err, bool null_stderr);
 
 #if defined(SOLARIS)
 #define SGE_DEFAULT_PATH "/usr/local/bin:/bin:/usr/bin:/usr/ucb"
 #else
 #define SGE_DEFAULT_PATH "/usr/local/bin:/bin:/usr/bin"
-#endif
-
-#ifdef __cplusplus
-}
 #endif
