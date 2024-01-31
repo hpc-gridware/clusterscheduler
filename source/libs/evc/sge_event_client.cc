@@ -41,6 +41,7 @@
 #include "uti/sge_time.h"
 #include "uti/sge_error_class.h"
 #include "uti/sge_mtutil.h"
+#include "uti/sge_bootstrap.h"
 
 #include "comm/commlib.h"
 
@@ -683,7 +684,7 @@ sge_evc_class_create(sge_gdi_ctx_class_t *sge_gdi_ctx, ev_registration_id reg_id
    /*
    ** get type of connection internal/external
    */
-   is_qmaster_internal = sge_gdi_ctx->is_qmaster_internal_client(sge_gdi_ctx);
+   is_qmaster_internal = bootstrap_is_qmaster_internal();
    
    DPRINTF(("creating %s event client context\n", is_qmaster_internal ? "internal" : "external"));
 
@@ -3177,7 +3178,7 @@ static ec_control_t *ec2_get_event_control(sge_evc_class_t *thiz) {
    DENTER(EVC_LAYER);
    if (thiz && thiz->ec_is_initialized(thiz)) {
       sge_gdi_ctx_class_t *gdi_ctx = thiz->get_gdi_ctx(thiz);
-      if (gdi_ctx && gdi_ctx->is_qmaster_internal_client(gdi_ctx)) {
+      if (gdi_ctx && bootstrap_is_qmaster_internal()) {
          sge_evc_t *sge_evc = (sge_evc_t*)thiz->sge_evc_handle;
          event_control = &(sge_evc->event_control);
       }

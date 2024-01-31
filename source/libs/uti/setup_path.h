@@ -106,8 +106,6 @@ struct sge_path_state_class_str {
 
    void (*dprintf)(sge_path_state_class_t *thiz);
 
-   const char *(*get_sge_root)(sge_path_state_class_t *thiz);
-
    const char *(*get_cell_root)(sge_path_state_class_t *thiz);
 
    const char *(*get_bootstrap_file)(sge_path_state_class_t *thiz);
@@ -121,8 +119,6 @@ struct sge_path_state_class_str {
    const char *(*get_shadow_masters_file)(sge_path_state_class_t *thiz);
 
    const char *(*get_alias_file)(sge_path_state_class_t *thiz);
-
-   void (*set_sge_root)(sge_path_state_class_t *thiz, const char *sge_root);
 
    void (*set_cell_root)(sge_path_state_class_t *thiz, const char *cell_root);
 

@@ -131,7 +131,7 @@ main(int argc, char **argv)
 
    prog_number = uti_state_get_mewho();
    myuid = ctx->get_uid(ctx);
-   sge_root = ctx->get_sge_root(ctx);
+   sge_root = bootstrap_get_sge_root();
    cell_root = ctx->get_cell_root(ctx);
    username = ctx->get_username(ctx);
    qualified_hostname = uti_state_get_qualified_hostname();

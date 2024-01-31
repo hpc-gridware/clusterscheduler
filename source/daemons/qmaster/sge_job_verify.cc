@@ -663,7 +663,7 @@ sge_job_verify_adjust(sge_gdi_ctx_class_t *ctx, lListElem *jep, lList **alpp, lL
    ** This also creates a forwardable credential for the user.
    */
    if (mconf_get_do_credentials()) {
-      const char *sge_root = ctx->get_sge_root(ctx);
+      const char *sge_root = bootstrap_get_sge_root();
 
       if (store_sec_cred(sge_root, packet, jep, mconf_get_do_authentication(), alpp) != 0) {
          DRETURN(STATUS_EUNKNOWN);

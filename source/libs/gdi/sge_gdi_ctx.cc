@@ -121,7 +121,6 @@ typedef struct {
    int last_commlib_error;
    sge_error_class_t *eh;
 
-   bool is_qmaster_internal_client;
    bool is_setup;
    u_long32 last_qmaster_file_read;
 } sge_gdi_ctx_t;
@@ -256,7 +255,6 @@ static const char* get_thread_name(sge_gdi_ctx_class_t *thiz);
 static const char* get_master(sge_gdi_ctx_class_t *thiz, bool reread);
 static const char* get_username(sge_gdi_ctx_class_t *thiz);
 static const char* get_cell_root(sge_gdi_ctx_class_t *thiz);
-static const char* get_sge_root(sge_gdi_ctx_class_t *thiz);
 static const char* get_groupname(sge_gdi_ctx_class_t *thiz);
 static uid_t ctx_get_uid(sge_gdi_ctx_class_t *thiz);
 static gid_t ctx_get_gid(sge_gdi_ctx_class_t *thiz);
@@ -269,7 +267,6 @@ static const char* get_private_key(sge_gdi_ctx_class_t *thiz);
 static const char* get_certificate(sge_gdi_ctx_class_t *thiz);
 static int ctx_get_last_commlib_error(sge_gdi_ctx_class_t *thiz);
 static void ctx_set_last_commlib_error(sge_gdi_ctx_class_t *thiz, int cl_error);
-static bool ctx_is_qmaster_internal_client(sge_gdi_ctx_class_t *thiz);
 
 static int sge_gdi_ctx_class_prepare_enroll(sge_gdi_ctx_class_t *thiz);
 static int sge_gdi_ctx_class_connect(sge_gdi_ctx_class_t *thiz);
@@ -285,11 +282,9 @@ static void sge_gdi_ctx_class_dprintf(sge_gdi_ctx_class_t *ctx);
 
 sge_gdi_ctx_class_t *
 sge_gdi_ctx_class_create(int prog_number, const char *component_name,
-                         int thread_number, const char *thread_name,
+                         const char *thread_name,
                          const char *username, const char *groupname,
-                         const char *sge_root, const char *sge_cell,
-                         int sge_qmaster_port, int sge_execd_port,
-                         bool from_services, bool is_qmaster_internal_client,
+                         bool is_qmaster_internal_client,
                          lList **alpp)
 {
    sge_gdi_ctx_class_t *ret = (sge_gdi_ctx_class_t *)sge_malloc(sizeof(sge_gdi_ctx_class_t));
@@ -332,7 +327,6 @@ sge_gdi_ctx_class_create(int prog_number, const char *component_name,
    ret->get_reporting_file = get_reporting_file;
    ret->get_shadow_master_file = get_shadow_master_file;
    ret->get_cell_root = get_cell_root;
-   ret->get_sge_root = get_sge_root;
    ret->get_groupname = get_groupname;
    ret->get_uid = ctx_get_uid;
    ret->get_gid = ctx_get_gid;
@@ -340,7 +334,6 @@ sge_gdi_ctx_class_create(int prog_number, const char *component_name,
 
    ret->get_private_key = get_private_key;
    ret->get_certificate = get_certificate;
-   ret->is_qmaster_internal_client = ctx_is_qmaster_internal_client;
 
    ret->dprintf = sge_gdi_ctx_class_dprintf;
 
@@ -348,8 +341,7 @@ sge_gdi_ctx_class_create(int prog_number, const char *component_name,
    memset(ret->sge_gdi_ctx_handle, 0, sizeof(sge_gdi_ctx_t));
 
    if (!ret->sge_gdi_ctx_handle) {
-      answer_list_add_sprintf(alpp, STATUS_EMALLOC,
-                              ANSWER_QUALITY_ERROR, MSG_MEMORY_MALLOCFAILED);
+      answer_list_add_sprintf(alpp, STATUS_EMALLOC, ANSWER_QUALITY_ERROR, MSG_MEMORY_MALLOCFAILED);
       sge_gdi_ctx_class_destroy(&ret);
       DRETURN(NULL);
    }
@@ -360,14 +352,12 @@ sge_gdi_ctx_class_create(int prog_number, const char *component_name,
    gdi_ctx = (sge_gdi_ctx_t*)ret->sge_gdi_ctx_handle;
    gdi_ctx->eh = sge_error_class_create();
    if (!gdi_ctx->eh) {
-      answer_list_add_sprintf(alpp, STATUS_EMALLOC,
-                              ANSWER_QUALITY_ERROR, MSG_MEMORY_MALLOCFAILED);
+      answer_list_add_sprintf(alpp, STATUS_EMALLOC, ANSWER_QUALITY_ERROR, MSG_MEMORY_MALLOCFAILED);
       DRETURN(NULL);
    }
 
 
-   if (!sge_gdi_ctx_setup(ret, prog_number, component_name, thread_name,
-                          username, groupname, is_qmaster_internal_client)) {
+   if (!sge_gdi_ctx_setup(ret, prog_number, component_name, thread_name, username, groupname, is_qmaster_internal_client)) {
       sge_gdi_ctx_class_get_errors(ret, alpp, true);
       sge_gdi_ctx_class_destroy(&ret);
       DRETURN(NULL);
@@ -496,7 +486,7 @@ sge_gdi_ctx_setup(sge_gdi_ctx_class_t *thiz, int prog_number, const char* compon
    /* TODO: shall we do that here ? */
    lInit(nmv);
 
-   es->is_qmaster_internal_client = qmaster_internal_client;
+   bootstrap_set_qmaster_internal(qmaster_internal_client);
 
    if (feature_initialize_from_string(bootstrap_get_security_mode())) {
       CRITICAL((SGE_EVENT, "feature_initialize_from_string() failed"));
@@ -504,14 +494,6 @@ sge_gdi_ctx_setup(sge_gdi_ctx_class_t *thiz, int prog_number, const char* compon
    }
 
 #if 1
-   {
-      sge_prog_state_class_t *p = sge_prog_state_class_create(prog_number, eh);
-      if (!p) {
-         CRITICAL((SGE_EVENT, "sge_prog_state_class_create() failed"));
-         DRETURN(false);
-      }
-   }
-
    es->sge_path_state_obj = sge_path_state_class_create(eh);
    if (!es->sge_path_state_obj) {
       CRITICAL((SGE_EVENT, "sge_path_state_class_create() failed"));
@@ -1237,16 +1219,6 @@ static const char* get_cell_root(sge_gdi_ctx_class_t *thiz) {
    DRETURN(cell_root);
 }
 
-static const char* get_sge_root(sge_gdi_ctx_class_t *thiz) {
-   sge_path_state_class_t* path_state = thiz->get_sge_path_state(thiz);
-   const char *sge_root = NULL;
-
-   DENTER(BASIS_LAYER);
-   sge_root = path_state->get_sge_root(path_state);
-   DRETURN(sge_root);
-}
-
-
 static const char* get_bootstrap_file(sge_gdi_ctx_class_t *thiz) {
    sge_path_state_class_t *path_state = thiz->get_sge_path_state(thiz);
    return path_state->get_bootstrap_file(path_state);
@@ -1303,12 +1275,6 @@ static gid_t ctx_get_gid(sge_gdi_ctx_class_t *thiz) {
    sge_gdi_ctx_t *es = (sge_gdi_ctx_t *) thiz->sge_gdi_ctx_handle;
    return es->gid;
 }
-
-static bool ctx_is_qmaster_internal_client(sge_gdi_ctx_class_t *thiz) {
-   sge_gdi_ctx_t *es = (sge_gdi_ctx_t *) thiz->sge_gdi_ctx_handle;
-   return es->is_qmaster_internal_client;
-}
-
 
 static int sge_gdi_ctx_log_flush_func(cl_raw_list_t* list_p)
 {
@@ -1385,10 +1351,6 @@ sge_setup2(sge_gdi_ctx_class_t **context, u_long32 progid, u_long32 thread_id,
    char  user[128] = "";
    char  group[128] = "";
    const char *sge_root = NULL;
-   const char *sge_cell = NULL;
-   u_long32 sge_qmaster_port = 0;
-   u_long32 sge_execd_port = 0;
-   bool from_services = false;
 
    DENTER(TOP_LAYER);
 
@@ -1409,9 +1371,6 @@ sge_setup2(sge_gdi_ctx_class_t **context, u_long32 progid, u_long32 thread_id,
                               ANSWER_QUALITY_CRITICAL, MSG_SGEROOTNOTSET);
       DRETURN(AE_ERROR);
    }
-   sge_cell = getenv("SGE_CELL")?getenv("SGE_CELL"):DEFAULT_CELL;
-   sge_qmaster_port = sge_get_qmaster_port(&from_services);
-   sge_execd_port = sge_get_execd_port();
 
    if (sge_uid2user(geteuid(), user, sizeof(user), MAX_NIS_RETRIES)) {
       answer_list_add_sprintf(alpp, STATUS_ESEMANTIC, ANSWER_QUALITY_CRITICAL, MSG_SYSTEM_RESOLVEUSER);
@@ -1424,10 +1383,8 @@ sge_setup2(sge_gdi_ctx_class_t **context, u_long32 progid, u_long32 thread_id,
    }
 
    /* a dynamic eh handler is created */
-   *context = sge_gdi_ctx_class_create(progid, prognames[progid], thread_id,
+   *context = sge_gdi_ctx_class_create(progid, prognames[progid],
                                        threadnames[thread_id], user, group,
-                                       sge_root, sge_cell, sge_qmaster_port,
-                                       sge_execd_port, from_services,
                                        is_qmaster_intern_client, alpp);
 
    if (*context == NULL) {

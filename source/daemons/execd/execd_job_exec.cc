@@ -362,7 +362,7 @@ static int handle_job(sge_gdi_ctx_class_t *ctx, lListElem *jelem, lListElem *jat
    ** This also creates a forwardable credential for the user.
    */
    if (mconf_get_do_credentials()) {
-      const char *sge_root = ctx->get_sge_root(ctx);
+      const char *sge_root = bootstrap_get_sge_root();
       const char *unqualified_hostname = uti_state_get_unqualified_hostname();
 
       if (store_sec_cred2(sge_root, unqualified_hostname, jelem, mconf_get_do_authentication(), &general, &err_str) != 0) {

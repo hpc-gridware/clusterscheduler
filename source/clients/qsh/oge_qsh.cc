@@ -946,7 +946,7 @@ get_client_name(sge_gdi_ctx_class_t *ctx, int is_rsh, int is_rlogin, int inherit
    u_long32 progid = uti_state_get_mewho();
    const char *qualified_hostname = uti_state_get_qualified_hostname();
    const char *cell_root = ctx->get_cell_root(ctx);
-   const char *sge_root = ctx->get_sge_root(ctx);
+   const char *sge_root = bootstrap_get_sge_root();
 
    DENTER(TOP_LAYER);
 
@@ -1413,7 +1413,7 @@ int main(int argc, char **argv)
    progname = uti_state_get_sge_formal_prog_name();
    unqualified_hostname = uti_state_get_unqualified_hostname();
    qualified_hostname = uti_state_get_qualified_hostname();
-   sge_root = ctx->get_sge_root(ctx);
+   sge_root = bootstrap_get_sge_root();
    cell_root = ctx->get_cell_root(ctx);
    myuid = ctx->get_uid(ctx);
    username = ctx->get_username(ctx);

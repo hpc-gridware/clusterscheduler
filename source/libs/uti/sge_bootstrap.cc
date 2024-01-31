@@ -73,6 +73,8 @@ typedef struct {
    u_long32 sge_execd_port;
    bool from_services;
    bool qmaster_internal;
+
+   // component information
 } sge_bootstrap_tl_t;
 
 static pthread_once_t bootstrap_once = PTHREAD_ONCE_INIT;

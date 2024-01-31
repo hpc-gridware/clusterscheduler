@@ -84,8 +84,6 @@ static bool sge_path_state_setup(sge_path_state_class_t *thiz, sge_error_class_t
 
 static void sge_path_state_dprintf(sge_path_state_class_t *thiz);
 
-static const char *get_sge_root(sge_path_state_class_t *thiz);
-
 static const char *get_cell_root(sge_path_state_class_t *thiz);
 
 static const char *get_bootstrap_file(sge_path_state_class_t *thiz);
@@ -99,8 +97,6 @@ static const char *get_reporting_file(sge_path_state_class_t *thiz);
 static const char *get_shadow_masters_file(sge_path_state_class_t *thiz);
 
 static const char *get_alias_file(sge_path_state_class_t *thiz);
-
-static void set_sge_root(sge_path_state_class_t *thiz, const char *sge_root);
 
 static void set_cell_root(sge_path_state_class_t *thiz, const char *cell_root);
 
@@ -533,7 +529,6 @@ sge_path_state_class_t *sge_path_state_class_create(sge_error_class_t *eh) {
 
    ret->dprintf = sge_path_state_dprintf;
 
-   ret->get_sge_root = get_sge_root;
    ret->get_cell_root = get_cell_root;
    ret->get_bootstrap_file = get_bootstrap_file;
    ret->get_act_qmaster_file = get_act_qmaster_file;
@@ -542,7 +537,6 @@ sge_path_state_class_t *sge_path_state_class_create(sge_error_class_t *eh) {
    ret->get_shadow_masters_file = get_shadow_masters_file;
    ret->get_alias_file = get_alias_file;
 
-   ret->set_sge_root = set_sge_root;
    ret->set_cell_root = set_cell_root;
    ret->set_conf_file = set_conf_file;
    ret->set_bootstrap_file = set_bootstrap_file;
@@ -607,8 +601,6 @@ static bool sge_path_state_setup(sge_path_state_class_t *thiz, sge_error_class_t
       eh->error(eh, STATUS_EUNKNOWN, ANSWER_QUALITY_ERROR, MSG_UTI_SGEROOTNOTADIRECTORY_S, sge_root);
       DRETURN(false);
    }
-
-   thiz->set_sge_root(thiz, sge_root);
 
    /* cell_root */
    sge_dstring_sprintf(&bw, "%s"PATH_SEPARATOR"%s", sge_root, sge_cell);
@@ -678,11 +670,6 @@ static void sge_path_state_dprintf(sge_path_state_class_t *thiz) {
    DRETURN_VOID;
 }
 
-static const char *get_sge_root(sge_path_state_class_t *thiz) {
-   sge_path_state_t *es = (sge_path_state_t *) thiz->sge_path_state_handle;
-   return es->sge_root;
-}
-
 static const char *get_cell_root(sge_path_state_class_t *thiz) {
    sge_path_state_t *es = (sge_path_state_t *) thiz->sge_path_state_handle;
    return es->cell_root;
@@ -716,12 +703,6 @@ static const char *get_shadow_masters_file(sge_path_state_class_t *thiz) {
 static const char *get_alias_file(sge_path_state_class_t *thiz) {
    sge_path_state_t *es = (sge_path_state_t *) thiz->sge_path_state_handle;
    return es->alias_file;
-}
-
-
-static void set_sge_root(sge_path_state_class_t *thiz, const char *sge_root) {
-   sge_path_state_t *es = (sge_path_state_t *) thiz->sge_path_state_handle;
-   es->sge_root = sge_strdup(es->sge_root, sge_root);
 }
 
 static void set_cell_root(sge_path_state_class_t *thiz, const char *cell_root) {

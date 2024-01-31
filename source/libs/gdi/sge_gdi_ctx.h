@@ -54,11 +54,9 @@ sge_setup2(sge_gdi_ctx_class_t **context, u_long32 progid, u_long32 thread_id,
 
 sge_gdi_ctx_class_t *
 sge_gdi_ctx_class_create(int prog_number, const char *component_name,
-                         int thread_number, const char *thread_name,
+                         const char *thread_name,
                          const char* username, const char* groupname, 
-                         const char* sge_root, const char* sge_cell, 
-                         int sge_qmaster_port, int sge_execd_port,
-                         bool from_services, bool is_qmaster_intern_client,
+                         bool is_qmaster_intern_client,
                          lList **alpp);
 
 void sge_gdi_ctx_class_destroy(sge_gdi_ctx_class_t **pst);

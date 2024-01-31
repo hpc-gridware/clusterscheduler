@@ -856,7 +856,7 @@ void remove_acked_job_exit(sge_gdi_ctx_class_t *ctx, u_long32 job_id, u_long32 j
    SGE_STRUCT_STAT statbuf;
    lListElem *jep = NULL, *petep = NULL, *jatep = NULL;
    const char *pe_task_id_str; 
-   const char *sge_root = ctx->get_sge_root(ctx);
+   const char *sge_root = bootstrap_get_sge_root();
 
    DENTER(TOP_LAYER);
 

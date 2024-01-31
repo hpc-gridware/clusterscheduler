@@ -96,63 +96,6 @@ enum {
 
 typedef void (*sge_exit_func_t)(void **ctx_ref, int);
 
-typedef struct sge_prog_state_class_str sge_prog_state_class_t;
-
-struct sge_prog_state_class_str {
-   void *sge_prog_state_handle;
-
-   void (*dprintf)(sge_prog_state_class_t *thiz);
-
-   const char *(*get_sge_formal_prog_name)(sge_prog_state_class_t *thiz);
-
-   const char *(*get_qualified_hostname)(sge_prog_state_class_t *thiz);
-
-   const char *(*get_unqualified_hostname)(sge_prog_state_class_t *thiz);
-
-   u_long32 (*get_who)(sge_prog_state_class_t *thiz);
-
-   u_long32 (*get_uid)(sge_prog_state_class_t *thiz);
-
-   u_long32 (*get_gid)(sge_prog_state_class_t *thiz);
-
-   bool (*get_daemonized)(sge_prog_state_class_t *thiz);
-
-   const char *(*get_user_name)(sge_prog_state_class_t *thiz);
-
-   const char *(*get_default_cell)(sge_prog_state_class_t *thiz);
-
-   bool (*get_exit_on_error)(sge_prog_state_class_t *thiz);
-
-   sge_exit_func_t (*get_exit_func)(sge_prog_state_class_t *thiz);
-
-   void (*set_sge_formal_prog_name)(sge_prog_state_class_t *thiz, const char *prog_name);
-
-   void (*set_qualified_hostname)(sge_prog_state_class_t *thiz, const char *qualified_hostname);
-
-   void (*set_unqualified_hostname)(sge_prog_state_class_t *thiz, const char *unqualified_hostname);
-
-   void (*set_who)(sge_prog_state_class_t *thiz, u_long32 who);
-
-   void (*set_uid)(sge_prog_state_class_t *thiz, u_long32 uid);
-
-   void (*set_gid)(sge_prog_state_class_t *thiz, u_long32 gid);
-
-   void (*set_daemonized)(sge_prog_state_class_t *thiz, bool daemonized);
-
-   void (*set_user_name)(sge_prog_state_class_t *thiz, const char *user_name);
-
-   void (*set_default_cell)(sge_prog_state_class_t *thiz, const char *default_cell);
-
-   void (*set_exit_on_error)(sge_prog_state_class_t *thiz, bool exit_on_error);
-
-   void (*set_exit_func)(sge_prog_state_class_t *thiz, sge_exit_func_t exit_func);
-};
-
-sge_prog_state_class_t *
-sge_prog_state_class_create(u_long32 program_number, sge_error_class_t *eh);
-
-void sge_prog_state_class_destroy(sge_prog_state_class_t **pst);
-
 extern const char *prognames[];
 extern const char *threadnames[];
 
@@ -178,8 +121,6 @@ const char *uti_state_get_user_name(void);
 
 const char *uti_state_get_default_cell(void);
 
-bool uti_state_get_exit_on_error(void);
-
 sge_exit_func_t uti_state_get_exit_func(void);
 
 void uti_state_set_qualified_hostname(const char *s);
@@ -188,10 +129,6 @@ void uti_state_set_daemonized(int daemonized);
 
 void uti_state_set_mewho(u_long32 who);
 
-void uti_state_set_exit_on_error(bool i);
-
 void uti_state_set_exit_func(sge_exit_func_t f);
-
-int uti_state_reresolve_qualified_hostname(void);
 
 #endif
