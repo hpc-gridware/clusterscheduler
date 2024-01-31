@@ -1,15 +1,23 @@
 {
 	"className":	"SubordinateQueue",
-	"summary":	"@todo add summary",
+	"summary":	"SubordinateQueue",
 	"description":	[{
-			"line":	"@todo add description"
+			"line":	"Subordinate (queue instances) are defined in a sub list of a queue instance."
+         }, { "line": "We want to use the configuration parameter subordinate_list"
+         }, { "line": "for both the classic queue instance-wise suspend on subordinate"
+         }, { "line": "and the slot-wise suspend on subordinate."
+         }, { "line": "The fields SO_name and SO_threshold are used by the queue instance-wise"
+         }, { "line": "suspend on subordinate, SO_name, SO_slots_sum, SO_seq_no and SO_action"
+         }, { "line": "are used by the slot-wise suspend on subordinate."
+         }, { "line": "If SO_slots_sum is 0, it's queue instance-wise, otherwise slot-wise"
+         }, { "line": "suspend on subordinate that is configured."
 		}],
 	"cullPrefix":	"SO",
 	"attributes":	[{
 			"name":	"name",
-			"summary":	"@todo add summary",
+			"summary":	"Subordinate Queue Name",
 			"description":	[{
-					"line":	"@todo add description"
+					"line":	"Name of the subordinate queue."
 				}],
 			"type":	"lStringT",
 			"flags":	[{
@@ -19,9 +27,9 @@
 				}]
 		}, {
 			"name":	"threshold",
-			"summary":	"@todo add summary",
+			"summary":	"Threshold",
 			"description":	[{
-					"line":	"@todo add description"
+					"line":	"The threshold (slots) defines when the subordination action (suspend) will be triggered."
 				}],
 			"type":	"lUlongT",
 			"flags":	[{
@@ -29,9 +37,9 @@
 				}]
 		}, {
 			"name":	"slots_sum",
-			"summary":	"@todo add summary",
+			"summary":	"Slots Sum",
 			"description":	[{
-					"line":	"@todo add description"
+					"line":	"Used for slot-wise SOS."
 				}],
 			"type":	"lUlongT",
 			"flags":	[{
@@ -39,9 +47,9 @@
 				}]
 		}, {
 			"name":	"seq_no",
-			"summary":	"@todo add summary",
+			"summary":	"Sequence Number",
 			"description":	[{
-					"line":	"@todo add description"
+					"line":	"Used for slot-wise SOS."
 				}],
 			"type":	"lUlongT",
 			"flags":	[{
@@ -49,9 +57,11 @@
 				}]
 		}, {
 			"name":	"action",
-			"summary":	"@todo add summary",
+			"summary":	"Action",
 			"description":	[{
-					"line":	"@todo add description"
+					"line":	"Subordination action, ussed for slot-wise SOS:"
+					}, { "line":	"- SO_ACTION_SR: suspend the task with the shortest runtime"
+					}, { "line":	"- SO_ACTION_LR: suspend the task with the longest runtime"
 				}],
 			"type":	"lUlongT",
 			"flags":	[{

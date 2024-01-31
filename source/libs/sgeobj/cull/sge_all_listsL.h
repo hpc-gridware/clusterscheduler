@@ -318,7 +318,6 @@ lNameSpace nmv[] = {
 #endif
 
 #else
-
 #ifdef __cplusplus
 extern "C" {
 #endif

@@ -40,24 +40,34 @@ extern "C" {
 #endif
 
 /**
-* @brief @todo add summary
+* @brief SubordinateQueue
 *
-* @todo add description
+* Subordinate (queue instances) are defined in a sub list of a queue instance.
+* We want to use the configuration parameter subordinate_list
+* for both the classic queue instance-wise suspend on subordinate
+* and the slot-wise suspend on subordinate.
+* The fields SO_name and SO_threshold are used by the queue instance-wise
+* suspend on subordinate, SO_name, SO_slots_sum, SO_seq_no and SO_action
+* are used by the slot-wise suspend on subordinate.
+* If SO_slots_sum is 0, it's queue instance-wise, otherwise slot-wise
+* suspend on subordinate that is configured.
 *
-*    SGE_STRING(SO_name) - @todo add summary
-*    @todo add description
+*    SGE_STRING(SO_name) - Subordinate Queue Name
+*    Name of the subordinate queue.
 *
-*    SGE_ULONG(SO_threshold) - @todo add summary
-*    @todo add description
+*    SGE_ULONG(SO_threshold) - Threshold
+*    The threshold (slots) defines when the subordination action (suspend) will be triggered.
 *
-*    SGE_ULONG(SO_slots_sum) - @todo add summary
-*    @todo add description
+*    SGE_ULONG(SO_slots_sum) - Slots Sum
+*    Used for slot-wise SOS.
 *
-*    SGE_ULONG(SO_seq_no) - @todo add summary
-*    @todo add description
+*    SGE_ULONG(SO_seq_no) - Sequence Number
+*    Used for slot-wise SOS.
 *
-*    SGE_ULONG(SO_action) - @todo add summary
-*    @todo add description
+*    SGE_ULONG(SO_action) - Action
+*    Subordination action, ussed for slot-wise SOS:
+*    - SO_ACTION_SR: suspend the task with the shortest runtime
+*    - SO_ACTION_LR: suspend the task with the longest runtime
 *
 */
 
