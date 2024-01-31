@@ -31,7 +31,6 @@
  ************************************************************************/
 /*___INFO__MARK_END__*/
 
-#include "uti/sge_env.h"
 #include "uti/sge_prog.h"
 #include "uti/setup_path.h"
 #include "uti/sge_bootstrap.h"

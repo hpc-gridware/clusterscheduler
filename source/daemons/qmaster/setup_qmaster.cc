@@ -603,7 +603,7 @@ communication_setup(sge_gdi_ctx_class_t *ctx) {
    struct rlimit qmaster_rlimits;
 
    const char *qualified_hostname = uti_state_get_qualified_hostname();
-   u_long32 qmaster_port = ctx->get_sge_qmaster_port(ctx);
+   u_long32 qmaster_port = bootstrap_get_sge_qmaster_port();
    const char *qmaster_spool_dir = bootstrap_get_qmaster_spool_dir();
 
    DENTER(TOP_LAYER);

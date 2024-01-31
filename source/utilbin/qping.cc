@@ -1004,7 +1004,6 @@ int main(int argc, char *argv[]) {
 
    prof_mt_init();
    
-   uidgid_mt_init();
    path_mt_init();
 
    bootstrap_mt_init(); 

@@ -44,10 +44,14 @@
 #include "uti/setup_path.h"
 #include "uti/sge_bootstrap.h"
 #include "uti/sge_arch.h"
+#include "uti/sge_hostname.h"
 
 #include "uti/msg_utilib.h"
 
+#include "sge.h"
+
 typedef struct {
+   // bootstrap file
    char *admin_user;
    char *default_domain;
    char *spooling_method;
@@ -61,6 +65,14 @@ typedef struct {
    int scheduler_thread_count;
    bool job_spooling;
    bool ignore_fqdn;
+
+   // environment
+   char *sge_root;
+   char *sge_cell;
+   u_long32 sge_qmaster_port;
+   u_long32 sge_execd_port;
+   bool from_services;
+   bool qmaster_internal;
 } sge_bootstrap_tl_t;
 
 static pthread_once_t bootstrap_once = PTHREAD_ONCE_INIT;
@@ -156,9 +168,48 @@ set_job_spooling(sge_bootstrap_tl_t *tl, bool job_spooling) {
 }
 
 static void
+set_sge_root(sge_bootstrap_tl_t *tl, const char *sge_root) {
+   tl->sge_root = sge_strdup(tl->sge_root, sge_root);
+}
+
+static void
+set_sge_cell(sge_bootstrap_tl_t *tl, const char *sge_cell) {
+   tl->sge_cell = sge_strdup(tl->sge_cell, sge_cell);
+}
+
+static void
+set_sge_qmaster_port(sge_bootstrap_tl_t *tl, u_long32 sge_qmaster_port) {
+   tl->sge_qmaster_port = sge_qmaster_port;
+}
+
+static void
+set_sge_execd_port(sge_bootstrap_tl_t *tl, u_long32 sge_execd_port) {
+   tl->sge_execd_port = sge_execd_port;
+}
+
+static void
+set_from_services(sge_bootstrap_tl_t *tl, bool from_services) {
+   tl->from_services = from_services;
+}
+
+static void
+set_qmaster_internal(sge_bootstrap_tl_t *tl, bool qmaster_internal) {
+   tl->qmaster_internal = qmaster_internal;
+}
+
+static void
 log_parameter(sge_bootstrap_tl_t *tl) {
    DENTER(TOP_LAYER);
 
+   DPRINTF(("ENVIRONMENT"))
+   DPRINTF(("sge_root            >%s<\n", tl->sge_root ? tl->sge_root : "NA"));
+   DPRINTF(("sge_cell            >%s<\n", tl->sge_cell ? tl->sge_cell : "NA"));
+   DPRINTF(("sge_qmaster_port    >%d<\n", tl->sge_qmaster_port));
+   DPRINTF(("sge_execd_port      >%d<\n", tl->sge_execd_port));
+   DPRINTF(("from_services       >%s<\n", tl->from_services ? "true" : "false"));
+   DPRINTF(("qmaster_internal    >%s<\n", tl->qmaster_internal ? "true" : "false"));
+
+   DPRINTF(("BOOTSTRAP FILE"))
    DPRINTF(("admin_user          >%s<\n", tl->admin_user));
    DPRINTF(("default_domain      >%s<\n", tl->default_domain));
    DPRINTF(("ignore_fqdn         >%s<\n", tl->ignore_fqdn ? "true" : "false"));
@@ -188,7 +239,42 @@ bootstrap_thread_local_once_init(void) {
 }
 
 static void
-bootstrap_read_file(sge_bootstrap_tl_t *tl) {
+bootstrap_init_from_environment(sge_bootstrap_tl_t *tl) {
+   DENTER(TOP_LAYER);
+
+   set_sge_root(tl, getenv("SGE_ROOT"));
+
+   const char *sge_cell = getenv("SGE_CELL");
+   set_sge_cell(tl, sge_cell != NULL ? sge_cell : DEFAULT_CELL);
+
+   bool from_services;
+   set_sge_qmaster_port(tl, sge_get_qmaster_port(&from_services));
+   set_from_services(tl, from_services);
+
+   set_sge_execd_port(tl, sge_get_execd_port());
+
+   set_qmaster_internal(tl, false);
+
+#if 0
+   char  user[128] = "";
+   if (sge_uid2user(geteuid(), user, sizeof(user), MAX_NIS_RETRIES)) {
+      CRITICAL((SGE_EVENT, MSG_SYSTEM_RESOLVEUSER));
+      DRETURN_VOID;
+   }
+
+   char  group[128] = "";
+   if (sge_gid2group(getegid(), group, sizeof(group), MAX_NIS_RETRIES)) {
+      CRITICAL((SGE_EVENT, MSG_SYSTEM_RESOLVEGROUP));
+      DRETURN_VOID;
+   }
+#endif
+
+   DRETURN_VOID;
+}
+
+
+static void
+bootstrap_init_from_file(sge_bootstrap_tl_t *tl) {
 #define NUM_BOOTSTRAP 14
 #define NUM_REQ_BOOTSTRAP 9
    /*const char **/
@@ -216,6 +302,7 @@ bootstrap_read_file(sge_bootstrap_tl_t *tl) {
 
    DENTER(TOP_LAYER);
 
+   // EB: OGE-116 TODO path should depend only on functions provided by this module
    // build path of the bootstrap files
    sge_dstring_init(&path, buffer, sizeof(buffer));
    sge_root = sge_get_root_dir(0, buffer, sizeof(buffer)-1, 1);
@@ -282,13 +369,22 @@ static void
 bootstrap_tl_init(sge_bootstrap_tl_t *tl) {
    DENTER(TOP_LAYER);
    memset(tl, 0, sizeof(sge_bootstrap_tl_t));
-   bootstrap_read_file(tl);
+
+   // do environment setup first because file based init depends on that
+   bootstrap_init_from_environment(tl);
+   bootstrap_init_from_file(tl);
    DRETURN_VOID;
 }
 
 static void
 bootstrap_thread_local_destroy(void *tl) {
    sge_bootstrap_tl_t *_tl = (sge_bootstrap_tl_t *) tl;
+
+   // Environment parameters
+   sge_free(&(_tl->sge_root));
+   sge_free(&(_tl->sge_cell));
+
+   // bootstrap file parameters
    sge_free(&(_tl->admin_user));
    sge_free(&(_tl->default_domain));
    sge_free(&(_tl->spooling_method));
@@ -297,6 +393,8 @@ bootstrap_thread_local_destroy(void *tl) {
    sge_free(&(_tl->binary_path));
    sge_free(&(_tl->qmaster_spool_dir));
    sge_free(&(_tl->security_mode));
+
+   // wrapping structure
    sge_free(&_tl);
 }
 
@@ -459,3 +557,74 @@ void bootstrap_set_job_spooling(bool job_spooling) {
    set_job_spooling(tl, job_spooling);
 }
 
+const char *
+bootstrap_get_sge_root(void) {
+   GET_SPECIFIC(sge_bootstrap_tl_t, tl, bootstrap_tl_init, sge_bootstrap_tl_key, "bootstrap_get_sge_root");
+   return tl->sge_root;
+}
+
+void
+bootstrap_set_sge_root(const char *sge_root) {
+   GET_SPECIFIC(sge_bootstrap_tl_t, tl, bootstrap_tl_init, sge_bootstrap_tl_key, "bootstrap_set_sge_root");
+   set_sge_root(tl, sge_root);
+}
+
+
+const char *
+bootstrap_get_sge_cell(void) {
+   GET_SPECIFIC(sge_bootstrap_tl_t, tl, bootstrap_tl_init, sge_bootstrap_tl_key, "bootstrap_get_sge_cell");
+   return tl->sge_cell;
+}
+
+void
+bootstrap_set_sge_cell(const char *sge_cell) {
+   GET_SPECIFIC(sge_bootstrap_tl_t, tl, bootstrap_tl_init, sge_bootstrap_tl_key, "bootstrap_set_sge_cell");
+   set_sge_cell(tl, sge_cell);
+}
+
+u_long32
+bootstrap_get_sge_qmaster_port(void) {
+   GET_SPECIFIC(sge_bootstrap_tl_t, tl, bootstrap_tl_init, sge_bootstrap_tl_key, "bootstrap_get_sge_qmaster_port");
+   return tl->sge_qmaster_port;
+}
+
+void bootstrap_set_sge_qmaster_port(u_long32 sge_qmaster_port) {
+   GET_SPECIFIC(sge_bootstrap_tl_t, tl, bootstrap_tl_init, sge_bootstrap_tl_key, "bootstrap_set_sge_qmaster_port");
+   set_sge_qmaster_port(tl, sge_qmaster_port);
+}
+
+u_long32
+bootstrap_get_sge_execd_port(void) {
+   GET_SPECIFIC(sge_bootstrap_tl_t, tl, bootstrap_tl_init, sge_bootstrap_tl_key, "bootstrap_get_sge_execd_port");
+   return tl->sge_execd_port;
+}
+
+void
+bootstrap_set_sge_execd_port(u_long32 sge_execd_port) {
+   GET_SPECIFIC(sge_bootstrap_tl_t, tl, bootstrap_tl_init, sge_bootstrap_tl_key, "bootstrap_set_sge_execd_port");
+   set_sge_execd_port(tl, sge_execd_port);
+}
+
+bool
+bootstrap_is_from_services(void) {
+   GET_SPECIFIC(sge_bootstrap_tl_t, tl, bootstrap_tl_init, sge_bootstrap_tl_key, "bootstrap_is_from_services");
+   return tl->from_services;
+}
+
+void
+bootstrap_set_from_services(bool from_services) {
+   GET_SPECIFIC(sge_bootstrap_tl_t, tl, bootstrap_tl_init, sge_bootstrap_tl_key, "bootstrap_set_from_services");
+   set_from_services(tl, from_services);
+}
+
+bool
+bootstrap_is_qmaster_internal(void) {
+   GET_SPECIFIC(sge_bootstrap_tl_t, tl, bootstrap_tl_init, sge_bootstrap_tl_key, "bootstrap_is_qmaster_internal");
+   return tl->qmaster_internal;
+}
+
+void
+bootstrap_set_qmaster_internal(bool qmaster_internal) {
+   GET_SPECIFIC(sge_bootstrap_tl_t, tl, bootstrap_tl_init, sge_bootstrap_tl_key, "bootstrap_set_qmaster_internal");
+   set_qmaster_internal(tl, qmaster_internal);
+}

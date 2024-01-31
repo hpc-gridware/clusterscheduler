@@ -33,7 +33,7 @@
 
 #include "basis_types.h"
 #include "sge_arch.h"
-#include "sge_env.h"
+#include "uti/sge_error_class.h"
 
 #define SGE_PREFIX      "sge_"
 #define SGE_COMMD       "sge_commd"
@@ -149,7 +149,7 @@ struct sge_prog_state_class_str {
 };
 
 sge_prog_state_class_t *
-sge_prog_state_class_create(sge_env_state_class_t *sge_env, u_long32 program_number, sge_error_class_t *eh);
+sge_prog_state_class_create(u_long32 program_number, sge_error_class_t *eh);
 
 void sge_prog_state_class_destroy(sge_prog_state_class_t **pst);
 

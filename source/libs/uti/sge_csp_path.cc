@@ -50,6 +50,7 @@
 #include "uti/sge_uidgid.h"
 #include "uti/sge_prog.h"
 #include "uti/sge_csp_path.h"
+#include "uti/sge_bootstrap.h"
 
 #include "sgeobj/sge_answer.h"
 
@@ -85,9 +86,7 @@ typedef struct {
    cl_ssl_verify_func_t verify_func; /* cert verify function */
 } sge_csp_path_t;
 
-static bool sge_csp_path_setup(sge_csp_path_class_t *thiz, 
-                               sge_env_state_class_t *sge_env, 
-                               sge_error_class_t *eh);
+static bool sge_csp_path_setup(sge_csp_path_class_t *thiz, sge_error_class_t *eh);
 
 static void sge_csp_path_destroy(void *theState);
 
@@ -226,7 +225,7 @@ static bool ssl_cert_verify_func(cl_ssl_verify_mode_t mode, bool service_mode, c
 
 
 sge_csp_path_class_t *
-sge_csp_path_class_create(sge_env_state_class_t *sge_env, sge_error_class_t *eh)
+sge_csp_path_class_create(sge_error_class_t *eh)
 {
    sge_csp_path_class_t *ret = NULL;
 
@@ -272,7 +271,7 @@ sge_csp_path_class_create(sge_env_state_class_t *sge_env, sge_error_class_t *eh)
    }
    memset(ret->sge_csp_path_handle, 0, sizeof(sge_csp_path_t));
 
-   if (!sge_csp_path_setup(ret, sge_env, eh)) {
+   if (!sge_csp_path_setup(ret, eh)) {
       sge_csp_path_class_destroy(&ret);
       DRETURN(NULL);
    }
@@ -292,7 +291,7 @@ void sge_csp_path_class_destroy(sge_csp_path_class_t **pst) {
 }
 
 static bool 
-sge_csp_path_setup(sge_csp_path_class_t *thiz, sge_env_state_class_t *sge_env, sge_error_class_t *eh)
+sge_csp_path_setup(sge_csp_path_class_t *thiz, sge_error_class_t *eh)
 {
    char buffer[2*1024];
    dstring bw;
@@ -312,16 +311,11 @@ sge_csp_path_setup(sge_csp_path_class_t *thiz, sge_env_state_class_t *sge_env, s
 
    DENTER(TOP_LAYER);
 
-   if (!sge_env) {
-      eh->error(eh, STATUS_EUNKNOWN, ANSWER_QUALITY_ERROR, "sge_env is NULL");
-      DRETURN(false);
-   }
-
    /* get the necessary info to build the paths */
-   sge_root = sge_env->get_sge_root(sge_env);
-   sge_cell = sge_env->get_sge_cell(sge_env);
-   sge_qmaster_port = sge_env->get_sge_qmaster_port(sge_env);
-   is_from_services = sge_env->is_from_services(sge_env);
+   sge_root = bootstrap_get_sge_root();
+   sge_cell = bootstrap_get_sge_cell();
+   sge_qmaster_port = bootstrap_get_sge_qmaster_port();
+   is_from_services = bootstrap_is_from_services();
    username = uti_state_get_user_name();
 
    DTRACE;

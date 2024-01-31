@@ -34,7 +34,7 @@
 #include "basis_types.h"
 #include "cull/cull_list.h"
 #include "uti/sge_dstring.h"
-#include "uti/sge_env.h"
+#include "uti/sge_error_class.h"
 
 /* These files and directories will be found in COMMON_DIR
  * They must be accessed with an absolute path. Do not use these defines!
@@ -110,8 +110,6 @@ struct sge_path_state_class_str {
 
    const char *(*get_cell_root)(sge_path_state_class_t *thiz);
 
-   const char *(*get_conf_file)(sge_path_state_class_t *thiz);
-
    const char *(*get_bootstrap_file)(sge_path_state_class_t *thiz);
 
    const char *(*get_act_qmaster_file)(sge_path_state_class_t *thiz);
@@ -119,8 +117,6 @@ struct sge_path_state_class_str {
    const char *(*get_acct_file)(sge_path_state_class_t *thiz);
 
    const char *(*get_reporting_file)(sge_path_state_class_t *thiz);
-
-   const char *(*get_local_conf_dir)(sge_path_state_class_t *thiz);
 
    const char *(*get_shadow_masters_file)(sge_path_state_class_t *thiz);
 
@@ -149,6 +145,6 @@ struct sge_path_state_class_str {
    void (*set_sched_conf_file)(sge_path_state_class_t *thiz, const char *sched_conf_file);
 };
 
-sge_path_state_class_t *sge_path_state_class_create(sge_env_state_class_t *sge_env, sge_error_class_t *eh);
+sge_path_state_class_t *sge_path_state_class_create(sge_error_class_t *eh);
 
 void sge_path_state_class_destroy(sge_path_state_class_t **pst);

@@ -557,8 +557,8 @@ sge_gdi2_send_any_request(sge_gdi_ctx_class_t *ctx, int synchron, u_long32 *mid,
    unsigned long dummy_mid = 0;
    unsigned long* mid_pointer = NULL;
 
-   int to_port   = ctx->get_sge_qmaster_port(ctx);
-   
+   int to_port   = bootstrap_get_sge_qmaster_port();
+
    DENTER(TOP_LAYER);
 
 
@@ -1232,8 +1232,7 @@ gdi2_receive_message(sge_gdi_ctx_class_t *sge_ctx, char *fromcommproc, u_short *
    int use_execd_handle = 0;
 
    u_long32 progid = uti_state_get_mewho();
-   u_long32 sge_execd_port = sge_ctx->get_sge_execd_port(sge_ctx);
-
+   u_long32 sge_execd_port = bootstrap_get_sge_execd_port();
 
    DENTER(GDI_LAYER);
 

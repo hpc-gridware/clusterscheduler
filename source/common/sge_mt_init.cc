@@ -78,7 +78,6 @@ void sge_mt_init(void)
    obj_mt_init(); 
 
    prof_mt_init();
-   uidgid_mt_init();
    sge_err_init();
    path_mt_init();
 

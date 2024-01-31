@@ -31,7 +31,6 @@
  ************************************************************************/
 /*___INFO__MARK_END__*/
 
-#include "uti/sge_env.h"
 #include "uti/sge_prog.h"
 #include "uti/setup_path.h"
 #include "uti/sge_bootstrap.h"
@@ -65,7 +64,6 @@ struct sge_gdi_ctx_class_str {
                                           lCondition *cp, lEnumeration *enp, 
                                           state_gdi_multi *state, bool do_copy);
   
-   sge_env_state_class_t* (*get_sge_env_state)(sge_gdi_ctx_class_t *thiz);
    sge_path_state_class_t* (*get_sge_path_state)(sge_gdi_ctx_class_t *thiz);
 
    int (*prepare_enroll)(sge_gdi_ctx_class_t *thiz);
@@ -74,8 +72,6 @@ struct sge_gdi_ctx_class_str {
    lList* (*tsm)(sge_gdi_ctx_class_t *thiz, const char *schedd_name, const char *cell);
    lList* (*kill)(sge_gdi_ctx_class_t *thiz, lList *id_list, const char *cell, u_long32 option_flags, u_long32 action_flag);
    const char* (*get_master)(sge_gdi_ctx_class_t *thiz, bool reread);
-   u_long32 (*get_sge_qmaster_port)(sge_gdi_ctx_class_t *thiz);
-   u_long32 (*get_sge_execd_port)(sge_gdi_ctx_class_t *thiz);
    const char* (*get_component_name)(sge_gdi_ctx_class_t *thiz);
    const char* (*get_thread_name)(sge_gdi_ctx_class_t *thiz);
    const char* (*get_bootstrap_file)(sge_gdi_ctx_class_t *thiz);

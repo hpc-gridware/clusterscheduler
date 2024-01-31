@@ -12,7 +12,6 @@ set(LIBRARY_SOURCES
         sge_csp_path.cc
         sge_dstring.cc
         sge_edit.cc
-        sge_env.cc
         sge_err.cc
         sge_error_class.cc
         sge_fgl.cc

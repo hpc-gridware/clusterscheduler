@@ -43,6 +43,7 @@
 #include "uti/sge_stdlib.h"
 #include "uti/sge_unistd.h"
 #include "uti/sge_dstring.h"
+#include "uti/sge_bootstrap.h"
 #include "uti/msg_utilib.h"
 
 #include "sgeobj/sge_answer.h"
@@ -79,15 +80,13 @@ static void path_state_init(path_state_t *theState);
 
 typedef path_state_t sge_path_state_t;
 
-static bool sge_path_state_setup(sge_path_state_class_t *thiz, sge_env_state_class_t *sge_env, sge_error_class_t *eh);
+static bool sge_path_state_setup(sge_path_state_class_t *thiz, sge_error_class_t *eh);
 
 static void sge_path_state_dprintf(sge_path_state_class_t *thiz);
 
 static const char *get_sge_root(sge_path_state_class_t *thiz);
 
 static const char *get_cell_root(sge_path_state_class_t *thiz);
-
-static const char *get_conf_file(sge_path_state_class_t *thiz);
 
 static const char *get_bootstrap_file(sge_path_state_class_t *thiz);
 
@@ -96,8 +95,6 @@ static const char *get_act_qmaster_file(sge_path_state_class_t *thiz);
 static const char *get_acct_file(sge_path_state_class_t *thiz);
 
 static const char *get_reporting_file(sge_path_state_class_t *thiz);
-
-static const char *get_local_conf_dir(sge_path_state_class_t *thiz);
 
 static const char *get_shadow_masters_file(sge_path_state_class_t *thiz);
 
@@ -524,7 +521,7 @@ static void path_state_init(path_state_t *theState) {
 
 /*-------------------------------------------------------------------------*/
 
-sge_path_state_class_t *sge_path_state_class_create(sge_env_state_class_t *sge_env, sge_error_class_t *eh) {
+sge_path_state_class_t *sge_path_state_class_create(sge_error_class_t *eh) {
    sge_path_state_class_t *ret = (sge_path_state_class_t *) sge_malloc(sizeof(sge_path_state_class_t));
 
    DENTER(TOP_LAYER);
@@ -538,12 +535,10 @@ sge_path_state_class_t *sge_path_state_class_create(sge_env_state_class_t *sge_e
 
    ret->get_sge_root = get_sge_root;
    ret->get_cell_root = get_cell_root;
-   ret->get_conf_file = get_conf_file;
    ret->get_bootstrap_file = get_bootstrap_file;
    ret->get_act_qmaster_file = get_act_qmaster_file;
    ret->get_acct_file = get_acct_file;
    ret->get_reporting_file = get_reporting_file;
-   ret->get_local_conf_dir = get_local_conf_dir;
    ret->get_shadow_masters_file = get_shadow_masters_file;
    ret->get_alias_file = get_alias_file;
 
@@ -567,7 +562,7 @@ sge_path_state_class_t *sge_path_state_class_create(sge_env_state_class_t *sge_e
    memset(ret->sge_path_state_handle, 0, sizeof(sge_path_state_t));
 
 
-   if (!sge_path_state_setup(ret, sge_env, eh)) {
+   if (!sge_path_state_setup(ret, eh)) {
       sge_path_state_class_destroy(&ret);
       DRETURN(NULL);
    }
@@ -587,7 +582,7 @@ void sge_path_state_class_destroy(sge_path_state_class_t **pst) {
    DRETURN_VOID;
 }
 
-static bool sge_path_state_setup(sge_path_state_class_t *thiz, sge_env_state_class_t *sge_env, sge_error_class_t *eh) {
+static bool sge_path_state_setup(sge_path_state_class_t *thiz, sge_error_class_t *eh) {
    char buffer[2 * 1024];
    dstring bw;
    const char *cell_root = NULL;
@@ -597,13 +592,8 @@ static bool sge_path_state_setup(sge_path_state_class_t *thiz, sge_env_state_cla
 
    DENTER(TOP_LAYER);
 
-   if (!sge_env) {
-      eh->error(eh, STATUS_EUNKNOWN, ANSWER_QUALITY_ERROR, "sge_env is NULL");
-      DRETURN(false);
-   }
-
-   sge_root = sge_env->get_sge_root(sge_env);
-   sge_cell = sge_env->get_sge_cell(sge_env);
+   sge_root = bootstrap_get_sge_root();
+   sge_cell = bootstrap_get_sge_cell();
 
    sge_dstring_init(&bw, buffer, sizeof(buffer));
 
@@ -698,11 +688,6 @@ static const char *get_cell_root(sge_path_state_class_t *thiz) {
    return es->cell_root;
 }
 
-static const char *get_conf_file(sge_path_state_class_t *thiz) {
-   sge_path_state_t *es = (sge_path_state_t *) thiz->sge_path_state_handle;
-   return es->conf_file;
-}
-
 static const char *get_bootstrap_file(sge_path_state_class_t *thiz) {
    sge_path_state_t *es = (sge_path_state_t *) thiz->sge_path_state_handle;
    return es->bootstrap_file;
@@ -721,11 +706,6 @@ static const char *get_acct_file(sge_path_state_class_t *thiz) {
 static const char *get_reporting_file(sge_path_state_class_t *thiz) {
    sge_path_state_t *es = (sge_path_state_t *) thiz->sge_path_state_handle;
    return es->reporting_file;
-}
-
-static const char *get_local_conf_dir(sge_path_state_class_t *thiz) {
-   sge_path_state_t *es = (sge_path_state_t *) thiz->sge_path_state_handle;
-   return es->local_conf_dir;
 }
 
 static const char *get_shadow_masters_file(sge_path_state_class_t *thiz) {

@@ -48,6 +48,7 @@
 #include "uti/sge_error_class.h"
 #include "uti/sge_uidgid.h"
 #include "uti/msg_utilib.h"
+#include "uti/sge_bootstrap.h"
 
 #include "sgeobj/sge_answer.h"
 
@@ -112,7 +113,6 @@ typedef struct prog_state_str {
    u_long32 gid;
    bool daemonized;
    char *user_name;
-   /* TODO: remove from prog_state, saved in sge_env_state_t */
    char *default_cell;
    sge_exit_func_t exit_func;
    bool exit_on_error;
@@ -145,8 +145,7 @@ static void uti_state_set_default_cell(const char *s);
 
 typedef struct prog_state_str sge_prog_state_t;
 
-static bool sge_prog_state_setup(sge_prog_state_class_t *thiz, sge_env_state_class_t *sge_env, u_long32 program_number,
-                                 sge_error_class_t *eh);
+static bool sge_prog_state_setup(sge_prog_state_class_t *thiz, u_long32 program_number, sge_error_class_t *eh);
 
 static void sge_prog_state_dprintf(sge_prog_state_class_t *thiz);
 
@@ -745,8 +744,7 @@ static void prog_state_init(prog_state_t *theState) {
 
 /*-------------------------------------------------------------------------*/
 sge_prog_state_class_t *
-sge_prog_state_class_create(sge_env_state_class_t *sge_env,
-                            u_long32 program_number, sge_error_class_t *eh) {
+sge_prog_state_class_create(u_long32 program_number, sge_error_class_t *eh) {
    sge_prog_state_class_t *ret = (sge_prog_state_class_t *) sge_malloc(sizeof(sge_prog_state_class_t));
 
    DENTER(TOP_LAYER);
@@ -790,7 +788,7 @@ sge_prog_state_class_create(sge_env_state_class_t *sge_env,
    }
    memset(ret->sge_prog_state_handle, 0, sizeof(sge_prog_state_t));
 
-   if (!sge_prog_state_setup(ret, sge_env, program_number, eh)) {
+   if (!sge_prog_state_setup(ret, program_number, eh)) {
       sge_prog_state_class_destroy(&ret);
       DRETURN(NULL);
    }
@@ -810,8 +808,7 @@ void sge_prog_state_class_destroy(sge_prog_state_class_t **pst) {
 }
 
 
-static bool sge_prog_state_setup(sge_prog_state_class_t *thiz, sge_env_state_class_t *sge_env, u_long32 program_number,
-                                 sge_error_class_t *eh) {
+static bool sge_prog_state_setup(sge_prog_state_class_t *thiz, u_long32 program_number, sge_error_class_t *eh) {
    stringT tmp_str;
    bool ret = true;
 
@@ -819,7 +816,7 @@ static bool sge_prog_state_setup(sge_prog_state_class_t *thiz, sge_env_state_cla
 
    thiz->set_who(thiz, program_number);
    thiz->set_sge_formal_prog_name(thiz, prognames[program_number]);
-   thiz->set_default_cell(thiz, sge_env->get_sge_cell(sge_env));
+   thiz->set_default_cell(thiz, bootstrap_get_sge_cell());
 
    if (gethostname(tmp_str, sizeof(tmp_str)) != 0) {
       eh->error(eh, STATUS_EUNKNOWN, ANSWER_QUALITY_ERROR, "gethostname failed %s", tmp_str);

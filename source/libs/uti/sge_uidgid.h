@@ -46,8 +46,6 @@
 #  define MAX_NIS_RETRIES 10
 #endif
 
-void uidgid_mt_init(void);
-
 bool sge_is_start_user_superuser(void);
 
 int sge_set_admin_username(const char *username, char *err_str);
@@ -92,14 +90,3 @@ bool sge_is_user_superuser(const char *name);
 int get_group_buffer_size(void);
 
 int get_pw_buffer_size(void);
-
-#ifdef SGE_THREADSAFE_UTIL
-
-#include <grp.h>
-
-int getpwnam_r(const char *, struct passwd *, char *, size_t, struct passwd **);
-int getgrnam_r(const char *, struct group *,  char *, size_t, struct group **);
-int getpwuid_r(uid_t,  struct passwd *, char *, size_t, struct passwd **);
-int getgrgid_r(gid_t , struct group *,  char *, size_t, struct group **);
-
-#endif

@@ -77,72 +77,11 @@ typedef struct {
    bool initialized;
 } admin_user_t;
 
-struct uidgid_state_t {
-   uid_t last_uid;
-   char last_username[SGE_MAX_USERGROUP_BUF];
-   gid_t last_gid;
-   char last_groupname[SGE_MAX_USERGROUP_BUF];
-};
-
 static admin_user_t admin_user = {PTHREAD_MUTEX_INITIALIZER, NULL, (uid_t) -1, (gid_t) -1, false};
-
-static pthread_once_t uidgid_once = PTHREAD_ONCE_INIT;
-static pthread_key_t uidgid_state_key;
-
-static void uidgid_once_init(void);
-
-static void uidgid_state_destroy(void *theState);
-
-static void uidgid_state_init(struct uidgid_state_t *theState);
 
 static void set_admin_user(const char *user_name, uid_t, gid_t);
 
 static int get_admin_user(uid_t *, gid_t *);
-
-static uid_t uidgid_state_get_last_uid(void);
-
-static const char *uidgid_state_get_last_username(void);
-
-static gid_t uidgid_state_get_last_gid(void);
-
-static const char *uidgid_state_get_last_groupname(void);
-
-static void uidgid_state_set_last_uid(uid_t uid);
-
-static void uidgid_state_set_last_username(const char *user);
-
-static void uidgid_state_set_last_gid(gid_t gid);
-
-static void uidgid_state_set_last_groupname(const char *group);
-
-/****** uti/uidgid/uidgid_mt_init() ************************************************
-*  NAME
-*     uidgid_mt_init() -- Initialize user and group oriented functions for multi
-*                         threading use.
-*
-*  SYNOPSIS
-*     void uidgid_mt_init(void) 
-*
-*  FUNCTION
-*     Set up user and group oriented functions. This function must be called at
-*     least once before any of the user and group functions can be used. This
-*     function is idempotent, i.e. it is safe to call it multiple times.
-*
-*     Thread local storage for the user and group state information is reserved. 
-*
-*  INPUTS
-*     void - NONE 
-*
-*  RESULT
-*     void - NONE
-*
-*  NOTES
-*     MT-NOTE: uidgid_mt_init() is MT safe 
-*
-*******************************************************************************/
-void uidgid_mt_init(void) {
-   pthread_once(&uidgid_once, uidgid_once_init);
-}
 
 /****** uti/uidgid/sge_is_start_user_superuser() *******************************
 *  NAME
@@ -634,41 +573,30 @@ int sge_group2gid(const char *gname, gid_t *gidp, int retries) {
 *         1 - Error
 ******************************************************************************/
 int sge_uid2user(uid_t uid, char *dst, size_t sz, int retries) {
-   const char *last_username;
+   struct passwd *pw;
+   struct passwd pwentry;
+   int size;
+   char *buffer;
 
    DENTER(UIDGID_LAYER);
 
-   last_username = uidgid_state_get_last_username();
+   size = get_pw_buffer_size();
+   buffer = sge_malloc(size);
 
-   if (!last_username[0] || (uidgid_state_get_last_uid() != uid)) {
-      struct passwd *pw;
-      struct passwd pwentry;
-      int size;
-      char *buffer;
-
-      size = get_pw_buffer_size();
-      buffer = sge_malloc(size);
-
-      /* max retries that are made resolving user name */
-      while (getpwuid_r(uid, &pwentry, buffer, size, &pw) != 0 || !pw) {
-         if (!retries--) {
-            ERROR((SGE_EVENT, MSG_SYSTEM_GETPWUIDFAILED_US,
-                    sge_u32c(uid), strerror(errno)));
-            sge_free(&buffer);
-            DRETURN(1);
-         }
-         sleep(1);
+   /* max retries that are made resolving user name */
+   while (getpwuid_r(uid, &pwentry, buffer, size, &pw) != 0 || !pw) {
+      if (!retries--) {
+         ERROR((SGE_EVENT, MSG_SYSTEM_GETPWUIDFAILED_US,
+                 sge_u32c(uid), strerror(errno)));
+         sge_free(&buffer);
+         DRETURN(1);
       }
-      /* cache user name */
-      uidgid_state_set_last_username(pw->pw_name);
-      uidgid_state_set_last_uid(uid);
-
-      sge_free(&buffer);
+      sleep(1);
    }
+   sge_strlcpy(dst, pw->pw_name, sz);
 
-   if (dst) {
-      sge_strlcpy(dst, uidgid_state_get_last_username(), sz);
-   }
+   sge_free(&buffer);
+
    DRETURN(0);
 } /* sge_uid2user() */
 
@@ -700,38 +628,27 @@ int sge_uid2user(uid_t uid, char *dst, size_t sz, int retries) {
 int sge_gid2group(gid_t gid, char *dst, size_t sz, int retries) {
    struct group *gr;
    struct group grentry;
-   const char *last_groupname;
+   char *buf = NULL;
+   int size = 0;
 
    DENTER(UIDGID_LAYER);
 
-   last_groupname = uidgid_state_get_last_groupname();
+   size = get_group_buffer_size();
+   buf = sge_malloc(size);
 
-   if (!last_groupname[0] || uidgid_state_get_last_gid() != gid) {
-      char *buf = NULL;
-      int size = 0;
-
-      size = get_group_buffer_size();
-      buf = sge_malloc(size);
-
-      gr = sge_getgrgid_r(gid, &grentry, buf, size, retries);
-      /* Bugfix: Issuezilla 1256
-       * We need to handle the case when the OS is unable to resolve the GID to
-       * a name. [DT] */
-      if (gr == NULL) {
-         sge_free(&buf);
-         DRETURN(1);
-      }
-
-      /* cache group name */
-      uidgid_state_set_last_groupname(gr->gr_name);
-      uidgid_state_set_last_gid(gid);
-
+   gr = sge_getgrgid_r(gid, &grentry, buf, size, retries);
+   /* Bugfix: Issuezilla 1256
+    * We need to handle the case when the OS is unable to resolve the GID to
+    * a name. [DT] */
+   if (gr == NULL) {
       sge_free(&buf);
+      DRETURN(1);
    }
 
-   if (dst != NULL) {
-      sge_strlcpy(dst, uidgid_state_get_last_groupname(), sz);
-   }
+   /* cache group name */
+   sge_strlcpy(dst, gr->gr_name, sz);
+   sge_free(&buf);
+
    DRETURN(0);
 } /* sge_gid2group() */
 
@@ -1286,66 +1203,6 @@ bool sge_is_user_superuser(const char *name) {
    return ret;
 }
 
-/****** uti/uidgid/uidgid_state_get_*() ************************************
-*  NAME
-*     uidgid_state_set_*() - read access to lib/uti/sge_uidgid.c global variables
-*
-*  FUNCTION
-*     Provides access to per thread global variable.
-*
-******************************************************************************/
-static uid_t uidgid_state_get_last_uid(void) {
-   GET_SPECIFIC(struct uidgid_state_t, uidgid_state, uidgid_state_init, uidgid_state_key, "uidgid_state_get_last_uid");
-   return uidgid_state->last_uid;
-}
-
-static const char *uidgid_state_get_last_username(void) {
-   GET_SPECIFIC(struct uidgid_state_t, uidgid_state, uidgid_state_init, uidgid_state_key,
-                "uidgid_state_get_last_username");
-   return uidgid_state->last_username;
-}
-
-static gid_t uidgid_state_get_last_gid(void) {
-   GET_SPECIFIC(struct uidgid_state_t, uidgid_state, uidgid_state_init, uidgid_state_key, "uidgid_state_get_last_gid");
-   return uidgid_state->last_gid;
-}
-
-static const char *uidgid_state_get_last_groupname(void) {
-   GET_SPECIFIC(struct uidgid_state_t, uidgid_state, uidgid_state_init, uidgid_state_key,
-                "uidgid_state_get_last_groupname");
-   return uidgid_state->last_groupname;
-}
-
-/****** uti/uidgid/uidgid_state_set_*() ************************************
-*  NAME
-*     uidgid_state_set_*() - write access to lib/uti/sge_uidgid.c global variables
-*
-*  FUNCTION
-*     Provides access to per thread global variable.
-*
-******************************************************************************/
-static void uidgid_state_set_last_uid(uid_t uid) {
-   GET_SPECIFIC(struct uidgid_state_t, uidgid_state, uidgid_state_init, uidgid_state_key, "uidgid_state_set_last_uid");
-   uidgid_state->last_uid = uid;
-}
-
-static void uidgid_state_set_last_username(const char *user) {
-   GET_SPECIFIC(struct uidgid_state_t, uidgid_state, uidgid_state_init, uidgid_state_key,
-                "uidgid_state_set_last_username");
-   sge_strlcpy(uidgid_state->last_username, user, SGE_MAX_USERGROUP_BUF);
-}
-
-static void uidgid_state_set_last_gid(gid_t gid) {
-   GET_SPECIFIC(struct uidgid_state_t, uidgid_state, uidgid_state_init, uidgid_state_key, "uidgid_state_set_last_gid");
-   uidgid_state->last_gid = gid;
-}
-
-static void uidgid_state_set_last_groupname(const char *group) {
-   GET_SPECIFIC(struct uidgid_state_t, uidgid_state, uidgid_state_init, uidgid_state_key,
-                "uidgid_state_set_last_groupname");
-   sge_strlcpy(uidgid_state->last_groupname, group, SGE_MAX_USERGROUP_BUF);
-}
-
 /****** uti/uidgid/set_admin_user() ********************************************
 *  NAME
 *     set_admin_user() -- Set user and group id of admin user. 
@@ -1498,246 +1355,3 @@ sge_has_admin_user(void) {
    ret = (get_admin_user(&uid, &gid) == ESRCH) ? false : true;
    DRETURN(ret);
 }
-
-/****** uti/uidgid/uidgid_once_init() ******************************************
-*  NAME
-*     uidgid_once_init() -- One-time user and group function initialization.
-*
-*  SYNOPSIS
-*     static uidgid_once_init(void) 
-*
-*  FUNCTION
-*     Create access key for thread local storage. Register cleanup function.
-*
-*     This function must be called exactly once.
-*
-*  INPUTS
-*     void - none
-*
-*  RESULT
-*     void - none 
-*
-*  NOTES
-*     MT-NOTE: uidgid_once_init() is MT safe. 
-*
-*******************************************************************************/
-static void uidgid_once_init(void) {
-   pthread_key_create(&uidgid_state_key, uidgid_state_destroy);
-}
-
-/****** uti/uidgid/uidgid_state_destroy() **************************************
-*  NAME
-*     uidgid_state_destroy() -- Free thread local storage
-*
-*  SYNOPSIS
-*     static void uidgid_state_destroy(void* theState) 
-*
-*  FUNCTION
-*     Free thread local storage.
-*
-*  INPUTS
-*     void* theState - Pointer to memroy which should be freed.
-*
-*  RESULT
-*     static void - none
-*
-*  NOTES
-*     MT-NOTE: uidgid_state_destroy() is MT safe.
-*
-*******************************************************************************/
-static void uidgid_state_destroy(void *theState) {
-   sge_free(&theState);
-}
-
-/****** uti/uidgid/uidgid_state_init() *****************************************
-*  NAME
-*     uidgid_state_init() -- Initialize user and group function state.
-*
-*  SYNOPSIS
-*     static void cull_state_init(struct cull_state_t* theState) 
-*
-*  FUNCTION
-*     Initialize user and group function state.
-*
-*  INPUTS
-*     struct cull_state_t* theState - Pointer to user and group state structure.
-*
-*  RESULT
-*     static void - none
-*
-*  NOTES
-*     MT-NOTE: cull_state_init() in MT safe. 
-*
-*******************************************************************************/
-static void uidgid_state_init(struct uidgid_state_t *theState) {
-   memset(theState, 0, sizeof(struct uidgid_state_t));
-}
-
-#ifdef SGE_THREADSAFE_UTIL
-
-/******************************************************************************
-* 20040108 - JM - Initial version intended to support
-*    SUPER-UX at least. The fields handled in pwd and
-*    grp are not necessarily exhaustive for other
-*    platforms--may need to add more to support them.
-*
-* 20050313 - RC - Checked into cvs
-*               - Used by the NetBSD port
-*
-******************************************************************************/
-
-static pthread_mutex_t sge_passwd_mutex = PTHREAD_MUTEX_INITIALIZER;
-static pthread_mutex_t sge_group_mutex  = PTHREAD_MUTEX_INITIALIZER;
-
-static int
-copygrp(struct group *tgrp, struct group *grp, char *buffer, size_t bufsize)
-{
-   size_t tlen, i;
-
-   grp->gr_name = buffer; tlen = strlen(tgrp->gr_name)+1;
-   /* array of pointers */
-   for (i = 0; tgrp->gr_mem[i] != NULL; i++);
-   grp->gr_mem = (char **)(buffer+tlen);
-   tlen += i*sizeof(void *);
-   /* array elements */
-   for (i = 0; (tgrp->gr_mem[i] != NULL) && (tlen <= bufsize); i++) {
-      grp->gr_mem[i] = buffer+tlen;
-      tlen += strlen(tgrp->gr_mem[i])+1;
-   }
-   tlen += 1; /* NULL */
-
-   if (tlen > bufsize) {
-      return ERANGE;
-   }
-
-   grp->gr_mem[i] = buffer+tlen;
-   strcpy(grp->gr_name, tgrp->gr_name);
-   grp->gr_gid = tgrp->gr_gid;
-   for (i = 0; tgrp->gr_mem[i] != NULL; i++) {
-      strcpy(grp->gr_mem[i], tgrp->gr_mem[i]);
-   }
-   grp->gr_mem[i] = NULL;
-
-   return 0;
-}
-
-static int
-copypwd(struct passwd *tpwd, struct passwd *pwd, char *buffer, size_t bufsize)
-{
-   size_t tlen;
-
-   pwd->pw_name = buffer; tlen = strlen(tpwd->pw_name)+1;
-   pwd->pw_passwd = buffer+tlen; tlen += strlen(tpwd->pw_passwd)+1;
-   pwd->pw_gecos = buffer+tlen; tlen += strlen(tpwd->pw_gecos)+1;
-   pwd->pw_dir = buffer+tlen; tlen += strlen(tpwd->pw_dir)+1;
-   pwd->pw_shell = buffer+tlen; tlen += strlen(tpwd->pw_shell)+1;
-
-   if (tlen > bufsize) {
-      return ERANGE;
-   }
-
-   strcpy(pwd->pw_name, tpwd->pw_name);
-   strcpy(pwd->pw_passwd, tpwd->pw_passwd);
-   pwd->pw_uid= tpwd->pw_uid;
-   pwd->pw_gid = tpwd->pw_gid;
-   strcpy(pwd->pw_gecos, tpwd->pw_gecos);
-   strcpy(pwd->pw_dir, tpwd->pw_dir);
-   strcpy(pwd->pw_shell, tpwd->pw_shell);
-
-   return 0;
-}
-
-
-
-int getpwnam_r(const char *name, struct passwd *pwd, char *buffer,
-               size_t bufsize, struct passwd **result)
-{
-   struct passwd *tpwd;
-   int res;
-
-   pthread_mutex_lock(&sge_passwd_mutex);
-   *result = NULL;
-
-   if ((tpwd = getpwnam(name)) == NULL) {
-      return 0;
-   }
-
-   res = copypwd(tpwd, pwd, buffer, bufsize);
-   if (!res)
-      *result = pwd;
-
-   pthread_mutex_unlock(&sge_passwd_mutex);
-
-   return res;
-}
-
-int getgrnam_r(const char *name, struct group *grp, char *buffer,
-      size_t bufsize, struct group **result)
-{
-   struct group *tgrp;
-   int res;
-
-   pthread_mutex_lock(&sge_group_mutex);
-   *result = NULL;
-
-   if ((tgrp = getgrnam(name)) == NULL)
-   {
-      return NULL;
-   }
-
-   res = copygrp(tgrp, grp, buffer, bufsize);
-   if (!res)
-      *result = grp;
-
-   pthread_mutex_unlock(&sge_group_mutex);
-   /* unlock */
-
-   return res;
-}
-
-int getpwuid_r(uid_t uid, struct passwd *pwd, char *buffer,
-      size_t bufsize, struct passwd **result)
-{
-   struct passwd *tpwd;
-   int res;
-
-   pthread_mutex_lock(&sge_passwd_mutex);
-   *result = NULL;
-
-   if ((tpwd = getpwuid(uid)) == NULL) {
-      return NULL;
-   }
-
-   res = copypwd(tpwd, pwd, buffer, bufsize);
-   if (!res)
-      *result = pwd;
-
-   pthread_mutex_unlock(&sge_passwd_mutex);
-
-   return res;
-}
-
-int getgrgid_r(gid_t gid, struct group *grp, char *buffer,
-      size_t bufsize, struct group **result)
-{
-   struct group *tgrp;
-   int res;
-
-   pthread_mutex_lock(&sge_group_mutex);
-   *result = NULL;
-
-   if ((tgrp = getgrgid(gid)) == NULL)
-   {
-      return NULL;
-   }
-
-   res = copygrp(tgrp, grp, buffer, bufsize);
-   if (!res)
-      *result = grp;
-
-   pthread_mutex_unlock(&sge_group_mutex);
-
-   return res;
-}
-
-#endif /* SGE_THREADSAFE_UTIL */
