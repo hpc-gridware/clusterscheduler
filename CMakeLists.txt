@@ -36,8 +36,7 @@ if (NOT CMAKE_BUILD_TYPE)
 endif ()
 
 # 3RD_PARTY OPTIONS
-# berkeleydb might not build on all platforms provide a way to disable it @todo
-# try updating config.guess and config.sub with a current version
+option(WITH_OS_3RDPARTY "Use 3rdparty libraries provided by OS packages" OFF)
 option(WITH_SPOOL_BERKELEYDB "Enable berkeleydb spooling" ON)
 option(WITH_SPOOL_DYNAMIC "Enable dynamic spooling configuration" ON)
 option(WITH_HWLOC "Enable building with hwloc library" ON)
@@ -60,8 +59,8 @@ option(ENABLE_LTO "Enable to add Link Time Optimization in Release Build." ON)
 option(ENABLE_SANITIZERS "Enable address, leak and undefined behaviour sanitizer" OFF)
 
 set(PROJECT_3RDPARTY_HOME
-      "$ENV{HOME}/3rd_party"
-      CACHE STRING "installation directory for 3rdparty tools")
+        "$ENV{HOME}/3rd_party"
+        CACHE STRING "installation directory for 3rdparty tools")
 include(cmake/OsReleaseInfo.cmake)
 include(cmake/ArchitectureSpecificSettings.cmake)
 
