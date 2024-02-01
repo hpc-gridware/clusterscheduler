@@ -882,7 +882,7 @@ static bool sge_evc_setup(sge_evc_class_t *thiz,
          /*
          ** for internal clients we reuse the data of the gdi context
          */
-         lSetString(sge_evc->ec, EV_commproc, sge_gdi_ctx->get_component_name(sge_gdi_ctx));
+         lSetString(sge_evc->ec, EV_commproc, bootstrap_get_component_name());
          lSetUlong(sge_evc->ec, EV_commid, 0);
          lSetUlong(sge_evc->ec, EV_d_time, DEFAULT_EVENT_DELIVERY_INTERVAL);
 

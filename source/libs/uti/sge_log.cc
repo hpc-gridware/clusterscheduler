@@ -508,7 +508,7 @@ int sge_log(u_long32 log_level, const char *mesg, const char *file__, const char
 
    if (ctx != NULL) {
       me = uti_state_get_mewho();
-      threadname = ctx->get_thread_name(ctx);
+      threadname = bootstrap_get_thread_name();
       unqualified_hostname = uti_state_get_unqualified_hostname();
       is_daemonized = uti_state_get_daemonized();
    } else {

@@ -75,6 +75,9 @@ typedef struct {
    bool qmaster_internal;
 
    // component information
+   u_long32 component_id;
+   char *component_name;
+   char *thread_name;
 } sge_bootstrap_tl_t;
 
 static pthread_once_t bootstrap_once = PTHREAD_ONCE_INIT;
@@ -200,10 +203,25 @@ set_qmaster_internal(sge_bootstrap_tl_t *tl, bool qmaster_internal) {
 }
 
 static void
+set_component_id(sge_bootstrap_tl_t *tl, u_long32 component_id) {
+   tl->component_id = component_id;
+}
+
+static void
+set_component_name(sge_bootstrap_tl_t *tl, const char *component_name) {
+   tl->component_name = sge_strdup(tl->component_name, component_name);
+}
+
+static void
+set_thread_name(sge_bootstrap_tl_t *tl, const char *thread_name) {
+   tl->thread_name = sge_strdup(tl->thread_name, thread_name);
+}
+
+static void
 log_parameter(sge_bootstrap_tl_t *tl) {
    DENTER(TOP_LAYER);
 
-   DPRINTF(("ENVIRONMENT"))
+   DPRINTF(("ENVIRONMENT\n"))
    DPRINTF(("sge_root            >%s<\n", tl->sge_root ? tl->sge_root : "NA"));
    DPRINTF(("sge_cell            >%s<\n", tl->sge_cell ? tl->sge_cell : "NA"));
    DPRINTF(("sge_qmaster_port    >%d<\n", tl->sge_qmaster_port));
@@ -211,7 +229,12 @@ log_parameter(sge_bootstrap_tl_t *tl) {
    DPRINTF(("from_services       >%s<\n", tl->from_services ? "true" : "false"));
    DPRINTF(("qmaster_internal    >%s<\n", tl->qmaster_internal ? "true" : "false"));
 
-   DPRINTF(("BOOTSTRAP FILE"))
+   DPRINTF(("COMPONENT\n"))
+   DPRINTF(("component_id        >%d<\n", tl->component_id));
+   DPRINTF(("component_name      >%s<\n", tl->component_name ? tl->component_name : "NA"));
+   DPRINTF(("thread_name         >%s<\n", tl->thread_name ? tl->thread_name : "NA"));
+
+   DPRINTF(("BOOTSTRAP FILE\n"))
    DPRINTF(("admin_user          >%s<\n", tl->admin_user));
    DPRINTF(("default_domain      >%s<\n", tl->default_domain));
    DPRINTF(("ignore_fqdn         >%s<\n", tl->ignore_fqdn ? "true" : "false"));
@@ -382,7 +405,11 @@ static void
 bootstrap_thread_local_destroy(void *tl) {
    sge_bootstrap_tl_t *_tl = (sge_bootstrap_tl_t *) tl;
 
-   // Environment parameters
+   // component parameters
+   sge_free(&(_tl->component_name));
+   sge_free(&(_tl->thread_name));
+
+   // environment parameters
    sge_free(&(_tl->sge_root));
    sge_free(&(_tl->sge_cell));
 
@@ -630,3 +657,40 @@ bootstrap_set_qmaster_internal(bool qmaster_internal) {
    GET_SPECIFIC(sge_bootstrap_tl_t, tl, bootstrap_tl_init, sge_bootstrap_tl_key, "bootstrap_set_qmaster_internal");
    set_qmaster_internal(tl, qmaster_internal);
 }
+
+u_long32
+bootstrap_get_component_id(void) {
+   GET_SPECIFIC(sge_bootstrap_tl_t, tl, bootstrap_tl_init, sge_bootstrap_tl_key, "bootstrap_get_component_id");
+   return tl->component_id;
+}
+
+void
+bootstrap_set_component_id(u_long32 component_id) {
+   GET_SPECIFIC(sge_bootstrap_tl_t, tl, bootstrap_tl_init, sge_bootstrap_tl_key, "bootstrap_set_component_id");
+   set_component_id(tl, component_id);
+}
+
+const char *
+bootstrap_get_component_name(void) {
+   GET_SPECIFIC(sge_bootstrap_tl_t, tl, bootstrap_tl_init, sge_bootstrap_tl_key, "bootstrap_get_component_name");
+   return tl->component_name;
+}
+
+void
+bootstrap_set_component_name(const char *component_name) {
+   GET_SPECIFIC(sge_bootstrap_tl_t, tl, bootstrap_tl_init, sge_bootstrap_tl_key, "bootstrap_set_component_name");
+   set_component_name(tl, component_name);
+}
+
+const char *
+bootstrap_get_thread_name(void) {
+   GET_SPECIFIC(sge_bootstrap_tl_t, tl, bootstrap_tl_init, sge_bootstrap_tl_key, "bootstrap_get_thread_name");
+   return tl->thread_name;
+}
+
+void
+bootstrap_set_thread_name(const char *thread_name) {
+   GET_SPECIFIC(sge_bootstrap_tl_t, tl, bootstrap_tl_init, sge_bootstrap_tl_key, "bootstrap_set_thread_name");
+   set_thread_name(tl, thread_name);
+}
+

@@ -151,5 +151,23 @@ bootstrap_is_qmaster_internal(void);
 void
 bootstrap_set_qmaster_internal(bool qmaster_internal);
 
+u_long32
+bootstrap_get_component_id(void);
+
+void
+bootstrap_set_component_id(u_long32 component_id);
+
+const char *
+bootstrap_get_component_name(void);
+
+void
+bootstrap_set_component_name(const char *component_name);
+
+const char *
+bootstrap_get_thread_name(void);
+
+void
+bootstrap_set_thread_name(const char *thread_name);
+
 void
 bootstrap_log_parameter(void);

@@ -105,8 +105,6 @@ typedef struct {
    sge_path_state_class_t* sge_path_state_obj;
    sge_csp_path_class_t* sge_csp_path_obj;
 
-   char* component_name;
-   char* thread_name;
    char* master;
    char* component_username;
    char* username;
@@ -250,8 +248,6 @@ static void sge_gdi_ctx_class_error(sge_gdi_ctx_class_t *thiz, int error_type, i
 static sge_path_state_class_t* get_sge_path_state(sge_gdi_ctx_class_t *thiz);
 static sge_csp_path_class_t* get_sge_csp_path(sge_gdi_ctx_class_t *thiz);
 static cl_com_handle_t* get_com_handle(sge_gdi_ctx_class_t *thiz);
-static const char* get_component_name(sge_gdi_ctx_class_t *thiz);
-static const char* get_thread_name(sge_gdi_ctx_class_t *thiz);
 static const char* get_master(sge_gdi_ctx_class_t *thiz, bool reread);
 static const char* get_username(sge_gdi_ctx_class_t *thiz);
 static const char* get_cell_root(sge_gdi_ctx_class_t *thiz);
@@ -316,8 +312,6 @@ sge_gdi_ctx_class_create(int prog_number, const char *component_name,
    ret->kill = sge_gdi_ctx_class_gdi_kill;
 
    ret->get_sge_path_state = get_sge_path_state;
-   ret->get_component_name = get_component_name;
-   ret->get_thread_name = get_thread_name;
 
    ret->get_master = get_master;
    ret->get_username = get_username;
@@ -487,6 +481,10 @@ sge_gdi_ctx_setup(sge_gdi_ctx_class_t *thiz, int prog_number, const char* compon
    lInit(nmv);
 
    bootstrap_set_qmaster_internal(qmaster_internal_client);
+   bootstrap_set_component_id(prog_number);
+   bootstrap_set_component_name(component_name ? component_name : prognames[prog_number]);
+   bootstrap_set_thread_name(thread_name ? thread_name : prognames[prog_number]);
+   bootstrap_log_parameter();
 
    if (feature_initialize_from_string(bootstrap_get_security_mode())) {
       CRITICAL((SGE_EVENT, "feature_initialize_from_string() failed"));
@@ -506,18 +504,6 @@ sge_gdi_ctx_setup(sge_gdi_ctx_class_t *thiz, int prog_number, const char* compon
       DRETURN(false);
    }
 #endif
-
-   if (component_name == NULL) {
-      es->component_name = strdup(prognames[prog_number]);
-   } else {
-      es->component_name = strdup(component_name);
-   }
-
-   if (thread_name == NULL) {
-      es->thread_name = strdup(prognames[prog_number]);
-   } else {
-      es->thread_name = strdup(thread_name);
-   }
 
    /* set uid and gid */
    {
@@ -617,8 +603,6 @@ static void sge_gdi_ctx_destroy(void *theState)
    sge_free(&(s->master));
    sge_free(&(s->username));
    sge_free(&(s->groupname));
-   sge_free(&(s->component_name));
-   sge_free(&(s->thread_name));
    sge_free(&(s->component_username));
    sge_free(&(s->ssl_certificate));
    sge_free(&(s->ssl_private_key));
@@ -839,9 +823,7 @@ static int sge_gdi_ctx_class_prepare_enroll(sge_gdi_ctx_class_t *thiz) {
          if (cl_ret != CL_RETVAL_OK && cl_ret != ctx_get_last_commlib_error(thiz)) {
             DPRINTF(("return value of cl_com_specify_ssl_configuration(): %s\n", cl_get_error_text(cl_ret)));
             sge_gdi_ctx_class_error(thiz, STATUS_EUNKNOWN, ANSWER_QUALITY_ERROR, MSG_GDI_CANT_CONNECT_HANDLE_SSUUS,
-                               (char*)thiz->get_component_name(thiz), 0,
-                               sge_qmaster_port,
-                               cl_get_error_text(cl_ret));
+                               bootstrap_get_component_name(), 0, sge_qmaster_port, cl_get_error_text(cl_ret));
             cl_com_free_ssl_setup(&sec_ssl_setup_config);
             DRETURN(cl_ret);
          }
@@ -872,7 +854,7 @@ static int sge_gdi_ctx_class_prepare_enroll(sge_gdi_ctx_class_t *thiz) {
                                           true,
                                           sge_execd_port,
                                           CL_TCP_DEFAULT,
-                                          (char*)thiz->get_component_name(thiz),
+                                          (char*)bootstrap_get_component_name(),
                                           my_component_id,
                                           1,
                                           0);
@@ -884,7 +866,7 @@ static int sge_gdi_ctx_class_prepare_enroll(sge_gdi_ctx_class_t *thiz) {
                   */
                   ERROR((SGE_EVENT, MSG_GDI_CANT_GET_COM_HANDLE_SSUUS,
                                     qualified_hostname,
-                                    (char*)thiz->get_component_name(thiz),
+                                    bootstrap_get_component_name(),
                                     sge_u32c(my_component_id),
                                     sge_u32c(sge_execd_port),
                                     cl_get_error_text(cl_ret)));
@@ -913,7 +895,7 @@ static int sge_gdi_ctx_class_prepare_enroll(sge_gdi_ctx_class_t *thiz) {
                                           true,
                                           sge_qmaster_port, /* create service on qmaster port */
                                           CL_TCP_DEFAULT,   /* use standard connect mode */
-                                          (char*)thiz->get_component_name(thiz),
+                                          (char*)bootstrap_get_component_name(),
                                           my_component_id,  /* this endpoint is called "qmaster" 
                                                                and has id 1 */
                                           1,
@@ -925,7 +907,7 @@ static int sge_gdi_ctx_class_prepare_enroll(sge_gdi_ctx_class_t *thiz) {
                   */
                   ERROR((SGE_EVENT, MSG_GDI_CANT_GET_COM_HANDLE_SSUUS,
                                        qualified_hostname,
-                                       (char*)thiz->get_component_name(thiz),
+                                       bootstrap_get_component_name(),
                                        sge_u32c(my_component_id),
                                        sge_u32c(sge_qmaster_port),
                                        cl_get_error_text(cl_ret)));
@@ -972,14 +954,14 @@ static int sge_gdi_ctx_class_prepare_enroll(sge_gdi_ctx_class_t *thiz) {
 
          default:
             /* this is for "normal" gdi clients of qmaster */
-            DPRINTF(("creating %s GDI handle\n", thiz->get_component_name(thiz)));
+            DPRINTF(("creating %s GDI handle\n", bootstrap_get_component_name()));
             handle = cl_com_create_handle(&cl_ret,
                                           communication_framework,
                                           CL_CM_CT_MESSAGE,
                                           false,
                                           sge_qmaster_port,
                                           CL_TCP_DEFAULT,
-                                          (char*)thiz->get_component_name(thiz),
+                                          (char*)bootstrap_get_component_name(),
                                           my_component_id,
                                           1,
                                           0);
@@ -988,7 +970,7 @@ static int sge_gdi_ctx_class_prepare_enroll(sge_gdi_ctx_class_t *thiz) {
                   sge_gdi_ctx_class_error(thiz, STATUS_EUNKNOWN, ANSWER_QUALITY_ERROR,
                                      MSG_GDI_CANT_CONNECT_HANDLE_SSUUS,
                                      uti_state_get_qualified_hostname(),
-                                     thiz->get_component_name(thiz),
+                                     bootstrap_get_component_name(),
                                      sge_u32c(my_component_id),
                                      sge_u32c(sge_qmaster_port),
                                      cl_get_error_text(cl_ret));
@@ -1038,7 +1020,7 @@ static int sge_gdi_ctx_class_is_alive(sge_gdi_ctx_class_t *thiz)
 
    if (handle == NULL) {
       sge_gdi_ctx_class_error(thiz, STATUS_EUNKNOWN, ANSWER_QUALITY_ERROR,
-                "handle not found %s:0", thiz->get_component_name(thiz));
+                "handle not found %s:0", bootstrap_get_component_name());
       DRETURN(CL_RETVAL_PARAMS);
    }
 
@@ -1119,8 +1101,7 @@ static void sge_gdi_ctx_class_dprintf(sge_gdi_ctx_class_t *ctx)
 /** --------- getter/setter ------------------------------------------------- */
 static cl_com_handle_t* get_com_handle(sge_gdi_ctx_class_t *thiz)
 {
-   sge_gdi_ctx_t *es = (sge_gdi_ctx_t *) thiz->sge_gdi_ctx_handle;
-   return cl_com_get_handle(es->component_name, 0);
+   return cl_com_get_handle(bootstrap_get_component_name(), 0);
 }
 
 static sge_path_state_class_t* get_sge_path_state(sge_gdi_ctx_class_t *thiz)
@@ -1174,22 +1155,6 @@ static const char* get_master(sge_gdi_ctx_class_t *thiz, bool reread) {
       }
    }
    DRETURN(es->master);
-}
-
-static const char* get_component_name(sge_gdi_ctx_class_t *thiz) {
-   sge_gdi_ctx_t *es = (sge_gdi_ctx_t *) thiz->sge_gdi_ctx_handle;
-   const char* ret = NULL;
-   DENTER(BASIS_LAYER);
-   ret = es->component_name;
-   DRETURN(ret);
-}
-
-static const char* get_thread_name(sge_gdi_ctx_class_t *thiz) {
-   sge_gdi_ctx_t *es = (sge_gdi_ctx_t *) thiz->sge_gdi_ctx_handle;
-   const char* ret = NULL;
-   DENTER(BASIS_LAYER);
-   ret = es->thread_name;
-   DRETURN(ret);
 }
 
 static const char* get_private_key(sge_gdi_ctx_class_t *thiz) {
