@@ -1,159 +1,161 @@
 {
 	"className":	"AccountingSummary",
-	"summary":	"@todo add summary",
+	"summary":	"Accounting Summary",
 	"description":	[{
-			"line":	"@todo add description"
+			"line":	"Used in qsub for summing up usage values (?)."
+			}, { "line":	"It contains some of the fields which can appear in the qacct -j job_id output."
+			}, { "line":	"See also the sge_accounting(5) man page."
 		}],
 	"cullPrefix":	"QAJ",
 	"attributes":	[{
 			"name":	"host",
-			"summary":	"@todo add summary",
+			"summary":	"Host Name",
 			"description":	[{
-					"line":	"@todo add description"
+					"line":	"Host where a job ran."
 				}],
 			"type":	"lHostT",
 			"flags":	[]
 		}, {
 			"name":	"queue",
-			"summary":	"@todo add summary",
+			"summary":	"Cluster Queue Name",
 			"description":	[{
-					"line":	"@todo add description"
+					"line":	"Cluster queue in which a job ran."
 				}],
 			"type":	"lStringT",
 			"flags":	[]
 		}, {
 			"name":	"group",
-			"summary":	"@todo add summary",
+			"summary":	"User Group",
 			"description":	[{
-					"line":	"@todo add description"
+					"line":	"Unix user group of the job owner."
 				}],
 			"type":	"lStringT",
 			"flags":	[]
 		}, {
 			"name":	"owner",
-			"summary":	"@todo add summary",
+			"summary":	"Owner",
 			"description":	[{
-					"line":	"@todo add description"
+					"line":	"Unix user name of the job owner."
 				}],
 			"type":	"lStringT",
 			"flags":	[]
 		}, {
 			"name":	"project",
-			"summary":	"@todo add summary",
+			"summary":	"Project",
 			"description":	[{
-					"line":	"@todo add description"
+					"line":	"Project the job was running for."
 				}],
 			"type":	"lStringT",
 			"flags":	[]
 		}, {
 			"name":	"department",
-			"summary":	"@todo add summary",
+			"summary":	"Department",
 			"description":	[{
-					"line":	"@todo add description"
+					"line":	"The job owner's department."
 				}],
 			"type":	"lStringT",
 			"flags":	[]
 		}, {
 			"name":	"ru_wallclock",
-			"summary":	"@todo add summary",
+			"summary":	"Rusage Wallclock",
 			"description":	[{
-					"line":	"@todo add description"
+					"line":	"Wallclock time from rusage (end time - start_time)."
 				}],
 			"type":	"lDoubleT",
 			"flags":	[]
 		}, {
 			"name":	"ru_utime",
-			"summary":	"@todo add summary",
+			"summary":	"Rusage User Time",
 			"description":	[{
-					"line":	"@todo add description"
+					"line":	"User CPU time from rusage."
 				}],
 			"type":	"lDoubleT",
 			"flags":	[]
 		}, {
 			"name":	"ru_stime",
-			"summary":	"@todo add summary",
+			"summary":	"Rusage System Time",
 			"description":	[{
-					"line":	"@todo add description"
+					"line":	"System CPU time from rusage."
 				}],
 			"type":	"lDoubleT",
 			"flags":	[]
 		}, {
 			"name":	"ru_maxrss",
-			"summary":	"@todo add summary",
+			"summary":	"Rusage Maximum RSS",
 			"description":	[{
-					"line":	"@todo add description"
+					"line":	"Maximum resident set size of the job's processes from rusage."
 				}],
 			"type":	"lDoubleT",
 			"flags":	[]
 		}, {
 			"name":	"ru_inblock",
-			"summary":	"@todo add summary",
+			"summary":	"Rusage Block Input",
 			"description":	[{
-					"line":	"@todo add description"
+					"line":	"Number of block input operations from rusage."
 				}],
 			"type":	"lDoubleT",
 			"flags":	[]
 		}, {
 			"name":	"granted_pe",
-			"summary":	"@todo add summary",
+			"summary":	"Granted Parallel Environment",
 			"description":	[{
-					"line":	"@todo add description"
+					"line":	"In case of a parallel job: The PE the job was running in."
 				}],
 			"type":	"lStringT",
 			"flags":	[]
 		}, {
 			"name":	"slots",
-			"summary":	"@todo add summary",
+			"summary":	"Slots",
 			"description":	[{
-					"line":	"@todo add description"
+					"line":	"The number of slots the job occupied."
 				}],
 			"type":	"lUlongT",
 			"flags":	[]
 		}, {
 			"name":	"cpu",
-			"summary":	"@todo add summary",
+			"summary":	"Cpu Usage",
 			"description":	[{
-					"line":	"@todo add description"
+					"line":	"The cpu usage of the job reported by sge_execd in seconds."
 				}],
 			"type":	"lDoubleT",
 			"flags":	[]
 		}, {
 			"name":	"mem",
-			"summary":	"@todo add summary",
+			"summary":	"Integral Memory Usage",
 			"description":	[{
-					"line":	"@todo add description"
+					"line":	"The integral memory usage of the job reported by sge_execd in Gbytes cpu seconds."
 				}],
 			"type":	"lDoubleT",
 			"flags":	[]
 		}, {
 			"name":	"io",
-			"summary":	"@todo add summary",
+			"summary":	"IO Usage",
 			"description":	[{
-					"line":	"@todo add description"
+					"line":	"The IO usage of the job reported by sge_execd (the amount of data transferred in input and output operations."
 				}],
 			"type":	"lDoubleT",
 			"flags":	[]
 		}, {
 			"name":	"iow",
-			"summary":	"@todo add summary",
+			"summary":	"IO Wait Time",
 			"description":	[{
-					"line":	"@todo add description"
+					"line":	"The amount of time the job waited for IO operations to happen as reported by sge_execd."
 				}],
 			"type":	"lDoubleT",
 			"flags":	[]
 		}, {
 			"name":	"maxvmem",
-			"summary":	"@todo add summary",
+			"summary":	"Maximum Virtual Memory",
 			"description":	[{
-					"line":	"@todo add description"
+					"line":	"The maximum virtual memory usage of the job reported by sge_execd."
 				}],
 			"type":	"lDoubleT",
 			"flags":	[]
 		}, {
 			"name":	"arid",
-			"summary":	"@todo add summary",
+			"summary":	"AR Id",
 			"description":	[{
-					"line":	"@todo add description"
+					"line":	"The id of an advance reservation the job might have run in."
 				}],
 			"type":	"lUlongT",
 			"flags":	[]

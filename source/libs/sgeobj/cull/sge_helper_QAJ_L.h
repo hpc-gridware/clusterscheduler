@@ -40,66 +40,68 @@ extern "C" {
 #endif
 
 /**
-* @brief @todo add summary
+* @brief Accounting Summary
 *
-* @todo add description
+* Used in qsub for summing up usage values (?).
+* It contains some of the fields which can appear in the qacct -j job_id output.
+* See also the sge_accounting(5) man page.
 *
-*    SGE_HOST(QAJ_host) - @todo add summary
-*    @todo add description
+*    SGE_HOST(QAJ_host) - Host Name
+*    Host where a job ran.
 *
-*    SGE_STRING(QAJ_queue) - @todo add summary
-*    @todo add description
+*    SGE_STRING(QAJ_queue) - Cluster Queue Name
+*    Cluster queue in which a job ran.
 *
-*    SGE_STRING(QAJ_group) - @todo add summary
-*    @todo add description
+*    SGE_STRING(QAJ_group) - User Group
+*    Unix user group of the job owner.
 *
-*    SGE_STRING(QAJ_owner) - @todo add summary
-*    @todo add description
+*    SGE_STRING(QAJ_owner) - Owner
+*    Unix user name of the job owner.
 *
-*    SGE_STRING(QAJ_project) - @todo add summary
-*    @todo add description
+*    SGE_STRING(QAJ_project) - Project
+*    Project the job was running for.
 *
-*    SGE_STRING(QAJ_department) - @todo add summary
-*    @todo add description
+*    SGE_STRING(QAJ_department) - Department
+*    The job owner's department.
 *
-*    SGE_DOUBLE(QAJ_ru_wallclock) - @todo add summary
-*    @todo add description
+*    SGE_DOUBLE(QAJ_ru_wallclock) - Rusage Wallclock
+*    Wallclock time from rusage (end time - start_time).
 *
-*    SGE_DOUBLE(QAJ_ru_utime) - @todo add summary
-*    @todo add description
+*    SGE_DOUBLE(QAJ_ru_utime) - Rusage User Time
+*    User CPU time from rusage.
 *
-*    SGE_DOUBLE(QAJ_ru_stime) - @todo add summary
-*    @todo add description
+*    SGE_DOUBLE(QAJ_ru_stime) - Rusage System Time
+*    System CPU time from rusage.
 *
-*    SGE_DOUBLE(QAJ_ru_maxrss) - @todo add summary
-*    @todo add description
+*    SGE_DOUBLE(QAJ_ru_maxrss) - Rusage Maximum RSS
+*    Maximum resident set size of the job's processes from rusage.
 *
-*    SGE_DOUBLE(QAJ_ru_inblock) - @todo add summary
-*    @todo add description
+*    SGE_DOUBLE(QAJ_ru_inblock) - Rusage Block Input
+*    Number of block input operations from rusage.
 *
-*    SGE_STRING(QAJ_granted_pe) - @todo add summary
-*    @todo add description
+*    SGE_STRING(QAJ_granted_pe) - Granted Parallel Environment
+*    In case of a parallel job: The PE the job was running in.
 *
-*    SGE_ULONG(QAJ_slots) - @todo add summary
-*    @todo add description
+*    SGE_ULONG(QAJ_slots) - Slots
+*    The number of slots the job occupied.
 *
-*    SGE_DOUBLE(QAJ_cpu) - @todo add summary
-*    @todo add description
+*    SGE_DOUBLE(QAJ_cpu) - Cpu Usage
+*    The cpu usage of the job reported by sge_execd in seconds.
 *
-*    SGE_DOUBLE(QAJ_mem) - @todo add summary
-*    @todo add description
+*    SGE_DOUBLE(QAJ_mem) - Integral Memory Usage
+*    The integral memory usage of the job reported by sge_execd in Gbytes cpu seconds.
 *
-*    SGE_DOUBLE(QAJ_io) - @todo add summary
-*    @todo add description
+*    SGE_DOUBLE(QAJ_io) - IO Usage
+*    The IO usage of the job reported by sge_execd (the amount of data transferred in input and output operations.
 *
-*    SGE_DOUBLE(QAJ_iow) - @todo add summary
-*    @todo add description
+*    SGE_DOUBLE(QAJ_iow) - IO Wait Time
+*    The amount of time the job waited for IO operations to happen as reported by sge_execd.
 *
-*    SGE_DOUBLE(QAJ_maxvmem) - @todo add summary
-*    @todo add description
+*    SGE_DOUBLE(QAJ_maxvmem) - Maximum Virtual Memory
+*    The maximum virtual memory usage of the job reported by sge_execd.
 *
-*    SGE_ULONG(QAJ_arid) - @todo add summary
-*    @todo add description
+*    SGE_ULONG(QAJ_arid) - AR Id
+*    The id of an advance reservation the job might have run in.
 *
 */
 
