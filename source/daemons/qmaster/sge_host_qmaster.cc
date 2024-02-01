@@ -191,7 +191,7 @@ sge_add_host_of_type(sge_gdi_ctx_class_t *ctx, const char *hostname, u_long32 ta
    lListElem *ep;
    gdi_object_t *object;
    lList *ppList = NULL;
-   const char *username = ctx->get_username(ctx);
+   const char *username = bootstrap_get_username();
    const char *qualified_hostname = uti_state_get_qualified_hostname();
 
    DENTER(TOP_LAYER);

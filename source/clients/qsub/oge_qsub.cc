@@ -130,10 +130,10 @@ main(int argc, char **argv)
    }
 
    prog_number = uti_state_get_mewho();
-   myuid = ctx->get_uid(ctx);
+   myuid = bootstrap_get_uid();
    sge_root = bootstrap_get_sge_root();
    cell_root = ctx->get_cell_root(ctx);
-   username = ctx->get_username(ctx);
+   username = bootstrap_get_username();
    qualified_hostname = uti_state_get_qualified_hostname();
    unqualified_hostname = uti_state_get_unqualified_hostname();
    mastername = ctx->get_master(ctx, false);

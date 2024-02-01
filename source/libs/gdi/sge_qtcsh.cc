@@ -68,7 +68,7 @@ static int init_qtask_config(sge_gdi_ctx_class_t *ctx, lList **alpp, print_func_
    struct passwd pw_struct;
    char *pw_buffer;
    size_t pw_buffer_size;
-   const char* user_name = ctx->get_username(ctx);
+   const char* user_name = bootstrap_get_username();
    const char* cell_root = ctx->get_cell_root(ctx);
 
    /* cell global settings */

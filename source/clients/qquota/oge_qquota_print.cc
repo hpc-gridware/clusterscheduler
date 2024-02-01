@@ -147,7 +147,7 @@ bool qquota_output(sge_gdi_ctx_class_t *ctx, lList *host_list, lList *resource_m
    DENTER(TOP_LAYER);
 
    /* If no user is requested on command line we set the current user as default */
-   qquota_filter.user = ctx->get_username(ctx);
+   qquota_filter.user = bootstrap_get_username();
 
    ret = get_all_lists(ctx, &rqs_list, &centry_list, &userset_list, &hgroup_list, &exechost_list, host_list, alpp);
 

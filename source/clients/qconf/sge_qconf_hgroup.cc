@@ -146,8 +146,8 @@ static bool hgroup_provide_modify_context(sge_gdi_ctx_class_t *ctx, lListElem **
    int status = 0;
    int fields_out[MAX_NUM_FIELDS];
    int missing_field = NoName;
-   uid_t uid = ctx->get_uid(ctx);
-   gid_t gid = ctx->get_gid(ctx);
+   uid_t uid = bootstrap_get_uid();
+   gid_t gid = bootstrap_get_gid();
    
    DENTER(TOP_LAYER);
    if (this_elem != NULL && *this_elem != NULL) {

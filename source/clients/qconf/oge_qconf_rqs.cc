@@ -391,8 +391,8 @@ static bool rqs_provide_modify_context(sge_gdi_ctx_class_t *ctx, lList **rqs_lis
    bool ret = false;
    int status = 0;
    const char *filename = NULL;
-   uid_t uid = ctx->get_uid(ctx);
-   gid_t gid = ctx->get_gid(ctx);
+   uid_t uid = bootstrap_get_uid();
+   gid_t gid = bootstrap_get_gid();
    
    DENTER(TOP_LAYER);
 

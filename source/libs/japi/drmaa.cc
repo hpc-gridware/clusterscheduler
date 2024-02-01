@@ -2569,9 +2569,9 @@ static int drmaa_job2sge_job(lListElem **jtp, const drmaa_job_template_t *drmaa_
    u_long32 jb_now = 0;
 
    u_long32 prog_number = uti_state_get_mewho();
-   u_long32 myuid = ctx->get_uid(ctx);
+   u_long32 myuid = bootstrap_get_uid();
    const char *cell_root = ctx->get_cell_root(ctx);
-   const char *username = ctx->get_username(ctx);
+   const char *username = bootstrap_get_username();
    const char *unqualified_hostname = uti_state_get_unqualified_hostname();
    const char *qualified_hostname = uti_state_get_qualified_hostname();
 

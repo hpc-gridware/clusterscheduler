@@ -160,7 +160,7 @@ int main(int argc, char **argv) {
     */
    {
       dstring file = DSTRING_INIT;
-      const char *user = ctx->get_username(ctx);
+      const char *user = bootstrap_get_username();
       const char *cell_root = ctx->get_cell_root(ctx);
 
       /* arguments from SGE_ROOT/common/sge_qrstat file */

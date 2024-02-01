@@ -1415,8 +1415,8 @@ int main(int argc, char **argv)
    qualified_hostname = uti_state_get_qualified_hostname();
    sge_root = bootstrap_get_sge_root();
    cell_root = ctx->get_cell_root(ctx);
-   myuid = ctx->get_uid(ctx);
-   username = ctx->get_username(ctx);
+   myuid = bootstrap_get_uid();
+   username = bootstrap_get_username();
    mastername = ctx->get_master(ctx, false);
 
    if (strcasecmp(bootstrap_get_security_mode(), "csp") == 0) {
@@ -1906,8 +1906,8 @@ int main(int argc, char **argv)
        * attributes in the job so that the information is available
        * in the JSV client context
        */
-      job_set_owner_and_group(job, ctx->get_uid(ctx), ctx->get_gid(ctx),
-                              ctx->get_username(ctx), ctx->get_groupname(ctx));
+      job_set_owner_and_group(job, bootstrap_get_uid(), bootstrap_get_gid(),
+                              bootstrap_get_username(), bootstrap_get_groupname());
 
       lp_jobs = lCreateList("submitted jobs", JB_Type);
       lAppendElem(lp_jobs, job);

@@ -79,11 +79,6 @@ struct sge_gdi_ctx_class_str {
    const char* (*get_reporting_file)(sge_gdi_ctx_class_t *thiz);
    const char* (*get_cell_root)(sge_gdi_ctx_class_t *thiz);
 
-   const char* (*get_username)(sge_gdi_ctx_class_t *thiz);
-   const char* (*get_groupname)(sge_gdi_ctx_class_t *thiz);
-   uid_t (*get_uid)(sge_gdi_ctx_class_t *thiz);
-   gid_t (*get_gid)(sge_gdi_ctx_class_t *thiz);
-
    /* credentials */
    const char* (*get_private_key)(sge_gdi_ctx_class_t *thiz);
    const char* (*get_certificate)(sge_gdi_ctx_class_t *thiz);

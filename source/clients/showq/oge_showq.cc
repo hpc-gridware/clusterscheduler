@@ -92,7 +92,7 @@ int main(int argc, char **argv)
       SGE_EXIT((void **) &ctx, 1);
    }
 
-   if (!sge_parse_showq_tacc(&alp, &pcmdline, &user_list, ctx->get_username(ctx), 
+   if (!sge_parse_showq_tacc(&alp, &pcmdline, &user_list, bootstrap_get_username(),
                              &full, &binding, &sfa_list, &sfw_list)) {
       answer_list_output(&alp); 
       lFreeList(&pcmdline);

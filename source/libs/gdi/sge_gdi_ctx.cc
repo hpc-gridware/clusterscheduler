@@ -106,11 +106,6 @@ typedef struct {
    sge_csp_path_class_t* sge_csp_path_obj;
 
    char* master;
-   char* component_username;
-   char* username;
-   char* groupname;
-   uid_t uid;
-   gid_t gid;
 
    char *ssl_private_key;
    char *ssl_certificate;
@@ -249,11 +244,7 @@ static sge_path_state_class_t* get_sge_path_state(sge_gdi_ctx_class_t *thiz);
 static sge_csp_path_class_t* get_sge_csp_path(sge_gdi_ctx_class_t *thiz);
 static cl_com_handle_t* get_com_handle(sge_gdi_ctx_class_t *thiz);
 static const char* get_master(sge_gdi_ctx_class_t *thiz, bool reread);
-static const char* get_username(sge_gdi_ctx_class_t *thiz);
 static const char* get_cell_root(sge_gdi_ctx_class_t *thiz);
-static const char* get_groupname(sge_gdi_ctx_class_t *thiz);
-static uid_t ctx_get_uid(sge_gdi_ctx_class_t *thiz);
-static gid_t ctx_get_gid(sge_gdi_ctx_class_t *thiz);
 static const char* get_bootstrap_file(sge_gdi_ctx_class_t *thiz);
 static const char* get_act_qmaster_file(sge_gdi_ctx_class_t *thiz);
 static const char* get_acct_file(sge_gdi_ctx_class_t *thiz);
@@ -314,16 +305,13 @@ sge_gdi_ctx_class_create(int prog_number, const char *component_name,
    ret->get_sge_path_state = get_sge_path_state;
 
    ret->get_master = get_master;
-   ret->get_username = get_username;
    ret->get_bootstrap_file = get_bootstrap_file;
    ret->get_act_qmaster_file = get_act_qmaster_file;
    ret->get_acct_file = get_acct_file;
    ret->get_reporting_file = get_reporting_file;
    ret->get_shadow_master_file = get_shadow_master_file;
    ret->get_cell_root = get_cell_root;
-   ret->get_groupname = get_groupname;
-   ret->get_uid = ctx_get_uid;
-   ret->get_gid = ctx_get_gid;
+
    ret->get_com_handle = get_com_handle;
 
    ret->get_private_key = get_private_key;
@@ -505,90 +493,6 @@ sge_gdi_ctx_setup(sge_gdi_ctx_class_t *thiz, int prog_number, const char* compon
    }
 #endif
 
-   /* set uid and gid */
-   {
-      struct passwd *pwd;
-      struct passwd pw_struct;
-      char *buffer;
-      int size;
-
-      size = get_pw_buffer_size();
-      buffer = sge_malloc(size);
-      pwd = sge_getpwnam_r(username, &pw_struct, buffer, size);
-
-      if (!pwd) {
-         eh->error(eh, STATUS_EUNKNOWN, ANSWER_QUALITY_ERROR, "sge_getpwnam_r failed for username %s", username);
-         sge_free(&buffer);
-         DRETURN(false);
-      }
-      es->uid = pwd->pw_uid;
-      if (groupname != NULL) {
-         gid_t gid;
-         if (sge_group2gid(groupname, &gid, MAX_NIS_RETRIES) == 1) {
-            eh->error(eh, STATUS_EUNKNOWN, ANSWER_QUALITY_ERROR, "sge_group2gid failed for groupname %s", groupname);
-            sge_free(&buffer);
-            DRETURN(false);
-         }
-         es->gid = gid;
-      } else {
-         es->gid = pwd->pw_gid;
-      }
-
-      sge_free(&buffer);
-   }
-
-   es->username = strdup(username);
-
-   /*
-   ** groupname
-   */
-   if (groupname != NULL) {
-      es->groupname = strdup(groupname);
-   } else {
-      if (_sge_gid2group(es->gid, &(es->gid), &(es->groupname), MAX_NIS_RETRIES)) {
-         eh->error(eh, STATUS_EUNKNOWN, ANSWER_QUALITY_ERROR, MSG_GDI_GETGRGIDXFAILEDERRORX_U, sge_u32c(es->gid));
-         DRETURN(false);
-      }
-   }
-
-   /*
-   ** set the component_username and check if login is needed
-   */
-   {
-      struct passwd *pwd = NULL;
-      char *buffer;
-      int size;
-      struct passwd pwentry;
-
-      size = get_pw_buffer_size();
-      buffer = sge_malloc(size);
-      if (getpwuid_r((uid_t)getuid(), &pwentry, buffer, size, &pwd) == 0) {
-         es->component_username = sge_strdup(es->component_username, pwd->pw_name);
-         sge_free(&buffer);
-      } else {
-         eh->error(eh, STATUS_EUNKNOWN, ANSWER_QUALITY_ERROR, "getpwuid_r failed");
-         sge_free(&buffer);
-         DRETURN(false);
-      }
-#if 0
-      /*
-      ** TODO: Login to system somehow and send something like a token with request
-      **       similar like the secret key in CSP mode
-      */
-      DPRINTF(("es->username: '%s', es->component_username: '%s'\n", es->username, es->component_username));      
-      if (strcmp(es->username, es->component_username) != 0) {
-#if 1      
-         eh->error(eh, STATUS_EUNKNOWN, ANSWER_QUALITY_ERROR, "!!!! Alert login needed !!!!!");
-         DRETURN(false);
-#else
-         eh->error(eh, STATUS_EUNKNOWN, ANSWER_QUALITY_ERROR, "!!!! First time login !!!!!");
-/*          sge_authenticate(es->username, callback_handler); */
-         
-#endif
-      }
-#endif
-   }
-
    DRETURN(true);
 }
 
@@ -601,9 +505,6 @@ static void sge_gdi_ctx_destroy(void *theState)
    sge_path_state_class_destroy(&(s->sge_path_state_obj));
    sge_csp_path_class_destroy(&(s->sge_csp_path_obj));
    sge_free(&(s->master));
-   sge_free(&(s->username));
-   sge_free(&(s->groupname));
-   sge_free(&(s->component_username));
    sge_free(&(s->ssl_certificate));
    sge_free(&(s->ssl_private_key));
    sge_error_class_destroy(&(s->eh));
@@ -1089,8 +990,6 @@ static void sge_gdi_ctx_class_dprintf(sge_gdi_ctx_class_t *ctx)
 #endif
 
    DPRINTF(("master: %s\n", ctx->get_master(ctx, false)));
-   DPRINTF(("uid/username: %d/%s\n", (int) ctx->get_uid(ctx), ctx->get_username(ctx)));
-   DPRINTF(("gid/groupname: %d/%s\n", (int) ctx->get_gid(ctx), ctx->get_groupname(ctx)));
 
    DPRINTF(("^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n"));
 
@@ -1210,17 +1109,6 @@ static const char* get_shadow_master_file(sge_gdi_ctx_class_t *thiz) {
    return path_state->get_shadow_masters_file(path_state);
 }
 
-
-static const char* get_username(sge_gdi_ctx_class_t *thiz) {
-   sge_gdi_ctx_t *es = (sge_gdi_ctx_t *) thiz->sge_gdi_ctx_handle;
-   return es->username;
-}
-
-static const char* get_groupname(sge_gdi_ctx_class_t *thiz) {
-   sge_gdi_ctx_t *es = (sge_gdi_ctx_t *) thiz->sge_gdi_ctx_handle;
-   return es->groupname;
-}
-
 static int ctx_get_last_commlib_error(sge_gdi_ctx_class_t *thiz) {
    sge_gdi_ctx_t *es = (sge_gdi_ctx_t *) thiz->sge_gdi_ctx_handle;
    return es->last_commlib_error;
@@ -1229,16 +1117,6 @@ static int ctx_get_last_commlib_error(sge_gdi_ctx_class_t *thiz) {
 static void ctx_set_last_commlib_error(sge_gdi_ctx_class_t *thiz, int cl_error) {
    sge_gdi_ctx_t *es = (sge_gdi_ctx_t *) thiz->sge_gdi_ctx_handle;
    es->last_commlib_error = cl_error;
-}
-
-static uid_t ctx_get_uid(sge_gdi_ctx_class_t *thiz) {
-   sge_gdi_ctx_t *es = (sge_gdi_ctx_t *) thiz->sge_gdi_ctx_handle;
-   return es->uid;
-}
-
-static gid_t ctx_get_gid(sge_gdi_ctx_class_t *thiz) {
-   sge_gdi_ctx_t *es = (sge_gdi_ctx_t *) thiz->sge_gdi_ctx_handle;
-   return es->gid;
 }
 
 static int sge_gdi_ctx_log_flush_func(cl_raw_list_t* list_p)

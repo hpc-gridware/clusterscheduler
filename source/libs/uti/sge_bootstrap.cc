@@ -45,6 +45,7 @@
 #include "uti/sge_bootstrap.h"
 #include "uti/sge_arch.h"
 #include "uti/sge_hostname.h"
+#include "uti/sge_uidgid.h"
 
 #include "uti/msg_utilib.h"
 
@@ -78,6 +79,10 @@ typedef struct {
    u_long32 component_id;
    char *component_name;
    char *thread_name;
+   uid_t uid;
+   gid_t gid;
+   char *username;
+   char *groupname;
 } sge_bootstrap_tl_t;
 
 static pthread_once_t bootstrap_once = PTHREAD_ONCE_INIT;
@@ -208,6 +213,16 @@ set_component_id(sge_bootstrap_tl_t *tl, u_long32 component_id) {
 }
 
 static void
+set_uid(sge_bootstrap_tl_t *tl, uid_t uid) {
+   tl->uid = uid;
+}
+
+static void
+set_gid(sge_bootstrap_tl_t *tl, gid_t gid) {
+   tl->gid = gid;
+}
+
+static void
 set_component_name(sge_bootstrap_tl_t *tl, const char *component_name) {
    tl->component_name = sge_strdup(tl->component_name, component_name);
 }
@@ -218,36 +233,50 @@ set_thread_name(sge_bootstrap_tl_t *tl, const char *thread_name) {
 }
 
 static void
+set_username(sge_bootstrap_tl_t *tl, const char *username) {
+   tl->username = sge_strdup(tl->username, username);
+}
+
+static void
+set_groupname(sge_bootstrap_tl_t *tl, const char *groupname) {
+   tl->groupname = sge_strdup(tl->groupname, groupname);
+}
+
+static void
 log_parameter(sge_bootstrap_tl_t *tl) {
    DENTER(TOP_LAYER);
 
-   DPRINTF(("ENVIRONMENT\n"))
-   DPRINTF(("sge_root            >%s<\n", tl->sge_root ? tl->sge_root : "NA"));
-   DPRINTF(("sge_cell            >%s<\n", tl->sge_cell ? tl->sge_cell : "NA"));
-   DPRINTF(("sge_qmaster_port    >%d<\n", tl->sge_qmaster_port));
-   DPRINTF(("sge_execd_port      >%d<\n", tl->sge_execd_port));
-   DPRINTF(("from_services       >%s<\n", tl->from_services ? "true" : "false"));
-   DPRINTF(("qmaster_internal    >%s<\n", tl->qmaster_internal ? "true" : "false"));
+   DPRINTF(("ENVIRONMENT ===\n"))
+   DPRINTF(("   sge_root            >%s<\n", tl->sge_root ? tl->sge_root : "NA"));
+   DPRINTF(("   sge_cell            >%s<\n", tl->sge_cell ? tl->sge_cell : "NA"));
+   DPRINTF(("   sge_qmaster_port    >%d<\n", tl->sge_qmaster_port));
+   DPRINTF(("   sge_execd_port      >%d<\n", tl->sge_execd_port));
+   DPRINTF(("   from_services       >%s<\n", tl->from_services ? "true" : "false"));
+   DPRINTF(("   qmaster_internal    >%s<\n", tl->qmaster_internal ? "true" : "false"));
 
-   DPRINTF(("COMPONENT\n"))
-   DPRINTF(("component_id        >%d<\n", tl->component_id));
-   DPRINTF(("component_name      >%s<\n", tl->component_name ? tl->component_name : "NA"));
-   DPRINTF(("thread_name         >%s<\n", tl->thread_name ? tl->thread_name : "NA"));
+   DPRINTF(("COMPONENT ===\n"))
+   DPRINTF(("   component_id        >%d<\n", tl->component_id));
+   DPRINTF(("   component_name      >%s<\n", tl->component_name ? tl->component_name : "NA"));
+   DPRINTF(("   thread_name         >%s<\n", tl->thread_name ? tl->thread_name : "NA"));
+   DPRINTF(("   uid                 >%d<\n", tl->uid));
+   DPRINTF(("   gid                 >%d<\n", tl->gid));
+   DPRINTF(("   username            >%s<\n", tl->username ? tl->username : "NA"));
+   DPRINTF(("   groupname           >%s<\n", tl->groupname ? tl->groupname : "NA"));
 
-   DPRINTF(("BOOTSTRAP FILE\n"))
-   DPRINTF(("admin_user          >%s<\n", tl->admin_user));
-   DPRINTF(("default_domain      >%s<\n", tl->default_domain));
-   DPRINTF(("ignore_fqdn         >%s<\n", tl->ignore_fqdn ? "true" : "false"));
-   DPRINTF(("spooling_method     >%s<\n", tl->spooling_method));
-   DPRINTF(("spooling_lib        >%s<\n", tl->spooling_lib));
-   DPRINTF(("spooling_params     >%s<\n", tl->spooling_params));
-   DPRINTF(("binary_path         >%s<\n", tl->binary_path));
-   DPRINTF(("qmaster_spool_dir   >%s<\n", tl->qmaster_spool_dir));
-   DPRINTF(("security_mode       >%s<\n", tl->security_mode));
-   DPRINTF(("job_spooling        >%s<\n", tl->job_spooling ? "true" : "false"));
-   DPRINTF(("listener_threads    >%d<\n", tl->listener_thread_count));
-   DPRINTF(("worker_threads      >%d<\n", tl->worker_thread_count));
-   DPRINTF(("scheduler_threads   >%d<\n", tl->scheduler_thread_count));
+   DPRINTF(("BOOTSTRAP FILE ===\n"))
+   DPRINTF(("   admin_user          >%s<\n", tl->admin_user));
+   DPRINTF(("   default_domain      >%s<\n", tl->default_domain));
+   DPRINTF(("   ignore_fqdn         >%s<\n", tl->ignore_fqdn ? "true" : "false"));
+   DPRINTF(("   spooling_method     >%s<\n", tl->spooling_method));
+   DPRINTF(("   spooling_lib        >%s<\n", tl->spooling_lib));
+   DPRINTF(("   spooling_params     >%s<\n", tl->spooling_params));
+   DPRINTF(("   binary_path         >%s<\n", tl->binary_path));
+   DPRINTF(("   qmaster_spool_dir   >%s<\n", tl->qmaster_spool_dir));
+   DPRINTF(("   security_mode       >%s<\n", tl->security_mode));
+   DPRINTF(("   job_spooling        >%s<\n", tl->job_spooling ? "true" : "false"));
+   DPRINTF(("   listener_threads    >%d<\n", tl->listener_thread_count));
+   DPRINTF(("   worker_threads      >%d<\n", tl->worker_thread_count));
+   DPRINTF(("   scheduler_threads   >%d<\n", tl->scheduler_thread_count));
 
    DRETURN_VOID;
 }
@@ -391,6 +420,21 @@ bootstrap_init_from_file(sge_bootstrap_tl_t *tl) {
 }
 
 static void
+bootstrap_init_from_component(sge_bootstrap_tl_t *tl) {
+   char user[256];
+   char group[256];
+   uid_t uid = geteuid();
+   gid_t gid = getegid();
+
+   set_uid(tl, uid);
+   set_gid(tl, gid);
+   SGE_ASSERT(sge_uid2user(uid, user, sizeof(user), MAX_NIS_RETRIES) == 0)
+   SGE_ASSERT(sge_gid2group(gid, group, sizeof(group), MAX_NIS_RETRIES) == 0)
+   set_username(tl, user);
+   set_groupname(tl, group);
+}
+
+static void
 bootstrap_tl_init(sge_bootstrap_tl_t *tl) {
    DENTER(TOP_LAYER);
    memset(tl, 0, sizeof(sge_bootstrap_tl_t));
@@ -398,6 +442,7 @@ bootstrap_tl_init(sge_bootstrap_tl_t *tl) {
    // do environment setup first because file based init depends on that
    bootstrap_init_from_environment(tl);
    bootstrap_init_from_file(tl);
+   bootstrap_init_from_component(tl);
    DRETURN_VOID;
 }
 
@@ -408,6 +453,8 @@ bootstrap_thread_local_destroy(void *tl) {
    // component parameters
    sge_free(&(_tl->component_name));
    sge_free(&(_tl->thread_name));
+   sge_free(&(_tl->username));
+   sge_free(&(_tl->groupname));
 
    // environment parameters
    sge_free(&(_tl->sge_root));
@@ -694,3 +741,50 @@ bootstrap_set_thread_name(const char *thread_name) {
    set_thread_name(tl, thread_name);
 }
 
+uid_t
+bootstrap_get_uid(void) {
+   GET_SPECIFIC(sge_bootstrap_tl_t, tl, bootstrap_tl_init, sge_bootstrap_tl_key, "bootstrap_get_uid");
+   return tl->uid;
+}
+
+void
+bootstrap_set_uid(uid_t uid) {
+   GET_SPECIFIC(sge_bootstrap_tl_t, tl, bootstrap_tl_init, sge_bootstrap_tl_key, "bootstrap_set_uid");
+   set_uid(tl, uid);
+}
+
+gid_t
+bootstrap_get_gid(void) {
+   GET_SPECIFIC(sge_bootstrap_tl_t, tl, bootstrap_tl_init, sge_bootstrap_tl_key, "bootstrap_get_gid");
+   return tl->gid;
+}
+
+void
+bootstrap_set_gid(gid_t gid) {
+   GET_SPECIFIC(sge_bootstrap_tl_t, tl, bootstrap_tl_init, sge_bootstrap_tl_key, "bootstrap_set_gid");
+   set_gid(tl, gid);
+}
+
+const char *
+bootstrap_get_username(void) {
+   GET_SPECIFIC(sge_bootstrap_tl_t, tl, bootstrap_tl_init, sge_bootstrap_tl_key, "bootstrap_get_username");
+   return tl->username;
+}
+
+void
+bootstrap_set_username(const char *username) {
+   GET_SPECIFIC(sge_bootstrap_tl_t, tl, bootstrap_tl_init, sge_bootstrap_tl_key, "bootstrap_set_username");
+   set_username(tl, username);
+}
+
+const char *
+bootstrap_get_groupname(void) {
+   GET_SPECIFIC(sge_bootstrap_tl_t, tl, bootstrap_tl_init, sge_bootstrap_tl_key, "bootstrap_get_groupname");
+   return tl->groupname;
+}
+
+void
+bootstrap_set_groupname(const char *groupname) {
+   GET_SPECIFIC(sge_bootstrap_tl_t, tl, bootstrap_tl_init, sge_bootstrap_tl_key, "bootstrap_set_groupname");
+   set_groupname(tl, groupname);
+}

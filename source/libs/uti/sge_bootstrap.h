@@ -171,3 +171,27 @@ bootstrap_set_thread_name(const char *thread_name);
 
 void
 bootstrap_log_parameter(void);
+
+uid_t
+bootstrap_get_uid(void);
+
+void
+bootstrap_set_uid(uid_t uid);
+
+gid_t
+bootstrap_get_gid(void);
+
+void
+bootstrap_set_gid(gid_t gid);
+
+const char *
+bootstrap_get_username(void);
+
+void
+bootstrap_set_username(const char *username);
+
+const char *
+bootstrap_get_groupname(void);
+
+void
+bootstrap_set_groupname(const char *groupname);

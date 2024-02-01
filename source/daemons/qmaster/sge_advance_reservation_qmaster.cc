@@ -247,7 +247,7 @@ int ar_mod(sge_gdi_ctx_class_t *ctx, lList **alpp, lListElem *new_ar, lListElem 
       ** attr_mod_str(alpp, ar, new_ar, AR_owner, object->object_name);
       */
       lSetString(new_ar, AR_owner, ruser);
-      lSetString(new_ar, AR_group, ctx->get_groupname(ctx));
+      lSetString(new_ar, AR_group, bootstrap_get_groupname());
    } else {
       ERROR((SGE_EVENT, MSG_NOTYETIMPLEMENTED_S, "advance reservation modification"));
       answer_list_add(alpp, SGE_EVENT, STATUS_ESEMANTIC, ANSWER_QUALITY_ERROR);

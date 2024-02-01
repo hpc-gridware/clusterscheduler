@@ -1277,10 +1277,10 @@ sge_gdi_packet_initialize_auth_info(sge_gdi_ctx_class_t *ctx,
    sge_mutex_lock(GDI_PACKET_MUTEX, __func__, __LINE__, &(packet_handle->mutex));
 #endif
 
-   uid = ctx->get_uid(ctx);
-   gid = ctx->get_gid(ctx);
-   sge_strlcpy(username, ctx->get_username(ctx), sizeof(username));
-   sge_strlcpy(groupname, ctx->get_groupname(ctx), sizeof(groupname));
+   uid = bootstrap_get_uid();
+   gid = bootstrap_get_gid();
+   sge_strlcpy(username, bootstrap_get_username(), sizeof(username));
+   sge_strlcpy(groupname, bootstrap_get_groupname(), sizeof(groupname));
 
    DPRINTF(("sge_set_auth_info: username(uid) = %s(%d), groupname = %s(%d)\n",
             username, uid, groupname, gid));

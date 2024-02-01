@@ -222,7 +222,7 @@ char **argv
       SGE_EXIT((void**)&ctx, 1);
    }
 
-   username = ctx->get_username(ctx);
+   username = bootstrap_get_username();
    cell_root = ctx->get_cell_root(ctx);
    lInit(nmv);      
    qstat_env.ctx = ctx;

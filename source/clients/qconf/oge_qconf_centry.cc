@@ -106,8 +106,8 @@ static bool centry_provide_modify_context(sge_gdi_ctx_class_t *ctx, lListElem **
    lList *alp = NULL;
    int fields_out[MAX_NUM_FIELDS];
    int missing_field = NoName;
-   uid_t uid = ctx->get_uid(ctx);
-   gid_t gid = ctx->get_gid(ctx);
+   uid_t uid = bootstrap_get_uid();
+   gid_t gid = bootstrap_get_gid();
 
    DENTER(TOP_LAYER);
 
@@ -669,8 +669,8 @@ bool centry_list_modify_from_file(sge_gdi_ctx_class_t *ctx, lList **answer_list,
 static bool centry_list_provide_modify_context(sge_gdi_ctx_class_t *ctx, lList **this_list, lList **answer_list) {
    bool ret = false;
    int status = 0;
-   uid_t uid = ctx->get_uid(ctx);
-   gid_t gid = ctx->get_gid(ctx);
+   uid_t uid = bootstrap_get_uid();
+   gid_t gid = bootstrap_get_gid();
 
    DENTER(TOP_LAYER);
    if (this_list != NULL) {

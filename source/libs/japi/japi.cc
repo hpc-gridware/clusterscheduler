@@ -544,7 +544,7 @@ int japi_init(const char *contact, const char *session_key_in,
    }
    
    if (enable_wait) {
-      const char *username = ctx->get_username(ctx);
+      const char *username = bootstrap_get_username();
       const char *unqualified_hostname = uti_state_get_unqualified_hostname();
 
       /* spawn implementation thread japi_implementation_thread() */
@@ -1251,8 +1251,8 @@ static int japi_send_job(lListElem **sge_job_template, u_long32 *jobid, dstring 
     * Set owner and group so that information will be available in
     * client JSV scripts
     */
-   job_set_owner_and_group(job, ctx->get_uid(ctx), ctx->get_gid(ctx),
-                           ctx->get_username(ctx), ctx->get_groupname(ctx));
+   job_set_owner_and_group(job, bootstrap_get_uid(), bootstrap_get_gid(),
+                           bootstrap_get_username(), bootstrap_get_groupname());
 
    /* use GDI to submit job for this session */
    alp = ctx->gdi(ctx, SGE_JB_LIST, SGE_GDI_ADD|SGE_GDI_RETURN_NEW_VERSION, &job_lp, NULL, NULL);
