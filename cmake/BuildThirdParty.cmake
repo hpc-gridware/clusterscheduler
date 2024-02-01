@@ -113,6 +113,20 @@ function(build_third_party 3rdparty_build_path 3rdparty_install_path)
                 )
             endif ()
         endif ()
+
+        if (${WITH_OPENSSL})
+            message(STATUS "adding 3rdparty openssl")
+            if (WITH_OS_3RDPARTY)
+                if (EXISTS "/usr/include/openssl")
+                    add_compile_definitions("SECURE")
+                else()
+                    message(FATAL_ERROR "openssl header files seem not to be installed")
+                endif()
+            else ()
+                message(FATAL_ERROR "can build with openssl only with os packages")
+            endif()
+        endif()
+
     endif ()
 
     # add a target containing all 3rdparty libs which need to be built once
