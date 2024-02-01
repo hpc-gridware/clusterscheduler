@@ -238,9 +238,7 @@ typedef struct cl_com_global_settings_def {
  */
 typedef struct cl_com_thread_data_def {
    cl_com_handle_t *handle;
-#ifdef USE_POLL
    cl_com_poll_t *poll_handle;
-#endif
 } cl_com_thread_data_t;
 
 static pthread_mutex_t cl_com_global_settings_mutex = PTHREAD_MUTEX_INITIALIZER;
@@ -702,14 +700,7 @@ char *cl_com_get_unresolvable_hosts(void) {
 
 bool cl_com_is_valid_fd(int fd) {
 
-   if (fd >= 0) {
-#ifndef USE_POLL
-                                                                                                                              if(fd >= FD_SETSIZE){
-         CL_LOG_INT(CL_LOG_WARNING, "filedescriptor is >= FD_SETSIZE: ", fd);
-         return false;
-      }
-#endif
-   } else {
+   if (fd < 0) {
       CL_LOG_INT(CL_LOG_WARNING, "filedescriptor is < 0: ", fd);
       return false;
    }
@@ -1319,13 +1310,6 @@ cl_com_handle_t *cl_com_create_handle(int *commlib_error,
 
    new_handle->max_open_connections = (unsigned long) application_rlimits.rlim_cur;
 
-#ifndef USE_POLL
-                                                                                                                           if (FD_SETSIZE < new_handle->max_open_connections) {
-      CL_LOG(CL_LOG_ERROR,"FD_SETSIZE < file descriptor limit");
-      new_handle->max_open_connections = FD_SETSIZE - 1;
-   }
-#endif
-
    if (new_handle->max_open_connections < 32) {
       CL_LOG_INT(CL_LOG_ERROR, "to less file descriptors:", (int) new_handle->max_open_connections);
       sge_free(&new_handle);
@@ -1711,7 +1695,6 @@ cl_com_handle_t *cl_com_create_handle(int *commlib_error,
             if (thread_data == NULL) {
                return_value = CL_RETVAL_MALLOC;
             } else {
-#ifdef USE_POLL
                cl_com_poll_t *poll_handle = (cl_com_poll_t *) sge_malloc(sizeof(cl_com_poll_t));
                if (poll_handle == NULL) {
                   return_value = CL_RETVAL_MALLOC;
@@ -1721,7 +1704,6 @@ cl_com_handle_t *cl_com_create_handle(int *commlib_error,
                   memset(poll_handle, 0, sizeof(cl_com_poll_t));
                   thread_data->poll_handle = poll_handle;
                }
-#endif
                thread_data->handle = new_handle;
             }
 
@@ -1754,7 +1736,6 @@ cl_com_handle_t *cl_com_create_handle(int *commlib_error,
             if (thread_data == NULL) {
                return_value = CL_RETVAL_MALLOC;
             } else {
-#ifdef USE_POLL
                cl_com_poll_t *poll_handle = (cl_com_poll_t *) sge_malloc(sizeof(cl_com_poll_t));
                if (poll_handle == NULL) {
                   return_value = CL_RETVAL_MALLOC;
@@ -1764,7 +1745,6 @@ cl_com_handle_t *cl_com_create_handle(int *commlib_error,
                   memset(poll_handle, 0, sizeof(cl_com_poll_t));
                   thread_data->poll_handle = poll_handle;
                }
-#endif
                thread_data->handle = new_handle;
             }
 
@@ -3008,10 +2988,8 @@ static int cl_com_trigger(cl_com_handle_t *handle, int synchron) {
    int retval = CL_RETVAL_OK;
    char tmp_string[1024];
    bool ignore_timeouts = false;
-#ifdef USE_POLL
    cl_com_poll_t poll_handle;
    memset(&poll_handle, 0, sizeof(cl_com_poll_t));
-#endif
 
    if (handle == NULL) {
       CL_LOG(CL_LOG_ERROR, "no handle specified");
@@ -3037,7 +3015,6 @@ static int cl_com_trigger(cl_com_handle_t *handle, int synchron) {
    /* check number of connections */
    cl_commlib_check_connection_count(handle);
 
-#ifdef USE_POLL
    /* do virtual select */
    if (synchron == 1) {
       retval = cl_com_open_connection_request_handler(&poll_handle, handle, handle->select_sec_timeout,
@@ -3046,14 +3023,6 @@ static int cl_com_trigger(cl_com_handle_t *handle, int synchron) {
       retval = cl_com_open_connection_request_handler(&poll_handle, handle, 0, 0, CL_RW_SELECT);
    }
    cl_com_free_poll_array(&poll_handle);
-#else
-                                                                                                                           /* do virtual select */
-   if (synchron == 1) {
-      retval = cl_com_open_connection_request_handler(handle, handle->select_sec_timeout, handle->select_usec_timeout, CL_RW_SELECT);
-   } else {
-      retval = cl_com_open_connection_request_handler(handle, 0, 0, CL_RW_SELECT);
-   }
-#endif
 
    ignore_timeouts = cl_com_get_ignore_timeouts_flag();
 
@@ -7424,7 +7393,6 @@ static void *cl_com_handle_service_thread(void *t_conf) {
 
 static void cl_thread_read_write_thread_cleanup_function(cl_thread_settings_t *thread_config) {
    if (thread_config != NULL) {
-#ifdef USE_POLL
       /*
        *  If we used the poll() implementation the poll array struct has
        *  to be freed.
@@ -7441,7 +7409,6 @@ static void cl_thread_read_write_thread_cleanup_function(cl_thread_settings_t *t
          thread_config->thread_user_data = NULL;
       }
       CL_LOG(CL_LOG_INFO, "thread user data cleanup done");
-#endif
    }
 }
 
@@ -7465,9 +7432,7 @@ static void *cl_com_handle_read_thread(void *t_conf) {
    struct timeval now;
    cl_com_handle_t *handle = NULL;
    cl_com_thread_data_t *thread_data = NULL;
-#ifdef USE_POLL
    cl_com_poll_t *poll_handle = NULL;
-#endif
 
    /* get pointer to cl_thread_settings_t struct */
    cl_thread_settings_t *thread_config = (cl_thread_settings_t *) t_conf;
@@ -7475,9 +7440,7 @@ static void *cl_com_handle_read_thread(void *t_conf) {
    /* get handle from thread_config */
    thread_data = (cl_com_thread_data_t *) thread_config->thread_user_data;
    handle = thread_data->handle;
-#ifdef USE_POLL
    poll_handle = thread_data->poll_handle;
-#endif
 
    /* thread init */
    if (cl_thread_func_startup(thread_config) != CL_RETVAL_OK) {
@@ -7522,12 +7485,8 @@ static void *cl_com_handle_read_thread(void *t_conf) {
       }
       cl_raw_list_unlock(handle->send_message_queue);
 
-#ifdef USE_POLL
       ret_val = cl_com_open_connection_request_handler(poll_handle, handle, handle->select_sec_timeout,
                                                        handle->select_usec_timeout, CL_R_SELECT);
-#else
-      ret_val = cl_com_open_connection_request_handler(handle, handle->select_sec_timeout , handle->select_usec_timeout, CL_R_SELECT);
-#endif
       switch (ret_val) {
          case CL_RETVAL_SELECT_TIMEOUT:
             CL_LOG(CL_LOG_INFO, "got select timeout");
@@ -7868,9 +7827,7 @@ static void *cl_com_handle_write_thread(void *t_conf) {
    cl_app_message_queue_elem_t *mq_elem = NULL;
    int mq_return_value = CL_RETVAL_OK;
    cl_com_thread_data_t *thread_data = NULL;
-#ifdef USE_POLL
    cl_com_poll_t *poll_handle = NULL;
-#endif
 
    /* get pointer to cl_thread_settings_t struct */
    cl_thread_settings_t *thread_config = (cl_thread_settings_t *) t_conf;
@@ -7878,9 +7835,7 @@ static void *cl_com_handle_write_thread(void *t_conf) {
    /* get handle from thread_config */
    thread_data = (cl_com_thread_data_t *) thread_config->thread_user_data;
    handle = thread_data->handle;
-#ifdef USE_POLL
    poll_handle = thread_data->poll_handle;
-#endif
 
    /* thread init */
    if (cl_thread_func_startup(thread_config) != CL_RETVAL_OK) {
@@ -7919,12 +7874,8 @@ static void *cl_com_handle_write_thread(void *t_conf) {
 
 
       /* do write select */
-#ifdef USE_POLL
       ret_val = cl_com_open_connection_request_handler(poll_handle, handle, handle->select_sec_timeout,
                                                        handle->select_usec_timeout, CL_W_SELECT);
-#else
-      ret_val = cl_com_open_connection_request_handler(handle, handle->select_sec_timeout , handle->select_usec_timeout, CL_W_SELECT);
-#endif
       switch (ret_val) {
          case CL_RETVAL_SELECT_TIMEOUT:
             CL_LOG(CL_LOG_INFO, "write select timeout");

@@ -375,11 +375,7 @@ extern int _insure_is_internal_fd(int);
 *     ???/???
 *******************************************************************************/
 int sge_get_max_fd(void) {
-#ifndef USE_POLL
-   return sysconf(_SC_OPEN_MAX) > FD_SETSIZE ? FD_SETSIZE : sysconf(_SC_OPEN_MAX);
-#else
    return sysconf(_SC_OPEN_MAX);
-#endif
 }
 
 /****** uti/os/fd_compare() ****************************************************

@@ -42,13 +42,7 @@
 #include <netinet/in.h>
 #include <arpa/inet.h>
 #include <netdb.h>
-
-#ifdef USE_POLL
-
 #include <sys/poll.h>
-
-#endif
-
 
 #include "uti/sge_hostname.h"
 #include "uti/sge_string.h"
@@ -3431,13 +3425,8 @@ int cl_com_connection_request_handler_cleanup(cl_com_connection_t *connection) {
 #define __CL_FUNCTION__ "cl_com_open_connection_request_handler()"
 /* WARNING connection list must be locked */
 
-#ifdef USE_POLL
-
 int cl_com_open_connection_request_handler(cl_com_poll_t *poll_handle, cl_com_handle_t *handle, int timeout_val_sec,
                                            int timeout_val_usec, cl_select_method_t select_mode)
-#else
-int cl_com_open_connection_request_handler(cl_com_handle_t* handle, int timeout_val_sec, int timeout_val_usec, cl_select_method_t select_mode)
-#endif
 {
    cl_com_connection_t *service_connection = NULL;
    int usec_rest = timeout_val_usec;
@@ -3479,24 +3468,14 @@ int cl_com_open_connection_request_handler(cl_com_handle_t* handle, int timeout_
    if (handle->connection_list != NULL) {
       switch (handle->framework) {
          case CL_CT_TCP: {
-#ifdef USE_POLL
             return cl_com_tcp_open_connection_request_handler(poll_handle, handle, handle->connection_list,
                                                               service_connection,
                                                               sec_param, usec_rest, select_mode);
-#else
-            return cl_com_tcp_open_connection_request_handler(handle, handle->connection_list, service_connection,
-                                                              sec_param , usec_rest, select_mode);
-#endif
          }
          case CL_CT_SSL: {
-#ifdef USE_POLL
             return cl_com_ssl_open_connection_request_handler(poll_handle, handle, handle->connection_list,
                                                               service_connection,
                                                               sec_param, usec_rest, select_mode);
-#else
-            return cl_com_ssl_open_connection_request_handler(handle, handle->connection_list, service_connection,
-                                                              sec_param , usec_rest, select_mode);
-#endif
          }
          case CL_CT_UNDEFINED: {
             break;
@@ -3510,7 +3489,6 @@ int cl_com_open_connection_request_handler(cl_com_handle_t* handle, int timeout_
 }
 
 
-#ifdef USE_POLL
 #ifdef __CL_FUNCTION__
 #undef __CL_FUNCTION__
 #endif
@@ -3570,11 +3548,6 @@ int cl_com_malloc_poll_array(cl_com_poll_t *poll_handle, unsigned long nr_of_mal
    CL_LOG_INT(CL_LOG_INFO, "nr of file descriptors fitting into the poll_array: ", (int) poll_handle->poll_fd_count);
    return CL_RETVAL_OK;
 }
-
-#endif
-
-
-
 
 /* If timeout is 0 then the function will return after one read try, the
    caller has to call this function again */

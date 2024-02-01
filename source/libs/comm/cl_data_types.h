@@ -351,25 +351,14 @@ typedef struct cl_com_handle {
    struct timeval last_message_queue_cleanup_time; /* used in service thread */
 } cl_com_handle_t;
 
-#ifdef USE_POLL
 typedef struct cl_com_poll {
    struct pollfd *poll_array;     /* array of pollfd structs */
    cl_com_connection_t **poll_con;       /* array of connection pointers */
    unsigned long poll_fd_count;  /* nr of malloced pollfd structs and connection pointers */
 } cl_com_poll_t;
-#endif
 
 typedef struct cl_com_hostent {
    struct hostent *he;              /* pointer of type struct hostent (defined in netdb.h) */
-
-#if 0
-   /* tried to store gethostbyname_r from unix return values into this struct, but
-      now sge_copy_hostent() and sge_gethostbyname() from utilib are used in order 
-      to create copies of struct hostent.
-
-      So it is not necessary to save this data anymore */
-   char*  he_data_buffer;           /* all struct member pointers point to data in this buffer */
-#endif
 
 } cl_com_hostent_t;
 

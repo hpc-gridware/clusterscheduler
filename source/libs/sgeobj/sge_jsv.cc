@@ -36,9 +36,7 @@
 #include <string.h>
 #include <time.h>
 #include <unistd.h>
-#ifdef USE_POLL
- #include <sys/poll.h>
-#endif
+#include <sys/poll.h>
 
 #include "sge.h"
 
@@ -206,7 +204,6 @@ jsv_is_send_ready(lListElem *jsv, lList **answer_list) {
    
    fd = fileno((FILE *) lGetRef(jsv, JSV_in));
 
-#ifdef USE_POLL
    {
       struct pollfd pfds;
       memset(&pfds, 0, sizeof(struct pollfd));
@@ -219,22 +216,6 @@ jsv_is_send_ready(lListElem *jsv, lList **answer_list) {
          }
       }
    }
-#else
-   {
-      fd_set writefds;
-      struct timeval timeleft;
-      FD_ZERO(&writefds);
-      FD_SET(fd, &writefds);
-      timeleft.tv_sec = timeout;
-      timeleft.tv_usec = 0;
-      lret = select(fd + 1, NULL, &writefds, NULL, &timeleft);
-      if (lret != -1 && lret != 0) {
-         if (FD_ISSET(fd, &writefds)) {
-            ret = true;
-         }
-      }
-   }
-#endif
 
    if (ret == true) {
       DPRINTF(("JSV - fd is ready. Data can be sent\n"));
