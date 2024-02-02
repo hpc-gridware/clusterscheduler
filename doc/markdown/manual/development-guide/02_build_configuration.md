@@ -74,8 +74,14 @@ definitions. Some dependencies may be optional for a platform that can be enable
    # on Solaris
    cmake ... -DWITH_MTMALLOC=OFF
    ```
-
-4. Select *Debug* vs. *Release* build mode. In *Debug* mode the code is built without optimization and with
+   
+4. By default the required 3rdparty dependencies will be downloaded and installed by the cmake build.
+   In order to use development packages provided by the OS use
+   ```shell
+   cmake ... -DWITH_OS_3RDPARTY=ON
+   ```
+   
+5. Select *Debug* vs. *Release* build mode. In *Debug* mode the code is built without optimization and with
    debug information; additional checks might be activated in the code. In a *Release* build there is no debug
    information. Optimizations are turned on, no potentially expensive special checks are done in the code. By
    default, the *Debug* build is active. To switch to Release build set the *CMAKE_BUILD_TYPE* variable:
@@ -95,7 +101,7 @@ definitions. Some dependencies may be optional for a platform that can be enable
    This enables following compiler and linker flags:  `-fno-omit-frame-pointer`, `-fsanitize=leak`,
    `-fsanitize=undefined` and `-fsanitize=address`
 
-5. Specify the product parts that need to get installed as part of the `cmake` installation process. Following
+6. Specify the product parts that need to get installed as part of the `cmake` installation process. Following
    parts are available:
 
     * *INSTALL_SGE_BIN* 

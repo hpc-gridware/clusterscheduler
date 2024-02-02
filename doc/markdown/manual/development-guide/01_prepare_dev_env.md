@@ -48,6 +48,27 @@ Certain tests of the automated test environment require:
 
 An IDE (e.g. Clion) is optional but might have addition prerequisites (e.g. rsync to support remote compilation). 
 
+### CentOS 7
+
+```Shell
+yum install centos-release-scl
+yum install devtoolset-11
+yum install numactl-devel ncurses-devel libXpm-devel pam-devel pciutils-devel systemd-devel
+yum install epel-release
+yum install patchelf
+yum install git autoconf automake flex bison
+```
+
+#### Building with 3rdparty libraries provided by the OS
+
+Relying on os packages for the 3rdparty tools requires the following additional packages:
+
+```Shell
+yum install libdb libdb-devel
+yum install hwloc hwloc-devel
+yum install openssl-devel
+```
+
 ### FreeBSD 13/14
 
 ```
@@ -95,6 +116,15 @@ dnf --enablerepo=devel install -y doxygen graphviz pandoc
 apt-get install -y git autoconf automake build-essential manpages-dev libudev-dev
 apt-get install -y expect tcl tdom gnuplot xterm
 apt-get install -y doxygen graphviz pandoc 
+```
+
+#### Building with 3rdparty libraries provided by the OS
+
+Relying on os packages for the 3rdparty tools requires the following additional packages:
+
+```Shell
+apt install rapidjson-dev libdb5.3 libdb5.3-dev libjemalloc2 libjemalloc-dev
+apt install hwloc libhwloc-dev
 ```
     
 ## Clone the Required Repositories

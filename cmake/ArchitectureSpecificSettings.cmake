@@ -20,14 +20,14 @@ function(architecture_specific_settings)
    message(STATUS "Compilearch: ${SGE_COMPILEARCH}")
    message(STATUS "Targetbits: ${SGE_TARGETBITS}")
 
-   # directory for installing 3rdparty tools once
-   # this allows us to delete the build directory without having to re-build all 3rdparty tools
-   set(PROJECT_3RDPARTY_DIR "${PROJECT_3RDPARTY_HOME}/${SGE_ARCH}/${OS_ID}/${OS_VERSION}/${CMAKE_BUILD_TYPE}")
-   # spaces in file/directory names break the build
-   string(REPLACE " " "_" PROJECT_3RDPARTY_DIR ${PROJECT_3RDPARTY_DIR})
-   message(STATUS "3rdparty tools are installed to ${PROJECT_3RDPARTY_DIR}")
-   set(PROJECT_3RDPARTY_DIR ${PROJECT_3RDPARTY_DIR} PARENT_SCOPE)
-   set(PROJECT_AUTOMAKE_SRC "/usr/share/automake-*/config.*" PARENT_SCOPE)
+      # directory for installing 3rdparty tools once
+      # this allows us to delete the build directory without having to re-build all 3rdparty tools
+      set(PROJECT_3RDPARTY_DIR "${PROJECT_3RDPARTY_HOME}/${SGE_ARCH}/${OS_ID}/${OS_VERSION}/${CMAKE_BUILD_TYPE}")
+      # spaces in file/directory names break the build
+      string(REPLACE " " "_" PROJECT_3RDPARTY_DIR ${PROJECT_3RDPARTY_DIR})
+      message(STATUS "3rdparty tools are installed to ${PROJECT_3RDPARTY_DIR}")
+      set(PROJECT_3RDPARTY_DIR ${PROJECT_3RDPARTY_DIR} PARENT_SCOPE)
+      set(PROJECT_AUTOMAKE_SRC "/usr/share/automake-*/config.*" PARENT_SCOPE)
 
    # DARWIN: GETHOSTBYNAME DGETHOSTBYADDR_M
    # SOLARIS: GETHOSTBYNAME_R5 GETHOSTBYADDR_R7
@@ -37,7 +37,6 @@ function(architecture_specific_settings)
          ${SGE_BUILDARCH}
          ${SGE_COMPILEARCH}
          ${SGE_TARGETBITS}
-         USE_POLL
          COMPILE_DC)
 
    if (SGE_ARCH MATCHES "lx-.*")
@@ -66,7 +65,6 @@ function(architecture_specific_settings)
       add_link_options(-pthread -rdynamic)
 
       set(WITH_MTMALLOC OFF PARENT_SCOPE)
-      set(WITH_JEMALLOC ON PARENT_SCOPE)
 
       # specific linux architectures
       if (SGE_TARGETBITS STREQUAL "TARGET_32BIT")
