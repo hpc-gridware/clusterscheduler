@@ -297,8 +297,7 @@ bdb_get_db(bdb_info info, const bdb_database database)
 DB_TXN *
 bdb_get_txn(bdb_info info)
 {
-   GET_SPECIFIC(bdb_connection, con, bdb_init_connection, info->key, 
-                "bdb_get_txn");
+   GET_SPECIFIC(bdb_connection, con, bdb_init_connection, info->key);
    return con->txn;
 }
 
@@ -403,8 +402,7 @@ bdb_set_db(bdb_info info, DB *db, const bdb_database database)
 void
 bdb_set_txn(bdb_info info, DB_TXN *txn)
 {
-   GET_SPECIFIC(bdb_connection, con, bdb_init_connection, info->key, 
-                "bdb_set_txn");
+   GET_SPECIFIC(bdb_connection, con, bdb_init_connection, info->key);
    con->txn = txn;
 }
 

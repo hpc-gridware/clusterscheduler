@@ -49,7 +49,6 @@
 #include "uti/sge_hostname.h"
 #include "uti/sge_bootstrap.h"
 #include "uti/sge_spool.h"
-#include "uti/setup_path.h"
 #include "uti/config_file.h"
 #include "uti/sge_time.h"
 
@@ -193,7 +192,7 @@ int
 sge_setup_qmaster(sge_gdi_ctx_class_t *ctx, char *anArgv[]) {
    char err_str[1024];
    const char *qualified_hostname = uti_state_get_qualified_hostname();
-   const char *act_qmaster_file = ctx->get_act_qmaster_file(ctx);
+   const char *act_qmaster_file = bootstrap_get_act_qmaster_file();
 
    DENTER(TOP_LAYER);
 

@@ -69,7 +69,7 @@ static int init_qtask_config(sge_gdi_ctx_class_t *ctx, lList **alpp, print_func_
    char *pw_buffer;
    size_t pw_buffer_size;
    const char* user_name = bootstrap_get_username();
-   const char* cell_root = ctx->get_cell_root(ctx);
+   const char* cell_root = bootstrap_get_cell_root();
 
    /* cell global settings */
    sprintf(fname, "%s/common/qtask", cell_root);

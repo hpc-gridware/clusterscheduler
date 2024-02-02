@@ -274,7 +274,7 @@ main(int argc, char **argv) {
    }
 
    if (bootstrap_get_qmaster_spool_dir() == NULL) {
-      CRITICAL((SGE_EVENT, MSG_SHADOWD_CANTREADQMASTERSPOOLDIRFROMX_S, ctx->get_bootstrap_file(ctx)));
+      CRITICAL((SGE_EVENT, MSG_SHADOWD_CANTREADQMASTERSPOOLDIRFROMX_S, bootstrap_get_bootstrap_file()));
       SGE_EXIT((void **) &ctx, 1);
    }
 
@@ -357,8 +357,8 @@ main(int argc, char **argv) {
                 * check if we are a possible new qmaster host (lock file of qmaster active, etc.)
                 */
                ret = check_if_valid_shadow(binpath, oldqmaster,
-                                           ctx->get_act_qmaster_file(ctx),
-                                           ctx->get_shadow_master_file(ctx),
+                                           bootstrap_get_act_qmaster_file(),
+                                           bootstrap_get_shadow_masters_file(),
                                            uti_state_get_qualified_hostname(),
                                            bootstrap_get_binary_path());
 
@@ -373,7 +373,7 @@ main(int argc, char **argv) {
                      latest_heartbeat = get_qmaster_heartbeat(QMASTER_HEARTBEAT_FILE, 30);
                      /* TODO: what do we when there is a timeout ??? */
                      DPRINTF(("old qmaster name in act_qmaster and old heartbeat\n"));
-                     if (!compare_qmaster_names(ctx->get_act_qmaster_file(ctx), oldqmaster) &&
+                     if (!compare_qmaster_names(bootstrap_get_act_qmaster_file(), oldqmaster) &&
                          !shadowd_is_old_master_enrolled(sge_test_heartbeat, sge_get_qmaster_port(NULL), oldqmaster) &&
                          (latest_heartbeat == heartbeat)) {
                         char qmaster_name[256];

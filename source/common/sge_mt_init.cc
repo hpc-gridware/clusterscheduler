@@ -32,7 +32,6 @@
 
 
 #include "uti/sge_uidgid.h"
-#include "uti/setup_path.h"
 #include "uti/sge_bootstrap.h"
 #include "uti/sge_profiling.h"
 #include "uti/sge_err.h"
@@ -79,7 +78,6 @@ void sge_mt_init(void)
 
    prof_mt_init();
    sge_err_init();
-   path_mt_init();
 
    bootstrap_mt_init(); 
    feature_mt_init();

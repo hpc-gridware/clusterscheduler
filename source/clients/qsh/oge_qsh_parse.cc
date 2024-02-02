@@ -40,7 +40,6 @@
 #include "uti/sge_time.h"
 #include "uti/sge_stdlib.h"
 #include "uti/sge_prog.h"
-#include "uti/setup_path.h"
 
 #include "sgeobj/cull_parse_util.h"
 #include "sgeobj/sge_host.h"

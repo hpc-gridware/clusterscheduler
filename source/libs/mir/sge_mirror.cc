@@ -210,13 +210,13 @@ static void mir_mt_init(void)
 
 static bool mir_get_produce_qmaster_alive_timeout(void)
 {
-   GET_SPECIFIC(mir_state_t, mir_state, mir_state_init, mir_state_key, "mir_get_produce_qmaster_alive_timeout");
+   GET_SPECIFIC(mir_state_t, mir_state, mir_state_init, mir_state_key);
    return mir_state->produce_qmaster_alive_timeout;
 }
 
 static mirror_description *mir_get_mirror_base(void)
 {
-   GET_SPECIFIC(mir_state_t, mir_state, mir_state_init, mir_state_key, "mir_get_mirror_base");
+   GET_SPECIFIC(mir_state_t, mir_state, mir_state_init, mir_state_key);
    return mir_state->mirror_base;
 }
 

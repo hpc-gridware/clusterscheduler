@@ -881,7 +881,7 @@ u_long32 show
    lList *conf_l = NULL;
    int q_id = 0, j_id = 0, ce_id, eh_id, pe_id, gc_id;
    state_gdi_multi state = STATE_GDI_MULTI_INIT;
-   const char *cell_root = ctx->get_cell_root(ctx);
+   const char *cell_root = bootstrap_get_cell_root();
    u_long32 progid = uti_state_get_mewho();
 
    DENTER(TOP_LAYER);

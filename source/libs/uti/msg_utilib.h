@@ -194,5 +194,6 @@
 #define MSG_LCK_MUTEXUNLOCKFAILED_SSS           _MESSAGE(59215, _(SFQ" failed to unlock "SFQ" - error: "SFQ))
 #define MSG_LCK_RWLOCKFORWRITINGFAILED_SSS      _MESSAGE(59216, _(SFQ" failed to lock "SFQ" for writing - error: "SFQ))
 #define MSG_LCK_RWLOCKUNLOCKFAILED_SSS          _MESSAGE(59217, _(SFQ" failed to unlock "SFQ" - error: "SFQ))
+#define MSG_SGETEXT_SGEROOTNOTFOUND_S           _MESSAGE(59218, _("SGE_ROOT directory "SFQ" doesn't exist"))
 
 // clang-format on

@@ -189,7 +189,7 @@ static void *thread_function(void *anArg) {
 
    gettimeofday(&before, NULL);
    for (i = 0; i < max; i++) {
-      GET_SPECIFIC(state_t, state, state_init, state_key, "test_sge_lock_multiple");
+      GET_SPECIFIC(state_t, state, state_init, state_key);
       state->value2 = state->value + 1;
       state->value = state->value2 + 1;
    }
@@ -204,7 +204,7 @@ static void *thread_function(void *anArg) {
    for (i = 0; i < max; i++) {
       pthread_once(&log_once, log_once_init);
       {
-         GET_SPECIFIC(state_t, state, state_init, state_key, "test_sge_lock_multiple");
+         GET_SPECIFIC(state_t, state, state_init, state_key);
          state->value2 = state->value + 1;
          state->value = state->value2 + 1;
       }

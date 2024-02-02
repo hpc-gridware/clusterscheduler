@@ -1512,7 +1512,7 @@ int gdi2_wait_for_conf(sge_gdi_ctx_class_t *ctx, lList **conf_list) {
    static u_long32 last_qmaster_file_read = 0;
    u_long32 now = sge_get_gmt();
    const char *qualified_hostname = uti_state_get_qualified_hostname();
-   const char *cell_root = ctx->get_cell_root(ctx);
+   const char *cell_root = bootstrap_get_cell_root();
    u_long32 progid = uti_state_get_mewho();
    
    /* TODO: move this function to execd */
@@ -1592,7 +1592,7 @@ lList **conf_list
    lListElem *global = NULL;
    lListElem *local = NULL;
    const char *qualified_hostname = uti_state_get_qualified_hostname();
-   const char *cell_root = ctx->get_cell_root(ctx);
+   const char *cell_root = bootstrap_get_cell_root();
    u_long32 progid = uti_state_get_mewho();
    int ret;
 

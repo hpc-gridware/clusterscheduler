@@ -1246,7 +1246,7 @@ lList **object_type_get_master_list_rw(const sge_object_type type)
    DENTER(OBJECT_LAYER);
 
    if (type >= 0 && type < SGE_TYPE_ALL) {
-      GET_SPECIFIC(obj_state_t, obj_state, obj_state_global_init, obj_state_key, "object_type_get_master_list");
+      GET_SPECIFIC(obj_state_t, obj_state, obj_state_global_init, obj_state_key);
       
       if (obj_state->object_base[type].list != NULL) {
          ret = obj_state->object_base[type].list;
@@ -1329,7 +1329,7 @@ bool object_type_free_master_list(const sge_object_type type)
    DENTER(OBJECT_LAYER);
 
    if (type >= 0 && type < SGE_TYPE_ALL) {
-      GET_SPECIFIC(obj_state_t, obj_state, obj_state_global_init, obj_state_key, __func__);
+      GET_SPECIFIC(obj_state_t, obj_state, obj_state_global_init, obj_state_key);
       
       if (obj_state->object_base[type].list) {
           lFreeList(obj_state->object_base[type].list);

@@ -113,8 +113,6 @@
 #define MSG_GDI_ARGUMENTSYNTAX_OA_THREAD_NAME          "thread_name             \"scheduler\""
 #define MSG_GDI_ARGUMENTSYNTAX_OA_TASK_CONCURRENCY     "max_running_tasks       maximum number of simultaneously running tasks"
 
-#define MSG_SGETEXT_SGEROOTNOTFOUND_S                    _MESSAGE(23000, _("SGE_ROOT directory "SFQ" doesn't exist"))
-
 #define MSG_PARSE_TOOMANYOPTIONS                         _MESSAGE(23002, _("ERROR! too many options"))
 #define MSG_UNKNOWN_OBJECT                               _MESSAGE(23003, _("??? unknown object ???"))
 #define MSG_NONE                                         _MESSAGE(23004, _("none"))

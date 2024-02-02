@@ -48,7 +48,6 @@
 #include "uti/sge_string.h"
 #include "uti/sge_afsutil.h"
 #include "uti/sge_parse_num_par.h"
-#include "uti/setup_path.h"
 #include "uti/sge_spool.h"
 #include "uti/sge_unistd.h"
 #include "uti/sge_uidgid.h"

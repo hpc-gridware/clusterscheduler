@@ -40,7 +40,6 @@
 #include "uti/sge_unistd.h"
 #include "uti/sge_uidgid.h"
 #include "uti/msg_utilib.h"  /* remove once 'sge_daemonize_qmaster' did become 'sge_daemonize' */
-#include "uti/setup_path.h"
 #include "uti/sge_os.h"
 #include "uti/sge_string.h"
 

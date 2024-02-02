@@ -41,7 +41,6 @@
 #include "uti/sge_profiling.h"
 #include "uti/sge_uidgid.h"
 #include "uti/sge_signal.h"
-#include "uti/setup_path.h"
 #include "uti/sge_bootstrap.h"
 #include "uti/sge_prog.h"
 #include "uti/sge_string.h"
@@ -1002,13 +1001,9 @@ int main(int argc, char *argv[]) {
    sigaction(SIGHUP, &sa, NULL);
    sigaction(SIGPIPE, &sa, NULL);
 
+   bootstrap_mt_init();
    prof_mt_init();
-   
-   path_mt_init();
-
-   bootstrap_mt_init(); 
    feature_mt_init();
-
    gdi_mt_init();
 
    sge_getme(QPING);
@@ -1216,10 +1211,8 @@ int main(int argc, char *argv[]) {
    if ( option_ssl == 0 && option_tcp == 0 ) {
       char buffer[2*1024];
       dstring bw;
-      sge_dstring_init(&bw, buffer, sizeof(buffer)); 
+      sge_dstring_init(&bw, buffer, sizeof(buffer));
 
-      sge_setup_paths(QPING, sge_get_default_cell(), &bw);
-      bootstrap_mt_init();
 #ifdef SECURE
       got_no_framework = 1;
 #endif

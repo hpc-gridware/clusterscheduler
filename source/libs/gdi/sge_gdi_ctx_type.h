@@ -32,7 +32,6 @@
 /*___INFO__MARK_END__*/
 
 #include "uti/sge_prog.h"
-#include "uti/setup_path.h"
 #include "uti/sge_bootstrap.h"
 #include "uti/sge_error_class.h"
 #include "uti/sge_profiling.h"
@@ -64,20 +63,13 @@ struct sge_gdi_ctx_class_str {
                                           lCondition *cp, lEnumeration *enp, 
                                           state_gdi_multi *state, bool do_copy);
   
-   sge_path_state_class_t* (*get_sge_path_state)(sge_gdi_ctx_class_t *thiz);
-
    int (*prepare_enroll)(sge_gdi_ctx_class_t *thiz);
    int (*connect)(sge_gdi_ctx_class_t *thiz);
    int (*is_alive)(sge_gdi_ctx_class_t *thiz);
    lList* (*tsm)(sge_gdi_ctx_class_t *thiz, const char *schedd_name, const char *cell);
    lList* (*kill)(sge_gdi_ctx_class_t *thiz, lList *id_list, const char *cell, u_long32 option_flags, u_long32 action_flag);
+
    const char* (*get_master)(sge_gdi_ctx_class_t *thiz, bool reread);
-   const char* (*get_bootstrap_file)(sge_gdi_ctx_class_t *thiz);
-   const char* (*get_act_qmaster_file)(sge_gdi_ctx_class_t *thiz);
-   const char* (*get_shadow_master_file)(sge_gdi_ctx_class_t *thiz);
-   const char* (*get_acct_file)(sge_gdi_ctx_class_t *thiz);
-   const char* (*get_reporting_file)(sge_gdi_ctx_class_t *thiz);
-   const char* (*get_cell_root)(sge_gdi_ctx_class_t *thiz);
 
    /* credentials */
    const char* (*get_private_key)(sge_gdi_ctx_class_t *thiz);

@@ -2,7 +2,6 @@
 set(LIBRARY_NAME uti)
 set(LIBRARY_SOURCES
         config_file.cc
-        setup_path.cc
         sge_afsutil.cc
         sge_arch.cc
         sge_binding_hlp.cc

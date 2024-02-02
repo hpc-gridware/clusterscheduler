@@ -43,7 +43,6 @@
 #include "uti/sge_mtutil.h"
 #include "uti/sge_rmon.h"
 #include "uti/sge_log.h"
-#include "uti/setup_path.h"
 #include "uti/sge_string.h"
 #include "uti/sge_afsutil.h"
 #include "uti/sge_unistd.h"

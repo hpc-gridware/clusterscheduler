@@ -40,7 +40,6 @@
 #include "uti/sge_log.h"
 #include "uti/sge_unistd.h"
 #include "uti/sge_dstring.h"
-#include "uti/setup_path.h"
 #include "uti/sge_prog.h"
 
 #include "sgeobj/sge_feature.h"

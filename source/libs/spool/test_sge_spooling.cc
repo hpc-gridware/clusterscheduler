@@ -92,7 +92,7 @@ static int sge_read_configuration(sge_gdi_ctx_class_t *ctx, const lListElem *aSp
    lListElem *local = NULL;
    lListElem *global = NULL;
    int ret = -1;
-   const char *cell_root = ctx->get_cell_root(ctx);
+   const char *cell_root = bootstrap_get_cell_root();
    const char *qualified_hostname = uti_state_get_qualified_hostname();
    u_long32 progid = uti_state_get_mewho();
    lList *cluster_config = *object_type_get_master_list_rw(SGE_TYPE_CONFIG);

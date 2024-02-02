@@ -34,7 +34,6 @@
 
 #include "uti/sge_rmon.h"
 #include "uti/sge_log.h"
-#include "uti/setup_path.h"
 
 #include "sgeobj/sge_schedd_conf.h"
 #include "sgeobj/sge_conf.h"

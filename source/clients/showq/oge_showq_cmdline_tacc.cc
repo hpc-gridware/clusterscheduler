@@ -33,7 +33,6 @@
 #include <pwd.h>
 
 #include "uti/sge_rmon.h"
-#include "uti/setup_path.h"
 
 #include "sgeobj/parse.h"
 #include "sgeobj/sge_answer.h"

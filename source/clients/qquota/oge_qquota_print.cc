@@ -36,7 +36,6 @@
 #include <fnmatch.h>
 
 #include "uti/sge_rmon.h"
-#include "uti/setup_path.h"
 #include "uti/sge_hostname.h"
 #include "uti/sge_prog.h"
 #include "uti/sge_bootstrap.h"

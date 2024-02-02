@@ -222,7 +222,7 @@ int main(int argc, char **argv)
    {
       dstring file = DSTRING_INIT;
       const char *user = bootstrap_get_username();
-      const char *cell_root = ctx->get_cell_root(ctx);
+      const char *cell_root = bootstrap_get_cell_root();
 
       /* arguments from SGE_ROOT/common/sge_qquota file */
       get_root_file_path(&file, cell_root, SGE_COMMON_DEF_QQUOTA_FILE);

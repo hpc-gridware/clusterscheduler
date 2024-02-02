@@ -43,7 +43,6 @@
 #include "uti/sge_stdlib.h"
 #include "uti/sge_io.h"
 #include "uti/sge_prog.h"
-#include "uti/setup_path.h"
 #include "uti/sge_log.h"
 
 #include "sgeobj/cull_parse_util.h"

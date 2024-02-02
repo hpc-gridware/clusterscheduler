@@ -34,7 +34,6 @@
 #include <errno.h>
 
 #include "uti/sge_rmon.h"
-#include "uti/setup_path.h"
 #include "uti/sge_unistd.h"
 #include "uti/sge_profiling.h"
 #include "uti/sge_prog.h"
@@ -132,7 +131,7 @@ main(int argc, char **argv)
    prog_number = uti_state_get_mewho();
    myuid = bootstrap_get_uid();
    sge_root = bootstrap_get_sge_root();
-   cell_root = ctx->get_cell_root(ctx);
+   cell_root = bootstrap_get_cell_root();
    username = bootstrap_get_username();
    qualified_hostname = uti_state_get_qualified_hostname();
    unqualified_hostname = uti_state_get_unqualified_hostname();

@@ -93,13 +93,13 @@ static void fgl_state_get_requests(fgl_t **requests, u_long32 *pos) {
       return;
    }
 
-   GET_SPECIFIC(fgl_state_t, fgl_state, fgl_state_init, fgl_state_key, "fgl_state_get_req_list");
+   GET_SPECIFIC(fgl_state_t, fgl_state, fgl_state_init, fgl_state_key);
    *requests = fgl_state->requests;
    *pos = fgl_state->pos;
 }
 
 static void fgl_state_set_pos(u_long32 new_pos) {
-   GET_SPECIFIC(fgl_state_t, fgl_state, fgl_state_init, fgl_state_key, "fgl_state_get_pos");
+   GET_SPECIFIC(fgl_state_t, fgl_state, fgl_state_init, fgl_state_key);
    fgl_state->pos = new_pos;
 }
 

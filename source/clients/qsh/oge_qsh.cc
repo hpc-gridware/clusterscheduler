@@ -53,7 +53,6 @@
 #include "uti/sge_prog.h"
 #include "uti/sge_log.h"
 #include "uti/sge_string.h"
-#include "uti/setup_path.h" 
 #include "uti/sge_afsutil.h"
 #include "uti/sge_signal.h"
 #include "uti/sge_unistd.h"
@@ -945,7 +944,7 @@ get_client_name(sge_gdi_ctx_class_t *ctx, int is_rsh, int is_rlogin, int inherit
 
    u_long32 progid = uti_state_get_mewho();
    const char *qualified_hostname = uti_state_get_qualified_hostname();
-   const char *cell_root = ctx->get_cell_root(ctx);
+   const char *cell_root = bootstrap_get_cell_root();
    const char *sge_root = bootstrap_get_sge_root();
 
    DENTER(TOP_LAYER);
@@ -1414,7 +1413,7 @@ int main(int argc, char **argv)
    unqualified_hostname = uti_state_get_unqualified_hostname();
    qualified_hostname = uti_state_get_qualified_hostname();
    sge_root = bootstrap_get_sge_root();
-   cell_root = ctx->get_cell_root(ctx);
+   cell_root = bootstrap_get_cell_root();
    myuid = bootstrap_get_uid();
    username = bootstrap_get_username();
    mastername = ctx->get_master(ctx, false);

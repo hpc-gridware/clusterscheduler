@@ -250,8 +250,8 @@ reporting_shutdown(sge_gdi_ctx_class_t *ctx, lList **answer_list, bool do_spool)
    bool ret = true;
    lList *alp = NULL;
    rep_buf_t *buf;
-   const char *reporting_file = ctx->get_reporting_file(ctx);
-   const char *acct_file = ctx->get_acct_file(ctx);
+   const char *reporting_file = bootstrap_get_reporting_file();
+   const char *acct_file = bootstrap_get_acct_file();
 
    DENTER(TOP_LAYER);
 
@@ -301,8 +301,8 @@ void
 reporting_trigger_handler(sge_gdi_ctx_class_t *ctx, te_event_t anEvent, monitoring_t *monitor) {
    u_long32 flush_interval = 0;
    lList *answer_list = NULL;
-   const char *reporting_file = ctx->get_reporting_file(ctx);
-   const char *acct_file = ctx->get_acct_file(ctx);
+   const char *reporting_file = bootstrap_get_reporting_file();
+   const char *acct_file = bootstrap_get_acct_file();
 
    DENTER(TOP_LAYER);
 
@@ -563,7 +563,7 @@ reporting_create_acct_record(sge_gdi_ctx_class_t *ctx, lList **answer_list, lLis
    const char *job_string = NULL;
    bool do_reporting = mconf_get_do_reporting();
    bool do_accounting = mconf_get_do_accounting();
-   const char *acct_file = ctx->get_acct_file(ctx);
+   const char *acct_file = bootstrap_get_acct_file();
    const lList *master_userset_list = *object_type_get_master_list(SGE_TYPE_USERSET);
    const lList *master_project_list = *object_type_get_master_list(SGE_TYPE_PROJECT);
    const lList *master_rqs_list = *object_type_get_master_list(SGE_TYPE_RQS);

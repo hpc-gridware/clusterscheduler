@@ -1166,7 +1166,7 @@ u_long32 sconf_get_reprioritize_interval(void) {
 *******************************************************************************/
 void sconf_enable_schedd_job_info() 
 {
-   GET_SPECIFIC(sc_state_t, sc_state, sc_state_init, sc_state_key, "sconf_enable_schedd_job_info");
+   GET_SPECIFIC(sc_state_t, sc_state, sc_state_init, sc_state_key);
    sc_state->schedd_job_info = SCHEDD_JOB_INFO_TRUE;
 }
 
@@ -1190,7 +1190,7 @@ void sconf_enable_schedd_job_info()
 *******************************************************************************/
 void sconf_disable_schedd_job_info() 
 {
-   GET_SPECIFIC(sc_state_t, sc_state, sc_state_init, sc_state_key, "sconf_disable_schedd_job_info");
+   GET_SPECIFIC(sc_state_t, sc_state, sc_state_init, sc_state_key);
    sc_state->schedd_job_info = SCHEDD_JOB_INFO_FALSE;
 }
 
@@ -1227,7 +1227,7 @@ schedd_pe_algorithm sconf_best_pe_alg()
       return alg;
    }
    else {
-      GET_SPECIFIC(sc_state_t, sc_state, sc_state_init, sc_state_key, "sconf_best_pe_alg");
+      GET_SPECIFIC(sc_state_t, sc_state, sc_state_init, sc_state_key);
     
       if ((sc_state->search_alg[SCHEDD_PE_BINARY] >= sc_state->search_alg[SCHEDD_PE_LOW_FIRST]) &&
           (sc_state->search_alg[SCHEDD_PE_BINARY] >= sc_state->search_alg[SCHEDD_PE_HIGH_FIRST])) {
@@ -1276,7 +1276,7 @@ void sconf_update_pe_alg(int runs, int current, int max)
    if (max > 1) {
       int low_run = current+1;
       int high_run = max - current+1;
-      GET_SPECIFIC(sc_state_t, sc_state, sc_state_init, sc_state_key, "sconf_update_pe_alg");
+      GET_SPECIFIC(sc_state_t, sc_state, sc_state_init, sc_state_key);
 
       /* we calculate 2 digits behind the commma*/
       runs *= 100;
@@ -1295,37 +1295,37 @@ void sconf_update_pe_alg(int runs, int current, int max)
 
 int sconf_get_pe_alg_value(schedd_pe_algorithm alg)
 {
-   GET_SPECIFIC(sc_state_t, sc_state, sc_state_init, sc_state_key, "sconf_update_pe_alg");
+   GET_SPECIFIC(sc_state_t, sc_state, sc_state_init, sc_state_key);
    return sc_state->search_alg[alg];
 }
 
 void sconf_inc_fast_jobs(void) 
 {
-   GET_SPECIFIC(sc_state_t, sc_state, sc_state_init, sc_state_key, "sconf_inc_fast_jobs");
+   GET_SPECIFIC(sc_state_t, sc_state, sc_state_init, sc_state_key);
    sc_state->scheduled_fast_jobs++;
 }
 
 int sconf_get_fast_jobs(void) 
 {
-   GET_SPECIFIC(sc_state_t, sc_state, sc_state_init, sc_state_key, "sconf_get_fast_jobs");
+   GET_SPECIFIC(sc_state_t, sc_state, sc_state_init, sc_state_key);
    return sc_state->scheduled_fast_jobs;
 }
 
 void sconf_inc_pe_jobs(void) 
 {
-   GET_SPECIFIC(sc_state_t, sc_state, sc_state_init, sc_state_key, "sconf_inc_pe_jobs");
+   GET_SPECIFIC(sc_state_t, sc_state, sc_state_init, sc_state_key);
    sc_state->scheduled_pe_jobs++;
 }
 
 int sconf_get_pe_jobs(void) 
 {
-   GET_SPECIFIC(sc_state_t, sc_state, sc_state_init, sc_state_key, "sconf_get_pe_jobs");
+   GET_SPECIFIC(sc_state_t, sc_state, sc_state_init, sc_state_key);
    return sc_state->scheduled_pe_jobs;
 }
 
 void sconf_reset_jobs(void)
 {
-   GET_SPECIFIC(sc_state_t, sc_state, sc_state_init, sc_state_key, "sconf_reset_jobs");
+   GET_SPECIFIC(sc_state_t, sc_state, sc_state_init, sc_state_key);
    sc_state->scheduled_fast_jobs = 0;
    sc_state->scheduled_pe_jobs = 0;
 }
@@ -1359,7 +1359,7 @@ u_long32 sconf_get_schedd_job_info(void) {
    sge_mutex_unlock("Sched_Conf_Lock", "", __LINE__, &pos.mutex);    
 
    if (info == SCHEDD_JOB_INFO_FALSE) {
-      GET_SPECIFIC(sc_state_t, sc_state, sc_state_init, sc_state_key, "sconf_get_schedd_job_info");
+      GET_SPECIFIC(sc_state_t, sc_state, sc_state_init, sc_state_key);
       info = sc_state->schedd_job_info;
    }
    
@@ -3639,23 +3639,23 @@ static bool sconf_eval_set_pe_range_alg(lList *param_list, lList **answer_list, 
 */
 void sconf_set_qs_state(qs_state_t qs_state) 
 {
-   GET_SPECIFIC(sc_state_t, sc_state, sc_state_init, sc_state_key, "sconf_set_qs_state");
+   GET_SPECIFIC(sc_state_t, sc_state, sc_state_init, sc_state_key);
    sc_state->queue_state = qs_state;
 }
 
 qs_state_t sconf_get_qs_state(void) 
 {
-   GET_SPECIFIC(sc_state_t, sc_state, sc_state_init, sc_state_key, "sconf_get_qs_state");
+   GET_SPECIFIC(sc_state_t, sc_state, sc_state_init, sc_state_key);
    return sc_state->queue_state;
 }
 void sconf_set_global_load_correction(bool flag) 
 {
-   GET_SPECIFIC(sc_state_t, sc_state, sc_state_init, sc_state_key, "sconf_set_global_load_correction");
+   GET_SPECIFIC(sc_state_t, sc_state, sc_state_init, sc_state_key);
    sc_state->global_load_correction = flag;
 }
 bool sconf_get_global_load_correction(void) 
 {
-   GET_SPECIFIC(sc_state_t, sc_state, sc_state_init, sc_state_key, "sconf_get_global_load_correction");
+   GET_SPECIFIC(sc_state_t, sc_state, sc_state_init, sc_state_key);
    return sc_state->global_load_correction;
 }
 
@@ -3666,42 +3666,42 @@ u_long32 sconf_get_default_duration(void)
 
 bool sconf_get_host_order_changed(void)
 {
-   GET_SPECIFIC(sc_state_t, sc_state, sc_state_init, sc_state_key, "sconf_get_host_order_changed");
+   GET_SPECIFIC(sc_state_t, sc_state, sc_state_init, sc_state_key);
    return sc_state->host_order_changed;
 }
 
 void sconf_set_host_order_changed(bool changed)
 {
-   GET_SPECIFIC(sc_state_t, sc_state, sc_state_init, sc_state_key, "sconf_set_host_order_changed");
+   GET_SPECIFIC(sc_state_t, sc_state, sc_state_init, sc_state_key);
    sc_state->host_order_changed = changed;
 }
 
 int sconf_get_last_dispatch_type(void)
 {
-   GET_SPECIFIC(sc_state_t, sc_state, sc_state_init, sc_state_key, "sconf_get_last_dispatch_type");
+   GET_SPECIFIC(sc_state_t, sc_state, sc_state_init, sc_state_key);
    return sc_state->last_dispatch_type;
 }
 
 void sconf_set_last_dispatch_type(int last)
 {
-   GET_SPECIFIC(sc_state_t, sc_state, sc_state_init, sc_state_key, "sconf_set_last_dispatch_type");
+   GET_SPECIFIC(sc_state_t, sc_state, sc_state_init, sc_state_key);
    sc_state->last_dispatch_type = last;
 }
 
 void sconf_set_decay_constant(double decay) 
 {
-   GET_SPECIFIC(sc_state_t, sc_state, sc_state_init, sc_state_key, "sconf_set_decay_constant");
+   GET_SPECIFIC(sc_state_t, sc_state, sc_state_init, sc_state_key);
    sc_state->decay_constant = decay;
 }
 double sconf_get_decay_constant(void) 
 {
-   GET_SPECIFIC(sc_state_t, sc_state, sc_state_init, sc_state_key, "sconf_get_decay_constant");
+   GET_SPECIFIC(sc_state_t, sc_state, sc_state_init, sc_state_key);
    return sc_state->decay_constant;
 }
 
 void sconf_set_mes_schedd_info(bool newval)
 {
-   GET_SPECIFIC(sc_state_t, sc_state, sc_state_init, sc_state_key, "sconf_set_mes_schedd_info");
+   GET_SPECIFIC(sc_state_t, sc_state, sc_state_init, sc_state_key);
    if (newval == true) {
       if (sc_state->sme == NULL || sc_state->tmp_sme == NULL) {
          /* if one of the values is NULL the messaging framework is initialized
@@ -3714,37 +3714,37 @@ void sconf_set_mes_schedd_info(bool newval)
 
 bool sconf_get_mes_schedd_info()
 {
-   GET_SPECIFIC(sc_state_t, sc_state, sc_state_init, sc_state_key, "sconf_get_mes_schedd_info");
+   GET_SPECIFIC(sc_state_t, sc_state, sc_state_init, sc_state_key);
    return sc_state->mes_schedd_info;
 }
 
 void schedd_mes_set_logging(int bval) {
-   GET_SPECIFIC(sc_state_t, sc_state, sc_state_init, sc_state_key, "schedd_mes_set_logging");
+   GET_SPECIFIC(sc_state_t, sc_state, sc_state_init, sc_state_key);
    sc_state->log_schedd_info = bval;
 }
 
 int schedd_mes_get_logging(void) {
-   GET_SPECIFIC(sc_state_t, sc_state, sc_state_init, sc_state_key, "schedd_mes_get_logging");
+   GET_SPECIFIC(sc_state_t, sc_state, sc_state_init, sc_state_key);
    return sc_state->log_schedd_info;
 }
 
 lListElem *sconf_get_sme(void) {
-   GET_SPECIFIC(sc_state_t, sc_state, sc_state_init, sc_state_key, "sconf_get_sme");
+   GET_SPECIFIC(sc_state_t, sc_state, sc_state_init, sc_state_key);
    return sc_state->sme;
 }
 
 void sconf_set_sme(lListElem *sme) {
-   GET_SPECIFIC(sc_state_t, sc_state, sc_state_init, sc_state_key, "sconf_get_sme");
+   GET_SPECIFIC(sc_state_t, sc_state, sc_state_init, sc_state_key);
    sc_state->sme = sme;
 }
 
 lListElem *sconf_get_tmp_sme(void) {
-   GET_SPECIFIC(sc_state_t, sc_state, sc_state_init, sc_state_key, "sconf_get_tmp_sme");
+   GET_SPECIFIC(sc_state_t, sc_state, sc_state_init, sc_state_key);
    return sc_state->tmp_sme;
 }
 
 void sconf_set_tmp_sme(lListElem *sme) {
-   GET_SPECIFIC(sc_state_t, sc_state, sc_state_init, sc_state_key, "sconf_get_tmp_sme");
+   GET_SPECIFIC(sc_state_t, sc_state, sc_state_init, sc_state_key);
    sc_state->tmp_sme = sme;
 }
 

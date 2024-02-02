@@ -34,13 +34,13 @@
 #include <errno.h>
 #include <string.h>
 
-#include "uti/setup_path.h"
 #include "uti/sge_rmon.h"
 #include "uti/sge_log.h"
 #include "uti/sge_stdio.h"
 #include "uti/sge_string.h"
 #include "uti/sge_dstring.h"
 #include "uti/sge_io.h"
+#include "uti/sge_bootstrap.h"
 
 #include "sgeobj/sge_feature.h"
 #include "sgeobj/sge_answer.h"

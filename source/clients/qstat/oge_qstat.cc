@@ -223,7 +223,7 @@ char **argv
    }
 
    username = bootstrap_get_username();
-   cell_root = ctx->get_cell_root(ctx);
+   cell_root = bootstrap_get_cell_root();
    lInit(nmv);      
    qstat_env.ctx = ctx;
 

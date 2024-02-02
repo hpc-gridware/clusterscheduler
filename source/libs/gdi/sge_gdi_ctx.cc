@@ -60,7 +60,6 @@
 #include "uti/sge_string.h"
 #include "uti/sge_unistd.h"
 #include "uti/sge_prog.h"
-#include "uti/setup_path.h"
 #include "uti/sge_bootstrap.h"
 #include "uti/sge_uidgid.h"
 #include "uti/sge_profiling.h"
@@ -102,7 +101,6 @@ void sc_mt_init(void);
 #include "gdi/sge_gdi_packet_internal.h"
 
 typedef struct {
-   sge_path_state_class_t* sge_path_state_obj;
    sge_csp_path_class_t* sge_csp_path_obj;
 
    char* master;
@@ -110,7 +108,6 @@ typedef struct {
    char *ssl_private_key;
    char *ssl_certificate;
 
-   lList *alp;
    int last_commlib_error;
    sge_error_class_t *eh;
 
@@ -179,8 +176,7 @@ void gdi_mt_init(void)
 ******************************************************************************/
 u_long32 gdi_state_get_next_request_id(void)
 {
-   GET_SPECIFIC(gdi_state_t, gdi_state,
-                gdi_state_init, gdi_state_key, "gdi_state_get_next_request_id");
+   GET_SPECIFIC(gdi_state_t, gdi_state, gdi_state_init, gdi_state_key);
    gdi_state->request_id++;
    return gdi_state->request_id;
 }
@@ -217,8 +213,7 @@ void sge_gdi_set_thread_local_ctx(sge_gdi_ctx_class_t* ctx) {
 
    pthread_once(&sge_gdi_ctx_once, sge_gdi_thread_local_ctx_once_init);
    {
-      GET_SPECIFIC(sge_gdi_ctx_thread_local_t, tl, sge_gdi_thread_local_ctx_init, sge_gdi_ctx_key,
-                "set_thread_local_ctx");
+      GET_SPECIFIC(sge_gdi_ctx_thread_local_t, tl, sge_gdi_thread_local_ctx_init, sge_gdi_ctx_key);
       tl->ctx = ctx;
 
       if (ctx != NULL) {
@@ -240,16 +235,9 @@ static void sge_gdi_ctx_set_is_setup(sge_gdi_ctx_class_t *thiz, bool is_setup);
 static bool sge_gdi_ctx_is_setup(sge_gdi_ctx_class_t *thiz);
 static void sge_gdi_ctx_class_get_errors(sge_gdi_ctx_class_t *thiz, lList **alpp, bool clear_errors);
 static void sge_gdi_ctx_class_error(sge_gdi_ctx_class_t *thiz, int error_type, int error_quality, const char* fmt, ...);
-static sge_path_state_class_t* get_sge_path_state(sge_gdi_ctx_class_t *thiz);
 static sge_csp_path_class_t* get_sge_csp_path(sge_gdi_ctx_class_t *thiz);
 static cl_com_handle_t* get_com_handle(sge_gdi_ctx_class_t *thiz);
 static const char* get_master(sge_gdi_ctx_class_t *thiz, bool reread);
-static const char* get_cell_root(sge_gdi_ctx_class_t *thiz);
-static const char* get_bootstrap_file(sge_gdi_ctx_class_t *thiz);
-static const char* get_act_qmaster_file(sge_gdi_ctx_class_t *thiz);
-static const char* get_acct_file(sge_gdi_ctx_class_t *thiz);
-static const char* get_reporting_file(sge_gdi_ctx_class_t *thiz);
-static const char* get_shadow_master_file(sge_gdi_ctx_class_t *thiz);
 static const char* get_private_key(sge_gdi_ctx_class_t *thiz);
 static const char* get_certificate(sge_gdi_ctx_class_t *thiz);
 static int ctx_get_last_commlib_error(sge_gdi_ctx_class_t *thiz);
@@ -264,8 +252,6 @@ static lList* sge_gdi_ctx_class_gdi_kill(sge_gdi_ctx_class_t *thiz, lList *id_li
                                           u_long32 option_flags, u_long32 action_flag);
 
 static int sge_gdi_ctx_log_flush_func(cl_raw_list_t* list_p);
-
-static void sge_gdi_ctx_class_dprintf(sge_gdi_ctx_class_t *ctx);
 
 sge_gdi_ctx_class_t *
 sge_gdi_ctx_class_create(int prog_number, const char *component_name,
@@ -302,22 +288,12 @@ sge_gdi_ctx_class_create(int prog_number, const char *component_name,
    ret->tsm = sge_gdi_ctx_class_gdi_tsm;
    ret->kill = sge_gdi_ctx_class_gdi_kill;
 
-   ret->get_sge_path_state = get_sge_path_state;
-
    ret->get_master = get_master;
-   ret->get_bootstrap_file = get_bootstrap_file;
-   ret->get_act_qmaster_file = get_act_qmaster_file;
-   ret->get_acct_file = get_acct_file;
-   ret->get_reporting_file = get_reporting_file;
-   ret->get_shadow_master_file = get_shadow_master_file;
-   ret->get_cell_root = get_cell_root;
 
    ret->get_com_handle = get_com_handle;
 
    ret->get_private_key = get_private_key;
    ret->get_certificate = get_certificate;
-
-   ret->dprintf = sge_gdi_ctx_class_dprintf;
 
    ret->sge_gdi_ctx_handle = (sge_gdi_ctx_t*)sge_malloc(sizeof(sge_gdi_ctx_t));
    memset(ret->sge_gdi_ctx_handle, 0, sizeof(sge_gdi_ctx_t));
@@ -462,7 +438,6 @@ sge_gdi_ctx_setup(sge_gdi_ctx_class_t *thiz, int prog_number, const char* compon
    bootstrap_mt_init();
    sc_mt_init();
    fgl_mt_init();
-   path_mt_init();
 
 
    /* TODO: shall we do that here ? */
@@ -480,12 +455,6 @@ sge_gdi_ctx_setup(sge_gdi_ctx_class_t *thiz, int prog_number, const char* compon
    }
 
 #if 1
-   es->sge_path_state_obj = sge_path_state_class_create(eh);
-   if (!es->sge_path_state_obj) {
-      CRITICAL((SGE_EVENT, "sge_path_state_class_create() failed"));
-      DRETURN(false);
-   }
-
    es->sge_csp_path_obj = sge_csp_path_class_create(eh);
    if (!es->sge_csp_path_obj) {
       CRITICAL((SGE_EVENT, "sge_csp_path_class_create() failed"));
@@ -502,7 +471,6 @@ static void sge_gdi_ctx_destroy(void *theState)
 
    DENTER(TOP_LAYER);
 
-   sge_path_state_class_destroy(&(s->sge_path_state_obj));
    sge_csp_path_class_destroy(&(s->sge_csp_path_obj));
    sge_free(&(s->master));
    sge_free(&(s->ssl_certificate));
@@ -539,7 +507,6 @@ static int sge_gdi_ctx_class_connect(sge_gdi_ctx_class_t *thiz)
 
 static int sge_gdi_ctx_class_prepare_enroll(sge_gdi_ctx_class_t *thiz) {
 
-   sge_path_state_class_t* path_state = thiz->get_sge_path_state(thiz);
    cl_host_resolve_method_t resolve_method = CL_SHORT;
    cl_framework_t  communication_framework = CL_CT_TCP;
    cl_com_handle_t* handle = NULL;
@@ -597,7 +564,7 @@ static int sge_gdi_ctx_class_prepare_enroll(sge_gdi_ctx_class_t *thiz) {
    }
 
    /* set the alias file */
-   cl_ret = cl_com_set_alias_file((char*)path_state->get_alias_file(path_state));
+   cl_ret = cl_com_set_alias_file(bootstrap_get_alias_file());
    if (cl_ret != CL_RETVAL_OK && cl_ret != ctx_get_last_commlib_error(thiz)) {
       sge_gdi_ctx_class_error(thiz, STATUS_EUNKNOWN, ANSWER_QUALITY_ERROR,
                          "cl_com_set_alias_file failed: %s", cl_get_error_text(cl_ret));
@@ -975,38 +942,10 @@ static lList* sge_gdi_ctx_class_gdi_kill(sge_gdi_ctx_class_t *thiz, lList *id_li
 
 }
 
-static void sge_gdi_ctx_class_dprintf(sge_gdi_ctx_class_t *ctx)
-{
-   DENTER(TOP_LAYER);
-
-   if (ctx == NULL) {
-      DRETURN_VOID;
-   }
-   DPRINTF(("vvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvv\n"));
-
-   (ctx->get_sge_path_state(ctx))->dprintf(ctx->get_sge_path_state(ctx));
-#if 1
-   bootstrap_log_parameter();
-#endif
-
-   DPRINTF(("master: %s\n", ctx->get_master(ctx, false)));
-
-   DPRINTF(("^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n"));
-
-   DRETURN_VOID;
-}
-
-
 /** --------- getter/setter ------------------------------------------------- */
 static cl_com_handle_t* get_com_handle(sge_gdi_ctx_class_t *thiz)
 {
    return cl_com_get_handle(bootstrap_get_component_name(), 0);
-}
-
-static sge_path_state_class_t* get_sge_path_state(sge_gdi_ctx_class_t *thiz)
-{
-   sge_gdi_ctx_t *es = (sge_gdi_ctx_t *) thiz->sge_gdi_ctx_handle;
-   return es->sge_path_state_obj;
 }
 
 static sge_csp_path_class_t* get_sge_csp_path(sge_gdi_ctx_class_t *thiz)
@@ -1017,7 +956,6 @@ static sge_csp_path_class_t* get_sge_csp_path(sge_gdi_ctx_class_t *thiz)
 
 static const char* get_master(sge_gdi_ctx_class_t *thiz, bool reread) {
    sge_gdi_ctx_t *es = (sge_gdi_ctx_t *) thiz->sge_gdi_ctx_handle;
-   sge_path_state_class_t* path_state = thiz->get_sge_path_state(thiz);
    sge_error_class_t *eh = es ? es->eh : NULL;
    static bool error_already_logged = false;
 
@@ -1038,7 +976,7 @@ static const char* get_master(sge_gdi_ctx_class_t *thiz, bool reread) {
          DPRINTF(("re-read actual qmaster file\n"));
          es->last_qmaster_file_read = now;
 
-         if (get_qm_name(master_name, path_state->get_act_qmaster_file(path_state), err_str) == -1) {
+         if (get_qm_name(master_name, bootstrap_get_act_qmaster_file(), err_str) == -1) {
             if (eh != NULL && !error_already_logged) {
                eh->error(eh, STATUS_EUNKNOWN, ANSWER_QUALITY_ERROR, MSG_GDI_READMASTERNAMEFAILED_S, err_str);
                error_already_logged = true;
@@ -1072,41 +1010,6 @@ static const char* get_certificate(sge_gdi_ctx_class_t *thiz) {
    DENTER(BASIS_LAYER);
    cert = es->ssl_certificate;
    DRETURN(cert);
-}
-
-static const char* get_cell_root(sge_gdi_ctx_class_t *thiz) {
-   sge_path_state_class_t* path_state = thiz->get_sge_path_state(thiz);
-   const char *cell_root = NULL;
-
-   DENTER(BASIS_LAYER);
-   cell_root = path_state->get_cell_root(path_state);
-   DRETURN(cell_root);
-}
-
-static const char* get_bootstrap_file(sge_gdi_ctx_class_t *thiz) {
-   sge_path_state_class_t *path_state = thiz->get_sge_path_state(thiz);
-   return path_state->get_bootstrap_file(path_state);
-}
-
-static const char* get_act_qmaster_file(sge_gdi_ctx_class_t *thiz) {
-   sge_path_state_class_t *path_state = thiz->get_sge_path_state(thiz);
-   return path_state->get_act_qmaster_file(path_state);
-}
-
-static const char* get_acct_file(sge_gdi_ctx_class_t *thiz) {
-   sge_path_state_class_t *path_state = thiz->get_sge_path_state(thiz);
-   return path_state->get_acct_file(path_state);
-}
-
-static const char* get_reporting_file(sge_gdi_ctx_class_t *thiz) {
-   sge_path_state_class_t *path_state = thiz->get_sge_path_state(thiz);
-   return path_state->get_reporting_file(path_state);
-}
-
-
-static const char* get_shadow_master_file(sge_gdi_ctx_class_t *thiz) {
-   sge_path_state_class_t *path_state = thiz->get_sge_path_state(thiz);
-   return path_state->get_shadow_masters_file(path_state);
 }
 
 static int ctx_get_last_commlib_error(sge_gdi_ctx_class_t *thiz) {

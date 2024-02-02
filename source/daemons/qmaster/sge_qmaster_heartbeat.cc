@@ -121,7 +121,7 @@ increment_heartbeat(sge_gdi_ctx_class_t *ctx, te_event_t anEvent, monitoring_t *
    char act_qmaster_name[CL_MAXHOSTLEN];
    char act_resolved_qmaster_name[CL_MAXHOSTLEN];
    char err_str[SGE_PATH_MAX+128];
-   const char *act_qmaster_file = ctx->get_act_qmaster_file(ctx);
+   const char *act_qmaster_file = bootstrap_get_act_qmaster_file();
    const char *qualified_hostname = uti_state_get_qualified_hostname();
 
    DENTER(TOP_LAYER);

@@ -521,7 +521,7 @@ int main(int argc, char **argv)
    ** mounted directory.
    */
    if (acct_file == NULL) {
-      acct_file = ctx->get_acct_file(ctx);
+      acct_file = bootstrap_get_acct_file();
       DPRINTF(("acct_file: %s\n", (acct_file ? acct_file : "(NULL)")));
      
       sge_setup_sig_handlers(QACCT);

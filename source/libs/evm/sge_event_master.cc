@@ -1565,7 +1565,7 @@ static bool add_list_event_for_client(u_long32    event_client_id,
     * need a new C block, as the GET_SPECIFIC macro declares new variables
     */
    {
-      GET_SPECIFIC(event_master_transaction_t, t_store, sge_event_master_init_transaction_store, Event_Master_Control.transaction_key, "t_store");
+      GET_SPECIFIC(event_master_transaction_t, t_store, sge_event_master_init_transaction_store, Event_Master_Control.transaction_key);
       if (t_store->is_transaction) {
          lAppendElem(t_store->transaction_requests, evr);
       } else {
@@ -3266,7 +3266,7 @@ bool sge_commit(void)
 
    /* need a new C block, as the GET_SPECIFIC macro declares new variables */
    {
-      GET_SPECIFIC(event_master_transaction_t, t_store, sge_event_master_init_transaction_store, Event_Master_Control.transaction_key, "t_store");
+      GET_SPECIFIC(event_master_transaction_t, t_store, sge_event_master_init_transaction_store, Event_Master_Control.transaction_key);
       if (t_store->is_transaction) {
          t_store->is_transaction = false;
 
@@ -3385,7 +3385,7 @@ void sge_set_commit_required(void)
 
    /* need a new C block, as the GET_SPECIFIC macro declares new variables */
    {
-      GET_SPECIFIC(event_master_transaction_t, t_store, sge_event_master_init_transaction_store, Event_Master_Control.transaction_key, "t_store");
+      GET_SPECIFIC(event_master_transaction_t, t_store, sge_event_master_init_transaction_store, Event_Master_Control.transaction_key);
       if (t_store->is_transaction) {
          WARNING((SGE_EVENT, "attempting to open a new event master transaction, but we already have a transaction open"));
       } else {

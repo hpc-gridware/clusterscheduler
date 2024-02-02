@@ -394,7 +394,7 @@ void rmon_menter(const char *func, const char *thread_name) {
    }
 #endif
    sprintf(msgbuf, "--> %s() {\n", func);
-   mwrite(msgbuf, thread_name);
+   mwrite(msgbuf, thread_name ? thread_name : "NA");
 } /* rmon_enter() */
 
 

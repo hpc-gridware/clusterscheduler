@@ -41,7 +41,6 @@
 #include "uti/sge_log.h"
 #include "uti/sge_stdlib.h"
 #include "uti/sge_prog.h"
-#include "uti/setup_path.h"
 #include "uti/sge_parse_num_par.h"
 #include "uti/sge_hostname.h"
 #include "uti/sge_profiling.h"

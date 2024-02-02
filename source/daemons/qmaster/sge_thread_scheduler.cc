@@ -88,7 +88,7 @@ master_scheduler_class_t Master_Scheduler = {
 
 static void
 schedd_set_serf_log_file(sge_gdi_ctx_class_t *ctx) {
-   const char *cell_root = ctx->get_cell_root(ctx);
+   const char *cell_root = bootstrap_get_cell_root();
 
    DENTER(TOP_LAYER);
 

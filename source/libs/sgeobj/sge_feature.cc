@@ -109,7 +109,7 @@ void feature_mt_init(void)
 *******************************************************************************/
 void feature_set_already_read_from_file(int i)
 {
-   GET_SPECIFIC(struct feature_state_t, feature_state, feature_state_init, feature_state_key, "feature_set_already_read_from_file");
+   GET_SPECIFIC(struct feature_state_t, feature_state, feature_state_init, feature_state_key);
    feature_state->already_read_from_file = i;
 }
 
@@ -125,7 +125,7 @@ void feature_set_already_read_from_file(int i)
 *******************************************************************************/
 int feature_get_already_read_from_file(void)
 {
-   GET_SPECIFIC(struct feature_state_t, feature_state, feature_state_init, feature_state_key, "feature_get_already_read_from_file");
+   GET_SPECIFIC(struct feature_state_t, feature_state, feature_state_init, feature_state_key);
    return feature_state->already_read_from_file;
 }
 
@@ -142,7 +142,7 @@ int feature_get_already_read_from_file(void)
 *******************************************************************************/
 lList **feature_get_master_featureset_list(void)
 {
-   GET_SPECIFIC(struct feature_state_t, feature_state, feature_state_init, feature_state_key, "feature_get_already_read_from_file");
+   GET_SPECIFIC(struct feature_state_t, feature_state, feature_state_init, feature_state_key);
    return &(feature_state->Master_FeatureSet_List);
 }
 
