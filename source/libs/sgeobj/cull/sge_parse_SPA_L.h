@@ -40,48 +40,57 @@ extern "C" {
 #endif
 
 /**
-* @brief @todo add summary
+* @brief Commandline Argument
 *
-* @todo add description
+* Used in clients for parsing the commandline.
+* One commandline argument (including data) is one SPA_Type object.
 *
-*    SGE_ULONG(SPA_number) - @todo add summary
-*    @todo add description
+*    SGE_ULONG(SPA_number) - Option Number
+*    Defines which option was parsed.
+*    The option numbers are defined as enum in source/common/sge_options.h, e.g.
+*    the -a option has option number a_OPT.
+*    Every option has a unique option number.
 *
-*    SGE_ULONG(SPA_argtype) - @todo add summary
-*    @todo add description
+*    SGE_ULONG(SPA_argtype) - Argument Type
+*    If an option has additional arguments the type of the argument,
+*    as defined in source/libs/cull/cull_list.h, enum _enum_lMultiType, e.g.
+*    lStringT for the -N option (defining a job name as string).
 *
-*    SGE_STRING(SPA_switch_val) - @todo add summary
-*    @todo add description
+*    SGE_STRING(SPA_switch_val) - Switch
+*    The option as string, e.g. -N.
 *
-*    SGE_STRING(SPA_switch_arg) - @todo add summary
-*    @todo add description
+*    SGE_STRING(SPA_switch_arg) - Switch Argument
+*    Optional the argument to the option, e.g. for the -N switch the job name.
 *
-*    SGE_ULONG(SPA_occurrence) - @todo add summary
-*    @todo add description
+*    SGE_ULONG(SPA_occurrence) - Occurence
+*    @todo Seems to define if an option has arguments or not.
+*    Possible values are defined in source/common/parse_qsub.h (@todo it is *not* qsub specific, move it):
+*    - BIT_SPA_OCC_NOARG
+*    - BIT_SPA_OCC_ARG
 *
-*    SGE_FLOAT(SPA_argval_lFloatT) - @todo add summary
-*    @todo add description
+*    SGE_FLOAT(SPA_argval_lFloatT) - Parsed Fload Argument
+*    If the option argument is a float then this value is the commandline argument (switch_arg) parsed to float.
 *
-*    SGE_DOUBLE(SPA_argval_lDoubleT) - @todo add summary
-*    @todo add description
+*    SGE_DOUBLE(SPA_argval_lDoubleT) - Parsed Double Argument
+*    If the option argument is a double then this value is the commandline argument (switch_arg) parsed to double.
 *
-*    SGE_ULONG(SPA_argval_lUlongT) - @todo add summary
-*    @todo add description
+*    SGE_ULONG(SPA_argval_lUlongT) - Parsed Ulong Argument
+*    If the option argument is an ulong then this value is the commandline argument (switch_arg) parsed to ulong.
 *
-*    SGE_LONG(SPA_argval_lLongT) - @todo add summary
-*    @todo add description
+*    SGE_LONG(SPA_argval_lLongT) - Parsed Long Argument
+*    If the option argument is a long then this value is the commandline argument (switch_arg) parsed to long.
 *
-*    SGE_CHAR(SPA_argval_lCharT) - @todo add summary
-*    @todo add description
+*    SGE_CHAR(SPA_argval_lCharT) - Parsed Char Argument
+*    If the option argument is a single char then this value is the commandline argument (first character of switch_arg).
 *
-*    SGE_INT(SPA_argval_lIntT) - @todo add summary
-*    @todo add description
+*    SGE_INT(SPA_argval_lIntT) - Parsed Int Argument
+*    If the option argument is an integer then this value is the commandline argument (switch_arg) parsed to integer.
 *
-*    SGE_STRING(SPA_argval_lStringT) - @todo add summary
-*    @todo add description
+*    SGE_STRING(SPA_argval_lStringT) - String Argument
+*    The commandline argument (same value as the switch_arg attribute)
 *
-*    SGE_LIST(SPA_argval_lListT) - @todo add summary
-*    @todo add description
+*    SGE_LIST(SPA_argval_lListT) - Parsed List Argument
+*    If the option argument defines a list of items then this attribute contains the parsed list.
 *
 */
 

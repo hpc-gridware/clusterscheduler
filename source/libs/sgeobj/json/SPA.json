@@ -1,31 +1,37 @@
 {
 	"className":	"CommandLineArgument",
-	"summary":	"@todo add summary",
+	"summary":	"Commandline Argument",
 	"description":	[{
-			"line":	"@todo add description"
+			"line":	"Used in clients for parsing the commandline."
+			}, { "line":	"One commandline argument (including data) is one SPA_Type object."
 		}],
 	"cullPrefix":	"SPA",
 	"attributes":	[{
 			"name":	"number",
-			"summary":	"@todo add summary",
+			"summary":	"Option Number",
 			"description":	[{
-					"line":	"@todo add description"
+					"line":	"Defines which option was parsed."
+					},{ "line":	"The option numbers are defined as enum in source/common/sge_options.h, e.g."
+					},{ "line":	"the -a option has option number a_OPT."
+					},{ "line":	"Every option has a unique option number."
 				}],
 			"type":	"lUlongT",
 			"flags":	[]
 		}, {
 			"name":	"argtype",
-			"summary":	"@todo add summary",
+			"summary":	"Argument Type",
 			"description":	[{
-					"line":	"@todo add description"
+					"line":	"If an option has additional arguments the type of the argument,"
+					},{ "line":	"as defined in source/libs/cull/cull_list.h, enum _enum_lMultiType, e.g."
+					},{ "line":	"lStringT for the -N option (defining a job name as string)."
 				}],
 			"type":	"lUlongT",
 			"flags":	[]
 		}, {
 			"name":	"switch_val",
-			"summary":	"@todo add summary",
+			"summary":	"Switch",
 			"description":	[{
-					"line":	"@todo add description"
+					"line":	"The option as string, e.g. -N."
 				}],
 			"type":	"lStringT",
 			"flags":	[{
@@ -33,81 +39,84 @@
 				}]
 		}, {
 			"name":	"switch_arg",
-			"summary":	"@todo add summary",
+			"summary":	"Switch Argument",
 			"description":	[{
-					"line":	"@todo add description"
+					"line":	"Optional the argument to the option, e.g. for the -N switch the job name."
 				}],
 			"type":	"lStringT",
 			"flags":	[]
 		}, {
 			"name":	"occurrence",
-			"summary":	"@todo add summary",
+			"summary":	"Occurence",
 			"description":	[{
-					"line":	"@todo add description"
+					"line":	"@todo Seems to define if an option has arguments or not."
+					},{ "line":	"Possible values are defined in source/common/parse_qsub.h (@todo it is *not* qsub specific, move it):"
+					},{ "line":	"- BIT_SPA_OCC_NOARG"
+					},{ "line":	"- BIT_SPA_OCC_ARG"
 				}],
 			"type":	"lUlongT",
 			"flags":	[]
 		}, {
 			"name":	"argval_lFloatT",
-			"summary":	"@todo add summary",
+			"summary":	"Parsed Fload Argument",
 			"description":	[{
-					"line":	"@todo add description"
+					"line":	"If the option argument is a float then this value is the commandline argument (switch_arg) parsed to float."
 				}],
 			"type":	"lFloatT",
 			"flags":	[]
 		}, {
 			"name":	"argval_lDoubleT",
-			"summary":	"@todo add summary",
+			"summary":	"Parsed Double Argument",
 			"description":	[{
-					"line":	"@todo add description"
+					"line":	"If the option argument is a double then this value is the commandline argument (switch_arg) parsed to double."
 				}],
 			"type":	"lDoubleT",
 			"flags":	[]
 		}, {
 			"name":	"argval_lUlongT",
-			"summary":	"@todo add summary",
+			"summary":	"Parsed Ulong Argument",
 			"description":	[{
-					"line":	"@todo add description"
+					"line":	"If the option argument is an ulong then this value is the commandline argument (switch_arg) parsed to ulong."
 				}],
 			"type":	"lUlongT",
 			"flags":	[]
 		}, {
 			"name":	"argval_lLongT",
-			"summary":	"@todo add summary",
+			"summary":	"Parsed Long Argument",
 			"description":	[{
-					"line":	"@todo add description"
+					"line":	"If the option argument is a long then this value is the commandline argument (switch_arg) parsed to long."
 				}],
 			"type":	"lLongT",
 			"flags":	[]
 		}, {
 			"name":	"argval_lCharT",
-			"summary":	"@todo add summary",
+			"summary":	"Parsed Char Argument",
 			"description":	[{
-					"line":	"@todo add description"
+					"line":	"If the option argument is a single char then this value is the commandline argument (first character of switch_arg)."
 				}],
 			"type":	"lCharT",
 			"flags":	[]
 		}, {
 			"name":	"argval_lIntT",
-			"summary":	"@todo add summary",
+			"summary":	"Parsed Int Argument",
 			"description":	[{
-					"line":	"@todo add description"
+					"line":	"If the option argument is an integer then this value is the commandline argument (switch_arg) parsed to integer."
 				}],
 			"type":	"lIntT",
 			"flags":	[]
 		}, {
 			"name":	"argval_lStringT",
-			"summary":	"@todo add summary",
+			"summary":	"String Argument",
 			"description":	[{
-					"line":	"@todo add description"
+					"line":	"The commandline argument (same value as the switch_arg attribute)"
 				}],
 			"type":	"lStringT",
 			"flags":	[]
 		}, {
 			"name":	"argval_lListT",
-			"summary":	"@todo add summary",
+			"summary":	"Parsed List Argument",
 			"description":	[{
-					"line":	"@todo add description"
+					"line":	"If the option argument defines a list of items then this attribute contains the parsed list."
 				}],
 			"type":	"lListT",
 			"subClassName":	"ST",
