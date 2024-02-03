@@ -40,24 +40,30 @@ extern "C" {
 #endif
 
 /**
-* @brief @todo add summary
+* @brief Report
 *
-* @todo add description
+* A report from sge_execd to sge_qmaster, e.g. a load report, a job report, ...
 *
-*    SGE_ULONG(REP_type) - @todo add summary
-*    @todo add description
+*    SGE_ULONG(REP_type) - Report Type
+*    The type of the report, defined in source/libs/sgeobj/sge_report.h, e.g.
+*    - NUM_REP_REPORT_LOAD: a load report
+*    - NUM_REP_REPORT_JOB: a job report
+*    - ...
 *
-*    SGE_HOST(REP_host) - @todo add summary
-*    @todo add description
+*    SGE_HOST(REP_host) - Host Name
+*    Hostname as it is seen by sender of report.
 *
-*    SGE_LIST(REP_list) - @todo add summary
-*    @todo add description
+*    SGE_LIST(REP_list) - Report List
+*    A list of report items, depending on the report type, e.g.
+*    a list of load values (HL_Type) objects for load reports or
+*    a list of job usage values (UA_Type) objects for job reports.
 *
-*    SGE_ULONG(REP_version) - @todo add summary
-*    @todo add description
+*    SGE_ULONG(REP_version) - Software Version
+*    Used to report software version (the GDI version) of execd.
+*    Only components with the same GDI version can communicate.
 *
-*    SGE_ULONG(REP_seqno) - @todo add summary
-*    @todo add description
+*    SGE_ULONG(REP_seqno) - Report Sequence Number
+*    Used to recognize old reports sent by execd.
 *
 */
 

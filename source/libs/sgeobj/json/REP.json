@@ -1,31 +1,36 @@
 {
 	"className":	"Report",
-	"summary":	"@todo add summary",
+	"summary":	"Report",
 	"description":	[{
-			"line":	"@todo add description"
+			"line":	"A report from sge_execd to sge_qmaster, e.g. a load report, a job report, ..."
 		}],
 	"cullPrefix":	"REP",
 	"attributes":	[{
 			"name":	"type",
-			"summary":	"@todo add summary",
+			"summary":	"Report Type",
 			"description":	[{
-					"line":	"@todo add description"
+					"line":	"The type of the report, defined in source/libs/sgeobj/sge_report.h, e.g."
+					}, { "line":	"- NUM_REP_REPORT_LOAD: a load report"
+					}, { "line":	"- NUM_REP_REPORT_JOB: a job report"
+					}, { "line":	"- ..."
 				}],
 			"type":	"lUlongT",
 			"flags":	[]
 		}, {
 			"name":	"host",
-			"summary":	"@todo add summary",
+			"summary":	"Host Name",
 			"description":	[{
-					"line":	"@todo add description"
+					"line":	"Hostname as it is seen by sender of report."
 				}],
 			"type":	"lHostT",
 			"flags":	[]
 		}, {
 			"name":	"list",
-			"summary":	"@todo add summary",
+			"summary":	"Report List",
 			"description":	[{
-					"line":	"@todo add description"
+					"line":	"A list of report items, depending on the report type, e.g."
+					}, { "line":	"a list of load values (HL_Type) objects for load reports or"
+					}, { "line":	"a list of job usage values (UA_Type) objects for job reports."
 				}],
 			"type":	"lListT",
 			"subClassName":	"ANY",
@@ -33,17 +38,18 @@
 			"flags":	[]
 		}, {
 			"name":	"version",
-			"summary":	"@todo add summary",
+			"summary":	"Software Version",
 			"description":	[{
-					"line":	"@todo add description"
+					"line":	"Used to report software version (the GDI version) of execd."
+					}, { "line":	"Only components with the same GDI version can communicate."
 				}],
 			"type":	"lUlongT",
 			"flags":	[]
 		}, {
 			"name":	"seqno",
-			"summary":	"@todo add summary",
+			"summary":	"Report Sequence Number",
 			"description":	[{
-					"line":	"@todo add description"
+					"line":	"Used to recognize old reports sent by execd."
 				}],
 			"type":	"lUlongT",
 			"flags":	[]
