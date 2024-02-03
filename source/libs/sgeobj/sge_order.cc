@@ -46,7 +46,7 @@
 *
 *  INPUTS
 *     order_pos_t **cull_order_pos - a douple pointer to the struct. Will be
-*                                    set to NULL
+*                                    set to nullptr
 *
 *  NOTES
 *     MT-NOTE: sge_free_cull_order_pos() is MT safe 
@@ -70,7 +70,7 @@ sge_free_cull_order_pos(order_pos_t **cull_order_pos)
 *     generates a cull order position struct
 *
 *  INPUTS
-*     order_pos_t **cull_order_pos - struct to init. if not NULL, the old struct will be freed
+*     order_pos_t **cull_order_pos - struct to init. if not nullptr, the old struct will be freed
 *     lListElem *jep               - job structure
 *     lListElem *jatp              - ja task structure
 *     lListElem *joker             - job order structure
@@ -89,7 +89,7 @@ sge_create_cull_order_pos(order_pos_t **cull_order_pos, const lListElem *jep, co
    job_pos_t   *job_pos;
    job_pos_t   *order_job_pos; 
 
-   if (*cull_order_pos != NULL) {
+   if (*cull_order_pos != nullptr) {
       sge_free(&cull_order_pos);
    }
 
@@ -100,7 +100,7 @@ sge_create_cull_order_pos(order_pos_t **cull_order_pos, const lListElem *jep, co
    job_pos = &((*cull_order_pos)->job);
    order_job_pos = &((*cull_order_pos)->order_job);   
 
-   if (jep != NULL) {
+   if (jep != nullptr) {
       job_pos->JB_version_pos = lGetPosViaElem(jep,JB_version, SGE_NO_ABORT);
       job_pos->JB_nppri_pos = lGetPosViaElem(jep,JB_nppri, SGE_NO_ABORT);
       job_pos->JB_nurg_pos = lGetPosViaElem(jep,JB_nurg, SGE_NO_ABORT);
@@ -115,7 +115,7 @@ DPRINTF(("job prio pos: %d %d %d %d %d %d %d\n", job_pos->JB_version_pos, job_po
 */                                  
    }
 
-   if (jatp != NULL) {
+   if (jatp != nullptr) {
       ja_pos->JAT_status_pos = lGetPosViaElem(jatp,JAT_status, SGE_NO_ABORT);
       ja_pos->JAT_tix_pos = lGetPosViaElem(jatp,JAT_tix, SGE_NO_ABORT);
 
@@ -132,7 +132,7 @@ DPRINTF(("ja task prio pos: %d %d %d %d %d %d %d %d\n", ja_pos->JAT_status_pos, 
 */                                        
    }
 
-   if (joker != NULL) {
+   if (joker != nullptr) {
       order_job_pos->JB_version_pos = -1;
       order_job_pos->JB_nppri_pos = lGetPosViaElem(joker,JB_nppri, SGE_NO_ABORT);
       order_job_pos->JB_nurg_pos = lGetPosViaElem(joker,JB_nurg, SGE_NO_ABORT);
@@ -147,7 +147,7 @@ DPRINTF(("ja task prio pos: %d %d %d %d %d %d %d %d\n", ja_pos->JAT_status_pos, 
 */                                  
    }
 
-   if (joker_task != NULL) {
+   if (joker_task != nullptr) {
       order_ja_pos->JAT_status_pos = -1;
       order_ja_pos->JAT_tix_pos = -1;
 

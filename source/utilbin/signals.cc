@@ -47,7 +47,7 @@ int main(int argc, char **argv)
       sigset_t sigset;
       sigemptyset(&sigset);
       sigaddset(&sigset, SIGUSR1);
-      sigprocmask(SIG_BLOCK, &sigset, NULL);
+      sigprocmask(SIG_BLOCK, &sigset, nullptr);
       printf("blocking signal SIGUSR1\n");
       fflush(stdout);
    }
@@ -55,7 +55,7 @@ int main(int argc, char **argv)
       sigset_t sigset;
       sigemptyset(&sigset);
       sigaddset(&sigset, SIGUSR2);
-      sigprocmask(SIG_BLOCK, &sigset, NULL);
+      sigprocmask(SIG_BLOCK, &sigset, nullptr);
       printf("blocking signal SIGUSR2\n");
       fflush(stdout);
    }

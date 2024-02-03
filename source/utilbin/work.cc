@@ -122,7 +122,7 @@ static void usage(int exit_code)
 int main(int argc, char *argv[])
 {
    int i;
-   char *kmp = NULL, *mmp = NULL; /* pointers for mallocing */
+   char *kmp = nullptr, *mmp = nullptr; /* pointers for mallocing */
 
    while (argc>1 && argv[1][0] == '-') {
       /* ---------------------- cpu load cmd line options ------- */
@@ -256,7 +256,7 @@ int main(int argc, char *argv[])
       sigset_t sigset;
       sigemptyset(&sigset);
       sigaddset(&sigset, SIGXFSZ);
-      sigprocmask(SIG_BLOCK, &sigset, NULL);
+      sigprocmask(SIG_BLOCK, &sigset, nullptr);
       printf("blocking signal SIGXFSZ\n");
       fflush(stdout);
    }
@@ -266,7 +266,7 @@ int main(int argc, char *argv[])
       sigset_t sigset;
       sigemptyset(&sigset);
       sigaddset(&sigset, SIGXCPU);
-      sigprocmask(SIG_BLOCK, &sigset, NULL);
+      sigprocmask(SIG_BLOCK, &sigset, nullptr);
       printf("blocking signal SIGXCPU\n");
       fflush(stdout);
    }
@@ -291,7 +291,7 @@ int main(int argc, char *argv[])
       keep_open[1] = 4;
       keep_open[2] = 5;
 
-      sge_daemonize(keep_open, 3, NULL);
+      sge_daemonize(keep_open, 3, nullptr);
       dup2(3, 0);
       dup2(4, 1);
       dup2(5, 2);
@@ -358,7 +358,7 @@ int main(int argc, char *argv[])
 void work(char *mmp) {
    float a=0.0, b = 0.1;
    char c;
-   char *miter = NULL, *miter_max = NULL;
+   char *miter = nullptr, *miter_max = nullptr;
    char buffer[2];
 
    if (mmp) {

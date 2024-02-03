@@ -411,7 +411,7 @@ typedef struct cl_com_message_type {
    cl_xml_mih_data_format_t message_df;
    cl_xml_ack_type_t message_mat;
    int message_ack_flag;
-   cl_com_SIRM_t *message_sirm;  /* if NOT NULL this was the response to a SIM */
+   cl_com_SIRM_t *message_sirm;  /* if NOT nullptr this was the response to a SIM */
    unsigned long message_tag;
    unsigned long message_id;
    unsigned long message_response_id;  /* if set, this message is a response for this message_id */
@@ -441,8 +441,8 @@ struct cl_com_connection_type {
    /* (if CL_TRUE, there is already a sim/sirm check ongoing) */
    unsigned long check_endpoint_mid;   /* contains the mid of the sim when sent */
 
-   cl_error_func_t error_func;   /* if not NULL this function is called on errors */
-   cl_tag_name_func_t tag_name_func; /* if not NULL this function is called for debug clients to get tag id name */
+   cl_error_func_t error_func;   /* if not nullptr this function is called on errors */
+   cl_tag_name_func_t tag_name_func; /* if not nullptr this function is called for debug clients to get tag id name */
 
    cl_com_endpoint_t *remote;   /* dst on local host in Connect Message (CM) */
    cl_com_endpoint_t *local;    /* src on local host in Connect Message (CM) */

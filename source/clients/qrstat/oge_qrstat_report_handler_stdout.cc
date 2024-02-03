@@ -160,12 +160,12 @@ qrstat_report_handler_t *
 qrstat_create_report_handler_stdout(qrstat_env_t *qrstat_env, 
                                     lList **answer_list)
 {
-   qrstat_report_handler_t* ret = NULL;
+   qrstat_report_handler_t* ret = nullptr;
 
    DENTER(TOP_LAYER);
 
    ret = (qrstat_report_handler_t*)sge_malloc(sizeof(qrstat_report_handler_t));
-   if (ret == NULL) {
+   if (ret == nullptr) {
       answer_list_add_sprintf(answer_list, STATUS_EMALLOC, ANSWER_QUALITY_ERROR,
                               MSG_MEM_MEMORYALLOCFAILED_S, __func__);
    } else {
@@ -227,7 +227,7 @@ qrstat_destroy_report_handler_stdout(qrstat_report_handler_t** handler, lList **
 
    DENTER(TOP_LAYER);
 
-   if (handler != NULL && *handler != NULL ) {
+   if (handler != nullptr && *handler != nullptr ) {
       sge_free(handler);
    }
 
@@ -382,7 +382,7 @@ qrstat_report_ar_node_string(qrstat_report_handler_t* handler, lList **alpp,
    FILE *out = (FILE*)handler->ctx;
 
    DENTER(TOP_LAYER);
-   if (value == NULL) {
+   if (value == nullptr) {
       value = "";
    }
    if (handler->show_summary) {

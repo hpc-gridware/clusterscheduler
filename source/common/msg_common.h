@@ -116,7 +116,7 @@
 #define MSG_PARSE_TOOMANYOPTIONS                         _MESSAGE(23002, _("ERROR! too many options"))
 #define MSG_UNKNOWN_OBJECT                               _MESSAGE(23003, _("??? unknown object ???"))
 #define MSG_NONE                                         _MESSAGE(23004, _("none"))
-#define MSG_NULL                                         _MESSAGE(23005, _("(NULL)"))
+#define MSG_NULL                                         _MESSAGE(23005, _("(nullptr)"))
 #define MSG_SMALLNULL                                    _MESSAGE(23006, _("(null)"))
 
 #define MSG_FILE_CHDIR_SS                                _MESSAGE(23011, _("can't change dir to "SFN": "SFN))
@@ -125,7 +125,7 @@
 #define MSG_FILE_CANTOPENDIRECTORYX_SS                   _MESSAGE(23014, _("can't open directory "SFQ": "SFN))
 #define MSG_SGETEXT_CANTRESOLVEHOST_S                    _MESSAGE(23015, _("can't resolve hostname "SFQ))
 #define MSG_SGETEXT_CANTRESOLVEHOST_SS                   _MESSAGE(23016, _("can't resolve hostname "SFQ": "SFN))
-#define MSG_NULLPOINTER                                  _MESSAGE(23017, _("NULL pointer received"))
+#define MSG_NULLPOINTER                                  _MESSAGE(23017, _("nullptr pointer received"))
 #define MSG_FILE_NOOPEN_SS                               _MESSAGE(23018, _("can't open file "SFN": "SFN))
 #define MSG_ERROR_COULDNOTOPENSTDOUTASFILE               _MESSAGE(23019, _("Could not open stdout as file"))
 #define MSG_ERROR_UNABLETODUMPJOBLIST                    _MESSAGE(23020, _("Unable to dump job list"))
@@ -139,12 +139,12 @@
 #define MSG_FILE_CANNOT_FLUSH_SS                         _MESSAGE(23031, _("unable to flush file "SFN": "SFN))
 #define MSG_CONF_THEPATHGIVENFORXMUSTSTARTWITHANY_S      _MESSAGE(23032, _("denied: the path given for "SFQ" must start with a \"/\""))
 
-#define MSG_PARSE_NULLPOINTERRECEIVED       _MESSAGE(23034, _("NULL pointer received"))
+#define MSG_PARSE_NULLPOINTERRECEIVED       _MESSAGE(23034, _("nullptr pointer received"))
 #define MSG_MEM_MEMORYALLOCFAILED_S         _MESSAGE(23035, _("memory allocation failed "SFN))
 #define MSG_ANSWER_GETCWDFAILED             _MESSAGE(23036, _("getcwd() failed"))
 #define MSG_ANSWER_HELPNOTALLOWEDINCONTEXT  _MESSAGE(23038, _("-help not allowed in this context"))
 #define MSG_ANSWER_UNKOWNOPTIONX_S          _MESSAGE(23039, _("Unknown option "SFN))
-#define MSG_ANSWER_CANTPROCESSNULLLIST      _MESSAGE(23040, _("can't process NULL list"))
+#define MSG_ANSWER_CANTPROCESSNULLLIST      _MESSAGE(23040, _("can't process nullptr list"))
 #define MSG_FILE_ERROROPENINGXY_SS          _MESSAGE(23041, _("error opening "SFN": "SFN))
 #define MSG_ANSWER_ERRORREADINGFROMFILEX_S  _MESSAGE(23042, _("error reading from file "SFN))
 #define MSG_ANSWER_ERRORREADINGFROMSTDIN    _MESSAGE(23043, _("error reading from stdin"))
@@ -859,7 +859,7 @@
 #define MSG_SGETEXT_CANT_OPEN_SS                         _MESSAGE(23493, _("can't open "SFQ" ("SFN")"))
 #define MSG_GDI_UTEXT_TASK_OPR                           _MESSAGE(23494, _("delete all jobs given in list"))
 #define MSG_SYSTEM_GETPWNAMFAILED_S                      _MESSAGE(23495, _("can't get password entry for user "SFQ". Either the user does not exist or NIS error!"))
-#define MSG_SGETEXT_NULLPTRPASSED_S                      _MESSAGE(23497, _("NULL ptr passed to "SFN"()"))
+#define MSG_SGETEXT_NULLPTRPASSED_S                      _MESSAGE(23497, _("nullptr ptr passed to "SFN"()"))
 #define MSG_ATTRIB_MISSINGATTRIBUTEXINCOMPLEXES_S        _MESSAGE(23498, _("missing attribute "SFQ" in complexes"))
 
 #define MSG_GDI_USAGE_i_OPT_PATH_LIST                    "[-i file_list]"
@@ -915,7 +915,7 @@
 #define MSG_NOTYETIMPLEMENTED_S           _MESSAGE(60001, _("feature "SFQ" not yet implemented"))
 #define MSG_UNABLETOALLOCATEBYTES_DS      _MESSAGE(60100, _("unable to allocate %d bytes of memory in function "SFQ))
 
-#define MSG_INVALIDFILENAMENULLOREMPTY    _MESSAGE(60200, _("invalid file name: NULL pointer or empty string"))
+#define MSG_INVALIDFILENAMENULLOREMPTY    _MESSAGE(60200, _("invalid file name: nullptr pointer or empty string"))
 #define MSG_ERRORGETTINGTMPNAM_S          _MESSAGE(60202, _("error getting temporary file name: "SFN))
 #define MSG_ERROROPENINGFILEFORREADING_SS _MESSAGE(60203, _("error opening file "SFQ" for reading: "SFN)) 
 #define MSG_ERROROPENINGFILEFORWRITING_SS _MESSAGE(60204, _("error opening file "SFQ" for writing: "SFN))
@@ -925,7 +925,7 @@
 #define MSG_ERRORRENAMING_SSS             _MESSAGE(60210, _("error renaming file "SFQ" to "SFQ": "SFN))
 #define MSG_ERRORDELETINGFILE_SS          _MESSAGE(60211, _("error deleting file "SFQ": "SFN))
 
-#define MSG_NULLELEMENTPASSEDTO_S         _MESSAGE(60301, _("NULL object pointer passed to function "SFQ))
+#define MSG_NULLELEMENTPASSEDTO_S         _MESSAGE(60301, _("nullptr object pointer passed to function "SFQ))
 
 #define MSG_NMNOTINELEMENT_S              _MESSAGE(60401, _("attribute "SFQ" not contained in given object"))
 #define MSG_INVALIDCULLDATATYPE_D         _MESSAGE(60402, _("invalid cull datatype %d"))

@@ -149,7 +149,7 @@ int main(int argc, char *argv[]) {
    int max_enroll_tries;
    int ret_val;
    bool has_daemonized = false;
-   sge_gdi_ctx_class_t *ctx = NULL;
+   sge_gdi_ctx_class_t *ctx = nullptr;
    u_long32 start_time = sge_get_gmt();
    monitoring_t monitor;
 
@@ -158,11 +158,11 @@ int main(int argc, char *argv[]) {
    sge_monitor_init(&monitor, "MAIN", NONE_EXT, MT_WARNING, MT_ERROR);
    prof_mt_init();
 
-   sge_get_root_dir(true, NULL, 0, true);
+   sge_get_root_dir(true, nullptr, 0, true);
 
 #ifdef __SGE_COMPILE_WITH_GETTEXT__
    sge_init_language_func((gettext_func_type)gettext, (setlocale_func_type)setlocale, (bindtextdomain_func_type)bindtextdomain, (textdomain_func_type)textdomain);
-   sge_init_language(NULL,NULL);
+   sge_init_language(nullptr,nullptr);
 #endif
 
    /* 
@@ -172,7 +172,7 @@ int main(int argc, char *argv[]) {
    if (argc != 1) {
       sigset_t sig_set;
       sigfillset(&sig_set);
-      pthread_sigmask(SIG_SETMASK, &sig_set, NULL);
+      pthread_sigmask(SIG_SETMASK, &sig_set, nullptr);
       sge_qmaster_thread_init(&ctx, QMASTER, MAIN_THREAD, true);
       sge_process_qmaster_cmdline(argv);
       SGE_EXIT((void **) &ctx, 1);
@@ -195,7 +195,7 @@ int main(int argc, char *argv[]) {
 
    /* this must be done as root user to be able to bind ports < 1024 */
    max_enroll_tries = 30;
-   while (cl_com_get_handle(prognames[QMASTER], 1) == NULL) {
+   while (cl_com_get_handle(prognames[QMASTER], 1) == nullptr) {
       ctx->prepare_enroll(ctx);
       max_enroll_tries--;
       if (max_enroll_tries <= 0) {
@@ -203,7 +203,7 @@ int main(int argc, char *argv[]) {
          CRITICAL((SGE_EVENT, SFNMAX, MSG_QMASTER_COMMUNICATION_ERRORS));
          SGE_EXIT((void **) &ctx, 1);
       }
-      if (cl_com_get_handle(prognames[QMASTER], 1) == NULL) {
+      if (cl_com_get_handle(prognames[QMASTER], 1) == nullptr) {
          /* sleep when prepare_enroll() failed */
          sleep(1);
       }
@@ -241,7 +241,7 @@ int main(int argc, char *argv[]) {
     * handler is after about HEARTBEAT_INTERVAL seconds. The hardbeat event handler
     * is setup during the initialisazion of the timer thread.
     */
-   inc_qmaster_heartbeat(QMASTER_HEARTBEAT_FILE, HEARTBEAT_INTERVAL, NULL);
+   inc_qmaster_heartbeat(QMASTER_HEARTBEAT_FILE, HEARTBEAT_INTERVAL, nullptr);
 
    /*
     * Event master module has to be initialized already here because
@@ -266,7 +266,7 @@ int main(int argc, char *argv[]) {
    sge_timer_initialize(ctx, &monitor);
    sge_worker_initialize(ctx);
    sge_listener_initialize(ctx);
-   sge_scheduler_initialize(ctx, NULL);
+   sge_scheduler_initialize(ctx, nullptr);
 
    INFO((SGE_EVENT, "qmaster startup took "sge_u32" seconds", sge_get_gmt() - start_time));
 
@@ -279,7 +279,7 @@ int main(int argc, char *argv[]) {
     * Shutdown all threads and shutdown corresponding modules.
     * Order is important!
     */
-   sge_scheduler_terminate(ctx, NULL);
+   sge_scheduler_terminate(ctx, nullptr);
    sge_listener_terminate();
 #if 0
    sge_test_terminate(ctx);
@@ -329,10 +329,10 @@ static void init_sig_action_and_mask(void) {
    sa.sa_handler = SIG_IGN;
    sigemptyset(&sa.sa_mask);
    sa.sa_flags = SA_NOCLDWAIT;
-   sigaction(SIGCHLD, &sa, NULL);
+   sigaction(SIGCHLD, &sa, nullptr);
 
    sigfillset(&sig_set);
-   pthread_sigmask(SIG_SETMASK, &sig_set, NULL);
+   pthread_sigmask(SIG_SETMASK, &sig_set, nullptr);
 
    return;
 }

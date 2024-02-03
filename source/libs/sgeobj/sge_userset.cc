@@ -50,7 +50,7 @@
 const char* userset_types[] = {
    "ACL",   /* US_ACL   */
    "DEPT",  /* US_DEPT  */
-   NULL
+   nullptr
 };
 
 /****** sgeobj/userset/userset_is_deadline_user() ******************************
@@ -130,11 +130,11 @@ bool userset_is_ar_user(const lList *lp, const char *username)
 *     const char *name - name 
 *
 *  RESULT
-*     lListElem* - NULL or element pointer
+*     lListElem* - nullptr or element pointer
 *******************************************************************************/
 lListElem *userset_list_locate(const lList *lp, const char *name) 
 {
-   lListElem *ep = NULL;
+   lListElem *ep = nullptr;
 
    DENTER(TOP_LAYER);
 
@@ -171,7 +171,7 @@ userset_list_validate_acl_list(const lList *acl_list, lList **alpp, const lList 
 
    for_each_ep(usp, acl_list) {
       if (!lGetElemStr(master_userset_list, US_name, lGetString(usp, US_name))) {
-         ERROR((SGE_EVENT, MSG_CQUEUE_UNKNOWNUSERSET_S, lGetString(usp, US_name) ? lGetString(usp, US_name) : "<NULL>"));
+         ERROR((SGE_EVENT, MSG_CQUEUE_UNKNOWNUSERSET_S, lGetString(usp, US_name) ? lGetString(usp, US_name) : "<nullptr>"));
          answer_list_add(alpp, SGE_EVENT, STATUS_EUNKNOWN, ANSWER_QUALITY_ERROR);
          DRETURN(STATUS_EUNKNOWN);
       }
@@ -216,7 +216,7 @@ int userset_list_validate_access(const lList *acl_list, int nm, lList **alpp, co
       if (is_hgroup_name(user) == true){
          user++;  /* jump ower the @ sign */
          if (!lGetElemStr(master_userset_list, US_name, user)) {
-            ERROR((SGE_EVENT, MSG_CQUEUE_UNKNOWNUSERSET_S, user ? user : "<NULL>"));
+            ERROR((SGE_EVENT, MSG_CQUEUE_UNKNOWNUSERSET_S, user ? user : "<nullptr>"));
             answer_list_add(alpp, SGE_EVENT, STATUS_EUNKNOWN, ANSWER_QUALITY_ERROR);
             DRETURN(STATUS_EUNKNOWN);
          }
@@ -313,7 +313,7 @@ userset_get_type_string(const lListElem *userset, lList **answer_list,
    type = lGetUlong(userset, US_type);
    sge_dstring_clear(buffer);
 
-   for (i = 0; userset_types[i] != NULL; i++) {
+   for (i = 0; userset_types[i] != nullptr; i++) {
       if ((type & (1 << i)) != 0) {
          if (append) {
             sge_dstring_append(buffer, " ");
@@ -362,13 +362,13 @@ userset_set_type_string(lListElem *userset, lList **answer_list,
 
    SGE_CHECK_POINTER_FALSE(userset, answer_list);
 
-   if (value != NULL && *value != 0) {
+   if (value != nullptr && *value != 0) {
       if (!sge_parse_bitfield_str(value, userset_types, &type, 
                                   "userset type", answer_list, false)) {
          ret = false;
       }
    }
-   else { /* value == NULL || *value == 0 */
+   else { /* value == nullptr || *value == 0 */
       SGE_ADD_MSG_ID(sprintf(SGE_EVENT, MSG_GDI_READCONFIGFILEEMPTYSPEC_S , "userset type"));
       answer_list_add(answer_list, SGE_EVENT, STATUS_ESYNTAX, ANSWER_QUALITY_ERROR);
       ret = false;
@@ -382,11 +382,11 @@ userset_set_type_string(lListElem *userset, lList **answer_list,
 const char *
 userset_list_append_to_dstring(const lList *this_list, dstring *string)
 {
-   const char *ret = NULL;
+   const char *ret = nullptr;
 
    DENTER(BASIS_LAYER);
-   if (string != NULL) {
-      const lListElem *elem = NULL;
+   if (string != nullptr) {
+      const lListElem *elem = nullptr;
       bool printed = false;
 
       for_each_ep(elem, this_list) {
@@ -410,7 +410,7 @@ userset_list_append_to_dstring(const lList *this_list, dstring *string)
    1  yes it is contained in the acl
    0  no 
 
-   user, group: may be NULL
+   user, group: may be nullptr
 */   
 int sge_contained_in_access_list(const char *user, const char *group, 
                                  const lListElem *acl, lList **alpp) 
@@ -419,18 +419,18 @@ int sge_contained_in_access_list(const char *user, const char *group,
    const lList *user_list = lGetList(acl, US_entries);
 
    DENTER(TOP_LAYER);
-   if (group != NULL) {
+   if (group != nullptr) {
       dstring group_entry = DSTRING_INIT;
 
       sge_dstring_sprintf(&group_entry, "@%s", group);
-      if (lGetElemStr(user_list, UE_name, sge_dstring_get_string(&group_entry)) != NULL) {
+      if (lGetElemStr(user_list, UE_name, sge_dstring_get_string(&group_entry)) != nullptr) {
          found = true;
       } else if (sge_is_pattern(group)) {
          const lListElem *acl_entry;
          const char *entry_name;
          for_each_ep(acl_entry, user_list) {
             entry_name = lGetString(acl_entry, UE_name);
-            if (entry_name != NULL && fnmatch(sge_dstring_get_string(&group_entry), entry_name, 0) == 0) {
+            if (entry_name != nullptr && fnmatch(sge_dstring_get_string(&group_entry), entry_name, 0) == 0) {
                found = true;
                break;
             }
@@ -438,15 +438,15 @@ int sge_contained_in_access_list(const char *user, const char *group,
       }
       sge_dstring_free(&group_entry);
    }
-   if (found == false && user != NULL) {
-      if (lGetElemStr(user_list, UE_name, user) != NULL) {
+   if (found == false && user != nullptr) {
+      if (lGetElemStr(user_list, UE_name, user) != nullptr) {
          found = true;            
       } else if (sge_is_pattern(user)) {
          const lListElem *acl_entry;
          const char *entry_name;
          for_each_ep(acl_entry, user_list) {
             entry_name = lGetString(acl_entry, UE_name);
-            if (entry_name != NULL && fnmatch(user, entry_name, 0) == 0) {
+            if (entry_name != nullptr && fnmatch(user, entry_name, 0) == 0) {
                found = true;
                break;
             }

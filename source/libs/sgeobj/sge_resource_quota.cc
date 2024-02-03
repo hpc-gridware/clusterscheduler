@@ -86,16 +86,16 @@ rqs_match_user_host_scope(const lList *scope, int filter_type, const char *value
 *
 *******************************************************************************/
 bool rqs_parse_filter_from_string(lListElem **filter, const char* buffer, lList **alp) {
-   lListElem *tmp_filter = NULL;
-   const lListElem *scope = NULL;
-   lList *lp = NULL;
-   lList *scope_list = NULL;
-   lList *xscope_list = NULL;
+   lListElem *tmp_filter = nullptr;
+   const lListElem *scope = nullptr;
+   lList *lp = nullptr;
+   lList *scope_list = nullptr;
+   lList *xscope_list = nullptr;
    char delims[] = "\t \v\r,{}"; 
 
    DENTER(TOP_LAYER);
 
-   if (buffer == NULL) {
+   if (buffer == nullptr) {
      DRETURN(false);
    }
 
@@ -159,13 +159,13 @@ bool rqs_parse_filter_from_string(lListElem **filter, const char* buffer, lList 
 *
 *******************************************************************************/
 bool rqs_append_filter_to_dstring(const lListElem *filter, dstring *buffer, lList **alp){
-   const lList *tlp = NULL;
-   const lListElem *scope = NULL;
+   const lList *tlp = nullptr;
+   const lListElem *scope = nullptr;
    bool first = true;
    bool expand = false;
    bool ret = false;
 
-   if (filter == NULL) {
+   if (filter == nullptr) {
       return ret;
    }
 
@@ -234,11 +234,11 @@ lListElem* rqs_set_defaults(lListElem* rqs)
 {
    DENTER(TOP_LAYER);
 
-   if (rqs != NULL) {
-      lList *limit_list = NULL;
-      lList *rule_list = NULL;
-      lListElem *rule = NULL;
-      lListElem *limit = NULL;
+   if (rqs != nullptr) {
+      lList *limit_list = nullptr;
+      lList *rule_list = nullptr;
+      lListElem *rule = nullptr;
+      lListElem *limit = nullptr;
 
       /* Free RQS_rule */
       rule_list = lGetListRW(rqs, RQS_rule);
@@ -298,22 +298,22 @@ rqs_verify_filter(const lListElem *rule, lList **answer_list, int nm, const char
 {
    bool ret = true;
 
-   if (rule == NULL) {
+   if (rule == nullptr) {
       ret = false;
    } else {
       const lListElem *filter = lGetObject(rule, nm);
-      if (filter != NULL) {
+      if (filter != nullptr) {
          const lListElem *ep;
 
          for_each_ep(ep, lGetList(filter, RQRF_scope)) {
-            if (lGetString(ep, ST_name) == NULL) {
+            if (lGetString(ep, ST_name) == nullptr) {
                answer_list_add(answer_list, message, STATUS_ESYNTAX, ANSWER_QUALITY_ERROR);
                ret = false;
                break;
             }
          }
          for_each_ep(ep, lGetList(filter, RQRF_xscope)) {
-            if (lGetString(ep, ST_name) == NULL) {
+            if (lGetString(ep, ST_name) == nullptr) {
                answer_list_add(answer_list, message, STATUS_ESYNTAX, ANSWER_QUALITY_ERROR);
                ret = false;
                break;
@@ -354,30 +354,30 @@ rqs_verify_filter(const lListElem *rule, lList **answer_list, int nm, const char
 bool rqs_verify_attributes(lListElem *rqs, lList **answer_list, bool in_master, const lList *master_centry_list)
 {
    bool ret = true;
-   const lList *rules = NULL;
+   const lList *rules = nullptr;
 
    DENTER(TOP_LAYER);
 
    /* every rule set needs a RQS_name */
-   if (lGetString(rqs, RQS_name) == NULL) {
+   if (lGetString(rqs, RQS_name) == nullptr) {
       answer_list_add_sprintf(answer_list, STATUS_ESYNTAX, ANSWER_QUALITY_ERROR, MSG_RESOURCEQUOTA_NONAME);
       ret = false;
    }
 
    /* every rule set needs at least one rule */
    rules = lGetList(rqs, RQS_rule);
-   if (ret && (rules == NULL || lGetNumberOfElem(rules) < 1)) {
+   if (ret && (rules == nullptr || lGetNumberOfElem(rules) < 1)) {
       answer_list_add_sprintf(answer_list, STATUS_ESYNTAX, ANSWER_QUALITY_ERROR, MSG_RESOURCEQUOTA_NORULES);
       ret = false;
    }
   
    if (ret && in_master) {
-      lListElem *rule = NULL;
+      lListElem *rule = nullptr;
       for_each_rw (rule, rules) {
          bool host_expand = false;
          bool queue_expand = false;
-         lListElem *limit = NULL;
-         lListElem *filter = NULL;
+         lListElem *limit = nullptr;
+         lListElem *filter = nullptr;
          const lList *limit_list = lGetList(rule, RQR_limit);
 
          /* check user, project and pe filters */
@@ -398,7 +398,7 @@ bool rqs_verify_attributes(lListElem *rqs, lList **answer_list, bool in_master, 
 
          /* check host and queue filters, set rule level. Needed by schedd */
          if ((filter = lGetObject(rule, RQR_filter_hosts))) {
-            lListElem *host = NULL;
+            lListElem *host = nullptr;
             host_expand = lGetBool(filter, RQRF_expand) ? true : false;
 
             for_each_rw(host, lGetList(filter, RQRF_xscope)) {
@@ -430,7 +430,7 @@ bool rqs_verify_attributes(lListElem *rqs, lList **answer_list, bool in_master, 
             const char *strval = lGetString(limit, RQRL_value);
             lListElem *centry = centry_list_locate(master_centry_list, name);
 
-            if (centry == NULL) {
+            if (centry == nullptr) {
                sprintf(SGE_EVENT, MSG_NOTEXISTING_ATTRIBUTE_SS, SGE_RQS_NAME, name);
                answer_list_add(answer_list, SGE_EVENT, STATUS_ESYNTAX, ANSWER_QUALITY_ERROR);
                ret = false;
@@ -439,13 +439,13 @@ bool rqs_verify_attributes(lListElem *rqs, lList **answer_list, bool in_master, 
 
             lSetString(limit, RQRL_name, lGetString(centry, CE_name));
 
-            if (strval == NULL) {
+            if (strval == nullptr) {
                answer_list_add_sprintf(answer_list, STATUS_ESYNTAX, ANSWER_QUALITY_ERROR, MSG_RESOURCEQUOTA_NORULES);
                ret = false;
                break;
             }
 
-            if (strchr(strval, '$') != NULL) {
+            if (strchr(strval, '$') != nullptr) {
                if (lGetUlong(rule, RQR_level) == RQR_HOST || lGetUlong(rule, RQR_level) == RQR_QUEUEI) {
                   /* the value is a dynamical limit */
                   if (!validate_load_formula(lGetString(limit, RQRL_value), answer_list, 
@@ -519,8 +519,8 @@ bool rqs_list_verify_attributes(lList *rqs_list, lList **answer_list, bool in_ma
    bool ret = true;
    
    DENTER(TOP_LAYER);
-   if (rqs_list != NULL) {
-      lListElem *rqs = NULL;
+   if (rqs_list != nullptr) {
+      lListElem *rqs = nullptr;
 
       for_each_rw(rqs, rqs_list) {
          ret = rqs_verify_attributes(rqs, answer_list, in_master, master_centry_list);
@@ -548,14 +548,14 @@ bool rqs_list_verify_attributes(lList *rqs_list, lList **answer_list, bool in_ma
 *     const char *name - rule set name of interest
 *
 *  RESULT
-*     lListElem* - if found the reference to the resource quota set, else NULL
+*     lListElem* - if found the reference to the resource quota set, else nullptr
 *
 *  NOTES
 *     MT-NOTE: rqs_list_locate() is MT safe 
 *******************************************************************************/
 lListElem *rqs_list_locate(lList *lp, const char *name)
 {
-   lListElem *ep = NULL;
+   lListElem *ep = nullptr;
 
    DENTER(TOP_LAYER);
 
@@ -584,21 +584,21 @@ lListElem *rqs_list_locate(lList *lp, const char *name)
 *
 *  RESULT
 *     lListElem* - reference to found rule
-*                  NULL if rule was not found
+*                  nullptr if rule was not found
 *
 *  NOTES
 *     MT-NOTE: rqs_rule_locate() is MT safe 
 *******************************************************************************/
 lListElem* rqs_rule_locate(lList *lp, const char *name)
 {
-   lListElem *ep = NULL;
+   lListElem *ep = nullptr;
    int get_pos = 0;
    int act_pos = 1;
 
    DENTER(TOP_LAYER);
 
-   if (name == NULL) {
-      DRETURN(NULL);
+   if (name == nullptr) {
+      DRETURN(nullptr);
    }
 
    get_pos = atoi(name);
@@ -607,7 +607,7 @@ lListElem* rqs_rule_locate(lList *lp, const char *name)
       const char *rule_name = lGetString(ep, RQR_name);
       if (get_pos != -1 && act_pos == get_pos) {
          break;
-      } else if (rule_name != NULL && !strcasecmp(name, lGetString(ep, RQR_name))) {
+      } else if (rule_name != nullptr && !strcasecmp(name, lGetString(ep, RQR_name))) {
          break;
       }
       act_pos++;
@@ -647,17 +647,17 @@ bool rqs_xattr_pre_gdi(lList *this_list, lList **answer_list)
    char delim[] = "/";
 
    DENTER(TOP_LAYER);
-   if (this_list != NULL) {
-      lListElem *rqs = NULL;
+   if (this_list != nullptr) {
+      lListElem *rqs = nullptr;
 
       for_each_rw(rqs, this_list) {
-         lList *lp = NULL;
+         lList *lp = nullptr;
          const char *name = lGetString(rqs, RQS_name);
          
          lString2List(name, &lp, ST_Type, ST_name, delim);
          if (lGetNumberOfElem(lp) == 2) {
-            const lListElem *ep = NULL;
-            lListElem *rule = NULL;
+            const lListElem *ep = nullptr;
+            lListElem *rule = nullptr;
             const lList *rules = lGetList(rqs, RQS_rule);
 
             ep = lFirst(lp);
@@ -715,46 +715,46 @@ rqs_get_rue_string(dstring *name, const lListElem *rule, const char *user,
                               const char *project, const char *host, const char *queue,
                               const char* pe)
 {
-   lListElem *filter = NULL;
+   lListElem *filter = nullptr;
 
    DENTER(BASIS_LAYER);
 
-   if (rule == NULL) {
+   if (rule == nullptr) {
       DRETURN(false);
    }
 
    sge_dstring_clear(name);
 
-   if ((filter = lGetObject(rule, RQR_filter_users)) != NULL) {
-      if (filter != NULL && user != NULL && lGetBool(filter, RQRF_expand) == true) {
+   if ((filter = lGetObject(rule, RQR_filter_users)) != nullptr) {
+      if (filter != nullptr && user != nullptr && lGetBool(filter, RQRF_expand) == true) {
          sge_dstring_append(name, user); 
       }
    }
    sge_dstring_append(name, "/");
 
-   if ((filter = lGetObject(rule, RQR_filter_projects)) != NULL) {
-      if (filter != NULL && project != NULL && lGetBool(filter, RQRF_expand) == true) {
+   if ((filter = lGetObject(rule, RQR_filter_projects)) != nullptr) {
+      if (filter != nullptr && project != nullptr && lGetBool(filter, RQRF_expand) == true) {
          sge_dstring_append(name, project); 
       }
    }
    sge_dstring_append(name, "/");
 
-   if ((filter = lGetObject(rule, RQR_filter_pes)) != NULL) {
-      if (filter != NULL && pe != NULL && lGetBool(filter, RQRF_expand) == true) {
+   if ((filter = lGetObject(rule, RQR_filter_pes)) != nullptr) {
+      if (filter != nullptr && pe != nullptr && lGetBool(filter, RQRF_expand) == true) {
          sge_dstring_append(name, pe); 
       }
    }
    sge_dstring_append(name, "/");
 
-   if ((filter = lGetObject(rule, RQR_filter_queues)) != NULL) {
-      if (filter != NULL && queue != NULL && lGetBool(filter, RQRF_expand) == true) {
+   if ((filter = lGetObject(rule, RQR_filter_queues)) != nullptr) {
+      if (filter != nullptr && queue != nullptr && lGetBool(filter, RQRF_expand) == true) {
          sge_dstring_append(name, queue); 
       }
    }
    sge_dstring_append(name, "/");
 
-   if ((filter = lGetObject(rule, RQR_filter_hosts)) != NULL) {
-      if (filter != NULL && host != NULL && lGetBool(filter, RQRF_expand) == true) {
+   if ((filter = lGetObject(rule, RQR_filter_hosts)) != nullptr) {
+      if (filter != nullptr && host != nullptr && lGetBool(filter, RQRF_expand) == true) {
          char buffer[10240];
          sge_hostcpy(buffer, host);
          sge_dstring_append(name, buffer); 
@@ -798,12 +798,12 @@ int
 rqs_debit_consumable(lListElem *rqs, lListElem *job, const lListElem *granted, const char *pename, const lList *centry_list, 
                      const lList *acl_list, const lList *hgrp_list, int slots, bool is_master_task)
 {
-   lListElem *rule = NULL;
+   lListElem *rule = nullptr;
    int mods = 0;
    const char* hostname = lGetHost(granted, JG_qhostname);
    const char* username = lGetString(job, JB_owner);
    const char* groupname = lGetString(job, JB_group);
-   char *qname = NULL;
+   char *qname = nullptr;
    const char *queue_instance = lGetString(granted, JG_qname);
    const char* project = lGetString(job, JB_project);
 
@@ -816,9 +816,9 @@ rqs_debit_consumable(lListElem *rqs, lListElem *job, const lListElem *granted, c
    /* remove the host name part of the queue instance name */
    qname = cqueue_get_name_from_qinstance(queue_instance);
 
-   rule = rqs_get_matching_rule(rqs, username, groupname, project, pename, hostname, qname, acl_list, hgrp_list, NULL);
+   rule = rqs_get_matching_rule(rqs, username, groupname, project, pename, hostname, qname, acl_list, hgrp_list, nullptr);
 
-   if (rule != NULL) {
+   if (rule != nullptr) {
       /* debit usage */
       dstring rue_name = DSTRING_INIT;
 
@@ -870,7 +870,7 @@ rqs_get_matching_rule(const lListElem *rqs, const char *user, const char *group,
                                   const char* pe, const char *host, const char *queue,
                                   const lList *userset_list, const lList* hgroup_list, dstring *rule_name)
 {
-   lListElem *rule = NULL;
+   lListElem *rule = nullptr;
    const lList *rule_list = lGetList(rqs, RQS_rule);
    int i = 0;
 
@@ -965,13 +965,13 @@ rqs_debit_rule_usage(lListElem *job, lListElem *rule, dstring *rue_name, int slo
       }
 
       rue_elem = lGetSubStr(limit, RUE_name, sge_dstring_get_string(rue_name), RQRL_usage);
-      if (rue_elem == NULL) {
+      if (rue_elem == nullptr) {
          rue_elem = lAddSubStr(limit, RUE_name, sge_dstring_get_string(rue_name), RQRL_usage, RUE_Type);
          /* RUE_utilized_now is implicitly set to zero */
       }
 
       if (job) {
-         bool tmp_ret = job_get_contribution(job, NULL, centry_name, &dval, raw_centry);
+         bool tmp_ret = job_get_contribution(job, nullptr, centry_name, &dval, raw_centry);
          if (tmp_ret && dval != 0.0) {
             DPRINTF(("debiting %f of %s on rqs %s for %s %d slots\n", dval, centry_name,
                      obj_name, sge_dstring_get_string(rue_name), debit_slots));
@@ -1036,14 +1036,14 @@ rqs_match_user_host_scope(const lList *scope, int filter_type, const char *value
 
    if (!sge_is_pattern(value)) {
       /* used in scheduler/qmaster and qquota */
-      if (lGetElemStr(scope, ST_name, value) != NULL) {
+      if (lGetElemStr(scope, ST_name, value) != nullptr) {
          found = true;
       } else {
          for_each_rw(ep, scope) {
             const lListElem *group_ep;
             const char *cp = lGetString(ep, ST_name);
-            const char *group_name = NULL;
-            const char *query = NULL;
+            const char *group_name = nullptr;
+            const char *query = nullptr;
 
             if (fnmatch(cp, value, 0) == 0) {
                found = true;
@@ -1058,14 +1058,14 @@ rqs_match_user_host_scope(const lList *scope, int filter_type, const char *value
                query = cp;
             }
 
-            if (group_name != NULL && query != NULL) {
+            if (group_name != nullptr && query != nullptr) {
                DPRINTF(("group_name=%s, query=%s\n", group_name, query));
                if (filter_type == FILTER_USERS) {
                   /* the userset name does not contain the preattached \@ sign */
                   group_name++; 
                   if (!sge_is_pattern(group_name)) {
-                     if ((group_ep = userset_list_locate(master_userset_list, group_name)) != NULL) {
-                        if (sge_contained_in_access_list(query, group, group_ep, NULL) == 1) {
+                     if ((group_ep = userset_list_locate(master_userset_list, group_name)) != nullptr) {
+                        if (sge_contained_in_access_list(query, group, group_ep, nullptr) == 1) {
                            found = true;
                            break;
                         }
@@ -1073,7 +1073,7 @@ rqs_match_user_host_scope(const lList *scope, int filter_type, const char *value
                   } else {
                      for_each_rw(group_ep, master_userset_list) {
                         if (fnmatch(group_name, lGetString(group_ep, US_name), 0) == 0) {
-                           if (sge_contained_in_access_list(query, group, group_ep, NULL) == 1) {
+                           if (sge_contained_in_access_list(query, group, group_ep, nullptr) == 1) {
                               found = true;
                               break;
                            }
@@ -1084,12 +1084,12 @@ rqs_match_user_host_scope(const lList *scope, int filter_type, const char *value
                      }
                   }
                } else { /* FILTER_HOSTS */
-                  lListElem *hgroup = NULL;
-                  lList *host_list = NULL;
+                  lListElem *hgroup = nullptr;
+                  lList *host_list = nullptr;
                   if (!sge_is_pattern(group_name)) {
                      if ((hgroup = hgroup_list_locate(master_hgroup_list, group_name))) { 
-                        hgroup_find_all_references(hgroup, NULL, master_hgroup_list, &host_list, NULL);
-                        if (host_list != NULL && lGetElemHost(host_list, HR_name, query) != NULL) {
+                        hgroup_find_all_references(hgroup, nullptr, master_hgroup_list, &host_list, nullptr);
+                        if (host_list != nullptr && lGetElemHost(host_list, HR_name, query) != nullptr) {
                            lFreeList(&host_list);
                            found = true;
                            break;
@@ -1111,8 +1111,8 @@ rqs_match_user_host_scope(const lList *scope, int filter_type, const char *value
                   } else {
                      for_each_ep(group_ep, master_hgroup_list) {
                         if (fnmatch(group_name, lGetHost(group_ep, HGRP_name), 0) == 0) {
-                           hgroup_find_all_references(group_ep, NULL, master_hgroup_list, &host_list, NULL);
-                           if (host_list != NULL && lGetElemHost(host_list, HR_name, query) != NULL) {
+                           hgroup_find_all_references(group_ep, nullptr, master_hgroup_list, &host_list, nullptr);
+                           if (host_list != nullptr && lGetElemHost(host_list, HR_name, query) != nullptr) {
                               lFreeList(&host_list);
                               found = true;
                               break;
@@ -1141,8 +1141,8 @@ rqs_match_user_host_scope(const lList *scope, int filter_type, const char *value
       /* only used in qquota */ 
       for_each_ep(ep, scope) {
          const char *cp = lGetString(ep, ST_name);
-         const char *group_name = NULL;
-         const char *query = NULL;
+         const char *group_name = nullptr;
+         const char *query = nullptr;
 
          if (fnmatch(value, cp, 0) == 0) {
             if (!is_xscope) {
@@ -1173,7 +1173,7 @@ rqs_match_user_host_scope(const lList *scope, int filter_type, const char *value
             query = cp;
          }
 
-         if (group_name != NULL && query != NULL) {
+         if (group_name != nullptr && query != nullptr) {
             const lListElem *group_ep;
             DPRINTF(("group_name=%s, query=%s\n", group_name, query));
             if (filter_type == FILTER_USERS) {
@@ -1181,7 +1181,7 @@ rqs_match_user_host_scope(const lList *scope, int filter_type, const char *value
                group_name++;
                for_each_ep(group_ep, master_userset_list) {
                   if (fnmatch(group_name, lGetString(group_ep, US_name), 0) == 0) {
-                     if (sge_contained_in_access_list(query, group, group_ep, NULL) == 1) {
+                     if (sge_contained_in_access_list(query, group, group_ep, nullptr) == 1) {
                         found = true;
                         break;
                      }
@@ -1191,11 +1191,11 @@ rqs_match_user_host_scope(const lList *scope, int filter_type, const char *value
                   break;
                }
             } else {
-               lList *host_list = NULL;
+               lList *host_list = nullptr;
                for_each_ep(group_ep, master_hgroup_list) {
                   if (fnmatch(group_name, lGetHost(group_ep, HGRP_name), 0) == 0) {
                      const lListElem *host_ep;
-                     hgroup_find_all_references(group_ep, NULL, master_hgroup_list, &host_list, NULL);
+                     hgroup_find_all_references(group_ep, nullptr, master_hgroup_list, &host_list, nullptr);
                      for_each_ep(host_ep, host_list) {
                         if (fnmatch(query, lGetHost(host_ep, HR_name), 0) == 0) {
                            found = true;
@@ -1255,23 +1255,23 @@ rqs_is_matching_rule(lListElem *rule, const char *user, const char *group, const
 {
       DENTER(TOP_LAYER);
 
-      if (!rqs_filter_match(lGetObject(rule, RQR_filter_users), FILTER_USERS, user, master_userset_list, NULL, group)) {
+      if (!rqs_filter_match(lGetObject(rule, RQR_filter_users), FILTER_USERS, user, master_userset_list, nullptr, group)) {
          DPRINTF(("user doesn't match\n"));
          DRETURN(false);
       }
-      if (!rqs_filter_match(lGetObject(rule, RQR_filter_projects), FILTER_PROJECTS, project, NULL, NULL, NULL)) {
+      if (!rqs_filter_match(lGetObject(rule, RQR_filter_projects), FILTER_PROJECTS, project, nullptr, nullptr, nullptr)) {
          DPRINTF(("project doesn't match\n"));
          DRETURN(false);
       }
-      if (!rqs_filter_match(lGetObject(rule, RQR_filter_pes), FILTER_PES, pe, NULL, NULL, NULL)) {
+      if (!rqs_filter_match(lGetObject(rule, RQR_filter_pes), FILTER_PES, pe, nullptr, nullptr, nullptr)) {
          DPRINTF(("pe doesn't match\n"));
          DRETURN(false);
       }
-      if (!rqs_filter_match(lGetObject(rule, RQR_filter_queues), FILTER_QUEUES, queue, NULL, NULL, NULL)) {
+      if (!rqs_filter_match(lGetObject(rule, RQR_filter_queues), FILTER_QUEUES, queue, nullptr, nullptr, nullptr)) {
          DPRINTF(("queue doesn't match\n"));
          DRETURN(false);
       }
-      if (!rqs_filter_match(lGetObject(rule, RQR_filter_hosts), FILTER_HOSTS, host, NULL, master_hgroup_list, NULL)) {
+      if (!rqs_filter_match(lGetObject(rule, RQR_filter_hosts), FILTER_HOSTS, host, nullptr, master_hgroup_list, nullptr)) {
          DPRINTF(("host doesn't match\n"));
          DRETURN(false);
       }
@@ -1318,7 +1318,7 @@ rqs_match_host_scope(const lList *scope, const char *name, const lList *master_h
    }
    
    if (sge_is_pattern(name) || is_hgroup_name(name)) {
-      DRETURN(rqs_match_user_host_scope(scope, FILTER_HOSTS, name, NULL, master_hgroup_list, NULL, is_xscope));
+      DRETURN(rqs_match_user_host_scope(scope, FILTER_HOSTS, name, nullptr, master_hgroup_list, nullptr, is_xscope));
    }
 
    /* at this stage we know 'name' is a simple hostname */
@@ -1367,7 +1367,7 @@ rqs_filter_match(lListElem *filter, int filter_type, const char *value, const lL
 
    DENTER(BASIS_LAYER);
 
-   if (filter != NULL) {
+   if (filter != nullptr) {
       const lList* scope = lGetList(filter, RQRF_scope);
       const lList* xscope = lGetList(filter, RQRF_xscope);
 
@@ -1376,7 +1376,7 @@ rqs_filter_match(lListElem *filter, int filter_type, const char *value, const lL
             DPRINTF(("matching hosts with %s\n", value));
             /* inverse logic because of xscope */
             ret = rqs_match_host_scope(xscope, value, master_hgroup_list, true) ? false: true;
-            if (ret == true && scope != NULL) { 
+            if (ret == true && scope != nullptr) {
                if (!rqs_match_host_scope(scope, value, master_hgroup_list, false)) {
                   ret = false;
                }
@@ -1387,9 +1387,9 @@ rqs_filter_match(lListElem *filter, int filter_type, const char *value, const lL
          {  
             DPRINTF(("matching users or hosts with %s\n", value));
             /* inverse logic because of xscope */
-            ret = rqs_match_user_host_scope(xscope, filter_type, value, master_userset_list, NULL, group, true) ? false: true;
-            if (ret == true && scope != NULL) { 
-               if (!rqs_match_user_host_scope(scope, filter_type, value, master_userset_list, NULL, group, false)) {
+            ret = rqs_match_user_host_scope(xscope, filter_type, value, master_userset_list, nullptr, group, true) ? false: true;
+            if (ret == true && scope != nullptr) {
+               if (!rqs_match_user_host_scope(scope, filter_type, value, master_userset_list, nullptr, group, false)) {
                   ret = false;
                }
             }
@@ -1398,13 +1398,13 @@ rqs_filter_match(lListElem *filter, int filter_type, const char *value, const lL
          case FILTER_PROJECTS:
          case FILTER_PES:
          case FILTER_QUEUES:
-            DPRINTF(("matching projects, pes or queues with %s\n", value? value: "NULL"));
-            if (lGetElemStr(xscope, ST_name, value) != NULL) {
+            DPRINTF(("matching projects, pes or queues with %s\n", value? value: "nullptr"));
+            if (lGetElemStr(xscope, ST_name, value) != nullptr) {
                ret = false;
             } else {
                for_each_ep(ep, xscope) {
                   const char *cp = lGetString(ep, ST_name);
-                  if (value == NULL || (strcmp(value, "*") == 0)) {
+                  if (value == nullptr || (strcmp(value, "*") == 0)) {
                      break;
                   }
                   DPRINTF(("xscope: strcmp(%s,%s)\n", cp, value));
@@ -1418,13 +1418,13 @@ rqs_filter_match(lListElem *filter, int filter_type, const char *value, const lL
             }
             if (ret != false) { 
                bool found = false;
-               if (lGetElemStr(scope, ST_name, value) != NULL) {
+               if (lGetElemStr(scope, ST_name, value) != nullptr) {
                   found = true;
                } else {
                   for_each_ep(ep, scope) {
                      const char *cp = lGetString(ep, ST_name);
 
-                     if (value == NULL) {
+                     if (value == nullptr) {
                         break;
                      }
                      DPRINTF(("scope: strcmp(%s,%s)\n", cp, value));
@@ -1434,7 +1434,7 @@ rqs_filter_match(lListElem *filter, int filter_type, const char *value, const lL
                      }
                   }
                }
-               if (scope != NULL && found == false) {
+               if (scope != nullptr && found == false) {
                   ret = false;
                }
             }
@@ -1482,7 +1482,7 @@ bool sge_centry_referenced_in_rqs(const lListElem *rqs, const lListElem *centry)
       for_each_ep(limit, lGetList(rule, RQR_limit)) {
          const char *limit_name = lGetString(limit, RQRL_name);
          DPRINTF(("limit name %s\n", limit_name));
-         if (strchr(limit_name, '$') != NULL) {
+         if (strchr(limit_name, '$') != nullptr) {
             /* dynamical limit */
             if (load_formula_is_centry_referenced(limit_name, centry)) {
                ret = true;
@@ -1536,7 +1536,7 @@ bool rqs_replace_request_verify(lList **answer_list, const lList *request)
    for_each_ep(ep, request) {
       const char *name = lGetString(ep, RQS_name);
       const lListElem *second = lNext(ep);
-      while (second != NULL) {
+      while (second != nullptr) {
          const char *second_name = lGetString(second, RQS_name);
          if (strcmp(name, second_name) == 0) {
             answer_list_add_sprintf(answer_list, STATUS_EUNKNOWN, ANSWER_QUALITY_ERROR, 

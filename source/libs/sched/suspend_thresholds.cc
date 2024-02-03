@@ -59,7 +59,7 @@ suspend_job_in_queues( lList *susp_queues, lList *job_list, order_t *orders)
 {
    u_long32 now;
    int i, found;
-   lListElem *jep = NULL, *ja_task = NULL;
+   lListElem *jep = nullptr, *ja_task = nullptr;
    lListElem *qep;
 
    DENTER(TOP_LAYER);
@@ -69,8 +69,8 @@ suspend_job_in_queues( lList *susp_queues, lList *job_list, order_t *orders)
       u_long32 interval;      
 
       /* are suspend thresholds enabled? */
-      parse_ulong_val(NULL, &interval, TYPE_TIM,
-                  lGetString(qep, QU_suspend_interval), NULL, 0);
+      parse_ulong_val(nullptr, &interval, TYPE_TIM,
+                  lGetString(qep, QU_suspend_interval), nullptr, 0);
 
       if (interval == 0
           || !lGetUlong(qep, QU_nsuspend)
@@ -96,7 +96,7 @@ suspend_job_in_queues( lList *susp_queues, lList *job_list, order_t *orders)
          found = 1;
          orders->configOrderList = sge_create_orders(orders->configOrderList, 
                                                      ORT_suspend_on_threshold, 
-                                                     jep, ja_task, NULL, true);
+                                                     jep, ja_task, nullptr, true);
 
          DPRINTF(("++++ suspending job "sge_u32"/"sge_u32" on threshold\n", 
                   lGetUlong(jep, JB_job_number), lGetUlong(ja_task, JAT_task_number)));
@@ -120,7 +120,7 @@ unsuspend_job_in_queues( lList *queue_list, lList *job_list, order_t *orders)
 {
    u_long32 now;
    int i, found;
-   lListElem *jep = NULL, *ja_task = NULL;
+   lListElem *jep = nullptr, *ja_task = nullptr;
    lListElem *qep;
 
    DENTER(TOP_LAYER);
@@ -134,8 +134,8 @@ unsuspend_job_in_queues( lList *queue_list, lList *job_list, order_t *orders)
       sge_dstring_init(&ds, buffer, sizeof(buffer));
 
       /* are suspend thresholds enabled? */
-      parse_ulong_val(NULL, &interval, TYPE_TIM,
-                  lGetString(qep, QU_suspend_interval), NULL, 0);
+      parse_ulong_val(nullptr, &interval, TYPE_TIM,
+                  lGetString(qep, QU_suspend_interval), nullptr, 0);
 
        if (interval == 0
            || !lGetUlong(qep, QU_nsuspend)
@@ -169,7 +169,7 @@ unsuspend_job_in_queues( lList *queue_list, lList *job_list, order_t *orders)
          found = 1;
          orders->configOrderList = sge_create_orders(orders->configOrderList, 
                                                         ORT_unsuspend_on_threshold, 
-                                                        jep, ja_task, NULL, true);
+                                                        jep, ja_task, nullptr, true);
 
          DPRINTF(("---- unsuspending job "sge_u32"/"sge_u32" on threshold\n", 
             lGetUlong(jep, JB_job_number), lGetUlong(ja_task, JAT_task_number)));
@@ -195,7 +195,7 @@ select4suspension(lList *job_list, lListElem *qep, lListElem **jepp,
 {
    u_long32 jstate;
    lListElem *jep, *ja_task;
-   lListElem *jshortest = NULL, *shortest = NULL;
+   lListElem *jshortest = nullptr, *shortest = nullptr;
    const char *qnm;
 
    DENTER(TOP_LAYER);
@@ -223,7 +223,7 @@ select4suspension(lList *job_list, lListElem *qep, lListElem **jepp,
          **    a master-task of a pe-job with sub-tasks in this queue
          ** then it is a potential candidate which we could suspend
          */
-         if (lGetSubStr(ja_task, JG_qname, qnm, JAT_granted_destin_identifier_list) == NULL) {
+         if (lGetSubStr(ja_task, JG_qname, qnm, JAT_granted_destin_identifier_list) == nullptr) {
             continue;
          }
 
@@ -251,7 +251,7 @@ lListElem **jepp,
 lListElem **ja_taskp 
 ) {
    u_long32 jstate;
-   lListElem *jep, *jlongest = NULL, *longest = NULL, *ja_task;
+   lListElem *jep, *jlongest = nullptr, *longest = nullptr, *ja_task;
    const char *qnm;
 
    DENTER(TOP_LAYER);

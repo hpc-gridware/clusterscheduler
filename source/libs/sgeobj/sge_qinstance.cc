@@ -96,9 +96,9 @@ lListElem *
 qinstance_list_locate(const lList *this_list, const char *hostname,
                       const char *cqueue_name) 
 {
-   lListElem *ret = NULL;
+   lListElem *ret = nullptr;
 
-   if (cqueue_name == NULL) {
+   if (cqueue_name == nullptr) {
       ret = lGetElemHostRW(this_list, QU_qhostname, hostname);
    } else {
       for_each_rw(ret, this_list) {
@@ -106,8 +106,8 @@ qinstance_list_locate(const lList *this_list, const char *hostname,
          const char *hname = lGetHost(ret, QU_qhostname);
 
          /* use qinstance expression */
-         if (!sge_eval_expression(TYPE_CSTR, cqueue_name, qname, NULL)) { 
-           if (!sge_eval_expression(TYPE_HOST, hostname, hname, NULL))  {
+         if (!sge_eval_expression(TYPE_CSTR, cqueue_name, qname, nullptr)) {
+           if (!sge_eval_expression(TYPE_HOST, hostname, hname, nullptr))  {
              break;
            }
          }
@@ -169,9 +169,9 @@ qinstance_list_locate2(const lList *queue_list, const char *full_name)
 const char *
 qinstance_get_name(const lListElem *this_elem, dstring *string_buffer)
 {
-   const char *ret = NULL;
+   const char *ret = nullptr;
 
-   if (this_elem != NULL && string_buffer != NULL) {
+   if (this_elem != nullptr && string_buffer != nullptr) {
       ret = sge_dstring_sprintf(string_buffer, SFN"@"SFN,
                                 lGetString(this_elem, QU_qname),
                                 lGetHost(this_elem, QU_qhostname));
@@ -203,8 +203,8 @@ qinstance_get_name(const lListElem *this_elem, dstring *string_buffer)
 void
 qinstance_list_set_tag(lList *this_list, u_long32 tag_value)
 {
-   if (this_list != NULL) {
-      lListElem *qinstance = NULL;
+   if (this_list != nullptr) {
+      lListElem *qinstance = nullptr;
 
       for_each_rw (qinstance, this_list) {
          lSetUlong(qinstance, QU_tag, tag_value);
@@ -264,15 +264,15 @@ qinstance_check_owner(const lListElem *this_elem, const char *user_name, const l
    bool ret = false;
 
    DENTER(TOP_LAYER);
-   if (this_elem == NULL) {
+   if (this_elem == nullptr) {
       ret = false;
-   } else if (user_name == NULL) {
+   } else if (user_name == nullptr) {
       ret = false;
    } else if (manop_is_operator(user_name, master_manager_list, master_operator_list)) {
       ret = true;
    } else {
       const lList *owner_list = lGetList(this_elem, QU_owner_list);
-      if (lGetElemStr(owner_list, US_name, user_name) != NULL) {
+      if (lGetElemStr(owner_list, US_name, user_name) != nullptr) {
          ret = true;
       }
    }
@@ -348,11 +348,11 @@ qinstance_is_calendar_referenced(const lListElem *this_elem,
                                  const lListElem *calendar)
 {
    bool ret = false;
-   const char *queue_calendar = NULL;
+   const char *queue_calendar = nullptr;
 
    DENTER(TOP_LAYER);
    queue_calendar = lGetString(this_elem, QU_calendar);
-   if (queue_calendar != NULL) {
+   if (queue_calendar != nullptr) {
       const char *calendar_name = lGetString(calendar, CAL_name);
 
       if (calendar_name && !strcmp(queue_calendar, calendar_name)) {
@@ -427,7 +427,7 @@ qinstance_is_ckpt_referenced(const lListElem *this_elem, const lListElem *ckpt)
    const lList *ckpt_list = lGetList(this_elem, QU_ckpt_list);
 
    DENTER(TOP_LAYER);
-   if (lGetElemStr(ckpt_list, ST_name, lGetString(ckpt, CK_name)) != NULL) {
+   if (lGetElemStr(ckpt_list, ST_name, lGetString(ckpt, CK_name)) != nullptr) {
       ret = true;
    }
    DRETURN(ret);
@@ -496,12 +496,12 @@ qinstance_is_centry_a_complex_value(const lListElem *this_elem,
    bool ret = false;
 
    DENTER(TOP_LAYER);
-   if (this_elem != NULL) {
+   if (this_elem != nullptr) {
       const char *name = lGetString(centry, CE_name);
       const lList *centry_list = lGetList(this_elem, QU_consumable_config_list);
       const lListElem *centry_ref = lGetElemStr(centry_list, CE_name, name);
 
-      if (centry_ref != NULL || get_rsrc(name, true, NULL, NULL, NULL, NULL)==0) {
+      if (centry_ref != nullptr || get_rsrc(name, true, nullptr, nullptr, nullptr, nullptr)==0) {
          ret = true;
       }
    }
@@ -546,11 +546,11 @@ qinstance_list_find_matching(const lList *this_list, lList **answer_list,
 
    DENTER(QINSTANCE_LAYER);
 
-   if (qref_list == NULL) {
+   if (qref_list == nullptr) {
       DRETURN(true);
    }
 
-   if (this_list != NULL && hostname_pattern != NULL) {
+   if (this_list != nullptr && hostname_pattern != nullptr) {
       const lListElem *qinstance;
       char host[CL_MAXHOSTLEN];
 
@@ -598,7 +598,7 @@ qinstance_slots_used(const lListElem *this_elem)
    DENTER(QINSTANCE_LAYER);
    
    slots = lGetSubStr(this_elem, RUE_name, SGE_ATTR_SLOTS, QU_resource_utilization);
-   if (slots != NULL) {
+   if (slots != nullptr) {
       ret = lGetDouble(slots, RUE_utilized_now);
    } else {
       /* this happens on qinstance_create when a queue instance is created 
@@ -639,7 +639,7 @@ qinstance_slots_reserved(const lListElem *this_elem)
    DENTER(QINSTANCE_LAYER);
 
    slots = lGetSubStr(this_elem, RUE_name, SGE_ATTR_SLOTS, QU_resource_utilization);
-   if (slots != NULL) {
+   if (slots != nullptr) {
       for_each_ep(utilized, lGetList(slots, RUE_utilized)) {
          ret = MAX(ret, lGetDouble(utilized, RDE_amount));
       }
@@ -676,7 +676,7 @@ qinstance_set_slots_used(lListElem *this_elem, int new_slots)
 
    DENTER(QINSTANCE_LAYER);
    slots = lGetSubStr(this_elem, RUE_name, "slots", QU_resource_utilization);
-   if (slots != NULL) {
+   if (slots != nullptr) {
       lSetDouble(slots, RUE_utilized_now, new_slots);
    } else {
       /* because this should never happen and an critical error */
@@ -866,7 +866,7 @@ qinstance_validate(lListElem *this_elem, lList **answer_list, const lList *maste
    DENTER(TOP_LAYER);
 
    /* QU_full_name isn't spooled, if it is not set, create it */
-   if (lGetString(this_elem, QU_full_name) == NULL) {
+   if (lGetString(this_elem, QU_full_name) == nullptr) {
       qinstance_set_full_name(this_elem);
    }
    
@@ -878,7 +878,7 @@ qinstance_validate(lListElem *this_elem, lList **answer_list, const lList *maste
    qinstance_message_trash_all_of_type_X(this_elem, ~QI_ERROR);   
 
    /* setup actual list of queue */
-   qinstance_debit_consumable(this_elem, NULL, master_centry_list, 0, true, NULL);
+   qinstance_debit_consumable(this_elem, nullptr, master_centry_list, 0, true, nullptr);
 
    /* init double values of consumable configuration */
    if (centry_list_fill_request(lGetListRW(this_elem, QU_consumable_config_list), answer_list, master_centry_list, true, false, true) != 0) {
@@ -886,9 +886,9 @@ qinstance_validate(lListElem *this_elem, lList **answer_list, const lList *maste
    }
 
    if (ret) {
-      if (ensure_attrib_available(NULL, this_elem, QU_load_thresholds, master_centry_list) ||
-          ensure_attrib_available(NULL, this_elem, QU_suspend_thresholds, master_centry_list) ||
-          ensure_attrib_available(NULL, this_elem, QU_consumable_config_list, master_centry_list)) {
+      if (ensure_attrib_available(nullptr, this_elem, QU_load_thresholds, master_centry_list) ||
+          ensure_attrib_available(nullptr, this_elem, QU_suspend_thresholds, master_centry_list) ||
+          ensure_attrib_available(nullptr, this_elem, QU_consumable_config_list, master_centry_list)) {
          ret = false;
       }
    } 
@@ -901,7 +901,7 @@ qinstance_validate(lListElem *this_elem, lList **answer_list, const lList *maste
       qinstance_set_slots_used(this_elem, 0);
       
       if (host_list_locate(master_exechost_list, 
-                           lGetHost(this_elem, QU_qhostname)) == NULL) {
+                           lGetHost(this_elem, QU_qhostname)) == nullptr) {
          answer_list_add_sprintf(answer_list, STATUS_EUNKNOWN, 
                                  ANSWER_QUALITY_ERROR, 
                                  MSG_QINSTANCE_HOSTFORQUEUEDOESNOTEXIST_SS,
@@ -994,7 +994,7 @@ qinstance_list_validate(lList *this_list, lList **answer_list, const lList *mast
 *     const char *obj_name - The name of the object we are debiting from. This
 *                            is only used for monitoring/diagnosis purposes.
 *
-*     bool *just_check     - If != NULL do not do the actual debiting, but just
+*     bool *just_check     - If != nullptr do not do the actual debiting, but just
 *                            check if debiting would exceed resources.
 *                            Only makes sense for debiting (slots > 0).
 *
@@ -1017,12 +1017,12 @@ rc_debit_consumable(lListElem *jep, lListElem *ep, const lList *centry_list,
 
    DENTER(TOP_LAYER);
 
-   if (ep == NULL) {
+   if (ep == nullptr) {
       DRETURN(0);
    }
 
    /* assume debiting would work */
-   if (just_check != NULL) {
+   if (just_check != nullptr) {
       *just_check = true;
    }
 
@@ -1057,21 +1057,21 @@ rc_debit_consumable(lListElem *jep, lListElem *ep, const lList *centry_list,
 
       /* ensure attribute is in actual list */
       cr = lGetSubStr(ep, RUE_name, name, actual_nm);
-      if (just_check == NULL && cr == NULL) {
+      if (just_check == nullptr && cr == nullptr) {
          cr = lAddSubStr(ep, RUE_name, name, actual_nm, RUE_Type);
          /* RUE_utilized_now is implicitly set to zero */
       }
 
       if (jep) {
-         bool tmp_ret = job_get_contribution(jep, NULL, name, &dval, dcep);
+         bool tmp_ret = job_get_contribution(jep, nullptr, name, &dval, dcep);
          if (tmp_ret && dval != 0.0) {
-            if (just_check == NULL) {
+            if (just_check == nullptr) {
                DPRINTF(("debiting %f of %s on %s %s for %d slots\n", dval, name,
                         (config_nm==QU_consumable_config_list)?"queue":"host",
                         obj_name, debit_slots));
                lAddDouble(cr, RUE_utilized_now, debit_slots * dval);
             } else {
-               double actual_value = cr == NULL ? 0 : lGetDouble(cr, RUE_utilized_now);
+               double actual_value = cr == nullptr ? 0 : lGetDouble(cr, RUE_utilized_now);
                double config_value = lGetDouble(cr_config, CE_doubleval);
                /* for exclusive consumables ignore the number of slots */
                if (lGetUlong(dcep, CE_relop) == CMPLXEXCL_OP) {
@@ -1094,17 +1094,17 @@ rc_debit_consumable(lListElem *jep, lListElem *ep, const lList *centry_list,
              * requesting the exclusive resource or a job not requesting it is
              * blocking the host.
              *
-             * For the consumable check (just_check != NULL) this means that
+             * For the consumable check (just_check != nullptr) this means that
              * we check if the resource is actually in use (RU_utilized_now).
              */
             dval = 1.0;
-            if (just_check == NULL) {
+            if (just_check == nullptr) {
                DPRINTF(("debiting (implicit exclusive) %f of %s on %s %s for %d slots\n", dval, name,
                         (config_nm==QU_consumable_config_list)?"queue":"host",
                         obj_name, debit_slots));
                lAddDouble(cr, RUE_utilized_now_nonexclusive, debit_slots * dval);
             } else {
-               double actual_value = cr == NULL ? 0 : lGetDouble(cr, RUE_utilized_now);
+               double actual_value = cr == nullptr ? 0 : lGetDouble(cr, RUE_utilized_now);
                if (actual_value > 0) {
                   ERROR((SGE_EVENT, MSG_EXCLCAPACITYEXCEEDED_FSSSI, dval, name,
                         (config_nm==QU_consumable_config_list)?"queue":"host",
@@ -1129,11 +1129,11 @@ qinstance_set_conf_slots_used(lListElem *this_elem)
    DENTER(QINSTANCE_LAYER);
    slots = lGetSubStr(this_elem, CE_name, "slots", 
                       QU_consumable_config_list);
-   if (slots == NULL) {
+   if (slots == nullptr) {
       slots = lAddSubStr(this_elem, CE_name, "slots", 
                          QU_consumable_config_list, CE_Type);
    }
-   if (slots != NULL) {
+   if (slots != nullptr) {
       dstring buffer = DSTRING_INIT;
       u_long32 slots_value = lGetUlong(this_elem, QU_job_slots);
 
@@ -1176,7 +1176,7 @@ qinstance_list_verify_execd_job(const lList *queue_list, lList **answer_list)
 
    DENTER(TOP_LAYER);
 
-   if (queue_list == NULL) {
+   if (queue_list == nullptr) {
       answer_list_add_sprintf(answer_list, STATUS_ESYNTAX, ANSWER_QUALITY_ERROR, 
                               MSG_NULLELEMENTPASSEDTO_S, __func__);
       DRETURN(false);
@@ -1222,7 +1222,7 @@ qinstance_verify(const lListElem *qep, lList **answer_list)
 
    DENTER(TOP_LAYER);
 
-   if (qep == NULL) {
+   if (qep == nullptr) {
       answer_list_add_sprintf(answer_list, STATUS_ESYNTAX, ANSWER_QUALITY_ERROR, 
                               MSG_NULLELEMENTPASSEDTO_S, __func__);
       ret = false;
@@ -1280,7 +1280,7 @@ qinstance_verify_full_name(lList **answer_list, const char *full_name)
    dstring host_domain = DSTRING_INIT;
    bool has_hostname, has_domain;
 
-   if (full_name == NULL) {
+   if (full_name == nullptr) {
       answer_list_add_sprintf(answer_list, STATUS_ESYNTAX, ANSWER_QUALITY_ERROR, 
                               MSG_INVALID_QINSTANCE_NAME_S, "<null>");
       ret = false;

@@ -111,7 +111,7 @@ attr_mod_procedure(lList **alpp, lListElem *qep, lListElem *new_ep, int nm, char
          }
 
          /* ensure that variables are valid */
-         if (replace_params(script, NULL, 0, variables)) {
+         if (replace_params(script, nullptr, 0, variables)) {
             ERROR((SGE_EVENT, MSG_GDI_VARS_SS, attr_name, err_msg));
             answer_list_add(alpp, SGE_EVENT, STATUS_EEXIST, ANSWER_QUALITY_ERROR);
             DRETURN(STATUS_EEXIST);
@@ -133,7 +133,7 @@ attr_mod_procedure(lList **alpp, lListElem *qep, lListElem *new_ep, int nm, char
 *
 *  FUNCTION
 *      This function modifies "new_qep" attribute with string from "qep 
-*      without any verification. NULL is a valid value.  
+*      without any verification. nullptr is a valid value.
 *
 *  INPUTS
 *     lListElem *qep    - CQ_Type, source of the modification 
@@ -163,7 +163,7 @@ attr_mod_zerostr(lListElem *qep, lListElem *new_ep, int nm, char *attr_name) {
 
 /****** sge_utility_qmaster/attr_mod_str() *************************************
 *  NAME
-*     attr_mod_str() -- modify strings except that it may not be NULL 
+*     attr_mod_str() -- modify strings except that it may not be nullptr
 *
 *  SYNOPSIS
 *     int attr_mod_str(lList **alpp, lListElem *qep, lListElem *new_ep, int nm, 
@@ -171,7 +171,7 @@ attr_mod_zerostr(lListElem *qep, lListElem *new_ep, int nm, char *attr_name) {
 *
 *  FUNCTION
 *      This function modifies "new_qep" attribute with string from "qep 
-*      except that the value of an attribute may not be NULL.  
+*      except that the value of an attribute may not be nullptr.
 *
 *  INPUTS
 *     lList **alpp      - AN_Type, The answer list 
@@ -339,7 +339,7 @@ attr_mod_double(lListElem *qep, lListElem *new_ep, int nm, char *attr_name) {
 
 /****** sge_utility_qmaster/attr_mod_mem_str() *********************************
 *  NAME
-*     attr_mod_mem_str() -- modify memory string, NULL is not allowed 
+*     attr_mod_mem_str() -- modify memory string, nullptr is not allowed
 *
 *  SYNOPSIS
 *     int attr_mod_mem_str(lList **alpp, lListElem *qep, lListElem *new_ep, int 
@@ -347,7 +347,7 @@ attr_mod_double(lListElem *qep, lListElem *new_ep, int nm, char *attr_name) {
 *
 *  FUNCTION
 *      This function modifies "new_qep" attribute with string from "qep 
-*      except that the value of an memory attribute may not be NULL.  
+*      except that the value of an memory attribute may not be nullptr.
 *
 *  INPUTS
 *     lList **alpp      - AN_Type, The answer list 
@@ -374,7 +374,7 @@ attr_mod_mem_str(lList **alpp, lListElem *qep, lListElem *new_ep, int nm, char *
       str = lGetString(qep, nm);
       DPRINTF(("got new %s\n", attr_name));
 
-      if (!parse_ulong_val(NULL, NULL, TYPE_MEM, str, NULL, 0)) {
+      if (!parse_ulong_val(nullptr, nullptr, TYPE_MEM, str, nullptr, 0)) {
          SGE_ADD_MSG_ID(sprintf(SGE_EVENT, MSG_GDI_TYPE_MEM_SS, attr_name, str ? str : "(null)"));
          answer_list_add(alpp, SGE_EVENT, STATUS_ESYNTAX, ANSWER_QUALITY_ERROR);
          DRETURN(STATUS_ESYNTAX);
@@ -396,7 +396,7 @@ attr_mod_mem_str(lList **alpp, lListElem *qep, lListElem *new_ep, int nm, char *
 *
 *  FUNCTION
 *     This function modifies "new_qep" attribute with string from "qep" 
-*     The value of an time_str attribute may not be NULL and must be valid.
+*     The value of an time_str attribute may not be nullptr and must be valid.
 *       
 *  INPUTS
 *     lList **alpp      - AN_Type, The answer list 
@@ -424,7 +424,7 @@ attr_mod_time_str(lList **alpp, lListElem *qep, lListElem *new_ep, int nm, char 
       str = lGetString(qep, nm);
       DPRINTF(("got new %s\n", attr_name));
 
-      if (str != NULL) {
+      if (str != nullptr) {
          /* don't allow infinity for these parameters */
          if ((strcasecmp(str, "infinity") == 0) && (enable_infinity == 0)) {
             DPRINTF(("ERROR! Infinity value for \"%s\"\n", attr_name));
@@ -434,7 +434,7 @@ attr_mod_time_str(lList **alpp, lListElem *qep, lListElem *new_ep, int nm, char 
          }
       }
 
-      if (!parse_ulong_val(NULL, NULL, TYPE_TIM, str, NULL, 0)) {
+      if (!parse_ulong_val(nullptr, nullptr, TYPE_TIM, str, nullptr, 0)) {
          SGE_ADD_MSG_ID(sprintf(SGE_EVENT, MSG_GDI_TYPE_TIME_SS, attr_name, str ? str : "(null)"));
          answer_list_add(alpp, SGE_EVENT, STATUS_ESYNTAX, ANSWER_QUALITY_ERROR);
          DRETURN(STATUS_ESYNTAX);
@@ -472,7 +472,7 @@ attr_mod_time_str(lList **alpp, lListElem *qep, lListElem *new_ep, int nm, char 
 *     const char *sub_list_name - The sublist name
 *     const char *object_name   - The target object name
 *     int no_info               - Skip or add the info messages 
-*     bool *changed             - Report back if changes have been made (may be NULL)
+*     bool *changed             - Report back if changes have been made (may be nullptr)
 *
 *  RESULT
 *     bool - true, the success
@@ -513,7 +513,7 @@ attr_mod_sub_list(lList **alpp, lListElem *this_elem, int this_elem_name, int th
             next_full_element = lFirstRW(full_sublist);
             while ((full_element = next_full_element)) {
                int pos, type;
-               const char *rstring = NULL, *fstring = NULL;
+               const char *rstring = nullptr, *fstring = nullptr;
 
                next_full_element = lNextRW(full_element);
 
@@ -527,7 +527,7 @@ attr_mod_sub_list(lList **alpp, lListElem *this_elem, int this_elem_name, int th
                   fstring = lGetHost(full_element, this_elem_primary_key);
                }
 
-               if (rstring == NULL || fstring == NULL) {
+               if (rstring == nullptr || fstring == nullptr) {
                   ERROR((SGE_EVENT, SFNMAX, MSG_OBJECT_VALUEMISSING));
                   answer_list_add(alpp, SGE_EVENT, STATUS_ESEMANTIC, ANSWER_QUALITY_ERROR);
                   ret = false;
@@ -542,7 +542,7 @@ attr_mod_sub_list(lList **alpp, lListElem *this_elem, int this_elem_name, int th
                   /* element already exists */
                   next_reduced_element = lNextRW(reduced_element);
                   if (SGE_GDI_IS_SUBCOMMAND_SET(sub_command, SGE_GDI_CHANGE)) {
-                     if (object_has_differences(reduced_element, NULL, full_element, false)) {
+                     if (object_has_differences(reduced_element, nullptr, full_element, false)) {
                         /* new object differs from old one - exchange them */
                         did_changes = true;
                         new_sub_elem = lDechainElem(reduced_sublist, reduced_element);
@@ -597,7 +597,7 @@ attr_mod_sub_list(lList **alpp, lListElem *this_elem, int this_elem_name, int th
 
             while ((reduced_element = next_reduced_element)) {
                int pos, type;
-               const char *rstring = NULL;
+               const char *rstring = nullptr;
                lListElem *new_sub_elem;
 
                next_reduced_element = lNextRW(reduced_element);
@@ -610,7 +610,7 @@ attr_mod_sub_list(lList **alpp, lListElem *this_elem, int this_elem_name, int th
                   rstring = lGetHost(reduced_element, this_elem_primary_key);
                }
 
-               if (rstring == NULL) {
+               if (rstring == nullptr) {
                   ERROR((SGE_EVENT, SFNMAX, MSG_OBJECT_VALUEMISSING));
                   answer_list_add(alpp, SGE_EVENT, STATUS_ESEMANTIC,
                                   ANSWER_QUALITY_ERROR);
@@ -658,15 +658,15 @@ attr_mod_sub_list(lList **alpp, lListElem *this_elem, int this_elem_name, int th
       if (ret) {
          const lList *tmp_list = lGetList(this_elem, this_elem_name);
 
-         if (tmp_list != NULL && lGetNumberOfElem(tmp_list) == 0) {
-            lSetList(this_elem, this_elem_name, NULL);
+         if (tmp_list != nullptr && lGetNumberOfElem(tmp_list) == 0) {
+            lSetList(this_elem, this_elem_name, nullptr);
          }
       }
    } else {
       ret = false;
    }
 
-   if (changed != NULL) {
+   if (changed != nullptr) {
       *changed = did_changes;
    }
 
@@ -751,7 +751,7 @@ cqueue_mod_sublist(lListElem *this_elem, lList **answer_list, lListElem *reduced
 
             next_elem = lNextRW(elem);
             mod_elem = lGetElemHostRW(mod_list, sublist_host_name, name);
-            if (mod_elem == NULL) {
+            if (mod_elem == nullptr) {
                DPRINTF(("Removing attribute list for "SFQ"\n", name));
                lRemoveElem(org_list, &elem);
             }
@@ -765,9 +765,9 @@ cqueue_mod_sublist(lListElem *this_elem, lList **answer_list, lListElem *reduced
       for_each_rw(mod_elem, mod_list) {
          const char *name = lGetHost(mod_elem, sublist_host_name);
          char resolved_name[CL_MAXHOSTLEN + 1];
-         lListElem *org_elem = NULL;
+         lListElem *org_elem = nullptr;
 
-         if (name == NULL) {
+         if (name == nullptr) {
             ERROR((SGE_EVENT, MSG_SGETEXT_INVALIDHOST_S, ""));
             answer_list_add(answer_list, SGE_EVENT,
                             STATUS_ESYNTAX, ANSWER_QUALITY_ERROR);
@@ -798,8 +798,8 @@ cqueue_mod_sublist(lListElem *this_elem, lList **answer_list, lListElem *reduced
          /*
           * Create element if it does not exist
           */
-         if (org_elem == NULL && !SGE_GDI_IS_SUBCOMMAND_SET(sub_command, SGE_GDI_REMOVE)) {
-            if (org_list == NULL) {
+         if (org_elem == nullptr && !SGE_GDI_IS_SUBCOMMAND_SET(sub_command, SGE_GDI_REMOVE)) {
+            if (org_list == nullptr) {
                org_list = lCreateList("", lGetElemDescr(mod_elem));
                lSetList(this_elem, attribute_name, org_list);
             }
@@ -811,10 +811,10 @@ cqueue_mod_sublist(lListElem *this_elem, lList **answer_list, lListElem *reduced
          /*
           * Modify sublist according to subcommand
           */
-         if (org_elem != NULL) {
+         if (org_elem != nullptr) {
             if (subsub_key != NoName) {
                attr_mod_sub_list(answer_list, org_elem, sublist_value_name, subsub_key, mod_elem, sub_command,
-                                 attribute_name_str, object_name_str, 0, NULL);
+                                 attribute_name_str, object_name_str, 0, nullptr);
             } else {
                object_replace_any_type(org_elem, sublist_value_name, mod_elem);
             }
@@ -854,6 +854,6 @@ normalize_sublist(lListElem *ep, int nm) {
    const lList *lp;
 
    if ((lp = lGetList(ep, nm)) && lGetNumberOfElem(lp) == 0)
-      lSetList(ep, nm, NULL);
+      lSetList(ep, nm, nullptr);
 }
 

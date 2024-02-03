@@ -105,7 +105,7 @@ sge_job_verify_adjust(sge_gdi_ctx_class_t *ctx, lListElem *jep, lList **alpp, lL
    const lList *master_ar_list = *object_type_get_master_list(SGE_TYPE_AR);
    lList *master_suser_list = *object_type_get_master_list_rw(SGE_TYPE_SUSER);
 
-   if (jep == NULL || ruser == NULL || rhost == NULL) {
+   if (jep == nullptr || ruser == nullptr || rhost == nullptr) {
       CRITICAL((SGE_EVENT, MSG_SGETEXT_NULLPTRPASSED_S, __func__));
       answer_list_add(alpp, SGE_EVENT, STATUS_EUNKNOWN, ANSWER_QUALITY_ERROR);
       ret = STATUS_EUNKNOWN;
@@ -144,7 +144,7 @@ sge_job_verify_adjust(sge_gdi_ctx_class_t *ctx, lListElem *jep, lList **alpp, lL
 
    /* check for non-parallel job that define a master queue */
    if (ret == STATUS_OK) {
-      if (lGetList(jep, JB_master_hard_queue_list) != NULL && lGetString(jep, JB_pe) == NULL) {
+      if (lGetList(jep, JB_master_hard_queue_list) != nullptr && lGetString(jep, JB_pe) == nullptr) {
          ERROR((SGE_EVENT, SFNMAX, MSG_JOB_MQNONPE));
          answer_list_add(alpp, SGE_EVENT, STATUS_EUNKNOWN, ANSWER_QUALITY_ERROR);
          ret = STATUS_EUNKNOWN;
@@ -202,10 +202,10 @@ sge_job_verify_adjust(sge_gdi_ctx_class_t *ctx, lListElem *jep, lList **alpp, lL
 
    /* initialize the task template element and other sublists */
    if (ret == STATUS_OK) {
-      lSetList(jep, JB_ja_tasks, NULL);
-      lSetList(jep, JB_jid_successor_list, NULL);
-      lSetList(jep, JB_ja_ad_successor_list, NULL);
-      if (lGetList(jep, JB_ja_template) == NULL) {
+      lSetList(jep, JB_ja_tasks, nullptr);
+      lSetList(jep, JB_jid_successor_list, nullptr);
+      lSetList(jep, JB_ja_ad_successor_list, nullptr);
+      if (lGetList(jep, JB_ja_template) == nullptr) {
          lAddSubUlong(jep, JAT_task_number, 0, JB_ja_template, JAT_Type);
       }
    }
@@ -213,7 +213,7 @@ sge_job_verify_adjust(sge_gdi_ctx_class_t *ctx, lListElem *jep, lList **alpp, lL
    if (ret == STATUS_OK) {
       const lListElem *binding_elem = lFirst(lGetList(jep, JB_binding));
 
-      if (binding_elem == NULL) {
+      if (binding_elem == nullptr) {
          bool lret = job_init_binding_elem(jep);
 
          if (lret == false) {
@@ -270,7 +270,7 @@ sge_job_verify_adjust(sge_gdi_ctx_class_t *ctx, lListElem *jep, lList **alpp, lL
     * again, processed. 
     */
    if (ret == STATUS_OK) {
-      lList *temp = NULL;
+      lList *temp = nullptr;
 
       lXchgList(jep, JB_context, &temp);
       set_context(temp, jep);
@@ -391,8 +391,8 @@ sge_job_verify_adjust(sge_gdi_ctx_class_t *ctx, lListElem *jep, lList **alpp, lL
     * if not the job is refused
     */
    {
-      const char *pe_name = NULL;
-      lList *pe_range = NULL;
+      const char *pe_name = nullptr;
+      lList *pe_range = nullptr;
 
       pe_name = lGetString(jep, JB_pe);
       if (pe_name) {
@@ -413,7 +413,7 @@ sge_job_verify_adjust(sge_gdi_ctx_class_t *ctx, lListElem *jep, lList **alpp, lL
 #ifdef SGE_PQS_API
 #if 0
          /* verify PE qsort_args */
-         if ((qsort_args=lGetString(pep, PE_qsort_argv)) != NULL) {
+         if ((qsort_args=lGetString(pep, PE_qsort_argv)) != nullptr) {
             sge_assignment_t a = SGE_ASSIGNMENT_INIT;
             int ret;
 
@@ -441,7 +441,7 @@ sge_job_verify_adjust(sge_gdi_ctx_class_t *ctx, lListElem *jep, lList **alpp, lL
       int ckpt_err = 0;
 
       /* request for non existing ckpt object will be refused */
-      if ((ckpt_name != NULL)) {
+      if ((ckpt_name != nullptr)) {
          if (!(ckpt_ep = ckpt_list_locate(master_ckpt_list, ckpt_name)))
             ckpt_err = 1;
          else if (!ckpt_attr) {
@@ -486,12 +486,12 @@ sge_job_verify_adjust(sge_gdi_ctx_class_t *ctx, lListElem *jep, lList **alpp, lL
 
    /* first check user permissions */
    {
-      const lListElem *cqueue = NULL;
+      const lListElem *cqueue = nullptr;
       int has_permissions = 0;
 
       for_each_ep(cqueue, master_cqueue_list) {
          const lList *qinstance_list = lGetList(cqueue, CQ_qinstances);
-         const lListElem *qinstance = NULL;
+         const lListElem *qinstance = nullptr;
 
          for_each_ep(qinstance, qinstance_list) {
             if (sge_has_access(ruser, lGetString(jep, JB_group), qinstance, master_userset_list)) {
@@ -536,7 +536,7 @@ sge_job_verify_adjust(sge_gdi_ctx_class_t *ctx, lListElem *jep, lList **alpp, lL
 
    /* set default project */
    if (!lGetString(jep, JB_project) && ruser && master_user_list) {
-      lListElem *uep = NULL;
+      lListElem *uep = nullptr;
       if ((uep = user_list_locate(master_user_list, ruser))) {
          lSetString(jep, JB_project, lGetString(uep, UU_default_project));
       }
@@ -578,7 +578,7 @@ sge_job_verify_adjust(sge_gdi_ctx_class_t *ctx, lListElem *jep, lList **alpp, lL
          DPRINTF(("job -ar "sge_u32"\n", sge_u32c(ar_id)));
 
          ar = ar_list_locate(master_ar_list, ar_id);
-         if (ar == NULL) {
+         if (ar == nullptr) {
             ERROR((SGE_EVENT, MSG_JOB_NOAREXISTS_U, sge_u32c(ar_id)));
             answer_list_add(alpp, SGE_EVENT, STATUS_EUNKNOWN, ANSWER_QUALITY_ERROR);
             DRETURN(STATUS_EEXIST);
@@ -628,7 +628,7 @@ sge_job_verify_adjust(sge_gdi_ctx_class_t *ctx, lListElem *jep, lList **alpp, lL
 
    /* verify schedulability */
    {
-      int ret = verify_suitable_queues(alpp, jep, NULL, false);
+      int ret = verify_suitable_queues(alpp, jep, nullptr, false);
       if (lGetUlong(jep, JB_verify_suitable_queues) == JUST_VERIFY ||
           lGetUlong(jep, JB_verify_suitable_queues) == POKE_VERIFY || ret != 0) {
          DRETURN(ret);
@@ -708,13 +708,13 @@ check_binding_param_consistency(const lListElem *binding_elem) {
 
    DENTER(TOP_LAYER);
 
-   if (binding_elem == NULL) {
+   if (binding_elem == nullptr) {
       DRETURN(false);
    }
 
-   if ((strategy = lGetString(binding_elem, BN_strategy)) == NULL) {
+   if ((strategy = lGetString(binding_elem, BN_strategy)) == nullptr) {
       /* no binding strategy set */
-      ERROR((SGE_EVENT, MSG_JSV_BINDING_REJECTED_SS, "BN_strategy", "NULL"));
+      ERROR((SGE_EVENT, MSG_JSV_BINDING_REJECTED_SS, "BN_strategy", "nullptr"));
       DRETURN(false);
    }
 
@@ -737,8 +737,8 @@ check_binding_param_consistency(const lListElem *binding_elem) {
       }
 
       /* check if explicit value is set */
-      if (lGetString(binding_elem, BN_parameter_explicit) != NULL) {
-         ERROR((SGE_EVENT, MSG_JSV_BINDING_REJECTED_SS, "BN_parameter_explicit", "!= NULL"));
+      if (lGetString(binding_elem, BN_parameter_explicit) != nullptr) {
+         ERROR((SGE_EVENT, MSG_JSV_BINDING_REJECTED_SS, "BN_parameter_explicit", "!= nullptr"));
          DRETURN(false);
       }
 
@@ -769,8 +769,8 @@ check_binding_param_consistency(const lListElem *binding_elem) {
       /* socket and core values are implicitly 0 */
 
       /* check explicit socket core list */
-      if (lGetString(binding_elem, BN_parameter_explicit) != NULL) {
-         ERROR((SGE_EVENT, MSG_JSV_BINDING_REJECTED_SS, "BN_parameter_explicit", "!= NULL"));
+      if (lGetString(binding_elem, BN_parameter_explicit) != nullptr) {
+         ERROR((SGE_EVENT, MSG_JSV_BINDING_REJECTED_SS, "BN_parameter_explicit", "!= nullptr"));
          DRETURN(false);
       }
 
@@ -782,8 +782,8 @@ check_binding_param_consistency(const lListElem *binding_elem) {
       int amount;
 
       /* the explicit parameter must be set */
-      if (lGetString(binding_elem, BN_parameter_explicit) == NULL) {
-         ERROR((SGE_EVENT, MSG_JSV_BINDING_REJECTED_SS, "BN_parameter_explicit", "== NULL"));
+      if (lGetString(binding_elem, BN_parameter_explicit) == nullptr) {
+         ERROR((SGE_EVENT, MSG_JSV_BINDING_REJECTED_SS, "BN_parameter_explicit", "== nullptr"));
          DRETURN(false);
       }
 

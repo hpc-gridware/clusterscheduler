@@ -61,13 +61,13 @@ bool centry_add_del_mod_via_gdi(sge_gdi_ctx_class_t *ctx, lListElem *this_elem, 
    bool ret = false;
 
    DENTER(TOP_LAYER);
-   if (this_elem != NULL) {
-      lList *centry_list = NULL;
-      lList *gdi_answer_list = NULL;
+   if (this_elem != nullptr) {
+      lList *centry_list = nullptr;
+      lList *gdi_answer_list = nullptr;
 
       centry_list = lCreateList("", CE_Type);
       lAppendElem(centry_list, this_elem);
-      gdi_answer_list = ctx->gdi(ctx, SGE_CE_LIST, gdi_command, &centry_list, NULL, NULL);
+      gdi_answer_list = ctx->gdi(ctx, SGE_CE_LIST, gdi_command, &centry_list, nullptr, nullptr);
       answer_list_replace(answer_list, &gdi_answer_list);
    }
 
@@ -75,14 +75,14 @@ bool centry_add_del_mod_via_gdi(sge_gdi_ctx_class_t *ctx, lListElem *this_elem, 
 }
 
 lListElem *centry_get_via_gdi(sge_gdi_ctx_class_t *ctx, lList **answer_list, const char *name) {
-   lListElem *ret = NULL;
+   lListElem *ret = nullptr;
 
    DENTER(TOP_LAYER);
-   if (name != NULL) {
-      lList *gdi_answer_list = NULL;
-      lEnumeration *what = NULL;
-      lCondition *where = NULL;
-      lList *centry_list = NULL;
+   if (name != nullptr) {
+      lList *gdi_answer_list = nullptr;
+      lEnumeration *what = nullptr;
+      lCondition *where = nullptr;
+      lList *centry_list = nullptr;
 
       what = lWhat("%T(ALL)", CE_Type);
       where = lWhere("%T(%I==%s)", CE_Type, CE_name, name);
@@ -103,7 +103,7 @@ lListElem *centry_get_via_gdi(sge_gdi_ctx_class_t *ctx, lList **answer_list, con
 static bool centry_provide_modify_context(sge_gdi_ctx_class_t *ctx, lListElem **this_elem, lList **answer_list) {
    bool ret = false;
    int status = 0;
-   lList *alp = NULL;
+   lList *alp = nullptr;
    int fields_out[MAX_NUM_FIELDS];
    int missing_field = NoName;
    uid_t uid = bootstrap_get_uid();
@@ -111,14 +111,14 @@ static bool centry_provide_modify_context(sge_gdi_ctx_class_t *ctx, lListElem **
 
    DENTER(TOP_LAYER);
 
-   if (this_elem != NULL && *this_elem) {
-      const char *filename = NULL;
+   if (this_elem != nullptr && *this_elem) {
+      const char *filename = nullptr;
 
       filename = spool_flatfile_write_object(&alp, *this_elem, false, CE_fields, &qconf_ce_sfi, SP_DEST_TMP,
                                              SP_FORM_ASCII, filename, false);
 
       if (answer_list_output(&alp)) {
-         if (filename != NULL) {
+         if (filename != nullptr) {
             unlink(filename);
             sge_free(&filename);
          }
@@ -130,14 +130,14 @@ static bool centry_provide_modify_context(sge_gdi_ctx_class_t *ctx, lListElem **
          lListElem *centry;
 
          fields_out[0] = NoName;
-         centry = spool_flatfile_read_object(&alp, CE_Type, NULL, CE_fields, fields_out, true, &qconf_ce_sfi,
-                                             SP_FORM_ASCII, NULL, filename);
+         centry = spool_flatfile_read_object(&alp, CE_Type, nullptr, CE_fields, fields_out, true, &qconf_ce_sfi,
+                                             SP_FORM_ASCII, nullptr, filename);
 
          if (answer_list_output(&alp)) {
             lFreeElem(&centry);
          }
 
-         if (centry != NULL) {
+         if (centry != nullptr) {
             missing_field = spool_get_unprocessed_field(CE_fields, fields_out, &alp);
          }
 
@@ -146,7 +146,7 @@ static bool centry_provide_modify_context(sge_gdi_ctx_class_t *ctx, lListElem **
             answer_list_output(&alp);
          }
 
-         if (centry != NULL) {
+         if (centry != nullptr) {
             lFreeElem(this_elem);
             *this_elem = centry;
             ret = true;
@@ -169,10 +169,10 @@ bool centry_add(sge_gdi_ctx_class_t *ctx, lList **answer_list, const char *name)
    bool ret = true;
 
    DENTER(TOP_LAYER);
-   if (name != NULL) {
+   if (name != nullptr) {
       lListElem *centry = centry_create(answer_list, name);
 
-      if (centry == NULL) {
+      if (centry == nullptr) {
          ret = false;
       }
       if (ret) {
@@ -192,18 +192,18 @@ bool centry_add_from_file(sge_gdi_ctx_class_t *ctx, lList **answer_list, const c
    int missing_field = NoName;
 
    DENTER(TOP_LAYER);
-   if (filename != NULL) {
+   if (filename != nullptr) {
       lListElem *centry;
 
       fields_out[0] = NoName;
-      centry = spool_flatfile_read_object(answer_list, CE_Type, NULL, CE_fields, fields_out, true, &qconf_ce_sfi,
-                                          SP_FORM_ASCII, NULL, filename);
+      centry = spool_flatfile_read_object(answer_list, CE_Type, nullptr, CE_fields, fields_out, true, &qconf_ce_sfi,
+                                          SP_FORM_ASCII, nullptr, filename);
 
       if (answer_list_output(answer_list)) {
          lFreeElem(&centry);
       }
 
-      if (centry != NULL) {
+      if (centry != nullptr) {
          missing_field = spool_get_unprocessed_field(CE_fields, fields_out, answer_list);
       }
 
@@ -212,7 +212,7 @@ bool centry_add_from_file(sge_gdi_ctx_class_t *ctx, lList **answer_list, const c
          answer_list_output(answer_list);
       }
 
-      if (centry == NULL) {
+      if (centry == nullptr) {
          ret = false;
       }
       if (ret) {
@@ -227,10 +227,10 @@ bool centry_modify(sge_gdi_ctx_class_t *ctx, lList **answer_list, const char *na
    bool ret = true;
 
    DENTER(TOP_LAYER);
-   if (name != NULL) {
+   if (name != nullptr) {
       lListElem *centry = centry_get_via_gdi(ctx, answer_list, name);
 
-      if (centry == NULL) {
+      if (centry == nullptr) {
          answer_list_add_sprintf(answer_list, STATUS_ERROR1, ANSWER_QUALITY_ERROR, MSG_CENTRY_DOESNOTEXIST_S, name);
          ret = false;
       }
@@ -254,18 +254,18 @@ bool centry_modify_from_file(sge_gdi_ctx_class_t *ctx, lList **answer_list, cons
    int missing_field = NoName;
 
    DENTER(TOP_LAYER);
-   if (filename != NULL) {
+   if (filename != nullptr) {
       lListElem *centry;
 
       fields_out[0] = NoName;
-      centry = spool_flatfile_read_object(answer_list, CE_Type, NULL, CE_fields, fields_out, true, &qconf_ce_sfi,
-                                          SP_FORM_ASCII, NULL, filename);
+      centry = spool_flatfile_read_object(answer_list, CE_Type, nullptr, CE_fields, fields_out, true, &qconf_ce_sfi,
+                                          SP_FORM_ASCII, nullptr, filename);
 
       if (answer_list_output(answer_list)) {
          lFreeElem(&centry);
       }
 
-      if (centry != NULL) {
+      if (centry != nullptr) {
          missing_field = spool_get_unprocessed_field(CE_fields, fields_out, answer_list);
       }
 
@@ -274,7 +274,7 @@ bool centry_modify_from_file(sge_gdi_ctx_class_t *ctx, lList **answer_list, cons
          answer_list_output(answer_list);
       }
 
-      if (centry == NULL) {
+      if (centry == nullptr) {
          answer_list_add_sprintf(answer_list, STATUS_ERROR1, ANSWER_QUALITY_ERROR, MSG_CENTRY_FILENOTCORRECT_S,
                                  filename);
          ret = false;
@@ -294,10 +294,10 @@ bool centry_delete(sge_gdi_ctx_class_t *ctx, lList **answer_list, const char *na
    bool ret = true;
 
    DENTER(TOP_LAYER);
-   if (name != NULL) {
+   if (name != nullptr) {
       lListElem *centry = centry_create(answer_list, name);
 
-      if (centry != NULL) {
+      if (centry != nullptr) {
          ret &= centry_add_del_mod_via_gdi(ctx, centry, answer_list, SGE_GDI_DEL);
       }
    }
@@ -309,13 +309,13 @@ bool centry_show(sge_gdi_ctx_class_t *ctx, lList **answer_list, const char *name
    bool ret = true;
 
    DENTER(TOP_LAYER);
-   if (name != NULL) {
+   if (name != nullptr) {
       lListElem *centry = centry_get_via_gdi(ctx, answer_list, name);
 
-      if (centry != NULL) {
+      if (centry != nullptr) {
          const char *filename;
          filename = spool_flatfile_write_object(answer_list, centry, false, CE_fields, &qconf_ce_sfi, SP_DEST_STDOUT,
-                                                SP_FORM_ASCII, NULL, false);
+                                                SP_FORM_ASCII, nullptr, false);
          sge_free(&filename);
          lFreeElem(&centry);
          if (answer_list_has_error(answer_list)) {
@@ -331,16 +331,16 @@ bool centry_show(sge_gdi_ctx_class_t *ctx, lList **answer_list, const char *name
 
 bool centry_list_show(sge_gdi_ctx_class_t *ctx, lList **answer_list) {
    bool ret = true;
-   lList *centry_list = NULL;
+   lList *centry_list = nullptr;
 
    DENTER(TOP_LAYER);
    centry_list = centry_list_get_via_gdi(ctx, answer_list);
-   if (centry_list != NULL) {
+   if (centry_list != nullptr) {
       const char *filename;
 
       spool_flatfile_align_list(answer_list, (const lList *)centry_list, CE_fields, 3);
       filename = spool_flatfile_write_list(answer_list, centry_list, CE_fields, &qconf_ce_list_sfi, SP_DEST_STDOUT,
-                                           SP_FORM_ASCII, NULL, false);
+                                           SP_FORM_ASCII, nullptr, false);
 
       sge_free(&filename);
       lFreeList(&centry_list);
@@ -354,13 +354,13 @@ bool centry_list_show(sge_gdi_ctx_class_t *ctx, lList **answer_list) {
 }
 
 lList *centry_list_get_via_gdi(sge_gdi_ctx_class_t *ctx, lList **answer_list) {
-   lList *ret = NULL;
-   lList *gdi_answer_list = NULL;
-   lEnumeration *what = NULL;
+   lList *ret = nullptr;
+   lList *gdi_answer_list = nullptr;
+   lEnumeration *what = nullptr;
 
    DENTER(TOP_LAYER);
    what = lWhat("%T(ALL)", CE_Type);
-   gdi_answer_list = ctx->gdi(ctx, SGE_CE_LIST, SGE_GDI_GET, &ret, NULL, what);
+   gdi_answer_list = ctx->gdi(ctx, SGE_CE_LIST, SGE_GDI_GET, &ret, nullptr, what);
    lFreeWhat(&what);
 
    if (answer_list_has_error(&gdi_answer_list)) {
@@ -385,11 +385,11 @@ bool centry_list_add_del_mod_via_gdi(sge_gdi_ctx_class_t *ctx, lList **this_list
       DRETURN(false);
    }
 
-   if (*this_list != NULL) {
-      lList *modify_list = NULL;
-      lList *add_list = NULL;
-      lListElem *centry_elem = NULL;
-      lListElem *next_centry_elem = NULL;
+   if (*this_list != nullptr) {
+      lList *modify_list = nullptr;
+      lList *add_list = nullptr;
+      lListElem *centry_elem = nullptr;
+      lListElem *next_centry_elem = nullptr;
       bool cont = true;
 
       /* check for duplicate names */
@@ -398,23 +398,23 @@ bool centry_list_add_del_mod_via_gdi(sge_gdi_ctx_class_t *ctx, lList **this_list
          lListElem *cmp_elem = lFirstRW(*this_list);
 
          while ((centry_elem != cmp_elem)) {
-            const char *name1 = NULL;
-            const char *name2 = NULL;
-            const char *shortcut1 = NULL;
-            const char *shortcut2 = NULL;
+            const char *name1 = nullptr;
+            const char *name2 = nullptr;
+            const char *shortcut1 = nullptr;
+            const char *shortcut2 = nullptr;
 
             const char *attrname;
             double dval;
             char error_msg[200];
 
-            const char *urgency1 = NULL;
-            const char *urgency2 = NULL;
+            const char *urgency1 = nullptr;
+            const char *urgency2 = nullptr;
 
             /* Bugfix: Issuezilla 1161
              * Previously it was assumed that name and shortcut would never be
-             * NULL.  In the course of testing for duplicate names, each name
+             * nullptr.  In the course of testing for duplicate names, each name
              * would potentially be accessed twice.  Now, in order to check for
-             * NULL without making a mess, I access each name exactly once.  In
+             * nullptr without making a mess, I access each name exactly once.  In
              * some cases, that may be 50% more than the previous code, but in
              * what I expect is the usual case, it will be 50% less. */
             name1 = lGetString(centry_elem, CE_name);
@@ -422,19 +422,19 @@ bool centry_list_add_del_mod_via_gdi(sge_gdi_ctx_class_t *ctx, lList **this_list
             shortcut1 = lGetString(centry_elem, CE_shortcut);
             shortcut2 = lGetString(cmp_elem, CE_shortcut);
 
-            if (name1 == NULL) {
+            if (name1 == nullptr) {
                answer_list_add_sprintf(answer_list, STATUS_EUNKNOWN, ANSWER_QUALITY_ERROR, SFNMAX,
                                        MSG_CENTRY_NULL_NAME);
                DRETURN(false);
-            } else if (name2 == NULL) {
+            } else if (name2 == nullptr) {
                answer_list_add_sprintf(answer_list, STATUS_EUNKNOWN, ANSWER_QUALITY_ERROR, SFNMAX,
                                        MSG_CENTRY_NULL_NAME);
                DRETURN(false);
-            } else if (shortcut1 == NULL) {
+            } else if (shortcut1 == nullptr) {
                answer_list_add_sprintf(answer_list, STATUS_EUNKNOWN, ANSWER_QUALITY_ERROR, MSG_CENTRY_NULL_SHORTCUT_S,
                                        name1);
                DRETURN(false);
-            } else if (shortcut2 == NULL) {
+            } else if (shortcut2 == nullptr) {
                answer_list_add_sprintf(answer_list, STATUS_EUNKNOWN, ANSWER_QUALITY_ERROR, MSG_CENTRY_NULL_SHORTCUT_S,
                                        name2);
                DRETURN(false);
@@ -444,16 +444,16 @@ bool centry_list_add_del_mod_via_gdi(sge_gdi_ctx_class_t *ctx, lList **this_list
                                        MSG_ANSWER_COMPLEXXALREADYEXISTS_SS, name1, shortcut1);
                cont = false;
             }
-            /* Let's also check if the new urgency is NULL */
-            /* Check first that the entry is not NULL  */
+            /* Let's also check if the new urgency is nullptr */
+            /* Check first that the entry is not nullptr  */
             urgency1 = lGetString(centry_elem, CE_urgency_weight);
             urgency2 = lGetString(cmp_elem, CE_urgency_weight);
 
-            if (urgency1 == NULL) {
+            if (urgency1 == nullptr) {
                answer_list_add_sprintf(answer_list, STATUS_EUNKNOWN, ANSWER_QUALITY_ERROR, SFNMAX,
                                        MSG_CENTRY_NULL_URGENCY);
                DRETURN(false);
-            } else if (urgency2 == NULL) {
+            } else if (urgency2 == nullptr) {
                answer_list_add_sprintf(answer_list, STATUS_EUNKNOWN, ANSWER_QUALITY_ERROR, SFNMAX,
                                        MSG_CENTRY_NULL_URGENCY);
                DRETURN(false);
@@ -463,8 +463,8 @@ bool centry_list_add_del_mod_via_gdi(sge_gdi_ctx_class_t *ctx, lList **this_list
             error_msg[0] = '\0';
             attrname = lGetString(centry_elem, CE_name);
 
-            if (!parse_ulong_val(&dval, NULL, TYPE_DOUBLE, urgency1, error_msg, 199) ||
-                !parse_ulong_val(&dval, NULL, TYPE_DOUBLE, urgency2, error_msg, 199)) {
+            if (!parse_ulong_val(&dval, nullptr, TYPE_DOUBLE, urgency1, error_msg, 199) ||
+                !parse_ulong_val(&dval, nullptr, TYPE_DOUBLE, urgency2, error_msg, 199)) {
                answer_list_add_sprintf(answer_list, STATUS_EUNKNOWN, ANSWER_QUALITY_ERROR,
                                        MSG_INVALID_CENTRY_PARSE_URGENCY_SS, attrname, error_msg);
                DRETURN(false);
@@ -473,7 +473,7 @@ bool centry_list_add_del_mod_via_gdi(sge_gdi_ctx_class_t *ctx, lList **this_list
             cmp_elem = lNextRW(cmp_elem);
          }
 
-         if (!centry_elem_validate(centry_elem, NULL, answer_list)) {
+         if (!centry_elem_validate(centry_elem, nullptr, answer_list)) {
             cont = false;
          }
 
@@ -492,9 +492,9 @@ bool centry_list_add_del_mod_via_gdi(sge_gdi_ctx_class_t *ctx, lList **this_list
          lListElem *tmp_elem = centry_list_locate(*old_list, name);
 
          next_centry_elem = lNextRW(centry_elem);
-         if (tmp_elem != NULL) {
+         if (tmp_elem != nullptr) {
             lDechainElem(*this_list, centry_elem);
-            if (object_has_differences(centry_elem, NULL, tmp_elem, false)) {
+            if (object_has_differences(centry_elem, nullptr, tmp_elem, false)) {
                lAppendElem(modify_list, centry_elem);
             } else {
                lFreeElem(&centry_elem);
@@ -508,8 +508,8 @@ bool centry_list_add_del_mod_via_gdi(sge_gdi_ctx_class_t *ctx, lList **this_list
       lFreeList(this_list);
 
       {
-         lList *gdi_answer_list = NULL;
-         lList *mal_answer_list = NULL;
+         lList *gdi_answer_list = nullptr;
+         lList *mal_answer_list = nullptr;
          state_gdi_multi state = STATE_GDI_MULTI_INIT;
          int del_id = -1;
          int mod_id = -1;
@@ -540,7 +540,7 @@ bool centry_list_add_del_mod_via_gdi(sge_gdi_ctx_class_t *ctx, lList **this_list
           */
          if (ret && do_del) {
             int mode = (--number_req > 0) ? SGE_GDI_RECORD : SGE_GDI_SEND;
-            del_id = ctx->gdi_multi(ctx, &gdi_answer_list, mode, SGE_CE_LIST, SGE_GDI_DEL, old_list, NULL, NULL, &state,
+            del_id = ctx->gdi_multi(ctx, &gdi_answer_list, mode, SGE_CE_LIST, SGE_GDI_DEL, old_list, nullptr, nullptr, &state,
                                     false);
             if (mode == SGE_GDI_SEND) {
                ctx->gdi_wait(ctx, &gdi_answer_list, &mal_answer_list, &state);
@@ -554,7 +554,7 @@ bool centry_list_add_del_mod_via_gdi(sge_gdi_ctx_class_t *ctx, lList **this_list
          }
          if (ret && do_mod) {
             int mode = (--number_req > 0) ? SGE_GDI_RECORD : SGE_GDI_SEND;
-            mod_id = ctx->gdi_multi(ctx, &gdi_answer_list, mode, SGE_CE_LIST, SGE_GDI_MOD, &modify_list, NULL, NULL,
+            mod_id = ctx->gdi_multi(ctx, &gdi_answer_list, mode, SGE_CE_LIST, SGE_GDI_MOD, &modify_list, nullptr, nullptr,
                                     &state, false);
             if (mode == SGE_GDI_SEND) {
                ctx->gdi_wait(ctx, &gdi_answer_list, &mal_answer_list, &state);
@@ -568,7 +568,7 @@ bool centry_list_add_del_mod_via_gdi(sge_gdi_ctx_class_t *ctx, lList **this_list
          }
          if (ret && do_add) {
             int mode = (--number_req > 0) ? SGE_GDI_RECORD : SGE_GDI_SEND;
-            add_id = ctx->gdi_multi(ctx, &gdi_answer_list, mode, SGE_CE_LIST, SGE_GDI_ADD, &add_list, NULL, NULL,
+            add_id = ctx->gdi_multi(ctx, &gdi_answer_list, mode, SGE_CE_LIST, SGE_GDI_ADD, &add_list, nullptr, nullptr,
                                     &state, false);
             if (mode == SGE_GDI_SEND) {
                ctx->gdi_wait(ctx, &gdi_answer_list, &mal_answer_list, &state);
@@ -585,15 +585,15 @@ bool centry_list_add_del_mod_via_gdi(sge_gdi_ctx_class_t *ctx, lList **this_list
           * Verify that the parts of the multi request are successfull
           */
          if (do_del && ret) {
-            sge_gdi_extract_answer(&gdi_answer_list, SGE_GDI_DEL, SGE_CE_LIST, del_id, mal_answer_list, NULL);
+            sge_gdi_extract_answer(&gdi_answer_list, SGE_GDI_DEL, SGE_CE_LIST, del_id, mal_answer_list, nullptr);
             answer_list_append_list(answer_list, &gdi_answer_list);
          }
          if (do_mod && ret) {
-            sge_gdi_extract_answer(&gdi_answer_list, SGE_GDI_MOD, SGE_CE_LIST, mod_id, mal_answer_list, NULL);
+            sge_gdi_extract_answer(&gdi_answer_list, SGE_GDI_MOD, SGE_CE_LIST, mod_id, mal_answer_list, nullptr);
             answer_list_append_list(answer_list, &gdi_answer_list);
          }
          if (do_add && ret) {
-            sge_gdi_extract_answer(&gdi_answer_list, SGE_GDI_ADD, SGE_CE_LIST, add_id, mal_answer_list, NULL);
+            sge_gdi_extract_answer(&gdi_answer_list, SGE_GDI_ADD, SGE_CE_LIST, add_id, mal_answer_list, nullptr);
             answer_list_append_list(answer_list, &gdi_answer_list);
          }
 
@@ -639,11 +639,11 @@ bool centry_list_modify_from_file(sge_gdi_ctx_class_t *ctx, lList **answer_list,
 
    DENTER(TOP_LAYER);
    if (ret) {
-      lList *old_centry_list = NULL;
-      lList *centry_list = NULL;
+      lList *old_centry_list = nullptr;
+      lList *centry_list = nullptr;
 
-      centry_list = spool_flatfile_read_list(answer_list, CE_Type, CE_fields, NULL, true, &qconf_ce_list_sfi,
-                                             SP_FORM_ASCII, NULL, filename);
+      centry_list = spool_flatfile_read_list(answer_list, CE_Type, CE_fields, nullptr, true, &qconf_ce_list_sfi,
+                                             SP_FORM_ASCII, nullptr, filename);
 
       if (answer_list_output(answer_list)) {
          lFreeList(&centry_list);
@@ -651,7 +651,7 @@ bool centry_list_modify_from_file(sge_gdi_ctx_class_t *ctx, lList **answer_list,
 
       old_centry_list = centry_list_get_via_gdi(ctx, answer_list);
 
-      if (centry_list == NULL) {
+      if (centry_list == nullptr) {
          answer_list_add_sprintf(answer_list, STATUS_ERROR1, ANSWER_QUALITY_ERROR, MSG_CENTRY_FILENOTCORRECT_S,
                                  filename);
          ret = false;
@@ -673,15 +673,15 @@ static bool centry_list_provide_modify_context(sge_gdi_ctx_class_t *ctx, lList *
    gid_t gid = bootstrap_get_gid();
 
    DENTER(TOP_LAYER);
-   if (this_list != NULL) {
+   if (this_list != nullptr) {
       const char *filename;
 
       spool_flatfile_align_list(answer_list, (const lList *)*this_list, CE_fields, 3);
       filename = spool_flatfile_write_list(answer_list, *this_list, CE_fields, &qconf_ce_list_sfi, SP_DEST_TMP,
-                                           SP_FORM_ASCII, NULL, false);
+                                           SP_FORM_ASCII, nullptr, false);
 
       if (answer_list_output(answer_list)) {
-         if (filename != NULL) {
+         if (filename != nullptr) {
             unlink(filename);
             sge_free(&filename);
          }
@@ -692,14 +692,14 @@ static bool centry_list_provide_modify_context(sge_gdi_ctx_class_t *ctx, lList *
       if (status >= 0) {
          lList *centry_list;
 
-         centry_list = spool_flatfile_read_list(answer_list, CE_Type, CE_fields, NULL, true, &qconf_ce_list_sfi,
-                                                SP_FORM_ASCII, NULL, filename);
+         centry_list = spool_flatfile_read_list(answer_list, CE_Type, CE_fields, nullptr, true, &qconf_ce_list_sfi,
+                                                SP_FORM_ASCII, nullptr, filename);
 
          if (answer_list_output(answer_list)) {
             lFreeList(&centry_list);
          }
 
-         if (centry_list != NULL) {
+         if (centry_list != nullptr) {
             lFreeList(this_list);
             *this_list = centry_list;
             ret = true;

@@ -112,7 +112,7 @@ NAMEEND
 lNameSpace nmv[] = {
         {1,  TEST_Size,  TEST_Name},
         {51, TEST1_Size, TEST1_Name},
-        {0, 0, NULL}
+        {0, 0, nullptr}
 };
 
 bool test_lWhat_ALL(void) {
@@ -173,7 +173,7 @@ bool test_lWhat_enumeration(lEnumeration *what, int *result,
       tmp_max = result[*pos_result + 3];
       *pos_result = *pos_result + 4;
 
-      if (what[*pos_what].ep != NULL) {
+      if (what[*pos_what].ep != nullptr) {
          ret &= test_lWhat_enumeration(what[*pos_what].ep, result,
                                        &tmp_pos_what, pos_result, tmp_max);
       }
@@ -284,9 +284,9 @@ bool test_lReduceDescr(void) {
                                TEST1_Type, TEST1_int, TEST1_host,
                                TEST_object, TEST1_Type,
                                TEST_ref, TEST1_Type);
-   lDescr *dst_descriptor1 = NULL;
-   lDescr *dst_descriptor2 = NULL;
-   lDescr *dst_descriptor3 = NULL;
+   lDescr *dst_descriptor1 = nullptr;
+   lDescr *dst_descriptor2 = nullptr;
+   lDescr *dst_descriptor3 = nullptr;
 
    lReduceDescr(&dst_descriptor1, TEST_Type, what1);
    lReduceDescr(&dst_descriptor2, TEST_Type, what2);
@@ -390,7 +390,7 @@ bool test_lIntVector2What(void) {
    lEnumeration *what1 = lWhat("%T(%I %I %I %I)",
                                TEST_Type, TEST_int, TEST_list, TEST_object, TEST_ref);
    const int vector1[] = {TEST_int, TEST_list, TEST_object, TEST_ref, NoName};
-   lEnumeration *dst_what1 = NULL;
+   lEnumeration *dst_what1 = nullptr;
 
    dst_what1 = lIntVector2What(TEST_Type, vector1);
 
@@ -423,7 +423,7 @@ bool test_lWhat_lSelect(void) {
    lListElem *elem;
    lListElem *elem1;
    lList *list = lCreateList("", TEST_Type);
-   lList *list1 = NULL;
+   lList *list1 = nullptr;
    int i;
 
    elem = lCreateElem(TEST_Type);
@@ -476,7 +476,7 @@ bool test_lWhat_lSelect(void) {
       lAppendElem(list, tmp_elem);
    }
 
-   list1 = lSelect("", list, NULL, what);
+   list1 = lSelect("", list, nullptr, what);
 
    /* EB: Replace this function */
 #if 0

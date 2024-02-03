@@ -109,7 +109,7 @@ void job_related_adminmail(u_long32 progid, lListElem *jr, int is_array, const c
    u_long32 jobid, jataskid, failed, general;
    const char *q;
    lListElem *ep;
-   lList *lp_mail = NULL;
+   lList *lp_mail = nullptr;
    u_long32 now;
    int ret;
    char *shepherd_filenames[] = { "trace", "error", "pe_hostfile" };
@@ -123,8 +123,8 @@ void job_related_adminmail(u_long32 progid, lListElem *jr, int is_array, const c
    dstring dstr_sge_mail_body_total = DSTRING_INIT;
    dstring ds;
    char buffer[256];
-   char* administrator_mail = NULL;
-   char *shepherd_file_buf = NULL; 
+   char* administrator_mail = nullptr;
+   char *shepherd_file_buf = nullptr;
 
    DENTER(TOP_LAYER);
 
@@ -138,7 +138,7 @@ void job_related_adminmail(u_long32 progid, lListElem *jr, int is_array, const c
 
    administrator_mail = mconf_get_administrator_mail();
 
-   if (administrator_mail == NULL) {
+   if (administrator_mail == nullptr) {
       DRETURN_VOID;
    }
 
@@ -215,13 +215,13 @@ void job_related_adminmail(u_long32 progid, lListElem *jr, int is_array, const c
          DRETURN_VOID;
       }
 
-      if (lGetString(jr, JR_pe_task_id_str) == NULL) {
+      if (lGetString(jr, JR_pe_task_id_str) == nullptr) {
           /* This is a regular job */
           if (general == GFSTATE_QUEUE) {
              snprintf(str_general, sizeof(str_general), MSG_GFSTATE_QUEUE_S, q);
           } else if (general == GFSTATE_HOST) {
              const char *s = strchr(q, '@');
-             if (s != NULL) {
+             if (s != nullptr) {
                s++;
                snprintf(str_general, sizeof(str_general), MSG_GFSTATE_HOST_S, s);
              } else {

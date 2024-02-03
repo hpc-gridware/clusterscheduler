@@ -135,9 +135,9 @@ sge_parse_qrstat(sge_gdi_ctx_class_t *ctx, lList **answer_list,
 /************************************************************************/
 int main(int argc, char **argv) {
    int ret = 0;
-   lList *pcmdline = NULL;
-   lList *answer_list = NULL;
-   sge_gdi_ctx_class_t *ctx = NULL;
+   lList *pcmdline = nullptr;
+   lList *answer_list = nullptr;
+   sge_gdi_ctx_class_t *ctx = nullptr;
    qrstat_env_t qrstat_env;
 
    DENTER_MAIN(TOP_LAYER, "qrsub");
@@ -182,7 +182,7 @@ int main(int argc, char **argv) {
    }
 
    answer_list = cull_parse_cmdline(QRSTAT, argv+1, environ, &pcmdline, FLG_USE_PSEUDOS);
-   if (answer_list != NULL) {
+   if (answer_list != nullptr) {
       answer_list_output(&answer_list);
       lFreeList(&pcmdline);
       goto error_exit;
@@ -214,7 +214,7 @@ int main(int argc, char **argv) {
     * stage 4: create output in correct format
     */
    {
-      qrstat_report_handler_t *handler = NULL;
+      qrstat_report_handler_t *handler = nullptr;
 
       if (qrstat_env.is_xml) {
          handler = qrstat_create_report_handler_xml(&qrstat_env, &answer_list);
@@ -249,7 +249,7 @@ sge_parse_from_file_qrstat(const char *file, lList **ppcmdline, lList **alpp)
 
    DENTER(TOP_LAYER);
 
-   if (ppcmdline == NULL) {
+   if (ppcmdline == nullptr) {
       ret = false;
    } else {
       if (!sge_is_file(file)) {
@@ -258,17 +258,17 @@ sge_parse_from_file_qrstat(const char *file, lList **ppcmdline, lList **alpp)
           */
          DPRINTF(("file "SFQ" does not exist\n", file));
       } else {
-         char *file_as_string = NULL;
+         char *file_as_string = nullptr;
          int file_as_string_length;
 
          file_as_string = sge_file2string(file, &file_as_string_length);
-         if (file_as_string == NULL) {
+         if (file_as_string == nullptr) {
             answer_list_add_sprintf(alpp, STATUS_EUNKNOWN, 
                                     ANSWER_QUALITY_ERROR,
                                     MSG_ANSWER_ERRORREADINGFROMFILEX_S, file);
             ret = false;
          } else {
-            char **token = NULL;
+            char **token = nullptr;
 
             token = stra_from_str(file_as_string, " \n\t");
             *alpp = cull_parse_cmdline(QRSTAT, token, environ, ppcmdline, FLG_USE_PSEUDOS);

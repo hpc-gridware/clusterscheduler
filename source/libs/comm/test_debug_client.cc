@@ -45,7 +45,7 @@
 void sighandler_client(int sig);
 
 static int do_shutdown = 0;
-static cl_com_handle_t *handle = NULL;
+static cl_com_handle_t *handle = nullptr;
 
 #define ARGUMENT_COUNT 13
 char *cl_values[ARGUMENT_COUNT];
@@ -126,7 +126,7 @@ void convert_time(char *buffer, char *dest) {
 #endif
    struct tm *tm;
    help = strtok(buffer, ".");
-   help2 = strtok(NULL, ".");
+   help2 = strtok(nullptr, ".");
    i = atoi(help);
 #ifndef HAS_LOCALTIME_R
    tm = localtime(&i);
@@ -158,7 +158,7 @@ void print_line(char *buffer) {
 
    i = 0;
    cl_values[i++] = strtok(buffer, "\t");
-   while ((cl_values[i++] = strtok(NULL, "\t\n")));
+   while ((cl_values[i++] = strtok(nullptr, "\t\n")));
 
 
    convert_time(cl_values[0], time);
@@ -228,19 +228,19 @@ extern int main(int argc, char **argv) {
    memset(&sa, 0, sizeof(sa));
    sa.sa_handler = sighandler_client;  /* one handler for all signals */
    sigemptyset(&sa.sa_mask);
-   sigaction(SIGINT, &sa, NULL);
-   sigaction(SIGTERM, &sa, NULL);
-   sigaction(SIGHUP, &sa, NULL);
-   sigaction(SIGPIPE, &sa, NULL);
+   sigaction(SIGINT, &sa, nullptr);
+   sigaction(SIGTERM, &sa, nullptr);
+   sigaction(SIGHUP, &sa, nullptr);
+   sigaction(SIGPIPE, &sa, nullptr);
 
 
    printf("startup commlib ...\n");
-   cl_com_setup_commlib(CL_NO_THREAD, (cl_log_t) atoi(argv[1]), NULL);
+   cl_com_setup_commlib(CL_NO_THREAD, (cl_log_t) atoi(argv[1]), nullptr);
 
    printf("setting up handle for connect port %d\n", atoi(argv[2]));
-   handle = cl_com_create_handle(NULL, CL_CT_TCP, CL_CM_CT_STREAM, false, atoi(argv[2]), /* CL_TCP_DEFAULT*/
+   handle = cl_com_create_handle(nullptr, CL_CT_TCP, CL_CM_CT_STREAM, false, atoi(argv[2]), /* CL_TCP_DEFAULT*/
                                  CL_TCP_RESERVED_PORT, "debug_client", 0, 1, 0);
-   if (handle == NULL) {
+   if (handle == nullptr) {
       printf("could not get handle\n");
       exit(1);
    }
@@ -254,11 +254,11 @@ extern int main(int argc, char **argv) {
 
    while (do_shutdown == 0) {
       int retval = 0;
-      cl_com_message_t *message = NULL;
-      cl_com_endpoint_t *sender = NULL;
+      cl_com_message_t *message = nullptr;
+      cl_com_endpoint_t *sender = nullptr;
 
       cl_commlib_trigger(handle, 1);
-      retval = cl_commlib_receive_message(handle, NULL, NULL, 0,      /* handle, comp_host, comp_name , comp_id, */
+      retval = cl_commlib_receive_message(handle, nullptr, nullptr, 0,      /* handle, comp_host, comp_name , comp_id, */
                                           false, 0,                 /* syncron, response_mid */
                                           &message, &sender);
       if (retval != CL_RETVAL_OK) {

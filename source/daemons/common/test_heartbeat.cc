@@ -65,7 +65,7 @@ int main(int argc, char* argv[])
    DENTER_MAIN(TOP_LAYER, "test_sge_qmaster_heartbeat");
 
    /* initialize last_time */
-   gettimeofday(&last_time, NULL);
+   gettimeofday(&last_time, nullptr);
 
    if (argc==3) {
       if (strcmp(argv[1],"-only-write") == 0) {
@@ -119,7 +119,7 @@ int main(int argc, char* argv[])
       if (i==1 && runs++ != 0) {
          do_stop = 1;
       }
-      gettimeofday(&now,NULL);
+      gettimeofday(&now,nullptr);
       if (now.tv_sec != last_time.tv_sec || do_stop != 0 ) {
          printf("%6.2f %% done\n", (double)(((double)todo/99999.0)*100.0));
          fflush(stdout);

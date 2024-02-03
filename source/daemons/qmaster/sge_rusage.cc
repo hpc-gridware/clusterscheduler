@@ -106,7 +106,7 @@ reporting_get_ulong_usage(const lList *usage_list, lList *reported_list,
    /* total usage */
    u_long32 usage = usage_list_get_ulong_usage(usage_list, name, def);
 
-   if (reported_list != NULL) {
+   if (reported_list != nullptr) {
       u_long32 reported;
 
       /* usage already reported */
@@ -142,7 +142,7 @@ reporting_get_ulong_usage(const lList *usage_list, lList *reported_list,
 *     value will be returned.
 *     If accounting_summary is true, the usage of all pe_tasks in the given
 *     ja_task object will be summed up as well.
-*     If reported_usage is NULL, no usage will be booked as already reported,
+*     If reported_usage is nullptr, no usage will be booked as already reported,
 *     e.g. for maximum values.
 *
 *     name and rname may differ, as already reported usage is taken from job 
@@ -177,15 +177,15 @@ reporting_get_ulong_usage_sum(const lList *usage_list, lList *reported_list, boo
 
    /* when we do an accounting summary, we also have to sum up the pe task usage */
    if (accounting_summary) {
-      lListElem *pe_task = NULL;
+      lListElem *pe_task = nullptr;
       const lList *pe_tasks = lGetList(ja_task, JAT_task_list);
 
       for_each_rw (pe_task, pe_tasks) {
          const lList *pe_usage_list = lGetList(pe_task, PET_scaled_usage);
 
-         if (pe_usage_list != NULL) {
-            lList *pe_reported_list = NULL;
-            if (reported_list != NULL) {
+         if (pe_usage_list != nullptr) {
+            lList *pe_reported_list = nullptr;
+            if (reported_list != nullptr) {
                pe_reported_list = lGetOrCreateList(pe_task, PET_reported_usage, "reported_usage", UA_Type);
             }
             usage += reporting_get_ulong_usage(pe_usage_list, pe_reported_list, name, rname, def);
@@ -241,7 +241,7 @@ reporting_get_double_usage(const lList *usage_list, lList *reported_list, const 
    /* total usage */
    double usage = usage_list_get_double_usage(usage_list, name, def);
 
-   if (reported_list != NULL) {
+   if (reported_list != nullptr) {
       double reported;
 
       /* usage already reported */
@@ -277,7 +277,7 @@ reporting_get_double_usage(const lList *usage_list, lList *reported_list, const 
 *     value will be returned.
 *     If accounting_summary is true, the usage of all pe_tasks in the given
 *     ja_task object will be summed up as well.
-*     If reported_usage is NULL, no usage will be booked as already reported,
+*     If reported_usage is nullptr, no usage will be booked as already reported,
 *     e.g. for maximum values.
 *
 *     name and rname may differ, as already reported usage is taken from job 
@@ -312,15 +312,15 @@ reporting_get_double_usage_sum(const lList *usage_list, lList *reported_list, bo
 
    /* when we do an accounting summary, we also have to sum up the pe task usage */
    if (accounting_summary) {
-      lListElem *pe_task = NULL;
+      lListElem *pe_task = nullptr;
       const lList *pe_tasks = lGetList(ja_task, JAT_task_list);
 
       for_each_rw (pe_task, pe_tasks) {
          const lList *pe_usage_list = lGetList(pe_task, PET_scaled_usage);
 
-         if (pe_usage_list != NULL) {
-            lList *pe_reported_list = NULL;
-            if (reported_list != NULL) {
+         if (pe_usage_list != nullptr) {
+            lList *pe_reported_list = nullptr;
+            if (reported_list != nullptr) {
                pe_reported_list = lGetOrCreateList(pe_task, PET_reported_usage, "reported_usage", UA_Type);
             }
             usage += reporting_get_double_usage(pe_usage_list, pe_reported_list, name, rname, def);
@@ -345,7 +345,7 @@ static const char *
 none_string(const char *str) {
    const char *ret = str;
 
-   if (str == NULL || strlen(str) == 0) {
+   if (str == nullptr || strlen(str) == 0) {
       ret = NONE_STR;
    }
 
@@ -355,19 +355,19 @@ none_string(const char *str) {
 const char *
 sge_write_rusage(dstring *buffer, lListElem *jr, lListElem *job, lListElem *ja_task, const char *category_str,
                  const char delimiter, bool intermediate) {
-   const lList *usage_list = NULL; /* usage list of ja_task or pe_task */
-   lList *reported_list = NULL; /* already reported usage of ja_task or pe_task */
+   const lList *usage_list = nullptr; /* usage list of ja_task or pe_task */
+   lList *reported_list = nullptr; /* already reported usage of ja_task or pe_task */
    const char *pe_task_id;
-   const char *ret = NULL;
-   char *qname = NULL;
-   char *hostname = NULL;
-   lListElem *pe_task = NULL;
+   const char *ret = nullptr;
+   char *qname = nullptr;
+   char *hostname = nullptr;
+   lListElem *pe_task = nullptr;
    u_long32 submission_time = 0;
    u_long32 start_time = 0;
    u_long32 end_time = 0;
    u_long32 now = sge_get_gmt();
    u_long32 ar_id = 0;
-   lListElem *ar = NULL;
+   lListElem *ar = nullptr;
    u_long32 exit_status = 0;
    bool do_accounting_summary = false;
    const lList *master_pe_list = *object_type_get_master_list(SGE_TYPE_PE);
@@ -376,7 +376,7 @@ sge_write_rusage(dstring *buffer, lListElem *jr, lListElem *job, lListElem *ja_t
    DENTER(TOP_LAYER);
 
    /* invalid input data */
-   if (buffer == NULL) {
+   if (buffer == nullptr) {
       DRETURN(ret);
    }
 
@@ -384,7 +384,7 @@ sge_write_rusage(dstring *buffer, lListElem *jr, lListElem *job, lListElem *ja_t
     * Figure out if it is a parallel job,
     * and if we shall write individual accounting entries or a summary.
     */
-   if (lGetString(ja_task, JAT_granted_pe) != NULL) {
+   if (lGetString(ja_task, JAT_granted_pe) != nullptr) {
       const lListElem *pe = pe_list_locate(master_pe_list, lGetString(ja_task, JAT_granted_pe));
       do_accounting_summary = pe_do_accounting_summary(pe);
    }
@@ -394,7 +394,7 @@ sge_write_rusage(dstring *buffer, lListElem *jr, lListElem *job, lListElem *ja_t
     * - the pe task usage list for pe tasks
     * - the ja_task list for ja tasks
     */
-   if ((pe_task_id = lGetString(jr, JR_pe_task_id_str)) != NULL) {
+   if ((pe_task_id = lGetString(jr, JR_pe_task_id_str)) != nullptr) {
       /* nothing to be done for pe task, if summary is requested */
       if (do_accounting_summary) {
          DRETURN(ret);
@@ -402,7 +402,7 @@ sge_write_rusage(dstring *buffer, lListElem *jr, lListElem *job, lListElem *ja_t
 
       /* try to find the pe_task */
       pe_task = lGetElemStrRW(lGetList(ja_task, JAT_task_list), PET_id, pe_task_id);
-      if (pe_task == NULL) {
+      if (pe_task == nullptr) {
          dstring err_buffer = DSTRING_INIT;
          ERROR((SGE_EVENT, MSG_GOTUSAGEREPORTFORUNKNOWNPETASK_S,
                  job_get_id_string(lGetUlong(job, JB_job_number),
@@ -424,7 +424,7 @@ sge_write_rusage(dstring *buffer, lListElem *jr, lListElem *job, lListElem *ja_t
     * ja_task or pe_task reported_list.
     */
    if (intermediate) {
-      if (pe_task != NULL) {
+      if (pe_task != nullptr) {
          reported_list = lGetOrCreateList(pe_task, PET_reported_usage,
                                           "reported_usage", UA_Type);
       } else {
@@ -445,10 +445,10 @@ sge_write_rusage(dstring *buffer, lListElem *jr, lListElem *job, lListElem *ja_t
    SET_STR_DEFAULT(jr, JR_queue_name, "UNKNOWN@UNKNOWN");
 
    /* job name and account get taken from local job structure */
-   if (lGetString(job, JB_job_name) == NULL) {
+   if (lGetString(job, JB_job_name) == nullptr) {
       lSetString(job, JB_job_name, "UNKNOWN");
    }
-   if (lGetString(job, JB_account) == NULL) {
+   if (lGetString(job, JB_account) == nullptr) {
       lSetString(job, JB_account, "UNKNOWN");
    }
 
@@ -457,8 +457,8 @@ sge_write_rusage(dstring *buffer, lListElem *jr, lListElem *job, lListElem *ja_t
       dstring cqueue = DSTRING_INIT;
       dstring hname = DSTRING_INIT;
 
-      cqueue_name_split(lGetString(jr, JR_queue_name), &cqueue, &hname, NULL,
-                        NULL);
+      cqueue_name_split(lGetString(jr, JR_queue_name), &cqueue, &hname, nullptr,
+                        nullptr);
 
       qname = strdup(sge_dstring_get_string(&cqueue));
       hostname = strdup(sge_dstring_get_string(&hname));
@@ -476,7 +476,7 @@ sge_write_rusage(dstring *buffer, lListElem *jr, lListElem *job, lListElem *ja_t
        * for the job, we don't have the submission time in the job report 
        * before job exit 
        */
-      if (job != NULL && pe_task == NULL) {
+      if (job != nullptr && pe_task == nullptr) {
          submission_time = lGetUlong(job, JB_submission_time);
       }
       /* 
@@ -484,7 +484,7 @@ sge_write_rusage(dstring *buffer, lListElem *jr, lListElem *job, lListElem *ja_t
        * For consequent intermediate records, we already set the start_time to the
        * previous intermediate record's end time.
        */
-      if (start_time == 0 && ja_task != NULL) {
+      if (start_time == 0 && ja_task != nullptr) {
          start_time = lGetUlong(ja_task, JAT_start_time);
       }
 
@@ -591,11 +591,11 @@ sge_write_rusage(dstring *buffer, lListElem *jr, lListElem *job, lListElem *ja_t
                                                             intermediate ? USAGE_ATTR_IOW : USAGE_ATTR_IOW_ACCT,
                                                             USAGE_ATTR_IOW, 0), delimiter,
                              none_string(pe_task_id), delimiter,
-                             reporting_get_double_usage_sum(usage_list, NULL, do_accounting_summary, ja_task,
+                             reporting_get_double_usage_sum(usage_list, nullptr, do_accounting_summary, ja_task,
                                                             intermediate ? USAGE_ATTR_MAXVMEM : USAGE_ATTR_MAXVMEM_ACCT,
                                                             USAGE_ATTR_MAXVMEM, 0), delimiter,
                              lGetUlong(job, JB_ar), delimiter,
-                             (ar != NULL) ? lGetUlong(ar, AR_submission_time) : 0
+                             (ar != nullptr) ? lGetUlong(ar, AR_submission_time) : 0
    );
 
    sge_free(&qname);

@@ -110,7 +110,7 @@
 *     unsigned int size - size in bits
 *
 *  RESULT
-*     bitfield - a new bitfield or NULL, if the creation of the bitfield 
+*     bitfield - a new bitfield or nullptr, if the creation of the bitfield
 *                failed
 *
 *  NOTES
@@ -125,7 +125,7 @@ sge_bitfield_new(unsigned int size) {
 
    /* allocate storage for bitfield object */
    bf = (bitfield *) sge_malloc(sizeof(bitfield));
-   if (bf != NULL) {
+   if (bf != nullptr) {
       /* initialize bitfield, on errors, free bitfield */
       if (!sge_bitfield_init(bf, size)) {
          sge_free(&bf);
@@ -162,7 +162,7 @@ bool
 sge_bitfield_init(bitfield *bf, unsigned int size) {
    bool ret = true;
 
-   if (bf == NULL) {
+   if (bf == nullptr) {
       ret = false;
    } else {
       unsigned int char_size = sge_bitfield_get_size_bytes(size);
@@ -173,7 +173,7 @@ sge_bitfield_init(bitfield *bf, unsigned int size) {
          bf->bf.dyn = (char *) 0;
       } else {
          bf->bf.dyn = sge_malloc(char_size);
-         if (bf->bf.dyn == NULL) {
+         if (bf->bf.dyn == nullptr) {
             ret = false;
          } else {
             /* clear buffer */
@@ -204,7 +204,7 @@ sge_bitfield_init(bitfield *bf, unsigned int size) {
 *     bitfield *target        - target bitfield
 *
 *  RESULT
-*     bool - false, if one of the bitfields is NULL or 
+*     bool - false, if one of the bitfields is nullptr or
 *                   the bitfield sizes are different
 *
 *  NOTES
@@ -215,7 +215,7 @@ bool
 sge_bitfield_copy(const bitfield *source, bitfield *target) {
    bool ret = true;
 
-   if (source == NULL || target == NULL) {
+   if (source == nullptr || target == nullptr) {
       ret = false;
    }
 
@@ -253,7 +253,7 @@ sge_bitfield_copy(const bitfield *source, bitfield *target) {
 *     bitfield *target        - target bitfield
 *
 *  RESULT
-*     bool - false, if one of the bitfields is NULL
+*     bool - false, if one of the bitfields is nullptr
 *
 *  NOTES
 *     MT-NOTE: sge_bitfield_bitwise_copy() is MT safe 
@@ -263,7 +263,7 @@ bool
 sge_bitfield_bitwise_copy(const bitfield *source, bitfield *target) {
    bool ret = true;
 
-   if (source == NULL || target == NULL) {
+   if (source == nullptr || target == nullptr) {
       ret = false;
    }
 
@@ -312,7 +312,7 @@ bool
 sge_bitfield_changed(const bitfield *bf) {
    bool ret = false;
 
-   if (bf != NULL) {
+   if (bf != nullptr) {
       const char *buf = sge_bitfield_get_buffer(bf);
       unsigned int char_size = sge_bitfield_get_size_bytes(bf->size);
       unsigned int i;
@@ -342,7 +342,7 @@ sge_bitfield_changed(const bitfield *bf) {
 *     bitfield *bf - bitfield to reset
 *
 *  RESULT
-*     bool - false, if bf is NULL
+*     bool - false, if bf is nullptr
 *
 *  NOTES
 *     MT-NOTE: sge_bitfield_copy() is MT safe 
@@ -350,7 +350,7 @@ sge_bitfield_changed(const bitfield *bf) {
 *******************************************************************************/
 bool
 sge_bitfield_reset(bitfield *bf) {
-   if (bf != NULL) {
+   if (bf != nullptr) {
       if (bf->size > fixed_bits) {
          unsigned int char_size = sge_bitfield_get_size_bytes(bf->size);
          memset(bf->bf.dyn, 0, char_size);
@@ -382,19 +382,19 @@ sge_bitfield_reset(bitfield *bf) {
 *     MT-NOTE: sge_bitfield_free() is MT safe
 *
 *  RESULT
-*     bitfield * - NULL
+*     bitfield * - nullptr
 *******************************************************************************/
 bitfield *sge_bitfield_free(bitfield *bf) {
-   if (bf != NULL) {
+   if (bf != nullptr) {
       if (bf->size > fixed_bits) {
-         if (bf->bf.dyn != NULL) {
+         if (bf->bf.dyn != nullptr) {
             sge_free(&(bf->bf.dyn));
          }
       }
       sge_free(&bf);
    }
 
-   return NULL;
+   return nullptr;
 }
 
 /****** uti/bitfield/sge_bitfield_free_data() **********************************
@@ -422,11 +422,11 @@ bool
 sge_bitfield_free_data(bitfield *bf) {
    bool ret = true;
 
-   if (bf == NULL) {
+   if (bf == nullptr) {
       ret = false;
    } else {
       if (bf->size > fixed_bits) {
-         if (bf->bf.dyn != NULL) {
+         if (bf->bf.dyn != nullptr) {
             sge_free(&(bf->bf.dyn));
          }
       }
@@ -461,7 +461,7 @@ bool
 sge_bitfield_set(bitfield *bf, unsigned int bit) {
    bool ret = true;
 
-   if (bf == NULL || bit >= bf->size) {
+   if (bf == nullptr || bit >= bf->size) {
       ret = false;
    }
 
@@ -502,7 +502,7 @@ bool
 sge_bitfield_get(const bitfield *bf, unsigned int bit) {
    bool ret = false;
 
-   if (bf != NULL && bit < bf->size) {
+   if (bf != nullptr && bit < bf->size) {
       const char *buf = sge_bitfield_get_buffer(bf);
       unsigned int byte_offset = bit / 8;
       unsigned int bit_offset = bit % 8;
@@ -541,7 +541,7 @@ bool
 sge_bitfield_clear(bitfield *bf, unsigned int bit) {
    bool ret = true;
 
-   if (bf == NULL || bit >= bf->size) {
+   if (bf == nullptr || bit >= bf->size) {
       ret = false;
    }
 
@@ -566,23 +566,23 @@ sge_bitfield_clear(bitfield *bf, unsigned int bit) {
 *  FUNCTION
 *     Prints the contents of a bitfield.
 *     For each bit one digit (0/1) is printed.
-*     If NULL is passed as file descriptor, output is sent to stdout.
+*     If nullptr is passed as file descriptor, output is sent to stdout.
 *
 *  NOTES
 *     MT-NOTE: sge_bitfield_print() is MT safe
 *
 *  INPUTS
 *     bitfield  bf - the bitfield to output
-*     FILE *fd     - filehandle or NULL
+*     FILE *fd     - filehandle or nullptr
 *******************************************************************************/
 void sge_bitfield_print(const bitfield *bf, FILE *fd) {
    unsigned int i;
 
-   if (bf == NULL) {
+   if (bf == nullptr) {
       return;
    }
 
-   if (fd == NULL) {
+   if (fd == nullptr) {
       fd = stdout;
    }
 

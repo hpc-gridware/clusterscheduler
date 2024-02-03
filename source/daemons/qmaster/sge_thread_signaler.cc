@@ -58,7 +58,7 @@
 
 void
 sge_signaler_initialize(sge_gdi_ctx_class_t *ctx) {
-   cl_thread_settings_t *dummy_thread_p = NULL;
+   cl_thread_settings_t *dummy_thread_p = nullptr;
    dstring thread_name = DSTRING_INIT;
 
    DENTER(TOP_LAYER);
@@ -67,18 +67,18 @@ sge_signaler_initialize(sge_gdi_ctx_class_t *ctx) {
    cl_thread_list_setup(&(Main_Control.signal_thread_pool), "signal thread pool");
    cl_thread_list_create_thread(Main_Control.signal_thread_pool, &dummy_thread_p,
                                 cl_com_get_log_list(), sge_dstring_get_string(&thread_name), 0,
-                                sge_signaler_main, NULL, NULL, CL_TT_SIGNALER);
+                                sge_signaler_main, nullptr, nullptr, CL_TT_SIGNALER);
    sge_dstring_free(&thread_name);
    DRETURN_VOID;
 }
 
 void
 sge_signaler_initiate_termination(void) {
-   cl_thread_settings_t *thread = NULL;
+   cl_thread_settings_t *thread = nullptr;
    DENTER(TOP_LAYER);
 
    thread = cl_thread_list_get_first_thread(Main_Control.signal_thread_pool);
-   if (thread != NULL) {
+   if (thread != nullptr) {
       pthread_kill(*(thread->thread_pointer), SIGINT);
       INFO((SGE_EVENT, "send SIGINT to "SFN"\n", thread->thread_name));
    }
@@ -87,11 +87,11 @@ sge_signaler_initiate_termination(void) {
 
 void
 sge_signaler_terminate(void) {
-   cl_thread_settings_t *thread = NULL;
+   cl_thread_settings_t *thread = nullptr;
    DENTER(TOP_LAYER);
 
    thread = cl_thread_list_get_first_thread(Main_Control.signal_thread_pool);
-   if (thread != NULL) {
+   if (thread != nullptr) {
       DPRINTF(("getting canceled\n"));
       cl_thread_list_delete_thread(Main_Control.signal_thread_pool, thread);
    }
@@ -134,7 +134,7 @@ sge_signaler_main(void *arg) {
    int sig_num;
    time_t next_prof_output = 0;
    monitoring_t monitor;
-   sge_gdi_ctx_class_t *ctx = NULL;
+   sge_gdi_ctx_class_t *ctx = nullptr;
 
    DENTER(TOP_LAYER);
 
@@ -198,6 +198,6 @@ sge_signaler_main(void *arg) {
 
    sge_monitor_free(&monitor);
 
-   DRETURN(NULL);
+   DRETURN(nullptr);
 } 
 

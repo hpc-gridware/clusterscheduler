@@ -90,12 +90,12 @@ const char *default_prefix = "#$";
 ** NAME
 **   cull_parse_job_parameter
 ** PARAMETER
-**   cmdline            - NULL or SPA_Type, if NULL, *pjob is initialised with defaults
+**   cmdline            - nullptr or SPA_Type, if nullptr, *pjob is initialised with defaults
 **   pjob               - pointer to job element, is filled according to cmdline
 **
 ** RETURN
-**   answer list, AN_Type or NULL if everything ok, the following stati can occur:
-**   STATUS_EUNKNOWN   - bad internal error like NULL pointer received or no memory
+**   answer list, AN_Type or nullptr if everything ok, the following stati can occur:
+**   STATUS_EUNKNOWN   - bad internal error like nullptr pointer received or no memory
 **   STATUS_EDISK      - getcwd() failed
 **   STATUS_ENOIMP     - unknown switch or -help occurred
 ** EXTERNAL
@@ -108,8 +108,8 @@ lList *cull_parse_job_parameter(u_long32 uid, const char *username, const char *
 {
    const char *cp;
    lListElem *ep;
-   lList *answer = NULL;
-   lList *path_alias = NULL;
+   lList *answer = nullptr;
+   lList *path_alias = nullptr;
    char error_string[MAX_STRING_SIZE];
 
    DENTER(TOP_LAYER); 
@@ -170,7 +170,7 @@ lList *cull_parse_job_parameter(u_long32 uid, const char *username, const char *
     *  binding n offset <- how should the error handling be done?
     */
    ep = lGetElemStrRW(cmdline, SPA_switch_val, "-binding");
-   if (ep != NULL) {
+   if (ep != nullptr) {
       const lList *binding_list = lGetList(ep, SPA_argval_lListT);
       lList *new_binding_list = lCopyList("binding",  binding_list);
       
@@ -199,7 +199,7 @@ lList *cull_parse_job_parameter(u_long32 uid, const char *username, const char *
     * -t
     */
    ep = lGetElemStrRW(cmdline, SPA_switch_val, "-t");
-   if (ep != NULL) {
+   if (ep != nullptr) {
       const lList *range_list = lGetList(ep, SPA_argval_lListT);
       lList *new_range_list = lCopyList("task_id_range",  range_list);
 
@@ -215,7 +215,7 @@ lList *cull_parse_job_parameter(u_long32 uid, const char *username, const char *
       job_set_submit_task_ids(*pjob, 1, 1, 1);
    }
    job_initialize_id_lists(*pjob, &answer);
-   if (answer != NULL) {
+   if (answer != nullptr) {
       DRETURN(answer);
    }
 
@@ -245,7 +245,7 @@ lList *cull_parse_job_parameter(u_long32 uid, const char *username, const char *
             break;
          }
          /*
-         ** lNext can never be NULL here, because the -clear
+         ** lNext can never be nullptr here, because the -clear
          ** element is the last one to delete
          ** in general, these two lines wont work!
          */
@@ -317,7 +317,7 @@ lList *cull_parse_job_parameter(u_long32 uid, const char *username, const char *
       const lList *list = lGetList(ep, SPA_argval_lListT);
       const char *file = lGetString(lFirst(list), PN_path);
 
-      jsv_list_add("jsv_switch", JSV_CONTEXT_CLIENT, NULL, file);
+      jsv_list_add("jsv_switch", JSV_CONTEXT_CLIENT, nullptr, file);
       lRemoveElem(cmdline, &ep);
    }
 
@@ -334,7 +334,7 @@ lList *cull_parse_job_parameter(u_long32 uid, const char *username, const char *
    /*
    ** to use lAddList correctly we have to get the list out
    ** of the option struct otherwise we free the list once again
-   ** in the lSetList(ep, SPA_argval_lListT, NULL); call
+   ** in the lSetList(ep, SPA_argval_lListT, nullptr); call
    ** this can lead to a core dump
    ** so a better method is to xchange the list in the option struct 
    ** with a null pointer, this is not nice but safe
@@ -348,7 +348,7 @@ lList *cull_parse_job_parameter(u_long32 uid, const char *username, const char *
       if (lGetInt(ep, SPA_argval_lIntT) & MINUS_H_TGT_USER) {
          lSetList(*pjob, JB_ja_u_h_ids, lCopyList("task_id_range",
                   lGetList(*pjob, JB_ja_n_h_ids)));
-         lSetList(*pjob, JB_ja_n_h_ids, NULL);
+         lSetList(*pjob, JB_ja_n_h_ids, nullptr);
       }
       lRemoveElem(cmdline, &ep);
    }
@@ -369,7 +369,7 @@ lList *cull_parse_job_parameter(u_long32 uid, const char *username, const char *
    if (lGetElemStr(cmdline, SPA_switch_val, "-hold_jid")) {
       lListElem *ep;
       lListElem *sep;
-      lList *jref_list = NULL;
+      lList *jref_list = nullptr;
       while ((ep = lGetElemStrRW(cmdline, SPA_switch_val, "-hold_jid"))) {
          for_each_rw(sep, lGetList(ep, SPA_argval_lListT)) {
             DPRINTF(("-hold_jid %s\n", lGetString(sep, ST_name)));
@@ -384,7 +384,7 @@ lList *cull_parse_job_parameter(u_long32 uid, const char *username, const char *
    if (lGetElemStr(cmdline, SPA_switch_val, "-hold_jid_ad")) {
       lListElem *ep;
       const lListElem *sep;
-      lList *jref_list = NULL;
+      lList *jref_list = nullptr;
       while ((ep = lGetElemStrRW(cmdline, SPA_switch_val, "-hold_jid_ad"))) {
          for_each_ep(sep, lGetList(ep, SPA_argval_lListT)) {
             DPRINTF(("-hold_jid_ad %s\n", lGetString(sep, ST_name)));
@@ -570,7 +570,7 @@ lList *cull_parse_job_parameter(u_long32 uid, const char *username, const char *
       const char *path = lGetString(ep, SPA_argval_lStringT);
       bool is_cwd = false;
 
-      if (path == NULL) {
+      if (path == nullptr) {
          char tmp_str[SGE_PATH_MAX + 1];
 
          is_cwd = true;
@@ -583,7 +583,7 @@ lList *cull_parse_job_parameter(u_long32 uid, const char *username, const char *
          
          path = reroot_path(*pjob, tmp_str, &answer);
          
-         if (path == NULL) {
+         if (path == nullptr) {
             DRETURN(answer);
          }
       }
@@ -680,15 +680,15 @@ lList *cull_parse_job_parameter(u_long32 uid, const char *username, const char *
 *     Searches for special comments in script files and parses contained 
 *     SGE options or
 *     parses SGE options in job defaults files (sge_request).
-*     Script files are parsed with directive prefix NULL,
+*     Script files are parsed with directive prefix nullptr,
 *     default files are parsed with directive prefix "" and FLG_USE_NO_PSEUSOS.
 *
 *  INPUTS
-*     char *script_file      - script file name or NULL or "-"
+*     char *script_file      - script file name or nullptr or "-"
 *                              in the latter two cases the job script is read 
 *                              from stdin
 *     char *directive_prefix - only lines beginning with this prefix are parsed
-*                              NULL causes function to look in the lpp_options 
+*                              nullptr causes function to look in the lpp_options
 *                              list whether the -C option has been set. 
 *                              If it has, this prefix is used.
 *                              If not, the default prefix "#$" is used. 
@@ -709,9 +709,9 @@ lList *cull_parse_job_parameter(u_long32 uid, const char *username, const char *
 *                              FLG_IGN_NO_FILE:     do not show an error if 
 *                                                   script_file was not found
 *  RESULT
-*     lList* - answer list, AN_Type, or NULL if everything was ok, 
+*     lList* - answer list, AN_Type, or nullptr if everything was ok,
 *              the following stati can occur:
-*                 STATUS_EUNKNOWN - bad internal error like NULL pointer 
+*                 STATUS_EUNKNOWN - bad internal error like nullptr pointer
 *                                   received or no memory
 *                 STATUS_EDISK    - file could not be opened
 *
@@ -741,16 +741,16 @@ u_long32 flags
 ) {
    unsigned int dpl; /* directive_prefix length */
    FILE *fp;
-   char *filestrptr = NULL;
+   char *filestrptr = nullptr;
    int script_len = 0;
-   char **str_table = NULL;
-   lList *alp, *answer = NULL; 
+   char **str_table = nullptr;
+   lList *alp, *answer = nullptr;
    lListElem *aep;
    int i;
    int do_exit = 0;
    lListElem *ep_opt;
-   lList *lp_new_opts = NULL;
-   /* snprintf takes the NULL terminator into account. */
+   lList *lp_new_opts = nullptr;
+   /* snprintf takes the nullptr terminator into account. */
    char error_string[MAX_STRING_SIZE];
 
    DENTER(TOP_LAYER);
@@ -769,7 +769,7 @@ u_long32 flags
    if (!(flags & FLG_IGNORE_EMBEDED_OPTS)) {
       if (script_file && strcmp(script_file, "-")) {
          /* are we able to access this file? */
-         if ((fp = fopen(script_file, "r")) == NULL) {
+         if ((fp = fopen(script_file, "r")) == nullptr) {
             snprintf(error_string, sizeof(error_string),
                      MSG_FILE_ERROROPENINGXY_SS, script_file, strerror(errno));
             answer_list_add(&answer, error_string, STATUS_EDISK, ANSWER_QUALITY_ERROR);
@@ -781,7 +781,7 @@ u_long32 flags
          /* read the script file in one sweep */
          filestrptr = sge_file2string(script_file, &script_len);
 
-         if (filestrptr == NULL) {
+         if (filestrptr == nullptr) {
             snprintf(error_string, sizeof(error_string),
                      MSG_ANSWER_ERRORREADINGFROMFILEX_S, script_file);
             answer_list_add(&answer, error_string,
@@ -791,7 +791,7 @@ u_long32 flags
       } else {
          /* no script file but input from stdin */
          filestrptr = sge_stream2string(stdin, &script_len);
-         if (filestrptr == NULL) {
+         if (filestrptr == nullptr) {
             answer_list_add(&answer, MSG_ANSWER_ERRORREADINGFROMSTDIN, 
                             STATUS_EUNKNOWN, ANSWER_QUALITY_ERROR);
             DRETURN(answer);
@@ -804,7 +804,7 @@ u_long32 flags
          }
       }
 
-      if (directive_prefix == NULL) {
+      if (directive_prefix == nullptr) {
          DPRINTF(("directive prefix = <null> - will skip parsing of script\n"));
          dpl = 0;
       } else {
@@ -812,10 +812,10 @@ u_long32 flags
          dpl = strlen(directive_prefix);
       }
 
-      if (directive_prefix != NULL) {
-         char *parameters = NULL;
-         char *free_me = NULL;
-         char *s = NULL;
+      if (directive_prefix != nullptr) {
+         char *parameters = nullptr;
+         char *free_me = nullptr;
+         char *s = nullptr;
          int nt_index = -1;
          
          /* now look for job parameters in script file */
@@ -825,12 +825,12 @@ u_long32 flags
 
          while (*s != '\0') {
             int length = 0;
-            char *newline = NULL;
+            char *newline = nullptr;
             int nl_index = -1;
 
             newline = strchr (s, '\n');
 
-            if (newline != NULL) {
+            if (newline != nullptr) {
                /* I'm doing this math very carefully because I'm not entirely
                 * certain how the compiler will interpret subtracting a pointer
                 * from a pointer.  Better safe than sorry. */
@@ -840,7 +840,7 @@ u_long32 flags
             if (nl_index != -1) {
                parameters = sge_malloc (sizeof (char) * (nl_index + 1));
                
-               if (parameters == NULL) {
+               if (parameters == nullptr) {
                   answer_list_add(&answer, MSG_SGETEXT_NOMEM, 
                                   STATUS_EUNKNOWN, ANSWER_QUALITY_ERROR);
                   DRETURN(answer);
@@ -855,13 +855,13 @@ u_long32 flags
             else {
                parameters = sge_malloc (sizeof (char) * (nt_index + 1));
                
-               if (parameters == NULL) {
+               if (parameters == nullptr) {
                   answer_list_add(&answer, MSG_SGETEXT_NOMEM, 
                                   STATUS_EUNKNOWN, ANSWER_QUALITY_ERROR);
                   DRETURN(answer);
                }
                
-               /* strcpy copies everything up to and including the NULL
+               /* strcpy copies everything up to and including the nullptr
                 * termination. */
                strcpy (parameters, s);
                length = nt_index;
@@ -870,7 +870,7 @@ u_long32 flags
             /* Advance the pointer past the string we just copied. */
             s += length;
 
-            /* Update the location of the NULL terminator. */
+            /* Update the location of the nullptr terminator. */
             nt_index -= length;
 
             /* Store a copy of the memory pointer. */
@@ -880,13 +880,13 @@ u_long32 flags
             ** If directive prefix is zero string then all lines except
             ** comment lines are read, this makes it possible to parse
             ** defaults files with this function.
-            ** If the line contains no SGE options, we set parameters to NULL.
+            ** If the line contains no SGE options, we set parameters to nullptr.
             */
 
             if (dpl == 0) {
                /* we parse a settings file (e.g. sge_request): skip comment lines */
                if (*parameters == '#') {
-                  parameters = NULL;
+                  parameters = nullptr;
                }
             } else {
                /* we parse a script file with special comments */
@@ -897,25 +897,25 @@ u_long32 flags
                      parameters++;
                   }
                } else {
-                  parameters = NULL;
+                  parameters = nullptr;
                }
             }
 
             /* delete trailing garbage */
-            if (parameters != NULL) {
+            if (parameters != nullptr) {
                char *additional_comment;
 
                /* don't copy additional comments */
-               if ((additional_comment = strchr(parameters, '#')) != NULL) {
+               if ((additional_comment = strchr(parameters, '#')) != nullptr) {
                   additional_comment[0] = '\0';
                }
 
-               /* Start one character before the NULL terminator. */
+               /* Start one character before the nullptr terminator. */
                i = strlen(parameters) - 1;
                
                while (i >= 0) {
                   if (!isspace(parameters[i])) {
-                     /* We start one character before the NULL terminator, so
+                     /* We start one character before the nullptr terminator, so
                       * we are guaranteed to always be able to access the
                       * character at i+1. */
                      parameters[i + 1] = '\0';
@@ -926,8 +926,8 @@ u_long32 flags
                }
             }
 
-            if ((parameters != NULL) && (*parameters != '\0')) {
-               lListElem *ep = NULL;
+            if ((parameters != nullptr) && (*parameters != '\0')) {
+               lListElem *ep = nullptr;
                
                DPRINTF(("parameter in script: %s\n", parameters));
 
@@ -936,7 +936,7 @@ u_long32 flags
                */
 
                /* so str_table has to be freed afterwards */
-               str_table = string_list(parameters, " \t\n", NULL);
+               str_table = string_list(parameters, " \t\n", nullptr);
                
                for (i=0; str_table[i]; i++) {
                   DPRINTF(("str_table[%d] = '%s'\n", i, str_table[i])); 
@@ -974,7 +974,7 @@ u_long32 flags
                sge_free(&str_table);
                lFreeList(&alp);
                sge_free(&free_me);
-               parameters = NULL;
+               parameters = nullptr;
                
                if (do_exit) {
                   sge_free(&filestrptr);
@@ -990,7 +990,7 @@ u_long32 flags
             } /* if (parameters is not empty) */
             else {
                sge_free(&free_me);
-               parameters = NULL;
+               parameters = nullptr;
             }
          } /* while (*s != '\0') */
       }   
@@ -1003,15 +1003,15 @@ u_long32 flags
       */
       if (!(flags & FLG_DONT_ADD_SCRIPT)) {
          if (!lpp_options || !lGetElemStr(*lpp_options, SPA_switch_val, STR_PSEUDO_SCRIPT)) {
-            ep_opt = sge_add_arg(&lp_new_opts, 0, lStringT, STR_PSEUDO_SCRIPT, NULL);
+            ep_opt = sge_add_arg(&lp_new_opts, 0, lStringT, STR_PSEUDO_SCRIPT, nullptr);
             lSetString(ep_opt, SPA_argval_lStringT, 
                ((!script_file || !strcmp(script_file, "-")) ? "STDIN" : script_file));
          }
       }
-      ep_opt = sge_add_arg(&lp_new_opts, 0, lUlongT, STR_PSEUDO_SCRIPTLEN, NULL);
+      ep_opt = sge_add_arg(&lp_new_opts, 0, lUlongT, STR_PSEUDO_SCRIPTLEN, nullptr);
       lSetUlong(ep_opt, SPA_argval_lUlongT, script_len);
 
-      ep_opt = sge_add_arg(&lp_new_opts, 0, lStringT, STR_PSEUDO_SCRIPTPTR, NULL);
+      ep_opt = sge_add_arg(&lp_new_opts, 0, lStringT, STR_PSEUDO_SCRIPTPTR, nullptr);
       lSetString(ep_opt, SPA_argval_lStringT, filestrptr);
    }
 
@@ -1028,7 +1028,7 @@ u_long32 flags
          *lpp_options = lp_new_opts;
       } else {
          lAddList(*lpp_options, &lp_new_opts);
-         lp_new_opts = NULL;
+         lp_new_opts = nullptr;
       }
    }
 

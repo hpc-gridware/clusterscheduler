@@ -54,14 +54,14 @@ int cl_endpoint_list_setup(cl_raw_list_t **list_p,
 
    int ret_val = CL_RETVAL_OK;
    struct timeval now;
-   cl_endpoint_list_data_t *ldata = NULL;
+   cl_endpoint_list_data_t *ldata = nullptr;
 
    ldata = (cl_endpoint_list_data_t *) sge_malloc(sizeof(cl_endpoint_list_data_t));
-   if (ldata == NULL) {
+   if (ldata == nullptr) {
       return CL_RETVAL_MALLOC;
    }
 
-   gettimeofday(&now, NULL);
+   gettimeofday(&now, nullptr);
 
    ldata->entry_life_time = entry_life_time;
    ldata->refresh_interval = refresh_interval;
@@ -88,7 +88,7 @@ int cl_endpoint_list_setup(cl_raw_list_t **list_p,
    /* create hashtable */
    if (create_hash == true) {
       ldata->ht = sge_htable_create(4, dup_func_string, hash_func_string, hash_compare_string);
-      if (ldata->ht == NULL) {
+      if (ldata->ht == nullptr) {
          cl_raw_list_cleanup(list_p);
          sge_free(&ldata);
          return CL_RETVAL_MALLOC;
@@ -96,7 +96,7 @@ int cl_endpoint_list_setup(cl_raw_list_t **list_p,
       CL_LOG_INT(CL_LOG_INFO, "created hash table with size =", 4);
    } else {
       CL_LOG(CL_LOG_INFO, "created NO hash table!");
-      ldata->ht = NULL;
+      ldata->ht = nullptr;
    }
 
    /* set private list data */
@@ -114,10 +114,10 @@ int cl_endpoint_list_setup(cl_raw_list_t **list_p,
 #define __CL_FUNCTION__ "cl_endpoint_list_set_entry_life_time()"
 
 int cl_endpoint_list_set_entry_life_time(cl_raw_list_t *list_p, long entry_life_time) {
-   cl_endpoint_list_data_t *ldata = NULL;
+   cl_endpoint_list_data_t *ldata = nullptr;
 
    ldata = cl_endpoint_list_get_data(list_p);
-   if (ldata != NULL) {
+   if (ldata != nullptr) {
       ldata->entry_life_time = entry_life_time;
       CL_LOG_INT(CL_LOG_INFO, "setting entry life time to", entry_life_time);
       return CL_RETVAL_OK;
@@ -135,17 +135,17 @@ int cl_endpoint_list_set_entry_life_time(cl_raw_list_t *list_p, long entry_life_
 
 cl_endpoint_list_data_t *cl_endpoint_list_get_data(cl_raw_list_t *list_p) {
 
-   cl_endpoint_list_data_t *ldata = NULL;
-   cl_raw_list_t *endpoint_list = NULL;
+   cl_endpoint_list_data_t *ldata = nullptr;
+   cl_raw_list_t *endpoint_list = nullptr;
 
-   if (list_p == NULL) {
+   if (list_p == nullptr) {
       endpoint_list = cl_com_get_endpoint_list();
    } else {
       endpoint_list = list_p;
    }
-   if (endpoint_list == NULL) {
+   if (endpoint_list == nullptr) {
       CL_LOG(CL_LOG_WARNING, "no global endpoint_list");
-      return NULL;
+      return nullptr;
    }
 
    ldata = (cl_endpoint_list_data_t *) endpoint_list->list_data;
@@ -159,22 +159,22 @@ cl_endpoint_list_data_t *cl_endpoint_list_get_data(cl_raw_list_t *list_p) {
 #define __CL_FUNCTION__ "cl_endpoint_list_cleanup()"
 
 int cl_endpoint_list_cleanup(cl_raw_list_t **list_p) {
-   cl_endpoint_list_data_t *ldata = NULL;
-   cl_endpoint_list_elem_t *elem = NULL;
+   cl_endpoint_list_data_t *ldata = nullptr;
+   cl_endpoint_list_elem_t *elem = nullptr;
 
-   if (list_p == NULL) {
+   if (list_p == nullptr) {
       /* we expect an address of an pointer */
       return CL_RETVAL_PARAMS;
    }
 
-   if (*list_p == NULL) {
+   if (*list_p == nullptr) {
       /* we expect an initalized pointer */
       return CL_RETVAL_PARAMS;
    }
 
    /* delete all entries in list */
    cl_raw_list_lock(*list_p);
-   while ((elem = cl_endpoint_list_get_first_elem(*list_p)) != NULL) {
+   while ((elem = cl_endpoint_list_get_first_elem(*list_p)) != nullptr) {
       cl_raw_list_remove_elem(*list_p, elem->raw_elem);
       cl_com_free_endpoint(&(elem->endpoint));
       sge_free(&elem);
@@ -183,13 +183,13 @@ int cl_endpoint_list_cleanup(cl_raw_list_t **list_p) {
 
    /* clean list private data */
    ldata = (cl_endpoint_list_data_t *)(*list_p)->list_data;
-   if (ldata != NULL) {
-      if (ldata->ht != NULL) {
+   if (ldata != nullptr) {
+      if (ldata->ht != nullptr) {
          sge_htable_destroy(ldata->ht);
       }
       sge_free(&ldata);
    }
-   (*list_p)->list_data = NULL;
+   (*list_p)->list_data = nullptr;
 
    return cl_raw_list_cleanup(list_p);
 }
@@ -205,11 +205,11 @@ int cl_endpoint_list_define_endpoint(cl_raw_list_t *list_p, cl_com_endpoint_t *e
 
    int ret_val = CL_RETVAL_OK;
    struct timeval now;
-   cl_com_endpoint_t *dup_endpoint = NULL;
-   cl_endpoint_list_elem_t *new_elem = NULL;
-   cl_endpoint_list_elem_t *elem = NULL;
+   cl_com_endpoint_t *dup_endpoint = nullptr;
+   cl_endpoint_list_elem_t *new_elem = nullptr;
+   cl_endpoint_list_elem_t *elem = nullptr;
 
-   if (endpoint == NULL || list_p == NULL) {
+   if (endpoint == nullptr || list_p == nullptr) {
       return CL_RETVAL_PARAMS;
    }
 
@@ -221,7 +221,7 @@ int cl_endpoint_list_define_endpoint(cl_raw_list_t *list_p, cl_com_endpoint_t *e
    elem = cl_endpoint_list_get_elem_endpoint(list_p, endpoint);
    if (elem) {
       /* found matching endpoint */
-      gettimeofday(&now, NULL);
+      gettimeofday(&now, nullptr);
       elem->last_used = now.tv_sec;
       elem->service_port = service_port;
       elem->autoclose = autoclose;
@@ -245,18 +245,18 @@ int cl_endpoint_list_define_endpoint(cl_raw_list_t *list_p, cl_com_endpoint_t *e
 
    /* create a copy of endpoint */
    dup_endpoint = cl_com_dup_endpoint(endpoint);
-   if (dup_endpoint == NULL) {
+   if (dup_endpoint == nullptr) {
       return CL_RETVAL_MALLOC;
    }
 
    /* add new element list */
    new_elem = (cl_endpoint_list_elem_t *) sge_malloc(sizeof(cl_endpoint_list_elem_t));
-   if (new_elem == NULL) {
+   if (new_elem == nullptr) {
       cl_com_free_endpoint(&dup_endpoint);
       return CL_RETVAL_MALLOC;
    }
 
-   gettimeofday(&now, NULL);
+   gettimeofday(&now, nullptr);
    new_elem->endpoint = dup_endpoint;
    new_elem->service_port = service_port;
    new_elem->autoclose = autoclose;
@@ -268,14 +268,14 @@ int cl_endpoint_list_define_endpoint(cl_raw_list_t *list_p, cl_com_endpoint_t *e
       return ret_val;
    }
    new_elem->raw_elem = cl_raw_list_append_elem(list_p, (void *) new_elem);
-   if (new_elem->raw_elem == NULL) {
+   if (new_elem->raw_elem == nullptr) {
       cl_raw_list_unlock(list_p);
       cl_com_free_endpoint(&dup_endpoint);
       sge_free(&new_elem);
       return CL_RETVAL_MALLOC;
    } else {
       cl_endpoint_list_data_t *ldata = (cl_endpoint_list_data_t *)list_p->list_data;
-      if (ldata->ht != NULL) {
+      if (ldata->ht != nullptr) {
          sge_htable_store(ldata->ht, dup_endpoint->hash_id, new_elem);
       }
    }
@@ -298,9 +298,9 @@ int cl_endpoint_list_get_autoclose_mode(cl_raw_list_t *list_p, cl_com_endpoint_t
                                         cl_xml_connection_autoclose_t *autoclose) {
    int back = CL_RETVAL_UNKNOWN_ENDPOINT;
    int ret_val = CL_RETVAL_OK;
-   cl_endpoint_list_elem_t *elem = NULL;
+   cl_endpoint_list_elem_t *elem = nullptr;
 
-   if (list_p == NULL || endpoint == NULL || autoclose == NULL) {
+   if (list_p == nullptr || endpoint == nullptr || autoclose == nullptr) {
       return CL_RETVAL_PARAMS;
    }
 
@@ -312,7 +312,7 @@ int cl_endpoint_list_get_autoclose_mode(cl_raw_list_t *list_p, cl_com_endpoint_t
    }
 
    elem = cl_endpoint_list_get_elem_endpoint(list_p, endpoint);
-   if (elem != NULL) {
+   if (elem != nullptr) {
       /* found matching endpoint */
       back = CL_RETVAL_OK;
       CL_LOG_INT(CL_LOG_INFO, "setting autoclose to:", elem->autoclose);
@@ -334,9 +334,9 @@ int cl_endpoint_list_get_autoclose_mode(cl_raw_list_t *list_p, cl_com_endpoint_t
 int cl_endpoint_list_get_service_port(cl_raw_list_t *list_p, cl_com_endpoint_t *endpoint, int *service_port) {
    int back = CL_RETVAL_UNKNOWN_ENDPOINT;
    int ret_val = CL_RETVAL_OK;
-   cl_endpoint_list_elem_t *elem = NULL;
+   cl_endpoint_list_elem_t *elem = nullptr;
 
-   if (list_p == NULL || endpoint == NULL || service_port == NULL) {
+   if (list_p == nullptr || endpoint == nullptr || service_port == nullptr) {
       return CL_RETVAL_PARAMS;
    }
 
@@ -348,7 +348,7 @@ int cl_endpoint_list_get_service_port(cl_raw_list_t *list_p, cl_com_endpoint_t *
    }
 
    elem = cl_endpoint_list_get_elem_endpoint(list_p, endpoint);
-   if (elem != NULL) {
+   if (elem != nullptr) {
       /* found matching endpoint */
       back = CL_RETVAL_OK;
       *service_port = elem->service_port;
@@ -372,10 +372,10 @@ cl_endpoint_list_get_last_touch_time(cl_raw_list_t *list_p, cl_com_endpoint_t *e
 
    int back = CL_RETVAL_UNKNOWN_ENDPOINT;
    int ret_val = CL_RETVAL_OK;
-   cl_endpoint_list_elem_t *elem = NULL;
+   cl_endpoint_list_elem_t *elem = nullptr;
 
 
-   if (list_p == NULL || endpoint == NULL) {
+   if (list_p == nullptr || endpoint == nullptr) {
       return CL_RETVAL_PARAMS;
    }
 
@@ -391,7 +391,7 @@ cl_endpoint_list_get_last_touch_time(cl_raw_list_t *list_p, cl_com_endpoint_t *e
    }
 
    elem = cl_endpoint_list_get_elem_endpoint(list_p, endpoint);
-   if (elem != NULL) {
+   if (elem != nullptr) {
       /* found matching endpoint */
       back = CL_RETVAL_OK;
       CL_LOG_STR(CL_LOG_INFO, "found endpoint comp_host:", elem->endpoint->comp_host);
@@ -416,9 +416,9 @@ cl_endpoint_list_get_last_touch_time(cl_raw_list_t *list_p, cl_com_endpoint_t *e
 int cl_endpoint_list_undefine_endpoint(cl_raw_list_t *list_p, cl_com_endpoint_t *endpoint) {
    int back = CL_RETVAL_UNKNOWN_ENDPOINT;
    int ret_val = CL_RETVAL_OK;
-   cl_endpoint_list_elem_t *elem = NULL;
+   cl_endpoint_list_elem_t *elem = nullptr;
 
-   if (list_p == NULL || endpoint == NULL) {
+   if (list_p == nullptr || endpoint == nullptr) {
       return CL_RETVAL_PARAMS;
    }
 
@@ -429,14 +429,14 @@ int cl_endpoint_list_undefine_endpoint(cl_raw_list_t *list_p, cl_com_endpoint_t 
 
    elem = cl_endpoint_list_get_elem_endpoint(list_p, endpoint);
    if (elem && elem->is_static == false) {
-      cl_endpoint_list_data_t *ldata = NULL;
+      cl_endpoint_list_data_t *ldata = nullptr;
 
       cl_raw_list_remove_elem(list_p, elem->raw_elem);
       cl_com_free_endpoint(&(elem->endpoint));
       sge_free(&elem);
 
       ldata = (cl_endpoint_list_data_t *)list_p->list_data;
-      if (ldata->ht != NULL) {
+      if (ldata->ht != nullptr) {
          sge_htable_delete(ldata->ht, endpoint->hash_id);
       }
       back = CL_RETVAL_OK;
@@ -460,7 +460,7 @@ cl_endpoint_list_elem_t *cl_endpoint_list_get_first_elem(cl_raw_list_t *list_p) 
    if (raw_elem) {
       return (cl_endpoint_list_elem_t *) raw_elem->data;
    }
-   return NULL;
+   return nullptr;
 }
 
 #ifdef __CL_FUNCTION__
@@ -473,7 +473,7 @@ cl_endpoint_list_elem_t *cl_endpoint_list_get_least_elem(cl_raw_list_t *list_p) 
    if (raw_elem) {
       return (cl_endpoint_list_elem_t *) raw_elem->data;
    }
-   return NULL;
+   return nullptr;
 }
 
 #ifdef __CL_FUNCTION__
@@ -482,16 +482,16 @@ cl_endpoint_list_elem_t *cl_endpoint_list_get_least_elem(cl_raw_list_t *list_p) 
 #define __CL_FUNCTION__ "cl_endpoint_list_get_next_elem()"
 
 cl_endpoint_list_elem_t *cl_endpoint_list_get_next_elem(cl_endpoint_list_elem_t *elem) {
-   cl_raw_list_elem_t *next_raw_elem = NULL;
+   cl_raw_list_elem_t *next_raw_elem = nullptr;
 
-   if (elem != NULL) {
+   if (elem != nullptr) {
       cl_raw_list_elem_t *raw_elem = elem->raw_elem;
       next_raw_elem = cl_raw_list_get_next_elem(raw_elem);
       if (next_raw_elem) {
          return (cl_endpoint_list_elem_t *) next_raw_elem->data;
       }
    }
-   return NULL;
+   return nullptr;
 }
 
 
@@ -501,16 +501,16 @@ cl_endpoint_list_elem_t *cl_endpoint_list_get_next_elem(cl_endpoint_list_elem_t 
 #define __CL_FUNCTION__ "cl_endpoint_list_get_last_elem()"
 
 cl_endpoint_list_elem_t *cl_endpoint_list_get_last_elem(cl_endpoint_list_elem_t *elem) {
-   cl_raw_list_elem_t *last_raw_elem = NULL;
+   cl_raw_list_elem_t *last_raw_elem = nullptr;
 
-   if (elem != NULL) {
+   if (elem != nullptr) {
       cl_raw_list_elem_t *raw_elem = elem->raw_elem;
       last_raw_elem = cl_raw_list_get_last_elem(raw_elem);
       if (last_raw_elem) {
          return (cl_endpoint_list_elem_t *) last_raw_elem->data;
       }
    }
-   return NULL;
+   return nullptr;
 }
 
 #ifdef __CL_FUNCTION__
@@ -519,12 +519,12 @@ cl_endpoint_list_elem_t *cl_endpoint_list_get_last_elem(cl_endpoint_list_elem_t 
 #define __CL_FUNCTION__ "cl_endpoint_list_get_elem_endpoint()"
 
 cl_endpoint_list_elem_t *cl_endpoint_list_get_elem_endpoint(cl_raw_list_t *list_p, cl_com_endpoint_t *endpoint) {
-   cl_endpoint_list_elem_t *elem = NULL;
+   cl_endpoint_list_elem_t *elem = nullptr;
 
-   if (endpoint != NULL && list_p != NULL) {
-      cl_endpoint_list_data_t *ldata = NULL;
+   if (endpoint != nullptr && list_p != nullptr) {
+      cl_endpoint_list_data_t *ldata = nullptr;
       ldata = (cl_endpoint_list_data_t *)list_p->list_data;
-      if (ldata->ht != NULL) {
+      if (ldata->ht != nullptr) {
          if (sge_htable_lookup(ldata->ht, endpoint->hash_id, (const void **) &elem) == True) {
             return elem;
          }
@@ -532,7 +532,7 @@ cl_endpoint_list_elem_t *cl_endpoint_list_get_elem_endpoint(cl_raw_list_t *list_
          /* Search without having hash table */
          CL_LOG(CL_LOG_INFO, "no hash table available, searching sequential");
          elem = cl_endpoint_list_get_first_elem(list_p);
-         while (elem != NULL) {
+         while (elem != nullptr) {
             if (cl_com_compare_endpoints(elem->endpoint, endpoint) == 1) {
                /* found matching element */
                return elem;
@@ -541,5 +541,5 @@ cl_endpoint_list_elem_t *cl_endpoint_list_get_elem_endpoint(cl_raw_list_t *list_
          }
       }
    }
-   return NULL;
+   return nullptr;
 }

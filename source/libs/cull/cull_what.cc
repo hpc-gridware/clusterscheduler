@@ -141,8 +141,8 @@ lEnumeration *_lWhat(const char *fmt, const lDescr *dp,
    int neg = 0;
    int i, j, k, n, size = 0;
    const char *s;
-   lEnumeration *ep = NULL;
-   lEnumeration *ep2 = NULL;
+   lEnumeration *ep = nullptr;
+   lEnumeration *ep2 = nullptr;
    int error_status;
    cull_parse_state state;
 
@@ -170,7 +170,7 @@ lEnumeration *_lWhat(const char *fmt, const lDescr *dp,
       goto error;
    }
    eat_token(&state);                 /* eat %T */
-   if (scan(NULL, &state) != BRA) {
+   if (scan(nullptr, &state) != BRA) {
       /* ( expected */
       error_status = LESYNTAX;
       goto error;
@@ -187,38 +187,38 @@ lEnumeration *_lWhat(const char *fmt, const lDescr *dp,
    }
 
    /* Special cases CULL_ALL fields are selected or NONE is selected */
-   /* Normally the arguments nm_list and nr_nm should be NULL(0)     */
-   switch (scan(NULL, &state)) {
+   /* Normally the arguments nm_list and nr_nm should be nullptr(0)     */
+   switch (scan(nullptr, &state)) {
 
       case CULL_ALL:
          ep[0].pos = WHAT_ALL;
          ep[0].nm = -99;
          ep[0].mt = -99;
-         ep[0].ep = NULL;
+         ep[0].ep = nullptr;
          eat_token(&state);
          ep[1].pos = 0;
          ep[1].nm = NoName;
          ep[1].mt = lEndT;
-         ep[1].ep = NULL;
+         ep[1].ep = nullptr;
          DRETURN(ep);
 
       case CULL_NONE:
          ep[0].pos = WHAT_NONE;
          ep[0].nm = -99;
          ep[0].mt = -99;
-         ep[0].ep = NULL;
+         ep[0].ep = nullptr;
          eat_token(&state);
          ep[1].pos = 0;
          ep[1].nm = NoName;
          ep[1].mt = lEndT;
-         ep[1].ep = NULL;
+         ep[1].ep = nullptr;
          DRETURN(ep);
 
       default:
          break;
    }
 
-   if (scan(NULL, &state) == NEG) {
+   if (scan(nullptr, &state) == NEG) {
       neg = 1;
       if ((size = lCountDescr(dp)) == -1) {
          error_status = LECOUNTDESCR;
@@ -227,7 +227,7 @@ lEnumeration *_lWhat(const char *fmt, const lDescr *dp,
       /* subtract the fields that shall not be enumerated */
       size -= n;
       eat_token(&state);              /* eat ! */
-      if (scan(NULL, &state) != BRA) {
+      if (scan(nullptr, &state) != BRA) {
          /* ( expected */
          error_status = LESYNTAX;
          goto error;
@@ -243,9 +243,9 @@ lEnumeration *_lWhat(const char *fmt, const lDescr *dp,
          goto error;
       }
       ep[i].mt = dp[ep[i].pos].mt;
-      ep[i].ep = NULL;
+      ep[i].ep = nullptr;
 
-      if (scan(NULL, &state) != FIELD) {
+      if (scan(nullptr, &state) != FIELD) {
          error_status = LESYNTAX;
          goto error;
       }
@@ -256,10 +256,10 @@ lEnumeration *_lWhat(const char *fmt, const lDescr *dp,
    ep[n].pos = 0;
    ep[n].nm = NoName;
    ep[n].mt = lEndT;
-   ep[n].ep = NULL;
+   ep[n].ep = nullptr;
 
    if (neg) {
-      if (scan(NULL, &state) != KET) {
+      if (scan(nullptr, &state) != KET) {
          error_status = LESYNTAX;
          goto error;
       }
@@ -279,18 +279,18 @@ lEnumeration *_lWhat(const char *fmt, const lDescr *dp,
          ep2[k].pos = i;
          ep2[k].nm = dp[i].nm;
          ep2[k].mt = dp[i].mt;
-         ep2[k].ep = NULL;
+         ep2[k].ep = nullptr;
          k++;
       }
       ep2[k].pos = 0;
       ep2[size].nm = NoName;
       ep2[size].mt = lEndT;
-      ep2[size].ep = NULL;
+      ep2[size].ep = nullptr;
       lFreeWhat(&ep);
       ep = ep2;
    }
 
-   if (scan(NULL, &state) != KET) {
+   if (scan(nullptr, &state) != KET) {
       error_status = LESYNTAX;
       goto error;
    }
@@ -302,7 +302,7 @@ lEnumeration *_lWhat(const char *fmt, const lDescr *dp,
    LERROR(error_status);
    lFreeWhat(&ep);
    DPRINTF(("error_status = %d\n", error_status));
-   DRETURN(NULL);
+   DRETURN(nullptr);
 }
 
 /****** cull/what/lWhat() *****************************************************
@@ -347,7 +347,7 @@ lEnumeration *_lWhat(const char *fmt, const lDescr *dp,
 *     "" is NOT equivalent with "%I->%T(NONE)"
 *******************************************************************************/
 lEnumeration *lWhat(const char *fmt, ...) {
-   lEnumeration *enumeration = NULL;
+   lEnumeration *enumeration = nullptr;
    va_list ap;
    cull_parse_state state;
 
@@ -355,7 +355,7 @@ lEnumeration *lWhat(const char *fmt, ...) {
 
    if (!fmt) {
       LERROR(LENOFORMATSTR);
-      DRETURN(NULL);
+      DRETURN(nullptr);
    }
 
    /* 
@@ -372,15 +372,15 @@ lEnumeration *lWhat(const char *fmt, ...) {
 
    if (!enumeration) {
       LERROR(LEPARSECOND);
-      DRETURN(NULL);
+      DRETURN(nullptr);
    }
 
    DRETURN(enumeration);
 }
 
 static lEnumeration *subscope_lWhat(cull_parse_state *state, va_list *app) {
-   lDescr *dp = NULL;
-   lEnumeration *enumeration = NULL;
+   lDescr *dp = nullptr;
+   lEnumeration *enumeration = nullptr;
    int token;
    lEnumeration ep[1000];
    int next_id = 0;
@@ -388,36 +388,36 @@ static lEnumeration *subscope_lWhat(cull_parse_state *state, va_list *app) {
 
    DENTER(CULL_LAYER);
 
-   if (scan(NULL, state) != TYPE) {
+   if (scan(nullptr, state) != TYPE) {
       LERROR(LESYNTAX);
-      DRETURN(NULL);
+      DRETURN(nullptr);
    }
    eat_token(state);                 /* eat %T */
    if (!(dp = va_arg(*app, lDescr *))) {
       LERROR(LEDESCRNULL);
-      DRETURN(NULL);
+      DRETURN(nullptr);
    }
 
-   if (scan(NULL, state) != BRA) {
+   if (scan(nullptr, state) != BRA) {
       LERROR(LESYNTAX);
-      DRETURN(NULL);
+      DRETURN(nullptr);
    }
    eat_token(state);                 /* eat ( */
 
-   token = scan(NULL, state);
+   token = scan(nullptr, state);
 
    if (token == CULL_ALL) {
       ep[next_id].pos = WHAT_ALL;
       ep[next_id].nm = -99;
       ep[next_id].mt = -99;
-      ep[next_id].ep = NULL;
+      ep[next_id].ep = nullptr;
       next_id++;
       eat_token(state);
    } else if (token == CULL_NONE) {
       ep[next_id].pos = WHAT_NONE;
       ep[next_id].nm = -99;
       ep[next_id].mt = -99;
-      ep[next_id].ep = NULL;
+      ep[next_id].ep = nullptr;
       next_id++;
       eat_token(state);
    } else {
@@ -426,7 +426,7 @@ static lEnumeration *subscope_lWhat(cull_parse_state *state, va_list *app) {
 
          if (token != FIELD) {
             LERROR(LESYNTAX);
-            DRETURN(NULL);
+            DRETURN(nullptr);
          }
          eat_token(state);                 /* eat %I */
 
@@ -441,13 +441,13 @@ static lEnumeration *subscope_lWhat(cull_parse_state *state, va_list *app) {
             }
          }
 
-         token = scan(NULL, state);
+         token = scan(nullptr, state);
          if (token == SUBSCOPE) {
             eat_token(state);                 /* eat -> */
             ep[next_id].ep = subscope_lWhat(state, app);
-            token = scan(NULL, state);
+            token = scan(nullptr, state);
          } else {
-            ep[next_id].ep = NULL;
+            ep[next_id].ep = nullptr;
          }
          next_id++;
 
@@ -458,20 +458,20 @@ static lEnumeration *subscope_lWhat(cull_parse_state *state, va_list *app) {
    ep[next_id].pos = 0;
    ep[next_id].nm = NoName;
    ep[next_id].mt = lEndT;
-   ep[next_id].ep = NULL;
+   ep[next_id].ep = nullptr;
    next_id++;
 
-   if (scan(NULL, state) != KET) {
+   if (scan(nullptr, state) != KET) {
       LERROR(LESYNTAX);
-      DRETURN(NULL);
+      DRETURN(nullptr);
    }
    eat_token(state);                 /* eat ) */
 
    /* make copy of local data */
    enumeration = (lEnumeration *) sge_malloc(sizeof(lEnumeration) * next_id);
-   if (enumeration == NULL) {
+   if (enumeration == nullptr) {
       LERROR(LEMALLOC);
-      DRETURN(NULL);
+      DRETURN(nullptr);
    }
 
    for (i = 0; i < next_id; i++) {
@@ -516,18 +516,18 @@ lEnumeration *lWhatAll(void) {
    ep[0].pos = WHAT_ALL;
    ep[0].nm = -99;
    ep[0].mt = -99;
-   ep[0].ep = NULL;
+   ep[0].ep = nullptr;
    ep[1].pos = 0;
    ep[1].nm = NoName;
    ep[1].mt = lEndT;
-   ep[1].ep = NULL;
+   ep[1].ep = nullptr;
 
    DRETURN(ep);
 
    error:
    LERROR(error_status);
    DPRINTF(("error_status = %d\n", error_status));
-   DRETURN(NULL);
+   DRETURN(nullptr);
 }
 
 /****** cull/what/lFreeWhat() *************************************************
@@ -541,7 +541,7 @@ lEnumeration *lWhatAll(void) {
 *     Frees a enumeration array 
 *
 *  INPUTS
-*     lEnumeration **ep - enumeration, will be set to NULL 
+*     lEnumeration **ep - enumeration, will be set to nullptr
 *
 ******************************************************************************/
 void lFreeWhat(lEnumeration **ep) {
@@ -549,11 +549,11 @@ void lFreeWhat(lEnumeration **ep) {
 
    DENTER(CULL_LAYER);
 
-   if (ep == NULL || *ep == NULL) {
+   if (ep == nullptr || *ep == nullptr) {
       DRETURN_VOID;
    }
    for (i = 0; mt_get_type((*ep)[i].mt) != lEndT; i++) {
-      if ((*ep)[i].ep != NULL) {
+      if ((*ep)[i].ep != nullptr) {
          lFreeWhat(&((*ep)[i].ep));
       }
    }
@@ -626,20 +626,20 @@ int lCountWhat(const lEnumeration *enp, const lDescr *dp) {
 ******************************************************************************/
 lEnumeration *lCopyWhat(const lEnumeration *ep) {
    int i, n;
-   lEnumeration *copy = NULL;
+   lEnumeration *copy = nullptr;
 
    DENTER(CULL_LAYER);
 
    if (!ep) {
       LERROR(LEENUMNULL);
-      DRETURN(NULL);
+      DRETURN(nullptr);
    }
 
    for (n = 0; mt_get_type(ep[n].mt) != lEndT; n++);
 
    if (!(copy = (lEnumeration *) sge_malloc(sizeof(lEnumeration) * (n + 1)))) {
       LERROR(LEMALLOC);
-      DRETURN(NULL);
+      DRETURN(nullptr);
    }
 
    for (i = 0; i <= n; i++) {
@@ -697,7 +697,7 @@ int lMergeWhat(lEnumeration **what1, lEnumeration **what2) {
    int ret = 0;
 
    DENTER(CULL_LAYER);
-   if (*what1 == NULL ||
+   if (*what1 == nullptr ||
        (*what1)[0].pos == WHAT_NONE ||
        (*what2)[0].pos == WHAT_ALL) {
       /*
@@ -705,7 +705,7 @@ int lMergeWhat(lEnumeration **what1, lEnumeration **what2) {
        */
       lFreeWhat(what1);
       *what1 = *what2;
-      *what2 = NULL;
+      *what2 = nullptr;
    } else if ((*what1)[0].pos == WHAT_ALL) {
       /*
        * what1 contailes already all elements
@@ -724,13 +724,13 @@ int lMergeWhat(lEnumeration **what1, lEnumeration **what2) {
          tmp_result[next_id].mt = (*what1)[i].mt;
          tmp_result[next_id].nm = (*what1)[i].nm;
          tmp_result[next_id].ep = (*what1)[i].ep;
-         (*what1)[i].ep = NULL;
+         (*what1)[i].ep = nullptr;
          next_id++;
       }
       tmp_result[next_id].pos = 0;
       tmp_result[next_id].nm = NoName;
       tmp_result[next_id].mt = lEndT;
-      tmp_result[next_id].ep = NULL;
+      tmp_result[next_id].ep = nullptr;
 
       lFreeWhat(what1);
 
@@ -747,10 +747,10 @@ int lMergeWhat(lEnumeration **what1, lEnumeration **what2) {
                 tmp_result[j].pos == (*what2)[i].pos) {
                /*TODO: SG is this correct? what happens, if we have a new subfilter
                  in what2 but none in temp? */
-               if (tmp_result[next_id].ep != NULL && (*what2)[i].ep != NULL) {
+               if (tmp_result[next_id].ep != nullptr && (*what2)[i].ep != nullptr) {
                   lMergeWhat(&(tmp_result[next_id].ep), &((*what2)[i].ep));
                } else {
-                  tmp_result[next_id].ep = NULL;
+                  tmp_result[next_id].ep = nullptr;
                }
 
                skip = true;
@@ -764,23 +764,23 @@ int lMergeWhat(lEnumeration **what1, lEnumeration **what2) {
 
             /*TODO: SG is this correct? what happens, if we have a new subfilter
               in what2 but none in temp? */
-            if (tmp_result[next_id].ep != NULL && (*what2)[i].ep != NULL) {
+            if (tmp_result[next_id].ep != nullptr && (*what2)[i].ep != nullptr) {
                lMergeWhat(&(tmp_result[next_id].ep), &((*what2)[i].ep));
             } else {
-               tmp_result[next_id].ep = NULL;
+               tmp_result[next_id].ep = nullptr;
             }
             /* add last element */
             next_id++;
             tmp_result[next_id].pos = 0;
             tmp_result[next_id].nm = NoName;
             tmp_result[next_id].mt = lEndT;
-            tmp_result[next_id].ep = NULL;
+            tmp_result[next_id].ep = nullptr;
          }
       }
       tmp_result[next_id].pos = 0;
       tmp_result[next_id].nm = NoName;
       tmp_result[next_id].mt = lEndT;
-      tmp_result[next_id].ep = NULL;
+      tmp_result[next_id].ep = nullptr;
       next_id++;
       lFreeWhat(what2);
 
@@ -788,7 +788,7 @@ int lMergeWhat(lEnumeration **what1, lEnumeration **what2) {
        * create result what 
        */
       *what1 = (lEnumeration *) sge_malloc(sizeof(lEnumeration) * next_id);
-      if (*what1 != NULL) {
+      if (*what1 != nullptr) {
          for (i = 0; i < next_id; i++) {
             (*what1)[i].pos = tmp_result[i].pos;
             (*what1)[i].nm = tmp_result[i].nm;
@@ -809,14 +809,14 @@ int lWhatSetSubWhat(lEnumeration *what1, int nm, lEnumeration **what2) {
    int i;
 
    DENTER(CULL_LAYER);
-   if (what1 != NULL && what2 != NULL) {
+   if (what1 != nullptr && what2 != nullptr) {
       for (i = 0; mt_get_type(what1[i].mt) != lEndT; i++) {
          if (what1[i].nm == nm) {
-            if (what1[i].ep != NULL) {
+            if (what1[i].ep != nullptr) {
                lFreeWhat(&(what1[i].ep));
             }
             what1[i].ep = *what2;
-            *what2 = NULL;
+            *what2 = nullptr;
             ret = 0;
             break;
          }

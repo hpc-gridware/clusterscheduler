@@ -70,16 +70,16 @@ typedef struct {
 #define MAX_OUTPUT_LINES 10           /* number of threads to monitor, currently 10 threads at max
                                          at the same time*/
 static Output_t Output[MAX_OUTPUT_LINES] = {
-        {NULL, {0, 0}, NO_WARNING, NO_ERROR, 0, NULL, PTHREAD_MUTEX_INITIALIZER},
-        {NULL, {0, 0}, NO_WARNING, NO_ERROR, 0, NULL, PTHREAD_MUTEX_INITIALIZER},
-        {NULL, {0, 0}, NO_WARNING, NO_ERROR, 0, NULL, PTHREAD_MUTEX_INITIALIZER},
-        {NULL, {0, 0}, NO_WARNING, NO_ERROR, 0, NULL, PTHREAD_MUTEX_INITIALIZER},
-        {NULL, {0, 0}, NO_WARNING, NO_ERROR, 0, NULL, PTHREAD_MUTEX_INITIALIZER},
-        {NULL, {0, 0}, NO_WARNING, NO_ERROR, 0, NULL, PTHREAD_MUTEX_INITIALIZER},
-        {NULL, {0, 0}, NO_WARNING, NO_ERROR, 0, NULL, PTHREAD_MUTEX_INITIALIZER},
-        {NULL, {0, 0}, NO_WARNING, NO_ERROR, 0, NULL, PTHREAD_MUTEX_INITIALIZER},
-        {NULL, {0, 0}, NO_WARNING, NO_ERROR, 0, NULL, PTHREAD_MUTEX_INITIALIZER},
-        {NULL, {0, 0}, NO_WARNING, NO_ERROR, 0, NULL, PTHREAD_MUTEX_INITIALIZER},
+        {nullptr, {0, 0}, NO_WARNING, NO_ERROR, 0, nullptr, PTHREAD_MUTEX_INITIALIZER},
+        {nullptr, {0, 0}, NO_WARNING, NO_ERROR, 0, nullptr, PTHREAD_MUTEX_INITIALIZER},
+        {nullptr, {0, 0}, NO_WARNING, NO_ERROR, 0, nullptr, PTHREAD_MUTEX_INITIALIZER},
+        {nullptr, {0, 0}, NO_WARNING, NO_ERROR, 0, nullptr, PTHREAD_MUTEX_INITIALIZER},
+        {nullptr, {0, 0}, NO_WARNING, NO_ERROR, 0, nullptr, PTHREAD_MUTEX_INITIALIZER},
+        {nullptr, {0, 0}, NO_WARNING, NO_ERROR, 0, nullptr, PTHREAD_MUTEX_INITIALIZER},
+        {nullptr, {0, 0}, NO_WARNING, NO_ERROR, 0, nullptr, PTHREAD_MUTEX_INITIALIZER},
+        {nullptr, {0, 0}, NO_WARNING, NO_ERROR, 0, nullptr, PTHREAD_MUTEX_INITIALIZER},
+        {nullptr, {0, 0}, NO_WARNING, NO_ERROR, 0, nullptr, PTHREAD_MUTEX_INITIALIZER},
+        {nullptr, {0, 0}, NO_WARNING, NO_ERROR, 0, nullptr, PTHREAD_MUTEX_INITIALIZER},
 };
 
 /* global mutex used for mallinfo initialisation and also used to access the Info_Line string */
@@ -91,9 +91,9 @@ static dstring Info_Line = DSTRING_INIT;
 /* mallinfo related data */
 #if defined(LINUX) || defined(SOLARIS)
 static bool mallinfo_initialized = false;
-static void *mallinfo_shlib_handle = NULL;
+static void *mallinfo_shlib_handle = nullptr;
 
-static struct mallinfo (*mallinfo_func_pointer)(void) = NULL;
+static struct mallinfo (*mallinfo_func_pointer)(void) = nullptr;
 
 #endif
 
@@ -146,8 +146,8 @@ void sge_monitor_free(monitoring_t *monitor) {
    if (monitor->pos != -1) {
       sge_mutex_lock("sge_monitor_init", __func__, __LINE__, &(Output[monitor->pos].Output_Mutex));
 
-      Output[monitor->pos].output = NULL;
-      Output[monitor->pos].name = NULL;
+      Output[monitor->pos].output = nullptr;
+      Output[monitor->pos].name = nullptr;
       Output[monitor->pos].warning_timeout = NO_WARNING;
       Output[monitor->pos].error_timeout = NO_ERROR;
 
@@ -155,19 +155,19 @@ void sge_monitor_free(monitoring_t *monitor) {
    }
 
    monitor->ext_data_size = 0;
-   monitor->ext_output = NULL;
+   monitor->ext_output = nullptr;
    monitor->ext_type = NONE_EXT;
    monitor->monitor_time = 0;
    monitor->pos = -1;
    monitor->output = false;
-   monitor->work_line = NULL;
-   monitor->thread_name = NULL;
+   monitor->work_line = nullptr;
+   monitor->thread_name = nullptr;
 
 #if defined(LINUX) || defined(SOLARIS)
    sge_mutex_lock("sge_monitor_status", __func__, __LINE__, &global_mutex);
-   if (mallinfo_shlib_handle != NULL) {
+   if (mallinfo_shlib_handle != nullptr) {
       dlclose(mallinfo_shlib_handle);
-      mallinfo_shlib_handle = NULL;
+      mallinfo_shlib_handle = nullptr;
    }
    sge_mutex_unlock("sge_monitor_status", __func__, __LINE__, &global_mutex);
 #endif
@@ -214,12 +214,12 @@ sge_monitor_init(monitoring_t *monitor, const char *thread_name, extension_t ext
 
       mallinfo_initialized = true;
 #  ifdef RTLD_NODELETE
-      mallinfo_shlib_handle = dlopen(NULL, RTLD_LAZY | RTLD_NODELETE);
+      mallinfo_shlib_handle = dlopen(nullptr, RTLD_LAZY | RTLD_NODELETE);
 #  else
-      mallinfo_shlib_handle = dlopen(NULL, RTLD_LAZY );
+      mallinfo_shlib_handle = dlopen(nullptr, RTLD_LAZY );
 #  endif /* RTLD_NODELETE */
 
-      if (mallinfo_shlib_handle != NULL) {
+      if (mallinfo_shlib_handle != nullptr) {
 #pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Wpedantic"
          mallinfo_func_pointer = (struct mallinfo (*)(void)) dlsym(mallinfo_shlib_handle, function_name);
@@ -234,7 +234,7 @@ sge_monitor_init(monitoring_t *monitor, const char *thread_name, extension_t ext
    monitor->output_line1 = (dstring *) sge_malloc(sizeof(dstring));
    monitor->output_line2 = (dstring *) sge_malloc(sizeof(dstring));
 
-   if (monitor->output_line1 == NULL || monitor->output_line2 == NULL) {
+   if (monitor->output_line1 == nullptr || monitor->output_line2 == nullptr) {
       CRITICAL((SGE_EVENT, SFNMAX, MSG_UTI_MONITOR_MEMERROR));
       exit(1);
    }
@@ -250,7 +250,7 @@ sge_monitor_init(monitoring_t *monitor, const char *thread_name, extension_t ext
    switch (ext) {
       case SCH_EXT :
          monitor->ext_data = sge_malloc(sizeof(m_sch_t));
-         if (monitor->ext_data != NULL) {
+         if (monitor->ext_data != nullptr) {
             monitor->ext_type = SCH_EXT;
             monitor->ext_data_size = sizeof(m_sch_t);
             monitor->ext_output = &ext_sch_output;
@@ -262,7 +262,7 @@ sge_monitor_init(monitoring_t *monitor, const char *thread_name, extension_t ext
 
       case GDI_EXT :
          monitor->ext_data = sge_malloc(sizeof(m_gdi_t));
-         if (monitor->ext_data != NULL) {
+         if (monitor->ext_data != nullptr) {
             monitor->ext_type = GDI_EXT;
             monitor->ext_data_size = sizeof(m_gdi_t);
             monitor->ext_output = &ext_gdi_output;
@@ -274,7 +274,7 @@ sge_monitor_init(monitoring_t *monitor, const char *thread_name, extension_t ext
 
       case LIS_EXT :
          monitor->ext_data = sge_malloc(sizeof(m_lis_t));
-         if (monitor->ext_data != NULL) {
+         if (monitor->ext_data != nullptr) {
             monitor->ext_type = LIS_EXT;
             monitor->ext_data_size = sizeof(m_lis_t);
             monitor->ext_output = &ext_lis_output;
@@ -286,7 +286,7 @@ sge_monitor_init(monitoring_t *monitor, const char *thread_name, extension_t ext
 
       case EDT_EXT :
          monitor->ext_data = sge_malloc(sizeof(m_edt_t));
-         if (monitor->ext_data != NULL) {
+         if (monitor->ext_data != nullptr) {
             monitor->ext_type = EDT_EXT;
             monitor->ext_data_size = sizeof(m_edt_t);
             monitor->ext_output = &ext_edt_output;
@@ -298,7 +298,7 @@ sge_monitor_init(monitoring_t *monitor, const char *thread_name, extension_t ext
 
       case TET_EXT :
          monitor->ext_data = sge_malloc(sizeof(m_tet_t));
-         if (monitor->ext_data != NULL) {
+         if (monitor->ext_data != nullptr) {
             monitor->ext_type = TET_EXT;
             monitor->ext_data_size = sizeof(m_tet_t);
             monitor->ext_output = &ext_tet_output;
@@ -319,8 +319,8 @@ sge_monitor_init(monitoring_t *monitor, const char *thread_name, extension_t ext
 
    if (monitor->ext_type == NONE_EXT) {
       monitor->ext_data_size = 0;
-      monitor->ext_data = NULL;
-      monitor->ext_output = NULL;
+      monitor->ext_data = nullptr;
+      monitor->ext_output = nullptr;
    }
 
    sge_monitor_reset(monitor);
@@ -330,11 +330,11 @@ sge_monitor_init(monitoring_t *monitor, const char *thread_name, extension_t ext
       struct timeval time;
       monitor->pos = -1;
 
-      gettimeofday(&time, NULL);
+      gettimeofday(&time, nullptr);
 
       for (i = 0; i < MAX_OUTPUT_LINES; i++) {
          sge_mutex_lock("sge_monitor_init", __func__, __LINE__, &(Output[i].Output_Mutex));
-         if (Output[i].name == NULL) {
+         if (Output[i].name == nullptr) {
             monitor->pos = i;
             Output[i].output = monitor->output_line1;
             Output[i].name = thread_name;
@@ -370,7 +370,7 @@ sge_monitor_init(monitoring_t *monitor, const char *thread_name, extension_t ext
 *     info to the commlib. 
 *
 *  INPUTS
-*     char **info_message   - info_message pointer, has to point to a NULL string
+*     char **info_message   - info_message pointer, has to point to a nullptr string
 *     u_long32 monitor_time - the configured monitoring interval
 *
 *  RESULT
@@ -390,7 +390,7 @@ u_long32 sge_monitor_status(char **info_message, u_long32 monitor_time) {
 
    DENTER(GDI_LAYER);
 
-   if (info_message == NULL) {
+   if (info_message == nullptr) {
       DRETURN(3);
    }
 
@@ -406,11 +406,11 @@ u_long32 sge_monitor_status(char **info_message, u_long32 monitor_time) {
       struct timeval now;
       double time;
       char state = 'R';
-      gettimeofday(&now, NULL);
+      gettimeofday(&now, nullptr);
 
       for (i = 0; i < MAX_OUTPUT_LINES; i++) {
          sge_mutex_lock("sge_monitor_status", __func__, __LINE__, &(Output[i].Output_Mutex));
-         if (Output[i].name != NULL) {
+         if (Output[i].name != nullptr) {
             time = now.tv_usec - Output[i].last_wait_time.tv_usec;
             time = now.tv_sec - Output[i].last_wait_time.tv_sec + (time / 1000000);
 
@@ -443,7 +443,7 @@ u_long32 sge_monitor_status(char **info_message, u_long32 monitor_time) {
    }
 
 #if defined(LINUX) || defined(SOLARIS)
-   if (mallinfo_func_pointer != NULL) {
+   if (mallinfo_func_pointer != nullptr) {
       struct mallinfo mallinfo_data = mallinfo_func_pointer();
 
       sge_dstring_sprintf_append(&Info_Line, MSG_UTI_MONITOR_SCHEXT_UUUUUUUUUU,
@@ -469,7 +469,7 @@ u_long32 sge_monitor_status(char **info_message, u_long32 monitor_time) {
 
       for (i = 0; i < MAX_OUTPUT_LINES; i++) {
          sge_mutex_lock("sge_monitor_status", __func__, __LINE__, &(Output[i].Output_Mutex));
-         if (Output[i].name != NULL) {
+         if (Output[i].name != nullptr) {
             append_time(Output[i].update_time, &Info_Line, false);
             sge_dstring_append(&Info_Line, " | ");
             sge_dstring_append_dstring(&Info_Line, Output[i].output);
@@ -552,11 +552,11 @@ void sge_set_last_wait_time(monitoring_t *monitor, struct timeval wait_time) {
 void sge_monitor_output(monitoring_t *monitor) {
    DENTER(GDI_LAYER);
 
-   if ((monitor != NULL) && (monitor->output == true)) {
+   if ((monitor != nullptr) && (monitor->output == true)) {
       struct timeval after;
       double time;
 
-      gettimeofday(&after, NULL);
+      gettimeofday(&after, nullptr);
       time = after.tv_usec - monitor->now.tv_usec;
       time = after.tv_sec - monitor->now.tv_sec + (time / 1000000);
 
@@ -582,7 +582,7 @@ void sge_monitor_output(monitoring_t *monitor) {
       }
 
       if (monitor->pos != -1) {
-         dstring *tmp = NULL;
+         dstring *tmp = nullptr;
 
          sge_mutex_lock("sge_monitor_init", __func__, __LINE__, &(Output[monitor->pos].Output_Mutex));
          tmp = Output[monitor->pos].output;

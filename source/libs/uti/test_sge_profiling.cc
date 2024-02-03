@@ -86,7 +86,7 @@ int test_params() {
    /* Test formerly broken actions for SGE_PROF_ALL level */
    prof_mt_init();
 
-   prof_start(SGE_PROF_ALL, NULL);
+   prof_start(SGE_PROF_ALL, nullptr);
 
    if (prof_is_active(SGE_PROF_ALL) != 1) {
       printf("prof_is_active(SGE_PROF_ALL) did not return 1!");
@@ -96,7 +96,7 @@ int test_params() {
    printf("the following prof_output_info call should output multiple profiling lines\n");
    prof_output_info(SGE_PROF_ALL, false, "test:\n");
 
-   prof_stop(SGE_PROF_ALL, NULL);
+   prof_stop(SGE_PROF_ALL, nullptr);
 
    sge_prof_cleanup();
 
@@ -151,29 +151,29 @@ int do_test() {
 
    PROF_START_MEASUREMENT(SGE_PROF_CUSTOM1);
 
-   pthread_create(&sleep_thread, NULL, do_sleep, NULL);
+   pthread_create(&sleep_thread, nullptr, do_sleep, nullptr);
    sleep(1);
 /*   set_thread_name(sleep_thread, "Sleep Thread");*/
 /*   set_thread_prof_status_by_name(sleep_thread, "Sleep Thread", true);*/
 
-   pthread_create(&calc_thread, NULL, do_calc, NULL);
+   pthread_create(&calc_thread, nullptr, do_calc, nullptr);
    sleep(1);
 /*   set_thread_name(calc_thread, "Calc Thread");
    set_thread_prof_status_by_name(calc_thread, "Calc Thread", true);*/
 
-   pthread_create(&calc2_thread, NULL, do_calc2, NULL);
+   pthread_create(&calc2_thread, nullptr, do_calc2, nullptr);
    sleep(1);
 /*   set_thread_name(calc2_thread, "Calc2 Thread");
    set_thread_prof_status_by_name(calc2_thread, "Calc2 Thread", true);*/
 
-   pthread_create(&malloc_thread, NULL, do_malloc, NULL);
+   pthread_create(&malloc_thread, nullptr, do_malloc, nullptr);
 /*   set_thread_name(malloc_thread, "Malloc Thread");
    set_thread_prof_status_by_name(malloc_thread, "Malloc Thread", true);*/
 
-   pthread_join(sleep_thread, NULL);
-   pthread_join(calc_thread, NULL);
-   pthread_join(calc2_thread, NULL);
-   pthread_join(malloc_thread, NULL);
+   pthread_join(sleep_thread, nullptr);
+   pthread_join(calc_thread, nullptr);
+   pthread_join(calc2_thread, nullptr);
+   pthread_join(malloc_thread, nullptr);
 
    PROF_START_MEASUREMENT(SGE_PROF_CUSTOM1);
 
@@ -298,7 +298,7 @@ void *do_sleep(void *p) {
    /*}*/
    sge_dstring_free(&error);
 
-   return NULL;
+   return nullptr;
 }
 
 
@@ -358,7 +358,7 @@ void *do_calc(void *p) {
    /* to please the compiler on irix */
    x = z;
 
-   return NULL;
+   return nullptr;
 }
 
 void *do_calc2(void *p) {
@@ -408,7 +408,7 @@ void *do_calc2(void *p) {
 
    sge_dstring_free(&error);
 
-   return NULL;
+   return nullptr;
 }
 
 void *do_malloc(void *p) {
@@ -453,6 +453,6 @@ void *do_malloc(void *p) {
 
    sge_dstring_free(&error);
 
-   return NULL;
+   return nullptr;
 }
 

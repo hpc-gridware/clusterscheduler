@@ -56,12 +56,12 @@ int do_ticket(sge_gdi_ctx_class_t *ctx, struct_msg_t *aMsg)
    u_long32 jobid, jataskid;
    double ticket;
    lListElem *job_ticket, *task_ticket;
-   lList *ticket_modifier = NULL;
+   lList *ticket_modifier = nullptr;
 
    DENTER(TOP_LAYER);
 
    while (pb_unused(&(aMsg->buf))>0) {
-      lList *jatasks = NULL;
+      lList *jatasks = nullptr;
 
       if (unpackint(&(aMsg->buf), &jobid) || unpackint(&(aMsg->buf), &jataskid)
           || unpackdouble(&(aMsg->buf), &ticket)) {

@@ -100,7 +100,7 @@ static bool do_timeout_handling(time_t *time, int *counter)
    unsigned long   time_diff = 0;
    bool            ret = false;
    
-   gettimeofday(&now, NULL);
+   gettimeofday(&now, nullptr);
    if ((now.tv_sec - *time) > (3 * CL_DEFINE_READ_TIMEOUT)) {
       *time = 0;
       *counter = 0;
@@ -126,7 +126,7 @@ static void ijs_general_communication_error(
 {
    DENTER(TOP_LAYER);
 
-   if (commlib_error == NULL) {
+   if (commlib_error == nullptr) {
       DRETURN_VOID;
    }
 
@@ -181,7 +181,7 @@ static void ijs_general_communication_error(
 
       switch (commlib_error->cl_err_type) {
          case CL_LOG_ERROR:
-            if (commlib_error->cl_info != NULL) {
+            if (commlib_error->cl_info != nullptr) {
                ERROR((SGE_EVENT, MSG_GDI_GENERAL_COM_ERROR_SS,
                       cl_get_error_text(commlib_error->cl_error),
                       commlib_error->cl_info));
@@ -192,7 +192,7 @@ static void ijs_general_communication_error(
             break;
 
          case CL_LOG_WARNING:
-            if (commlib_error->cl_info != NULL) {
+            if (commlib_error->cl_info != nullptr) {
                WARNING((SGE_EVENT, MSG_GDI_GENERAL_COM_ERROR_SS,
                         cl_get_error_text(commlib_error->cl_error),
                         commlib_error->cl_info));
@@ -203,7 +203,7 @@ static void ijs_general_communication_error(
             break;
 
          case CL_LOG_INFO:
-            if (commlib_error->cl_info != NULL) {
+            if (commlib_error->cl_info != nullptr) {
                INFO((SGE_EVENT, MSG_GDI_GENERAL_COM_ERROR_SS,
                      cl_get_error_text(commlib_error->cl_error),
                      commlib_error->cl_info));
@@ -214,7 +214,7 @@ static void ijs_general_communication_error(
             break;
 
          case CL_LOG_DEBUG:
-            if (commlib_error->cl_info != NULL) {
+            if (commlib_error->cl_info != nullptr) {
                DEBUG((SGE_EVENT, MSG_GDI_GENERAL_COM_ERROR_SS,
                       cl_get_error_text(commlib_error->cl_error),
                       commlib_error->cl_info));
@@ -259,12 +259,12 @@ int comm_get_application_error(dstring *err_msg)
 /* redirects the commlib logging to a file */
 /* this is a modified copy of the cl_log_list_flush_list() */
 int my_log_list_flush_list(cl_raw_list_t* list_p) {
-   cl_log_list_elem_t *elem = NULL;
-   FILE               *fp = NULL;
+   cl_log_list_elem_t *elem = nullptr;
+   FILE               *fp = nullptr;
    struct timeval     now;
    int                ret_val;
 
-   if (list_p == NULL) {
+   if (list_p == nullptr) {
       return CL_RETVAL_LOG_NO_LOGLIST;
    }
 
@@ -272,15 +272,15 @@ int my_log_list_flush_list(cl_raw_list_t* list_p) {
       return ret_val;
    }
 
-   if ((fp = fopen("cl_log.txt", "a")) == NULL) {
+   if ((fp = fopen("cl_log.txt", "a")) == nullptr) {
       return CL_RETVAL_NOT_OPEN; 
    }
 
-   while ((elem = cl_log_list_get_first_elem(list_p)) != NULL) {
-      gettimeofday(&now,NULL);
+   while ((elem = cl_log_list_get_first_elem(list_p)) != nullptr) {
+      gettimeofday(&now,nullptr);
 
       fprintf(fp, "%-76s|", elem->log_module_name);
-      if (elem->log_parameter == NULL) {
+      if (elem->log_parameter == nullptr) {
          fprintf(fp, "%ld.%ld|%20s|%s|%s| %s\n",
                  (long)now.tv_sec,
                  (long)now.tv_usec,
@@ -346,13 +346,13 @@ int comm_init_lib(dstring *err_msg)
     * Caution: On some architectures, logging causes problems! 
     */
    /*ret = cl_com_setup_commlib(CL_RW_THREAD, CL_LOG_DEBUG, my_log_list_flush_list);*/
-   ret = cl_com_setup_commlib(CL_RW_THREAD, CL_LOG_OFF, NULL); 
+   ret = cl_com_setup_commlib(CL_RW_THREAD, CL_LOG_OFF, nullptr);
    if (ret != CL_RETVAL_OK) {
       sge_dstring_sprintf(err_msg, cl_get_error_text(ret));
       DPRINTF(("cl_com_setup_commlib() failed: %s (%d)\n", sge_dstring_get_string(err_msg), ret));
       ret_val = COMM_CANT_SETUP_COMMLIB;
    } else {
-      const char *alias_path = NULL;
+      const char *alias_path = nullptr;
 
       /* set the alias file */
       alias_path = sge_get_alias_path();
@@ -366,14 +366,14 @@ int comm_init_lib(dstring *err_msg)
 
       if (ret_val == COMM_RETVAL_OK) {
          cl_host_resolve_method_t resolve_method = CL_SHORT;
-         char *help = NULL;
-         char *default_domain = NULL;
+         char *help = nullptr;
+         char *default_domain = nullptr;
 
          /* setup the resolve method */
          if (atoi(get_conf_val("ignore_fqdn")) == 0) {
             resolve_method = CL_LONG;
          }
-         if ((help = get_conf_val("default_domain")) != NULL) {
+         if ((help = get_conf_val("default_domain")) != nullptr) {
             if (SGE_STRCASECMP(help, NONE_STR) != 0) {
                default_domain = help;
             }
@@ -467,7 +467,7 @@ int comm_cleanup_lib(dstring *err_msg)
 *                                   whose certificates are to be used.
 *                                   Ignored for unsecured connections.
 *     COMM_HANDLE **handle        - The address of a COMM_HANDLE pointer
-*                                   which must be initialized to NULL.
+*                                   which must be initialized to nullptr.
 *     dstring *err_msg            - Pointer to an empty dstring to receive
 *                                   error messages.
 *
@@ -481,7 +481,7 @@ int comm_cleanup_lib(dstring *err_msg)
 *              Connection was successfully opened.
 * 
 *           COMM_INVALID_PARAMETER:
-*              The *handle is not NULL.
+*              The *handle is not nullptr.
 *
 *           COMM_CANT_SETUP_SSL:
 *              err_msg contains the reason.
@@ -516,8 +516,8 @@ int comm_open_connection(bool        b_server,
    DENTER(TOP_LAYER);
 
    /* Check validity of parameters */
-   if (*handle != NULL) {
-      sge_dstring_sprintf(err_msg, "Invalid parameter: *handle is not NULL");
+   if (*handle != nullptr) {
+      sge_dstring_sprintf(err_msg, "Invalid parameter: *handle is not nullptr");
       DPRINTF((sge_dstring_get_string(err_msg)));
       DRETURN(COMM_INVALID_PARAMETER);
    }
@@ -588,7 +588,7 @@ int comm_open_connection(bool        b_server,
                                           1, 1, 0);
          }
 
-         if (*handle == NULL) {
+         if (*handle == nullptr) {
             sge_dstring_sprintf(err_msg, cl_get_error_text(commlib_error));
             DPRINTF(("cl_com_create_handle() failed: %s (%d)\n",
                      sge_dstring_get_string(err_msg), commlib_error));
@@ -677,7 +677,7 @@ int comm_shutdown_connection(COMM_HANDLE *handle, const char *component_name,
     * From here on the user shouldn't get informed of any errors occuring
     * during the shutdown of the connection - just shut down.
     */
-   ret = cl_com_set_error_func(NULL);
+   ret = cl_com_set_error_func(nullptr);
    ret = cl_commlib_close_connection(handle, remote_host, 
                                      (char*)component_name, 1, false);
    if (ret != CL_RETVAL_OK && ret != CL_RETVAL_UNKNOWN_ENDPOINT) {
@@ -823,7 +823,7 @@ int comm_ignore_timeouts(bool b_ignore, dstring *err_msg)
 *              err_msg contains the reason.
 *
 *           COMM_INVALID_PARAMETER:
-*              handle = NULL, err_msg doesn't contain an error reason.
+*              handle = nullptr, err_msg doesn't contain an error reason.
 *
 *  NOTES
 *     MT-NOTE: comm_wait_for_connection() is not MT safe 
@@ -841,12 +841,12 @@ int comm_wait_for_connection(COMM_HANDLE *handle,
    int                     ret = 0;
    int                     ret2 = 0;
    int                     ret_val = COMM_RETVAL_OK;
-   cl_raw_list_t           *endpoint_list = NULL;
+   cl_raw_list_t           *endpoint_list = nullptr;
    cl_endpoint_list_elem_t *endpoint;
 
    DENTER(TOP_LAYER);
 
-   if (handle == NULL) {
+   if (handle == nullptr) {
       return COMM_INVALID_PARAMETER;
    }
   
@@ -858,9 +858,9 @@ int comm_wait_for_connection(COMM_HANDLE *handle,
     * 10 milliseconds and loop again.
     */
    while ((ret2=cl_commlib_trigger(handle, 0)) != 99 
-          && (ret = cl_commlib_search_endpoint(handle, NULL,
+          && (ret = cl_commlib_search_endpoint(handle, nullptr,
              (char*)component, 0, true, &endpoint_list)) == CL_RETVAL_OK
-          && endpoint_list != NULL
+          && endpoint_list != nullptr
           && endpoint_list->elem_count == 0
           && waited_usec/1000000 < wait_secs) {
 
@@ -886,7 +886,7 @@ int comm_wait_for_connection(COMM_HANDLE *handle,
                sge_dstring_get_string(err_msg), ret));
       ret_val = COMM_CANT_SEARCH_ENDPOINT;
    }
-   if (endpoint_list != NULL) {
+   if (endpoint_list != nullptr) {
       /* A client connected to us, get it's hostname */
       if (endpoint_list->elem_count > 0) {
          endpoint = cl_endpoint_list_get_first_elem(endpoint_list);
@@ -946,7 +946,7 @@ int comm_wait_for_no_connection(COMM_HANDLE *handle, const char *component,
    int                     ret = 0;
    int                     ret2 = 0;
    int                     ret_val = COMM_RETVAL_OK;
-   cl_raw_list_t           *endpoint_list = NULL;
+   cl_raw_list_t           *endpoint_list = nullptr;
    bool                    do_exit = false;
 
    DENTER(TOP_LAYER);
@@ -963,15 +963,15 @@ int comm_wait_for_no_connection(COMM_HANDLE *handle, const char *component,
       /* Let commlib update it's lists */
       ret2 = cl_commlib_trigger(handle, 0);
       /* Get list of all endpoints */
-      ret  = cl_commlib_search_endpoint(handle, NULL, (char*)component, 0, true, 
+      ret  = cl_commlib_search_endpoint(handle, nullptr, (char*)component, 0, true,
                                         &endpoint_list);
 
       if (ret == CL_RETVAL_OK
-          && endpoint_list != NULL
+          && endpoint_list != nullptr
           && endpoint_list->elem_count > 0
           && waited_usec/1000000 < wait_secs) {
          cl_endpoint_list_cleanup(&endpoint_list);
-         endpoint_list = NULL;
+         endpoint_list = nullptr;
          usleep(10000);
          waited_usec += 10000;
          if (received_signal == SIGINT) {
@@ -1004,7 +1004,7 @@ int comm_wait_for_no_connection(COMM_HANDLE *handle, const char *component,
                sge_dstring_get_string(err_msg), ret));
       ret_val = COMM_CANT_SEARCH_ENDPOINT;
    }
-   if (endpoint_list != NULL) {
+   if (endpoint_list != nullptr) {
       DPRINTF(("wait_for_no_connection: cleaning up endpoint list\n"));
       cl_endpoint_list_cleanup(&endpoint_list);
    }
@@ -1042,7 +1042,7 @@ int comm_get_connection_count(const COMM_HANDLE *handle, dstring *err_msg)
 {
    int                        ret;
    int                        ret_val = 1;
-   cl_connection_list_elem_t* elem    = NULL;
+   cl_connection_list_elem_t* elem    = nullptr;
 
    DENTER(TOP_LAYER);
 
@@ -1054,7 +1054,7 @@ int comm_get_connection_count(const COMM_HANDLE *handle, dstring *err_msg)
       ret_val = -COMM_CANT_LOCK_CONNECTION_LIST;
    } else {
       elem = cl_connection_list_get_first_elem(handle->connection_list);
-      if (elem == NULL) {
+      if (elem == nullptr) {
          ret_val = 0;
       }
       ret = cl_raw_list_unlock(handle->connection_list);
@@ -1186,7 +1186,7 @@ unsigned long comm_write_message(COMM_HANDLE *handle,
                            CL_MIH_MAT_NAK, 
                            &sendbuf,
                            size+1,
-                           NULL,
+                           nullptr,
                            0,
                            0,
                            false,  /* don't copy the sendbuf */
@@ -1328,25 +1328,25 @@ int comm_recv_message(COMM_HANDLE *handle, bool b_synchron,
    int  ret_val = COMM_RETVAL_OK;
    int  ret = 0;
    char sub_type[10];
-   cl_com_message_t  *message = NULL;
-   cl_com_endpoint_t *sender  = NULL;
+   cl_com_message_t  *message = nullptr;
+   cl_com_endpoint_t *sender  = nullptr;
 
    DENTER(TOP_LAYER);
 
    /* check validity of parameters */
-   if (handle == NULL || recv_mess == NULL) {
-      if (handle == NULL) {
-         sge_dstring_sprintf(err_msg, "Invalid parameter: handle == NULL");
+   if (handle == nullptr || recv_mess == nullptr) {
+      if (handle == nullptr) {
+         sge_dstring_sprintf(err_msg, "Invalid parameter: handle == nullptr");
       } else {
-         sge_dstring_sprintf(err_msg, "Invalid parameter: recv_mess == NULL");
+         sge_dstring_sprintf(err_msg, "Invalid parameter: recv_mess == nullptr");
       }
       DPRINTF((sge_dstring_get_string(err_msg)));
       DRETURN(COMM_INVALID_PARAMETER);
    }
 
    ret = cl_commlib_receive_message(handle,
-                                    NULL,       /* unresolved_hostname, */
-                                    NULL,       /* component_name, */
+                                    nullptr,       /* unresolved_hostname, */
+                                    nullptr,       /* component_name, */
                                     0,          /* component_id, */
                                     false,
                                     0,
@@ -1385,11 +1385,11 @@ int comm_recv_message(COMM_HANDLE *handle, bool b_synchron,
       }
    }
 
-   if(sender != NULL) {
+   if(sender != nullptr) {
       cl_com_free_endpoint(&sender);
    }
    
-   if (message != NULL) {
+   if (message != nullptr) {
       recv_mess->cl_message = message;
       if (message->message_length>0) {
          char tmpbuf[100];
@@ -1475,7 +1475,7 @@ int comm_free_message(recv_message_t *recv_mess, dstring *err_msg)
 
    DENTER(TOP_LAYER);
 
-   if (recv_mess != NULL && recv_mess->cl_message != NULL) {
+   if (recv_mess != nullptr && recv_mess->cl_message != nullptr) {
       ret = cl_com_free_message(&(recv_mess->cl_message));
       if (ret != CL_RETVAL_OK) {
          sge_dstring_sprintf(err_msg, cl_get_error_text(ret));
@@ -1523,7 +1523,7 @@ int check_client_alive(COMM_HANDLE *handle,
 {
    int           ret;
    int           ret_val = COMM_RETVAL_OK;
-   cl_com_SIRM_t *status = NULL;
+   cl_com_SIRM_t *status = nullptr;
 
    DENTER(TOP_LAYER);
 

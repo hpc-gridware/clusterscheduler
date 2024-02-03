@@ -45,40 +45,40 @@
 bool check_attr_str_list_find_value(void) 
 {
    bool ret = false;
-   lList *attr_list = NULL;
-   lList *answer_list = NULL;
-   lList *ambiguous_hostref_list = NULL;
-   lListElem *attr = NULL;
+   lList *attr_list = nullptr;
+   lList *answer_list = nullptr;
+   lList *ambiguous_hostref_list = nullptr;
+   lListElem *attr = nullptr;
 
    {
-      lList *hostref_list1 = NULL;
-      lList *hostref_list2 = NULL;
-      lList *hostref_list3 = NULL;
+      lList *hostref_list1 = nullptr;
+      lList *hostref_list2 = nullptr;
+      lList *hostref_list3 = nullptr;
       lListElem *hgroup1;
       lListElem *hgroup2;
       lListElem *hgroup3;
 
-      hostref_list_add(&hostref_list1, NULL, "a");
-      hostref_list_add(&hostref_list1, NULL, "b");
-      hostref_list_add(&hostref_list1, NULL, "c");
-      hostref_list_add(&hostref_list1, NULL, "d");
-      hostref_list_add(&hostref_list1, NULL, "e");
+      hostref_list_add(&hostref_list1, nullptr, "a");
+      hostref_list_add(&hostref_list1, nullptr, "b");
+      hostref_list_add(&hostref_list1, nullptr, "c");
+      hostref_list_add(&hostref_list1, nullptr, "d");
+      hostref_list_add(&hostref_list1, nullptr, "e");
 
-      hostref_list_add(&hostref_list2, NULL, "f");
-      hostref_list_add(&hostref_list2, NULL, "a");
-      hostref_list_add(&hostref_list2, NULL, "b");
-      hostref_list_add(&hostref_list2, NULL, "g");
-      hostref_list_add(&hostref_list2, NULL, "c");
+      hostref_list_add(&hostref_list2, nullptr, "f");
+      hostref_list_add(&hostref_list2, nullptr, "a");
+      hostref_list_add(&hostref_list2, nullptr, "b");
+      hostref_list_add(&hostref_list2, nullptr, "g");
+      hostref_list_add(&hostref_list2, nullptr, "c");
 
-      hostref_list_add(&hostref_list3, NULL, "f");
-      hostref_list_add(&hostref_list3, NULL, "g");
-      hostref_list_add(&hostref_list3, NULL, "h");
-      hostref_list_add(&hostref_list3, NULL, "i");
-      hostref_list_add(&hostref_list3, NULL, "j");
+      hostref_list_add(&hostref_list3, nullptr, "f");
+      hostref_list_add(&hostref_list3, nullptr, "g");
+      hostref_list_add(&hostref_list3, nullptr, "h");
+      hostref_list_add(&hostref_list3, nullptr, "i");
+      hostref_list_add(&hostref_list3, nullptr, "j");
    
-      hgroup1 = hgroup_create(NULL, "@A", hostref_list1);
-      hgroup2 = hgroup_create(NULL, "@B", hostref_list2);
-      hgroup3 = hgroup_create(NULL, "@C", hostref_list3);
+      hgroup1 = hgroup_create(nullptr, "@A", hostref_list1);
+      hgroup2 = hgroup_create(nullptr, "@B", hostref_list2);
+      hgroup3 = hgroup_create(nullptr, "@C", hostref_list3);
       *object_type_get_master_list(SGE_TYPE_HGROUP) = lCreateList("", HGRP_Type);
       lAppendElem(*object_type_get_master_list(SGE_TYPE_HGROUP), hgroup1);
       lAppendElem(*object_type_get_master_list(SGE_TYPE_HGROUP), hgroup2);

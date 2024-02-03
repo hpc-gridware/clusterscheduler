@@ -117,7 +117,7 @@ an_status_t verify_str_key(
    static const char mid_characters[2][20] =
       { { '\n', '\t', '\r', ' ', '/', ':', '\'', '\"', '\\', '[', ']', '{', '}', '|', '(', ')', '@', '%', ',', 0},  /* KEY_TABLE  */
         { '\n', '\t', '\r', '/', ':', '@', '\\', '*', '?', 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0} };                      /* QSUB_TABLE */
-   static const char* keyword[] = { "NONE", "ALL", "TEMPLATE", NULL };
+   static const char* keyword[] = { "NONE", "ALL", "TEMPLATE", nullptr };
    static const char* keyword_strings[4];
 
    static int initialized = 0;
@@ -129,10 +129,10 @@ an_status_t verify_str_key(
    if (!initialized) {
       begin_strings[0][0] = MSG_GDI_KEYSTR_DOT;
       begin_strings[0][1] = MSG_GDI_KEYSTR_HASH;
-      begin_strings[0][2] = NULL;
-      begin_strings[1][0] = NULL;
-      begin_strings[1][1] = NULL;
-      begin_strings[1][2] = NULL;
+      begin_strings[0][2] = nullptr;
+      begin_strings[1][0] = nullptr;
+      begin_strings[1][1] = nullptr;
+      begin_strings[1][2] = nullptr;
 
       mid_strings[0][0] = MSG_GDI_KEYSTR_RETURN;
       mid_strings[0][1] = MSG_GDI_KEYSTR_TABULATOR;
@@ -153,7 +153,7 @@ an_status_t verify_str_key(
       mid_strings[0][16] = MSG_GDI_KEYSTR_AT;
       mid_strings[0][17] = MSG_GDI_KEYSTR_PERCENT;
       mid_strings[0][18] = MSG_GDI_KEYSTR_COMMA;
-      mid_strings[0][19] = NULL;
+      mid_strings[0][19] = nullptr;
       mid_strings[1][0] = MSG_GDI_KEYSTR_RETURN;
       mid_strings[1][1] = MSG_GDI_KEYSTR_TABULATOR;
       mid_strings[1][2] = MSG_GDI_KEYSTR_CARRIAGERET;
@@ -163,17 +163,17 @@ an_status_t verify_str_key(
       mid_strings[1][6] = MSG_GDI_KEYSTR_BACKSLASH;
       mid_strings[1][7] = MSG_GDI_KEYSTR_ASTERISK;
       mid_strings[1][8] = MSG_GDI_KEYSTR_QUESTIONMARK;
-      mid_strings[1][9] = NULL;
+      mid_strings[1][9] = nullptr;
 
       keyword_strings[0] = MSG_GDI_KEYSTR_KEYWORD;
       keyword_strings[1] = MSG_GDI_KEYSTR_KEYWORD;
       keyword_strings[2] = MSG_GDI_KEYSTR_KEYWORD;
-      keyword_strings[3] = NULL;
+      keyword_strings[3] = nullptr;
 
       initialized = 1;
    }
 
-   if (str == NULL) {
+   if (str == nullptr) {
       SGE_ADD_MSG_ID(sprintf(SGE_EVENT, MSG_GDI_KEYSTR_NULL_S, name));
       answer_list_add(alpp, SGE_EVENT, STATUS_ESYNTAX, ANSWER_QUALITY_ERROR);
       return STATUS_EUNKNOWN;
@@ -259,7 +259,7 @@ bool verify_host_name(lList **answer_list, const char *host_name)
 {
    bool ret = true;
 
-   if (host_name == NULL || *host_name == '\0') {
+   if (host_name == nullptr || *host_name == '\0') {
       answer_list_add_sprintf(answer_list, STATUS_ESYNTAX, ANSWER_QUALITY_ERROR, 
                               MSG_HOSTNAME_NOT_EMPTY);
       ret = false;
@@ -285,12 +285,12 @@ int reresolve_qualified_hostname(void) {
 
 #if 1
    // lazy initialize of the qualified hostname store in uti_state
-   if (qh == NULL) {
+   if (qh == nullptr) {
       stringT tmp_str;
-      struct hostent *hent = NULL;
+      struct hostent *hent = nullptr;
 
       SGE_ASSERT((gethostname(tmp_str, sizeof(tmp_str)) == 0));
-      SGE_ASSERT(((hent = sge_gethostbyname(tmp_str,NULL)) != NULL));
+      SGE_ASSERT(((hent = sge_gethostbyname(tmp_str,nullptr)) != nullptr));
       uti_state_set_qualified_hostname(hent->h_name);
       sge_free_hostent(&hent);
       qh = uti_state_get_qualified_hostname();

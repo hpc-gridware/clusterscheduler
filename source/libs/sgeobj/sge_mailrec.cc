@@ -88,14 +88,14 @@ int mailrec_parse(lList **lpp, const char *mail_str)
       DRETURN(1);
    }
 
-   mail = sge_strdup(NULL, mail_str);
+   mail = sge_strdup(nullptr, mail_str);
    if (!mail) {
-      *lpp = NULL;
+      *lpp = nullptr;
       DRETURN(2);
    }
-   str_str = string_list(mail, ",", NULL);
+   str_str = string_list(mail, ",", nullptr);
    if (!str_str || !*str_str) {
-      *lpp = NULL;
+      *lpp = nullptr;
       sge_free(&mail);
       DRETURN(3);
    }
@@ -110,9 +110,9 @@ int mailrec_parse(lList **lpp, const char *mail_str)
    }
 
    for (pstr = str_str; *pstr; pstr++) {
-      context = NULL;
+      context = nullptr;
       user = sge_strtok_r(*pstr, "@", &context);
-      host = sge_strtok_r(NULL, "@", &context);
+      host = sge_strtok_r(nullptr, "@", &context);
       if ((tmp=lGetElemStr(*lpp, MR_user, user))) {
          if (!sge_strnullcmp(host, lGetHost(tmp, MR_host))) {
             /* got this mail adress twice */

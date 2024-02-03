@@ -56,7 +56,7 @@ void sighandler_client(int sig);
 
 static int do_shutdown = 0;
 
-static cl_com_handle_t *handle = NULL;
+static cl_com_handle_t *handle = nullptr;
 
 void sighandler_client(
         int sig
@@ -87,7 +87,7 @@ extern int main(int argc, char **argv) {
    time_t shutdown_time = 0;
    int i, first_message_sent = 0;
    int no_output = 0;
-   cl_byte_t *reference = NULL;
+   cl_byte_t *reference = nullptr;
 
    prof_mt_init();
 
@@ -108,22 +108,22 @@ extern int main(int argc, char **argv) {
    memset(&sa, 0, sizeof(sa));
    sa.sa_handler = sighandler_client;  /* one handler for all signals */
    sigemptyset(&sa.sa_mask);
-   sigaction(SIGINT, &sa, NULL);
-   sigaction(SIGTERM, &sa, NULL);
-   sigaction(SIGHUP, &sa, NULL);
-   sigaction(SIGPIPE, &sa, NULL);
+   sigaction(SIGINT, &sa, nullptr);
+   sigaction(SIGTERM, &sa, nullptr);
+   sigaction(SIGHUP, &sa, nullptr);
+   sigaction(SIGPIPE, &sa, nullptr);
 
-   gettimeofday(&now, NULL);
+   gettimeofday(&now, nullptr);
    shutdown_time = now.tv_sec + SGE_TEST_VIRTUAL_CLIENT_SHUTDOWN_TIMEOUT;
 
 
    printf("startup commlib ...\n");
-   cl_com_setup_commlib(CL_NO_THREAD, (cl_log_t) atoi(argv[1]), NULL);
+   cl_com_setup_commlib(CL_NO_THREAD, (cl_log_t) atoi(argv[1]), nullptr);
 
    printf("setting up handle for connect port %d\n", atoi(argv[2]));
-   handle = cl_com_create_handle(NULL, CL_CT_TCP, CL_CM_CT_MESSAGE, false, atoi(argv[2]), CL_TCP_DEFAULT,
+   handle = cl_com_create_handle(nullptr, CL_CT_TCP, CL_CM_CT_MESSAGE, false, atoi(argv[2]), CL_TCP_DEFAULT,
                                  "virtual_event_client", 0, 1, 0);
-   if (handle == NULL) {
+   if (handle == nullptr) {
       printf("could not get handle\n");
       exit(1);
    }
@@ -138,10 +138,10 @@ extern int main(int argc, char **argv) {
    printf("virtual event client is running ...\n");
    while (do_shutdown == 0) {
       int retval = 0;
-      cl_com_message_t *message = NULL;
-      cl_com_endpoint_t *sender = NULL;
+      cl_com_message_t *message = nullptr;
+      cl_com_endpoint_t *sender = nullptr;
 
-      gettimeofday(&now, NULL);
+      gettimeofday(&now, nullptr);
       if (now.tv_sec != last_time && !no_output) {
          printf("virtual event client["pid_t_fmt"] message count[sent |%d|] events[received |%d|]...\n",
                 getpid(), snd_messages, events_received);
@@ -153,7 +153,7 @@ extern int main(int argc, char **argv) {
          do_shutdown = 1;
       }
 
-      retval = cl_commlib_receive_message(handle, NULL, NULL, 0,      /* handle, comp_host, comp_name , comp_id, */
+      retval = cl_commlib_receive_message(handle, nullptr, nullptr, 0,      /* handle, comp_host, comp_name , comp_id, */
                                           true, 0,                 /* syncron, response_mid */
                                           &message, &sender);
       if (retval != CL_RETVAL_OK) {
@@ -178,7 +178,7 @@ extern int main(int argc, char **argv) {
 #if 0
          printf("received message from %s/%s/%ld: \"%s\" (%ld bytes)\n", sender->comp_host,sender->comp_name,sender->comp_id, message->message, message->message_length);
 #endif
-         gettimeofday(&now, NULL);
+         gettimeofday(&now, nullptr);
          shutdown_time = now.tv_sec + SGE_TEST_VIRTUAL_CLIENT_SHUTDOWN_TIMEOUT;
          events_received++;
          cl_com_free_message(&message);
@@ -195,7 +195,7 @@ extern int main(int argc, char **argv) {
          retval = cl_commlib_send_message(handle, argv[3], "virtual_master", 1,
                                           CL_MIH_MAT_ACK,
                                           &reference, 6,
-                                          NULL, 0, 0, true, true);
+                                          nullptr, 0, 0, true, true);
          if (retval == CL_RETVAL_OK) {
             snd_messages++;
          }

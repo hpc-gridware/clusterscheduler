@@ -58,8 +58,8 @@
 #define MSG_JOB_LONELY_TOPTION_S                          _MESSAGE(64025, _("found lonely '-t "SFN"' option (The -t option needs a leading job name)."))
 
 
-#define MSG_JOB_JLPPNULL                  _MESSAGE(64028, _("jlpp == NULL in job_add_job()"))                                                        
-#define MSG_JOB_JEPNULL                   _MESSAGE(64029, _("jep == NULL in job_add_job()"))
+#define MSG_JOB_JLPPNULL                  _MESSAGE(64028, _("jlpp == nullptr in job_add_job()"))
+#define MSG_JOB_JEPNULL                   _MESSAGE(64029, _("jep == nullptr in job_add_job()"))
 #define MSG_JOB_JOBALREADYEXISTS_S        _MESSAGE(64030, _("can't add job "SFN" - job already exists"))
 #define MSG_JOB_NULLNOTALLOWEDT           _MESSAGE(64031, _("job rejected: 0 is an invalid task id"))
 #define MSG_JOB_NOIDNOTALLOWED            _MESSAGE(64032, _("job rejected: Job comprises no tasks in its id lists"))
@@ -235,8 +235,8 @@
 #define MSG_PQS_UNABLELOCATESYMBOL_SSSS  _MESSAGE(64316, _("Unable to locate "SFQ" symbol in "SFQ" library for pe_qsort_args in PE "SFQ" - "SFQ))
 #endif
 
-#define MSG_CQUEUE_CQUEUEISNULL_SSSII      _MESSAGE(64317, _("cqueue_list_locate_qinstance("SFQ"): cqueue == NULL("SFQ", "SFQ", %d, %d"))
-#define MSG_CQUEUE_FULLNAMEISNULL        _MESSAGE(64318, _("cqueue_list_locate_qinstance(): full_name == NULL"))
+#define MSG_CQUEUE_CQUEUEISNULL_SSSII      _MESSAGE(64317, _("cqueue_list_locate_qinstance("SFQ"): cqueue == nullptr("SFQ", "SFQ", %d, %d"))
+#define MSG_CQUEUE_FULLNAMEISNULL        _MESSAGE(64318, _("cqueue_list_locate_qinstance(): full_name == nullptr"))
 #define MSG_PE_REJECTINGURGENCYSLOTS_S  _MESSAGE(64319, _("rejecting invalid urgency_slots setting "SFQ))
 #define MSG_CALENDAR_CALCTERMINATED    _MESSAGE(64320, _("Calendar calculation terminated due to inf. loop!"))
 
@@ -244,7 +244,7 @@
 #define MSG_OBJECT_ULONG_NOT_NULL            _MESSAGE(64322, _("object attribute "SFQ" may not be 0"))
 #define MSG_OBJECT_ULONG_NULL            _MESSAGE(64323, _("object attribute "SFQ" may only be 0"))
 #define MSG_OBJECT_DOUBLE_NULL            _MESSAGE(64324, _("object attribute "SFQ" may only be 0"))
-#define MSG_OBJECT_STRING_NOT_NULL            _MESSAGE(64325, _("object attribute "SFQ" may not be NULL"))
+#define MSG_OBJECT_STRING_NOT_NULL            _MESSAGE(64325, _("object attribute "SFQ" may not be nullptr"))
 #define MSG_OBJECT_VARIABLENAME_NOT_EMPTY            _MESSAGE(64326, _("variable names may not be empty"))
 
 #define MSG_PATH_TOOLONG_I _MESSAGE(64330, _("a path or filename may not exceed %d characters"))

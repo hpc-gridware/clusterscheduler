@@ -53,7 +53,7 @@ static const char *eatws(const char *s);
    sets pointer s to next character after
    white space character 
 
-   returns NULL if there is '\0'
+   returns nullptr if there is '\0'
 
  */
 static const char *eatws(
@@ -61,7 +61,7 @@ static const char *eatws(
 ) {
    while (*s && isspace((int) *s))
       s++;
-   return *s ? s : NULL;
+   return *s ? s : nullptr;
 }
 
 /* ------------------------------------------------------------ 
@@ -79,8 +79,8 @@ void eat_token(cull_parse_state *state) {
    scan() scans a string s for valid tokens 
 
    for getting the first token call scan with s = &string
-   s != NULL initializes scan()
-   s == NULL uses the previous string for scanning
+   s != nullptr initializes scan()
+   s == nullptr uses the previous string for scanning
    if scan is called once again it gets the same token as before if there
    was no call to eat_token() otherwise a new token is delivered
 
@@ -144,7 +144,7 @@ int scan(
    }
 
    state->t = eatws(state->t);
-   if (state->t == NULL) {       /* end of the string to parse */
+   if (state->t == nullptr) {       /* end of the string to parse */
       state->token_is_valid = 1;
       state->token = NO_TOKEN;
       DRETURN(state->token);

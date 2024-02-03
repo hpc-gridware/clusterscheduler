@@ -52,8 +52,8 @@ extern int main(void) {
    char *val2 = "val2";
    char *val3 = "val3";
 
-   cl_raw_list_t *my_parameter_list = NULL;
-   cl_parameter_list_elem_t *elem = NULL;
+   cl_raw_list_t *my_parameter_list = nullptr;
+   cl_parameter_list_elem_t *elem = nullptr;
 
 
    printf("testing parameter list ...\n");
@@ -64,7 +64,7 @@ extern int main(void) {
 
    printf("nr of elems: %ld\n", cl_raw_list_get_elem_count(my_parameter_list));
    for (elem = cl_parameter_list_get_first_elem(my_parameter_list);
-        elem != NULL; elem = cl_parameter_list_get_next_elem(elem)) {
+        elem != nullptr; elem = cl_parameter_list_get_next_elem(elem)) {
       printf("parameter: %s\n", elem->parameter);
       printf("value: %s\n", elem->value);
    }
@@ -77,7 +77,7 @@ extern int main(void) {
 
    printf("nr of elems: %ld\n", cl_raw_list_get_elem_count(my_parameter_list));
    for (elem = cl_parameter_list_get_first_elem(my_parameter_list);
-        elem != NULL; elem = cl_parameter_list_get_next_elem(elem)) {
+        elem != nullptr; elem = cl_parameter_list_get_next_elem(elem)) {
       printf("Print elements:\n");
       printf("parameter: %s\n", elem->parameter);
       printf("value: %s\n", elem->value);
@@ -91,7 +91,7 @@ extern int main(void) {
 
    printf("nr of elems: %ld\n", cl_raw_list_get_elem_count(my_parameter_list));
    for (elem = cl_parameter_list_get_first_elem(my_parameter_list);
-        elem != NULL; elem = cl_parameter_list_get_next_elem(elem)) {
+        elem != nullptr; elem = cl_parameter_list_get_next_elem(elem)) {
       printf("Print elements:\n");
       printf("parameter: %s\n", elem->parameter);
       printf("value: %s\n", elem->value);
@@ -105,7 +105,7 @@ extern int main(void) {
 
    printf("nr of elems: %ld\n", cl_raw_list_get_elem_count(my_parameter_list));
    for (elem = cl_parameter_list_get_first_elem(my_parameter_list);
-        elem != NULL; elem = cl_parameter_list_get_next_elem(elem)) {
+        elem != nullptr; elem = cl_parameter_list_get_next_elem(elem)) {
       printf("Print elements:\n");
       printf("parameter: %s\n", elem->parameter);
       printf("value: %s\n", elem->value);
@@ -120,7 +120,7 @@ extern int main(void) {
    printf("nr of elems: %ld\n", cl_raw_list_get_elem_count(my_parameter_list));
 
    for (elem = cl_parameter_list_get_first_elem(my_parameter_list);
-        elem != NULL; elem = cl_parameter_list_get_next_elem(elem)) {
+        elem != nullptr; elem = cl_parameter_list_get_next_elem(elem)) {
       printf("Print elements:\n");
       printf("parameter: %s\n", elem->parameter);
       printf("value: %s\n", elem->value);

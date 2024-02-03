@@ -65,8 +65,8 @@ int do_get_new_conf(sge_gdi_ctx_class_t *ctx, struct_msg_t *aMsg)
    int ret;
    bool use_qidle = mconf_get_use_qidle();
    u_long32 dummy; /* always 0 */ 
-   char* old_spool = NULL;
-   char* spool_dir = NULL;
+   char* old_spool = nullptr;
+   char* spool_dir = nullptr;
    u_long32 old_reprioritization_enabled = mconf_get_reprioritize(); 
 
    DENTER(TOP_LAYER);
@@ -97,7 +97,7 @@ int do_get_new_conf(sge_gdi_ctx_class_t *ctx, struct_msg_t *aMsg)
          for_each_rw (jatask, lGetList(job, JB_ja_tasks)) {
             int priority;
 
-            master_queue = responsible_queue(job, jatask, NULL);
+            master_queue = responsible_queue(job, jatask, nullptr);
             priority = atoi(lGetString(master_queue, QU_priority));
 
             DPRINTF(("Set priority of job "sge_u32"."sge_u32" running in"
@@ -107,7 +107,7 @@ int do_get_new_conf(sge_gdi_ctx_class_t *ctx, struct_msg_t *aMsg)
             lGetString(master_queue, QU_full_name), priority));
             ptf_reinit_queue_priority(lGetUlong(job, JB_job_number),
                                       lGetUlong(jatask, JAT_task_number),
-                                      NULL, priority);
+                                      nullptr, priority);
 
             for_each_rw(petask, lGetList(jatask, JAT_task_list)) {
                master_queue = responsible_queue(job, jatask, petask);

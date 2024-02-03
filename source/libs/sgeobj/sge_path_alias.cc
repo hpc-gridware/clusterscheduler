@@ -336,7 +336,7 @@ int path_alias_list_initialize(lList **path_alias_list,
     * remove the unnecessary hosts from the list
     */
    {
-      lCondition *where = NULL;
+      lCondition *where = nullptr;
 
       where = lWhere("%T(%I == %s || %I == %s)", PA_Type, 
                      PA_submit_host, "*", PA_submit_host, host);
@@ -480,7 +480,7 @@ path_verify(const char *path, lList **answer_list, const char *name, bool absolu
 {
    bool ret = true;
 
-   if (path == NULL || *path == '\0') {
+   if (path == nullptr || *path == '\0') {
       answer_list_add_sprintf(answer_list, STATUS_ESYNTAX, ANSWER_QUALITY_ERROR, 
                               MSG_PATH_ALIAS_INVALID_PATH);
       ret = false;
@@ -548,7 +548,7 @@ path_alias_verify(const lList *path_aliases, lList **answer_list)
 
    for_each_ep(ep, path_aliases) {
       /* 
-       * PA_origin and PA_translation may not be NULL or empty string 
+       * PA_origin and PA_translation may not be nullptr or empty string
        * they have to be valid paths.
        */
       if (ret) {
@@ -616,7 +616,7 @@ path_list_verify(const lList *path_list, lList **answer_list, const char *name)
       }
 
       host = lGetHost(ep, PN_host);
-      if (host != NULL) {
+      if (host != nullptr) {
          ret = verify_host_name(answer_list, host);
          if (!ret) {
             break;
@@ -624,7 +624,7 @@ path_list_verify(const lList *path_list, lList **answer_list, const char *name)
       }
 
       host = lGetHost(ep, PN_file_host);
-      if (host != NULL) {
+      if (host != nullptr) {
          ret = verify_host_name(answer_list, host);
          if (!ret) {
             break;

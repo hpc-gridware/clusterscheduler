@@ -78,13 +78,13 @@ static bool rqs_provide_modify_context(sge_gdi_ctx_class_t *ctx,
 *******************************************************************************/
 bool rqs_show(sge_gdi_ctx_class_t *ctx, lList **answer_list, const char *name)
 {
-   lList *rqs_list = NULL;
+   lList *rqs_list = nullptr;
    bool ret = false;
 
    DENTER(TOP_LAYER);
 
-   if (name != NULL) {
-      lList *rqsref_list = NULL;
+   if (name != nullptr) {
+      lList *rqsref_list = nullptr;
 
       lString2List(name, &rqsref_list, RQS_Type, RQS_name, ", ");
       ret = rqs_get_via_gdi(ctx, answer_list, rqsref_list, &rqs_list);
@@ -97,7 +97,7 @@ bool rqs_show(sge_gdi_ctx_class_t *ctx, lList **answer_list, const char *name)
       const char* filename;
       filename = spool_flatfile_write_list(answer_list, rqs_list, RQS_fields, 
                                         &qconf_rqs_sfi,
-                                        SP_DEST_STDOUT, SP_FORM_ASCII, NULL,
+                                        SP_DEST_STDOUT, SP_FORM_ASCII, nullptr,
                                         false);
       sge_free(&filename);
    }
@@ -142,17 +142,17 @@ bool rqs_get_via_gdi(sge_gdi_ctx_class_t *ctx, lList **answer_list, const lList 
    bool ret = false;
 
    DENTER(TOP_LAYER);
-   if (rqsref_list != NULL) {
-      const lListElem *rqsref = NULL;
-      lCondition *where = NULL;
-      lEnumeration *what = NULL;
+   if (rqsref_list != nullptr) {
+      const lListElem *rqsref = nullptr;
+      lCondition *where = nullptr;
+      lEnumeration *what = nullptr;
 
       what = lWhat("%T(ALL)", RQS_Type);
 
       for_each_ep(rqsref, rqsref_list) {
-         lCondition *add_where = NULL;
+         lCondition *add_where = nullptr;
          add_where = lWhere("%T(%I p= %s)", RQS_Type, RQS_name, lGetString(rqsref, RQS_name));
-         if (where == NULL) {
+         if (where == nullptr) {
             where = add_where;
          } else {
             where = lOrWhere(where, add_where);
@@ -199,7 +199,7 @@ bool rqs_get_all_via_gdi(sge_gdi_ctx_class_t *ctx, lList **answer_list, lList **
 
    DENTER(TOP_LAYER);
 
-   *answer_list = ctx->gdi(ctx, SGE_RQS_LIST, SGE_GDI_GET, rqs_list, NULL, what);
+   *answer_list = ctx->gdi(ctx, SGE_RQS_LIST, SGE_GDI_GET, rqs_list, nullptr, what);
    if (!answer_list_has_error(answer_list)) {
       ret = true;
    }
@@ -237,9 +237,9 @@ bool rqs_add(sge_gdi_ctx_class_t *ctx, lList **answer_list, const char *name)
    bool ret = false;
 
    DENTER(TOP_LAYER);
-   if (name != NULL) {
-      lList *rqs_list = NULL;
-      lListElem *rqs = NULL;
+   if (name != nullptr) {
+      lList *rqs_list = nullptr;
+      lListElem *rqs = nullptr;
 
       lString2List(name, &rqs_list, RQS_Type, RQS_name, ", ");
       for_each_rw (rqs, rqs_list) {
@@ -284,13 +284,13 @@ bool rqs_add(sge_gdi_ctx_class_t *ctx, lList **answer_list, const char *name)
 bool rqs_modify(sge_gdi_ctx_class_t *ctx, lList **answer_list, const char *name)
 {
    bool ret = false;
-   lList *rqs_list = NULL;
+   lList *rqs_list = nullptr;
    u_long32 gdi_command = 0;
 
    DENTER(TOP_LAYER);
 
-   if (name != NULL) {
-      lList *rqsref_list = NULL;
+   if (name != nullptr) {
+      lList *rqsref_list = nullptr;
 
       gdi_command = SGE_GDI_MOD | SGE_GDI_SET_ALL;
 
@@ -343,13 +343,13 @@ bool rqs_add_from_file(sge_gdi_ctx_class_t *ctx, lList **answer_list, const char
    bool ret = false;
 
    DENTER(TOP_LAYER);
-   if (filename != NULL) {
-      lList *rqs_list = NULL;
+   if (filename != nullptr) {
+      lList *rqs_list = nullptr;
 
       /* fields_out field does not work for rqs because of duplicate entry */
       rqs_list = spool_flatfile_read_list(answer_list, RQS_Type, RQS_fields,
-                                          NULL, true, &qconf_rqs_sfi,
-                                          SP_FORM_ASCII, NULL, filename);
+                                          nullptr, true, &qconf_rqs_sfi,
+                                          SP_FORM_ASCII, nullptr, filename);
       if (!answer_list_has_error(answer_list)) {
          ret = rqs_add_del_mod_via_gdi(ctx, rqs_list, answer_list, 
                                        SGE_GDI_ADD | SGE_GDI_SET_ALL); 
@@ -390,19 +390,19 @@ static bool rqs_provide_modify_context(sge_gdi_ctx_class_t *ctx, lList **rqs_lis
 {
    bool ret = false;
    int status = 0;
-   const char *filename = NULL;
+   const char *filename = nullptr;
    uid_t uid = bootstrap_get_uid();
    gid_t gid = bootstrap_get_gid();
    
    DENTER(TOP_LAYER);
 
-   if (rqs_list == NULL) {
+   if (rqs_list == nullptr) {
       answer_list_add(answer_list, MSG_PARSE_NULLPOINTERRECEIVED, 
                       STATUS_ERROR1, ANSWER_QUALITY_ERROR);
       DRETURN(ret); 
    }
 
-   if (*rqs_list == NULL) {
+   if (*rqs_list == nullptr) {
       *rqs_list = lCreateList("", RQS_Type);
    }
 
@@ -411,7 +411,7 @@ static bool rqs_provide_modify_context(sge_gdi_ctx_class_t *ctx, lList **rqs_lis
                                         SP_FORM_ASCII, filename, false);
 
    if (answer_list_has_error(answer_list)) {
-      if (filename != NULL) {
+      if (filename != nullptr) {
          unlink(filename);
          sge_free(&filename);
       }
@@ -421,16 +421,16 @@ static bool rqs_provide_modify_context(sge_gdi_ctx_class_t *ctx, lList **rqs_lis
    status = sge_edit(filename, uid, gid);
 
    if (status == 0) {
-      lList *new_rqs_list = NULL;
+      lList *new_rqs_list = nullptr;
 
       /* fields_out field does not work for rqs because of duplicate entry */
       new_rqs_list = spool_flatfile_read_list(answer_list, RQS_Type, RQS_fields,
-                                               NULL, true, &qconf_rqs_sfi,
-                                               SP_FORM_ASCII, NULL, filename);
+                                               nullptr, true, &qconf_rqs_sfi,
+                                               SP_FORM_ASCII, nullptr, filename);
       if (answer_list_has_error(answer_list)) {
          lFreeList(&new_rqs_list);
       }
-      if (new_rqs_list != NULL) {
+      if (new_rqs_list != nullptr) {
          if (ignore_unchanged_message || object_list_has_differences(new_rqs_list, answer_list, *rqs_list, false)) {
             lFreeList(rqs_list);
             *rqs_list = new_rqs_list;
@@ -489,7 +489,7 @@ bool rqs_add_del_mod_via_gdi(sge_gdi_ctx_class_t *ctx, lList *rqs_list, lList **
    
    DENTER(TOP_LAYER);
 
-   if (rqs_list != NULL) {
+   if (rqs_list != nullptr) {
       u_long32 operation = SGE_GDI_GET_OPERATION(gdi_command);
       bool do_verify = (operation == SGE_GDI_MOD) || (operation == SGE_GDI_ADD
                         || (operation == SGE_GDI_REPLACE)) ? true : false;
@@ -498,8 +498,8 @@ bool rqs_add_del_mod_via_gdi(sge_gdi_ctx_class_t *ctx, lList *rqs_list, lList **
          ret = rqs_list_verify_attributes(rqs_list, answer_list, false, master_centry_list);
       }
       if (ret) {
-         lList *my_answer_list = ctx->gdi(ctx, SGE_RQS_LIST, gdi_command, &rqs_list, NULL, NULL);
-         if (my_answer_list != NULL) {
+         lList *my_answer_list = ctx->gdi(ctx, SGE_RQS_LIST, gdi_command, &rqs_list, nullptr, nullptr);
+         if (my_answer_list != nullptr) {
             answer_list_append_list(answer_list, &my_answer_list);
          }
       }
@@ -537,18 +537,18 @@ bool rqs_modify_from_file(sge_gdi_ctx_class_t *ctx, lList **answer_list, const c
    u_long32 gdi_command = 0;
    
    DENTER(TOP_LAYER);
-   if (filename != NULL) {
-      lList *rqs_list = NULL;
+   if (filename != nullptr) {
+      lList *rqs_list = nullptr;
 
       /* fields_out field does not work for rqs because of duplicate entry */
       rqs_list = spool_flatfile_read_list(answer_list, RQS_Type, RQS_fields,
-                                          NULL, true, &qconf_rqs_sfi,
-                                          SP_FORM_ASCII, NULL, filename);
-      if (rqs_list != NULL) {
+                                          nullptr, true, &qconf_rqs_sfi,
+                                          SP_FORM_ASCII, nullptr, filename);
+      if (rqs_list != nullptr) {
 
-         if (name != NULL && strlen(name) > 0 ) {
-            lList *selected_rqs_list = NULL;
-            const lListElem *tmp_rqs = NULL;
+         if (name != nullptr && strlen(name) > 0 ) {
+            lList *selected_rqs_list = nullptr;
+            const lListElem *tmp_rqs = nullptr;
             lList *found_rqs_list = lCreateList("rqs_list", RQS_Type);
 
             gdi_command = SGE_GDI_MOD | SGE_GDI_SET_ALL;
@@ -556,7 +556,7 @@ bool rqs_modify_from_file(sge_gdi_ctx_class_t *ctx, lList **answer_list, const c
             lString2List(name, &selected_rqs_list, RQS_Type, RQS_name, ", ");
             for_each_ep(tmp_rqs, selected_rqs_list) {
                lListElem *found = rqs_list_locate(rqs_list, lGetString(tmp_rqs, RQS_name));
-               if (found != NULL) {
+               if (found != nullptr) {
                   lAppendElem(found_rqs_list, lCopyElem(found));
                } else {
                   sprintf(SGE_EVENT, MSG_RQS_NOTFOUNDINFILE_SS, lGetString(tmp_rqs, RQS_name), filename);
@@ -572,7 +572,7 @@ bool rqs_modify_from_file(sge_gdi_ctx_class_t *ctx, lList **answer_list, const c
             gdi_command = SGE_GDI_REPLACE;
          }
 
-         if (rqs_list != NULL) {
+         if (rqs_list != nullptr) {
             ret = rqs_add_del_mod_via_gdi(ctx, rqs_list, answer_list,
                                            gdi_command); 
          }

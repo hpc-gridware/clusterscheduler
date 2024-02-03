@@ -113,7 +113,7 @@ void calendar_event_handler(sge_gdi_ctx_class_t *ctx, te_event_t anEvent, monito
 {
    DENTER(TOP_LAYER);
 
-   DPRINTF(("%s: time:"sge_u32" when:"sge_u32"\n", __func__, time(NULL), te_get_when(anEvent)));
+   DPRINTF(("%s: time:"sge_u32" when:"sge_u32"\n", __func__, time(nullptr), te_get_when(anEvent)));
 
    DRETURN_VOID;
 } /* calendar_event_handler() */
@@ -122,7 +122,7 @@ void signal_resend_event_handler(sge_gdi_ctx_class_t *ctx, te_event_t anEvent, m
 {
    DENTER(TOP_LAYER);
 
-   DPRINTF(("%s: time:"sge_u32" when:"sge_u32"\n", __func__, time(NULL), te_get_when(anEvent)));
+   DPRINTF(("%s: time:"sge_u32" when:"sge_u32"\n", __func__, time(nullptr), te_get_when(anEvent)));
 
    DRETURN_VOID;
 } /* signal_resend_event_handler() */
@@ -131,7 +131,7 @@ void job_resend_event_handler(sge_gdi_ctx_class_t *ctx, te_event_t anEvent, moni
 {
    DENTER(TOP_LAYER);
 
-   DPRINTF(("%s: time:"sge_u32" when:"sge_u32"\n", __func__, time(NULL), te_get_when(anEvent)));
+   DPRINTF(("%s: time:"sge_u32" when:"sge_u32"\n", __func__, time(nullptr), te_get_when(anEvent)));
 
    DRETURN_VOID;
 } /* job_resend_event_handler() */
@@ -147,7 +147,7 @@ static void test_add_one_time_event_without_handler(void)
 {
    te_event_t ev1;
 
-   ev1 = te_new_event(time(NULL), TYPE_CALENDAR_EVENT, ONE_TIME_EVENT, 0, 0, "calendar_event-1");
+   ev1 = te_new_event(time(nullptr), TYPE_CALENDAR_EVENT, ONE_TIME_EVENT, 0, 0, "calendar_event-1");
    te_add_event(ev1);
    te_free_event(&ev1);
 
@@ -159,7 +159,7 @@ static void test_add_one_time_event_without_handler(void)
 static void test_delete_one_time_event(void)
 {
    te_event_t ev1;
-   time_t when = time(NULL) + 30;
+   time_t when = time(nullptr) + 30;
 
    ev1 = te_new_event(when, TYPE_CALENDAR_EVENT, ONE_TIME_EVENT, 0, 0, "calendar_event-2");
    te_add_event(ev1);
@@ -179,17 +179,17 @@ static void test_delete_multiple_one_time_events(void)
    te_event_t ev1;
    time_t when1, when2 = 0;
 
-   when1 = time(NULL) + 10;
+   when1 = time(nullptr) + 10;
    ev1 = te_new_event(when1, TYPE_CALENDAR_EVENT, ONE_TIME_EVENT, 0, 0, "calendar_event-3");
    te_add_event(ev1);
    te_free_event(&ev1);
 
-   when1 = time(NULL) + 20;
+   when1 = time(nullptr) + 20;
    ev1 = te_new_event(when1, TYPE_CALENDAR_EVENT, ONE_TIME_EVENT, 0, 0, "calendar_event-3");
    te_add_event(ev1);
    te_free_event(&ev1);
 
-   when2 = time(NULL) + 30;
+   when2 = time(nullptr) + 30;
    ev1 = te_new_event(when2, TYPE_CALENDAR_EVENT, ONE_TIME_EVENT, 0, 0, "calendar_event-3");
    te_add_event(ev1);
    te_free_event(&ev1);
@@ -208,7 +208,7 @@ static void test_one_time_event_delivery(void)
    te_event_t ev1;
 
    te_register_event_handler(calendar_event_handler, TYPE_CALENDAR_EVENT);
-   ev1 = te_new_event(time(NULL), TYPE_CALENDAR_EVENT, ONE_TIME_EVENT, 0, 0, "calendar_event-4");
+   ev1 = te_new_event(time(nullptr), TYPE_CALENDAR_EVENT, ONE_TIME_EVENT, 0, 0, "calendar_event-4");
    te_add_event(ev1);
    te_free_event(&ev1);
 
@@ -224,9 +224,9 @@ static void test_multiple_one_time_events_delivery(void)
    te_register_event_handler(signal_resend_event_handler, TYPE_SIGNAL_RESEND_EVENT);
    te_register_event_handler(job_resend_event_handler, TYPE_JOB_RESEND_EVENT);
 
-   ev1 = te_new_event(time(NULL), TYPE_CALENDAR_EVENT, ONE_TIME_EVENT, 0, 0, "calendar_event-5");
-   ev2 = te_new_event(time(NULL), TYPE_SIGNAL_RESEND_EVENT, ONE_TIME_EVENT, 0, 0, "signal-resend-event-1");
-   ev3 = te_new_event(time(NULL), TYPE_JOB_RESEND_EVENT, ONE_TIME_EVENT, 0, 0, "job-resend-event-1");
+   ev1 = te_new_event(time(nullptr), TYPE_CALENDAR_EVENT, ONE_TIME_EVENT, 0, 0, "calendar_event-5");
+   ev2 = te_new_event(time(nullptr), TYPE_SIGNAL_RESEND_EVENT, ONE_TIME_EVENT, 0, 0, "signal-resend-event-1");
+   ev3 = te_new_event(time(nullptr), TYPE_JOB_RESEND_EVENT, ONE_TIME_EVENT, 0, 0, "job-resend-event-1");
 
    te_add_event(ev1);
    te_add_event(ev2);
@@ -258,7 +258,7 @@ static void test_add_earlier_one_time_event(void)
 {
    te_event_t ev1;
 
-   ev1 = te_new_event(time(NULL), TYPE_JOB_RESEND_EVENT, ONE_TIME_EVENT, 0, 0, "job-resend-event-2");
+   ev1 = te_new_event(time(nullptr), TYPE_JOB_RESEND_EVENT, ONE_TIME_EVENT, 0, 0, "job-resend-event-2");
    te_add_event(ev1);
    te_free_event(&ev1);
 

@@ -145,7 +145,7 @@ struct _state_gdi_multi {
 };
 
 /* to be used for initializing state_gdi_multi */
-#define STATE_GDI_MULTI_INIT { NULL, NULL, NULL}
+#define STATE_GDI_MULTI_INIT { nullptr, nullptr, nullptr}
 
 bool sge_gdi_extract_answer(lList **alpp, u_long32 cmd, u_long32 target, int id, lList *mal, lList **olpp);
 

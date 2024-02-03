@@ -68,7 +68,7 @@
 void
 heartbeat_initialize(void)
 {
-   te_event_t ev     = NULL;
+   te_event_t ev     = nullptr;
 
    DENTER(TOP_LAYER);
 
@@ -79,7 +79,7 @@ heartbeat_initialize(void)
    te_free_event(&ev);
 
    /* this is for testsuite shadowd test */
-   if (getenv("SGE_TEST_HEARTBEAT_TIMEOUT") != NULL) {
+   if (getenv("SGE_TEST_HEARTBEAT_TIMEOUT") != nullptr) {
       time_t test_timeout = atoi(getenv("SGE_TEST_HEARTBEAT_TIMEOUT"));
       set_inc_qmaster_heartbeat_test_mode(test_timeout);
       DPRINTF(("heartbeat timeout test enabled (timeout="sge_U32CFormat")\n", sge_u32c(test_timeout)));

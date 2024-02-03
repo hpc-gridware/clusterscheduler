@@ -107,7 +107,7 @@ static int sge_domkdir(const char *path_, int fmode, bool exit_on_error, bool ma
       if (exit_on_error) {
          CRITICAL((SGE_EVENT, MSG_FILE_CREATEDIRFAILED_SS, path_,
                  strerror(errno)));
-         SGE_EXIT(NULL, 1);
+         SGE_EXIT(nullptr, 1);
       } else {
          ERROR((SGE_EVENT, MSG_FILE_CREATEDIRFAILED_SS, path_,
                  strerror(errno)));
@@ -127,10 +127,10 @@ static int sge_domkdir(const char *path_, int fmode, bool exit_on_error, bool ma
 *
 *  FUNCTION
 *     Replacement for unlink(). 'prefix' and 'suffix' will be combined
-*     to a filename. This file will be deleted. 'prefix' may be NULL.
+*     to a filename. This file will be deleted. 'prefix' may be nullptr.
 *
 *  INPUTS
-*     const char *prefix - pathname or NULL
+*     const char *prefix - pathname or nullptr
 *     const char *suffix - filename 
 *
 *  RESULT
@@ -218,7 +218,7 @@ int sge_chdir_exit(const char *path, int exit_on_error) {
    if (chdir(path)) {
       if (exit_on_error) {
          CRITICAL((SGE_EVENT, MSG_FILE_NOCDTODIRECTORY_S, path));
-         SGE_EXIT(NULL, 1);
+         SGE_EXIT(nullptr, 1);
       } else {
          ERROR((SGE_EVENT, MSG_FILE_NOCDTODIRECTORY_S, path));
          return -1;
@@ -254,7 +254,7 @@ int sge_chdir_exit(const char *path, int exit_on_error) {
 *     uti/unistd/sge_chdir_exit()
 ******************************************************************************/
 int sge_chdir(const char *dir) {
-   if (dir != NULL) {
+   if (dir != nullptr) {
       SGE_STRUCT_STAT statbuf;
 
       /*
@@ -286,7 +286,7 @@ int sge_chdir(const char *dir) {
 *     uti/unistd/sge_install_exit_func()
 ******************************************************************************/
 void sge_exit(void **ref_ctx, int i) {
-   sge_exit_func_t exit_func = NULL;
+   sge_exit_func_t exit_func = nullptr;
 
    if (ref_ctx && *ref_ctx) {
       exit_func = uti_state_get_exit_func();
@@ -329,7 +329,7 @@ int sge_mkdir(const char *path, int fmode, bool exit_on_error, bool may_not_exis
       if (exit_on_error) {
          CRITICAL((SGE_EVENT, SFNMAX, MSG_VAR_PATHISNULLINSGEMKDIR));
          DCLOSE;
-         SGE_EXIT(NULL, 1);
+         SGE_EXIT(nullptr, 1);
       } else {
          ERROR((SGE_EVENT, SFNMAX, MSG_VAR_PATHISNULLINSGEMKDIR));
          DRETURN(-1);
@@ -365,11 +365,11 @@ int sge_mkdir2(const char *base_dir, const char *name, int fmode, bool exit_on_e
 
    DENTER(TOP_LAYER);
 
-   if (base_dir == NULL || name == NULL) {
+   if (base_dir == nullptr || name == nullptr) {
       if (exit_on_error) {
          CRITICAL((SGE_EVENT, SFNMAX, MSG_VAR_PATHISNULLINSGEMKDIR));
          DCLOSE;
-         SGE_EXIT(NULL, 1);
+         SGE_EXIT(nullptr, 1);
       } else {
          ERROR((SGE_EVENT, SFNMAX, MSG_VAR_PATHISNULLINSGEMKDIR));
          DRETURN(-1);
@@ -397,7 +397,7 @@ int sge_mkdir2(const char *base_dir, const char *name, int fmode, bool exit_on_e
 *
 *  INPUTS
 *     const char *cp  - path 
-*     dstring *error  - destination for error message if non-NULL
+*     dstring *error  - destination for error message if non-nullptr
 *
 *  RESULT
 *     int - error state
@@ -423,7 +423,7 @@ int sge_rmdir(const char *cp, dstring *error) {
       DRETURN(-1);
    }
 
-   while (SGE_READDIR_R(dir, (SGE_STRUCT_DIRENT *) dirent, &dent) == 0 && dent != NULL) {
+   while (SGE_READDIR_R(dir, (SGE_STRUCT_DIRENT *) dirent, &dent) == 0 && dent != nullptr) {
       if (strcmp(dent->d_name, ".") && strcmp(dent->d_name, "..")) {
 
          sprintf(fname, "%s/%s", cp, dent->d_name);

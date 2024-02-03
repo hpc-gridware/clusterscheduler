@@ -108,9 +108,9 @@ sge_task_depend_get_range(lListElem **range, lList **alpp, const lListElem *pre_
 
    DENTER(TOP_LAYER);
 
-   if (range == NULL ||
-       pre_jep == NULL ||
-       suc_jep == NULL) {
+   if (range == nullptr ||
+       pre_jep == nullptr ||
+       suc_jep == nullptr) {
       DRETURN(STATUS_EUNKNOWN);
    }
 
@@ -136,9 +136,9 @@ sge_task_depend_get_range(lListElem **range, lList **alpp, const lListElem *pre_
    }
 
    /* if an existing range was not given, create one */
-   if (*range == NULL) {
+   if (*range == nullptr) {
       *range = lCreateElem(RN_Type);
-      if (*range == NULL) {
+      if (*range == nullptr) {
          DRETURN(STATUS_EUNKNOWN);
       }
    }
@@ -153,7 +153,7 @@ sge_task_depend_get_range(lListElem **range, lList **alpp, const lListElem *pre_
  *****************************************************************************/
 static bool
 task_depend_is_finished(const lListElem *job, u_long32 task_id) {
-   const lListElem *ja_task = NULL;
+   const lListElem *ja_task = nullptr;
 
    DENTER(TOP_LAYER);
 
@@ -161,9 +161,9 @@ task_depend_is_finished(const lListElem *job, u_long32 task_id) {
       DRETURN(false);
    }
 
-   ja_task = job_search_task(job, NULL, task_id);
-   if (ja_task != NULL) {
-      const lListElem *task = NULL; /* PE_Type */
+   ja_task = job_search_task(job, nullptr, task_id);
+   if (ja_task != nullptr) {
+      const lListElem *task = nullptr; /* PE_Type */
       if (lGetUlong(ja_task, JAT_status) != JFINISHED) {
          DRETURN(false);
       }
@@ -212,7 +212,7 @@ task_depend_is_finished(const lListElem *job, u_long32 task_id) {
 *     Update status is returned to help the caller decide whether modify
 *     event code should be emitted.
 *
-*     If the job argument jep is NULL, or the task indicated by task_id
+*     If the job argument jep is nullptr, or the task indicated by task_id
 *     in jep is finished, false is returned.
 *
 *     MT-NOTE: Is not thread safe. Reads from the global Job-List
@@ -220,7 +220,7 @@ task_depend_is_finished(const lListElem *job, u_long32 task_id) {
 ******************************************************************************/
 bool
 sge_task_depend_update(lListElem *jep, lList **alpp, u_long32 task_id) {
-   const lListElem *pre = NULL;  /* JRE_Type */
+   const lListElem *pre = nullptr;  /* JRE_Type */
    u_long32 hold_state, new_state;
    int Depend = 0;
    const lList *master_job_list = *object_type_get_master_list(SGE_TYPE_JOB);
@@ -228,8 +228,8 @@ sge_task_depend_update(lListElem *jep, lList **alpp, u_long32 task_id) {
    DENTER(TOP_LAYER);
 
    /* this should not really be necessary */
-   if (jep == NULL) {
-      DPRINTF(("got NULL for job argument\n"));
+   if (jep == nullptr) {
+      DPRINTF(("got nullptr for job argument\n"));
       DRETURN(false);
    }
 
@@ -242,8 +242,8 @@ sge_task_depend_update(lListElem *jep, lList **alpp, u_long32 task_id) {
    /* process the resolved predecessor list */
    for_each_ep(pre, lGetList(jep, JB_ja_ad_predecessor_list)) {
       u_long32 sa, sa_task_id, amin, amax;
-      const lListElem *pred_jep = NULL; /* JB_Type */
-      lListElem *dep_range = NULL;      /* RN_Type */
+      const lListElem *pred_jep = nullptr; /* JB_Type */
+      lListElem *dep_range = nullptr;      /* RN_Type */
 
       /* locate the job id in the master list, if not found we can't do much */
       pred_jep = lGetElemUlong(master_job_list, JB_job_number, lGetUlong(pre, JRE_job_number));
@@ -288,8 +288,8 @@ sge_task_depend_update(lListElem *jep, lList **alpp, u_long32 task_id) {
       job_set_hold_state(jep, alpp, task_id, new_state);
       if (job_is_enrolled(jep, task_id)) {
          /* all task mod events will need to be added individually */
-         lListElem *ja_task = job_search_task(jep, NULL, task_id);
-         if (ja_task != NULL)
+         lListElem *ja_task = job_search_task(jep, nullptr, task_id);
+         if (ja_task != nullptr)
             sge_add_jatask_event(sgeE_JATASK_MOD, jep, ja_task);
          DRETURN(false);
       }
@@ -335,8 +335,8 @@ sge_task_depend_init(lListElem *jep, lList **alpp) {
 
    DENTER(TOP_LAYER);
 
-   if (jep == NULL) {
-      DPRINTF(("got NULL for job argument\n"));
+   if (jep == nullptr) {
+      DPRINTF(("got nullptr for job argument\n"));
       DRETURN(false);
    }
 
@@ -399,8 +399,8 @@ sge_task_depend_flush(lListElem *jep, lList **alpp) {
    DENTER(TOP_LAYER);
 
    /* this should not really be necessary */
-   if (jep == NULL) {
-      DPRINTF(("got NULL for job argument\n"));
+   if (jep == nullptr) {
+      DPRINTF(("got nullptr for job argument\n"));
       DRETURN(false);
    }
 
@@ -424,7 +424,7 @@ sge_task_depend_flush(lListElem *jep, lList **alpp) {
          lFreeList(&a_h_ids);
          /* just make sure it is null */
          if (lGetList(jep, JB_ja_a_h_ids)) {
-            a_h_ids = NULL;
+            a_h_ids = nullptr;
             lXchgList(jep, JB_ja_a_h_ids, &a_h_ids);
             lFreeList(&a_h_ids);
          }
@@ -475,9 +475,9 @@ sge_task_depend_is_same_range(const lListElem *pre_jep, const lListElem *suc_jep
 
    DENTER(TOP_LAYER);
 
-   /* equivalent jobs cannot be NULL */
-   if (pre_jep == NULL || suc_jep == NULL) {
-      DPRINTF(("got NULL pre_jep or suc_jep job argument\n"));
+   /* equivalent jobs cannot be nullptr */
+   if (pre_jep == nullptr || suc_jep == nullptr) {
+      DPRINTF(("got nullptr pre_jep or suc_jep job argument\n"));
       DRETURN(false);
    }
 

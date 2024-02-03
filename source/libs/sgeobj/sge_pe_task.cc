@@ -84,8 +84,8 @@ pe_task_sum_past_usage(lListElem *container, const lListElem *pe_task)
    DENTER(TOP_LAYER);
 
    /* invalid input - nothing to do */
-   if (container == NULL || pe_task == NULL) {
-      DRETURN(NULL);
+   if (container == nullptr || pe_task == nullptr) {
+      DRETURN(nullptr);
    }
 
    if (container == pe_task) {
@@ -96,7 +96,7 @@ pe_task_sum_past_usage(lListElem *container, const lListElem *pe_task)
    /* we sum up the scaled_usage */
    container_usage = lGetOrCreateList(container, PET_scaled_usage, "reported_usage", UA_Type);
    pe_task_usage = lGetList(pe_task, PET_scaled_usage);
-   if (pe_task_usage != NULL) {
+   if (pe_task_usage != nullptr) {
       usage_list_sum(container_usage, pe_task_usage);
    }
 
@@ -106,7 +106,7 @@ pe_task_sum_past_usage(lListElem *container, const lListElem *pe_task)
     */
    container_reported_usage = lGetOrCreateList(container, PET_reported_usage, "reported_usage", UA_Type);
    pe_task_reported_usage = lGetList(pe_task, PET_reported_usage);
-   if (pe_task_reported_usage != NULL) {
+   if (pe_task_reported_usage != nullptr) {
       usage_list_sum(container_reported_usage, pe_task_reported_usage);
    }
 
@@ -138,19 +138,19 @@ pe_task_sum_past_usage(lListElem *container, const lListElem *pe_task)
 *******************************************************************************/
 lListElem *pe_task_sum_past_usage_all(lList *pe_task_list)
 {
-   lListElem *container = NULL;
+   lListElem *container = nullptr;
    const lListElem *pe_task;
 
    DENTER(TOP_LAYER);
 
    /* no pe task list - nothing to do */
-   if (pe_task_list == NULL) {
-      DRETURN(NULL);
+   if (pe_task_list == nullptr) {
+      DRETURN(nullptr);
    }
 
    /* loop over all pe tasks and sum up usage */
    for_each_ep(pe_task, pe_task_list) {
-      if (container == NULL) {
+      if (container == nullptr) {
          container = pe_task_sum_past_usage_list(pe_task_list, pe_task);
       } else {
          pe_task_sum_past_usage(container, pe_task);
@@ -194,17 +194,17 @@ pe_task_sum_past_usage_list(lList *pe_task_list, const lListElem *pe_task)
    DENTER(TOP_LAYER);
 
    /* no pe task list - nothing to do */
-   if (pe_task_list == NULL) {
-      DRETURN(NULL);
+   if (pe_task_list == nullptr) {
+      DRETURN(nullptr);
    }
 
    /* get container - if it does not yet exist, create it as first element in pe task list */
    container = lGetElemStrRW(pe_task_list, PET_id, PE_TASK_PAST_USAGE_CONTAINER);
-   if (container == NULL) {
+   if (container == nullptr) {
       container = lCreateElem(PET_Type);
       lSetString(container, PET_id, PE_TASK_PAST_USAGE_CONTAINER);
       lSetBool(container, PET_do_contact, true);
-      lInsertElem(pe_task_list, NULL, container);
+      lInsertElem(pe_task_list, nullptr, container);
    }
 
    /* sum up usage */
@@ -249,7 +249,7 @@ pe_task_verify_request(const lListElem *petr, lList **answer_list) {
 
    DENTER(TOP_LAYER);
 
-   if (petr == NULL) {
+   if (petr == nullptr) {
       answer_list_add_sprintf(answer_list, STATUS_ESYNTAX, ANSWER_QUALITY_ERROR,
                               MSG_NULLELEMENTPASSEDTO_S, __func__);
       ret = false;
@@ -259,11 +259,11 @@ pe_task_verify_request(const lListElem *petr, lList **answer_list) {
     * A pe task request entering execd must have some additional properties: 
     *    - PETR_jobid > 0
     *    - PETR_jataskid > 0
-    *    - PETR_owner != NULL
-    *    - verify PETR_queuename, if != NULL
-    *    - verify PETR_cwd, if it is != NULL
-    *    - verify PETR_path_aliases, if they are != NULL
-    *    - verify PETR_environment, if it is != NULL
+    *    - PETR_owner != nullptr
+    *    - verify PETR_queuename, if != nullptr
+    *    - verify PETR_cwd, if it is != nullptr
+    *    - verify PETR_path_aliases, if they are != nullptr
+    *    - verify PETR_environment, if it is != nullptr
     *    - PETR_submission_time (currently unused)
     */
 
@@ -282,7 +282,7 @@ pe_task_verify_request(const lListElem *petr, lList **answer_list) {
    if (ret) {
       const char *queue_name = lGetString(petr, PETR_queuename);
 
-      if (queue_name != NULL) {
+      if (queue_name != nullptr) {
          if (verify_str_key(
                answer_list, queue_name, MAX_VERIFY_STRING,
                lNm2Str(PETR_queuename), KEY_TABLE) != STATUS_OK) {
@@ -294,7 +294,7 @@ pe_task_verify_request(const lListElem *petr, lList **answer_list) {
    if (ret) {
       const char *cwd = lGetString(petr, PETR_cwd);
 
-      if (cwd != NULL) {
+      if (cwd != nullptr) {
          ret = path_verify(cwd, answer_list, "cwd", true);
       }
    }
@@ -302,7 +302,7 @@ pe_task_verify_request(const lListElem *petr, lList **answer_list) {
    if (ret) {
       const lList *path_aliases = lGetList(petr, PETR_path_aliases);
 
-      if (path_aliases != NULL) {
+      if (path_aliases != nullptr) {
          ret = path_alias_verify(path_aliases, answer_list);
       }
    } 
@@ -310,7 +310,7 @@ pe_task_verify_request(const lListElem *petr, lList **answer_list) {
    if (ret) {
       const lList *env_list = lGetList(petr, PETR_environment);
 
-      if (env_list != NULL) {
+      if (env_list != nullptr) {
          ret = var_list_verify(env_list, answer_list);
       }
    } 

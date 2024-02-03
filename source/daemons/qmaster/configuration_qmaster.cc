@@ -76,7 +76,7 @@
 #include "msg_qmaster.h"
 
 /* Static configuration entries may be changed at runtime with a warning */
-static char *Static_Conf_Entries[] = {"execd_spool_dir", NULL};
+static char *Static_Conf_Entries[] = {"execd_spool_dir", nullptr};
 
 
 static int
@@ -117,8 +117,8 @@ sge_get_config_version_for_host(const char *aName);
  */
 int
 sge_read_configuration(sge_gdi_ctx_class_t *ctx, const lListElem *aSpoolContext, lList **config_list, lList *anAnswer) {
-   lListElem *local = NULL;
-   lListElem *global = NULL;
+   lListElem *local = nullptr;
+   lListElem *global = nullptr;
    int ret = -1;
    const char *cell_root = bootstrap_get_cell_root();
    const char *qualified_hostname = uti_state_get_qualified_hostname();
@@ -140,13 +140,13 @@ sge_read_configuration(sge_gdi_ctx_class_t *ctx, const lListElem *aSpoolContext,
    {
       lListElem *global = lGetElemHostRW(*config_list, CONF_name, "global");
 
-      if (global != NULL) {
+      if (global != nullptr) {
          const lList *entries = lGetList(global, CONF_entries);
          lListElem *jsv_url = lGetElemStrRW(entries, CF_name, "jsv_url");
 
-         if (jsv_url == NULL) {
+         if (jsv_url == nullptr) {
             jsv_url = lAddSubStr(global, CF_name, "jsv_url", CONF_entries, CF_Type);
-            if (jsv_url != NULL) {
+            if (jsv_url != nullptr) {
                lSetString(jsv_url, CF_value, "none");
             }
          }
@@ -162,13 +162,13 @@ sge_read_configuration(sge_gdi_ctx_class_t *ctx, const lListElem *aSpoolContext,
    {
       lListElem *global = lGetElemHostRW(*config_list, CONF_name, "global");
 
-      if (global != NULL) {
+      if (global != nullptr) {
          const lList *entries = lGetList(global, CONF_entries);
          lListElem *jsv_url = lGetElemStrRW(entries, CF_name, "jsv_allowed_mod");
 
-         if (jsv_url == NULL) {
+         if (jsv_url == nullptr) {
             jsv_url = lAddSubStr(global, CF_name, "jsv_allowed_mod", CONF_entries, CF_Type);
-            if (jsv_url != NULL) {
+            if (jsv_url != nullptr) {
                lSetString(jsv_url, CF_value, "ac,h,i,e,o,j,M,N,p,w");
             }
          }
@@ -179,17 +179,17 @@ sge_read_configuration(sge_gdi_ctx_class_t *ctx, const lListElem *aSpoolContext,
    answer_list_output(&anAnswer);
 
    DPRINTF(("qualified_hostname: '%s'\n", qualified_hostname));
-   if ((local = sge_get_configuration_for_host(qualified_hostname)) == NULL) {
+   if ((local = sge_get_configuration_for_host(qualified_hostname)) == nullptr) {
       /* write a warning into messages file, if no local config exists*/
       WARNING((SGE_EVENT, MSG_CONFIG_NOLOCAL_S, qualified_hostname));
    }
 
-   if ((global = sge_get_configuration_for_host(SGE_GLOBAL_NAME)) == NULL) {
+   if ((global = sge_get_configuration_for_host(SGE_GLOBAL_NAME)) == nullptr) {
       ERROR((SGE_EVENT, SFNMAX, MSG_CONFIG_NOGLOBAL));
       DRETURN(-1);
    }
 
-   ret = merge_configuration(&anAnswer, progid, cell_root, global, local, NULL);
+   ret = merge_configuration(&anAnswer, progid, cell_root, global, local, nullptr);
    answer_list_output(&anAnswer);
 
    lFreeElem(&local);
@@ -213,7 +213,7 @@ sge_read_configuration(sge_gdi_ctx_class_t *ctx, const lListElem *aSpoolContext,
  */
 int
 sge_del_configuration(sge_gdi_ctx_class_t *ctx, lListElem *aConf, lList **anAnswer, char *aUser, char *aHost) {
-   const char *tmp_name = NULL;
+   const char *tmp_name = nullptr;
    char unique_name[CL_MAXHOSTLEN];
    int ret = -1;
 
@@ -226,7 +226,7 @@ sge_del_configuration(sge_gdi_ctx_class_t *ctx, lListElem *aConf, lList **anAnsw
       DRETURN(STATUS_EUNKNOWN);
    }
 
-   if ((tmp_name = lGetHost(aConf, CONF_name)) == NULL) {
+   if ((tmp_name = lGetHost(aConf, CONF_name)) == nullptr) {
       CRITICAL((SGE_EVENT, MSG_SGETEXT_MISSINGCULLFIELD_SS,
               lNm2Str(CONF_name), __func__));
       answer_list_add(anAnswer, SGE_EVENT,
@@ -243,13 +243,13 @@ sge_del_configuration(sge_gdi_ctx_class_t *ctx, lListElem *aConf, lList **anAnsw
     */
    ret = sge_resolve_hostname(tmp_name, unique_name, EH_name);
    if (ret != CL_RETVAL_OK) {
-      lListElem *conf_obj = NULL;
+      lListElem *conf_obj = nullptr;
 
       DPRINTF(("%s: error %s resolving host %s\n", __func__,
               cl_get_error_text(ret), tmp_name));
 
       conf_obj = sge_get_configuration_for_host(tmp_name);
-      if (conf_obj != NULL) {
+      if (conf_obj != nullptr) {
          DPRINTF(("using hostname stored in configuration object\n"));
          strcpy(unique_name, lGetHost(conf_obj, CONF_name));
          lFreeElem(&conf_obj);
@@ -268,7 +268,7 @@ sge_del_configuration(sge_gdi_ctx_class_t *ctx, lListElem *aConf, lList **anAnsw
       DRETURN(STATUS_EEXIST);
    }
 
-   sge_event_spool(ctx, anAnswer, 0, sgeE_CONFIG_DEL, 0, 0, unique_name, NULL, NULL, NULL, NULL, NULL, true, true);
+   sge_event_spool(ctx, anAnswer, 0, sgeE_CONFIG_DEL, 0, 0, unique_name, nullptr, nullptr, nullptr, nullptr, nullptr, true, true);
 
    remove_conf_by_name(unique_name);
 
@@ -314,7 +314,7 @@ sge_del_configuration(sge_gdi_ctx_class_t *ctx, lListElem *aConf, lList **anAnsw
 int
 sge_mod_configuration(sge_gdi_ctx_class_t *ctx, lListElem *aConf, lList **anAnswer, char *aUser, char *aHost) {
    lListElem *old_conf;
-   const char *tmp_name = NULL;
+   const char *tmp_name = nullptr;
    char unique_name[CL_MAXHOSTLEN];
    int ret = -1;
    const char *cell_root = bootstrap_get_cell_root();
@@ -329,7 +329,7 @@ sge_mod_configuration(sge_gdi_ctx_class_t *ctx, lListElem *aConf, lList **anAnsw
       DRETURN(STATUS_EUNKNOWN);
    }
 
-   if ((tmp_name = lGetHost(aConf, CONF_name)) == NULL) {
+   if ((tmp_name = lGetHost(aConf, CONF_name)) == nullptr) {
       CRITICAL((SGE_EVENT, MSG_SGETEXT_MISSINGCULLFIELD_SS, lNm2Str(CONF_name), __func__));
       answer_list_add(anAnswer, SGE_EVENT, STATUS_EUNKNOWN, ANSWER_QUALITY_ERROR);
       DRETURN(STATUS_EUNKNOWN);
@@ -346,7 +346,7 @@ sge_mod_configuration(sge_gdi_ctx_class_t *ctx, lListElem *aConf, lList **anAnsw
       DRETURN(ret);
    }
 
-   if ((old_conf = sge_get_configuration_for_host(unique_name)) != NULL) {
+   if ((old_conf = sge_get_configuration_for_host(unique_name)) != nullptr) {
       int ret = -1;
 
       ret = do_mod_config(ctx, unique_name, old_conf, aConf, anAnswer);
@@ -367,7 +367,7 @@ sge_mod_configuration(sge_gdi_ctx_class_t *ctx, lListElem *aConf, lList **anAnsw
    }
 
    if (strcmp(SGE_GLOBAL_NAME, unique_name) == 0) {
-      sge_add_event(0, sgeE_GLOBAL_CONFIG, 0, 0, NULL, NULL, NULL, NULL);
+      sge_add_event(0, sgeE_GLOBAL_CONFIG, 0, 0, nullptr, nullptr, nullptr, nullptr);
    }
 
    /*
@@ -375,21 +375,21 @@ sge_mod_configuration(sge_gdi_ctx_class_t *ctx, lListElem *aConf, lList **anAnsw
    ** if so, initialise conf struct anew
    */
    if (strcmp(unique_name, SGE_GLOBAL_NAME) == 0 || sge_hostcmp(unique_name, qualified_hostname) == 0) {
-      lListElem *local = NULL;
-      lListElem *global = NULL;
-      lList *answer_list = NULL;
-      char *qmaster_params = NULL;
+      lListElem *local = nullptr;
+      lListElem *global = nullptr;
+      lList *answer_list = nullptr;
+      char *qmaster_params = nullptr;
       int accounting_flush_time = mconf_get_accounting_flush_time();
 
-      if ((local = sge_get_configuration_for_host(qualified_hostname)) == NULL) {
+      if ((local = sge_get_configuration_for_host(qualified_hostname)) == nullptr) {
          WARNING((SGE_EVENT, MSG_CONFIG_NOLOCAL_S, qualified_hostname));
       }
 
-      if ((global = sge_get_configuration_for_host(SGE_GLOBAL_NAME)) == NULL) {
+      if ((global = sge_get_configuration_for_host(SGE_GLOBAL_NAME)) == nullptr) {
          ERROR((SGE_EVENT, SFNMAX, MSG_CONFIG_NOGLOBAL));
       }
 
-      if (merge_configuration(&answer_list, progid, cell_root, global, local, NULL) != 0) {
+      if (merge_configuration(&answer_list, progid, cell_root, global, local, nullptr) != 0) {
          ERROR((SGE_EVENT, MSG_CONF_CANTMERGECONFIGURATIONFORHOST_S, qualified_hostname));
       }
       answer_list_output(&answer_list);
@@ -397,7 +397,7 @@ sge_mod_configuration(sge_gdi_ctx_class_t *ctx, lListElem *aConf, lList **anAnsw
       /* Restart the accounting flush event if needed. */
       if ((accounting_flush_time == 0) &&
           (mconf_get_accounting_flush_time() != 0)) {
-         te_event_t ev = te_new_event(time(NULL), TYPE_ACCOUNTING_TRIGGER, ONE_TIME_EVENT, 1, 0, NULL);
+         te_event_t ev = te_new_event(time(nullptr), TYPE_ACCOUNTING_TRIGGER, ONE_TIME_EVENT, 1, 0, nullptr);
          te_add_event(ev);
          te_free_event(&ev);
       }
@@ -440,13 +440,13 @@ check_config(lList **alpp, lListElem *conf) {
       name = lGetString(ep, CF_name);
       value = lGetString(ep, CF_value);
 
-      if (name == NULL) {
+      if (name == nullptr) {
          ERROR((SGE_EVENT, MSG_CONF_NAMEISNULLINCONFIGURATIONLISTOFX_S,
                  conf_name));
          answer_list_add(alpp, SGE_EVENT, STATUS_EEXIST, ANSWER_QUALITY_ERROR);
          DRETURN(STATUS_EEXIST);
       }
-      if (value == NULL) {
+      if (value == nullptr) {
          ERROR((SGE_EVENT, MSG_CONF_VALUEISNULLFORATTRXINCONFIGURATIONLISTOFY_SS,
                  name, conf_name));
          answer_list_add(alpp, SGE_EVENT, STATUS_EEXIST, ANSWER_QUALITY_ERROR);
@@ -522,7 +522,7 @@ check_config(lList **alpp, lListElem *conf) {
          }
          sge_free(&buffer);
       } else if (!strcmp(name, "user_lists") || !strcmp(name, "xuser_lists")) {
-         lList *tmp = NULL;
+         lList *tmp = nullptr;
          int ok;
 
          /* parse just for .. */
@@ -539,7 +539,7 @@ check_config(lList **alpp, lListElem *conf) {
             DRETURN(STATUS_EEXIST);
          }
       } else if (!strcmp(name, "projects") || !strcmp(name, "xprojects")) {
-         lList *tmp = NULL;
+         lList *tmp = nullptr;
          int ok = 1;
 
          /* parse just for .. */
@@ -572,7 +572,7 @@ check_config(lList **alpp, lListElem *conf) {
             }
 
             /* ensure that variables are valid */
-            if (replace_params(script, NULL, 0, prolog_epilog_variables)) {
+            if (replace_params(script, nullptr, 0, prolog_epilog_variables)) {
                ERROR((SGE_EVENT, MSG_CONF_PARAMETERXINCONFIGURATION_SS, name, err_msg));
                answer_list_add(alpp, SGE_EVENT, STATUS_EEXIST, ANSWER_QUALITY_ERROR);
                DRETURN(STATUS_EEXIST);
@@ -580,8 +580,8 @@ check_config(lList **alpp, lListElem *conf) {
          }
       } else if (!strcmp(name, "auto_user_oticket") || !strcmp(name, "auto_user_fshare")) {
          u_long32 uval = 0;
-         if (!extended_parse_ulong_val(NULL, &uval, TYPE_INT, value, NULL, 0, 0, true)) {
-            ERROR((SGE_EVENT, MSG_CONF_FORMATERRORFORXINYCONFIG_SS, name, value ? value : "(NULL)"));
+         if (!extended_parse_ulong_val(nullptr, &uval, TYPE_INT, value, nullptr, 0, 0, true)) {
+            ERROR((SGE_EVENT, MSG_CONF_FORMATERRORFORXINYCONFIG_SS, name, value ? value : "(nullptr)"));
             answer_list_add(alpp, SGE_EVENT, STATUS_EEXIST, ANSWER_QUALITY_ERROR);
             DRETURN(STATUS_EEXIST);
          }
@@ -628,7 +628,7 @@ check_config(lList **alpp, lListElem *conf) {
 
          /* load_sensor is a comma separated list of scripts */
       else if (strcmp(name, "load_sensor") == 0 && strcasecmp(value, "none") != 0) {
-         struct saved_vars_s *context = NULL;
+         struct saved_vars_s *context = nullptr;
          const char *path = sge_strtok_r(value, ",", &context);
          do {
             if (!path_verify(path, alpp, name, true)) {
@@ -636,7 +636,7 @@ check_config(lList **alpp, lListElem *conf) {
                sge_free_saved_vars(context);
                DRETURN(STATUS_EEXIST);
             }
-         } while ((path = sge_strtok_r(NULL, ",", &context)) != NULL);
+         } while ((path = sge_strtok_r(nullptr, ",", &context)) != nullptr);
          sge_free_saved_vars(context);
       }
    }
@@ -653,7 +653,7 @@ check_config(lList **alpp, lListElem *conf) {
  */
 int
 sge_compare_configuration(const lListElem *aHost, const lList *aConf) {
-   const lListElem *conf_entry = NULL;
+   const lListElem *conf_entry = nullptr;
 
    DENTER(TOP_LAYER);
 
@@ -663,7 +663,7 @@ sge_compare_configuration(const lListElem *aHost, const lList *aConf) {
    }
 
    for_each_ep(conf_entry, aConf) {
-      const char *host_name = NULL;
+      const char *host_name = nullptr;
       u_long32 conf_version;
       u_long32 master_version;
 
@@ -689,21 +689,21 @@ sge_compare_configuration(const lListElem *aHost, const lList *aConf) {
  */
 lListElem *
 sge_get_configuration_entry_by_name(const char *aHost, const char *anEntryName) {
-   lListElem *conf = NULL;
-   lListElem *elem = NULL;
+   lListElem *conf = nullptr;
+   lListElem *elem = nullptr;
 
    DENTER(TOP_LAYER);
 
-   SGE_ASSERT((NULL != aHost) && (NULL != anEntryName));
+   SGE_ASSERT((nullptr != aHost) && (nullptr != anEntryName));
 
    /* try local configuration first */
-   if ((conf = sge_get_configuration_for_host(aHost)) != NULL) {
+   if ((conf = sge_get_configuration_for_host(aHost)) != nullptr) {
       elem = get_entry_from_conf(conf, anEntryName);
    }
    lFreeElem(&conf);
 
    /* local configuration did not work, try global one */
-   if ((elem == NULL) && ((conf = sge_get_configuration_for_host(SGE_GLOBAL_NAME)) != NULL)) {
+   if ((elem == nullptr) && ((conf = sge_get_configuration_for_host(SGE_GLOBAL_NAME)) != nullptr)) {
       elem = get_entry_from_conf(conf, anEntryName);
    }
 
@@ -723,14 +723,14 @@ get_entry_from_conf(lListElem *aConf, const char *anEntryName) {
  */
 lList *
 sge_get_configuration(const lCondition *condition, const lEnumeration *enumeration) {
-   lList *conf = NULL;
+   lList *conf = nullptr;
    const lList *config_list = *object_type_get_master_list(SGE_TYPE_CONFIG);
 
    DENTER(TOP_LAYER);
 
    SGE_LOCK(LOCK_MASTER_CONF, LOCK_READ);
 
-   conf = lSelectHashPack("", config_list, condition, enumeration, false, NULL);
+   conf = lSelectHashPack("", config_list, condition, enumeration, false, nullptr);
 
    SGE_UNLOCK(LOCK_MASTER_CONF, LOCK_READ);
 
@@ -739,7 +739,7 @@ sge_get_configuration(const lCondition *condition, const lEnumeration *enumerati
 
 static u_long32
 sge_get_config_version_for_host(const char *aName) {
-   const lListElem *conf = NULL;
+   const lListElem *conf = nullptr;
    u_long32 version = 0;
    char unique_name[CL_MAXHOSTLEN];
    int ret = -1;
@@ -750,7 +750,7 @@ sge_get_config_version_for_host(const char *aName) {
    SGE_LOCK(LOCK_MASTER_CONF, LOCK_READ);
 
    conf = lGetElemHost(config_list, CONF_name, aName);
-   if (conf == NULL) {
+   if (conf == nullptr) {
       /*
        * Due to CR 6319231 IZ 1760:
        *    Try to resolve the hostname
@@ -765,7 +765,7 @@ sge_get_config_version_for_host(const char *aName) {
       conf = lGetElemHost(config_list, CONF_name, unique_name);
    }
 
-   if (conf == NULL) {
+   if (conf == nullptr) {
       DPRINTF(("%s: no master configuration for %s found\n", __func__, aName));
    } else {
       version = lGetUlong(conf, CONF_version);
@@ -783,14 +783,14 @@ sge_get_config_version_for_host(const char *aName) {
  */
 lListElem *
 sge_get_configuration_for_host(const char *aName) {
-   lListElem *conf = NULL;
+   lListElem *conf = nullptr;
    char unique_name[CL_MAXHOSTLEN];
    int ret = -1;
    const lList *config_list = *object_type_get_master_list(SGE_TYPE_CONFIG);
 
    DENTER(TOP_LAYER);
 
-   SGE_ASSERT((NULL != aName));
+   SGE_ASSERT((nullptr != aName));
 
    /*
     * Due to CR 6319231 IZ 1760:
@@ -817,18 +817,18 @@ sge_get_configuration_for_host(const char *aName) {
 
 void
 sge_set_conf_reprioritize(lListElem *aConf, bool aFlag) {
-   lList *entries = NULL;
-   lListElem *ep = NULL;
+   lList *entries = nullptr;
+   lListElem *ep = nullptr;
 
    DENTER(TOP_LAYER);
 
-   SGE_ASSERT((NULL != aConf));
+   SGE_ASSERT((nullptr != aConf));
 
    entries = lGetListRW(aConf, CONF_entries);
 
    ep = lGetElemStrRW(entries, CF_name, REPRIORITIZE);
 
-   if (NULL == ep) {
+   if (nullptr == ep) {
       ep = lCreateElem(CF_Type);
       lSetString(ep, CF_name, REPRIORITIZE);
       lAppendElem(entries, ep);
@@ -849,16 +849,16 @@ sge_set_conf_reprioritize(lListElem *aConf, bool aFlag) {
  */
 static int
 do_mod_config(sge_gdi_ctx_class_t *ctx, char *aConfName, lListElem *anOldConf, lListElem *aNewConf, lList **anAnswer) {
-   const lList *old_entries = NULL;
-   lList *new_entries = NULL;
-   lListElem *reprio = NULL;
+   const lList *old_entries = nullptr;
+   lList *new_entries = nullptr;
+   lListElem *reprio = nullptr;
 
    DENTER(TOP_LAYER);
 
    old_entries = lGetList(anOldConf, CONF_entries);
    new_entries = lGetListRW(aNewConf, CONF_entries);
 
-   if ((reprio = is_reprioritize_missing(old_entries, new_entries)) != NULL) {
+   if ((reprio = is_reprioritize_missing(old_entries, new_entries)) != nullptr) {
       lAppendElem(new_entries, reprio);
    }
 
@@ -884,25 +884,25 @@ check_static_conf_entries(const lList *theOldConfEntries, const lList *theNewCon
 
    DENTER(TOP_LAYER);
 
-   while (NULL != Static_Conf_Entries[entry_idx]) {
-      const lListElem *old_entry, *new_entry = NULL;
-      const char *old_value, *new_value = NULL;
+   while (nullptr != Static_Conf_Entries[entry_idx]) {
+      const lListElem *old_entry, *new_entry = nullptr;
+      const char *old_value, *new_value = nullptr;
       const char *entry_name = Static_Conf_Entries[entry_idx];
 
       old_entry = lGetElemStr(theOldConfEntries, CF_name, entry_name);
       new_entry = lGetElemStr(theNewConfEntries, CF_name, entry_name);
 
-      if ((NULL != old_entry) && (NULL != new_entry)) {
+      if ((nullptr != old_entry) && (nullptr != new_entry)) {
          old_value = lGetString(old_entry, CF_value);
          new_value = lGetString(new_entry, CF_value);
 
-         if (((NULL != old_value) && (NULL != new_value)) && (strcmp(old_value, new_value) != 0)) {
+         if (((nullptr != old_value) && (nullptr != new_value)) && (strcmp(old_value, new_value) != 0)) {
             /* log in qmaster messages file */
             WARNING((SGE_EVENT, MSG_WARN_CHANGENOTEFFECTEDUNTILRESTARTOFEXECHOSTS, entry_name));
             /*   INFO((SGE_EVENT, MSG_WARN_CHANGENOTEFFECTEDUNTILRESTARTOFEXECHOSTS, entry_name)); */
             answer_list_add(anAnswer, SGE_EVENT, STATUS_OK, ANSWER_QUALITY_INFO);
          }
-      } else if ((NULL != old_entry) != (NULL != new_entry)) {
+      } else if ((nullptr != old_entry) != (nullptr != new_entry)) {
          /* log error only if one value is set */
          /* log in qmaster messages file */
          WARNING((SGE_EVENT, MSG_WARN_CHANGENOTEFFECTEDUNTILRESTARTOFEXECHOSTS, entry_name));
@@ -921,16 +921,16 @@ check_static_conf_entries(const lList *theOldConfEntries, const lList *theNewCon
  */
 static lListElem *
 is_reprioritize_missing(const lList *theOldConfEntries, const lList *theNewConfEntries) {
-   const lListElem *old_reprio = NULL;
-   const lListElem *new_reprio = NULL;
-   lListElem *res = NULL;
+   const lListElem *old_reprio = nullptr;
+   const lListElem *new_reprio = nullptr;
+   lListElem *res = nullptr;
 
    DENTER(TOP_LAYER);
 
    old_reprio = lGetElemStr(theOldConfEntries, CF_name, REPRIORITIZE);
    new_reprio = lGetElemStr(theNewConfEntries, CF_name, REPRIORITIZE);
 
-   if ((NULL == new_reprio) && (NULL != old_reprio)) {
+   if ((nullptr == new_reprio) && (nullptr != old_reprio)) {
       res = lCopyElem(old_reprio);
    }
 
@@ -945,7 +945,7 @@ is_reprioritize_missing(const lList *theOldConfEntries, const lList *theNewConfE
 static int
 exchange_conf_by_name(sge_gdi_ctx_class_t *ctx, char *aConfName, lListElem *anOldConf, lListElem *aNewConf,
                       lList **anAnswer) {
-   lListElem *elem = NULL;
+   lListElem *elem = nullptr;
    u_long32 old_version, new_version = 0;
    const char *old_conf_name = lGetHost(anOldConf, CONF_name);
    lList *config_list = *object_type_get_master_list_rw(SGE_TYPE_CONFIG);
@@ -973,17 +973,17 @@ exchange_conf_by_name(sge_gdi_ctx_class_t *ctx, char *aConfName, lListElem *anOl
 
    SGE_UNLOCK(LOCK_MASTER_CONF, LOCK_WRITE);
 
-   sge_event_spool(ctx, anAnswer, 0, sgeE_CONFIG_MOD, 0, 0, old_conf_name, NULL, NULL, elem, NULL, NULL, true, true);
+   sge_event_spool(ctx, anAnswer, 0, sgeE_CONFIG_MOD, 0, 0, old_conf_name, nullptr, nullptr, elem, nullptr, nullptr, true, true);
 
    DRETURN(0);
 }
 
 static bool
 has_reschedule_unknown_change(const lList *theOldConfEntries, const lList *theNewConfEntries) {
-   const lListElem *old_elem = NULL;
-   const lListElem *new_elem = NULL;
-   const char *old_value = NULL;
-   const char *new_value = NULL;
+   const lListElem *old_elem = nullptr;
+   const lListElem *new_elem = nullptr;
+   const char *old_value = nullptr;
+   const char *new_value = nullptr;
    bool res = false;
 
    DENTER(TOP_LAYER);
@@ -991,12 +991,12 @@ has_reschedule_unknown_change(const lList *theOldConfEntries, const lList *theNe
    old_elem = lGetElemStr(theOldConfEntries, CF_name, "reschedule_unknown");
    new_elem = lGetElemStr(theNewConfEntries, CF_name, "reschedule_unknown");
 
-   old_value = (NULL != old_elem) ? lGetString(old_elem, CF_value) : NULL;
-   new_value = (NULL != new_elem) ? lGetString(new_elem, CF_value) : NULL;
+   old_value = (nullptr != old_elem) ? lGetString(old_elem, CF_value) : nullptr;
+   new_value = (nullptr != new_elem) ? lGetString(new_elem, CF_value) : nullptr;
 
-   if ((NULL == old_value) || (NULL == new_value)) {
+   if ((nullptr == old_value) || (nullptr == new_value)) {
       res = true;  /* change by omission in one configuration */
-   } else if (((NULL != old_value) && (NULL != new_value)) && (strcmp(old_value, new_value) != 0)) {
+   } else if (((nullptr != old_value) && (nullptr != new_value)) && (strcmp(old_value, new_value) != 0)) {
       res = true;  /* value did change */
    }
 
@@ -1009,7 +1009,7 @@ has_reschedule_unknown_change(const lList *theOldConfEntries, const lList *theNe
 
 static int
 do_add_config(sge_gdi_ctx_class_t *ctx, char *aConfName, lListElem *aConf, lList **anAnswer) {
-   lListElem *elem = NULL;
+   lListElem *elem = nullptr;
    lList *config_list = *object_type_get_master_list_rw(SGE_TYPE_CONFIG);
 
    DENTER(TOP_LAYER);
@@ -1022,14 +1022,14 @@ do_add_config(sge_gdi_ctx_class_t *ctx, char *aConfName, lListElem *aConf, lList
 
    SGE_UNLOCK(LOCK_MASTER_CONF, LOCK_WRITE);
 
-   sge_event_spool(ctx, anAnswer, 0, sgeE_CONFIG_ADD, 0, 0, aConfName, NULL, NULL, elem, NULL, NULL, true, true);
+   sge_event_spool(ctx, anAnswer, 0, sgeE_CONFIG_ADD, 0, 0, aConfName, nullptr, nullptr, elem, nullptr, nullptr, true, true);
 
    DRETURN(0);
 }
 
 static int
 remove_conf_by_name(char *aConfName) {
-   lListElem *elem = NULL;
+   lListElem *elem = nullptr;
    lList *config_list = *object_type_get_master_list_rw(SGE_TYPE_CONFIG);
 
    DENTER(TOP_LAYER);

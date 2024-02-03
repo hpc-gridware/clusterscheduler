@@ -160,51 +160,51 @@ int lDumpDescr(FILE *fp, const lDescr *dp, int indent) {
 *******************************************************************************/
 lDescr *lUndumpDescr(FILE *fp) {
    int n, i;
-   lDescr *dp = NULL;
+   lDescr *dp = nullptr;
 
    DENTER(CULL_LAYER);
 
    if (!fp) {
       LERROR(LEFILENULL);
-      DRETURN(NULL);
+      DRETURN(nullptr);
    }
 
    /* read bra */
    if (fGetBra(fp)) {
       printf("bra is missing\n");
       LERROR(LESYNTAX);
-      DRETURN(NULL);
+      DRETURN(nullptr);
    }
 
    /* read Descriptor Count */
    if (fGetInt(fp, &n)) {
       printf("reading integer from dump file failed\n");
       LERROR(LEFIELDREAD);
-      DRETURN(NULL);
+      DRETURN(nullptr);
    }
 
    if (!(dp = (lDescr *) sge_malloc(sizeof(lDescr) * (n + 1)))) {
       LERROR(LEMALLOC);
-      DRETURN(NULL);
+      DRETURN(nullptr);
    }
 
    for (i = 0; i < n; i++) {
       /* read descriptor */
       if (fGetDescr(fp, &(dp[i]))) {
          LERROR(LEFGETDESCR);
-         DRETURN(NULL);
+         DRETURN(nullptr);
       }
    }
    dp[i].nm = NoName;
    dp[i].mt = lEndT;
-   dp[i].ht = NULL;
+   dp[i].ht = nullptr;
 
    /* read ket */
    if (fGetKet(fp)) {
       printf("ket is missing");
       sge_free(&dp);
       LERROR(LESYNTAX);
-      DRETURN(NULL);
+      DRETURN(nullptr);
    }
 
    DRETURN(dp);
@@ -238,7 +238,7 @@ int lDumpElem(const char *fname, const lListElem *ep, int indent) {
    FILE *fp;
 
    fp = fopen(fname, "w");
-   if (fp != NULL) {
+   if (fp != nullptr) {
       ret = lDumpElemFp(fp, ep, indent);
       FCLOSE(fp);
    } else {
@@ -299,7 +299,7 @@ int lDumpElemFp(FILE *fp, const lListElem *ep, int indent) {
 
    ret = fprintf(fp, "%s{ \n", space);
    for (i = 0, ret = 0; ep->descr[i].nm != NoName && ret != EOF; i++) {
-      char *tok = NULL;
+      char *tok = nullptr;
 
       switch (mt_get_type(ep->descr[i].mt)) {
          case lIntT:
@@ -317,22 +317,22 @@ int lDumpElemFp(FILE *fp, const lListElem *ep, int indent) {
          case lStringT:
             str = lGetPosString(ep, i);
             /* quote " inside str */
-            if ((tok = sge_strtok(str, "\"")) != NULL) {
+            if ((tok = sge_strtok(str, "\"")) != nullptr) {
                sge_dstring_append(&dstr, tok);
-               while ((tok = sge_strtok(NULL, "\"")) != NULL) {
+               while ((tok = sge_strtok(nullptr, "\"")) != nullptr) {
                   sge_dstring_append(&dstr, "\\\"");
                   sge_dstring_append(&dstr, tok);
                }
             }
             str = sge_dstring_get_string(&dstr);
             ret = fprintf(fp, "%s/* %-20.20s */ \"%s\"\n",
-                          space, lNm2Str(ep->descr[i].nm), str != NULL ? str : "");
+                          space, lNm2Str(ep->descr[i].nm), str != nullptr ? str : "");
             sge_dstring_clear(&dstr);
             break;
          case lHostT:
             str = lGetPosHost(ep, i);
             ret = fprintf(fp, "%s/* %-20.20s */ \"%s\"\n",
-                          space, lNm2Str(ep->descr[i].nm), str != NULL ? str : "");
+                          space, lNm2Str(ep->descr[i].nm), str != nullptr ? str : "");
             break;
          case lFloatT:
             ret = fprintf(fp, "%s/* %-20.20s */ %f\n",
@@ -359,7 +359,7 @@ int lDumpElemFp(FILE *fp, const lListElem *ep, int indent) {
                           space, lNm2Str(ep->descr[i].nm), (long) lGetPosRef(ep, i));
             break;
          case lObjectT:
-            if ((tep = lGetPosObject(ep, i)) == NULL)
+            if ((tep = lGetPosObject(ep, i)) == nullptr)
                ret = fprintf(fp, "%s/* %-20.20s */ none\n",
                              space, lNm2Str(ep->descr[i].nm));
             else {
@@ -370,7 +370,7 @@ int lDumpElemFp(FILE *fp, const lListElem *ep, int indent) {
             }
             break;
          case lListT:
-            if ((tlp = lGetPosList(ep, i)) == NULL)
+            if ((tlp = lGetPosList(ep, i)) == nullptr)
                ret = fprintf(fp, "%s/* %-20.20s */ empty\n",
                              space, lNm2Str(ep->descr[i].nm));
             else {
@@ -521,13 +521,13 @@ int lDumpList(FILE *fp, const lList *lp, int indent) {
 *     lListElem* - Read element 
 ******************************************************************************/
 lListElem *lUndumpElem(const char *fname, const lDescr *dp) {
-   lListElem *ep = NULL;
+   lListElem *ep = nullptr;
    FILE *fp;
 
    DENTER(CULL_LAYER);
 
    fp = fopen(fname, "r");
-   if (fp == NULL) {
+   if (fp == nullptr) {
       LERROR(LEOPEN);
    } else {
       ep = lUndumpElemFp(fp, dp);
@@ -564,21 +564,21 @@ lListElem *lUndumpElemFp(FILE *fp, const lDescr *dp) {
 
    if (!fp) {
       LERROR(LEFILENULL);
-      DRETURN(NULL);
+      DRETURN(nullptr);
    }
    if (!dp) {
       LERROR(LEDESCRNULL);
-      DRETURN(NULL);
+      DRETURN(nullptr);
    }
    if (!(ep = lCreateElem(dp))) {
       LERROR(LECREATEELEM);
-      DRETURN(NULL);
+      DRETURN(nullptr);
    }
 
    if ((n = lCountDescr(dp)) <= 0) {
       LERROR(LECOUNTDESCR);
       lFreeElem(&ep);
-      DRETURN(NULL);
+      DRETURN(nullptr);
    }
 
    /* read bra */
@@ -586,7 +586,7 @@ lListElem *lUndumpElemFp(FILE *fp, const lDescr *dp) {
       printf("bra is missing\n");
       LERROR(LESYNTAX);
       lFreeElem(&ep);
-      DRETURN(NULL);
+      DRETURN(nullptr);
    }
 
    for (i = 0; i < n && ret == 0; i++) {
@@ -632,7 +632,7 @@ lListElem *lUndumpElemFp(FILE *fp, const lDescr *dp) {
          case lRefT:
             /* we will not undump references! But we have to skip the line! */
             ret = fGetUlong(fp, &dummy);
-            ep->cont[i].ref = NULL;
+            ep->cont[i].ref = nullptr;
             break;
          case lObjectT:
             ret = fGetObject(fp, &(ep->cont[i].obj));
@@ -650,7 +650,7 @@ lListElem *lUndumpElemFp(FILE *fp, const lDescr *dp) {
    if (ret != 0) {
       lFreeElem(&ep);
       LERROR(LEFIELDREAD);
-      DRETURN(NULL);
+      DRETURN(nullptr);
    }
 
    /* read ket */
@@ -658,7 +658,7 @@ lListElem *lUndumpElemFp(FILE *fp, const lDescr *dp) {
       lFreeElem(&ep);
       printf("ket is missing\n");
       LERROR(LESYNTAX);
-      DRETURN(NULL);
+      DRETURN(nullptr);
    }
 
    DRETURN(ep);
@@ -685,37 +685,37 @@ lListElem *lUndumpElemFp(FILE *fp, const lDescr *dp) {
 ******************************************************************************/
 lListElem *lUndumpObject(FILE *fp) {
    lListElem *ep;
-   lDescr *dp = NULL;
+   lDescr *dp = nullptr;
 
    DENTER(CULL_LAYER);
 
    if (!fp) {
       LERROR(LEFILENULL);
-      DRETURN(NULL);
+      DRETURN(nullptr);
    }
    /* read bra */
    if (fGetBra(fp)) {
       printf("bra is missing\n");
       LERROR(LESYNTAX);
-      DRETURN(NULL);
+      DRETURN(nullptr);
    }
 
    /* read Descriptor from file */
-   if ((dp = lUndumpDescr(fp)) == NULL) {
+   if ((dp = lUndumpDescr(fp)) == nullptr) {
       LERROR(LEFGETDESCR);
-      DRETURN(NULL);
+      DRETURN(nullptr);
    }
 
    if (lCountDescr(dp) <= 0) {
       LERROR(LECOUNTDESCR);
       sge_free(&dp);
-      DRETURN(NULL);
+      DRETURN(nullptr);
    }
 
-   if ((ep = lUndumpElemFp(fp, dp)) == NULL) {
+   if ((ep = lUndumpElemFp(fp, dp)) == nullptr) {
       LERROR(LEUNDUMPELEM);
       sge_free(&dp);
-      DRETURN(NULL);
+      DRETURN(nullptr);
    }
 
    sge_free(&dp);
@@ -725,7 +725,7 @@ lListElem *lUndumpObject(FILE *fp) {
       lFreeElem(&ep);
       printf("ket is missing\n");
       LERROR(LESYNTAX);
-      DRETURN(NULL);
+      DRETURN(nullptr);
    }
 
    DRETURN(ep);
@@ -743,9 +743,9 @@ lListElem *lUndumpObject(FILE *fp) {
 *
 *  INPUTS
 *     FILE *fp         - file pointer 
-*     const char *name - new name of list or NULL if the old name in the
+*     const char *name - new name of list or nullptr if the old name in the
 *                        dumpfile should be used as listname 
-*     const lDescr *dp - new list descriptor or NULL if the old list
+*     const lDescr *dp - new list descriptor or nullptr if the old list
 *                        descriptor should be used as list descriptor 
 *
 *  RESULT
@@ -763,9 +763,9 @@ lListElem *lUndumpObject(FILE *fp) {
 *     hands over the varargs list to lUndumpList
 ******************************************************************************/
 lList *lUndumpList(FILE *fp, const char *name, const lDescr *dp) {
-   lList *lp = NULL;
+   lList *lp = nullptr;
    lListElem *fep, *ep;
-   lDescr *fdp = NULL;
+   lDescr *fdp = nullptr;
    int i, j, nelem, n, k;
    int *found;
    char *oldname;
@@ -774,43 +774,43 @@ lList *lUndumpList(FILE *fp, const char *name, const lDescr *dp) {
 
    if (!fp) {
       LERROR(LEFILENULL);
-      DRETURN(NULL);
+      DRETURN(nullptr);
    }
 
    /* read bra */
    if (fGetBra(fp)) {
       printf("bra is missing\n");
       LERROR(LESYNTAX);
-      DRETURN(NULL);
+      DRETURN(nullptr);
    }
    /* read listname */
    if (fGetString(fp, &oldname)) {
       printf("fGetString failed\n");
       LERROR(LEFIELDREAD);
-      DRETURN(NULL);
+      DRETURN(nullptr);
    }
 
    /* read number of elems */
    if (fGetInt(fp, &nelem)) {
       printf("fGetInt failed\n");
       LERROR(LEFIELDREAD);
-      DRETURN(NULL);
+      DRETURN(nullptr);
    }
 
    /* read Descriptor from file */
    if (!(fdp = lUndumpDescr(fp))) {
       LERROR(LEFGETDESCR);
-      DRETURN(NULL);
+      DRETURN(nullptr);
    }
 
-   if (!dp)                     /* dp is NULL, use lDescr from dumpfile */
+   if (!dp)                     /* dp is nullptr, use lDescr from dumpfile */
       dp = fdp;
 
-   /* use old name (from file) if name is NULL */
+   /* use old name (from file) if name is nullptr */
    if (!(lp = lCreateList((name) ? name : oldname, dp))) {
       sge_free(&fdp);
       LERROR(LECREATELIST);
-      DRETURN(NULL);
+      DRETURN(nullptr);
    }
    sge_free(&oldname);               /* fGetString strdup's */
 
@@ -818,14 +818,14 @@ lList *lUndumpList(FILE *fp, const char *name, const lDescr *dp) {
       LERROR(LECOUNTDESCR);
       sge_free(&fdp);
       lFreeList(&lp);
-      DRETURN(NULL);
+      DRETURN(nullptr);
    }
 
    if (!(found = (int *) sge_malloc(sizeof(int) * n))) {
       LERROR(LEMALLOC);
       sge_free(&fdp);
       lFreeList(&lp);
-      DRETURN(NULL);
+      DRETURN(nullptr);
    }
 
    /* Initialize found array */
@@ -859,7 +859,7 @@ lList *lUndumpList(FILE *fp, const char *name, const lDescr *dp) {
          lFreeList(&lp);
          sge_free(&found);
          sge_free(&fdp);
-         DRETURN(NULL);
+         DRETURN(nullptr);
       }
 
       if (!(ep = lCreateElem(dp))) {
@@ -867,19 +867,19 @@ lList *lUndumpList(FILE *fp, const char *name, const lDescr *dp) {
          sge_free(&found);
          sge_free(&fdp);
          LERROR(LECREATEELEM);
-         DRETURN(NULL);
+         DRETURN(nullptr);
       }
 
       for (i = 0; i < n; i++) {
          if (found[i] == -1) {
             continue;
-         } else if (lCopySwitchPack(fep, ep, found[i], i, true, NULL, NULL) == -1) {
+         } else if (lCopySwitchPack(fep, ep, found[i], i, true, nullptr, nullptr) == -1) {
             lFreeList(&lp);
             lFreeElem(&ep);
             sge_free(&found);
             sge_free(&fdp);
             LERROR(LECOPYSWITCH);
-            DRETURN(NULL);
+            DRETURN(nullptr);
          }
       }
       lFreeElem(&fep);
@@ -889,7 +889,7 @@ lList *lUndumpList(FILE *fp, const char *name, const lDescr *dp) {
          sge_free(&found);
          sge_free(&fdp);
          LERROR(LEAPPENDELEM);
-         DRETURN(NULL);
+         DRETURN(nullptr);
       }
 
    }
@@ -1006,7 +1006,7 @@ static int fGetDescr(FILE *fp, lDescr *dp) {
 
    dp->nm = nm;
    dp->mt = mt;
-   dp->ht = NULL;
+   dp->ht = nullptr;
 
    DRETURN(0);
 }
@@ -1132,7 +1132,7 @@ static int fGetString(FILE *fp, lString *tp) {
    }
 
    s = sge_dstring_get_string(&sp);
-   if (s == NULL) {
+   if (s == nullptr) {
       *tp = strdup("");
    } else {
       *tp = strdup(s);
@@ -1312,7 +1312,7 @@ static int fGetList(FILE *fp, lList **lpp) {
 
    DENTER(CULL_LAYER);
 
-   if (fp == NULL) {
+   if (fp == nullptr) {
       LERROR(LEFILENULL);
       DRETURN(-1);
    }
@@ -1322,8 +1322,8 @@ static int fGetList(FILE *fp, lList **lpp) {
       DRETURN(-1);
    }
 
-   if (strstr(s, "empty") != NULL)
-      *lpp = NULL;              /* empty sublist */
+   if (strstr(s, "empty") != nullptr)
+      *lpp = nullptr;              /* empty sublist */
    else {
 /*
       if (strstr(s, "full") == 0) {
@@ -1331,7 +1331,7 @@ static int fGetList(FILE *fp, lList **lpp) {
          DRETURN(-1);
       }
 */
-      if ((*lpp = lUndumpList(fp, NULL, NULL)) == NULL) {
+      if ((*lpp = lUndumpList(fp, nullptr, nullptr)) == nullptr) {
          LERROR(LEUNDUMPLIST);
          DRETURN(-1);
       }
@@ -1345,7 +1345,7 @@ static int fGetObject(FILE *fp, lListElem **epp) {
 
    DENTER(CULL_LAYER);
 
-   if (fp == NULL) {
+   if (fp == nullptr) {
       LERROR(LEFILENULL);
       DRETURN(-1);
    }
@@ -1355,15 +1355,15 @@ static int fGetObject(FILE *fp, lListElem **epp) {
       DRETURN(-1);
    }
 
-   if (strstr(s, "none") != NULL)
-      *epp = NULL;              /* no object stored */
+   if (strstr(s, "none") != nullptr)
+      *epp = nullptr;              /* no object stored */
    else {
       if (strstr(s, "object") == 0) {
          LERROR(LESYNTAX);
          DRETURN(-1);
       }
 
-      if ((*epp = lUndumpObject(fp)) == NULL) {
+      if ((*epp = lUndumpObject(fp)) == nullptr) {
          LERROR(LEUNDUMPELEM);
          DRETURN(-1);
       }

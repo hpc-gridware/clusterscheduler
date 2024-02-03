@@ -91,7 +91,7 @@ struct cl_thread_settings_type {
    int thread_id;                    /* thread id */
    int thread_state;                 /* thread state, e.g. CL_THREAD_WAITING */
    unsigned long thread_event_count;           /* number of cl_thread_wait_for_event() calls */
-   cl_raw_list_t *thread_log_list;              /* list for log ( can be NULL ) */
+   cl_raw_list_t *thread_log_list;              /* list for log ( can be nullptr ) */
    pthread_t *thread_pointer;               /* pointer to thread (pthread lib) */
    cl_thread_condition_t *thread_event_condition;       /* event call conditions */
    cl_thread_condition_t *thread_startup_condition;     /* startup condition ( used by cl_thread_setup() ) */
@@ -210,6 +210,6 @@ void cl_thread_default_cleanup_function(cl_thread_settings_t *thread_config);
    
        cl_thread_func_cleanup(thread_config);  
        pthread_cleanup_pop(0);
-       return (NULL);
+       return (nullptr);
     }
 */

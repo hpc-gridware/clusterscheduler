@@ -133,7 +133,7 @@ static bool update_jobs(void)
 
 static bool spool_data(void)
 {
-   lList *answer_list = NULL;
+   lList *answer_list = nullptr;
    const lListElem *context;
    lListElem *job;
    dstring key_ds = DSTRING_INIT;
@@ -146,14 +146,14 @@ static bool spool_data(void)
 
    for_each_rw(job, *object_type_get_master_list(SGE_TYPE_JOB)) {
       const lList *ja_tasks = lGetList(job, JB_ja_tasks);
-      if (ja_tasks == NULL || lGetNumberOfElem(ja_tasks) == 0) {
-         key = job_get_key(lGetUlong(job, JB_job_number), 0, NULL, &key_ds);
+      if (ja_tasks == nullptr || lGetNumberOfElem(ja_tasks) == 0) {
+         key = job_get_key(lGetUlong(job, JB_job_number), 0, nullptr, &key_ds);
          spool_write_object(&answer_list, context, job, key, SGE_TYPE_JOB, true);
          num_total++;
       } else {
          const lListElem *ja_task;
          for_each_rw(ja_task, ja_tasks) {
-            key = job_get_key(lGetUlong(job, JB_job_number), lGetUlong(ja_task, JAT_task_number), NULL, &key_ds);
+            key = job_get_key(lGetUlong(job, JB_job_number), lGetUlong(ja_task, JAT_task_number), nullptr, &key_ds);
             spool_write_object(&answer_list, context, ja_task, key, SGE_TYPE_JATASK, true);
             num_total++;
          }
@@ -170,7 +170,7 @@ static bool spool_data(void)
 #endif
 static bool read_spooled_data(void)
 {
-   lList *answer_list = NULL;
+   lList *answer_list = nullptr;
    const lListElem *context;
 
    context = spool_get_default_context();
@@ -185,7 +185,7 @@ static bool read_spooled_data(void)
 
 static bool delete_spooled_data(void)
 {
-   lList *answer_list = NULL;
+   lList *answer_list = nullptr;
    lListElem *job;
    const lListElem *context;
    char key[100];
@@ -227,9 +227,9 @@ static void write_csv(const char *scenario, prof_level level)
    double utilization;
    double jobs_per_second;
 
-   busy        = prof_get_total_busy(level, true, NULL);
-   utime       = prof_get_total_utime(level, true, NULL);
-   stime       = prof_get_total_stime(level, true, NULL);
+   busy        = prof_get_total_busy(level, true, nullptr);
+   utime       = prof_get_total_utime(level, true, nullptr);
+   stime       = prof_get_total_stime(level, true, nullptr);
    utilization = busy > 0 ? (utime + stime) / busy * 100 : 0;
    jobs_per_second = busy > 0 ? num_jobs / busy : 0;
 
@@ -249,9 +249,9 @@ void clear_caches(void)
 
 int main(int argc, char *argv[])
 {
-   sge_gdi_ctx_class_t *ctx = NULL;
+   sge_gdi_ctx_class_t *ctx = nullptr;
    lListElem *spooling_context;
-   lList *answer_list = NULL;
+   lList *answer_list = nullptr;
 
    DENTER_MAIN(TOP_LAYER, "test_performance");
 
@@ -264,11 +264,11 @@ int main(int argc, char *argv[])
    obj_mt_init();
    bootstrap_mt_init();
 
-   prof_start(SGE_PROF_CUSTOM1, NULL);
-   prof_set_level_name(SGE_PROF_CUSTOM1, "performance", NULL);
+   prof_start(SGE_PROF_CUSTOM1, nullptr);
+   prof_set_level_name(SGE_PROF_CUSTOM1, "performance", nullptr);
 
-   prof_start(SGE_PROF_SPOOLINGIO, NULL);
-   prof_set_level_name(SGE_PROF_SPOOLINGIO, "io", NULL);
+   prof_start(SGE_PROF_SPOOLINGIO, nullptr);
+   prof_set_level_name(SGE_PROF_SPOOLINGIO, "io", nullptr);
 
    /* parse commandline parameters */
    if(argc != 4) {
@@ -283,7 +283,7 @@ int main(int argc, char *argv[])
    /* initialize spooling */
    spooling_context = spool_create_dynamic_context(&answer_list, argv[1], argv[2], argv[3]);
    answer_list_output(&answer_list);
-   if (spooling_context == NULL) {
+   if (spooling_context == nullptr) {
       SGE_EXIT((void**)&ctx, EXIT_FAILURE);
    }
 
@@ -303,7 +303,7 @@ int main(int argc, char *argv[])
    PROF_STOP_MEASUREMENT(SGE_PROF_CUSTOM1);
    write_csv("generating jobs", SGE_PROF_CUSTOM1);
    prof_output_info(SGE_PROF_CUSTOM1, true, "generating jobs:\n");
-   prof_reset(SGE_PROF_CUSTOM1, NULL);
+   prof_reset(SGE_PROF_CUSTOM1, nullptr);
 /*
    PROF_START_MEASUREMENT(SGE_PROF_CUSTOM1);
    copy = copy_jobs();
@@ -311,7 +311,7 @@ int main(int argc, char *argv[])
    lFreeList(&copy);
    write_csv("copy jobs", SGE_PROF_CUSTOM1);
    prof_output_info(SGE_PROF_CUSTOM1, true, "copy jobs:\n");
-   prof_reset(SGE_PROF_CUSTOM1, NULL);
+   prof_reset(SGE_PROF_CUSTOM1, nullptr);
 
    PROF_START_MEASUREMENT(SGE_PROF_CUSTOM1);
    copy = select_jobs(what_job);
@@ -319,17 +319,17 @@ int main(int argc, char *argv[])
    lFreeList(&copy);
    write_csv("select jobs", SGE_PROF_CUSTOM1);
    prof_output_info(SGE_PROF_CUSTOM1, true, "select jobs:\n");
-   prof_reset(SGE_PROF_CUSTOM1, SGE_PROF_CUSTOM1, NULL);
+   prof_reset(SGE_PROF_CUSTOM1, SGE_PROF_CUSTOM1, nullptr);
 */
    PROF_START_MEASUREMENT(SGE_PROF_CUSTOM1);
    spool_data();
    PROF_STOP_MEASUREMENT(SGE_PROF_CUSTOM1);
    write_csv("spool jobs", SGE_PROF_CUSTOM1);
    prof_output_info(SGE_PROF_CUSTOM1, true, "spool jobs:\n");
-   prof_reset(SGE_PROF_CUSTOM1, NULL);
+   prof_reset(SGE_PROF_CUSTOM1, nullptr);
    write_csv("spooling io", SGE_PROF_SPOOLINGIO);
    prof_output_info(SGE_PROF_SPOOLINGIO, true, "IO:\n");
-   prof_reset(SGE_PROF_SPOOLINGIO, NULL);
+   prof_reset(SGE_PROF_SPOOLINGIO, nullptr);
 
    /* modify jobs */
    clear_caches();
@@ -339,10 +339,10 @@ int main(int argc, char *argv[])
    PROF_STOP_MEASUREMENT(SGE_PROF_CUSTOM1);
    write_csv("respool jobs", SGE_PROF_CUSTOM1);
    prof_output_info(SGE_PROF_CUSTOM1, true, "respool jobs:\n");
-   prof_reset(SGE_PROF_CUSTOM1, NULL);
+   prof_reset(SGE_PROF_CUSTOM1, nullptr);
    write_csv("respooling io", SGE_PROF_SPOOLINGIO);
    prof_output_info(SGE_PROF_SPOOLINGIO, true, "IO:\n");
-   prof_reset(SGE_PROF_SPOOLINGIO, NULL);
+   prof_reset(SGE_PROF_SPOOLINGIO, nullptr);
 
    clear_caches();
    lFreeList(object_type_get_master_list_rw(SGE_TYPE_JOB));
@@ -352,7 +352,7 @@ int main(int argc, char *argv[])
    PROF_STOP_MEASUREMENT(SGE_PROF_CUSTOM1);
    write_csv("read jobs", SGE_PROF_CUSTOM1);
    prof_output_info(SGE_PROF_CUSTOM1, true, "read jobs:\n");
-   prof_reset(SGE_PROF_CUSTOM1, NULL);
+   prof_reset(SGE_PROF_CUSTOM1, nullptr);
 
    clear_caches();
    PROF_START_MEASUREMENT(SGE_PROF_CUSTOM1);
@@ -360,7 +360,7 @@ int main(int argc, char *argv[])
    PROF_STOP_MEASUREMENT(SGE_PROF_CUSTOM1);
    write_csv("delete jobs", SGE_PROF_CUSTOM1);
    prof_output_info(SGE_PROF_CUSTOM1, true, "delete jobs:\n");
-   prof_reset(SGE_PROF_CUSTOM1, NULL);
+   prof_reset(SGE_PROF_CUSTOM1, nullptr);
 
    spool_shutdown_context(&answer_list, spooling_context);
    spool_startup_context(&answer_list, spooling_context, true);

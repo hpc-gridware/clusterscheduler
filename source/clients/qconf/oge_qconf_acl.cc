@@ -63,7 +63,7 @@ lList *user_args,
 lList *acl_args 
 ) {
    const lListElem *userarg, *aclarg;
-   lList *acl=NULL, *answers=NULL;
+   lList *acl=nullptr, *answers=nullptr;
    const char *acl_name, *user_name;
    lCondition *where;
    lEnumeration *what;
@@ -93,7 +93,7 @@ lList *acl_args
 
                /* mod the acl */
                answers = ctx->gdi(ctx, SGE_US_LIST, SGE_GDI_MOD, &acl, 
-                        NULL, NULL);   
+                        nullptr, nullptr);
             } else {
                already = 1;
             }
@@ -104,7 +104,7 @@ lList *acl_args
             
             /* add the acl */
             answers = ctx->gdi(ctx, SGE_US_LIST, SGE_GDI_ADD, &acl, 
-                     NULL, NULL);   
+                     nullptr, nullptr);
          }
 
          if (already) {
@@ -156,7 +156,7 @@ lList *user_args,
 lList *acl_args 
 ) {
    const lListElem *userarg, *aclarg;
-   lList *acl=NULL, *answers=NULL;
+   lList *acl=nullptr, *answers=nullptr;
    const char *acl_name, *user_name;
    lCondition *where;
    lEnumeration *what;
@@ -172,7 +172,7 @@ lList *acl_args
 
       for_each_ep(userarg, user_args) {
          int breakit = 0;
-         char *cp = NULL;
+         char *cp = nullptr;
          user_name=lGetString(userarg, UE_name);
          /* get old acl */
          answers = ctx->gdi(ctx, SGE_US_LIST, SGE_GDI_GET, &acl, where, what);
@@ -182,7 +182,7 @@ lList *acl_args
             sge_free(&cp);
             if (lGetSubStr(lFirst(acl), UE_name, user_name, US_entries)) {
                lDelSubStr(lFirstRW(acl), UE_name, user_name, US_entries);
-               answers = ctx->gdi(ctx, SGE_US_LIST, SGE_GDI_MOD, &acl, NULL, NULL);
+               answers = ctx->gdi(ctx, SGE_US_LIST, SGE_GDI_MOD, &acl, nullptr, nullptr);
                cp = sge_strdup(cp, lGetString(lFirst(answers), AN_text));
                status = lGetUlong(lFirst(answers), AN_status);
                lFreeList(&answers);
@@ -258,11 +258,11 @@ lList **dst
    
    DENTER(TOP_LAYER);
 
-   where = NULL;
+   where = nullptr;
    for_each_ep(aclarg, acl_args) {
       acl_name = lGetString(aclarg, US_name);
       newcp = lWhere("%T(%I==%s)", US_Type, US_name, acl_name);
-      if (where == NULL) {
+      if (where == nullptr) {
          where = newcp;
       } else {
          where = lOrWhere(where, newcp);
@@ -276,7 +276,7 @@ lList **dst
    answer_list_append_list(alpp, &answers);
   
    /*
-    * if NULL was passwd to alpp, answers will not be
+    * if nullptr was passwd to alpp, answers will not be
     * freed in answer_list_append_list!
     */
    lFreeList(&answers);

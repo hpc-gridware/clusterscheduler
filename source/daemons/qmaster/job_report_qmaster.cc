@@ -163,7 +163,7 @@ status2str(u_long32 status) {
 void process_job_report(sge_gdi_ctx_class_t *ctx, lListElem *report, lListElem *hep, char *rhost, char *commproc,
                         sge_pack_buffer *pb, monitoring_t *monitor) {
    lList *jrl = lGetListRW(report, REP_list); /* JR_Type */
-   lListElem *jep, *jr, *ep, *jatep = NULL;
+   lListElem *jep, *jr, *ep, *jatep = nullptr;
 
    char job_id_buffer[MAX_STRING_SIZE];
    dstring job_id_dstring;
@@ -183,7 +183,7 @@ void process_job_report(sge_gdi_ctx_class_t *ctx, lListElem *report, lListElem *
    ** TODO: could be sorted on execd
    */
    {
-      static lSortOrder *jr_sort_order = NULL;
+      static lSortOrder *jr_sort_order = nullptr;
       if (!jr_sort_order) {
          DPRINTF(("parsing job report sort order\n"));
          jr_sort_order = lParseSortOrderVarArg(JR_Type, "%I-",
@@ -200,7 +200,7 @@ void process_job_report(sge_gdi_ctx_class_t *ctx, lListElem *report, lListElem *
       const char *queue_name;
       const char *pe_task_id_str = lGetString(jr, JR_pe_task_id_str);
       u_long32 status = 0;
-      lListElem *petask = NULL;
+      lListElem *petask = nullptr;
       int fret;
       u_long32 jobid, rstate = 0, jataskid = 0;
 
@@ -209,13 +209,13 @@ void process_job_report(sge_gdi_ctx_class_t *ctx, lListElem *report, lListElem *
       rstate = lGetUlong(jr, JR_state);
 
       jep = lGetElemUlongRW(*object_type_get_master_list(SGE_TYPE_JOB), JB_job_number, jobid);
-      if (jep != NULL) {
+      if (jep != nullptr) {
          jatep = lGetElemUlongRW(lGetList(jep, JB_ja_tasks), JAT_task_number, jataskid);
 
-         if (jatep != NULL) {
+         if (jatep != nullptr) {
             status = lGetUlong(jatep, JAT_status);
 
-            if (pe_task_id_str != NULL) {
+            if (pe_task_id_str != nullptr) {
                petask = lGetSubStr(jatep, PET_id, pe_task_id_str, JAT_task_list);
             }
          }
@@ -230,9 +230,9 @@ void process_job_report(sge_gdi_ctx_class_t *ctx, lListElem *report, lListElem *
       fret = skip_restarted_job(hep, jr, jobid, jataskid);
       if (fret > 0) {
          if (fret == 2) {
-            pack_ack(pb, ACK_SIGNAL_JOB, jobid, jataskid, NULL);
+            pack_ack(pb, ACK_SIGNAL_JOB, jobid, jataskid, nullptr);
          } else if (fret == 3) {
-            lList *answer_list = NULL;
+            lList *answer_list = nullptr;
             u_long32 state = 0;
 
             pack_ack(pb, ACK_JOB_EXIT, jobid, jataskid, pe_task_id_str);
@@ -248,8 +248,8 @@ void process_job_report(sge_gdi_ctx_class_t *ctx, lListElem *report, lListElem *
                   lSetUlong(jatep, JAT_state, state);
                   sge_event_spool(ctx,
                                   &answer_list, 0, sgeE_JATASK_MOD,
-                                  jobid, jataskid, NULL, NULL, NULL,
-                                  jep, jatep, NULL, true, true);
+                                  jobid, jataskid, nullptr, nullptr, nullptr,
+                                  jep, jatep, nullptr, true, true);
                }
             }
          }
@@ -257,7 +257,7 @@ void process_job_report(sge_gdi_ctx_class_t *ctx, lListElem *report, lListElem *
       }
 
 
-      if ((queue_name = lGetString(jr, JR_queue_name)) == NULL) {
+      if ((queue_name = lGetString(jr, JR_queue_name)) == nullptr) {
          queue_name = MSG_OBJ_UNKNOWNQ;
       }
 
@@ -266,7 +266,7 @@ void process_job_report(sge_gdi_ctx_class_t *ctx, lListElem *report, lListElem *
          case JRUNNING:
          case JWAITING4OSJID:
             if (jep && jatep) {
-               lList *answer_list = NULL;
+               lList *answer_list = nullptr;
 
                switch (status) {
                   case JTRANSFERING:
@@ -283,10 +283,10 @@ void process_job_report(sge_gdi_ctx_class_t *ctx, lListElem *report, lListElem *
                                 " which is already in \"deleted\" state. "
                                 "==> send kill signal\n", jobid, jataskid));
 
-                        pack_ack(pb, ACK_SIGNAL_JOB, jobid, jataskid, NULL);
+                        pack_ack(pb, ACK_SIGNAL_JOB, jobid, jataskid, nullptr);
                      }
 
-                     if (pe_task_id_str == NULL) {
+                     if (pe_task_id_str == nullptr) {
 
                         /* store unscaled usage directly in job */
                         lXchgList(jr, JR_usage, lGetListRef(jatep, JAT_usage_list));
@@ -308,7 +308,7 @@ void process_job_report(sge_gdi_ctx_class_t *ctx, lListElem *report, lListElem *
                             * the timestamp should better come from report object
                             */
                            /* jatask usage is not spooled (?) */
-                           sge_add_list_event(0, sgeE_JOB_USAGE, jobid, jataskid, NULL, NULL,
+                           sge_add_list_event(0, sgeE_JOB_USAGE, jobid, jataskid, nullptr, nullptr,
                                               lGetString(jep, JB_session), lGetListRW(jatep, JAT_scaled_usage_list));
                            lList_clear_changed_info(lGetListRW(jatep, JAT_scaled_usage_list));
                         }
@@ -321,7 +321,7 @@ void process_job_report(sge_gdi_ctx_class_t *ctx, lListElem *report, lListElem *
                             lGetElemHost(lGetList(jatep, JAT_granted_destin_identifier_list), JG_qhostname, rhost)) {
 
                            /* is the task already known (object was created earlier)? */
-                           if (petask == NULL) {
+                           if (petask == nullptr) {
                               /* here qmaster hears the first time about this task
                                  and thus adds it to the task list of the appropriate job */
                               new_task = true;
@@ -331,7 +331,7 @@ void process_job_report(sge_gdi_ctx_class_t *ctx, lListElem *report, lListElem *
                               lSetUlong(petask, PET_status, JRUNNING);
                               /* JG: TODO: this should be delivered from execd! */
                               lSetUlong(petask, PET_start_time, sge_get_gmt());
-                              lSetList(petask, PET_granted_destin_identifier_list, NULL);
+                              lSetList(petask, PET_granted_destin_identifier_list, nullptr);
                               if ((ep = lAddSubHost(petask, JG_qhostname, rhost, PET_granted_destin_identifier_list,
                                                     JG_Type))) {
                                  lSetString(ep, JG_qname, queue_name);
@@ -353,12 +353,12 @@ void process_job_report(sge_gdi_ctx_class_t *ctx, lListElem *report, lListElem *
                            if (new_task) {
                               sge_event_spool(ctx,
                                               &answer_list, 0, sgeE_PETASK_ADD,
-                                              jobid, jataskid, pe_task_id_str, NULL,
+                                              jobid, jataskid, pe_task_id_str, nullptr,
                                               lGetString(jep, JB_session),
                                               jep, jatep, petask, true, true);
                            } else {
                               sge_add_list_event(0, sgeE_JOB_USAGE, jobid, jataskid, pe_task_id_str,
-                                                 NULL, lGetString(jep, JB_session),
+                                                 nullptr, lGetString(jep, JB_session),
                                                  lGetListRW(petask, PET_scaled_usage));
                            }
                            answer_list_output(&answer_list);
@@ -371,10 +371,10 @@ void process_job_report(sge_gdi_ctx_class_t *ctx, lListElem *report, lListElem *
                               shouldbe_queue_name = MSG_OBJ_NOTRUNNING;
                               shouldbe_host_name = MSG_OBJ_NOTRUNNING;
                            } else {
-                              if ((shouldbe_queue_name = lGetString(jg, JG_qname)) == NULL) {
+                              if ((shouldbe_queue_name = lGetString(jg, JG_qname)) == nullptr) {
                                  shouldbe_queue_name = MSG_OBJ_UNKNOWN;
                               }
-                              if ((shouldbe_host_name = lGetHost(jg, JG_qhostname)) == NULL) {
+                              if ((shouldbe_host_name = lGetHost(jg, JG_qhostname)) == nullptr) {
                                  shouldbe_host_name = MSG_OBJ_UNKNOWN;
                               }
                            }
@@ -395,24 +395,24 @@ void process_job_report(sge_gdi_ctx_class_t *ctx, lListElem *report, lListElem *
                       */
                      if (reporting_is_intermediate_acct_required(jep, jatep, petask)) {
                         /* write intermediate usage */
-                        reporting_create_acct_record(ctx, NULL, jr, jep, jatep, true);
+                        reporting_create_acct_record(ctx, nullptr, jr, jep, jatep, true);
 
                         /* this action has changed the ja_task/pe_task - spool */
-                        if (pe_task_id_str != NULL) {
+                        if (pe_task_id_str != nullptr) {
                            /* JG: TODO we would need a PETASK_MOD event here!
                             * for spooling only, the ADD event is OK
                             */
                            sge_event_spool(ctx,
                                            &answer_list, 0, sgeE_PETASK_ADD,
-                                           jobid, jataskid, pe_task_id_str, NULL,
+                                           jobid, jataskid, pe_task_id_str, nullptr,
                                            lGetString(jep, JB_session),
                                            jep, jatep, petask, false, true);
                         } else {
                            sge_event_spool(ctx,
                                            &answer_list, 0, sgeE_JATASK_MOD,
-                                           jobid, jataskid, NULL, NULL,
+                                           jobid, jataskid, nullptr, nullptr,
                                            lGetString(jep, JB_session),
-                                           jep, jatep, NULL, false, true);
+                                           jep, jatep, nullptr, false, true);
                         }
                         answer_list_output(&answer_list);
                      }
@@ -437,7 +437,7 @@ void process_job_report(sge_gdi_ctx_class_t *ctx, lListElem *report, lListElem *
                ERROR((SGE_EVENT, MSG_JOB_REPORTRUNFALSE_SUUSS, rhost,
                        sge_u32c(jobid), sge_u32c(jataskid),
                        pe_task_id_str ? pe_task_id_str : MSG_MASTER, queue_name));
-               pack_ack(pb, ACK_SIGNAL_JOB, jobid, jataskid, NULL);
+               pack_ack(pb, ACK_SIGNAL_JOB, jobid, jataskid, nullptr);
             }
             break;
 
@@ -454,7 +454,7 @@ void process_job_report(sge_gdi_ctx_class_t *ctx, lListElem *report, lListElem *
              *   exit_status - when we receive such a final slave job report, we trigger
              *   exit of the job
              */
-            if (jep == NULL || jatep == NULL) {
+            if (jep == nullptr || jatep == nullptr) {
                DPRINTF(("send cleanup request for slave job "SFN"\n", job_id_string));
                pack_ack(pb, ACK_JOB_EXIT, jobid, jataskid, pe_task_id_str);
             } else {
@@ -466,7 +466,7 @@ void process_job_report(sge_gdi_ctx_class_t *ctx, lListElem *report, lListElem *
                 * but only the first one is tagged
                 */
                first_at_host = lGetElemHostRW(lGetList(jatep, JAT_granted_destin_identifier_list), JG_qhostname, rhost);
-               if (first_at_host != NULL) {
+               if (first_at_host != nullptr) {
                   /* If the job is being delivered, we first deliver it to the slave hosts,
                    * once all slave hosts have been notified, we start the master task.
                    * During this time the job is in status JTRANSFERING.
@@ -489,7 +489,7 @@ void process_job_report(sge_gdi_ctx_class_t *ctx, lListElem *report, lListElem *
                            DPRINTF(("trigger retry of job delivery to master execd\n"));
                            lSetUlong(jatep, JAT_start_time, 0);
                            cancel_job_resend(jobid, jataskid);
-                           trigger_job_resend(sge_get_gmt(), NULL, jobid, jataskid, 0);
+                           trigger_job_resend(sge_get_gmt(), nullptr, jobid, jataskid, 0);
                         }
                      }
                   } else {
@@ -498,7 +498,7 @@ void process_job_report(sge_gdi_ctx_class_t *ctx, lListElem *report, lListElem *
                       * When the slave report contains JR_usage with exit_status, we are done, untag gdil, pack_job_exit
                       */
                      if (lGetUlong(first_at_host, JG_tag_slave_job) != 0) {
-                        if (lGetElemStr(lGetList(jr, JR_usage), UA_name, "exit_status") != NULL) {
+                        if (lGetElemStr(lGetList(jr, JR_usage), UA_name, "exit_status") != nullptr) {
                            /* the job is done in this slave exec host */
                            lSetUlong(first_at_host, JG_tag_slave_job, 0);
                            DPRINTF(("slave job "SFN" exited on host %s\n", job_id_string, rhost));
@@ -529,7 +529,7 @@ void process_job_report(sge_gdi_ctx_class_t *ctx, lListElem *report, lListElem *
          case JEXITING: {
             int skip_job_exit = 0;
 
-            if (jep == NULL || jatep == NULL || (jep != NULL && status == JFINISHED)) {
+            if (jep == nullptr || jatep == nullptr || (jep != nullptr && status == JFINISHED)) {
                /* must be retry of execds job exit
                 * or job was deleted using "qdel -f"
                 * while execd was down or ...
@@ -537,7 +537,7 @@ void process_job_report(sge_gdi_ctx_class_t *ctx, lListElem *report, lListElem *
                DPRINTF(("exiting job "SFN" does not exist\n", job_id_string));
             } else {
                /* job exited */
-               if (pe_task_id_str == NULL) {
+               if (pe_task_id_str == nullptr) {
                   /* store unscaled usage directly in job */
                   lXchgList(jr, JR_usage, lGetListRef(jatep, JAT_usage_list));
 
@@ -626,7 +626,7 @@ void process_job_report(sge_gdi_ctx_class_t *ctx, lListElem *report, lListElem *
                         bool known_pe_task = true; /* did this pe task show up
                                                    earlier (USAGE report) */
 
-                        if (petask == NULL) {
+                        if (petask == nullptr) {
                            known_pe_task = false;
                            petask = lAddSubStr(jatep, PET_id, pe_task_id_str,
                                                JAT_task_list, PET_Type);
@@ -636,7 +636,7 @@ void process_job_report(sge_gdi_ctx_class_t *ctx, lListElem *report, lListElem *
                         /* store unscaled usage directly in sub-task */
                         /* lXchgList(jr, JR_usage, lGetListRef(task, JB_usage_list)); */
                         /* copy list because we need to keep usage in jr for sge_log_dusage() */
-                        lSetList(petask, PET_usage, lCopyList(NULL, lGetList(jr, JR_usage)));
+                        lSetList(petask, PET_usage, lCopyList(nullptr, lGetList(jr, JR_usage)));
 
                         /* update task's scaled usage list */
                         lSetList(petask, PET_scaled_usage,
@@ -653,29 +653,29 @@ void process_job_report(sge_gdi_ctx_class_t *ctx, lListElem *report, lListElem *
                            DPRINTF(("--- petask "SFN" -> final usage\n", job_id_string));
                            lSetUlong(petask, PET_status, JFINISHED);
 
-                           reporting_create_acct_record(ctx, NULL, jr, jep, jatep, false);
+                           reporting_create_acct_record(ctx, nullptr, jr, jep, jatep, false);
 
                            /* add tasks (scaled) usage to past usage container */
                            {
                               lListElem *container = lGetSubStr(jatep, PET_id, PE_TASK_PAST_USAGE_CONTAINER,
                                                                 JAT_task_list);
-                              if (container == NULL) {
-                                 lList *answer_list = NULL;
+                              if (container == nullptr) {
+                                 lList *answer_list = nullptr;
                                  container = pe_task_sum_past_usage_list(lGetListRW(jatep, JAT_task_list), petask);
                                  /* usage container will be spooled */
                                  sge_event_spool(ctx,
                                                  &answer_list, 0, sgeE_PETASK_ADD,
-                                                 jobid, jataskid, PE_TASK_PAST_USAGE_CONTAINER, NULL,
+                                                 jobid, jataskid, PE_TASK_PAST_USAGE_CONTAINER, nullptr,
                                                  lGetString(jep, JB_session),
                                                  jep, jatep, container, true, true);
                                  answer_list_output(&answer_list);
                               } else {
-                                 lList *answer_list = NULL;
+                                 lList *answer_list = nullptr;
 
                                  pe_task_sum_past_usage(container, petask);
                                  /* create list event for the USAGE_CONTAINER */
                                  sge_add_list_event(0, sgeE_JOB_USAGE, jobid, jataskid,
-                                                    PE_TASK_PAST_USAGE_CONTAINER, NULL,
+                                                    PE_TASK_PAST_USAGE_CONTAINER, nullptr,
                                                     lGetString(jep, JB_session),
                                                     lGetListRW(container, PET_scaled_usage));
                                  /* usage container will be spooled */
@@ -685,7 +685,7 @@ void process_job_report(sge_gdi_ctx_class_t *ctx, lListElem *report, lListElem *
                                   */
                                  sge_event_spool(ctx,
                                                  &answer_list, 0, sgeE_PETASK_ADD,
-                                                 jobid, jataskid, PE_TASK_PAST_USAGE_CONTAINER, NULL,
+                                                 jobid, jataskid, PE_TASK_PAST_USAGE_CONTAINER, nullptr,
                                                  lGetString(jep, JB_session),
                                                  jep, jatep, container, false, true);
                                  answer_list_output(&answer_list);
@@ -694,11 +694,11 @@ void process_job_report(sge_gdi_ctx_class_t *ctx, lListElem *report, lListElem *
 
                            /* remove pe task from job/jatask */
                            if (known_pe_task) {
-                              lList *answer_list = NULL;
+                              lList *answer_list = nullptr;
                               sge_event_spool(ctx,
                                               &answer_list, 0, sgeE_PETASK_DEL,
                                               jobid, jataskid, pe_task_id_str,
-                                              NULL, NULL, NULL, NULL, NULL,
+                                              nullptr, nullptr, nullptr, nullptr, nullptr,
                                               true, true);
                               answer_list_output(&answer_list);
                            }
@@ -751,10 +751,10 @@ void process_job_report(sge_gdi_ctx_class_t *ctx, lListElem *report, lListElem *
                         shouldbe_queue_name = MSG_OBJ_NOTRUNNING;
                         shouldbe_host_name = MSG_OBJ_NOTRUNNING;
                      } else {
-                        if ((shouldbe_queue_name = lGetString(jg, JG_qname)) == NULL) {
+                        if ((shouldbe_queue_name = lGetString(jg, JG_qname)) == nullptr) {
                            shouldbe_queue_name = MSG_OBJ_UNKNOWN;
                         }
-                        if ((shouldbe_host_name = lGetHost(jg, JG_qhostname)) == NULL) {
+                        if ((shouldbe_host_name = lGetHost(jg, JG_qhostname)) == nullptr) {
                            shouldbe_host_name = MSG_OBJ_UNKNOWN;
                         }
                      }

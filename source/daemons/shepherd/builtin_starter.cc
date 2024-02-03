@@ -133,13 +133,13 @@ void son(const char *childname, char *script_file, int truncate_stderr_out)
    int   is_rsh = 0;
    int   is_rlogin = 0;
    int   is_qlogin_starter = 0;   /* Caution! There is a function qlogin_starter(), too! */
-   char  *shell_path = NULL;
-   char  *stdin_path = NULL;
-   char  *stdout_path = NULL;
-   char  *stderr_path = NULL; 
-   char  *stdin_path_for_fs = NULL;
-   char  *target_user = NULL;
-   char  *intermediate_user = NULL;
+   char  *shell_path = nullptr;
+   char  *stdin_path = nullptr;
+   char  *stdout_path = nullptr;
+   char  *stderr_path = nullptr;
+   char  *stdin_path_for_fs = nullptr;
+   char  *target_user = nullptr;
+   char  *intermediate_user = nullptr;
    char  fs_stdin_tmp_path[SGE_PATH_MAX] = "\"\"";
    char  fs_stdout_tmp_path[SGE_PATH_MAX] = "\"\"";
    char  fs_stderr_tmp_path[SGE_PATH_MAX] = "\"\"";
@@ -160,7 +160,7 @@ void son(const char *childname, char *script_file, int truncate_stderr_out)
    pid_t pid, pgrp, newpgrp;
    gid_t add_grp_id = 0;
    gid_t gid;
-   struct passwd *pw=NULL;
+   struct passwd *pw=nullptr;
    struct passwd pw_struct;
    char *buffer;
    int size;
@@ -172,7 +172,7 @@ void son(const char *childname, char *script_file, int truncate_stderr_out)
    /* From here only the son --------------------------------------*/
    if (!script_file) {
       /* output error and exit */
-      shepherd_error(1, "received NULL als script file");
+      shepherd_error(1, "received nullptr als script file");
    }   
 
    /*
@@ -209,10 +209,10 @@ void son(const char *childname, char *script_file, int truncate_stderr_out)
          target_user = "root";
       } else { /* g_new_interactive_job_support == true */
          /*
-          * Make sure target_user is NULL and will thus be
+          * Make sure target_user is nullptr and will thus be
           * set to get_conf_val("job_owner") below.
           */
-         target_user = NULL;
+         target_user = nullptr;
       }
    }
 
@@ -281,7 +281,7 @@ void son(const char *childname, char *script_file, int truncate_stderr_out)
                   (cp = getlogin()) ? cp : "<no login set>");
 
    shepherd_trace("reading passwd information for user '%s'",
-                  target_user ? target_user : "<NULL>");
+                  target_user ? target_user : "<nullptr>");
 
    size = get_pw_buffer_size();
    buffer = sge_malloc(size);
@@ -294,7 +294,7 @@ void son(const char *childname, char *script_file, int truncate_stderr_out)
 
    if (!strcmp(childname, "job")) {
       char *write_osjob_id = get_conf_val("write_osjob_id");
-      if(write_osjob_id != NULL && atoi(write_osjob_id) != 0) {
+      if(write_osjob_id != nullptr && atoi(write_osjob_id) != 0) {
          setosjobid(newpgrp, &add_grp_id, pw);
       }   
    }
@@ -331,7 +331,7 @@ void son(const char *childname, char *script_file, int truncate_stderr_out)
       gid = 0;
    }
    tmp_str = search_conf_val("skip_ngroups_max_silently");
-   if (tmp_str != NULL && strcmp(tmp_str, "yes") == 0) {
+   if (tmp_str != nullptr && strcmp(tmp_str, "yes") == 0) {
       skip_silently = true;
    }
 
@@ -736,7 +736,7 @@ void son(const char *childname, char *script_file, int truncate_stderr_out)
       strcpy(argv0, shell_basename);
    }
 
-   sge_set_def_sig_mask(NULL, NULL);
+   sge_set_def_sig_mask(nullptr, nullptr);
    sge_unblock_all_signals();
    
    /*
@@ -758,10 +758,10 @@ void son(const char *childname, char *script_file, int truncate_stderr_out)
 /* ---- switch to target user */
    if (intermediate_user) {
       if (is_qlogin_starter) {
-         ret = sge_set_uid_gid_addgrp(target_user, NULL, 0, 0, 0, 
+         ret = sge_set_uid_gid_addgrp(target_user, nullptr, 0, 0, 0,
                                       err_str, use_qsub_gid, gid, skip_silently);
       } else {
-         ret = sge_set_uid_gid_addgrp(target_user, NULL, min_gid, min_uid, 
+         ret = sge_set_uid_gid_addgrp(target_user, nullptr, min_gid, min_uid,
                                       add_grp_id, err_str, use_qsub_gid, gid, skip_silently);
       }
       if (ret < 0) {
@@ -848,7 +848,7 @@ int sge_set_environment()
    FILE *fp;
    char buf[10000], *name, *value, err_str[10000];
    int line=0;
-   const char *new_value = NULL;
+   const char *new_value = nullptr;
 
    setup_environment();
    
@@ -865,18 +865,18 @@ int sge_set_environment()
       }
 
       name = strtok(buf, "=");
-      if (name == NULL) {
+      if (name == nullptr) {
          FCLOSE(fp);
          shepherd_error(1, "error reading environment file: line=%d, contents:%s", line, buf);
       }
 
-      value = strtok(NULL, "\n");
-      if (value == NULL) {
+      value = strtok(nullptr, "\n");
+      if (value == nullptr) {
          value = "";
       }
 
       new_value = sge_replace_substring(value, "\\n", "\n");
-      if (new_value == NULL) {
+      if (new_value == nullptr) {
          sge_set_env_value(name, value);
       } else {
          sge_set_env_value(name, new_value);
@@ -912,14 +912,14 @@ static void setup_environment()
     * optional. */
    if (!inherit_env()) {
       if (shepherd_env_index < 0) {
-         shepherd_env[0] = NULL;
+         shepherd_env[0] = nullptr;
       }
       else {
          int index = 0;
 
-         while (shepherd_env[index] != NULL) {
+         while (shepherd_env[index] != nullptr) {
             sge_free(&(shepherd_env[index]));
-            shepherd_env[index] = NULL;
+            shepherd_env[index] = nullptr;
             index++;
          }
       }
@@ -987,7 +987,7 @@ int sge_set_env_value(const char *name, const char* value)
     * Because this fix could break pre-existing installations, it was made
     * optional. */
    if (!inherit_env()) {
-      char *entry = NULL;
+      char *entry = nullptr;
       int entry_size = 0;
 
       if (shepherd_env_index < 0) {
@@ -998,7 +998,7 @@ int sge_set_env_value(const char *name, const char* value)
          entry_size = strlen(name) + strlen(value) + 2;
          entry = sge_malloc(sizeof (char) * entry_size);
 
-         if (entry != NULL) {
+         if (entry != nullptr) {
             snprintf(entry, entry_size, "%s=%s", name, value);
             shepherd_env[shepherd_env_index] = entry;
             shepherd_env_index++;
@@ -1034,7 +1034,7 @@ int sge_set_env_value(const char *name, const char* value)
 *******************************************************************************/
 const char *sge_get_env_value(const char *name)
 {
-   const char *ret = NULL;
+   const char *ret = nullptr;
    /* Bugfix: Issuezilla 1300
     * Because this fix could break pre-existing installations, it was made
     * optional. */
@@ -1042,11 +1042,11 @@ const char *sge_get_env_value(const char *name)
       if (shepherd_env_index >= 0) {
          int index = 0;
 
-         while (shepherd_env[index] != NULL) {
+         while (shepherd_env[index] != nullptr) {
             char *entry = shepherd_env[index++];
             char *equals = strchr(entry, '=');
 
-            if (equals != NULL) {
+            if (equals != nullptr) {
                equals[0] = '\0';
 
                if (strcmp(entry, name) == 0) {
@@ -1077,27 +1077,27 @@ static char **disassemble_proc_args(const char *script_file, char **preargs, int
       n_preargs++;
 
    /* count procedure args */
-   for (s = sge_strtok(script_file, PROC_ARG_DELIM); s; s = sge_strtok(NULL, PROC_ARG_DELIM))
+   for (s = sge_strtok(script_file, PROC_ARG_DELIM); s; s = sge_strtok(nullptr, PROC_ARG_DELIM))
       n_procargs++;
 
    if (!(n_preargs + n_procargs))
-      return NULL;
+      return nullptr;
 
    /* malloc new argv */
    args = (char **)sge_malloc((n_preargs + n_procargs + extra_args + 1)*sizeof(char *));
    if (!args)
-      return NULL;
+      return nullptr;
 
    /* copy preargs */
    for (i = 0; i < n_preargs; i++)
       args[i] = strdup(preargs[i]);
-   args[i] = NULL;
+   args[i] = nullptr;
 
    /* add procedure args */
-   for (s = sge_strtok(script_file, PROC_ARG_DELIM); s; s = sge_strtok(NULL, PROC_ARG_DELIM)) {
+   for (s = sge_strtok(script_file, PROC_ARG_DELIM); s; s = sge_strtok(nullptr, PROC_ARG_DELIM)) {
       args[i++] = strdup(s);
    }
-   args[i] = NULL;
+   args[i] = nullptr;
    return args;
 }
 
@@ -1120,31 +1120,31 @@ static char **read_job_args(char **preargs, int extra_args)
    n_job_args = atoi(get_conf_val("njob_args"));
 
    if (!(n_preargs + n_job_args))
-      return NULL;
+      return nullptr;
   
    /* malloc new argv */ 
    args = (char **)sge_malloc((n_preargs + n_job_args + extra_args + 1)*sizeof(char *));
    if (!args)
-      return NULL;
+      return nullptr;
   
    /* copy preargs */ 
    for (i = 0; i < n_preargs; i++) {
       args[i] = strdup(preargs[i]);
    }
 
-   args[i] = NULL;
+   args[i] = nullptr;
 
    for (i = 0; i < n_job_args; i++) {
       sprintf(conf_val, "job_arg%d", i + 1);
       cp = get_conf_val(conf_val);
      
-      if(cp != NULL) {
+      if(cp != nullptr) {
          args[i + n_preargs] = strdup(cp);
       } else {
          args[i + n_preargs] = "";
       }
    }
-   args[i + n_preargs] = NULL;
+   args[i + n_preargs] = nullptr;
    return args;
 }
 
@@ -1177,16 +1177,16 @@ int use_starter_method /* If this flag is set the shellpath contains the
    pre_args_ptr = &pre_args[0];
    
 #if 0
-   shepherd_trace("childname = %s", childname? childname : "NULL");
-   shepherd_trace("shell_path = %s", shell_path ? shell_path : "NULL");
-   shepherd_trace("script_file = %s", script_file ? script_file : "NULL");
-   shepherd_trace("argv0 = %s", argv0 ? argv0 : "NULL");
-   shepherd_trace("shell_start_mode = %s", shell_start_mode ? shell_start_mode : "NULL");
+   shepherd_trace("childname = %s", childname? childname : "nullptr");
+   shepherd_trace("shell_path = %s", shell_path ? shell_path : "nullptr");
+   shepherd_trace("script_file = %s", script_file ? script_file : "nullptr");
+   shepherd_trace("argv0 = %s", argv0 ? argv0 : "nullptr");
+   shepherd_trace("shell_start_mode = %s", shell_start_mode ? shell_start_mode : "nullptr");
    shepherd_trace("is_interactive = %d", is_interactive);
    shepherd_trace("is_qlogin = %d", is_qlogin);
    shepherd_trace("is_rsh = %d", is_rsh);
    shepherd_trace("is_rlogin = %d", is_rlogin);
-   shepherd_trace("str_title = %s", str_title ? str_title : "NULL");
+   shepherd_trace("str_title = %s", str_title ? str_title : "nullptr");
 #endif
 
    /*
@@ -1217,7 +1217,7 @@ int use_starter_method /* If this flag is set the shellpath contains the
          sprintf(conf_val, "job_arg%d", i + 1);
          cp = get_conf_val(conf_val);
 
-         if(cp != NULL) {
+         if(cp != nullptr) {
             sge_dstring_append(&arguments, cp);
             sge_dstring_append(&arguments, " ");
          } else {
@@ -1226,7 +1226,7 @@ int use_starter_method /* If this flag is set the shellpath contains the
       }
       
       pre_args_ptr[arg_id++] = strdup(sge_dstring_get_string(&arguments));
-      pre_args_ptr[arg_id++] = NULL;
+      pre_args_ptr[arg_id++] = nullptr;
       sge_dstring_free(&arguments);
       args = pre_args;
    /* No need to test for binary since this option excludes binary */
@@ -1244,7 +1244,7 @@ int use_starter_method /* If this flag is set the shellpath contains the
       */
       pre_args_ptr[0] = argv0;
       pre_args_ptr[1] = "-s";
-      pre_args_ptr[2] = NULL;
+      pre_args_ptr[2] = nullptr;
       args = read_job_args(pre_args, 0);
    /* Binary, noshell jobs have to make it to the else */
    } else if ( (!strcasecmp("posix_compliant", shell_start_mode) &&
@@ -1256,7 +1256,7 @@ int use_starter_method /* If this flag is set the shellpath contains the
 
       pre_args_ptr[0] = argv0;
       pre_args_ptr[1] = script_file;
-      pre_args_ptr[2] = NULL;
+      pre_args_ptr[2] = nullptr;
       args = read_job_args(pre_args, 0);
    /* No need to test for binary since this option excludes binary */
    } else if (!strcasecmp("start_as_command", shell_start_mode)) {
@@ -1270,7 +1270,7 @@ int use_starter_method /* If this flag is set the shellpath contains the
                      " shell_path = \"%s\"", argv0, shell_path); 
       pre_args_ptr[1] = "-c";
       pre_args_ptr[2] = script_file;
-      pre_args_ptr[3] = NULL;
+      pre_args_ptr[3] = nullptr;
       args = pre_args;
    /* No need to test for binary since this option excludes binary */
    } else if (is_interactive) {
@@ -1285,15 +1285,15 @@ int use_starter_method /* If this flag is set the shellpath contains the
       pre_args_ptr[2] = get_conf_val("display");
       pre_args_ptr[3] = "-n";
       pre_args_ptr[4] = str_title;
-      pre_args_ptr[5] = NULL;   
+      pre_args_ptr[5] = nullptr;
       args = read_job_args(pre_args, 2);
       njob_args = atoi(get_conf_val("njob_args"));
       args[njob_args + 5] = "-e";
       args[njob_args + 6] = get_conf_val("shell_path");
-      args[njob_args + 7] = NULL;
+      args[njob_args + 7] = nullptr;
    /* No need to test for binary since qlogin handles that itself */
    } else if (is_qlogin) {
-      char *conf_name = NULL;
+      char *conf_name = nullptr;
 #if 0
      shepherd_trace("Case 6: qlogin");
 #endif
@@ -1316,7 +1316,7 @@ int use_starter_method /* If this flag is set the shellpath contains the
       }
 
       pre_args_ptr[2] = "-d"; 
-      pre_args_ptr[3] = NULL;
+      pre_args_ptr[3] = nullptr;
       args = read_job_args(pre_args, 0);
    /* Here we finally deal with binary, noshell jobs */
    } else {
@@ -1337,7 +1337,7 @@ int use_starter_method /* If this flag is set the shellpath contains the
            pre_args_ptr[arg_id++] = shell_path;
          }
          pre_args_ptr[arg_id++] = script_file;
-         pre_args_ptr[arg_id++] = NULL; 
+         pre_args_ptr[arg_id++] = nullptr;
          
          args = read_job_args(pre_args, 0);
       } else {
@@ -1349,9 +1349,9 @@ int use_starter_method /* If this flag is set the shellpath contains the
             need to disassemble the string and put into args vector */
          if( use_starter_method ) {
             pre_args_ptr[0] = shell_path;
-            pre_args_ptr[1] = NULL; 
+            pre_args_ptr[1] = nullptr;
          } else {
-            pre_args_ptr[0] = NULL;
+            pre_args_ptr[0] = nullptr;
          }
          args = disassemble_proc_args(script_file, pre_args, 0);
          
@@ -1367,7 +1367,7 @@ int use_starter_method /* If this flag is set the shellpath contains the
          shepherd_trace("calling qlogin_starter(%s, %s);", shepherd_job_dir, args[1]);
 #if defined (SOLARIS)
          if (is_rlogin) {
-            if (strstr(args[1], "sshd") != NULL) {
+            if (strstr(args[1], "sshd") != nullptr) {
                /* workaround for CR 6215730 */ 
                shepherd_trace("staring an sshd on SOLARIS, do a SETPGRP to be "
                               "able to kill it (qdel)");
@@ -1384,7 +1384,7 @@ int use_starter_method /* If this flag is set the shellpath contains the
          }
       }
    } else { /* batch job */
-      char *filename = NULL;
+      char *filename = nullptr;
 
       if( use_starter_method ) {
          filename = shell_path;
@@ -1461,7 +1461,7 @@ char *err_str
    unsigned int        file_perm = S_IXOTH;
    int                 ret = 0;
    char                *command;
-   struct saved_vars_s *context = NULL;
+   struct saved_vars_s *context = nullptr;
 
    /*
     * The configured method can include some pameters, e.g.
@@ -1528,7 +1528,7 @@ int type
       postfix = "i";
       break;
    default:
-      return NULL;
+      return nullptr;
    }
 
    base = get_conf_val(name);
@@ -1608,12 +1608,12 @@ int type
 * 
 *  RESULT
 *     char* - If one is given, the name of the user.
-*             Else NULL.
+*             Else nullptr.
 *******************************************************************************/
 static char*
 parse_script_params(char **script_file) 
 {
-   char* target_user = NULL;
+   char* target_user = nullptr;
    char* s;
 
    /* syntax is [<user>@]<path> <arguments> */
@@ -1653,7 +1653,7 @@ static bool inherit_env()
        * use get_conf_val() instead. */
       char *inherit = search_conf_val("inherit_env");
       
-      if (inherit != NULL) {
+      if (inherit != nullptr) {
          inherit_environ = (strcmp(inherit, "1") == 0);
       }
       else {
@@ -1726,7 +1726,7 @@ static void start_qlogin_job(const char *shell_path)
    static char	timez[8+100]       = { "TZ=" };
    static char	hertz[8+10]        = { "HZ=" };
    static char	path[8+MAXPATHLEN] = { "PATH=" };
-   struct passwd *pw = NULL;
+   struct passwd *pw = nullptr;
    struct passwd pw_struct;
    char minusname[50];
    char *my_env[8];
@@ -1741,23 +1741,23 @@ static void start_qlogin_job(const char *shell_path)
    buffer = sge_malloc(size);
    errno = 0;
    ret = getpwuid_r(getuid(), &pw_struct, buffer, size, &pw);
-   if (pw == NULL || ret != 0) {
+   if (pw == nullptr || ret != 0) {
       shepherd_error(1, "can't get password entry for user id %d, error: %s (%d)",
          (int)getuid(), strerror(errno), errno);
       /* shepherd_error(1,...) does an exit()! */
    }
    
    i = 0;
-   if (pw->pw_shell != NULL) {
+   if (pw->pw_shell != nullptr) {
       my_env[i++] = strncat(shell, pw->pw_shell, 256);
    }
-   if (pw->pw_dir != NULL) {
+   if (pw->pw_dir != nullptr) {
       my_env[i++] = strncat(home, pw->pw_dir, MAXPATHLEN);
    }
-   if (getenv("TERM") != NULL) {
+   if (getenv("TERM") != nullptr) {
       my_env[i++] = strncat(term, getenv("TERM"), 64);
    }
-   if (pw->pw_name != NULL) {
+   if (pw->pw_name != nullptr) {
       my_env[i++] = strncat(logname, pw->pw_name, 30);
    }
 
@@ -1765,11 +1765,11 @@ static void start_qlogin_job(const char *shell_path)
     * inherited from init, unless execd is started manually with TZ unset in the
     * corresponding shell
     */ 
-   if (getenv("TZ") != NULL) {
+   if (getenv("TZ") != nullptr) {
       my_env[i++] = strncat(timez, getenv("TZ"), 100);
    }
 
-   if (getenv("HZ") != NULL) {
+   if (getenv("HZ") != nullptr) {
       my_env[i++] = strncat(hertz, getenv("HZ"), 10);
    }
 
@@ -1779,12 +1779,12 @@ static void start_qlogin_job(const char *shell_path)
 #else
    my_env[i++] = strcat(path, "/usr/bin");
 #endif
-   my_env[i] = NULL;
+   my_env[i] = nullptr;
 
    sge_free(&buffer);
   
-   shepherd_trace("execle(%s, %s, NULL, env)", shell_path, minusname);
-   execle(shell_path, minusname, NULL, my_env);
+   shepherd_trace("execle(%s, %s, nullptr, env)", shell_path, minusname);
+   execle(shell_path, minusname, nullptr, my_env);
 }
 
 /****** builtin_starter/start_qrsh_job() ***************************************
@@ -1815,15 +1815,15 @@ static void start_qlogin_job(const char *shell_path)
 static void start_qrsh_job(void)
 {
    /* TODO: RFE: Make a minimal qrsh_starter for new IJS */
-   const char *sge_root = NULL;
-   const char *arch = NULL;
-   char *command = NULL;
-   char *buf = NULL;
+   const char *sge_root = nullptr;
+   const char *arch = nullptr;
+   char *command = nullptr;
+   char *buf = nullptr;
    char *args[9];
    int  nargs;
    int  i=0;
 
-   args[0] = NULL;
+   args[0] = nullptr;
 
    command = (char*)sge_get_env_value("QRSH_COMMAND");
    nargs = count_command(command);
@@ -1831,9 +1831,9 @@ static void start_qrsh_job(void)
    if (nargs > 0) {
       buf = sge_malloc(strlen(command)+2049);
 
-      sge_root = sge_get_root_dir(0, NULL, 0, 1);
+      sge_root = sge_get_root_dir(0, nullptr, 0, 1);
       arch = sge_get_arch();
-      if (sge_root == NULL || arch == NULL) {
+      if (sge_root == nullptr || arch == nullptr) {
          shepherd_trace("reading environment SGE_ROOT and ARC failed");
          return;
       }
@@ -1843,13 +1843,13 @@ static void start_qrsh_job(void)
       args[1] = shepherd_job_dir;
       if (g_noshell == 1) {
          args[2] = "noshell";
-         args[3] = NULL;
+         args[3] = nullptr;
       } else {
-         args[2] = NULL;
+         args[2] = nullptr;
       }
    }
 
-   for (i=0; args[i] != NULL; i++) {
+   for (i=0; args[i] != nullptr; i++) {
       shepherd_trace("args[%d] = \"%s\"", i, args[i]);
    }
 

@@ -68,7 +68,7 @@
 #  define sge_X32CFormat "%x"
 #  define sge_x32c(x)  (unsigned int)(x)
 
-#define SGE_STRTOU_LONG32(S) strtoul(S, NULL, 10)
+#define SGE_STRTOU_LONG32(S) strtoul(S, nullptr, 10)
 #else
 #  define sge_U32CFormat "%ld"
 #  define sge_U32CLetter "ld"
@@ -77,7 +77,7 @@
 #  define sge_X32CFormat "%lx"
 #  define sge_x32c(x)  (unsigned long)(x)
 
-#define SGE_STRTOU_LONG32(S) strtoul(S, NULL, 10)
+#define SGE_STRTOU_LONG32(S) strtoul(S, nullptr, 10)
 #endif
 
 #include <sys/param.h>
@@ -175,7 +175,7 @@ typedef char stringT[MAX_STRING_SIZE];
 
 #define GET_SPECIFIC(type, variable, init_func, key) \
    auto variable = (type *)pthread_getspecific((pthread_key_t)key); \
-   if (variable == NULL) { \
+   if (variable == nullptr) { \
       variable = (type *)malloc(sizeof(type)); \
       init_func(variable); \
       int ret = pthread_setspecific(key, (void*)variable); \

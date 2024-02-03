@@ -53,15 +53,15 @@ int cl_message_list_cleanup(cl_raw_list_t **list_p) {  /* CR check */
 int cl_message_list_append_message(cl_raw_list_t *list_p, cl_com_message_t *message, int lock_list) {  /* CR check */
 
    int ret_val;
-   cl_message_list_elem_t *new_elem = NULL;
+   cl_message_list_elem_t *new_elem = nullptr;
 
-   if (message == NULL || list_p == NULL) {
+   if (message == nullptr || list_p == nullptr) {
       return CL_RETVAL_PARAMS;
    }
 
    /* add new element list */
    new_elem = (cl_message_list_elem_t *) sge_malloc(sizeof(cl_message_list_elem_t));
-   if (new_elem == NULL) {
+   if (new_elem == nullptr) {
       return CL_RETVAL_MALLOC;
    }
    new_elem->message = message;
@@ -75,7 +75,7 @@ int cl_message_list_append_message(cl_raw_list_t *list_p, cl_com_message_t *mess
    }
 
    new_elem->raw_elem = cl_raw_list_append_elem(list_p, (void *) new_elem);
-   if (new_elem->raw_elem == NULL) {
+   if (new_elem->raw_elem == nullptr) {
       sge_free(&new_elem);
       if (lock_list == 1) {
          cl_raw_list_unlock(list_p);
@@ -83,7 +83,7 @@ int cl_message_list_append_message(cl_raw_list_t *list_p, cl_com_message_t *mess
       return CL_RETVAL_MALLOC;
    }
 
-   gettimeofday(&(message->message_insert_time), NULL);
+   gettimeofday(&(message->message_insert_time), nullptr);
 
    /* unlock the thread list */
    if (lock_list == 1) {
@@ -98,9 +98,9 @@ int cl_message_list_append_message(cl_raw_list_t *list_p, cl_com_message_t *mess
 int cl_message_list_remove_message(cl_raw_list_t *list_p, cl_com_message_t *message, int lock_list) {  /*CR check */
    int function_return = CL_RETVAL_CONNECTION_NOT_FOUND;
    int ret_val = CL_RETVAL_OK;
-   cl_message_list_elem_t *elem = NULL;
+   cl_message_list_elem_t *elem = nullptr;
 
-   if (list_p == NULL || message == NULL) {
+   if (list_p == nullptr || message == nullptr) {
       return CL_RETVAL_PARAMS;
    }
 
@@ -112,10 +112,10 @@ int cl_message_list_remove_message(cl_raw_list_t *list_p, cl_com_message_t *mess
    }
 
    elem = cl_message_list_get_first_elem(list_p);
-   while (elem != NULL) {
+   while (elem != nullptr) {
       if (elem->message == message) {
          /* found matching element */
-         gettimeofday(&(message->message_remove_time), NULL);
+         gettimeofday(&(message->message_remove_time), nullptr);
 
          function_return = CL_RETVAL_OK;
          cl_raw_list_remove_elem(list_p, elem->raw_elem);
@@ -140,7 +140,7 @@ cl_message_list_elem_t *cl_message_list_get_first_elem(cl_raw_list_t *list_p) { 
    if (raw_elem) {
       return (cl_message_list_elem_t *) raw_elem->data;
    }
-   return NULL;
+   return nullptr;
 }
 
 cl_message_list_elem_t *cl_message_list_get_least_elem(cl_raw_list_t *list_p) {  /* CR check */
@@ -148,33 +148,33 @@ cl_message_list_elem_t *cl_message_list_get_least_elem(cl_raw_list_t *list_p) { 
    if (raw_elem) {
       return (cl_message_list_elem_t *) raw_elem->data;
    }
-   return NULL;
+   return nullptr;
 }
 
 cl_message_list_elem_t *cl_message_list_get_next_elem(cl_message_list_elem_t *elem) {  /* CR check */
-   cl_raw_list_elem_t *next_raw_elem = NULL;
+   cl_raw_list_elem_t *next_raw_elem = nullptr;
 
-   if (elem != NULL) {
+   if (elem != nullptr) {
       cl_raw_list_elem_t *raw_elem = elem->raw_elem;
       next_raw_elem = cl_raw_list_get_next_elem(raw_elem);
       if (next_raw_elem) {
          return (cl_message_list_elem_t *) next_raw_elem->data;
       }
    }
-   return NULL;
+   return nullptr;
 }
 
 
 cl_message_list_elem_t *cl_message_list_get_last_elem(cl_message_list_elem_t *elem) {  /* CR check */
-   cl_raw_list_elem_t *last_raw_elem = NULL;
+   cl_raw_list_elem_t *last_raw_elem = nullptr;
 
-   if (elem != NULL) {
+   if (elem != nullptr) {
       cl_raw_list_elem_t *raw_elem = elem->raw_elem;
       last_raw_elem = cl_raw_list_get_last_elem(raw_elem);
       if (last_raw_elem) {
          return (cl_message_list_elem_t *) last_raw_elem->data;
       }
    }
-   return NULL;
+   return nullptr;
 }
 

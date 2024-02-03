@@ -148,7 +148,7 @@ sge_timer_register_event_handler(void) {
 *  NOTES
 *******************************************************************************/
 void sge_timer_start_periodic_tasks(void) {
-   te_event_t ev = NULL;
+   te_event_t ev = nullptr;
 
    DENTER(TOP_LAYER);
 
@@ -182,8 +182,8 @@ void sge_timer_start_periodic_tasks(void) {
 
 void
 sge_timer_initialize(sge_gdi_ctx_class_t *ctx, monitoring_t *monitor) {
-   cl_thread_settings_t *dummy_thread_p = NULL;
-   lList *answer_list = NULL;
+   cl_thread_settings_t *dummy_thread_p = nullptr;
+   lList *answer_list = nullptr;
    dstring thread_name = DSTRING_INIT;
 
    DENTER(TOP_LAYER);
@@ -215,19 +215,19 @@ sge_timer_initialize(sge_gdi_ctx_class_t *ctx, monitoring_t *monitor) {
    sge_dstring_sprintf(&thread_name, "%s%03d", threadnames[TIMER_THREAD], 0);
    cl_thread_list_setup(&(Main_Control.timer_thread_pool), "timer thread pool");
    cl_thread_list_create_thread(Main_Control.timer_thread_pool, &dummy_thread_p, cl_com_get_log_list(),
-                                sge_dstring_get_string(&thread_name), 0, sge_timer_main, NULL, NULL, CL_TT_TIMER);
+                                sge_dstring_get_string(&thread_name), 0, sge_timer_main, nullptr, nullptr, CL_TT_TIMER);
    sge_dstring_free(&thread_name);
    DRETURN_VOID;
 }
 
 void
 sge_timer_terminate(void) {
-   cl_thread_settings_t *thread = NULL;
+   cl_thread_settings_t *thread = nullptr;
 
    DENTER(TOP_LAYER);
 
    thread = cl_thread_list_get_first_thread(Main_Control.timer_thread_pool);
-   while (thread != NULL) {
+   while (thread != nullptr) {
       DPRINTF(("getting canceled\n"));
       cl_thread_list_delete_thread(Main_Control.timer_thread_pool, thread);
 
@@ -291,12 +291,12 @@ void *
 sge_timer_main(void *arg) {
    bool do_endlessly = true;
    cl_thread_settings_t *thread_config = (cl_thread_settings_t *) arg;
-   sge_gdi_ctx_class_t *ctx = NULL;
+   sge_gdi_ctx_class_t *ctx = nullptr;
    monitoring_t monitor;
    monitoring_t *p_monitor = &monitor;
 
-   lListElem *le = NULL;
-   te_event_t te = NULL;
+   lListElem *le = nullptr;
+   te_event_t te = nullptr;
    time_t now;
    time_t next_prof_output = 0;
 
@@ -318,9 +318,9 @@ sge_timer_main(void *arg) {
 
       sge_mutex_lock("event_control_mutex", __func__, __LINE__, &Event_Control.mutex);
 
-      te_check_time(time(NULL));
+      te_check_time(time(nullptr));
 
-      Event_Control.last = time(NULL);
+      Event_Control.last = time(nullptr);
 
       MONITOR_IDLE_TIME(te_wait_empty(), p_monitor, mconf_get_monitor_time(),
                         mconf_is_monitor_message());
@@ -331,7 +331,7 @@ sge_timer_main(void *arg) {
 
       le = lFirstRW(Event_Control.list);
       te = te_event_from_list_elem(le);
-      now = Event_Control.next = time(NULL);
+      now = Event_Control.next = time(nullptr);
 
       if (te->when > now) {
 
@@ -385,6 +385,6 @@ sge_timer_main(void *arg) {
     * and after the call of cl_thread_func_testcancel()
     */
 
-   DRETURN(NULL);
+   DRETURN(nullptr);
 }
 

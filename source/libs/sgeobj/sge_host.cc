@@ -55,14 +55,14 @@
 lListElem *
 host_list_locate(const lList *host_list, const char *hostname) 
 {
-   lListElem *ret = NULL;
+   lListElem *ret = nullptr;
    
    DENTER(TOP_LAYER);
-   if (host_list != NULL) {
-      if (hostname != NULL) {
+   if (host_list != nullptr) {
+      if (hostname != nullptr) {
          const lListElem *element = lFirst(host_list);
 
-         if (element != NULL) {
+         if (element != nullptr) {
             int nm = NoName;
 
             if (object_has_type(element, EH_Type)) {
@@ -83,7 +83,7 @@ host_list_locate(const lList *host_list, const char *hostname)
        * if e.g. someone tries to find a element at qmaster startup to 
        * check if a certain element should be added
        */
-      ret = NULL;
+      ret = nullptr;
    }
    
    DRETURN(ret);
@@ -121,10 +121,10 @@ bool host_is_referenced(const lListElem *host,
 {
    bool ret = false;
 
-   if (host != NULL) {
-      const lListElem *cqueue = NULL;
-      const lListElem *queue = NULL;
-      const char *hostname = NULL;
+   if (host != nullptr) {
+      const lListElem *cqueue = nullptr;
+      const lListElem *queue = nullptr;
+      const char *hostname = nullptr;
       int nm = NoName;
 
       if (object_has_type(host, EH_Type)) {
@@ -141,7 +141,7 @@ bool host_is_referenced(const lListElem *host,
       for_each_ep(cqueue, queue_list) {
          queue = lGetSubHost(cqueue, QU_qhostname, hostname, CQ_qinstances); 
 
-         if (queue != NULL) {
+         if (queue != nullptr) {
             const char *queuename = lGetString(cqueue, CQ_name);
 
             sprintf(SGE_EVENT, MSG_HOSTREFINQUEUE_SS, hostname, queuename);
@@ -155,13 +155,13 @@ bool host_is_referenced(const lListElem *host,
       /* if we have not found a reference yet, we keep looking in the host groups, if
          we have an exec host */
       if (!ret && object_has_type(host, EH_Type)) {
-         const lListElem *hgrp_elem = NULL;
-         lList *host_list = NULL;
+         const lListElem *hgrp_elem = nullptr;
+         lList *host_list = nullptr;
 
          for_each_ep(hgrp_elem, hgrp_list) {
-            hgroup_find_all_references(hgrp_elem, NULL, hgrp_list, &host_list, NULL);
-            if (host_list != NULL) {
-               if (lGetElemHost(host_list, HR_name, hostname) != NULL) {
+            hgroup_find_all_references(hgrp_elem, nullptr, hgrp_list, &host_list, nullptr);
+            if (host_list != nullptr) {
+               if (lGetElemHost(host_list, HR_name, hostname) != nullptr) {
                   const char *hgrp_name = lGetHost(hgrp_elem, HGRP_name);
 
                   sprintf(SGE_EVENT, MSG_HOSTREFINHGRP_SS, hostname, hgrp_name);
@@ -205,11 +205,11 @@ bool host_is_referenced(const lListElem *host,
 const char *host_get_load_value(lListElem *host, const char *name)
 {
    lListElem *load;
-   const char *value = NULL;
+   const char *value = nullptr;
 
-   if (host != NULL) {
+   if (host != nullptr) {
       load = lGetSubStr(host, HL_name, name, EH_load_list);
-      if(load != NULL) {
+      if(load != nullptr) {
          value = lGetString(load, HL_value);
       }
    }   
@@ -229,7 +229,7 @@ int sge_resolve_host(lListElem *ep, int nm)
 
    memset(unique, 0, CL_MAXHOSTLEN);
 
-   if (ep == NULL) {
+   if (ep == nullptr) {
       DRETURN(-1);
    }
 
@@ -252,12 +252,12 @@ int sge_resolve_host(lListElem *ep, int nm)
           break;
 
        default:
-          hostname = NULL;
+          hostname = nullptr;
           ret = CL_RETVAL_GETHOSTNAME_ERROR;
           break;
    }
    /* Check to find hostname only if it was not contained in expression */
-   if (hostname != NULL && !sge_is_expression(hostname)) {
+   if (hostname != nullptr && !sge_is_expression(hostname)) {
       ret = sge_resolve_hostname(hostname, unique, nm);
 
       if (ret == CL_RETVAL_OK) {
@@ -282,7 +282,7 @@ int sge_resolve_hostname(const char *hostname, char *unique, int nm)
 
    DENTER(TOP_LAYER);
 
-   if (hostname == NULL) {
+   if (hostname == nullptr) {
       DRETURN(CL_RETVAL_PARAMS);
    }
 
@@ -327,7 +327,7 @@ host_is_centry_referenced(const lListElem *this_elem, const lListElem *centry)
 
    DENTER(TOP_LAYER);
 
-   if (this_elem != NULL) {
+   if (this_elem != nullptr) {
       const char *name = lGetString(centry, CE_name);
       const lList *ce_values = lGetList(this_elem, EH_consumable_config_list);
       const lList *load_list = lGetList(this_elem, EH_load_list);
@@ -339,9 +339,9 @@ host_is_centry_referenced(const lListElem *this_elem, const lListElem *centry)
        *    - load_list
        *    - report_variables
        */
-      if (lGetElemStr(ce_values, CE_name, name) != NULL ||
-          lGetElemStr(load_list, HL_name, name) != NULL ||
-          lGetElemStr(rep_vars, STU_name, name) != NULL) {
+      if (lGetElemStr(ce_values, CE_name, name) != nullptr ||
+          lGetElemStr(load_list, HL_name, name) != nullptr ||
+          lGetElemStr(rep_vars, STU_name, name) != nullptr) {
          ret = true;
       }
    }
@@ -357,7 +357,7 @@ host_is_centry_a_complex_value(const lListElem *this_elem,
 
    DENTER(TOP_LAYER);
 
-   if (this_elem != NULL) {  
+   if (this_elem != nullptr) {
       const char *name = lGetString(centry, CE_name);
       const lList *ce_values = lGetList(this_elem, EH_consumable_config_list);
       const lList *load_list = lGetList(this_elem, EH_load_list);
@@ -367,8 +367,8 @@ host_is_centry_a_complex_value(const lListElem *this_elem,
        *    - complex_values
        *    - load_list
        */
-      if (lGetElemStr(ce_values, CE_name, name) != NULL ||
-          lGetElemStr(load_list, HL_name, name) != NULL) {
+      if (lGetElemStr(ce_values, CE_name, name) != nullptr ||
+          lGetElemStr(load_list, HL_name, name) != nullptr) {
          ret = true;
       }  
    }
@@ -406,11 +406,11 @@ host_list_merge(lList *this_list)
 
    DENTER(TOP_LAYER);
    
-   if (this_list != NULL) {
+   if (this_list != nullptr) {
       lListElem *global_host = lGetElemHostRW(this_list, EH_name, SGE_GLOBAL_NAME);
 
       /* we merge global settings into host settings */
-      if (global_host != NULL) {
+      if (global_host != nullptr) {
          lListElem *host;
 
          /* for the global host, merged_report_variables == report_variables */
@@ -464,24 +464,24 @@ host_merge(lListElem *host, const lListElem *global_host)
 
    DENTER(TOP_LAYER);
 
-   if (host != NULL && global_host != NULL) {
+   if (host != nullptr && global_host != nullptr) {
       const lList *local_list = lGetList(host, EH_report_variables);
 
       /* if we have a local list: use this one */
-      if (local_list != NULL && lGetNumberOfElem(local_list) != 0) {
+      if (local_list != nullptr && lGetNumberOfElem(local_list) != 0) {
          lSetList(host, EH_merged_report_variables, lCopyList("", local_list));
       } else {
          const lList *global_list;
       
          global_list = lGetList(global_host, EH_report_variables);
          /* if we have no local list, but a global one, use this one */
-         if (global_list != NULL && lGetNumberOfElem(global_list) != 0) {
+         if (global_list != nullptr && lGetNumberOfElem(global_list) != 0) {
             lSetList(host, EH_merged_report_variables, lCopyList("", global_list));
          } else {
             /* if no report variables are configured in local and global object,
              * delete the merged list.
              */
-            lSetList(host, EH_merged_report_variables, NULL);
+            lSetList(host, EH_merged_report_variables, nullptr);
          }
       }
    }

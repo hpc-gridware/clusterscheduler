@@ -561,6 +561,7 @@ bootstrap_tl_init(sge_bootstrap_tl_t *tl) {
 
    if (!already_shown) {
       log_parameter(tl);
+      already_shown = true;
    }
    DRETURN_VOID;
 }

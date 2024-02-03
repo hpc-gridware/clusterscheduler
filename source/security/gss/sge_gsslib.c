@@ -74,7 +74,7 @@ static void put_creds_in_ccache(char *name, gss_cred_id_t creds);
 #endif
 
 static char msgbuf[2048];
-static char *msgptr = NULL;
+static char *msgptr = nullptr;
 static int verbose = 0;
 
 #ifdef KERBEROS
@@ -240,12 +240,12 @@ gsslib_get_credentials(char *service_name, gss_buffer_desc *cred,
                                    GSS_C_REPLAY_FLAG,
 #endif
                                    0,                        
-                                   NULL,       /* no channel bindings */
+                                   nullptr,       /* no channel bindings */
                                    token_ptr,                
-                                   NULL,       /* ignore mech type */
+                                   nullptr,       /* ignore mech type */
                                    cred,
                                    &ret_flags,
-                                   NULL);      /* ignore time_rec */
+                                   nullptr);      /* ignore time_rec */
 
    if (maj_stat!=GSS_S_COMPLETE && maj_stat!=GSS_S_CONTINUE_NEEDED) {
       gsslib_display_status(MSG_GSS_DISPLAYSTATUS_INITIALIZINGCONTEXT, maj_stat, min_stat);
@@ -271,7 +271,7 @@ error:
 int
 gsslib_acquire_client_credentials(gss_cred_id_t *client_creds)
 {
-   gss_name_t client_name = NULL;
+   gss_name_t client_name = nullptr;
    OM_uint32 maj_stat, min_stat;
    int cc=0;
    
@@ -283,7 +283,7 @@ gsslib_acquire_client_credentials(gss_cred_id_t *client_creds)
 
    maj_stat = gss_acquire_cred(&min_stat, client_name, 0,
                                GSS_C_NULL_OID_SET, GSS_C_INITIATE,
-                               client_creds, NULL, NULL);
+                               client_creds, nullptr, nullptr);
 
    if (maj_stat != GSS_S_COMPLETE) {
       gsslib_display_status(MSG_GSS_DISPLAYSTATUS_ACQUIRINGCREDENTIALS , maj_stat, min_stat);
@@ -311,7 +311,7 @@ gsslib_acquire_server_credentials(char *service_name,
                                   gss_cred_id_t *server_creds)
 {
    gss_buffer_desc name_buf;
-   gss_name_t server_name = NULL;
+   gss_name_t server_name = nullptr;
    OM_uint32 maj_stat, min_stat;
    int cc=0;
 #ifdef KERBEROS
@@ -336,8 +336,8 @@ gsslib_acquire_server_credentials(char *service_name,
    maj_stat =
      gssdce_register_acceptor_identity(&min_stat,
 				       server_name,
-				       NULL,
-				       NULL);
+				       nullptr,
+				       nullptr);
    if (maj_stat != GSS_S_COMPLETE) {
       gsslib_display_status(MSG_GSS_DISPLAYSTATUS_REGISTERINGIDENTITY , maj_stat, min_stat);
       return -1;
@@ -361,7 +361,7 @@ gsslib_acquire_server_credentials(char *service_name,
 #else
 			       GSS_C_ACCEPT,
 #endif
-                               server_creds, NULL, NULL);
+                               server_creds, nullptr, nullptr);
    if (maj_stat != GSS_S_COMPLETE) {
       gsslib_display_status(MSG_GSS_DISPLAYSTATUS_ACQUIRINGCREDENTIALS , maj_stat, min_stat);
       return -1;
@@ -395,7 +395,7 @@ gsslib_put_credentials(gss_cred_id_t server_creds,
    OM_uint32 maj_stat, min_stat;
    GSSAPI_INT ret_flags;
    gss_buffer_desc send_tok;
-   gss_name_t client = NULL;
+   gss_name_t client = nullptr;
    gss_OID doid;
    int cc=0;
    gss_cred_id_t delegated_cred = GSS_C_NO_CREDENTIAL;
@@ -424,7 +424,7 @@ gsslib_put_credentials(gss_cred_id_t server_creds,
                                      &doid,
                                      &send_tok,
                                      &ret_flags,
-                                     NULL,     /* ignore time_rec */
+                                     nullptr,     /* ignore time_rec */
                                      &delegated_cred);    /* ignore del_cred_handle */
 
    if (maj_stat!=GSS_S_COMPLETE && maj_stat!=GSS_S_CONTINUE_NEEDED) {
@@ -543,11 +543,11 @@ gsslib_put_credentials(gss_cred_id_t server_creds,
       error_status_t st;
       dce_error_string_t err_string;
       int lst;
-      sec_login_auth_src_t auth_src=NULL;
+      sec_login_auth_src_t auth_src=nullptr;
       boolean32 reset_passwd=0;
       char errbuf[1024];
       unsigned32 num_groups=0;
-      signed32 *groups=NULL;
+      signed32 *groups=nullptr;
       unsigned32 flags;
 
       maj_stat = gssdce_set_cred_context_ownership(&min_stat, delegated_cred, GSSDCE_C_OWNERSHIP_APPLICATION);

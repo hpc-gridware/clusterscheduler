@@ -117,12 +117,12 @@ static void log_set_log_context(sge_gdi_ctx_class_t *theCtx);
 *
 ******************************************************************************/
 char *log_get_log_buffer(void) {
-   log_buffer_t *buf = NULL;
-   char *log_buffer = NULL;
+   log_buffer_t *buf = nullptr;
+   char *log_buffer = nullptr;
 
    buf = log_buffer_getspecific();
 
-   if (buf != NULL) {
+   if (buf != nullptr) {
       log_buffer = buf->log_buffer;
    }
 
@@ -144,12 +144,12 @@ char *log_get_log_buffer(void) {
 *
 ******************************************************************************/
 static sge_gdi_ctx_class_t *log_get_log_context(void) {
-   log_context_t *log_ctx = NULL;
-   sge_gdi_ctx_class_t *context = NULL;
+   log_context_t *log_ctx = nullptr;
+   sge_gdi_ctx_class_t *context = nullptr;
 
    log_ctx = log_context_getspecific();
 
-   if (log_ctx != NULL) {
+   if (log_ctx != nullptr) {
       context = log_ctx->context;
    }
 
@@ -179,11 +179,11 @@ static sge_gdi_ctx_class_t *log_get_log_context(void) {
 *
 ******************************************************************************/
 static void log_set_log_context(sge_gdi_ctx_class_t *newctx) {
-   log_context_t *log_ctx = NULL;
+   log_context_t *log_ctx = nullptr;
 
    log_ctx = log_context_getspecific();
 
-   if (log_ctx != NULL) {
+   if (log_ctx != nullptr) {
       log_ctx->context = newctx;
    }
 }
@@ -243,7 +243,7 @@ u_long32 log_state_get_log_level(void) {
 *
 *******************************************************************************/
 const char *log_state_get_log_file(void) {
-   char *file = NULL;
+   char *file = nullptr;
 
    sge_mutex_lock("Log_State_Lock", "log_state_get_log_file", __LINE__, &Log_State.mutex);
 
@@ -431,7 +431,7 @@ void log_state_set_log_as_admin_user(int i) {
 
 
 static sge_gdi_ctx_class_t *log_state_get_log_context(void) {
-   sge_gdi_ctx_class_t *log_context = NULL;
+   sge_gdi_ctx_class_t *log_context = nullptr;
 
 /*    sge_mutex_lock("Log_State_Lock", "log_state_get_log_context", __LINE__, &Log_State.mutex); */
 
@@ -494,25 +494,25 @@ int sge_log(u_long32 log_level, const char *mesg, const char *file__, const char
    int levelchar;
    char levelstring[32 * 4];
 
-   sge_gdi_ctx_class_t *ctx = NULL;
+   sge_gdi_ctx_class_t *ctx = nullptr;
    /* TODO: this must be kept for qmaster and should be done in a different
             way (qmaster context) !!! */
    u_long32 me = 0;
-   const char *threadname = NULL;
-   const char *unqualified_hostname = NULL;
+   const char *threadname = nullptr;
+   const char *unqualified_hostname = nullptr;
    int is_daemonized = 0;
 
    DENTER_(BASIS_LAYER);
 
    ctx = log_state_get_log_context();
 
-   if (ctx != NULL) {
+   if (ctx != nullptr) {
       me = uti_state_get_mewho();
       threadname = bootstrap_get_thread_name();
       unqualified_hostname = uti_state_get_unqualified_hostname();
       is_daemonized = uti_state_get_daemonized();
    } else {
-      DPRINTF(("sge_log: ctx is NULL\n"));
+      DPRINTF(("sge_log: ctx is nullptr\n"));
    }
 
    /* Make sure to have at least a one byte logging string */
@@ -705,12 +705,12 @@ static void log_buffer_destroy(void *theBuffer) {
 *
 *******************************************************************************/
 static log_buffer_t *log_buffer_getspecific(void) {
-   log_buffer_t *buf = NULL;
+   log_buffer_t *buf = nullptr;
    int res = -1;
 
    pthread_once(&log_buffer_once, log_buffer_once_init);
 
-   if ((buf = (log_buffer_t *)pthread_getspecific(log_buffer_key)) != NULL) {
+   if ((buf = (log_buffer_t *)pthread_getspecific(log_buffer_key)) != nullptr) {
       return buf;
    }
 
@@ -799,18 +799,18 @@ static void log_context_destroy(void *theContext) {
 *
 *******************************************************************************/
 static log_context_t *log_context_getspecific(void) {
-   log_context_t *myctx = NULL;
+   log_context_t *myctx = nullptr;
    int res = -1;
 
    pthread_once(&log_context_once, log_context_once_init);
 
-   if ((myctx = (log_context_t *)pthread_getspecific(log_context_key)) != NULL) {
+   if ((myctx = (log_context_t *)pthread_getspecific(log_context_key)) != nullptr) {
       return myctx;
    }
 
    myctx = (log_context_t *) sge_malloc(sizeof(log_context_t));
-   if (myctx != NULL) {
-      myctx->context = NULL;
+   if (myctx != nullptr) {
+      myctx->context = nullptr;
    }
    res = pthread_setspecific(log_context_key, (const void *) myctx);
 

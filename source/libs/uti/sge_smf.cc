@@ -132,7 +132,7 @@ typedef enum scf_error {
 static int libsLoaded             = -1;
 static int libscfLoaded           = -1;
 static int libcontractLoaded      = -1;
-static char *FMRI                 = NULL;
+static char *FMRI                 = nullptr;
 static int useSMF                 = -1;
 
 pthread_once_t FMRIcontrol        = PTHREAD_ONCE_INIT;
@@ -142,7 +142,7 @@ pthread_once_t libscfcontrol      = PTHREAD_ONCE_INIT;
 pthread_once_t libcontractcontrol = PTHREAD_ONCE_INIT;
 
 /* LIBSCF */
-static void* scf_lib = NULL;
+static void* scf_lib = nullptr;
 /* Used libscf function pointers */
 static scf_error_t (*shared_scf_func__scf_error)(void);
 static const char *(*shared_scf_func__scf_strerror)(scf_error_t);
@@ -154,7 +154,7 @@ static char *(*shared_scf_func__smf_get_state)(const char *fmri);
 static int (*shared_scf_func__smf_disable_instance)(const char *fmri, int flag);
 
 /* LIBCONTRACT */
-static void* contract_lib = NULL;
+static void* contract_lib = nullptr;
 /* Used libcontract function pointers */
 static int (*shared_contract_func__ct_tmpl_activate)(int ctfd);
 static int (*shared_contract_func__ct_tmpl_clear)(int ctfd);
@@ -206,14 +206,14 @@ static int sge_init_lib(void *lib_ptr, char *lib_name,
 
  DENTER(TOP_LAYER);
 
- if (lib_ptr == NULL) {
+ if (lib_ptr == nullptr) {
      lib_ptr = dlopen(lib_name, RTLD_LAZY | RTLD_NODELETE);
-     if (lib_ptr != NULL) {
+     if (lib_ptr != nullptr) {
          int i = 0;
-         while (func_name[i] != NULL) {
+         while (func_name[i] != nullptr) {
              *((int**)(func_ptr[i])) = (int*)dlsym(lib_ptr, func_name[i]);
 
-             if (*((int**)(func_ptr[i])) == NULL) {
+             if (*((int**)(func_ptr[i])) == nullptr) {
                  DPRINTF(("%s: unable to initialize function %s\n",
                          "sge_init_lib", func_name[i]));
                  DRETURN(1);
@@ -269,7 +269,7 @@ static void init_scf_lib(void)
      "scf_simple_prop_free",
      "smf_get_state",
      "smf_disable_instance",
-     NULL
+     nullptr
  };
 
  const void *func_ptr[] = {
@@ -280,7 +280,7 @@ static void init_scf_lib(void)
      &shared_scf_func__scf_simple_prop_free,
      &shared_scf_func__smf_get_state,
      &shared_scf_func__smf_disable_instance,
-     NULL
+     nullptr
  };
 
  DENTER(TOP_LAYER);
@@ -370,7 +370,7 @@ static void init_contract_lib(void)
      "ct_status_get_id",
      "ct_pr_tmpl_set_fatal",
      "ct_pr_tmpl_set_param",
-     NULL
+     nullptr
  };
 
  const void *func_ptr[] = {
@@ -384,7 +384,7 @@ static void init_contract_lib(void)
      &shared_contract_func__ct_status_get_id,
      &shared_contract_func__ct_pr_tmpl_set_fatal,
      &shared_contract_func__ct_pr_tmpl_set_param,
-     NULL
+     nullptr
  };
 
  DENTER(TOP_LAYER);
@@ -544,8 +544,8 @@ static void init_fmri(void)
  char *temp = getenv("SMF_FMRI");
  /* We explicitly check the fmri for valid service names */
  if (temp && is_valid_sge_fmri(temp)) {
-     FMRI = sge_strdup(NULL, temp);
-     DPRINTF(("init_fmri() - FMRI set to %s\n", (FMRI==NULL) ? "NULL" : FMRI));
+     FMRI = sge_strdup(nullptr, temp);
+     DPRINTF(("init_fmri() - FMRI set to %s\n", (FMRI==nullptr) ? "nullptr" : FMRI));
  }
  DRETURN_VOID;
 }
@@ -566,7 +566,7 @@ static void init_fmri(void)
 *
 *  RESULT
 *    char* - result
-*        NULL - no FMRI, smf was/can not be used
+*        nullptr - no FMRI, smf was/can not be used
 *        other - valid service fmri of this process
 *
 *  NOTES
@@ -582,7 +582,7 @@ static char *get_fmri(void)
      ERROR((SGE_EVENT, MSG_SMF_PTHREAD_ONCE_FAILED_S, "get_fmri()"));
  }
  DPRINTF(("get_fmri() -> useSMF=%d, FMRI=%s\n",
-          useSMF, (FMRI==NULL) ? "NULL" : FMRI));
+          useSMF, (FMRI==nullptr) ? "nullptr" : FMRI));
  DRETURN(FMRI);
 }
 
@@ -617,7 +617,7 @@ static void init_use_smf(void)
 
  DENTER(TOP_LAYER);
 
- if (get_fmri() == NULL) {
+ if (get_fmri() == nullptr) {
      useSMF = 0;
      DRETURN_VOID;
  }
@@ -967,7 +967,7 @@ return pid;
 *******************************************************************************/
 void sge_smf_temporary_disable_instance(void)
 {
- uid_t old_euid = NULL;
+ uid_t old_euid = nullptr;
  int change_user = 1;
  DENTER(TOP_LAYER);
  if (once_libscf_init() != 0) {
@@ -1052,18 +1052,18 @@ char *sge_smf_get_instance_next_state()
 
  DENTER(TOP_LAYER);
 
- if ((prop = shared_scf_func__scf_simple_prop_get(NULL, FMRI, SCF_PG_RESTARTER, SCF_PROPERTY_NEXT_STATE)) == NULL) {
-    DRETURN(NULL);
+ if ((prop = shared_scf_func__scf_simple_prop_get(nullptr, FMRI, SCF_PG_RESTARTER, SCF_PROPERTY_NEXT_STATE)) == nullptr) {
+    DRETURN(nullptr);
  }
 
- if ((state_str = shared_scf_func__scf_simple_prop_next_astring(prop)) == NULL) {
+ if ((state_str = shared_scf_func__scf_simple_prop_next_astring(prop)) == nullptr) {
     shared_scf_func__scf_simple_prop_free(prop);
-    DRETURN(NULL);
+    DRETURN(nullptr);
  }
 
- if ((ret = strdup(state_str)) == NULL) {
+ if ((ret = strdup(state_str)) == nullptr) {
      ERROR((SGE_EVENT, "Out of memory"));
-     DRETURN(NULL);
+     DRETURN(nullptr);
  }
 
  shared_scf_func__scf_simple_prop_free(prop);

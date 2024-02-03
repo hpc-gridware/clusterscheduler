@@ -64,9 +64,9 @@ bool manop_is_manager(const char *user_name, const lList *master_manager_list)
    bool ret = false;
 
    DENTER(TOP_LAYER);
-   if (user_name == NULL) {
+   if (user_name == nullptr) {
       ret = false;
-   } else if (lGetElemStr(master_manager_list, UM_name, user_name) != NULL) {
+   } else if (lGetElemStr(master_manager_list, UM_name, user_name) != nullptr) {
       ret = true;
    }
    DRETURN(ret);
@@ -102,11 +102,11 @@ bool manop_is_operator(const char *user_name, const lList *master_manager_list, 
    bool ret = false;
 
    DENTER(TOP_LAYER);
-   if (user_name == NULL) {
+   if (user_name == nullptr) {
       ret = false;
-   } else if(lGetElemStr(master_operator_list, UO_name, user_name) != NULL) {
+   } else if(lGetElemStr(master_operator_list, UO_name, user_name) != nullptr) {
       ret = true;
-   } else if (lGetElemStr(master_manager_list, UM_name, user_name) != NULL) {
+   } else if (lGetElemStr(master_manager_list, UM_name, user_name) != nullptr) {
       ret = true;
    }
    DRETURN(ret);

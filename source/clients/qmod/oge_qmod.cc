@@ -68,10 +68,10 @@ int argc,
 char **argv
 ) {
    u_long32 force = 0;
-   lList *ref_list = NULL;
-   lList *alp = NULL, *pcmdline = NULL;
+   lList *ref_list = nullptr;
+   lList *alp = nullptr, *pcmdline = nullptr;
    const lListElem *aep;
-   sge_gdi_ctx_class_t *ctx = NULL;
+   sge_gdi_ctx_class_t *ctx = nullptr;
    bool answ_list_has_err = false;
 
    DENTER_MAIN(TOP_LAYER, "qmod");
@@ -119,14 +119,14 @@ char **argv
    }
 
    {
-      lListElem *idep = NULL;
+      lListElem *idep = nullptr;
       for_each_rw(idep, ref_list) {
          lSetUlong(idep, ID_force, force);
       }
    }
 
    if (ref_list) {
-      alp = ctx->gdi(ctx, SGE_CQ_LIST, SGE_GDI_TRIGGER, &ref_list, NULL, NULL);
+      alp = ctx->gdi(ctx, SGE_CQ_LIST, SGE_GDI_TRIGGER, &ref_list, nullptr, nullptr);
    }
 
    answ_list_has_err = answer_list_has_exit_code_error(&alp); 
@@ -215,15 +215,15 @@ lList **ppcmdline
 ) {
 char **sp;
 char **rp;
-lList *alp = NULL;
+lList *alp = nullptr;
 
    DENTER(TOP_LAYER);
 
    rp = argv;
 
-   if (*rp == NULL) {
+   if (*rp == nullptr) {
       /* no command line argument: print help on error */
-      qmod_usage(stderr, NULL);
+      qmod_usage(stderr, nullptr);
       answer_list_add_sprintf(&alp, STATUS_ESEMANTIC, ANSWER_QUALITY_ERROR, SFNMAX, MSG_PARSE_NOOPTIONARGUMENT);
    }
 
@@ -294,12 +294,12 @@ lList *alp = NULL;
 
       /* -t */
       if (!strcmp("-t", *sp)) {
-         lList *task_id_range_list = NULL;
+         lList *task_id_range_list = nullptr;
          lListElem *ep_opt;
 
          /* next field is path_name */
          sp++;
-         if (*sp == NULL) {
+         if (*sp == nullptr) {
              answer_list_add(&alp, MSG_PARSE_TOPTIONMUSTHAVEALISTOFTASKIDRANGES, STATUS_ESEMANTIC, ANSWER_QUALITY_ERROR);
              goto error;
          }
@@ -346,7 +346,7 @@ lList *alp = NULL;
       /* oops */
       answer_list_add_sprintf(&alp, STATUS_ESEMANTIC, ANSWER_QUALITY_ERROR, MSG_PARSE_INVALIDOPTIONARGUMENTX_S, *sp);
 error:
-      qmod_usage(stderr, NULL);
+      qmod_usage(stderr, nullptr);
       DRETURN(alp);
    }
    DRETURN(alp);
@@ -361,7 +361,7 @@ error:
  ****/
 static lList *sge_parse_qmod(lList **ppcmdline, lList **ppreflist, u_long32 *pforce)
 {
-   lList *alp = NULL;
+   lList *alp = nullptr;
    u_long32 helpflag;
    int usageshowed = 0;
 
@@ -396,7 +396,7 @@ static lList *sge_parse_qmod(lList **ppcmdline, lList **ppreflist, u_long32 *pfo
          "-_c",
          "-_dc",
 #endif
-         NULL
+         nullptr
       };
       static const u_long32 transitions[] = {
          QI_DO_CLEARERROR,
@@ -427,7 +427,7 @@ static lList *sge_parse_qmod(lList **ppcmdline, lList **ppreflist, u_long32 *pfo
       int i;
 
       if (parse_flag(ppcmdline, "-help",  &alp, &helpflag)) {
-         usageshowed = qmod_usage(stdout, NULL);
+         usageshowed = qmod_usage(stdout, nullptr);
          break;
       }
 
@@ -436,11 +436,11 @@ static lList *sge_parse_qmod(lList **ppcmdline, lList **ppreflist, u_long32 *pfo
       }
 
       i = 0;
-      while (options[i] != NULL) {
+      while (options[i] != nullptr) {
          if ((transitions[i] & QUEUE_DO_ACTION) == 0) {
             parse_multi_jobtaskslist(ppcmdline, options[i], &alp, ppreflist, true, transitions[i]);
          } else {
-            lList *queueList = NULL;
+            lList *queueList = nullptr;
             if (parse_multi_stringlist( ppcmdline, options[i], &alp, &queueList, ST_Type, ST_name)){
                id_list_build_from_str_list(ppreflist, &alp, queueList, transitions[i], *pforce);
             }
@@ -450,7 +450,7 @@ static lList *sge_parse_qmod(lList **ppcmdline, lList **ppreflist, u_long32 *pfo
       }
 
       /* we get to this point, than there are -t options without job names. We have to write an error message */
-      if ((ep = lGetElemStrRW(*ppcmdline, SPA_switch_val, "-t")) != NULL) {
+      if ((ep = lGetElemStrRW(*ppcmdline, SPA_switch_val, "-t")) != nullptr) {
          answer_list_add_sprintf(&alp, STATUS_ESEMANTIC, ANSWER_QUALITY_ERROR,
                                  MSG_JOB_LONELY_TOPTION_S, lGetString(ep, SPA_switch_arg));
 
@@ -461,7 +461,7 @@ static lList *sge_parse_qmod(lList **ppcmdline, lList **ppreflist, u_long32 *pfo
 
    if (lGetNumberOfElem(*ppcmdline)) {
       if (!usageshowed) {
-         qmod_usage(stderr, NULL);
+         qmod_usage(stderr, nullptr);
       }
       answer_list_add_sprintf(&alp, STATUS_ESEMANTIC, ANSWER_QUALITY_ERROR,
                               SFNMAX, MSG_PARSE_TOOMANYOPTIONS);
@@ -474,7 +474,7 @@ static lList *sge_parse_qmod(lList **ppcmdline, lList **ppreflist, u_long32 *pfo
  **** qmod_usage (static)
  ****
  **** displays usage of qmod on file fp.
- **** Is what NULL, full usage will be displayed.
+ **** Is what nullptr, full usage will be displayed.
  ****
  **** Returns always 1.
  ****

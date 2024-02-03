@@ -75,9 +75,9 @@ extern int main(int argc, char **argv) {
    static int runs = 100;
 
 
-   cl_com_handle_t *handle = NULL;
-   cl_com_message_t *message = NULL;
-   cl_com_endpoint_t *sender = NULL;
+   cl_com_handle_t *handle = nullptr;
+   cl_com_message_t *message = nullptr;
+   cl_com_endpoint_t *sender = nullptr;
 
    int bytes_received = 0;
    unsigned long total_bytes_sent = 0;
@@ -106,10 +106,10 @@ extern int main(int argc, char **argv) {
    memset(&sa, 0, sizeof(sa));
    sa.sa_handler = sighandler_client;  /* one handler for all signals */
    sigemptyset(&sa.sa_mask);
-   sigaction(SIGINT, &sa, NULL);
-   sigaction(SIGTERM, &sa, NULL);
-   sigaction(SIGHUP, &sa, NULL);
-   sigaction(SIGPIPE, &sa, NULL);
+   sigaction(SIGINT, &sa, nullptr);
+   sigaction(SIGTERM, &sa, nullptr);
+   sigaction(SIGHUP, &sa, nullptr);
+   sigaction(SIGPIPE, &sa, nullptr);
 
 
    if (argc < 7) {
@@ -117,7 +117,7 @@ extern int main(int argc, char **argv) {
       exit(1);
    }
    prof_mt_init();
-   cl_com_setup_commlib(CL_NO_THREAD, (cl_log_t) atoi(argv[4]), NULL);
+   cl_com_setup_commlib(CL_NO_THREAD, (cl_log_t) atoi(argv[4]), nullptr);
    if (atoi(argv[6]) != 0) {
       close_connection = 1;
    }
@@ -142,20 +142,20 @@ extern int main(int argc, char **argv) {
       cl_ssl_setup_t ssl_config;
       ssl_config.ssl_method = CL_SSL_v23;                 /*  v23 method                                  */
       ssl_config.ssl_CA_cert_pem_file = getenv("SSL_CA_CERT_FILE"); /*  CA certificate file                         */
-      ssl_config.ssl_CA_key_pem_file = NULL;                       /*  private certificate file of CA (not used)   */
+      ssl_config.ssl_CA_key_pem_file = nullptr;                       /*  private certificate file of CA (not used)   */
       ssl_config.ssl_cert_pem_file = getenv("SSL_CERT_FILE");    /*  certificates file                           */
       ssl_config.ssl_key_pem_file = getenv("SSL_KEY_FILE");     /*  key file                                    */
       ssl_config.ssl_rand_file = getenv("SSL_RAND_FILE");    /*  rand file (if RAND_status() not ok)         */
       ssl_config.ssl_crl_file = getenv("SSL_CRL_FILE");     /*  revocation list file                        */
-      ssl_config.ssl_reconnect_file = NULL;                       /*  file for reconnect data    (not used)       */
+      ssl_config.ssl_reconnect_file = nullptr;                       /*  file for reconnect data    (not used)       */
       ssl_config.ssl_refresh_time = 0;                          /*  key alive time for connections (not used)   */
-      ssl_config.ssl_password = NULL;                       /*  password for encrypted keyfiles (not used)  */
-      ssl_config.ssl_verify_func = NULL;                       /*  function callback for peer user/name check  */
+      ssl_config.ssl_password = nullptr;                       /*  password for encrypted keyfiles (not used)  */
+      ssl_config.ssl_verify_func = nullptr;                       /*  function callback for peer user/name check  */
 
-      if (ssl_config.ssl_CA_cert_pem_file == NULL ||
-          ssl_config.ssl_cert_pem_file == NULL ||
-          ssl_config.ssl_key_pem_file == NULL ||
-          ssl_config.ssl_rand_file == NULL) {
+      if (ssl_config.ssl_CA_cert_pem_file == nullptr ||
+          ssl_config.ssl_cert_pem_file == nullptr ||
+          ssl_config.ssl_key_pem_file == nullptr ||
+          ssl_config.ssl_rand_file == nullptr) {
          printf("please set the following environment variables:\n");
          printf("SSL_CA_CERT_FILE         = CA certificate file\n");
          printf("SSL_CERT_FILE            = certificates file\n");
@@ -176,8 +176,8 @@ extern int main(int argc, char **argv) {
 
 #ifdef CREATE_SERVICE
    cl_com_append_known_endpoint_from_name(argv[1], "server", 1,atoi(argv[2]),CL_CM_AC_DISABLED , 1);
-   handle=cl_com_create_handle(NULL,framework,CL_CM_CT_MESSAGE , true, 0 , CL_TCP_DEFAULT, "client", atoi(argv[3]),SELECT_TIMEOUT,0 );
-   if (handle == NULL) {
+   handle=cl_com_create_handle(nullptr,framework,CL_CM_CT_MESSAGE , true, 0 , CL_TCP_DEFAULT, "client", atoi(argv[3]),SELECT_TIMEOUT,0 );
+   if (handle == nullptr) {
       printf("could not get handle\n");
       exit(1);
    } else {
@@ -186,9 +186,9 @@ extern int main(int argc, char **argv) {
       printf("I'm reachable at port %d!\n", my_port);
    }
 #else
-   handle = cl_com_create_handle(NULL, framework, CL_CM_CT_MESSAGE, false, atoi(argv[2]), CL_TCP_DEFAULT, "client",
+   handle = cl_com_create_handle(nullptr, framework, CL_CM_CT_MESSAGE, false, atoi(argv[2]), CL_TCP_DEFAULT, "client",
                                  atoi(argv[3]), SELECT_TIMEOUT, 0);
-   if (handle == NULL) {
+   if (handle == nullptr) {
       printf("could not get handle\n");
       exit(1);
    }
@@ -214,7 +214,7 @@ extern int main(int argc, char **argv) {
 #endif
 
 
-   gettimeofday(&now, NULL);
+   gettimeofday(&now, nullptr);
    start_time = now.tv_sec;
    appl_start_time = start_time;
    welcome_text_size = strlen(welcome_text) + 1;
@@ -273,9 +273,9 @@ extern int main(int argc, char **argv) {
       while (retval != CL_RETVAL_OK) {
 
 
-         while ((retval = cl_commlib_receive_message(handle, NULL, NULL, 0, false, 0, &message, &sender)) ==
+         while ((retval = cl_commlib_receive_message(handle, nullptr, nullptr, 0, false, 0, &message, &sender)) ==
                 CL_RETVAL_OK) {
-            if (message != NULL) {
+            if (message != nullptr) {
                cl_com_free_endpoint(&sender);
                cl_com_free_message(&message);
             } else {
@@ -326,7 +326,7 @@ extern int main(int argc, char **argv) {
 
 
          CL_LOG_INT(CL_LOG_INFO, "waiting for mid .... ", (int) mid);
-         retval = cl_commlib_receive_message(handle, NULL, NULL, 0, false, mid, &message, &sender);
+         retval = cl_commlib_receive_message(handle, nullptr, nullptr, 0, false, mid, &message, &sender);
 
 
          CL_LOG_STR(CL_LOG_INFO, "waiting for bytes ...", cl_get_error_text(retval));
@@ -341,7 +341,7 @@ extern int main(int argc, char **argv) {
 #endif
             break;
          }
-         if (message != NULL) {
+         if (message != nullptr) {
 
             /*   printf("received message from \"%s\"\n", sender->comp_host); */
             CL_LOG_INT(CL_LOG_INFO, "bytes received:", (int) message->message_length);
@@ -354,9 +354,9 @@ extern int main(int argc, char **argv) {
             cl_com_free_message(&message);
          }
 
-         while ((retval = cl_commlib_receive_message(handle, NULL, NULL, 0, false, 0, &message, &sender)) ==
+         while ((retval = cl_commlib_receive_message(handle, nullptr, nullptr, 0, false, 0, &message, &sender)) ==
                 CL_RETVAL_OK) {
-            if (message != NULL) {
+            if (message != nullptr) {
                cl_com_free_endpoint(&sender);
                cl_com_free_message(&message);
             } else {
@@ -383,11 +383,11 @@ extern int main(int argc, char **argv) {
 #if CL_DO_SLOW
       sleep(atoi(argv[5]));
 #endif
-      gettimeofday(&now, NULL);
+      gettimeofday(&now, nullptr);
       end_time = now.tv_sec;
       if (end_time - start_time >= 2) {
-         cl_com_connection_t *con = NULL;
-         cl_connection_list_elem_t *elem = NULL;
+         cl_com_connection_t *con = nullptr;
+         cl_connection_list_elem_t *elem = nullptr;
 /*        printf("Kbit/s sent: %.2f   ", ((total_bytes_sent * 8.0)/1024.0) /  (double)(end_time - start_time));
         printf("Kbit/s read: %.2f   ", ((total_bytes_received * 8.0)/1024.0) /  (double)(end_time - start_time)); */
          printf("KBit/s     : %.2f   ",
@@ -396,7 +396,7 @@ extern int main(int argc, char **argv) {
          printf("avg. connections/s: %.2f", (double) total_connection_sum / (double) (end_time - appl_start_time));
          cl_raw_list_lock(handle->connection_list);
          elem = cl_connection_list_get_first_elem(handle->connection_list);
-         if (elem != NULL) {
+         if (elem != nullptr) {
             con = elem->connection;
             if (elem->connection->local) {
                printf("[for comp host, comp name, comp id: \"%s\", \"%s\", \"%ld\"]    \n", con->local->comp_host,
@@ -418,9 +418,9 @@ extern int main(int argc, char **argv) {
 
          while (cl_commlib_shutdown_handle(handle, true) == CL_RETVAL_MESSAGE_IN_BUFFER) {
             printf("got message\n");
-            message = NULL;
-            cl_commlib_receive_message(handle, NULL, NULL, 0, false, 0, &message, &sender);
-            if (message != NULL) {
+            message = nullptr;
+            cl_commlib_receive_message(handle, nullptr, nullptr, 0, false, 0, &message, &sender);
+            if (message != nullptr) {
                cl_com_free_endpoint(&sender);
                cl_com_free_message(&message);
             } else {
@@ -430,8 +430,8 @@ extern int main(int argc, char **argv) {
             }
          }
 #ifdef CREATE_SERVICE
-         handle=cl_com_create_handle(NULL,framework,CL_CM_CT_MESSAGE , true, 0 , CL_TCP_DEFAULT, "client", atoi(argv[3]),SELECT_TIMEOUT,0 );
-         if (handle == NULL) {
+         handle=cl_com_create_handle(nullptr,framework,CL_CM_CT_MESSAGE , true, 0 , CL_TCP_DEFAULT, "client", atoi(argv[3]),SELECT_TIMEOUT,0 );
+         if (handle == nullptr) {
             printf("could not get handle\n");
             exit(-1);
          } else {
@@ -440,9 +440,9 @@ extern int main(int argc, char **argv) {
             printf("I'm reachable at port %d!\n", my_port);
          }
 #else
-         handle = cl_com_create_handle(NULL, framework, CL_CM_CT_MESSAGE, false, atoi(argv[2]), CL_TCP_DEFAULT,
+         handle = cl_com_create_handle(nullptr, framework, CL_CM_CT_MESSAGE, false, atoi(argv[2]), CL_TCP_DEFAULT,
                                        "client", atoi(argv[3]), SELECT_TIMEOUT, 0);
-         if (handle == NULL) {
+         if (handle == nullptr) {
             printf("could not get handle\n");
             exit(-1);
          }
@@ -462,10 +462,10 @@ extern int main(int argc, char **argv) {
    fflush(stdout);
    while (cl_commlib_shutdown_handle(handle, true) == CL_RETVAL_MESSAGE_IN_BUFFER) {
       printf("got message\n");
-      message = NULL;
+      message = nullptr;
 
-      cl_commlib_receive_message(handle, NULL, NULL, 0, false, 0, &message, &sender);
-      if (message != NULL) {
+      cl_commlib_receive_message(handle, nullptr, nullptr, 0, false, 0, &message, &sender);
+      if (message != nullptr) {
          cl_com_free_endpoint(&sender);
          cl_com_free_message(&message);
       } else {

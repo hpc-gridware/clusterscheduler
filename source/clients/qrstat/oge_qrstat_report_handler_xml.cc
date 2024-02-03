@@ -154,12 +154,12 @@ qrstat_report_newline(qrstat_report_handler_t* handler, lList **alpp);
 qrstat_report_handler_t *
 qrstat_create_report_handler_xml(qrstat_env_t *qrstat_env, lList **answer_list)
 {
-   qrstat_report_handler_t* ret = NULL;
+   qrstat_report_handler_t* ret = nullptr;
 
    DENTER(TOP_LAYER);
 
    ret = (qrstat_report_handler_t*)sge_malloc(sizeof(qrstat_report_handler_t));
-   if (ret == NULL) {
+   if (ret == nullptr) {
       answer_list_add_sprintf(answer_list, STATUS_EMALLOC, ANSWER_QUALITY_ERROR,
                               MSG_MEM_MEMORYALLOCFAILED_S, __func__);
    } else {
@@ -167,7 +167,7 @@ qrstat_create_report_handler_xml(qrstat_env_t *qrstat_env, lList **answer_list)
       * xml report handler ctx is a dstring
       */
       ret->ctx = sge_malloc(sizeof(dstring));
-      if (ret->ctx == NULL ) {
+      if (ret->ctx == nullptr ) {
          answer_list_add_sprintf(answer_list, STATUS_EMALLOC, ANSWER_QUALITY_ERROR,
                                  MSG_MEM_MEMORYALLOCFAILED_S, __func__);
       } else {
@@ -230,7 +230,7 @@ qrstat_destroy_report_handler_xml(qrstat_report_handler_t** handler, lList **ans
 
    DENTER(TOP_LAYER);
 
-   if (handler != NULL && *handler != NULL ) {
+   if (handler != nullptr && *handler != nullptr ) {
       sge_dstring_free((dstring*)(*handler)->ctx);
       sge_free(&((*handler)->ctx));
       sge_free(handler);
@@ -361,7 +361,7 @@ qrstat_report_ar_node_string(qrstat_report_handler_t* handler, lList **alpp,
 
    DENTER(TOP_LAYER);
  
-   if (value != NULL) { 
+   if (value != nullptr) {
       sge_dstring_sprintf_append(buffer, "      <"SFN">"SFN"</"SFN">\n", name, value, name);
    } else {
       sge_dstring_sprintf_append(buffer, "      <"SFN"/>\n", name);
@@ -540,8 +540,8 @@ qrstat_report_granted_parallel_environment_node(qrstat_report_handler_t* handler
 
    DENTER(TOP_LAYER);
   
-   sge_dstring_sprintf_append(buffer, "         <parallel_environment>"SFN"</parallel_environment>\n", (name != NULL) ? name : "");
-   sge_dstring_sprintf_append(buffer, "         <slots>"SFN"</slots>\n", (slots_range != NULL) ? slots_range : "");
+   sge_dstring_sprintf_append(buffer, "         <parallel_environment>"SFN"</parallel_environment>\n", (name != nullptr) ? name : "");
+   sge_dstring_sprintf_append(buffer, "         <slots>"SFN"</slots>\n", (slots_range != nullptr) ? slots_range : "");
 
    DRETURN(ret); 
 }
@@ -583,7 +583,7 @@ qrstat_report_mail_list_node(qrstat_report_handler_t* handler,
    DENTER(TOP_LAYER);
   
    sge_dstring_sprintf_append(buffer, "         <mail  user="SFQ
-                              " host="SFQ"/>\n", name, host?host:"NULL");
+                              " host="SFQ"/>\n", name, host?host:"nullptr");
 
    DRETURN(ret); 
 }

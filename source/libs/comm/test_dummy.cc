@@ -46,10 +46,10 @@
 int main(int argc, char **argv) {
    int test = 1;
    int my_error = 0;
-   cl_raw_list_t *list = NULL;
-   cl_raw_list_t *log_list = NULL;
+   cl_raw_list_t *list = nullptr;
+   cl_raw_list_t *log_list = nullptr;
 
-   my_error = cl_log_list_setup(&log_list, "test_dummy", 0, CL_LOG_FLUSHED, NULL);
+   my_error = cl_log_list_setup(&log_list, "test_dummy", 0, CL_LOG_FLUSHED, nullptr);
    printf("log list setup: %s\n", cl_get_error_text(my_error));
    cl_log_list_set_log_level(log_list, CL_LOG_DEBUG);
 

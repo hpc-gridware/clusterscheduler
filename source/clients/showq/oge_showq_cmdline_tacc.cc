@@ -54,19 +54,19 @@ bool switch_list_showq_parse_from_cmdline_tacc(lList **ppcmdline,
    rp = argv;
    while(*(sp=rp)) {
       /* --help */
-      if ((rp = parse_noopt(sp, "--help", NULL, ppcmdline, answer_list)) != sp)
+      if ((rp = parse_noopt(sp, "--help", nullptr, ppcmdline, answer_list)) != sp)
          continue;
-      if ((rp = parse_noopt(sp, "-u", NULL, ppcmdline, answer_list)) != sp)
+      if ((rp = parse_noopt(sp, "-u", nullptr, ppcmdline, answer_list)) != sp)
          continue;
-      if ((rp = parse_noopt(sp, "-l", NULL, ppcmdline, answer_list)) != sp)
+      if ((rp = parse_noopt(sp, "-l", nullptr, ppcmdline, answer_list)) != sp)
          continue;
-      if ((rp = parse_noopt(sp, "-cb", NULL, ppcmdline, answer_list)) != sp)
+      if ((rp = parse_noopt(sp, "-cb", nullptr, ppcmdline, answer_list)) != sp)
          continue;
-      if ((rp = parse_until_next_opt(sp, "-U", NULL, ppcmdline, answer_list)) != sp)
+      if ((rp = parse_until_next_opt(sp, "-U", nullptr, ppcmdline, answer_list)) != sp)
          continue;
-      if ((rp = parse_until_next_opt(sp, "-sfa", NULL, ppcmdline, answer_list)) != sp)
+      if ((rp = parse_until_next_opt(sp, "-sfa", nullptr, ppcmdline, answer_list)) != sp)
          continue;
-      if ((rp = parse_until_next_opt(sp, "-sfw", NULL, ppcmdline, answer_list)) != sp)
+      if ((rp = parse_until_next_opt(sp, "-sfw", nullptr, ppcmdline, answer_list)) != sp)
          continue;
 
       /* oops */

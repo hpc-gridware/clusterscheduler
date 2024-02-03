@@ -46,13 +46,13 @@
 
 /* some global things */
 int test_server_port = 0;
-char *test_server_host = NULL;
+char *test_server_host = nullptr;
 
 void sighandler_client(int sig);
 
 static int do_shutdown = 0;
 
-cl_raw_list_t *thread_list = NULL;
+cl_raw_list_t *thread_list = nullptr;
 
 void *my_receive_thread(void *t_conf);
 
@@ -77,10 +77,10 @@ void sighandler_client(
 }
 
 void my_cleanup_func(cl_thread_settings_t *thread_config) {
-   cl_com_handle_t *handle = NULL;
+   cl_com_handle_t *handle = nullptr;
    printf("my thread cleanup called: thread state is: %s\n", cl_thread_get_state(thread_config));
    handle = (cl_com_handle_t *) thread_config->thread_user_data;
-   if (handle != NULL) {
+   if (handle != nullptr) {
       printf("shutting down handle %s/%s/%ld ...\n", handle->local->comp_host, handle->local->comp_name,
              handle->local->comp_id);
       cl_commlib_shutdown_handle(handle, false);
@@ -93,12 +93,12 @@ void my_cleanup_func(cl_thread_settings_t *thread_config) {
 #define __CL_FUNCTION__ "main()"
 
 extern int main(int argc, char **argv) {
-   cl_thread_settings_t *thread_p = NULL;
-   cl_thread_settings_t *dummy_thread_p = NULL;
-   cl_thread_settings_t *sender_thread = NULL;
+   cl_thread_settings_t *thread_p = nullptr;
+   cl_thread_settings_t *dummy_thread_p = nullptr;
+   cl_thread_settings_t *sender_thread = nullptr;
 
    struct sigaction sa;
-   cl_com_handle_t *handle = NULL;
+   cl_com_handle_t *handle = nullptr;
 #define TEST_RECEIVER_COUNT 32
    cl_com_endpoint_t *receiver_list[TEST_RECEIVER_COUNT];
    int i;
@@ -146,20 +146,20 @@ extern int main(int argc, char **argv) {
    memset(&sa, 0, sizeof(sa));
    sa.sa_handler = sighandler_client;  /* one handler for all signals */
    sigemptyset(&sa.sa_mask);
-   sigaction(SIGINT, &sa, NULL);
-   sigaction(SIGTERM, &sa, NULL);
-   sigaction(SIGHUP, &sa, NULL);
-   sigaction(SIGPIPE, &sa, NULL);
+   sigaction(SIGINT, &sa, nullptr);
+   sigaction(SIGTERM, &sa, nullptr);
+   sigaction(SIGHUP, &sa, nullptr);
+   sigaction(SIGPIPE, &sa, nullptr);
 
 
-   cl_com_setup_commlib(tmode /* CL_NO_THREAD*/ /* CL_RW_THREAD */ /*  CL_THREAD_POOL */, CL_LOG_OFF, NULL);
+   cl_com_setup_commlib(tmode /* CL_NO_THREAD*/ /* CL_RW_THREAD */ /*  CL_THREAD_POOL */, CL_LOG_OFF, nullptr);
 
-   if (getenv("CL_PORT") != NULL) {
+   if (getenv("CL_PORT") != nullptr) {
       port = atoi(getenv("CL_PORT"));
    }
 
-   handle = cl_com_create_handle(NULL, CL_CT_TCP, CL_CM_CT_MESSAGE, true, port, CL_TCP_DEFAULT, "server", 1, 1, 0);
-   if (handle == NULL) {
+   handle = cl_com_create_handle(nullptr, CL_CT_TCP, CL_CM_CT_MESSAGE, true, port, CL_TCP_DEFAULT, "server", 1, 1, 0);
+   if (handle == nullptr) {
       printf("could not get handle\n");
       exit(1);
    }
@@ -168,7 +168,7 @@ extern int main(int argc, char **argv) {
    cl_com_get_service_port(handle, &test_server_port);
    printf("application running on port %d\n", test_server_port);
 
-   cl_com_gethostname(&test_server_host, NULL, NULL, NULL);
+   cl_com_gethostname(&test_server_host, nullptr, nullptr, nullptr);
    printf("application running on host %s\n", test_server_host);
 
    /* setup thread list */
@@ -177,21 +177,21 @@ extern int main(int argc, char **argv) {
    for (i = 1; i <= TEST_RECEIVER_COUNT; i++) {
       printf("starting receiver thread %i\n", i);
       cl_thread_list_create_thread(thread_list, &dummy_thread_p, cl_com_get_log_list(), "receiver", i,
-                                   my_receive_thread, my_cleanup_func, NULL, CL_TT_USER1);
+                                   my_receive_thread, my_cleanup_func, nullptr, CL_TT_USER1);
    }
    cl_thread_list_create_thread(thread_list, &sender_thread, cl_com_get_log_list(), "sender1", 1, my_sender_thread,
-                                my_cleanup_func, NULL, CL_TT_USER1);
+                                my_cleanup_func, nullptr, CL_TT_USER1);
    cl_thread_list_create_thread(thread_list, &sender_thread, cl_com_get_log_list(), "sender2", 2, my_sender_thread,
-                                my_cleanup_func, NULL, CL_TT_USER1);
+                                my_cleanup_func, nullptr, CL_TT_USER1);
 
 
 
    /* main thread = application thread */
    while (do_shutdown == 0) {
-      cl_com_message_t *message = NULL;
-      cl_com_endpoint_t *sender = NULL;
+      cl_com_message_t *message = nullptr;
+      cl_com_endpoint_t *sender = nullptr;
 
-      gettimeofday(&now, NULL);
+      gettimeofday(&now, nullptr);
       if (now.tv_sec >= next_calc) {
          double now_time = 0.0;
          double last_time = 0.0;
@@ -208,30 +208,30 @@ extern int main(int argc, char **argv) {
 
          printf("\nmaster thread: %.3f [messages/s]\n", messages_per_second);
 
-         gettimeofday(&last_now, NULL);
+         gettimeofday(&last_now, nullptr);
          next_calc = now.tv_sec + 5;
       }
 
       /* synchron message receive */
-      cl_commlib_receive_message(handle, NULL, NULL, 0, true, 0, &message, &sender);
+      cl_commlib_receive_message(handle, nullptr, nullptr, 0, true, 0, &message, &sender);
 
-      if (message != NULL) {
+      if (message != nullptr) {
          int is_route_message = 1;
-         cl_com_endpoint_t *client = NULL;
+         cl_com_endpoint_t *client = nullptr;
 
          if (strcmp((char *) message->message, "announce") == 0) {
             printf("server: received announce message from %s/%s/%ld\n", sender->comp_host, sender->comp_name,
                    sender->comp_id);
             receiver_list[endpoint_index] = sender;
-            sender = NULL;
+            sender = nullptr;
             endpoint_index++;
             is_route_message = 0;
          }
-         if ((sender != NULL) && strcmp((char *) sender->comp_name, "client") == 0) {
+         if ((sender != nullptr) && strcmp((char *) sender->comp_name, "client") == 0) {
             client = sender;
             cl_commlib_send_message(handle, client->comp_host, client->comp_name, client->comp_id,
                                     CL_MIH_MAT_NAK, &message->message, message->message_length,
-                                    NULL, message->message_id, 0,
+                                    nullptr, message->message_id, 0,
                                     true, false);
             is_route_message = 0;
          }
@@ -244,19 +244,19 @@ extern int main(int argc, char **argv) {
 
                cl_commlib_send_message(handle, client->comp_host, client->comp_name, client->comp_id,
                                        CL_MIH_MAT_NAK, &message->message, message->message_length,
-                                       NULL, 0, 0,
+                                       nullptr, 0, 0,
                                        true, false);
                cl_commlib_send_message(handle, client->comp_host, client->comp_name, client->comp_id,
                                        CL_MIH_MAT_NAK, &message->message, message->message_length,
-                                       NULL, 0, 0,
+                                       nullptr, 0, 0,
                                        true, false);
                cl_commlib_send_message(handle, client->comp_host, client->comp_name, client->comp_id,
                                        CL_MIH_MAT_NAK, &message->message, message->message_length,
-                                       NULL, 0, 0,
+                                       nullptr, 0, 0,
                                        true, false);
                cl_commlib_send_message(handle, client->comp_host, client->comp_name, client->comp_id,
                                        CL_MIH_MAT_NAK, &message->message, message->message_length,
-                                       NULL, 0, 0,
+                                       nullptr, 0, 0,
                                        true, false);
             }
 
@@ -277,7 +277,7 @@ extern int main(int argc, char **argv) {
    }
 
    /* delete all threads */
-   while ((thread_p = cl_thread_list_get_first_thread(thread_list)) != NULL) {
+   while ((thread_p = cl_thread_list_get_first_thread(thread_list)) != nullptr) {
       cl_thread_list_delete_thread(thread_list, thread_p);
    }
 
@@ -300,7 +300,7 @@ extern int main(int argc, char **argv) {
 void *my_receive_thread(void *t_conf) {
    int do_exit = 0;
    char *message = "announce";
-   cl_com_handle_t *handle = NULL;
+   cl_com_handle_t *handle = nullptr;
    struct timeval now;
    struct timeval last_now;
    int next_calc = 0;
@@ -323,9 +323,9 @@ void *my_receive_thread(void *t_conf) {
    cl_thread_func_startup(thread_config);
    CL_LOG(CL_LOG_INFO, "starting main loop ...");
 
-   handle = cl_com_create_handle(NULL, CL_CT_TCP, CL_CM_CT_MESSAGE, false, test_server_port, CL_TCP_DEFAULT, "receiver",
+   handle = cl_com_create_handle(nullptr, CL_CT_TCP, CL_CM_CT_MESSAGE, false, test_server_port, CL_TCP_DEFAULT, "receiver",
                                  thread_config->thread_id, 1, 0);
-   if (handle == NULL) {
+   if (handle == nullptr) {
       printf("receiver: could not get handle\n");
       do_exit = 1;
    }
@@ -336,18 +336,18 @@ void *my_receive_thread(void *t_conf) {
 
    cl_commlib_send_message(handle, test_server_host, "server", 1,
                            CL_MIH_MAT_NAK, (cl_byte_t **) &message, strlen(message) + 1,
-                           NULL, 0, 0,
+                           nullptr, 0, 0,
                            true, false);
 
 
    /* ok, thread main */
    while (do_exit == 0) {
-      cl_com_message_t *message = NULL;
-      cl_com_endpoint_t *sender = NULL;
+      cl_com_message_t *message = nullptr;
+      cl_com_endpoint_t *sender = nullptr;
 
       cl_thread_func_testcancel(thread_config);
 
-      gettimeofday(&now, NULL);
+      gettimeofday(&now, nullptr);
       if (now.tv_sec >= next_calc) {
          double now_time = 0.0;
          double last_time = 0.0;
@@ -366,16 +366,16 @@ void *my_receive_thread(void *t_conf) {
             printf("receiver thread (%d): %.3f [messages/s]\n", thread_config->thread_id, messages_per_second);
          }
 
-         gettimeofday(&last_now, NULL);
+         gettimeofday(&last_now, nullptr);
          next_calc = now.tv_sec + 5;
       }
 
       cl_commlib_receive_message(handle,
-                                 NULL, NULL, 0,
+                                 nullptr, nullptr, 0,
                                  true,
                                  0,
                                  &message, &sender);
-      if (message != NULL) {
+      if (message != nullptr) {
          /* printf("receiver: received message: \"%s\"\n", message->message); */
          message_counter++;
       }
@@ -386,7 +386,7 @@ void *my_receive_thread(void *t_conf) {
    CL_LOG(CL_LOG_INFO, "exiting ...");
    /* at least set exit state */
    cl_thread_func_cleanup(thread_config);
-   return (NULL);
+   return (nullptr);
 }
 
 #ifdef __CL_FUNCTION__
@@ -396,7 +396,7 @@ void *my_receive_thread(void *t_conf) {
 
 void *my_sender_thread(void *t_conf) {
    int do_exit = 0;
-   cl_com_handle_t *handle = NULL;
+   cl_com_handle_t *handle = nullptr;
    struct timeval now;
    struct timeval last_now;
    int next_calc = 0;
@@ -419,9 +419,9 @@ void *my_sender_thread(void *t_conf) {
    cl_thread_func_startup(thread_config);
 
 
-   handle = cl_com_create_handle(NULL, CL_CT_TCP, CL_CM_CT_MESSAGE, false, test_server_port, CL_TCP_DEFAULT, "sender",
+   handle = cl_com_create_handle(nullptr, CL_CT_TCP, CL_CM_CT_MESSAGE, false, test_server_port, CL_TCP_DEFAULT, "sender",
                                  thread_config->thread_id, 1, 0);
-   if (handle == NULL) {
+   if (handle == nullptr) {
       printf("sender: could not get handle\n");
       do_exit = 1;
    }
@@ -440,7 +440,7 @@ void *my_sender_thread(void *t_conf) {
       message[0] = 0;
       cl_thread_func_testcancel(thread_config);
 
-      gettimeofday(&now, NULL);
+      gettimeofday(&now, nullptr);
       if (now.tv_sec >= next_calc) {
          double now_time = 0.0;
          double last_time = 0.0;
@@ -457,14 +457,14 @@ void *my_sender_thread(void *t_conf) {
 
          printf("send thread: %.3f [messages/s]\n", messages_per_second);
 
-         gettimeofday(&last_now, NULL);
+         gettimeofday(&last_now, nullptr);
          next_calc = now.tv_sec + 5;
       }
 
       for (i = 0; i < 24; i++) {
          cl_commlib_send_message(handle, test_server_host, "server", 1,
                                  CL_MIH_MAT_ACK, (cl_byte_t **) &message, 12048,
-                                 NULL, 0, 0,
+                                 nullptr, 0, 0,
                                  true, true);
          message_counter++;
       }
@@ -476,7 +476,7 @@ void *my_sender_thread(void *t_conf) {
    my_cleanup_func(thread_config);
    /* at least set exit state */
    cl_thread_func_cleanup(thread_config);
-   return (NULL);
+   return (nullptr);
 }
 
 

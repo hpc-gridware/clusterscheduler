@@ -75,7 +75,7 @@ int main(int argc, char *argv[])
     printf("%d\n", (int) s.st_ctime);
  else if (!strcmp(argv[1], "-owner")) {
     int i = 10;
-    struct passwd *pw = NULL;
+    struct passwd *pw = nullptr;
     while (i-- && !pw)
        pw = getpwuid((uid_t) s.st_uid);
     if (pw && pw->pw_name)

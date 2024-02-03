@@ -75,7 +75,7 @@ void sge_pset_create_processor_set(void)
 
       sge_switch2start_user();
       if ((ret=set_processor_range(get_conf_val("processors"),
-                 (int) strtol(get_conf_val("job_id"), NULL, 10),
+                 (int) strtol(get_conf_val("job_id"), nullptr, 10),
                  err_str)) != PROC_SET_OK) {
          sge_switch2admin_user();
          if (ret == PROC_SET_WARNING) /* not critical - e.g. not root */
@@ -214,11 +214,11 @@ static int set_processor_range(char *crange, int proc_set_num, char *err_str)
 
       sprintf(err_str,"pset_bind: try to use processorset %d", proc_set_num);
       shepherd_trace(err_str);
-      if (pset_bind(proc_set_num, P_PID, P_MYID, NULL)) {
+      if (pset_bind(proc_set_num, P_PID, P_MYID, nullptr)) {
          switch (errno) {
          case EFAULT:
             shepherd_trace("pset_bind: The location pointed to by opset was not"
-               " NULL and not writable by the user");
+               " nullptr and not writable by the user");
             local_ret = PROC_SET_ERROR;
             break;
          case EINVAL:

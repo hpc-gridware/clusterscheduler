@@ -47,7 +47,7 @@ int sge_quick_count_num_args(
    int num_args = 0;
    char *resreq = sge_malloc(strlen(args) + 1);
    char *s;
-   struct saved_vars_s *context = NULL;
+   struct saved_vars_s *context = nullptr;
 
    DENTER(TOP_LAYER);
 
@@ -56,7 +56,7 @@ int sge_quick_count_num_args(
     * mallocing arrays, and a little too big is fine.
     */
    strcpy(resreq, args);
-   for (s = sge_strtok_r(resreq, " \t", &context); s != NULL; s = sge_strtok_r(NULL, " \t", &context)) {
+   for (s = sge_strtok_r(resreq, " \t", &context); s != nullptr; s = sge_strtok_r(nullptr, " \t", &context)) {
       num_args++;
    }
    sge_free(&resreq);
@@ -200,7 +200,7 @@ int parse_quoted_command_line(
         sge_sl_list_t *sl_args) {
    const char quotes[] = "\"\'";
    char last_quote = 0;
-   char *p_cur_arg = NULL;
+   char *p_cur_arg = nullptr;
    char *p_cur_char = command;
 
    while (*p_cur_char != '\0') {
@@ -284,10 +284,10 @@ int parse_quoted_command_line(
 *     char ***pargs          - an argument vector like main() provides, filled
 *                              with all arguments from the list.
 *                              This argument vector is terminated by an element
-*                              that points to NULL.
+*                              that points to nullptr.
 *
 *  RESULT
-*     int - The length of the argument vector including the terminal NULL
+*     int - The length of the argument vector including the terminal nullptr
 *           element.
 *
 *  EXAMPLE
@@ -302,7 +302,7 @@ int parse_quoted_command_line(
 *
 *     ... use args ...
 *     ... done using args ...
-*     sge_sl_destroy(&sl_args, NULL);
+*     sge_sl_destroy(&sl_args, nullptr);
 *     
 *  NOTES
 *     MT-NOTE: convert_arg_list_to_vector() is not MT safe 
@@ -323,7 +323,7 @@ int convert_arg_list_to_vector(
    for_each_sl(pelem, sl_args) {
       (*pargs)[i++] = (char *)pelem->data;
    }
-   (*pargs)[i] = NULL;
+   (*pargs)[i] = nullptr;
 
    return count + 1;
 }

@@ -130,7 +130,7 @@ rqs_set_dynamical_limit(lListElem *limit, lListElem *global_host, lListElem *exe
 *     out.
 *    
 *     Note: As long as rqs_match_assignment() is not used for parallel jobs
-*           passing NULL as PE request is perfectly fine.
+*           passing nullptr as PE request is perfectly fine.
 *
 *  INPUTS
 *     const lListElem *rule - Resource quota rule
@@ -144,9 +144,9 @@ rqs_set_dynamical_limit(lListElem *limit, lListElem *global_host, lListElem *exe
 *******************************************************************************/
 static bool rqs_match_assignment(const lListElem *rule, sge_assignment_t *a)
 {
-   return (rqs_filter_match(lGetObject(rule, RQR_filter_projects), FILTER_PROJECTS, a->project, NULL, NULL, NULL) &&
-           rqs_filter_match(lGetObject(rule, RQR_filter_users), FILTER_USERS, a->user, a->acl_list, NULL, a->group) &&
-           rqs_filter_match(lGetObject(rule, RQR_filter_pes), FILTER_PES, NULL, NULL, NULL, NULL))?true:false;
+   return (rqs_filter_match(lGetObject(rule, RQR_filter_projects), FILTER_PROJECTS, a->project, nullptr, nullptr, nullptr) &&
+           rqs_filter_match(lGetObject(rule, RQR_filter_users), FILTER_USERS, a->user, a->acl_list, nullptr, a->group) &&
+           rqs_filter_match(lGetObject(rule, RQR_filter_pes), FILTER_PES, nullptr, nullptr, nullptr, nullptr))?true:false;
 }
 
 
@@ -252,7 +252,7 @@ static bool cqueue_shadowed_by(const char *cqname, const lListElem *rule, sge_as
 {
    while ((rule = lPrev(rule))) {
       if (rqs_match_assignment(rule, a) &&
-          rqs_filter_match(lGetObject(rule, RQR_filter_queues), FILTER_QUEUES, cqname, NULL, NULL, NULL)) {
+          rqs_filter_match(lGetObject(rule, RQR_filter_queues), FILTER_QUEUES, cqname, nullptr, nullptr, nullptr)) {
          return true;
       }
    }
@@ -290,7 +290,7 @@ static bool host_shadowed_by(const char *host, const lListElem *rule, sge_assign
 {
    while ((rule = lPrev(rule))) {
       if (rqs_match_assignment(rule, a) &&
-          rqs_filter_match(lGetObject(rule, RQR_filter_hosts), FILTER_HOSTS, host, NULL, a->hgrp_list, NULL)) {
+          rqs_filter_match(lGetObject(rule, RQR_filter_hosts), FILTER_HOSTS, host, nullptr, a->hgrp_list, nullptr)) {
          return true;
       }
    }
@@ -384,7 +384,7 @@ static void rqs_excluded_cqueues(const lListElem *rule, sge_assignment_t *a)
          if (!rqs_match_assignment(rule, a))
             continue;
 
-         if (rqs_filter_match(lGetObject(prev, RQR_filter_queues), FILTER_QUEUES, cqname, NULL, NULL, NULL)) {
+         if (rqs_filter_match(lGetObject(prev, RQR_filter_queues), FILTER_QUEUES, cqname, nullptr, nullptr, nullptr)) {
             exclude = false;
             break;
          }
@@ -445,7 +445,7 @@ static void rqs_excluded_hosts(const lListElem *rule, sge_assignment_t *a)
          if (!rqs_match_assignment(rule, a))
             continue;
 
-         if (rqs_filter_match(lGetObject(prev, RQR_filter_hosts), FILTER_HOSTS, hname, NULL, a->hgrp_list, NULL)) {
+         if (rqs_filter_match(lGetObject(prev, RQR_filter_hosts), FILTER_HOSTS, hname, nullptr, a->hgrp_list, nullptr)) {
             exclude = false;
             break;
          }
@@ -492,7 +492,7 @@ static void rqs_expand_cqueues(const lListElem *rule, sge_assignment_t *a)
       cqname = lGetString(cq, CQ_name);
       if (lGetElemStr(a->skip_cqueue_list, CTI_name, cqname))
          continue;
-      if (rqs_filter_match(qfilter, FILTER_QUEUES, cqname, NULL, NULL, NULL) && !cqueue_shadowed_by(cqname, rule, a))
+      if (rqs_filter_match(qfilter, FILTER_QUEUES, cqname, nullptr, nullptr, nullptr) && !cqueue_shadowed_by(cqname, rule, a))
          lAddElemStr(&(a->skip_cqueue_list), CTI_name, cqname, CTI_Type);
    }
 
@@ -528,7 +528,7 @@ static void rqs_expand_hosts(const lListElem *rule, sge_assignment_t *a)
       hname = lGetHost(eh, EH_name);
       if (lGetElemStr(a->skip_host_list, CTI_name, hname))
          continue;
-      if (rqs_filter_match(hfilter, FILTER_HOSTS, hname, NULL, a->hgrp_list, NULL) && !host_shadowed_by(hname, rule, a))
+      if (rqs_filter_match(hfilter, FILTER_HOSTS, hname, nullptr, a->hgrp_list, nullptr) && !host_shadowed_by(hname, rule, a))
          lAddElemStr(&(a->skip_host_list), CTI_name, hname, CTI_Type);
    }
 
@@ -845,7 +845,7 @@ bool sge_user_is_referenced_in_rqs(const lList *rqs, const char *user, const cha
       for_each_ep(rule, rule_list) {
          /* there may be no per-user limitation and also not limitation that is special for this user */
          if ((is_expand(rule, RQR_filter_users) || !is_global(rule, RQR_filter_users)) &&
-             rqs_filter_match(lGetObject(rule, RQR_filter_users), FILTER_USERS, user, acl_list, NULL, group)) {
+             rqs_filter_match(lGetObject(rule, RQR_filter_users), FILTER_USERS, user, acl_list, nullptr, group)) {
             ret = true;
             break;
          }
@@ -906,7 +906,7 @@ void parallel_check_and_debit_rqs_slots(sge_assignment_t *a, const char *host, c
       }
       sge_dstring_clear(rule_name);
       rule = rqs_get_matching_rule(rqs, user, group, project, pe, host, queue, a->acl_list, a->hgrp_list, rule_name);
-      if (rule != NULL) {
+      if (rule != nullptr) {
          const lListElem *rql;
          rqs_get_rue_string(rue_name, rule, user, project, host, queue, pe);
          sge_dstring_sprintf(limit_name, "%s=%s", sge_dstring_get_string(rule_name), sge_dstring_get_string(rue_name));
@@ -933,7 +933,7 @@ void parallel_check_and_debit_rqs_slots(sge_assignment_t *a, const char *host, c
          }
          sge_dstring_clear(rule_name);
          rule = rqs_get_matching_rule(rqs, user, group, project, pe, host, queue, a->acl_list, a->hgrp_list, rule_name);
-         if (rule != NULL) {
+         if (rule != nullptr) {
             lListElem *rql;
             rqs_get_rue_string(rue_name, rule, user, project, host, queue, pe);
             sge_dstring_sprintf(limit_name, "%s=%s", sge_dstring_get_string(rule_name), sge_dstring_get_string(rue_name));
@@ -968,7 +968,7 @@ void parallel_revert_rqs_slot_debitation(sge_assignment_t *a, const char *host, 
       }
       sge_dstring_clear(rule_name);
       rule = rqs_get_matching_rule(rqs, user, group, project, pe, host, queue, a->acl_list, a->hgrp_list, rule_name);
-      if (rule != NULL) {
+      if (rule != nullptr) {
          lListElem *rql;
          rqs_get_rue_string(rue_name, rule, user, project, host, queue, pe);
          sge_dstring_sprintf(limit_name, "%s=%s", sge_dstring_get_string(rule_name), sge_dstring_get_string(rue_name));
@@ -1022,8 +1022,8 @@ parallel_limit_slots_by_time(const sge_assignment_t *a, lList *requests,
 {
    lList *tmp_centry_list = lCreateList("", CE_Type);
    lList *tmp_rue_list = lCreateList("", RUE_Type);
-   lListElem *tmp_centry_elem = NULL;
-   lListElem *tmp_rue_elem = NULL;
+   lListElem *tmp_centry_elem = nullptr;
+   lListElem *tmp_rue_elem = nullptr;
    const lList *rue_list = lGetList(limit, RQRL_usage);
    dispatch_t result = DISPATCH_NEVER_CAT;
 
@@ -1038,7 +1038,7 @@ parallel_limit_slots_by_time(const sge_assignment_t *a, lList *requests,
    lWriteListTo(rue_list, stdout);
    fflush(stdout);
    tmp_rue_elem = lCopyElem(lGetElemStr(rue_list, RUE_name, sge_dstring_get_string(rue_name)));
-   if (tmp_rue_elem == NULL) {
+   if (tmp_rue_elem == nullptr) {
       DPRINTF(("RD: 1\n"));
       tmp_rue_elem = lCreateElem(RUE_Type);
    }
@@ -1063,7 +1063,7 @@ parallel_limit_slots_by_time(const sge_assignment_t *a, lList *requests,
    lAppendElem(tmp_rue_list, tmp_rue_elem);
 
    result = parallel_rc_slots_by_time(a, requests, slots, 
-                                      slots_qend, tmp_centry_list, tmp_rue_list, NULL,  
+                                      slots_qend, tmp_centry_list, tmp_rue_list, nullptr,
                                       false, qep, DOMINANT_LAYER_RQS, 0.0, RQS_TAG,
                                       false, SGE_RQS_NAME, true);
    
@@ -1131,7 +1131,7 @@ parallel_rqs_slots_by_time(sge_assignment_t *a, int *slots, int *slots_qend, lLi
          a->pi->par_rqs++;
 
       for_each_ep(rqs, a->rqs_list) {
-         lListElem *rule = NULL;
+         lListElem *rule = nullptr;
 
          /* ignore disabled rule sets */
          if (!lGetBool(rqs, RQS_enabled)) {
@@ -1139,8 +1139,8 @@ parallel_rqs_slots_by_time(sge_assignment_t *a, int *slots, int *slots_qend, lLi
          }
          sge_dstring_clear(&rule_name);
          rule = rqs_get_matching_rule(rqs, user, group, project, pe, host, queue, a->acl_list, a->hgrp_list, &rule_name);
-         if (rule != NULL) {
-            lListElem *limit = NULL;
+         if (rule != nullptr) {
+            lListElem *limit = nullptr;
             const char *limit_s;
             rqs_get_rue_string(&rue_string, rule, user, project, host, queue, pe);
             sge_dstring_sprintf(&limit_name, "%s=%s", sge_dstring_get_string(&rule_name), sge_dstring_get_string(&rue_string));
@@ -1170,7 +1170,7 @@ parallel_rqs_slots_by_time(sge_assignment_t *a, int *slots, int *slots_qend, lLi
                   lListElem *raw_centry = centry_list_locate(a->centry_list, limit_name);
                   lList *job_centry_list = lGetListRW(a->job, JB_hard_resource_list);
                   lListElem *job_centry = centry_list_locate(job_centry_list, limit_name);
-                  if (raw_centry == NULL) {
+                  if (raw_centry == nullptr) {
                      DPRINTF(("ignoring limit %s because not defined", limit_name));
                      continue;
                   } else {
@@ -1198,7 +1198,7 @@ parallel_rqs_slots_by_time(sge_assignment_t *a, int *slots, int *slots_qend, lLi
                         result = DISPATCH_NEVER_CAT;
                         break;
                      }
-                  } else if (job_centry != NULL) {
+                  } else if (job_centry != nullptr) {
                      char availability_text[2048];
 
                      lSetString(raw_centry, CE_stringval, lGetString(limit, RQRL_value));
@@ -1286,16 +1286,16 @@ parallel_rqs_slots_by_time(sge_assignment_t *a, int *slots, int *slots_qend, lLi
 static dispatch_t rqs_limitation_reached(sge_assignment_t *a, const lListElem *rule, const char* host, const char* queue, u_long32 *start) 
 {
    dispatch_t ret = DISPATCH_MISSING_ATTR;
-   const lList *limit_list = NULL;
-   lListElem * limit = NULL;
-   static lListElem *implicit_slots_request = NULL;
+   const lList *limit_list = nullptr;
+   lListElem * limit = nullptr;
+   static lListElem *implicit_slots_request = nullptr;
    lListElem *exec_host = host_list_locate(a->host_list, host);
    dstring rue_name = DSTRING_INIT;
    dstring reason = DSTRING_INIT;
 
    DENTER(TOP_LAYER);
 
-    if (implicit_slots_request == NULL) {
+    if (implicit_slots_request == nullptr) {
       implicit_slots_request = lCreateElem(CE_Type);
       lSetString(implicit_slots_request, CE_name, SGE_ATTR_SLOTS);
       lSetString(implicit_slots_request, CE_stringval, "1");
@@ -1305,12 +1305,12 @@ static dispatch_t rqs_limitation_reached(sge_assignment_t *a, const lListElem *r
    limit_list = lGetList(rule, RQR_limit);
    for_each_rw(limit, limit_list) {
       bool       is_forced = false;
-      const lList      *job_centry_list = NULL;
-      lListElem  *job_centry = NULL;
+      const lList      *job_centry_list = nullptr;
+      lListElem  *job_centry = nullptr;
       const char *limit_name = lGetString(limit, RQRL_name);
       lListElem  *raw_centry = centry_list_locate(a->centry_list, limit_name);
 
-      if (raw_centry == NULL) {
+      if (raw_centry == nullptr) {
          DPRINTF(("ignoring limit %s because not defined", limit_name));
          continue;
       } else {
@@ -1322,12 +1322,12 @@ static dispatch_t rqs_limitation_reached(sge_assignment_t *a, const lListElem *r
       job_centry = centry_list_locate(job_centry_list, limit_name);
 
       /* check for implicit slot and default request */
-      if (job_centry == NULL) {
+      if (job_centry == nullptr) {
          if (strcmp(lGetString(raw_centry, CE_name), SGE_ATTR_SLOTS) == 0) {
             job_centry = implicit_slots_request;
-         } else if (lGetString(raw_centry, CE_defaultval) != NULL && lGetUlong(raw_centry, CE_consumable)) {
+         } else if (lGetString(raw_centry, CE_defaultval) != nullptr && lGetUlong(raw_centry, CE_consumable)) {
             double request;
-            parse_ulong_val(&request, NULL, lGetUlong(raw_centry, CE_valtype), lGetString(raw_centry, CE_defaultval), NULL, 0);
+            parse_ulong_val(&request, nullptr, lGetUlong(raw_centry, CE_valtype), lGetString(raw_centry, CE_defaultval), nullptr, 0);
 
             /* default requests with zero value are ignored */
             if (request == 0.0 && lGetUlong(raw_centry, CE_relop) != CMPLXEXCL_OP) {
@@ -1352,8 +1352,8 @@ static dispatch_t rqs_limitation_reached(sge_assignment_t *a, const lListElem *r
       {
          lList *tmp_centry_list = lCreateList("", CE_Type);
          lList *tmp_rue_list = lCreateList("", RUE_Type);
-         lListElem *tmp_centry_elem = NULL;
-         lListElem *tmp_rue_elem = NULL;
+         lListElem *tmp_centry_elem = nullptr;
+         lListElem *tmp_rue_elem = nullptr;
             
          if (rqs_set_dynamical_limit(limit, a->gep, exec_host, a->centry_list)) {
             const lList *rue_list = lGetList(limit, RQRL_usage);
@@ -1366,17 +1366,17 @@ static dispatch_t rqs_limitation_reached(sge_assignment_t *a, const lListElem *r
             lAppendElem(tmp_centry_list, tmp_centry_elem);
 
             /* create tmp_rue_list */
-            rqs_get_rue_string(&rue_name, rule, a->user, a->project, host, queue, NULL);
+            rqs_get_rue_string(&rue_name, rule, a->user, a->project, host, queue, nullptr);
             tmp_rue_elem = lCopyElem(lGetElemStr(rue_list, RUE_name, sge_dstring_get_string(&rue_name)));
-            if (tmp_rue_elem == NULL) {
+            if (tmp_rue_elem == nullptr) {
                tmp_rue_elem = lCreateElem(RUE_Type);
             }
             lSetString(tmp_rue_elem, RUE_name, limit_name);
             lAppendElem(tmp_rue_list, tmp_rue_elem);
            
             sge_dstring_clear(&reason);
-            ret = ri_time_by_slots(a, job_centry, NULL, tmp_centry_list,  tmp_rue_list,
-                                       NULL, &reason, false, 1, DOMINANT_LAYER_RQS, 0.0, &tmp_time,
+            ret = ri_time_by_slots(a, job_centry, nullptr, tmp_centry_list,  tmp_rue_list,
+                                       nullptr, &reason, false, 1, DOMINANT_LAYER_RQS, 0.0, &tmp_time,
                                        SGE_RQS_NAME);
             if (ret != DISPATCH_OK) {
                DPRINTF(("denied because: %s\n", sge_dstring_get_string(&reason)));
@@ -1462,13 +1462,13 @@ dispatch_t rqs_by_slots(sge_assignment_t *a, const char *queue, const char *host
       }
 
       sge_dstring_clear(rule_name);
-      rule = rqs_get_matching_rule(rqs, user, group, project, NULL, host, queue, a->acl_list, a->hgrp_list, rule_name);
-      if (rule != NULL) {
+      rule = rqs_get_matching_rule(rqs, user, group, project, nullptr, host, queue, a->acl_list, a->hgrp_list, rule_name);
+      if (rule != nullptr) {
          const char *limit;
          lListElem *rql;
 
          /* need unique identifier for cache */
-         rqs_get_rue_string(rue_string, rule, user, project, host, queue, NULL);
+         rqs_get_rue_string(rue_string, rule, user, project, host, queue, nullptr);
          sge_dstring_sprintf(limit_name, "%s=%s", sge_dstring_get_string(rule_name), sge_dstring_get_string(rue_string));
          limit = sge_dstring_get_string(limit_name);
 

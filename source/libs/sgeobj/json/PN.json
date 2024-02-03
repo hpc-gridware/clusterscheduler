@@ -25,7 +25,7 @@
 			"summary":	"Host Name",
 			"description":	[{
 					"line":	"Name of the host where this specification is valid."
-					}, { "line":	"If it is left empty (NULL), then the path is valid on all hosts (default)."
+					}, { "line":	"If it is left empty (nullptr), then the path is valid on all hosts (default)."
 				}],
 			"type":	"lHostT",
 			"flags":	[]

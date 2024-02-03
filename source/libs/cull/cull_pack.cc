@@ -145,7 +145,7 @@ static int cull_unpack_switch(
          break;
 
       case lRefT:
-         dst->ref = NULL;
+         dst->ref = nullptr;
          ret = PACK_SUCCESS;
          break;
 
@@ -258,7 +258,7 @@ static int cull_unpack_descr(
 
    DENTER(CULL_LAYER);
 
-   *dpp = NULL;
+   *dpp = nullptr;
 
    /* read in number of lDescr fields (without end mark) */
    if ((ret = unpackint(pb, &n))) {
@@ -271,7 +271,7 @@ static int cull_unpack_descr(
       DRETURN(PACK_ENOMEM);
    }
 
-   if ((dp = (lDescr *) sge_malloc(sizeof(lDescr) * (n + 1))) == NULL) {
+   if ((dp = (lDescr *) sge_malloc(sizeof(lDescr) * (n + 1))) == nullptr) {
       LERROR(LEMALLOC);
       DRETURN(PACK_ENOMEM);
    }
@@ -280,7 +280,7 @@ static int cull_unpack_descr(
 
    dp[n].nm = NoName;
    dp[n].mt = lEndT;
-   dp[n].ht = NULL;
+   dp[n].ht = nullptr;
 
    /* read in n lDescr fields */
    for (i = 0; i < n; i++) {
@@ -295,7 +295,7 @@ static int cull_unpack_descr(
          DRETURN(ret);
       }
       dp[i].mt = temp;
-      dp[i].ht = NULL;
+      dp[i].ht = nullptr;
    }
 
    /* 
@@ -312,10 +312,10 @@ static int cull_unpack_descr(
 
       /*
        * EB: TODO: I don't know why but when this function is executed within drmma
-       * functionality then the namespace is sometimes NULL. 
+       * functionality then the namespace is sometimes nullptr.
        * If this happens, then I assume that the element is reduced. 
        */
-      if (ns == NULL) {
+      if (ns == nullptr) {
          is_reduced = true;
       } else {
          /* 
@@ -483,12 +483,12 @@ cull_pack_cont(sge_pack_buffer *pb, const lMultiType *cp, const lDescr *dp,
 
    DENTER(CULL_LAYER);
 
-   if (what == NULL) {
+   if (what == nullptr) {
       n = lCountDescr(dp);
       for (i = 0; i < n; i++) {
          /* if flags are given, pack only fields matching flags, e.g. CULL_SPOOL */
          if (flags == 0 || (dp[i].mt & flags) != 0) {
-            if ((ret = cull_pack_switch(pb, &cp[i], NULL, mt_get_type(dp[i].mt), flags))) {
+            if ((ret = cull_pack_switch(pb, &cp[i], nullptr, mt_get_type(dp[i].mt), flags))) {
                DRETURN(ret);
             }
          }
@@ -531,13 +531,13 @@ static int cull_unpack_cont(
                                      * error happens */
    int last_error = PACK_SUCCESS;   /* error happend in last iteration 
                                      * or PACK_SUCCESS */
-   lMultiType *cp = NULL;
+   lMultiType *cp = nullptr;
 
    DENTER(CULL_LAYER);
 
-   *mpp = NULL;
+   *mpp = nullptr;
    n = lCountDescr(dp);
-   if ((cp = (lMultiType *) calloc(1, sizeof(lMultiType) * (n + 1))) == NULL) {
+   if ((cp = (lMultiType *) calloc(1, sizeof(lMultiType) * (n + 1))) == nullptr) {
       LERROR(LEMALLOC);
       DRETURN(PACK_ENOMEM);
    }
@@ -608,7 +608,7 @@ int cull_pack_elem(sge_pack_buffer *pb, const lListElem *ep) {
    int ret;
 
    DENTER(TOP_LAYER);
-   ret = cull_pack_elem_partial(pb, ep, NULL, 0);
+   ret = cull_pack_elem_partial(pb, ep, nullptr, 0);
    DRETURN(ret);
 }
 
@@ -621,8 +621,8 @@ cull_pack_elem_partial(sge_pack_buffer *pb, const lListElem *ep,
    DENTER(TOP_LAYER);
 
    PROF_START_MEASUREMENT(SGE_PROF_PACKING);
-   if (ep->descr == NULL) {
-      DPRINTF(("element descriptor NULL not allowed !!!\n"));
+   if (ep->descr == nullptr) {
+      DPRINTF(("element descriptor nullptr not allowed !!!\n"));
       abort();
    }
 
@@ -632,7 +632,7 @@ cull_pack_elem_partial(sge_pack_buffer *pb, const lListElem *ep,
    }
 
    if (ep->status == FREE_ELEM) {
-      if (what == NULL) {
+      if (what == nullptr) {
          if ((ret = cull_pack_descr(pb, ep->descr)) != PACK_SUCCESS) {
             PROF_STOP_MEASUREMENT(SGE_PROF_PACKING);
             DRETURN(ret);
@@ -652,7 +652,7 @@ cull_pack_elem_partial(sge_pack_buffer *pb, const lListElem *ep,
    {
       bitfield field;
 
-      if (what == NULL) {
+      if (what == nullptr) {
          if (!sge_bitfield_init(&field, lCountDescr(ep->descr))) {
             PROF_STOP_MEASUREMENT(SGE_PROF_PACKING);
             DRETURN(PACK_ENOMEM);
@@ -689,7 +689,7 @@ cull_pack_elem_partial(sge_pack_buffer *pb, const lListElem *ep,
 int cull_unpack_elem(
         sge_pack_buffer *pb,
         lListElem **epp,
-        const lDescr *dp                  /* has to be NULL in case of free elements
+        const lDescr *dp                  /* has to be nullptr in case of free elements
                                    must be the desriptor in case of bound elements */
 ) {
    int ret;
@@ -701,14 +701,14 @@ int cull_unpack_elem(
 
 int cull_unpack_elem_partial(sge_pack_buffer *pb, lListElem **epp, const lDescr *dp, int flags) {
    int ret;
-   lListElem *ep = NULL;
+   lListElem *ep = nullptr;
 
    DENTER(CULL_LAYER);
 
    PROF_START_MEASUREMENT(SGE_PROF_PACKING);
-   *epp = NULL;
+   *epp = nullptr;
 
-   if ((ep = (lListElem *) calloc(1, sizeof(lListElem))) == NULL) {
+   if ((ep = (lListElem *) calloc(1, sizeof(lListElem))) == nullptr) {
       PROF_STOP_MEASUREMENT(SGE_PROF_PACKING);
       DRETURN(PACK_ENOMEM);
    }
@@ -743,9 +743,9 @@ int cull_unpack_elem_partial(sge_pack_buffer *pb, lListElem **epp, const lDescr 
        * 50 is JB_job_number. I did not use the enum value here because it is defined
        * in sgeobj header file and not cull.
        */
-      if (dp != NULL && dp[0].nm == 50) {
+      if (dp != nullptr && dp[0].nm == 50) {
          sge_free(&(ep->descr));
-         if ((ep->descr = lCopyDescr((lDescr *) dp)) == NULL) {
+         if ((ep->descr = lCopyDescr((lDescr *) dp)) == nullptr) {
             sge_free(&ep);
             PROF_STOP_MEASUREMENT(SGE_PROF_PACKING);
             DRETURN(PACK_BADARG);
@@ -756,7 +756,7 @@ int cull_unpack_elem_partial(sge_pack_buffer *pb, lListElem **epp, const lDescr 
          if it is not a free element we need 
          a descriptor from outside 
        */
-      if ((ep->descr = (lDescr *) dp) == NULL) {
+      if ((ep->descr = (lDescr *) dp) == nullptr) {
          sge_free(&ep);
          PROF_STOP_MEASUREMENT(SGE_PROF_PACKING);
          DRETURN(PACK_BADARG);
@@ -792,7 +792,7 @@ int cull_unpack_elem_partial(sge_pack_buffer *pb, lListElem **epp, const lDescr 
    }
 
 #ifdef OBSERVE
-   lObserveAdd(ep, NULL, false);
+   lObserveAdd(ep, nullptr, false);
 #endif
 
    *epp = ep;
@@ -822,18 +822,18 @@ static int cull_pack_object(
 
    DENTER(CULL_LAYER);
 
-   if ((ret = packint(pb, ep != NULL)) != PACK_SUCCESS) {
+   if ((ret = packint(pb, ep != nullptr)) != PACK_SUCCESS) {
       DRETURN(ret);
    }
 
-   if (ep != NULL) {
+   if (ep != nullptr) {
       /* pack descriptor */
       if ((ret = cull_pack_descr(pb, ep->descr)) != PACK_SUCCESS) {
          DRETURN(ret);
       }
 
       /* pack list element */
-      if ((ret = cull_pack_elem_partial(pb, ep, NULL, flags)) != PACK_SUCCESS) {
+      if ((ret = cull_pack_elem_partial(pb, ep, nullptr, flags)) != PACK_SUCCESS) {
          DRETURN(ret);
       }
    }
@@ -855,7 +855,7 @@ int cull_pack_list(sge_pack_buffer *pb, const lList *lp) {
    int ret;
 
    DENTER(CULL_LAYER);
-   ret = cull_pack_list_partial(pb, lp, NULL, 0);
+   ret = cull_pack_list_partial(pb, lp, nullptr, 0);
    DRETURN(ret);
 }
 
@@ -868,12 +868,12 @@ cull_pack_list_summary(sge_pack_buffer *pb, const lList *lp,
    DENTER(CULL_LAYER);
 
    PROF_START_MEASUREMENT(SGE_PROF_PACKING);
-   if ((ret = packint(pb, lp != NULL)) != PACK_SUCCESS) {
+   if ((ret = packint(pb, lp != nullptr)) != PACK_SUCCESS) {
       PROF_STOP_MEASUREMENT(SGE_PROF_PACKING);
       DRETURN(ret);
    }
 
-   if (lp != NULL) {
+   if (lp != nullptr) {
       /*
        * TODO: The next release where it is possible to change the pb-format
        *       makes it possible to delete this hack 
@@ -899,7 +899,7 @@ cull_pack_list_summary(sge_pack_buffer *pb, const lList *lp,
       /*
        * name of the list
        */
-      if (name == NULL) {
+      if (name == nullptr) {
          name = lp->listname;
       }
       if ((ret = packstr(pb, name)) != PACK_SUCCESS) {
@@ -914,7 +914,7 @@ cull_pack_list_summary(sge_pack_buffer *pb, const lList *lp,
       }
 
       /* pack descriptor */
-      if (what == NULL) {
+      if (what == nullptr) {
          ret = cull_pack_descr(pb, lp->descr);
          if (ret != PACK_SUCCESS) {
             PROF_STOP_MEASUREMENT(SGE_PROF_PACKING);
@@ -941,7 +941,7 @@ int cull_pack_list_partial(sge_pack_buffer *pb, const lList *lp,
 
    PROF_START_MEASUREMENT(SGE_PROF_PACKING);
 
-   if (lp != NULL && pb != NULL) {
+   if (lp != nullptr && pb != nullptr) {
       if ((ret = packint(pb, 1)) != PACK_SUCCESS) {
          PROF_STOP_MEASUREMENT(SGE_PROF_PACKING);
          DRETURN(ret);
@@ -963,7 +963,7 @@ int cull_pack_list_partial(sge_pack_buffer *pb, const lList *lp,
       }
 
       /* pack descriptor */
-      if (what == NULL) {
+      if (what == nullptr) {
          if ((ret = cull_pack_descr(pb, lp->descr)) != PACK_SUCCESS) {
             PROF_STOP_MEASUREMENT(SGE_PROF_PACKING);
             DRETURN(ret);
@@ -981,7 +981,7 @@ int cull_pack_list_partial(sge_pack_buffer *pb, const lList *lp,
       }
    }
 
-   if (lp != NULL) {
+   if (lp != nullptr) {
       /* pack each list element */
 
       for_each_ep(ep, lp) {
@@ -1027,20 +1027,20 @@ int cull_unpack_list_partial(sge_pack_buffer *pb, lList **lpp, int flags) {
    DENTER(CULL_LAYER);
 
    PROF_START_MEASUREMENT(SGE_PROF_PACKING);
-   *lpp = NULL;
+   *lpp = nullptr;
 
    if ((ret = unpackint(pb, &i))) {
       PROF_STOP_MEASUREMENT(SGE_PROF_PACKING);
       DRETURN(ret);
    }
 
-   /* do we have an empty list (NULL) ? */
+   /* do we have an empty list (nullptr) ? */
    if (!i) {
       PROF_STOP_MEASUREMENT(SGE_PROF_PACKING);
       DRETURN(PACK_SUCCESS);
    }
 
-   if ((lp = (lList *) calloc(1, sizeof(lList))) == NULL) {
+   if ((lp = (lList *) calloc(1, sizeof(lList))) == nullptr) {
       PROF_STOP_MEASUREMENT(SGE_PROF_PACKING);
       DRETURN(PACK_ENOMEM);
    }
@@ -1072,7 +1072,7 @@ int cull_unpack_list_partial(sge_pack_buffer *pb, lList **lpp, int flags) {
    }
 
 #ifdef OBSERVE
-   lObserveAdd(lp, NULL, true);
+   lObserveAdd(lp, nullptr, true);
 #endif
 
    /* unpack each list element */
@@ -1116,13 +1116,13 @@ static int cull_unpack_object(
 
    DENTER(CULL_LAYER);
 
-   *epp = NULL;
+   *epp = nullptr;
 
    if ((ret = unpackint(pb, &i))) {
       DRETURN(ret);
    }
 
-   /* do we have an empty object (NULL) ? */
+   /* do we have an empty object (nullptr) ? */
    if (!i) {
       DRETURN(PACK_SUCCESS);
    }
@@ -1141,7 +1141,7 @@ static int cull_unpack_object(
    ep->status = OBJECT_ELEM;
 
 #ifdef OBSERVE
-   lObserveAdd(ep, NULL, false);
+   lObserveAdd(ep, nullptr, false);
 #endif
 
    *epp = ep;
@@ -1174,7 +1174,7 @@ int cull_pack_enum(
    DENTER(CULL_LAYER);
 
    PROF_START_MEASUREMENT(SGE_PROF_PACKING);
-   if ((ret = packint(pb, enp != NULL)))
+   if ((ret = packint(pb, enp != nullptr)))
       goto error;
 
    if (!enp) {
@@ -1211,7 +1211,7 @@ int cull_pack_enum(
             goto error;
          if ((ret = packint(pb, enp[i].nm)))
             goto error;
-         if (enp[i].ep == NULL) {
+         if (enp[i].ep == nullptr) {
             if ((ret = packint(pb, 0))) {
                goto error;
             }
@@ -1250,14 +1250,14 @@ int cull_unpack_enum(
         lEnumeration **enpp
 ) {
    int ret;
-   lEnumeration *enp = NULL;
+   lEnumeration *enp = nullptr;
    u_long32 flag = 0, i = 0, temp = 0;
    u_long32 n = 0;
 
    DENTER(CULL_LAYER);
 
    PROF_START_MEASUREMENT(SGE_PROF_PACKING);
-   *enpp = NULL;
+   *enpp = nullptr;
 
    if ((ret = unpackint(pb, &i)))
       goto error;
@@ -1290,10 +1290,10 @@ int cull_unpack_enum(
       }
       enp[0].nm = -99;
       enp[0].mt = -99;
-      enp[0].ep = NULL;
+      enp[0].ep = nullptr;
       enp[1].nm = NoName;
       enp[1].mt = lEndT;
-      enp[1].ep = NULL;
+      enp[1].ep = nullptr;
    } else {
       /* read in number of lEnumeration fields (without end mark) */
       if ((ret = unpackint(pb, &n)))
@@ -1311,7 +1311,7 @@ int cull_unpack_enum(
 
       /* read in n lEnumeration fields */
       for (i = 0; i < n; i++) {
-         lEnumeration *tmp2 = NULL;
+         lEnumeration *tmp2 = nullptr;
 
          if ((ret = unpackint(pb, &temp)))
             goto error;
@@ -1330,12 +1330,12 @@ int cull_unpack_enum(
             }
          }
          enp[i].ep = tmp2;
-         tmp2 = NULL;
+         tmp2 = nullptr;
       }
 
       enp[n].nm = NoName;
       enp[n].mt = lEndT;
-      enp[n].ep = NULL;
+      enp[n].ep = nullptr;
    }
 
    *enpp = enp;
@@ -1369,7 +1369,7 @@ int cull_pack_cond(
    DENTER(CULL_LAYER);
 
    PROF_START_MEASUREMENT(SGE_PROF_PACKING);
-   if ((ret = packint(pb, cp != NULL))) {
+   if ((ret = packint(pb, cp != nullptr))) {
       PROF_STOP_MEASUREMENT(SGE_PROF_PACKING);
       DRETURN(ret);
    }
@@ -1416,7 +1416,7 @@ int cull_pack_cond(
          }
 
          if (mt_get_type(cp->operand.cmp.mt) != lListT) {
-            if ((ret = cull_pack_switch(pb, &(cp->operand.cmp.val), NULL,
+            if ((ret = cull_pack_switch(pb, &(cp->operand.cmp.val), nullptr,
                                         mt_get_type(cp->operand.cmp.mt), 0))) {
                PROF_STOP_MEASUREMENT(SGE_PROF_PACKING);
                DRETURN(ret);
@@ -1473,18 +1473,18 @@ int cull_unpack_cond(
 ) {
    int ret;
    u_long32 i = 0;
-   lCondition *cp = NULL;
+   lCondition *cp = nullptr;
 
    DENTER(CULL_LAYER);
 
    PROF_START_MEASUREMENT(SGE_PROF_PACKING);
-   *cpp = NULL;
+   *cpp = nullptr;
    if ((ret = unpackint(pb, &i))) {
       PROF_STOP_MEASUREMENT(SGE_PROF_PACKING);
       DRETURN(ret);
    }
    if (!i) {
-      *cpp = NULL;
+      *cpp = nullptr;
       PROF_STOP_MEASUREMENT(SGE_PROF_PACKING);
       DRETURN(0);
    }
@@ -1609,7 +1609,7 @@ void setByteArray(const char *byteArray, int size, lListElem *elem, int name) {
    int lower_part;
    int upper_part;
    int target_size = size * 2 + 1;
-   char *z_stream_str = NULL;
+   char *z_stream_str = nullptr;
    int i = 0;
    int y = 0;
 
@@ -1639,11 +1639,11 @@ void setByteArray(const char *byteArray, int size, lListElem *elem, int name) {
 *
 *  FUNCTION
 *     extracts a string from an element and changes it into a byte array. The
-*     target has to be a pointer to NULL. The array will be created in the function
+*     target has to be a pointer to nullptr. The array will be created in the function
 *     and no memory is freed. The calling functions have to take care of that.
 *
 *  INPUTS
-*     char **byte           - target byte array, has to be a pointer to NULL  
+*     char **byte           - target byte array, has to be a pointer to nullptr
 *     const lListElem *elem - the list element, which contains the string
 *     int name              - name of the attribute containing the string 
 *

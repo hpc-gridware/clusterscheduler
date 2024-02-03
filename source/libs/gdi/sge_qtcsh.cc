@@ -54,7 +54,7 @@
 
 /* module global variables */
 static pthread_mutex_t qtask_mutex = PTHREAD_MUTEX_INITIALIZER;
-static lList *task_config = NULL;
+static lList *task_config = nullptr;
 static int mode_verbose = 0;
 
 static int init_qtask_config(sge_gdi_ctx_class_t *ctx, lList **alpp, print_func_t ostream) {
@@ -62,7 +62,7 @@ static int init_qtask_config(sge_gdi_ctx_class_t *ctx, lList **alpp, print_func_
    char fname[SGE_PATH_MAX + 1];
    char buffer[10000];
    FILE *fp;
-   lList *clp_cluster = NULL, *clp_user = NULL;
+   lList *clp_cluster = nullptr, *clp_user = nullptr;
    lListElem *nxt, *cep_dest, *cep, *next;
    const char *task_name;
    struct passwd pw_struct;
@@ -83,7 +83,7 @@ static int init_qtask_config(sge_gdi_ctx_class_t *ctx, lList **alpp, print_func_
    if (fp) {
       /* read in config file */
       if (read_config_list(fp, &clp_cluster, alpp, CF_Type, CF_name, CF_value,
-                        CF_sublist, NULL, RCL_NO_VALUE, buffer, sizeof(buffer)-1)) {
+                        CF_sublist, nullptr, RCL_NO_VALUE, buffer, sizeof(buffer)-1)) {
          FCLOSE(fp);
          goto Error;
       }
@@ -104,7 +104,7 @@ static int init_qtask_config(sge_gdi_ctx_class_t *ctx, lList **alpp, print_func_
    pwd = sge_getpwnam_r(user_name, &pw_struct, pw_buffer, pw_buffer_size);
    
    /* user settings */
-   if (pwd == NULL) {
+   if (pwd == nullptr) {
       SGE_ADD_MSG_ID(sprintf(SGE_EVENT, MSG_USER_INVALIDNAMEX_S , user_name));
       answer_list_add(alpp, SGE_EVENT, STATUS_ENOSUCHUSER, ANSWER_QUALITY_ERROR);
       (*ostream)("%s", SGE_EVENT);
@@ -127,7 +127,7 @@ static int init_qtask_config(sge_gdi_ctx_class_t *ctx, lList **alpp, print_func_
    if (fp) {
       /* read in config file */
       if (read_config_list(fp, &clp_user, alpp, CF_Type, CF_name, CF_value,
-                           CF_sublist, NULL, RCL_NO_VALUE, buffer, sizeof(buffer)-1)) {
+                           CF_sublist, nullptr, RCL_NO_VALUE, buffer, sizeof(buffer)-1)) {
          FCLOSE(fp);
          goto Error;
       }
@@ -219,7 +219,7 @@ Error:
 *     lList **answer_list - For returning error information
 *
 *  RESULT
-*     char **           A NULL-terminated array of args for the given qtask
+*     char **           A nullptr-terminated array of args for the given qtask
 *                       entry
 *
 *  NOTES
@@ -231,10 +231,10 @@ Error:
 *******************************************************************************/
 char **sge_get_qtask_args(void *context, char *taskname, lList **answer_list)
 {
-   const char *value = NULL; 
+   const char *value = nullptr;
    int num_args = 0;
-   const lListElem *task = NULL;
-   char** args = NULL;
+   const lListElem *task = nullptr;
+   char** args = nullptr;
    sge_gdi_ctx_class_t *ctx = (sge_gdi_ctx_class_t *)context;
    
    DENTER(TOP_LAYER);
@@ -251,7 +251,7 @@ char **sge_get_qtask_args(void *context, char *taskname, lList **answer_list)
     * have any more problems. */
    sge_mutex_lock("qtask_mutex", __func__, __LINE__, &qtask_mutex);
     
-   if (task_config == NULL) {
+   if (task_config == nullptr) {
       /* Just using printf here since we don't really have an exciting function
        * like xprintf to pass in.  This was really meant for use with qtsch. */
       if (init_qtask_config(ctx, answer_list, (print_func_t)printf) != 0) {
@@ -264,13 +264,13 @@ char **sge_get_qtask_args(void *context, char *taskname, lList **answer_list)
    
    task = lGetElemStr(task_config, CF_name, taskname);
    
-   if (task == NULL) {
+   if (task == nullptr) {
       DRETURN(args);
    }
   
    value = lGetString(task, CF_value);
    
-   if (value != NULL) {
+   if (value != nullptr) {
       num_args = sge_quick_count_num_args(value);
    }
    

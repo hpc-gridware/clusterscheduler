@@ -70,7 +70,7 @@ static int read_ls(void);
  * Each element in this list contains elements which show the state
  * of the corresponding load sensor 
  */
-static lList *ls_list = NULL;   /* LS_Type */
+static lList *ls_list = nullptr;   /* LS_Type */
 
 /* 
  * should we start the qidle command 
@@ -178,7 +178,7 @@ static int sge_ls_status(lListElem *this_ls)
    FD_SET(higest_fd, &writefds);
 
    /* is load sensor ready to read ? */
-   ret = select(higest_fd + 1, NULL, &writefds, NULL, NULL);
+   ret = select(higest_fd + 1, nullptr, &writefds, nullptr, nullptr);
 
    if (ret <= 0) {
       DRETURN(LS_BROKEN_PIPE);
@@ -222,11 +222,11 @@ static int sge_ls_status(lListElem *this_ls)
 static int sge_ls_start_ls(const char *qualified_hostname, lListElem *this_ls)
 {
    pid_t pid = -1;
-   FILE *fp_in = NULL;
-   FILE *fp_out = NULL;
-   FILE *fp_err = NULL;
+   FILE *fp_in = nullptr;
+   FILE *fp_out = nullptr;
+   FILE *fp_err = nullptr;
    char buffer[1024];
-   char **envp = NULL;
+   char **envp = nullptr;
 
    DENTER(TOP_LAYER);
 
@@ -236,15 +236,15 @@ static int sge_ls_start_ls(const char *qualified_hostname, lListElem *this_ls)
       envp = (char **) sge_malloc(sizeof(char *) * 3);
       envp[0] = buffer;
       envp[1] = "XAUTHORITY=/tmp/.xauthority";
-      envp[2] = NULL;
+      envp[2] = nullptr;
    } else {
       envp = (char **) sge_malloc(sizeof(char *) * 2);
       envp[0] = buffer;
-      envp[1] = NULL;
+      envp[1] = nullptr;
    }
 
    /* we need fds for select() .. */
-   pid = sge_peopen("/bin/sh", 0, lGetString(this_ls, LS_command), NULL, envp,
+   pid = sge_peopen("/bin/sh", 0, lGetString(this_ls, LS_command), nullptr, envp,
                 &fp_in, &fp_out, &fp_err, true);
 
    if (envp) {
@@ -298,18 +298,18 @@ static int sge_ls_start_ls(const char *qualified_hostname, lListElem *this_ls)
 ******************************************************************************/
 static lListElem *sge_ls_create_ls(const char *qualified_hostname, char *name, const char *scriptfile)
 {
-   lListElem *new_ls = NULL;    /* LS_Type */
+   lListElem *new_ls = nullptr;    /* LS_Type */
    SGE_STRUCT_STAT st;
 
    DENTER(TOP_LAYER);
 
-   if (scriptfile != NULL) {
+   if (scriptfile != nullptr) {
       if (SGE_STAT(scriptfile, &st) != 0) {
          if (strcmp(name, "extern") == 0) {
             WARNING((SGE_EVENT, MSG_LS_NOMODTIME_SS, scriptfile,
                    strerror(errno)));
          }
-         DRETURN(NULL);
+         DRETURN(nullptr);
       }
 
       new_ls = lCreateElem(LS_Type);
@@ -318,9 +318,9 @@ static lListElem *sge_ls_create_ls(const char *qualified_hostname, char *name, c
          lSetString(new_ls, LS_name, name);
          lSetString(new_ls, LS_command, scriptfile);
          sge_ls_set_pid(new_ls, -1);
-         lSetRef(new_ls, LS_in, NULL);
-         lSetRef(new_ls, LS_out, NULL);
-         lSetRef(new_ls, LS_err, NULL);
+         lSetRef(new_ls, LS_in, nullptr);
+         lSetRef(new_ls, LS_out, nullptr);
+         lSetRef(new_ls, LS_err, nullptr);
          lSetBool(new_ls, LS_has_to_restart, false);
          lSetUlong(new_ls, LS_tag, 0);
          lSetList(new_ls, LS_incomplete, lCreateList("", LR_Type));
@@ -389,7 +389,7 @@ static void sge_ls_stop_ls(lListElem *this_ls, int send_no_quit_command)
    if (ret != LS_NOT_STARTED) {
       exit_status = sge_peclose(sge_ls_get_pid(this_ls), (FILE *)lGetRef(this_ls, LS_in),
                             (FILE *)lGetRef(this_ls, LS_out), (FILE *)lGetRef(this_ls, LS_err),
-                            (t.tv_sec ? &t : NULL));
+                            (t.tv_sec ? &t : nullptr));
       DPRINTF(("%s: load sensor `%s` stopped, exit status from sge_peclose= %d\n",
                __func__, lGetString(this_ls, LS_command), exit_status));
    }
@@ -458,7 +458,7 @@ static int read_ls(void)
 
          if (!strcmp(input, "end")) {
             /* replace old load report by new one */
-            lList *tmp_list = NULL;
+            lList *tmp_list = nullptr;
             lXchgList(ls_elem, LS_incomplete, &tmp_list);
             lXchgList(ls_elem, LS_complete, &tmp_list);
             lFreeList(&tmp_list);
@@ -522,7 +522,7 @@ static int ls_send_command(lListElem *this_ls, const char *command)
    timeleft.tv_usec = 0;
 
    /* wait for writing on fd_in */
-   ret = select(higest_fd + 1, NULL, &writefds, NULL, &timeleft);
+   ret = select(higest_fd + 1, nullptr, &writefds, nullptr, &timeleft);
    if (ret == -1) {
       switch (errno) {
       case EINTR:
@@ -633,8 +633,8 @@ void sge_ls_gnu_ls(int gnu_ls)
 ******************************************************************************/
 static int sge_ls_start(const char *qualified_hostname, const char *binary_path, char *scriptfiles)
 {
-   lListElem *ls_elem = NULL;        /* LS_Type */
-   lListElem *nxt_ls_elem = NULL;    /* LS_Type */
+   lListElem *ls_elem = nullptr;        /* LS_Type */
+   lListElem *nxt_ls_elem = nullptr;    /* LS_Type */
    char scriptfiles_buffer[MAX_STRING_SIZE];
    SGE_STRUCT_STAT stat_buffer;
 
@@ -646,8 +646,8 @@ static int sge_ls_start(const char *qualified_hostname, const char *binary_path,
    }
 
    /* add / remove load sensors */
-   if ((scriptfiles != NULL) && (strcasecmp(scriptfiles, "NONE") != 0)) {
-      char *scriptfile = NULL;
+   if ((scriptfiles != nullptr) && (strcasecmp(scriptfiles, "NONE") != 0)) {
+      char *scriptfile = nullptr;
 
        if (strlen(scriptfiles) > MAX_STRING_SIZE - 1) {
           DRETURN(LS_NOT_STARTED);
@@ -661,19 +661,19 @@ static int sge_ls_start(const char *qualified_hostname, const char *binary_path,
       while (scriptfile) {
          ls_elem = lGetElemStrRW(ls_list, LS_command, scriptfile);
 
-         if (ls_elem == NULL) {
+         if (ls_elem == nullptr) {
             INFO((SGE_EVENT, MSG_LS_STARTLS_S, scriptfile));
             ls_elem = sge_ls_create_ls(qualified_hostname, "extern", scriptfile);
 
-            if (ls_list == NULL) {
+            if (ls_list == nullptr) {
                ls_list = lCreateList("", LS_Type);
             }
             lAppendElem(ls_list, ls_elem);
          }
-         if (ls_elem != NULL) {
+         if (ls_elem != nullptr) {
             lSetUlong(ls_elem, LS_tag, 0);
          }
-         scriptfile = strtok(NULL, ",\n");
+         scriptfile = strtok(nullptr, ",\n");
       }
    }
 
@@ -689,15 +689,15 @@ static int sge_ls_start(const char *qualified_hostname, const char *binary_path,
       }
       
       ls_elem = lGetElemStrRW(ls_list, LS_command, scriptfiles_buffer);
-      if (ls_elem == NULL) {
+      if (ls_elem == nullptr) {
          ls_elem = sge_ls_create_ls(qualified_hostname, IDLE_LOADSENSOR_NAME, scriptfiles_buffer);
 
-         if (ls_list == NULL) {
+         if (ls_list == nullptr) {
             ls_list = lCreateList("", LS_Type);
          }
          lAppendElem(ls_list, ls_elem);
       }
-      if (ls_elem != NULL) {
+      if (ls_elem != nullptr) {
          lSetUlong(ls_elem, LS_tag, 0);
       }
    }
@@ -714,15 +714,15 @@ static int sge_ls_start(const char *qualified_hostname, const char *binary_path,
       }
       
       ls_elem = lGetElemStrRW(ls_list, LS_command, scriptfiles_buffer);
-      if (ls_elem == NULL) {
+      if (ls_elem == nullptr) {
          ls_elem = sge_ls_create_ls(qualified_hostname, GNU_LOADSENSOR_NAME, scriptfiles_buffer);
 
-         if (ls_list == NULL) {
+         if (ls_list == nullptr) {
             ls_list = lCreateList("", LS_Type);
          }
          lAppendElem(ls_list, ls_elem);
       }
-      if (ls_elem != NULL) {
+      if (ls_elem != nullptr) {
          lSetUlong(ls_elem, LS_tag, 0);
       }
    }
@@ -831,7 +831,7 @@ int sge_ls_get(const char *qualified_hostname, const char *binary_path, lList **
 {
    lListElem *ls_elem;          /* LS_Type */
    lListElem *ep;
-   char* load_sensor = NULL;
+   char* load_sensor = nullptr;
 
    DENTER(TOP_LAYER);
 

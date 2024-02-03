@@ -169,7 +169,7 @@ void sge_lock(sge_locktype_t aType, sge_lockmode_t aMode, const char *func, sge_
 #ifdef PRINT_LOCK
    {
       struct timeval now;
-      gettimeofday(&now, NULL);
+      gettimeofday(&now, nullptr);
       printf("%ld lock %lu:%lus %s(%d)\n", (long int) pthread_self(),now.tv_sec, now.tv_usec, locktype_names[aType], aMode); 
    }   
 #endif   
@@ -202,7 +202,7 @@ void sge_lock(sge_locktype_t aType, sge_lockmode_t aMode, const char *func, sge_
 #ifdef PRINT_LOCK
    {
       struct timeval now;
-      gettimeofday(&now, NULL);
+      gettimeofday(&now, nullptr);
       printf("%ld got lock %lu:%lus %s(%d)\n", (long int) pthread_self(),now.tv_sec, now.tv_usec, locktype_names[aType], aMode); 
    }   
 #endif   
@@ -226,7 +226,7 @@ void sge_lock(sge_locktype_t aType, sge_lockmode_t aMode, const char *func, sge_
    pthread_once(&lock_once, lock_once_init);
 
 #ifdef SGE_DEBUG_LOCK_TIME
-   gettimeofday(&before, NULL);
+   gettimeofday(&before, nullptr);
 #endif
 
    if (aMode == LOCK_READ) {
@@ -251,7 +251,7 @@ void sge_lock(sge_locktype_t aType, sge_lockmode_t aMode, const char *func, sge_
    }
 
 #ifdef SGE_DEBUG_LOCK_TIME
-      gettimeofday(&after, NULL);
+      gettimeofday(&after, nullptr);
       time = after.tv_usec - before.tv_usec;
       time = after.tv_sec - before.tv_sec + (time/1000000);
 
@@ -326,7 +326,7 @@ void sge_unlock(sge_locktype_t aType, sge_lockmode_t aMode, const char *func, sg
 #ifdef PRINT_LOCK
    {
       struct timeval now;
-      gettimeofday(&now, NULL);
+      gettimeofday(&now, nullptr);
       printf("%ld unlock %lu:%lus %s(%d)\n", (long int) pthread_self(),now.tv_sec, now.tv_usec, locktype_names[aType], aMode); 
    }   
 #endif
@@ -383,7 +383,7 @@ void sge_unlock(sge_locktype_t aType, sge_lockmode_t aMode, const char *func, sg
 sge_locker_t sge_locker_id(void) {
    sge_locker_t id = 0;
 
-   if (NULL != id_callback) {
+   if (nullptr != id_callback) {
       id = (sge_locker_t) id_callback();
    }
 
@@ -422,8 +422,8 @@ static void lock_once_init(void) {
    sge_fifo_lock_init(&Global_Lock);
    sge_fifo_lock_init(&Master_Conf_Lock);
 #else
-   pthread_rwlock_init(&Global_Lock, NULL); 
-   pthread_rwlock_init(&Master_Conf_Lock, NULL);
+   pthread_rwlock_init(&Global_Lock, nullptr);
+   pthread_rwlock_init(&Master_Conf_Lock, nullptr);
 #endif
    return;
 } /* prog_once_init() */

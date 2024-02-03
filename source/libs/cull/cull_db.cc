@@ -93,24 +93,24 @@ static lListElem *lJoinCopyElem(const lDescr *dp,
 
    if (!src0 || !src1) {
       LERROR(LEELEMNULL);
-      DRETURN(NULL);
+      DRETURN(nullptr);
    }
 
    if (!(dst = lCreateElem(dp))) {
       LERROR(LECREATEELEM);
-      DRETURN(NULL);
+      DRETURN(nullptr);
    }
 
    i = 0;
-   if (lCopyElemPartialPack(dst, &i, src0, enp0, true, NULL) == -1) {
+   if (lCopyElemPartialPack(dst, &i, src0, enp0, true, nullptr) == -1) {
       sge_free(&dst);
       LERROR(LECOPYELEMPART);
-      DRETURN(NULL);
+      DRETURN(nullptr);
    }
-   if (lCopyElemPartialPack(dst, &i, src1, enp1, true, NULL) == -1) {
+   if (lCopyElemPartialPack(dst, &i, src1, enp1, true, nullptr) == -1) {
       sge_free(&dst);
       LERROR(LECOPYELEMPART);
-      DRETURN(NULL);
+      DRETURN(nullptr);
    }
 
    DRETURN(dst);
@@ -134,7 +134,7 @@ static lListElem *lJoinCopyElem(const lDescr *dp,
 *     Joins a list and one of its sublists together. The other 
 *     parameters are equal to them from lJoin(). In the enumeration
 *     'enp0' the sublist field neither may be selected nor 'enp0'
-*     may be NULL. 
+*     may be nullptr.
 *
 *  INPUTS
 *     const char *name         - new list name 
@@ -164,44 +164,44 @@ lList *lJoinSublist(const char *name, int nm0, const lList *lp,
    /* check different pointers */
    if (!name || !lp || !enp0 || !sldp || !enp1) {
       LERROR(LENULLARGS);
-      DRETURN(NULL);
+      DRETURN(nullptr);
    }
 
    /* make sure that nm0 is a sublist field of lp */
    if (!(tdp = lGetListDescr(lp))) {
       LERROR(LEDESCRNULL);
-      DRETURN(NULL);
+      DRETURN(nullptr);
    }
    if ((pos = lGetPosInDescr(tdp, nm0)) < 0) {
       LERROR(LENAMENOT);
-      DRETURN(NULL);
+      DRETURN(nullptr);
    }
 
    if (mt_get_type(tdp[pos].mt) != lListT) {
       LERROR(LEINCTYPE);
-      DRETURN(NULL);
+      DRETURN(nullptr);
    }
 
    /* is nm0 enumerated in enp0 ? */
    if (enp0[0].pos == WHAT_ALL) {
       LERROR(LEFALSEFIELD);
-      DRETURN(NULL);
+      DRETURN(nullptr);
    }
    for (i = 0; enp0[i].nm != NoName; i++)
       if (enp0[i].nm == nm0) {
          LERROR(LEFALSEFIELD);
-         DRETURN(NULL);
+         DRETURN(nullptr);
       }
 
    /* create destination list */
    if (!(dp = lJoinDescr(lGetListDescr(lp), sldp, enp0, enp1))) {
       LERROR(LEJOINDESCR);
-      DRETURN(NULL);
+      DRETURN(nullptr);
    }
    if (!(dlp = lCreateList(name, dp))) {
       sge_free(&dp);
       LERROR(LECREATELIST);
-      DRETURN(NULL);
+      DRETURN(nullptr);
    }
    /* free dp it has been copied in lCreateList */
    sge_free(&dp);
@@ -210,30 +210,30 @@ lList *lJoinSublist(const char *name, int nm0, const lList *lp,
    if (!(tlp = lCreateList("lJoinSublist: tlp", lGetListDescr(lp)))) {
       lFreeList(&dlp);
       LERROR(LECREATELIST);
-      DRETURN(NULL);
+      DRETURN(nullptr);
    }
 
    for_each_where(ep, lp, cp0) {
       /* is there a sublist for the join */
-      if ((sublist = lGetListRW(ep, nm0)) != NULL) {
+      if ((sublist = lGetListRW(ep, nm0)) != nullptr) {
 
          /* put each element in the tlp to be used by lJoin */
          if (lAppendElem(tlp, lCopyElem(ep)) == -1) {
             lFreeList(&tlp);
             lFreeList(&dlp);
             LERROR(LEAPPENDELEM);
-            DRETURN(NULL);
+            DRETURN(nullptr);
          }
 
          /* join the tlp with one element together with its sublist */
-         joinedlist = lJoin("lJoinSublist: joinedlist", nm0, tlp, NULL, enp0,
+         joinedlist = lJoin("lJoinSublist: joinedlist", nm0, tlp, nullptr, enp0,
                             NoName, sublist, cp1, enp1);
 
          if (!joinedlist) {
             lFreeList(&tlp);
             lFreeList(&dlp);
             LERROR(LEJOIN);
-            DRETURN(NULL);
+            DRETURN(nullptr);
          }
 
          /* joinedlist is freed in lAddList */
@@ -241,7 +241,7 @@ lList *lJoinSublist(const char *name, int nm0, const lList *lp,
             LERROR(LEADDLIST);
             lFreeList(&tlp);
             lFreeList(&dlp);
-            DRETURN(NULL);
+            DRETURN(nullptr);
          }
 
          /* dechain the only element from tlp and free it (copy) */
@@ -251,7 +251,7 @@ lList *lJoinSublist(const char *name, int nm0, const lList *lp,
    /* temporary list has to be freed */
    lFreeList(&tlp);
 
-   /* RETURN AN EMPTY LIST OR NULL THAT'S THE QUESTION */
+   /* RETURN AN EMPTY LIST OR nullptr THAT'S THE QUESTION */
 
    if (lGetNumberOfElem(dlp) == 0) {
       lFreeList(&dlp);
@@ -275,7 +275,7 @@ lList *lJoinSublist(const char *name, int nm0, const lList *lp,
 *     For the join only these 'lines' described in condition 'cp0'
 *     and 'cp1' are used.
 *     The new list gets only these members described in 'enp0' and
-*     'enp1'. NULL means every member of this list.
+*     'enp1'. nullptr means every member of this list.
 *     The list gets 'name' as listname.
 *
 *  INPUTS
@@ -297,7 +297,7 @@ lList *lJoin(const char *name, int nm0, const lList *lp0,
              const lList *lp1, const lCondition *cp1, const lEnumeration *enp1) {
    lListElem *ep0, *ep1;
    lListElem *ep;
-   lList *dlp = NULL;
+   lList *dlp = nullptr;
    lDescr *dp;
    int lp0_pos = 0, lp1_pos = 0;
    u_int i, j;
@@ -307,35 +307,35 @@ lList *lJoin(const char *name, int nm0, const lList *lp0,
 
    if (!lp0 || !lp1 || !name || !enp0 || !enp1) {
       LERROR(LENULLARGS);
-      DRETURN(NULL);
+      DRETURN(nullptr);
    }
 
    if (nm1 != NoName) {
       if ((lp0_pos = lGetPosInDescr(lGetListDescr(lp0), nm0)) < 0) {
          LERROR(LENAMENOT);
-         DRETURN(NULL);
+         DRETURN(nullptr);
       }
       if ((lp1_pos = lGetPosInDescr(lGetListDescr(lp1), nm1)) < 0) {
          LERROR(LENAMENOT);
-         DRETURN(NULL);
+         DRETURN(nullptr);
       }
 
       if (mt_get_type(lp0->descr[lp0_pos].mt) != mt_get_type(lp1->descr[lp1_pos].mt) ||
           mt_get_type(lp0->descr[lp0_pos].mt) == lListT) {
          LERROR(LEDIFFDESCR);
-         DRETURN(NULL);
+         DRETURN(nullptr);
       }
    }
 
    /* the real join ?! */
    if (!(dp = lJoinDescr(lGetListDescr(lp0), lGetListDescr(lp1), enp0, enp1))) {
       LERROR(LEJOINDESCR);
-      DRETURN(NULL);
+      DRETURN(nullptr);
    }
    if (!(dlp = lCreateList(name, dp))) {
       LERROR(LECREATELIST);
       sge_free(&dp);
-      DRETURN(NULL);
+      DRETURN(nullptr);
    }
    /* free dp it has been copied by lCreateList */
    sge_free(&dp);
@@ -384,7 +384,7 @@ lList *lJoin(const char *name, int nm0, const lList *lp0,
                   break;
                default:
                   unknownType("lJoin");
-                  DRETURN(NULL);
+                  DRETURN(nullptr);
             }
             if (!needed)
                continue;
@@ -392,18 +392,18 @@ lList *lJoin(const char *name, int nm0, const lList *lp0,
          if (!(ep = lJoinCopyElem(dlp->descr, ep0, enp0, ep1, enp1))) {
             LERROR(LEJOINCOPYELEM);
             lFreeList(&dlp);
-            DRETURN(NULL);
+            DRETURN(nullptr);
          } else {
             if (lAppendElem(dlp, ep) == -1) {
                LERROR(LEAPPENDELEM);
                lFreeList(&dlp);
-               DRETURN(NULL);
+               DRETURN(nullptr);
             }
          }
       }
    }
 
-   /* RETURN AN EMPTY LIST OR NULL THAT'S THE QUESTION */
+   /* RETURN AN EMPTY LIST OR nullptr THAT'S THE QUESTION */
 
    if (lGetNumberOfElem(dlp) == 0) {
       lFreeList(&dlp);
@@ -472,7 +472,7 @@ int lSplit(lList **slp, lList **ulp, const char *ulp_name,
       }
    }
 
-   /* if no elements remain, free the list and return NULL */
+   /* if no elements remain, free the list and return nullptr */
    if (*slp && lGetNumberOfElem(*slp) == 0) {
       lFreeList(slp);
    }
@@ -505,9 +505,9 @@ lList *lSelectDestroy(lList *slp, const lCondition *cp) {
 
    DENTER(CULL_LAYER);
 
-   if (lSplit(&slp, NULL, NULL, cp)) {
+   if (lSplit(&slp, nullptr, nullptr, cp)) {
       lFreeList(&slp);
-      DRETURN(NULL);
+      DRETURN(nullptr);
    }
    DRETURN(slp);
 }
@@ -540,14 +540,14 @@ lList *lSelectDestroy(lList *slp, const lCondition *cp) {
 lListElem *
 lSelectElemPack(const lListElem *slp, const lCondition *cp,
                 const lEnumeration *enp, bool isHash, sge_pack_buffer *pb) {
-   lListElem *new_ep = NULL;
+   lListElem *new_ep = nullptr;
 
    DENTER(CULL_LAYER);
 
    if (!slp) {
-      DRETURN(NULL);
+      DRETURN(nullptr);
    }
-   if (enp != NULL) {
+   if (enp != nullptr) {
       lDescr *dp;
       int n, index = 0;
       u_long32 elements = 0;
@@ -555,17 +555,17 @@ lSelectElemPack(const lListElem *slp, const lCondition *cp,
       /* create new lList with partial descriptor */
       if ((n = lCountWhat(enp, slp->descr)) <= 0) {
          LERROR(LECOUNTWHAT);
-         DRETURN(NULL);
+         DRETURN(nullptr);
       }
       if (!(dp = (lDescr *) sge_malloc(sizeof(lDescr) * (n + 1)))) {
          LERROR(LEMALLOC);
-         DRETURN(NULL);
+         DRETURN(nullptr);
       }
       /* INITIALIZE THE INDEX IF YOU BUILD A NEW DESCRIPTOR */
       if (lPartialDescr(enp, slp->descr, dp, &index) < 0) {
          LERROR(LEPARTIALDESCR);
          sge_free(&dp);
-         DRETURN(NULL);
+         DRETURN(nullptr);
       }
       /* create reduced element */
       new_ep = lSelectElemDPack(slp, cp, dp, enp, isHash, pb, &elements);
@@ -592,7 +592,7 @@ lSelectElemPack(const lListElem *slp, const lCondition *cp,
 *  FUNCTION
 *     Creates a new list from the list 'slp' extracting the elements
 *     fulfilling the condition 'cp' or it packs those elemets into 'pb' if 
-*     it is not NULL. 
+*     it is not nullptr.
 *
 *  INPUTS
 *     const lListElem *slp     - source list pointer 
@@ -602,7 +602,7 @@ lSelectElemPack(const lListElem *slp, const lCondition *cp,
 *     sge_pack_buffer *pb      - packbuffer
 *     u_long32 *elements       - increases the number of elems, if one is
 *                                added to the pb. Only, when elements is 
-*                                not NULL (only used if pb != NULL)
+*                                not nullptr (only used if pb != nullptr)
 *
 *  RESULT
 *     lListElem* - list containing the extracted elements
@@ -611,33 +611,33 @@ lListElem *
 lSelectElemDPack(const lListElem *slp, const lCondition *cp, const lDescr *dp,
                  const lEnumeration *enp, bool isHash, sge_pack_buffer *pb,
                  u_long32 *elements) {
-   lListElem *new_ep = NULL;
+   lListElem *new_ep = nullptr;
    int index = 0;
 
    DENTER(CULL_LAYER);
    if (!slp || (!dp && !pb)) {
-      DRETURN(NULL);
+      DRETURN(nullptr);
    }
    /*
     * iterate through the source list call lCompare and add
     * depending on result of lCompare
     */
    if (lCompare(slp, cp)) {
-      if (pb == NULL) {
+      if (pb == nullptr) {
          if (!(new_ep = lCreateElem(dp))) {
-            DRETURN(NULL);
+            DRETURN(nullptr);
          }
 
-         if (lCopyElemPartialPack(new_ep, &index, slp, enp, isHash, NULL)) {
+         if (lCopyElemPartialPack(new_ep, &index, slp, enp, isHash, nullptr)) {
             lFreeElem(&new_ep);
          }
       } else {
-         if (elements != NULL) {
+         if (elements != nullptr) {
             (*elements)++;
          }
 
-         lCopyElemPartialPack(NULL, &index, slp, enp, isHash, pb);
-         new_ep = NULL;
+         lCopyElemPartialPack(nullptr, &index, slp, enp, isHash, pb);
+         new_ep = nullptr;
       }
    }
    DRETURN(new_ep);
@@ -666,7 +666,7 @@ lSelectElemDPack(const lListElem *slp, const lCondition *cp, const lDescr *dp,
 ******************************************************************************/
 lList *lSelect(const char *name, const lList *slp, const lCondition *cp,
                const lEnumeration *enp) {
-   return lSelectHashPack(name, slp, cp, enp, true, NULL);
+   return lSelectHashPack(name, slp, cp, enp, true, nullptr);
 }
 
 /****** cull/db/lSelectHashPack() *********************************************
@@ -682,7 +682,7 @@ lList *lSelect(const char *name, const lList *slp, const lCondition *cp,
 *  FUNCTION
 *     Creates a new list from the list 'slp' extracting the elements
 *     fulfilling the condition 'cp' or fills the packbuffer if pb is 
-*     not NULL.
+*     not nullptr.
 *
 *  INPUTS
 *     const char *name        - name for the new list 
@@ -698,15 +698,15 @@ lList *lSelect(const char *name, const lList *slp, const lCondition *cp,
 lList *lSelectHashPack(const char *name, const lList *slp,
                        const lCondition *cp, const lEnumeration *enp,
                        bool isHash, sge_pack_buffer *pb) {
-   lList *ret = NULL;
+   lList *ret = nullptr;
 
    DENTER(CULL_LAYER);
-   if (slp == NULL && pb == NULL) {
-      DRETURN(NULL);
+   if (slp == nullptr && pb == nullptr) {
+      DRETURN(nullptr);
    }
 
-   if (enp != NULL) {
-      if (pb == NULL) {
+   if (enp != nullptr) {
+      if (pb == nullptr) {
          lDescr *dp;
          int n, index;
 
@@ -714,13 +714,13 @@ lList *lSelectHashPack(const char *name, const lList *slp,
          n = lCountWhat(enp, slp->descr);
          if (n <= 0) {
             LERROR(LECOUNTWHAT);
-            DRETURN(NULL);
+            DRETURN(nullptr);
          }
 
          dp = (lDescr *) sge_malloc(sizeof(lDescr) * (n + 1));
-         if (dp == NULL) {
+         if (dp == nullptr) {
             LERROR(LEMALLOC);
-            DRETURN(NULL);
+            DRETURN(nullptr);
          }
 
          /* INITIALIZE THE INDEX IF YOU BUILD A NEW DESCRIPTOR */
@@ -728,9 +728,9 @@ lList *lSelectHashPack(const char *name, const lList *slp,
          if (lPartialDescr(enp, slp->descr, dp, &index) < 0) {
             LERROR(LEPARTIALDESCR);
             sge_free(&dp);
-            DRETURN(NULL);
+            DRETURN(nullptr);
          }
-         ret = lSelectDPack(name, slp, cp, dp, enp, isHash, NULL, NULL);
+         ret = lSelectDPack(name, slp, cp, dp, enp, isHash, nullptr, nullptr);
 
          /* free the descriptor, it has been copied by lCreateList */
          cull_hash_free_descr(dp);
@@ -742,26 +742,26 @@ lList *lSelectHashPack(const char *name, const lList *slp,
          const char *pack_name = "";
          int local_ret;
 
-         if (name != NULL) {
+         if (name != nullptr) {
             pack_name = name;
-         } else if (slp != NULL) {
+         } else if (slp != nullptr) {
             pack_name = slp->listname;
          }
 
          local_ret = cull_pack_list_summary(pb, slp, enp, pack_name, &offset, &used);
          if (local_ret != PACK_SUCCESS) {
             LERROR(LEMALLOC);
-            DRETURN(NULL);
+            DRETURN(nullptr);
          }
 
-         lSelectDPack(name, slp, cp, NULL, enp, isHash, pb,
+         lSelectDPack(name, slp, cp, nullptr, enp, isHash, pb,
                       &number_of_packed_elements);
 
          /*
           * change number of elements contained in the packbuffer 
           */
-         if (slp != NULL && pb != NULL) {
-            char *old_cur_ptr = NULL;
+         if (slp != nullptr && pb != nullptr) {
+            char *old_cur_ptr = nullptr;
             size_t old_used = 0;
 
             old_cur_ptr = pb->cur_ptr;
@@ -772,14 +772,14 @@ lList *lSelectHashPack(const char *name, const lList *slp,
             local_ret = repackint(pb, number_of_packed_elements);
             if (local_ret != PACK_SUCCESS) {
                LERROR(LEMALLOC);
-               DRETURN(NULL);
+               DRETURN(nullptr);
             }
             pb->cur_ptr = old_cur_ptr;
             pb->bytes_used = old_used;
          }
       }
    } else {
-      if (pb == NULL) {
+      if (pb == nullptr) {
          ret = lCopyListHash(slp->listname, slp, isHash);
       } else {
          cull_pack_list(pb, slp);
@@ -801,7 +801,7 @@ lList *lSelectHashPack(const char *name, const lList *slp,
 *  FUNCTION
 *     Creates a new list from the list 'slp' extracting the elements
 *     fulfilling the condition 'cp' or packs the elements into the
-*     packbuffer 'pb' if it is not NULL. 
+*     packbuffer 'pb' if it is not nullptr.
 *
 *  INPUTS
 *     const char *name        - name for the new list 
@@ -812,7 +812,7 @@ lList *lSelectHashPack(const char *name, const lList *slp,
 *     bool  isHash            - enables/disables the hash table creation 
 *     sge_pack_buffer *pb     - packbuffer
 *     u_long32 *elements      - number of packed elements 
-*                               (only used if pb != NULL)
+*                               (only used if pb != nullptr)
 *
 *  RESULT
 *     lList* - list containing the extracted elements
@@ -822,19 +822,19 @@ lList *lSelectDPack(const char *name, const lList *slp, const lCondition *cp,
                     sge_pack_buffer *pb, u_long32 *elements) {
 
    lListElem *ep, *new_ep;
-   lList *dlp = (lList *) NULL;
-   const lDescr *descr = NULL;
+   lList *dlp = (lList *) nullptr;
+   const lDescr *descr = nullptr;
 
    DENTER(CULL_LAYER);
 
    if (!slp || (!dp && !pb)) {
-      DRETURN(NULL);
+      DRETURN(nullptr);
    }
 
-   if (pb == NULL) {
+   if (pb == nullptr) {
       if (!(dlp = lCreateListHash(name, dp, false))) {
          LERROR(LECREATELIST);
-         DRETURN(NULL);
+         DRETURN(nullptr);
       }
       dlp->changed = slp->changed;
       descr = dlp->descr;
@@ -846,17 +846,17 @@ lList *lSelectDPack(const char *name, const lList *slp, const lCondition *cp,
     */
    for (ep = slp->first; ep; ep = ep->next) {
       new_ep = lSelectElemDPack(ep, cp, descr, enp, isHash, pb, elements);
-      if (new_ep != NULL) {
+      if (new_ep != nullptr) {
          if (lAppendElem(dlp, new_ep) == -1) {
             LERROR(LEAPPENDELEM);
             lFreeElem(&new_ep);
             lFreeList(&dlp);
-            DRETURN(NULL);
+            DRETURN(nullptr);
          }
       }
    }
 
-   if (pb == NULL && isHash) {
+   if (pb == nullptr && isHash) {
       /* now create the hash tables */
       cull_hash_create_hashtables(dlp);
 
@@ -923,7 +923,7 @@ int lPartialDescr(const lEnumeration *ep, const lDescr *sdp, lDescr *ddp,
          for (i = 0; mt_get_type(sdp[i].mt) != lEndT; i++) {
             ddp[*indexp].mt = sdp[i].mt;
             ddp[*indexp].nm = sdp[i].nm;
-            ddp[*indexp].ht = NULL;
+            ddp[*indexp].ht = nullptr;
 
             (*indexp)++;
          }
@@ -943,7 +943,7 @@ int lPartialDescr(const lEnumeration *ep, const lDescr *sdp, lDescr *ddp,
                }
                ddp[*indexp].mt = sdp[ep[i].pos].mt;
                ddp[*indexp].nm = sdp[ep[i].pos].nm;
-               ddp[*indexp].ht = NULL;
+               ddp[*indexp].ht = nullptr;
                ddp[*indexp].mt |= CULL_IS_REDUCED;
                reduced = true;
 
@@ -958,7 +958,7 @@ int lPartialDescr(const lEnumeration *ep, const lDescr *sdp, lDescr *ddp,
    /* copy end mark */
    ddp[*indexp].mt = lEndT;
    ddp[*indexp].nm = NoName;
-   ddp[*indexp].ht = NULL;
+   ddp[*indexp].ht = nullptr;
    if (reduced) {
       ddp[*indexp].mt |= CULL_IS_REDUCED;
    }
@@ -1004,12 +1004,12 @@ lDescr *lJoinDescr(const lDescr *sdp0, const lDescr *sdp1,
 
    if (!sdp0 || !sdp1) {
       LERROR(LEDESCRNULL);
-      DRETURN(NULL);
+      DRETURN(nullptr);
    }
 
    if (!ep0 || !ep1) {
       LERROR(LEELEMNULL);
-      DRETURN(NULL);
+      DRETURN(nullptr);
    }
 
    /* compute size of new descr */
@@ -1018,31 +1018,31 @@ lDescr *lJoinDescr(const lDescr *sdp0, const lDescr *sdp1,
 
    if (n == -1 || m == -1) {
       LERROR(LECOUNTWHAT);
-      DRETURN(NULL);
+      DRETURN(nullptr);
    }
 
    /* There is WHAT_NONE specified in both lEnumeration ptr's */
    if (!n && !m) {
       LERROR(LEENUMBOTHNONE);
-      DRETURN(NULL);
+      DRETURN(nullptr);
    }
 
    if (!(ddp = (lDescr *) sge_malloc(sizeof(lDescr) * (n + m + 1)))) {
       LERROR(LEMALLOC);
-      DRETURN(NULL);
+      DRETURN(nullptr);
    }
    /* INITIALIZE THE INDEX IF YOU BUILD A NEW DESCRIPTOR */
    index = 0;
    if (lPartialDescr(ep0, sdp0, ddp, &index) < 0) {
       LERROR(LEPARTIALDESCR);
       sge_free(&ddp);
-      DRETURN(NULL);
+      DRETURN(nullptr);
    }
    /* This one is appended */
    if (lPartialDescr(ep1, sdp1, ddp, &index) < 0) {
       LERROR(LEPARTIALDESCR);
       sge_free(&ddp);
-      DRETURN(NULL);
+      DRETURN(nullptr);
    }
 
    DRETURN(ddp);
@@ -1050,21 +1050,21 @@ lDescr *lJoinDescr(const lDescr *sdp0, const lDescr *sdp1,
 
 lDescr *lGetReducedDescr(const lDescr *type, const lEnumeration *what) {
 
-   lDescr *new_descr = NULL;
+   lDescr *new_descr = nullptr;
    int index = 0;
    int n = 0;
    DENTER(CULL_LAYER);
 
    if ((n = lCountWhat(what, type)) <= 0) {
-      DRETURN(NULL);
+      DRETURN(nullptr);
    }
 
    if (!(new_descr = (lDescr *) sge_malloc(sizeof(lDescr) * (n + 1)))) {
-      DRETURN(NULL);
+      DRETURN(nullptr);
    }
    if (lPartialDescr(what, type, new_descr, &index) != 0) {
       sge_free(&new_descr);
-      DRETURN(NULL);
+      DRETURN(nullptr);
    }
 
    DRETURN(new_descr);
@@ -1081,7 +1081,7 @@ lDescr *lGetReducedDescr(const lDescr *type, const lEnumeration *what) {
 *  FUNCTION
 *     Parses separated strings and adds them into the cull list *lpp
 *     The string is a unique key for the list and resides at field 'nm'
-*     If 'deleminator' is NULL than isspace() is used. 
+*     If 'deleminator' is nullptr than isspace() is used.
 *
 *  INPUTS
 *     const char *s         - String to parse   
@@ -1099,7 +1099,7 @@ int lString2List(const char *s, lList **lpp, const lDescr *dp, int nm,
                  const char *dlmt) {
    int pos;
    int dataType;
-   struct saved_vars_s *context = NULL;
+   struct saved_vars_s *context = nullptr;
 
    DENTER(TOP_LAYER);
 
@@ -1112,7 +1112,7 @@ int lString2List(const char *s, lList **lpp, const lDescr *dp, int nm,
    switch (dataType) {
       case lStringT:
          DPRINTF(("lString2List: got lStringT data type\n"));
-         for (s = sge_strtok_r(s, dlmt, &context); s; s = sge_strtok_r(NULL, dlmt, &context)) {
+         for (s = sge_strtok_r(s, dlmt, &context); s; s = sge_strtok_r(nullptr, dlmt, &context)) {
             if (lGetElemStr(*lpp, nm, s)) {
                /* silently ignore multiple occurencies */
                continue;
@@ -1127,7 +1127,7 @@ int lString2List(const char *s, lList **lpp, const lDescr *dp, int nm,
          break;
       case lHostT:
          DPRINTF(("lString2List: got lHostT data type\n"));
-         for (s = sge_strtok_r(s, dlmt, &context); s; s = sge_strtok_r(NULL, dlmt, &context)) {
+         for (s = sge_strtok_r(s, dlmt, &context); s; s = sge_strtok_r(nullptr, dlmt, &context)) {
             if (lGetElemHost(*lpp, nm, s)) {
                /* silently ignore multiple occurencies */
                continue;
@@ -1261,7 +1261,7 @@ int lDiffListStr(int nm, lList **lpp1, lList **lpp2) {
 
       ep = lNext(ep);           /* point to next element before del */
 
-      if (lGetElemStr(*lpp2, nm, key) != NULL) {
+      if (lGetElemStr(*lpp2, nm, key) != nullptr) {
          lDelElemStr(lpp2, nm, key);
          lDelElemStr(lpp1, nm, key);
       }
@@ -1291,7 +1291,7 @@ int lDiffListUlong(int nm, lList **lpp1, lList **lpp2) {
 
       ep = lNext(ep);
 
-      if (lGetElemUlong(*lpp2, nm, key) != NULL) {
+      if (lGetElemUlong(*lpp2, nm, key) != nullptr) {
          lDelElemUlong(lpp2, nm, key);
          lDelElemUlong(lpp1, nm, key);
       }

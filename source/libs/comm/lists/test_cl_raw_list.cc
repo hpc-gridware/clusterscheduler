@@ -49,10 +49,10 @@ extern int main(void) {
    char *data2 = "string_2";
    char *data3 = "string_3";
 
-   cl_raw_list_elem_t *elem = NULL;
-   cl_raw_list_t *my_list = NULL;
-   cl_raw_list_t *my_string_list = NULL;
-   cl_string_list_elem_t *selem = NULL;
+   cl_raw_list_elem_t *elem = nullptr;
+   cl_raw_list_t *my_list = nullptr;
+   cl_raw_list_t *my_string_list = nullptr;
+   cl_string_list_elem_t *selem = nullptr;
 
    printf("setting up list ...\n");
    if ((ret = cl_raw_list_setup(&my_list, "my raw list", 1)) != CL_RETVAL_OK) {
@@ -66,22 +66,22 @@ extern int main(void) {
 
 
    printf("append elem ...\n");
-   if (cl_raw_list_append_elem(my_list, data1) == NULL) {
+   if (cl_raw_list_append_elem(my_list, data1) == nullptr) {
       printf("error: cl_raw_list_append_elem()\n");
    }
    printf("append elem ...\n");
-   if (cl_raw_list_append_elem(my_list, data2) == NULL) {
+   if (cl_raw_list_append_elem(my_list, data2) == nullptr) {
       printf("error: cl_raw_list_append_elem()\n");
    }
    printf("append elem ...\n");
-   if (cl_raw_list_append_elem(my_list, data3) == NULL) {
+   if (cl_raw_list_append_elem(my_list, data3) == nullptr) {
       printf("error: cl_raw_list_append_elem()\n");
    }
 
 
    printf("search elem ...\n");
    elem = cl_raw_list_search_elem(my_list, data2);
-   if (elem == NULL) {
+   if (elem == nullptr) {
       printf("error: cl_raw_list_search_elem(): elem not found!!!\n");
    } else {
       printf("next elem from %s : %s\n", (char *) elem->data, (char *) (cl_raw_list_get_next_elem(elem))->data);
@@ -98,7 +98,7 @@ extern int main(void) {
 
    printf("search elem 2 ...\n");
    elem = cl_raw_list_search_elem(my_list, data2);
-   if (elem == NULL) {
+   if (elem == nullptr) {
       printf("error: cl_raw_list_search_elem(): elem not found!!!\n");
    }
    printf("removing elem 2 \n");
@@ -125,7 +125,7 @@ extern int main(void) {
    }
 
    printf("removing not existing elem\n");
-   if (cl_raw_list_remove_elem(my_list, cl_raw_list_search_elem(my_list, data3)) != NULL) {
+   if (cl_raw_list_remove_elem(my_list, cl_raw_list_search_elem(my_list, data3)) != nullptr) {
       printf("error: cl_raw_list_remove_elem(): object should be unfindable\n");
    }
 
@@ -148,7 +148,7 @@ extern int main(void) {
 
    printf("nr of elems: %ld\n", cl_raw_list_get_elem_count(my_string_list));
    for (selem = cl_string_list_get_first_elem(my_string_list);
-        selem != NULL; selem = cl_string_list_get_next_elem(selem)) {
+        selem != nullptr; selem = cl_string_list_get_next_elem(selem)) {
       printf("elem: %s\n", selem->string);
    }
 
@@ -159,7 +159,7 @@ extern int main(void) {
 
    printf("nr of elems: %ld\n", cl_raw_list_get_elem_count(my_string_list));
    for (selem = cl_string_list_get_first_elem(my_string_list);
-        selem != NULL; selem = cl_string_list_get_next_elem(selem)) {
+        selem != nullptr; selem = cl_string_list_get_next_elem(selem)) {
       printf("elem: %s\n", selem->string);
    }
 
@@ -170,7 +170,7 @@ extern int main(void) {
 
    printf("nr of elems: %ld\n", cl_raw_list_get_elem_count(my_string_list));
    for (selem = cl_string_list_get_first_elem(my_string_list);
-        selem != NULL; selem = cl_string_list_get_next_elem(selem)) {
+        selem != nullptr; selem = cl_string_list_get_next_elem(selem)) {
       printf("elem: %s\n", selem->string);
    }
 
@@ -182,7 +182,7 @@ extern int main(void) {
    printf("nr of elems: %ld\n", cl_raw_list_get_elem_count(my_string_list));
 
    for (selem = cl_string_list_get_first_elem(my_string_list);
-        selem != NULL; selem = cl_string_list_get_next_elem(selem)) {
+        selem != nullptr; selem = cl_string_list_get_next_elem(selem)) {
       printf("elem: %s\n", selem->string);
    }
 

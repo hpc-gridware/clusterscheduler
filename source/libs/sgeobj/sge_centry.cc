@@ -172,9 +172,9 @@ int get_rsrc(const char *name, bool queue, int *field, int *cqfld, int *valfld, 
 *     lListElem *cep           - CE_Type, this object will be checked
 *     lList** answer_list      - answer list
 *     int allow_empty_boolean  - boolean
-*        true  - NULL values of boolean attributes will
+*        true  - nullptr values of boolean attributes will
 *                be replaced with "true"
-*        false - NULL values will be handled as error
+*        false - nullptr values will be handled as error
 *     int allow_neg_consumable - boolean
 *        true  - negative values for consumable
 *                resources are allowed.
@@ -220,7 +220,7 @@ centry_fill_and_check(lListElem *this_elem, lList** answer_list, bool allow_empt
       case TYPE_MEM:
       case TYPE_BOO:
       case TYPE_DOUBLE:
-         if (!extended_parse_ulong_val(&dval, NULL, type, s, tmp, sizeof(tmp)-1, allow_infinity, false)) {
+         if (!extended_parse_ulong_val(&dval, nullptr, type, s, tmp, sizeof(tmp)-1, allow_infinity, false)) {
 /*             ERROR((SGE_EVENT, MSG_CPLX_WRONGTYPE_SSS, name, s, tmp)); */
             answer_list_add_sprintf(answer_list, STATUS_EUNKNOWN, ANSWER_QUALITY_ERROR, MSG_ATTRIB_XISNOTAY_SS, name, tmp);
             DRETURN(-1);
@@ -240,7 +240,7 @@ centry_fill_and_check(lListElem *this_elem, lList** answer_list, bool allow_empt
          
          /* also the CE_defaultval must be parsable for numeric types */
          if ((s=lGetString(this_elem, CE_defaultval))
-            && !parse_ulong_val(&dval, NULL, type, s, tmp, sizeof(tmp)-1)) {
+            && !parse_ulong_val(&dval, nullptr, type, s, tmp, sizeof(tmp)-1)) {
 /*             ERROR((SGE_EVENT, MSG_CPLX_WRONGTYPE_SSS, name, s, tmp)); */
             answer_list_add_sprintf(answer_list, STATUS_EUNKNOWN, ANSWER_QUALITY_ERROR, MSG_CPLX_WRONGTYPE_SSS, name, s, tmp);
             DRETURN(-1);
@@ -400,12 +400,12 @@ map_type2str(u_long32 type)
 lListElem *
 centry_create(lList **answer_list, const char *name)
 {
-   lListElem *ret = NULL;  /* CE_Type */
+   lListElem *ret = nullptr;  /* CE_Type */
 
    DENTER(CENTRY_LAYER);
-   if (name != NULL) {
+   if (name != nullptr) {
       ret = lCreateElem(CE_Type);
-      if (ret != NULL) {
+      if (ret != nullptr) {
          lSetString(ret, CE_name, name);
          lSetString(ret, CE_shortcut, name);
          lSetUlong(ret, CE_valtype, TYPE_INT);
@@ -470,7 +470,7 @@ centry_is_referenced(const lListElem *centry, lList **answer_list,
       ret = true;
    }
    if (!ret) {
-      const lListElem *cqueue = NULL, *cel = NULL;
+      const lListElem *cqueue = nullptr, *cel = nullptr;
  
       /* fix for bug 6422335
        * check the cq configuration for centry references instead of qinstances
@@ -493,7 +493,7 @@ centry_is_referenced(const lListElem *centry, lList **answer_list,
       }
    }
    if (!ret) {
-      const lListElem *host = NULL;    /* EH_Type */
+      const lListElem *host = nullptr;    /* EH_Type */
 
       for_each_ep(host, master_exechost_list) {
          if (host_is_centry_referenced(host, centry)) {
@@ -509,7 +509,7 @@ centry_is_referenced(const lListElem *centry, lList **answer_list,
       }
    }
    if (!ret) {
-      const lListElem *rqs = NULL;
+      const lListElem *rqs = nullptr;
       for_each_ep(rqs, master_rqs_list) {
          if (sge_centry_referenced_in_rqs(rqs, centry)) {
             answer_list_add_sprintf(answer_list, STATUS_EUNKNOWN,
@@ -555,7 +555,7 @@ centry_print_resource_to_dstring(const lListElem *this_elem, dstring *string)
    bool ret = true;
 
    DENTER(CENTRY_LAYER);
-   if (this_elem != NULL && string != NULL) {
+   if (this_elem != nullptr && string != nullptr) {
       u_long32 type = lGetUlong(this_elem, CE_valtype);
       double val = lGetDouble(this_elem, CE_doubleval);
 
@@ -594,12 +594,12 @@ centry_print_resource_to_dstring(const lListElem *this_elem, dstring *string)
 lListElem *
 centry_list_locate(const lList *this_list, const char *name)
 {
-   lListElem *ret = NULL;   /* CE_Type */
+   lListElem *ret = nullptr;   /* CE_Type */
 
    DENTER(CENTRY_LAYER);
-   if (this_list != NULL && name != NULL) {
+   if (this_list != nullptr && name != nullptr) {
       ret = lGetElemStrRW(this_list, CE_name, name);
-      if (ret == NULL) {
+      if (ret == nullptr) {
          ret = lGetElemStrRW(this_list, CE_shortcut, name);
       }
    }
@@ -630,8 +630,8 @@ centry_list_sort(lList *this_list)
    bool ret = true;
 
    DENTER(CENTRY_LAYER);
-   if (this_list != NULL) {
-      lSortOrder *order = NULL;
+   if (this_list != nullptr) {
+      lSortOrder *order = nullptr;
 
       order = lParseSortOrderVarArg(lGetListDescr(this_list), "%I+", CE_name);
       lSortList(this_list, order);
@@ -662,7 +662,7 @@ centry_list_init_double(lList *this_list)
    bool ret = true;
 
    DENTER(CENTRY_LAYER);
-   if (this_list != NULL) {
+   if (this_list != nullptr) {
       lListElem *centry;
 
       for_each_rw (centry, this_list) {
@@ -670,8 +670,8 @@ centry_list_init_double(lList *this_list)
                                 * parse_ulong_val will not set it for all 
                                 * data types! 
                                 */
-         parse_ulong_val(&new_val, NULL, lGetUlong(centry, CE_valtype),
-                         lGetString(centry, CE_stringval), NULL, 0);
+         parse_ulong_val(&new_val, nullptr, lGetUlong(centry, CE_valtype),
+                         lGetString(centry, CE_stringval), nullptr, 0);
          lSetDouble(centry, CE_doubleval, new_val);
       }
    }
@@ -701,9 +701,9 @@ centry_list_init_double(lList *this_list)
 *     bool allow_non_requestable - needed for qstat -l or qmon customize
 *                                 dialog
 *     int allow_empty_boolean    - boolean
-*        true  - NULL values of boolean attributes will
+*        true  - nullptr values of boolean attributes will
 *                be replaced with "true"
-*        false - NULL values will be handled as error
+*        false - nullptr values will be handled as error
 *     int allow_neg_consumable  - boolean
 *        true  - negative values for consumable
 *                resources are allowed.
@@ -721,8 +721,8 @@ centry_list_fill_request(lList *this_list, lList **answer_list, const lList *mas
                          bool allow_non_requestable, bool allow_empty_boolean,
                          bool allow_neg_consumable)
 {
-   lListElem *entry = NULL;
-   lListElem *cep = NULL;
+   lListElem *entry = nullptr;
+   lListElem *cep = nullptr;
 
    DENTER(CENTRY_LAYER);
 
@@ -731,7 +731,7 @@ centry_list_fill_request(lList *this_list, lList **answer_list, const lList *mas
       u_long32 requestable;
 
       cep = centry_list_locate(master_centry_list, name);
-      if (cep != NULL) {
+      if (cep != nullptr) {
          requestable = lGetUlong(cep, CE_requestable);
          if (!allow_non_requestable && requestable == REQU_NO) {
 /*             ERROR((SGE_EVENT, MSG_SGETEXT_RESOURCE_NOT_REQUESTABLE_S, name)); */
@@ -781,10 +781,10 @@ centry_list_are_queues_requestable(const lList *this_list)
    bool ret = false;
    
    DENTER(CENTRY_LAYER);
-   if (this_list != NULL) {
+   if (this_list != nullptr) {
       lListElem *centry = centry_list_locate(this_list, "qname");
       
-      if (centry != NULL) {
+      if (centry != nullptr) {
          ret = (lGetUlong(centry, CE_requestable) != REQU_NO) ? true : false;
       }
    }
@@ -794,11 +794,11 @@ centry_list_are_queues_requestable(const lList *this_list)
 const char *
 centry_list_append_to_dstring(const lList *this_list, dstring *string)
 {
-   const char *ret = NULL;
+   const char *ret = nullptr;
 
    DENTER(CENTRY_LAYER);
-   if (string != NULL) {
-      const lListElem *elem = NULL;
+   if (string != nullptr) {
+      const lListElem *elem = nullptr;
       bool printed = false;
 
       for_each_ep(elem, this_list) {
@@ -806,7 +806,7 @@ centry_list_append_to_dstring(const lList *this_list, dstring *string)
             sge_dstring_append(string, ",");
          }
          sge_dstring_sprintf_append(string, "%s=", lGetString(elem, CE_name));
-         if (lGetString(elem, CE_stringval) != NULL) {
+         if (lGetString(elem, CE_stringval) != nullptr) {
             sge_dstring_append(string, lGetString(elem, CE_stringval));
          }
          printed = true;
@@ -834,7 +834,7 @@ centry_list_append_to_string(lList *this_list, char *buff, u_long32 max_len)
 
    lPSortList(this_list, "%I+", CE_name);
 
-   ret = uni_print_list(NULL, buff, max_len, this_list, attr_fields, attr_delis, 0);
+   ret = uni_print_list(nullptr, buff, max_len, this_list, attr_fields, attr_delis, 0);
    if (ret) {
       DRETURN(ret);
    }
@@ -852,25 +852,25 @@ centry_list_parse_from_string(lList *complex_attributes,
                               const char *str, bool check_value) 
 {
    char *cp;
-   struct saved_vars_s *context = NULL;
+   struct saved_vars_s *context = nullptr;
 
    DENTER(TOP_LAYER);
 
    /* allocate space for attribute list if no list is passed */
-   if (complex_attributes == NULL) {
-      if ((complex_attributes = lCreateList("qstat_l_requests", CE_Type)) == NULL) {
+   if (complex_attributes == nullptr) {
+      if ((complex_attributes = lCreateList("qstat_l_requests", CE_Type)) == nullptr) {
          ERROR((SGE_EVENT, SFNMAX, MSG_PARSE_NOALLOCATTRLIST));
-         DRETURN(NULL);
+         DRETURN(nullptr);
       }
    }
 
    /* str now points to the attr=value pairs */
    while ((cp = sge_strtok_r(str, ", ", &context))) {
-      lListElem *complex_attribute = NULL;
-      const char *attr = NULL;
-      char *value = NULL;
+      lListElem *complex_attribute = nullptr;
+      const char *attr = nullptr;
+      char *value = nullptr;
 
-      str = NULL;       /* for the next strtoks */
+      str = nullptr;       /* for the next strtoks */
 
       /*
       ** recursive strtoks did not work
@@ -880,28 +880,28 @@ centry_list_parse_from_string(lList *complex_attributes,
          *value++ = 0;
       }
 
-      if (attr == NULL || *attr == '\0') {
+      if (attr == nullptr || *attr == '\0') {
          ERROR((SGE_EVENT, MSG_SGETEXT_UNKNOWN_RESOURCE_S, ""));
          lFreeList(&complex_attributes);
          sge_free_saved_vars(context);
-         DRETURN(NULL);
+         DRETURN(nullptr);
       }
 
       /*
        * If no default value was specified then use TRUE
        */
-      if (check_value == false && value == NULL) {
+      if (check_value == false && value == nullptr) {
          value = TRUE_STR;
-      } else if (check_value == true && (value == NULL || *value == '\0')) {
+      } else if (check_value == true && (value == nullptr || *value == '\0')) {
          ERROR((SGE_EVENT, MSG_CPLX_VALUEMISSING_S, attr));
          lFreeList(&complex_attributes);
          sge_free_saved_vars(context);
-         DRETURN(NULL);
+         DRETURN(nullptr);
       }
 
       /* create new element, fill in the values and append it */
       complex_attribute = lGetElemStrRW(complex_attributes, CE_name, attr);
-      if (complex_attribute == NULL) {
+      if (complex_attribute == nullptr) {
          complex_attribute = lCreateElem(CE_Type);
          lSetString(complex_attribute, CE_name, attr);
          lAppendElem(complex_attributes, complex_attribute);
@@ -1056,7 +1056,7 @@ bool centry_elem_validate(lListElem *centry, const lList *centry_list,
          }
 
          if (lGetUlong(centry, CE_requestable) == REQU_NO) {
-            if(!parse_ulong_val(&dval, NULL, type, lGetString(centry, CE_defaultval), error_msg, 199)){
+            if(!parse_ulong_val(&dval, nullptr, type, lGetString(centry, CE_defaultval), error_msg, 199)){
                answer_list_add_sprintf(answer_list, STATUS_EUNKNOWN , ANSWER_QUALITY_ERROR, 
                                        MSG_INVALID_CENTRY_PARSE_DEFAULT_SS, attrname, error_msg);
                ret = false;
@@ -1067,7 +1067,7 @@ bool centry_elem_validate(lListElem *centry, const lList *centry_list,
                ret = false;
             }
          } else if (lGetUlong(centry, CE_requestable) == REQU_FORCED) {
-            if(!parse_ulong_val(&dval, NULL, type, lGetString(centry, CE_defaultval), error_msg, 199)){
+            if(!parse_ulong_val(&dval, nullptr, type, lGetString(centry, CE_defaultval), error_msg, 199)){
                answer_list_add_sprintf(answer_list, STATUS_EUNKNOWN , ANSWER_QUALITY_ERROR, 
                                     MSG_INVALID_CENTRY_PARSE_DEFAULT_SS, attrname, error_msg);
                ret = false;
@@ -1087,7 +1087,7 @@ bool centry_elem_validate(lListElem *centry, const lList *centry_list,
             case TYPE_BOO:
             case TYPE_DOUBLE:
       
-               if(!parse_ulong_val(&dval, NULL, type, temp, error_msg, 199)){
+               if(!parse_ulong_val(&dval, nullptr, type, temp, error_msg, 199)){
                   answer_list_add_sprintf(answer_list, STATUS_EUNKNOWN , ANSWER_QUALITY_ERROR, 
                   MSG_INVALID_CENTRY_PARSE_DEFAULT_SS, attrname, error_msg);
                   ret = false;
@@ -1130,7 +1130,7 @@ bool centry_elem_validate(lListElem *centry, const lList *centry_list,
             case TYPE_STR:
             case TYPE_CSTR:
             case TYPE_RESTR:
-               if(!parse_ulong_val(&dval, NULL, TYPE_DOUBLE, temp, error_msg, 199)){
+               if(!parse_ulong_val(&dval, nullptr, TYPE_DOUBLE, temp, error_msg, 199)){
                   answer_list_add_sprintf(answer_list, STATUS_EUNKNOWN , ANSWER_QUALITY_ERROR, 
                        MSG_INVALID_CENTRY_PARSE_URGENCY_SS, attrname, error_msg);
                   ret = false;
@@ -1192,8 +1192,8 @@ bool centry_elem_validate(lListElem *centry, const lList *centry_list,
        * if we already have a centry with this name or shortcut,
        * that is not the current centry -> cannot add/mod this one
        */
-      if ((ce1 != NULL && ce1 != centry) ||
-          (ce2 != NULL && ce2 != centry)) {
+      if ((ce1 != nullptr && ce1 != centry) ||
+          (ce2 != nullptr && ce2 != centry)) {
          answer_list_add_sprintf(answer_list, STATUS_EUNKNOWN , 
                                  ANSWER_QUALITY_ERROR, 
                                  MSG_ANSWER_COMPLEXXALREADYEXISTS_SS, 
@@ -1244,7 +1244,7 @@ centry_urgency_contribution(int slots, const char *name, double value,
 
    if (!centry || 
        !(strval = lGetString(centry, CE_urgency_weight)) ||
-       !(parse_ulong_val(&weight, NULL, TYPE_INT, strval, NULL, 0))) {
+       !(parse_ulong_val(&weight, nullptr, TYPE_INT, strval, nullptr, 0))) {
       DPRINTF(("no contribution for attribute\n"));
       DRETURN(0);
    }
@@ -1281,13 +1281,13 @@ centry_list_do_all_exists(const lList *this_list, lList **answer_list,
                           const lList *centry_list) 
 {
    bool ret = true;
-   const lListElem *centry = NULL;
+   const lListElem *centry = nullptr;
    
    DENTER(TOP_LAYER);
    for_each_ep(centry, centry_list) {
       const char *name = lGetString(centry, CE_name);
 
-      if (centry_list_locate(this_list, name) == NULL) {
+      if (centry_list_locate(this_list, name) == nullptr) {
          answer_list_add_sprintf(answer_list, STATUS_EEXIST,
                                  ANSWER_QUALITY_ERROR,
                                  MSG_CQUEUE_UNKNOWNCENTRY_S, name);
@@ -1306,10 +1306,10 @@ centry_list_is_correct(lList *this_list, lList **answer_list)
    bool ret = true;
 
    DENTER(TOP_LAYER);
-   if (this_list != NULL) {
+   if (this_list != nullptr) {
       const lListElem *centry = lGetElemStr(this_list, CE_name, "qname");
 
-      if (centry != NULL) {
+      if (centry != nullptr) {
          const char *value = lGetString(centry, CE_stringval);
 
          if (strchr(value, (int)'@')) {
@@ -1335,17 +1335,17 @@ centry_list_is_correct(lList *this_list, lList **answer_list)
 int ensure_attrib_available(lList **alpp, lListElem *ep, int nm, const lList *master_centry_list) 
 {
    int ret = 0;
-   lListElem *attr = NULL;
+   lListElem *attr = nullptr;
 
    DENTER(TOP_LAYER);
-   if (ep != NULL) {
+   if (ep != nullptr) {
       for_each_rw (attr, lGetList(ep, nm)) {
          const char *name = lGetString(attr, CE_name);
          lListElem *centry = centry_list_locate(master_centry_list, name);
 
-         if (centry == NULL) {
+         if (centry == nullptr) {
             ERROR((SGE_EVENT, MSG_GDI_NO_ATTRIBUTE_S, 
-                   name != NULL ? name : "<noname>"));
+                   name != nullptr ? name : "<noname>"));
             answer_list_add(alpp, SGE_EVENT, 
                             STATUS_EUNKNOWN, ANSWER_QUALITY_ERROR);
             ret = STATUS_EUNKNOWN;
@@ -1406,29 +1406,29 @@ bool validate_load_formula(const char *load_formula, lList **answer_list, const 
    if (ret == true) {
       const char *term_delim = "+-";
       const char *term, *next_term;
-      struct saved_vars_s *term_context = NULL;
+      struct saved_vars_s *term_context = nullptr;
 
       next_term = sge_strtok_r(load_formula, term_delim, &term_context);
       while ((term = next_term) && ret == true) {
          const char *fact_delim = "*";
          const char *fact, *next_fact, *end;
-         const lListElem *cmplx_attr = NULL;
-         struct saved_vars_s *fact_context = NULL;
+         const lListElem *cmplx_attr = nullptr;
+         struct saved_vars_s *fact_context = nullptr;
          
-         next_term = sge_strtok_r(NULL, term_delim, &term_context);
+         next_term = sge_strtok_r(nullptr, term_delim, &term_context);
 
          fact = sge_strtok_r(term, fact_delim, &fact_context);
-         next_fact = sge_strtok_r(NULL, fact_delim, &fact_context);
-         end = sge_strtok_r(NULL, fact_delim, &fact_context);
+         next_fact = sge_strtok_r(nullptr, fact_delim, &fact_context);
+         end = sge_strtok_r(nullptr, fact_delim, &fact_context);
 
          /* first factor has to be a complex attr */
-         if (fact != NULL) {
+         if (fact != nullptr) {
             if (strchr(fact, '$')) {
                fact++;
             }
             cmplx_attr = centry_list_locate(centry_list, fact);
 
-            if (cmplx_attr != NULL) {
+            if (cmplx_attr != nullptr) {
                int type = lGetUlong(cmplx_attr, CE_valtype);
 
                if (type == TYPE_STR || type == TYPE_CSTR || type == TYPE_HOST || type == TYPE_RESTR) {
@@ -1447,7 +1447,7 @@ bool validate_load_formula(const char *load_formula, lList **answer_list, const 
             }
          }
          /* is weighting factor a number? */
-         if (next_fact != NULL) {
+         if (next_fact != nullptr) {
             if (!sge_str_is_number(next_fact)) {
                SGE_ADD_MSG_ID(sprintf(SGE_EVENT, MSG_WEIGHTFACTNONUMB_SS, name,
                               next_fact));
@@ -1458,7 +1458,7 @@ bool validate_load_formula(const char *load_formula, lList **answer_list, const 
          }
 
          /* multiple weighting factors? */
-         if (end != NULL) {
+         if (end != nullptr) {
             SGE_ADD_MSG_ID(sprintf(SGE_EVENT, MSG_MULTIPLEWEIGHTFACT_S, name));
             answer_list_add(answer_list, SGE_EVENT, 
                             STATUS_ESYNTAX, ANSWER_QUALITY_ERROR);
@@ -1501,12 +1501,12 @@ bool load_formula_is_centry_referenced(const char *load_formula, const lListElem
    bool ret = false;
    const char *term_delim = "+-";
    const char *term, *next_term;
-   struct saved_vars_s *term_context = NULL;
+   struct saved_vars_s *term_context = nullptr;
    const char *centry_name = lGetString(centry, CE_name);
 
    DENTER(TOP_LAYER);
 
-   if (load_formula == NULL) {
+   if (load_formula == nullptr) {
       DRETURN(ret);
    }
 
@@ -1514,12 +1514,12 @@ bool load_formula_is_centry_referenced(const char *load_formula, const lListElem
    while ((term = next_term) && ret == false) {
       const char *fact_delim = "*";
       const char *fact;
-      struct saved_vars_s *fact_context = NULL;
+      struct saved_vars_s *fact_context = nullptr;
       
-      next_term = sge_strtok_r(NULL, term_delim, &term_context);
+      next_term = sge_strtok_r(nullptr, term_delim, &term_context);
 
       fact = sge_strtok_r(term, fact_delim, &fact_context);
-      if (fact != NULL) {
+      if (fact != nullptr) {
          if (strchr(fact, '$')) {
             fact++;
          }
@@ -1536,7 +1536,7 @@ bool load_formula_is_centry_referenced(const char *load_formula, const lListElem
 
 const char* sge_get_dominant_stringval(lListElem *rep, u_long32 *dominant_p, dstring *resource_string_p)
 {
-   const char *s = NULL;
+   const char *s = nullptr;
    u_long32 type = lGetUlong(rep, CE_valtype);
 
    DENTER(TOP_LAYER);

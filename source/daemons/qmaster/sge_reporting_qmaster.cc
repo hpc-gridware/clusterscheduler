@@ -191,7 +191,7 @@ reporting_create_ar_acct_record(lList **answer_list, const lListElem *ar, const 
 bool
 reporting_initialize(lList **answer_list) {
    bool ret = true;
-   te_event_t ev = NULL;
+   te_event_t ev = nullptr;
 
    DENTER(TOP_LAYER);
 
@@ -202,7 +202,7 @@ reporting_initialize(lList **answer_list) {
    /* we always have the reporting trigger for flushing reporting files and
     * checking for new reporting configuration
     */
-   ev = te_new_event(time(NULL), TYPE_REPORTING_TRIGGER, ONE_TIME_EVENT, 1, 0, NULL);
+   ev = te_new_event(time(nullptr), TYPE_REPORTING_TRIGGER, ONE_TIME_EVENT, 1, 0, nullptr);
    te_add_event(ev);
    te_free_event(&ev);
 
@@ -210,7 +210,7 @@ reporting_initialize(lList **answer_list) {
     * doing immediate flushing.
     */
    if (mconf_get_accounting_flush_time() != 0) {
-      ev = te_new_event(time(NULL), TYPE_ACCOUNTING_TRIGGER, ONE_TIME_EVENT, 1, 0, NULL);
+      ev = te_new_event(time(nullptr), TYPE_ACCOUNTING_TRIGGER, ONE_TIME_EVENT, 1, 0, nullptr);
       te_add_event(ev);
       te_free_event(&ev);
    }
@@ -248,7 +248,7 @@ reporting_initialize(lList **answer_list) {
 bool
 reporting_shutdown(sge_gdi_ctx_class_t *ctx, lList **answer_list, bool do_spool) {
    bool ret = true;
-   lList *alp = NULL;
+   lList *alp = nullptr;
    rep_buf_t *buf;
    const char *reporting_file = bootstrap_get_reporting_file();
    const char *acct_file = bootstrap_get_acct_file();
@@ -300,7 +300,7 @@ reporting_shutdown(sge_gdi_ctx_class_t *ctx, lList **answer_list, bool do_spool)
 void
 reporting_trigger_handler(sge_gdi_ctx_class_t *ctx, te_event_t anEvent, monitoring_t *monitor) {
    u_long32 flush_interval = 0;
-   lList *answer_list = NULL;
+   lList *answer_list = nullptr;
    const char *reporting_file = bootstrap_get_reporting_file();
    const char *acct_file = bootstrap_get_acct_file();
 
@@ -354,11 +354,11 @@ reporting_trigger_handler(sge_gdi_ctx_class_t *ctx, te_event_t anEvent, monitori
     * reporting flush time is immediate, then don't add trigger 
     */
    if (flush_interval > 0) {
-      te_event_t ev = NULL;
-      time_t next_flush = (time_t) (time(NULL) + flush_interval);
+      te_event_t ev = nullptr;
+      time_t next_flush = (time_t) (time(nullptr) + flush_interval);
 
       ev = te_new_event(next_flush, te_get_type(anEvent), ONE_TIME_EVENT, 1, 0,
-                        NULL);
+                        nullptr);
       te_add_event(ev);
       te_free_event(&ev);
    }
@@ -372,7 +372,7 @@ reporting_create_new_job_record(lList **answer_list, const lListElem *job) {
 
    DENTER(TOP_LAYER);
 
-   if (mconf_get_do_reporting() && mconf_get_do_joblog() && job != NULL) {
+   if (mconf_get_do_reporting() && mconf_get_do_joblog() && job != nullptr) {
       dstring job_dstring = DSTRING_INIT;
 
       u_long32 job_number, priority, submission_time;
@@ -430,7 +430,7 @@ reporting_create_job_log(lList **answer_list, u_long32 event_time, const job_log
 
    DENTER(TOP_LAYER);
 
-   if (mconf_get_do_reporting() && mconf_get_do_joblog() && job != NULL) {
+   if (mconf_get_do_reporting() && mconf_get_do_joblog() && job != nullptr) {
       dstring job_dstring = DSTRING_INIT;
 
       u_long32 job_id = 0;
@@ -449,21 +449,21 @@ reporting_create_job_log(lList **answer_list, u_long32 event_time, const job_log
        *  0, if we have a non array job
        *  task_number for array jobs
        */
-      if (ja_task != NULL) {
+      if (ja_task != nullptr) {
          if (job_is_array(job)) {
             ja_task_id = (int) lGetUlong(ja_task, JAT_task_number);
          } else {
             ja_task_id = 0;
          }
       }
-      if (pe_task != NULL) {
+      if (pe_task != nullptr) {
          pe_task_id = lGetStringNotNull(pe_task, PET_id);
       }
 
       /* JG: TODO: implement the whole job/task state mess */
-      if (pe_task != NULL) {
+      if (pe_task != nullptr) {
          jstate = lGetUlong(pe_task, PET_status);
-      } else if (ja_task != NULL) {
+      } else if (ja_task != nullptr) {
          jstate = lGetUlong(ja_task, JAT_status);
       } else {
          jstate = 0;
@@ -473,7 +473,7 @@ reporting_create_job_log(lList **answer_list, u_long32 event_time, const job_log
 
       *state = '\0';
       job_get_state_string(state, jstate);
-      if (message == NULL) {
+      if (message == nullptr) {
          message = "";
       }
 
@@ -559,8 +559,8 @@ reporting_create_acct_record(sge_gdi_ctx_class_t *ctx, lList **answer_list, lLis
    char category_buffer[MAX_STRING_SIZE];
    dstring category_dstring;
    dstring job_dstring = DSTRING_INIT;
-   const char *category_string = NULL;
-   const char *job_string = NULL;
+   const char *category_string = nullptr;
+   const char *job_string = nullptr;
    bool do_reporting = mconf_get_do_reporting();
    bool do_accounting = mconf_get_do_accounting();
    const char *acct_file = bootstrap_get_acct_file();
@@ -576,7 +576,7 @@ reporting_create_acct_record(sge_gdi_ctx_class_t *ctx, lList **answer_list, lLis
       sge_dstring_init(&category_dstring, category_buffer,
                        sizeof(category_buffer));
 
-      sge_build_job_category_dstring(&category_dstring, job, master_userset_list, master_project_list, NULL,
+      sge_build_job_category_dstring(&category_dstring, job, master_userset_list, master_project_list, nullptr,
                                      master_rqs_list);
       category_string = sge_dstring_get_string(&category_dstring);
 
@@ -587,7 +587,7 @@ reporting_create_acct_record(sge_gdi_ctx_class_t *ctx, lList **answer_list, lLis
          job_string = sge_write_rusage(&job_dstring, job_report, job, ja_task,
                                        category_string, REPORTING_DELIMITER,
                                        false);
-         if (job_string == NULL) {
+         if (job_string == nullptr) {
             ret = false;
          } else {
             /* write accounting file */
@@ -619,13 +619,13 @@ reporting_create_acct_record(sge_gdi_ctx_class_t *ctx, lList **answer_list, lLis
          bool intermediate_written = intermediate_usage_written(job_report, ja_task);
          bool do_intermediate = (intermediate_written || intermediate) ? true : false;
 
-         if (job_string == NULL || do_intermediate) {
+         if (job_string == nullptr || do_intermediate) {
             sge_dstring_clear(&job_dstring);
             job_string = sge_write_rusage(&job_dstring, job_report, job, ja_task,
                                           category_string, REPORTING_DELIMITER,
                                           do_intermediate);
          }
-         if (job_string == NULL) {
+         if (job_string == nullptr) {
             ret = false;
          } else {
             ret = reporting_create_record(answer_list, "acct", job_string);
@@ -684,7 +684,7 @@ reporting_write_consumables(lList **answer_list, dstring *buffer, const lList *a
        */
       if (mconf_get_log_consumables() == false) {
          const lList *report_variables = lGetList(host, EH_merged_report_variables);
-         if (lGetElemStr(report_variables, STU_name, name) == NULL) {
+         if (lGetElemStr(report_variables, STU_name, name) == nullptr) {
             log_variable = false;
          } else {
             /*
@@ -692,8 +692,8 @@ reporting_write_consumables(lList **answer_list, dstring *buffer, const lList *a
              * consumables, which are requested by the job
              * slots is an implicit request - always log it if requested
              */
-            if (strcmp(name, "slots") != 0 && job != NULL) {
-               if (job_get_request(job, name) == NULL) {
+            if (strcmp(name, "slots") != 0 && job != nullptr) {
+               if (job_get_request(job, name) == nullptr) {
                   log_variable = false;
                }
             }
@@ -703,14 +703,14 @@ reporting_write_consumables(lList **answer_list, dstring *buffer, const lList *a
       /* now do the logging, if requested */
       if (log_variable == true) {
          const lListElem *tep = lGetElemStr(total, CE_name, name);
-         if (tep != NULL) {
+         if (tep != nullptr) {
             sge_dstring_append(buffer, name);
             sge_dstring_append_char(buffer, '=');
             utilization_print_to_dstring(cep, buffer);
             sge_dstring_append_char(buffer, '=');
             centry_print_resource_to_dstring(tep, buffer);
 
-            if (lNext(cep) != NULL) {
+            if (lNext(cep) != nullptr) {
                sge_dstring_append_char(buffer, ',');
             }
          }
@@ -752,7 +752,7 @@ reporting_create_queue_record(lList **answer_list,
 
    DENTER(TOP_LAYER);
 
-   if (mconf_get_do_reporting() && queue != NULL) {
+   if (mconf_get_do_reporting() && queue != nullptr) {
       dstring queue_dstring = DSTRING_INIT;
 
       sge_dstring_sprintf(&queue_dstring, "%s%c%s%c"sge_U32CFormat"%c",
@@ -813,7 +813,7 @@ reporting_create_queue_consumable_record(lList **answer_list,
 
    DENTER(TOP_LAYER);
 
-   if (mconf_get_do_reporting() && host != NULL && queue != NULL) {
+   if (mconf_get_do_reporting() && host != nullptr && queue != nullptr) {
       dstring consumable_dstring = DSTRING_INIT;
 
       /* dump consumables */
@@ -881,7 +881,7 @@ reporting_create_host_record(lList **answer_list,
 
    DENTER(TOP_LAYER);
 
-   if (mconf_get_do_reporting() && host != NULL) {
+   if (mconf_get_do_reporting() && host != nullptr) {
       dstring load_dstring = DSTRING_INIT;
 
       reporting_write_load_values(answer_list, &load_dstring,
@@ -946,7 +946,7 @@ reporting_create_host_consumable_record(lList **answer_list,
 
    DENTER(TOP_LAYER);
 
-   if (mconf_get_do_reporting() && host != NULL) {
+   if (mconf_get_do_reporting() && host != nullptr) {
       dstring consumable_dstring = DSTRING_INIT;
 
       /* dump consumables */
@@ -1030,7 +1030,7 @@ reporting_create_sharelog_record(lList **answer_list, monitoring_t *monitor) {
          format.line_delim = "\n";
          format.rec_delim = "";
          format.str_format = "%s";
-         format.field_names = NULL;
+         format.field_names = nullptr;
          format.format_times = false;
          format.line_prefix = sge_dstring_get_string(&prefix_dstring);
 
@@ -1039,7 +1039,7 @@ reporting_create_sharelog_record(lList **answer_list, monitoring_t *monitor) {
 
          sge_sharetree_print(&data_dstring, master_stree_list, master_user_list, master_project_list,
                              master_userset_list,
-                             true, false, NULL, &format);
+                             true, false, nullptr, &format);
 
          SGE_UNLOCK(LOCK_GLOBAL, LOCK_READ);
 
@@ -1119,7 +1119,7 @@ reporting_is_intermediate_acct_required(const lListElem *job,
    }
 
    /* valid input data? */
-   if (job == NULL || ja_task == NULL) {
+   if (job == nullptr || ja_task == nullptr) {
       /* JG: TODO: i18N */
       WARNING((SGE_EVENT, "reporting_is_intermediate_acct_required: invalid input data\n"));
       DRETURN(false);
@@ -1140,7 +1140,7 @@ reporting_is_intermediate_acct_required(const lListElem *job,
     * optimization: do not write intermediate usage for jobs that just 
     * "started a short time before"
     */
-   if (pe_task != NULL) {
+   if (pe_task != nullptr) {
       start_time = (time_t) lGetUlong(pe_task, PET_start_time);
    } else {
       start_time = (time_t) lGetUlong(ja_task, JAT_start_time);
@@ -1155,7 +1155,7 @@ reporting_is_intermediate_acct_required(const lListElem *job,
     * try to read time of an earlier intermediate report
     * if no intermediate report has been written so far, use start time 
     */
-   if (pe_task != NULL) {
+   if (pe_task != nullptr) {
       last_intermediate = (time_t) usage_list_get_ulong_usage(
               lGetList(pe_task, PET_reported_usage),
               LAST_INTERMEDIATE, 0);
@@ -1188,8 +1188,8 @@ tm_last_intermediate.tm_year < tm_now.tm_year
       INFO((SGE_EVENT, MSG_REPORTING_INTERMEDIATE_SS,
               job_get_key(lGetUlong(job, JB_job_number),
                           lGetUlong(ja_task, JAT_task_number),
-                          pe_task != NULL ? lGetString(pe_task, PET_id)
-                                          : NULL,
+                          pe_task != nullptr ? lGetString(pe_task, PET_id)
+                                          : nullptr,
                           &buffer_dstring),
               asctime_r(&tm_now, timebuffer)));
       ret = true;
@@ -1219,7 +1219,7 @@ reporting_write_load_values(lList **answer_list, dstring *buffer,
 
       name = lGetString(variable, STU_name);
       load = lGetElemStr(load_list, HL_name, name);
-      if (load != NULL) {
+      if (load != nullptr) {
          if (first) {
             first = false;
          } else {
@@ -1372,8 +1372,8 @@ static bool reporting_flush_report_file(lList **answer_list,
 
       /* open file for append */
       fp = fopen(filename, "a");
-      if (fp == NULL) {
-         if (answer_list == NULL) {
+      if (fp == nullptr) {
+         if (answer_list == nullptr) {
             ERROR((SGE_EVENT, MSG_ERROROPENINGFILEFORWRITING_SS, filename,
                     sge_strerror(errno, &error_dstring)));
          } else {
@@ -1401,7 +1401,7 @@ static bool reporting_flush_report_file(lList **answer_list,
 
             spool_ret = sge_spoolmsg_write(fp, COMMENT_CHAR, version_string);
             if (spool_ret != 0) {
-               if (answer_list == NULL) {
+               if (answer_list == nullptr) {
                   ERROR((SGE_EVENT, MSG_ERRORWRITINGFILE_SS, filename,
                           sge_strerror(errno, &error_dstring)));
                } else {
@@ -1418,7 +1418,7 @@ static bool reporting_flush_report_file(lList **answer_list,
       /* write data */
       if (ret) {
          if (fwrite(sge_dstring_get_string(&(buf->buffer)), size, 1, fp) != 1) {
-            if (answer_list == NULL) {
+            if (answer_list == nullptr) {
                ERROR((SGE_EVENT, MSG_ERRORWRITINGFILE_SS, filename,
                        sge_strerror(errno, &error_dstring)));
             } else {
@@ -1439,7 +1439,7 @@ static bool reporting_flush_report_file(lList **answer_list,
       sge_dstring_clear(&(buf->buffer));
 
       /* close file */
-      if (fp != NULL) {
+      if (fp != nullptr) {
          FCLOSE(fp);
       }
    }
@@ -1450,7 +1450,7 @@ static bool reporting_flush_report_file(lList **answer_list,
 
    FCLOSE_ERROR:
    sge_mutex_unlock(buf->mtx_name, __func__, __LINE__, &(buf->mtx));
-   if (answer_list == NULL) {
+   if (answer_list == nullptr) {
       ERROR((SGE_EVENT, MSG_ERRORCLOSINGFILE_SS, filename,
               sge_strerror(errno, &error_dstring)));
    } else {
@@ -1557,7 +1557,7 @@ reporting_create_new_ar_record(lList **answer_list,
                               "new_ar", REPORTING_DELIMITER,
                               sge_u32c(lGetUlong(ar, AR_submission_time)), REPORTING_DELIMITER,
                               sge_u32c(lGetUlong(ar, AR_id)), REPORTING_DELIMITER,
-                              (owner != NULL) ? owner : "");
+                              (owner != nullptr) ? owner : "");
    sge_mutex_unlock(buf->mtx_name, __func__, __LINE__, &(buf->mtx));
 
    DRETURN(ret);
@@ -1596,9 +1596,9 @@ reporting_create_ar_attribute_record(lList **answer_list,
                                      u_long32 report_time) {
    bool ret = true;
    rep_buf_t *buf = &reporting_buffer[REPORTING_BUFFER];
-   const char *pe_name = NULL;
-   const char *ar_name = NULL;
-   const char *ar_account = NULL;
+   const char *pe_name = nullptr;
+   const char *ar_name = nullptr;
+   const char *ar_account = nullptr;
    dstring ar_granted_resources = DSTRING_INIT;
 
    DENTER(TOP_LAYER);
@@ -1630,11 +1630,11 @@ reporting_create_ar_attribute_record(lList **answer_list,
                               sge_u32c(report_time), REPORTING_DELIMITER,
                               sge_u32c(lGetUlong(ar, AR_submission_time)), REPORTING_DELIMITER,
                               sge_u32c(lGetUlong(ar, AR_id)), REPORTING_DELIMITER,
-                              (ar_name != NULL) ? ar_name : "", REPORTING_DELIMITER,
-                              (ar_account != NULL) ? ar_account : "", REPORTING_DELIMITER,
+                              (ar_name != nullptr) ? ar_name : "", REPORTING_DELIMITER,
+                              (ar_account != nullptr) ? ar_account : "", REPORTING_DELIMITER,
                               sge_u32c(lGetUlong(ar, AR_start_time)), REPORTING_DELIMITER,
                               sge_u32c(lGetUlong(ar, AR_end_time)), REPORTING_DELIMITER,
-                              (pe_name != NULL) ? pe_name : "", REPORTING_DELIMITER,
+                              (pe_name != nullptr) ? pe_name : "", REPORTING_DELIMITER,
                               sge_dstring_get_string(&ar_granted_resources));
    sge_dstring_free(&ar_granted_resources);
    sge_mutex_unlock(buf->mtx_name, __func__, __LINE__, &(buf->mtx));
@@ -1707,7 +1707,7 @@ reporting_create_ar_log_record(lList **answer_list,
                               sge_u32c(lGetUlong(ar, AR_id)), REPORTING_DELIMITER,
                               sge_dstring_get_string(&state_string), REPORTING_DELIMITER,
                               ar_get_string_from_event(event), REPORTING_DELIMITER,
-                              (ar_description != NULL) ? ar_description : "");
+                              (ar_description != nullptr) ? ar_description : "");
    sge_mutex_unlock(buf->mtx_name, __func__, __LINE__, &(buf->mtx));
    sge_dstring_free(&state_string);
    DRETURN(ret);
@@ -1750,13 +1750,13 @@ bool reporting_create_ar_acct_records(lList **answer_list, const lListElem *ar, 
       dstring cqueue_name = DSTRING_INIT;
       dstring host_or_hgroup = DSTRING_INIT;
 
-      if (!cqueue_name_split(queue_name, &cqueue_name, &host_or_hgroup, NULL,
-                             NULL)) {
+      if (!cqueue_name_split(queue_name, &cqueue_name, &host_or_hgroup, nullptr,
+                             nullptr)) {
          ret = false;
          continue;
       }
 
-      if (!reporting_create_ar_acct_record(NULL, ar,
+      if (!reporting_create_ar_acct_record(nullptr, ar,
                                            sge_dstring_get_string(&cqueue_name),
                                            sge_dstring_get_string(&host_or_hgroup),
                                            slots, report_time)) {
@@ -1912,7 +1912,7 @@ reporting_get_job_log_name(const job_log_t type) {
 static const char *
 lGetStringNotNull(const lListElem *ep, int nm) {
    const char *ret = lGetString(ep, nm);
-   if (ret == NULL) {
+   if (ret == nullptr) {
       ret = "";
    }
    return ret;
@@ -1932,9 +1932,9 @@ config_sharelog(void) {
    if (mconf_get_sharelog_time() > 0) {
       /* if sharelog is not running: switch it on */
       if (!sharelog_running) {
-         te_event_t ev = NULL;
-         ev = te_new_event(time(NULL), TYPE_SHARELOG_TRIGGER, ONE_TIME_EVENT,
-                           1, 0, NULL);
+         te_event_t ev = nullptr;
+         ev = te_new_event(time(nullptr), TYPE_SHARELOG_TRIGGER, ONE_TIME_EVENT,
+                           1, 0, nullptr);
          te_add_event(ev);
          te_free_event(&ev);
          sharelog_running = true;
@@ -1942,7 +1942,7 @@ config_sharelog(void) {
    } else {
       /* switch if off */
       if (sharelog_running) {
-         te_delete_one_time_event(TYPE_SHARELOG_TRIGGER, 1, 0, NULL);
+         te_delete_one_time_event(TYPE_SHARELOG_TRIGGER, 1, 0, nullptr);
          sharelog_running = false;
       }
    }
@@ -1957,14 +1957,14 @@ intermediate_usage_written(const lListElem *job_report,
                            const lListElem *ja_task) {
    bool ret = false;
    const char *pe_task_id;
-   const lList *reported_usage = NULL;
+   const lList *reported_usage = nullptr;
 
    /* do we have a tightly integrated parallel task? */
    pe_task_id = lGetString(job_report, JR_pe_task_id_str);
-   if (pe_task_id != NULL) {
+   if (pe_task_id != nullptr) {
       const lListElem *pe_task = lGetElemStr(lGetList(ja_task, JAT_task_list),
                                              PET_id, pe_task_id);
-      if (pe_task != NULL) {
+      if (pe_task != nullptr) {
          reported_usage = lGetList(pe_task, PET_reported_usage);
       }
    } else {
@@ -1974,7 +1974,7 @@ intermediate_usage_written(const lListElem *job_report,
    /* the reported usage list will be created when the first intermediate
     * acct record is written
     */
-   if (reported_usage != NULL) {
+   if (reported_usage != nullptr) {
       ret = true;
    }
 

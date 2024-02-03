@@ -106,7 +106,7 @@ int sge_nprocs(void) {
 #if defined(FREEBSD)
    size_t nprocs_len = sizeof(nprocs);
 
-   if (sysctlbyname("hw.ncpu", &nprocs, &nprocs_len, NULL, 0) == -1) {
+   if (sysctlbyname("hw.ncpu", &nprocs, &nprocs_len, nullptr, 0) == -1) {
       nprocs = -1;
    }
 #endif
@@ -119,7 +119,7 @@ int sge_nprocs(void) {
    mib[0]     = CTL_HW;
    mib[1]     = HW_NCPU;
 
-   if (sysctl(mib, sizeof(mib)/sizeof(int), &nprocs, &nprocs_len, NULL, 0) == -1) {
+   if (sysctl(mib, sizeof(mib)/sizeof(int), &nprocs, &nprocs_len, nullptr, 0) == -1) {
      nprocs = -1;
    }
 #endif

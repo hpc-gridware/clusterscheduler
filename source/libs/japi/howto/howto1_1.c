@@ -37,7 +37,7 @@ int main (int argc, char **argv) {
    int errnum = 0;
    char contact[DRMAA_CONTACT_BUFFER];
 
-   errnum = drmaa_init (NULL, error, DRMAA_ERROR_STRING_BUFFER);
+   errnum = drmaa_init (nullptr, error, DRMAA_ERROR_STRING_BUFFER);
 
    if (errnum != DRMAA_ERRNO_SUCCESS) {
       fprintf (stderr, "Could not initialize the DRMAA library: %s\n", error);

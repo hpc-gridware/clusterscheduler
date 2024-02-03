@@ -124,8 +124,8 @@ sge_del_userset(sge_gdi_ctx_class_t *ctx, lListElem *ep, lList **alpp, lList **u
    lRemoveElem(*userset_list, &found);
 
    sge_event_spool(ctx, alpp, 0, sgeE_USERSET_DEL,
-                   0, 0, userset_name, NULL, NULL,
-                   NULL, NULL, NULL, true, true);
+                   0, 0, userset_name, nullptr, nullptr,
+                   nullptr, nullptr, nullptr, true, true);
 
    INFO((SGE_EVENT, MSG_SGETEXT_REMOVEDFROMLIST_SSSS,
            ruser, rhost, userset_name, MSG_OBJ_USERSET));
@@ -143,30 +143,30 @@ sge_del_userset(sge_gdi_ctx_class_t *ctx, lListElem *ep, lList **alpp, lList **u
  **********************************************************************/
 static void
 sge_change_queue_version_acl(sge_gdi_ctx_class_t *ctx, const char *acl_name) {
-   const lListElem *cqueue = NULL;
+   const lListElem *cqueue = nullptr;
    const lList *master_cqueue_list = *object_type_get_master_list(SGE_TYPE_CQUEUE);
 
    DENTER(TOP_LAYER);
 
    for_each_ep(cqueue, master_cqueue_list) {
       const lList *qinstance_list = lGetList(cqueue, CQ_qinstances);
-      lListElem *qinstance = NULL;
+      lListElem *qinstance = nullptr;
 
       for_each_rw(qinstance, qinstance_list) {
          const lList *acl_list = lGetList(qinstance, QU_acl);
          const lList *xacl_list = lGetList(qinstance, QU_xacl);
          const lListElem *acl = lGetElemStr(acl_list, US_name, acl_name);
          const lListElem *xacl = lGetElemStr(xacl_list, US_name, acl_name);
-         bool is_used = ((acl != NULL) || (xacl != NULL)) ? true : false;
+         bool is_used = ((acl != nullptr) || (xacl != nullptr)) ? true : false;
 
          if (is_used) {
-            lList *answer_list = NULL;
+            lList *answer_list = nullptr;
 
             DPRINTF(("increasing version of queue "SFQ" because acl "SFQ
                     " changed\n", lGetString(qinstance, QU_full_name), acl_name));
             qinstance_increase_qversion(qinstance);
             sge_event_spool(ctx, &answer_list, 0, sgeE_QINSTANCE_MOD, 0, 0, lGetString(qinstance, QU_qname),
-                            lGetHost(qinstance, QU_qhostname), NULL, qinstance, NULL, NULL, true, false);
+                            lGetHost(qinstance, QU_qhostname), nullptr, qinstance, nullptr, nullptr, true, false);
             answer_list_output(&answer_list);
          }
       }
@@ -184,7 +184,7 @@ sge_change_queue_version_acl(sge_gdi_ctx_class_t *ctx, const char *acl_name) {
    new_userset
       the new userset element
    alpp
-      may be NULL
+      may be nullptr
       is used to build up an answer
       element in case of error
 
@@ -196,9 +196,9 @@ int
 sge_verify_department_entries(const lList *userset_list, lListElem *new_userset, lList **alpp) {
    lListElem *up;
    lList *depts;
-   lList *answers = NULL;
-   lCondition *where = NULL;
-   lEnumeration *what = NULL;
+   lList *answers = nullptr;
+   lCondition *where = nullptr;
+   lEnumeration *what = nullptr;
 
    DENTER(TOP_LAYER);
 
@@ -274,7 +274,7 @@ dept_is_valid_defaultdepartment(lListElem *dept, lList **answer_list) {
    int ret = 1;
    DENTER(TOP_LAYER);
 
-   if (dept != NULL) {
+   if (dept != nullptr) {
       /* test 'type' */
       if (!(lGetUlong(dept, US_type) & US_DEPT)) {
          ERROR((SGE_EVENT, SFNMAX, MSG_QMASTER_DEPTFORDEFDEPARTMENT));
@@ -313,7 +313,7 @@ acl_is_valid_acl(lListElem *acl, lList **answer_list) {
    int ret = 1;
    DENTER(TOP_LAYER);
 
-   if (acl != NULL) {
+   if (acl != nullptr) {
       if (!(lGetUlong(acl, US_type) & US_DEPT)) {
          if (lGetUlong(acl, US_fshare) > 0) {
             ERROR((SGE_EVENT, SFNMAX, MSG_QMASTER_ACLNOSHARE));
@@ -332,10 +332,10 @@ acl_is_valid_acl(lListElem *acl, lList **answer_list) {
 
 static lList *
 do_depts_conflict(lListElem *new_dep, lListElem *old_dep) {
-   const lList *new_users = NULL;
-   const lList *old_users = NULL;
+   const lList *new_users = nullptr;
+   const lList *old_users = nullptr;
    const lListElem *np;
-   lList *alp = NULL;
+   lList *alp = nullptr;
    const char *nname;
 
    DENTER(TOP_LAYER);
@@ -344,7 +344,7 @@ do_depts_conflict(lListElem *new_dep, lListElem *old_dep) {
    old_users = lGetList(old_dep, US_entries);
 
    if (!old_users || !new_users) {
-      DRETURN(NULL);
+      DRETURN(nullptr);
    }
 
    /*
@@ -353,17 +353,17 @@ do_depts_conflict(lListElem *new_dep, lListElem *old_dep) {
    for_each_ep(np, new_users) {
       nname = lGetString(np, UE_name);
       if (nname && nname[0] == '@') {
-         if (sge_contained_in_access_list(NULL, &nname[1], old_dep, &alp)) {
+         if (sge_contained_in_access_list(nullptr, &nname[1], old_dep, &alp)) {
             DRETURN(alp);
          }
       } else {
-         if (sge_contained_in_access_list(nname, NULL, old_dep, &alp)) {
+         if (sge_contained_in_access_list(nname, nullptr, old_dep, &alp)) {
             DRETURN(alp);
          }
       }
    }
 
-   DRETURN(NULL);
+   DRETURN(nullptr);
 }
 
 /* 
@@ -386,7 +386,7 @@ int set_department(lList **alpp, lListElem *job, const lList *userset_list) {
       if (!(lGetUlong(dep, US_type) & US_DEPT))
          continue;
 
-      if (sge_contained_in_access_list(owner, NULL, dep, NULL)) {
+      if (sge_contained_in_access_list(owner, nullptr, dep, nullptr)) {
          lSetString(job, JB_department, lGetString(dep, US_name));
          DPRINTF(("user %s got department "SFQ"\n",
                  owner, lGetString(dep, US_name)));
@@ -403,7 +403,7 @@ int set_department(lList **alpp, lListElem *job, const lList *userset_list) {
       if (!(lGetUlong(dep, US_type) & US_DEPT))
          continue;
 
-      if (sge_contained_in_access_list(NULL, group, dep, NULL)) {
+      if (sge_contained_in_access_list(nullptr, group, dep, nullptr)) {
          lSetString(job, JB_department, lGetString(dep, US_name));
          DPRINTF(("user %s got department \"%s\"\n", owner, lGetString(dep, US_name)));
 
@@ -433,9 +433,9 @@ static int verify_userset_deletion(
         const char *userset_name
 ) {
    int ret = STATUS_OK;
-   const lListElem *ep = NULL;
-   const lListElem *cqueue = NULL;
-   lList *user_lists = NULL;
+   const lListElem *ep = nullptr;
+   const lListElem *cqueue = nullptr;
+   lList *user_lists = nullptr;
    const lListElem *cl;
    const lList *master_cqueue_list = *object_type_get_master_list(SGE_TYPE_CQUEUE);
    const lList *master_pe_list = *object_type_get_master_list(SGE_TYPE_PE);
@@ -632,7 +632,7 @@ void userset_update_categories(const lList *added, const lList *removed) {
       acl = lGetElemStrRW(master_userset_list, US_name, u);
       if (acl && lGetBool(acl, US_consider_with_categories) == false) {
          lSetBool(acl, US_consider_with_categories, true);
-         sge_add_event(0, sgeE_USERSET_MOD, 0, 0, u, NULL, NULL, acl);
+         sge_add_event(0, sgeE_USERSET_MOD, 0, 0, u, nullptr, nullptr, acl);
       }
    }
 
@@ -643,7 +643,7 @@ void userset_update_categories(const lList *added, const lList *removed) {
 
       if (acl && !userset_still_used(u)) {
          lSetBool(acl, US_consider_with_categories, false);
-         sge_add_event(0, sgeE_USERSET_MOD, 0, 0, u, NULL, NULL, acl);
+         sge_add_event(0, sgeE_USERSET_MOD, 0, 0, u, nullptr, nullptr, acl);
       }
    }
 
@@ -728,7 +728,7 @@ int userset_mod(sge_gdi_ctx_class_t *ctx, lList **alpp, lListElem *new_userset,
    }
    /* ---- US_entries */
    attr_mod_sub_list(alpp, new_userset, US_entries,
-                     UE_name, userset, sub_command, SGE_ATTR_USER_LISTS, object->object_name, 0, NULL);
+                     UE_name, userset, sub_command, SGE_ATTR_USER_LISTS, object->object_name, 0, nullptr);
    /* interpret user/group names */
    if (userset_validate_entries(new_userset, alpp, 0) != STATUS_OK) {
       goto ERROR;
@@ -747,11 +747,11 @@ int userset_mod(sge_gdi_ctx_class_t *ctx, lList **alpp, lListElem *new_userset,
    */
    if (!add) {
       const lListElem *cqueue;
-      lList *new_master_userset_list = NULL;
+      lList *new_master_userset_list = nullptr;
 
       for_each_ep(cqueue, master_cqueue_list) {
          const lList *qinstance_list = lGetList(cqueue, CQ_qinstances);
-         const lListElem *qinstance = NULL;
+         const lListElem *qinstance = nullptr;
 
          for_each_ep(qinstance, qinstance_list) {
             lListElem *ar;
@@ -762,15 +762,15 @@ int userset_mod(sge_gdi_ctx_class_t *ctx, lList **alpp, lListElem *new_userset,
                continue;
             }
 
-            if (lGetElemStr(lGetList(qinstance, QU_acl), US_name, userset_name) == NULL &&
-                lGetElemStr(lGetList(qinstance, QU_xacl), US_name, userset_name) == NULL) {
+            if (lGetElemStr(lGetList(qinstance, QU_acl), US_name, userset_name) == nullptr &&
+                lGetElemStr(lGetList(qinstance, QU_xacl), US_name, userset_name) == nullptr) {
                /* userset not referenced by queue instance */
                continue;
             }
 
             for_each_rw(ar, master_ar_list) {
                if (lGetElemStr(lGetList(ar, AR_granted_slots), JG_qname, queue_name)) {
-                  if (new_master_userset_list == NULL) {
+                  if (new_master_userset_list == nullptr) {
                      lListElem *old_userset;
                      new_master_userset_list = lCopyList("", master_userset_list);
                      old_userset = lGetElemStrRW(new_master_userset_list, US_name, userset_name);
@@ -778,7 +778,7 @@ int userset_mod(sge_gdi_ctx_class_t *ctx, lList **alpp, lListElem *new_userset,
                      lAppendElem(new_master_userset_list, lCopyElem(new_userset));
                   }
 
-                  if (!sge_ar_have_users_access(NULL, ar, lGetString(qinstance, QU_full_name),
+                  if (!sge_ar_have_users_access(nullptr, ar, lGetString(qinstance, QU_full_name),
                                                 lGetList(qinstance, QU_acl),
                                                 lGetList(qinstance, QU_xacl),
                                                 new_master_userset_list)) {
@@ -830,7 +830,7 @@ DRETURN(STATUS_EUNKNOWN);
 *     MT-NOTE: userset_spool() is not MT safe 
 *******************************************************************************/
 int userset_spool(sge_gdi_ctx_class_t *ctx, lList **alpp, lListElem *userset, gdi_object_t *object) {
-   lList *answer_list = NULL;
+   lList *answer_list = nullptr;
    bool dbret;
    bool job_spooling = bootstrap_get_job_spooling();
 
@@ -898,13 +898,13 @@ int userset_success(sge_gdi_ctx_class_t *ctx, lListElem *ep, lListElem *old_ep, 
       }
    }
 
-   if (old_ep != NULL) {
+   if (old_ep != nullptr) {
       /* change queue versions if userset was modified */
       sge_change_queue_version_acl(ctx, userset_name);
    }
 
    sge_add_event(0, old_ep ? sgeE_USERSET_MOD : sgeE_USERSET_ADD, 0, 0,
-                 userset_name, NULL, NULL, ep);
+                 userset_name, nullptr, nullptr, ep);
    lListElem_clear_changed_info(ep);
 
    sge_dstring_free(&ds);

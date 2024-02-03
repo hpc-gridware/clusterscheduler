@@ -68,13 +68,13 @@ int main(int argc, char **argv) {
    int ret = 0;
    const lListElem *aep;
    lListElem *idep;
-   lList *jlp = NULL, *alp = NULL, *pcmdline = NULL, *ref_list = NULL, *user_list=NULL;
+   lList *jlp = nullptr, *alp = nullptr, *pcmdline = nullptr, *ref_list = nullptr, *user_list=nullptr;
    u_long32 force = 0;
    int wait;
    unsigned long status = 0;
    bool have_master_privileges;
-   cl_com_handle_t* handle = NULL;
-   sge_gdi_ctx_class_t *ctx = NULL;
+   cl_com_handle_t* handle = nullptr;
+   sge_gdi_ctx_class_t *ctx = nullptr;
 
    DENTER_MAIN(TOP_LAYER, "qdel");
 
@@ -166,7 +166,7 @@ int main(int argc, char **argv) {
          bool do_again;
          bool first_try = true;
          const int MAX_DELETE_JOBS = 500;
-         lList *part_ref_list = NULL;
+         lList *part_ref_list = nullptr;
          lList *cp_ref_list = lCopyList("", ref_list);
 
          for_each_rw(idep, cp_ref_list) {
@@ -183,16 +183,16 @@ int main(int argc, char **argv) {
          do {
             do_again = false;
 
-            if (part_ref_list == NULL) {
+            if (part_ref_list == nullptr) {
                int i;
                int max = MIN(lGetNumberOfElem(cp_ref_list), MAX_DELETE_JOBS); 
-               lListElem *temp_ref = NULL;
+               lListElem *temp_ref = nullptr;
 
                first_try = true;
 
                part_ref_list = lCreateList("part_del_jobs", ID_Type);
                for (i = 0; i < max; i++){
-                  const char* job = NULL;
+                  const char* job = nullptr;
                   temp_ref = lFirstRW(cp_ref_list);
                   job = lGetString(temp_ref, ID_str);
                   /* break if we got job ids first and hit a job name now */
@@ -207,7 +207,7 @@ int main(int argc, char **argv) {
                   }   
                }
             }
-            alp = ctx->gdi(ctx, SGE_JB_LIST, SGE_GDI_DEL, &part_ref_list, NULL, NULL);
+            alp = ctx->gdi(ctx, SGE_JB_LIST, SGE_GDI_DEL, &part_ref_list, nullptr, nullptr);
 
             for_each_ep(aep, alp) {
                status = lGetUlong(aep, AN_status);
@@ -297,7 +297,7 @@ lList **alpp
    rp = argv;
    while (*(sp=rp)) {
       /* -help */
-      if ((rp = parse_noopt(sp, "-help", NULL, ppcmdline, alpp)) != sp)
+      if ((rp = parse_noopt(sp, "-help", nullptr, ppcmdline, alpp)) != sp)
          continue;
       
       /* -f option */
@@ -306,7 +306,7 @@ lList **alpp
 
       /* -u */
       if (!strcmp("-u", *sp)) {
-         lList *user_list = NULL;
+         lList *user_list = nullptr;
          lListElem *ep_opt;
 
          sp++;
@@ -322,12 +322,12 @@ lList **alpp
       }
 
       if (!strcmp("-t", *sp)) {
-         lList *task_id_range_list = NULL;
+         lList *task_id_range_list = nullptr;
          lListElem *ep_opt;
 
          /* next field is path_name */
          sp++;
-         if (*sp == NULL) {
+         if (*sp == nullptr) {
              answer_list_add_sprintf(alpp, STATUS_ESEMANTIC, ANSWER_QUALITY_ERROR,
                                      SFNMAX, MSG_PARSE_TOPTIONMUSTHAVEALISTOFTASKIDRANGES);
              goto error;
@@ -357,16 +357,16 @@ lList **alpp
 
       /* job id's */
       if (*sp) {
-         lList *del_list = NULL;
+         lList *del_list = nullptr;
          const lListElem *job;
-         lListElem *ep = NULL;
+         lListElem *ep = nullptr;
          str_list_parse_from_string(&del_list, *sp, ",");
         
          for_each_ep(job, del_list) {
             const char *job_name;
             job_name = lGetString(job, ST_name);
-            if(ep == NULL) {
-               ep = sge_add_arg(ppcmdline, 0, lListT, "jobs", NULL);
+            if(ep == nullptr) {
+               ep = sge_add_arg(ppcmdline, 0, lListT, "jobs", nullptr);
             }
             lAddElemStr(lGetListRef(ep, SPA_argval_lListT), ST_name, job_name, ST_Type);
          }  
@@ -416,7 +416,7 @@ lList **alpp
    {
       if(parse_flag(ppcmdline, "-help",  alpp, &helpflag)) {
          sge_usage(QDEL, stdout);
-         SGE_EXIT(NULL, 0);
+         SGE_EXIT(nullptr, 0);
          break;
       }
       if(parse_flag(ppcmdline, "-f", alpp, pforce)) 
@@ -436,7 +436,7 @@ lList **alpp
       }
 
        /* we get to this point, than there are -t options without job names. We have to write an error message */
-      if ((ep = lGetElemStrRW(*ppcmdline, SPA_switch_val, "-t")) != NULL) {
+      if ((ep = lGetElemStrRW(*ppcmdline, SPA_switch_val, "-t")) != nullptr) {
          answer_list_add_sprintf(alpp, STATUS_ESEMANTIC, ANSWER_QUALITY_ERROR, MSG_JOB_LONELY_TOPTION_S, lGetString(ep, SPA_switch_arg));
          break;
       }

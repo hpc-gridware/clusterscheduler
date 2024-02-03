@@ -77,7 +77,7 @@ typedef struct {
    bool initialized;
 } admin_user_t;
 
-static admin_user_t admin_user = {PTHREAD_MUTEX_INITIALIZER, NULL, (uid_t) -1, (gid_t) -1, false};
+static admin_user_t admin_user = {PTHREAD_MUTEX_INITIALIZER, nullptr, (uid_t) -1, (gid_t) -1, false};
 
 static void set_admin_user(const char *user_name, uid_t, gid_t);
 
@@ -224,7 +224,7 @@ bool sge_is_admin_user(const char *username) {
    const char *admin_user;
 
    admin_user = bootstrap_get_admin_user();
-   if (admin_user != NULL && username != NULL) {
+   if (admin_user != nullptr && username != nullptr) {
       ret = strcmp(username, admin_user) == 0 ? true : false;
    }
 
@@ -438,7 +438,7 @@ int sge_run_as_user(void) {
 *     Resolves a username ('user') to it's uid (stored in 'puid') and
 *     it's primary gid (stored in 'pgid').
 *     'retries' defines the number of (e.g. NIS/DNS) retries.
-*     If 'puid' is NULL the user name is resolved without saving it.
+*     If 'puid' is nullptr the user name is resolved without saving it.
 *
 *  INPUTS
 *     const char *user - username 
@@ -473,9 +473,9 @@ int sge_user2uid(const char *user, uid_t *puid, uid_t *pgid, int retries) {
          DRETURN(1);
       }
       if (getpwnam_r(user, &pwentry, buffer, size, &pw) != 0) {
-         pw = NULL;
+         pw = nullptr;
       }
-   } while (pw == NULL);
+   } while (pw == nullptr);
 
    if (puid) {
       *puid = pw->pw_uid;
@@ -498,7 +498,7 @@ int sge_user2uid(const char *user, uid_t *puid, uid_t *pgid, int retries) {
 *  FUNCTION
 *     Resolves a groupname ('gname') to its gid (stored in 'gidp').
 *     'retries' defines the number of (e.g. NIS/DNS) retries.
-*     If 'gidp' is NULL the group name is resolved without saving it.
+*     If 'gidp' is nullptr the group name is resolved without saving it.
 *
 *  INPUTS
 *     const char *gname - group name 
@@ -535,9 +535,9 @@ int sge_group2gid(const char *gname, gid_t *gidp, int retries) {
             size += 1024;
             buffer = (char *)sge_realloc(buffer, size, 1);
          }
-         gr = NULL;
+         gr = nullptr;
       }
-   } while (gr == NULL);
+   } while (gr == nullptr);
 
    if (gidp) {
       *gidp = gr->gr_gid;
@@ -555,7 +555,7 @@ int sge_group2gid(const char *gname, gid_t *gidp, int retries) {
 *     int sge_uid2user(uid_t uid, char *dst, size_t sz, int retries) 
 *
 *  FUNCTION
-*     Resolves uid to user name. if 'dst' is NULL the function checks
+*     Resolves uid to user name. if 'dst' is nullptr the function checks
 *     only if the uid is resolvable. 
 *
 *  INPUTS
@@ -608,7 +608,7 @@ int sge_uid2user(uid_t uid, char *dst, size_t sz, int retries) {
 *     int sge_gid2group(gid_t gid, char *dst, size_t sz, int retries) 
 *
 *  FUNCTION
-*     Resolves gid to group name. if 'dst' is NULL the function checks
+*     Resolves gid to group name. if 'dst' is nullptr the function checks
 *     only if the gid is resolvable. 
 *
 *  INPUTS
@@ -628,7 +628,7 @@ int sge_uid2user(uid_t uid, char *dst, size_t sz, int retries) {
 int sge_gid2group(gid_t gid, char *dst, size_t sz, int retries) {
    struct group *gr;
    struct group grentry;
-   char *buf = NULL;
+   char *buf = nullptr;
    int size = 0;
 
    DENTER(UIDGID_LAYER);
@@ -640,7 +640,7 @@ int sge_gid2group(gid_t gid, char *dst, size_t sz, int retries) {
    /* Bugfix: Issuezilla 1256
     * We need to handle the case when the OS is unable to resolve the GID to
     * a name. [DT] */
-   if (gr == NULL) {
+   if (gr == nullptr) {
       sge_free(&buf);
       DRETURN(1);
    }
@@ -665,7 +665,7 @@ int _sge_gid2group(gid_t gid, gid_t *last_gid, char **groupnamep, int retries) {
    }
 
    if (!(*groupnamep) || *last_gid != gid) {
-      char *buf = NULL;
+      char *buf = nullptr;
       int size = 0;
 
       size = get_group_buffer_size();
@@ -685,7 +685,7 @@ int _sge_gid2group(gid_t gid, gid_t *last_gid, char **groupnamep, int retries) {
       /* Bugfix: Issuezilla 1256
        * We need to handle the case when the OS is unable to resolve the GID to
        * a name. [DT] */
-      if (gr == NULL) {
+      if (gr == nullptr) {
          sge_free(&buf);
          DRETURN(1);
       }
@@ -999,7 +999,7 @@ int sge_add_group(gid_t add_grp_id, char *err_str, bool skip_silently) {
    gid_t *list;
    int groups;
 
-   if (err_str != NULL) {
+   if (err_str != nullptr) {
       err_str[0] = 0;
    }
 
@@ -1009,7 +1009,7 @@ int sge_add_group(gid_t add_grp_id, char *err_str, bool skip_silently) {
 
    max_groups = sge_sysconf(SGE_SYSCONF_NGROUPS_MAX);
    if (max_groups <= 0) {
-      if (err_str != NULL) {
+      if (err_str != nullptr) {
          sprintf(err_str, MSG_SYSTEM_ADDGROUPIDFORSGEFAILED_UUS, sge_u32c(getuid()),
                  sge_u32c(geteuid()), MSG_SYSTEM_INVALID_NGROUPS_MAX);
       }
@@ -1025,8 +1025,8 @@ int sge_add_group(gid_t add_grp_id, char *err_str, bool skip_silently) {
 #else
    list = (gid_t*) sge_malloc(max_groups*sizeof(gid_t));
 #endif
-   if (list == NULL) {
-      if (err_str != NULL) {
+   if (list == nullptr) {
+      if (err_str != nullptr) {
          int error = errno;
          sprintf(err_str, MSG_SYSTEM_ADDGROUPIDFORSGEFAILED_UUS, sge_u32c(getuid()),
                  sge_u32c(geteuid()), strerror(error));
@@ -1036,7 +1036,7 @@ int sge_add_group(gid_t add_grp_id, char *err_str, bool skip_silently) {
 
    groups = getgroups(max_groups, list);
    if (groups == -1) {
-      if (err_str != NULL) {
+      if (err_str != nullptr) {
          int error = errno;
          sprintf(err_str, MSG_SYSTEM_ADDGROUPIDFORSGEFAILED_UUS, sge_u32c(getuid()),
                  sge_u32c(geteuid()), strerror(error));
@@ -1050,7 +1050,7 @@ int sge_add_group(gid_t add_grp_id, char *err_str, bool skip_silently) {
       groups++;
       groups = setgroups(groups, list);
       if (groups == -1) {
-         if (err_str != NULL) {
+         if (err_str != nullptr) {
             int error = errno;
             sprintf(err_str, MSG_SYSTEM_ADDGROUPIDFORSGEFAILED_UUS, sge_u32c(getuid()),
                     sge_u32c(geteuid()), strerror(error));
@@ -1059,7 +1059,7 @@ int sge_add_group(gid_t add_grp_id, char *err_str, bool skip_silently) {
          return -1;
       }
    } else if (skip_silently == false) {
-      if (err_str != NULL) {
+      if (err_str != nullptr) {
          sprintf(err_str, MSG_SYSTEM_ADDGROUPIDFORSGEFAILED_UUS, sge_u32c(getuid()),
                  sge_u32c(geteuid()), MSG_SYSTEM_USER_HAS_TOO_MANY_GIDS);
       }
@@ -1093,7 +1093,7 @@ int sge_add_group(gid_t add_grp_id, char *err_str, bool skip_silently) {
 *
 *  RESULT
 *     struct passwd* - Pointer to entry matching user name upon success,
-*                      NULL otherwise.
+*                      nullptr otherwise.
 *
 *  NOTES
 *     MT-NOTE: sge_getpwnam_r() is MT safe. 
@@ -1101,20 +1101,20 @@ int sge_add_group(gid_t add_grp_id, char *err_str, bool skip_silently) {
 *******************************************************************************/
 struct passwd *sge_getpwnam_r(const char *name, struct passwd *pw,
                               char *buffer, size_t bufsize) {
-   struct passwd *res = NULL;
+   struct passwd *res = nullptr;
    int i = MAX_NIS_RETRIES;
 
    DENTER(UIDGID_LAYER);
 
    while (i-- && !res) {
       if (getpwnam_r(name, pw, buffer, bufsize, &res) != 0) {
-         res = NULL;
+         res = nullptr;
       }
    }
 
-   /* sometime on failure struct is non NULL but name is empty */
+   /* sometime on failure struct is non nullptr but name is empty */
    if (res && !res->pw_name) {
-      res = NULL;
+      res = nullptr;
    }
 
    DRETURN(res);
@@ -1143,7 +1143,7 @@ struct passwd *sge_getpwnam_r(const char *name, struct passwd *pw,
 *
 *  RESULT
 *     struct group*  - Pointer to entry matching group informations upon success,
-*                      NULL otherwise.
+*                      nullptr otherwise.
 *
 *  NOTES
 *     MT-NOTE: sge_getpwnam_r() is MT safe. 
@@ -1151,7 +1151,7 @@ struct passwd *sge_getpwnam_r(const char *name, struct passwd *pw,
 *******************************************************************************/
 struct group *sge_getgrgid_r(gid_t gid, struct group *pg,
                              char *buffer, size_t bufsize, int retries) {
-   struct group *res = NULL;
+   struct group *res = nullptr;
 
    DENTER(UIDGID_LAYER);
 
@@ -1162,13 +1162,13 @@ struct group *sge_getgrgid_r(gid_t gid, struct group *pg,
             bufsize += 1024;
             buffer = (char *)sge_realloc(buffer, bufsize, 1);
          }
-         res = NULL;
+         res = nullptr;
       }
    }
 
-   /* could be that struct is not NULL but group nam is empty */
+   /* could be that struct is not nullptr but group nam is empty */
    if (res && !res->gr_name) {
-      res = NULL;
+      res = nullptr;
    }
 
    DRETURN(res);

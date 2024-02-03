@@ -78,7 +78,7 @@ int main(int argc, char *argv[])
                          (setlocale_func_type)      setlocale,
                          (bindtextdomain_func_type) bindtextdomain,
                          (textdomain_func_type)     textdomain);
-   sge_init_language(NULL,NULL);   
+   sge_init_language(nullptr,nullptr);
 #endif /* __SGE_COMPILE_WITH_GETTEXT__  */
 
    for (i=0;i< argc;i++) {
@@ -93,7 +93,7 @@ int main(int argc, char *argv[])
       DRETURN(1);
    }
 
-   if ((tokenbuf = sge_read_token(TOKEN_FILE)) == NULL) {
+   if ((tokenbuf = sge_read_token(TOKEN_FILE)) == nullptr) {
       DRETURN(1);
    }   
    

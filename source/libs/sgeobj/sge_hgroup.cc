@@ -114,12 +114,12 @@ bool hgroup_check_name(lList **answer_list, const char* name)
 *     const char *group      - group name 
 *
 *  RESULT
-*     lListElem* - found element or NULL 
+*     lListElem* - found element or nullptr
 ******************************************************************************/
 lListElem *
 hgroup_list_locate(const lList *this_list, const char *group) 
 {
-   lListElem *ret = NULL;
+   lListElem *ret = nullptr;
    
    DENTER(HGROUP_LAYER);
    ret = lGetElemHostRW(this_list, HGRP_name, group);
@@ -147,18 +147,18 @@ hgroup_list_locate(const lList *this_list, const char *group)
 *                               there is only one case in qconf in that the name has to be ignored.
 *
 *  RESULT
-*     lListElem* - new element or NULL 
+*     lListElem* - new element or nullptr
 *******************************************************************************/
 lListElem *
 hgroup_create(lList **answer_list, const char *name, lList *href_or_groupref, bool is_name_validate)
 {
-   lListElem *ret = NULL;  /* HGRP_Type */
+   lListElem *ret = nullptr;  /* HGRP_Type */
 
    DENTER(HGROUP_LAYER);
-   if (name != NULL) {
+   if (name != nullptr) {
       if(!is_name_validate || hgroup_check_name(answer_list, name) ) {
          ret = lCreateElem(HGRP_Type);
-         if (ret != NULL) {
+         if (ret != nullptr) {
             lSetHost(ret, HGRP_name, name);
             lSetList(ret, HGRP_host_list, href_or_groupref);
          } else {
@@ -205,8 +205,8 @@ hgroup_add_references(lListElem *this_elem, lList **answer_list,
    bool ret = true;
 
    DENTER(HGROUP_LAYER);
-   if (this_elem != NULL && href_or_groupref != NULL) {
-      lList *href_list = NULL;   /* HR_Type */
+   if (this_elem != nullptr && href_or_groupref != nullptr) {
+      lList *href_list = nullptr;   /* HR_Type */
       const lListElem *href;           /* HR_Type */
 
       lXchgList(this_elem, HGRP_host_list, &href_list);
@@ -267,8 +267,8 @@ hgroup_find_all_references(const lListElem *this_elem, lList **answer_list,
    bool ret = true;
 
    DENTER(HGROUP_LAYER);
-   if (this_elem != NULL && master_list != NULL) {
-      lList *href_list = NULL;   /* HR_Type */
+   if (this_elem != nullptr && master_list != nullptr) {
+      lList *href_list = nullptr;   /* HR_Type */
       const char *name;
 
       name = lGetHost(this_elem, HGRP_name);
@@ -323,9 +323,9 @@ hgroup_find_references(const lListElem *this_elem, lList **answer_list,
    bool ret = true;
 
    DENTER(HGROUP_LAYER);
-   if (this_elem != NULL && master_list != NULL) {
+   if (this_elem != nullptr && master_list != nullptr) {
       const char *name = lGetHost(this_elem, HGRP_name);
-      lList *href_list = NULL;   /* HR_Type */
+      lList *href_list = nullptr;   /* HR_Type */
 
       ret &= href_list_add(&href_list, answer_list, name);
 
@@ -376,8 +376,8 @@ hgroup_find_all_referencees(const lListElem *this_elem,
    bool ret = true;
 
    DENTER(HGROUP_LAYER);
-   if (this_elem != NULL && occupants_groups != NULL) {
-      lList *href_list = NULL;
+   if (this_elem != nullptr && occupants_groups != nullptr) {
+      lList *href_list = nullptr;
       const char *name;
 
       name = lGetHost(this_elem, HGRP_name);
@@ -435,10 +435,10 @@ hgroup_find_referencees(const lListElem *this_elem,
    bool ret = true;
 
    DENTER(HGROUP_LAYER);
-   if (this_elem != NULL) {
-      if (occupants_groups != NULL) {
+   if (this_elem != nullptr) {
+      if (occupants_groups != nullptr) {
          const char *name = lGetHost(this_elem, HGRP_name);
-         lList *href_list = NULL;
+         lList *href_list = nullptr;
 
          ret &= href_list_add(&href_list, answer_list, name);
          if (ret) {
@@ -448,7 +448,7 @@ hgroup_find_referencees(const lListElem *this_elem,
          }
          lFreeList(&href_list);
       }
-      if (ret && occupants_queues != NULL) {
+      if (ret && occupants_queues != nullptr) {
          ret &= cqueue_list_find_hgroup_references(master_cqueue_list, 
                                                    answer_list,
                                                    this_elem, 
@@ -488,7 +488,7 @@ hgroup_list_exists(const lList *this_list, lList **answer_list,
    bool ret = true;
 
    DENTER(HGROUP_LAYER);
-   if (href_list != NULL && this_list != NULL) {
+   if (href_list != nullptr && this_list != nullptr) {
       const lListElem *href;
 
       for_each_ep(href, href_list) {
@@ -497,7 +497,7 @@ hgroup_list_exists(const lList *this_list, lList **answer_list,
          if (is_hgroup_name(name)) {
             lListElem *hgroup = hgroup_list_locate(this_list, name);
          
-            if (hgroup == NULL) {
+            if (hgroup == nullptr) {
                ret = false;
                SGE_ADD_MSG_ID(sprintf(SGE_EVENT, 
                               MSG_SGETEXT_DOESNOTEXIST_SS, "host group", name));
@@ -547,21 +547,21 @@ hgroup_list_find_matching_and_resolve(const lList *this_list,
    bool ret = true;
 
    DENTER(HGROUP_LAYER);
-   if (this_list != NULL && hgroup_pattern != NULL) {
+   if (this_list != nullptr && hgroup_pattern != nullptr) {
       const lListElem *hgroup;
 
       for_each_ep(hgroup, this_list) {
          const char *hgroup_name = lGetHost(hgroup, HGRP_name);
          
          /* use hostgroup expression */
-         if (!sge_eval_expression(TYPE_HOST,hgroup_pattern, hgroup_name, NULL)) {
-            lList *tmp_used_hosts = NULL;
-            const lListElem *tmp_href = NULL;
+         if (!sge_eval_expression(TYPE_HOST,hgroup_pattern, hgroup_name, nullptr)) {
+            lList *tmp_used_hosts = nullptr;
+            const lListElem *tmp_href = nullptr;
 
-            ret = hgroup_find_all_references(hgroup, NULL, this_list,
-                                             &tmp_used_hosts, NULL);
+            ret = hgroup_find_all_references(hgroup, nullptr, this_list,
+                                             &tmp_used_hosts, nullptr);
             for_each_ep(tmp_href, tmp_used_hosts) {
-               if (used_hosts != NULL) {
+               if (used_hosts != nullptr) {
                   const char *hostname = lGetHost(tmp_href, HR_name);
 
                   lAddElemHost(used_hosts, HR_name, hostname, HR_Type);
@@ -608,15 +608,15 @@ hgroup_list_find_matching(const lList *this_list, lList **answer_list,
    bool ret = true;
 
    DENTER(HGROUP_LAYER);
-   if (this_list != NULL && hgroup_pattern != NULL) {
+   if (this_list != nullptr && hgroup_pattern != nullptr) {
       const lListElem *hgroup;
 
       for_each_ep(hgroup, this_list) {
          const char *hgroup_name = lGetHost(hgroup, HGRP_name);
 
    /* use hostgroup expression */
-         if (!sge_eval_expression(TYPE_HOST,hgroup_pattern, hgroup_name, NULL)) {
-            if (href_list != NULL) {
+         if (!sge_eval_expression(TYPE_HOST,hgroup_pattern, hgroup_name, nullptr)) {
+            if (href_list != nullptr) {
                lAddElemHost(href_list, HR_name, hgroup_name, HR_Type);
             }
          }

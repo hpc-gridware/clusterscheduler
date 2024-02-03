@@ -76,7 +76,7 @@ static int fprint_name_value_list(FILE *fp, char *name, lList *thresholds, int p
 **   MT-NOTE: cull_parse_string_list() is MT safe
 */
 /*
-** problem: if NULL ends string list, then NULL cannot be used
+** problem: if nullptr ends string list, then nullptr cannot be used
 ** for fields that should not be set
 */
 int cull_parse_string_list(
@@ -93,7 +93,7 @@ lList **pplist
 
    DENTER(BASIS_LAYER);
    if (!pstrlist || !descr || !interpretation_rule || !pplist) {
-      DPRINTF(("cull_parse_string_list: NULL pointer received\n"));
+      DPRINTF(("cull_parse_string_list: nullptr pointer received\n"));
       DRETURN(-1);
    }
    if (*interpretation_rule == 0) {
@@ -263,7 +263,7 @@ lList **pplist
 ** PARAMETER
 **   str                 - string to be parsed
 **   lpp                 - list pointer-pointer to be set the list,
-**                         or NULL if first token is NONE
+**                         or nullptr if first token is NONE
 **   name                - name for the cull list
 **   descr               - type of the cull list
 **   interpretation_rule - fields to be filled, normally 2 entries
@@ -288,12 +288,12 @@ int *interpretation_rule
    if (!str || !lpp) {
       DRETURN(-1);
    }
-   pstr = string_list(str, " ,=\t\n\f\r\v", NULL);
+   pstr = string_list(str, " ,=\t\n\f\r\v", nullptr);
    if (!pstr) {
       DRETURN(-2);
    }
    if (!strcasecmp("NONE", pstr[0]) || !strcasecmp("UNDEFINED", pstr[0])) {
-      *lpp = NULL;
+      *lpp = nullptr;
       sge_free(&pstr);
       DRETURN(0);
    }
@@ -310,10 +310,10 @@ int *interpretation_rule
 ** NAME
 **   cull_merge_definition_list
 ** PARAMETER
-**   lpp_old       - pointer to list which is to be changed, pointer cannot be NULL
-**                   if list is NULL then list is created if lp_new contains any
+**   lpp_old       - pointer to list which is to be changed, pointer cannot be nullptr
+**                   if list is nullptr then list is created if lp_new contains any
                      elements
-**   lp_new        - list to update *lpp_old with, or NULL
+**   lp_new        - list to update *lpp_old with, or nullptr
 **   nm_var        - field containing the variable, must be in both lists, can
 **                   be any valid type except list
 **   nm_value      - field containing the value, must be in both lists, can
@@ -613,7 +613,7 @@ int double_keys
 ** PARAMETER
 **   str                 - string to be parsed
 **   lpp                 - list pointer-pointer to be set the list,
-**                         or NULL if first token is NONE
+**                         or nullptr if first token is NONE
 **   name                - name for the cull list
 **   descr               - type of the cull list
 **   interpretation_rule - fields to be filled, normally 1 entry
@@ -637,20 +637,20 @@ int *interpretation_rule
 
    DENTER(BASIS_LAYER);
    if (!str || !lpp) {
-      DPRINTF(("cull_parse_simple_list: NULL pointer received\n"));
+      DPRINTF(("cull_parse_simple_list: nullptr pointer received\n"));
       DRETURN(-1);
     }
 
    /*
    ** = is not a delimiter here
    */
-   pstr = string_list(str, " ,\t\n\f\r\v",  NULL);
+   pstr = string_list(str, " ,\t\n\f\r\v",  nullptr);
    if (!pstr) {
       DPRINTF(("cull_parse_simple_list: could not parse string\n"));
       DRETURN(-2);
    }
    if (!strcasecmp("NONE", pstr[0])) {
-      *lpp = NULL;
+      *lpp = nullptr;
       sge_free(&pstr);
       DPRINTF(("cull_parse_simple_list: String is NONE, no list, not an error\n"));
       DRETURN(0);
@@ -670,8 +670,8 @@ int *interpretation_rule
 ** NAME
 **   uni_print_list
 ** PARAMETER
-**   fp                    -   pointer to file to write string list to or NULL
-**   buff                  -   buffer to write string list to, can be NULL
+**   fp                    -   pointer to file to write string list to or nullptr
+**   buff                  -   buffer to write string list to, can be nullptr
 **                             if fp is not, data is then written to fp
 **   max_len               -   maximum bytes to be written, can be 0 if
 **                             fp is given
@@ -685,7 +685,7 @@ int *interpretation_rule
 **                             pdelis[2] : string inserted after end of list,
 **                                         e.g. a newline
 **   flags                 -   FLG_NO_DELIS_STRINGS - leave out delimiters
-**                             before zero or NULL strings
+**                             before zero or nullptr strings
 **                             FLG_NO_DELIS_NUMBERS - leave out delimiters
 **                             and the following "0" if a number is 0
 **                             Be careful in using these 2 options. If more
@@ -722,10 +722,10 @@ unsigned long flags
    DENTER(BASIS_LAYER);
 
    /*
-   ** problem: one might allow NULL deli as no deli
+   ** problem: one might allow nullptr deli as no deli
    */
    if (!which_elements_rule || !pdelis) {
-      DPRINTF(("uni_print_list: NULL pointer received\n"));
+      DPRINTF(("uni_print_list: nullptr pointer received\n"));
       DRETURN(-1);
    }
    if (!fp && !buff) {
@@ -955,7 +955,7 @@ FPRINTF_ERROR:
 *  FUNCTION
 *     Prints str and field 'fi' (must be string) of
 *     every element of lList lp to file fp separated
-*     by blanks. If fp is NULL, "NONE" will be printed. 
+*     by blanks. If fp is nullptr, "NONE" will be printed.
 *
 *  INPUTS
 *     FILE *fp  - a file
@@ -1082,7 +1082,7 @@ int print_slots
 *     an entry with name "slots" is skipped. The 'name' is printed prior 
 *     the actual list to 'fp'. In 'nm_name'/'nm_strval' the CULL names must
 *     be passed. Optionally a string representation of the value is printed 
-*     if non-NULL and if 'nm_strval' is not -1.
+*     if non-nullptr and if 'nm_strval' is not -1.
 *
 *  INPUTS
 *     FILE *fp          - The file pointer
@@ -1153,10 +1153,10 @@ lListElem *job,
 int hard_field,
 int soft_field 
 ) {
-   lList *hard_list = NULL;
-   lList *soft_list = NULL;
-   lList *lp = NULL;
-   lListElem *ep = NULL;
+   lList *hard_list = nullptr;
+   lList *soft_list = nullptr;
+   lList *lp = nullptr;
+   lListElem *ep = nullptr;
 
    DENTER(TOP_LAYER);
 
@@ -1166,7 +1166,7 @@ int soft_field
    }
 
    while ((ep = lGetElemStrRW(cmdline, SPA_switch_val, option))) {
-      lp = NULL;
+      lp = nullptr;
       lXchgList(ep, SPA_argval_lListT, &lp);
       if (lp) {
          if (!soft_field || lGetInt(ep, SPA_argval_lIntT) < 2) {
@@ -1198,8 +1198,8 @@ int
 parse_list_simple(lList *cmdline, char *option, lListElem *job, int field, 
                   int nm_var, int nm_value, u_long32 flags) 
 {
-   lList *destlist = NULL;
-   lList *lp = NULL;
+   lList *destlist = nullptr;
+   lList *lp = nullptr;
    lListElem *ep;
 
    DENTER(TOP_LAYER);
@@ -1208,7 +1208,7 @@ parse_list_simple(lList *cmdline, char *option, lListElem *job, int field,
 
    while ((ep = lGetElemStrRW(cmdline, SPA_switch_val, option))) {
       DPRINTF(("OPTION: %s\n", option));
-      lp = NULL;
+      lp = nullptr;
       lXchgList(ep, SPA_argval_lListT, &lp);
 
       parse_list_simpler(lp, &destlist, option, job, field, nm_var, nm_value, flags);
@@ -1225,7 +1225,7 @@ int
 parse_list_simpler(lList *lp, lList **destlist, char *option, lListElem *job, int field, 
                   int nm_var, int nm_value, u_long32 flags) 
 {
-   if (lp != NULL) {
+   if (lp != nullptr) {
       if (flags & FLG_LIST_APPEND || flags & FLG_LIST_MERGE_DOUBLE_KEY) {
          if (lp) {  
             if (!*destlist) {
@@ -1239,7 +1239,7 @@ parse_list_simpler(lList *lp, lList **destlist, char *option, lListElem *job, in
             }
          }
       } else if (flags & FLG_LIST_MERGE) {
-         if (lp != NULL) {
+         if (lp != nullptr) {
             if (!*destlist) {
                *destlist = lp; 
             } else {
@@ -1281,36 +1281,36 @@ parse_list_simpler(lList *lp, lList **destlist, char *option, lListElem *job, in
 *******************************************************************************/
 int cull_parse_path_list(lList **lpp, const char *path_str) 
 {
-   char *path = NULL;
-   char *cell = NULL;
-   char **str_str = NULL;
-   char **pstr = NULL;
-   lListElem *ep = NULL;
-   char *path_string = NULL;
+   char *path = nullptr;
+   char *cell = nullptr;
+   char **str_str = nullptr;
+   char **pstr = nullptr;
+   lListElem *ep = nullptr;
+   char *path_string = nullptr;
    bool ret_error = false;
 
    DENTER(TOP_LAYER);
 
-   ret_error = (lpp == NULL) ? true : false;
+   ret_error = (lpp == nullptr) ? true : false;
 
    if(!ret_error){
-      path_string = sge_strdup(NULL, path_str);
-      ret_error = (path_string == NULL) ? true : false;
+      path_string = sge_strdup(nullptr, path_str);
+      ret_error = (path_string == nullptr) ? true : false;
    }
    if(!ret_error){
-      str_str = string_list(path_string, ",", NULL);
-      ret_error = (str_str == NULL || *str_str == NULL) ? true : false;
+      str_str = string_list(path_string, ",", nullptr);
+      ret_error = (str_str == nullptr || *str_str == nullptr) ? true : false;
    }
    if ( (!ret_error) && (!*lpp)) {
       *lpp = lCreateList("path_list", PN_Type);
-      ret_error = (*lpp == NULL) ? true : false;
+      ret_error = (*lpp == nullptr) ? true : false;
    }
 
    if(!ret_error){
       for (pstr = str_str; *pstr; pstr++) {
       /* cell given ? */
          if (*pstr[0] == ':') {  /* :path */
-            cell = NULL;
+            cell = nullptr;
             path = *pstr+1;
          } else if ((path = strstr(*pstr, ":"))){ /* host:path */
             path[0] = '\0';
@@ -1318,7 +1318,7 @@ int cull_parse_path_list(lList **lpp, const char *path_str)
             path[0] = ':';
             path += 1;
          } else { /* path */
-            cell = NULL;
+            cell = nullptr;
             path = *pstr;
          }
 
@@ -1365,7 +1365,7 @@ int
 cull_parse_jid_hold_list(lList **lpp, const char *str) 
 {
    int rule[] = {ST_name, 0};
-   char **str_str = NULL;
+   char **str_str = nullptr;
    int i_ret;
    char *s;
 
@@ -1375,14 +1375,14 @@ cull_parse_jid_hold_list(lList **lpp, const char *str)
       DRETURN(1);
    }
 
-   s = sge_strdup(NULL, str);
+   s = sge_strdup(nullptr, str);
    if (!s) {
-      *lpp = NULL;
+      *lpp = nullptr;
       DRETURN(3);
    }
-   str_str = string_list(s, ",", NULL);
+   str_str = string_list(s, ",", nullptr);
    if (!str_str || !*str_str) {
-      *lpp = NULL;
+      *lpp = nullptr;
       sge_free(&s);
       DRETURN(2);
    }

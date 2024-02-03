@@ -56,7 +56,7 @@ void sighandler_client(int sig);
 
 static int do_shutdown = 0;
 
-static cl_com_handle_t *handle = NULL;
+static cl_com_handle_t *handle = nullptr;
 
 void sighandler_client(
         int sig
@@ -121,32 +121,32 @@ extern int main(int argc, char **argv) {
    memset(&sa, 0, sizeof(sa));
    sa.sa_handler = sighandler_client;  /* one handler for all signals */
    sigemptyset(&sa.sa_mask);
-   sigaction(SIGINT, &sa, NULL);
-   sigaction(SIGTERM, &sa, NULL);
-   sigaction(SIGHUP, &sa, NULL);
-   sigaction(SIGPIPE, &sa, NULL);
+   sigaction(SIGINT, &sa, nullptr);
+   sigaction(SIGTERM, &sa, nullptr);
+   sigaction(SIGHUP, &sa, nullptr);
+   sigaction(SIGPIPE, &sa, nullptr);
 
-   gettimeofday(&now, NULL);
+   gettimeofday(&now, nullptr);
    shutdown_time = now.tv_sec + SGE_TEST_VIRTUAL_CLIENT_SHUTDOWN_TIMEOUT;
 
    printf("virtual gdi client is connecting to the virtual qmaster for each request.\n");
 
-   cl_com_setup_commlib(CL_NO_THREAD, (cl_log_t) atoi(argv[1]), NULL);
+   cl_com_setup_commlib(CL_NO_THREAD, (cl_log_t) atoi(argv[1]), nullptr);
 
    while (do_shutdown == 0) {
-      char *snd_data = NULL;
-      gettimeofday(&now, NULL);
+      char *snd_data = nullptr;
+      gettimeofday(&now, nullptr);
 
       if (now.tv_sec > shutdown_time) {
          printf("shutting down test - timeout\n");
          do_shutdown = 1;
       }
 
-      cl_com_setup_commlib(CL_NO_THREAD, (cl_log_t) atoi(argv[1]), NULL);
+      cl_com_setup_commlib(CL_NO_THREAD, (cl_log_t) atoi(argv[1]), nullptr);
 
-      handle = cl_com_create_handle(NULL, CL_CT_TCP, CL_CM_CT_MESSAGE, false, atoi(argv[2]), CL_TCP_DEFAULT,
+      handle = cl_com_create_handle(nullptr, CL_CT_TCP, CL_CM_CT_MESSAGE, false, atoi(argv[2]), CL_TCP_DEFAULT,
                                     "virtual_gdi_client", 0, 1, 0);
-      if (handle == NULL) {
+      if (handle == nullptr) {
          printf("could not get handle\n");
          exit(1);
       }
@@ -167,9 +167,9 @@ extern int main(int argc, char **argv) {
 
       while (do_shutdown == 0) {
          int retval = 0;
-         cl_com_message_t *message = NULL;
-         cl_com_endpoint_t *sender = NULL;
-         if (snd_data == NULL) {
+         cl_com_message_t *message = nullptr;
+         cl_com_endpoint_t *sender = nullptr;
+         if (snd_data == nullptr) {
             snd_data = sge_malloc(DATA_SIZE);
 #ifdef PACKAGE_COUNTER
             sprintf(snd_data, "%d\n", snd_messages);
@@ -183,7 +183,7 @@ extern int main(int argc, char **argv) {
          }
 #endif
 
-         gettimeofday(&now, NULL);
+         gettimeofday(&now, nullptr);
          if (now.tv_sec > shutdown_time) {
             printf("shutting down test - timeout\n");
             do_shutdown = 1;
@@ -192,19 +192,19 @@ extern int main(int argc, char **argv) {
          retval = cl_commlib_send_message(handle, argv[3], "virtual_master", 1,
                                           ack_type,
                                           (cl_byte_t **) (&snd_data), DATA_SIZE,
-                                          NULL, 0, 0, false, synchron);
+                                          nullptr, 0, 0, false, synchron);
          if (retval == CL_RETVAL_OK) {
-            snd_data = NULL;
+            snd_data = nullptr;
             snd_messages++;
-            retval = cl_commlib_receive_message(handle, NULL, NULL, 0,  /* handle, comp_host, comp_name ,comp_id, */
+            retval = cl_commlib_receive_message(handle, nullptr, nullptr, 0,  /* handle, comp_host, comp_name ,comp_id, */
                                                 true, 0,                   /* syncron, response_mid */
                                                 &message, &sender);
             if (retval == CL_RETVAL_OK) {
-               gettimeofday(&now, NULL);
+               gettimeofday(&now, nullptr);
                shutdown_time = now.tv_sec + SGE_TEST_VIRTUAL_CLIENT_SHUTDOWN_TIMEOUT;
 
                snd_data = (char *) message->message;
-               message->message = NULL;
+               message->message = nullptr;
 
 #ifdef PACKAGE_COUNTER
                if (rcv_messages == 0) {

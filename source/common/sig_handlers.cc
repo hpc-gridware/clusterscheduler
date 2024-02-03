@@ -149,7 +149,7 @@ int me_who
 #endif
 
    sigaction(SIGTERM, &sigterm_vec, &sigterm_ovec);
-   sigaction(SIGINT, &sigterm_vec, NULL);
+   sigaction(SIGINT, &sigterm_vec, nullptr);
 
 
    /******** signal handler for SIGCHLD AND SIGPIPE *******/

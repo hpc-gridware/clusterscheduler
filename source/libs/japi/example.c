@@ -55,7 +55,7 @@ int main(int argc, char *argv[])
    }
    job_path = argv[1];
 
-   if (drmaa_init(NULL, diagnosis, sizeof(diagnosis)-1) != DRMAA_ERRNO_SUCCESS) {
+   if (drmaa_init(nullptr, diagnosis, sizeof(diagnosis)-1) != DRMAA_ERRNO_SUCCESS) {
       fprintf(stderr, "drmaa_init() failed: %s\n", diagnosis);
       return 1;
    }
@@ -89,7 +89,7 @@ int main(int argc, char *argv[])
       } 
       drmaa_release_job_ids(jobids);
    }
-   drmaa_delete_job_template(jt, NULL, 0);
+   drmaa_delete_job_template(jt, nullptr, 0);
 
    /*
     *   submit some sequential jobs
@@ -113,9 +113,9 @@ int main(int argc, char *argv[])
    }
 
    /* set string array end mark */
-   all_jobids[pos] = NULL;
+   all_jobids[pos] = nullptr;
 
-   drmaa_delete_job_template(jt, NULL, 0);
+   drmaa_delete_job_template(jt, nullptr, 0);
 
    /*
     *   synchronize with all jobs
@@ -135,7 +135,7 @@ int main(int argc, char *argv[])
       int aborted, exited, exit_status, signaled;
 
       drmaa_errno = drmaa_wait(all_jobids[pos], jobid, sizeof(jobid)-1, 
-         &stat, DRMAA_TIMEOUT_WAIT_FOREVER, NULL, diagnosis, sizeof(diagnosis)-1);
+         &stat, DRMAA_TIMEOUT_WAIT_FOREVER, nullptr, diagnosis, sizeof(diagnosis)-1);
 
       if (drmaa_errno != DRMAA_ERRNO_SUCCESS) {
          fprintf(stderr, "drmaa_wait(%s) failed: %s\n", all_jobids[pos], diagnosis);
@@ -145,20 +145,20 @@ int main(int argc, char *argv[])
       /*
        * report how job finished 
        */
-      drmaa_wifaborted(&aborted, stat, NULL, 0);
+      drmaa_wifaborted(&aborted, stat, nullptr, 0);
       if (aborted)
          printf("job \"%s\" never ran\n", all_jobids[pos]);
       else {
-         drmaa_wifexited(&exited, stat, NULL, 0);
+         drmaa_wifexited(&exited, stat, nullptr, 0);
          if (exited) {
-            drmaa_wexitstatus(&exit_status, stat, NULL, 0);
+            drmaa_wexitstatus(&exit_status, stat, nullptr, 0);
             printf("job \"%s\" finished regularly with exit status %d\n", 
                   all_jobids[pos], exit_status);
          } else {
-            drmaa_wifsignaled(&signaled, stat, NULL, 0);
+            drmaa_wifsignaled(&signaled, stat, nullptr, 0);
             if (signaled) {
                char termsig[DRMAA_SIGNAL_BUFFER+1];
-               drmaa_wtermsig(termsig, DRMAA_SIGNAL_BUFFER, stat, NULL, 0);
+               drmaa_wtermsig(termsig, DRMAA_SIGNAL_BUFFER, stat, nullptr, 0);
                printf("job \"%s\" finished due to signal %s\n", 
                   all_jobids[pos], termsig);
             } else
@@ -180,32 +180,32 @@ int main(int argc, char *argv[])
 static drmaa_job_template_t *create_job_template(const char *job_path, int seconds, int as_bulk_job)
 {
    const char *job_argv[2];
-   drmaa_job_template_t *jt = NULL;
+   drmaa_job_template_t *jt = nullptr;
    char buffer[100];
 
-   if (drmaa_allocate_job_template(&jt, NULL, 0)!=DRMAA_ERRNO_SUCCESS)
-      return NULL;
+   if (drmaa_allocate_job_template(&jt, nullptr, 0)!=DRMAA_ERRNO_SUCCESS)
+      return nullptr;
 
    /* run in users home directory */
-   drmaa_set_attribute(jt, DRMAA_WD, DRMAA_PLACEHOLDER_HD, NULL, 0);
+   drmaa_set_attribute(jt, DRMAA_WD, DRMAA_PLACEHOLDER_HD, nullptr, 0);
 
    /* the job to be run */
-   drmaa_set_attribute(jt, DRMAA_REMOTE_COMMAND, job_path, NULL, 0);
+   drmaa_set_attribute(jt, DRMAA_REMOTE_COMMAND, job_path, nullptr, 0);
 
    /* the job's arguments */
    sprintf(buffer, "%d", seconds);
    job_argv[0] = buffer; 
-   job_argv[1] = NULL;
-   drmaa_set_vector_attribute(jt, DRMAA_V_ARGV, job_argv, NULL, 0);
+   job_argv[1] = nullptr;
+   drmaa_set_vector_attribute(jt, DRMAA_V_ARGV, job_argv, nullptr, 0);
 
    /* join output/error file */
-   drmaa_set_attribute(jt, DRMAA_JOIN_FILES, "y", NULL, 0);
+   drmaa_set_attribute(jt, DRMAA_JOIN_FILES, "y", nullptr, 0);
 
    /* path for output */
    if (!as_bulk_job)
-      drmaa_set_attribute(jt, DRMAA_OUTPUT_PATH, ":"DRMAA_PLACEHOLDER_HD"/DRMAA_JOB", NULL, 0);
+      drmaa_set_attribute(jt, DRMAA_OUTPUT_PATH, ":"DRMAA_PLACEHOLDER_HD"/DRMAA_JOB", nullptr, 0);
    else
-      drmaa_set_attribute(jt, DRMAA_OUTPUT_PATH, ":"DRMAA_PLACEHOLDER_HD"/DRMAA_JOB."DRMAA_PLACEHOLDER_INCR, NULL, 0);
+      drmaa_set_attribute(jt, DRMAA_OUTPUT_PATH, ":"DRMAA_PLACEHOLDER_HD"/DRMAA_JOB."DRMAA_PLACEHOLDER_INCR, nullptr, 0);
 
    return jt;
 }

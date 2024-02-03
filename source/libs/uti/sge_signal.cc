@@ -79,7 +79,7 @@ const sig_mapT sig_map[] =
                 {SGE_SIGUSR2, SIGUSR2, "USR2"},
                 {SGE_SIGBUS, SIGBUS, "BUS"},
                 {SGE_MIGRATE, SIGTTOU, "MIGRATE"},
-                {SIGUNKNOWN, 0, NULL}
+                {SIGUNKNOWN, 0, nullptr}
         };
 
 /****** uti/signal/sge_unmap_signal() *****************************************
@@ -182,7 +182,7 @@ u_long32 sge_str2signal(const char *str) {
 
    /* could not find per name -> look for signal numbers */
    if (sge_strisint(str)) {
-      signum = strtol(str, NULL, 10);
+      signum = strtol(str, nullptr, 10);
       mapptr = sig_map;
       while (mapptr->sge_sig) {
          if ((int) signum == mapptr->sig) {
@@ -315,7 +315,7 @@ const char *sge_sys_sig2str(u_long32 sys_sig) {
 *  INPUTS
 *     sigset_t sig_num    - signals which should be ignored
 *                           (use sigemptyset and sigaddset to set signals,
-*                           if NULL, no signals are ignored)
+*                           if nullptr, no signals are ignored)
 *     err_func_t err_func - callback function to report errors
 *
 *  NOTES
@@ -338,9 +338,9 @@ void sge_set_def_sig_mask(sigset_t *sig_num, err_func_t err_func) {
 
       /*
        * never set default handler for signals set
-       * in sig_num if not NULL 
+       * in sig_num if not nullptr
        */
-      if (sig_num != NULL && sigismember(sig_num, i)) {
+      if (sig_num != nullptr && sigismember(sig_num, i)) {
          i++;
          continue;
       }
@@ -350,7 +350,7 @@ void sge_set_def_sig_mask(sigset_t *sig_num, err_func_t err_func) {
       sig_vec.sa_flags = 0;
       sig_vec.sa_handler = 0;
       sig_vec.sa_handler = SIG_DFL;
-      if (sigaction(i, &sig_vec, NULL)) {
+      if (sigaction(i, &sig_vec, nullptr)) {
          if (err_func) {
             char err_str[256];
             snprintf(err_str, 256, MSG_PROC_SIGACTIONFAILED_IS, i, strerror(errno));
@@ -381,7 +381,7 @@ void sge_unblock_all_signals(void) {
    /* without this we depend on shell to unblock the signals */
    /* result is that SIGXCPU was not delivered with several shells */
    sigemptyset(&sigmask);
-   sigprocmask(SIG_SETMASK, &sigmask, NULL);
+   sigprocmask(SIG_SETMASK, &sigmask, nullptr);
 }
 
 /****** uti/signal/sge_thread_block_all_signals() *****************************
@@ -401,7 +401,7 @@ void sge_unblock_all_signals(void) {
 *  RETURN VALUES
 *     int - 0 if ok,
 *           errno if pthread_sigmask failed,
-*           1000 if oldsigmask == NULL.
+*           1000 if oldsigmask == nullptr.
 *
 *  NOTES
 *     MT-NOTE: sge_thread_block_signals() is MT safe
@@ -410,7 +410,7 @@ int sge_thread_block_all_signals(sigset_t *oldsigmask) {
    sigset_t new_mask;
    int ret = 1000;
 
-   if (oldsigmask != NULL) {
+   if (oldsigmask != nullptr) {
       sigfillset(&new_mask);
       ret = pthread_sigmask(SIG_BLOCK, &new_mask, oldsigmask);
    }

@@ -108,7 +108,7 @@ sge_tid_t sge_qexecve(sge_gdi_ctx_class_t *ctx,
    char myname[256];
    const char *s;
    int ret, uid;
-   sge_tid_t tid = NULL;
+   sge_tid_t tid = nullptr;
    lListElem *petrep;
    lListElem *rt;
    sge_pack_buffer pb;
@@ -118,40 +118,40 @@ sge_tid_t sge_qexecve(sge_gdi_ctx_class_t *ctx,
 
    DENTER(TOP_LAYER);
 
-   if (hostname == NULL) {
+   if (hostname == nullptr) {
       sprintf(lasterror, MSG_GDI_INVALIDPARAMETER_SS, "sge_qexecve", "hostname");
-      DRETURN(NULL);
+      DRETURN(nullptr);
    }
 
    /* resolve user */
    if (sge_uid2user((uid=getuid()), myname, sizeof(myname)-1, MAX_NIS_RETRIES)) {
       sprintf(lasterror, MSG_GDI_RESOLVINGUIDTOUSERNAMEFAILED_IS , 
               uid, strerror(errno));
-      DRETURN(NULL);
+      DRETURN(nullptr);
    }
    
-   if ((s=getenv("JOB_ID")) == NULL) {
+   if ((s=getenv("JOB_ID")) == nullptr) {
       sprintf(lasterror, MSG_GDI_MISSINGINENVIRONMENT_S, "JOB_ID");
-      DRETURN(NULL);
+      DRETURN(nullptr);
    }
 
    if (sscanf(s, sge_uu32, &jobid) != 1) {
       sprintf(lasterror, MSG_GDI_STRINGISINVALID_SS, s, "JOB_ID");
-      DRETURN(NULL);
+      DRETURN(nullptr);
    }
 
-   if ((s=getenv(env_var_name)) != NULL) {
+   if ((s=getenv(env_var_name)) != nullptr) {
       if (strcmp(s, "undefined") == 0) {
          jataskid = 1;
       } else {
          if (sscanf(s, sge_uu32, &jataskid) != 1) {
             sprintf(lasterror, MSG_GDI_STRINGISINVALID_SS, s, env_var_name);
-            DRETURN(NULL);
+            DRETURN(nullptr);
          }
       }
    } else {
       sprintf(lasterror, MSG_GDI_MISSINGINENVIRONMENT_S, env_var_name);
-      DRETURN(NULL);
+      DRETURN(nullptr);
    }
 
    /* ---- build up pe task request structure (see gdilib/sge_petaskL.h) */
@@ -162,27 +162,27 @@ sge_tid_t sge_qexecve(sge_gdi_ctx_class_t *ctx,
    lSetString(petrep, PETR_owner, myname);
    lSetUlong(petrep, PETR_submission_time, sge_get_gmt());
 
-   if (cwd != NULL) {
+   if (cwd != nullptr) {
       lSetString(petrep, PETR_cwd, cwd);
    }
 
-   if (environment != NULL) {
+   if (environment != nullptr) {
       lSetList(petrep, PETR_environment, lCopyList("environment", environment));
    }
 
-   if (path_aliases != NULL) {
+   if (path_aliases != nullptr) {
       lSetList(petrep, PETR_path_aliases, lCopyList("path_aliases", path_aliases));
    }
 
 
-   if (queuename != NULL) {
+   if (queuename != nullptr) {
       lSetString(petrep, PETR_queuename, queuename);
    }
 
    if (init_packbuffer(&pb, 1024, 0) != PACK_SUCCESS) {
       lFreeElem(&petrep);
       sprintf(lasterror, SFN, MSG_GDI_OUTOFMEMORY);
-      DRETURN(NULL);
+      DRETURN(nullptr);
    }
 
    pack_job_delivery(&pb, petrep);
@@ -196,7 +196,7 @@ sge_tid_t sge_qexecve(sge_gdi_ctx_class_t *ctx,
 
    if (ret != CL_RETVAL_OK) {
       sprintf(lasterror, MSG_GDI_SENDTASKTOEXECDFAILED_SS, hostname, cl_get_error_text(ret));
-      DRETURN(NULL);
+      DRETURN(nullptr);
    }
   
    /* add list into our remote task list */
@@ -209,7 +209,7 @@ sge_tid_t sge_qexecve(sge_gdi_ctx_class_t *ctx,
    tid = (sge_tid_t) lGetString(rt, RT_tid);
 
    if (strcmp(tid, "none") == 0) {
-      tid = NULL;
+      tid = nullptr;
       sprintf(lasterror, MSG_GDI_EXECDONHOSTDIDNTACCEPTTASK_S, hostname);
    }
 
@@ -227,7 +227,7 @@ sge_tid_t sge_qexecve(sge_gdi_ctx_class_t *ctx,
  */
 int sge_qwaittid(sge_gdi_ctx_class_t *ctx, sge_tid_t tid, int *status, int options)
 {
-   lListElem *rt = NULL;
+   lListElem *rt = nullptr;
    int ret, rcv_opt = 0;
 
    DENTER(TOP_LAYER);
@@ -235,7 +235,7 @@ int sge_qwaittid(sge_gdi_ctx_class_t *ctx, sge_tid_t tid, int *status, int optio
    if (!(options&WNOHANG))
       rcv_opt |= OPT_SYNCHRON;
 
-   if (tid != NULL && !(rt=LOCATE_RTASK(tid))) {
+   if (tid != nullptr && !(rt=LOCATE_RTASK(tid))) {
       sprintf(lasterror, MSG_GDI_TASKNOTEXIST_S , tid);
       DRETURN(-1);
    }
@@ -271,7 +271,7 @@ int sge_qwaittid(sge_gdi_ctx_class_t *ctx, sge_tid_t tid, int *status, int optio
 static int rcv_from_execd(sge_gdi_ctx_class_t *ctx, int options, int tag)
 {
    int ret;
-   char *msg = NULL;
+   char *msg = nullptr;
    u_long32 msg_len = 0;
    sge_pack_buffer pb;
    u_short from_id;
@@ -279,7 +279,7 @@ static int rcv_from_execd(sge_gdi_ctx_class_t *ctx, int options, int tag)
 
    lListElem *rt_rcv;
    u_long32 exit_status=0;
-   sge_tid_t tid = NULL;
+   sge_tid_t tid = nullptr;
 
    DENTER(TOP_LAYER);
 

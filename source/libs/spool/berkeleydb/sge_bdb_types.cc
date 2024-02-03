@@ -102,17 +102,17 @@ bdb_create(const char *path)
    int ret, i;
    bdb_info info = (bdb_info) sge_malloc(sizeof(struct _bdb_info));
 
-   pthread_mutex_init(&(info->mtx), NULL);
+   pthread_mutex_init(&(info->mtx), nullptr);
    ret = pthread_key_create(&(info->key), bdb_destroy_connection);
    if (ret != 0) {
       fprintf(stderr, "can't initialize key for thread local storage: %s\n", strerror(ret));
    }
    info->path   = path;
-   info->env    = NULL;
+   info->env    = nullptr;
 
    info->db     = (DB **)sge_malloc(BDB_ALL_DBS * sizeof(DB *));
    for (i = 0; i < BDB_ALL_DBS; i++) {
-      info->db[i] = NULL;
+      info->db[i] = nullptr;
    }
 
    info->next_clear = 0;
@@ -132,14 +132,14 @@ bdb_init_connection(bdb_connection *con)
 {
    int i;
 
-   con->env = NULL;
+   con->env = nullptr;
 
    con->db     = (DB **)sge_malloc(BDB_ALL_DBS * sizeof(DB *));
    for (i = 0; i < BDB_ALL_DBS; i++) {
-      con->db[i] = NULL;
+      con->db[i] = nullptr;
    }
 
-   con->txn = NULL;
+   con->txn = nullptr;
 }
 
 /*
@@ -159,16 +159,16 @@ bdb_destroy_connection(void *connection)
 
    DENTER(TOP_LAYER);
 
-   if (con->txn != NULL) {
+   if (con->txn != nullptr) {
       /* error */
    }
 
-   if (con->db != NULL) {
+   if (con->db != nullptr) {
       sge_free(&(con->db));
       /* error */
    }
 
-   if (con->env != NULL) {
+   if (con->env != nullptr) {
       /* error */
    }
    
@@ -229,7 +229,7 @@ bdb_get_path(bdb_info info)
 DB_ENV *
 bdb_get_env(bdb_info info)
 {
-   DB_ENV *env = NULL;
+   DB_ENV *env = nullptr;
 
    env = info->env;
 
@@ -263,7 +263,7 @@ bdb_get_env(bdb_info info)
 DB *
 bdb_get_db(bdb_info info, const bdb_database database)
 {
-   DB *db = NULL;
+   DB *db = nullptr;
 
    db = info->db[database];
 
@@ -453,7 +453,7 @@ bdb_get_dbname(bdb_info info, dstring *buffer)
    const char *ret;
    const char *path   = bdb_get_path(info);
 
-   if (path == NULL) {
+   if (path == nullptr) {
       ret = sge_dstring_copy_string(buffer, MSG_BERKELEY_DBNOTINITIALIZED);
    } else {
       ret = sge_dstring_copy_string(buffer, path);
@@ -487,7 +487,7 @@ bdb_get_database_name(const bdb_database database)
          ret = "sge_job";
          break;
       default:
-         ret = NULL;
+         ret = nullptr;
          break;
    };
 

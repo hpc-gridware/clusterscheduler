@@ -110,16 +110,16 @@ tst_sos(int used, int total, const lListElem *so)
 const char *
 so_list_append_to_dstring(const lList *this_list, dstring *string)
 {
-   const char *ret = NULL;
+   const char *ret = nullptr;
 
    DENTER(BASIS_LAYER);
-   if (string != NULL) {
-      const lListElem *elem = NULL;
+   if (string != nullptr) {
+      const lListElem *elem = nullptr;
       bool printed = false;
-      const lListElem *so = NULL;
+      const lListElem *so = nullptr;
       u_long32 slots_sum = 0;
 
-      if (this_list != NULL && (so = lFirst(this_list)) != NULL) {
+      if (this_list != nullptr && (so = lFirst(this_list)) != nullptr) {
          slots_sum = lGetUlong(so, SO_slots_sum);
 
          if (slots_sum > 0) {
@@ -182,10 +182,10 @@ so_list_add(lList **this_list, lList **answer_list, const char *so_name,
 {
    DENTER(TOP_LAYER);
 
-   if (this_list != NULL && so_name != NULL) {
+   if (this_list != nullptr && so_name != nullptr) {
       lListElem *elem = lGetElemStrRW(*this_list, SO_name, so_name);
    
-      if (elem != NULL) {
+      if (elem != nullptr) {
          u_long32 current_threshold = lGetUlong(elem, SO_threshold);
          u_long32 current_slots_sum = lGetUlong(elem, SO_slots_sum);
          u_long32 current_seq_no    = lGetUlong(elem, SO_seq_no);
@@ -264,10 +264,10 @@ so_list_resolve(const lList *so_list, lList **answer_list,
    bool ret = true;
 
    DENTER(TOP_LAYER);
-   if ((so_list != NULL) && (hostname != NULL)) {
+   if ((so_list != nullptr) && (hostname != nullptr)) {
       const lListElem *so;
 
-      if (cq_name != NULL) {
+      if (cq_name != nullptr) {
          DPRINTF(("Finding subordinates for %s on %s\n", cq_name, hostname));
       } else {
          DPRINTF(("Finding subordinates on host %s\n", hostname));
@@ -275,17 +275,17 @@ so_list_resolve(const lList *so_list, lList **answer_list,
       
       /* Get the list of resolved qinstances for each subordinate. */
       for_each_ep(so, so_list) {
-         const char *qinstance_name = NULL;
+         const char *qinstance_name = nullptr;
          const char *cq_name_str = lGetString (so, SO_name);
 
          lListElem *cqueue = cqueue_list_locate(master_cqueue_list, cq_name_str);
 
-         if (cqueue != NULL) {
+         if (cqueue != nullptr) {
             lListElem *qinstance = cqueue_locate_qinstance(cqueue, hostname);
 
             /* If this cqueue doesn't have a qinstance on this host,
              * just skip it. */
-            if (qinstance != NULL) {
+            if (qinstance != nullptr) {
                lUlong threshold   = lGetUlong(so, SO_threshold);
                lUlong slots_sum   = lGetUlong(so, SO_slots_sum);
                lUlong seq_no      = lGetUlong(so, SO_seq_no);

@@ -59,9 +59,9 @@ extern char **environ;
 
 /************************************************************************/
 int main(int argc, char **argv) {
-   lList *pcmdline = NULL, *id_list = NULL;
-   lList *alp = NULL;
-   sge_gdi_ctx_class_t *ctx = NULL;
+   lList *pcmdline = nullptr, *id_list = nullptr;
+   lList *alp = nullptr;
+   sge_gdi_ctx_class_t *ctx = nullptr;
 
    DENTER_MAIN(TOP_LAYER, "qrdel");
 
@@ -102,7 +102,7 @@ int main(int argc, char **argv) {
       goto error_exit;
    }
 
-   alp = ctx->gdi(ctx, SGE_AR_LIST, SGE_GDI_DEL, &id_list, NULL, NULL);
+   alp = ctx->gdi(ctx, SGE_AR_LIST, SGE_GDI_DEL, &id_list, nullptr, nullptr);
    lFreeList(&id_list);
    if (answer_list_has_error(&alp)) {
       answer_list_on_error_print_or_exit(&alp, stdout);
@@ -130,7 +130,7 @@ static bool sge_parse_cmdline_qrdel(char **argv, char **envp, lList **ppcmdline,
    rp = argv;
    while (*(sp=rp)) {
       /* -help */
-      if ((rp = parse_noopt(sp, "-help", NULL, ppcmdline, alpp)) != sp)
+      if ((rp = parse_noopt(sp, "-help", nullptr, ppcmdline, alpp)) != sp)
          continue;
       
       /* -f option */
@@ -139,7 +139,7 @@ static bool sge_parse_cmdline_qrdel(char **argv, char **envp, lList **ppcmdline,
 
       /* -u option */
       if (!strcmp("-u", *sp)) {
-         lList *user_list = NULL;
+         lList *user_list = nullptr;
          lListElem *ep_opt;
 
          sp++;
@@ -172,18 +172,18 @@ static bool sge_parse_qrdel(lList **ppcmdline, lList **ppid_list, lList **alpp)
 {
    u_long32 pforce = 0;
    u_long32 helpflag;
-   lList *plist = NULL;
-   lList *user_list = NULL;
+   lList *plist = nullptr;
+   lList *user_list = nullptr;
    bool ret = true;
 
    DENTER(TOP_LAYER);
 
    while (lGetNumberOfElem(*ppcmdline)) {
-      const lListElem *ep = NULL;
+      const lListElem *ep = nullptr;
       
       if (parse_flag(ppcmdline, "-help",  alpp, &helpflag)) {
          sge_usage(QRDEL, stdout);
-         SGE_EXIT(NULL, 0);
+         SGE_EXIT(nullptr, 0);
          break;
       }
       if (parse_flag(ppcmdline, "-f", alpp, &pforce)) 
@@ -217,7 +217,7 @@ static bool sge_parse_qrdel(lList **ppcmdline, lList **ppid_list, lList **alpp)
       lFreeList(&user_list);
    } else {
       /* fill up ID list */
-      if (user_list != NULL) {
+      if (user_list != nullptr) {
          lListElem *id;
 
          if (lGetNumberOfElem(*ppid_list) == 0){

@@ -64,7 +64,7 @@ typedef struct config_entry {
  * MT-NOTE: libs/uti/config_file.c is not MT safe due to access to global 
  * MT-NOTE: variables. But currently it is used only in execd and shepherd 
  */
-static config_entry *config_list = NULL;
+static config_entry *config_list = nullptr;
 
 /* these variables may get used to replace variables in pe_start */
 char *pe_variables[] = {
@@ -93,7 +93,7 @@ char *pe_variables[] = {
         "fs_stderr_path",
         "fs_stderr_tmp_path",
         "fs_stderr_file_staging",
-        NULL
+        nullptr
 };
 
 /* these variables may get used to replace variables in prolog/epilog */
@@ -120,7 +120,7 @@ char *prolog_epilog_variables[] = {
         "fs_stderr_path",
         "fs_stderr_tmp_path",
         "fs_stderr_file_staging",
-        NULL
+        nullptr
 };
 
 
@@ -129,7 +129,7 @@ char *pe_alloc_rule_variables[] = {
         "pe_slots",
         "fill_up",
         "round_robin",
-        NULL
+        nullptr
 };
 
 char *ckpt_variables[] = {
@@ -141,7 +141,7 @@ char *ckpt_variables[] = {
         "job_pid",
         "ckpt_dir",
         "ckpt_signal",
-        NULL
+        nullptr
 };
 
 char *ctrl_method_variables[] = {
@@ -151,10 +151,10 @@ char *ctrl_method_variables[] = {
         "job_name",
         "queue",
         "job_pid",
-        NULL
+        nullptr
 };
 
-void (*config_errfunc)(const char *) = NULL;
+void (*config_errfunc)(const char *) = nullptr;
 
 /*****************************************************
  read configuration file to memory.
@@ -178,13 +178,13 @@ int read_config(const char *fname) {
 
    while (fgets(buf, sizeof(buf), fp)) {
       struct saved_vars_s *context;
-      context = NULL;
+      context = nullptr;
       name = sge_strtok_r(buf, " =", &context);
       if (!name) {
          sge_free_saved_vars(context);
          break;
       }
-      value = sge_strtok_r(NULL, "\n", &context);
+      value = sge_strtok_r(nullptr, "\n", &context);
 
       if (add_config_entry(name, value)) {
          sge_free_saved_vars(context);
@@ -203,23 +203,23 @@ int read_config(const char *fname) {
 int add_config_entry(const char *name, const char *value) {
    config_entry *new_entry;
 
-   if ((new_entry = (config_entry *) sge_malloc(sizeof(config_entry))) == NULL) {
+   if ((new_entry = (config_entry *) sge_malloc(sizeof(config_entry))) == nullptr) {
       return 1;
    }
 
-   if ((new_entry->name = strdup(name)) == NULL) {
+   if ((new_entry->name = strdup(name)) == nullptr) {
       sge_free(&new_entry);
       return 1;
    }
 
-   if (value != NULL) {
-      if ((new_entry->value = strdup(value)) == NULL) {
+   if (value != nullptr) {
+      if ((new_entry->value = strdup(value)) == nullptr) {
          sge_free(&(new_entry->name));
          sge_free(&(new_entry));
          return 1;
       }
    } else {
-      new_entry->value = NULL;
+      new_entry->value = nullptr;
    }
 
    new_entry->next = config_list;
@@ -237,7 +237,7 @@ static config_entry *find_conf_entry(const char *name, config_entry *ptr) {
 
       ptr = ptr->next;
    }
-   return NULL;
+   return nullptr;
 }
 
 /***************************************************/
@@ -252,7 +252,7 @@ char *get_conf_val(const char *name) {
    sprintf(err_str, MSG_CONF_NOCONFVALUE_S, name);
    if (config_errfunc)
       config_errfunc(err_str);
-   return NULL;
+   return nullptr;
 }
 
 /*****************************************************************************
@@ -268,12 +268,12 @@ char *get_conf_val(const char *name) {
 void set_conf_val(const char *name, const char *value) {
    config_entry *pConfigEntry;
 
-   if (name == NULL || value == NULL) {
+   if (name == nullptr || value == nullptr) {
       return;
    }
 
    pConfigEntry = find_conf_entry(name, config_list);
-   if (pConfigEntry != NULL) {
+   if (pConfigEntry != nullptr) {
       /* avoid overwriting by itself */
       if (pConfigEntry->value != value) {
          sge_free(&(pConfigEntry->value));
@@ -289,23 +289,23 @@ char *search_conf_val(const char *name) {
    config_entry *ptr = config_list;
 
    ptr = find_conf_entry(name, config_list);
-   if (ptr != NULL) {
+   if (ptr != nullptr) {
       return ptr->value;
    } else {
-      return NULL;
+      return nullptr;
    }
 }
 
 /**************************************************
-   return NULL if conf value does not exist or
+   return nullptr if conf value does not exist or
    if "none" is it's value
 */
 char *search_nonone_conf_val(const char *name) {
    char *s;
 
    s = search_conf_val(name);
-   if (s != NULL && strcasecmp("none", s) == 0) {
-      return NULL;
+   if (s != nullptr && strcasecmp("none", s) == 0) {
+      return nullptr;
    } else {
       return s;
    }
@@ -338,7 +338,7 @@ void delete_config(void) {
  * config list - and would not need the checking function 
  * Solution: Pass a function pointer for a checking function.
  * qmaster (resp. the functions validating pe and ckpt etc. in libgdi)
- * pass NULL as checking function, schepherd etc. passes a function pointer.
+ * pass nullptr as checking function, schepherd etc. passes a function pointer.
  * replace_params should be moved to sge_string (libuti),
  * config_file could be moved to libspool.
  */
@@ -359,7 +359,7 @@ DESCRIPTION
 
    the allowed variable names are given using a string array 
    that contains accessable variables or all variable from 
-   config list are allowed if NULL is passed
+   config list are allowed if nullptr is passed
 
 ERROR
 
@@ -388,7 +388,7 @@ int replace_params(
 /*
    size_t max_dst_len = dst_len - 1;
 */
-   char **spp, *value = NULL;
+   char **spp, *value = nullptr;
    int just_check = 0;
 
 
@@ -408,8 +408,8 @@ int replace_params(
       just_check = 1;
    }
 
-   /* handle NULL string as src */
-   if (src == NULL) {
+   /* handle nullptr string as src */
+   if (src == nullptr) {
       sp = "";
    } else {
       sp = src;
@@ -499,7 +499,7 @@ bool parse_time_param(const char *input, const char *variable, u_long32 *value) 
 
    DENTER(BASIS_LAYER);
 
-   if (input != NULL && variable != NULL && value != NULL) {
+   if (input != nullptr && variable != nullptr && value != nullptr) {
       int var_len = strlen(variable);
 
       /* Test that 'variable' is the left side of the = in 'input.' */
@@ -517,13 +517,13 @@ bool parse_time_param(const char *input, const char *variable, u_long32 *value) 
          s = strchr(input, '=');
 
          /* only boolean variable contained in input -> value = true */
-         if (s == NULL) {
+         if (s == nullptr) {
             *value = 0;
          } else {
             /* skip = */
             s++;
 
-            if (!extended_parse_ulong_val(NULL, value, TYPE_TIM, s, NULL, 0, 0, false)) {
+            if (!extended_parse_ulong_val(nullptr, value, TYPE_TIM, s, nullptr, 0, 0, false)) {
                *value = 0;
                ret = false;
             }
@@ -542,7 +542,7 @@ bool parse_bool_param(const char *input, const char *variable, bool *value) {
 
    DENTER(BASIS_LAYER);
 
-   if (input != NULL && variable != NULL && value != NULL) {
+   if (input != nullptr && variable != nullptr && value != nullptr) {
       int var_len = strlen(variable);
 
       /* 
@@ -563,7 +563,7 @@ bool parse_bool_param(const char *input, const char *variable, bool *value) {
          s = strchr(input, '=');
 
          /* only boolean variable contained in input -> value = true */
-         if (s == NULL) {
+         if (s == nullptr) {
             *value = true;
          } else {
             /* skip = */
@@ -589,7 +589,7 @@ bool parse_int_param(const char *input, const char *variable,
 
    DENTER(BASIS_LAYER);
 
-   if (input != NULL && variable != NULL && value != NULL) {
+   if (input != nullptr && variable != nullptr && value != nullptr) {
       int var_len = strlen(variable);
 
       if ((strncasecmp(input, variable, var_len) == 0) &&
@@ -603,14 +603,14 @@ bool parse_int_param(const char *input, const char *variable,
          s = strchr(input, '=');
 
          /* no value contained in input -> value = 0 */
-         if (s == NULL) {
+         if (s == nullptr) {
             *value = 0;
          } else {
             u_long32 new_value;
             /* skip = */
             s++;
             /* parse value */
-            if (parse_ulong_val(NULL, &new_value, type, s, NULL, 0)) {
+            if (parse_ulong_val(nullptr, &new_value, type, s, nullptr, 0)) {
                *value = new_value;
             } else {
                *value = 0;

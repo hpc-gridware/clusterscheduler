@@ -159,7 +159,7 @@ bool prof_stop_measurement(prof_level level, dstring *error);
 *******************************************************************************/
 #define PROF_START_MEASUREMENT(level) \
    if(prof_is_active(level)) {\
-      prof_start_measurement(level,NULL);\
+      prof_start_measurement(level,nullptr);\
    }
 
 /****** uti/profiling/PROF_STOP_MEASUREMENT() ******************************
@@ -190,7 +190,7 @@ bool prof_stop_measurement(prof_level level, dstring *error);
 *******************************************************************************/
 #define PROF_STOP_MEASUREMENT(level) \
    if(prof_is_active(level)) {\
-      prof_stop_measurement(level, NULL);\
+      prof_stop_measurement(level, nullptr);\
    }
 
 bool prof_reset(prof_level level, dstring *error);

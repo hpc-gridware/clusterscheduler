@@ -38,7 +38,7 @@
 
 #include "comm/lists/cl_lists.h"
 
-cl_raw_list_t *thread_list = NULL;
+cl_raw_list_t *thread_list = nullptr;
 
 void *my_thread(void *t_conf);
 
@@ -51,8 +51,8 @@ void *my_thread_test(void *t_conf);
 #define __CL_FUNCTION__ "main()"
 
 extern int main(void) {
-   cl_thread_settings_t *thread_p = NULL;
-   cl_thread_settings_t *dummy_thread_p = NULL;
+   cl_thread_settings_t *thread_p = nullptr;
+   cl_thread_settings_t *dummy_thread_p = nullptr;
 
    int count = 0;
 
@@ -60,11 +60,11 @@ extern int main(void) {
    cl_thread_list_setup(&thread_list, "thread list");
 
    /* setup first thread */
-   cl_thread_list_create_thread(thread_list, &dummy_thread_p, NULL, "1st thread", 1, my_thread, NULL, NULL,
+   cl_thread_list_create_thread(thread_list, &dummy_thread_p, nullptr, "1st thread", 1, my_thread, nullptr, nullptr,
                                 CL_TT_USER1);
 
    /* setup second thread */
-   cl_thread_list_create_thread(thread_list, &dummy_thread_p, NULL, "2nd thread", 2, my_thread, NULL, NULL,
+   cl_thread_list_create_thread(thread_list, &dummy_thread_p, nullptr, "2nd thread", 2, my_thread, nullptr, nullptr,
                                 CL_TT_USER1);
 
    thread_p = cl_thread_list_get_thread_by_id(thread_list, 1);
@@ -86,14 +86,14 @@ extern int main(void) {
       printf("<----------- delete thread %d done\n", id);
 
       printf("-----------> add thread ...\n");
-      cl_thread_list_create_thread(thread_list, &dummy_thread_p, NULL, "new thread", id, my_thread, NULL, NULL,
+      cl_thread_list_create_thread(thread_list, &dummy_thread_p, nullptr, "new thread", id, my_thread, nullptr, nullptr,
                                    CL_TT_USER1);
       printf("<----------- add thread done\n");
 
    }
 
    /* delete all threads */
-   while ((thread_p = cl_thread_list_get_first_thread(thread_list)) != NULL) {
+   while ((thread_p = cl_thread_list_get_first_thread(thread_list)) != nullptr) {
       int id = thread_p->thread_id;
       printf("-----------> delete thread %d ...\n", id);
 
@@ -114,7 +114,7 @@ extern int main(void) {
 #define __CL_FUNCTION__ "my_thread()"
 
 void *my_thread(void *t_conf) {
-   cl_thread_settings_t *thread_p = NULL;
+   cl_thread_settings_t *thread_p = nullptr;
    int counter = 0;
    int do_exit = 0;
    /* get pointer to cl_thread_settings_t struct */
@@ -181,7 +181,7 @@ void *my_thread(void *t_conf) {
 
    /* at least set exit state */
    cl_thread_func_cleanup(thread_config);
-   return (NULL);
+   return (nullptr);
 }
 
 

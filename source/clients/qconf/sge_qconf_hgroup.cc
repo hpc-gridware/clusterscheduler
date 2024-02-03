@@ -60,7 +60,7 @@ static void
 hgroup_list_show_elem(lList *hgroup_list, const char *name, int indent)
 {
    const char *const indent_string = "   ";
-   const lListElem *hgroup = NULL;
+   const lListElem *hgroup = nullptr;
    int i;
 
    DENTER(TOP_LAYER);
@@ -71,9 +71,9 @@ hgroup_list_show_elem(lList *hgroup_list, const char *name, int indent)
    printf("%s\n", name);
 
    hgroup = lGetElemHost(hgroup_list, HGRP_name, name);   
-   if (hgroup != NULL) {
+   if (hgroup != nullptr) {
       const lList *sub_list = lGetList(hgroup, HGRP_host_list);
-      const lListElem *href = NULL;
+      const lListElem *href = nullptr;
 
       for_each_ep(href, sub_list) {
          const char *href_name = lGetHost(href, HR_name);
@@ -92,16 +92,16 @@ hgroup_add_del_mod_via_gdi(sge_gdi_ctx_class_t *ctx,
    bool ret = true;
 
    DENTER(TOP_LAYER);
-   if (this_elem != NULL) {
-      lListElem *element = NULL;
-      lList *hgroup_list = NULL;
-      lList *gdi_answer_list = NULL;
+   if (this_elem != nullptr) {
+      lListElem *element = nullptr;
+      lList *hgroup_list = nullptr;
+      lList *gdi_answer_list = nullptr;
 
       element = lCopyElem(this_elem);
       hgroup_list = lCreateList("", HGRP_Type);
       lAppendElem(hgroup_list, element);
       gdi_answer_list = ctx->gdi(ctx, SGE_HGRP_LIST, gdi_command,
-                                &hgroup_list, NULL, NULL);
+                                &hgroup_list, nullptr, nullptr);
       answer_list_replace(answer_list, &gdi_answer_list);
       lFreeList(&hgroup_list);
    }
@@ -111,14 +111,14 @@ hgroup_add_del_mod_via_gdi(sge_gdi_ctx_class_t *ctx,
 lListElem *hgroup_get_via_gdi(sge_gdi_ctx_class_t *ctx,
                               lList **answer_list, const char *name) 
 {
-   lListElem *ret = NULL;
+   lListElem *ret = nullptr;
 
    DENTER(TOP_LAYER);
-   if (name != NULL) {
-      lList *gdi_answer_list = NULL;
-      lEnumeration *what = NULL;
-      lCondition *where = NULL;
-      lList *hostgroup_list = NULL;
+   if (name != nullptr) {
+      lList *gdi_answer_list = nullptr;
+      lEnumeration *what = nullptr;
+      lCondition *where = nullptr;
+      lList *hostgroup_list = nullptr;
 
       what = lWhat("%T(ALL)", HGRP_Type);
       where = lWhere("%T(%I==%s)", HGRP_Type, HGRP_name, 
@@ -150,15 +150,15 @@ static bool hgroup_provide_modify_context(sge_gdi_ctx_class_t *ctx, lListElem **
    gid_t gid = bootstrap_get_gid();
    
    DENTER(TOP_LAYER);
-   if (this_elem != NULL && *this_elem != NULL) {
-      const char *filename = NULL;
+   if (this_elem != nullptr && *this_elem != nullptr) {
+      const char *filename = nullptr;
       filename = spool_flatfile_write_object(answer_list, *this_elem,
                                                      false, HGRP_fields,
                                                      &qconf_sfi,
                                                      SP_DEST_TMP, SP_FORM_ASCII,
                                                      filename, false);
       if (answer_list_has_error(answer_list)) {
-         if (filename != NULL) {
+         if (filename != nullptr) {
             unlink(filename);
             sge_free(&filename);
          }
@@ -168,18 +168,18 @@ static bool hgroup_provide_modify_context(sge_gdi_ctx_class_t *ctx, lListElem **
       status = sge_edit(filename, uid, gid);
       
       if (status >= 0) {
-         lListElem *hgroup = NULL;
+         lListElem *hgroup = nullptr;
 
          fields_out[0] = NoName;
-         hgroup = spool_flatfile_read_object(answer_list, HGRP_Type, NULL,
+         hgroup = spool_flatfile_read_object(answer_list, HGRP_Type, nullptr,
                                          HGRP_fields, fields_out, true, &qconf_sfi,
-                                         SP_FORM_ASCII, NULL, filename);
+                                         SP_FORM_ASCII, nullptr, filename);
             
          if (answer_list_output (answer_list)) {
             lFreeElem(&hgroup);
          }
 
-         if (hgroup != NULL) {
+         if (hgroup != nullptr) {
             missing_field = spool_get_unprocessed_field(HGRP_fields, fields_out, answer_list);
          }
 
@@ -188,7 +188,7 @@ static bool hgroup_provide_modify_context(sge_gdi_ctx_class_t *ctx, lListElem **
             answer_list_output (answer_list);
          }      
 
-         if (hgroup != NULL) {
+         if (hgroup != nullptr) {
             if (object_has_differences(*this_elem, answer_list,
                                        hgroup, false) || 
                 ignore_unchanged_message) {
@@ -243,10 +243,10 @@ bool hgroup_add(sge_gdi_ctx_class_t *ctx, lList **answer_list, const char *name,
    bool ret = true;
 
    DENTER(TOP_LAYER);
-   if (name != NULL) {
-      lListElem *hgroup = hgroup_create(answer_list, name, NULL, is_name_validate);
+   if (name != nullptr) {
+      lListElem *hgroup = hgroup_create(answer_list, name, nullptr, is_name_validate);
 
-      if (hgroup == NULL) {
+      if (hgroup == nullptr) {
          ret = false;
       }
       if (ret) {
@@ -270,19 +270,19 @@ bool hgroup_add_from_file(sge_gdi_ctx_class_t *ctx, lList **answer_list, const c
 
    DENTER(TOP_LAYER);
 
-   if (filename != NULL) {
+   if (filename != nullptr) {
       lListElem *hgroup;
 
       fields_out[0] = NoName;
-      hgroup = spool_flatfile_read_object(answer_list, HGRP_Type, NULL,
+      hgroup = spool_flatfile_read_object(answer_list, HGRP_Type, nullptr,
                                       HGRP_fields, fields_out, true, &qconf_sfi,
-                                      SP_FORM_ASCII, NULL, filename);
+                                      SP_FORM_ASCII, nullptr, filename);
 
       if (answer_list_output (answer_list)) {
          lFreeElem(&hgroup);
       }
 
-      if (hgroup != NULL) {
+      if (hgroup != nullptr) {
          missing_field = spool_get_unprocessed_field (HGRP_fields, fields_out, answer_list);
       }
 
@@ -291,7 +291,7 @@ bool hgroup_add_from_file(sge_gdi_ctx_class_t *ctx, lList **answer_list, const c
          answer_list_output (answer_list);
       }
 
-      if (hgroup == NULL) {
+      if (hgroup == nullptr) {
          ret = false;
       }
       if (ret) {
@@ -308,10 +308,10 @@ bool hgroup_modify(sge_gdi_ctx_class_t *ctx, lList **answer_list, const char *na
    bool ret = true;
 
    DENTER(TOP_LAYER);
-   if (name != NULL) {
+   if (name != nullptr) {
       lListElem *hgroup = hgroup_get_via_gdi(ctx, answer_list, name);
 
-      if (hgroup == NULL) {
+      if (hgroup == nullptr) {
          answer_list_add_sprintf(answer_list, STATUS_ERROR1,
                                  ANSWER_QUALITY_ERROR, MSG_HGROUP_NOTEXIST_S, name);
          ret = false;
@@ -335,19 +335,19 @@ bool hgroup_modify_from_file(sge_gdi_ctx_class_t *ctx, lList **answer_list, cons
    int missing_field = NoName;
 
    DENTER(TOP_LAYER);
-   if (filename != NULL) {
+   if (filename != nullptr) {
       lListElem *hgroup;
 
       fields_out[0] = NoName;
-      hgroup = spool_flatfile_read_object(answer_list, HGRP_Type, NULL,
+      hgroup = spool_flatfile_read_object(answer_list, HGRP_Type, nullptr,
                                       HGRP_fields, fields_out, true, &qconf_sfi,
-                                      SP_FORM_ASCII, NULL, filename);
+                                      SP_FORM_ASCII, nullptr, filename);
             
       if (answer_list_output(answer_list)) {
          lFreeElem(&hgroup);
       }
 
-      if (hgroup != NULL) {
+      if (hgroup != nullptr) {
          missing_field = spool_get_unprocessed_field(HGRP_fields, fields_out, answer_list);
       }
 
@@ -356,7 +356,7 @@ bool hgroup_modify_from_file(sge_gdi_ctx_class_t *ctx, lList **answer_list, cons
          answer_list_output (answer_list);
       }      
 
-      if (hgroup == NULL) {
+      if (hgroup == nullptr) {
          answer_list_add_sprintf(answer_list, STATUS_ERROR1,
                                  ANSWER_QUALITY_ERROR, MSG_HGROUP_FILEINCORRECT_S, filename);
          ret = false;
@@ -377,10 +377,10 @@ bool hgroup_delete(sge_gdi_ctx_class_t *ctx, lList **answer_list, const char *na
    bool ret = true;
 
    DENTER(TOP_LAYER);
-   if (name != NULL) {
-      lListElem *hgroup = hgroup_create(answer_list, name, NULL, true); 
+   if (name != nullptr) {
+      lListElem *hgroup = hgroup_create(answer_list, name, nullptr, true);
    
-      if (hgroup != NULL) {
+      if (hgroup != nullptr) {
          ret = hgroup_add_del_mod_via_gdi(ctx, hgroup, answer_list, SGE_GDI_DEL); 
       }
       lFreeElem(&hgroup);
@@ -393,14 +393,14 @@ bool hgroup_show(sge_gdi_ctx_class_t *ctx, lList **answer_list, const char *name
    bool ret = true;
 
    DENTER(TOP_LAYER);
-   if (name != NULL) {
+   if (name != nullptr) {
       lListElem *hgroup = hgroup_get_via_gdi(ctx, answer_list, name); 
    
-      if (hgroup != NULL) {
+      if (hgroup != nullptr) {
          const char *filename;
          filename = spool_flatfile_write_object(answer_list, hgroup, false, HGRP_fields,
                                      &qconf_sfi, SP_DEST_STDOUT,
-                                     SP_FORM_ASCII, NULL, false);
+                                     SP_FORM_ASCII, nullptr, false);
       
          sge_free(&filename);
          lFreeElem(&hgroup);
@@ -423,15 +423,15 @@ bool hgroup_show_structure(sge_gdi_ctx_class_t *ctx, lList **answer_list, const 
    bool ret = true;
 
    DENTER(TOP_LAYER);
-   if (name != NULL) {
-      lList *hgroup_list = NULL;
-      const lListElem *hgroup = NULL;
-      lEnumeration *what = NULL;
-      lList *alp = NULL;
-      const lListElem *alep = NULL;
+   if (name != nullptr) {
+      lList *hgroup_list = nullptr;
+      const lListElem *hgroup = nullptr;
+      lEnumeration *what = nullptr;
+      lList *alp = nullptr;
+      const lListElem *alep = nullptr;
 
       what = lWhat("%T(ALL)", HGRP_Type);
-      alp = ctx->gdi(ctx, SGE_HGRP_LIST, SGE_GDI_GET, &hgroup_list, NULL, what);
+      alp = ctx->gdi(ctx, SGE_HGRP_LIST, SGE_GDI_GET, &hgroup_list, nullptr, what);
       lFreeWhat(&what);
 
       alep = lFirst(alp);
@@ -443,13 +443,13 @@ bool hgroup_show_structure(sge_gdi_ctx_class_t *ctx, lList **answer_list, const 
       }
 
       hgroup = lGetElemHost(hgroup_list, HGRP_name, name); 
-      if (hgroup != NULL) {
+      if (hgroup != nullptr) {
          if (show_tree) {
             hgroup_list_show_elem(hgroup_list, name, 0);
          } else {
             dstring string = DSTRING_INIT;
-            lList *sub_host_list = NULL;
-            lList *sub_hgroup_list = NULL;
+            lList *sub_host_list = nullptr;
+            lList *sub_hgroup_list = nullptr;
 
             hgroup_find_all_references(hgroup, answer_list, hgroup_list, 
                                        &sub_host_list, &sub_hgroup_list);

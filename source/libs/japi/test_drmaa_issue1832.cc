@@ -122,7 +122,7 @@ static void state_monitor(char **ids_a, int chunks_a, char **ids_b, int chunks_b
    do {
       char jobid[512];
 
-      drmaa_errno = drmaa_wait(DRMAA_JOB_IDS_SESSION_ANY, jobid, sizeof(jobid)-1, &status, 0, NULL, errorbuf, sizeof(errorbuf)-1);
+      drmaa_errno = drmaa_wait(DRMAA_JOB_IDS_SESSION_ANY, jobid, sizeof(jobid)-1, &status, 0, nullptr, errorbuf, sizeof(errorbuf)-1);
 
       if (drmaa_errno==DRMAA_ERRNO_INVALID_JOB) {
          break; /* nothing more to wait for */
@@ -140,7 +140,7 @@ static void state_monitor(char **ids_a, int chunks_a, char **ids_b, int chunks_b
             ids_remove_id(ids_b, BULK_SIZE/chunks_b, jobid);
 
          if (do_exit) {
-            if (drmaa_wifexited(&exited, status, NULL, 0) != DRMAA_ERRNO_SUCCESS) {
+            if (drmaa_wifexited(&exited, status, nullptr, 0) != DRMAA_ERRNO_SUCCESS) {
                fprintf(stderr, "drmaa_wifexited(\"%s\") failed\n", jobid);
                exit(1);
             }
@@ -148,7 +148,7 @@ static void state_monitor(char **ids_a, int chunks_a, char **ids_b, int chunks_b
                fprintf(stderr, "job \"%s\" didn't exit orderly\n", jobid);
                exit(1);
             }
-            if (drmaa_wexitstatus(&exit_status, status, NULL, 0) != DRMAA_ERRNO_SUCCESS) {
+            if (drmaa_wexitstatus(&exit_status, status, nullptr, 0) != DRMAA_ERRNO_SUCCESS) {
                fprintf(stderr, "drmaa_wexitstatus(\"%s\") failed\n", jobid);
                exit(1);
             }
@@ -274,28 +274,28 @@ validate_jobs(drmaa_job_ids_t *jobids_a, int chunks_a, drmaa_job_ids_t *jobids_b
 static 
 drmaa_job_template_t *create_job_template(const char *job_path, const char *job_name, const char *pred_name, int seconds, int hold) 
 {
-   drmaa_job_template_t *jt = NULL;
+   drmaa_job_template_t *jt = nullptr;
    int drmaa_errno;
    char buf[512];
 
    const char *job_argv[2];
 
-   if (drmaa_allocate_job_template(&jt, NULL, 0) != DRMAA_ERRNO_SUCCESS) {
+   if (drmaa_allocate_job_template(&jt, nullptr, 0) != DRMAA_ERRNO_SUCCESS) {
       fprintf(stderr, "error: failed to create job template %s.\n", job_name);
       exit(1);
    }
 
    /* the job to be run */
-   drmaa_set_attribute(jt, DRMAA_REMOTE_COMMAND, job_path, NULL, 0);
+   drmaa_set_attribute(jt, DRMAA_REMOTE_COMMAND, job_path, nullptr, 0);
 
    /* join output/error file */
-   drmaa_set_attribute(jt, DRMAA_JOIN_FILES, "y", NULL, 0);
+   drmaa_set_attribute(jt, DRMAA_JOIN_FILES, "y", nullptr, 0);
 
    /* path for output */
-   drmaa_set_attribute(jt, DRMAA_OUTPUT_PATH, ":/dev/null", NULL, 0);
+   drmaa_set_attribute(jt, DRMAA_OUTPUT_PATH, ":/dev/null", nullptr, 0);
 
    /* job name for hold_jid_ad list */
-   drmaa_set_attribute(jt, DRMAA_JOB_NAME, job_name, NULL, 0);
+   drmaa_set_attribute(jt, DRMAA_JOB_NAME, job_name, nullptr, 0);
 
 
    /* drmaa_run_bulk_job(3) must accept -hold_jid_ad wc_job_list when passed through job  
@@ -304,7 +304,7 @@ drmaa_job_template_t *create_job_template(const char *job_path, const char *job_
       strcpy(buf, "-h ");
    }
 
-   if (pred_name != NULL) {
+   if (pred_name != nullptr) {
       if (strlen(pred_name) > 256) {
          fprintf(stderr, "error: predecessor name too long!\n");
          exit(1);
@@ -313,7 +313,7 @@ drmaa_job_template_t *create_job_template(const char *job_path, const char *job_
       strcat(buf, pred_name);
    }
 
-   if (hold || pred_name != NULL) {
+   if (hold || pred_name != nullptr) {
       drmaa_errno = drmaa_set_attribute(jt, DRMAA_NATIVE_SPECIFICATION, buf, errorbuf, sizeof(errorbuf)-1);
       if(drmaa_errno != DRMAA_ERRNO_SUCCESS) {
          fprintf(stderr, "drmaa_set_attribute failed: %s\n", errorbuf);
@@ -324,18 +324,18 @@ drmaa_job_template_t *create_job_template(const char *job_path, const char *job_
    /* control job sleep time */
    sprintf(buf, "%d", seconds);
    job_argv[0] = buf; 
-   job_argv[1] = NULL;
-   drmaa_set_vector_attribute(jt, DRMAA_V_ARGV, job_argv, NULL, 0);
+   job_argv[1] = nullptr;
+   drmaa_set_vector_attribute(jt, DRMAA_V_ARGV, job_argv, nullptr, 0);
 
    return jt;
 }
 
 int main(int argc, char **argv)
 {
-   drmaa_job_template_t *jt_a = NULL;
-   drmaa_job_template_t *jt_b = NULL;
-   drmaa_job_ids_t *jobids_a = NULL;
-   drmaa_job_ids_t *jobids_b = NULL;
+   drmaa_job_template_t *jt_a = nullptr;
+   drmaa_job_template_t *jt_b = nullptr;
+   drmaa_job_ids_t *jobids_a = nullptr;
+   drmaa_job_ids_t *jobids_b = nullptr;
    const char *base_name = "Job";
    char name_a[512], name_b[512];
 
@@ -397,7 +397,7 @@ int main(int argc, char **argv)
       exit(1);
    }
 
-   if (strstr(argv[1], "sleeper.sh") == NULL) {
+   if (strstr(argv[1], "sleeper.sh") == nullptr) {
       printf("Usage: %s path_to_sleeper_script\n", argv[0]);
       exit(1);
    }
@@ -407,7 +407,7 @@ int main(int argc, char **argv)
    else
       samples = sizeof(chunking)/(sizeof(void *));
 
-   while ((drmaa_errno=drmaa_init(NULL, errorbuf, sizeof(errorbuf)-1) == DRMAA_ERRNO_DRM_COMMUNICATION_FAILURE))
+   while ((drmaa_errno=drmaa_init(nullptr, errorbuf, sizeof(errorbuf)-1) == DRMAA_ERRNO_DRM_COMMUNICATION_FAILURE))
       sleep(1);
    if (drmaa_errno != DRMAA_ERRNO_SUCCESS) {
       fprintf(stderr, "drmaa_init failed: %s\n", errorbuf);
@@ -421,7 +421,7 @@ int main(int argc, char **argv)
 
    for (i=0; i< samples; i++) {
 
-      jt_a = create_job_template(argv[1], name_a, NULL, chunking[i].a, 1);
+      jt_a = create_job_template(argv[1], name_a, nullptr, chunking[i].a, 1);
       jt_b = create_job_template(argv[1], name_b, name_a, chunking[i].b, 0);
       
       while ((drmaa_errno = drmaa_run_bulk_jobs(&jobids_a, jt_a, 1, BULK_SIZE, chunking[i].a, 

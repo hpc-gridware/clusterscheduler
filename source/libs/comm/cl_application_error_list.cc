@@ -45,7 +45,7 @@
 int cl_application_error_list_setup(cl_raw_list_t **list_p, char *list_name) {
    int ret_val = CL_RETVAL_OK;
    int ret_val2 = CL_RETVAL_OK;
-   cl_raw_list_t *logged_error_list = NULL;
+   cl_raw_list_t *logged_error_list = nullptr;
 
    ret_val = cl_raw_list_setup(list_p, list_name, 1);
    if (ret_val == CL_RETVAL_OK) {
@@ -62,7 +62,7 @@ int cl_application_error_list_setup(cl_raw_list_t **list_p, char *list_name) {
       cl_raw_list_unlock(*list_p);
    }
 
-   if (list_name != NULL) {
+   if (list_name != nullptr) {
       CL_LOG_STR(CL_LOG_INFO, "application error list setup ok for list:", list_name);
    }
    return ret_val;
@@ -75,13 +75,13 @@ int cl_application_error_list_setup(cl_raw_list_t **list_p, char *list_name) {
 #define __CL_FUNCTION__ "cl_application_error_list_cleanup()"
 
 int cl_application_error_list_cleanup(cl_raw_list_t **list_p) {
-   cl_application_error_list_elem_t *elem = NULL;
+   cl_application_error_list_elem_t *elem = nullptr;
    int ret_val = CL_RETVAL_OK;
-   if (list_p == NULL) {
+   if (list_p == nullptr) {
       /* we expect an address of an pointer */
       return CL_RETVAL_PARAMS;
    }
-   if (*list_p == NULL) {
+   if (*list_p == nullptr) {
       /* we expect an initalized pointer */
       return CL_RETVAL_PARAMS;
    }
@@ -90,15 +90,15 @@ int cl_application_error_list_cleanup(cl_raw_list_t **list_p) {
    cl_raw_list_lock(*list_p);
 
    /* first delete list_data list */
-   if ((*list_p)->list_data != NULL) {
-      cl_raw_list_t *logged_error_list = NULL;
+   if ((*list_p)->list_data != nullptr) {
+      cl_raw_list_t *logged_error_list = nullptr;
       logged_error_list = (cl_raw_list_t *) (*list_p)->list_data;
       CL_LOG(CL_LOG_INFO, "cleanup of already logged data list");
       cl_application_error_list_cleanup(&logged_error_list);
-      (*list_p)->list_data = NULL;
+      (*list_p)->list_data = nullptr;
    }
 
-   while ((elem = cl_application_error_list_get_first_elem(*list_p)) != NULL) {
+   while ((elem = cl_application_error_list_get_first_elem(*list_p)) != nullptr) {
       cl_raw_list_remove_elem(*list_p, elem->raw_elem);
       sge_free(&(elem->cl_info));
       sge_free(&elem);
@@ -118,12 +118,12 @@ int cl_application_error_list_cleanup(cl_raw_list_t **list_p) {
 int cl_application_error_list_push_error(cl_raw_list_t *list_p, cl_log_t cl_err_type, int cl_error, const char *cl_info,
                                          int lock_list) {
 
-   cl_application_error_list_elem_t *new_elem = NULL;
-   cl_application_error_list_elem_t *al_list_elem = NULL;
+   cl_application_error_list_elem_t *new_elem = nullptr;
+   cl_application_error_list_elem_t *al_list_elem = nullptr;
    int ret_val;
    bool do_log = true;
 
-   if (list_p == NULL || cl_info == NULL) {
+   if (list_p == nullptr || cl_info == nullptr) {
       return CL_RETVAL_PARAMS;
    }
 
@@ -135,9 +135,9 @@ int cl_application_error_list_push_error(cl_raw_list_t *list_p, cl_log_t cl_err_
    }
 
    /* check if we should log this error */
-   if (list_p->list_data != NULL) {
-      cl_raw_list_t *logged_error_list = NULL;
-      cl_application_error_list_elem_t *next_elem = NULL;
+   if (list_p->list_data != nullptr) {
+      cl_raw_list_t *logged_error_list = nullptr;
+      cl_application_error_list_elem_t *next_elem = nullptr;
       struct timeval now;
 
       logged_error_list = (cl_raw_list_t *) list_p->list_data;
@@ -145,10 +145,10 @@ int cl_application_error_list_push_error(cl_raw_list_t *list_p, cl_log_t cl_err_
       if (lock_list == 1) {
          cl_raw_list_lock(logged_error_list);
       }
-      gettimeofday(&now, NULL);
+      gettimeofday(&now, nullptr);
 
       al_list_elem = cl_application_error_list_get_first_elem(logged_error_list);
-      while (al_list_elem != NULL) {
+      while (al_list_elem != nullptr) {
          next_elem = cl_application_error_list_get_next_elem(al_list_elem);
 
          if (al_list_elem->cl_log_time.tv_sec + CL_DEFINE_MESSAGE_DUP_LOG_TIMEOUT <= now.tv_sec) {
@@ -157,7 +157,7 @@ int cl_application_error_list_push_error(cl_raw_list_t *list_p, cl_log_t cl_err_
             cl_raw_list_remove_elem(logged_error_list, al_list_elem->raw_elem);
             sge_free(&(al_list_elem->cl_info));
             sge_free(&al_list_elem);
-            al_list_elem = NULL;
+            al_list_elem = nullptr;
          }
 
          al_list_elem = next_elem;
@@ -165,7 +165,7 @@ int cl_application_error_list_push_error(cl_raw_list_t *list_p, cl_log_t cl_err_
 
 
       al_list_elem = cl_application_error_list_get_first_elem(logged_error_list);
-      while (al_list_elem != NULL) {
+      while (al_list_elem != nullptr) {
          if (al_list_elem->cl_error == cl_error) {
             if (strcmp(al_list_elem->cl_info, cl_info) == 0) {
                do_log = false;
@@ -181,7 +181,7 @@ int cl_application_error_list_push_error(cl_raw_list_t *list_p, cl_log_t cl_err_
 
    /* add new element into application error push list */
    new_elem = (cl_application_error_list_elem_t *) sge_malloc(sizeof(cl_application_error_list_elem_t));
-   if (new_elem == NULL) {
+   if (new_elem == nullptr) {
       if (lock_list == 1) {
          cl_raw_list_unlock(list_p);
       }
@@ -190,7 +190,7 @@ int cl_application_error_list_push_error(cl_raw_list_t *list_p, cl_log_t cl_err_
 
    new_elem->cl_info = strdup(cl_info);
    new_elem->cl_error = cl_error;
-   gettimeofday(&(new_elem->cl_log_time), NULL);
+   gettimeofday(&(new_elem->cl_log_time), nullptr);
    new_elem->cl_already_logged = false;
    new_elem->cl_err_type = cl_err_type;
 
@@ -204,15 +204,15 @@ int cl_application_error_list_push_error(cl_raw_list_t *list_p, cl_log_t cl_err_
       CL_LOG_STR(CL_LOG_WARNING, "ignore application error - found entry in already logged list:", cl_info);
    } else {
       /* store this error into already logged error list */
-      if (list_p->list_data != NULL) {
-         cl_raw_list_t *logged_error_list = NULL;
+      if (list_p->list_data != nullptr) {
+         cl_raw_list_t *logged_error_list = nullptr;
          logged_error_list = (cl_raw_list_t *) list_p->list_data;
          cl_application_error_list_push_error(logged_error_list, cl_err_type, cl_error, cl_info, lock_list);
       }
    }
 
 
-   if (new_elem->cl_info == NULL) {
+   if (new_elem->cl_info == nullptr) {
       sge_free(&new_elem);
       if (lock_list == 1) {
          cl_raw_list_unlock(list_p);
@@ -221,7 +221,7 @@ int cl_application_error_list_push_error(cl_raw_list_t *list_p, cl_log_t cl_err_
    }
 
    new_elem->raw_elem = cl_raw_list_append_elem(list_p, (void *) new_elem);
-   if (new_elem->raw_elem == NULL) {
+   if (new_elem->raw_elem == nullptr) {
       sge_free(&(new_elem->cl_info));
       sge_free(&new_elem);
       if (lock_list == 1) {
@@ -250,7 +250,7 @@ cl_application_error_list_elem_t *cl_application_error_list_get_first_elem(cl_ra
    if (raw_elem) {
       return (cl_application_error_list_elem_t *) raw_elem->data;
    }
-   return NULL;
+   return nullptr;
 }
 
 #ifdef __CL_FUNCTION__
@@ -263,7 +263,7 @@ cl_application_error_list_elem_t *cl_application_error_list_get_least_elem(cl_ra
    if (raw_elem) {
       return (cl_application_error_list_elem_t *) raw_elem->data;
    }
-   return NULL;
+   return nullptr;
 }
 
 #ifdef __CL_FUNCTION__
@@ -272,16 +272,16 @@ cl_application_error_list_elem_t *cl_application_error_list_get_least_elem(cl_ra
 #define __CL_FUNCTION__ "cl_application_error_list_get_next_elem()"
 
 cl_application_error_list_elem_t *cl_application_error_list_get_next_elem(cl_application_error_list_elem_t *elem) {
-   cl_raw_list_elem_t *next_raw_elem = NULL;
+   cl_raw_list_elem_t *next_raw_elem = nullptr;
 
-   if (elem != NULL) {
+   if (elem != nullptr) {
       cl_raw_list_elem_t *raw_elem = elem->raw_elem;
       next_raw_elem = cl_raw_list_get_next_elem(raw_elem);
       if (next_raw_elem) {
          return (cl_application_error_list_elem_t *) next_raw_elem->data;
       }
    }
-   return NULL;
+   return nullptr;
 }
 
 
@@ -291,16 +291,16 @@ cl_application_error_list_elem_t *cl_application_error_list_get_next_elem(cl_app
 #define __CL_FUNCTION__ "cl_application_error_list_get_last_elem()"
 
 cl_application_error_list_elem_t *cl_application_error_list_get_last_elem(cl_application_error_list_elem_t *elem) {
-   cl_raw_list_elem_t *last_raw_elem = NULL;
+   cl_raw_list_elem_t *last_raw_elem = nullptr;
 
-   if (elem != NULL) {
+   if (elem != nullptr) {
       cl_raw_list_elem_t *raw_elem = elem->raw_elem;
       last_raw_elem = cl_raw_list_get_last_elem(raw_elem);
       if (last_raw_elem) {
          return (cl_application_error_list_elem_t *) last_raw_elem->data;
       }
    }
-   return NULL;
+   return nullptr;
 }
 
 

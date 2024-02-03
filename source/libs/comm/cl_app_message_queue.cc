@@ -77,15 +77,15 @@ int cl_app_message_queue_append(cl_raw_list_t *list_p,
                                 int do_lock) {
 
    int ret_val;
-   cl_app_message_queue_elem_t *new_elem = NULL;
+   cl_app_message_queue_elem_t *new_elem = nullptr;
 
-   if (list_p == NULL) {
+   if (list_p == nullptr) {
       return CL_RETVAL_PARAMS;
    }
 
    /* add new element list */
    new_elem = (cl_app_message_queue_elem_t *) sge_malloc(sizeof(cl_app_message_queue_elem_t));
-   if (new_elem == NULL) {
+   if (new_elem == nullptr) {
       return CL_RETVAL_MALLOC;
    }
 
@@ -96,7 +96,7 @@ int cl_app_message_queue_append(cl_raw_list_t *list_p,
    new_elem->snd_size = snd_size;
    new_elem->snd_response_mid = snd_response_mid;
    new_elem->snd_tag = snd_tag;
-   new_elem->raw_elem = NULL;
+   new_elem->raw_elem = nullptr;
 
    /* lock the list */
    if (do_lock != 0) {
@@ -106,7 +106,7 @@ int cl_app_message_queue_append(cl_raw_list_t *list_p,
    }
 
    new_elem->raw_elem = cl_raw_list_append_elem(list_p, (void *) new_elem);
-   if (new_elem->raw_elem == NULL) {
+   if (new_elem->raw_elem == nullptr) {
       if (do_lock != 0) {
          cl_raw_list_unlock(list_p);
       }
@@ -133,11 +133,11 @@ int cl_app_message_queue_remove(cl_raw_list_t *list_p, cl_com_connection_t *conn
                                 bool remove_all_elements) {
    int function_return = CL_RETVAL_CONNECTION_NOT_FOUND;
    int ret_val = CL_RETVAL_OK;
-   cl_app_message_queue_elem_t *elem = NULL;
-   cl_app_message_queue_elem_t *next_elem = NULL;
+   cl_app_message_queue_elem_t *elem = nullptr;
+   cl_app_message_queue_elem_t *next_elem = nullptr;
 
 
-   if (list_p == NULL || connection == NULL) {
+   if (list_p == nullptr || connection == nullptr) {
       return CL_RETVAL_PARAMS;
    }
 
@@ -149,7 +149,7 @@ int cl_app_message_queue_remove(cl_raw_list_t *list_p, cl_com_connection_t *conn
    }
 
    elem = cl_app_message_queue_get_first_elem(list_p);
-   while (elem != NULL) {
+   while (elem != nullptr) {
       next_elem = cl_app_message_queue_get_next_elem(elem);
       if (elem->rcv_connection == connection) {
          /* found matching element */
@@ -185,7 +185,7 @@ cl_app_message_queue_elem_t *cl_app_message_queue_get_first_elem(cl_raw_list_t *
    if (raw_elem) {
       return (cl_app_message_queue_elem_t *) raw_elem->data;
    }
-   return NULL;
+   return nullptr;
 }
 
 #ifdef __CL_FUNCTION__
@@ -198,7 +198,7 @@ cl_app_message_queue_elem_t *cl_app_message_queue_get_least_elem(cl_raw_list_t *
    if (raw_elem) {
       return (cl_app_message_queue_elem_t *) raw_elem->data;
    }
-   return NULL;
+   return nullptr;
 }
 
 
@@ -209,16 +209,16 @@ cl_app_message_queue_elem_t *cl_app_message_queue_get_least_elem(cl_raw_list_t *
 
 cl_app_message_queue_elem_t *cl_app_message_queue_get_next_elem(cl_app_message_queue_elem_t *elem) {
 
-   cl_raw_list_elem_t *next_raw_elem = NULL;
+   cl_raw_list_elem_t *next_raw_elem = nullptr;
 
-   if (elem != NULL) {
+   if (elem != nullptr) {
       cl_raw_list_elem_t *raw_elem = elem->raw_elem;
       next_raw_elem = cl_raw_list_get_next_elem(raw_elem);
       if (next_raw_elem) {
          return (cl_app_message_queue_elem_t *) next_raw_elem->data;
       }
    }
-   return NULL;
+   return nullptr;
 }
 
 
@@ -229,15 +229,15 @@ cl_app_message_queue_elem_t *cl_app_message_queue_get_next_elem(cl_app_message_q
 
 cl_app_message_queue_elem_t *cl_app_message_queue_get_last_elem(cl_app_message_queue_elem_t *elem) {
 
-   cl_raw_list_elem_t *last_raw_elem = NULL;
+   cl_raw_list_elem_t *last_raw_elem = nullptr;
 
-   if (elem != NULL) {
+   if (elem != nullptr) {
       cl_raw_list_elem_t *raw_elem = elem->raw_elem;
       last_raw_elem = cl_raw_list_get_last_elem(raw_elem);
       if (last_raw_elem) {
          return (cl_app_message_queue_elem_t *) last_raw_elem->data;
       }
    }
-   return NULL;
+   return nullptr;
 }
 

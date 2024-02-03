@@ -51,14 +51,14 @@
 int correct_load(lList *running_jobs, lList *queue_list, lList *host_list,
                   u_long32 decay_time, bool monitor_next_run) 
 {
-   lListElem *job = NULL;
+   lListElem *job = nullptr;
    u_long32 now;
-   lListElem *global_host = NULL;
+   lListElem *global_host = nullptr;
 
    
    DENTER(TOP_LAYER);
 
-   if (queue_list == NULL || host_list == NULL) {
+   if (queue_list == nullptr || host_list == nullptr) {
       DRETURN(1);
    }
 
@@ -67,14 +67,14 @@ int correct_load(lList *running_jobs, lList *queue_list, lList *host_list,
 
    for_each_rw(job, running_jobs) {
       u_long32 job_id = lGetUlong(job, JB_job_number);
-      lListElem *ja_task = NULL;
+      lListElem *ja_task = nullptr;
       double global_lcf = 0.0;
 
       for_each_rw(ja_task, lGetList(job, JB_ja_tasks)) {
          u_long32 ja_task_id = lGetUlong(ja_task, JAT_task_number); 
          u_long32 running_time = now - lGetUlong(ja_task, JAT_start_time);
-         const lListElem *granted_queue = NULL;
-         const lList *granted_list = NULL;
+         const lListElem *granted_queue = nullptr;
+         const lList *granted_list = nullptr;
          double host_lcf = 0.0;
 
 #if 1
@@ -88,15 +88,15 @@ int correct_load(lList *running_jobs, lList *queue_list, lList *host_list,
          }
          granted_list = lGetList(ja_task, JAT_granted_destin_identifier_list);
          for_each_ep(granted_queue, granted_list) {
-            const char *qnm = NULL;
-            const char *hnm = NULL;
-            lListElem *qep = NULL;
-            lListElem *hep = NULL;
+            const char *qnm = nullptr;
+            const char *hnm = nullptr;
+            lListElem *qep = nullptr;
+            lListElem *hep = nullptr;
             u_long32 slots;
             
             qnm = lGetString(granted_queue, JG_qname);
             qep = qinstance_list_locate2(queue_list, qnm);
-            if (qep == NULL) {
+            if (qep == nullptr) {
                DPRINTF(("Unable to find queue \"%s\" from gdil "
                         "list of job "sge_u32"."sge_u32"\n", qnm, job_id, ja_task_id));
                continue;
@@ -104,7 +104,7 @@ int correct_load(lList *running_jobs, lList *queue_list, lList *host_list,
            
             hnm=lGetHost(granted_queue, JG_qhostname); 
             hep = lGetElemHostRW(host_list, EH_name, hnm);
-            if (hep == NULL) {
+            if (hep == nullptr) {
                DPRINTF(("Unable to find host \"%s\" from gdil "
                         "list of job "sge_u32"."sge_u32"\n", hnm, job_id, ja_task_id));
                continue;
@@ -147,7 +147,7 @@ int correct_load(lList *running_jobs, lList *queue_list, lList *host_list,
                           " increased absolute lc of host "SFN" by "sge_u32" to "
                           sge_u32"", job_id, ja_task_id, slots, qnm, hnm,
                           (u_long32)(host_lcf*100), lGetUlong(hep, EH_load_correction_factor));
-               schedd_log(log_string, NULL, true);
+               schedd_log(log_string, nullptr, true);
             }
          }
       }
@@ -174,7 +174,7 @@ correct_capacities(lList *host_list, const lList *centry_list)
    u_long32 type, relop;
    double dval, inuse_ext, full_capacity, sc_factor;
    double load_correction;
-   lList* job_load_adj_list = NULL;
+   lList* job_load_adj_list = nullptr;
 
    DENTER(TOP_LAYER);
    job_load_adj_list = sconf_get_job_load_adjustments();
@@ -198,7 +198,7 @@ correct_capacities(lList *host_list, const lList *centry_list)
             continue;
          }
         
-         if (!parse_ulong_val(&dval, NULL, type, lGetString(ep, HL_value), NULL, 0))
+         if (!parse_ulong_val(&dval, nullptr, type, lGetString(ep, HL_value), nullptr, 0))
             continue;
 
          /* do load scaling */
@@ -230,7 +230,7 @@ correct_capacities(lList *host_list, const lList *centry_list)
             double lc_factor;
             const char *s = lGetString(job_load, CE_stringval);
 
-            if (parse_ulong_val(&load_correction, NULL, type, s, NULL, 0)) {
+            if (parse_ulong_val(&load_correction, nullptr, type, s, nullptr, 0)) {
                lc_factor = ((double)lGetUlong(hep, EH_load_correction_factor))/100.0;
                load_correction *= lc_factor;
                DPRINTF(("%s:%s %s %8.3f %8.3f\n", 

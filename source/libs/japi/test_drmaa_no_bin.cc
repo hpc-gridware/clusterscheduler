@@ -9,7 +9,7 @@ int handle_code(int code, char *msg);
 int main(int argc, char **argv) {
     int ret = DRMAA_ERRNO_SUCCESS;
     char error[DRMAA_ERROR_STRING_BUFFER + 1];
-    drmaa_job_template_t *jt = NULL;
+    drmaa_job_template_t *jt = nullptr;
     char jobid[DRMAA_JOBNAME_BUFFER + 1];
 
     if (argc != 2) {

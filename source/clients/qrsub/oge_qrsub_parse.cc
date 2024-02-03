@@ -60,8 +60,8 @@
 
 bool sge_parse_qrsub(sge_gdi_ctx_class_t *ctx, lList *pcmdline, lList **alpp, lListElem **ar)
 {
-   lListElem *ep = NULL, *next_ep = NULL;
-   lList *lp = NULL;
+   lListElem *ep = nullptr, *next_ep = nullptr;
+   lList *lp = nullptr;
    DENTER(TOP_LAYER);
 
    /*  -help 	 print this help */
@@ -138,7 +138,7 @@ bool sge_parse_qrsub(sge_gdi_ctx_class_t *ctx, lList *pcmdline, lList **alpp, lL
          buffer = sge_malloc(size);
          pw = sge_getpwnam_r(name, &pw_struct, buffer, size);
          
-         if (pw == NULL) {
+         if (pw == nullptr) {
            answer_list_add_sprintf(alpp, STATUS_EUNKNOWN, ANSWER_QUALITY_ERROR, MSG_USER_XISNOKNOWNUSER_S, name);
            sge_free(&buffer);
            DRETURN(false);

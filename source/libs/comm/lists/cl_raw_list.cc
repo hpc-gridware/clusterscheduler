@@ -61,37 +61,37 @@
 
 int cl_raw_list_setup(cl_raw_list_t **list_p, char *list_name, int enable_list_locking) {  /* CR check */
 
-   if (list_p == NULL || list_name == NULL) {
-      /* don't accept NULL pointer for list pointer */
+   if (list_p == nullptr || list_name == nullptr) {
+      /* don't accept nullptr pointer for list pointer */
       return CL_RETVAL_PARAMS;
    }
 
-   if (*list_p != NULL) {
-      /* pointer to list pointer must be set to NULL */
+   if (*list_p != nullptr) {
+      /* pointer to list pointer must be set to nullptr */
       return CL_RETVAL_PARAMS;
    }
 
    /* get memory for cl_raw_list_t list object */
    *list_p = (cl_raw_list_t *) sge_malloc(sizeof(cl_raw_list_t));
-   if (*list_p == NULL) {
+   if (*list_p == nullptr) {
       return CL_RETVAL_MALLOC;
    }
    memset(*list_p, 0, sizeof(cl_raw_list_t));
 
    (*list_p)->list_name = strdup(list_name);
-   if ((*list_p)->list_name == NULL) {
+   if ((*list_p)->list_name == nullptr) {
       free(*list_p);
-      *list_p = NULL;
+      *list_p = nullptr;
    }
 
    if (enable_list_locking) {
       /* malloc pthread_mutex_t for the list */
       (*list_p)->list_mutex = (pthread_mutex_t *) sge_malloc(sizeof(pthread_mutex_t));
-      if ((*list_p)->list_mutex == NULL) {
+      if ((*list_p)->list_mutex == nullptr) {
          cl_raw_list_cleanup(list_p);
          return CL_RETVAL_MALLOC;
       }
-      if (pthread_mutex_init((*list_p)->list_mutex, NULL) != 0) {
+      if (pthread_mutex_init((*list_p)->list_mutex, nullptr) != 0) {
          CL_LOG_STR(CL_LOG_ERROR, "raw list mutex init setup error for list:", (*list_p)->list_name);
          cl_raw_list_cleanup(list_p);
          return CL_RETVAL_MUTEX_ERROR;
@@ -130,11 +130,11 @@ int cl_raw_list_cleanup(cl_raw_list_t **list_p) {  /* CR check */
 
    int do_log = 1;
 
-   if (list_p == NULL) {
+   if (list_p == nullptr) {
       /* we expect an address of an pointer */
       return CL_RETVAL_PARAMS;
    }
-   if (*list_p == NULL) {
+   if (*list_p == nullptr) {
       /* we expect an initalized pointer */
       return CL_RETVAL_PARAMS;
    }
@@ -145,14 +145,14 @@ int cl_raw_list_cleanup(cl_raw_list_t **list_p) {  /* CR check */
    }
 
    /* check if list is empty */
-   if ((*list_p)->list_data != NULL) {
+   if ((*list_p)->list_data != nullptr) {
       if (do_log) {
          CL_LOG_STR(CL_LOG_ERROR, "list_data is not empty for list:", (*list_p)->list_name);
       }
       return CL_RETVAL_LIST_DATA_NOT_EMPTY;
    }
 
-   if ((*list_p)->first_elem != NULL) {
+   if ((*list_p)->first_elem != nullptr) {
       if (do_log) {
          CL_LOG_STR(CL_LOG_ERROR, "list is not empty listname is:", (*list_p)->list_name);
       }
@@ -160,7 +160,7 @@ int cl_raw_list_cleanup(cl_raw_list_t **list_p) {  /* CR check */
    }
 
    /* destroy any mutex variables if set */
-   if ((*list_p)->list_mutex != NULL) {
+   if ((*list_p)->list_mutex != nullptr) {
       ret_val = pthread_mutex_destroy((*list_p)->list_mutex);
       if (ret_val == EBUSY) {
          if (do_log) {
@@ -172,7 +172,7 @@ int cl_raw_list_cleanup(cl_raw_list_t **list_p) {  /* CR check */
          return CL_RETVAL_MUTEX_CLEANUP_ERROR;
       }
       free((*list_p)->list_mutex);
-      (*list_p)->list_mutex = NULL;
+      (*list_p)->list_mutex = nullptr;
    }
 
 #ifdef CL_DO_COMMLIB_DEBUG
@@ -180,18 +180,18 @@ int cl_raw_list_cleanup(cl_raw_list_t **list_p) {  /* CR check */
       CL_LOG_STR(CL_LOG_DEBUG,"raw list cleanup complete for list:",(*list_p)->list_name );
    }
    free((*list_p)->last_locker);
-   (*list_p)->last_locker = NULL;
+   (*list_p)->last_locker = nullptr;
 #endif
 
    /* destroy list name */
-   if ((*list_p)->list_name != NULL) {
+   if ((*list_p)->list_name != nullptr) {
       free((*list_p)->list_name);
-      (*list_p)->list_name = NULL;
+      (*list_p)->list_name = nullptr;
    }
 
-   /* free list, set pointer to NULL */
+   /* free list, set pointer to nullptr */
    free(*list_p);
-   *list_p = NULL;
+   *list_p = nullptr;
 
    return CL_RETVAL_OK;
 }
@@ -205,7 +205,7 @@ int cl_raw_list_cleanup(cl_raw_list_t **list_p) {  /* CR check */
 
    return values:
  
-   pointer to a new list element (cl_raw_list_elem_t*) or NULL 
+   pointer to a new list element (cl_raw_list_elem_t*) or nullptr
 
 */
 #ifdef __CL_FUNCTION__
@@ -215,16 +215,16 @@ int cl_raw_list_cleanup(cl_raw_list_t **list_p) {  /* CR check */
 
 cl_raw_list_elem_t *cl_raw_list_append_elem(cl_raw_list_t *list_p, void *data) {
 
-   cl_raw_list_elem_t *new_elem = NULL;
+   cl_raw_list_elem_t *new_elem = nullptr;
 
-   if (data == NULL || list_p == NULL) {
-      return NULL;
+   if (data == nullptr || list_p == nullptr) {
+      return nullptr;
    }
 
    /* malloc memory for new cl_raw_list_elem_t */
    new_elem = (cl_raw_list_elem_t *) sge_malloc(sizeof(cl_raw_list_elem_t));
-   if (new_elem == NULL) {
-      return NULL;
+   if (new_elem == nullptr) {
+      return nullptr;
    }
 
 
@@ -245,14 +245,14 @@ cl_raw_list_elem_t *cl_raw_list_append_elem(cl_raw_list_t *list_p, void *data) {
 
 
 int cl_raw_list_append_dechained_elem(cl_raw_list_t *list_p, cl_raw_list_elem_t *dechain_elem) {
-   if (dechain_elem == NULL || list_p == NULL) {
+   if (dechain_elem == nullptr || list_p == nullptr) {
       return CL_RETVAL_PARAMS;
    }
-   dechain_elem->next = NULL;
-   dechain_elem->last = NULL;
+   dechain_elem->next = nullptr;
+   dechain_elem->last = nullptr;
 
    /* append new element into list */
-   if (list_p->first_elem == NULL) {
+   if (list_p->first_elem == nullptr) {
       /* we have an empty list */
       list_p->first_elem = dechain_elem;
       list_p->last_elem = dechain_elem;
@@ -276,31 +276,31 @@ int cl_raw_list_append_dechained_elem(cl_raw_list_t *list_p, cl_raw_list_elem_t 
 
 int cl_raw_list_dechain_elem(cl_raw_list_t *list_p, cl_raw_list_elem_t *dechain_elem) {
 
-   if (dechain_elem == NULL || list_p == NULL) {
+   if (dechain_elem == nullptr || list_p == nullptr) {
       return CL_RETVAL_PARAMS;
    }
 
    if (dechain_elem == list_p->first_elem) {
       if (dechain_elem == list_p->last_elem) {
-         list_p->last_elem = NULL;
-         list_p->first_elem = NULL;
+         list_p->last_elem = nullptr;
+         list_p->first_elem = nullptr;
       } else {
          list_p->first_elem = dechain_elem->next;
-         list_p->first_elem->last = NULL;
+         list_p->first_elem->last = nullptr;
       }
    } else {
       if (dechain_elem == list_p->last_elem) {
          /* dechain at the end */
          list_p->last_elem = dechain_elem->last;
-         list_p->last_elem->next = NULL;
+         list_p->last_elem->next = nullptr;
       } else {
          /* dechain in the middle */
          dechain_elem->last->next = dechain_elem->next;
          dechain_elem->next->last = dechain_elem->last;
       }
    }
-   dechain_elem->last = NULL;
-   dechain_elem->next = NULL;
+   dechain_elem->last = nullptr;
+   dechain_elem->next = nullptr;
    /* decrease the list element counter */
    list_p->elem_count = list_p->elem_count - 1;
    return CL_RETVAL_OK;
@@ -322,11 +322,11 @@ int cl_raw_list_dechain_elem(cl_raw_list_t *list_p, cl_raw_list_elem_t *dechain_
 #define __CL_FUNCTION__ "cl_raw_list_remove_elem()"
 
 void *cl_raw_list_remove_elem(cl_raw_list_t *list_p, cl_raw_list_elem_t *delete_elem) {       /* CR check */
-   void *old_data = NULL;
+   void *old_data = nullptr;
 
-   if (delete_elem == NULL || list_p == NULL) {
+   if (delete_elem == nullptr || list_p == nullptr) {
       /* parameter errors */
-      return NULL;
+      return nullptr;
    }
 
    old_data = delete_elem->data;
@@ -364,15 +364,15 @@ unsigned long cl_raw_list_get_elem_count(cl_raw_list_t *list_p) {   /* CR check 
 #define __CL_FUNCTION__ "cl_raw_list_lock()"
 
 int cl_raw_list_lock(cl_raw_list_t *list_p) {             /* CR check */
-   if (list_p == NULL) {
+   if (list_p == nullptr) {
       return CL_RETVAL_PARAMS;
    }
-   if (list_p->list_mutex != NULL) {
+   if (list_p->list_mutex != nullptr) {
 #ifdef CL_DO_COMMLIB_DEBUG
       /* ENABLE THIS ONLY FOR LOCK DEBUGING (1 of 2) */
       if ( list_p->list_type != CL_LOG_LIST ) {
         CL_LOG_STR(CL_LOG_INFO, "try locking list:", list_p->list_name); 
-        if (list_p->last_locker != NULL) {
+        if (list_p->last_locker != nullptr) {
            CL_LOG_STR(CL_LOG_INFO, "last locker thread:", list_p->last_locker);
         }
       }
@@ -385,13 +385,13 @@ int cl_raw_list_lock(cl_raw_list_t *list_p) {             /* CR check */
       }
 #ifdef CL_DO_COMMLIB_DEBUG
       if ( list_p->list_type != CL_LOG_LIST ) {
-         cl_thread_settings_t* thread_config_p = NULL;
-         if (list_p->last_locker != NULL) {
+         cl_thread_settings_t* thread_config_p = nullptr;
+         if (list_p->last_locker != nullptr) {
             free(list_p->last_locker);
-            list_p->last_locker = NULL;
+            list_p->last_locker = nullptr;
          }
          thread_config_p = cl_thread_get_thread_config();
-         if (thread_config_p == NULL) {
+         if (thread_config_p == nullptr) {
             list_p->last_locker = strdup("unknown");
          } else {
             list_p->last_locker = strdup(thread_config_p->thread_name);
@@ -417,10 +417,10 @@ int cl_raw_list_lock(cl_raw_list_t *list_p) {             /* CR check */
 #define __CL_FUNCTION__ "cl_raw_list_unlock()"
 
 int cl_raw_list_unlock(cl_raw_list_t *list_p) {
-   if (list_p == NULL) {
+   if (list_p == nullptr) {
       return CL_RETVAL_PARAMS;
    }
-   if (list_p->list_mutex != NULL) {
+   if (list_p->list_mutex != nullptr) {
 #ifdef CL_DO_COMMLIB_DEBUG
       /* ENABLE THIS ONLY FOR LOCK DEBUGING (2 of 2) */
       if ( list_p->list_type != CL_LOG_LIST ) {
@@ -449,9 +449,9 @@ int cl_raw_list_unlock(cl_raw_list_t *list_p) {
 #define __CL_FUNCTION__ "cl_raw_list_get_first_elem()"
 
 cl_raw_list_elem_t *cl_raw_list_get_first_elem(cl_raw_list_t *list_p) {   /* CR check */
-   cl_raw_list_elem_t *elem = NULL;
+   cl_raw_list_elem_t *elem = nullptr;
 
-   if (list_p != NULL) {
+   if (list_p != nullptr) {
       elem = list_p->first_elem;
    }
    return elem;
@@ -463,8 +463,8 @@ cl_raw_list_elem_t *cl_raw_list_get_first_elem(cl_raw_list_t *list_p) {   /* CR 
 #define __CL_FUNCTION__ "cl_raw_list_get_least_elem()"
 
 cl_raw_list_elem_t *cl_raw_list_get_least_elem(cl_raw_list_t *list_p) {   /* CR check */
-   cl_raw_list_elem_t *elem = NULL;
-   if (list_p != NULL) {
+   cl_raw_list_elem_t *elem = nullptr;
+   if (list_p != nullptr) {
       elem = list_p->last_elem;
    }
    return elem;
@@ -477,15 +477,15 @@ cl_raw_list_elem_t *cl_raw_list_get_least_elem(cl_raw_list_t *list_p) {   /* CR 
 #define __CL_FUNCTION__ "cl_raw_list_search_elem()"
 
 cl_raw_list_elem_t *cl_raw_list_search_elem(cl_raw_list_t *list_p, void *data) {  /* CR check */
-   cl_raw_list_elem_t *elem = NULL;
+   cl_raw_list_elem_t *elem = nullptr;
 
-   if (list_p != NULL) {
+   if (list_p != nullptr) {
       elem = list_p->first_elem;
       while (elem && elem->data != data) {
          elem = elem->next;
       }
    }
-   if (elem == NULL) {
+   if (elem == nullptr) {
       if (list_p->list_type != CL_LOG_LIST) {
          CL_LOG_STR(CL_LOG_DEBUG, "element not found in list:", list_p->list_name);
       }
@@ -502,7 +502,7 @@ cl_raw_list_elem_t *cl_raw_list_get_next_elem(cl_raw_list_elem_t *elem) {       
    if (elem) {
       return elem->next;
    }
-   return NULL;
+   return nullptr;
 }
 
 #ifdef __CL_FUNCTION__
@@ -514,7 +514,7 @@ cl_raw_list_elem_t *cl_raw_list_get_last_elem(cl_raw_list_elem_t *elem) {       
    if (elem) {
       return elem->last;
    }
-   return NULL;
+   return nullptr;
 }
 
 

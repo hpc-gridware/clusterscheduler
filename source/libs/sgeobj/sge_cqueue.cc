@@ -81,25 +81,25 @@
 /* *INDENT-OFF* */
 
 list_attribute_struct cqueue_attribute_array[] = {
-   { CQ_seq_no,                  QU_seq_no,                 AULNG_href,    AULNG_value,      NoName,     SGE_ATTR_SEQ_NO,            false,  false, NULL},
-   { CQ_nsuspend,                QU_nsuspend,               AULNG_href,    AULNG_value,      NoName,     SGE_ATTR_NSUSPEND,          false,  false, NULL},
+   { CQ_seq_no,                  QU_seq_no,                 AULNG_href,    AULNG_value,      NoName,     SGE_ATTR_SEQ_NO,            false,  false, nullptr},
+   { CQ_nsuspend,                QU_nsuspend,               AULNG_href,    AULNG_value,      NoName,     SGE_ATTR_NSUSPEND,          false,  false, nullptr},
    { CQ_job_slots,               QU_job_slots,              AULNG_href,    AULNG_value,      NoName,     SGE_ATTR_SLOTS,             false,  false, cqueue_verify_job_slots},
 
-   { CQ_tmpdir,                  QU_tmpdir,                 ASTR_href,     ASTR_value,       NoName,     SGE_ATTR_TMPDIR,            false,  false, NULL},
+   { CQ_tmpdir,                  QU_tmpdir,                 ASTR_href,     ASTR_value,       NoName,     SGE_ATTR_TMPDIR,            false,  false, nullptr},
    { CQ_shell,                   QU_shell,                  ASTR_href,     ASTR_value,       NoName,     SGE_ATTR_SHELL,             false,  true,  cqueue_verify_shell},
    { CQ_calendar,                QU_calendar,               ASTR_href,     ASTR_value,       NoName,     SGE_ATTR_CALENDAR,          false,  false, cqueue_verify_calendar},
    { CQ_priority,                QU_priority,               ASTR_href,     ASTR_value,       NoName,     SGE_ATTR_PRIORITY,          false,  true,  cqueue_verify_priority},
    { CQ_processors,              QU_processors,             ASTR_href,     ASTR_value,       NoName,     SGE_ATTR_PROCESSORS,        false,  true,  cqueue_verify_processors},
-   { CQ_prolog,                  QU_prolog,                 ASTR_href,     ASTR_value,       NoName,     SGE_ATTR_PROLOG,            false,  false, NULL},
-   { CQ_epilog,                  QU_epilog,                 ASTR_href,     ASTR_value,       NoName,     SGE_ATTR_EPILOG,            false,  false, NULL},
+   { CQ_prolog,                  QU_prolog,                 ASTR_href,     ASTR_value,       NoName,     SGE_ATTR_PROLOG,            false,  false, nullptr},
+   { CQ_epilog,                  QU_epilog,                 ASTR_href,     ASTR_value,       NoName,     SGE_ATTR_EPILOG,            false,  false, nullptr},
    { CQ_shell_start_mode,        QU_shell_start_mode,       ASTR_href,     ASTR_value,       NoName,     SGE_ATTR_SHELL_START_MODE,  false,  true,  cqueue_verify_shell_start_mode},
-   { CQ_starter_method,          QU_starter_method,         ASTR_href,     ASTR_value,       NoName,     SGE_ATTR_STARTER_METHOD,    false,  false, NULL},
-   { CQ_suspend_method,          QU_suspend_method,         ASTR_href,     ASTR_value,       NoName,     SGE_ATTR_SUSPEND_METHOD,    false,  false, NULL},
-   { CQ_resume_method,           QU_resume_method,          ASTR_href,     ASTR_value,       NoName,     SGE_ATTR_RESUME_METHOD,     false,  false, NULL},
-   { CQ_terminate_method,        QU_terminate_method,       ASTR_href,     ASTR_value,       NoName,     SGE_ATTR_TERMINATE_METHOD,  false,  false, NULL},
+   { CQ_starter_method,          QU_starter_method,         ASTR_href,     ASTR_value,       NoName,     SGE_ATTR_STARTER_METHOD,    false,  false, nullptr},
+   { CQ_suspend_method,          QU_suspend_method,         ASTR_href,     ASTR_value,       NoName,     SGE_ATTR_SUSPEND_METHOD,    false,  false, nullptr},
+   { CQ_resume_method,           QU_resume_method,          ASTR_href,     ASTR_value,       NoName,     SGE_ATTR_RESUME_METHOD,     false,  false, nullptr},
+   { CQ_terminate_method,        QU_terminate_method,       ASTR_href,     ASTR_value,       NoName,     SGE_ATTR_TERMINATE_METHOD,  false,  false, nullptr},
    { CQ_initial_state,           QU_initial_state,          ASTR_href,     ASTR_value,       NoName,     SGE_ATTR_INITIAL_STATE,     false,  true,  cqueue_verify_initial_state},
    
-   { CQ_rerun,                   QU_rerun,                  ABOOL_href,    ABOOL_value,      NoName,     SGE_ATTR_RERUN,             false,  false, NULL},
+   { CQ_rerun,                   QU_rerun,                  ABOOL_href,    ABOOL_value,      NoName,     SGE_ATTR_RERUN,             false,  false, nullptr},
 
    { CQ_s_fsize,                 QU_s_fsize,                AMEM_href,     AMEM_value,       NoName,     SGE_ATTR_S_FSIZE,           false,  false, cqueue_verify_memory_value},
    { CQ_h_fsize,                 QU_h_fsize,                AMEM_href,     AMEM_value,       NoName,     SGE_ATTR_H_FSIZE,           false,  false, cqueue_verify_memory_value},
@@ -119,16 +119,16 @@ list_attribute_struct cqueue_attribute_array[] = {
    { CQ_s_cpu,                   QU_s_cpu,                  ATIME_href,    ATIME_value,      NoName,     SGE_ATTR_S_CPU,             false,  false, cqueue_verify_time_value},
    { CQ_h_cpu,                   QU_h_cpu,                  ATIME_href,    ATIME_value,      NoName,     SGE_ATTR_H_CPU,             false,  false, cqueue_verify_time_value},
 
-   { CQ_suspend_interval,        QU_suspend_interval,       AINTER_href,   AINTER_value,     NoName,     SGE_ATTR_SUSPEND_INTERVAL,  false,  false, NULL},
-   { CQ_min_cpu_interval,        QU_min_cpu_interval,       AINTER_href,   AINTER_value,     NoName,     SGE_ATTR_MIN_CPU_INTERVAL,  false,  false, NULL},
-   { CQ_notify,                  QU_notify,                 AINTER_href,   AINTER_value,     NoName,     SGE_ATTR_NOTIFY,            false,  false, NULL},
+   { CQ_suspend_interval,        QU_suspend_interval,       AINTER_href,   AINTER_value,     NoName,     SGE_ATTR_SUSPEND_INTERVAL,  false,  false, nullptr},
+   { CQ_min_cpu_interval,        QU_min_cpu_interval,       AINTER_href,   AINTER_value,     NoName,     SGE_ATTR_MIN_CPU_INTERVAL,  false,  false, nullptr},
+   { CQ_notify,                  QU_notify,                 AINTER_href,   AINTER_value,     NoName,     SGE_ATTR_NOTIFY,            false,  false, nullptr},
 
-   { CQ_qtype,                   QU_qtype,                  AQTLIST_href,  AQTLIST_value,    NoName,     SGE_ATTR_QTYPE,             false,  false, NULL},
+   { CQ_qtype,                   QU_qtype,                  AQTLIST_href,  AQTLIST_value,    NoName,     SGE_ATTR_QTYPE,             false,  false, nullptr},
 
    { CQ_ckpt_list,               QU_ckpt_list,              ASTRLIST_href, ASTRLIST_value,   ST_name,    SGE_ATTR_CKPT_LIST,         false,  false, cqueue_verify_ckpt_list},
    { CQ_pe_list,                 QU_pe_list,                ASTRLIST_href, ASTRLIST_value,   ST_name,    SGE_ATTR_PE_LIST,           false,  false, cqueue_verify_pe_list},
  
-   { CQ_owner_list,              QU_owner_list,             AUSRLIST_href, AUSRLIST_value,   US_name,    SGE_ATTR_OWNER_LIST,        false,  false, NULL},
+   { CQ_owner_list,              QU_owner_list,             AUSRLIST_href, AUSRLIST_value,   US_name,    SGE_ATTR_OWNER_LIST,        false,  false, nullptr},
    { CQ_acl,                     QU_acl,                    AUSRLIST_href, AUSRLIST_value,   US_name,    SGE_ATTR_USER_LISTS,        false,  false, cqueue_verify_user_list},
    { CQ_xacl,                    QU_xacl,                   AUSRLIST_href, AUSRLIST_value,   US_name,    SGE_ATTR_XUSER_LISTS,       false,  false, cqueue_verify_user_list},
 
@@ -136,12 +136,12 @@ list_attribute_struct cqueue_attribute_array[] = {
    { CQ_xprojects,               QU_xprojects,              APRJLIST_href, APRJLIST_value,   PR_name,    SGE_ATTR_XPROJECTS,         true,   false, cqueue_verify_project_list},
 
    { CQ_consumable_config_list,  QU_consumable_config_list, ACELIST_href,  ACELIST_value,    CE_name,    SGE_ATTR_COMPLEX_VALUES,    false,  false, cqueue_verify_consumable_config_list},
-   { CQ_load_thresholds,         QU_load_thresholds,        ACELIST_href,  ACELIST_value,    CE_name,    SGE_ATTR_LOAD_THRESHOLD,    false,  false, NULL},
-   { CQ_suspend_thresholds,      QU_suspend_thresholds,     ACELIST_href,  ACELIST_value,    CE_name,    SGE_ATTR_SUSPEND_THRESHOLD, false,  false, NULL},
+   { CQ_load_thresholds,         QU_load_thresholds,        ACELIST_href,  ACELIST_value,    CE_name,    SGE_ATTR_LOAD_THRESHOLD,    false,  false, nullptr},
+   { CQ_suspend_thresholds,      QU_suspend_thresholds,     ACELIST_href,  ACELIST_value,    CE_name,    SGE_ATTR_SUSPEND_THRESHOLD, false,  false, nullptr},
 
    { CQ_subordinate_list,        QU_subordinate_list,       ASOLIST_href,  ASOLIST_value,    SO_name,    SGE_ATTR_SUBORDINATE_LIST,  false,  false, cqueue_verify_subordinate_list},
 
-   { NoName,                     NoName,                    NoName,        NoName,           NoName,     NULL,                       false,  false, NULL}
+   { NoName,                     NoName,                    NoName,        NoName,           NoName,     nullptr,                       false,  false, nullptr}
 };
 
 /* *INDENT-ON* */
@@ -228,7 +228,7 @@ cqueue_name_split(const char *name,
    if (has_domain)
       *has_domain = false;
 
-   if (name != NULL && cqueue_name != NULL && host_domain != NULL ) {
+   if (name != nullptr && cqueue_name != nullptr && host_domain != nullptr ) {
       bool at_skiped = false;
 
       sge_dstring_clear(cqueue_name);
@@ -295,8 +295,8 @@ cqueue_name_split(const char *name,
 *******************************************************************************/
 char* cqueue_get_name_from_qinstance(const char *queue_instance)
 {
-   char *at_sign = NULL;
-   char *cqueue = NULL; 
+   char *at_sign = nullptr;
+   char *cqueue = nullptr;
 
    if ((at_sign = strchr((char *)queue_instance, '@'))) {
       int size = at_sign - queue_instance;
@@ -327,18 +327,18 @@ char* cqueue_get_name_from_qinstance(const char *queue_instance)
 *     const char *name    - cluster queue name 
 *
 *  RESULT
-*     lListElem * - CQ_Type object or NULL
+*     lListElem * - CQ_Type object or nullptr
 *******************************************************************************/
 lListElem *
 cqueue_create(lList **answer_list, const char *name)
 {
-   lListElem *ret = NULL;
+   lListElem *ret = nullptr;
 
    DENTER(CQUEUE_LAYER);
-   if (name != NULL) {
+   if (name != nullptr) {
       ret = lCreateElem(CQ_Type);
 
-      if (ret != NULL) {
+      if (ret != nullptr) {
          lSetString(ret, CQ_name, name);
       } else {
          SGE_ADD_MSG_ID(sprintf(SGE_EVENT, 
@@ -381,17 +381,17 @@ cqueue_is_href_referenced(const lListElem *this_elem,
 {
    bool ret = false;
 
-   if (this_elem != NULL && href != NULL) {
+   if (this_elem != nullptr && href != nullptr) {
       const char *href_name = lGetHost(href, HR_name);
       
-      if (href_name != NULL) {
+      if (href_name != nullptr) {
          const lList *href_list = lGetList(this_elem, CQ_hostlist);
          const lListElem *tmp_href = lGetElemHost(href_list, HR_name, href_name);
 
          /*
           * Is the host group part of the hostlist definition ...
           */
-         if (tmp_href != NULL) {
+         if (tmp_href != nullptr) {
             ret = true;
          }
 
@@ -405,7 +405,7 @@ cqueue_is_href_referenced(const lListElem *this_elem,
                const lList *attr_list = lGetList(this_elem, cqueue_attribute_array[index].cqueue_attr);
                const lListElem *attr_elem = lGetElemHost(attr_list, cqueue_attribute_array[index].href_attr, href_name);
                                                                                    
-               if (attr_elem != NULL) {
+               if (attr_elem != nullptr) {
                   ret = true;
                }
                index++;
@@ -441,17 +441,17 @@ cqueue_is_hgroup_referenced(const lListElem *this_elem, const lListElem *hgroup)
 {
    bool ret = false;
 
-   if (this_elem != NULL && hgroup != NULL) {
+   if (this_elem != nullptr && hgroup != nullptr) {
       const char *name = lGetHost(hgroup, HGRP_name);
       
-      if (name != NULL) {
+      if (name != nullptr) {
          const lList *href_list = lGetList(this_elem, CQ_hostlist);
          const lListElem *tmp_href = lGetElemHost(href_list, HR_name, name);
 
          /*
           * Is the host group part of the hostlist definition ...
           */
-         if (tmp_href != NULL) {
+         if (tmp_href != nullptr) {
             ret = true;
          } else {
             /*
@@ -462,7 +462,7 @@ cqueue_is_hgroup_referenced(const lListElem *this_elem, const lListElem *hgroup)
                const lList *attr_list = lGetList(this_elem, cqueue_attribute_array[index].cqueue_attr);
                const lListElem *attr_elem = lGetElemHost(attr_list, cqueue_attribute_array[index].href_attr, name);
 
-               if (attr_elem != NULL) {
+               if (attr_elem != nullptr) {
                   ret = true;
                   break;
                }
@@ -505,7 +505,7 @@ cqueue_is_a_href_referenced(const lListElem *this_elem,
 {
    bool ret = false;
   
-   if (this_elem != NULL && href_list != NULL) { 
+   if (this_elem != nullptr && href_list != nullptr) {
       const lListElem *href;
 
       for_each_ep(href, href_list) {
@@ -547,7 +547,7 @@ cqueue_set_template_attributes(lListElem *this_elem, lList **answer_list)
    bool ret = true;
 
    DENTER(CQUEUE_LAYER);
-   if (this_elem != NULL) {
+   if (this_elem != nullptr) {
       /*
        * initialize u_long32 values
        */
@@ -561,7 +561,7 @@ cqueue_set_template_attributes(lListElem *this_elem, lList **answer_list)
          int index = 0;
 
          while (attr[index] != NoName) {
-            lList *attr_list = NULL;
+            lList *attr_list = nullptr;
             lListElem *attr_elem = lAddElemHost(&attr_list, AULNG_href, 
                                                 HOSTREF_DEFAULT, AULNG_Type);
 
@@ -585,7 +585,7 @@ cqueue_set_template_attributes(lListElem *this_elem, lList **answer_list)
          int index = 0;
 
          while (attr[index] != NoName) {
-            lList *attr_list = NULL;
+            lList *attr_list = nullptr;
             lListElem *attr_elem = lAddElemHost(&attr_list, AULNG_href, 
                                                 HOSTREF_DEFAULT, AULNG_Type);
 
@@ -602,7 +602,7 @@ cqueue_set_template_attributes(lListElem *this_elem, lList **answer_list)
       if (ret) {
          const char *string = "BATCH INTERACTIVE";
          u_long32 value = 0;
-         lList *attr_list = NULL;
+         lList *attr_list = nullptr;
          lListElem *attr_elem = lAddElemHost(&attr_list, AQTLIST_href,
                                              HOSTREF_DEFAULT, AQTLIST_Type);
 
@@ -617,7 +617,7 @@ cqueue_set_template_attributes(lListElem *this_elem, lList **answer_list)
        * initialize bool values
        */
       if (ret) {
-         lList *attr_list = NULL;
+         lList *attr_list = nullptr;
          lListElem *attr = lAddElemHost(&attr_list, ABOOL_href, 
                                         HOSTREF_DEFAULT, ABOOL_Type);
 
@@ -633,7 +633,7 @@ cqueue_set_template_attributes(lListElem *this_elem, lList **answer_list)
             "INFINITY", "INFINITY", "INFINITY", "INFINITY",
             "INFINITY", "INFINITY", "INFINITY", "INFINITY",
             "INFINITY", "INFINITY", "INFINITY", "INFINITY",
-            NULL
+            nullptr
          }; 
          const int attr[] = {
             CQ_s_fsize, CQ_h_fsize, CQ_s_data, CQ_h_data,
@@ -644,7 +644,7 @@ cqueue_set_template_attributes(lListElem *this_elem, lList **answer_list)
          int index = 0;
 
          while (attr[index] != NoName) {
-            lList *attr_list = NULL;
+            lList *attr_list = nullptr;
             lListElem *attr_elem = lAddElemHost(&attr_list, AMEM_href, 
                                                 HOSTREF_DEFAULT, AMEM_Type);
 
@@ -660,7 +660,7 @@ cqueue_set_template_attributes(lListElem *this_elem, lList **answer_list)
       if (ret) {
          const char *value[] = {
             "INFINITY", "INFINITY", "INFINITY", "INFINITY",
-            NULL
+            nullptr
          }; 
          const int attr[] = {
             CQ_s_rt, CQ_h_rt, CQ_s_cpu, CQ_h_cpu,
@@ -669,7 +669,7 @@ cqueue_set_template_attributes(lListElem *this_elem, lList **answer_list)
          int index = 0;
 
          while (attr[index] != NoName) {
-            lList *attr_list = NULL;
+            lList *attr_list = nullptr;
             lListElem *attr_elem = lAddElemHost(&attr_list, ATIME_href, 
                                                 HOSTREF_DEFAULT, ATIME_Type);
 
@@ -685,7 +685,7 @@ cqueue_set_template_attributes(lListElem *this_elem, lList **answer_list)
       if (ret) {
          const char *value[] = {
             "00:05:00", "00:05:00", "00:00:60",
-            NULL
+            nullptr
          }; 
          const int attr[] = {
             CQ_suspend_interval, CQ_min_cpu_interval, CQ_notify,
@@ -694,7 +694,7 @@ cqueue_set_template_attributes(lListElem *this_elem, lList **answer_list)
          int index = 0;
 
          while (attr[index] != NoName) {
-            lList *attr_list = NULL;
+            lList *attr_list = nullptr;
             lListElem *attr_elem = lAddElemHost(&attr_list, AINTER_href, 
                                                 HOSTREF_DEFAULT, AINTER_Type);
 
@@ -714,7 +714,7 @@ cqueue_set_template_attributes(lListElem *this_elem, lList **answer_list)
             "NONE", "posix_compliant", "NONE",
             "NONE", "NONE", "NONE",
             "default", 
-            NULL
+            nullptr
          }; 
          const int attr[] = {
             CQ_tmpdir, CQ_shell, CQ_calendar,
@@ -727,7 +727,7 @@ cqueue_set_template_attributes(lListElem *this_elem, lList **answer_list)
          int index = 0;
 
          while (attr[index] != NoName) {
-            lList *attr_list = NULL;
+            lList *attr_list = nullptr;
             lListElem *attr_elem = lAddElemHost(&attr_list, ASTR_href, 
                                                 HOSTREF_DEFAULT, ASTR_Type);
 
@@ -747,14 +747,14 @@ cqueue_set_template_attributes(lListElem *this_elem, lList **answer_list)
          };
          int index = 0;
          lList *value[] = {
-            NULL, NULL, NULL
+            nullptr, nullptr, nullptr
          };
 
          value[0] = lCreateList("", ST_Type);
          lAddElemStr(&(value[0]), ST_name, "make", ST_Type);
 
          while (attr[index] != NoName) {
-            lList *attr_list = NULL;
+            lList *attr_list = nullptr;
             lListElem *attr_elem = lAddElemHost(&attr_list, ASTRLIST_href, 
                                                 HOSTREF_DEFAULT, ASTRLIST_Type);
 
@@ -775,11 +775,11 @@ cqueue_set_template_attributes(lListElem *this_elem, lList **answer_list)
          int index = 0;
 
          while (attr[index] != NoName) {
-            lList *attr_list = NULL;
+            lList *attr_list = nullptr;
             lListElem *attr_elem = lAddElemHost(&attr_list, AUSRLIST_href, 
                                                 HOSTREF_DEFAULT, AUSRLIST_Type);
 
-            lSetList(attr_elem, AUSRLIST_value, NULL);
+            lSetList(attr_elem, AUSRLIST_value, nullptr);
             lSetList(this_elem, attr[index], attr_list);
             index++;
          }
@@ -796,11 +796,11 @@ cqueue_set_template_attributes(lListElem *this_elem, lList **answer_list)
          int index = 0;
 
          while (attr[index] != NoName) {
-            lList *attr_list = NULL;
+            lList *attr_list = nullptr;
             lListElem *attr_elem = lAddElemHost(&attr_list, APRJLIST_href, 
                                                 HOSTREF_DEFAULT, APRJLIST_Type);
 
-            lSetList(attr_elem, APRJLIST_value, NULL);
+            lSetList(attr_elem, APRJLIST_value, nullptr);
             lSetList(this_elem, attr[index], attr_list);
             index++;
          }
@@ -816,7 +816,7 @@ cqueue_set_template_attributes(lListElem *this_elem, lList **answer_list)
             NoName
          };
          lList *value[] = {
-            NULL, NULL, NULL, NULL
+            nullptr, nullptr, nullptr, nullptr
          };
          int index = 0;
          lListElem *elem;
@@ -826,7 +826,7 @@ cqueue_set_template_attributes(lListElem *this_elem, lList **answer_list)
          lSetString(elem, CE_stringval, "1.75");
 
          while (attr[index] != NoName) {
-            lList *attr_list = NULL;
+            lList *attr_list = nullptr;
             lListElem *attr_elem = lAddElemHost(&attr_list, ACELIST_href, 
                                                 HOSTREF_DEFAULT, ACELIST_Type);
 
@@ -847,11 +847,11 @@ cqueue_set_template_attributes(lListElem *this_elem, lList **answer_list)
          int index = 0;
 
          while (attr[index] != NoName) {
-            lList *attr_list = NULL;
+            lList *attr_list = nullptr;
             lListElem *attr_elem = lAddElemHost(&attr_list, ASOLIST_href, 
                                                 HOSTREF_DEFAULT, ASOLIST_Type);
 
-            lSetList(attr_elem, ASOLIST_value, NULL);
+            lSetList(attr_elem, ASOLIST_value, nullptr);
             lSetList(this_elem, attr[index], attr_list);
             index++;
          }
@@ -883,12 +883,12 @@ bool
 cqueue_list_add_cqueue(lList *this_list, lListElem *queue)
 {
    bool ret = false;
-   static lSortOrder *so = NULL;
+   static lSortOrder *so = nullptr;
 
    DENTER(TOP_LAYER);
 
-   if (queue != NULL) {
-      if (so == NULL) {
+   if (queue != nullptr) {
+      if (so == nullptr) {
          so = lParseSortOrderVarArg(CQ_Type, "%I+", CQ_name);
       }
 
@@ -915,7 +915,7 @@ cqueue_list_add_cqueue(lList *this_list, lListElem *queue)
 *     const char *name       - cluster queue name 
 *
 *  RESULT
-*     lListElem * - cluster queue object or NULL
+*     lListElem * - cluster queue object or nullptr
 *******************************************************************************/
 lListElem *
 cqueue_list_locate(const lList *this_list, const char *name)
@@ -941,14 +941,14 @@ cqueue_list_locate(const lList *this_list, const char *name)
 *     const char *hostname       - resolved hostname  
 *
 *  RESULT
-*     lListElem * - qinstance object or NULL
+*     lListElem * - qinstance object or nullptr
 *******************************************************************************/
 lListElem *
 cqueue_locate_qinstance(const lListElem *this_elem, const char *hostname)
 {
    const lList *qinstance_list = lGetList(this_elem, CQ_qinstances);
 
-   return qinstance_list_locate(qinstance_list, hostname, NULL);
+   return qinstance_list_locate(qinstance_list, hostname, nullptr);
 }
 
 /****** sgeobj/cqueue/cqueue_verify_attributes() ******************************
@@ -993,7 +993,7 @@ cqueue_verify_attributes(lListElem *cqueue, lList **answer_list,
    bool ret = true;
 
    DENTER(CQUEUE_LAYER);
-   if (cqueue != NULL && reduced_elem != NULL) {
+   if (cqueue != nullptr && reduced_elem != nullptr) {
       int index = 0;
 
       while (cqueue_attribute_array[index].cqueue_attr != NoName && ret) {
@@ -1009,7 +1009,7 @@ cqueue_verify_attributes(lListElem *cqueue, lList **answer_list,
             if (ret) {
                const lListElem *elem = lGetElemHost(list, cqueue_attribute_array[index].href_attr, HOSTREF_DEFAULT);
 
-               if (elem == NULL) {
+               if (elem == nullptr) {
                   SGE_ADD_MSG_ID(sprintf(SGE_EVENT, MSG_CQUEUE_NODEFVALUE_S, cqueue_attribute_array[index].name));
                   answer_list_add(answer_list, SGE_EVENT, STATUS_EUNKNOWN, ANSWER_QUALITY_ERROR);
                   ret = false;
@@ -1022,12 +1022,12 @@ cqueue_verify_attributes(lListElem *cqueue, lList **answer_list,
              * Verify host group names
              */
             if (ret) {
-               lListElem *elem = NULL;
+               lListElem *elem = nullptr;
 
                for_each_rw(elem, list) {
-                  const char *hostname = NULL;
-                  const void *iterator = NULL;
-                  const lListElem *first_elem = NULL;
+                  const char *hostname = nullptr;
+                  const void *iterator = nullptr;
+                  const lListElem *first_elem = nullptr;
 
                   hostname = lGetHost(elem, cqueue_attribute_array[index].href_attr);
                   first_elem = lGetElemHostFirst(list, cqueue_attribute_array[index].href_attr, hostname, &iterator);
@@ -1042,7 +1042,7 @@ cqueue_verify_attributes(lListElem *cqueue, lList **answer_list,
                      if (in_master && strcmp(hostname, HOSTREF_DEFAULT)) {
                         const lListElem *hgroup = hgroup_list_locate(master_hgroup_list, hostname);
 
-                        if (hgroup == NULL) {
+                        if (hgroup == nullptr) {
                            ERROR((SGE_EVENT, MSG_CQUEUE_INVALIDDOMSETTING_SS, cqueue_attribute_array[index].name, hostname));
                            answer_list_add(answer_list, SGE_EVENT, STATUS_ESYNTAX, ANSWER_QUALITY_ERROR);
                            ret = false;
@@ -1068,9 +1068,9 @@ cqueue_verify_attributes(lListElem *cqueue, lList **answer_list,
              * Call native verify function if it is possible
              */
             if (ret && 
-                cqueue_attribute_array[index].verify_function != NULL &&
+                cqueue_attribute_array[index].verify_function != nullptr &&
                 (cqueue_attribute_array[index].verify_client || in_master)) {
-               lListElem *elem = NULL;
+               lListElem *elem = nullptr;
                const lList *master_list;
 
                switch(cqueue_attribute_array[index].cqueue_attr) {
@@ -1098,7 +1098,7 @@ cqueue_verify_attributes(lListElem *cqueue, lList **answer_list,
                      master_list = master_cqueue_list;
                      break;
                   default:
-                     master_list = NULL;
+                     master_list = nullptr;
                }
 
                for_each_rw(elem, list) {
@@ -1153,17 +1153,17 @@ cqueue_list_find_all_matching_references(const lList *this_list,
    bool ret = true;
 
    DENTER(CQUEUE_LAYER);
-   if (this_list != NULL && cqueue_pattern != NULL && qref_list != NULL) {
+   if (this_list != nullptr && cqueue_pattern != nullptr && qref_list != nullptr) {
       const lListElem *cqueue;
 
       for_each_ep(cqueue, this_list) {
          const char *cqueue_name = lGetString(cqueue, CQ_name);
          /* use cqueue expression */         
-         if (!sge_eval_expression(TYPE_STR, cqueue_pattern, cqueue_name, NULL)) {
-            if (*qref_list == NULL) {
+         if (!sge_eval_expression(TYPE_STR, cqueue_pattern, cqueue_name, nullptr)) {
+            if (*qref_list == nullptr) {
                *qref_list = lCreateList("", QR_Type);
             }
-            if (*qref_list != NULL) {
+            if (*qref_list != nullptr) {
                lAddElemStr(qref_list, QR_name, cqueue_name, QR_Type);
             }
          }
@@ -1204,8 +1204,8 @@ cqueue_xattr_pre_gdi(lList *this_list, lList **answer_list)
    dstring host_domain = DSTRING_INIT;
 
    DENTER(CQUEUE_LAYER);
-   if (this_list != NULL) {
-      lListElem *cqueue = NULL;
+   if (this_list != nullptr) {
+      lListElem *cqueue = nullptr;
    
       for_each_rw(cqueue, this_list) {
          const char *name = lGetString(cqueue, CQ_name);
@@ -1238,7 +1238,7 @@ cqueue_xattr_pre_gdi(lList *this_list, lList **answer_list)
 
                if (pos >= 0) {
                   lList *list = lGetPosList(cqueue, pos);
-                  lListElem *elem = NULL;
+                  lListElem *elem = nullptr;
 
                   for_each_rw(elem, list) {
                      const char *attr_hostname = lGetHost(elem, 
@@ -1296,7 +1296,7 @@ cqueue_is_used_in_subordinate(const char *cqueue_name, const lListElem *cqueue)
 
    DENTER(CQUEUE_LAYER);
 
-   if (cqueue != NULL && cqueue_name != NULL) {
+   if (cqueue != nullptr && cqueue_name != nullptr) {
       const lList *sub_list = lGetList(cqueue, CQ_subordinate_list);
       const lListElem *sub_el;
       const lListElem *so;
@@ -1304,7 +1304,7 @@ cqueue_is_used_in_subordinate(const char *cqueue_name, const lListElem *cqueue)
       for_each_ep(sub_el, sub_list) {
          so = lGetSubStr(sub_el, SO_name, cqueue_name, ASOLIST_value);
 
-         if (so != NULL) { /* we found a reference */
+         if (so != nullptr) { /* we found a reference */
             ret = true;
             break;
          }
@@ -1352,7 +1352,7 @@ cqueue_list_find_hgroup_references(const lList *this_list, lList **answer_list,
    const lListElem *cqueue;
 
    DENTER(CQUEUE_LAYER);
-   if (this_list != NULL && hgroup != NULL && string_list != NULL) {
+   if (this_list != nullptr && hgroup != nullptr && string_list != nullptr) {
       for_each_ep(cqueue, this_list) {
          if (cqueue_is_hgroup_referenced(cqueue, hgroup)) {
             const char *name = lGetString(cqueue, CQ_name);
@@ -1394,8 +1394,8 @@ void
 cqueue_list_set_tag(lList *this_list, u_long32 tag_value, bool tag_qinstances)
 {
    DENTER(TOP_LAYER);
-   if (this_list != NULL) {
-      lListElem *cqueue = NULL;
+   if (this_list != nullptr) {
+      lListElem *cqueue = nullptr;
 
       for_each_rw(cqueue, this_list) {
          lSetUlong(cqueue, CQ_tag, tag_value);
@@ -1464,10 +1464,10 @@ cqueue_list_locate_qinstance(const lList *cqueue_list, const char *full_name)
 lListElem *
 cqueue_list_locate_qinstance_msg(const lList *cqueue_list, const char *full_name, bool raise_error) 
 {
-   lListElem *ret = NULL;
+   lListElem *ret = nullptr;
 
    DENTER(TOP_LAYER);
-   if (full_name != NULL) {
+   if (full_name != nullptr) {
       dstring cqueue_name_buffer = DSTRING_INIT;
       dstring host_domain_buffer = DSTRING_INIT;
       bool has_hostname = false;
@@ -1477,14 +1477,14 @@ cqueue_list_locate_qinstance_msg(const lList *cqueue_list, const char *full_name
       const char *cqueue_name = sge_dstring_get_string(&cqueue_name_buffer);
       const char *hostname = sge_dstring_get_string(&host_domain_buffer);
       const lListElem *cqueue = lGetElemStr(cqueue_list, CQ_name, cqueue_name);
-      if (cqueue != NULL) {
+      if (cqueue != nullptr) {
          lList *qinstance_list = lGetListRW(cqueue, CQ_qinstances);
 
          ret = lGetElemHostRW(qinstance_list, QU_qhostname, hostname);
       } else {
          if (raise_error) {
-            ERROR((SGE_EVENT, MSG_CQUEUE_CQUEUEISNULL_SSSII, full_name, cqueue_name != NULL ? cqueue_name : "<null>", 
-                    hostname != NULL ? hostname: "<null>", (int)has_hostname, (int)has_domain));
+            ERROR((SGE_EVENT, MSG_CQUEUE_CQUEUEISNULL_SSSII, full_name, cqueue_name != nullptr ? cqueue_name : "<null>",
+                    hostname != nullptr ? hostname: "<null>", (int)has_hostname, (int)has_domain));
          }
       }
       sge_dstring_free(&cqueue_name_buffer);
@@ -1532,7 +1532,7 @@ cqueue_find_used_href(lListElem *this_elem, lList **answer_list,
    bool ret = true;
 
    DENTER(CQUEUE_LAYER);
-   if (this_elem != NULL) {
+   if (this_elem != nullptr) {
       int index=0;
 
       while (cqueue_attribute_array[index].cqueue_attr != NoName && ret) {
@@ -1541,7 +1541,7 @@ cqueue_find_used_href(lListElem *this_elem, lList **answer_list,
 
          if (pos >= 0) {
             lList *list = lGetPosList(this_elem, pos);
-            const lListElem *elem = NULL;
+            const lListElem *elem = nullptr;
 
             for_each_ep(elem, list) {
                const char *attr_hostname = lGetHost(elem, 
@@ -1591,7 +1591,7 @@ cqueue_trash_used_href_setting(lListElem *this_elem, lList **answer_list,
    bool ret = true;
 
    DENTER(CQUEUE_LAYER);
-   if (this_elem != NULL) {
+   if (this_elem != nullptr) {
       int index=0;
 
       while (cqueue_attribute_array[index].cqueue_attr != NoName && ret) {
@@ -1600,11 +1600,11 @@ cqueue_trash_used_href_setting(lListElem *this_elem, lList **answer_list,
 
          if (pos >= 0) {
             lList *list = lGetPosList(this_elem, pos);
-            lListElem *elem = NULL;
-            lListElem *next_elem = NULL;
+            lListElem *elem = nullptr;
+            lListElem *next_elem = nullptr;
 
             next_elem = lFirstRW(list);
-            while ((elem = next_elem) != NULL) {
+            while ((elem = next_elem) != nullptr) {
                const char *attr_hostname = lGetHost(elem, 
                                  cqueue_attribute_array[index].href_attr);
 
@@ -1655,20 +1655,20 @@ cqueue_purge_host(lListElem *this_elem, lList **answer_list,
    bool ret = false;
    int index;
 
-   lList *sublist = NULL;
-   const lListElem *ep = NULL;
-   const char *attr_name = NULL;
+   lList *sublist = nullptr;
+   const lListElem *ep = nullptr;
+   const char *attr_name = nullptr;
 
    DENTER(CQUEUE_LAYER);
 
-   if (this_elem != NULL) {
+   if (this_elem != nullptr) {
       for_each_ep(ep, attr_list) {
          attr_name = lGetString(ep, US_name);
          DPRINTF((SFQ"\n", attr_name));
       
          /* purge hostlist */         
-         if (!sge_eval_expression(TYPE_HOST, attr_name, SGE_ATTR_HOSTLIST, NULL)) {
-            sublist = NULL;
+         if (!sge_eval_expression(TYPE_HOST, attr_name, SGE_ATTR_HOSTLIST, nullptr)) {
+            sublist = nullptr;
             lXchgList(this_elem, CQ_hostlist, &sublist);
             if (lDelElemHost(&sublist, HR_name, hgroup_or_hostname) == 1) {
                DPRINTF((SFQ" deleted in "SFQ"\n", hgroup_or_hostname, 
@@ -1680,10 +1680,10 @@ cqueue_purge_host(lListElem *this_elem, lList **answer_list,
          
          /* purge attributes */ 
          index = 0;
-         while(cqueue_attribute_array[index].name != NULL) {
+         while(cqueue_attribute_array[index].name != nullptr) {
 
             /* Does the given attr_wildcard match with the actual attr_name */         
-            if (!sge_eval_expression(TYPE_STR, attr_name, cqueue_attribute_array[index].name, NULL)) {
+            if (!sge_eval_expression(TYPE_STR, attr_name, cqueue_attribute_array[index].name, nullptr)) {
                sublist = lGetListRW(this_elem, cqueue_attribute_array[index].cqueue_attr );
 
                if (lDelElemHost(&sublist, cqueue_attribute_array[index].href_attr, hgroup_or_hostname) == 1) {
@@ -1715,9 +1715,9 @@ cqueue_sick(lListElem *cqueue, lList **answer_list,
     */
    {
       const char *cqueue_name = lGetString(cqueue, CQ_name);
-      lList *used_hosts = NULL;
-      lList *used_groups = NULL;
-      lList **answer_list = NULL;
+      lList *used_hosts = nullptr;
+      lList *used_groups = nullptr;
+      lList **answer_list = nullptr;
       int index;
       
       /*
@@ -1734,23 +1734,23 @@ cqueue_sick(lListElem *cqueue, lList **answer_list,
           */
          lList *attr_list = lGetListRW(cqueue, cqueue_attribute_array[index].cqueue_attr);
          lListElem *next_attr = lFirstRW(attr_list);
-         lListElem *attr = NULL;
+         lListElem *attr = nullptr;
 
          /*
           * Test each attribute setting if it is really used in the
           * current configuration
           */
-         while((attr = next_attr) != NULL) { 
+         while((attr = next_attr) != nullptr) {
             const char *name = lGetHost(attr, cqueue_attribute_array[index].href_attr);
 
             next_attr = lNextRW(attr);
             if (is_hgroup_name(name)) {
                if (strcmp(name, HOSTREF_DEFAULT)) {
-                  lListElem *hgroup = NULL;
-                  lList *used_hgroup_hosts = NULL;
-                  lList *used_hgroup_groups = NULL;
-                  lList *add_hosts = NULL;
-                  lList *equity_hosts = NULL;
+                  lListElem *hgroup = nullptr;
+                  lList *used_hgroup_hosts = nullptr;
+                  lList *used_hgroup_groups = nullptr;
+                  lList *add_hosts = nullptr;
+                  lList *equity_hosts = nullptr;
 
                   hgroup = hgroup_list_locate(master_hgroup_list, name);
 
@@ -1764,8 +1764,8 @@ cqueue_sick(lListElem *cqueue, lList **answer_list,
                                              &used_hgroup_hosts,
                                              &used_hgroup_groups);
                   href_list_compare(used_hgroup_hosts, answer_list,
-                                    used_hosts, &add_hosts, NULL,
-                                    &equity_hosts, NULL);
+                                    used_hosts, &add_hosts, nullptr,
+                                    &equity_hosts, nullptr);
 
                   if (lGetNumberOfElem(add_hosts)) {
                      DTRACE;

@@ -52,12 +52,12 @@ extern char **environ;
 
 /************************************************************************/
 int main(int argc, char **argv) {
-   lList *pcmdline = NULL;
-   lList *alp = NULL;
-   sge_gdi_ctx_class_t *ctx = NULL;
-   lList *ar_lp = NULL;
+   lList *pcmdline = nullptr;
+   lList *alp = nullptr;
+   sge_gdi_ctx_class_t *ctx = nullptr;
+   lList *ar_lp = nullptr;
 
-   lListElem *ar = NULL;
+   lListElem *ar = nullptr;
 
    DENTER_MAIN(TOP_LAYER, "qrsub");
 
@@ -82,7 +82,7 @@ int main(int argc, char **argv) {
       /* arguments from SGE_ROOT/common/sge_ar_request file */
       get_root_file_path(&file, cell_root, SGE_COMMON_DEF_AR_REQ_FILE);
       if ((alp = parse_script_file(QRSUB, sge_dstring_get_string(&file), "", &pcmdline, environ, 
-         FLG_HIGHER_PRIOR | FLG_IGN_NO_FILE)) == NULL) {
+         FLG_HIGHER_PRIOR | FLG_IGN_NO_FILE)) == nullptr) {
          /* arguments from $HOME/.sge_ar_request file */
          if (get_user_home_file_path(&file, SGE_HOME_DEF_AR_REQ_FILE, user, &alp)) {
             lFreeList(&alp);
@@ -101,7 +101,7 @@ int main(int argc, char **argv) {
    
    alp = cull_parse_cmdline(QRSUB, argv+1, environ, &pcmdline, FLG_USE_PSEUDOS);
 
-   if (answer_list_print_err_warn(&alp, NULL, "qrsub: ", MSG_WARNING) > 0) {
+   if (answer_list_print_err_warn(&alp, nullptr, "qrsub: ", MSG_WARNING) > 0) {
       lFreeList(&pcmdline);
       goto error_exit;
    }
@@ -124,10 +124,10 @@ int main(int argc, char **argv) {
       goto error_exit;
    }
 
-   ar_lp = lCreateList(NULL, AR_Type);
+   ar_lp = lCreateList(nullptr, AR_Type);
    lAppendElem(ar_lp, ar);
 
-   alp = ctx->gdi(ctx, SGE_AR_LIST, SGE_GDI_ADD | SGE_GDI_RETURN_NEW_VERSION, &ar_lp, NULL, NULL);
+   alp = ctx->gdi(ctx, SGE_AR_LIST, SGE_GDI_ADD | SGE_GDI_RETURN_NEW_VERSION, &ar_lp, nullptr, nullptr);
    lFreeList(&ar_lp);
    answer_list_on_error_print_or_exit(&alp, stdout);
    if (answer_list_has_error(&alp)) {

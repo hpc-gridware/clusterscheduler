@@ -60,7 +60,7 @@ lDescr *DESCR = JB_Type;
 
 lNameSpace my_nmv[] = {
    {1, JBS, JBN },
-   {0, 0, NULL}
+   {0, 0, nullptr}
 };
 
 #else
@@ -87,7 +87,7 @@ lDescr *DESCR = TEST_Type;
 
 lNameSpace my_nmv[] = {
         {1, TEST_Size, TEST_Name},
-        {0, 0, NULL}
+        {0, 0, nullptr}
 };
 #endif
 
@@ -113,14 +113,14 @@ static const char *random_string(int length) {
 }
 
 long clk_tck = 0;
-const char **names = NULL;
+const char **names = nullptr;
 
 const char *HEADER_FORMAT = "%s %s %8s %8s %8s %8s %8s %8s %8s %8s %8s %8s %8s\n";
 const char *DATA_FORMAT = "%s %s %8.3lf %8.3lf %8.3lf %8.3lf %8.3lf %8.3lf %8.3lf (%6d) %8.3lf (%6d) %8ld\n";
 
 static void do_test(bool unique_hash, bool non_unique_hash,
                     int num_objects, int num_names) {
-   lList *lp = NULL;
+   lList *lp = nullptr;
    lList *copy;
    lListElem *ep;
    clock_t now, start;
@@ -201,11 +201,11 @@ static void do_test(bool unique_hash, bool non_unique_hash,
 
    /* TEST: iterate by non unique attrib */
    for (i = 0; i < num_names; i++) {
-      const void *iterator = NULL;
+      const void *iterator = nullptr;
       lListElem *next_ep;
 
       next_ep = lGetElemStrFirstRW(lp, NM_STRING, names[i], &iterator);
-      while ((ep = next_ep) != NULL) {
+      while ((ep = next_ep) != nullptr) {
          next_ep = lGetElemStrNextRW(lp, NM_STRING, names[i], &iterator);
       }
    }
@@ -256,7 +256,7 @@ static void do_test(bool unique_hash, bool non_unique_hash,
       /* search object */
       ep = lGetElemUlongRW(lp, NM_ULONG, rand() % num_objects);
       /* if same rand showed up earlier, object does no longer exist! */
-      if (ep != NULL) {
+      if (ep != nullptr) {
          lRemoveElem(lp, &ep);
          objs_dru++;
       }
@@ -269,11 +269,11 @@ static void do_test(bool unique_hash, bool non_unique_hash,
    /* TEST: delete all objects having the same non unique attribute */
    objs_dinu = 0;
    for (i = 0; i < num_names; i++) {
-      const void *iterator = NULL;
+      const void *iterator = nullptr;
       lListElem *next_ep;
 
       next_ep = lGetElemStrFirstRW(lp, NM_STRING, names[i], &iterator);
-      while ((ep = next_ep) != NULL) {
+      while ((ep = next_ep) != nullptr) {
          next_ep = lGetElemStrNextRW(lp, NM_STRING, names[i], &iterator);
          lRemoveElem(lp, &ep);
          objs_dinu++;

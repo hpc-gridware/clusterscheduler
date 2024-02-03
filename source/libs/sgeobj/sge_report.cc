@@ -56,7 +56,7 @@
 *
 *  INPUTS
 *     const lListElem *job_report - JR_Type element 
-*     FILE *fp                    - file stream or NULL 
+*     FILE *fp                    - file stream or nullptr
 ******************************************************************************/
 void job_report_print_usage(const lListElem *job_report, FILE *fp) 
 {
@@ -116,7 +116,7 @@ void job_report_init_from_job(lListElem *job_report,
    lSetUlong(job_report, JR_job_number, job_id);
    lSetUlong(job_report, JR_ja_task_number, ja_task_id);
 
-   if (pe_task != NULL) {
+   if (pe_task != nullptr) {
       lSetString(job_report, JR_pe_task_id_str, lGetString(pe_task, PET_id));
       queue = lFirst(lGetList(pe_task, PET_granted_destin_identifier_list));
    } else {
@@ -124,7 +124,7 @@ void job_report_init_from_job(lListElem *job_report,
    }
 
    if (lGetUlong(ja_task, JAT_status) == JSLAVE){
-      if (pe_task == NULL) {
+      if (pe_task == nullptr) {
          lSetUlong(job_report, JR_state, JSLAVE);
       } else {
          lSetUlong(job_report, JR_state, JWRITTEN);
@@ -133,7 +133,7 @@ void job_report_init_from_job(lListElem *job_report,
       lSetUlong(job_report, JR_state, JWRITTEN);
    }
 
-   if (queue != NULL) {
+   if (queue != nullptr) {
       lSetString(job_report, JR_queue_name, lGetString(queue, JG_qname));
    }
 
@@ -163,7 +163,7 @@ void job_report_init_from_job_with_usage(lListElem *job_report,
    lSetUlong(job_report, JR_wait_status, SGE_SET_WEXITSTATUS(SGE_WEXITED_BIT, 0));
    lSetUlong(job_report, JR_failed, SSTATE_QMASTER_ENFORCED_LIMIT);
 
-   if (pe_task == NULL) {
+   if (pe_task == nullptr) {
       nm = JAT_scaled_usage_list;
       obj = ja_task;
    } else {

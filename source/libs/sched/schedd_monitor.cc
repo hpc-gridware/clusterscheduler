@@ -65,7 +65,7 @@ int schedd_log(const char *logstr, lList **monitor_alpp, bool monitor_next_run)
 {
    DENTER(TOP_LAYER);
 
-   if (monitor_alpp != NULL) {
+   if (monitor_alpp != nullptr) {
       /* add to answer list for verification (-w v) */
       answer_list_add(monitor_alpp, logstr, STATUS_ESEMANTIC, ANSWER_QUALITY_ERROR);
    }
@@ -73,8 +73,8 @@ int schedd_log(const char *logstr, lList **monitor_alpp, bool monitor_next_run)
    if (monitor_next_run) {
       /* do logging (-tsm) */
       time_t now;
-      FILE *fp = NULL;
-      char *time_str = NULL;
+      FILE *fp = nullptr;
+      char *time_str = nullptr;
       char str[128];
 
       now = (time_t)sge_get_gmt();
@@ -105,13 +105,13 @@ FCLOSE_ERROR:
 
 int schedd_log_list(lList **monitor_alpp, bool monitor_next_run, const char *logstr, lList *lp, int nm) {
    int fields[] = { 0, 0 };
-   const char *delis[] = {NULL, " ", NULL};
-   lList *lp_part = NULL;
-   const lListElem *ep = NULL;
+   const char *delis[] = {nullptr, " ", nullptr};
+   lList *lp_part = nullptr;
+   const lListElem *ep = nullptr;
 
    DENTER(TOP_LAYER);
 
-   if (monitor_alpp == NULL && !monitor_next_run) {
+   if (monitor_alpp == nullptr && !monitor_next_run) {
       DRETURN(0);
    }
 
@@ -126,14 +126,14 @@ int schedd_log_list(lList **monitor_alpp, bool monitor_next_run, const char *log
          char log_string[2048];
 
          strcpy(log_string, logstr);
-         uni_print_list(NULL,
+         uni_print_list(nullptr,
                         log_string + strlen(log_string),
                         sizeof(log_string) - strlen(log_string) - 1,
                         lp_part,
                         fields, delis, 0);
          schedd_log(log_string, monitor_alpp, monitor_next_run);
          lFreeList(&lp_part);
-         lp_part = NULL;
+         lp_part = nullptr;
       }
    }
 

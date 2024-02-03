@@ -45,10 +45,10 @@ int cl_fd_list_setup(cl_raw_list_t **list_p, char *list_name) {
 }
 
 int cl_fd_list_cleanup(cl_raw_list_t **list_p) {
-   cl_fd_list_elem_t *elem = NULL;
+   cl_fd_list_elem_t *elem = nullptr;
 
    elem = cl_fd_list_get_first_elem(*list_p);
-   if (elem != NULL) {
+   if (elem != nullptr) {
       CL_LOG(CL_LOG_WARNING,
              "The list was NOT empty. Unregister all external file descriptors before cleanup next time, please");
    }
@@ -64,9 +64,9 @@ int cl_fd_list_cleanup(cl_raw_list_t **list_p) {
 int cl_fd_list_register_fd(cl_raw_list_t *list_p, cl_com_fd_data_t *fd, int lock_list) {
 
    int ret_val;
-   cl_fd_list_elem_t *new_elem = NULL;
+   cl_fd_list_elem_t *new_elem = nullptr;
 
-   if (fd == NULL || list_p == NULL) {
+   if (fd == nullptr || list_p == nullptr) {
       return CL_RETVAL_PARAMS;
    }
 
@@ -79,7 +79,7 @@ int cl_fd_list_register_fd(cl_raw_list_t *list_p, cl_com_fd_data_t *fd, int lock
 
    /* add a new elemt to the list */
    new_elem = (cl_fd_list_elem_t *) sge_malloc(sizeof(cl_fd_list_elem_t));
-   if (new_elem == NULL) {
+   if (new_elem == nullptr) {
       if (lock_list == 1) {
          cl_raw_list_unlock(list_p);
       }
@@ -88,7 +88,7 @@ int cl_fd_list_register_fd(cl_raw_list_t *list_p, cl_com_fd_data_t *fd, int lock
 
    new_elem->data = fd;
    new_elem->raw_elem = cl_raw_list_append_elem(list_p, (void *) new_elem);
-   if (new_elem->raw_elem == NULL) {
+   if (new_elem->raw_elem == nullptr) {
       sge_free(&new_elem);
       if (lock_list == 1) {
          cl_raw_list_unlock(list_p);
@@ -108,7 +108,7 @@ int cl_fd_list_register_fd(cl_raw_list_t *list_p, cl_com_fd_data_t *fd, int lock
 int cl_fd_list_unregister_fd(cl_raw_list_t *list_p, cl_fd_list_elem_t *elem, int lock_list) {
    int ret_val = CL_RETVAL_OK;
 
-   if (list_p == NULL || elem == NULL) {
+   if (list_p == nullptr || elem == nullptr) {
       return CL_RETVAL_PARAMS;
    }
 
@@ -137,7 +137,7 @@ cl_fd_list_elem_t *cl_fd_list_get_first_elem(cl_raw_list_t *list_p) {
    if (raw_elem) {
       return (cl_fd_list_elem_t *) raw_elem->data;
    }
-   return NULL;
+   return nullptr;
 }
 
 cl_fd_list_elem_t *cl_fd_list_get_least_elem(cl_raw_list_t *list_p) {
@@ -145,31 +145,31 @@ cl_fd_list_elem_t *cl_fd_list_get_least_elem(cl_raw_list_t *list_p) {
    if (raw_elem) {
       return (cl_fd_list_elem_t *) raw_elem->data;
    }
-   return NULL;
+   return nullptr;
 }
 
 cl_fd_list_elem_t *cl_fd_list_get_next_elem(cl_fd_list_elem_t *elem) {
-   cl_raw_list_elem_t *next_raw_elem = NULL;
+   cl_raw_list_elem_t *next_raw_elem = nullptr;
 
-   if (elem != NULL) {
+   if (elem != nullptr) {
       cl_raw_list_elem_t *raw_elem = elem->raw_elem;
       next_raw_elem = cl_raw_list_get_next_elem(raw_elem);
       if (next_raw_elem) {
          return (cl_fd_list_elem_t *) next_raw_elem->data;
       }
    }
-   return NULL;
+   return nullptr;
 }
 
 cl_fd_list_elem_t *cl_fd_list_get_last_elem(cl_fd_list_elem_t *elem) {
-   cl_raw_list_elem_t *last_raw_elem = NULL;
+   cl_raw_list_elem_t *last_raw_elem = nullptr;
 
-   if (elem != NULL) {
+   if (elem != nullptr) {
       cl_raw_list_elem_t *raw_elem = elem->raw_elem;
       last_raw_elem = cl_raw_list_get_last_elem(raw_elem);
       if (last_raw_elem) {
          return (cl_fd_list_elem_t *) last_raw_elem->data;
       }
    }
-   return NULL;
+   return nullptr;
 }

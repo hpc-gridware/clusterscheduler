@@ -81,7 +81,7 @@ const char *my_application_tag_name(unsigned long tag) {
 }
 
 unsigned long my_application_status(char **info_message) {
-   if (info_message != NULL) {
+   if (info_message != nullptr) {
       (*info_message) = strdup("not specified (state 1)");
    }
 #if 0
@@ -99,8 +99,8 @@ unsigned long my_application_status(char **info_message) {
 #define __CL_FUNCTION__ "my_ssl_verify_func()"
 
 static bool my_ssl_verify_func(cl_ssl_verify_mode_t mode, bool service_mode, const char *value) {
-   char *user_name = NULL;
-   struct passwd *paswd = NULL;
+   char *user_name = nullptr;
+   struct passwd *paswd = nullptr;
    struct passwd pw_struct;
    char *pw_buffer;
    int pw_buffer_size;
@@ -110,10 +110,10 @@ static bool my_ssl_verify_func(cl_ssl_verify_mode_t mode, bool service_mode, con
    if (getpwuid_r(getuid(), &pw_struct, pw_buffer, pw_buffer_size, &paswd) != 0) {
       CL_LOG(CL_LOG_ERROR, "getpwuid_r failed");
    }
-   if (paswd != NULL) {
+   if (paswd != nullptr) {
       user_name = paswd->pw_name;
    }
-   if (user_name == NULL) {
+   if (user_name == nullptr) {
       user_name = "unexpected user name";
    }
    if (service_mode == true) {
@@ -171,9 +171,9 @@ extern int main(int argc, char **argv) {
    cl_ssl_setup_t ssl_config;
    static int runs = 100;
    int handle_port = 0;
-   cl_com_handle_t *handle = NULL;
-   cl_com_message_t *message = NULL;
-   cl_com_endpoint_t *sender = NULL;
+   cl_com_handle_t *handle = nullptr;
+   cl_com_message_t *message = nullptr;
+   cl_com_endpoint_t *sender = nullptr;
    int i;
    unsigned long max_connections;
    cl_log_t log_level;
@@ -182,14 +182,14 @@ extern int main(int argc, char **argv) {
    memset(&ssl_config, 0, sizeof(ssl_config));
    ssl_config.ssl_method = CL_SSL_v23;                 /*  v23 method                                  */
    ssl_config.ssl_CA_cert_pem_file = getenv("SSL_CA_CERT_FILE"); /*  CA certificate file                         */
-   ssl_config.ssl_CA_key_pem_file = NULL;                       /*  private certificate file of CA (not used)   */
+   ssl_config.ssl_CA_key_pem_file = nullptr;                       /*  private certificate file of CA (not used)   */
    ssl_config.ssl_cert_pem_file = getenv("SSL_CERT_FILE");    /*  certificates file                           */
    ssl_config.ssl_key_pem_file = getenv("SSL_KEY_FILE");     /*  key file                                    */
    ssl_config.ssl_rand_file = getenv("SSL_RAND_FILE");    /*  rand file (if RAND_status() not ok)         */
    ssl_config.ssl_crl_file = getenv("SSL_CRL_FILE");     /*  revocation list file                        */
-   ssl_config.ssl_reconnect_file = NULL;                       /*  file for reconnect data    (not used)       */
+   ssl_config.ssl_reconnect_file = nullptr;                       /*  file for reconnect data    (not used)       */
    ssl_config.ssl_refresh_time = 0;                          /*  key alive time for connections (not used)   */
-   ssl_config.ssl_password = NULL;                       /*  password for encrypted keyfiles (not used)  */
+   ssl_config.ssl_password = nullptr;                       /*  password for encrypted keyfiles (not used)  */
    ssl_config.ssl_verify_func = my_ssl_verify_func;         /*  function callback for peer user/name check  */
 
    if (getenv("CL_PORT")) {
@@ -213,10 +213,10 @@ extern int main(int argc, char **argv) {
          framework = CL_CT_SSL;
          printf("using SSL framework\n");
 
-         if (ssl_config.ssl_CA_cert_pem_file == NULL ||
-             ssl_config.ssl_cert_pem_file == NULL ||
-             ssl_config.ssl_key_pem_file == NULL ||
-             ssl_config.ssl_rand_file == NULL) {
+         if (ssl_config.ssl_CA_cert_pem_file == nullptr ||
+             ssl_config.ssl_cert_pem_file == nullptr ||
+             ssl_config.ssl_key_pem_file == nullptr ||
+             ssl_config.ssl_rand_file == nullptr) {
             printf("please set the following environment variables:\n");
             printf("SSL_CA_CERT_FILE         = CA certificate file\n");
             printf("SSL_CERT_FILE            = certificates file\n");
@@ -234,10 +234,10 @@ extern int main(int argc, char **argv) {
    memset(&sa, 0, sizeof(sa));
    sa.sa_handler = sighandler_server;  /* one handler for all signals */
    sigemptyset(&sa.sa_mask);
-   sigaction(SIGINT, &sa, NULL);
-   sigaction(SIGTERM, &sa, NULL);
-   sigaction(SIGHUP, &sa, NULL);
-   sigaction(SIGPIPE, &sa, NULL);
+   sigaction(SIGINT, &sa, nullptr);
+   sigaction(SIGTERM, &sa, nullptr);
+   sigaction(SIGHUP, &sa, nullptr);
+   sigaction(SIGPIPE, &sa, nullptr);
 
 
    printf("commlib setup ...\n");
@@ -268,7 +268,7 @@ extern int main(int argc, char **argv) {
          log_level = CL_LOG_OFF;
          break;
    }
-   cl_com_setup_commlib(CL_RW_THREAD, log_level, NULL);
+   cl_com_setup_commlib(CL_RW_THREAD, log_level, nullptr);
 
 
    cl_com_set_parameter_list_value("parameter1", "value1");
@@ -286,9 +286,9 @@ extern int main(int argc, char **argv) {
       cl_com_specify_ssl_configuration(&ssl_config);
    }
 
-   handle = cl_com_create_handle(NULL, framework, CL_CM_CT_MESSAGE, true, handle_port, CL_TCP_DEFAULT, "server", 1, 1,
+   handle = cl_com_create_handle(nullptr, framework, CL_CM_CT_MESSAGE, true, handle_port, CL_TCP_DEFAULT, "server", 1, 1,
                                  0);
-   if (handle == NULL) {
+   if (handle == nullptr) {
       printf("could not get handle\n");
       cl_com_cleanup_commlib();
       exit(-1);
@@ -362,10 +362,10 @@ extern int main(int argc, char **argv) {
       }
 #if 0
       {
-         cl_raw_list_t* tmp_endpoint_list = NULL;
-         cl_endpoint_list_elem_t* elem = NULL;
+         cl_raw_list_t* tmp_endpoint_list = nullptr;
+         cl_endpoint_list_elem_t* elem = nullptr;
 
-         cl_commlib_search_endpoint(handle, NULL, NULL, 1, true, &tmp_endpoint_list);
+         cl_commlib_search_endpoint(handle, nullptr, nullptr, 1, true, &tmp_endpoint_list);
          elem = cl_endpoint_list_get_first_elem(tmp_endpoint_list);
          printf("\nconnected endpoints with id=1:\n");
          printf("==============================\n");
@@ -376,7 +376,7 @@ extern int main(int argc, char **argv) {
          }
          cl_endpoint_list_cleanup(&tmp_endpoint_list);
 
-         cl_commlib_search_endpoint(handle, NULL, NULL, 1, false, &tmp_endpoint_list);
+         cl_commlib_search_endpoint(handle, nullptr, nullptr, 1, false, &tmp_endpoint_list);
          elem = cl_endpoint_list_get_first_elem(tmp_endpoint_list);
          printf("\nconnected and known endpoints with id=1:\n");
          printf("=========================================\n");
@@ -387,7 +387,7 @@ extern int main(int argc, char **argv) {
          }
          cl_endpoint_list_cleanup(&tmp_endpoint_list);
 
-         cl_commlib_search_endpoint(handle, NULL, "client", 0, false, &tmp_endpoint_list);
+         cl_commlib_search_endpoint(handle, nullptr, "client", 0, false, &tmp_endpoint_list);
          elem = cl_endpoint_list_get_first_elem(tmp_endpoint_list);
          printf("\nconnected and known endpoints with comp_name=client:\n");
          printf("=====================================================\n");
@@ -402,20 +402,20 @@ extern int main(int argc, char **argv) {
 
 #if 0
       /* TODO: check behaviour for unknown host and for a host which is down */
-      cl_commlib_send_message(handle, "down_host", "nocomp", 1, CL_MIH_MAT_ACK, (cl_byte_t*)"blub", 5, NULL, 1, 1 ); /* check wait for ack / ack_types  TODO*/
+      cl_commlib_send_message(handle, "down_host", "nocomp", 1, CL_MIH_MAT_ACK, (cl_byte_t*)"blub", 5, nullptr, 1, 1 ); /* check wait for ack / ack_types  TODO*/
 #endif
 
-      ret_val = cl_commlib_receive_message(handle, NULL, NULL, 0, false, 0, &message, &sender);
+      ret_val = cl_commlib_receive_message(handle, nullptr, nullptr, 0, false, 0, &message, &sender);
       CL_LOG_STR(CL_LOG_INFO, "cl_commlib_receive_message() returned", cl_get_error_text(ret_val));
 
-      if (message != NULL) {
+      if (message != nullptr) {
          CL_LOG_STR(CL_LOG_INFO, "received message from", sender->comp_host);
 
 /*        printf("received message from \"%s/%s/%ld\"\n", sender->comp_host, sender->comp_name, sender->comp_id); */
 
 
 
-         if (strstr((char *) message->message, "exit") != NULL) {
+         if (strstr((char *) message->message, "exit") != nullptr) {
             printf("received \"exit\" message from host %s, component %s, id %ld\n",
                    sender->comp_host, sender->comp_name, sender->comp_id);
             cl_commlib_close_connection(handle, sender->comp_host, sender->comp_name, sender->comp_id, false);
@@ -427,7 +427,7 @@ extern int main(int argc, char **argv) {
                                               sender->comp_id, CL_MIH_MAT_NAK,
                                               &message->message,
                                               message->message_length,
-                                              NULL, message->message_id, 0,
+                                              nullptr, message->message_id, 0,
                                               false, false);
             if (ret_val != CL_RETVAL_OK) {
                CL_LOG_INT(CL_LOG_ERROR, "sent message response for message id", (int) message->message_id);
@@ -441,7 +441,7 @@ extern int main(int argc, char **argv) {
 
          cl_com_free_message(&message);
          cl_com_free_endpoint(&sender);
-         message = NULL;
+         message = nullptr;
       }
 #if CL_DO_SLOW
       sleep(1);
@@ -450,7 +450,7 @@ extern int main(int argc, char **argv) {
 
    printf("shutting down server ...\n");
    handle = cl_com_get_handle("server", 1);
-   if (handle == NULL) {
+   if (handle == nullptr) {
       printf("could not find handle\n");
       exit(1);
    } else {
@@ -458,14 +458,14 @@ extern int main(int argc, char **argv) {
    }
 
    while (cl_commlib_shutdown_handle(handle, true) == CL_RETVAL_MESSAGE_IN_BUFFER) {
-      message = NULL;
-      cl_commlib_receive_message(handle, NULL, NULL, 0, false, 0, &message, &sender);
+      message = nullptr;
+      cl_commlib_receive_message(handle, nullptr, nullptr, 0, false, 0, &message, &sender);
 
-      if (message != NULL) {
+      if (message != nullptr) {
          printf("ignoring message from \"%s\"\n", sender->comp_host);
          cl_com_free_message(&message);
          cl_com_free_endpoint(&sender);
-         message = NULL;
+         message = nullptr;
       }
    }
 

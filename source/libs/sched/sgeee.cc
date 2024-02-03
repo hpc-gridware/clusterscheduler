@@ -202,7 +202,7 @@ static sge_task_ref_t *task_ref_get_entry(u_long32 index);
 static scheduler_all_data_t *all_lists; /* thread local */
 static u_long32 sge_scheduling_run = 0; /* thread local */
 
-static sge_task_ref_t *task_ref_table = NULL; /* thread local */
+static sge_task_ref_t *task_ref_table = nullptr; /* thread local */
 static u_long32 task_ref_entries = 0;   /* thread local */
 static u_long32 task_ref_job_pos = 0;   /* thread local */
 static double Master_min_tix = 0.0;     /* thread local */
@@ -210,9 +210,9 @@ static double Master_max_tix = 0.0;     /* thread local */
 static u_long32 halflife = 0;                /* stores the last used halflife time to detect changes  thread_local*/
 static int last_seqno = 0;              /* stores the last used seqno for the orders  thread_local*/
 static u_long32 past = 0;               /* stores the last re-order send time thread local */
-static lEnumeration *user_usage_what = NULL; /* thread local */
-static lEnumeration *prj_usage_what = NULL; /* thread local */
-static lEnumeration *share_tree_what = NULL; /* thread local */
+static lEnumeration *user_usage_what = nullptr; /* thread local */
+static lEnumeration *prj_usage_what = nullptr; /* thread local */
+static lEnumeration *share_tree_what = nullptr; /* thread local */
 
 
 /****** sgeee/tix_range_set() **************************************************
@@ -272,14 +272,14 @@ static void task_ref_initialize_table(u_long32 number_of_tasks)
       task_ref_table = (sge_task_ref_t *) sge_malloc(size);
       task_ref_entries = number_of_tasks;
    }
-   if (task_ref_table != NULL) {
+   if (task_ref_table != nullptr) {
       memset(task_ref_table, 0, size);
    }
 }
 
 static void task_ref_destroy_table(void) 
 {
-   if (task_ref_table != NULL) {
+   if (task_ref_table != nullptr) {
       sge_free(&task_ref_table);
       task_ref_entries = 0;
    }
@@ -287,7 +287,7 @@ static void task_ref_destroy_table(void)
 
 static sge_task_ref_t *task_ref_get_entry(u_long32 index) 
 {
-   sge_task_ref_t *ret = NULL;
+   sge_task_ref_t *ret = nullptr;
 
    DENTER(BASIS_LAYER);
    if (index < task_ref_entries) {
@@ -305,7 +305,7 @@ static void task_ref_print_table(void)
    for (i = 0; i < task_ref_entries; i++) {
       sge_task_ref_t *tref = task_ref_get_entry(i);
 
-      if (tref == NULL) {
+      if (tref == nullptr) {
          break;
       }
 
@@ -318,7 +318,7 @@ static void task_ref_print_table_entry(sge_task_ref_t *tref)
 {
    DENTER(TOP_LAYER);
 
-   if (tref != NULL) {
+   if (tref != nullptr) {
       DPRINTF(("    @@@ "
          "job: "sge_u32" "
          "ja_task: "sge_u32" "
@@ -340,7 +340,7 @@ static void task_ref_print_table_entry(sge_task_ref_t *tref)
 static sge_task_ref_t *task_ref_get_first(u_long32 job_number, 
                                    u_long32 ja_task_number)
 {
-   sge_task_ref_t *ret = NULL;
+   sge_task_ref_t *ret = nullptr;
    u_long32 i;
 
    DENTER(TOP_LAYER);
@@ -348,7 +348,7 @@ static sge_task_ref_t *task_ref_get_first(u_long32 job_number,
    for (i = 0; i < task_ref_entries; i++) {
       sge_task_ref_t *tref = task_ref_get_entry(i);
 
-      if (tref != NULL && tref->job_number == job_number &&  
+      if (tref != nullptr && tref->job_number == job_number &&
           tref->ja_task_number == ja_task_number) {
          ret = tref;
          break;
@@ -360,7 +360,7 @@ static sge_task_ref_t *task_ref_get_first(u_long32 job_number,
 
 static sge_task_ref_t *task_ref_get_first_job_entry(void)
 {
-   sge_task_ref_t *ret = NULL;
+   sge_task_ref_t *ret = nullptr;
 
    DENTER(BASIS_LAYER);
    task_ref_job_pos = 0;
@@ -373,17 +373,17 @@ static sge_task_ref_t *task_ref_get_first_job_entry(void)
 static sge_task_ref_t *task_ref_get_next_job_entry(void)
 {
    sge_task_ref_t *current_entry = task_ref_get_entry(task_ref_job_pos);
-   sge_task_ref_t *ret = NULL;
+   sge_task_ref_t *ret = nullptr;
    u_long32 pos = task_ref_job_pos;
 
    DENTER(BASIS_LAYER); 
-   if (current_entry != NULL) {
+   if (current_entry != nullptr) {
       u_long32 current_job_number = current_entry->job_number;
    
       while (++pos < task_ref_entries) {
          sge_task_ref_t *next_entry = task_ref_get_entry(pos);
          
-         if (next_entry != NULL && 
+         if (next_entry != nullptr &&
              current_job_number != next_entry->job_number) {
             task_ref_job_pos = pos;
             ret = next_entry;
@@ -399,7 +399,7 @@ static void task_ref_copy_to_ja_task(sge_task_ref_t *tref, lListElem *ja_task)
 
    DENTER(BASIS_LAYER);
 
-   if (ja_task != NULL && tref != NULL) {
+   if (ja_task != nullptr && tref != nullptr) {
       lSetUlong(ja_task, JAT_task_number, tref->ja_task_number);
 
       lSetDouble(ja_task, JAT_tix,                       tref->ja_task_ticket); 
@@ -524,16 +524,16 @@ void sgeee_resort_pending_jobs(lList **job_list)
       u_long32 job_id = lGetUlong(next_job, JB_job_number);
       u_long32 start_time_of_job1 = lGetUlong(next_job, JB_submission_time);
       const lListElem *tmp_task = lFirst(lGetList(next_job, JB_ja_tasks));
-      lListElem *jep = NULL;
-      lListElem *insert_jep = NULL;
+      lListElem *jep = nullptr;
+      lListElem *insert_jep = nullptr;
       double prio = 0.0;
 
-      if (tmp_task == NULL) {
+      if (tmp_task == nullptr) {
          double nurg = 0.5;
          double npri = 0.5;
 
          const lList *range_list = lGetList(next_job, JB_ja_n_h_ids);
-         u_long32 ja_task_id = range_list_get_first_id(range_list, NULL);
+         u_long32 ja_task_id = range_list_get_first_id(range_list, nullptr);
          sge_task_ref_t *tref = task_ref_get_first(job_id, ja_task_id);
          lListElem *ja_task_template = lFirstRW(lGetList(next_job, JB_ja_template));
 
@@ -590,7 +590,7 @@ void sgeee_resort_pending_jobs(lList **job_list)
             const lListElem *tmp_task2 = lFirst(lGetList(jep, JB_ja_tasks));
             double prio2;
 
-            if (tmp_task2 == NULL) {
+            if (tmp_task2 == nullptr) {
                tmp_task2 = lFirst(lGetList(jep, JB_ja_template));
             }
             prio2 = lGetDouble(tmp_task2, JAT_prio);
@@ -699,7 +699,7 @@ locate_department( lList *dept_list,
                    const char *name )
 {
    if (!name)
-      return NULL;
+      return nullptr;
 
    /*-------------------------------------------------------------
     * Look up the department object by name
@@ -723,11 +723,11 @@ sge_set_job_refs( lListElem *job,
                   int queued)
 {
    lListElem *root;
-   int is_enrolled_ja_task = (ja_task != NULL && tref == NULL) ? 1 : 0;
+   int is_enrolled_ja_task = (ja_task != nullptr && tref == nullptr) ? 1 : 0;
 
    memset(ref, 0, sizeof(sge_ref_t));
 
-   if (tref != NULL) {
+   if (tref != nullptr) {
       memset(tref, 0, sizeof(sge_task_ref_t));
 
       tref->job_number = lGetUlong(job, JB_job_number);
@@ -745,7 +745,7 @@ sge_set_job_refs( lListElem *job,
     * save task reference 
     *-------------------------------------------------------------*/
 
-   ref->ja_task = is_enrolled_ja_task ? ja_task : NULL;
+   ref->ja_task = is_enrolled_ja_task ? ja_task : nullptr;
 
    /*-------------------------------------------------------------
     * save job state
@@ -780,14 +780,14 @@ sge_set_job_refs( lListElem *job,
     *-------------------------------------------------------------*/
 
    if ((root = lFirstRW(lists->share_tree))) {
-      lListElem *pnode = NULL;
+      lListElem *pnode = nullptr;
        
       ref->share_tree_type = lGetUlong(root, STN_type);
 
       if (ref->user || ref->project) {
          ref->node = search_userprj_node(root,
-               ref->user ? lGetString(ref->user, UU_name) : NULL,
-               ref->project ? lGetString(ref->project, PR_name) : NULL,
+               ref->user ? lGetString(ref->user, UU_name) : nullptr,
+               ref->project ? lGetString(ref->project, PR_name) : nullptr,
                &pnode);
 
          /*
@@ -804,7 +804,7 @@ sge_set_job_refs( lListElem *job,
             lAppendElem(lGetListRW(pnode, STN_children), ref->node);
          }
       } else
-         ref->node = NULL;
+         ref->node = nullptr;
    }
 
    /*-------------------------------------------------------------
@@ -1018,7 +1018,7 @@ sge_init_share_tree_node_fields( lListElem *node,
    lSetPosDouble(node, sn_actual_proportion_pos, 0);
    lSetPosUlong(node, sn_job_ref_count_pos, 0);
    lSetPosUlong(node, sn_active_job_ref_count_pos, 0);
-   lSetPosList(node, sn_usage_list_pos, NULL);
+   lSetPosList(node, sn_usage_list_pos, nullptr);
    lSetPosUlong(node, sn_sum_priority_pos, 0);
    lSetPosDouble(node, sn_stt_pos, 0);
    lSetPosDouble(node, sn_ostt_pos, 0);
@@ -1038,7 +1038,7 @@ static int
 sge_init_share_tree_nodes( lListElem *root )
 {
    return sge_for_each_share_tree_node(root,
-         sge_init_share_tree_node_fields, NULL);
+         sge_init_share_tree_node_fields, nullptr);
 }
 
 
@@ -1079,7 +1079,7 @@ lList *
 build_usage_list( char *name,
                   lList *old_usage_list )
 {
-   lList *usage_list = NULL;
+   lList *usage_list = nullptr;
    lListElem *usage;
 
    if (old_usage_list) {
@@ -1140,7 +1140,7 @@ delete_debited_job_usage( sge_ref_t *ref,
 
          if ((upu = lGetElemUlongRW(upu_list, UPU_job_number, lGetUlong(job, JB_job_number)))) {
             DPRINTF(("DDJU (4) "sge_u32"\n", lGetUlong(job, JB_job_number)));
-            lSetList(upu, UPU_old_usage_list, NULL);
+            lSetList(upu, UPU_old_usage_list, nullptr);
             lSetUlong(user, UU_usage_seqno, seqno);
          }
       }
@@ -1155,7 +1155,7 @@ delete_debited_job_usage( sge_ref_t *ref,
             for this job in the PR_debited_job_usage list */
 
          if ((upu = lGetElemUlongRW(upu_list, UPU_job_number, lGetUlong(job, JB_job_number)))) {
-            lSetList(upu, UPU_old_usage_list, NULL);
+            lSetList(upu, UPU_old_usage_list, nullptr);
             lSetUlong(project, PR_usage_seqno, seqno);
          }
       }
@@ -1179,8 +1179,8 @@ combine_usage( sge_ref_t *ref )
     * Get usage from associated user/project object
     *-------------------------------------------------------------*/
    if (ref->node) {
-      lList *usage_weight_list = NULL;
-      const lList *usage_list=NULL;
+      lList *usage_weight_list = nullptr;
+      const lList *usage_list=nullptr;
       const lListElem *usage_weight, *usage_elem;
       double sum_of_usage_weights = 0;
       const char *usage_name;
@@ -1248,18 +1248,18 @@ decay_and_sum_usage( sge_ref_t *ref,
                      u_long seqno,
                      u_long curr_time )
 {
-   lList *job_usage_list=NULL,
-         *old_usage_list=NULL,
-         *user_usage_list=NULL,
-         *project_usage_list=NULL,
-         *user_long_term_usage_list=NULL,
-         *project_long_term_usage_list=NULL;
+   lList *job_usage_list=nullptr,
+         *old_usage_list=nullptr,
+         *user_usage_list=nullptr,
+         *project_usage_list=nullptr,
+         *user_long_term_usage_list=nullptr,
+         *project_long_term_usage_list=nullptr;
    lListElem *job=ref->job,
              *ja_task=ref->ja_task,
              *node=ref->node,
              *user=ref->user,
              *project=ref->project,
-             *userprj = NULL,
+             *userprj = nullptr,
              *petask;
    int obj_debited_job_usage = PR_debited_job_usage;          
 
@@ -1296,7 +1296,7 @@ decay_and_sum_usage( sge_ref_t *ref,
     * depending on the type of share tree.
     *-------------------------------------------------------------*/
 
-   if (ja_task != NULL) {
+   if (ja_task != nullptr) {
       job_usage_list = lCopyList("", lGetList(ja_task, JAT_scaled_usage_list));
 
       /* sum sub-task usage into job_usage_list */
@@ -1327,7 +1327,7 @@ decay_and_sum_usage( sge_ref_t *ref,
    }
 
    if (!old_usage_list) {
-      old_usage_list = build_usage_list("old_usage_list", NULL);
+      old_usage_list = build_usage_list("old_usage_list", nullptr);
    }
 
    if (user) {
@@ -1347,24 +1347,24 @@ decay_and_sum_usage( sge_ref_t *ref,
             upp = lAddElemStr(&upp_list, UPP_name, project_name, UPP_Type);
          user_long_term_usage_list = lGetListRW(upp, UPP_long_term_usage);
          if (!user_long_term_usage_list) {
-            user_long_term_usage_list = build_usage_list("upp_long_term_usage_list", NULL);
+            user_long_term_usage_list = build_usage_list("upp_long_term_usage_list", nullptr);
             lSetList(upp, UPP_long_term_usage, user_long_term_usage_list);
          }
          user_usage_list = lGetListRW(upp, UPP_usage);
          if (!user_usage_list) {
-            user_usage_list = build_usage_list("upp_usage_list", NULL);
+            user_usage_list = build_usage_list("upp_usage_list", nullptr);
             lSetList(upp, UPP_usage, user_usage_list);
          }
 
       } else {
          user_long_term_usage_list = lGetListRW(user, UU_long_term_usage);
          if (!user_long_term_usage_list) {
-            user_long_term_usage_list = build_usage_list("user_long_term_usage_list", NULL);
+            user_long_term_usage_list = build_usage_list("user_long_term_usage_list", nullptr);
             lSetList(user, UU_long_term_usage, user_long_term_usage_list);
          }
          user_usage_list = lGetListRW(user, UU_usage);
          if (!user_usage_list) {
-            user_usage_list = build_usage_list("user_usage_list", NULL);
+            user_usage_list = build_usage_list("user_usage_list", nullptr);
             lSetList(user, UU_usage, user_usage_list);
          }
       }
@@ -1373,12 +1373,12 @@ decay_and_sum_usage( sge_ref_t *ref,
    if (project) {
       project_long_term_usage_list = lGetListRW(project, PR_long_term_usage);
       if (!project_long_term_usage_list) {
-         project_long_term_usage_list = build_usage_list("project_long_term_usage_list", NULL);
+         project_long_term_usage_list = build_usage_list("project_long_term_usage_list", nullptr);
          lSetList(project, PR_long_term_usage, project_long_term_usage_list);
       }
       project_usage_list = lGetListRW(project, PR_usage);
       if (!project_usage_list) {
-         project_usage_list = build_usage_list("project_usage_list", NULL);
+         project_usage_list = build_usage_list("project_usage_list", nullptr);
          lSetList(project, PR_usage, project_usage_list);
       }
    }
@@ -1392,10 +1392,10 @@ decay_and_sum_usage( sge_ref_t *ref,
 
       for_each_rw(job_usage, job_usage_list) {
 
-         lListElem *old_usage=NULL, 
-                   *user_usage=NULL, *project_usage=NULL,
-                   *user_long_term_usage=NULL,
-                   *project_long_term_usage=NULL;
+         lListElem *old_usage=nullptr,
+                   *user_usage=nullptr, *project_usage=nullptr,
+                   *user_long_term_usage=nullptr,
+                   *project_long_term_usage=nullptr;
          const char *usage_name = lGetString(job_usage, UA_name);
 
          /*---------------------------------------------------------
@@ -1607,7 +1607,7 @@ calc_job_share_tree_tickets_pass2( sge_ref_t *ref, double total_share_tree_ticke
 *     ??? 
 *******************************************************************************/
 static void copy_ftickets(sge_ref_list_t *source, sge_ref_list_t *dest){
-   if (source == NULL || dest == NULL) {
+   if (source == nullptr || dest == nullptr) {
       return;
    }
    else { 
@@ -1650,8 +1650,8 @@ static void copy_ftickets(sge_ref_list_t *source, sge_ref_list_t *dest){
 *******************************************************************************/
 static void destribute_ftickets(lList *root, int dependent){   
    lListElem *elem;
-   sge_ref_list_t *current = NULL;
-   sge_ref_list_t *first = NULL;
+   sge_ref_list_t *current = nullptr;
+   sge_ref_list_t *first = nullptr;
 
    for_each_rw(elem, root) {
       first = (sge_ref_list_t *)lGetRef(elem, FCAT_jobrelated_ticket_first);
@@ -1659,7 +1659,7 @@ static void destribute_ftickets(lList *root, int dependent){
          continue;*/
       current = first->next;
       
-      while(current != NULL) {
+      while(current != nullptr) {
          copy_ftickets(first, current); 
          if(dependent)
             current->ref->tickets += REF_GET_FTICKET(current->ref);        
@@ -1692,7 +1692,7 @@ static void destribute_ftickets(lList *root, int dependent){
 *     sge_ref_t *job_ref     - array of pointers to the job reference structure 
 *     int num_jobs           - amount of elements in the job_ref array 
 *     sge_fcategory_t **root - root pointer to the functional category list 
-*     sge_ref_list_t ** ref_array - has to be a pointer to NULL pointer. The memory 
+*     sge_ref_list_t ** ref_array - has to be a pointer to nullptr pointer. The memory
 *                                   will be allocated
 *                                   in this function and freed with free_fcategories.
 *     int dependent          - does the functional tickets depend on prior computed tickets? 
@@ -1731,7 +1731,7 @@ static u_long32 build_functional_categories(sge_ref_t *job_ref, u_long32 num_job
    DENTER(TOP_LAYER);
 
    *ref_array = (sge_ref_list_t *)sge_malloc(sizeof(sge_ref_list_t) * num_jobs);
-   if (*ref_array == NULL) {
+   if (*ref_array == nullptr) {
       DRETURN(0);
    }
    
@@ -1756,20 +1756,20 @@ static u_long32 build_functional_categories(sge_ref_t *job_ref, u_long32 num_job
          if(user_el){
             user_shares = lGetUlong(user_el, user_tickets); 
             if (user_shares == 0) {
-               user_el = NULL;
+               user_el = nullptr;
             }
          }
          if(project_el){
             project_shares = lGetUlong(project_el, project_tickets); 
             if (project_shares == 0) {
-               project_el = NULL;
+               project_el = nullptr;
             }
 
          }
          if(dept_el){
             dept_shares = lGetUlong(dept_el, dp_tickets); 
             if (dept_shares == 0) {
-               dept_el = NULL;
+               dept_el = nullptr;
             }
 
          }
@@ -1796,7 +1796,7 @@ static u_long32 build_functional_categories(sge_ref_t *job_ref, u_long32 num_job
             }
          }
 
-         if (current == NULL) {   /* create new category */
+         if (current == nullptr) {   /* create new category */
             if (!(current = lAddElemUlong(fcategories, FCAT_job_share, job_shares, FCAT_Type))) {
                free_fcategories(fcategories, ref_array);
                /* maybe an error code */
@@ -1811,7 +1811,7 @@ static u_long32 build_functional_categories(sge_ref_t *job_ref, u_long32 num_job
          }
 
          {  /* create new job entry */ 
-            sge_ref_list_t  *cur_ref_entry = NULL;
+            sge_ref_list_t  *cur_ref_entry = nullptr;
             sge_ref_list_t *new_elem = &((*ref_array)[ref_array_pos++]);
 
             new_elem->ref = jref;
@@ -1820,7 +1820,7 @@ static u_long32 build_functional_categories(sge_ref_t *job_ref, u_long32 num_job
             cur_ref_entry = (sge_ref_list_t *)lGetRef(current, FCAT_jobrelated_ticket_last);
 
             if (dependent) {
-               while (cur_ref_entry != NULL) {
+               while (cur_ref_entry != nullptr) {
                   sge_ref_t *ref = cur_ref_entry->ref;
 
                   if (ref->tickets > jref->tickets) {
@@ -1845,8 +1845,8 @@ static u_long32 build_functional_categories(sge_ref_t *job_ref, u_long32 num_job
             }
 
             /* insert element into the list */ 
-            if (cur_ref_entry == NULL) {
-               if (lGetRef(current, FCAT_jobrelated_ticket_first) == NULL) {
+            if (cur_ref_entry == nullptr) {
+               if (lGetRef(current, FCAT_jobrelated_ticket_first) == nullptr) {
                   /* first element, no elements in the list */
                   lSetRef(current, FCAT_jobrelated_ticket_first, new_elem);
                   lSetRef(current, FCAT_jobrelated_ticket_last, new_elem);
@@ -1864,7 +1864,7 @@ static u_long32 build_functional_categories(sge_ref_t *job_ref, u_long32 num_job
                /* insert element somewhere in the list */
                new_elem->prev = cur_ref_entry;
                new_elem->next = cur_ref_entry->next;
-               if(cur_ref_entry->next != NULL){
+               if(cur_ref_entry->next != nullptr){
                   cur_ref_entry->next->prev = new_elem;
                }
                else { 
@@ -1905,11 +1905,11 @@ static void free_fcategories(lList **fcategories, sge_ref_list_t **ref_array) {
    lListElem *fcategory;
 
    for_each_rw(fcategory, *fcategories) {
-      lSetRef(fcategory, FCAT_jobrelated_ticket_last, NULL);
-      lSetRef(fcategory, FCAT_jobrelated_ticket_first, NULL);      
-      lSetRef(fcategory, FCAT_user, NULL);
-      lSetRef(fcategory, FCAT_dept, NULL);
-      lSetRef(fcategory, FCAT_project, NULL);
+      lSetRef(fcategory, FCAT_jobrelated_ticket_last, nullptr);
+      lSetRef(fcategory, FCAT_jobrelated_ticket_first, nullptr);
+      lSetRef(fcategory, FCAT_user, nullptr);
+      lSetRef(fcategory, FCAT_dept, nullptr);
+      lSetRef(fcategory, FCAT_project, nullptr);
    }
 
    lFreeList(fcategories);
@@ -2250,8 +2250,8 @@ calc_job_tickets ( sge_ref_t *ref )
          total number of slots granted on all queues with active subtasks or
          on which no subtasks have started yet (active_nslots). */
 
-      nslots = nslots_granted(granted, NULL);
-      active_nslots = active_nslots_granted(job, granted, NULL);
+      nslots = nslots_granted(granted, nullptr);
+      active_nslots = active_nslots_granted(job, granted, nullptr);
 
       /* If there are some active_nslots, then calculate the number of tickets
          per slot based on the active_nslots */
@@ -2526,9 +2526,9 @@ sge_calc_tickets( scheduler_all_data_t *lists,
 
    u_long32 num_unenrolled_tasks = 0;
 
-   sge_ref_t *job_ref = NULL;
+   sge_ref_t *job_ref = nullptr;
 
-   lListElem *job, *qep, *root = NULL;
+   lListElem *job, *qep, *root = nullptr;
 
    double prof_init=0, prof_pass0=0, prof_pass1=0, prof_pass2=0, prof_calc=0; 
 
@@ -2538,7 +2538,7 @@ sge_calc_tickets( scheduler_all_data_t *lists,
    bool share_functional_shares = sconf_get_share_functional_shares();
    u_long32 max_pending_tasks_per_job = sconf_get_max_pending_tasks_per_job();
 
-   lList *decay_list = NULL;
+   lList *decay_list = nullptr;
 
    u_long32 free_qslots = 0;
 
@@ -2554,9 +2554,9 @@ sge_calc_tickets( scheduler_all_data_t *lists,
    { 
       lList *halflife_decay_list = sconf_get_halflife_decay_list();
 
-      if (halflife_decay_list != NULL) {
-         lListElem *ep = NULL;
-         lListElem *u = NULL;
+      if (halflife_decay_list != nullptr) {
+         lListElem *ep = nullptr;
+         lListElem *u = nullptr;
          double decay_rate, decay_constant;
          
          for_each_rw(ep, halflife_decay_list) {
@@ -2568,7 +2568,7 @@ sge_calc_tickets( scheduler_all_data_t *lists,
          }
       } 
       else {
-         lListElem *u = NULL;
+         lListElem *u = nullptr;
          double decay_rate, decay_constant;
 
          calculate_decay_constant(-1, &decay_rate, &decay_constant);
@@ -2687,7 +2687,7 @@ sge_calc_tickets( scheduler_all_data_t *lists,
             if (!job_is_active(job, ja_task)) {
                sge_clear_ja_task(ja_task);
             } else {
-               sge_set_job_refs(job, ja_task, &job_ref[job_ndx], NULL, lists, 0);
+               sge_set_job_refs(job, ja_task, &job_ref[job_ndx], nullptr, lists, 0);
                if (job_ref[job_ndx].node) {
                   lSetUlong(job_ref[job_ndx].node, STN_job_ref_count,
                             lGetUlong(job_ref[job_ndx].node, STN_job_ref_count)+1);
@@ -2704,9 +2704,9 @@ sge_calc_tickets( scheduler_all_data_t *lists,
       u_long32 ja_task_ndx = 0;
 
       for_each_rw(job, queued_jobs) {
-         lListElem *ja_task = NULL;
-         lListElem *range = NULL;
-         const lList *range_list = NULL;  
+         lListElem *ja_task = nullptr;
+         lListElem *range = nullptr;
+         const lList *range_list = nullptr;
          u_long32 id;
          u_long32 task_cnt = 0;
 
@@ -2717,7 +2717,7 @@ sge_calc_tickets( scheduler_all_data_t *lists,
                 !job_is_active(job, ja_task)) {
                sge_clear_ja_task(ja_task);
             } else {
-               sge_set_job_refs(job, ja_task, jref, NULL, lists, 1);
+               sge_set_job_refs(job, ja_task, jref, nullptr, lists, 1);
                if (jref->node)
                   lSetUlong(jref->node, STN_job_ref_count,
                             lGetUlong(jref->node, STN_job_ref_count)+1);
@@ -2787,9 +2787,9 @@ sge_calc_tickets( scheduler_all_data_t *lists,
 
          for_each_rw(ja_task, lGetList(job, JB_ja_tasks)) {
             memset(&jref, 0, sizeof(jref));
-            sge_set_job_refs(job, ja_task, &jref, NULL, lists, 0);
+            sge_set_job_refs(job, ja_task, &jref, nullptr, lists, 0);
             if (lGetElemStr(lGetList(jref.ja_task, JAT_scaled_usage_list),
-                            UA_name, "finished_jobs") == NULL) {
+                            UA_name, "finished_jobs") == nullptr) {
                lListElem *u;
                if ((u=lAddSubStr(jref.ja_task, UA_name, "finished_jobs",
                                  JAT_scaled_usage_list, UA_Type)))
@@ -2805,12 +2805,12 @@ sge_calc_tickets( scheduler_all_data_t *lists,
    } else {
       DPRINTF(("\n"));
       DPRINTF(("no DDJU: do_usage: %d finished_jobs %d\n",
-         do_usage, (finished_jobs!=NULL)));
+         do_usage, (finished_jobs!=nullptr)));
       DPRINTF(("\n"));
    }     
    
    PROF_STOP_MEASUREMENT(SGE_PROF_SCHEDLIB4);
-   prof_init = prof_get_measurement_wallclock(SGE_PROF_SCHEDLIB4, false, NULL);
+   prof_init = prof_get_measurement_wallclock(SGE_PROF_SCHEDLIB4, false, nullptr);
    PROF_START_MEASUREMENT(SGE_PROF_SCHEDLIB4); 
 
    /*-----------------------------------------------------------------
@@ -2838,7 +2838,7 @@ sge_calc_tickets( scheduler_all_data_t *lists,
                                  curr_time, sge_scheduling_run);
 
    PROF_STOP_MEASUREMENT(SGE_PROF_SCHEDLIB4);
-   prof_pass0 = prof_get_measurement_wallclock(SGE_PROF_SCHEDLIB4,false, NULL);
+   prof_pass0 = prof_get_measurement_wallclock(SGE_PROF_SCHEDLIB4,false, nullptr);
    PROF_START_MEASUREMENT(SGE_PROF_SCHEDLIB4); 
 
    /*-----------------------------------------------------------------
@@ -2864,7 +2864,7 @@ sge_calc_tickets( scheduler_all_data_t *lists,
    }
 
    PROF_STOP_MEASUREMENT(SGE_PROF_SCHEDLIB4);
-   prof_pass1= prof_get_measurement_wallclock(SGE_PROF_SCHEDLIB4,false, NULL);
+   prof_pass1= prof_get_measurement_wallclock(SGE_PROF_SCHEDLIB4,false, nullptr);
    PROF_START_MEASUREMENT(SGE_PROF_SCHEDLIB4); 
 
    /*-----------------------------------------------------------------
@@ -2923,7 +2923,7 @@ sge_calc_tickets( scheduler_all_data_t *lists,
    }
 
    PROF_STOP_MEASUREMENT(SGE_PROF_SCHEDLIB4);
-   prof_pass2 = prof_get_measurement_wallclock(SGE_PROF_SCHEDLIB4,false, NULL);
+   prof_pass2 = prof_get_measurement_wallclock(SGE_PROF_SCHEDLIB4,false, nullptr);
    PROF_START_MEASUREMENT(SGE_PROF_SCHEDLIB4); 
 
    /*-----------------------------------------------------------------
@@ -3043,14 +3043,14 @@ sge_calc_tickets( scheduler_all_data_t *lists,
        *-----------------------------------------------------------------*/
       DPRINTF(("calc funktional tickets %.3f\n", total_functional_tickets));
       if (total_functional_tickets > 0 && num_queued_jobs > 0) {
-         sge_ref_t **sort_list=NULL;
-         lList *fcategories = NULL;
+         sge_ref_t **sort_list=nullptr;
+         lList *fcategories = nullptr;
 
          u_long32 i=0;
          
          double weight[k_last];
 
-         sge_ref_list_t *ref_array = NULL;
+         sge_ref_list_t *ref_array = nullptr;
          double pending_user_fshares = sum_of_user_functional_shares;
          double pending_proj_fshares = sum_of_project_functional_shares;
          double pending_dept_fshares = sum_of_department_functional_shares;
@@ -3067,14 +3067,14 @@ sge_calc_tickets( scheduler_all_data_t *lists,
          if (max > 0) { 
             sort_list = (sge_ref_t **)sge_malloc(max * sizeof(sge_ref_t *));
            
-            if(sort_list == NULL){
+            if(sort_list == nullptr){
                /* error message to come */
                
                sge_free(&sort_list);
                sge_free(&job_ref);
                lFreeList(&decay_list);
 
-               if (fcategories != NULL) {
+               if (fcategories != nullptr) {
                   free_fcategories(&fcategories, &ref_array);
                }
                
@@ -3092,8 +3092,8 @@ sge_calc_tickets( scheduler_all_data_t *lists,
                double ftickets, max_ftickets=-1;
                u_long32 jid, save_jid=0, save_tid=0;
 	            u_long32 submission_time = 0, save_submission_time = 0;
-               lListElem *current = NULL;
-               lListElem *max_current = NULL;
+               lListElem *current = nullptr;
+               lListElem *max_current = nullptr;
 
                /* loop over all first jobs from the different categories */
                for_each_rw(current, fcategories) {
@@ -3124,7 +3124,7 @@ sge_calc_tickets( scheduler_all_data_t *lists,
                   if(ftickets >= max_ftickets){
                      jid = lGetUlong(jref->job, JB_job_number);
                      submission_time = lGetUlong(jref->job, JB_submission_time);
-                     if (max_current == NULL ||
+                     if (max_current == nullptr ||
                            (ftickets > max_ftickets) ||
 			   (submission_time < save_submission_time) ||
 			   (submission_time == save_submission_time && jid < save_jid) ||
@@ -3142,7 +3142,7 @@ sge_calc_tickets( scheduler_all_data_t *lists,
                /* - set the results from first entry of the winning category to the second 
                   - remove the winning element
                   - if it was the last element, remove the fcategory*/
-               if (max_current != NULL) {
+               if (max_current != nullptr) {
                   sge_ref_list_t *tmp = (sge_ref_list_t *)lGetRef(max_current, FCAT_jobrelated_ticket_first);  
                   copy_ftickets (tmp, tmp->next);
 
@@ -3150,11 +3150,11 @@ sge_calc_tickets( scheduler_all_data_t *lists,
                   lSetRef(max_current, FCAT_jobrelated_ticket_first, tmp->next);  
                  
                   /* remove category */
-                  if (lGetRef(max_current, FCAT_jobrelated_ticket_first) == NULL) {
-                     lSetRef(max_current, FCAT_jobrelated_ticket_last,  NULL);
-                     lSetRef(max_current, FCAT_user, NULL);
-                     lSetRef(max_current, FCAT_dept, NULL);
-                     lSetRef(max_current, FCAT_project, NULL);
+                  if (lGetRef(max_current, FCAT_jobrelated_ticket_first) == nullptr) {
+                     lSetRef(max_current, FCAT_jobrelated_ticket_last,  nullptr);
+                     lSetRef(max_current, FCAT_user, nullptr);
+                     lSetRef(max_current, FCAT_dept, nullptr);
+                     lSetRef(max_current, FCAT_project, nullptr);
 
                      lRemoveElem(fcategories, &max_current);
                   }
@@ -3304,10 +3304,10 @@ sge_calc_tickets( scheduler_all_data_t *lists,
 
          for_each_rw(ja_task, lGetList(job, JB_ja_tasks)) {
             memset(&jref, 0, sizeof(jref));
-            sge_set_job_refs(job, ja_task, &jref, NULL, lists, 0);
+            sge_set_job_refs(job, ja_task, &jref, nullptr, lists, 0);
             if (jref.node) {
                if (sge_scheduling_run != lGetUlong(jref.node, STN_pass2_seqno)) {
-                  sge_zero_node_fields(jref.node, NULL);
+                  sge_zero_node_fields(jref.node, nullptr);
                   lSetUlong(jref.node, STN_pass2_seqno, sge_scheduling_run);
                }
             }
@@ -3323,10 +3323,10 @@ sge_calc_tickets( scheduler_all_data_t *lists,
     * most tickets. These ticket numbers will be stored in the template
     * element within the job. 
     */
-   if (queued_jobs != NULL) {
+   if (queued_jobs != nullptr) {
       sge_task_ref_t *tref = task_ref_get_first_job_entry();
 
-      while (tref != NULL) {
+      while (tref != nullptr) {
          lListElem *job = lGetElemUlongRW(queued_jobs, JB_job_number, tref->job_number); 
 
          if (job) {
@@ -3342,8 +3342,8 @@ sge_calc_tickets( scheduler_all_data_t *lists,
    lFreeList(&decay_list);
 
    if (prof_is_active(SGE_PROF_SCHEDLIB4)){
-      prof_stop_measurement(SGE_PROF_SCHEDLIB4, NULL);
-      prof_calc = prof_get_measurement_wallclock(SGE_PROF_SCHEDLIB4, false, NULL);    
+      prof_stop_measurement(SGE_PROF_SCHEDLIB4, nullptr);
+      prof_calc = prof_get_measurement_wallclock(SGE_PROF_SCHEDLIB4, false, nullptr);
    
       PROFILING((SGE_EVENT, "PROF: job ticket calculation: init: %.3f s, pass 0: %.3f s, pass 1: %.3f, pass2: %.3f, calc: %.3f s",
                prof_init, prof_pass0, prof_pass1, prof_pass2, prof_calc));
@@ -3363,7 +3363,7 @@ sge_sort_pending_job_nodes(lListElem *root,
                            lListElem *node,
                            double total_share_tree_tickets)
 {
-   lList *job_node_list = NULL;
+   lList *job_node_list = nullptr;
    lListElem *child, *job_node;
    double node_stt;
    double job_count=0;
@@ -3371,7 +3371,7 @@ sge_sort_pending_job_nodes(lListElem *root,
    
    if(root == node){
       int active_nodes = 0;
-      lListElem *temp_root = NULL;
+      lListElem *temp_root = nullptr;
 
       for_each_rw(child, lGetList(node, STN_children)) {
          if (lGetUlong(child, STN_ref)) {
@@ -3400,7 +3400,7 @@ sge_sort_pending_job_nodes(lListElem *root,
          lList *child_job_node_list;
          /* recursively get all the child job nodes onto our list */
          if ((child_job_node_list = sge_sort_pending_job_nodes(root, child, total_share_tree_tickets))) {
-            if (job_node_list == NULL)
+            if (job_node_list == nullptr)
                job_node_list = child_job_node_list;
             else
                lAddList(job_node_list, &child_job_node_list);
@@ -3409,7 +3409,7 @@ sge_sort_pending_job_nodes(lListElem *root,
    }
    /* free the temporary job nodes */
    if (job_nodes)
-      lSetList(node, STN_children, NULL);
+      lSetList(node, STN_children, nullptr);
 
    /* sort the job nodes based on the calculated pending priority */
    if (root != node || job_nodes) { 
@@ -3466,7 +3466,7 @@ sge_calc_sharetree_targets( lListElem *root,
                        lists->project_list,
                        decay_list,
                        curr_time,
-                       NULL,
+                       nullptr,
                        seqno);
 
    /* Calculate targeted proportions for each node */
@@ -3686,14 +3686,14 @@ get_mod_share_tree( lListElem *node,
                     lEnumeration *what,
                     int seqno )
 {
-   lListElem *new_node=NULL;
+   lListElem *new_node=nullptr;
    const lList *children;
    lListElem *child;
 
    if (((children = lGetList(node, STN_children))) &&
        lGetNumberOfElem(children) > 0) {
 
-      lList *child_list=NULL;
+      lList *child_list=nullptr;
 
       for_each_rw(child, children) {
          lListElem *child_node;
@@ -3768,13 +3768,13 @@ sge_build_sgeee_orders(scheduler_all_data_t *lists, lList *running_jobs, lList *
                        lList *finished_jobs, order_t *orders, 
                        bool update_usage_and_configuration, int seqno, bool update_execd)
 {
-   lCondition *user_where=NULL;
-   lCondition *prj_where=NULL;
-   lList *up_list = NULL;
-   lList *order_list = NULL;
-   lListElem *order = NULL;
-   lListElem *root = NULL;
-   lListElem *job = NULL;
+   lCondition *user_where=nullptr;
+   lCondition *prj_where=nullptr;
+   lList *up_list = nullptr;
+   lList *order_list = nullptr;
+   lListElem *order = nullptr;
+   lListElem *root = nullptr;
+   lListElem *job = nullptr;
    int norders = 0;
    u_long32 max_pending_tasks_per_job = sconf_get_max_pending_tasks_per_job();
 
@@ -3782,27 +3782,27 @@ sge_build_sgeee_orders(scheduler_all_data_t *lists, lList *running_jobs, lList *
    
    DENTER(TOP_LAYER);
 
-   if (share_tree_what == NULL) {
+   if (share_tree_what == nullptr) {
       share_tree_what = lWhat("%T(%I %I %I %I %I %I)", STN_Type,
                          STN_version, STN_name, STN_job_ref_count, STN_m_share,
                          STN_last_actual_proportion,
                          STN_adjusted_current_proportion);
    }   
 
-   if (user_usage_what == NULL) {
+   if (user_usage_what == nullptr) {
       user_usage_what = lWhat("%T(%I %I %I %I %I %I %I)", UU_Type,
                               UU_name, UU_usage, UU_usage_time_stamp,
                               UU_long_term_usage, UU_project,
                               UU_debited_job_usage, UU_version);
    }   
-   if (prj_usage_what == NULL) {
+   if (prj_usage_what == nullptr) {
       prj_usage_what = lWhat("%T(%I %I %I %I %I %I %I)", PR_Type,
                               PR_name, PR_usage, PR_usage_time_stamp,
                               PR_long_term_usage, PR_project,
                               PR_debited_job_usage, PR_version);
    }   
 
-   if (orders->pendingOrderList == NULL) {
+   if (orders->pendingOrderList == nullptr) {
       orders->pendingOrderList = lCreateList("orderlist", OR_Type);
    }   
 
@@ -3818,10 +3818,10 @@ sge_build_sgeee_orders(scheduler_all_data_t *lists, lList *running_jobs, lList *
       DPRINTF(("   got %d running jobs\n", lGetNumberOfElem(running_jobs)));
 
       for_each_rw(job, running_jobs) {
-         const char *pe_str = NULL;
-         const lList *granted = NULL;
-         lListElem *pe = NULL;
-         lListElem *ja_task = NULL;
+         const char *pe_str = nullptr;
+         const lList *granted = nullptr;
+         lListElem *pe = nullptr;
+         lListElem *ja_task = nullptr;
 
          for_each_rw(ja_task, lGetList(job, JB_ja_tasks)) {
             if ((pe_str=lGetString(ja_task, JAT_granted_pe))
@@ -3831,7 +3831,7 @@ sge_build_sgeee_orders(scheduler_all_data_t *lists, lList *running_jobs, lList *
                granted=lGetList(ja_task, JAT_granted_destin_identifier_list);
             }  
             else {
-               granted=NULL;
+               granted=nullptr;
             }   
 
             order_list = sge_create_orders(order_list, ORT_tickets, job, ja_task, granted, update_execd);
@@ -3849,8 +3849,8 @@ sge_build_sgeee_orders(scheduler_all_data_t *lists, lList *running_jobs, lList *
  * This prevents qstat from reporting wrong pticket values. Its only done
  * once after the config change.
  */
-   if ((queued_jobs != NULL) && (max_queued_ticket_orders || sconf_is_new_config())) {
-      lListElem *qep = NULL;
+   if ((queued_jobs != nullptr) && (max_queued_ticket_orders || sconf_is_new_config())) {
+      lListElem *qep = nullptr;
       u_long32 free_qslots = 0;
       norders = lGetNumberOfElem(order_list);
       for_each_rw(qep, lists->queue_list) {
@@ -3858,7 +3858,7 @@ sge_build_sgeee_orders(scheduler_all_data_t *lists, lList *running_jobs, lList *
       }
       
       for_each_rw(job, queued_jobs) {
-         lListElem *ja_task = NULL;
+         lListElem *ja_task = nullptr;
          u_long32 tasks = 0;
   
          if (max_queued_ticket_orders) {
@@ -3870,17 +3870,17 @@ sge_build_sgeee_orders(scheduler_all_data_t *lists, lList *running_jobs, lList *
                if (++tasks > MIN(max_pending_tasks_per_job, free_qslots+1)) {
                   break;
                }   
-               order_list = sge_create_orders(order_list, ORT_ptickets, job, ja_task, NULL, false);
+               order_list = sge_create_orders(order_list, ORT_ptickets, job, ja_task, nullptr, false);
             }
 
             if (job_get_not_enrolled_ja_tasks(job) > 0) {
                lListElem *task_template = lFirstRW(lGetList(job, JB_ja_template));
                if (task_template) {
-                  order_list = sge_create_orders(order_list, ORT_ptickets, job, task_template, NULL, false);
+                  order_list = sge_create_orders(order_list, ORT_ptickets, job, task_template, nullptr, false);
                }
             }  
          } else {
-            order_list = sge_create_orders(order_list, ORT_clear_pri_info, job, NULL, NULL, false);               
+            order_list = sge_create_orders(order_list, ORT_clear_pri_info, job, nullptr, nullptr, false);
          }
       }
       DPRINTF(("   added %d ticket orders for queued jobs\n", 
@@ -3949,7 +3949,7 @@ sge_build_sgeee_orders(scheduler_all_data_t *lists, lList *running_jobs, lList *
        *-----------------------------------------------------------------*/
 
       if (lists->share_tree && ((root = lFirstRW(lists->share_tree)))) {
-         lListElem *node = NULL;
+         lListElem *node = nullptr;
          norders = lGetNumberOfElem(order_list);
 
          if ((node = get_mod_share_tree(root, share_tree_what, last_seqno))) {
@@ -3970,10 +3970,10 @@ sge_build_sgeee_orders(scheduler_all_data_t *lists, lList *running_jobs, lList *
        *-----------------------------------------------------------------*/
 
       if (sconf_is()) {
-         lListElem *node = NULL;
+         lListElem *node = nullptr;
          const lDescr schedConfDesc[] = {
-                            {SC_weight_tickets_override, lUlongT  | CULL_IS_REDUCED, NULL},
-                            {NoName, lEndT  | CULL_IS_REDUCED, NULL}
+                            {SC_weight_tickets_override, lUlongT  | CULL_IS_REDUCED, nullptr},
+                            {NoName, lEndT  | CULL_IS_REDUCED, nullptr}
                            };
 
          node = lCreateElem(schedConfDesc);
@@ -4107,10 +4107,10 @@ int sgeee_scheduler(scheduler_all_data_t *lists,
       sge_do_urgency(now, pending_jobs, running_jobs, lists);
 
       if (prof_is_active(SGE_PROF_CUSTOM3)) {
-         prof_stop_measurement(SGE_PROF_CUSTOM3, NULL);
+         prof_stop_measurement(SGE_PROF_CUSTOM3, nullptr);
 
          PROFILING((SGE_EVENT, "PROF: static urgency took %.3f s",
-               prof_get_measurement_wallclock(SGE_PROF_CUSTOM3, false, NULL)));
+               prof_get_measurement_wallclock(SGE_PROF_CUSTOM3, false, nullptr)));
       }
 
    }   
@@ -4122,7 +4122,7 @@ int sgeee_scheduler(scheduler_all_data_t *lists,
    sge_calc_tickets(lists, running_jobs, finished_jobs, pending_jobs, 1, &max_tix);
          
    /* correct the shares for the running jobs */
-   seqno = sge_calc_tickets(lists, running_jobs, NULL, NULL, 0, &max_tix);
+   seqno = sge_calc_tickets(lists, running_jobs, nullptr, nullptr, 0, &max_tix);
 
    if (max_tix == -1) { /* we have no running jobs and the tickets are disabled. */
       max_tix = 0;
@@ -4149,10 +4149,10 @@ int sgeee_scheduler(scheduler_all_data_t *lists,
    sge_do_sgeee_priority(pending_jobs, min_tix, max_tix, do_nprio, do_nurg); 
 
    if (prof_is_active(SGE_PROF_CUSTOM3)) {
-      prof_stop_measurement(SGE_PROF_CUSTOM3, NULL);
+      prof_stop_measurement(SGE_PROF_CUSTOM3, nullptr);
 
       PROFILING((SGE_EVENT, "PROF: normalizing job tickets took %.3f s",
-                 prof_get_measurement_wallclock(SGE_PROF_CUSTOM3, false, NULL)));
+                 prof_get_measurement_wallclock(SGE_PROF_CUSTOM3, false, nullptr)));
    }
 
    PROF_STOP_MEASUREMENT(SGE_PROF_SCHEDLIB4)
@@ -4171,15 +4171,15 @@ int sgeee_scheduler(scheduler_all_data_t *lists,
       /* we are not calculation pending tickets here, only the running, finished jobs,
          and the sharetree changes are processed. The pending tickets are calculated at the
          end of the scheduler cycle */
-      sge_build_sgeee_orders(lists, running_jobs, NULL, finished_jobs, orders, true, seqno, 
+      sge_build_sgeee_orders(lists, running_jobs, nullptr, finished_jobs, orders, true, seqno,
                              update_execd);
    }
 
    if (prof_is_active(SGE_PROF_SCHEDLIB4)) {
-      prof_stop_measurement(SGE_PROF_SCHEDLIB4, NULL);
+      prof_stop_measurement(SGE_PROF_SCHEDLIB4, nullptr);
 
       PROFILING((SGE_EVENT, "PROF: create active job orders: %.3f s",
-               prof_get_measurement_wallclock(SGE_PROF_SCHEDLIB4, false, NULL)));
+               prof_get_measurement_wallclock(SGE_PROF_SCHEDLIB4, false, nullptr)));
    }  
    
    DRETURN(0);
@@ -4356,9 +4356,9 @@ static void sgeee_priority(lListElem *task, u_long32 jobid, double nsu,
 *     ???/???
 *******************************************************************************/
 static void calculate_pending_shared_override_tickets(sge_ref_t *job_ref, u_long32 num_jobs, int dependent) {
-         lList *fcategories = NULL;
-         sge_ref_list_t *ref_array = NULL;
-         sge_ref_t **sort_list=NULL;
+         lList *fcategories = nullptr;
+         sge_ref_list_t *ref_array = nullptr;
+         sge_ref_t **sort_list=nullptr;
          u_long32 i;
          u_long32 max;
          u_long32 job_ndx;
@@ -4371,12 +4371,12 @@ static void calculate_pending_shared_override_tickets(sge_ref_t *job_ref, u_long
          if (max > 0) {
             sort_list = (sge_ref_t **)sge_malloc(max * sizeof(sge_ref_t *));
 
-            if (sort_list == NULL) {
+            if (sort_list == nullptr) {
                /* error message to come */
                
                sge_free(&sort_list);            
                
-               if (fcategories != NULL) {
+               if (fcategories != nullptr) {
                   free_fcategories(&fcategories, &ref_array);
                }
                DRETURN_VOID;
@@ -4386,8 +4386,8 @@ static void calculate_pending_shared_override_tickets(sge_ref_t *job_ref, u_long
                double max_otickets=-1;
                u_long32 jid, tid, max_jid=0, max_tid=0;            
 
-               lListElem *current = NULL;
-               lListElem *max_current = NULL;         
+               lListElem *current = nullptr;
+               lListElem *max_current = nullptr;
                /* loop over all first jobs from the different categories */
                for_each_rw(current, fcategories){
                   sge_ref_list_t *tmp = (sge_ref_list_t *)lGetRef(current, FCAT_jobrelated_ticket_first); 
@@ -4400,7 +4400,7 @@ static void calculate_pending_shared_override_tickets(sge_ref_t *job_ref, u_long
 
                   /* get the job with the max otickets */
                   if ((max_otickets < otickets) ||
-                      (max_current == NULL)) {
+                      (max_current == nullptr)) {
                      max_current = current;
                      max_otickets = otickets;
                      max_jid = jid;
@@ -4419,18 +4419,18 @@ static void calculate_pending_shared_override_tickets(sge_ref_t *job_ref, u_long
                   }         
                }
                
-               if (max_current != NULL) {
+               if (max_current != nullptr) {
                   sge_ref_list_t *tmp = (sge_ref_list_t *)lGetRef(max_current, FCAT_jobrelated_ticket_first);  
                   sge_set_job_cnts(tmp->ref, 0); /* set job active */
                   lSetRef(max_current, FCAT_jobrelated_ticket_first, tmp->next);/* next job in that category */  
                   sort_list[i]->tickets += max_otickets;
 
                   /* remove category */
-                  if(lGetRef(max_current, FCAT_jobrelated_ticket_first) == NULL){
-                     lSetRef(max_current, FCAT_jobrelated_ticket_last,  NULL);
-                     lSetRef(current, FCAT_user, NULL);
-                     lSetRef(current, FCAT_dept, NULL);
-                     lSetRef(current, FCAT_project, NULL);
+                  if(lGetRef(max_current, FCAT_jobrelated_ticket_first) == nullptr){
+                     lSetRef(max_current, FCAT_jobrelated_ticket_last,  nullptr);
+                     lSetRef(current, FCAT_user, nullptr);
+                     lSetRef(current, FCAT_dept, nullptr);
+                     lSetRef(current, FCAT_project, nullptr);
 
                      lRemoveElem(fcategories, &max_current);
                   }            
@@ -4461,8 +4461,8 @@ main(int argc, char **argv)
 {
    int job_number;
    sge_Sdescr_t *lists;
-   lList *child_list = NULL;
-   lList *group_list = NULL;
+   lList *child_list = nullptr;
+   lList *group_list = nullptr;
    lListElem *job, *config, *node, *usage;
 
    lListElem *ep;
@@ -4477,7 +4477,7 @@ main(int argc, char **argv)
                          (setlocale_func_type)      setlocale,
                          (bindtextdomain_func_type) bindtextdomain,
                          (textdomain_func_type)     textdomain);
-   sge_init_language(NULL,NULL);   
+   sge_init_language(nullptr,nullptr);
 #endif /* __SGE_COMPILE_WITH_GETTEXT__  */
 
 
@@ -4503,7 +4503,7 @@ main(int argc, char **argv)
    config = lCreateElem(SC_Type);
    lSetUlong(config, SC_halftime, 60*60);
    lSetList(config, SC_usage_weight_list,
-       build_usage_list("usageweightlist", NULL));
+       build_usage_list("usageweightlist", nullptr));
    for_each_ep(usage, lGetList(config, SC_usage_weight_list))
       lSetDouble(usage, UA_value, 1.0/3.0);
    lSetDouble(config, SC_compensation_factor, 2);
@@ -4596,7 +4596,7 @@ main(int argc, char **argv)
    lSetUlong(job, JB_deadline, 0);
    lSetHost(job, JB_host, "racerx");
    lSetUlong(job, JB_override_tickets, 0);
-   lSetList(job, JB_scaled_usage_list, build_usage_list("jobusagelist", NULL));
+   lSetList(job, JB_scaled_usage_list, build_usage_list("jobusagelist", nullptr));
    for_each_ep(usage, lGetList(job, JB_scaled_usage_list))
       lSetDouble(usage, UA_value, rand());
 
@@ -4610,7 +4610,7 @@ main(int argc, char **argv)
    lSetUlong(job, JB_deadline, 0);
    lSetHost(job, JB_host, "racerx");
    lSetUlong(job, JB_override_tickets, 0);
-   lSetList(job, JB_scaled_usage_list, build_usage_list("jobusagelist", NULL));
+   lSetList(job, JB_scaled_usage_list, build_usage_list("jobusagelist", nullptr));
    for_each_ep(usage, lGetList(job, JB_scaled_usage_list))
       lSetDouble(usage, UA_value, rand());
 
@@ -4625,7 +4625,7 @@ main(int argc, char **argv)
    lSetUlong(job, JB_deadline, 0);
    lSetHost(job, JB_host, "racerx");
    lSetUlong(job, JB_override_tickets, 0);
-   lSetList(job, JB_scaled_usage_list, build_usage_list("jobusagelist", NULL));
+   lSetList(job, JB_scaled_usage_list, build_usage_list("jobusagelist", nullptr));
    for_each_ep(usage, lGetList(job, JB_scaled_usage_list))
       lSetDouble(usage, UA_value, rand());
 
@@ -4639,18 +4639,18 @@ main(int argc, char **argv)
    lSetUlong(job, JB_deadline, sge_get_gmt() + 60*2);
    lSetHost(job, JB_host, "racerx");
    lSetUlong(job, JB_override_tickets, 0);
-   lSetList(job, JB_scaled_usage_list, build_usage_list("jobusagelist", NULL));
+   lSetList(job, JB_scaled_usage_list, build_usage_list("jobusagelist", nullptr));
    for_each_ep(usage, lGetList(job, JB_scaled_usage_list))
       lSetDouble(usage, UA_value, rand());
 
 
    /* call the SGEEE scheduler */
 
-   sge_setup_lists(lists, lists->job_list, NULL);
+   sge_setup_lists(lists, lists->job_list, nullptr);
 
-   sge_calc_tickets(lists, lists->job_list, NULL, NULL);
+   sge_calc_tickets(lists, lists->job_list, nullptr, nullptr);
 
-   sge_calc_tickets(lists, lists->job_list, NULL, NULL);
+   sge_calc_tickets(lists, lists->job_list, nullptr, nullptr);
 
 /*   lWriteListTo(lists->job_list, stdout);*/
 

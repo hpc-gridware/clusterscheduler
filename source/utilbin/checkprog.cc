@@ -125,7 +125,7 @@ int main(int argc, char *argv[])
    if (checkit) {
 		
 		int printpid = 0;
-		char* process_name = NULL;
+		char* process_name = nullptr;
 		
 		switch( argc ) {
 			case 2:

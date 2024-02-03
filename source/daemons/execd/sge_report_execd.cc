@@ -80,8 +80,8 @@ int sge_send_all_reports(sge_gdi_ctx_class_t *ctx, u_long32 now, int which,
 
    if (get_last_qmaster_register_time() >= connect_time && connect_time != 0) {
       if (sge_get_com_error_flag(EXECD, SGE_COM_WAS_COMMUNICATION_ERROR, false) == false) {
-         const char *master_host = NULL;
-         lList *report_list = NULL;
+         const char *master_host = nullptr;
+         lList *report_list = nullptr;
          int i = 0;
 
          master_host = ctx->get_master(ctx, false);
@@ -154,19 +154,19 @@ int sge_add_int2load_report(lList **lpp, const char *name, int value,
 */
 int sge_add_str2load_report(lList **lpp, const char *name, const char *value, const char *host)
 {
-   lListElem *ep = NULL;
-   const void *iterator = NULL;
+   lListElem *ep = nullptr;
+   const void *iterator = nullptr;
 
    DENTER(BASIS_LAYER);
 
-   if (lpp == NULL || name == NULL || value == NULL || host == NULL) {
+   if (lpp == nullptr || name == nullptr || value == nullptr || host == nullptr) {
       DRETURN(-1);
    }
 
-   if (*lpp != NULL) {
+   if (*lpp != nullptr) {
       lListElem *search_ep = lGetElemHostFirstRW(*lpp, LR_host, host, &iterator);
 
-      while (search_ep != NULL) {
+      while (search_ep != nullptr) {
          DPRINTF(("---> %s\n", lGetString(search_ep, LR_name)));
          if (strcmp(lGetString(search_ep, LR_name), name) == 0) {
             ep = search_ep;
@@ -176,7 +176,7 @@ int sge_add_str2load_report(lList **lpp, const char *name, const char *value, co
       }
    }
    
-   if (ep == NULL) {
+   if (ep == nullptr) {
       DPRINTF(("adding new load variable %s for host %s\n", name, host));
       ep = lAddElemStr(lpp, LR_name, name, LR_Type);
       lSetHost(ep, LR_host, host);

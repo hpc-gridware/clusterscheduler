@@ -55,7 +55,7 @@ NAMEEND
 
 lNameSpace nmv[] = {
         {1, TEST_Size, TEST_Name},
-        {0, 0, NULL}
+        {0, 0, nullptr}
 };
 
 int main(int argc, char *argv[]) {
@@ -65,15 +65,15 @@ int main(int argc, char *argv[]) {
 
    lInit(nmv);
 
-   /* test if unparsable request returns NULL */
+   /* test if unparsable request returns nullptr */
    enp = lWhat("%T(%I%I->%T(%I%T))", TEST_Type, TEST_int, TEST_int, TEST_Type, TEST_int, TEST_host);
-   if (enp != NULL) {
+   if (enp != nullptr) {
       lFreeWhat(&enp);
       printf("lWhat is broken!\n");
       return EXIT_FAILURE;
    } else {
       lCondition *where = lWhere("%T(ALL)", TEST_Type);
-      if (where != NULL) {
+      if (where != nullptr) {
          lFreeWhere(&where);
          printf("lWhere is broken!\n");
          return EXIT_FAILURE;
@@ -94,7 +94,7 @@ int main(int argc, char *argv[]) {
    lSetLong(ep, TEST_long, 2);
    lSetUlong(ep, TEST_ulong, 3);
    lSetBool(ep, TEST_bool, true);
-   lSetList(ep, TEST_list, NULL);
+   lSetList(ep, TEST_list, nullptr);
 
    lSetInt(ep, TEST_int, 100);
    lSetObject(ep, TEST_object, obj);
@@ -119,7 +119,7 @@ int main(int argc, char *argv[]) {
    copy = lCreateElem(TEST_Type);
    enp = lWhat("%T(ALL)", TEST_Type);
    index = 0;
-   lCopyElemPartialPack(copy, &index, ep, enp, true, NULL);
+   lCopyElemPartialPack(copy, &index, ep, enp, true, nullptr);
    printf("complete copy of element\n");
    lWriteElemTo(copy, stdout);
    lFreeElem(&copy);
@@ -128,7 +128,7 @@ int main(int argc, char *argv[]) {
    copy = lCreateElem(TEST_Type);
    enp = lWhat("%T(%I %I %I)", TEST_Type, TEST_string, TEST_float, TEST_double);
    index = lGetPosInDescr(TEST_Type, TEST_string);
-   lCopyElemPartialPack(copy, &index, ep, enp, true, NULL);
+   lCopyElemPartialPack(copy, &index, ep, enp, true, nullptr);
    printf("partial copy of element\n");
    lWriteElemTo(copy, stdout);
    lFreeElem(&copy);

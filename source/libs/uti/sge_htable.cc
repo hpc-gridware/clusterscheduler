@@ -263,7 +263,7 @@ void sge_htable_destroy(htable ht) {
    for (i = 0; i < ht->mask + 1; i++) {
       for (bucket = ht->table[i]; bucket; bucket = next) {
          next = bucket->next;
-         if (bucket->key != NULL) {
+         if (bucket->key != nullptr) {
             sge_free(&(bucket->key));
          }
          sge_free(&bucket);
@@ -359,7 +359,7 @@ void sge_htable_store(htable table, const void *key, const void *data) {
 *  INPUTS
 *     htable table      - the table to search
 *     const void* key   - unique key to search
-*     const void** data - object if found, else NULL
+*     const void** data - object if found, else nullptr
 *
 *  RESULT
 *     int - true, when an object was found, else false
@@ -410,7 +410,7 @@ void sge_htable_delete(htable table, const void *key) {
         prev = &bucket->next) {
       if (table->compare_func(bucket->key, key) == 0) {
          *prev = bucket->next;
-         if (bucket->key != NULL) {
+         if (bucket->key != nullptr) {
             sge_free(&(bucket->key));
          }
          sge_free(&bucket);
@@ -466,13 +466,13 @@ const char *sge_htable_statistics(htable ht, dstring *buffer) {
 
    for (i = 0; i < size; i++) {
       long count = 0;
-      if (ht->table[i] == NULL) {
+      if (ht->table[i] == nullptr) {
          empty++;
       } else {
          Bucket *b = ht->table[i];
          do {
             count++;
-         } while ((b = b->next) != NULL);
+         } while ((b = b->next) != nullptr);
 
          if (count > max) {
             max = count;
@@ -518,10 +518,10 @@ const char *sge_htable_statistics(htable ht, dstring *buffer) {
 *     uti/htable/sge_htable_create()
 ******************************************************************************/
 const void *dup_func_u_long32(const void *key) {
-   u_long32 *dup_key = NULL;
+   u_long32 *dup_key = nullptr;
    u_long32 *cast = (u_long32 *) key;
 
-   if ((dup_key = (u_long32 *) sge_malloc(sizeof(u_long32))) != NULL) {
+   if ((dup_key = (u_long32 *) sge_malloc(sizeof(u_long32))) != nullptr) {
       *dup_key = *cast;
    }
 
@@ -529,10 +529,10 @@ const void *dup_func_u_long32(const void *key) {
 }
 
 const void *dup_func_u_long64(const void *key) {
-   u_long64 *dup_key = NULL;
+   u_long64 *dup_key = nullptr;
    u_long64 *cast = (u_long64 *) key;
 
-   if ((dup_key = (u_long64 *) sge_malloc(sizeof(u_long64))) != NULL) {
+   if ((dup_key = (u_long64 *) sge_malloc(sizeof(u_long64))) != nullptr) {
       *dup_key = *cast;
    }
 
@@ -540,20 +540,20 @@ const void *dup_func_u_long64(const void *key) {
 }
 
 const void *dup_func_long(const void *key) {
-   long *dup_key = NULL;
+   long *dup_key = nullptr;
    long *cast = (long *) key;
 
-   if ((dup_key = (long *) sge_malloc(sizeof(long))) != NULL) {
+   if ((dup_key = (long *) sge_malloc(sizeof(long))) != nullptr) {
       *dup_key = *cast;
    }
    return dup_key;
 }
 
 const void *dup_func_pointer(const void *key) {
-   char **dup_key = NULL;
+   char **dup_key = nullptr;
    char **cast = (char **) key;
 
-   if ((dup_key = (char **) sge_malloc(sizeof(char *))) != NULL) {
+   if ((dup_key = (char **) sge_malloc(sizeof(char *))) != nullptr) {
       *dup_key = *cast;
    }
    return dup_key;
@@ -618,7 +618,7 @@ int hash_func_string(const void *key) {
    int hash = 0;
    const char *c = (const char *)key;
 
-   if (c != NULL) {
+   if (c != nullptr) {
       do {
          hash += (hash << 3) + *c;
       } while (*c++ != 0);

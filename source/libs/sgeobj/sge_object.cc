@@ -71,65 +71,65 @@
 
 #define OBJECT_LAYER BASIS_LAYER
 
-static lList *Master_Job_List = NULL;
-static lList *Master_Zombie_List = NULL;
-static lList *Master_Job_Schedd_Info_List = NULL;
-static lList *Master_CEntry_List = NULL;
-static lList *Master_HGroup_List = NULL;
-static lList *Master_Userset_List = NULL;
-static lList *Master_Project_List = NULL;
-static lList *Master_User_List = NULL;
-static lList *Master_CQueue_List = NULL;
-static lList *Master_Exechost_List = NULL;
-static lList *Master_Adminhost_List = NULL;
-static lList *Master_Submithost_List = NULL;
-static lList *Master_Calendar_List = NULL;
-static lList *Master_Ckpt_List = NULL;
-static lList *Master_Manager_List = NULL;
-static lList *Master_Operator_List = NULL;
-static lList *Master_Sharetree_List = NULL;
-static lList *Master_Pe_List = NULL;
-static lList *Master_SUser_List = NULL;
-static lList *Master_RQS_List = NULL;
-static lList *Master_AR_List = NULL;
-static lList *Master_SchedulerConfig_List = NULL;
+static lList *Master_Job_List = nullptr;
+static lList *Master_Zombie_List = nullptr;
+static lList *Master_Job_Schedd_Info_List = nullptr;
+static lList *Master_CEntry_List = nullptr;
+static lList *Master_HGroup_List = nullptr;
+static lList *Master_Userset_List = nullptr;
+static lList *Master_Project_List = nullptr;
+static lList *Master_User_List = nullptr;
+static lList *Master_CQueue_List = nullptr;
+static lList *Master_Exechost_List = nullptr;
+static lList *Master_Adminhost_List = nullptr;
+static lList *Master_Submithost_List = nullptr;
+static lList *Master_Calendar_List = nullptr;
+static lList *Master_Ckpt_List = nullptr;
+static lList *Master_Manager_List = nullptr;
+static lList *Master_Operator_List = nullptr;
+static lList *Master_Sharetree_List = nullptr;
+static lList *Master_Pe_List = nullptr;
+static lList *Master_SUser_List = nullptr;
+static lList *Master_RQS_List = nullptr;
+static lList *Master_AR_List = nullptr;
+static lList *Master_SchedulerConfig_List = nullptr;
 
-static lList *Master_Config_List = NULL;
+static lList *Master_Config_List = nullptr;
 
 /* One entry per event type */
 static object_description object_base[SGE_TYPE_ALL] = {
    /* master list                  set function              name                 descr      key               */
-   { &Master_Adminhost_List,       NULL,                   "ADMINHOST",         AH_Type,   AH_name           },
-   { &Master_Calendar_List,        NULL,                   "CALENDAR",          CAL_Type,  CAL_name          },
-   { &Master_Ckpt_List,            NULL,                   "CKPT",              CK_Type,   CK_name           },
-   { &Master_Config_List,          NULL,                   "CONFIG",            CONF_Type, CONF_name         },
-   { NULL,                         NULL,                   "GLOBAL_CONFIG",     NULL,      NoName            },
-   { &Master_Exechost_List,        NULL,                   "EXECHOST",          EH_Type,   EH_name           },
-   { NULL,                         NULL,                   "JATASK",            JAT_Type,  JAT_task_number   },
-   { NULL,                         NULL,                   "PETASK",            PET_Type,  PET_id            },
-   { &Master_Job_List,             NULL,                   "JOB",               JB_Type,   JB_job_number     },
-   { &Master_Job_Schedd_Info_List, NULL,                   "JOB_SCHEDD_INFO",   SME_Type,  NoName            },
-   { &Master_Manager_List,         NULL,                   "MANAGER",           UM_Type,   UM_name           },
-   { &Master_Operator_List,        NULL,                   "OPERATOR",          UO_Type,   UO_name           },
-   { &Master_Sharetree_List,       NULL,                   "SHARETREE",         STN_Type,  STN_name          },
-   { &Master_Pe_List,              NULL,                   "PE",                PE_Type,   PE_name           },
-   { &Master_Project_List,         NULL,                   "PROJECT",           PR_Type,   PR_name           },
-   { &Master_CQueue_List,          NULL,                   "CQUEUE",            CQ_Type,   CQ_name           },
-   { NULL,                         NULL,                   "QINSTANCE",         QU_Type,   QU_qname          },
+   { &Master_Adminhost_List,       nullptr,                   "ADMINHOST",         AH_Type,   AH_name           },
+   { &Master_Calendar_List,        nullptr,                   "CALENDAR",          CAL_Type,  CAL_name          },
+   { &Master_Ckpt_List,            nullptr,                   "CKPT",              CK_Type,   CK_name           },
+   { &Master_Config_List,          nullptr,                   "CONFIG",            CONF_Type, CONF_name         },
+   { nullptr,                         nullptr,                   "GLOBAL_CONFIG",     nullptr,      NoName            },
+   { &Master_Exechost_List,        nullptr,                   "EXECHOST",          EH_Type,   EH_name           },
+   { nullptr,                         nullptr,                   "JATASK",            JAT_Type,  JAT_task_number   },
+   { nullptr,                         nullptr,                   "PETASK",            PET_Type,  PET_id            },
+   { &Master_Job_List,             nullptr,                   "JOB",               JB_Type,   JB_job_number     },
+   { &Master_Job_Schedd_Info_List, nullptr,                   "JOB_SCHEDD_INFO",   SME_Type,  NoName            },
+   { &Master_Manager_List,         nullptr,                   "MANAGER",           UM_Type,   UM_name           },
+   { &Master_Operator_List,        nullptr,                   "OPERATOR",          UO_Type,   UO_name           },
+   { &Master_Sharetree_List,       nullptr,                   "SHARETREE",         STN_Type,  STN_name          },
+   { &Master_Pe_List,              nullptr,                   "PE",                PE_Type,   PE_name           },
+   { &Master_Project_List,         nullptr,                   "PROJECT",           PR_Type,   PR_name           },
+   { &Master_CQueue_List,          nullptr,                   "CQUEUE",            CQ_Type,   CQ_name           },
+   { nullptr,                         nullptr,                   "QINSTANCE",         QU_Type,   QU_qname          },
    { &Master_SchedulerConfig_List, sconf_validate_config_, "SCHEDD_CONF",       SC_Type,   NoName            },
-   { NULL,                         NULL,                   "SCHEDD_MONITOR",    NULL,      NoName            },
-   { NULL,                         NULL,                   "SHUTDOWN",          NULL,      NoName            },
-   { NULL,                         NULL,                   "QMASTER_GOES_DOWN", NULL,      NoName            },
-   { &Master_Submithost_List,      NULL,                   "SUBMITHOST",        SH_Type,   SH_name           },
-   { &Master_User_List,            NULL,                   "USER",              UU_Type,   UU_name           },
-   { &Master_Userset_List,         NULL,                   "USERSET",           US_Type,   US_name           },
-   { &Master_HGroup_List,          NULL,                   "HOSTGROUP",         HGRP_Type, HGRP_name         },
-   { &Master_CEntry_List,          NULL,                   "COMPLEX_ENTRY",     CE_Type,   CE_name           },
-   { &Master_Zombie_List,          NULL,                   "ZOMBIE_JOBS",       JB_Type,   JB_job_number     },
-   { &Master_SUser_List,           NULL,                   "SUBMIT_USER",       SU_Type,   SU_name           },
-   { &Master_RQS_List,             NULL,                   "RQS",               RQS_Type,  RQS_name          },
-   { &Master_AR_List,              NULL,                   "AR",                AR_Type,   AR_id             },
-   { NULL,                         NULL,                   "JOBSCRIPT",         STU_Type,  STU_name          },
+   { nullptr,                         nullptr,                   "SCHEDD_MONITOR",    nullptr,      NoName            },
+   { nullptr,                         nullptr,                   "SHUTDOWN",          nullptr,      NoName            },
+   { nullptr,                         nullptr,                   "QMASTER_GOES_DOWN", nullptr,      NoName            },
+   { &Master_Submithost_List,      nullptr,                   "SUBMITHOST",        SH_Type,   SH_name           },
+   { &Master_User_List,            nullptr,                   "USER",              UU_Type,   UU_name           },
+   { &Master_Userset_List,         nullptr,                   "USERSET",           US_Type,   US_name           },
+   { &Master_HGroup_List,          nullptr,                   "HOSTGROUP",         HGRP_Type, HGRP_name         },
+   { &Master_CEntry_List,          nullptr,                   "COMPLEX_ENTRY",     CE_Type,   CE_name           },
+   { &Master_Zombie_List,          nullptr,                   "ZOMBIE_JOBS",       JB_Type,   JB_job_number     },
+   { &Master_SUser_List,           nullptr,                   "SUBMIT_USER",       SU_Type,   SU_name           },
+   { &Master_RQS_List,             nullptr,                   "RQS",               RQS_Type,  RQS_name          },
+   { &Master_AR_List,              nullptr,                   "AR",                AR_Type,   AR_id             },
+   { nullptr,                         nullptr,                   "JOBSCRIPT",         STU_Type,  STU_name          },
 };
 
 /*-------------------------*/
@@ -174,7 +174,7 @@ object_append_raw_field_to_dstring(const lListElem *object, lList **answer_list,
 *
 *  FUNCTION
 *     Inits the thread local memory, by coping the static information and 
-*     setting the list pointers to NULL
+*     setting the list pointers to nullptr
 *
 *  INPUTS
 *     obj_state_t *state - the thread local memory
@@ -197,7 +197,7 @@ static void obj_state_init(obj_state_t *state)
   
    /* initialize mirroring data structures - only changeable fields */
    for (i = 0; i < SGE_TYPE_ALL; i++) {
-      state->lists[i] = NULL;
+      state->lists[i] = nullptr;
       state->object_base[i].list = &(state->lists[i]);                          /* master list                    */
  
    }
@@ -212,7 +212,7 @@ static void obj_state_init(obj_state_t *state)
 *
 *  FUNCTION
 *     Inits the thread local memory, by coping the static information and 
-*     setting the list pointers to NULL
+*     setting the list pointers to nullptr
 *
 *  INPUTS
 *     obj_state_t *state - the thread local memory
@@ -232,12 +232,12 @@ static void obj_state_global_init(obj_state_t* state)
    DENTER(TOP_LAYER);
    state->global=true;
 
-   if (state != NULL) {
+   if (state != nullptr) {
       memcpy((void *)state->object_base, (const void *)object_base, sizeof(object_description) * SGE_TYPE_ALL);
 
       /* initialize mirroring data structures - only changeable fields */
       for (i = 0; i < SGE_TYPE_ALL; i++) {
-         state->lists[i] = NULL;
+         state->lists[i] = nullptr;
          state->object_base[i].list = object_base[i].list;
       }
    }
@@ -306,12 +306,12 @@ void obj_mt_init(void)
 
 void obj_init(bool is_global) 
 {
-   obj_state_t *state = NULL;
+   obj_state_t *state = nullptr;
    int ret = 0;
    bool init = false;
    DENTER(TOP_LAYER);
 
-   if ((state = (obj_state_t *)pthread_getspecific(obj_state_key)) == NULL) { 
+   if ((state = (obj_state_t *)pthread_getspecific(obj_state_key)) == nullptr) {
       state = (obj_state_t*) sge_malloc(sizeof(obj_state_t));
       memset((void *)state, 0 , sizeof(obj_state_t));
       init = true;
@@ -476,7 +476,7 @@ object_has_type(const lListElem *object, const lDescr *descr)
     *
     * --> make sure that your object is handled in object_get_primary_key() 
     */
-   if (object != NULL && descr != NULL &&
+   if (object != nullptr && descr != nullptr &&
        _lGetPosInDescr(object->descr, object_get_primary_key(descr)) != -1) {
       ret = true;
    }
@@ -507,7 +507,7 @@ object_has_type(const lListElem *object, const lDescr *descr)
 const lDescr * 
 object_get_type(const lListElem *object)
 {
-   const lDescr *ret = NULL;
+   const lDescr *ret = nullptr;
 
    if (object_has_type(object, AH_Type)) {
       ret = AH_Type;
@@ -570,7 +570,7 @@ object_get_primary_key(const lDescr *descr)
 {
    int ret = NoName;
 
-   if (descr != NULL) {
+   if (descr != nullptr) {
       int i;
 
       for (i = 0; descr[i].nm != NoName; i++) {
@@ -607,7 +607,7 @@ object_get_primary_key(const lDescr *descr)
 *
 *  RESULT
 *     const char * - the prefix or
-*                    NULL, if an error occured
+*                    nullptr, if an error occured
 *
 *  EXAMPLE
 *     object_get_name_prefix(QU_Type, buffer) = "QU_"
@@ -616,7 +616,7 @@ object_get_primary_key(const lDescr *descr)
 *  NOTES
 *     The function relies on object_get_primary_key. This function only
 *     is implemented for some object types.
-*     For types not handled in object_get_primary_key, NULL will be 
+*     For types not handled in object_get_primary_key, nullptr will be
 *     returned.
 *
 *  SEE ALSO
@@ -627,8 +627,8 @@ object_get_name_prefix(const lDescr *descr, dstring *buffer)
 {
    int nm;
 
-   if (descr == NULL || buffer == NULL) {
-      return NULL;
+   if (descr == nullptr || buffer == nullptr) {
+      return nullptr;
    }
 
    nm = descr[0].nm;
@@ -636,17 +636,17 @@ object_get_name_prefix(const lDescr *descr, dstring *buffer)
    if (nm != NoName) {
       const char *name = lNm2Str(nm);
 
-      if (name != NULL) {
+      if (name != nullptr) {
          char *underscore = strchr((char *)name, '_');
 
-         if (underscore != NULL) {
+         if (underscore != nullptr) {
             sge_dstring_sprintf(buffer, "%.*s", underscore - name + 1, name);
             return sge_dstring_get_string(buffer);
          }
       }
    }
 
-   return NULL;
+   return nullptr;
 }
 
 /****** sge_object/object_get_name() *******************************************
@@ -679,7 +679,7 @@ object_get_name(const lDescr *descr)
 {
    const char *name = "unknown";
 
-   if (descr != NULL) {
+   if (descr != nullptr) {
       int i;
 
       for (i = SGE_TYPE_ADMINHOST; i < SGE_TYPE_ALL; i++) {
@@ -722,10 +722,10 @@ object_get_name(const lDescr *descr)
 *  RESULT
 *     const char * - string representation of the attribute value 
 *                    (pointer to the string in the dynamic string 
-*                    buffer, or NULL if an error occured.
+*                    buffer, or nullptr if an error occured.
 *
 *  NOTES
-*     For sublists, subobjects and references NULL is returned.
+*     For sublists, subobjects and references nullptr is returned.
 *
 *  BUGS
 *     For the handled special cases, the dstring is cleared,
@@ -740,7 +740,7 @@ object_append_field_to_dstring(const lListElem *object, lList **answer_list,
                                dstring *buffer, const int nm, 
                                const char string_quotes)
 {
-   const char *ret = NULL;
+   const char *ret = nullptr;
    dstring string = DSTRING_INIT;
    bool quote_special_case = false;
 
@@ -804,7 +804,7 @@ object_append_field_to_dstring(const lListElem *object, lList **answer_list,
    }
 
    /* we had a special case - append to result dstring */
-   if (ret != NULL) {
+   if (ret != nullptr) {
       if (quote_special_case && string_quotes != '\0') {
          sge_dstring_append_char(buffer, string_quotes);
          sge_dstring_append(buffer, ret);
@@ -850,10 +850,10 @@ object_append_field_to_dstring(const lListElem *object, lList **answer_list,
 *  RESULT
 *     const char * - string representation of the attribute value 
 *                    (pointer to the string in the dynamic string 
-*                    buffer, or NULL if an error occured.
+*                    buffer, or nullptr if an error occured.
 *
 *  NOTES
-*     For sublists, subobjects and references NULL is returned.
+*     For sublists, subobjects and references nullptr is returned.
 *
 *  BUGS
 *     For the handled special cases, the dstring is cleared,
@@ -869,7 +869,7 @@ object_append_raw_field_to_dstring(const lListElem *object, lList **answer_list,
                                    char string_quotes)
 {
    const char *str;
-   const char *result = NULL;
+   const char *result = nullptr;
    int pos;
 
    DENTER(OBJECT_LAYER);
@@ -914,20 +914,20 @@ object_append_raw_field_to_dstring(const lListElem *object, lList **answer_list,
             str = lGetPosString(object, pos);
             if (string_quotes != '\0') {
                sge_dstring_append_char(buffer, string_quotes);
-               sge_dstring_append(buffer, str != NULL ? str : NONE_STR);
+               sge_dstring_append(buffer, str != nullptr ? str : NONE_STR);
                result = sge_dstring_append_char(buffer, string_quotes);
             } else {
-               result = sge_dstring_append(buffer, str != NULL ? str : NONE_STR);
+               result = sge_dstring_append(buffer, str != nullptr ? str : NONE_STR);
             }
             break;
          case lHostT:
             str = lGetPosHost(object, pos);
             if (string_quotes != '\0') {
                sge_dstring_append_char(buffer, string_quotes);
-               sge_dstring_append(buffer, str != NULL ? str : NONE_STR);
+               sge_dstring_append(buffer, str != nullptr ? str : NONE_STR);
                result = sge_dstring_append_char(buffer, string_quotes);
             } else {
-               result = sge_dstring_append(buffer, str != NULL ? str : NONE_STR);
+               result = sge_dstring_append(buffer, str != nullptr ? str : NONE_STR);
             }
             break;
          case lListT:
@@ -1138,7 +1138,7 @@ void
 object_delete_range_id(lListElem *object, lList **answer_list, 
                        const int rnm, const u_long32 id)
 {
-   lList *range_list = NULL;
+   lList *range_list = nullptr;
 
    lXchgList(object, rnm, &range_list);
    range_list_remove_id(&range_list, answer_list, id);
@@ -1181,12 +1181,12 @@ object_set_range_id(lListElem *object, int rnm, u_long32 start, u_long32 end,
    int ret = 0;
  
    range_elem = lFirstRW(lGetList(object, rnm));
-   if (range_elem == NULL) {
+   if (range_elem == nullptr) {
       lList *range_list;
  
       range_elem = lCreateElem(RN_Type);
       range_list = lCreateList("task_id_range", RN_Type);
-      if (range_elem == NULL || range_list == NULL) {
+      if (range_elem == nullptr || range_list == nullptr) {
          lFreeElem(&range_elem);
          lFreeList(&range_list);
 
@@ -1197,7 +1197,7 @@ object_set_range_id(lListElem *object, int rnm, u_long32 start, u_long32 end,
          lSetList(object, rnm, range_list);
       }
    }
-   if (range_elem != NULL) {
+   if (range_elem != nullptr) {
       lSetUlong(range_elem, RN_min, start);
       lSetUlong(range_elem, RN_max, end);
       lSetUlong(range_elem, RN_step, step);
@@ -1221,14 +1221,14 @@ object_set_range_id(lListElem *object, int rnm, u_long32 start, u_long32 end,
 *     const sge_object_type type - the object type 
 *
 *  RESULT
-*     lList** - the corresponding master list, or NULL, if the object 
+*     lList** - the corresponding master list, or nullptr, if the object
 *               type has no associated master list
 *
 *  EXAMPLE
 *     object_type_get_master_list(SGE_TYPE_JOB) will return a pointer 
 *     to the Master_Job_List.
 *
-*     object_type_get_master_list(SGE_TYPE_SHUTDOWN) will return NULL,
+*     object_type_get_master_list(SGE_TYPE_SHUTDOWN) will return nullptr,
 *     as this object type has no associated master list.
 *
 *  NOTES
@@ -1241,14 +1241,14 @@ object_set_range_id(lListElem *object, int rnm, u_long32 start, u_long32 end,
 *******************************************************************************/
 lList **object_type_get_master_list_rw(const sge_object_type type)
 {
-   lList **ret = NULL;
+   lList **ret = nullptr;
 
    DENTER(OBJECT_LAYER);
 
    if (type >= 0 && type < SGE_TYPE_ALL) {
       GET_SPECIFIC(obj_state_t, obj_state, obj_state_global_init, obj_state_key);
       
-      if (obj_state->object_base[type].list != NULL) {
+      if (obj_state->object_base[type].list != nullptr) {
          ret = obj_state->object_base[type].list;
 
 #ifdef OBSERVE
@@ -1415,7 +1415,7 @@ sge_object_type object_name_get_type(const char *name)
 
    type_name = strdup(name);
    colon = strchr(type_name, ':');
-   if (colon != NULL) {
+   if (colon != nullptr) {
       *colon = '\0';
    }
 
@@ -1445,13 +1445,13 @@ sge_object_type object_name_get_type(const char *name)
 *     const sge_object_type type - the event type
 *
 *  RESULT
-*     const lDescr* - the descriptor, or NULL, if no descriptor is 
+*     const lDescr* - the descriptor, or nullptr, if no descriptor is
 *                     associated with the type
 *
 *  EXAMPLE
 *     object_type_get_descr(SGE_TYPE_JOB) will return the descriptor 
 *        JB_Type,
-*     object_type_get_descr(SGE_TYPE_SHUTDOWN) will return NULL
+*     object_type_get_descr(SGE_TYPE_SHUTDOWN) will return nullptr
 *
 *  SEE ALSO
 *     sgeobj/object/object_type_get_master_list()
@@ -1460,7 +1460,7 @@ sge_object_type object_name_get_type(const char *name)
 *******************************************************************************/
 const lDescr *object_type_get_descr(const sge_object_type type)
 {
-   const lDescr *ret = NULL;
+   const lDescr *ret = nullptr;
 
    DENTER(OBJECT_LAYER);
 
@@ -1522,7 +1522,7 @@ object_parse_bool_from_string(lListElem *this_elem, lList **answer_list,
    bool ret = true;
 
    DENTER(OBJECT_LAYER);
-   if (this_elem != NULL && string != NULL) {
+   if (this_elem != nullptr && string != nullptr) {
       int pos = lGetPosViaElem(this_elem, name, SGE_NO_ABORT);
 
       if (!strcasecmp(string, "true") || !strcasecmp(string, "t") || 
@@ -1555,10 +1555,10 @@ object_parse_time_from_string(lListElem *this_elem, lList **answer_list,
    bool ret = true;
 
    DENTER(OBJECT_LAYER);
-   if (this_elem != NULL && string != NULL) {
+   if (this_elem != nullptr && string != nullptr) {
       int pos = lGetPosViaElem(this_elem, name, SGE_NO_ABORT);
 
-      if (parse_ulong_val(NULL, NULL, TYPE_TIM, string, NULL, 0)) {
+      if (parse_ulong_val(nullptr, nullptr, TYPE_TIM, string, nullptr, 0)) {
          lSetPosString(this_elem, pos, string);
       } else {
          answer_list_add_sprintf(answer_list, STATUS_EUNKNOWN,
@@ -1582,10 +1582,10 @@ object_parse_inter_from_string(lListElem *this_elem, lList **answer_list,
    bool ret = true;
 
    DENTER(OBJECT_LAYER);
-   if (this_elem != NULL && string != NULL) {
+   if (this_elem != nullptr && string != nullptr) {
       int pos = lGetPosViaElem(this_elem, name, SGE_NO_ABORT);
 
-      if (parse_ulong_val(NULL, NULL, TYPE_TIM, string, NULL, 0)) {
+      if (parse_ulong_val(nullptr, nullptr, TYPE_TIM, string, nullptr, 0)) {
          lSetPosString(this_elem, pos, string);
       } else {
          answer_list_add_sprintf(answer_list, STATUS_EUNKNOWN,
@@ -1610,12 +1610,12 @@ object_parse_list_from_string(lListElem *this_elem, lList **answer_list,
    bool ret = true;
 
    DENTER(OBJECT_LAYER);
-   if (this_elem != NULL && string != NULL) {
-      lList *tmp_list = NULL;
+   if (this_elem != nullptr && string != nullptr) {
+      lList *tmp_list = nullptr;
       int pos = lGetPosViaElem(this_elem, name, SGE_NO_ABORT);
 
       lString2List(string, &tmp_list, descr, nm, "\t \v\r,");
-      if (tmp_list != NULL) {
+      if (tmp_list != nullptr) {
          const lListElem *first_elem = lFirst(tmp_list);
          const char *first_string = lGetString(first_elem, nm);
 
@@ -1648,8 +1648,8 @@ object_parse_celist_from_string(lListElem *this_elem, lList **answer_list,
 
    DENTER(TOP_LAYER);
 
-   if (this_elem != NULL && string != NULL) {
-      lList *tmp_list = NULL;
+   if (this_elem != nullptr && string != nullptr) {
+      lList *tmp_list = nullptr;
       int pos = lGetPosViaElem(this_elem, name, SGE_NO_ABORT);
 
       if (!cull_parse_definition_list((char *)string, &tmp_list, "", CE_Type, rule)) {
@@ -1677,11 +1677,11 @@ object_parse_solist_from_string(lListElem *this_elem, lList **answer_list,
    bool ret = true;
 
    DENTER(OBJECT_LAYER);
-   if (this_elem != NULL && string != NULL) {
-      lList               *tmp_list = NULL;
-      lListElem           *tmp_elem = NULL;
-      struct saved_vars_s *last = NULL;
-      char                *slots_text = NULL;
+   if (this_elem != nullptr && string != nullptr) {
+      lList               *tmp_list = nullptr;
+      lListElem           *tmp_elem = nullptr;
+      struct saved_vars_s *last = nullptr;
+      char                *slots_text = nullptr;
       int                 pos = -1;
       
       pos = lGetPosViaElem(this_elem, name, SGE_NO_ABORT);
@@ -1700,13 +1700,13 @@ object_parse_solist_from_string(lListElem *this_elem, lList **answer_list,
        * slotwise subordinate and therefore lead to an error.
        */
       slots_text = sge_strtok_r(string, "=", &last);
-      if (slots_text != NULL && strncasecmp("slots", slots_text, 5) == 0) {
+      if (slots_text != nullptr && strncasecmp("slots", slots_text, 5) == 0) {
          /*
           * slot-wise suspend on subordinate
           */
-         char *sub_queues_text = NULL;
-         char *slots_sum_text = NULL;
-         char *endptr = NULL;
+         char *sub_queues_text = nullptr;
+         char *slots_sum_text = nullptr;
+         char *endptr = nullptr;
          lUlong slots_sum_value = 0;
 
          /*
@@ -1714,35 +1714,35 @@ object_parse_solist_from_string(lListElem *this_elem, lList **answer_list,
           */
          /* the "slots=" was already skipped in the first sge_strtok_r() */
          /* parse the "8" in our example above */
-         slots_sum_text = sge_strtok_r(NULL, "(", &last);
-         if (slots_sum_text != NULL) {
+         slots_sum_text = sge_strtok_r(nullptr, "(", &last);
+         if (slots_sum_text != nullptr) {
             slots_sum_value = strtol(slots_sum_text, &endptr, 10);
          } else {
             answer_list_add_sprintf(answer_list, STATUS_EUNKNOWN,
                ANSWER_QUALITY_ERROR, MSG_ERRORPARSINGVALUEFORNM_S, string);
             ret = false;
          }
-         if (endptr != NULL && *endptr != '\0') {
+         if (endptr != nullptr && *endptr != '\0') {
             answer_list_add_sprintf(answer_list, STATUS_EUNKNOWN,
                ANSWER_QUALITY_ERROR, MSG_ERRORPARSINGVALUEFORNM_S, string);
             ret = false;
          }
          if (ret) {
             /* point the "sub_queues_text" to the start of the sub queue list */
-            sub_queues_text = sge_strtok_r(NULL, ")", &last);
+            sub_queues_text = sge_strtok_r(nullptr, ")", &last);
             /* split up the original string from the first subordinated queue on */
             lString2List(sub_queues_text, &tmp_list, SO_Type, SO_name, ",) \t");
             for_each_rw (tmp_elem, tmp_list) {
                const char *queue_value = lGetString(tmp_elem, SO_name);
                char *queuename   = sge_strtok(queue_value, ":");
-               char *value_str   = sge_strtok(NULL, ":");
-               char *action_str  = sge_strtok(NULL, ":");
+               char *value_str   = sge_strtok(nullptr, ":");
+               char *action_str  = sge_strtok(nullptr, ":");
 
                sge_strip_blanks(queuename);
                sge_strip_blanks(value_str);
                sge_strip_blanks(action_str);
 
-               if (queuename != NULL) {
+               if (queuename != nullptr) {
                   lSetString(tmp_elem, SO_name, queuename);
                } else {
                   answer_list_add_sprintf(answer_list, STATUS_EUNKNOWN,
@@ -1762,11 +1762,11 @@ object_parse_solist_from_string(lListElem *this_elem, lList **answer_list,
                   break;
                }
 
-               if (value_str != NULL) {
-                  char     *endptr = NULL;
+               if (value_str != nullptr) {
+                  char     *endptr = nullptr;
                   u_long32 value   = strtol(value_str, &endptr, 10);
 
-                  if (endptr != NULL && *endptr == '\0') {
+                  if (endptr != nullptr && *endptr == '\0') {
                      lSetUlong(tmp_elem, SO_seq_no, value); 
                   } else {
                      answer_list_add_sprintf(answer_list, STATUS_EUNKNOWN,
@@ -1779,7 +1779,7 @@ object_parse_solist_from_string(lListElem *this_elem, lList **answer_list,
                   lSetUlong(tmp_elem, SO_seq_no, 0);
                }
 
-               if (action_str != NULL) {
+               if (action_str != nullptr) {
                   if (strcmp(action_str, "lr") == 0) {
                      lSetUlong(tmp_elem, SO_action, SO_ACTION_LR);
                   } else if (strcmp(action_str, "sr") == 0) {
@@ -1800,7 +1800,7 @@ object_parse_solist_from_string(lListElem *this_elem, lList **answer_list,
          }
       } else {
          lString2List(string, &tmp_list, SO_Type, SO_name, ", \t");
-         if (tmp_list != NULL) {
+         if (tmp_list != nullptr) {
             if (!strcasecmp("NONE", lGetString(lFirst(tmp_list), SO_name))) {
                lFreeList(&tmp_list);
             } else {
@@ -1810,14 +1810,14 @@ object_parse_solist_from_string(lListElem *this_elem, lList **answer_list,
                for_each_rw (tmp_elem, tmp_list) {
                   const char *queue_value = lGetString(tmp_elem, SO_name);
                   const char *queuename = sge_strtok(queue_value, ":=");
-                  const char *value_str = sge_strtok(NULL, ":=");
+                  const char *value_str = sge_strtok(nullptr, ":=");
 
                   lSetString(tmp_elem, SO_name, queuename);
-                  if (value_str != NULL) {
-                     char *endptr = NULL;
+                  if (value_str != nullptr) {
+                     char *endptr = nullptr;
                      u_long32 value = strtol(value_str, &endptr, 10);
 
-                     if (endptr != NULL && *endptr == '\0') {
+                     if (endptr != nullptr && *endptr == '\0') {
                         lSetUlong(tmp_elem, SO_threshold, value);
                      } else {
                         answer_list_add_sprintf(answer_list, STATUS_EUNKNOWN,
@@ -1856,7 +1856,7 @@ object_parse_qtlist_from_string(lListElem *this_elem, lList **answer_list,
    bool ret = true;
 
    DENTER(TOP_LAYER);
-   if (this_elem != NULL && string != NULL) {
+   if (this_elem != nullptr && string != nullptr) {
       u_long32 value;
       int pos = lGetPosViaElem(this_elem, name, SGE_NO_ABORT);
 
@@ -1886,10 +1886,10 @@ object_parse_mem_from_string(lListElem *this_elem, lList **answer_list,
    bool ret = true;
 
    DENTER(OBJECT_LAYER);
-   if (this_elem != NULL && string != NULL) {
+   if (this_elem != nullptr && string != nullptr) {
       int pos = lGetPosViaElem(this_elem, name, SGE_NO_ABORT);
 
-      if (parse_ulong_val(NULL, NULL, TYPE_MEM, string, NULL, 0)) {
+      if (parse_ulong_val(nullptr, nullptr, TYPE_MEM, string, nullptr, 0)) {
          lSetPosString(this_elem, pos, string);
       } else {
          answer_list_add_sprintf(answer_list, STATUS_EUNKNOWN,
@@ -1913,7 +1913,7 @@ object_parse_ulong32_from_string(lListElem *this_elem, lList **answer_list,
    bool ret = true;
    
    DENTER(OBJECT_LAYER);
-   if (this_elem != NULL && string != NULL) {
+   if (this_elem != nullptr && string != nullptr) {
       int pos = lGetPosViaElem(this_elem, name, SGE_NO_ABORT);
 
       if (strlen(string) == 0) {
@@ -1923,7 +1923,7 @@ object_parse_ulong32_from_string(lListElem *this_elem, lList **answer_list,
          lSetPosUlong(this_elem, pos, (u_long32)0);
       } else {
          const double epsilon = 1.0E-12;
-         char *end_ptr = NULL;
+         char *end_ptr = nullptr;
          double dbl_value;
          u_long32 ulng_value;
 
@@ -1937,7 +1937,7 @@ object_parse_ulong32_from_string(lListElem *this_elem, lList **answer_list,
                                     ANSWER_QUALITY_ERROR,
                                     MSG_OBJECT_VALUENOTULONG_S, string);
             ret = false;
-         } else if (end_ptr != NULL && *end_ptr == '\0') {
+         } else if (end_ptr != nullptr && *end_ptr == '\0') {
             lSetPosUlong(this_elem, pos, ulng_value);
          } else {
             /*
@@ -1966,7 +1966,7 @@ object_parse_int_from_string(lListElem *this_elem, lList **answer_list,
    bool ret = true;
 
    DENTER(OBJECT_LAYER);
-   if (this_elem != NULL && string != NULL) {
+   if (this_elem != nullptr && string != nullptr) {
       int pos = lGetPosViaElem(this_elem, name, SGE_NO_ABORT);
       int value;
 
@@ -1994,7 +1994,7 @@ object_parse_char_from_string(lListElem *this_elem, lList **answer_list,
    bool ret = true;
 
    DENTER(OBJECT_LAYER);
-   if (this_elem != NULL && string != NULL) {
+   if (this_elem != nullptr && string != nullptr) {
       int pos = lGetPosViaElem(this_elem, name, SGE_NO_ABORT);
       char value;
 
@@ -2022,7 +2022,7 @@ object_parse_long_from_string(lListElem *this_elem, lList **answer_list,
    bool ret = true;
 
    DENTER(OBJECT_LAYER);
-   if (this_elem != NULL && string != NULL) {
+   if (this_elem != nullptr && string != nullptr) {
       int pos = lGetPosViaElem(this_elem, name, SGE_NO_ABORT);
       long value;
 
@@ -2050,7 +2050,7 @@ object_parse_double_from_string(lListElem *this_elem, lList **answer_list,
    bool ret = true;
 
    DENTER(OBJECT_LAYER);
-   if (this_elem != NULL && string != NULL) {
+   if (this_elem != nullptr && string != nullptr) {
       int pos = lGetPosViaElem(this_elem, name, SGE_NO_ABORT);
       double value;
 
@@ -2078,7 +2078,7 @@ object_parse_float_from_string(lListElem *this_elem, lList **answer_list,
    bool ret = true;
 
    DENTER(OBJECT_LAYER);
-   if (this_elem != NULL && string != NULL) {
+   if (this_elem != nullptr && string != nullptr) {
       int pos = lGetPosViaElem(this_elem, name, SGE_NO_ABORT);
       float value;
 
@@ -2206,7 +2206,7 @@ object_get_any_type(const lListElem *this_elem, int name, void *value)
    int type = lGetPosType(lGetElemDescr(this_elem), pos);
 
    DENTER(OBJECT_LAYER);
-   if (value != NULL) {
+   if (value != nullptr) {
       if (type == lStringT) {
          *((const char **)value) = lGetPosString(this_elem, pos);
       } else if (type == lHostT) {
@@ -2247,11 +2247,11 @@ object_has_differences(const lListElem *this_elem, lList **answer_list,
 
    DENTER(TOP_LAYER);
 
-   if (this_elem != NULL && old_elem != NULL) {
+   if (this_elem != nullptr && old_elem != nullptr) {
       lDescr *this_elem_descr = this_elem->descr;
       lDescr *old_elem_descr = old_elem->descr;
-      lDescr *tmp_decr1 = NULL;
-      lDescr *tmp_decr2 = NULL;
+      lDescr *tmp_decr1 = nullptr;
+      lDescr *tmp_decr2 = nullptr;
 
       /*
        * Compare each attribute of the given elements
@@ -2307,8 +2307,8 @@ object_has_differences(const lListElem *this_elem, lList **answer_list,
                   const char *new_str = lGetPosString(this_elem, pos);
                   const char *old_str = lGetPosString(old_elem, pos);
 
-                  if ((new_str == NULL && old_str != NULL) || 
-                      (new_str != NULL && old_str == NULL)) {
+                  if ((new_str == nullptr && old_str != nullptr) ||
+                      (new_str != nullptr && old_str == nullptr)) {
                      equiv = false;
                   } else if (new_str == old_str) {
                      equiv = true;
@@ -2322,8 +2322,8 @@ object_has_differences(const lListElem *this_elem, lList **answer_list,
                   const char *new_str = lGetPosHost(this_elem, pos);
                   const char *old_str = lGetPosHost(old_elem, pos);
 
-                  if ((new_str == NULL && old_str != NULL) || 
-                      (new_str != NULL && old_str == NULL)) {
+                  if ((new_str == nullptr && old_str != nullptr) ||
+                      (new_str != nullptr && old_str == nullptr)) {
                      equiv = false;
                   } else if (new_str == old_str) {
                      equiv = true;
@@ -2379,8 +2379,8 @@ object_has_differences(const lListElem *this_elem, lList **answer_list,
          DPRINTF(("Descriptor size is not equivalent\n"));
          ret = true;
       } 
-   } else if (this_elem != NULL || old_elem != NULL) {
-      /* One of both elems is not NULL */
+   } else if (this_elem != nullptr || old_elem != nullptr) {
+      /* One of both elems is not nullptr */
       ret = true;
    }
 
@@ -2395,14 +2395,14 @@ object_list_has_differences(const lList *this_list, lList **answer_list,
 
    DENTER(BASIS_LAYER);
 
-   if (this_list == NULL && old_list == NULL) {
+   if (this_list == nullptr && old_list == nullptr) {
       ret = false;
    } else if (lGetNumberOfElem(this_list) == lGetNumberOfElem(old_list)) {
       const lListElem *new_elem;
       const lListElem *old_elem;
 
       for(new_elem = lFirst(this_list), old_elem = lFirst(old_list);
-          new_elem != NULL && old_elem != NULL;
+          new_elem != nullptr && old_elem != nullptr;
           new_elem = lNext(new_elem), old_elem = lNext(old_elem)) {
 
          ret = object_has_differences(new_elem, answer_list,
@@ -2438,7 +2438,7 @@ object_list_has_differences(const lList *this_list, lList **answer_list,
 *
 *  INPUTS
 *     const lList *lp     - list to verify
-*     const lDescr *descr - expected descriptor (or NULL, see above)
+*     const lDescr *descr - expected descriptor (or nullptr, see above)
 *
 *  RESULT
 *     bool - true, if the object is OK, else false
@@ -2457,15 +2457,15 @@ object_list_verify_cull(const lList *lp, const lDescr *descr)
 
    /* 
     * valid input parameters?
-    * descr may be NULL, if sublist is defined as CULL_ANY_SUBTYPE
+    * descr may be nullptr, if sublist is defined as CULL_ANY_SUBTYPE
     */
-   if (lp == NULL) {
+   if (lp == nullptr) {
       ret = false;
    }
 
    /* does list descriptor match expected descriptor? */
    if (ret) {
-      if (descr != NULL) {
+      if (descr != nullptr) {
          if (lCompListDescr(lp->descr, descr) != 0) {
             ret = false;
          }
@@ -2476,7 +2476,7 @@ object_list_verify_cull(const lList *lp, const lDescr *descr)
    if (ret) {
       const lListElem *ep;
       for_each_ep(ep, lp) {
-         if (!object_verify_cull(ep, NULL)) {
+         if (!object_verify_cull(ep, nullptr)) {
             ret = false;
             break;
          }
@@ -2506,7 +2506,7 @@ object_list_verify_cull(const lList *lp, const lDescr *descr)
 *
 *  INPUTS
 *     const lListElem *ep - the object to verify
-*     const lDescr *descr - expected object type, or NULL (see above)
+*     const lDescr *descr - expected object type, or nullptr (see above)
 *
 *  RESULT
 *     bool - true on success, else false
@@ -2525,15 +2525,15 @@ object_verify_cull(const lListElem *ep, const lDescr *descr)
 
    /* 
     * valid input parameters?
-    * descr may be NULL, if subobject is defined as CULL_ANY_SUBTYPE
+    * descr may be nullptr, if subobject is defined as CULL_ANY_SUBTYPE
     */
-   if (ep == NULL) {
+   if (ep == nullptr) {
       ret = false;
    }
 
    /* does object descriptor match expected descriptor? */
    if (ret) {
-      if (descr != NULL) {
+      if (descr != nullptr) {
          if (lCompListDescr(ep->descr, descr) != 0) {
             ret = false;
          }
@@ -2547,7 +2547,7 @@ object_verify_cull(const lListElem *ep, const lDescr *descr)
          int type = mt_get_type(ep->descr[i].mt);
          if (type == lListT) {
             const lList *lp = lGetList(ep, ep->descr[i].nm);
-            if (lp != NULL) {
+            if (lp != nullptr) {
                const lDescr *subdescr = object_get_subtype(ep->descr[i].nm);
                if (!object_list_verify_cull(lp, subdescr)) {
                   ret = false;
@@ -2556,7 +2556,7 @@ object_verify_cull(const lListElem *ep, const lDescr *descr)
             }
          } else if (type == lObjectT) {
             lListElem *sub_ep = lGetObject(ep, ep->descr[i].nm);
-            if (sub_ep != NULL) {
+            if (sub_ep != nullptr) {
                const lDescr *subdescr = object_get_subtype(ep->descr[i].nm);
                if (!object_verify_cull(sub_ep, subdescr)) {
                   ret = false;
@@ -2704,7 +2704,7 @@ object_verify_double_null(const lListElem *ep, lList **answer_list, int nm)
 *                                   int nm) 
 *
 *  FUNCTION
-*     Verifies that a string attribute of a certain object is not NULL.
+*     Verifies that a string attribute of a certain object is not nullptr.
 *
 *  INPUTS
 *     const lListElem *ep - the object to verify
@@ -2726,7 +2726,7 @@ object_verify_string_not_null(const lListElem *ep, lList **answer_list, int nm)
 {
    bool ret = true;
 
-   if (lGetString(ep, nm) == NULL) {
+   if (lGetString(ep, nm) == nullptr) {
       answer_list_add_sprintf(answer_list, STATUS_ESYNTAX, ANSWER_QUALITY_ERROR, 
                               MSG_OBJECT_STRING_NOT_NULL, lNm2Str(nm));
       ret = false;
@@ -2812,7 +2812,7 @@ int object_verify_name(const lListElem *object, lList **answer_list, int name,
    int ret = 0;
    
    DENTER(TOP_LAYER);
-   if (object_name != NULL) {
+   if (object_name != nullptr) {
       if (isdigit(object_name[0])) {
          ERROR((SGE_EVENT, MSG_OBJECT_INVALID_NAME_S, object_name));
          answer_list_add(answer_list, SGE_EVENT, STATUS_EUNKNOWN, ANSWER_QUALITY_ERROR);
@@ -2860,14 +2860,14 @@ int object_verify_name(const lListElem *object, lList **answer_list, int name,
 int object_verify_pe_range(lList **alpp, const char *pe_name, lList *pe_range,
                                   const char *object_descr)
 {
-   const lListElem *relem = NULL;
+   const lListElem *relem = nullptr;
    unsigned long pe_range_max;
    unsigned long pe_range_min;
    
    DENTER(TOP_LAYER);
    
    /* ensure jobs PE range list request is normalized and ascending */
-   range_list_sort_uniq_compress(pe_range, NULL, true);
+   range_list_sort_uniq_compress(pe_range, nullptr, true);
    
    for_each_ep(relem, pe_range) {
       pe_range_min = lGetUlong(relem, RN_min);
@@ -2994,14 +2994,14 @@ bool object_unpack_elem_verify(lList **answer_list, sge_pack_buffer *pb, lListEl
 
    DENTER(TOP_LAYER);
 
-   if (pb == NULL || epp == NULL || descr == NULL) {
+   if (pb == nullptr || epp == nullptr || descr == nullptr) {
       answer_list_add_sprintf(answer_list, STATUS_ESYNTAX, ANSWER_QUALITY_ERROR,
                               MSG_NULLELEMENTPASSEDTO_S, "object_unpack_elem_verify");
       ret = false;
    }
 
    if (ret) {
-      if (cull_unpack_elem(pb, epp, NULL) != 0) {
+      if (cull_unpack_elem(pb, epp, nullptr) != 0) {
          answer_list_add_sprintf(answer_list, STATUS_ESYNTAX, ANSWER_QUALITY_ERROR,
                                  MSG_COM_UNPACKOBJ_S, object_get_name(descr));
          ret = false;

@@ -58,7 +58,7 @@
 
 #define CLIENT_WAIT_TIME_S 1
 
-sge_tq_queue_t *Master_Task_Queue = NULL;
+sge_tq_queue_t *Master_Task_Queue = nullptr;
 
 /****** gdi/request_internal/sge_gdi_packet_create_multi_answer() ***********
 *  NAME
@@ -76,7 +76,7 @@ sge_tq_queue_t *Master_Task_Queue = NULL;
 *     The lists and answer lists for the (multi) GDI request will be
 *     moved from the task structures conteined in the packet, into the
 *     multi answer list. After all information has been moved the packet
-*     and all subelement will be freed so that the *packet will be NULL
+*     and all subelement will be freed so that the *packet will be nullptr
 *     when the function returns.
 *
 *     Threre are no errors expected from this function. So the return 
@@ -107,7 +107,7 @@ static bool
 sge_gdi_packet_create_multi_answer(sge_gdi_ctx_class_t* ctx, lList **answer_list,
                                    sge_gdi_packet_class_t **packet, lList **malpp)
 {
-   sge_gdi_task_class_t *task = NULL;
+   sge_gdi_task_class_t *task = nullptr;
    bool ret = true;
 
    DENTER(TOP_LAYER);
@@ -117,7 +117,7 @@ sge_gdi_packet_create_multi_answer(sge_gdi_ctx_class_t* ctx, lList **answer_list
     * into that structure 
     */
    task = (*packet)->first_task;
-   while (task != NULL) {
+   while (task != nullptr) {
       u_long32 operation = SGE_GDI_GET_OPERATION(task->command);
       u_long32 sub_command = SGE_GDI_GET_SUBCOMMAND(task->command);
       lListElem *map = lAddElemUlong(malpp, MA_id, task->id, MA_Type);
@@ -125,11 +125,11 @@ sge_gdi_packet_create_multi_answer(sge_gdi_ctx_class_t* ctx, lList **answer_list
       if (operation == SGE_GDI_GET || operation == SGE_GDI_PERMCHECK ||
           (operation == SGE_GDI_ADD && sub_command == SGE_GDI_RETURN_NEW_VERSION)) {
          lSetList(map, MA_objects, task->data_list);
-         task->data_list = NULL;
+         task->data_list = nullptr;
       }
 
       lSetList(map, MA_answers, task->answer_list);
-      task->answer_list = NULL;
+      task->answer_list = nullptr;
 
       task = task->next;
    }
@@ -187,7 +187,7 @@ sge_gdi_packet_wait_till_handled(sge_gdi_packet_class_t *packet)
 {
    DENTER(TOP_LAYER);
 
-   if (packet != NULL) {
+   if (packet != nullptr) {
       sge_mutex_lock(GDI_PACKET_MUTEX, __func__, __LINE__, &(packet->mutex));
 
       while (packet->is_handled == false) {
@@ -244,7 +244,7 @@ sge_gdi_packet_is_handled(sge_gdi_packet_class_t *packet)
    bool ret = true;
 
    DENTER(TOP_LAYER);
-   if (packet != NULL) {   
+   if (packet != nullptr) {
       sge_mutex_lock(GDI_PACKET_MUTEX, __func__, __LINE__, &(packet->mutex));
       ret = packet->is_handled;
       sge_mutex_unlock(GDI_PACKET_MUTEX, __func__, __LINE__, &(packet->mutex));
@@ -327,10 +327,10 @@ sge_gdi_packet_broadcast_that_handled(sge_gdi_packet_class_t *packet)
 *     gdi/request/get_gdi_retries_value()
 *******************************************************************************/
 static int get_gdi_retries_value(void) {
-   char* gdi_retries = NULL;
+   char* gdi_retries = nullptr;
    int retries = 0;
    cl_com_get_parameter_list_value("gdi_retries", &gdi_retries);
-   if (gdi_retries != NULL) {
+   if (gdi_retries != nullptr) {
       retries = atoi(gdi_retries);
       sge_free(&gdi_retries);
    }
@@ -361,11 +361,11 @@ static int get_gdi_retries_value(void) {
 *     gdi/request/get_gdi_retries_value()
 *******************************************************************************/
 static bool get_cl_ping_value(void) {
-   char* cl_ping = NULL;
+   char* cl_ping = nullptr;
    bool do_ping = false;
 
    cl_com_get_parameter_list_value("cl_ping", &cl_ping);
-   if (cl_ping != NULL) {
+   if (cl_ping != nullptr) {
       if (strcasecmp(cl_ping, "true") == 0) {
          do_ping = true;
       }
@@ -430,7 +430,7 @@ sge_gdi_packet_execute_external(sge_gdi_ctx_class_t* ctx, lList **answer_list,
    sge_pack_buffer pb;
    bool pb_initialized = false;
    sge_pack_buffer rpb;
-   sge_gdi_packet_class_t *ret_packet = NULL;
+   sge_gdi_packet_class_t *ret_packet = nullptr;
    int commlib_error;
    u_long32 message_id;
 
@@ -463,12 +463,12 @@ sge_gdi_packet_execute_external(sge_gdi_ctx_class_t* ctx, lList **answer_list,
           lListElem *job, *next_job;
 
           next_job = lLastRW(task->data_list);
-          while (ret && ((job = next_job) != NULL)) {
+          while (ret && ((job = next_job) != nullptr)) {
              next_job = lNextRW(job);
 
              lDechainElem(task->data_list, job);
              ret &= jsv_do_verify(ctx, JSV_CONTEXT_CLIENT, &job, answer_list, false);
-             lInsertElem(task->data_list, NULL, job);
+             lInsertElem(task->data_list, nullptr, job);
           }
        }
     }
@@ -511,7 +511,7 @@ sge_gdi_packet_execute_external(sge_gdi_ctx_class_t* ctx, lList **answer_list,
       int id = 1;
       int response_id = 0;
       commlib_error = sge_gdi2_send_any_request(ctx, 0, &message_id, host, commproc, id, &pb,
-                                                TAG_GDI_REQUEST, response_id, NULL);
+                                                TAG_GDI_REQUEST, response_id, nullptr);
       if (commlib_error != CL_RETVAL_OK) {
          ret = false;
          commlib_error = ctx->is_alive(ctx);
@@ -524,12 +524,12 @@ sge_gdi_packet_execute_external(sge_gdi_ctx_class_t* ctx, lList **answer_list,
                /* For the default case, just print a simple message */
                SGE_ADD_MSG_ID(sprintf(SGE_EVENT, MSG_GDI_UNABLE_TO_CONNECT_SUS,
                                       prognames[QMASTER], sge_u32c(sge_qmaster_port),
-                                      mastername?mastername:"<NULL>"));
+                                      mastername?mastername:"<nullptr>"));
             } else {
                /* For unusual errors, give more detail */
                SGE_ADD_MSG_ID(sprintf(SGE_EVENT, MSG_GDI_CANT_SEND_MSG_TO_PORT_ON_HOST_SUSS,
                                       prognames[QMASTER], sge_u32c(sge_qmaster_port),
-                                      mastername?mastername:"<NULL>", 
+                                      mastername?mastername:"<nullptr>",
                                       cl_get_error_text(commlib_error))); 
             }
          } else {
@@ -568,7 +568,7 @@ sge_gdi_packet_execute_external(sge_gdi_ctx_class_t* ctx, lList **answer_list,
       /*running this loop as long as configured in gdi_retries, doing a break after getting a gdi_request*/
       do {
          gdi_error = sge_gdi2_get_any_request(ctx, rcv_host, rcv_commproc, &id, &rpb, &tag, 
-                                              true, message_id, NULL);
+                                              true, message_id, nullptr);
 
          do_ping = get_cl_ping_value();
          retries = get_gdi_retries_value();
@@ -581,18 +581,18 @@ sge_gdi_packet_execute_external(sge_gdi_ctx_class_t* ctx, lList **answer_list,
             ret = false;
             /*this error appears, if qmaster or any qmaster thread is not responding, or overloaded*/
             if (gdi_error == CL_RETVAL_SYNC_RECEIVE_TIMEOUT) {
-               cl_com_SIRM_t* cl_endpoint_status = NULL;
-               cl_com_handle_t* handle = NULL;
+               cl_com_SIRM_t* cl_endpoint_status = nullptr;
+               cl_com_handle_t* handle = nullptr;
                DPRINTF(("TEST_2372_OUTPUT: CL_RETVAL_SYNC_RECEIVE_TIMEOUT: RUNS="sge_U32CFormat"\n", sge_u32c(runs)));
 
                handle = ctx->get_com_handle(ctx);
-               if (handle != NULL) {
+               if (handle != nullptr) {
                   DPRINTF(("TEST_2372_OUTPUT: GDI_TIMEOUT="sge_U32CFormat"\n", sge_u32c(handle->synchron_receive_timeout)));
                }
                if (do_ping == true) {
                   DPRINTF(("TEST_2372_OUTPUT: CL_PING=TRUE\n"));
                   cl_commlib_get_endpoint_status(handle, rcv_host, rcv_commproc, id, &cl_endpoint_status);
-                  if (cl_endpoint_status != NULL) {
+                  if (cl_endpoint_status != nullptr) {
                      if (cl_endpoint_status->application_status != 0) {
                         DPRINTF(("TEST_2372_OUTPUT: QPING: error\n"));
                      } else {
@@ -624,12 +624,12 @@ sge_gdi_packet_execute_external(sge_gdi_ctx_class_t* ctx, lList **answer_list,
                /* For the default case, just print a simple message */
                SGE_ADD_MSG_ID(sprintf(SGE_EVENT, MSG_GDI_UNABLE_TO_CONNECT_SUS,
                                       prognames[QMASTER], sge_u32c(sge_qmaster_port),
-                                      mastername?mastername:"<NULL>"));            
+                                      mastername?mastername:"<nullptr>"));
             } else { 
                /* For unusual errors, give more detail */
                SGE_ADD_MSG_ID(sprintf(SGE_EVENT, MSG_GDI_CANT_SEND_MSG_TO_PORT_ON_HOST_SUSS,
                                       prognames[QMASTER], sge_u32c(sge_qmaster_port),
-                                      mastername?mastername:"<NULL>", 
+                                      mastername?mastername:"<nullptr>",
                                       cl_get_error_text(commlib_error))); 
             }
          } else {
@@ -666,13 +666,13 @@ sge_gdi_packet_execute_external(sge_gdi_ctx_class_t* ctx, lList **answer_list,
 
       send = packet->first_task;
       recv = ret_packet->first_task;
-      while (send != NULL && recv != NULL) {
+      while (send != nullptr && recv != nullptr) {
          if (send->id == recv->id) {
             lFreeList(&send->data_list);
             send->data_list = recv->data_list;
             send->answer_list = recv->answer_list;
-            recv->data_list = NULL;
-            recv->answer_list = NULL;
+            recv->data_list = nullptr;
+            recv->answer_list = nullptr;
          } else {
             gdi_mismatch = true;
             break;
@@ -680,7 +680,7 @@ sge_gdi_packet_execute_external(sge_gdi_ctx_class_t* ctx, lList **answer_list,
          send = send->next;
          recv = recv->next;
       }
-      if (send != NULL || recv != NULL) {
+      if (send != nullptr || recv != nullptr) {
          gdi_mismatch = true;
       }
       if (gdi_mismatch) {

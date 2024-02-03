@@ -69,7 +69,7 @@ static char hashes[] =
     "##############################################################################################################";
 
 static int sge_print_subtask(const lListElem *job, const lListElem *ja_task,
-                             const lListElem *pe_task, /* NULL, if master task shall be printed */
+                             const lListElem *pe_task, /* nullptr, if master task shall be printed */
                              int print_hdr, int indent) {
    char task_state_string[8];
    u_long32 tstate, tstatus;
@@ -82,7 +82,7 @@ static int sge_print_subtask(const lListElem *job, const lListElem *ja_task,
    DENTER(TOP_LAYER);
 
    /* is sub-task logically running */
-   if (pe_task == NULL) {
+   if (pe_task == nullptr) {
       tstatus = lGetUlong(ja_task, JAT_status);
       usage_list = lGetList(ja_task, JAT_usage_list);
       scaled_usage_list = lGetList(ja_task, JAT_scaled_usage_list);
@@ -99,7 +99,7 @@ static int sge_print_subtask(const lListElem *job, const lListElem *ja_task,
              USAGE_ATTR_CPU "        " USAGE_ATTR_MEM "     " USAGE_ATTR_IO "     ", "stat", "failed");
    }
 
-   if (pe_task == NULL) {
+   if (pe_task == nullptr) {
       str = "";
    } else {
       str = lGetString(pe_task, PET_id);
@@ -208,7 +208,7 @@ int sge_print_jobs_queue(lListElem *qep, lList *job_list, const lList *pe_list, 
          }
 
          gdilep = lGetElemStr(lGetList(jatep, JAT_granted_destin_identifier_list), JG_qname, qnm);
-         if (gdilep != NULL) {
+         if (gdilep != nullptr) {
             int slot_adjust = 0;
             int lines_to_print;
             int slots_per_line, slots_in_queue = lGetUlong(gdilep, JG_slots);
@@ -397,12 +397,12 @@ static int sge_print_job(lListElem *job, lListElem *jatep, lListElem *qep, int p
    static int first_time = 1;
    u_long32 jstate;
    int sge_urg, sge_pri, sge_ext, sge_time;
-   const lList *ql = NULL;
+   const lList *ql = nullptr;
    const lListElem *qrep;
-   lListElem *gdil_ep = NULL;
+   lListElem *gdil_ep = nullptr;
    int running;
-   const char *queue_name = NULL;
-   const char *cqname = NULL;
+   const char *queue_name = nullptr;
+   const char *cqname = nullptr;
    int tsk_ext;
    u_long tickets, otickets, stickets, ftickets;
    int is_zombie_job;
@@ -418,7 +418,7 @@ static int sge_print_job(lListElem *job, lListElem *jatep, lListElem *qep, int p
 
    is_zombie_job = job_is_zombie_job(job);
 
-   if (qep != NULL) {
+   if (qep != nullptr) {
       queue_name = qinstance_get_name(qep, &queue_name_buffer);
       cqname = lGetString(qep, QU_qname);
    }
@@ -665,7 +665,7 @@ static int sge_print_job(lListElem *job, lListElem *jatep, lListElem *qep, int p
       const char *pe_name;
 
       if (!master || !strcmp(master, "MASTER")) {
-         job_usage_list = lCopyList(NULL, lGetList(jatep, JAT_scaled_usage_list));
+         job_usage_list = lCopyList(nullptr, lGetList(jatep, JAT_scaled_usage_list));
       } else {
          job_usage_list = lCreateList("", UA_Type);
       }
@@ -844,7 +844,7 @@ static int sge_print_job(lListElem *job, lListElem *jatep, lListElem *qep, int p
          if (indent++) {
             printf("%*s", num_spaces, " ");
          }
-         sge_print_subtask(job, jatep, NULL, 0, 0);
+         sge_print_subtask(job, jatep, nullptr, 0, 0);
          /* subtask_ndx++; */
       }
 
@@ -908,7 +908,7 @@ static int sge_print_job(lListElem *job, lListElem *jatep, lListElem *qep, int p
 
       /* display default requests if necessary */
       {
-         lList *attributes = NULL;
+         lList *attributes = nullptr;
          const lListElem *ce;
          const char *name;
          lListElem *hep;
@@ -922,7 +922,7 @@ static int sge_print_job(lListElem *job, lListElem *jatep, lListElem *qep, int p
                continue;
             }
 
-            parse_ulong_val(&dval, NULL, lGetUlong(ce, CE_valtype), lGetString(ce, CE_defaultval), NULL, 0);
+            parse_ulong_val(&dval, nullptr, lGetUlong(ce, CE_valtype), lGetString(ce, CE_defaultval), nullptr, 0);
             if (dval == 0.0) {
                continue;
             }
@@ -942,7 +942,7 @@ static int sge_print_job(lListElem *job, lListElem *jatep, lListElem *qep, int p
       }
 
       sge_show_ce_type_list_line_by_line(QSTAT_INDENT "Soft Resources:   ", QSTAT_INDENT2,
-                                         lGetList(job, JB_soft_resource_list), false, NULL, 0);
+                                         lGetList(job, JB_soft_resource_list), false, nullptr, 0);
 
       ql = lGetList(job, JB_hard_queue_list);
       if (ql) {

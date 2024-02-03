@@ -60,7 +60,7 @@ void *(*get_thrd_func(void))(void *anArg) {
 }
 
 void *get_thrd_func_arg(void) {
-   return NULL;
+   return nullptr;
 }
 
 void set_thread_count(int count) {
@@ -118,7 +118,7 @@ static void *thread_function_1(void *anArg) {
    SGE_UNLOCK(LOCK_GLOBAL, LOCK_READ);
    sleep(3);
 
-   DRETURN((void *) NULL);
+   DRETURN((void *) nullptr);
 } /* thread_function_1 */
 
 /****** test_sge_deadlock/thread_function_2() **********************************
@@ -172,7 +172,7 @@ static void *thread_function_2(void *anArg) {
    SGE_UNLOCK(LOCK_MASTER_CONF, LOCK_READ);
    sleep(3);
 
-   DRETURN((void *) NULL);
+   DRETURN((void *) nullptr);
 } /* thread_function_2 */
 
 int validate(int thread_count) {

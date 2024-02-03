@@ -53,7 +53,7 @@ static int number_of_jobs(void) {
    int ret = 0;
 
    for (i = 0; i < JOB_MAX; i++) {
-      if (job[i].jid != NULL) {
+      if (job[i].jid != nullptr) {
          ret++;
       }
    }
@@ -67,7 +67,7 @@ static int search_job(const char *jobid)
    int i;
 
    for (i=0; i < JOB_MAX; i++) {
-      if (job[i].jid != NULL) {
+      if (job[i].jid != nullptr) {
          if (strcmp(jobid, job[i].jid) == 0) {
             return i;
          }
@@ -86,7 +86,7 @@ static void delete_all_jobs(void)
    terminate_session = 0;
 
    for (i = 0; i < JOB_MAX; i++) {
-      if (job[i].jid != NULL) {
+      if (job[i].jid != nullptr) {
          int drmaa_ret;
          printf("    deleting job %s\n", job[i].jid);
          drmaa_ret = drmaa_control(job[i].jid, DRMAA_CONTROL_TERMINATE, err_buf, sizeof(err_buf));
@@ -121,7 +121,7 @@ int main(int argc, char *argv[])
    char jobid[1024];
    char line[2*1024];
    int drmaa_errno;
-   drmaa_job_template_t *jt = NULL;
+   drmaa_job_template_t *jt = nullptr;
    int stat;
    int aborted, exited, exit_status, signaled;
    int j, njobs = 0;
@@ -135,14 +135,14 @@ int main(int argc, char *argv[])
    memset(&sa, 0, sizeof(sa));
    sa.sa_handler = my_compile_signal_handler;  /* one handler for all signals */
    sigemptyset(&sa.sa_mask);
-   sigaction(SIGINT,  &sa, NULL);
-   sigaction(SIGTERM, &sa, NULL);
-   sigaction(SIGHUP,  &sa, NULL);
-   sigaction(SIGPIPE, &sa, NULL);
+   sigaction(SIGINT,  &sa, nullptr);
+   sigaction(SIGTERM, &sa, nullptr);
+   sigaction(SIGHUP,  &sa, nullptr);
+   sigaction(SIGPIPE, &sa, nullptr);
 
    /* we can override use of a compile.conf in cwd by environment */
    filename = getenv("RAIMK_COMPILE_CONF");
-   if (filename == NULL) {
+   if (filename == nullptr) {
       filename = "compile.conf";
    }
 
@@ -161,7 +161,7 @@ int main(int argc, char *argv[])
    }
 
    /* initialize a drmaa session */
-   if (drmaa_init(NULL, diagnosis, sizeof(diagnosis)-1) != DRMAA_ERRNO_SUCCESS) {
+   if (drmaa_init(nullptr, diagnosis, sizeof(diagnosis)-1) != DRMAA_ERRNO_SUCCESS) {
       fprintf(stderr, "drmaa_init() failed: %s\n", diagnosis);
       return 2;
    }
@@ -189,29 +189,29 @@ int main(int argc, char *argv[])
       sprintf(name, "build %s", arch);
 
       /* build job template */
-      if (drmaa_allocate_job_template(&jt, NULL, 0)!=DRMAA_ERRNO_SUCCESS) {
+      if (drmaa_allocate_job_template(&jt, nullptr, 0)!=DRMAA_ERRNO_SUCCESS) {
          fprintf(stderr, "drmaa_run_job() failed: %s\n", diagnosis);
          ret = 2;
          goto Finish;
       }
 
-      drmaa_set_attribute(jt, DRMAA_WD, jobwd, NULL, 0);
-      drmaa_set_attribute(jt, DRMAA_REMOTE_COMMAND, argv[1], NULL, 0);
-      drmaa_set_attribute(jt, DRMAA_JOIN_FILES, "y", NULL, 0);
-      drmaa_set_attribute(jt, DRMAA_JOB_NAME, name, NULL, 0);
+      drmaa_set_attribute(jt, DRMAA_WD, jobwd, nullptr, 0);
+      drmaa_set_attribute(jt, DRMAA_REMOTE_COMMAND, argv[1], nullptr, 0);
+      drmaa_set_attribute(jt, DRMAA_JOIN_FILES, "y", nullptr, 0);
+      drmaa_set_attribute(jt, DRMAA_JOB_NAME, name, nullptr, 0);
 
       sprintf(nat_spec, "-b no -S /bin/csh %s", ns);
-      drmaa_set_attribute(jt, DRMAA_NATIVE_SPECIFICATION, nat_spec, NULL, 0);
+      drmaa_set_attribute(jt, DRMAA_NATIVE_SPECIFICATION, nat_spec, nullptr, 0);
 
       sprintf(output_file, ":%s/build_%s.log", jobwd, arch);
-      drmaa_set_attribute(jt, DRMAA_OUTPUT_PATH, output_file, NULL, 0);
+      drmaa_set_attribute(jt, DRMAA_OUTPUT_PATH, output_file, nullptr, 0);
 
-      drmaa_set_vector_attribute(jt, DRMAA_V_ARGV, (const char **)&argv[2], NULL, 0);
+      drmaa_set_vector_attribute(jt, DRMAA_V_ARGV, (const char **)&argv[2], nullptr, 0);
 
       /* submit job */
       if ((drmaa_errno=drmaa_run_job(jobid, sizeof(jobid)-1, jt, diagnosis,
                sizeof(diagnosis)-1)) != DRMAA_ERRNO_SUCCESS) {
-         drmaa_delete_job_template(jt, NULL, 0);
+         drmaa_delete_job_template(jt, nullptr, 0);
 
          if (drmaa_errno == DRMAA_ERRNO_DENIED_BY_DRM) {
             printf("--- job \"%s\" using \"%s\" wasn't accepted: %s\n", name, ns, diagnosis);
@@ -230,7 +230,7 @@ int main(int argc, char *argv[])
       job[njobs].output_file = strdup(output_file);
       njobs++;
 
-      drmaa_delete_job_template(jt, NULL, 0);
+      drmaa_delete_job_template(jt, nullptr, 0);
       
       printf("    submitted job \"%s\" as job %s\n", name, jobid);
    }
@@ -240,7 +240,7 @@ int main(int argc, char *argv[])
    while (number_of_jobs() > 0) {
       /* We wait with timeout to be able to react on events like CTRL-C */
       drmaa_errno = drmaa_wait(DRMAA_JOB_IDS_SESSION_ANY, jobid, sizeof(jobid)-1, 
-                               &stat, 1, NULL, diagnosis, sizeof(diagnosis)-1);
+                               &stat, 1, nullptr, diagnosis, sizeof(diagnosis)-1);
 
       /* error */
       if (drmaa_errno != DRMAA_ERRNO_SUCCESS && drmaa_errno != DRMAA_ERRNO_EXIT_TIMEOUT) {
@@ -272,16 +272,16 @@ int main(int argc, char *argv[])
          }
 
          /* report how job finished */
-         drmaa_wifaborted(&aborted, stat, NULL, 0);
+         drmaa_wifaborted(&aborted, stat, nullptr, 0);
          if (aborted) {
             printf("--- run \"%s\" stopped or never started\n", job[j].name);
          } else {
             int failed = 1;
             char *path = job[j].output_file + 1;
 
-            drmaa_wifexited(&exited, stat, NULL, 0);
+            drmaa_wifexited(&exited, stat, nullptr, 0);
             if (exited) {
-               drmaa_wexitstatus(&exit_status, stat, NULL, 0);
+               drmaa_wexitstatus(&exit_status, stat, nullptr, 0);
                if (exit_status == 0) {
                   printf("+++ run \"%s\" was successful\n", job[j].name);
                   failed = 0;
@@ -290,10 +290,10 @@ int main(int argc, char *argv[])
                   ret = 1;
                }
             } else {
-               drmaa_wifsignaled(&signaled, stat, NULL, 0);
+               drmaa_wifsignaled(&signaled, stat, nullptr, 0);
                if (signaled) {
                   char termsig[DRMAA_SIGNAL_BUFFER+1];
-                  drmaa_wtermsig(termsig, DRMAA_SIGNAL_BUFFER, stat, NULL, 0);
+                  drmaa_wtermsig(termsig, DRMAA_SIGNAL_BUFFER, stat, nullptr, 0);
                   printf("job \"%s\" finished due to signal %s\n", job[j].name, termsig);
                } else {
                   printf("job \"%s\" finished with unclear conditions\n", job[j].name);

@@ -69,7 +69,7 @@ typedef struct {
 static char *AccessList[] = {"test2_acc user test_user irgendwas",
                              "test1_acc help user what-ever",
                              "test0_acc nothing",
-                             NULL};
+                             nullptr};
 
 /**
  *
@@ -78,37 +78,37 @@ static char *AccessList[] = {"test2_acc user test_user irgendwas",
  * that for each line you have also 1 result_category line with the expected category string
  *
  **/
-static data_entry_t tests[] = { {1, 128, NULL, "user", NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 0},
-                                {2, 128, "my_pr", "user", NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 0},
-                                {3, 128, NULL, "user", NULL, "my_check", NULL, NULL, NULL, NULL, NULL, NULL, 0},
-                                {4, 128, "my_pr", "user", NULL, "my_check", NULL, NULL, NULL, NULL, NULL, NULL, 0},
-                                {5, 128, NULL, "user", NULL, NULL, NULL, "arch test_arch lic 1 memory 1GB", NULL, NULL, NULL, NULL, 0},
-                                {6, 128, "my_pr", "user", NULL, "my_check", NULL, "arch test_arch lic 1 memory 1GB", NULL, NULL, NULL, NULL, 0},
-                                {7, 128, NULL, "user", NULL, NULL, NULL, NULL, "arch test_arch lic 1 memory 1GB", NULL, NULL, NULL, 0},
-                                {8, 128, "my_pr", "user", NULL, "my_check", NULL, "arch test_arch lic 1 memory 1GB", "arch test_arch lic 1 memory 1GB", 
-                                    NULL, NULL, NULL, 0}, 
-                                {9, 128, NULL, "user", NULL, NULL, NULL, NULL, NULL, "my.q@test m1.q@what-ever test@*", NULL, NULL, 0},
-                                {10, 128, "my_pr", "user", NULL, "my_check", NULL, "arch test_arch lic 1 memory 1GB", "arch test_arch lic 1 memory 1GB", 
-                                    "my.q@test m1.q@what-ever test@*", NULL, NULL, 0},
-                                {11, 128, NULL, "user", NULL, NULL, NULL, NULL, NULL, NULL, "my.q@test m1.q@what-ever test@*", NULL, 0},
-                                {12, 128, "my_pr", "user", NULL, "my_check", NULL, "arch test_arch lic 1 memory 1GB", "arch test_arch lic 1 memory 1GB", 
-                                    "my.q@test m1.q@what-ever test@*", "my.q@test m1.q@what-ever test@*", NULL, 0},
-                                {13, 128, NULL, "user", NULL, NULL, NULL, NULL, NULL, NULL, NULL, "my_pe 1-10", 0},
-                                {14, 128, "my_pr", "user", NULL, "my_check", NULL, "arch test_arch lic 1 memory 1GB", "arch test_arch lic 1 memory 1GB", 
+static data_entry_t tests[] = { {1, 128, nullptr, "user", nullptr, nullptr, nullptr, nullptr, nullptr, nullptr, nullptr, nullptr, 0},
+                                {2, 128, "my_pr", "user", nullptr, nullptr, nullptr, nullptr, nullptr, nullptr, nullptr, nullptr, 0},
+                                {3, 128, nullptr, "user", nullptr, "my_check", nullptr, nullptr, nullptr, nullptr, nullptr, nullptr, 0},
+                                {4, 128, "my_pr", "user", nullptr, "my_check", nullptr, nullptr, nullptr, nullptr, nullptr, nullptr, 0},
+                                {5, 128, nullptr, "user", nullptr, nullptr, nullptr, "arch test_arch lic 1 memory 1GB", nullptr, nullptr, nullptr, nullptr, 0},
+                                {6, 128, "my_pr", "user", nullptr, "my_check", nullptr, "arch test_arch lic 1 memory 1GB", nullptr, nullptr, nullptr, nullptr, 0},
+                                {7, 128, nullptr, "user", nullptr, nullptr, nullptr, nullptr, "arch test_arch lic 1 memory 1GB", nullptr, nullptr, nullptr, 0},
+                                {8, 128, "my_pr", "user", nullptr, "my_check", nullptr, "arch test_arch lic 1 memory 1GB", "arch test_arch lic 1 memory 1GB",
+                                    nullptr, nullptr, nullptr, 0},
+                                {9, 128, nullptr, "user", nullptr, nullptr, nullptr, nullptr, nullptr, "my.q@test m1.q@what-ever test@*", nullptr, nullptr, 0},
+                                {10, 128, "my_pr", "user", nullptr, "my_check", nullptr, "arch test_arch lic 1 memory 1GB", "arch test_arch lic 1 memory 1GB",
+                                    "my.q@test m1.q@what-ever test@*", nullptr, nullptr, 0},
+                                {11, 128, nullptr, "user", nullptr, nullptr, nullptr, nullptr, nullptr, nullptr, "my.q@test m1.q@what-ever test@*", nullptr, 0},
+                                {12, 128, "my_pr", "user", nullptr, "my_check", nullptr, "arch test_arch lic 1 memory 1GB", "arch test_arch lic 1 memory 1GB",
+                                    "my.q@test m1.q@what-ever test@*", "my.q@test m1.q@what-ever test@*", nullptr, 0},
+                                {13, 128, nullptr, "user", nullptr, nullptr, nullptr, nullptr, nullptr, nullptr, nullptr, "my_pe 1-10", 0},
+                                {14, 128, "my_pr", "user", nullptr, "my_check", nullptr, "arch test_arch lic 1 memory 1GB", "arch test_arch lic 1 memory 1GB",
                                     "my.q@test m1.q@what-ever test@*", "my.q@test m1.q@what-ever test@*", "my_pe 1-10", 0},
-                                {15, 128, NULL, "user", NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 1},    
-                                {16, 128, "my_pr", "user", NULL, "my_check", NULL, "arch test_arch lic 1 memory 1GB", "arch test_arch lic 1 memory 1GB", 
+                                {15, 128, nullptr, "user", nullptr, nullptr, nullptr, nullptr, nullptr, nullptr, nullptr, nullptr, 1},
+                                {16, 128, "my_pr", "user", nullptr, "my_check", nullptr, "arch test_arch lic 1 memory 1GB", "arch test_arch lic 1 memory 1GB",
                                     "my.q@test m1.q@what-ever test@*", "my.q@test m1.q@what-ever test@*", "my_pe 1-10", 1},
-                                {17, 128, NULL, "rqs_user", NULL, NULL, "my_rqs", NULL, NULL, NULL, NULL, NULL, 0},
-                                {18, 128, NULL, "user", NULL, NULL, "my_rqs", NULL, NULL, NULL, NULL, NULL, 0},
+                                {17, 128, nullptr, "rqs_user", nullptr, nullptr, "my_rqs", nullptr, nullptr, nullptr, nullptr, nullptr, 0},
+                                {18, 128, nullptr, "user", nullptr, nullptr, "my_rqs", nullptr, nullptr, nullptr, nullptr, nullptr, 0},
 
-/* stop entry */                {-1,  0, NULL,   NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 0} 
+/* stop entry */                {-1,  0, nullptr,   nullptr, nullptr, nullptr, nullptr, nullptr, nullptr, nullptr, nullptr, 0}
                               };  
 
 /**
  * result strings
  **/
-static char *result_category[] = { NULL,
+static char *result_category[] = { nullptr,
                                    "-P my_pr",
                                    "-ckpt my_check",
                                    "-ckpt my_check -P my_pr",
@@ -125,8 +125,8 @@ static char *result_category[] = { NULL,
                                    "-U test2_acc,test1_acc",
                                    "-U test2_acc,test1_acc -q m1.q@what-ever,my.q@test,test@* -masterq m1.q@what-ever,my.q@test,test@* -l arch=test_arch,lic=1,memory=1GB -soft -l arch=test_arch,lic=1,memory=1GB -pe my_pe 1-10 -ckpt my_check -P my_pr",
                                    "-u rqs_user",
-                                   NULL,
-                                   NULL
+                                   nullptr,
+                                   nullptr
                                  };
 
 /****** test_category/test_create_access() *************************************
@@ -137,7 +137,7 @@ static char *result_category[] = { NULL,
 *     lList* test_create_access() 
 *
 *  RESULT
-*     lList* - NULL or valid acces list
+*     lList* - nullptr or valid acces list
 *
 *  NOTES
 *     MT-NOTE: test_create_access() is not MT safe 
@@ -145,25 +145,25 @@ static char *result_category[] = { NULL,
 *******************************************************************************/
 static lList *test_create_access(void)
 {
-   lList *access_list = NULL;
+   lList *access_list = nullptr;
 
    access_list = lCreateList("access", US_Type);
    
-   if (access_list != NULL) {
+   if (access_list != nullptr) {
       int i;
 
-      for (i = 0; AccessList[i] != NULL; i++) {
-         char *access_cp = NULL;
-         char *access_str = NULL;
-         char *iter_dash = NULL;
+      for (i = 0; AccessList[i] != nullptr; i++) {
+         char *access_cp = nullptr;
+         char *access_str = nullptr;
+         char *iter_dash = nullptr;
 
          access_cp = strdup(AccessList[i]);
         
-         for (access_str = strtok_r(access_cp, " ", &iter_dash); access_str; access_str = strtok_r(NULL, " ", &iter_dash)) {
-            lListElem *acc_elem = NULL;
+         for (access_str = strtok_r(access_cp, " ", &iter_dash); access_str; access_str = strtok_r(nullptr, " ", &iter_dash)) {
+            lListElem *acc_elem = nullptr;
 
             acc_elem = lCreateElem(US_Type);
-            if (acc_elem != NULL) {
+            if (acc_elem != nullptr) {
                lList *users = lCreateList("user", UE_Type);
                lSetString(acc_elem, US_name, access_str);
                lSetList(acc_elem, US_entries, users);
@@ -171,7 +171,7 @@ static lList *test_create_access(void)
               
                lAppendElem(access_list, acc_elem);
               
-               for (access_str = strtok_r(NULL, " ", &iter_dash); access_str; access_str = strtok_r(NULL, " ", &iter_dash)) {
+               for (access_str = strtok_r(nullptr, " ", &iter_dash); access_str; access_str = strtok_r(nullptr, " ", &iter_dash)) {
                   lListElem *user = lCreateElem(UE_Type);
 
                   lSetString(user, UE_name, access_str);
@@ -180,7 +180,7 @@ static lList *test_create_access(void)
 
             }
          }
-         if (access_cp != NULL) {
+         if (access_cp != nullptr) {
             sge_free(&access_cp);
          }
       }
@@ -196,7 +196,7 @@ static lList *test_create_access(void)
 *     lList* test_create_project(const char *project) 
 *
 *  RESULT
-*     lList* - NULL or valid project list
+*     lList* - nullptr or valid project list
 *
 *  NOTES
 *     MT-NOTE: test_create_project() is not MT safe 
@@ -204,7 +204,7 @@ static lList *test_create_access(void)
 *******************************************************************************/
 static lList *test_create_project(const char *project)
 {
-   lList *project_list = NULL;
+   lList *project_list = nullptr;
    lListElem *prj;
    prj = lAddElemStr(&project_list, PR_name, project, PR_Type);
    lSetBool(prj, PR_consider_with_categories, true);
@@ -260,7 +260,7 @@ static lList *test_create_rqs(void)
 *                              (multiplyer, needs to between 1 and ...)
 *
 *  RESULT
-*     lList* - NULL or request list
+*     lList* - nullptr or request list
 *
 *  NOTES
 *     MT-NOTE: test_create_request() is MT safe 
@@ -268,27 +268,27 @@ static lList *test_create_rqs(void)
 *******************************************************************************/
 static lList *test_create_request(const char *requestStr, int count) 
 {
-   lList *requests = NULL;
-   char *request_cp = NULL;
-   char *iter_dash = NULL;
+   lList *requests = nullptr;
+   char *request_cp = nullptr;
+   char *iter_dash = nullptr;
 
    requests = lCreateList("requests", CE_Type);
 
-   if (requests != NULL) {
+   if (requests != nullptr) {
        int i;
        for (i = 0; i < count; i++) {
           char *request_str;
 
           request_cp = strdup(requestStr);
           
-          for (request_str = strtok_r(request_cp, " ", &iter_dash); request_str; request_str = strtok_r(NULL, " ", &iter_dash)) {
-            lListElem *request = NULL;
+          for (request_str = strtok_r(request_cp, " ", &iter_dash); request_str; request_str = strtok_r(nullptr, " ", &iter_dash)) {
+            lListElem *request = nullptr;
             
             request = lCreateElem(CE_Type);
             
-            if (request != NULL) {
+            if (request != nullptr) {
                lSetString(request, CE_name, request_str);
-               lSetString(request, CE_stringval, strtok_r(NULL, " ", &iter_dash));
+               lSetString(request, CE_stringval, strtok_r(nullptr, " ", &iter_dash));
             }
             else {
                lFreeList(&requests);
@@ -296,13 +296,13 @@ static lList *test_create_request(const char *requestStr, int count)
             }
             lAppendElem(requests, request); 
           }
-         if (request_cp != NULL) { 
+         if (request_cp != nullptr) {
             sge_free(&request_cp);
          }
        }
    }
 end:
-   if (request_cp != NULL) {
+   if (request_cp != nullptr) {
       sge_free(&request_cp);
    }
    return requests;
@@ -321,7 +321,7 @@ end:
 *                             (multiplyer, needs to between 1 and ...)
 *
 *  RESULT
-*     lList* - NULL or valid queue request list
+*     lList* - nullptr or valid queue request list
 *
 *  NOTES
 *     MT-NOTE: test_create_queue() is MT safe 
@@ -329,23 +329,23 @@ end:
 *******************************************************************************/
 static lList *test_create_queue(const char *queueStr, int count) 
 {
-   lList *queues = NULL;
-   char *queue_cp = NULL;
-   char *iter_dash = NULL;
+   lList *queues = nullptr;
+   char *queue_cp = nullptr;
+   char *iter_dash = nullptr;
 
    queues = lCreateList("queues", QR_Type);
 
-   if (queues != NULL) {
+   if (queues != nullptr) {
        int i;
        for (i = 0; i < count; i++) {
           char *queues_str;
           queue_cp = strdup(queueStr);
-          for (queues_str = strtok_r(queue_cp, " ", &iter_dash); queues_str; queues_str = strtok_r(NULL, " ", &iter_dash)) {
-            lListElem *queue = NULL;
+          for (queues_str = strtok_r(queue_cp, " ", &iter_dash); queues_str; queues_str = strtok_r(nullptr, " ", &iter_dash)) {
+            lListElem *queue = nullptr;
             
             queue = lCreateElem(QR_Type);
             
-            if (queue != NULL) {
+            if (queue != nullptr) {
                lSetString(queue, QR_name, queues_str);
             }
             else {
@@ -354,13 +354,13 @@ static lList *test_create_queue(const char *queueStr, int count)
             }
             lAppendElem(queues, queue); 
           }
-          if (queue_cp != NULL) {
+          if (queue_cp != nullptr) {
             sge_free(&queue_cp);
           }
        }
    }
 end:
-   if (queue_cp != NULL) {
+   if (queue_cp != nullptr) {
       sge_free(&queue_cp); 
    }
    return queues;
@@ -383,28 +383,28 @@ end:
 *******************************************************************************/
 static void test_create_pe(const char *peStr, lListElem *job_elem) 
 {
-   lList *range= NULL;
+   lList *range= nullptr;
    char *pe_cp = strdup(peStr);
-   char *iter_dash = NULL;
+   char *iter_dash = nullptr;
    char *pe_str;
 
-    for (pe_str = strtok_r(pe_cp, " ", &iter_dash); pe_str; pe_str= strtok_r(NULL, " ", &iter_dash)) {
+    for (pe_str = strtok_r(pe_cp, " ", &iter_dash); pe_str; pe_str= strtok_r(nullptr, " ", &iter_dash)) {
 
       lSetString(job_elem, JB_pe, pe_str);
       
-      pe_str= strtok_r(NULL, " ", &iter_dash);
-      range_list_parse_from_string(&range, NULL, pe_str, false, false, INF_ALLOWED);
-      if (range != NULL) {
+      pe_str= strtok_r(nullptr, " ", &iter_dash);
+      range_list_parse_from_string(&range, nullptr, pe_str, false, false, INF_ALLOWED);
+      if (range != nullptr) {
          lSetList(job_elem, JB_pe_range, range);             
       }
       else {
-         lSetString(job_elem, JB_pe, NULL);
+         lSetString(job_elem, JB_pe, nullptr);
          printf("error generating pe object: %s\n", peStr);
 
       }
 
     }
-   if (pe_cp != NULL) {
+   if (pe_cp != nullptr) {
       sge_free(&pe_cp); 
    }
 }
@@ -425,7 +425,7 @@ static void test_create_pe(const char *peStr, lListElem *job_elem)
 *     int count          - multiplier for the requests
 *
 *  RESULT
-*     lListElem* - NULL or valid job object
+*     lListElem* - nullptr or valid job object
 *
 *  NOTES
 *     MT-NOTE: test_create_job() is MT safe 
@@ -433,28 +433,28 @@ static void test_create_pe(const char *peStr, lListElem *job_elem)
 *******************************************************************************/
 static lListElem *test_create_job(data_entry_t *test, int count) 
 {
-   lListElem *job = NULL;
+   lListElem *job = nullptr;
 
    job = lCreateElem(JB_Type);
 
-   if (job != NULL) {
+   if (job != nullptr) {
       lSetUlong(job, JB_type, test->type);
 
-      if (test->project != NULL) {
+      if (test->project != nullptr) {
          lSetString(job, JB_project, test->project);
       }
-      if (test->owner != NULL) {
+      if (test->owner != nullptr) {
          lSetString(job, JB_owner, test->owner);
       }
-      if (test->group != NULL) {
+      if (test->group != nullptr) {
          lSetString(job, JB_group, test->group);
       }
-      if (test->checkpointing != NULL) {
+      if (test->checkpointing != nullptr) {
          lSetString(job, JB_checkpoint_name, test->checkpointing);
       }
-      if (test->hard_resource_list != NULL) {
+      if (test->hard_resource_list != nullptr) {
          lList *requests = test_create_request(test->hard_resource_list, count);
-         if (requests != NULL) {
+         if (requests != nullptr) {
             lSetList(job, JB_hard_resource_list, requests);
          }
          else {
@@ -462,9 +462,9 @@ static lListElem *test_create_job(data_entry_t *test, int count)
             goto end;
          }
       }
-      if (test->soft_resource_list != NULL) {
+      if (test->soft_resource_list != nullptr) {
          lList *requests = test_create_request(test->soft_resource_list, count);
-         if (requests != NULL) {
+         if (requests != nullptr) {
             lSetList(job, JB_soft_resource_list, requests);
          }
          else {
@@ -472,9 +472,9 @@ static lListElem *test_create_job(data_entry_t *test, int count)
             goto end;
          }
       }
-      if (test->hard_queue_list != NULL) {
+      if (test->hard_queue_list != nullptr) {
          lList *queues = test_create_queue(test->hard_queue_list, count);
-         if (queues != NULL) {
+         if (queues != nullptr) {
             lSetList(job, JB_hard_queue_list, queues);
          }
          else {
@@ -482,9 +482,9 @@ static lListElem *test_create_job(data_entry_t *test, int count)
             goto end;
          }
       }
-      if (test->hard_master_queue_list != NULL) {
+      if (test->hard_master_queue_list != nullptr) {
          lList *queues = test_create_queue(test->hard_master_queue_list, count);
-         if (queues != NULL) {
+         if (queues != nullptr) {
             lSetList(job, JB_master_hard_queue_list, queues);
          }
          else {
@@ -492,7 +492,7 @@ static lListElem *test_create_job(data_entry_t *test, int count)
             goto end;
          }
       }
-      if (test->pe != NULL) {
+      if (test->pe != nullptr) {
          test_create_pe(test->pe, job);
       }
    }
@@ -510,7 +510,7 @@ end:
 *  INPUTS
 *     lListElem *job_elem - job object
 *     int max             - number of generated category strings
-*     lList* access_list  - access list or NULL
+*     lList* access_list  - access list or nullptr
 *
 *  RESULT
 *     double - time needed for the run
@@ -527,12 +527,12 @@ static double test_performance(lListElem *job_elem, int max, lList* access_list,
    struct timeval after;
    double time_new;
    
-   gettimeofday(&before, NULL); 
+   gettimeofday(&before, nullptr);
    for (i = 0; i < max; i++) {
-      sge_build_job_category_dstring(&category_str, job_elem, access_list, project_list, NULL, rqs_list);
+      sge_build_job_category_dstring(&category_str, job_elem, access_list, project_list, nullptr, rqs_list);
       sge_dstring_clear(&category_str);
    }
-   gettimeofday(&after, NULL);
+   gettimeofday(&after, nullptr);
    sge_dstring_free(&category_str);
 
    time_new = after.tv_usec - before.tv_usec;
@@ -565,10 +565,10 @@ static double test_performance(lListElem *job_elem, int max, lList* access_list,
 static int test(data_entry_t *test, char *result, int count) 
 {
    int ret = 0;
-   lListElem *job_elem = NULL;
-   lList *access_list = NULL;
-   lList *project_list = NULL;
-   lList *rqs_list = NULL;
+   lListElem *job_elem = nullptr;
+   lList *access_list = nullptr;
+   lList *project_list = nullptr;
+   lList *rqs_list = nullptr;
 
    printf("\ntest %d:\n-------\n", test->test_nr);
    
@@ -584,23 +584,23 @@ static int test(data_entry_t *test, char *result, int count)
       rqs_list = test_create_rqs();
    }
 
-   if (job_elem != NULL) {
+   if (job_elem != nullptr) {
        dstring category_str = DSTRING_INIT;
 
-       sge_build_job_category_dstring(&category_str, job_elem, access_list, project_list, NULL, rqs_list);
+       sge_build_job_category_dstring(&category_str, job_elem, access_list, project_list, nullptr, rqs_list);
 
-       printf("got     : <%s>\n", sge_dstring_get_string(&category_str)!=NULL?sge_dstring_get_string(&category_str):"<NULL>");
+       printf("got     : <%s>\n", sge_dstring_get_string(&category_str)!=nullptr?sge_dstring_get_string(&category_str):"<nullptr>");
 
-       if (result != NULL && sge_dstring_get_string(&category_str) != NULL) {
+       if (result != nullptr && sge_dstring_get_string(&category_str) != nullptr) {
          if (strcmp(result, sge_dstring_get_string(&category_str)) == 0) {
          } else {
             ret = 1;
-            printf("expected: <%s>\n", result!=NULL? result:"<NULL>");
+            printf("expected: <%s>\n", result!=nullptr? result:"<nullptr>");
          }
-       } else if (result == NULL &&  sge_dstring_get_string(&category_str) == NULL) {
+       } else if (result == nullptr &&  sge_dstring_get_string(&category_str) == nullptr) {
        } else {
          ret = 1;
-         printf("expected: <%s>\n", result!=NULL? result:"<NULL>");
+         printf("expected: <%s>\n", result!=nullptr? result:"<nullptr>");
        }
        
        if (ret == 0) {
@@ -611,8 +611,8 @@ static int test(data_entry_t *test, char *result, int count)
          for (i = 1; i <= 500; i*=6) {
             printf("test with %dx :", i);
             job_elem = test_create_job(test, i);
-            if (job_elem != NULL) {
-               double time = test_performance(job_elem, max, access_list, NULL, rqs_list); 
+            if (job_elem != nullptr) {
+               double time = test_performance(job_elem, max, access_list, nullptr, rqs_list);
                if (time > 1) {
                   max /= 10;
                }

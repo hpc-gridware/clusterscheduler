@@ -110,7 +110,7 @@ u_long32 sge_get_gmt(void) {
    struct timeval now;
 
 #ifdef SOLARIS
-   gettimeofday(&now, NULL);
+   gettimeofday(&now, nullptr);
 #else
    struct timezone tzp;
    gettimeofday(&now, &tzp);
@@ -273,8 +273,8 @@ const char *sge_ctime32(u_long32 *i, dstring *buffer) {
 #else
    s = (const char *) ctime_r((time_t *) &temp, str);
 #endif
-   if (s == NULL) {
-      return NULL;
+   if (s == nullptr) {
+      return nullptr;
    }
    return sge_dstring_copy_string(buffer, s);
 }
@@ -472,9 +472,9 @@ void sge_usleep(int sleep_time) {
    int time_to_sleep = sleep_time;
 
    do {
-      gettimeofday(&sleep_tv, NULL);
+      gettimeofday(&sleep_tv, nullptr);
       usleep(time_to_sleep);
-      gettimeofday(&wake_tv, NULL);
+      gettimeofday(&wake_tv, nullptr);
       if (wake_tv.tv_usec < sleep_tv.tv_usec) {
          wake_tv.tv_sec--;
          wake_tv.tv_usec = wake_tv.tv_usec + 1000000;

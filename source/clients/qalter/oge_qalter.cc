@@ -80,16 +80,16 @@ extern char **environ;
 /************************************************************************/
 int main(int argc, char **argv) {
    int ret = STATUS_OK;
-   lList *alp = NULL;
-   lList *request_list = NULL;
-   lList *cmdline = NULL;
+   lList *alp = nullptr;
+   lList *request_list = nullptr;
+   lList *cmdline = nullptr;
    const lListElem *aep;
    int all_jobs = 0;
    int all_users = 0;
    u_long32 gdi_cmd = SGE_GDI_MOD; 
    int tmp_ret;
    int me_who;
-   sge_gdi_ctx_class_t *ctx = NULL;
+   sge_gdi_ctx_class_t *ctx = nullptr;
 
    DENTER_MAIN(TOP_LAYER, "qalter");
 
@@ -167,7 +167,7 @@ int main(int argc, char **argv) {
       SGE_EXIT((void**)&ctx, 0);
    }
 
-   tmp_ret = answer_list_print_err_warn(&alp, NULL, NULL, MSG_WARNING);
+   tmp_ret = answer_list_print_err_warn(&alp, nullptr, nullptr, MSG_WARNING);
    if (tmp_ret > 0) {
       SGE_EXIT((void**)&ctx, tmp_ret);
    }
@@ -191,7 +191,7 @@ int main(int argc, char **argv) {
    if (all_users)
       gdi_cmd |= SGE_GDI_ALL_USERS;
 
-   alp = ctx->gdi(ctx, SGE_JB_LIST, gdi_cmd, &request_list, NULL, NULL); 
+   alp = ctx->gdi(ctx, SGE_JB_LIST, gdi_cmd, &request_list, nullptr, nullptr);
    for_each_ep(aep, alp) {
       printf("%s\n", lGetString(aep, AN_text));
       if (ret == STATUS_OK) {
@@ -220,12 +220,12 @@ int main(int argc, char **argv) {
 ** NAME
 **   qalter_parse_job_parameter
 ** PARAMETER
-**   cmdline            - NULL or SPA_Type, if NULL, *pjob is initialised with defaults
+**   cmdline            - nullptr or SPA_Type, if nullptr, *pjob is initialised with defaults
 **   prequestlist       - pointer a list of job modify request for sge_gdi
 **
 ** RETURN
-**   answer list, AN_Type or NULL if everything ok, the following stati can occur:
-**   STATUS_EUNKNOWN   - bad internal error like NULL pointer received or no memory
+**   answer list, AN_Type or nullptr if everything ok, the following stati can occur:
+**   STATUS_EUNKNOWN   - bad internal error like nullptr pointer received or no memory
 **   STATUS_EDISK      - getcwd() failed
 **   STATUS_ENOIMP     - unknown switch or -help occurred
 ** DESCRIPTION
@@ -239,14 +239,14 @@ int main(int argc, char **argv) {
 static lList *qalter_parse_job_parameter(u_long32 me_who, lList *cmdline, lList **prequestlist,
                                          int *all_jobs, int *all_users)
 {
-   lListElem *ep  = NULL;
-   lListElem *job = NULL;
-   lListElem *rep = NULL;
+   lListElem *ep  = nullptr;
+   lListElem *job = nullptr;
+   lListElem *rep = nullptr;
    u_long32 jobid;
    int i;
-   lEnumeration *what = NULL;
-   lDescr *rdp = NULL;
-   lList *answer = NULL;
+   lEnumeration *what = nullptr;
+   lDescr *rdp = nullptr;
+   lList *answer = nullptr;
    enum {NOTINIT, JOB, ALL} all_or_jidlist = NOTINIT;
    int users_flag = 0;
 
@@ -269,7 +269,7 @@ static lList *qalter_parse_job_parameter(u_long32 me_who, lList *cmdline, lList 
    */
    /* we need this job to parse our options in */
    job = lCreateElem(JB_Type);
-   if (job == NULL) {
+   if (job == nullptr) {
       answer_list_add_sprintf(&answer, STATUS_EMALLOC, ANSWER_QUALITY_ERROR,
                               MSG_MEM_MEMORYALLOCFAILED_S, __func__);
       DRETURN(answer);
@@ -339,7 +339,7 @@ static lList *qalter_parse_job_parameter(u_long32 me_who, lList *cmdline, lList 
          }
 
          if (sge_o_home && chdir(sge_o_home) == 0) {
-            if (getcwd(tmp_str2, sizeof(tmp_str2)) == NULL) {
+            if (getcwd(tmp_str2, sizeof(tmp_str2)) == nullptr) {
                answer_list_add(&answer, MSG_ANSWER_GETCWDFAILED,
                                STATUS_EDISK, ANSWER_QUALITY_ERROR);
                lFreeElem(&job);
@@ -404,7 +404,7 @@ static lList *qalter_parse_job_parameter(u_long32 me_who, lList *cmdline, lList 
 
    /* STR_PSEUDO_JOBID */
    if (lGetElemStr(cmdline, SPA_switch_val, STR_PSEUDO_JOBID)) {
-      lList *jid_list = NULL;
+      lList *jid_list = nullptr;
       if (!parse_multi_jobtaskslist(&cmdline, STR_PSEUDO_JOBID, &answer, &jid_list, true, 0)) {
          lFreeList(&jid_list);
          lFreeElem(&job);
@@ -415,8 +415,8 @@ static lList *qalter_parse_job_parameter(u_long32 me_who, lList *cmdline, lList 
 
    if (me_who != QRESUB) {
       while ((ep = lGetElemStrRW(cmdline, SPA_switch_val, "-u"))) {
-         lList *lp = NULL;
-         lList *jid_list = NULL;
+         lList *lp = nullptr;
+         lList *jid_list = nullptr;
 
          lAddElemStr(&jid_list, ID_str, "*", ID_Type); 
          lSetList(job, JB_job_identifier_list, jid_list);
@@ -447,7 +447,7 @@ static lList *qalter_parse_job_parameter(u_long32 me_who, lList *cmdline, lList 
       if (lGetElemStrRW(cmdline, SPA_switch_val, "-hold_jid")) {
          const lListElem *sep;
          lListElem *ep;
-         lList *jref_list = NULL;
+         lList *jref_list = nullptr;
          while ((ep = lGetElemStrRW(cmdline, SPA_switch_val, "-hold_jid"))) {
             for_each_ep(sep, lGetList(ep, SPA_argval_lListT)) {
                DPRINTF(("-hold_jid %s\n", lGetString(sep, ST_name)));
@@ -464,7 +464,7 @@ static lList *qalter_parse_job_parameter(u_long32 me_who, lList *cmdline, lList 
       if (lGetElemStrRW(cmdline, SPA_switch_val, "-hold_jid_ad")) {
          const lListElem *sep;
          lListElem *ep;
-         lList *jref_list = NULL;
+         lList *jref_list = nullptr;
          while ((ep = lGetElemStrRW(cmdline, SPA_switch_val, "-hold_jid_ad"))) {
             for_each_ep(sep, lGetList(ep, SPA_argval_lListT)) {
                DPRINTF(("-hold_jid_ad %s\n", lGetString(sep, ST_name)));
@@ -722,9 +722,9 @@ static lList *qalter_parse_job_parameter(u_long32 me_who, lList *cmdline, lList 
       DRETURN(answer);
    }
 
-   rdp = NULL;
+   rdp = nullptr;
    lReduceDescr(&rdp, JB_Type, what);
-   if (rdp == NULL) {
+   if (rdp == nullptr) {
       answer_list_add(&answer, MSG_ANSWER_FAILDTOBUILDREDUCEDDESCRIPTOR, 
                       STATUS_EUNKNOWN, ANSWER_QUALITY_ERROR);
       lFreeElem(&job);
@@ -736,7 +736,7 @@ static lList *qalter_parse_job_parameter(u_long32 me_who, lList *cmdline, lList 
    /* if user uses -u or -uall flag and does not enter jids
       we will add a dummy job to send other parameters to qmaster */
    if (users_flag && !lGetList(job, JB_job_identifier_list)){   
-      lList *jid_list = NULL;
+      lList *jid_list = nullptr;
 
       lAddElemStr(&jid_list, ID_str, "*", ID_Type);
       lSetList(job, JB_job_identifier_list, jid_list);
@@ -744,12 +744,12 @@ static lList *qalter_parse_job_parameter(u_long32 me_who, lList *cmdline, lList 
 
    /* get next job id from cmd line */
    for_each_rw(ep, lGetList(job, JB_job_identifier_list)) {
-      lList *task_list = NULL;
+      lList *task_list = nullptr;
       lListElem *task;
       lDescr task_descr[] = { 
-            {JAT_task_number, lUlongT | CULL_IS_REDUCED, NULL},
-            {JAT_hold, lUlongT | CULL_IS_REDUCED, NULL},
-            {NoName, lEndT | CULL_IS_REDUCED, NULL}
+            {JAT_task_number, lUlongT | CULL_IS_REDUCED, nullptr},
+            {JAT_hold, lUlongT | CULL_IS_REDUCED, nullptr},
+            {NoName, lEndT | CULL_IS_REDUCED, nullptr}
       };
 
       jobid = atol(lGetString(ep, ID_str));
@@ -785,12 +785,12 @@ static lList *qalter_parse_job_parameter(u_long32 me_who, lList *cmdline, lList 
          const char *job_name = lGetString(job, JB_job_name);
 
          rep = lAddElemUlong(prequestlist, JB_job_number, jobid, rdp);
-         if (job_name != NULL) {
+         if (job_name != nullptr) {
             lSetString(rep, JB_job_name, job_name);
          }
       }   
       else{
-         char *name = NULL;
+         char *name = nullptr;
          const char *job_name = lGetString(job, JB_job_name);
          int size = strlen(lGetString(ep, ID_str));
          if (job_name) {

@@ -69,14 +69,14 @@
 *     u_long32 ar_id - id of interest
 *
 *  RESULT
-*     lListElem* - if found the reference to the ar object, else NULL
+*     lListElem* - if found the reference to the ar object, else nullptr
 *
 *  NOTES
 *     MT-NOTE: ar_list_locate() is MT safe 
 *******************************************************************************/
 lListElem *ar_list_locate(const lList *ar_list, u_long32 ar_id)
 {
-   lListElem *ep = NULL;
+   lListElem *ep = nullptr;
 
    DENTER(TOP_LAYER);
 
@@ -185,10 +185,10 @@ bool ar_validate(lListElem *ar, lList **alpp, bool in_master, bool is_spool, con
       NULL_OUT_NONE(ar, AR_checkpoint_name);
       {
          /* request for non existing ckpt object will be refused */
-         const char *ckpt_name = NULL;
+         const char *ckpt_name = nullptr;
 
          ckpt_name = lGetString(ar, AR_checkpoint_name);
-         if (ckpt_name != NULL) {
+         if (ckpt_name != nullptr) {
             lListElem *ckpt_ep = ckpt_list_locate(master_ckpt_list, ckpt_name);
             if (!ckpt_ep) {
                ERROR((SGE_EVENT, MSG_JOB_CKPTUNKNOWN_S, ckpt_name));
@@ -227,8 +227,8 @@ bool ar_validate(lListElem *ar, lList **alpp, bool in_master, bool is_spool, con
       /*   AR_pe, SGE_STRING,  AR_pe_range, SGE_LIST */
       NULL_OUT_NONE(ar, AR_pe);
       {
-         const char *pe_name = NULL;
-         lList *pe_range = NULL;
+         const char *pe_name = nullptr;
+         lList *pe_range = nullptr;
          
          pe_name = lGetString(ar, AR_pe);
          if (pe_name) {
@@ -261,7 +261,7 @@ bool ar_validate(lListElem *ar, lList **alpp, bool in_master, bool is_spool, con
          dstring cqueue_buffer = DSTRING_INIT;
          dstring hostname_buffer = DSTRING_INIT;
          for_each_rw(jg, lGetList(ar, AR_granted_slots)){
-            const char *hostname = NULL;
+            const char *hostname = nullptr;
             const char *qname = lGetString(jg, JG_qname);
             bool has_hostname = false;
             bool has_domain = false;
@@ -312,7 +312,7 @@ ar_get_event_from_string(const char *string)
    ar_state_event_t ret = ARL_UNKNOWN;
 
    DENTER(TOP_LAYER);
-   if (string != NULL) {
+   if (string != nullptr) {
       if (!strcmp(MSG_AR_EVENT_STATE_UNKNOWN, string)) {
          ret = ARL_UNKNOWN;
       } else if (!strcmp(MSG_AR_EVENT_STATE_CREATION, string)) {

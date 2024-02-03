@@ -45,18 +45,18 @@ bool check_range_get_all_ids(void)
    /* Create preinitialized range element */
    if (!failed) {
       range = lCreateElem(RN_Type);
-      if (range == NULL) {
+      if (range == nullptr) {
          failed = true;
       }
    }
 
-   /* Check NULL pointer */
+   /* Check nullptr pointer */
    if (!failed) {
       u_long32 min = 1, max = 6, step = 2;
 
-      range_get_all_ids(NULL, &min, &max, &step);
+      range_get_all_ids(nullptr, &min, &max, &step);
       if (max != 0 || min != 0 || step != 0) {
-         fprintf(stderr, "NULL range is not correct in range_get_all_ids()\n");
+         fprintf(stderr, "nullptr range is not correct in range_get_all_ids()\n");
          failed = true;
       }
    }
@@ -96,16 +96,16 @@ bool check_range_set_all_ids(void)
    /* Create preinitialized range element */
    if (!failed) {
       range = lCreateElem(RN_Type);
-      if (range == NULL) {
+      if (range == nullptr) {
          failed = true;
       }
    }
 
-   /* Check NULL pointer */
+   /* Check nullptr pointer */
    if (!failed) {
       u_long32 min = 1, max = 6, step = 2;
 
-      range_set_all_ids(NULL, min, max, step);
+      range_set_all_ids(nullptr, min, max, step);
    }
 
    /* Check normal range */

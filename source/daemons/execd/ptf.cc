@@ -189,7 +189,7 @@ static void ptf_setpriority_addgrpid(const lListElem *job, const lListElem *osjo
 
 #endif
 
-static lList *ptf_jobs = NULL;
+static lList *ptf_jobs = nullptr;
 
 static int is_ptf_running = 0;
 
@@ -268,7 +268,7 @@ static void ptf_set_osjobid(lListElem *osjob, osjobid_t osjobid)
 *
 *  INPUTS
 *     char *name            - name of the new list 
-*     lList *old_usage_list - old usage list or NULL 
+*     lList *old_usage_list - old usage list or nullptr
 *
 *  RESULT
 *     static lList* - copy of "old_usage_list" or a real new one 
@@ -341,7 +341,7 @@ static lList *ptf_build_usage_list(char *name, lList *old_usage_list)
 *  INPUTS
 *     u_long32 job_id      - job id 
 *     u_long32 ja_task_id  - task number 
-*     char *pe_task_id_str - pe task id string or NULL 
+*     char *pe_task_id_str - pe task id string or nullptr
 *     u_long32 priority    - new static priority 
 ******************************************************************************/
 void ptf_reinit_queue_priority(u_long32 job_id, u_long32 ja_task_id,
@@ -530,21 +530,21 @@ static lListElem *ptf_get_job(u_long job_id)
 *     lList *job_list      - List of all known jobs (JL_Type) 
 *     osjobid_t os_job_id  - os job id (ash, job id, supplementary gid) 
 *     lListElem **job_elem - Pointer to a job element pointer (JL_Type)
-*                          - pointer to a NULL pointer
+*                          - pointer to a nullptr pointer
 *                            => *job_elem will contain the corresponding
 *                               job element pointer when the function 
 *                               returns successfully
-*                          - NULL 
+*                          - nullptr
 *
 *  RESULT
 *     static lListElem* - osjob (JO_Type) 
-*                         or NULL if it was not found.
+*                         or nullptr if it was not found.
 ******************************************************************************/
 static lListElem *ptf_get_job_os(const lList *job_list, osjobid_t os_job_id, 
                                  lListElem **job_elem)
 {
    lListElem *job;
-   lListElem *osjob = NULL;
+   lListElem *osjob = nullptr;
    lCondition *where;
 
    DENTER(TOP_LAYER);
@@ -559,7 +559,7 @@ static lListElem *ptf_get_job_os(const lList *job_list, osjobid_t os_job_id,
 
    if (!where) {
       CRITICAL((SGE_EVENT, SFNMAX, MSG_WHERE_FAILEDTOBUILDWHERECONDITION));
-      DRETURN(NULL);
+      DRETURN(nullptr);
    }
 
    if (job_elem && (*job_elem)) {
@@ -572,7 +572,7 @@ static lListElem *ptf_get_job_os(const lList *job_list, osjobid_t os_job_id,
          }
       }
       if (job_elem) {
-         *job_elem = osjob ? job : NULL;
+         *job_elem = osjob ? job : nullptr;
       }
    }
 
@@ -597,7 +597,7 @@ static lListElem *ptf_process_job(osjobid_t os_job_id, const char *task_id_str,
    u_long job_id = lGetUlong(new_job, JB_job_number);
    double job_tickets =
       lGetDouble(lFirst(lGetList(new_job, JB_ja_tasks)), JAT_tix);
-   u_long interactive = (lGetString(new_job, JB_script_file) == NULL);
+   u_long interactive = (lGetString(new_job, JB_script_file) == nullptr);
 
    DENTER(TOP_LAYER);
 
@@ -608,9 +608,9 @@ static lListElem *ptf_process_job(osjobid_t os_job_id, const char *task_id_str,
 /*
  * cases:
  *
- * job == NULL && osjobid == 0
+ * job == nullptr && osjobid == 0
  *    return
- *    job == NULL && osjobid > 0
+ *    job == nullptr && osjobid > 0
  *    add osjob job && osjobid > 0 search by osjobid if osjob
  *    found skip
  *    else
@@ -618,13 +618,13 @@ static lListElem *ptf_process_job(osjobid_t os_job_id, const char *task_id_str,
  */
    job = ptf_get_job(job_id);
    if (os_job_id == 0) {
-      if (job == NULL) {
-         DRETURN(NULL);
+      if (job == nullptr) {
+         DRETURN(nullptr);
       }
    } else {
       lList *osjoblist;
 
-      if (job == NULL) {
+      if (job == nullptr) {
          job = lCreateElem(JL_Type);
          lAppendElem(job_list, job);
          lSetUlong(job, JL_job_ID, job_id);
@@ -640,7 +640,7 @@ static lListElem *ptf_process_job(osjobid_t os_job_id, const char *task_id_str,
          lSetUlong(osjob, JO_ja_task_ID, jataskid);
          lAppendElem(osjoblist, osjob);
          lSetList(osjob, JO_usage_list,
-                  ptf_build_usage_list("usagelist", NULL));
+                  ptf_build_usage_list("usagelist", nullptr));
          ptf_set_osjobid(osjob, os_job_id);
       }
       if (task_id_str) {
@@ -712,7 +712,7 @@ static void ptf_get_usage_from_data_collector(void)
 
          /* look up job in job list */
 
-         job = NULL;
+         job = nullptr;
          osjob = ptf_get_job_os(ptf_jobs, jobs->jd_jid, &job);
 
          if (osjob) {
@@ -728,7 +728,7 @@ static void ptf_get_usage_from_data_collector(void)
             /* fill in usage for job */
             usage_list = lGetListRW(osjob, JO_usage_list);
             if (!usage_list) {
-               usage_list = ptf_build_usage_list("usagelist", NULL);
+               usage_list = ptf_build_usage_list("usagelist", nullptr);
                lSetList(osjob, JO_usage_list, usage_list);
             }
 
@@ -795,7 +795,7 @@ static void ptf_get_usage_from_data_collector(void)
                jobs = (struct psJob_s *)procs;
                lSetList(osjob, JO_pid_list, pidlist);
             } else {
-               lSetList(osjob, JO_pid_list, NULL);
+               lSetList(osjob, JO_pid_list, nullptr);
             }
 
             tid = lGetString(osjob, JO_task_id_str);
@@ -877,7 +877,7 @@ static void ptf_get_usage_from_data_collector(void)
 
       usage_list = lGetList(osjob, JO_usage_list);
       if (!usage_list) {
-         usage_list = ptf_build_usage_list("usagelist", NULL);
+         usage_list = ptf_build_usage_list("usagelist", nullptr);
          lSetList(osjob, JO_usage_list, usage_list);
       }
 
@@ -1219,7 +1219,7 @@ int ptf_job_complete(u_long32 job_id, u_long32 ja_task_id, const char *pe_task_i
 
    ptf_job = ptf_get_job(job_id);
 
-   if (ptf_job == NULL) {
+   if (ptf_job == nullptr) {
       DRETURN(PTF_ERROR_JOB_NOT_FOUND);
    }
 
@@ -1241,14 +1241,14 @@ int ptf_job_complete(u_long32 job_id, u_long32 ja_task_id, const char *pe_task_i
    *usage = _ptf_get_job_usage(ptf_job, ja_task_id, pe_task_id); 
 
    /* Search ja/pe ptf task */
-   if (pe_task_id == NULL) {
+   if (pe_task_id == nullptr) {
       osjob = lFirstRW(osjobs);
    } else {
       for_each_rw(osjob, osjobs) {
          if (lGetUlong(osjob, JO_ja_task_ID) == ja_task_id) {
             const char *osjob_pe_task_id = lGetString(osjob, JO_task_id_str);
 
-            if (osjob_pe_task_id != NULL &&
+            if (osjob_pe_task_id != nullptr &&
                 strcmp(pe_task_id, osjob_pe_task_id) == 0) {
                break;
             } 
@@ -1256,7 +1256,7 @@ int ptf_job_complete(u_long32 job_id, u_long32 ja_task_id, const char *pe_task_i
       }
    }
 
-   if (osjob == NULL) {
+   if (osjob == nullptr) {
       DRETURN(PTF_ERROR_JOB_NOT_FOUND);
    } 
    
@@ -1286,7 +1286,7 @@ int ptf_job_complete(u_long32 job_id, u_long32 ja_task_id, const char *pe_task_i
     */
 
    DPRINTF(("PTF: Removing job " sge_u32 "." sge_u32 ", petask %s\n", 
-            job_id, ja_task_id, pe_task_id == NULL ? "none" : pe_task_id));
+            job_id, ja_task_id, pe_task_id == nullptr ? "none" : pe_task_id));
    lRemoveElem(osjobs, &osjob);
 
    if (lGetNumberOfElem(osjobs) == 0) {
@@ -1322,7 +1322,7 @@ int ptf_process_job_ticket_list(lList *job_ticket_list)
        */
       lSetString(jte, JB_script_file, "dummy");
 
-      job = ptf_process_job(0, NULL, jte,
+      job = ptf_process_job(0, nullptr, jte,
                             lGetUlong(lFirst(lGetList(jte, JB_ja_tasks)),
                             JAT_task_number));
       if (job) {
@@ -1473,11 +1473,11 @@ static lList *_ptf_get_job_usage(lListElem *job, u_long ja_task_id,
                                  const char *task_id)
 {
    lListElem *osjob, *usrc, *udst;
-   lList *job_usage = NULL;
+   lList *job_usage = nullptr;
    const char *task_id_str;
 
-   if (job == NULL) {
-      return NULL;
+   if (job == nullptr) {
+      return nullptr;
    }
 
    for_each_rw(osjob, lGetList(job, JL_OS_job_list)) {
@@ -1497,7 +1497,7 @@ static lList *_ptf_get_job_usage(lListElem *job, u_long ja_task_id,
                }
             }
          } else {
-            job_usage = lCopyList(NULL, lGetList(osjob, JO_usage_list));
+            job_usage = lCopyList(nullptr, lGetList(osjob, JO_usage_list));
          }
       }
    }
@@ -1524,7 +1524,7 @@ int ptf_get_usage(lList **job_usage_list)
    temp_usage_list = lCreateList("PtfJobUsageList", JB_Type);
    job_list = ptf_jobs;
    for_each_rw(job, job_list) {
-      lListElem *tmp_job = NULL;
+      lListElem *tmp_job = nullptr;
       u_long32 job_id = lGetUlong(job, JL_job_ID);
 
       for_each_rw(osjob, lGetList(job, JL_OS_job_list)) {
@@ -1538,30 +1538,30 @@ int ptf_get_usage(lList **job_usage_list)
          }
 
          tmp_job = lGetElemUlongRW(temp_usage_list, JB_job_number, job_id);
-         if (tmp_job == NULL) {
+         if (tmp_job == nullptr) {
             tmp_job = lCreateElem(JB_Type);
             lSetUlong(tmp_job, JB_job_number, job_id);
             lAppendElem(temp_usage_list, tmp_job);
          }
 
-         tmp_ja_task = job_search_task(tmp_job, NULL, ja_task_id);
-         if (tmp_ja_task == NULL) {
+         tmp_ja_task = job_search_task(tmp_job, nullptr, ja_task_id);
+         if (tmp_ja_task == nullptr) {
             tmp_ja_task = lAddSubUlong(tmp_job, JAT_task_number, ja_task_id, JB_ja_tasks, JAT_Type);
          }
 
-         if (pe_task_id != NULL) {
+         if (pe_task_id != nullptr) {
             tmp_pe_task = ja_task_search_pe_task(tmp_ja_task, pe_task_id);
-            if (tmp_pe_task == NULL) {
+            if (tmp_pe_task == nullptr) {
                tmp_pe_task = lAddSubStr(tmp_ja_task, PET_id, pe_task_id, JAT_task_list, PET_Type);
             }
-            lSetList(tmp_pe_task, PET_usage, lCopyList(NULL, lGetList(osjob, JO_usage_list)));
+            lSetList(tmp_pe_task, PET_usage, lCopyList(nullptr, lGetList(osjob, JO_usage_list)));
          } else {
-            lSetList(tmp_ja_task, JAT_usage_list, lCopyList(NULL, lGetList(osjob, JO_usage_list)));
+            lSetList(tmp_ja_task, JAT_usage_list, lCopyList(nullptr, lGetList(osjob, JO_usage_list)));
          }
       } /* for each osjob */
    } /* for each ptf job */
 
-   *job_usage_list = lSelect("PtfJobUsageList", temp_usage_list, NULL, what);
+   *job_usage_list = lSelect("PtfJobUsageList", temp_usage_list, nullptr, what);
 
    lFreeList(&temp_usage_list);
    lFreeWhat(&what);
@@ -1580,7 +1580,7 @@ int ptf_init(void)
    lInit(nmv);
 
    ptf_jobs = lCreateList("ptf_job_list", JL_Type);
-   if (ptf_jobs == NULL) {
+   if (ptf_jobs == nullptr) {
       DRETURN(-1); 
    }
 
@@ -1691,7 +1691,7 @@ void ptf_unregister_registered_job(u_long32 job_id, u_long32 ja_task_id ) {
             }
          }
 
-         if (lFirst(os_job_list) == NULL) {
+         if (lFirst(os_job_list) == nullptr) {
             DPRINTF(("PTF: No more os_job_list entries, removing job\n"));
             DPRINTF(("PTF: Removing job " sge_u32 "\n", lGetUlong(job, JL_job_ID)));
             lRemoveElem(ptf_jobs, &job);
@@ -1775,7 +1775,7 @@ int main(int argc, char **argv)
                          (setlocale_func_type) setlocale,
                          (bindtextdomain_func_type) bindtextdomain,
                          (textdomain_func_type) textdomain);
-   sge_init_language(NULL, NULL);
+   sge_init_language(nullptr, nullptr);
 #endif /* __SGE_COMPILE_WITH_GETTEXT__  */
 
    ptf_init();
@@ -1840,7 +1840,7 @@ int main(int argc, char **argv)
          char *jobname = lGetString(jte, JB_script_file);
 
          /* schedctl(NDPRI, 0, 0); */
-         execl(jobname, jobname, NULL);
+         execl(jobname, jobname, nullptr);
          perror("exec");
          exit(1);
       } else {

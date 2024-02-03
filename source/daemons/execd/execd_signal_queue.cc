@@ -85,7 +85,7 @@ int do_signal_queue(sge_gdi_ctx_class_t *ctx, struct_msg_t *aMsg, sge_pack_buffe
    lListElem *jep;
    int found = 0;
    u_long32 jobid, signal, jataskid;
-   char *qname = NULL;
+   char *qname = nullptr;
 
    DENTER(TOP_LAYER);
 
@@ -98,10 +98,10 @@ int do_signal_queue(sge_gdi_ctx_class_t *ctx, struct_msg_t *aMsg, sge_pack_buffe
    }
 
    DPRINTF(("===>DELIVER_SIGNAL: %s >%s< Job(s) "sge_u32"."sge_u32" \n",
-            sge_sig2str(signal), qname? qname: "<NULL>", jobid, jataskid));
+            sge_sig2str(signal), qname? qname: "<nullptr>", jobid, jataskid));
 
    if (aMsg->tag == TAG_SIGJOB) { /* signal a job / task */
-      pack_ack(apb, ACK_SIGJOB, jobid, jataskid, NULL);
+      pack_ack(apb, ACK_SIGJOB, jobid, jataskid, nullptr);
 
       found = (signal_job(jobid, jataskid, signal)==0);
    } else {            /* signal a queue */
@@ -122,7 +122,7 @@ int do_signal_queue(sge_gdi_ctx_class_t *ctx, struct_msg_t *aMsg, sge_pack_buffe
                forwarded to the job in case the master queue keeps still active */
             for_each_rw (gdil_ep, lGetList(jatep, JAT_granted_destin_identifier_list)) {
                master_q = lGetObject(gdil_ep, JG_queue);
-               if (master_q != NULL) {
+               if (master_q != nullptr) {
                   qnm =  lGetString(master_q, QU_full_name);
                   if (strcmp(qname, qnm) == 0) {
                      char tmpstr[SGE_PATH_MAX];
@@ -161,7 +161,7 @@ int do_signal_queue(sge_gdi_ctx_class_t *ctx, struct_msg_t *aMsg, sge_pack_buffe
                      if (!mconf_get_simulate_jobs()) {
                         job_write_spool_file(jep, 
                            lGetUlong(lFirst(lGetList(jep, JB_ja_tasks)), 
-                           JAT_task_number), NULL, SPOOL_WITHIN_EXECD);
+                           JAT_task_number), nullptr, SPOOL_WITHIN_EXECD);
                      }
 
                   }
@@ -180,8 +180,8 @@ int do_signal_queue(sge_gdi_ctx_class_t *ctx, struct_msg_t *aMsg, sge_pack_buffe
       running in this queue. */
    if (!found && aMsg->tag == TAG_SIGJOB) {
       lListElem *jr;
-      jr = get_job_report(jobid, jataskid, NULL);
-      remove_acked_job_exit(ctx, jobid, jataskid, NULL, jr);
+      jr = get_job_report(jobid, jataskid, nullptr);
+      remove_acked_job_exit(ctx, jobid, jataskid, nullptr, jr);
       job_unknown(jobid, jataskid, qname);
    }
 
@@ -231,7 +231,7 @@ int sge_execd_deliver_signal(u_long32 sig, const lListElem *jep, lListElem *jate
    /* for simulated hosts do nothing */
    if (mconf_get_simulate_jobs()) {
       if (sig == SGE_SIGKILL) {
-         lListElem *jr = NULL;
+         lListElem *jr = nullptr;
          u_long32 jobid, jataskid;
          u_long32 wallclock;
 
@@ -240,24 +240,24 @@ int sge_execd_deliver_signal(u_long32 sig, const lListElem *jep, lListElem *jate
          
          DPRINTF(("Simulated job "sge_u32"."sge_u32" is killed\n", jobid, jataskid));
 
-         if ((jr=get_job_report(jobid, jataskid, NULL)) == NULL) {
+         if ((jr=get_job_report(jobid, jataskid, nullptr)) == nullptr) {
             ERROR((SGE_EVENT, MSG_JOB_MISSINGJOBXYINJOBREPORTFOREXITINGJOBADDINGIT_UU, 
                    sge_u32c(jobid), sge_u32c(jataskid)));
-            jr = add_job_report(jobid, jataskid, NULL, jep);
+            jr = add_job_report(jobid, jataskid, nullptr, jep);
          }
 
          lSetUlong(jr, JR_state, JEXITING);
          lSetUlong(jatep, JAT_end_time, sge_get_gmt());
-         add_usage(jr, "submission_time", NULL, lGetUlong(jep, JB_submission_time));
-         add_usage(jr, "start_time", NULL, lGetUlong(jatep, JAT_start_time));
-         add_usage(jr, "end_time", NULL, lGetUlong(jatep, JAT_end_time));
+         add_usage(jr, "submission_time", nullptr, lGetUlong(jep, JB_submission_time));
+         add_usage(jr, "start_time", nullptr, lGetUlong(jatep, JAT_start_time));
+         add_usage(jr, "end_time", nullptr, lGetUlong(jatep, JAT_end_time));
          wallclock = lGetUlong(jatep, JAT_end_time) - lGetUlong(jatep, JAT_start_time);
-         add_usage(jr, "ru_wallclock", NULL, wallclock);
-         add_usage(jr, USAGE_ATTR_CPU_ACCT, NULL, wallclock * 0.5);
-         add_usage(jr, "ru_utime", NULL, wallclock * 0.4);
-         add_usage(jr, "ru_stime", NULL, wallclock * 0.1);
-         add_usage(jr, "exit_status", NULL, 137);
-         add_usage(jr, "signal", NULL, sig);
+         add_usage(jr, "ru_wallclock", nullptr, wallclock);
+         add_usage(jr, USAGE_ATTR_CPU_ACCT, nullptr, wallclock * 0.5);
+         add_usage(jr, "ru_utime", nullptr, wallclock * 0.4);
+         add_usage(jr, "ru_stime", nullptr, wallclock * 0.1);
+         add_usage(jr, "exit_status", nullptr, 137);
+         add_usage(jr, "signal", nullptr, sig);
 
          lSetUlong(jatep, JAT_status, JEXITING);
 
@@ -292,7 +292,7 @@ int sge_execd_deliver_signal(u_long32 sig, const lListElem *jep, lListElem *jate
 
    if (lGetUlong(jatep, JAT_status) != JSLAVE) {
       if (sge_kill((int)lGetUlong(jatep, JAT_pid), sig, lGetUlong(jep, JB_job_number), 
-                        lGetUlong(jatep, JAT_task_number), NULL) == -2) {
+                        lGetUlong(jatep, JAT_task_number), nullptr) == -2) {
          getridofjob = 1;
       }
    }
@@ -335,7 +335,7 @@ void sge_send_suspend_mail(u_long32 signal, lListElem *master_q, lListElem *jep,
 
    /* only if mail at suspendsion is enabled */
    if (VALID(MAIL_AT_SUSPENSION, mail_options)) {
-       const lList *mail_users      = NULL; 
+       const lList *mail_users      = nullptr;
 
        u_long32 jobid         = 0;
        u_long32 taskid        = 0;
@@ -347,9 +347,9 @@ void sge_send_suspend_mail(u_long32 signal, lListElem *master_q, lListElem *jep,
        char job_sub_time_str[256];
        char job_exec_time_str[256];
 
-       const char *job_name = NULL;
-       const char *job_master_queue = NULL;
-       const char *job_owner = NULL; 
+       const char *job_name = nullptr;
+       const char *job_master_queue = nullptr;
+       const char *job_owner = nullptr;
        const char *mail_type = "unknown";
 
        dstring ds;
@@ -359,7 +359,7 @@ void sge_send_suspend_mail(u_long32 signal, lListElem *master_q, lListElem *jep,
 
 
        /* get values */       
-       if (jep != NULL) {
+       if (jep != nullptr) {
           job_sub_time = lGetUlong(jep, JB_submission_time);
           jobid        = lGetUlong(jep, JB_job_number);
           mail_users   = lGetList(jep, JB_mail_list);
@@ -367,20 +367,20 @@ void sge_send_suspend_mail(u_long32 signal, lListElem *master_q, lListElem *jep,
           job_owner    = lGetString(jep, JB_owner);
         }
 
-       if (jatep != NULL) {
+       if (jatep != nullptr) {
           job_exec_time    = lGetUlong(jatep, JAT_start_time );
           taskid           = lGetUlong(jatep, JAT_task_number );
           job_master_queue = lGetString(jatep, JAT_master_queue);
        }
 
        /* check strings */
-       if (job_name == NULL) {
+       if (job_name == nullptr) {
            job_name = MSG_MAIL_UNKNOWN_NAME;
        }
-       if (job_master_queue == NULL) {
+       if (job_master_queue == nullptr) {
            job_master_queue = MSG_MAIL_UNKNOWN_NAME;
        }
-       if (job_owner == NULL) {
+       if (job_owner == nullptr) {
            job_owner = MSG_MAIL_UNKNOWN_NAME;
        }
 
@@ -541,7 +541,7 @@ CheckShepherdStillRunning:
       SGE_STRUCT_STAT statbuf;
 
       sge_get_active_job_file_path(&path,
-                                   job_id, ja_task_id, pe_task_id, NULL);
+                                   job_id, ja_task_id, pe_task_id, nullptr);
 
       if (!SGE_STAT(sge_dstring_get_string(&path), &statbuf) && S_ISDIR(statbuf.st_mode)) {
          sge_sig_handler_dead_children = 1; /* may be we've lost a SIGCHLD */
@@ -578,7 +578,7 @@ int signal_job(u_long32 jobid, u_long32 jataskid, u_long32 signal)
    lListElem *jep;
    u_long32 state;
    lListElem *master_q;
-   lListElem *jatep = NULL;
+   lListElem *jatep = nullptr;
    int getridofjob = 0;
 
    int suspend_change = 0;
@@ -663,7 +663,7 @@ int signal_job(u_long32 jobid, u_long32 jataskid, u_long32 signal)
    /* now save this job/queue so we are up to date on restart */
    if (!getridofjob) {
       if (!mconf_get_simulate_jobs()) {
-         job_write_spool_file(jep, jataskid, NULL, SPOOL_WITHIN_EXECD);
+         job_write_spool_file(jep, jataskid, nullptr, SPOOL_WITHIN_EXECD);
       }
       /* write mail */
       if (send_mail == 1) {

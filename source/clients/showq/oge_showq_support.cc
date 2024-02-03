@@ -121,7 +121,7 @@ NAMEEND
 lNameSpace taccdj_nmv[] =
 {
    { 1, TACCDJS, TACCDJN },
-   { 0, 0, NULL }
+   { 0, 0, nullptr }
 };
 
 struct sort_def active_default_sort = {
@@ -150,7 +150,7 @@ int sort_dj_list(lList *djobs, lList *field_list, bool sort_waiting)
    char            dir_str[256];
    int             ret;
    int             i;
-   struct sort_def *default_sort_def = NULL;
+   struct sort_def *default_sort_def = nullptr;
    const lListElem      *field_elem;
 
    if (sort_waiting) {
@@ -227,11 +227,11 @@ int extract_dj_lists(lList *job_list, lList **active_jobs, lList **waiting_jobs,
     * extract active jobs from job_list (JB_Type) and return a list of type
     * TACCDJ
     */
-   lListElem      *job = NULL, *nxt_job = NULL;
+   lListElem      *job = nullptr, *nxt_job = nullptr;
    u_long32        job_state;
-   lListElem      *tmp_dj_job = NULL;
-   const char     *qname = NULL;
-   const lList          *req_queue_list = NULL;
+   lListElem      *tmp_dj_job = nullptr;
+   const char     *qname = nullptr;
+   const lList          *req_queue_list = nullptr;
    u_long32        ultime;
    u_long32        time_limit = 0;
    int             remaining_time;
@@ -244,7 +244,7 @@ int extract_dj_lists(lList *job_list, lList **active_jobs, lList **waiting_jobs,
    int             jdep;
    u_long32        unf_task_start, unf_task_end, unf_task_step;
    const lListElem      *range_spec;
-   const lListElem      *pe_range = NULL;        /* RN_Type */
+   const lListElem      *pe_range = nullptr;        /* RN_Type */
    /*
     * lList *active_jobs; lList *waiting_jobs; lList *dep_waiting_jobs; lList
     * *unsched_jobs;
@@ -252,7 +252,7 @@ int extract_dj_lists(lList *job_list, lList **active_jobs, lList **waiting_jobs,
 
    DENTER(TOP_LAYER);
 
-   if (job_list == NULL) {
+   if (job_list == nullptr) {
       return 1;
    }
    /*-----------------------------------------------------------------
@@ -262,8 +262,8 @@ int extract_dj_lists(lList *job_list, lList **active_jobs, lList **waiting_jobs,
    *waiting_jobs = lCreateList("waiting job list", TACCDJ_Type);
    *dep_waiting_jobs = lCreateList("dep waiting job list", TACCDJ_Type);
    *unsched_jobs = lCreateList("unsched job list", TACCDJ_Type);
-   if (*active_jobs == NULL) {
-      printf("NULL active_jobs\n");
+   if (*active_jobs == nullptr) {
+      printf("nullptr active_jobs\n");
    }
 
    nxt_job = lFirstRW(job_list);
@@ -293,8 +293,8 @@ int extract_dj_lists(lList *job_list, lList **active_jobs, lList **waiting_jobs,
                /* printf("this one is running\n"); */
 
                tmp_dj_job = lCreateElem(TACCDJ_Type);
-               if (tmp_dj_job == NULL) {
-                  printf("NULL tmp_dj_job\n");
+               if (tmp_dj_job == nullptr) {
+                  printf("nullptr tmp_dj_job\n");
                }
                running_slots = 0;
                /*
@@ -323,7 +323,7 @@ int extract_dj_lists(lList *job_list, lList **active_jobs, lList **waiting_jobs,
                lSetUlong(tmp_dj_job, TACCDJ_host, running_slots / 16);
 
                req_queue_list = lGetList(job, JB_hard_queue_list);
-               if (req_queue_list != NULL) {
+               if (req_queue_list != nullptr) {
                   qname = lGetString(lFirst(req_queue_list), QR_name);
                   lSetString(tmp_dj_job, TACCDJ_queue, qname);
                }
@@ -349,7 +349,7 @@ int extract_dj_lists(lList *job_list, lList **active_jobs, lList **waiting_jobs,
                if (time_limit) {
                   killtime = (time_t) (ultime + time_limit);
                   /* get current time */
-                  current_time = time(NULL);
+                  current_time = time(nullptr);
                   remaining_time = (int) killtime - (int) current_time;
                }
                lSetLong(tmp_dj_job, TACCDJ_remaining, remaining_time);
@@ -363,7 +363,7 @@ int extract_dj_lists(lList *job_list, lList **active_jobs, lList **waiting_jobs,
                /*
                 * If there is no enrolled task than take the template element
                 */
-               if (tmp_task == NULL) {
+               if (tmp_task == nullptr) {
                   tmp_task = lFirst(lGetList(job, JB_ja_template));
                }
                lSetDouble(tmp_dj_job, TACCDJ_priority,
@@ -374,7 +374,7 @@ int extract_dj_lists(lList *job_list, lList **active_jobs, lList **waiting_jobs,
                   dstring cb = DSTRING_INIT;
                   get_core_binding_string(job, (int)lGetUlong(jatep, JAT_task_number), &cb);
 
-                  if (sge_dstring_get_string(&cb) != NULL) {
+                  if (sge_dstring_get_string(&cb) != nullptr) {
                      lSetString(tmp_dj_job, TACCDJ_corebinding, 
                                  sge_dstring_get_string(&cb));
                   } else {
@@ -403,7 +403,7 @@ int extract_dj_lists(lList *job_list, lList **active_jobs, lList **waiting_jobs,
             unf_tasks = unf_tasks + (unf_task_range_max - unf_task_range_min) / unf_task_range_step + 1;
          }
       }
-      if (lGetString(job, JB_pe) != NULL) {
+      if (lGetString(job, JB_pe) != nullptr) {
          /*
           * not sure why there would be more than one of these JB_pe things
           * (presumably this is due to the specification of a complex
@@ -419,7 +419,7 @@ int extract_dj_lists(lList *job_list, lList **active_jobs, lList **waiting_jobs,
          /* printf("%-6d", pe_range_max); */
       }
 
-      if (lGetList(job, JB_jid_predecessor_list) != NULL) {
+      if (lGetList(job, JB_jid_predecessor_list) != nullptr) {
          jdep = 1;
       } else {
          jdep = 0;
@@ -440,7 +440,7 @@ int extract_dj_lists(lList *job_list, lList **active_jobs, lList **waiting_jobs,
          /*
           * If there is no enrolled task than take the template element
           */
-         if (tmp_task == NULL) {
+         if (tmp_task == nullptr) {
             tmp_task = lFirst(lGetList(job, JB_ja_template));
          }
          lSetUlong(tmp_dj_job, TACCDJ_jobid, lGetUlong(job, JB_job_number));
@@ -456,7 +456,7 @@ int extract_dj_lists(lList *job_list, lList **active_jobs, lList **waiting_jobs,
          lSetUlong(tmp_dj_job, TACCDJ_host, pe_range_max * unf_tasks / 16);
 
          req_queue_list = lGetList(job, JB_hard_queue_list);
-         if (req_queue_list != NULL) {
+         if (req_queue_list != nullptr) {
             qname = lGetString(lFirst(req_queue_list), QR_name);
             lSetString(tmp_dj_job, TACCDJ_queue, qname);
          }
@@ -509,7 +509,7 @@ int extract_dj_lists(lList *job_list, lList **active_jobs, lList **waiting_jobs,
           * Now grab the job pe to determine the number of slots to multiply
           * unfinished tasks by:
           */
-         if (lGetString(job, JB_pe) != NULL) {
+         if (lGetString(job, JB_pe) != nullptr) {
             /*
              * not sure why there would be more than one of these JB_pe
              * things (presumably this is due to the specification of a
@@ -530,7 +530,7 @@ int extract_dj_lists(lList *job_list, lList **active_jobs, lList **waiting_jobs,
          /*
           * If there is no enrolled task than take the template element
           */
-         if (tmp_task == NULL) {
+         if (tmp_task == nullptr) {
             tmp_task = lFirst(lGetList(job, JB_ja_template));
          }
          lSetUlong(tmp_dj_job, TACCDJ_jobid, lGetUlong(job, JB_job_number));
@@ -540,7 +540,7 @@ int extract_dj_lists(lList *job_list, lList **active_jobs, lList **waiting_jobs,
          lSetUlong(tmp_dj_job, TACCDJ_core, pe_range_max * unf_tasks);
          lSetUlong(tmp_dj_job, TACCDJ_host, pe_range_max * unf_tasks / 16);
          req_queue_list = lGetList(job, JB_hard_queue_list);
-         if (req_queue_list != NULL) {
+         if (req_queue_list != nullptr) {
             qname = lGetString(lFirst(req_queue_list), QR_name);
             lSetString(tmp_dj_job, TACCDJ_queue, qname);
          }
@@ -605,9 +605,9 @@ void show_active_jobs(lList *joblist, int flags, const bool binding)
    u_long32        time_limit = 0;
    /* u_long32 job_tag; */
 
-   /* const char *qname =NULL; */
+   /* const char *qname =nullptr; */
    /* lListElem *rqueue; */
-   /* lList* req_queue_list = NULL; */
+   /* lList* req_queue_list = nullptr; */
    const lListElem      *job;
 
    for_each_ep(job, joblist) {
@@ -641,7 +641,7 @@ void show_active_jobs(lList *joblist, int flags, const bool binding)
          /* -l mode: print hosts and queue */
          const char *queue = lGetString(job, TACCDJ_queue);
          printf("%-6"sge_U32CLetter, sge_u32c(lGetUlong(job, TACCDJ_host)));
-         if (queue != NULL) {
+         if (queue != nullptr) {
             strncpy(trunc_string, queue, 13);
             trunc_string[13] = '\0';
             printf("%-13s", trunc_string);
@@ -686,7 +686,7 @@ void show_active_jobs(lList *joblist, int flags, const bool binding)
 
       if ((ultime = (time_t)lGetUlong(job, TACCDJ_starttime))) {
          const char *time_string = ctime((time_t *)&ultime);
-         if (time_string != NULL) {
+         if (time_string != nullptr) {
             char *truncated_time = strdup(time_string);
             truncated_time[20] = '\0';
             printf("%20s", truncated_time);
@@ -700,7 +700,7 @@ void show_active_jobs(lList *joblist, int flags, const bool binding)
    
       /* core binding */ 
       if (binding) {
-         if ((lGetString(job, TACCDJ_corebinding) != NULL)) {
+         if ((lGetString(job, TACCDJ_corebinding) != nullptr)) {
             printf("%s", lGetString(job, TACCDJ_corebinding));
          }
       }   
@@ -735,7 +735,7 @@ void show_waiting_jobs(lList *joblist, int flags)
          printf("%-10s", "");
       }
 
-      if (lGetString(job, TACCDJ_jobname) != NULL) {
+      if (lGetString(job, TACCDJ_jobname) != nullptr) {
          strncpy(truncated_jobname, lGetString(job, TACCDJ_jobname), 10);
          truncated_jobname[10] = '\0';
          printf("%-11s", truncated_jobname);
@@ -758,7 +758,7 @@ void show_waiting_jobs(lList *joblist, int flags)
          /* -l mode: print hosts and queue */
          const char *queue = lGetString(job, TACCDJ_queue);
          printf("%-6"sge_U32CLetter, sge_u32c(lGetUlong(job, TACCDJ_host)));
-         if (queue != NULL) {
+         if (queue != nullptr) {
             strncpy(trunc_string, queue, 13);
             trunc_string[13] = '\0';
             printf("%-13s", trunc_string);
@@ -785,7 +785,7 @@ void show_waiting_jobs(lList *joblist, int flags)
 
       if ((ultime = (time_t)lGetUlong(job, TACCDJ_queuetime))) {
          const char *time_string = ctime((time_t *)&ultime);
-         if (time_string != NULL) {
+         if (time_string != nullptr) {
             char *truncated_time = strdup(time_string);
             truncated_time[20] = '\0';
             printf("%20s\n", truncated_time);
@@ -804,15 +804,15 @@ static void get_core_binding_string(lListElem *job, const int task_number, dstri
    const lListElem *jatep;
    bool binding_of_first_task_found = false;
 
-   if (corebinding == NULL || job == NULL) {
+   if (corebinding == nullptr || job == nullptr) {
       return;
    } 
 
    for_each_ep(jatep, lGetList(job, JB_ja_tasks)) {
       /* int first_task = 1; */
       const lListElem *usage_elem;
-      const char *binding_inuse = NULL; 
-      const char *binding_topo = NULL;
+      const char *binding_inuse = nullptr;
+      const char *binding_topo = nullptr;
 
       if (task_number > 0) {
          if ((int)lGetUlong(jatep, JAT_task_number) != task_number) {
@@ -830,17 +830,17 @@ static void get_core_binding_string(lListElem *job, const int task_number, dstri
 
          if (strncmp(usage_name, binding_name, strlen(binding_name)) == 0) {
             binding_inuse = strstr(usage_name, "!"); 
-            if (binding_inuse != NULL) {
+            if (binding_inuse != nullptr) {
                binding_inuse++;
             }
             break;
          }
       }
 
-      if (binding_inuse != NULL && strcmp(binding_inuse, "NULL") != 0) {  
+      if (binding_inuse != nullptr && strcmp(binding_inuse, "nullptr") != 0) {
          binding_topo = binding_get_topology_for_job(binding_inuse);
 
-         if (binding_topo != NULL) {
+         if (binding_topo != nullptr) {
             sge_dstring_append(corebinding, binding_topo);
             binding_of_first_task_found = true;
             break;

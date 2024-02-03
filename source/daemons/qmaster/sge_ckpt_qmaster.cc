@@ -213,7 +213,7 @@ DRETURN(STATUS_EUNKNOWN);
 *     STATUS_EEXIST - an error occured
 ******************************************************************************/
 int ckpt_spool(sge_gdi_ctx_class_t *ctx, lList **alpp, lListElem *ep, gdi_object_t *object) {
-   lList *answer_list = NULL;
+   lList *answer_list = nullptr;
    bool dbret;
    bool job_spooling = bootstrap_get_job_spooling();
 
@@ -254,7 +254,7 @@ int ckpt_spool(sge_gdi_ctx_class_t *ctx, lList **alpp, lListElem *ep, gdi_object
 *  INPUTS
 *     ep          - new ckpt object 
 *     old_ep      - old ckpt object before modification or
-*                   NULL if a new object was added
+*                   nullptr if a new object was added
 *     object      - structure of the gdi framework which contains 
 *                   additional information to perform the request
 *                   (function pointers, names, CULL-types) 
@@ -272,7 +272,7 @@ ckpt_success(sge_gdi_ctx_class_t *ctx, lListElem *ep, lListElem *old_ep, gdi_obj
    ckpt_name = lGetString(ep, CK_name);
 
    sge_add_event(0, old_ep ? sgeE_CKPT_MOD : sgeE_CKPT_ADD, 0, 0,
-                 ckpt_name, NULL, NULL, ep);
+                 ckpt_name, nullptr, nullptr, ep);
    lListElem_clear_changed_info(ep);
 
    DRETURN(0);
@@ -344,7 +344,7 @@ sge_del_ckpt(sge_gdi_ctx_class_t *ctx, lListElem *ep, lList **alpp, char *ruser,
     * Try to find references in other objects
     */
    {
-      lList *local_answer_list = NULL;
+      lList *local_answer_list = nullptr;
 
       if (ckpt_is_referenced(found, &local_answer_list, *object_type_get_master_list(SGE_TYPE_JOB),
                              *object_type_get_master_list(SGE_TYPE_CQUEUE))) {
@@ -359,8 +359,8 @@ sge_del_ckpt(sge_gdi_ctx_class_t *ctx, lListElem *ep, lList **alpp, char *ruser,
    }
 
    /* remove ckpt file 1st */
-   if (!sge_event_spool(ctx, alpp, 0, sgeE_CKPT_DEL, 0, 0, ckpt_name, NULL, NULL,
-                        NULL, NULL, NULL, true, true)) {
+   if (!sge_event_spool(ctx, alpp, 0, sgeE_CKPT_DEL, 0, 0, ckpt_name, nullptr, nullptr,
+                        nullptr, nullptr, nullptr, true, true)) {
       ERROR((SGE_EVENT, MSG_CANTSPOOL_SS, MSG_OBJ_CKPT, ckpt_name));
       answer_list_add(alpp, SGE_EVENT, STATUS_EEXIST, ANSWER_QUALITY_ERROR);
       DRETURN(STATUS_EDISK);

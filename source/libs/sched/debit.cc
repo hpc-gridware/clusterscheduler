@@ -137,7 +137,7 @@ bool now,                 - if true this is or will be a running job
                             false for all jobs that must only be put into the
                             resource schedule 
 const char *type          - a string as forseen with serf_record_entry() 
-                            'type' parameter (may be NULL) 
+                            'type' parameter (may be nullptr)
 bool for_job_scheduling   - true if debiting job, false if advance_reservation
       
 */
@@ -205,7 +205,7 @@ debit_job_from_queues(lListElem *job, lList *granted, lList *global_queue_list,
       if (tagged) {
          /* find queue */
          qname = lGetString(gel, JG_qname);
-         if ((qep = lGetElemStrRW(global_queue_list, QU_full_name, qname)) == NULL) {
+         if ((qep = lGetElemStrRW(global_queue_list, QU_full_name, qname)) == nullptr) {
             master_task = false;
             continue;
          }
@@ -218,7 +218,7 @@ debit_job_from_queues(lListElem *job, lList *granted, lList *global_queue_list,
          for_each_ep(so, lGetList(qep, QU_subordinate_list)) {
             if (!tst_sos(qslots,        total, so)  &&  /* not suspended till now */
                  tst_sos(qslots+tagged, total, so)) {   /* but now                */
-               const lListElem *order = NULL;
+               const lListElem *order = nullptr;
 
                sge_dstring_sprintf(&queue_name, "%s@%s", lGetString(so, SO_name), lGetHost(qep, QU_qhostname));
              
@@ -250,7 +250,7 @@ debit_job_from_queues(lListElem *job, lList *granted, lList *global_queue_list,
 
          DPRINTF(("REDUCING SLOTS OF QUEUE %s BY %d\n", qname, tagged));
 
-         qinstance_debit_consumable(qep, job, centry_list, tagged, master_task, NULL);
+         qinstance_debit_consumable(qep, job, centry_list, tagged, master_task, nullptr);
       }
       master_task = false;
    }
@@ -267,12 +267,12 @@ lList *host_list,   /* EH_Type */
 const lList *centry_list, /* CE_Type */
 int *sort_hostlist
 ) {
-   lSortOrder *so = NULL;
+   lSortOrder *so = nullptr;
    const lListElem *gel;
    lListElem *hep;
    lListElem *global;
-   const char *hnm = NULL;
-   const char *load_formula = NULL;
+   const char *hnm = nullptr;
+   const char *load_formula = nullptr;
    lList *job_load_adjustments = sconf_get_job_load_adjustments();
    u_long32 load_adjustment_decay_time = sconf_get_load_adjustment_decay_time();
    bool master_task = true;
@@ -302,8 +302,8 @@ int *sort_hostlist
          lSetUlong(hep, EH_load_correction_factor, ulc_factor);
       }   
 
-      debit_host_consumable(job, host_list_locate(host_list, "global"), centry_list, slots, master_task, NULL);
-      debit_host_consumable(job, hep, centry_list, slots, master_task, NULL);
+      debit_host_consumable(job, host_list_locate(host_list, "global"), centry_list, slots, master_task, nullptr);
+      debit_host_consumable(job, hep, centry_list, slots, master_task, nullptr);
       master_task = false;
 
       /* compute new combined load for this host and put it into the host */
@@ -372,7 +372,7 @@ static int
 debit_job_from_rqs(lListElem *job, lList *granted, lList *rqs_list, lListElem* pe,
                    const lList *centry_list, const lList *acl_list, const lList *hgrp_list) 
 {
-   const lListElem *gel = NULL;
+   const lListElem *gel = nullptr;
    bool master_task = true;
 
    DENTER(TOP_LAYER);
@@ -384,11 +384,11 @@ debit_job_from_rqs(lListElem *job, lList *granted, lList *rqs_list, lListElem* p
   
    /* debit for all hosts */
    for_each_ep(gel, granted) {
-      const char* pe_name = NULL;
-      lListElem *rqs = NULL;
+      const char* pe_name = nullptr;
+      lListElem *rqs = nullptr;
       int slots = lGetUlong(gel, JG_slots);
 
-      if (pe != NULL) {
+      if (pe != nullptr) {
          pe_name =  lGetString(pe, PE_name);
       }
 
@@ -405,17 +405,17 @@ static int
 debit_job_from_ar(lListElem *job, lList *granted, lList *ar_list, const lList *centry_list)
 {
    bool master_task = true;
-   const lListElem *gel = NULL;
+   const lListElem *gel = nullptr;
 
    DENTER(TOP_LAYER);
 
    for_each_ep(gel, granted) {
-      const lListElem *ar = NULL;
+      const lListElem *ar = nullptr;
       int slots = lGetUlong(gel, JG_slots);
       
-      if ((ar = lGetElemUlong(ar_list, AR_id, lGetUlong(job, JB_ar))) != NULL) {
+      if ((ar = lGetElemUlong(ar_list, AR_id, lGetUlong(job, JB_ar))) != nullptr) {
          lListElem *queue = lGetSubStr(ar, QU_full_name, lGetString(gel, JG_qname), AR_reserved_queues);
-         qinstance_debit_consumable(queue, job, centry_list, slots, master_task, NULL);
+         qinstance_debit_consumable(queue, job, centry_list, slots, master_task, nullptr);
       }
       master_task = false;
    }

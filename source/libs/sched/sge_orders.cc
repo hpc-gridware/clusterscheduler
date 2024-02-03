@@ -104,8 +104,8 @@ lList *sge_add_schedd_info(lList *or_list, int *global_mes_count, int *job_mes_c
 
 /*************************************************************
  Create a new order-list or add orders to an existing one.
- or_list==NULL -> create new one.
- or_list!=NULL -> append orders.
+ or_list==nullptr -> create new one.
+ or_list!=nullptr -> append orders.
  returns updated order-list.
 
  The granted list contains granted queues.
@@ -125,17 +125,17 @@ lList *sge_add_schedd_info(lList *or_list, int *global_mes_count, int *job_mes_c
 *     lListElem *ja_task, lList *granted, bool update_execd) 
 *
 *  FUNCTION
-*     - If the or_list is NULL, a new one will be generated
+*     - If the or_list is nullptr, a new one will be generated
 *
-*     - in case of a clear_pri order, teh ja_task is improtant. If NULL is put
-*       in for ja_task, only the pendin tasks of the spedified job are set to NULL.
-*       If a ja_task is put in, all tasks of the job are set to NULL
+*     - in case of a clear_pri order, teh ja_task is improtant. If nullptr is put
+*       in for ja_task, only the pendin tasks of the spedified job are set to nullptr.
+*       If a ja_task is put in, all tasks of the job are set to nullptr
 *
 *  INPUTS
 *     lList *or_list     - the order list
 *     u_long32 type      - order type
 *     lListElem *job     - job
-*     lListElem *ja_task - ja_task ref or NULL(there is only one case, where it can be NULL)
+*     lListElem *ja_task - ja_task ref or nullptr(there is only one case, where it can be nullptr)
 *     lList *granted     - granted queue list
 *     bool update_execd  - should the execd get new ticket values?
 *
@@ -152,7 +152,7 @@ lList
 *sge_create_orders(lList *or_list, u_long32 type, const lListElem *job, const lListElem *ja_task,
                    const lList *granted , bool update_execd) 
 {
-   lList *ql = NULL;
+   lList *ql = nullptr;
    const lListElem *gel;
    lListElem *ep, *ep2;
    u_long32 qslots;
@@ -193,7 +193,7 @@ lList
    /* build order */
    ep=lCreateElem(OR_Type);
 
-   if(ja_task != NULL) {
+   if(ja_task != nullptr) {
       lSetDouble(ep, OR_ticket,    lGetDouble(ja_task, JAT_tix));
       lSetDouble(ep, OR_ntix,      lGetDouble(ja_task, JAT_ntix));
       lSetDouble(ep, OR_prio,      lGetDouble(ja_task, JAT_prio));
@@ -201,40 +201,40 @@ lList
    
    if (type == ORT_tickets || type == ORT_ptickets) {
       
-      static order_pos_t *order_pos = NULL;
+      static order_pos_t *order_pos = nullptr;
       
       const lDescr tixDesc[] = {
-                            {JAT_task_number, lUlongT | CULL_IS_REDUCED, NULL},
-                            {JAT_tix, lDoubleT | CULL_IS_REDUCED, NULL},
-                            {JAT_oticket, lDoubleT | CULL_IS_REDUCED, NULL}, 
-                            {JAT_fticket, lDoubleT | CULL_IS_REDUCED, NULL},
-                            {JAT_sticket, lDoubleT | CULL_IS_REDUCED, NULL},
-                            {JAT_share, lDoubleT | CULL_IS_REDUCED, NULL},
-                            {JAT_prio, lDoubleT | CULL_IS_REDUCED, NULL},
-                            {JAT_ntix, lDoubleT | CULL_IS_REDUCED, NULL},
-                            {JAT_granted_destin_identifier_list, lListT | CULL_IS_REDUCED, NULL},
-                            {NoName, lEndT | CULL_IS_REDUCED, NULL} 
+                            {JAT_task_number, lUlongT | CULL_IS_REDUCED, nullptr},
+                            {JAT_tix, lDoubleT | CULL_IS_REDUCED, nullptr},
+                            {JAT_oticket, lDoubleT | CULL_IS_REDUCED, nullptr},
+                            {JAT_fticket, lDoubleT | CULL_IS_REDUCED, nullptr},
+                            {JAT_sticket, lDoubleT | CULL_IS_REDUCED, nullptr},
+                            {JAT_share, lDoubleT | CULL_IS_REDUCED, nullptr},
+                            {JAT_prio, lDoubleT | CULL_IS_REDUCED, nullptr},
+                            {JAT_ntix, lDoubleT | CULL_IS_REDUCED, nullptr},
+                            {JAT_granted_destin_identifier_list, lListT | CULL_IS_REDUCED, nullptr},
+                            {NoName, lEndT | CULL_IS_REDUCED, nullptr}
                            };
       const lDescr tix2Desc[] = {
-                             {JAT_task_number, lUlongT | CULL_IS_REDUCED, NULL},
-                             {JAT_tix, lDoubleT| CULL_IS_REDUCED, NULL},
-                             {JAT_oticket, lDoubleT | CULL_IS_REDUCED, NULL}, 
-                             {JAT_fticket, lDoubleT | CULL_IS_REDUCED, NULL},
-                             {JAT_sticket, lDoubleT | CULL_IS_REDUCED, NULL},
-                             {JAT_share, lDoubleT | CULL_IS_REDUCED, NULL},
-                             {JAT_prio, lDoubleT | CULL_IS_REDUCED, NULL},
-                             {JAT_ntix, lDoubleT | CULL_IS_REDUCED, NULL},
-                             {NoName, lEndT | CULL_IS_REDUCED, NULL}
+                             {JAT_task_number, lUlongT | CULL_IS_REDUCED, nullptr},
+                             {JAT_tix, lDoubleT| CULL_IS_REDUCED, nullptr},
+                             {JAT_oticket, lDoubleT | CULL_IS_REDUCED, nullptr},
+                             {JAT_fticket, lDoubleT | CULL_IS_REDUCED, nullptr},
+                             {JAT_sticket, lDoubleT | CULL_IS_REDUCED, nullptr},
+                             {JAT_share, lDoubleT | CULL_IS_REDUCED, nullptr},
+                             {JAT_prio, lDoubleT | CULL_IS_REDUCED, nullptr},
+                             {JAT_ntix, lDoubleT | CULL_IS_REDUCED, nullptr},
+                             {NoName, lEndT | CULL_IS_REDUCED, nullptr}
                             };
       const lDescr jobDesc[] = {
-                                 {JB_nppri, lDoubleT | CULL_IS_REDUCED, NULL},
-                                 {JB_nurg, lDoubleT | CULL_IS_REDUCED, NULL},
-                                 {JB_urg, lDoubleT | CULL_IS_REDUCED, NULL},
-                                 {JB_rrcontr, lDoubleT | CULL_IS_REDUCED, NULL},
-                                 {JB_dlcontr, lDoubleT | CULL_IS_REDUCED, NULL},
-                                 {JB_wtcontr, lDoubleT | CULL_IS_REDUCED, NULL},
-                                 {JB_ja_tasks, lListT | CULL_IS_REDUCED, NULL},
-                                 {NoName, lEndT | CULL_IS_REDUCED, NULL}
+                                 {JB_nppri, lDoubleT | CULL_IS_REDUCED, nullptr},
+                                 {JB_nurg, lDoubleT | CULL_IS_REDUCED, nullptr},
+                                 {JB_urg, lDoubleT | CULL_IS_REDUCED, nullptr},
+                                 {JB_rrcontr, lDoubleT | CULL_IS_REDUCED, nullptr},
+                                 {JB_dlcontr, lDoubleT | CULL_IS_REDUCED, nullptr},
+                                 {JB_wtcontr, lDoubleT | CULL_IS_REDUCED, nullptr},
+                                 {JB_ja_tasks, lListT | CULL_IS_REDUCED, nullptr},
+                                 {NoName, lEndT | CULL_IS_REDUCED, nullptr}
                                };
       ja_task_pos_t *ja_pos;
       ja_task_pos_t *order_ja_pos;   
@@ -243,7 +243,7 @@ lList
       lListElem *jep = lCreateElem(jobDesc);
       lList *jlist = lCreateList("", jobDesc);
      
-      if (order_pos == NULL) {
+      if (order_pos == nullptr) {
          lListElem *tempElem = lCreateElem(tix2Desc);
 
          sge_create_cull_order_pos(&order_pos, job, ja_task, jep, tempElem);    
@@ -259,8 +259,8 @@ lList
 
       /* Create a reduced task list with only the required fields */
       {           
-         lList *tlist = NULL;         
-         lListElem *tempElem = NULL;
+         lList *tlist = nullptr;
+         lListElem *tempElem = nullptr;
 
          if (update_execd){
             tlist = lCreateList("", tixDesc);
@@ -304,12 +304,12 @@ lList
    lSetUlong(ep, OR_job_version, lGetUlong(job, JB_version));
    lSetList(ep, OR_queuelist, ql);
 
-   if (ja_task != NULL) {
-      const char *s = NULL;
+   if (ja_task != nullptr) {
+      const char *s = nullptr;
 
       lSetUlong(ep, OR_ja_task_number, lGetUlong(ja_task, JAT_task_number));
       s = lGetString(ja_task, JAT_granted_pe);
-      if (s != NULL) {
+      if (s != nullptr) {
          lSetString(ep, OR_pe, s);
       }   
    }
@@ -327,8 +327,8 @@ int
 sge_send_orders2master(sge_evc_class_t *evc, lList **orders) 
 {
    int ret = STATUS_OK;
-   lList *alp = NULL;
-   lList *malp = NULL;
+   lList *alp = nullptr;
+   lList *malp = nullptr;
 
    int order_id = 0;
    state_gdi_multi state = STATE_GDI_MULTI_INIT;
@@ -336,13 +336,13 @@ sge_send_orders2master(sge_evc_class_t *evc, lList **orders)
 
    DENTER(TOP_LAYER);
 
-   if (*orders != NULL) {
+   if (*orders != nullptr) {
       DPRINTF(("SENDING %d ORDERS TO QMASTER\n", lGetNumberOfElem(*orders)));
       order_id = ctx->gdi_multi(ctx, &alp, SGE_GDI_SEND, SGE_ORDER_LIST, SGE_GDI_ADD,
-                               orders, NULL, NULL, &state, false);
+                               orders, nullptr, nullptr, &state, false);
       ctx->gdi_wait(ctx, &alp, &malp, &state);
 
-      if (alp != NULL) {
+      if (alp != nullptr) {
          ret = answer_list_handle_request_answer_list(&alp, stderr);
          DRETURN(ret);
       }
@@ -350,7 +350,7 @@ sge_send_orders2master(sge_evc_class_t *evc, lList **orders)
 
    /* check result of orders */
    if(order_id > 0) {
-      sge_gdi_extract_answer(&alp, SGE_GDI_ADD, SGE_ORDER_LIST, order_id, malp, NULL);
+      sge_gdi_extract_answer(&alp, SGE_GDI_ADD, SGE_ORDER_LIST, order_id, malp, nullptr);
 
       ret = answer_list_handle_request_answer_list(&alp, stderr);
    }
@@ -377,7 +377,7 @@ lList *order_list
          DPRINTF(("DELETE JOB "sge_u32"."sge_u32"\n", lGetUlong(job, JB_job_number),
             lGetUlong(ja_task, JAT_task_number)));
          order_list = sge_create_orders(order_list, ORT_remove_job, job, 
-            ja_task, NULL, true);
+            ja_task, nullptr, true);
       }
    }
 
@@ -409,28 +409,28 @@ lList *order_list
 *
 *******************************************************************************/
 lList *sge_join_orders(order_t *orders){
-      lList *orderlist=NULL;
+      lList *orderlist=nullptr;
    
       orderlist = orders->configOrderList;
-      orders->configOrderList = NULL;
+      orders->configOrderList = nullptr;
   
       
-      if (orderlist == NULL) {
+      if (orderlist == nullptr) {
          orderlist = orders->jobStartOrderList;
       }
       else {
          lAddList(orderlist, &(orders->jobStartOrderList));
       }   
-      orders->jobStartOrderList = NULL; 
+      orders->jobStartOrderList = nullptr;
     
       
-      if (orderlist == NULL) {
+      if (orderlist == nullptr) {
          orderlist = orders->pendingOrderList;
       }
       else {
          lAddList(orderlist, &(orders->pendingOrderList));
       }
-      orders->pendingOrderList= NULL;
+      orders->pendingOrderList= nullptr;
 
       
       /* they have been send earlier, so we can remove them */

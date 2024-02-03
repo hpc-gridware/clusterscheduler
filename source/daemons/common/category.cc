@@ -116,8 +116,8 @@ static sge_category_t Category_Control = {PTHREAD_MUTEX_INITIALIZER, {-1, -1, -1
 void sge_build_job_category_dstring(dstring *category_str, lListElem *job, const lList *acl_list, const lList *prj_list, bool *did_project, const lList *rqs_list) 
 {
 
-   const char *owner = NULL;
-   const char *group = NULL;
+   const char *owner = nullptr;
+   const char *group = nullptr;
 
    DENTER(TOP_LAYER);
 

@@ -135,22 +135,22 @@ void monitor_dominance(char *str, u_long32 mask) {
 *     lListElem *queue     - the current queue, or null, if one works on hosts 
 *     u_long32 layer       - the current layer 
 *     double lc_factor     - the load correction value 
-*     dstring *reason      - space for error messages or NULL 
+*     dstring *reason      - space for error messages or nullptr
 *     bool zero_utilization - ???
 *     u_long32 start_time  - begin of the time interval, one asks for the resource
 *     u_long32 duration    - the duration the interval
 *
 *  RESULT
-*     static lListElem* - the element one was looking for or NULL
+*     static lListElem* - the element one was looking for or nullptr
 *
 *******************************************************************************/
 lListElem* get_attribute(const char *attrname, const lList *config_attr, const lList *actual_attr, const lList *load_attr, 
    const lList *centry_list, const lListElem *queue, u_long32 layer, double lc_factor, dstring *reason,
    bool zero_utilization, u_long32 start_time, u_long32 duration)
 {
-   const lListElem *actual_el=NULL;
-   const lListElem *load_el=NULL;
-   lListElem *cplx_el=NULL;
+   const lListElem *actual_el=nullptr;
+   const lListElem *load_el=nullptr;
+   lListElem *cplx_el=nullptr;
 
    DENTER(BASIS_LAYER);
 
@@ -163,7 +163,7 @@ lListElem* get_attribute(const char *attrname, const lList *config_attr, const l
          cplx_el = lCopyElem(lGetElemStr(centry_list, CE_name, attrname));
          if(!cplx_el){
             /* error */
-            DRETURN(NULL);
+            DRETURN(nullptr);
          }
          lSetUlong(cplx_el, CE_dominant, layer | DOMINANT_TYPE_FIXED);
          lSetUlong(cplx_el, CE_pj_dominant, DOMINANT_TYPE_VALUE);  /* default, no value set */ 
@@ -202,7 +202,7 @@ lListElem* get_attribute(const char *attrname, const lList *config_attr, const l
          } else{
             sge_dstring_sprintf(reason, MSG_ATTRIB_ACTUALELEMENTTOATTRIBXMISSING_S, attrname);
             lFreeElem(&cplx_el);
-            DRETURN(NULL);
+            DRETURN(nullptr);
          }
       } else{
          lSetDouble(cplx_el, CE_pj_doubleval, lGetDouble(cplx_el, CE_doubleval)); 
@@ -213,14 +213,14 @@ lListElem* get_attribute(const char *attrname, const lList *config_attr, const l
    /** check for a load value */
    if (load_attr && (load_el = lGetElemStr(load_attr, HL_name, attrname)) &&
        (sconf_get_qs_state()==QS_STATE_FULL || lGetBool(load_el, HL_is_static)) && (!is_attr_prior(cplx_el, cplx_el))) {
-         const lListElem *ep_nproc=NULL;
+         const lListElem *ep_nproc=nullptr;
          int nproc=1;
 
          if (!cplx_el){
             cplx_el = lCopyElem(lGetElemStr(centry_list, CE_name, attrname));
                if (!cplx_el){
                   /* error */
-                  DRETURN(NULL);
+                  DRETURN(nullptr);
                }         
             lSetUlong(cplx_el, CE_dominant, DOMINANT_TYPE_VALUE);
             lSetUlong(cplx_el, CE_pj_dominant, DOMINANT_TYPE_VALUE);
@@ -233,7 +233,7 @@ lListElem* get_attribute(const char *attrname, const lList *config_attr, const l
          }
 
          {
-            const char *load_value=NULL;
+            const char *load_value=nullptr;
             u_long32 type;
             double dval;
 
@@ -252,7 +252,7 @@ lListElem* get_attribute(const char *attrname, const lList *config_attr, const l
  
                job_load=lGetElemStr(load_adjustments, CE_name, attrname);
 
-               if (parse_ulong_val(&dval, NULL, type, load_value, NULL, 0)) {
+               if (parse_ulong_val(&dval, nullptr, type, load_value, nullptr, 0)) {
 
                sge_strlcpy(sval, load_value, 100);
                /* --------------------------------
@@ -263,7 +263,7 @@ lListElem* get_attribute(const char *attrname, const lList *config_attr, const l
                   double load_correction;
 
                   s = lGetString(job_load, CE_stringval);
-                  if (!parse_ulong_val(&load_correction, NULL, type, s, err_str, 255)) {
+                  if (!parse_ulong_val(&load_correction, nullptr, type, s, err_str, 255)) {
                      ERROR((SGE_EVENT, MSG_SCHEDD_LOADADJUSTMENTSVALUEXNOTNUMERIC_S , attrname));
                   } else if (lc_factor) {
                      double old_dval;
@@ -324,7 +324,7 @@ lListElem* get_attribute(const char *attrname, const lList *config_attr, const l
          cplx_el = lCopyElem(lGetElemStr(centry_list, CE_name, attrname));
          if(!cplx_el){
             /* error */
-            DRETURN(NULL);
+            DRETURN(nullptr);
          }         
          lSetUlong(cplx_el, CE_dominant, DOMINANT_TYPE_VALUE);
          lSetUlong(cplx_el, CE_pj_dominant, DOMINANT_TYPE_VALUE);
@@ -348,7 +348,7 @@ lListElem* get_attribute(const char *attrname, const lList *config_attr, const l
 *  FUNCTION
 *     All fixed queue attributes are directly coded into the queue structure. These have to extraced
 *     and formed into a CE structure. That is, what this function does. It takes a name for an attribut
-*     and returns a full CE structure, if the attribut is set in the queue. Otherwise it returns NULL.
+*     and returns a full CE structure, if the attribut is set in the queue. Otherwise it returns nullptr.
 *
 *  INPUTS
 *     lListElem *queue_elem - 
@@ -361,7 +361,7 @@ lListElem* get_attribute(const char *attrname, const lList *config_attr, const l
 *******************************************************************************/
 bool get_queue_resource(lListElem *queue_elem, const lListElem *queue, const char *attrname){
    double dval=0.0;
-   const char *value=NULL;
+   const char *value=nullptr;
    char as_str[100];
    int type, field;
 
@@ -372,7 +372,7 @@ bool get_queue_resource(lListElem *queue_elem, const lListElem *queue, const cha
       DRETURN(false);
    }
 
-   if (get_rsrc(attrname, true, &field, NULL, NULL, &type)!=0) {
+   if (get_rsrc(attrname, true, &field, nullptr, nullptr, &type)!=0) {
       DPRINTF(("is not a system queue attribute: %s\n", attrname));
       DRETURN(false);
    }
@@ -388,7 +388,7 @@ bool get_queue_resource(lListElem *queue_elem, const lListElem *queue, const cha
    case TYPE_MEM:
    case TYPE_DOUBLE:
       if ((value = lGetString(queue, field))) {
-         parse_ulong_val(&dval, NULL, type, value, NULL, 0); 
+         parse_ulong_val(&dval, nullptr, type, value, nullptr, 0);
       } 
       break;
 
@@ -434,8 +434,8 @@ bool get_queue_resource(lListElem *queue_elem, const lListElem *queue, const cha
 *  FUNCTION
 *     checks if the first given attribut instance has a higher priority than
 *     second instance.
-*     if the first is NULL, it returns false
-*     if the second or the second and first is NULL, it returns true
+*     if the first is nullptr, it returns false
+*     if the second or the second and first is nullptr, it returns true
 *     if the "==" or "!=" operators are used, it is true
 *     if both are the same, it may returns false. 
 *     otherwise it computes the minimum or maximum between the values. 
@@ -590,7 +590,7 @@ lList *centry_list
    }
    /* build global complex and add it to result */
    lFreeList(new_centry_list);
-   *new_centry_list = get_attribute_list(host_list_locate(exechost_list, "global"), host, NULL, centry_list);
+   *new_centry_list = get_attribute_list(host_list_locate(exechost_list, "global"), host, nullptr, centry_list);
 
    DRETURN(0);
 }
@@ -610,7 +610,7 @@ int queue_complexes2scheduler(lList **new_centry_list, lListElem *queue, const l
 
    lFreeList(new_centry_list);
    *new_centry_list = get_attribute_list(host_list_locate(exechost_list, "global"), 
-                                         queue ? host_list_locate(exechost_list, lGetHost(queue, QU_qhostname)) : NULL, 
+                                         queue ? host_list_locate(exechost_list, lGetHost(queue, QU_qhostname)) : nullptr,
                                          queue, centry_list);
    DRETURN(0);
 }
@@ -627,17 +627,17 @@ int queue_complexes2scheduler(lList **new_centry_list, lListElem *queue, const l
 *     Assembles a list of attributes for a given queue, host, global, which contains all 
 *     the specified elements. The general sort order is, global, host, queue. If an 
 *     element could not be found, it will not exist. If no elements exist, the function
-*     will return NULL 
+*     will return nullptr
 *
 *  INPUTS
 *     lListElem *global      - global host 
-*     lListElem *host        - host (or NULL, if only global resources are asked for ) 
-*     lListElem *queue       - queue (or NULL, if only global / host resources are asked for) 
+*     lListElem *host        - host (or nullptr, if only global resources are asked for )
+*     lListElem *queue       - queue (or nullptr, if only global / host resources are asked for)
 *     lList *centry_list     - the system wide attribut config list 
 *     lList *attrnames       - ST_Type list of attribute names 
 *
 *  RESULT
-*     static lList* - a CULL list of elements or NULL
+*     static lList* - a CULL list of elements or nullptr
 *
 *******************************************************************************/
 static lList *get_attribute_list_by_names(lListElem *global, lListElem *host, 
@@ -646,7 +646,7 @@ static lList *get_attribute_list_by_names(lListElem *global, lListElem *host,
 {
    lListElem *attr;
    const lListElem *elem;
-   lList *list = NULL;
+   lList *list = nullptr;
 
    for_each_ep(elem, attrnames) {
       attr = get_attribute_by_name(global, host, queue, lGetString(elem, ST_name), centry_list, DISPATCH_TIME_NOW, 0);
@@ -675,18 +675,18 @@ static lList *get_attribute_list_by_names(lListElem *global, lListElem *host,
 *
 *  INPUTS
 *     lListElem *global  - global host 
-*     lListElem *host    - host (or NULL, if only global attributes are important) 
-*     lListElem *queue   - queue (or NULL if only host/global attributes are important) 
+*     lListElem *host    - host (or nullptr, if only global attributes are important)
+*     lListElem *queue   - queue (or nullptr if only host/global attributes are important)
 *     lList *centry_list - system wide attribute config list 
 *
 *  RESULT
-*     static lList* - list of attributes or NULL, if no attributes exist.
+*     static lList* - list of attributes or nullptr, if no attributes exist.
 *
 *******************************************************************************/
 static lList *get_attribute_list(lListElem *global, lListElem *host, lListElem *queue, const lList *centry_list)
 {
-   lList *filter = NULL; 
-   lList *list = NULL;
+   lList *filter = nullptr;
+   lList *list = nullptr;
 
    DENTER(BASIS_LAYER);
    
@@ -705,7 +705,7 @@ static lList *get_attribute_list(lListElem *global, lListElem *host, lListElem *
    if (queue){ 
       int x = 0;  
       for (; x < max_queue_resources; x++){
-         if (lGetElemStr(filter, ST_name, queue_resource[x].name) == NULL) {
+         if (lGetElemStr(filter, ST_name, queue_resource[x].name) == nullptr) {
             lAddElemStr(&filter, ST_name, queue_resource[x].name, ST_Type);
          }
       }
@@ -742,7 +742,7 @@ static lList *get_attribute_list(lListElem *global, lListElem *host, lListElem *
 *
 *******************************************************************************/
 static void build_name_filter(lList *filter, const lList *list, int t_name){
-   const lListElem *current = NULL;
+   const lListElem *current = nullptr;
    
    if (!list) {
       return;
@@ -751,7 +751,7 @@ static void build_name_filter(lList *filter, const lList *list, int t_name){
    for_each_ep(current,list){
       const char* name = lGetString(current, t_name);
 
-      if (lGetElemStr(filter, ST_name, name) == NULL) {
+      if (lGetElemStr(filter, ST_name, name) == nullptr) {
          lAddElemStr(&filter, ST_name, name, ST_Type);
       }
    }
@@ -762,7 +762,7 @@ static void build_name_filter(lList *filter, const lList *list, int t_name){
 /* s2 the string that should be matched against the pattern */
 int string_base_cmp(u_long32 type, const char *s1, const char *s2)
 {
-   return sge_eval_expression(type, s1, s2, NULL);
+   return sge_eval_expression(type, s1, s2, nullptr);
 }
 
 /* wrapper for strcmp() of all string types, old version */ 
@@ -782,16 +782,16 @@ int string_base_cmp_old(u_long32 type, const char *s1, const char *s2)
       case TYPE_HOST:  match = sge_hostcmp(s1, s2);
          break;
       case TYPE_RESTR:  {
-                           char *s = NULL;
-                           struct saved_vars_s *context=NULL;
-                           for (s=sge_strtok_r(s1, "|", &context); s; s=sge_strtok_r(NULL, "|", &context)) {
+                           char *s = nullptr;
+                           struct saved_vars_s *context=nullptr;
+                           for (s=sge_strtok_r(s1, "|", &context); s; s=sge_strtok_r(nullptr, "|", &context)) {
                               /* Old implementation shloud be kept for performance tests */                              
                               if ((match = fnmatch(s, s2, 0)) == 0) {
                                  break;
                               }   
                            }
                            sge_free_saved_vars(context);
-                           context = NULL;
+                           context = nullptr;
                         }
          break;
       default: match = -1;
@@ -947,7 +947,7 @@ int compare_complexes(int slots, lListElem *req_cplx, lListElem *src_cplx, char 
    case TYPE_BOO:
    case TYPE_DOUBLE:
       s=lGetString(req_cplx, CE_stringval); 
-      if (!parse_ulong_val(&req_dl, NULL, type, s, NULL, 0)) {
+      if (!parse_ulong_val(&req_dl, nullptr, type, s, nullptr, 0)) {
 #if 0
          DPRINTF(("%s is not of type %s\n", s, map_type2str(type)));
 #endif
@@ -1133,19 +1133,19 @@ int compare_complexes(int slots, lListElem *req_cplx, lListElem *src_cplx, char 
 *     int reason_size      - the max length of an error message 
 *
 *  RESULT
-*     void lListElem* - the element one is looking for (a copy) or NULL.
+*     void lListElem* - the element one is looking for (a copy) or nullptr.
 *
 *******************************************************************************/
 lListElem *get_attribute_by_name(const lListElem* global, const lListElem *host, const lListElem *queue, 
     const char* attrname, const lList *centry_list, u_long32 start_time, u_long32 duration)
 {
-   lListElem *global_el=NULL;
-   lListElem *host_el=NULL;
-   lListElem *queue_el=NULL;
-   lListElem *ret_el = NULL;
-   const lList *load_attr = NULL;
-   const lList *config_attr = NULL;
-   const lList *actual_attr = NULL; 
+   lListElem *global_el=nullptr;
+   lListElem *host_el=nullptr;
+   lListElem *queue_el=nullptr;
+   lListElem *ret_el = nullptr;
+   const lList *load_attr = nullptr;
+   const lList *config_attr = nullptr;
+   const lList *actual_attr = nullptr;
 
    DENTER(BASIS_LAYER);
 
@@ -1162,8 +1162,8 @@ lListElem *get_attribute_by_name(const lListElem* global, const lListElem *host,
          }   
       }
       global_el = get_attribute(attrname, config_attr, actual_attr, load_attr, 
-                                centry_list, NULL, DOMINANT_LAYER_GLOBAL, 
-                                lc_factor, NULL, false, start_time, duration);
+                                centry_list, nullptr, DOMINANT_LAYER_GLOBAL,
+                                lc_factor, nullptr, false, start_time, duration);
       ret_el = global_el;
    } 
 
@@ -1179,8 +1179,8 @@ lListElem *get_attribute_by_name(const lListElem* global, const lListElem *host,
             lc_factor = ((double)lc_factor)/100;
          }
       }
-      host_el = get_attribute(attrname, config_attr, actual_attr, load_attr, centry_list, NULL, DOMINANT_LAYER_HOST, 
-                              lc_factor, NULL, false, start_time, duration);
+      host_el = get_attribute(attrname, config_attr, actual_attr, load_attr, centry_list, nullptr, DOMINANT_LAYER_HOST,
+                              lc_factor, nullptr, false, start_time, duration);
       if (!global_el && host_el) {
          ret_el = host_el;
       } else if (global_el && host_el) {
@@ -1197,8 +1197,8 @@ lListElem *get_attribute_by_name(const lListElem* global, const lListElem *host,
       config_attr = lGetList(queue, QU_consumable_config_list);
       actual_attr = lGetList(queue, QU_resource_utilization);
       
-      queue_el = get_attribute(attrname, config_attr, actual_attr, NULL, centry_list, queue, DOMINANT_LAYER_QUEUE, 
-                              0.0, NULL, false, start_time, duration);
+      queue_el = get_attribute(attrname, config_attr, actual_attr, nullptr, centry_list, queue, DOMINANT_LAYER_QUEUE,
+                              0.0, nullptr, false, start_time, duration);
 
       if (!ret_el) {
          ret_el = queue_el;
@@ -1225,7 +1225,7 @@ gcc -Wall -DLINUX -DTEST -o complex complex.c ../LINUX/sge_parse_num_par.o ../LI
 int main(int argc, char *argv[], char *envp[])
 {
    lListElem *l;
-   lList *alp = NULL;
+   lList *alp = nullptr;
   
 #ifdef __SGE_COMPILE_WITH_GETTEXT__   
    /* init language output for gettext() , it will use the right language */
@@ -1233,7 +1233,7 @@ int main(int argc, char *argv[], char *envp[])
                          (setlocale_func_type)      setlocale,
                          (bindtextdomain_func_type) bindtextdomain,
                          (textdomain_func_type)     textdomain);
-   sge_init_language(NULL,NULL);  
+   sge_init_language(nullptr,nullptr);
 #endif /* __SGE_COMPILE_WITH_GETTEXT__  */
  
 
@@ -1250,7 +1250,7 @@ int main(int argc, char *argv[], char *envp[])
    }
    
 
-   write_cmplx(1, argv[2], l, NULL, &alp);
+   write_cmplx(1, argv[2], l, nullptr, &alp);
 
    if (answer_list_has_error(&alp)) {
       answer_list_output(&alp);
@@ -1291,7 +1291,7 @@ int main(int argc, char *argv[], char *envp[])
 bool request_cq_rejected(const lList* hard_resource_list, const lListElem *cq,
       const lList *centry_list, bool single_slot, dstring *unsatisfied)
 {
-   const lListElem *req, *val_ce = NULL, *ce; /* CE_Type */
+   const lListElem *req, *val_ce = nullptr, *ce; /* CE_Type */
    const lListElem *alist;
    const char *name, *request, *offer;
    u_long32 relop;
@@ -1313,7 +1313,7 @@ bool request_cq_rejected(const lList* hard_resource_list, const lListElem *cq,
       request = lGetString(req, CE_stringval);
       relop = lGetUlong(ce, CE_relop);
 
-      if (get_rsrc(name, true, NULL, &cqfld, &valfld, &type)==0) {
+      if (get_rsrc(name, true, nullptr, &cqfld, &valfld, &type)==0) {
          if (cqfld == 0) {
             continue;
          } 
@@ -1357,8 +1357,8 @@ bool request_cq_rejected(const lList* hard_resource_list, const lListElem *cq,
          case TYPE_DOUBLE:
             {
                double req_dl, off_dl;
-               if (!parse_ulong_val(&req_dl, NULL, type, request, NULL, 0) || 
-                    !parse_ulong_val(&off_dl, NULL, type, offer, NULL, 0)) {
+               if (!parse_ulong_val(&req_dl, nullptr, type, request, nullptr, 0) ||
+                    !parse_ulong_val(&off_dl, nullptr, type, offer, nullptr, 0)) {
                   DPRINTF(("%s is not of type %s\n", request, map_type2str(type)));
                   match = 0;
                } else {

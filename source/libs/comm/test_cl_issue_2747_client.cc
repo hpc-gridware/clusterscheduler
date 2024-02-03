@@ -79,10 +79,10 @@ extern int main(int argc, char **argv) {
    int ret_val = CL_RETVAL_OK;
    cl_thread_mode_t thread_mode = CL_RW_THREAD;
    int handle_port = 0;
-   cl_com_handle_t *handle = NULL;
-   cl_com_message_t *message = NULL;
-   cl_com_endpoint_t *sender = NULL;
-   char *server_host = NULL;
+   cl_com_handle_t *handle = nullptr;
+   cl_com_message_t *message = nullptr;
+   cl_com_endpoint_t *sender = nullptr;
+   char *server_host = nullptr;
    int server_port = -1;
    int i;
    char message_text[] = "blub";
@@ -112,10 +112,10 @@ extern int main(int argc, char **argv) {
    memset(&sa, 0, sizeof(sa));
    sa.sa_handler = sighandler_server;  /* one handler for all signals */
    sigemptyset(&sa.sa_mask);
-   sigaction(SIGINT, &sa, NULL);
-   sigaction(SIGTERM, &sa, NULL);
-   sigaction(SIGHUP, &sa, NULL);
-   sigaction(SIGPIPE, &sa, NULL);
+   sigaction(SIGINT, &sa, nullptr);
+   sigaction(SIGTERM, &sa, nullptr);
+   sigaction(SIGHUP, &sa, nullptr);
+   sigaction(SIGPIPE, &sa, nullptr);
 
 
    printf("commlib setup ...\n");
@@ -126,7 +126,7 @@ extern int main(int argc, char **argv) {
       printf("hup\n");
    };
 
-   if (getenv("CL_THREADS") != NULL) {
+   if (getenv("CL_THREADS") != nullptr) {
       if (strcasecmp(getenv("CL_THREADS"), "false") == 0) {
          thread_mode = CL_NO_THREAD;
       }
@@ -139,12 +139,12 @@ extern int main(int argc, char **argv) {
    }
 
 
-   cl_com_setup_commlib(thread_mode, CL_LOG_OFF, NULL);
+   cl_com_setup_commlib(thread_mode, CL_LOG_OFF, nullptr);
 
 
-   handle = cl_com_create_handle(NULL, CL_CT_TCP, CL_CM_CT_MESSAGE, true, handle_port, CL_TCP_DEFAULT, "client", 1, 1,
+   handle = cl_com_create_handle(nullptr, CL_CT_TCP, CL_CM_CT_MESSAGE, true, handle_port, CL_TCP_DEFAULT, "client", 1, 1,
                                  0);
-   if (handle == NULL) {
+   if (handle == nullptr) {
       printf("could not get handle\n");
       cl_com_cleanup_commlib();
       exit(-1);
@@ -158,8 +158,8 @@ extern int main(int argc, char **argv) {
                   handle->local->comp_id);
 
    {
-      char *resolved_server_host = NULL;
-      cl_com_cached_gethostbyname(server_host, &resolved_server_host, NULL, NULL, NULL);
+      char *resolved_server_host = nullptr;
+      cl_com_cached_gethostbyname(server_host, &resolved_server_host, nullptr, nullptr, nullptr);
       printf("server will connect to server on host \"%s\" bound to port \"%d\"\n", resolved_server_host, server_port);
       sge_free(&resolved_server_host);
    }
@@ -174,7 +174,7 @@ extern int main(int argc, char **argv) {
                                         server_host, "server", 1,
                                         CL_MIH_MAT_NAK,
                                         &message_text_pointer, 5,
-                                        NULL, 0, 0,
+                                        nullptr, 0, 0,
                                         true, false);
       if (ret_val != CL_RETVAL_OK) {
          exit_state = 1;
@@ -184,8 +184,8 @@ extern int main(int argc, char **argv) {
 
    printf("receiving one message from server ...\n");
    /* we receive first syncron message response from server */
-   ret_val = cl_commlib_receive_message(handle, NULL, NULL, 0, true, 1, &message, &sender);
-   if (message != NULL) {
+   ret_val = cl_commlib_receive_message(handle, nullptr, nullptr, 0, true, 1, &message, &sender);
+   if (message != nullptr) {
       printf("received message from \"%s/%s/%ld\" (%s)\n", sender->comp_host, sender->comp_name, sender->comp_id,
              cl_get_error_text(ret_val));
       cl_com_free_message(&message);
@@ -204,7 +204,7 @@ extern int main(int argc, char **argv) {
                                         server_host, "server", 1,
                                         CL_MIH_MAT_NAK,
                                         &message_text_pointer, 5,
-                                        NULL, 0, 0,
+                                        nullptr, 0, 0,
                                         true, false);
       if (ret_val != CL_RETVAL_OK) {
          exit_state = 1;

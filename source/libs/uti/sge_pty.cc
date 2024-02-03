@@ -138,7 +138,7 @@ int ptym_open(char *pts_name) {
       close(fdm);
       return -3;
    }
-   if ((ptr = ptsname(fdm)) == NULL) {   /* get slave's name */
+   if ((ptr = ptsname(fdm)) == nullptr) {   /* get slave's name */
       close(fdm);
       return -4;
    }

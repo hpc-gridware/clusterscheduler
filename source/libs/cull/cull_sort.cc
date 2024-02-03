@@ -225,15 +225,15 @@ lSortOrder *lParseSortOrderVarArg(const lDescr *dp, const char *fmt, ...) {
 *     with ascending H_hostname and descending H_memsize. 
 *******************************************************************************/
 lSortOrder *lParseSortOrder(const lDescr *dp, const char *fmt, va_list ap) {
-   const char *s = NULL;
-   lSortOrder *sp = NULL;
+   const char *s = nullptr;
+   lSortOrder *sp = nullptr;
    int i, n;
    cull_parse_state state;
 
    DENTER(CULL_LAYER);
 
    if (!dp || !fmt) {
-      DRETURN(NULL);
+      DRETURN(nullptr);
    }
 
    /* how many fields are selected (for malloc) */
@@ -245,7 +245,7 @@ lSortOrder *lParseSortOrder(const lDescr *dp, const char *fmt, va_list ap) {
 
    if (!(sp = (lSortOrder *) sge_malloc(sizeof(lSortOrder) * (n + 1)))) {
       LERROR(LEMALLOC);
-      DRETURN(NULL);
+      DRETURN(nullptr);
    }
 
    memset(&state, 0, sizeof(state));
@@ -255,19 +255,19 @@ lSortOrder *lParseSortOrder(const lDescr *dp, const char *fmt, va_list ap) {
       if ((sp[i].pos = lGetPosInDescr(dp, sp[i].nm)) < 0) {
          sge_free(&sp);
          LERROR(LENAMENOT);
-         DRETURN(NULL);
+         DRETURN(nullptr);
       }
       sp[i].mt = dp[sp[i].pos].mt;
 
       /* next token */
-      if (scan(NULL, &state) != FIELD) {
+      if (scan(nullptr, &state) != FIELD) {
          sge_free(&sp);
          LERROR(LESYNTAX);
-         DRETURN(NULL);
+         DRETURN(nullptr);
       }
       /* THIS IS FOR TYPE CHECKING */
       /* COMMENTED OUT
-         switch( scan(NULL, &state) ) {
+         switch( scan(nullptr, &state) ) {
          case INT:
          if (mt_get_type(sp[i].mt) != lIntT )
          incompatibleType("lSortList (should be a lIntT)\n");
@@ -306,7 +306,7 @@ lSortOrder *lParseSortOrder(const lDescr *dp, const char *fmt, va_list ap) {
          } 
        */
       eat_token(&state);              /* eat %I */
-      switch (scan(NULL, &state)) {
+      switch (scan(nullptr, &state)) {
          case PLUS:
             sp[i].ad = 1;
             break;
@@ -317,7 +317,7 @@ lSortOrder *lParseSortOrder(const lDescr *dp, const char *fmt, va_list ap) {
             /* +/- is missing */
             sge_free(&sp);
             LERROR(LESYNTAX);
-            DRETURN(NULL);
+            DRETURN(nullptr);
       }
       eat_token(&state);
    }
@@ -339,7 +339,7 @@ lSortOrder *lCreateSortOrder(
 
    if (!(sp = (lSortOrder *) sge_malloc(sizeof(lSortOrder) * (n + 1)))) {
       LERROR(LEMALLOC);
-      return NULL;
+      return nullptr;
    }
 
    /* set end mark at pos 0 */

@@ -64,11 +64,11 @@ int
 sge_add_manop(sge_gdi_ctx_class_t *ctx, lListElem *ep, lList **alpp, char *ruser, char *rhost, u_long32 target) {
    const char *manop_name;
    const char *object_name;
-   lList **lpp = NULL;
+   lList **lpp = nullptr;
    lListElem *added;
    int pos;
    int key;
-   lDescr *descr = NULL;
+   lDescr *descr = nullptr;
    ev_event eve = sgeE_EVENTSIZE;
 
    DENTER(TOP_LAYER);
@@ -125,8 +125,8 @@ sge_add_manop(sge_gdi_ctx_class_t *ctx, lListElem *ep, lList **alpp, char *ruser
 
    /* update on file */
    if (!sge_event_spool(ctx, alpp, 0, eve,
-                        0, 0, manop_name, NULL, NULL,
-                        added, NULL, NULL, true, true)) {
+                        0, 0, manop_name, nullptr, nullptr,
+                        added, nullptr, nullptr, true, true)) {
       ERROR((SGE_EVENT, MSG_CANTSPOOL_SS, object_name, manop_name));
       answer_list_add(alpp, SGE_EVENT, STATUS_EDISK, ANSWER_QUALITY_ERROR);
 
@@ -174,13 +174,13 @@ sge_del_manop(sge_gdi_ctx_class_t *ctx, lListElem *ep, lList **alpp, char *ruser
    int pos;
    const char *manop_name;
    const char *object_name;
-   lList **lpp = NULL;
+   lList **lpp = nullptr;
    int key = NoName;
    ev_event eve = sgeE_EVENTSIZE;
 
    DENTER(TOP_LAYER);
 
-   if (ep == NULL || ruser == NULL || rhost == NULL) {
+   if (ep == nullptr || ruser == nullptr || rhost == nullptr) {
       CRITICAL((SGE_EVENT, MSG_SGETEXT_NULLPTRPASSED_S, __func__));
       answer_list_add(alpp, SGE_EVENT, STATUS_EUNKNOWN, ANSWER_QUALITY_ERROR);
       DRETURN(STATUS_EUNKNOWN);
@@ -212,7 +212,7 @@ sge_del_manop(sge_gdi_ctx_class_t *ctx, lListElem *ep, lList **alpp, char *ruser
    }
 
    manop_name = lGetPosString(ep, pos);
-   if (manop_name == NULL) {
+   if (manop_name == nullptr) {
       CRITICAL((SGE_EVENT, MSG_SGETEXT_NULLPTRPASSED_S, __func__));
       answer_list_add(alpp, SGE_EVENT, STATUS_EUNKNOWN, ANSWER_QUALITY_ERROR);
       DRETURN(STATUS_EUNKNOWN);
@@ -244,8 +244,8 @@ sge_del_manop(sge_gdi_ctx_class_t *ctx, lListElem *ep, lList **alpp, char *ruser
 
    /* update on file */
    if (!sge_event_spool(ctx, alpp, 0, eve,
-                        0, 0, manop_name, NULL, NULL,
-                        NULL, NULL, NULL, true, true)) {
+                        0, 0, manop_name, nullptr, nullptr,
+                        nullptr, nullptr, nullptr, true, true)) {
       ERROR((SGE_EVENT, MSG_CANTSPOOL_SS, object_name, manop_name));
       answer_list_add(alpp, SGE_EVENT, STATUS_EDISK, ANSWER_QUALITY_ERROR);
 

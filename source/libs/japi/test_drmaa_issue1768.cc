@@ -43,11 +43,11 @@ int main(int argc, char *argv[])
    char diagnosis[DRMAA_ERROR_STRING_BUFFER + 1];
    char jobid[DRMAA_JOBNAME_BUFFER + 1];
    int drmaa_errno = DRMAA_ERRNO_SUCCESS;
-   const char *job_path = NULL;
-   const char *job_cat = NULL;
-   void *buffer = NULL;
+   const char *job_path = nullptr;
+   const char *job_cat = nullptr;
+   void *buffer = nullptr;
    size_t buffer_size = 0;
-   drmaa_job_template_t *jt = NULL;
+   drmaa_job_template_t *jt = nullptr;
    int exit_code = 0;
    
    job_path = argv[1];
@@ -61,14 +61,14 @@ int main(int argc, char *argv[])
    /* Submit a job to find out what the current job id is. */
    jt = create_job_template(job_path, job_cat);
    
-   if (jt == NULL) {
+   if (jt == nullptr) {
       fprintf(stderr, "create_job_template() failed\n");
       exit_code = 1;
       goto error;
    }
    
    /* Make sure the next available block of memory contains something other than
-    * NULL. */
+    * nullptr. */
    buffer_size = 256 * sizeof(void*);
    buffer = sge_malloc(buffer_size);
    memset(buffer, 255, buffer_size);
@@ -99,25 +99,25 @@ error:
 static drmaa_job_template_t *create_job_template(const char *job_path,
                                                  const char *job_cat)
 {
-   drmaa_job_template_t *jt = NULL;
+   drmaa_job_template_t *jt = nullptr;
 
-   if (drmaa_allocate_job_template(&jt, NULL, 0) != DRMAA_ERRNO_SUCCESS)
-      return NULL;
+   if (drmaa_allocate_job_template(&jt, nullptr, 0) != DRMAA_ERRNO_SUCCESS)
+      return nullptr;
 
    /* the job to be run */
-   drmaa_set_attribute(jt, DRMAA_REMOTE_COMMAND, job_path, NULL, 0);
+   drmaa_set_attribute(jt, DRMAA_REMOTE_COMMAND, job_path, nullptr, 0);
 
    /* join output/error file */
-   drmaa_set_attribute(jt, DRMAA_JOIN_FILES, "y", NULL, 0);
+   drmaa_set_attribute(jt, DRMAA_JOIN_FILES, "y", nullptr, 0);
 
    /* path for output */
-   drmaa_set_attribute(jt, DRMAA_OUTPUT_PATH, ":/dev/null", NULL, 0);
+   drmaa_set_attribute(jt, DRMAA_OUTPUT_PATH, ":/dev/null", nullptr, 0);
 
    /* job category */
-   drmaa_set_attribute(jt, DRMAA_JOB_CATEGORY, job_cat, NULL, 0);
+   drmaa_set_attribute(jt, DRMAA_JOB_CATEGORY, job_cat, nullptr, 0);
 
    /* job native specification */
-   drmaa_set_attribute(jt, DRMAA_NATIVE_SPECIFICATION, "-ac test=\"one two three\"", NULL, 0);
+   drmaa_set_attribute(jt, DRMAA_NATIVE_SPECIFICATION, "-ac test=\"one two three\"", nullptr, 0);
 
    return jt;
 }

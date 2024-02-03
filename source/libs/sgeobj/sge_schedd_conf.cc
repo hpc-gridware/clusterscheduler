@@ -180,8 +180,8 @@ static void sc_state_init(sc_state_t* state)
    state->scheduled_pe_jobs = 0;
    state->decay_constant = 0.0;
    /* temp data for scheduler messages */
-   state->sme = NULL;
-   state->tmp_sme = NULL;
+   state->sme = nullptr;
+   state->tmp_sme = nullptr;
    state->mes_schedd_info = false;
    state->log_schedd_info = 0;
 }
@@ -338,7 +338,7 @@ static config_pos_type pos = {PTHREAD_MUTEX_INITIALIZER, true,
                        -1, -1, -1, -1, -1, -1, -1, -1, -1, -1,
                        -1, -1, -1, -1, -1, -1, -1, -1, -1,
                        -1, -1, -1, -1, -1, -1, 
-                       SCHEDD_JOB_INFO_UNDEF, 0, NULL, NULL, NULL, U_LONG32_MAX, 
+                       SCHEDD_JOB_INFO_UNDEF, 0, nullptr, nullptr, nullptr, U_LONG32_MAX,
 
                        false};
 
@@ -355,8 +355,8 @@ const parameters_t params[] = {
    {"JC_FILTER",       sconf_eval_set_job_category_filtering},
    {"DURATION_OFFSET", sconf_eval_set_duration_offset},
    {"PE_RANGE_ALG",    sconf_eval_set_pe_range_alg},
-   {"NONE",            NULL},
-   {NULL,              NULL}
+   {"NONE",            nullptr},
+   {nullptr,              nullptr}
 };
 
 const char *const policy_hierarchy_chars = "OFS";
@@ -521,7 +521,7 @@ static bool calc_pos(void)
 *    - stores the position of each attribute in the structure
 *    - and sets the new configuration, if the validation worked
 *
-*    If the new configuration is a NULL pointer, the current configuration
+*    If the new configuration is a nullptr pointer, the current configuration
 *    if deleted.
 *
 *  INPUTS
@@ -539,9 +539,9 @@ static bool calc_pos(void)
 *******************************************************************************/
 bool sconf_set_config(lList **config, lList **answer_list)
 {
-   lList *store = NULL;
+   lList *store = nullptr;
    bool ret = true;
-   lList **master_sconf_list = NULL;
+   lList **master_sconf_list = nullptr;
 
    DENTER(TOP_LAYER); 
 
@@ -567,7 +567,7 @@ bool sconf_set_config(lList **config, lList **answer_list)
       
       if (ret) {
          lFreeList(&store);
-         *config = NULL;
+         *config = nullptr;
       } else {
          *master_sconf_list = store;
          if (!*master_sconf_list) {
@@ -579,7 +579,7 @@ bool sconf_set_config(lList **config, lList **answer_list)
 
          }
          sge_mutex_unlock("Sched_Conf_Lock", "", __LINE__, &pos.mutex);
-         sconf_validate_config_(NULL);
+         sconf_validate_config_(nullptr);
          sge_mutex_lock("Sched_Conf_Lock", "", __LINE__, &pos.mutex);
       }   
    } else {
@@ -611,8 +611,8 @@ bool sconf_set_config(lList **config, lList **answer_list)
 bool sconf_is_valid_load_formula(lList **answer_list, const lList *centry_list)
 {
    bool is_valid = false;
-   const lListElem *schedd_conf = NULL;
-   const char *load_formula = NULL;
+   const lListElem *schedd_conf = nullptr;
+   const char *load_formula = nullptr;
 
    DENTER(TOP_LAYER);
    sge_mutex_lock("Sched_Conf_Lock", "", __LINE__, &pos.mutex);
@@ -731,18 +731,18 @@ lListElem *sconf_create_default()
 bool sconf_is_centry_referenced(const lListElem *centry) 
 {
    bool ret = false;
-   const lListElem *sc_ep = NULL;
+   const lListElem *sc_ep = nullptr;
    
    sge_mutex_lock("Sched_Conf_Lock", "", __LINE__, &pos.mutex);
    
    sc_ep = lFirst(*object_type_get_master_list(SGE_TYPE_SCHEDD_CONF));
    
-   if (sc_ep != NULL) {
+   if (sc_ep != nullptr) {
       const char *name = lGetString(centry, CE_name);
       const lList *centry_list = lGetList(sc_ep, SC_job_load_adjustments);
       const lListElem *centry_ref = lGetElemStr(centry_list, CE_name, name);
 
-      ret = ((centry_ref != NULL)? true : false);
+      ret = ((centry_ref != nullptr)? true : false);
 
       if (!ret) {
          if (load_formula_is_centry_referenced(lGetString(sc_ep, SC_load_formula), centry)) {
@@ -806,13 +806,13 @@ static const char * get_load_adjustment_decay_time_str()
 u_long32 sconf_get_load_adjustment_decay_time() 
 {
    u_long32 uval;
-   const char *time = NULL;
+   const char *time = nullptr;
 
    sge_mutex_lock("Sched_Conf_Lock", "", __LINE__, &pos.mutex);
 
    time = get_load_adjustment_decay_time_str();
 
-   if (!extended_parse_ulong_val(NULL, &uval, TYPE_TIM, time, NULL, 0, 0, true)) {
+   if (!extended_parse_ulong_val(nullptr, &uval, TYPE_TIM, time, nullptr, 0, 0, true)) {
       uval = _DEFAULT_LOAD_ADJUSTMENTS_DECAY_TIME;
    }
 
@@ -840,7 +840,7 @@ u_long32 sconf_get_load_adjustment_decay_time()
 *
 *******************************************************************************/
 lList *sconf_get_job_load_adjustments(void) {
-   lList *load_adjustments = NULL;      
+   lList *load_adjustments = nullptr;
   
    sge_mutex_lock("Sched_Conf_Lock", "", __LINE__, &pos.mutex);
 
@@ -877,7 +877,7 @@ static const lList *get_job_load_adjustments(void)
       return lGetPosList(sc_ep, pos.job_load_adjustments); 
    }   
    else {
-      return NULL;
+      return nullptr;
    }   
 }
 
@@ -902,7 +902,7 @@ static const lList *get_job_load_adjustments(void)
 *
 *******************************************************************************/
 char* sconf_get_load_formula(void) {
-   char *formula = NULL;      
+   char *formula = nullptr;
   
    sge_mutex_lock("Sched_Conf_Lock", "", __LINE__, &pos.mutex);
 
@@ -964,7 +964,7 @@ static const char* get_load_formula(void)
 *******************************************************************************/
 u_long32 sconf_get_queue_sort_method(void) 
 {
-   const lListElem *sc_ep =  NULL;
+   const lListElem *sc_ep =  nullptr;
    u_long32 sort_method = 0;
   
    sge_mutex_lock("Sched_Conf_Lock", "", __LINE__, &pos.mutex);
@@ -1035,10 +1035,10 @@ static const char *get_schedule_interval_str(void)
 {
    if (pos.schedule_interval != -1) {
       const lListElem *sc_ep =  lFirst(*object_type_get_master_list(SGE_TYPE_SCHEDD_CONF));
-      if (sc_ep != NULL) {
+      if (sc_ep != nullptr) {
          return lGetPosString(sc_ep, pos.schedule_interval);
       } else {
-         return NULL;
+         return nullptr;
       }
    }   
    else {
@@ -1067,12 +1067,12 @@ static const char *get_schedule_interval_str(void)
 *******************************************************************************/
 u_long32 sconf_get_schedule_interval(void) {
    u_long32 uval = _SCHEDULE_TIME;   
-   const char *time = NULL;
+   const char *time = nullptr;
    
    sge_mutex_lock("Sched_Conf_Lock", "", __LINE__, &pos.mutex);
    
    time = get_schedule_interval_str();
-   if (!extended_parse_ulong_val(NULL, &uval, TYPE_TIM, time, NULL, 0, 0, true) ) {
+   if (!extended_parse_ulong_val(nullptr, &uval, TYPE_TIM, time, nullptr, 0, 0, true) ) {
          uval = _SCHEDULE_TIME;
    }
 
@@ -1132,13 +1132,13 @@ static const char *reprioritize_interval_str(void)
 *******************************************************************************/
 u_long32 sconf_get_reprioritize_interval(void) {
    u_long32 uval = REPRIORITIZE_INTERVAL_I;
-   const char *time = NULL;
+   const char *time = nullptr;
 
    sge_mutex_lock("Sched_Conf_Lock", "", __LINE__, &pos.mutex);
   
    time = reprioritize_interval_str();
 
-   if (!extended_parse_ulong_val(NULL, &uval, TYPE_TIM,time, NULL, 0 , 0, true)) {
+   if (!extended_parse_ulong_val(nullptr, &uval, TYPE_TIM,time, nullptr, 0 , 0, true)) {
       uval = REPRIORITIZE_INTERVAL_I;
    }
    
@@ -1386,7 +1386,7 @@ u_long32 sconf_get_schedd_job_info(void) {
 *
 *******************************************************************************/
 lList *sconf_get_schedd_job_info_range(void) {
-   lList *range_copy = NULL;        
+   lList *range_copy = nullptr;
   
    sge_mutex_lock("Sched_Conf_Lock", "", __LINE__, &pos.mutex);
    
@@ -1479,7 +1479,7 @@ static const char * get_algorithm(void)
 *******************************************************************************/
 lList *sconf_get_usage_weight_list(void) 
 {
-   lList *weight_list = NULL;      
+   lList *weight_list = nullptr;
   
    sge_mutex_lock("Sched_Conf_Lock", "", __LINE__, &pos.mutex);
    
@@ -1517,7 +1517,7 @@ static const lList *get_usage_weight_list(void)
       return lGetPosList(sc_ep, pos.usage_weight_list );
    }   
    else {
-      return NULL;
+      return nullptr;
    }   
 }
 
@@ -1748,7 +1748,7 @@ u_long32 sconf_get_weight_tickets_functional(void)
 *******************************************************************************/
 u_long32 sconf_get_halftime(void) 
 {
-   const lListElem *sc_ep = NULL;
+   const lListElem *sc_ep = nullptr;
    u_long32 halftime = 0;
   
    sge_mutex_lock("Sched_Conf_Lock", "", __LINE__, &pos.mutex);
@@ -1784,7 +1784,7 @@ u_long32 sconf_get_halftime(void)
 *******************************************************************************/
 void sconf_set_weight_tickets_override(u_long32 active) 
 {
-   lListElem *sc_ep = NULL;
+   lListElem *sc_ep = nullptr;
 
    sge_mutex_lock("Sched_Conf_Lock", "", __LINE__, &pos.mutex);   
 
@@ -2256,14 +2256,14 @@ bool sconf_is_job_category_filtering(void){
 *******************************************************************************/
 u_long32 sconf_get_flush_submit_sec(void)
 {
-   const lListElem *sc_ep = NULL;
+   const lListElem *sc_ep = nullptr;
    u_long32 flush_sec = 0;
   
    sge_mutex_lock("Sched_Conf_Lock", "", __LINE__, &pos.mutex);
       
    if (pos.flush_submit_sec != -1) {
       sc_ep = lFirst(*object_type_get_master_list(SGE_TYPE_SCHEDD_CONF));
-      if (sc_ep != NULL) {
+      if (sc_ep != nullptr) {
          flush_sec = lGetPosUlong(sc_ep, pos.flush_submit_sec);
       }
    }
@@ -2293,14 +2293,14 @@ u_long32 sconf_get_flush_submit_sec(void)
 *******************************************************************************/
 u_long32 sconf_get_flush_finish_sec(void)
 {
-   const lListElem *sc_ep = NULL;
+   const lListElem *sc_ep = nullptr;
    u_long32 flush_sec = 0;
   
    sge_mutex_lock("Sched_Conf_Lock", "", __LINE__, &pos.mutex);
       
    if (pos.flush_finish_sec!= -1) {
       sc_ep = lFirst(*object_type_get_master_list(SGE_TYPE_SCHEDD_CONF));
-      if (sc_ep != NULL) {
+      if (sc_ep != nullptr) {
          flush_sec = lGetPosUlong(sc_ep, pos.flush_finish_sec);
       }
    }
@@ -2429,7 +2429,7 @@ static const char *get_halflife_decay_list_str(void)
 *
 *******************************************************************************/
 lList* sconf_get_halflife_decay_list(void){
-   lList *decay_list = NULL; 
+   lList *decay_list = nullptr;
 
    sge_mutex_lock("Sched_Conf_Lock", "", __LINE__, &pos.mutex);
   
@@ -2454,13 +2454,13 @@ lList* sconf_get_halflife_decay_list(void){
 *******************************************************************************/
 static bool is_config_set(void) 
 {
-   const lListElem *sc_ep = NULL;
+   const lListElem *sc_ep = nullptr;
    
    if (*object_type_get_master_list(SGE_TYPE_SCHEDD_CONF)) {
       sc_ep = lFirst(*object_type_get_master_list(SGE_TYPE_SCHEDD_CONF));
    }   
 
-   return ((sc_ep != NULL) ? true : false);
+   return ((sc_ep != nullptr) ? true : false);
 }
 
 /****** sge_schedd_conf/sconf_is() *********************************************
@@ -2509,7 +2509,7 @@ bool sconf_is(void)
 *******************************************************************************/
 lListElem *sconf_get_config(void)
 {
-   lListElem *config = NULL;
+   lListElem *config = nullptr;
   
    sge_mutex_lock("Sched_Conf_Lock", "", __LINE__, &pos.mutex);
    
@@ -2546,7 +2546,7 @@ lListElem *sconf_get_config(void)
 *******************************************************************************/
 lList *sconf_get_config_list(void)
 {
-   lList *copy_list = NULL;
+   lList *copy_list = nullptr;
 
    DENTER(TOP_LAYER);
    sge_mutex_lock("Sched_Conf_Lock", "", __LINE__, &pos.mutex);
@@ -2572,7 +2572,7 @@ void sconf_print_config(void){
    char tmp_buffer[1024];
    u_long32 uval;
    const char *s;
-   const lList *lval= NULL;
+   const lList *lval= nullptr;
    double dval;
 
    DENTER(TOP_LAYER);
@@ -2582,7 +2582,7 @@ void sconf_print_config(void){
       DRETURN_VOID;
    }
 
-   sconf_validate_config_(NULL);
+   sconf_validate_config_(nullptr);
 
    sge_mutex_lock("Sched_Conf_Lock", "", __LINE__, &pos.mutex);
 
@@ -2613,7 +2613,7 @@ void sconf_print_config(void){
    INFO((SGE_EVENT, MSG_ATTRIB_USINGXFORY_SS, s, "reprioritize_interval"));
 
    /* --- SC_usage_weight_list */
-   uni_print_list(NULL, tmp_buffer, sizeof(tmp_buffer), get_usage_weight_list(), usage_fields, delis, 0);
+   uni_print_list(nullptr, tmp_buffer, sizeof(tmp_buffer), get_usage_weight_list(), usage_fields, delis, 0);
    INFO((SGE_EVENT, MSG_ATTRIB_USINGXFORY_SS, tmp_buffer, "usage_weight_list"));
 
    /* --- SC_halflife_decay_list_str */
@@ -2626,7 +2626,7 @@ void sconf_print_config(void){
 
    /* --- SC_job_load_adjustments */
    lval = get_job_load_adjustments();
-   uni_print_list(NULL, tmp_buffer, sizeof(tmp_buffer), lval, load_adjustment_fields, delis, 0);
+   uni_print_list(nullptr, tmp_buffer, sizeof(tmp_buffer), lval, load_adjustment_fields, delis, 0);
    INFO((SGE_EVENT, MSG_ATTRIB_USINGXFORY_SS, tmp_buffer, "job_load_adjustments"));
    
    sge_mutex_unlock("Sched_Conf_Lock", "", __LINE__, &pos.mutex);
@@ -2797,7 +2797,7 @@ bool sconf_validate_config_(lList **answer_list)
    char tmp_buffer[1024], tmp_error[1024];
    u_long32 uval;
    const char *s;
-   const lList *lval= NULL;
+   const lList *lval= nullptr;
    bool ret = true;
    u_long32 max_reservation = 0;
 
@@ -2822,7 +2822,7 @@ bool sconf_validate_config_(lList **answer_list)
  /* --- SC_params */
    {
       const char *sparams = lGetString(lFirst(*object_type_get_master_list(SGE_TYPE_SCHEDD_CONF)), SC_params); 
-      char *s = NULL; 
+      char *s = nullptr;
       
       /* the implementation has a problem. If an entry is removed, its setting is not
          changed, but it should be turned off. This means we have to turn everything off,
@@ -2834,12 +2834,12 @@ bool sconf_validate_config_(lList **answer_list)
       pe_algorithm = SCHEDD_PE_AUTO;
 
       if (sparams) {
-         struct saved_vars_s *context = NULL;
+         struct saved_vars_s *context = nullptr;
 
-         if (pos.c_params == NULL) {
+         if (pos.c_params == nullptr) {
             pos.c_params = lCreateList("params", PARA_Type);
          }
-         for (s=sge_strtok_r(sparams, ",; ", &context); s; s=sge_strtok_r(NULL, ",; ", &context)) {
+         for (s=sge_strtok_r(sparams, ",; ", &context); s; s=sge_strtok_r(nullptr, ",; ", &context)) {
             int i = 0;
             bool added = false;
             for(i=0; params[i].name ;i++ ){
@@ -2880,7 +2880,7 @@ bool sconf_validate_config_(lList **answer_list)
      
    /* --- SC_schedule_interval */
    s = get_schedule_interval_str();
-   if (!s || !extended_parse_ulong_val(NULL, &uval, TYPE_TIM, s, tmp_error, sizeof(tmp_error), 0, true) ) {
+   if (!s || !extended_parse_ulong_val(nullptr, &uval, TYPE_TIM, s, tmp_error, sizeof(tmp_error), 0, true) ) {
       if (!s)
          SGE_ADD_MSG_ID(sprintf(SGE_EVENT, MSG_ATTRIB_XISNOTAY_SS , "schedule_interval", "not defined"));   
       else
@@ -2891,7 +2891,7 @@ bool sconf_validate_config_(lList **answer_list)
 
    /* --- SC_load_adjustment_decay_time */
    s = get_load_adjustment_decay_time_str();
-   if (!s || !extended_parse_ulong_val(NULL, &uval, TYPE_TIM, s, tmp_error, sizeof(tmp_error), 0, true)) {
+   if (!s || !extended_parse_ulong_val(nullptr, &uval, TYPE_TIM, s, tmp_error, sizeof(tmp_error), 0, true)) {
       if (!s) {
          SGE_ADD_MSG_ID(sprintf(SGE_EVENT, MSG_ATTRIB_XISNOTAY_SS , "schedule_interval", "not defined"));
       }   
@@ -2905,18 +2905,18 @@ bool sconf_validate_config_(lList **answer_list)
   /* --- SC_schedd_job_info */
    {
       char buf[4096];
-      char* key = NULL;
+      char* key = nullptr;
       int ikey = 0;
-      lList *rlp=NULL, *alp=NULL;
+      lList *rlp=nullptr, *alp=nullptr;
       const char *schedd_info = lGetString(lFirst(*object_type_get_master_list(SGE_TYPE_SCHEDD_CONF)), SC_schedd_job_info);
 
-      if (schedd_info == NULL){
+      if (schedd_info == nullptr){
          SGE_ADD_MSG_ID(sprintf(SGE_EVENT, SFNMAX, MSG_ATTRIB_SCHEDDJOBINFONOVALIDPARAM ));
          answer_list_add(answer_list, SGE_EVENT, STATUS_ESYNTAX, ANSWER_QUALITY_ERROR);  
          ret = false;
       }
       else {
-         struct saved_vars_s *context = NULL;
+         struct saved_vars_s *context = nullptr;
          strcpy(buf, schedd_info);
          /* on/off or watch a set of jobs */
          key = sge_strtok_r(buf, " \t", &context);
@@ -2933,10 +2933,10 @@ bool sconf_validate_config_(lList **answer_list)
          }
          /* check list of groups */
          if (ikey == SCHEDD_JOB_INFO_JOB_LIST) {
-            key = sge_strtok_r(NULL, "\n", &context);
+            key = sge_strtok_r(nullptr, "\n", &context);
             range_list_parse_from_string(&rlp, &alp, key, false, false, 
                                          INF_NOT_ALLOWED);
-            if (rlp == NULL) {
+            if (rlp == nullptr) {
                lFreeList(&alp);
                SGE_ADD_MSG_ID(sprintf(SGE_EVENT, SFNMAX, MSG_ATTRIB_SCHEDDJOBINFONOVALIDJOBLIST));
                answer_list_add(answer_list, SGE_EVENT, STATUS_ESYNTAX, ANSWER_QUALITY_ERROR);
@@ -2956,9 +2956,9 @@ bool sconf_validate_config_(lList **answer_list)
 
    /* --- SC_reprioritize_interval */
    s = reprioritize_interval_str();
-   if (s == NULL || !extended_parse_ulong_val(NULL, &uval, TYPE_TIM, s, tmp_error, 
+   if (s == nullptr || !extended_parse_ulong_val(nullptr, &uval, TYPE_TIM, s, tmp_error,
                                               sizeof(tmp_error), 0, true)) {
-      if (s == NULL) {
+      if (s == nullptr) {
          SGE_ADD_MSG_ID(sprintf(SGE_EVENT, MSG_ATTRIB_XISNOTAY_SS , "schedule_interval", 
                         "not defined"));
       }   
@@ -2974,20 +2974,20 @@ bool sconf_validate_config_(lList **answer_list)
    {
       s = get_halflife_decay_list_str();
       if (s && (strcasecmp(s, "none") != 0)) {
-         lList *halflife_decay_list = NULL;
-         lListElem *ep = NULL;
-         const char *s0 = NULL;
-         const char *s1 = NULL;
-         const char *s2 = NULL; 
-         const char *s3 = NULL;
+         lList *halflife_decay_list = nullptr;
+         lListElem *ep = nullptr;
+         const char *s0 = nullptr;
+         const char *s1 = nullptr;
+         const char *s2 = nullptr;
+         const char *s3 = nullptr;
          double value;
-         struct saved_vars_s *sv1=NULL; 
-         struct saved_vars_s *sv2=NULL;
+         struct saved_vars_s *sv1=nullptr;
+         struct saved_vars_s *sv2=nullptr;
          s0 = s; 
-         for(s1=sge_strtok_r(s0, ":", &sv1); s1 != NULL;
-             s1=sge_strtok_r(NULL, ":", &sv1)) {
-            if (((s2=sge_strtok_r(s1, "=", &sv2)) != NULL) &&
-                ((s3=sge_strtok_r(NULL, "=", &sv2)) != NULL) &&
+         for(s1=sge_strtok_r(s0, ":", &sv1); s1 != nullptr;
+             s1=sge_strtok_r(nullptr, ":", &sv1)) {
+            if (((s2=sge_strtok_r(s1, "=", &sv2)) != nullptr) &&
+                ((s3=sge_strtok_r(nullptr, "=", &sv2)) != nullptr) &&
                 (sscanf(s3, "%lf", &value) == 1)) {
                ep = lAddElemStr(&halflife_decay_list, UA_name, s2, UA_Type);
                lSetDouble(ep, UA_value, value);
@@ -3032,9 +3032,9 @@ bool sconf_validate_config_(lList **answer_list)
    {
       const char *s = get_default_duration_str();
 
-      if (s == NULL || !extended_parse_ulong_val(NULL, &uval, TYPE_TIM, s, tmp_error, 
+      if (s == nullptr || !extended_parse_ulong_val(nullptr, &uval, TYPE_TIM, s, tmp_error,
                                                  sizeof(tmp_error), 1, true) ) {
-         if (s == NULL) {
+         if (s == nullptr) {
             SGE_ADD_MSG_ID(sprintf(SGE_EVENT, MSG_ATTRIB_XISNOTAY_SS , "default_duration", 
                                    "not defined"));   
          }   
@@ -3059,7 +3059,7 @@ bool sconf_validate_config_(lList **answer_list)
    }
   
    /* --- SC_usage_weight_list */
-   if (uni_print_list(NULL, tmp_buffer, sizeof(tmp_buffer), 
+   if (uni_print_list(nullptr, tmp_buffer, sizeof(tmp_buffer),
        get_usage_weight_list(), usage_fields, delis, 0) < 0) {
       SGE_ADD_MSG_ID(sprintf(SGE_EVENT, MSG_SCHEDD_USAGE_WEIGHT_LIST_S, tmp_error));    
       answer_list_add(answer_list, SGE_EVENT, STATUS_ESYNTAX, ANSWER_QUALITY_ERROR);      
@@ -3068,7 +3068,7 @@ bool sconf_validate_config_(lList **answer_list)
 
    /* --- SC_job_load_adjustments */
    lval = get_job_load_adjustments();
-   if (uni_print_list(NULL, tmp_buffer, sizeof(tmp_buffer), lval, load_adjustment_fields, delis, 0) < 0) {
+   if (uni_print_list(nullptr, tmp_buffer, sizeof(tmp_buffer), lval, load_adjustment_fields, delis, 0) < 0) {
       SGE_ADD_MSG_ID(sprintf(SGE_EVENT, MSG_SCHEDD_JOB_LOAD_ADJUSTMENTS_S, s)); 
       answer_list_add(answer_list, SGE_EVENT, STATUS_ESYNTAX, ANSWER_QUALITY_ERROR);
       ret = false;
@@ -3079,7 +3079,7 @@ bool sconf_validate_config_(lList **answer_list)
    /* --- SC_load_formula */
    {
       const lList *master_centry_list = *object_type_get_master_list(SGE_TYPE_CENTRY);
-      if (master_centry_list != NULL && !sconf_is_valid_load_formula(answer_list, master_centry_list)) {
+      if (master_centry_list != nullptr && !sconf_is_valid_load_formula(answer_list, master_centry_list)) {
          ret = false; 
       }
    }
@@ -3115,7 +3115,7 @@ bool sconf_validate_config_(lList **answer_list)
 *
 *******************************************************************************/
 bool sconf_validate_config(lList **answer_list, lList *config){
-   const lList *store = NULL;
+   const lList *store = nullptr;
    bool ret = true;
 
    DENTER(TOP_LAYER);
@@ -3132,7 +3132,7 @@ bool sconf_validate_config(lList **answer_list, lList *config){
       *object_type_get_master_list(SGE_TYPE_SCHEDD_CONF) = store;
       sge_mutex_unlock("Sched_Conf_Lock", "", __LINE__, &pos.mutex);
 
-      sconf_validate_config_(NULL);
+      sconf_validate_config_(nullptr);
    }
    
    DRETURN(ret);
@@ -3156,7 +3156,7 @@ bool sconf_validate_config(lList **answer_list, lList *config){
 *     int - 0 -> OK
 *           1 -> ERROR: one char is at least twice in "value"
 *           2 -> ERROR: invalid char in "value"
-*           3 -> ERROR: value == NULL
+*           3 -> ERROR: value == nullptr
 *
 *  MT-NOTE:  is MT safe, uses only the given data.
 *
@@ -3167,7 +3167,7 @@ static int policy_hierarchy_verify_value(const char* value)
 
    DENTER(TOP_LAYER);
 
-   if (value != NULL) {
+   if (value != nullptr) {
       if (strcmp(value, "") && strcasecmp(value, "NONE")) {
          int is_contained[POLICY_VALUES]; 
          int i;
@@ -3265,7 +3265,7 @@ void sconf_ph_fill_array(policy_hierarchy_t array[])
    int is_contained[POLICY_VALUES];
    int index = 0;
    int i;
-   const char *policy_hierarchy_string = NULL;
+   const char *policy_hierarchy_string = nullptr;
    
    DENTER(TOP_LAYER);
 
@@ -3278,7 +3278,7 @@ void sconf_ph_fill_array(policy_hierarchy_t array[])
       is_contained[i] = 0;
       array[i].policy = INVALID_POLICY;
    }     
-   if (policy_hierarchy_string != NULL && strcmp(policy_hierarchy_string, "") && 
+   if (policy_hierarchy_string != nullptr && strcmp(policy_hierarchy_string, "") &&
        strcasecmp(policy_hierarchy_string, "NONE")) {
       
       for (i = 0; i < (int)strlen(policy_hierarchy_string); i++) {
@@ -3331,7 +3331,7 @@ static policy_type_t policy_hierarchy_char2enum(char character)
    policy_type_t ret;
    
    pointer = strchr(policy_hierarchy_chars, character);
-   if (pointer != NULL) {
+   if (pointer != nullptr) {
       ret = (policy_type_t)((pointer - policy_hierarchy_chars) + 1);
    } else {
       ret = INVALID_POLICY;
@@ -3423,7 +3423,7 @@ static char policy_hierarchy_enum2char(policy_type_t value)
 *******************************************************************************/
 static bool sconf_eval_set_profiling(lList *param_list, lList **answer_list, const char* param){
    bool ret = true;
-   lListElem *elem = NULL;
+   lListElem *elem = nullptr;
    DENTER(TOP_LAYER);
 
    schedd_profiling = false;
@@ -3479,7 +3479,7 @@ static bool sconf_eval_set_profiling(lList *param_list, lList **answer_list, con
 *******************************************************************************/
 static bool sconf_eval_set_job_category_filtering(lList *param_list, lList **answer_list, const char* param){
    bool ret = true;
-   lListElem *elem = NULL;
+   lListElem *elem = nullptr;
    
    DENTER(TOP_LAYER);
 
@@ -3537,7 +3537,7 @@ static bool sconf_eval_set_job_category_filtering(lList *param_list, lList **ans
 *******************************************************************************/
 static bool sconf_eval_set_monitoring(lList *param_list, lList **answer_list, const char* param){
    bool ret = true;
-   lListElem *elem = NULL;
+   lListElem *elem = nullptr;
    const char mon_true[] = "MONITOR=TRUE", mon_one[] = "MONITOR=1";
    const char mon_false[] = "MONITOR=FALSE", mon_zero[] = "MONITOR=0";
    bool do_monitoring = false;
@@ -3577,7 +3577,7 @@ static bool sconf_eval_set_duration_offset(lList *param_list, lList **answer_lis
    char *s;
 
    if (!(s=strchr((char *)param, '=')) ||
-       !extended_parse_ulong_val(NULL, &uval, TYPE_TIM, ++s, NULL, 0, 0, true)) {
+       !extended_parse_ulong_val(nullptr, &uval, TYPE_TIM, ++s, nullptr, 0, 0, true)) {
       pos.s_duration_offset = DEFAULT_DURATION_OFFSET; 
       return false;
    }
@@ -3607,7 +3607,7 @@ static bool sconf_eval_set_pe_range_alg(lList *param_list, lList **answer_list, 
 
    DENTER(TOP_LAYER);
    
-   if ((s=strchr((char *)param, '=')) != NULL) {
+   if ((s=strchr((char *)param, '=')) != nullptr) {
       s++;
       if (strncasecmp(s, "auto", sizeof("auto")-1)  == 0) {
           pe_algorithm = SCHEDD_PE_AUTO;
@@ -3703,8 +3703,8 @@ void sconf_set_mes_schedd_info(bool newval)
 {
    GET_SPECIFIC(sc_state_t, sc_state, sc_state_init, sc_state_key);
    if (newval == true) {
-      if (sc_state->sme == NULL || sc_state->tmp_sme == NULL) {
-         /* if one of the values is NULL the messaging framework is initialized
+      if (sc_state->sme == nullptr || sc_state->tmp_sme == nullptr) {
+         /* if one of the values is nullptr the messaging framework is initialized
             in this case just ignore the activate request */
          return;
       }

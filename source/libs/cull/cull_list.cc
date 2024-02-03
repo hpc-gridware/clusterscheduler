@@ -172,29 +172,29 @@ lListElem *lCopyElemHash(const lListElem *ep, bool isHash) {
 
    if (!ep) {
       LERROR(LEELEMNULL);
-      DRETURN(NULL);
+      DRETURN(nullptr);
    }
 
    max = lCountDescr(ep->descr);
 
    if (!(new_ep = lCreateElem(ep->descr))) {
       LERROR(LECREATEELEM);
-      DRETURN(NULL);
+      DRETURN(nullptr);
    }
 
    for (index = 0; index < max; index++) {
-      if (lCopySwitchPack(ep, new_ep, index, index, isHash, NULL, NULL) != 0) {
+      if (lCopySwitchPack(ep, new_ep, index, index, isHash, nullptr, nullptr) != 0) {
          lFreeElem(&new_ep);
 
          LERROR(LECOPYSWITCH);
-         DRETURN(NULL);
+         DRETURN(nullptr);
       }
    }
    if (!sge_bitfield_copy(&(ep->changed), &(new_ep->changed))) {
       lFreeElem(&new_ep);
 
       LERROR(LECOPYSWITCH);
-      DRETURN(NULL);
+      DRETURN(nullptr);
    }
 
    new_ep->status = FREE_ELEM;
@@ -212,7 +212,7 @@ lListElem *lCopyElemHash(const lListElem *ep, bool isHash) {
 *
 *  FUNCTION
 *     Copies elements from 'src' to 'dst' using the enumeration 'enp'
-*     as a mask or copies all elements if 'enp' is NULL 
+*     as a mask or copies all elements if 'enp' is nullptr
 *
 *  INPUTS
 *     lListElem *dst          - destination element
@@ -229,7 +229,7 @@ int lModifyWhat(lListElem *dst, const lListElem *src, const lEnumeration *enp) {
 
    DENTER(CULL_LAYER);
 
-   ret = lCopyElemPartialPack(dst, &i, src, enp, true, NULL);
+   ret = lCopyElemPartialPack(dst, &i, src, enp, true, nullptr);
 
    DRETURN(ret);
 }
@@ -247,7 +247,7 @@ int lModifyWhat(lListElem *dst, const lListElem *src, const lEnumeration *enp) {
 *  FUNCTION
 *     Copies elements from list element 'src' to 'dst' using the
 *     enumeration 'enp' as a mask or copies all elements if
-*     'enp' is NULL. Copying starts at index *jp. If pb is not NULL
+*     'enp' is nullptr. Copying starts at index *jp. If pb is not nullptr
 *     then the elements will be stored in the packbuffer 'pb' instead of
 *     being copied.
 *
@@ -279,9 +279,9 @@ lCopyElemPartialPack(lListElem *dst, int *jp, const lListElem *src,
 
    switch (enp[0].pos) {
       case WHAT_ALL:               /* all fields of element src is copied */
-         if (pb == NULL) {
+         if (pb == nullptr) {
             for (i = 0; src->descr[i].nm != NoName; i++, (*jp)++) {
-               if (lCopySwitchPack(src, dst, i, *jp, isHash, enp[0].ep, NULL) != 0) {
+               if (lCopySwitchPack(src, dst, i, *jp, isHash, enp[0].ep, nullptr) != 0) {
                   LERROR(LECOPYSWITCH);
                   DRETURN(-1);
                }
@@ -301,7 +301,7 @@ lCopyElemPartialPack(lListElem *dst, int *jp, const lListElem *src,
          break;
 
       default:                     /* copy only the in enp enumerated elems */
-         if (pb == NULL) {
+         if (pb == nullptr) {
             int maxpos = 0;
             maxpos = lCountDescr(src->descr);
 
@@ -311,7 +311,7 @@ lCopyElemPartialPack(lListElem *dst, int *jp, const lListElem *src,
                   DRETURN(-1);
                }
 
-               if (lCopySwitchPack(src, dst, enp[i].pos, *jp, isHash, enp[i].ep, NULL) != 0) {
+               if (lCopySwitchPack(src, dst, enp[i].pos, *jp, isHash, enp[i].ep, nullptr) != 0) {
                   LERROR(LECOPYSWITCH);
                   DRETURN(-1);
                }
@@ -378,13 +378,13 @@ lCopySwitchPack(const lListElem *sep, lListElem *dep, int src_idx, int dst_idx,
          break;
       case lStringT:
          if (!sep->cont[src_idx].str)
-            dep->cont[dst_idx].str = NULL;
+            dep->cont[dst_idx].str = nullptr;
          else
             dep->cont[dst_idx].str = strdup(sep->cont[src_idx].str);
          break;
       case lHostT:
          if (!sep->cont[src_idx].host)
-            dep->cont[dst_idx].host = NULL;
+            dep->cont[dst_idx].host = nullptr;
          else
             dep->cont[dst_idx].host = strdup(sep->cont[src_idx].host);
          break;
@@ -393,18 +393,18 @@ lCopySwitchPack(const lListElem *sep, lListElem *dep, int src_idx, int dst_idx,
          dep->cont[dst_idx].db = sep->cont[src_idx].db;
          break;
       case lListT:
-         if ((tlp = sep->cont[src_idx].glp) == NULL)
-            dep->cont[dst_idx].glp = NULL;
+         if ((tlp = sep->cont[src_idx].glp) == nullptr)
+            dep->cont[dst_idx].glp = nullptr;
          else {
-            dep->cont[dst_idx].glp = lSelectHashPack(tlp->listname, tlp, NULL,
+            dep->cont[dst_idx].glp = lSelectHashPack(tlp->listname, tlp, nullptr,
                                                      ep, isHash, pb);
          }
          break;
       case lObjectT:
-         if ((tep = sep->cont[src_idx].obj) == NULL) {
-            dep->cont[dst_idx].obj = NULL;
+         if ((tep = sep->cont[src_idx].obj) == nullptr) {
+            dep->cont[dst_idx].obj = nullptr;
          } else {
-            lListElem *new_ep = lSelectElemPack(tep, NULL, ep, isHash, pb);
+            lListElem *new_ep = lSelectElemPack(tep, nullptr, ep, isHash, pb);
             new_ep->status = OBJECT_ELEM;
             dep->cont[dst_idx].obj = new_ep;
          }
@@ -490,7 +490,7 @@ const lDescr *lGetListDescr(const lList *lp) {
 
    if (!lp) {
       LERROR(LELISTNULL);
-      DRETURN(NULL);
+      DRETURN(nullptr);
    }
    DRETURN(lp->descr);
 }
@@ -517,7 +517,7 @@ const lDescr *lGetListDescr(const lList *lp) {
 u_long32 lGetNumberOfElem(const lList *lp) {
    DENTER(CULL_LAYER);
 
-   if (lp == NULL) {
+   if (lp == nullptr) {
       LERROR(LELISTNULL);
       DRETURN(0);
    }
@@ -582,7 +582,7 @@ u_long32 lGetNumberOfRemainingElem(const lListElem *ep) {
 
    DENTER(CULL_LAYER);
 
-   if (ep == NULL) {
+   if (ep == nullptr) {
       DRETURN(0);
    }
 
@@ -614,7 +614,7 @@ const lDescr *lGetElemDescr(const lListElem *ep) {
 
    if (!ep) {
       LERROR(LEELEMNULL);
-      DRETURN(NULL);
+      DRETURN(nullptr);
    }
    DRETURN(ep->descr);
 }
@@ -639,7 +639,7 @@ void lWriteElem(const lListElem *ep) {
    DENTER(CULL_LAYER);
    lWriteElem_(ep, &buffer, 0);
    str = sge_dstring_get_string(&buffer);
-   if (str != NULL) {
+   if (str != nullptr) {
       fprintf(stderr, "%s", str);
    }
    sge_dstring_free(&buffer);
@@ -668,7 +668,7 @@ void lWriteElemTo(const lListElem *ep, FILE *fp) {
    DENTER(CULL_LAYER);
    lWriteElem_(ep, &buffer, 0);
    str = sge_dstring_get_string(&buffer);
-   if (str != NULL) {
+   if (str != nullptr) {
       fprintf(fp, "%s", str);
    }
    sge_dstring_free(&buffer);
@@ -704,7 +704,7 @@ static void lWriteElem_(const lListElem *ep, dstring *buffer, int nesting_level)
 
    for (i = 0; mt_get_type(ep->descr[i].mt) != lEndT; i++) {
       bool changed = sge_bitfield_get(&(ep->changed), i);
-      const char *name = ((lNm2Str(ep->descr[i].nm) != NULL) ? lNm2Str(ep->descr[i].nm) : "(null)");
+      const char *name = ((lNm2Str(ep->descr[i].nm) != nullptr) ? lNm2Str(ep->descr[i].nm) : "(null)");
 
       switch (mt_get_type(ep->descr[i].mt)) {
          case lIntT:
@@ -808,7 +808,7 @@ void lWriteList(const lList *lp) {
    }
    lWriteList_(lp, &buffer, 0);
    str = sge_dstring_get_string(&buffer);
-   if (str != NULL) {
+   if (str != nullptr) {
       fprintf(stderr, "%s", str);
    }
    sge_dstring_free(&buffer);
@@ -836,7 +836,7 @@ void lWriteListTo(const lList *lp, FILE *fp) {
    DENTER(CULL_LAYER);
    lWriteList_(lp, &buffer, 0);
    str = sge_dstring_get_string(&buffer);
-   if (str != NULL) {
+   if (str != nullptr) {
       fprintf(fp, "%s", str);
    }
    sge_dstring_free(&buffer);
@@ -865,7 +865,7 @@ static void lWriteList_(const lList *lp, dstring *buffer, int nesting_level) {
    indent[i] = '\0';
 
    sge_dstring_sprintf_append(buffer, "\n%sList: <%s> %c #Elements: %d\n",
-                              indent, (lGetListName(lp) != NULL) ? lGetListName(lp) : "NULL",
+                              indent, (lGetListName(lp) != nullptr) ? lGetListName(lp) : "nullptr",
                               lp->changed ? '*' : ' ', lGetNumberOfElem(lp));
    for_each_ep(ep, lp) {
       lWriteElem_(ep, buffer, nesting_level);
@@ -887,7 +887,7 @@ static void lWriteList_(const lList *lp, dstring *buffer, int nesting_level) {
 *     const lDescr *dp - descriptor 
 *
 *  RESULT
-*     lListElem* - element pointer or NULL
+*     lListElem* - element pointer or nullptr
 ******************************************************************************/
 lListElem *lCreateElem(const lDescr *dp) {
    int n, i;
@@ -897,30 +897,30 @@ lListElem *lCreateElem(const lDescr *dp) {
 
    if ((n = lCountDescr(dp)) <= 0) {
       LERROR(LECOUNTDESCR);
-      DRETURN(NULL);
+      DRETURN(nullptr);
    }
 
    ep = (lListElem *) sge_malloc(sizeof(lListElem));
 
-   if (ep == NULL) {
+   if (ep == nullptr) {
       LERROR(LEMALLOC);
-      DRETURN(NULL);
+      DRETURN(nullptr);
    }
 
-   ep->next = NULL;
-   ep->prev = NULL;
+   ep->next = nullptr;
+   ep->prev = nullptr;
 
    ep->descr = (lDescr *) sge_malloc(sizeof(lDescr) * (n + 1));
    if (!ep->descr) {
       LERROR(LEMALLOC);
       sge_free(&ep);
-      DRETURN(NULL);
+      DRETURN(nullptr);
    }
    memcpy(ep->descr, dp, sizeof(lDescr) * (n + 1));
 
    /* new descr has no htables yet */
    for (i = 0; i <= n; i++) {
-      ep->descr[i].ht = NULL;
+      ep->descr[i].ht = nullptr;
       ep->descr[i].mt |= (dp->mt & CULL_IS_REDUCED);
    }
 
@@ -929,7 +929,7 @@ lListElem *lCreateElem(const lDescr *dp) {
       LERROR(LEMALLOC);
       sge_free(&(ep->descr));
       sge_free(&ep);
-      DRETURN(NULL);
+      DRETURN(nullptr);
    }
 
    if (!sge_bitfield_init(&(ep->changed), n)) {
@@ -937,11 +937,11 @@ lListElem *lCreateElem(const lDescr *dp) {
       sge_free(&(ep->cont));
       sge_free(&(ep->descr));
       sge_free(&ep);
-      DRETURN(NULL);
+      DRETURN(nullptr);
    }
 
 #ifdef OBSERVE
-      lObserveAdd(ep, NULL, false);
+      lObserveAdd(ep, nullptr, false);
 #endif
 
    DRETURN(ep);
@@ -963,7 +963,7 @@ lListElem *lCreateElem(const lDescr *dp) {
 *     const lDescr *descr  - descriptor 
 *
 *  RESULT
-*     lList* - list pointer or NULL 
+*     lList* - list pointer or nullptr
 *******************************************************************************/
 lList *lCreateList(const char *listname, const lDescr *descr) {
    return lCreateListHash(listname, descr, true);
@@ -987,7 +987,7 @@ lList *lCreateList(const char *listname, const lDescr *descr) {
 *     bool hash            - shall hashtables be created?
 *
 *  RESULT
-*     lList* - list pointer or NULL 
+*     lList* - list pointer or nullptr
 *******************************************************************************/
 lList *lCreateListHash(const char *listname, const lDescr *descr, bool hash) {
    lList *lp;
@@ -995,23 +995,23 @@ lList *lCreateListHash(const char *listname, const lDescr *descr, bool hash) {
 
    DENTER(CULL_LAYER);
 
-   if (listname == NULL) {
+   if (listname == nullptr) {
       listname = "No list name specified";
    }
 
    if (!descr || mt_get_type(descr[0].mt) == lEndT) {
       LERROR(LEDESCRNULL);
-      DRETURN(NULL);
+      DRETURN(nullptr);
    }
 
    if (!(lp = (lList *) sge_malloc(sizeof(lList)))) {
       LERROR(LEMALLOC);
-      DRETURN(NULL);
+      DRETURN(nullptr);
    }
    if (!(lp->listname = strdup(listname))) {
       sge_free(&lp);
       LERROR(LESTRDUP);
-      DRETURN(NULL);
+      DRETURN(nullptr);
    }
 
    lp->nelem = 0;
@@ -1019,16 +1019,16 @@ lList *lCreateListHash(const char *listname, const lDescr *descr, bool hash) {
       sge_free(&(lp->listname));
       sge_free(&lp);
       LERROR(LECOUNTDESCR);
-      DRETURN(NULL);
+      DRETURN(nullptr);
    }
 
-   lp->first = NULL;
-   lp->last = NULL;
+   lp->first = nullptr;
+   lp->last = nullptr;
    if (!(lp->descr = (lDescr *) sge_malloc(sizeof(lDescr) * (n + 1)))) {
       sge_free(&(lp->listname));
       sge_free(&lp);
       LERROR(LEMALLOC);
-      DRETURN(NULL);
+      DRETURN(nullptr);
    }
    /* copy descriptor array */
    for (i = 0; i <= n; i++) {
@@ -1039,7 +1039,7 @@ lList *lCreateListHash(const char *listname, const lDescr *descr, bool hash) {
       if (hash && mt_do_hashing(lp->descr[i].mt)) {
          lp->descr[i].ht = cull_hash_create(&descr[i], 0);
       } else {
-         lp->descr[i].ht = NULL;
+         lp->descr[i].ht = nullptr;
       }
       lp->descr[i].mt |= (descr[i].mt & CULL_IS_REDUCED);
    }
@@ -1047,7 +1047,7 @@ lList *lCreateListHash(const char *listname, const lDescr *descr, bool hash) {
    lp->changed = false;
 
 #ifdef OBSERVE
-   lObserveAdd(lp, NULL, true);
+   lObserveAdd(lp, nullptr, true);
 #endif
 
    DRETURN(lp);
@@ -1071,25 +1071,25 @@ lList *lCreateListHash(const char *listname, const lDescr *descr, bool hash) {
 *     int nr_elem          - number of elements 
 *
 *  RESULT
-*     lList* - list or NULL
+*     lList* - list or nullptr
 *******************************************************************************/
 lList *lCreateElemList(const char *listname, const lDescr *descr, int nr_elem) {
-   lList *lp = NULL;
-   lListElem *ep = NULL;
+   lList *lp = nullptr;
+   lListElem *ep = nullptr;
    int i;
 
    DENTER(CULL_LAYER);
 
    if (!(lp = lCreateList(listname, descr))) {
       LERROR(LECREATELIST);
-      DRETURN(NULL);
+      DRETURN(nullptr);
    }
 
    for (i = 0; i < nr_elem; i++) {
       if (!(ep = lCreateElem(descr))) {
          LERROR(LECREATEELEM);
          lFreeList(&lp);
-         DRETURN(NULL);
+         DRETURN(nullptr);
       }
       lAppendElem(lp, ep);
    }
@@ -1108,32 +1108,32 @@ lList *lCreateElemList(const char *listname, const lDescr *descr, int nr_elem) {
 *     Free a element including strings and sublists 
 *
 *  INPUTS
-*     lListElem **ep - element, will be set to NULL 
+*     lListElem **ep - element, will be set to nullptr
 *
 *  NOTES
 *     MT-NOTE: lRemoveElem() is MT safe
 ******************************************************************************/
 void lFreeElem(lListElem **ep1) {
    int i = 0;
-   lListElem *ep = NULL;
+   lListElem *ep = nullptr;
 
    DENTER(CULL_LAYER);
 
-   if (ep1 == NULL || *ep1 == NULL) {
+   if (ep1 == nullptr || *ep1 == nullptr) {
       DRETURN_VOID;
    }
 
    ep = *ep1;
 
-   if (ep->descr == NULL) {
+   if (ep->descr == nullptr) {
       LERROR(LEDESCRNULL);
-      DPRINTF(("NULL descriptor not allowed !!!\n"));
+      DPRINTF(("nullptr descriptor not allowed !!!\n"));
       abort();
    }
 
    for (i = 0; mt_get_type(ep->descr[i].mt) != lEndT; i++) {
       /* remove element from hash tables */
-      if (ep->descr[i].ht != NULL) {
+      if (ep->descr[i].ht != nullptr) {
          cull_hash_remove(ep, i);
       }
 
@@ -1151,25 +1151,25 @@ void lFreeElem(lListElem **ep1) {
             break;
 
          case lStringT:
-            if (ep->cont[i].str != NULL) {
+            if (ep->cont[i].str != nullptr) {
                sge_free(&(ep->cont[i].str));
             }
             break;
 
          case lHostT:
-            if (ep->cont[i].host != NULL) {
+            if (ep->cont[i].host != nullptr) {
                sge_free(&(ep->cont[i].host));
             }
             break;
 
          case lListT:
-            if (ep->cont[i].glp != NULL) {
+            if (ep->cont[i].glp != nullptr) {
                lFreeList(&(ep->cont[i].glp));
             }
             break;
 
          case lObjectT:
-            if (ep->cont[i].obj != NULL) {
+            if (ep->cont[i].obj != nullptr) {
                lFreeElem(&(ep->cont[i].obj));
             }
             break;
@@ -1186,7 +1186,7 @@ void lFreeElem(lListElem **ep1) {
       sge_free(&(ep->descr));
    }
 
-   if (ep->cont != NULL) {
+   if (ep->cont != nullptr) {
       sge_free(&(ep->cont));
    }
 
@@ -1222,7 +1222,7 @@ void lFreeElem(lListElem **ep1) {
 void lFreeList(lList **lp) {
    DENTER(CULL_LAYER);
 
-   if (lp == NULL || *lp == NULL) {
+   if (lp == nullptr || *lp == nullptr) {
       DRETURN_VOID;
    }
 
@@ -1230,7 +1230,7 @@ void lFreeList(lList **lp) {
     * remove all hash tables, 
     * it is more efficient than removing it at the end 
     */
-   if ((*lp)->descr != NULL) {
+   if ((*lp)->descr != nullptr) {
       cull_hash_free_descr((*lp)->descr);
    }
 
@@ -1438,7 +1438,7 @@ int lOverrideStrList(lList *lp0, lList *lp1, int nm, const char *str) {
        */
       if (sge_strnullcmp(lGetString(ep, nm), str) == 0 && !overridden) {
          lListElem *tmp = lGetElemStrRW(lp0, nm, str);
-         while (tmp != NULL) {
+         while (tmp != nullptr) {
             lRemoveElem(lp0, &tmp);
          }
          overridden = true;
@@ -1535,7 +1535,7 @@ int lCompListDescr(const lDescr *dp0, const lDescr *dp1) {
 *     const lList *src - source list 
 *
 *  RESULT
-*     lList* - Copy of 'src' or NULL 
+*     lList* - Copy of 'src' or nullptr
 ******************************************************************************/
 lList *lCopyList(const char *name, const lList *src) {
    return lCopyListHash(name, src, true);
@@ -1558,17 +1558,17 @@ lList *lCopyList(const char *name, const lList *src) {
 *     bool hash - if set to true, a hash table is generated
 *
 *  RESULT
-*     lList* - Copy of 'src' or NULL 
+*     lList* - Copy of 'src' or nullptr
 ******************************************************************************/
 lList *lCopyListHash(const char *name, const lList *src, bool hash) {
-   lList *dst = NULL;
+   lList *dst = nullptr;
    lListElem *sep;
 
    DENTER(CULL_LAYER);
 
    if (!src) {
       LERROR(LELISTNULL);
-      DRETURN(NULL);
+      DRETURN(nullptr);
    }
 
    if (!name)
@@ -1581,7 +1581,7 @@ lList *lCopyListHash(const char *name, const lList *src, bool hash) {
    /* create new list without hashes - we'll hash it once it is filled */
    if (!(dst = lCreateListHash(name, src->descr, false))) {
       LERROR(LECREATELIST);
-      DRETURN(NULL);
+      DRETURN(nullptr);
    }
 
 #if 0 /* TODO EB:  need to decide if we want this or not*/
@@ -1592,7 +1592,7 @@ lList *lCopyListHash(const char *name, const lList *src, bool hash) {
       if (lAppendElem(dst, lCopyElem(sep)) == -1) {
          lFreeList(&dst);
          LERROR(LEAPPENDELEM);
-         DRETURN(NULL);
+         DRETURN(nullptr);
       }
    }
    if (hash) {
@@ -1612,7 +1612,7 @@ lList *lCopyListHash(const char *name, const lList *src, bool hash) {
 *
 *  FUNCTION
 *     Insert a 'new_ep' element after element 'ep' into list 'lp'.
-*     If 'ep' is NULL then 'new_ep' will be the first element in 'lp'.
+*     If 'ep' is nullptr then 'new_ep' will be the first element in 'lp'.
 *
 *  INPUTS
 *     lList *lp      - list 
@@ -1653,7 +1653,7 @@ int lInsertElem(lList *lp, lListElem *ep, lListElem *new_ep) {
       else                      /* the new element is the last element */
          lp->last = new_ep;
    } else {                       /* insert as first element */
-      new_ep->prev = NULL;
+      new_ep->prev = nullptr;
       new_ep->next = lp->first;
       if (!lp->first)           /* empty list ? */
          lp->last = new_ep;
@@ -1675,7 +1675,7 @@ int lInsertElem(lList *lp, lListElem *ep, lListElem *new_ep) {
    lp->changed = true;
 
 #ifdef OBSERVE
-   lObserveChangeOwner(ep, lp, NULL, NoName);
+   lObserveChangeOwner(ep, lp, nullptr, NoName);
 #endif
 
    DRETURN(0);
@@ -1725,10 +1725,10 @@ int lAppendElem(lList *lp, lListElem *ep) {
       lp->last->next = ep;
       ep->prev = lp->last;
       lp->last = ep;
-      ep->next = NULL;
+      ep->next = nullptr;
    } else {
       lp->last = lp->first = ep;
-      ep->prev = ep->next = NULL;
+      ep->prev = ep->next = nullptr;
    }
 
    if (ep->status == FREE_ELEM) {
@@ -1743,7 +1743,7 @@ int lAppendElem(lList *lp, lListElem *ep) {
    lp->changed = true;
 
 #ifdef OBSERVE
-   lObserveChangeOwner(ep, lp, NULL, NoName);
+   lObserveChangeOwner(ep, lp, nullptr, NoName);
 #endif
 
    DRETURN(0);
@@ -1761,7 +1761,7 @@ int lAppendElem(lList *lp, lListElem *ep) {
 *
 *  INPUTS
 *     lList *lp     - list 
-*     lListElem **ep - element, will be set to NULL 
+*     lListElem **ep - element, will be set to nullptr
 *
 *  RESULT
 *     int - error state
@@ -1772,11 +1772,11 @@ int lAppendElem(lList *lp, lListElem *ep) {
 *     MT-NOTE: lRemoveElem() is MT safe
 *******************************************************************************/
 int lRemoveElem(lList *lp, lListElem **ep1) {
-   lListElem *ep = NULL;
+   lListElem *ep = nullptr;
 
    DENTER(CULL_LAYER);
 
-   if (lp == NULL || ep1 == NULL || *ep1 == NULL) {
+   if (lp == nullptr || ep1 == nullptr || *ep1 == nullptr) {
       DRETURN(-1);
    }
 
@@ -1799,14 +1799,14 @@ int lRemoveElem(lList *lp, lListElem **ep1) {
       lp->last = ep->prev;
    }
 
-   /* NULL the ep next and previous pointers */
-   ep->prev = ep->next = NULL;
+   /* nullptr the ep next and previous pointers */
+   ep->prev = ep->next = nullptr;
 
    lp->nelem--;
    lp->changed = true;
 
 #ifdef OBSERVE
-   lObserveChangeOwner(ep, NULL, lp, NoName);
+   lObserveChangeOwner(ep, nullptr, lp, NoName);
 #endif
 
    lFreeElem(ep1);
@@ -1840,11 +1840,11 @@ lDechainList(lList *source, lList **target, lListElem *ep) {
 
    DENTER(CULL_LAYER);
 
-   if (source == NULL || target == NULL) {
+   if (source == nullptr || target == nullptr) {
       LERROR(LELISTNULL);
       DRETURN_VOID;
    }
-   if (ep == NULL) {
+   if (ep == nullptr) {
       LERROR(LEELEMNULL);
       DRETURN_VOID;
    }
@@ -1854,7 +1854,7 @@ lDechainList(lList *source, lList **target, lListElem *ep) {
       abort();
    }
 
-   if (*target == NULL) {
+   if (*target == nullptr) {
       *target = lCreateList(lGetListName(source), source->descr);
    } else {
       if (lCompListDescr(source->descr, (*target)->descr) != 0) {
@@ -1868,24 +1868,24 @@ lDechainList(lList *source, lList **target, lListElem *ep) {
 
    target_last = source->last;
 
-   if (ep->prev != NULL) {
-      ep->prev->next = NULL;
+   if (ep->prev != nullptr) {
+      ep->prev->next = nullptr;
       source->last = ep->prev;
    } else {
-      source->first = NULL;
-      source->last = NULL;
+      source->first = nullptr;
+      source->last = nullptr;
    }
 
-   if ((*target)->first != NULL) {
+   if ((*target)->first != nullptr) {
       (*target)->last->next = ep;
       ep->prev = (*target)->last;
    } else {
-      ep->prev = NULL;
+      ep->prev = nullptr;
       (*target)->first = ep;
    }
    (*target)->last = target_last;
 
-   for (; ep != NULL; ep = ep->next) {
+   for (; ep != nullptr; ep = ep->next) {
       ep->descr = (*target)->descr;
       (*target)->nelem++;
       source->nelem--;
@@ -1922,7 +1922,7 @@ lDechainList(lList *source, lList **target, lListElem *ep) {
 *     lListElem *ep - element 
 *
 *  RESULT
-*     lListElem* - dechained element or NULL
+*     lListElem* - dechained element or nullptr
 *
 *  NOTES
 *     MT-NOTE: lDechainElem() is MT safe
@@ -1934,11 +1934,11 @@ lListElem *lDechainElem(lList *lp, lListElem *ep) {
 
    if (!lp) {
       LERROR(LELISTNULL);
-      DRETURN(NULL);
+      DRETURN(nullptr);
    }
    if (!ep) {
       LERROR(LEELEMNULL);
-      DRETURN(NULL);
+      DRETURN(nullptr);
    }
    if (lp->descr != ep->descr) {
       CRITICAL((SGE_EVENT, "Dechaining element from other list !!!"));
@@ -1959,20 +1959,20 @@ lListElem *lDechainElem(lList *lp, lListElem *ep) {
 
    /* remove hash entries */
    for (i = 0; mt_get_type(ep->descr[i].mt) != lEndT; i++) {
-      if (ep->descr[i].ht != NULL) {
+      if (ep->descr[i].ht != nullptr) {
          cull_hash_remove(ep, i);
       }
    }
 
-   /* NULL the ep next and previous pointers */
-   ep->prev = ep->next = (lListElem *) NULL;
+   /* nullptr the ep next and previous pointers */
+   ep->prev = ep->next = (lListElem *) nullptr;
    ep->descr = lCopyDescr(ep->descr);
    ep->status = FREE_ELEM;
    lp->nelem--;
    lp->changed = true;
 
 #ifdef OBSERVE
-   lObserveChangeOwner(ep, NULL, lp, NoName);
+   lObserveChangeOwner(ep, nullptr, lp, NoName);
 #endif
 
    DRETURN(ep);
@@ -1993,7 +1993,7 @@ lListElem *lDechainElem(lList *lp, lListElem *ep) {
 *     int name      - attribute name 
 *
 *  RESULT
-*     lListElem* - dechained element or NULL
+*     lListElem* - dechained element or nullptr
 ******************************************************************************/
 lListElem *lDechainObject(lListElem *parent, int name) {
    int pos;
@@ -2001,9 +2001,9 @@ lListElem *lDechainObject(lListElem *parent, int name) {
 
    DENTER(CULL_LAYER);
 
-   if (parent == NULL) {
+   if (parent == nullptr) {
       LERROR(LEELEMNULL);
-      DRETURN(NULL);
+      DRETURN(nullptr);
    }
 
    pos = lGetPosViaElem(parent, name, SGE_DO_ABORT);
@@ -2011,21 +2011,21 @@ lListElem *lDechainObject(lListElem *parent, int name) {
    if (mt_get_type(parent->descr[pos].mt) != lObjectT) {
       incompatibleType2(MSG_CULL_DECHAINOBJECT_WRONGTYPEFORFIELDXY_S,
                         lNm2Str(name));
-      DRETURN(NULL);
+      DRETURN(nullptr);
    }
 
    dep = (lListElem *) parent->cont[pos].obj;
 
-   if (dep != NULL) {
+   if (dep != nullptr) {
       dep->status = FREE_ELEM;
-      parent->cont[pos].obj = NULL;
+      parent->cont[pos].obj = nullptr;
 
       /* remember that field changed */
       sge_bitfield_set(&(parent->changed), pos);
    }
 
 #ifdef OBSERVE
-      lObserveChangeOwner(dep, NULL, parent, NoName);
+      lObserveChangeOwner(dep, nullptr, parent, NoName);
 #endif
 
    DRETURN(dep);
@@ -2045,11 +2045,11 @@ lListElem *lDechainObject(lListElem *parent, int name) {
 *     const lList *slp - list 
 *
 *  RESULT
-*     lListElem* - first element or NULL 
+*     lListElem* - first element or nullptr
 ******************************************************************************/
 lListElem *lFirstRW(const lList *slp) {
    DENTER(CULL_LAYER);
-   DRETURN(slp ? slp->first : NULL);
+   DRETURN(slp ? slp->first : nullptr);
 }
 
 const lListElem *lFirst(const lList *slp) {
@@ -2070,11 +2070,11 @@ const lListElem *lFirst(const lList *slp) {
 *     const lList *slp - list 
 *
 *  RESULT
-*     lListElem* - last element or NULL 
+*     lListElem* - last element or nullptr
 ******************************************************************************/
 lListElem *lLastRW(const lList *slp) {
    DENTER(CULL_LAYER);
-   DRETURN(slp ? slp->last : NULL);
+   DRETURN(slp ? slp->last : nullptr);
 }
 
 const lListElem *lLast(const lList *slp) {
@@ -2083,23 +2083,23 @@ const lListElem *lLast(const lList *slp) {
 
 /****** cull/list/lNext() *****************************************************
 *  NAME
-*     lNext() -- Returns the next element or NULL
+*     lNext() -- Returns the next element or nullptr
 *
 *  SYNOPSIS
 *     lListElem* lNext(const lListElem *sep) 
 *
 *  FUNCTION
-*     Returns the next element of 'sep' or NULL 
+*     Returns the next element of 'sep' or nullptr
 *
 *  INPUTS
 *     const lListElem *sep - element 
 *
 *  RESULT
-*     lListElem* - next element or NULL 
+*     lListElem* - next element or nullptr
 *******************************************************************************/
 lListElem *lNextRW(const lListElem *sep) {
    DENTER(CULL_LAYER);
-   DRETURN(sep ? sep->next : NULL);
+   DRETURN(sep ? sep->next : nullptr);
 }
 
 const lListElem *lNext(const lListElem *sep) {
@@ -2108,13 +2108,13 @@ const lListElem *lNext(const lListElem *sep) {
 
 /****** cull/list/lPrev() *****************************************************
 *  NAME
-*     lPrev() -- Returns the previous element or NULL 
+*     lPrev() -- Returns the previous element or nullptr
 *
 *  SYNOPSIS
 *     lListElem* lPrev(const lListElem *sep) 
 *
 *  FUNCTION
-*     Returns the previous element or NULL. 
+*     Returns the previous element or nullptr.
 *
 *  INPUTS
 *     const lListElem *sep - element 
@@ -2124,7 +2124,7 @@ const lListElem *lNext(const lListElem *sep) {
 ******************************************************************************/
 lListElem *lPrevRW(const lListElem *sep) {
    DENTER(CULL_LAYER);
-   DRETURN(sep ? sep->prev : NULL);
+   DRETURN(sep ? sep->prev : nullptr);
 }
 
 const lListElem *lPrev(const lListElem *sep) {
@@ -2140,7 +2140,7 @@ const lListElem *lPrev(const lListElem *sep) {
 *
 *  FUNCTION
 *     Returns the first element fulfilling the condition 'cp' or
-*     NULL if nothing is found. If the condition is NULL the first
+*     nullptr if nothing is found. If the condition is nullptr the first
 *     element is delivered. 
 *
 *  INPUTS
@@ -2148,7 +2148,7 @@ const lListElem *lPrev(const lListElem *sep) {
 *     const lCondition *cp - condition 
 *
 *  RESULT
-*     lListElem* - element or NULL 
+*     lListElem* - element or nullptr
 ******************************************************************************/
 lListElem *lFindFirstRW(const lList *lp, const lCondition *cp) {
    lListElem *ep;
@@ -2157,10 +2157,10 @@ lListElem *lFindFirstRW(const lList *lp, const lCondition *cp) {
 
    if (!lp) {
       LERROR(LELISTNULL);
-      DRETURN(NULL);
+      DRETURN(nullptr);
    }
 
-   /* ep->next=NULL for the last element */
+   /* ep->next=nullptr for the last element */
    for (ep = lp->first; ep && !lCompare(ep, cp); ep = ep->next);
 
    DRETURN(ep);
@@ -2174,8 +2174,8 @@ lListElem *lFindFirstRW(const lList *lp, const lCondition *cp) {
 *     lListElem* lFindLastRW(const lList *slp, const lCondition *cp)
 *
 *  FUNCTION
-*     Retruns the last element fulfilling the condition 'cp' or NULL
-*     if nothing is found. If the condition is NULL then the last
+*     Retruns the last element fulfilling the condition 'cp' or nullptr
+*     if nothing is found. If the condition is nullptr then the last
 *     element is delivered.
 *
 *  INPUTS
@@ -2183,7 +2183,7 @@ lListElem *lFindFirstRW(const lList *lp, const lCondition *cp) {
 *     const lCondition *cp - condition 
 *
 *  RESULT
-*     lListElem* - element or NULL
+*     lListElem* - element or nullptr
 ******************************************************************************/
 lListElem *lFindLastRW(const lList *lp, const lCondition *cp) {
    lListElem *ep;
@@ -2192,10 +2192,10 @@ lListElem *lFindLastRW(const lList *lp, const lCondition *cp) {
 
    if (!lp) {
       LERROR(LELISTNULL);
-      DRETURN(NULL);
+      DRETURN(nullptr);
    }
 
-   /* ep->prev=NULL for the first element */
+   /* ep->prev=nullptr for the first element */
    for (ep = lp->last; ep && !lCompare(ep, cp); ep = ep->prev);
 
    DRETURN(ep);
@@ -2209,8 +2209,8 @@ lListElem *lFindLastRW(const lList *lp, const lCondition *cp) {
 *     lListElem* lFindNext(const lListElem *ep, const lCondition *cp) 
 *
 *  FUNCTION
-*     Returns the next element fulfilling the condition 'cp' or NULL
-*     if nothing is found. If condition is NULL than the following
+*     Returns the next element fulfilling the condition 'cp' or nullptr
+*     if nothing is found. If condition is nullptr than the following
 *     element is delivered. 
 *
 *  INPUTS
@@ -2218,14 +2218,14 @@ lListElem *lFindLastRW(const lList *lp, const lCondition *cp) {
 *     const lCondition *cp - condition 
 *
 *  RESULT
-*     lListElem* - element or NULL 
+*     lListElem* - element or nullptr
 *******************************************************************************/
 lListElem *lFindNextRW(const lListElem *ep, const lCondition *cp) {
    DENTER(CULL_LAYER);
 
    if (!ep) {
       LERROR(LEELEMNULL);
-      DRETURN(NULL);
+      DRETURN(nullptr);
    }
 
    do {
@@ -2244,7 +2244,7 @@ lListElem *lFindNextRW(const lListElem *ep, const lCondition *cp) {
 *
 *  FUNCTION
 *     Returns the previous element fulfilling the condition 'cp' or
-*     NULL if nothing is found. If condition is NULL than the following
+*     nullptr if nothing is found. If condition is nullptr than the following
 *     element is delivered. 
 *
 *  INPUTS
@@ -2252,14 +2252,14 @@ lListElem *lFindNextRW(const lListElem *ep, const lCondition *cp) {
 *     const lCondition *cp - condition 
 *
 *  RESULT
-*     lListElem* - element or NULL 
+*     lListElem* - element or nullptr
 ******************************************************************************/
 lListElem *lFindPrevRW(const lListElem *ep, const lCondition *cp) {
    DENTER(CULL_LAYER);
 
    if (!ep) {
       LERROR(LEELEMNULL);
-      DRETURN(NULL);
+      DRETURN(nullptr);
    }
 
    do {
@@ -2394,8 +2394,8 @@ int lSortList(lList *lp, const lSortOrder *sp) {
    lp->last = pointer[n - 1];
 
    /* handle first element separatly */
-   pointer[0]->prev = NULL;
-   pointer[n - 1]->next = NULL;
+   pointer[0]->prev = nullptr;
+   pointer[n - 1]->next = nullptr;
 
    if (n > 1) {
       pointer[0]->next = pointer[1];
@@ -2579,9 +2579,9 @@ int lUniqHost(lList *lp, int keyfield) {
 *  EXAMPLE
 *     if(mt_is_unique(descr[i].mt)) {
 *        // check for uniqueness before inserting new elemente into a list
-*        if(lGetElemUlong(....) != NULL) {
+*        if(lGetElemUlong(....) != nullptr) {
 *           WARNING((SGE_EVENT, MSG_DUPLICATERECORD....));
-*           DRETURN(NULL);
+*           DRETURN(nullptr);
 *        }
 *     }
 *
@@ -2629,7 +2629,7 @@ bool
 lList_clear_changed_info(lList *lp) {
    bool ret = true;
 
-   if (lp == NULL) {
+   if (lp == nullptr) {
       ret = false;
    } else {
       lListElem *ep;
@@ -2673,7 +2673,7 @@ bool
 lListElem_clear_changed_info(lListElem *ep) {
    bool ret = true;
 
-   if (ep == NULL) {
+   if (ep == nullptr) {
       ret = false;
    } else {
       int i;

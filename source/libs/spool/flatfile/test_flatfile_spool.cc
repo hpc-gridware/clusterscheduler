@@ -101,7 +101,7 @@ int main(int argc, char** argv)
                                CONF_test,                               
                                AR_test,
                                RQS_test,
-                               NULL };
+                               nullptr };
 
    DENTER_MAIN(TOP_LAYER, "test_ff_cl");   
 
@@ -117,9 +117,9 @@ int main(int argc, char** argv)
       sge_mt_init();
       lInit(nmv);
 
-      while (test_array[i] != NULL) {
+      while (test_array[i] != nullptr) {
          if (test_array[i]() != 0) {
-            SGE_EXIT(NULL, 1);
+            SGE_EXIT(nullptr, 1);
          }
          i++;
       }
@@ -131,14 +131,14 @@ int main(int argc, char** argv)
 static int PE_test(void)
 {
    int ret = 0;
-   lList *lp = NULL;
-   lList *lp2 = NULL;
-   lList *alp = NULL;
+   lList *lp = nullptr;
+   lList *lp2 = nullptr;
+   lList *alp = nullptr;
    lListElem *ep = lCreateElem(PE_Type);
-   lListElem *ep2 = NULL;
-   lListElem *ep3 = NULL;
-   const char *file1 = NULL;
-   const char *file2 = NULL;
+   lListElem *ep2 = nullptr;
+   lListElem *ep3 = nullptr;
+   const char *file1 = nullptr;
+   const char *file2 = nullptr;
    
    /* Build a PE structure */
    
@@ -275,9 +275,9 @@ static int PE_test(void)
 
    /* Read a PE file using flatfile spooling */
    lFreeElem(&ep);
-   ep = spool_flatfile_read_object(&alp, PE_Type, NULL,
-                                   PE_fields, NULL, true, &qconf_sfi,
-                                   SP_FORM_ASCII, NULL, file1);
+   ep = spool_flatfile_read_object(&alp, PE_Type, nullptr,
+                                   PE_fields, nullptr, true, &qconf_sfi,
+                                   SP_FORM_ASCII, nullptr, file1);
 
    /* Write a PE file using flatfile spooling */
    file2 = spool_flatfile_write_object(&alp, ep, false,
@@ -290,8 +290,8 @@ static int PE_test(void)
    lFreeElem(&ep);
    ret = diff(file1, file2);
    
-   sge_unlink(NULL, file1);
-   sge_unlink(NULL, file2);
+   sge_unlink(nullptr, file1);
+   sge_unlink(nullptr, file2);
    sge_free(&file1);
    sge_free(&file2);
 
@@ -303,9 +303,9 @@ static int PE_test(void)
 static int CAL_test(void)
 {
    int ret = 0;
-   lListElem *ep = NULL;
-   lList *alp = NULL;
-   const char *file1 = NULL, *file2 = NULL;
+   lListElem *ep = nullptr;
+   lList *alp = nullptr;
+   const char *file1 = nullptr, *file2 = nullptr;
    
    ep = lCreateElem(CAL_Type);   
    lSetString(ep, CAL_name, "Test_Name");
@@ -323,9 +323,9 @@ static int CAL_test(void)
    
    /* Read a CAL file using flatfile spooling */
    lFreeElem(&ep);
-   ep = spool_flatfile_read_object(&alp, CAL_Type, NULL,
-                                   CAL_fields, NULL, true, &qconf_sfi,
-                                   SP_FORM_ASCII, NULL, file1);
+   ep = spool_flatfile_read_object(&alp, CAL_Type, nullptr,
+                                   CAL_fields, nullptr, true, &qconf_sfi,
+                                   SP_FORM_ASCII, nullptr, file1);
    
    /* Write a CAL file using flatfile spooling */
    file2 = spool_flatfile_write_object(&alp, ep, false,
@@ -339,8 +339,8 @@ static int CAL_test(void)
    
    ret = diff(file1, file2);
    
-   sge_unlink(NULL, file1);
-   sge_unlink(NULL, file2);
+   sge_unlink(nullptr, file1);
+   sge_unlink(nullptr, file2);
    sge_free(&file1);
    sge_free(&file2);
    
@@ -353,9 +353,9 @@ static int CAL_test(void)
 static int CK_test(void)
 {
    int ret = 0;
-   lListElem *ep = NULL;
-   lList *alp = NULL;
-   const char *file1 = NULL, *file2 = NULL;
+   lListElem *ep = nullptr;
+   lList *alp = nullptr;
+   const char *file1 = nullptr, *file2 = nullptr;
    
    ep = lCreateElem(CK_Type);
    lSetString(ep, CK_name, "Test_Name");
@@ -380,9 +380,9 @@ static int CK_test(void)
    
    /* Read a CK file using flatfile spooling */
    lFreeElem(&ep);
-   ep = spool_flatfile_read_object(&alp, CK_Type, NULL,
-                                   CK_fields, NULL, true, &qconf_sfi,
-                                   SP_FORM_ASCII, NULL, file1);
+   ep = spool_flatfile_read_object(&alp, CK_Type, nullptr,
+                                   CK_fields, nullptr, true, &qconf_sfi,
+                                   SP_FORM_ASCII, nullptr, file1);
       
    /* Write a CK file using flatfile spooling */
    file2 = spool_flatfile_write_object(&alp, ep, false,
@@ -396,8 +396,8 @@ static int CK_test(void)
    
    ret = diff(file1, file2);
    
-   sge_unlink(NULL, file1);
-   sge_unlink(NULL, file2);
+   sge_unlink(nullptr, file1);
+   sge_unlink(nullptr, file2);
    sge_free(&file1);
    sge_free(&file2);
    
@@ -408,15 +408,15 @@ static int CK_test(void)
 
 static int STN_test() {
    int ret = 0;
-   lListElem *ep = NULL;
-   lListElem *ep2 = NULL;
-   lListElem *ep3 = NULL;
-   lList *lp = NULL;
-   lList *lp2 = NULL;
-   lList *alp = NULL;
-   spooling_field *fields = NULL;
-   const char *file1 = NULL;
-   const char *file2 = NULL;
+   lListElem *ep = nullptr;
+   lListElem *ep2 = nullptr;
+   lListElem *ep3 = nullptr;
+   lList *lp = nullptr;
+   lList *lp2 = nullptr;
+   lList *alp = nullptr;
+   spooling_field *fields = nullptr;
+   const char *file1 = nullptr;
+   const char *file2 = nullptr;
    
    ep = lCreateElem(STN_Type);
    lSetString(ep, STN_name, "Test_Name");
@@ -440,7 +440,7 @@ static int STN_test() {
    lSetUlong(ep3, STN_type, 1);
    lSetUlong(ep3, STN_id, 2);
    lSetUlong(ep3, STN_shares, 99);
-   lSetList(ep3, STN_children, NULL);
+   lSetList(ep3, STN_children, nullptr);
    lAppendElem(lp2, ep3);
    
    ep3 = lCreateElem(STN_Type);
@@ -448,7 +448,7 @@ static int STN_test() {
    lSetUlong(ep3, STN_type, 1);
    lSetUlong(ep3, STN_id, 4);
    lSetUlong(ep3, STN_shares, 99);
-   lSetList(ep3, STN_children, NULL);
+   lSetList(ep3, STN_children, nullptr);
    lAppendElem(lp2, ep3);
    
    lSetList(ep2, STN_children, lp2);
@@ -467,7 +467,7 @@ static int STN_test() {
    lSetUlong(ep3, STN_type, 1);
    lSetUlong(ep3, STN_id, 7);
    lSetUlong(ep3, STN_shares, 99);
-   lSetList(ep3, STN_children, NULL);
+   lSetList(ep3, STN_children, nullptr);
    lAppendElem(lp2, ep3);
    
    lSetList(ep2, STN_children, lp2);
@@ -488,9 +488,9 @@ static int STN_test() {
 
    /* Read a STN file using flatfile spooling */
    lFreeElem(&ep);
-   ep = spool_flatfile_read_object(&alp, STN_Type, NULL,
-                                   fields, NULL, true, &qconf_name_value_list_sfi,
-                                   SP_FORM_ASCII, NULL, file1);
+   ep = spool_flatfile_read_object(&alp, STN_Type, nullptr,
+                                   fields, nullptr, true, &qconf_name_value_list_sfi,
+                                   SP_FORM_ASCII, nullptr, file1);
    
    /* Write a STN file using flatfile spooling */
    file2 = spool_flatfile_write_object(&alp, ep, false,
@@ -504,8 +504,8 @@ static int STN_test() {
    
    ret = diff(file1, file2);
    
-   sge_unlink(NULL, file1);
-   sge_unlink(NULL, file2);
+   sge_unlink(nullptr, file1);
+   sge_unlink(nullptr, file2);
    sge_free(&file1);
    sge_free(&file2);
    sge_free(&fields);
@@ -518,9 +518,9 @@ static int STN_test() {
 static int CE_test(void)
 {
    int ret = 0;
-   lListElem *ep = NULL;
-   lList *alp = NULL;
-   const char *file1 = NULL, *file2 = NULL;
+   lListElem *ep = nullptr;
+   lList *alp = nullptr;
+   const char *file1 = nullptr, *file2 = nullptr;
    
    ep = lCreateElem(CE_Type);
    lSetString(ep, CE_name, "Test_Name");
@@ -543,9 +543,9 @@ static int CE_test(void)
    
    /* Read a CE file using flatfile spooling */
    lFreeElem(&ep);
-   ep = spool_flatfile_read_object(&alp, CE_Type, NULL,
-                                   CE_fields, NULL, true, &qconf_sfi,
-                                   SP_FORM_ASCII, NULL, file1);
+   ep = spool_flatfile_read_object(&alp, CE_Type, nullptr,
+                                   CE_fields, nullptr, true, &qconf_sfi,
+                                   SP_FORM_ASCII, nullptr, file1);
          
    /* Write a CE file using flatfile spooling */
    file2 = spool_flatfile_write_object(&alp, ep, false,
@@ -559,8 +559,8 @@ static int CE_test(void)
    
    ret = diff(file1, file2);
    
-   sge_unlink(NULL, file1);
-   sge_unlink(NULL, file2);
+   sge_unlink(nullptr, file1);
+   sge_unlink(nullptr, file2);
    sge_free(&file1);
    sge_free(&file2);
    
@@ -572,11 +572,11 @@ static int CE_test(void)
 static int CEL_test(void)
 {
    int ret = 0;
-   lListElem *ep = NULL;
-   lList *lp = NULL;
-   lList *alp = NULL;
-   const char *file1 = NULL;
-   const char *file2 = NULL;
+   lListElem *ep = nullptr;
+   lList *lp = nullptr;
+   lList *alp = nullptr;
+   const char *file1 = nullptr;
+   const char *file2 = nullptr;
    
    lp = lCreateList("Complex List", CE_Type);
    
@@ -616,8 +616,8 @@ static int CEL_test(void)
    /* Read a CE file using flatfile spooling */
    lFreeList(&lp);
    lp = spool_flatfile_read_list(&alp, CE_Type,
-                                   CE_fields, NULL, true, &qconf_ce_list_sfi,
-                                   SP_FORM_ASCII, NULL, file1);
+                                   CE_fields, nullptr, true, &qconf_ce_list_sfi,
+                                   SP_FORM_ASCII, nullptr, file1);
    
    /* Write a CEL file using flatfile spooling */
    file2 = spool_flatfile_write_list(&alp, lp,
@@ -625,14 +625,14 @@ static int CEL_test(void)
                                      &qconf_ce_list_sfi,
                                      SP_DEST_TMP, 
                                      SP_FORM_ASCII, 
-                                     NULL, false);
+                                     nullptr, false);
    lFreeList(&lp);
 
    
    ret = diff(file1, file2);
    
-   sge_unlink(NULL, file1);
-   sge_unlink(NULL, file2);
+   sge_unlink(nullptr, file1);
+   sge_unlink(nullptr, file2);
    sge_free(&file1);
    sge_free(&file2);
    
@@ -647,16 +647,16 @@ static int diff(const char *file1, const char *file2)
    char **argv =(char **)sge_malloc(sizeof(char *) * 4);
    char *path = "/usr/bin/diff";
 
-   if(file1 == NULL || file2 == NULL) {
-      printf("file pointer is <NULL>\n");
-      SGE_EXIT(NULL, 1);
+   if(file1 == nullptr || file2 == nullptr) {
+      printf("file pointer is <nullptr>\n");
+      SGE_EXIT(nullptr, 1);
    }
    
    if(!fork()) {
       argv[0] = path;
       argv[1] = (char *)file1;
       argv[2] = (char *)file2;
-      argv[3] = NULL;
+      argv[3] = nullptr;
       
       execv(path, argv);
       /* if execv return an error occured */
@@ -675,8 +675,8 @@ static int diff(const char *file1, const char *file2)
 }
 
 static lList *buildUsageList(void) {   
-   lList *lp = NULL;
-   lListElem *ep2 = NULL;
+   lList *lp = nullptr;
+   lListElem *ep2 = nullptr;
 
    lp = lCreateList("Usage List", UA_Type);
    
@@ -699,8 +699,8 @@ static lList *buildUsageList(void) {
 }
 
 static lList *buildLTUsageList(void) {
-   lList *lp = NULL;
-   lListElem *ep2 = NULL;
+   lList *lp = nullptr;
+   lListElem *ep2 = nullptr;
 
    lp = lCreateList("LT Usage List", UA_Type);
    
@@ -723,10 +723,10 @@ static lList *buildLTUsageList(void) {
 }      
 
 static lList *buildProjectList(void) {
-   lList *lp = NULL;
-   lList *lp2 = NULL;
-   lListElem *ep2 = NULL;
-   lListElem *ep3 = NULL;
+   lList *lp = nullptr;
+   lList *lp2 = nullptr;
+   lListElem *ep2 = nullptr;
+   lListElem *ep3 = nullptr;
 
    lp = lCreateList("Project List", UPP_Type);
    
@@ -818,10 +818,10 @@ static lList *buildProjectList(void) {
 }
 
 static lList *buildDebitedUsageList(void) {
-   lList *lp = NULL;
-   lList *lp2 = NULL;
-   lListElem *ep = NULL;
-   lListElem *ep1 = NULL;
+   lList *lp = nullptr;
+   lList *lp2 = nullptr;
+   lListElem *ep = nullptr;
+   lListElem *ep1 = nullptr;
 
    lp = lCreateList("Debited Usage List", UPU_Type);
    
@@ -875,8 +875,8 @@ static lList *buildDebitedUsageList(void) {
 }   
 
 static lList *buildACLList(void) {
-   lList *lp = NULL;
-   lListElem *ep2 = NULL;
+   lList *lp = nullptr;
+   lListElem *ep2 = nullptr;
 
    lp = lCreateList("ACL List", US_Type);
    
@@ -892,8 +892,8 @@ static lList *buildACLList(void) {
 }   
    
 static lList *buildXACLList(void) {
-   lList *lp = NULL;
-   lListElem *ep2 = NULL;
+   lList *lp = nullptr;
+   lListElem *ep2 = nullptr;
 
    lp = lCreateList("XACL List", US_Type);
    
@@ -910,12 +910,12 @@ static lList *buildXACLList(void) {
 
 static int UU_test(void) {
    int ret = 0;
-   lListElem *user = NULL;
-   lList *lp = NULL;
-   lList *alp = NULL;
-   spooling_field *fields = NULL;
-   const char *file1 = NULL;
-   const char *file2 = NULL;
+   lListElem *user = nullptr;
+   lList *lp = nullptr;
+   lList *alp = nullptr;
+   spooling_field *fields = nullptr;
+   const char *file1 = nullptr;
+   const char *file2 = nullptr;
    
    user = lCreateElem(UU_Type);
    lSetString(user, UU_name, "Test_Name");
@@ -950,9 +950,9 @@ static int UU_test(void) {
                                      SP_FORM_ASCII, 
                                      file1, false);
    lFreeElem(&user);
-   user = spool_flatfile_read_object(&alp, UU_Type, NULL,
-                                   fields, NULL, true, &qconf_sfi,
-                                   SP_FORM_ASCII, NULL, file1);
+   user = spool_flatfile_read_object(&alp, UU_Type, nullptr,
+                                   fields, nullptr, true, &qconf_sfi,
+                                   SP_FORM_ASCII, nullptr, file1);
    file2 = spool_flatfile_write_object(&alp, user, false,
                                      fields,
                                      &qconf_sfi,
@@ -962,8 +962,8 @@ static int UU_test(void) {
    lFreeElem(&user);
    ret = diff(file1, file2);
    
-   sge_unlink(NULL, file1);
-   sge_unlink(NULL, file2);
+   sge_unlink(nullptr, file1);
+   sge_unlink(nullptr, file2);
    sge_free(&file1);
    sge_free(&file2);
    sge_free(&fields);
@@ -975,12 +975,12 @@ static int UU_test(void) {
 
 static int PR_test(void) {
    int ret = 0;
-   lListElem *prj = NULL;
-   lList *lp = NULL;
-   lList *alp = NULL;
-   spooling_field *fields = NULL;
-   const char *file1 = NULL;
-   const char *file2 = NULL;
+   lListElem *prj = nullptr;
+   lList *lp = nullptr;
+   lList *alp = nullptr;
+   spooling_field *fields = nullptr;
+   const char *file1 = nullptr;
+   const char *file2 = nullptr;
    
    prj = lCreateElem(PR_Type);
    lSetString(prj, PR_name, "Test_Name");
@@ -1019,9 +1019,9 @@ static int PR_test(void) {
    
    /* Read a PR file using flatfile spooling */
    lFreeElem(&prj);
-   prj = spool_flatfile_read_object(&alp, PR_Type, NULL,
-                                   fields, NULL, true, &qconf_sfi,
-                                   SP_FORM_ASCII, NULL, file1);
+   prj = spool_flatfile_read_object(&alp, PR_Type, nullptr,
+                                   fields, nullptr, true, &qconf_sfi,
+                                   SP_FORM_ASCII, nullptr, file1);
          
    /* Write a PR file using flatfile spooling */
    file2 = spool_flatfile_write_object(&alp, prj, false,
@@ -1036,8 +1036,8 @@ static int PR_test(void) {
    
    ret = diff(file1, file2);
    
-   sge_unlink(NULL, file1);
-   sge_unlink(NULL, file2);
+   sge_unlink(nullptr, file1);
+   sge_unlink(nullptr, file2);
    sge_free(&file1);
    sge_free(&file2);
    sge_free(&fields);
@@ -1050,12 +1050,12 @@ static int PR_test(void) {
 static int US_test(void)
 {
    int ret = 0;
-   lListElem *ep = NULL;
-   lListElem *ep2 = NULL;
-   lList *lp = NULL;
-   lList *alp = NULL;
-   const char *file1 = NULL;
-   const char *file2 = NULL;
+   lListElem *ep = nullptr;
+   lListElem *ep2 = nullptr;
+   lList *lp = nullptr;
+   lList *alp = nullptr;
+   const char *file1 = nullptr;
+   const char *file2 = nullptr;
    
    ep = lCreateElem(US_Type);
    lSetString(ep, US_name, "Test_Name");
@@ -1090,9 +1090,9 @@ static int US_test(void)
 
    /* Read a US file using flatfile spooling */
    lFreeElem(&ep);
-   ep = spool_flatfile_read_object(&alp, US_Type, NULL,
-                                   US_fields, NULL, true, &qconf_param_sfi,
-                                   SP_FORM_ASCII, NULL, file1);
+   ep = spool_flatfile_read_object(&alp, US_Type, nullptr,
+                                   US_fields, nullptr, true, &qconf_param_sfi,
+                                   SP_FORM_ASCII, nullptr, file1);
       
    /* Write a US file using flatfile spooling */
    file2 = spool_flatfile_write_object(&alp, ep, false,
@@ -1105,8 +1105,8 @@ static int US_test(void)
    
    ret = diff(file1, file2);
    
-   sge_unlink(NULL, file1);
-   sge_unlink(NULL, file2);
+   sge_unlink(nullptr, file1);
+   sge_unlink(nullptr, file2);
    sge_free(&file1);
    sge_free(&file2);
    
@@ -1120,13 +1120,13 @@ static int US_test(void)
 static int EH_test(void)
 {
    int ret = 0;
-   lListElem *ep = NULL;
-   lListElem *ep2 = NULL;
-   lList *lp = NULL;
-   lList *alp = NULL;
-   spooling_field *fields = NULL;
-   const char *file1 = NULL;
-   const char *file2 = NULL;
+   lListElem *ep = nullptr;
+   lListElem *ep2 = nullptr;
+   lList *lp = nullptr;
+   lList *alp = nullptr;
+   spooling_field *fields = nullptr;
+   const char *file1 = nullptr;
+   const char *file2 = nullptr;
    
    ep = lCreateElem(EH_Type);
    lSetHost(ep, EH_name, "Test_Name");
@@ -1326,9 +1326,9 @@ static int EH_test(void)
    
    /* Read a EH file using flatfile spooling */
    lFreeElem(&ep);
-   ep = spool_flatfile_read_object(&alp, EH_Type, NULL,
-                                   fields, NULL, true, &qconf_sfi,
-                                   SP_FORM_ASCII, NULL, file1);
+   ep = spool_flatfile_read_object(&alp, EH_Type, nullptr,
+                                   fields, nullptr, true, &qconf_sfi,
+                                   SP_FORM_ASCII, nullptr, file1);
       
    /* Write a EH file using flatfile spooling */
    file2 = spool_flatfile_write_object(&alp, ep, false,
@@ -1340,8 +1340,8 @@ static int EH_test(void)
    
    ret = diff(file1, file2);
    
-   sge_unlink(NULL, file1);
-   sge_unlink(NULL, file2);
+   sge_unlink(nullptr, file1);
+   sge_unlink(nullptr, file2);
    sge_free(&file1);
    sge_free(&file2);
    sge_free(&fields);
@@ -1359,13 +1359,13 @@ static int EH_test(void)
 
 static int CQ_test(void) {
    int ret = 0;
-   lListElem *ep = NULL;
-   lListElem *ep2 = NULL;
-   lListElem *ep3 = NULL;
-   lList *lp = NULL;
-   lList *lp2 = NULL;
-   lList *alp = NULL;
-   const char *file1 = NULL, *file2 = NULL;
+   lListElem *ep = nullptr;
+   lListElem *ep2 = nullptr;
+   lListElem *ep3 = nullptr;
+   lList *lp = nullptr;
+   lList *lp2 = nullptr;
+   lList *alp = nullptr;
+   const char *file1 = nullptr, *file2 = nullptr;
    
    ep = lCreateElem(CQ_Type);
    
@@ -2139,9 +2139,9 @@ static int CQ_test(void) {
    
    /* Read a CQ file using flatfile spooling */
    lFreeElem(&ep);
-   ep = spool_flatfile_read_object(&alp, CQ_Type, NULL,
-                                   CQ_fields, NULL, true, &qconf_sfi,
-                                   SP_FORM_ASCII, NULL, file1);
+   ep = spool_flatfile_read_object(&alp, CQ_Type, nullptr,
+                                   CQ_fields, nullptr, true, &qconf_sfi,
+                                   SP_FORM_ASCII, nullptr, file1);
    
    /* Write a CQ file using flatfile spooling */
    file2 = spool_flatfile_write_object(&alp, ep, false,
@@ -2155,8 +2155,8 @@ static int CQ_test(void) {
    
    ret = diff(file1, file2);
    
-   sge_unlink(NULL, file1);
-   sge_unlink(NULL, file2);
+   sge_unlink(nullptr, file1);
+   sge_unlink(nullptr, file2);
    sge_free(&file1);
    sge_free(&file2);
    
@@ -2168,11 +2168,11 @@ static int CQ_test(void) {
 static int SC_test(void)
 {
    int ret = 0;
-   lListElem *ep = NULL;
-   lListElem *ep2 = NULL;
-   lList *lp = NULL;
-   lList *alp = NULL;
-   const char *file1 = NULL, *file2 = NULL;
+   lListElem *ep = nullptr;
+   lListElem *ep2 = nullptr;
+   lList *lp = nullptr;
+   lList *alp = nullptr;
+   const char *file1 = nullptr, *file2 = nullptr;
    
    ep = lCreateElem(SC_Type);
    lSetString(ep, SC_algorithm, "algorithm");
@@ -2263,9 +2263,9 @@ static int SC_test(void)
    
    /* Read a SC file using flatfile spooling */
    lFreeElem(&ep);
-   ep = spool_flatfile_read_object(&alp, SC_Type, NULL,
-                                   SC_fields, NULL, true, &qconf_comma_sfi,
-                                   SP_FORM_ASCII, NULL, file1);
+   ep = spool_flatfile_read_object(&alp, SC_Type, nullptr,
+                                   SC_fields, nullptr, true, &qconf_comma_sfi,
+                                   SP_FORM_ASCII, nullptr, file1);
    
    /* Write a SC file using flatfile spooling */
    file2 = spool_flatfile_write_object(&alp, ep, false,
@@ -2279,8 +2279,8 @@ static int SC_test(void)
    
    ret = diff(file1, file2);
    
-   sge_unlink(NULL, file1);
-   sge_unlink(NULL, file2);
+   sge_unlink(nullptr, file1);
+   sge_unlink(nullptr, file2);
    sge_free(&file1);
    sge_free(&file2);
    
@@ -2292,10 +2292,10 @@ static int SC_test(void)
 static int QU_test(void)
 {
    int ret = 0;
-   lListElem *ep = NULL;
-   lList * alp = NULL;
-   spooling_field *fields = NULL;
-   const char *file1 = NULL, *file2 = NULL;
+   lListElem *ep = nullptr;
+   lList * alp = nullptr;
+   spooling_field *fields = nullptr;
+   const char *file1 = nullptr, *file2 = nullptr;
    
    ep = lCreateElem(QU_Type);
    lSetHost(ep, QU_qhostname, "Test_Name");
@@ -2319,9 +2319,9 @@ static int QU_test(void)
    
    /* Read a QU file using flatfile spooling */
    lFreeElem(&ep);
-   ep = spool_flatfile_read_object(&alp, QU_Type, NULL,
-                                   fields, NULL, true, &qconf_sfi,
-                                   SP_FORM_ASCII, NULL, file1);
+   ep = spool_flatfile_read_object(&alp, QU_Type, nullptr,
+                                   fields, nullptr, true, &qconf_sfi,
+                                   SP_FORM_ASCII, nullptr, file1);
    
    /* Write a QU file using flatfile spooling */
    file2 = spool_flatfile_write_object(&alp, ep, false,
@@ -2335,8 +2335,8 @@ static int QU_test(void)
    
    ret = diff(file1, file2);
    
-   sge_unlink(NULL, file1);
-   sge_unlink(NULL, file2);
+   sge_unlink(nullptr, file1);
+   sge_unlink(nullptr, file2);
    sge_free(&file1);
    sge_free(&file2);
    sge_free(&fields);
@@ -2349,9 +2349,9 @@ static int QU_test(void)
 static int HGRP_test(void)
 {
    int ret = 0;
-   lListElem *ep = NULL;
-   lList * alp = NULL;
-   const char *file1 = NULL, *file2 = NULL;
+   lListElem *ep = nullptr;
+   lList * alp = nullptr;
+   const char *file1 = nullptr, *file2 = nullptr;
    
    ep = lCreateElem(HGRP_Type);
    lSetHost(ep, HGRP_name, "Test_Name");
@@ -2372,9 +2372,9 @@ static int HGRP_test(void)
    
    /* Read a HGRP file using flatfile spooling */
    lFreeElem(&ep);
-   ep = spool_flatfile_read_object(&alp, HGRP_Type, NULL,
-                                   HGRP_fields, NULL, true, &qconf_sfi,
-                                   SP_FORM_ASCII, NULL, file1);
+   ep = spool_flatfile_read_object(&alp, HGRP_Type, nullptr,
+                                   HGRP_fields, nullptr, true, &qconf_sfi,
+                                   SP_FORM_ASCII, nullptr, file1);
    
    /* Write a HGRP file using flatfile spooling */
    file2 = spool_flatfile_write_object(&alp, ep, false,
@@ -2387,8 +2387,8 @@ static int HGRP_test(void)
    
    ret = diff(file1, file2);
    
-   sge_unlink(NULL, file1);
-   sge_unlink(NULL, file2);
+   sge_unlink(nullptr, file1);
+   sge_unlink(nullptr, file2);
    sge_free(&file1);
    sge_free(&file2);
    
@@ -2399,13 +2399,13 @@ static int HGRP_test(void)
 
 static int CONF_test(void) {
    int ret = 0;
-   lListElem *ep = NULL;
-   lListElem *ep2 = NULL;
-   lList * lp = NULL;
-   lList * alp = NULL;
+   lListElem *ep = nullptr;
+   lListElem *ep2 = nullptr;
+   lList * lp = nullptr;
+   lList * alp = nullptr;
    spooling_field *fields;
-   const char *file1 = NULL;
-   const char *file2 = NULL;
+   const char *file1 = nullptr;
+   const char *file2 = nullptr;
    
    ep = lCreateElem(CONF_Type);
    lSetUlong(ep, CONF_version, 101);
@@ -2465,9 +2465,9 @@ static int CONF_test(void) {
    
    /* Read a CU file using flatfile spooling */
    lFreeElem(&ep);
-   ep = spool_flatfile_read_object(&alp, CONF_Type, NULL,
-                                   fields, NULL, false, &qconf_sfi,
-                                   SP_FORM_ASCII, NULL, file1);
+   ep = spool_flatfile_read_object(&alp, CONF_Type, nullptr,
+                                   fields, nullptr, false, &qconf_sfi,
+                                   SP_FORM_ASCII, nullptr, file1);
 
    /* Write a CU file using flatfile spooling */
    file2 = spool_flatfile_write_object(&alp, ep, false,
@@ -2481,8 +2481,8 @@ static int CONF_test(void) {
    
    ret = diff(file1, file2);
    
-   sge_unlink(NULL, file1);
-   sge_unlink(NULL, file2);
+   sge_unlink(nullptr, file1);
+   sge_unlink(nullptr, file2);
    sge_free(&file1);
    sge_free(&file2);
    sge_free(&fields);
@@ -2494,15 +2494,15 @@ static int CONF_test(void) {
 
 static int RQS_test(void) {
    int ret = 0;
-   lListElem *ep = NULL;
-   lListElem *ep2 = NULL;
-   lListElem *ep3 = NULL;
-   lListElem *limit = NULL;
-   lList *lp1 = NULL;
-   lList *limit_list= NULL;
-   lList *alp = NULL;
-   const char *file1 = NULL;
-   const char *file2 = NULL;
+   lListElem *ep = nullptr;
+   lListElem *ep2 = nullptr;
+   lListElem *ep3 = nullptr;
+   lListElem *limit = nullptr;
+   lList *lp1 = nullptr;
+   lList *limit_list= nullptr;
+   lList *alp = nullptr;
+   const char *file1 = nullptr;
+   const char *file2 = nullptr;
    lList* rqs_list = lCreateList("test", RQS_Type);
 
    ep = lCreateElem(RQS_Type);
@@ -2616,8 +2616,8 @@ static int RQS_test(void) {
 
    /* Read a RQS file using flatfile spooling */
    lFreeList(&rqs_list);
-   rqs_list = spool_flatfile_read_list(&alp, RQS_Type, RQS_fields, NULL, true, &qconf_rqs_sfi,
-                                   SP_FORM_ASCII, NULL, file1);
+   rqs_list = spool_flatfile_read_list(&alp, RQS_Type, RQS_fields, nullptr, true, &qconf_rqs_sfi,
+                                   SP_FORM_ASCII, nullptr, file1);
 
    /* Write a RQS file using flatfile spooling */
    file2 = spool_flatfile_write_list(&alp, rqs_list, RQS_fields, &qconf_rqs_sfi, SP_DEST_TMP, SP_FORM_ASCII, file2, false);
@@ -2625,8 +2625,8 @@ static int RQS_test(void) {
 
    ret = diff(file1, file2);
 
-   sge_unlink(NULL, file1);
-   sge_unlink(NULL, file2);
+   sge_unlink(nullptr, file1);
+   sge_unlink(nullptr, file2);
    sge_free(&file1);
    sge_free(&file2);
 
@@ -2638,10 +2638,10 @@ static int RQS_test(void) {
 static int AR_test(void) {
    int ret = 0;
    lList *lp;
-   lListElem *ep = NULL;
+   lListElem *ep = nullptr;
    lListElem *ep1;
-   lList *alp = NULL;
-   const char *file1 = NULL, *file2 = NULL;
+   lList *alp = nullptr;
+   const char *file1 = nullptr, *file2 = nullptr;
    
    ep = lCreateElem(AR_Type);
    lSetUlong(ep, AR_id, 1);
@@ -2710,9 +2710,9 @@ static int AR_test(void) {
 
    /* Read a AR file using flatfile spooling */
    lFreeElem(&ep);
-   ep = spool_flatfile_read_object(&alp, AR_Type, NULL,
-                                   AR_fields, NULL, true, &qconf_sfi,
-                                   SP_FORM_ASCII, NULL, file1);
+   ep = spool_flatfile_read_object(&alp, AR_Type, nullptr,
+                                   AR_fields, nullptr, true, &qconf_sfi,
+                                   SP_FORM_ASCII, nullptr, file1);
    
    /* Write a AR file using flatfile spooling */
    file2 = spool_flatfile_write_object(&alp, ep, false,
@@ -2725,8 +2725,8 @@ static int AR_test(void) {
 
    ret = diff(file1, file2);
   
-   sge_unlink(NULL, file1);
-   sge_unlink(NULL, file2);
+   sge_unlink(nullptr, file1);
+   sge_unlink(nullptr, file2);
    sge_free(&file1);
    sge_free(&file2);
    

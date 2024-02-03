@@ -71,12 +71,12 @@ cqueue_verify_calendar(lListElem *cqueue, lList **answer_list, lListElem *attr_e
    bool ret = true;
 
    DENTER(CQUEUE_VERIFY_LAYER);
-   if (cqueue != NULL && attr_elem != NULL) {
+   if (cqueue != nullptr && attr_elem != nullptr) {
       const char *name = lGetString(attr_elem, ASTR_value);
 
-      if (name != NULL && strcasecmp("none", name)) {
+      if (name != nullptr && strcasecmp("none", name)) {
          const lListElem *calendar = lGetElemStr(master_calendar_list, CAL_name, name);
-         if (calendar == NULL) {
+         if (calendar == nullptr) {
             sprintf(SGE_EVENT, MSG_CQUEUE_UNKNOWNCALENDAR_S, name);
             answer_list_add(answer_list, SGE_EVENT, STATUS_EUNKNOWN, ANSWER_QUALITY_ERROR);
             ret = false;
@@ -92,10 +92,10 @@ cqueue_verify_ckpt_list(lListElem *cqueue, lList **answer_list, lListElem *attr_
    bool ret = true;
 
    DENTER(CQUEUE_VERIFY_LAYER);
-   if (cqueue != NULL && attr_elem != NULL) {
+   if (cqueue != nullptr && attr_elem != nullptr) {
       const lList *ckpt_list = lGetList(attr_elem, ASTRLIST_value);
 
-      if (ckpt_list != NULL) {
+      if (ckpt_list != nullptr) {
          if (!ckpt_list_do_all_exist(master_ckpt_list, answer_list, ckpt_list)) {
             ret = false;
          }
@@ -110,10 +110,10 @@ cqueue_verify_consumable_config_list(lListElem *cqueue, lList **answer_list, lLi
    bool ret = true;
 
    DENTER(CQUEUE_VERIFY_LAYER);
-   if (cqueue != NULL && attr_elem != NULL) {
+   if (cqueue != nullptr && attr_elem != nullptr) {
       const lList *centry_list = lGetList(attr_elem, ACELIST_value);
 
-      if (centry_list != NULL) {
+      if (centry_list != nullptr) {
          if (!centry_list_do_all_exists(master_centry_list, answer_list, centry_list)) {
             ret = false;
          }
@@ -128,13 +128,13 @@ cqueue_verify_initial_state(lListElem *cqueue, lList **answer_list, lListElem *a
    bool ret = true;
 
    DENTER(CQUEUE_VERIFY_LAYER);
-   if (cqueue != NULL && attr_elem != NULL) {
-      const char *names[] = {"default", "enabled", "disabled", NULL};
+   if (cqueue != nullptr && attr_elem != nullptr) {
+      const char *names[] = {"default", "enabled", "disabled", nullptr};
       const char *name = lGetString(attr_elem, ASTR_value);
       bool found = false;
       int i = 0;
 
-      while (names[i] != NULL) {
+      while (names[i] != nullptr) {
          if (!strcasecmp(name, names[i])) {
             found = true;
          }
@@ -156,10 +156,10 @@ cqueue_verify_pe_list(lListElem *cqueue, lList **answer_list, lListElem *attr_el
    bool ret = true;
 
    DENTER(CQUEUE_VERIFY_LAYER);
-   if (cqueue != NULL && attr_elem != NULL) {
+   if (cqueue != nullptr && attr_elem != nullptr) {
       const lList *pe_list = lGetList(attr_elem, ASTRLIST_value);
 
-      if (pe_list != NULL) {
+      if (pe_list != nullptr) {
          if (!pe_list_do_all_exist(master_pe_list, answer_list, pe_list, true)) {
             ret = false;
          }
@@ -174,10 +174,10 @@ cqueue_verify_priority(lListElem *cqueue, lList **answer_list, lListElem *attr_e
    bool ret = true;
 
    DENTER(CQUEUE_VERIFY_LAYER);
-   if (cqueue != NULL && attr_elem != NULL) {
+   if (cqueue != nullptr && attr_elem != nullptr) {
       const char *priority_string = lGetString(attr_elem, ASTR_value);
 
-      if (priority_string != NULL) {
+      if (priority_string != nullptr) {
          const int priority = atoi(priority_string);
 
          if (priority == 0 && priority_string[0] != '0') {
@@ -198,11 +198,11 @@ cqueue_verify_processors(lListElem *cqueue, lList **answer_list, lListElem *attr
    bool ret = true;
 
    DENTER(CQUEUE_VERIFY_LAYER);
-   if (cqueue != NULL && attr_elem != NULL) {
+   if (cqueue != nullptr && attr_elem != nullptr) {
       const char *processors_string = lGetString(attr_elem, ASTR_value);
 
-      if (processors_string != NULL) {
-         lList *range_list = NULL;
+      if (processors_string != nullptr) {
+         lList *range_list = nullptr;
 
          range_list_parse_from_string(&range_list, answer_list, processors_string, JUST_PARSE, false, INF_ALLOWED);
          if (*answer_list) {
@@ -219,10 +219,10 @@ cqueue_verify_project_list(lListElem *cqueue, lList **answer_list, lListElem *at
    bool ret = true;
 
    DENTER(CQUEUE_VERIFY_LAYER);
-   if (cqueue != NULL && attr_elem != NULL) {
+   if (cqueue != nullptr && attr_elem != nullptr) {
       const lList *project_list = lGetList(attr_elem, APRJLIST_value);
 
-      if (project_list != NULL) {
+      if (project_list != nullptr) {
          if (!prj_list_do_all_exist(master_project_list, answer_list, project_list)) {
             ret = false;
          }
@@ -237,16 +237,16 @@ cqueue_verify_shell_start_mode(lListElem *cqueue, lList **answer_list, lListElem
    bool ret = true;
 
    DENTER(CQUEUE_VERIFY_LAYER);
-   if (cqueue != NULL && attr_elem != NULL) {
+   if (cqueue != nullptr && attr_elem != nullptr) {
       const char *names[] = {
          "unix_behavior", "posix_compliant", "script_from_stdin",
-         NULL
+         nullptr
       };
       const char *name = lGetString(attr_elem, ASTR_value);
       bool found = false;
       int i = 0;
 
-      while (names[i] != NULL) {
+      while (names[i] != nullptr) {
          if (!strcasecmp(name, names[i])) {
             found = true;
          }
@@ -290,7 +290,7 @@ cqueue_verify_subordinate_list(lListElem *cqueue, lList **answer_list, lListElem
    bool ret = true;
 
    DENTER(CQUEUE_VERIFY_LAYER);
-   if (cqueue != NULL && attr_elem != NULL) {
+   if (cqueue != nullptr && attr_elem != nullptr) {
       const char *cqueue_name = lGetString(cqueue, CQ_name);
       const lList *so_list = lGetList(attr_elem, ASOLIST_value);
       const lListElem *so;
@@ -302,13 +302,13 @@ cqueue_verify_subordinate_list(lListElem *cqueue, lList **answer_list, lListElem
           * Check for recursions to ourself
           */
          if (strcmp(cqueue_name, so_name) != 0) {
-            const lListElem *cqueue = NULL;
+            const lListElem *cqueue = nullptr;
 
             /*
              * Check if cqueue exists
              */
             cqueue = cqueue_list_locate(master_cqueue_list, so_name);
-            if (cqueue != NULL) {
+            if (cqueue != nullptr) {
                /*
                 * Success
                 */
@@ -337,10 +337,10 @@ cqueue_verify_user_list(lListElem *cqueue, lList **answer_list, lListElem *attr_
    bool ret = true;
 
    DENTER(CQUEUE_VERIFY_LAYER);
-   if (cqueue != NULL && attr_elem != NULL) {
+   if (cqueue != nullptr && attr_elem != nullptr) {
       const lList *user_list = lGetList(attr_elem, AUSRLIST_value);
 
-      if (user_list != NULL) {
+      if (user_list != nullptr) {
          if (userset_list_validate_acl_list(user_list, answer_list, master_userset_list) == STATUS_EUNKNOWN) {
             ret = false;
          }
@@ -381,7 +381,7 @@ cqueue_verify_job_slots(lListElem *cqueue, lList **answer_list, lListElem *attr_
    bool ret = true;
 
    DENTER(CQUEUE_VERIFY_LAYER);
-   if (cqueue != NULL && attr_elem != NULL) {
+   if (cqueue != nullptr && attr_elem != nullptr) {
       u_long32 slots = lGetUlong(attr_elem, AULNG_value);
 
       if (slots > MAX_SEQNUM) {
@@ -425,7 +425,7 @@ cqueue_verify_memory_value(lListElem *cqueue, lList **answer_list, lListElem *at
    bool ret = true;
 
    DENTER(CQUEUE_VERIFY_LAYER);
-   if (cqueue != NULL && attr_elem != NULL) {
+   if (cqueue != nullptr && attr_elem != nullptr) {
       const char *memory_string = lGetString(attr_elem, AMEM_value);
 
 #if 1
@@ -435,7 +435,7 @@ cqueue_verify_memory_value(lListElem *cqueue, lList **answer_list, lListElem *at
       }
       lFreeElem(&copy);
 #else
-      if (memory_string == NULL || !strcasecmp(memory_string, "none")) {
+      if (memory_string == nullptr || !strcasecmp(memory_string, "none")) {
          answer_list_add_sprintf(answer_list, STATUS_EUNKNOWN, ANSWER_QUALITY_ERROR,
                          MSG_NONE_NOT_ALLOWED_S, "memory values");
          ret = false;
@@ -475,10 +475,10 @@ cqueue_verify_time_value(lListElem *cqueue, lList **answer_list, lListElem *attr
    bool ret = true;
 
    DENTER(CQUEUE_VERIFY_LAYER);
-   if (cqueue != NULL && attr_elem != NULL) {
+   if (cqueue != nullptr && attr_elem != nullptr) {
       const char *time_string = lGetString(attr_elem, ATIME_value);
 
-      if (time_string == NULL || !strcasecmp(time_string, "none")) {
+      if (time_string == nullptr || !strcasecmp(time_string, "none")) {
          answer_list_add_sprintf(answer_list, STATUS_EUNKNOWN, ANSWER_QUALITY_ERROR,
                          MSG_NONE_NOT_ALLOWED_S, "time values");
          ret = false;

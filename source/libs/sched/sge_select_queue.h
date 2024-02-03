@@ -109,7 +109,7 @@ typedef struct {
    u_long32    job_id;            /* job id (convenience reasons)                   */
    u_long32    ja_task_id;        /* job array task id (convenience reasons)        */
    lListElem  *job;               /* the job (JB_Type)                              */
-   lListElem  *ja_task;           /* the task (JAT_Type) (if NULL only reschedule   */
+   lListElem  *ja_task;           /* the task (JAT_Type) (if nullptr only reschedule   */
                                   /* unknown verification is missing)               */
    const char* user;              /* user name (JB_owner)                           */
    const char* group;             /* group name (JB_group)                          */
@@ -143,14 +143,14 @@ typedef struct {
    int        slots;              /* total number of slots                          */
    u_long32   start;              /* jobs start time                                */
    int        soft_violations;    /* number of soft request violations              */
-   lList      **monitor_alpp;     /* place scheduler diagnosis here if non-NULL     */
+   lList      **monitor_alpp;     /* place scheduler diagnosis here if non-nullptr     */
    bool       monitor_next_run;   /* controls qconf -tsm scheduler diagnosis        */
    /* ------ scheduler profiling index as picky pack data ------------------------- */
    sched_prof_t *pi;
 } sge_assignment_t;
 
-#define SGE_ASSIGNMENT_INIT {0, 0, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 0, \
-   NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, false, false, false, false, false, false, 0, NULL, NULL, NULL, NULL, NULL, NULL, 0, 0, 0, NULL, false, NULL}
+#define SGE_ASSIGNMENT_INIT {0, 0, nullptr, nullptr, nullptr, nullptr, nullptr, nullptr, nullptr, 0, \
+   nullptr, nullptr, nullptr, nullptr, nullptr, nullptr, nullptr, nullptr, false, false, false, false, false, false, 0, nullptr, nullptr, nullptr, nullptr, nullptr, nullptr, 0, 0, 0, nullptr, false, nullptr}
 
 void assignment_init(sge_assignment_t *a, lListElem *job, lListElem *ja_task, bool is_load_adj);
 void assignment_copy(sge_assignment_t *dst, sge_assignment_t *src, bool move_gdil);

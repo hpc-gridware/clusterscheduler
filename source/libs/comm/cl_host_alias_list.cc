@@ -45,7 +45,7 @@
 int cl_host_alias_list_setup(cl_raw_list_t **list_p, char *list_name) {
    int ret_val = CL_RETVAL_OK;
    ret_val = cl_raw_list_setup(list_p, list_name, 1);
-   if (list_name != NULL) {
+   if (list_name != nullptr) {
       CL_LOG_STR(CL_LOG_INFO, "host alias list setup ok for list:", list_name);
    }
    return ret_val;
@@ -58,20 +58,20 @@ int cl_host_alias_list_setup(cl_raw_list_t **list_p, char *list_name) {
 #define __CL_FUNCTION__ "cl_host_alias_list_cleanup()"
 
 int cl_host_alias_list_cleanup(cl_raw_list_t **list_p) {
-   cl_host_alias_list_elem_t *elem = NULL;
+   cl_host_alias_list_elem_t *elem = nullptr;
    int ret_val = CL_RETVAL_OK;
-   if (list_p == NULL) {
+   if (list_p == nullptr) {
       /* we expect an address of an pointer */
       return CL_RETVAL_PARAMS;
    }
-   if (*list_p == NULL) {
+   if (*list_p == nullptr) {
       /* we expect an initalized pointer */
       return CL_RETVAL_PARAMS;
    }
 
    /* delete all entries in list */
    cl_raw_list_lock(*list_p);
-   while ((elem = cl_host_alias_list_get_first_elem(*list_p)) != NULL) {
+   while ((elem = cl_host_alias_list_get_first_elem(*list_p)) != nullptr) {
       cl_raw_list_remove_elem(*list_p, elem->raw_elem);
       sge_free(&(elem->local_resolved_hostname));
       sge_free(&(elem->alias_name));
@@ -91,11 +91,11 @@ int cl_host_alias_list_cleanup(cl_raw_list_t **list_p) {
 
 int cl_host_alias_list_append_host(cl_raw_list_t *list_p, char *local_resolved_name, char *alias_name, int lock_list) {
 
-   cl_host_alias_list_elem_t *new_elem = NULL;
+   cl_host_alias_list_elem_t *new_elem = nullptr;
    int ret_val;
-   char *help = NULL;
+   char *help = nullptr;
 
-   if (list_p == NULL || local_resolved_name == NULL || alias_name == NULL) {
+   if (list_p == nullptr || local_resolved_name == nullptr || alias_name == nullptr) {
       return CL_RETVAL_PARAMS;
    }
 
@@ -130,7 +130,7 @@ int cl_host_alias_list_append_host(cl_raw_list_t *list_p, char *local_resolved_n
 
    /* add new element list */
    new_elem = (cl_host_alias_list_elem_t *) sge_malloc(sizeof(cl_host_alias_list_elem_t));
-   if (new_elem == NULL) {
+   if (new_elem == nullptr) {
       if (lock_list == 1) {
          cl_raw_list_unlock(list_p);
       }
@@ -138,7 +138,7 @@ int cl_host_alias_list_append_host(cl_raw_list_t *list_p, char *local_resolved_n
    }
 
    new_elem->local_resolved_hostname = strdup(local_resolved_name);
-   if (new_elem->local_resolved_hostname == NULL) {
+   if (new_elem->local_resolved_hostname == nullptr) {
       sge_free(&new_elem);
       if (lock_list == 1) {
          cl_raw_list_unlock(list_p);
@@ -147,7 +147,7 @@ int cl_host_alias_list_append_host(cl_raw_list_t *list_p, char *local_resolved_n
    }
 
    new_elem->alias_name = strdup(alias_name);
-   if (new_elem->alias_name == NULL) {
+   if (new_elem->alias_name == nullptr) {
       sge_free(&(new_elem->local_resolved_hostname));
       sge_free(&new_elem);
       if (lock_list == 1) {
@@ -157,7 +157,7 @@ int cl_host_alias_list_append_host(cl_raw_list_t *list_p, char *local_resolved_n
    }
 
    new_elem->raw_elem = cl_raw_list_append_elem(list_p, (void *) new_elem);
-   if (new_elem->raw_elem == NULL) {
+   if (new_elem->raw_elem == nullptr) {
       sge_free(&(new_elem->local_resolved_hostname));
       sge_free(&(new_elem->alias_name));
       sge_free(&new_elem);
@@ -184,11 +184,11 @@ int cl_host_alias_list_append_host(cl_raw_list_t *list_p, char *local_resolved_n
 #define __CL_FUNCTION__ "cl_host_alias_list_remove_host()"
 
 int cl_host_alias_list_remove_host(cl_raw_list_t *list_p, cl_host_alias_list_elem_t *element, int lock_list) {
-   cl_host_alias_list_elem_t *elem = NULL;
+   cl_host_alias_list_elem_t *elem = nullptr;
    int ret_val = CL_RETVAL_OK;
    int function_return = CL_RETVAL_UNKNOWN;
 
-   if (list_p == NULL || element == NULL) {
+   if (list_p == nullptr || element == nullptr) {
       return CL_RETVAL_PARAMS;
    }
 
@@ -200,7 +200,7 @@ int cl_host_alias_list_remove_host(cl_raw_list_t *list_p, cl_host_alias_list_ele
    }
 
    elem = cl_host_alias_list_get_first_elem(list_p);
-   while (elem != NULL) {
+   while (elem != nullptr) {
       if (elem == element) {
          /* found matching element */
          cl_raw_list_remove_elem(list_p, elem->raw_elem);
@@ -208,7 +208,7 @@ int cl_host_alias_list_remove_host(cl_raw_list_t *list_p, cl_host_alias_list_ele
          sge_free(&(elem->local_resolved_hostname));
          sge_free(&(elem->alias_name));
          sge_free(&elem);
-         elem = NULL;
+         elem = nullptr;
          break;
       }
       elem = cl_host_alias_list_get_next_elem(elem);
@@ -229,12 +229,12 @@ int cl_host_alias_list_remove_host(cl_raw_list_t *list_p, cl_host_alias_list_ele
 #define __CL_FUNCTION__ "cl_host_alias_list_get_local_resolved_name()"
 
 int cl_host_alias_list_get_local_resolved_name(cl_raw_list_t *list_p, char *alias_name, char **local_resolved_name) {
-   cl_host_alias_list_elem_t *elem = NULL;
+   cl_host_alias_list_elem_t *elem = nullptr;
    int ret_val;
-   if (list_p == NULL || alias_name == NULL || local_resolved_name == NULL) {
+   if (list_p == nullptr || alias_name == nullptr || local_resolved_name == nullptr) {
       return CL_RETVAL_PARAMS;
    }
-   if (*local_resolved_name != NULL) {
+   if (*local_resolved_name != nullptr) {
       CL_LOG(CL_LOG_ERROR, "need empty pointer pointer");
       return CL_RETVAL_PARAMS;
    }
@@ -245,14 +245,14 @@ int cl_host_alias_list_get_local_resolved_name(cl_raw_list_t *list_p, char *alia
 
 
    elem = cl_host_alias_list_get_first_elem(list_p);
-   while (elem != NULL) {
+   while (elem != nullptr) {
       if (strcasecmp(alias_name, elem->alias_name) == 0) {
          *local_resolved_name = strdup(elem->local_resolved_hostname);
          if ((ret_val = cl_raw_list_unlock(list_p)) != CL_RETVAL_OK) {
             sge_free(local_resolved_name);
             return ret_val;
          }
-         if (*local_resolved_name == NULL) {
+         if (*local_resolved_name == nullptr) {
             return CL_RETVAL_MALLOC;
          }
          return CL_RETVAL_OK;
@@ -272,12 +272,12 @@ int cl_host_alias_list_get_local_resolved_name(cl_raw_list_t *list_p, char *alia
 #define __CL_FUNCTION__ "cl_host_alias_list_get_alias_name()"
 
 int cl_host_alias_list_get_alias_name(cl_raw_list_t *list_p, char *local_resolved_name, char **alias_name) {
-   cl_host_alias_list_elem_t *elem = NULL;
+   cl_host_alias_list_elem_t *elem = nullptr;
    int ret_val;
-   if (list_p == NULL || local_resolved_name == NULL || alias_name == NULL) {
+   if (list_p == nullptr || local_resolved_name == nullptr || alias_name == nullptr) {
       return CL_RETVAL_PARAMS;
    }
-   if (*alias_name != NULL) {
+   if (*alias_name != nullptr) {
       CL_LOG(CL_LOG_ERROR, "need empty pointer pointer");
       return CL_RETVAL_PARAMS;
    }
@@ -287,14 +287,14 @@ int cl_host_alias_list_get_alias_name(cl_raw_list_t *list_p, char *local_resolve
    }
 
    elem = cl_host_alias_list_get_first_elem(list_p);
-   while (elem != NULL) {
+   while (elem != nullptr) {
       if (strcasecmp(local_resolved_name, elem->local_resolved_hostname) == 0) {
          *alias_name = strdup(elem->alias_name);
          if ((ret_val = cl_raw_list_unlock(list_p)) != CL_RETVAL_OK) {
             sge_free(alias_name);
             return ret_val;
          }
-         if (*alias_name == NULL) {
+         if (*alias_name == nullptr) {
             return CL_RETVAL_MALLOC;
          }
          return CL_RETVAL_OK;
@@ -319,7 +319,7 @@ cl_host_alias_list_elem_t *cl_host_alias_list_get_first_elem(cl_raw_list_t *list
    if (raw_elem) {
       return (cl_host_alias_list_elem_t *) raw_elem->data;
    }
-   return NULL;
+   return nullptr;
 }
 
 #ifdef __CL_FUNCTION__
@@ -332,7 +332,7 @@ cl_host_alias_list_elem_t *cl_host_alias_list_get_least_elem(cl_raw_list_t *list
    if (raw_elem) {
       return (cl_host_alias_list_elem_t *) raw_elem->data;
    }
-   return NULL;
+   return nullptr;
 }
 
 #ifdef __CL_FUNCTION__
@@ -341,16 +341,16 @@ cl_host_alias_list_elem_t *cl_host_alias_list_get_least_elem(cl_raw_list_t *list
 #define __CL_FUNCTION__ "cl_host_alias_list_get_next_elem()"
 
 cl_host_alias_list_elem_t *cl_host_alias_list_get_next_elem(cl_host_alias_list_elem_t *elem) {
-   cl_raw_list_elem_t *next_raw_elem = NULL;
+   cl_raw_list_elem_t *next_raw_elem = nullptr;
 
-   if (elem != NULL) {
+   if (elem != nullptr) {
       cl_raw_list_elem_t *raw_elem = elem->raw_elem;
       next_raw_elem = cl_raw_list_get_next_elem(raw_elem);
       if (next_raw_elem) {
          return (cl_host_alias_list_elem_t *) next_raw_elem->data;
       }
    }
-   return NULL;
+   return nullptr;
 }
 
 
@@ -360,16 +360,16 @@ cl_host_alias_list_elem_t *cl_host_alias_list_get_next_elem(cl_host_alias_list_e
 #define __CL_FUNCTION__ "cl_host_alias_list_get_last_elem()"
 
 cl_host_alias_list_elem_t *cl_host_alias_list_get_last_elem(cl_host_alias_list_elem_t *elem) {
-   cl_raw_list_elem_t *last_raw_elem = NULL;
+   cl_raw_list_elem_t *last_raw_elem = nullptr;
 
-   if (elem != NULL) {
+   if (elem != nullptr) {
       cl_raw_list_elem_t *raw_elem = elem->raw_elem;
       last_raw_elem = cl_raw_list_get_last_elem(raw_elem);
       if (last_raw_elem) {
          return (cl_host_alias_list_elem_t *) last_raw_elem->data;
       }
    }
-   return NULL;
+   return nullptr;
 }
 
 

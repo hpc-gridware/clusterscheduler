@@ -79,7 +79,7 @@
 *                              function in the specified shared lib.
 *
 *  RESULT
-*     lListElem * - on success a spooling context, else NULL.
+*     lListElem * - on success a spooling context, else nullptr.
 *
 *  SEE ALSO
 *     spool/--Spooling
@@ -89,7 +89,7 @@ spool_create_dynamic_context(lList **answer_list, const char *method,
                              const char *shlib_name, const char *args)
 {
    const char *compiled_method;
-   lListElem *context = NULL;
+   lListElem *context = nullptr;
 
    DENTER(TOP_LAYER);
 
@@ -148,7 +148,7 @@ spool_create_dynamic_context(lList **answer_list, const char *method,
    context = spool_dynamic_create_context(answer_list, method, shlib_name, args);
 #endif
 
-   if (context == NULL) {
+   if (context == nullptr) {
       answer_list_add_sprintf(answer_list, STATUS_EUNKNOWN, 
                               ANSWER_QUALITY_ERROR, 
                               MSG_SPOOL_ERRORCREATINGCONTEXT_S, 

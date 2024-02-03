@@ -88,7 +88,7 @@ static bool job_update_master_list_usage(lList *job_list, lListElem *event)
       ret = false;
    }
 
-   if(pe_task_id != NULL) {
+   if(pe_task_id != nullptr) {
       ret = (pe_task_update_master_list_usage(job_list, event) != SGE_EMA_FAILURE)?true:false;   /* usage for a pe task */
    } else {
       ret = (ja_task_update_master_list_usage(job_list, event) != SGE_EMA_FAILURE)?true:false;   /* usage for a ja task */
@@ -140,8 +140,8 @@ job_update_master_list(sge_evc_class_t *evc, sge_object_type type,
    lList **list;
    const lDescr *list_descr;
    u_long32 job_id;
-   lListElem *job = NULL;
-   lList *ja_tasks = NULL;
+   lListElem *job = nullptr;
+   lList *ja_tasks = nullptr;
 
    char id_buffer[MAX_STRING_SIZE];
    dstring id_dstring;
@@ -158,9 +158,9 @@ job_update_master_list(sge_evc_class_t *evc, sge_object_type type,
    if (action == SGE_EMA_MOD) {
       u_long32 event_type = lGetUlong(event, ET_type);
 
-      if (job == NULL) {
+      if (job == nullptr) {
          ERROR((SGE_EVENT, MSG_JOB_CANTFINDJOBFORUPDATEIN_SS,
-                job_get_id_string(job_id, 0, NULL, &id_dstring), "job_update_master_list"));
+                job_get_id_string(job_id, 0, nullptr, &id_dstring), "job_update_master_list"));
          DRETURN(SGE_EMA_FAILURE);
       }
 
@@ -186,7 +186,7 @@ job_update_master_list(sge_evc_class_t *evc, sge_object_type type,
           lListElem *modified_job;
 
           modified_job = lFirstRW(lGetList(event, ET_new_version));
-          if(job != NULL && modified_job != NULL) {
+          if(job != nullptr && modified_job != nullptr) {
             /* we want to preserve the old ja_tasks, since job update events to not contain them */
             lXchgList(job, JB_ja_tasks, &ja_tasks);
             lSetHost(modified_job, JB_host, lGetHost(job, JB_host));
@@ -195,18 +195,18 @@ job_update_master_list(sge_evc_class_t *evc, sge_object_type type,
       }
    }
 
-   if (sge_mirror_update_master_list(list, list_descr, job, job_get_id_string(job_id, 0, NULL, &id_dstring), action, event) != SGE_EM_OK) {
+   if (sge_mirror_update_master_list(list, list_descr, job, job_get_id_string(job_id, 0, nullptr, &id_dstring), action, event) != SGE_EM_OK) {
       lFreeList(&ja_tasks);
       DRETURN(SGE_EMA_FAILURE);
    }
 
    /* restore ja_task list after modify event */
-   if (action == SGE_EMA_MOD && ja_tasks != NULL) {
+   if (action == SGE_EMA_MOD && ja_tasks != nullptr) {
       /* we have to search the replaced job */
       job = lGetElemUlongRW(*list, JB_job_number, job_id);
-      if (job == NULL) {
+      if (job == nullptr) {
          ERROR((SGE_EVENT, MSG_JOB_CANTFINDJOBFORUPDATEIN_SS,
-                job_get_id_string(job_id, 0, NULL, &id_dstring), "job_update_master_list"));
+                job_get_id_string(job_id, 0, nullptr, &id_dstring), "job_update_master_list"));
          lFreeList(&ja_tasks);
          DRETURN(SGE_EMA_FAILURE);
       }
@@ -222,11 +222,11 @@ sge_callback_result
 job_schedd_info_update_master_list(sge_evc_class_t *evc, sge_object_type type, 
                                    sge_event_action action, lListElem *event, void *clientdata)
 {
-   lList **list = NULL;
-   const lDescr *list_descr = NULL;
+   lList **list = nullptr;
+   const lDescr *list_descr = nullptr;
 
    lList *data_list;
-   lListElem *ep = NULL;
+   lListElem *ep = nullptr;
    
    DENTER(TOP_LAYER);
 
@@ -236,14 +236,14 @@ job_schedd_info_update_master_list(sge_evc_class_t *evc, sge_object_type type,
    /* We always update the whole list (consisting of one list element) */
    lFreeList(list);
 
-   if((data_list = lGetListRW(event, ET_new_version)) != NULL) {
-      if((ep = lFirstRW(data_list)) != NULL) {
+   if((data_list = lGetListRW(event, ET_new_version)) != nullptr) {
+      if((ep = lFirstRW(data_list)) != nullptr) {
          ep = lDechainElem(data_list, ep);
       }
    }
 
    /* if neccessary, create list and copy schedd info */
-   if(ep != NULL) {
+   if(ep != nullptr) {
       *list = lCreateList("job schedd info", list_descr);
       lAppendElem(*list, ep);
    }

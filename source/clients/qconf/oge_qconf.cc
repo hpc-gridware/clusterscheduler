@@ -50,8 +50,8 @@ extern char **environ;
 /************************************************************************/
 int main(int argc, char **argv)
 {
-   lList *alp = NULL;
-   sge_gdi_ctx_class_t *ctx = NULL;
+   lList *alp = nullptr;
+   sge_gdi_ctx_class_t *ctx = nullptr;
 
    DENTER_MAIN(TOP_LAYER, "qconf");
 

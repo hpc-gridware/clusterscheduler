@@ -52,7 +52,7 @@ void usage(void)
 
 int main(int argc, char **argv)
 {
-   struct passwd *pw = NULL;
+   struct passwd *pw = nullptr;
    int i;
 
    if (argc < 3)
@@ -63,7 +63,7 @@ int main(int argc, char **argv)
       execvp(argv[0], argv);
       fprintf(stderr, "execvp errno=%d\n", errno);
       fprintf(stderr, "Arguments, passed to adminrun:\n");
-      for (i=0; argv[i] != NULL; i++) {
+      for (i=0; argv[i] != nullptr; i++) {
          fprintf(stderr, "argv[%d] = %s\n", i, argv[i]);
       }
       fprintf(stderr, MSG_COMMAND_EXECUTEFAILED_S , argv[0]);
@@ -88,7 +88,7 @@ int main(int argc, char **argv)
    execvp(argv[0], argv);
    fprintf(stderr, "execvp errno=%d\n", errno);
    fprintf(stderr, "Arguments, passed to adminrun:\n");
-   for (i=0; argv[i] != NULL; i++) {
+   for (i=0; argv[i] != nullptr; i++) {
       fprintf(stderr, "argv[%d] = %s\n", i, argv[i]);
    }
 

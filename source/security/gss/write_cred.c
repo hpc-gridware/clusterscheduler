@@ -57,7 +57,7 @@ void
 usage(char *progname)
 {
    char *p;
-   p = (NULL == (p = strrchr(progname,'/'))) ? progname : p+1;
+   p = (nullptr == (p = strrchr(progname,'/'))) ? progname : p+1;
    fprintf(stderr, MSG_GSS_WRITECRED_USAGE_S , p);
    fprintf(stderr, "\n");
    exit(1);

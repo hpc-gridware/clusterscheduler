@@ -72,9 +72,9 @@ int main(int argc, char *argv[])
       name = lNm2Str(nm);
       value = object_append_field_to_dstring(queue, &answer_list, 
                                              &queue_str, nm, '\0');
-      reread_value = NULL;
+      reread_value = nullptr;
 
-      if(value != NULL) {
+      if(value != nullptr) {
          if(!object_parse_field_from_string(copy, &answer_list, nm, value)) {
             fprintf(stderr, "setting value for field %s failed\n", name);
          } else {
@@ -85,15 +85,15 @@ int main(int argc, char *argv[])
 
 #if 1
       printf("%s\t%s\t%s\n", name, 
-             value == NULL ? "<null>" : value,
-             reread_value == NULL ? "<null>" : reread_value);
+             value == nullptr ? "<null>" : value,
+             reread_value == nullptr ? "<null>" : reread_value);
 #endif
 
       if(sge_strnullcmp(value, reread_value) != 0) {
          fprintf(stderr, "regression test for object_[gs]et_field_contents failed for attribute "SFQ": "SFQ" != "SFQ"\n", 
                  name, 
-                 value != NULL ? value : "<null>", 
-                 reread_value != NULL ? reread_value : "<null>");
+                 value != nullptr ? value : "<null>",
+                 reread_value != nullptr ? reread_value : "<null>");
       }
    }
 

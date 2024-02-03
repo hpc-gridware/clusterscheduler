@@ -91,7 +91,7 @@ host_notify_about_X(sge_gdi_ctx_class_t *ctx, lListElem *host, u_long32 x, int t
 *******************************************************************************/
 static int
 host_notify_about_X(sge_gdi_ctx_class_t *ctx, lListElem *host, u_long32 x, int tag, int progname_id) {
-   const char *hostname = NULL;
+   const char *hostname = nullptr;
    sge_pack_buffer pb;
    int ret = -1;
 

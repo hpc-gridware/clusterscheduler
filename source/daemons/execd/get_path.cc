@@ -63,12 +63,12 @@ getHomeDir(dstring *dstr_exp_path, const char *user)
    buffer = sge_malloc(size);
 
    pwd = sge_getpwnam_r(user, &pw_struct, buffer, size);
-   if (pwd == NULL) {
+   if (pwd == nullptr) {
       ERROR((SGE_EVENT, MSG_EXECD_INVALIDUSERNAME_S, user));
       sge_free(&buffer);
       DRETURN(0);
    }
-   if (pwd->pw_dir == NULL) {
+   if (pwd->pw_dir == nullptr) {
       ERROR((SGE_EVENT, MSG_EXECD_NOHOMEDIR_S, user));
       sge_free(&buffer);
       DRETURN(0);
@@ -86,8 +86,8 @@ int sge_get_path(const char *qualified_hostname, const lList *lp, const char *cw
                  u_long32 ja_task_number, int type,
                  char *pathstr, size_t pathstr_len) 
 {
-   const lListElem *ep = NULL;
-   const char *path = NULL, *host = NULL;
+   const lListElem *ep = nullptr;
+   const char *path = nullptr, *host = nullptr;
    char exp_path_buf[SGE_PATH_MAX];
    dstring dstr_exp_path;
 
@@ -100,7 +100,7 @@ int sge_get_path(const char *qualified_hostname, const lList *lp, const char *cw
     * check if there's a path for this host
     */
    ep = lGetElemHost(lp, PN_host, qualified_hostname);
-   if (ep != NULL) {
+   if (ep != nullptr) {
       path = expand_path(&dstr_exp_path, lGetString(ep, PN_path), job_number, ja_task_number, job_name, owner, qualified_hostname);
       host = lGetHost(ep, PN_host);
    } else {
@@ -110,7 +110,7 @@ int sge_get_path(const char *qualified_hostname, const lList *lp, const char *cw
       for_each_ep(ep, lp) {
          path = expand_path(&dstr_exp_path, lGetString(ep, PN_path), job_number, ja_task_number, job_name, owner, qualified_hostname);
          host = lGetHost(ep, PN_host);
-         if (host == NULL) {
+         if (host == nullptr) {
             break;
          }
       }
@@ -206,7 +206,7 @@ expand_path(dstring *dstr_exp_path, const char *in_path, u_long32 job_id, u_long
          strcat(tmp, "");
          if (!strcmp(tmp, "")) {
             if (!getHomeDir(dstr_exp_path, user)) {
-               DRETURN(NULL);
+               DRETURN(nullptr);
             }
             s = s + 2;
          } else if (!getHomeDir(dstr_exp_path, tmp)) {
@@ -219,7 +219,7 @@ expand_path(dstring *dstr_exp_path, const char *in_path, u_long32 job_id, u_long
          s = t;
          if (!strncmp(t, "$HOME", sizeof("$HOME") - 1)) {
             if (!getHomeDir(dstr_exp_path, user)) {
-               DRETURN(NULL);
+               DRETURN(nullptr);
             }
             s = t + sizeof("$HOME") - 1;
          }
@@ -278,10 +278,10 @@ expand_path(dstring *dstr_exp_path, const char *in_path, u_long32 job_id, u_long
 *     const lListElem *job     - job object
 *     const lListElem *ja_task - ja task object
 *     dstring *err_str         - optional buffer to hold error strings. If it is
-*                                NULL, errors are output.
+*                                nullptr, errors are output.
 *
 *  RESULT
-*     const char* - the path of the jobs/jatasks active job directory, or NULL if
+*     const char* - the path of the jobs/jatasks active job directory, or nullptr if
 *                   the function call failed.
 *
 *  SEE ALSO
@@ -297,19 +297,19 @@ const char *sge_make_ja_task_active_dir(const lListElem *job, const lListElem *j
 
    DENTER(TOP_LAYER);
    
-   if (err_str != NULL) {
+   if (err_str != nullptr) {
       sge_dstring_clear(err_str);
    }
    
-   if (job == NULL || ja_task == NULL) {
-      DRETURN(NULL);
+   if (job == nullptr || ja_task == nullptr) {
+      DRETURN(nullptr);
    }
 
    /* build path to active dir */
    path = sge_get_active_job_file_path(&path_buffer,
                                        lGetUlong(job, JB_job_number), 
                                        lGetUlong(ja_task, JAT_task_number), 
-                                       NULL, NULL);   
+                                       nullptr, nullptr);
 
    /* try to create it */
    result = sge_mkdir(path, 0755, false, false);
@@ -337,12 +337,12 @@ const char *sge_make_ja_task_active_dir(const lListElem *job, const lListElem *j
             DPRINTF(("could not rename old active job dir "SFN" - removing it\n", path));
 
             if (sge_rmdir(path, &error_string)) {
-               if (err_str != NULL) {
+               if (err_str != nullptr) {
                   SGE_ADD_MSG_ID(sge_dstring_sprintf(err_str, MSG_FILE_RMDIR_SS, path, 
                         sge_dstring_get_string(&error_string)));
                } else {
                   ERROR((SGE_EVENT, MSG_FILE_RMDIR_SS, path, SGE_EVENT));
-                  DRETURN(NULL);
+                  DRETURN(nullptr);
                }
             }
          }
@@ -355,12 +355,12 @@ const char *sge_make_ja_task_active_dir(const lListElem *job, const lListElem *j
 
    if (result == -1) {
       /* error creating directory */
-      if (err_str != NULL) {
+      if (err_str != nullptr) {
          sge_dstring_sprintf(err_str, MSG_FILE_CREATEDIR_SS, path, strerror(errno));
       } else {
          ERROR((SGE_EVENT, MSG_FILE_CREATEDIR_SS, path, strerror(errno)));
       }
-      DRETURN(NULL);
+      DRETURN(nullptr);
    }
 
    DRETURN(path);
@@ -384,10 +384,10 @@ const char *sge_make_ja_task_active_dir(const lListElem *job, const lListElem *j
 *     const lListElem *ja_task - the ja task object
 *     const lListElem *pe_task - the pe task object
 *     dstring *err_str         - optional buffer to hold error strings. If it is
-*                                NULL, errors are output.
+*                                nullptr, errors are output.
 *
 *  RESULT
-*     const char* - the path of the jobs/jatasks active job directory, or NULL if
+*     const char* - the path of the jobs/jatasks active job directory, or nullptr if
 *                   the function call failed.
 *
 *  SEE ALSO
@@ -401,12 +401,12 @@ const char *sge_make_pe_task_active_dir(const lListElem *job, const lListElem *j
 
    DENTER(TOP_LAYER);
   
-   if(err_str != NULL) {
+   if(err_str != nullptr) {
       sge_dstring_clear(err_str);
    }
   
-   if(job == NULL || ja_task == NULL || pe_task == NULL) {
-      DRETURN(NULL);
+   if(job == nullptr || ja_task == nullptr || pe_task == nullptr) {
+      DRETURN(nullptr);
    }
 
    /* build path to active dir */
@@ -414,17 +414,17 @@ const char *sge_make_pe_task_active_dir(const lListElem *job, const lListElem *j
                                        lGetUlong(job, JB_job_number), 
                                        lGetUlong(ja_task, JAT_task_number), 
                                        lGetString(pe_task, PET_id), 
-                                       NULL);   
+                                       nullptr);
 
    /* try to create it */
    if (sge_mkdir(path, 0755, false, false) == -1) {
       /* error creating directory */
-      if(err_str != NULL) {
+      if(err_str != nullptr) {
          sge_dstring_sprintf(err_str, MSG_FILE_CREATEDIR_SS, path, strerror(errno));
       } else {
          ERROR((SGE_EVENT, MSG_FILE_CREATEDIR_SS, path, strerror(errno)));
       }
-      DRETURN(NULL);
+      DRETURN(nullptr);
    }
 
    DRETURN(path);

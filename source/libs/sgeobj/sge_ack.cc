@@ -73,7 +73,7 @@ int sge_send_ack_to_qmaster(sge_gdi_ctx_class_t *ctx, u_long32 type, u_long32 ul
 
    pack_ack(&pb, type, ulong_val, ulong_val_2, str);
 
-   ret = sge_gdi2_send_any_request(ctx, 0, NULL, rhost, commproc, id, &pb, TAG_ACK_REQUEST, 0, alpp);
+   ret = sge_gdi2_send_any_request(ctx, 0, nullptr, rhost, commproc, id, &pb, TAG_ACK_REQUEST, 0, alpp);
    clear_packbuffer(&pb);
    answer_list_output (alpp);
 

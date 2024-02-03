@@ -73,7 +73,7 @@ static pthread_mutex_t jsv_mutex = PTHREAD_MUTEX_INITIALIZER;
  * of the corresponding JSV. The order of the elements in the list 
  * is important because the JSV's are executed in that order.
  */
-static lList *jsv_list = NULL;   /* JSV_Type */
+static lList *jsv_list = nullptr;   /* JSV_Type */
 
 /****** sgeobj/jsv/jsv_create() ***************************************************
 *  NAME
@@ -107,13 +107,13 @@ static lListElem *
 jsv_create(const char *name, const char *context, lList **answer_list, const char *jsv_url,
            const char *type, const char *user, const char *scriptfile)
 {
-   lListElem *new_jsv = NULL;
+   lListElem *new_jsv = nullptr;
 
    DENTER(TOP_LAYER);
-   if (name != NULL && scriptfile != NULL) {
+   if (name != nullptr && scriptfile != nullptr) {
       new_jsv = lCreateElem(JSV_Type);
 
-      if (new_jsv != NULL) {
+      if (new_jsv != nullptr) {
          SGE_STRUCT_STAT st;
 
          if (SGE_STAT(scriptfile, &st) == 0) {
@@ -128,20 +128,20 @@ jsv_create(const char *name, const char *context, lList **answer_list, const cha
             lSetString(new_jsv, JSV_command, scriptfile);
             lSetString(new_jsv, JSV_pid, pid_buffer);
             lSetBool(new_jsv, JSV_send_env, false);
-            lSetRef(new_jsv, JSV_in, NULL);
-            lSetRef(new_jsv, JSV_out, NULL);
-            lSetRef(new_jsv, JSV_err, NULL);
+            lSetRef(new_jsv, JSV_in, nullptr);
+            lSetRef(new_jsv, JSV_out, nullptr);
+            lSetRef(new_jsv, JSV_err, nullptr);
             lSetBool(new_jsv, JSV_has_to_restart, false);
             lSetUlong(new_jsv, JSV_last_mod, st.st_mtime);
             lSetBool(new_jsv, JSV_test, false);
 
             sge_mutex_lock("jsv_list", __func__, __LINE__, &jsv_mutex);
 
-            if (jsv_list == NULL) {
+            if (jsv_list == nullptr) {
                jsv_list = lCreateList("", JSV_Type);
             }
-            if (jsv_list != NULL) {
-               lInsertElem(jsv_list, NULL, new_jsv);
+            if (jsv_list != nullptr) {
+               lInsertElem(jsv_list, nullptr, new_jsv);
             } else {
                answer_list_add_sprintf(answer_list, STATUS_EUNKNOWN, ANSWER_QUALITY_ERROR,
                                        MSG_JSV_INSTANCIATE_S, scriptfile);
@@ -165,11 +165,11 @@ jsv_create(const char *name, const char *context, lList **answer_list, const cha
 static pid_t
 jsv_get_pid(lListElem *jsv) {
    pid_t pid = -1;
-   const char *pid_string = NULL;
+   const char *pid_string = nullptr;
 
    DENTER(TOP_LAYER);
    pid_string = lGetString(jsv, JSV_pid);
-   if (pid_string != NULL) {
+   if (pid_string != nullptr) {
       sscanf(pid_string, pid_t_fmt, &pid);
    }
    DRETURN(pid);
@@ -282,13 +282,13 @@ jsv_start(lListElem *jsv, lList **answer_list)
    bool ret = true;
 
    DENTER(TOP_LAYER);
-   if (jsv != NULL && jsv_is_started(jsv) == false) {
+   if (jsv != nullptr && jsv_is_started(jsv) == false) {
       const char *scriptfile = lGetString(jsv, JSV_command);
       const char *user = lGetString(jsv, JSV_user);
       pid_t pid = -1;
-      FILE *fp_in = NULL;
-      FILE *fp_out = NULL;
-      FILE *fp_err = NULL;
+      FILE *fp_in = nullptr;
+      FILE *fp_out = nullptr;
+      FILE *fp_err = nullptr;
       SGE_STRUCT_STAT st;
 
       if (SGE_STAT(scriptfile, &st) == 0) {
@@ -296,7 +296,7 @@ jsv_start(lListElem *jsv, lList **answer_list)
          lSetUlong(jsv, JSV_last_mod, st.st_mtime);
 
          pid = sge_peopen_r("/bin/sh", 0, scriptfile, 
-                            (user != NULL ? user : get_admin_user_name()), NULL,
+                            (user != nullptr ? user : get_admin_user_name()), nullptr,
                             &fp_in, &fp_out, &fp_err, false);
          if (pid == -1) {
             answer_list_add_sprintf(answer_list, STATUS_EUNKNOWN, ANSWER_QUALITY_ERROR,
@@ -427,7 +427,7 @@ jsv_stop(lListElem *jsv, lList **answer_list, bool try_soft_quit) {
 *     dstring *jsv_url    - dstring containing a JSV url 
 *     lList **answer_list - answer_list
 *     dstring *type       - "script" 
-*     dstring *user       - specified username or NULL 
+*     dstring *user       - specified username or nullptr
 *     dstring *path       - absolute path to a script or binary 
 *     bool in_client      - true in commandline clients
 *                           false within qmaster 
@@ -446,7 +446,7 @@ bool jsv_url_parse(dstring *jsv_url, lList **answer_list, dstring *type,
    bool success = true;
 
    DENTER(TOP_LAYER);
-   if (jsv_url != NULL) {
+   if (jsv_url != nullptr) {
       dstring tmp = DSTRING_INIT;
       const char *t, *u, *p;
 
@@ -465,25 +465,25 @@ bool jsv_url_parse(dstring *jsv_url, lList **answer_list, dstring *type,
       u = sge_dstring_get_string(user);
       p = sge_dstring_get_string(path);
 
-      DPRINTF(("type = %s\n", t != NULL? t : "<null>"));
-      DPRINTF(("u = %s\n", u != NULL ? u : "<null>"));
-      DPRINTF(("p = %s\n", p != NULL ? p : "<null>"));
+      DPRINTF(("type = %s\n", t != nullptr? t : "<null>"));
+      DPRINTF(("u = %s\n", u != nullptr ? u : "<null>"));
+      DPRINTF(("p = %s\n", p != nullptr ? p : "<null>"));
 
       /*
        * either the type is not specified (the type "script" is used)
        * or "script" has to be specified. In future we might support 
        * "sharedlib" or others 
        */
-      if ((t == NULL) ||
-          (t != NULL && strcmp(t, "script") == 0)) {
+      if ((t == nullptr) ||
+          (t != nullptr && strcmp(t, "script") == 0)) {
 
-         if (in_client && u != NULL) {
+         if (in_client && u != nullptr) {
             answer_list_add_sprintf(answer_list, STATUS_EEXIST, 
                                     ANSWER_QUALITY_ERROR, MSG_JSV_USER_S);
          } else {
-            if (p != NULL) {
+            if (p != nullptr) {
                if ((sge_is_file(p) && sge_is_executable(p)) || strcasecmp("none", p) == 0) {
-                  if (u != NULL) {
+                  if (u != nullptr) {
                      struct passwd *pw;
                      struct passwd pw_struct;
                      char *buffer;
@@ -493,7 +493,7 @@ bool jsv_url_parse(dstring *jsv_url, lList **answer_list, dstring *type,
                      buffer = sge_malloc(size);
                      pw = sge_getpwnam_r(u, &pw_struct, buffer, size);
                      sge_free(&buffer);
-                     if (pw == NULL) {
+                     if (pw == nullptr) {
                         answer_list_add_sprintf(answer_list, STATUS_EEXIST, ANSWER_QUALITY_ERROR,  
                                                  MSG_JSV_USER_EXIST_S, u);
                         success = false;
@@ -552,7 +552,7 @@ jsv_send_command(lListElem *jsv, lList **answer_list, const char *message)
 {
    bool ret = true;
    dstring buffer = DSTRING_INIT;
-   const char *new_message = NULL;
+   const char *new_message = nullptr;
 
    DENTER(TOP_LAYER);
    sge_dstring_sprintf(&buffer, "%s\n", message);
@@ -609,7 +609,7 @@ jsv_list_add(const char *name, const char *context, lList **answer_list, const c
    DENTER(TOP_LAYER);
 
    if (strcasecmp("none", jsv_url) != 0) {
-      lListElem *new_jsv = NULL;
+      lListElem *new_jsv = nullptr;
       dstring input = DSTRING_INIT;
       dstring type = DSTRING_INIT;
       dstring user = DSTRING_INIT;
@@ -624,7 +624,7 @@ jsv_list_add(const char *name, const char *context, lList **answer_list, const c
                            sge_dstring_get_string(&type),
                            sge_dstring_get_string(&user),
                            sge_dstring_get_string(&path));
-      if (new_jsv == NULL) {
+      if (new_jsv == nullptr) {
          ret = false;
       }   
 
@@ -666,14 +666,14 @@ jsv_list_remove(const char *name, const char *context)
    bool ret = true;
 
    DENTER(TOP_LAYER);
-   if (name != NULL && context != NULL) {
-      const void *iterator = NULL;
+   if (name != nullptr && context != nullptr) {
+      const void *iterator = nullptr;
       lListElem *jsv_next;
       lListElem *jsv;
 
       sge_mutex_lock("jsv_list", __func__, __LINE__, &jsv_mutex);
       jsv_next = lGetElemStrFirstRW(jsv_list, JSV_context, context, &iterator);
-      while ((jsv = jsv_next) != NULL) {
+      while ((jsv = jsv_next) != nullptr) {
          jsv_next = lGetElemStrNextRW(jsv_list, JSV_context, context, &iterator);
 
          if ((strcmp(lGetString(jsv, JSV_name), name) == 0) && (strcmp(lGetString(jsv, JSV_context), context) == 0)) {
@@ -716,7 +716,7 @@ jsv_is_enabled(const char *context) {
    DENTER(TOP_LAYER);
 
    jsv_url = mconf_get_jsv_url();
-   jsv_list_update("jsv", context, NULL, jsv_url);
+   jsv_list_update("jsv", context, nullptr, jsv_url);
    sge_free(&jsv_url);
    sge_mutex_lock("jsv_list", __func__, __LINE__, &jsv_mutex);
    ret = (lGetNumberOfElem(jsv_list) > 0) ? true : false;
@@ -755,9 +755,9 @@ jsv_list_remove_all(void)
    DENTER(TOP_LAYER);
    sge_mutex_lock("jsv_list", __func__, __LINE__, &jsv_mutex);
    jsv_next = lFirstRW(jsv_list);
-   while ((jsv = jsv_next) != NULL) {
+   while ((jsv = jsv_next) != nullptr) {
       jsv_next = lNextRW(jsv);
-      jsv_stop(jsv, NULL, true);
+      jsv_stop(jsv, nullptr, true);
       lRemoveElem(jsv_list, &jsv);
    }
    sge_mutex_unlock("jsv_list", __func__, __LINE__, &jsv_mutex);
@@ -809,7 +809,7 @@ jsv_list_update(const char *name, const char *context,
 
    DENTER(TOP_LAYER);
 
-   if (name != NULL && context != NULL) {
+   if (name != nullptr && context != nullptr) {
       bool already_exists = false;
 
       /*
@@ -821,22 +821,22 @@ jsv_list_update(const char *name, const char *context,
        * is changed to none then stop the process and remove data structures.
        */
       {
-         const void *iterator = NULL;
-         lListElem *jsv = NULL;
-         lListElem *jsv_next = NULL;
+         const void *iterator = nullptr;
+         lListElem *jsv = nullptr;
+         lListElem *jsv_next = nullptr;
          bool not_parsed = true;
-         bool use_old_url = (jsv_url == NULL) ? true : false;
+         bool use_old_url = (jsv_url == nullptr) ? true : false;
 
          sge_mutex_lock("jsv_list", __func__, __LINE__, &jsv_mutex);
 
          ret = true;
          jsv_next = lGetElemStrFirstRW(jsv_list, JSV_context, context, &iterator);
-         while ((ret == true) && ((jsv = jsv_next) != NULL)) {
+         while ((ret == true) && ((jsv = jsv_next) != nullptr)) {
             dstring input = DSTRING_INIT;
             dstring type = DSTRING_INIT;
             dstring user = DSTRING_INIT;
             dstring path = DSTRING_INIT; 
-            const char *old_jsv_url = NULL; 
+            const char *old_jsv_url = nullptr;
             bool in_client = false;
 
             /* position pointer to the next element */
@@ -909,7 +909,7 @@ jsv_list_update(const char *name, const char *context,
       /*
        * create a new JSV element if no one exists
        */
-      if (ret && !already_exists && jsv_url != NULL && strcasecmp(jsv_url, "none") != 0) {
+      if (ret && !already_exists && jsv_url != nullptr && strcasecmp(jsv_url, "none") != 0) {
          ret = jsv_list_add(name, context, answer_list, jsv_url);
       }
    }
@@ -987,16 +987,16 @@ jsv_do_verify(sge_gdi_ctx_class_t* ctx, const char *context, lListElem **job,
    bool ret = true;
    lListElem *jsv;
    lListElem *jsv_next;
-   const void *iterator = NULL;
+   const void *iterator = nullptr;
    
    DENTER(TOP_LAYER);
 
-   if (context != NULL && job != NULL) {
-      const char *jsv_url = NULL;
+   if (context != nullptr && job != nullptr) {
+      const char *jsv_url = nullptr;
       bool holding_mutex = false;
 
       /*
-       * Depending on the context either provide a NULL pointer to 
+       * Depending on the context either provide a nullptr pointer to
        * jsv_list_update or the current setting of the configuration.
        * In the client context this means that the registered jsv_url
        * will be used which was provided at command start via -jsv
@@ -1004,7 +1004,7 @@ jsv_do_verify(sge_gdi_ctx_class_t* ctx, const char *context, lListElem **job,
        * will be used which is part of the global configuration.
        */
       if (strcmp(context, JSV_CONTEXT_CLIENT) == 0) {
-         jsv_url = NULL;
+         jsv_url = nullptr;
          DPRINTF(("JSV client context\n"));
       } else {
          jsv_url = mconf_get_jsv_url();
@@ -1024,7 +1024,7 @@ jsv_do_verify(sge_gdi_ctx_class_t* ctx, const char *context, lListElem **job,
        * execute JSV scripts for this thread
        */
       jsv_next = lGetElemStrFirstRW(jsv_list, JSV_context, context, &iterator);
-      while ((ret == true) && ((jsv = jsv_next) != NULL)) {
+      while ((ret == true) && ((jsv = jsv_next) != nullptr)) {
          jsv_next = lGetElemStrNextRW(jsv_list, JSV_context, context, &iterator);
 
          if (jsv_is_started(jsv) == false) {
@@ -1051,14 +1051,14 @@ jsv_do_verify(sge_gdi_ctx_class_t* ctx, const char *context, lListElem **job,
              *    - holding_lock is true because this code is then executed within the 
              *      master as part of a GDI JOB ADD request. The lock was accquired outside
              *    - jsv_mutex is currently hold because it was accquired above
-             *    - jsv_next will always be NULL because there is only one server JSV 
+             *    - jsv_next will always be nullptr because there is only one server JSV
              *      instance which has to be executed,
              *
              * B) If we came here and this code is executed due to a configured client JSV then
              *
              *    - holding_lock is false. There is no global lock in the client code.
              *    - jsv_mutex is currently hold because it was accquired above.    
-             *    - jsv_next might be != NULL when there are other client JSVs which have
+             *    - jsv_next might be != nullptr when there are other client JSVs which have
              *      to be executed after the one which is currently handled.
              *
              * We can distinguish between case A and B by looking at holding_lock. In case A
@@ -1090,14 +1090,14 @@ jsv_do_verify(sge_gdi_ctx_class_t* ctx, const char *context, lListElem **job,
                ret &= jsv_do_communication(ctx, jsv, answer_list);
             }
 
-            lSetRef(jsv, JSV_old_job, NULL); 
-            lSetRef(jsv, JSV_new_job, NULL); 
+            lSetRef(jsv, JSV_old_job, nullptr);
+            lSetRef(jsv, JSV_new_job, nullptr);
 
             if (lGetBool(jsv, JSV_accept)) {
                DPRINTF(("JSV accepts job"));
                lFreeElem(job);
                *job = new_job;
-               new_job = NULL;
+               new_job = nullptr;
                ret = true;
             } else {
                u_long32 jid = lGetUlong(new_job, JB_job_number);

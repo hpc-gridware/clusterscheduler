@@ -74,22 +74,22 @@ cqueue_add_del_mod_via_gdi(sge_gdi_ctx_class_t *ctx, lListElem *this_elem, lList
    bool ret = true;
 
    DENTER(TOP_LAYER);
-   if (this_elem != NULL) {
+   if (this_elem != nullptr) {
       u_long32 operation = SGE_GDI_GET_OPERATION(gdi_command);
       bool do_verify = (operation == SGE_GDI_MOD) || (operation == SGE_GDI_ADD) ? true : false;
 
       if (do_verify) {
          ret &= cqueue_verify_attributes(this_elem, answer_list,
-                                         this_elem, false, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL);
+                                         this_elem, false, nullptr, nullptr, nullptr, nullptr, nullptr, nullptr, nullptr, nullptr);
       }
       if (ret) {
-         lList *cqueue_list = NULL;
-         lList *gdi_answer_list = NULL;
+         lList *cqueue_list = nullptr;
+         lList *gdi_answer_list = nullptr;
 
          cqueue_list = lCreateList("", CQ_Type);
          lAppendElem(cqueue_list, this_elem);
          gdi_answer_list = ctx->gdi(ctx, SGE_CQ_LIST, gdi_command,
-                                   &cqueue_list, NULL, NULL);
+                                   &cqueue_list, nullptr, nullptr);
          answer_list_replace(answer_list, &gdi_answer_list);
          lDechainElem(cqueue_list, this_elem);
          lFreeList(&cqueue_list);
@@ -101,14 +101,14 @@ cqueue_add_del_mod_via_gdi(sge_gdi_ctx_class_t *ctx, lListElem *this_elem, lList
 lListElem *
 cqueue_get_via_gdi(sge_gdi_ctx_class_t *ctx, lList **answer_list, const char *name) 
 {
-   lListElem *ret = NULL;
+   lListElem *ret = nullptr;
 
    DENTER(TOP_LAYER);
-   if (name != NULL) {
-      lList *gdi_answer_list = NULL;
-      lEnumeration *what = NULL;
-      lCondition *where = NULL;
-      lList *cqueue_list = NULL;
+   if (name != nullptr) {
+      lList *gdi_answer_list = nullptr;
+      lEnumeration *what = nullptr;
+      lCondition *where = nullptr;
+      lList *cqueue_list = nullptr;
 
       what = lWhat("%T(ALL)", CQ_Type);
       where = lWhere("%T(%I==%s)", CQ_Type, CQ_name, name);
@@ -137,11 +137,11 @@ static bool cqueue_hgroup_get_via_gdi(sge_gdi_ctx_class_t *ctx, lList **answer_l
 
    DENTER(TOP_LAYER);
 
-   if (hgrp_list != NULL && cq_list != NULL) {
+   if (hgrp_list != nullptr && cq_list != nullptr) {
       state_gdi_multi state = STATE_GDI_MULTI_INIT;
-      lList *multi_answer_list = NULL;
-      lCondition *cqueue_where = NULL;
-      const lListElem *qref = NULL;
+      lList *multi_answer_list = nullptr;
+      lCondition *cqueue_where = nullptr;
+      const lListElem *qref = nullptr;
       bool fetch_all_hgroup = false;
       bool fetch_all_qi = false;
       bool fetch_all_nqi = false;
@@ -153,8 +153,8 @@ static bool cqueue_hgroup_get_via_gdi(sge_gdi_ctx_class_t *ctx, lList **answer_l
          dstring host_domain = DSTRING_INIT;
          const char *name = lGetString(qref, QR_name);
          bool has_hostname, has_domain;
-         lCondition *add_cqueue_where = NULL;
-         const char* cqueue_name_str = NULL;
+         lCondition *add_cqueue_where = nullptr;
+         const char* cqueue_name_str = nullptr;
          
          if (!cqueue_name_split(name, &cqueue_name, &host_domain,
                            &has_hostname, &has_domain)) {
@@ -168,7 +168,7 @@ static bool cqueue_hgroup_get_via_gdi(sge_gdi_ctx_class_t *ctx, lList **answer_l
 
          cqueue_name_str = sge_dstring_get_string(&cqueue_name);
          
-         if (cqueue_name_str == NULL) {
+         if (cqueue_name_str == nullptr) {
             answer_list_add_sprintf(answer_list, STATUS_ESYNTAX,
                              ANSWER_QUALITY_ERROR, MSG_CQUEUE_NAMENOTCORRECT_SS, 
                              name, name);
@@ -178,7 +178,7 @@ static bool cqueue_hgroup_get_via_gdi(sge_gdi_ctx_class_t *ctx, lList **answer_l
          
          add_cqueue_where = lWhere("%T(%I p= %s)", CQ_Type, CQ_name, 
                                    sge_dstring_get_string(&cqueue_name));
-         if (cqueue_where == NULL) {
+         if (cqueue_where == nullptr) {
             cqueue_where = add_cqueue_where;
          } else {
             cqueue_where = lOrWhere(cqueue_where, add_cqueue_where);   
@@ -189,7 +189,7 @@ static bool cqueue_hgroup_get_via_gdi(sge_gdi_ctx_class_t *ctx, lList **answer_l
       if (ret && fetch_all_hgroup) { 
          lEnumeration *what = lWhat("%T(ALL)", HGRP_Type);
          hgrp_id = ctx->gdi_multi(ctx, answer_list, SGE_GDI_RECORD, SGE_HGRP_LIST, 
-                                 SGE_GDI_GET, NULL, NULL, what, &state, true);
+                                 SGE_GDI_GET, nullptr, nullptr, what, &state, true);
          lFreeWhat(&what);
       }  
       if (ret) {
@@ -197,17 +197,17 @@ static bool cqueue_hgroup_get_via_gdi(sge_gdi_ctx_class_t *ctx, lList **answer_l
 
          what = enumeration_create_reduced_cq(fetch_all_qi, fetch_all_nqi);
          cq_id = ctx->gdi_multi(ctx, answer_list, SGE_GDI_SEND, SGE_CQ_LIST,
-                               SGE_GDI_GET, NULL, cqueue_where, what,
+                               SGE_GDI_GET, nullptr, cqueue_where, what,
                                &state, true);
          ctx->gdi_wait(ctx, answer_list, &multi_answer_list, &state);
          lFreeWhat(&what);
       }
       if (ret && fetch_all_hgroup) {
-         lList *local_answer_list = NULL;
+         lList *local_answer_list = nullptr;
          
          sge_gdi_extract_answer(&local_answer_list, SGE_GDI_GET, 
                       SGE_HGRP_LIST, hgrp_id, multi_answer_list, hgrp_list);
-         if (local_answer_list != NULL) {
+         if (local_answer_list != nullptr) {
             lListElem *answer = lFirstRW(local_answer_list);
 
             if (lGetUlong(answer, AN_status) != STATUS_OK) {
@@ -219,11 +219,11 @@ static bool cqueue_hgroup_get_via_gdi(sge_gdi_ctx_class_t *ctx, lList **answer_l
          lFreeList(&local_answer_list);
       }  
       if (ret) {
-         lList *local_answer_list = NULL;
+         lList *local_answer_list = nullptr;
          
          sge_gdi_extract_answer(&local_answer_list, SGE_GDI_GET, 
                       SGE_CQ_LIST, cq_id, multi_answer_list, cq_list);
-         if (local_answer_list != NULL) {
+         if (local_answer_list != nullptr) {
             lListElem *answer = lFirstRW(local_answer_list);
 
             if (lGetUlong(answer, AN_status) != STATUS_OK) {
@@ -247,25 +247,25 @@ cqueue_hgroup_get_all_via_gdi(sge_gdi_ctx_class_t *ctx, lList **answer_list,
    bool ret = true;
 
    DENTER(TOP_LAYER);
-   if (hgrp_list != NULL && cq_list != NULL) {
+   if (hgrp_list != nullptr && cq_list != nullptr) {
       state_gdi_multi state = STATE_GDI_MULTI_INIT;
-      lEnumeration *hgrp_what = NULL; 
-      lEnumeration *cqueue_what = NULL;
+      lEnumeration *hgrp_what = nullptr;
+      lEnumeration *cqueue_what = nullptr;
       int hgrp_id = 0; 
       int cq_id = 0;
-      lList *local_answer_list = NULL;
-      lList *multi_answer_list = NULL;
+      lList *local_answer_list = nullptr;
+      lList *multi_answer_list = nullptr;
 
       /* HGRP */
       hgrp_what = lWhat("%T(ALL)", HGRP_Type);
       hgrp_id = ctx->gdi_multi(ctx, answer_list, SGE_GDI_RECORD, SGE_HGRP_LIST,
-                               SGE_GDI_GET, NULL, NULL, hgrp_what, &state, true);
+                               SGE_GDI_GET, nullptr, nullptr, hgrp_what, &state, true);
       lFreeWhat(&hgrp_what);
 
       /* CQ */
       cqueue_what = lWhat("%T(ALL)", CQ_Type);
       cq_id = ctx->gdi_multi(ctx, answer_list, SGE_GDI_SEND, SGE_CQ_LIST,
-                            SGE_GDI_GET, NULL, NULL, cqueue_what,
+                            SGE_GDI_GET, nullptr, nullptr, cqueue_what,
                             &state, true);
       ctx->gdi_wait(ctx, answer_list, &multi_answer_list, &state);
       lFreeWhat(&cqueue_what);
@@ -273,7 +273,7 @@ cqueue_hgroup_get_all_via_gdi(sge_gdi_ctx_class_t *ctx, lList **answer_list,
       /* HGRP */
       sge_gdi_extract_answer(&local_answer_list, SGE_GDI_GET,
                       SGE_HGRP_LIST, hgrp_id, multi_answer_list, hgrp_list);
-      if (local_answer_list != NULL) {
+      if (local_answer_list != nullptr) {
          lListElem *answer = lFirstRW(local_answer_list);
 
          if (lGetUlong(answer, AN_status) != STATUS_OK) {
@@ -287,7 +287,7 @@ cqueue_hgroup_get_all_via_gdi(sge_gdi_ctx_class_t *ctx, lList **answer_list,
       /* CQ */   
       sge_gdi_extract_answer(&local_answer_list, SGE_GDI_GET, 
                    SGE_CQ_LIST, cq_id, multi_answer_list, cq_list);
-      if (local_answer_list != NULL) {
+      if (local_answer_list != nullptr) {
          lListElem *answer = lFirstRW(local_answer_list);
 
          if (lGetUlong(answer, AN_status) != STATUS_OK) {
@@ -314,8 +314,8 @@ cqueue_provide_modify_context(sge_gdi_ctx_class_t *ctx, lListElem **this_elem, l
    gid_t gid = bootstrap_get_gid();
    
    DENTER(TOP_LAYER);
-   if (this_elem != NULL && *this_elem) {
-      const char *filename = NULL;      
+   if (this_elem != nullptr && *this_elem) {
+      const char *filename = nullptr;
       filename = spool_flatfile_write_object(answer_list, *this_elem,
                                                      false, CQ_fields,
                                                      &qconf_sfi, SP_DEST_TMP,
@@ -323,7 +323,7 @@ cqueue_provide_modify_context(sge_gdi_ctx_class_t *ctx, lListElem **this_elem, l
                                                      false);
       
       if (answer_list_output(answer_list)) {
-         if (filename != NULL) { 
+         if (filename != nullptr) {
             unlink(filename);
             sge_free(&filename);
          }
@@ -335,16 +335,16 @@ cqueue_provide_modify_context(sge_gdi_ctx_class_t *ctx, lListElem **this_elem, l
          lListElem *cqueue;
 
          fields_out[0] = NoName;
-         cqueue = spool_flatfile_read_object(answer_list, CQ_Type, NULL,
+         cqueue = spool_flatfile_read_object(answer_list, CQ_Type, nullptr,
                                              CQ_fields, fields_out, false, 
                                              &qconf_sfi, SP_FORM_ASCII, 
-                                             NULL, filename);
+                                             nullptr, filename);
 
          if (answer_list_output(answer_list)) {
             lFreeElem(&cqueue);
          }
 
-         if (cqueue != NULL) {
+         if (cqueue != nullptr) {
             missing_field = spool_get_unprocessed_field(CQ_fields, fields_out,
                                                         answer_list);
          }
@@ -354,7 +354,7 @@ cqueue_provide_modify_context(sge_gdi_ctx_class_t *ctx, lListElem **this_elem, l
             answer_list_output(answer_list);
          }
 
-         if (cqueue != NULL) {
+         if (cqueue != nullptr) {
             if (object_has_differences(*this_elem, answer_list, 
                                        cqueue, false) ||
                 ignore_unchanged_message) {
@@ -386,10 +386,10 @@ cqueue_add(sge_gdi_ctx_class_t *ctx, lList **answer_list, const char *name)
    bool ret = true;
 
    DENTER(TOP_LAYER);
-   if (name != NULL) {
+   if (name != nullptr) {
       lListElem *cqueue = cqueue_create(answer_list, name);
 
-      if (cqueue == NULL) {
+      if (cqueue == nullptr) {
          ret = false;
       }
       if (ret) {
@@ -417,19 +417,19 @@ cqueue_add_from_file(sge_gdi_ctx_class_t *ctx, lList **answer_list, const char *
    int missing_field = NoName;
 
    DENTER(TOP_LAYER);
-   if (filename != NULL) {
+   if (filename != nullptr) {
       lListElem *cqueue;
 
       fields_out[0] = NoName;
-      cqueue = spool_flatfile_read_object(answer_list, CQ_Type, NULL,
+      cqueue = spool_flatfile_read_object(answer_list, CQ_Type, nullptr,
                                           CQ_fields, fields_out, false, &qconf_sfi,
-                                          SP_FORM_ASCII, NULL, filename);
+                                          SP_FORM_ASCII, nullptr, filename);
             
       if (answer_list_output(answer_list)) {
          lFreeElem(&cqueue);
       }
 
-      if (cqueue != NULL) {
+      if (cqueue != nullptr) {
          missing_field = spool_get_unprocessed_field (CQ_fields, fields_out, answer_list);
       }
 
@@ -438,7 +438,7 @@ cqueue_add_from_file(sge_gdi_ctx_class_t *ctx, lList **answer_list, const char *
          answer_list_output(answer_list);
       }
 
-      if (cqueue == NULL) {
+      if (cqueue == nullptr) {
          ret = false;
       }
       if (ret) {
@@ -458,10 +458,10 @@ cqueue_modify(sge_gdi_ctx_class_t *ctx, lList **answer_list, const char *name)
    bool ret = true;
 
    DENTER(TOP_LAYER);
-   if (name != NULL) {
+   if (name != nullptr) {
       lListElem *cqueue = cqueue_get_via_gdi(ctx, answer_list, name);
 
-      if (cqueue == NULL) {
+      if (cqueue == nullptr) {
          sprintf(SGE_EVENT, MSG_CQUEUE_DOESNOTEXIST_S, name);
          answer_list_add(answer_list, SGE_EVENT,
                          STATUS_ERROR1, ANSWER_QUALITY_ERROR);
@@ -488,19 +488,19 @@ cqueue_modify_from_file(sge_gdi_ctx_class_t *ctx, lList **answer_list, const cha
    int missing_field = NoName;
 
    DENTER(TOP_LAYER);
-   if (filename != NULL) {
+   if (filename != nullptr) {
       lListElem *cqueue;
 
       fields_out[0] = NoName;
-      cqueue = spool_flatfile_read_object(answer_list, CQ_Type, NULL,
+      cqueue = spool_flatfile_read_object(answer_list, CQ_Type, nullptr,
                                           CQ_fields, fields_out, false, &qconf_sfi,
-                                          SP_FORM_ASCII, NULL, filename);
+                                          SP_FORM_ASCII, nullptr, filename);
             
       if (answer_list_output(answer_list)) {
          lFreeElem(&cqueue);
       }
 
-      if (cqueue != NULL) {
+      if (cqueue != nullptr) {
          missing_field = spool_get_unprocessed_field (CQ_fields, fields_out, answer_list);
       }
 
@@ -509,7 +509,7 @@ cqueue_modify_from_file(sge_gdi_ctx_class_t *ctx, lList **answer_list, const cha
          answer_list_output(answer_list);
       }      
 
-      if (cqueue == NULL) {
+      if (cqueue == nullptr) {
          sprintf(SGE_EVENT, MSG_CQUEUE_FILENOTCORRECT_S, filename);
          answer_list_add(answer_list, SGE_EVENT,
                          STATUS_ERROR1, ANSWER_QUALITY_ERROR);
@@ -519,7 +519,7 @@ cqueue_modify_from_file(sge_gdi_ctx_class_t *ctx, lList **answer_list, const cha
          ret &= cqueue_add_del_mod_via_gdi(ctx, cqueue, answer_list, 
                                            SGE_GDI_MOD | SGE_GDI_SET_ALL);
       }
-      if (cqueue != NULL) {
+      if (cqueue != nullptr) {
          lFreeElem(&cqueue);
       }
    }
@@ -533,10 +533,10 @@ cqueue_delete(sge_gdi_ctx_class_t *ctx, lList **answer_list, const char *name)
    bool ret = true;
 
    DENTER(TOP_LAYER);
-   if (name != NULL) {
+   if (name != nullptr) {
       lListElem *cqueue = cqueue_create(answer_list, name); 
    
-      if (cqueue != NULL) {
+      if (cqueue != nullptr) {
          ret &= cqueue_add_del_mod_via_gdi(ctx, cqueue, answer_list, SGE_GDI_DEL); 
       }
 
@@ -551,9 +551,9 @@ cqueue_show(sge_gdi_ctx_class_t *ctx, lList **answer_list, const lList *qref_pat
    bool ret = true;
 
    DENTER(TOP_LAYER);
-   if (qref_pattern_list != NULL) {
-      lList *hgroup_list = NULL;
-      lList *cqueue_list = NULL;
+   if (qref_pattern_list != nullptr) {
+      lList *hgroup_list = nullptr;
+      lList *cqueue_list = nullptr;
       lListElem *qref_pattern;
       bool local_ret;
 
@@ -563,12 +563,12 @@ cqueue_show(sge_gdi_ctx_class_t *ctx, lList **answer_list, const lList *qref_pat
          for_each_rw(qref_pattern, qref_pattern_list) {
             dstring cqueue_name = DSTRING_INIT;
             dstring host_domain = DSTRING_INIT;
-            const char *cq_pattern = NULL;
-            const char *name = NULL;
+            const char *cq_pattern = nullptr;
+            const char *name = nullptr;
             bool has_hostname;
             bool has_domain;
-            lList *qref_list = NULL;
-            const lListElem *qref = NULL;
+            lList *qref_list = nullptr;
+            const lListElem *qref = nullptr;
             bool found_something = false;
 
             name = lGetString(qref_pattern, QR_name);
@@ -579,23 +579,23 @@ cqueue_show(sge_gdi_ctx_class_t *ctx, lList **answer_list, const lList *qref_pat
                break;
             }
             cq_pattern = sge_dstring_get_string(&cqueue_name);
-            cqueue_list_find_all_matching_references(cqueue_list, NULL,
+            cqueue_list_find_all_matching_references(cqueue_list, nullptr,
                                                      cq_pattern, &qref_list);
             if (has_domain) {
                const char *d_pattern = sge_dstring_get_string(&host_domain);
-               lList *href_list = NULL;
+               lList *href_list = nullptr;
                bool is_first = true;
 
-               hgroup_list_find_matching_and_resolve(hgroup_list, NULL,
+               hgroup_list_find_matching_and_resolve(hgroup_list, nullptr,
                                                      d_pattern, &href_list);
                for_each_ep(qref, qref_list) {
                   const char *cqueue_name = lGetString(qref, QR_name);
-                  const lListElem *cqueue = NULL;
+                  const lListElem *cqueue = nullptr;
 
                   cqueue = lGetElemStr(cqueue_list, CQ_name, cqueue_name);
-                  if (cqueue != NULL) {
-                     const lList *qinstance_list = NULL;
-                     const lListElem *href = NULL;
+                  if (cqueue != nullptr) {
+                     const lList *qinstance_list = nullptr;
+                     const lListElem *href = nullptr;
 
                      qinstance_list = lGetList(cqueue, CQ_qinstances);
                      for_each_ep(href, href_list) {
@@ -605,7 +605,7 @@ cqueue_show(sge_gdi_ctx_class_t *ctx, lList **answer_list, const lList *qref_pat
                         qinstance = lGetElemHost(qinstance_list,
                                                  QU_qhostname, hostname);
 
-                        if (qinstance != NULL) {
+                        if (qinstance != nullptr) {
                            const char *filename_stdout;
                            spooling_field *fields = sge_build_QU_field_list
                                                                   (true, false);
@@ -628,7 +628,7 @@ cqueue_show(sge_gdi_ctx_class_t *ctx, lList **answer_list, const lList *qref_pat
                                                        false, fields,
                                                        &qconf_sfi,
                                                        SP_DEST_STDOUT,
-                                                       SP_FORM_ASCII, NULL,
+                                                       SP_FORM_ASCII, nullptr,
                                                        false);
                            sge_free(&fields);
                            sge_free(&filename_stdout);
@@ -652,21 +652,21 @@ cqueue_show(sge_gdi_ctx_class_t *ctx, lList **answer_list, const lList *qref_pat
                bool is_first = true;
 
                for_each_ep(qref, qref_list) {
-                  const char *cqueue_name = NULL;
-                  const lListElem *cqueue = NULL;
+                  const char *cqueue_name = nullptr;
+                  const lListElem *cqueue = nullptr;
 
                   cqueue_name = lGetString(qref, QR_name);
                   cqueue = lGetElemStr(cqueue_list, CQ_name, cqueue_name);
-                  if (cqueue != NULL) {
-                     const lList *qinstance_list = NULL;
-                     const lListElem *qinstance = NULL;
+                  if (cqueue != nullptr) {
+                     const lList *qinstance_list = nullptr;
+                     const lListElem *qinstance = nullptr;
 
                      qinstance_list = lGetList(cqueue, CQ_qinstances);
                      for_each_ep(qinstance, qinstance_list) {
-                        const char *hostname = NULL;
+                        const char *hostname = nullptr;
 
                         hostname = lGetHost(qinstance, QU_qhostname);
-                        if (!sge_eval_expression(TYPE_HOST, h_pattern, hostname, NULL)) {
+                        if (!sge_eval_expression(TYPE_HOST, h_pattern, hostname, nullptr)) {
                            const char *filename;
                            spooling_field *fields = sge_build_QU_field_list(true, false);
 
@@ -687,7 +687,7 @@ cqueue_show(sge_gdi_ctx_class_t *ctx, lList **answer_list, const lList *qref_pat
                                                                   false, fields,
                                                                   &qconf_sfi,
                                                                   SP_DEST_STDOUT,
-                                                                  SP_FORM_ASCII, NULL,
+                                                                  SP_FORM_ASCII, nullptr,
                                                                   false);
                            sge_free(&fields);
                            sge_free(&filename);
@@ -708,7 +708,7 @@ cqueue_show(sge_gdi_ctx_class_t *ctx, lList **answer_list, const lList *qref_pat
                   const char *cqueue_name = lGetString(qref, QR_name);
                   const lListElem *cqueue = lGetElemStr(cqueue_list, CQ_name, cqueue_name);
 
-                  if (cqueue != NULL) {
+                  if (cqueue != nullptr) {
                      const char *outname;
 
                      if (is_first) {
@@ -720,7 +720,7 @@ cqueue_show(sge_gdi_ctx_class_t *ctx, lList **answer_list, const lList *qref_pat
                      outname = spool_flatfile_write_object(answer_list, cqueue, 
                                                  false, CQ_fields, &qconf_sfi,
                                                  SP_DEST_STDOUT, SP_FORM_ASCII, 
-                                                 NULL, false);
+                                                 nullptr, false);
                      sge_free(&outname);
                            
                      if (answer_list_output(answer_list)) {
@@ -753,7 +753,7 @@ cqueue_show(sge_gdi_ctx_class_t *ctx, lList **answer_list, const lList *qref_pat
       ret &= cqueue_set_template_attributes(cqueue, answer_list);
       filename = spool_flatfile_write_object(answer_list, cqueue, false, CQ_fields,
                                              &qconf_sfi, SP_DEST_STDOUT, SP_FORM_ASCII,
-                                             NULL, false);
+                                             nullptr, false);
                            
       sge_free(&filename);
       lFreeElem(&cqueue);
@@ -770,8 +770,8 @@ bool
 cqueue_list_sick(sge_gdi_ctx_class_t *ctx, lList **answer_list)
 {
    bool ret = true;
-   lList *hgroup_list = NULL;
-   lList *cqueue_list = NULL;
+   lList *hgroup_list = nullptr;
+   lList *cqueue_list = nullptr;
    bool local_ret;
 
    DENTER(TOP_LAYER);
@@ -780,13 +780,13 @@ cqueue_list_sick(sge_gdi_ctx_class_t *ctx, lList **answer_list)
                                              &hgroup_list, &cqueue_list);
    if (local_ret) {
       dstring ds = DSTRING_INIT;
-      lListElem *cqueue = NULL;
+      lListElem *cqueue = nullptr;
 
       for_each_rw(cqueue, cqueue_list) {
          cqueue_sick(cqueue, answer_list, hgroup_list, &ds);
       }
 
-      if (sge_dstring_get_string(&ds) != NULL) {
+      if (sge_dstring_get_string(&ds) != nullptr) {
          /* JG: TODO: shouldn't we better use INFO or WARNING? */
          printf("%s", sge_dstring_get_string(&ds));
          ret = false;
@@ -861,7 +861,7 @@ static int write_QU_consumable_config_list(const lListElem *ep, int nm,
                                            dstring *buffer, lList **alp)
 {
    const lList *lp = lGetList (ep, nm);
-   const lListElem *vep = NULL;
+   const lListElem *vep = nullptr;
    bool first = true, has_elems = false;
    
    DENTER(TOP_LAYER);
@@ -877,7 +877,7 @@ static int write_QU_consumable_config_list(const lListElem *ep, int nm,
       const char *name = lGetString(vep, CE_name);
 
       if (strcmp(name, "slots") != 0) {
-         const char *strval = NULL;
+         const char *strval = nullptr;
          
          /* we want to know if any elements from the list are available or not*/
          has_elems = true;
@@ -896,7 +896,7 @@ static int write_QU_consumable_config_list(const lListElem *ep, int nm,
          
          strval = lGetString(vep, CE_stringval);
 
-         if (strval != NULL) {
+         if (strval != nullptr) {
             sge_dstring_append(buffer, strval);
          }
          else {

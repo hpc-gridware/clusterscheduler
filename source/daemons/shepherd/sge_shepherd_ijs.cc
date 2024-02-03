@@ -77,13 +77,13 @@
 #define EXTENSIVE_TRACING
 #endif
 
-static ijs_fds_t     *g_p_ijs_fds         = NULL;
-static COMM_HANDLE   *g_comm_handle       = NULL;
+static ijs_fds_t     *g_p_ijs_fds         = nullptr;
+static COMM_HANDLE   *g_comm_handle       = nullptr;
 static THREAD_HANDLE g_thread_main;
 static int           g_raised_event        = 0;
 static int           g_job_pid             = 0;
 
-static char          *g_hostname           = NULL;
+static char          *g_hostname           = nullptr;
 extern int           received_signal; /* defined in shepherd.c */
 
 /*
@@ -265,7 +265,7 @@ static int send_buf(char *pbuf, unsigned long buf_bytes, int message_type)
 *     void *t_conf - pointer to cl_thread_settings_t struct of the thread
 *
 *  RESULT
-*     void* - always NULL
+*     void* - always nullptr
 *
 *  NOTES
 *     MT-NOTE: 
@@ -279,8 +279,8 @@ static void* pty_to_commlib(void *t_conf)
    int                  ret;
    fd_set               read_fds;
    struct timeval       timeout;
-   char                 *stdout_buf = NULL;
-   char                 *stderr_buf = NULL;
+   char                 *stdout_buf = nullptr;
+   char                 *stderr_buf = nullptr;
    int                  stdout_bytes = 0;
    int                  stderr_bytes = 0;
    bool                 b_select_timeout = false;
@@ -346,7 +346,7 @@ static void* pty_to_commlib(void *t_conf)
 #endif
       /* Wait blocking for data from pty or pipe */
       errno = 0;
-      ret = select(fd_max+1, &read_fds, NULL, NULL, &timeout);
+      ret = select(fd_max+1, &read_fds, nullptr, nullptr, &timeout);
       thread_testcancel(t_conf);
 /* This is a workaround for Darwin, where thread_testcancel() doesn't work.
  * TODO: Find the reason why it doesn't work and remove the workaround
@@ -490,7 +490,7 @@ static void* pty_to_commlib(void *t_conf)
 #ifdef EXTENSIVE_TRACING
    shepherd_trace("pty_to_commlib: leaving pty_to_commlib thread");
 #endif
-   return NULL;
+   return nullptr;
 }
 
 /****** commlib_to_pty() *******************************************************
@@ -508,7 +508,7 @@ static void* pty_to_commlib(void *t_conf)
 *     void *t_conf - pointer to cl_thread_settings_t struct of the thread
 *
 *  RESULT
-*     void* - always NULL
+*     void* - always nullptr
 *
 *  NOTES
 *     MT-NOTE:
@@ -541,8 +541,8 @@ static void* commlib_to_pty(void *t_conf)
 
    while (do_exit == 0) {
       /* wait blocking for a message from commlib */
-      recv_mess.cl_message = NULL;
-      recv_mess.data       = NULL;
+      recv_mess.cl_message = nullptr;
+      recv_mess.data       = nullptr;
       sge_dstring_free(&err_msg);
       sge_dstring_sprintf(&err_msg, "");
 
@@ -756,7 +756,7 @@ static void* commlib_to_pty(void *t_conf)
 #ifdef EXTENSIVE_TRACING
    shepherd_trace("commlib_to_pty: leaving commlib_to_pty thread");
 #endif
-   return NULL;
+   return nullptr;
 }
 
 int
@@ -766,10 +766,10 @@ parent_loop(int job_pid, const char *childname, int timeout, ckpt_info_t *p_ckpt
    dstring *err_msg)
 {
    int               ret;
-   THREAD_LIB_HANDLE *thread_lib_handle     = NULL;
-   THREAD_HANDLE     *thread_pty_to_commlib = NULL;
-   THREAD_HANDLE     *thread_commlib_to_pty = NULL;
-   cl_raw_list_t     *cl_com_log_list = NULL;
+   THREAD_LIB_HANDLE *thread_lib_handle     = nullptr;
+   THREAD_HANDLE     *thread_pty_to_commlib = nullptr;
+   THREAD_HANDLE     *thread_commlib_to_pty = nullptr;
+   cl_raw_list_t     *cl_com_log_list = nullptr;
 
    shepherd_trace("parent: starting parent loop with remote_host = %s, "
                   "remote_port = %d, job_owner = %s, fd_pty_master = %d, "
@@ -784,7 +784,7 @@ parent_loop(int job_pid, const char *childname, int timeout, ckpt_info_t *p_ckpt
    g_job_pid   = job_pid;
 
    /*
-    * Initialize err_msg, so it's never NULL.
+    * Initialize err_msg, so it's never nullptr.
     */
    sge_dstring_sprintf(err_msg, "");
 
@@ -879,7 +879,7 @@ parent_loop(int job_pid, const char *childname, int timeout, ckpt_info_t *p_ckpt
                           3,
                           commlib_to_pty);
 
-      pthread_sigmask(SIG_SETMASK, &old_sigmask, NULL);
+      pthread_sigmask(SIG_SETMASK, &old_sigmask, nullptr);
    }
 
    if (ret != CL_RETVAL_OK) {
@@ -984,7 +984,7 @@ int close_parent_loop(int exit_status)
    shepherd_trace("sending UNREGISTER_CTRL_MSG with exit_status = \"%s\"", 
                   sz_exit_status);
    shepherd_trace("sending to host: %s", 
-                  g_hostname != NULL ? g_hostname : "<null>");
+                  g_hostname != nullptr ? g_hostname : "<null>");
    ret = (int)comm_write_message(g_comm_handle, g_hostname,
       COMM_SERVER, 1, (unsigned char*)sz_exit_status, strlen(sz_exit_status), 
       UNREGISTER_CTRL_MSG, &err_msg);

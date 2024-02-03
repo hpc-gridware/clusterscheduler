@@ -169,11 +169,11 @@ static long get_next_addgrpid(lList *, long);
 
 lListElem* responsible_queue(lListElem *jep, lListElem *jatep, lListElem *petep)
 {
-   lListElem *master_q = NULL;
+   lListElem *master_q = nullptr;
 
    DENTER(TOP_LAYER);
 
-   if (petep == NULL) {
+   if (petep == nullptr) {
       master_q = lGetObject(lFirst(lGetList(jatep, JAT_granted_destin_identifier_list)), JG_queue);
    } else {
       const lListElem *pe_queue = lFirst(lGetList(petep, PET_granted_destin_identifier_list));
@@ -225,20 +225,20 @@ static long get_next_addgrpid(lList *rlp, long last_addgrpid)
 
 static int addgrpid_already_in_use(long add_grp_id) 
 {
-   const lListElem *job = NULL;
-   const lListElem *ja_task = NULL;
-   const lListElem *pe_task = NULL;
+   const lListElem *job = nullptr;
+   const lListElem *ja_task = nullptr;
+   const lListElem *pe_task = nullptr;
    
    for_each_ep(job, *object_type_get_master_list(SGE_TYPE_JOB)) {
       for_each_ep(ja_task, lGetList(job, JB_ja_tasks)) {
          const char *id = lGetString(ja_task, JAT_osjobid);
-         if (id != NULL && atol(id) == add_grp_id) {
+         if (id != nullptr && atol(id) == add_grp_id) {
             return 1;
          }
 
          for_each_ep(pe_task, lGetList(ja_task, JAT_task_list)) {
             id = lGetString(pe_task, PET_osjobid);
-            if (id != NULL && atol(id) == add_grp_id) {
+            if (id != nullptr && atol(id) == add_grp_id) {
                return 1;
             }
          }
@@ -269,14 +269,14 @@ int sge_exec_job(sge_gdi_ctx_class_t *ctx, lListElem *jep, lListElem *jatep,
    struct passwd *pw;
    SGE_STRUCT_STAT buf;
    int used_slots, pe_slots = 0, host_slots = 0, nhosts = 0;
-   static lList *processor_set = NULL;
+   static lList *processor_set = nullptr;
    const char *cp;
    char *shell;
-   const char *cwd = NULL;
+   const char *cwd = nullptr;
    char cwd_out_buffer[SGE_PATH_MAX];
    dstring cwd_out;
      
-   const lList *path_aliases = NULL;
+   const lList *path_aliases = nullptr;
    char dce_wrapper_cmd[128];
 
 #if COMPILE_DC
@@ -315,7 +315,7 @@ int sge_exec_job(sge_gdi_ctx_class_t *ctx, lListElem *jep, lListElem *jatep,
    lListElem *master_q;
    lListElem *ep;
    const lListElem *env;
-   lList *environmentList = NULL;
+   lList *environmentList = nullptr;
    const char *arch = sge_get_arch();
    const char *sge_root = bootstrap_get_sge_root();
    const char *qualified_hostname = uti_state_get_qualified_hostname();
@@ -335,26 +335,26 @@ int sge_exec_job(sge_gdi_ctx_class_t *ctx, lListElem *jep, lListElem *jatep,
 
    bool bInputFileStaging, bOutputFileStaging, bErrorFileStaging;
    
-   const char* processor_binding_strategy = NULL;
+   const char* processor_binding_strategy = nullptr;
    
    /* env var reflecting SGE_BINDING if set */
-   char* sge_binding_environment = NULL;
+   char* sge_binding_environment = nullptr;
    /* string reflecting the logical socket,core pairs if "pe" is set */
-   char* rankfileinput = NULL;
+   char* rankfileinput = nullptr;
 
    dstring core_binding_strategy_string = DSTRING_INIT;
 
       /* retrieve the job, jatask and petask id once */
       u_long32 job_id;
       u_long32 ja_task_id;
-      const char *pe_task_id = NULL;
+      const char *pe_task_id = nullptr;
 
-      char* shell_start_mode = NULL;
-      char* pag_cmd = NULL;
-      char* notify_kill = NULL;
-      char* notify_susp = NULL;
-      char* shepherd_cmd = NULL;
-      char* set_token_cmd = NULL;
+      char* shell_start_mode = nullptr;
+      char* pag_cmd = nullptr;
+      char* notify_kill = nullptr;
+      char* notify_susp = nullptr;
+      char* shepherd_cmd = nullptr;
+      char* set_token_cmd = nullptr;
 
       DENTER(TOP_LAYER);
 
@@ -370,13 +370,13 @@ int sge_exec_job(sge_gdi_ctx_class_t *ctx, lListElem *jep, lListElem *jatep,
       ja_task_id = lGetUlong(jatep, JAT_task_number);
       gdil = lGetList(jatep, JAT_granted_destin_identifier_list);
 
-      if (petep != NULL) {
+      if (petep != nullptr) {
          pe_task_id = lGetString(petep, PET_id);
       }
 
       DPRINTF(("job: %ld jatask: %ld petask: %s\n", 
          job_id, ja_task_id,
-         pe_task_id != NULL ? pe_task_id : "none"));
+         pe_task_id != nullptr ? pe_task_id : "none"));
 
       master_q = responsible_queue(jep, jatep, petep);
       SGE_ASSERT((master_q));
@@ -391,7 +391,7 @@ int sge_exec_job(sge_gdi_ctx_class_t *ctx, lListElem *jep, lListElem *jatep,
       }
 
       sge_get_active_job_file_path(&active_dir, job_id, 
-                    ja_task_id, pe_task_id, NULL);
+                    ja_task_id, pe_task_id, nullptr);
 
       umask(022);
 
@@ -438,17 +438,17 @@ int sge_exec_job(sge_gdi_ctx_class_t *ctx, lListElem *jep, lListElem *jatep,
 
 #if defined(OGE_HWLOC)
          dstring pseudo_usage = DSTRING_INIT;
-         lListElem* jr        = NULL;
+         lListElem* jr        = nullptr;
 
          /* check, depending on the used topology, which cores are can be used 
             in order to fulfill the selected strategy. if strategy is not 
-            applicable or in case of errors "NULL" is written to this 
+            applicable or in case of errors "nullptr" is written to this
             line in the "config" file */
          create_binding_strategy_string_linux(&core_binding_strategy_string, jep, 
                                            &rankfileinput);
  
-         if (sge_dstring_get_string(&core_binding_strategy_string) != NULL
-               && strcmp(sge_dstring_get_string(&core_binding_strategy_string), "NULL") != 0) {
+         if (sge_dstring_get_string(&core_binding_strategy_string) != nullptr
+               && strcmp(sge_dstring_get_string(&core_binding_strategy_string), "nullptr") != 0) {
             
             INFO((SGE_EVENT, "core binding: %s", sge_dstring_get_string(&core_binding_strategy_string)));
 
@@ -457,7 +457,7 @@ int sge_exec_job(sge_gdi_ctx_class_t *ctx, lListElem *jep, lListElem *jatep,
             sge_dstring_sprintf(&pseudo_usage, "binding_inuse!%s", 
                            binding_get_topology_for_job(sge_dstring_get_string(&core_binding_strategy_string)));
             
-            add_usage(jr, sge_dstring_get_string(&pseudo_usage), NULL, 0);
+            add_usage(jr, sge_dstring_get_string(&pseudo_usage), nullptr, 0);
             
             /* send job report   */
             flush_job_report(jr);
@@ -470,7 +470,7 @@ int sge_exec_job(sge_gdi_ctx_class_t *ctx, lListElem *jep, lListElem *jatep,
          and write processor set id to "binding" element in 
          config file */
          dstring pseudo_usage = DSTRING_INIT;
-         lListElem* jr        = NULL;
+         lListElem* jr        = nullptr;
 
          create_binding_strategy_string_solaris(&core_binding_strategy_string, 
                            jep, err_str, err_length, &sge_binding_environment, 
@@ -479,19 +479,19 @@ int sge_exec_job(sge_gdi_ctx_class_t *ctx, lListElem *jep, lListElem *jatep,
          /* in case SGE_BINDING environment variable has to be setup instead 
             of creating processor sets, this have to be done here (on Linux 
             this is done from shepherd itself) */
-         if (sge_binding_environment != NULL) {
+         if (sge_binding_environment != nullptr) {
             INFO((SGE_EVENT, "SGE_BINDING variable set: %s", sge_binding_environment));
          }
          
-         if (sge_dstring_get_string(&core_binding_strategy_string) != NULL 
-               && strcmp(sge_dstring_get_string(&core_binding_strategy_string), "NULL") != 0) {
+         if (sge_dstring_get_string(&core_binding_strategy_string) != nullptr
+               && strcmp(sge_dstring_get_string(&core_binding_strategy_string), "nullptr") != 0) {
             
             sge_dstring_sprintf(&pseudo_usage, "binding_inuse!%s", 
                            binding_get_topology_for_job((sge_dstring_get_string(&core_binding_strategy_string))));
 
             jr = get_job_report(job_id, ja_task_id, pe_task_id);
             
-            add_usage(jr, sge_dstring_get_string(&pseudo_usage), NULL, 0);
+            add_usage(jr, sge_dstring_get_string(&pseudo_usage), nullptr, 0);
             
             /* send job report   */
             flush_job_report(jr);
@@ -501,14 +501,14 @@ int sge_exec_job(sge_gdi_ctx_class_t *ctx, lListElem *jep, lListElem *jatep,
 
 #endif
    }
-      if (rankfileinput != NULL) {
+      if (rankfileinput != nullptr) {
          INFO((SGE_EVENT, "appended socket,core list to hostfile %s", rankfileinput));
       }
 
       /***************** write out sge host file ******************************/
       /* JG: TODO: create function write_pe_hostfile() */
       /* JG: TODO (254) use function sge_get_active_job.... */
-      if (petep == NULL) {
+      if (petep == nullptr) {
          DSTRING_STATIC(dstr_hostfilename, SGE_PATH_MAX);
          const char *str_hostfilename;
          lFreeList(&processor_set);
@@ -536,10 +536,10 @@ int sge_exec_job(sge_gdi_ctx_class_t *ctx, lListElem *jep, lListElem *jatep,
          host_slots = 0;
          for_each_ep(gdil_ep, gdil) {
             int slots;
-            lList *alp = NULL;
+            lList *alp = nullptr;
             /* this is the processor set id in case when when using 
                the processors feature */
-            const char *q_set = NULL;
+            const char *q_set = nullptr;
 
             slots = (int)lGetUlong(gdil_ep, JG_slots);
             q_set = lGetString(gdil_ep, JG_processors);
@@ -548,7 +548,7 @@ int sge_exec_job(sge_gdi_ctx_class_t *ctx, lListElem *jep, lListElem *jatep,
                and is more important than the processors configuration out 
                of the queue since both should NOT be used together */
 
-            if (rankfileinput != NULL) {
+            if (rankfileinput != nullptr) {
                /* print job2core binding info */
                fprintf(fp, "%s %d %s %s\n", 
                   lGetHost(gdil_ep, JG_qhostname),
@@ -561,7 +561,7 @@ int sge_exec_job(sge_gdi_ctx_class_t *ctx, lListElem *jep, lListElem *jatep,
                   lGetHost(gdil_ep, JG_qhostname),
                   slots, 
                   lGetString(gdil_ep, JG_qname), 
-                  q_set ? q_set : "<NULL>");
+                  q_set ? q_set : "<nullptr>");
             }
 
             if (!sge_hostcmp(lGetHost(master_q, QU_qhostname), lGetHost(gdil_ep, JG_qhostname))) {
@@ -595,7 +595,7 @@ int sge_exec_job(sge_gdi_ctx_class_t *ctx, lListElem *jep, lListElem *jatep,
                                        lGetList(jep, JB_env_list));
 
       /* write environment of petask */
-      if (petep != NULL) {
+      if (petep != nullptr) {
          var_list_copy_env_vars_and_value(&environmentList,
                                           lGetList(petep, PET_environment));
       }
@@ -614,21 +614,21 @@ int sge_exec_job(sge_gdi_ctx_class_t *ctx, lListElem *jep, lListElem *jatep,
       }
 
       /* 1.) try to read cwd from pe task */
-      if(petep != NULL) {
+      if(petep != nullptr) {
          cwd = lGetString(petep, PET_cwd);
          path_aliases = lGetList(petep, PET_path_aliases);
       } 
 
       /* 2.) try to read cwd from job */
-      if(cwd == NULL) {
+      if(cwd == nullptr) {
          cwd = lGetString(jep, JB_cwd);
          path_aliases = lGetList(jep, JB_path_aliases);
       }
 
       /* 3.) if pe task or job set cwd: do path mapping */
-      if(cwd != NULL) {
+      if(cwd != nullptr) {
          /* path aliasing only for cwd flag set */
-         path_alias_list_get_path(path_aliases, NULL,
+         path_alias_list_get_path(path_aliases, nullptr,
                                   cwd, qualified_hostname, 
                                   &cwd_out);
          cwd = sge_dstring_get_string(&cwd_out);
@@ -641,8 +641,8 @@ int sge_exec_job(sge_gdi_ctx_class_t *ctx, lListElem *jep, lListElem *jatep,
       }
 
       {
-         const char *reqname = petep == NULL ? lGetString(jep, JB_job_name) : lGetString(petep, PET_name);
-         if (reqname != NULL) {
+         const char *reqname = petep == nullptr ? lGetString(jep, JB_job_name) : lGetString(petep, PET_name);
+         if (reqname != nullptr) {
             var_list_set_string(&environmentList, "REQNAME", reqname);
          }
       }
@@ -657,7 +657,7 @@ int sge_exec_job(sge_gdi_ctx_class_t *ctx, lListElem *jep, lListElem *jatep,
       /* do not access pw->* from here on! */
       sge_free(&pw_buffer);
 
-      if (sge_binding_environment != NULL) {
+      if (sge_binding_environment != nullptr) {
          var_list_set_string(&environmentList, "SGE_BINDING", sge_binding_environment);
          sge_free(&sge_binding_environment);
       }   
@@ -675,7 +675,7 @@ int sge_exec_job(sge_gdi_ctx_class_t *ctx, lListElem *jep, lListElem *jatep,
          u_long32 jb_now;
          const char *job_name;
          
-         if(petep != NULL) {
+         if(petep != nullptr) {
             jb_now = JOB_TYPE_QRSH;
             job_name = lGetString(petep, PET_name);
          } else {
@@ -697,15 +697,15 @@ int sge_exec_job(sge_gdi_ctx_class_t *ctx, lListElem *jep, lListElem *jatep,
             const char *sfile;
 
             sfile = lGetString(jep, JB_script_file);
-            if (sfile != NULL) {
+            if (sfile != nullptr) {
                DSTRING_STATIC(dstr_script_file_out, SGE_PATH_MAX);
-               path_alias_list_get_path(lGetList(jep, JB_path_aliases), NULL, 
+               path_alias_list_get_path(lGetList(jep, JB_path_aliases), nullptr,
                                         sfile, qualified_hostname, 
                                         &dstr_script_file_out);
                str_script_file = sge_dstring_copy_dstring(&dstr_script_file, &dstr_script_file_out);
             }
          } else {
-            if (lGetString(jep, JB_script_file) != NULL) {
+            if (lGetString(jep, JB_script_file) != nullptr) {
                /* JG: TODO: use some function to create path */
                str_script_file = sge_dstring_sprintf(&dstr_script_file, "%s/%s/" sge_u32, execd_spool_dir, EXEC_DIR,
                        job_id);
@@ -721,7 +721,7 @@ int sge_exec_job(sge_gdi_ctx_class_t *ctx, lListElem *jep, lListElem *jatep,
          }
 
          /* set JOB_NAME */
-         if(job_name == NULL) {
+         if(job_name == nullptr) {
             job_name = sge_basename(str_script_file, PATH_SEPARATOR_CHAR);
          }
          
@@ -732,12 +732,12 @@ int sge_exec_job(sge_gdi_ctx_class_t *ctx, lListElem *jep, lListElem *jatep,
          u_long32 type = lGetUlong(jep, JB_type);
          const char *var_name = "QRSH_COMMAND";
 
-         if (!JOB_TYPE_IS_BINARY(type) && petep == NULL) {
-            const char *old_qrsh_command_s = NULL;
+         if (!JOB_TYPE_IS_BINARY(type) && petep == nullptr) {
+            const char *old_qrsh_command_s = nullptr;
             dstring old_qrsh_command = DSTRING_INIT;
 
             old_qrsh_command_s = var_list_get_string(environmentList, var_name);
-            if (old_qrsh_command_s != NULL) {
+            if (old_qrsh_command_s != nullptr) {
                char delim[2];
                const char *buffer;
                const char *token;
@@ -748,7 +748,7 @@ int sge_exec_job(sge_gdi_ctx_class_t *ctx, lListElem *jep, lListElem *jatep,
                sge_dstring_copy_string(&old_qrsh_command, old_qrsh_command_s);
                buffer = sge_dstring_get_string(&old_qrsh_command);
                token = sge_strtok(buffer, delim);
-               while (token != NULL) {
+               while (token != nullptr) {
                   if (is_first_token) { 
                      sge_dstring_sprintf(&new_qrsh_command, "%s/%s/" sge_u32, 
                                          execd_spool_dir, EXEC_DIR, job_id); 
@@ -757,7 +757,7 @@ int sge_exec_job(sge_gdi_ctx_class_t *ctx, lListElem *jep, lListElem *jatep,
                      sge_dstring_append(&new_qrsh_command, delim);
                      sge_dstring_append(&new_qrsh_command, token);
                   }
-                  token = sge_strtok(NULL, delim);
+                  token = sge_strtok(nullptr, delim);
                }
                var_list_set_string(&environmentList, var_name,
                                    sge_dstring_get_string(&new_qrsh_command));
@@ -766,10 +766,10 @@ int sge_exec_job(sge_gdi_ctx_class_t *ctx, lListElem *jep, lListElem *jatep,
             const char *sfile;
 
             sfile = var_list_get_string(environmentList, var_name); 
-            if (sfile != NULL) {
+            if (sfile != nullptr) {
                DSTRING_STATIC(dstr_script_file_out, SGE_PATH_MAX);
 
-               path_alias_list_get_path(lGetList(jep, JB_path_aliases), NULL,
+               path_alias_list_get_path(lGetList(jep, JB_path_aliases), nullptr,
                                         sfile, qualified_hostname,
                                         &dstr_script_file_out);
                var_list_set_string(&environmentList, var_name, 
@@ -783,7 +783,7 @@ int sge_exec_job(sge_gdi_ctx_class_t *ctx, lListElem *jep, lListElem *jatep,
       var_list_set_string(&environmentList, "SGE_BINARY_PATH", str_fname);
       
       /* JG: TODO (ENV): do we need REQNAME and REQUEST? */
-      var_list_set_string(&environmentList, "REQUEST", petep == NULL ? lGetString(jep, JB_job_name) : lGetString(petep, PET_name));
+      var_list_set_string(&environmentList, "REQUEST", petep == nullptr ? lGetString(jep, JB_job_name) : lGetString(petep, PET_name));
       var_list_set_string(&environmentList, "HOSTNAME", lGetHost(master_q, QU_qhostname));
       var_list_set_string(&environmentList, "QUEUE", lGetString(master_q, QU_qname));
       /* JB: TODO (ENV): shouldn't we better have a SGE_JOB_ID? */
@@ -839,7 +839,7 @@ int sge_exec_job(sge_gdi_ctx_class_t *ctx, lListElem *jep, lListElem *jatep,
 
       sge_get_path(qualified_hostname, lGetList(jep, JB_shell_list), cwd, 
                    lGetString(jep, JB_owner),
-                   petep == NULL ? lGetString(jep, JB_job_name) : lGetString(petep, PET_name), 
+                   petep == nullptr ? lGetString(jep, JB_job_name) : lGetString(petep, PET_name),
                    job_id,
                    job_is_array(jep) ? ja_task_id : 0,
                    SGE_SHELL, shell_path, SGE_PATH_MAX);
@@ -850,22 +850,22 @@ int sge_exec_job(sge_gdi_ctx_class_t *ctx, lListElem *jep, lListElem *jatep,
       var_list_set_string(&environmentList, "SHELL", shell_path);
 
       /* forward name of pe to job */
-      if (lGetString(jatep, JAT_granted_pe) != NULL) {
+      if (lGetString(jatep, JAT_granted_pe) != nullptr) {
          DSTRING_STATIC(dstr_buffer, SGE_PATH_MAX);
          const char *str_buffer;
          const lListElem *pe;
 
          var_list_set_string(&environmentList, "PE", lGetString(jatep, JAT_granted_pe));
          /* forward PE_HOSTFILE only to master task */
-         if (petep == NULL) {
+         if (petep == nullptr) {
             str_buffer = sge_dstring_sprintf(&dstr_buffer, "%s/%s/%s", execd_spool_dir, active_dir_buffer, PE_HOSTFILE);
             var_list_set_string(&environmentList, "PE_HOSTFILE", str_buffer);
          }
          /* for tightly integrated jobs, also set the rsh_command SGE_RSH_COMMAND */
          pe = lGetObject(jatep, JAT_pe_object);
-         if (pe != NULL && lGetBool(pe, PE_control_slaves) == true) {
+         if (pe != nullptr && lGetBool(pe, PE_control_slaves) == true) {
             const char *mconf_string = mconf_get_rsh_command();
-            if (mconf_string != NULL && sge_strnullcasecmp(mconf_string, "none") != 0) {
+            if (mconf_string != nullptr && sge_strnullcasecmp(mconf_string, "none") != 0) {
                var_list_set_string(&environmentList, "SGE_RSH_COMMAND", mconf_string);
             } else {
                char default_buffer[SGE_PATH_MAX];
@@ -880,14 +880,14 @@ int sge_exec_job(sge_gdi_ctx_class_t *ctx, lListElem *jep, lListElem *jatep,
             /* transport the notify kill and susp signals to qrsh -inherit */
             if (mconf_get_notify_kill_type() == 0) {
                mconf_string = mconf_get_notify_kill();
-               if (mconf_string != NULL) {
+               if (mconf_string != nullptr) {
                   var_list_set_string(&environmentList, "SGE_NOTIFY_KILL_SIGNAL", mconf_string);
                   sge_free(&mconf_string);
                }
             }
             if (mconf_get_notify_susp_type() == 0) {
                mconf_string = mconf_get_notify_susp();
-               if (mconf_string != NULL) {
+               if (mconf_string != nullptr) {
                   var_list_set_string(&environmentList, "SGE_NOTIFY_SUSP_SIGNAL", mconf_string);
                   sge_free(&mconf_string);
                }
@@ -933,7 +933,7 @@ int sge_exec_job(sge_gdi_ctx_class_t *ctx, lListElem *jep, lListElem *jatep,
             const char *lib_path_env = var_get_sharedlib_path_name();
             const char *lib_path = sge_getenv(lib_path_env);
 
-            if (lib_path != NULL) {
+            if (lib_path != nullptr) {
                var_list_set_string(&environmentList, lib_path_env, lib_path);
             }
          }
@@ -972,11 +972,11 @@ int sge_exec_job(sge_gdi_ctx_class_t *ctx, lListElem *jep, lListElem *jatep,
 #  if defined(SOLARIS) || defined(LINUX) || defined(FREEBSD) || defined(DARWIN)
 
       {
-         lList *rlp = NULL;
-         lList *alp = NULL;
+         lList *rlp = nullptr;
+         lList *alp = nullptr;
          gid_t temp_id;
          char str_id[256];
-         char* gid_range = NULL;
+         char* gid_range = nullptr;
 #     if defined(LINUX)
 
          if (!sup_groups_in_proc()) {
@@ -994,7 +994,7 @@ int sge_exec_job(sge_gdi_ctx_class_t *ctx, lListElem *jep, lListElem *jatep,
          range_list_parse_from_string(&rlp, &alp, gid_range,
                                       0, 0, INF_NOT_ALLOWED);
          sge_free(&gid_range);
-         if (rlp == NULL) {
+         if (rlp == nullptr) {
              lFreeList(&alp);
              snprintf(err_str, err_length, SFNMAX, MSG_EXECD_NOPARSEGIDRANGE);
              lFreeList(&environmentList);
@@ -1018,7 +1018,7 @@ int sge_exec_job(sge_gdi_ctx_class_t *ctx, lListElem *jep, lListElem *jatep,
          /* write add_grp_id to job-structure and file */
          sprintf(str_id, "%ld", (long) last_addgrpid);
          fprintf(fp, "add_grp_id="gid_t_fmt"\n", last_addgrpid);
-         if(petep == NULL) {
+         if(petep == nullptr) {
             lSetString(jatep, JAT_osjobid, str_id);
          } else {
             lSetString(petep, PET_osjobid, str_id);
@@ -1139,7 +1139,7 @@ int sge_exec_job(sge_gdi_ctx_class_t *ctx, lListElem *jep, lListElem *jatep,
    if (lGetUlong(jep, JB_checkpoint_attr) && 
        (ep = lGetObject(jep, JB_checkpoint_object))) {
       fprintf(fp, "ckpt_job=1\n");
-      fprintf(fp, "ckpt_restarted=%d\n", petep != NULL ? 0 : (int) lGetUlong(jatep, JAT_job_restarted));
+      fprintf(fp, "ckpt_restarted=%d\n", petep != nullptr ? 0 : (int) lGetUlong(jatep, JAT_job_restarted));
       fprintf(fp, "ckpt_pid=%d\n", (int) lGetUlong(jatep, JAT_pvm_ckpt_pid));
       fprintf(fp, "ckpt_osjobid=%s\n", lGetString(jatep, JAT_osjobid) ? lGetString(jatep, JAT_osjobid): "0");
       fprintf(fp, "ckpt_interface=%s\n", lGetString(ep, CK_interface));
@@ -1153,7 +1153,7 @@ int sge_exec_job(sge_gdi_ctx_class_t *ctx, lListElem *jep, lListElem *jatep,
       if (!(lGetUlong(jep, JB_checkpoint_attr) & CHECKPOINT_AT_MINIMUM_INTERVAL)) {
          interval = 0;
       } else {   
-         parse_ulong_val(NULL, &interval, TYPE_TIM, lGetString(master_q, QU_min_cpu_interval), NULL, 0);   
+         parse_ulong_val(nullptr, &interval, TYPE_TIM, lGetString(master_q, QU_min_cpu_interval), nullptr, 0);
          interval = MAX(interval, lGetUlong(jep, JB_checkpoint_interval));
       }   
       fprintf(fp, "ckpt_interval=%d\n", (int) interval);
@@ -1250,7 +1250,7 @@ int sge_exec_job(sge_gdi_ctx_class_t *ctx, lListElem *jep, lListElem *jatep,
    }
 
    /* do not start prolog/epilog in case of pe tasks */
-   if(petep == NULL) {
+   if(petep == nullptr) {
       char* prolog = mconf_get_prolog();
       char* epilog = mconf_get_epilog();
 
@@ -1281,18 +1281,18 @@ int sge_exec_job(sge_gdi_ctx_class_t *ctx, lListElem *jep, lListElem *jatep,
 
    /* write pe related data */
    if (lGetString(jatep, JAT_granted_pe)) {
-      lListElem *pep = NULL;
+      lListElem *pep = nullptr;
       /* no pe start/stop for petasks */
-      if(petep == NULL) {
+      if(petep == nullptr) {
          pep = lGetObject(jatep, JAT_pe_object);
       }
       fprintf(fp, "pe_hostfile=%s/%s/%s\n", execd_spool_dir, active_dir_buffer, PE_HOSTFILE);
-      fprintf(fp, "pe_start=%s\n",  pep != NULL && lGetString(pep, PE_start_proc_args)?
+      fprintf(fp, "pe_start=%s\n",  pep != nullptr && lGetString(pep, PE_start_proc_args)?
                                        lGetString(pep, PE_start_proc_args):"none");
-      fprintf(fp, "pe_stop=%s\n",   pep != NULL && lGetString(pep, PE_stop_proc_args)?
+      fprintf(fp, "pe_stop=%s\n",   pep != nullptr && lGetString(pep, PE_stop_proc_args)?
                                        lGetString(pep, PE_stop_proc_args):"none");
 #ifdef SGE_PQS_API
-      fprintf(fp, "pe_qsort=%s\n",   pep != NULL && lGetString(pep, PE_qsort_args)?
+      fprintf(fp, "pe_qsort=%s\n",   pep != nullptr && lGetString(pep, PE_qsort_args)?
                                        lGetString(pep, PE_qsort_args):"none");
 #endif
 
@@ -1347,8 +1347,8 @@ int sge_exec_job(sge_gdi_ctx_class_t *ctx, lListElem *jep, lListElem *jatep,
       sge_dstring_free(&range_string);
       
       
-      if (sge_dstring_get_string(&core_binding_strategy_string) == NULL) {
-         processor_binding_strategy = "NULL";
+      if (sge_dstring_get_string(&core_binding_strategy_string) == nullptr) {
+         processor_binding_strategy = "nullptr";
       } else {
          processor_binding_strategy = sge_dstring_get_string(&core_binding_strategy_string); 
       }
@@ -1356,18 +1356,18 @@ int sge_exec_job(sge_gdi_ctx_class_t *ctx, lListElem *jep, lListElem *jatep,
       fprintf(fp, "binding=%s\n", processor_binding_strategy);
       
    }
-   if(petep != NULL) {
+   if(petep != nullptr) {
       fprintf(fp, "job_name=%s\n", lGetString(petep, PET_name));
    } else {
       fprintf(fp, "job_name=%s\n", lGetString(jep, JB_job_name));
    }
    fprintf(fp, "job_id="sge_u32"\n", job_id);
    fprintf(fp, "ja_task_id="sge_u32"\n", job_is_array(jep) ? ja_task_id : 0);
-   if(petep != NULL) {
+   if(petep != nullptr) {
       fprintf(fp, "pe_task_id=%s\n", pe_task_id);
    }
    fprintf(fp, "account=%s\n", (lGetString(jep, JB_account) ? lGetString(jep, JB_account) : DEFAULT_ACCOUNT));
-   if(petep != NULL) {
+   if(petep != nullptr) {
       fprintf(fp, "submission_time=" sge_u32 "\n", lGetUlong(petep, PET_submission_time));
    } else {
       fprintf(fp, "submission_time=" sge_u32 "\n", lGetUlong(jep, JB_submission_time));
@@ -1376,7 +1376,7 @@ int sge_exec_job(sge_gdi_ctx_class_t *ctx, lListElem *jep, lListElem *jatep,
    {
       u_long32 notify = 0;
       if (lGetBool(jep, JB_notify))
-         parse_ulong_val(NULL, &notify, TYPE_TIM, lGetString(master_q, QU_notify), NULL, 0);
+         parse_ulong_val(nullptr, &notify, TYPE_TIM, lGetString(master_q, QU_notify), nullptr, 0);
       fprintf(fp, "notify=" sge_u32 "\n", notify);
    }
    
@@ -1385,7 +1385,7 @@ int sge_exec_job(sge_gdi_ctx_class_t *ctx, lListElem *jep, lListElem *jatep,
    */
    if (!lGetString(jep, JB_script_file)) {
       u_long32 jb_now;
-      if(petep != NULL) {
+      if(petep != nullptr) {
          jb_now = JOB_TYPE_QRSH;
       } else {
          jb_now = lGetUlong(jep, JB_type);
@@ -1432,8 +1432,8 @@ int sge_exec_job(sge_gdi_ctx_class_t *ctx, lListElem *jep, lListElem *jatep,
       /* for pe tasks we have no args - the daemon (rshd etc.) to start
        * comes from the cluster configuration 
        */
-      if(petep != NULL) {
-         args = NULL;
+      if(petep != nullptr) {
+         args = nullptr;
       } else {
          args = lGetList(jep, JB_job_args);
       }
@@ -1442,7 +1442,7 @@ int sge_exec_job(sge_gdi_ctx_class_t *ctx, lListElem *jep, lListElem *jatep,
 
       for_each_ep(se, args) {
          const char *arg = lGetString(se, ST_name);
-         if(arg != NULL) {
+         if(arg != nullptr) {
             fprintf(fp, "job_arg%d=%s\n", nargs++, arg);
          } else {
             fprintf(fp, "job_arg%d=\n", nargs++);
@@ -1456,7 +1456,7 @@ int sge_exec_job(sge_gdi_ctx_class_t *ctx, lListElem *jep, lListElem *jatep,
    */
    if (!lGetString(jep, JB_script_file)) {         /* interactive job  */
       u_long32 jb_now;
-      if(petep != NULL) {
+      if(petep != nullptr) {
          jb_now = JOB_TYPE_QRSH;
       } else {
          jb_now = lGetUlong(jep, JB_type);    /* detect qsh case  */
@@ -1464,7 +1464,7 @@ int sge_exec_job(sge_gdi_ctx_class_t *ctx, lListElem *jep, lListElem *jatep,
       
       /* check DISPLAY variable for qsh jobs */
       if(JOB_TYPE_IS_QSH(jb_now)) {
-         lList *answer_list = NULL;
+         lList *answer_list = nullptr;
 
          if(job_check_qsh_display(jep, &answer_list, false) == STATUS_OK) {
             env = lGetElemStr(lGetList(jep, JB_env_list), VA_variable, "DISPLAY");
@@ -1474,7 +1474,7 @@ int sge_exec_job(sge_gdi_ctx_class_t *ctx, lListElem *jep, lListElem *jatep,
              *           error descriptions, but an answer list.
              */
             const char *error_string = lGetString(lFirst(answer_list), AN_text);
-            if(error_string != NULL) {
+            if(error_string != nullptr) {
                snprintf(err_str, err_length, SFNMAX, error_string);
             }
             lFreeList(&answer_list);
@@ -1525,13 +1525,13 @@ int sge_exec_job(sge_gdi_ctx_class_t *ctx, lListElem *jep, lListElem *jatep,
    {
       u_long32 jb_now;
       int      pty_option;
-      if (petep != NULL) {
+      if (petep != nullptr) {
          jb_now = JOB_TYPE_QRSH;
       } else {
          jb_now = lGetUlong(jep, JB_type); 
       }
      
-      if(petep != NULL) {
+      if(petep != nullptr) {
          fprintf(fp, "pe_task_id=%s\n", pe_task_id);
       }
      
@@ -1549,7 +1549,7 @@ int sge_exec_job(sge_gdi_ctx_class_t *ctx, lListElem *jep, lListElem *jatep,
          fprintf(fp, "master_host=%s\n", masterhost);
          fprintf(fp, "commd_port=-1\n");  /* commd_port not used for GE > 6.0 */
                
-         if((elem=lGetElemStr(environmentList, VA_variable, "QRSH_PORT")) != NULL) {
+         if((elem=lGetElemStr(environmentList, VA_variable, "QRSH_PORT")) != nullptr) {
             fprintf(fp, "qrsh_control_port=%s\n", lGetString(elem, VA_value));
          }
         
@@ -1577,7 +1577,7 @@ int sge_exec_job(sge_gdi_ctx_class_t *ctx, lListElem *jep, lListElem *jatep,
 
                fprintf(fp, "qrsh_tmpdir=%s\n", tmpdir);
 
-               if(petep != NULL) {
+               if(petep != nullptr) {
                   fprintf(fp, "qrsh_pid_file=%s/pid.%s\n", tmpdir, pe_task_id);
                } else {
                   fprintf(fp, "qrsh_pid_file=%s/pid\n", tmpdir);
@@ -1632,7 +1632,7 @@ int sge_exec_job(sge_gdi_ctx_class_t *ctx, lListElem *jep, lListElem *jatep,
    /*
    ** tightly integrated (qrsh) and interactive jobs dont need to access script file
    */
-   if(petep == NULL) {
+   if(petep == nullptr) {
       u_long32 jb_now = lGetUlong(jep, JB_type);
       JOB_TYPE_CLEAR_IMMEDIATE(jb_now);            /* batch jobs can also be immediate */
       if(jb_now == 0) {                          /* it is a batch job */
@@ -1730,7 +1730,7 @@ int sge_exec_job(sge_gdi_ctx_class_t *ctx, lListElem *jep, lListElem *jatep,
    sge_free(&shepherd_cmd);
 
    /* send mail to users if requested */
-   if(petep == NULL) {
+   if(petep == nullptr) {
       if (VALID(MAIL_AT_BEGINNING, lGetUlong(jep, JB_mail_options))) {
          dstring subject = DSTRING_INIT;
          dstring body = DSTRING_INIT;
@@ -1811,9 +1811,9 @@ int sge_exec_job(sge_gdi_ctx_class_t *ctx, lListElem *jep, lListElem *jatep,
    }
 
    if (i != 0) { /* parent or -1 */
-      sigprocmask(SIG_SETMASK, &sigset_oset, NULL);
+      sigprocmask(SIG_SETMASK, &sigset_oset, nullptr);
 
-      if (petep == NULL) {
+      if (petep == nullptr) {
          /* nothing to be done for petasks: We do not signal single petasks, but always the whole jatask */
          lSetUlong(jep, JB_hard_wallclock_gmt, 0); /* in case we are restarting! */
          lSetUlong(jatep, JAT_pending_signal, 0);
@@ -1868,12 +1868,12 @@ int sge_exec_job(sge_gdi_ctx_class_t *ctx, lListElem *jep, lListElem *jatep,
       DPRINTF(("CHILD - About to exec shepherd wrapper job ->%s< under queue -<%s<\n", 
               lGetString(jep, JB_job_name), 
               lGetString(master_q, QU_full_name)));
-      execlp(shepherd_cmd, ps_name, NULL);
+      execlp(shepherd_cmd, ps_name, nullptr);
    } else if (mconf_get_do_credentials() && feature_is_enabled(FEATURE_DCE_SECURITY)) {
       DPRINTF(("CHILD - About to exec DCE shepherd wrapper job ->%s< under queue -<%s<\n", 
               lGetString(jep, JB_job_name), 
               lGetString(master_q, QU_full_name)));
-      execlp(dce_wrapper_cmd, ps_name, NULL);
+      execlp(dce_wrapper_cmd, ps_name, nullptr);
    } else if (!feature_is_enabled(FEATURE_AFS_SECURITY) || !pag_cmd ||
             !strlen(pag_cmd) || !strcasecmp(pag_cmd, "none")) {
       DPRINTF(("CHILD - About to exec ->%s< under queue -<%s<\n",
@@ -1881,9 +1881,9 @@ int sge_exec_job(sge_gdi_ctx_class_t *ctx, lListElem *jep, lListElem *jatep,
               lGetString(master_q, QU_full_name)));
 
       if (ISTRACE)
-         execlp(shepherd_path, ps_name, NULL);
+         execlp(shepherd_path, ps_name, nullptr);
       else
-        execlp(shepherd_path, ps_name, "-bg", NULL);
+        execlp(shepherd_path, ps_name, "-bg", nullptr);
    } else {
       char commandline[2048];
 
@@ -1894,7 +1894,7 @@ int sge_exec_job(sge_gdi_ctx_class_t *ctx, lListElem *jep, lListElem *jatep,
       else
         sprintf(commandline, "exec %s -bg", shepherd_path);
 
-      execlp(pag_cmd, pag_cmd, "-c", commandline, NULL);
+      execlp(pag_cmd, pag_cmd, "-c", commandline, nullptr);
    }
    sge_free(&pag_cmd);
    sge_free(&shepherd_cmd);
@@ -1938,7 +1938,7 @@ char *shell
 
    login_shells = mconf_get_login_shells();
   
-   if (login_shells == NULL) {
+   if (login_shells == nullptr) {
       DRETURN(0);
    }
 
@@ -1979,7 +1979,7 @@ get_nhosts(const lList *gdil_orig) {
    DENTER(TOP_LAYER);
    for_each_ep(ep, gdil_orig) {
       hostname = lGetHost(ep, JG_qhostname);
-      if (lGetElemStr(cache, STU_name, hostname) == NULL) {
+      if (lGetElemStr(cache, STU_name, hostname) == nullptr) {
          nhosts++;
          lAddElemStr(&cache, STU_name, hostname, STU_Type);
       }
@@ -2028,14 +2028,14 @@ static bool create_binding_strategy_string_linux(dstring* result, lListElem *jep
    bool retval;
    
    /* binding strategy */
-   const lListElem *binding_elem = NULL;
+   const lListElem *binding_elem = nullptr;
    const lList *binding = lGetList(jep, JB_binding);
 
    DENTER(TOP_LAYER);
 
-   if (binding != NULL) {
+   if (binding != nullptr) {
       /* get sublist */
-      if ((binding_elem = lFirst(binding)) != NULL) {
+      if ((binding_elem = lFirst(binding)) != nullptr) {
 
          /* re-create the binding string (<strategy>:<parameter>:<parameter>) */
 
@@ -2102,7 +2102,7 @@ static bool create_binding_strategy_string_linux(dstring* result, lListElem *jep
 
    if (retval == false) {
       sge_dstring_clear(result);
-      sge_dstring_append(result, "NULL");
+      sge_dstring_append(result, "nullptr");
    }
 
    sge_dstring_free(&tmp_result);
@@ -2155,7 +2155,7 @@ static bool linear_linux(dstring* result, const lListElem* binding_elem, const b
    int used_first_socket  = 0;
    int used_first_core    = 0;
    int amount             = 0;
-   char* topo_job         = NULL;
+   char* topo_job         = nullptr;
    int topo_job_length    = 0;
    bool retval;
 
@@ -2177,9 +2177,9 @@ static bool linear_linux(dstring* result, const lListElem* binding_elem, const b
    if (automatic == true) {   
       /* user has not specified where to begin, this has now beeing 
          figured out automatically */
-      int* list_of_sockets = NULL;
+      int* list_of_sockets = nullptr;
       int samount          = 0;
-      int* list_of_cores   = NULL;
+      int* list_of_cores   = nullptr;
       int camount          = 0;
 
       if (get_linear_automatic_socket_core_list_and_account(amount, 
@@ -2212,7 +2212,7 @@ static bool linear_linux(dstring* result, const lListElem* binding_elem, const b
       } else {
          /* there was a problem allocating the cores */
          DPRINTF(("ERROR: Couldn't allocate cores with respect to binding request!"));
-         sge_dstring_append(result, "NULL");
+         sge_dstring_append(result, "nullptr");
          retval = false;
       }
 
@@ -2238,7 +2238,7 @@ static bool linear_linux(dstring* result, const lListElem* binding_elem, const b
       } else { 
          /* couldn't allocate cores */ 
          DPRINTF(("ERROR: Couldn't allocate cores with respect to binding request!"));
-         sge_dstring_append(result, "NULL");
+         sge_dstring_append(result, "nullptr");
          retval = false;
       }
    }   
@@ -2289,7 +2289,7 @@ static bool striding_linux(dstring* result, const lListElem* binding_elem, const
    int first_core          = 0;
    int used_first_socket   = 0;
    int used_first_core     = 0;
-   char* topo_job          = NULL;
+   char* topo_job          = nullptr;
    int topo_job_length     = 0;
    bool retval;
 
@@ -2329,12 +2329,12 @@ static bool striding_linux(dstring* result, const lListElem* binding_elem, const
       /* it was not possible to fit the binding strategy on host 
          because it is occupied already or any other reason */
       DPRINTF(("ERROR: couldn't allocate cores with respect to binding request")); 
-      sge_dstring_append(result, "NULL");
+      sge_dstring_append(result, "nullptr");
       retval = false;
    }
 
    /* free topology string */
-   if (topo_job != NULL) {
+   if (topo_job != nullptr) {
       sge_free(&topo_job);
    }
 
@@ -2378,15 +2378,15 @@ static bool striding_linux(dstring* result, const lListElem* binding_elem, const
 static bool explicit_linux(dstring* result, const lListElem* binding_elem) 
 {
    /* pointer to string which contains the <socket>,<core> pairs */
-   const char* request = NULL;
+   const char* request = nullptr;
 
    /* the topology used by the job */
-   char* topo_by_job = NULL;
+   char* topo_by_job = nullptr;
    int topo_by_job_length;
 
    /* the from the request extracted sockets and cores (to bind to) */
-   int* socket_list = NULL;
-   int* core_list   = NULL;
+   int* socket_list = nullptr;
+   int* core_list   = nullptr;
    int socket_list_length, core_list_length;
    bool retval;
 
@@ -2399,7 +2399,7 @@ static bool explicit_linux(dstring* result, const lListElem* binding_elem)
       &socket_list_length, &core_list, &core_list_length) == false) {
       /* problems while parsing the binding request */ 
       INFO((SGE_EVENT, "Couldn't extract socket and core lists out of string"));
-      sge_dstring_append(result, "NULL");
+      sge_dstring_append(result, "nullptr");
       retval = false;
    } else {  
       
@@ -2418,7 +2418,7 @@ static bool explicit_linux(dstring* result, const lListElem* binding_elem)
             it or some cores are already occupied */
          INFO((SGE_EVENT, "ERROR: Couldn't determine appropriate core binding %s %d %d %d %d",
             request, socket_list_length, socket_list[0], core_list_length, core_list[0]));
-         sge_dstring_append(result, "NULL");
+         sge_dstring_append(result, "nullptr");
          retval = false;
       }
    } 
@@ -2478,11 +2478,11 @@ static bool create_binding_strategy_string_solaris(dstring* result,
    bool retval;
    /* binding strategy */
    lList *binding = lGetList(jep, JB_binding);
-   lListElem *binding_elem = NULL;
+   lListElem *binding_elem = nullptr;
 
    DENTER(TOP_LAYER);
 
-   if (binding != NULL && ((binding_elem = lFirst(binding)) != NULL)) {
+   if (binding != nullptr && ((binding_elem = lFirst(binding)) != nullptr)) {
 
       if (strcmp(lGetString(binding_elem, BN_strategy), "striding_automatic") == 0) {
          
@@ -2523,13 +2523,13 @@ static bool create_binding_strategy_string_solaris(dstring* result,
 
    /* in case no core binding is selected or any other error occured */
    if (retval == false) {
-      sge_dstring_append(result, "NULL");
+      sge_dstring_append(result, "nullptr");
    } else {
       /* in case of -binding PE the string with the socket,core pairs 
          must be returned */
          
-      if (result != NULL && sge_dstring_get_string(result) != NULL && 
-            strstr(sge_dstring_get_string(result), "pe_") != NULL) {   
+      if (result != nullptr && sge_dstring_get_string(result) != nullptr &&
+            strstr(sge_dstring_get_string(result), "pe_") != nullptr) {
          retval = parse_job_accounting_and_create_logical_list(
                sge_dstring_get_string(result), rankfileinput); 
       }
@@ -2572,13 +2572,13 @@ static bool linear_automatic_solaris(dstring* result, lListElem* binding_elem,
    binding_type_t type;    /* type of binding (set|env|pe)     */
 
    /* the <socket, core> tuples on which the job have to be bound to */
-   int* list_of_sockets    = NULL;
-   int* list_of_cores      = NULL;
+   int* list_of_sockets    = nullptr;
+   int* list_of_cores      = nullptr;
    int samount             = 0;
    int camount             = 0;
 
    /* topology used by job */
-   char* topo_by_job       = NULL;
+   char* topo_by_job       = nullptr;
    int topo_by_job_length  = 0;
 
    /* return value */
@@ -2686,7 +2686,7 @@ static bool striding_solaris(dstring* result, lListElem* binding_elem, const boo
    binding_type_t type;
 
    /* topology consumed by job */
-   char* topo_by_job       = NULL;
+   char* topo_by_job       = nullptr;
    int topo_by_job_length  = 0;
 
    /* return value */
@@ -2816,11 +2816,11 @@ static bool explicit_solaris(dstring* result, lListElem* binding_elem, char* err
                                        int err_length, char** env)
 {
    /* pointer to string which contains the <socket>,<core> pairs */
-   const char* request = NULL;
+   const char* request = nullptr;
    
    /* the from the request extracted sockets and cores (to bind to) */
-   int* socket_list = NULL;
-   int* core_list = NULL;
+   int* socket_list = nullptr;
+   int* core_list = nullptr;
    int socket_list_length, core_list_length;
    
    int processor_set = 0;
@@ -2844,7 +2844,7 @@ static bool explicit_solaris(dstring* result, lListElem* binding_elem, char* err
       retval = false;
    } else {
       /* the topology used by the job */
-      char* topo_by_job = NULL;
+      char* topo_by_job = nullptr;
       int topo_by_job_length;
 
       /* check if socket and core numbers are free */ 
@@ -2935,8 +2935,8 @@ static bool parse_job_accounting_and_create_logical_list(const char* binding_str
 {
    bool retval;
 
-   int* sockets = NULL;
-   int* cores   = NULL;
+   int* sockets = nullptr;
+   int* cores   = nullptr;
    int amount   = 0;
 
    const char* pos;
@@ -2970,9 +2970,9 @@ static bool parse_job_accounting_and_create_logical_list(const char* binding_str
       sge_dstring_append_dstring(&full, &pair);
 
       /* allocate memory for the output variable "rankfileinput" */
-      *rankfileinput = sge_strdup(NULL, sge_dstring_get_string(&full));
+      *rankfileinput = sge_strdup(nullptr, sge_dstring_get_string(&full));
      
-      if (*rankfileinput == NULL) {
+      if (*rankfileinput == nullptr) {
          WARNING((SGE_EVENT, "Core binding: Malloc error"));
          retval = false;
       } else {
@@ -2989,7 +2989,7 @@ static bool parse_job_accounting_and_create_logical_list(const char* binding_str
    } else {
       /* no cores used */
       INFO((SGE_EVENT, "Core binding: Couldn't determine any allocated cores for the job"));
-      *rankfileinput = sge_strdup(NULL, "<NULL>");
+      *rankfileinput = sge_strdup(nullptr, "<nullptr>");
       retval = true;
    }
    

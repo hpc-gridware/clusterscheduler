@@ -22,13 +22,13 @@ add_string_to_array(cJSON *json_array, const char *name, const char *str)
 static char *
 get_type_name_from_descr(const lDescr *descr)
 {
-   char *type_name = NULL;
+   char *type_name = nullptr;
 
-   if (descr != NULL) {
+   if (descr != nullptr) {
       const char *first_nm_str = lNm2Str(descr[0].nm);
       type_name = strdup(first_nm_str);
       char *pos = strchr(type_name, '_');
-      if (pos != NULL) {
+      if (pos != nullptr) {
          *pos = '\0';
       }
    }
@@ -94,7 +94,7 @@ dump_schema(const lNameSpace *ns, const char *target_dir, cJSON *json_all)
 {
    const lDescr *descr = ns->descr;
    char *obj_type = get_type_name_from_descr(descr);
-   if (obj_type != NULL) {
+   if (obj_type != nullptr) {
       int i;
       cJSON *json = cJSON_CreateObject();
       cJSON *json_attributes;
@@ -119,10 +119,10 @@ dump_schema(const lNameSpace *ns, const char *target_dir, cJSON *json_all)
       for (i = 0; i < ns->size; i++) {
          char *cull_name = strdup(ns->namev[i]);
          const char *name = strip_prefix(cull_name);
-         if (name != NULL && *name != '\0') {
+         if (name != nullptr && *name != '\0') {
             int data_type = mt_get_type(descr[i].mt);
             const char *data_type_str = lMt2Str(data_type);
-            char *sub_obj_type = NULL;
+            char *sub_obj_type = nullptr;
             cJSON *json_attribute = cJSON_CreateObject();
             cJSON_AddItemToArray(json_attributes, json_attribute);
             cJSON_AddStringToObject(json_attribute, "name", name);
@@ -133,7 +133,7 @@ dump_schema(const lNameSpace *ns, const char *target_dir, cJSON *json_all)
 
             if (data_type == lListT || data_type == lObjectT || data_type == lRefT) {
                sub_obj_type = get_type_name_from_descr(object_get_subtype(descr[i].nm));
-               if (sub_obj_type == NULL) {
+               if (sub_obj_type == nullptr) {
                   sub_obj_type = strdup("ANY");
                }
                cJSON_AddStringToObject(json_attribute, "subClassName", sub_obj_type);
@@ -185,7 +185,7 @@ walk_nmv(const char *target_dir)
    cJSON *json_array = cJSON_AddArrayToObject(json_all, "types");
 
    // dump all types
-   for (i = 0; nmv[i].descr != NULL; i++) {
+   for (i = 0; nmv[i].descr != nullptr; i++) {
       cJSON *json_array_item;
 
       printf("Type %03d,\tlower: %d,\tsize: %d,\tfirst: %s\n",
@@ -216,7 +216,7 @@ walk_nmv(const char *target_dir)
 int main(int argc, char *argv[])
 {
    bool ret = true;
-   const char *target_dir = NULL;
+   const char *target_dir = nullptr;
 
    if (argc < 2) {
       fprintf(stderr, "usage: %s <target_dir>\n", argv[0]);

@@ -67,7 +67,7 @@ vdict_t GRM_GDI_VERSION_ARRAY[] =
       { 0x100020F7, "6.2u5beta2" },
       { 0x100020F8, "6.2u5beta2" },
       { 0x100020F8, "6.2u5" },
-      { 0, NULL}
+      { 0, nullptr}
 };
 
 #ifdef ADD_UNIVA_COPYRIGHT

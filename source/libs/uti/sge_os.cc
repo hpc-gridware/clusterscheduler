@@ -104,7 +104,7 @@ int sge_get_pids(pid_t *pids, int max_pids, const char *name,
 
    DENTER(TOP_LAYER);
 
-   command_pid = sge_peopen("/bin/sh", 0, pscommand, NULL, NULL,
+   command_pid = sge_peopen("/bin/sh", 0, pscommand, nullptr, nullptr,
                             &fp_in, &fp_out, &fp_err, false);
 
    if (command_pid == -1) {
@@ -147,7 +147,7 @@ int sge_get_pids(pid_t *pids, int max_pids, const char *name,
       }
    }
 
-   sge_peclose(command_pid, fp_in, fp_out, fp_err, NULL);
+   sge_peclose(command_pid, fp_in, fp_out, fp_err, nullptr);
    DRETURN(num_of_pids);
 }
 
@@ -220,7 +220,7 @@ int sge_checkprog(pid_t pid, const char *name, const char *pscommand) {
 
    DENTER(TOP_LAYER);
 
-   command_pid = sge_peopen("/bin/sh", 0, pscommand, NULL, NULL,
+   command_pid = sge_peopen("/bin/sh", 0, pscommand, nullptr, nullptr,
                             &fp_in, &fp_out, &fp_err, false);
 
    if (command_pid == -1) {
@@ -266,7 +266,7 @@ int sge_checkprog(pid_t pid, const char *name, const char *pscommand) {
       }
    }
 
-   sge_peclose(command_pid, fp_in, fp_out, fp_err, NULL);
+   sge_peclose(command_pid, fp_in, fp_out, fp_err, nullptr);
 
    DRETURN(notfound);
 }
@@ -388,7 +388,7 @@ int sge_get_max_fd(void) {
 *  FUNCTION
 *     qsort() needs a callback function to compare two filedescriptors for
 *     sorting them. This is the implementation to value the difference of two
-*     file descriptors. If one paramter is NULL, only the pointers are
+*     file descriptors. If one paramter is nullptr, only the pointers are
 *     used for the comparsion.
 *     Used by sge_close_all_fds().
 *
@@ -412,8 +412,8 @@ static int fd_compare(const void *fd1, const void *fd2) {
    int *i1 = (int *) fd1;
    int *i2 = (int *) fd2;
 
-   /* If there are NULL pointer we also try to compare them */
-   if (i1 == NULL || i2 == NULL) {
+   /* If there are nullptr pointer we also try to compare them */
+   if (i1 == nullptr || i2 == nullptr) {
       if (i1 > i2) {
          return 1;
       }
@@ -482,7 +482,7 @@ static void sge_close_fd(int fd) {
 *  INPUTS
 *     int* keep_open          - integer array which contains file descriptor
 *                               ids which should not be closed
-*                             - if this value is set to NULL nr_of_fds is
+*                             - if this value is set to nullptr nr_of_fds is
 *                               ignored
 *     unsigned long nr_of_fds - nr of filedescriptors in the keep_open array
 *
@@ -495,7 +495,7 @@ static void sge_close_fd(int fd) {
 void sge_close_all_fds(int *keep_open, unsigned long nr_of_keep_open_entries) {
    int maxfd = sge_get_max_fd();
    int fd = 0;
-   if (keep_open == NULL) {
+   if (keep_open == nullptr) {
       /* if we do not have any keep_open we can delete all fds */
       for (fd = 0; fd < maxfd; fd++) {
          sge_close_fd(fd);
@@ -562,7 +562,7 @@ void sge_close_all_fds(int *keep_open, unsigned long nr_of_keep_open_entries) {
 *  SEE ALSO
 *******************************************************************************/
 int sge_dup_fd_above_stderr(int *fd) {
-   if (fd == NULL) {
+   if (fd == nullptr) {
       return EINVAL;
    }
    /* 

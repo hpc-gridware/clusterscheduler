@@ -69,7 +69,7 @@ void sge_setup_sge_execd(sge_gdi_ctx_class_t *ctx, const char* tmp_err_file_name
 {
    char err_str[MAX_STRING_SIZE];
    int allowed_get_conf_errors     = 5;
-   char* spool_dir = NULL;
+   char* spool_dir = nullptr;
    const char *unqualified_hostname = uti_state_get_unqualified_hostname();
    const char *admin_user = bootstrap_get_admin_user();
 
@@ -83,20 +83,20 @@ void sge_setup_sge_execd(sge_gdi_ctx_class_t *ctx, const char* tmp_err_file_name
    if (sge_set_admin_username(admin_user, err_str)) {
       CRITICAL((SGE_EVENT, SFNMAX, err_str));
       /* TODO: remove */
-      SGE_EXIT(NULL, 1);
+      SGE_EXIT(nullptr, 1);
    }
 
    if (sge_switch2admin_user()) {
       CRITICAL((SGE_EVENT, SFNMAX, MSG_ERROR_CANTSWITCHTOADMINUSER));
       /* TODO: remove */
-      SGE_EXIT(NULL, 1);
+      SGE_EXIT(nullptr, 1);
    }
 
    while (gdi2_wait_for_conf(ctx, &Execd_Config_List)) {
       if (allowed_get_conf_errors-- <= 0) {
          CRITICAL((SGE_EVENT, SFNMAX, MSG_EXECD_CANT_GET_CONFIGURATION_EXIT));
          /* TODO: remove */
-         SGE_EXIT(NULL, 1);
+         SGE_EXIT(nullptr, 1);
       }
       sleep(1);
       ctx->get_master(ctx, true);
@@ -121,11 +121,11 @@ void sge_setup_sge_execd(sge_gdi_ctx_class_t *ctx, const char* tmp_err_file_name
    sge_chdir_exit(unqualified_hostname, 1); 
    /* having passed the  previous statement we may 
       log messages into the ERR_FILE  */
-   if ( tmp_err_file_name != NULL) {
+   if ( tmp_err_file_name != nullptr) {
       sge_copy_append((char*)tmp_err_file_name, ERR_FILE, SGE_MODE_APPEND);
    }
    sge_switch2start_user();
-   if ( tmp_err_file_name != NULL) {
+   if ( tmp_err_file_name != nullptr) {
       unlink(tmp_err_file_name);
    }
    sge_switch2admin_user();
@@ -166,7 +166,7 @@ int job_initialize_job(lListElem *job)
 
       ja_task_id = lGetUlong(ja_task, JAT_task_number);
 
-      add_job_report(job_id, ja_task_id, NULL, job);
+      add_job_report(job_id, ja_task_id, nullptr, job);
                                                                                       /* add also job reports for tasks */
       for_each_ep(pe_task, lGetList(ja_task, JAT_task_list)) {
          add_job_report(job_id, ja_task_id, lGetString(pe_task, PET_id), job);
@@ -184,10 +184,10 @@ int job_initialize_job(lListElem *job)
          stringT active_dir = "";
 
          sge_get_file_path(active_dir, JOB_ACTIVE_DIR, FORMAT_DEFAULT,
-                           SPOOL_WITHIN_EXECD, job_id, ja_task_id, NULL);
+                           SPOOL_WITHIN_EXECD, job_id, ja_task_id, nullptr);
          if (SGE_STAT(active_dir, &stat_buffer)) {
             /* lost active directory - initiate cleanup for job */
-            execd_job_run_failure(job, ja_task, NULL, "lost active dir of running "
+            execd_job_run_failure(job, ja_task, nullptr, "lost active dir of running "
                                   "job", GFSTATE_HOST);
             continue;
          }
@@ -198,7 +198,7 @@ int job_initialize_job(lListElem *job)
          int ret;
          /* register still running jobs at ptf */
          if (lGetUlong(ja_task, JAT_status) == JRUNNING) {
-            ret = register_at_ptf(job, ja_task, NULL);
+            ret = register_at_ptf(job, ja_task, nullptr);
             if (ret) {
                ERROR((SGE_EVENT, MSG_JOB_XREGISTERINGJOBYATPTFDURINGSTARTUP_SU,
                      (ret == 1 ? MSG_DELAYED : MSG_FAILED), sge_u32c(job_id)));

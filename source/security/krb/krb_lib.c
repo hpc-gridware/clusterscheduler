@@ -154,8 +154,8 @@ static krb5_error_code krb_get_tkt_for_daemon(const char *qmaster_host)
 
    /* get SGE ticket using keytab */
 
-   if ((rc = krb5_get_in_tkt_with_keytab(gsd.context, 0, 0, NULL,
-					 NULL, gsd.keytab, gsd.ccdef,
+   if ((rc = krb5_get_in_tkt_with_keytab(gsd.context, 0, 0, nullptr,
+					 nullptr, gsd.keytab, gsd.ccdef,
 					 &gsd.creds, 0)))
       goto error;
 
@@ -203,7 +203,7 @@ int krb_init(const char *progname)
    else
       gsd.daemon = 0;
 
-   gsd.conn_list = NULL;
+   gsd.conn_list = nullptr;
 
 #ifdef notdef
 
@@ -216,7 +216,7 @@ int krb_init(const char *progname)
 
    if ((krbhost = sge_get_master(getenv("SGE_CELL"), 0))) {
 
-      char **realmlist=NULL;
+      char **realmlist=nullptr;
 
       /* get kerberos realm of master host */
       if ((rc = krb5_get_host_realm(gsd.context, krbhost, &realmlist))) {
@@ -227,7 +227,7 @@ int krb_init(const char *progname)
       } else {
 
 	 if (realmlist && realmlist[0])
-	    krbrealm = sge_strdup(NULL, realmlist[0]);
+	    krbrealm = sge_strdup(nullptr, realmlist[0]);
 
 	 if (realmlist)
 	    if ((rc = krb5_free_host_realm(gsd.context, realmlist)))
@@ -272,7 +272,7 @@ int krb_init(const char *progname)
       exit(1);
    }
 
-   if ((he = gethostbyname(gsd.hostname)) == NULL) {
+   if ((he = gethostbyname(gsd.hostname)) == nullptr) {
       ERROR((SGE_EVENT, MSG_KRB_GETHOSTNAMEFAILED));
       exit(1);
    }
@@ -291,7 +291,7 @@ int krb_init(const char *progname)
 
       /* use $SGE_ROOT/keytab */
 
-      sprintf(keytab, "FILE:%s/%s", sge_get_root_dir(0, NULL, 0, 1), KRB_KEYTAB);
+      sprintf(keytab, "FILE:%s/%s", sge_get_root_dir(0, nullptr, 0, 1), KRB_KEYTAB);
       if ((rc = krb5_kt_resolve(gsd.context, keytab, &gsd.keytab))) {
 
 	 ERROR((SGE_EVENT, MSG_KRB_COULDNOTRESOLVEKEYTABX_S, error_message(rc)));
@@ -300,7 +300,7 @@ int krb_init(const char *progname)
 
       if ((!strcmp(prognames[QMASTER], progname))) {
 
-	 if ((rc = krb5_sname_to_principal(gsd.context, NULL, SGE_SERVICE,
+	 if ((rc = krb5_sname_to_principal(gsd.context, nullptr, SGE_SERVICE,
 					   KRB5_NT_SRV_HST, &gsd.serverp))) {
 	    ERROR((SGE_EVENT, MSG_KRB_KRB5SNAMETOPRINCIPALFAILEDX_S ,
 		   error_message(rc)));
@@ -351,7 +351,7 @@ int krb_init(const char *progname)
       /* initialize the connection list */
       gsd.conn_list = lCreateList("krb_connections", KRB_Type);
 
-      if (gsd.conn_list == NULL) {
+      if (gsd.conn_list == nullptr) {
 	 ERROR(( SGE_EVENT, MSB_KRB_CONNECTIONLISTCOULDNOTBECREATED ));
 	 exit(1);
       }
@@ -367,7 +367,7 @@ int krb_init(const char *progname)
    } else {
  
       /* initialize client auth_context */
-      if ((rc = krb_get_new_auth_con(&gsd.auth_context, NULL))) {
+      if ((rc = krb_get_new_auth_con(&gsd.auth_context, nullptr))) {
 	 ERROR((SGE_EVENT, MSG_KRB_KRBGETNEWAUTHCONFAILUREX_S ,
 		error_message(rc)));
 	 com_err(gsd.progname, rc, MSG_KRB_KRBGETNEWAUTHCONFAILED );
@@ -379,7 +379,7 @@ int krb_init(const char *progname)
          /* initialize the connection list in execd */
          if (!strcmp(prognames[EXECD], progname)) {
             gsd.conn_list = lCreateList("krb_connections", KRB_Type);
-            if (gsd.conn_list == NULL) {
+            if (gsd.conn_list == nullptr) {
                ERROR((SGE_EVENT, MSB_KRB_CONNECTIONLISTCOULDNOTBECREATED));
                exit(1);
             }
@@ -436,10 +436,10 @@ static int krb_delete_client(lListElem *client)
    auth = (krb5_auth_context)str2ptr(lGetString(client,
                                                 KRB_auth_context));
    if (auth) {
-      krb5_rcache rcache=NULL;
+      krb5_rcache rcache=nullptr;
       if (!krb5_auth_con_getrcache(gsd.context, auth, &rcache))
          if (rcache)
-            krb5_auth_con_setrcache(gsd.context, auth, NULL);
+            krb5_auth_con_setrcache(gsd.context, auth, nullptr);
       krb5_auth_con_free(gsd.context, auth);
    }
 
@@ -487,7 +487,7 @@ static krb5_error_code krb_get_new_auth_con(krb5_auth_context *auth,
                                             krb5_rcache rcache) 
 {
     krb5_error_code rc=0;
-    krb5_auth_context new_auth=NULL, old_auth=NULL;
+    krb5_auth_context new_auth=nullptr, old_auth=nullptr;
     krb5_int32 flags;
 
    /* init new auth context */
@@ -515,10 +515,10 @@ static krb5_error_code krb_get_new_auth_con(krb5_auth_context *auth,
    *auth = new_auth;
 
    if (old_auth) {
-      krb5_rcache old_rcache=NULL;
+      krb5_rcache old_rcache=nullptr;
       if (!krb5_auth_con_getrcache(gsd.context, old_auth, &old_rcache))
          if (old_rcache && rcache && old_rcache == rcache)
-            krb5_auth_con_setrcache(gsd.context, old_auth, NULL);
+            krb5_auth_con_setrcache(gsd.context, old_auth, nullptr);
       if ((rc = krb5_auth_con_free(gsd.context, old_auth))) {
 	 goto error;
       }
@@ -536,7 +536,7 @@ static krb5_error_code krb_get_forwardable_tgt(char *host,
 {
    krb5_error_code rc = 0;
    char ccname[40];
-   krb5_ccache          ccache = NULL;
+   krb5_ccache          ccache = nullptr;
 
    DENTER(TOP_LAYER);
 
@@ -554,7 +554,7 @@ static krb5_error_code krb_get_forwardable_tgt(char *host,
       goto error;
 
    if ((rc = krb5_fwd_tgt_creds(gsd.context, auth, host,
-                                (*in_creds)->client, NULL,
+                                (*in_creds)->client, nullptr,
                                 ccache, 1,
                                 tgtbuf)))
       goto error;
@@ -576,12 +576,12 @@ krb_send_message(int synchron, const char *tocomproc, int toid,
    krb5_timestamp time_now;
    int ret = SEC_SEND_FAILED;
    krb5_auth_context auth;
-   lListElem  *client=NULL, *tgt_ep;
-   lCondition *where=NULL;
+   lListElem  *client=nullptr, *tgt_ep;
+   lCondition *where=nullptr;
    krb5_data ap_req, inbuf, outbuf, tgtbuf;
    krb5_address addr;
    sge_pack_buffer pb;
-   krb5_principal server = NULL;
+   krb5_principal server = nullptr;
    int I_am_a_client = 0;
    krb5_creds **tgt_creds;
 #ifdef KRB_DO_REPLAY_STUFF
@@ -647,7 +647,7 @@ krb_send_message(int synchron, const char *tocomproc, int toid,
 
       I_am_a_client = 1;
 
-      if ((rc = krb_get_new_auth_con(&gsd.auth_context, NULL))) {
+      if ((rc = krb_get_new_auth_con(&gsd.auth_context, nullptr))) {
 	 ERROR((SGE_EVENT, MSG_KRB_KRBGETNEWAUTHCONFAILUREX_S,
 		error_message(rc)));
 	 com_err(gsd.progname, rc, MSG_KRB_COULDNOTGETNEWAUTHCONTEXT);
@@ -707,7 +707,7 @@ krb_send_message(int synchron, const char *tocomproc, int toid,
    addr.length = sizeof(c_sock.sin_port);
    addr.contents = (krb5_octet *)&c_sock.sin_port;
    if ((rc = krb5_auth_con_setports(gsd.context, auth,
-				    &addr, NULL))) {
+				    &addr, nullptr))) {
       ERROR((SGE_EVENT, MSG_KRB_KRB5AUTHCONSETADDRSFIALEDFORWXYZ_SSIS,
 	     tohost, tocomproc, toid, error_message(rc)));
       if (!gsd.daemon)
@@ -720,7 +720,7 @@ krb_send_message(int synchron, const char *tocomproc, int toid,
    addr.addrtype = ADDRTYPE_INET;
    addr.length = sizeof(gsd.hostaddr);
    addr.contents = (krb5_octet *)&gsd.hostaddr;
-   if ((rc = krb5_auth_con_setaddrs(gsd.context, auth, &addr, NULL))) {
+   if ((rc = krb5_auth_con_setaddrs(gsd.context, auth, &addr, nullptr))) {
       ERROR((SGE_EVENT, MSG_KRB_KRB5AUTHCONSETADDRSFIALEDFORWXYZ_SSIS,
 	     tohost, tocomproc, toid, error_message(rc)));
       if (!gsd.daemon)
@@ -775,7 +775,7 @@ krb_send_message(int synchron, const char *tocomproc, int toid,
    inbuf.data = buffer;
    inbuf.length = buflen;
 
-   if ((rc = KRB_ENCRYPT(gsd.context, auth, &inbuf, &outbuf, NULL))) {
+   if ((rc = KRB_ENCRYPT(gsd.context, auth, &inbuf, &outbuf, nullptr))) {
       ERROR((SGE_EVENT, MSG_KRB_FAILEDENCRYPTINGMSGFORWXYZ_SSIS ,
 	     tohost, tocomproc, toid, error_message(rc)));
       if (!gsd.daemon)
@@ -787,7 +787,7 @@ krb_send_message(int synchron, const char *tocomproc, int toid,
 
    if (I_am_a_client && gsd.client_flags & KRB_FORWARD_TGT) {
 
-      if ((rc = krb5_sname_to_principal(gsd.context, NULL, SGE_SERVICE,
+      if ((rc = krb5_sname_to_principal(gsd.context, nullptr, SGE_SERVICE,
                                         KRB5_NT_SRV_HST, &server))) {
          ERROR((SGE_EVENT, MSG_KRB_KRB5SNAMETOPRINCIPALFAILEDX_S,
                 error_message(rc)));
@@ -888,16 +888,16 @@ krb_unpackmsg(sge_pack_buffer *pb, krb5_data *buf1, krb5_data *buf2,
    if ((buf1->length = len1)) {
       if ((ret=unpackbuf(pb, &buf1->data, buf1->length))) goto error;
    } else
-      buf1->data = NULL;
+      buf1->data = nullptr;
    if ((buf2->length = len2)) {
       if ((ret=unpackbuf(pb, &buf2->data, buf2->length))) goto error;
    } else
-      buf2->data = NULL;
+      buf2->data = nullptr;
    if ((buf3->length = len3)) {
       if ((ret=unpackint(pb, tgt_id))) goto error;
       if ((ret=unpackbuf(pb, &buf3->data, buf3->length))) goto error;
    } else
-      buf3->data = NULL;
+      buf3->data = nullptr;
    ret = PACK_SUCCESS;
 
  error:
@@ -915,7 +915,7 @@ char *tohost
    int buflen;
    sge_strlcpy(buffer, MSG_KRB_AUTHENTICATIONFAILURE, BUFSIZ);
    buflen = strlen(buffer);
-   return send_message(0, tocommproc, toid, tohost, tag, buffer, buflen, NULL, 0);
+   return send_message(0, tocommproc, toid, tohost, tag, buffer, buflen, nullptr, 0);
 }
 
 
@@ -925,10 +925,10 @@ krb_receive_message(char *fromcommproc, u_short *fromid, char *fromhost,
 {
    krb5_error_code rc;
    int ret = SEC_RECEIVE_FAILED;
-   krb5_auth_context auth=NULL;
-   krb5_creds ** tgt_creds = NULL;
-   lListElem  *client=NULL;
-   lCondition *where=NULL;
+   krb5_auth_context auth=nullptr;
+   krb5_creds ** tgt_creds = nullptr;
+   lListElem  *client=nullptr;
+   lCondition *where=nullptr;
    krb5_data inbuf, outbuf, ap_req, tgtbuf;
    krb5_address addr;
    sge_pack_buffer pb;
@@ -1052,7 +1052,7 @@ krb_receive_message(char *fromcommproc, u_short *fromid, char *fromhost,
 
       /* Set up daemon replay cache */
 
-      if (gsd.rcache == NULL) {
+      if (gsd.rcache == nullptr) {
          if ((rc = krb5_get_server_rcache(gsd.context,         
                krb5_princ_component(gsd.context, gsd.serverp, 0),
                &gsd.rcache))) {
@@ -1081,7 +1081,7 @@ krb_receive_message(char *fromcommproc, u_short *fromid, char *fromhost,
 	    ret = SEC_RECEIVE_FAILED;
 	    goto error;
          } else {
-	    lSetString(client, KRB_auth_context, ptr2str(auth, NULL));
+	    lSetString(client, KRB_auth_context, ptr2str(auth, nullptr));
 	 }
 
 	 if ((ret=lAppendElem(gsd.conn_list, client))) {
@@ -1101,7 +1101,7 @@ krb_receive_message(char *fromcommproc, u_short *fromid, char *fromhost,
 	    ret = SEC_RECEIVE_FAILED;
 	    goto error;
 	 }
-	 lSetString(client, KRB_auth_context, ptr2str(auth, NULL));
+	 lSetString(client, KRB_auth_context, ptr2str(auth, nullptr));
       }
 
       /* set activity time stamp in client */
@@ -1112,7 +1112,7 @@ krb_receive_message(char *fromcommproc, u_short *fromid, char *fromhost,
 
       /* authenticate the client using the AP_REQ */
       if ((rc = krb5_rd_req(gsd.context, &auth, &ap_req, gsd.serverp,
-			    gsd.keytab, NULL, NULL))) {
+			    gsd.keytab, nullptr, nullptr))) {
 	 ERROR((SGE_EVENT, MSG_KRB_CLIENTWXYFAILEDAUTHENTICATIONZ_SSIS ,
 		tmphost, tmpcommproc, (int) tmpid, error_message(rc)));
 	 if ((rc = krb_send_auth_failure(tmpcommproc, tmpid, tmphost))) {
@@ -1144,7 +1144,7 @@ krb_receive_message(char *fromcommproc, u_short *fromid, char *fromhost,
 
    /* put client's host address in the client auth_context */
 
-   if ((he = gethostbyname(tmphost)) == NULL) {
+   if ((he = gethostbyname(tmphost)) == nullptr) {
       ERROR((SGE_EVENT, MSG_KRB_GETHOSTBYNAMEFAILED));
       ret = SEC_RECEIVE_FAILED;
       goto error;
@@ -1155,7 +1155,7 @@ krb_receive_message(char *fromcommproc, u_short *fromid, char *fromhost,
    addr.addrtype = ADDRTYPE_INET;
    addr.length = sizeof(hostaddr);
    addr.contents = (krb5_octet *)&hostaddr;
-   if ((rc = krb5_auth_con_setaddrs(gsd.context, auth, NULL, &addr))) {
+   if ((rc = krb5_auth_con_setaddrs(gsd.context, auth, nullptr, &addr))) {
       ERROR((SGE_EVENT, MSG_KRB_KRB5AUTHCONSETADDRSFAILEDFORWXYZ_SSIS ,
 	     tmphost, tmpcommproc, (int) tmpid, error_message(rc)));
       ret = SEC_RECEIVE_FAILED;
@@ -1166,7 +1166,7 @@ krb_receive_message(char *fromcommproc, u_short *fromid, char *fromhost,
 
    if (tgtbuf.length) {
 
-      if ((rc = krb5_rd_cred(gsd.context, auth, &tgtbuf, &tgt_creds, NULL))) {
+      if ((rc = krb5_rd_cred(gsd.context, auth, &tgtbuf, &tgt_creds, nullptr))) {
 	 ERROR((SGE_EVENT, MSG_KRB_UNABLETODECRYPTFORWARDEDTGTFORCLIENTWXYZ_SSIS 
                 , tmphost, tmpcommproc, (int)tmpid,
                 error_message(rc)));
@@ -1194,8 +1194,8 @@ krb_receive_message(char *fromcommproc, u_short *fromid, char *fromhost,
                /* store TGT in list based on TGT ID, for later retrieval */
 
                if ((tgt_ep = lAddSubUlong(tmp_client, KTGT_id, tgt_id, KRB_tgt_list, KTGT_Type))) {
-                  lSetString(tgt_ep, KTGT_tgt, ptr2str(tgt_creds, NULL));
-                  tgt_creds = NULL;
+                  lSetString(tgt_ep, KTGT_tgt, ptr2str(tgt_creds, nullptr));
+                  tgt_creds = nullptr;
                } else /* this shouldn't happen */
                   ERROR((SGE_EVENT, MSG_KRB_FAILEDADDINGTGTWTOCLIENTSTGTLISTFORXYZ_ISSI, 
                            (int)tgt_id, tmphost, tmpcommproc, (int)tmpid));
@@ -1211,8 +1211,8 @@ krb_receive_message(char *fromcommproc, u_short *fromid, char *fromhost,
                if (creds)
                   krb5_free_tgt_creds(gsd.context, creds);
                
-               lSetString(client, KRB_tgt, ptr2str(tgt_creds, NULL));
-               tgt_creds = NULL;
+               lSetString(client, KRB_tgt, ptr2str(tgt_creds, nullptr));
+               tgt_creds = nullptr;
 
             } else if (gsd.daemon &&
                    !strcmp(prognames[EXECD], gsd.progname)) {
@@ -1222,7 +1222,7 @@ krb_receive_message(char *fromcommproc, u_short *fromid, char *fromhost,
                 if (gsd.tgt_creds)
                    krb5_free_tgt_creds(gsd.context, gsd.tgt_creds);
                 gsd.tgt_creds = tgt_creds;
-                tgt_creds = NULL;
+                tgt_creds = nullptr;
             }
 
 #endif
@@ -1240,7 +1240,7 @@ krb_receive_message(char *fromcommproc, u_short *fromid, char *fromhost,
 
    /* decrypt message using auth_context */
 
-   if ((rc = KRB_DECRYPT(gsd.context, auth, &inbuf, &outbuf, NULL))) {
+   if ((rc = KRB_DECRYPT(gsd.context, auth, &inbuf, &outbuf, nullptr))) {
       ERROR((SGE_EVENT, MSG_KRB_FAILEDDECRYPTINGMSGFORWXYZ_SSIS ,
 	     tmphost, tmpcommproc, (int) tmpid, error_message(rc)));
       if (gsd.qmaster || (gsd.daemon &&
@@ -1262,7 +1262,7 @@ krb_receive_message(char *fromcommproc, u_short *fromid, char *fromhost,
       free(*buffer);
       *buffer = outbuf.data;
       /* otherwise buffer gets freed again by clear_packbuffer */
-      pb.head_ptr = NULL;
+      pb.head_ptr = nullptr;
    }
 
  error:
@@ -1307,11 +1307,11 @@ const char *user
 ) {
    krb5_error_code rc;
    int ret=-1;
-   lListElem  *client=NULL;
-   lCondition *where=NULL;
-   krb5_auth_context auth=NULL;
+   lListElem  *client=nullptr;
+   lCondition *where=nullptr;
+   krb5_auth_context auth=nullptr;
    char clientname[256];
-   krb5_authenticator *authenticator=NULL;
+   krb5_authenticator *authenticator=nullptr;
 
    DENTER(TOP_LAYER);
 
@@ -1387,10 +1387,10 @@ error:
  */
 static char* ptr2str(void *ptr, char *str) 
 {
-   if (str == NULL)
+   if (str == nullptr)
       str = sge_malloc(sizeof(void *)*2+4);
-   if (str == NULL || ptr == NULL)
-      return NULL;
+   if (str == nullptr || ptr == nullptr)
+      return nullptr;
    sprintf(str, "%p", ptr);
    return str;
 }
@@ -1398,10 +1398,10 @@ static char* ptr2str(void *ptr, char *str)
 static void* str2ptr(const char *str) 
 {
    void *ptr;
-   if (str == NULL)
-       return NULL;
+   if (str == nullptr)
+       return nullptr;
    if (sscanf(str, "%p", &ptr) != 1)
-       return NULL;
+       return nullptr;
    return ptr;
 }
 
@@ -1416,10 +1416,10 @@ char *str
    char *ostr = str;
    int n;
 
-   if (str == NULL)
+   if (str == nullptr)
       str = sge_malloc(len*2+5);
-   if (str == NULL || data == NULL)
-      return NULL;
+   if (str == nullptr || data == nullptr)
+      return nullptr;
 
    src = data;
    dest = str;
@@ -1447,7 +1447,7 @@ char *str
    }
    *dest = 0;
 
-   if (ostr == NULL)
+   if (ostr == nullptr)
       str = (char *)sge_realloc(str, dest-str + 1, 1);
 
    return str;
@@ -1464,20 +1464,20 @@ int *rlen
    unsigned int len=0;
    int i;
 
-   if (str == NULL)
-      return NULL;
+   if (str == nullptr)
+      return nullptr;
 
    /* get length which is encoded as non-zero values in the first 4 bytes */
    for (i=0; i<4; i++)
       len = len * 255 + (str[i]-1);
 
    if (len == 0)
-      return NULL;
+      return nullptr;
 
-   if (data == NULL)
+   if (data == nullptr)
       data = sge_malloc(len);
-   if (data == NULL)
-      return NULL;
+   if (data == nullptr)
+      return nullptr;
 
    src = (char*) str+4;
    dest = data;
@@ -1514,9 +1514,9 @@ krb5_creds **tgt_creds,
 krb5_data *outbuf 
 ) {
    krb5_error_code      rc = 0;
-   krb5_auth_context    auth_context = NULL;
+   krb5_auth_context    auth_context = nullptr;
    krb5_int32           flags;
-   krb5_data          * scratch = NULL;
+   krb5_data          * scratch = nullptr;
    krb5_address         addr;
 
    DENTER(TOP_LAYER);
@@ -1538,7 +1538,7 @@ krb5_data *outbuf
    addr.addrtype = ADDRTYPE_INET;
    addr.length = sizeof(gsd.hostaddr);
    addr.contents = (krb5_octet *)&gsd.hostaddr;
-   if ((rc = krb5_auth_con_setaddrs(gsd.context, auth_context, &addr, NULL)))
+   if ((rc = krb5_auth_con_setaddrs(gsd.context, auth_context, &addr, nullptr)))
       goto error;
 
    if ((rc = krb5_auth_con_setuseruserkey(gsd.context, auth_context,
@@ -1546,7 +1546,7 @@ krb5_data *outbuf
       goto error;
 
    if ((rc = krb5_mk_ncred(gsd.context, auth_context, tgt_creds, &scratch,
-         NULL)))
+         nullptr)))
       goto error;
 
    if (rc) {
@@ -1577,7 +1577,7 @@ krb5_data *inbuf,
 krb5_creds ***tgt_creds 
 ) {
    krb5_error_code      rc = 0;
-   krb5_auth_context    auth_context = NULL;
+   krb5_auth_context    auth_context = nullptr;
    krb5_int32           flags;
    krb5_address         addr;
 
@@ -1604,11 +1604,11 @@ krb5_creds ***tgt_creds
    addr.addrtype = ADDRTYPE_INET;
    addr.length = sizeof(gsd.hostaddr);
    addr.contents = (krb5_octet *)&gsd.hostaddr;
-   if ((rc = krb5_auth_con_setaddrs(gsd.context, auth_context, NULL, &addr)))
+   if ((rc = krb5_auth_con_setaddrs(gsd.context, auth_context, nullptr, &addr)))
       goto error;
 
    if ((rc = krb5_rd_cred(gsd.context, auth_context, inbuf, tgt_creds,
-         NULL)))
+         nullptr)))
       goto error;
 
 error:
@@ -1658,19 +1658,19 @@ u_long tgt_id,
 krb5_creds ***tgt_creds 
 ) {
    int ret = -1;
-   lCondition *where=NULL;
-   lListElem  *client=NULL, *tgt_ep;
-   krb5_creds **creds=NULL;
+   lCondition *where=nullptr;
+   lListElem  *client=nullptr, *tgt_ep;
+   krb5_creds **creds=nullptr;
 
    DENTER(TOP_LAYER);
 
-   if (tgt_creds == NULL || host == NULL || comproc == NULL) {
+   if (tgt_creds == nullptr || host == nullptr || comproc == nullptr) {
       ERROR((SGE_EVENT, MSG_KRB_TGTCREDSHOSTORCOMPROCISNULL ));
       goto all_done;
    }
 
 #if 0
-   if (host == NULL && comproc == NULL) {
+   if (host == nullptr && comproc == nullptr) {
 
       if (gsd.tgt_creds) {
          *tgt_creds = gsd.tgt_creds;
@@ -1707,7 +1707,7 @@ krb5_creds ***tgt_creds
 
    creds = (krb5_creds **)str2ptr(lGetString(tgt_ep, KTGT_tgt));
 
-   if (creds == NULL)
+   if (creds == nullptr)
       goto all_done;
    
    *tgt_creds = creds;
@@ -1724,7 +1724,7 @@ all_done:
 
 /*
  * krb_put_tgt - Store a TGT into the client's TGT list. Storing a
- * NULL TGT will free an existing TGT with a matching tgt_id.
+ * nullptr TGT will free an existing TGT with a matching tgt_id.
  */
 
 int
@@ -1736,14 +1736,14 @@ u_long tgt_id,
 krb5_creds **tgt_creds 
 ) {
    int ret = -1;
-   lCondition *where=NULL;
-   lListElem  *client=NULL, *tgt_ep;
-   krb5_creds **creds=NULL;
+   lCondition *where=nullptr;
+   lListElem  *client=nullptr, *tgt_ep;
+   krb5_creds **creds=nullptr;
 
    DENTER(TOP_LAYER);
 
 #if 0
-   if (host == NULL && comproc == NULL) {
+   if (host == nullptr && comproc == nullptr) {
 
       if (gsd.tgt_creds)
          krb5_free_tgt_creds(gsd.context, gsd.tgt_creds);
@@ -1784,14 +1784,14 @@ krb5_creds **tgt_creds
 
    if (tgt_creds)
       if ((tgt_ep = lAddSubUlong(client, KTGT_id, tgt_id, KRB_tgt_list, KTGT_Type)))
-         lSetString(tgt_ep, KTGT_tgt, ptr2str(tgt_creds, NULL));
+         lSetString(tgt_ep, KTGT_tgt, ptr2str(tgt_creds, nullptr));
                
 #if 0
    creds = (krb5_creds **)str2ptr(lGetString(client, KRB_tgt));
    if (creds)
       krb5_free_tgt_creds(gsd.context, creds);
    
-   lSetString(client, KRB_tgt, ptr2str(tgt_creds, NULL));
+   lSetString(client, KRB_tgt, ptr2str(tgt_creds, nullptr));
 #endif
 
    ret = 0;
@@ -1818,7 +1818,7 @@ krb5_creds **tgt_creds
    int                  ret = 0;
    krb5_error_code      rc = 0;
    char                 ccname[40];
-   krb5_ccache          ccache = NULL;
+   krb5_ccache          ccache = nullptr;
 
    DENTER(TOP_LAYER);
 
@@ -1869,7 +1869,7 @@ int jobid
    int                  ret = 0;
    krb5_error_code      rc = 0;
    char                 ccname[40];
-   krb5_ccache          ccache = NULL;
+   krb5_ccache          ccache = nullptr;
 
    DENTER(TOP_LAYER);
 
@@ -1900,10 +1900,10 @@ char *krb_get_ccname(
 int jobid,
 char *ccname 
 ) {
-   if (ccname == NULL) {
+   if (ccname == nullptr) {
       ccname = sge_malloc(40);
-      if (ccname == NULL)
-         return NULL;
+      if (ccname == nullptr)
+         return nullptr;
    }
    sprintf(ccname, "FILE:/tmp/krb5cc_sge%d", jobid);
    return ccname;

@@ -51,7 +51,7 @@ qim_list_add(lList **this_list, u_long32 type, const char *message)
    bool ret = true;
 
    DENTER(TOP_LAYER);
-   if (this_list != NULL && message != NULL) {
+   if (this_list != nullptr && message != nullptr) {
       lListElem *new_elem = lAddElemUlong(this_list, QIM_type, type, QIM_Type);
 
       lSetString(new_elem, QIM_message, message);
@@ -65,12 +65,12 @@ qim_list_trash_all_of_type_X(lList **this_list, u_long32 type)
    bool ret = true;
    
    DENTER(TOP_LAYER);
-   if (this_list != NULL) {
-      lListElem *elem = NULL;
-      lListElem *next_elem = NULL;
+   if (this_list != nullptr) {
+      lListElem *elem = nullptr;
+      lListElem *next_elem = nullptr;
 
       next_elem = lFirstRW(*this_list);
-      while ((elem = next_elem) != NULL) {
+      while ((elem = next_elem) != nullptr) {
          u_long32 elem_type = lGetUlong(elem, QIM_type);
 
          next_elem = lNextRW(elem);
@@ -92,8 +92,8 @@ object_message_add(lListElem *this_elem, int name,
    bool ret = true;
 
    DENTER(TOP_LAYER);
-   if (this_elem != NULL) {
-      lList *qim_list = NULL;
+   if (this_elem != nullptr) {
+      lList *qim_list = nullptr;
 
       lXchgList(this_elem, name, &qim_list);
       ret &= qim_list_add(&qim_list, type, message);
@@ -109,8 +109,8 @@ object_message_trash_all_of_type_X(lListElem *this_elem, int name,
    bool ret = true;
 
    DENTER(TOP_LAYER);
-   if (this_elem != NULL) {
-      lList *qim_list = NULL;
+   if (this_elem != nullptr) {
+      lList *qim_list = nullptr;
 
       lXchgList(this_elem, name, &qim_list);
       ret &= qim_list_trash_all_of_type_X(&qim_list, type);

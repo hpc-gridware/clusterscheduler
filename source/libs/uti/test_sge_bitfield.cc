@@ -58,24 +58,24 @@ test_nullpointer_actions(void) {
    b1 = sge_bitfield_new(10);
 
    /* pass nullpointer */
-   sge_bitfield_free(NULL);
-   sge_bitfield_free_data(NULL);
+   sge_bitfield_free(nullptr);
+   sge_bitfield_free_data(nullptr);
 
-   sge_bitfield_copy(b1, NULL);
-   sge_bitfield_copy(NULL, b1);
-   sge_bitfield_copy(NULL, NULL);
+   sge_bitfield_copy(b1, nullptr);
+   sge_bitfield_copy(nullptr, b1);
+   sge_bitfield_copy(nullptr, nullptr);
 
-   sge_bitfield_bitwise_copy(b1, NULL);
-   sge_bitfield_bitwise_copy(NULL, b1);
-   sge_bitfield_bitwise_copy(NULL, NULL);
+   sge_bitfield_bitwise_copy(b1, nullptr);
+   sge_bitfield_bitwise_copy(nullptr, b1);
+   sge_bitfield_bitwise_copy(nullptr, nullptr);
 
-   sge_bitfield_set(NULL, 0);
-   sge_bitfield_get(NULL, 0);
-   sge_bitfield_clear(NULL, 0);
-   sge_bitfield_reset(NULL);
-   sge_bitfield_changed(NULL);
-   sge_bitfield_print(NULL, stdout);
-   sge_bitfield_print(b1, NULL); /* shall output to stdout */
+   sge_bitfield_set(nullptr, 0);
+   sge_bitfield_get(nullptr, 0);
+   sge_bitfield_clear(nullptr, 0);
+   sge_bitfield_reset(nullptr);
+   sge_bitfield_changed(nullptr);
+   sge_bitfield_print(nullptr, stdout);
+   sge_bitfield_print(b1, nullptr); /* shall output to stdout */
    printf("\n");
 
    /* free bitfield */

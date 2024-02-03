@@ -85,7 +85,7 @@ static void _lWriteWhatTo(const lEnumeration *ep, dstring *buffer, int level) {
             break;
       }
 
-      if (ep[i].ep != NULL) {
+      if (ep[i].ep != nullptr) {
          _lWriteWhatTo(ep[i].ep, buffer, level + 1);
       }
    }

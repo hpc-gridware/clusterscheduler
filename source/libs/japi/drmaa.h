@@ -315,7 +315,7 @@ void drmaa_release_job_ids(drmaa_job_ids_t* values);
  * is an implementation dependent string which MAY be used to specify
  * which DRM system to use. This routine MUST be called before any
  * other DRMAA calls, except for drmaa_version().
- * If 'contact' is NULL, the default DRM system SHALL be used provided there is
+ * If 'contact' is nullptr, the default DRM system SHALL be used provided there is
  * only one DRMAA implementation in the provided binary module.  When these is
  * more than one DRMAA implementation in the binary module, drmaa_init() SHALL
  * return the DRMAA_ERRNO_NO_DEFAULT_CONTACT_STRING_SELECTED error. drmaa_init()
@@ -400,7 +400,7 @@ int drmaa_set_attribute(drmaa_job_template_t *jt, const char *name,
 /* 
  * If 'name' is an existing non-vector attribute name in the job 
  * template 'jt', then the value of 'name' SHALL be returned; otherwise, 
- * NULL is returned.
+ * nullptr is returned.
  *
  * drmaa_get_attribute() SHALL return DRMAA_ERRNO_SUCCESS on success, otherwise:
  *    DRMAA_ERRNO_INVALID_ATTRIBUTE_VALUE.
@@ -412,7 +412,7 @@ int drmaa_get_attribute(drmaa_job_template_t *jt, const char *name, char *value,
 /* Adds ('name', 'values') pair to list of vector attributes in job template
  * 'jt'. Only vector attributes SHALL be passed.
  * A 'value' string vector containing n elements must be n+1 elements long, with
- * the nth value, i.e. value[n], being set to NULL as a delimitor.
+ * the nth value, i.e. value[n], being set to nullptr as a delimitor.
  *
  * drmaa_set_vector_attribute() SHALL return DRMAA_ERRNO_SUCCESS on success,
  * otherwise:
@@ -428,7 +428,7 @@ int drmaa_set_vector_attribute(drmaa_job_template_t *jt, const char *name,
 
 /* 
  * If 'name' is an existing vector attribute name in the job template 'jt',
- * then the values of 'name' are returned; otherwise, NULL is returned.
+ * then the values of 'name' are returned; otherwise, nullptr is returned.
  *
  * drmaa_get_vector_attribute() SHALL return DRMAA_ERRNO_SUCCESS on success,
  * otherwise:
@@ -468,7 +468,7 @@ int drmaa_get_vector_attribute_names(drmaa_attr_names_t **values,
 
 /*
  * Submit a job with attributes defined in the job template 'jt'.
- * The job identifier 'job_id' is a printable, NULL terminated string,
+ * The job identifier 'job_id' is a printable, nullptr terminated string,
  * identical to that returned by the underlying DRM system.
  *
  * drmaa_run_job() SHALL return DRMAA_ERRNO_SUCCESS on success, otherwise:
@@ -486,7 +486,7 @@ int drmaa_run_job(char *job_id, size_t job_id_len,
  * Submit a set of parametric jobs, dependent on the implied loop index, each
  * with attributes defined in the job template 'jt'.
  * The job identifiers 'job_ids' SHALL all be printable,
- * NULL terminated strings, identical to those returned by the underlying
+ * nullptr terminated strings, identical to those returned by the underlying
  * DRM system. Nonnegative loop bounds SHALL NOT use file names
  * that start with minus sign like command line options.
  * DRMAA defines a special index placeholder, drmaa_incr_ph, (which has the
@@ -557,7 +557,7 @@ int drmaa_control(const char *jobid, int action, char *error_diagnosis,
  * False=0     do not reap
  * 
  * A 'job_ids' string vector containing n elements must be n+1 elements long,
- * with the nth value, i.e. job_ids[n], being set to NULL as a delimitor.
+ * with the nth value, i.e. job_ids[n], being set to nullptr as a delimitor.
  *
  * drmaa_synchronize() SHALL return DRMAA_ERRNO_SUCCESS on success, otherwise:
  *    DRMAA_ERRNO_DRM_COMMUNICATION_FAILURE,

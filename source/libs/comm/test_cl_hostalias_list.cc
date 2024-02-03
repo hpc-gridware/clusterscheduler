@@ -42,9 +42,9 @@
 
 extern int
 main(int argc, char **argv) {
-   cl_raw_list_t *alias_list = NULL;
-   cl_host_alias_list_elem_t *elem = NULL;
-   char *help = NULL;
+   cl_raw_list_t *alias_list = nullptr;
+   cl_host_alias_list_elem_t *elem = nullptr;
+   char *help = nullptr;
    int ret_val;
 
 

@@ -59,30 +59,30 @@ static int cl_thread_set_default_cancel_method(void);
 #define __CL_FUNCTION__ "cl_thread_create_thread_condition()"
 
 int cl_thread_create_thread_condition(cl_thread_condition_t **condition) {
-   cl_thread_condition_t *new_condition = NULL;
+   cl_thread_condition_t *new_condition = nullptr;
    int ret_val;
-   if (condition == NULL) {
+   if (condition == nullptr) {
       /* no condition pointer pointer */
       return CL_RETVAL_PARAMS;
    }
-   if (*condition != NULL) {
+   if (*condition != nullptr) {
       /* pointer pointer is already initialized (not free) */
       return CL_RETVAL_PARAMS;
    }
 
    new_condition = (cl_thread_condition_t *) sge_malloc(sizeof(cl_thread_condition_t));
-   if (new_condition == NULL) {
+   if (new_condition == nullptr) {
       return CL_RETVAL_MALLOC;
    }
 
    new_condition->thread_mutex_lock = (pthread_mutex_t *) sge_malloc(sizeof(pthread_mutex_t));
-   if (new_condition->thread_mutex_lock == NULL) {
+   if (new_condition->thread_mutex_lock == nullptr) {
       free(new_condition);
       return CL_RETVAL_MALLOC;
    }
 
    new_condition->trigger_count_mutex = (pthread_mutex_t *) sge_malloc(sizeof(pthread_mutex_t));
-   if (new_condition->trigger_count_mutex == NULL) {
+   if (new_condition->trigger_count_mutex == nullptr) {
       free(new_condition->thread_mutex_lock);
       free(new_condition);
       return CL_RETVAL_MALLOC;
@@ -91,14 +91,14 @@ int cl_thread_create_thread_condition(cl_thread_condition_t **condition) {
 
 
    new_condition->thread_cond_var = (pthread_cond_t *) sge_malloc(sizeof(pthread_cond_t));
-   if (new_condition->thread_cond_var == NULL) {
+   if (new_condition->thread_cond_var == nullptr) {
       free(new_condition->trigger_count_mutex);
       free(new_condition->thread_mutex_lock);
       free(new_condition);
       return CL_RETVAL_MALLOC;
    }
 
-   if (pthread_mutex_init(new_condition->thread_mutex_lock, NULL) != 0) {
+   if (pthread_mutex_init(new_condition->thread_mutex_lock, nullptr) != 0) {
       free(new_condition->trigger_count_mutex);
       free(new_condition->thread_mutex_lock);
       free(new_condition->thread_cond_var);
@@ -106,7 +106,7 @@ int cl_thread_create_thread_condition(cl_thread_condition_t **condition) {
       return CL_RETVAL_MUTEX_ERROR;
    }
 
-   if (pthread_mutex_init(new_condition->trigger_count_mutex, NULL) != 0) {
+   if (pthread_mutex_init(new_condition->trigger_count_mutex, nullptr) != 0) {
       ret_val = pthread_mutex_destroy(new_condition->thread_mutex_lock);
       if (ret_val == EBUSY) {
          return CL_RETVAL_MUTEX_CLEANUP_ERROR;
@@ -118,7 +118,7 @@ int cl_thread_create_thread_condition(cl_thread_condition_t **condition) {
       return CL_RETVAL_MUTEX_ERROR;
    }
 
-   if (pthread_cond_init(new_condition->thread_cond_var, NULL) != 0) {
+   if (pthread_cond_init(new_condition->thread_cond_var, nullptr) != 0) {
       ret_val = pthread_mutex_destroy(new_condition->thread_mutex_lock);
       if (ret_val == EBUSY) {
          return CL_RETVAL_MUTEX_CLEANUP_ERROR;
@@ -145,48 +145,48 @@ int cl_thread_create_thread_condition(cl_thread_condition_t **condition) {
 
 int cl_thread_delete_thread_condition(cl_thread_condition_t **condition) {
    int ret_val;
-   if (condition == NULL) {
+   if (condition == nullptr) {
       return CL_RETVAL_PARAMS;
    }
-   if (*condition == NULL) {
+   if (*condition == nullptr) {
       return CL_RETVAL_PARAMS;
    }
 
-   if ((*condition)->thread_mutex_lock != NULL) {
+   if ((*condition)->thread_mutex_lock != nullptr) {
       ret_val = pthread_mutex_destroy((*condition)->thread_mutex_lock);
       if (ret_val == EBUSY) {
          return CL_RETVAL_MUTEX_CLEANUP_ERROR;
       }
    }
 
-   if ((*condition)->trigger_count_mutex != NULL) {
+   if ((*condition)->trigger_count_mutex != nullptr) {
       ret_val = pthread_mutex_destroy((*condition)->trigger_count_mutex);
       if (ret_val == EBUSY) {
          return CL_RETVAL_MUTEX_CLEANUP_ERROR;
       }
    }
 
-   if ((*condition)->thread_cond_var != NULL) {
+   if ((*condition)->thread_cond_var != nullptr) {
       ret_val = pthread_cond_destroy((*condition)->thread_cond_var);
       if (ret_val == EBUSY) {
          return CL_RETVAL_CONDITION_CLEANUP_ERROR;
       }
    }
 
-   if ((*condition)->thread_mutex_lock != NULL) {
+   if ((*condition)->thread_mutex_lock != nullptr) {
       free((*condition)->thread_mutex_lock);
    }
 
-   if ((*condition)->trigger_count_mutex != NULL) {
+   if ((*condition)->trigger_count_mutex != nullptr) {
       free((*condition)->trigger_count_mutex);
    }
 
-   if ((*condition)->thread_cond_var != NULL) {
+   if ((*condition)->thread_cond_var != nullptr) {
       free((*condition)->thread_cond_var);
    }
 
    free(*condition);
-   *condition = NULL;
+   *condition = nullptr;
    return CL_RETVAL_OK;
 }
 
@@ -198,8 +198,8 @@ int cl_thread_delete_thread_condition(cl_thread_condition_t **condition) {
 int cl_thread_wait_for_thread_condition(cl_thread_condition_t *condition, long sec, long micro_sec) {
    int ret_val = CL_RETVAL_OK;
 
-   if (condition == NULL) {
-      CL_LOG(CL_LOG_ERROR, "thread condition is NULL");
+   if (condition == nullptr) {
+      CL_LOG(CL_LOG_ERROR, "thread condition is nullptr");
       return CL_RETVAL_PARAMS;
    }
 
@@ -243,7 +243,7 @@ int cl_thread_wait_for_thread_condition(cl_thread_condition_t *condition, long s
          long micro_sec_now;
 
          /* get current time */
-         gettimeofday(&now, NULL);
+         gettimeofday(&now, nullptr);
 
          /* normalize timeout parameter */
          sec = sec + (micro_sec / 1000000);
@@ -311,7 +311,7 @@ int cl_thread_wait_for_thread_condition(cl_thread_condition_t *condition, long s
 #define __CL_FUNCTION__ "cl_thread_clear_triggered_conditions()"
 
 int cl_thread_clear_triggered_conditions(cl_thread_condition_t *condition) {
-   if (condition == NULL) {
+   if (condition == nullptr) {
       return CL_RETVAL_PARAMS;
    }
    /* increase trigger count */
@@ -339,7 +339,7 @@ int cl_thread_clear_triggered_conditions(cl_thread_condition_t *condition) {
 int cl_thread_trigger_thread_condition(cl_thread_condition_t *condition, int do_broadcast) {
    int ret_val = CL_RETVAL_OK;
 
-   if (condition == NULL) {
+   if (condition == nullptr) {
       return CL_RETVAL_PARAMS;
    }
 
@@ -395,7 +395,7 @@ void cl_thread_cleanup_global_thread_config_key(void) {
 }
 
 
-/* if no start_routine is given (=NULL) the cl_thread_settings_t struct is
+/* if no start_routine is given (=nullptr) the cl_thread_settings_t struct is
    filled, but no thread is started */
 #ifdef __CL_FUNCTION__
 #undef __CL_FUNCTION__
@@ -414,7 +414,7 @@ int cl_thread_setup(cl_thread_settings_t *thread_config,
    int retry = 0;
    int ret_val;
 
-   if (thread_config == NULL || name == NULL) {
+   if (thread_config == nullptr || name == nullptr) {
       return CL_RETVAL_PARAMS;
    }
 
@@ -422,7 +422,7 @@ int cl_thread_setup(cl_thread_settings_t *thread_config,
    memset(thread_config, 0, sizeof(cl_thread_settings_t));
 
    thread_config->thread_name = strdup(name);    /* malloc */
-   if (thread_config->thread_name == NULL) {
+   if (thread_config->thread_name == nullptr) {
       return CL_RETVAL_MALLOC;
    }
 
@@ -442,13 +442,13 @@ int cl_thread_setup(cl_thread_settings_t *thread_config,
    thread_config->thread_cleanup_func = cleanup_func;
    thread_config->thread_user_data = user_data;
 
-   if (start_routine != NULL) {
+   if (start_routine != nullptr) {
       thread_config->thread_pointer = (pthread_t *) sge_malloc(sizeof(pthread_t));
-      if (thread_config->thread_pointer == NULL) {
+      if (thread_config->thread_pointer == nullptr) {
          return CL_RETVAL_MALLOC;
       }
    } else {
-      thread_config->thread_pointer = NULL;
+      thread_config->thread_pointer = nullptr;
    }
 
 
@@ -459,14 +459,14 @@ int cl_thread_setup(cl_thread_settings_t *thread_config,
 
    pthread_mutex_lock(&global_thread_config_key_mutex);
    if (global_thread_config_key_done == 0) {
-      pthread_key_create(&global_thread_config_key, NULL);
+      pthread_key_create(&global_thread_config_key, nullptr);
       global_thread_config_key_done = 1;
    }
    pthread_mutex_unlock(&global_thread_config_key_mutex);
 
-   if (start_routine != NULL) {
+   if (start_routine != nullptr) {
       /* startup thread */
-      if (pthread_create(thread_config->thread_pointer, NULL, start_routine, thread_config) != 0) {
+      if (pthread_create(thread_config->thread_pointer, nullptr, start_routine, thread_config) != 0) {
          return CL_RETVAL_THREAD_CREATE_ERROR;
       }
 
@@ -498,7 +498,7 @@ int cl_thread_setup(cl_thread_settings_t *thread_config,
 
 int cl_thread_join(cl_thread_settings_t *thread_config) {
 
-   if (thread_config == NULL) {
+   if (thread_config == nullptr) {
       return CL_RETVAL_PARAMS;
    }
 
@@ -507,7 +507,7 @@ int cl_thread_join(cl_thread_settings_t *thread_config) {
    CL_LOG(CL_LOG_DEBUG, "cl_thread_join() waiting for thread ...");
 
    /* wait for thread's end of life */
-   if (pthread_join(*(thread_config->thread_pointer), NULL) != 0) {
+   if (pthread_join(*(thread_config->thread_pointer), nullptr) != 0) {
       return CL_RETVAL_THREAD_JOIN_ERROR;
    }
    CL_LOG(CL_LOG_DEBUG, "cl_thread_join() done");
@@ -521,7 +521,7 @@ int cl_thread_join(cl_thread_settings_t *thread_config) {
 
 cl_thread_settings_t *cl_thread_get_thread_config(void) {
    /* cl_thread_setup  will set the thread specific data */
-   cl_thread_settings_t *settings = NULL;
+   cl_thread_settings_t *settings = nullptr;
    pthread_mutex_lock(&global_thread_config_key_mutex);
    if (global_thread_config_key_done != 0) {
       settings = (cl_thread_settings_t *) pthread_getspecific(global_thread_config_key);
@@ -542,19 +542,19 @@ int cl_thread_cleanup(cl_thread_settings_t *thread_config) {
    /* on CL_RETVAL_MUTEX_CLEANUP_ERROR or CL_RETVAL_CONDITION_CLEANUP_ERROR 
       the struct is NOT freed  !!! */
 
-   if (thread_config == NULL) {
+   if (thread_config == nullptr) {
       return CL_RETVAL_PARAMS;
    }
 
 
-   if (thread_config->thread_event_condition != NULL) {
+   if (thread_config->thread_event_condition != nullptr) {
       ret_val = cl_thread_delete_thread_condition(&(thread_config->thread_event_condition));
       if (ret_val != CL_RETVAL_OK) {
          return ret_val;
       }
    }
 
-   if (thread_config->thread_startup_condition != NULL) {
+   if (thread_config->thread_startup_condition != nullptr) {
       ret_val = cl_thread_delete_thread_condition(&(thread_config->thread_startup_condition));
       if (ret_val != CL_RETVAL_OK) {
          return ret_val;
@@ -568,13 +568,13 @@ int cl_thread_cleanup(cl_thread_settings_t *thread_config) {
    /* destroy thread name */
    if (thread_config->thread_name) {
       free(thread_config->thread_name);
-      thread_config->thread_name = NULL;
+      thread_config->thread_name = nullptr;
    }
 
    /* destroy thread_pointer */
    if (thread_config->thread_pointer) {
       free(thread_config->thread_pointer);
-      thread_config->thread_pointer = NULL;
+      thread_config->thread_pointer = nullptr;
    }
 
    return CL_RETVAL_OK;
@@ -588,7 +588,7 @@ int cl_thread_cleanup(cl_thread_settings_t *thread_config) {
 int cl_thread_shutdown(cl_thread_settings_t *thread_config) {
    int ret_val;
 
-   if (thread_config == NULL) {
+   if (thread_config == nullptr) {
       return CL_RETVAL_PARAMS;
    }
 
@@ -613,7 +613,7 @@ int cl_thread_wait_for_event(cl_thread_settings_t *thread_config, long sec, long
 
    int ret = CL_RETVAL_OK;
 
-   if (thread_config == NULL) {
+   if (thread_config == nullptr) {
       return CL_RETVAL_PARAMS;
    }
 
@@ -643,7 +643,7 @@ int cl_thread_wait_for_event(cl_thread_settings_t *thread_config, long sec, long
 
 const char *cl_thread_get_state(cl_thread_settings_t *thread_config) {
 
-   if (thread_config == NULL) {
+   if (thread_config == nullptr) {
       return "got no thread config";
    }
 
@@ -683,7 +683,7 @@ const char *cl_thread_convert_state_id(int thread_state) {
 #define __CL_FUNCTION__ "cl_thread_clear_events()"
 
 int cl_thread_clear_events(cl_thread_settings_t *thread_config) {
-   if (thread_config == NULL) {
+   if (thread_config == nullptr) {
       return CL_RETVAL_PARAMS;
    }
    return cl_thread_clear_triggered_conditions(thread_config->thread_event_condition);
@@ -697,7 +697,7 @@ int cl_thread_clear_events(cl_thread_settings_t *thread_config) {
 
 int cl_thread_trigger_event(cl_thread_settings_t *thread_config) {
    int ret_val;
-   if (thread_config == NULL) {
+   if (thread_config == nullptr) {
       return CL_RETVAL_PARAMS;
    }
 
@@ -717,7 +717,7 @@ int cl_thread_func_testcancel(cl_thread_settings_t *thread_config) {
    int ret_val = 0;
    int execute_pop = 0;
 
-   if (thread_config == NULL) {
+   if (thread_config == nullptr) {
       return CL_RETVAL_THREAD_CANCELSTATE_ERROR;
    }
 
@@ -725,21 +725,21 @@ int cl_thread_func_testcancel(cl_thread_settings_t *thread_config) {
       same { ... } context */
 
 #ifdef CL_DO_COMMLIB_DEBUG
-   gettimeofday(&(thread_config->thread_last_cancel_test_time),NULL);
+   gettimeofday(&(thread_config->thread_last_cancel_test_time),nullptr);
 #endif
 
-   if (thread_config->thread_cleanup_func != NULL) {
+   if (thread_config->thread_cleanup_func != nullptr) {
       /* push user cleanup function */
       pthread_cleanup_push((void (*)(void *)) thread_config->thread_cleanup_func, thread_config) ;
 
             /* push default cleanup function */
             pthread_cleanup_push((void (*)(void *)) cl_thread_default_cleanup_function, thread_config) ;
 
-                  ret_val = pthread_setcancelstate(PTHREAD_CANCEL_ENABLE, NULL);
+                  ret_val = pthread_setcancelstate(PTHREAD_CANCEL_ENABLE, nullptr);
 
                   if (ret_val == 0) {
                      pthread_testcancel();
-                     ret_val = pthread_setcancelstate(PTHREAD_CANCEL_DISABLE, NULL);
+                     ret_val = pthread_setcancelstate(PTHREAD_CANCEL_DISABLE, nullptr);
                   }
                   /* remove cleanup function from stack without execution */
             pthread_cleanup_pop(execute_pop);  /* client_thread_cleanup */
@@ -749,11 +749,11 @@ int cl_thread_func_testcancel(cl_thread_settings_t *thread_config) {
    } else {
       /* push default cleanup function */
       pthread_cleanup_push((void (*)(void *)) cl_thread_default_cleanup_function, thread_config) ;
-            ret_val = pthread_setcancelstate(PTHREAD_CANCEL_ENABLE, NULL);
+            ret_val = pthread_setcancelstate(PTHREAD_CANCEL_ENABLE, nullptr);
 
             if (ret_val == 0) {
                pthread_testcancel();
-               ret_val = pthread_setcancelstate(PTHREAD_CANCEL_DISABLE, NULL);
+               ret_val = pthread_setcancelstate(PTHREAD_CANCEL_DISABLE, nullptr);
             }
             /* remove cleanup function from stack without execution */
       pthread_cleanup_pop(execute_pop);  /* client_thread_cleanup */
@@ -777,8 +777,8 @@ static int cl_thread_set_default_cancel_method(void) {
     * Commlib threads have a cancelation point:
     * The threads * have to call cl_thread_func_testcancel() in their mainloop!
     */
-   pthread_setcancelstate(PTHREAD_CANCEL_DISABLE, NULL);
-   pthread_setcanceltype(PTHREAD_CANCEL_DEFERRED, NULL);
+   pthread_setcancelstate(PTHREAD_CANCEL_DISABLE, nullptr);
+   pthread_setcanceltype(PTHREAD_CANCEL_DEFERRED, nullptr);
    return CL_RETVAL_OK;
 }
 
@@ -789,7 +789,7 @@ static int cl_thread_set_default_cancel_method(void) {
 
 int cl_thread_func_startup(cl_thread_settings_t *thread_config) {
    int ret_val = CL_RETVAL_OK;
-   if (thread_config == NULL) {
+   if (thread_config == nullptr) {
       return CL_RETVAL_PARAMS;
    }
 
@@ -841,7 +841,7 @@ int cl_thread_unset_thread_config(void) {
 
    pthread_mutex_lock(&global_thread_config_key_mutex);
    if (global_thread_config_key_done != 0) {
-      if (pthread_setspecific(global_thread_config_key, NULL) != 0) {
+      if (pthread_setspecific(global_thread_config_key, nullptr) != 0) {
          pthread_mutex_unlock(&global_thread_config_key_mutex);
          return CL_RETVAL_THREAD_SETSPECIFIC_ERROR;
       }
@@ -859,7 +859,7 @@ int cl_thread_unset_thread_config(void) {
 #define __CL_FUNCTION__ "cl_thread_func_cleanup()"
 
 int cl_thread_func_cleanup(cl_thread_settings_t *thread_config) {
-   if (thread_config == NULL) {
+   if (thread_config == nullptr) {
       return CL_RETVAL_PARAMS;
    }
    thread_config->thread_state = CL_THREAD_EXIT;
@@ -874,7 +874,7 @@ int cl_thread_func_cleanup(cl_thread_settings_t *thread_config) {
 #define __CL_FUNCTION__ "cl_thread_default_cleanup_function()"
 
 void cl_thread_default_cleanup_function(cl_thread_settings_t *thread_config) {
-   if (thread_config != NULL) {
+   if (thread_config != nullptr) {
       thread_config->thread_state = CL_THREAD_CANCELED;
       CL_LOG(CL_LOG_INFO, "cl_thread_default_cleanup_function() called");
       /*  There is no need to unset thread config - This can result in

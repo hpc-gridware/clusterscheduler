@@ -71,7 +71,7 @@ const char *get_template_spooling_method(void)
 *     char *argv[] - argument vector
 *
 *  RESULT
-*     lListElem* - on success, the new spooling context, else NULL
+*     lListElem* - on success, the new spooling context, else nullptr
 *
 *  SEE ALSO
 *     spool/--Spooling
@@ -80,7 +80,7 @@ const char *get_template_spooling_method(void)
 lListElem *
 spool_template_create_context(lList **answer_list, const char *args)
 {
-   lListElem *context = NULL;
+   lListElem *context = nullptr;
 
    DENTER(TOP_LAYER);
 
@@ -311,7 +311,7 @@ spool_template_default_list_func(lList **answer_list,
 *     const sge_object_type object_type - object type
 *
 *  RESULT
-*     lListElem* - the object, if it could be read, else NULL
+*     lListElem* - the object, if it could be read, else nullptr
 *
 *  NOTES
 *     This function should not be called directly, it is called by the
@@ -327,7 +327,7 @@ spool_template_default_read_func(lList **answer_list,
                                  const lListElem *rule, const char *key, 
                                  const sge_object_type object_type)
 {
-   lListElem *ep = NULL;
+   lListElem *ep = nullptr;
 
    DENTER(TOP_LAYER);
 

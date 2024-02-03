@@ -246,14 +246,14 @@ static char *_lNm2Str(const lNameSpace *nsp, int nm) {
 
    if (!nsp) {
       DPRINTF(("name vector uninitialized !!\n"));
-      DRETURN(NULL);
+      DRETURN(nullptr);
    }
 
    if (nm >= nsp->lower && nm < (nsp->lower + nsp->size)) {
       DRETURN(nsp->namev[nm - nsp->lower]);
    }
 
-   DRETURN(NULL);
+   DRETURN(nullptr);
 }
 
 /****** cull/multitype/lStr2Nm() **********************************************
@@ -395,11 +395,11 @@ int lCountDescr(const lDescr *dp) {
 *     const lDescr *dp - descriptor 
 *
 *  RESULT
-*     lDescr* - descriptor pointer or NULL in case of error 
+*     lDescr* - descriptor pointer or nullptr in case of error
 ******************************************************************************/
 lDescr *lCopyDescr(const lDescr *dp) {
    int i;
-   lDescr *new_descr = NULL;
+   lDescr *new_descr = nullptr;
 
    DENTER(CULL_BASIS_LAYER);
 
@@ -421,14 +421,14 @@ lDescr *lCopyDescr(const lDescr *dp) {
 
    /* copy hashing information */
    for (i = 0; mt_get_type(dp[i].mt) != lEndT; i++) {
-      new_descr[i].ht = NULL;
+      new_descr[i].ht = nullptr;
    }
 
    DRETURN(new_descr);
 
    error:
    DPRINTF(("lCopyDescr failed\n"));
-   DRETURN(NULL);
+   DRETURN(nullptr);
 }
 
 /****** cull/multitype/lWriteDescrTo() ****************************************
@@ -466,7 +466,7 @@ void lWriteDescrTo(const lDescr *dp, FILE *fp) {
             do_hash = 'h';
          }
       }
-      if (dp[i].ht != NULL) {
+      if (dp[i].ht != nullptr) {
          is_hash = '+';
       }
 
@@ -572,7 +572,7 @@ int lGetPosInDescr(const lDescr *dp, int name) {
 *  FUNCTION
 *     Returns the type at specified position in a descriptor array. The
 *     Position must be inside the valid range of the descriptor. Returns
-*     NoName if descriptor is NULL or pos < 0.
+*     NoName if descriptor is nullptr or pos < 0.
 *
 *  INPUTS
 *     const lDescr *dp - Descriptor 
@@ -626,7 +626,7 @@ char **lGetPosHostRef(const lListElem *ep, int pos) {
 
 /* 
    FOR THE lGet{Type} FUNCTIONS THERE IS NO REAL ERRORHANDLING
-   IF EP IS NULL THERE WILL BE A COREDUMP
+   IF EP IS nullptr THERE WILL BE A COREDUMP
    THIS IS NECESSARY, OTHERWISE IT WOULD BE DIFFICULT TO CASCADE
    THE GET FUNCTIONS
    SO HIGHER LEVEL FUNCTIONS OR THE USER SHOULD CHECK IF THE
@@ -841,7 +841,7 @@ const char *lGetPosString(const lListElem *ep, int pos) {
       /* someone has called lGetString() */
       /* makro with an invalid nm        */
       DPRINTF(("!!!!!!!!!!!! lGetPosString() got an invalid pos !!!!!!!!!\n"));
-      DRETURN(NULL);
+      DRETURN(nullptr);
    }
 
    if (mt_get_type(ep->descr[pos].mt) != lStringT)
@@ -874,7 +874,7 @@ const char *lGetPosHost(const lListElem *ep, int pos) {
       /* someone has called lGetString() */
       /* makro with an invalid nm        */
       DPRINTF(("!!!!!!!!!!!!!! lGetPosHost() got an invalid pos !!!!!!!!!\n"));
-      DRETURN(NULL);
+      DRETURN(nullptr);
    }
 
    if (mt_get_type(ep->descr[pos].mt) != lHostT)
@@ -1137,11 +1137,11 @@ const lList *lGetList(const lListElem *ep, int nm) {
 *******************************************************************************/
 lList *lGetOrCreateList(lListElem *ep, int name,
                         const char *list_name, const lDescr *descr) {
-   lList *list = NULL;
+   lList *list = nullptr;
 
-   if (ep != NULL) {
+   if (ep != nullptr) {
       list = lGetListRW(ep, name);
-      if (list == NULL) {
+      if (list == nullptr) {
          list = lCreateList(list_name, descr);
          lSetList(ep, name, list);
       }
@@ -1613,19 +1613,19 @@ int lSetPosUlong(lListElem *ep, int pos, lUlong value) {
    }
 
 #ifdef OBSERVE
-   lObserveChangeValue(ep, ep->descr[pos].ht != NULL, lGetPosName(ep->descr, pos));
+   lObserveChangeValue(ep, ep->descr[pos].ht != nullptr, lGetPosName(ep->descr, pos));
 #endif
 
    if (value != ep->cont[pos].ul) {
       /* remove old hash entry */
-      if (ep->descr[pos].ht != NULL) {
+      if (ep->descr[pos].ht != nullptr) {
          cull_hash_remove(ep, pos);
       }
 
       ep->cont[pos].ul = value;
 
       /* create entry in hash table */
-      if (ep->descr[pos].ht != NULL) {
+      if (ep->descr[pos].ht != nullptr) {
          cull_hash_insert(ep, (void *) &(ep->cont[pos].ul), ep->descr[pos].ht,
                           mt_is_unique(ep->descr[pos].mt));
       }
@@ -1681,19 +1681,19 @@ int lSetUlong(lListElem *ep, int name, lUlong value) {
    }
 
 #ifdef OBSERVE
-   lObserveChangeValue(ep, ep->descr[pos].ht != NULL, name);
+   lObserveChangeValue(ep, ep->descr[pos].ht != nullptr, name);
 #endif
 
    if (value != ep->cont[pos].ul) {
       /* remove old hash entry */
-      if (ep->descr[pos].ht != NULL) {
+      if (ep->descr[pos].ht != nullptr) {
          cull_hash_remove(ep, pos);
       }
 
       ep->cont[pos].ul = value;
 
       /* create entry in hash table */
-      if (ep->descr[pos].ht != NULL) {
+      if (ep->descr[pos].ht != nullptr) {
          cull_hash_insert(ep, (void *) &(ep->cont[pos].ul), ep->descr[pos].ht,
                           mt_is_unique(ep->descr[pos].mt));
       }
@@ -1753,19 +1753,19 @@ int lAddUlong(lListElem *ep, int name, lUlong offset) {
    }
 
 #ifdef OBSERVE
-   lObserveChangeValue(ep, ep->descr[pos].ht != NULL, name);
+   lObserveChangeValue(ep, ep->descr[pos].ht != nullptr, name);
 #endif
 
    if (offset != 0) {
       /* remove old hash entry */
-      if (ep->descr[pos].ht != NULL) {
+      if (ep->descr[pos].ht != nullptr) {
          cull_hash_remove(ep, pos);
       }
 
       ep->cont[pos].ul += offset;
 
       /* create entry in hash table */
-      if (ep->descr[pos].ht != NULL) {
+      if (ep->descr[pos].ht != nullptr) {
          cull_hash_insert(ep, (void *) &(ep->cont[pos].ul), ep->descr[pos].ht,
                           mt_is_unique(ep->descr[pos].mt));
       }
@@ -1821,19 +1821,19 @@ int lSetUlong64(lListElem *ep, int name, lUlong64 value) {
    }
 
 #ifdef OBSERVE
-   lObserveChangeValue(ep, ep->descr[pos].ht != NULL, name);
+   lObserveChangeValue(ep, ep->descr[pos].ht != nullptr, name);
 #endif
 
    if (value != ep->cont[pos].ul64) {
       /* remove old hash entry */
-      if (ep->descr[pos].ht != NULL) {
+      if (ep->descr[pos].ht != nullptr) {
          cull_hash_remove(ep, pos);
       }
 
       ep->cont[pos].ul64 = value;
 
       /* create entry in hash table */
-      if (ep->descr[pos].ht != NULL) {
+      if (ep->descr[pos].ht != nullptr) {
          cull_hash_insert(ep, (void *) &(ep->cont[pos].ul64), ep->descr[pos].ht,
                           mt_is_unique(ep->descr[pos].mt));
       }
@@ -1893,19 +1893,19 @@ int lAddUlong64(lListElem *ep, int name, lUlong64 offset) {
    }
 
 #ifdef OBSERVE
-   lObserveChangeValue(ep, ep->descr[pos].ht != NULL, name);
+   lObserveChangeValue(ep, ep->descr[pos].ht != nullptr, name);
 #endif
 
    if (offset != 0) {
       /* remove old hash entry */
-      if (ep->descr[pos].ht != NULL) {
+      if (ep->descr[pos].ht != nullptr) {
          cull_hash_remove(ep, pos);
       }
 
       ep->cont[pos].ul64 += offset;
 
       /* create entry in hash table */
-      if (ep->descr[pos].ht != NULL) {
+      if (ep->descr[pos].ht != nullptr) {
          cull_hash_insert(ep, (void *) &(ep->cont[pos].ul64), ep->descr[pos].ht,
                           mt_is_unique(ep->descr[pos].mt));
       }
@@ -1955,19 +1955,19 @@ int lSetPosUlong64(lListElem *ep, int pos, lUlong64 value) {
    }
 
 #ifdef OBSERVE
-   lObserveChangeValue(ep, ep->descr[pos].ht != NULL, lGetPosName(ep->descr, pos));
+   lObserveChangeValue(ep, ep->descr[pos].ht != nullptr, lGetPosName(ep->descr, pos));
 #endif
 
    if (value != ep->cont[pos].ul64) {
       /* remove old hash entry */
-      if (ep->descr[pos].ht != NULL) {
+      if (ep->descr[pos].ht != nullptr) {
          cull_hash_remove(ep, pos);
       }
 
       ep->cont[pos].ul64 = value;
 
       /* create entry in hash table */
-      if (ep->descr[pos].ht != NULL) {
+      if (ep->descr[pos].ht != nullptr) {
          cull_hash_insert(ep, (void *) &(ep->cont[pos].ul64), ep->descr[pos].ht,
                           mt_is_unique(ep->descr[pos].mt));
       }
@@ -2000,7 +2000,7 @@ int lSetPosUlong64(lListElem *ep, int pos, lUlong64 value) {
 *        -1 - Error 
 ******************************************************************************/
 int lSetPosString(lListElem *ep, int pos, const char *value) {
-   char *str = NULL;
+   char *str = nullptr;
    int changed;
 
    DENTER(CULL_BASIS_LAYER);
@@ -2021,15 +2021,15 @@ int lSetPosString(lListElem *ep, int pos, const char *value) {
    }
 
    /* has the string value changed?
-   ** if both new and old are NULL, nothing changed,
-   ** if one of them is NULL, it changed,
+   ** if both new and old are nullptr, nothing changed,
+   ** if one of them is nullptr, it changed,
    ** else do a string compare
    */
    str = ep->cont[pos].str;
-   if (value == NULL && str == NULL) {
+   if (value == nullptr && str == nullptr) {
       changed = 0;
    } else {
-      if (value == NULL || str == NULL) {
+      if (value == nullptr || str == nullptr) {
          changed = 1;
       } else {
          changed = strcmp(value, str);
@@ -2037,12 +2037,12 @@ int lSetPosString(lListElem *ep, int pos, const char *value) {
    }
 
 #ifdef OBSERVE
-   lObserveChangeValue(ep, ep->descr[pos].ht != NULL, lGetPosName(ep->descr, pos));
+   lObserveChangeValue(ep, ep->descr[pos].ht != nullptr, lGetPosName(ep->descr, pos));
 #endif
 
    if (changed) {
       /* remove old hash entry */
-      if (ep->descr[pos].ht != NULL) {
+      if (ep->descr[pos].ht != nullptr) {
          cull_hash_remove(ep, pos);
       }
 
@@ -2054,14 +2054,14 @@ int lSetPosString(lListElem *ep, int pos, const char *value) {
          }
       }                            /* these brackets are required */
       else
-         str = NULL;               /* value is NULL */
+         str = nullptr;               /* value is nullptr */
 
       /* free old string value */
       sge_free(&(ep->cont[pos].str));
       ep->cont[pos].str = str;
 
       /* create entry in hash table */
-      if (ep->descr[pos].ht != NULL) {
+      if (ep->descr[pos].ht != nullptr) {
          cull_hash_insert(ep, ep->cont[pos].str, ep->descr[pos].ht,
                           mt_is_unique(ep->descr[pos].mt));
       }
@@ -2094,7 +2094,7 @@ int lSetPosString(lListElem *ep, int pos, const char *value) {
 *        -1 - Error
 *******************************************************************************/
 int lSetPosHost(lListElem *ep, int pos, const char *value) {
-   char *str = NULL;
+   char *str = nullptr;
    int changed;
 
    DENTER(CULL_BASIS_LAYER);
@@ -2115,16 +2115,16 @@ int lSetPosHost(lListElem *ep, int pos, const char *value) {
    }
 
    /* has the host value changed?
-   ** if both new and old are NULL, nothing changed,
-   ** if one of them is NULL, it changed,
+   ** if both new and old are nullptr, nothing changed,
+   ** if one of them is nullptr, it changed,
    ** else do a string compare (a hostcmp would be more accurate,
    ** but most probably not neccessary and too expensive
    */
    str = ep->cont[pos].host;
-   if (value == NULL && str == NULL) {
+   if (value == nullptr && str == nullptr) {
       changed = 0;
    } else {
-      if (value == NULL || str == NULL) {
+      if (value == nullptr || str == nullptr) {
          changed = 1;
       } else {
          changed = strcmp(value, str);
@@ -2132,12 +2132,12 @@ int lSetPosHost(lListElem *ep, int pos, const char *value) {
    }
 
 #ifdef OBSERVE
-   lObserveChangeValue(ep, ep->descr[pos].ht != NULL, lGetPosName(ep->descr, pos));
+   lObserveChangeValue(ep, ep->descr[pos].ht != nullptr, lGetPosName(ep->descr, pos));
 #endif
 
    if (changed) {
       /* remove old hash entry */
-      if (ep->descr[pos].ht != NULL) {
+      if (ep->descr[pos].ht != nullptr) {
          cull_hash_remove(ep, pos);
       }
 
@@ -2149,14 +2149,14 @@ int lSetPosHost(lListElem *ep, int pos, const char *value) {
          }
       }                            /* these brackets are required */
       else
-         str = NULL;               /* value is NULL */
+         str = nullptr;               /* value is nullptr */
 
       /* free old string value */
       sge_free(&(ep->cont[pos].host));
       ep->cont[pos].host = str;
 
       /* create entry in hash table */
-      if (ep->descr[pos].ht != NULL) {
+      if (ep->descr[pos].ht != nullptr) {
          char host_key[CL_MAXHOSTLEN + 1];
          cull_hash_insert(ep, cull_hash_key(ep, pos, host_key),
                           ep->descr[pos].ht, mt_is_unique(ep->descr[pos].mt));
@@ -2215,15 +2215,15 @@ int lSetString(lListElem *ep, int name, const char *value) {
    }
 
    /* has the string value changed?
-   ** if both new and old are NULL, nothing changed,
-   ** if one of them is NULL, it changed,
+   ** if both new and old are nullptr, nothing changed,
+   ** if one of them is nullptr, it changed,
    ** else do a string compare
    */
    str = ep->cont[pos].str;
-   if (value == NULL && str == NULL) {
+   if (value == nullptr && str == nullptr) {
       changed = 0;
    } else {
-      if (value == NULL || str == NULL) {
+      if (value == nullptr || str == nullptr) {
          changed = 1;
       } else {
          changed = strcmp(value, str);
@@ -2231,12 +2231,12 @@ int lSetString(lListElem *ep, int name, const char *value) {
    }
 
 #ifdef OBSERVE
-   lObserveChangeValue(ep, ep->descr[pos].ht != NULL, name);
+   lObserveChangeValue(ep, ep->descr[pos].ht != nullptr, name);
 #endif
 
    if (changed) {
       /* remove old hash entry */
-      if (ep->descr[pos].ht != NULL) {
+      if (ep->descr[pos].ht != nullptr) {
          cull_hash_remove(ep, pos);
       }
 
@@ -2248,7 +2248,7 @@ int lSetString(lListElem *ep, int name, const char *value) {
             DRETURN(-1);
          }
       } else {
-         str = NULL;               /* value is NULL */
+         str = nullptr;               /* value is nullptr */
       }
 
       /* free old string value */
@@ -2256,7 +2256,7 @@ int lSetString(lListElem *ep, int name, const char *value) {
       ep->cont[pos].str = str;
 
       /* create entry in hash table */
-      if (ep->descr[pos].ht != NULL) {
+      if (ep->descr[pos].ht != nullptr) {
          cull_hash_insert(ep, ep->cont[pos].str, ep->descr[pos].ht,
                           mt_is_unique(ep->descr[pos].mt));
       }
@@ -2316,16 +2316,16 @@ int lSetHost(lListElem *ep, int name, const char *value) {
    }
 
    /* has the host value changed?
-   ** if both new and old are NULL, nothing changed,
-   ** if one of them is NULL, it changed,
+   ** if both new and old are nullptr, nothing changed,
+   ** if one of them is nullptr, it changed,
    ** else do a string compare (a hostcmp would be more accurate,
    ** but most probably not neccessary and too expensive
    */
    str = ep->cont[pos].host;
-   if (value == NULL && str == NULL) {
+   if (value == nullptr && str == nullptr) {
       changed = 0;
    } else {
-      if (value == NULL || str == NULL) {
+      if (value == nullptr || str == nullptr) {
          changed = 1;
       } else {
          changed = strcmp(value, str);
@@ -2333,12 +2333,12 @@ int lSetHost(lListElem *ep, int name, const char *value) {
    }
 
 #ifdef OBSERVE
-   lObserveChangeValue(ep, ep->descr[pos].ht != NULL, name);
+   lObserveChangeValue(ep, ep->descr[pos].ht != nullptr, name);
 #endif
 
    if (changed) {
       /* remove old hash entry */
-      if (ep->descr[pos].ht != NULL) {
+      if (ep->descr[pos].ht != nullptr) {
          cull_hash_remove(ep, pos);
       }
       /* strdup new string value */
@@ -2349,13 +2349,13 @@ int lSetHost(lListElem *ep, int name, const char *value) {
             DRETURN(-1);
          }
       } else {
-         str = NULL;               /* value is NULL */
+         str = nullptr;               /* value is nullptr */
       }
       sge_free(&(ep->cont[pos].host));
       ep->cont[pos].host = str;
 
       /* create entry in hash table */
-      if (ep->descr[pos].ht != NULL) {
+      if (ep->descr[pos].ht != nullptr) {
          char host_key[CL_MAXHOSTLEN + 1];
          cull_hash_insert(ep, cull_hash_key(ep, pos, host_key),
                           ep->descr[pos].ht, mt_is_unique(ep->descr[pos].mt));
@@ -2405,19 +2405,19 @@ int lSetPosObject(lListElem *ep, int pos, lListElem *value) {
       DRETURN(-1);
    }
 
-   if (value != NULL && value->status != FREE_ELEM && value->status != TRANS_BOUND_ELEM) {
+   if (value != nullptr && value->status != FREE_ELEM && value->status != TRANS_BOUND_ELEM) {
       LERROR(LEBOUNDELEM);
       DRETURN(-1);
    }
 
 #ifdef OBSERVE
-   lObserveChangeOwner(ep->cont[pos].obj, NULL, ep, lGetPosName(ep->descr, pos));
-   lObserveChangeOwner(value, ep, NULL, lGetPosName(ep->descr, pos));
+   lObserveChangeOwner(ep->cont[pos].obj, nullptr, ep, lGetPosName(ep->descr, pos));
+   lObserveChangeOwner(value, ep, nullptr, lGetPosName(ep->descr, pos));
 #endif
 
    if (value != ep->cont[pos].obj) {
       /* free old element */
-      if (ep->cont[pos].obj != NULL) {
+      if (ep->cont[pos].obj != nullptr) {
          lFreeElem(&(ep->cont[pos].obj));
       }
 
@@ -2473,8 +2473,8 @@ int lSetPosList(lListElem *ep, int pos, lList *value) {
    }
 
 #ifdef OBSERVE
-   lObserveChangeOwner(ep->cont[pos].glp, NULL, ep, lGetPosName(ep->descr, pos));
-   lObserveChangeOwner(value, ep, NULL, lGetPosName(ep->descr, pos));
+   lObserveChangeOwner(ep->cont[pos].glp, nullptr, ep, lGetPosName(ep->descr, pos));
+   lObserveChangeOwner(value, ep, nullptr, lGetPosName(ep->descr, pos));
 #endif
 
    if (value != ep->cont[pos].glp) {
@@ -2519,7 +2519,7 @@ int lXchgString(lListElem *ep, int name, char **str) {
 
    DENTER(CULL_BASIS_LAYER);
 
-   if (ep == NULL || str == NULL) {
+   if (ep == nullptr || str == nullptr) {
       LERROR(LEELEMNULL);
       DRETURN(-1);
    }
@@ -2578,7 +2578,7 @@ int lXchgList(lListElem *ep, int name, lList **lpp) {
 
    DENTER(CULL_BASIS_LAYER);
 
-   if (ep == NULL || lpp == NULL) {
+   if (ep == nullptr || lpp == nullptr) {
       LERROR(LEELEMNULL);
       DRETURN(-1);
    }
@@ -2595,7 +2595,7 @@ int lXchgList(lListElem *ep, int name, lList **lpp) {
    }
 
 #ifdef OBSERVE
-   lObserveSwitchOwner(ep->cont[pos].glp, *lpp, ep, NULL, name);
+   lObserveSwitchOwner(ep->cont[pos].glp, *lpp, ep, nullptr, name);
 #endif
 
    if (*lpp != ep->cont[pos].glp) {
@@ -2633,7 +2633,7 @@ int lXchgList(lListElem *ep, int name, lList **lpp) {
 *        -1 - Error 
 ******************************************************************************/
 int lSwapList(lListElem *to, int nm_to, lListElem *from, int nm_from) {
-   lList *tmp = NULL;
+   lList *tmp = nullptr;
 
    DENTER(CULL_BASIS_LAYER);
 
@@ -2694,14 +2694,14 @@ int lSetObject(lListElem *ep, int name, lListElem *value) {
       DRETURN(-1);
    }
 
-   if (value != NULL && value->status != FREE_ELEM && value->status != TRANS_BOUND_ELEM) {
+   if (value != nullptr && value->status != FREE_ELEM && value->status != TRANS_BOUND_ELEM) {
       LERROR(LEBOUNDELEM);
       DRETURN(-1);
    }
 
 #ifdef OBSERVE
-   lObserveChangeOwner(ep->cont[pos].obj, NULL, ep, name);
-   lObserveChangeOwner(value, ep, NULL, name);
+   lObserveChangeOwner(ep->cont[pos].obj, nullptr, ep, name);
+   lObserveChangeOwner(value, ep, nullptr, name);
 #endif
 
    if (value != ep->cont[pos].obj) {
@@ -2769,8 +2769,8 @@ int lSetList(lListElem *ep, int name, lList *value) {
    }
 
 #ifdef OBSERVE
-   lObserveChangeOwner(ep->cont[pos].glp, ep, NULL, name);
-   lObserveChangeOwner(value, ep, NULL, name);
+   lObserveChangeOwner(ep->cont[pos].glp, ep, nullptr, name);
+   lObserveChangeOwner(value, ep, nullptr, name);
 #endif
 
    if (value != ep->cont[pos].glp) {
@@ -3578,7 +3578,7 @@ int refcmp(lRef c0, lRef c1) {
 *     lDescr* dp    - Type of the new element 
 *
 *  RESULT
-*     NULL in case of error
+*     nullptr in case of error
 *     otherwise pointer to the added element 
 ******************************************************************************/
 lListElem *lAddSubStr(lListElem *ep, int nm, const char *str, int snm,
@@ -3589,25 +3589,25 @@ lListElem *lAddSubStr(lListElem *ep, int nm, const char *str, int snm,
    DENTER(CULL_LAYER);
 
    if (!ep) {
-      DPRINTF(("error: NULL ptr passed to lAddSubStr\n"));
-      DRETURN(NULL);
+      DPRINTF(("error: nullptr ptr passed to lAddSubStr\n"));
+      DRETURN(nullptr);
    }
 
    if (!(ep->descr)) {
-      DPRINTF(("NULL descriptor in element not allowed !!!"));
+      DPRINTF(("nullptr descriptor in element not allowed !!!"));
       abort();
    }
 
    /* run time type checking */
    if ((sublist_pos = lGetPosViaElem(ep, snm, SGE_NO_ABORT)) < 0) {
       CRITICAL((SGE_EVENT, MSG_CULL_ADDSUBSTRERRORXRUNTIMETYPE_S, lNm2Str(snm)));
-      DRETURN(NULL);
+      DRETURN(nullptr);
    }
 
    ret = lAddElemStr(&(ep->cont[sublist_pos].glp), nm, str, dp);
 
    /* remember that field changed */
-   if (ret != NULL) {
+   if (ret != nullptr) {
       sge_bitfield_set(&(ep->changed), sublist_pos);
    }
 
@@ -3636,7 +3636,7 @@ lListElem *lAddSubStr(lListElem *ep, int nm, const char *str, int snm,
 *     lDescr* dp    - Type of the new element 
 *
 *  RESULT
-*     NULL in case of error
+*     nullptr in case of error
 *     otherwise pointer to the added element 
 ******************************************************************************/
 lListElem *lAddSubHost(lListElem *ep, int nm, const char *str, int snm,
@@ -3647,25 +3647,25 @@ lListElem *lAddSubHost(lListElem *ep, int nm, const char *str, int snm,
    DENTER(CULL_LAYER);
 
    if (!ep) {
-      DPRINTF(("error: NULL ptr passed to lAddSubHost\n"));
-      DRETURN(NULL);
+      DPRINTF(("error: nullptr ptr passed to lAddSubHost\n"));
+      DRETURN(nullptr);
    }
 
    if (!(ep->descr)) {
-      DPRINTF(("NULL descriptor in element not allowed !!!"));
+      DPRINTF(("nullptr descriptor in element not allowed !!!"));
       abort();
    }
 
    /* run time type checking */
    if ((sublist_pos = lGetPosViaElem(ep, snm, SGE_NO_ABORT)) < 0) {
       CRITICAL((SGE_EVENT, MSG_CULL_ADDSUBHOSTERRORXRUNTIMETYPE_S, lNm2Str(snm)));
-      DRETURN(NULL);
+      DRETURN(nullptr);
    }
 
    ret = lAddElemHost(&(ep->cont[sublist_pos].glp), nm, str, dp);
 
    /* remember that field changed */
-   if (ret != NULL) {
+   if (ret != nullptr) {
       sge_bitfield_set(&(ep->changed), sublist_pos);
    }
 
@@ -3702,8 +3702,8 @@ lListElem *lAddElemStr(lList **lpp, int nm, const char *str, const lDescr *dp) {
    DENTER(CULL_LAYER);
 
    if (!lpp || !str || !dp) {
-      DPRINTF(("error: NULL ptr passed to lAddElemStr\n"));
-      DRETURN(NULL);
+      DPRINTF(("error: nullptr ptr passed to lAddElemStr\n"));
+      DRETURN(nullptr);
    }
 
    /* get position of nm in sdp */
@@ -3712,13 +3712,13 @@ lListElem *lAddElemStr(lList **lpp, int nm, const char *str, const lDescr *dp) {
    /* run time type checking */
    if (pos < 0) {
       CRITICAL((SGE_EVENT, MSG_CULL_ADDELEMSTRERRORXRUNTIMETYPE_S, lNm2Str(nm)));
-      DRETURN(NULL);
+      DRETURN(nullptr);
    }
    data_type = lGetPosType(dp, pos);
    if (data_type != lStringT) {
       DPRINTF(("error: lAddElemStr called to field which is no lStringT type\n"));
       CRITICAL((SGE_EVENT, MSG_CULL_ADDELEMSTRERRORXRUNTIMETYPE_S, lNm2Str(nm)));
-      DRETURN(NULL);
+      DRETURN(nullptr);
    }
 
    if (!*lpp) {
@@ -3752,7 +3752,7 @@ lListElem *lAddElemStr(lList **lpp, int nm, const char *str, const lDescr *dp) {
 *     const lDescr *dp - descriptor of new element 
 *
 *  RESULT
-*     lListElem* - new element or NULL
+*     lListElem* - new element or nullptr
 ******************************************************************************/
 lListElem *lAddElemHost(lList **lpp, int nm, const char *str, const lDescr *dp) {
    lListElem *sep;
@@ -3762,8 +3762,8 @@ lListElem *lAddElemHost(lList **lpp, int nm, const char *str, const lDescr *dp) 
    DENTER(CULL_LAYER);
 
    if (!lpp || !str || !dp) {
-      DPRINTF(("error: NULL ptr passed to lAddElemHost\n"));
-      DRETURN(NULL);
+      DPRINTF(("error: nullptr ptr passed to lAddElemHost\n"));
+      DRETURN(nullptr);
    }
 
    /* get position of nm in sdp */
@@ -3772,13 +3772,13 @@ lListElem *lAddElemHost(lList **lpp, int nm, const char *str, const lDescr *dp) 
    /* run time type checking */
    if (pos < 0) {
       CRITICAL((SGE_EVENT, MSG_CULL_ADDELEMHOSTERRORXRUNTIMETYPE_S, lNm2Str(nm)));
-      DRETURN(NULL);
+      DRETURN(nullptr);
    }
    data_type = lGetPosType(dp, pos);
    if (data_type != lHostT) {
       DPRINTF(("error: lAddElemHost called to field which is no lHostT type\n"));
       CRITICAL((SGE_EVENT, MSG_CULL_ADDELEMHOSTERRORXRUNTIMETYPE_S, lNm2Str(nm)));
-      DRETURN(NULL);
+      DRETURN(nullptr);
    }
 
    if (!*lpp) {
@@ -3859,7 +3859,7 @@ int lDelElemStr(lList **lpp, int nm, const char *str) {
    DENTER(CULL_LAYER);
 
    if (!lpp || !str) {
-      DPRINTF(("error: NULL ptr passed to lDelElemStr\n"));
+      DPRINTF(("error: nullptr ptr passed to lDelElemStr\n"));
       DRETURN(0);
    }
 
@@ -3902,16 +3902,16 @@ int lDelElemStr(lList **lpp, int nm, const char *str) {
 *     int snm             - field id contained in ep 
 *
 *  RESULT
-*     NULL if element was not found or in case of an error 
+*     nullptr if element was not found or in case of an error
 *     otherwise pointer to an element
 ******************************************************************************/
 lListElem *lGetSubStr(const lListElem *ep, int nm, const char *str, int snm) {
    int sublist_pos;
-   lListElem *ret = NULL;
+   lListElem *ret = nullptr;
 
    DENTER(CULL_LAYER);
 
-   if (ep != NULL) {
+   if (ep != nullptr) {
       /* get position of sublist in ep */
       sublist_pos = lGetPosViaElem(ep, snm, SGE_DO_ABORT);
 
@@ -3937,12 +3937,12 @@ lListElem *lGetSubStr(const lListElem *ep, int nm, const char *str, int snm) {
 *     const char* str - value 
 *
 *  RESULT
-*     NULL when element was not found or if an error occured
+*     nullptr when element was not found or if an error occured
 *     otherwise pointer to element 
 ******************************************************************************/
 lListElem *lGetElemStrRW(const lList *lp, int nm, const char *str) {
-   const void *iterator = NULL;
-   lListElem *ret = NULL;
+   const void *iterator = nullptr;
+   lListElem *ret = nullptr;
    DENTER(CULL_LAYER);
 
    ret = lGetElemStrFirstRW(lp, nm, str, &iterator);
@@ -3977,7 +3977,7 @@ const lListElem *lGetElemStr(const lList *lp, int nm, const char *str) {
 *     const void **iterator - iterator 
 *
 *  RESULT
-*     lListElem* - first element or NULL 
+*     lListElem* - first element or nullptr
 ******************************************************************************/
 lListElem *lGetElemStrFirstRW(const lList *lp, int nm, const char *str, const void **iterator) {
    lListElem *ep;
@@ -3988,13 +3988,13 @@ lListElem *lGetElemStrFirstRW(const lList *lp, int nm, const char *str, const vo
 
    DENTER(CULL_LAYER);
    if (!str) {
-      DPRINTF(("error: NULL ptr passed to lGetElemStrFirst\n"));
-      DRETURN(NULL);
+      DPRINTF(("error: nullptr ptr passed to lGetElemStrFirst\n"));
+      DRETURN(nullptr);
    }
 
    /* empty list ? */
    if (!lp) {
-      DRETURN(NULL);
+      DRETURN(nullptr);
    }
 
    listDescriptor = lGetListDescr(lp);
@@ -4005,19 +4005,19 @@ lListElem *lGetElemStrFirstRW(const lList *lp, int nm, const char *str, const vo
    /* run time type checking */
    if (pos < 0) {
       CRITICAL((SGE_EVENT, MSG_CULL_GETELEMSTRERRORXRUNTIMETYPE_S, lNm2Str(nm)));
-      DRETURN(NULL);
+      DRETURN(nullptr);
    }
 
    data_type = lGetPosType(listDescriptor, pos);
    if (data_type != lStringT) {
       DPRINTF(("error: lGetElemStrFirst called to field which is no lStringT type\n"));
       CRITICAL((SGE_EVENT, MSG_CULL_GETELEMSTRERRORXRUNTIMETYPE_S, lNm2Str(nm)));
-      DRETURN(NULL);
+      DRETURN(nullptr);
    }
 
-   *iterator = NULL;
+   *iterator = nullptr;
 
-   if (lp->descr[pos].ht != NULL) {
+   if (lp->descr[pos].ht != nullptr) {
       /* hash access */
       ep = cull_hash_first(lp->descr[pos].ht, str,
                            mt_is_unique(lp->descr[pos].mt), iterator);
@@ -4033,7 +4033,7 @@ lListElem *lGetElemStrFirstRW(const lList *lp, int nm, const char *str, const vo
       }
    }
 
-   DRETURN(NULL);
+   DRETURN(nullptr);
 }
 
 const lListElem *lGetElemStrFirst(const lList *lp, int nm, const char *str, const void **iterator) {
@@ -4064,7 +4064,7 @@ const lListElem *lGetElemStrFirst(const lList *lp, int nm, const char *str, cons
 *     const void **iterator - iterator 
 *
 *  RESULT
-*     lListElem* - next element or NULL
+*     lListElem* - next element or nullptr
 ******************************************************************************/
 lListElem *lGetElemStrNextRW(const lList *lp, int nm, const char *str, const void **iterator) {
    lListElem *ep;
@@ -4074,18 +4074,18 @@ lListElem *lGetElemStrNextRW(const lList *lp, int nm, const char *str, const voi
 
    DENTER(CULL_LAYER);
 
-   if (*iterator == NULL) {
-      return NULL;
+   if (*iterator == nullptr) {
+      return nullptr;
    }
 
    if (!str) {
-      DPRINTF(("error: NULL ptr passed to lGetElemStr\n"));
-      DRETURN(NULL);
+      DPRINTF(("error: nullptr ptr passed to lGetElemStr\n"));
+      DRETURN(nullptr);
    }
 
    /* empty list ? */
    if (!lp) {
-      DRETURN(NULL);
+      DRETURN(nullptr);
    }
 
    listDescriptor = lGetListDescr(lp);
@@ -4095,15 +4095,15 @@ lListElem *lGetElemStrNextRW(const lList *lp, int nm, const char *str, const voi
    /* run time type checking */
    if (pos < 0) {
       CRITICAL((SGE_EVENT, MSG_CULL_GETELEMSTRERRORXRUNTIMETYPE_S, lNm2Str(nm)));
-      DRETURN(NULL);
+      DRETURN(nullptr);
    }
    data_type = lGetPosType(listDescriptor, pos);
    if (data_type != lStringT) {
       DPRINTF(("error: lGetElemStrNext called to field which is no lStringT type\n"));
-      DRETURN(NULL);
+      DRETURN(nullptr);
    }
 
-   if (lp->descr[pos].ht != NULL) {
+   if (lp->descr[pos].ht != nullptr) {
       /* hash access */
       ep = cull_hash_next(lp->descr[pos].ht, iterator);
       DRETURN(ep);
@@ -4118,8 +4118,8 @@ lListElem *lGetElemStrNextRW(const lList *lp, int nm, const char *str, const voi
       }
    }
 
-   *iterator = NULL;
-   DRETURN(NULL);
+   *iterator = nullptr;
+   DRETURN(nullptr);
 }
 
 const lListElem *lGetElemStrNext(const lList *lp, int nm, const char *str, const void **iterator) {
@@ -4145,7 +4145,7 @@ const lListElem *lGetElemStrNext(const lList *lp, int nm, const char *str, const
 *     const char* str - wildcard string 
 *
 *  RESULT
-*     NULL if element was not found or in case of error
+*     nullptr if element was not found or in case of error
 *     otherwise pointer to element 
 ******************************************************************************/
 lListElem *lGetElemStrLikeRW(const lList *lp, int nm, const char *str) {
@@ -4159,13 +4159,13 @@ lListElem *lGetElemStrLikeRW(const lList *lp, int nm, const char *str) {
 
    DENTER(CULL_LAYER);
    if (!str) {
-      DPRINTF(("error: NULL ptr passed to lGetElemStr\n"));
-      DRETURN(NULL);
+      DPRINTF(("error: nullptr ptr passed to lGetElemStr\n"));
+      DRETURN(nullptr);
    }
 
    /* empty list ? */
    if (!lp) {
-      DRETURN(NULL);
+      DRETURN(nullptr);
    }
 
    /* get position of nm in sdp */
@@ -4174,13 +4174,13 @@ lListElem *lGetElemStrLikeRW(const lList *lp, int nm, const char *str) {
    /* run time type checking */
    if (pos < 0) {
       CRITICAL((SGE_EVENT, MSG_CULL_GETELEMSTRERRORXRUNTIMETYPE_S, lNm2Str(nm)));
-      DRETURN(NULL);
+      DRETURN(nullptr);
    }
    data_type = lGetPosType(listDescriptor, pos);
    if (data_type != lStringT) {
       DPRINTF(("error: lGetElemStrLike called to field which is no lStringT type\n"));
       CRITICAL((SGE_EVENT, MSG_CULL_GETELEMSTRERRORXRUNTIMETYPE_S, lNm2Str(nm)));
-      DRETURN(NULL);
+      DRETURN(nullptr);
    }
 
    /* seek for element */
@@ -4193,7 +4193,7 @@ lListElem *lGetElemStrLikeRW(const lList *lp, int nm, const char *str) {
       }
    }
 
-   DRETURN(NULL);
+   DRETURN(nullptr);
 }
 
 const lListElem *lGetElemStrLike(const lList *lp, int nm, const char *str) {
@@ -4222,7 +4222,7 @@ const lListElem *lGetElemStrLike(const lList *lp, int nm, const char *str) {
 *     const lDescr* dp    - Type of the new element (e.g. JB_Type) 
 *
 *  RESULT
-*     NULL in case of error
+*     nullptr in case of error
 *     or the pointer to the new element 
 ******************************************************************************/
 lListElem *lAddSubUlong(lListElem *ep, int nm, lUlong val, int snm,
@@ -4233,25 +4233,25 @@ lListElem *lAddSubUlong(lListElem *ep, int nm, lUlong val, int snm,
    DENTER(CULL_LAYER);
 
    if (!ep) {
-      DPRINTF(("error: NULL ptr passed to lAddSubUlong\n"));
-      DRETURN(NULL);
+      DPRINTF(("error: nullptr ptr passed to lAddSubUlong\n"));
+      DRETURN(nullptr);
    }
 
    if (!(ep->descr)) {
-      DPRINTF(("NULL descriptor in element not allowed !!!"));
+      DPRINTF(("nullptr descriptor in element not allowed !!!"));
       abort();
    }
 
    /* run time type checking */
    if ((sublist_pos = lGetPosViaElem(ep, snm, SGE_NO_ABORT)) < 0) {
       CRITICAL((SGE_EVENT, MSG_CULL_ADDSUBULONGERRORXRUNTIMETYPE_S, lNm2Str(snm)));
-      DRETURN(NULL);
+      DRETURN(nullptr);
    }
 
    ret = lAddElemUlong(&(ep->cont[sublist_pos].glp), nm, val, dp);
 
    /* remember that field changed */
-   if (ret != NULL) {
+   if (ret != nullptr) {
       sge_bitfield_set(&(ep->changed), sublist_pos);
    }
 
@@ -4278,7 +4278,7 @@ lListElem *lAddSubUlong(lListElem *ep, int nm, lUlong val, int snm,
 *     const lDescr* dp  - type of the list (e.g. JB_Type) 
 *
 *  RESULT
-*     NULL on error
+*     nullptr on error
 *     or pointer to the added element 
 ******************************************************************************/
 lListElem *lAddElemUlong(lList **lpp, int nm, lUlong val, const lDescr *dp) {
@@ -4288,8 +4288,8 @@ lListElem *lAddElemUlong(lList **lpp, int nm, lUlong val, const lDescr *dp) {
    DENTER(CULL_LAYER);
 
    if (!lpp || !dp) {
-      DPRINTF(("error: NULL ptr passed to lAddElemUlong\n"));
-      DRETURN(NULL);
+      DPRINTF(("error: nullptr ptr passed to lAddElemUlong\n"));
+      DRETURN(nullptr);
    }
 
    /* get position of nm in sdp */
@@ -4299,7 +4299,7 @@ lListElem *lAddElemUlong(lList **lpp, int nm, lUlong val, const lDescr *dp) {
    if (pos < 0) {
       CRITICAL((SGE_EVENT, MSG_CULL_ADDELEMULONGERRORXRUNTIMETYPE_S,
               lNm2Str(nm)));
-      DRETURN(NULL);
+      DRETURN(nullptr);
    }
 
    if (!*lpp) {
@@ -4381,7 +4381,7 @@ int lDelElemUlong(lList **lpp, int nm, lUlong val) {
    DENTER(CULL_LAYER);
 
    if (!lpp || !val) {
-      DPRINTF(("error: NULL ptr passed to lDelElemUlong\n"));
+      DPRINTF(("error: nullptr ptr passed to lDelElemUlong\n"));
       DRETURN(0);
    }
 
@@ -4422,7 +4422,7 @@ int lDelElemUlong(lList **lpp, int nm, lUlong val) {
 *     int snm             - field id of a list which is part of ep 
 *
 *  RESULT
-*     NULL if element was not found or in case of an error
+*     nullptr if element was not found or in case of an error
 *     otherwise pointer to the element 
 ******************************************************************************/
 lListElem *lGetSubUlong(const lListElem *ep, int nm, lUlong val, int snm) {
@@ -4456,11 +4456,11 @@ lListElem *lGetSubUlong(const lListElem *ep, int nm, lUlong val, int snm) {
 *     lUlong val - unsigned long value 
 *
 *  RESULT
-*    NULL if element was not found or an error occured
+*    nullptr if element was not found or an error occured
 *    otherwise pointer to element 
 ******************************************************************************/
 lListElem *lGetElemUlongRW(const lList *lp, int nm, lUlong val) {
-   const void *iterator = NULL;
+   const void *iterator = nullptr;
    return lGetElemUlongFirstRW(lp, nm, val, &iterator);
 }
 
@@ -4491,17 +4491,17 @@ const lListElem *lGetElemUlong(const lList *lp, int nm, lUlong val) {
 *     const void **iterator - iterator 
 *
 *  RESULT
-*     lListElem* - element or NULL 
+*     lListElem* - element or nullptr
 ******************************************************************************/
 lListElem *lGetElemUlongFirstRW(const lList *lp, int nm, lUlong val, const void **iterator) {
-   lListElem *ep = NULL;
+   lListElem *ep = nullptr;
    int pos;
 
    DENTER(CULL_LAYER);
 
    /* empty list ? */
    if (!lp) {
-      DRETURN(NULL);
+      DRETURN(nullptr);
    }
 
    /* get position of nm in sdp */
@@ -4510,12 +4510,12 @@ lListElem *lGetElemUlongFirstRW(const lList *lp, int nm, lUlong val, const void 
    /* run time type checking */
    if (pos < 0) {
       CRITICAL((SGE_EVENT, MSG_CULL_GETELEMULONGERRORXRUNTIMETYPE_S, lNm2Str(nm)));
-      DRETURN(NULL);
+      DRETURN(nullptr);
    }
 
-   *iterator = NULL;
+   *iterator = nullptr;
 
-   if (lp->descr[pos].ht != NULL) {
+   if (lp->descr[pos].ht != nullptr) {
       /* hash access */
       ep = cull_hash_first(lp->descr[pos].ht, &val,
                            mt_is_unique(lp->descr[pos].mt), iterator);
@@ -4531,7 +4531,7 @@ lListElem *lGetElemUlongFirstRW(const lList *lp, int nm, lUlong val, const void 
       }
    }
 
-   DRETURN(NULL);
+   DRETURN(nullptr);
 }
 
 const lListElem *lGetElemUlongFirst(const lList *lp, int nm, lUlong val, const void **iterator) {
@@ -4562,7 +4562,7 @@ const lListElem *lGetElemUlongFirst(const lList *lp, int nm, lUlong val, const v
 *     const void **iterator - iterator 
 *
 *  RESULT
-*     lListElem* - next element or NULL 
+*     lListElem* - next element or nullptr
 ******************************************************************************/
 lListElem *lGetElemUlongNextRW(const lList *lp, int nm, lUlong val, const void **iterator) {
    lListElem *ep;
@@ -4570,8 +4570,8 @@ lListElem *lGetElemUlongNextRW(const lList *lp, int nm, lUlong val, const void *
 
    DENTER(CULL_LAYER);
 
-   if (*iterator == NULL) {
-      return NULL;
+   if (*iterator == nullptr) {
+      return nullptr;
    }
 
    /* get position of nm in sdp */
@@ -4580,10 +4580,10 @@ lListElem *lGetElemUlongNextRW(const lList *lp, int nm, lUlong val, const void *
    /* run time type checking */
    if (pos < 0) {
       CRITICAL((SGE_EVENT, MSG_CULL_GETELEMULONGERRORXRUNTIMETYPE_S, lNm2Str(nm)));
-      DRETURN(NULL);
+      DRETURN(nullptr);
    }
 
-   if (lp->descr[pos].ht != NULL) {
+   if (lp->descr[pos].ht != nullptr) {
       /* hash access */
       ep = cull_hash_next(lp->descr[pos].ht, iterator);
       DRETURN(ep);
@@ -4598,8 +4598,8 @@ lListElem *lGetElemUlongNextRW(const lList *lp, int nm, lUlong val, const void *
       }
    }
 
-   *iterator = NULL;
-   DRETURN(NULL);
+   *iterator = nullptr;
+   DRETURN(nullptr);
 }
 
 const lListElem *lGetElemUlongNext(const lList *lp, int nm, lUlong val, const void **iterator) {
@@ -4628,7 +4628,7 @@ const lListElem *lGetElemUlongNext(const lList *lp, int nm, lUlong val, const vo
 *     const lDescr* dp    - Type of the new element (e.g. JB_Type) 
 *
 *  RESULT
-*     NULL in case of error
+*     nullptr in case of error
 *     or the pointer to the new element 
 ******************************************************************************/
 lListElem *lAddSubUlong64(lListElem *ep, int nm, lUlong64 val, int snm,
@@ -4639,25 +4639,25 @@ lListElem *lAddSubUlong64(lListElem *ep, int nm, lUlong64 val, int snm,
    DENTER(CULL_LAYER);
 
    if (!ep) {
-      DPRINTF(("error: NULL ptr passed to lAddSubUlong64\n"));
-      DRETURN(NULL);
+      DPRINTF(("error: nullptr ptr passed to lAddSubUlong64\n"));
+      DRETURN(nullptr);
    }
 
    if (!(ep->descr)) {
-      DPRINTF(("NULL descriptor in element not allowed !!!"));
+      DPRINTF(("nullptr descriptor in element not allowed !!!"));
       abort();
    }
 
    /* run time type checking */
    if ((sublist_pos = lGetPosViaElem(ep, snm, SGE_NO_ABORT)) < 0) {
       CRITICAL((SGE_EVENT, MSG_CULL_ADDSUBULONG64ERRORXRUNTIMETYPE_S, lNm2Str(snm)));
-      DRETURN(NULL);
+      DRETURN(nullptr);
    }
 
    ret = lAddElemUlong64(&(ep->cont[sublist_pos].glp), nm, val, dp);
 
    /* remember that field changed */
-   if (ret != NULL) {
+   if (ret != nullptr) {
       sge_bitfield_set(&(ep->changed), sublist_pos);
    }
 
@@ -4684,7 +4684,7 @@ lListElem *lAddSubUlong64(lListElem *ep, int nm, lUlong64 val, int snm,
 *     const lDescr* dp  - type of the list (e.g. JB_Type) 
 *
 *  RESULT
-*     NULL on error
+*     nullptr on error
 *     or pointer to the added element 
 ******************************************************************************/
 lListElem *lAddElemUlong64(lList **lpp, int nm, lUlong64 val, const lDescr *dp) {
@@ -4694,8 +4694,8 @@ lListElem *lAddElemUlong64(lList **lpp, int nm, lUlong64 val, const lDescr *dp) 
    DENTER(CULL_LAYER);
 
    if (!lpp || !dp) {
-      DPRINTF(("error: NULL ptr passed to lAddElemUlong64\n"));
-      DRETURN(NULL);
+      DPRINTF(("error: nullptr ptr passed to lAddElemUlong64\n"));
+      DRETURN(nullptr);
    }
 
    /* get position of nm in sdp */
@@ -4705,7 +4705,7 @@ lListElem *lAddElemUlong64(lList **lpp, int nm, lUlong64 val, const lDescr *dp) 
    if (pos < 0) {
       CRITICAL((SGE_EVENT, MSG_CULL_ADDELEMULONG64ERRORXRUNTIMETYPE_S,
               lNm2Str(nm)));
-      DRETURN(NULL);
+      DRETURN(nullptr);
    }
 
    if (!*lpp) {
@@ -4787,7 +4787,7 @@ int lDelElemUlong64(lList **lpp, int nm, lUlong64 val) {
    DENTER(CULL_LAYER);
 
    if (!lpp || !val) {
-      DPRINTF(("error: NULL ptr passed to lDelElemUlong64\n"));
+      DPRINTF(("error: nullptr ptr passed to lDelElemUlong64\n"));
       DRETURN(0);
    }
 
@@ -4828,7 +4828,7 @@ int lDelElemUlong64(lList **lpp, int nm, lUlong64 val) {
 *     int snm             - field id of a list which is part of ep 
 *
 *  RESULT
-*     NULL if element was not found or in case of an error
+*     nullptr if element was not found or in case of an error
 *     otherwise pointer to the element 
 ******************************************************************************/
 lListElem *lGetSubUlong64(const lListElem *ep, int nm, lUlong64 val, int snm) {
@@ -4862,11 +4862,11 @@ lListElem *lGetSubUlong64(const lListElem *ep, int nm, lUlong64 val, int snm) {
 *     lUlong64 val - unsigned long value 
 *
 *  RESULT
-*    NULL if element was not found or an error occured
+*    nullptr if element was not found or an error occured
 *    otherwise pointer to element 
 ******************************************************************************/
 lListElem *lGetElemUlong64RW(const lList *lp, int nm, lUlong64 val) {
-   const void *iterator = NULL;
+   const void *iterator = nullptr;
    return lGetElemUlong64FirstRW(lp, nm, val, &iterator);
 }
 
@@ -4897,17 +4897,17 @@ const lListElem *lGetElemUlong64(const lList *lp, int nm, lUlong64 val) {
 *     const void **iterator - iterator 
 *
 *  RESULT
-*     lListElem* - element or NULL 
+*     lListElem* - element or nullptr
 ******************************************************************************/
 lListElem *lGetElemUlong64FirstRW(const lList *lp, int nm, lUlong64 val, const void **iterator) {
-   lListElem *ep = NULL;
+   lListElem *ep = nullptr;
    int pos;
 
    DENTER(CULL_LAYER);
 
    /* empty list ? */
    if (!lp) {
-      DRETURN(NULL);
+      DRETURN(nullptr);
    }
 
    /* get position of nm in sdp */
@@ -4916,12 +4916,12 @@ lListElem *lGetElemUlong64FirstRW(const lList *lp, int nm, lUlong64 val, const v
    /* run time type checking */
    if (pos < 0) {
       CRITICAL((SGE_EVENT, MSG_CULL_GETELEMULONG64ERRORXRUNTIMETYPE_S, lNm2Str(nm)));
-      DRETURN(NULL);
+      DRETURN(nullptr);
    }
 
-   *iterator = NULL;
+   *iterator = nullptr;
 
-   if (lp->descr[pos].ht != NULL) {
+   if (lp->descr[pos].ht != nullptr) {
       /* hash access */
       ep = cull_hash_first(lp->descr[pos].ht, &val,
                            mt_is_unique(lp->descr[pos].mt), iterator);
@@ -4937,7 +4937,7 @@ lListElem *lGetElemUlong64FirstRW(const lList *lp, int nm, lUlong64 val, const v
       }
    }
 
-   DRETURN(NULL);
+   DRETURN(nullptr);
 }
 
 const lListElem *lGetElemUlong64First(const lList *lp, int nm, lUlong64 val, const void **iterator) {
@@ -4968,7 +4968,7 @@ const lListElem *lGetElemUlong64First(const lList *lp, int nm, lUlong64 val, con
 *     const void **iterator - iterator 
 *
 *  RESULT
-*     lListElem* - next element or NULL 
+*     lListElem* - next element or nullptr
 ******************************************************************************/
 lListElem *lGetElemUlong64NextRW(const lList *lp, int nm, lUlong64 val, const void **iterator) {
    lListElem *ep;
@@ -4976,8 +4976,8 @@ lListElem *lGetElemUlong64NextRW(const lList *lp, int nm, lUlong64 val, const vo
 
    DENTER(CULL_LAYER);
 
-   if (*iterator == NULL) {
-      return NULL;
+   if (*iterator == nullptr) {
+      return nullptr;
    }
 
    /* get position of nm in sdp */
@@ -4986,10 +4986,10 @@ lListElem *lGetElemUlong64NextRW(const lList *lp, int nm, lUlong64 val, const vo
    /* run time type checking */
    if (pos < 0) {
       CRITICAL((SGE_EVENT, MSG_CULL_GETELEMULONG64ERRORXRUNTIMETYPE_S, lNm2Str(nm)));
-      DRETURN(NULL);
+      DRETURN(nullptr);
    }
 
-   if (lp->descr[pos].ht != NULL) {
+   if (lp->descr[pos].ht != nullptr) {
       /* hash access */
       ep = cull_hash_next(lp->descr[pos].ht, iterator);
       DRETURN(ep);
@@ -5004,8 +5004,8 @@ lListElem *lGetElemUlong64NextRW(const lList *lp, int nm, lUlong64 val, const vo
       }
    }
 
-   *iterator = NULL;
-   DRETURN(NULL);
+   *iterator = nullptr;
+   DRETURN(nullptr);
 }
 
 const lListElem *lGetElemUlong64Next(const lList *lp, int nm, lUlong64 val, const void **iterator) {
@@ -5081,7 +5081,7 @@ int lDelElemCaseStr(lList **lpp, int nm, const char *str) {
    DENTER(CULL_LAYER);
 
    if (!lpp || !str) {
-      DPRINTF(("error: NULL ptr passed to lDelElemCaseStr\n"));
+      DPRINTF(("error: nullptr ptr passed to lDelElemCaseStr\n"));
       DRETURN(0);
    }
 
@@ -5122,7 +5122,7 @@ int lDelElemCaseStr(lList **lpp, int nm, const char *str) {
 *                           sublist 
 *
 *  RESULT
-*     NULL if element was not found or in case of an error
+*     nullptr if element was not found or in case of an error
 *     otherwise pointer to element 
 ******************************************************************************/
 lListElem *lGetSubCaseStr(const lListElem *ep, int nm, const char *str,
@@ -5159,7 +5159,7 @@ lListElem *lGetSubCaseStr(const lListElem *ep, int nm, const char *str,
 *     const char* str - string 
 *
 *  RESULT
-*     NULL when element is not found or an error occured
+*     nullptr when element is not found or an error occured
 *     otherwise the pointer to an element 
 *
 ******************************************************************************/
@@ -5172,13 +5172,13 @@ lListElem *lGetElemCaseStr(const lList *lp, int nm, const char *str) {
 
    DENTER(CULL_LAYER);
    if (!str) {
-      DPRINTF(("error: NULL ptr passed to lGetElemCaseStr\n"));
-      DRETURN(NULL);
+      DPRINTF(("error: nullptr ptr passed to lGetElemCaseStr\n"));
+      DRETURN(nullptr);
    }
 
    /* empty list ? */
    if (!lp) {
-      DRETURN(NULL);
+      DRETURN(nullptr);
    }
 
    listDescriptor = lGetListDescr(lp);
@@ -5189,14 +5189,14 @@ lListElem *lGetElemCaseStr(const lList *lp, int nm, const char *str) {
    /* run time type checking */
    if (pos < 0) {
       CRITICAL((SGE_EVENT, MSG_CULL_GETELEMCASESTRERRORXRUNTIMETYPE_S, lNm2Str(nm)));
-      DRETURN(NULL);
+      DRETURN(nullptr);
    }
 
    data_type = lGetPosType(listDescriptor, pos);
    if (data_type != lStringT) {
       DPRINTF((":::::::::::::::: lGetElemCaseStr - data type is not lStringT !!! :::::::"));
       CRITICAL((SGE_EVENT, MSG_CULL_GETELEMCASESTRERRORXRUNTIMETYPE_S, lNm2Str(nm)));
-      DRETURN(NULL);
+      DRETURN(nullptr);
    }
 
    /* seek for element */
@@ -5207,7 +5207,7 @@ lListElem *lGetElemCaseStr(const lList *lp, int nm, const char *str) {
       }
    }
 
-   DRETURN(NULL);
+   DRETURN(nullptr);
 }
 
 /****** cull/multitype/lGetElemHost() *****************************************
@@ -5227,11 +5227,11 @@ lListElem *lGetElemCaseStr(const lList *lp, int nm, const char *str) {
 *     const char* str - hostname 
 *
 *  RESULT
-*     NULL when the list does not contain the element or in case of 
+*     nullptr when the list does not contain the element or in case of
 *     error otherwise pointer to an element
 ******************************************************************************/
 lListElem *lGetElemHostRW(const lList *lp, int nm, const char *str) {
-   const void *iterator = NULL;
+   const void *iterator = nullptr;
    return lGetElemHostFirstRW(lp, nm, str, &iterator);
 }
 
@@ -5257,23 +5257,23 @@ const lListElem *lGetElemHost(const lList *lp, int nm, const char *str) {
 *     const void **iterator - iterator 
 *
 *  RESULT
-*     lListElem* - element or NULL 
+*     lListElem* - element or nullptr
 ******************************************************************************/
 lListElem *lGetElemHostFirstRW(const lList *lp, int nm, const char *str, const void **iterator) {
    int pos;
    int data_type;
-   lListElem *ep = NULL;
-   const lDescr *listDescriptor = NULL;
+   lListElem *ep = nullptr;
+   const lDescr *listDescriptor = nullptr;
    char uhost[CL_MAXHOSTLEN + 1];
    char cmphost[CL_MAXHOSTLEN + 1];
-   const char *s = NULL;
+   const char *s = nullptr;
 
    DENTER(TOP_LAYER);
 
    /* check for null pointers */
-   if ((str == NULL) || (lp == NULL)) {
-      DPRINTF(("error: NULL ptr passed to lGetElemHostFirst\n"));
-      DRETURN(NULL);
+   if ((str == nullptr) || (lp == nullptr)) {
+      DPRINTF(("error: nullptr ptr passed to lGetElemHostFirst\n"));
+      DRETURN(nullptr);
    }
 
    /* run time type checking */
@@ -5285,11 +5285,11 @@ lListElem *lGetElemHostFirstRW(const lList *lp, int nm, const char *str, const v
          DPRINTF((":::::::::::::::: lGetElemHostFirst - data type is not lHostT !!! :::::::\n"));
       }
       CRITICAL((SGE_EVENT, MSG_CULL_GETELEMHOSTERRORXRUNTIMETYPE_S, lNm2Str(nm)));
-      DRETURN(NULL);
+      DRETURN(nullptr);
    }
 
-   *iterator = NULL;
-   if (lp->descr[pos].ht != NULL) {
+   *iterator = nullptr;
+   if (lp->descr[pos].ht != nullptr) {
       /* we have a hash table */
       char host_key[CL_MAXHOSTLEN + 1];
       sge_hostcpy(host_key, str);
@@ -5306,7 +5306,7 @@ lListElem *lGetElemHostFirstRW(const lList *lp, int nm, const char *str, const v
       /* sequence search */
       for_each_rw(ep, lp) {
          s = lGetPosHost(ep, pos);
-         if (s != NULL) {
+         if (s != nullptr) {
             sge_hostcpy(cmphost, s);
             if (!SGE_STRCASECMP(cmphost, uhost)) {
                *iterator = ep;
@@ -5316,7 +5316,7 @@ lListElem *lGetElemHostFirstRW(const lList *lp, int nm, const char *str, const v
       }
    }
 
-   DRETURN(NULL);
+   DRETURN(nullptr);
 }
 
 const lListElem *lGetElemHostFirst(const lList *lp, int nm, const char *str, const void **iterator) {
@@ -5343,23 +5343,23 @@ const lListElem *lGetElemHostFirst(const lList *lp, int nm, const char *str, con
 *     const void **iterator - iterator 
 *
 *  RESULT
-*     lListElem* - element or NULL 
+*     lListElem* - element or nullptr
 ******************************************************************************/
 lListElem *lGetElemHostNextRW(const lList *lp, int nm, const char *str, const void **iterator) {
    int pos;
-   lListElem *ep = NULL;
-   const lDescr *listDescriptor = NULL;
+   lListElem *ep = nullptr;
+   const lDescr *listDescriptor = nullptr;
    char uhost[CL_MAXHOSTLEN + 1];
    char cmphost[CL_MAXHOSTLEN + 1];
-   const char *s = NULL;
+   const char *s = nullptr;
 
    DENTER(TOP_LAYER);
 
    /* check for null *iterator and */
    /* check for null pointers */
-   if ((str == NULL) || (lp == NULL) || (*iterator == NULL)) {
-      DPRINTF(("error: NULL ptr passed to lGetElemHostNext\n"));
-      DRETURN(NULL);
+   if ((str == nullptr) || (lp == nullptr) || (*iterator == nullptr)) {
+      DPRINTF(("error: nullptr ptr passed to lGetElemHostNext\n"));
+      DRETURN(nullptr);
    }
 
    /* run time type checking */
@@ -5367,10 +5367,10 @@ lListElem *lGetElemHostNextRW(const lList *lp, int nm, const char *str, const vo
    pos = lGetPosInDescr(listDescriptor, nm);
    if (pos < 0) {
       CRITICAL((SGE_EVENT, MSG_CULL_GETELEMHOSTERRORXRUNTIMETYPE_S, lNm2Str(nm)));
-      DRETURN(NULL);
+      DRETURN(nullptr);
    }
 
-   if (lp->descr[pos].ht != NULL) {
+   if (lp->descr[pos].ht != nullptr) {
       /* we have a hash table */
       ep = cull_hash_next(lp->descr[pos].ht, iterator);
       DRETURN(ep);
@@ -5383,7 +5383,7 @@ lListElem *lGetElemHostNextRW(const lList *lp, int nm, const char *str, const vo
       /* sequence search */
       for (ep = ((lListElem *) *iterator)->next; ep; ep = ep->next) {
          s = lGetPosHost(ep, pos);
-         if (s != NULL) {
+         if (s != nullptr) {
             sge_hostcpy(cmphost, s);
             if (!SGE_STRCASECMP(cmphost, uhost)) {
                *iterator = ep;
@@ -5392,9 +5392,9 @@ lListElem *lGetElemHostNextRW(const lList *lp, int nm, const char *str, const vo
          }
       }
    }
-   *iterator = NULL;
+   *iterator = nullptr;
 
-   DRETURN(NULL);
+   DRETURN(nullptr);
 }
 
 const lListElem *lGetElemHostNext(const lList *lp, int nm, const char *str, const void **iterator) {
@@ -5420,7 +5420,7 @@ const lListElem *lGetElemHostNext(const lList *lp, int nm, const char *str, cons
 *     int snm             - field id of a sublist in ep 
 *
 *  RESULT
-*     NULL if element was not found or in case of error
+*     nullptr if element was not found or in case of error
 *     otherwise pointer to element 
 ******************************************************************************/
 lListElem *lGetSubHostRW(const lListElem *ep, int nm, const char *str, int snm) {
@@ -5469,7 +5469,7 @@ int lDelElemHost(lList **lpp, int nm, const char *str) {
    DENTER(CULL_LAYER);
 
    if (!lpp || !str) {
-      DPRINTF(("error: NULL ptr passed to lDelElemHost\n"));
+      DPRINTF(("error: nullptr ptr passed to lDelElemHost\n"));
       DRETURN(0);
    }
 
@@ -5501,7 +5501,7 @@ int lDelElemHost(lList **lpp, int nm, const char *str) {
 *  FUNCTION
 *     Returns the name at specified position in a descriptor array. The
 *     Position must be inside the valid range of the descriptor. Returns
-*     NoName if descriptor is NULL or pos < 0.
+*     NoName if descriptor is nullptr or pos < 0.
 *
 *  INPUTS
 *     const lDescr *dp - Descriptor 

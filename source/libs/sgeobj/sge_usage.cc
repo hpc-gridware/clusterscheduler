@@ -68,7 +68,7 @@ usage_list_get_ulong_usage(const lList *usage_list, const char *name,
                            u_long32 def)
 {
    const lListElem *ep = lGetElemStr(usage_list, UA_name, name);
-   if (ep != NULL) {
+   if (ep != nullptr) {
       return (u_long32)lGetDouble(ep, UA_value);
    } else {
       return def;
@@ -106,7 +106,7 @@ usage_list_get_double_usage(const lList *usage_list, const char *name,
                             double def)
 {
    const lListElem *ep = lGetElemStr(usage_list, UA_name, name);
-   if(ep != NULL) {
+   if(ep != nullptr) {
       return lGetDouble(ep, UA_value);
    } else {
       return def;
@@ -175,7 +175,7 @@ void
 usage_list_set_double_usage(lList *usage_list, const char *name, double value)
 {
    lListElem *ep = lGetElemStrRW(usage_list, UA_name, name);
-   if (ep == NULL) {
+   if (ep == nullptr) {
       ep = lAddElemStr(&usage_list, UA_name, name, UA_Type);
    }
 
@@ -224,7 +224,7 @@ usage_list_sum(lList *usage_list, const lList *add_usage_list)
           strncmp(name, "acct_", 5) == 0 ||
           strncmp(name, "ru_", 3) == 0) {
          lListElem *sum = lGetElemStrRW(usage_list, UA_name, name);
-         if (sum == NULL) {
+         if (sum == nullptr) {
             lAppendElem(usage_list, lCopyElem(usage));
          } else {
             lAddDouble(sum, UA_value, lGetDouble(usage, UA_value));
@@ -244,10 +244,10 @@ lList *scaled_usage /* UA_Type */
    const lListElem *prev;
 
    if (!scaling) {
-      return NULL;
+      return nullptr;
    }
 
-   if (scaled_usage == NULL) {
+   if (scaled_usage == nullptr) {
       scaled_usage = lCreateList("usage", UA_Type);
    }
 
@@ -257,42 +257,42 @@ lList *scaled_usage /* UA_Type */
       }
    }
 
-   if ((prev = lGetElemStr(prev_usage, UA_name, USAGE_ATTR_CPU)) != NULL) {
+   if ((prev = lGetElemStr(prev_usage, UA_name, USAGE_ATTR_CPU)) != nullptr) {
       if ((ep=lGetElemStrRW(scaled_usage, UA_name, USAGE_ATTR_CPU))) {
          lAddDouble(ep, UA_value, lGetDouble(prev, UA_value));
       } else {
          lAppendElem(scaled_usage, lCopyElem(prev));
       }
    }
-   if ((prev = lGetElemStr(prev_usage, UA_name, USAGE_ATTR_IO)) != NULL) {
+   if ((prev = lGetElemStr(prev_usage, UA_name, USAGE_ATTR_IO)) != nullptr) {
       if ((ep=lGetElemStrRW(scaled_usage, UA_name, USAGE_ATTR_IO))) {
          lAddDouble(ep, UA_value, lGetDouble(prev, UA_value));
       } else {
          lAppendElem(scaled_usage, lCopyElem(prev));
       }
    }
-   if ((prev = lGetElemStr(prev_usage, UA_name, USAGE_ATTR_IOW)) != NULL) {
+   if ((prev = lGetElemStr(prev_usage, UA_name, USAGE_ATTR_IOW)) != nullptr) {
       if ((ep=lGetElemStrRW(scaled_usage, UA_name, USAGE_ATTR_IOW))) {
          lAddDouble(ep, UA_value, lGetDouble(prev, UA_value));
       } else {
          lAppendElem(scaled_usage, lCopyElem(prev));
       }
    }
-   if ((prev = lGetElemStr(prev_usage, UA_name, USAGE_ATTR_VMEM)) != NULL) {
+   if ((prev = lGetElemStr(prev_usage, UA_name, USAGE_ATTR_VMEM)) != nullptr) {
       if ((ep=lGetElemStrRW(scaled_usage, UA_name, USAGE_ATTR_VMEM))) {
          lAddDouble(ep, UA_value, lGetDouble(prev, UA_value));
       } else {
          lAppendElem(scaled_usage, lCopyElem(prev));
       }
    }
-   if ((prev = lGetElemStr(prev_usage, UA_name, USAGE_ATTR_MAXVMEM)) != NULL) {
+   if ((prev = lGetElemStr(prev_usage, UA_name, USAGE_ATTR_MAXVMEM)) != nullptr) {
       if ((ep=lGetElemStrRW(scaled_usage, UA_name, USAGE_ATTR_MAXVMEM))) {
          lAddDouble(ep, UA_value, lGetDouble(prev, UA_value));
       } else {
          lAppendElem(scaled_usage, lCopyElem(prev));
       }
    }
-   if ((prev = lGetElemStr(prev_usage, UA_name, USAGE_ATTR_MEM)) != NULL) {
+   if ((prev = lGetElemStr(prev_usage, UA_name, USAGE_ATTR_MEM)) != nullptr) {
       if ((ep=lGetElemStrRW(scaled_usage, UA_name, USAGE_ATTR_MEM))) {
          lAddDouble(ep, UA_value, lGetDouble(prev, UA_value));
       } else {

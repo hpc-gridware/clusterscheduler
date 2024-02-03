@@ -61,12 +61,12 @@
 *     MT-NOTE: sge_malloc() is MT safe
 ******************************************************************************/
 char *sge_malloc(int size) {
-   char *cp = NULL;
+   char *cp = nullptr;
 
    DENTER_(BASIS_LAYER);
 
    if (!size) {
-      DRETURN_(NULL);
+      DRETURN_(nullptr);
    }
 
    cp = (char *) malloc(size);
@@ -100,18 +100,18 @@ char *sge_malloc(int size) {
 *     MT-NOTE: sge_realloc() is MT safe
 ******************************************************************************/
 void *sge_realloc(void *ptr, int size, int do_abort) {
-   void *cp = NULL;
+   void *cp = nullptr;
 
    DENTER_(BASIS_LAYER);
 
    /* if new size is 0, just free the currently allocated memory */
    if (size == 0) {
       sge_free(&ptr);
-      DRETURN_(NULL);
+      DRETURN_(nullptr);
    }
 
    cp = realloc(ptr, size);
-   if (cp == NULL) {
+   if (cp == nullptr) {
       CRITICAL((SGE_EVENT, SFNMAX, MSG_MEMORY_REALLOCFAILED));
       if (do_abort) {
          abort();
@@ -131,13 +131,13 @@ void *sge_realloc(void *ptr, int size, int do_abort) {
 *     void sge_free(char **cp) 
 *
 *  FUNCTION
-*     Replacement for free function. Accepts NULL pointers.
+*     Replacement for free function. Accepts nullptr pointers.
 *
 *  INPUTS
 *     char **cp - pointer to a pointer of a memory block 
 *
 *  RESULT
-*     char* - NULL
+*     char* - nullptr
 *
 *  NOTES
 *     MT-NOTE: sge_free() is MT safe
@@ -145,9 +145,9 @@ void *sge_realloc(void *ptr, int size, int do_abort) {
 void sge_free(void *cp) {
    char **mem = (char **) cp;
 
-   if (mem != NULL && *mem != NULL) {
+   if (mem != nullptr && *mem != nullptr) {
       free(*mem);
-      *mem = NULL;
+      *mem = nullptr;
    }
 }
 
@@ -176,7 +176,7 @@ void sge_free(void *cp) {
 *     MT-NOTE: sge_getenv() is MT safe
 ******************************************************************************/
 const char *sge_getenv(const char *env_str) {
-   const char *cp = NULL;
+   const char *cp = nullptr;
 
    DENTER_(BASIS_LAYER);
 
@@ -212,13 +212,13 @@ const char *sge_getenv(const char *env_str) {
 int sge_putenv(const char *var) {
    char *duplicate;
 
-   if (var == NULL) {
+   if (var == nullptr) {
       return 0;
    }
 
    duplicate = strdup(var);
 
-   if (duplicate == NULL) {
+   if (duplicate == nullptr) {
       return 0;
    }
 
@@ -259,7 +259,7 @@ int sge_putenv(const char *var) {
 int sge_setenv(const char *name, const char *value) {
    int ret = 0;
 
-   if (name != NULL && value != NULL) {
+   if (name != nullptr && value != nullptr) {
       dstring variable = DSTRING_INIT;
 
       sge_dstring_sprintf(&variable, "%s=%s", name, value);
@@ -293,19 +293,19 @@ int sge_setenv(const char *name, const char *value) {
 void sge_unsetenv(const char *varName) {
 #ifdef USE_SGE_UNSETENV
    extern char **environ;
-   char* searchString = NULL;
+   char* searchString = nullptr;
 
-   if (varName != NULL) {
+   if (varName != nullptr) {
       size_t length = (strlen(varName) + 2) * sizeof(char);
       searchString = malloc(length);
-      if (searchString != NULL) {
+      if (searchString != nullptr) {
          bool found = false;
          int i;
          snprintf(searchString, length, "%s=", varName);
          
          /* At first we have to search the index of varName */
-         for (i=0; i < ARG_MAX && environ[i] != NULL; i++) {
-            if (strstr(environ[i],searchString) != NULL) {
+         for (i=0; i < ARG_MAX && environ[i] != nullptr; i++) {
+            if (strstr(environ[i],searchString) != nullptr) {
                found = true;
                break;
             }
@@ -313,10 +313,10 @@ void sge_unsetenv(const char *varName) {
         
          /* At second we remove varName by copying varName+1 to varName */ 
          if (found == true) {
-            for (; i < ARG_MAX-1 && environ[i] != NULL; i++) {
+            for (; i < ARG_MAX-1 && environ[i] != nullptr; i++) {
                environ[i] = environ[i+1];
             }
-            environ[i] = NULL; 
+            environ[i] = nullptr;
          }
          sge_free(&searchString);
       }

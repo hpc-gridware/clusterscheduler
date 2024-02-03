@@ -91,22 +91,22 @@ int main(int argc, char* argv[])
 
 
    sigfillset(&sig_set);
-   pthread_sigmask(SIG_SETMASK, &sig_set, NULL);
+   pthread_sigmask(SIG_SETMASK, &sig_set, nullptr);
    
    printf("main: creating threads\n");
 
-   pthread_create(&(id[0]), NULL, signal_waiter, NULL);
+   pthread_create(&(id[0]), nullptr, signal_waiter, nullptr);
    incr_thrd_cnt();
 
    for (i = 1; i < NUM_THRDS; i++) {
-      pthread_create(&(id[i]), NULL, signal_emitter, NULL);
+      pthread_create(&(id[i]), nullptr, signal_emitter, nullptr);
       incr_thrd_cnt();
    }
 
    printf("main: startig to join threads\n");
 
    for (i = 0; i < NUM_THRDS; i++) {
-      pthread_join(id[i], NULL);
+      pthread_join(id[i], nullptr);
    }
 
    printf("main: all threads joined - quit\n");
@@ -164,7 +164,7 @@ static void incr_thrd_cnt(void)
 *     void* anArg - not used 
 *
 *  RESULT
-*     void* - NULL 
+*     void* - nullptr
 *
 *  NOTES
 *     MT-NOTE: signal_emitter() is a thread function.
@@ -190,7 +190,7 @@ static void* signal_emitter(void* anArg)
       sleep(4);
    }
 
-   return NULL;
+   return nullptr;
 } /* signal_emitter() */
 
 /****** utilbin/tst_pthread_signals/should_quit() ******************************
@@ -250,7 +250,7 @@ static int should_quit(void)
 *     void* anArg - not used 
 *
 *  RESULT
-*     void* - NULL 
+*     void* - nullptr
 *
 *  NOTES
 *     MT-NOTE: signal_waiter() is a thread function.
@@ -304,7 +304,7 @@ static void* signal_waiter(void* anArg)
       }
    }
 
-   return NULL;
+   return nullptr;
 } /* signal_waiter() */
 
 /****** utilbin/tst_pthread_signals/ignore_signals() ***************************
@@ -333,20 +333,20 @@ static void ignore_signals(void)
 
 
    act.sa_handler = SIG_IGN;
-   sigaction(SIGABRT, &act, NULL);
-   sigaction(SIGCHLD, &act, NULL);
-   sigaction(SIGCONT, &act, NULL);
-   sigaction(SIGHUP, &act, NULL);
-   sigaction(SIGQUIT, &act, NULL);
-   sigaction(SIGTERM, &act, NULL);
-   sigaction(SIGTSTP, &act, NULL);
-   sigaction(SIGTTIN, &act, NULL);
-   sigaction(SIGTTOU, &act, NULL);
-   sigaction(SIGURG, &act, NULL);
-   sigaction(SIGVTALRM, &act, NULL);
+   sigaction(SIGABRT, &act, nullptr);
+   sigaction(SIGCHLD, &act, nullptr);
+   sigaction(SIGCONT, &act, nullptr);
+   sigaction(SIGHUP, &act, nullptr);
+   sigaction(SIGQUIT, &act, nullptr);
+   sigaction(SIGTERM, &act, nullptr);
+   sigaction(SIGTSTP, &act, nullptr);
+   sigaction(SIGTTIN, &act, nullptr);
+   sigaction(SIGTTOU, &act, nullptr);
+   sigaction(SIGURG, &act, nullptr);
+   sigaction(SIGVTALRM, &act, nullptr);
 
 #if !defined(DARWIN) && !defined(FREEBSD) && !defined(NETBSD)
-   sigaction(SIGPOLL, &act, NULL);
+   sigaction(SIGPOLL, &act, nullptr);
 #endif
 
    return;

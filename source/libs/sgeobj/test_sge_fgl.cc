@@ -41,10 +41,10 @@ static long request = 0;
                                                                              \
    if (rmon_condition(xaybzc, TRACE)) {                                      \
       cl_thread_settings_t* ___thread_config = cl_thread_get_thread_config();\
-      if (___thread_config != NULL) {                                        \
+      if (___thread_config != nullptr) {                                        \
          rmon_menter (__func__, ___thread_config->thread_name);              \
       } else {                                                               \
-         rmon_menter (__func__, NULL);                                       \
+         rmon_menter (__func__, nullptr);                                       \
       }                                                                      \
    } 
 
@@ -130,7 +130,7 @@ void *thread1(void *data) {
       pthread_mutex_lock(&request_mtx);
       if (request > REQUESTS) {
          pthread_mutex_unlock(&request_mtx);
-         DRETURN(NULL);
+         DRETURN(nullptr);
       } 
       long request_id = requests[request];
       request++;
@@ -225,7 +225,7 @@ void *thread1(void *data) {
             break;
       }
    }
-   DRETURN(NULL);
+   DRETURN(nullptr);
 }
 
 int main(int argc, char *argv[]) {
@@ -239,7 +239,7 @@ int main(int argc, char *argv[]) {
    fgl_mt_init();
 
    // create some pseudo requests
-   srand(time(NULL));
+   srand(time(nullptr));
    for (long r = 0; r < REQUESTS; r++) {
       requests[r] = rand() % SCENARIOS;
    }
@@ -283,12 +283,12 @@ int main(int argc, char *argv[]) {
    // spawn threads
    for (long t = 0; t < THREADS; t++) {
       thread_args[t].id = t;
-      pthread_create(&threads[t], NULL, thread1, &thread_args[t]);
+      pthread_create(&threads[t], nullptr, thread1, &thread_args[t]);
    }
 
    // join threads
    for (long t = 0; t < THREADS; t++) {
-      pthread_join(threads[t], NULL);
+      pthread_join(threads[t], nullptr);
    }
 
    // dump statistics (if enabled)

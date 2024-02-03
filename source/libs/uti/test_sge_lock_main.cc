@@ -89,10 +89,10 @@ int main(int argc, char *argv[]) {
       printf("\n%s Create %d threads\n\n", __func__, i);
 
       for (j = 0; j < i; j++) {
-         pthread_create(&(t[j]), NULL, get_thrd_func(), get_thrd_func_arg());
+         pthread_create(&(t[j]), nullptr, get_thrd_func(), get_thrd_func_arg());
       }
       for (j = 0; j < i; j++) {
-         pthread_join(t[j], NULL);
+         pthread_join(t[j], nullptr);
       }
 
       after = sge_get_gmt();

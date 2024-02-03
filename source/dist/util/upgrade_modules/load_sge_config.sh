@@ -416,7 +416,7 @@ ResolveResult()
    	#If -Aconf fails we try modify
       -Aconf)
          case "$resMsg" in
-            *'value == NULL for attribute'*)
+            *'value == nullptr for attribute'*)
                unknown=`echo ${resMsg} | awk -F'"' '{ print $2 }'`
                ReplaceLineWithMatch ${resFile} "${unknown}*" "#${unknown}"
                LogIt "I" "$obj commented, trying to again"
@@ -448,7 +448,7 @@ ResolveResult()
       ;;
       -Mconf)
          case "$resMsg" in
-            *'value == NULL for attribute'*)
+            *'value == nullptr for attribute'*)
                unknown=`echo ${resMsg} | awk -F'"' '{ print $2 }'`
                ReplaceLineWithMatch ${resFile} "${unknown}*" "#${unknown}"
                LogIt "I" "$obj commented, trying to again"

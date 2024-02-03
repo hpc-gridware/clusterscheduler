@@ -65,7 +65,7 @@ int main(int argc, char *argv[]) {
    } else {
 #if defined(LINUX)
    struct statfs buf;
-   FILE *fd = NULL;
+   FILE *fd = nullptr;
    char buffer[BUF_SIZE];
    ret = statfs(argv[1], &buf);
 #elif defined(DARWIN) || defined(FREEBSD) || (defined(NETBSD) && !defined(ST_RDONLY))
@@ -92,7 +92,7 @@ int main(int argc, char *argv[]) {
        * the /etc/mtab file until we found a better solution to do this.
        */
       fd = fopen("/etc/mtab", "r");
-      if (fd == NULL) {
+      if (fd == nullptr) {
          fprintf(stderr, "file system type could not be detected\n");
          printf("unknown fs\n");
          return 1;
@@ -101,17 +101,17 @@ int main(int argc, char *argv[]) {
          sge_strip_white_space_at_eol(argv[1]);
          sge_strip_slash_at_eol(argv[1]);
 
-         while (fgets(buffer, sizeof(buffer), fd) != NULL) {
-            //char* export = NULL; /* where is the nfs exported*/
-            char* mountpoint = NULL; /*where is it mounted to */
-            char* fstype = NULL; /*type of exported file system */
+         while (fgets(buffer, sizeof(buffer), fd) != nullptr) {
+            //char* export = nullptr; /* where is the nfs exported*/
+            char* mountpoint = nullptr; /*where is it mounted to */
+            char* fstype = nullptr; /*type of exported file system */
 
             /* export = */sge_strtok(buffer, " \t");
-            mountpoint = sge_strtok(NULL, " \t");
-            fstype = sge_strtok(NULL, " \t");
+            mountpoint = sge_strtok(nullptr, " \t");
+            fstype = sge_strtok(nullptr, " \t");
 
             /* search only in valid lines that contain NFS4 mounts */
-            if (mountpoint != NULL && fstype != NULL && strcmp(fstype, "nfs4") == 0) {
+            if (mountpoint != nullptr && fstype != nullptr && strcmp(fstype, "nfs4") == 0) {
                /* search mountpoint in given path */
                char *pos = strstr(argv[1], mountpoint);
                if (pos == argv[1]) {

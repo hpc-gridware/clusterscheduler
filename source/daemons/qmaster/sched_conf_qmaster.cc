@@ -53,7 +53,7 @@ check_reprioritize_interval(sge_gdi_ctx_class_t *ctx, lList **alpp, char *ruser,
 
 int
 sge_read_sched_configuration(sge_gdi_ctx_class_t *ctx, const lListElem *aSpoolContext, lList **anAnswer) {
-   lList *sched_conf = NULL;
+   lList *sched_conf = nullptr;
    bool job_spooling = bootstrap_get_job_spooling();
 
    DENTER(TOP_LAYER);
@@ -63,7 +63,7 @@ sge_read_sched_configuration(sge_gdi_ctx_class_t *ctx, const lListElem *aSpoolCo
    if (lGetNumberOfElem(sched_conf) == 0) {
       lListElem *ep = sconf_create_default();
 
-      if (sched_conf == NULL) {
+      if (sched_conf == nullptr) {
          sched_conf = lCreateList("schedd_config_list", SC_Type);
       }
 
@@ -90,7 +90,7 @@ sge_read_sched_configuration(sge_gdi_ctx_class_t *ctx, const lListElem *aSpoolCo
  ************************************************************/
 int
 sge_mod_sched_configuration(sge_gdi_ctx_class_t *ctx, lListElem *confp, lList **alpp, char *ruser, char *rhost) {
-   lList *temp_conf_list = NULL;
+   lList *temp_conf_list = nullptr;
 
    DENTER(TOP_LAYER);
 
@@ -115,8 +115,8 @@ sge_mod_sched_configuration(sge_gdi_ctx_class_t *ctx, lListElem *confp, lList **
 
    if (!sge_event_spool(ctx,
                         alpp, 0, sgeE_SCHED_CONF,
-                        0, 0, "schedd_conf", NULL, NULL,
-                        confp, NULL, NULL, true, true)) {
+                        0, 0, "schedd_conf", nullptr, nullptr,
+                        confp, nullptr, nullptr, true, true)) {
       answer_list_add(alpp, MSG_SCHEDCONF_CANTCREATESCHEDULERCONFIGURATION, STATUS_ESEMANTIC, ANSWER_QUALITY_ERROR);
       DRETURN(-1);
    }

@@ -62,7 +62,7 @@ static bool answer_log(const lListElem *answer, bool show_info);
 *     Example:
 *
 *        void caller(void) {
-*           lList *answer_list = NULL; 
+*           lList *answer_list = nullptr;
 *
 *           callee(&answer_list);
 *           if (answer_list_has_error(&answer_list)) {
@@ -74,7 +74,7 @@ static bool answer_log(const lListElem *answer, bool show_info);
 *        void callee(lList **answer_list) {
 *           char *s = sge_malloc(256);
 *
-*           if (s == NULL) {
+*           if (s == nullptr) {
 *              answer_list_add(answer_list, "no memory", 
 *                              STATUS_ERROR, ANSWER_QUALITY_ERROR);
 *              return;
@@ -158,7 +158,7 @@ static bool answer_is_recoverable(const lListElem *answer)
    bool ret = true;
 
    DENTER(ANSWER_LAYER);
-   if (answer != NULL) {
+   if (answer != nullptr) {
       const int max_non_recoverable = 4;
       const u_long32 non_recoverable[] = {
          STATUS_NOQMASTER,
@@ -207,7 +207,7 @@ void answer_exit_if_not_recoverable(const lListElem *answer)
    if (!answer_is_recoverable(answer)) {
       fprintf(stderr, "%s: %s\n", answer_get_quality_text(answer),
               lGetString(answer, AN_text));
-      SGE_EXIT(NULL, 1);
+      SGE_EXIT(nullptr, 1);
    }
    DRETURN_VOID;
 }
@@ -305,18 +305,18 @@ void answer_print_text(const lListElem *answer,
                        const char *prefix,
                        const char *suffix)
 {
-   const char *text = NULL;
+   const char *text = nullptr;
 
    DENTER(ANSWER_LAYER);
    text = lGetString(answer, AN_text);
 
-   if (prefix != NULL) {
+   if (prefix != nullptr) {
       fprintf(stream, "%s", prefix);
    }
-   if (text != NULL) {
+   if (text != nullptr) {
       fprintf(stream, "%s", text);
    }
-   if (suffix != NULL) {
+   if (suffix != nullptr) {
       fprintf(stream, "%s", suffix);
    }
    fprintf(stream, "\n");
@@ -390,7 +390,7 @@ void answer_list_to_dstring(const lList *alp, dstring *diag)
       if (!alp || (lGetNumberOfElem (alp) == 0)) {
          sge_dstring_copy_string(diag, MSG_ANSWERWITHOUTDIAG);
       } else {
-         const lListElem *aep = NULL;
+         const lListElem *aep = nullptr;
          
          sge_dstring_clear(diag);
          
@@ -400,7 +400,7 @@ void answer_list_to_dstring(const lList *alp, dstring *diag)
             s = lGetString(aep, AN_text);
             sge_dstring_append(diag, s);
 
-            if (strchr(s, '\n') == NULL) {
+            if (strchr(s, '\n') == nullptr) {
                sge_dstring_append_char(diag, '\n');
             }
          }
@@ -424,9 +424,9 @@ void answer_list_to_dstring(const lList *alp, dstring *diag)
 *
 *     The new element will be appended to "answer_list".
 *     
-*     If "answer_list" is NULL, no action is performed.
+*     If "answer_list" is nullptr, no action is performed.
 *
-*     If the list pointed to by "answer_list" is NULL, a new list will be
+*     If the list pointed to by "answer_list" is nullptr, a new list will be
 *     created.
 *
 *  INPUTS
@@ -452,7 +452,7 @@ answer_list_add_sprintf(lList **answer_list, u_long32 status,
    bool ret = false;
 
    DENTER(ANSWER_LAYER);
-   if (answer_list != NULL) {
+   if (answer_list != nullptr) {
       dstring buffer = DSTRING_INIT;
       const char *message;
       va_list ap;
@@ -461,7 +461,7 @@ answer_list_add_sprintf(lList **answer_list, u_long32 status,
       message = sge_dstring_vsprintf(&buffer, fmt, ap);
       va_end(ap);
 
-      if (message != NULL) {
+      if (message != nullptr) {
          ret = answer_list_add(answer_list, message, status, quality);
       }
 
@@ -498,7 +498,7 @@ bool answer_list_has_quality(lList **answer_list, answer_quality_t quality)
    bool ret = false;
 
    DENTER(ANSWER_LAYER);
-   if (answer_list != NULL) {
+   if (answer_list != nullptr) {
       const lListElem *answer;   /* AN_Type */
 
       for_each_ep(answer, *answer_list) {
@@ -576,7 +576,7 @@ bool answer_list_has_status(lList **answer_list, u_long32 status)
 
    DENTER(ANSWER_LAYER);
 
-   if (answer_list != NULL) {
+   if (answer_list != nullptr) {
       const lListElem *answer;   /* AN_Type */
 
       for_each_ep(answer, *answer_list) {
@@ -648,7 +648,7 @@ void answer_list_on_error_print_or_exit(lList **answer_list, FILE *stream)
    DENTER(ANSWER_LAYER);
    for_each_ep(answer, *answer_list) {
       answer_exit_if_not_recoverable(answer);
-      answer_print_text(answer, stream, NULL, NULL);
+      answer_print_text(answer, stream, nullptr, nullptr);
    }
    DRETURN_VOID;
 }
@@ -697,22 +697,22 @@ int answer_list_print_err_warn(lList **answer_list,
    DENTER(ANSWER_LAYER);
    for_each_ep(answer, *answer_list) {
       if (answer_has_quality(answer, ANSWER_QUALITY_CRITICAL)) {
-         answer_print_text(answer, stderr, critical_prefix, NULL);
+         answer_print_text(answer, stderr, critical_prefix, nullptr);
          if (do_exit == 0) {
             status = answer_get_status(answer);
             do_exit = 1;
          }
       } else if (answer_has_quality(answer, ANSWER_QUALITY_ERROR)) {
-         answer_print_text(answer, stderr, err_prefix, NULL);
+         answer_print_text(answer, stderr, err_prefix, nullptr);
          if (do_exit == 0) {
             status = answer_get_status(answer);
             do_exit = 1;
          }
       } else if (answer_has_quality (answer, ANSWER_QUALITY_WARNING)) {
-         answer_print_text(answer, stdout, warn_prefix, NULL);
+         answer_print_text(answer, stdout, warn_prefix, nullptr);
       }
       else {
-         answer_print_text(answer, stdout, NULL, NULL);
+         answer_print_text(answer, stdout, nullptr, nullptr);
       }
    }
    lFreeList(answer_list);
@@ -748,14 +748,14 @@ int answer_list_handle_request_answer_list(lList **answer_list, FILE *stream) {
    int ret = STATUS_OK;
 
    DENTER(ANSWER_LAYER);
-   if(answer_list != NULL && *answer_list != NULL) {
+   if(answer_list != nullptr && *answer_list != nullptr) {
       const lListElem *answer;
 
       for_each_ep(answer, *answer_list) {
          if(answer_has_quality(answer, ANSWER_QUALITY_CRITICAL) ||
             answer_has_quality(answer, ANSWER_QUALITY_ERROR) ||
             answer_has_quality(answer, ANSWER_QUALITY_WARNING)) {
-            answer_print_text(answer, stream, NULL, NULL);
+            answer_print_text(answer, stream, nullptr, nullptr);
             if(ret == STATUS_OK) {
                ret = lGetUlong(answer, AN_status);
             }
@@ -784,9 +784,9 @@ int answer_list_handle_request_answer_list(lList **answer_list, FILE *stream) {
 *     "status" and "text"). The new element will be appended to
 *     "answer_list"
 *
-*     If "answer_list" is NULL, no action is performed.
+*     If "answer_list" is nullptr, no action is performed.
 *
-*     If the list pointed to by "answer_list" is NULL, a new list will be
+*     If the list pointed to by "answer_list" is nullptr, a new list will be
 *     created.
 *
 *  INPUTS
@@ -814,19 +814,19 @@ answer_list_add(lList **answer_list, const char *text,
 
    DENTER(ANSWER_LAYER);
 
-   if (answer_list != NULL) {
+   if (answer_list != nullptr) {
       lListElem *answer = lCreateElem(AN_Type);
 
-      if (answer != NULL) {
+      if (answer != nullptr) {
          lSetString(answer, AN_text, text);
          lSetUlong(answer, AN_status, status);
          lSetUlong(answer, AN_quality, quality);
 
-         if (*answer_list == NULL) {
+         if (*answer_list == nullptr) {
             *answer_list = lCreateList("", AN_Type);
          }
 
-         if (*answer_list != NULL) {
+         if (*answer_list != nullptr) {
             lAppendElem(*answer_list, answer);
             ret = true;
          }
@@ -844,11 +844,11 @@ bool answer_list_add_elem(lList **answer_list, lListElem *answer)
    bool ret = false;
 
    DENTER(ANSWER_LAYER);
-   if (answer_list != NULL) {
-      if (*answer_list == NULL) {
+   if (answer_list != nullptr) {
+      if (*answer_list == nullptr) {
          *answer_list = lCreateList("", AN_Type);
       }
-      if (*answer_list != NULL) {
+      if (*answer_list != nullptr) {
          lAppendElem(*answer_list, answer);
          ret = true;
       }
@@ -879,14 +879,14 @@ bool answer_list_add_elem(lList **answer_list, lListElem *answer)
 void answer_list_replace(lList **answer_list, lList **new_list)
 {
    DENTER(ANSWER_LAYER);
-   if (answer_list != NULL) {
+   if (answer_list != nullptr) {
       lFreeList(answer_list);
 
-      if (new_list != NULL) {
+      if (new_list != nullptr) {
          *answer_list = *new_list; 
-         *new_list = NULL;
+         *new_list = nullptr;
       } else {
-         *answer_list = NULL; 
+         *answer_list = nullptr;
       }
    }
    DRETURN_VOID;
@@ -900,7 +900,7 @@ void answer_list_replace(lList **answer_list, lList **new_list)
 *     void answer_list_append_list(lList **answer_list, lList **new_list) 
 *
 *  FUNCTION
-*     Append "new_list" after "answer_list". *new_list will be NULL afterwards 
+*     Append "new_list" after "answer_list". *new_list will be nullptr afterwards
 *
 *  INPUTS
 *     lList **answer_list - AN_Type list 
@@ -912,11 +912,11 @@ void answer_list_replace(lList **answer_list, lList **new_list)
 void answer_list_append_list(lList **answer_list, lList **new_list)
 {
    DENTER(ANSWER_LAYER);
-   if (answer_list != NULL && new_list != NULL) {
-      if (*answer_list == NULL && *new_list != NULL) {
+   if (answer_list != nullptr && new_list != nullptr) {
+      if (*answer_list == nullptr && *new_list != nullptr) {
          *answer_list = lCreateList("", AN_Type);
       }
-      if (*new_list != NULL) {
+      if (*new_list != nullptr) {
          lAddList(*answer_list, new_list);
       }
    }
@@ -941,7 +941,7 @@ void answer_list_append_list(lList **answer_list, lList **new_list)
 *     If there is no error contained in 'answer_list' then this function 
 *     will return with a value of false. 
 *
-*     "*answer_list" will only be freed and set to NULL, if is_free_list is
+*     "*answer_list" will only be freed and set to nullptr, if is_free_list is
 *     true.
 *
 *  INPUTS
@@ -959,7 +959,7 @@ bool answer_list_log(lList **answer_list, bool is_free_list, bool show_info) {
 
    DENTER(ANSWER_LAYER);
 
-   if (answer_list != NULL && *answer_list != NULL) {
+   if (answer_list != nullptr && *answer_list != nullptr) {
       for_each_ep(answer, *answer_list) {
          ret = answer_log(answer, show_info);
       }
@@ -987,7 +987,7 @@ bool answer_list_log(lList **answer_list, bool is_free_list, bool show_info) {
 *     lListElem *answer       - AN_Type element 
 *
 *  RESULT
-*     bool - true if answer is an error, false otherwise and if answer == NULL 
+*     bool - true if answer is an error, false otherwise and if answer == nullptr
 *
 *  NOTES
 *     MT-NOTE: answer_log() is MT safe
@@ -1044,7 +1044,7 @@ static bool answer_log(const lListElem *answer, bool show_info) {
 *     If there is no error contained in 'answer_list' then this function 
 *     will return with a value of false. 
 *
-*     "*answer_list" will be freed and set to NULL.
+*     "*answer_list" will be freed and set to nullptr.
 *
 *  INPUTS
 *     lList **answer_list     - AN_Type list 
@@ -1059,12 +1059,12 @@ bool answer_list_output(lList **answer_list) {
 
 int show_answer(lList *alp) 
 {
-   const lListElem *aep = NULL;
+   const lListElem *aep = nullptr;
    int ret = 0;
    
    DENTER(TOP_LAYER);
    
-   if (alp != NULL) {
+   if (alp != nullptr) {
     
       for_each_ep(aep,alp) {
          answer_exit_if_not_recoverable(aep);
@@ -1083,12 +1083,12 @@ int show_answer(lList *alp)
 
 int show_answer_list(lList *alp) 
 {
-   const lListElem *aep = NULL;
+   const lListElem *aep = nullptr;
    int ret = 0;
    
    DENTER(TOP_LAYER);
    
-   if (alp != NULL) {
+   if (alp != nullptr) {
       for_each_ep(aep,alp) {
          if (lGetUlong(aep, AN_quality) == ANSWER_QUALITY_END) {
             continue;
@@ -1106,9 +1106,9 @@ int show_answer_list(lList *alp)
 }
 
 void answer_list_from_sge_error(sge_error_class_t *eh, lList **alpp, bool clear_errors) {
-   sge_error_iterator_class_t *iter = NULL;
+   sge_error_iterator_class_t *iter = nullptr;
    
-   if (eh == NULL || alpp == NULL) {
+   if (eh == nullptr || alpp == nullptr) {
       return;
    }
    iter = eh->iterator(eh);

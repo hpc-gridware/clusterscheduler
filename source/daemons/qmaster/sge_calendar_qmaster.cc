@@ -63,8 +63,8 @@
 void
 calendar_initalize_timer(sge_gdi_ctx_class_t *ctx, monitoring_t *monitor) {
    lListElem *cep;
-   lList *ppList = NULL;
-   lList *answer_list = NULL;
+   lList *ppList = nullptr;
+   lList *answer_list = nullptr;
    const lList *master_calendar_list = *object_type_get_master_list(SGE_TYPE_CALENDAR);
 
    DENTER(TOP_LAYER);
@@ -74,7 +74,7 @@ calendar_initalize_timer(sge_gdi_ctx_class_t *ctx, monitoring_t *monitor) {
       calendar_parse_week(cep, &answer_list);
       answer_list_output(&answer_list);
 
-      calendar_update_queue_states(ctx, cep, NULL, NULL, &ppList, monitor);
+      calendar_update_queue_states(ctx, cep, nullptr, nullptr, &ppList, monitor);
    }
 
    lFreeList(&answer_list);
@@ -122,7 +122,7 @@ calendar_mod(sge_gdi_ctx_class_t *ctx, lList **alpp, lListElem *new_cal, lListEl
          const lListElem *queue;
          for_each_ep(queue, lGetList(cqueue, CQ_qinstances)) {
             const char *q_cal = lGetString(queue, QU_calendar);
-            if ((q_cal != NULL) && (strcmp(cal_name, q_cal) == 0)) {
+            if ((q_cal != nullptr) && (strcmp(cal_name, q_cal) == 0)) {
                if (sge_ar_list_conflicts_with_calendar(alpp,
                                                        lGetString(queue, QU_full_name), new_cal, master_ar_list)) {
                   goto ERROR;
@@ -140,7 +140,7 @@ DRETURN(STATUS_EUNKNOWN);
 
 int
 calendar_spool(sge_gdi_ctx_class_t *ctx, lList **alpp, lListElem *cep, gdi_object_t *object) {
-   lList *answer_list = NULL;
+   lList *answer_list = nullptr;
    bool dbret;
    bool job_spooling = bootstrap_get_job_spooling();
 
@@ -191,7 +191,7 @@ sge_del_calendar(sge_gdi_ctx_class_t *ctx, lListElem *cep, lList **alpp, char *r
 
    /* prevent deletion of a still referenced calendar */
    {
-      lList *local_answer_list = NULL;
+      lList *local_answer_list = nullptr;
 
       if (calendar_is_referenced(cep, &local_answer_list, master_cqueue_list)) {
          const lListElem *answer = lFirst(local_answer_list);
@@ -209,8 +209,8 @@ sge_del_calendar(sge_gdi_ctx_class_t *ctx, lListElem *cep, lList **alpp, char *r
 
    sge_event_spool(ctx,
                    alpp, 0, sgeE_CALENDAR_DEL,
-                   0, 0, cal_name, NULL, NULL,
-                   NULL, NULL, NULL, true, true);
+                   0, 0, cal_name, nullptr, nullptr,
+                   nullptr, nullptr, nullptr, true, true);
    lDelElemStr(master_calendar_list, CAL_name, cal_name);
 
    INFO((SGE_EVENT, MSG_SGETEXT_REMOVEDFROMLIST_SSSS,
@@ -242,7 +242,7 @@ sge_del_calendar(sge_gdi_ctx_class_t *ctx, lListElem *cep, lList **alpp, char *r
 void sge_calendar_event_handler(sge_gdi_ctx_class_t *ctx, te_event_t anEvent, monitoring_t *monitor) {
    lListElem *cep;
    const char *cal_name = te_get_alphanumeric_key(anEvent);
-   lList *ppList = NULL;
+   lList *ppList = nullptr;
    const lList *master_calendar_list = *object_type_get_master_list(SGE_TYPE_CALENDAR);
 
    DENTER(TOP_LAYER);
@@ -255,7 +255,7 @@ void sge_calendar_event_handler(sge_gdi_ctx_class_t *ctx, te_event_t anEvent, mo
       DRETURN_VOID;
    }
 
-   calendar_update_queue_states(ctx, cep, 0, NULL, &ppList, monitor);
+   calendar_update_queue_states(ctx, cep, 0, nullptr, &ppList, monitor);
 
    SGE_UNLOCK(LOCK_GLOBAL, LOCK_WRITE);
 
@@ -268,18 +268,18 @@ void sge_calendar_event_handler(sge_gdi_ctx_class_t *ctx, te_event_t anEvent, mo
 int calendar_update_queue_states(sge_gdi_ctx_class_t *ctx, lListElem *cep, lListElem *old_cep, gdi_object_t *object,
                                  lList **ppList, monitoring_t *monitor) {
    const char *cal_name = lGetString(cep, CAL_name);
-   lList *state_changes_list = NULL;
+   lList *state_changes_list = nullptr;
    u_long32 state;
    time_t when = 0;
    DENTER(TOP_LAYER);
 
    if (lListElem_is_changed(cep)) {
       sge_add_event(0, old_cep ? sgeE_CALENDAR_MOD : sgeE_CALENDAR_ADD,
-                    0, 0, cal_name, NULL, NULL, cep);
+                    0, 0, cal_name, nullptr, nullptr, cep);
       lListElem_clear_changed_info(cep);
    }
 
-   state = calender_state_changes(cep, &state_changes_list, &when, NULL);
+   state = calender_state_changes(cep, &state_changes_list, &when, nullptr);
 
    qinstance_change_state_on_calendar_all(ctx, cal_name, state, state_changes_list, monitor);
 

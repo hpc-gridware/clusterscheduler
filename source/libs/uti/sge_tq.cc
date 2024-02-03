@@ -127,19 +127,19 @@ sge_tq_task_create(sge_tq_task_t **task, sge_tq_type_t type, void *data) {
    bool ret = true;
 
    DENTER(TQ_LAYER);
-   if (task != NULL && type != SGE_TQ_UNKNOWN && data != NULL) {
+   if (task != nullptr && type != SGE_TQ_UNKNOWN && data != nullptr) {
       sge_tq_task_t *new_task;
       int size = sizeof(sge_tq_task_t);
 
       new_task = (sge_tq_task_t *) sge_malloc(size);
-      if (new_task != NULL) {
+      if (new_task != nullptr) {
          new_task->type = type;
          new_task->data = data;
 
          *task = new_task;
       } else {
          sge_err_set(SGE_ERR_MEMORY, MSG_UNABLETOALLOCATEBYTES_DS, size, __func__);
-         *task = NULL;
+         *task = nullptr;
          ret = false;
       }
    }
@@ -172,7 +172,7 @@ sge_tq_task_destroy(sge_tq_task_t **task) {
    bool ret = true;
 
    DENTER(TQ_LAYER);
-   if (task != NULL && *task != NULL) {
+   if (task != nullptr && *task != nullptr) {
       sge_free(task);
    }
    DRETURN(ret);
@@ -207,20 +207,20 @@ sge_tq_create(sge_tq_queue_t **queue) {
    bool ret = true;
 
    DENTER(TQ_LAYER);
-   if (queue != NULL) {
+   if (queue != nullptr) {
       sge_tq_queue_t *new_queue;
       int size = sizeof(sge_tq_queue_t);
 
       new_queue = (sge_tq_queue_t *) sge_malloc(size);
-      if (new_queue != NULL) {
+      if (new_queue != nullptr) {
          sge_sl_create(&new_queue->list);
-         pthread_cond_init(&new_queue->cond, NULL);
+         pthread_cond_init(&new_queue->cond, nullptr);
          new_queue->waiting = 0;
 
          *queue = new_queue;
       } else {
          sge_err_set(SGE_ERR_MEMORY, MSG_UNABLETOALLOCATEBYTES_DS, size, __func__);
-         *queue = NULL;
+         *queue = nullptr;
          ret = false;
       }
    }
@@ -257,7 +257,7 @@ sge_tq_destroy(sge_tq_queue_t **queue) {
    bool ret = true;
 
    DENTER(TQ_LAYER);
-   if (queue != NULL && *queue != NULL) {
+   if (queue != nullptr && *queue != nullptr) {
       pthread_cond_destroy(&(*queue)->cond);
       sge_sl_destroy(&(*queue)->list, (sge_sl_destroy_f) sge_tq_task_destroy);
       sge_free(queue);
@@ -289,7 +289,7 @@ sge_tq_get_task_count(sge_tq_queue_t *queue) {
    u_long32 count = 0;
 
    DENTER(TQ_LAYER);
-   if (queue != NULL) {
+   if (queue != nullptr) {
       count = sge_sl_get_elem_count(queue->list);
    }
    DRETURN(count);
@@ -324,7 +324,7 @@ sge_tq_get_waiting_count(sge_tq_queue_t *queue) {
    u_long32 count = 0;
 
    DENTER(TQ_LAYER);
-   if (queue != NULL) {
+   if (queue != nullptr) {
       sge_mutex_lock(TQ_MUTEX_NAME, __func__, __LINE__, sge_sl_get_mutex(queue->list));
       count = queue->waiting;
       sge_mutex_unlock(TQ_MUTEX_NAME, __func__, __LINE__, sge_sl_get_mutex(queue->list));
@@ -371,8 +371,8 @@ sge_tq_store_notify(sge_tq_queue_t *queue, sge_tq_type_t type, void *data) {
    bool ret = true;
 
    DENTER(TQ_LAYER);
-   if (queue != NULL && type != SGE_TQ_UNKNOWN && data != NULL) {
-      sge_tq_task_t *new_task = NULL;
+   if (queue != nullptr && type != SGE_TQ_UNKNOWN && data != nullptr) {
+      sge_tq_task_t *new_task = nullptr;
 
       /* create a new task */
       ret &= sge_tq_task_create(&new_task, type, data);
@@ -420,7 +420,7 @@ sge_tq_wakeup_waiting(sge_tq_queue_t *queue) {
    bool ret = true;
 
    DENTER(TQ_LAYER);
-   if (queue != NULL) {
+   if (queue != nullptr) {
       sge_mutex_lock(TQ_MUTEX_NAME, __func__, __LINE__, sge_sl_get_mutex(queue->list));
 
       /* wake up all threads waiting for a task */
@@ -453,13 +453,13 @@ sge_tq_wakeup_waiting(sge_tq_queue_t *queue) {
 *     The function returns either if a task of the correct type is 
 *     available of if sge_thread_has_shutdown_started() returns true to
 *     indicate that the shutdown of the thread/process has been triggered.
-*     In that case the function might return with NULL in *data.
+*     In that case the function might return with nullptr in *data.
 *
 *  INPUTS
 *     sge_tq_queue_t *queue - task queue 
 *     int seconds           - max number of seconds to sleep 
 *     sge_tq_type_t type    - type of the task that should be returned 
-*     void **data           - NULL in case of thread/process shutdown 
+*     void **data           - nullptr in case of thread/process shutdown
 *                             or the data pointer of the task
 *
 *  RESULT
@@ -482,12 +482,12 @@ sge_tq_wait_for_task(sge_tq_queue_t *queue, int seconds,
    bool ret = true;
 
    DENTER(TQ_LAYER);
-   if (queue != NULL && data != NULL) {
-      sge_sl_elem_t *elem = NULL;
+   if (queue != nullptr && data != nullptr) {
+      sge_sl_elem_t *elem = nullptr;
       sge_tq_task_t key;
 
       key.type = type;
-      *data = NULL;
+      *data = nullptr;
 
       sge_mutex_lock(TQ_MUTEX_NAME, __func__, __LINE__, sge_sl_get_mutex(queue->list));
 
@@ -498,7 +498,7 @@ sge_tq_wait_for_task(sge_tq_queue_t *queue, int seconds,
        */
       ret = sge_sl_elem_search(queue->list, &elem, &key,
                                sge_tq_task_compare_type, SGE_SL_FORWARD);
-      if (ret && elem == NULL && sge_thread_has_shutdown_started() == false) {
+      if (ret && elem == nullptr && sge_thread_has_shutdown_started() == false) {
          queue->waiting++;
          do {
             struct timespec ts;
@@ -507,19 +507,19 @@ sge_tq_wait_for_task(sge_tq_queue_t *queue, int seconds,
             pthread_cond_timedwait(&(queue->cond), sge_sl_get_mutex(queue->list), &ts);
             ret = sge_sl_elem_search(queue->list, &elem, &key,
                                      sge_tq_task_compare_type, SGE_SL_FORWARD);
-         } while (ret && elem == NULL && sge_thread_has_shutdown_started() == false);
+         } while (ret && elem == nullptr && sge_thread_has_shutdown_started() == false);
          queue->waiting--;
       }
 
       /*
        * If we found a element that matches the key then remove and destroy if and return the data
        */
-      if (ret && elem != NULL) {
+      if (ret && elem != nullptr) {
          if (ret) {
             ret = sge_sl_dechain(queue->list, elem);
          }
          if (ret) {
-            sge_tq_task_t *task = NULL;
+            sge_tq_task_t *task = nullptr;
 
             task = (sge_tq_task_t *)sge_sl_elem_data(elem);
             *data = task->data;

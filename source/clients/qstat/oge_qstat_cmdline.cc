@@ -57,7 +57,7 @@ switch_list_qstat_parse_from_file(lList **switch_list, lList **answer_list,
    bool ret = true;
 
    DENTER(TOP_LAYER);
-   if (switch_list == NULL) {
+   if (switch_list == nullptr) {
       ret = false;
    } else {
       if (!sge_is_file(file)) {
@@ -67,17 +67,17 @@ switch_list_qstat_parse_from_file(lList **switch_list, lList **answer_list,
          DPRINTF(("file "SFQ" does not exist\n", file));
          ret = true;
       } else {
-         char *file_as_string = NULL;
+         char *file_as_string = nullptr;
          int file_as_string_length;
 
          file_as_string = sge_file2string(file, &file_as_string_length);
-         if (file_as_string == NULL) {
+         if (file_as_string == nullptr) {
             answer_list_add_sprintf(answer_list, STATUS_EUNKNOWN, 
                                     ANSWER_QUALITY_ERROR,
                                     MSG_ANSWER_ERRORREADINGFROMFILEX_S, file);
             ret = false;
          } else {
-            char **token = NULL;
+            char **token = nullptr;
 
             token = stra_from_str(file_as_string, " \n\t");
             ret = switch_list_qstat_parse_from_cmdline(switch_list, answer_list,
@@ -104,90 +104,90 @@ switch_list_qstat_parse_from_cmdline(lList **ppcmdline, lList **answer_list,
    rp = argv;
    while(*(sp=rp)) {
       /* -help */
-      if ((rp = parse_noopt(sp, "-help", NULL, ppcmdline, answer_list)) != sp)
+      if ((rp = parse_noopt(sp, "-help", nullptr, ppcmdline, answer_list)) != sp)
          continue;
 
       /* -ncb */
-      if ((rp = parse_noopt(sp, "-ncb", NULL, ppcmdline, answer_list)) != sp)
+      if ((rp = parse_noopt(sp, "-ncb", nullptr, ppcmdline, answer_list)) != sp)
          continue;
 
       /* -f option */
-      if (!qselect_mode && (rp = parse_noopt(sp, "-f", NULL, ppcmdline, answer_list)) != sp)
+      if (!qselect_mode && (rp = parse_noopt(sp, "-f", nullptr, ppcmdline, answer_list)) != sp)
          continue;
 
       /* -F */
-      if (!qselect_mode && (rp = parse_until_next_opt2(sp, "-F", NULL, ppcmdline, answer_list)) != sp)
+      if (!qselect_mode && (rp = parse_until_next_opt2(sp, "-F", nullptr, ppcmdline, answer_list)) != sp)
          continue;
 
       if (!qselect_mode) {
          /* -ext option */
-         if ((rp = parse_noopt(sp, "-ext", NULL, ppcmdline, answer_list)) != sp)
+         if ((rp = parse_noopt(sp, "-ext", nullptr, ppcmdline, answer_list)) != sp)
             continue;
 
          /* -urg option */
-         if ((rp = parse_noopt(sp, "-urg", NULL, ppcmdline, answer_list)) != sp)
+         if ((rp = parse_noopt(sp, "-urg", nullptr, ppcmdline, answer_list)) != sp)
             continue;
 
          /* -urg option */
-         if ((rp = parse_noopt(sp, "-pri", NULL, ppcmdline, answer_list)) != sp)
+         if ((rp = parse_noopt(sp, "-pri", nullptr, ppcmdline, answer_list)) != sp)
             continue;
 
          /* -xml option */
-         if ((rp = parse_noopt(sp, "-xml", NULL, ppcmdline, answer_list)) != sp)
+         if ((rp = parse_noopt(sp, "-xml", nullptr, ppcmdline, answer_list)) != sp)
             continue;
 
       }
 
       /* -g */
-      if (!qselect_mode && (rp = parse_until_next_opt(sp, "-g", NULL, ppcmdline, answer_list)) != sp)
+      if (!qselect_mode && (rp = parse_until_next_opt(sp, "-g", nullptr, ppcmdline, answer_list)) != sp)
          continue;
 
       /* -j [jid {,jid}]*/
-      if (!qselect_mode && (rp = parse_until_next_opt2(sp, "-j", NULL, ppcmdline, answer_list)) != sp)
+      if (!qselect_mode && (rp = parse_until_next_opt2(sp, "-j", nullptr, ppcmdline, answer_list)) != sp)
          continue;
 
       /* -l */
-      if ((rp = parse_until_next_opt(sp, "-l", NULL, ppcmdline, answer_list)) != sp)
+      if ((rp = parse_until_next_opt(sp, "-l", nullptr, ppcmdline, answer_list)) != sp)
          continue;
 
       /* -ne option */
-      if (!qselect_mode && (rp = parse_noopt(sp, "-ne", NULL, ppcmdline, answer_list)) != sp)
+      if (!qselect_mode && (rp = parse_noopt(sp, "-ne", nullptr, ppcmdline, answer_list)) != sp)
          continue;
 
       /* -s [p|r|s|h|d|...] option */
-      if (!qselect_mode && (rp = parse_until_next_opt(sp, "-s", NULL, ppcmdline, answer_list)) != sp)
+      if (!qselect_mode && (rp = parse_until_next_opt(sp, "-s", nullptr, ppcmdline, answer_list)) != sp)
          continue;
 
       /* -qs [.{a|c|d|o|..] option */
-      if ((rp = parse_until_next_opt(sp, "-qs", NULL, ppcmdline, answer_list)) != sp)
+      if ((rp = parse_until_next_opt(sp, "-qs", nullptr, ppcmdline, answer_list)) != sp)
          continue;
 
       /* -explain [c|a|A...] option */
-      if (!qselect_mode && (rp = parse_until_next_opt(sp, "-explain", NULL, ppcmdline, answer_list)) != sp)
+      if (!qselect_mode && (rp = parse_until_next_opt(sp, "-explain", nullptr, ppcmdline, answer_list)) != sp)
          continue;
 
       /* -q */
-      if ((rp = parse_until_next_opt(sp, "-q", NULL, ppcmdline, answer_list)) != sp)
+      if ((rp = parse_until_next_opt(sp, "-q", nullptr, ppcmdline, answer_list)) != sp)
          continue;
 
       /* -r */
-      if (!qselect_mode && (rp = parse_noopt(sp, "-r", NULL, ppcmdline, answer_list)) != sp)
+      if (!qselect_mode && (rp = parse_noopt(sp, "-r", nullptr, ppcmdline, answer_list)) != sp)
          continue;
 
       /* -t */
-      if (!qselect_mode && (rp = parse_noopt(sp, "-t", NULL, ppcmdline, answer_list)) != sp)
+      if (!qselect_mode && (rp = parse_noopt(sp, "-t", nullptr, ppcmdline, answer_list)) != sp)
          continue;
 
       /* -u */
-      if (!qselect_mode && (rp = parse_until_next_opt(sp, "-u", NULL, ppcmdline, answer_list)) != sp)
+      if (!qselect_mode && (rp = parse_until_next_opt(sp, "-u", nullptr, ppcmdline, answer_list)) != sp)
          continue;
 
       /* -U */
-      if ((rp = parse_until_next_opt(sp, "-U", NULL, ppcmdline, answer_list)) != sp)
+      if ((rp = parse_until_next_opt(sp, "-U", nullptr, ppcmdline, answer_list)) != sp)
          continue;
 
       /* -pe */
-      if ((rp = parse_until_next_opt(sp, "-pe", NULL, ppcmdline, answer_list)) != sp)
+      if ((rp = parse_until_next_opt(sp, "-pe", nullptr, ppcmdline, answer_list)) != sp)
          continue;
 
       /*
@@ -197,17 +197,17 @@ switch_list_qstat_parse_from_cmdline(lList **ppcmdline, lList **answer_list,
       */
       if (getenv("MORE_INFO")) {
          /* -dj */
-         if ((rp = parse_noopt(sp, "-dj", NULL, ppcmdline, answer_list)) != sp)
+         if ((rp = parse_noopt(sp, "-dj", nullptr, ppcmdline, answer_list)) != sp)
             continue;
 
          /* -dq */
-         if ((rp = parse_noopt(sp, "-dq", NULL, ppcmdline, answer_list)) != sp)
+         if ((rp = parse_noopt(sp, "-dq", nullptr, ppcmdline, answer_list)) != sp)
             continue;
       }
 
       /* oops */
       sprintf(str, MSG_ANSWER_INVALIDOPTIONARGX_S, *sp);
-      qstat_usage(qselect_mode, stderr, NULL);
+      qstat_usage(qselect_mode, stderr, nullptr);
       answer_list_add(answer_list, str, STATUS_ESEMANTIC, ANSWER_QUALITY_ERROR);
       DRETURN(ret);
    }
@@ -218,7 +218,7 @@ switch_list_qstat_parse_from_cmdline(lList **ppcmdline, lList **answer_list,
  **** qstat_usage (static)
  ****
  **** displays usage of qstat on file fp.
- **** Is what NULL, full usage will be displayed.
+ **** Is what nullptr, full usage will be displayed.
  ****
  **** Returns always 1.
  ****

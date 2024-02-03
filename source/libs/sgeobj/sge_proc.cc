@@ -43,19 +43,19 @@ static lList *procList;
 *
 *  FUNCTION
 *     Looks for the element with the specified pid and return it.
-*     Otherwise return NULL
+*     Otherwise return nullptr
 *
 *  INPUTS
 *     int pid - The process ID of the process we're looking for. 
 *
 *  RESULT
-*     lListElem* - PRO_Type object or NULL
+*     lListElem* - PRO_Type object or nullptr
 *******************************************************************************/
 lListElem *get_pr (int pid)
 {
    if (!procList) {
       gen_procList ();
-      return NULL;
+      return nullptr;
    }
 
    return lGetElemUlongRW(procList, PRO_pid, pid);
@@ -113,8 +113,8 @@ void free_procList()
 void clean_procList()
 {
 
-   lListElem *next = NULL;
-   lListElem *ep = NULL;
+   lListElem *next = nullptr;
+   lListElem *ep = nullptr;
    lCondition *cp = lWhere("%T(%I == %b)", PRO_Type, PRO_run, false); 
    int pos = lGetPosInDescr(PRO_Type, PRO_run);
 
@@ -122,7 +122,7 @@ void clean_procList()
 
    /* free all finished jobs */
 
-   while (next != NULL) {
+   while (next != nullptr) {
       ep = lFindNextRW(next, cp);
       lRemoveElem(procList, &next);
       next = ep;

@@ -90,7 +90,7 @@ int startprog(int out, int err,
  va_start(argnp, name);
 
  for (i=0; i<256; i++)
-   argv[i] = NULL;
+   argv[i] = nullptr;
  
  for (i=1; i<256 && (str = va_arg(argnp, char*)); i++) {
    DPRINTF(("argv[%d] %s\n", i, str));   
@@ -98,7 +98,7 @@ int startprog(int out, int err,
  }   
  va_end(argnp);
 
- /* Check with $SGE_ROOT/bin/arch if argv0 == NULL */
+ /* Check with $SGE_ROOT/bin/arch if argv0 == nullptr */
  if (argv0) {
    strcpy(prog_path, argv0);
    if ((ptr = strrchr(prog_path, '/'))) {

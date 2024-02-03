@@ -84,8 +84,8 @@ event_update_func(u_long32 ec_id, lList **alpp, lList *event_list)
 
    sge_mutex_lock("event_control_mutex", __func__, __LINE__, &Scheduler_Control.mutex);
    
-   if (Scheduler_Control.new_events != NULL) {
-      lList *events = NULL;
+   if (Scheduler_Control.new_events != nullptr) {
+      lList *events = nullptr;
       lXchgList(lFirstRW(event_list), REP_list, &(events));
       lAddList(Scheduler_Control.new_events, &events);
    } else {
@@ -132,31 +132,31 @@ subscribe_scheduler(sge_evc_class_t *evc, sge_where_what_t *where_what)
    DENTER(TOP_LAYER);
 
    /* subscribe event types for the mirroring interface */
-   sge_mirror_subscribe(evc, SGE_TYPE_AR,             NULL, NULL, NULL, NULL, NULL);
-   sge_mirror_subscribe(evc, SGE_TYPE_CKPT,           NULL, NULL, NULL, NULL, NULL);
-   sge_mirror_subscribe(evc, SGE_TYPE_CENTRY,         NULL, NULL, NULL, NULL, NULL);
-   sge_mirror_subscribe(evc, SGE_TYPE_CQUEUE,         NULL, NULL, NULL, where_what->where_cqueue, where_what->what_cqueue);
-   sge_mirror_subscribe(evc, SGE_TYPE_EXECHOST,       NULL, NULL, NULL, where_what->where_host, where_what->what_host);
-   sge_mirror_subscribe(evc, SGE_TYPE_HGROUP,         NULL, NULL, NULL, NULL, NULL);
-   sge_mirror_subscribe(evc, SGE_TYPE_GLOBAL_CONFIG,  NULL, sge_process_global_config_event, NULL, NULL, NULL);
-   sge_mirror_subscribe(evc, SGE_TYPE_JOB,            sge_process_job_event_before, sge_process_job_event_after, NULL, where_what->where_job, where_what->what_job);
-   sge_mirror_subscribe(evc, SGE_TYPE_JATASK,         NULL, sge_process_ja_task_event_after, NULL, where_what->where_jat, where_what->what_jat);
-   sge_mirror_subscribe(evc, SGE_TYPE_PE,             NULL, NULL, NULL, NULL, where_what->what_pe);
+   sge_mirror_subscribe(evc, SGE_TYPE_AR,             nullptr, nullptr, nullptr, nullptr, nullptr);
+   sge_mirror_subscribe(evc, SGE_TYPE_CKPT,           nullptr, nullptr, nullptr, nullptr, nullptr);
+   sge_mirror_subscribe(evc, SGE_TYPE_CENTRY,         nullptr, nullptr, nullptr, nullptr, nullptr);
+   sge_mirror_subscribe(evc, SGE_TYPE_CQUEUE,         nullptr, nullptr, nullptr, where_what->where_cqueue, where_what->what_cqueue);
+   sge_mirror_subscribe(evc, SGE_TYPE_EXECHOST,       nullptr, nullptr, nullptr, where_what->where_host, where_what->what_host);
+   sge_mirror_subscribe(evc, SGE_TYPE_HGROUP,         nullptr, nullptr, nullptr, nullptr, nullptr);
+   sge_mirror_subscribe(evc, SGE_TYPE_GLOBAL_CONFIG,  nullptr, sge_process_global_config_event, nullptr, nullptr, nullptr);
+   sge_mirror_subscribe(evc, SGE_TYPE_JOB,            sge_process_job_event_before, sge_process_job_event_after, nullptr, where_what->where_job, where_what->what_job);
+   sge_mirror_subscribe(evc, SGE_TYPE_JATASK,         nullptr, sge_process_ja_task_event_after, nullptr, where_what->where_jat, where_what->what_jat);
+   sge_mirror_subscribe(evc, SGE_TYPE_PE,             nullptr, nullptr, nullptr, nullptr, where_what->what_pe);
    
    /* we do *not* subscribe reduced elements for TYPE_PETASK:
     * event master currently cannot handle this, see IZ 3216
-    * sge_mirror_subscribe(evc, SGE_TYPE_PETASK,         NULL, NULL, NULL, NULL, where_what->what_pet);
+    * sge_mirror_subscribe(evc, SGE_TYPE_PETASK,         nullptr, nullptr, nullptr, nullptr, where_what->what_pet);
     */
-   sge_mirror_subscribe(evc, SGE_TYPE_PETASK,         NULL, NULL, NULL, NULL, NULL);
+   sge_mirror_subscribe(evc, SGE_TYPE_PETASK,         nullptr, nullptr, nullptr, nullptr, nullptr);
 
-   sge_mirror_subscribe(evc, SGE_TYPE_PROJECT,        sge_process_project_event_before, NULL, NULL, NULL, NULL);
-   sge_mirror_subscribe(evc, SGE_TYPE_QINSTANCE,      NULL, NULL, NULL, where_what->where_all_queue, where_what->what_queue);
-   sge_mirror_subscribe(evc, SGE_TYPE_RQS,            NULL, NULL, NULL, NULL, NULL);
-   sge_mirror_subscribe(evc, SGE_TYPE_SCHEDD_CONF,    sge_process_schedd_conf_event_before, sge_process_schedd_conf_event_after, NULL, NULL, NULL);
-   sge_mirror_subscribe(evc, SGE_TYPE_SCHEDD_MONITOR, NULL, sge_process_schedd_monitor_event, NULL, NULL, NULL); 
-   sge_mirror_subscribe(evc, SGE_TYPE_SHARETREE,      NULL, NULL, NULL, NULL, NULL);
-   sge_mirror_subscribe(evc, SGE_TYPE_USER,           NULL, NULL, NULL, NULL, NULL);
-   sge_mirror_subscribe(evc, SGE_TYPE_USERSET,        sge_process_userset_event_before, NULL, NULL, NULL, NULL);
+   sge_mirror_subscribe(evc, SGE_TYPE_PROJECT,        sge_process_project_event_before, nullptr, nullptr, nullptr, nullptr);
+   sge_mirror_subscribe(evc, SGE_TYPE_QINSTANCE,      nullptr, nullptr, nullptr, where_what->where_all_queue, where_what->what_queue);
+   sge_mirror_subscribe(evc, SGE_TYPE_RQS,            nullptr, nullptr, nullptr, nullptr, nullptr);
+   sge_mirror_subscribe(evc, SGE_TYPE_SCHEDD_CONF,    sge_process_schedd_conf_event_before, sge_process_schedd_conf_event_after, nullptr, nullptr, nullptr);
+   sge_mirror_subscribe(evc, SGE_TYPE_SCHEDD_MONITOR, nullptr, sge_process_schedd_monitor_event, nullptr, nullptr, nullptr);
+   sge_mirror_subscribe(evc, SGE_TYPE_SHARETREE,      nullptr, nullptr, nullptr, nullptr, nullptr);
+   sge_mirror_subscribe(evc, SGE_TYPE_USER,           nullptr, nullptr, nullptr, nullptr, nullptr);
+   sge_mirror_subscribe(evc, SGE_TYPE_USERSET,        sge_process_userset_event_before, nullptr, nullptr, nullptr, nullptr);
 
    set_job_flushing(evc);
 
@@ -185,10 +185,10 @@ sge_before_dispatch(sge_evc_class_t *evc)
    /* hostname resolving scheme in global config could have changed
       get it and use it if we got a notification about a new global config */
    if (st_get_flag_new_global_conf()) {
-      lListElem *global = NULL, *local = NULL;
+      lListElem *global = nullptr, *local = nullptr;
    
       if (gdi2_get_configuration(ctx, SGE_GLOBAL_NAME, &global, &local) == 0) {
-         merge_configuration(NULL, progid, cell_root, global, local, NULL);
+         merge_configuration(nullptr, progid, cell_root, global, local, nullptr);
       }  
       lFreeElem(&global);
       lFreeElem(&local); 

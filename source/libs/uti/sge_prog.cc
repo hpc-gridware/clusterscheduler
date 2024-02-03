@@ -147,7 +147,7 @@ static void uti_state_set_default_cell(const char *s);
 *     Provides access to either global variable or per thread global variable.
 ******************************************************************************/
 const char *uti_state_get_sge_formal_prog_name(void) {
-   prog_state_t *prog_state = NULL;
+   prog_state_t *prog_state = nullptr;
 
    pthread_once(&prog_once, prog_once_init);
 
@@ -157,7 +157,7 @@ const char *uti_state_get_sge_formal_prog_name(void) {
 }
 
 const char *uti_state_get_qualified_hostname(void) {
-   prog_state_t *prog_state = NULL;
+   prog_state_t *prog_state = nullptr;
 
    pthread_once(&prog_once, prog_once_init);
 
@@ -167,7 +167,7 @@ const char *uti_state_get_qualified_hostname(void) {
 }
 
 const char *uti_state_get_unqualified_hostname(void) {
-   prog_state_t *prog_state = NULL;
+   prog_state_t *prog_state = nullptr;
 
    pthread_once(&prog_once, prog_once_init);
 
@@ -177,7 +177,7 @@ const char *uti_state_get_unqualified_hostname(void) {
 }
 
 u_long32 uti_state_get_mewho(void) {
-   prog_state_t *prog_state = NULL;
+   prog_state_t *prog_state = nullptr;
 
    pthread_once(&prog_once, prog_once_init);
 
@@ -187,7 +187,7 @@ u_long32 uti_state_get_mewho(void) {
 }
 
 u_long32 uti_state_get_uid(void) {
-   prog_state_t *prog_state = NULL;
+   prog_state_t *prog_state = nullptr;
 
    pthread_once(&prog_once, prog_once_init);
 
@@ -197,7 +197,7 @@ u_long32 uti_state_get_uid(void) {
 }
 
 u_long32 uti_state_get_gid(void) {
-   prog_state_t *prog_state = NULL;
+   prog_state_t *prog_state = nullptr;
 
    pthread_once(&prog_once, prog_once_init);
 
@@ -207,7 +207,7 @@ u_long32 uti_state_get_gid(void) {
 }
 
 int uti_state_get_daemonized(void) {
-   prog_state_t *prog_state = NULL;
+   prog_state_t *prog_state = nullptr;
 
    pthread_once(&prog_once, prog_once_init);
 
@@ -217,7 +217,7 @@ int uti_state_get_daemonized(void) {
 }
 
 const char *uti_state_get_user_name(void) {
-   prog_state_t *prog_state = NULL;
+   prog_state_t *prog_state = nullptr;
 
    pthread_once(&prog_once, prog_once_init);
 
@@ -227,7 +227,7 @@ const char *uti_state_get_user_name(void) {
 }
 
 const char *uti_state_get_default_cell(void) {
-   prog_state_t *prog_state = NULL;
+   prog_state_t *prog_state = nullptr;
 
    pthread_once(&prog_once, prog_once_init);
 
@@ -244,7 +244,7 @@ const char *uti_state_get_default_cell(void) {
 *     Provides access to either global variable or per thread global variable.
 ******************************************************************************/
 static void uti_state_set_sge_formal_prog_name(const char *s) {
-   prog_state_t *prog_state = NULL;
+   prog_state_t *prog_state = nullptr;
 
    prog_state = prog_state_getspecific(prog_state_key);
 
@@ -254,7 +254,7 @@ static void uti_state_set_sge_formal_prog_name(const char *s) {
 }
 
 void uti_state_set_qualified_hostname(const char *s) {
-   prog_state_t *prog_state = NULL;
+   prog_state_t *prog_state = nullptr;
 
    pthread_once(&prog_once, prog_once_init);
 
@@ -266,7 +266,7 @@ void uti_state_set_qualified_hostname(const char *s) {
 }
 
 void uti_state_set_unqualified_hostname(const char *s) {
-   prog_state_t *prog_state = NULL;
+   prog_state_t *prog_state = nullptr;
 
    pthread_once(&prog_once, prog_once_init);
 
@@ -278,7 +278,7 @@ void uti_state_set_unqualified_hostname(const char *s) {
 }
 
 void uti_state_set_daemonized(int daemonized) {
-   prog_state_t *prog_state = NULL;
+   prog_state_t *prog_state = nullptr;
 
    pthread_once(&prog_once, prog_once_init);
 
@@ -290,7 +290,7 @@ void uti_state_set_daemonized(int daemonized) {
 }
 
 void uti_state_set_mewho(u_long32 who) {
-   prog_state_t *prog_state = NULL;
+   prog_state_t *prog_state = nullptr;
 
    pthread_once(&prog_once, prog_once_init);
 
@@ -302,7 +302,7 @@ void uti_state_set_mewho(u_long32 who) {
 }
 
 static void uti_state_set_uid(u_long32 uid) {
-   prog_state_t *prog_state = NULL;
+   prog_state_t *prog_state = nullptr;
 
    prog_state = prog_state_getspecific(prog_state_key);
 
@@ -312,7 +312,7 @@ static void uti_state_set_uid(u_long32 uid) {
 }
 
 static void uti_state_set_gid(u_long32 gid) {
-   prog_state_t *prog_state = NULL;
+   prog_state_t *prog_state = nullptr;
 
    prog_state = prog_state_getspecific(prog_state_key);
 
@@ -322,7 +322,7 @@ static void uti_state_set_gid(u_long32 gid) {
 }
 
 static void uti_state_set_user_name(const char *s) {
-   prog_state_t *prog_state = NULL;
+   prog_state_t *prog_state = nullptr;
 
    prog_state = prog_state_getspecific(prog_state_key);
 
@@ -332,7 +332,7 @@ static void uti_state_set_user_name(const char *s) {
 }
 
 static void uti_state_set_default_cell(const char *s) {
-   prog_state_t *prog_state = NULL;
+   prog_state_t *prog_state = nullptr;
 
    prog_state = prog_state_getspecific(prog_state_key);
 
@@ -359,7 +359,7 @@ static void uti_state_set_default_cell(const char *s) {
 *     uti/unistd/sge_exit() 
 ******************************************************************************/
 sge_exit_func_t uti_state_get_exit_func(void) {
-   prog_state_t *prog_state = NULL;
+   prog_state_t *prog_state = nullptr;
 
    pthread_once(&prog_once, prog_once_init);
 
@@ -385,7 +385,7 @@ sge_exit_func_t uti_state_get_exit_func(void) {
 *     uti/unistd/sge_exit() 
 ******************************************************************************/
 void uti_state_set_exit_func(sge_exit_func_t f) {
-   prog_state_t *prog_state = NULL;
+   prog_state_t *prog_state = nullptr;
 
    pthread_once(&prog_once, prog_once_init);
 
@@ -413,9 +413,9 @@ void uti_state_set_exit_func(sge_exit_func_t f) {
 *     MT-NOTE: sge_getme() is MT safe
 ******************************************************************************/
 void sge_getme(u_long32 program_number) {
-   char *s = NULL;
+   char *s = nullptr;
    stringT tmp_str;
-   struct hostent *hent = NULL;
+   struct hostent *hent = nullptr;
 
    DENTER(TOP_LAYER);
 
@@ -427,7 +427,7 @@ void sge_getme(u_long32 program_number) {
 
    /* Fetch hostnames */
    SGE_ASSERT((gethostname(tmp_str, sizeof(tmp_str)) == 0));
-   SGE_ASSERT(((hent = sge_gethostbyname(tmp_str, NULL)) != NULL));
+   SGE_ASSERT(((hent = sge_gethostbyname(tmp_str, nullptr)) != nullptr));
 
    uti_state_set_qualified_hostname(hent->h_name);
    s = sge_dirname(hent->h_name, '.');
@@ -437,9 +437,9 @@ void sge_getme(u_long32 program_number) {
    /* Bad resolving in some networks leads to short qualified host names */
    if (!strcmp(uti_state_get_qualified_hostname(), uti_state_get_unqualified_hostname())) {
       char tmp_addr[8];
-      struct hostent *hent2 = NULL;
+      struct hostent *hent2 = nullptr;
       memcpy(tmp_addr, hent->h_addr, hent->h_length);
-      SGE_ASSERT(((hent2 = sge_gethostbyaddr((const struct in_addr *) tmp_addr, NULL)) != NULL));
+      SGE_ASSERT(((hent2 = sge_gethostbyaddr((const struct in_addr *) tmp_addr, nullptr)) != nullptr));
 
       uti_state_set_qualified_hostname(hent2->h_name);
       s = sge_dirname(hent2->h_name, '.');
@@ -455,7 +455,7 @@ void sge_getme(u_long32 program_number) {
    uti_state_set_gid(getgid());
 
    {
-      struct passwd *paswd = NULL;
+      struct passwd *paswd = nullptr;
       char *buffer;
       int size;
       struct passwd pwentry;
@@ -595,10 +595,10 @@ static void prog_state_destroy(void *theState) {
 *
 *******************************************************************************/
 static prog_state_t *prog_state_getspecific(pthread_key_t aKey) {
-   prog_state_t *prog_state = NULL;
+   prog_state_t *prog_state = nullptr;
    int res = EINVAL;
 
-   if ((prog_state = (prog_state_t *)pthread_getspecific(aKey)) != NULL) { return prog_state; }
+   if ((prog_state = (prog_state_t *)pthread_getspecific(aKey)) != nullptr) { return prog_state; }
 
    prog_state = (prog_state_t *) sge_malloc(sizeof(prog_state_t));
 

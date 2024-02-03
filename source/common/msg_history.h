@@ -59,7 +59,7 @@
 #define MSG_HISTORY_SHOWJOB_QSUBTIME         "qsub_time"
 #define MSG_HISTORY_SHOWJOB_STARTTIME        "start_time"
 #define MSG_HISTORY_SHOWJOB_ENDTIME          "end_time"
-#define MSG_HISTORY_SHOWJOB_NULL             "(NULL)"
+#define MSG_HISTORY_SHOWJOB_NULL             "(nullptr)"
 #define MSG_HISTORY_SHOWJOB_GRANTEDPE        "granted_pe"
 #define MSG_HISTORY_SHOWJOB_SLOTS            "slots"
 #define MSG_HISTORY_SHOWJOB_FAILED           "failed"

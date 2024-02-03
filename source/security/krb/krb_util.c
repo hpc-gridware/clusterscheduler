@@ -104,9 +104,9 @@ lList *joblist
    for_each_ep(job, joblist) {
 
       krb5_error_code rc;
-      krb5_creds ** tgt_creds = NULL;
+      krb5_creds ** tgt_creds = nullptr;
       krb5_data tgtbuf;
-      const char *tgtstr = NULL;
+      const char *tgtstr = nullptr;
 
       tgtbuf.length = 0;
 
@@ -114,7 +114,7 @@ lList *joblist
 
       if ((tgtstr = lGetString(job, JB_tgt))) {
 
-         tgtbuf.data = krb_str2bin(tgtstr, NULL, &tgtbuf.length);
+         tgtbuf.data = krb_str2bin(tgtstr, nullptr, &tgtbuf.length);
 
          if (tgtbuf.length) {
 
@@ -183,7 +183,7 @@ lList *joblist
 		     } else {
 
 			lSetString(job, JB_tgt,
-			      krb_bin2str(outbuf.data, outbuf.length, NULL));
+			      krb_bin2str(outbuf.data, outbuf.length, nullptr));
                      }
 
 		     /* if we are called by the execd, also store the
@@ -192,7 +192,7 @@ lList *joblist
                      if (!strcmp(prognames[EXECD], gsd->progname)) {
                          
                         int retries = MAX_NIS_RETRIES;
-			struct passwd *pw = NULL;
+			struct passwd *pw = nullptr;
 
 			while (retries-- && !pw)
 			   pw = getpwnam(lGetString(job, JB_owner));
@@ -221,7 +221,7 @@ lList *joblist
 		  }
 
       if (!mconf_get_simulate_jobs()) {
-         job_write_spool_file(job, 0, NULL, SPOOL_DEFAULT);;
+         job_write_spool_file(job, 0, nullptr, SPOOL_DEFAULT);;
       }
 
 		  if (new_creds[0])

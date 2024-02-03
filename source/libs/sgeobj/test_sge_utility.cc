@@ -39,7 +39,7 @@
 
 int main(int argc, char *argv[]) 
 {
-   lList *answer_list = NULL;
+   lList *answer_list = nullptr;
 
    int i=0, ret=0;
 
@@ -51,7 +51,7 @@ int main(int argc, char *argv[])
       "NONE",
       "thisisawordwithmorethanfivehundredandtwelvecharactersitishardtowritesomethinglongbecauseidontknwowhatishouldwritesoidecidedtowritedownashortstoryaboutanythingwhichisnotrealonceuponatimetherewasalittlesoftwareprogrammerhewasinsanebecausehehastofindwordswhicharelongerthanfivehunderdandtwelvecharactersandhefoundithardtowritesuchlongwordsbuthediditandhedecidedtowritedownashortstoryaboutalittleprogrammerasoftwareprogrammerwhohastowritetestsfortestingfunctionwhichteststehlengthofstringsandaftmanymanymanycharactershesolvedtheproblem",
       "bla%sfoo",
-      NULL
+      nullptr
    };
 
    static const char* allowed[] = {
@@ -59,10 +59,10 @@ int main(int argc, char *argv[])
       "forbiddencharacteratthebeginning",
       "EMPLATE",
       "boutanythingwhichisnotrealonceuponatimetherewasalittlesoftwareprogrammerhewasinsanebecausehehastofindwordswhicharelongerthanfivehunderdandtwelvecharactersandhefoundithardtowritesuchlongwordsbuthediditandhedecidedtowritedownashortstoryaboutalittleprogrammerasoftwareprogrammerwhohastowritetestsfortestingfunctionwhichteststehlengthofstringsandaftmanymanymanycharactershesolvedtheproblem",
-      NULL
+      nullptr
    };
 
-   for (i=0; denied[i] != NULL; i++) {
+   for (i=0; denied[i] != nullptr; i++) {
       if (verify_str_key(
             &answer_list, denied[i], MAX_VERIFY_STRING, "test", KEY_TABLE) == STATUS_OK) {
          printf("%s should be forbidden\n",  denied[i]);
@@ -70,7 +70,7 @@ int main(int argc, char *argv[])
       }
    }
 
-   for (i=0; allowed[i] != NULL; i++) {
+   for (i=0; allowed[i] != nullptr; i++) {
       if (verify_str_key(
             &answer_list, allowed[i], MAX_VERIFY_STRING, "test", KEY_TABLE) != STATUS_OK) {
          printf("%s should be allowed\n",  allowed[i]);

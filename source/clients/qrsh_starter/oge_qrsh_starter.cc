@@ -81,8 +81,8 @@ static pid_t child_pid = 0;
 *******************************************************************************/
 static void qrsh_error(const char *fmt, ...)
 {
-   char *tmpdir = NULL;
-   char *taskid = NULL;
+   char *tmpdir = nullptr;
+   char *taskid = nullptr;
    int file;
    char fileName[SGE_PATH_MAX];
 
@@ -91,14 +91,14 @@ static void qrsh_error(const char *fmt, ...)
 
    va_start(ap, fmt);
 
-   if (fmt == NULL || *fmt == '\0') {
+   if (fmt == nullptr || *fmt == '\0') {
       return;
    }
 
    vsnprintf(message, MAX_STRING_SIZE, fmt, ap);
    va_end(ap);
 
-   if ((tmpdir = search_conf_val("qrsh_tmpdir")) == NULL) {
+   if ((tmpdir = search_conf_val("qrsh_tmpdir")) == nullptr) {
       fprintf(stderr, "%s\n", message);
       fprintf(stderr, MSG_CONF_NOCONFVALUE_S, "qrsh_tmpdir");
       fprintf(stderr, "\n");
@@ -107,7 +107,7 @@ static void qrsh_error(const char *fmt, ...)
 
    taskid = search_conf_val("qrsh_task_id");
 
-   if (taskid != NULL) {
+   if (taskid != nullptr) {
       snprintf(fileName, SGE_PATH_MAX, "%s/qrsh_error.%s", tmpdir, taskid);
    } else {
       snprintf(fileName, SGE_PATH_MAX, "%s/qrsh_error", tmpdir);
@@ -147,7 +147,7 @@ static void qrsh_error(const char *fmt, ...)
 *     directory.
 *     Special handling for variable QRSH_COMMAND: is the command to be executed
 *     by qrsh_starter. The value of this variable will be returned as command,
-*     or NULL, if an error occurs.
+*     or nullptr, if an error occurs.
 *     Special handling for variable QRSH_WRAPPER: this is a wrapper to be called
 *     instead of a shell to execute the command.
 *     If this variable is contained in the environment, it will be returned in
@@ -164,7 +164,7 @@ static void qrsh_error(const char *fmt, ...)
 *
 *  RESULT
 *     command, if all actions could be performed
-*     NULL,    if an error occured; possible errors are:
+*     nullptr,    if an error occured; possible errors are:
 *                 - the environment file cannot be opened
 *                 - a PWD entry is found, but changing to the named directory fails
 *                 - necessary memory cannot be allocated
@@ -175,17 +175,17 @@ static void qrsh_error(const char *fmt, ...)
 static char *setEnvironment(const char *jobdir, char **wrapper)
 {
    char envFileName[SGE_PATH_MAX];
-   FILE *envFile = NULL;
-   char *line = NULL;
-   char *command   = NULL;
+   FILE *envFile = nullptr;
+   char *line = nullptr;
+   char *command   = nullptr;
    SGE_STRUCT_STAT statbuf;
    int size;
    bool set_display = true;
 
-   *wrapper = NULL;
+   *wrapper = nullptr;
 
    /* don't set DISPLAY, if it is already set (e.g. by ssh) */
-   if (getenv("DISPLAY") != NULL) {
+   if (getenv("DISPLAY") != nullptr) {
       set_display = false;
    }
 
@@ -196,25 +196,25 @@ static char *setEnvironment(const char *jobdir, char **wrapper)
     */
    if (SGE_STAT(envFileName, &statbuf) != 0) {
       qrsh_error(MSG_QRSH_STARTER_CANNOTOPENFILE_SS, envFileName, strerror(errno));
-      return NULL;
+      return nullptr;
    } 
    
    size = statbuf.st_size;
    line = sge_malloc(size + 1);
-   if (line == NULL) {
+   if (line == nullptr) {
       qrsh_error(MSG_QRSH_STARTER_MALLOCFAILED_S, strerror(errno));
-      return NULL;
+      return nullptr;
    }
 
    /* open sge environment file */
-   if ((envFile = fopen(envFileName, "r")) == NULL) {
+   if ((envFile = fopen(envFileName, "r")) == nullptr) {
       qrsh_error(MSG_QRSH_STARTER_CANNOTOPENFILE_SS, envFileName, strerror(errno));
       sge_free(&line);
-      return NULL;
+      return nullptr;
    }
 
    /* set all environment variables, change to directory named by PWD */
-   while (fgets(line, size, envFile) != NULL) {
+   while (fgets(line, size, envFile) != nullptr) {
       /* clean trailing garbage (\n, \r, EOF ...) */
       char *c = &line[strlen(line)];
       while (iscntrl(*(--c))) {
@@ -227,22 +227,22 @@ static char *setEnvironment(const char *jobdir, char **wrapper)
       }
       
       if (strncmp(line, "QRSH_COMMAND=", 13) == 0) {
-         if ((command = sge_malloc(strlen(line) - 13 + 1)) == NULL) {
+         if ((command = sge_malloc(strlen(line) - 13 + 1)) == nullptr) {
             qrsh_error(MSG_QRSH_STARTER_MALLOCFAILED_S, strerror(errno));
             sge_free(&line);
             FCLOSE(envFile);
-            return NULL;
+            return nullptr;
          }
          strcpy(command, line + 13);
       } else if (strncmp(line, "QRSH_WRAPPER=", 13) == 0) {
          if (*(line + 13) == 0) {
             fprintf(stderr, "%s\n", MSG_QRSH_STARTER_EMPTY_WRAPPER);
          } else {
-            if ((*wrapper = sge_malloc(strlen(line) - 13 + 1)) == NULL) {
+            if ((*wrapper = sge_malloc(strlen(line) - 13 + 1)) == nullptr) {
                qrsh_error(MSG_QRSH_STARTER_MALLOCFAILED_S, strerror(errno));
                sge_free(&line);
                FCLOSE(envFile); 
-               return NULL;
+               return nullptr;
             }
             strcpy(*wrapper, line + 13);
          }
@@ -250,7 +250,7 @@ static char *setEnvironment(const char *jobdir, char **wrapper)
          const char *new_line = sge_replace_substring(line, "\\n", "\n");
          int put_ret;
          /* set variable */
-         if (new_line != NULL) {
+         if (new_line != nullptr) {
             put_ret = sge_putenv(new_line);
             sge_free(&new_line);
          } else {
@@ -259,7 +259,7 @@ static char *setEnvironment(const char *jobdir, char **wrapper)
          if (put_ret == 0) {
             sge_free(&line);
             FCLOSE(envFile); 
-            return NULL;
+            return nullptr;
          }
       }
    }
@@ -272,9 +272,9 @@ static char *setEnvironment(const char *jobdir, char **wrapper)
     * and not overridden by QRSH_WRAPPER
     */
     
-   if (*wrapper == NULL) {
+   if (*wrapper == nullptr) {
       char *starter_method = get_conf_val("starter_method");
-      if (starter_method != NULL && strcasecmp(starter_method, "none") != 0) { 
+      if (starter_method != nullptr && strcasecmp(starter_method, "none") != 0) {
          char buffer[128];
          *wrapper = starter_method;
          snprintf(buffer, 128, "%s=%s", "SGE_STARTER_SHELL_PATH", ""); sge_putenv(buffer);
@@ -286,7 +286,7 @@ static char *setEnvironment(const char *jobdir, char **wrapper)
    return command;
 FCLOSE_ERROR:
    qrsh_error(MSG_FILE_ERRORCLOSEINGXY_SS, envFileName, strerror(errno));
-   return NULL;
+   return nullptr;
 }
 
 /****** Interactive/qrsh/readConfig() *****************************************
@@ -343,12 +343,12 @@ static int readConfig(const char *jobdir)
 *******************************************************************************/
 static int changeDirectory(void) 
 {
-   char *cwd = NULL;
+   char *cwd = nullptr;
 
    /* get jobs target directory */
    cwd = get_conf_val("cwd");
 
-   if(cwd == NULL) {
+   if(cwd == nullptr) {
       qrsh_error(MSG_QRSH_STARTER_NOCWDINCONFIG);
       return 0;
    }
@@ -389,11 +389,11 @@ static int changeDirectory(void)
 */
 static int write_pid_file(pid_t pid) 
 {
-   char *pid_file_name = NULL;
+   char *pid_file_name = nullptr;
    int pid_file;
    char pid_str[20];
 
-   if((pid_file_name = search_conf_val("qrsh_pid_file")) == NULL) {
+   if((pid_file_name = search_conf_val("qrsh_pid_file")) == nullptr) {
       qrsh_error(MSG_CONF_NOCONFVALUE_S, "qrsh_pid_file");
       return 0;
    }
@@ -490,7 +490,7 @@ static int split_command(char *command, char ***cmdargs) {
    argc = 0;
    args = (char **)sge_malloc(counter * sizeof(char *));
    
-   if(args == NULL) {
+   if(args == nullptr) {
       return 0;
    }
 
@@ -537,7 +537,7 @@ static int split_command(char *command, char ***cmdargs) {
 *     char **argv - argument vector
 *
 *  RESULT
-*     static char* - the resulting commandline or NULL, if an error occured.
+*     static char* - the resulting commandline or nullptr, if an error occured.
 *
 *  SEE ALSO
 *     Interactive/qrsh/split_command()
@@ -558,7 +558,7 @@ static char *join_command(int argc, char **argv) {
 
    buffer = sge_malloc(length * sizeof(char));
 
-   if(buffer == NULL) {
+   if(buffer == nullptr) {
       return 0;
    }
 
@@ -650,16 +650,16 @@ static int startJob(char *command, char *wrapper, int noshell)
       return(status);
    } else {
       /* child */
-      char *buffer = NULL;
+      char *buffer = nullptr;
       int size;
       struct passwd pw_struct;
-      char *shell    = NULL;
-      char *userName = NULL;
+      char *shell    = nullptr;
+      char *userName = nullptr;
       int    argc = 0;
-      const char **args = NULL;
-      char *cmd = NULL;
+      const char **args = nullptr;
+      char *cmd = nullptr;
       int cmdargc;
-      char **cmdargs = NULL;
+      char **cmdargs = nullptr;
       int i;
 
       if(!write_pid_file(getpid())) {
@@ -674,9 +674,9 @@ static int startJob(char *command, char *wrapper, int noshell)
       }
 
       if(!noshell) {
-         struct passwd *pw = NULL;
+         struct passwd *pw = nullptr;
 
-         if((userName = search_conf_val("job_owner")) == NULL) {
+         if((userName = search_conf_val("job_owner")) == nullptr) {
             qrsh_error(MSG_QRSH_STARTER_CANNOTGETLOGIN_S, strerror(errno));
             exit(EXIT_FAILURE);
          }
@@ -684,25 +684,25 @@ static int startJob(char *command, char *wrapper, int noshell)
          size = get_pw_buffer_size();
          buffer = sge_malloc(size);
 
-         if ((pw = sge_getpwnam_r(userName, &pw_struct, buffer, size)) == NULL) {
+         if ((pw = sge_getpwnam_r(userName, &pw_struct, buffer, size)) == nullptr) {
             qrsh_error(MSG_QRSH_STARTER_CANNOTGETUSERINFO_S, strerror(errno));
             exit(EXIT_FAILURE);
          }
          
          shell = pw->pw_shell;
          
-         if(shell == NULL) { 
+         if(shell == nullptr) {
             qrsh_error(MSG_QRSH_STARTER_CANNOTDETERMSHELL_S, "/bin/sh");
             shell = "/bin/sh";
          } 
       }
      
-      if((args = (const char **)sge_malloc((cmdargc + 3) * sizeof(char *))) == NULL) {
+      if((args = (const char **)sge_malloc((cmdargc + 3) * sizeof(char *))) == nullptr) {
          qrsh_error(MSG_QRSH_STARTER_MALLOCFAILED_S, strerror(errno));
          exit(EXIT_FAILURE);
       }         
     
-      if(wrapper == NULL) {
+      if(wrapper == nullptr) {
          if(noshell) {
             cmd = cmdargs[0];
             for(i = 0; i < cmdargc; i++) {
@@ -722,7 +722,7 @@ static int startJob(char *command, char *wrapper, int noshell)
          }
       }
 
-      args[argc++] = NULL;
+      args[argc++] = nullptr;
 
 #if 0
 {
@@ -731,7 +731,7 @@ static int startJob(char *command, char *wrapper, int noshell)
    
    fflush(stdout) ; fflush(stderr);
    printf("qrsh_starter: executing %s\n", cmd);
-   for(i = 1; args[i] != NULL; i++) {
+   for(i = 1; args[i] != nullptr; i++) {
       printf("args[%d] = %s\n", i, args[i]);
    }
    printf("\n");
@@ -782,8 +782,8 @@ static int writeExitCode(int myExitCode, int programExitCode)
 {   
    int exitCode;
    char exitCode_str[20];
-   char *tmpdir = NULL;
-   char *taskid = NULL;
+   char *tmpdir = nullptr;
+   char *taskid = nullptr;
    int  file;
    char fileName[SGE_PATH_MAX];
 
@@ -793,14 +793,14 @@ static int writeExitCode(int myExitCode, int programExitCode)
       exitCode = programExitCode;
    }
 
-   if((tmpdir = search_conf_val("qrsh_tmpdir")) == NULL) {
+   if((tmpdir = search_conf_val("qrsh_tmpdir")) == nullptr) {
       qrsh_error(MSG_CONF_NOCONFVALUE_S, "qrsh_tmpdir");
       return EXIT_FAILURE;
    }
   
    taskid = get_conf_val("pe_task_id");
    
-   if(taskid != NULL) {
+   if(taskid != nullptr) {
       snprintf(fileName, SGE_PATH_MAX, "%s/qrsh_exit_code.%s", tmpdir, taskid);
    } else {
       snprintf(fileName, SGE_PATH_MAX, "%s/qrsh_exit_code", tmpdir);
@@ -870,8 +870,8 @@ static int writeExitCode(int myExitCode, int programExitCode)
 int main(int argc, char *argv[])
 {
    int   exitCode = 0;
-   char *command  = NULL;
-   char *wrapper = NULL;
+   char *command  = nullptr;
+   char *wrapper = nullptr;
    int  noshell  = 0;
 
    /* check for correct usage */
@@ -894,7 +894,7 @@ int main(int argc, char *argv[])
 
    /* setup environment */
    command = setEnvironment(argv[1], &wrapper);
-   if(command == NULL) {
+   if(command == nullptr) {
       writeExitCode(EXIT_FAILURE, 0);
       exit(EXIT_FAILURE);
    }   

@@ -138,7 +138,7 @@ void *(*get_thrd_func(void))(void *anArg) {
 }
 
 void *get_thrd_func_arg(void) {
-   return NULL;
+   return nullptr;
 }
 
 /****** test_sge_lock_multiple/thread_function() *********************************
@@ -175,32 +175,32 @@ static void *thread_function(void *anArg) {
 
    has_finished("start", 0.0);
 
-   gettimeofday(&before, NULL);
+   gettimeofday(&before, nullptr);
    for (i = 0; i < max; i++) {
       result = test + 1;
       test = result + 1;
    }
-   gettimeofday(&after, NULL);
+   gettimeofday(&after, nullptr);
 
    time_new = after.tv_usec - before.tv_usec;
    time_new = after.tv_sec - before.tv_sec + (time_new / 1000000);
 
    has_finished("variable access", time_new);
 
-   gettimeofday(&before, NULL);
+   gettimeofday(&before, nullptr);
    for (i = 0; i < max; i++) {
       GET_SPECIFIC(state_t, state, state_init, state_key);
       state->value2 = state->value + 1;
       state->value = state->value2 + 1;
    }
-   gettimeofday(&after, NULL);
+   gettimeofday(&after, nullptr);
 
    time_new = after.tv_usec - before.tv_usec;
    time_new = after.tv_sec - before.tv_sec + (time_new / 1000000);
 
    has_finished("thread local   ", time_new);
 
-   gettimeofday(&before, NULL);
+   gettimeofday(&before, nullptr);
    for (i = 0; i < max; i++) {
       pthread_once(&log_once, log_once_init);
       {
@@ -209,49 +209,49 @@ static void *thread_function(void *anArg) {
          state->value = state->value2 + 1;
       }
    }
-   gettimeofday(&after, NULL);
+   gettimeofday(&after, nullptr);
 
    time_new = after.tv_usec - before.tv_usec;
    time_new = after.tv_sec - before.tv_sec + (time_new / 1000000);
 
    has_finished("thread local once ", time_new);
 
-   gettimeofday(&before, NULL);
+   gettimeofday(&before, nullptr);
    for (i = 0; i < max; i++) {
       sge_mutex_lock("mutex", __func__, __LINE__, &mutex);
       result = test + 1;
       test = result + 1;
       sge_mutex_unlock("mutex", __func__, __LINE__, &mutex);
    }
-   gettimeofday(&after, NULL);
+   gettimeofday(&after, nullptr);
 
    time_new = after.tv_usec - before.tv_usec;
    time_new = after.tv_sec - before.tv_sec + (time_new / 1000000);
 
    has_finished("mutex          ", time_new);
 
-   gettimeofday(&before, NULL);
+   gettimeofday(&before, nullptr);
    for (i = 0; i < max; i++) {
       SGE_LOCK(LOCK_GLOBAL, LOCK_READ);
       result = test + 1;
       test = result + 1;
       SGE_UNLOCK(LOCK_GLOBAL, LOCK_READ);
    }
-   gettimeofday(&after, NULL);
+   gettimeofday(&after, nullptr);
 
    time_new = after.tv_usec - before.tv_usec;
    time_new = after.tv_sec - before.tv_sec + (time_new / 1000000);
 
    has_finished("read lock      ", time_new);
 
-   gettimeofday(&before, NULL);
+   gettimeofday(&before, nullptr);
    for (i = 0; i < max; i++) {
       SGE_LOCK(LOCK_GLOBAL, LOCK_WRITE);
       result = test + 1;
       test = result + 1;
       SGE_UNLOCK(LOCK_GLOBAL, LOCK_WRITE);
    }
-   gettimeofday(&after, NULL);
+   gettimeofday(&after, nullptr);
 
    time_new = after.tv_usec - before.tv_usec;
    time_new = after.tv_sec - before.tv_sec + (time_new / 1000000);
@@ -259,7 +259,7 @@ static void *thread_function(void *anArg) {
    has_finished("write lock     ", time_new);
 
 
-   DRETURN((void *) NULL);
+   DRETURN((void *) nullptr);
 } /* thread_function */
 
 int validate(int thread_count) {

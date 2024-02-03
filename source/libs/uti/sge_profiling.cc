@@ -184,8 +184,8 @@ static void init_thread_info(void);
 
 static int get_prof_info_thread_id(pthread_t thread_num);
 
-static sge_prof_info_t **theInfo = NULL;
-static sge_thread_info_t *thrdInfo = NULL;
+static sge_prof_info_t **theInfo = nullptr;
+static sge_thread_info_t *thrdInfo = nullptr;
 
 static pthread_mutex_t thrdInfo_mutex = PTHREAD_MUTEX_INITIALIZER;
 static pthread_key_t thread_id_key;
@@ -274,11 +274,11 @@ void prof_mt_init(void) {
 *  INPUTS
 *     prof_level level - level to edit
 *     const char *name - new name for level
-*     dstring *error   - if != NULL, error messages will be put here
+*     dstring *error   - if != nullptr, error messages will be put here
 *
 *  RESULT
 *     bool - true on success, else false is returned and an error message 
-*            is returned in parameter error, if error != NULL
+*            is returned in parameter error, if error != nullptr
 *
 *  NOTES
 *     MT-NOTE: prof_set_level_name() is MT safe
@@ -294,7 +294,7 @@ bool prof_set_level_name(prof_level level, const char *name, dstring *error) {
    if (level >= SGE_PROF_ALL) {
       sge_dstring_sprintf_append(error, MSG_PROF_INVALIDLEVEL_SD, "prof_set_level_name", level);
       ret = false;
-   } else if (name == NULL) {
+   } else if (name == nullptr) {
       sge_dstring_sprintf_append(error, MSG_PROF_NULLLEVELNAME_S, "prof_set_level_name");
       ret = false;
    } else {
@@ -324,7 +324,7 @@ bool prof_set_level_name(prof_level level, const char *name, dstring *error) {
 *
 *  RESULT
 *     bool - true on success, else false is returned and an error message 
-*            is returned in parameter error, if error != NULL
+*            is returned in parameter error, if error != nullptr
 *
 *  SEE ALSO
 *     uti/profiling/prof_stop()
@@ -363,11 +363,11 @@ bool prof_is_active(prof_level level) {
 *     calling profiling_start_measurement or profiling_stop_measurement.
 *
 *  INPUTS
-*     dstring *error   - if != NULL, error messages will be put here
+*     dstring *error   - if != nullptr, error messages will be put here
 *
 *  RESULT
 *     bool - true on success, else false is returned and an error message 
-*            is returned in parameter error, if error != NULL
+*            is returned in parameter error, if error != nullptr
 *
 *  SEE ALSO
 *     uti/profiling/prof_stop()
@@ -455,11 +455,11 @@ bool prof_start(prof_level level, dstring *error) {
 *     Profiling can be re-enabled by calling profiling_start.
 *
 *  INPUTS
-*     dstring *error   - if != NULL, error messages will be put here
+*     dstring *error   - if != nullptr, error messages will be put here
 *
 *  RESULT
 *     bool - true on success, else false is returned and an error message 
-*            is returned in parameter error, if error != NULL
+*            is returned in parameter error, if error != nullptr
 *
 *  SEE ALSO
 *     uti/profiling/prof_start()
@@ -518,11 +518,11 @@ bool prof_stop(prof_level level, dstring *error) {
 *
 *  INPUTS
 *     prof_level level - level to process
-*     dstring *error   - if != NULL, error messages will be put here
+*     dstring *error   - if != nullptr, error messages will be put here
 *
 *  RESULT
 *     bool - true on success, else false is returned and an error message 
-*            is returned in parameter error, if error != NULL
+*            is returned in parameter error, if error != nullptr
 *
 *  SEE ALSO
 *     uti/profiling/prof_stop_measurement()
@@ -588,11 +588,11 @@ bool prof_start_measurement(prof_level level, dstring *error) {
 *
 *  INPUTS
 *     prof_level level - level to process
-*     dstring *error   - if != NULL, error messages will be put here
+*     dstring *error   - if != nullptr, error messages will be put here
 *
 *  RESULT
 *     bool - true on success, else false is returned and an error message 
-*            is returned in parameter error, if error != NULL
+*            is returned in parameter error, if error != nullptr
 *
 *  SEE ALSO
 *     uti/profiling/prof_start_measurement()
@@ -674,11 +674,11 @@ bool prof_stop_measurement(prof_level level, dstring *error) {
 *     Reset usage and timing information to 0.
 *
 *  INPUTS
-*     dstring *error   - if != NULL, error messages will be put here
+*     dstring *error   - if != nullptr, error messages will be put here
 *
 *  RESULT
 *     bool - true on success, else false is returned and an error message 
-*            is returned in parameter error, if error != NULL
+*            is returned in parameter error, if error != nullptr
 *
 *  NOTES
 *     MT-NOTE: prof_reset() is MT safe
@@ -783,12 +783,12 @@ static void prof_reset_thread(int thread_num, prof_level level) {
 *  INPUTS
 *     prof_level level - level to process
 *     bool with_sub    - include usage of subordinated measurements?
-*     dstring *error   - if != NULL, error messages will be put here
+*     dstring *error   - if != nullptr, error messages will be put here
 *
 *  RESULT
 *     double - the wallclock time of the last measurement
 *              on error, 0 is returned and an error message is written 
-*              to the buffer given in parameter error, if error != NULL
+*              to the buffer given in parameter error, if error != nullptr
 *
 *  RESULT
 *     double - the wallclock time
@@ -839,12 +839,12 @@ double prof_get_measurement_wallclock(prof_level level, bool with_sub, dstring *
 *  INPUTS
 *     prof_level level - level to process
 *     bool with_sub    - include usage of subordinated measurements?
-*     dstring *error   - if != NULL, error messages will be put here
+*     dstring *error   - if != nullptr, error messages will be put here
 *
 *  RESULT
 *     double - the user cpu time of the last measurement
 *              on error, 0 is returned and an error message is written 
-*              to the buffer given in parameter error, if error != NULL
+*              to the buffer given in parameter error, if error != nullptr
 *
 *  NOTES
 *     MT-NOTE: prof_get_measurement_utime() is not MT safe
@@ -892,12 +892,12 @@ double prof_get_measurement_utime(prof_level level, bool with_sub, dstring *erro
 *  INPUTS
 *     prof_level level - level to process
 *     bool with_sub    - include usage of subordinated measurements?
-*     dstring *error   - if != NULL, error messages will be put here
+*     dstring *error   - if != nullptr, error messages will be put here
 *
 *  RESULT
 *     double - the system cpu time of the last measurement
 *              on error, 0 is returned and an error message is written 
-*              to the buffer given in parameter error, if error != NULL
+*              to the buffer given in parameter error, if error != nullptr
 *
 *  NOTES
 *     MT-NOTE: prof_get_measurement_stime() is MT safe
@@ -943,12 +943,12 @@ double prof_get_measurement_stime(prof_level level, bool with_sub, dstring *erro
 *     Resolution is clock ticks (_SC_CLK_TCK).
 *
 *  INPUTS
-*     dstring *error   - if != NULL, error messages will be put here
+*     dstring *error   - if != nullptr, error messages will be put here
 *
 *  RESULT
 *     double - the total wallclock time of the profiling run
 *              on error, 0 is returned and an error message is written 
-*              to the buffer given in parameter error, if error != NULL
+*              to the buffer given in parameter error, if error != nullptr
 *
 *  NOTES
 *     MT-NOTE: prof_get_total_wallclock() is MT safe
@@ -998,12 +998,12 @@ double prof_get_total_wallclock(prof_level level, dstring *error) {
 *  INPUTS
 *     prof_level level - level to process
 *     bool with_sub    - include usage of subordinated measurements?
-*     dstring *error   - if != NULL, error messages will be put here
+*     dstring *error   - if != nullptr, error messages will be put here
 *
 *  RESULT
 *     double - the total busy time of the profiling run
 *              on error, 0 is returned and an error message is written 
-*              to the buffer given in parameter error, if error != NULL
+*              to the buffer given in parameter error, if error != nullptr
 *
 *  NOTES
 *     MT-NOTE: prof_get_total_busy() is MT safe
@@ -1066,12 +1066,12 @@ double prof_get_total_busy(prof_level level, bool with_sub, dstring *error) {
 *  INPUTS
 *     prof_level level - level to process
 *     bool with_sub    - include usage of subordinated measurements?
-*     dstring *error   - if != NULL, error messages will be put here
+*     dstring *error   - if != nullptr, error messages will be put here
 *
 *  RESULT
 *     double - the total user cpu time of the profiling run
 *              on error, 0 is returned and an error message is written 
-*              to the buffer given in parameter error, if error != NULL
+*              to the buffer given in parameter error, if error != nullptr
 *
 *  NOTES
 *     MT-NOTE: prof_get_total_utime() is MT safe
@@ -1134,12 +1134,12 @@ double prof_get_total_utime(prof_level level, bool with_sub, dstring *error) {
 *  INPUTS
 *     prof_level level - level to process
 *     bool with_sub    - include usage of subordinated measurements?
-*     dstring *error   - if != NULL, error messages will be put here
+*     dstring *error   - if != nullptr, error messages will be put here
 *
 *  RESULT
 *     double - the total system cpu time of the profiling run
 *              on error, 0 is returned and an error message is written 
-*              to the buffer given in parameter error, if error != NULL
+*              to the buffer given in parameter error, if error != nullptr
 *
 *  NOTES
 *     MT-NOTE: prof_get_total_stime() is MT safe
@@ -1208,13 +1208,13 @@ double prof_get_total_stime(prof_level level, bool with_sub, dstring *error) {
 *  INPUTS
 *     prof_level level - level to process
 *     bool with_sub    - include usage of subordinated measurements?
-*     dstring *error   - if != NULL, error messages will be put here
+*     dstring *error   - if != nullptr, error messages will be put here
 *
 *  RESULT
 *     const char* - pointer to result string. It is valid until the next
 *                   call of prof_get_info_string()
 *                   on error, 0 is returned and an error message is written 
-*                   to the buffer given in parameter error, if error != NULL
+*                   to the buffer given in parameter error, if error != nullptr
 *
 *  EXAMPLE
 *     The result can look like the following:
@@ -1232,7 +1232,7 @@ _prof_get_info_string(prof_level level, dstring *info_string, bool with_sub, dst
    pthread_t thread_id = pthread_self();
    int thread_num;
    dstring level_string = DSTRING_INIT;
-   const char *ret = NULL;
+   const char *ret = nullptr;
    double busy, utime, stime, utilization;
 
    thread_num = get_prof_info_thread_id(thread_id);
@@ -1256,7 +1256,7 @@ const char *
 prof_get_info_string(prof_level level, bool with_sub, dstring *error) {
    pthread_t thread_id;
    int thread_num;
-   const char *ret = NULL;
+   const char *ret = nullptr;
 
    if (level > SGE_PROF_ALL) {
       sge_dstring_sprintf_append(error, MSG_PROF_INVALIDLEVEL_SD, "prof_get_info_string", level);
@@ -1289,7 +1289,7 @@ prof_get_info_string(prof_level level, bool with_sub, dstring *error) {
          utilization = busy > 0 ? (utime + stime) / busy * 100 : 0;
 
          for (i = SGE_PROF_OTHER; i < SGE_PROF_ALL; i++) {
-            if (theInfo[thread_num][i].name != NULL && theInfo[thread_num][i].ever_started == true) {
+            if (theInfo[thread_num][i].name != nullptr && theInfo[thread_num][i].ever_started == true) {
                _prof_get_info_string((prof_level)i, &theInfo[thread_num][SGE_PROF_ALL].info_string, with_sub, error);
             }
          }
@@ -1307,7 +1307,7 @@ prof_get_info_string(prof_level level, bool with_sub, dstring *error) {
          /* clear previous contents */
          sge_dstring_clear(&(theInfo[thread_num][level].info_string));
 
-         if (theInfo[thread_num][level].name != NULL) {
+         if (theInfo[thread_num][level].name != nullptr) {
             ret = _prof_get_info_string(level, &theInfo[thread_num][level].info_string, with_sub, error);
          }
       }
@@ -1330,17 +1330,17 @@ bool prof_output_info(prof_level level, bool with_sub, const char *info) {
       thread_num = get_prof_info_thread_id(thread_id);
 
       if ((thread_num >= 0) && (thread_num < MAX_THREAD_NUM) && prof_is_active(level)) {
-         const char *info_message = NULL;
-         const char *message = NULL;
-         struct saved_vars_s *context = NULL;
+         const char *info_message = nullptr;
+         const char *message = nullptr;
+         struct saved_vars_s *context = nullptr;
 
-         info_message = prof_get_info_string(level, with_sub, NULL);
+         info_message = prof_get_info_string(level, with_sub, nullptr);
          PROFILING((SGE_EVENT, "PROF(%d): %s%s", (int) thread_num, info, ""));
-         for (message = sge_strtok_r(info_message, "\n", &context); message != NULL;
-              message = sge_strtok_r(NULL, "\n", &context)) {
+         for (message = sge_strtok_r(info_message, "\n", &context); message != nullptr;
+              message = sge_strtok_r(nullptr, "\n", &context)) {
             PROFILING((SGE_EVENT, "PROF(%d): %s", (int) thread_num, message));
          }
-         prof_reset(level, NULL);
+         prof_reset(level, nullptr);
 
          sge_free_saved_vars(context);
          ret = true;
@@ -1457,7 +1457,7 @@ static void prof_info_level_init(prof_level i, int thread_num) {
          theInfo[thread_num][i].name = "all";
          break;
       default:
-         theInfo[thread_num][i].name = NULL; /* "custom"*/
+         theInfo[thread_num][i].name = nullptr; /* "custom"*/
          break;
    }
 
@@ -1488,7 +1488,7 @@ static void prof_info_level_init(prof_level i, int thread_num) {
    theInfo[thread_num][i].start_clock = 0;
    theInfo[thread_num][i].ever_started = false;
 
-   theInfo[thread_num][i].info_string.s = NULL;
+   theInfo[thread_num][i].info_string.s = nullptr;
    theInfo[thread_num][i].info_string.length = 0;
    theInfo[thread_num][i].info_string.size = 0;
    theInfo[thread_num][i].info_string.is_static = false;
@@ -1531,9 +1531,9 @@ static void init_array(pthread_t num) {
    pthread_mutex_lock(&thrdInfo_mutex);
 
    for (i = 0; i < MAX_THREAD_NUM; i++) {
-      if (theInfo[i] != NULL && theInfo[i][SGE_PROF_ALL].thread_id == num) {
+      if (theInfo[i] != nullptr && theInfo[i][SGE_PROF_ALL].thread_id == num) {
          break;
-      } else if (theInfo[i] == NULL) {
+      } else if (theInfo[i] == nullptr) {
          long storage = 0;
 
          theInfo[i] = (sge_prof_info_t *) sge_malloc((SGE_PROF_ALL + 1) * sizeof(sge_prof_info_t));
@@ -1568,7 +1568,7 @@ static void init_array_first(void) {
    if (sge_prof_array_initialized == 0) {
       pthread_mutex_lock(&thrdInfo_mutex);
 
-      if (pthread_key_create(&thread_id_key, NULL) == 0) {
+      if (pthread_key_create(&thread_id_key, nullptr) == 0) {
          theInfo = (sge_prof_info_t **) sge_malloc(MAX_THREAD_NUM * sizeof(sge_prof_info_t *));
          memset(theInfo, 0, MAX_THREAD_NUM * sizeof(sge_prof_info_t *));
          sge_prof_array_initialized = 1;
@@ -1608,7 +1608,7 @@ static void init_thread_info(void) {
 
    pthread_mutex_lock(&thrdInfo_mutex);
 
-   if (thrdInfo == NULL) {
+   if (thrdInfo == nullptr) {
       thrdInfo = (sge_thread_info_t *) sge_malloc(MAX_THREAD_NUM * sizeof(sge_thread_info_t));
       memset(thrdInfo, 0, MAX_THREAD_NUM * sizeof(sge_thread_info_t));
    }
@@ -1642,7 +1642,7 @@ static void init_thread_info(void) {
 sge_thread_info_t *get_thread_info(void) {
 
    if (!profiling_enabled) {
-      return NULL;
+      return nullptr;
    }
 
    init_thread_info();
@@ -1762,7 +1762,7 @@ void set_thread_prof_status_by_id(pthread_t thread_id, bool prof_status) {
 *
 *  RESULTS
 *     return 0 - ok
-*     return 1 - thread_name = NULL
+*     return 1 - thread_name = nullptr
 *
 *  EXAMPLE
 *
@@ -1775,7 +1775,7 @@ int set_thread_prof_status_by_name(const char *thread_name, bool prof_status) {
 
    if (!profiling_enabled) {
       return 0;
-   } else if (thread_name == NULL) {
+   } else if (thread_name == nullptr) {
       return 1;
    }
 
@@ -1784,7 +1784,7 @@ int set_thread_prof_status_by_name(const char *thread_name, bool prof_status) {
    pthread_mutex_lock(&thrdInfo_mutex);
 
    for (i = 0; i < MAX_THREAD_NUM; i++) {
-      if (thrdInfo[i].thrd_name != NULL) {
+      if (thrdInfo[i].thrd_name != nullptr) {
          if (strcmp(thrdInfo[i].thrd_name, thread_name) == 0) {
             thrdInfo[i].prof_is_active = prof_status;
          }
@@ -1827,12 +1827,12 @@ void sge_prof_cleanup(void) {
 
    pthread_key_delete(thread_id_key);
 
-   if (theInfo != NULL) {
+   if (theInfo != nullptr) {
       int c, i;
 
       for (c = 0; c < MAX_THREAD_NUM; c++) {
          for (i = 0; i <= SGE_PROF_ALL; i++) {
-            if (theInfo[c] != NULL) {
+            if (theInfo[c] != nullptr) {
                sge_dstring_free(&theInfo[c][i].info_string);
             }
          }
@@ -1916,7 +1916,7 @@ bool thread_prof_active_by_name(const char *thread_name) {
 
    bool ret = false;
 
-   if (profiling_enabled && (thread_name != NULL)) {
+   if (profiling_enabled && (thread_name != nullptr)) {
       int c;
 
       init_thread_info();
@@ -1924,7 +1924,7 @@ bool thread_prof_active_by_name(const char *thread_name) {
       pthread_mutex_lock(&thrdInfo_mutex);
 
       for (c = 0; c < MAX_THREAD_NUM; c++) {
-         if (thrdInfo[c].thrd_name != NULL && strstr(thrdInfo[c].thrd_name, thread_name)) {
+         if (thrdInfo[c].thrd_name != nullptr && strstr(thrdInfo[c].thrd_name, thread_name)) {
             ret = thrdInfo[c].prof_is_active;
             break;
          }
@@ -1969,9 +1969,9 @@ thread_start_stop_profiling(void) {
    }
 
    if (thread_prof_active_by_id(pthread_self())) {
-      prof_start(SGE_PROF_ALL, NULL);
+      prof_start(SGE_PROF_ALL, nullptr);
    } else {
-      prof_stop(SGE_PROF_ALL, NULL);
+      prof_stop(SGE_PROF_ALL, nullptr);
    }
 }
 

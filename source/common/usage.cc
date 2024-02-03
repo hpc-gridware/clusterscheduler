@@ -228,7 +228,7 @@ void sge_usage(u_long32 prog_number, FILE *fp) {
   const char *prog_name = prognames[prog_number];
   
 #define PRINTITD(o,d) print_option_syntax(fp,o,d)
-#define PRINTIT(o) print_option_syntax(fp,o,NULL)
+#define PRINTIT(o) print_option_syntax(fp,o,nullptr)
 #define MARK(n) mark_argument_syntax(n)
 
    DENTER(TOP_LAYER);

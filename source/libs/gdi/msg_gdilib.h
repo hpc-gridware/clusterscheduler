@@ -51,9 +51,9 @@
 #define MSG_ADMIN_REQUEST_DENIED_FOR_USER_S _MESSAGE(43024, _("admin request denied for user "SFN))
 
 #define MSG_GDI_NO_VALID_PROGRAMM_NAME                _MESSAGE(43047, _("got no valid program name"))
-#define MSG_GDI_RHOSTISNULLFORSENDREQUEST             _MESSAGE(43050, _("parameter rhost = NULL for sge_send_any_request()"))
+#define MSG_GDI_RHOSTISNULLFORSENDREQUEST             _MESSAGE(43050, _("parameter rhost = nullptr for sge_send_any_request()"))
 #define MSG_GDI_SENDMESSAGETOCOMMPROCFAILED_SSISS     _MESSAGE(43051, _("can't send "SFN"synchronous message to commproc ("SFN":%d) on host "SFQ": "SFN))
-#define MSG_GDI_RHOSTISNULLFORGETANYREQUEST           _MESSAGE(43052, _("parameter rhost = NULL for sge_get_any_request()"))
+#define MSG_GDI_RHOSTISNULLFORGETANYREQUEST           _MESSAGE(43052, _("parameter rhost = nullptr for sge_get_any_request()"))
 #define MSG_GDI_RECEIVEMESSAGEFROMCOMMPROCFAILED_SISS _MESSAGE(43053, _("can't receive message from commproc ("SFN":%d) on host "SFQ": "SFN))
 #define MSG_GDI_NOCOMMHANDLE                          _MESSAGE(43054, _("can't get communication handle"))
 
@@ -72,7 +72,7 @@
 #define MSG_GDI_REPORTFORMATERROR                        _MESSAGE(43081, _("format error while packing report"))
 #define MSG_GDI_REPORTUNKNOWERROR                        _MESSAGE(43082, _("unexpected error while packing report"))
 
-#define MSG_GDI_NULLPOINTERPASSED                        _MESSAGE(43099, _("NULL pointer passed to \"master_host\" or \"master_file\""))
+#define MSG_GDI_NULLPOINTERPASSED                        _MESSAGE(43099, _("nullptr pointer passed to \"master_host\" or \"master_file\""))
 #define MSG_GDI_OPENMASTERFILEFAILED_S                   _MESSAGE(43100, _("can't open "SFQ" for reading qmaster hostname"))
 #define MSG_GDI_READMASTERHOSTNAMEFAILED_S               _MESSAGE(43101, _("can't read qmaster hostname in "SFQ))
 #define MSG_GDI_MASTERHOSTNAMEHASZEROLENGTH_S            _MESSAGE(43102, _("qmaster hostname in "SFQ" has zero length"))
@@ -123,6 +123,6 @@
 
 #define MSG_GDI_MASTER_ON_HOST_X_RUNINNG_TERMINATE_S _MESSAGE(55013, _("qmaster on host "SFQ" is still running - terminating"))
 
-#define MSG_GDI_CONTEXT_NULL             _MESSAGE(55015, _("context is NULL"))
+#define MSG_GDI_CONTEXT_NULL             _MESSAGE(55015, _("context is nullptr"))
 
 // clang-format on

@@ -74,7 +74,7 @@ const spool_instr_t spool_config_subinstr = {
    CULL_SUBLIST,
    false,
    false,
-   NULL
+   nullptr
 };
 
 const spool_instr_t spool_config_instr = {
@@ -88,7 +88,7 @@ const spool_instr_t spool_complex_subinstr = {
    CULL_SPOOL,
    false,
    false,
-   NULL
+   nullptr
 };
 
 const spool_instr_t spool_complex_instr = {
@@ -145,7 +145,7 @@ _spool_get_fields_to_spool(lList **answer_list, const lDescr *descr,
 *
 *  RESULT
 *     spooling_field * - an array of type spooling_field, or 
-*                        NULL, if an error occured, error messages are returned
+*                        nullptr, if an error occured, error messages are returned
 *                        in answer_list
 *
 *  NOTES
@@ -194,23 +194,23 @@ _spool_get_fields_to_spool(lList **answer_list, const lDescr *descr,
 
    /* allocate memory */
    fields = (spooling_field *)sge_malloc((size + 1) * sizeof(spooling_field));
-   if (fields == NULL) {
+   if (fields == nullptr) {
       answer_list_add_sprintf(answer_list, STATUS_EUNKNOWN, 
                               ANSWER_QUALITY_ERROR, 
                               MSG_UNABLETOALLOCATEBYTES_DS, 
                               (size * 1) * sizeof(spooling_field), __func__);
-      DRETURN(NULL);
+      DRETURN(nullptr);
    }
 
    /* initialize fields */
    for (i = 0; i < size; i++) {
       fields[i].nm         = NoName;
       fields[i].width      = 0;
-      fields[i].name       = NULL;
-      fields[i].sub_fields = NULL;
-      fields[i].clientdata = NULL;
-      fields[i].read_func  = NULL;
-      fields[i].write_func = NULL;
+      fields[i].name       = nullptr;
+      fields[i].sub_fields = nullptr;
+      fields[i].clientdata = nullptr;
+      fields[i].read_func  = nullptr;
+      fields[i].write_func = nullptr;
    }
 
    /* do we have to strip field prefixes, e.g. "QU_" from field names? */
@@ -224,7 +224,7 @@ _spool_get_fields_to_spool(lList **answer_list, const lDescr *descr,
    /* copy field info */
    for (i = 0, j = 0; mt_get_type(descr[i].mt) != lEndT; i++) {
       if ((descr[i].mt & instr->selection) != 0) {
-         spooling_field *sub_fields = NULL;
+         spooling_field *sub_fields = nullptr;
 
          DPRINTF(("field "SFQ" will be spooled\n", lNm2Str(descr[i].nm)));
 
@@ -233,13 +233,13 @@ _spool_get_fields_to_spool(lList **answer_list, const lDescr *descr,
          if (instr->copy_field_names) {
             const char *name;
             name = lNm2Str(descr[i].nm);
-            if(name == NULL || strlen(name) <= strip) {
+            if(name == nullptr || strlen(name) <= strip) {
                answer_list_add_sprintf(answer_list, STATUS_EUNKNOWN, 
                                        ANSWER_QUALITY_ERROR, 
                                        MSG_NONAMEFORATTRIBUTE_D, 
                                        descr[i].nm);
                fields = spool_free_spooling_fields(fields);
-               DRETURN(NULL);
+               DRETURN(nullptr);
             }
             fields[j].name = strdup(name + strip);
          }
@@ -247,23 +247,23 @@ _spool_get_fields_to_spool(lList **answer_list, const lDescr *descr,
          if (mt_get_type(descr[i].mt) == lListT) {
             const lDescr *sub_descr;
 
-            if (instr->sub_instr == NULL) {
+            if (instr->sub_instr == nullptr) {
                answer_list_add_sprintf(answer_list, STATUS_EUNKNOWN, 
                                        ANSWER_QUALITY_ERROR,
                                        MSG_DONTKNOWHOWTOSPOOLSUBLIST_SS,
                                        lNm2Str(descr[i].nm), __func__);
                fields = spool_free_spooling_fields(fields);
-               DRETURN(NULL);
+               DRETURN(nullptr);
             }
 
             sub_descr = object_get_subtype(descr[i].nm);
-            if (sub_descr == NULL) {
+            if (sub_descr == nullptr) {
                answer_list_add_sprintf(answer_list, STATUS_EUNKNOWN, 
                                        ANSWER_QUALITY_ERROR,
                                        MSG_UNKNOWNOBJECTTYPEFOR_SS,
                                        lNm2Str(descr[i].nm), __func__);
                fields = spool_free_spooling_fields(fields);
-               DRETURN(NULL);
+               DRETURN(nullptr);
             }
 
             /* recursive spooling, e.g. sharetree */
@@ -301,7 +301,7 @@ _spool_get_fields_to_spool(lList **answer_list, const lDescr *descr,
 *     spooling_field *fields - the field array to free
 *
 *  RESULT
-*     spooling_field * - NULL
+*     spooling_field * - nullptr
 *
 *  EXAMPLE
 *     fields = spool_free_spooling_fields(fields);
@@ -309,21 +309,21 @@ _spool_get_fields_to_spool(lList **answer_list, const lDescr *descr,
 spooling_field * 
 spool_free_spooling_fields(spooling_field *fields)
 {
-   if (fields != NULL) {
+   if (fields != nullptr) {
       int i;
       for (i = 0; fields[i].nm >=0; i++) {
-         if (fields[i].sub_fields != NULL && fields[i].sub_fields != fields) {
+         if (fields[i].sub_fields != nullptr && fields[i].sub_fields != fields) {
             fields[i].sub_fields = spool_free_spooling_fields(fields[i].sub_fields);
          }
 
-         if (fields[i].name != NULL) {
+         if (fields[i].name != nullptr) {
             sge_free(&(fields[i].name));
          }
       }
       sge_free(&fields);
    }
 
-   return NULL;
+   return nullptr;
 }
 
 /****** spool/utilities/spool_default_validate_func() ****************
@@ -424,11 +424,11 @@ bool spool_default_validate_func(lList **answer_list,
                }
 
                /* necessary to init double values of consumable configuration */
-               centry_list_fill_request(lGetListRW(object, EH_consumable_config_list), NULL, master_centry_list, true, false, true);
+               centry_list_fill_request(lGetListRW(object, EH_consumable_config_list), nullptr, master_centry_list, true, false, true);
                /* necessary to setup actual list of exechost */
-               debit_host_consumable(NULL, object, master_centry_list, 0, true, NULL);
+               debit_host_consumable(nullptr, object, master_centry_list, 0, true, nullptr);
 
-               if (ensure_attrib_available(NULL, object, EH_consumable_config_list, master_centry_list)) {
+               if (ensure_attrib_available(nullptr, object, EH_consumable_config_list, master_centry_list)) {
                   ret = false;
                }
             }

@@ -47,7 +47,7 @@
 const char *queue_types[] = {
    "BATCH",
    "INTERACTIVE",
-   NULL
+   nullptr
 };
 
 static bool
@@ -90,15 +90,15 @@ qinstance_has_type(const lListElem *this_elem, u_long32 type)
 const char *
 qtype_append_to_dstring(u_long32 qtype, dstring *string)
 {
-   const char *ret = NULL;
+   const char *ret = nullptr;
 
    DENTER(QINSTANCE_TYPE_LAYER);
-   if (string != NULL) {
-      const char **ptr = NULL;
+   if (string != nullptr) {
+      const char **ptr = nullptr;
       u_long32 bitmask = 1;
       bool qtype_defined = false;
 
-      for (ptr = queue_types; *ptr != NULL; ptr++) {
+      for (ptr = queue_types; *ptr != nullptr; ptr++) {
          if (bitmask & qtype) {
             if (qtype_defined) {
                sge_dstring_append(string, " ");
@@ -123,12 +123,12 @@ qinstance_print_qtype_to_dstring(const lListElem *this_elem,
    bool ret = true;
 
    DENTER(QINSTANCE_TYPE_LAYER);
-   if (this_elem != NULL && string != NULL) {
-      const char **ptr = NULL;
+   if (this_elem != nullptr && string != nullptr) {
+      const char **ptr = nullptr;
       u_long32 bitmask = 1;
       bool qtype_defined = false;
 
-      for (ptr = queue_types; *ptr != NULL; ptr++) {
+      for (ptr = queue_types; *ptr != nullptr; ptr++) {
          if (bitmask & lGetUlong(this_elem, QU_qtype)) {
             qtype_defined = true;
             if (only_first_char) {
@@ -169,9 +169,9 @@ qinstance_parse_qtype_from_string(lListElem *this_elem, lList **answer_list,
 
    DENTER(QINSTANCE_TYPE_LAYER);
    SGE_CHECK_POINTER_FALSE(this_elem, answer_list);
-   if (value != NULL && *value != 0) {
+   if (value != nullptr && *value != 0) {
       if (!sge_parse_bitfield_str(value, queue_types, &type,
-                                  "queue type", NULL, true)) {
+                                  "queue type", nullptr, true)) {
          ret = false;
       }
    }

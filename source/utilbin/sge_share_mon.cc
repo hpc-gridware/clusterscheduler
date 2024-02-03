@@ -71,8 +71,8 @@ free_lists(lList **sharetree, lList **users, lList **projects, lList **usersets,
 static int
 setup_lists(sge_gdi_ctx_class_t *ctx, lList **sharetree, lList **users, lList **projects, lList **usersets, lList **config)
 {
-   lList *alp = NULL;               /* answer list for individual gdi_multi */
-   lList *malp = NULL;              /* answer list for final gdi_multi */
+   lList *alp = nullptr;               /* answer list for individual gdi_multi */
+   lList *malp = nullptr;              /* answer list for final gdi_multi */
    lEnumeration *what;
    state_gdi_multi state = STATE_GDI_MULTI_INIT;
    int sharetree_id = 0;
@@ -85,7 +85,7 @@ setup_lists(sge_gdi_ctx_class_t *ctx, lList **sharetree, lList **users, lList **
    /* get share tree */
    what = lWhat("%T(ALL)", STN_Type);
    sharetree_id = ctx->gdi_multi(ctx, &alp, SGE_GDI_RECORD, SGE_STN_LIST, 
-                                 SGE_GDI_GET, NULL, NULL, what, &state, true);
+                                 SGE_GDI_GET, nullptr, nullptr, what, &state, true);
    lFreeWhat(&what);
    error = answer_list_output(&alp);
 
@@ -93,7 +93,7 @@ setup_lists(sge_gdi_ctx_class_t *ctx, lList **sharetree, lList **users, lList **
    if (!error) {
       what = lWhat("%T(ALL)", SC_Type);
       sched_conf_id = ctx->gdi_multi(ctx, &alp, SGE_GDI_RECORD, SGE_SC_LIST, SGE_GDI_GET, 
-                                    NULL, NULL, what, &state, true);
+                                    nullptr, nullptr, what, &state, true);
       lFreeWhat(&what);
       error = answer_list_output(&alp);
    }
@@ -102,7 +102,7 @@ setup_lists(sge_gdi_ctx_class_t *ctx, lList **sharetree, lList **users, lList **
    if (!error) {
       what = lWhat("%T(ALL)", UU_Type);
       user_id = ctx->gdi_multi(ctx, &alp, SGE_GDI_RECORD, SGE_UU_LIST, SGE_GDI_GET, 
-                              NULL, NULL, what, &state, true);
+                              nullptr, nullptr, what, &state, true);
       lFreeWhat(&what);
       error = answer_list_output(&alp);
    }
@@ -111,7 +111,7 @@ setup_lists(sge_gdi_ctx_class_t *ctx, lList **sharetree, lList **users, lList **
    if (!error) {
       what = lWhat("%T(ALL)", PR_Type);
       project_id = ctx->gdi_multi(ctx, &alp, SGE_GDI_RECORD, SGE_PR_LIST, 
-                                  SGE_GDI_GET, NULL, NULL, what, &state, true);
+                                  SGE_GDI_GET, nullptr, nullptr, what, &state, true);
       lFreeWhat(&what);
       error = answer_list_output(&alp);
    }
@@ -123,7 +123,7 @@ setup_lists(sge_gdi_ctx_class_t *ctx, lList **sharetree, lList **users, lList **
    if (!error) {
       what = lWhat("%T(ALL)", US_Type);
       userset_id = ctx->gdi_multi(ctx, &alp, SGE_GDI_SEND, SGE_US_LIST, SGE_GDI_GET, 
-                                 NULL, NULL, what, &state, true);
+                                 nullptr, nullptr, what, &state, true);
       ctx->gdi_wait(ctx, &alp, &malp, &state);
       lFreeWhat(&what);
       error = answer_list_output(&alp);
@@ -141,7 +141,7 @@ setup_lists(sge_gdi_ctx_class_t *ctx, lList **sharetree, lList **users, lList **
 
    /* if we have no sharetree, output message and exit */
    if (!error) {
-      if (!*sharetree || lFirst(*sharetree) == NULL) {
+      if (!*sharetree || lFirst(*sharetree) == nullptr) {
          fprintf(stderr, "%s\n", MSG_SGESHAREMON_NOSHARETREE);
          lFreeList(sharetree);
          lFreeList(&malp);
@@ -210,9 +210,9 @@ open_output(const char *file_name, const char *mode)
 {
    FILE *file = stdout;
    
-   if (file_name != NULL) {
+   if (file_name != nullptr) {
       file = fopen(file_name, mode);
-      if (file == NULL) {
+      if (file == nullptr) {
          fprintf(stderr, MSG_FILE_COULDNOTOPENXFORY_SS , file_name, mode);
          fprintf(stderr, "\n");
          exit(1);
@@ -227,7 +227,7 @@ close_output(FILE *file)
 {
    if (file != stdout) {
       FCLOSE(file);
-      file = NULL;
+      file = nullptr;
    }
 FCLOSE_ERROR:
    return file;
@@ -237,31 +237,31 @@ FCLOSE_ERROR:
 int
 main(int argc, char **argv)
 {
-   lList *sharetree = NULL;
-   lList *users = NULL;
-   lList *projects = NULL;
-   lList *usersets = NULL;
-   lList *config = NULL;
+   lList *sharetree = nullptr;
+   lList *users = nullptr;
+   lList *projects = nullptr;
+   lList *usersets = nullptr;
+   lList *config = nullptr;
 
    int interval=15;
    int err=0;
    int count=-1;
    int header=0;
    format_t format;
-   char *ofile=NULL;
-   const char **names=NULL;
+   char *ofile=nullptr;
+   const char **names=nullptr;
    bool group_nodes=true;
    bool decay_usage=false;
    int c;
    extern char *optarg;
    extern int optind;
-   FILE *outfile = NULL;
+   FILE *outfile = nullptr;
    char *output_mode = "a";
 
    dstring output_dstring = DSTRING_INIT;
 
-   sge_gdi_ctx_class_t *ctx = NULL;
-   lList *alp = NULL;
+   sge_gdi_ctx_class_t *ctx = nullptr;
+   lList *alp = nullptr;
    
    DENTER_MAIN(TOP_LAYER, "share_mon");
 
@@ -274,9 +274,9 @@ main(int argc, char **argv)
    format.line_delim   = "\n";
    format.rec_delim    = "\n";
    format.str_format   = "%s";
-   format.field_names  = NULL;
+   format.field_names  = nullptr;
    format.format_times = false;
-   format.line_prefix  = NULL;
+   format.line_prefix  = nullptr;
 
 
 #ifdef __SGE_COMPILE_WITH_GETTEXT__  
@@ -285,7 +285,7 @@ main(int argc, char **argv)
                          (setlocale_func_type)      setlocale,
                          (bindtextdomain_func_type) bindtextdomain,
                          (textdomain_func_type)     textdomain);
-   sge_init_language(NULL,NULL);   
+   sge_init_language(nullptr,nullptr);
 #endif /* __SGE_COMPILE_WITH_GETTEXT__  */
 
 
@@ -366,7 +366,7 @@ main(int argc, char **argv)
    while(count == -1 || count-- > 0) {
       setup_lists(ctx, &sharetree, &users, &projects, &usersets, &config);
 
-      sconf_set_config(&config, NULL);
+      sconf_set_config(&config, nullptr);
 
       sge_sharetree_print(&output_dstring, sharetree, users, projects, usersets, group_nodes, decay_usage, names, &format);
 

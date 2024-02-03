@@ -62,13 +62,13 @@ static int showq_show_job_tacc(sge_gdi_ctx_class_t * ctx, lList * jid, int full,
 /*-------------------------------------------------------------------------*/
 int main(int argc, char **argv)
 {
-   lList          *alp = NULL;
-   lList          *pcmdline = NULL;
-   lList          *user_list = NULL;
-   lList          *sfa_list = NULL;
-   lList          *sfw_list = NULL;
-   lList          *ref_list = NULL;
-   sge_gdi_ctx_class_t *ctx = NULL;
+   lList          *alp = nullptr;
+   lList          *pcmdline = nullptr;
+   lList          *user_list = nullptr;
+   lList          *sfa_list = nullptr;
+   lList          *sfw_list = nullptr;
+   lList          *ref_list = nullptr;
+   sge_gdi_ctx_class_t *ctx = nullptr;
    int             full = 0;
    bool            binding = false;
    int             ret = 0;
@@ -191,11 +191,11 @@ static int showq_show_job_tacc(sge_gdi_ctx_class_t * ctx, lList * user_list, int
                                lList * sfa_list, lList * sfw_list)
 {
    const lListElem      *j_elem = 0;
-   lList          *jlp = NULL;
-   lList          *ilp = NULL;
-   lCondition     *where = NULL, *newcp = NULL;
-   lEnumeration   *what = NULL;
-   lList          *alp = NULL;
+   lList          *jlp = nullptr;
+   lList          *ilp = nullptr;
+   lCondition     *where = nullptr, *newcp = nullptr;
+   lEnumeration   *what = nullptr;
+   lList          *alp = nullptr;
    int            total_slot_count;
    int            active_slot_count;
    int            active_job_count;
@@ -203,10 +203,10 @@ static int showq_show_job_tacc(sge_gdi_ctx_class_t * ctx, lList * user_list, int
    int            unsched_job_count;
    int            dep_waiting_job_count;
    int            waiting_job_count;
-   lList          *active_dj_list = NULL;
-   lList          *waiting_dj_list = NULL;
-   lList          *dep_waiting_dj_list = NULL;
-   lList          *unsched_dj_list = NULL;
+   lList          *active_dj_list = nullptr;
+   lList          *waiting_dj_list = nullptr;
+   lList          *dep_waiting_dj_list = nullptr;
+   lList          *unsched_dj_list = nullptr;
 
    DENTER(TOP_LAYER);
 
@@ -214,8 +214,8 @@ static int showq_show_job_tacc(sge_gdi_ctx_class_t * ctx, lList * user_list, int
    if (lGetNumberOfElem(user_list) != 0) {
       for_each_ep(j_elem, user_list) {
          newcp = lWhere("%T(%I p= %s)", JB_Type, JB_owner, lGetString(j_elem, ST_name));
-         if (newcp != NULL) {
-            if (where == NULL) {
+         if (newcp != nullptr) {
+            if (where == nullptr) {
                where = newcp;
             } else {
                where = lOrWhere(where, newcp);
@@ -227,7 +227,7 @@ static int showq_show_job_tacc(sge_gdi_ctx_class_t * ctx, lList * user_list, int
    /* get job data */
    what = lWhat("%T(ALL)", JB_Type);
    alp = ctx->gdi(ctx, SGE_JB_LIST, SGE_GDI_GET, &jlp, where, what);
-   if (alp != NULL) {
+   if (alp != nullptr) {
       answer_list_output(&alp);
    }
    lFreeWhere(&where);

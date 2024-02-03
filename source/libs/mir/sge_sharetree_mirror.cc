@@ -71,8 +71,8 @@ sge_callback_result
 sharetree_update_master_list(sge_evc_class_t *evc, sge_object_type type, sge_event_action action,
                              lListElem *event, void *clientdata)
 {
-   lList **list = NULL;
-   lList *src = NULL;
+   lList **list = nullptr;
+   lList *src = nullptr;
 
    DENTER(TOP_LAYER);
 

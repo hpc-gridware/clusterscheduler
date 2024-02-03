@@ -54,7 +54,7 @@ void
 usage(char *progname)
 {
    char *p;
-   p = (NULL == (p = strrchr(progname,'/'))) ? progname : p+1;
+   p = (nullptr == (p = strrchr(progname,'/'))) ? progname : p+1;
    fprintf(stderr, "%s\n", MSG_GSS_ACQUIREX_USAGE_S);
    fprintf(stderr, MSG_GSS_ACQUIREX_s_OPT_USAGE , p);
    fprintf(stderr, "\n");
@@ -65,7 +65,7 @@ usage(char *progname)
 int
 main(int argc, char **argv)
 {
-   char *service_name = NULL;
+   char *service_name = nullptr;
    gss_cred_id_t server_creds;
    int cc=0;
    int ch;

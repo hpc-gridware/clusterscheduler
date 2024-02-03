@@ -175,7 +175,7 @@ sge_daemonize_qmaster() {
 
    DENTER(TOP_LAYER);
 
-   if (getenv("SGE_ND") != NULL) {
+   if (getenv("SGE_ND") != nullptr) {
       DPRINTF(("sge_qmaster is not daemonized\n"));
       DRETURN(false);
    }
@@ -198,12 +198,12 @@ sge_daemonize_qmaster() {
       exit(0); /* child 1 terminates */
    }
 
-   sge_close_all_fds(NULL, 0);
+   sge_close_all_fds(nullptr, 0);
 
    failed_fd = sge_occupy_first_three();
    if (failed_fd != -1) {
       CRITICAL((SGE_EVENT, MSG_CANNOT_REDIRECT_STDINOUTERR_I, failed_fd));
-      SGE_EXIT(NULL, 0);
+      SGE_EXIT(nullptr, 0);
    }
 
    DRETURN(true);
@@ -240,12 +240,12 @@ sge_become_admin_user(const char *admin_user) {
 
    if (sge_set_admin_username(admin_user, str) == -1) {
       CRITICAL((SGE_EVENT, SFNMAX, str));
-      SGE_EXIT(NULL, 1);
+      SGE_EXIT(nullptr, 1);
    }
 
    if (sge_switch2admin_user()) {
       CRITICAL((SGE_EVENT, SFNMAX, MSG_ERROR_CANTSWITCHTOADMINUSER));
-      SGE_EXIT(NULL, 1);
+      SGE_EXIT(nullptr, 1);
    }
 
    DRETURN_VOID;

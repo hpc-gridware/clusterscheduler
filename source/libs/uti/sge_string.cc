@@ -64,7 +64,7 @@
 *
 *  RESULT
 *     char* - pointer to base of name after the last delimter
-*             NULL if "name" is NULL or zero length string or 
+*             nullptr if "name" is nullptr or zero length string or
 *             delimiter is the last character in "name"
 *
 *  EXAMPLE
@@ -79,10 +79,10 @@ const char *sge_basename(const char *name, int delim) {
    DENTER(BASIS_LAYER);
 
    if (!name) {
-      DRETURN(NULL);
+      DRETURN(nullptr);
    }
    if (name[0] == '\0') {
-      DRETURN(NULL);
+      DRETURN(nullptr);
    }
 
    cp = strrchr((char *)name, delim);
@@ -91,7 +91,7 @@ const char *sge_basename(const char *name, int delim) {
    } else {
       cp++;
       if (*cp == '\0') {
-         DRETURN(NULL);
+         DRETURN(nullptr);
       } else {
          DRETURN(cp);
       }
@@ -117,7 +117,7 @@ const char *sge_basename(const char *name, int delim) {
 *
 *  RESULT
 *     const char* - pointer to the jobname
-*                   NULL if name is NULL or only '\0'
+*                   nullptr if name is nullptr or only '\0'
 *
 *  EXAMPLE
 *  Command line                       jobname
@@ -137,7 +137,7 @@ const char *sge_basename(const char *name, int delim) {
 *******************************************************************************/
 const char *sge_jobname(const char *name) {
 
-   const char *cp = NULL;
+   const char *cp = nullptr;
 
    DENTER(BASIS_LAYER);
    if (name && name[0] != '\0') {
@@ -160,8 +160,8 @@ const char *sge_jobname(const char *name) {
 *
 *  FUNCTION
 *     The function will return a malloced string containing the first 
-*     part of 'name' up to, but not including deliminator. NULL will 
-*     be returned if 'name' is NULL or a zero length string or if 
+*     part of 'name' up to, but not including deliminator. nullptr will
+*     be returned if 'name' is nullptr or a zero length string or if
 *     'delim' is the first character in 'name' 
 *
 *  INPUTS
@@ -182,11 +182,11 @@ char *sge_dirname(const char *name, int delim) {
    DENTER(BASIS_LAYER);
 
    if (!name) {
-      DRETURN(NULL);
+      DRETURN(nullptr);
    }
 
    if (name[0] == '\0' || name[0] == delim) {
-      DRETURN(NULL);
+      DRETURN(nullptr);
    }
 
    cp = strchr((char *)name, delim);
@@ -195,8 +195,8 @@ char *sge_dirname(const char *name, int delim) {
       cp2 = strdup(name);
       DRETURN(cp2);
    } else {
-      if ((cp2 = sge_malloc((cp - name) + 1)) == NULL) {
-         DRETURN(NULL);
+      if ((cp2 = sge_malloc((cp - name) + 1)) == nullptr) {
+         DRETURN(nullptr);
       } else {
          strncpy(cp2, name, cp - name);
          cp2[cp - name] = '\0';
@@ -232,8 +232,8 @@ char *sge_dirname(const char *name, int delim) {
 char *sge_strtok(const char *str, const char *delimitor) {
    char *cp;
    char *saved_cp;
-   static char *static_cp = NULL;
-   static char *static_str = NULL;
+   static char *static_cp = nullptr;
+   static char *static_str = nullptr;
    static unsigned int alloc_len = 0;
    unsigned int n;
    bool done;
@@ -264,8 +264,8 @@ char *sge_strtok(const char *str, const char *delimitor) {
    while (!done) {
 
       /* found end of string */
-      if (saved_cp == NULL || *saved_cp == '\0') {
-         DRETURN(NULL);
+      if (saved_cp == nullptr || *saved_cp == '\0') {
+         DRETURN(nullptr);
       }
 
       /* eat white spaces */
@@ -298,7 +298,7 @@ char *sge_strtok(const char *str, const char *delimitor) {
       cp++;
    }
 
-   DRETURN(NULL);
+   DRETURN(nullptr);
 }
 
 /****** uti/string/sge_strlcat() ***********************************************
@@ -329,12 +329,12 @@ size_t sge_strlcat(char *dst, const char *src, size_t dstsize) {
    size_t dst_idx = 0, src_idx = 0;
 
    /* no destination - do nothing */
-   if (dst == NULL) {
+   if (dst == nullptr) {
       return 0;
    }
 
    /* no source or source empty - do nothing */
-   if (src == NULL || src[0] == '\0') {
+   if (src == nullptr || src[0] == '\0') {
       return 0;
    }
 
@@ -384,10 +384,10 @@ size_t sge_strlcat(char *dst, const char *src, size_t dstsize) {
 *******************************************************************************/
 size_t sge_strlcpy(char *dst, const char *src, size_t dstsize) {
    size_t index = 0;
-   if (dst == NULL) {
+   if (dst == nullptr) {
       return 0;
    }
-   if (src == NULL) {
+   if (src == nullptr) {
       dst[0] = '\0';
       return 0;
    }
@@ -410,9 +410,9 @@ size_t sge_strlcpy(char *dst, const char *src, size_t dstsize) {
 *                        struct saved_vars_s **context) 
 *
 *  FUNCTION
-*     Reentrant version of sge_strtok. When 'str' is not NULL, 
-*     '*context'has to be NULL. If 'str' is NULL, '*context' 
-*     must not be NULL. The caller is responsible for freeing 
+*     Reentrant version of sge_strtok. When 'str' is not nullptr,
+*     '*context'has to be nullptr. If 'str' is nullptr, '*context'
+*     must not be nullptr. The caller is responsible for freeing
 *     '*context' with sge_free_saved_vars(). 
 *     If no delimitor is given isspace() is used. 
 *
@@ -440,8 +440,8 @@ char *sge_strtok_r(const char *str, const char *delimitor,
 
    DENTER(BASIS_LAYER);
 
-   if (str != NULL) {
-      if (*context != NULL) {
+   if (str != nullptr) {
+      if (*context != nullptr) {
          ERROR((SGE_EVENT, SFNMAX, MSG_POINTER_INVALIDSTRTOKCALL));
       }
       *context = (struct saved_vars_s *) sge_malloc(sizeof(struct saved_vars_s));
@@ -453,9 +453,9 @@ char *sge_strtok_r(const char *str, const char *delimitor,
       strcpy(saved->static_str, str);
       saved_cp = saved->static_str;
    } else {
-      if (*context == NULL) {
+      if (*context == nullptr) {
          ERROR((SGE_EVENT, SFNMAX, MSG_POINTER_INVALIDSTRTOKCALL1));
-         DRETURN(NULL);
+         DRETURN(nullptr);
       }
       saved = *context;
       saved_cp = saved->static_cp;
@@ -466,8 +466,8 @@ char *sge_strtok_r(const char *str, const char *delimitor,
    while (!done) {
 
       /* found end of string */
-      if (saved_cp == NULL || *saved_cp == '\0') {
-         DRETURN(NULL);
+      if (saved_cp == nullptr || *saved_cp == '\0') {
+         DRETURN(nullptr);
       }
 
       /* eat white spaces */
@@ -500,7 +500,7 @@ char *sge_strtok_r(const char *str, const char *delimitor,
       cp++;
    }
 
-   DRETURN(NULL);
+   DRETURN(nullptr);
 }
 
 /****** uti/string/sge_free_saved_vars() **************************************
@@ -552,21 +552,21 @@ void sge_free_saved_vars(struct saved_vars_s *context) {
 *     MT-NOTE: sge_strdup() is MT safe
 ******************************************************************************/
 char *sge_strdup(char *old_str, const char *s) {
-   char *ret = NULL;
+   char *ret = nullptr;
 
    /* 
     * target (old_str) and source (s) might point to the same object!
     * therefore free old_str only after the dup
     */
-   if (s != NULL) {
+   if (s != nullptr) {
       int n = strlen(s);
       ret = sge_malloc(n + 1);
-      if (ret != NULL) {
+      if (ret != nullptr) {
          strcpy(ret, s);
       }
    }
 
-   /* free and NULL the old_str pointer */
+   /* free and nullptr the old_str pointer */
    sge_free(&old_str);
 
    return ret;
@@ -634,7 +634,7 @@ void sge_strip_blanks(char *str) {
 void sge_strip_white_space_at_eol(char *str) {
    DENTER(BASIS_LAYER);
 
-   if (str != NULL) {
+   if (str != nullptr) {
       size_t length = strlen(str);
 
       while (str[length - 1] == ' ' || str[length - 1] == '\t') {
@@ -667,7 +667,7 @@ void sge_strip_white_space_at_eol(char *str) {
 void sge_strip_slash_at_eol(char *str) {
    DENTER(BASIS_LAYER);
 
-   if (str != NULL) {
+   if (str != nullptr) {
       size_t length = strlen(str);
 
       while (str[length - 1] == '/') {
@@ -694,7 +694,7 @@ void sge_strip_slash_at_eol(char *str) {
 *
 *     ATTENTION: The user is responsible for freeing the allocated
 *     memory outside this routine. If not enough space could be 
-*     allocated, NULL is returned.
+*     allocated, nullptr is returned.
 *
 *  INPUTS
 *     char *str         - string to be truncated 
@@ -714,14 +714,14 @@ void sge_strip_slash_at_eol(char *str) {
 *     MT-NOTE: sge_delim_str() is MT safe
 ******************************************************************************/
 char *sge_delim_str(char *str, char **delim_pos, const char *delim) {
-   char *cp = NULL;
-   char *tstr = NULL;
+   char *cp = nullptr;
+   char *tstr = nullptr;
 
    DENTER(BASIS_LAYER);
 
    /* we want it non-destructive --> we need a copy of str */
-   if ((tstr = strdup(str)) == NULL) {
-      DRETURN(NULL);
+   if ((tstr = strdup(str)) == nullptr) {
+      DRETURN(nullptr);
    }
 
    /* walk through str to find a character contained in delim or a
@@ -749,15 +749,15 @@ char *sge_delim_str(char *str, char **delim_pos, const char *delim) {
 
 /****** uti/string/sge_strnullcmp() *******************************************
 *  NAME
-*     sge_strnullcmp() -- Like strcmp() but honours NULL ptrs.
+*     sge_strnullcmp() -- Like strcmp() but honours nullptr ptrs.
 *
 *  SYNOPSIS
 *     int sge_strnullcmp(const char *a, const char *b) 
 *
 *  FUNCTION
-*     Like strcmp() apart from the handling of NULL strings.
-*     These are treated as being less than any not-NULL strings.
-*     Important for sorting lists where NULL strings can occur.  
+*     Like strcmp() apart from the handling of nullptr strings.
+*     These are treated as being less than any not-nullptr strings.
+*     Important for sorting lists where nullptr strings can occur.
 *
 *  INPUTS
 *     const char *a - 1st string 
@@ -765,9 +765,9 @@ char *sge_delim_str(char *str, char **delim_pos, const char *delim) {
 *
 *  RESULT
 *     int - result
-*         0 - strings are the same or both NULL 
-*        -1 - a < b or a is NULL
-*         1 - a > b or b is NULL
+*         0 - strings are the same or both nullptr
+*        -1 - a < b or a is nullptr
+*         1 - a > b or b is nullptr
 *
 *  NOTES
 *     MT-NOTE: sge_strnullcmp() is MT safe
@@ -793,9 +793,9 @@ int sge_strnullcmp(const char *a, const char *b) {
 *     int sge_patternnullcmp(const char *str, const char *pattern) 
 *
 *  FUNCTION
-*     Like fnmatch() apart from the handling of NULL strings.
-*     These are treated as being less than any not-NULL strings.
-*     Important for sorting lists where NULL strings can occur. 
+*     Like fnmatch() apart from the handling of nullptr strings.
+*     These are treated as being less than any not-nullptr strings.
+*     Important for sorting lists where nullptr strings can occur.
 *
 *  INPUTS
 *     const char *str     - string 
@@ -803,9 +803,9 @@ int sge_strnullcmp(const char *a, const char *b) {
 *
 *  RESULT
 *     int - result
-*         0 - strings are the same or both NULL 
-*        -1 - a < b or a is NULL
-*         1 - a > b or b is NULL
+*         0 - strings are the same or both nullptr
+*        -1 - a < b or a is nullptr
+*         1 - a > b or b is nullptr
 *
 *  NOTES
 *   MT-NOTE: fnmatch uses static variables, not MT safe
@@ -826,15 +826,15 @@ int sge_patternnullcmp(const char *str, const char *pattern) {
 
 /****** uti/string/sge_strnullcasecmp() ***************************************
 *  NAME
-*     sge_strnullcasecmp() -- Like strcasecmp() but honours NULL ptrs.
+*     sge_strnullcasecmp() -- Like strcasecmp() but honours nullptr ptrs.
 *
 *  SYNOPSIS
 *     int sge_strnullcasecmp(const char *a, const char *b) 
 *
 *  FUNCTION
-*     Like strcasecmp() apart from the handling of NULL strings.
-*     These are treated as being less than any not-NULL strings.
-*     Important for sorting lists where NULL strings can occur.  
+*     Like strcasecmp() apart from the handling of nullptr strings.
+*     These are treated as being less than any not-nullptr strings.
+*     Important for sorting lists where nullptr strings can occur.
 *
 *  INPUTS
 *     const char *a - 1st string 
@@ -842,9 +842,9 @@ int sge_patternnullcmp(const char *str, const char *pattern) {
 *
 *  RESULT
 *     int - result
-*         0 - strings are the same minus case or both NULL 
-*        -1 - a < b or a is NULL
-*         1 - a > b or b is NULL
+*         0 - strings are the same minus case or both nullptr
+*        -1 - a < b or a is nullptr
+*         1 - a > b or b is nullptr
 *
 *  NOTES
 *     MT-NOTE: sge_strnullcasecmp() is MT safe
@@ -918,7 +918,7 @@ bool sge_is_pattern(const char *s) {
 bool sge_is_expression(const char *s) {
    char c;
 
-   if (s != NULL) {
+   if (s != nullptr) {
       while (*s != '\0') {
          c = *s;
          switch (c) {
@@ -993,7 +993,7 @@ int sge_strisint(const char *str) {
 void sge_strtoupper(char *buffer, int max_len) {
    DENTER(BASIS_LAYER);
 
-   if (buffer != NULL) {
+   if (buffer != nullptr) {
       int i;
       int length = MIN(strlen(buffer), max_len);
       for (i = 0; i < length; i++) {
@@ -1027,7 +1027,7 @@ void sge_strtoupper(char *buffer, int max_len) {
 ******************************************************************************/
 void sge_strtolower(char *buffer, int max_len) {
    DENTER(BASIS_LAYER);
-   if (buffer != NULL) {
+   if (buffer != nullptr) {
       int i;
       for (i = 0; buffer[i] != '\0' && i < max_len; i++) {
          buffer[i] = tolower(buffer[i]);
@@ -1072,7 +1072,7 @@ char **sge_stradup(char **cpp, int n) {
    /* alloc space */
    cpp1 = (char **) sge_malloc((count + 1) * sizeof(char **));
    if (!cpp1)
-      return NULL;
+      return nullptr;
 
    /* copy  */
    cpp2 = cpp;
@@ -1090,7 +1090,7 @@ char **sge_stradup(char **cpp, int n) {
             sge_free(cpp3);
          }
          sge_free(&cpp1);
-         return NULL;
+         return nullptr;
       }
 
       /* copy string */
@@ -1099,7 +1099,7 @@ char **sge_stradup(char **cpp, int n) {
       cpp2++;
    }
 
-   *cpp3 = NULL;
+   *cpp3 = nullptr;
 
    return cpp1;
 }
@@ -1121,10 +1121,10 @@ char **sge_stradup(char **cpp, int n) {
 *     MT-NOTE: sge_strafree() is MT safe
 ******************************************************************************/
 void sge_strafree(char ***cpp) {
-   if (cpp != NULL && *cpp != NULL) {
+   if (cpp != nullptr && *cpp != nullptr) {
       char **cpp1 = *cpp;
 
-      while (*cpp1 != NULL) {
+      while (*cpp1 != nullptr) {
          sge_free(cpp1);
          cpp1++;
       }
@@ -1153,7 +1153,7 @@ void sge_strafree(char ***cpp) {
 *     MT-NOTE: sge_stramemncpy() is MT safe
 *
 *  RESULT
-*     char** - NULL or pointer a string
+*     char** - nullptr or pointer a string
 *
 *  NOTES
 *     MT-NOTE: sge_stramemncpy() is MT safe
@@ -1165,7 +1165,7 @@ char **sge_stramemncpy(const char *cp, char **cpp, int n) {
       }
       cpp++;
    }
-   return NULL;
+   return nullptr;
 }
 
 /****** uti/string/sge_stracasecmp() ******************************************
@@ -1184,7 +1184,7 @@ char **sge_stramemncpy(const char *cp, char **cpp, int n) {
 *     char **cpp     - pointer to array of strings  
 *
 *  RESULT
-*     char** - NULL or pointer a string
+*     char** - nullptr or pointer a string
 *
 *  NOTES
 *     MT-NOTE: sge_stracasecmp() is MT safe
@@ -1195,14 +1195,14 @@ char **sge_stracasecmp(const char *cp, char **cpp) {
          return cpp;
       cpp++;
    }
-   return NULL;
+   return nullptr;
 }
 
 void
 stra_printf(char *stra[]) {
    int i = 0;
 
-   while (stra[i] != NULL) {
+   while (stra[i] != nullptr) {
       fprintf(stdout, "%s\n", stra[i]);
       i++;
    }
@@ -1235,13 +1235,13 @@ stra_printf(char *stra[]) {
 *************************************************************************************/
 char **
 stra_from_str(const char *source_str, const char *delim) {
-   char **ret = NULL;
+   char **ret = nullptr;
 
-   if (source_str != NULL && delim != NULL) {
+   if (source_str != nullptr && delim != nullptr) {
       struct saved_vars_s *context1;
       struct saved_vars_s *context2;
-      const char *token_1 = NULL;
-      const char *token_2 = NULL;
+      const char *token_1 = nullptr;
+      const char *token_2 = nullptr;
       int number_of_tokens = 0;
       int index = 0;
 
@@ -1263,19 +1263,19 @@ stra_from_str(const char *source_str, const char *delim) {
       /*
        * Count tokens.
        */
-      context1 = NULL;
+      context1 = nullptr;
       token_1 = sge_strtok_r(source_str, "\n", &context1);
-      while (token_1 != NULL) {
+      while (token_1 != nullptr) {
          if (token_1[0] != '#') {
-            context2 = NULL;
+            context2 = nullptr;
             token_2 = sge_strtok_r(token_1, " \t", &context2);
-            while (token_2 != NULL) {
-               token_2 = sge_strtok_r(NULL, " \t", &context2);
+            while (token_2 != nullptr) {
+               token_2 = sge_strtok_r(nullptr, " \t", &context2);
                number_of_tokens++;
             }
             sge_free_saved_vars(context2);
          }
-         token_1 = sge_strtok_r(NULL, "\n", &context1);
+         token_1 = sge_strtok_r(nullptr, "\n", &context1);
       }
       sge_free_saved_vars(context1);
 
@@ -1288,28 +1288,28 @@ stra_from_str(const char *source_str, const char *delim) {
       /* malloc array memory */
       ret = (char **) sge_malloc(sizeof(char *) * (number_of_tokens + 1));
 
-      if (ret != NULL) {
+      if (ret != nullptr) {
          /*
           * Allocate and populate string array.
           */
          index = 0;
-         context1 = NULL;
+         context1 = nullptr;
          token_1 = sge_strtok_r(source_str, "\n", &context1);
-         while (token_1 != NULL) {
+         while (token_1 != nullptr) {
             if (token_1[0] != '#') {
-               context2 = NULL;
+               context2 = nullptr;
                token_2 = sge_strtok_r(token_1, " \t", &context2);
-               while (token_2 != NULL) {
+               while (token_2 != nullptr) {
                   ret[index] = strdup(token_2);
-                  token_2 = sge_strtok_r(NULL, " \t", &context2);
+                  token_2 = sge_strtok_r(nullptr, " \t", &context2);
                   index++;
                }
                sge_free_saved_vars(context2);
             }
-            token_1 = sge_strtok_r(NULL, "\n", &context1);
+            token_1 = sge_strtok_r(nullptr, "\n", &context1);
          }
          sge_free_saved_vars(context1);
-         ret[index] = NULL; /* Stopper */
+         ret[index] = nullptr; /* Stopper */
       }
    }
    return ret;
@@ -1367,8 +1367,8 @@ void sge_compress_slashes(char *str) {
 *     MT-NOTE: sge_strip_quotes() is MT safe
 ******************************************************************************/
 void sge_strip_quotes(char **pstr) {
-   char *cp = NULL;
-   char *cp2 = NULL;
+   char *cp = nullptr;
+   char *cp2 = nullptr;
 
    DENTER(TOP_LAYER);
 
@@ -1400,10 +1400,10 @@ void sge_strip_quotes(char **pstr) {
 *     replacement for strlen 
 *
 *  INPUTS
-*     const char *str - NULL or pointer to string 
+*     const char *str - nullptr or pointer to string
 *
 *  RESULT
-*     int - length of string or 0 if NULL pointer
+*     int - length of string or 0 if nullptr pointer
 *
 *  NOTES
 *     MT-NOTE: sge_strlen() is MT safe
@@ -1411,7 +1411,7 @@ void sge_strip_quotes(char **pstr) {
 size_t sge_strlen(const char *str) {
    size_t ret = 0;
 
-   if (str != NULL) {
+   if (str != nullptr) {
       ret = strlen(str);
    }
    return ret;
@@ -1431,9 +1431,9 @@ size_t sge_strlen(const char *str) {
 ** PARAMETER
 **   str       -    string to be parsed
 **   delis     -    string containing delimiters
-**   pstr      -    NULL or string array to return
+**   pstr      -    nullptr or string array to return
 ** RETURN
-**   NULL      -    error
+**   nullptr      -    error
 **   char **   -    pointer to an array of strings containing
 **                  the string list
 ** EXTERNAL
@@ -1448,32 +1448,32 @@ char **string_list(char *str, char *delis, char **pstr) {
    unsigned int i = 0, j = 0;
    bool is_space = false;
    int found_first_quote = 0;
-   char **head = NULL;
+   char **head = nullptr;
    bool done;
 
    DENTER(BASIS_LAYER);
 
-   if (str == NULL) {
-      DRETURN(NULL);
+   if (str == nullptr) {
+      DRETURN(nullptr);
    }
 
    /* skip heading delimiters */
-   while (str[0] != '\0' && strchr(delis, str[0]) != NULL) {
+   while (str[0] != '\0' && strchr(delis, str[0]) != nullptr) {
       str++;
    }
 
    /* at str end: str either was an empty string or only contained delimiters */
    if (str[0] == '\0') {
-      DRETURN(NULL);
+      DRETURN(nullptr);
    }
 
    /*
     * not more items than length of string is possible
     */
-   if (pstr == NULL) {
+   if (pstr == nullptr) {
       head = (char **) sge_malloc((sizeof(void *)) * (strlen(str) + 1));
-      if (head == NULL) {
-         DRETURN(NULL);
+      if (head == nullptr) {
+         DRETURN(nullptr);
       }
    } else {
       head = pstr;
@@ -1481,7 +1481,7 @@ char **string_list(char *str, char *delis, char **pstr) {
 
    done = false;
    while (!done) {
-      while ((str[i] != '\0') && (strchr(delis, str[i]) != NULL)) {
+      while ((str[i] != '\0') && (strchr(delis, str[i]) != nullptr)) {
          i++;
       }
 
@@ -1508,7 +1508,7 @@ char **string_list(char *str, char *delis, char **pstr) {
 
          /* If we're inside quotes, we don't count spaces. */
          if (found_first_quote == 0) {
-            is_space = (bool) (strchr(delis, str[i]) != NULL);
+            is_space = (bool) (strchr(delis, str[i]) != nullptr);
          }
 
          if (((found_first_quote == 2) && (str[i] == '"')) ||
@@ -1526,7 +1526,7 @@ char **string_list(char *str, char *delis, char **pstr) {
       i++;
    }
 
-   head[j] = NULL;
+   head[j] = nullptr;
 
    DRETURN(head);
 }
@@ -1594,7 +1594,7 @@ sge_strerror(int errnum, dstring *buffer) {
 *******************************************************************************/
 bool sge_str_is_number(const char *string) {
    bool ret = true;
-   char *end = NULL;
+   char *end = nullptr;
    double val;
 
    errno = 0;
@@ -1639,7 +1639,7 @@ bool sge_str_is_number(const char *string) {
 *     const char *replace   - the replacement string
 *
 *  RESULT
-*     NULL, if the input string didn't contain the pattern,
+*     nullptr, if the input string didn't contain the pattern,
 *     else a newly allocated string containing the input string with replacements.
 *
 *  NOTES
@@ -1650,18 +1650,18 @@ bool sge_str_is_number(const char *string) {
 const char *sge_replace_substring(const char *input, const char *search, const char *replace) {
    int to_replace = 0;
    int change, new_len;
-   char *new_string = NULL;
-   char *return_string = NULL;
-   char *source = NULL;
-   char *source_string = NULL;
-   char *tail = NULL;
-   char *current_tail = NULL;
+   char *new_string = nullptr;
+   char *return_string = nullptr;
+   char *source = nullptr;
+   char *source_string = nullptr;
+   char *tail = nullptr;
+   char *current_tail = nullptr;
 
    /*
     * Basic sanity checks first.
     */
-   if (input == NULL || search == NULL || replace == NULL) {
-      return NULL;
+   if (input == nullptr || search == nullptr || replace == nullptr) {
+      return nullptr;
    }
    /*
     * Determine number for of substrings to replace. We are
@@ -1680,7 +1680,7 @@ const char *sge_replace_substring(const char *input, const char *search, const c
       source++;
    }
    if (to_replace == 0) {
-      return NULL;
+      return nullptr;
    }
    /*
     * Calculate size of new string based on number of substrings to replace.
@@ -1691,8 +1691,8 @@ const char *sge_replace_substring(const char *input, const char *search, const c
     * Allocate new string and re-shuffle original string.
     */
    return_string = new_string = sge_malloc(new_len);
-   if (new_string == NULL) {
-      return NULL;
+   if (new_string == nullptr) {
+      return nullptr;
    }
    memset(new_string, 0x0, new_len);
    source = source_string;

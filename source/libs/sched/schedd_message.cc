@@ -59,9 +59,9 @@ static lRef schedd_mes_get_category(u_long32 job_id, lList *job_list);
 static void schedd_mes_find_others(lListElem *tmp_sme, lList *job_list, int ignore_category)
 {
    if (tmp_sme && job_list) {
-      lListElem *message_elem = NULL;  /* MES_Type */
-      lRef category = NULL;            /* Category pointer (void*) */
-      lList *jid_cat_list = NULL;      /* ULNG */
+      lListElem *message_elem = nullptr;  /* MES_Type */
+      lRef category = nullptr;            /* Category pointer (void*) */
+      lList *jid_cat_list = nullptr;      /* ULNG */
       const lList *message_list = lGetList(tmp_sme, SME_message_list);
 
       /*
@@ -96,8 +96,8 @@ static void schedd_mes_find_others(lListElem *tmp_sme, lList *job_list, int igno
 
 static lRef schedd_mes_get_category(u_long32 job_id, lList *job_list)
 {
-   const lListElem *job = NULL;  /* JB_Type */
-   lRef ret = NULL;        /* Category pointer (void*) */
+   const lListElem *job = nullptr;  /* JB_Type */
+   lRef ret = nullptr;        /* Category pointer (void*) */
 
    DENTER(TOP_LAYER);
    job = lGetElemUlong(job_list, JB_job_number, job_id);
@@ -111,11 +111,11 @@ static lList *schedd_mes_get_same_category_jids(lRef category,
                                                 lList *job_list,
                                                 int ignore_category)
 {
-   lList *ret = NULL;      /* ULNG */
-   const lListElem *job = NULL;  /* JB_Type */
+   lList *ret = nullptr;      /* ULNG */
+   const lListElem *job = nullptr;  /* JB_Type */
 
    DENTER(TOP_LAYER);
-   if (job_list != NULL && category != NULL) {
+   if (job_list != nullptr && category != nullptr) {
       for_each_ep(job, job_list) {
          if (ignore_category || lGetRef(job, JB_category) == category) {
             lAddElemUlong(&ret, ULNG_value, lGetUlong(job, JB_job_number), ULNG_Type);
@@ -194,7 +194,7 @@ void schedd_mes_initialize(void)
 *     lList *job_list     - JB_Type list 
 *     int ignore_category - if set to true, the messages with be generated for all jobs
 *                           in the list
-*     lRef jid_category   - if not NULL, the function uses the category to ensure, that
+*     lRef jid_category   - if not nullptr, the function uses the category to ensure, that
 *                           every message is only added per category once.
 *******************************************************************************/
 void schedd_mes_commit(lList *job_list, int ignore_category, lRef jid_category) {
@@ -202,10 +202,10 @@ void schedd_mes_commit(lList *job_list, int ignore_category, lRef jid_category) 
    lListElem *tmp_sme = sconf_get_tmp_sme();
 
    if (sme && tmp_sme) {
-      lList *sme_mes_list = NULL;
-      lList *tmp_sme_list = NULL;
+      lList *sme_mes_list = nullptr;
+      lList *tmp_sme_list = nullptr;
       
-      if (jid_category != NULL) {
+      if (jid_category != nullptr) {
          if (lGetBool((lListElem *)jid_category, CT_messages_added) ) {
             return;
          }
@@ -215,7 +215,7 @@ void schedd_mes_commit(lList *job_list, int ignore_category, lRef jid_category) 
       /*
        * Try to find other jobs which apply also for created message
        */
-      if (jid_category != NULL || ignore_category == 1) {
+      if (jid_category != nullptr || ignore_category == 1) {
          schedd_mes_find_others(tmp_sme, job_list, ignore_category);
       }
 
@@ -245,7 +245,7 @@ void schedd_mes_rollback(void)
    lListElem *tmp_sme = sconf_get_tmp_sme();
    
    if (tmp_sme) {
-      lList *tmp_sme_list = NULL;
+      lList *tmp_sme_list = nullptr;
 
       tmp_sme_list = lCreateList("job info messages", MES_Type);
       lSetList(tmp_sme, SME_message_list, tmp_sme_list);
@@ -288,27 +288,27 @@ lListElem *schedd_mes_obtain_package(int *global_mes_count, int *job_mes_count)
        * message which says that schedd_job_info is disabled. 
        */
       sconf_enable_schedd_job_info();
-      schedd_mes_add_global(NULL, false, SCHEDD_INFO_TURNEDOFF);
+      schedd_mes_add_global(nullptr, false, SCHEDD_INFO_TURNEDOFF);
       sconf_disable_schedd_job_info();
    } else if (schedd_job_info == SCHEDD_JOB_INFO_JOB_LIST) {
-      schedd_mes_add_global(NULL, false, SCHEDD_INFO_JOBLIST);
+      schedd_mes_add_global(nullptr, false, SCHEDD_INFO_JOBLIST);
    } else if (lGetNumberOfElem(lGetList(sme, SME_message_list))<1 &&
             lGetNumberOfElem(lGetList(sme, SME_global_message_list))<1) {
-      schedd_mes_add_global(NULL, false, SCHEDD_INFO_NOMESSAGE);
+      schedd_mes_add_global(nullptr, false, SCHEDD_INFO_NOMESSAGE);
    }
 
-   if (global_mes_count != NULL) {
+   if (global_mes_count != nullptr) {
       *global_mes_count = lGetNumberOfElem(lGetList(sme, SME_global_message_list));
    }
 
-   if (job_mes_count != NULL) {
+   if (job_mes_count != nullptr) {
       *job_mes_count = lGetNumberOfElem(lGetList(sme, SME_message_list));
    }
 
    ret = sme; /* calling function is responsible to free messages! */
-   sconf_set_sme(NULL);
+   sconf_set_sme(nullptr);
    lFreeElem(&tmp_sme);
-   sconf_set_tmp_sme(NULL);
+   sconf_set_tmp_sme(nullptr);
 
    sconf_set_mes_schedd_info(false);
    schedd_mes_set_logging(0);
@@ -359,7 +359,7 @@ void schedd_mes_add(lList **monitor_alpp, bool monitor_next_run, u_long32 job_id
 
    schedd_job_info = sconf_get_schedd_job_info();
 
-   if (monitor_alpp != NULL || monitor_next_run ||
+   if (monitor_alpp != nullptr || monitor_next_run ||
        (job_id != 0 && schedd_job_info != SCHEDD_JOB_INFO_FALSE)) {
       va_list args;
       const char *fmt;
@@ -392,8 +392,8 @@ void schedd_mes_add(lList **monitor_alpp, bool monitor_next_run, u_long32 job_id
       if (!monitor_alpp) {
          if (job_id && (schedd_job_info != SCHEDD_JOB_INFO_FALSE)) {
             if (sconf_get_mes_schedd_info()) {
-               lListElem *mes = NULL;
-               lList *jobs_ulng = NULL;
+               lListElem *mes = nullptr;
+               lList *jobs_ulng = nullptr;
                lListElem *jid_ulng;
                lListElem *tmp_sme = sconf_get_tmp_sme();
 
@@ -480,7 +480,7 @@ void schedd_mes_add_join(bool monitor_next_run, u_long32 job_number, u_long32 me
          if (sconf_get_mes_schedd_info()) {
             lListElem *tmp_sme = sconf_get_tmp_sme();
             lListElem *mes;
-            lList *jobs_ulng = NULL;
+            lList *jobs_ulng = nullptr;
             lListElem *jid_ulng;
 
             if (schedd_job_info == SCHEDD_JOB_INFO_JOB_LIST) {
@@ -491,7 +491,7 @@ void schedd_mes_add_join(bool monitor_next_run, u_long32 job_number, u_long32 me
             }
 
             mes = lGetElemUlongRW(lGetList(tmp_sme, SME_message_list), MES_message_number, message_number);
-            if (mes == NULL) {
+            if (mes == nullptr) {
                mes = lCreateElem(MES_Type);
                jobs_ulng = lCreateList("job ids", ULNG_Type);
                lSetList(mes, MES_job_number_list, jobs_ulng);
@@ -510,7 +510,7 @@ void schedd_mes_add_join(bool monitor_next_run, u_long32 job_number, u_long32 me
 
          if (do_logging) {
             msg_log_str = sge_dstring_sprintf(&msg_log_ds, "Job "sge_u32" %s", job_number, msg_str);
-            schedd_log(msg_log_str, NULL, monitor_next_run);
+            schedd_log(msg_log_str, nullptr, monitor_next_run);
          }
       } else {
          if (do_logging) {
@@ -519,7 +519,7 @@ void schedd_mes_add_join(bool monitor_next_run, u_long32 job_number, u_long32 me
             } else {
                msg_log_str = sge_dstring_sprintf(&msg_log_ds, "Your job %s", msg_str);
             }
-            schedd_log(msg_log_str, NULL, monitor_next_run);
+            schedd_log(msg_log_str, nullptr, monitor_next_run);
          }
       }
    }
@@ -551,7 +551,7 @@ void schedd_mes_add_global(lList **monitor_alpp, bool monitor_next_run, u_long32
 
    DENTER(TOP_LAYER);
 
-   if (monitor_alpp != NULL || monitor_next_run ||
+   if (monitor_alpp != nullptr || monitor_next_run ||
        sconf_get_schedd_job_info() != SCHEDD_JOB_INFO_FALSE) {
       va_list args;
       const char *fmt;
@@ -570,7 +570,7 @@ void schedd_mes_add_global(lList **monitor_alpp, bool monitor_next_run, u_long32
       if (!monitor_alpp && sconf_get_schedd_job_info() != SCHEDD_JOB_INFO_FALSE) {
          lListElem *sme = sconf_get_sme();
 
-         if (sme != NULL) {
+         if (sme != nullptr) {
             lListElem *mes = lCreateElem(MES_Type);
             lSetUlong(mes, MES_message_number, message_number);
             lSetString(mes, MES_message, msg_str);
@@ -601,7 +601,7 @@ void schedd_mes_add_global(lList **monitor_alpp, bool monitor_next_run, u_long32
 *
 *******************************************************************************/
 lList *schedd_mes_get_tmp_list(){
-   lList *ret = NULL;
+   lList *ret = nullptr;
    const lListElem *tmp_sme = sconf_get_tmp_sme();
    
    DENTER(TOP_LAYER);
@@ -632,7 +632,7 @@ lList *schedd_mes_get_tmp_list(){
 void schedd_mes_set_tmp_list(lListElem *category, int name, u_long32 job_number)
 {
    lListElem *tmp_sme = sconf_get_tmp_sme();
-   lList *tmp_list = NULL;
+   lList *tmp_list = nullptr;
    lListElem *tmp_elem;
 
    DENTER(TOP_LAYER);
@@ -643,7 +643,7 @@ void schedd_mes_set_tmp_list(lListElem *category, int name, u_long32 job_number)
       lAddSubUlong(tmp_elem, ULNG_value, job_number, MES_job_number_list, ULNG_Type);
 
    if (tmp_sme && tmp_list) {
-      lList *prev = NULL;
+      lList *prev = nullptr;
       lXchgList(tmp_sme, SME_message_list, &prev);
       lAddList(tmp_list, &prev);
       lSetList(tmp_sme, SME_message_list, tmp_list);

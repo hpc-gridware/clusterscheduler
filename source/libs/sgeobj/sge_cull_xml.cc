@@ -54,7 +54,7 @@ static void lWriteXMLHead_(const lListElem *ep, int nesting_level, FILE *fp, int
 static lListElem *append_Attr_S(lList *attributeList, const char *name, const char *value);
 
 lListElem* xml_getHead(const char *name, lList *list, lList *attributes) {
-   lListElem *xml_head = NULL;
+   lListElem *xml_head = nullptr;
 
    xml_head = lCreateElem(XMLH_Type);
 
@@ -75,7 +75,7 @@ lListElem* xml_getHead(const char *name, lList *list, lList *attributes) {
 
 void xml_addStylesheet(lListElem *xml_head, const char* name, const char *url, const char *version) {
    lListElem *stylesheet_elem = lCreateElem(XMLS_Type);
-   lList *stylesheet_list = NULL;
+   lList *stylesheet_list = nullptr;
    
    if (stylesheet_elem) {
       lSetString(stylesheet_elem, XMLS_Name, name);
@@ -100,7 +100,7 @@ void xml_addAttributeD(lListElem *xml_elem, const char *name, double value){
 
 void xml_addAttribute(lListElem *xml_elem, const char *name, const char *value){
    lListElem *attr_elem = lCreateElem(XMLA_Type);
-   lList *attr_list = NULL;
+   lList *attr_list = nullptr;
    dstring mod_value = DSTRING_INIT;
    bool is_mod_value; 
    DENTER(CULL_LAYER);
@@ -188,7 +188,7 @@ static void lWriteListXML_(const lList *lp, int nesting_level, FILE *fp, int ign
       if (is_XML_elem && (lGetBool(ep, XMLE_Print)))  {
          lListElem *elem = lGetObject(ep, XMLE_Element);
          if (!fp){
-            if (lGetString(elem, XMLA_Value) != NULL){
+            if (lGetString(elem, XMLA_Value) != nullptr){
                DPRINTF(("%s<%s%s>", indent, lGetString(elem, XMLA_Name), (is_attr?sge_dstring_get_string(&attr):"")));
                DPRINTF(("%s", lGetString(elem, XMLA_Value))); 
                lWriteListXML_(lGetList(ep, XMLE_List), nesting_level+1, fp, ignore_cull_name);
@@ -201,7 +201,7 @@ static void lWriteListXML_(const lList *lp, int nesting_level, FILE *fp, int ign
             }
          }
          else {
-            if (lGetString(elem, XMLA_Value) != NULL){
+            if (lGetString(elem, XMLA_Value) != nullptr){
                fprintf(fp, "%s<%s%s>", indent, lGetString(elem, XMLA_Name), (is_attr?sge_dstring_get_string(&attr):""));
                fprintf(fp, "%s", lGetString(elem, XMLA_Value));
                lWriteListXML_(lGetList(ep, XMLE_List), nesting_level+1, fp, ignore_cull_name);
@@ -222,7 +222,7 @@ static void lWriteListXML_(const lList *lp, int nesting_level, FILE *fp, int ign
          if (!fp){
             DPRINTF(("%s<%s%s>\n", indent, listName, ((is_attr)?sge_dstring_get_string(&attr):"")));
             
-            lWriteElemXML_(ep, nesting_level+1, NULL, ignore_cull_name);
+            lWriteElemXML_(ep, nesting_level+1, nullptr, ignore_cull_name);
             
             DPRINTF(("%s</%s>\n", indent, listName));
          }
@@ -256,7 +256,7 @@ void lWriteElemXML(const lListElem *ep)
 {
    DENTER(CULL_LAYER);
 
-   lWriteElemXML_(ep, 0, NULL, -1);
+   lWriteElemXML_(ep, 0, nullptr, -1);
 
    DRETURN_VOID;
 }
@@ -351,7 +351,7 @@ static void lWriteElemXML_(const lListElem *ep, int nesting_level, FILE *fp, int
                   continue;
                break;   
             case lStringT:
-               if (lGetPosString(ep, i) == NULL)
+               if (lGetPosString(ep, i) == nullptr)
                   continue;
                break;
             case lRefT:
@@ -520,7 +520,7 @@ lListElem *xml_append_Attr_D8(lList *attributeList, const char *name, double val
 
 lListElem *xml_append_Attr_S(lList *attributeList, const char *name, const char *value){
    dstring string = DSTRING_INIT;
-   lListElem *xml_Elem = NULL;
+   lListElem *xml_Elem = nullptr;
    
    if (escape_string(value, &string)) {
       xml_Elem = append_Attr_S(attributeList, name, sge_dstring_get_string(&string));
@@ -539,9 +539,9 @@ lListElem *xml_append_Attr_I(lList *attributeList, const char *name, int value) 
 }
 
 static bool lAttributesToString_(const lList *attr_list, dstring *attr){
-   const lListElem *attr_elem = NULL;
+   const lListElem *attr_elem = nullptr;
    
-   if(attr == NULL)
+   if(attr == nullptr)
       return false;
 
    if (lGetNumberOfElem(attr_list) == 0){
@@ -559,8 +559,8 @@ static bool lAttributesToString_(const lList *attr_list, dstring *attr){
 }
 
 static void lWriteXMLHead_(const lListElem *ep, int nesting_level, FILE *fp, int ignore_cull_name) {
-   const lListElem *elem = NULL;
-   const char *name = NULL;
+   const lListElem *elem = nullptr;
+   const char *name = nullptr;
    dstring attr = DSTRING_INIT;
    bool is_attr = false;
    
@@ -603,8 +603,8 @@ static void lWriteXMLHead_(const lListElem *ep, int nesting_level, FILE *fp, int
 }
 
 static lListElem *append_Attr_S(lList *attributeList, const char *name, const char *value) {
-   lListElem *elem = NULL;
-   lListElem *parent = NULL; 
+   lListElem *elem = nullptr;
+   lListElem *parent = nullptr;
    if (!value)
       return parent;
    parent = lCreateElem(XMLE_Type);
@@ -627,12 +627,12 @@ bool escape_string(const char *string, dstring *target){
  
    DENTER(CULL_LAYER);
    
-   if (target == NULL) {
+   if (target == nullptr) {
       DPRINTF(("no target string in excape_string()\n"));
       abort();
    } 
  
-   if (string == NULL){
+   if (string == nullptr){
       DRETURN(false);
    }
      

@@ -51,13 +51,13 @@ main(int argc, char **argv) {
    unsigned long arg = 2;
    int touches = 5;
    int service_port = 0;
-   char *local_host = NULL;
+   char *local_host = nullptr;
    struct in_addr in_addr;
-   cl_raw_list_t *endpoint_list = NULL;
-   cl_endpoint_list_data_t *list_data = NULL;
-   cl_endpoint_list_elem_t *elem = NULL;
-   cl_com_endpoint_t *last_endpoint = NULL;
-   cl_com_handle_t *handle = NULL;
+   cl_raw_list_t *endpoint_list = nullptr;
+   cl_endpoint_list_data_t *list_data = nullptr;
+   cl_endpoint_list_elem_t *elem = nullptr;
+   cl_com_endpoint_t *last_endpoint = nullptr;
+   cl_com_handle_t *handle = nullptr;
 
    in_addr.s_addr = 0;
 
@@ -75,7 +75,7 @@ main(int argc, char **argv) {
    sleep(4);
 
    printf("commlib setup ...\n");
-   retval = cl_com_setup_commlib(CL_NO_THREAD, (cl_log_t) atoi(argv[1]), NULL);
+   retval = cl_com_setup_commlib(CL_NO_THREAD, (cl_log_t) atoi(argv[1]), nullptr);
    printf("%s\n\n", cl_get_error_text(retval));
 
 
@@ -84,8 +84,8 @@ main(int argc, char **argv) {
    printf("%s\n\n", cl_get_error_text(retval));
 
 
-   while (argv[arg] != NULL) {
-      cl_com_endpoint_t *new_ep = NULL;
+   while (argv[arg] != nullptr) {
+      cl_com_endpoint_t *new_ep = nullptr;
 
       printf("append \"%s\" (static):\n", argv[arg]);
       new_ep = cl_com_create_endpoint(argv[arg], "name", 1, &in_addr);
@@ -111,7 +111,7 @@ main(int argc, char **argv) {
 
 
    list_data = cl_endpoint_list_get_data(endpoint_list);
-   if (list_data != NULL) {
+   if (list_data != nullptr) {
       printf("list data:\n");
       printf("entry life time:   %ld\n", list_data->entry_life_time);
       printf("refresh interval:  %ld\n", list_data->refresh_interval);
@@ -207,8 +207,8 @@ main(int argc, char **argv) {
 
 
    arg = 2;
-   while (argv[arg] != NULL) {
-      cl_com_endpoint_t *new_ep = NULL;
+   while (argv[arg] != nullptr) {
+      cl_com_endpoint_t *new_ep = nullptr;
       printf("elements in list: %ld\n", cl_raw_list_get_elem_count(endpoint_list));
       printf("delete %s/%s/%ld (static):\n", argv[arg], "name", (unsigned long) 1);
       new_ep = cl_com_create_endpoint(argv[arg], "name", 1, &in_addr);
@@ -235,18 +235,18 @@ main(int argc, char **argv) {
    sleep(4);
 
    printf("commlib setup ...\n");
-   retval = cl_com_setup_commlib(CL_NO_THREAD, (cl_log_t) atoi(argv[1]), NULL);
+   retval = cl_com_setup_commlib(CL_NO_THREAD, (cl_log_t) atoi(argv[1]), nullptr);
    printf("%s\n\n", cl_get_error_text(retval));
 
-   handle = cl_com_create_handle(NULL, CL_CT_TCP, CL_CM_CT_MESSAGE, true, 4545, CL_TCP_DEFAULT, "client", 1, 1, 0);
-   if (handle == NULL) {
+   handle = cl_com_create_handle(nullptr, CL_CT_TCP, CL_CM_CT_MESSAGE, true, 4545, CL_TCP_DEFAULT, "client", 1, 1, 0);
+   if (handle == nullptr) {
       printf("could not get handle\n");
       sge_prof_cleanup();
       exit(1);
    }
 
 
-   cl_com_gethostname(&local_host, NULL, NULL, NULL);
+   cl_com_gethostname(&local_host, nullptr, nullptr, nullptr);
 
    list_data = cl_endpoint_list_get_data(cl_com_get_endpoint_list());
    if (list_data) {
@@ -342,18 +342,18 @@ main(int argc, char **argv) {
    sleep(4);
 
    printf("commlib setup ...\n");
-   retval = cl_com_setup_commlib(CL_RW_THREAD, (cl_log_t) atoi(argv[1]), NULL);
+   retval = cl_com_setup_commlib(CL_RW_THREAD, (cl_log_t) atoi(argv[1]), nullptr);
    printf("%s\n\n", cl_get_error_text(retval));
 
-   handle = cl_com_create_handle(NULL, CL_CT_TCP, CL_CM_CT_MESSAGE, true, 4545, CL_TCP_DEFAULT, "client", 1, 1, false);
-   if (handle == NULL) {
+   handle = cl_com_create_handle(nullptr, CL_CT_TCP, CL_CM_CT_MESSAGE, true, 4545, CL_TCP_DEFAULT, "client", 1, 1, false);
+   if (handle == nullptr) {
       printf("could not get handle\n");
       sge_prof_cleanup();
       exit(1);
    }
 
 
-   cl_com_gethostname(&local_host, NULL, NULL, NULL);
+   cl_com_gethostname(&local_host, nullptr, nullptr, nullptr);
 
    list_data = cl_endpoint_list_get_data(cl_com_get_endpoint_list());
    if (list_data) {

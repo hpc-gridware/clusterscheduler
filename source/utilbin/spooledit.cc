@@ -79,8 +79,8 @@ init_framework(sge_gdi_ctx_class_t *ctx)
 {
    int ret = EXIT_FAILURE;
 
-   lList *answer_list = NULL;
-   lListElem *spooling_context = NULL;
+   lList *answer_list = nullptr;
+   lListElem *spooling_context = nullptr;
    const char *spooling_method = bootstrap_get_spooling_method();
    const char *spooling_lib = bootstrap_get_spooling_lib();
    const char *spooling_params = bootstrap_get_spooling_params();
@@ -95,7 +95,7 @@ init_framework(sge_gdi_ctx_class_t *ctx)
    answer_list_output(&answer_list);
    if (!strcmp(bootstrap_get_spooling_method(),"classic")) {
       CRITICAL((SGE_EVENT, SFNMAX, MSG_SPOOLDEFAULTS_CANTHANDLECLASSICSPOOLING));
-   } else if (spooling_context == NULL) {
+   } else if (spooling_context == nullptr) {
       CRITICAL((SGE_EVENT, SFNMAX, MSG_SPOOLDEFAULTS_CANNOTCREATECONTEXT));
    } else {
       spool_set_default_context(spooling_context);
@@ -120,7 +120,7 @@ get_database_from_key(const char *key)
 {
    bdb_database database = BDB_CONFIG_DB;
 
-   if (key != NULL) {
+   if (key != nullptr) {
       if (strncmp(key, "J", 1) == 0 ||
           strncmp(key, "PET", 3) == 0) {
          database = BDB_JOB_DB;
@@ -134,16 +134,16 @@ get_database_from_key(const char *key)
 static const lDescr *
 get_descr_from_key(const char *key) 
 {
-   const lDescr *descr = NULL;
+   const lDescr *descr = nullptr;
 
    DENTER(TOP_LAYER);
 
-   if (key != NULL) {
-      struct saved_vars_s *context = NULL;
+   if (key != nullptr) {
+      struct saved_vars_s *context = nullptr;
       const char *type_name;
 
       type_name = sge_strtok_r(key, ":", &context);
-      if (type_name != NULL) {
+      if (type_name != nullptr) {
          sge_object_type type = object_name_get_type(type_name);
          if (type != SGE_TYPE_ALL) {
             descr = object_type_get_descr(type);
@@ -152,7 +152,7 @@ get_descr_from_key(const char *key)
 
       sge_free_saved_vars(context);
 
-      if (descr == NULL) {
+      if (descr == nullptr) {
          ERROR((SGE_EVENT, MSG_DBSTAT_INVALIDKEY_S, key));
       }
    }
@@ -165,8 +165,8 @@ list_objects(const char *key)
 {
    int   ret = EXIT_SUCCESS;
    bool  dbret = false;
-   lList *answer_list = NULL;
-   lList *stu_list = NULL;
+   lList *answer_list = nullptr;
+   lList *stu_list = nullptr;
 
    DENTER(TOP_LAYER);
 
@@ -189,7 +189,7 @@ list_objects(const char *key)
       /*
        * Sucess: print out data.
        */
-      const lListElem *stu_elem = NULL;
+      const lListElem *stu_elem = nullptr;
       for_each_ep(stu_elem, stu_list) {
          fprintf(stdout, "%s\n", lGetString(stu_elem, STU_name));
       }
@@ -219,7 +219,7 @@ dump_object(const char *key)
 {
    int ret = EXIT_SUCCESS;
    bool dbret;
-   lList *answer_list = NULL;
+   lList *answer_list = nullptr;
 
    DENTER(TOP_LAYER);
 
@@ -231,22 +231,22 @@ dump_object(const char *key)
    } else {
       /* job script is spooled as string, not as cull object */
       if (strncmp(key, "JOBSCRIPT:", 10) == 0) {
-         const char *job_script = NULL;
+         const char *job_script = nullptr;
          lListElem *job_script_ep;
 
          // job script is written as a pseudo STU_Type object in field STU_name
          job_script_ep = spool_read_object(&answer_list, spool_get_default_context(),
                                            SGE_TYPE_JOBSCRIPT, key);
-         if (job_script_ep != NULL) {
+         if (job_script_ep != nullptr) {
             job_script = lGetString(job_script_ep, STU_name);
          }
 
-         if (job_script == NULL) {
+         if (job_script == nullptr) {
             answer_list_output(&answer_list);
             ret = EXIT_FAILURE;
          } else {
             /* dump job script with a trailing linefeed, it might be missing in the script */
-            printf("%s\n", job_script != NULL ? job_script : "no job script");
+            printf("%s\n", job_script != nullptr ? job_script : "no job script");
             sge_free(&job_script);
          }
       } else {
@@ -254,7 +254,7 @@ dump_object(const char *key)
          lListElem *object;
          object = spool_read_object(&answer_list, spool_get_default_context(),
                                     object_name_get_type(key), key);
-         if (object == NULL) {
+         if (object == nullptr) {
             answer_list_output(&answer_list);
             ret = EXIT_FAILURE;
          } else {
@@ -280,35 +280,35 @@ load_object(const char *key, const char *fname)
 {
    int ret = EXIT_SUCCESS;
    bool dbret;
-   lList *answer_list = NULL;
+   lList *answer_list = nullptr;
    const lDescr *descr;
-   lListElem *object = NULL;
+   lListElem *object = nullptr;
 
    DENTER(TOP_LAYER);
 
    descr    = get_descr_from_key(key);
 
-   if (descr == NULL) {
+   if (descr == nullptr) {
       ret = EXIT_FAILURE;
    }
 
    if (ret == EXIT_SUCCESS) {
       FILE *fd;
 
-      if((fd = fopen(fname, "r")) == NULL) {
+      if((fd = fopen(fname, "r")) == nullptr) {
          ERROR((SGE_EVENT, MSG_ERROROPENINGFILEFORREADING_SS, fname, strerror(errno)));
          ret = EXIT_FAILURE;
       } else {
          object = lUndumpElemFp(fd, descr);
          FCLOSE(fd);
-         if (object == NULL) {
+         if (object == nullptr) {
             ERROR((SGE_EVENT, MSG_DBSTAT_ERRORUNDUMPING_S, fname));
             ret = EXIT_FAILURE;
          }
       }
    }
 
-   if (object != NULL) {
+   if (object != nullptr) {
       /* start a transaction */
       dbret = spool_transaction(&answer_list, spool_get_default_context(), STC_begin);
       if (!dbret) {
@@ -349,7 +349,7 @@ delete_object(const char *key)
 {
    int ret = EXIT_SUCCESS;
    bool dbret;
-   lList *answer_list = NULL;
+   lList *answer_list = nullptr;
 
    DENTER(TOP_LAYER);
 
@@ -386,8 +386,8 @@ int
 main(int argc, char *argv[])
 {
    int ret = EXIT_SUCCESS;
-   lList *answer_list = NULL;
-   sge_gdi_ctx_class_t *ctx = NULL;
+   lList *answer_list = nullptr;
+   sge_gdi_ctx_class_t *ctx = nullptr;
 
    DENTER_MAIN(TOP_LAYER, "spooledit");
 
@@ -436,7 +436,7 @@ main(int argc, char *argv[])
       }
    }
 
-   if (spool_get_default_context() != NULL) {
+   if (spool_get_default_context() != nullptr) {
 #if 0
       time_t next_trigger = 0;
       if (!spool_trigger_context(&answer_list, spool_get_default_context(), 

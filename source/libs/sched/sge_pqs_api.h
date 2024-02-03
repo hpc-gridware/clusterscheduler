@@ -160,7 +160,7 @@
  *    qsort_argv[0] = "libmyqsort.so"
  *    qsort_argv[1] = "my_qsort"
  *    qsort_argv[2] = "5"
- *    qsort_argv[3] = NULL
+ *    qsort_argv[3] = nullptr
  *
  *
  * Here's a sample PE qsort function. It reverses the sort order.

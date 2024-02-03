@@ -405,13 +405,13 @@ const char* sge_get_schedd_text( int nr )
 }
 
 const char *sge_schedd_text(int number) {
-   const char *error_text = NULL;
+   const char *error_text = nullptr;
 
    DENTER(TOP_LAYER);
 
    error_text = sge_get_schedd_text(number);
 
-   if (error_text == NULL) {
+   if (error_text == nullptr) {
       DRETURN(MSG_SYSTEM_GOTNULLASERRORTEXT);
    }
  

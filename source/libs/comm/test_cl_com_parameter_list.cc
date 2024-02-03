@@ -52,10 +52,10 @@ extern int main(void) {
    const char *param3 = "param3";
    char *val2 = "val2";
    char *val3 = "val3";
-   char *ret_char = NULL;
+   char *ret_char = nullptr;
 
    printf("commlib setup ...\n");
-   retval = cl_com_setup_commlib(CL_NO_THREAD, CL_LOG_INFO, NULL);
+   retval = cl_com_setup_commlib(CL_NO_THREAD, CL_LOG_INFO, nullptr);
    if (retval != CL_RETVAL_OK) {
       printf("%s\n\n", cl_get_error_text(retval));
       exit(1);

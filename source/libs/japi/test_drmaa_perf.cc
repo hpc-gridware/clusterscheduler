@@ -48,11 +48,11 @@ int nthreads = 1;
 int dowait   = 1;
 int quiet   = 0;
 char *native_spec = "-w n";
-char *job_path = NULL;
-char **job_args = NULL;
+char *job_path = nullptr;
+char **job_args = nullptr;
 
-char *scenario = NULL;
-char *site_b = NULL;
+char *scenario = nullptr;
+char *site_b = nullptr;
 
 drmaa_job_template_t *jt;
 
@@ -218,7 +218,7 @@ int main(int argc, char *argv[])
    printf("1st arg:  %s\n", job_args?job_args[0]:"<noargs>");
 #endif
 
-   if (drmaa_init(NULL, diagnosis, sizeof(diagnosis)-1) != DRMAA_ERRNO_SUCCESS) {
+   if (drmaa_init(nullptr, diagnosis, sizeof(diagnosis)-1) != DRMAA_ERRNO_SUCCESS) {
       fprintf(stderr, "drmaa_init() failed: %s\n", diagnosis);
       return 1;
    }
@@ -226,7 +226,7 @@ int main(int argc, char *argv[])
    get_gmt(&start_s);
 
    if (!scenario) {
-      if (!(jt = create_job_template(job_path, NULL, 0))) {
+      if (!(jt = create_job_template(job_path, nullptr, 0))) {
          fprintf(stderr, "create_sleeper_job_template() failed\n");
          return 1;
       }
@@ -235,22 +235,22 @@ int main(int argc, char *argv[])
          if (submit_jobs(&argv[i]))
              return 1;
       } else {
-         pthread_t *ids = NULL;
+         pthread_t *ids = nullptr;
          ids = (pthread_t *)malloc(sizeof (pthread_t) * nthreads);
 
          for (i = 0; i < nthreads; i++) {
-            if (pthread_create(&ids[i], NULL, submit_jobs, NULL)) {
+            if (pthread_create(&ids[i], nullptr, submit_jobs, nullptr)) {
                fprintf(stderr, "pthread_create() failed: %s\n", strerror(errno));
                return 1;
             }
          }
 
          for (i = 0; i < nthreads; i++) {
-            pthread_join(ids[i], NULL);
+            pthread_join(ids[i], nullptr);
          }
       }
    
-      drmaa_delete_job_template(jt, NULL, 0);
+      drmaa_delete_job_template(jt, nullptr, 0);
    } else {
       if (submit_by_project("project1") || submit_by_project("project2") ||
           submit_by_project("project3") || submit_by_project("project4"))
@@ -268,7 +268,7 @@ int main(int argc, char *argv[])
          int aborted, exited, exit_status, signaled;
 
          drmaa_errno = drmaa_wait(DRMAA_JOB_IDS_SESSION_ANY, jobid, sizeof(jobid)-1, 
-            &stat, DRMAA_TIMEOUT_WAIT_FOREVER, NULL, diagnosis, sizeof(diagnosis)-1);
+            &stat, DRMAA_TIMEOUT_WAIT_FOREVER, nullptr, diagnosis, sizeof(diagnosis)-1);
 
          if (drmaa_errno != DRMAA_ERRNO_SUCCESS) {
             fprintf(stderr, "drmaa_wait() failed: %s\n", diagnosis);
@@ -278,14 +278,14 @@ int main(int argc, char *argv[])
          /*
           * report how job finished 
           */
-         drmaa_wifaborted(&aborted, stat, NULL, 0);
+         drmaa_wifaborted(&aborted, stat, nullptr, 0);
          if (aborted) {
             printf("job \"%s\" never ran\n", jobid);
             success = 0;
          } else {
-            drmaa_wifexited(&exited, stat, NULL, 0);
+            drmaa_wifexited(&exited, stat, nullptr, 0);
             if (exited) {
-               drmaa_wexitstatus(&exit_status, stat, NULL, 0);
+               drmaa_wexitstatus(&exit_status, stat, nullptr, 0);
                if (exit_status != 0) {
                   success = 0;
                   printf("job \"%s\" with exit status %d\n", jobid, exit_status);
@@ -295,10 +295,10 @@ int main(int argc, char *argv[])
                }
             } else {
                success = 0;
-               drmaa_wifsignaled(&signaled, stat, NULL, 0);
+               drmaa_wifsignaled(&signaled, stat, nullptr, 0);
                if (signaled) {
                   char termsig[DRMAA_SIGNAL_BUFFER+1];
-                  drmaa_wtermsig(termsig, DRMAA_SIGNAL_BUFFER, stat, NULL, 0);
+                  drmaa_wtermsig(termsig, DRMAA_SIGNAL_BUFFER, stat, nullptr, 0);
                   printf("job \"%s\" finished due to signal %s\n", jobid, termsig);
                } else
                   printf("job \"%s\" finished with unclear conditions\n", jobid);
@@ -324,7 +324,7 @@ int main(int argc, char *argv[])
 
 static int submit_by_project(const char *project)
 {
-   drmaa_job_template_t *jt = NULL; 
+   drmaa_job_template_t *jt = nullptr;
    char diagnosis[DRMAA_ERROR_STRING_BUFFER];
    char jobid[100];
    int drmaa_errno, i;
@@ -346,7 +346,7 @@ static int submit_by_project(const char *project)
       }
       if (!quiet)
          printf("\t \"%s\"\n", jobid);
-      drmaa_delete_job_template(jt, NULL, 0);
+      drmaa_delete_job_template(jt, nullptr, 0);
    }
 
    return 0;
@@ -371,20 +371,20 @@ static void *submit_jobs(void *arg)
          printf("\t \"%s\"\n", jobid);
    }
 
-   return NULL;
+   return nullptr;
 }
 
 static drmaa_job_template_t *create_job_template(const char *job_path, 
       const char *project, int i)
 {
-   drmaa_job_template_t *jt = NULL;
+   drmaa_job_template_t *jt = nullptr;
    char buffer[10240];
 
-   if (drmaa_allocate_job_template(&jt, NULL, 0)!=DRMAA_ERRNO_SUCCESS)
-      return NULL;
+   if (drmaa_allocate_job_template(&jt, nullptr, 0)!=DRMAA_ERRNO_SUCCESS)
+      return nullptr;
 
    /* run in users home directory */
-   drmaa_set_attribute(jt, DRMAA_WD, DRMAA_PLACEHOLDER_HD, NULL, 0);
+   drmaa_set_attribute(jt, DRMAA_WD, DRMAA_PLACEHOLDER_HD, nullptr, 0);
 
    if (scenario) {
 
@@ -448,20 +448,20 @@ static drmaa_job_template_t *create_job_template(const char *job_path,
       strcpy(buffer, native_spec);
 
 /* printf("### native spec \"%s\"\n", buffer); */
-   drmaa_set_attribute(jt, DRMAA_NATIVE_SPECIFICATION, buffer, NULL, 0);
+   drmaa_set_attribute(jt, DRMAA_NATIVE_SPECIFICATION, buffer, nullptr, 0);
 
    /* the job to be run */
-   drmaa_set_attribute(jt, DRMAA_REMOTE_COMMAND, job_path, NULL, 0);
+   drmaa_set_attribute(jt, DRMAA_REMOTE_COMMAND, job_path, nullptr, 0);
 
    /* the job's arguments if any */
    if (job_args)
-      drmaa_set_vector_attribute(jt, DRMAA_V_ARGV, (const char **)job_args, NULL, 0);
+      drmaa_set_vector_attribute(jt, DRMAA_V_ARGV, (const char **)job_args, nullptr, 0);
 
    /* join output/error file */
-   drmaa_set_attribute(jt, DRMAA_JOIN_FILES, "y", NULL, 0);
+   drmaa_set_attribute(jt, DRMAA_JOIN_FILES, "y", nullptr, 0);
 
    /* path for output */
-   drmaa_set_attribute(jt, DRMAA_OUTPUT_PATH, ":/dev/null", NULL, 0);
+   drmaa_set_attribute(jt, DRMAA_OUTPUT_PATH, ":/dev/null", nullptr, 0);
 
    return jt;
 }
@@ -469,7 +469,7 @@ static drmaa_job_template_t *create_job_template(const char *job_path,
 static void get_gmt(struct timeval *now)
 {
 #  ifdef SOLARIS
-   gettimeofday(now, NULL);
+   gettimeofday(now, nullptr);
 #  else
    struct timezone tzp;
    gettimeofday(now, &tzp);

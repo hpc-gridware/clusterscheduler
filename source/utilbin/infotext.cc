@@ -85,7 +85,7 @@ int main(int argc, char *argv[]);
 static int   sge_infotext_all_spaces(char* text) {
    size_t i;
    int back = 0;
-   if (text != NULL) {
+   if (text != nullptr) {
       for(i=0;i<strlen(text);i++) {
          if(text[i] != ' ') {
             back = 1;
@@ -245,9 +245,9 @@ static char* sge_infotext_get_next_word(dstring* buf, char* text) {
 }
 
 static void  sge_infotext_format_output(dstring* dash_buf,sge_infotext_options* options, char* text) {
-   char* column_var = NULL;
+   char* column_var = nullptr;
    size_t max_column = 79;
-   char* tp = NULL;
+   char* tp = nullptr;
    size_t i;
    int nr_word = 0;
    dstring dash = DSTRING_INIT;
@@ -266,13 +266,13 @@ static void  sge_infotext_format_output(dstring* dash_buf,sge_infotext_options* 
    options->n = 0;
 
    column_var = getenv("SGE_INFOTEXT_MAX_COLUMN");
-   if (column_var != NULL) {
+   if (column_var != nullptr) {
       max_column = atoi(column_var);
    } 
 
    tp = text;
    DPRINTF(("do strcpy"));
-   if (sge_dstring_get_string(dash_buf) == NULL) {
+   if (sge_dstring_get_string(dash_buf) == nullptr) {
       DPRINTF(("dash_buf is null"));
    }
    sge_dstring_copy_dstring(&line,dash_buf);
@@ -287,7 +287,7 @@ static void  sge_infotext_format_output(dstring* dash_buf,sge_infotext_options* 
 
    done = false;
    while (!done) {
-      char* next_word = NULL;
+      char* next_word = nullptr;
       int new_line_buffer;
 
       next_word = sge_infotext_get_next_word(&tmp_buf, tp);
@@ -316,7 +316,7 @@ static void  sge_infotext_format_output(dstring* dash_buf,sge_infotext_options* 
       }
       
 
-      if(sge_dstring_strlen(&line) > max_column || strstr(sge_dstring_get_string(&line),"\n") != NULL ) {
+      if(sge_dstring_strlen(&line) > max_column || strstr(sge_dstring_get_string(&line),"\n") != nullptr ) {
 #if 0
 /*      
          uncomment this code if a word break should be done
@@ -430,7 +430,7 @@ static void  sge_infotext_print_line(dstring* dash_buf, sge_infotext_options* op
       output=stderr;
    }
 
-   if ((getenv("SGE_NOMSG") != NULL && options->log == 1) || (getenv("SGE_NOMSG") == NULL && options->log == 0)) {
+   if ((getenv("SGE_NOMSG") != nullptr && options->log == 1) || (getenv("SGE_NOMSG") == nullptr && options->log == 0)) {
       fprintf(output,"%s",sge_dstring_get_string(&line));
       if (options->n != 1 && line_length > 0 ) {
          fprintf(output,"\n");
@@ -455,13 +455,13 @@ static void  sge_infotext_print_line(dstring* dash_buf, sge_infotext_options* op
 
 
 static char* sge_infotext_string_input_parsing(dstring* string_buffer,char* string) {
-    char* h1 = NULL;
-    char* h2 = NULL;
+    char* h1 = nullptr;
+    char* h2 = nullptr;
     char buf[10];
     int special_sign = 0;
 
-    if (string == NULL) {
-       return NULL;
+    if (string == nullptr) {
+       return nullptr;
     }
     if (strlen(string) == 0) {
        sge_dstring_copy_string(string_buffer,"");
@@ -514,7 +514,7 @@ static char* sge_infotext_string_input_parsing(dstring* string_buffer,char* stri
 }
 
 static char* sge_infotext_string_output_parsing(dstring* string_buffer,char* string) {
-    char* h1 = NULL;
+    char* h1 = nullptr;
     char buf[10];
 
 
@@ -559,13 +559,13 @@ static char *sge_infotext_string_replace(dstring* tmp_buf, const char *arg, cons
    p2 = sge_dstring_copy_string(&arg_copy, arg);
 
    p1 = strstr((char *)p2, what);
-   if (p1 == NULL) {
+   if (p1 == nullptr) {
       sge_dstring_copy_string(tmp_buf,arg);
       sge_dstring_free(&arg_copy);
       return (char*) sge_dstring_get_string(tmp_buf);
    }
    sge_dstring_copy_string(tmp_buf,"");
-   while (p1 != NULL) {
+   while (p1 != nullptr) {
       *p1 = 0;
       sge_dstring_append(tmp_buf,p2);
       sge_dstring_append(tmp_buf,with);
@@ -588,13 +588,13 @@ static char *sge_infotext_string_replace(dstring* tmp_buf, const char *arg, cons
 #endif
 
 static int sge_infotext_get_nr_of_substrings(const char* buffer, const char* substring) {
-   const char* p1 = NULL;
-   const char* buf = NULL;
+   const char* p1 = nullptr;
+   const char* buf = nullptr;
    int nr = 0;
 
    buf = buffer;
    p1 = strstr(buf, substring);
-   while (p1 != NULL) {
+   while (p1 != nullptr) {
       buf = ++p1;
       p1 = strstr(buf, substring);
       nr++;
@@ -606,9 +606,9 @@ static int sge_infotext_get_nr_of_substrings(const char* buffer, const char* sub
 
 static void sge_infotext_welcome(void) {
 
-   char* user = NULL;
+   char* user = nullptr;
    user = getenv("USER");
-   if (user == NULL) {
+   if (user == nullptr) {
       user = "(no USER environment variable set)";
    }
    
@@ -621,7 +621,7 @@ static void sge_infotext_welcome(void) {
 }
 
 static void sge_infotext_raw(char *format_string) {
-   const char* buffer = NULL;
+   const char* buffer = nullptr;
    dstring tmp_buf = DSTRING_INIT;
 
    buffer = _SGE_GETTEXT__((char*)_(sge_infotext_string_input_parsing(&tmp_buf,format_string)));
@@ -688,7 +688,7 @@ int main( int argc, char* argv[] ) {
    int string_arguments = 0;
    int first_arg = 0;
    int real_args = 0;
-   char* help_str = NULL;
+   char* help_str = nullptr;
    sge_infotext_options options;
    dstring buffer = DSTRING_INIT;
    dstring buffer2 = DSTRING_INIT;
@@ -702,7 +702,7 @@ int main( int argc, char* argv[] ) {
                          (setlocale_func_type)      setlocale,
                          (bindtextdomain_func_type) bindtextdomain,
                          (textdomain_func_type)     textdomain);
-   sge_init_language(NULL,NULL);
+   sge_init_language(nullptr,nullptr);
 #endif /* __SGE_COMPILE_WITH_GETTEXT__  */
   
       
@@ -720,7 +720,7 @@ int main( int argc, char* argv[] ) {
       char* arg = argv[i];
       if (arg[0] == '-' && arg_start == 0 && no_options == 0) {
          int o_start = 0;
-         char* option = NULL;
+         char* option = nullptr;
          int h;
          int opt_length; 
 
@@ -933,7 +933,7 @@ int main( int argc, char* argv[] ) {
    /* if we have to much args add the rest to the string buffer */
    while(real_args > string_arguments) {
       char* arg = argv[first_arg];
-      char* hcp = NULL;
+      char* hcp = nullptr;
 
       hcp = (char*)sge_dstring_get_string(&buffer);
       if (strcmp(hcp,"") != 0 ) {
@@ -1083,8 +1083,8 @@ int main( int argc, char* argv[] ) {
    DPRINTF(("build_dash\n"));
    sge_dstring_append(&sge_infotext_dash_buffer,"");
    sge_infotext_build_dash(&sge_infotext_dash_buffer,&options);
-   if (sge_dstring_get_string(&sge_infotext_dash_buffer) == NULL) {
-      DPRINTF(("sge_infotext_dash_buffer is NULL"));
+   if (sge_dstring_get_string(&sge_infotext_dash_buffer) == nullptr) {
+      DPRINTF(("sge_infotext_dash_buffer is nullptr"));
    }
    DPRINTF(("output\n"));
    if (do_ask != 1) {
@@ -1094,19 +1094,19 @@ int main( int argc, char* argv[] ) {
    ret_val = 0;
    if (do_ask == 1 || do_wait == 1 ) {
       char input_buffer[2048];
-      char* help = NULL;
+      char* help = nullptr;
       int done = 0;
       while (done == 0) {
          if (do_wait != 1) {
             sge_infotext_format_output(&sge_infotext_dash_buffer,&options,(char*)sge_dstring_get_string(&buffer));
          }
          if (do_auto == 0) {
-            if ( fgets(input_buffer, 2047, stdin) == NULL) {
+            if ( fgets(input_buffer, 2047, stdin) == nullptr) {
                ret_val = 2;
                break;
             } else {
                help = strstr(input_buffer, "\n");
-               if (help != NULL) {
+               if (help != nullptr) {
                   *help = 0;
                }
             }

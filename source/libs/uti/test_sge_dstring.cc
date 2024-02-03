@@ -44,7 +44,7 @@ check_dstring(dstring *sb) {
    bool ret = true;
 
    printf("%5d : %5d : %-50s\n", (int) sb->size, (int) sb->length,
-          sb->s == NULL ? "(null)" : sb->s);
+          sb->s == nullptr ? "(null)" : sb->s);
 
    return ret;
 }
@@ -56,9 +56,9 @@ check_all(dstring *sb) {
 
    /* sge_dstring_append */
    printf("\nchecking sge_dstring_append\n");
-   sge_dstring_append(NULL, NULL);
+   sge_dstring_append(nullptr, nullptr);
 
-   sge_dstring_append(sb, NULL);
+   sge_dstring_append(sb, nullptr);
    check_dstring(sb);
 
    sge_dstring_append(sb, "blah");
@@ -81,12 +81,12 @@ check_all(dstring *sb) {
    /* sge_dstring_append_dstring */
    printf("\nchecking sge_dstring_append_dstring\n");
    sge_dstring_clear(sb);
-   sge_dstring_append_dstring(NULL, NULL);
+   sge_dstring_append_dstring(nullptr, nullptr);
    {
       dstring second = DSTRING_INIT;
       sge_dstring_append(&second, "dstring");
-      sge_dstring_append_dstring(NULL, &second);
-      sge_dstring_append_dstring(sb, NULL);
+      sge_dstring_append_dstring(nullptr, &second);
+      sge_dstring_append_dstring(sb, nullptr);
       sge_dstring_append_dstring(sb, &second);
       check_dstring(sb);
 
@@ -96,7 +96,7 @@ check_all(dstring *sb) {
    /* sge_dstring_append_char */
    printf("\nchecking sge_dstring_append_char\n");
    sge_dstring_clear(sb);
-   sge_dstring_append_char(NULL, 'a');
+   sge_dstring_append_char(nullptr, 'a');
    sge_dstring_append_char(sb, '\0');
    check_dstring(sb);
    sge_dstring_append_char(sb, 'a');
@@ -106,8 +106,8 @@ check_all(dstring *sb) {
 
    /* sge_dstring_sprintf */
    printf("\nchecking sge_dstring_sprintf\n");
-   sge_dstring_sprintf(NULL, "test %s", "string");
-   sge_dstring_sprintf(sb, NULL);
+   sge_dstring_sprintf(nullptr, "test %s", "string");
+   sge_dstring_sprintf(sb, nullptr);
    sge_dstring_sprintf(sb, "test %s", "string");
    check_dstring(sb);
 
@@ -116,10 +116,10 @@ check_all(dstring *sb) {
    /* sge_dstring_vsprintf */
    printf("\nchecking sge_dstring_vsprintf\n");
    {
-      const char *args[] = { "string", NULL };
+      const char *args[] = { "string", nullptr };
       sge_dstring_clear(sb);
-      sge_dstring_vsprintf(NULL, "test %s", args);
-      sge_dstring_vsprintf(sb, NULL, args);
+      sge_dstring_vsprintf(nullptr, "test %s", args);
+      sge_dstring_vsprintf(sb, nullptr, args);
       sge_dstring_vsprintf(sb, "test %s", args);
       check_dstring(sb);
    }
@@ -128,21 +128,21 @@ check_all(dstring *sb) {
    /* sge_dstring_sprintf_append */
    printf("\nchecking sge_dstring_sprintf_append\n");
    sge_dstring_clear(sb);
-   sge_dstring_sprintf_append(NULL, "test %s", "string");
-   sge_dstring_sprintf_append(sb, NULL);
+   sge_dstring_sprintf_append(nullptr, "test %s", "string");
+   sge_dstring_sprintf_append(sb, nullptr);
    sge_dstring_sprintf_append(sb, "test %s", "string");
    sge_dstring_sprintf_append(sb, " appended test %s", "string");
    check_dstring(sb);
 
    /* sge_dstring_clear */
    printf("\nchecking sge_dstring_clear\n");
-   sge_dstring_clear(NULL);
+   sge_dstring_clear(nullptr);
    sge_dstring_clear(sb);
    check_dstring(sb);
 
    /* sge_dstring_free */
    printf("\nchecking sge_dstring_free\n");
-   sge_dstring_free(NULL);
+   sge_dstring_free(nullptr);
    sge_dstring_free(sb);
    check_dstring(sb);
 
@@ -153,28 +153,28 @@ check_all(dstring *sb) {
    {
       const char *result;
 
-      result = sge_dstring_get_string(NULL);
-      printf("sge_dstring_get_string(NULL) = %s\n",
-             result == NULL ? "NULL" : result);
+      result = sge_dstring_get_string(nullptr);
+      printf("sge_dstring_get_string(nullptr) = %s\n",
+             result == nullptr ? "nullptr" : result);
       result = sge_dstring_get_string(sb);
       printf("sge_dstring_get_string(sb) = %s\n",
-             result == NULL ? "NULL" : result);
+             result == nullptr ? "nullptr" : result);
    }
 
    /* sge_dstring_copy_string */
    printf("\nchecking sge_dstring_copy_string\n");
-   sge_dstring_copy_string(NULL, NULL);
-   sge_dstring_copy_string(sb, NULL);
-   sge_dstring_copy_string(NULL, "new test string");
+   sge_dstring_copy_string(nullptr, nullptr);
+   sge_dstring_copy_string(sb, nullptr);
+   sge_dstring_copy_string(nullptr, "new test string");
    sge_dstring_copy_string(sb, "new test string");
    check_dstring(sb);
 
    /* sge_dstring_copy_dstring 
-    * check only NULL pointer behaviour, it just calls sge_dstring_copy_string
+    * check only nullptr pointer behaviour, it just calls sge_dstring_copy_string
     */
    printf("\nchecking sge_dstring_copy_dstring\n");
-   sge_dstring_copy_dstring(NULL, NULL);
-   sge_dstring_copy_dstring(sb, NULL);
+   sge_dstring_copy_dstring(nullptr, nullptr);
+   sge_dstring_copy_dstring(sb, nullptr);
    check_dstring(sb);
 
    /* sge_dstring_strlen */
@@ -182,8 +182,8 @@ check_all(dstring *sb) {
    {
       int len;
       sge_dstring_copy_string(sb, "test string");
-      len = sge_dstring_strlen(NULL);
-      printf("sge_dstring_strlen(NULL) = %d\n", len);
+      len = sge_dstring_strlen(nullptr);
+      printf("sge_dstring_strlen(nullptr) = %d\n", len);
       len = sge_dstring_strlen(sb);
       printf("sge_dstring_strlen(sb) = %d\n", len);
    }
@@ -193,8 +193,8 @@ check_all(dstring *sb) {
    {
       int len;
       sge_dstring_copy_string(sb, "test string");
-      len = sge_dstring_remaining(NULL);
-      printf("sge_dstring_remaining(NULL) = %d\n", len);
+      len = sge_dstring_remaining(nullptr);
+      printf("sge_dstring_remaining(nullptr) = %d\n", len);
       len = sge_dstring_remaining(sb);
       printf("sge_dstring_remaining(sb) = %d\n", len);
    }
@@ -208,11 +208,11 @@ static void test_dstring_performance(dstring *ds, int max, const char *data) {
    struct timeval after;
    double time;
 
-   gettimeofday(&before, NULL);
+   gettimeofday(&before, nullptr);
    for (i = 0; i < max; i++) {
       sge_dstring_sprintf(ds, "%s", data, data);
    }
-   gettimeofday(&after, NULL);
+   gettimeofday(&after, nullptr);
 
    time = after.tv_usec - before.tv_usec;
    time = after.tv_sec - before.tv_sec + (time / 1000000);
@@ -226,14 +226,14 @@ static void test_dstring_performance_static(int max, const char *data) {
    struct timeval after;
    double time;
 
-   gettimeofday(&before, NULL);
+   gettimeofday(&before, nullptr);
    for (i = 0; i < max; i++) {
       dstring ds;
       char ds_buffer[MAX_STRING_SIZE];
       sge_dstring_init(&ds, ds_buffer, sizeof(ds_buffer));
       sge_dstring_sprintf(&ds, "%s/%s", data, data);
    }
-   gettimeofday(&after, NULL);
+   gettimeofday(&after, nullptr);
 
    time = after.tv_usec - before.tv_usec;
    time = after.tv_sec - before.tv_sec + (time / 1000000);
@@ -247,13 +247,13 @@ static void test_dstring_performance_dynamic(int max, const char *data) {
    struct timeval after;
    double time;
 
-   gettimeofday(&before, NULL);
+   gettimeofday(&before, nullptr);
    for (i = 0; i < max; i++) {
       dstring ds = DSTRING_INIT;
       sge_dstring_sprintf(&ds, "%s/%s", data, data);
       sge_dstring_free(&ds);
    }
-   gettimeofday(&after, NULL);
+   gettimeofday(&after, nullptr);
 
    time = after.tv_usec - before.tv_usec;
    time = after.tv_sec - before.tv_sec + (time / 1000000);

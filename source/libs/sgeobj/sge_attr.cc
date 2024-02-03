@@ -197,7 +197,7 @@ attr_list_locate(const lList *this_list, const char *host_or_group,
 *     int value_nm             - CULL field name for the value 
 *
 *  RESULT
-*     lListElem * - new CULL element or NULL in case on an error
+*     lListElem * - new CULL element or nullptr in case on an error
 *
 *  NOTES
 *     There are typesafe versions of this function. Have a look into 
@@ -216,15 +216,15 @@ static lListElem *
 attr_create(lList **answer_list, const char *href, void *value,
             const lDescr *descriptor, int href_nm, int value_nm)
 {
-   lListElem *ret = NULL;
+   lListElem *ret = nullptr;
 
    DENTER(HOSTATTR_LAYER);
-   if (href != NULL) {
+   if (href != nullptr) {
       lListElem *new_attr = lCreateElem(descriptor);
 
-      if (new_attr != NULL) {
+      if (new_attr != nullptr) {
          lSetHost(new_attr, href_nm, href);
-         if (value != NULL) {
+         if (value != nullptr) {
             object_set_any_type(new_attr, value_nm, value);
          }
          ret = new_attr;
@@ -304,16 +304,16 @@ attr_list_add(lList **this_list, lList **answer_list, lListElem **attr,
 
    DENTER(HOSTATTR_LAYER);
 
-   if (this_list != NULL && attr != NULL && *attr != NULL) {
-      lListElem *attr_elem = NULL; 
-      const char *href = NULL;
+   if (this_list != nullptr && attr != nullptr && *attr != nullptr) {
+      lListElem *attr_elem = nullptr;
+      const char *href = nullptr;
       bool is_hgroup = false; 
       bool created_list = false;
 
       href = lGetHost(*attr, href_nm);
       is_hgroup = is_hgroup_name(href);
 
-      if (*this_list == NULL) {
+      if (*this_list == nullptr) {
          *this_list = lCreateList("", descriptor);
          created_list = true;
       } else {
@@ -329,11 +329,11 @@ attr_list_add(lList **this_list, lList **answer_list, lListElem **attr,
        */
       if (!strcmp(href, HOSTREF_DEFAULT) || 
           !is_hgroup ||
-          (is_hgroup && attr_elem != NULL)) {
-         const char *value = NULL; 
+          (is_hgroup && attr_elem != nullptr)) {
+         const char *value = nullptr;
 
          object_get_any_type(*attr, value_nm, &value);
-         if (attr_elem != NULL) {
+         if (attr_elem != nullptr) {
             if (flags & HOSTATTR_OVERWRITE) {
                object_set_any_type(attr_elem, value_nm, &value);
                lFreeElem(attr);
@@ -350,9 +350,9 @@ attr_list_add(lList **this_list, lList **answer_list, lListElem **attr,
             ret = true;
          }
       } else {
-         lList *href_list = NULL;
-         lList *host_list = NULL;
-         lList *new_host_list = NULL;
+         lList *href_list = nullptr;
+         lList *host_list = nullptr;
+         lList *new_host_list = nullptr;
          bool lret = true;
        
          /*
@@ -362,7 +362,7 @@ attr_list_add(lList **this_list, lList **answer_list, lListElem **attr,
           *    function to return it
           */ 
          if (!(flags & HOSTATTR_ALLOW_AMBIGUITY) && 
-             ambiguous_href_list != NULL) {
+             ambiguous_href_list != nullptr) {
 
             /*
              * Create host reference list of all used hostgroups
@@ -374,7 +374,7 @@ attr_list_add(lList **this_list, lList **answer_list, lListElem **attr,
 
                   if (strcmp(href, HOSTREF_DEFAULT) && 
                       is_hgroup_name(href)) {
-                     lret &= href_list_add(&href_list, NULL, href);
+                     lret &= href_list_add(&href_list, nullptr, href);
                   }
                }
             }
@@ -383,16 +383,16 @@ attr_list_add(lList **this_list, lList **answer_list, lListElem **attr,
              * Find all directly or indirectly referenced hosts for all 
              * hostgroups
              */
-            if (lret && href_list != NULL) {
-               lList *tmp_href_list = NULL; 
+            if (lret && href_list != nullptr) {
+               lList *tmp_href_list = nullptr;
 
-               lret &= href_list_find_all_references(href_list, NULL, 
+               lret &= href_list_find_all_references(href_list, nullptr,
                                                      master_hgroup_list, &host_list, 
-                                                     NULL); 
-               lret &= href_list_add(&tmp_href_list, NULL, href);
-               lret &= href_list_find_all_references(tmp_href_list, NULL,
+                                                     nullptr);
+               lret &= href_list_add(&tmp_href_list, nullptr, href);
+               lret &= href_list_find_all_references(tmp_href_list, nullptr,
                                                      master_hgroup_list, 
-                                                     &new_host_list, NULL);
+                                                     &new_host_list, nullptr);
                lFreeList(&tmp_href_list);
             }
 
@@ -400,15 +400,15 @@ attr_list_add(lList **this_list, lList **answer_list, lListElem **attr,
              * Find all host references which already have a value attached.
              * For all these hosts the new value in ambiguious.
              */
-            if (lret && ambiguous_href_list != NULL && host_list != NULL &&
-                new_host_list != NULL) { 
-               lret = href_list_compare(new_host_list, NULL, host_list,
-                                           NULL, NULL, ambiguous_href_list,
-                                           NULL);
+            if (lret && ambiguous_href_list != nullptr && host_list != nullptr &&
+                new_host_list != nullptr) {
+               lret = href_list_compare(new_host_list, nullptr, host_list,
+                                           nullptr, nullptr, ambiguous_href_list,
+                                           nullptr);
             }
          } 
 
-         if (ambiguous_href_list != NULL &&
+         if (ambiguous_href_list != nullptr &&
                lGetNumberOfElem(*ambiguous_href_list) >= 1 &&
                !(flags & HOSTATTR_ALLOW_AMBIGUITY)) {
             SGE_ADD_MSG_ID(sprintf(SGE_EVENT, SFNMAX, MSG_ATTR_RESULTAMBIGUOUS));
@@ -471,7 +471,7 @@ attr_list_add_set_del(lList **this_list, lList **answer_list,
               int href_nm, int value_nm, const lList *master_hgroup_list)
 {
    bool ret = true;
-   lListElem *attr = NULL;
+   lListElem *attr = nullptr;
 
    if (this_list && *this_list) {
       if (remove) {
@@ -481,7 +481,7 @@ attr_list_add_set_del(lList **this_list, lList **answer_list,
          attr = attr_create(answer_list, hostname, value, descriptor, 
                             href_nm, value_nm);
          ret = attr_list_add(this_list, answer_list,
-                             &attr, HOSTATTR_OVERWRITE, NULL,
+                             &attr, HOSTATTR_OVERWRITE, nullptr,
                              descriptor, href_nm, value_nm, master_hgroup_list);
       }
    }
@@ -505,14 +505,14 @@ attr_list_find_value(const lList *this_list, lList **answer_list,
 
    DENTER(HOSTATTR_LAYER);
 
-   if (this_list != NULL && hostname != NULL) {
-      const lListElem *href = NULL;
+   if (this_list != nullptr && hostname != nullptr) {
+      const lListElem *href = nullptr;
    
       /*
        * Try to find a value for the concerned host
        */ 
       href = attr_list_locate(this_list, hostname, href_nm);
-      if (href != NULL) {  
+      if (href != nullptr) {
          object_get_any_type(href, value_nm, value_buffer);
          DPRINTF(("Found value for host "SFQ"\n", hostname));
          ret = true;
@@ -532,16 +532,16 @@ attr_list_find_value(const lList *this_list, lList **answer_list,
 
             if (strcmp(href_name, HOSTREF_DEFAULT) && 
                 is_hgroup_name(href_name)) {
-               lList *tmp_href_list = NULL;
-               lListElem *tmp_href = NULL;
-               lList *host_list = NULL;
+               lList *tmp_href_list = nullptr;
+               lListElem *tmp_href = nullptr;
+               lList *host_list = nullptr;
 
-               href_list_add(&tmp_href_list, NULL, href_name);
-               href_list_find_all_references(tmp_href_list, NULL,
+               href_list_add(&tmp_href_list, nullptr, href_name);
+               href_list_find_all_references(tmp_href_list, nullptr,
                                              master_hroup_list, &host_list,
-                                             NULL);
+                                             nullptr);
                tmp_href = href_list_locate(host_list, hostname);
-               if (tmp_href != NULL) {
+               if (tmp_href != nullptr) {
                   if (already_found == false) {
                      already_found = true;
                      object_get_any_type(href, value_nm, value_buffer);
@@ -564,13 +564,13 @@ attr_list_find_value(const lList *this_list, lList **answer_list,
             }
          }
          if (ret == false) {
-            lListElem *tmp_href = NULL;
+            lListElem *tmp_href = nullptr;
 
             /*
              * Use the default value
              */
             tmp_href = attr_list_locate(this_list, HOSTREF_DEFAULT, href_nm);
-            if (tmp_href != NULL) {
+            if (tmp_href != nullptr) {
                DPRINTF(("Using default value\n"));
                object_get_any_type(tmp_href, value_nm, value_buffer);
                ret = true;
@@ -606,26 +606,26 @@ attr_list_find_value_href(const lList *this_list, lList **answer_list,
 
    DENTER(HOSTATTR_LAYER);
 
-   if (this_list != NULL && hostname != NULL) {
-      lListElem *href = NULL;
+   if (this_list != nullptr && hostname != nullptr) {
+      lListElem *href = nullptr;
    
       /*
        * Try to find a value for the concerned host
        */ 
       href = attr_list_locate(this_list, hostname, href_nm);
-      if (href != NULL) {  
+      if (href != nullptr) {
          object_get_any_type(href, value_nm, value_buffer);
          *found = true;
          DTRACE;
          ret = true;
       } else {
-         lListElem *tmp_href = NULL;
+         lListElem *tmp_href = nullptr;
 
          /*
           * Use the default value
           */
          tmp_href = attr_list_locate(this_list, HOSTREF_DEFAULT, href_nm);
-         if (tmp_href != NULL) {
+         if (tmp_href != nullptr) {
             object_get_any_type(tmp_href, value_nm, value_buffer);
             *found = false;
             DTRACE;
@@ -655,14 +655,14 @@ attr_list_append_to_dstring(const lList *this_list, dstring *string,
    bool found_default = false;
    bool found_group = false;
    bool found_host = false;
-   const lListElem *attr = NULL;
+   const lListElem *attr = nullptr;
    dstring host_string = DSTRING_INIT;
 
    DENTER(HOSTATTR_LAYER);
 
-   if ((attr = attr_list_locate(this_list, HOSTREF_DEFAULT, href_nm)) != NULL) {
+   if ((attr = attr_list_locate(this_list, HOSTREF_DEFAULT, href_nm)) != nullptr) {
       found_default = true;
-      object_append_field_to_dstring(attr, NULL, string, value_nm, '\0');
+      object_append_field_to_dstring(attr, nullptr, string, value_nm, '\0');
    }
    
    for_each_ep(attr, this_list) {
@@ -670,7 +670,7 @@ attr_list_append_to_dstring(const lList *this_list, dstring *string,
 
       href = lGetHost(attr, href_nm);
 
-      if (href == NULL || (found_default && !strcmp(href, HOSTREF_DEFAULT))) {
+      if (href == nullptr || (found_default && !strcmp(href, HOSTREF_DEFAULT))) {
          continue;
       } else {
          dstring *ds; /* will be reference to the corresponding dstring container */
@@ -692,7 +692,7 @@ attr_list_append_to_dstring(const lList *this_list, dstring *string,
          sge_dstring_append_char(ds, '[');
          sge_dstring_append(ds, href);
          sge_dstring_append_char(ds, '=');
-         object_append_field_to_dstring(attr, NULL, ds, value_nm, 
+         object_append_field_to_dstring(attr, nullptr, ds, value_nm,
                                         '\0');
          sge_dstring_append_char(ds, ']');
       }
@@ -724,10 +724,10 @@ attr_list_parse_from_string(lList **this_list, lList **answer_list,
    bool ret = true;
    DENTER(TOP_LAYER);
   
-   if (this_list != NULL && string != NULL) { 
-      struct saved_vars_s *strtok_context = NULL;
-      char *token = NULL;
-      char *next_token = NULL;
+   if (this_list != nullptr && string != nullptr) {
+      struct saved_vars_s *strtok_context = nullptr;
+      char *token = nullptr;
+      char *next_token = nullptr;
       bool is_first_token = true;
       bool is_last_token = false;
 
@@ -757,8 +757,8 @@ attr_list_parse_from_string(lList **this_list, lList **answer_list,
       while (ret && (token = next_token)) {
          size_t length; 
 
-         next_token = sge_strtok_r(NULL, "[", &strtok_context);
-         if (next_token == NULL) {
+         next_token = sge_strtok_r(nullptr, "[", &strtok_context);
+         if (next_token == nullptr) {
             is_last_token = true;
          }
 
@@ -769,8 +769,8 @@ attr_list_parse_from_string(lList **this_list, lList **answer_list,
          length = strlen(token);
 
          if (length >= 1) {
-            const char *href_name = NULL;
-            char *value = NULL;
+            const char *href_name = nullptr;
+            char *value = nullptr;
             bool first_is_default = true;
   
             /* 
@@ -842,7 +842,7 @@ attr_list_parse_from_string(lList **this_list, lList **answer_list,
                   value = strchr(token, '=');
                   href_name = token;
 
-                  if (value != NULL) {
+                  if (value != nullptr) {
                      value[0] = '\0';
                      value++;
                   } else {
@@ -863,17 +863,17 @@ attr_list_parse_from_string(lList **this_list, lList **answer_list,
              * element.
              */
             if (ret) {
-               lListElem *attr_elem = NULL;
+               lListElem *attr_elem = nullptr;
      
-               attr_elem = attr_create(answer_list, href_name, NULL,
+               attr_elem = attr_create(answer_list, href_name, nullptr,
                                        descriptor, href_nm, value_nm);
-               if (attr_elem != NULL) {
+               if (attr_elem != nullptr) {
                   ret &= object_parse_field_from_string(attr_elem, 
                                                         answer_list,
                                                         value_nm, value);
                   if (ret) {
                      ret &= attr_list_add(this_list, answer_list,
-                                          &attr_elem, flags, NULL,
+                                          &attr_elem, flags, nullptr,
                                           descriptor, href_nm, value_nm, master_hgroup_list);
                   } else {
                      SGE_ADD_MSG_ID(sprintf(SGE_EVENT, 
@@ -897,7 +897,7 @@ attr_list_parse_from_string(lList **this_list, lList **answer_list,
          is_first_token = false;
       } 
       sge_free_saved_vars(strtok_context);
-      strtok_context = NULL;
+      strtok_context = nullptr;
    } else {
       SGE_ADD_MSG_ID(sprintf(SGE_EVENT, MSG_INAVLID_PARAMETER_IN_S, __func__));
       answer_list_add(answer_list, SGE_EVENT, 
@@ -914,10 +914,10 @@ href_nm           ASTR_href
 static lListElem *
 attr_list_locate(const lList *this_list, const char *host_or_group, int href_nm)
 {
-   lListElem *ret = NULL;
+   lListElem *ret = nullptr;
 
    DENTER(HOSTATTR_LAYER);
-   if (this_list != NULL && host_or_group != NULL) {
+   if (this_list != nullptr && host_or_group != nullptr) {
       ret = lGetElemHostRW(this_list, href_nm, host_or_group);
    }
    DRETURN(ret); 

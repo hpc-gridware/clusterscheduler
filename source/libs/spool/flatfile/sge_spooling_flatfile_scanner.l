@@ -66,7 +66,7 @@ static void remove_newline(void);
 int spool_line;
 int spool_return_whitespace;
 int spool_finish_line;
-static char* tmp_str = NULL;
+static char* tmp_str = nullptr;
 
 int spool_scanner_initialize(FILE *input)
 {
@@ -87,7 +87,7 @@ static void remove_markers(void)
    tmp_str = (char *)strchr(spool_text, '\xFF');
 
    /* Find continuation markers. */
-   while (tmp_str != NULL) {
+   while (tmp_str != nullptr) {
       char *rw = tmp_str;
       char *ff = tmp_str + 1;
       bool add_space = false;
@@ -150,7 +150,7 @@ static void remove_backslash(void)
    tmp_str = (char *)strrchr(spool_text, '\\');
 
    /* VERY BAD */
-   SGE_ASSERT(tmp_str != NULL);
+   SGE_ASSERT(tmp_str != nullptr);
 
    *tmp_str = '\xFF';
 }
@@ -161,7 +161,7 @@ static void remove_newline(void)
    tmp_str = (char *)strrchr(spool_text, '\n');
 
    /* VERY BAD */
-   SGE_ASSERT(tmp_str != NULL);
+   SGE_ASSERT(tmp_str != nullptr);
 
    *tmp_str = ' ';
 }

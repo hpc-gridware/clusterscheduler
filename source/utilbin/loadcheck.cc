@@ -89,7 +89,7 @@ int main(int argc, char *argv[])
 {
    double avg[3];
    int loads;
-   char *name = NULL;
+   char *name = nullptr;
    oge::TestClass tst("troete");
 
    tst.method("rhabarberkuchen");
@@ -120,7 +120,7 @@ int main(int argc, char *argv[])
                          (setlocale_func_type)      setlocale,
                          (bindtextdomain_func_type) bindtextdomain,
                          (textdomain_func_type)     textdomain);
-   sge_init_language(NULL,NULL);   
+   sge_init_language(nullptr,nullptr);
 #endif /* __SGE_COMPILE_WITH_GETTEXT__  */
    if (argc == 2 && !strcmp(argv[1], "-cb")) {
       core_binding = 1;
@@ -206,7 +206,7 @@ int main(int argc, char *argv[])
    if (pos)
       name = argv[pos];
    else
-      name = NULL;
+      name = nullptr;
 
 #ifdef SGE_LOADMEM
    /* memory load report */
@@ -313,7 +313,7 @@ void check_core_binding()
 #if defined(OGE_HWLOC)
 void test_linux_hwloc()
 {
-   char* topology = NULL;
+   char* topology = nullptr;
    int length     = 0;
    int s, c;
    struct utsname name;
@@ -345,7 +345,7 @@ void test_linux_hwloc()
       /* try multi-mapping */
       for (s = 0; s < oge::topo_get_total_amount_of_sockets(); s++) {
          for (c = 0; c < oge::topo_get_amount_of_cores_for_socket(s); c++) {
-            int* proc_ids  = NULL;
+            int* proc_ids  = nullptr;
             int amount     = 0;
             if (oge::topo_get_processor_ids(s, c, &proc_ids, &amount)) {
                int i = 0;
@@ -384,7 +384,7 @@ void test_linux_hwloc()
 *******************************************************************************/
 void test_solaris_binding()
 {
-   char* topology = NULL;
+   char* topology = nullptr;
    int length;
    int sockets, cores, s;
 
@@ -398,9 +398,9 @@ void test_solaris_binding()
 
    /* get topology */
    if (get_execd_topology(&topology, &length)) {
-      int** matrix   = NULL;
+      int** matrix   = nullptr;
       int mlength    = 0;
-      int* cores     = NULL;
+      int* cores     = nullptr;
       int size;
 
       printf("Topology:\t\t\t%s\n", topology);
@@ -447,14 +447,14 @@ void test_solaris_binding()
 void fill_socket_core_topology(dstring* msocket, dstring* mcore, dstring* mthread, dstring* mtopology)
 {
    int ms, mc, mt;
-   char* topo = NULL;
+   char* topo = nullptr;
    int length = 0;
 
    ms = get_execd_amount_of_sockets();
    mc = get_execd_amount_of_cores();
    mt = get_execd_amount_of_threads();
-   if (!get_execd_topology(&topo, &length) || topo == NULL) {
-      topo = sge_strdup(NULL, "-");
+   if (!get_execd_topology(&topo, &length) || topo == nullptr) {
+      topo = sge_strdup(nullptr, "-");
    }
    sge_dstring_sprintf(msocket, "%d", ms);
    sge_dstring_sprintf(mcore, "%d", mc);

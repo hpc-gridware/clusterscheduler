@@ -57,7 +57,7 @@ void *(*get_thrd_func(void))(void *anArg) {
 }
 
 void *get_thrd_func_arg(void) {
-   return NULL;
+   return nullptr;
 }
 
 static void *thread_function_1(void *anArg) {
@@ -71,7 +71,7 @@ static void *thread_function_1(void *anArg) {
 
    SGE_UNLOCK(LOCK_GLOBAL, LOCK_WRITE);
 
-   DRETURN((void *) NULL);
+   DRETURN((void *) nullptr);
 }
 
 static void lock_recursive(void) {
@@ -97,7 +97,7 @@ static void *thread_function_2(void *anArg) {
 
    SGE_UNLOCK(LOCK_GLOBAL, LOCK_WRITE);
 
-   DRETURN((void *) NULL);
+   DRETURN((void *) nullptr);
 } /* thread_function_2 */
 
 int validate(int thread_count) {

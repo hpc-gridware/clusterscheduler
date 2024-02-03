@@ -67,7 +67,7 @@ static int spawn_file(dstring *aBuffer, dstring *error_message);
 *
 *     The 'aBuffer' argument points to an array of at least SGE_PATH_MAX length.
 *     'aBuffer' will contain the generated filename upon successful completion.
-*     In addition, 'aBuffer' will be returned. If the function fails, NULL will
+*     In addition, 'aBuffer' will be returned. If the function fails, nullptr will
 *     be returned and 'errno' set to indicate the error.
 *
 *     If the environment variable TMPDIR is defined, it's value will be used
@@ -85,7 +85,7 @@ static int spawn_file(dstring *aBuffer, dstring *error_message);
 *     char *aBuffer - Array to hold filename
 *
 *  RESULT
-*     char* - Points to 'aBuffer' if successful, NULL otherwise
+*     char* - Points to 'aBuffer' if successful, nullptr otherwise
 *
 *  NOTE
 *     MT-NOTE: sge_tmpnam() is MT safe.
@@ -95,15 +95,15 @@ char *sge_tmpnam(char *aBuffer, dstring *error_message) {
 
    DENTER(TOP_LAYER);
 
-   if (aBuffer == NULL) {
+   if (aBuffer == nullptr) {
       sge_dstring_sprintf(error_message, MSG_TMPNAM_GOT_NULL_PARAMETER);
-      DRETURN(NULL);
+      DRETURN(nullptr);
    }
 
    if (elect_path(&s) < 0) {
       sge_dstring_sprintf(error_message, MSG_TMPNAM_CANNOT_GET_TMP_PATH);
       sge_dstring_free(&s);
-      DRETURN(NULL);
+      DRETURN(nullptr);
    }
 
    if ((sge_dstring_get_string(&s))[sge_dstring_strlen(&s) - 1] != '/') {
@@ -112,7 +112,7 @@ char *sge_tmpnam(char *aBuffer, dstring *error_message) {
 
    if (spawn_file(&s, error_message) < 0) {
       sge_dstring_free(&s);
-      DRETURN(NULL);
+      DRETURN(nullptr);
    }
 
    sge_strlcpy(aBuffer, sge_dstring_get_string(&s), SGE_PATH_MAX);
@@ -127,7 +127,7 @@ static int elect_path(dstring *aBuffer) {
    const char *d;
 
    d = getenv("TMPDIR");
-   if ((d != NULL) && sge_is_directory(d)) {
+   if ((d != nullptr) && sge_is_directory(d)) {
       sge_dstring_append(aBuffer, d);
       return 0;
    } else if (sge_is_directory(P_tmpdir)) {
@@ -143,7 +143,7 @@ static int elect_path(dstring *aBuffer) {
 
 static int spawn_file(dstring *aBuffer, dstring *error_message) {
    int my_errno;
-   char *mktemp_return = NULL;
+   char *mktemp_return = nullptr;
    char tmp_file_string[256];
    char tmp_string[SGE_PATH_MAX];
 

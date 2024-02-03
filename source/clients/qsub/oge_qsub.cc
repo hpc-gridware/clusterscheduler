@@ -79,12 +79,12 @@ static void error_handler(const char *message);
 int 
 main(int argc, char **argv) 
 {
-   lList *opts_cmdline = NULL;
-   lList *opts_defaults = NULL;
-   lList *opts_scriptfile = NULL;
-   lList *opts_all = NULL;
-   lListElem *job = NULL;
-   lList *alp = NULL;
+   lList *opts_cmdline = nullptr;
+   lList *opts_defaults = nullptr;
+   lList *opts_scriptfile = nullptr;
+   lList *opts_all = nullptr;
+   lListElem *job = nullptr;
+   lList *alp = nullptr;
    lListElem *ep;
    int exit_status = 0;
    int just_verify;
@@ -97,18 +97,18 @@ main(int argc, char **argv)
    u_long32 num_tasks;
    u_long32 count;
    int stat;
-   char *jobid_string = NULL;
+   char *jobid_string = nullptr;
    bool has_terse = false;
-   drmaa_attr_values_t *jobids = NULL;
+   drmaa_attr_values_t *jobids = nullptr;
 
    u_long32 prog_number = 0;
    u_long32 myuid = 0;
-   const char *sge_root = NULL;
-   const char *cell_root = NULL;
-   const char *username = NULL;
-   const char *qualified_hostname = NULL;
-   const char *unqualified_hostname = NULL;
-   const char *mastername = NULL;
+   const char *sge_root = nullptr;
+   const char *cell_root = nullptr;
+   const char *username = nullptr;
+   const char *qualified_hostname = nullptr;
+   const char *unqualified_hostname = nullptr;
+   const char *mastername = nullptr;
 
    DENTER_MAIN(TOP_LAYER, "qsub");
 
@@ -119,7 +119,7 @@ main(int argc, char **argv)
 
    DPRINTF(("Initializing JAPI\n"));
 
-   if (japi_init(NULL, NULL, NULL, QSUB, false, NULL, &diag)
+   if (japi_init(nullptr, nullptr, nullptr, QSUB, false, nullptr, &diag)
                                                       != DRMAA_ERRNO_SUCCESS) {
       fprintf(stderr, "\n");
       fprintf(stderr, MSG_QSUB_COULDNOTINITIALIZEENV_S,
@@ -141,7 +141,7 @@ main(int argc, char **argv)
     * read switches from the various defaults files
     */
    opt_list_append_opts_from_default_files(prog_number, cell_root, username, &opts_defaults, &alp, environ);
-   tmp_ret = answer_list_print_err_warn(&alp, NULL, NULL, MSG_WARNING);
+   tmp_ret = answer_list_print_err_warn(&alp, nullptr, nullptr, MSG_WARNING);
    if (tmp_ret > 0) {
       SGE_EXIT((void**)&ctx, tmp_ret);
    }
@@ -151,7 +151,7 @@ main(int argc, char **argv)
     */
    opt_list_append_opts_from_qsub_cmdline(prog_number, &opts_cmdline, &alp,
                                           argv + 1, environ);
-   tmp_ret = answer_list_print_err_warn(&alp, NULL, "qsub: ", MSG_QSUB_WARNING_S);
+   tmp_ret = answer_list_print_err_warn(&alp, nullptr, "qsub: ", MSG_QSUB_WARNING_S);
    if (tmp_ret > 0) {
       SGE_EXIT((void**)&ctx, tmp_ret);
    }
@@ -183,7 +183,7 @@ main(int argc, char **argv)
       opt_list_append_opts_from_script(prog_number,
                                        &opts_scriptfile, &alp, 
                                        opts_cmdline, environ);
-      tmp_ret = answer_list_print_err_warn(&alp, NULL, MSG_QSUB_COULDNOTREADSCRIPT_S,
+      tmp_ret = answer_list_print_err_warn(&alp, nullptr, MSG_QSUB_COULDNOTREADSCRIPT_S,
                                            MSG_WARNING);
       if (tmp_ret > 0) {
          SGE_EXIT((void**)&ctx, tmp_ret);
@@ -214,7 +214,7 @@ main(int argc, char **argv)
    alp = cull_parse_job_parameter(myuid, username, cell_root, unqualified_hostname, 
                                   qualified_hostname, opts_all, &job);
 
-   tmp_ret = answer_list_print_err_warn(&alp, NULL, "qsub: ", MSG_WARNING);
+   tmp_ret = answer_list_print_err_warn(&alp, nullptr, "qsub: ", MSG_WARNING);
    if (tmp_ret > 0) {
       SGE_EXIT((void**)&ctx, tmp_ret);
    }
@@ -240,7 +240,7 @@ main(int argc, char **argv)
       
       qsub_setup_sig_handlers(); 
 
-      if (pthread_create(&sigt, NULL, sig_thread, (void *)NULL) != 0) {
+      if (pthread_create(&sigt, nullptr, sig_thread, (void *)nullptr) != 0) {
          fprintf(stderr, "\n");
          fprintf(stderr, MSG_QSUB_COULDNOTINITIALIZEENV_S,
                  " error preparing signal handling thread");
@@ -250,7 +250,7 @@ main(int argc, char **argv)
          goto Error;
       }
       
-      if (japi_enable_job_wait(username, unqualified_hostname, NULL, &session_key_out, error_handler, &diag) ==
+      if (japi_enable_job_wait(username, unqualified_hostname, nullptr, &session_key_out, error_handler, &diag) ==
                                        DRMAA_ERRNO_DRM_COMMUNICATION_FAILURE) {
          const char *msg = sge_dstring_get_string(&diag);
          fprintf(stderr, "\n");
@@ -349,7 +349,7 @@ main(int argc, char **argv)
       /* print the tersed output */
       if (has_terse) {
          printf("%s", jobid_string);
-      } else if (output != NULL) {
+      } else if (output != nullptr) {
         printf("%s", output);
       } else {
         printf(MSG_QSUB_YOURJOBHASBEENSUBMITTED_SS, jobid_string, lGetString(job, JB_job_name));
@@ -369,7 +369,7 @@ main(int argc, char **argv)
           * to say that the job is running. */
          tmp_ret = japi_wait(DRMAA_JOB_IDS_SESSION_ANY, &jobid, &stat,
                              DRMAA_TIMEOUT_WAIT_FOREVER, JAPI_JOB_START, &event,
-                             NULL, &diag);
+                             nullptr, &diag);
 
          if ((tmp_ret == DRMAA_ERRNO_SUCCESS) && (event == JAPI_JOB_START)) {
             fprintf(stderr, "\n");
@@ -412,7 +412,7 @@ main(int argc, char **argv)
              * wait for ANY. */
             if ((tmp_ret = japi_wait(DRMAA_JOB_IDS_SESSION_ANY, &jobid, &stat,
                           DRMAA_TIMEOUT_WAIT_FOREVER, JAPI_JOB_FINISH, &event,
-                          NULL, &diag)) != DRMAA_ERRNO_SUCCESS) {
+                          nullptr, &diag)) != DRMAA_ERRNO_SUCCESS) {
                if ((tmp_ret != DRMAA_ERRNO_EXIT_TIMEOUT) &&
                    (tmp_ret != DRMAA_ERRNO_NO_ACTIVE_SESSION)) {
                   fprintf(stderr, "\n");
@@ -509,7 +509,7 @@ Error:
 static char *get_bulk_jobid_string(long job_id, int start, int end, int step)
 {
    char *jobid_str = sge_malloc(sizeof(char) * 1024);
-   char *ret_str = NULL;
+   char *ret_str = nullptr;
    
    sprintf(jobid_str, "%ld.%d-%d:%d", job_id, start, end, step);
    ret_str = strdup(jobid_str);
@@ -536,7 +536,7 @@ static void qsub_setup_sig_handlers(void)
    sigset_t sig_set;
 
    sigfillset(&sig_set);
-   pthread_sigmask(SIG_BLOCK, &sig_set, NULL);
+   pthread_sigmask(SIG_BLOCK, &sig_set, nullptr);
 }
 
 /****** qsub_terminate() *******************************************************
@@ -594,7 +594,7 @@ static void qsub_terminate(void)
 *     void *dummy - Unused
 *
 *  RESULT
-*     static void * - Always NULL
+*     static void * - Always nullptr
 *
 *  NOTES
 *     MT-NOTES: sig_thread() is MT safe
@@ -619,7 +619,7 @@ static void *sig_thread(void *dummy)
    
    qsub_terminate();
    
-   return (void *)NULL;
+   return (void *)nullptr;
 }
 
 /****** report_exit_status() ***************************************************
@@ -647,21 +647,21 @@ static int report_exit_status(int stat, const char *jobid)
    int aborted, exited, signaled;
    int exit_status = 0;
    
-   japi_wifaborted(&aborted, stat, NULL);
+   japi_wifaborted(&aborted, stat, nullptr);
 
    if (aborted) {
       printf(MSG_QSUB_JOBNEVERRAN_S, jobid);
    } else {
-      japi_wifexited(&exited, stat, NULL);
+      japi_wifexited(&exited, stat, nullptr);
       if (exited) {
-         japi_wexitstatus(&exit_status, stat, NULL);
+         japi_wexitstatus(&exit_status, stat, nullptr);
          printf(MSG_QSUB_JOBEXITED_SI, jobid, exit_status);
       } else {
-         japi_wifsignaled(&signaled, stat, NULL);
+         japi_wifsignaled(&signaled, stat, nullptr);
          
          if (signaled) {
             dstring termsig = DSTRING_INIT;
-            japi_wtermsig(&termsig, stat, NULL);
+            japi_wtermsig(&termsig, stat, nullptr);
             printf(MSG_QSUB_JOBRECEIVEDSIGNAL_SS, jobid,
                     sge_dstring_get_string(&termsig));
             sge_dstring_free(&termsig);
@@ -695,5 +695,5 @@ static int report_exit_status(int stat, const char *jobid)
 *******************************************************************************/
 static void error_handler(const char *message)
 {
-   fprintf(stderr, "%s", message != NULL ? message : "NULL japi message");
+   fprintf(stderr, "%s", message != nullptr ? message : "nullptr japi message");
 }

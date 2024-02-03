@@ -81,12 +81,12 @@ href_list_add(lList **this_list, lList **answer_list, const char *host_or_group)
    bool ret = true;
 
    DENTER(HOSTREF_LAYER);
-   if (this_list != NULL && host_or_group != NULL) {
+   if (this_list != nullptr && host_or_group != nullptr) {
       if (!href_list_has_member(*this_list, host_or_group)) {
          lListElem *h_or_g;   /* HR_Type */
 
          h_or_g = lAddElemHost(this_list, HR_name, host_or_group, HR_Type);
-         if (h_or_g == NULL) {
+         if (h_or_g == nullptr) {
             answer_list_add(answer_list, MSG_GDI_OUTOFMEMORY,
                             STATUS_EMALLOC, ANSWER_QUALITY_ERROR);
             ret = false;
@@ -129,8 +129,8 @@ href_list_has_member(const lList *this_list, const char *host_or_group)
    bool ret = false;
 
    DENTER(HOSTREF_LAYER);
-   if (this_list != NULL && host_or_group != NULL) {
-      if (href_list_locate(this_list, host_or_group) != NULL) {
+   if (this_list != nullptr && host_or_group != nullptr) {
+      if (href_list_locate(this_list, host_or_group) != nullptr) {
          ret = true;
       }
    } else {
@@ -162,7 +162,7 @@ href_list_has_member(const lList *this_list, const char *host_or_group)
 *     'equity_hosts' and 'equity_groups' after a call to this function.
 *
 *     If the calling function is not interested in one ore more of the
-*     result lists than NULL should be used as parameter. The calling
+*     result lists than nullptr should be used as parameter. The calling
 *     function is responsible to free all result lists. 
 *
 *     If the callee is also interested in the references which are
@@ -202,18 +202,18 @@ href_list_compare(const lList *this_list, lList **answer_list,
 
       if (!href_list_has_member(list, host_or_group)) {
          if (is_hgroup_name(host_or_group)) {
-            if (add_groups != NULL) {
+            if (add_groups != nullptr) {
                ret = href_list_add(add_groups, answer_list, host_or_group);
             }
-         } else if (add_hosts != NULL) {
+         } else if (add_hosts != nullptr) {
             ret = href_list_add(add_hosts, answer_list, host_or_group);
          }
       } else {
          if (is_hgroup_name(host_or_group)) {
-            if (equity_groups != NULL) {
+            if (equity_groups != nullptr) {
                ret = href_list_add(equity_groups, answer_list, host_or_group);
             }
-         } else if (equity_hosts != NULL) {
+         } else if (equity_hosts != nullptr) {
             ret = href_list_add(equity_hosts, answer_list, host_or_group);
          }
       }
@@ -244,7 +244,7 @@ href_list_compare(const lList *this_list, lList **answer_list,
 *
 *     The calling context is responsible to free all result lists.
 *     If the callee is not interested in one or more of the resultlist
-*     than NULL should be used as parameter for this function.
+*     than nullptr should be used as parameter for this function.
 *
 *  INPUTS
 *     const lList *this_list - HR_Type list to be compared
@@ -272,9 +272,9 @@ href_list_find_diff(const lList *this_list, lList **answer_list,
 
    DENTER(HOSTREF_LAYER);
    ret &= href_list_compare(this_list, answer_list, list,
-                            add_hosts, add_groups, NULL, NULL);
+                            add_hosts, add_groups, nullptr, nullptr);
    ret &= href_list_compare(list, answer_list, this_list,
-                               rem_hosts, rem_groups, NULL, NULL);
+                               rem_hosts, rem_groups, nullptr, nullptr);
    DRETURN(ret);
 }
 
@@ -317,29 +317,29 @@ href_list_find_effective_diff(lList **answer_list, const lList *add_groups,
    bool ret = true;
 
    DENTER(HOSTREF_LAYER);
-   if (ret && add_groups != NULL) {
+   if (ret && add_groups != nullptr) {
       ret &= href_list_find_all_references(add_groups, answer_list,
-                                           master_list, add_hosts, NULL);
+                                           master_list, add_hosts, nullptr);
    }
-   if (ret && rem_groups != NULL) {
+   if (ret && rem_groups != nullptr) {
       ret &= href_list_find_all_references(rem_groups, answer_list,
-                                           master_list, rem_hosts, NULL);
+                                           master_list, rem_hosts, nullptr);
    }
-   if (ret && add_hosts != NULL && *add_hosts != NULL &&
-       rem_hosts != NULL && *rem_hosts != NULL) {
-      lList *tmp_rem_hosts = NULL;
-      lList *tmp_add_hosts = NULL;
+   if (ret && add_hosts != nullptr && *add_hosts != nullptr &&
+       rem_hosts != nullptr && *rem_hosts != nullptr) {
+      lList *tmp_rem_hosts = nullptr;
+      lList *tmp_add_hosts = nullptr;
 
       ret &= href_list_find_diff(*add_hosts, answer_list,
                                  *rem_hosts, &tmp_add_hosts,
-                                 &tmp_rem_hosts, NULL, NULL);
+                                 &tmp_rem_hosts, nullptr, nullptr);
       if (ret) {
          lFreeList(add_hosts);
          lFreeList(rem_hosts);
          *add_hosts = tmp_add_hosts;
          *rem_hosts = tmp_rem_hosts;
-         tmp_add_hosts = NULL;
-         tmp_rem_hosts = NULL;
+         tmp_add_hosts = nullptr;
+         tmp_rem_hosts = nullptr;
       }
    }
    DRETURN(ret);
@@ -361,15 +361,15 @@ href_list_find_effective_diff(lList **answer_list, const lList *add_groups,
 *     const char *name       - host or groupname 
 *
 *  RESULT
-*     lListElem* - Pointer to host or hostgroup element or NULL 
+*     lListElem* - Pointer to host or hostgroup element or nullptr
 *******************************************************************************/
 lListElem *
 href_list_locate(const lList *this_list, const char *name) 
 {
-   lListElem *ret = NULL;  /* HR_Type */
+   lListElem *ret = nullptr;  /* HR_Type */
 
    DENTER(HOSTREF_LAYER);
-   if (this_list != NULL && name != NULL) {
+   if (this_list != nullptr && name != nullptr) {
       ret = lGetElemHostRW(this_list, HR_name, name);
    }
    DRETURN(ret);
@@ -414,7 +414,7 @@ href_list_find_references(const lList *this_list, lList **answer_list,
    bool ret = true;
 
    DENTER(HOSTREF_LAYER);
-   if (this_list != NULL && master_list != NULL) { 
+   if (this_list != nullptr && master_list != nullptr) {
       const lListElem *href;  /* HR_Type */
 
       /*
@@ -423,7 +423,7 @@ href_list_find_references(const lList *this_list, lList **answer_list,
       for_each_ep(href, this_list) {
          const char *name = lGetHost(href, HR_name);
          bool is_group = is_hgroup_name(name);
-         lListElem *hgroup = NULL;  /* HGRP_name */
+         lListElem *hgroup = nullptr;  /* HGRP_name */
 
          /*
           * Try to locate the concerned hgroup object
@@ -432,12 +432,12 @@ href_list_find_references(const lList *this_list, lList **answer_list,
          if (is_group) {
             hgroup = hgroup_list_locate(master_list, name);
          } else {
-            if (used_hosts != NULL) {
+            if (used_hosts != nullptr) {
                href_list_add(used_hosts, answer_list, name);
             }
          }
 
-         if (hgroup != NULL) {
+         if (hgroup != nullptr) {
             const lList *href_list2 = lGetList(hgroup, HGRP_host_list);
             const lListElem *href2;    /* HR_Type */
 
@@ -449,11 +449,11 @@ href_list_find_references(const lList *this_list, lList **answer_list,
                const char *name2 = lGetHost(href2, HR_name);
 
                if (is_hgroup_name(name2)) {
-                  if (used_groups != NULL) {
+                  if (used_groups != nullptr) {
                      href_list_add(used_groups, answer_list, name2); 
                   }
                } else {
-                  if (used_hosts != NULL) {
+                  if (used_hosts != nullptr) {
                      href_list_add(used_hosts, answer_list, name2); 
                   }
                }   
@@ -503,11 +503,11 @@ href_list_find_all_references(const lList *this_list, lList **answer_list,
    bool ret = true;
 
    DENTER(HOSTREF_LAYER);
-   if (this_list != NULL && master_list != NULL) {
-      lList *tmp_used_groups = NULL;
+   if (this_list != nullptr && master_list != nullptr) {
+      lList *tmp_used_groups = nullptr;
       bool free_tmp_list = false;
 
-      if (used_groups == NULL) {
+      if (used_groups == nullptr) {
          used_groups = &tmp_used_groups;
          free_tmp_list = true;
       }
@@ -524,28 +524,28 @@ href_list_find_all_references(const lList *this_list, lList **answer_list,
        *
        * Recursive!
        */
-      if (ret && used_groups != NULL && *used_groups != NULL) {
-         lList *used_sub_groups = NULL;
-         lList *used_sub_hosts = NULL;
+      if (ret && used_groups != nullptr && *used_groups != nullptr) {
+         lList *used_sub_groups = nullptr;
+         lList *used_sub_hosts = nullptr;
 
          ret &= href_list_find_all_references(*used_groups, answer_list,
                                               master_list, &used_sub_hosts,
                                               &used_sub_groups);
          if (ret) {
-            if (used_hosts != NULL && used_sub_hosts != NULL) {
-               if (*used_hosts != NULL) {
+            if (used_hosts != nullptr && used_sub_hosts != nullptr) {
+               if (*used_hosts != nullptr) {
                   lAddList(*used_hosts, &used_sub_hosts);
                } else {
                   *used_hosts = used_sub_hosts;
-                  used_sub_hosts = NULL;
+                  used_sub_hosts = nullptr;
                }
             }
-            if (used_groups != NULL && used_sub_groups != NULL) {
-               if (*used_groups != NULL) {
+            if (used_groups != nullptr && used_sub_groups != nullptr) {
+               if (*used_groups != nullptr) {
                   lAddList(*used_groups, &used_sub_groups);
                } else {
                   *used_groups = used_sub_groups;
-                  used_sub_groups = NULL;
+                  used_sub_groups = nullptr;
                }
             }
          } 
@@ -594,7 +594,7 @@ href_list_find_referencees(const lList *this_list, lList **answer_list,
    bool ret = true;
 
    DENTER(HOSTREF_LAYER);
-   if (this_list != NULL && occupant_groups != NULL) {
+   if (this_list != nullptr && occupant_groups != nullptr) {
       const lListElem *href;  /* HR_Type */
 
       for_each_ep(href, this_list) {
@@ -607,7 +607,7 @@ href_list_find_referencees(const lList *this_list, lList **answer_list,
                const lList *href_list = lGetList(hgroup, HGRP_host_list);
                lListElem *href = href_list_locate(href_list, name);
 
-               if (href != NULL) {
+               if (href != nullptr) {
                   const char *name = lGetHost(hgroup, HGRP_name);
 
                   href_list_add(occupant_groups, answer_list, name);
@@ -661,7 +661,7 @@ href_list_find_all_referencees(const lList *this_list, lList **answer_list,
    bool ret = true;
 
    DENTER(HOSTREF_LAYER);
-   if (this_list != NULL && occupant_groups != NULL) {
+   if (this_list != nullptr && occupant_groups != nullptr) {
 
       /*
        * Find parents of all given hgroups
@@ -669,8 +669,8 @@ href_list_find_all_referencees(const lList *this_list, lList **answer_list,
       ret &= href_list_find_referencees(this_list, answer_list,
                                         master_list, occupant_groups);
 
-      if (*occupant_groups != NULL && ret) {
-         lList *occupant_sub_groups = NULL;  /* HR_Type */
+      if (*occupant_groups != nullptr && ret) {
+         lList *occupant_sub_groups = nullptr;  /* HR_Type */
 
          /*
           * Find grandparents, ...
@@ -681,9 +681,9 @@ href_list_find_all_referencees(const lList *this_list, lList **answer_list,
                                                master_list, 
                                                &occupant_sub_groups);
 
-         if (occupant_sub_groups != NULL && ret) {
+         if (occupant_sub_groups != nullptr && ret) {
             lAddList(*occupant_groups, &occupant_sub_groups);
-            occupant_sub_groups = NULL;
+            occupant_sub_groups = nullptr;
          } 
       }
    } else {
@@ -726,8 +726,8 @@ href_list_resolve_hostnames(lList *this_list, lList **answer_list,
    bool ret = true;
 
    DENTER(HOSTREF_LAYER);
-   if (this_list != NULL) {
-      lListElem *href = NULL;
+   if (this_list != nullptr) {
+      lListElem *href = nullptr;
 
       for_each_rw (href, this_list) {
          const char *name = lGetHost(href, HR_name);
@@ -780,7 +780,7 @@ href_list_append_to_dstring(const lList *this_list, dstring *string)
    bool ret = true;
 
    DENTER(HOSTREF_LAYER);
-   if (this_list != NULL && string != NULL) {
+   if (this_list != nullptr && string != nullptr) {
       const lListElem *href;  /* HR_Type */
       bool is_first = true;
 
@@ -829,14 +829,14 @@ href_list_remove_existing(lList **this_list, lList **answer_list,
    bool ret = true;
 
    DENTER(HOSTREF_LAYER);
-   if (this_list != NULL && *this_list != NULL && list != NULL) {
-      const lListElem * href = NULL;
+   if (this_list != nullptr && *this_list != nullptr && list != nullptr) {
+      const lListElem * href = nullptr;
 
       for_each_ep(href, list) {
          const char *hostname = lGetHost(href, HR_name);
          lListElem *existing_href = lGetElemHostRW(*this_list, HR_name, hostname);
 
-         if (existing_href != NULL) {
+         if (existing_href != nullptr) {
             lRemoveElem(*this_list, &existing_href);
          }
       }
@@ -868,7 +868,7 @@ href_list_remove_existing(lList **this_list, lList **answer_list,
 void
 href_list_debug_print(const lList *this_list, const char *prefix) 
 {
-   const lListElem *href = NULL;
+   const lListElem *href = nullptr;
    dstring message = DSTRING_INIT;
    bool is_first_hostname = true;
    DENTER(TOP_LAYER);
@@ -912,18 +912,18 @@ href_list_debug_print(const lList *this_list, const char *prefix)
 void
 href_list_make_uniq(lList *this_list, lList **answer_list)
 {
-   lListElem *elem = NULL;
-   lListElem *next_elem = NULL;
+   lListElem *elem = nullptr;
+   lListElem *next_elem = nullptr;
 
    DENTER(TOP_LAYER);
    next_elem = lFirstRW(this_list);
-   while((elem = next_elem) != NULL) {
-      lListElem *elem2 = NULL;
-      const void *iterator = NULL;
+   while((elem = next_elem) != nullptr) {
+      lListElem *elem2 = nullptr;
+      const void *iterator = nullptr;
 
       next_elem = lNextRW(elem);
       elem2 = lGetElemHostFirstRW(this_list, HR_name, lGetHost(elem, HR_name), &iterator); 
-      if (elem2 != NULL && elem != elem2) {
+      if (elem2 != nullptr && elem != elem2) {
          lRemoveElem(this_list, &elem);
       }
    }

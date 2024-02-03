@@ -65,7 +65,7 @@ sge_test_cleanup_monitor(monitoring_t *monitor) {
 void
 sge_test_initialize(sge_gdi_ctx_class_t *ctx) {
    const u_long32 max_initial_test_threads = 1;
-   cl_thread_settings_t *dummy_thread_p = NULL;
+   cl_thread_settings_t *dummy_thread_p = nullptr;
    int i;
 
    DENTER(TOP_LAYER);
@@ -77,7 +77,7 @@ sge_test_initialize(sge_gdi_ctx_class_t *ctx) {
 
       sge_dstring_sprintf(&thread_name, "%s%03d", threadnames[TESTER_THREAD], i);
       cl_thread_list_create_thread(Main_Control.test_thread_pool, &dummy_thread_p, cl_com_get_log_list(),
-                                   sge_dstring_get_string(&thread_name), i, sge_test_main, NULL, NULL, CL_TT_TESTER);
+                                   sge_dstring_get_string(&thread_name), i, sge_test_main, nullptr, nullptr, CL_TT_TESTER);
       sge_dstring_free(&thread_name);
    }
    DRETURN_VOID;
@@ -85,12 +85,12 @@ sge_test_initialize(sge_gdi_ctx_class_t *ctx) {
 
 void
 sge_test_terminate(sge_gdi_ctx_class_t *ctx) {
-   cl_thread_settings_t *thread = NULL;
+   cl_thread_settings_t *thread = nullptr;
 
    DENTER(TOP_LAYER);
 
    thread = cl_thread_list_get_first_thread(Main_Control.test_thread_pool);
-   while (thread != NULL) {
+   while (thread != nullptr) {
       DPRINTF((SFN" gets canceled\n", thread->thread_name));
       cl_thread_list_delete_thread(Main_Control.test_thread_pool, thread);
 
@@ -105,7 +105,7 @@ void *
 sge_test_main(void *arg) {
    bool do_endlessly = true;
    cl_thread_settings_t *thread_config = (cl_thread_settings_t *) arg;
-   sge_gdi_ctx_class_t *ctx = NULL;
+   sge_gdi_ctx_class_t *ctx = nullptr;
    monitoring_t monitor;
 
    DENTER(TOP_LAYER);
@@ -125,10 +125,10 @@ sge_test_main(void *arg) {
       DPRINTF((SFN " is looping\n", thread_config->thread_name));
 
       {
-         lList *answer_list = NULL;
+         lList *answer_list = nullptr;
          lEnumeration *what = lWhat("%T(ALL)", CQ_Type);
-         lCondition *where = NULL;
-         lList *data_list = NULL;
+         lCondition *where = nullptr;
+         lList *data_list = nullptr;
 
          answer_list = ctx->gdi(ctx, SGE_CQ_LIST, SGE_GDI_GET, &data_list,
                                 where, what);
@@ -147,25 +147,25 @@ sge_test_main(void *arg) {
       {
          state_gdi_multi state = STATE_GDI_MULTI_INIT;
          lEnumeration *what_cqueue = lWhat("%T(ALL)", CQ_Type);
-         lCondition *where_cqueue = NULL;
+         lCondition *where_cqueue = nullptr;
          lEnumeration *what_job = lWhat("%T(ALL)", JB_Type);
-         lCondition *where_job = NULL;
-         lList *local_answer_list = NULL;
+         lCondition *where_job = nullptr;
+         lList *local_answer_list = nullptr;
          int cqueue_request_id;
          int job_request_id;
 
          cqueue_request_id = ctx->gdi_multi(ctx, &local_answer_list, SGE_GDI_RECORD,
-                                            SGE_CQ_LIST, SGE_GDI_GET, NULL,
+                                            SGE_CQ_LIST, SGE_GDI_GET, nullptr,
                                             where_cqueue, what_cqueue, &state, true);
          job_request_id = ctx->gdi_multi(ctx, &local_answer_list, SGE_GDI_SEND,
-                                         SGE_JB_LIST, SGE_GDI_GET, NULL,
+                                         SGE_JB_LIST, SGE_GDI_GET, nullptr,
                                          where_job, what_job, &state, true);
          if (cqueue_request_id != -1 && job_request_id != -1 && answer_list_has_error(&local_answer_list) == false) {
-            lList *multi_answer_list = NULL;
-            lList *list_cqueue = NULL;
-            lList *list_job = NULL;
-            lList *answer_cqueue = NULL;
-            lList *answer_job = NULL;
+            lList *multi_answer_list = nullptr;
+            lList *list_cqueue = nullptr;
+            lList *list_job = nullptr;
+            lList *answer_cqueue = nullptr;
+            lList *answer_job = nullptr;
 
             ctx->gdi_wait(ctx, &local_answer_list, &multi_answer_list, &state);
             sge_gdi_extract_answer(&answer_cqueue, SGE_GDI_GET, SGE_CQ_LIST, cqueue_request_id,
@@ -216,6 +216,6 @@ sge_test_main(void *arg) {
     * and after the call of cl_thread_func_testcancel()
     */
 
-   DRETURN(NULL);
+   DRETURN(nullptr);
 }
 

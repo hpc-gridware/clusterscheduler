@@ -66,7 +66,7 @@ static void sge_parse_string_list(lList **lp, const char *str, int field,
 
    cp = sge_strtok(str, ",");
    lAddElemStr(lp, field, cp, descr);
-   while((cp = sge_strtok(NULL, ","))) {
+   while((cp = sge_strtok(nullptr, ","))) {
       lAddElemStr(lp, field, cp, descr);
    }
 
@@ -84,18 +84,18 @@ const char *opt_switch_arg
    lListElem *ep;
 
    if (!popt_list) {
-      return NULL;
+      return nullptr;
    }
    if (!*popt_list) {
       *popt_list = lCreateList("option list", SPA_Type);
       if (!*popt_list) {
-         return NULL;
+         return nullptr;
       }
    }
 
    ep = lCreateElem(SPA_Type);
    if (!ep) {
-      return NULL;
+      return nullptr;
    }
    lSetUlong(ep, SPA_number, opt_number);
    lSetString(ep, SPA_switch_val, opt_switch);
@@ -119,13 +119,13 @@ const char *opt_switch_arg
    
    DENTER(TOP_LAYER);
    
-   if (popt_list == NULL) {
-       DRETURN(NULL);
+   if (popt_list == nullptr) {
+       DRETURN(nullptr);
    }
 
    ep = lAddElemStr(popt_list, SPA_switch_val, opt_switch, SPA_Type);
 
-   if (ep != NULL) {
+   if (ep != nullptr) {
       lSetUlong(ep, SPA_number, opt_number);
       lSetUlong(ep, SPA_argtype, opt_type);
       lSetString(ep, SPA_switch_arg, opt_switch_arg);
@@ -159,7 +159,7 @@ lList **alpp
 
    if ( (!strcmp(shortopt, *sp)) || (longopt && !strcmp(longopt, *sp)) ) {
       if(!lGetElemStr(*ppcmdline, SPA_switch_val, shortopt)) {
-         sge_add_noarg(ppcmdline, 0, shortopt, NULL);
+         sge_add_noarg(ppcmdline, 0, shortopt, nullptr);
       }
       sp++;
    }
@@ -204,7 +204,7 @@ lListElem *ep; /* SPA_Type */
          answer_list_add(alpp, str, STATUS_ESEMANTIC, ANSWER_QUALITY_ERROR);
          DRETURN(rp);
       }
-      ep = sge_add_arg(ppcmdline, 0, lListT, shortopt, NULL);
+      ep = sge_add_arg(ppcmdline, 0, lListT, shortopt, nullptr);
       while (*rp && **rp != '-') {
          /* string at *rp is argument to current option */
          lAddSubStr(ep, ST_name, *rp, SPA_argval_lListT, ST_Type);
@@ -250,7 +250,7 @@ lList **alpp
          DRETURN(rp);
       }
 #endif
-      ep = sge_add_arg(ppcmdline, 0, lListT, shortopt, NULL);
+      ep = sge_add_arg(ppcmdline, 0, lListT, shortopt, nullptr);
       while (*rp && **rp != '-') {
          /* string at *rp is argument to current option */
          lAddSubStr(ep, ST_name, *rp, SPA_argval_lListT, ST_Type);
@@ -276,7 +276,7 @@ lList **ppcmdline,
 lList **alpp 
 ) {
 char **rp;
-lListElem *ep = NULL; /* SPA_Type */
+lListElem *ep = nullptr; /* SPA_Type */
 
    DENTER(TOP_LAYER)
 
@@ -284,7 +284,7 @@ lListElem *ep = NULL; /* SPA_Type */
    while( (*rp) && (**rp != '-') ) {
       /* string under rp is parameter, no option! */
       if(!ep)
-         ep = sge_add_arg(ppcmdline, 0, lListT, opt, NULL);
+         ep = sge_add_arg(ppcmdline, 0, lListT, opt, nullptr);
       lAddElemStr(lGetListRef(ep, SPA_argval_lListT), ST_name, *rp, ST_Type);
       rp++;
    }
@@ -316,7 +316,7 @@ char* actual_opt;
    DENTER(BASIS_LAYER);
 
    if((ep = lGetElemStrLikeRW(*ppcmdline, SPA_switch_val, opt))) {
-      actual_opt = sge_strdup(NULL, lGetString(ep, SPA_switch_val));
+      actual_opt = sge_strdup(nullptr, lGetString(ep, SPA_switch_val));
       while(ep) {
          /* remove _all_ flags of same type */
          lRemoveElem(*ppcmdline, &ep);
@@ -385,20 +385,20 @@ u_long32 action
    DENTER(TOP_LAYER);
    while ((ep = lGetElemStrRW(*ppcmdline, SPA_switch_val, opt))) {
       lListElem *arrayDef = lNextRW(ep);
-      const lList *arrayDefList = NULL;
+      const lList *arrayDefList = nullptr;
 
       ret = true;
       is_run_once = true;
-      if ((arrayDef != NULL) && lGetUlong(arrayDef, SPA_number) ==  t_OPT) {
+      if ((arrayDef != nullptr) && lGetUlong(arrayDef, SPA_number) ==  t_OPT) {
          arrayDefList = lGetList(arrayDef, SPA_argval_lListT);
       }
       for_each_rw(sep, lGetList(ep, SPA_argval_lListT)) {
-         const lList *tempArrayList = NULL;
+         const lList *tempArrayList = nullptr;
      
-         if ((arrayDefList != NULL) && (lNext(sep) == NULL)) {
+         if ((arrayDefList != nullptr) && (lNext(sep) == nullptr)) {
             tempArrayList = arrayDefList;
          }   
-         if (sge_parse_jobtasks(ppdestlist, &idp, lGetString(sep, ST_name), NULL,
+         if (sge_parse_jobtasks(ppdestlist, &idp, lGetString(sep, ST_name), nullptr,
              include_names, tempArrayList) == -1) {
             answer_list_add_sprintf(alpp, STATUS_ESEMANTIC, ANSWER_QUALITY_ERROR,
                                     MSG_JOB_XISINVALIDJOBTASKID_S, lGetString(sep, ST_name));
@@ -408,18 +408,18 @@ u_long32 action
          }
          lSetUlong(idp, ID_action, action);
       }
-      if (arrayDefList != NULL) {
+      if (arrayDefList != nullptr) {
          lRemoveElem(*ppcmdline, &arrayDef);
-         arrayDef = NULL;
-         arrayDefList = NULL;
+         arrayDef = nullptr;
+         arrayDefList = nullptr;
       }
       lRemoveElem(*ppcmdline, &ep);
    }
    
-   if (is_run_once && (ep = lGetElemUlongRW(*ppcmdline, SPA_number, t_OPT )) != NULL) {
+   if (is_run_once && (ep = lGetElemUlongRW(*ppcmdline, SPA_number, t_OPT )) != nullptr) {
       answer_list_add_sprintf(alpp, STATUS_ESEMANTIC, ANSWER_QUALITY_ERROR,
                               MSG_JOB_LONELY_TOPTION_S, lGetString(ep, SPA_switch_arg));
-      while ((ep = lGetElemUlongRW(*ppcmdline, SPA_number, t_OPT )) != NULL) {
+      while ((ep = lGetElemUlongRW(*ppcmdline, SPA_number, t_OPT )) != nullptr) {
          lRemoveElem(*ppcmdline, &ep);
       }  
       
@@ -442,9 +442,9 @@ char **str
    if((ep = lGetElemStrRW(*ppcmdline, SPA_switch_val, opt))) {
       ep2 = lFirstRW(lGetList(ep, SPA_argval_lListT));
       if (ep2)
-         *str = sge_strdup(NULL, lGetString(ep2, ST_name));
+         *str = sge_strdup(nullptr, lGetString(ep2, ST_name));
       else
-         *str = NULL;   
+         *str = nullptr;
       
       if (lGetNumberOfElem(lGetList(ep, SPA_argval_lListT)) > 1) {
          lRemoveElem(lGetListRW(ep, SPA_argval_lListT), &ep2);
@@ -462,11 +462,11 @@ int
 parse_u_long32(lList **ppcmdline, const char *opt, lList **ppal, u_long32 *value) 
 {
    bool ret = false;
-   lListElem *ep = NULL;
+   lListElem *ep = nullptr;
 
    DENTER(TOP_LAYER);
    ep = lGetElemStrRW(*ppcmdline, SPA_switch_val, opt);
-   if(ep != NULL) {
+   if(ep != nullptr) {
       *value = lGetUlong(ep, SPA_argval_lUlongT); 
 
       lRemoveElem(*ppcmdline, &ep);
@@ -479,12 +479,12 @@ int
 parse_u_longlist(lList **ppcmdline, const char *opt, lList **ppal, lList **value) 
 {
    bool ret = false;
-   lListElem *ep = NULL;
+   lListElem *ep = nullptr;
 
    DENTER(TOP_LAYER);
    ep = lGetElemStrRW(*ppcmdline, SPA_switch_val, opt);
-   if(ep != NULL) {
-      *value = NULL;
+   if(ep != nullptr) {
+      *value = nullptr;
       lXchgList(ep, SPA_argval_lListT, value);
 
       lRemoveElem(*ppcmdline, &ep);
@@ -556,10 +556,10 @@ sge_parse_bitfield_str(const char *str, const char *set_specifier[],
       DRETURN(true);
    }
 
-   for (s = sge_strtok(str, delim); s; s=sge_strtok(NULL, delim)) {
+   for (s = sge_strtok(str, delim); s; s=sge_strtok(nullptr, delim)) {
 
       bitmask = 1;
-      for (cpp=set_specifier; *cpp != NULL; cpp++) {
+      for (cpp=set_specifier; *cpp != nullptr; cpp++) {
          if (!strcasecmp(*cpp, s)) {
 
             if ( *value & bitmask ) {
@@ -576,7 +576,7 @@ sge_parse_bitfield_str(const char *str, const char *set_specifier[],
             bitmask <<= 1;
       }
 
-      if ( *cpp == NULL ) {
+      if ( *cpp == nullptr ) {
          /* whops! unknown specifier */
          SGE_ADD_MSG_ID(sprintf(SGE_EVENT, MSG_GDI_READCONFIGFILEUNKNOWNSPEC_SS, s, name)); 
          answer_list_add(alpp, SGE_EVENT, STATUS_ESYNTAX, ANSWER_QUALITY_ERROR);

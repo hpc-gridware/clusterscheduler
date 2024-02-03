@@ -118,13 +118,13 @@
 ****************************************************************************/
 
 #define for_each_sl_locked(elem, list) \
-   for(sge_sl_lock(list), elem = NULL, sge_sl_elem_next(list, &elem, SGE_SL_FORWARD); \
-       elem != NULL || (sge_sl_unlock(list), false); \
+   for(sge_sl_lock(list), elem = nullptr, sge_sl_elem_next(list, &elem, SGE_SL_FORWARD); \
+       elem != nullptr || (sge_sl_unlock(list), false); \
        sge_sl_elem_next(list, &elem, SGE_SL_FORWARD))
 
 #define for_each_sl(elem, list) \
-   for(elem = NULL, sge_sl_elem_next(list, &elem, SGE_SL_FORWARD); \
-       elem != NULL; \
+   for(elem = nullptr, sge_sl_elem_next(list, &elem, SGE_SL_FORWARD); \
+       elem != nullptr; \
        sge_sl_elem_next(list, &elem, SGE_SL_FORWARD))
 
 typedef int (*sge_sl_compare_f)(const void *data1, const void *data2);

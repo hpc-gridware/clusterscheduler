@@ -34,18 +34,18 @@
 #define  LEMALLOC       1       /* malloc failure                         */
 #define  LEINCTYPE      2       /* incompatible type                      */
 #define  LEUNKTYPE      3       /* unknown type                           */
-#define  LEELEMNULL     4       /* element is NULL                        */
+#define  LEELEMNULL     4       /* element is nullptr                        */
 #define  LENAMENOT      5       /* name not in descriptor contained       */
 #define  LENAMEOUT      6       /* name out of namespaces                 */
-#define  LEDESCRNULL    7       /* descriptor is NULL, empty describtor   */
+#define  LEDESCRNULL    7       /* descriptor is nullptr, empty describtor   */
 #define  LENEGPOS       8       /* negative position is not allowed       */
 #define  LESTRDUP       9       /* strdup failure                         */
-#define  LEFILENULL     10      /* file pointer is NULL                   */
+#define  LEFILENULL     10      /* file pointer is nullptr                   */
 #define  LEFGETBRA      11      /* fGetBra failed                         */
 #define  LEFGETKET      12      /* fGetKet failed                         */
 #define  LEFGETINT      13      /* fGetInt failed                         */
 #define  LEFGETDESCR    14      /* fGetDescr failed                       */
-#define  LELISTNULL     15      /* list is NULL                           */
+#define  LELISTNULL     15      /* list is nullptr                           */
 #define  LECREATEELEM   16      /* lCreateElem failure                    */
 #define  LECOUNTDESCR   17      /* lCountDescr failure                    */
 #define  LEFIELDREAD    18      /* reading field failure                  */
@@ -60,8 +60,8 @@
 #define  LESPACECOMMENT 26      /* space_comment failure                  */
 #define  LEUNDUMPLIST   27      /* lUndumpList failure                    */
 #define  LECOPYSWITCH   28      /* lCopySwitch failure                    */
-#define  LEENUMNULL     29      /* lEnumeration is NULL                   */
-#define  LECONDNULL     30      /* lCondition is NULL                     */
+#define  LEENUMNULL     29      /* lEnumeration is nullptr                   */
+#define  LECONDNULL     30      /* lCondition is nullptr                     */
 #define  LENOLISTNAME   31      /* no listname specified                  */
 #define  LEDIFFDESCR    32      /* different list descriptors             */
 #define  LEDECHAINELEM  33      /* lDechainElem failure                   */
@@ -69,11 +69,11 @@
 #define  LENOFORMATSTR  35      /* format string is missing               */
 #define  LEPARSESORTORD 36      /* lParseSortOrder failure                */
 #define  LEGETNROFELEM  37      /* lgetNumberOfElem failure               */
-#define  LESORTORDNULL  38      /* lSortOrder is NULL                     */
+#define  LESORTORDNULL  38      /* lSortOrder is nullptr                     */
 #define  LESUM          39      /* sum in where.c failure                 */
 #define  LEOPUNKNOWN    40      /* operator of lCondition struct unknown  */
 #define  LECOPYELEMPART 41      /* lCopyElemPartialPack failure           */
-#define  LENULLARGS     42      /* function argument is NULL              */
+#define  LENULLARGS     42      /* function argument is nullptr              */
 #define  LEFALSEFIELD   43      /* field is not allowed here              */
 #define  LEJOINDESCR    44      /* lJoinDescr failure                     */
 #define  LEJOIN         45      /* lJoin failure                          */
@@ -83,7 +83,7 @@
 #define  LEPARTIALDESCR 49      /* lPartialDescr failure                  */
 #define  LEENUMDESCR    50      /* enumeration no subset of descriptor    */
 #define  LEENUMBOTHNONE 51      /* at least one enumeration required      */
-#define  LENULLSTRING   52      /* string NULL not allowed                */
+#define  LENULLSTRING   52      /* string nullptr not allowed                */
 #define  LEPARSECOND    53      /* parsing condition failed               */
 #define  LEFORMAT       54      /* wrong packing format                   */
 #define  LEOPEN         55      /* error opening file                     */

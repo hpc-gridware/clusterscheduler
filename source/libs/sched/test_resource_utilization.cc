@@ -110,7 +110,7 @@ static int do_qeti_test(lListElem *cr, u_long32 *qeti_expected_result)
 
    /* sge_qeti_first() */
    for (pe_time = sge_qeti_first(iter), i=0; pe_time; pe_time = sge_qeti_next(iter), i++) {
-      if (qeti_expected_result == NULL) {
+      if (qeti_expected_result == nullptr) {
          printf("failed: qeti returned "sge_U32CFormat", expected no iteration\n", sge_u32c(pe_time));
          ret++;
       } else if (qeti_expected_result[i] != pe_time) {
@@ -294,7 +294,7 @@ static int test_extensive_utilization(void) {
       utilization_add(cr, 2000, U_LONG32_MAX, -4, 103, 1, PE_TAG, "pe_slots", "RESERVING", false, false);
 
       ret += do_utilization_test(cr, test_array);
-      ret += do_qeti_test(cr, NULL);
+      ret += do_qeti_test(cr, nullptr);
    }
 
    lFreeElem(&cr);

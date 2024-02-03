@@ -80,7 +80,7 @@ int cl_util_get_double_number_length(double id) {
 
 unsigned long cl_util_get_ulong_value(const char *text) {
    unsigned long value = 0;
-   if (text != NULL) {
+   if (text != nullptr) {
       sscanf(text, "%lu", &value);
    }
    return value;
@@ -93,21 +93,21 @@ unsigned long cl_util_get_ulong_value(const char *text) {
 #define __CL_FUNCTION__ "cl_util_get_ascii_hex_buffer()"
 
 int cl_util_get_ascii_hex_buffer(unsigned char *buffer, unsigned long buf_len, char **ascii_buffer, char *separator) {
-   char *asc_buffer = NULL;
+   char *asc_buffer = nullptr;
    unsigned long asc_buffer_size = 0;
    unsigned long asc_buffer_index = 0;
    unsigned long buffer_index = 0;
    int sep_length = 0;
 
-   if (buffer == NULL || ascii_buffer == NULL) {
+   if (buffer == nullptr || ascii_buffer == nullptr) {
       return CL_RETVAL_PARAMS;
    }
 
-   if (*ascii_buffer != NULL) {
+   if (*ascii_buffer != nullptr) {
       return CL_RETVAL_PARAMS;
    }
 
-   if (separator == NULL) {
+   if (separator == nullptr) {
       sep_length = 0;
    } else {
       sep_length = strlen(separator);
@@ -115,7 +115,7 @@ int cl_util_get_ascii_hex_buffer(unsigned char *buffer, unsigned long buf_len, c
    asc_buffer_size = buf_len * (2 + sep_length) + 1;
 
    asc_buffer = sge_malloc(sizeof(char) * asc_buffer_size);
-   if (asc_buffer == NULL) {
+   if (asc_buffer == nullptr) {
       return CL_RETVAL_MALLOC;
    }
 
@@ -123,7 +123,7 @@ int cl_util_get_ascii_hex_buffer(unsigned char *buffer, unsigned long buf_len, c
    for (buffer_index = 0; buffer_index < buf_len; buffer_index++) {
       asc_buffer[asc_buffer_index++] = cl_util_get_ascii_hex_char((buffer[buffer_index] & 0xf0) >> 4);
       asc_buffer[asc_buffer_index++] = cl_util_get_ascii_hex_char((buffer[buffer_index] & 0x0f));
-      if (separator != NULL && (buffer_index + 1) < buf_len) {
+      if (separator != nullptr && (buffer_index + 1) < buf_len) {
          strncpy(&asc_buffer[asc_buffer_index], separator, sep_length);
          asc_buffer_index += sep_length;
       }
@@ -141,7 +141,7 @@ int cl_util_get_ascii_hex_buffer(unsigned char *buffer, unsigned long buf_len, c
 #define __CL_FUNCTION__ "cl_util_get_binary_buffer()"
 
 int cl_util_get_binary_buffer(char *hex_buffer, unsigned char **buffer, unsigned long *buffer_lenght) {
-   unsigned char *bin_buffer = NULL;
+   unsigned char *bin_buffer = nullptr;
    unsigned long bin_buffer_len = 0;
    unsigned long bin_buffer_index = 0;
    unsigned long hex_buffer_index = 0;
@@ -149,10 +149,10 @@ int cl_util_get_binary_buffer(char *hex_buffer, unsigned char **buffer, unsigned
    int hi = 0;
    int lo = 0;
 
-   if (hex_buffer == NULL || buffer == NULL || buffer_lenght == NULL) {
+   if (hex_buffer == nullptr || buffer == nullptr || buffer_lenght == nullptr) {
       return CL_RETVAL_PARAMS;
    }
-   if (*buffer != NULL) {
+   if (*buffer != nullptr) {
       return CL_RETVAL_PARAMS;
    }
 
@@ -163,7 +163,7 @@ int cl_util_get_binary_buffer(char *hex_buffer, unsigned char **buffer, unsigned
    }
    bin_buffer_len = hex_buffer_len / 2;
    bin_buffer = (unsigned char *) sge_malloc(sizeof(char) * bin_buffer_len);
-   if (bin_buffer == NULL) {
+   if (bin_buffer == nullptr) {
       return CL_RETVAL_MALLOC;
    }
 

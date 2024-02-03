@@ -55,7 +55,7 @@ void
 usage(char *progname)
 {
    char *p;
-   p = (NULL == (p = strrchr(progname,'/'))) ? progname : p+1;
+   p = (nullptr == (p = strrchr(progname,'/'))) ? progname : p+1;
    fprintf(stderr, MSG_GSS_GETCRED_USAGE, p);
    fprintf(stderr, "\n");
    exit(1);

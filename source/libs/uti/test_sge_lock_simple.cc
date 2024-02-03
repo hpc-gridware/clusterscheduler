@@ -56,7 +56,7 @@ void *(*get_thrd_func(void))(void *anArg) {
 }
 
 void *get_thrd_func_arg(void) {
-   return NULL;
+   return nullptr;
 }
 
 void set_thread_count(int count) {
@@ -94,7 +94,7 @@ static void *thread_function(void *anArg) {
 
    SGE_UNLOCK(LOCK_GLOBAL, LOCK_READ);
 
-   DRETURN((void *) NULL);
+   DRETURN((void *) nullptr);
 } /* thread_function */
 
 int validate(int thread_count) {

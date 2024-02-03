@@ -119,7 +119,7 @@ static void notify_ptf()
          for_each_rw (jatep, lGetList(jep, JB_ja_tasks)) {
             write_job = 0;
             if (lGetUlong(jatep, JAT_status) == JWAITING4OSJID) {
-               switch (register_at_ptf(jep, jatep, NULL)) {
+               switch (register_at_ptf(jep, jatep, nullptr)) {
                   case 0:   
                      /* succeeded */
                      lSetUlong(jatep, JAT_status, JRUNNING);
@@ -162,7 +162,7 @@ static void notify_ptf()
             }
             if (write_job && !mconf_get_simulate_jobs())
                job_write_spool_file(jep, lGetUlong(jatep, JAT_task_number), 
-                                    NULL, SPOOL_WITHIN_EXECD);
+                                    nullptr, SPOOL_WITHIN_EXECD);
          }
       }
 
@@ -187,7 +187,7 @@ static void force_job_rlimit(const char* qualified_hostname)
       const lListElem *jatep;
 
       for_each_ep(jatep, lGetList(jep, JB_ja_tasks)) {
-         const lListElem *q=NULL, *cpu_ep, *vmem_ep, *gdil_ep;
+         const lListElem *q=nullptr, *cpu_ep, *vmem_ep, *gdil_ep;
          double cpu_val, vmem_val;
          double s_cpu, h_cpu;
          double s_vmem, h_vmem;
@@ -202,7 +202,7 @@ static void force_job_rlimit(const char* qualified_hostname)
 
          /* retrieve cpu and vmem usage */
          usage_list = ptf_get_job_usage(jobid, jataskid, "*");
-         if (usage_list == NULL) {
+         if (usage_list == nullptr) {
             continue;
          }
 
@@ -215,12 +215,12 @@ static void force_job_rlimit(const char* qualified_hostname)
          }
             
          DPRINTF(("JOB "sge_u32" %s %10.5f %s %10.5f\n", jobid,
-            cpu_ep != NULL ? USAGE_ATTR_CPU : "("USAGE_ATTR_CPU")", cpu_val,
-            vmem_ep != NULL ? USAGE_ATTR_VMEM : "("USAGE_ATTR_VMEM")", vmem_val));
+            cpu_ep != nullptr ? USAGE_ATTR_CPU : "("USAGE_ATTR_CPU")", cpu_val,
+            vmem_ep != nullptr ? USAGE_ATTR_VMEM : "("USAGE_ATTR_VMEM")", vmem_val));
 
          /* free no longer needed usage_list */
          lFreeList(&usage_list);
-         cpu_ep = vmem_ep = NULL;
+         cpu_ep = vmem_ep = nullptr;
 
          for_each_ep(gdil_ep, lGetList(jatep, JAT_granted_destin_identifier_list)) {
             int nslots=0;
@@ -235,28 +235,28 @@ static void force_job_rlimit(const char* qualified_hostname)
 
             nslots = lGetUlong(gdil_ep, JG_slots);
 
-            parse_ulong_val(&lim, NULL, TYPE_TIM, lGetString(q, QU_s_cpu), err_str, err_size);
+            parse_ulong_val(&lim, nullptr, TYPE_TIM, lGetString(q, QU_s_cpu), err_str, err_size);
             if (lim == DBL_MAX) {
                s_cpu = DBL_MAX;
             } else {
                s_cpu += lim * nslots; 
             }
 
-            parse_ulong_val(&lim, NULL, TYPE_TIM, lGetString(q, QU_h_cpu), err_str, err_size);
+            parse_ulong_val(&lim, nullptr, TYPE_TIM, lGetString(q, QU_h_cpu), err_str, err_size);
             if (lim == DBL_MAX) {
                h_cpu = DBL_MAX;
             } else {
                h_cpu += lim * nslots; 
             }
 
-            parse_ulong_val(&lim, NULL, TYPE_TIM, lGetString(q, QU_s_vmem), err_str, err_size);
+            parse_ulong_val(&lim, nullptr, TYPE_TIM, lGetString(q, QU_s_vmem), err_str, err_size);
             if (lim == DBL_MAX) {
                s_vmem = DBL_MAX;
             } else {
                s_vmem += lim * nslots; 
             }
 
-            parse_ulong_val(&lim, NULL, TYPE_TIM, lGetString(q, QU_h_vmem), err_str, err_size);
+            parse_ulong_val(&lim, nullptr, TYPE_TIM, lGetString(q, QU_h_vmem), err_str, err_size);
             if (lim == DBL_MAX) {
                h_vmem = DBL_MAX;
             } else {
@@ -301,19 +301,19 @@ execd_get_wallclock_limit(const char *qualified_hostname, const lList *gdil_list
    const void *iterator;
 
    gdil = lGetElemHostFirst(gdil_list, JG_qhostname, qualified_hostname, &iterator);
-   while (gdil != NULL) {
+   while (gdil != nullptr) {
       const lListElem *queue;
       const char *limit;
       u_long32 clock_val;
 
       queue = lGetObject(gdil, JG_queue);
-      if (queue != NULL) {
+      if (queue != nullptr) {
          limit = lGetString(queue, limit_nm);
 
          if (strcasecmp(limit, "infinity") == 0) {
             clock_val = U_LONG32_MAX;
          } else {   
-            parse_ulong_val(NULL, &clock_val, TYPE_TIM, limit, NULL, 0);
+            parse_ulong_val(nullptr, &clock_val, TYPE_TIM, limit, nullptr, 0);
          }   
 
          ret = MIN(ret, clock_val);
@@ -440,7 +440,7 @@ int do_ck_to_do(sge_gdi_ctx_class_t *ctx, bool is_qmaster_down) {
                }
                if (!mconf_get_simulate_jobs()) {
                   job_write_spool_file(jep, lGetUlong(jatep, JAT_task_number), 
-                                       NULL, SPOOL_WITHIN_EXECD);
+                                       nullptr, SPOOL_WITHIN_EXECD);
                }
             }
             
@@ -456,7 +456,7 @@ int do_ck_to_do(sge_gdi_ctx_class_t *ctx, bool is_qmaster_down) {
                      sge_kill(lGetUlong(jatep, JAT_pid), SGE_SIGKILL, 
                               lGetUlong(jep, JB_job_number),
                               lGetUlong(jatep, JAT_task_number),
-                              NULL);     
+                              nullptr);
                   }
                   lSetUlong(jatep, JAT_pending_signal_delivery_time, now+90);
                }    
@@ -475,7 +475,7 @@ int do_ck_to_do(sge_gdi_ctx_class_t *ctx, bool is_qmaster_down) {
                      sge_kill(lGetUlong(jatep, JAT_pid), SGE_SIGUSR1, 
                               lGetUlong(jep, JB_job_number),
                               lGetUlong(jatep, JAT_task_number),
-                              NULL);
+                              nullptr);
                   }
                   lSetUlong(jatep, JAT_pending_signal_delivery_time, now+90);         
                }
@@ -495,7 +495,7 @@ int do_ck_to_do(sge_gdi_ctx_class_t *ctx, bool is_qmaster_down) {
       for_each_rw(jep, *object_type_get_master_list_rw(SGE_TYPE_JOB)) {
          for_each_rw(jatep, lGetList(jep, JB_ja_tasks)) {
             if (lGetUlong(jatep, JAT_end_time) <= now) {
-               lListElem *jr = NULL;
+               lListElem *jr = nullptr;
                u_long32 jobid, jataskid;
                u_long32 wallclock;
 
@@ -504,22 +504,22 @@ int do_ck_to_do(sge_gdi_ctx_class_t *ctx, bool is_qmaster_down) {
 
                DPRINTF(("Simulated job "sge_u32"."sge_u32" is exiting\n", jobid, jataskid));
 
-               if ((jr=get_job_report(jobid, jataskid, NULL)) == NULL) {
+               if ((jr=get_job_report(jobid, jataskid, nullptr)) == nullptr) {
                   ERROR((SGE_EVENT, MSG_JOB_MISSINGJOBXYINJOBREPORTFOREXITINGJOBADDINGIT_UU, 
                          sge_u32c(jobid), sge_u32c(jataskid)));
-                  jr = add_job_report(jobid, jataskid, NULL, jep);
+                  jr = add_job_report(jobid, jataskid, nullptr, jep);
                }
 
                lSetUlong(jr, JR_state, JEXITING);
-               add_usage(jr, "submission_time", NULL, lGetUlong(jep, JB_submission_time));
-               add_usage(jr, "start_time", NULL, lGetUlong(jatep, JAT_start_time));
-               add_usage(jr, "end_time", NULL, lGetUlong(jatep, JAT_end_time));
+               add_usage(jr, "submission_time", nullptr, lGetUlong(jep, JB_submission_time));
+               add_usage(jr, "start_time", nullptr, lGetUlong(jatep, JAT_start_time));
+               add_usage(jr, "end_time", nullptr, lGetUlong(jatep, JAT_end_time));
                wallclock = lGetUlong(jatep, JAT_end_time) - lGetUlong(jatep, JAT_start_time);
-               add_usage(jr, "ru_wallclock", NULL, wallclock);
-               add_usage(jr, USAGE_ATTR_CPU_ACCT, NULL, wallclock * 0.5);
-               add_usage(jr, "ru_utime", NULL, wallclock * 0.4);
-               add_usage(jr, "ru_stime", NULL, wallclock * 0.1);
-               add_usage(jr, "exit_status", NULL, 0);
+               add_usage(jr, "ru_wallclock", nullptr, wallclock);
+               add_usage(jr, USAGE_ATTR_CPU_ACCT, nullptr, wallclock * 0.5);
+               add_usage(jr, "ru_utime", nullptr, wallclock * 0.4);
+               add_usage(jr, "ru_stime", nullptr, wallclock * 0.1);
+               add_usage(jr, "exit_status", nullptr, 0);
             
                
                lSetUlong(jatep, JAT_status, JEXITING);
@@ -585,9 +585,9 @@ sge_execd_ja_task_is_tightly_integrated(const lListElem *ja_task)
 {
    bool ret = false;
 
-   if (ja_task != NULL) {
+   if (ja_task != nullptr) {
       const lListElem *pe = lGetObject(ja_task, JAT_pe_object);
-      if (pe != NULL && lGetBool(pe, PE_control_slaves)) {
+      if (pe != nullptr && lGetBool(pe, PE_control_slaves)) {
          ret = true;
       }
    }
@@ -620,7 +620,7 @@ sge_kill_petasks(const lListElem *job, const lListElem *ja_task)
 {
    bool ret = false;
 
-   if (job != NULL && ja_task != NULL) {
+   if (job != nullptr && ja_task != nullptr) {
       const lListElem *pe_task;
 
       for_each_ep(pe_task, lGetList(ja_task, JAT_task_list)) {
@@ -653,7 +653,7 @@ static int sge_start_jobs(sge_gdi_ctx_class_t *ctx)
 
    for_each_rw(jep, *object_type_get_master_list_rw(SGE_TYPE_JOB)) {
       for_each_rw(jatep, lGetList(jep, JB_ja_tasks)) {
-         state_changed = exec_job_or_task(ctx, jep, jatep, NULL);
+         state_changed = exec_job_or_task(ctx, jep, jatep, nullptr);
 
          /* visit all tasks */
          for_each_rw(petep, lGetList(jatep, JAT_task_list)) {
@@ -663,7 +663,7 @@ static int sge_start_jobs(sge_gdi_ctx_class_t *ctx)
          /* now save this job so we are up to date on restart */
          if (state_changed) {
             if (!mconf_get_simulate_jobs()) {
-               job_write_spool_file(jep, lGetUlong(jatep, JAT_task_number), NULL, SPOOL_WITHIN_EXECD);
+               job_write_spool_file(jep, lGetUlong(jatep, JAT_task_number), nullptr, SPOOL_WITHIN_EXECD);
             }
             jobs_started++;
          }
@@ -681,7 +681,7 @@ static int exec_job_or_task(sge_gdi_ctx_class_t *ctx, lListElem *jep, lListElem 
    int pid;
    u_long32 now;
    u_long32 job_id, ja_task_id;
-   const char *pe_task_id = NULL;
+   const char *pe_task_id = nullptr;
    const char *qualified_hostname = uti_state_get_qualified_hostname();
 
    DENTER(TOP_LAYER);
@@ -689,7 +689,7 @@ static int exec_job_or_task(sge_gdi_ctx_class_t *ctx, lListElem *jep, lListElem 
    /* retrieve ids - we need them later on */
    job_id = lGetUlong(jep, JB_job_number);
    ja_task_id = lGetUlong(jatep, JAT_task_number);
-   if (petep != NULL) {
+   if (petep != nullptr) {
       pe_task_id = lGetString(petep, PET_id);
    }
 
@@ -698,7 +698,7 @@ static int exec_job_or_task(sge_gdi_ctx_class_t *ctx, lListElem *jep, lListElem 
    {
       u_long32 status;
 
-      if (petep != NULL) {
+      if (petep != nullptr) {
          status = lGetUlong(petep, PET_status);
       } else {
          status = lGetUlong(jatep, JAT_status);
@@ -723,12 +723,12 @@ static int exec_job_or_task(sge_gdi_ctx_class_t *ctx, lListElem *jep, lListElem 
       /* set time when job shall be reported as finished */
       job_args = lGetList(jep, JB_job_args);
       if (lGetNumberOfElem(job_args) == 1) {
-         const char *arg = NULL;
-         char *endptr = NULL;
+         const char *arg = nullptr;
+         char *endptr = nullptr;
          u_long32 duration_in;
 
          arg = lGetString(lFirst(job_args), ST_name);
-         if (arg != NULL) {
+         if (arg != nullptr) {
             DPRINTF(("Trying to use first argument ("SFQ") as duration for simulated job\n", arg));
             
             duration_in = strtol(arg, &endptr, 0);
@@ -742,7 +742,7 @@ static int exec_job_or_task(sge_gdi_ctx_class_t *ctx, lListElem *jep, lListElem 
       DRETURN(1);
    }
 
-   if (petep != NULL) {
+   if (petep != nullptr) {
       lSetUlong(petep, PET_start_time, now);
 #ifdef COMPILE_DC
       lSetUlong(petep, PET_status, JWAITING4OSJID);
@@ -787,7 +787,7 @@ static int exec_job_or_task(sge_gdi_ctx_class_t *ctx, lListElem *jep, lListElem 
    DTIMEPRINTF(("TIME IN EXECD FOR STARTING THE JOB: " sge_u32 "\n",
                 sge_get_gmt()-now));
    
-   if (petep != NULL) {
+   if (petep != nullptr) {
       lSetUlong(petep, PET_pid, pid);
    } else {
       lSetUlong(jatep, JAT_pid, pid);
@@ -795,12 +795,12 @@ static int exec_job_or_task(sge_gdi_ctx_class_t *ctx, lListElem *jep, lListElem 
 
    DPRINTF(("***EXECING "sge_u32"."sge_u32" on %s (tid = %s) (pid = %d)\n",
             job_id, ja_task_id, 
-            qualified_hostname, pe_task_id != NULL ? pe_task_id : "null", pid));
+            qualified_hostname, pe_task_id != nullptr ? pe_task_id : "null", pid));
 
    /* when a ja_task or pe_task has been started, flush the job report */
    {
       lListElem *jr = get_job_report(job_id, ja_task_id, pe_task_id);
-      if (jr == NULL) {
+      if (jr == nullptr) {
          jr = add_job_report(job_id, ja_task_id, pe_task_id, jep);
          flush_job_report(jr);
       }
@@ -817,7 +817,7 @@ const lListElem *pe_task
 ) {
    u_long32 job_id;   
    u_long32 ja_task_id;   
-   const char *pe_task_id = NULL;
+   const char *pe_task_id = nullptr;
 
    int success;
    FILE *fp;
@@ -839,7 +839,7 @@ const lListElem *pe_task
 
    job_id = lGetUlong(job, JB_job_number);
    ja_task_id = lGetUlong(ja_task, JAT_task_number);
-   if (pe_task != NULL) { 
+   if (pe_task != nullptr) {
       pe_task_id = lGetString(pe_task, PET_id);
    }
 

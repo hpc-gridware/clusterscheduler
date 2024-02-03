@@ -152,18 +152,18 @@ static char **sge_parser_get_next(sge_gdi_ctx_class_t *ctx, char **arg)
 int sge_parse_qconf(sge_gdi_ctx_class_t *ctx, char *argv[])
 {
    int status;
-   char *cp = NULL;
-   char **spp = NULL;
+   char *cp = nullptr;
+   char **spp = nullptr;
    int opt;
    int sge_parse_return = 0;
-   lEnumeration *what = NULL;
-   lCondition *where = NULL;
-   lList *lp=NULL, *arglp=NULL, *alp=NULL, *newlp=NULL;
-   lListElem *hep=NULL, *ep=NULL;
-   lListElem *argep=NULL;
-   const lListElem *aep=NULL;
-   lListElem *newep = NULL;
-   const char *host = NULL;
+   lEnumeration *what = nullptr;
+   lCondition *where = nullptr;
+   lList *lp=nullptr, *arglp=nullptr, *alp=nullptr, *newlp=nullptr;
+   lListElem *hep=nullptr, *ep=nullptr;
+   lListElem *argep=nullptr;
+   const lListElem *aep=nullptr;
+   lListElem *newep = nullptr;
+   const char *host = nullptr;
    char *filename;
    const char *filename_stdout;
    int fields_out[MAX_NUM_FIELDS];
@@ -179,7 +179,7 @@ int sge_parse_qconf(sge_gdi_ctx_class_t *ctx, char *argv[])
    DENTER(TOP_LAYER);
 
    /* If no arguments were given, output the help message on stderr. */
-   if (*argv == NULL) {
+   if (*argv == nullptr) {
       sge_usage(QCONF, stderr);
       fprintf(stderr, "%s\n", MSG_PARSE_NOOPTIONARGUMENT);
       DRETURN(1);
@@ -227,14 +227,14 @@ int sge_parse_qconf(sge_gdi_ctx_class_t *ctx, char *argv[])
             filename = (char *)spool_flatfile_write_object(&alp, ep, false,
                                                  CAL_fields, &qconf_sfi,
                                                  SP_DEST_TMP, SP_FORM_ASCII,
-                                                 NULL, false);
+                                                 nullptr, false);
             lFreeElem(&ep);
             if (answer_list_output(&alp)) {
-               if (filename != NULL) {
+               if (filename != nullptr) {
                   unlink(filename);
                   sge_free(&filename);
                }
-               sge_error_and_exit(ctx, NULL);
+               sge_error_and_exit(ctx, nullptr);
             }
 
             /* edit this file */
@@ -257,9 +257,9 @@ int sge_parse_qconf(sge_gdi_ctx_class_t *ctx, char *argv[])
          
             /* read it in again */
             fields_out[0] = NoName;
-            ep = spool_flatfile_read_object(&alp, CAL_Type, NULL,
+            ep = spool_flatfile_read_object(&alp, CAL_Type, nullptr,
                                             CAL_fields, fields_out, true, &qconf_sfi,
-                                            SP_FORM_ASCII, NULL, filename);
+                                            SP_FORM_ASCII, nullptr, filename);
             unlink(filename);
             sge_free(&filename);
             
@@ -267,7 +267,7 @@ int sge_parse_qconf(sge_gdi_ctx_class_t *ctx, char *argv[])
                lFreeElem(&ep);
             }
 
-            if (ep != NULL) {
+            if (ep != nullptr) {
                missing_field = spool_get_unprocessed_field(CAL_fields, fields_out, &alp);
             }
 
@@ -277,7 +277,7 @@ int sge_parse_qconf(sge_gdi_ctx_class_t *ctx, char *argv[])
                sge_parse_return = 1;
             }      
             
-            if (ep == NULL) {
+            if (ep == nullptr) {
                if (sge_error_and_exit(ctx, MSG_FILE_ERRORREADINGINFILE)) {
                   continue;
                }
@@ -286,14 +286,14 @@ int sge_parse_qconf(sge_gdi_ctx_class_t *ctx, char *argv[])
             spp = sge_parser_get_next(ctx, spp);
            
             fields_out[0] = NoName;
-            ep = spool_flatfile_read_object(&alp, CAL_Type, NULL,
+            ep = spool_flatfile_read_object(&alp, CAL_Type, nullptr,
                                             CAL_fields, fields_out, true, &qconf_sfi,
-                                            SP_FORM_ASCII, NULL, *spp);
+                                            SP_FORM_ASCII, nullptr, *spp);
             if (answer_list_output(&alp)) {
                lFreeElem(&ep);
             }
 
-            if (ep != NULL) {
+            if (ep != nullptr) {
                missing_field = spool_get_unprocessed_field(CAL_fields, fields_out, &alp);
             }
 
@@ -303,7 +303,7 @@ int sge_parse_qconf(sge_gdi_ctx_class_t *ctx, char *argv[])
                sge_parse_return = 1;
             }
             
-            if (ep == NULL) {
+            if (ep == nullptr) {
                if (sge_error_and_exit(ctx, MSG_FILE_ERRORREADINGINFILE)) {
                   continue;
                }
@@ -313,7 +313,7 @@ int sge_parse_qconf(sge_gdi_ctx_class_t *ctx, char *argv[])
          /* send it to qmaster */
          lp = lCreateList("cal to add", CAL_Type); 
          lAppendElem(lp, ep);
-         alp = ctx->gdi(ctx, SGE_CAL_LIST, SGE_GDI_ADD, &lp, NULL, NULL);
+         alp = ctx->gdi(ctx, SGE_CAL_LIST, SGE_GDI_ADD, &lp, nullptr, nullptr);
 
          sge_parse_return |= show_answer_list(alp);
          lFreeList(&alp);
@@ -340,13 +340,13 @@ int sge_parse_qconf(sge_gdi_ctx_class_t *ctx, char *argv[])
             filename = (char *)spool_flatfile_write_object(&alp, ep, false,
                                                  CK_fields, &qconf_sfi,
                                                  SP_DEST_TMP, SP_FORM_ASCII,
-                                                 NULL, false);
+                                                 nullptr, false);
             if (answer_list_output(&alp)) {
-               if (filename != NULL) {
+               if (filename != nullptr) {
                   unlink(filename);
                   sge_free(&filename);
                }
-               sge_error_and_exit(ctx, NULL);
+               sge_error_and_exit(ctx, nullptr);
             }
 
             lFreeElem(&ep);
@@ -369,9 +369,9 @@ int sge_parse_qconf(sge_gdi_ctx_class_t *ctx, char *argv[])
          
             /* read it in again */
             fields_out[0] = NoName;
-            ep = spool_flatfile_read_object(&alp, CK_Type, NULL,
+            ep = spool_flatfile_read_object(&alp, CK_Type, nullptr,
                                             CK_fields, fields_out, true, &qconf_sfi,
-                                            SP_FORM_ASCII, NULL, filename);
+                                            SP_FORM_ASCII, nullptr, filename);
             unlink(filename);
             sge_free(&filename);
             
@@ -379,7 +379,7 @@ int sge_parse_qconf(sge_gdi_ctx_class_t *ctx, char *argv[])
                lFreeElem(&ep);
             }
 
-            if (ep != NULL) {
+            if (ep != nullptr) {
                missing_field = spool_get_unprocessed_field(CK_fields, fields_out, &alp);
             }
 
@@ -389,13 +389,13 @@ int sge_parse_qconf(sge_gdi_ctx_class_t *ctx, char *argv[])
                sge_parse_return = 1;
             }
             
-            if ((ep != NULL) && (ckpt_validate(ep, &alp) != STATUS_OK)) {
+            if ((ep != nullptr) && (ckpt_validate(ep, &alp) != STATUS_OK)) {
                lFreeElem(&ep);
                answer_list_output(&alp);
                sge_parse_return = 1;
             }
             
-            if (ep == NULL) {
+            if (ep == nullptr) {
                if (sge_error_and_exit(ctx, MSG_FILE_ERRORREADINGINFILE)) {
                   continue;
                }
@@ -404,15 +404,15 @@ int sge_parse_qconf(sge_gdi_ctx_class_t *ctx, char *argv[])
             spp = sge_parser_get_next(ctx, spp);
 
             fields_out[0] = NoName;
-            ep = spool_flatfile_read_object(&alp, CK_Type, NULL,
+            ep = spool_flatfile_read_object(&alp, CK_Type, nullptr,
                                             CK_fields, fields_out,  true, &qconf_sfi,
-                                            SP_FORM_ASCII, NULL, *spp);
+                                            SP_FORM_ASCII, nullptr, *spp);
             
             if (answer_list_output(&alp)) {
                lFreeElem(&ep);
             }
 
-            if (ep != NULL) {
+            if (ep != nullptr) {
                missing_field = spool_get_unprocessed_field(CK_fields, fields_out, &alp);
             }
 
@@ -422,13 +422,13 @@ int sge_parse_qconf(sge_gdi_ctx_class_t *ctx, char *argv[])
                sge_parse_return = 1;
             }
 
-            if ((ep != NULL) && (ckpt_validate(ep, &alp) != STATUS_OK)) {
+            if ((ep != nullptr) && (ckpt_validate(ep, &alp) != STATUS_OK)) {
                lFreeElem(&ep);
                answer_list_output(&alp);
                sge_parse_return = 1;
             }
                
-            if (ep == NULL) {
+            if (ep == nullptr) {
                if (sge_error_and_exit(ctx, MSG_FILE_ERRORREADINGINFILE)) {
                   continue;
                }
@@ -439,7 +439,7 @@ int sge_parse_qconf(sge_gdi_ctx_class_t *ctx, char *argv[])
          lp = lCreateList("CKPT list to add", CK_Type); 
          lAppendElem(lp, ep);
 
-         alp = ctx->gdi(ctx, SGE_CK_LIST, SGE_GDI_ADD, &lp, NULL, NULL);
+         alp = ctx->gdi(ctx, SGE_CK_LIST, SGE_GDI_ADD, &lp, nullptr, nullptr);
 
          sge_parse_return |= show_answer_list(alp);
          lFreeList(&alp);
@@ -452,13 +452,13 @@ int sge_parse_qconf(sge_gdi_ctx_class_t *ctx, char *argv[])
 /*----------------------------------------------------------------------------*/
       /* "-ae [server_name]" */
       if (strcmp("-ae", *spp) == 0) {
-         char *host = NULL;
+         char *host = nullptr;
 
-         cp = NULL;
+         cp = nullptr;
          qconf_is_adminhost(ctx, qualified_hostname);
          qconf_is_manager(ctx, username);
          if (!sge_next_is_an_opt(spp)) {
-            lListElem *hep = NULL;
+            lListElem *hep = nullptr;
 
             spp = sge_parser_get_next(ctx, spp);
 
@@ -500,7 +500,7 @@ int sge_parse_qconf(sge_gdi_ctx_class_t *ctx, char *argv[])
             continue;
          }
          
-         if (arglp == NULL || lGetNumberOfElem(arglp) == 0) {
+         if (arglp == nullptr || lGetNumberOfElem(arglp) == 0) {
             fprintf(stderr, MSG_EXEC_XISNOEXECHOST_S, host);   
             fprintf(stderr, "\n");
             sge_free(&host);
@@ -517,7 +517,7 @@ int sge_parse_qconf(sge_gdi_ctx_class_t *ctx, char *argv[])
          /* edit the template */
          argep = lFirstRW(arglp);
          ep = edit_exechost(ctx, argep, uid, gid);
-         if (ep == NULL) {
+         if (ep == nullptr) {
             lFreeList(&arglp);
             spp++;
             sge_parse_return = 1;
@@ -539,7 +539,7 @@ int sge_parse_qconf(sge_gdi_ctx_class_t *ctx, char *argv[])
 
          lp = lCreateList("hosts to add", EH_Type);
          lAppendElem(lp, ep);
-         alp = ctx->gdi(ctx, SGE_EH_LIST, SGE_GDI_ADD, &lp, NULL, NULL);
+         alp = ctx->gdi(ctx, SGE_EH_LIST, SGE_GDI_ADD, &lp, nullptr, nullptr);
          lFreeList(&lp);
 
          aep = lFirst(alp);
@@ -578,14 +578,14 @@ int sge_parse_qconf(sge_gdi_ctx_class_t *ctx, char *argv[])
          /* read file */
          lp = lCreateList("exechosts to add", EH_Type); 
          fields_out[0] = NoName;
-         ep = spool_flatfile_read_object(&alp, EH_Type, NULL,
+         ep = spool_flatfile_read_object(&alp, EH_Type, nullptr,
                                          fields, fields_out, true, &qconf_sfi,
-                                         SP_FORM_ASCII, NULL, *spp);
+                                         SP_FORM_ASCII, nullptr, *spp);
          if (answer_list_output(&alp)) {
             lFreeElem(&ep);
          }
 
-         if (ep != NULL) {
+         if (ep != nullptr) {
             missing_field = spool_get_unprocessed_field(fields, fields_out, &alp);
          }
 
@@ -614,7 +614,7 @@ int sge_parse_qconf(sge_gdi_ctx_class_t *ctx, char *argv[])
             DRETURN(1);
          }
 
-         alp = ctx->gdi(ctx, SGE_EH_LIST, SGE_GDI_ADD, &lp, NULL, NULL);
+         alp = ctx->gdi(ctx, SGE_EH_LIST, SGE_GDI_ADD, &lp, nullptr, nullptr);
 
          sge_parse_return |= show_answer_list(alp);
          lFreeList(&alp);
@@ -671,7 +671,7 @@ int sge_parse_qconf(sge_gdi_ctx_class_t *ctx, char *argv[])
 /*-----------------------------------------------------------------------------*/
       /* "-Arqs fname" */
       if (strcmp("-Arqs", *spp) == 0) {
-         const char *file = NULL;
+         const char *file = nullptr;
 
          if (!sge_next_is_an_opt(spp)) {
             spp = sge_parser_get_next(ctx, spp);
@@ -707,7 +707,7 @@ int sge_parse_qconf(sge_gdi_ctx_class_t *ctx, char *argv[])
 
          spp = sge_parser_get_next(ctx, spp);
          lString2List(*spp, &lp, UM_Type, UM_name, ", ");
-         alp = ctx->gdi(ctx, SGE_UM_LIST, SGE_GDI_ADD, &lp, NULL, NULL);
+         alp = ctx->gdi(ctx, SGE_UM_LIST, SGE_GDI_ADD, &lp, nullptr, nullptr);
          sge_parse_return |= show_answer_list(alp);
          
          lFreeList(&alp);
@@ -725,7 +725,7 @@ int sge_parse_qconf(sge_gdi_ctx_class_t *ctx, char *argv[])
 
          spp = sge_parser_get_next(ctx, spp);
          lString2List(*spp, &lp, UO_Type, UO_name, ", ");
-         alp = ctx->gdi(ctx, SGE_UO_LIST, SGE_GDI_ADD, &lp, NULL, NULL);
+         alp = ctx->gdi(ctx, SGE_UO_LIST, SGE_GDI_ADD, &lp, nullptr, nullptr);
          sge_parse_return |= show_answer_list(alp);
          
          lFreeList(&alp);
@@ -752,15 +752,15 @@ int sge_parse_qconf(sge_gdi_ctx_class_t *ctx, char *argv[])
             filename = (char *)spool_flatfile_write_object(&alp, ep, false,
                                                  PE_fields, &qconf_sfi,
                                                  SP_DEST_TMP, SP_FORM_ASCII,
-                                                 NULL, false);
+                                                 nullptr, false);
             lFreeElem(&ep);
             
             if (answer_list_output(&alp)) {
-               if (filename != NULL) {
+               if (filename != nullptr) {
                   unlink(filename);
                   sge_free(&filename);
                }
-               sge_error_and_exit(ctx, NULL);
+               sge_error_and_exit(ctx, nullptr);
             }
 
             /* edit this file */
@@ -783,9 +783,9 @@ int sge_parse_qconf(sge_gdi_ctx_class_t *ctx, char *argv[])
          
             /* read it in again */
             fields_out[0] = NoName;
-            ep = spool_flatfile_read_object(&alp, PE_Type, NULL,
+            ep = spool_flatfile_read_object(&alp, PE_Type, nullptr,
                                             PE_fields, fields_out,  true, &qconf_sfi,
-                                            SP_FORM_ASCII, NULL, filename);
+                                            SP_FORM_ASCII, nullptr, filename);
             unlink(filename);
             sge_free(&filename);
             
@@ -793,7 +793,7 @@ int sge_parse_qconf(sge_gdi_ctx_class_t *ctx, char *argv[])
                lFreeElem(&ep);
             }
 
-            if (ep != NULL) {
+            if (ep != nullptr) {
                missing_field = spool_get_unprocessed_field(PE_fields, fields_out, &alp);
             }
 
@@ -803,13 +803,13 @@ int sge_parse_qconf(sge_gdi_ctx_class_t *ctx, char *argv[])
                sge_parse_return = 1;
             }
 
-            if ((ep != NULL) && (pe_validate(ep, &alp, 0, NULL) != STATUS_OK)) {
+            if ((ep != nullptr) && (pe_validate(ep, &alp, 0, nullptr) != STATUS_OK)) {
                lFreeElem(&ep);
                answer_list_output(&alp);
                sge_parse_return = 1;
             }
             
-            if (ep == NULL) {
+            if (ep == nullptr) {
                if (sge_error_and_exit(ctx, MSG_FILE_ERRORREADINGINFILE)) {
                   continue;
                }
@@ -818,15 +818,15 @@ int sge_parse_qconf(sge_gdi_ctx_class_t *ctx, char *argv[])
             spp = sge_parser_get_next(ctx, spp);
 
             fields_out[0] = NoName;
-            ep = spool_flatfile_read_object(&alp, PE_Type, NULL,
+            ep = spool_flatfile_read_object(&alp, PE_Type, nullptr,
                                             PE_fields, fields_out, true, &qconf_sfi,
-                                            SP_FORM_ASCII, NULL, *spp);
+                                            SP_FORM_ASCII, nullptr, *spp);
             
             if (answer_list_output(&alp)) {
                lFreeElem(&ep);
             }
 
-            if (ep != NULL) {
+            if (ep != nullptr) {
                missing_field = spool_get_unprocessed_field(PE_fields, fields_out, &alp);
             }
 
@@ -836,13 +836,13 @@ int sge_parse_qconf(sge_gdi_ctx_class_t *ctx, char *argv[])
                sge_parse_return = 1;
             }
 
-            if ((ep != NULL) && (pe_validate(ep, &alp, 0, NULL) != STATUS_OK)) {
+            if ((ep != nullptr) && (pe_validate(ep, &alp, 0, nullptr) != STATUS_OK)) {
                lFreeElem(&ep);
                answer_list_output(&alp);
                sge_parse_return = 1;
             }
 
-            if (ep == NULL) {
+            if (ep == nullptr) {
                if (sge_error_and_exit(ctx, MSG_FILE_ERRORREADINGINFILE)) {
                   continue;
                }
@@ -852,7 +852,7 @@ int sge_parse_qconf(sge_gdi_ctx_class_t *ctx, char *argv[])
          /* send it to qmaster */
          lp = lCreateList("PE list to add", PE_Type); 
          lAppendElem(lp, ep);
-         alp = ctx->gdi(ctx, SGE_PE_LIST, SGE_GDI_ADD, &lp, NULL, NULL);
+         alp = ctx->gdi(ctx, SGE_PE_LIST, SGE_GDI_ADD, &lp, nullptr, nullptr);
          sge_parse_return |= show_answer_list(alp);
 
          lFreeList(&alp);
@@ -879,7 +879,7 @@ int sge_parse_qconf(sge_gdi_ctx_class_t *ctx, char *argv[])
          /* send it to qmaster */
          lp = lCreateList("User list to add", UU_Type); 
          lAppendElem(lp, newep);
-         alp = ctx->gdi(ctx, SGE_UU_LIST, SGE_GDI_ADD, &lp, NULL, NULL);
+         alp = ctx->gdi(ctx, SGE_UU_LIST, SGE_GDI_ADD, &lp, nullptr, nullptr);
          aep = lFirst(alp);
          answer_exit_if_not_recoverable(aep);
          if (answer_get_status(aep) != STATUS_OK) {
@@ -915,7 +915,7 @@ int sge_parse_qconf(sge_gdi_ctx_class_t *ctx, char *argv[])
          /* send it to qmaster */
          lp = lCreateList("Project list to add", PR_Type); 
          lAppendElem(lp, newep);
-         alp = ctx->gdi(ctx, SGE_PR_LIST, SGE_GDI_ADD, &lp, NULL, NULL);
+         alp = ctx->gdi(ctx, SGE_PR_LIST, SGE_GDI_ADD, &lp, nullptr, nullptr);
          sge_parse_return |= show_answer_list(alp);
                   
          lFreeList(&alp);
@@ -930,8 +930,8 @@ int sge_parse_qconf(sge_gdi_ctx_class_t *ctx, char *argv[])
       /* "-Auser" */
 
       if (strcmp("-Auser", *spp) == 0) {
-         char* file = NULL;
-         spooling_field *fields = NULL;
+         char* file = nullptr;
+         spooling_field *fields = nullptr;
          
          /* no adminhost/manager check needed here */
 
@@ -944,18 +944,18 @@ int sge_parse_qconf(sge_gdi_ctx_class_t *ctx, char *argv[])
 
 
          /* get project  */
-         ep = NULL;
+         ep = nullptr;
          fields_out[0] = NoName;
          fields = sge_build_UU_field_list(false);
-         ep = spool_flatfile_read_object(&alp, UU_Type, NULL, fields, fields_out,
-                                          true, &qconf_sfi, SP_FORM_ASCII, NULL,
+         ep = spool_flatfile_read_object(&alp, UU_Type, nullptr, fields, fields_out,
+                                          true, &qconf_sfi, SP_FORM_ASCII, nullptr,
                                           file);
          
          if (answer_list_output(&alp)) {
             lFreeElem(&ep);
          }
 
-         if (ep != NULL) {
+         if (ep != nullptr) {
             missing_field = spool_get_unprocessed_field(fields, fields_out, &alp);
          }
 
@@ -967,14 +967,14 @@ int sge_parse_qconf(sge_gdi_ctx_class_t *ctx, char *argv[])
             sge_parse_return = 1;
          }
 
-         if (ep == NULL) {
+         if (ep == nullptr) {
             sge_error_and_exit(ctx, MSG_FILE_ERRORREADINGINFILE); 
          }
          
          /* send it to qmaster */
          lp = lCreateList("User to add", UU_Type); 
          lAppendElem(lp, ep);
-         alp = ctx->gdi(ctx, SGE_UU_LIST, SGE_GDI_ADD, &lp, NULL, NULL);
+         alp = ctx->gdi(ctx, SGE_UU_LIST, SGE_GDI_ADD, &lp, nullptr, nullptr);
          aep = lFirst(alp);
          answer_exit_if_not_recoverable(aep);
          if (answer_get_status(aep) != STATUS_OK) {
@@ -998,8 +998,8 @@ int sge_parse_qconf(sge_gdi_ctx_class_t *ctx, char *argv[])
       /* "-Aprj" */
 
       if (strcmp("-Aprj", *spp) == 0) {
-         char* file = NULL;
-         spooling_field *fields = NULL;
+         char* file = nullptr;
+         spooling_field *fields = nullptr;
          
          /* no adminhost/manager check needed here */
 
@@ -1012,18 +1012,18 @@ int sge_parse_qconf(sge_gdi_ctx_class_t *ctx, char *argv[])
 
 
          /* get project  */
-         ep = NULL;
+         ep = nullptr;
          fields_out[0] = NoName;
          fields = sge_build_PR_field_list(false);
-         ep = spool_flatfile_read_object(&alp, PR_Type, NULL, fields, fields_out,
-                                          true, &qconf_sfi, SP_FORM_ASCII, NULL,
+         ep = spool_flatfile_read_object(&alp, PR_Type, nullptr, fields, fields_out,
+                                          true, &qconf_sfi, SP_FORM_ASCII, nullptr,
                                           file);
          
          if (answer_list_output(&alp)) {
             lFreeElem(&ep);
          }
 
-         if (ep != NULL) {
+         if (ep != nullptr) {
             missing_field = spool_get_unprocessed_field(fields, fields_out, &alp);
          }
 
@@ -1034,14 +1034,14 @@ int sge_parse_qconf(sge_gdi_ctx_class_t *ctx, char *argv[])
             answer_list_output(&alp);
          }
             
-         if (ep == NULL) {
+         if (ep == nullptr) {
             sge_error_and_exit(ctx, MSG_FILE_ERRORREADINGINFILE); 
          }
         
          /* send it to qmaster */
          lp = lCreateList("Project list to add", PR_Type); 
          lAppendElem(lp, ep);
-         alp = ctx->gdi(ctx, SGE_PR_LIST, SGE_GDI_ADD, &lp, NULL, NULL);
+         alp = ctx->gdi(ctx, SGE_PR_LIST, SGE_GDI_ADD, &lp, nullptr, nullptr);
          aep = lFirst(alp);
          answer_exit_if_not_recoverable(aep);
          fprintf(stderr, "%s\n", lGetString(aep, AN_text)); 
@@ -1078,7 +1078,7 @@ int sge_parse_qconf(sge_gdi_ctx_class_t *ctx, char *argv[])
       /* "-astree", "-Astree file":  add sharetree */
 
       if ((strcmp("-astree", *spp) == 0) || (strcmp("-Astree", *spp) == 0)) {
-         lListElem *unspecified = NULL;
+         lListElem *unspecified = nullptr;
          
          if (strcmp("-astree", *spp) == 0) {
             qconf_is_adminhost(ctx, qualified_hostname);
@@ -1086,7 +1086,7 @@ int sge_parse_qconf(sge_gdi_ctx_class_t *ctx, char *argv[])
 
             /* get the sharetree .. */
             what = lWhat("%T(ALL)", STN_Type);
-            alp = ctx->gdi(ctx, SGE_STN_LIST, SGE_GDI_GET, &lp, NULL, what);
+            alp = ctx->gdi(ctx, SGE_STN_LIST, SGE_GDI_GET, &lp, nullptr, what);
             lFreeWhat(&what);
 
             sge_parse_return |= show_answer_list(alp);
@@ -1108,16 +1108,16 @@ int sge_parse_qconf(sge_gdi_ctx_class_t *ctx, char *argv[])
             spp = sge_parser_get_next(ctx, spp);
            
             fields_out[0] = NoName;
-            ep = spool_flatfile_read_object(&alp, STN_Type, NULL,
+            ep = spool_flatfile_read_object(&alp, STN_Type, nullptr,
                                             fields, fields_out, true,
                                             &qconf_name_value_list_sfi,
-                                            SP_FORM_ASCII, NULL, *spp);
+                                            SP_FORM_ASCII, nullptr, *spp);
             
             if (answer_list_output(&alp)) {
                lFreeElem(&ep);
             }
 
-            if (ep != NULL) {
+            if (ep != nullptr) {
                missing_field = spool_get_unprocessed_field(fields, fields_out, &alp);
             }
 
@@ -1129,7 +1129,7 @@ int sge_parse_qconf(sge_gdi_ctx_class_t *ctx, char *argv[])
                sge_parse_return = 1;
             }
                
-            if (ep == NULL) {
+            if (ep == nullptr) {
                if (sge_error_and_exit(ctx, MSG_FILE_ERRORREADINGINFILE)) {
                   continue;
                }
@@ -1141,7 +1141,7 @@ int sge_parse_qconf(sge_gdi_ctx_class_t *ctx, char *argv[])
           * not appear itself. */
          unspecified = sge_search_unspecified_node(ep);
          
-         if (unspecified != NULL) {
+         if (unspecified != nullptr) {
             fprintf(stderr, MSG_STREE_NOVALIDNODEREF_U,
                     sge_u32c(lGetUlong(unspecified, STN_id)));
             fprintf(stderr, "\n");
@@ -1155,7 +1155,7 @@ int sge_parse_qconf(sge_gdi_ctx_class_t *ctx, char *argv[])
          lAppendElem(newlp, ep);
 
          what = lWhat("%T(ALL)", STN_Type);
-         alp = ctx->gdi(ctx, SGE_STN_LIST, SGE_GDI_ADD, &newlp, NULL, what);
+         alp = ctx->gdi(ctx, SGE_STN_LIST, SGE_GDI_ADD, &newlp, nullptr, what);
          lFreeWhat(&what);
 
          ep = lFirstRW(alp);
@@ -1184,7 +1184,7 @@ int sge_parse_qconf(sge_gdi_ctx_class_t *ctx, char *argv[])
 
          /* get the sharetree .. */
          what = lWhat("%T(ALL)", STN_Type);
-         alp = ctx->gdi(ctx, SGE_STN_LIST, SGE_GDI_GET, &lp, NULL, what);
+         alp = ctx->gdi(ctx, SGE_STN_LIST, SGE_GDI_GET, &lp, nullptr, what);
          lFreeWhat(&what);
 
          aep = lFirst(alp);
@@ -1210,14 +1210,14 @@ int sge_parse_qconf(sge_gdi_ctx_class_t *ctx, char *argv[])
          lString2List(*spp, &arglp, STN_Type, STN_name, ", ");
 
          for_each_rw (argep, arglp) {
-            lListElem *node = NULL;
-            char *buf=NULL, *nodepath=NULL, *sharestr=NULL;
+            lListElem *node = nullptr;
+            char *buf=nullptr, *nodepath=nullptr, *sharestr=nullptr;
             int shares;
             ancestors_t ancestors;
 
             buf = sge_strdup(buf, lGetString(argep, STN_name));
             nodepath = sge_strtok(buf, "=");
-            sharestr = sge_strtok(NULL, "");
+            sharestr = sge_strtok(nullptr, "");
             if (nodepath && sharestr && sscanf(sharestr, "%d", &shares) == 1) {
                if (shares < 0) {
                   fprintf(stderr, "%s\n", MSG_QCONF_POSITIVE_SHARE_VALUE);                  
@@ -1226,7 +1226,7 @@ int sge_parse_qconf(sge_gdi_ctx_class_t *ctx, char *argv[])
                memset(&ancestors, 0, sizeof(ancestors));
                node = search_named_node_path(ep, nodepath, &ancestors);
                if (!node && opt==astnode_OPT) {
-                  char *c, *lc = NULL;
+                  char *c, *lc = nullptr;
                   lListElem *pnode, *nnode;
 
                   /* scan for basename of nodepath */
@@ -1289,7 +1289,7 @@ int sge_parse_qconf(sge_gdi_ctx_class_t *ctx, char *argv[])
 
          if (modified) {
             what = lWhat("%T(ALL)", STN_Type);
-            alp = ctx->gdi(ctx, SGE_STN_LIST, SGE_GDI_MOD, &lp, NULL, what);
+            alp = ctx->gdi(ctx, SGE_STN_LIST, SGE_GDI_MOD, &lp, nullptr, what);
             lFreeWhat(&what);
             ep = lFirstRW(alp);
             answer_exit_if_not_recoverable(ep);
@@ -1345,14 +1345,14 @@ int sge_parse_qconf(sge_gdi_ctx_class_t *ctx, char *argv[])
       /* "-clearusage"  clear sharetree usage */
 
       if (strcmp("-clearusage", *spp) == 0) {
-         lList *lp2=NULL;
+         lList *lp2=nullptr;
 
          qconf_is_adminhost(ctx, qualified_hostname);
          qconf_is_manager(ctx, username);
 
          /* get user list */
          what = lWhat("%T(ALL)", STN_Type);
-         alp = ctx->gdi(ctx, SGE_UU_LIST, SGE_GDI_GET, &lp, NULL, what);
+         alp = ctx->gdi(ctx, SGE_UU_LIST, SGE_GDI_GET, &lp, nullptr, what);
          lFreeWhat(&what);
 
          aep = lFirst(alp);
@@ -1366,7 +1366,7 @@ int sge_parse_qconf(sge_gdi_ctx_class_t *ctx, char *argv[])
  
          /* get project list */
          what = lWhat("%T(ALL)", STN_Type);
-         alp = ctx->gdi(ctx, SGE_PR_LIST, SGE_GDI_GET, &lp2, NULL, what);
+         alp = ctx->gdi(ctx, SGE_PR_LIST, SGE_GDI_GET, &lp2, nullptr, what);
          lFreeWhat(&what);
 
          aep = lFirst(alp);
@@ -1380,26 +1380,26 @@ int sge_parse_qconf(sge_gdi_ctx_class_t *ctx, char *argv[])
  
          /* clear user usage */
          for_each_rw (ep, lp) {
-            lSetList(ep, UU_usage, NULL);
-            lSetList(ep, UU_project, NULL);
+            lSetList(ep, UU_usage, nullptr);
+            lSetList(ep, UU_project, nullptr);
          }
 
          /* clear project usage */
          for_each_rw (ep, lp2) {
-            lSetList(ep, PR_usage, NULL);
-            lSetList(ep, PR_project, NULL);
+            lSetList(ep, PR_usage, nullptr);
+            lSetList(ep, PR_project, nullptr);
          }
 
          /* update user usage */
-         if (lp != NULL && lGetNumberOfElem(lp) > 0) {
-            alp = ctx->gdi(ctx, SGE_UU_LIST, SGE_GDI_MOD, &lp, NULL, NULL);
+         if (lp != nullptr && lGetNumberOfElem(lp) > 0) {
+            alp = ctx->gdi(ctx, SGE_UU_LIST, SGE_GDI_MOD, &lp, nullptr, nullptr);
             answer_list_on_error_print_or_exit(&alp, stderr);
             lFreeList(&alp);
          }
 
          /* update project usage */
          if (lp2 && lGetNumberOfElem(lp2) > 0) {
-            alp = ctx->gdi(ctx, SGE_PR_LIST, SGE_GDI_MOD, &lp2, NULL, NULL);
+            alp = ctx->gdi(ctx, SGE_PR_LIST, SGE_GDI_MOD, &lp2, nullptr, nullptr);
             answer_list_on_error_print_or_exit(&alp, stderr);
             lFreeList(&alp);
          }
@@ -1420,7 +1420,7 @@ int sge_parse_qconf(sge_gdi_ctx_class_t *ctx, char *argv[])
          lSetString(ep, CAL_name, *spp);
          lp = lCreateList("cal's to del", CAL_Type);
          lAppendElem(lp, ep);
-         alp = ctx->gdi(ctx, SGE_CAL_LIST, SGE_GDI_DEL, &lp, NULL, NULL);
+         alp = ctx->gdi(ctx, SGE_CAL_LIST, SGE_GDI_DEL, &lp, nullptr, nullptr);
          sge_parse_return |= show_answer_list(alp);
          lFreeList(&alp);
          lFreeList(&lp);
@@ -1439,7 +1439,7 @@ int sge_parse_qconf(sge_gdi_ctx_class_t *ctx, char *argv[])
          lSetString(ep, CK_name, *spp);
          lp = lCreateList("ckpt interfaces to del", CK_Type);
          lAppendElem(lp, ep);
-         alp = ctx->gdi(ctx, SGE_CK_LIST, SGE_GDI_DEL, &lp, NULL, NULL);
+         alp = ctx->gdi(ctx, SGE_CK_LIST, SGE_GDI_DEL, &lp, nullptr, nullptr);
          sge_parse_return |= show_answer_list(alp);
          lFreeList(&alp);
          lFreeList(&lp);
@@ -1483,7 +1483,7 @@ int sge_parse_qconf(sge_gdi_ctx_class_t *ctx, char *argv[])
          spp = sge_parser_get_next(ctx, spp);
 
          lString2List(*spp, &lp, RQS_Type, RQS_name, ", ");
-         alp = ctx->gdi(ctx, SGE_RQS_LIST, SGE_GDI_DEL, &lp, NULL, NULL);
+         alp = ctx->gdi(ctx, SGE_RQS_LIST, SGE_GDI_DEL, &lp, nullptr, nullptr);
          sge_parse_return |= show_answer_list(alp);
          lFreeList(&alp);
          lFreeList(&lp);
@@ -1500,7 +1500,7 @@ int sge_parse_qconf(sge_gdi_ctx_class_t *ctx, char *argv[])
          spp = sge_parser_get_next(ctx, spp);
 
          lString2List(*spp, &lp, UM_Type, UM_name, ", ");
-         alp = ctx->gdi(ctx, SGE_UM_LIST, SGE_GDI_DEL, &lp, NULL, NULL);
+         alp = ctx->gdi(ctx, SGE_UM_LIST, SGE_GDI_DEL, &lp, nullptr, nullptr);
          sge_parse_return |= show_answer_list(alp);
          lFreeList(&alp);
          lFreeList(&lp);
@@ -1517,7 +1517,7 @@ int sge_parse_qconf(sge_gdi_ctx_class_t *ctx, char *argv[])
          spp = sge_parser_get_next(ctx, spp);
 
          lString2List(*spp, &lp, UO_Type, UO_name, ", ");
-         alp = ctx->gdi(ctx, SGE_UO_LIST, SGE_GDI_DEL, &lp, NULL, NULL);
+         alp = ctx->gdi(ctx, SGE_UO_LIST, SGE_GDI_DEL, &lp, nullptr, nullptr);
          sge_parse_return |= show_answer_list(alp);
          lFreeList(&alp);
          lFreeList(&lp);
@@ -1537,7 +1537,7 @@ int sge_parse_qconf(sge_gdi_ctx_class_t *ctx, char *argv[])
          lSetString(ep, PE_name, *spp);
          lp = lCreateList("pe's to del", PE_Type);
          lAppendElem(lp, ep);
-         alp = ctx->gdi(ctx, SGE_PE_LIST, SGE_GDI_DEL, &lp, NULL, NULL);
+         alp = ctx->gdi(ctx, SGE_PE_LIST, SGE_GDI_DEL, &lp, nullptr, nullptr);
          sge_parse_return |= show_answer_list(alp);
          lFreeList(&alp);
          lFreeList(&lp);
@@ -1600,7 +1600,7 @@ int sge_parse_qconf(sge_gdi_ctx_class_t *ctx, char *argv[])
          spp = sge_parser_get_next(ctx, spp);
 
          lString2List(*spp, &lp, US_Type, US_name, ", ");
-         alp = ctx->gdi(ctx, SGE_US_LIST, SGE_GDI_DEL, &lp, NULL, NULL);
+         alp = ctx->gdi(ctx, SGE_US_LIST, SGE_GDI_DEL, &lp, nullptr, nullptr);
          sge_parse_return |= show_answer_list(alp);
          lFreeList(&alp);
          lFreeList(&lp);
@@ -1617,7 +1617,7 @@ int sge_parse_qconf(sge_gdi_ctx_class_t *ctx, char *argv[])
          spp = sge_parser_get_next(ctx, spp);
 
          lString2List(*spp, &lp, UU_Type, UU_name, ", ");
-         alp = ctx->gdi(ctx, SGE_UU_LIST, SGE_GDI_DEL, &lp, NULL, NULL);
+         alp = ctx->gdi(ctx, SGE_UU_LIST, SGE_GDI_DEL, &lp, nullptr, nullptr);
          sge_parse_return |= show_answer_list(alp);
          lFreeList(&alp);
          lFreeList(&lp);
@@ -1636,7 +1636,7 @@ int sge_parse_qconf(sge_gdi_ctx_class_t *ctx, char *argv[])
          spp = sge_parser_get_next(ctx, spp);
 
          lString2List(*spp, &lp, PR_Type, PR_name, ", ");
-         alp = ctx->gdi(ctx, SGE_PR_LIST, SGE_GDI_DEL, &lp, NULL, NULL);
+         alp = ctx->gdi(ctx, SGE_PR_LIST, SGE_GDI_DEL, &lp, nullptr, nullptr);
          sge_parse_return |= show_answer_list(alp);
 
          lFreeList(&alp);
@@ -1657,7 +1657,7 @@ int sge_parse_qconf(sge_gdi_ctx_class_t *ctx, char *argv[])
 
          /* get the sharetree .. */
          what = lWhat("%T(ALL)", STN_Type);
-         alp = ctx->gdi(ctx, SGE_STN_LIST, SGE_GDI_GET, &lp, NULL, what);
+         alp = ctx->gdi(ctx, SGE_STN_LIST, SGE_GDI_GET, &lp, nullptr, what);
          lFreeWhat(&what);
 
          aep = lFirst(alp);
@@ -1682,8 +1682,8 @@ int sge_parse_qconf(sge_gdi_ctx_class_t *ctx, char *argv[])
 
          for_each_rw (argep, arglp) {
 
-            lListElem *node = NULL;
-            const char *nodepath = NULL;
+            lListElem *node = nullptr;
+            const char *nodepath = nullptr;
             ancestors_t ancestors;
 
             nodepath = lGetString(argep, STN_name);
@@ -1691,11 +1691,11 @@ int sge_parse_qconf(sge_gdi_ctx_class_t *ctx, char *argv[])
                memset(&ancestors, 0, sizeof(ancestors_t));
                node = search_named_node_path(ep, nodepath, &ancestors);
                if (node) {
-                  if (lGetList(node, STN_children) == NULL) {
+                  if (lGetList(node, STN_children) == nullptr) {
                      if (ancestors.depth > 0) {
                         int i;
-                        lList *siblings = NULL;
-                        lListElem *pnode = NULL;
+                        lList *siblings = nullptr;
+                        lListElem *pnode = nullptr;
                         modified++;
                         if (ancestors.depth == 1)
                            pnode = ep;
@@ -1709,7 +1709,7 @@ int sge_parse_qconf(sge_gdi_ctx_class_t *ctx, char *argv[])
                         siblings = lGetListRW(pnode, STN_children);
                         lRemoveElem(siblings, &node);
                         if (lGetNumberOfElem(siblings) == 0)
-                           lSetList(pnode, STN_children, NULL);
+                           lSetList(pnode, STN_children, nullptr);
                      } else {
                         fprintf(stderr, "%s\n", MSG_TREE_CANTDELROOTNODE);
                      }
@@ -1729,7 +1729,7 @@ int sge_parse_qconf(sge_gdi_ctx_class_t *ctx, char *argv[])
 
          if (modified) {
             what = lWhat("%T(ALL)", STN_Type);
-            alp = ctx->gdi(ctx, SGE_STN_LIST, SGE_GDI_MOD, &lp, NULL, what);
+            alp = ctx->gdi(ctx, SGE_STN_LIST, SGE_GDI_MOD, &lp, nullptr, what);
             lFreeWhat(&what);
             ep = lFirstRW(alp);
             answer_exit_if_not_recoverable(ep);
@@ -1757,7 +1757,7 @@ int sge_parse_qconf(sge_gdi_ctx_class_t *ctx, char *argv[])
       if (strcmp("-dstree", *spp) == 0) {
          /* no adminhost/manager check needed here */
          
-         alp = ctx->gdi(ctx, SGE_STN_LIST, SGE_GDI_DEL, NULL, NULL, NULL);
+         alp = ctx->gdi(ctx, SGE_STN_LIST, SGE_GDI_DEL, nullptr, nullptr, nullptr);
          sge_parse_return |= show_answer_list(alp);
          lFreeList(&alp);
          lFreeList(&lp);
@@ -1780,12 +1780,12 @@ int sge_parse_qconf(sge_gdi_ctx_class_t *ctx, char *argv[])
       if (strcmp("-ks", *spp) == 0) {
          /* no adminhost/manager check needed here */
 
-         alp = ctx->kill(ctx, NULL, default_cell, 0, SCHEDD_KILL);
+         alp = ctx->kill(ctx, nullptr, default_cell, 0, SCHEDD_KILL);
          for_each_ep(aep, alp) {
             answer_exit_if_not_recoverable(aep);
             if (answer_get_status(aep) != STATUS_OK)
                sge_parse_return = 1;
-            answer_print_text(aep, stderr, NULL, NULL);
+            answer_print_text(aep, stderr, nullptr, nullptr);
          }
 
          lFreeList(&alp);
@@ -1799,7 +1799,7 @@ int sge_parse_qconf(sge_gdi_ctx_class_t *ctx, char *argv[])
 
       if (strcmp("-km", *spp) == 0) {
          /* no adminhost/manager check needed here */
-         alp = ctx->kill(ctx, NULL, default_cell, 0, MASTER_KILL);
+         alp = ctx->kill(ctx, nullptr, default_cell, 0, MASTER_KILL);
          sge_parse_return |= show_answer_list(alp);
          lFreeList(&alp);
 
@@ -1820,7 +1820,7 @@ int sge_parse_qconf(sge_gdi_ctx_class_t *ctx, char *argv[])
          spp = sge_parser_get_next(ctx, spp);
          /* found namelist -> process */
          if (strcmp(*spp, "all") == 0) { /* kill all dynamic event clients (EV_ID_ANY) */
-            alp = ctx->kill(ctx, NULL, default_cell, 0, opt);
+            alp = ctx->kill(ctx, nullptr, default_cell, 0, opt);
          } else {
             lString2List(*spp, &lp, ID_Type, ID_str, ", ");
             alp = ctx->kill(ctx, lp, default_cell, 0, opt);
@@ -1905,7 +1905,7 @@ int sge_parse_qconf(sge_gdi_ctx_class_t *ctx, char *argv[])
          }
 
          if (strcmp(*spp, "all") == 0) { /* kill all dynamic event clients (EV_ID_ANY) */
-            alp = ctx->kill(ctx, NULL, default_cell, 0, opt);
+            alp = ctx->kill(ctx, nullptr, default_cell, 0, opt);
          } else {   
             /* found namelist -> process */
             lString2List(*spp, &lp, EH_Type, EH_name, ", ");
@@ -1924,7 +1924,7 @@ int sge_parse_qconf(sge_gdi_ctx_class_t *ctx, char *argv[])
       /* "-mc" */
 
       if (strcmp("-mc", *spp) == 0) {
-         lList *answer_list = NULL;
+         lList *answer_list = nullptr;
 
          qconf_is_adminhost(ctx, qualified_hostname);
          qconf_is_manager(ctx, username);
@@ -1966,7 +1966,7 @@ int sge_parse_qconf(sge_gdi_ctx_class_t *ctx, char *argv[])
             }
             lFreeList(&alp);
 
-            if (lp == NULL || lGetNumberOfElem(lp) == 0) {
+            if (lp == nullptr || lGetNumberOfElem(lp) == 0) {
                fprintf(stderr, MSG_CALENDAR_XISNOTACALENDAR_S, *spp);
                fprintf(stderr, "\n");
                lFreeList(&lp);
@@ -1977,14 +1977,14 @@ int sge_parse_qconf(sge_gdi_ctx_class_t *ctx, char *argv[])
             filename = (char *)spool_flatfile_write_object(&alp, ep, false,
                                                  CAL_fields, &qconf_sfi,
                                                  SP_DEST_TMP, SP_FORM_ASCII,
-                                                 NULL, false);
+                                                 nullptr, false);
             
             if (answer_list_output(&alp)) {
-               if (filename != NULL) {
+               if (filename != nullptr) {
                   unlink(filename);
                   sge_free(&filename);
                }
-               sge_error_and_exit(ctx, NULL);
+               sge_error_and_exit(ctx, nullptr);
             }
 
             lFreeList(&lp);
@@ -2007,9 +2007,9 @@ int sge_parse_qconf(sge_gdi_ctx_class_t *ctx, char *argv[])
 
             /* read it in again */
             fields_out[0] = NoName;
-            ep = spool_flatfile_read_object(&alp, CAL_Type, NULL,
+            ep = spool_flatfile_read_object(&alp, CAL_Type, nullptr,
                                             CAL_fields, fields_out, true, &qconf_sfi,
-                                            SP_FORM_ASCII, NULL, filename);
+                                            SP_FORM_ASCII, nullptr, filename);
             unlink(filename);
             sge_free(&filename);
             
@@ -2017,7 +2017,7 @@ int sge_parse_qconf(sge_gdi_ctx_class_t *ctx, char *argv[])
                lFreeElem(&ep);
             }
 
-            if (ep != NULL) {
+            if (ep != nullptr) {
                missing_field = spool_get_unprocessed_field(CAL_fields, fields_out, &alp);
             }
 
@@ -2027,7 +2027,7 @@ int sge_parse_qconf(sge_gdi_ctx_class_t *ctx, char *argv[])
                sge_parse_return = 1;
             }
                
-            if (ep == NULL) {
+            if (ep == nullptr) {
                if (sge_error_and_exit(ctx, MSG_FILE_ERRORREADINGINFILE)) {
                   continue;
                }
@@ -2036,15 +2036,15 @@ int sge_parse_qconf(sge_gdi_ctx_class_t *ctx, char *argv[])
             spp = sge_parser_get_next(ctx, spp);
            
             fields_out[0] = NoName;
-            ep = spool_flatfile_read_object(&alp, CAL_Type, NULL,
+            ep = spool_flatfile_read_object(&alp, CAL_Type, nullptr,
                                             CAL_fields, fields_out, true, &qconf_sfi,
-                                            SP_FORM_ASCII, NULL, *spp);
+                                            SP_FORM_ASCII, nullptr, *spp);
             
             if (answer_list_output(&alp)) {
                lFreeElem(&ep);
             }
 
-            if (ep != NULL) {
+            if (ep != nullptr) {
                missing_field = spool_get_unprocessed_field(CAL_fields, fields_out, &alp);
             }
 
@@ -2054,7 +2054,7 @@ int sge_parse_qconf(sge_gdi_ctx_class_t *ctx, char *argv[])
                sge_parse_return = 1;
             }
                
-            if (ep == NULL) 
+            if (ep == nullptr)
                if (sge_error_and_exit(ctx, MSG_FILE_ERRORREADINGINFILE)) {
                   continue;
                }
@@ -2063,7 +2063,7 @@ int sge_parse_qconf(sge_gdi_ctx_class_t *ctx, char *argv[])
          /* send it to qmaster */
          lp = lCreateList("calendar to add", CAL_Type); 
          lAppendElem(lp, ep);
-         alp = ctx->gdi(ctx, SGE_CAL_LIST, SGE_GDI_MOD, &lp, NULL, NULL);
+         alp = ctx->gdi(ctx, SGE_CAL_LIST, SGE_GDI_MOD, &lp, nullptr, nullptr);
          sge_parse_return |= show_answer_list(alp);
          lFreeList(&alp);
          lFreeList(&lp);
@@ -2075,8 +2075,8 @@ int sge_parse_qconf(sge_gdi_ctx_class_t *ctx, char *argv[])
       /* "-Mc complex file" */
 
       if (strcmp("-Mc", *spp) == 0) {
-         lList *answer_list = NULL;
-         char* file = NULL;
+         lList *answer_list = nullptr;
+         char* file = nullptr;
 
          /* no adminhost/manager check needed here */
 
@@ -2123,7 +2123,7 @@ int sge_parse_qconf(sge_gdi_ctx_class_t *ctx, char *argv[])
             }
             lFreeList(&alp);
 
-            if (lp == NULL || lGetNumberOfElem(lp) == 0 ) {
+            if (lp == nullptr || lGetNumberOfElem(lp) == 0 ) {
                fprintf(stderr, MSG_CKPT_XISNOTCHKPINTERFACEDEF_S, *spp);
                fprintf(stderr, "\n");
                lFreeList(&lp);
@@ -2134,14 +2134,14 @@ int sge_parse_qconf(sge_gdi_ctx_class_t *ctx, char *argv[])
             filename = (char *)spool_flatfile_write_object(&alp, ep, false,
                                                  CK_fields, &qconf_sfi,
                                                  SP_DEST_TMP, SP_FORM_ASCII,
-                                                 NULL, false);
+                                                 nullptr, false);
             
             if (answer_list_output(&alp)) {
-               if (filename != NULL) {
+               if (filename != nullptr) {
                   unlink(filename);
                   sge_free(&filename);
                }
-               sge_error_and_exit(ctx, NULL);
+               sge_error_and_exit(ctx, nullptr);
             }
 
             lFreeList(&lp);
@@ -2164,9 +2164,9 @@ int sge_parse_qconf(sge_gdi_ctx_class_t *ctx, char *argv[])
 
             /* read it in again */
             fields_out[0] = NoName;
-            ep = spool_flatfile_read_object(&alp, CK_Type, NULL,
+            ep = spool_flatfile_read_object(&alp, CK_Type, nullptr,
                                             CK_fields, fields_out, true, &qconf_sfi,
-                                            SP_FORM_ASCII, NULL, filename);
+                                            SP_FORM_ASCII, nullptr, filename);
             unlink(filename);
             sge_free(&filename);
             
@@ -2174,7 +2174,7 @@ int sge_parse_qconf(sge_gdi_ctx_class_t *ctx, char *argv[])
                lFreeElem(&ep);
             }
 
-            if (ep != NULL) {
+            if (ep != nullptr) {
                missing_field = spool_get_unprocessed_field(CK_fields, fields_out, &alp);
             }
 
@@ -2184,13 +2184,13 @@ int sge_parse_qconf(sge_gdi_ctx_class_t *ctx, char *argv[])
                sge_parse_return = 1;
             }
 
-            if ((ep != NULL) && (ckpt_validate(ep, &alp) != STATUS_OK)) {
+            if ((ep != nullptr) && (ckpt_validate(ep, &alp) != STATUS_OK)) {
                lFreeElem(&ep);
                answer_list_output(&alp);
                sge_parse_return = 1;
             }
                
-            if (ep == NULL) {
+            if (ep == nullptr) {
                if (sge_error_and_exit(ctx, MSG_FILE_ERRORREADINGINFILE)) {
                   continue;
                }
@@ -2199,15 +2199,15 @@ int sge_parse_qconf(sge_gdi_ctx_class_t *ctx, char *argv[])
             spp = sge_parser_get_next(ctx, spp);
 
             fields_out[0] = NoName;
-            ep = spool_flatfile_read_object(&alp, CK_Type, NULL,
+            ep = spool_flatfile_read_object(&alp, CK_Type, nullptr,
                                             CK_fields, fields_out, true, &qconf_sfi,
-                                            SP_FORM_ASCII, NULL, *spp);
+                                            SP_FORM_ASCII, nullptr, *spp);
             
             if (answer_list_output(&alp)) {
                lFreeElem(&ep);
             }
 
-            if (ep != NULL) {
+            if (ep != nullptr) {
                missing_field = spool_get_unprocessed_field(CK_fields, fields_out, &alp);
             }
 
@@ -2217,13 +2217,13 @@ int sge_parse_qconf(sge_gdi_ctx_class_t *ctx, char *argv[])
                sge_parse_return = 1;
             }
 
-            if ((ep != NULL) && (ckpt_validate(ep, &alp) != STATUS_OK)) {
+            if ((ep != nullptr) && (ckpt_validate(ep, &alp) != STATUS_OK)) {
                lFreeElem(&ep);
                answer_list_output(&alp);
                sge_parse_return = 1;
             }
 
-            if (ep == NULL) {
+            if (ep == nullptr) {
                if (sge_error_and_exit(ctx, MSG_FILE_ERRORREADINGINFILE)) {
                   continue;
                }
@@ -2233,7 +2233,7 @@ int sge_parse_qconf(sge_gdi_ctx_class_t *ctx, char *argv[])
          /* send it to qmaster */
          lp = lCreateList("CKPT list to add", CK_Type); 
          lAppendElem(lp, ep);
-         alp = ctx->gdi(ctx, SGE_CK_LIST, SGE_GDI_MOD, &lp, NULL, NULL);
+         alp = ctx->gdi(ctx, SGE_CK_LIST, SGE_GDI_MOD, &lp, nullptr, nullptr);
          sge_parse_return |= show_answer_list(alp);
          
          lFreeList(&alp);
@@ -2255,15 +2255,15 @@ int sge_parse_qconf(sge_gdi_ctx_class_t *ctx, char *argv[])
          /* read file */
          lp = lCreateList("exechosts to change", EH_Type);
          fields_out[0] = NoName;
-         ep = spool_flatfile_read_object(&alp, EH_Type, NULL,
+         ep = spool_flatfile_read_object(&alp, EH_Type, nullptr,
                                          fields, fields_out, true, &qconf_sfi,
-                                         SP_FORM_ASCII, NULL, *spp);
+                                         SP_FORM_ASCII, nullptr, *spp);
          
          if (answer_list_output(&alp)) {
             lFreeElem(&ep);
          }
 
-         if (ep != NULL) {
+         if (ep != nullptr) {
             missing_field = spool_get_unprocessed_field(fields, fields_out, &alp);
          }
 
@@ -2275,7 +2275,7 @@ int sge_parse_qconf(sge_gdi_ctx_class_t *ctx, char *argv[])
             sge_parse_return = 1;
          }
 
-         if (ep == NULL) {
+         if (ep == nullptr) {
             fprintf(stderr, "%s\n", MSG_ANSWER_INVALIDFORMAT); 
             DRETURN(1);
          }
@@ -2291,7 +2291,7 @@ int sge_parse_qconf(sge_gdi_ctx_class_t *ctx, char *argv[])
             DRETURN(1);
          }
 
-         alp = ctx->gdi(ctx, SGE_EH_LIST, SGE_GDI_MOD, &lp, NULL, NULL);
+         alp = ctx->gdi(ctx, SGE_EH_LIST, SGE_GDI_MOD, &lp, nullptr, nullptr);
 
          sge_parse_return |= show_answer(alp);
          lFreeList(&alp);
@@ -2344,13 +2344,13 @@ int sge_parse_qconf(sge_gdi_ctx_class_t *ctx, char *argv[])
             lFreeList(&alp);
 
             ep = edit_exechost(ctx, lFirstRW(lp), uid, gid);
-            if (ep == NULL) {
+            if (ep == nullptr) {
                continue;
             }
             lFreeList(&lp);
             lp = lCreateList("host to mod", EH_Type);
             lAppendElem(lp, ep);
-            alp = ctx->gdi(ctx, SGE_EH_LIST, SGE_GDI_MOD, &lp, NULL, NULL);
+            alp = ctx->gdi(ctx, SGE_EH_LIST, SGE_GDI_MOD, &lp, nullptr, nullptr);
             lFreeList(&lp);
 
             if (show_answer(alp) == 1) {
@@ -2367,7 +2367,7 @@ int sge_parse_qconf(sge_gdi_ctx_class_t *ctx, char *argv[])
 /*-----------------------------------------------------------------------------*/
       /* "-mrqs rqs_name" */
       if (strcmp("-mrqs", *spp) == 0) { 
-         const char *name = NULL; 
+         const char *name = nullptr;
 
          if (!sge_next_is_an_opt(spp)) {
             spp = sge_parser_get_next(ctx, spp);
@@ -2386,8 +2386,8 @@ int sge_parse_qconf(sge_gdi_ctx_class_t *ctx, char *argv[])
 /*-----------------------------------------------------------------------------*/
       /* "-Mrqs fname [rqs_name,...]" */
       if (strcmp("-Mrqs", *spp) == 0) {
-         const char *file = NULL;
-         const char *name = NULL;
+         const char *file = nullptr;
+         const char *name = nullptr;
 
          qconf_is_adminhost(ctx, qualified_hostname);
          qconf_is_manager(ctx, username);
@@ -2439,7 +2439,7 @@ int sge_parse_qconf(sge_gdi_ctx_class_t *ctx, char *argv[])
             }
             lFreeList(&alp);
 
-            if (lp == NULL || lGetNumberOfElem(lp) == 0) {
+            if (lp == nullptr || lGetNumberOfElem(lp) == 0) {
                fprintf(stderr, MSG_PARALLEL_XNOTAPARALLELEVIRONMENT_S, *spp);
                fprintf(stderr, "\n");
                lFreeList(&lp);
@@ -2452,15 +2452,15 @@ int sge_parse_qconf(sge_gdi_ctx_class_t *ctx, char *argv[])
             filename = (char *)spool_flatfile_write_object(&alp, ep, false,
                                                  PE_fields, &qconf_sfi,
                                                  SP_DEST_TMP, SP_FORM_ASCII,
-                                                 NULL, false);
+                                                 nullptr, false);
             lFreeList(&lp);
 
             if (answer_list_output(&alp)) {
-               if (filename != NULL) {
+               if (filename != nullptr) {
                   unlink(filename);
                   sge_free(&filename);
                }
-               sge_error_and_exit(ctx, NULL);
+               sge_error_and_exit(ctx, nullptr);
             }
 
             /* edit this file */
@@ -2482,9 +2482,9 @@ int sge_parse_qconf(sge_gdi_ctx_class_t *ctx, char *argv[])
             }
 
             fields_out[0] = NoName;
-            ep = spool_flatfile_read_object(&alp, PE_Type, NULL,
+            ep = spool_flatfile_read_object(&alp, PE_Type, nullptr,
                                             PE_fields, fields_out, true, &qconf_sfi,
-                                            SP_FORM_ASCII, NULL, filename);
+                                            SP_FORM_ASCII, nullptr, filename);
             
             unlink(filename);
             sge_free(&filename);
@@ -2493,7 +2493,7 @@ int sge_parse_qconf(sge_gdi_ctx_class_t *ctx, char *argv[])
                lFreeElem(&ep);
             }
 
-            if (ep != NULL) {
+            if (ep != nullptr) {
                missing_field = spool_get_unprocessed_field(PE_fields, fields_out, &alp);
             }
 
@@ -2503,13 +2503,13 @@ int sge_parse_qconf(sge_gdi_ctx_class_t *ctx, char *argv[])
                sge_parse_return = 1;
             }
 
-            if ((ep != NULL) && (pe_validate(ep, &alp, 0, NULL) != STATUS_OK)) {
+            if ((ep != nullptr) && (pe_validate(ep, &alp, 0, nullptr) != STATUS_OK)) {
                lFreeElem(&ep);
                answer_list_output(&alp);
                sge_parse_return = 1;
             }
                
-            if (ep == NULL) {
+            if (ep == nullptr) {
                if (sge_error_and_exit(ctx, MSG_FILE_ERRORREADINGINFILE)) {
                   continue;
                }
@@ -2518,15 +2518,15 @@ int sge_parse_qconf(sge_gdi_ctx_class_t *ctx, char *argv[])
             spp = sge_parser_get_next(ctx, spp);
 
             fields_out[0] = NoName;
-            ep = spool_flatfile_read_object(&alp, PE_Type, NULL,
+            ep = spool_flatfile_read_object(&alp, PE_Type, nullptr,
                                             PE_fields, fields_out, true, &qconf_sfi,
-                                            SP_FORM_ASCII, NULL, *spp);
+                                            SP_FORM_ASCII, nullptr, *spp);
             
             if (answer_list_output(&alp)) {
                lFreeElem(&ep);
             }
 
-            if (ep != NULL) {
+            if (ep != nullptr) {
                missing_field = spool_get_unprocessed_field(PE_fields, fields_out, &alp);
             }
 
@@ -2536,13 +2536,13 @@ int sge_parse_qconf(sge_gdi_ctx_class_t *ctx, char *argv[])
                sge_parse_return = 1;
             }
 
-            if ((ep != NULL) && (pe_validate(ep, &alp, 0, NULL) != STATUS_OK)) {
+            if ((ep != nullptr) && (pe_validate(ep, &alp, 0, nullptr) != STATUS_OK)) {
                lFreeElem(&ep);
                answer_list_output(&alp);
                sge_parse_return = 1;
             }
                
-            if (ep == NULL) {
+            if (ep == nullptr) {
                if (sge_error_and_exit(ctx, MSG_FILE_ERRORREADINGINFILE)) {
                   continue;
                }
@@ -2552,7 +2552,7 @@ int sge_parse_qconf(sge_gdi_ctx_class_t *ctx, char *argv[])
          /* send it to qmaster */
          lp = lCreateList("PE list to add", PE_Type); 
          lAppendElem(lp, ep);
-         alp = ctx->gdi(ctx, SGE_PE_LIST, SGE_GDI_MOD, &lp, NULL, NULL);
+         alp = ctx->gdi(ctx, SGE_PE_LIST, SGE_GDI_MOD, &lp, nullptr, nullptr);
          
          sge_parse_return |= show_answer_list(alp);
          
@@ -2586,14 +2586,14 @@ int sge_parse_qconf(sge_gdi_ctx_class_t *ctx, char *argv[])
       handle_exechost = (strcmp(sge_dstring_get_string(&object_name), "exechost") == 0) ? true : false;
 
       if (handle_exechost) {
-         lEnumeration *what = NULL;
-         lList *list = NULL;
-         lListElem *elem = NULL;
-         lList *answer_list = NULL;
+         lEnumeration *what = nullptr;
+         lList *list = nullptr;
+         lListElem *elem = nullptr;
+         lList *answer_list = nullptr;
          const lListElem *answer_ep;
 
          what = lWhat("%T(ALL)", EH_Type);
-         answer_list = ctx->gdi(ctx, SGE_EH_LIST, SGE_GDI_GET, &list, NULL, what);
+         answer_list = ctx->gdi(ctx, SGE_EH_LIST, SGE_GDI_GET, &list, nullptr, what);
          lFreeWhat(&what);
 
          answer_ep = lFirst(answer_list);
@@ -2609,7 +2609,7 @@ int sge_parse_qconf(sge_gdi_ctx_class_t *ctx, char *argv[])
          lFreeList(&answer_list);
 
          for_each_rw (elem, list) {
-            const char *hostname = NULL;
+            const char *hostname = nullptr;
             bool already_handled = false;
 
             /*
@@ -2628,22 +2628,22 @@ int sge_parse_qconf(sge_gdi_ctx_class_t *ctx, char *argv[])
             if (!already_handled && 
                 !fnmatch(sge_dstring_get_string(&attribute_pattern), SGE_ATTR_LOAD_SCALING, 0)) {
                dstring value = DSTRING_INIT;
-               const lList *value_list = NULL;
-               const lListElem *value_elem = NULL;
-               const char *value_string = NULL;
+               const lList *value_list = nullptr;
+               const lListElem *value_elem = nullptr;
+               const char *value_string = nullptr;
 
                value_list = lGetList(elem, EH_scaling_list);
                value_elem = lFirst(value_list);
 
-               while (value_elem != NULL) {
+               while (value_elem != nullptr) {
                   sge_dstring_sprintf_append(&value, "%s=%.10g", lGetString(value_elem, HS_name), lGetDouble(value_elem, HS_value));
                   value_elem = lNext(value_elem);
-                  if (value_elem != NULL) {
+                  if (value_elem != nullptr) {
                      sge_dstring_append(&value, ",");
                   }
                }
                value_string = sge_dstring_get_string(&value);
-               if (value_string == NULL) {
+               if (value_string == nullptr) {
                   sge_dstring_copy_string(&value, "NONE");
                   value_string = sge_dstring_get_string(&value);
                }
@@ -2660,27 +2660,27 @@ int sge_parse_qconf(sge_gdi_ctx_class_t *ctx, char *argv[])
             if (!already_handled &&
                 !fnmatch(sge_dstring_get_string(&attribute_pattern), SGE_ATTR_COMPLEX_VALUES, 0)) {
                dstring value = DSTRING_INIT;
-               const lList *value_list = NULL;
-               const lListElem *value_elem = NULL;
-               const char *value_string = NULL;
+               const lList *value_list = nullptr;
+               const lListElem *value_elem = nullptr;
+               const char *value_string = nullptr;
 
                value_list = lGetList(elem, EH_consumable_config_list);
                value_elem = lFirst(value_list);
 
-               while (value_elem != NULL) {
+               while (value_elem != nullptr) {
                   sge_dstring_sprintf_append(&value, "%s=", lGetString(value_elem, CE_name));
-                  if (lGetString(value_elem, CE_stringval) != NULL) {
+                  if (lGetString(value_elem, CE_stringval) != nullptr) {
                      sge_dstring_append(&value, lGetString(value_elem, CE_stringval));
                   } else {
                      sge_dstring_sprintf_append(&value, "%f", lGetString(value_elem, CE_doubleval));
                   }
                   value_elem = lNext(value_elem);
-                  if (value_elem != NULL) {
+                  if (value_elem != nullptr) {
                      sge_dstring_append(&value, ",");
                   }
                }
                value_string = sge_dstring_get_string(&value);
-               if (value_string == NULL) {
+               if (value_string == nullptr) {
                   sge_dstring_copy_string(&value, "NONE");
                   value_string = sge_dstring_get_string(&value);
                }
@@ -2697,23 +2697,23 @@ int sge_parse_qconf(sge_gdi_ctx_class_t *ctx, char *argv[])
             if (!already_handled &&
                 !fnmatch(sge_dstring_get_string(&attribute_pattern), SGE_ATTR_LOAD_VALUES, 0)) {
                dstring value = DSTRING_INIT;
-               const lList *value_list = NULL;
-               const lListElem *value_elem = NULL;
-               const char *value_string = NULL;
+               const lList *value_list = nullptr;
+               const lListElem *value_elem = nullptr;
+               const char *value_string = nullptr;
 
                value_list = lGetList(elem, EH_load_list);
                value_elem = lFirst(value_list);
 
-               while (value_elem != NULL) {
+               while (value_elem != nullptr) {
                   sge_dstring_sprintf_append(&value, "%s=", lGetString(value_elem, HL_name));
                   sge_dstring_sprintf_append(&value, "%s", lGetString(value_elem, HL_value));
                   value_elem = lNext(value_elem);
-                  if (value_elem != NULL) {
+                  if (value_elem != nullptr) {
                      sge_dstring_append(&value, ",");
                   }
                }
                value_string = sge_dstring_get_string(&value);
-               if (value_string == NULL) {
+               if (value_string == nullptr) {
                   sge_dstring_copy_string(&value, "NONE");
                   value_string = sge_dstring_get_string(&value);
                }
@@ -2730,7 +2730,7 @@ int sge_parse_qconf(sge_gdi_ctx_class_t *ctx, char *argv[])
             if (!already_handled &&
                 !fnmatch(sge_dstring_get_string(&attribute_pattern), SGE_ATTR_PROCESSORS, 0)) {
                dstring value = DSTRING_INIT;
-               const char *value_string = NULL;
+               const char *value_string = nullptr;
 
                sge_dstring_sprintf(&value, "%d", (int) lGetUlong(elem, EH_processors));
                value_string = sge_dstring_get_string(&value);
@@ -2748,22 +2748,22 @@ int sge_parse_qconf(sge_gdi_ctx_class_t *ctx, char *argv[])
             if (!already_handled &&
                 !fnmatch(sge_dstring_get_string(&attribute_pattern), SGE_ATTR_USER_LISTS, 0)) {
                dstring value = DSTRING_INIT;
-               const lList *value_list = NULL;
-               const lListElem *value_elem = NULL;
-               const char *value_string = NULL;
+               const lList *value_list = nullptr;
+               const lListElem *value_elem = nullptr;
+               const char *value_string = nullptr;
 
                value_list = lGetList(elem, EH_acl);
                value_elem = lFirst(value_list);
 
-               while (value_elem != NULL) {
+               while (value_elem != nullptr) {
                   sge_dstring_append(&value, lGetString(value_elem, US_name));
                   value_elem = lNext(value_elem);
-                  if (value_elem != NULL) {
+                  if (value_elem != nullptr) {
                      sge_dstring_append(&value, " ");
                   }
                }
                value_string = sge_dstring_get_string(&value);
-               if (value_string == NULL) {
+               if (value_string == nullptr) {
                   sge_dstring_copy_string(&value, "NONE");
                   value_string = sge_dstring_get_string(&value);
                }
@@ -2780,22 +2780,22 @@ int sge_parse_qconf(sge_gdi_ctx_class_t *ctx, char *argv[])
             if (!already_handled &&
                 !fnmatch(sge_dstring_get_string(&attribute_pattern), SGE_ATTR_XUSER_LISTS, 0)) {
                dstring value = DSTRING_INIT;
-               const lList *value_list = NULL;
-               const lListElem *value_elem = NULL;
-               const char *value_string = NULL;
+               const lList *value_list = nullptr;
+               const lListElem *value_elem = nullptr;
+               const char *value_string = nullptr;
 
                value_list = lGetList(elem, EH_xacl);
                value_elem = lFirst(value_list);
 
-               while (value_elem != NULL) {
+               while (value_elem != nullptr) {
                   sge_dstring_append(&value, lGetString(value_elem, US_name));
                   value_elem = lNext(value_elem);
-                  if (value_elem != NULL) {
+                  if (value_elem != nullptr) {
                      sge_dstring_append(&value, " ");
                   }
                }
                value_string = sge_dstring_get_string(&value);
-               if (value_string == NULL) {
+               if (value_string == nullptr) {
                   sge_dstring_copy_string(&value, "NONE");
                   value_string = sge_dstring_get_string(&value);
                }
@@ -2807,14 +2807,14 @@ int sge_parse_qconf(sge_gdi_ctx_class_t *ctx, char *argv[])
             }
          }
       } else if (handle_cqueue || handle_domain || handle_qinstance) {
-         lEnumeration *what = NULL;
-         lList *list = NULL;
-         lListElem *elem = NULL;
-         lList *answer_list = NULL;
+         lEnumeration *what = nullptr;
+         lList *list = nullptr;
+         lListElem *elem = nullptr;
+         lList *answer_list = nullptr;
          const lListElem *answer_ep;
 
          what = lWhat("%T(ALL)", CQ_Type);
-         answer_list = ctx->gdi(ctx, SGE_CQ_LIST, SGE_GDI_GET, &list, NULL, what);
+         answer_list = ctx->gdi(ctx, SGE_CQ_LIST, SGE_GDI_GET, &list, nullptr, what);
          lFreeWhat(&what);
 
          answer_ep = lFirst(answer_list);
@@ -2854,7 +2854,7 @@ int sge_parse_qconf(sge_gdi_ctx_class_t *ctx, char *argv[])
                dstring value = DSTRING_INIT;
                const lList *hostref_list = lGetList(elem, CQ_hostlist);
 
-               if (hostref_list != NULL) {
+               if (hostref_list != nullptr) {
                   href_list_append_to_dstring(hostref_list, &value);
                } else {
                   sge_dstring_copy_string(&value, "NONE");
@@ -2944,13 +2944,13 @@ int sge_parse_qconf(sge_gdi_ctx_class_t *ctx, char *argv[])
      
 /* *INDENT-OFF* */ 
       static object_info_entry info_entry[] = {
-         {SGE_CQ_LIST,         SGE_OBJ_CQUEUE,    CQ_Type,   SGE_ATTR_QNAME,     CQ_name,   NULL,     &qconf_sfi,        cqueue_xattr_pre_gdi},
-         {SGE_EH_LIST,         SGE_OBJ_EXECHOST,  EH_Type,   SGE_ATTR_HOSTNAME,  EH_name,   NULL,     &qconf_sfi,        NULL},
-         {SGE_PE_LIST,         SGE_OBJ_PE,        PE_Type,   SGE_ATTR_PE_NAME,   PE_name,   NULL,     &qconf_sfi,        NULL},
-         {SGE_CK_LIST,         SGE_OBJ_CKPT,      CK_Type,   SGE_ATTR_CKPT_NAME, CK_name,   NULL,     &qconf_sfi,        NULL},
-         {SGE_HGRP_LIST,       SGE_OBJ_HGROUP,    HGRP_Type, SGE_ATTR_HGRP_NAME, HGRP_name, NULL,     &qconf_sfi,        NULL},
-         {SGE_RQS_LIST,        SGE_OBJ_RQS,       RQS_Type,  SGE_ATTR_RQS_NAME,  RQS_name, NULL,      &qconf_rqs_sfi,    rqs_xattr_pre_gdi},
-         {0,                   NULL,              0,         NULL,               0,         NULL,     NULL,        NULL}
+         {SGE_CQ_LIST,         SGE_OBJ_CQUEUE,    CQ_Type,   SGE_ATTR_QNAME,     CQ_name,   nullptr,     &qconf_sfi,        cqueue_xattr_pre_gdi},
+         {SGE_EH_LIST,         SGE_OBJ_EXECHOST,  EH_Type,   SGE_ATTR_HOSTNAME,  EH_name,   nullptr,     &qconf_sfi,        nullptr},
+         {SGE_PE_LIST,         SGE_OBJ_PE,        PE_Type,   SGE_ATTR_PE_NAME,   PE_name,   nullptr,     &qconf_sfi,        nullptr},
+         {SGE_CK_LIST,         SGE_OBJ_CKPT,      CK_Type,   SGE_ATTR_CKPT_NAME, CK_name,   nullptr,     &qconf_sfi,        nullptr},
+         {SGE_HGRP_LIST,       SGE_OBJ_HGROUP,    HGRP_Type, SGE_ATTR_HGRP_NAME, HGRP_name, nullptr,     &qconf_sfi,        nullptr},
+         {SGE_RQS_LIST,        SGE_OBJ_RQS,       RQS_Type,  SGE_ATTR_RQS_NAME,  RQS_name, nullptr,      &qconf_rqs_sfi,    rqs_xattr_pre_gdi},
+         {0,                   nullptr,              0,         nullptr,               0,         nullptr,     nullptr,        nullptr}
       }; 
 /* *INDENT-ON* */
       
@@ -3018,7 +3018,7 @@ int sge_parse_qconf(sge_gdi_ctx_class_t *ctx, char *argv[])
          int exit = 0;
 
          for_each_ep(aep, alp) {
-            FILE *std_x = NULL;
+            FILE *std_x = nullptr;
             
             if (lGetUlong(aep, AN_status) != STATUS_OK) {
                std_x = stderr;
@@ -3046,16 +3046,16 @@ int sge_parse_qconf(sge_gdi_ctx_class_t *ctx, char *argv[])
    if (strcmp("-purge", *spp) == 0) {
 
       static object_info_entry info_entry[] = {
-         {SGE_CQ_LIST,     SGE_OBJ_CQUEUE,    QR_Type,   SGE_ATTR_QNAME,     QR_name,   NULL,        &qconf_sfi,    cqueue_xattr_pre_gdi},
-         {0,                   NULL,              0,         NULL,               0,         NULL,        NULL}
+         {SGE_CQ_LIST,     SGE_OBJ_CQUEUE,    QR_Type,   SGE_ATTR_QNAME,     QR_name,   nullptr,        &qconf_sfi,    cqueue_xattr_pre_gdi},
+         {0,                   nullptr,              0,         nullptr,               0,         nullptr,        nullptr}
       };
 
       int index = 0;
-      char *object_instance = NULL;
-      char *object = NULL;
-      char *hgroup_or_hostname = NULL;
-      char *attr = NULL;
-      lListElem *cqueue = NULL;
+      char *object_instance = nullptr;
+      char *object = nullptr;
+      char *hgroup_or_hostname = nullptr;
+      char *attr = nullptr;
+      lListElem *cqueue = nullptr;
 
       /* This does not have to be freed later */
       info_entry[0].fields = CQ_fields;
@@ -3079,21 +3079,21 @@ int sge_parse_qconf(sge_gdi_ctx_class_t *ctx, char *argv[])
    } 
 
    /* parse command line arguments */
-   attr = sge_strdup(NULL, *spp);
-   if (attr == NULL) {
+   attr = sge_strdup(nullptr, *spp);
+   if (attr == nullptr) {
       ERROR((SGE_EVENT, SFNMAX, MSG_QCONF_NOATTRIBUTEGIVEN));
       DRETURN(1);
    }
    spp = sge_parser_get_next(ctx, spp);
 
-   object_instance = sge_strdup(NULL, *spp);
+   object_instance = sge_strdup(nullptr, *spp);
 
    /* object_instance look like queue@host */
-   if ((object = sge_strdup(NULL, sge_strtok(object_instance, "@"))) != NULL) {
-       hgroup_or_hostname = sge_strdup(NULL, sge_strtok(NULL, NULL));
+   if ((object = sge_strdup(nullptr, sge_strtok(object_instance, "@"))) != nullptr) {
+       hgroup_or_hostname = sge_strdup(nullptr, sge_strtok(nullptr, nullptr));
    }
    
-   if (object == NULL || hgroup_or_hostname == NULL) {
+   if (object == nullptr || hgroup_or_hostname == nullptr) {
       ERROR((SGE_EVENT, MSG_QCONF_GIVENOBJECTINSTANCEINCOMPLETE_S, object_instance));
       sge_free(&attr);
       sge_free(&object_instance);
@@ -3115,7 +3115,7 @@ int sge_parse_qconf(sge_gdi_ctx_class_t *ctx, char *argv[])
       /* now get the queue, delete the objects and send the queue back to the master */
       cqueue = cqueue_get_via_gdi(ctx, &alp, object);
 
-      if (cqueue == NULL) {
+      if (cqueue == nullptr) {
          ERROR((SGE_EVENT, MSG_CQUEUE_DOESNOTEXIST_S, object));  
          sge_free(&attr); 
          sge_free(&object);
@@ -3133,7 +3133,7 @@ int sge_parse_qconf(sge_gdi_ctx_class_t *ctx, char *argv[])
 
       /* Error handling */
       for_each_ep(aep, alp) {
-            FILE *std_x = NULL;
+            FILE *std_x = nullptr;
             
             if (lGetUlong(aep, AN_status) != STATUS_OK) {
                std_x = stderr;
@@ -3143,7 +3143,7 @@ int sge_parse_qconf(sge_gdi_ctx_class_t *ctx, char *argv[])
             fprintf(std_x, "%s\n", lGetString(aep, AN_text)); 
          }
 
-      if (cqueue != NULL) {
+      if (cqueue != nullptr) {
          lFreeElem(&cqueue);
       }
 
@@ -3163,15 +3163,15 @@ int sge_parse_qconf(sge_gdi_ctx_class_t *ctx, char *argv[])
          spp = sge_parser_get_next(ctx, spp);
 
          fields_out[0] = NoName;
-         ep = spool_flatfile_read_object(&alp, SC_Type, NULL,
+         ep = spool_flatfile_read_object(&alp, SC_Type, nullptr,
                                          SC_fields, fields_out, true, &qconf_comma_sfi,
-                                         SP_FORM_ASCII, NULL, *spp);
+                                         SP_FORM_ASCII, nullptr, *spp);
 
          if (answer_list_output(&alp)) {
             lFreeElem(&ep);
          }
          
-         if (ep != NULL) {
+         if (ep != nullptr) {
             missing_field = spool_get_unprocessed_field(SC_fields, fields_out, &alp);
          }
 
@@ -3181,7 +3181,7 @@ int sge_parse_qconf(sge_gdi_ctx_class_t *ctx, char *argv[])
             sge_parse_return = 1;
          }
          
-         if (ep != NULL) {
+         if (ep != nullptr) {
             lp = lCreateList("scheduler config", SC_Type);
             lAppendElem (lp, ep);
             
@@ -3191,13 +3191,13 @@ int sge_parse_qconf(sge_gdi_ctx_class_t *ctx, char *argv[])
             }
          }
          
-         /* else we let the check for lp != NULL catch the error below */
+         /* else we let the check for lp != nullptr catch the error below */
 
-         if ((lp == NULL) && (sge_error_and_exit(ctx, MSG_FILE_ERRORREADINGINFILE))) {
+         if ((lp == nullptr) && (sge_error_and_exit(ctx, MSG_FILE_ERRORREADINGINFILE))) {
             continue;
          }
 
-         alp = ctx->gdi(ctx, SGE_SC_LIST, SGE_GDI_MOD, &lp, NULL, NULL);
+         alp = ctx->gdi(ctx, SGE_SC_LIST, SGE_GDI_MOD, &lp, nullptr, nullptr);
          aep = lFirst(alp);
          answer_exit_if_not_recoverable(aep);
          if (answer_get_status(aep) == STATUS_OK)
@@ -3224,7 +3224,7 @@ int sge_parse_qconf(sge_gdi_ctx_class_t *ctx, char *argv[])
 
          /* get the scheduler configuration .. */
          what = lWhat("%T(ALL)", SC_Type);
-         alp = ctx->gdi(ctx, SGE_SC_LIST, SGE_GDI_GET, &lp, NULL, what);
+         alp = ctx->gdi(ctx, SGE_SC_LIST, SGE_GDI_GET, &lp, nullptr, what);
          lFreeWhat(&what);
 
          aep = lFirst(alp);
@@ -3242,7 +3242,7 @@ int sge_parse_qconf(sge_gdi_ctx_class_t *ctx, char *argv[])
 
          lFreeList(&lp);
          what = lWhat("%T(ALL)", SC_Type);
-         alp = ctx->gdi(ctx, SGE_SC_LIST, SGE_GDI_MOD, &newlp, NULL, what);
+         alp = ctx->gdi(ctx, SGE_SC_LIST, SGE_GDI_MOD, &newlp, nullptr, what);
          lFreeWhat(&what);
          ep = lFirstRW(alp);
          answer_exit_if_not_recoverable(ep);
@@ -3262,7 +3262,7 @@ int sge_parse_qconf(sge_gdi_ctx_class_t *ctx, char *argv[])
       /* "-mstree", "-Mstree file": modify sharetree */
 
       if ((strcmp("-mstree", *spp) == 0) || (strcmp("-Mstree", *spp) == 0)) {
-         lListElem *unspecified = NULL;
+         lListElem *unspecified = nullptr;
          
          if (strcmp("-mstree", *spp) == 0) {
             qconf_is_adminhost(ctx, qualified_hostname);
@@ -3270,7 +3270,7 @@ int sge_parse_qconf(sge_gdi_ctx_class_t *ctx, char *argv[])
 
             /* get the sharetree .. */
             what = lWhat("%T(ALL)", STN_Type);
-            alp = ctx->gdi(ctx, SGE_STN_LIST, SGE_GDI_GET, &lp, NULL, what);
+            alp = ctx->gdi(ctx, SGE_STN_LIST, SGE_GDI_GET, &lp, nullptr, what);
             lFreeWhat(&what);
 
             aep = lFirst(alp);
@@ -3293,16 +3293,16 @@ int sge_parse_qconf(sge_gdi_ctx_class_t *ctx, char *argv[])
             spp = sge_parser_get_next(ctx, spp);
            
             fields_out[0] = NoName;
-            ep = spool_flatfile_read_object(&alp, STN_Type, NULL,
+            ep = spool_flatfile_read_object(&alp, STN_Type, nullptr,
                                             fields, fields_out, true,
                                             &qconf_name_value_list_sfi,
-                                            SP_FORM_ASCII, NULL, *spp);
+                                            SP_FORM_ASCII, nullptr, *spp);
             
             if (answer_list_output(&alp)) {
                lFreeElem(&ep);
             }
          
-            if (ep != NULL) {
+            if (ep != nullptr) {
                missing_field = spool_get_unprocessed_field(fields, fields_out, &alp);
             }
 
@@ -3314,7 +3314,7 @@ int sge_parse_qconf(sge_gdi_ctx_class_t *ctx, char *argv[])
                sge_parse_return = 1;
             }
                
-            if (ep == NULL) {
+            if (ep == nullptr) {
                if (sge_error_and_exit(ctx, MSG_FILE_ERRORREADINGINFILE))
                   continue;
             }
@@ -3325,7 +3325,7 @@ int sge_parse_qconf(sge_gdi_ctx_class_t *ctx, char *argv[])
           * not appear itself. */
          unspecified = sge_search_unspecified_node(ep);
          
-         if (unspecified != NULL) {
+         if (unspecified != nullptr) {
             fprintf(stderr, MSG_STREE_NOVALIDNODEREF_U,
                     sge_u32c(lGetUlong(unspecified, STN_id)));
             fprintf(stderr, "\n");
@@ -3340,7 +3340,7 @@ int sge_parse_qconf(sge_gdi_ctx_class_t *ctx, char *argv[])
          lAppendElem(newlp, ep);
 
          what = lWhat("%T(ALL)", STN_Type);
-         alp = ctx->gdi(ctx, SGE_STN_LIST, SGE_GDI_MOD, &newlp, NULL, what);
+         alp = ctx->gdi(ctx, SGE_STN_LIST, SGE_GDI_MOD, &newlp, nullptr, what);
          lFreeWhat(&what);
          ep = lFirstRW(alp);
          answer_exit_if_not_recoverable(ep);
@@ -3384,9 +3384,9 @@ int sge_parse_qconf(sge_gdi_ctx_class_t *ctx, char *argv[])
       /* "-Mu fname" */
 
       if (strcmp("-Mu", *spp) == 0) {
-         char* file = NULL;
-         const char* usersetname = NULL;
-         lList *acl = NULL;
+         char* file = nullptr;
+         const char* usersetname = nullptr;
+         lList *acl = nullptr;
 
          /* no adminhost/manager check needed here */
 
@@ -3399,17 +3399,17 @@ int sge_parse_qconf(sge_gdi_ctx_class_t *ctx, char *argv[])
 
           
          /* get userset from file */
-         ep = NULL;
+         ep = nullptr;
          fields_out[0] = NoName;
-         ep = spool_flatfile_read_object(&alp, US_Type, NULL,
+         ep = spool_flatfile_read_object(&alp, US_Type, nullptr,
                                          US_fields, fields_out, true, &qconf_param_sfi,
-                                         SP_FORM_ASCII, NULL, file);
+                                         SP_FORM_ASCII, nullptr, file);
          
          if (answer_list_output(&alp)) {
             lFreeElem(&ep);
          }
          
-         if (ep != NULL) {
+         if (ep != nullptr) {
             missing_field = spool_get_unprocessed_field(US_fields, fields_out, &alp);
          }
 
@@ -3419,14 +3419,14 @@ int sge_parse_qconf(sge_gdi_ctx_class_t *ctx, char *argv[])
             sge_parse_return = 1;
          }
 
-         if ((ep != NULL) &&
+         if ((ep != nullptr) &&
             (userset_validate_entries(ep, &alp, 0) != STATUS_OK)) {
             lFreeElem(&ep);
             answer_list_output(&alp);
             sge_parse_return = 1;
          }
             
-         if (ep == NULL) {
+         if (ep == nullptr) {
             sge_error_and_exit(ctx, MSG_FILE_ERRORREADINGINFILE); 
          }
          usersetname = lGetString(ep, US_name);
@@ -3448,7 +3448,7 @@ int sge_parse_qconf(sge_gdi_ctx_class_t *ctx, char *argv[])
             DRETURN(1); 
          }
 
-         if (lp == NULL || lGetNumberOfElem(lp) == 0) {
+         if (lp == nullptr || lGetNumberOfElem(lp) == 0) {
             fprintf(stderr, MSG_PROJECT_XISNOKNWOWNPROJECT_S, usersetname);
             fprintf(stderr, "\n");
             fflush(stdout);
@@ -3464,7 +3464,7 @@ int sge_parse_qconf(sge_gdi_ctx_class_t *ctx, char *argv[])
          acl = lCreateList("modified usersetlist", US_Type); 
          lAppendElem(acl, ep);
 
-         alp = ctx->gdi(ctx, SGE_US_LIST, SGE_GDI_MOD, &acl, NULL, NULL);
+         alp = ctx->gdi(ctx, SGE_US_LIST, SGE_GDI_MOD, &acl, nullptr, nullptr);
          aep = lFirst(alp);
          answer_exit_if_not_recoverable(aep);
          if (answer_get_status(aep) != STATUS_OK) {
@@ -3485,8 +3485,8 @@ int sge_parse_qconf(sge_gdi_ctx_class_t *ctx, char *argv[])
       /* "-Au fname" */
 
       if (strcmp("-Au", *spp) == 0) {
-         lList *acl = NULL;
-         char* file = NULL;
+         lList *acl = nullptr;
+         char* file = nullptr;
 
          /* no adminhost/manager check needed here */
 
@@ -3499,18 +3499,18 @@ int sge_parse_qconf(sge_gdi_ctx_class_t *ctx, char *argv[])
 
           
          /* get userset  */
-         ep = NULL;
+         ep = nullptr;
          fields_out[0] = NoName;
-         ep = spool_flatfile_read_object(&alp, US_Type, NULL,
+         ep = spool_flatfile_read_object(&alp, US_Type, nullptr,
                                          US_fields, fields_out,  true,
                                          &qconf_param_sfi,
-                                         SP_FORM_ASCII, NULL, file);
+                                         SP_FORM_ASCII, nullptr, file);
          
          if (answer_list_output(&alp)) {
             lFreeElem(&ep);
          }
 
-         if (ep != NULL) {
+         if (ep != nullptr) {
             missing_field = spool_get_unprocessed_field(US_fields, fields_out, &alp);
          }
          
@@ -3520,19 +3520,19 @@ int sge_parse_qconf(sge_gdi_ctx_class_t *ctx, char *argv[])
             sge_parse_return = 1;
          }
 
-         if ((ep != NULL) && (userset_validate_entries(ep, &alp, 0) != STATUS_OK)) {
+         if ((ep != nullptr) && (userset_validate_entries(ep, &alp, 0) != STATUS_OK)) {
             lFreeElem(&ep);
             answer_list_output(&alp);
             sge_parse_return = 1;
          }
             
-         if (ep == NULL) {
+         if (ep == nullptr) {
             sge_error_and_exit(ctx, MSG_FILE_ERRORREADINGINFILE); 
          }
 
          acl = lCreateList("usersetlist list to add", US_Type); 
          lAppendElem(acl,ep);
-         alp = ctx->gdi(ctx, SGE_US_LIST, SGE_GDI_ADD, &acl, NULL, NULL);
+         alp = ctx->gdi(ctx, SGE_US_LIST, SGE_GDI_ADD, &acl, nullptr, nullptr);
          aep = lFirst(alp);
          answer_exit_if_not_recoverable(aep);
          if (answer_get_status(aep) != STATUS_OK) {
@@ -3578,7 +3578,7 @@ int sge_parse_qconf(sge_gdi_ctx_class_t *ctx, char *argv[])
          }
          lFreeList(&alp);
 
-         if (lp == NULL || lGetNumberOfElem(lp) == 0) {
+         if (lp == nullptr || lGetNumberOfElem(lp) == 0) {
             fprintf(stderr, MSG_USER_XISNOKNOWNUSER_S, *spp);
             fprintf(stderr, "\n");
             spp++;
@@ -3591,7 +3591,7 @@ int sge_parse_qconf(sge_gdi_ctx_class_t *ctx, char *argv[])
          newep = edit_user(ctx, ep, uid, gid);
 
          /* if the user name has changed, we need to print an error message */   
-         if (newep == NULL || strcmp(lGetString(ep, UU_name), lGetString(newep, UU_name))) {
+         if (newep == nullptr || strcmp(lGetString(ep, UU_name), lGetString(newep, UU_name))) {
             fprintf(stderr, MSG_QCONF_CANTCHANGEOBJECTNAME_SS, lGetString(ep, UU_name), lGetString(newep, UU_name));
             fprintf(stderr, "\n");
             lFreeElem(&newep);
@@ -3602,7 +3602,7 @@ int sge_parse_qconf(sge_gdi_ctx_class_t *ctx, char *argv[])
             /* send it to qmaster */
             lp = lCreateList("User list to modify", UU_Type); 
             lAppendElem(lp, newep);
-            alp = ctx->gdi(ctx, SGE_UU_LIST, SGE_GDI_MOD, &lp, NULL, NULL);
+            alp = ctx->gdi(ctx, SGE_UU_LIST, SGE_GDI_MOD, &lp, nullptr, nullptr);
             aep = lFirst(alp);
             answer_exit_if_not_recoverable(aep);
             if (answer_get_status(aep) != STATUS_OK) {
@@ -3649,7 +3649,7 @@ int sge_parse_qconf(sge_gdi_ctx_class_t *ctx, char *argv[])
          }
          lFreeList(&alp);
 
-         if (lp == NULL || lGetNumberOfElem(lp) == 0) {
+         if (lp == nullptr || lGetNumberOfElem(lp) == 0) {
             fprintf(stderr, MSG_PROJECT_XISNOKNWOWNPROJECT_S, *spp);
             fprintf(stderr, "\n");
             lFreeList(&lp);
@@ -3665,7 +3665,7 @@ int sge_parse_qconf(sge_gdi_ctx_class_t *ctx, char *argv[])
          lFreeList(&lp);
          lp = lCreateList("Project list to modify", PR_Type); 
          lAppendElem(lp, newep);
-         alp = ctx->gdi(ctx, SGE_PR_LIST, SGE_GDI_MOD, &lp, NULL, NULL);
+         alp = ctx->gdi(ctx, SGE_PR_LIST, SGE_GDI_MOD, &lp, nullptr, nullptr);
          sge_parse_return |= show_answer_list(alp);
          
          lFreeList(&alp);
@@ -3683,9 +3683,9 @@ int sge_parse_qconf(sge_gdi_ctx_class_t *ctx, char *argv[])
       /* "-Muser file" */
 
       if (strcmp("-Muser", *spp) == 0) {
-         char* file = NULL;
-         const char* username = NULL;
-         spooling_field *fields = NULL;
+         char* file = nullptr;
+         const char* username = nullptr;
+         spooling_field *fields = nullptr;
 
          /* no adminhost/manager check needed here */
 
@@ -3697,18 +3697,18 @@ int sge_parse_qconf(sge_gdi_ctx_class_t *ctx, char *argv[])
          }
 
          /* get user from file */
-         newep = NULL;
+         newep = nullptr;
          fields_out[0] = NoName;
          fields = sge_build_UU_field_list(false);
-         newep = spool_flatfile_read_object(&alp, UU_Type, NULL,
+         newep = spool_flatfile_read_object(&alp, UU_Type, nullptr,
                                          fields, fields_out, true, &qconf_sfi,
-                                         SP_FORM_ASCII, NULL, file);
+                                         SP_FORM_ASCII, nullptr, file);
          
          if (answer_list_output(&alp)) {
             lFreeElem(&newep);
          }
          
-         if (newep != NULL) {
+         if (newep != nullptr) {
             missing_field = spool_get_unprocessed_field(fields, fields_out, &alp);
          }
 
@@ -3719,7 +3719,7 @@ int sge_parse_qconf(sge_gdi_ctx_class_t *ctx, char *argv[])
             answer_list_output(&alp);
          }
 
-         if (newep == NULL) {
+         if (newep == nullptr) {
             sge_error_and_exit(ctx, MSG_FILE_ERRORREADINGINFILE); 
          } 
          
@@ -3742,7 +3742,7 @@ int sge_parse_qconf(sge_gdi_ctx_class_t *ctx, char *argv[])
             DRETURN(1); 
          }
 
-         if (lp == NULL || lGetNumberOfElem(lp) == 0) {
+         if (lp == nullptr || lGetNumberOfElem(lp) == 0) {
             fprintf(stderr, MSG_USER_XISNOKNOWNUSER_S, username);
             fprintf(stderr, "\n");
             fflush(stdout);
@@ -3758,7 +3758,7 @@ int sge_parse_qconf(sge_gdi_ctx_class_t *ctx, char *argv[])
          lFreeList(&lp);
          lp = lCreateList("User list to modify", UU_Type); 
          lAppendElem(lp, newep);
-         alp = ctx->gdi(ctx, SGE_UU_LIST, SGE_GDI_MOD, &lp, NULL, NULL);
+         alp = ctx->gdi(ctx, SGE_UU_LIST, SGE_GDI_MOD, &lp, nullptr, nullptr);
          aep = lFirst(alp);
          answer_exit_if_not_recoverable(aep);
          if (answer_get_status(aep) != STATUS_OK) {
@@ -3782,9 +3782,9 @@ int sge_parse_qconf(sge_gdi_ctx_class_t *ctx, char *argv[])
       /* "-Mprj file" */
 
       if (strcmp("-Mprj", *spp) == 0) {
-         char* file = NULL;
-         const char* projectname = NULL;
-         spooling_field *fields = NULL;
+         char* file = nullptr;
+         const char* projectname = nullptr;
+         spooling_field *fields = nullptr;
    
          /* no adminhost/manager check needed here */
 
@@ -3799,18 +3799,18 @@ int sge_parse_qconf(sge_gdi_ctx_class_t *ctx, char *argv[])
          }
 
          /* get project from file */
-         newep = NULL;
+         newep = nullptr;
          fields_out[0] = NoName;
          fields = sge_build_PR_field_list(false);
-         newep = spool_flatfile_read_object(&alp, PR_Type, NULL,
+         newep = spool_flatfile_read_object(&alp, PR_Type, nullptr,
                                          fields, fields_out, true, &qconf_sfi,
-                                         SP_FORM_ASCII, NULL, file);
+                                         SP_FORM_ASCII, nullptr, file);
          
          if (answer_list_output(&alp)) {
             lFreeElem(&newep);
          }
          
-         if (newep != NULL) {
+         if (newep != nullptr) {
             missing_field = spool_get_unprocessed_field(fields, fields_out, &alp);
          }
 
@@ -3822,7 +3822,7 @@ int sge_parse_qconf(sge_gdi_ctx_class_t *ctx, char *argv[])
             sge_parse_return = 1;
          }
 
-         if (newep == NULL) {
+         if (newep == nullptr) {
             sge_error_and_exit(ctx, MSG_FILE_ERRORREADINGINFILE); 
          } 
          
@@ -3845,7 +3845,7 @@ int sge_parse_qconf(sge_gdi_ctx_class_t *ctx, char *argv[])
             DRETURN(1); 
          }
 
-         if (lp == NULL || lGetNumberOfElem(lp) == 0) {
+         if (lp == nullptr || lGetNumberOfElem(lp) == 0) {
             fprintf(stderr, MSG_PROJECT_XISNOKNWOWNPROJECT_S, projectname);
             fprintf(stderr, "\n");
             fflush(stdout);
@@ -3861,7 +3861,7 @@ int sge_parse_qconf(sge_gdi_ctx_class_t *ctx, char *argv[])
          /* send it to qmaster */
          lp = lCreateList("Project list to modify", PR_Type); 
          lAppendElem(lp, newep);
-         alp = ctx->gdi(ctx, SGE_PR_LIST, SGE_GDI_MOD, &lp, NULL, NULL);
+         alp = ctx->gdi(ctx, SGE_PR_LIST, SGE_GDI_MOD, &lp, nullptr, nullptr);
          sge_parse_return |= show_answer_list(alp);
          
          lFreeList(&alp);
@@ -3875,7 +3875,7 @@ int sge_parse_qconf(sge_gdi_ctx_class_t *ctx, char *argv[])
       /* "-sc complex_name_list" */
 
       if (strcmp("-sc", *spp) == 0) {
-         lList *answer_list = NULL;
+         lList *answer_list = nullptr;
 
          if (!centry_list_show(ctx, &answer_list)) {
             show_answer(answer_list);
@@ -3919,11 +3919,11 @@ int sge_parse_qconf(sge_gdi_ctx_class_t *ctx, char *argv[])
          filename_stdout = spool_flatfile_write_object(&alp, ep, false,
                                               CAL_fields, &qconf_sfi,
                                               SP_DEST_STDOUT, SP_FORM_ASCII,
-                                              NULL, false);
+                                              nullptr, false);
          sge_free(&filename_stdout);
          lFreeList(&lp);
          if (answer_list_output(&alp)) {
-            sge_error_and_exit(ctx, NULL);
+            sge_error_and_exit(ctx, nullptr);
          }
 
          spp++;
@@ -3956,7 +3956,7 @@ int sge_parse_qconf(sge_gdi_ctx_class_t *ctx, char *argv[])
             ACTION_Mconf
          } action_enum;   
          action_enum action = ACTION_sconf;
-         char *host_list = NULL;
+         char *host_list = nullptr;
          int ret, first = 1;
          lListElem *hep;
          const char *host;
@@ -3979,16 +3979,16 @@ int sge_parse_qconf(sge_gdi_ctx_class_t *ctx, char *argv[])
 
          if (!sge_next_is_an_opt(spp))  {
             spp = sge_parser_get_next(ctx, spp);
-            host_list = sge_strdup(NULL, *spp);
+            host_list = sge_strdup(nullptr, *spp);
          } else {
-            host_list = sge_strdup(NULL, SGE_GLOBAL_NAME);
+            host_list = sge_strdup(nullptr, SGE_GLOBAL_NAME);
          }
             
          /* host_list might look like host1,host2,... */
          hep = lCreateElem(EH_Type);
 
          for ((cp = sge_strtok(host_list, ",")); cp && *cp;
-             (cp = sge_strtok(NULL, ","))) {
+             (cp = sge_strtok(nullptr, ","))) {
 
             if (!first) {
                fprintf(stdout, "\n");
@@ -4025,11 +4025,11 @@ int sge_parse_qconf(sge_gdi_ctx_class_t *ctx, char *argv[])
                   sge_parse_return = 1;
                }
             } else if (action == ACTION_aconf) {
-               if (add_modify_config(ctx, host, NULL, 1) != 0) {
+               if (add_modify_config(ctx, host, nullptr, 1) != 0) {
                   sge_parse_return = 1;
                }
             } else if (action == ACTION_mconf) {
-               if (add_modify_config(ctx, host, NULL, 0) != 0) {
+               if (add_modify_config(ctx, host, nullptr, 0) != 0) {
                   sge_parse_return = 1;
                }
             } else if (action == ACTION_Aconf) {
@@ -4075,7 +4075,7 @@ int sge_parse_qconf(sge_gdi_ctx_class_t *ctx, char *argv[])
          }
          lFreeList(&alp);
 
-         if (lp == NULL || lGetNumberOfElem(lp) == 0) {
+         if (lp == nullptr || lGetNumberOfElem(lp) == 0) {
             fprintf(stderr, MSG_CKPT_XISNOTCHKPINTERFACEDEF_S, *spp);
             fprintf(stderr, "\n");
             lFreeList(&lp);
@@ -4086,11 +4086,11 @@ int sge_parse_qconf(sge_gdi_ctx_class_t *ctx, char *argv[])
          filename_stdout = spool_flatfile_write_object(&alp, ep, false,
                                              CK_fields, &qconf_sfi,
                                              SP_DEST_STDOUT, SP_FORM_ASCII,
-                                             NULL, false);
+                                             nullptr, false);
          sge_free(&filename_stdout);
          lFreeList(&lp);
          if (answer_list_output(&alp)) {
-            sge_error_and_exit(ctx, NULL);
+            sge_error_and_exit(ctx, nullptr);
          }
 
          spp++;
@@ -4120,9 +4120,9 @@ int sge_parse_qconf(sge_gdi_ctx_class_t *ctx, char *argv[])
 /*----------------------------------------------------------------------------*/
       /* "-dconf config_list" */
       if (strcmp("-dconf", *spp) == 0) {
-         char *host_list = NULL;
-         lListElem *hep = NULL;
-         const char *host = NULL;
+         char *host_list = nullptr;
+         lListElem *hep = nullptr;
+         const char *host = nullptr;
          int ret;
 
          /* no adminhost/manager check needed here */
@@ -4130,11 +4130,11 @@ int sge_parse_qconf(sge_gdi_ctx_class_t *ctx, char *argv[])
          if (!sge_next_is_an_opt(spp))  {
             spp = sge_parser_get_next(ctx, spp);
 
-            host_list = sge_strdup(NULL, *spp);
+            host_list = sge_strdup(nullptr, *spp);
             hep = lCreateElem(EH_Type);
 
             for ((cp = sge_strtok(host_list, ",")); cp && *cp;
-                (cp = sge_strtok(NULL, ","))) {
+                (cp = sge_strtok(nullptr, ","))) {
                
                lSetHost(hep, EH_name, cp);
                
@@ -4210,7 +4210,7 @@ int sge_parse_qconf(sge_gdi_ctx_class_t *ctx, char *argv[])
          }
          lFreeList(&alp);
 
-         if (lp == NULL || lGetNumberOfElem(lp) == 0) {
+         if (lp == nullptr || lGetNumberOfElem(lp) == 0) {
             fprintf(stderr, MSG_EXEC_XISNOTANEXECUTIONHOST_S, host);
             fprintf(stderr, "\n");
             lFreeList(&lp);
@@ -4226,7 +4226,7 @@ int sge_parse_qconf(sge_gdi_ctx_class_t *ctx, char *argv[])
          {
             spooling_field *fields = sge_build_EH_field_list(false, true, false);
             filename_stdout = spool_flatfile_write_object(&alp, ep, false, fields, &qconf_sfi,
-                                        SP_DEST_STDOUT, SP_FORM_ASCII, NULL,
+                                        SP_DEST_STDOUT, SP_FORM_ASCII, nullptr,
                                         false);
             lFreeList(&lp);
             sge_free(&fields);
@@ -4277,7 +4277,7 @@ int sge_parse_qconf(sge_gdi_ctx_class_t *ctx, char *argv[])
 /*----------------------------------------------------------------------------*/
       /* "-srqs [rqs_name,...]" */
       if (strcmp("-srqs", *spp) == 0) {
-         const char *name = NULL;
+         const char *name = nullptr;
          bool ret = true;
 
          if (!sge_next_is_an_opt(spp)) {
@@ -4337,7 +4337,7 @@ int sge_parse_qconf(sge_gdi_ctx_class_t *ctx, char *argv[])
          }
          lFreeList(&alp);
 
-         if (lp == NULL || lGetNumberOfElem(lp) == 0) {
+         if (lp == nullptr || lGetNumberOfElem(lp) == 0) {
             fprintf(stderr,  MSG_PARALLEL_XNOTAPARALLELEVIRONMENT_S , *spp);
             fprintf(stderr, "\n");
             lFreeList(&lp);
@@ -4350,12 +4350,12 @@ int sge_parse_qconf(sge_gdi_ctx_class_t *ctx, char *argv[])
             filename_stdout = spool_flatfile_write_object(&alp, ep, false,
                                                  PE_fields, &qconf_sfi,
                                                  SP_DEST_STDOUT, SP_FORM_ASCII,
-                                                 NULL, false);
+                                                 nullptr, false);
             lFreeList(&lp);
             sge_free(&filename_stdout);
             
             if (answer_list_output(&alp)) {
-               sge_error_and_exit(ctx, NULL);
+               sge_error_and_exit(ctx, nullptr);
             }
          }
 
@@ -4399,7 +4399,7 @@ int sge_parse_qconf(sge_gdi_ctx_class_t *ctx, char *argv[])
       if (strcmp("-ssconf", *spp) == 0) {
          /* get the scheduler configuration .. */
          what = lWhat("%T(ALL)", SC_Type);
-         alp = ctx->gdi(ctx, SGE_SC_LIST, SGE_GDI_GET, &lp, NULL, what);
+         alp = ctx->gdi(ctx, SGE_SC_LIST, SGE_GDI_GET, &lp, nullptr, what);
          lFreeWhat(&what);
 
          aep = lFirst(alp);
@@ -4414,7 +4414,7 @@ int sge_parse_qconf(sge_gdi_ctx_class_t *ctx, char *argv[])
  
          filename_stdout = spool_flatfile_write_object(&alp, lFirst(lp), false, SC_fields,
                                      &qconf_comma_sfi, SP_DEST_STDOUT,
-                                     SP_FORM_ASCII, NULL, false);
+                                     SP_FORM_ASCII, nullptr, false);
         
          sge_free(&filename_stdout);
          if (answer_list_output(&alp)) {
@@ -4441,7 +4441,7 @@ int sge_parse_qconf(sge_gdi_ctx_class_t *ctx, char *argv[])
 
          /* get the sharetree .. */
          what = lWhat("%T(ALL)", STN_Type);
-         alp = ctx->gdi(ctx, SGE_STN_LIST, SGE_GDI_GET, &lp, NULL, what);
+         alp = ctx->gdi(ctx, SGE_STN_LIST, SGE_GDI_GET, &lp, nullptr, what);
          lFreeWhat(&what);
 
          aep = lFirst(alp);
@@ -4491,7 +4491,7 @@ int sge_parse_qconf(sge_gdi_ctx_class_t *ctx, char *argv[])
 
          /* get the sharetree .. */
          what = lWhat("%T(ALL)", STN_Type);
-         alp = ctx->gdi(ctx, SGE_STN_LIST, SGE_GDI_GET, &lp, NULL, what);
+         alp = ctx->gdi(ctx, SGE_STN_LIST, SGE_GDI_GET, &lp, nullptr, what);
          lFreeWhat(&what);
 
          aep = lFirst(alp);
@@ -4513,14 +4513,14 @@ int sge_parse_qconf(sge_gdi_ctx_class_t *ctx, char *argv[])
          lString2List(*spp, &arglp, STN_Type, STN_name, ", ");
 
          for_each_rw(argep, arglp) {
-            const char *nodepath = NULL;
+            const char *nodepath = nullptr;
             nodepath = lGetString(argep, STN_name);
             if (nodepath) {
                show_sharetree_path(ep, nodepath);
             }
          }                                                                      
 
-         if (!found && *(spp+1) == NULL) {
+         if (!found && *(spp+1) == nullptr) {
             DRETURN(1);
          }
 
@@ -4534,11 +4534,11 @@ int sge_parse_qconf(sge_gdi_ctx_class_t *ctx, char *argv[])
       /* "-sstree" */
 
       if (strcmp("-sstree", *spp) == 0) {
-         spooling_field *fields = NULL;
+         spooling_field *fields = nullptr;
 
          /* get the sharetree .. */
          what = lWhat("%T(ALL)", STN_Type);
-         alp = ctx->gdi(ctx, SGE_STN_LIST, SGE_GDI_GET, &lp, NULL, what);
+         alp = ctx->gdi(ctx, SGE_STN_LIST, SGE_GDI_GET, &lp, nullptr, what);
          lFreeWhat(&what);
 
          sge_parse_return |= show_answer_list(alp);
@@ -4551,7 +4551,7 @@ int sge_parse_qconf(sge_gdi_ctx_class_t *ctx, char *argv[])
  
          ep = lFirstRW(lp);
 
-         if (ep == NULL) {
+         if (ep == nullptr) {
             fprintf(stderr, "%s\n", MSG_OBJ_NOSTREEELEM);
             sge_parse_return = 1;
             lFreeList(&alp);
@@ -4564,12 +4564,12 @@ int sge_parse_qconf(sge_gdi_ctx_class_t *ctx, char *argv[])
          filename_stdout = spool_flatfile_write_object(&alp, ep, true, fields,
                                      &qconf_name_value_list_sfi,
                                      SP_DEST_STDOUT, SP_FORM_ASCII, 
-                                     NULL, false);
+                                     nullptr, false);
          sge_free(&fields);
          sge_free(&filename_stdout);
          sge_parse_return |= show_answer_list(alp);
          if (sge_parse_return) {
-            sge_error_and_exit(ctx, NULL);
+            sge_error_and_exit(ctx, nullptr);
          }
 
          lFreeList(&alp);
@@ -4585,7 +4585,7 @@ int sge_parse_qconf(sge_gdi_ctx_class_t *ctx, char *argv[])
       if (strcmp("-bonsai", *spp) == 0) {
          /* get the sharetree .. */
          what = lWhat("%T(ALL)", STN_Type);
-         alp = ctx->gdi(ctx, SGE_STN_LIST, SGE_GDI_GET, &lp, NULL, what);
+         alp = ctx->gdi(ctx, SGE_STN_LIST, SGE_GDI_GET, &lp, nullptr, what);
          lFreeWhat(&what);
 
          aep = lFirst(alp);
@@ -4599,7 +4599,7 @@ int sge_parse_qconf(sge_gdi_ctx_class_t *ctx, char *argv[])
  
          ep = lFirstRW(lp);
 
-         show_sharetree(ep, NULL);
+         show_sharetree(ep, nullptr);
 
          lFreeList(&lp);
          spp++;
@@ -4612,7 +4612,7 @@ int sge_parse_qconf(sge_gdi_ctx_class_t *ctx, char *argv[])
       if (strcmp("-sst", *spp) == 0) {
          /* get the sharetree .. */
          what = lWhat("%T(ALL)", STN_Type);
-         alp = ctx->gdi(ctx, SGE_STN_LIST, SGE_GDI_GET, &lp, NULL, what);
+         alp = ctx->gdi(ctx, SGE_STN_LIST, SGE_GDI_GET, &lp, nullptr, what);
          lFreeWhat(&what);
 
          aep = lFirst(alp);
@@ -4631,7 +4631,7 @@ int sge_parse_qconf(sge_gdi_ctx_class_t *ctx, char *argv[])
             spp++;
             continue;
          } else {
-          show_sharetree(ep, NULL);
+          show_sharetree(ep, nullptr);
          }
 
          lFreeList(&lp);
@@ -4681,7 +4681,7 @@ int sge_parse_qconf(sge_gdi_ctx_class_t *ctx, char *argv[])
 
       /* "-sce attribute"  */
       if (strcmp("-sce", *spp) == 0) {
-         lList *answer_list = NULL;
+         lList *answer_list = nullptr;
 
          spp = sge_parser_get_next(ctx, spp);
          if (!centry_show(ctx, &answer_list, *spp)) {
@@ -4697,7 +4697,7 @@ int sge_parse_qconf(sge_gdi_ctx_class_t *ctx, char *argv[])
 
       /* "-mce centry"  */
       if (strcmp("-mce", *spp) == 0) {
-         lList *answer_list = NULL;
+         lList *answer_list = nullptr;
 
          qconf_is_adminhost(ctx, qualified_hostname);
          qconf_is_manager(ctx, username);
@@ -4715,8 +4715,8 @@ int sge_parse_qconf(sge_gdi_ctx_class_t *ctx, char *argv[])
 
       /* "-Mce filename"  */
       if (strcmp("-Mce", *spp) == 0) {
-         lList *answer_list = NULL;
-         char* file = NULL;
+         lList *answer_list = nullptr;
+         char* file = nullptr;
 
          qconf_is_adminhost(ctx, qualified_hostname);
          qconf_is_manager(ctx, username);
@@ -4738,7 +4738,7 @@ int sge_parse_qconf(sge_gdi_ctx_class_t *ctx, char *argv[])
 
       /* "-dce attribute "  */
       if (strcmp("-dce", *spp) == 0) {
-         lList *answer_list = NULL;
+         lList *answer_list = nullptr;
    
          spp = sge_parser_get_next(ctx, spp);
          qconf_is_manager(ctx, username);
@@ -4753,7 +4753,7 @@ int sge_parse_qconf(sge_gdi_ctx_class_t *ctx, char *argv[])
 
       /* "-ace attribute"  */
       if (strcmp("-ace", *spp) == 0) {
-         lList *answer_list = NULL;
+         lList *answer_list = nullptr;
 
          qconf_is_adminhost(ctx, qualified_hostname);
          qconf_is_manager(ctx, username);
@@ -4769,8 +4769,8 @@ int sge_parse_qconf(sge_gdi_ctx_class_t *ctx, char *argv[])
 
       /* "-Ace filename"  */
       if (strcmp("-Ace", *spp) == 0) {
-         lList *answer_list = NULL;
-         char* file = NULL;
+         lList *answer_list = nullptr;
+         char* file = nullptr;
 
          qconf_is_adminhost(ctx, qualified_hostname);
          qconf_is_manager(ctx, username);
@@ -4807,7 +4807,7 @@ int sge_parse_qconf(sge_gdi_ctx_class_t *ctx, char *argv[])
 
       /* "-mhgrp user"  */
       if (strcmp("-mhgrp", *spp) == 0) {
-         lList *answer_list = NULL;
+         lList *answer_list = nullptr;
 
          spp = sge_parser_get_next(ctx, spp);
          qconf_is_adminhost(ctx, qualified_hostname);
@@ -4822,8 +4822,8 @@ int sge_parse_qconf(sge_gdi_ctx_class_t *ctx, char *argv[])
 
       /* "-Mhgrp user filename" */
       if (strcmp("-Mhgrp", *spp) == 0) {
-         lList *answer_list = NULL;
-         char* file = NULL;
+         lList *answer_list = nullptr;
+         char* file = nullptr;
 
          if (!sge_next_is_an_opt(spp)) {
             spp = sge_parser_get_next(ctx, spp);
@@ -4843,7 +4843,7 @@ int sge_parse_qconf(sge_gdi_ctx_class_t *ctx, char *argv[])
 
       /* "-ahgrp group"  */
       if (strcmp("-ahgrp", *spp) == 0) {
-         lList *answer_list = NULL;
+         lList *answer_list = nullptr;
          char* group = "@template";
          bool is_validate_name = false; /* This boolean is needed to create a
                                            hgrp templete. One could have done
@@ -4868,8 +4868,8 @@ int sge_parse_qconf(sge_gdi_ctx_class_t *ctx, char *argv[])
 
       /* "-Ahgrp file"  */
       if (strcmp("-Ahgrp", *spp) == 0) {
-         lList *answer_list = NULL;
-         char* file = NULL;
+         lList *answer_list = nullptr;
+         char* file = nullptr;
 
          if (!sge_next_is_an_opt(spp)) {
             spp = sge_parser_get_next(ctx, spp);
@@ -4889,7 +4889,7 @@ int sge_parse_qconf(sge_gdi_ctx_class_t *ctx, char *argv[])
 
       /* "-dhgrp group "  */
       if (strcmp("-dhgrp", *spp) == 0) {
-         lList *answer_list = NULL;
+         lList *answer_list = nullptr;
    
          spp = sge_parser_get_next(ctx, spp);
          qconf_is_manager(ctx, username);
@@ -4903,7 +4903,7 @@ int sge_parse_qconf(sge_gdi_ctx_class_t *ctx, char *argv[])
 
       /* "-shgrp group"  */
       if (strcmp("-shgrp", *spp) == 0) {
-         lList *answer_list = NULL;
+         lList *answer_list = nullptr;
 
          spp = sge_parser_get_next(ctx, spp);
          hgroup_show(ctx, &answer_list, *spp);
@@ -4917,7 +4917,7 @@ int sge_parse_qconf(sge_gdi_ctx_class_t *ctx, char *argv[])
       /* Are these two options still supported?  qconf doesn't recognise them */
       /* "-shgrp_tree" */
       if (strcmp("-shgrp_tree", *spp) == 0) {
-         lList *answer_list = NULL;
+         lList *answer_list = nullptr;
 
          spp = sge_parser_get_next(ctx, spp);
          hgroup_show_structure(ctx, &answer_list, *spp, true);
@@ -4930,7 +4930,7 @@ int sge_parse_qconf(sge_gdi_ctx_class_t *ctx, char *argv[])
 
       /* "-shgrp_resolved" */
       if (strcmp("-shgrp_resolved", *spp) == 0) {
-         lList *answer_list = NULL;
+         lList *answer_list = nullptr;
 
          spp = sge_parser_get_next(ctx, spp);
          hgroup_show_structure(ctx, &answer_list, *spp, false);
@@ -4956,7 +4956,7 @@ int sge_parse_qconf(sge_gdi_ctx_class_t *ctx, char *argv[])
 
       /* "-mq cqueue"  */
       if (strcmp("-mq", *spp) == 0) {
-         lList *answer_list = NULL;
+         lList *answer_list = nullptr;
 
          spp = sge_parser_get_next(ctx, spp);
 
@@ -4972,8 +4972,8 @@ int sge_parse_qconf(sge_gdi_ctx_class_t *ctx, char *argv[])
   
       /* "-Mq filename"  */ 
       if (strcmp("-Mq", *spp) == 0) {
-         lList *answer_list = NULL;
-         char* file = NULL;
+         lList *answer_list = nullptr;
+         char* file = nullptr;
 
          qconf_is_adminhost(ctx, qualified_hostname);
          qconf_is_manager(ctx, username);
@@ -4993,7 +4993,7 @@ int sge_parse_qconf(sge_gdi_ctx_class_t *ctx, char *argv[])
 
       /* "-aq cqueue"  */
       if (strcmp("-aq", *spp) == 0) {
-         lList *answer_list = NULL;
+         lList *answer_list = nullptr;
          const char *name = "template";
 
          if (!sge_next_is_an_opt(spp)) {
@@ -5012,8 +5012,8 @@ int sge_parse_qconf(sge_gdi_ctx_class_t *ctx, char *argv[])
 
       /* "-Aq filename"  */ 
       if (strcmp("-Aq", *spp) == 0) {
-         lList *answer_list = NULL;
-         char* file = NULL;
+         lList *answer_list = nullptr;
+         char* file = nullptr;
 
          qconf_is_adminhost(ctx, qualified_hostname);
          qconf_is_manager(ctx, username);
@@ -5036,7 +5036,7 @@ int sge_parse_qconf(sge_gdi_ctx_class_t *ctx, char *argv[])
 
       /* "-dq cqueue"  */
       if (strcmp("-dq", *spp) == 0) {
-         lList *answer_list = NULL;
+         lList *answer_list = nullptr;
 
          spp = sge_parser_get_next(ctx, spp);
 
@@ -5073,7 +5073,7 @@ int sge_parse_qconf(sge_gdi_ctx_class_t *ctx, char *argv[])
          for_each_rw (ep, lp) {
             lSetUlong(ep, ID_action, QI_DO_CLEAN);
          }
-         alp = ctx->gdi(ctx, SGE_CQ_LIST, SGE_GDI_TRIGGER, &lp, NULL, NULL);
+         alp = ctx->gdi(ctx, SGE_CQ_LIST, SGE_GDI_TRIGGER, &lp, nullptr, nullptr);
          if (answer_list_has_error(&alp)) {
             sge_parse_return = 1;
          }
@@ -5085,7 +5085,7 @@ int sge_parse_qconf(sge_gdi_ctx_class_t *ctx, char *argv[])
       }
 
       if (strcmp("-sds", *spp) == 0) {
-         lList *answer_list = NULL;
+         lList *answer_list = nullptr;
 
          /* Use cqueue_list_sick()'s return value to set the exit code */
          sge_parse_return |= (cqueue_list_sick(ctx, &answer_list)?0:1);
@@ -5100,11 +5100,11 @@ int sge_parse_qconf(sge_gdi_ctx_class_t *ctx, char *argv[])
       /* "-suser username" */
 
       if (strcmp("-suser", *spp) == 0) {
-         const char*  user = NULL;
-         lList* uList = NULL;
-         const lListElem* uep = NULL;
+         const char*  user = nullptr;
+         lList* uList = nullptr;
+         const lListElem* uep = nullptr;
          bool first = true;
-         spooling_field *fields = NULL;
+         spooling_field *fields = nullptr;
 
          spp = sge_parser_get_next(ctx, spp);
 
@@ -5134,7 +5134,7 @@ int sge_parse_qconf(sge_gdi_ctx_class_t *ctx, char *argv[])
             }
             lFreeList(&alp);
 
-            if (lp == NULL || lGetNumberOfElem(lp) == 0) {
+            if (lp == nullptr || lGetNumberOfElem(lp) == 0) {
                fprintf(stderr, MSG_USER_XISNOKNOWNUSER_S, user);
                fprintf(stderr, "\n");
                lFreeList(&lp);
@@ -5146,7 +5146,7 @@ int sge_parse_qconf(sge_gdi_ctx_class_t *ctx, char *argv[])
             fields = sge_build_UU_field_list(false);
             filename_stdout = spool_flatfile_write_object(&alp, ep, false, fields, &qconf_param_sfi,
                                                  SP_DEST_STDOUT, SP_FORM_ASCII, 
-                                                 NULL, false);
+                                                 nullptr, false);
             lFreeList(&lp);
             lFreeList(&alp);
             sge_free(&filename_stdout);
@@ -5163,7 +5163,7 @@ int sge_parse_qconf(sge_gdi_ctx_class_t *ctx, char *argv[])
       /* "-sprj projectname" */
 
       if (strcmp("-sprj", *spp) == 0) {
-         spooling_field *fields = NULL;
+         spooling_field *fields = nullptr;
 
          spp = sge_parser_get_next(ctx, spp);
 
@@ -5186,7 +5186,7 @@ int sge_parse_qconf(sge_gdi_ctx_class_t *ctx, char *argv[])
          }
 
          lFreeList(&alp);
-         if (lp == NULL || lGetNumberOfElem(lp) == 0) {
+         if (lp == nullptr || lGetNumberOfElem(lp) == 0) {
             fprintf(stderr, MSG_PROJECT_XISNOKNWOWNPROJECT_S, *spp);
             fprintf(stderr, "\n");
             lFreeList(&lp);
@@ -5200,7 +5200,7 @@ int sge_parse_qconf(sge_gdi_ctx_class_t *ctx, char *argv[])
          fields = sge_build_PR_field_list(false);
          filename_stdout = spool_flatfile_write_object(&alp, ep, false, fields, &qconf_sfi,
                                               SP_DEST_STDOUT, SP_FORM_ASCII, 
-                                              NULL, false);
+                                              nullptr, false);
          lFreeList(&alp);
          lFreeList(&lp);
          sge_free(&filename_stdout);
@@ -5265,7 +5265,7 @@ int sge_parse_qconf(sge_gdi_ctx_class_t *ctx, char *argv[])
 
       if (strcmp("-tsm", *spp) == 0) {
          /* no adminhost/manager check needed here */
-         alp = ctx->tsm(ctx, NULL, NULL);
+         alp = ctx->tsm(ctx, nullptr, nullptr);
          answer_list_on_error_print_or_exit(&alp, stderr);
          lFreeList(&alp);
          
@@ -5290,8 +5290,8 @@ int sge_parse_qconf(sge_gdi_ctx_class_t *ctx, char *argv[])
 
 static void parse_name_list_to_cull(char *name, lList **lpp, lDescr *dp, int nm, char *s)
 {
-   char *cp2 = NULL;
-   lListElem *ep = NULL;
+   char *cp2 = nullptr;
+   lListElem *ep = nullptr;
    int pos;
    int dataType;
 
@@ -5319,7 +5319,7 @@ static void parse_name_list_to_cull(char *name, lList **lpp, lDescr *dp, int nm,
    }
    lAppendElem(*lpp, ep);
 
-   while ((cp2 = sge_strtok(0, ",")) != NULL) {
+   while ((cp2 = sge_strtok(0, ",")) != nullptr) {
       ep = lCreateElem(dp);
       switch (dataType) {
          case lStringT:
@@ -5376,12 +5376,12 @@ static int sge_error_and_exit(sge_gdi_ctx_class_t *ctx, const char *ptr) {
 
 static bool add_host_of_type(sge_gdi_ctx_class_t *ctx, lList *arglp, u_long32 target)
 {
-   lListElem *argep=NULL, *ep=NULL;
-   lList *lp=NULL, *alp=NULL;
-   const char *host = NULL;
+   lListElem *argep=nullptr, *ep=nullptr;
+   lList *lp=nullptr, *alp=nullptr;
+   const char *host = nullptr;
    int nm = NoName;
-   lDescr *type = NULL;
-   char *name = NULL;
+   lDescr *type = nullptr;
+   char *name = nullptr;
    bool ret = true;
 
    DENTER(TOP_LAYER);
@@ -5408,7 +5408,7 @@ static bool add_host_of_type(sge_gdi_ctx_class_t *ctx, lList *arglp, u_long32 ta
       if (sge_resolve_host(argep, nm) != CL_RETVAL_OK) {
          const char* host = lGetHost(argep, nm);
          ret = false;
-         if ( host == NULL) {
+         if ( host == nullptr) {
             host = "";
          }
          fprintf(stderr, MSG_SGETEXT_CANTRESOLVEHOST_S, host);
@@ -5424,7 +5424,7 @@ static bool add_host_of_type(sge_gdi_ctx_class_t *ctx, lList *arglp, u_long32 ta
 
 
       /* add the new host to the host list */
-      alp = ctx->gdi(ctx, target, SGE_GDI_ADD, &lp, NULL, NULL);
+      alp = ctx->gdi(ctx, target, SGE_GDI_ADD, &lp, nullptr, nullptr);
 
       /* report results */
       ep = lFirstRW(alp);
@@ -5447,9 +5447,9 @@ static bool add_host_of_type(sge_gdi_ctx_class_t *ctx, lList *arglp, u_long32 ta
 
 static bool del_host_of_type(sge_gdi_ctx_class_t *ctx, lList *arglp, u_long32 target )
 {
-   lListElem *argep=NULL, *ep=NULL;
-   lList *lp=NULL, *alp=NULL;
-   lDescr *type = NULL;
+   lListElem *argep=nullptr, *ep=nullptr;
+   lList *lp=nullptr, *alp=nullptr;
+   lDescr *type = nullptr;
    bool ret = true;
 
    DENTER(TOP_LAYER);
@@ -5474,7 +5474,7 @@ static bool del_host_of_type(sge_gdi_ctx_class_t *ctx, lList *arglp, u_long32 ta
       lAppendElem(lp, ep);
 
       /* delete element */
-      alp = ctx->gdi(ctx, target, SGE_GDI_DEL, &lp, NULL, NULL);
+      alp = ctx->gdi(ctx, target, SGE_GDI_DEL, &lp, nullptr, nullptr);
 
       /* print results */
       if (answer_list_has_error(&alp)) {
@@ -5494,14 +5494,14 @@ static bool del_host_of_type(sge_gdi_ctx_class_t *ctx, lList *arglp, u_long32 ta
 static lListElem *edit_exechost(sge_gdi_ctx_class_t *ctx, lListElem *ep, uid_t uid, gid_t gid)
 {
    int status;
-   lListElem *hep = NULL;
+   lListElem *hep = nullptr;
    spooling_field *fields = sge_build_EH_field_list(false, false, false);
-   lList *alp = NULL;
+   lList *alp = nullptr;
    int fields_out[MAX_NUM_FIELDS];
    int missing_field = NoName;
 
    /* used for generating filenames */
-   char *filename = NULL;
+   char *filename = nullptr;
 
    DENTER(TOP_LAYER);
 
@@ -5510,12 +5510,12 @@ static lListElem *edit_exechost(sge_gdi_ctx_class_t *ctx, lListElem *ep, uid_t u
                                                   SP_FORM_ASCII, filename,
                                                   false);
    if (answer_list_output(&alp)) {
-      if (filename != NULL) {
+      if (filename != nullptr) {
          unlink(filename);
          sge_free(&filename);
       }
       sge_free(&fields);
-      sge_error_and_exit(ctx, NULL);
+      sge_error_and_exit(ctx, nullptr);
    }
 
    lFreeList(&alp);
@@ -5526,7 +5526,7 @@ static lListElem *edit_exechost(sge_gdi_ctx_class_t *ctx, lListElem *ep, uid_t u
       sge_free(&filename);
       sge_free(&fields);
       if (sge_error_and_exit(ctx, MSG_PARSE_EDITFAILED)) {
-         DRETURN(NULL);
+         DRETURN(nullptr);
       }
    }
 
@@ -5535,20 +5535,20 @@ static lListElem *edit_exechost(sge_gdi_ctx_class_t *ctx, lListElem *ep, uid_t u
       sge_free(&filename);
       sge_free(&fields);
       if (sge_error_and_exit(ctx, MSG_FILE_FILEUNCHANGED)) {
-         DRETURN(NULL);
+         DRETURN(nullptr);
       }
    }
    
    fields_out[0] = NoName;
-   hep = spool_flatfile_read_object(&alp, EH_Type, NULL,
+   hep = spool_flatfile_read_object(&alp, EH_Type, nullptr,
                                    fields, fields_out, true, &qconf_sfi,
-                                   SP_FORM_ASCII, NULL, filename);
+                                   SP_FORM_ASCII, nullptr, filename);
             
    if (answer_list_output(&alp)) {
       lFreeElem(&hep);
    }
 
-   if (hep != NULL) {
+   if (hep != nullptr) {
       missing_field = spool_get_unprocessed_field(fields, fields_out, &alp);
    }
 
@@ -5568,9 +5568,9 @@ static lListElem *edit_exechost(sge_gdi_ctx_class_t *ctx, lListElem *ep, uid_t u
 static lList* edit_sched_conf(sge_gdi_ctx_class_t *ctx, lList *confl, uid_t uid, gid_t gid)
 {
    int status;
-   char *fname = NULL;
-   lList *alp=NULL, *newconfl=NULL;
-   lListElem *ep = NULL;
+   char *fname = nullptr;
+   lList *alp=nullptr, *newconfl=nullptr;
+   lListElem *ep = nullptr;
    int fields_out[MAX_NUM_FIELDS];
    int missing_field = NoName;
 
@@ -5593,7 +5593,7 @@ static lList* edit_sched_conf(sge_gdi_ctx_class_t *ctx, lList *confl, uid_t uid,
       sge_free(&fname);
       
       if (sge_error_and_exit(ctx, MSG_PARSE_EDITFAILED)) {
-         DRETURN(NULL);
+         DRETURN(nullptr);
       }
    }
 
@@ -5602,20 +5602,20 @@ static lList* edit_sched_conf(sge_gdi_ctx_class_t *ctx, lList *confl, uid_t uid,
       sge_free(&fname);
       
       if (sge_error_and_exit(ctx, MSG_FILE_FILEUNCHANGED)) {
-         DRETURN(NULL);
+         DRETURN(nullptr);
       }
    }
    
    fields_out[0] = NoName;
-   ep = spool_flatfile_read_object(&alp, SC_Type, NULL,
+   ep = spool_flatfile_read_object(&alp, SC_Type, nullptr,
                                    SC_fields, fields_out, true, &qconf_comma_sfi,
-                                   SP_FORM_ASCII, NULL, fname);
+                                   SP_FORM_ASCII, nullptr, fname);
             
    if (answer_list_output(&alp)) {
       lFreeElem(&ep);
    }
 
-   if (ep != NULL) {
+   if (ep != nullptr) {
       missing_field = spool_get_unprocessed_field(SC_fields, fields_out, &alp);
    }
 
@@ -5624,17 +5624,17 @@ static lList* edit_sched_conf(sge_gdi_ctx_class_t *ctx, lList *confl, uid_t uid,
       answer_list_output(&alp);
    }
 
-   if (ep != NULL) {
+   if (ep != nullptr) {
       newconfl = lCreateList("scheduler config", SC_Type);
       lAppendElem(newconfl, ep);
    }
    
-   if ((newconfl != NULL) && !sconf_validate_config(&alp, newconfl)) {
+   if ((newconfl != nullptr) && !sconf_validate_config(&alp, newconfl)) {
       lFreeList(&newconfl);
       answer_list_output(&alp);
    }
    
-   if (newconfl == NULL) {
+   if (newconfl == nullptr) {
       fprintf(stderr, MSG_QCONF_CANTREADCONFIG_S, "can't parse config");
       fprintf(stderr, "\n");
       unlink(fname);
@@ -5654,9 +5654,9 @@ static lList* edit_sched_conf(sge_gdi_ctx_class_t *ctx, lList *confl, uid_t uid,
 static lListElem *edit_user(sge_gdi_ctx_class_t *ctx, lListElem *ep, uid_t uid, gid_t gid)
 {
    int status;
-   lListElem *newep = NULL;
-   lList *alp = NULL;
-   char *filename = NULL;
+   lListElem *newep = nullptr;
+   lList *alp = nullptr;
+   char *filename = nullptr;
    spooling_field *fields = sge_build_UU_field_list(false);
    int fields_out[MAX_NUM_FIELDS];
    int missing_field = NoName;
@@ -5665,14 +5665,14 @@ static lListElem *edit_user(sge_gdi_ctx_class_t *ctx, lListElem *ep, uid_t uid, 
 
    filename = (char *)spool_flatfile_write_object(&alp, ep, false, fields,
                                                   &qconf_sfi, SP_DEST_TMP,
-                                                  SP_FORM_ASCII, NULL, false);
+                                                  SP_FORM_ASCII, nullptr, false);
    if (answer_list_output(&alp)) {
-      if (filename != NULL) {
+      if (filename != nullptr) {
          unlink(filename);
          sge_free(&filename);
       }
       sge_free(&fields);
-      sge_error_and_exit(ctx, NULL);
+      sge_error_and_exit(ctx, nullptr);
    }
 
    lFreeList(&alp);
@@ -5683,7 +5683,7 @@ static lListElem *edit_user(sge_gdi_ctx_class_t *ctx, lListElem *ep, uid_t uid, 
       sge_free(&fields);
       unlink(filename);
       if (sge_error_and_exit(ctx, MSG_PARSE_EDITFAILED)) {
-         DRETURN(NULL);
+         DRETURN(nullptr);
       }
    }
 
@@ -5691,20 +5691,20 @@ static lListElem *edit_user(sge_gdi_ctx_class_t *ctx, lListElem *ep, uid_t uid, 
       sge_free(&fields);
       unlink(filename);
       if (sge_error_and_exit(ctx, MSG_FILE_FILEUNCHANGED)) {
-         DRETURN(NULL);
+         DRETURN(nullptr);
       }
    }
 
    fields_out[0] = NoName;
-   newep = spool_flatfile_read_object(&alp, UU_Type, NULL, fields, fields_out,
-                                    true, &qconf_sfi, SP_FORM_ASCII, NULL,
+   newep = spool_flatfile_read_object(&alp, UU_Type, nullptr, fields, fields_out,
+                                    true, &qconf_sfi, SP_FORM_ASCII, nullptr,
                                     filename);
    
    if (answer_list_output(&alp)) {
       lFreeElem(&newep);
    }
 
-   if (newep != NULL) {
+   if (newep != nullptr) {
       missing_field = spool_get_unprocessed_field(fields, fields_out, &alp);
    }
 
@@ -5731,9 +5731,9 @@ static lListElem *edit_user(sge_gdi_ctx_class_t *ctx, lListElem *ep, uid_t uid, 
 static lListElem *edit_project(sge_gdi_ctx_class_t *ctx, lListElem *ep, uid_t uid, gid_t gid)
 {
    int status;
-   lListElem *newep = NULL;
-   lList *alp = NULL;
-   char *filename = NULL;
+   lListElem *newep = nullptr;
+   lList *alp = nullptr;
+   char *filename = nullptr;
    spooling_field *fields = sge_build_PR_field_list(false);
    int fields_out[MAX_NUM_FIELDS];
    int missing_field = NoName;
@@ -5742,14 +5742,14 @@ static lListElem *edit_project(sge_gdi_ctx_class_t *ctx, lListElem *ep, uid_t ui
 
    filename = (char *)spool_flatfile_write_object(&alp, ep, false, fields,
                                                   &qconf_sfi, SP_DEST_TMP,
-                                                  SP_FORM_ASCII, NULL, false);
+                                                  SP_FORM_ASCII, nullptr, false);
    if (answer_list_output(&alp)) {
-      if (filename != NULL) {
+      if (filename != nullptr) {
          unlink(filename);
          sge_free(&filename);
       }
       sge_free(&fields);
-      sge_error_and_exit(ctx, NULL);
+      sge_error_and_exit(ctx, nullptr);
    }
 
    lFreeList(&alp);
@@ -5760,7 +5760,7 @@ static lListElem *edit_project(sge_gdi_ctx_class_t *ctx, lListElem *ep, uid_t ui
       sge_free(&fields);
       unlink(filename);
       if (sge_error_and_exit(ctx, MSG_PARSE_EDITFAILED)) {
-         DRETURN(NULL);
+         DRETURN(nullptr);
       }
    }
 
@@ -5768,20 +5768,20 @@ static lListElem *edit_project(sge_gdi_ctx_class_t *ctx, lListElem *ep, uid_t ui
       sge_free(&fields);
       unlink(filename);
       if (sge_error_and_exit(ctx, MSG_FILE_FILEUNCHANGED)) {
-         DRETURN(NULL);
+         DRETURN(nullptr);
       }
    }
 
    fields_out[0] = NoName;
-   newep = spool_flatfile_read_object(&alp, PR_Type, NULL, fields, fields_out,
-                                    true, &qconf_sfi, SP_FORM_ASCII, NULL,
+   newep = spool_flatfile_read_object(&alp, PR_Type, nullptr, fields, fields_out,
+                                    true, &qconf_sfi, SP_FORM_ASCII, nullptr,
                                     filename);
    
    if (answer_list_output(&alp)) {
       lFreeElem(&newep);
    }
 
-   if (newep != NULL) {
+   if (newep != nullptr) {
       missing_field = spool_get_unprocessed_field(fields, fields_out, &alp);
    }
 
@@ -5808,17 +5808,17 @@ static lListElem *edit_project(sge_gdi_ctx_class_t *ctx, lListElem *ep, uid_t ui
 static lListElem *edit_sharetree(sge_gdi_ctx_class_t *ctx, lListElem *ep, uid_t uid, gid_t gid)
 {
    int status;
-   lListElem *newep = NULL;
-   const char *filename = NULL;
-   lList *alp = NULL;
-   spooling_field *fields = NULL;
+   lListElem *newep = nullptr;
+   const char *filename = nullptr;
+   lList *alp = nullptr;
+   spooling_field *fields = nullptr;
    int fields_out[MAX_NUM_FIELDS];
    int missing_field = NoName;
    bool is_missing = false;
 
    DENTER(TOP_LAYER);
 
-   if (ep == NULL) {
+   if (ep == nullptr) {
       is_missing = true;
    }
    if (is_missing) {
@@ -5830,18 +5830,18 @@ static lListElem *edit_sharetree(sge_gdi_ctx_class_t *ctx, lListElem *ep, uid_t 
    filename = spool_flatfile_write_object(&alp, ep, false,
                                           fields, &qconf_name_value_list_sfi,
                                           SP_DEST_TMP, SP_FORM_ASCII,
-                                          NULL, false);
+                                          nullptr, false);
    if (is_missing) {
       lFreeElem(&ep);
    }
 
    if (answer_list_output(&alp)) {
-      if (filename != NULL) {
+      if (filename != nullptr) {
          unlink(filename);
          sge_free(&filename);
       }
       sge_free(&fields);
-      sge_error_and_exit(ctx, NULL);
+      sge_error_and_exit(ctx, nullptr);
    }
 
    lFreeList(&alp);
@@ -5853,7 +5853,7 @@ static lListElem *edit_sharetree(sge_gdi_ctx_class_t *ctx, lListElem *ep, uid_t 
       unlink(filename);
       sge_free(&filename);
       if (sge_error_and_exit(ctx, MSG_PARSE_EDITFAILED)) {
-         DRETURN(NULL);
+         DRETURN(nullptr);
       }
    }
 
@@ -5862,21 +5862,21 @@ static lListElem *edit_sharetree(sge_gdi_ctx_class_t *ctx, lListElem *ep, uid_t 
       unlink(filename);
       sge_free(&filename);
       if (sge_error_and_exit(ctx, MSG_FILE_FILEUNCHANGED)) {
-         DRETURN(NULL);
+         DRETURN(nullptr);
       }
    }
    
    fields_out[0] = NoName;
-   newep = spool_flatfile_read_object(&alp, STN_Type, NULL,
+   newep = spool_flatfile_read_object(&alp, STN_Type, nullptr,
                                       fields, fields_out,  true,
                                       &qconf_name_value_list_sfi,
-                                      SP_FORM_ASCII, NULL, filename);
+                                      SP_FORM_ASCII, nullptr, filename);
    
    if (answer_list_output(&alp)) {
       lFreeElem(&newep);
    }
 
-   if (newep != NULL) {
+   if (newep != nullptr) {
       missing_field = spool_get_unprocessed_field(fields, fields_out, &alp);
    }
 
@@ -5890,7 +5890,7 @@ static lListElem *edit_sharetree(sge_gdi_ctx_class_t *ctx, lListElem *ep, uid_t 
    unlink(filename);
    sge_free(&filename);
 
-   if (newep == NULL) {
+   if (newep == nullptr) {
       /* JG: TODO: do we need the following output?
        * Isn't an error message already written by spool_flatfile_read_object?
        */
@@ -5906,10 +5906,10 @@ static lListElem *edit_sharetree(sge_gdi_ctx_class_t *ctx, lListElem *ep, uid_t 
 
 static bool show_object_list(sge_gdi_ctx_class_t *ctx, u_long32 target, lDescr *type, int keynm, char *name) 
 {
-   lEnumeration *what = NULL;
-   lCondition *where = NULL;
-   lList *alp = NULL, *lp = NULL;
-   lListElem *ep = NULL;
+   lEnumeration *what = nullptr;
+   lCondition *where = nullptr;
+   lList *alp = nullptr, *lp = nullptr;
+   lListElem *ep = nullptr;
    int pos;
    int dataType;
    bool ret = true;
@@ -5933,7 +5933,7 @@ static bool show_object_list(sge_gdi_ctx_class_t *ctx, u_long32 target, lDescr *
          type, EV_id, EV_ID_SCHEDD);
       break;
    default:
-      where = NULL; /* all elements */
+      where = nullptr; /* all elements */
       break;
    } 
 
@@ -5952,7 +5952,7 @@ static bool show_object_list(sge_gdi_ctx_class_t *ctx, u_long32 target, lDescr *
 
    if (lGetNumberOfElem(lp) > 0) {
       for_each_rw (ep, lp) {
-         const char *line = NULL;
+         const char *line = nullptr;
          pos = lGetPosInDescr(type, keynm);
          dataType = lGetPosType(type , pos);
          switch(dataType) {
@@ -5986,15 +5986,15 @@ static bool show_object_list(sge_gdi_ctx_class_t *ctx, u_long32 target, lDescr *
 
 static int show_eventclients(sge_gdi_ctx_class_t *ctx)
 {
-   lEnumeration *what = NULL;
-   lList *alp = NULL, *lp = NULL;
-   const lListElem *ep = NULL;
+   lEnumeration *what = nullptr;
+   lList *alp = nullptr, *lp = nullptr;
+   const lListElem *ep = nullptr;
 
    DENTER(TOP_LAYER);
 
    what = lWhat("%T(%I %I %I)", EV_Type, EV_id, EV_name, EV_host);
 
-   alp = ctx->gdi(ctx, SGE_EV_LIST, SGE_GDI_GET, &lp, NULL, what);
+   alp = ctx->gdi(ctx, SGE_EV_LIST, SGE_GDI_GET, &lp, nullptr, what);
    lFreeWhat(&what);
 
    ep = lFirstRW(alp);
@@ -6005,7 +6005,7 @@ static int show_eventclients(sge_gdi_ctx_class_t *ctx)
       DRETURN(-1);
    }
 
-   if (lp != NULL && lGetNumberOfElem(lp) > 0) {
+   if (lp != nullptr && lGetNumberOfElem(lp) > 0) {
       lPSortList(lp, "%I+", EV_id);
    
       printf("%8s %-15s %-25s\n",MSG_TABLE_EV_ID, MSG_TABLE_EV_NAME, MSG_TABLE_HOST);
@@ -6013,7 +6013,7 @@ static int show_eventclients(sge_gdi_ctx_class_t *ctx)
       for_each_ep(ep, lp) {
          printf("%8d ", (int)lGetUlong(ep, EV_id));
          printf("%-15s ", lGetString(ep, EV_name));
-         printf("%-25s\n", (lGetHost(ep, EV_host) != NULL) ? lGetHost(ep, EV_host) : "-");
+         printf("%-25s\n", (lGetHost(ep, EV_host) != nullptr) ? lGetHost(ep, EV_host) : "-");
       }
    }
    else {
@@ -6029,11 +6029,11 @@ static int show_eventclients(sge_gdi_ctx_class_t *ctx)
 
 static int show_processors(sge_gdi_ctx_class_t *ctx, bool has_binding_param)
 {
-   lEnumeration *what = NULL;
-   lCondition *where = NULL;
-   lList *alp = NULL, *lp = NULL;
-   const lListElem *ep = NULL;
-   const char *cp = NULL;
+   lEnumeration *what = nullptr;
+   lCondition *where = nullptr;
+   lList *alp = nullptr, *lp = nullptr;
+   const lListElem *ep = nullptr;
+   const char *cp = nullptr;
    u_long32 sum = 0;
    u_long32 socket_sum = 0;
    u_long32 core_sum = 0;
@@ -6055,7 +6055,7 @@ static int show_processors(sge_gdi_ctx_class_t *ctx, bool has_binding_param)
       DRETURN(-1);
    }
 
-   if (lp != NULL && lGetNumberOfElem(lp) > 0) {
+   if (lp != nullptr && lGetNumberOfElem(lp) > 0) {
       lPSortList(lp,"%I+", EH_name);
 
       if (has_binding_param) {
@@ -6081,13 +6081,13 @@ static int show_processors(sge_gdi_ctx_class_t *ctx, bool has_binding_param)
             lListElem *socket_elem = lGetSubStr(ep, HL_name, "m_socket", EH_load_list); 
             lListElem *core_elem = lGetSubStr(ep, HL_name, "m_core", EH_load_list); 
 
-            if (socket_elem != NULL) {
+            if (socket_elem != nullptr) {
                printf("%6.5s", lGetString(socket_elem, HL_value));
                sockets = atol(lGetString(socket_elem, HL_value));
             } else {
                printf("%6.5s", "-");
             }
-            if (core_elem != NULL) {
+            if (core_elem != nullptr) {
                printf("%6.5s", lGetString(core_elem, HL_value));
                cores = atol(lGetString(core_elem, HL_value));
             } else {
@@ -6146,17 +6146,17 @@ static int print_acl(
 sge_gdi_ctx_class_t *ctx,
 lList *arglp 
 ) {
-   lList *acls = NULL;
-   const lListElem *argep = NULL, *ep = NULL;
+   lList *acls = nullptr;
+   const lListElem *argep = nullptr, *ep = nullptr;
    int fail = 0;
-   const char *acl_name = NULL;
+   const char *acl_name = nullptr;
    int first_time = 1;
    const char *filename_stdout;
 
    DENTER(TOP_LAYER);
 
    /* get all acls named in arglp, put them into acls */
-   if (sge_client_get_acls(ctx, NULL, arglp, &acls)) {
+   if (sge_client_get_acls(ctx, nullptr, arglp, &acls)) {
       DRETURN(-1);
    }
 
@@ -6164,12 +6164,12 @@ lList *arglp
       acl_name = lGetString(argep, US_name);
 
       ep = lGetElemStrRW(acls, US_name, acl_name);
-      if (ep == NULL) {
+      if (ep == nullptr) {
          fprintf(stderr, MSG_SGETEXT_DOESNOTEXIST_SS, "access list", acl_name);
          fprintf(stderr, "\n");
          fail = 1;
       } else {
-         lList *alp = NULL;
+         lList *alp = nullptr;
          
          if (first_time)
             first_time = 0;
@@ -6178,7 +6178,7 @@ lList *arglp
          }
          
          filename_stdout = spool_flatfile_write_object(&alp, ep, false, US_fields, &qconf_param_sfi,
-                                     SP_DEST_STDOUT, SP_FORM_ASCII, NULL,
+                                     SP_DEST_STDOUT, SP_FORM_ASCII, nullptr,
                                      false);
          lFreeList(&alp);
          sge_free(&filename_stdout);
@@ -6202,15 +6202,15 @@ lList *arglp
  **************************************************************/
 static int edit_usersets(sge_gdi_ctx_class_t *ctx, lList *arglp)
 {
-   lList *usersets = NULL;
-   const lListElem *argep=NULL;
-   lListElem *ep=NULL;
-   const lListElem *aep=NULL;
-   lListElem *changed_ep=NULL;
+   lList *usersets = nullptr;
+   const lListElem *argep=nullptr;
+   lListElem *ep=nullptr;
+   const lListElem *aep=nullptr;
+   lListElem *changed_ep=nullptr;
    int status;
-   const char *userset_name = NULL;
-   lList *alp = NULL, *lp = NULL;
-   char *fname = NULL;
+   const char *userset_name = nullptr;
+   lList *alp = nullptr, *lp = nullptr;
+   char *fname = nullptr;
    int cmd;
    int fields_out[MAX_NUM_FIELDS];
    int missing_field = NoName;
@@ -6220,16 +6220,16 @@ static int edit_usersets(sge_gdi_ctx_class_t *ctx, lList *arglp)
    DENTER(TOP_LAYER);
 
    /* get all usersets named in arglp, put them into usersets */
-   if (sge_client_get_acls(ctx, NULL, arglp, &usersets)) {
+   if (sge_client_get_acls(ctx, nullptr, arglp, &usersets)) {
       DRETURN(-1);
    }
 
    for_each_ep(argep, arglp) {
-      alp = NULL;
+      alp = nullptr;
       userset_name = lGetString(argep, US_name);
 
       ep = lGetElemStrRW(usersets, US_name, userset_name);
-      if (ep == NULL) {
+      if (ep == nullptr) {
          ep = lAddElemStr(&usersets, US_name, userset_name, US_Type);
          /* initialize type field in case of sge */
          lSetUlong(ep, US_type, US_ACL|US_DEPT);
@@ -6262,15 +6262,15 @@ static int edit_usersets(sge_gdi_ctx_class_t *ctx, lList *arglp)
       }
 
       fields_out[0] = NoName;
-      changed_ep = spool_flatfile_read_object(&alp, US_Type, NULL,
+      changed_ep = spool_flatfile_read_object(&alp, US_Type, nullptr,
                                       US_fields, fields_out,  true, &qconf_param_sfi,
-                                      SP_FORM_ASCII, NULL, fname);
+                                      SP_FORM_ASCII, nullptr, fname);
       
       if (answer_list_output(&alp)) {
          lFreeElem(&changed_ep);
       }
 
-      if (changed_ep != NULL) {
+      if (changed_ep != nullptr) {
          missing_field = spool_get_unprocessed_field(US_fields, fields_out, &alp);
       }
 
@@ -6279,7 +6279,7 @@ static int edit_usersets(sge_gdi_ctx_class_t *ctx, lList *arglp)
          answer_list_output(&alp);
       }
 
-      if (changed_ep == NULL) {
+      if (changed_ep == nullptr) {
          fprintf(stderr, MSG_FILE_ERRORREADINGUSERSETFROMFILE_S, fname);
          fprintf(stderr, "\n");
          continue;   /* May be the user made a mistake. Just proceed with 
@@ -6289,7 +6289,7 @@ static int edit_usersets(sge_gdi_ctx_class_t *ctx, lList *arglp)
       /* Create List; append Element; and do a modification gdi call */
       lp = lCreateList("userset list", US_Type);
       lAppendElem(lp, changed_ep);
-      alp = ctx->gdi(ctx, SGE_US_LIST, cmd, &lp, NULL, NULL);
+      alp = ctx->gdi(ctx, SGE_US_LIST, cmd, &lp, nullptr, nullptr);
       lFreeList(&lp);
 
       for_each_ep(aep, alp) {
@@ -6310,13 +6310,13 @@ static int print_config(
 sge_gdi_ctx_class_t *ctx,
 const char *config_name 
 ) {
-   lCondition *where = NULL;
-   lEnumeration *what = NULL;
-   lList *alp = NULL, *lp = NULL;
-   const lListElem *ep = NULL;
+   lCondition *where = nullptr;
+   lEnumeration *what = nullptr;
+   lList *alp = nullptr, *lp = nullptr;
+   const lListElem *ep = nullptr;
    int fail=0;
-   const char *cfn = NULL;
-   spooling_field *fields = NULL;
+   const char *cfn = nullptr;
+   spooling_field *fields = nullptr;
    
    DENTER(TOP_LAYER);
 
@@ -6352,12 +6352,12 @@ const char *config_name
       
       fields = sge_build_CONF_field_list(false);
       filename_stdout = spool_flatfile_write_object(&alp, ep, false, fields, &qconf_sfi,
-                                  SP_DEST_STDOUT, SP_FORM_ASCII, NULL, false);
+                                  SP_DEST_STDOUT, SP_FORM_ASCII, nullptr, false);
       sge_free(&fields);
       sge_free(&filename_stdout);
       
       if (answer_list_output(&alp)) {
-         sge_error_and_exit(ctx, NULL);
+         sge_error_and_exit(ctx, nullptr);
       }
    }
 
@@ -6374,14 +6374,14 @@ static int delete_config(
 sge_gdi_ctx_class_t *ctx,
 const char *config_name 
 ) {
-   lList *alp = NULL, *lp = NULL;
-   const lListElem *ep = NULL;
+   lList *alp = nullptr, *lp = nullptr;
+   const lListElem *ep = nullptr;
    int fail = 0;
    
    DENTER(TOP_LAYER);
 
    lAddElemHost(&lp, CONF_name, config_name, CONF_Type);
-   alp = ctx->gdi(ctx, SGE_CONF_LIST, SGE_GDI_DEL, &lp, NULL, NULL);
+   alp = ctx->gdi(ctx, SGE_CONF_LIST, SGE_GDI_DEL, &lp, nullptr, nullptr);
 
    ep = lFirst(alp);
    fprintf(stderr, "%s\n", lGetString(ep, AN_text));
@@ -6401,14 +6401,14 @@ const char *config_name
  *------------------------------------------------------------------------*/
 static int add_modify_config(sge_gdi_ctx_class_t *ctx, const char *cfn, const char *filename, u_long32 flags)
 {
-   lCondition *where = NULL;
-   lEnumeration *what = NULL;
-   lList *alp = NULL, *lp = NULL;
-   lListElem *ep = NULL;
+   lCondition *where = nullptr;
+   lEnumeration *what = nullptr;
+   lList *alp = nullptr, *lp = nullptr;
+   lListElem *ep = nullptr;
    int failed=0;
-   char *tmpname = NULL;
+   char *tmpname = nullptr;
    int status;
-   spooling_field *fields = NULL;
+   spooling_field *fields = nullptr;
    int fields_out[MAX_NUM_FIELDS];
    int missing_field = NoName;
    uid_t uid = bootstrap_get_uid();
@@ -6450,11 +6450,11 @@ static int add_modify_config(sge_gdi_ctx_class_t *ctx, const char *cfn, const ch
       DRETURN(3);
    }
 
-   if (filename == NULL) {
+   if (filename == nullptr) {
       bool failed = false;
 
       /* get config or make an empty config entry if none exists */
-      if (ep == NULL) {
+      if (ep == nullptr) {
          ep = lCreateElem(CONF_Type);
          lSetHost(ep, CONF_name, cfn);
       }
@@ -6485,16 +6485,16 @@ static int add_modify_config(sge_gdi_ctx_class_t *ctx, const char *cfn, const ch
       }
 
       fields_out[0] = NoName;
-      ep = spool_flatfile_read_object(&alp, CONF_Type, NULL,
+      ep = spool_flatfile_read_object(&alp, CONF_Type, nullptr,
                                       fields, fields_out, false, &qconf_sfi,
-                                      SP_FORM_ASCII, NULL, tmpname);
+                                      SP_FORM_ASCII, nullptr, tmpname);
 
       if (answer_list_output(&alp)) {
          lFreeElem(&ep);
          failed = true;
       }
 
-      if (ep != NULL) {
+      if (ep != nullptr) {
          missing_field = spool_get_unprocessed_field(fields, fields_out, &alp);
       }
 
@@ -6506,12 +6506,12 @@ static int add_modify_config(sge_gdi_ctx_class_t *ctx, const char *cfn, const ch
          failed = true;
       }
 
-      /* If the configuration is legitematly NULL, create an empty object. */
-      if (!failed && (ep == NULL)) {
+      /* If the configuration is legitematly nullptr, create an empty object. */
+      if (!failed && (ep == nullptr)) {
          ep = lCreateElem(CONF_Type);
       }
 
-      if (ep != NULL) {
+      if (ep != nullptr) {
          lSetHost(ep, CONF_name, cfn);
       } else {
          fprintf(stderr, "%s\n", MSG_ANSWER_ERRORREADINGTEMPFILE);
@@ -6527,15 +6527,15 @@ static int add_modify_config(sge_gdi_ctx_class_t *ctx, const char *cfn, const ch
 
       fields_out[0] = NoName;
       fields = sge_build_CONF_field_list(false);
-      ep = spool_flatfile_read_object(&alp, CONF_Type, NULL,
+      ep = spool_flatfile_read_object(&alp, CONF_Type, nullptr,
                                       fields, fields_out, false, &qconf_sfi,
-                                      SP_FORM_ASCII, NULL, filename);
+                                      SP_FORM_ASCII, nullptr, filename);
 
       if (answer_list_output(&alp)) {
          lFreeElem(&ep);
       }
 
-      if (ep != NULL) {
+      if (ep != nullptr) {
          missing_field = spool_get_unprocessed_field(fields, fields_out, &alp);
       }
 
@@ -6546,7 +6546,7 @@ static int add_modify_config(sge_gdi_ctx_class_t *ctx, const char *cfn, const ch
          answer_list_output(&alp);
       }
 
-      if (ep != NULL) {
+      if (ep != nullptr) {
          lSetHost(ep, CONF_name, cfn);
       }
 
@@ -6561,7 +6561,7 @@ static int add_modify_config(sge_gdi_ctx_class_t *ctx, const char *cfn, const ch
    lp = lCreateList("modified configuration", CONF_Type); 
    lAppendElem(lp, ep);
 
-   alp = ctx->gdi(ctx, SGE_CONF_LIST, SGE_GDI_MOD, &lp, NULL, NULL);
+   alp = ctx->gdi(ctx, SGE_CONF_LIST, SGE_GDI_MOD, &lp, nullptr, nullptr);
    lFreeList(&lp);
 
    /* report results */
@@ -6591,7 +6591,7 @@ static int add_modify_config(sge_gdi_ctx_class_t *ctx, const char *cfn, const ch
 static int qconf_is_manager(sge_gdi_ctx_class_t *ctx, const char *user)
 {
    int perm_return;
-   lList *alp = NULL;
+   lList *alp = nullptr;
 
    DENTER(TOP_LAYER);
 
@@ -6603,9 +6603,9 @@ static int qconf_is_manager(sge_gdi_ctx_class_t *ctx, const char *user)
    perm_return = sge_gdi2_check_permission(ctx, &alp, MANAGER_CHECK);
    if (perm_return == true) {
      /* user is manager */
-     if (alp != NULL) {
+     if (alp != nullptr) {
         lFreeList(&alp);
-        alp = NULL;
+        alp = nullptr;
      }
      DRETURN(1);
    }
@@ -6615,7 +6615,7 @@ static int qconf_is_manager(sge_gdi_ctx_class_t *ctx, const char *user)
    */
    if (perm_return == -10 ) {
       /* fills SGE_EVENT with diagnosis information */
-      if (alp != NULL) {
+      if (alp != nullptr) {
          lListElem *aep;
          if (lGetUlong(aep = lFirstRW(alp), AN_status) != STATUS_OK) {
             fprintf(stderr, "%s\n", lGetString(aep, AN_text));
@@ -6626,9 +6626,9 @@ static int qconf_is_manager(sge_gdi_ctx_class_t *ctx, const char *user)
       fprintf(stderr, "\n");
    }
 
-   if (alp != NULL) {
+   if (alp != nullptr) {
       lFreeList(&alp);
-      alp = NULL;
+      alp = nullptr;
    }
 
    SGE_EXIT((void **)&ctx, 1);
@@ -6652,12 +6652,12 @@ static int qconf_is_manager(sge_gdi_ctx_class_t *ctx, const char *user)
 */
 static int qconf_is_adminhost(sge_gdi_ctx_class_t *ctx, const char *host)
 {
-   lCondition *where = NULL;
-   lEnumeration *what = NULL;
-   lList *alp = NULL;
-   lListElem *aep = NULL;
-   lList *lp = NULL;
-   lListElem  *ep = NULL;
+   lCondition *where = nullptr;
+   lEnumeration *what = nullptr;
+   lList *alp = nullptr;
+   lListElem *aep = nullptr;
+   lList *lp = nullptr;
+   lListElem  *ep = nullptr;
 
    DENTER(TOP_LAYER);
 
@@ -6758,9 +6758,9 @@ static int qconf_modify_attribute(sge_gdi_ctx_class_t *ctx,
                                   struct object_info_entry *info_entry) 
 {
    int fields[150];
-   lListElem *add_qp = NULL;
-   lList *qlp = NULL;
-   lEnumeration *what = NULL;
+   lListElem *add_qp = nullptr;
+   lList *qlp = nullptr;
+   lEnumeration *what = nullptr;
    
    DENTER(TOP_LAYER);    
 
@@ -6778,23 +6778,23 @@ static int qconf_modify_attribute(sge_gdi_ctx_class_t *ctx,
       }                
       DTRACE;
       *epp = spool_flatfile_read_object(alpp, info_entry->cull_descriptor,
-                                        NULL, info_entry->fields, fields,
+                                        nullptr, info_entry->fields, fields,
                                         true, info_entry->instr, SP_FORM_ASCII,
-                                        NULL, **spp);
+                                        nullptr, **spp);
             
       if (answer_list_output(alpp)) {
          DRETURN(1);
       }
-      if (*epp == NULL){
+      if (*epp == nullptr){
          SGE_ADD_MSG_ID(sprintf(SGE_EVENT, SFNMAX, MSG_FILE_ERRORREADINGINFILE));
          answer_list_add(alpp, SGE_EVENT, STATUS_ESYNTAX, ANSWER_QUALITY_ERROR);
          DRETURN(1);
       }
       DTRACE;
    } else {
-      const char *name = NULL;
-      const char *value = NULL;
-      const char *filename = NULL;
+      const char *name = nullptr;
+      const char *value = nullptr;
+      const char *filename = nullptr;
       DSTRING_STATIC(delim, 100);
 
       /* attribute name to be [admr] for info_entry obj */
@@ -6811,12 +6811,12 @@ static int qconf_modify_attribute(sge_gdi_ctx_class_t *ctx,
       {
          dstring write_attr_tmp_file_error = DSTRING_INIT;
          filename = write_attr_tmp_file(name, value, sge_dstring_get_string(&delim), &write_attr_tmp_file_error);
-         if (filename == NULL && sge_dstring_get_string(&write_attr_tmp_file_error) != NULL) {
+         if (filename == nullptr && sge_dstring_get_string(&write_attr_tmp_file_error) != nullptr) {
             answer_list_add_sprintf(alpp, STATUS_EDISK, ANSWER_QUALITY_ERROR, sge_dstring_get_string(&write_attr_tmp_file_error));
          } else {
-            *epp = spool_flatfile_read_object(alpp, info_entry->cull_descriptor, NULL,
+            *epp = spool_flatfile_read_object(alpp, info_entry->cull_descriptor, nullptr,
                                       info_entry->fields, fields, true, info_entry->instr,
-                                      SP_FORM_ASCII, NULL, filename);
+                                      SP_FORM_ASCII, nullptr, filename);
             unlink(filename);
             sge_free(&filename);
          }
@@ -6830,7 +6830,7 @@ static int qconf_modify_attribute(sge_gdi_ctx_class_t *ctx,
        * list and replace the error messages with ones that will make better
        * sense. */
       if (answer_list_has_error(alpp)) {
-         lListElem *aep = NULL;
+         lListElem *aep = nullptr;
          
          for_each_rw(aep, *alpp) {
             if (answer_has_quality(aep, ANSWER_QUALITY_ERROR) &&
@@ -6923,7 +6923,7 @@ static int qconf_modify_attribute(sge_gdi_ctx_class_t *ctx,
    if (SGE_GDI_IS_SUBCOMMAND_SET(sub_command, SGE_GDI_CHANGE) && (lGetType((*epp)->descr, fields[0]) == lListT)) {
       lList *lp = lGetListRW(*epp, fields[0]);
       
-      if (lp == NULL || lGetNumberOfElem(lp) == 0) {
+      if (lp == nullptr || lGetNumberOfElem(lp) == 0) {
          SGE_ADD_MSG_ID(sprintf(SGE_EVENT, SFNMAX, MSG_QCONF_CANT_MODIFY_NONE));
          answer_list_add(alpp, SGE_EVENT, STATUS_ESYNTAX, ANSWER_QUALITY_ERROR);
          lFreeElem(epp);
@@ -6936,12 +6936,12 @@ static int qconf_modify_attribute(sge_gdi_ctx_class_t *ctx,
          int count = 1;
          int nm = 0;
 
-         /* Look for the list and see if it's NULL.  These should all be very
+         /* Look for the list and see if it's nullptr.  These should all be very
           * simple CULL structures which should only contain an lHostT and an
           * lListT. */
          for (nm = ep->descr[0].nm; nm != NoName; nm = ep->descr[count++].nm) {            
             if (lGetType(ep->descr, nm) == lListT) {
-               if (lGetList(ep, nm) == NULL) {
+               if (lGetList(ep, nm) == nullptr) {
                   SGE_ADD_MSG_ID(sprintf(SGE_EVENT, SFNMAX, MSG_QCONF_CANT_MODIFY_NONE));
                   answer_list_add(alpp, SGE_EVENT, STATUS_ESYNTAX, ANSWER_QUALITY_ERROR);
                   lFreeElem(epp);
@@ -6954,10 +6954,10 @@ static int qconf_modify_attribute(sge_gdi_ctx_class_t *ctx,
       }
    }
    
-   if (info_entry->pre_gdi_function == NULL || 
+   if (info_entry->pre_gdi_function == nullptr ||
       info_entry->pre_gdi_function(qlp, alpp)) {
       *alpp = ctx->gdi(ctx, info_entry->target, SGE_GDI_MOD | sub_command, &qlp, 
-                      NULL, what);
+                      nullptr, what);
    }
    lFreeElem(epp);
    lFreeWhat(&what);
@@ -6971,21 +6971,21 @@ static const char *write_attr_tmp_file(const char *name, const char *value,
                                        const char *delimiter, dstring *error_message)
 {
    char *filename = sge_malloc(sizeof(char) * SGE_PATH_MAX);
-   FILE *fp = NULL;
+   FILE *fp = nullptr;
    int my_errno;
    DENTER(TOP_LAYER);
 
-   if (sge_tmpnam(filename, error_message) == NULL) {
-      DRETURN(NULL);
+   if (sge_tmpnam(filename, error_message) == nullptr) {
+      DRETURN(nullptr);
    }
 
    errno = 0;
    fp = fopen(filename, "w");
    my_errno = errno;
 
-   if (fp == NULL) {
+   if (fp == nullptr) {
       sge_dstring_sprintf(error_message, MSG_ERROROPENINGFILEFORWRITING_SS, filename, strerror(my_errno));
-      DRETURN(NULL);
+      DRETURN(nullptr);
    }
    
    fprintf(fp, "%s", name);
@@ -6996,5 +6996,5 @@ static const char *write_attr_tmp_file(const char *name, const char *value,
    
    DRETURN((const char *)filename);
 FCLOSE_ERROR:
-   DRETURN(NULL);
+   DRETURN(nullptr);
 }

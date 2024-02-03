@@ -98,13 +98,13 @@ static void free_all_lists(lList **ql, lList **jl, lList **cl, lList **ehl, lLis
 int do_qhost(sge_gdi_ctx_class_t *ctx, lList *host_list, lList *user_list, lList *resource_match_list, 
               lList *resource_list, u_long32 show, lList **alpp, qhost_report_handler_t* report_handler) {
 
-   lList *cl = NULL;
-   lList *ehl = NULL;
-   lList *ql = NULL;
-   lList *jl = NULL;
-   lList *pel = NULL;
+   lList *cl = nullptr;
+   lList *ehl = nullptr;
+   lList *ql = nullptr;
+   lList *jl = nullptr;
+   lList *pel = nullptr;
    lListElem *ep;
-   lCondition *where = NULL;
+   lCondition *where = nullptr;
    bool have_lists = true;
    int print_header = 1;
    int ret = QHOST_SUCCESS;
@@ -142,7 +142,7 @@ int do_qhost(sge_gdi_ctx_class_t *ctx, lList *host_list, lList *user_list, lList
    */
    if (lGetNumberOfElem(resource_match_list)) {
       int selected;
-      lListElem *global = NULL;
+      lListElem *global = nullptr;
 
       if (centry_list_fill_request(resource_match_list, alpp, cl, true, true, false)) {
          /* TODO: error message gets written by centry_list_fill_request into SGE_EVENT */
@@ -151,7 +151,7 @@ int do_qhost(sge_gdi_ctx_class_t *ctx, lList *host_list, lList *user_list, lList
       }
 
       {/* clean host list */
-         lListElem *host = NULL;
+         lListElem *host = nullptr;
          for_each_rw(host, ehl) {
             lSetUlong(host, EH_tagged, 0);
          }
@@ -159,13 +159,13 @@ int do_qhost(sge_gdi_ctx_class_t *ctx, lList *host_list, lList *user_list, lList
 
       /* prepare request */
       global = lGetElemHostRW(ehl, EH_name, "global");
-      selected = sge_select_queue(resource_match_list, NULL, global, ehl, cl, true, -1, NULL, NULL, NULL);
+      selected = sge_select_queue(resource_match_list, nullptr, global, ehl, cl, true, -1, nullptr, nullptr, nullptr);
       if (selected) {
          for_each_rw(ep, ehl) {
             lSetUlong(ep, EH_tagged, 1);
          }
       } else {
-        lListElem *tmp_resource_list = NULL;
+        lListElem *tmp_resource_list = nullptr;
         /* if there is hostname request, remove it as we cannot match hostname in
          * sge_select_queue
          * we'll process this tmp_resource_list separately!!
@@ -181,12 +181,12 @@ int do_qhost(sge_gdi_ctx_class_t *ctx, lList *host_list, lList *user_list, lList
 
             DPRINTF(("matching host %s with qhost -l\n", lGetHost(ep, EH_name)));
 
-            selected = sge_select_queue(resource_match_list, NULL, ep, ehl, cl,
-                                        true, -1, NULL, NULL, NULL);
+            selected = sge_select_queue(resource_match_list, nullptr, ep, ehl, cl,
+                                        true, -1, nullptr, nullptr, nullptr);
             if(selected) { /* found other matching attribs */
                lSetUlong(ep, EH_tagged, 1);
                /* check for hostname match if there was a hostname match request */
-               if (tmp_resource_list != NULL) {
+               if (tmp_resource_list != nullptr) {
                   if (sge_hostcmp(lGetString(tmp_resource_list, CE_stringval), lGetHost(ep, EH_name)) != 0 ) {
                      DPRINTF(("NOT matched hostname %s with qhost -l\n", lGetHost(ep, EH_name)));
                      lSetUlong(ep, EH_tagged, 0);
@@ -196,7 +196,7 @@ int do_qhost(sge_gdi_ctx_class_t *ctx, lList *host_list, lList *user_list, lList
                lSetUlong(ep, EH_tagged, 0);
             }
          }
-         if (tmp_resource_list != NULL) {
+         if (tmp_resource_list != nullptr) {
             lFreeElem(&tmp_resource_list);
          }
       }
@@ -205,7 +205,7 @@ int do_qhost(sge_gdi_ctx_class_t *ctx, lList *host_list, lList *user_list, lList
       ** reduce the hostlist, only the tagged ones survive
       */
       where = lWhere("%T(%I == %u)", EH_Type, EH_tagged, 1);
-      lSplit(&ehl, NULL, NULL, where);
+      lSplit(&ehl, nullptr, nullptr, where);
       lFreeWhere(&where);
    }
 
@@ -216,18 +216,18 @@ int do_qhost(sge_gdi_ctx_class_t *ctx, lList *host_list, lList *user_list, lList
 
    /* SGE_GLOBAL_NAME should be printed at first */
    lPSortList(ehl, "%I+", EH_name);
-   ep = NULL;
+   ep = nullptr;
    where = lWhere("%T(%I == %s)", EH_Type, EH_name, SGE_GLOBAL_NAME );
    ep = lDechainElem(ehl, lFindFirstRW(ehl, where));
    lFreeWhere(&where);
    if (ep) {
-      lInsertElem(ehl, NULL, ep); 
+      lInsertElem(ehl, nullptr, ep);
    }
    
    /*
    ** output handling
    */
-   if (report_handler != NULL) {
+   if (report_handler != nullptr) {
       ret = report_handler->report_started(report_handler, alpp);
       if (ret != QHOST_SUCCESS) {
          free_all_lists(&ql, &jl, &cl, &ehl, &pel);
@@ -240,7 +240,7 @@ int do_qhost(sge_gdi_ctx_class_t *ctx, lList *host_list, lList *user_list, lList
          DRETURN(QHOST_ERROR);
       }
 
-      if (report_handler == NULL ) {
+      if (report_handler == nullptr ) {
          if (print_header) {
             print_header = 0;
             if (show_binding) {
@@ -266,12 +266,12 @@ int do_qhost(sge_gdi_ctx_class_t *ctx, lList *host_list, lList *user_list, lList
       }
       sge_print_host(ctx, ep, cl, report_handler, alpp, show);
       sge_print_resources(ehl, cl, resource_list, ep, show, report_handler, alpp);
-      ret = sge_print_queues(ql, ep, jl, NULL, ehl, cl, pel, show, report_handler, alpp);
+      ret = sge_print_queues(ql, ep, jl, nullptr, ehl, cl, pel, show, report_handler, alpp);
       if (ret != QHOST_SUCCESS) {
          break;
       }
       
-      if (report_handler != NULL) {
+      if (report_handler != nullptr) {
          DPRINTF(("report host_finished: %s\n", lGetHost(ep, EH_name)));
          ret = report_handler->report_host_finished(report_handler, lGetHost(ep, EH_name), alpp);
          if (ret != QHOST_SUCCESS) {
@@ -279,7 +279,7 @@ int do_qhost(sge_gdi_ctx_class_t *ctx, lList *host_list, lList *user_list, lList
          }
       }
    }   
-   if (report_handler != NULL) {
+   if (report_handler != nullptr) {
       ret = report_handler->report_finished(report_handler, alpp);
    }
 
@@ -319,7 +319,7 @@ sge_print_host(sge_gdi_ctx_class_t *gdi_ctx, lListElem *hep, lList *centry_list,
    /*
    ** arch
    */
-   lep=get_attribute_by_name(NULL, hep, NULL, LOAD_ATTR_ARCH, centry_list, DISPATCH_TIME_NOW, 0);
+   lep=get_attribute_by_name(nullptr, hep, nullptr, LOAD_ATTR_ARCH, centry_list, DISPATCH_TIME_NOW, 0);
    if (lep) {
       sge_strlcpy(arch_string, sge_get_dominant_stringval(lep, &dominant, &rs), 
                sizeof(arch_string)); 
@@ -332,7 +332,7 @@ sge_print_host(sge_gdi_ctx_class_t *gdi_ctx, lListElem *hep, lList *centry_list,
    /*
    ** num_proc
    */
-   lep=get_attribute_by_name(NULL, hep, NULL, "num_proc", centry_list, DISPATCH_TIME_NOW, 0);
+   lep=get_attribute_by_name(nullptr, hep, nullptr, "num_proc", centry_list, DISPATCH_TIME_NOW, 0);
    if (lep) {
       sge_strlcpy(num_proc, sge_get_dominant_stringval(lep, &dominant, &rs),
                sizeof(num_proc)); 
@@ -346,7 +346,7 @@ sge_print_host(sge_gdi_ctx_class_t *gdi_ctx, lListElem *hep, lList *centry_list,
       /*
       ** nsoc (sockets)
       */
-      lep=get_attribute_by_name(NULL, hep, NULL, "m_socket", centry_list, DISPATCH_TIME_NOW, 0);
+      lep=get_attribute_by_name(nullptr, hep, nullptr, "m_socket", centry_list, DISPATCH_TIME_NOW, 0);
       if (lep) {
          sge_strlcpy(socket, sge_get_dominant_stringval(lep, &dominant, &rs),
                   sizeof(socket));
@@ -359,7 +359,7 @@ sge_print_host(sge_gdi_ctx_class_t *gdi_ctx, lListElem *hep, lList *centry_list,
       /*
       ** nthr (threads)
       */
-      lep=get_attribute_by_name(NULL, hep, NULL, "m_thread", centry_list, DISPATCH_TIME_NOW, 0);
+      lep=get_attribute_by_name(nullptr, hep, nullptr, "m_thread", centry_list, DISPATCH_TIME_NOW, 0);
       if (lep) {
          sge_strlcpy(thread, sge_get_dominant_stringval(lep, &dominant, &rs),
                   sizeof(thread));
@@ -373,7 +373,7 @@ sge_print_host(sge_gdi_ctx_class_t *gdi_ctx, lListElem *hep, lList *centry_list,
       /*
       ** ncor (cores)
       */
-      lep=get_attribute_by_name(NULL, hep, NULL, "m_core", centry_list, DISPATCH_TIME_NOW, 0);
+      lep=get_attribute_by_name(nullptr, hep, nullptr, "m_core", centry_list, DISPATCH_TIME_NOW, 0);
       if (lep) {
          sge_strlcpy(core, sge_get_dominant_stringval(lep, &dominant, &rs),
                   sizeof(core)); 
@@ -387,7 +387,7 @@ sge_print_host(sge_gdi_ctx_class_t *gdi_ctx, lListElem *hep, lList *centry_list,
    /*
    ** load_avg
    */
-   lep=get_attribute_by_name(NULL, hep, NULL, "load_avg", centry_list, DISPATCH_TIME_NOW, 0);
+   lep=get_attribute_by_name(nullptr, hep, nullptr, "load_avg", centry_list, DISPATCH_TIME_NOW, 0);
    if (lep) {
       reformatDoubleValue(load_avg, "%.2f%c", sge_get_dominant_stringval(lep, &dominant, &rs));
       sge_dstring_clear(&rs);
@@ -399,7 +399,7 @@ sge_print_host(sge_gdi_ctx_class_t *gdi_ctx, lListElem *hep, lList *centry_list,
    /*
    ** mem_total
    */
-   lep=get_attribute_by_name(NULL, hep, NULL, "mem_total", centry_list, DISPATCH_TIME_NOW, 0);
+   lep=get_attribute_by_name(nullptr, hep, nullptr, "mem_total", centry_list, DISPATCH_TIME_NOW, 0);
    if (lep) {
       reformatDoubleValue(mem_total, "%.1f%c", sge_get_dominant_stringval(lep, &dominant, &rs));
       sge_dstring_clear(&rs);
@@ -411,7 +411,7 @@ sge_print_host(sge_gdi_ctx_class_t *gdi_ctx, lListElem *hep, lList *centry_list,
    /*
    ** mem_used
    */
-   lep=get_attribute_by_name(NULL, hep, NULL, "mem_used", centry_list, DISPATCH_TIME_NOW, 0);
+   lep=get_attribute_by_name(nullptr, hep, nullptr, "mem_used", centry_list, DISPATCH_TIME_NOW, 0);
    if (lep) {
       reformatDoubleValue(mem_used, "%.1f%c", sge_get_dominant_stringval(lep, &dominant, &rs));
       sge_dstring_clear(&rs);
@@ -423,7 +423,7 @@ sge_print_host(sge_gdi_ctx_class_t *gdi_ctx, lListElem *hep, lList *centry_list,
    /*
    ** swap_total
    */
-   lep=get_attribute_by_name(NULL, hep, NULL, "swap_total", centry_list, DISPATCH_TIME_NOW, 0);
+   lep=get_attribute_by_name(nullptr, hep, nullptr, "swap_total", centry_list, DISPATCH_TIME_NOW, 0);
    if (lep) {
       reformatDoubleValue(swap_total, "%.1f%c", sge_get_dominant_stringval(lep, &dominant, &rs));
       sge_dstring_clear(&rs);
@@ -435,7 +435,7 @@ sge_print_host(sge_gdi_ctx_class_t *gdi_ctx, lListElem *hep, lList *centry_list,
    /*
    ** swap_used
    */
-   lep=get_attribute_by_name(NULL, hep, NULL, "swap_used", centry_list, DISPATCH_TIME_NOW, 0);
+   lep=get_attribute_by_name(nullptr, hep, nullptr, "swap_used", centry_list, DISPATCH_TIME_NOW, 0);
    if (lep) {
       reformatDoubleValue(swap_used, "%.1f%c", sge_get_dominant_stringval(lep, &dominant, &rs));
       sge_dstring_clear(&rs);
@@ -540,7 +540,7 @@ lList **alpp
          const char *qname = lGetString(qep, QU_qname);
          
          if (show & QHOST_DISPLAY_QUEUES) {
-            if (report_handler == NULL) {
+            if (report_handler == nullptr) {
                /*
                ** Header/indent
                */
@@ -562,7 +562,7 @@ lList **alpp
                dstring type_string = DSTRING_INIT;
 
                qinstance_print_qtype_to_dstring(qep, &type_string, true);
-               if (report_handler == NULL) {
+               if (report_handler == nullptr) {
                   printf("%-5.5s ", sge_dstring_get_string(&type_string));
                } else {
                   ret = report_handler->report_queue_string_value(report_handler,
@@ -581,7 +581,7 @@ lList **alpp
             /* 
             ** number of used/free slots 
             */
-            if (report_handler == NULL) {
+            if (report_handler == nullptr) {
                sprintf(buf, sge_uu32"/%d/"sge_uu32" ",
                        qinstance_slots_reserved(qep),
                        qinstance_slots_used(qep),
@@ -618,18 +618,18 @@ lList **alpp
             */
             load_thresholds = lGetList(qep, QU_load_thresholds);
             suspend_thresholds = lGetList(qep, QU_suspend_thresholds);
-            if (sge_load_alarm(NULL, qep, load_thresholds, ehl, cl, NULL, true)) {
+            if (sge_load_alarm(nullptr, qep, load_thresholds, ehl, cl, nullptr, true)) {
                qinstance_state_set_alarm(qep, true);
             }
-            parse_ulong_val(NULL, &interval, TYPE_TIM, lGetString(qep, QU_suspend_interval), NULL, 0);
-            if (lGetUlong(qep, QU_nsuspend) != 0 && interval != 0 && sge_load_alarm(NULL, qep, suspend_thresholds, ehl, cl, NULL, false)) {
+            parse_ulong_val(nullptr, &interval, TYPE_TIM, lGetString(qep, QU_suspend_interval), nullptr, 0);
+            if (lGetUlong(qep, QU_nsuspend) != 0 && interval != 0 && sge_load_alarm(nullptr, qep, suspend_thresholds, ehl, cl, nullptr, false)) {
                qinstance_state_set_suspend_alarm(qep, true);
             }
             {
                dstring state_string = DSTRING_INIT;
 
                qinstance_state_append_to_dstring(qep, &state_string);
-               if (report_handler == NULL) {
+               if (report_handler == nullptr) {
                   printf("%s", sge_dstring_get_string(&state_string));
                } else {
                   ret = report_handler->report_queue_string_value(report_handler,
@@ -647,7 +647,7 @@ lList **alpp
             /*
             ** newline
             */
-            if (report_handler == NULL) {
+            if (report_handler == nullptr) {
                printf("\n");
             } else {
                ret = report_handler->report_queue_finished(report_handler, qname, alpp);
@@ -689,7 +689,7 @@ u_long32 show,
 qhost_report_handler_t* report_handler,
 lList **alpp
 ) {
-   lList *rlp = NULL;
+   lList *rlp = nullptr;
    lListElem *rep;
    char dom[5];
    dstring resource_string = DSTRING_INIT;
@@ -707,7 +707,7 @@ lList **alpp
    for_each_rw(rep , rlp) {
       u_long32 type = lGetUlong(rep, CE_valtype);
 
-      if (resl != NULL) {
+      if (resl != nullptr) {
          lListElem *r1;
          int found = 0;
          for_each_rw (r1, resl) {
@@ -716,7 +716,7 @@ lList **alpp
                found = 1;
                if (first) {
                   first = 0;
-                  if (report_handler == NULL ) {
+                  if (report_handler == nullptr ) {
                      printf("    Host Resource(s):   ");
                   }
                }
@@ -797,7 +797,7 @@ lList **alpp
          case TYPE_BOO:  
          case TYPE_DOUBLE:  
          default:
-            if (report_handler == NULL) {
+            if (report_handler == nullptr) {
                printf("   ");
                printf("%s:%s=%s\n", dom, lGetString(rep, CE_name), s);
             } else {
@@ -825,7 +825,7 @@ static int reformatDoubleValue(char *result, const char *format, const char *old
 
    DENTER(TOP_LAYER);
 
-   if (parse_ulong_val(&dval, NULL, TYPE_MEM, oldmem, NULL, 0)) {
+   if (parse_ulong_val(&dval, nullptr, TYPE_MEM, oldmem, nullptr, 0)) {
       if (dval==DBL_MAX) {
          strcpy(result, "infinity");
       } else {
@@ -872,13 +872,13 @@ lList *hostref_list,
 lList *user_list,
 u_long32 show
 ) {
-   lCondition *where= NULL, *nw = NULL, *jw = NULL, *gc_where;
-   lEnumeration *q_all = NULL, *j_all = NULL, *ce_all = NULL, 
-                *eh_all = NULL, *pe_all = NULL, *gc_what;
-   lListElem *ep = NULL;
-   lListElem *jatep = NULL;
-   lList *mal = NULL;
-   lList *conf_l = NULL;
+   lCondition *where= nullptr, *nw = nullptr, *jw = nullptr, *gc_where;
+   lEnumeration *q_all = nullptr, *j_all = nullptr, *ce_all = nullptr,
+                *eh_all = nullptr, *pe_all = nullptr, *gc_what;
+   lListElem *ep = nullptr;
+   lListElem *jatep = nullptr;
+   lList *mal = nullptr;
+   lList *conf_l = nullptr;
    int q_id = 0, j_id = 0, ce_id, eh_id, pe_id, gc_id;
    state_gdi_multi state = STATE_GDI_MULTI_INIT;
    const char *cell_root = bootstrap_get_cell_root();
@@ -899,7 +899,7 @@ u_long32 show
          where = lOrWhere(where, nw);
    }
    /* the global host has to be retrieved as well */
-   if (where != NULL) {
+   if (where != nullptr) {
       nw = lWhere("%T(%I == %s)", EH_Type, EH_name, SGE_GLOBAL_NAME);
       where = lOrWhere(where, nw);
    }
@@ -913,7 +913,7 @@ u_long32 show
    
    eh_id = ctx->gdi_multi(ctx,
                           answer_list, SGE_GDI_RECORD, SGE_EH_LIST, SGE_GDI_GET, 
-                          NULL, where, eh_all, &state, true);
+                          nullptr, where, eh_all, &state, true);
    lFreeWhat(&eh_all);
    lFreeWhere(&where);
 
@@ -926,7 +926,7 @@ u_long32 show
       
       q_id = ctx->gdi_multi(ctx, 
                             answer_list, SGE_GDI_RECORD, SGE_CQ_LIST, SGE_GDI_GET, 
-                            NULL, NULL, q_all, &state, true);
+                            nullptr, nullptr, q_all, &state, true);
       lFreeWhat(&q_all);
 
       if (answer_list_has_error(answer_list)) {
@@ -996,7 +996,7 @@ u_long32 show
 
       j_id = ctx->gdi_multi(ctx, 
                          answer_list, SGE_GDI_RECORD, SGE_JB_LIST, SGE_GDI_GET, 
-                         NULL, jw, j_all, &state, true);
+                         nullptr, jw, j_all, &state, true);
       lFreeWhat(&j_all);
       lFreeWhere(&jw);
 
@@ -1011,7 +1011,7 @@ u_long32 show
    ce_all = lWhat("%T(ALL)", CE_Type);
    ce_id = ctx->gdi_multi(ctx, 
                           answer_list, SGE_GDI_RECORD, SGE_CE_LIST, SGE_GDI_GET, 
-                          NULL, NULL, ce_all, &state, true);
+                          nullptr, nullptr, ce_all, &state, true);
    lFreeWhat(&ce_all);
 
    if (answer_list_has_error(answer_list)) {
@@ -1025,7 +1025,7 @@ u_long32 show
    
    pe_id = ctx->gdi_multi(ctx, 
                           answer_list, SGE_GDI_RECORD, SGE_PE_LIST, SGE_GDI_GET, 
-                          NULL, NULL, pe_all, &state, true);
+                          nullptr, nullptr, pe_all, &state, true);
    lFreeWhat(&pe_all);
 
    if (answer_list_has_error(answer_list)) {
@@ -1040,7 +1040,7 @@ u_long32 show
    
    gc_id = ctx->gdi_multi(ctx, 
                           answer_list, SGE_GDI_SEND, SGE_CONF_LIST, SGE_GDI_GET,
-                          NULL, gc_where, gc_what, &state, true);
+                          nullptr, gc_where, gc_what, &state, true);
    ctx->gdi_wait(ctx, answer_list, &mal, &state);
    lFreeWhat(&gc_what);
    lFreeWhere(&gc_where);
@@ -1073,7 +1073,7 @@ u_long32 show
 
    /* --- job */
    if (job_l && (show & QHOST_DISPLAY_JOBS)) {
-      lListElem *ep = NULL;
+      lListElem *ep = nullptr;
       sge_gdi_extract_answer(answer_list, SGE_GDI_GET, SGE_JB_LIST, j_id,
                                     mal, job_l);
       if (answer_list_has_error(answer_list)) {
@@ -1115,8 +1115,8 @@ u_long32 show
       DRETURN(false);
    }
    if (lFirst(conf_l)) {
-      lListElem *local = NULL;
-      merge_configuration(NULL, progid, cell_root, lFirstRW(conf_l), local, NULL);
+      lListElem *local = nullptr;
+      merge_configuration(nullptr, progid, cell_root, lFirstRW(conf_l), local, nullptr);
    }
    
    lFreeList(&conf_l);

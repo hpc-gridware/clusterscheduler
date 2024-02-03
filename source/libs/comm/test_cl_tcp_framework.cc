@@ -66,8 +66,8 @@ extern int main(int argc, char **argv) {
    int nr = 0;
 
    cl_thread_settings_t *dummy_thread_p;
-   cl_raw_list_t *thread_list = NULL;
-   cl_raw_list_t *log_list = NULL;
+   cl_raw_list_t *thread_list = nullptr;
+   cl_raw_list_t *log_list = nullptr;
 
    strcpy(help, "");
 #if 0
@@ -86,10 +86,10 @@ extern int main(int argc, char **argv) {
    memset(&sa, 0, sizeof(sa));
    sa.sa_handler = sighandler;  /* one handler for all signals */
    sigemptyset(&sa.sa_mask);
-   sigaction(SIGINT, &sa, NULL);
-   sigaction(SIGTERM, &sa, NULL);
-   sigaction(SIGHUP, &sa, NULL);
-   sigaction(SIGPIPE, &sa, NULL);
+   sigaction(SIGINT, &sa, nullptr);
+   sigaction(SIGTERM, &sa, nullptr);
+   sigaction(SIGHUP, &sa, nullptr);
+   sigaction(SIGPIPE, &sa, nullptr);
 
 
    if (argc != 2) {
@@ -103,7 +103,7 @@ extern int main(int argc, char **argv) {
 
 #if 1
    /* setup log list and log level*/
-   cl_log_list_setup(&log_list, "main()", 0, CL_LOG_IMMEDIATE, NULL);
+   cl_log_list_setup(&log_list, "main()", 0, CL_LOG_IMMEDIATE, nullptr);
    cl_log_list_set_log_level(log_list, CL_LOG_WARNING);
 #endif
 
@@ -118,14 +118,14 @@ extern int main(int argc, char **argv) {
 
       printf("debug4\n");
 
-      cl_thread_list_create_thread(thread_list, &dummy_thread_p, log_list, "client1", 2, client_thread, NULL, NULL);
+      cl_thread_list_create_thread(thread_list, &dummy_thread_p, log_list, "client1", 2, client_thread, nullptr, nullptr);
       printf("debug5\n");
 
    }
    printf("debug6\n");
 
    if (strcmp(argv[1], "server") == 0 || strcmp(argv[1], "both") == 0) {
-      cl_thread_list_create_thread(thread_list, &dummy_thread_p, log_list, "server", 1, server_thread, NULL, NULL);
+      cl_thread_list_create_thread(thread_list, &dummy_thread_p, log_list, "server", 1, server_thread, nullptr, nullptr);
    }
 #if 0
    cl_thread_list_create_thread(thread_list, log_list, "client2", 3, client_thread );
@@ -135,7 +135,7 @@ extern int main(int argc, char **argv) {
 
 
    while (do_shutdown == 0) {
-      cl_thread_settings_t *thread_p = NULL;
+      cl_thread_settings_t *thread_p = nullptr;
       CL_LOG(CL_LOG_INFO, "still alive ...");
 
 
@@ -163,7 +163,7 @@ extern int main(int argc, char **argv) {
    }
    nr = 1;
    CL_LOG(CL_LOG_INFO, "shutdown ...");
-   while (cl_thread_list_get_first_thread(thread_list) != NULL) {
+   while (cl_thread_list_get_first_thread(thread_list) != nullptr) {
       cl_thread_list_delete_thread_by_id(thread_list, nr);
       nr++;
    }
@@ -211,7 +211,7 @@ void server_cleanup_conlist(cl_raw_list_t **connection_list) {
    cl_com_handle_t handle;
    CL_LOG(CL_LOG_INFO, "start");
    if (connection_list && *connection_list) {
-      cl_connection_list_elem_t *con_elem = NULL;
+      cl_connection_list_elem_t *con_elem = nullptr;
       cl_raw_list_lock(*connection_list);
       con_elem = cl_connection_list_get_first_elem(*connection_list);
       while (con_elem) {
@@ -254,11 +254,11 @@ void *server_thread(void *t_conf) {
    struct timeval now;
    cl_com_handle_t handle;
    int ret_val, retval, do_exit = 0;
-   cl_com_connection_t *con = NULL;
-   cl_com_connection_t *new_con = NULL;
-   cl_raw_list_t *connection_list = NULL;
-   cl_com_endpoint_t *local_host = NULL;
-   char *local_hostname = NULL;
+   cl_com_connection_t *con = nullptr;
+   cl_com_connection_t *new_con = nullptr;
+   cl_raw_list_t *connection_list = nullptr;
+   cl_com_endpoint_t *local_host = nullptr;
+   char *local_hostname = nullptr;
    struct in_addr in_addr;
 
    /* get pointer to cl_thread_settings_t struct */
@@ -274,7 +274,7 @@ void *server_thread(void *t_conf) {
    /* setup thread */
    CL_LOG(CL_LOG_INFO, "starting initialization ...");
 
-   cl_com_gethostname(&local_hostname, &in_addr, NULL, NULL);
+   cl_com_gethostname(&local_hostname, &in_addr, nullptr, nullptr);
    local_host = cl_com_create_endpoint(local_hostname, "server", 1, &in_addr);
    sge_free(&local_hostname);
 
@@ -301,9 +301,9 @@ void *server_thread(void *t_conf) {
 
    while (do_exit == 0) {
       int pthread_cleanup_pop_execute = 0; /* workaround for irix compiler warning */
-      cl_connection_list_elem_t *con_elem = NULL;
+      cl_connection_list_elem_t *con_elem = nullptr;
 
-      cl_com_connection_t *connection = NULL;
+      cl_com_connection_t *connection = nullptr;
 
       pthread_cleanup_push((void (*)(void *)) server_cleanup, (void *) &con);
       pthread_cleanup_push((void (*)(void *)) server_cleanup_conlist, (void *) &connection_list);
@@ -313,13 +313,13 @@ void *server_thread(void *t_conf) {
 
       CL_LOG_INT(CL_LOG_INFO, "--> nr of connections: ", (int) cl_raw_list_get_elem_count(connection_list));
 
-      new_con = NULL;
+      new_con = nullptr;
       if (con->data_read_flag == CL_COM_DATA_READY) {
          retval = cl_com_connection_request_handler(con, &new_con);
       }
       CL_LOG_STR(CL_LOG_INFO, "cl_com_connection_request_handler() returned ", cl_get_error_text(retval));
 
-      if (retval == CL_RETVAL_OK && new_con != NULL) {
+      if (retval == CL_RETVAL_OK && new_con != nullptr) {
          CL_LOG(CL_LOG_INFO, "new connection!!!");
          while ((retval = cl_com_connection_complete_request(connection_list, con_elem,
                                                              CL_DEFINE_GET_CLIENT_CONNECTION_DATA_TIMEOUT,
@@ -335,7 +335,7 @@ void *server_thread(void *t_conf) {
             cl_connection_list_append_connection(connection_list, new_con, 1);
          }
 
-         new_con = NULL;
+         new_con = nullptr;
       }
 
       CL_LOG(CL_LOG_INFO, "checking open connections ...");
@@ -351,9 +351,9 @@ void *server_thread(void *t_conf) {
 
             if (connection->data_read_flag == CL_COM_DATA_READY) {
                CL_LOG(CL_LOG_INFO, "we have data to read");
-               gettimeofday(&now, NULL);
+               gettimeofday(&now, nullptr);
                connection->read_buffer_timeout_time = now.tv_sec + 10;
-               retval = cl_com_read(connection, connection->data_read_buffer, sizeof(data), NULL);
+               retval = cl_com_read(connection, connection->data_read_buffer, sizeof(data), nullptr);
                CL_LOG_STR(CL_LOG_INFO, "cl_com_read() returned ", cl_get_error_text(retval));
 
                if (retval != CL_RETVAL_OK && retval != CL_RETVAL_UNCOMPLETE_READ) {
@@ -365,9 +365,9 @@ void *server_thread(void *t_conf) {
                   continue;
                }
                CL_LOG_STR(CL_LOG_WARNING, "data is:", (char *) connection->data_read_buffer);
-               gettimeofday(&now, NULL);
+               gettimeofday(&now, nullptr);
                connection->write_buffer_timeout_time = now.tv_sec + 10;
-               retval = cl_com_write(connection, connection->data_read_buffer, sizeof(data), NULL);
+               retval = cl_com_write(connection, connection->data_read_buffer, sizeof(data), nullptr);
             } else {
                CL_LOG(CL_LOG_INFO, "no data");
             }
@@ -399,7 +399,7 @@ void *server_thread(void *t_conf) {
 
    /* at least set exit state */
    cl_thread_func_cleanup(thread_config);
-   return (NULL);
+   return (nullptr);
 }
 
 #ifdef __CL_FUNCTION__
@@ -424,10 +424,10 @@ void client_cleanup_function(cl_com_connection_t **con) {
 void *client_thread(void *t_conf) {
    int ret_val, retval, i, do_exit = 0;
    struct timeval now;
-   cl_com_connection_t *con = NULL;
-   cl_com_endpoint_t *local_host = NULL;
-   cl_com_endpoint_t *remote_host = NULL;
-   char *local_hostname = NULL;
+   cl_com_connection_t *con = nullptr;
+   cl_com_endpoint_t *local_host = nullptr;
+   cl_com_endpoint_t *remote_host = nullptr;
+   char *local_hostname = nullptr;
    struct in_addr local_addr;
 
    /* get pointer to cl_thread_settings_t struct */
@@ -440,7 +440,7 @@ void *client_thread(void *t_conf) {
 
    /* setup thread */
    CL_LOG(CL_LOG_INFO, "starting initialization ...");
-   cl_com_gethostname(&local_hostname, &local_addr, NULL, NULL);
+   cl_com_gethostname(&local_hostname, &local_addr, nullptr, nullptr);
    local_host = cl_com_create_endpoint(local_hostname, thread_config->thread_name, 0, &local_addr);
    remote_host = cl_com_create_endpoint(local_hostname, "server", 1, &local_addr);
    sge_free(&local_hostname);
@@ -456,7 +456,7 @@ void *client_thread(void *t_conf) {
       cl_thread_func_testcancel(thread_config);
       pthread_cleanup_pop(pthread_cleanup_pop_execute);  /* client_thread_cleanup */
 
-      if (con == NULL) {
+      if (con == nullptr) {
          cl_com_tcp_setup_connection(&con, 5000, 5000, CL_CM_CT_STREAM, CL_CM_AC_DISABLED, CL_CT_TCP, CL_CM_DF_BIN,
                                      CL_TCP_DEFAULT);
          while ((retval = cl_com_open_connection(con, 5, remote_host, local_host)) == CL_RETVAL_UNCOMPLETE_WRITE) {
@@ -480,12 +480,12 @@ void *client_thread(void *t_conf) {
             CL_LOG(CL_LOG_ERROR, "error receiving connection data");
          }
       }
-      if (con != NULL) {
+      if (con != nullptr) {
          for (i = 0; i < 1; i++) {
 #if 1
-            gettimeofday(&now, NULL);
+            gettimeofday(&now, nullptr);
             con->write_buffer_timeout_time = now.tv_sec + 10;
-            retval = cl_com_write(con, (cl_byte_t *) data, sizeof(data), NULL);
+            retval = cl_com_write(con, (cl_byte_t *) data, sizeof(data), nullptr);
             CL_LOG_INT(CL_LOG_INFO, "cl_com_write() nr ", i);
             if (retval != CL_RETVAL_OK) {
                CL_LOG_STR(CL_LOG_INFO, "cl_com_write() returned ", cl_get_error_text(retval));
@@ -499,10 +499,10 @@ void *client_thread(void *t_conf) {
       }
 
 #if 1
-      if (con != NULL) {
-         gettimeofday(&now, NULL);
+      if (con != nullptr) {
+         gettimeofday(&now, nullptr);
          con->read_buffer_timeout_time = now.tv_sec + 5;
-         retval = cl_com_read(con, con->data_read_buffer, sizeof(data), NULL);
+         retval = cl_com_read(con, con->data_read_buffer, sizeof(data), nullptr);
          CL_LOG_STR(CL_LOG_INFO, "cl_com_read() returned ", cl_get_error_text(retval));
          CL_LOG_STR(CL_LOG_WARNING, "data is:", (char *) con->data_read_buffer);
 #endif
@@ -533,5 +533,5 @@ void *client_thread(void *t_conf) {
 
    /* at least set exit state */
    cl_thread_func_cleanup(thread_config);
-   return (NULL);
+   return (nullptr);
 }

@@ -62,7 +62,7 @@ id_list_build_from_str_list(lList **id_list,
        str_list_is_valid(str_list, answer_list)) {
       for_each_ep(elem, str_list) {
          const char *string = lGetString(elem, ST_name);
-         lListElem *new_id = NULL;
+         lListElem *new_id = nullptr;
 
          /*
           * Try to parse and add jid/taskid
@@ -70,13 +70,13 @@ id_list_build_from_str_list(lList **id_list,
           */
 
          if ((transition & QUEUE_DO_ACTION) == 0) { 
-            sge_parse_jobtasks(id_list, &new_id, string, answer_list, false, NULL);
+            sge_parse_jobtasks(id_list, &new_id, string, answer_list, false, nullptr);
          }   
 
-         if (new_id == NULL) {
+         if (new_id == nullptr) {
             new_id = lAddElemStr(id_list, ID_str, string, ID_Type);
          }
-         if (new_id != NULL) {
+         if (new_id != nullptr) {
             lSetUlong(new_id, ID_action, transition);
             lSetUlong(new_id, ID_force, option);
          } else {

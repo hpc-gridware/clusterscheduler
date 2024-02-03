@@ -122,7 +122,7 @@ filter_diff_usersets_or_projects_scope(lList *filter_scope, int filter_nm, lList
 int
 rqs_mod(sge_gdi_ctx_class_t *ctx, lList **alpp, lListElem *new_rqs, lListElem *rqs, int add, const char *ruser,
         const char *rhost, gdi_object_t *object, int sub_command, monitoring_t *monitor) {
-   const char *rqs_name = NULL;
+   const char *rqs_name = nullptr;
    bool rules_changed = false;
    bool previous_enabled = (bool) lGetBool(new_rqs, RQS_enabled);
    const lList *master_centry_list = *object_type_get_master_list(SGE_TYPE_CENTRY);
@@ -154,21 +154,21 @@ rqs_mod(sge_gdi_ctx_class_t *ctx, lList **alpp, lListElem *new_rqs, lListElem *r
       if (SGE_GDI_IS_SUBCOMMAND_SET(sub_command, SGE_GDI_SET_ALL)) {
          normalize_sublist(rqs, RQS_rule);
          attr_mod_sub_list(alpp, new_rqs, RQS_rule, RQS_name, rqs, sub_command,
-                           SGE_ATTR_RQSRULES, SGE_OBJ_RQS, 0, NULL);
+                           SGE_ATTR_RQSRULES, SGE_OBJ_RQS, 0, nullptr);
       } else {
          /* *attr cases */
          const lList *rule_list = lGetList(rqs, RQS_rule);
-         const lListElem *rule = NULL;
+         const lListElem *rule = nullptr;
 
          for_each_ep(rule, rule_list) {
             lList *new_rule_list = lGetListRW(new_rqs, RQS_rule);
-            lListElem *new_rule = NULL;
+            lListElem *new_rule = nullptr;
 
             new_rule = rqs_rule_locate(new_rule_list, lGetString(rule, RQR_name));
-            if (new_rule != NULL) {
+            if (new_rule != nullptr) {
                /* ---- RQR_limit */
                attr_mod_sub_list(alpp, new_rule, RQR_limit, RQRL_name, rule,
-                                 sub_command, SGE_ATTR_RQSRULES, SGE_OBJ_RQS, 0, NULL);
+                                 sub_command, SGE_ATTR_RQSRULES, SGE_OBJ_RQS, 0, nullptr);
             } else {
                ERROR((SGE_EVENT, SFNMAX, MSG_RESOURCEQUOTA_NORULEDEFINED));
                answer_list_add(alpp, SGE_EVENT, STATUS_ESEMANTIC,
@@ -222,7 +222,7 @@ DRETURN(STATUS_EUNKNOWN);
 *******************************************************************************/
 int
 rqs_spool(sge_gdi_ctx_class_t *ctx, lList **alpp, lListElem *ep, gdi_object_t *object) {
-   lList *answer_list = NULL;
+   lList *answer_list = nullptr;
    bool dbret;
    bool job_spooling = bootstrap_get_job_spooling();
 
@@ -262,7 +262,7 @@ rqs_spool(sge_gdi_ctx_class_t *ctx, lList **alpp, lListElem *ep, gdi_object_t *o
 *  INPUTS
 *     lListElem *ep         - new rqs object
 *     lListElem *old_ep     - old rqs object before modification or
-*                             NULL if a new object was added
+*                             nullptr if a new object was added
 *     gdi_object_t *object  - structure of the gdi framework which contains 
 *                             additional information to perform the request
 *                             (function pointers, names, CULL-types) 
@@ -278,7 +278,7 @@ rqs_spool(sge_gdi_ctx_class_t *ctx, lList **alpp, lListElem *ep, gdi_object_t *o
 int
 rqs_success(sge_gdi_ctx_class_t *ctx, lListElem *ep, lListElem *old_ep, gdi_object_t *object, lList **ppList,
             monitoring_t *monitor) {
-   const char *rqs_name = NULL;
+   const char *rqs_name = nullptr;
 
    DENTER(TOP_LAYER);
 
@@ -287,7 +287,7 @@ rqs_success(sge_gdi_ctx_class_t *ctx, lListElem *ep, lListElem *old_ep, gdi_obje
    rqs_update_categories(ep, old_ep);
 
    sge_add_event(0, old_ep ? sgeE_RQS_MOD : sgeE_RQS_ADD, 0, 0,
-                 rqs_name, NULL, NULL, ep);
+                 rqs_name, nullptr, nullptr, ep);
    lListElem_clear_changed_info(ep);
 
    DRETURN(0);
@@ -358,12 +358,12 @@ rqs_del(sge_gdi_ctx_class_t *ctx, lListElem *ep, lList **alpp, lList **rqs_list,
 
    found = lDechainElem(*rqs_list, found);
 
-   rqs_update_categories(NULL, found);
+   rqs_update_categories(nullptr, found);
 
    sge_event_spool(ctx,
                    alpp, 0, sgeE_RQS_DEL,
-                   0, 0, rqs_name, NULL, NULL,
-                   NULL, NULL, NULL, true, true);
+                   0, 0, rqs_name, nullptr, nullptr,
+                   nullptr, nullptr, nullptr, true, true);
 
    INFO((SGE_EVENT, MSG_SGETEXT_REMOVEDFROMLIST_SSSS,
            ruser, rhost, rqs_name, MSG_OBJ_RQS));
@@ -407,14 +407,14 @@ rqs_reinit_consumable_actual_list(lListElem *rqs, lList **answer_list) {
 
    DENTER(TOP_LAYER);
 
-   if (rqs != NULL) {
+   if (rqs != nullptr) {
       lListElem *job;
-      const lListElem *rule = NULL;
+      const lListElem *rule = nullptr;
 
       for_each_ep(rule, lGetList(rqs, RQS_rule)) {
-         lListElem *limit = NULL;
+         lListElem *limit = nullptr;
          for_each_rw(limit, lGetList(rule, RQR_limit)) {
-            lList *usage = NULL;
+            lList *usage = nullptr;
             lXchgList(limit, RQRL_usage, &usage);
             lFreeList(&usage);
          }
@@ -426,10 +426,10 @@ rqs_reinit_consumable_actual_list(lListElem *rqs, lList **answer_list) {
 
       for_each_rw(job, master_job_list) {
          const lList *ja_task_list = lGetList(job, JB_ja_tasks);
-         const lListElem *ja_task = NULL;
+         const lListElem *ja_task = nullptr;
 
          for_each_ep(ja_task, ja_task_list) {
-            const lListElem *granted = NULL;
+            const lListElem *granted = nullptr;
             const lList *gdi_list = lGetList(ja_task, JAT_granted_destin_identifier_list);
             bool is_master_task = true;
 
@@ -508,7 +508,7 @@ filter_diff_usersets_or_projects_scope(lList *filter_scope, int filter_nm, lList
           * however this is no bug since any entry contained 
           * in the old scope_ref list will be also in the new one 
           */
-         *scope_ref = lSelect("", master_list, NULL, what);
+         *scope_ref = lSelect("", master_list, nullptr, what);
          lFreeWhat(&what);
          ret = false;
          break;
@@ -518,13 +518,13 @@ filter_diff_usersets_or_projects_scope(lList *filter_scope, int filter_nm, lList
             for_each_ep(ep, master_list) {
                const char *ep_entry = lGetString(ep, nm);
                if (fnmatch(scope, ep_entry, 0) == 0) {
-                  if (lGetElemStr(*scope_ref, nm, scope) == NULL) {
+                  if (lGetElemStr(*scope_ref, nm, scope) == nullptr) {
                      lAddElemStr(scope_ref, nm, ep_entry, dp);
                   }
                }
             }
          } else {
-            if (lGetElemStr(*scope_ref, nm, scope) == NULL) {
+            if (lGetElemStr(*scope_ref, nm, scope) == nullptr) {
                lAddElemStr(scope_ref, nm, scope, dp);
             }
          }
@@ -578,11 +578,11 @@ filter_diff_usersets_or_projects(const lListElem *rule, int filter_nm, lList **s
       DRETURN(ret);
    }
 
-   if (rule == NULL || master_list == NULL) {
+   if (rule == nullptr || master_list == nullptr) {
       DRETURN(ret);
    }
 
-   if ((filter = lGetObject(rule, filter_nm)) == NULL) {
+   if ((filter = lGetObject(rule, filter_nm)) == nullptr) {
       DRETURN(ret);
    }
 
@@ -744,7 +744,7 @@ rqs_diff_projects(const lListElem *new_rqs, const lListElem *old_rqs, lList **ne
 *******************************************************************************/
 static void
 rqs_update_categories(const lListElem *new_rqs, const lListElem *old_rqs) {
-   lList *old_lp = NULL, *new_lp = NULL;
+   lList *old_lp = nullptr, *new_lp = nullptr;
    const lList *master_userset_list = *object_type_get_master_list(SGE_TYPE_USERSET);
    const lList *master_project_list = *object_type_get_master_list(SGE_TYPE_PROJECT);
 
@@ -802,13 +802,13 @@ scope_is_referenced_rqs(const lListElem *rqs, int nm, const char *name) {
 
    DENTER(TOP_LAYER);
 
-   if (rqs == NULL || name == NULL) {
+   if (rqs == nullptr || name == nullptr) {
       DRETURN(ret);
    }
 
    for_each_ep(rule, lGetList(rqs, RQS_rule)) {
       lListElem *filter = lGetObject(rule, nm);
-      if (filter != NULL) {
+      if (filter != nullptr) {
          const lListElem *scope_ep;
          for_each_ep(scope_ep, lGetList(filter, RQRF_scope)) {
             const char *scope = lGetString(scope_ep, ST_name);

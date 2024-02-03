@@ -60,7 +60,7 @@ static void show_ce_type_list(const lList *cel, const char *indent, const char *
                               bool display_resource_contribution, const lList *centry_list, int slots);
 
 void cull_show_job(const lListElem *job, int flags, bool show_binding) {
-   const char *delis[] = {NULL, ",", "\n"};
+   const char *delis[] = {nullptr, ",", "\n"};
    time_t ultime; /* used to be u_long32, but problem w/ 64 bit times */
 
    DENTER(TOP_LAYER);
@@ -111,20 +111,20 @@ void cull_show_job(const lListElem *job, int flags, bool show_binding) {
       printf("gid:                        %d\n", (int)lGetUlong(job, JB_gid));
 
    {
-      const char *name[] = {"O_HOME", "O_LOGNAME", "O_PATH", "O_SHELL", "O_TZ", "O_WORKDIR", "O_HOST", NULL};
+      const char *name[] = {"O_HOME", "O_LOGNAME", "O_PATH", "O_SHELL", "O_TZ", "O_WORKDIR", "O_HOST", nullptr};
       const char *fmt_string[] = {"sge_o_home:                 %s\n", "sge_o_log_name:             %s\n",
                                   "sge_o_path:                 %s\n", "sge_o_shell:                %s\n",
                                   "sge_o_tz:                   %s\n", "sge_o_workdir:              %s\n",
-                                  "sge_o_host:                 %s\n", NULL};
+                                  "sge_o_host:                 %s\n", nullptr};
       int i = -1;
 
-      while (name[++i] != NULL) {
+      while (name[++i] != nullptr) {
          const char *value;
          char fullname[MAX_STRING_SIZE];
 
          sprintf(fullname, "%s%s", VAR_PREFIX, name[i]);
          value = job_get_env_string(job, fullname);
-         if (value != NULL) {
+         if (value != nullptr) {
             printf(fmt_string[i], value);
          }
       }
@@ -164,7 +164,7 @@ void cull_show_job(const lListElem *job, int flags, bool show_binding) {
 
             delis[0] = " ";
             printf("path_aliases:               ");
-            uni_print_list(stdout, NULL, 0, lGetList(job, JB_path_aliases), fields, delis, FLG_NO_DELIS_STRINGS);
+            uni_print_list(stdout, nullptr, 0, lGetList(job, JB_path_aliases), fields, delis, FLG_NO_DELIS_STRINGS);
          }
    }
 
@@ -178,7 +178,7 @@ void cull_show_job(const lListElem *job, int flags, bool show_binding) {
 
          delis[0] = ":";
          printf("stderr_path_list:           ");
-         uni_print_list(stdout, NULL, 0, lGetList(job, JB_stderr_path_list), fields, delis, FLG_NO_DELIS_STRINGS);
+         uni_print_list(stdout, nullptr, 0, lGetList(job, JB_stderr_path_list), fields, delis, FLG_NO_DELIS_STRINGS);
          printf("\n");
       }
 
@@ -226,7 +226,7 @@ void cull_show_job(const lListElem *job, int flags, bool show_binding) {
 
          delis[0] = "@";
          printf("mail_list:                  ");
-         uni_print_list(stdout, NULL, 0, lGetList(job, JB_mail_list), fields, delis, FLG_NO_DELIS_STRINGS);
+         uni_print_list(stdout, nullptr, 0, lGetList(job, JB_mail_list), fields, delis, FLG_NO_DELIS_STRINGS);
       }
 
    if (lGetPosViaElem(job, JB_notify, SGE_NO_ABORT) >= 0)
@@ -245,7 +245,7 @@ void cull_show_job(const lListElem *job, int flags, bool show_binding) {
 
          delis[0] = ":";
          printf("stdout_path_list:           ");
-         uni_print_list(stdout, NULL, 0, lGetList(job, JB_stdout_path_list), fields, delis, FLG_NO_DELIS_STRINGS);
+         uni_print_list(stdout, nullptr, 0, lGetList(job, JB_stdout_path_list), fields, delis, FLG_NO_DELIS_STRINGS);
          printf("\n");
       }
 
@@ -255,7 +255,7 @@ void cull_show_job(const lListElem *job, int flags, bool show_binding) {
 
          delis[0] = ":";
          printf("stdin_path_list:            ");
-         uni_print_list(stdout, NULL, 0, lGetList(job, JB_stdin_path_list), fields, delis, FLG_NO_DELIS_STRINGS);
+         uni_print_list(stdout, nullptr, 0, lGetList(job, JB_stdin_path_list), fields, delis, FLG_NO_DELIS_STRINGS);
          printf("\n");
       }
 
@@ -276,7 +276,7 @@ void cull_show_job(const lListElem *job, int flags, bool show_binding) {
 
          delis[0] = " ";
          printf("hard_queue_list:            ");
-         uni_print_list(stdout, NULL, 0, lGetList(job, JB_hard_queue_list), fields, delis, FLG_NO_DELIS_STRINGS);
+         uni_print_list(stdout, nullptr, 0, lGetList(job, JB_hard_queue_list), fields, delis, FLG_NO_DELIS_STRINGS);
       }
 
    if (lGetPosViaElem(job, JB_soft_queue_list, SGE_NO_ABORT) >= 0)
@@ -285,7 +285,7 @@ void cull_show_job(const lListElem *job, int flags, bool show_binding) {
 
          delis[0] = " ";
          printf("soft_queue_list:            ");
-         uni_print_list(stdout, NULL, 0, lGetList(job, JB_soft_queue_list), fields, delis, FLG_NO_DELIS_STRINGS);
+         uni_print_list(stdout, nullptr, 0, lGetList(job, JB_soft_queue_list), fields, delis, FLG_NO_DELIS_STRINGS);
       }
 
    if (lGetPosViaElem(job, JB_restart, SGE_NO_ABORT) >= 0)
@@ -301,7 +301,7 @@ void cull_show_job(const lListElem *job, int flags, bool show_binding) {
 
          delis[0] = ":";
          printf("shell_list:                 ");
-         uni_print_list(stdout, NULL, 0, lGetList(job, JB_shell_list), fields, delis, FLG_NO_DELIS_STRINGS);
+         uni_print_list(stdout, nullptr, 0, lGetList(job, JB_shell_list), fields, delis, FLG_NO_DELIS_STRINGS);
       }
 
    if (lGetPosViaElem(job, JB_verify, SGE_NO_ABORT) >= 0)
@@ -312,8 +312,8 @@ void cull_show_job(const lListElem *job, int flags, bool show_binding) {
       int print_new_line = 1;
 
       if (lGetList(job, JB_env_list)) {
-         lList *print = NULL;
-         lList *do_not_print = NULL;
+         lList *print = nullptr;
+         lList *do_not_print = nullptr;
          int fields[] = {VA_variable, VA_value, 0};
 
          delis[0] = "=";
@@ -321,7 +321,7 @@ void cull_show_job(const lListElem *job, int flags, bool show_binding) {
 
          print = lGetListRW(job, JB_env_list);
          var_list_split_prefix_vars(&print, &do_not_print, VAR_PREFIX);
-         uni_print_list(stdout, NULL, 0, print, fields, delis, FLG_NO_DELIS_STRINGS);
+         uni_print_list(stdout, nullptr, 0, print, fields, delis, FLG_NO_DELIS_STRINGS);
          if (lGetNumberOfElem(print) > 0) {
             print_new_line = 0;
          }
@@ -338,7 +338,7 @@ void cull_show_job(const lListElem *job, int flags, bool show_binding) {
 
          delis[0] = "";
          printf("job_args:                   ");
-         uni_print_list(stdout, NULL, 0, lGetList(job, JB_job_args), fields, delis, 0);
+         uni_print_list(stdout, nullptr, 0, lGetList(job, JB_job_args), fields, delis, 0);
       }
 
    if (lGetPosViaElem(job, JB_qs_args, SGE_NO_ABORT) >= 0)
@@ -346,7 +346,7 @@ void cull_show_job(const lListElem *job, int flags, bool show_binding) {
          int fields[] = {ST_name, 0};
          delis[0] = "";
          printf("qs_args:                    ");
-         uni_print_list(stdout, NULL, 0, lGetList(job, JB_qs_args), fields, delis, 0);
+         uni_print_list(stdout, nullptr, 0, lGetList(job, JB_qs_args), fields, delis, 0);
       }
 
    if (lGetPosViaElem(job, JB_master_hard_queue_list, SGE_NO_ABORT) >= 0)
@@ -354,7 +354,7 @@ void cull_show_job(const lListElem *job, int flags, bool show_binding) {
          int fields[] = {QR_name, 0};
          delis[0] = " ";
          printf("master hard queue_list:     ");
-         uni_print_list(stdout, NULL, 0, lGetList(job, JB_master_hard_queue_list), fields, delis, FLG_NO_DELIS_STRINGS);
+         uni_print_list(stdout, nullptr, 0, lGetList(job, JB_master_hard_queue_list), fields, delis, FLG_NO_DELIS_STRINGS);
       }
 
    if (lGetPosViaElem(job, JB_job_identifier_list, SGE_NO_ABORT) >= 0)
@@ -363,7 +363,7 @@ void cull_show_job(const lListElem *job, int flags, bool show_binding) {
 
          delis[0] = "";
          printf("job_identifier_list:        ");
-         uni_print_list(stdout, NULL, 0, lGetList(job, JB_job_identifier_list), fields, delis, 0);
+         uni_print_list(stdout, nullptr, 0, lGetList(job, JB_job_identifier_list), fields, delis, 0);
       }
 
    if (lGetPosViaElem(job, JB_script_size, SGE_NO_ABORT) >= 0)
@@ -393,7 +393,7 @@ void cull_show_job(const lListElem *job, int flags, bool show_binding) {
 
          delis[0] = "";
          printf("jid_predecessor_list (req):  ");
-         uni_print_list(stdout, NULL, 0, lGetList(job, JB_jid_request_list), fields, delis, 0);
+         uni_print_list(stdout, nullptr, 0, lGetList(job, JB_jid_request_list), fields, delis, 0);
       }
 
    if (lGetPosViaElem(job, JB_jid_predecessor_list, SGE_NO_ABORT) >= 0)
@@ -402,7 +402,7 @@ void cull_show_job(const lListElem *job, int flags, bool show_binding) {
 
          delis[0] = "";
          printf("jid_predecessor_list:       ");
-         uni_print_list(stdout, NULL, 0, lGetList(job, JB_jid_predecessor_list), fields, delis, 0);
+         uni_print_list(stdout, nullptr, 0, lGetList(job, JB_jid_predecessor_list), fields, delis, 0);
       }
 
    if (lGetPosViaElem(job, JB_jid_successor_list, SGE_NO_ABORT) >= 0)
@@ -411,7 +411,7 @@ void cull_show_job(const lListElem *job, int flags, bool show_binding) {
 
          delis[0] = "";
          printf("jid_successor_list:          ");
-         uni_print_list(stdout, NULL, 0, lGetList(job, JB_jid_successor_list), fields, delis, 0);
+         uni_print_list(stdout, nullptr, 0, lGetList(job, JB_jid_successor_list), fields, delis, 0);
       }
 
    if (lGetPosViaElem(job, JB_ja_ad_request_list, SGE_NO_ABORT) >= 0)
@@ -420,7 +420,7 @@ void cull_show_job(const lListElem *job, int flags, bool show_binding) {
 
          delis[0] = "";
          printf("ja_ad_predecessor_list (req):  ");
-         uni_print_list(stdout, NULL, 0, lGetList(job, JB_ja_ad_request_list), fields, delis, 0);
+         uni_print_list(stdout, nullptr, 0, lGetList(job, JB_ja_ad_request_list), fields, delis, 0);
       }
 
    if (lGetPosViaElem(job, JB_ja_ad_predecessor_list, SGE_NO_ABORT) >= 0)
@@ -429,7 +429,7 @@ void cull_show_job(const lListElem *job, int flags, bool show_binding) {
 
          delis[0] = "";
          printf("ja_ad_predecessor_list:       ");
-         uni_print_list(stdout, NULL, 0, lGetList(job, JB_ja_ad_predecessor_list), fields, delis, 0);
+         uni_print_list(stdout, nullptr, 0, lGetList(job, JB_ja_ad_predecessor_list), fields, delis, 0);
       }
 
    if (lGetPosViaElem(job, JB_ja_ad_successor_list, SGE_NO_ABORT) >= 0)
@@ -438,7 +438,7 @@ void cull_show_job(const lListElem *job, int flags, bool show_binding) {
 
          delis[0] = "";
          printf("ja_ad_successor_list:          ");
-         uni_print_list(stdout, NULL, 0, lGetList(job, JB_ja_ad_successor_list), fields, delis, 0);
+         uni_print_list(stdout, nullptr, 0, lGetList(job, JB_ja_ad_successor_list), fields, delis, 0);
       }
 
    if (lGetPosViaElem(job, JB_verify_suitable_queues, SGE_NO_ABORT) >= 0)
@@ -490,7 +490,7 @@ void cull_show_job(const lListElem *job, int flags, bool show_binding) {
 
          delis[0] = "=";
          printf("context:                    ");
-         uni_print_list(stdout, NULL, 0, lGetList(job, JB_context), fields, delis, FLG_NO_DELIS_STRINGS);
+         uni_print_list(stdout, nullptr, 0, lGetList(job, JB_context), fields, delis, FLG_NO_DELIS_STRINGS);
       }
 
       /* display online job usage separately for each array job but summarized over all pe_tasks */
@@ -507,7 +507,7 @@ void cull_show_job(const lListElem *job, int flags, bool show_binding) {
    if (show_binding) {
       const lList *binding_list = lGetList(job, JB_binding);
 
-      if (binding_list != NULL) {
+      if (binding_list != nullptr) {
          const lListElem *binding_elem = lFirst(binding_list);
          dstring binding_param = DSTRING_INIT;
 
@@ -581,7 +581,7 @@ void cull_show_job(const lListElem *job, int flags, bool show_binding) {
       for_each_ep(jatep, lGetList(job, JB_ja_tasks)) {
          int first_task = 1;
          const lListElem *usage_elem;
-         const char *binding_inuse = NULL;
+         const char *binding_inuse = nullptr;
 
          if (lGetUlong(jatep, JAT_status) != JRUNNING && lGetUlong(jatep, JAT_status) != JTRANSFERING) {
             continue;
@@ -592,14 +592,14 @@ void cull_show_job(const lListElem *job, int flags, bool show_binding) {
 
             if (strncmp(usage_name, binding_name, strlen(binding_name)) == 0) {
                binding_inuse = strstr(usage_name, "!");
-               if (binding_inuse != NULL) {
+               if (binding_inuse != nullptr) {
                   binding_inuse++;
                }
                break;
             }
          }
          printf("%s %4d:               %s\n", first_task ? "binding" : "       ",
-                (int)lGetUlong(jatep, JAT_task_number), binding_inuse != NULL ? binding_inuse : "NONE");
+                (int)lGetUlong(jatep, JAT_task_number), binding_inuse != nullptr ? binding_inuse : "NONE");
          if (first_task) {
             first_task = 0;
          }
@@ -615,7 +615,7 @@ void cull_show_job(const lListElem *job, int flags, bool show_binding) {
          for_each_ep(mesobj, lGetList(jatep, JAT_message_list)) {
             const char *message = lGetString(mesobj, QIM_message);
 
-            if (message != NULL) {
+            if (message != nullptr) {
                printf(SFN " %4d:          " SFN "\n", first_task ? "error reason" : "            ",
                       (int)lGetUlong(jatep, JAT_task_number), message);
             }
@@ -672,7 +672,7 @@ static void sge_show_y_n(int op, int how) {
 void sge_show_ce_type_list(const lList *rel) {
    DENTER(TOP_LAYER);
 
-   show_ce_type_list(rel, "", ",", false, NULL, 0);
+   show_ce_type_list(rel, "", ",", false, nullptr, 0);
 
    DRETURN_VOID;
 }

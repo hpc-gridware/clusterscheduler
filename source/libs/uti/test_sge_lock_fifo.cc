@@ -65,7 +65,7 @@ void *(*get_thrd_func(void))(void *anArg) {
 }
 
 void *get_thrd_func_arg(void) {
-   return NULL;
+   return nullptr;
 }
 
 static void *thread_function(void *anArg) {
@@ -103,7 +103,7 @@ static void *thread_function(void *anArg) {
 
    printf("%s thread %d got "sge_U32CFormat" times the lock\n", read_thread ? "read" : "write", thread_id, count);
 
-   DRETURN(NULL);
+   DRETURN(nullptr);
 }
 
 static int is_in_tolerance(u_long32 value1, u_long32 value2, u_int accepted_tolerance) {

@@ -88,7 +88,7 @@ namespace oge {
 *  FUNCTION
 *     Performs core binding on shepherd side. All information required for  
 *     the binding is communicated from execd to shepherd in the config 
-*     file value "binding". If there is "NULL" no core binding is done. 
+*     file value "binding". If there is "nullptr" no core binding is done.
 * 
 *     This function is Linux specific.
 *
@@ -115,7 +115,7 @@ namespace oge {
       char *binding = get_conf_val("binding");
       binding_type_t type;
 
-      if (binding == NULL || strcasecmp("NULL", binding) == 0) {
+      if (binding == nullptr || strcasecmp("nullptr", binding) == 0) {
          shepherd_trace("do_core_binding: \"binding\" parameter not found in config file");
          return -1;
       }
@@ -129,7 +129,7 @@ namespace oge {
       type = binding_parse_type(binding);
 
       /* do a binding accorting the strategy */
-      if (strstr(binding, "linear") != NULL) {
+      if (strstr(binding, "linear") != nullptr) {
          /* do a linear binding */
          int amount;
          int socket;
@@ -175,7 +175,7 @@ namespace oge {
             }
          }
 
-      } else if (strstr(binding, "striding") != NULL) {
+      } else if (strstr(binding, "striding") != nullptr) {
          int amount = binding_striding_parse_amount(binding);
          int stepsize = binding_striding_parse_step_size(binding);
 
@@ -225,14 +225,14 @@ namespace oge {
             shepherd_trace("do_core_binding: striding: binding not done");
          }
 
-      } else if (strstr(binding, "explicit") != NULL) {
+      } else if (strstr(binding, "explicit") != nullptr) {
 
          /* list with the sockets (first part of the <socket>,<core> tuples) */
-         int *sockets = NULL;
+         int *sockets = nullptr;
          /* length of sockets list */
          int nr_of_sockets = 0;
          /* list with the cores to be bound on the sockets */
-         int *cores = NULL;
+         int *cores = nullptr;
          /* length of cores list */
          int nr_of_cores = 0;
 
@@ -267,7 +267,7 @@ namespace oge {
 
       } else {
 
-         if (binding != NULL) {
+         if (binding != nullptr) {
             shepherd_trace("do_core_binding: WARNING: unknown \"binding\" parameter: %s",
                            binding);
          } else {
@@ -295,7 +295,7 @@ namespace oge {
    *  FUNCTION
    *     Performs core binding on shepherd side. All information required for
    *     the binding is communicated from execd to shepherd in the config
-   *     file value "binding". If there is "NULL" no core binding is done.
+   *     file value "binding". If there is "nullptr" no core binding is done.
    *
    *     This function is Solaris specific.
    *
@@ -316,23 +316,23 @@ namespace oge {
          it is specified */
       char *binding = get_conf_val("binding");
 
-      if (binding == NULL) {
+      if (binding == nullptr) {
          shepherd_trace("do_core_binding: \"binding\" parameter not found in config file");
          retval = -1;
-      } else if (strcasecmp("no_job_binding", binding) == 0 || strcasecmp("NULL", binding) == 0) {
+      } else if (strcasecmp("no_job_binding", binding) == 0 || strcasecmp("nullptr", binding) == 0) {
          shepherd_trace("do_core_binding: skip binding - no core binding configured");
          retval = -1;
       }
 
-      if (retval == 0 && strstr(binding, "psrset:") != NULL) {
+      if (retval == 0 && strstr(binding, "psrset:") != nullptr) {
          int processor_set_id = 0;
          shepherd_trace("do_core_binding: psrset found - attaching to it!");
 
          /* parse the psrset number right after "psrset:" */
-         if (sge_strtok(binding, ":") != NULL) {
+         if (sge_strtok(binding, ":") != nullptr) {
             /* parse the rest of the line */
             char* pset_id;
-            if ((pset_id = sge_strtok(NULL, ":")) != NULL) {
+            if ((pset_id = sge_strtok(nullptr, ":")) != nullptr) {
                /* finally get the processor set id */
                processor_set_id = atoi(pset_id);
             } else {
@@ -403,7 +403,7 @@ namespace oge {
    static bool bind_shepherd_to_pset(int pset_id)
    {
       /* try to bind current process to processor set */
-      if (pset_bind((psetid_t)pset_id, P_PID, P_MYID, NULL) != 0) {
+      if (pset_bind((psetid_t)pset_id, P_PID, P_MYID, nullptr) != 0) {
          /* binding was not successful */
          return false;
       }
@@ -816,7 +816,7 @@ bool binding_add_core_to_cpuset(hwloc_bitmap_t cpuset, int socket, int core) {
          return false;
       }
 
-      if (list_of_sockets == NULL || list_of_cores == NULL) {
+      if (list_of_sockets == nullptr || list_of_cores == nullptr) {
          shepherd_trace("binding_explicit: wrong input values");
       }
 

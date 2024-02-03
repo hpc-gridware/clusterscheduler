@@ -104,7 +104,7 @@
 *     Name of the shared lib path variable
 *
 *  NOTES
-*     Raising a compile time error (instead of e.g. just returning NULL
+*     Raising a compile time error (instead of e.g. just returning nullptr
 *     or LD_LIBRARY_PATH as default) has the following reason:
 *     Setting the shared lib path is a very sensible operation 
 *     concerning security.
@@ -122,7 +122,7 @@ const char *var_get_sharedlib_path_name(void)
    return "DYLD_LIBRARY_PATH";
 #else
 #error "don't know how to set shared lib path on this architecture"
-   return NULL; /* never reached */
+   return nullptr; /* never reached */
 #endif
 }
 
@@ -155,11 +155,11 @@ void var_list_set_string(lList **varl, const char *name, const char *value)
    lListElem *elem;
 
    DENTER(TOP_LAYER);
-   if (varl == NULL || name == NULL || value == NULL) {
+   if (varl == nullptr || name == nullptr || value == nullptr) {
       DRETURN_VOID;
    }
    elem = lGetElemStrRW(*varl, VA_variable, name);
-   if (elem == NULL) {
+   if (elem == nullptr) {
       elem = lAddElemStr(varl, VA_variable, name, VA_Type);
    }
    lSetString(elem, VA_value, value);
@@ -189,11 +189,11 @@ void var_list_delete_string(lList **varl, const char *name)
    lListElem *elem;
 
    DENTER(TOP_LAYER);
-   if (varl == NULL || name == NULL) {
+   if (varl == nullptr || name == nullptr) {
       DRETURN_VOID;
    }
    elem = lGetElemStrRW(*varl, VA_variable, name);
-   if (elem != NULL) {
+   if (elem != nullptr) {
       lRemoveElem(*varl, &elem);
    }
    DRETURN_VOID;
@@ -293,9 +293,9 @@ void var_list_set_sharedlib_path(lList **varl)
 {
    char *sharedlib_path;
    char *sge_sharedlib_path;
-   const char *sge_root = sge_get_root_dir(0, NULL, 0, 1);
+   const char *sge_root = sge_get_root_dir(0, nullptr, 0, 1);
    const char *sharedlib_path_name = var_get_sharedlib_path_name();
-   lListElem *sharedlib_elem = NULL;
+   lListElem *sharedlib_elem = nullptr;
 
    DENTER(TOP_LAYER);
 
@@ -306,7 +306,7 @@ void var_list_set_sharedlib_path(lList **varl)
 
    /* if already in environment: extend by SGE sharedlib path, else set */
    sharedlib_elem = lGetElemStrRW(*varl, VA_variable, sharedlib_path_name);
-   if(sharedlib_elem != NULL) {
+   if(sharedlib_elem != nullptr) {
       const char *old_value = lGetString(sharedlib_elem, VA_value);
 
       if(old_value && strlen(old_value) > 0) {
@@ -357,7 +357,7 @@ void var_list_dump_to_file(const lList *varl, FILE *file)
 {
    const lListElem *elem;
 
-   if (varl == NULL || file == NULL) {
+   if (varl == nullptr || file == nullptr) {
       return;
    }
 
@@ -370,7 +370,7 @@ void var_list_dump_to_file(const lList *varl, FILE *file)
       const char *env_value = lGetString(elem, VA_value);
       const char *new_env_value = sge_replace_substring(env_value, "\n", "\\n");
 
-      if (new_env_value == NULL) {
+      if (new_env_value == nullptr) {
          fprintf(file, "%s=%s\n", env_name, env_value);
       } else {
          fprintf(file, "%s=%s\n", env_name, new_env_value);
@@ -396,7 +396,7 @@ void var_list_dump_to_file(const lList *varl, FILE *file)
 *     const char *variable - variable name 
 *
 *  RESULT
-*     const char* - value or NULL 
+*     const char* - value or nullptr
 *
 *  SEE ALSO
 *     sgeobj/var/var_list_set_string()
@@ -406,10 +406,10 @@ void var_list_dump_to_file(const lList *varl, FILE *file)
 ******************************************************************************/
 const char* var_list_get_string(const lList *varl, const char *variable)
 {
-   const char *ret = NULL;
+   const char *ret = nullptr;
    const lListElem *var = lGetElemStr(varl, VA_variable, variable);
 
-   if (var != NULL) {
+   if (var != nullptr) {
       ret = lGetString(var, VA_value);
    }
    return ret;
@@ -448,8 +448,8 @@ void var_list_copy_prefix_vars(lList **varl,
                                const char *new_prefix)
 {
    int prefix_len = strlen(prefix);
-   const lListElem *var_elem = NULL;
-   lList *var_list2 = NULL;
+   const lListElem *var_elem = nullptr;
+   lList *var_list2 = nullptr;
 
    DENTER(TOP_LAYER);
    for_each_ep(var_elem, src_varl) {
@@ -464,7 +464,7 @@ void var_list_copy_prefix_vars(lList **varl,
          var_list_set_string(&var_list2, name, value);
       }
    }
-   if (*varl == NULL) {
+   if (*varl == nullptr) {
       *varl = lCreateList("", VA_Type);
    }
    var_list_add_as_set(*varl, var_list2); 
@@ -506,8 +506,8 @@ void var_list_copy_prefix_vars_undef(lList **varl,
                                      const char *new_prefix)
 {
    int prefix_len = strlen(prefix);
-   const lListElem *var_elem = NULL;
-   lList *var_list2 = NULL;
+   const lListElem *var_elem = nullptr;
+   lList *var_list2 = nullptr;
 
    DENTER(TOP_LAYER);
    for_each_ep(var_elem, src_varl) {
@@ -521,12 +521,12 @@ void var_list_copy_prefix_vars_undef(lList **varl,
 
          sprintf(name, "%s%s", new_prefix, name_without_prefix);
          existing_variable = lGetElemStr(*varl, VA_variable, name);
-         if (existing_variable == NULL) {
+         if (existing_variable == nullptr) {
             var_list_set_string(&var_list2, name, value);
          }
       }
    }
-   if (*varl == NULL) {
+   if (*varl == nullptr) {
       *varl = lCreateList("", VA_Type);
    }
    lAddList(*varl, &var_list2);
@@ -591,8 +591,8 @@ void var_list_copy_env_vars_and_value(lList **varl,
 void var_list_remove_prefix_vars(lList **varl, const char *prefix)
 {
    int prefix_len = strlen(prefix);
-   lListElem *var_elem = NULL;
-   lListElem *next_var_elem = NULL;
+   lListElem *var_elem = nullptr;
+   lListElem *next_var_elem = nullptr;
 
    DENTER(TOP_LAYER);
    next_var_elem = lFirstRW(*varl);
@@ -637,8 +637,8 @@ void var_list_split_prefix_vars(lList **varl,
                                 const char *prefix)
 {
    int prefix_len = strlen(prefix);
-   lListElem *var_elem = NULL;
-   lListElem *next_var_elem = NULL;
+   lListElem *var_elem = nullptr;
+   lListElem *next_var_elem = nullptr;
 
    DENTER(TOP_LAYER);
    next_var_elem = lFirstRW(*varl);
@@ -649,7 +649,7 @@ void var_list_split_prefix_vars(lList **varl,
       if (!strncmp(prefix_name, prefix, prefix_len)) {
          lListElem *dechained_elem = lDechainElem(*varl, var_elem);
 
-         if (*pefix_vars == NULL) {
+         if (*pefix_vars == nullptr) {
             *pefix_vars = lCreateList("", VA_Type);
          }
 
@@ -690,7 +690,7 @@ int var_list_add_as_set(lList *lp0, lList *lp1)
 
    DENTER(CULL_LAYER);
 
-   if (lp1 == NULL || lp0 == NULL) {
+   if (lp1 == nullptr || lp0 == nullptr) {
       DRETURN(-1);
    }
 
@@ -701,9 +701,9 @@ int var_list_add_as_set(lList *lp0, lList *lp1)
       DRETURN(-1);
    }
 
-   while (lp1->first != NULL) {
+   while (lp1->first != nullptr) {
       /* Get the first element from the second list */
-      if ((ep1 = lDechainElem(lp1, lp1->first)) == NULL) {
+      if ((ep1 = lDechainElem(lp1, lp1->first)) == nullptr) {
          DRETURN(-1);
       }
    
@@ -714,7 +714,7 @@ int var_list_add_as_set(lList *lp0, lList *lp1)
 
       /* If there is a matching element in the first list, set it's value to the
        * value of the element from the second list. */
-      if (ep0 != NULL) {
+      if (ep0 != nullptr) {
          value = lGetString(ep1, VA_value);         
          lSetString(ep0, VA_value, value);
          lFreeElem(&ep1);
@@ -744,7 +744,7 @@ int var_list_add_as_set(lList *lp0, lList *lp1)
 *
 *  FUNCTION
 *     Verifies the contents of a variable list.
-*     Variable names may not be NULL or empty strings.
+*     Variable names may not be nullptr or empty strings.
 *
 *  INPUTS
 *     const lList *lp     - the list to verify
@@ -765,7 +765,7 @@ var_list_verify(const lList *lp, lList **answer_list)
 
    for_each_ep(ep, lp) {
       const char *variable = lGetString(ep, VA_variable);
-      if (variable == NULL || variable[0] == '\0') {
+      if (variable == nullptr || variable[0] == '\0') {
          answer_list_add_sprintf(answer_list, STATUS_ESYNTAX, ANSWER_QUALITY_ERROR, 
                                  MSG_OBJECT_VARIABLENAME_NOT_EMPTY);
          ret = false;
@@ -823,14 +823,14 @@ int var_list_parse_from_string(lList **lpp, const char *variable_str,
       DRETURN(1);
    }
 
-   va_string = sge_strdup(NULL, variable_str);
+   va_string = sge_strdup(nullptr, variable_str);
    if (!va_string) {
-      *lpp = NULL;
+      *lpp = nullptr;
       DRETURN(2);
    }
-   str_str = string_list(va_string, ",", NULL);
+   str_str = string_list(va_string, ",", nullptr);
    if (!str_str || !*str_str) {
-      *lpp = NULL;
+      *lpp = nullptr;
       sge_free(&va_string);
       DRETURN(3);
    }
@@ -850,7 +850,7 @@ int var_list_parse_from_string(lList **lpp, const char *variable_str,
       /* SGE_ASSERT(ep); */
       lAppendElem(*lpp, ep);
 
-      context = NULL;
+      context = nullptr;
       variable = sge_strtok_r(*pstr, "=", &context);
       SGE_ASSERT((variable));
       var_len=strlen(variable);
@@ -863,14 +863,14 @@ int var_list_parse_from_string(lList **lpp, const char *variable_str,
        * If it's a '\0' and check_environment is set, then we get the value from
        * the environment variable value. 
        * If it's a '\0' and check_environment is not set, then we set the value
-       * to NULL.
+       * to nullptr.
        */
       if (val_str[var_len] == '=') {
           lSetString(ep, VA_value, &val_str[var_len+1]);
       } else if (check_environment) {
          lSetString(ep, VA_value, sge_getenv(variable));
       } else {
-         lSetString(ep, VA_value, NULL);
+         lSetString(ep, VA_value, nullptr);
       }
       sge_free_saved_vars(context);
    }
@@ -912,16 +912,16 @@ int var_list_parse_from_string(lList **lpp, const char *variable_str,
 
 void getenv_and_set(lListElem *ep, char *variable)
 {
-   const char *env_value = NULL;
-   char *new_env_value = NULL;
-   char *a = NULL;
-   char *b = NULL;
+   const char *env_value = nullptr;
+   char *new_env_value = nullptr;
+   char *a = nullptr;
+   char *b = nullptr;
    int i, nchars;
    int newline_chars = 0;
 
    env_value = sge_getenv(variable);
-   if (env_value == NULL) {
-      lSetString(ep, VA_value, NULL);
+   if (env_value == nullptr) {
+      lSetString(ep, VA_value, nullptr);
       return;
    }
    /*
@@ -929,7 +929,7 @@ void getenv_and_set(lListElem *ep, char *variable)
     * character.
     */
    a = strchr((char *)env_value, '\n');
-   if (a == NULL) {
+   if (a == nullptr) {
       /*
        * Nothing to do. Just leave it alone.
        */
@@ -987,7 +987,7 @@ void var_list_filter_env_list(lList *env_list, lList **answer_list)
 
    /* LD_PRELOAD */
    ep = lGetElemStrRW(env_list, VA_variable, "LD_PRELOAD");
-   if (ep != NULL) {
+   if (ep != nullptr) {
       lRemoveElem(env_list, &ep);
       answer_list_add_sprintf(answer_list, STATUS_ESYNTAX, ANSWER_QUALITY_INFO,
                               MSG_REMOVED_ENV_VAR_S, "LD_PRELOAD");
@@ -1004,13 +1004,13 @@ void var_list_filter_env_list(lList *env_list, lList **answer_list)
          "DYLD_LIBRARY_PATH",
          "LD_ORIGIN_PATH",
          "LD_CONFIG",
-         NULL
+         nullptr
       };
       const char *var_name;
       int i;
-      for (i = 0; (var_name = lib_path_names[i]) != NULL; i++) {
+      for (i = 0; (var_name = lib_path_names[i]) != nullptr; i++) {
          ep = lGetElemStrRW(env_list, VA_variable, var_name);
-         if (ep != NULL) {
+         if (ep != nullptr) {
             lRemoveElem(env_list, &ep);
             answer_list_add_sprintf(answer_list, STATUS_ESYNTAX, ANSWER_QUALITY_INFO,
                                     MSG_REMOVED_ENV_VAR_S, var_name);

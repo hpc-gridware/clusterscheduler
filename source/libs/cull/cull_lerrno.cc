@@ -181,13 +181,13 @@ const char *get_lerror_string(int nr) {
 }
 
 int lerror(void) {
-   const char *errorText = NULL;
+   const char *errorText = nullptr;
 
    DENTER(TOP_LAYER);
 
    errorText = get_lerror_string(lerrno);
 
-   if (errorText == NULL) {
+   if (errorText == nullptr) {
       DRETURN(-1);
    }
 

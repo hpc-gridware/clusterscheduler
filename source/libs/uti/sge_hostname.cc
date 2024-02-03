@@ -86,20 +86,20 @@ static struct servent *sge_getservbyname_r(struct servent *se_result, const char
  ******************************************************************************/
 #if defined(LINUX)
       if (getservbyname_r(service, "tcp", se_result, buffer, size, &se) != 0)
-         se = NULL;
+         se = nullptr;
 #elif defined(SOLARIS)
       se = getservbyname_r(service, "tcp", se_result, buffer, size);
 #else
       se = getservbyname(service, "tcp");
 #endif
-      if (se != NULL) {
+      if (se != nullptr) {
          return se;
       } else {
          sleep(1);
       }
    }
 
-   return NULL;
+   return nullptr;
 }
 
 /****** sge_hostname/sge_get_qmaster_port() ************************************
@@ -126,7 +126,7 @@ static struct servent *sge_getservbyname_r(struct servent *se_result, const char
 #define SGE_PORT_CACHE_TIMEOUT 60*10   /* 10 Min. */
 
 int sge_get_qmaster_port(bool *from_services) {
-   char *port = NULL;
+   char *port = nullptr;
    int int_port = -1;
 
    struct timeval now;
@@ -139,7 +139,7 @@ int sge_get_qmaster_port(bool *from_services) {
    sge_mutex_lock("get_qmaster_port_mutex", __func__, __LINE__, &get_qmaster_port_mutex);
 
    /* check for reresolve timeout */
-   gettimeofday(&now, NULL);
+   gettimeofday(&now, nullptr);
 
    if (next_timeout > 0) {
       DPRINTF(("reresolve port timeout in "sge_U32CFormat"\n", sge_u32c(next_timeout - now.tv_sec)));
@@ -148,7 +148,7 @@ int sge_get_qmaster_port(bool *from_services) {
    /* get port from cache when next_timeout for re-resolving is not reached */
    if (cached_port >= 0 && next_timeout > now.tv_sec) {
       int_port = cached_port;
-      if (from_services != NULL) {
+      if (from_services != nullptr) {
          *from_services = is_port_from_services_file;
       }
       DPRINTF(("returning cached port value: "sge_U32CFormat"\n", sge_u32c(int_port)));
@@ -158,7 +158,7 @@ int sge_get_qmaster_port(bool *from_services) {
 
    /* get port from environment variable SGE_QMASTER_PORT */
    port = getenv("SGE_QMASTER_PORT");
-   if (port != NULL) {
+   if (port != nullptr) {
       int_port = atoi(port);
       is_port_from_services_file = false;
    }
@@ -167,15 +167,15 @@ int sge_get_qmaster_port(bool *from_services) {
    if (int_port <= 0) {
       char buffer[2048];
       struct servent se_result;
-      struct servent *se_help = NULL;
+      struct servent *se_help = nullptr;
 
       se_help = sge_getservbyname_r(&se_result, "sge_qmaster", buffer, sizeof(buffer));
-      if (se_help != NULL) {
+      if (se_help != nullptr) {
          int_port = ntohs(se_help->s_port);
          if (int_port > 0) {
             /* we found a port in the services */
             is_port_from_services_file = true;
-            if (from_services != NULL) {
+            if (from_services != nullptr) {
                *from_services = is_port_from_services_file;
             }
          }
@@ -189,12 +189,12 @@ int sge_get_qmaster_port(bool *from_services) {
          int_port = cached_port;
       } else {
          sge_mutex_unlock("get_qmaster_port_mutex", __func__, __LINE__, &get_qmaster_port_mutex);
-         SGE_EXIT(NULL, 1);
+         SGE_EXIT(nullptr, 1);
       }
    } else {
       DPRINTF(("returning port value: "sge_U32CFormat"\n", sge_u32c(int_port)));
       /* set new timeout time */
-      gettimeofday(&now, NULL);
+      gettimeofday(&now, nullptr);
       next_timeout = now.tv_sec + SGE_PORT_CACHE_TIMEOUT;
 
       /* set new port value */
@@ -207,7 +207,7 @@ int sge_get_qmaster_port(bool *from_services) {
 }
 
 int sge_get_execd_port(void) {
-   char *port = NULL;
+   char *port = nullptr;
    int int_port = -1;
 
    struct timeval now;
@@ -219,7 +219,7 @@ int sge_get_execd_port(void) {
    sge_mutex_lock("get_execd_port_mutex", __func__, __LINE__, &get_execd_port_mutex);
 
    /* check for reresolve timeout */
-   gettimeofday(&now, NULL);
+   gettimeofday(&now, nullptr);
 
    if (next_timeout > 0) {
       DPRINTF(("reresolve port timeout in "sge_U32CFormat"\n", sge_u32c(next_timeout - now.tv_sec)));
@@ -232,7 +232,7 @@ int sge_get_execd_port(void) {
    }
 
    port = getenv("SGE_EXECD_PORT");
-   if (port != NULL) {
+   if (port != nullptr) {
       int_port = atoi(port);
    }
 
@@ -240,10 +240,10 @@ int sge_get_execd_port(void) {
    if (int_port <= 0) {
       char buffer[2048];
       struct servent se_result;
-      struct servent *se_help = NULL;
+      struct servent *se_help = nullptr;
 
       se_help = sge_getservbyname_r(&se_result, "sge_execd", buffer, sizeof(buffer));
-      if (se_help != NULL) {
+      if (se_help != nullptr) {
          int_port = ntohs(se_help->s_port);
       }
    }
@@ -255,12 +255,12 @@ int sge_get_execd_port(void) {
          int_port = cached_port;
       } else {
          sge_mutex_unlock("get_execd_port_mutex", __func__, __LINE__, &get_execd_port_mutex);
-         SGE_EXIT(NULL, 1);
+         SGE_EXIT(nullptr, 1);
       }
    } else {
       DPRINTF(("returning port value: "sge_U32CFormat"\n", sge_u32c(int_port)));
       /* set new timeout time */
-      gettimeofday(&now, NULL);
+      gettimeofday(&now, nullptr);
       next_timeout = now.tv_sec + SGE_PORT_CACHE_TIMEOUT;
 
       /* set new port value */
@@ -327,16 +327,16 @@ struct hostent *sge_gethostbyname_retry(
    DENTER(TOP_LAYER);
 
    if (!name || name[0] == '\0') {
-      DPRINTF(("hostname to resolve is NULL or has zero length\n"));
-      DRETURN(NULL);
+      DPRINTF(("hostname to resolve is nullptr or has zero length\n"));
+      DRETURN(nullptr);
    }
 
-   he = sge_gethostbyname(name, NULL);
-   if (he == NULL) {
-      for (i = 0; i < MAX_NIS_RETRIES && he == NULL; i++) {
+   he = sge_gethostbyname(name, nullptr);
+   if (he == nullptr) {
+      for (i = 0; i < MAX_NIS_RETRIES && he == nullptr; i++) {
          DPRINTF(("Couldn't resolve hostname %s\n", name));
          sleep(1);
-         he = sge_gethostbyname(name, NULL);
+         he = sge_gethostbyname(name, nullptr);
       }
    }
 
@@ -372,7 +372,7 @@ struct hostent *sge_gethostbyname_retry(
 *     MT-NOTE: gethostbyname() must go through sge_gethostbyname() to be MT safe.
 *******************************************************************************/
 struct hostent *sge_gethostbyname(const char *name, int *system_error_retval) {
-   struct hostent *he = NULL;
+   struct hostent *he = nullptr;
    time_t now;
    time_t time;
    int l_errno = 0;
@@ -402,9 +402,9 @@ struct hostent *sge_gethostbyname(const char *name, int *system_error_retval) {
 
       /* Since re contains pointers into buffer, and both re and the buffer go
        * away when we exit this code block, we make a deep copy to return. */
-      /* Yes, I do mean to check if he is NULL and then copy re!  No, he
+      /* Yes, I do mean to check if he is nullptr and then copy re!  No, he
        * doesn't need to be freed first. */
-      if (he != NULL) {
+      if (he != nullptr) {
          he = sge_copy_hostent(&re);
       }
    }
@@ -416,18 +416,18 @@ struct hostent *sge_gethostbyname(const char *name, int *system_error_retval) {
    DPRINTF (("Getting host by name - Solaris\n"));
    {
       char buffer[4096];
-      struct hostent *help_he = NULL;
+      struct hostent *help_he = nullptr;
 
       he = (struct hostent *)sge_malloc (sizeof (struct hostent));
-      if (he != NULL) {
+      if (he != nullptr) {
          memset(he, 0, sizeof(struct hostent));
          /* On Solaris, this function returns the pointer to my struct on success
-          * and NULL on failure. */
+          * and nullptr on failure. */
          help_he = gethostbyname_r(name, he, buffer, 4096, &l_errno);
          
          /* Since he contains pointers into buffer, and buffer goes away when we
           * exit this code block, we make a deep copy to return. */
-         if (help_he != NULL) {
+         if (help_he != nullptr) {
             struct hostent *new_he = sge_copy_hostent(he);
             sge_free(&he);
             he = new_he;
@@ -450,7 +450,7 @@ struct hostent *sge_gethostbyname(const char *name, int *system_error_retval) {
     * already screwed, so we won't worry too much about it.
     * An alternative would be to set errno to HOST_NOT_FOUND. */
    l_errno = h_errno;
-   if (he != NULL) {
+   if (he != nullptr) {
       struct hostent *new_he = sge_copy_hostent (he);
       /* do NOT free he, there was no malloc() */
       he = new_he;
@@ -465,7 +465,7 @@ struct hostent *sge_gethostbyname(const char *name, int *system_error_retval) {
    he = gethostbyname(name);
    l_errno = h_errno;
 
-   if (he != NULL) {
+   if (he != nullptr) {
       struct hostent *new_he = sge_copy_hostent (he);
       /* do NOT free he, there was no malloc() */
       he = new_he;
@@ -491,7 +491,7 @@ struct hostent *sge_gethostbyname(const char *name, int *system_error_retval) {
                                 (l_errno == NO_DATA) ? "NO_DATA" :
                                 (l_errno == NO_ADDRESS) ? "NO_ADDRESS" : "<unknown error>"));
    }
-   if (system_error_retval != NULL) {
+   if (system_error_retval != nullptr) {
       *system_error_retval = l_errno;
    }
 
@@ -514,12 +514,12 @@ struct hostent *sge_gethostbyname(const char *name, int *system_error_retval) {
 *******************************************************************************/
 struct hostent *sge_copy_hostent(struct hostent *orig) {
    struct hostent *copy = (struct hostent *) sge_malloc(sizeof(struct hostent));
-   char **p = NULL;
+   char **p = nullptr;
    int count = 0;
 
    DENTER(GDI_LAYER);
 
-   if (copy != NULL) {
+   if (copy != nullptr) {
       /* reset the malloced memory */
       memset(copy, 0, sizeof(struct hostent));
 
@@ -530,7 +530,7 @@ struct hostent *sge_copy_hostent(struct hostent *orig) {
 
       /* Count the number of entries */
       count = 0;
-      for (p = orig->h_addr_list; *p != NULL; p++) {
+      for (p = orig->h_addr_list; *p != nullptr; p++) {
          count++;
       }
 
@@ -540,7 +540,7 @@ struct hostent *sge_copy_hostent(struct hostent *orig) {
 
       /* Copy the entries */
       count = 0;
-      for (p = orig->h_addr_list; *p != NULL; p++) {
+      for (p = orig->h_addr_list; *p != nullptr; p++) {
 
 #ifndef in_addr_t
          int tmp_size = sizeof(uint32_t); /* POSIX definition for AF_INET */
@@ -552,7 +552,7 @@ struct hostent *sge_copy_hostent(struct hostent *orig) {
          memcpy(copy->h_addr_list[count++], *p, tmp_size);
       }
 
-      copy->h_addr_list[count] = NULL;
+      copy->h_addr_list[count] = nullptr;
 
       /* Count the number of entries */
       count = 0;
@@ -573,7 +573,7 @@ struct hostent *sge_copy_hostent(struct hostent *orig) {
          memcpy(copy->h_aliases[count++], *p, tmp_size);
       }
 
-      copy->h_aliases[count] = NULL;
+      copy->h_aliases[count] = nullptr;
    }
    DRETURN(copy);
 }
@@ -605,7 +605,7 @@ struct hostent *sge_copy_hostent(struct hostent *orig) {
 *     MT-NOTE: sge_gethostbyaddr() to be MT safe.
 *******************************************************************************/
 struct hostent *sge_gethostbyaddr(const struct in_addr *addr, int *system_error_retval) {
-   struct hostent *he = NULL;
+   struct hostent *he = nullptr;
    time_t now;
    time_t time;
    int l_errno;
@@ -635,9 +635,9 @@ struct hostent *sge_gethostbyaddr(const struct in_addr *addr, int *system_error_
 
       /* Since re contains pointers into buffer, and both re and the buffer go
        * away when we exit this code block, we make a deep copy to return. */
-      /* Yes, I do mean to check if he is NULL and then copy re!  No, he
+      /* Yes, I do mean to check if he is nullptr and then copy re!  No, he
        * doesn't need to be freed first. */
-      if (he != NULL) {
+      if (he != nullptr) {
          he = sge_copy_hostent(&re);
       }
    }
@@ -648,18 +648,18 @@ struct hostent *sge_gethostbyaddr(const struct in_addr *addr, int *system_error_
    DPRINTF(("Getting host by addr - Solaris\n"));
    {
       char buffer[4096];
-      struct hostent *help_he = NULL;
+      struct hostent *help_he = nullptr;
       he = (struct hostent *)sge_malloc(sizeof(struct hostent));
-      if (he != NULL) {
+      if (he != nullptr) {
          memset(he, 0, sizeof(struct hostent));
 
          /* On Solaris, this function returns the pointer to my struct on success
-          * and NULL on failure. */
+          * and nullptr on failure. */
          help_he = gethostbyaddr_r((const char *)addr, 4, AF_INET, he, buffer, 4096, &l_errno);
       
          /* Since he contains pointers into buffer, and buffer goes away when we
           * exit this code block, we make a deep copy to return. */
-         if (help_he != NULL) {
+         if (help_he != nullptr) {
             struct hostent *new_he = sge_copy_hostent(help_he);
             sge_free(&he);
             he = new_he;
@@ -687,7 +687,7 @@ struct hostent *sge_gethostbyaddr(const struct in_addr *addr, int *system_error_
     * already screwed, so we won't worry too much about it.
     * An alternative would be to set errno to HOST_NOT_FOUND. */
    l_errno = h_errno;
-   if (he != NULL) {
+   if (he != nullptr) {
       struct hostent *new_he = sge_copy_hostent(he);
       /* do not free he, there was no malloc() */
       he = new_he;
@@ -706,7 +706,7 @@ struct hostent *sge_gethostbyaddr(const struct in_addr *addr, int *system_error_
    he = gethostbyaddr((const char *)addr, 4, AF_INET);
 
    l_errno = h_errno;
-   if (he != NULL) {
+   if (he != nullptr) {
       struct hostent *new_he = sge_copy_hostent(he);
       /* do not free he, there was no malloc() */
       he = new_he;
@@ -735,7 +735,7 @@ struct hostent *sge_gethostbyaddr(const struct in_addr *addr, int *system_error_
                                                                                           ? "NO_ADDRESS"
                                                                                           : "<unknown error>"));
    }
-   if (system_error_retval != NULL) {
+   if (system_error_retval != nullptr) {
       *system_error_retval = l_errno;
    }
 
@@ -743,16 +743,16 @@ struct hostent *sge_gethostbyaddr(const struct in_addr *addr, int *system_error_
 }
 
 void sge_free_hostent(struct hostent **he_to_del) {
-   struct hostent *he = NULL;
-   char **help = NULL;
+   struct hostent *he = nullptr;
+   char **help = nullptr;
 
    /* nothing to free */
-   if (he_to_del == NULL) {
+   if (he_to_del == nullptr) {
       return;
    }
 
-   /* pointer points to NULL, nothing to free */
-   if (*he_to_del == NULL) {
+   /* pointer points to nullptr, nothing to free */
+   if (*he_to_del == nullptr) {
       return;
    }
 
@@ -760,21 +760,21 @@ void sge_free_hostent(struct hostent **he_to_del) {
 
    /* free unique host name */
    sge_free(&(he->h_name));
-   he->h_name = NULL;
+   he->h_name = nullptr;
 
    /* free host aliases */
-   if (he->h_aliases != NULL) {
+   if (he->h_aliases != nullptr) {
       help = he->h_aliases;
-      while (*help != NULL) {
+      while (*help != nullptr) {
          sge_free(help);
          help++;
       }
       sge_free(&(he->h_aliases));
    }
-   he->h_aliases = NULL;
+   he->h_aliases = nullptr;
 
    /* free addr list */
-   if (he->h_addr_list != NULL) {
+   if (he->h_addr_list != nullptr) {
       help = he->h_addr_list;
       while (*help) {
          sge_free(help);
@@ -782,7 +782,7 @@ void sge_free_hostent(struct hostent **he_to_del) {
       }
       sge_free(&(he->h_addr_list));
    }
-   he->h_addr_list = NULL;
+   he->h_addr_list = nullptr;
 
    /* free hostent struct */
    sge_free(he_to_del);
@@ -818,7 +818,7 @@ void sge_hostcpy(char *dst, const char *raw) {
    bool is_hgrp = is_hgroup_name(raw);
    const char *default_domain;
 
-   if (dst == NULL || raw == NULL) {
+   if (dst == nullptr || raw == nullptr) {
       return;
    }
    if (is_hgrp) {
@@ -827,7 +827,7 @@ void sge_hostcpy(char *dst, const char *raw) {
       return;
    }
    if (ignore_fqdn) {
-      char *s = NULL;
+      char *s = nullptr;
       /* standard: simply ignore FQDN */
 
       sge_strlcpy(dst, raw, CL_MAXHOSTLEN);
@@ -836,7 +836,7 @@ void sge_hostcpy(char *dst, const char *raw) {
       }
       return;
    }
-   if ((default_domain = bootstrap_get_default_domain()) != NULL &&
+   if ((default_domain = bootstrap_get_default_domain()) != nullptr &&
        SGE_STRCASECMP(default_domain, "none") != 0) {
 
       /* exotic: honor FQDN but use default_domain */
@@ -888,7 +888,7 @@ int sge_hostcmp(const char *h1, const char *h2) {
 
    DENTER(BASIS_LAYER);
 
-   if (h1 != NULL && h2 != NULL) {
+   if (h1 != nullptr && h2 != nullptr) {
       sge_hostcpy(h1_cpy, h1);
       sge_hostcpy(h2_cpy, h2);
 
@@ -934,7 +934,7 @@ int sge_hostmatch(const char *h1, const char *h2) {
 
    DENTER(BASIS_LAYER);
 
-   if (h1 != NULL && h2 != NULL) {
+   if (h1 != nullptr && h2 != nullptr) {
       sge_hostcpy(h1_cpy, h1);
       sge_hostcpy(h2_cpy, h2);
 
@@ -970,7 +970,7 @@ bool
 is_hgroup_name(const char *name) {
    bool ret = false;
 
-   if (name != NULL) {
+   if (name != nullptr) {
       ret = (name[0] == HOSTGROUP_INITIAL_CHAR) ? true : false;
    }
    return ret;

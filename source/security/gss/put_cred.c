@@ -57,7 +57,7 @@ void
 usage(char *progname)
 {
    char *p;
-   p = (NULL == (p = strrchr(progname,'/'))) ? progname : p+1;
+   p = (nullptr == (p = strrchr(progname,'/'))) ? progname : p+1;
    fprintf(stderr, MSG_GSS_PUTCRED_USAGE, p);
    fprintf(stderr, "\n");
    exit(1);
@@ -67,18 +67,18 @@ usage(char *progname)
 int
 main(int argc, char **argv)
 {
-   char *service_name = NULL;
+   char *service_name = nullptr;
    gss_cred_id_t server_creds = GSS_C_NO_CREDENTIAL;
    gss_buffer_desc client_cred;
-   char *username = NULL;
+   char *username = nullptr;
    int cc=0;
    int ch;
    extern int optind;
    extern char *optarg;
-   char *cmd = NULL, *ecmd = NULL;
+   char *cmd = nullptr, *ecmd = nullptr;
    int verbose=0;
-   char *become_user=NULL;
-   char *change_owner=NULL;
+   char *become_user=nullptr;
+   char *change_owner=nullptr;
    char *ccname = getenv("KRB5CCNAME");
    char ccbuf[1024];
    int i;
@@ -202,7 +202,7 @@ main(int argc, char **argv)
 
          char *new_ccname = getenv("KRB5CCNAME");
 
-         if (new_ccname == NULL || strncasecmp(new_ccname, "file:", 5) != 0) {
+         if (new_ccname == nullptr || strncasecmp(new_ccname, "file:", 5) != 0) {
             fprintf(stderr, MSG_GSS_COULDNOTCHANGEOWNERSHIPOFCREDENTIALSCACHETOXINVALIDKRB5CCNAME_S, owner);
             fprintf(stderr, "\n");
             cc = 4;
@@ -313,7 +313,7 @@ main(int argc, char **argv)
       char *eargv[256];
       eargv[eargc] = strtok(ecmd, " \t");
       while(eargv[eargc])
-	 eargv[++eargc] = strtok(NULL, " \t");
+	 eargv[++eargc] = strtok(nullptr, " \t");
       execv(eargv[0], eargv);
       perror("exec failed");
    }

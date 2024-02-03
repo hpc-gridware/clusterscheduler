@@ -310,7 +310,7 @@ lNameSpace nmv[] = {
    {PRO_LOWERBOUND, PRO_SIZE, PRON, PRO_Type},
    {GR_LOWERBOUND, GR_SIZE, GRN, GR_Type},
    {BN_LOWERBOUND, BN_SIZE, BNN, BN_Type},
-   {0, 0, NULL, NULL}
+   {0, 0, nullptr, nullptr}
 };
 
 #ifdef __cplusplus

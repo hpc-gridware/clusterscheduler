@@ -41,7 +41,7 @@ int main(int argc, char *argv[])
  struct timeval now;
 
 #ifdef SOLARIS
-   gettimeofday(&now, NULL);
+   gettimeofday(&now, nullptr);
 #else
    struct timezone tzp;
 

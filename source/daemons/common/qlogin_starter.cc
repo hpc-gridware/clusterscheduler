@@ -79,10 +79,10 @@
 *******************************************************************************/
 int delete_qrsh_pid_file(void)
 {
-   char *pid_file_name = NULL;
+   char *pid_file_name = nullptr;
    int ret = 1;
 
-   if((pid_file_name = search_conf_val("qrsh_pid_file")) == NULL) {
+   if((pid_file_name = search_conf_val("qrsh_pid_file")) == nullptr) {
       shepherd_trace("cannot get variable %s", pid_file_name);
       return 0;
    }
@@ -127,7 +127,7 @@ int delete_qrsh_pid_file(void)
 ******************************************************************************/
 int write_to_qrsh(const char *data)
 {
-   char *address = NULL;
+   char *address = nullptr;
    char *host;
    char *c;
    int   port    = 0;
@@ -141,7 +141,7 @@ int write_to_qrsh(const char *data)
    /* read destination host and port from config */
    address = get_conf_val("qrsh_control_port");
 
-   if (address == NULL) {
+   if (address == nullptr) {
       shepherd_trace("config does not contain entry for qrsh_control_port");
       return 1;
    }
@@ -149,7 +149,7 @@ int write_to_qrsh(const char *data)
    shepherd_trace("write_to_qrsh - address = %s", address);
 
    c = strchr(address, ':');
-   if (c == NULL) {
+   if (c == nullptr) {
       shepherd_trace("illegal value for qrsh_control_port: \"%s\". "
                      "Should be host:port", address);
       return 2;
@@ -273,7 +273,7 @@ int get_exit_code_of_qrsh_starter(int* exit_code)
 
    /* we only have an error file in TMPDIR in case of rsh, 
     * otherwise pass exit_code */
-   if (search_conf_val("rsh_daemon") != NULL) {
+   if (search_conf_val("rsh_daemon") != nullptr) {
       char *tmpdir;
       char *taskid;
       FILE *errorfile;
@@ -282,15 +282,15 @@ int get_exit_code_of_qrsh_starter(int* exit_code)
       taskid = search_conf_val("pe_task_id");
       shepherd_trace("get_exit_code_of_qrsh_starter - TMPDIR = %s, pe_task_id = %s",
                      tmpdir ? tmpdir : "0", taskid ? taskid : "0");
-      if (tmpdir != NULL) {
-         if (taskid != NULL) {
+      if (tmpdir != nullptr) {
+         if (taskid != nullptr) {
             sprintf(buffer, "%s/qrsh_exit_code.%s", tmpdir, taskid);
          } else {
             sprintf(buffer, "%s/qrsh_exit_code", tmpdir);
          }
 
          errorfile = fopen(buffer, "r");
-         if (errorfile != NULL) {
+         if (errorfile != nullptr) {
             ret = 0;
             if (fscanf(errorfile, "%d", exit_code) == 1) {
                shepherd_trace("error code from remote command is %d", *exit_code);
@@ -327,7 +327,7 @@ FCLOSE_ERROR:
 *
 *  RESULT
 *     the error message from qrsh_starter or
-*     NULL, if no error was generated (the job started up without problems)
+*     nullptr, if no error was generated (the job started up without problems)
 *
 *  NOTE
 *     The returned string is dynamically allocated. It is in the responsibility
@@ -336,7 +336,7 @@ FCLOSE_ERROR:
 const char *get_error_of_qrsh_starter(void)
 {
    char buffer[SGE_PATH_MAX];
-   char *ret = NULL;
+   char *ret = nullptr;
    
    *buffer = 0;
 
@@ -344,7 +344,7 @@ const char *get_error_of_qrsh_starter(void)
    shepherd_trace("get_error_of_qrsh_starter()"); 
 
    /* we only have an error file in TMPDIR in case of rsh */
-   if (search_conf_val("rsh_daemon") != NULL) {
+   if (search_conf_val("rsh_daemon") != nullptr) {
       char *tmpdir;
       char *taskid;
       FILE *errorfile;
@@ -353,18 +353,18 @@ const char *get_error_of_qrsh_starter(void)
       taskid = search_conf_val("qrsh_task_id");
       shepherd_trace("get_error_of_qrsh_starter - TMPDIR = %s, qrsh_task_id = %s", 
                      tmpdir ? tmpdir : "0", taskid ? taskid : "0");
-      if (tmpdir != NULL) {
-         if (taskid != NULL) {
+      if (tmpdir != nullptr) {
+         if (taskid != nullptr) {
             sprintf(buffer, "%s/qrsh_error.%s", tmpdir, taskid);
          } else {
             sprintf(buffer, "%s/qrsh_error", tmpdir);
          }
 
          errorfile = fopen(buffer, "r");
-         if (errorfile != NULL) {
+         if (errorfile != nullptr) {
             char buffer[MAX_STRING_SIZE];
 
-            if (fgets(buffer, MAX_STRING_SIZE, errorfile) != NULL) {
+            if (fgets(buffer, MAX_STRING_SIZE, errorfile) != nullptr) {
                shepherd_trace("error string from qrsh_starter is %s", buffer);
                ret = strdup(buffer);
             }
@@ -437,8 +437,8 @@ int qlogin_starter(const char *cwd, char *daemon, char** env)
    char buffer[2048];
    char *args[20]; /* JG: TODO: should be dynamically allocated */
    int argc = 0;
-   const char *sge_root = NULL;
-   const char *arch = NULL;
+   const char *sge_root = nullptr;
+   const char *arch = nullptr;
    
    socklen_t length;
    socklen_t len;
@@ -503,10 +503,10 @@ int qlogin_starter(const char *cwd, char *daemon, char** env)
    port = ntohs(serv_addr.sin_port);
    shepherd_trace("bound to port %d", port);
  
-   sge_root = sge_get_root_dir(0, NULL, 0, 1);
+   sge_root = sge_get_root_dir(0, nullptr, 0, 1);
    arch = sge_get_arch();
    
-   if (sge_root == NULL || arch == NULL) {
+   if (sge_root == nullptr || arch == nullptr) {
       shepherd_trace("reading environment SGE_ROOT and ARC failed");
       shutdown(sockfd, 2);
       close(sockfd);
@@ -530,7 +530,7 @@ int qlogin_starter(const char *cwd, char *daemon, char** env)
    FD_SET(sockfd, &fds);
    timeout.tv_sec = 60;
    timeout.tv_usec = 0;
-   if (select(sockfd+1, &fds, NULL, NULL, &timeout) < 1) {
+   if (select(sockfd+1, &fds, nullptr, nullptr, &timeout) < 1) {
       shepherd_trace("nobody connected to the socket");
       shutdown(sockfd, 2);
       close(sockfd);
@@ -579,12 +579,12 @@ int qlogin_starter(const char *cwd, char *daemon, char** env)
     *           make function to split or use an already existing one
     */
    args[argc++] = strtok(daemon, " ");
-   while ((args[argc++] = strtok(NULL, " ")) != NULL);
+   while ((args[argc++] = strtok(nullptr, " ")) != nullptr);
 #if 0
    {
       int i = 0;
       shepherd_trace("daemon commandline split to %d arguments", argc);
-      while (args[i] != NULL) {
+      while (args[i] != nullptr) {
          shepherd_trace("daemon argv[%d] = |%s|", i, args[i]);
          i++;
       }

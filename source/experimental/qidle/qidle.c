@@ -96,9 +96,9 @@ char ** argv;
    struct timeval timeout;
    int fd;
 
-   dpy = NULL;
-   status = NULL;
-   dpy_name = host = script = NULL;
+   dpy = nullptr;
+   status = nullptr;
+   dpy_name = host = script = nullptr;
    buffer[0] = '\0';
    i = dispopen = enter = entersum = DEBUG = 0;
    time(&starttime);
@@ -139,7 +139,7 @@ char ** argv;
          if (entersum>3) 
             entersum = 0;
       }
-      if (dpy == NULL) {
+      if (dpy == nullptr) {
          timeout.tv_sec  = 20;
          timeout.tv_usec = 0;
       } else {
@@ -149,19 +149,19 @@ char ** argv;
       }
       FD_ZERO(&readfds);
       FD_SET(0, &readfds);
-      if (select(1, &readfds, NULL, NULL, &timeout)) {
+      if (select(1, &readfds, nullptr, nullptr, &timeout)) {
          fgets(buffer, 5, stdin);
          if (!strcmp(buffer, "quit"))
          exit(0);
          enter = 0;
          if (!strncmp(buffer, "\n", 1)) {	
             enter = 1;
-            printf("begin\n"); fflush(NULL);
+            printf("begin\n"); fflush(nullptr);
             tt = getidletime(dpy);
-            printf("%s:idle:%d:%02d:%02d\n", host, tt.std, tt.min, tt.sek); fflush(NULL);
-            if (script != NULL) 
+            printf("%s:idle:%d:%02d:%02d\n", host, tt.std, tt.min, tt.sek); fflush(nullptr);
+            if (script != nullptr)
                getextloadsensor(uti_state_get_qualified_hostname(), bootstrap_get_binary_path(), script);
-            printf("end\n"); fflush(NULL);
+            printf("end\n"); fflush(nullptr);
          }
          else 
             entersum = 0;
@@ -183,7 +183,7 @@ Display *dpy;
    unsigned int mask;
    Window root, child;
    time(&akttime); 
-   if (dpy != NULL) {
+   if (dpy != nullptr) {
       root = DefaultRootWindow(dpy);
       XQueryPointer(dpy, root, &root, &child, &xnew, &ynew, &x, &y, &mask);  
       if (xnew != xold || ynew != yold) {
@@ -218,14 +218,14 @@ int s;
 void getextloadsensor(const char *qualified_hostname, const char *binary_path, 
                       char *script)
 {
-   lList *lpp = NULL;
-   lListElem *ep = NULL;
+   lList *lpp = nullptr;
+   lListElem *ep = nullptr;
    sge_ls_get(qualified_hostname, binary_path, &lpp);
    for_each_ep(ep, lpp) {
       printf("%s:%s:%s\n", 
       lGetHost(ep, LR_host),
       lGetString(ep, LR_name),
-      lGetString(ep, LR_value)); fflush(NULL);
+      lGetString(ep, LR_value)); fflush(nullptr);
    }
 }
 

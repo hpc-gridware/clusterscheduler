@@ -108,8 +108,8 @@ shadowd_is_old_master_enrolled(int sge_test_heartbeat, int sge_qmaster_port, cha
 
 static int
 shadowd_is_old_master_enrolled(int sge_test_heartbeat, int sge_qmaster_port, char *oldqmaster) {
-   cl_com_handle_t *handle = NULL;
-   cl_com_SIRM_t *status = NULL;
+   cl_com_handle_t *handle = nullptr;
+   cl_com_SIRM_t *status = nullptr;
    int ret;
    int is_up_and_running = 0;
    int commlib_error = CL_RETVAL_OK;
@@ -127,7 +127,7 @@ shadowd_is_old_master_enrolled(int sge_test_heartbeat, int sge_qmaster_port, cha
 
    handle = cl_com_create_handle(&commlib_error, CL_CT_TCP, CL_CM_CT_MESSAGE, false, sge_qmaster_port, CL_TCP_DEFAULT,
                                  (char *) prognames[SHADOWD], 0, 1, 0);
-   if (handle == NULL) {
+   if (handle == nullptr) {
       CRITICAL((SGE_EVENT, SFNMAX, cl_get_error_text(commlib_error)));
       DRETURN(is_up_and_running);
    }
@@ -143,7 +143,7 @@ shadowd_is_old_master_enrolled(int sge_test_heartbeat, int sge_qmaster_port, cha
       is_up_and_running = 1;
    }
 
-   if (status != NULL) {
+   if (status != nullptr) {
       DPRINTF(("endpoint is up since %ld seconds and has status %ld\n", status->runtime, status->application_status));
       cl_com_free_sirm_message(&status);
    }
@@ -184,8 +184,8 @@ main(int argc, char **argv) {
 
 #endif
 
-   lList *alp = NULL;
-   sge_gdi_ctx_class_t *ctx = NULL;
+   lList *alp = nullptr;
+   sge_gdi_ctx_class_t *ctx = nullptr;
 
    DENTER_MAIN(TOP_LAYER, "sge_shadowd");
 
@@ -217,7 +217,7 @@ main(int argc, char **argv) {
                          (setlocale_func_type)      setlocale,
                          (bindtextdomain_func_type) bindtextdomain,
                          (textdomain_func_type)     textdomain);
-   sge_init_language(NULL,NULL);
+   sge_init_language(nullptr,nullptr);
 #endif /* __SGE_COMPILE_WITH_GETTEXT__  */
 
    log_state_set_log_file(TMP_ERR_FILE_SHADOWD);
@@ -238,7 +238,7 @@ main(int argc, char **argv) {
    }
 #endif
 
-   if (bootstrap_get_qmaster_spool_dir() != NULL) {
+   if (bootstrap_get_qmaster_spool_dir() != nullptr) {
       char *shadowd_name = SGE_SHADOWD;
 
       /* is there a running shadowd on this host (with unqualified name) */
@@ -273,7 +273,7 @@ main(int argc, char **argv) {
       SGE_EXIT((void **) &ctx, 0);
    }
 
-   if (bootstrap_get_qmaster_spool_dir() == NULL) {
+   if (bootstrap_get_qmaster_spool_dir() == nullptr) {
       CRITICAL((SGE_EVENT, MSG_SHADOWD_CANTREADQMASTERSPOOLDIRFROMX_S, bootstrap_get_bootstrap_file()));
       SGE_EXIT((void **) &ctx, 1);
    }
@@ -301,17 +301,17 @@ main(int argc, char **argv) {
    log_state_set_log_file(shadow_err_file);
 
    {
-      int *tmp_fd_array = NULL;
+      int *tmp_fd_array = nullptr;
       unsigned long tmp_fd_count = 0;
 
       if (cl_com_set_handle_fds(cl_com_get_handle(prognames[SHADOWD], 0), &tmp_fd_array, &tmp_fd_count) ==
           CL_RETVAL_OK) {
          sge_daemonize(tmp_fd_array, tmp_fd_count, ctx);
-         if (tmp_fd_array != NULL) {
+         if (tmp_fd_array != nullptr) {
             sge_free(&tmp_fd_array);
          }
       } else {
-         sge_daemonize(NULL, 0, ctx);
+         sge_daemonize(nullptr, 0, ctx);
       }
    }
 
@@ -374,7 +374,7 @@ main(int argc, char **argv) {
                      /* TODO: what do we when there is a timeout ??? */
                      DPRINTF(("old qmaster name in act_qmaster and old heartbeat\n"));
                      if (!compare_qmaster_names(bootstrap_get_act_qmaster_file(), oldqmaster) &&
-                         !shadowd_is_old_master_enrolled(sge_test_heartbeat, sge_get_qmaster_port(NULL), oldqmaster) &&
+                         !shadowd_is_old_master_enrolled(sge_test_heartbeat, sge_get_qmaster_port(nullptr), oldqmaster) &&
                          (latest_heartbeat == heartbeat)) {
                         char qmaster_name[256];
 
@@ -399,7 +399,7 @@ main(int argc, char **argv) {
                         }
 
                         sge_switch2start_user();
-                        ret = startprog(out, err, NULL, binpath, qmaster_name, NULL);
+                        ret = startprog(out, err, nullptr, binpath, qmaster_name, nullptr);
                         sge_switch2admin_user();
                         if (ret) {
                            ERROR((SGE_EVENT, SFNMAX, MSG_SHADOWD_CANTSTARTQMASTER));
@@ -465,7 +465,7 @@ compare_qmaster_names(const char *act_qmaster_file, const char *oldqmaster) {
 
    DENTER(TOP_LAYER);
 
-   if (get_qm_name(newqmaster, act_qmaster_file, NULL)) {
+   if (get_qm_name(newqmaster, act_qmaster_file, nullptr)) {
       WARNING((SGE_EVENT, MSG_SHADOWD_CANTREADACTQMASTERFILEX_S, act_qmaster_file));
       DRETURN(-1);
    }
@@ -496,14 +496,14 @@ check_if_valid_shadow(char *binpath, char *oldqmaster, const char *act_qmaster_f
    }
 
    /* we can't read act_qmaster file */
-   if (get_qm_name(oldqmaster, act_qmaster_file, NULL)) {
+   if (get_qm_name(oldqmaster, act_qmaster_file, nullptr)) {
       WARNING((SGE_EVENT, MSG_SHADOWD_CANTREADACTQMASTERFILEX_S, act_qmaster_file));
       DRETURN(-1);
    }
 
    /* we can't resolve hostname of old qmaster */
    hp = sge_gethostbyname_retry(oldqmaster);
-   if (hp == (struct hostent *) NULL) {
+   if (hp == (struct hostent *) nullptr) {
       WARNING((SGE_EVENT, MSG_SHADOWD_CANTRESOLVEHOSTNAMEFROMACTQMASTERFILE_SS,
               act_qmaster_file, oldqmaster));
       DRETURN(-1);
@@ -553,9 +553,9 @@ host_in_file(const char *host, const char *file) {
    }
 
    while (fgets(buf, sizeof(buf), fp)) {
-      for (cp = strtok(buf, " \t\n,"); cp; cp = strtok(NULL, " \t\n,")) {
-         char *resolved_host = NULL;
-         cl_com_cached_gethostbyname(cp, &resolved_host, NULL, NULL, NULL);
+      for (cp = strtok(buf, " \t\n,"); cp; cp = strtok(nullptr, " \t\n,")) {
+         char *resolved_host = nullptr;
+         cl_com_cached_gethostbyname(cp, &resolved_host, nullptr, nullptr, nullptr);
          if (resolved_host) {
             if (!sge_hostcmp(host, resolved_host)) {
                FCLOSE(fp);

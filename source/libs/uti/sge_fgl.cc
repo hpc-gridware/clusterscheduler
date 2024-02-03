@@ -54,7 +54,7 @@ static pthread_once_t fgl_once = PTHREAD_ONCE_INIT;
 
 static pthread_key_t fgl_state_key;
 
-static htable fgl_lcks = NULL;
+static htable fgl_lcks = nullptr;
 
 static pthread_mutex_t fgl_mtx = PTHREAD_MUTEX_INITIALIZER;
 
@@ -67,7 +67,7 @@ typedef struct {
    double max_wait_time;
 } fgl_stats_t;
 
-static htable fgl_stats = NULL;
+static htable fgl_stats = nullptr;
 
 static pthread_mutex_t fgl_stats_mtx = PTHREAD_MUTEX_INITIALIZER;
 
@@ -89,7 +89,7 @@ static void fgl_once_init(void) {
 }
 
 static void fgl_state_get_requests(fgl_t **requests, u_long32 *pos) {
-   if (requests == NULL || pos == NULL) {
+   if (requests == nullptr || pos == nullptr) {
       return;
    }
 
@@ -106,13 +106,13 @@ static void fgl_state_set_pos(u_long32 new_pos) {
 void fgl_mt_init(void) {
    pthread_once(&fgl_once, fgl_once_init);
    pthread_mutex_lock(&fgl_mtx);
-   if (fgl_lcks == NULL) {
+   if (fgl_lcks == nullptr) {
       fgl_lcks = sge_htable_create(FGL_REQ_MAX, dup_func_string, hash_func_string, hash_compare_string);
    }
    pthread_mutex_unlock(&fgl_mtx);
 #if COLLECT_STATS
    pthread_mutex_lock(&fgl_stats_mtx);
-   if (fgl_stats == NULL) {
+   if (fgl_stats == nullptr) {
       fgl_stats = sge_htable_create(FGL_REQ_MAX, dup_func_string, hash_func_string, hash_compare_string);
    }
    pthread_mutex_unlock(&fgl_stats_mtx);
@@ -208,7 +208,7 @@ int fgl_rsv_compare(const void *a, const void *b) {
 
 void fgl_rsv_sort(void) {
    // fetch current lck requests array and pos 
-   fgl_t *requests = NULL;
+   fgl_t *requests = nullptr;
    u_long32 pos = 0;
    fgl_state_get_requests(&requests, &pos);
 
@@ -218,7 +218,7 @@ void fgl_rsv_sort(void) {
 
 static void fgl_add(u_long32 id_root, bool is_rw, fgl_type_t type, u_long32 id_ulong, const char *id_str) {
    // fetch current lck requests array and pos 
-   fgl_t *requests = NULL;
+   fgl_t *requests = nullptr;
    u_long32 pos = 0;
    fgl_state_get_requests(&requests, &pos);
 
@@ -248,11 +248,11 @@ static void fgl_add(u_long32 id_root, bool is_rw, fgl_type_t type, u_long32 id_u
 }
 
 void fgl_add_r(u_long32 id_root, bool is_rw) {
-   fgl_add(id_root, is_rw, FGL_NONE, 0, NULL);
+   fgl_add(id_root, is_rw, FGL_NONE, 0, nullptr);
 }
 
 void fgl_add_u(u_long32 id_root, u_long32 id_ulong, bool is_rw) {
-   fgl_add(id_root, is_rw, FGL_ULONG, id_ulong, NULL);
+   fgl_add(id_root, is_rw, FGL_ULONG, id_ulong, nullptr);
 }
 
 void fgl_add_s(u_long32 id_root, const char *id_str, bool is_rw) {
@@ -265,7 +265,7 @@ void fgl_clear(void) {
 
 static void fgl_get_key_clear(int i, dstring *dstr, bool do_clear) {
    // fetch current array and pos 
-   fgl_t *requests = NULL;
+   fgl_t *requests = nullptr;
    u_long32 pos = 0;
    fgl_state_get_requests(&requests, &pos);
 
@@ -300,7 +300,7 @@ static void fgl_get_key(int i, dstring *dstr) {
 
 void fgl_dump(dstring *dstr) {
    // fetch current array and pos 
-   fgl_t *requests = NULL;
+   fgl_t *requests = nullptr;
    u_long32 pos = 0;
    fgl_state_get_requests(&requests, &pos);
 
@@ -338,7 +338,7 @@ void fgl_lock(void) {
    DENTER(TOP_LAYER);
 
    // fetch request array 
-   fgl_t *requests = NULL;
+   fgl_t *requests = nullptr;
    u_long32 pos = 0;
    fgl_state_get_requests(&requests, &pos);
 
@@ -358,7 +358,7 @@ void fgl_lock(void) {
       pthread_mutex_lock(&fgl_mtx);
 
       // find or create the lock in the table with created key
-      fgl_lck_t *fgl_lck = NULL;
+      fgl_lck_t *fgl_lck = nullptr;
       int found = sge_htable_lookup(fgl_lcks, sge_dstring_get_string(&key), (const void **) &fgl_lck);
       if (found == False) {
 
@@ -367,7 +367,7 @@ void fgl_lock(void) {
 #if USE_FIFO_LOCK
          sge_fifo_lock_init(&fgl_lck->lck);
 #else
-         pthread_rwlock_init(&fgl_lck->lck, NULL);
+         pthread_rwlock_init(&fgl_lck->lck, nullptr);
 #endif
          counter = 1;
          fgl_lck->counter = counter;
@@ -387,7 +387,7 @@ void fgl_lock(void) {
 
 #if COLLECT_STATS
       struct timeval start_time;
-      gettimeofday(&start_time, NULL);
+      gettimeofday(&start_time, nullptr);
       suseconds_t start_us = start_time.tv_sec * 10e6 + start_time.tv_usec;
 #endif
 
@@ -406,7 +406,7 @@ void fgl_lock(void) {
 
 #if COLLECT_STATS
       struct timeval end_time;
-      gettimeofday(&end_time, NULL);
+      gettimeofday(&end_time, nullptr);
       suseconds_t end_us = end_time.tv_sec * 10e6 + end_time.tv_usec;
       double wait_time = ((double) (end_us - start_us)) / 10e6;
 
@@ -438,7 +438,7 @@ void fgl_lock(void) {
 void fgl_unlock(void) {
    DENTER(TOP_LAYER);
    // fetch current array and pos 
-   fgl_t *requests = NULL;
+   fgl_t *requests = nullptr;
    u_long32 pos = 0;
    fgl_state_get_requests(&requests, &pos);
 
@@ -453,7 +453,7 @@ void fgl_unlock(void) {
       pthread_mutex_lock(&fgl_mtx);
 
       // find or create the lock in the table with created key
-      fgl_lck_t *fgl_lck = NULL;
+      fgl_lck_t *fgl_lck = nullptr;
       int found = sge_htable_lookup(fgl_lcks, sge_dstring_get_string(&key), (const void **) &fgl_lck);
       if (found == True) {
          // unlock data 

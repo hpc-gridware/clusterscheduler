@@ -61,13 +61,13 @@ sge_initialize_persistence(sge_gdi_ctx_class_t *ctx, lList **answer_list) {
 
    DENTER(TOP_LAYER);
 
-   if (getenv("SGE_TEST_SPOOLING_WAIT_TIME") != NULL) {
+   if (getenv("SGE_TEST_SPOOLING_WAIT_TIME") != nullptr) {
       spooling_wait_time = atoi(getenv("SGE_TEST_SPOOLING_WAIT_TIME"));
    }
 
    /* create spooling context */
    spooling_context = spool_create_dynamic_context(answer_list, spooling_method, spooling_lib, spooling_params);
-   if (spooling_context == NULL) {
+   if (spooling_context == nullptr) {
       /* error message created in spool_create_dynamic_context */
       ret = false;
    } else {
@@ -89,13 +89,13 @@ sge_initialize_persistence(sge_gdi_ctx_class_t *ctx, lList **answer_list) {
 
 void
 sge_initialize_persistance_timer(void) {
-   te_event_t ev = NULL;
+   te_event_t ev = nullptr;
 
    DENTER(TOP_LAYER);
 
    te_register_event_handler(spooling_trigger_handler, TYPE_SPOOLING_TRIGGER);
 
-   ev = te_new_event(time(NULL), TYPE_SPOOLING_TRIGGER, ONE_TIME_EVENT, 0, 0, NULL);
+   ev = te_new_event(time(nullptr), TYPE_SPOOLING_TRIGGER, ONE_TIME_EVENT, 0, 0, nullptr);
    te_add_event(ev);
    te_free_event(&ev);
 
@@ -106,7 +106,7 @@ bool
 sge_shutdown_persistence(lList **answer_list) {
    bool ret = true;
    time_t time = 0;
-   lList *alp = NULL;
+   lList *alp = nullptr;
    lListElem *context;
 
    DENTER(TOP_LAYER);
@@ -118,15 +118,15 @@ sge_shutdown_persistence(lList **answer_list) {
 
    /* shutdown spooling */
    context = spool_get_default_context();
-   if (context != NULL) {
-      lList *local_answer = NULL;
+   if (context != nullptr) {
+      lList *local_answer = nullptr;
 
-      if (answer_list != NULL) {
+      if (answer_list != nullptr) {
          local_answer = *answer_list;
       }
 
       spool_shutdown_context(&local_answer, context);
-      if (answer_list == NULL) {
+      if (answer_list == nullptr) {
          answer_list_output(&local_answer);
       }
 
@@ -141,8 +141,8 @@ void
 spooling_trigger_handler(sge_gdi_ctx_class_t *ctx, te_event_t anEvent, monitoring_t *monitor) {
    time_t next_trigger = 0;
    time_t now;
-   lList *answer_list = NULL;
-   te_event_t ev = NULL;
+   lList *answer_list = nullptr;
+   te_event_t ev = nullptr;
 
    DENTER(TOP_LAYER);
 
@@ -159,7 +159,7 @@ spooling_trigger_handler(sge_gdi_ctx_class_t *ctx, te_event_t anEvent, monitorin
    }
 
    /* set timerevent for next trigger */
-   ev = te_new_event(next_trigger, te_get_type(anEvent), ONE_TIME_EVENT, 0, 0, NULL);
+   ev = te_new_event(next_trigger, te_get_type(anEvent), ONE_TIME_EVENT, 0, 0, nullptr);
    te_add_event(ev);
    te_free_event(&ev);
 
@@ -218,9 +218,9 @@ sge_event_spool(sge_gdi_ctx_class_t *ctx, lList **answer_list, u_long32 timestam
                 u_long32 intkey2, const char *strkey, const char *strkey2, const char *session, lListElem *object,
                 lListElem *sub_object1, lListElem *sub_object2, bool send_event, bool spool) {
    bool ret = true;
-   const char *key = NULL;
+   const char *key = nullptr;
    sge_object_type object_type;
-   lListElem *element = NULL;
+   lListElem *element = nullptr;
    bool do_delete = false;
    dstring buffer = DSTRING_INIT;
    bool job_spooling = bootstrap_get_job_spooling();
@@ -237,8 +237,8 @@ sge_event_spool(sge_gdi_ctx_class_t *ctx, lList **answer_list, u_long32 timestam
           * find out if there is a qping -dump client connected to qmaster
           */
          cl_com_handle_t *handle = cl_com_get_handle("qmaster", 1);
-         if (handle != NULL) {
-            if (handle->debug_client_setup != NULL) {
+         if (handle != nullptr) {
+            if (handle->debug_client_setup != nullptr) {
                if (handle->debug_client_setup->dc_mode != CL_DEBUG_CLIENT_OFF) {
                   do_sleep = true;
                } else {
@@ -506,7 +506,7 @@ sge_event_spool(sge_gdi_ctx_class_t *ctx, lList **answer_list, u_long32 timestam
             do_delete = true;
             break;
          case sgeE_NEW_SHARETREE:
-            if (object == NULL) {
+            if (object == nullptr) {
                do_delete = true;
             }
             break;
@@ -520,12 +520,12 @@ sge_event_spool(sge_gdi_ctx_class_t *ctx, lList **answer_list, u_long32 timestam
          /* use an own answer list for the low level spooling operation. 
           * in case of error, generate a high level error message.
           */
-         lList *spool_answer_list = NULL;
+         lList *spool_answer_list = nullptr;
          if (do_delete) {
             ret = spool_delete_object(&spool_answer_list, spool_get_default_context(),
                                       object_type, key, job_spooling);
          } else {
-            lList *tmp_list = NULL;
+            lList *tmp_list = nullptr;
             const lListElem *load_value;
 
             /* 

@@ -69,7 +69,7 @@ spool_dynamic_create_context(lList **answer_list, const char *method,
                              const char *shlib_name, const char *args)
 {
    bool ok = true;
-   lListElem *context = NULL;
+   lListElem *context = nullptr;
 
    /* shared lib name buffer and handle */
    dstring shlib_dstring = DSTRING_INIT;
@@ -77,8 +77,8 @@ spool_dynamic_create_context(lList **answer_list, const char *method,
    void *shlib_handle;
 
    /* get_method function pointer and result */
-   spooling_get_method_func get_spooling_method = NULL;
-   const char *spooling_name = NULL;
+   spooling_get_method_func get_spooling_method = nullptr;
+   const char *spooling_name = nullptr;
 
    DENTER(TOP_LAYER);
 
@@ -108,7 +108,7 @@ spool_dynamic_create_context(lList **answer_list, const char *method,
    # endif /* RTLD_NODELETE */
    #endif
 
-   if (shlib_handle == NULL) {
+   if (shlib_handle == nullptr) {
       answer_list_add_sprintf(answer_list, STATUS_EUNKNOWN, 
                               ANSWER_QUALITY_ERROR, 
                               MSG_SPOOL_ERROROPENINGSHAREDLIB_SS, 
@@ -129,7 +129,7 @@ spool_dynamic_create_context(lList **answer_list, const char *method,
                             dlsym(shlib_handle, 
                             sge_dstring_get_string(&get_spooling_method_func_name));
 #pragma GCC diagnostic pop
-      if (get_spooling_method == NULL) {
+      if (get_spooling_method == nullptr) {
          answer_list_add_sprintf(answer_list, STATUS_EUNKNOWN, 
                                  ANSWER_QUALITY_ERROR, 
                                  MSG_SPOOL_SHLIBDOESNOTCONTAINSPOOLING_SS, 
@@ -143,7 +143,7 @@ spool_dynamic_create_context(lList **answer_list, const char *method,
    if (ok) {
       spooling_name = get_spooling_method();
 
-      if (spooling_name == NULL) {
+      if (spooling_name == nullptr) {
          answer_list_add_sprintf(answer_list, STATUS_EUNKNOWN, 
                                  ANSWER_QUALITY_INFO, 
                                  MSG_SPOOL_SHLIBGETMETHODRETURNSNULL_S, 
@@ -180,7 +180,7 @@ spool_dynamic_create_context(lList **answer_list, const char *method,
             dlsym(shlib_handle, 
                   sge_dstring_get_string(&create_context_func_name));
 #pragma GCC diagnostic pop
-      if (create_context == NULL) {
+      if (create_context == nullptr) {
          answer_list_add_sprintf(answer_list, STATUS_EUNKNOWN, 
                                  ANSWER_QUALITY_ERROR, 
                                  MSG_SPOOL_SHLIBDOESNOTCONTAINSPOOLING_SS,
@@ -193,8 +193,8 @@ spool_dynamic_create_context(lList **answer_list, const char *method,
    }
 
    /* cleanup in case of initialization error */
-   if (context == NULL) {
-      if (shlib_handle != NULL) {
+   if (context == nullptr) {
+      if (shlib_handle != nullptr) {
          dlclose(shlib_handle);
       }
    }

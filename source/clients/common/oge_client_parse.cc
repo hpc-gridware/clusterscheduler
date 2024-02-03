@@ -68,9 +68,9 @@ static void append_opts_from_default_files(u_long32 prog_number, lList **pcmdlin
  *     into an options list.
  *
  *  INPUTS
- *     lList **pcmdline - pointer to SPA_Type list, if list is NULL, it is
+ *     lList **pcmdline - pointer to SPA_Type list, if list is nullptr, it is
  *                        created if the files contain any options
- *     lList* - answer list, AN_Type or NULL if everything ok
+ *     lList* - answer list, AN_Type or nullptr if everything ok
  *        possible errors:
  *           STATUS_ENOSUCHUSER - could not retrieve passwd info on me.user_name
  *           STATUS_EDISK       - home directory for user is missing or cwd
@@ -110,7 +110,7 @@ void opt_list_append_opts_from_default_files(u_long32 prog_number, const char *c
     */
    def_files[2] = get_cwd_defaults_file_path(answer_list);
 
-   def_files[3] = NULL;
+   def_files[3] = nullptr;
 
    /*
     * now read all the defaults files, unaware of where they came from
@@ -138,7 +138,7 @@ void opt_list_append_opts_from_default_files(u_long32 prog_number, const char *c
  *     dstring              - computed absoult filename
  *     const char *filename - file name
  *     const char *user     - user name
- *     lList* - answer list, AN_Type or NULL if everything ok
+ *     lList* - answer list, AN_Type or nullptr if everything ok
  *        possible errors:
  *           STATUS_ENOSUCHUSER - could not retrieve passwd info on me.user_name
  *           STATUS_EDISK       - home directory for user is missing or cwd
@@ -160,7 +160,7 @@ bool get_user_home_file_path(dstring *absolut_filename, const char *filename, co
 
    DENTER(TOP_LAYER);
 
-   if (absolut_filename != NULL && filename != NULL) {
+   if (absolut_filename != nullptr && filename != nullptr) {
 
       sge_dstring_clear(absolut_filename);
 
@@ -186,7 +186,7 @@ bool get_user_home_file_path(dstring *absolut_filename, const char *filename, co
  *     directory
  *
  *  INPUTS
- *     lList* - answer list, AN_Type or NULL if everything ok
+ *     lList* - answer list, AN_Type or nullptr if everything ok
  *        possible errors:
  *           STATUS_ENOSUCHUSER - could not retrieve passwd info on me.user_name
  *           STATUS_EDISK       - home directory for user is missing or cwd
@@ -204,7 +204,7 @@ bool get_user_home_file_path(dstring *absolut_filename, const char *filename, co
 static char *get_cwd_defaults_file_path(lList **answer_list) {
    char cwd[SGE_PATH_MAX + 1];
    char str[MAX_STRING_SIZE];
-   char *file = NULL;
+   char *file = nullptr;
 
    DENTER(TOP_LAYER);
 
@@ -239,9 +239,9 @@ static char *get_cwd_defaults_file_path(lList **answer_list) {
  *     exist and parses them into an options list.
  *
  *  INPUTS
- *     lList **pcmdline - pointer to SPA_Type list, if list is NULL, it is
+ *     lList **pcmdline - pointer to SPA_Type list, if list is nullptr, it is
  *                        created if the files contain any options
- *     lList* - answer list, AN_Type or NULL if everything ok
+ *     lList* - answer list, AN_Type or nullptr if everything ok
  *        possible errors:
  *           STATUS_ENOSUCHUSER - could not retrieve passwd info on me.user_name
  *           STATUS_EDISK       - home directory for user is missing or cwd
@@ -422,17 +422,17 @@ void opt_list_append_opts_from_qalter_cmdline(u_long32 prog_number, lList **opts
  *******************************************************************************/
 void opt_list_append_opts_from_script(u_long32 prog_number, lList **opts_scriptfile, lList **answer_list,
                                       const lList *opts_cmdline, char **envp) {
-   const lListElem *script_option = NULL;
-   const lListElem *c_option = NULL;
-   const char *scriptfile = NULL;
-   const char *prefix = NULL;
+   const lListElem *script_option = nullptr;
+   const lListElem *c_option = nullptr;
+   const char *scriptfile = nullptr;
+   const char *prefix = nullptr;
 
    script_option = lGetElemStr(opts_cmdline, SPA_switch_val, STR_PSEUDO_SCRIPT);
-   if (script_option != NULL) {
+   if (script_option != nullptr) {
       scriptfile = lGetString(script_option, SPA_argval_lStringT);
    }
    c_option = lGetElemStr(opts_cmdline, SPA_switch_val, "-C");
-   if (c_option != NULL) {
+   if (c_option != nullptr) {
       prefix = lGetString(c_option, SPA_argval_lStringT);
    } else {
       prefix = default_prefix;
@@ -473,20 +473,20 @@ void opt_list_append_opts_from_script(u_long32 prog_number, lList **opts_scriptf
  *******************************************************************************/
 void opt_list_append_opts_from_script_path(u_long32 prog_number, lList **opts_scriptfile, const char *path,
                                            lList **answer_list, const lList *opts_cmdline, char **envp) {
-   const lListElem *script_option = NULL;
-   const lListElem *c_option = NULL;
-   const char *scriptfile = NULL;
-   char *scriptpath = NULL;
-   const char *prefix = NULL;
+   const lListElem *script_option = nullptr;
+   const lListElem *c_option = nullptr;
+   const char *scriptfile = nullptr;
+   char *scriptpath = nullptr;
+   const char *prefix = nullptr;
 
    script_option = lGetElemStr(opts_cmdline, SPA_switch_val, STR_PSEUDO_SCRIPT);
-   if (script_option != NULL) {
+   if (script_option != nullptr) {
       scriptfile = lGetString(script_option, SPA_argval_lStringT);
 
       /* If the scriptfile path isn't absolute (which includes starting with
          $HOME), make it absolute relative to the given path.
-         If the script or path is NULL, let parse_script_file() catch it. */
-      if ((scriptfile != NULL) && (path != NULL) && (scriptfile[0] != '/') && (strncmp(scriptfile, "$HOME/", 6) != 0) &&
+         If the script or path is nullptr, let parse_script_file() catch it. */
+      if ((scriptfile != nullptr) && (path != nullptr) && (scriptfile[0] != '/') && (strncmp(scriptfile, "$HOME/", 6) != 0) &&
           (strcmp(scriptfile, "$HOME") != 0)) {
          /* Malloc space for the path, the filename, the \0, and perhaps a / */
          scriptpath = sge_malloc(sizeof(char) * (strlen(path) + strlen(scriptfile) + 2));
@@ -505,7 +505,7 @@ void opt_list_append_opts_from_script_path(u_long32 prog_number, lList **opts_sc
 
    c_option = lGetElemStr(opts_cmdline, SPA_switch_val, "-C");
 
-   if (c_option != NULL) {
+   if (c_option != nullptr) {
       prefix = lGetString(c_option, SPA_argval_lStringT);
    } else {
       prefix = default_prefix;
@@ -552,36 +552,36 @@ void opt_list_merge_command_lines(lList **opts_all, lList **opts_defaults, lList
    /*
     * Order is very important here
     */
-   if (*opts_defaults != NULL) {
-      if (*opts_all == NULL) {
+   if (*opts_defaults != nullptr) {
+      if (*opts_all == nullptr) {
          *opts_all = *opts_defaults;
       } else {
          lAddList(*opts_all, opts_defaults);
       }
-      *opts_defaults = NULL;
+      *opts_defaults = nullptr;
    }
-   if (*opts_scriptfile != NULL) {
-      if (*opts_all == NULL) {
+   if (*opts_scriptfile != nullptr) {
+      if (*opts_all == nullptr) {
          *opts_all = *opts_scriptfile;
       } else {
          /* Override the queue (-q) values from defaults */
          lOverrideStrList(*opts_all, *opts_scriptfile, SPA_switch_val, "-q");
       }
-      *opts_scriptfile = NULL;
+      *opts_scriptfile = nullptr;
    }
-   if (*opts_cmdline != NULL) {
-      if (*opts_all == NULL) {
+   if (*opts_cmdline != nullptr) {
+      if (*opts_all == nullptr) {
          *opts_all = *opts_cmdline;
       } else {
          /* Override queue (-q) values from both defaults and scriptfile */
          lOverrideStrList(*opts_all, *opts_cmdline, SPA_switch_val, "-q");
       }
-      *opts_cmdline = NULL;
+      *opts_cmdline = nullptr;
    }
 
    /* If -ar was requested add -w if it was not explicitly set */
-   if (lGetElemStr(*opts_all, SPA_switch_val, "-ar") != NULL) {
-      if (lGetElemStr(*opts_all, SPA_switch_val, "-w") == NULL) {
+   if (lGetElemStr(*opts_all, SPA_switch_val, "-ar") != nullptr) {
+      if (lGetElemStr(*opts_all, SPA_switch_val, "-w") == nullptr) {
          lListElem *ep_opt = sge_add_arg(opts_all, r_OPT, lIntT, "-w", "e");
          lSetInt(ep_opt, SPA_argval_lIntT, ERROR_VERIFY);
       }
@@ -616,7 +616,7 @@ bool opt_list_has_X(lList *opts, const char *option) {
    bool ret = false;
 
    opt = lGetElemStr(opts, SPA_switch_val, option);
-   if (opt != NULL) {
+   if (opt != nullptr) {
       ret = true;
    }
    return ret;
@@ -652,7 +652,7 @@ bool opt_list_is_X_true(lList *opts, const char *option) {
    bool ret = false;
 
    opt = lGetElemStr(opts, SPA_switch_val, option);
-   if (opt != NULL) {
+   if (opt != nullptr) {
       ret = (lGetInt(opt, SPA_argval_lIntT) == 1) ? true : false;
    }
    return ret;
@@ -718,7 +718,7 @@ bool get_user_home(dstring *home_dir, const char *user, lList **answer_list) {
 
    DENTER(TOP_LAYER);
 
-   if (home_dir != NULL) {
+   if (home_dir != nullptr) {
       struct passwd *pwd;
       struct passwd pw_struct;
       char *buffer;

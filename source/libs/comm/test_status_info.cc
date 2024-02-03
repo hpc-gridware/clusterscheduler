@@ -76,27 +76,27 @@ extern int main(int argc, char **argv) {
    struct sigaction sa;
    int i;
 
-   cl_com_handle_t *handle = NULL;
+   cl_com_handle_t *handle = nullptr;
 
    /* setup signalhandling */
    memset(&sa, 0, sizeof(sa));
    sa.sa_handler = sighandler_client;  /* one handler for all signals */
    sigemptyset(&sa.sa_mask);
-   sigaction(SIGINT, &sa, NULL);
-   sigaction(SIGTERM, &sa, NULL);
-   sigaction(SIGHUP, &sa, NULL);
-   sigaction(SIGPIPE, &sa, NULL);
+   sigaction(SIGINT, &sa, nullptr);
+   sigaction(SIGTERM, &sa, nullptr);
+   sigaction(SIGHUP, &sa, nullptr);
+   sigaction(SIGPIPE, &sa, nullptr);
 
 
    if (argc != 6) {
       printf("wrong parameters, param1 = server host, param2 = port number, param3 = comp name, param4 = comp_id, param5=debug_level\n");
       exit(1);
    }
-   cl_com_setup_commlib(CL_RW_THREAD, (cl_log_t) atoi(argv[5]), NULL);
+   cl_com_setup_commlib(CL_RW_THREAD, (cl_log_t) atoi(argv[5]), nullptr);
 
-   handle = cl_com_create_handle(NULL, CL_CT_TCP, CL_CM_CT_MESSAGE, false, atoi(argv[2]), CL_TCP_DEFAULT, "sim_client",
+   handle = cl_com_create_handle(nullptr, CL_CT_TCP, CL_CM_CT_MESSAGE, false, atoi(argv[2]), CL_TCP_DEFAULT, "sim_client",
                                  0, 1, 0);
-   if (handle == NULL) {
+   if (handle == nullptr) {
       printf("could not get handle\n");
       exit(1);
    }
@@ -110,12 +110,12 @@ extern int main(int argc, char **argv) {
 
    while (do_shutdown != 1) {
       int ret;
-      cl_com_SIRM_t *status = NULL;
+      cl_com_SIRM_t *status = nullptr;
       ret = cl_commlib_get_endpoint_status(handle, argv[1], argv[3], atoi(argv[4]), &status);
       if (ret != CL_RETVAL_OK) {
          printf("cl_commlib_get_endpoint_status() returned %s\n", cl_get_error_text(ret));
       }
-      if (status != NULL) {
+      if (status != nullptr) {
          printf("endpoint is up since %ld seconds and has status %ld\n", status->runtime, status->application_status);
          cl_com_free_sirm_message(&status);
          break;

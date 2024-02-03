@@ -106,7 +106,7 @@
 lListElem *job_get_ja_task_template_pending(const lListElem *job,
                                             u_long32 ja_task_id)
 {
-   lListElem *template_task = NULL;    /* JAT_Type */
+   lListElem *template_task = nullptr;    /* JAT_Type */
 
    DENTER(BASIS_LAYER);
 
@@ -158,7 +158,7 @@ lListElem *job_get_ja_task_template_hold(const lListElem *job,
                                          u_long32 ja_task_id, 
                                          u_long32 hold_state)
 {
-   lListElem *template_task = NULL;    /* JAT_Type */
+   lListElem *template_task = nullptr;    /* JAT_Type */
  
    DENTER(BASIS_LAYER);
    template_task = job_get_ja_task_template_pending(job, ja_task_id);
@@ -194,7 +194,7 @@ lListElem *job_get_ja_task_template_hold(const lListElem *job,
 *******************************************************************************/
 bool job_is_zombie_job(const lListElem *job)
 {
-   return (lGetList(job, JB_ja_z_ids) != NULL ? true : false);
+   return (lGetList(job, JB_ja_z_ids) != nullptr ? true : false);
 }
 
 /****** sgeobj/job/job_get_ja_task_template() *********************************
@@ -289,7 +289,7 @@ u_long32 job_get_ja_task_hold_state(const lListElem *job,
 *
 *  INPUTS
 *     const lListElem *job    - JB_Type 
-*     lList *id_list[16]      - NULL initialized pointer array 
+*     lList *id_list[16]      - nullptr initialized pointer array
 *     u_long32 hold_state[16] - Array for hold state combinations 
 *
 *  SEE ALSO
@@ -326,93 +326,93 @@ void job_create_hold_id_lists(const lListElem *job, lList *id_list[16],
                     MINUS_H_TGT_SYSTEM | MINUS_H_TGT_JA_AD;
 
    for (i = 0; i < 24; i++) {
-      list[i] = NULL;
+      list[i] = nullptr;
    }
 
    for (i = 0; i < 16; i++) {
-      id_list[i] = NULL;
+      id_list[i] = nullptr;
    }
 
    /* uo, us, ua, os, oa, sa, uos, uoa, usa, osa */
-   range_list_calculate_intersection_set(&list[0], NULL, 
+   range_list_calculate_intersection_set(&list[0], nullptr,
                   lGetList(job, JB_ja_u_h_ids), lGetList(job, JB_ja_o_h_ids));
-   range_list_calculate_intersection_set(&list[1], NULL, 
+   range_list_calculate_intersection_set(&list[1], nullptr,
                   lGetList(job, JB_ja_u_h_ids), lGetList(job, JB_ja_s_h_ids));
-   range_list_calculate_intersection_set(&list[2], NULL, 
+   range_list_calculate_intersection_set(&list[2], nullptr,
                   lGetList(job, JB_ja_u_h_ids), lGetList(job, JB_ja_a_h_ids));
-   range_list_calculate_intersection_set(&list[3], NULL, 
+   range_list_calculate_intersection_set(&list[3], nullptr,
                   lGetList(job, JB_ja_o_h_ids), lGetList(job, JB_ja_s_h_ids));
-   range_list_calculate_intersection_set(&list[4], NULL, 
+   range_list_calculate_intersection_set(&list[4], nullptr,
                   lGetList(job, JB_ja_o_h_ids), lGetList(job, JB_ja_a_h_ids));
-   range_list_calculate_intersection_set(&list[5], NULL, 
+   range_list_calculate_intersection_set(&list[5], nullptr,
                   lGetList(job, JB_ja_s_h_ids), lGetList(job, JB_ja_a_h_ids));
-   range_list_calculate_intersection_set(&list[6], NULL, list[0], list[3]);
-   range_list_calculate_intersection_set(&list[7], NULL, list[0], list[4]);
-   range_list_calculate_intersection_set(&list[8], NULL, list[1], list[5]);
-   range_list_calculate_intersection_set(&list[9], NULL, list[3], list[5]);
+   range_list_calculate_intersection_set(&list[6], nullptr, list[0], list[3]);
+   range_list_calculate_intersection_set(&list[7], nullptr, list[0], list[4]);
+   range_list_calculate_intersection_set(&list[8], nullptr, list[1], list[5]);
+   range_list_calculate_intersection_set(&list[9], nullptr, list[3], list[5]);
 
    /* uosa -> 15 */
-   range_list_calculate_intersection_set(&id_list[15], NULL, list[6], list[7]); 
+   range_list_calculate_intersection_set(&id_list[15], nullptr, list[6], list[7]);
 
    /* osaU -> 14 */
-   range_list_calculate_difference_set(&id_list[14], NULL, list[9], id_list[15]); 
+   range_list_calculate_difference_set(&id_list[14], nullptr, list[9], id_list[15]);
 
    /* usaO -> 13 */
-   range_list_calculate_difference_set(&id_list[13], NULL, list[8], id_list[15]); 
+   range_list_calculate_difference_set(&id_list[13], nullptr, list[8], id_list[15]);
 
    /* uoaS -> 12 */
-   range_list_calculate_difference_set(&id_list[12], NULL, list[7], id_list[15]); 
+   range_list_calculate_difference_set(&id_list[12], nullptr, list[7], id_list[15]);
 
    /* uosA -> 11 */
-   range_list_calculate_difference_set(&id_list[11], NULL, list[6], id_list[15]); 
+   range_list_calculate_difference_set(&id_list[11], nullptr, list[6], id_list[15]);
 
    /* saUO -> 10 */
-   range_list_calculate_difference_set(&list[10], NULL, list[5], list[8]);
-   range_list_calculate_difference_set(&id_list[10], NULL, list[10], id_list[14]); 
+   range_list_calculate_difference_set(&list[10], nullptr, list[5], list[8]);
+   range_list_calculate_difference_set(&id_list[10], nullptr, list[10], id_list[14]);
 
    /* oaUS -> 9 */
-   range_list_calculate_difference_set(&list[11], NULL, list[4], list[7]);
-   range_list_calculate_difference_set(&id_list[9], NULL, list[11], id_list[14]); 
+   range_list_calculate_difference_set(&list[11], nullptr, list[4], list[7]);
+   range_list_calculate_difference_set(&id_list[9], nullptr, list[11], id_list[14]);
 
    /* osUA -> 8 */
-   range_list_calculate_difference_set(&list[12], NULL, list[3], list[6]);
-   range_list_calculate_difference_set(&id_list[8], NULL, list[12], id_list[14]); 
+   range_list_calculate_difference_set(&list[12], nullptr, list[3], list[6]);
+   range_list_calculate_difference_set(&id_list[8], nullptr, list[12], id_list[14]);
 
    /* uaOS -> 7 */
-   range_list_calculate_difference_set(&list[13], NULL, list[2], list[7]);
-   range_list_calculate_difference_set(&id_list[7], NULL, list[13], id_list[13]); 
+   range_list_calculate_difference_set(&list[13], nullptr, list[2], list[7]);
+   range_list_calculate_difference_set(&id_list[7], nullptr, list[13], id_list[13]);
 
    /* usOA -> 6 */
-   range_list_calculate_difference_set(&list[14], NULL, list[1], list[6]);
-   range_list_calculate_difference_set(&id_list[6], NULL, list[14], id_list[13]); 
+   range_list_calculate_difference_set(&list[14], nullptr, list[1], list[6]);
+   range_list_calculate_difference_set(&id_list[6], nullptr, list[14], id_list[13]);
    
    /* uoSA -> 5 */
-   range_list_calculate_difference_set(&list[15], NULL, list[0], list[6]);
-   range_list_calculate_difference_set(&id_list[5], NULL, list[15], id_list[12]);
+   range_list_calculate_difference_set(&list[15], nullptr, list[0], list[6]);
+   range_list_calculate_difference_set(&id_list[5], nullptr, list[15], id_list[12]);
 
    /* aUOS -> 4 */
-   range_list_calculate_difference_set(&list[16], NULL, 
+   range_list_calculate_difference_set(&list[16], nullptr,
       lGetList(job, JB_ja_a_h_ids), list[2]);
-   range_list_calculate_difference_set(&list[17], NULL, list[16], list[11]);
-   range_list_calculate_difference_set(&id_list[4], NULL, list[17], id_list[10]);
+   range_list_calculate_difference_set(&list[17], nullptr, list[16], list[11]);
+   range_list_calculate_difference_set(&id_list[4], nullptr, list[17], id_list[10]);
 
    /* sUOA -> 3 */
-   range_list_calculate_difference_set(&list[18], NULL, 
+   range_list_calculate_difference_set(&list[18], nullptr,
       lGetList(job, JB_ja_s_h_ids), list[1]);
-   range_list_calculate_difference_set(&list[19], NULL, list[18], list[12]);
-   range_list_calculate_difference_set(&id_list[3], NULL, list[19], id_list[10]);
+   range_list_calculate_difference_set(&list[19], nullptr, list[18], list[12]);
+   range_list_calculate_difference_set(&id_list[3], nullptr, list[19], id_list[10]);
 
    /* oUSA -> 2 */
-   range_list_calculate_difference_set(&list[20], NULL, 
+   range_list_calculate_difference_set(&list[20], nullptr,
       lGetList(job, JB_ja_o_h_ids), list[0]);
-   range_list_calculate_difference_set(&list[21], NULL, list[20], list[12]);
-   range_list_calculate_difference_set(&id_list[2], NULL, list[21], id_list[9]);
+   range_list_calculate_difference_set(&list[21], nullptr, list[20], list[12]);
+   range_list_calculate_difference_set(&id_list[2], nullptr, list[21], id_list[9]);
 
    /* uOSA -> 1 */
-   range_list_calculate_difference_set(&list[22], NULL, 
+   range_list_calculate_difference_set(&list[22], nullptr,
       lGetList(job, JB_ja_u_h_ids), list[0]);
-   range_list_calculate_difference_set(&list[23], NULL, list[22], list[14]);
-   range_list_calculate_difference_set(&id_list[1], NULL, list[23], id_list[7]);
+   range_list_calculate_difference_set(&list[23], nullptr, list[22], list[14]);
+   range_list_calculate_difference_set(&id_list[1], nullptr, list[23], id_list[7]);
 
    /* UOSA -> 0 */
    id_list[0] = lCopyList("task_id_range", lGetList(job, JB_ja_n_h_ids));
@@ -581,10 +581,10 @@ u_long32 job_get_ja_tasks(const lListElem *job)
 ******************************************************************************/
 u_long32 job_get_not_enrolled_ja_tasks(const lListElem *job) 
 {
-   lList *answer_list = NULL;
-   lList *uosa_ids = NULL;
-   lList *uos_ids = NULL;
-   lList *uo_ids = NULL;
+   lList *answer_list = nullptr;
+   lList *uosa_ids = nullptr;
+   lList *uos_ids = nullptr;
+   lList *uo_ids = nullptr;
    u_long32 ret = 0;
 
    DENTER(TOP_LAYER);     
@@ -690,18 +690,18 @@ u_long32 job_get_submit_ja_tasks(const lListElem *job)
 lListElem *job_enroll(lListElem *job, lList **answer_list,
                       u_long32 ja_task_number)
 {
-   lListElem *ja_task = NULL;
+   lListElem *ja_task = nullptr;
 
    DENTER(TOP_LAYER);
 
    object_delete_range_id(job, answer_list, JB_ja_n_h_ids, ja_task_number);
 
    ja_task = lGetSubUlong(job, JAT_task_number, ja_task_number, JB_ja_tasks);
-   if (ja_task == NULL) {
+   if (ja_task == nullptr) {
       lList *ja_task_list = lGetListRW(job, JB_ja_tasks);
       lListElem *template_task = job_get_ja_task_template_pending(job, ja_task_number); 
 
-      if (ja_task_list == NULL) {
+      if (ja_task_list == nullptr) {
          ja_task_list = lCreateList("ulong_sublist", lGetElemDescr(template_task) );
          lSetList(job, JB_ja_tasks, ja_task_list);
       }
@@ -843,11 +843,11 @@ void job_delete_not_enrolled_ja_task(lListElem *job, lList **answer_list,
 void job_add_as_zombie(lListElem *zombie, lList **answer_list, 
                        u_long32 ja_task_id) 
 {
-   lList *z_ids = NULL;    /* RN_Type */
+   lList *z_ids = nullptr;    /* RN_Type */
 
    DENTER(TOP_LAYER);
    lXchgList(zombie, JB_ja_z_ids, &z_ids);
-   range_list_insert_id(&z_ids, NULL, ja_task_id);
+   range_list_insert_id(&z_ids, nullptr, ja_task_id);
    range_list_compress(z_ids);
    lXchgList(zombie, JB_ja_z_ids, &z_ids);    
    DRETURN_VOID;
@@ -876,8 +876,8 @@ bool job_has_soft_requests(lListElem *job)
 {
    bool ret = false;
    
-   if (lGetList(job, JB_soft_resource_list) != NULL || 
-       lGetList(job, JB_soft_queue_list) != NULL) {
+   if (lGetList(job, JB_soft_resource_list) != nullptr ||
+       lGetList(job, JB_soft_queue_list) != nullptr) {
       ret = true;
    }
 
@@ -927,7 +927,7 @@ void job_set_hold_state(lListElem *job, lList **answer_list,
       int i;
 
       for (i = 0; i < lists; i++) {
-         lList *range_list = NULL;
+         lList *range_list = nullptr;
 
          if (new_hold_state & mask[i]) {
             lXchgList(job, attribute[i], &range_list);
@@ -941,9 +941,9 @@ void job_set_hold_state(lListElem *job, lList **answer_list,
          range_list_compress(lGetListRW(job, attribute[i]));
       }
    } else {
-      lListElem *ja_task = job_search_task(job, NULL, ja_task_id);
+      lListElem *ja_task = job_search_task(job, nullptr, ja_task_id);
 
-      if (ja_task != NULL) {
+      if (ja_task != nullptr) {
          lSetUlong(ja_task, JAT_hold, new_hold_state); 
          if (new_hold_state) {
             lSetUlong(ja_task, JAT_state, lGetUlong(ja_task, JAT_state) | JHELD);
@@ -978,9 +978,9 @@ u_long32 job_get_hold_state(lListElem *job, u_long32 ja_task_id)
 
    DENTER(TOP_LAYER);
    if (job_is_enrolled(job, ja_task_id)) {
-      lListElem *ja_task = job_search_task(job, NULL, ja_task_id);
+      lListElem *ja_task = job_search_task(job, nullptr, ja_task_id);
   
-      if (ja_task != NULL) { 
+      if (ja_task != nullptr) {
          ret = lGetUlong(ja_task, JAT_hold) & MINUS_H_TGT_ALL;
       } else {
          ret = 0;
@@ -1015,7 +1015,7 @@ u_long32 job_get_hold_state(lListElem *job, u_long32 ja_task_id)
 *  FUNCTION
 *     This function return the array task with the id 'ja_task_id' if 
 *     it exists in the JB_ja_tasks-sublist of 'job'. If the task 
-*     is not found in the sublist, NULL is returned. 
+*     is not found in the sublist, nullptr is returned.
 *
 *  INPUTS
 *     const lListElem *job       - JB_Type 
@@ -1027,16 +1027,16 @@ u_long32 job_get_hold_state(lListElem *job, u_long32 ja_task_id)
 *
 *  NOTES
 *     In case of errors, the function should return a message in a
-*     given answer_list (answer_list != NULL).
+*     given answer_list (answer_list != nullptr).
 *     MT-NOTE: job_search_task() is MT safe
 ******************************************************************************/
 lListElem *job_search_task(const lListElem *job, lList **answer_list,
                            u_long32 ja_task_id)
 {
-   lListElem *ja_task = NULL; 
+   lListElem *ja_task = nullptr;
 
    DENTER(TOP_LAYER);
-   if (job != NULL) {
+   if (job != nullptr) {
       ja_task = lGetSubUlong(job, JAT_task_number, ja_task_id, JB_ja_tasks);
    }
    DRETURN(ja_task);
@@ -1067,15 +1067,15 @@ lListElem *job_search_task(const lListElem *job, lList **answer_list,
 *
 *  NOTES
 *     In case of errors, the function should return a message in a
-*     given answer_list (answer_list != NULL).
+*     given answer_list (answer_list != nullptr).
 ******************************************************************************/
 lListElem *job_create_task(lListElem *job, lList **answer_list, u_long32 ja_task_id)
 {
-   lListElem *ja_task = NULL; 
+   lListElem *ja_task = nullptr;
 
    DENTER(TOP_LAYER);
 
-   if (job != NULL && job_is_ja_task_defined(job, ja_task_id)) {
+   if (job != nullptr && job_is_ja_task_defined(job, ja_task_id)) {
       ja_task = job_enroll(job, answer_list, ja_task_id);
    }
 
@@ -1169,7 +1169,7 @@ int job_list_add_job(lList **job_list, const char *name, lListElem *job,
    if (check && *job_list && lGetElemUlong(*job_list, JB_job_number, lGetUlong(job, JB_job_number))) {
       dstring id_dstring = DSTRING_INIT;
       ERROR((SGE_EVENT, MSG_JOB_JOBALREADYEXISTS_S, 
-             job_get_id_string(lGetUlong(job, JB_job_number), 0, NULL, &id_dstring)));
+             job_get_id_string(lGetUlong(job, JB_job_number), 0, nullptr, &id_dstring)));
       sge_dstring_free(&id_dstring);
       DRETURN(-1);
    }
@@ -1230,7 +1230,7 @@ bool job_is_array(const lListElem *job)
 ******************************************************************************/
 bool job_is_parallel(const lListElem *job)
 {
-   return (lGetString(job, JB_pe) != NULL ? true : false);
+   return (lGetString(job, JB_pe) != nullptr ? true : false);
 } 
 
 /****** sgeobj/job/job_is_tight_parallel() ************************************
@@ -1260,11 +1260,11 @@ bool job_is_parallel(const lListElem *job)
 bool job_is_tight_parallel(const lListElem *job, const lList *pe_list)
 {
    bool ret = false;
-   const char *pe_name = NULL;
+   const char *pe_name = nullptr;
 
    DENTER(TOP_LAYER);
    pe_name = lGetString(job, JB_pe);
-   if (pe_name != NULL) {
+   if (pe_name != nullptr) {
       int found_pe = 0;
       int all_are_tight = 1;
       const lListElem *pe;
@@ -1313,12 +1313,12 @@ bool job_is_tight_parallel(const lListElem *job, const lList *pe_list)
 bool job_might_be_tight_parallel(const lListElem *job, const lList *pe_list)
 {
    bool ret = false;
-   const char *pe_name = NULL;
+   const char *pe_name = nullptr;
 
    DENTER(TOP_LAYER);
 
    pe_name = lGetString(job, JB_pe);
-   if (pe_name != NULL) {
+   if (pe_name != nullptr) {
       const lListElem *pe;
 
       for_each_ep(pe, pe_list) {
@@ -1422,11 +1422,11 @@ u_long32 job_get_smallest_unenrolled_task_id(const lListElem *job)
    u_long32 n_h_id, u_h_id, o_h_id, s_h_id, a_h_id;
    u_long32 ret = 0;
 
-   n_h_id = range_list_get_first_id(lGetList(job, JB_ja_n_h_ids), NULL);    
-   u_h_id = range_list_get_first_id(lGetList(job, JB_ja_u_h_ids), NULL);    
-   o_h_id = range_list_get_first_id(lGetList(job, JB_ja_o_h_ids), NULL);    
-   s_h_id = range_list_get_first_id(lGetList(job, JB_ja_s_h_ids), NULL);    
-   a_h_id = range_list_get_first_id(lGetList(job, JB_ja_a_h_ids), NULL);    
+   n_h_id = range_list_get_first_id(lGetList(job, JB_ja_n_h_ids), nullptr);
+   u_h_id = range_list_get_first_id(lGetList(job, JB_ja_u_h_ids), nullptr);
+   o_h_id = range_list_get_first_id(lGetList(job, JB_ja_o_h_ids), nullptr);
+   s_h_id = range_list_get_first_id(lGetList(job, JB_ja_s_h_ids), nullptr);
+   a_h_id = range_list_get_first_id(lGetList(job, JB_ja_a_h_ids), nullptr);
    ret = n_h_id;
    if (ret > 0 && u_h_id > 0) {
       ret = MIN(ret, u_h_id);
@@ -1480,7 +1480,7 @@ u_long32 job_get_smallest_enrolled_task_id(const lListElem *job)
     */
    ja_task = lFirst(lGetList(job, JB_ja_tasks)); 
    nxt_ja_task = lNext(ja_task);
-   if (ja_task != NULL) {
+   if (ja_task != nullptr) {
       ret = lGetUlong(ja_task, JAT_task_number);
    }
 
@@ -1518,11 +1518,11 @@ u_long32 job_get_biggest_unenrolled_task_id(const lListElem *job)
    u_long32 n_h_id, u_h_id, o_h_id, s_h_id, a_h_id;
    u_long32 ret = 0;
  
-   n_h_id = range_list_get_last_id(lGetList(job, JB_ja_n_h_ids), NULL);    
-   u_h_id = range_list_get_last_id(lGetList(job, JB_ja_u_h_ids), NULL);    
-   o_h_id = range_list_get_last_id(lGetList(job, JB_ja_o_h_ids), NULL);    
-   s_h_id = range_list_get_last_id(lGetList(job, JB_ja_s_h_ids), NULL);    
-   a_h_id = range_list_get_last_id(lGetList(job, JB_ja_a_h_ids), NULL);    
+   n_h_id = range_list_get_last_id(lGetList(job, JB_ja_n_h_ids), nullptr);
+   u_h_id = range_list_get_last_id(lGetList(job, JB_ja_u_h_ids), nullptr);
+   o_h_id = range_list_get_last_id(lGetList(job, JB_ja_o_h_ids), nullptr);
+   s_h_id = range_list_get_last_id(lGetList(job, JB_ja_s_h_ids), nullptr);
+   a_h_id = range_list_get_last_id(lGetList(job, JB_ja_a_h_ids), nullptr);
    ret = n_h_id;
    if (ret > 0 && u_h_id > 0) {
       ret = MAX(ret, u_h_id);
@@ -1576,7 +1576,7 @@ u_long32 job_get_biggest_enrolled_task_id(const lListElem *job)
     */
    ja_task = lLast(lGetList(job, JB_ja_tasks)); 
    nxt_ja_task = lPrev(ja_task);
-   if (ja_task != NULL) {
+   if (ja_task != nullptr) {
       ret = lGetUlong(ja_task, JAT_task_number);
    }
 
@@ -1665,20 +1665,20 @@ int job_list_register_new_job(const lList *job_list, u_long32 max_jobs, int forc
 ******************************************************************************/
 int job_initialize_id_lists(lListElem *job, lList **answer_list)
 {
-   lList *n_h_list = NULL;    /* RN_Type */
+   lList *n_h_list = nullptr;    /* RN_Type */
 
    DENTER(TOP_LAYER);
    n_h_list = lCopyList("task_id_range", lGetList(job, JB_ja_structure));
-   if (n_h_list == NULL) {
+   if (n_h_list == nullptr) {
       answer_list_add_sprintf(answer_list, STATUS_EMALLOC, ANSWER_QUALITY_ERROR,
                               MSG_MEM_MEMORYALLOCFAILED_S, __func__);
       DRETURN(-1);
    } else {
       lSetList(job, JB_ja_n_h_ids, n_h_list);
-      lSetList(job, JB_ja_u_h_ids, NULL);
-      lSetList(job, JB_ja_o_h_ids, NULL);
-      lSetList(job, JB_ja_s_h_ids, NULL);
-      lSetList(job, JB_ja_a_h_ids, NULL);
+      lSetList(job, JB_ja_u_h_ids, nullptr);
+      lSetList(job, JB_ja_o_h_ids, nullptr);
+      lSetList(job, JB_ja_s_h_ids, nullptr);
+      lSetList(job, JB_ja_a_h_ids, nullptr);
    }
    DRETURN(0);
 }
@@ -1722,7 +1722,7 @@ void job_initialize_env(lListElem *job, lList **answer_list,
                         const char *unqualified_hostname,
                         const char *qualified_hostname)
 {
-   lList *env_list = NULL;
+   lList *env_list = nullptr;
    dstring buffer = DSTRING_INIT;
    DENTER(TOP_LAYER);  
     
@@ -1730,9 +1730,9 @@ void job_initialize_env(lListElem *job, lList **answer_list,
    {   
       int i = -1;
       const char* env_name[] = {"HOME", "LOGNAME", "PATH", 
-                                "SHELL", "TZ", "MAIL", NULL};
+                                "SHELL", "TZ", "MAIL", nullptr};
 
-      while (env_name[++i] != NULL) {
+      while (env_name[++i] != nullptr) {
          const char *env_value = sge_getenv(env_name[i]);
 
          sge_dstring_sprintf(&buffer, "%s%s%s", VAR_PREFIX, "O_",
@@ -1744,7 +1744,7 @@ void job_initialize_env(lListElem *job, lList **answer_list,
    {
       const char* host = sge_getenv("HOST"); /* ??? */
 
-      if (host == NULL) {
+      if (host == nullptr) {
          host = unqualified_hostname;
       }
       var_list_set_string(&env_list, VAR_PREFIX "O_HOST", host);
@@ -1757,7 +1757,7 @@ void job_initialize_env(lListElem *job, lList **answer_list,
                          STATUS_EDISK, ANSWER_QUALITY_ERROR);
          goto error;
       }
-      path_alias_list_get_path(path_alias_list, NULL, 
+      path_alias_list_get_path(path_alias_list, nullptr,
                                tmp_str, qualified_hostname,
                                &buffer);
       var_list_set_string(&env_list, VAR_PREFIX "O_WORKDIR", 
@@ -1799,7 +1799,7 @@ error:
 ******************************************************************************/
 const char *job_get_env_string(const lListElem *job, const char *variable)
 {
-   const char *ret = NULL;
+   const char *ret = nullptr;
    DENTER(TOP_LAYER);
    ret = var_list_get_string(lGetList(job, JB_env_list), variable);
    DRETURN(ret);
@@ -1833,7 +1833,7 @@ const char *job_get_env_string(const lListElem *job, const char *variable)
 ******************************************************************************/
 void job_set_env_string(lListElem *job, const char* variable, const char* value)
 {
-   lList *env_list = NULL;
+   lList *env_list = nullptr;
    DENTER(TOP_LAYER);  
 
    lXchgList(job, JB_env_list, &env_list);
@@ -1886,7 +1886,7 @@ void job_check_correct_id_sublists(lListElem *job, lList **answer_list)
 
       while (field[++i] != -1) {
          const lList *range_list = lGetList(job, field[i]);
-         lListElem *range = NULL;
+         lListElem *range = nullptr;
 
          for_each_rw(range, range_list) {
             if (field[i] != JB_ja_structure)
@@ -1978,7 +1978,7 @@ const char *job_get_id_string(u_long32 job_id, u_long32 ja_task_id,
       if(ja_task_id == 0) {
          sge_dstring_sprintf(buffer, MSG_JOB_JOB_ID_U, job_id);
       } else {
-         if(pe_task_id == NULL) {
+         if(pe_task_id == nullptr) {
             sge_dstring_sprintf(buffer, MSG_JOB_JOB_JATASK_ID_UU,
                                 job_id, ja_task_id);
          } else {
@@ -2016,7 +2016,7 @@ bool job_is_pe_referenced(const lListElem *job, const lListElem *pe)
    const char *ref_pe_name = lGetString(job, JB_pe);
    bool ret = false;
 
-   if(ref_pe_name != NULL) {
+   if(ref_pe_name != nullptr) {
       if (pe_is_matching(pe, ref_pe_name)) {
          ret = true;
       }
@@ -2049,7 +2049,7 @@ bool job_is_ckpt_referenced(const lListElem *job, const lListElem *ckpt)
    const char *ref_ckpt_name = lGetString(job, JB_checkpoint_name);
    bool ret = false;
 
-   if(ckpt_name != NULL && ref_ckpt_name != NULL) {
+   if(ckpt_name != nullptr && ref_ckpt_name != nullptr) {
       if (!strcmp(ref_ckpt_name, ckpt_name)) {
          ret = true;
       }
@@ -2154,12 +2154,12 @@ void job_get_state_string(char *str, u_long32 op)
 ******************************************************************************/
 void job_add_parent_id_to_context(lListElem *job) 
 {
-   lListElem *context_parent = NULL;   /* VA_Type */
-   const char *job_id_string = NULL;
+   lListElem *context_parent = nullptr;   /* VA_Type */
+   const char *job_id_string = nullptr;
    
    job_id_string = sge_getenv("JOB_ID");
    context_parent = lGetSubStr(job, VA_variable, CONTEXT_PARENT, JB_context); 
-   if (job_id_string != NULL && context_parent == NULL) {
+   if (job_id_string != nullptr && context_parent == nullptr) {
       context_parent = lAddSubStr(job, VA_variable, CONTEXT_PARENT, 
                                   JB_context, VA_Type);
       lSetString(context_parent, VA_value, job_id_string);
@@ -2188,7 +2188,7 @@ void job_add_parent_id_to_context(lListElem *job)
 *  INPUTS
 *     const lListElem *job - the job to check
 *     lList **answer_list  - answer list to take error messages, if 
-*                            NULL, no answer is passed back.
+*                            nullptr, no answer is passed back.
 *     bool output_warning  - output error messages to stderr?
 *
 *  RESULT
@@ -2210,12 +2210,12 @@ int job_check_qsh_display(const lListElem *job, lList **answer_list,
 
    /* check for existence of DISPLAY */
    display_ep = lGetElemStr(lGetList(job, JB_env_list), VA_variable, "DISPLAY");
-   if(display_ep == NULL) {
+   if(display_ep == nullptr) {
       dstring id_dstring = DSTRING_INIT;
       if(output_warning) {
-         WARNING((SGE_EVENT, MSG_JOB_NODISPLAY_S, job_get_id_string(lGetUlong(job, JB_job_number), 0, NULL, &id_dstring)));
+         WARNING((SGE_EVENT, MSG_JOB_NODISPLAY_S, job_get_id_string(lGetUlong(job, JB_job_number), 0, nullptr, &id_dstring)));
       } else {
-         sprintf(SGE_EVENT, MSG_JOB_NODISPLAY_S, job_get_id_string(lGetUlong(job, JB_job_number), 0, NULL, &id_dstring));
+         sprintf(SGE_EVENT, MSG_JOB_NODISPLAY_S, job_get_id_string(lGetUlong(job, JB_job_number), 0, nullptr, &id_dstring));
       }
       answer_list_add(answer_list, SGE_EVENT, STATUS_EUNKNOWN, ANSWER_QUALITY_ERROR);
       sge_dstring_free(&id_dstring);
@@ -2226,12 +2226,12 @@ int job_check_qsh_display(const lListElem *job, lList **answer_list,
     * it is useless in a grid environment.
     */
    display = lGetString(display_ep, VA_value);
-   if(display == NULL || strlen(display) == 0) {
+   if(display == nullptr || strlen(display) == 0) {
       dstring id_dstring = DSTRING_INIT;
       if(output_warning) {
-         WARNING((SGE_EVENT, MSG_JOB_EMPTYDISPLAY_S, job_get_id_string(lGetUlong(job, JB_job_number), 0, NULL, &id_dstring)));
+         WARNING((SGE_EVENT, MSG_JOB_EMPTYDISPLAY_S, job_get_id_string(lGetUlong(job, JB_job_number), 0, nullptr, &id_dstring)));
       } else {
-         sprintf(SGE_EVENT, MSG_JOB_EMPTYDISPLAY_S, job_get_id_string(lGetUlong(job, JB_job_number), 0, NULL, &id_dstring));
+         sprintf(SGE_EVENT, MSG_JOB_EMPTYDISPLAY_S, job_get_id_string(lGetUlong(job, JB_job_number), 0, nullptr, &id_dstring));
       }
       answer_list_add(answer_list, SGE_EVENT, STATUS_EUNKNOWN, ANSWER_QUALITY_ERROR);
       sge_dstring_free(&id_dstring);
@@ -2244,9 +2244,9 @@ int job_check_qsh_display(const lListElem *job, lList **answer_list,
    if(*display == ':') {
       dstring id_dstring = DSTRING_INIT;
       if(output_warning) {
-         WARNING((SGE_EVENT, MSG_JOB_LOCALDISPLAY_SS, display, job_get_id_string(lGetUlong(job, JB_job_number), 0, NULL, &id_dstring)));
+         WARNING((SGE_EVENT, MSG_JOB_LOCALDISPLAY_SS, display, job_get_id_string(lGetUlong(job, JB_job_number), 0, nullptr, &id_dstring)));
       } else {
-         sprintf(SGE_EVENT, MSG_JOB_LOCALDISPLAY_SS, display, job_get_id_string(lGetUlong(job, JB_job_number), 0, NULL, &id_dstring));
+         sprintf(SGE_EVENT, MSG_JOB_LOCALDISPLAY_SS, display, job_get_id_string(lGetUlong(job, JB_job_number), 0, nullptr, &id_dstring));
       }
       answer_list_add(answer_list, SGE_EVENT, STATUS_EUNKNOWN, ANSWER_QUALITY_ERROR);
       sge_dstring_free(&id_dstring);
@@ -2292,7 +2292,7 @@ int job_check_owner(const char *user_name, u_long32 job_id, lList *master_job_li
    }
 
    job = lGetElemUlong(master_job_list, JB_job_number, job_id);
-   if (job == NULL) {
+   if (job == nullptr) {
       DRETURN(-1);
    }
 
@@ -2331,9 +2331,9 @@ int job_check_owner(const char *user_name, u_long32 job_id, lList *master_job_li
 ******************************************************************************/
 const char *job_get_job_key(u_long32 job_id, dstring *buffer)
 {
-   const char *ret = NULL;
+   const char *ret = nullptr;
    DENTER(TOP_LAYER);
-   if (buffer != NULL) {
+   if (buffer != nullptr) {
       ret = sge_dstring_sprintf(buffer, "%d", job_id);
    }
 
@@ -2371,12 +2371,12 @@ const char *job_get_job_key(u_long32 job_id, dstring *buffer)
 const char *job_get_key(u_long32 job_id, u_long32 ja_task_id,
                         const char *pe_task_id, dstring *buffer)
 {
-   const char *ret = NULL;
+   const char *ret = nullptr;
    DENTER(TOP_LAYER);
-   if (buffer != NULL) {
+   if (buffer != nullptr) {
       if (ja_task_id == 0) {
          ret = sge_dstring_sprintf(buffer, "%d", job_id);
-      } else if (pe_task_id != NULL) {
+      } else if (pe_task_id != nullptr) {
          ret = sge_dstring_sprintf(buffer, "%d.%d %s",
                                    job_id, ja_task_id, pe_task_id);
       } else {
@@ -2424,23 +2424,23 @@ bool job_parse_key(char *key, u_long32 *job_id, u_long32 *ja_task_id,
                    char **pe_task_id, bool *only_job)
 {
    const char *ja_task_id_str;
-   char *lasts = NULL;
+   char *lasts = nullptr;
 
    DENTER(TOP_LAYER);
    *job_id = atoi(strtok_r(key, ".", &lasts));
-   ja_task_id_str = strtok_r(NULL, " ", &lasts);
-   if (ja_task_id_str == NULL) {
+   ja_task_id_str = strtok_r(nullptr, " ", &lasts);
+   if (ja_task_id_str == nullptr) {
       *ja_task_id = 0;
-      *pe_task_id = NULL;
+      *pe_task_id = nullptr;
       *only_job  = true;
    } else {
       *ja_task_id = atoi(ja_task_id_str);
-      *pe_task_id = strtok_r(NULL, " ", &lasts);
+      *pe_task_id = strtok_r(nullptr, " ", &lasts);
       *only_job = false;
    }
 
-   if(*pe_task_id != NULL && strlen(*pe_task_id) == 0) {
-      *pe_task_id = NULL;
+   if(*pe_task_id != nullptr && strlen(*pe_task_id) == 0) {
+      *pe_task_id = nullptr;
    }
 
    DRETURN(true);
@@ -2477,11 +2477,11 @@ bool job_parse_key(char *key, u_long32 *job_id, u_long32 *ja_task_id,
 ******************************************************************************/
 const char *jobscript_get_key(const lListElem *jep, dstring *buffer)
 {
-   const char *ret = NULL;
+   const char *ret = nullptr;
    int job_id = lGetUlong(jep, JB_job_number);
    
    DENTER(TOP_LAYER);
-   if (buffer != NULL) {
+   if (buffer != nullptr) {
       ret = sge_dstring_sprintf(buffer, "%s:%d.%s",
                                 object_type_get_name(SGE_TYPE_JOBSCRIPT), 
                                 job_id, lGetString(jep, JB_exec_file));
@@ -2516,11 +2516,11 @@ const char *jobscript_get_key(const lListElem *jep, dstring *buffer)
 ******************************************************************************/
 char *jobscript_parse_key(char *key, const char **exec_file)
 {
-   char *lasts = NULL;
-   char *ret = NULL;
+   char *lasts = nullptr;
+   char *ret = nullptr;
    DENTER(TOP_LAYER);
    ret = strtok_r(key, ".", &lasts);
-   *exec_file = strtok_r(NULL, ".", &lasts);
+   *exec_file = strtok_r(nullptr, ".", &lasts);
    DRETURN(ret);
 }
 
@@ -2558,7 +2558,7 @@ int job_resolve_host_for_path_list(const lListElem *job, lList **answer_list,
       DPRINTF(("after sge_resolve_host() which returned %s\n", cl_get_error_text(res)));
       if (res != CL_RETVAL_OK) { 
          const char *hostname = lGetHost(ep, PN_host);
-         if (hostname != NULL) {
+         if (hostname != nullptr) {
             ERROR((SGE_EVENT, MSG_SGETEXT_CANTRESOLVEHOST_S, hostname));
             answer_list_add(answer_list, SGE_EVENT, STATUS_EUNKNOWN, ANSWER_QUALITY_ERROR);
             ret_error=true;
@@ -2578,8 +2578,8 @@ int job_resolve_host_for_path_list(const lListElem *job, lList **answer_list,
          for (temp= lPrev(ep); temp; temp =lPrev(temp)){
             const char *temp_hostname = lGetHost(temp, PN_host);
 
-            if(hostname == NULL){
-               if(temp_hostname == NULL){
+            if(hostname == nullptr){
+               if(temp_hostname == nullptr){
                   ERROR((SGE_EVENT, SFNMAX, MSG_PARSE_DUPLICATEHOSTINFILESPEC));
                   answer_list_add(answer_list, SGE_EVENT, STATUS_EUNKNOWN, ANSWER_QUALITY_ERROR);
                   ret_error=true;
@@ -2632,12 +2632,12 @@ int job_resolve_host_for_path_list(const lListElem *job, lList **answer_list,
 lListElem *
 job_get_request(const lListElem *this_elem, const char *centry_name) 
 {
-   lListElem *ret = NULL; 
+   lListElem *ret = nullptr;
 
    DENTER(TOP_LAYER);
    const lList *hard_centry_list = lGetList(this_elem, JB_hard_resource_list);
    ret = lGetElemStrRW(hard_centry_list, CE_name, centry_name);
-   if (ret == NULL) {
+   if (ret == nullptr) {
       const lList *soft_centry_list = lGetList(this_elem, JB_soft_resource_list);
 
       ret = lGetElemStrRW(soft_centry_list, CE_name, centry_name);
@@ -2653,19 +2653,19 @@ job_get_contribution(const lListElem *this_elem, lList **answer_list,
                      const lListElem *implicit_centry)
 {
    bool ret = true;
-   lListElem *centry = NULL;
-   const char *value_string = NULL;
+   lListElem *centry = nullptr;
+   const char *value_string = nullptr;
    char error_str[256];
    
    DENTER(TOP_LAYER);
    centry = job_get_request(this_elem, name);
-   if (centry != NULL) {
+   if (centry != nullptr) {
       value_string = lGetString(centry, CE_stringval);
    }
-   if (value_string == NULL) {
+   if (value_string == nullptr) {
       value_string = lGetString(implicit_centry, CE_defaultval); 
    }
-   if (!(parse_ulong_val(value, NULL, TYPE_INT, value_string, 
+   if (!(parse_ulong_val(value, nullptr, TYPE_INT, value_string,
                          error_str, sizeof(error_str)-1))) {
       answer_list_add_sprintf(answer_list, STATUS_EEXIST, ANSWER_QUALITY_ERROR,
                               MSG_ATTRIB_PARSATTRFAILED_SS, name, error_str); 
@@ -2704,13 +2704,13 @@ bool sge_unparse_acl_dstring(dstring *category_str, const char *owner, const cha
                              const lList *acl_list, const char *option) 
 {
    bool first = true;
-   const lListElem *elem = NULL;
+   const lListElem *elem = nullptr;
   
    DENTER(TOP_LAYER);  
 
    for_each_ep(elem, acl_list) {
       if (lGetBool(elem, US_consider_with_categories) &&
-          sge_contained_in_access_list(owner, group, elem, NULL)) {
+          sge_contained_in_access_list(owner, group, elem, nullptr)) {
          if (first) {      
             if (sge_dstring_strlen(category_str) > 0) {
                sge_dstring_append_char(category_str, ' ');
@@ -2759,12 +2759,12 @@ bool sge_unparse_queue_list_dstring(dstring *category_str, lListElem *job_elem,
                                     int nm, const char *option) 
 {
    bool first = true;
-   lList *print_list = NULL;
-   const lListElem *sub_elem = NULL;
+   lList *print_list = nullptr;
+   const lListElem *sub_elem = nullptr;
    
    DENTER(TOP_LAYER);  
   
-   if ((print_list = lGetPosList(job_elem, nm)) != NULL) {
+   if ((print_list = lGetPosList(job_elem, nm)) != nullptr) {
       lPSortList(print_list, "%I+", QR_name);
       for_each_ep(sub_elem, print_list) {
          if (first) {      
@@ -2814,12 +2814,12 @@ bool sge_unparse_resource_list_dstring(dstring *category_str, lListElem *job_ele
                                        int nm, const char *option) 
 {
    bool first = true;
-   lList *print_list = NULL;
-   const lListElem *sub_elem = NULL;
+   lList *print_list = nullptr;
+   const lListElem *sub_elem = nullptr;
    
    DENTER(TOP_LAYER); 
 
-   if ((print_list = lGetPosList(job_elem, nm)) != NULL) {
+   if ((print_list = lGetPosList(job_elem, nm)) != nullptr) {
       lPSortList(print_list, "%I+", CE_name);
 
        for_each_ep(sub_elem, print_list) {
@@ -2875,12 +2875,12 @@ bool sge_unparse_resource_list_dstring(dstring *category_str, lListElem *job_ele
 bool sge_unparse_pe_dstring(dstring *category_str, const lListElem *job_elem, int pe_pos, int range_pos,
                             const char *option) 
 {
-   const lList *range_list = NULL;
+   const lList *range_list = nullptr;
    
    DENTER(TOP_LAYER); 
 
-   if (lGetPosString(job_elem, pe_pos) != NULL) {
-      if ((range_list = lGetPosList(job_elem, range_pos)) == NULL) {
+   if (lGetPosString(job_elem, pe_pos) != nullptr) {
+      if ((range_list = lGetPosList(job_elem, range_pos)) == nullptr) {
          DPRINTF(("Job has parallel environment with no ranges\n"));
          DRETURN(false);
       }
@@ -2934,11 +2934,11 @@ bool sge_unparse_pe_dstring(dstring *category_str, const lListElem *job_elem, in
 bool sge_unparse_string_option_dstring(dstring *category_str, const lListElem *job_elem, 
                                int nm, char *option)
 {
-   const char *string = NULL;
+   const char *string = nullptr;
 
    DENTER(TOP_LAYER);
    
-   if ((string = lGetPosString(job_elem, nm)) != NULL) {            
+   if ((string = lGetPosString(job_elem, nm)) != nullptr) {
       if (sge_dstring_strlen(category_str) > 0) {
          sge_dstring_append(category_str, " ");
       }
@@ -3038,7 +3038,7 @@ job_verify(const lListElem *job, lList **answer_list, bool do_cull_verify)
 
    DENTER(TOP_LAYER);
 
-   if (job == NULL) {
+   if (job == nullptr) {
       answer_list_add_sprintf(answer_list, STATUS_ESYNTAX, ANSWER_QUALITY_ERROR,
                               MSG_NULLELEMENTPASSEDTO_S, "job_verify");
       DRETURN(false);
@@ -3054,7 +3054,7 @@ job_verify(const lListElem *job, lList **answer_list, bool do_cull_verify)
 
    if (ret) {
       const char *name = lGetString(job, JB_job_name);
-      if (name != NULL) {
+      if (name != nullptr) {
          if (strlen(name) >= MAX_VERIFY_STRING) {
             answer_list_add_sprintf(answer_list, STATUS_ESYNTAX, ANSWER_QUALITY_ERROR, 
                                     MSG_JOB_NAMETOOLONG_I, MAX_VERIFY_STRING);
@@ -3070,7 +3070,7 @@ job_verify(const lListElem *job, lList **answer_list, bool do_cull_verify)
    if (ret) {
       const char *cwd = lGetString(job, JB_cwd);
 
-      if (cwd != NULL) {
+      if (cwd != nullptr) {
          /*
           * cwd needn't be an absolute path, we also accept 
           * relative paths, e.g. via -wd switch, 
@@ -3083,7 +3083,7 @@ job_verify(const lListElem *job, lList **answer_list, bool do_cull_verify)
    if (ret) {
       const lList *path_aliases = lGetList(job, JB_path_aliases);
 
-      if (path_aliases != NULL) {
+      if (path_aliases != nullptr) {
          ret = path_alias_verify(path_aliases, answer_list);
       }
    } 
@@ -3091,7 +3091,7 @@ job_verify(const lListElem *job, lList **answer_list, bool do_cull_verify)
    if (ret) {
       const lList *env_list = lGetList(job, JB_env_list);
 
-      if (env_list != NULL) {
+      if (env_list != nullptr) {
          ret = var_list_verify(env_list, answer_list);
       }
    } 
@@ -3099,7 +3099,7 @@ job_verify(const lListElem *job, lList **answer_list, bool do_cull_verify)
    if (ret) {
       const lList *context_list = lGetList(job, JB_context);
 
-      if (context_list != NULL) {
+      if (context_list != nullptr) {
          ret = var_list_verify(context_list, answer_list);
       }
    }
@@ -3177,7 +3177,7 @@ job_verify_submitted_job(const lListElem *job, lList **answer_list)
    /* JB_session must be a valid string */
    if (ret) {
       const char *name = lGetString(job, JB_session);
-      if (name != NULL) {
+      if (name != nullptr) {
          if (verify_str_key(
                answer_list, name, MAX_VERIFY_STRING,
                lNm2Str(JB_session), KEY_TABLE) != STATUS_OK) {
@@ -3189,7 +3189,7 @@ job_verify_submitted_job(const lListElem *job, lList **answer_list)
    /* JB_project must be a valid string */
    if (ret) {
       const char *name = lGetString(job, JB_project);
-      if (name != NULL) {
+      if (name != nullptr) {
          if (verify_str_key(
             answer_list, name, MAX_VERIFY_STRING,
             lNm2Str(JB_project), KEY_TABLE) != STATUS_OK) {
@@ -3201,7 +3201,7 @@ job_verify_submitted_job(const lListElem *job, lList **answer_list)
    /* JB_department must be a valid string */
    if (ret) {
       const char *name = lGetString(job, JB_department);
-      if (name != NULL) {
+      if (name != nullptr) {
          if (verify_str_key(
             answer_list, name, MAX_VERIFY_STRING,
             lNm2Str(JB_department), KEY_TABLE) != STATUS_OK) {
@@ -3215,7 +3215,7 @@ job_verify_submitted_job(const lListElem *job, lList **answer_list)
    /* JB_exec_file must be a valid directory string */
    if (ret) {
       const char *name = lGetString(job, JB_exec_file);
-      if (name != NULL) {
+      if (name != nullptr) {
          ret = path_verify(name, answer_list, "exec_file", false);
       } 
    }
@@ -3223,7 +3223,7 @@ job_verify_submitted_job(const lListElem *job, lList **answer_list)
    /* JB_script_file must be a string and a valid directory string */
    if (ret) {
       const char *name = lGetString(job, JB_script_file);
-      if (name != NULL) {
+      if (name != nullptr) {
          ret = path_verify(name, answer_list, "script_file", false);
       } 
    }
@@ -3231,7 +3231,7 @@ job_verify_submitted_job(const lListElem *job, lList **answer_list)
    /* JB_script_ptr must be any string */
    if (ret) {
       const char *name = lGetString(job, JB_script_ptr);
-      if (name == NULL) {
+      if (name == nullptr) {
          /* JB_script_size must not 0 */
          ret = object_verify_ulong_null(job, answer_list, JB_script_size);
       } else {
@@ -3262,7 +3262,7 @@ job_verify_submitted_job(const lListElem *job, lList **answer_list)
    /* JB_account must be a valid string */
    if (ret) {
       const char *name = lGetString(job, JB_account);
-      if (name != NULL) {
+      if (name != nullptr) {
          if(verify_str_key(
                answer_list, name, MAX_VERIFY_STRING,
                lNm2Str(JB_account), QSUB_TABLE) != STATUS_OK) {
@@ -3300,7 +3300,7 @@ job_verify_submitted_job(const lListElem *job, lList **answer_list)
    /* JB_checkpoint_name */
    if (ret) {
       const char *name = lGetString(job, JB_checkpoint_name);
-      if (name != NULL) {
+      if (name != nullptr) {
          if (verify_str_key(
                answer_list, name, MAX_VERIFY_STRING,
                lNm2Str(JB_checkpoint_name), KEY_TABLE) != STATUS_OK) {
@@ -3311,7 +3311,7 @@ job_verify_submitted_job(const lListElem *job, lList **answer_list)
 
    /* JB_checkpoint_object */
    if (ret) {
-      if (lGetObject(job, JB_checkpoint_object) != NULL) {
+      if (lGetObject(job, JB_checkpoint_object) != nullptr) {
             answer_list_add_sprintf(answer_list, STATUS_ESYNTAX, ANSWER_QUALITY_ERROR, 
                               MSG_INVALIDJOB_REQUEST_S, "checkpoint object");
             ret = false;
@@ -3344,7 +3344,7 @@ job_verify_submitted_job(const lListElem *job, lList **answer_list)
    /* JB_pe must be a valid string */
    if (ret) {
       const char *name = lGetString(job,JB_pe );
-      if (name != NULL) {
+      if (name != nullptr) {
          if (verify_str_key(
                answer_list, name, MAX_VERIFY_STRING,
                lNm2Str(JB_pe), KEY_TABLE) != STATUS_OK) {
@@ -3369,9 +3369,9 @@ job_verify_submitted_job(const lListElem *job, lList **answer_list)
    /* TODO: JB_ja_template */
    /* TODO: JB_ja_tasks */
 
-   /* JB_host must be NULL */
+   /* JB_host must be nullptr */
    if (ret) {
-      if (lGetHost(job, JB_host) != NULL) {
+      if (lGetHost(job, JB_host) != nullptr) {
             answer_list_add_sprintf(answer_list, STATUS_ESYNTAX, ANSWER_QUALITY_ERROR, 
                               MSG_INVALIDJOB_REQUEST_S, "host");
             ret = false;
@@ -3431,7 +3431,7 @@ job_verify_submitted_job(const lListElem *job, lList **answer_list)
    if (ret) {
       ret = object_verify_double_null(job, answer_list, JB_wtcontr);
     }
-   /* JB_ja_task_concurrency must be NULL */
+   /* JB_ja_task_concurrency must be nullptr */
    if (ret) {
       u_long32 task_concurrency = lGetUlong(job, JB_ja_task_concurrency);
       if (task_concurrency > 0 && !job_is_array(job)) {
@@ -3446,7 +3446,7 @@ job_verify_submitted_job(const lListElem *job, lList **answer_list)
     */
    if (ret) {
       lList *env_list = lGetListRW(job, JB_env_list);
-      if (env_list != NULL) {
+      if (env_list != nullptr) {
          var_list_filter_env_list(env_list, answer_list);
       }
    }
@@ -3487,7 +3487,7 @@ bool job_get_wallclock_limit(u_long32 *limit, const lListElem *jep) {
    DENTER(TOP_LAYER);
 
    if ((ep=lGetElemStr(lGetList(jep, JB_hard_resource_list), CE_name, SGE_ATTR_H_RT))) {
-      if (parse_ulong_val(&d_tmp, NULL, TYPE_TIM, (s=lGetString(ep, CE_stringval)), error_str, sizeof(error_str)-1)==0) {
+      if (parse_ulong_val(&d_tmp, nullptr, TYPE_TIM, (s=lGetString(ep, CE_stringval)), error_str, sizeof(error_str)-1)==0) {
          ERROR((SGE_EVENT, MSG_CPLX_WRONGTYPE_SSS, SGE_ATTR_H_RT, s, error_str));
          DRETURN(false);
       }
@@ -3496,7 +3496,7 @@ bool job_get_wallclock_limit(u_long32 *limit, const lListElem *jep) {
    }
    
    if ((ep=lGetElemStr(lGetList(jep, JB_hard_resource_list), CE_name, SGE_ATTR_S_RT))) {
-      if (parse_ulong_val(&d_tmp, NULL, TYPE_TIM, (s=lGetString(ep, CE_stringval)), error_str, sizeof(error_str)-1)==0) {
+      if (parse_ulong_val(&d_tmp, nullptr, TYPE_TIM, (s=lGetString(ep, CE_stringval)), error_str, sizeof(error_str)-1)==0) {
          ERROR((SGE_EVENT, MSG_CPLX_WRONGTYPE_SSS, SGE_ATTR_H_RT, s, error_str));
          DRETURN(false);
       }
@@ -3615,7 +3615,7 @@ job_set_owner_and_group(lListElem *job, u_long32 uid, u_long32 gid,
 void 
 set_context(lList *jbctx, lListElem *job) 
 {
-   lList* newjbctx = NULL;
+   lList* newjbctx = nullptr;
    const lListElem* jbctxep;
    lListElem* temp;
    char   mode = '+';
@@ -3624,8 +3624,8 @@ set_context(lList *jbctx, lListElem *job)
 
    /* if the incoming list is empty, then simply clear the context */
    if (!jbctx || !lGetNumberOfElem(jbctx)) {
-      lSetList(job, JB_context, NULL);
-      newjbctx = NULL;
+      lSetList(job, JB_context, nullptr);
+      newjbctx = nullptr;
    }
    else {
       /* if first element contains no tag => assume (=, ) */
@@ -3635,8 +3635,8 @@ set_context(lList *jbctx, lListElem *job)
          case '=':
             break;
          default:
-            lSetList(job, JB_context, NULL);
-            newjbctx = NULL;
+            lSetList(job, JB_context, nullptr);
+            newjbctx = nullptr;
             break;
       }
    }
@@ -3650,8 +3650,8 @@ set_context(lList *jbctx, lListElem *job)
             mode = '-';
             break;
          case '=':
-            lSetList(job, JB_context, NULL);
-            newjbctx = NULL;
+            lSetList(job, JB_context, nullptr);
+            newjbctx = nullptr;
             mode = '+';
             break;
          default:
@@ -3790,13 +3790,13 @@ job_parse_validation_level(int *level, const char *input, int prog_number, lList
 bool
 job_is_requesting_consumable(lListElem *jep, const char *resource_name)
 {
-   lListElem *cep = NULL;
+   lListElem *cep = nullptr;
    u_long32 consumable;
    const lList *request_list = lGetList(jep, JB_hard_resource_list);
 
-   if (request_list != NULL) {
+   if (request_list != nullptr) {
       cep = centry_list_locate(request_list, resource_name);
-      if (cep != NULL) {
+      if (cep != nullptr) {
          consumable = lGetUlong(cep, CE_consumable);
          if (consumable == CONSUMABLE_JOB) {
             return true;
@@ -3813,7 +3813,7 @@ job_init_binding_elem(lListElem *jep)
    lList *binding_list = lCreateList("", BN_Type);
    lListElem *binding_elem = lCreateElem(BN_Type); 
 
-   if (binding_elem != NULL && binding_list != NULL) {
+   if (binding_elem != nullptr && binding_list != nullptr) {
       lAppendElem(binding_list, binding_elem);
       lSetList(jep, JB_binding, binding_list);
 

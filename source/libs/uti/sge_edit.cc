@@ -54,7 +54,7 @@ int sge_edit(const char *fname, uid_t myuid, gid_t mygid) {
 
    DENTER(TOP_LAYER);;
 
-   if (fname == NULL) {
+   if (fname == nullptr) {
       ERROR((SGE_EVENT, SFNMAX, MSG_NULLPOINTER));
       DRETURN(-1);
    }
@@ -100,21 +100,21 @@ int sge_edit(const char *fname, uid_t myuid, gid_t mygid) {
          }
       }
    } else {
-      const char *cp = NULL;
+      const char *cp = nullptr;
 
-      sge_set_def_sig_mask(NULL, NULL);
+      sge_set_def_sig_mask(nullptr, nullptr);
       sge_unblock_all_signals();
       setuid(getuid());
       setgid(getgid());
 
       cp = sge_getenv("EDITOR");
-      if (cp == NULL || strlen(cp) == 0) {
+      if (cp == nullptr || strlen(cp) == 0) {
          cp = DEFAULT_EDITOR;
       }
 
       execlp(cp, cp, fname, (char *) 0);
       ERROR((SGE_EVENT, MSG_QCONF_CANTSTARTEDITORX_S, cp));
-      SGE_EXIT(NULL, 1);
+      SGE_EXIT(nullptr, 1);
    }
 
    DRETURN(-1);

@@ -93,7 +93,7 @@ static int gdi2_send_message(sge_gdi_ctx_class_t * ctx,
 
 static const char *target2string(u_long32 target)
 {
-   const char *ret = NULL;
+   const char *ret = nullptr;
 
    switch (target) {
       case SGE_AH_LIST:
@@ -232,7 +232,7 @@ bool
 sge_gdi_extract_answer(lList **alpp, u_long32 cmd, u_long32 target, int id,
                        lList *mal, lList **olpp)
 {
-   lListElem *map = NULL;
+   lListElem *map = nullptr;
    int operation, sub_command;
 
    DENTER(GDI_LAYER);
@@ -272,8 +272,8 @@ sge_gdi_extract_answer(lList **alpp, u_long32 cmd, u_long32 target, int id,
 lList* sge_gdi2(sge_gdi_ctx_class_t *ctx, u_long32 target, u_long32 cmd, 
                 lList **lpp, lCondition *cp, lEnumeration *enp) 
 {
-   lList *alp = NULL;
-   lList *mal = NULL;
+   lList *alp = nullptr;
+   lList *mal = nullptr;
    int id;
    bool local_ret;
    state_gdi_multi state = STATE_GDI_MULTI_INIT;
@@ -310,7 +310,7 @@ int sge_gdi2_multi(sge_gdi_ctx_class_t* ctx, lList **alpp,
     * in state_gdi_multi structure
     */
    packet = state->packet;
-   if (packet == NULL) {
+   if (packet == nullptr) {
       packet = sge_gdi_packet_create(ctx, alpp);
       state->packet = packet;
    }
@@ -319,8 +319,8 @@ int sge_gdi2_multi(sge_gdi_ctx_class_t* ctx, lList **alpp,
     * Add a task to the packet and if it is the last task of a
     * multi GDI request (mode == SGE_GDI_SEND) then execute it
     */
-   if (packet != NULL) {
-      local_ret = sge_gdi_packet_append_task(packet, alpp, target, cmd, lp, NULL, 
+   if (packet != nullptr) {
+      local_ret = sge_gdi_packet_append_task(packet, alpp, target, cmd, lp, nullptr,
                                              &cp, &enp, do_copy, true);
       if (local_ret != false) {
          ret = sge_gdi_packet_get_last_task_id(packet);
@@ -337,14 +337,14 @@ int sge_gdi2_multi(sge_gdi_ctx_class_t* ctx, lList **alpp,
             if (local_ret == false) {
                /* answer has been written in ctx->sge_gdi_packet_execute() */
                sge_gdi_packet_free(&packet);
-               state->packet = NULL;
+               state->packet = nullptr;
                ret = -1;
             }
          } 
       } else {
          /* answer list has been filled by sge_gdi_packet_append_task() */
          sge_gdi_packet_free(&packet);
-         state->packet = NULL;
+         state->packet = nullptr;
          ret = -1;
       }
    } else {
@@ -396,26 +396,26 @@ int sge_gdi2_multi(sge_gdi_ctx_class_t* ctx, lList **alpp,
 *     {
 *        state_gdi_multi state = STATE_GDI_MULTI_INIT;
 *        lEnumeration *what_cqueue = lWhat("%T(ALL)", CQ_Type);
-*        lCondition *where_cqueue = NULL;
+*        lCondition *where_cqueue = nullptr;
 *        lEnumeration *what_job = lWhat("%T(ALL)", JB_Type);
-*        lCondition *where_job = NULL;
-*        lList *local_answer_list = NULL;
+*        lCondition *where_job = nullptr;
+*        lList *local_answer_list = nullptr;
 *        int cqueue_request_id;
 *        int job_request_id;
 *
 *        cqueue_request_id = ctx->gdi_multi(ctx, &local_answer_list, SGE_GDI_RECORD,
-*                                          SGE_CQ_LIST, SGE_GDI_GET, NULL,
+*                                          SGE_CQ_LIST, SGE_GDI_GET, nullptr,
 *                                          where_cqueue, what_cqueue, &state, true);
 *        job_request_id = ctx->gdi_multi(ctx, &local_answer_list, SGE_GDI_SEND,
-*                                        SGE_JB_LIST, SGE_GDI_GET, NULL,
+*                                        SGE_JB_LIST, SGE_GDI_GET, nullptr,
 *                                        where_job, what_job, &state, true);
 *        if (cqueue_request_id != -1 && job_request_id != -1 &&
 *            answer_list_has_error(&local_answer_list) == false) {
-*           lList *multi_answer_list = NULL;
-*           lList *list_cqueue = NULL;
-*           lList *list_job = NULL;
-*           lList *answer_cqueue = NULL;
-*           lList *answer_job = NULL;
+*           lList *multi_answer_list = nullptr;
+*           lList *list_cqueue = nullptr;
+*           lList *list_job = nullptr;
+*           lList *answer_cqueue = nullptr;
+*           lList *answer_job = nullptr;
 *           bool local_ret;
 *
 *           local_ret = ctx->gdi_wait(ctx, &local_answer_list, &multi_answer_list, &state);
@@ -463,12 +463,12 @@ sge_gdi2_wait(sge_gdi_ctx_class_t* ctx, lList **alpp, lList **malpp,
               state_gdi_multi *state)
 {
    bool ret = true;  
-   sge_gdi_packet_class_t *packet = NULL;
+   sge_gdi_packet_class_t *packet = nullptr;
 
    DENTER(GDI_LAYER);
    packet = state->packet;
-   state->packet = NULL;
-   if (packet != NULL) {
+   state->packet = nullptr;
+   if (packet != nullptr) {
       /*
        * One of two different functions might be called here:
        *    -  If this call is executed in an external GDI client (like qstat, qhost...)
@@ -528,7 +528,7 @@ sge_gdi2_is_done(sge_gdi_ctx_class_t* ctx, lList **alpp, state_gdi_multi *state)
    bool ret = true;     
                     
    DENTER(GDI_LAYER);  
-   if (state->packet != NULL) {
+   if (state->packet != nullptr) {
       ret = sge_gdi_packet_is_handled(state->packet);
    }                             
    DRETURN(ret);          
@@ -537,7 +537,7 @@ sge_gdi2_is_done(sge_gdi_ctx_class_t* ctx, lList **alpp, state_gdi_multi *state)
 /*---------------------------------------------------------
  *  sge_send_any_request
  *  returns 0 if ok
- *          -4 if peer is not alive or rhost == NULL
+ *          -4 if peer is not alive or rhost == nullptr
  *          return value of gdi_send_message() for other errors
  *
  *  NOTES
@@ -555,20 +555,20 @@ sge_gdi2_send_any_request(sge_gdi_ctx_class_t *ctx, int synchron, u_long32 *mid,
    cl_xml_ack_type_t ack_type = CL_MIH_MAT_NAK;
    cl_com_handle_t* handle = ctx->get_com_handle(ctx);
    unsigned long dummy_mid = 0;
-   unsigned long* mid_pointer = NULL;
+   unsigned long* mid_pointer = nullptr;
 
    int to_port   = bootstrap_get_sge_qmaster_port();
 
    DENTER(TOP_LAYER);
 
 
-   if (rhost == NULL) {
+   if (rhost == nullptr) {
       answer_list_add(alpp, MSG_GDI_RHOSTISNULLFORSENDREQUEST, STATUS_ESYNTAX,
                       ANSWER_QUALITY_ERROR);
       DRETURN(CL_RETVAL_PARAMS);
    }
    
-   if (handle == NULL) {
+   if (handle == nullptr) {
       answer_list_add(alpp, MSG_GDI_NOCOMMHANDLE, STATUS_NOCOMMD, ANSWER_QUALITY_ERROR);
       DRETURN(CL_RETVAL_HANDLE_NOT_FOUND);
    }
@@ -617,7 +617,7 @@ sge_gdi2_send_any_request(sge_gdi_ctx_class_t *ctx, int synchron, u_long32 *mid,
  * sge_get_any_request
  *
  * returns 0               on success
- *         -1              rhost is NULL 
+ *         -1              rhost is nullptr
  *         commlib return values (always positive)
  *
  * NOTES
@@ -631,9 +631,9 @@ sge_gdi2_get_any_request(sge_gdi_ctx_class_t *ctx, char *rhost,
 {
    int i;
    ushort usid=0;
-   cl_com_message_t* message = NULL;
-   cl_com_endpoint_t* sender = NULL;
-   cl_com_handle_t* handle = NULL;
+   cl_com_message_t* message = nullptr;
+   cl_com_endpoint_t* sender = nullptr;
+   cl_com_handle_t* handle = nullptr;
    
 
    DENTER(GDI_LAYER);
@@ -698,12 +698,12 @@ sge_gdi2_get_any_request(sge_gdi_ctx_class_t *ctx, char *rhost,
    }    
 
    /* ok, we received a message */
-   if (message != NULL ) {
+   if (message != nullptr ) {
       dump_receive_info(&message, &sender);
 
       /* TODO: there are two cases for any and addressed communication partner, 
                two functions are needed */
-      if (sender != NULL && id) {
+      if (sender != nullptr && id) {
          *id = (u_short)sender->comp_id;
       }
       if (tag) {
@@ -718,7 +718,7 @@ sge_gdi2_get_any_request(sge_gdi_ctx_class_t *ctx, char *rhost,
       i = init_packbuffer_from_buffer(pb, (char*)message->message, message->message_length);
 
       /* TODO: the packbuffer must be hold, not deleted !!! */
-      message->message = NULL;
+      message->message = nullptr;
 
       if(i != PACK_SUCCESS) {
          ERROR((SGE_EVENT, MSG_GDI_ERRORUNPACKINGGDIREQUEST_S, cull_pack_strerror(i)));
@@ -728,7 +728,7 @@ sge_gdi2_get_any_request(sge_gdi_ctx_class_t *ctx, char *rhost,
 
       /* TODO: there are two cases for any and addressed communication partner, 
                two functions are needed */
-      if (sender != NULL ) {
+      if (sender != nullptr ) {
          DEBUG((SGE_EVENT,"received from: %s,"sge_U32CFormat"\n",sender->comp_host, 
                 sge_u32c(sender->comp_id) ));
          if (rhost[0] == '\0') {
@@ -749,8 +749,8 @@ sge_gdi2_get_any_request(sge_gdi_ctx_class_t *ctx, char *rhost,
 static void dump_receive_info(cl_com_message_t** message, cl_com_endpoint_t** sender) 
 {
    DENTER(GDI_LAYER);
-   if ( message  != NULL && sender   != NULL && *message != NULL && *sender  != NULL &&
-        (*sender)->comp_host != NULL && (*sender)->comp_name != NULL ) {
+   if ( message  != nullptr && sender   != nullptr && *message != nullptr && *sender  != nullptr &&
+        (*sender)->comp_host != nullptr && (*sender)->comp_name != nullptr ) {
          char buffer[512];
          dstring ds;
          sge_dstring_init(&ds, buffer, sizeof(buffer));
@@ -775,7 +775,7 @@ static void dump_send_info(const char* comp_host, const char* comp_name, int com
    DENTER(GDI_LAYER);
    sge_dstring_init(&ds, buffer, sizeof(buffer));
 
-   if (comp_host != NULL && comp_name != NULL) {
+   if (comp_host != nullptr && comp_name != nullptr) {
       DEBUG((SGE_EVENT,">>>>>>>>>>>>>>>>>>>>"));
       DEBUG((SGE_EVENT,"gdi_snd: sending message to %s/%s/"sge_U32CFormat": ", 
                (char*)comp_host,comp_name ,sge_u32c(comp_id)));
@@ -816,11 +816,11 @@ sge_gdi_ctx_class_t *thiz,
 const char *schedd_name,
 const char *cell 
 ) {
-   lList *alp = NULL;
+   lList *alp = nullptr;
 
    DENTER(GDI_LAYER);
 
-   alp = thiz->gdi(thiz, SGE_SC_LIST, SGE_GDI_TRIGGER, NULL, NULL, NULL); 
+   alp = thiz->gdi(thiz, SGE_SC_LIST, SGE_GDI_TRIGGER, nullptr, nullptr, nullptr);
 
    DRETURN(alp);
 }
@@ -846,7 +846,7 @@ const char *cell
 lList *gdi2_kill(sge_gdi_ctx_class_t *thiz, lList *id_list, const char *cell, 
                  u_long32 option_flags, u_long32 action_flag ) 
 {
-   lList *alp = NULL, *tmpalp;
+   lList *alp = nullptr, *tmpalp;
    bool id_list_created = false;
 
    DENTER(GDI_LAYER);
@@ -854,7 +854,7 @@ lList *gdi2_kill(sge_gdi_ctx_class_t *thiz, lList *id_list, const char *cell,
    alp = lCreateList("answer", AN_Type);
 
    if (action_flag & MASTER_KILL) {
-      tmpalp = thiz->gdi(thiz, SGE_MASTER_EVENT, SGE_GDI_TRIGGER, NULL, NULL, NULL);
+      tmpalp = thiz->gdi(thiz, SGE_MASTER_EVENT, SGE_GDI_TRIGGER, nullptr, nullptr, nullptr);
       lAddList(alp, &tmpalp);
    }
 
@@ -865,32 +865,32 @@ lList *gdi2_kill(sge_gdi_ctx_class_t *thiz, lList *id_list, const char *cell,
       id_list = lCreateList("kill scheduler", ID_Type);
       id_list_created = true;
       lAddElemStr(&id_list, ID_str, buffer, ID_Type);
-      tmpalp = thiz->gdi(thiz, SGE_EV_LIST, SGE_GDI_TRIGGER, &id_list, NULL, NULL);
+      tmpalp = thiz->gdi(thiz, SGE_EV_LIST, SGE_GDI_TRIGGER, &id_list, nullptr, nullptr);
       lAddList(alp, &tmpalp);  
    }
 
    if (action_flag & THREAD_START) {
-      tmpalp = thiz->gdi(thiz, SGE_DUMMY_LIST, SGE_GDI_TRIGGER, &id_list, NULL, NULL);
+      tmpalp = thiz->gdi(thiz, SGE_DUMMY_LIST, SGE_GDI_TRIGGER, &id_list, nullptr, nullptr);
       lAddList(alp, &tmpalp);  
    }
 
    if (action_flag & EVENTCLIENT_KILL) {
-      if (id_list == NULL) {
+      if (id_list == nullptr) {
          char buffer[10];
          sprintf(buffer, "%d", EV_ID_ANY);
          id_list = lCreateList("kill all event clients", ID_Type);
          id_list_created = true;
          lAddElemStr(&id_list, ID_str, buffer, ID_Type);
       }
-      tmpalp = thiz->gdi(thiz, SGE_EV_LIST, SGE_GDI_TRIGGER, &id_list, NULL, NULL);
+      tmpalp = thiz->gdi(thiz, SGE_EV_LIST, SGE_GDI_TRIGGER, &id_list, nullptr, nullptr);
       lAddList(alp, &tmpalp);  
    }
 
    if ((action_flag & EXECD_KILL) || (action_flag & JOB_KILL)) {
-      lListElem *hlep = NULL;
-      const lListElem *hep = NULL;
-      lList *hlp = NULL;
-      if (id_list != NULL) {
+      lListElem *hlep = nullptr;
+      const lListElem *hep = nullptr;
+      lList *hlp = nullptr;
+      if (id_list != nullptr) {
          /*
          ** we have to convert the EH_Type to ID_Type
          ** It would be better to change the call to use ID_Type!
@@ -902,11 +902,11 @@ lList *gdi2_kill(sge_gdi_ctx_class_t *thiz, lList *id_list, const char *cell,
       } else {
          hlp = lCreateList("kill all hosts", ID_Type);
          hlep = lCreateElem(ID_Type);
-         lSetString(hlep, ID_str, NULL);
+         lSetString(hlep, ID_str, nullptr);
          lSetUlong(hlep, ID_force, (action_flag & JOB_KILL)?1:0);
          lAppendElem(hlp, hlep);
       }
-      tmpalp = thiz->gdi(thiz, SGE_EH_LIST, SGE_GDI_TRIGGER, &hlp, NULL, NULL);
+      tmpalp = thiz->gdi(thiz, SGE_EH_LIST, SGE_GDI_TRIGGER, &hlp, nullptr, nullptr);
       lAddList(alp, &tmpalp);
       lFreeList(&hlp);
    }
@@ -946,14 +946,14 @@ lList *gdi2_kill(sge_gdi_ctx_class_t *thiz, lList *id_list, const char *cell,
 ******************************************************************************/
 bool sge_gdi2_get_mapping_name(sge_gdi_ctx_class_t *ctx, const char *requestedHost, char *buf, size_t buflen) 
 {  
-   lList* alp = NULL;
-   lList* permList = NULL;
-   lListElem *ep = NULL;
-   const char* mapName = NULL;
+   lList* alp = nullptr;
+   lList* permList = nullptr;
+   lListElem *ep = nullptr;
+   const char* mapName = nullptr;
    
    DENTER(GDI_LAYER);
 
-   if (requestedHost == NULL) {
+   if (requestedHost == nullptr) {
       DRETURN(false);
    }
    
@@ -962,17 +962,17 @@ bool sge_gdi2_get_mapping_name(sge_gdi_ctx_class_t *ctx, const char *requestedHo
    lAppendElem(permList,ep);
    lSetHost(ep, PERM_req_host, requestedHost); 
 
-   alp = ctx->gdi(ctx, SGE_DUMMY_LIST, SGE_GDI_PERMCHECK ,  &permList , NULL,NULL );
+   alp = ctx->gdi(ctx, SGE_DUMMY_LIST, SGE_GDI_PERMCHECK ,  &permList , nullptr,nullptr );
 
    
-   if (permList != NULL) {
+   if (permList != nullptr) {
       ep = permList->first;
-      if (ep != NULL) {
+      if (ep != nullptr) {
          mapName = lGetString(ep, PERM_req_username ); 
       } 
    }
   
-   if (mapName != NULL) {
+   if (mapName != nullptr) {
       if ((strlen(mapName) + 1) <= buflen) {
          strcpy(buf,mapName);
          DPRINTF(("Mapping name is: '%s'\n", buf));
@@ -1022,19 +1022,19 @@ bool sge_gdi2_check_permission(sge_gdi_ctx_class_t *ctx, lList **alpp, int optio
 {
   bool access_status = false;
   int failed_checks = 0;
-  lList* alp = NULL;
-  lList* permList = NULL;
+  lList* alp = nullptr;
+  lList* permList = nullptr;
   lUlong value;
 
   DENTER(GDI_LAYER);
 
-  permList = NULL;
-  alp = ctx->gdi(ctx, SGE_DUMMY_LIST, SGE_GDI_PERMCHECK, &permList, NULL, NULL);
+  permList = nullptr;
+  alp = ctx->gdi(ctx, SGE_DUMMY_LIST, SGE_GDI_PERMCHECK, &permList, nullptr, nullptr);
 
-  if (permList == NULL) {
-     DPRINTF(("Permlist is NULL\n"));
-     if (alpp != NULL) {
-        if (*alpp == NULL) {
+  if (permList == nullptr) {
+     DPRINTF(("Permlist is nullptr\n"));
+     if (alpp != nullptr) {
+        if (*alpp == nullptr) {
            *alpp = alp;
         } else {
            lAddList(*alpp, &alp);
@@ -1043,7 +1043,7 @@ bool sge_gdi2_check_permission(sge_gdi_ctx_class_t *ctx, lList **alpp, int optio
      failed_checks++;
      DRETURN(false);
   } else {
-     if (permList->first == NULL) {
+     if (permList->first == nullptr) {
        DPRINTF(("Permlist has no entries\n"));
        failed_checks++;
      } else {
@@ -1106,7 +1106,7 @@ int gdi2_send_message_pb(sge_gdi_ctx_class_t *ctx,
 
    if (!pb) {
        DPRINTF(("no pointer for sge_pack_buffer\n"));
-       ret = gdi2_send_message(ctx, synchron, tocomproc, toid, tohost, tag, NULL, 0, mid);
+       ret = gdi2_send_message(ctx, synchron, tocomproc, toid, tohost, tag, nullptr, 0, mid);
        DRETURN(ret);
    }
 
@@ -1132,10 +1132,10 @@ gdi2_send_message(sge_gdi_ctx_class_t *sge_ctx, int synchron, const char *tocomp
                  int buflen, u_long32 *mid) 
 {
    int ret;
-   cl_com_handle_t* handle = NULL;
+   cl_com_handle_t* handle = nullptr;
    cl_xml_ack_type_t ack_type = CL_MIH_MAT_NAK;
    unsigned long dummy_mid;
-   unsigned long* mid_pointer = NULL;
+   unsigned long* mid_pointer = nullptr;
    int use_execd_handle = 0;
    u_long32 progid = uti_state_get_mewho();
    
@@ -1161,7 +1161,7 @@ gdi2_send_message(sge_gdi_ctx_class_t *sge_ctx, int synchron, const char *tocomp
          if (strcmp(tocomproc,prognames[QMASTER]) == 0) {
             use_execd_handle = 0;
          } else {
-            if (tocomproc != NULL && tocomproc[0] != '\0') {
+            if (tocomproc != nullptr && tocomproc[0] != '\0') {
                use_execd_handle = 1;
             }
          }
@@ -1176,7 +1176,7 @@ gdi2_send_message(sge_gdi_ctx_class_t *sge_ctx, int synchron, const char *tocomp
       /* we have to send a message to another component than qmaster */
       DEBUG((SGE_EVENT,"search handle to \"%s\"\n", tocomproc));
       handle = cl_com_get_handle("execd_handle", 0);
-      if (handle == NULL) {
+      if (handle == nullptr) {
          int commlib_error = CL_RETVAL_OK;
          cl_framework_t  communication_framework = CL_CT_TCP;
          DEBUG((SGE_EVENT,"creating handle to \"%s\"\n", tocomproc));
@@ -1188,7 +1188,7 @@ gdi2_send_message(sge_gdi_ctx_class_t *sge_ctx, int synchron, const char *tocomp
                               false, sge_get_execd_port(), CL_TCP_DEFAULT,
                               "execd_handle" , 0 , 1 , 0 );
          handle = cl_com_get_handle("execd_handle", 0);
-         if (handle == NULL) {
+         if (handle == nullptr) {
             ERROR((SGE_EVENT, MSG_GDI_CANT_CREATE_HANDLE_TOEXECD_S, tocomproc));
             ERROR((SGE_EVENT, SFNMAX, cl_get_error_text(commlib_error)));
          }
@@ -1198,7 +1198,7 @@ gdi2_send_message(sge_gdi_ctx_class_t *sge_ctx, int synchron, const char *tocomp
    if (synchron) {
       ack_type = CL_MIH_MAT_ACK;
    }
-   if (mid != NULL) {
+   if (mid != nullptr) {
       mid_pointer = &dummy_mid;
    }
 
@@ -1206,7 +1206,7 @@ gdi2_send_message(sge_gdi_ctx_class_t *sge_ctx, int synchron, const char *tocomp
                                  ack_type, (cl_byte_t**)buffer, (unsigned long)buflen,
                                  mid_pointer, 0, tag, false, (bool)synchron);
 
-   if (mid != NULL) {
+   if (mid != nullptr) {
       *mid = dummy_mid;
    }
 
@@ -1226,9 +1226,9 @@ gdi2_receive_message(sge_gdi_ctx_class_t *sge_ctx, char *fromcommproc, u_short *
 {
    
    int ret;
-   cl_com_handle_t* handle = NULL;
-   cl_com_message_t* message = NULL;
-   cl_com_endpoint_t* sender = NULL;
+   cl_com_handle_t* handle = nullptr;
+   cl_com_message_t* message = nullptr;
+   cl_com_endpoint_t* sender = nullptr;
    int use_execd_handle = 0;
 
    u_long32 progid = uti_state_get_mewho();
@@ -1258,7 +1258,7 @@ gdi2_receive_message(sge_gdi_ctx_class_t *sge_ctx, char *fromcommproc, u_short *
          if (strcmp(fromcommproc, prognames[QMASTER]) == 0) {
             use_execd_handle = 0;
          } else {
-            if (fromcommproc != NULL && fromcommproc[0] != '\0') {
+            if (fromcommproc != nullptr && fromcommproc[0] != '\0') {
                use_execd_handle = 1;
             }
          }
@@ -1273,7 +1273,7 @@ gdi2_receive_message(sge_gdi_ctx_class_t *sge_ctx, char *fromcommproc, u_short *
       /* we have to send a message to another component than qmaster */
       DEBUG((SGE_EVENT,"search handle to \"%s\"\n", fromcommproc));
       handle = cl_com_get_handle("execd_handle", 0);
-      if (handle == NULL) {
+      if (handle == nullptr) {
          int commlib_error = CL_RETVAL_OK;
          cl_framework_t communication_framework = CL_CT_TCP;
          DEBUG((SGE_EVENT,"creating handle to \"%s\"\n", fromcommproc));
@@ -1286,7 +1286,7 @@ gdi2_receive_message(sge_gdi_ctx_class_t *sge_ctx, char *fromcommproc, u_short *
                               false, sge_execd_port, CL_TCP_DEFAULT, 
                               "execd_handle" , 0 , 1 , 0 );
          handle = cl_com_get_handle("execd_handle", 0);
-         if (handle == NULL) {
+         if (handle == nullptr) {
             ERROR((SGE_EVENT, MSG_GDI_CANT_CREATE_HANDLE_TOEXECD_S, fromcommproc));
             ERROR((SGE_EVENT, SFNMAX, cl_get_error_text(commlib_error)));
          }
@@ -1309,23 +1309,23 @@ gdi2_receive_message(sge_gdi_ctx_class_t *sge_ctx, char *fromcommproc, u_short *
       }
    }
 
-   if (message != NULL && ret == CL_RETVAL_OK) {
+   if (message != nullptr && ret == CL_RETVAL_OK) {
       *buffer = (char *)message->message;
-      message->message = NULL;
+      message->message = nullptr;
       *buflen = message->message_length;
       if (tag) {
          *tag = (int)message->message_tag;
       }
 
-      if (sender != NULL) {
+      if (sender != nullptr) {
          DEBUG((SGE_EVENT, "received from: %s,"sge_U32CFormat"\n", sender->comp_host, sge_u32c(sender->comp_id)));
-         if (fromcommproc != NULL && fromcommproc[0] == '\0') {
+         if (fromcommproc != nullptr && fromcommproc[0] == '\0') {
             strcpy(fromcommproc, sender->comp_name);
          }
-         if (fromhost != NULL) {
+         if (fromhost != nullptr) {
             strcpy(fromhost, sender->comp_host);
          }
-         if (fromid != NULL) {
+         if (fromid != nullptr) {
             *fromid = (u_short)sender->comp_id;
          }
       }
@@ -1345,17 +1345,17 @@ gdi2_receive_message(sge_gdi_ctx_class_t *sge_ctx, char *fromcommproc, u_short *
  *   config_name       - name of local configuration or "global",
  *                       name is being resolved before action
  *   gepp              - pointer to list element containing global
- *                       configuration, CONF_Type, should point to NULL
+ *                       configuration, CONF_Type, should point to nullptr
  *                       or otherwise will be freed
  *   lepp              - pointer to list element containing local configuration
- *                       by name given by config_name, can be NULL if global
+ *                       by name given by config_name, can be nullptr if global
  *                       configuration is requested, CONF_Type, should point
- *                       to NULL or otherwise will be freed
+ *                       to nullptr or otherwise will be freed
  * RETURN
  *    0   on success
- *   -1   NULL pointer received
+ *   -1   nullptr pointer received
  *   -2   error resolving host
- *   -3   invalid NULL pointer received for local configuration
+ *   -3   invalid nullptr pointer received for local configuration
  *   -4   request to qmaster failed
  *   -5   there is no global configuration
  *   -6   endpoint not unique
@@ -1376,11 +1376,11 @@ int gdi2_get_configuration(sge_gdi_ctx_class_t *ctx, const char *config_name,
 {
    lCondition *where;
    lEnumeration *what;
-   lList *alp = NULL;
-   lList *lp = NULL;
+   lList *alp = nullptr;
+   lList *lp = nullptr;
    u_long32 is_global_requested = 0;
    int ret;
-   lListElem *hep = NULL;
+   lListElem *hep = nullptr;
    int success;
    static int already_logged = 0;
    u_long32 status;
@@ -1388,15 +1388,15 @@ int gdi2_get_configuration(sge_gdi_ctx_class_t *ctx, const char *config_name,
 
    DENTER(GDI_LAYER);
 
-   if (config_name == NULL || gepp == NULL) {
+   if (config_name == nullptr || gepp == nullptr) {
       DRETURN(-1);
    }
 
    /* free elements referenced in gepp and lepp - we will overwrite them */
-   if (*gepp != NULL) {
+   if (*gepp != nullptr) {
       lFreeElem(gepp);
    }
-   if (lepp != NULL && *lepp) {
+   if (lepp != nullptr && *lepp) {
       lFreeElem(lepp);
    }
 
@@ -1504,9 +1504,9 @@ int gdi2_get_configuration(sge_gdi_ctx_class_t *ctx, const char *config_name,
 
 
 int gdi2_wait_for_conf(sge_gdi_ctx_class_t *ctx, lList **conf_list) {
-   lListElem *global = NULL;
-   lListElem *local = NULL;
-   cl_com_handle_t* handle = NULL;
+   lListElem *global = nullptr;
+   lListElem *local = nullptr;
+   cl_com_handle_t* handle = nullptr;
    int ret_val;
    int ret;
    static u_long32 last_qmaster_file_read = 0;
@@ -1558,7 +1558,7 @@ int gdi2_wait_for_conf(sge_gdi_ctx_class_t *ctx, lList **conf_list) {
       }
    }
   
-   ret = merge_configuration(NULL, progid, cell_root, global, local, NULL);
+   ret = merge_configuration(nullptr, progid, cell_root, global, local, nullptr);
    if (ret) {
       DPRINTF(("Error %d merging configuration \"%s\"\n", ret, qualified_hostname));
    }
@@ -1567,8 +1567,8 @@ int gdi2_wait_for_conf(sge_gdi_ctx_class_t *ctx, lList **conf_list) {
     * we don't keep all information, just the name and the version
     * the entries are freed
     */
-   lSetList(global, CONF_entries, NULL);
-   lSetList(local, CONF_entries, NULL);
+   lSetList(global, CONF_entries, nullptr);
+   lSetList(local, CONF_entries, nullptr);
    lFreeList(conf_list);
    *conf_list = lCreateList("config list", CONF_Type);
    lAppendElem(*conf_list, global);
@@ -1589,8 +1589,8 @@ int gdi2_get_merged_configuration(
 sge_gdi_ctx_class_t *ctx,
 lList **conf_list
 ) {
-   lListElem *global = NULL;
-   lListElem *local = NULL;
+   lListElem *global = nullptr;
+   lListElem *local = nullptr;
    const char *qualified_hostname = uti_state_get_qualified_hostname();
    const char *cell_root = bootstrap_get_cell_root();
    u_long32 progid = uti_state_get_mewho();
@@ -1607,7 +1607,7 @@ lList **conf_list
       DRETURN(-1);
    }
 
-   ret = merge_configuration(NULL, progid, cell_root, global, local, NULL);
+   ret = merge_configuration(nullptr, progid, cell_root, global, local, nullptr);
    if (ret) {
       ERROR((SGE_EVENT, MSG_CONF_NOMERGECONF_IS, ret, qualified_hostname));
       lFreeElem(&global);
@@ -1618,8 +1618,8 @@ lList **conf_list
     * we don't keep all information, just the name and the version
     * the entries are freed
     */
-   lSetList(global, CONF_entries, NULL);
-   lSetList(local, CONF_entries, NULL);
+   lSetList(global, CONF_entries, nullptr);
+   lSetList(local, CONF_entries, nullptr);
 
    lFreeList(conf_list);
    *conf_list = lCreateList("config list", CONF_Type);
@@ -1698,7 +1698,7 @@ int report_list_send(sge_gdi_ctx_class_t *ctx,
 {
    sge_pack_buffer pb;
    int ret; 
-   lList *alp = NULL;
+   lList *alp = nullptr;
 
    DENTER(TOP_LAYER);
 
@@ -1727,7 +1727,7 @@ int report_list_send(sge_gdi_ctx_class_t *ctx,
       DRETURN(-1);
    }
 
-   ret = sge_gdi2_send_any_request(ctx, synchron, NULL, rhost, commproc, id, &pb, TAG_REPORT_REQUEST, 0, &alp);
+   ret = sge_gdi2_send_any_request(ctx, synchron, nullptr, rhost, commproc, id, &pb, TAG_REPORT_REQUEST, 0, &alp);
 
    clear_packbuffer(&pb);
    answer_list_output (&alp);
@@ -1833,10 +1833,10 @@ const char* sge_dump_message_tag(unsigned long tag) {
 
 int gdi_log_flush_func(cl_raw_list_t* list_p) {
    int ret_val;
-   cl_log_list_elem_t* elem = NULL;
+   cl_log_list_elem_t* elem = nullptr;
    DENTER(COMMD_LAYER);
 
-   if (list_p == NULL) {
+   if (list_p == nullptr) {
       DRETURN(CL_RETVAL_LOG_NO_LOGLIST);
    }
 
@@ -1844,9 +1844,9 @@ int gdi_log_flush_func(cl_raw_list_t* list_p) {
       DRETURN(ret_val);
    }
 
-   while ( (elem = cl_log_list_get_first_elem(list_p) ) != NULL) {
+   while ( (elem = cl_log_list_get_first_elem(list_p) ) != nullptr) {
       char* param;
-      if (elem->log_parameter == NULL) {
+      if (elem->log_parameter == nullptr) {
          param = "";
       } else {
          param = elem->log_parameter;
@@ -1896,10 +1896,10 @@ int gdi_log_flush_func(cl_raw_list_t* list_p) {
 
 #ifdef DEBUG_CLIENT_SUPPORT
 void gdi_rmon_print_callback_function(const char *progname, const char *message, unsigned long traceid, unsigned long pid, unsigned long thread_id) {
-   cl_com_handle_t* handle = NULL;
+   cl_com_handle_t* handle = nullptr;
 
    handle = cl_com_get_handle(progname ,0);
-   if (handle != NULL) {
+   if (handle != nullptr) {
       cl_com_application_debug(handle, message);
    }
 }
@@ -1939,7 +1939,7 @@ void
 general_communication_error(const cl_application_error_list_elem_t* commlib_error)
 {
    DENTER(GDI_LAYER);
-   if (commlib_error != NULL) {
+   if (commlib_error != nullptr) {
       struct timeval now;
       unsigned long time_diff = 0;
 
@@ -1957,7 +1957,7 @@ general_communication_error(const cl_application_error_list_elem_t* commlib_erro
             if (sge_gdi_communication_error.com_access_denied == false) {
                /* counts access denied errors (TODO: workaround for BT: 6350264, IZ: 1893) */
                /* increment counter only once per second and allow max CL_DEFINE_READ_TIMEOUT + 2 access denied */
-               gettimeofday(&now,NULL);
+               gettimeofday(&now,nullptr);
                if ( (now.tv_sec - sge_gdi_communication_error.com_access_denied_time) > (3*CL_DEFINE_READ_TIMEOUT) ) {
                   sge_gdi_communication_error.com_access_denied_time = 0;
                   sge_gdi_communication_error.com_access_denied_counter = 0;
@@ -1983,7 +1983,7 @@ general_communication_error(const cl_application_error_list_elem_t* commlib_erro
                /* counts endpoint not unique errors (TODO: workaround for BT: 6350264, IZ: 1893) */
                /* increment counter only once per second and allow max CL_DEFINE_READ_TIMEOUT + 2 endpoint not unique */
                DPRINTF(("got endpint not unique"));
-               gettimeofday(&now,NULL);
+               gettimeofday(&now,nullptr);
                if ( (now.tv_sec - sge_gdi_communication_error.com_endpoint_not_unique_time) > (3*CL_DEFINE_READ_TIMEOUT) ) {
                   sge_gdi_communication_error.com_endpoint_not_unique_time = 0;
                   sge_gdi_communication_error.com_endpoint_not_unique_counter = 0;
@@ -2026,7 +2026,7 @@ general_communication_error(const cl_application_error_list_elem_t* commlib_erro
 
          switch (commlib_error->cl_err_type) {
             case CL_LOG_ERROR: {
-               if (commlib_error->cl_info != NULL) {
+               if (commlib_error->cl_info != nullptr) {
                   ERROR((SGE_EVENT, MSG_GDI_GENERAL_COM_ERROR_SS,
                          cl_get_error_text(commlib_error->cl_error),
                          commlib_error->cl_info));
@@ -2037,7 +2037,7 @@ general_communication_error(const cl_application_error_list_elem_t* commlib_erro
                break;
             }
             case CL_LOG_WARNING: {
-               if (commlib_error->cl_info != NULL) {
+               if (commlib_error->cl_info != nullptr) {
                   WARNING((SGE_EVENT, MSG_GDI_GENERAL_COM_ERROR_SS,
                            cl_get_error_text(commlib_error->cl_error),
                            commlib_error->cl_info));
@@ -2048,7 +2048,7 @@ general_communication_error(const cl_application_error_list_elem_t* commlib_erro
                break;
             }
             case CL_LOG_INFO: {
-               if (commlib_error->cl_info != NULL) {
+               if (commlib_error->cl_info != nullptr) {
                   INFO((SGE_EVENT, MSG_GDI_GENERAL_COM_ERROR_SS,
                         cl_get_error_text(commlib_error->cl_error),
                         commlib_error->cl_info));
@@ -2059,7 +2059,7 @@ general_communication_error(const cl_application_error_list_elem_t* commlib_erro
                break;
             }
             case CL_LOG_DEBUG: {
-               if (commlib_error->cl_info != NULL) {
+               if (commlib_error->cl_info != nullptr) {
                   DEBUG((SGE_EVENT, MSG_GDI_GENERAL_COM_ERROR_SS,
                          cl_get_error_text(commlib_error->cl_error),
                          commlib_error->cl_info));

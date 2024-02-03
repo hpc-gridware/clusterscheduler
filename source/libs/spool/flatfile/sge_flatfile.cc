@@ -73,7 +73,7 @@
 
 const spool_flatfile_instr qconf_sub_name_value_space_sfi = 
 {
-   NULL,
+   nullptr,
    false,
    false,
    false,
@@ -93,7 +93,7 @@ const spool_flatfile_instr qconf_sub_name_value_space_sfi =
 
 const spool_flatfile_instr qconf_sfi = 
 {
-   NULL,
+   nullptr,
    true,
    false,
    false,
@@ -113,7 +113,7 @@ const spool_flatfile_instr qconf_sfi =
 
 const spool_flatfile_instr qconf_sub_comma_list_sfi = 
 {
-   NULL,
+   nullptr,
    false,
    false,
    false,
@@ -127,13 +127,13 @@ const spool_flatfile_instr qconf_sub_comma_list_sfi =
    '\0',
    '\0',
    '\0',
-   NULL,
+   nullptr,
    {NoName, NoName, NoName}
 };
 
 const spool_flatfile_instr qconf_name_value_list_sfi = 
 {
-   NULL,
+   nullptr,
    true,
    false,
    false,
@@ -157,7 +157,7 @@ const spool_flatfile_instr qconf_name_value_list_sfi =
 
 const spool_flatfile_instr qconf_sub_name_value_comma_sfi = 
 {
-   NULL,
+   nullptr,
    false,
    false,
    false,
@@ -171,13 +171,13 @@ const spool_flatfile_instr qconf_sub_name_value_comma_sfi =
    ',',
    '\0',
    '\0',
-   NULL,
+   nullptr,
    { NoName, NoName, NoName }
 };
 
 const spool_flatfile_instr qconf_sub_comma_sfi = 
 {
-   NULL,
+   nullptr,
    false,
    false,
    false,
@@ -197,7 +197,7 @@ const spool_flatfile_instr qconf_sub_comma_sfi =
 
 const spool_flatfile_instr qconf_param_sfi = 
 {
-   NULL,
+   nullptr,
    true,
    false,
    false,
@@ -217,7 +217,7 @@ const spool_flatfile_instr qconf_param_sfi =
 
 const spool_flatfile_instr qconf_sub_param_sfi = 
 {
-   NULL,
+   nullptr,
    false,
    false,
    false,
@@ -231,13 +231,13 @@ const spool_flatfile_instr qconf_sub_param_sfi =
    '\0',
    '\0',
    '\n',
-   NULL,
+   nullptr,
    { NoName, NoName, NoName }
 };
 
 const spool_flatfile_instr qconf_comma_sfi = 
 {
-   NULL,
+   nullptr,
    true,
    false,
    false,
@@ -257,7 +257,7 @@ const spool_flatfile_instr qconf_comma_sfi =
 
 const spool_flatfile_instr qconf_ce_sfi = 
 {
-   NULL,
+   nullptr,
    true,
    false,
    false,
@@ -277,7 +277,7 @@ const spool_flatfile_instr qconf_ce_sfi =
 
 const spool_flatfile_instr qconf_ce_list_sfi = 
 {
-   NULL,
+   nullptr,
    false,
    true,
    true,
@@ -291,13 +291,13 @@ const spool_flatfile_instr qconf_ce_list_sfi =
    '\0',
    '\0',
    '\n',
-   NULL,
+   nullptr,
    { NoName, NoName, NoName }
 };
 
 const spool_flatfile_instr qconf_sub_rqs_sfi = 
 {
-   NULL,
+   nullptr,
    true,
    false,
    false,
@@ -317,7 +317,7 @@ const spool_flatfile_instr qconf_sub_rqs_sfi =
 
 const spool_flatfile_instr qconf_sub_spool_usage_sfi = 
 {
-   NULL,
+   nullptr,
    false,
    false,
    false,
@@ -337,7 +337,7 @@ const spool_flatfile_instr qconf_sub_spool_usage_sfi =
 
 const spool_flatfile_instr qconf_rqs_sfi = 
 {
-   NULL,
+   nullptr,
    true,
    false,
    false,
@@ -357,7 +357,7 @@ const spool_flatfile_instr qconf_rqs_sfi =
 
 const spool_flatfile_instr qconf_sub_name_value_comma_braced_sfi = 
 {
-   NULL,
+   nullptr,
    false,
    false,
    false,
@@ -402,8 +402,8 @@ static void debug_flatfile(const char *msg, int line, int token,
       text = buffer;
    }
 
-   if (end_token == NULL) {
-      et = "<NULL>";
+   if (end_token == nullptr) {
+      et = "<nullptr>";
    } else {
       et = end_token;
    }
@@ -442,7 +442,7 @@ static char *get_end_token(char *buffer, int size, const char *end_token,
 {
    char new_buffer[2] = { '\0', '\0' };
 
-   if (end_token != NULL) {
+   if (end_token != nullptr) {
       sge_strlcpy(buffer, end_token, size);
    } else {
       *buffer = '\0';
@@ -461,8 +461,8 @@ static bool check_end_token(const char *end_token, const char act_char)
 {
    bool ret = false;
 
-   if (end_token !=  NULL && act_char != '\0') {
-      if (strchr(end_token, act_char) != NULL) {
+   if (end_token !=  nullptr && act_char != '\0') {
+      if (strchr(end_token, act_char) != nullptr) {
          ret = true;
       }
    }
@@ -693,7 +693,7 @@ spool_flatfile_align_list(lList **answer_list, const lList *list,
 *                                                    spool file
 *
 *  RESULT
-*     const char* - on success the name of the spool file / stream, else NULL
+*     const char* - on success the name of the spool file / stream, else nullptr
 *
 *  SEE ALSO
 *     spool/flatfile/spool_flatfile_write_object()
@@ -708,11 +708,11 @@ spool_flatfile_write_list(lList **answer_list,
                           const char *filepath, bool print_header)
 {
    dstring char_buffer = DSTRING_INIT;
-   const char *result = NULL;
-   const void *data = NULL;
+   const char *result = nullptr;
+   const void *data = nullptr;
    size_t data_len  = 0;
-   const spooling_field *fields = NULL;
-   spooling_field *my_fields = NULL;
+   const spooling_field *fields = nullptr;
+   spooling_field *my_fields = nullptr;
 
    DENTER(FLATFILE_LAYER);
 
@@ -720,15 +720,15 @@ spool_flatfile_write_list(lList **answer_list,
    SGE_CHECK_POINTER_NULL(instr, answer_list);
 
    /* if fields are passed, use them, else retrieve them from instructions */
-   if (fields_in != NULL) {
+   if (fields_in != nullptr) {
       fields = fields_in;
    } else { 
       my_fields = spool_get_fields_to_spool(answer_list, lGetListDescr(list), 
                                             instr->spool_instr);
-      if (my_fields == NULL) {
+      if (my_fields == nullptr) {
          /* message generated in spool_get_fields_to_spool */
          sge_dstring_free(&char_buffer);
-         DRETURN(NULL);
+         DRETURN(nullptr);
       }
 
       if (format == SP_FORM_ASCII) {
@@ -737,7 +737,7 @@ spool_flatfile_write_list(lList **answer_list,
                /* message generated in spool_flatfile_align_object */
                my_fields = spool_free_spooling_fields(my_fields);
                sge_dstring_free(&char_buffer);
-               DRETURN(NULL);
+               DRETURN(nullptr);
             }
          }
       }
@@ -777,7 +777,7 @@ spool_flatfile_write_list(lList **answer_list,
          }
          
          if (!spool_flatfile_write_list_fields(answer_list, list, &char_buffer, 
-                                              instr, fields, false, NULL)) {
+                                              instr, fields, false, nullptr)) {
             /* in case of errors, messages are in answer_list,
              * clear data - we don't want to write erroneous data */
             sge_dstring_clear(&char_buffer); 
@@ -794,7 +794,7 @@ spool_flatfile_write_list(lList **answer_list,
             sge_dstring_append_char(&char_buffer, '\n');
          }
 
-         if (!print_header && instr->show_field_names && (getenv("SGE_SINGLE_LINE") == NULL)) {
+         if (!print_header && instr->show_field_names && (getenv("SGE_SINGLE_LINE") == nullptr)) {
             spool_flatfile_add_line_breaks(&char_buffer);
          }
          
@@ -811,14 +811,14 @@ spool_flatfile_write_list(lList **answer_list,
          break;
    }      
 
-   if (data == NULL || data_len == 0) {
+   if (data == nullptr || data_len == 0) {
       answer_list_add_sprintf(answer_list, STATUS_EUNKNOWN, 
                               ANSWER_QUALITY_ERROR, MSG_FLATFILE_NODATATOSPOOL);
       sge_dstring_free(&char_buffer);
-      if(my_fields != NULL) {
+      if(my_fields != nullptr) {
          my_fields = spool_free_spooling_fields(my_fields);
       }
-      DRETURN(NULL);
+      DRETURN(nullptr);
    }
 
    result = spool_flatfile_write_data(answer_list, data, data_len, destination, 
@@ -828,7 +828,7 @@ spool_flatfile_write_list(lList **answer_list,
    sge_dstring_free(&char_buffer);
 
    /* if we created our own fields */
-   if (my_fields != NULL) {
+   if (my_fields != nullptr) {
       my_fields = spool_free_spooling_fields(my_fields);
    }
 
@@ -884,10 +884,10 @@ spool_flatfile_write_object(lList **answer_list, const lListElem *object,
                             const char *filepath, bool print_header)
 {
    dstring char_buffer = DSTRING_INIT;
-   const char *result = NULL;
-   const void *data = NULL;
+   const char *result = nullptr;
+   const void *data = nullptr;
    size_t data_len  = 0;
-   spooling_field *my_fields = NULL;
+   spooling_field *my_fields = nullptr;
 
    DENTER(FLATFILE_LAYER);
 
@@ -895,13 +895,13 @@ spool_flatfile_write_object(lList **answer_list, const lListElem *object,
    SGE_CHECK_POINTER_NULL(instr, answer_list);
 
    /* if no fields are passed, retrieve them from instructions */
-   if (fields_in == NULL) {
+   if (fields_in == nullptr) {
       my_fields = spool_get_fields_to_spool(answer_list, 
                                             object_get_type(object), 
                                             instr->spool_instr);
-      if (my_fields == NULL) {
+      if (my_fields == nullptr) {
          /* message generated in spool_get_fields_to_spool */
-         DRETURN(NULL);
+         DRETURN(nullptr);
       }
 
       if (format == SP_FORM_ASCII) {
@@ -909,7 +909,7 @@ spool_flatfile_write_object(lList **answer_list, const lListElem *object,
             if (!spool_flatfile_align_object(answer_list, my_fields)) {
                /* message generated in spool_flatfile_align_object */
                my_fields = spool_free_spooling_fields(my_fields);
-               DRETURN(NULL);
+               DRETURN(nullptr);
             }
          }
       }
@@ -935,7 +935,7 @@ spool_flatfile_write_object(lList **answer_list, const lListElem *object,
 
          sge_dstring_append_char(&char_buffer, '\n');
 
-         if (!print_header && instr->show_field_names && (getenv("SGE_SINGLE_LINE") == NULL)) {
+         if (!print_header && instr->show_field_names && (getenv("SGE_SINGLE_LINE") == nullptr)) {
             spool_flatfile_add_line_breaks(&char_buffer);
          }
 
@@ -954,11 +954,11 @@ spool_flatfile_write_object(lList **answer_list, const lListElem *object,
       answer_list_add_sprintf(answer_list, STATUS_EUNKNOWN, 
                               ANSWER_QUALITY_ERROR, MSG_FLATFILE_NODATATOSPOOL);
       sge_dstring_free(&char_buffer);
-      if (my_fields != NULL) {
+      if (my_fields != nullptr) {
          my_fields = spool_free_spooling_fields(my_fields);
-         fields_in = NULL;
+         fields_in = nullptr;
       }
-      DRETURN(NULL);
+      DRETURN(nullptr);
    } 
 
    result = spool_flatfile_write_data(answer_list, data, data_len, destination, 
@@ -968,9 +968,9 @@ spool_flatfile_write_object(lList **answer_list, const lListElem *object,
    sge_dstring_free(&char_buffer);
 
    /* if we created our own fields */
-   if (my_fields != NULL) {
+   if (my_fields != nullptr) {
       my_fields = spool_free_spooling_fields(my_fields);
-      fields_in = NULL;
+      fields_in = nullptr;
    }
 
    DRETURN(result);
@@ -1011,7 +1011,7 @@ spool_flatfile_write_object(lList **answer_list, const lListElem *object,
 *     const char **filepath_out                    - returned filename
 *
 *  RESULT
-*     static FILE * - on success a file handle, else NULL
+*     static FILE * - on success a file handle, else nullptr
 *
 *  SEE ALSO
 *     spool/flatfile/spool_flatfile_close_file()
@@ -1027,19 +1027,19 @@ spool_flatfile_open_file(lList **answer_list,
                          const char **filepath_out)
 {
 #ifdef USE_FOPEN
-   FILE *fd = NULL;
+   FILE *fd = nullptr;
 #else
    int fd = -1;
 #endif
 
    DENTER(FLATFILE_LAYER);
 
-   *filepath_out = NULL;
+   *filepath_out = nullptr;
 
    switch (destination) {
       case SP_DEST_SPOOL:
          /* check file name */
-         if (filepath_in == NULL || filepath_in[0] == '\0') {
+         if (filepath_in == nullptr || filepath_in[0] == '\0') {
             answer_list_add_sprintf(answer_list, STATUS_ESEMANTIC, 
                                     ANSWER_QUALITY_ERROR, 
                                     MSG_INVALIDFILENAMENULLOREMPTY);
@@ -1049,7 +1049,7 @@ spool_flatfile_open_file(lList **answer_list,
          /* open file */
 #ifdef USE_FOPEN
          fd = fopen(filepath_in, "w");
-         if (fd == NULL) {
+         if (fd == nullptr) {
 #else
          fd = open(filepath_in, O_WRONLY|O_CREAT, S_IRUSR|S_IWUSR|S_IRGRP|S_IWGRP|S_IROTH|S_IWOTH);
          if (fd == -1) {
@@ -1071,8 +1071,8 @@ spool_flatfile_open_file(lList **answer_list,
              * thread safe.
              */
             filepath_in = sge_tmpnam(buffer, &tmp_name_error);
-            if (filepath_in == NULL) {
-               if (sge_dstring_get_string(&tmp_name_error) != NULL) {
+            if (filepath_in == nullptr) {
+               if (sge_dstring_get_string(&tmp_name_error) != nullptr) {
                   answer_list_add_sprintf(answer_list, STATUS_EUNKNOWN, 
                                        ANSWER_QUALITY_ERROR, 
                                        sge_dstring_get_string(&tmp_name_error));
@@ -1090,7 +1090,7 @@ spool_flatfile_open_file(lList **answer_list,
             /* open file */
 #ifdef USE_FOPEN
             fd = fopen(filepath_in, "w");
-            if (fd == NULL) {
+            if (fd == nullptr) {
 #else
             fd = open(filepath_in, O_WRONLY|O_CREAT, S_IRUSR|S_IWUSR|S_IRGRP|S_IWGRP|S_IROTH|S_IWOTH);
             if (fd == -1) {
@@ -1174,7 +1174,7 @@ spool_flatfile_close_file(lList **answer_list, int fd, const char *filepath,
             answer_list_add_sprintf(answer_list, STATUS_EDISK,
                                     ANSWER_QUALITY_ERROR,
                                     MSG_ERRORCLOSINGFILE_SS,
-                                    filepath != NULL ? filepath : "<null>",
+                                    filepath != nullptr ? filepath : "<null>",
                                     strerror(errno));
             return false;
          }
@@ -1199,11 +1199,11 @@ spool_flatfile_write_data(lList **answer_list, const void *data, int data_len,
                           const char *filepath)
 {
 #ifdef USE_FOPEN
-   FILE *fd = NULL;
+   FILE *fd = nullptr;
 #else
    int fd = -1;
 #endif
-   const char *result = NULL;
+   const char *result = nullptr;
 
    DENTER(FLATFILE_LAYER);
 
@@ -1214,13 +1214,13 @@ spool_flatfile_write_data(lList **answer_list, const void *data, int data_len,
    /* open/get filehandle */
    fd = spool_flatfile_open_file(answer_list, destination, filepath, &result);
 #ifdef USE_FOPEN
-   if (fd == NULL) {
+   if (fd == nullptr) {
 #else
    if (fd == -1) {
 #endif
       /* message generated in spool_flatfile_open_file */
       PROF_STOP_MEASUREMENT(SGE_PROF_SPOOLINGIO);
-      DRETURN(NULL);
+      DRETURN(nullptr);
    }
 
    /* write data */
@@ -1237,7 +1237,7 @@ spool_flatfile_write_data(lList **answer_list, const void *data, int data_len,
       unlink(filepath);
       sge_free(&result);
       PROF_STOP_MEASUREMENT(SGE_PROF_SPOOLINGIO);
-      DRETURN(NULL);
+      DRETURN(nullptr);
    }
 
    /* close file */
@@ -1246,7 +1246,7 @@ spool_flatfile_write_data(lList **answer_list, const void *data, int data_len,
       unlink(filepath);
       sge_free(&result);
       PROF_STOP_MEASUREMENT(SGE_PROF_SPOOLINGIO);
-      DRETURN(NULL);
+      DRETURN(nullptr);
    }
    PROF_STOP_MEASUREMENT(SGE_PROF_SPOOLINGIO);
 
@@ -1295,7 +1295,7 @@ spool_flatfile_write_object_fields(lList **answer_list, const lListElem *object,
    for (i = 0; fields[i].nm != NoName; i++) {
       const int nm = fields[i].nm;
       const char *name = fields[i].name;
-      const char *value = NULL;
+      const char *value = nullptr;
       int pos;
 
 
@@ -1323,7 +1323,7 @@ spool_flatfile_write_object_fields(lList **answer_list, const lListElem *object,
       } 
 
       /* if show_field_names, output field name */
-      if (show_field_names && (name != NULL)) {
+      if (show_field_names && (name != nullptr)) {
 
          /* if record_start_end_newline indent three spaces */
          if (record_start_end_newline) {
@@ -1348,16 +1348,16 @@ spool_flatfile_write_object_fields(lList **answer_list, const lListElem *object,
       }
 
       /* output value */
-      if (fields[i].write_func != NULL) {
+      if (fields[i].write_func != nullptr) {
          if (fields[i].write_func(object, nm, &field_buffer, answer_list) == 0
              && !show_empty_fields) {
             continue;
          }
       } else if (mt_get_type(descr[pos].mt) == lListT) {
-         const spool_flatfile_instr *sub_instr = NULL;
+         const spool_flatfile_instr *sub_instr = nullptr;
          const bool recurse_field = (instr->recursion_info.recursion_field
                                        == nm) ? true : false;
-         const spooling_field *sub_fields = NULL;
+         const spooling_field *sub_fields = nullptr;
          
          sub_instr = instr;
          sub_fields = fields;
@@ -1365,14 +1365,14 @@ spool_flatfile_write_object_fields(lList **answer_list, const lListElem *object,
             sub_instr = (spool_flatfile_instr *)fields[i].clientdata;
 
             /* if no field specific sub_instr exists, use default from inst */
-            if (sub_instr == NULL) {
+            if (sub_instr == nullptr) {
                sub_instr = instr->sub_instr;
             }
 
             sub_fields = fields[i].sub_fields;
          }
 
-         if (sub_instr == NULL || sub_fields == NULL) {
+         if (sub_instr == nullptr || sub_fields == nullptr) {
             if (sub_instr->show_empty_fields) {
                answer_list_add_sprintf(answer_list, STATUS_EUNKNOWN, 
                                        ANSWER_QUALITY_WARNING, 
@@ -1389,8 +1389,8 @@ spool_flatfile_write_object_fields(lList **answer_list, const lListElem *object,
              * If a list field has no name and no value, it should be ignored
              * altogether.  I'm using this funny "if" arrangement to get the
              * desired effect with the minimum amount of overhead. */
-            if ((sub_list == NULL) || (lGetNumberOfElem(sub_list) == 0)) {
-               if (name != NULL) {
+            if ((sub_list == nullptr) || (lGetNumberOfElem(sub_list) == 0)) {
+               if (name != nullptr) {
                   if (sub_instr->show_empty_fields) {
                      sge_dstring_append(&field_buffer, NONE_STR);
                   } else {
@@ -1478,7 +1478,7 @@ spool_flatfile_write_list_fields(lList **answer_list, const lList *list,
    for_each_ep(ep, list) {
       /* from second record on write record delimiter */
       if (!first) {
-         if (ignore_list_name && list_name != NULL) {
+         if (ignore_list_name && list_name != nullptr) {
             sge_dstring_append(buffer, list_name);
             if (field_delimiter) {
                sge_dstring_append_char(buffer, instr->field_delimiter);
@@ -1567,11 +1567,11 @@ spool_flatfile_write_list_fields(lList **answer_list, const lList *list,
 *     const spool_flatfile_instr *instr  - spooling instruction
 *     const spool_flatfile_format format - spooling format
 *     FILE *file                         - filehandle to read from
-*     const char *filepath               - if <file> == NULL, <filepath> is 
+*     const char *filepath               - if <file> == nullptr, <filepath> is
 *                                          opened
 *
 *  RESULT
-*     lListElem * - on success the read object, else NULL
+*     lListElem * - on success the read object, else nullptr
 *
 *  SEE ALSO
 *     spool/flatfile/spool_flatfile_write_object()
@@ -1588,9 +1588,9 @@ spool_flatfile_read_object(lList **answer_list, const lDescr *descr,
 {
    bool file_opened = false;
    int token;
-   lListElem *object = NULL;
+   lListElem *object = nullptr;
    const spooling_field *fields = fields_in;
-   spooling_field *my_fields = NULL;
+   spooling_field *my_fields = nullptr;
 
    DENTER(FLATFILE_LAYER);
 
@@ -1598,7 +1598,7 @@ spool_flatfile_read_object(lList **answer_list, const lDescr *descr,
    SGE_CHECK_POINTER_NULL(instr, answer_list);
 
    /* if no file handle is passed, try to open file for reading */
-   if (file == NULL) {
+   if (file == nullptr) {
       SGE_CHECK_POINTER_NULL(filepath, answer_list);
 
       if (sge_is_file(filepath) == 0) {
@@ -1606,16 +1606,16 @@ spool_flatfile_read_object(lList **answer_list, const lDescr *descr,
                                  ANSWER_QUALITY_ERROR, 
                                  MSG_ERROROPENINGFILEFORREADING_SS,
                                  filepath, strerror(errno));
-         DRETURN(NULL);
+         DRETURN(nullptr);
       }
 
       file = fopen(filepath, "r");
-      if (file == NULL) {
+      if (file == nullptr) {
          answer_list_add_sprintf(answer_list, STATUS_EDISK,
                                  ANSWER_QUALITY_ERROR, 
                                  MSG_ERROROPENINGFILEFORREADING_SS,
                                  filepath, strerror(errno));
-         DRETURN(NULL);
+         DRETURN(nullptr);
       }
       file_opened = true;
    }
@@ -1632,29 +1632,29 @@ spool_flatfile_read_object(lList **answer_list, const lDescr *descr,
       if (file_opened) {
          FCLOSE(file);
       }
-      DRETURN(NULL);
+      DRETURN(nullptr);
    }
 
    /* if no fields are passed, retrieve them from instructions */
-   if (fields == NULL) {
+   if (fields == nullptr) {
       my_fields = spool_get_fields_to_spool(answer_list, descr, 
                                          instr->spool_instr);
-      if (my_fields == NULL) {
+      if (my_fields == nullptr) {
          /* messages generated in spool_get_fields_to_spool */
          spool_scanner_shutdown();
          if (file_opened) {
             FCLOSE(file);
          }
-         DRETURN(NULL);
+         DRETURN(nullptr);
       }
 
       fields = my_fields;
    }
 
    object = _spool_flatfile_read_object(answer_list, descr, root, instr, 
-                                        fields, fields_out, &token, NULL,
+                                        fields, fields_out, &token, nullptr,
                                         parse_values);
-   if (object == NULL) {
+   if (object == nullptr) {
       answer_list_add_sprintf(answer_list, STATUS_EUNKNOWN, 
                               ANSWER_QUALITY_ERROR, 
                               MSG_FLATFILE_ERROR_READINGFILE_S, 
@@ -1668,14 +1668,14 @@ spool_flatfile_read_object(lList **answer_list, const lDescr *descr,
    }
 
    /* if we created our own fields */
-   if (my_fields != NULL) {
+   if (my_fields != nullptr) {
       my_fields = spool_free_spooling_fields(my_fields);
    }
 
    DRETURN(object);
 FCLOSE_ERROR:
    lFreeElem(&object);
-   DRETURN(NULL);
+   DRETURN(nullptr);
 }
 
 static lListElem *
@@ -1685,12 +1685,12 @@ _spool_flatfile_read_object(lList **answer_list, const lDescr *descr,
                             int *token, const char *end_token,
                             bool parse_values)
 {
-   lListElem *object = NULL;
-   int *my_fields_out = NULL;
+   lListElem *object = nullptr;
+   int *my_fields_out = nullptr;
 
    /* BUGFIX: Issuezilla #732
     * If we're not given a fields_out array, create one for internal use. */
-   if (fields_out != NULL) {
+   if (fields_out != nullptr) {
       my_fields_out = fields_out;
    }
    else {
@@ -1707,7 +1707,7 @@ _spool_flatfile_read_object(lList **answer_list, const lDescr *descr,
       lFreeElem(&object);
    }
 
-   if (fields_out == NULL) {
+   if (fields_out == nullptr) {
       sge_free(&my_fields_out);
    }
    
@@ -1751,13 +1751,13 @@ FF_DEBUG("detected end_token");
       while (*token == SPFT_NEWLINE) {
 FF_DEBUG("skip newline");
          /* DT: TODO: There is a potential problem here that just hasn't come up
-          * yet.  If an object type with a NULL field name were to disable value
+          * yet.  If an object type with a nullptr field name were to disable value
           * parsing, it wouldn't work because the field name is always expected
-          * to be a WORD.  Therefore, with a NULL field name value parsing is
+          * to be a WORD.  Therefore, with a nullptr field name value parsing is
           * always assumed to be false.
           * To fix this, we would need to allow text to be pushed back onto the
           * spool_text so that we could read the name as a WORD, and if it turns
-          * out to be a field with a NULL name with value parsing disabled we
+          * out to be a field with a nullptr name with value parsing disabled we
           * could push the WORD back onto the spool_text and read it again with
           * value parsing disabled. */
          *token = spool_lex();
@@ -1769,9 +1769,9 @@ FF_DEBUG("eof detected");
          continue;
       }
 
-      if (*object == NULL) {
+      if (*object == nullptr) {
          *object = lCreateElem(descr);
-         if (*object == NULL) {
+         if (*object == nullptr) {
             answer_list_add_sprintf(answer_list, STATUS_EUNKNOWN, 
                                     ANSWER_QUALITY_ERROR, 
                                     MSG_ERRORCREATINGOBJECT);
@@ -1806,7 +1806,7 @@ FF_DEBUG("read field name");
             field_has_name = false;
             
             for (field_index = 0; fields[field_index].nm != NoName; field_index++) {
-               if (fields[field_index].name == NULL) {
+               if (fields[field_index].name == nullptr) {
                   nm = fields[field_index].nm;
                   break;
                }
@@ -1875,14 +1875,14 @@ FF_DEBUG(lNm2Str(nm));
          answer_list_add_sprintf(answer_list, STATUS_ESYNTAX,
                                  ANSWER_QUALITY_ERROR,
                                  MSG_ATTRIBUTENOTINOBJECT_S,
-                                 (fields[field_index].name != NULL) ?
+                                 (fields[field_index].name != nullptr) ?
                                  fields[field_index].name : lNm2Str(nm));
          stop = true;
          continue;
       }
 
       /* if list of read fields is requested in fields_out, store this info */
-      if (fields_out != NULL) {
+      if (fields_out != nullptr) {
          /* BUGFIX: Issuezilla #732
           * If add_nm_to_set returns -1, it means that the field already exists
           * in the field list.  In this case, return an error. */
@@ -1890,7 +1890,7 @@ FF_DEBUG(lNm2Str(nm));
             answer_list_add_sprintf(answer_list, STATUS_ESYNTAX,
                                     ANSWER_QUALITY_ERROR,
                                     MSG_FLATFILE_DUPLICATEATTRIB_S,
-                                    (fields[field_index].name != NULL) ?
+                                    (fields[field_index].name != nullptr) ?
                                     fields[field_index].name : lNm2Str(nm));
             stop = true;
             continue;
@@ -1900,7 +1900,7 @@ FF_DEBUG(lNm2Str(nm));
       type = mt_get_type(descr[pos].mt);
       
       /* now read the data */
-      if ((type != lListT) || (fields[field_index].read_func != NULL)) {
+      if ((type != lListT) || (fields[field_index].read_func != nullptr)) {
          bool found_value = false;
          
          /* read field data and append until field/record end */
@@ -1949,10 +1949,10 @@ FF_DEBUG("detected end_token");
          }
          spool_return_whitespace = false;
          
-         if (fields[field_index].read_func == NULL) {
+         if (fields[field_index].read_func == nullptr) {
                         
             if(type == lUlongT) {            
-               char *end_ptr = NULL;
+               char *end_ptr = nullptr;
                double dbl_value;
                
                dbl_value = strtod(sge_dstring_get_string(&buffer), &end_ptr);
@@ -2001,12 +2001,12 @@ FF_DEBUG("empty list");
             /* parse sublist - do we have necessary info */
             const spool_flatfile_instr *sub_instr = (spool_flatfile_instr *)fields[field_index].clientdata;
             /* if no field specific instr exists, take default sub_instr */
-            if (sub_instr == NULL) {
+            if (sub_instr == nullptr) {
                sub_instr = instr->sub_instr;
             }
             
-            if (sub_instr == NULL || 
-               fields[field_index].sub_fields == NULL) {
+            if (sub_instr == nullptr ||
+               fields[field_index].sub_fields == nullptr) {
                answer_list_add_sprintf(answer_list, STATUS_EUNKNOWN,
                                        ANSWER_QUALITY_ERROR,
                                        MSG_DONTKNOWHOWTOHANDLELIST_S, 
@@ -2017,7 +2017,7 @@ FF_DEBUG("empty list");
 
             /* get / check type of sublist */
             sub_descr = object_get_subtype(nm);
-            if (sub_descr == NULL)  {
+            if (sub_descr == nullptr)  {
                answer_list_add_sprintf(answer_list, STATUS_EUNKNOWN,
                                        ANSWER_QUALITY_ERROR,
                                        MSG_UNKNOWNOBJECTTYPEFOR_SS, 
@@ -2032,23 +2032,23 @@ FF_DEBUG("empty list");
 
                get_end_token(new_end_token, MAX_STRING_SIZE, end_token,
                              instr->field_delimiter);
-               /* We're passing in NULL for the fields_out parameter
+               /* We're passing in nullptr for the fields_out parameter
                 * because we don't care about the fields read from sub
                 * lists. */
                list = _spool_flatfile_read_list(answer_list, sub_descr, 
                                                 sub_instr, 
                                                 fields[field_index].sub_fields, 
-                                                NULL, token, 
+                                                nullptr, token,
                                                 new_end_token, parse_values,
                                                 fields[field_index].name);
             
                lSetPosList(*object, pos, list);
                
                if (instr->recursion_info.recursion_field == nm) {
-                  lListElem *ep = NULL;
+                  lListElem *ep = nullptr;
                   lListElem *rep = root;
 
-                  if (rep == NULL) {
+                  if (rep == nullptr) {
                      rep = *object;
                   }
             
@@ -2069,11 +2069,11 @@ FF_DEBUG("skipping field delimiter");
 
                   /* Read in the full element for each element in the list */
                   for_each_rw(ep, list) {
-                     /* We're passing in NULL for the fields_out parameter
+                     /* We're passing in nullptr for the fields_out parameter
                       * because we don't care about the fields read from sub
                       * lists. */
                      _spool_flatfile_read_live_object(answer_list, &ep, descr,
-                                                      rep, instr, fields, NULL,
+                                                      rep, instr, fields, nullptr,
                                                       token, end_token,
                                                       parse_values);
                   }
@@ -2188,12 +2188,12 @@ FF_DEBUG("after parsing object");
 *     int fields_out[]                   - fields actually read
 *     const spool_flatfile_instr *instr  - spooling instructions
 *     const spool_flatfile_format format - data format
-*     FILE *file                         - file to read or NULL if <filepath> 
+*     FILE *file                         - file to read or nullptr if <filepath>
 *                                          shall be opened
-*     const char *filepath               - file to open if <file> == NULL
+*     const char *filepath               - file to open if <file> == nullptr
 *
 *  RESULT
-*     lList * - the list read on success, else NULL
+*     lList * - the list read on success, else nullptr
 *
 *  SEE ALSO
 *     spool/flatfile/spool_flatfile_write_list()
@@ -2209,10 +2209,10 @@ spool_flatfile_read_list(lList **answer_list, const lDescr *descr,
 {
    bool file_opened = false;
    int token = 0;
-   lList *list = NULL;
+   lList *list = nullptr;
    const spooling_field *fields = fields_in;
-   spooling_field *my_fields = NULL;
-   const char *end_token = NULL;
+   spooling_field *my_fields = nullptr;
+   const char *end_token = nullptr;
    char new_end_token[MAX_STRING_SIZE];
 
    DENTER(FLATFILE_LAYER);
@@ -2221,7 +2221,7 @@ spool_flatfile_read_list(lList **answer_list, const lDescr *descr,
    SGE_CHECK_POINTER_NULL(instr, answer_list);
 
    /* if no file handle is passed, try to open file for reading */
-   if (file == NULL) {
+   if (file == nullptr) {
       SGE_CHECK_POINTER_NULL(filepath, answer_list);
 
       if (sge_is_file(filepath) == 0) {
@@ -2229,16 +2229,16 @@ spool_flatfile_read_list(lList **answer_list, const lDescr *descr,
                                  ANSWER_QUALITY_ERROR, 
                                  MSG_ERROROPENINGFILEFORREADING_SS,
                                  filepath, strerror(errno));
-         DRETURN(NULL);
+         DRETURN(nullptr);
       }
 
       file = fopen(filepath, "r");
-      if (file == NULL) {
+      if (file == nullptr) {
          answer_list_add_sprintf(answer_list, STATUS_EDISK,
                                  ANSWER_QUALITY_ERROR, 
                                  MSG_ERROROPENINGFILEFORREADING_SS,
                                  filepath, strerror(errno));
-         DRETURN(NULL);
+         DRETURN(nullptr);
       }
 
       file_opened = true;
@@ -2258,20 +2258,20 @@ spool_flatfile_read_list(lList **answer_list, const lDescr *descr,
       if (file_opened) {
          FCLOSE(file);
       }
-      DRETURN(NULL);
+      DRETURN(nullptr);
    }
 
    /* if no fields are passed, retrieve them from instructions */
-   if (fields == NULL) {
+   if (fields == nullptr) {
       my_fields = spool_get_fields_to_spool(answer_list, descr, 
                                             instr->spool_instr);
-      if (my_fields == NULL) {
+      if (my_fields == nullptr) {
          /* messages generated in spool_get_fields_to_spool */
          spool_scanner_shutdown();
          if (file_opened) {
             FCLOSE(file);
          }
-         DRETURN(NULL);
+         DRETURN(nullptr);
       }
 
       fields = my_fields;
@@ -2282,7 +2282,7 @@ spool_flatfile_read_list(lList **answer_list, const lDescr *descr,
 
    list = _spool_flatfile_read_list(answer_list, descr, instr, 
                                     fields, fields_out, &token, new_end_token,
-                                    parse_values, NULL);
+                                    parse_values, nullptr);
    spool_scanner_shutdown();
 
    /* if we opened the file, we also have to close it */
@@ -2291,14 +2291,14 @@ spool_flatfile_read_list(lList **answer_list, const lDescr *descr,
    }
 
    /* if we created our own fields */
-   if (my_fields != NULL) {
+   if (my_fields != nullptr) {
       my_fields = spool_free_spooling_fields(my_fields);
    }
 
    DRETURN(list);
 FCLOSE_ERROR:
    lFreeList(&list);
-   DRETURN(NULL);
+   DRETURN(nullptr);
 }
 
 static lList *
@@ -2317,11 +2317,11 @@ _spool_flatfile_read_list(lList **answer_list, const lDescr *descr,
    DENTER(FLATFILE_LAYER);
 
    list = lCreateList("list", descr);
-   if (list == NULL) {
+   if (list == nullptr) {
       answer_list_add_sprintf(answer_list, STATUS_EUNKNOWN,
                               ANSWER_QUALITY_ERROR,
                               MSG_ERRORCREATINGLIST);
-      DRETURN(NULL);
+      DRETURN(nullptr);
    }
 
    if (instr->record_end == '\0') {
@@ -2339,7 +2339,7 @@ FF_DEBUG("read list");
    /* parse all objects in list */
    while (*token != 0 && !stop) {
 
-      if (instr->ignore_list_name && list_name != NULL) {
+      if (instr->ignore_list_name && list_name != nullptr) {
          if (strcmp(list_name, spool_text) == 0) {
 FF_DEBUG("ignored token");
                *token = spool_lex();
@@ -2392,12 +2392,12 @@ FF_DEBUG("detected record_start");
       }
 
       /* read an object */
-      object = _spool_flatfile_read_object(answer_list, descr, NULL, instr,
+      object = _spool_flatfile_read_object(answer_list, descr, nullptr, instr,
                                            fields, fields_out, token, 
                                            new_end_token, parse_values);
 
       /* store object */
-      if (object != NULL) {
+      if (object != nullptr) {
          lAppendElem(list, object);
       } else {
          /* if no object was read due to an error, a message has been
@@ -2472,7 +2472,7 @@ int spool_get_unprocessed_field(spooling_field in[], int out[], lList **alpp)
       if (out[counter] == NoName) {
          SGE_ADD_MSG_ID(sprintf(SGE_EVENT, 
                         MSG_FLATFILE_ATTRIBISMISSING_S,
-                        (in[count].name == NULL) ?
+                        (in[count].name == nullptr) ?
                            lNm2Str(in[count].nm) :
                            in[count].name));
          answer_list_add(alpp, SGE_EVENT, STATUS_ESYNTAX, 
@@ -2522,17 +2522,17 @@ static void spool_flatfile_add_line_breaks(dstring *buffer)
 {
    size_t index = 0;
    size_t word = 0;
-   const char *tmp_orig = NULL;
-   char *orig = NULL;
-   char *strp = NULL;
+   const char *tmp_orig = nullptr;
+   char *orig = nullptr;
+   char *strp = nullptr;
    char str_buf[MAX_STRING_SIZE];
-   char *indent_str = NULL;
+   char *indent_str = nullptr;
    bool first_line = true;
 
    tmp_orig = sge_dstring_get_string(buffer);
    
    /* This happens when qconf -aconf is used. */
-   if (tmp_orig == NULL) {
+   if (tmp_orig == nullptr) {
       return;
    }
    
@@ -2549,7 +2549,7 @@ static void spool_flatfile_add_line_breaks(dstring *buffer)
       char *newlp = strchr(strp, '\n');
       index = (newlp - strp) / sizeof (char);
       
-      if ((newlp != NULL) && (index <= MAX_LINE_LENGTH - word)) {
+      if ((newlp != nullptr) && (index <= MAX_LINE_LENGTH - word)) {
          strncpy(str_buf, strp, index + 1);
          str_buf[index + 1] = '\0';
          sge_dstring_append(buffer, str_buf);
@@ -2559,7 +2559,7 @@ static void spool_flatfile_add_line_breaks(dstring *buffer)
          /* Reset to the first line */
          first_line = true;
          
-         if (indent_str != NULL) {
+         if (indent_str != nullptr) {
             sge_free(&indent_str);
             word = 0;
          }
@@ -2569,7 +2569,7 @@ static void spool_flatfile_add_line_breaks(dstring *buffer)
       
       /* Build the indent string by finding the beginning of the second word in
        * the line. */
-      if (indent_str == NULL) {
+      if (indent_str == nullptr) {
          /* Word should always be 0 when we enter this function, but I'll set
           * it again, just to be sure. */
          word = 0;
@@ -2734,7 +2734,7 @@ static void spool_flatfile_add_line_breaks(dstring *buffer)
 
    sge_dstring_append(buffer, strp);
    
-   if (indent_str != NULL) {
+   if (indent_str != nullptr) {
       sge_free(&indent_str);
    }
    

@@ -78,7 +78,7 @@
 #define MSG_CANTOPENTRANSACTIONALREADYOPEN _MESSAGE(59903, _("can't open a transaction - it is already open"))
 #define MSG_CANTCLOSETRANSACTIONNONEOPEN _MESSAGE(59904, _("can't close a transaction - we have no transaction open"))
 #define MSG_OBJECTWITHPRIMARYKEYUNKNOWN_S _MESSAGE(59905, _("object with primary key "SFQ" unknown to database spooling"))
-#define MSG_PARENTKEYORIDNULL _MESSAGE(59906, _("required primary key or database id of the parent object is NULL"))
+#define MSG_PARENTKEYORIDNULL _MESSAGE(59906, _("required primary key or database id of the parent object is nullptr"))
 #define MSG_UNKNOWNTABLENAMEFORSUBLIST_S  _MESSAGE(59907, _("table name unknown for sublist "SFN))
 #define MSG_NOTABLENAMEPASSEDTO_S _MESSAGE(59908, _("no table_name passed to function "SFN))
 #define MSG_UNKNOWNPREFIXORKEYNMFORTABLE_S _MESSAGE(59909, _("prefix or primary key unknown for table "SFN))

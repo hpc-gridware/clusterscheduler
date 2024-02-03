@@ -35,14 +35,14 @@ enum {
 static bool show_all = true;
 
 // Internal htable that stores all cull list and element pointers
-static htable ob_ht = NULL;
+static htable ob_ht = nullptr;
 
 // Mutex to secure ob_ht
 static pthread_mutex_t ob_mtx = PTHREAD_MUTEX_INITIALIZER;
 
 typedef struct _lObserveEntry {
    const void *pointer;     // pointer to a CULL list or element
-   const void *owner;       // owner of pointer when pointer is bound in CULL, otherwise NULL 
+   const void *owner;       // owner of pointer when pointer is bound in CULL, otherwise nullptr
    bool is_list;            // true if pointer is a CULL list
    int direct_access;       // 1 (RW) when either an attribute was changed directlry or if change in elemts caused change of htable of a list 
    int indirect_access;     // 1 (RW) when some descendant was changed
@@ -138,7 +138,7 @@ long lObserveGetSize(void) {
  */
 void lObserveInit(void) {
    pthread_mutex_lock(&ob_mtx);
-   if (ob_ht == NULL) {
+   if (ob_ht == nullptr) {
       ob_ht = sge_htable_create(2^20, dup_func_u_long64, hash_func_u_long64, hash_compare_u_long64);
    }
    pthread_mutex_unlock(&ob_mtx);
@@ -197,7 +197,7 @@ static void lObserveAddEntry(const void *pointer, const void *owner, bool is_lis
  */
 void lObserveAdd(const void *pointer, const void *owner, bool is_list) {
    pthread_mutex_lock(&ob_mtx);
-   lObserveEntry *entry = NULL;
+   lObserveEntry *entry = nullptr;
    int found = sge_htable_lookup(ob_ht, &pointer, (const void **) &entry);
    if (found == False) {
       pthread_mutex_unlock(&ob_mtx);
@@ -212,7 +212,7 @@ void lObserveAdd(const void *pointer, const void *owner, bool is_list) {
  */
 void lObserveRemove(const void *pointer) {
    pthread_mutex_lock(&ob_mtx);
-   lObserveEntry *entry = NULL;
+   lObserveEntry *entry = nullptr;
    int found = sge_htable_lookup(ob_ht, &pointer, (const void **) &entry);
 
    if (found == True) {
@@ -229,7 +229,7 @@ void lObserveRemove(const void *pointer) {
  */
 void lObserveChangeListType(const void *pointer, bool is_master_list, const char *list_name) {
    pthread_mutex_lock(&ob_mtx);
-   lObserveEntry *entry = NULL;
+   lObserveEntry *entry = nullptr;
    int found = sge_htable_lookup(ob_ht, &pointer, (const void **) &entry);
 
    if (found == True) {
@@ -248,29 +248,29 @@ void lObserveChangeListType(const void *pointer, bool is_master_list, const char
  * @brief Allows to change the ownership details of entries.
  *
  * Is sometimes called twice. Once to notify about removal of ownership (when a list or element 
- * changes from bound to unbount state. In this case new_owner is NULL and old_owner points to
+ * changes from bound to unbount state. In this case new_owner is nullptr and old_owner points to
  * the element that previously owned the elemnt.
  * Called a second time to make decalre the new owner (change form unbound to bound state)
  *
  * @param[in] pointer   CULL elem or list where the ownership changes
- * @param[in] new_owner New Owner of pointer (or NULL if element is unbound afterwards)
- * @param[in] old_owner Pointer to the binding CULL element or list (or NULL if the element was unbound before)
+ * @param[in] new_owner New Owner of pointer (or nullptr if element is unbound afterwards)
+ * @param[in] old_owner Pointer to the binding CULL element or list (or nullptr if the element was unbound before)
  * @param[in] nm        CULL nm if the attribute name is available otherwise NoName.
  */
 void lObserveChangeOwner(const void *pointer, const void *new_owner, const void *old_owner, int nm) {
    DENTER(OBSERVE_LAYER);
 
-   const void *owner = NULL;
-   if (new_owner != NULL) {
+   const void *owner = nullptr;
+   if (new_owner != nullptr) {
       owner = new_owner;
-   } else if (old_owner != NULL) {
+   } else if (old_owner != nullptr) {
       owner = old_owner;
    } else {
-      fprintf(stderr, "ERROR lObserveChangeOwner both pinter are NULL");
+      fprintf(stderr, "ERROR lObserveChangeOwner both pinter are nullptr");
    }
 
    pthread_mutex_lock(&ob_mtx);
-   lObserveEntry *entry = NULL;
+   lObserveEntry *entry = nullptr;
    int found = sge_htable_lookup(ob_ht, &pointer, (const void **) &entry);
    if (found == True) {
       entry->owner = new_owner;
@@ -286,12 +286,12 @@ void lObserveSwitchOwner(const void *pointer_a, const void *pointer_b, const voi
    DENTER(OBSERVE_LAYER);
 
    pthread_mutex_lock(&ob_mtx);
-   lObserveEntry *entry_a = NULL;
+   lObserveEntry *entry_a = nullptr;
    int found = sge_htable_lookup(ob_ht, &pointer_a, (const void **) &entry_a);
    if (found == True) {
       entry_a->owner = owner_b;
    } 
-   lObserveEntry *entry_b = NULL;
+   lObserveEntry *entry_b = nullptr;
    found = sge_htable_lookup(ob_ht, &pointer_b, (const void **) &entry_b);
    if (found == True) {
       entry_b->owner = owner_a;
@@ -328,8 +328,8 @@ void lObserveChangeValue(const void *pointer, bool has_hash, int nm) {
    bool is_last_found_a_master = false;
 
    // Walk upward the object tree beginning from the object that changed to the list that contains the object
-   lObserveEntry *previous_entry = NULL;
-   lObserveEntry *entry = NULL;
+   lObserveEntry *previous_entry = nullptr;
+   lObserveEntry *entry = nullptr;
    int found = sge_htable_lookup(ob_ht, &pointer, (const void **) &entry);
    while (found) {
       bool changed = false;
@@ -364,8 +364,8 @@ void lObserveChangeValue(const void *pointer, bool has_hash, int nm) {
 
          // If there was a previous element then we try to find the primary key of that
          int primary_key_nm = NoName;
-         const lDescr *descr = NULL;
-         if (previous_entry != NULL) {
+         const lDescr *descr = nullptr;
+         if (previous_entry != nullptr) {
             if (!previous_entry->is_list) {
                descr = lGetElemDescr(previous_entry->pointer);
                for (int i = 0; descr[i].nm != NoName; i++) {

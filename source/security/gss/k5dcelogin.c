@@ -130,10 +130,10 @@ main(int argc, char *argv[])
     char *sname, *realm, *tgtname;
     int code, i, sw;
 	uid_t uid;
-    krb5_ccache cache = NULL;
+    krb5_ccache cache = nullptr;
     krb5_cc_cursor cur;
-    krb5_creds creds, *krbtgt = NULL;
-    char *cache_name = (char *)NULL;
+    krb5_creds creds, *krbtgt = nullptr;
+    char *cache_name = (char *)nullptr;
     krb5_principal princ, tgt_princ;
     krb5_flags flags;
     error_status_t st;
@@ -159,7 +159,7 @@ main(int argc, char *argv[])
     setlocale(LC_ALL, "");
 
 	/* get new argv list + extras */
-    if ((newargv = calloc(argc + 3, sizeof(argv[0]))) == NULL) {
+    if ((newargv = calloc(argc + 3, sizeof(argv[0]))) == nullptr) {
         fprintf(stderr,"Unable to allocate new argv\n");
         exit(EXIT_STATUS);
     }
@@ -175,7 +175,7 @@ main(int argc, char *argv[])
 	}
     DEEDEBUG2("User=%s\n",lusername);
 
-    if ((pw = getpwnam(lusername)) == NULL) {
+    if ((pw = getpwnam(lusername)) == nullptr) {
 		fprintf(stderr, "Who are you?\n");
 		exit(EXIT_STATUS);
 	}
@@ -196,12 +196,12 @@ main(int argc, char *argv[])
      * cred, then just call the login program 
      */
 
-    if ((ccname = getenv("KRB5CCNAME")) == NULL) {
+    if ((ccname = getenv("KRB5CCNAME")) == nullptr) {
         goto done;
 	}
     DEEDEBUG2("KRB5CCNAME = %s\n",ccname);
 
-    if (cache == NULL) {
+    if (cache == nullptr) {
         if (code = krb5_cc_default(&cache)) {
             com_err(progname, code, "while getting default ccache");
             exit(EXIT_STATUS);
@@ -317,7 +317,7 @@ main(int argc, char *argv[])
       exit(EXIT_STATUS);
     }
 
-    if (krbtgt == NULL) {
+    if (krbtgt == nullptr) {
 	  fprintf(stderr, "%s: Did not find TGT\n", progname);
 	  goto done;
     }

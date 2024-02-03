@@ -117,7 +117,7 @@ pe_mod(sge_gdi_ctx_class_t *ctx, lList **alpp, lListElem *new_pe, lListElem *pe,
       }
 
       attr_mod_sub_list(alpp, new_pe, PE_user_list, US_name, pe, sub_command,
-                        SGE_ATTR_USER_LISTS, SGE_OBJ_PE, 0, NULL);
+                        SGE_ATTR_USER_LISTS, SGE_OBJ_PE, 0, nullptr);
    }
 
    /* ---- PE_xuser_list */
@@ -129,7 +129,7 @@ pe_mod(sge_gdi_ctx_class_t *ctx, lList **alpp, lListElem *new_pe, lListElem *pe,
          goto ERROR;
       }
       attr_mod_sub_list(alpp, new_pe, PE_xuser_list, US_name, pe, sub_command,
-                        SGE_ATTR_XUSER_LISTS, SGE_OBJ_PE, 0, NULL);
+                        SGE_ATTR_XUSER_LISTS, SGE_OBJ_PE, 0, nullptr);
    }
 
    if (lGetPosViaElem(pe, PE_xuser_list, SGE_NO_ABORT) >= 0 ||
@@ -150,13 +150,13 @@ pe_mod(sge_gdi_ctx_class_t *ctx, lList **alpp, lListElem *new_pe, lListElem *pe,
    /* -------- PE_allocation_rule */
    if (lGetPosViaElem(pe, PE_allocation_rule, SGE_NO_ABORT) >= 0) {
       s = lGetString(pe, PE_allocation_rule);
-      if (s == NULL) {
+      if (s == nullptr) {
          ERROR((SGE_EVENT, MSG_SGETEXT_MISSINGCULLFIELD_SS, lNm2Str(PE_allocation_rule), "validate_pe"));
          answer_list_add(alpp, SGE_EVENT, STATUS_EEXIST, ANSWER_QUALITY_ERROR);
          DRETURN(STATUS_EEXIST);
       }
 
-      if (replace_params(s, NULL, 0, pe_alloc_rule_variables)) {
+      if (replace_params(s, nullptr, 0, pe_alloc_rule_variables)) {
          ERROR((SGE_EVENT, MSG_PE_ALLOCRULE_SS, pe_name, err_msg));
          answer_list_add(alpp, SGE_EVENT, STATUS_EEXIST, ANSWER_QUALITY_ERROR);
          DRETURN(STATUS_EEXIST);
@@ -167,7 +167,7 @@ pe_mod(sge_gdi_ctx_class_t *ctx, lList **alpp, lListElem *new_pe, lListElem *pe,
    /* -------- PE_urgency_slots */
    if (lGetPosViaElem(pe, PE_urgency_slots, SGE_NO_ABORT) >= 0) {
       s = lGetString(pe, PE_urgency_slots);
-      if (s == NULL) {
+      if (s == nullptr) {
          ERROR((SGE_EVENT, MSG_SGETEXT_MISSINGCULLFIELD_SS, lNm2Str(PE_allocation_rule), "validate_pe"));
          answer_list_add(alpp, SGE_EVENT, STATUS_EEXIST, ANSWER_QUALITY_ERROR);
          DRETURN(STATUS_EEXIST);
@@ -182,7 +182,7 @@ pe_mod(sge_gdi_ctx_class_t *ctx, lList **alpp, lListElem *new_pe, lListElem *pe,
 #ifdef SGE_PQS_API
    /* -------- PE_qsort_args */
    if (lGetPosViaElem(pe, PE_qsort_args, SGE_NO_ABORT) >= 0) {
-      void *handle=NULL, *fn=NULL;
+      void *handle=nullptr, *fn=nullptr;
 
       s = lGetString(pe, PE_qsort_args);
 
@@ -214,7 +214,7 @@ pe_mod(sge_gdi_ctx_class_t *ctx, lList **alpp, lListElem *new_pe, lListElem *pe,
 
 int
 pe_spool(sge_gdi_ctx_class_t *ctx, lList **alpp, lListElem *pep, gdi_object_t *object) {
-   lList *answer_list = NULL;
+   lList *answer_list = nullptr;
    bool dbret;
    bool job_spooling = bootstrap_get_job_spooling();
 
@@ -246,7 +246,7 @@ int pe_success(sge_gdi_ctx_class_t *ctx, lListElem *ep, lListElem *old_ep, gdi_o
    pe_update_categories(ep, old_ep);
 
    sge_add_event(0, old_ep ? sgeE_PE_MOD : sgeE_PE_ADD, 0, 0,
-                 pe_name, NULL, NULL, ep);
+                 pe_name, nullptr, nullptr, ep);
    lListElem_clear_changed_info(ep);
 
    DRETURN(0);
@@ -255,8 +255,8 @@ int pe_success(sge_gdi_ctx_class_t *ctx, lListElem *ep, lListElem *old_ep, gdi_o
 int
 sge_del_pe(sge_gdi_ctx_class_t *ctx, lListElem *pep, lList **alpp, char *ruser, char *rhost) {
    int pos;
-   lListElem *ep = NULL;
-   const char *pe = NULL;
+   lListElem *ep = nullptr;
+   const char *pe = nullptr;
    const lList *master_job_list = *object_type_get_master_list(SGE_TYPE_JOB);
    const lList *master_cqueue_list = *object_type_get_master_list(SGE_TYPE_CQUEUE);
    lList *master_pe_list = *object_type_get_master_list_rw(SGE_TYPE_PE);
@@ -283,7 +283,7 @@ sge_del_pe(sge_gdi_ctx_class_t *ctx, lListElem *pep, lList **alpp, char *ruser, 
       DRETURN(STATUS_EUNKNOWN);
    }
 
-   if ((ep = pe_list_locate(master_pe_list, pe)) == NULL) {
+   if ((ep = pe_list_locate(master_pe_list, pe)) == nullptr) {
       ERROR((SGE_EVENT, MSG_SGETEXT_DOESNOTEXIST_SS, object_name, pe));
       answer_list_add(alpp, SGE_EVENT, STATUS_EEXIST, ANSWER_QUALITY_ERROR);
       DRETURN(STATUS_EEXIST);
@@ -293,7 +293,7 @@ sge_del_pe(sge_gdi_ctx_class_t *ctx, lListElem *pep, lList **alpp, char *ruser, 
     * Try to find references in other objects
     */
    {
-      lList *local_answer_list = NULL;
+      lList *local_answer_list = nullptr;
 
       if (pe_is_referenced(ep, &local_answer_list, master_job_list, master_cqueue_list)) {
          const lListElem *answer = lFirst(local_answer_list);
@@ -308,13 +308,13 @@ sge_del_pe(sge_gdi_ctx_class_t *ctx, lListElem *pep, lList **alpp, char *ruser, 
 
    /* remove host file */
    if (!sge_event_spool(ctx, alpp, 0, sgeE_PE_DEL,
-                        0, 0, pe, NULL, NULL, NULL, NULL, NULL, true, true)) {
+                        0, 0, pe, nullptr, nullptr, nullptr, nullptr, nullptr, true, true)) {
       ERROR((SGE_EVENT, MSG_CANTSPOOL_SS, object_name, pe));
       answer_list_add(alpp, SGE_EVENT, STATUS_EEXIST, ANSWER_QUALITY_ERROR);
       DRETURN(STATUS_EEXIST);
    }
 
-   pe_update_categories(NULL, ep);
+   pe_update_categories(nullptr, ep);
 
    /* delete found pe element */
    lRemoveElem(master_pe_list, &ep);
@@ -346,7 +346,7 @@ debit_all_jobs_from_pes(lList *pe_list) {
       {
          const lListElem *jatep;
 
-         if (lGetString(jep, JB_pe) != NULL) { /* is job  parallel */
+         if (lGetString(jep, JB_pe) != nullptr) { /* is job  parallel */
             slots = 0;
             for_each_ep(jatep, lGetList(jep, JB_ja_tasks))
             {
@@ -444,7 +444,7 @@ pe_diff_usersets(const lListElem *new_pe, const lListElem *old_pe, lList **new_a
 *******************************************************************************/
 static void
 pe_update_categories(const lListElem *new_pe, const lListElem *old_pe) {
-   lList *old_lp = NULL, *new_lp = NULL;
+   lList *old_lp = nullptr, *new_lp = nullptr;
 
    pe_diff_usersets(new_pe, old_pe, &new_lp, &old_lp);
    userset_update_categories(new_lp, old_lp);

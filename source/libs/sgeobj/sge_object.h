@@ -64,9 +64,9 @@
 ******************************************************************************/
 
 #define NULL_OUT_NONE(ep, nm) \
-   if (lGetString(ep, nm) != NULL && \
+   if (lGetString(ep, nm) != nullptr && \
        strcasecmp(lGetString(ep, nm), "none") == 0) { \
-      lSetString(ep, nm, NULL); \
+      lSetString(ep, nm, nullptr); \
    }
 
 /****** sgeobj/object/--Object-Typedefs ***************************************
@@ -214,14 +214,8 @@ object_has_type(const lListElem *object, const lDescr *descr);
 const lDescr *
 object_get_type(const lListElem *object);
 
-#ifdef __cplusplus
-extern "C" {
-#endif
 const lDescr *
 object_get_subtype(int nm);
-#ifdef __cplusplus
-}
-#endif
 
 int 
 object_get_primary_key(const lDescr *descr);

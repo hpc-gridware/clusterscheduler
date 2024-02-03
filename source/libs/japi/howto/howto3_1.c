@@ -35,9 +35,9 @@
 int main (int argc, char **argv) {
    char error[DRMAA_ERROR_STRING_BUFFER];
    int errnum = 0;
-   drmaa_job_template_t *jt = NULL;
+   drmaa_job_template_t *jt = nullptr;
 
-   errnum = drmaa_init (NULL, error, DRMAA_ERROR_STRING_BUFFER);
+   errnum = drmaa_init (nullptr, error, DRMAA_ERROR_STRING_BUFFER);
 
    if (errnum != DRMAA_ERRNO_SUCCESS) {
       fprintf (stderr, "Could not initialize the DRMAA library: %s\n", error);
@@ -58,7 +58,7 @@ int main (int argc, char **argv) {
                   DRMAA_REMOTE_COMMAND, error);
       }
       else {
-         const char *args[2] = {"5", NULL};
+         const char *args[2] = {"5", nullptr};
          
          errnum = drmaa_set_vector_attribute (jt, DRMAA_V_ARGV, args, error,
                                               DRMAA_ERROR_STRING_BUFFER);
@@ -69,7 +69,7 @@ int main (int argc, char **argv) {
                   DRMAA_REMOTE_COMMAND, error);
       }
       else {
-         drmaa_job_ids_t *ids = NULL;
+         drmaa_job_ids_t *ids = nullptr;
 
          errnum = drmaa_run_bulk_jobs (&ids, jt, 1, 30, 2, error, DRMAA_ERROR_STRING_BUFFER);
 
@@ -78,7 +78,7 @@ int main (int argc, char **argv) {
          }
          else {
             char jobid[DRMAA_JOBNAME_BUFFER];
-            const char *jobids[2] = {DRMAA_JOB_IDS_SESSION_ALL, NULL};
+            const char *jobids[2] = {DRMAA_JOB_IDS_SESSION_ALL, nullptr};
 
             while (drmaa_get_next_job_id (ids, jobid, DRMAA_JOBNAME_BUFFER) == DRMAA_ERRNO_SUCCESS) {
                printf ("A job task has been submitted with id %s\n", jobid);

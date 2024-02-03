@@ -41,7 +41,7 @@
 #include "msg_common.h"
 
 lListElem *lWhereToElem(const lCondition *where){
-   lListElem *whereElem = NULL;
+   lListElem *whereElem = nullptr;
    sge_pack_buffer pb;
    DENTER(CULL_LAYER);
 
@@ -58,7 +58,7 @@ lListElem *lWhereToElem(const lCondition *where){
 }
 
 lCondition *lWhereFromElem(const lListElem *where){
-   lCondition *cond = NULL;
+   lCondition *cond = nullptr;
    sge_pack_buffer pb;
    int size=0;
    char *buffer;
@@ -86,7 +86,7 @@ lCondition *lWhereFromElem(const lListElem *where){
 
 lListElem *lWhatToElem(const lEnumeration *what)
 {
-   lListElem *whatElem = NULL;
+   lListElem *whatElem = nullptr;
    sge_pack_buffer pb;
 
    DENTER(CULL_LAYER);
@@ -105,7 +105,7 @@ lListElem *lWhatToElem(const lEnumeration *what)
 }
 
 lEnumeration *lWhatFromElem(const lListElem *what){
-   lEnumeration *cond = NULL;
+   lEnumeration *cond = nullptr;
    sge_pack_buffer pb;
    int size=0;
    char *buffer;

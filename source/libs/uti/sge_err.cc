@@ -80,7 +80,7 @@ sge_err_get_object(sge_err_object_t **object) {
 
    DENTER(ERR_LAYER);
    *object = (sge_err_object_t *)pthread_getspecific(sge_err_key);
-   if (*object == NULL) {
+   if (*object == nullptr) {
       sge_err_object_t *new_object = (sge_err_object_t *) sge_malloc(sizeof(sge_err_object_t));
       int pthread_ret = pthread_setspecific(sge_err_key, (void *) new_object);
 
@@ -98,7 +98,7 @@ sge_err_get_object(sge_err_object_t **object) {
 /* local function that sets the error id and the error message (format + variable arguments) */
 static void
 sge_err_vset(sge_err_t id, const char *format, va_list args) {
-   sge_err_object_t *err_obj = NULL;
+   sge_err_object_t *err_obj = nullptr;
 
    DENTER(ERR_LAYER);
    sge_err_get_object(&err_obj);
@@ -120,7 +120,7 @@ sge_err_set(sge_err_t id, const char *format, ...) {
    va_list args;
 
    DENTER(ERR_LAYER);
-   if (format != NULL) {
+   if (format != nullptr) {
       va_start(args, format);
       sge_err_vset(id, format, args);
       va_end(args);
@@ -131,8 +131,8 @@ sge_err_set(sge_err_t id, const char *format, ...) {
 void
 sge_err_get(u_long32 pos, sge_err_t *id, char *message, size_t size) {
    DENTER(ERR_LAYER);
-   if (id != NULL && message != NULL && size > 0) {
-      sge_err_object_t *err_obj = NULL;
+   if (id != nullptr && message != nullptr && size > 0) {
+      sge_err_object_t *err_obj = nullptr;
 
       sge_err_get_object(&err_obj);
       if (err_obj->id != SGE_ERR_SUCCESS) {
@@ -148,7 +148,7 @@ sge_err_get(u_long32 pos, sge_err_t *id, char *message, size_t size) {
 
 bool
 sge_err_has_error(void) {
-   sge_err_object_t *err_obj = NULL;
+   sge_err_object_t *err_obj = nullptr;
    bool ret;
 
    DENTER(ERR_LAYER);
@@ -159,7 +159,7 @@ sge_err_has_error(void) {
 
 void
 sge_err_clear(void) {
-   sge_err_object_t *err_obj = NULL;
+   sge_err_object_t *err_obj = nullptr;
 
    DENTER(ERR_LAYER);
    sge_err_get_object(&err_obj);

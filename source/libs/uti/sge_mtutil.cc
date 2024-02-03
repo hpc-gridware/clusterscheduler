@@ -90,7 +90,7 @@ void sge_mutex_lock(const char *mutex_name, const char *func, int line, pthread_
 #ifdef PRINT_LOCK
    {
       struct timeval now;
-      gettimeofday(&now, NULL);
+      gettimeofday(&now, nullptr);
       printf("%ld lock %lu:%lus %s\n", (long int) pthread_self(),now.tv_sec, (long unsigned)now.tv_usec, mutex_name); 
    }   
 #endif  
@@ -105,7 +105,7 @@ void sge_mutex_lock(const char *mutex_name, const char *func, int line, pthread_
 #ifdef PRINT_LOCK
    {
       struct timeval now;
-      gettimeofday(&now, NULL);
+      gettimeofday(&now, nullptr);
       printf("%ld got lock %lu:%lu %s\n", (long int) pthread_self(),now.tv_sec, now.tv_usec, mutex_name); 
    }   
 #endif  
@@ -176,7 +176,7 @@ void sge_mutex_unlock(const char *mutex_name, const char *func, int line, pthrea
 #ifdef PRINT_LOCK
    {
       struct timeval now;
-      gettimeofday(&now, NULL);
+      gettimeofday(&now, nullptr);
       printf("%ld unlock %lu:%lu %s\n", (long int) pthread_self(),now.tv_sec, now.tv_usec, mutex_name); 
    }   
 #endif  
@@ -230,7 +230,7 @@ void sge_relative_timespec(signed long timeout, struct timespec *ts) {
    struct timeval now;
 
    /* in examples also clock_gettime(CLOCK_REALTIME, &ts) was used */
-   gettimeofday(&now, NULL);
+   gettimeofday(&now, nullptr);
    ts->tv_sec = now.tv_sec;
    ts->tv_nsec = now.tv_usec * 1000;
 

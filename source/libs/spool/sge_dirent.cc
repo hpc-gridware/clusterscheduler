@@ -53,10 +53,10 @@
  **** Returns the entries of the specified directory
  **** (without . and ..) as lList of type ST_Type.
  **** The lList has to be freed from the caller.
- **** On any error, NULL is returned.
+ **** On any error, nullptr is returned.
  ****/
 lList *sge_get_dirents(const char *path) {
-   lList *entries = NULL;
+   lList *entries = nullptr;
    DIR *cwd;
    SGE_STRUCT_DIRENT *dent;
    char dirent[SGE_PATH_MAX*2];
@@ -67,10 +67,10 @@ lList *sge_get_dirents(const char *path) {
 
    if (cwd == (DIR *) 0) {
       ERROR((SGE_EVENT, MSG_FILE_CANTOPENDIRECTORYX_SS, path, strerror(errno)));
-      return (NULL);
+      return (nullptr);
    }
 
-   while (SGE_READDIR_R(cwd, (SGE_STRUCT_DIRENT *)dirent, &dent)==0 && dent!=NULL) {
+   while (SGE_READDIR_R(cwd, (SGE_STRUCT_DIRENT *)dirent, &dent)==0 && dent!=nullptr) {
       if (!dent->d_name[0])
          continue;             
       if (strcmp(dent->d_name, "..") == 0 || strcmp(dent->d_name, ".") == 0)

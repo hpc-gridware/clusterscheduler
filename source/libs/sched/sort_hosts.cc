@@ -97,7 +97,7 @@ static int get_load_value(double *dvalp, lListElem *global, lListElem *host, con
 *************************************************************************/
 int sort_host_list(lList *hl, const lList *centry_list)
 {
-   lListElem *hlp = NULL;
+   lListElem *hlp = nullptr;
    lListElem *global = host_list_locate(hl, SGE_GLOBAL_NAME);
    lListElem *template_ep = host_list_locate(hl, SGE_TEMPLATE_NAME);
    const char *load_formula = sconf_get_load_formula();
@@ -149,22 +149,22 @@ int sort_host_list(lList *hl, const lList *centry_list)
 double scaled_mixed_load(const char* load_formula, lListElem *global,
                          lListElem *host, const lList *centry_list)
 {
-   char *cp = NULL;
-   char *tf = NULL; 
-   char *ptr = NULL;
-   char *ptr2 = NULL;
-   char *par_name = NULL;
-   char *op_ptr=NULL;
+   char *cp = nullptr;
+   char *tf = nullptr;
+   char *ptr = nullptr;
+   char *ptr2 = nullptr;
+   char *par_name = nullptr;
+   char *op_ptr=nullptr;
 
    double val=0, val2=0;
    double load=0;
    int op_pos, next_op=LOAD_OP_NONE;
-   char *lasts = NULL;
+   char *lasts = nullptr;
 
    DENTER(TOP_LAYER);
 
    /* we'll use strtok ==> we need a safety copy */
-   if ((tf = strdup(load_formula)) == NULL) {
+   if ((tf = strdup(load_formula)) == nullptr) {
       DRETURN(ERROR_LOAD_VAL);
    }
 
@@ -178,7 +178,7 @@ double scaled_mixed_load(const char* load_formula, lListElem *global,
       next_op = LOAD_OP_MINUS;
    }
 
-   for (cp=strtok_r(tf, "+-", &lasts); cp; cp = strtok_r(NULL, "+-", &lasts)) {
+   for (cp=strtok_r(tf, "+-", &lasts); cp; cp = strtok_r(nullptr, "+-", &lasts)) {
 
       /* ---------------------------------------- */
       /* get scaled load value                    */
@@ -212,7 +212,7 @@ double scaled_mixed_load(const char* load_formula, lListElem *global,
          ptr++;
          if (!(val2 = strtod(ptr,&ptr2)) && ptr2 == ptr) {
             /* it is not an integer ==> it's got to be a load value */
-            if (!(par_name = sge_delim_str(ptr,NULL,load_ops)) ||
+            if (!(par_name = sge_delim_str(ptr,nullptr,load_ops)) ||
                get_load_value(&val2, global, host, centry_list, par_name)) {
                sge_free(&par_name);
                sge_free(&tf);
@@ -304,7 +304,7 @@ static int get_load_value(double *dvalp, lListElem *global, lListElem *host, con
       attrname++;
    }
 
-   if(!(cep = get_attribute_by_name(global, host, NULL, attrname, centry_list, DISPATCH_TIME_NOW, 0))){
+   if(!(cep = get_attribute_by_name(global, host, nullptr, attrname, centry_list, DISPATCH_TIME_NOW, 0))){
       /* neither load or consumable available for that host */
       DRETURN(1);
    }

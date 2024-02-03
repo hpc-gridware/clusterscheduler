@@ -55,11 +55,11 @@
 *     const char *name - project name 
 *
 *  RESULT
-*     lListElem* - NULL or element pointer
+*     lListElem* - nullptr or element pointer
 *******************************************************************************/
 lListElem *prj_list_locate(const lList *lp, const char *name) 
 {
-   lListElem *ep = NULL;
+   lListElem *ep = nullptr;
 
    DENTER(BASIS_LAYER);
 
@@ -83,11 +83,11 @@ lListElem *prj_list_locate(const lList *lp, const char *name)
 *     const char *name - user name 
 *
 *  RESULT
-*     lListElem* - NULL or element pointer
+*     lListElem* - nullptr or element pointer
 *******************************************************************************/
 lListElem *user_list_locate(const lList *lp, const char *name) 
 {
-   lListElem *ep = NULL;
+   lListElem *ep = nullptr;
 
    DENTER(BASIS_LAYER);
 
@@ -112,15 +112,15 @@ lListElem *user_list_locate(const lList *lp, const char *name)
 *     dstring *string  - dstring to append to
 *
 *  RESULT
-*     const char* - NULL or resulting string of dstring 
+*     const char* - nullptr or resulting string of dstring
 *******************************************************************************/
 const char *prj_list_append_to_dstring(const lList *this_list, dstring *string)
 {
-   const char *ret = NULL;
+   const char *ret = nullptr;
 
    DENTER(BASIS_LAYER);
-   if (string != NULL) {
-      const lListElem *elem = NULL;
+   if (string != nullptr) {
+      const lListElem *elem = nullptr;
       bool printed = false;
 
       for_each_ep(elem, this_list) {
@@ -143,13 +143,13 @@ prj_list_do_all_exist(const lList *this_list, lList **answer_list,
                       const lList *prj_list)
 {
    bool ret = true;
-   const lListElem *prj = NULL;
+   const lListElem *prj = nullptr;
 
    DENTER(TOP_LAYER);
    for_each_ep(prj, prj_list) {
       const char *name = lGetString(prj, PR_name);
 
-      if (prj_list_locate(this_list, name) == NULL) {
+      if (prj_list_locate(this_list, name) == nullptr) {
          answer_list_add_sprintf(answer_list, STATUS_EEXIST,
                                  ANSWER_QUALITY_ERROR,
                                  MSG_CQUEUE_UNKNOWNPROJECT_S, name);
@@ -172,13 +172,13 @@ lListElem *getUserTemplate()
 
    ep = lCreateElem(UU_Type);
    lSetString(ep, UU_name, "template");
-   lSetString(ep, UU_default_project, NULL);
+   lSetString(ep, UU_default_project, nullptr);
    lSetUlong(ep, UU_oticket, 0);
    lSetUlong(ep, UU_fshare, 0);
    lSetUlong(ep, UU_job_cnt, 0);
-   lSetList(ep, UU_project, NULL);
-   lSetList(ep, UU_usage, NULL);
-   lSetList(ep, UU_long_term_usage, NULL);
+   lSetList(ep, UU_project, nullptr);
+   lSetList(ep, UU_usage, nullptr);
+   lSetList(ep, UU_long_term_usage, nullptr);
 
    DRETURN(ep);
 }
@@ -197,11 +197,11 @@ lListElem *getPrjTemplate()
    lSetUlong(ep, PR_oticket, 0);
    lSetUlong(ep, PR_fshare, 0);
    lSetUlong(ep, PR_job_cnt, 0);
-   lSetList(ep, PR_project, NULL);
-   lSetList(ep, PR_usage, NULL);
-   lSetList(ep, PR_long_term_usage, NULL);
-   lSetList(ep, PR_acl, NULL);
-   lSetList(ep, PR_xacl, NULL);
+   lSetList(ep, PR_project, nullptr);
+   lSetList(ep, PR_usage, nullptr);
+   lSetList(ep, PR_long_term_usage, nullptr);
+   lSetList(ep, PR_acl, nullptr);
+   lSetList(ep, PR_xacl, nullptr);
 
    DRETURN(ep);
 }

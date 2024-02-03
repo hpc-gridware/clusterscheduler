@@ -78,7 +78,7 @@ int
 test_compare(const void *data1, const void *data2) {
    int ret = 0;
 
-   if (data1 != NULL && data2 != NULL) {
+   if (data1 != nullptr && data2 != nullptr) {
       ret = strcmp(*(char **) data1, *(char **) data2);
    }
    return ret;
@@ -88,7 +88,7 @@ int
 test_compare_first_char(const void *data1, const void *data2) {
    int ret = 0;
 
-   if (data1 != NULL && data2 != NULL) {
+   if (data1 != nullptr && data2 != nullptr) {
       ret = fnmatch(*(char **) data1, *(char **) data2, 0);
    }
    return ret;
@@ -107,10 +107,10 @@ test_sequence(sge_sl_list_t *list, bool forward, const char *expected,
       ret &= sge_sl_lock(list);
 
       /* create string from stored characters */
-      next = NULL;
+      next = nullptr;
       ret &= sge_sl_elem_next(list, &next, forward ? SGE_SL_FORWARD : SGE_SL_BACKWARD);
       sge_dstring_sprintf(&test_string, "");
-      while (ret && (current = next) != NULL) {
+      while (ret && (current = next) != nullptr) {
          ret &= sge_sl_elem_next(list, &next, forward ? SGE_SL_FORWARD : SGE_SL_BACKWARD);
          sge_dstring_append(&test_string, (char *) sge_sl_elem_data(current));
       }
@@ -146,11 +146,11 @@ test_search_sequence(sge_sl_list_t *list, bool forward, const char *key,
       ret &= sge_sl_lock(list);
 
       /* create string from stored characters */
-      next = NULL;
+      next = nullptr;
       ret &= sge_sl_elem_search(list, &next, (void *) key, test_compare_first_char,
                                 forward ? SGE_SL_FORWARD : SGE_SL_BACKWARD);
       sge_dstring_sprintf(&test_string, "");
-      while (ret && (current = next) != NULL) {
+      while (ret && (current = next) != nullptr) {
          ret &= sge_sl_elem_search(list, &next, (void *) key, test_compare_first_char,
                                    forward ? SGE_SL_FORWARD : SGE_SL_BACKWARD);
 
@@ -178,7 +178,7 @@ test_search_sequence(sge_sl_list_t *list, bool forward, const char *key,
 bool
 test_create_insert_destroy(void) {
    bool ret = true;
-   sge_sl_list_t *list = NULL;
+   sge_sl_list_t *list = nullptr;
 
    DENTER(TOP_LAYER);
 
@@ -227,7 +227,7 @@ test_create_insert_destroy(void) {
 bool
 test_create_append(void) {
    bool ret = true;
-   sge_sl_list_t *list = NULL;
+   sge_sl_list_t *list = nullptr;
 
    DENTER(TOP_LAYER);
 
@@ -264,7 +264,7 @@ test_create_append(void) {
 bool
 test_create_insort(void) {
    bool ret = true;
-   sge_sl_list_t *list = NULL;
+   sge_sl_list_t *list = nullptr;
 
    DENTER(TOP_LAYER);
 
@@ -302,7 +302,7 @@ test_create_insort(void) {
 bool
 test_create_insert_sort(void) {
    bool ret = true;
-   sge_sl_list_t *list = NULL;
+   sge_sl_list_t *list = nullptr;
 
    DENTER(TOP_LAYER);
 
@@ -342,9 +342,9 @@ test_create_insert_sort(void) {
 bool
 test_dechain_before_after(void) {
    bool ret = true;
-   sge_sl_list_t *list = NULL;
-   sge_sl_elem_t *new_elem = NULL;
-   sge_sl_elem_t *elem = NULL;
+   sge_sl_list_t *list = nullptr;
+   sge_sl_elem_t *new_elem = nullptr;
+   sge_sl_elem_t *elem = nullptr;
 
    DENTER(TOP_LAYER);
 
@@ -400,7 +400,7 @@ test_dechain_before_after(void) {
 
    /* dechain first */
    if (ret) {
-      elem = NULL;
+      elem = nullptr;
       ret &= sge_sl_elem_next(list, &elem, SGE_SL_FORWARD);
       ret &= sge_sl_dechain(list, elem);
       sge_sl_elem_destroy(&elem, test_destroy_test);
@@ -414,7 +414,7 @@ test_dechain_before_after(void) {
 
    /* dechain first */
    if (ret) {
-      elem = NULL;
+      elem = nullptr;
       ret &= sge_sl_elem_next(list, &elem, SGE_SL_BACKWARD);
       ret &= sge_sl_dechain(list, elem);
       sge_sl_elem_destroy(&elem, test_destroy_test);
@@ -437,7 +437,7 @@ test_dechain_before_after(void) {
 bool
 test_search_forward_backward(void) {
    bool ret = true;
-   sge_sl_list_t *list = NULL;
+   sge_sl_list_t *list = nullptr;
 
    DENTER(TOP_LAYER);
 
@@ -459,7 +459,7 @@ test_search_forward_backward(void) {
    }
 
    if (ret) {
-      char *data = NULL;
+      char *data = nullptr;
 
       ret &= sge_sl_data_search(list, (void *)"X*", (void **) &data,
                                 test_compare_first_char, SGE_SL_FORWARD);
@@ -486,7 +486,7 @@ test_search_forward_backward(void) {
 bool
 test_delete_forward_backward(void) {
    bool ret = true;
-   sge_sl_list_t *list = NULL;
+   sge_sl_list_t *list = nullptr;
 
    DENTER(TOP_LAYER);
 
@@ -541,7 +541,7 @@ test_delete_forward_backward(void) {
 bool
 test_delete_search(void) {
    bool ret = true;
-   sge_sl_list_t *list = NULL;
+   sge_sl_list_t *list = nullptr;
 
    DENTER(TOP_LAYER);
 
@@ -589,7 +589,7 @@ test_delete_search(void) {
 bool
 test_for_each_ep(void) {
    bool ret = true;
-   sge_sl_list_t *list = NULL;
+   sge_sl_list_t *list = nullptr;
    int sum = 0;
 
    DENTER(TOP_LAYER);
@@ -618,13 +618,13 @@ test_for_each_ep(void) {
       ret = false;
    }
 
-   ret &= sge_sl_destroy(&list, NULL);
+   ret &= sge_sl_destroy(&list, nullptr);
    DRETURN(ret);
 }
 
 void *
 test_thread1_main(void *arg) {
-   void *ret = NULL;
+   void *ret = nullptr;
    test_sl_thread_t *global = (test_sl_thread_t *) arg;
 
    DENTER(TOP_LAYER);
@@ -643,27 +643,27 @@ test_thread1_main(void *arg) {
          switch (search_action) {
             case 0:
                /* first element */
-               elem = NULL;
+               elem = nullptr;
                sge_sl_elem_next(global->list, &elem, SGE_SL_FORWARD);
                break;
             case 1:
                /* last element */
-               elem = NULL;
+               elem = nullptr;
                sge_sl_elem_next(global->list, &elem, SGE_SL_BACKWARD);
                break;
             case 2:
                /* somewhere in middle */
                i = sge_sl_get_elem_count(global->list) / 2;
-               elem = NULL;
-               next = NULL;
+               elem = nullptr;
+               next = nullptr;
                sge_sl_elem_next(global->list, &next, SGE_SL_BACKWARD);
-               while ((elem = next) != NULL && i > 0) {
+               while ((elem = next) != nullptr && i > 0) {
                   sge_sl_elem_next(global->list, &next, SGE_SL_BACKWARD);
                   i--;
                }
                break;
             default:
-               elem = NULL;
+               elem = nullptr;
                break;
          }
       }
@@ -686,8 +686,8 @@ test_thread1_main(void *arg) {
             break;
          case 3:
             /* search and insert before or append after */
-            if (elem != NULL) {
-               sge_sl_elem_t *new_elem = NULL;
+            if (elem != nullptr) {
+               sge_sl_elem_t *new_elem = nullptr;
                int location = random() % 2;
 
                sge_sl_elem_create(&new_elem, (void *) "3");
@@ -705,14 +705,14 @@ test_thread1_main(void *arg) {
             sge_sl_unlock(global->list); /* lock has been done above during serach */
             break;
          case 4:
-            sge_sl_delete(global->list, NULL, SGE_SL_FORWARD);
+            sge_sl_delete(global->list, nullptr, SGE_SL_FORWARD);
             break;
          case 5:
-            sge_sl_delete(global->list, NULL, SGE_SL_BACKWARD);
+            sge_sl_delete(global->list, nullptr, SGE_SL_BACKWARD);
             break;
          case 6:
-            if (elem != NULL) {
-               sge_sl_delete_search(global->list, elem->data, NULL,
+            if (elem != nullptr) {
+               sge_sl_delete_search(global->list, elem->data, nullptr,
                                     test_compare,
                                     random() % 2 == 0 ? SGE_SL_FORWARD : SGE_SL_BACKWARD);
             }
@@ -743,7 +743,7 @@ test_mt_support(void) {
    /* create a list */
    memset(&global, 0, sizeof(test_sl_thread_t));
    global.do_terminate = false;
-   pthread_mutex_init(&global.mutex, NULL);
+   pthread_mutex_init(&global.mutex, nullptr);
    ret = sge_sl_create(&global.list);
 
    /* spawn threads */
@@ -752,16 +752,16 @@ test_mt_support(void) {
       int i;
 
       for (i = 0; i < TEST_SL_MAX_THREADS; i++) {
-         pthread_create(&(thread[i]), NULL, test_thread1_main, &global);
+         pthread_create(&(thread[i]), nullptr, test_thread1_main, &global);
       }
       for (i = 0; i < TEST_SL_MAX_THREADS; i++) {
-         pthread_join(thread[i], NULL);
+         pthread_join(thread[i], nullptr);
       }
    }
 
    /* cleanup */
    pthread_mutex_destroy(&global.mutex);
-   ret &= sge_sl_destroy(&global.list, NULL);
+   ret &= sge_sl_destroy(&global.list, nullptr);
    DRETURN(ret);
 }
 

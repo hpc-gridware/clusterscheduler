@@ -112,19 +112,19 @@ static qhost_report_handler_t* xml_report_handler_create(lList **alpp)
 
    DENTER(TOP_LAYER);
 
-   if (ret == NULL ) {
+   if (ret == nullptr ) {
       answer_list_add_sprintf(alpp, STATUS_EMALLOC, ANSWER_QUALITY_ERROR,
                               MSG_MEM_MEMORYALLOCFAILED_S, __func__);
-      DRETURN(NULL);
+      DRETURN(nullptr);
    }
    /*
    ** for xml_report_handler ctx is a dstring
    */
    ret->ctx = sge_malloc(sizeof(dstring));
-   if (ret->ctx == NULL ) {
+   if (ret->ctx == nullptr ) {
       answer_list_add_sprintf(alpp, STATUS_EMALLOC, ANSWER_QUALITY_ERROR,
                               MSG_MEM_MEMORYALLOCFAILED_S, __func__);
-      DRETURN(NULL);
+      DRETURN(nullptr);
    }
    /*
    ** corresponds to initializing with DSTRING_INIT
@@ -160,11 +160,11 @@ static int xml_report_handler_destroy(qhost_report_handler_t** handler, lList **
 {
    DENTER(TOP_LAYER);
 
-   if (handler != NULL && *handler != NULL ) {
+   if (handler != nullptr && *handler != nullptr ) {
       sge_dstring_free((dstring*)(*handler)->ctx);
       sge_free(&((*handler)->ctx));
       sge_free(handler);
-      *handler = NULL;
+      *handler = nullptr;
    }
 
    DRETURN(QHOST_SUCCESS);
@@ -363,17 +363,17 @@ int main(int argc, char **argv);
 /************************************************************************/
 int main(int argc, char **argv)
 {
-   lList *pcmdline = NULL;
-   lList *ul = NULL;
-   lList *host_list = NULL;
+   lList *pcmdline = nullptr;
+   lList *ul = nullptr;
+   lList *host_list = nullptr;
    u_long32 show = 0;
-   lList *resource_list = NULL;
-   lList *resource_match_list = NULL;
-   lList *alp = NULL;
-   qhost_report_handler_t *report_handler = NULL;
+   lList *resource_list = nullptr;
+   lList *resource_match_list = nullptr;
+   lList *alp = nullptr;
+   qhost_report_handler_t *report_handler = nullptr;
    int is_ok = 0;
    int qhost_result = 0;
-   sge_gdi_ctx_class_t *ctx = NULL;
+   sge_gdi_ctx_class_t *ctx = nullptr;
 
    DENTER_MAIN(TOP_LAYER, "qhost");
 
@@ -418,18 +418,18 @@ int main(int argc, char **argv)
       */
       answer_list_output(&alp);
       sge_prof_cleanup();
-      SGE_EXIT(NULL, 1);
+      SGE_EXIT(nullptr, 1);
    } else if (is_ok == 2) {
       /* -help output generated, exit normally */ 
       answer_list_output(&alp);
       sge_prof_cleanup();
-      SGE_EXIT(NULL, 0);
+      SGE_EXIT(nullptr, 0);
    }
 
    qhost_result = do_qhost(ctx, host_list, ul, resource_match_list, resource_list, 
                            show, &alp, report_handler);
 
-   if (report_handler != NULL) {
+   if (report_handler != nullptr) {
       report_handler->destroy(&report_handler, &alp);
    }
    
@@ -467,7 +467,7 @@ FILE *fp
 
    DENTER(TOP_LAYER);
 
-   if (fp == NULL) {
+   if (fp == nullptr) {
       DRETURN(false);
    }
 
@@ -510,39 +510,39 @@ lList **alpp
 
    while(*(sp=rp)) {
       /* -help */
-      if ((rp = parse_noopt(sp, "-help", NULL, ppcmdline, alpp)) != sp)
+      if ((rp = parse_noopt(sp, "-help", nullptr, ppcmdline, alpp)) != sp)
          continue;
  
       /* -ncb */
-      if ((rp = parse_noopt(sp, "-ncb", NULL, ppcmdline, alpp)) != sp)
+      if ((rp = parse_noopt(sp, "-ncb", nullptr, ppcmdline, alpp)) != sp)
          continue;
 
       /* -q */
-      if ((rp = parse_noopt(sp, "-q", NULL, ppcmdline, alpp)) != sp)
+      if ((rp = parse_noopt(sp, "-q", nullptr, ppcmdline, alpp)) != sp)
          continue;
 
       /* -F */
-      if ((rp = parse_until_next_opt2(sp, "-F", NULL, ppcmdline, alpp)) != sp)
+      if ((rp = parse_until_next_opt2(sp, "-F", nullptr, ppcmdline, alpp)) != sp)
          continue;
 
       /* -h */
-      if ((rp = parse_until_next_opt(sp, "-h", NULL, ppcmdline, alpp)) != sp)
+      if ((rp = parse_until_next_opt(sp, "-h", nullptr, ppcmdline, alpp)) != sp)
          continue;
 
       /* -j */
-      if ((rp = parse_noopt(sp, "-j", NULL, ppcmdline, alpp)) != sp)
+      if ((rp = parse_noopt(sp, "-j", nullptr, ppcmdline, alpp)) != sp)
          continue;
 
       /* -l */
-      if ((rp = parse_until_next_opt(sp, "-l", NULL, ppcmdline, alpp)) != sp)
+      if ((rp = parse_until_next_opt(sp, "-l", nullptr, ppcmdline, alpp)) != sp)
          continue;
 
       /* -u */
-      if ((rp = parse_until_next_opt(sp, "-u", NULL, ppcmdline, alpp)) != sp)
+      if ((rp = parse_until_next_opt(sp, "-u", nullptr, ppcmdline, alpp)) != sp)
          continue;
 
       /* -xml */
-      if ((rp = parse_noopt(sp, "-xml", NULL, ppcmdline, alpp)) != sp)
+      if ((rp = parse_noopt(sp, "-xml", nullptr, ppcmdline, alpp)) != sp)
          continue;
       
       /* oops */
@@ -571,7 +571,7 @@ static int sge_parse_qhost(lList **ppcmdline,
    bool usageshowed = false;
    u_long32 full = 0;
    u_long32 binding = 0;
-   char * argstr = NULL;
+   char * argstr = nullptr;
    lListElem *ep;
    int ret = 1;
 

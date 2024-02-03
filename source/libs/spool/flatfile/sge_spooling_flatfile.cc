@@ -108,7 +108,7 @@ static bool read_manop(int target);
 *     const char *args - arguments to classic spooling
 *
 *  RESULT
-*     lListElem* - on success, the new spooling context, else NULL
+*     lListElem* - on success, the new spooling context, else nullptr
 *
 *  SEE ALSO
 *     spool/--Spooling
@@ -117,23 +117,23 @@ static bool read_manop(int target);
 lListElem *
 spool_classic_create_context(lList **answer_list, const char *args)
 {
-   lListElem *context = NULL;
+   lListElem *context = nullptr;
 
    DENTER(TOP_LAYER);
 
    /* check parameters - both must be set and be absolute paths */
-   if (args == NULL) {
+   if (args == nullptr) {
       answer_list_add_sprintf(answer_list, STATUS_EUNKNOWN, 
                               ANSWER_QUALITY_ERROR, 
                               MSG_SPOOL_INCORRECTPATHSFORCOMMONANDSPOOLDIR);
    } else {
       char *common_dir, *spool_dir;
-      struct saved_vars_s *strtok_context = NULL;
+      struct saved_vars_s *strtok_context = nullptr;
 
       common_dir = sge_strtok_r(args, ";", &strtok_context);
-      spool_dir  = sge_strtok_r(NULL, ";", &strtok_context);
+      spool_dir  = sge_strtok_r(nullptr, ";", &strtok_context);
       
-      if (common_dir == NULL || spool_dir == NULL ||
+      if (common_dir == nullptr || spool_dir == nullptr ||
          *common_dir != '/' || *spool_dir != '/') {
          answer_list_add_sprintf(answer_list, STATUS_EUNKNOWN, 
                                  ANSWER_QUALITY_ERROR, 
@@ -153,8 +153,8 @@ spool_classic_create_context(lList **answer_list, const char *args)
                case SGE_TYPE_SCHEDD_MONITOR:
                case SGE_TYPE_SHUTDOWN:
                case SGE_TYPE_MARK_4_REGISTRATION:
-                  field_info[i].fields = NULL;
-                  field_info[i].instr  = NULL;
+                  field_info[i].fields = nullptr;
+                  field_info[i].instr  = nullptr;
                   break;
                case SGE_TYPE_CQUEUE:
                   field_info[i].fields = CQ_fields;
@@ -193,8 +193,8 @@ spool_classic_create_context(lList **answer_list, const char *args)
                   break;
                case SGE_TYPE_MANAGER:
                case SGE_TYPE_OPERATOR:
-                  field_info[i].fields = NULL;
-                  field_info[i].instr  = NULL;
+                  field_info[i].fields = nullptr;
+                  field_info[i].instr  = nullptr;
                   break;
                case SGE_TYPE_EXECHOST:
                   field_info[i].fields = sge_build_EH_field_list(true, false, false);
@@ -252,15 +252,15 @@ spool_classic_create_context(lList **answer_list, const char *args)
          rule = spool_context_create_rule(answer_list, context, 
                                           "default rule (spool dir)", 
                                           spool_dir,
-                                          NULL,
+                                          nullptr,
                                           spool_classic_default_startup_func,
-                                          NULL,
-                                          NULL,
-                                          NULL,
-                                          NULL,
+                                          nullptr,
+                                          nullptr,
+                                          nullptr,
+                                          nullptr,
                                           spool_classic_default_list_func,
                                           spool_classic_default_read_func,
-                                          NULL, // @todo read keys from flatfile spooling db
+                                          nullptr, // @todo read keys from flatfile spooling db
                                           spool_classic_default_write_func,
                                           spool_classic_default_delete_func,
                                           spool_default_validate_func,
@@ -273,15 +273,15 @@ spool_classic_create_context(lList **answer_list, const char *args)
          rule = spool_context_create_rule(answer_list, context, 
                                           "default rule (common dir)", 
                                           common_dir,
-                                          NULL,
+                                          nullptr,
                                           spool_classic_common_startup_func,
-                                          NULL,
-                                          NULL,
-                                          NULL,
-                                          NULL,
+                                          nullptr,
+                                          nullptr,
+                                          nullptr,
+                                          nullptr,
                                           spool_classic_default_list_func,
                                           spool_classic_default_read_func,
-                                          NULL, // @todo read keys from flatfile spooling db
+                                          nullptr, // @todo read keys from flatfile spooling db
                                           spool_classic_default_write_func,
                                           spool_classic_default_delete_func,
                                           spool_default_validate_func,
@@ -451,14 +451,14 @@ static bool read_validate_object(lList **answer_list,
 
    ep = spool_classic_default_read_func(answer_list, type, rule, key, 
                                          object_type);
-   if (ep == NULL) {
+   if (ep == nullptr) {
       ret = false;
    } else {
       spooling_validate_func validate_func;
 
       /* set key from filename */
       if (key_nm != NoName) {
-         object_parse_field_from_string(ep, NULL, key_nm, key);
+         object_parse_field_from_string(ep, nullptr, key_nm, key);
       }
 
 #pragma GCC diagnostic push
@@ -466,7 +466,7 @@ static bool read_validate_object(lList **answer_list,
       /* validate object */
       validate_func = (spooling_validate_func)lGetRef(rule, SPR_validate_func);
 #pragma GCC diagnostic pop
-      if (validate_func != NULL) {
+      if (validate_func != nullptr) {
          if (!validate_func(answer_list, type, rule, ep, object_type)) {
             lFreeElem(&ep);
             ret = false;
@@ -474,7 +474,7 @@ static bool read_validate_object(lList **answer_list,
       }
 
       /* object read correctly and validate succeeded */
-      if (ep != NULL) {
+      if (ep != nullptr) {
          lAppendElem(*master_list, ep);
       }
    }
@@ -526,9 +526,9 @@ spool_classic_default_list_func(lList **answer_list,
 {
    const lDescr *descr;
 
-   const char *filename  = NULL;
-   const char *directory = NULL;
-   const char *url = NULL;
+   const char *filename  = nullptr;
+   const char *directory = nullptr;
+   const char *url = nullptr;
    int key_nm = NoName;
 
    bool ret = true;
@@ -544,7 +544,7 @@ spool_classic_default_list_func(lList **answer_list,
       url = lGetString(rule, SPR_url);
       descr = object_type_get_descr(object_type);
 
-      if (*list == NULL && descr != NULL) {
+      if (*list == nullptr && descr != nullptr) {
          *list = lCreateList("master list", descr);
       }
 
@@ -619,9 +619,9 @@ spool_classic_default_list_func(lList **answer_list,
              break;
          case SGE_TYPE_JOB:
             job_list_read_from_disk(list, "Master_Job_List", 0,
-                                    SPOOL_DEFAULT, NULL);
+                                    SPOOL_DEFAULT, nullptr);
             job_list_read_from_disk(list, "Master_Zombie_List", 0,
-                                    SPOOL_HANDLE_AS_ZOMBIE, NULL);
+                                    SPOOL_HANDLE_AS_ZOMBIE, nullptr);
             break;
          default:
             answer_list_add_sprintf(answer_list, STATUS_EUNKNOWN, 
@@ -633,15 +633,15 @@ spool_classic_default_list_func(lList **answer_list,
       }
 
       /* if all necessary data has been initialized */
-      if (url != NULL && list != NULL && descr != NULL) {
+      if (url != nullptr && list != nullptr && descr != nullptr) {
          /* single file to parse (SHARETREE, global config, schedd config */
-         if (filename != NULL) {
+         if (filename != nullptr) {
             ret = read_validate_object(answer_list, type, rule, filename, key_nm, 
                                      object_type, list);
          }
 
          /* if we have a directory (= multiple files) to parse */ 
-         if (ret && directory != NULL) { 
+         if (ret && directory != nullptr) {
             lList *direntries;
             const lListElem *direntry;
             char abs_dir_buf[SGE_PATH_MAX];
@@ -707,7 +707,7 @@ spool_classic_default_list_func(lList **answer_list,
 
 
 #ifdef DEBUG_FLATFILE
-      if (list != NULL && *list != NULL) {
+      if (list != nullptr && *list != nullptr) {
          lWriteListTo(*list, stderr);
       }
 #endif
@@ -750,7 +750,7 @@ spool_classic_default_list_func(lList **answer_list,
 *     const sge_object_type object_type - object type
 *
 *  RESULT
-*     lListElem* - the object, if it could be read, else NULL
+*     lListElem* - the object, if it could be read, else nullptr
 *
 *  NOTES
 *     This function should not be called directly, it is called by the
@@ -767,13 +767,13 @@ spool_classic_default_read_func(lList **answer_list,
                                  const char *key, 
                                  const sge_object_type object_type)
 {
-   const char *url = NULL;
-   const char *directory = NULL;
-   const char *filename = NULL;
-   const lDescr *descr = NULL;
+   const char *url = nullptr;
+   const char *directory = nullptr;
+   const char *filename = nullptr;
+   const lDescr *descr = nullptr;
    flatfile_info *rule_clientdata;
    flatfile_info *field_info;
-   lListElem *ep = NULL;
+   lListElem *ep = nullptr;
    bool parse_values = true;
 
    DENTER(TOP_LAYER);
@@ -813,8 +813,8 @@ spool_classic_default_read_func(lList **answer_list,
          break;
       case SGE_TYPE_MANAGER:
       case SGE_TYPE_OPERATOR:
-         directory = NULL;
-         filename  = NULL;
+         directory = nullptr;
+         filename  = nullptr;
          break;
       case SGE_TYPE_PE:
          directory = PE_DIR;
@@ -870,13 +870,13 @@ spool_classic_default_read_func(lList **answer_list,
          break;
       case SGE_TYPE_JOBSCRIPT:
          {
-            const char *exec_file = NULL;         
+            const char *exec_file = nullptr;
             char *dup=strdup(key);
             jobscript_parse_key(dup, &exec_file);
-            if (exec_file != NULL ) {
+            if (exec_file != nullptr ) {
                int len;
                char *str = sge_file2string(exec_file, &len);
-               if (str != NULL) {
+               if (str != nullptr) {
                   ep = lCreateElem(STU_Type);
                   lXchgString(ep, STU_name, &str);
                }
@@ -894,7 +894,7 @@ spool_classic_default_read_func(lList **answer_list,
    }
 
    /* spool, if possible */
-   if (url != NULL && directory != NULL && filename != NULL && descr != NULL) {
+   if (url != nullptr && directory != nullptr && filename != nullptr && descr != nullptr) {
       dstring filepath_dstring = DSTRING_INIT;
       const char *filepath;
 
@@ -902,14 +902,14 @@ spool_classic_default_read_func(lList **answer_list,
                                      url, directory, filename);
 
       /* spool */
-      ep = spool_flatfile_read_object(answer_list, descr, NULL,
-                                      field_info->fields, NULL, 
+      ep = spool_flatfile_read_object(answer_list, descr, nullptr,
+                                      field_info->fields, nullptr,
                                       parse_values, field_info->instr, SP_FORM_ASCII, 
-                                      NULL, filepath);
+                                      nullptr, filepath);
 
       sge_dstring_free(&filepath_dstring);
    } else {
-      DPRINTF(("error: one of the required parameters is NULL\n"));
+      DPRINTF(("error: one of the required parameters is nullptr\n"));
    }
 
    DRETURN(ep);
@@ -958,10 +958,10 @@ spool_classic_default_write_func(lList **answer_list,
                                   const char *key, 
                                   const sge_object_type object_type)
 {
-   const char *url = NULL;
-   const char *directory = NULL;
-   const char *filename = NULL;
-   const char *filepath = NULL;
+   const char *url = nullptr;
+   const char *directory = nullptr;
+   const char *filename = nullptr;
+   const char *filepath = nullptr;
    flatfile_info *rule_clientdata;
    flatfile_info *field_info;
    dstring tmp = DSTRING_INIT;
@@ -1068,7 +1068,7 @@ spool_classic_default_write_func(lList **answer_list,
             job_parse_key(dup, &job_id, &ja_task_id, &pe_task_id, &only_job);
 
             DPRINTF(("spooling job %d.%d %s\n", job_id, ja_task_id, 
-                     pe_task_id != NULL ? pe_task_id : "<null>"));
+                     pe_task_id != nullptr ? pe_task_id : "<null>"));
 
             if (object_type == SGE_TYPE_JOB) {
                job = (lListElem *)object;
@@ -1129,8 +1129,8 @@ spool_classic_default_write_func(lList **answer_list,
    /* spool, if possible using default spooling behaviour.
     * job are spooled in corresponding case branch 
     */
-   if (url != NULL && directory != NULL && filename != NULL) {
-      const char *tmpfilepath = NULL;
+   if (url != nullptr && directory != nullptr && filename != nullptr) {
+      const char *tmpfilepath = nullptr;
       dstring filepath_buffer = DSTRING_INIT;
 
       /* first write to a temporary file; for jobs it is already initialized */
@@ -1144,7 +1144,7 @@ spool_classic_default_write_func(lList **answer_list,
                                                 SP_DEST_SPOOL, SP_FORM_ASCII,
                                                 tmpfilepath, true);
 
-      if (tmpfilepath == NULL) {
+      if (tmpfilepath == nullptr) {
          ret = false;
       } else {
          /* spooling was ok: rename temporary to target file */
@@ -1259,7 +1259,7 @@ spool_classic_default_delete_func(lList **answer_list,
             job_parse_key(dup, &job_id, &ja_task_id, &pe_task_id, &only_job);
    
             DPRINTF(("spooling job %d.%d %s\n", job_id, ja_task_id, 
-                     pe_task_id != NULL ? pe_task_id : "<null>"));
+                     pe_task_id != nullptr ? pe_task_id : "<null>"));
             if (job_remove_spool_file(job_id, ja_task_id, pe_task_id, 
                                       SPOOL_DEFAULT) != 0) {
                ret = false;
@@ -1283,7 +1283,7 @@ spool_classic_default_delete_func(lList **answer_list,
          write_manop(1, SGE_UO_LIST);
          break;
       case SGE_TYPE_SHARETREE:
-         ret = sge_unlink(NULL, SHARETREE_FILE);
+         ret = sge_unlink(nullptr, SHARETREE_FILE);
          break;
       case SGE_TYPE_PE:
          ret = sge_unlink(PE_DIR, key);
@@ -1403,7 +1403,7 @@ static bool read_manop(int target) {
    FILE *fp;
    SGE_STRUCT_STAT st;
    int key = NoName;
-   lDescr *descr = NULL;
+   lDescr *descr = nullptr;
 
    DENTER(TOP_LAYER);
 

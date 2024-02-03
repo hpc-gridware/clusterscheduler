@@ -290,10 +290,10 @@ int utilization_add(lListElem *cr, u_long32 start_time, u_long32 duration, doubl
    /* A reservation is only neccessary in one of the following cases:
       - for_job is true (this means no advance reservation request) 
       - reservation is enabled and job duration not zero 
-      - queue is already reserved by an advance reservation (resource_diagram != NULL)
+      - queue is already reserved by an advance reservation (resource_diagram != nullptr)
    */
    if (for_job && (sconf_get_max_reservations() == 0 || duration == 0)
-      && resource_diagram == NULL) /* AR queues have a resource diagram and we must reflect changes for this queues */
+      && resource_diagram == nullptr) /* AR queues have a resource diagram and we must reflect changes for this queues */
    { 
       DPRINTF(("max reservations reached or duration is 0\n"));
 
@@ -302,11 +302,11 @@ int utilization_add(lListElem *cr, u_long32 start_time, u_long32 duration, doubl
 
    end_time = utilization_endtime(start_time, duration);
 
-   serf_record_entry(job_id, ja_taskid, (type!=NULL)?type:"<unknown>", start_time, end_time, 
+   serf_record_entry(job_id, ja_taskid, (type!=nullptr)?type:"<unknown>", start_time, end_time,
          level_char, object_name, name, utilization);
 
    /* ensure resource diagram is initialized */
-   if (resource_diagram == NULL) {
+   if (resource_diagram == nullptr) {
       resource_diagram = lCreateList(name, RDE_Type);
       lSetList(cr, nm, resource_diagram);
    }
@@ -329,7 +329,7 @@ int utilization_add(lListElem *cr, u_long32 start_time, u_long32 duration, doubl
       lInsertElem(resource_diagram, prev, start);
    }
 
-   end = NULL;
+   end = nullptr;
    prev = start;
    thiz = lNextRW(start);
 
@@ -369,16 +369,16 @@ int utilization_add(lListElem *cr, u_long32 start_time, u_long32 duration, doubl
    Find element with specified time or the element before it 
 
    If the element exists it is returned in 'hit'. Otherwise
-   the element before it is returned or NULL if no such exists.
+   the element before it is returned or nullptr if no such exists.
 
 */
 static void utilization_find_time_or_prevstart_or_prev(const lList *diagram, u_long32 time, lListElem **hit, lListElem **before)
 { 
    lListElem *start, *thiz, *prev;
 
-   start = NULL;
+   start = nullptr;
    thiz = lFirstRW(diagram); 
-   prev = NULL;
+   prev = nullptr;
 
    while (thiz) {
       if (time == lGetUlong(thiz, RDE_time)) {
@@ -398,7 +398,7 @@ static void utilization_find_time_or_prevstart_or_prev(const lList *diagram, u_l
 
 /* normalize utilization diagram 
 
-   Note: Diagram doesn't need to vanish (NULL list) 
+   Note: Diagram doesn't need to vanish (nullptr list)
          as long as utilization is added only
 */
 static void utilization_normalize(lList *diagram)
@@ -413,11 +413,11 @@ static void utilization_normalize(lList *diagram)
       thiz = lFirstRW(diagram);
    }
 
-   if (thiz == NULL) {
+   if (thiz == nullptr) {
       return;
    }
    
-   if ((next = lNextRW(thiz)) == NULL) {
+   if ((next = lNextRW(thiz)) == nullptr) {
       return;
    }
 
@@ -720,23 +720,23 @@ int add_job_utilization(const sge_assignment_t *a, const char *type, bool for_jo
          int slots = lGetUlong(gel, JG_slots); 
          const char *eh_name = lGetHost(gel, JG_qhostname);
          const char *qname = lGetString(gel, JG_qname);
-         const char* pe = (a->pe)?lGetString(a->pe, PE_name):NULL;
+         const char* pe = (a->pe)?lGetString(a->pe, PE_name):nullptr;
          const char *queue_instance = lGetString(gel, JG_qname);
          char *queue = cqueue_get_name_from_qinstance(queue_instance);
 
-         const lListElem *rqs = NULL;
+         const lListElem *rqs = nullptr;
 
          /* hosts */
-         if ((hep = host_list_locate(a->host_list, eh_name)) != NULL) {
+         if ((hep = host_list_locate(a->host_list, eh_name)) != nullptr) {
             rc_add_job_utilization(a->job, a->ja_task_id, type, hep, a->centry_list, slots,
                      EH_consumable_config_list, EH_resource_utilization, eh_name, a->start, 
                      a->duration, HOST_TAG, for_job_scheduling, is_master_task);
          }
 
          /* queues */
-         if ((qep = qinstance_list_locate2(a->queue_list, qname)) != NULL) {
+         if ((qep = qinstance_list_locate2(a->queue_list, qname)) != nullptr) {
             /* 
-             * The NULL case happens in case of queues that were sorted out b/c they 
+             * The nullptr case happens in case of queues that were sorted out b/c they
              * are unknown, in some suspend state or in calendar disable state. As long 
              * as we do not intend to schedule future resource utilization for those 
              * queues it's valid to simply ignore resource utilizations decided in former 
@@ -750,15 +750,15 @@ int add_job_utilization(const sge_assignment_t *a, const char *type, bool for_jo
 
          /* resource quotas */
          for_each_ep(rqs, a->rqs_list) {
-            lListElem *rule = NULL;
+            lListElem *rule = nullptr;
 
             if (!lGetBool(rqs, RQS_enabled)) {
                continue;
             }
 
             rule = rqs_get_matching_rule(rqs, a->user, a->group, a->project, pe, eh_name, queue, a->acl_list,
-                                          a->hgrp_list, NULL);
-            if (rule != NULL) {
+                                          a->hgrp_list, nullptr);
+            if (rule != nullptr) {
 
                rqs_get_rue_string(&rue_name, rule, a->user, a->project,
                                    eh_name, queue, pe);
@@ -778,12 +778,12 @@ int add_job_utilization(const sge_assignment_t *a, const char *type, bool for_jo
       bool is_master_task = true;
       /* debit AR-job */
       for_each_ep(gel, a->gdil) {
-         const lListElem *ar = NULL;
+         const lListElem *ar = nullptr;
          int slots = lGetUlong(gel, JG_slots);
          const char *qname = lGetString(gel, JG_qname);
          
-         if ((ar = lGetElemUlong(a->ar_list, AR_id, ar_id)) != NULL) {
-            if ((qep = lGetSubStr(ar, QU_full_name, qname, AR_reserved_queues)) != NULL) {
+         if ((ar = lGetElemUlong(a->ar_list, AR_id, ar_id)) != nullptr) {
+            if ((qep = lGetSubStr(ar, QU_full_name, qname, AR_reserved_queues)) != nullptr) {
                rc_add_job_utilization(a->job, a->ja_task_id, type, qep, a->centry_list, slots,
                      QU_consumable_config_list, QU_resource_utilization, qname, a->start, 
                      a->duration, QUEUE_TAG, for_job_scheduling, is_master_task);
@@ -807,7 +807,7 @@ int rc_add_job_utilization(lListElem *jep, u_long32 task_id, const char *type,
    DENTER(TOP_LAYER);
 
    if (!ep) {
-      ERROR((SGE_EVENT, "rc_add_job_utilization NULL object "
+      ERROR((SGE_EVENT, "rc_add_job_utilization nullptr object "
             "(job "sge_u32" obj %s type %s) slots %d ep %p\n", 
             lGetUlong(jep, JB_job_number), obj_name, type, slots, (void*)ep));
       DRETURN(0);
@@ -857,7 +857,7 @@ int rc_add_job_utilization(lListElem *jep, u_long32 task_id, const char *type,
          /* CE_double is implicitly set to zero */
       }
    
-      if (job_get_contribution(jep, NULL, name, &dval, dcep) && dval != 0.0) {
+      if (job_get_contribution(jep, nullptr, name, &dval, dcep) && dval != 0.0) {
          /* update RUE_utilized resource diagram to reflect jobs utilization */
          utilization_add(cr, start_time, duration, debit_slots * dval,
             lGetUlong(jep, JB_job_number), task_id, tag, obj_name, type, for_job_scheduling, false);
@@ -924,7 +924,7 @@ rqs_add_job_utilization(lListElem *jep, u_long32 task_id, const char *type,
 
    DENTER(TOP_LAYER);
 
-   if (jep != NULL) {
+   if (jep != nullptr) {
       limit_list = lGetList(rule, RQR_limit);
 
       for_each_rw (limit, limit_list) {
@@ -960,12 +960,12 @@ rqs_add_job_utilization(lListElem *jep, u_long32 task_id, const char *type,
          }
 
          rue_elem = lGetSubStr(limit, RUE_name, sge_dstring_get_string(&rue_name), RQRL_usage);
-         if(rue_elem == NULL) {
+         if(rue_elem == nullptr) {
             rue_elem = lAddSubStr(limit, RUE_name, sge_dstring_get_string(&rue_name), RQRL_usage, RUE_Type);
             /* RUE_utilized_now is implicitly set to zero */
          }
 
-         if (job_get_contribution(jep, NULL, centry_name, &dval, raw_centry) && dval != 0.0) {
+         if (job_get_contribution(jep, nullptr, centry_name, &dval, raw_centry) && dval != 0.0) {
             /* update RUE_utilized resource diagram to reflect jobs utilization */
             utilization_add(rue_elem, start_time, end_time, debit_slots * dval,
                lGetUlong(jep, JB_job_number), task_id, RQS_TAG, obj_name, type, true, false);
@@ -1034,7 +1034,7 @@ add_job_list_to_schedule(const lList *job_list, bool suspended, lList *pe_list,
          }
 
          a.gdil = lGetListRW(ja_task, JAT_granted_destin_identifier_list);
-         a.slots = nslots_granted(a.gdil, NULL);
+         a.slots = nslots_granted(a.gdil, nullptr);
          if ((pe_name = lGetString(ja_task, JAT_granted_pe)) && 
              !(a.pe = pe_list_locate(pe_list, pe_name))) {
             ERROR((SGE_EVENT, MSG_OBJ_UNABLE2FINDPE_S, pe_name));
@@ -1057,7 +1057,7 @@ add_job_list_to_schedule(const lList *job_list, bool suspended, lList *pe_list,
 
          /* only update resource utilization schedule  
             RUE_utililized_now is already set through events */
-         debit_scheduled_job(&a, NULL, NULL, false, type, for_job_scheduling);
+         debit_scheduled_job(&a, nullptr, nullptr, false, type, for_job_scheduling);
       }
    }
 
@@ -1152,7 +1152,7 @@ add_calendar_to_schedule(lList *queue_list, u_long32 now)
       const lList *queue_states = lGetList(queue, QU_state_changes);
       u_long32 from       = now;
 
-      if (queue_states != NULL) {
+      if (queue_states != nullptr) {
       
          const lList *consumable_list = lGetList(queue, QU_consumable_config_list);
          const lListElem *slot_elem = lGetElemStr(consumable_list, CE_name, "slots"); 
@@ -1162,11 +1162,11 @@ add_calendar_to_schedule(lList *queue_list, u_long32 now)
          lListElem *slot_uti = lGetElemStrRW(queue_uti_list, RUE_name, "slots");
          lList *slot_uti_list = lGetListRW(slot_uti, RUE_utilized);
          
-         const lListElem *queue_state = NULL;
+         const lListElem *queue_state = nullptr;
 
          DPRINTF(("queue: %s time %d\n", lGetString(queue, QU_full_name), from));
 
-         if (slot_uti_list == NULL) {
+         if (slot_uti_list == nullptr) {
             slot_uti_list = lCreateList("slot_uti", RDE_Type);
             lSetList(slot_uti, RUE_utilized, slot_uti_list);
          }
@@ -1226,7 +1226,7 @@ set_utilization(lList *uti_list, u_long32 from, u_long32 till, double uti)
       bool is_from_added = false;
       bool is_till_added = false;
       double past_uti = 0;
-      lListElem *uti_elem_next = NULL;
+      lListElem *uti_elem_next = nullptr;
 
       if (till == 0) {
          till = DISPATCH_TIME_QUEUE_END;
@@ -1237,7 +1237,7 @@ set_utilization(lList *uti_list, u_long32 from, u_long32 till, double uti)
       uti_elem_next = lFirstRW(uti_list);
      
       /* search for the starting point */
-      while (uti_elem_next != NULL) {
+      while (uti_elem_next != nullptr) {
          if (lGetUlong(uti_elem_next, RDE_time) > from) { /*insert before this elem */
             lInsertElem(uti_list, lPrevRW(uti_elem_next), newResourceElem(from, uti));
             past_uti = lGetDouble(uti_elem_next, RDE_amount);
@@ -1257,7 +1257,7 @@ set_utilization(lList *uti_list, u_long32 from, u_long32 till, double uti)
       }
 
       if (is_from_added) { /* searc for the endpoint */
-          while (uti_elem_next != NULL) {
+          while (uti_elem_next != nullptr) {
             if (lGetUlong(uti_elem_next, RDE_time) > till) { /*insert before this elem */
                lInsertElem(uti_list, lPrevRW(uti_elem_next), newResourceElem(till, past_uti));
                is_till_added = true; 
@@ -1315,10 +1315,10 @@ set_utilization(lList *uti_list, u_long32 from, u_long32 till, double uti)
 
 static lListElem *newResourceElem(u_long32 time, double amount) 
 {
-   lListElem *elem = NULL;
+   lListElem *elem = nullptr;
 
    elem = lCreateElem(RDE_Type);
-   if (elem != NULL) {
+   if (elem != nullptr) {
       lSetUlong(elem, RDE_time, time);
       lSetDouble(elem, RDE_amount, amount);    
    }

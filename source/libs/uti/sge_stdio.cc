@@ -142,14 +142,14 @@ pid_t sge_peopen(const char *shell, int login_shell, const char *command,
             if (write(2, err_str, strlen(err_str)) != (ssize_t)strlen(err_str)) {
                /* nothing we can do here - we are anyway about to exit */
             }
-            SGE_EXIT(NULL, 1);
+            SGE_EXIT(nullptr, 1);
          }
 
          /* set stderr to /dev/null */
          close(2);
          if (dup(fd) == -1) {
             /* we have a serious problem here - nothing we can do but exit */
-            SGE_EXIT(NULL, 1);
+            SGE_EXIT(nullptr, 1);
          }
 
          /* we don't need the stderr the pipe - close it */
@@ -159,7 +159,7 @@ pid_t sge_peopen(const char *shell, int login_shell, const char *command,
          close(2);
          if (dup(pipefds[2][1]) == -1) {
             /* we have a serious problem here - nothing we can do but exit */
-            SGE_EXIT(NULL, 1);
+            SGE_EXIT(nullptr, 1);
          }
       }
 
@@ -169,7 +169,7 @@ pid_t sge_peopen(const char *shell, int login_shell, const char *command,
       if (dup(pipefds[0][0]) == -1 ||
           dup(pipefds[1][1]) == -1) {
          /* we have a serious problem here - nothing we can do but exit */
-         SGE_EXIT(NULL, 1);
+         SGE_EXIT(nullptr, 1);
       }
 
       if (user) {
@@ -187,7 +187,7 @@ pid_t sge_peopen(const char *shell, int login_shell, const char *command,
                /* nothing we can do here - we are anyway about to exit */
             }
             sge_free(&buffer);
-            SGE_EXIT(NULL, 1);
+            SGE_EXIT(nullptr, 1);
          }
 
          myuid = geteuid();
@@ -198,7 +198,7 @@ pid_t sge_peopen(const char *shell, int login_shell, const char *command,
                   /* nothing we can do here - we are anyway about to exit */
                }
                sge_free(&buffer);
-               SGE_EXIT(NULL, 1);
+               SGE_EXIT(nullptr, 1);
             }
             sprintf(err_str, "%s %d\n", pw->pw_name, (int) pw->pw_gid);
             if (write(2, err_str, strlen(err_str)) != (ssize_t)strlen(err_str)) {
@@ -213,7 +213,7 @@ pid_t sge_peopen(const char *shell, int login_shell, const char *command,
                   /* nothing we can do here - we are anyway about to exit */
                }
                sge_free(&buffer);
-               SGE_EXIT(NULL, 1);
+               SGE_EXIT(nullptr, 1);
             }
 
             if (setuid(pw->pw_uid)) {
@@ -224,7 +224,7 @@ pid_t sge_peopen(const char *shell, int login_shell, const char *command,
                   /* nothing we can do here - we are anyway about to exit */
                }
                sge_free(&buffer);
-               SGE_EXIT(NULL, 1);
+               SGE_EXIT(nullptr, 1);
             }
          }
 
@@ -250,12 +250,12 @@ pid_t sge_peopen(const char *shell, int login_shell, const char *command,
          }
       }
 
-      execlp(shell, arg0, "-c", command, NULL);
+      execlp(shell, arg0, "-c", command, nullptr);
 
       if (write(2, could_not, sizeof(could_not)) != sizeof(could_not)) {
          /* nothing we can do here - we are anyway about to exit */
       }
-      SGE_EXIT(NULL, 1);
+      SGE_EXIT(nullptr, 1);
    } /* end child */
 
    if (pid < 0) {
@@ -284,9 +284,9 @@ pid_t sge_peopen(const char *shell, int login_shell, const char *command,
 
    /* is stderr redirected to /dev/null? */
    if (null_stderr) {
-      /* close the pipe and return NULL as filehandle */
+      /* close the pipe and return nullptr as filehandle */
       close(pipefds[2][0]);
-      *fp_err = NULL;
+      *fp_err = nullptr;
    } else {
       /* return filehandle for stderr */
       *fp_err = fdopen(pipefds[2][0], "r");
@@ -352,7 +352,7 @@ pid_t sge_peopen_r(const char *shell, int login_shell, const char *command,
 #if defined(SOLARIS)
    char err_str[256];
 #endif
-   struct passwd *pw = NULL;
+   struct passwd *pw = nullptr;
    uid_t myuid;
    uid_t tuid;
 
@@ -411,9 +411,9 @@ pid_t sge_peopen_r(const char *shell, int login_shell, const char *command,
       /*
        * get information about the target user
        */
-      if (buffer != NULL) {
+      if (buffer != nullptr) {
          pw = sge_getpwnam_r(user, &pw_struct, buffer, size);
-         if (pw == NULL) {
+         if (pw == nullptr) {
             ERROR((SGE_EVENT, MSG_SYSTEM_NOUSERFOUND_SS, user, strerror(errno)));
             sge_free(&buffer);
             if (sge_has_admin_user()) {
@@ -451,14 +451,14 @@ pid_t sge_peopen_r(const char *shell, int login_shell, const char *command,
          if (res) {
             ERROR((SGE_EVENT, MSG_SYSTEM_INITGROUPSFORUSERFAILED_ISS, res, user, strerror(errno)));
             sge_free(&buffer);
-            SGE_EXIT(NULL, 1);
+            SGE_EXIT(nullptr, 1);
          }
 
          DPRINTF(("Initgroups was successful\n"));
       }
       DPRINTF(("user = %s\n", user));
       DPRINTF(("myuid = %d\n", (int) myuid));
-      if (pw != NULL) {
+      if (pw != nullptr) {
          tuid = pw->pw_uid;
          DPRINTF(("target uid = %d\n", (int) tuid));
       }
@@ -504,16 +504,16 @@ pid_t sge_peopen_r(const char *shell, int login_shell, const char *command,
          if (fd != -1) {
             close(2);
             if (dup(fd) == -1) {
-               SGE_EXIT(NULL, 1);
+               SGE_EXIT(nullptr, 1);
             }
             close(pipefds[2][1]);
          } else {
-            SGE_EXIT(NULL, 1);
+            SGE_EXIT(nullptr, 1);
          }
       } else {
          close(2);
          if (dup(pipefds[2][1]) == -1) {
-            SGE_EXIT(NULL, 1);
+            SGE_EXIT(nullptr, 1);
          }
       }
 
@@ -524,21 +524,21 @@ pid_t sge_peopen_r(const char *shell, int login_shell, const char *command,
       close(1);
       if (dup(pipefds[0][0]) == -1 ||
           dup(pipefds[1][1]) == -1) {
-         SGE_EXIT(NULL, 1);
+         SGE_EXIT(nullptr, 1);
       }
 
-      if (pw != NULL) {
+      if (pw != nullptr) {
          int lret = setuid(tuid);
          if (lret) {
-            SGE_EXIT(NULL, 1);
+            SGE_EXIT(nullptr, 1);
          }
       }
 
       /*
        * set the environment if we got one as argument
        */
-      if (env != NULL) {
-         if (pw != NULL) {
+      if (env != nullptr) {
+         if (pw != nullptr) {
             addenv("HOME", pw->pw_dir);
             addenv("SHELL", pw->pw_shell);
             addenv("USER", pw->pw_name);
@@ -549,7 +549,7 @@ pid_t sge_peopen_r(const char *shell, int login_shell, const char *command,
             putenv(*env);
          }
       }
-      execlp(shell, arg0, "-c", command, NULL);
+      execlp(shell, arg0, "-c", command, nullptr);
    }
 
    if (pid < 0) {
@@ -579,9 +579,9 @@ pid_t sge_peopen_r(const char *shell, int login_shell, const char *command,
 
    /* is stderr redirected to /dev/null? */
    if (null_stderr) {
-      /* close the pipe and return NULL as filehandle */
+      /* close the pipe and return nullptr as filehandle */
       close(pipefds[2][0]);
-      *fp_err = NULL;
+      *fp_err = nullptr;
    } else {
       /* return filehandle for stderr */
       *fp_err = fdopen(pipefds[2][0], "r");
@@ -626,13 +626,13 @@ int sge_peclose(pid_t pid, FILE *fp_in, FILE *fp_out, FILE *fp_err,
 
    DENTER(TOP_LAYER);
 
-   if (fp_in != NULL) {
+   if (fp_in != nullptr) {
       FCLOSE(fp_in);
    }
-   if (fp_out != NULL) {
+   if (fp_out != nullptr) {
       FCLOSE(fp_out);
    }
-   if (fp_err != NULL) {
+   if (fp_err != nullptr) {
       FCLOSE(fp_err);
    }
 
@@ -644,7 +644,7 @@ int sge_peclose(pid_t pid, FILE *fp_in, FILE *fp_out, FILE *fp_err,
       if (i == 0) { /* not yet exited */
          if (timeout->tv_sec == 0) {
             DPRINTF(("killing\n"));
-            timeout = NULL;
+            timeout = nullptr;
             kill(pid, SIGKILL);
          } else {
             DPRINTF(("%d seconds waiting for exit\n", timeout->tv_sec));

@@ -63,7 +63,7 @@
 *
 *  RESULT
 *     char* - pointer to a malloced buffer or 
-*             NULL if error occured
+*             nullptr if error occured
 ******************************************************************************/
 char *sge_read_token(const char *file) {
    SGE_STRUCT_STAT sb;
@@ -74,22 +74,22 @@ char *sge_read_token(const char *file) {
    DENTER(TOP_LAYER);
 
    if (SGE_STAT(file, &sb)) {
-      DRETURN(NULL);
+      DRETURN(nullptr);
    }
 
    size = sb.st_size + 1;
    if (((SGE_OFF_T) size != sb.st_size + 1)
-       || (tokenbuf = sge_malloc(size)) == NULL) {
-      DRETURN(NULL);
+       || (tokenbuf = sge_malloc(size)) == nullptr) {
+      DRETURN(nullptr);
    }
 
    if ((fd = SGE_OPEN2(file, O_RDONLY)) == -1) {
-      DRETURN(NULL);
+      DRETURN(nullptr);
    }
 
    if (read(fd, tokenbuf, sb.st_size) != sb.st_size) {
       close(fd);
-      DRETURN(NULL);
+      DRETURN(nullptr);
    }
 
    tokenbuf[sb.st_size] = '\0';
@@ -141,7 +141,7 @@ int sge_afs_extend_token(const char *command, char *tokenbuf, const char *user,
       strcpy(err_str, cmdbuf);
    }
 
-   command_pid = sge_peopen("/bin/sh", 0, cmdbuf, NULL, NULL,
+   command_pid = sge_peopen("/bin/sh", 0, cmdbuf, nullptr, nullptr,
                             &fp_in, &fp_out, &fp_err, false);
    if (command_pid == -1) {
       if (err_str) {
@@ -156,7 +156,7 @@ int sge_afs_extend_token(const char *command, char *tokenbuf, const char *user,
       DRETURN(-1);
    }
 
-   if ((ret = sge_peclose(command_pid, fp_in, fp_out, fp_err, NULL)) != 0) {
+   if ((ret = sge_peclose(command_pid, fp_in, fp_out, fp_err, nullptr)) != 0) {
       if (err_str) {
          sprintf(err_str, MSG_TOKEN_NOSETAFS_SI, cmdbuf, ret);
       }
@@ -175,12 +175,12 @@ int sge_afs_extend_token(const char *command, char *tokenbuf, const char *user,
 *
 *  FUNCTION
 *     Check if 'tokencmdname' exists and is executable. If an error
-*     occures write a error message into 'buf' if not NULL. 
+*     occures write a error message into 'buf' if not nullptr.
 *     Otherwise write error messages to stderr.
 *
 *  INPUTS
 *     const char *tokencmdname - command 
-*     char *buf                - NULL or buffer for error message 
+*     char *buf                - nullptr or buffer for error message
 *
 *  NOTES
 *     MT-NOTE: sge_get_token_cmd() is MT safe 

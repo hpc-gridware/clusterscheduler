@@ -78,7 +78,7 @@ static void rmon_mprintf_va(int debug_class, const char *fmt, va_list args);
 #ifdef DEBUG_CLIENT_SUPPORT
 static pthread_mutex_t rmon_print_callback_mutex = PTHREAD_MUTEX_INITIALIZER;
 static pthread_mutex_t rmon_condition_mutex = PTHREAD_MUTEX_INITIALIZER;
-static rmon_print_callback_func_t rmon_print_callback = NULL;
+static rmon_print_callback_func_t rmon_print_callback = nullptr;
 #define RMON_CALLBACK_FUNC_LOCK()      pthread_mutex_lock(&rmon_print_callback_mutex)
 #define RMON_CALLBACK_FUNC_UNLOCK()    pthread_mutex_unlock(&rmon_print_callback_mutex)
 #define RMON_CONDITION_LOCK()          pthread_mutex_lock(&rmon_condition_mutex)
@@ -122,12 +122,12 @@ static void rmon_ctx_key_destroy(void *ctx) {
 }
 
 rmon_helper_t *rmon_get_helper(void) {
-   rmon_helper_t *helper = NULL;
+   rmon_helper_t *helper = nullptr;
 
    pthread_once(&rmon_helper_key_once, rmon_helper_key_init);
 
    helper = (rmon_helper_t *)pthread_getspecific(rmon_helper_key);
-   if (helper == NULL) {
+   if (helper == nullptr) {
       helper = (rmon_helper_t *) sge_malloc(sizeof(rmon_helper_t));
 
       memset(helper, 0, sizeof(rmon_helper_t));
@@ -276,7 +276,7 @@ void rmon_debug_client_callback(int dc_connected, int debug_level) {
 
 void rmon_set_print_callback(rmon_print_callback_func_t function_p) {
 #ifdef DEBUG_CLIENT_SUPPORT
-   if (function_p != NULL) {
+   if (function_p != nullptr) {
       RMON_CALLBACK_FUNC_LOCK();
       rmon_print_callback = *function_p;
       RMON_CALLBACK_FUNC_UNLOCK();
@@ -533,7 +533,7 @@ void rmon_mprintf_special(const char *fmt, ...) {
 
 static void rmon_mprintf_va(int debug_class, const char *fmt, va_list args) {
    char msgbuf[RMON_BUF_SIZE];
-   rmon_helper_t *helper = NULL;
+   rmon_helper_t *helper = nullptr;
 #ifdef RMON_USE_CTX
    rmon_ctx_t *ctx = rmon_get_thread_ctx();
    if (ctx) {
@@ -544,10 +544,10 @@ static void rmon_mprintf_va(int debug_class, const char *fmt, va_list args) {
    helper = rmon_get_helper();
    strcpy(msgbuf, empty);
    vsnprintf(&msgbuf[4], (RMON_BUF_SIZE) - 10, fmt, args);
-   if ((helper != NULL) && (strlen(helper->thread_name) > 0)) {
+   if ((helper != nullptr) && (strlen(helper->thread_name) > 0)) {
       mwrite(msgbuf, helper->thread_name);
    } else {
-      mwrite(msgbuf, NULL);
+      mwrite(msgbuf, nullptr);
    }
 }
 
@@ -588,13 +588,13 @@ static void mwrite(char *message, const char *thread_name) {
 #ifdef DEBUG_CLIENT_SUPPORT
    /* if there is a callback function, don't call standard function */
    RMON_CALLBACK_FUNC_LOCK();
-   if (rmon_print_callback != NULL) {
+   if (rmon_print_callback != nullptr) {
       rmon_print_callback(message, traceid, tmp_pid, tmp_thread);
    }
    RMON_CALLBACK_FUNC_UNLOCK();
 #endif
 
-   if (thread_name != NULL) {
+   if (thread_name != nullptr) {
       fprintf(rmon_fp, "%6ld %6d %12.12s ", traceid, (int) tmp_pid, thread_name);
    } else {
       fprintf(rmon_fp, "%6ld %6d %ld ", traceid, (int) tmp_pid, (long int) tmp_thread);
@@ -633,10 +633,10 @@ static void mwrite(char *message, const char *thread_name) {
 *
 *******************************************************************************/
 static int set_debug_level_from_env(void) {
-   const char *env, *s = NULL;
+   const char *env, *s = nullptr;
    int i, l[N_LAYER];
 
-   if ((env = getenv("SGE_DEBUG_LEVEL")) == NULL) {
+   if ((env = getenv("SGE_DEBUG_LEVEL")) == nullptr) {
       return ENOENT;
    }
 
@@ -684,9 +684,9 @@ static int set_debug_level_from_env(void) {
 *
 *******************************************************************************/
 static int set_debug_target_from_env(void) {
-   const char *env, *s = NULL;
+   const char *env, *s = nullptr;
 
-   if ((env = getenv("SGE_DEBUG_TARGET")) == NULL) {
+   if ((env = getenv("SGE_DEBUG_TARGET")) == nullptr) {
       return 0;
    }
 
@@ -695,7 +695,7 @@ static int set_debug_target_from_env(void) {
       rmon_fp = stdout;
    } else if (strcmp(s, "stderr") == 0) {
       rmon_fp = stderr;
-   } else if ((rmon_fp = fopen(s, "w")) == NULL) {
+   } else if ((rmon_fp = fopen(s, "w")) == nullptr) {
       rmon_fp = stderr;
       fprintf(rmon_fp, MSG_RMON_UNABLETOOPENXFORWRITING_S, s);
       fprintf(rmon_fp, MSG_RMON_ERRNOXY_DS, errno, strerror(errno));

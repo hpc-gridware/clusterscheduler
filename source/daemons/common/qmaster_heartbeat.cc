@@ -54,7 +54,7 @@ static int sge_testmode_timeout_at_heartbeat = 0;
  *         -4   fclose error
  *-------------------------------------------------------------*/
 int get_qmaster_heartbeat(char *file, time_t read_timeout) {
-   FILE *fp   = NULL;
+   FILE *fp   = nullptr;
    int hb     = 0; 
    struct timeval start_time;
    struct timeval end_time;
@@ -62,12 +62,12 @@ int get_qmaster_heartbeat(char *file, time_t read_timeout) {
 
    DENTER(TOP_LAYER);
 
-   if (file == NULL) {
+   if (file == nullptr) {
       ERROR((SGE_EVENT, SFNMAX, MSG_HEART_NO_FILENAME));
       DRETURN(-1);
    }
 
-   gettimeofday(&start_time,NULL);
+   gettimeofday(&start_time,nullptr);
 
    fp = fopen(file, "r");
    if (!fp) {
@@ -88,7 +88,7 @@ int get_qmaster_heartbeat(char *file, time_t read_timeout) {
       sleep(sge_testmode_timeout_value);
    }
 
-   gettimeofday(&end_time,NULL);
+   gettimeofday(&end_time,nullptr);
    read_time = end_time.tv_sec - start_time.tv_sec;
    if (read_time > read_timeout) {
       ERROR((SGE_EVENT, MSG_HEART_READ_TIMEOUT_S, file));
@@ -107,7 +107,7 @@ FCLOSE_ERROR:
  *         wrap at 99999
  *         if file doesn't exist create it
  * Return: 0 if operation was successfull 
- *           (if beat_value != NULL it will contain 
+ *           (if beat_value != nullptr it will contain
  *            the written heartbeat value)
  *
  * Errors:
@@ -121,7 +121,7 @@ FCLOSE_ERROR:
  *-------------------------------------------------------------*/
 int inc_qmaster_heartbeat(char *file, time_t write_timeout , int* beat_value) {
 
-   FILE *fp = NULL;
+   FILE *fp = nullptr;
    int hb   = 1;
    struct timeval start_time;
    struct timeval end_time;
@@ -129,12 +129,12 @@ int inc_qmaster_heartbeat(char *file, time_t write_timeout , int* beat_value) {
 
    DENTER(TOP_LAYER);
 
-   if (file == NULL) {
+   if (file == nullptr) {
       ERROR((SGE_EVENT, SFNMAX, MSG_HEART_NO_FILENAME));
       DRETURN(-1);
    }
 
-   gettimeofday(&start_time,NULL);
+   gettimeofday(&start_time,nullptr);
 
    /* Try to open heartbeat file */
    fp = fopen(file, "r+");
@@ -182,14 +182,14 @@ int inc_qmaster_heartbeat(char *file, time_t write_timeout , int* beat_value) {
    }
 
 
-   gettimeofday(&end_time,NULL);
+   gettimeofday(&end_time,nullptr);
    write_time = end_time.tv_sec - start_time.tv_sec;
    if (write_time > write_timeout) {
       WARNING((SGE_EVENT, MSG_HEART_WRITE_TIMEOUT_S, file)); 
       return -4;
    }
 
-   if (beat_value != NULL) {
+   if (beat_value != nullptr) {
       *beat_value = hb;
    }
 

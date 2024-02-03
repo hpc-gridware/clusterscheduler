@@ -106,7 +106,7 @@ static struct dirent *dent;
 int groups_in_proc (void) 
 {
    char buf[1024];
-   FILE* fd = (FILE*) NULL;
+   FILE* fd = (FILE*) nullptr;
    
    if (!(fd = fopen(PROC_DIR "/self/status", "r"))) {
       return 0;
@@ -130,9 +130,9 @@ FCLOSE_ERROR:
    return the proc element */
 static lnk_link_t *find_pid_in_jobs(pid_t pid, lnk_link_t *job_list)
 {
-   lnk_link_t *job, *proc = NULL;
-   proc_elem_t *proc_elem = NULL;
-   job_elem_t *job_elem = NULL;
+   lnk_link_t *job, *proc = nullptr;
+   proc_elem_t *proc_elem = nullptr;
+   job_elem_t *job_elem = nullptr;
 
    /*
     * try to find a matching job
@@ -155,7 +155,7 @@ static lnk_link_t *find_pid_in_jobs(pid_t pid, lnk_link_t *job_list)
 
       if (proc == &job_elem->procs) {
          /* end of procs list - no process found - try next job */
-         proc = NULL;
+         proc = nullptr;
       } else
          /* found a process */
          break;
@@ -227,7 +227,7 @@ void procfs_kill_addgrpid(gid_t add_grp_id, int sig, tShepherd_trace shepherd_tr
 #else
    list = (gid_t*) sge_malloc(max_groups*sizeof(gid_t));
 #endif
-   if (list == NULL)
+   if (list == nullptr)
       if (shepherd_trace) {
          shepherd_trace(MSG_SGE_PROCFSKILLADDGRPIDMALLOCFAILED);
       }
@@ -287,27 +287,27 @@ void procfs_kill_addgrpid(gid_t add_grp_id, int sig, tShepherd_trace shepherd_tr
        */
       groups = 0;
       while (fgets(buffer, sizeof(buffer), fp)) {
-         char *label = NULL;
-         char *token = NULL;
+         char *label = nullptr;
+         char *token = nullptr;
 
          label = strtok(buffer, " \t\n");
          if (label) {
             if (!strcmp("Groups:", label)) {
-               while ((token = strtok((char*) NULL, " \t\n"))) {
+               while ((token = strtok((char*) nullptr, " \t\n"))) {
                   list[groups]=(gid_t) atol(token);
                   groups++;
                }
             } else if (!strcmp("Uid:", label)) {
                int i = 0;
 
-               while ((i < 4) && (token = strtok((char*) NULL, " \t\n"))) {
+               while ((i < 4) && (token = strtok((char*) nullptr, " \t\n"))) {
                   uids[i]=(uid_t) atol(token);
                   i++;
                }
             } else if (!strcmp("Gid:", label)) {
                int i = 0;
 
-               while ((i < 4) && (token = strtok((char*) NULL, " \t\n"))) {
+               while ((i < 4) && (token = strtok((char*) nullptr, " \t\n"))) {
                   gids[i]=(gid_t) atol(token);
                   i++;
                }
@@ -387,7 +387,7 @@ time_t last_time
    int fd = -1;
 #if defined(LINUX)
    char buffer[BIGLINE];
-   lListElem *pr = NULL;
+   lListElem *pr = nullptr;
    SGE_STRUCT_STAT fst;
    unsigned long utime, stime, vsize, pid;
    int pos_pid = lGetPosInDescr(PRO_Type, PRO_pid);
@@ -414,8 +414,8 @@ time_t last_time
    int groups=0;
    int pid_tmp;
 
-   proc_elem_t *proc_elem = NULL;
-   job_elem_t *job_elem = NULL;
+   proc_elem_t *proc_elem = nullptr;
+   job_elem_t *job_elem = nullptr;
    lnk_link_t *curr;
    double old_time = 0;
    uint64 old_vmem = 0;
@@ -429,7 +429,7 @@ time_t last_time
    }   
 
    list = (gid_t*) sge_malloc(max_groups*sizeof(gid_t));
-   if (list == NULL) {
+   if (list == nullptr) {
       ERROR((SGE_EVENT, SFNMAX, MSG_SGE_PTDISPATCHPROCTOJOBMALLOCFAILED));
       DRETURN(1);
    }
@@ -458,7 +458,7 @@ time_t last_time
 
 #if defined(LINUX)
       /* check only processes which belongs to a GE job */
-      if ((pr = get_pr(atoi(pidname))) != NULL) {
+      if ((pr = get_pr(atoi(pidname))) != nullptr) {
          /* set process as still running */
          lSetPosBool(pr, pos_run, true);
          if (lGetPosBool(pr, pos_rel) != true) {
@@ -479,7 +479,7 @@ time_t last_time
       /* TODO (SH): This does not work with Linux 2.6. I'm looking for a workaround.
        * If the stat file was not changed since our last parsing there is no need to do it again
        */
-      /*if (pr == NULL || fst.st_mtime > last_time) {*/
+      /*if (pr == nullptr || fst.st_mtime > last_time) {*/
       {
 #else
          sprintf(procnam, "%s/%s", PROC_DIR, dent->d_name);
@@ -535,7 +535,7 @@ time_t last_time
             continue;
          }
 
-         if (pr == NULL) {
+         if (pr == nullptr) {
             pr = lCreateElem(PRO_Type);
             lSetPosUlong(pr, pos_pid, pid);
             lSetPosBool(pr, pos_rel, false);
@@ -571,7 +571,7 @@ time_t last_time
          }
 
          groups = 0;
-         if (fst.st_mtime < last_time && groupTable != NULL) {
+         if (fst.st_mtime < last_time && groupTable != nullptr) {
             const lListElem *group;
 
             for_each_ep(group, groupTable) {
@@ -580,7 +580,7 @@ time_t last_time
             }
          } else {
             char buf[1024];
-            FILE* f = (FILE*) NULL;
+            FILE* f = (FILE*) nullptr;
 
             if (!(f = fopen(procnam, "r"))) {
                continue;
@@ -591,7 +591,7 @@ time_t last_time
                if (strcmp("Groups:", strtok(buf, "\t"))==0) {
                   char *token;
                   
-                  while ((token=strtok((char*) NULL, " "))) {
+                  while ((token=strtok((char*) nullptr, " "))) {
                      lListElem *gr = lCreateElem(GR_Type);
                      long group = atol(token);
                      list[groups] = group;
@@ -783,7 +783,7 @@ time_t last_time
                while (fgets(buf, sizeof(buf), fd))
                {
                  char *label = strtok(buf, " \t\n");
-                 char *token = strtok((char*) NULL, " \t\n");
+                 char *token = strtok((char*) nullptr, " \t\n");
 
                  if (label && token)
                    if (!strcmp("rchar:", label) ||

@@ -49,12 +49,12 @@
 ************************************************************************/
 bool id_sharetree(lList **alpp, lListElem *ep, int id, int *ret_id)
 {
-   lListElem *cep = NULL;
+   lListElem *cep = nullptr;
    int my_id = id;
 
    DENTER(TOP_LAYER);
 
-   if (ep == NULL) {
+   if (ep == nullptr) {
       answer_list_add(alpp, MSG_OBJ_NOSTREEELEM, STATUS_EUNKNOWN, ANSWER_QUALITY_ERROR);
       DRETURN(false);
    }
@@ -63,7 +63,7 @@ bool id_sharetree(lList **alpp, lListElem *ep, int id, int *ret_id)
 
    /* handle the children */
    for_each_rw(cep, lGetList(ep, STN_children)) {
-      if (false == id_sharetree(NULL, cep, my_id, &my_id)) {
+      if (false == id_sharetree(nullptr, cep, my_id, &my_id)) {
          DRETURN(false);
       }
    }
@@ -181,7 +181,7 @@ lListElem *getSNTemplate(void)
    lSetUlong(ep, STN_type, 0);
    lSetUlong(ep, STN_id, 0);
    lSetUlong(ep, STN_shares, 0);
-   lSetList(ep, STN_children, NULL);
+   lSetList(ep, STN_children, nullptr);
 
    DRETURN(ep);
 }
@@ -200,7 +200,7 @@ lListElem *search_named_node(lListElem *ep,  /* root of the tree */
    DENTER(TOP_LAYER);
 
    if (!ep || !name) {
-      DRETURN(NULL);
+      DRETURN(nullptr);
    }
 
    if (sn_name_pos == -1) {
@@ -218,7 +218,7 @@ lListElem *search_named_node(lListElem *ep,  /* root of the tree */
       }
    }
       
-   DRETURN(NULL);
+   DRETURN(nullptr);
 }
 
 
@@ -247,14 +247,14 @@ search_by_path( lListElem *ep,  /* root of the [sub]tree */
                 int depth )
 {
    lList *children;
-   lListElem *ret = NULL;
+   lListElem *ret = nullptr;
    lListElem *child;
-   char *buf=NULL, *bufp;
+   char *buf=nullptr, *bufp;
 
-   if (name == NULL)
+   if (name == nullptr)
       delim = '.';
 
-   if (name == NULL || !strcmp(name, "*") ||
+   if (name == nullptr || !strcmp(name, "*") ||
        !strcmp(name, lGetString(ep, STN_name))) {
       if (*path == 0) {
          if (name) {
@@ -279,7 +279,7 @@ search_by_path( lListElem *ep,  /* root of the [sub]tree */
       *bufp = 0;
       name = buf;
    } else if (delim == '/')
-      return NULL;
+      return nullptr;
 
    if ((children = lGetListRW(ep, STN_children)))
       for (child=lFirstRW(children); child && !ret; child = child->next)
@@ -303,7 +303,7 @@ search_named_node_path( lListElem *ep,  /* root of the tree */
                         const char *path,
                         ancestors_t *ancestors )
 {
-   return search_by_path(ep, NULL, path, 0, ancestors, 0);
+   return search_by_path(ep, nullptr, path, 0, ancestors, 0);
 }
 
 
@@ -344,7 +344,7 @@ search_ancestors( lListElem *ep,
    DENTER(TOP_LAYER);
 
    if (!ep || !name) {
-      DRETURN(NULL);
+      DRETURN(nullptr);
    }
 
    if (sn_name_pos == -1) {
@@ -365,7 +365,7 @@ search_ancestors( lListElem *ep,
       }
    }
       
-   DRETURN(NULL);
+   DRETURN(nullptr);
 }
 
 /****** sge_search_unspecified_node() ******************************************
@@ -385,16 +385,16 @@ search_ancestors( lListElem *ep,
 *     ep - root of the tree
 *
 *  RESULT
-*     the first node which has no name or NULL if all nodes have names
+*     the first node which has no name or nullptr if all nodes have names
 ******************************************************************************/
 lListElem *sge_search_unspecified_node(lListElem *ep)
 {
-   lListElem *cep = NULL, *ret = NULL;
+   lListElem *cep = nullptr, *ret = nullptr;
 
    DENTER(TOP_LAYER);
 
-   if (ep == NULL) {
-      DRETURN(NULL);
+   if (ep == nullptr) {
+      DRETURN(nullptr);
    }
 
    for_each_rw(cep, lGetList(ep, STN_children)) {
@@ -403,9 +403,9 @@ lListElem *sge_search_unspecified_node(lListElem *ep)
       }   
    }
 
-   if (lGetString(ep, STN_name) == NULL) {
+   if (lGetString(ep, STN_name) == nullptr) {
       DRETURN(ep);         /* no name filled in -> unspecified */
    }
    
-   DRETURN(NULL);
+   DRETURN(nullptr);
 }

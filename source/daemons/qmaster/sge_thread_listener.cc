@@ -62,7 +62,7 @@ sge_listener_cleanup_monitor(monitoring_t *monitor) {
 void
 sge_listener_initialize(sge_gdi_ctx_class_t *ctx) {
    const u_long32 max_initial_listener_threads = bootstrap_get_listener_thread_count();
-   cl_thread_settings_t *dummy_thread_p = NULL;
+   cl_thread_settings_t *dummy_thread_p = nullptr;
    u_long32 i;
 
    DENTER(TOP_LAYER);
@@ -75,7 +75,7 @@ sge_listener_initialize(sge_gdi_ctx_class_t *ctx) {
       sge_dstring_sprintf(&thread_name, "%s%03d", threadnames[LISTENER_THREAD], i);
       cl_thread_list_create_thread(Main_Control.listener_thread_pool, &dummy_thread_p,
                                    cl_com_get_log_list(), sge_dstring_get_string(&thread_name), i,
-                                   sge_listener_main, NULL, NULL, CL_TT_LISTENER);
+                                   sge_listener_main, nullptr, nullptr, CL_TT_LISTENER);
       sge_dstring_free(&thread_name);
    }
    DRETURN_VOID;
@@ -83,7 +83,7 @@ sge_listener_initialize(sge_gdi_ctx_class_t *ctx) {
 
 void
 sge_listener_terminate(void) {
-   cl_thread_settings_t *thread = NULL;
+   cl_thread_settings_t *thread = nullptr;
    DENTER(TOP_LAYER);
 
    /*
@@ -92,7 +92,7 @@ sge_listener_terminate(void) {
     * 'sgeE_QMASTER_GOES_DOWN' event *before* the listener threads 
     * are terminated.
     */
-   sge_add_event(0, sgeE_QMASTER_GOES_DOWN, 0, 0, NULL, NULL, NULL, NULL);
+   sge_add_event(0, sgeE_QMASTER_GOES_DOWN, 0, 0, nullptr, nullptr, nullptr, nullptr);
    DPRINTF(("triggered shutdown event for event master module\n"));
 
    /*
@@ -100,11 +100,11 @@ sge_listener_terminate(void) {
     * shutdown process will be faster
     */
    {
-      cl_thread_list_elem_t *thr = NULL;
-      cl_thread_list_elem_t *thr_nxt = NULL;
+      cl_thread_list_elem_t *thr = nullptr;
+      cl_thread_list_elem_t *thr_nxt = nullptr;
 
       thr_nxt = cl_thread_list_get_first_elem(Main_Control.listener_thread_pool);
-      while ((thr = thr_nxt) != NULL) {
+      while ((thr = thr_nxt) != nullptr) {
          thr_nxt = cl_thread_list_get_next_elem(thr);
 
          cl_thread_shutdown(thr->thread_config);
@@ -115,7 +115,7 @@ sge_listener_terminate(void) {
     * delete all threads and wait for termination
     */
    thread = cl_thread_list_get_first_thread(Main_Control.listener_thread_pool);
-   while (thread != NULL) {
+   while (thread != nullptr) {
       DPRINTF((SFN" gets canceled\n", thread->thread_name));
       cl_thread_list_delete_thread(Main_Control.listener_thread_pool, thread);
       thread = cl_thread_list_get_first_thread(Main_Control.listener_thread_pool);
@@ -129,7 +129,7 @@ sge_listener_main(void *arg) {
    bool do_endlessly = true;
    cl_thread_settings_t *thread_config = (cl_thread_settings_t *) arg;
    monitoring_t monitor;
-   sge_gdi_ctx_class_t *ctx = NULL;
+   sge_gdi_ctx_class_t *ctx = nullptr;
    time_t next_prof_output = 0;
 
    DENTER(TOP_LAYER);
@@ -176,6 +176,6 @@ sge_listener_main(void *arg) {
     * a cleanup function with pthread_cleanup_push()/pthread_cleanup_pop() before 
     * the call of cl_thread_func_testcancel()
     */
-   DRETURN(NULL);
+   DRETURN(nullptr);
 }
 

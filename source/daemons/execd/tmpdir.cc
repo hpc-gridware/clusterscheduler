@@ -52,8 +52,8 @@ char *sge_make_tmpdir(lListElem *qep, u_long32 jobid, u_long32 jataskid, uid_t u
    DENTER(TOP_LAYER);
 
    t = lGetString(qep, QU_tmpdir);
-   if (t == NULL) {
-      DRETURN(NULL);
+   if (t == nullptr) {
+      DRETURN(nullptr);
    }
 
    /* Note could have multiple instantiations of same job, */
@@ -77,7 +77,7 @@ char *sge_make_tmpdir(lListElem *qep, u_long32 jobid, u_long32 jataskid, uid_t u
       ERROR((SGE_EVENT, MSG_FILE_NOCHOWN_SS, tmpdir, sge_strerror(errno, &ds)));
       sge_dstring_free(&ds);
       unlink(tmpdir);
-      DRETURN(NULL);
+      DRETURN(nullptr);
    }
 
    sge_switch2admin_user();
@@ -121,7 +121,7 @@ char *sge_get_tmpdir(lListElem *qep, u_long32 jobid, u_long32 jataskid, char *tm
    DENTER(TOP_LAYER);
 
    if (!(t=lGetString(qep, QU_tmpdir))) {
-      DRETURN(NULL);
+      DRETURN(nullptr);
    }
 
    sprintf(tmpdir, "%s/"sge_u32"."sge_u32".%s", t, jobid, jataskid, lGetString(qep, QU_qname));

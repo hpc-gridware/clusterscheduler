@@ -53,7 +53,7 @@ char **argv
    int i;
    int running = 1;
    wchar_t wbuffer[500];
-   char* charpointer = NULL;
+   char* charpointer = nullptr;
 #endif
 
    DENTER_MAIN(TOP_LAYER, "languagetest");
@@ -63,7 +63,7 @@ char **argv
                          (setlocale_func_type)      setlocale,
                          (bindtextdomain_func_type) bindtextdomain,
                          (textdomain_func_type)     textdomain);
-   sge_init_language(NULL,NULL);
+   sge_init_language(nullptr,nullptr);
 #else
    printf ("\n Binary not compiled with gettext!!!\n");
 #endif /* __SGE_COMPILE_WITH_GETTEXT__  */

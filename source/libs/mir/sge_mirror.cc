@@ -128,37 +128,37 @@ sge_mirror_error sge_mirror_update_master_list_ar_key(lList **list, const lDescr
  */
 static const mirror_description dev_mirror_base[SGE_TYPE_ALL] = {
    /*cbb   cbd                                     cba   cd   */
-   { NULL, host_update_master_list,                NULL, NULL },
-   { NULL, generic_update_master_list,             NULL, NULL },
-   { NULL, generic_update_master_list,             NULL, NULL },
-   { NULL, generic_update_master_list,             NULL, NULL },
-   { NULL, NULL,                                   NULL, NULL },
-   { NULL, host_update_master_list,                NULL, NULL },
-   { NULL, ja_task_update_master_list,             NULL, NULL },
-   { NULL, pe_task_update_master_list,             NULL, NULL },
-   { NULL, job_update_master_list,                 NULL, NULL },
-   { NULL, job_schedd_info_update_master_list,     NULL, NULL },
-   { NULL, generic_update_master_list,             NULL, NULL },
-   { NULL, generic_update_master_list,             NULL, NULL },
-   { NULL, sharetree_update_master_list,           NULL, NULL },
-   { NULL, generic_update_master_list,             NULL, NULL },
-   { NULL, generic_update_master_list,             NULL, NULL },
-   { NULL, cqueue_update_master_list,              NULL, NULL },
-   { NULL, qinstance_update_cqueue_list,           NULL, NULL },
-   { NULL, schedd_conf_update_master_list,         NULL, NULL },
-   { NULL, NULL,                                   NULL, NULL },
-   { NULL, sge_mirror_process_shutdown,            NULL, NULL },
-   { NULL, sge_mirror_process_mark4registration,   NULL, NULL },
-   { NULL, host_update_master_list,                NULL, NULL },
-   { NULL, generic_update_master_list,             NULL, NULL },
-   { NULL, generic_update_master_list,             NULL, NULL },
-   { NULL, host_update_master_list,                NULL, NULL }, /*hgroup*/
-   { NULL, generic_update_master_list,             NULL, NULL },
-   { NULL, generic_update_master_list,             NULL, NULL }, /*zombie*/
-   { NULL, generic_update_master_list,             NULL, NULL }, /*suser*/
-   { NULL, generic_update_master_list,             NULL, NULL }, /*rqs*/
-   { NULL, ar_update_master_list,                  NULL, NULL }, /*advance reservation*/
-   { NULL, NULL,                                   NULL, NULL }, /*jobscripts*/
+   { nullptr, host_update_master_list,                nullptr, nullptr },
+   { nullptr, generic_update_master_list,             nullptr, nullptr },
+   { nullptr, generic_update_master_list,             nullptr, nullptr },
+   { nullptr, generic_update_master_list,             nullptr, nullptr },
+   { nullptr, nullptr,                                   nullptr, nullptr },
+   { nullptr, host_update_master_list,                nullptr, nullptr },
+   { nullptr, ja_task_update_master_list,             nullptr, nullptr },
+   { nullptr, pe_task_update_master_list,             nullptr, nullptr },
+   { nullptr, job_update_master_list,                 nullptr, nullptr },
+   { nullptr, job_schedd_info_update_master_list,     nullptr, nullptr },
+   { nullptr, generic_update_master_list,             nullptr, nullptr },
+   { nullptr, generic_update_master_list,             nullptr, nullptr },
+   { nullptr, sharetree_update_master_list,           nullptr, nullptr },
+   { nullptr, generic_update_master_list,             nullptr, nullptr },
+   { nullptr, generic_update_master_list,             nullptr, nullptr },
+   { nullptr, cqueue_update_master_list,              nullptr, nullptr },
+   { nullptr, qinstance_update_cqueue_list,           nullptr, nullptr },
+   { nullptr, schedd_conf_update_master_list,         nullptr, nullptr },
+   { nullptr, nullptr,                                   nullptr, nullptr },
+   { nullptr, sge_mirror_process_shutdown,            nullptr, nullptr },
+   { nullptr, sge_mirror_process_mark4registration,   nullptr, nullptr },
+   { nullptr, host_update_master_list,                nullptr, nullptr },
+   { nullptr, generic_update_master_list,             nullptr, nullptr },
+   { nullptr, generic_update_master_list,             nullptr, nullptr },
+   { nullptr, host_update_master_list,                nullptr, nullptr }, /*hgroup*/
+   { nullptr, generic_update_master_list,             nullptr, nullptr },
+   { nullptr, generic_update_master_list,             nullptr, nullptr }, /*zombie*/
+   { nullptr, generic_update_master_list,             nullptr, nullptr }, /*suser*/
+   { nullptr, generic_update_master_list,             nullptr, nullptr }, /*rqs*/
+   { nullptr, ar_update_master_list,                  nullptr, nullptr }, /*advance reservation*/
+   { nullptr, nullptr,                                   nullptr, nullptr }, /*jobscripts*/
 };
 
 /*-------------------------*/
@@ -191,10 +191,10 @@ static void mir_state_init(mir_state_t* state)
 
    /* initialize mirroring data structures - only changeable fields */
    for (i = 0; i < SGE_TYPE_ALL; i++) {
-      state->mirror_base[i].callback_before  = NULL;
-      state->mirror_base[i].callback_after   = NULL;
+      state->mirror_base[i].callback_before  = nullptr;
+      state->mirror_base[i].callback_after   = nullptr;
       state->mirror_base[i].callback_default = dev_mirror_base[i].callback_default;
-      state->mirror_base[i].clientdata       = NULL;
+      state->mirror_base[i].clientdata       = nullptr;
    }
 }
 
@@ -279,11 +279,11 @@ sge_mirror_initialize(sge_evc_class_t *evc, ev_registration_id id, const char *n
    obj_init(use_global_data);
 
    /* subscribe some events with default handling */
-   sge_mirror_subscribe(evc, SGE_TYPE_SHUTDOWN, NULL, NULL, NULL, NULL, NULL);
-   sge_mirror_subscribe(evc, SGE_TYPE_MARK_4_REGISTRATION, NULL, NULL, NULL, NULL, NULL);
+   sge_mirror_subscribe(evc, SGE_TYPE_SHUTDOWN, nullptr, nullptr, nullptr, nullptr, nullptr);
+   sge_mirror_subscribe(evc, SGE_TYPE_MARK_4_REGISTRATION, nullptr, nullptr, nullptr, nullptr, nullptr);
 
    /* register with qmaster */
-   evc->ec_commit(evc, NULL);
+   evc->ec_commit(evc, nullptr);
 
    DRETURN(SGE_EM_OK);
 }
@@ -378,7 +378,7 @@ sge_mirror_error sge_mirror_subscribe(sge_evc_class_t *evc,
       int i;
       
       for (i = (int)SGE_TYPE_ADMINHOST; i < (int)SGE_TYPE_ALL; i++) {
-         _sge_mirror_subscribe(evc, (sge_object_type)i, callback_before, callback_after, clientdata, NULL, NULL);
+         _sge_mirror_subscribe(evc, (sge_object_type)i, callback_before, callback_after, clientdata, nullptr, nullptr);
       }
    } else {
       ret = _sge_mirror_subscribe(evc, type, callback_before, callback_after, clientdata, where, what);
@@ -790,9 +790,9 @@ static sge_mirror_error _sge_mirror_unsubscribe(sge_evc_class_t *evc, sge_object
    DENTER(TOP_LAYER);
  
    /* type has been checked in calling function - clear callback information */
-   mirror_base[type].callback_before  = NULL;
-   mirror_base[type].callback_after   = NULL;
-   mirror_base[type].clientdata       = NULL;
+   mirror_base[type].callback_before  = nullptr;
+   mirror_base[type].callback_after   = nullptr;
+   mirror_base[type].clientdata       = nullptr;
 
    switch (type) {
       case SGE_TYPE_ADMINHOST:
@@ -995,14 +995,14 @@ static sge_mirror_error _sge_mirror_unsubscribe(sge_evc_class_t *evc, sge_object
 *******************************************************************************/
 sge_mirror_error sge_mirror_process_events(sge_evc_class_t *evc)
 {
-   lList *event_list = NULL;
+   lList *event_list = nullptr;
    sge_mirror_error ret = SGE_EM_OK;
    static int test_debug = 0;
 
    DENTER(TOP_LAYER);
 
    if (evc && evc->ec_get(evc, &event_list, false)) {
-      if (event_list != NULL) {
+      if (event_list != nullptr) {
          ret = sge_mirror_process_event_list(evc, event_list);
          lFreeList(&event_list);
       }
@@ -1078,7 +1078,7 @@ static void sge_mirror_free_list(sge_object_type type)
 static sge_mirror_error
 sge_mirror_process_event_list_(sge_evc_class_t *evc, lList *event_list)
 {
-   lListElem *event = NULL;
+   lListElem *event = nullptr;
    sge_mirror_error function_ret;
    bool no_more_events=false;
    int num_events = 0;
@@ -1436,10 +1436,10 @@ sge_mirror_process_event_list_(sge_evc_class_t *evc, lList *event_list)
    }
 
    if (prof_is_active(SGE_PROF_MIRROR)) {
-      prof_stop_measurement(SGE_PROF_MIRROR, NULL);
+      prof_stop_measurement(SGE_PROF_MIRROR, nullptr);
       PROFILING((SGE_EVENT, "PROF: sge_mirror processed %d events in %.3f s",
                  num_events, prof_get_measurement_wallclock(SGE_PROF_MIRROR,
-                 false, NULL)));
+                 false, nullptr)));
    }
 
    DRETURN(function_ret);
@@ -1482,11 +1482,11 @@ sge_mirror_process_event(sge_evc_class_t *evc, mirror_description *mirror_base,
       strkey2 = lGetString(event, ET_strkey2);
       DPRINTF(("\tEvent: %s intkey %d intkey2 %d strkey \"%s\" strkey2 \"%s\"\n",
                event_text(event, &buffer_wrapper), intkey, intkey2,
-               strkey?strkey:"NULL", strkey2?strkey2:"NULL"));
+               strkey?strkey:"nullptr", strkey2?strkey2:"nullptr"));
    }
 #endif
 
-   if (mirror_base[type].callback_before != NULL) {
+   if (mirror_base[type].callback_before != nullptr) {
       ret = mirror_base[type].callback_before(evc, type, action, event, mirror_base[type].clientdata);
       if (ret == SGE_EMA_FAILURE) {
          ERROR((SGE_EVENT, MSG_MIRROR_CALLBACKFAILED_S, event_text(event, &buffer_wrapper)));
@@ -1496,8 +1496,8 @@ sge_mirror_process_event(sge_evc_class_t *evc, mirror_description *mirror_base,
       }
    }
 
-   if (mirror_base[type].callback_default != NULL) {
-      ret = mirror_base[type].callback_default(evc, type, action, event, NULL);
+   if (mirror_base[type].callback_default != nullptr) {
+      ret = mirror_base[type].callback_default(evc, type, action, event, nullptr);
       if (ret == SGE_EMA_FAILURE) {
          ERROR((SGE_EVENT, MSG_MIRROR_CALLBACKFAILED_S, event_text(event, &buffer_wrapper)));
          DRETURN(SGE_EM_CALLBACK_FAILED);
@@ -1506,7 +1506,7 @@ sge_mirror_process_event(sge_evc_class_t *evc, mirror_description *mirror_base,
       }
    }
 
-   if (mirror_base[type].callback_after != NULL) {
+   if (mirror_base[type].callback_after != nullptr) {
       ret = mirror_base[type].callback_after(evc, type, action, event, mirror_base[type].clientdata);
       if (ret == SGE_EMA_FAILURE) {
          ERROR((SGE_EVENT, MSG_MIRROR_CALLBACKFAILED_S, event_text(event, &buffer_wrapper)));
@@ -1550,7 +1550,7 @@ static sge_callback_result
 generic_update_master_list(sge_evc_class_t *evc, sge_object_type type,
                            sge_event_action action, lListElem *event, void *clientdata)
 {
-   lList **list = NULL;
+   lList **list = nullptr;
    const lDescr *list_descr;
    int key_nm;
    const char *key;
@@ -1567,7 +1567,7 @@ generic_update_master_list(sge_evc_class_t *evc, sge_object_type type,
       DRETURN(SGE_EMA_FAILURE);
    }
 
-   if (!object_type_commit_master_list(type, NULL)) {
+   if (!object_type_commit_master_list(type, nullptr)) {
       DRETURN(SGE_EMA_FAILURE);
    }
 
@@ -1620,8 +1620,8 @@ sge_mirror_update_master_list_str_key(lList **list, const lDescr *list_descr,
 
    ret = sge_mirror_update_master_list(list, list_descr, ep, key, action, event);
 #else
-   /* TODO: is the code above correct, do we always have list != NULL ??? */
-   if (list != NULL) {
+   /* TODO: is the code above correct, do we always have list != nullptr ??? */
+   if (list != nullptr) {
       ep = lGetElemStrRW(*list, key_nm, key);
       ret = sge_mirror_update_master_list(list, list_descr, ep, key, action, event);
    } else {
@@ -1700,7 +1700,7 @@ sge_mirror_error sge_mirror_update_master_list_host_key(lList **list, const lDes
 *  INPUTS
 *     lList **list            - mirrored list to manipulate
 *     lDescr *list_descr      - descriptor of mirrored list
-*     lListElem *ep           - element to manipulate or NULL
+*     lListElem *ep           - element to manipulate or nullptr
 *     const char *key         - key of an element to manipulate
 *     sge_event_action action - action to perform
 *     lListElem *event        - raw event
@@ -1717,7 +1717,7 @@ sge_mirror_update_master_list(lList **list, const lDescr *list_descr,
                               lListElem *ep, const char *key,
                               sge_event_action action, lListElem *event)
 {
-   lList *data_list = NULL;
+   lList *data_list = nullptr;
 
    DENTER(TOP_LAYER);
 
@@ -1729,13 +1729,13 @@ sge_mirror_update_master_list(lList **list, const lDescr *list_descr,
 
       case SGE_EMA_ADD:
          /* check for duplicate */
-         if (ep != NULL) {
-            ERROR((SGE_EVENT, "duplicate list element "SFQ"\n", (key != NULL) ?key:"NULL"));
+         if (ep != nullptr) {
+            ERROR((SGE_EVENT, "duplicate list element "SFQ"\n", (key != nullptr) ?key:"nullptr"));
             DRETURN(SGE_EM_DUPLICATE_KEY);
          }
    
          /* if neccessary, create list */
-         if (*list == NULL) {
+         if (*list == nullptr) {
             *list = lCreateList("", list_descr);
          }
 
@@ -1746,8 +1746,8 @@ sge_mirror_update_master_list(lList **list, const lDescr *list_descr,
 
       case SGE_EMA_DEL:
          /* check for existence */
-         if (ep == NULL) {
-            ERROR((SGE_EVENT, "element "SFQ" does not exist\n", (key != NULL) ?key:"NULL"));
+         if (ep == nullptr) {
+            ERROR((SGE_EVENT, "element "SFQ" does not exist\n", (key != nullptr) ?key:"nullptr"));
             DRETURN(SGE_EM_KEY_NOT_FOUND);
          }
 
@@ -1757,8 +1757,8 @@ sge_mirror_update_master_list(lList **list, const lDescr *list_descr,
 
       case SGE_EMA_MOD:
          /* check for existence */
-         if (ep == NULL) {
-            ERROR((SGE_EVENT, "element "SFQ" does not exist\n", (key != NULL) ?key:"NULL"));
+         if (ep == nullptr) {
+            ERROR((SGE_EVENT, "element "SFQ" does not exist\n", (key != nullptr) ?key:"nullptr"));
             DRETURN(SGE_EM_KEY_NOT_FOUND);
          }
          lRemoveElem(*list, &ep);
@@ -1803,7 +1803,7 @@ static sge_callback_result
 ar_update_master_list(sge_evc_class_t *evc, sge_object_type type,
                       sge_event_action action, lListElem *event, void *clientdata)
 {
-   lList **list = NULL;
+   lList **list = nullptr;
    const lDescr *list_descr;
    int key_nm;
    const char *key;
@@ -1855,13 +1855,13 @@ static sge_mirror_error sge_mirror_update_master_list_ar_key(lList **list, const
                                                         int key_nm, const char *key,
                                                         sge_event_action action, lListElem *event)
 {
-   lListElem *ep = NULL;
+   lListElem *ep = nullptr;
    sge_mirror_error ret;
 
    DENTER(TOP_LAYER);
 
-   if (list != NULL) {
-      if (key != NULL) {
+   if (list != nullptr) {
+      if (key != nullptr) {
          ep = lGetElemUlongRW(*list, key_nm, atoi(key));
       }
       ret = sge_mirror_update_master_list(list, list_descr, ep, key, action, event);

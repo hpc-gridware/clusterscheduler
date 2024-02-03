@@ -102,7 +102,7 @@ char *tTypes[] = { "!<pattern>", "|<pattern>", "&<pattern>", "(", ")", "<end>",
 *
 *  RESULT
 *     int - result if expression is true or
-*         0 - strings are the same or both NULL
+*         0 - strings are the same or both nullptr
 *         1 - if is false
 *        -1 - for empty expression, null, or other error
 *
@@ -122,13 +122,13 @@ sge_eval_expression(u_long32 type, const char *expr, const char *value, lList **
    DENTER(BASIS_LAYER);
    
    /* Null values are supported in str_cmp_null way */
-   if (expr==NULL && value!=NULL) {
+   if (expr==nullptr && value!=nullptr) {
       DRETURN(-1);
    }              
-   if (expr!=NULL && value==NULL) {
+   if (expr!=nullptr && value==nullptr) {
       DRETURN(1);
    }
-   if (expr == NULL && value == NULL) {
+   if (expr == nullptr && value == nullptr) {
       DRETURN(0);
    }
 
@@ -184,7 +184,7 @@ sge_eval_expression(u_long32 type, const char *expr, const char *value, lList **
  * NextTok[0]en
  *    set "s" to next token
  *    set "token" to T_NOT, T_AND, T_OR, T_BRACEOPEN, T_BRACECLOSE, T_EXP
- *    set "s" to NULL and "token" to T_END of string is completely read
+ *    set "s" to nullptr and "token" to T_END of string is completely read
  *-----------------------------------------------------------*/
 static void NextToken(s_token *token_p, bool skip)
 {
@@ -192,7 +192,7 @@ static void NextToken(s_token *token_p, bool skip)
    
    while (token_p->s[0] == ' ') token_p->s++; /*skip white chars */
    
-   if (token_p->s == NULL ) return;    /* Should not happen */
+   if (token_p->s == nullptr ) return;    /* Should not happen */
    if (token_p->tt==T_ERROR) return;   /*Previous error */
    
    if (token_p->s[0] == '\0' ) {       /* At the end of expression */
@@ -393,7 +393,7 @@ static int MatchPattern(s_token *token_p, bool skip)
    if (skip==true){
       return -1;
    }
-   if (token_p->pattern==NULL){
+   if (token_p->pattern==nullptr){
       return -1;
    }
    if (token_p->has_patterns ){

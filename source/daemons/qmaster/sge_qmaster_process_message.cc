@@ -147,7 +147,7 @@ sge_qmaster_process_message(sge_gdi_ctx_class_t *ctx, monitoring_t *monitor) {
       switch (msg.tag) {
          case TAG_GDI_REQUEST:
             MONITOR_INC_GDI(monitor);
-            do_gdi_packet(ctx, NULL, &msg, monitor);
+            do_gdi_packet(ctx, nullptr, &msg, monitor);
             break;
          case TAG_ACK_REQUEST:
             MONITOR_INC_ACK(monitor);
@@ -173,7 +173,7 @@ sge_qmaster_process_message(sge_gdi_ctx_class_t *ctx, monitoring_t *monitor) {
 static void
 do_gdi_packet(sge_gdi_ctx_class_t *ctx, lList **answer_list, struct_msg_t *aMsg, monitoring_t *monitor) {
    sge_pack_buffer *pb_in = &(aMsg->buf);
-   sge_gdi_packet_class_t *packet = NULL;
+   sge_gdi_packet_class_t *packet = nullptr;
    bool local_ret;
 
    DENTER(TOP_LAYER);
@@ -182,8 +182,8 @@ do_gdi_packet(sge_gdi_ctx_class_t *ctx, lList **answer_list, struct_msg_t *aMsg,
     * unpack the packet and set values 
     */
    local_ret = sge_gdi_packet_unpack(&packet, answer_list, pb_in);
-   packet->host = sge_strdup(NULL, aMsg->snd_host);
-   packet->commproc = sge_strdup(NULL, aMsg->snd_name);
+   packet->host = sge_strdup(nullptr, aMsg->snd_host);
+   packet->commproc = sge_strdup(nullptr, aMsg->snd_name);
    packet->commproc_id = aMsg->snd_id;
    packet->response_id = aMsg->request_mid;
    packet->is_intern_request = false;
@@ -253,10 +253,10 @@ do_gdi_packet(sge_gdi_ctx_class_t *ctx, lList **answer_list, struct_msg_t *aMsg,
 *******************************************************************************/
 static void
 do_report_request(sge_gdi_ctx_class_t *ctx, struct_msg_t *aMsg, monitoring_t *monitor) {
-   lList *rep = NULL;
+   lList *rep = nullptr;
    const char *admin_user = bootstrap_get_admin_user();
    const char *myprogname = uti_state_get_sge_formal_prog_name();
-   sge_gdi_packet_class_t *packet = NULL;
+   sge_gdi_packet_class_t *packet = nullptr;
 
    DENTER(TOP_LAYER);
 
@@ -275,9 +275,9 @@ do_report_request(sge_gdi_ctx_class_t *ctx, struct_msg_t *aMsg, monitoring_t *mo
     * create a GDI packet to transport the list to the worker where
     * it will be handled
     */
-   packet = sge_gdi_packet_create_base(NULL);
-   packet->host = sge_strdup(NULL, aMsg->snd_host);
-   packet->commproc = sge_strdup(NULL, aMsg->snd_name);
+   packet = sge_gdi_packet_create_base(nullptr);
+   packet->host = sge_strdup(nullptr, aMsg->snd_host);
+   packet->commproc = sge_strdup(nullptr, aMsg->snd_name);
    packet->commproc_id = aMsg->snd_id;
    packet->response_id = aMsg->request_mid;
    packet->is_intern_request = false;
@@ -286,7 +286,7 @@ do_report_request(sge_gdi_ctx_class_t *ctx, struct_msg_t *aMsg, monitoring_t *mo
    /* 
     * Append a pseudo GDI task
     */
-   sge_gdi_packet_append_task(packet, NULL, 0, 0, &rep, NULL, NULL, NULL, false, false);
+   sge_gdi_packet_append_task(packet, nullptr, 0, 0, &rep, nullptr, nullptr, nullptr, false, false);
 
    /*
     * Put the packet into the task queue so that workers can handle it
@@ -372,7 +372,7 @@ do_c_ack(sge_gdi_ctx_class_t *ctx, struct_msg_t *aMsg, monitoring_t *monitor) {
    u_long32 ack_tag, ack_ulong, ack_ulong2;
    const char *admin_user = bootstrap_get_admin_user();
    const char *myprogname = uti_state_get_sge_formal_prog_name();
-   lListElem *ack = NULL;
+   lListElem *ack = nullptr;
 
    DENTER(TOP_LAYER);
 
@@ -380,7 +380,7 @@ do_c_ack(sge_gdi_ctx_class_t *ctx, struct_msg_t *aMsg, monitoring_t *monitor) {
 
    /* Do some validity tests */
    while (pb_unused(&(aMsg->buf)) > 0) {
-      if (cull_unpack_elem(&(aMsg->buf), &ack, NULL)) {
+      if (cull_unpack_elem(&(aMsg->buf), &ack, nullptr)) {
          ERROR((SGE_EVENT, "failed unpacking ACK"));
          SGE_UNLOCK(LOCK_GLOBAL, LOCK_WRITE)
          DRETURN_VOID;
@@ -430,7 +430,7 @@ do_c_ack(sge_gdi_ctx_class_t *ctx, struct_msg_t *aMsg, monitoring_t *monitor) {
 static void
 sge_c_job_ack(sge_gdi_ctx_class_t *ctx, const char *host, const char *commproc, u_long32 ack_tag,
               u_long32 ack_ulong, u_long32 ack_ulong2, const char *ack_str, monitoring_t *monitor) {
-   lList *answer_list = NULL;
+   lList *answer_list = nullptr;
    bool job_spooling = bootstrap_get_job_spooling();
 
    DENTER(TOP_LAYER);
@@ -442,8 +442,8 @@ sge_c_job_ack(sge_gdi_ctx_class_t *ctx, const char *host, const char *commproc, 
 
    switch (ack_tag) {
       case ACK_SIGJOB: {
-         lListElem *jep = NULL;
-         lListElem *jatep = NULL;
+         lListElem *jep = nullptr;
+         lListElem *jatep = nullptr;
          const lList *master_job_list = *object_type_get_master_list(SGE_TYPE_JOB);
 
          DPRINTF(("TAG_SIGJOB\n"));
@@ -452,20 +452,20 @@ sge_c_job_ack(sge_gdi_ctx_class_t *ctx, const char *host, const char *commproc, 
             ERROR((SGE_EVENT, MSG_COM_ACKEVENTFORUNKOWNJOB_U, sge_u32c(ack_ulong)));
             DRETURN_VOID;
          }
-         jatep = job_search_task(jep, NULL, ack_ulong2);
-         if (jatep == NULL) {
+         jatep = job_search_task(jep, nullptr, ack_ulong2);
+         if (jatep == nullptr) {
             ERROR((SGE_EVENT, MSG_COM_ACKEVENTFORUNKNOWNTASKOFJOB_UU, sge_u32c(ack_ulong2), sge_u32c(ack_ulong)));
             DRETURN_VOID;
          }
 
          DPRINTF(("JOB "sge_u32": SIGNAL ACK\n", lGetUlong(jep, JB_job_number)));
          lSetUlong(jatep, JAT_pending_signal, 0);
-         te_delete_one_time_event(TYPE_SIGNAL_RESEND_EVENT, ack_ulong, ack_ulong2, NULL);
+         te_delete_one_time_event(TYPE_SIGNAL_RESEND_EVENT, ack_ulong, ack_ulong2, nullptr);
          {
             dstring buffer = DSTRING_INIT;
             spool_write_object(&answer_list, spool_get_default_context(), jep,
                                job_get_key(lGetUlong(jep, JB_job_number),
-                                           ack_ulong2, NULL, &buffer), SGE_TYPE_JOB, job_spooling);
+                                           ack_ulong2, nullptr, &buffer), SGE_TYPE_JOB, job_spooling);
             sge_dstring_free(&buffer);
          }
          answer_list_output(&answer_list);
@@ -474,26 +474,26 @@ sge_c_job_ack(sge_gdi_ctx_class_t *ctx, const char *host, const char *commproc, 
       }
 
       case ACK_SIGQUEUE: {
-         lListElem *qinstance = NULL;
-         const lListElem *cqueue = NULL;
+         lListElem *qinstance = nullptr;
+         const lListElem *cqueue = nullptr;
          dstring cqueue_name = DSTRING_INIT;
          dstring host_domain = DSTRING_INIT;
          const lList *master_cqueue_list = *object_type_get_master_list(SGE_TYPE_CQUEUE);
 
-         cqueue_name_split(ack_str, &cqueue_name, &host_domain, NULL, NULL);
+         cqueue_name_split(ack_str, &cqueue_name, &host_domain, nullptr, nullptr);
 
          cqueue = lGetElemStr(master_cqueue_list, CQ_name, sge_dstring_get_string(&cqueue_name));
 
          sge_dstring_free(&cqueue_name);
 
-         if (cqueue != NULL) {
+         if (cqueue != nullptr) {
             const lList *qinstance_list = lGetList(cqueue, CQ_qinstances);
 
             qinstance = lGetElemHostRW(qinstance_list, QU_qhostname, sge_dstring_get_string(&host_domain));
          }
          sge_dstring_free(&host_domain);
 
-         if (qinstance == NULL) {
+         if (qinstance == nullptr) {
             ERROR((SGE_EVENT, MSG_COM_ACK_QUEUE_S, ack_str));
             DRETURN_VOID;
          }

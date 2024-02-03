@@ -58,8 +58,8 @@ int usage(void)
 }
 
 int main(int argc,char *argv[]) {
-   struct hostent *he = NULL;
-   char* resolved_name = NULL;
+   struct hostent *he = nullptr;
+   char* resolved_name = nullptr;
    int retval = CL_RETVAL_OK;
    char **tp,**tp2;
    int name_only = 0;
@@ -101,7 +101,7 @@ int main(int argc,char *argv[]) {
       usage();
    }
      
-  retval = cl_com_setup_commlib(CL_NO_THREAD ,CL_LOG_OFF, NULL);
+  retval = cl_com_setup_commlib(CL_NO_THREAD ,CL_LOG_OFF, nullptr);
   if (retval != CL_RETVAL_OK) {
      fprintf(stderr,"%s\n",cl_get_error_text(retval));
      exit(1);
@@ -113,12 +113,12 @@ int main(int argc,char *argv[]) {
      sge_free(&alias_path);
   }
 
-  retval = cl_com_gethostname(&resolved_name, NULL, &he, &system_error);
+  retval = cl_com_gethostname(&resolved_name, nullptr, &he, &system_error);
   if (retval != CL_RETVAL_OK) {
      char* err_text = cl_com_get_h_error_string(system_error);
-     if (err_text == NULL) {
+     if (err_text == nullptr) {
         err_text = strdup(strerror(system_error));
-        if (err_text == NULL) {
+        if (err_text == nullptr) {
            err_text = strdup("unexpected error");
         }
      }
@@ -131,24 +131,24 @@ int main(int argc,char *argv[]) {
 
   if (name_only) {
      if (sge_aliasing) {
-        if (resolved_name != NULL) {
+        if (resolved_name != nullptr) {
            printf("%s\n",resolved_name);
         } else {
            printf("%s\n","unexpected error");
         }
      } else {
-        if (he != NULL) {
+        if (he != nullptr) {
            printf("%s\n",he->h_name);
         } else {
            printf("%s\n","could not get hostent struct");
         }
      }
   } else {
-     if (he != NULL) {
+     if (he != nullptr) {
         printf(MSG_SYSTEM_HOSTNAMEIS_S , he->h_name);
         	printf("\n");
 
-        	if (resolved_name != NULL && all_option) {
+        	if (resolved_name != nullptr && all_option) {
            	printf("SGE name: %s\n",resolved_name);
         	}
 

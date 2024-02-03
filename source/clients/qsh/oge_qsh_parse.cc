@@ -65,12 +65,12 @@
 ** NAME
 **   cull_parse_qsh_parameter
 ** PARAMETER
-**   cmdline            - NULL or SPA_Type, if NULL, *pjob is initialised with defaults
+**   cmdline            - nullptr or SPA_Type, if nullptr, *pjob is initialised with defaults
 **   pjob               - pointer to job element, is filled according to cmdline
 **
 ** RETURN
-**   answer list, AN_Type or NULL if everything ok, the following stati can occur:
-**   STATUS_EUNKNOWN   - bad internal error like NULL pointer received or no memory
+**   answer list, AN_Type or nullptr if everything ok, the following stati can occur:
+**   STATUS_EUNKNOWN   - bad internal error like nullptr pointer received or no memory
 **   STATUS_EDISK      - getcwd() failed
 **   STATUS_ENOIMP     - unknown switch or -help occurred
 ** EXTERNAL
@@ -82,8 +82,8 @@ lList *cull_parse_qsh_parameter(u_long32 prog_number, u_long32 uid, const char *
 {
    const char *cp;
    lListElem *ep;
-   lList *answer = NULL;
-   lList *path_alias = NULL;
+   lList *answer = nullptr;
+   lList *path_alias = nullptr;
    u_long32 job_now;
 
    DENTER(TOP_LAYER); 
@@ -168,7 +168,7 @@ lList *cull_parse_qsh_parameter(u_long32 prog_number, u_long32 uid, const char *
             break;
          }
          /*
-         ** lNext can never be NULL here, because the -clear
+         ** lNext can never be nullptr here, because the -clear
          ** element is the last one to delete
          ** in general, these two lines wont work!
          */
@@ -213,7 +213,7 @@ lList *cull_parse_qsh_parameter(u_long32 prog_number, u_long32 uid, const char *
    /*
    ** to use lAddList correctly we have to get the list out
    ** of the option struct otherwise we free the list once again
-   ** in the lSetList(ep, SPA_argval_lListT, NULL); call
+   ** in the lSetList(ep, SPA_argval_lListT, nullptr); call
    ** this can lead to a core dump
    ** so a better method is to xchange the list in the option struct 
    ** with a null pointer, this is not nice but safe
@@ -222,7 +222,7 @@ lList *cull_parse_qsh_parameter(u_long32 prog_number, u_long32 uid, const char *
    */
    job_set_submit_task_ids(*pjob, 1, 1, 1);
    job_initialize_id_lists(*pjob, &answer);
-   if (answer != NULL) {
+   if (answer != nullptr) {
       lFreeList(&path_alias);
       DRETURN(answer);
    }
@@ -243,7 +243,7 @@ lList *cull_parse_qsh_parameter(u_long32 prog_number, u_long32 uid, const char *
          lSetList(*pjob, JB_ja_u_h_ids, lCopyList("task_id_range",
             lGetList(*pjob, JB_ja_n_h_ids)));
       }
-      lSetList(*pjob, JB_ja_n_h_ids, NULL);
+      lSetList(*pjob, JB_ja_n_h_ids, nullptr);
       lRemoveElem(cmdline, &ep);
    }
 
@@ -251,7 +251,7 @@ lList *cull_parse_qsh_parameter(u_long32 prog_number, u_long32 uid, const char *
    if (lGetElemStr(cmdline, SPA_switch_val, "-hold_jid")) {
       lListElem *ep;
       const lListElem *sep;
-      lList *jref_list = NULL;
+      lList *jref_list = nullptr;
       while ((ep = lGetElemStrRW(cmdline, SPA_switch_val, "-hold_jid"))) {
          for_each_ep(sep, lGetList(ep, SPA_argval_lListT)) {
             DPRINTF(("-hold_jid %s\n", lGetString(sep, ST_name)));
@@ -266,7 +266,7 @@ lList *cull_parse_qsh_parameter(u_long32 prog_number, u_long32 uid, const char *
    if (lGetElemStr(cmdline, SPA_switch_val, "-hold_jid_ad")) {
       lListElem *ep;
       const lListElem *sep;
-      lList *jref_list = NULL;
+      lList *jref_list = nullptr;
       while ((ep = lGetElemStrRW(cmdline, SPA_switch_val, "-hold_jid_ad"))) {
          for_each_ep(sep, lGetList(ep, SPA_argval_lListT)) {
             DPRINTF(("-hold_jid_ad %s\n", lGetString(sep, ST_name)));
@@ -299,7 +299,7 @@ lList *cull_parse_qsh_parameter(u_long32 prog_number, u_long32 uid, const char *
       const lList *list = lGetList(ep, SPA_argval_lListT);
       const char *file = lGetString(lFirst(list), PN_path);
 
-      jsv_list_add("jsv_switch", JSV_CONTEXT_CLIENT, NULL, file);
+      jsv_list_add("jsv_switch", JSV_CONTEXT_CLIENT, nullptr, file);
       lRemoveElem(cmdline, &ep);
    }
 
@@ -438,7 +438,7 @@ lList *cull_parse_qsh_parameter(u_long32 prog_number, u_long32 uid, const char *
       const char *path = lGetString(ep, SPA_argval_lStringT);
       bool is_cwd = false;
 
-      if (path == NULL) {
+      if (path == nullptr) {
          char tmp_str[SGE_PATH_MAX + 1];
 
          is_cwd = true;
@@ -452,7 +452,7 @@ lList *cull_parse_qsh_parameter(u_long32 prog_number, u_long32 uid, const char *
          
          path = reroot_path(*pjob, tmp_str, &answer);
          
-         if (path == NULL) {
+         if (path == nullptr) {
             lFreeList(&path_alias);
             DRETURN(answer);
          }
@@ -540,11 +540,11 @@ lList *cull_parse_qsh_parameter(u_long32 prog_number, u_long32 uid, const char *
       /* if DISPLAY not set from -display or -v option,
        * try to read it from the environment
        */
-      if(ep == NULL) {
+      if(ep == nullptr) {
          const char *display;
          display = getenv("DISPLAY");
 
-         if(display != NULL) {
+         if(display != nullptr) {
             ep = lAddSubStr(*pjob, VA_variable, "DISPLAY", JB_env_list, VA_Type);
             lSetString(ep, VA_value, display);   
          }   

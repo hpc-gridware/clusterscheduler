@@ -86,7 +86,7 @@ int remove_immediate_jobs(lList *pending_job_list, lList *running_job_list, orde
 
    next_job = lFirstRW(pending_job_list);
    while ((job = next_job)) {
-      lCondition *where = NULL;
+      lCondition *where = nullptr;
       next_job = lNextRW(job);
       
       /* skip non immediate .. */
@@ -107,7 +107,7 @@ int remove_immediate_jobs(lList *pending_job_list, lList *running_job_list, orde
       
       /* If the job also exists in the running list, we need to remove it there
        * as well since array jobs are all or nothing. */
-      if ((job = lFindFirstRW(running_job_list, where)) != NULL) {
+      if ((job = lFindFirstRW(running_job_list, where)) != nullptr) {
          remove_immediate_job(running_job_list, job, orders, 1);
       }
       
@@ -148,8 +148,8 @@ void
 remove_immediate_job(lList *job_list, lListElem *job, order_t *orders, int remove_orders) 
 {
    const lListElem *ja_task;
-   const lListElem *range = NULL;
-   const lList *range_list = NULL;
+   const lListElem *range = nullptr;
+   const lList *range_list = nullptr;
    u_long32 ja_task_id;
 
    DENTER(TOP_LAYER);
@@ -230,7 +230,7 @@ order_remove_order_and_immediate(const lListElem *job, const lListElem *ja_task,
    
    DENTER(TOP_LAYER);
    
-   if (ep != NULL) {
+   if (ep != nullptr) {
       DPRINTF (("Removing job start order for job task %u.%u\n",
                 lGetUlong(job, JB_job_number),
                 lGetUlong(ja_task, JAT_task_number)));
@@ -277,7 +277,7 @@ order_remove_immediate(const lListElem *job, const lListElem *ja_task, order_t *
    
    orders->jobStartOrderList = sge_create_orders(orders->jobStartOrderList, 
                                                  ORT_remove_immediate_job, 
-                                                 job, ja_task, NULL, true);
+                                                 job, ja_task, nullptr, true);
    
-   DRETURN((orders->jobStartOrderList == NULL));
+   DRETURN((orders->jobStartOrderList == nullptr));
 }

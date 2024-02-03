@@ -51,7 +51,7 @@ int create_thread(THREAD_LIB_HANDLE *thread_lib_handle,
 {
    return cl_thread_list_create_thread(thread_lib_handle, thread, log_list, 
                                        thread_name, thread_id,
-                                       thread_func, NULL, NULL, CL_TT_IJS);
+                                       thread_func, nullptr, nullptr, CL_TT_IJS);
 }
 
 int register_thread(cl_raw_list_t     *log_list,
@@ -61,7 +61,7 @@ int register_thread(cl_raw_list_t     *log_list,
    int ret;
    ret = cl_thread_setup(thread,
                          log_list, 
-                         thread_name, 0, NULL, NULL, NULL, CL_TT_IJS_REGISTER);
+                         thread_name, 0, nullptr, nullptr, nullptr, CL_TT_IJS_REGISTER);
    if (ret == CL_RETVAL_OK) {
       ret = cl_thread_func_startup(thread);
    }

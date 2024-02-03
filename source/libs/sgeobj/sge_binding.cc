@@ -56,7 +56,7 @@
  * these sockets cores or threads are currently in use from SGE 
  * access them via getExecdTopologyInUse() because of initialization 
  */
-static char* logical_used_topology = NULL;
+static char* logical_used_topology = nullptr;
 
 static int logical_used_topology_length = 0;
 
@@ -239,8 +239,8 @@ bool get_execd_topology(char** topology, int* length)
 {
    bool success = false;
 
-   /* topology must be a NULL pointer */
-   if (topology != NULL && (*topology) == NULL) {
+   /* topology must be a nullptr pointer */
+   if (topology != nullptr && (*topology) == nullptr) {
 #if defined(OGE_HWLOC)
       if (oge::topo_get_topology(topology, length) == true) {
          success = true;
@@ -292,12 +292,12 @@ bool get_execd_topology_in_use(char** topology)
 {
    bool retval = false;
 
-   /* topology must be a NULL pointer */
-   if ((*topology) != NULL) {
+   /* topology must be a nullptr pointer */
+   if ((*topology) != nullptr) {
       return false;
    }   
 
-   if (logical_used_topology_length == 0 || logical_used_topology == NULL) {
+   if (logical_used_topology_length == 0 || logical_used_topology == nullptr) {
 #if defined(OGE_HWLOC)
       /* initialize without any usage */
       oge::topo_get_topology(&logical_used_topology,
@@ -310,7 +310,7 @@ bool get_execd_topology_in_use(char** topology)
 
    if (logical_used_topology_length > 0) {
       /* copy the string */
-      (*topology) = sge_strdup(NULL, logical_used_topology);
+      (*topology) = sge_strdup(nullptr, logical_used_topology);
       retval = true;
    } 
       
@@ -380,7 +380,7 @@ static bool binding_set_linear_solaris(const int first_socket, const int first_c
    const binding_type_t type, char** env)
 {
    /* the topology matrix */
-   int** matrix = NULL;
+   int** matrix = nullptr;
    /* size of the topology matrix */
    int mlength = 0;
    /* are threads (to bind) available (this would be done then) */
@@ -388,16 +388,16 @@ static bool binding_set_linear_solaris(const int first_socket, const int first_c
    /* amount of sockets in the system */
    int csockets = 0;
    /* amount of cores on each socket */ 
-   int* cores = NULL;
+   int* cores = nullptr;
    /* current position */ 
    int current_socket = first_socket;
    int current_core   = first_core;
    /* internal processor_ids (which could be threads or cores) */ 
-   processorid_t* pid_list = NULL;
+   processorid_t* pid_list = nullptr;
    /* current length of the internal pid_list */
    int pid_list_length = 0;
    /* temporary pid list and length */ 
-   processorid_t* tmp_pid_list = NULL;
+   processorid_t* tmp_pid_list = nullptr;
    int tmp_pid_list_length = 0;
    /* return value: successful or not */
    bool retval = true;
@@ -405,7 +405,7 @@ static bool binding_set_linear_solaris(const int first_socket, const int first_c
    int i = 0;
 
    /* check parameter */
-   if (psetid == NULL) {
+   if (psetid == nullptr) {
       /* no memory location of output parameter */
       return false;
    }
@@ -501,7 +501,7 @@ static bool binding_set_linear_solaris(const int first_socket, const int first_c
       pid_list = (processorid_t *) realloc(pid_list, (pid_list_length 
          + tmp_pid_list_length) * sizeof(processorid_t));
 
-      if (pid_list == NULL) {
+      if (pid_list == nullptr) {
          /* out of memory */ 
          free_matrix(matrix, mlength);
          sge_free(&cores);
@@ -574,7 +574,7 @@ static bool binding_set_linear_solaris(const int first_socket, const int first_c
 *     const binding_type_t type  - Type of binding request (set,env or pe) 
 *
 *  OUTPUTS
-*     char** env                 - String with content of SGE_BINDING or NULL 
+*     char** env                 - String with content of SGE_BINDING or nullptr
 *                                  when binding type other than "env"
 *
 *  RESULT
@@ -593,11 +593,11 @@ int create_processor_set_explicit_solaris(const int* list_of_sockets,
    /* tmp variables */
    int i, j, chip_id, pr_id;
    /* internal processor IDs to bind to */
-   processorid_t* pid_list = NULL;
+   processorid_t* pid_list = nullptr;
    /* processor set id */
    processorid_t psetid;
    /* the topology matrix */
-   int** matrix = NULL;
+   int** matrix = nullptr;
    /* size of the topology matrix */
    int length = 0;
    /* current length of the processor id list */
@@ -605,7 +605,7 @@ int create_processor_set_explicit_solaris(const int* list_of_sockets,
    /* length of the processor id list for one core (could be >1 in CMT case) */
    int tmp_pid_list_length = 0;
    /* processor id list for one core */
-   int* tmp_pid_list = NULL;
+   int* tmp_pid_list = nullptr;
    
    /* assert that both lists have the same length */
    if (samount != camount) {
@@ -719,7 +719,7 @@ static void create_environment_string_solaris(const processorid_t* pid_list,
 
    *environment = (char*) calloc((sge_dstring_strlen(&env)+1), sizeof(char));
    if (memcpy(*environment, sge_dstring_get_string(&env), 
-                           sge_dstring_strlen(&env) * sizeof(char)) == NULL) {
+                           sge_dstring_strlen(&env) * sizeof(char)) == nullptr) {
       /* error while copying */                            
    }   
 
@@ -752,7 +752,7 @@ static void create_environment_string_solaris(const processorid_t* pid_list,
 *
 *  OUTPUTS
 *     char** env                - String which contains the content of SGE_BINDING
-*                                 when not NULL.
+*                                 when not nullptr.
 *
 *  RESULT
 *     int - 
@@ -768,7 +768,7 @@ int create_processor_set_striding_solaris(const int first_socket,
    const binding_type_t type, char** env) 
 {
    /* the topology matrix */
-   int** matrix = NULL;
+   int** matrix = nullptr;
    /* size of the topology matrix */
    int mlength = 0;
    /* are threads (to bind) available (this would be done then) */
@@ -776,16 +776,16 @@ int create_processor_set_striding_solaris(const int first_socket,
    /* amount of sockets in the system */
    int csockets = 0;
    /* amount of cores on each socket */ 
-   int* cores = NULL;
+   int* cores = nullptr;
    /* current position */ 
    int current_socket = first_socket;
    int current_core   = first_core;
    /* internal processor_ids (which could be threads or cores) */ 
-   processorid_t* pid_list = NULL;
+   processorid_t* pid_list = nullptr;
    /* current length of the internal pid_list */
    int pid_list_length = 0;
    /* temporary pid list and length */ 
-   processorid_t* tmp_pid_list = NULL;
+   processorid_t* tmp_pid_list = nullptr;
    int tmp_pid_list_length = 0;
    /* return value: processor set id */
    int retval = -1;
@@ -886,7 +886,7 @@ int create_processor_set_striding_solaris(const int first_socket,
       pid_list = (processorid_t *) realloc(pid_list, (pid_list_length 
          + tmp_pid_list_length) * sizeof(processorid_t));
 
-      if (pid_list == NULL) {
+      if (pid_list == nullptr) {
          /* out of memory */ 
          free_matrix(matrix, mlength);
          sge_free(&cores);
@@ -970,7 +970,7 @@ void free_matrix(int** matrix, const int length)
 {
    
    int i;
-   if (matrix == NULL) {
+   if (matrix == nullptr) {
       return;
    }
    for (i = 0; i < length; i++) {
@@ -997,9 +997,9 @@ void free_matrix(int** matrix, const int length)
 *     pset_id is set to the ID of the processor set (output parameter), 
 *     and the function returns true. 
 *  
-*     - pset_id must not be NULL 
+*     - pset_id must not be nullptr
 *     - length must be > 0 
-*     - and plist must not be NULL and have to contain at least one element
+*     - and plist must not be nullptr and have to contain at least one element
 *
 *  INPUTS
 *     const processorid_t* const plist - Processor id list.  
@@ -1027,7 +1027,7 @@ static bool create_pset(const processorid_t* plist, const int length,
    bool successful = true;
 
    /* check parameters plist must have values and pset_id must be allocated */
-   if (plist == NULL || length == 0 || pset_id == NULL 
+   if (plist == nullptr || length == 0 || pset_id == nullptr
          || (pset_create(pset_id) == -1)) {
       
       /* invalid input values */
@@ -1041,7 +1041,7 @@ static bool create_pset(const processorid_t* plist, const int length,
       for (i = 0; i < length && successful == true; i++) {
 
          /* try to assign processor id to the processor set */
-         if (pset_assign(*pset_id, plist[i], NULL) == -1) {
+         if (pset_assign(*pset_id, plist[i], nullptr) == -1) {
             /* problem while assigning a CPU to the set */
             /* destroy the processor set and return with error */ 
             if (pset_destroy(*pset_id) != 0) {
@@ -1123,7 +1123,7 @@ static bool delete_pset(psetid_t pset_id)
 static bool bind_current_process_to_pset(psetid_t pset_id)
 {
    /* try to bind current process to processor set */
-   if (pset_bind(pset_id, P_PID, P_MYID, NULL) != 0) {
+   if (pset_bind(pset_id, P_PID, P_MYID, nullptr) != 0) {
       /* binding was not successful */
       return false;
    }
@@ -1162,7 +1162,7 @@ static bool bind_current_process_to_pset(psetid_t pset_id)
 bool account_job(const char* job_topology)
 {
    
-   if (logical_used_topology_length == 0 || logical_used_topology == NULL) {
+   if (logical_used_topology_length == 0 || logical_used_topology == nullptr) {
 
 #if defined(OGE_HWLOC)
       /* initialize without any usage */
@@ -1214,7 +1214,7 @@ static bool account_job_on_topology(char** topology, const int topology_length,
    
    /* parameter validation */
    if (topology_length != job_length ||  job_length <= 0 
-      || topology == NULL || (*topology) == NULL || job == NULL) {
+      || topology == nullptr || (*topology) == nullptr || job == nullptr) {
       return false;
    }
 
@@ -1280,13 +1280,13 @@ bool binding_explicit_check_and_account(const int* list_of_sockets, const int sa
    bool possible = true;
 
    /* input parameter validation */
-   if (samount != score || samount <= 0 || list_of_sockets == NULL 
-         || list_of_cores == NULL) {
+   if (samount != score || samount <= 0 || list_of_sockets == nullptr
+         || list_of_cores == nullptr) {
       return false;
    }
 
    /* check if the topology which is used already is accessable */
-   if (logical_used_topology == NULL) {
+   if (logical_used_topology == nullptr) {
       /* we have no topology string at the moment (should be initialized before) */
       if (!get_execd_topology(&logical_used_topology, &logical_used_topology_length)) {
          /* couldn't even get the topology string */
@@ -1437,7 +1437,7 @@ bool free_topology(const char* topology, const int topology_length)
 *
 *  FUNCTION
 *     Creates the topology string of the host. The topology pointer has 
-*     to be initialized with NULL when calling this function.
+*     to be initialized with nullptr when calling this function.
 *
 *  OUTPUTS 
 *     char** topology - Pointer to the topology string. 
@@ -1447,7 +1447,7 @@ bool free_topology(const char* topology, const int topology_length)
 *     static bool - 
 *
 *  EXAMPLE
-*     char* topo = NULL;
+*     char* topo = nullptr;
 *     int length = 0;
 *     get_topology_solaris(&topo, &length);
 *     printf("topology: %s", topo);
@@ -1481,15 +1481,15 @@ static bool get_topology_solaris(char** topology, int* length)
    /* topology string */
    
    /* matrix with the kstat values */
-   int** matrix = NULL;
+   int** matrix = nullptr;
    int matrix_length = 0;
 
    /* vector with the amount of cores per socket */
-   int* cores_per_socket = NULL;
+   int* cores_per_socket = nullptr;
    int cores_per_socket_length = 0;
    
    /* vector with the amount of hw threads per core */
-   int* threads_per_core = NULL;
+   int* threads_per_core = nullptr;
    int threads_per_core_length = 0;
 
    /* counters */
@@ -1560,7 +1560,7 @@ static bool get_topology_solaris(char** topology, int* length)
    
    if ((*length) == 0) {
       /* we couldn't get the kernel kstat values therefore we have no topology */
-      (*topology) = sge_strdup(NULL, "NONE");
+      (*topology) = sge_strdup(nullptr, "NONE");
       (*length)   = 5;
       retval = false;
       sge_dstring_free(&d_topology);
@@ -1570,7 +1570,7 @@ static bool get_topology_solaris(char** topology, int* length)
       (*length) += 1;
                  
       /* free matrix, cores_per_socket, and threads_per_socket vector */
-      (*topology) = sge_strdup(NULL, sge_dstring_get_string(&d_topology));
+      (*topology) = sge_strdup(nullptr, sge_dstring_get_string(&d_topology));
 
       sge_dstring_free(&d_topology);
    }   
@@ -1593,7 +1593,7 @@ static bool get_topology_solaris(char** topology, int* length)
 *     The matrix contains all entries found in the kernel kstat 
 *     structure "cpu_info".
 *
-*     Important: matrix must be the address of a NULL pointer 
+*     Important: matrix must be the address of a nullptr pointer
 *                otherwise the function will not allocate new memory
 *    
 *  INPUTS
@@ -1604,7 +1604,7 @@ static bool get_topology_solaris(char** topology, int* length)
 *     bool - true when the matrix was initialized correctly otherwise false
 *
 *  EXAMPLE
-*     int** matrix = NULL; 
+*     int** matrix = nullptr;
 *     int length = 0;
 *     if (generate_chipID_coreID_matrix(&matrix, &length)) 
 *        for (int i = 0; i < length; i++)
@@ -1623,30 +1623,30 @@ bool generate_chipID_coreID_matrix(int*** matrix, int* length)
    bool success = true;
    
    /* kstat structures needed for accessing the kernel statistics */
-	kstat_t *cpu_info = NULL;
-   kstat_ctl_t *kstat = NULL;
-	kstat_named_t *kdata = NULL;
+	kstat_t *cpu_info = nullptr;
+   kstat_ctl_t *kstat = nullptr;
+	kstat_named_t *kdata = nullptr;
    int chip_id, core_id, processor_id;
 
    /* initialize length of matrix (width is always 3) */ 
    (*length) = 0;
-   if (*matrix != NULL) {
-      /* expecting a NULL pointer */
+   if (*matrix != nullptr) {
+      /* expecting a nullptr pointer */
       return false;
    }
 
    /* initialize kernel statistics facility */
    kstat = kstat_open();
-   if (kstat == NULL) {
+   if (kstat == nullptr) {
 		/* couldn't open kstat */
 		return false;
    }
 
    /* get pointer to the cpu_info kstat */
-   cpu_info = kstat_lookup(kstat, "cpu_info", -1, NULL);
+   cpu_info = kstat_lookup(kstat, "cpu_info", -1, nullptr);
 
    /* loop over all cpu_info entries */
-   for (; cpu_info != NULL; cpu_info = cpu_info->ks_next) {
+   for (; cpu_info != nullptr; cpu_info = cpu_info->ks_next) {
 
       /* if this is not the cpu_info module skip the entry */
       if (strcmp(cpu_info->ks_module, "cpu_info")) {
@@ -1654,14 +1654,14 @@ bool generate_chipID_coreID_matrix(int*** matrix, int* length)
       }
 
       /* update kstat with current cpu_info */
-		if (kstat_read(kstat, cpu_info, NULL) == -1) { 
+		if (kstat_read(kstat, cpu_info, nullptr) == -1) {
          /* unable to get the data from kernel */
          continue;
       }   
 
       /* get the chip_id which reflects the socket */
       kdata = kstat_data_lookup(cpu_info, "chip_id");
-      if (kdata == NULL) {
+      if (kdata == nullptr) {
          /* couldn't get data */ 
          continue;
       }   
@@ -1670,7 +1670,7 @@ bool generate_chipID_coreID_matrix(int*** matrix, int* length)
       /* get the core_id which reflects the core and threads 
          when multiple same core ids are on one chip_id */
       kdata = kstat_data_lookup(cpu_info, "core_id");
-      if (kdata == NULL) {
+      if (kdata == nullptr) {
          /* couldn't get data */ 
          continue;
       }
@@ -1685,7 +1685,7 @@ bool generate_chipID_coreID_matrix(int*** matrix, int* length)
 
       /* this function is not called often, so performance is not an issue here */
       *matrix = (int **) realloc(*matrix, (*length) * sizeof(int *));
-      if (*matrix == NULL) {
+      if (*matrix == nullptr) {
          /* out of memory */
          success = false;
          break;
@@ -1693,7 +1693,7 @@ bool generate_chipID_coreID_matrix(int*** matrix, int* length)
 
       /* get the memory for the two values */
       (*matrix)[(*length)-1] = (int *) calloc(3, sizeof(int));
-      if ((*matrix)[(*length)-1] != NULL) {
+      if ((*matrix)[(*length)-1] != nullptr) {
          /* write chip_id and core_id into the matrix */
          ((*matrix)[(*length)-1])[0] = chip_id;
          ((*matrix)[(*length)-1])[1] = core_id;
@@ -1754,7 +1754,7 @@ bool generate_chipID_coreID_matrix(int*** matrix, int* length)
 static int get_amount_of_sockets_from_matrix(const int** matrix, const int length)
 {
    int amount     = 0;
-   int* chip_ids  = NULL;
+   int* chip_ids  = nullptr;
 
    /* we don't care about the actual chip_ids here */
    if (get_chip_ids_from_matrix(matrix, length, &chip_ids, &amount) == true) {
@@ -1995,15 +1995,15 @@ static int get_amount_of_core_or_threads_from_matrix(const int** matrix, const i
    
    /* get the different (internal) chip_ids if necessary */ 
    /* get the different (internal) core_ids if necessary */
-   int* ids = NULL;
+   int* ids = nullptr;
    /* the amount of different chip_ids or core_ids in the matrix 
       (depending if amount of cores or amount of threads are searched) */
    int ids_length = 0;
    /* the amount of different core_ids per chip_id or amount of same core_ids*/
    int amount = 0;
    
-   /* check if output parameter is NULL pointer and if core is 1 or 0 */
-   if ((*core_or_threads) != NULL || core > 1 || core < 0) {
+   /* check if output parameter is nullptr pointer and if core is 1 or 0 */
+   if ((*core_or_threads) != nullptr || core > 1 || core < 0) {
       *size = 0;
       return -1;
    }
@@ -2156,7 +2156,7 @@ static int is_new_id(const int id)
    /* if id < 0 : delete all ids collected so far */
    const int MAX_ID_SIZE = 11;
    static int different_ids = 0;
-   static int* different_id_vector = NULL;
+   static int* different_id_vector = nullptr;
    /* counter */
    int i = 0;
    /* do we have the id already? */
@@ -2170,7 +2170,7 @@ static int is_new_id(const int id)
    } 
 
    /* allocate memory for the ids if necessary */
-   if (different_id_vector == NULL || (different_ids % (MAX_ID_SIZE-1) == 0)) {
+   if (different_id_vector == nullptr || (different_ids % (MAX_ID_SIZE-1) == 0)) {
       /* allocate a chunk of memory for the new ids */
       different_id_vector = (int *) realloc(different_id_vector, 
          (different_ids + MAX_ID_SIZE) * sizeof(int));
@@ -2201,8 +2201,8 @@ static int is_new_id_pair(const int id, const int id2)
    /* if id < 0 : delete all ids collected so far */
    const  int MAX_ID_SIZE            = 10;
    static int different_ids          = 0;
-   static int* different_id_vector_1 = NULL;
-   static int* different_id_vector_2 = NULL;
+   static int* different_id_vector_1 = nullptr;
+   static int* different_id_vector_2 = nullptr;
 
    /* counter */
    int i = 0;
@@ -2212,17 +2212,17 @@ static int is_new_id_pair(const int id, const int id2)
    if (id < 0) {
       /* reset everything */
       different_ids = 0;
-      if (different_id_vector_1 != NULL) {
+      if (different_id_vector_1 != nullptr) {
          sge_free(&different_id_vector_1);
       }
-      if (different_id_vector_2 != NULL) {
+      if (different_id_vector_2 != nullptr) {
          sge_free(&different_id_vector_2);
       }
       return 1;
    } 
 
    /* allocate memory for the ids if necessary */
-   if (different_id_vector_1 == NULL || different_id_vector_2 == NULL 
+   if (different_id_vector_1 == nullptr || different_id_vector_2 == nullptr
          || (different_ids % (MAX_ID_SIZE-1) == 0)) {
       /* allocate a chunk of memory for the new ids */
       different_id_vector_1 = (int *) realloc(different_id_vector_1,
@@ -2274,7 +2274,7 @@ static int is_new_id_pair(const int id, const int id2)
 static int get_total_amount_of_cores_solaris()
 {
    /* pointer to the topology matrix */
-   int** matrix = NULL;
+   int** matrix = nullptr;
    /* length of the matrix */
    int length = 0;
    /* total amount of cores found */
@@ -2284,7 +2284,7 @@ static int get_total_amount_of_cores_solaris()
    if (generate_chipID_coreID_matrix(&matrix, &length)) {
       int i = 0;
       int nr_cores = 0;
-      int* cores = NULL;
+      int* cores = nullptr;
 
       get_amount_of_cores_from_matrix((const int**)matrix, length, &cores, &nr_cores);
       
@@ -2327,7 +2327,7 @@ static int get_total_amount_of_cores_solaris()
 static int get_total_amount_of_sockets_solaris()
 {
    /* pointer to the topology matrix */
-   int** matrix = NULL;
+   int** matrix = nullptr;
    /* length of the matrix */
    int length = 0;
    /* total amount of sockets found */
@@ -2336,10 +2336,10 @@ static int get_total_amount_of_sockets_solaris()
    /* get the topology matrix out of kstat */
    if (generate_chipID_coreID_matrix(&matrix, &length)) {
       int i = 0;
-      int* cores = NULL;
+      int* cores = nullptr;
 
       for (i = 0; i < length; i++)
-         if (matrix[i] == NULL)
+         if (matrix[i] == nullptr)
            break;
 
       get_amount_of_cores_from_matrix((const int**)matrix, length, &cores, &sockets_total);
@@ -2408,7 +2408,7 @@ static bool get_processor_ids_solaris(const int** matrix, const int length, cons
    /* counter */
    int i;
 
-   if (matrix == NULL || length == 0 || pr_ids == NULL || (*pr_ids) != NULL || pr_length == NULL) {
+   if (matrix == nullptr || length == 0 || pr_ids == nullptr || (*pr_ids) != nullptr || pr_length == nullptr) {
       return false;
    }
 
@@ -2546,7 +2546,7 @@ static int get_core_id_from_logical_core_number_solaris(const int** matrix,
    int i = 0;
    int core_number = 0;
 
-   if (matrix == NULL || *matrix == NULL) {
+   if (matrix == nullptr || *matrix == nullptr) {
       /* this is not a matrix */ 
       return -1;
    }
@@ -2605,13 +2605,13 @@ bool get_linear_automatic_socket_core_list_and_account(const int amount,
    bool possible       = true;   
    
    /* temp topology string where accounting is done on     */
-   char* tmp_topo_busy = NULL;
+   char* tmp_topo_busy = nullptr;
 
    /* amount of cores we could account already             */
    int used_cores      = 0;
 
    /* the numbers of the sockets which are completely free */
-   int* sockets        = NULL;
+   int* sockets        = nullptr;
    int sockets_size    = 0;
 
    /* tmp counter */
@@ -2734,7 +2734,7 @@ static bool account_all_threads_after_core(char** topology, const int core_pos)
    size_t next_pos = core_pos + 1;
 
    /* check correctness of input values */
-   if (topology == NULL || (*topology) == NULL || core_pos < 0 || strlen(*topology) <= (size_t)core_pos) {
+   if (topology == nullptr || (*topology) == nullptr || core_pos < 0 || strlen(*topology) <= (size_t)core_pos) {
       return false;
    }
    
@@ -2845,7 +2845,7 @@ static bool get_free_sockets(const char* topology, const int topology_length,
    /* this amount of sockets we discovered already */ 
    int socket_number  = 0;
 
-   (*sockets) = NULL;
+   (*sockets) = nullptr;
    (*sockets_size) = 0;
 
    /* go through the whole topology and check if there are some sockets
@@ -2962,7 +2962,7 @@ bool get_striding_first_socket_first_core_and_account(const int amount, const in
       return false;
    }
 
-   if (logical_used_topology == NULL) {
+   if (logical_used_topology == nullptr) {
       /* we have no topology string at the moment (should be initialized before) */
       if (!get_execd_topology(&logical_used_topology, &logical_used_topology_length)) {
          /* couldn't even get the topology string */
@@ -3072,7 +3072,7 @@ static bool create_topology_used_per_job(char** accounted_topology, int* account
    
    /* copy string of current topology in use */
    (*accounted_topology) = (char *)calloc(logical_used_topology_length+1, sizeof(char));
-   if ((*accounted_topology) == NULL) {
+   if ((*accounted_topology) == nullptr) {
       /* out of memory */
       return false;
    }
@@ -3168,8 +3168,8 @@ static bool is_starting_point(const char* topo, const int length, const int pos,
    if (pos >= length) {
       return false;
    }
-   /* topology string must not be NULL */
-   if (topo == NULL) {
+   /* topology string must not be nullptr */
+   if (topo == nullptr) {
       return false;
    }
    /* amount must be 1 or greater */
@@ -3251,7 +3251,7 @@ static int get_position_in_topology(const int socket, const int core,
    int s = -1;
    int c = -1;
 
-   if (topology_length <= 0 || socket < 0 || core < 0 || topology == NULL) {
+   if (topology_length <= 0 || socket < 0 || core < 0 || topology == nullptr) {
       return false;
    }
    
@@ -3282,7 +3282,7 @@ bool initialize_topology() {
    
    /* this is done when execution daemon starts        */
    
-   if (logical_used_topology == NULL) {
+   if (logical_used_topology == nullptr) {
       if (get_execd_topology(&logical_used_topology, &logical_used_topology_length)) {
          return true;
       }
@@ -3326,7 +3326,7 @@ binding_print_to_string(const lListElem *this_elem, dstring *string) {
    bool ret = true;
 
    DENTER(BINDING_LAYER);
-   if (this_elem != NULL && string != NULL) {
+   if (this_elem != nullptr && string != nullptr) {
       const char *const strategy = lGetString(this_elem, BN_strategy);
       binding_type_t type = (binding_type_t)lGetUlong(this_elem, BN_type);
 
@@ -3376,7 +3376,7 @@ binding_parse_from_string(lListElem *this_elem, lList **answer_list, dstring *st
 
    DENTER(BINDING_LAYER);
 
-   if (this_elem != NULL && string != NULL) {
+   if (this_elem != nullptr && string != nullptr) {
       int amount = 0;
       int stepsize = 0;
       int firstsocket = 0;
@@ -3408,7 +3408,7 @@ binding_parse_from_string(lListElem *this_elem, lList **answer_list, dstring *st
          lSetUlong(this_elem, BN_parameter_n, (amount >= 0) ? amount : 0);
          lSetUlong(this_elem, BN_parameter_striding_step_size, (stepsize >= 0) ? stepsize : 0);
          
-         if (strstr(sge_dstring_get_string(&strategy), "explicit") != NULL) {
+         if (strstr(sge_dstring_get_string(&strategy), "explicit") != nullptr) {
             lSetString(this_elem, BN_parameter_explicit, sge_dstring_get_string(&socketcorelist));
          }
       }

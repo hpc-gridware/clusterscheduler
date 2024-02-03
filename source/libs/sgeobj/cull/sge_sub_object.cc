@@ -32,13 +32,15 @@
 
 
 /* auto generated file */
+#include <cstddef>
+
 #include "cull/cull.h"
 #include "sgeobj/cull/sge_all_listsL.h"
 
 const lDescr *
 object_get_subtype(int nm)
 {
-   const lDescr *ret = NULL;
+   const lDescr *ret = nullptr;
    switch (nm) {
       case JB_jid_request_list:
          ret = JRE_Type;

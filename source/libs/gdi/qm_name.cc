@@ -49,7 +49,7 @@
  * -> master_file
  * <- return -1  error in err_str
  *           0   host name of master in master_host
- *           don't copy error to err_str if err_str = NULL
+ *           don't copy error to err_str if err_str = nullptr
  *    master_file name of file which should point to act_qmaster file
  *    copy name of qmaster host to master_host
  *

@@ -67,12 +67,12 @@ extern int main(int argc, char **argv) {
    struct sigaction sa;
 
 
-   cl_com_handle_t *handle = NULL;
-   cl_com_message_t *message = NULL;
-   cl_com_endpoint_t *sender = NULL;
+   cl_com_handle_t *handle = nullptr;
+   cl_com_message_t *message = nullptr;
+   cl_com_endpoint_t *sender = nullptr;
 #if 0
-   cl_com_endpoint_t* clients[10] = { NULL, NULL, NULL, NULL, NULL,
-                                      NULL, NULL, NULL, NULL, NULL };
+   cl_com_endpoint_t* clients[10] = { nullptr, nullptr, nullptr, nullptr, nullptr,
+                                      nullptr, nullptr, nullptr, nullptr, nullptr };
 #endif
    int i;
    unsigned long max_connections;
@@ -86,19 +86,19 @@ extern int main(int argc, char **argv) {
    memset(&sa, 0, sizeof(sa));
    sa.sa_handler = sighandler_server;  /* one handler for all signals */
    sigemptyset(&sa.sa_mask);
-   sigaction(SIGINT, &sa, NULL);
-   sigaction(SIGTERM, &sa, NULL);
-   sigaction(SIGHUP, &sa, NULL);
-   sigaction(SIGPIPE, &sa, NULL);
+   sigaction(SIGINT, &sa, nullptr);
+   sigaction(SIGTERM, &sa, nullptr);
+   sigaction(SIGHUP, &sa, nullptr);
+   sigaction(SIGPIPE, &sa, nullptr);
 
 
    printf("commlib setup ...\n");
-   cl_com_setup_commlib(CL_RW_THREAD, (cl_log_t) atoi(argv[1]), NULL);
+   cl_com_setup_commlib(CL_RW_THREAD, (cl_log_t) atoi(argv[1]), nullptr);
 
    printf("setting up service on port %d\n", atoi(argv[2]));
-   handle = cl_com_create_handle(NULL, CL_CT_TCP, CL_CM_CT_MESSAGE, true, atoi(argv[2]), CL_TCP_DEFAULT, "server", 1, 2,
+   handle = cl_com_create_handle(nullptr, CL_CT_TCP, CL_CM_CT_MESSAGE, true, atoi(argv[2]), CL_TCP_DEFAULT, "server", 1, 2,
                                  0);
-   if (handle == NULL) {
+   if (handle == nullptr) {
       printf("could not get handle\n");
       exit(-1);
    }
@@ -125,10 +125,10 @@ extern int main(int argc, char **argv) {
 
       CL_LOG(CL_LOG_INFO, "main()");
 
-      gettimeofday(&now, NULL);
+      gettimeofday(&now, nullptr);
       cl_commlib_trigger(handle, 1);
-      ret_val = cl_commlib_receive_message(handle, NULL, NULL, 0, false, 0, &message, &sender);
-      if (message != NULL) {
+      ret_val = cl_commlib_receive_message(handle, nullptr, nullptr, 0, false, 0, &message, &sender);
+      if (message != nullptr) {
          ret_val = cl_commlib_send_message(handle,
                                            sender->comp_host,
                                            sender->comp_name,
@@ -148,7 +148,7 @@ extern int main(int argc, char **argv) {
 
          cl_com_free_message(&message);
          cl_com_free_endpoint(&sender);
-         message = NULL;
+         message = nullptr;
       }
    }
 
@@ -158,7 +158,7 @@ extern int main(int argc, char **argv) {
 
    printf("shutting down server ...\n");
    handle = cl_com_get_handle("server", 1);
-   if (handle == NULL) {
+   if (handle == nullptr) {
       printf("could not find handle\n");
       exit(1);
    } else {
@@ -166,14 +166,14 @@ extern int main(int argc, char **argv) {
    }
 
    while (cl_commlib_shutdown_handle(handle, true) == CL_RETVAL_MESSAGE_IN_BUFFER) {
-      message = NULL;
-      cl_commlib_receive_message(handle, NULL, NULL, 0, false, 0, &message, &sender);
+      message = nullptr;
+      cl_commlib_receive_message(handle, nullptr, nullptr, 0, false, 0, &message, &sender);
 
-      if (message != NULL) {
+      if (message != nullptr) {
          printf("ignoring message from \"%s\": size of message: %ld\n", sender->comp_host, message->message_length);
          cl_com_free_message(&message);
          cl_com_free_endpoint(&sender);
-         message = NULL;
+         message = nullptr;
       } else {
          break;
       }

@@ -42,22 +42,22 @@
 *     void FREE(char *cp) 
 *
 *  FUNCTION
-*     Replacement for sge_free(). Accepts NULL pointers.
-*     After a call of this macro "cp" will be NULL.
+*     Replacement for sge_free(). Accepts nullptr pointers.
+*     After a call of this macro "cp" will be nullptr.
 *
 *  INPUTS
 *     char *cp - pointer to a memory block 
 *
 *  RESULT
-*     char* - NULL
+*     char* - nullptr
 *
 *  SEE ALSO
 *     uti/stdlib/sge_free()
 ******************************************************************************/
 #define FREE(x) \
-   if (x != NULL) { \
+   if (x != nullptr) { \
       free((char *)x); \
-      x = NULL; \
+      x = nullptr; \
    }
 
 char *sge_malloc(int size);

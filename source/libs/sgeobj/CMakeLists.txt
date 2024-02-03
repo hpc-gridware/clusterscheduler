@@ -58,7 +58,7 @@ set(LIBRARY_SOURCES
       sge_utility.cc
       sge_var.cc
       str2nm_converter.cc
-      cull/sge_sub_object.c)
+      cull/sge_sub_object.cc)
 set(LIBRARY_INCLUDES ${SGE_INCLUDES} "./")
 
 add_library(${LIBRARY_NAME} STATIC ${LIBRARY_SOURCES})

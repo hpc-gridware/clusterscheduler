@@ -106,11 +106,11 @@ bool pe_is_matching(const lListElem *pe, const char *wildcard)
 *     const char *wildcard - Wildcard expression 
 *
 *  RESULT
-*     lListElem* - PE_Type object or NULL
+*     lListElem* - PE_Type object or nullptr
 *******************************************************************************/
 lListElem *pe_list_find_matching(const lList *pe_list, const char *wildcard) 
 {
-   lListElem *ret = NULL;
+   lListElem *ret = nullptr;
 
    for_each_rw (ret, pe_list) {
       if (pe_is_matching(ret, wildcard)) {
@@ -135,7 +135,7 @@ lListElem *pe_list_find_matching(const lList *pe_list, const char *wildcard)
 *     const char *pe_name - PE name 
 *
 *  RESULT
-*     lListElem* - PE_Type object or NULL
+*     lListElem* - PE_Type object or nullptr
 * 
 *  NOTES
 *     MT-NOTE: pe_list_locate() is MT safe
@@ -176,7 +176,7 @@ bool pe_is_referenced(const lListElem *pe, lList **answer_list,
    bool ret = false;
 
    {
-      const lListElem *job = NULL;
+      const lListElem *job = nullptr;
 
       for_each_ep(job, master_job_list) {
          if (job_is_pe_referenced(job, pe)) {
@@ -192,7 +192,7 @@ bool pe_is_referenced(const lListElem *pe, lList **answer_list,
       } 
    }
    if (!ret) {
-      const lListElem *cqueue = NULL, *cpl = NULL;
+      const lListElem *cqueue = nullptr, *cpl = nullptr;
 
       /* fix for bug 6422335
        * check cq configuration for pe references instead of qinstances
@@ -233,7 +233,7 @@ bool pe_is_referenced(const lListElem *pe, lList **answer_list,
 *  INPUTS
 *     lListElem *pep - the pe to check
 *     lList **alpp   - answer list pointer, if an answer shall be created, else
-*                      NULL - errors will in any case be output using the
+*                      nullptr - errors will in any case be output using the
 *                      Grid Engine error logging macros.
 *     int startup    - are we in qmaster startup phase?
 *
@@ -252,8 +252,8 @@ int pe_validate(lListElem *pep, lList **alpp, int startup, const lList *master_u
 
    DENTER(TOP_LAYER);
    pe_name = lGetString(pep, PE_name);
-   if (pe_name != NULL && verify_str_key(alpp, pe_name, MAX_VERIFY_STRING, MSG_OBJ_PE, KEY_TABLE) != STATUS_OK) {
-      if (alpp == NULL) {
+   if (pe_name != nullptr && verify_str_key(alpp, pe_name, MAX_VERIFY_STRING, MSG_OBJ_PE, KEY_TABLE) != STATUS_OK) {
+      if (alpp == nullptr) {
          ERROR((SGE_EVENT, MSG_PE_INVALIDCHARACTERINPE_S, pe_name));
       } else {
          answer_list_add_sprintf(alpp, STATUS_EEXIST, ANSWER_QUALITY_ERROR,
@@ -268,8 +268,8 @@ int pe_validate(lListElem *pep, lList **alpp, int startup, const lList *master_u
    /* -------- start_proc_args */
    NULL_OUT_NONE(pep, PE_start_proc_args);
    s = lGetString(pep, PE_start_proc_args);
-   if (s != NULL && replace_params(s, NULL, 0, pe_variables)) {
-      if (alpp == NULL) {
+   if (s != nullptr && replace_params(s, nullptr, 0, pe_variables)) {
+      if (alpp == nullptr) {
          ERROR((SGE_EVENT, MSG_PE_STARTPROCARGS_SS, pe_name, err_msg));
       } else {
          answer_list_add_sprintf(alpp, STATUS_EEXIST, ANSWER_QUALITY_ERROR,
@@ -281,8 +281,8 @@ int pe_validate(lListElem *pep, lList **alpp, int startup, const lList *master_u
    /* -------- stop_proc_args */
    NULL_OUT_NONE(pep, PE_stop_proc_args);
    s = lGetString(pep, PE_stop_proc_args);
-   if (s != NULL && replace_params(s, NULL, 0, pe_variables)) {
-      if (alpp == NULL) {
+   if (s != nullptr && replace_params(s, nullptr, 0, pe_variables)) {
+      if (alpp == nullptr) {
          ERROR((SGE_EVENT, MSG_PE_STOPPROCARGS_SS, pe_name, err_msg));
       } else {
          answer_list_add_sprintf(alpp, STATUS_EEXIST, ANSWER_QUALITY_ERROR,
@@ -298,8 +298,8 @@ int pe_validate(lListElem *pep, lList **alpp, int startup, const lList *master_u
 
    /* -------- allocation_rule */
    s = lGetString(pep, PE_allocation_rule);
-   if (s == NULL) {
-      if (alpp == NULL) {
+   if (s == nullptr) {
+      if (alpp == nullptr) {
          ERROR((SGE_EVENT, MSG_SGETEXT_MISSINGCULLFIELD_SS,
                lNm2Str(PE_allocation_rule), "validate_pe"));
       } else {
@@ -310,8 +310,8 @@ int pe_validate(lListElem *pep, lList **alpp, int startup, const lList *master_u
       DRETURN(STATUS_EEXIST);
    }
 
-   if (replace_params(s, NULL, 0, pe_alloc_rule_variables)) {
-      if (alpp == NULL) {
+   if (replace_params(s, nullptr, 0, pe_alloc_rule_variables)) {
+      if (alpp == nullptr) {
          ERROR((SGE_EVENT, MSG_PE_ALLOCRULE_SS, pe_name, err_msg));
       } else {
          answer_list_add_sprintf(alpp, STATUS_EEXIST, ANSWER_QUALITY_ERROR,
@@ -342,7 +342,7 @@ int pe_validate(lListElem *pep, lList **alpp, int startup, const lList *master_u
    /* -------- PE_qsort_args */
    NULL_OUT_NONE(pep, PE_qsort_args);
    if (startup) {
-      void *handle=NULL, *fn=NULL;
+      void *handle=nullptr, *fn=nullptr;
       const char *qsort_args = lGetString(pep, PE_qsort_args);
       if (qsort_args) {
          if ((ret=pe_validate_qsort_args(alpp, qsort_args, pep,
@@ -382,7 +382,7 @@ int pe_validate_slots(lList **alpp, u_long32 slots)
    DENTER(TOP_LAYER);
 
    if (slots > MAX_SEQNUM) {
-      if (alpp == NULL) {
+      if (alpp == nullptr) {
          ERROR((SGE_EVENT, MSG_ATTR_INVALID_ULONGVALUE_USUU, sge_u32c(slots), 
                 "slots", sge_u32c(0), sge_u32c(MAX_SEQNUM)));
       } else {
@@ -423,7 +423,7 @@ int pe_validate_urgency_slots(lList **answer_list, const char *s)
        strcasecmp(s, SGE_ATTRVAL_MAX) &&
        strcasecmp(s, SGE_ATTRVAL_AVG) &&
        !isdigit(s[0])) {
-      if (answer_list == NULL) {
+      if (answer_list == nullptr) {
          ERROR((SGE_EVENT, "rejecting invalid urgency_slots setting \"%s\"\n", 
                 s));
       } else {
@@ -469,7 +469,7 @@ bool pe_list_do_all_exist(const lList *pe_list, lList **answer_list,
                           const lList *pe_ref_list, bool ignore_make_pe)
 {
    bool ret = true;
-   const lListElem *pe_ref_elem = NULL;
+   const lListElem *pe_ref_elem = nullptr;
 
    DENTER(TOP_LAYER);
    for_each_ep(pe_ref_elem, pe_ref_list) {
@@ -478,7 +478,7 @@ bool pe_list_do_all_exist(const lList *pe_list, lList **answer_list,
       if (ignore_make_pe && !strcmp(pe_ref_string, "make")) { 
          continue;
       }
-      if (pe_list_locate(pe_list, pe_ref_string) == NULL) {
+      if (pe_list_locate(pe_list, pe_ref_string) == nullptr) {
          answer_list_add_sprintf(answer_list, STATUS_EEXIST, 
                                  ANSWER_QUALITY_ERROR, 
                                  MSG_PEREFDOESNOTEXIST_S, pe_ref_string);
@@ -523,13 +523,13 @@ pe_urgency_slots(const lListElem *pe, const char *urgency_slot_setting,
    DENTER(TOP_LAYER);
 
    if (!strcasecmp(urgency_slot_setting, SGE_ATTRVAL_MIN)) {
-      n = range_list_get_first_id(range_list, NULL);
+      n = range_list_get_first_id(range_list, nullptr);
    } else if (!strcasecmp(urgency_slot_setting, SGE_ATTRVAL_MAX)) {
       /* 
        * in case of an infinity slot range we use the 
        * maximum PE slot number instead 
        */
-      n = range_list_get_last_id(range_list, NULL);
+      n = range_list_get_last_id(range_list, nullptr);
       if (n == RANGE_INFINITY) {
          n = lGetUlong(pe, PE_slots);
       }
@@ -561,11 +561,11 @@ pe_urgency_slots(const lListElem *pe, const char *urgency_slot_setting,
 *
 *  INPUTS
 *     pe_name - name used for the PE_name attribute of the generic
-*               pe object. If NULL then "template" is the default name.
+*               pe object. If nullptr then "template" is the default name.
 *
 *  RESULT
-*     !NULL - Pointer to a new CULL object of type PE_Type
-*     NULL - Error
+*     !nullptr - Pointer to a new CULL object of type PE_Type
+*     nullptr - Error
 *
 *  NOTES
 *     MT-NOTE: pe_set_slots_used() is MT safe 
@@ -594,7 +594,7 @@ lListElem* pe_create_template(char *pe_name)
    lSetString(pep, PE_urgency_slots, SGE_ATTRVAL_MIN);
 
 #ifdef SGE_PQS_API
-   lSetString(pep, PE_qsort_args, NULL);
+   lSetString(pep, PE_qsort_args, nullptr);
 #endif
 
    DRETURN(pep);
@@ -732,8 +732,8 @@ int pe_validate_qsort_args(lList **alpp, const char *qsort_args, lListElem *pe,
 {
    const char *old_qsort_args = lGetString(pe, PE_qsort_args);
    char *lib_name, *fn_name;
-   struct saved_vars_s *cntx = NULL;
-   void *lib_handle=NULL, *fn_handle=NULL;
+   struct saved_vars_s *cntx = nullptr;
+   void *lib_handle=nullptr, *fn_handle=nullptr;
    int ret = STATUS_OK;
    const char *error;
 
@@ -755,7 +755,7 @@ int pe_validate_qsort_args(lList **alpp, const char *qsort_args, lListElem *pe,
    /* get library name */
    lib_name = sge_strtok_r(qsort_args, " ", &cntx); 
    if (!lib_name) {
-      if (alpp == NULL) {
+      if (alpp == nullptr) {
          ERROR((SGE_EVENT, "No d2yyynamic library specified for pe_qsort_args for PE %s\n",
                 lGetString(pe, PE_name)));
       } else {
@@ -769,7 +769,7 @@ int pe_validate_qsort_args(lList **alpp, const char *qsort_args, lListElem *pe,
    /* open library */
    lib_handle = dlopen(lib_name, RTLD_LAZY);
    if (!lib_handle) {
-      if (alpp == NULL) {
+      if (alpp == nullptr) {
          ERROR((SGE_EVENT, "Unable to open %s library in pe_qsort_args for PE %s - %s\n",
               lib_name, lGetString(pe, PE_name), dlerror()));
       } else {
@@ -782,9 +782,9 @@ int pe_validate_qsort_args(lList **alpp, const char *qsort_args, lListElem *pe,
    }
 
    /* get function name */
-   fn_name = sge_strtok_r(NULL, " ", &cntx);
+   fn_name = sge_strtok_r(nullptr, " ", &cntx);
    if (!fn_name) {
-      if (alpp == NULL) {
+      if (alpp == nullptr) {
          ERROR((SGE_EVENT, "No function name specified in pe_qsort_args for PE %s \n",
               lGetString(pe, PE_name)));
       } else {
@@ -797,8 +797,8 @@ int pe_validate_qsort_args(lList **alpp, const char *qsort_args, lListElem *pe,
 
    /* lookup function address */
    fn_handle = dlsym(lib_handle, fn_name);
-   if ((error = dlerror()) != NULL) {
-      if (alpp == NULL) {
+   if ((error = dlerror()) != nullptr) {
+      if (alpp == nullptr) {
          ERROR((SGE_EVENT, "Unable to locate %s symbol in %s library for pe_qsort_args in PE %s - %s\n",
               fn_name, lib_name, lGetString(pe, PE_name), error));
       } else {
@@ -854,7 +854,7 @@ pe_do_accounting_summary(const lListElem *pe)
     * the accounting_summary attribute has only a meaning
     * for tightly integrated jobs
     */
-   if (pe != NULL && lGetBool(pe, PE_control_slaves)) {
+   if (pe != nullptr && lGetBool(pe, PE_control_slaves)) {
       ret = lGetBool(pe, PE_accounting_summary) ? true : false;
    }
 

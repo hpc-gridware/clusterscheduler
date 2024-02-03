@@ -164,7 +164,7 @@ print_field(dstring *out, const item_t *item, const format_t *format)
                
                sge_dstring_init(&tc_dstring, tc_buffer, sizeof(tc_buffer));
                tc = (char *)sge_ctime32(&t, &tc_dstring);
-               if (tc != NULL && *tc != '\0') {
+               if (tc != nullptr && *tc != '\0') {
                   /* remove trailing linefeed */
                   tc[sge_dstring_strlen(&tc_dstring) - 1] = '\0';
                }
@@ -193,8 +193,8 @@ print_node(dstring *out, const lListElem *node,
            const char **names, const format_t *format,
            const lListElem *parent, const char *parent_node_names)
 {
-   if (node != NULL) {
-      const lList *usage=NULL, *ltusage=NULL;
+   if (node != nullptr) {
+      const lList *usage=nullptr, *ltusage=nullptr;
       int i, fields_printed=0;
       dstring node_name_dstring = DSTRING_INIT;
 
@@ -205,7 +205,7 @@ print_node(dstring *out, const lListElem *node,
        * we want to name the Root node simply /, instead of /Root 
        * but it is possible to create nodes /project1/Root
        */
-      if (parent == NULL) {
+      if (parent == nullptr) {
          sge_dstring_sprintf(&node_name_dstring, "/");
       } else {
          sge_dstring_sprintf(&node_name_dstring, "%s/%s", parent_node_names, lGetString(node, STN_name));
@@ -223,7 +223,7 @@ print_node(dstring *out, const lListElem *node,
       actual_share = lGetDouble(node, STN_actual_proportion);
       combined_usage = lGetDouble(node, STN_combined_usage);
 
-      if (lGetList(node, STN_children) == NULL && user && project) {
+      if (lGetList(node, STN_children) == nullptr && user && project) {
          const lList *projl = lGetList(user, UU_project);
          const lListElem *upp;
          if (projl) {
@@ -275,12 +275,12 @@ print_node(dstring *out, const lListElem *node,
       }
 
       /* print line prefix */
-      if (format->line_prefix != NULL) {
+      if (format->line_prefix != nullptr) {
          sge_dstring_append(out, format->line_prefix);
       }
 
       if (format->field_names) {
-         struct saved_vars_s *context = NULL;
+         struct saved_vars_s *context = nullptr;
          char *field;
 
          field = sge_strtok_r(format->field_names, ",", &context);
@@ -292,7 +292,7 @@ print_node(dstring *out, const lListElem *node,
                   break;
                }
             }
-            field = sge_strtok_r(NULL, ",", &context);
+            field = sge_strtok_r(nullptr, ",", &context);
          }
          sge_free_saved_vars(context);
       } else {
@@ -324,19 +324,19 @@ print_nodes(dstring *out, const lListElem *node, const lListElem *parent,
       project = prj_list_locate(projects, lGetString(node, STN_name));
    }
 
-   if (children == NULL) {
+   if (children == nullptr) {
       user = user_list_locate(users, lGetString(node, STN_name));
    } else {
-      user = NULL;
+      user = nullptr;
    }
 
-   if (group_nodes || (children == NULL)) {
+   if (group_nodes || (children == nullptr)) {
       print_node(out, node, user, project, names, format, parent, parent_node_names);
    }
 
    for_each_ep(child, children) {
       /* we want to name the Root node simply /, instead of /Root */
-      if (parent == NULL) {
+      if (parent == nullptr) {
          sge_dstring_sprintf(&node_name_dstring, "");
       } else {
          sge_dstring_sprintf(&node_name_dstring, "%s/%s", parent_node_names, lGetString(node, STN_name));
@@ -380,7 +380,7 @@ print_hdr(dstring *out, const format_t *format)
    sge_mutex_lock("sharetree_printing", __func__, __LINE__, &mtx);
    
    if (format->field_names) {
-      struct saved_vars_s *context = NULL;
+      struct saved_vars_s *context = nullptr;
       char *field;
 
       field = sge_strtok_r(format->field_names, ",", &context);
@@ -392,7 +392,7 @@ print_hdr(dstring *out, const format_t *format)
                break;
             }
          }
-         field = sge_strtok_r(NULL, ",", &context);
+         field = sge_strtok_r(nullptr, ",", &context);
       }
       sge_free_saved_vars(context);
    } else {
@@ -485,9 +485,9 @@ sge_sharetree_print(dstring *out, const lList *sharetree_in, const lList *users,
       curr_time = sge_get_gmt();
    }
 
-   _sge_calc_share_tree_proportions(sharetree, users, projects, NULL, curr_time);
+   _sge_calc_share_tree_proportions(sharetree, users, projects, nullptr, curr_time);
 
-   print_nodes(out, root, NULL, NULL, users, projects, group_nodes, names, format, "");
+   print_nodes(out, root, nullptr, nullptr, users, projects, group_nodes, names, format, "");
 
    sge_mutex_unlock("sharetree_printing", __func__, __LINE__, &mtx);
 

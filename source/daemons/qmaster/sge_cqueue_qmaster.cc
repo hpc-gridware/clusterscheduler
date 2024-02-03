@@ -111,7 +111,7 @@ qinstance_create(sge_gdi_ctx_class_t *ctx, const lListElem *cqueue, lList **answ
    const char *cqueue_name = lGetString(cqueue, CQ_name);
    const lList *centry_list = *object_type_get_master_list(SGE_TYPE_CENTRY);
    const lList *master_ehost_list = *object_type_get_master_list(SGE_TYPE_EXECHOST);
-   lListElem *ret = NULL;
+   lListElem *ret = nullptr;
    int index;
 
    DENTER(TOP_LAYER);
@@ -136,8 +136,8 @@ qinstance_create(sge_gdi_ctx_class_t *ctx, const lListElem *cqueue, lList **answ
       bool tmp_is_ambiguous = false;
       bool tmp_has_changed_conf_attr = false;
       bool tmp_has_changed_state_attr = false;
-      const char *matching_host_or_group = NULL;
-      const char *matching_group = NULL;
+      const char *matching_host_or_group = nullptr;
+      const char *matching_group = nullptr;
 
       qinstance_modify_attribute(ctx,
                                  ret, answer_list, cqueue,
@@ -151,7 +151,7 @@ qinstance_create(sge_gdi_ctx_class_t *ctx, const lListElem *cqueue, lList **answ
                                  &tmp_is_ambiguous,
                                  &tmp_has_changed_conf_attr,
                                  &tmp_has_changed_state_attr,
-                                 true, NULL, monitor, master_hgroup_list, master_cqueue_list);
+                                 true, nullptr, monitor, master_hgroup_list, master_cqueue_list);
 
       *is_ambiguous |= tmp_is_ambiguous;
 
@@ -159,7 +159,7 @@ qinstance_create(sge_gdi_ctx_class_t *ctx, const lListElem *cqueue, lList **answ
    }
 
    qinstance_set_conf_slots_used(ret);
-   qinstance_debit_consumable(ret, NULL, centry_list, 0, true, NULL);
+   qinstance_debit_consumable(ret, nullptr, centry_list, 0, true, nullptr);
 
    /*
     * Change qinstance state
@@ -195,15 +195,15 @@ cqueue_add_qinstances(sge_gdi_ctx_class_t *ctx, lListElem *cqueue, lList **answe
    bool ret = true;
 
    DENTER(TOP_LAYER);
-   if (cqueue != NULL && add_hosts != NULL) {
-      const lListElem *href = NULL;
+   if (cqueue != nullptr && add_hosts != nullptr) {
+      const lListElem *href = nullptr;
 
       for_each_ep(href, add_hosts) {
          const char *hostname = lGetHost(href, HR_name);
          lList *list = lGetListRW(cqueue, CQ_qinstances);
          lListElem *qinstance = lGetElemHostRW(list, QU_qhostname, hostname);
 
-         if (qinstance != NULL) {
+         if (qinstance != nullptr) {
             if (qinstance_state_is_orphaned(qinstance)) {
                sge_qmaster_qinstance_state_set_orphaned(qinstance, false);
                lSetUlong(qinstance, QU_tag, SGE_QI_TAG_MOD);
@@ -219,7 +219,7 @@ cqueue_add_qinstances(sge_gdi_ctx_class_t *ctx, lListElem *cqueue, lList **answe
          } else {
             bool is_ambiguous = false;
 
-            if (list == NULL) {
+            if (list == nullptr) {
                list = lCreateList("", QU_Type);
                lSetList(cqueue, CQ_qinstances, list);
             }
@@ -242,15 +242,15 @@ cqueue_mark_qinstances(lListElem *cqueue, lList **answer_list, lList *del_hosts)
    bool ret = true;
 
    DENTER(TOP_LAYER);
-   if (cqueue != NULL) {
+   if (cqueue != nullptr) {
       const lList *qinstance_list = lGetList(cqueue, CQ_qinstances);
-      lListElem *qinstance = NULL;
+      lListElem *qinstance = nullptr;
 
       for_each_rw(qinstance, qinstance_list) {
          const char *hostname = lGetHost(qinstance, QU_qhostname);
          const lListElem *href = lGetElemHost(del_hosts, HR_name, hostname);
 
-         if (href != NULL) {
+         if (href != nullptr) {
             if (qinstance_slots_used(qinstance) > 0 || qinstance_slots_reserved(qinstance) > 0) {
                /*
                 * Jobs are currently running in this queue. Therefore
@@ -276,7 +276,7 @@ cqueue_mod_attributes(lListElem *cqueue, lList **answer_list,
    bool ret = true;
 
    DENTER(TOP_LAYER);
-   if (cqueue != NULL && reduced_elem != NULL) {
+   if (cqueue != nullptr && reduced_elem != nullptr) {
       const char *cqueue_name = lGetString(cqueue, CQ_name);
       int index = 0;
 
@@ -307,16 +307,16 @@ cqueue_mod_hostlist(lListElem *cqueue, lList **answer_list, lListElem *reduced_e
    const lList *master_hgroup_list = *object_type_get_master_list(SGE_TYPE_HGROUP);
 
    DENTER(TOP_LAYER);
-   if (cqueue != NULL && reduced_elem != NULL) {
+   if (cqueue != nullptr && reduced_elem != nullptr) {
       int pos = lGetPosViaElem(reduced_elem, CQ_hostlist, SGE_NO_ABORT);
 
       if (pos >= 0) {
          const char *cqueue_name = lGetString(cqueue, CQ_name);
          lList *list = lGetPosList(reduced_elem, pos);
          lList *old_href_list = lCopyList("", lGetList(cqueue, CQ_hostlist));
-         const lList *href_list = NULL;
-         lList *add_groups = NULL;
-         lList *rem_groups = NULL;
+         const lList *href_list = nullptr;
+         lList *add_groups = nullptr;
+         lList *rem_groups = nullptr;
 
          if (ret) {
             ret &= href_list_resolve_hostnames(list, answer_list, true);
@@ -325,7 +325,7 @@ cqueue_mod_hostlist(lListElem *cqueue, lList **answer_list, lListElem *reduced_e
             ret = attr_mod_sub_list(answer_list, cqueue, CQ_hostlist, HR_name,
                                     reduced_elem, sub_command,
                                     SGE_ATTR_HOST_LIST,
-                                    cqueue_name, 0, NULL);
+                                    cqueue_name, 0, nullptr);
             href_list = lGetList(cqueue, CQ_hostlist);
          }
          if (ret) {
@@ -333,7 +333,7 @@ cqueue_mod_hostlist(lListElem *cqueue, lList **answer_list, lListElem *reduced_e
                                        add_hosts, rem_hosts, &add_groups,
                                        &rem_groups);
          }
-         if (ret && add_groups != NULL) {
+         if (ret && add_groups != nullptr) {
             ret &= hgroup_list_exists(master_hgroup_list, answer_list, add_groups);
          }
          if (ret) {
@@ -351,15 +351,15 @@ cqueue_mod_hostlist(lListElem *cqueue, lList **answer_list, lListElem *reduced_e
           *   - removed hosts are not part of the new hostlist
           */
          if (ret) {
-            lList *tmp_hosts = NULL;
+            lList *tmp_hosts = nullptr;
 
             ret &= href_list_find_all_references(old_href_list, answer_list,
-                                                 master_hgroup_list, &tmp_hosts, NULL);
+                                                 master_hgroup_list, &tmp_hosts, nullptr);
             ret &= href_list_remove_existing(add_hosts, answer_list, tmp_hosts);
             lFreeList(&tmp_hosts);
 
             ret &= href_list_find_all_references(href_list, answer_list,
-                                                 master_hgroup_list, &tmp_hosts, NULL);
+                                                 master_hgroup_list, &tmp_hosts, nullptr);
             ret &= href_list_remove_existing(rem_hosts, answer_list, tmp_hosts);
             lFreeList(&tmp_hosts);
          }
@@ -390,9 +390,9 @@ cqueue_mod_qinstances(sge_gdi_ctx_class_t *ctx, lListElem *cqueue, lList **answe
 
    DENTER(TOP_LAYER);
 
-   if (cqueue != NULL && reduced_elem != NULL) {
+   if (cqueue != nullptr && reduced_elem != nullptr) {
       const lList *qinstance_list = lGetList(cqueue, CQ_qinstances);
-      lListElem *qinstance = NULL;
+      lListElem *qinstance = nullptr;
 
       /*
        * Try to find changes for all qinstances ...
@@ -411,7 +411,7 @@ cqueue_mod_qinstances(sge_gdi_ctx_class_t *ctx, lListElem *cqueue, lList **answe
           * Set full name of QI if it is not set
           */
          if (refresh_all_values &&
-             lGetString(qinstance, QU_full_name) == NULL) {
+             lGetString(qinstance, QU_full_name) == nullptr) {
             qinstance_set_full_name(qinstance);
          }
 
@@ -427,8 +427,8 @@ cqueue_mod_qinstances(sge_gdi_ctx_class_t *ctx, lListElem *cqueue, lList **answe
 
          while (ret && !is_del &&
                 cqueue_attribute_array[index].cqueue_attr != NoName) {
-            const char *matching_host_or_group = NULL;
-            const char *matching_group = NULL;
+            const char *matching_host_or_group = nullptr;
+            const char *matching_group = nullptr;
 
             int pos = lGetPosViaElem(reduced_elem,
                                      cqueue_attribute_array[index].cqueue_attr, SGE_NO_ABORT);
@@ -536,7 +536,7 @@ cqueue_mod_qinstances(sge_gdi_ctx_class_t *ctx, lListElem *cqueue, lList **answe
 
             for_each_rw(ar, master_ar_list) {
                if (lGetElemStr(lGetList(ar, AR_granted_slots), JG_qname, qinstance_name)) {
-                  if (!sge_ar_have_users_access(NULL, ar, lGetString(qinstance, QU_full_name),
+                  if (!sge_ar_have_users_access(nullptr, ar, lGetString(qinstance, QU_full_name),
                                                 lGetList(qinstance, QU_acl), lGetList(qinstance, QU_xacl),
                                                 master_userset_list)) {
                      ERROR((SGE_EVENT, MSG_PARSE_MOD3_REJECTED_DUE_TO_AR_SU, SGE_ATTR_USER_LISTS, sge_u32c(
@@ -588,8 +588,8 @@ cqueue_mod(sge_gdi_ctx_class_t *ctx, lList **answer_list, lListElem *cqueue, lLi
            const char *remote_user, const char *remote_host, gdi_object_t *object, int sub_command,
            monitoring_t *monitor) {
    bool ret = true;
-   lList *add_hosts = NULL;
-   lList *rem_hosts = NULL;
+   lList *add_hosts = nullptr;
+   lList *rem_hosts = nullptr;
    const lList *master_calendar_list = *object_type_get_master_list(SGE_TYPE_CALENDAR);
    const lList *master_ckpt_list = *object_type_get_master_list(SGE_TYPE_CKPT);
    const lList *master_pe_list = *object_type_get_master_list(SGE_TYPE_PE);
@@ -666,7 +666,7 @@ cqueue_mod(sge_gdi_ctx_class_t *ctx, lList **answer_list, lListElem *cqueue, lLi
     * Now we have to add/mod/del all qinstances
     */
    if (ret) {
-      bool refresh_all_values = ((add_hosts != NULL) || (rem_hosts != NULL)) ? true : false;
+      bool refresh_all_values = ((add_hosts != nullptr) || (rem_hosts != nullptr)) ? true : false;
 
       ret &= cqueue_handle_qinstances(ctx,
                                       cqueue, answer_list, reduced_elem,
@@ -710,7 +710,7 @@ cqueue_success(sge_gdi_ctx_class_t *ctx, lListElem *cqueue, lListElem *old_cqueu
     * CQ modify or add event
     */
    sge_add_event(0, old_cqueue ? sgeE_CQUEUE_MOD : sgeE_CQUEUE_ADD, 0, 0,
-                 lGetString(cqueue, CQ_name), NULL, NULL, cqueue);
+                 lGetString(cqueue, CQ_name), nullptr, nullptr, cqueue);
 
    /*
     * QI modify, add or delete event. Finalize operation.
@@ -737,7 +737,7 @@ cqueue_success(sge_gdi_ctx_class_t *ctx, lListElem *cqueue, lListElem *old_cqueu
          /* in case the thresholds are set to none, we have to unsuspend all jobs because
             the scheduler is not able to do that. If the suspend threshold is still set; 
             just changed, the scheduler can easily deal with it.*/
-         if (lGetList(qinstance, QU_suspend_thresholds) == NULL) {
+         if (lGetList(qinstance, QU_suspend_thresholds) == nullptr) {
             for_each_rw(job, master_job_list) {
                const lList *ja_tasks = lGetList(job, JB_ja_tasks);
                lListElem *ja_task;
@@ -764,10 +764,10 @@ cqueue_success(sge_gdi_ctx_class_t *ctx, lListElem *cqueue, lListElem *old_cqueu
 
                         lSetUlong(ja_task, JAT_state, state);
 
-                        sge_event_spool(ctx, NULL, 0, sgeE_JATASK_MOD,
+                        sge_event_spool(ctx, nullptr, 0, sgeE_JATASK_MOD,
                                         lGetUlong(job, JB_job_number),
-                                        lGetUlong(ja_task, JAT_task_number), NULL, NULL, NULL,
-                                        job, ja_task, NULL, true, true);
+                                        lGetUlong(ja_task, JAT_task_number), nullptr, nullptr, nullptr,
+                                        job, ja_task, nullptr, true, true);
 
                      }
                   }
@@ -778,9 +778,9 @@ cqueue_success(sge_gdi_ctx_class_t *ctx, lListElem *cqueue, lListElem *old_cqueu
          if (is_qinstance_mod) {
             const char *hostname = lGetHost(qinstance, QU_qhostname);
             const char *cqueue_name = lGetString(qinstance, QU_qname);
-            sge_event_spool(ctx, NULL, 0, sgeE_QINSTANCE_MOD,
-                            0, 0, cqueue_name, hostname, NULL,
-                            qinstance, NULL, NULL, true, true);
+            sge_event_spool(ctx, nullptr, 0, sgeE_QINSTANCE_MOD,
+                            0, 0, cqueue_name, hostname, nullptr,
+                            qinstance, nullptr, nullptr, true, true);
          }
       }
    }
@@ -791,8 +791,8 @@ cqueue_success(sge_gdi_ctx_class_t *ctx, lListElem *cqueue, lListElem *old_cqueu
 void
 cqueue_commit(sge_gdi_ctx_class_t *ctx, lListElem *cqueue) {
    lList *qinstances = lGetListRW(cqueue, CQ_qinstances);
-   lListElem *next_qinstance = NULL;
-   lListElem *qinstance = NULL;
+   lListElem *next_qinstance = nullptr;
+   lListElem *qinstance = nullptr;
 
    DENTER(TOP_LAYER);
 
@@ -814,15 +814,15 @@ cqueue_commit(sge_gdi_ctx_class_t *ctx, lListElem *cqueue) {
 
       if (tag == SGE_QI_TAG_ADD) {
          sge_add_event(0, sgeE_QINSTANCE_ADD, 0, 0,
-                       name, hostname, NULL, qinstance);
+                       name, hostname, nullptr, qinstance);
       } else if (tag == SGE_QI_TAG_MOD ||
                  tag == SGE_QI_TAG_MOD_ONLY_CONFIG) {
          sge_add_event(0, sgeE_QINSTANCE_MOD, 0, 0,
-                       name, hostname, NULL, qinstance);
+                       name, hostname, nullptr, qinstance);
       } else if (tag == SGE_QI_TAG_DEL) {
-         sge_event_spool(ctx, NULL, 0, sgeE_QINSTANCE_DEL,
+         sge_event_spool(ctx, nullptr, 0, sgeE_QINSTANCE_DEL,
                          0, 0, name, hostname,
-                         NULL, NULL, NULL, NULL, true, true);
+                         nullptr, nullptr, nullptr, nullptr, true, true);
 
          /*
           * Now we can remove the qinstance.
@@ -831,7 +831,7 @@ cqueue_commit(sge_gdi_ctx_class_t *ctx, lListElem *cqueue) {
       }
    }
    if (lGetNumberOfElem(qinstances) == 0) {
-      lSetList(cqueue, CQ_qinstances, NULL);
+      lSetList(cqueue, CQ_qinstances, nullptr);
    }
    DRETURN_VOID;
 }
@@ -843,7 +843,7 @@ cqueue_spool(sge_gdi_ctx_class_t *ctx, lList **answer_list, lListElem *cqueue, g
    lListElem *qinstance;
    dstring key_dstring = DSTRING_INIT;
    bool dbret;
-   lList *spool_answer_list = NULL;
+   lList *spool_answer_list = nullptr;
    bool job_spooling = bootstrap_get_job_spooling();
 
    DENTER(TOP_LAYER);
@@ -895,15 +895,15 @@ cqueue_del(sge_gdi_ctx_class_t *ctx, lListElem *this_elem, lList **answer_list, 
 
    DENTER(TOP_LAYER);
 
-   if (this_elem != NULL && remote_user != NULL && remote_host != NULL) {
+   if (this_elem != nullptr && remote_user != nullptr && remote_host != nullptr) {
       const char *name = lGetString(this_elem, CQ_name);
 
-      if (name != NULL) {
+      if (name != nullptr) {
          lListElem *cqueue = cqueue_list_locate(master_cqueue_list, name);
 
-         if (cqueue != NULL) {
+         if (cqueue != nullptr) {
             const lList *qinstances = lGetList(cqueue, CQ_qinstances);
-            lListElem *qinstance = NULL;
+            lListElem *qinstance = nullptr;
             const char *cq_name = lGetString(cqueue, CQ_name);
             dstring dir = DSTRING_INIT;
             bool do_del = true;
@@ -955,20 +955,20 @@ cqueue_del(sge_gdi_ctx_class_t *ctx, lListElem *this_elem, lList **answer_list, 
                   sge_dstring_sprintf(&key, "%s/%s", cq_name, qi_name);
                   if (sge_event_spool(ctx, answer_list, 0, sgeE_QINSTANCE_DEL,
                                       0, 0, cq_name, qi_name,
-                                      NULL, NULL, NULL, NULL, true, true)) { ;
+                                      nullptr, nullptr, nullptr, nullptr, true, true)) { ;
                   }
                }
                sge_dstring_free(&key);
-               sge_rmdir(sge_dstring_get_string(&dir), NULL);
+               sge_rmdir(sge_dstring_get_string(&dir), nullptr);
                sge_dstring_free(&dir);
 
                /*
                 * delete CQ
                 */
                if (sge_event_spool(ctx, answer_list, 0, sgeE_CQUEUE_DEL,
-                                   0, 0, name, NULL, NULL,
-                                   NULL, NULL, NULL, true, true)) {
-                  cqueue_update_categories(NULL, cqueue);
+                                   0, 0, name, nullptr, nullptr,
+                                   nullptr, nullptr, nullptr, true, true)) {
+                  cqueue_update_categories(nullptr, cqueue);
                   lRemoveElem(master_cqueue_list, &cqueue);
 
                   INFO((SGE_EVENT, MSG_SGETEXT_REMOVEDFROMLIST_SSSS,
@@ -1019,11 +1019,11 @@ cqueue_del_all_orphaned(sge_gdi_ctx_class_t *ctx, lListElem *this_elem, lList **
 
    DENTER(TOP_LAYER);
 
-   if (this_elem != NULL) {
+   if (this_elem != nullptr) {
       dstring dir = DSTRING_INIT;
       const char *cq_name = lGetString(this_elem, CQ_name);
       lList *qinstance_list = lGetListRW(this_elem, CQ_qinstances);
-      lListElem *qinstance = NULL;
+      lListElem *qinstance = nullptr;
 
       if (ehname) {
          if ((qinstance = lGetElemHostRW(qinstance_list, QU_qhostname, ehname)) &&
@@ -1038,18 +1038,18 @@ cqueue_del_all_orphaned(sge_gdi_ctx_class_t *ctx, lListElem *this_elem, lList **
             sge_dstring_sprintf(&dir, "%s/%s", QINSTANCES_DIR, cq_name);
             if (sge_event_spool(ctx, answer_list, 0, sgeE_QINSTANCE_DEL,
                                 0, 0, cq_name, qi_name,
-                                NULL, NULL, NULL, NULL, true, true)) {
+                                nullptr, nullptr, nullptr, nullptr, true, true)) {
                lRemoveElem(qinstance_list, &qinstance);
                if (lGetNumberOfElem(qinstance_list) == 0) {
-                  sge_rmdir(sge_dstring_get_string(&dir), NULL);
+                  sge_rmdir(sge_dstring_get_string(&dir), nullptr);
                }
             }
          }
       } else {
-         lListElem *next_qinstance = NULL;
+         lListElem *next_qinstance = nullptr;
 
          next_qinstance = lFirstRW(qinstance_list);
-         while ((qinstance = next_qinstance) != NULL) {
+         while ((qinstance = next_qinstance) != nullptr) {
             next_qinstance = lNextRW(qinstance);
 
             if (qinstance_state_is_orphaned(qinstance) &&
@@ -1063,10 +1063,10 @@ cqueue_del_all_orphaned(sge_gdi_ctx_class_t *ctx, lListElem *this_elem, lList **
                sge_dstring_sprintf(&dir, "%s/%s", QINSTANCES_DIR, cq_name);
                if (sge_event_spool(ctx, answer_list, 0, sgeE_QINSTANCE_DEL,
                                    0, 0, cq_name, qi_name,
-                                   NULL, NULL, NULL, NULL, true, true)) {
+                                   nullptr, nullptr, nullptr, nullptr, true, true)) {
                   lRemoveElem(qinstance_list, &qinstance);
                   if (lGetNumberOfElem(qinstance_list) == 0) {
-                     sge_rmdir(sge_dstring_get_string(&dir), NULL);
+                     sge_rmdir(sge_dstring_get_string(&dir), nullptr);
                   }
                }
             }
@@ -1103,21 +1103,21 @@ cqueue_list_del_all_orphaned(sge_gdi_ctx_class_t *ctx, lList *this_list, lList *
 
 void
 cqueue_list_set_unknown_state(lList *this_list, const char *hostname, bool send_events, bool is_unknown) {
-   const lListElem *cqueue = NULL;
+   const lListElem *cqueue = nullptr;
 
    for_each_ep(cqueue, this_list) {
-      if (hostname != NULL) {
+      if (hostname != nullptr) {
          const lList *qinstance_list = lGetList(cqueue, CQ_qinstances);
          lListElem *qinstance = lGetElemHostRW(qinstance_list, QU_qhostname, hostname);
 
-         if (qinstance != NULL && qinstance_state_is_unknown(qinstance) != is_unknown) {
+         if (qinstance != nullptr && qinstance_state_is_unknown(qinstance) != is_unknown) {
             sge_qmaster_qinstance_state_set_unknown(qinstance, is_unknown);
             if (send_events) {
                qinstance_add_event(qinstance, sgeE_QINSTANCE_MOD);
             }
          }
       } else {
-         lListElem *qinstance = NULL;
+         lListElem *qinstance = nullptr;
 
          for_each_rw (qinstance, lGetList(cqueue, CQ_qinstances)) {
             if (qinstance_state_is_unknown(qinstance) != is_unknown) {
@@ -1284,7 +1284,7 @@ cqueue_diff_usersets(const lListElem *new_cqueue, const lListElem *old_cqueue, l
 *******************************************************************************/
 static void
 cqueue_update_categories(const lListElem *new_cq, const lListElem *old_cq) {
-   lList *old_lp = NULL, *new_lp = NULL;
+   lList *old_lp = nullptr, *new_lp = nullptr;
 
    cqueue_diff_projects(new_cq, old_cq, &new_lp, &old_lp);
    project_update_categories(new_lp, old_lp);
@@ -1321,13 +1321,13 @@ cqueue_update_categories(const lListElem *new_cq, const lListElem *old_cq) {
 *******************************************************************************/
 static void
 qinstance_check_unknown_state(lListElem *this_elem, const lList *master_exechost_list) {
-   const char *hostname = NULL;
-   lListElem *host = NULL;
+   const char *hostname = nullptr;
+   lListElem *host = nullptr;
 
    DENTER(TOP_LAYER);
    hostname = lGetHost(this_elem, QU_qhostname);
    host = host_list_locate(master_exechost_list, hostname);
-   if (host != NULL) {
+   if (host != nullptr) {
       u_long32 last_heard = lGetUlong(host, EH_lt_heard_from);
 
       if (last_heard != 0) {

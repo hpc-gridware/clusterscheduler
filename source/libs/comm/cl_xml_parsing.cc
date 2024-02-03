@@ -76,14 +76,14 @@ static const cl_xml_sequence_t cl_com_sequence_array[CL_XML_SEQUENCE_ARRAY_SIZE]
 static bool cl_xml_parse_is_version(const char *buffer, unsigned long start, unsigned long buffer_length);
 
 static char *cl_xml_parse_version(char *charptr, unsigned long buffer_length) {
-   char *ret = NULL;
-   char *sign = NULL;
+   char *ret = nullptr;
+   char *sign = nullptr;
 
    charptr[buffer_length - 1] = '\0';
    if ((sign = strchr(charptr, '"'))) {
       int size = sign - charptr;
       ret = sge_malloc(sizeof(char) * (size + 1));
-      if (ret != NULL) {
+      if (ret != nullptr) {
          ret = strncpy(ret, charptr, size);
          ret[size] = '\0';
       }
@@ -144,7 +144,7 @@ int cl_com_transformXML2String(const char *input, char **output) {
    int seq_count;
    int matched;
 
-   if (input == NULL || output == NULL || *output != NULL) {
+   if (input == nullptr || output == nullptr || *output != nullptr) {
       return CL_RETVAL_PARAMS;
    }
 
@@ -153,7 +153,7 @@ int cl_com_transformXML2String(const char *input, char **output) {
    /* since output is shorter than input we don't calculate the output length */
    output_length = input_length;
    *output = sge_malloc((sizeof(char) * (1 + output_length)));
-   if (*output == NULL) {
+   if (*output == nullptr) {
       return CL_RETVAL_MALLOC;
    }
 
@@ -239,7 +239,7 @@ int cl_com_transformString2XML(const char *input, char **output) {
    int used = 0;
    int malloced_size;
 
-   if (input == NULL || output == NULL || *output != NULL) {
+   if (input == nullptr || output == nullptr || *output != nullptr) {
       return CL_RETVAL_PARAMS;
    }
 
@@ -332,7 +332,7 @@ const char *cl_com_get_mih_df_string(cl_xml_mih_data_format_t df) {
 #define __CL_FUNCTION__ "cl_com_free_gmsh_header()"
 
 int cl_com_free_gmsh_header(cl_com_GMSH_t **header) {
-   if (header == NULL || *header == NULL) {
+   if (header == nullptr || *header == nullptr) {
       return CL_RETVAL_PARAMS;
    }
    sge_free(header);
@@ -345,10 +345,10 @@ int cl_com_free_gmsh_header(cl_com_GMSH_t **header) {
 #define __CL_FUNCTION__ "cl_com_free_cm_message()"
 
 int cl_com_free_cm_message(cl_com_CM_t **message) {   /* CR check */
-   if (message == NULL || *message == NULL) {
+   if (message == nullptr || *message == nullptr) {
       return CL_RETVAL_PARAMS;
    }
-   if ((*message)->version != NULL) {
+   if ((*message)->version != nullptr) {
       sge_free(&((*message)->version));
    }
    cl_com_free_endpoint(&((*message)->rdata));
@@ -359,7 +359,7 @@ int cl_com_free_cm_message(cl_com_CM_t **message) {   /* CR check */
 }
 
 int cl_com_free_mih_message(cl_com_MIH_t **message) {   /* CR check */
-   if (message == NULL || *message == NULL) {
+   if (message == nullptr || *message == nullptr) {
       return CL_RETVAL_PARAMS;
    }
    sge_free(&((*message)->version));
@@ -368,7 +368,7 @@ int cl_com_free_mih_message(cl_com_MIH_t **message) {   /* CR check */
 }
 
 int cl_com_free_am_message(cl_com_AM_t **message) {   /* CR check */
-   if (message == NULL || *message == NULL) {
+   if (message == nullptr || *message == nullptr) {
       return CL_RETVAL_PARAMS;
    }
    sge_free(&((*message)->version));
@@ -377,7 +377,7 @@ int cl_com_free_am_message(cl_com_AM_t **message) {   /* CR check */
 }
 
 int cl_com_free_sim_message(cl_com_SIM_t **message) {
-   if (message == NULL || *message == NULL) {
+   if (message == nullptr || *message == nullptr) {
       return CL_RETVAL_PARAMS;
    }
    sge_free(&((*message)->version));
@@ -386,7 +386,7 @@ int cl_com_free_sim_message(cl_com_SIM_t **message) {
 }
 
 int cl_com_free_sirm_message(cl_com_SIRM_t **message) {
-   if (message == NULL || *message == NULL) {
+   if (message == nullptr || *message == nullptr) {
       return CL_RETVAL_PARAMS;
    }
    sge_free(&((*message)->version));
@@ -396,7 +396,7 @@ int cl_com_free_sirm_message(cl_com_SIRM_t **message) {
 }
 
 int cl_com_free_ccm_message(cl_com_CCM_t **message) {   /* CR check */
-   if (message == NULL || *message == NULL) {
+   if (message == nullptr || *message == nullptr) {
       return CL_RETVAL_PARAMS;
    }
    sge_free(&((*message)->version));
@@ -410,7 +410,7 @@ int cl_com_free_ccm_message(cl_com_CCM_t **message) {   /* CR check */
 #define __CL_FUNCTION__ "cl_com_free_ccrm_message()"
 
 int cl_com_free_ccrm_message(cl_com_CCRM_t **message) {   /* CR check */
-   if (message == NULL || *message == NULL) {
+   if (message == nullptr || *message == nullptr) {
       return CL_RETVAL_PARAMS;
    }
    sge_free(&((*message)->version));
@@ -425,7 +425,7 @@ int cl_com_free_ccrm_message(cl_com_CCRM_t **message) {   /* CR check */
 #define __CL_FUNCTION__ "cl_com_free_crm_message()"
 
 int cl_com_free_crm_message(cl_com_CRM_t **message) {   /* CR check */
-   if (message == NULL || *message == NULL) {
+   if (message == nullptr || *message == nullptr) {
       return CL_RETVAL_PARAMS;
    }
    sge_free(&((*message)->version));
@@ -452,7 +452,7 @@ int cl_xml_parse_GMSH(unsigned char *buffer, unsigned long buffer_length, cl_com
    unsigned long dl_end = 0;
    bool closing_tag;
 
-   if (header == NULL || buffer == NULL) {
+   if (header == nullptr || buffer == nullptr) {
       return CL_RETVAL_PARAMS;
    }
 
@@ -534,22 +534,22 @@ int cl_xml_parse_CM(unsigned char *buffer, unsigned long buffer_length, cl_com_C
    unsigned long autoclose_end = 0;
    bool closing_tag;
 
-   if (message == NULL || buffer == NULL || *message != NULL) {
+   if (message == nullptr || buffer == nullptr || *message != nullptr) {
       return CL_RETVAL_PARAMS;
    }
 
    *message = (cl_com_CM_t *) sge_malloc(sizeof(cl_com_CM_t));
-   if (*message == NULL) {
+   if (*message == nullptr) {
       return CL_RETVAL_MALLOC;
    }
 
-   (*message)->version = NULL;
+   (*message)->version = nullptr;
    (*message)->df = CL_CM_DF_UNDEFINED;
    (*message)->ct = CL_CM_CT_UNDEFINED;
    (*message)->ac = CL_CM_AC_UNDEFINED;
    (*message)->port = 0;
-   (*message)->rdata = NULL;
-   (*message)->dst = NULL;
+   (*message)->rdata = nullptr;
+   (*message)->dst = nullptr;
 
    while (buf_pointer < buffer_length) {
       switch (buffer[buf_pointer]) {
@@ -668,7 +668,7 @@ int cl_xml_parse_CM(unsigned char *buffer, unsigned long buffer_length, cl_com_C
    /* get version */
    if (version_begin > 0) {
       (*message)->version = cl_xml_parse_version((char *) &(buffer[version_begin]), buffer_length - version_begin);
-      if ((*message)->version == NULL) {
+      if ((*message)->version == nullptr) {
          CL_LOG(CL_LOG_ERROR, "version information undefined");
          return CL_RETVAL_UNKNOWN;
       }
@@ -695,12 +695,12 @@ int cl_xml_parse_CM(unsigned char *buffer, unsigned long buffer_length, cl_com_C
    /* get rdata */
    if (rdata_begin > 0 && rdata_end >= rdata_begin) {
       (*message)->rdata = (cl_com_endpoint_t *) sge_malloc(sizeof(cl_com_endpoint_t));
-      if ((*message)->rdata == NULL) {
+      if ((*message)->rdata == nullptr) {
          return CL_RETVAL_MALLOC;
       }
-      (*message)->rdata->comp_host = NULL;
-      (*message)->rdata->comp_name = NULL;
-      (*message)->rdata->hash_id = NULL;
+      (*message)->rdata->comp_host = nullptr;
+      (*message)->rdata->comp_name = nullptr;
+      (*message)->rdata->hash_id = nullptr;
       i = rdata_begin;
 
       tag_begin = 0;
@@ -722,7 +722,7 @@ int cl_xml_parse_CM(unsigned char *buffer, unsigned long buffer_length, cl_com_C
       }
       help_buf[help_buf_pointer] = '\0';
       (*message)->rdata->comp_host = strdup(help_buf);
-      if ((*message)->rdata->comp_host == NULL) {
+      if ((*message)->rdata->comp_host == nullptr) {
          return CL_RETVAL_MALLOC;
       }
       tag_begin = 0;
@@ -745,7 +745,7 @@ int cl_xml_parse_CM(unsigned char *buffer, unsigned long buffer_length, cl_com_C
       }
       help_buf[help_buf_pointer] = 0;
       (*message)->rdata->comp_name = strdup(help_buf);
-      if ((*message)->rdata->comp_name == NULL) {
+      if ((*message)->rdata->comp_name == nullptr) {
          return CL_RETVAL_MALLOC;
       }
       tag_begin = 0;
@@ -768,18 +768,18 @@ int cl_xml_parse_CM(unsigned char *buffer, unsigned long buffer_length, cl_com_C
       }
       help_buf[help_buf_pointer] = 0;
       (*message)->rdata->comp_id = cl_util_get_ulong_value(help_buf);
-      (*message)->rdata->hash_id = NULL;
+      (*message)->rdata->hash_id = nullptr;
    }
 
    /* get dst data */
    if (dst_begin > 0 && dst_end >= dst_begin) {
       (*message)->dst = (cl_com_endpoint_t *) sge_malloc(sizeof(cl_com_endpoint_t));
-      if ((*message)->dst == NULL) {
+      if ((*message)->dst == nullptr) {
          return CL_RETVAL_MALLOC;
       }
-      (*message)->dst->comp_host = NULL;
-      (*message)->dst->comp_name = NULL;
-      (*message)->dst->hash_id = NULL;
+      (*message)->dst->comp_host = nullptr;
+      (*message)->dst->comp_name = nullptr;
+      (*message)->dst->hash_id = nullptr;
 
       i = dst_begin;
 
@@ -802,7 +802,7 @@ int cl_xml_parse_CM(unsigned char *buffer, unsigned long buffer_length, cl_com_C
       }
       help_buf[help_buf_pointer] = '\0';
       (*message)->dst->comp_host = strdup(help_buf);
-      if ((*message)->dst->comp_host == NULL) {
+      if ((*message)->dst->comp_host == nullptr) {
          return CL_RETVAL_MALLOC;
       }
       tag_begin = 0;
@@ -825,7 +825,7 @@ int cl_xml_parse_CM(unsigned char *buffer, unsigned long buffer_length, cl_com_C
       }
       help_buf[help_buf_pointer] = 0;
       (*message)->dst->comp_name = strdup(help_buf);
-      if ((*message)->dst->comp_name == NULL) {
+      if ((*message)->dst->comp_name == nullptr) {
          return CL_RETVAL_MALLOC;
       }
       tag_begin = 0;
@@ -848,32 +848,32 @@ int cl_xml_parse_CM(unsigned char *buffer, unsigned long buffer_length, cl_com_C
       }
       help_buf[help_buf_pointer] = 0;
       (*message)->dst->comp_id = cl_util_get_ulong_value(help_buf);
-      (*message)->dst->hash_id = NULL;
+      (*message)->dst->hash_id = nullptr;
    }
 
    /* check complete return structure of dst and rdata */
-   if ((*message)->dst == NULL) {
+   if ((*message)->dst == nullptr) {
       CL_LOG(CL_LOG_ERROR, "dst information not set");
       return CL_RETVAL_UNKNOWN;
    } else {
-      if ((*message)->dst->comp_host == NULL) {
+      if ((*message)->dst->comp_host == nullptr) {
          CL_LOG(CL_LOG_ERROR, "dst comp host information not set");
          return CL_RETVAL_UNKNOWN;
       }
-      if ((*message)->dst->comp_name == NULL) {
+      if ((*message)->dst->comp_name == nullptr) {
          CL_LOG(CL_LOG_ERROR, "dst comp name information not set");
          return CL_RETVAL_UNKNOWN;
       }
    }
-   if ((*message)->rdata == NULL) {
+   if ((*message)->rdata == nullptr) {
       CL_LOG(CL_LOG_ERROR, "rdata information not set");
       return CL_RETVAL_UNKNOWN;
    } else {
-      if ((*message)->rdata->comp_host == NULL) {
+      if ((*message)->rdata->comp_host == nullptr) {
          CL_LOG(CL_LOG_ERROR, "rdata comp host information not set");
          return CL_RETVAL_UNKNOWN;
       }
-      if ((*message)->rdata->comp_name == NULL) {
+      if ((*message)->rdata->comp_name == nullptr) {
          CL_LOG(CL_LOG_ERROR, "rdata comp name information not set");
          return CL_RETVAL_UNKNOWN;
       }
@@ -907,12 +907,12 @@ int cl_xml_parse_CRM(unsigned char *buffer, unsigned long buffer_length, cl_com_
    unsigned long params_begin = 0;
    unsigned long params_end = 0;
 
-   if (message == NULL || buffer == NULL || *message != NULL) {
+   if (message == nullptr || buffer == nullptr || *message != nullptr) {
       return CL_RETVAL_PARAMS;
    }
 
    *message = (cl_com_CRM_t *) sge_malloc(sizeof(cl_com_CRM_t));
-   if (*message == NULL) {
+   if (*message == nullptr) {
       return CL_RETVAL_MALLOC;
    }
    memset((char *) (*message), 0, sizeof(cl_com_CRM_t));
@@ -1028,7 +1028,7 @@ int cl_xml_parse_CRM(unsigned char *buffer, unsigned long buffer_length, cl_com_
    /* get rdata */
    if (rdata_begin > 0 && rdata_end >= rdata_begin) {
       (*message)->rdata = (cl_com_endpoint_t *) sge_malloc(sizeof(cl_com_endpoint_t));
-      if ((*message)->rdata == NULL) {
+      if ((*message)->rdata == nullptr) {
          cl_com_free_crm_message(message);
          return CL_RETVAL_MALLOC;
       }
@@ -1095,7 +1095,7 @@ int cl_xml_parse_CRM(unsigned char *buffer, unsigned long buffer_length, cl_com_
       }
       help_buf[help_buf_pointer] = '\0';
       (*message)->rdata->comp_id = cl_util_get_ulong_value(help_buf);
-      (*message)->rdata->hash_id = NULL;
+      (*message)->rdata->hash_id = nullptr;
    }
 
    /* get env params */
@@ -1135,7 +1135,7 @@ static bool cl_xml_parse_is_version(const char *buffer, unsigned long start, uns
    unsigned long i = 0;
    bool found = false;
 
-   if (buffer != NULL) {
+   if (buffer != nullptr) {
       for (i = start; (i < buffer_length) && (buffer[i] != '>'); i++) {
          /* check for version string in tag */
          if (strncmp(&buffer[i], "version", 7) == 0) {
@@ -1174,12 +1174,12 @@ int cl_xml_parse_MIH(unsigned char *buffer, unsigned long buffer_length, cl_com_
    unsigned long rid_end = 0;
    bool closing_tag;
 
-   if (message == NULL || buffer == NULL || *message != NULL) {
+   if (message == nullptr || buffer == nullptr || *message != nullptr) {
       return CL_RETVAL_PARAMS;
    }
 
    *message = (cl_com_MIH_t *) sge_malloc(sizeof(cl_com_MIH_t));
-   if (*message == NULL) {
+   if (*message == nullptr) {
       return CL_RETVAL_MALLOC;
    }
    memset((char *) (*message), 0, sizeof(cl_com_MIH_t));
@@ -1383,12 +1383,12 @@ int cl_xml_parse_SIRM(unsigned char *buffer, unsigned long buffer_length, cl_com
    unsigned long info_end = 0;
    bool closing_tag;
 
-   if (message == NULL || buffer == NULL || *message != NULL) {
+   if (message == nullptr || buffer == nullptr || *message != nullptr) {
       return CL_RETVAL_PARAMS;
    }
 
    *message = (cl_com_SIRM_t *) sge_malloc(sizeof(cl_com_SIRM_t));
-   if (*message == NULL) {
+   if (*message == nullptr) {
       return CL_RETVAL_MALLOC;
    }
    memset((char *) (*message), 0, sizeof(cl_com_SIRM_t));
@@ -1564,12 +1564,12 @@ int cl_xml_parse_AM(unsigned char *buffer, unsigned long buffer_length, cl_com_A
    unsigned long mid_end = 0;
    bool closing_tag;
 
-   if (message == NULL || buffer == NULL || *message != NULL) {
+   if (message == nullptr || buffer == nullptr || *message != nullptr) {
       return CL_RETVAL_PARAMS;
    }
 
    *message = (cl_com_AM_t *) sge_malloc(sizeof(cl_com_AM_t));
-   if (*message == NULL) {
+   if (*message == nullptr) {
       return CL_RETVAL_MALLOC;
    }
 
@@ -1620,7 +1620,7 @@ int cl_xml_parse_AM(unsigned char *buffer, unsigned long buffer_length, cl_com_A
    if (version_begin > 0) {
       (*message)->version = cl_xml_parse_version((char *) &(buffer[version_begin]), buffer_length - version_begin);
    } else {
-      (*message)->version = NULL;
+      (*message)->version = nullptr;
    }
 
 
@@ -1654,12 +1654,12 @@ int cl_xml_parse_CCM(unsigned char *buffer, unsigned long buffer_length, cl_com_
    unsigned long tag_end = 0;
    unsigned long version_begin = 0;
 
-   if (message == NULL || buffer == NULL || *message != NULL) {
+   if (message == nullptr || buffer == nullptr || *message != nullptr) {
       return CL_RETVAL_PARAMS;
    }
 
    *message = (cl_com_CCM_t *) sge_malloc(sizeof(cl_com_CCM_t));
-   if (*message == NULL) {
+   if (*message == nullptr) {
       return CL_RETVAL_MALLOC;
    }
 
@@ -1699,7 +1699,7 @@ int cl_xml_parse_CCM(unsigned char *buffer, unsigned long buffer_length, cl_com_
    if (version_begin > 0) {
       (*message)->version = cl_xml_parse_version((char *) &(buffer[version_begin]), buffer_length - version_begin);
    } else {
-      (*message)->version = NULL;
+      (*message)->version = nullptr;
    }
 
 #if CL_DO_XML_DEBUG
@@ -1721,12 +1721,12 @@ int cl_xml_parse_CCRM(unsigned char *buffer, unsigned long buffer_length, cl_com
    unsigned long version_begin = 0;
 
 
-   if (message == NULL || buffer == NULL || *message != NULL) {
+   if (message == nullptr || buffer == nullptr || *message != nullptr) {
       return CL_RETVAL_PARAMS;
    }
 
    *message = (cl_com_CCRM_t *) sge_malloc(sizeof(cl_com_CCRM_t));
-   if (*message == NULL) {
+   if (*message == nullptr) {
       return CL_RETVAL_MALLOC;
    }
 
@@ -1767,7 +1767,7 @@ int cl_xml_parse_CCRM(unsigned char *buffer, unsigned long buffer_length, cl_com
    if (version_begin > 0) {
       (*message)->version = cl_xml_parse_version((char *) &(buffer[version_begin]), buffer_length - version_begin);
    } else {
-      (*message)->version = NULL;
+      (*message)->version = nullptr;
    }
 
 #if CL_DO_XML_DEBUG
@@ -1790,12 +1790,12 @@ int cl_xml_parse_SIM(unsigned char *buffer, unsigned long buffer_length, cl_com_
    unsigned long tag_end = 0;
    unsigned long version_begin = 0;
 
-   if (message == NULL || buffer == NULL || *message != NULL) {
+   if (message == nullptr || buffer == nullptr || *message != nullptr) {
       return CL_RETVAL_PARAMS;
    }
 
    *message = (cl_com_SIM_t *) sge_malloc(sizeof(cl_com_SIM_t));
-   if (*message == NULL) {
+   if (*message == nullptr) {
       return CL_RETVAL_MALLOC;
    }
 
@@ -1835,7 +1835,7 @@ int cl_xml_parse_SIM(unsigned char *buffer, unsigned long buffer_length, cl_com_
    if (version_begin > 0) {
       (*message)->version = cl_xml_parse_version((char *) &(buffer[version_begin]), buffer_length - version_begin);
    } else {
-      (*message)->version = NULL;
+      (*message)->version = nullptr;
    }
 
 #if CL_DO_XML_DEBUG
@@ -1852,7 +1852,7 @@ int cl_xml_parse_SIM(unsigned char *buffer, unsigned long buffer_length, cl_com_
    cl_com_endpoint_t** endpoint -> address of an pointer to cl_com_endpoint_t
 
    return:
-      - *endpoint is set to NULL
+      - *endpoint is set to nullptr
       - int - CL_RETVAL_XXXX error number
 */
 #ifdef __CL_FUNCTION__
@@ -1861,16 +1861,16 @@ int cl_xml_parse_SIM(unsigned char *buffer, unsigned long buffer_length, cl_com_
 #define __CL_FUNCTION__ "cl_com_free_endpoint()"
 
 int cl_com_free_endpoint(cl_com_endpoint_t **endpoint) { /* CR check */
-   if (endpoint == NULL || *endpoint == NULL) {
+   if (endpoint == nullptr || *endpoint == nullptr) {
       return CL_RETVAL_PARAMS;
    }
-   if ((*endpoint)->comp_host != NULL) {
+   if ((*endpoint)->comp_host != nullptr) {
       sge_free(&((*endpoint)->comp_host));
    }
-   if ((*endpoint)->comp_name != NULL) {
+   if ((*endpoint)->comp_name != nullptr) {
       sge_free(&((*endpoint)->comp_name));
    }
-   if ((*endpoint)->hash_id != NULL) {
+   if ((*endpoint)->hash_id != nullptr) {
       sge_free(&((*endpoint)->hash_id));
    }
    sge_free(endpoint);
@@ -1884,8 +1884,8 @@ int cl_com_free_endpoint(cl_com_endpoint_t **endpoint) { /* CR check */
 #define __CL_FUNCTION__ "cl_com_dup_endpoint()"
 
 cl_com_endpoint_t *cl_com_dup_endpoint(cl_com_endpoint_t *endpoint) {
-   if (endpoint == NULL || endpoint->comp_host == NULL || endpoint->comp_name == NULL) {
-      return NULL;
+   if (endpoint == nullptr || endpoint->comp_host == nullptr || endpoint->comp_name == nullptr) {
+      return nullptr;
    }
    return cl_com_create_endpoint(endpoint->comp_host, endpoint->comp_name, endpoint->comp_id, &endpoint->addr);
 }
@@ -1898,21 +1898,21 @@ cl_com_endpoint_t *cl_com_dup_endpoint(cl_com_endpoint_t *endpoint) {
 
 cl_com_endpoint_t *cl_com_create_endpoint(const char *host, const char *name,
                                           unsigned long id, const struct in_addr *in_addr) {
-   cl_com_endpoint_t *endpoint = NULL;
+   cl_com_endpoint_t *endpoint = nullptr;
 
-   if (host == NULL || name == NULL) {
+   if (host == nullptr || name == nullptr) {
       CL_LOG(CL_LOG_ERROR, "parameter errors");
-      return NULL;
+      return nullptr;
    }
    if (strlen(name) > 256) {
       CL_LOG(CL_LOG_ERROR, "max supported component name length is 256");
-      return NULL;
+      return nullptr;
    }
 
    endpoint = (cl_com_endpoint_t *) sge_malloc(sizeof(cl_com_endpoint_t));
-   if (endpoint == NULL) {
+   if (endpoint == nullptr) {
       CL_LOG(CL_LOG_ERROR, "malloc error");
-      return NULL;
+      return nullptr;
    }
    endpoint->comp_host = strdup(host);
    endpoint->comp_name = strdup(name);
@@ -1920,10 +1920,10 @@ cl_com_endpoint_t *cl_com_create_endpoint(const char *host, const char *name,
    endpoint->addr.s_addr = in_addr->s_addr;
    endpoint->hash_id = cl_create_endpoint_string(endpoint);
 
-   if (endpoint->comp_host == NULL || endpoint->comp_name == NULL || endpoint->hash_id == NULL) {
+   if (endpoint->comp_host == nullptr || endpoint->comp_name == nullptr || endpoint->hash_id == nullptr) {
       cl_com_free_endpoint(&endpoint);
       CL_LOG(CL_LOG_ERROR, "malloc error");
-      return NULL;
+      return nullptr;
    }
    return endpoint;
 }

@@ -53,10 +53,10 @@ int main(int argc, char *argv[])
    char buffer[BUF_SIZE];
    char *ret;
 
-   setvbuf(stdin,NULL,_IONBF,0);
+   setvbuf(stdin,nullptr,_IONBF,0);
 
    ret = fgets(buffer, BUF_SIZE, stdin);
-   if (ret != NULL) {
+   if (ret != nullptr) {
       size_t length = strlen(ret);
 
       while (length-- > 0) {

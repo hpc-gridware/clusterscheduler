@@ -190,7 +190,7 @@ void sge_monitor_reset(monitoring_t *monitor);
 
 #define MONITOR_IDLE_TIME(execute, monitor, output_time, is_log)    { \
                                  struct timeval before;  \
-                                 gettimeofday(&before, NULL); \
+                                 gettimeofday(&before, nullptr); \
                                  sge_set_last_wait_time((monitor), before); \
                                  if (output_time > 0) { \
                                     struct timeval before;  \
@@ -199,12 +199,12 @@ void sge_monitor_reset(monitoring_t *monitor);
                                     \
                                     (monitor)->monitor_time = output_time; \
                                     (monitor)->log_monitor_mes = is_log; \
-                                    gettimeofday(&before, NULL); \
+                                    gettimeofday(&before, nullptr); \
                                     if ((monitor)->now.tv_sec == 0) { \
                                        (monitor)->now = before; \
                                     } \
                                     execute; \
-                                    gettimeofday(&after, NULL);  \
+                                    gettimeofday(&after, nullptr);  \
                                     (monitor)->output = ((after.tv_sec-(monitor)->now.tv_sec) >= (monitor)->monitor_time)?true:false; \
                                     time = after.tv_usec - before.tv_usec; \
                                     time = after.tv_sec - before.tv_sec + (time/1000000); \
@@ -220,14 +220,14 @@ void sge_monitor_reset(monitoring_t *monitor);
  *
  * TODO: it should be customized for read/write locks.
  */
-#define MONITOR_WAIT_TIME(execute, monitor)    if (((monitor) != NULL) && ((monitor)->monitor_time > 0)){ \
+#define MONITOR_WAIT_TIME(execute, monitor)    if (((monitor) != nullptr) && ((monitor)->monitor_time > 0)){ \
                                     struct timeval before;  \
                                     struct timeval after; \
                                     double time; \
                                     \
-                                    gettimeofday(&before, NULL); \
+                                    gettimeofday(&before, nullptr); \
                                     execute; \
-                                    gettimeofday(&after, NULL);  \
+                                    gettimeofday(&after, nullptr);  \
                                     time = after.tv_usec - before.tv_usec; \
                                     time = after.tv_sec - before.tv_sec + (time/1000000); \
                                     (monitor)->wait += time; \
@@ -236,9 +236,9 @@ void sge_monitor_reset(monitoring_t *monitor);
                                     execute; \
                                  } \
 
-#define MONITOR_MESSAGES(monitor) if ((monitor != NULL) && ((monitor)->monitor_time > 0)) (monitor)->message_in_count++
+#define MONITOR_MESSAGES(monitor) if ((monitor != nullptr) && ((monitor)->monitor_time > 0)) (monitor)->message_in_count++
 
-#define MONITOR_MESSAGES_OUT(monitor) if (((monitor) != NULL) && ((monitor)->monitor_time > 0)) (monitor)->message_out_count++
+#define MONITOR_MESSAGES_OUT(monitor) if (((monitor) != nullptr) && ((monitor)->monitor_time > 0)) (monitor)->message_out_count++
 
 /*--------------------------------*/
 /*   EXTENSION SECTION            */
@@ -308,7 +308,7 @@ typedef struct {
 #define MONITOR_EPROC(monitor)    if ((monitor->monitor_time > 0) && (monitor->ext_type == GDI_EXT)) ((m_gdi_t*)(monitor->ext_data))->eproc_count++
 #define MONITOR_EACK(monitor)    if ((monitor->monitor_time > 0) && (monitor->ext_type == GDI_EXT)) ((m_gdi_t*)(monitor->ext_data))->eack_count++
 
-#define MONITOR_SET_QLEN(monitor, qlen)    if ((monitor) != NULL && (monitor->monitor_time > 0) && (monitor->ext_type == GDI_EXT)) ((m_gdi_t*)(monitor->ext_data))->queue_length = (qlen)
+#define MONITOR_SET_QLEN(monitor, qlen)    if ((monitor) != nullptr && (monitor->monitor_time > 0) && (monitor->ext_type == GDI_EXT)) ((m_gdi_t*)(monitor->ext_data))->queue_length = (qlen)
 
 /* listener extension */
 typedef struct {

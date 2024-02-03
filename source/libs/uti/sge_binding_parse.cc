@@ -42,11 +42,11 @@
 binding_type_t binding_type_to_enum(const char *parameter) {
    binding_type_t type = BINDING_TYPE_NONE;
 
-   if (strstr(parameter, "env") != NULL) {
+   if (strstr(parameter, "env") != nullptr) {
       type = BINDING_TYPE_ENV;
-   } else if (strstr(parameter, "pe") != NULL) {
+   } else if (strstr(parameter, "pe") != nullptr) {
       type = BINDING_TYPE_PE;
-   } else if (strstr(parameter, "set") != NULL) {
+   } else if (strstr(parameter, "set") != nullptr) {
       type = BINDING_TYPE_SET;
    }
 
@@ -57,7 +57,7 @@ bool
 binding_type_to_string(binding_type_t type, dstring *string) {
    bool ret = true;
 
-   if (string != NULL) {
+   if (string != nullptr) {
       switch (type) {
          case BINDING_TYPE_SET:
             sge_dstring_append(string, "set");
@@ -105,34 +105,34 @@ binding_type_to_string(binding_type_t type, dstring *string) {
 bool binding_explicit_extract_sockets_cores(const char *parameter,
                                             int **list_of_sockets, int *samount, int **list_of_cores, int *camount) {
    /* string representation of a socket number */
-   char *socket = NULL;
+   char *socket = nullptr;
    /* string representation of a core number */
-   char *core = NULL;
+   char *core = nullptr;
    bool do_endlessly = true;
 
    /* no sockets and no cores at the beginning */
    *samount = 0;
    *camount = 0;
 
-   if (list_of_sockets == NULL || list_of_cores == NULL || *list_of_sockets != NULL
-       || *list_of_cores != NULL) {
-      /* we expect NULL pointers because we allocate memory within the function */
+   if (list_of_sockets == nullptr || list_of_cores == nullptr || *list_of_sockets != nullptr
+       || *list_of_cores != nullptr) {
+      /* we expect nullptr pointers because we allocate memory within the function */
       return false;
    }
 
    /* check if the prefix of the parameter is correct */
-   if (strstr(parameter, "explicit:") == NULL) {
+   if (strstr(parameter, "explicit:") == nullptr) {
       return false;
    }
 
-   if (sge_strtok(parameter, ":") != NULL) {
+   if (sge_strtok(parameter, ":") != nullptr) {
 
       /* first socket,core is mandatory */
-      if ((socket = sge_strtok(NULL, ",")) == NULL) {
+      if ((socket = sge_strtok(nullptr, ",")) == nullptr) {
          /* we have no first socket number */
          return false;
       }
-      if ((core = sge_strtok(NULL, ":")) == NULL) {
+      if ((core = sge_strtok(nullptr, ":")) == nullptr) {
          /* we have no first core number */
          return false;
       }
@@ -146,12 +146,12 @@ bool binding_explicit_extract_sockets_cores(const char *parameter,
 
       while (do_endlessly) {
          /* get socket number */
-         if ((socket = sge_strtok(NULL, ",")) == NULL || (isdigit(*socket) == 0)) {
+         if ((socket = sge_strtok(nullptr, ",")) == nullptr || (isdigit(*socket) == 0)) {
             break;
          }
 
          /* we have a socket therefore we need a core number */
-         if ((core = sge_strtok(NULL, ":")) == NULL || (isdigit(*core) == 0)) {
+         if ((core = sge_strtok(nullptr, ":")) == nullptr || (isdigit(*core) == 0)) {
             /* missing core number */
             sge_free(list_of_sockets);
             sge_free(list_of_cores);
@@ -183,7 +183,7 @@ binding_printf_explicit_sockets_cores(dstring *string, int *socket_array, int so
                                       int *core_array, int cores) {
    bool ret = true;
 
-   if (string != NULL && socket_array != NULL && core_array != NULL && sockets == cores) {
+   if (string != nullptr && socket_array != nullptr && core_array != nullptr && sockets == cores) {
       int i;
       bool first_line = true;
 

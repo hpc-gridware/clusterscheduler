@@ -91,16 +91,16 @@ qref_list_resolve_cqueue_names(const lList *cq_qref_list,
                                bool resolve_cqueue)
 {
    bool ret = true;
-   const lListElem *cq_qref = NULL;
+   const lListElem *cq_qref = nullptr;
 
    DENTER(QREF_LAYER);
    for_each_ep(cq_qref, cq_qref_list) {
       const char *cq_name = lGetString(cq_qref, QR_name);
 
       if (resolve_cqueue) {
-         const lListElem *cqueue = NULL;
-         const lList *qinstance_list = NULL;
-         const lListElem *qinstance = NULL;
+         const lListElem *cqueue = nullptr;
+         const lList *qinstance_list = nullptr;
+         const lListElem *qinstance = nullptr;
         
          cqueue = lGetElemStr(cqueue_list, CQ_name, cq_name); 
          qinstance_list = lGetList(cqueue, CQ_qinstances);
@@ -124,16 +124,16 @@ qref_list_resolve_qinstance_names(const lList *cq_qref_list,
                                   const lList *cqueue_list)
 {
    bool ret = true;
-   const lListElem *cq_qref = NULL;
+   const lListElem *cq_qref = nullptr;
 
    DENTER(QREF_LAYER);
    for_each_ep(cq_qref, cq_qref_list) {
-      const char *cqueue_name = NULL;
-      const char *hostname_pattern = NULL;
-      const lListElem *cqueue = NULL;
-      const lList *qinstance_list = NULL;
-      lList *qi_ref_list = NULL;
-      const lListElem *qi_qref = NULL;
+      const char *cqueue_name = nullptr;
+      const char *hostname_pattern = nullptr;
+      const lListElem *cqueue = nullptr;
+      const lList *qinstance_list = nullptr;
+      lList *qi_ref_list = nullptr;
+      const lListElem *qi_qref = nullptr;
 
       cqueue_name = lGetString(cq_qref, QR_name);
       cqueue = lGetElemStr(cqueue_list, CQ_name, cqueue_name);
@@ -164,9 +164,9 @@ qref_list_resolve_qdomain_names(const lList *cq_qref_list,
                                 bool resolve_qdomain)
 {
    bool ret = true;
-   const char *hgroup_pattern = NULL;
-   lList *href_list = NULL;
-   const lListElem *cq_qref = NULL;
+   const char *hgroup_pattern = nullptr;
+   lList *href_list = nullptr;
+   const lListElem *cq_qref = nullptr;
    dstring buffer = DSTRING_INIT;
 
    DENTER(QREF_LAYER);
@@ -184,21 +184,21 @@ qref_list_resolve_qdomain_names(const lList *cq_qref_list,
    }
    for_each_ep(cq_qref, cq_qref_list) {
       const char *cqueue_name = lGetString(cq_qref, QR_name);
-      const lListElem *cqueue = NULL;
-      const lList *qinstance_list = NULL;
-      const lListElem *href = NULL;
+      const lListElem *cqueue = nullptr;
+      const lList *qinstance_list = nullptr;
+      const lListElem *href = nullptr;
 
       cqueue = lGetElemStr(cqueue_list, CQ_name, cqueue_name);
       qinstance_list = lGetList(cqueue, CQ_qinstances);
       for_each_ep(href, href_list) {
          if (resolve_qdomain) {
             const char *hostname = lGetHost(href, HR_name);
-            const lListElem *qinstance = NULL;
+            const lListElem *qinstance = nullptr;
 
             qinstance = lGetElemHost(qinstance_list, 
                                      QU_qhostname, hostname);
-            if (qinstance != NULL) {
-               const char *qinstance_name = NULL;
+            if (qinstance != nullptr) {
+               const char *qinstance_name = nullptr;
 
                qinstance_name = qinstance_get_name(qinstance, 
                                                    &buffer);
@@ -208,7 +208,7 @@ qref_list_resolve_qdomain_names(const lList *cq_qref_list,
             }
          } else {
             const char *hgroup_name = lGetHost(href, HR_name);
-            const char *qinstance_name = NULL;
+            const char *qinstance_name = nullptr;
 
             qinstance_name = sge_dstring_sprintf(&buffer, SFN"@"SFN,
                                                  cqueue_name, hgroup_name);
@@ -253,11 +253,11 @@ qref_list_add(lList **this_list, lList **answer_list, const char *qref_string)
    bool ret = true;
 
    DENTER(QREF_LAYER);
-   if (this_list != NULL && qref_string != NULL) {
+   if (this_list != nullptr && qref_string != nullptr) {
       lListElem *new_elem; 
 
       new_elem = lAddElemStr(this_list, QR_name, qref_string, QR_Type);
-      if (new_elem == NULL) {
+      if (new_elem == nullptr) {
          answer_list_add(answer_list, MSG_GDI_OUTOFMEMORY,
                          STATUS_EMALLOC, ANSWER_QUALITY_ERROR);
          ret = false;
@@ -342,16 +342,16 @@ qref_list_resolve(const lList *src_qref_list, lList **answer_list,
 
    DENTER(QREF_LAYER);
 
-   if (src_qref_list != NULL) {
-      const lListElem *qref_pattern = NULL;
+   if (src_qref_list != nullptr) {
+      const lListElem *qref_pattern = nullptr;
 
       *found_something = false;
       for_each_ep(qref_pattern, src_qref_list) {
-         const char *name = NULL;
+         const char *name = nullptr;
          bool has_hostname;
          bool has_domain;
-         const char *cq_pattern = NULL;
-         lList *cq_ref_list = NULL;
+         const char *cq_pattern = nullptr;
+         lList *cq_ref_list = nullptr;
          bool tmp_found_something = false;
  
          /*
@@ -414,13 +414,13 @@ qref_list_resolve(const lList *src_qref_list, lList **answer_list,
 *
 *  FUNCTION
 *     Check if patter in -q qref_list rejects cluster queue and hostname,
-*     if passed. If NULL is passed as hostname, cluster queue verfication
+*     if passed. If nullptr is passed as hostname, cluster queue verfication
 *     is performed only.
 *
 *  INPUTS
 *     const char *qref_pattern - a wildcard pattern as defined for -q qref_list
 *     const char *cqname       - cluster queue name
-*     const char *hostname     - execution hostname (may be NULL)
+*     const char *hostname     - execution hostname (may be nullptr)
 *     const lList *hgroup_list - host group list
 *
 *  RESULT
@@ -443,7 +443,7 @@ qref_cq_rejected(const char *qref_pattern, const char *cqname,
       char *wc_cqueue = strdup(qref_pattern);
       wc_cqueue[ s - qref_pattern ] = '\0';
       /* reject the cluster queue expression support */
-      boo = sge_eval_expression(TYPE_STR,wc_cqueue, cqname, NULL);
+      boo = sge_eval_expression(TYPE_STR,wc_cqueue, cqname, nullptr);
       sge_free(&wc_cqueue);
       if (!boo) {
          if (!hostname || !qref_list_host_rejected(&s[1], hostname, hgroup_list)) {
@@ -453,7 +453,7 @@ qref_cq_rejected(const char *qref_pattern, const char *cqname,
    } else {
       /* use entire qref as wc_queue */
      /* cqueue expression support */
-      if (!sge_eval_expression(TYPE_STR,qref_pattern, cqname, NULL)) {
+      if (!sge_eval_expression(TYPE_STR,qref_pattern, cqname, nullptr)) {
          DRETURN(false);
       }
    }
@@ -472,7 +472,7 @@ qref_cq_rejected(const char *qref_pattern, const char *cqname,
 *
 *  FUNCTION
 *     Check if -q qref_list rejects cluster queue and hostname, if passed.
-*     If NULL is passed as hostname, cluster queue verfication is performed
+*     If nullptr is passed as hostname, cluster queue verfication is performed
 *     only.
 *
 *  INPUTS
@@ -508,7 +508,7 @@ qref_eh_rejected(const char *qref_pattern, const char *hostname, const lList *hg
 bool
 qref_list_eh_rejected(const lList *qref_list, const char *hostname, const lList *hgroup_list)
 {
-   const lListElem *qref_pattern = NULL;
+   const lListElem *qref_pattern = nullptr;
 
    DENTER(TOP_LAYER);
 
@@ -535,7 +535,7 @@ bool
 qref_list_cq_rejected(const lList *qref_list, const char *cqname,
       const char *hostname, const lList *hgroup_list)
 {
-   const lListElem *qref_pattern = NULL;
+   const lListElem *qref_pattern = nullptr;
 
    DENTER(TOP_LAYER);
 
@@ -594,7 +594,7 @@ qref_list_host_rejected(const char *href, const char *hostname, const lList *hgr
          DPRINTF(("found hostgroup \"%s\" wc_hostgroup: \"%s\"\n",
                hgroup_name, wc_hostgroup));
          /* use hostgroup expression */
-         if (sge_eval_expression(TYPE_HOST, wc_hostgroup, &hgroup_name[1], NULL) == 0) {         
+         if (sge_eval_expression(TYPE_HOST, wc_hostgroup, &hgroup_name[1], nullptr) == 0) {
             const lListElem *h;
             for_each_ep(h, lGetList(hgroup, HGRP_host_list)) {
                if (!qref_list_host_rejected(lGetHost(h, HR_name), hostname, hgroup_list)) {
@@ -605,7 +605,7 @@ qref_list_host_rejected(const char *href, const char *hostname, const lList *hgr
       }
    } else { /* wc_host */
       /* use host expression */
-      if (sge_eval_expression(TYPE_HOST, href, hostname, NULL)==0) {
+      if (sge_eval_expression(TYPE_HOST, href, hostname, nullptr)==0) {
             DRETURN(false);
       }
    }
@@ -645,18 +645,18 @@ qref_list_trash_some_elemts(lList **this_list, const char *full_name)
    bool ret = true;
 
    DENTER(TOP_LAYER);
-   if (this_list != NULL) {
-      lListElem *qref = NULL;
-      lListElem *next_qref = NULL;
+   if (this_list != nullptr) {
+      lListElem *qref = nullptr;
+      lListElem *next_qref = nullptr;
       dstring cqueue_buffer = DSTRING_INIT;
       dstring host_or_hgroup_buffer = DSTRING_INIT;
       dstring cqueue_buffer1 = DSTRING_INIT;
       dstring host_or_hgroup_buffer1 = DSTRING_INIT;
-      const char *cqueue1 = NULL;
-      const char *host1 = NULL;
+      const char *cqueue1 = nullptr;
+      const char *host1 = nullptr;
 
-      if (!cqueue_name_split(full_name, &cqueue_buffer1, &host_or_hgroup_buffer1, NULL, 
-                        NULL)) {
+      if (!cqueue_name_split(full_name, &cqueue_buffer1, &host_or_hgroup_buffer1, nullptr,
+                        nullptr)) {
          /* we got an syntax error while splitting */               
          ret = false;
       } else {                
@@ -664,16 +664,16 @@ qref_list_trash_some_elemts(lList **this_list, const char *full_name)
          host1 = sge_dstring_get_string(&host_or_hgroup_buffer1);
 
          next_qref = lFirstRW(*this_list);
-         while ((qref = next_qref) != NULL) {
-            const char *name = NULL;
-            const char *cqueue = NULL;
-            const char *host = NULL;
+         while ((qref = next_qref) != nullptr) {
+            const char *name = nullptr;
+            const char *cqueue = nullptr;
+            const char *host = nullptr;
 
             next_qref = lNextRW(qref);
 
             name = lGetString(qref, QR_name);
-            if (!cqueue_name_split(name, &cqueue_buffer, &host_or_hgroup_buffer, NULL,
-                              NULL)) {
+            if (!cqueue_name_split(name, &cqueue_buffer, &host_or_hgroup_buffer, nullptr,
+                              nullptr)) {
                sge_dstring_clear(&cqueue_buffer);
                sge_dstring_clear(&host_or_hgroup_buffer);
                ret = false;
@@ -739,7 +739,7 @@ qref_list_is_valid(const lList *this_list, lList **answer_list, const lList *mas
    bool ret = true;
 
    DENTER(TOP_LAYER);
-   if (this_list != NULL) {
+   if (this_list != nullptr) {
 
       /*
        * qname has to be requestable
@@ -753,10 +753,10 @@ qref_list_is_valid(const lList *this_list, lList **answer_list, const lList *mas
          for_each_rw(qref_elem, this_list) {
             bool found_something = false;
             bool found_matching_qinstance = false;
-            const char *qref_pattern = NULL;
-            lList *resolved_qref_list = NULL;
-            lList *qref_list = NULL;
-            const lListElem *resolved_qref = NULL;
+            const char *qref_pattern = nullptr;
+            lList *resolved_qref_list = nullptr;
+            lList *qref_list = nullptr;
+            const lListElem *resolved_qref = nullptr;
             qref_resolve_hostname(qref_elem);
             qref_pattern = lGetString(qref_elem, QR_name);
 
@@ -767,14 +767,14 @@ qref_list_is_valid(const lList *this_list, lList **answer_list, const lList *mas
             for_each_ep(resolved_qref, resolved_qref_list) {
                const char *resolved_qref_name = lGetString(resolved_qref, QR_name);
 
-               if (cqueue_list_locate_qinstance(master_cqueue_list, resolved_qref_name) != NULL) {
+               if (cqueue_list_locate_qinstance(master_cqueue_list, resolved_qref_name) != nullptr) {
                   found_matching_qinstance = true;
                }
             }
             lFreeList(&qref_list);
             lFreeList(&resolved_qref_list);
             if (!found_matching_qinstance) {
-               ERROR((SGE_EVENT, MSG_QREF_QUNKNOWN_S, qref_pattern == NULL ? "" : qref_pattern));
+               ERROR((SGE_EVENT, MSG_QREF_QUNKNOWN_S, qref_pattern == nullptr ? "" : qref_pattern));
                answer_list_add(answer_list, SGE_EVENT, STATUS_EUNKNOWN, ANSWER_QUALITY_ERROR);
                ret = false;
             }
@@ -806,8 +806,8 @@ qref_resolve_hostname(lListElem *this_elem)
 {
    dstring cqueue_name = DSTRING_INIT;
    dstring host_or_hgroup = DSTRING_INIT;
-   const char *name = NULL;
-   const char *unresolved_name = NULL;
+   const char *name = nullptr;
+   const char *unresolved_name = nullptr;
    bool has_hostname;
    bool has_domain;
    
@@ -818,7 +818,7 @@ qref_resolve_hostname(lListElem *this_elem)
                      &has_hostname, &has_domain)) {
       unresolved_name = sge_dstring_get_string(&host_or_hgroup);
       /* Find all CQ names which match 'cq_pattern' */
-      if (has_hostname && unresolved_name != NULL &&!sge_is_expression(unresolved_name)) {
+      if (has_hostname && unresolved_name != nullptr &&!sge_is_expression(unresolved_name)) {
          char resolved_name[CL_MAXHOSTLEN+1];
          int back = getuniquehostname(unresolved_name, resolved_name, 0);
 
@@ -870,25 +870,25 @@ int
 cull_parse_destination_identifier_list(lList **lpp, const char *dest_str) 
 {
    int rule[] = {QR_name, 0};
-   char **str_str = NULL;
+   char **str_str = nullptr;
    int i_ret;
    char *s;
 
    DENTER(TOP_LAYER);
 
-   if (lpp == NULL) {
+   if (lpp == nullptr) {
       DRETURN(1);
    }
 
-   s = sge_strdup(NULL, dest_str);
-   if (s == NULL) {
-      *lpp = NULL;
+   s = sge_strdup(nullptr, dest_str);
+   if (s == nullptr) {
+      *lpp = nullptr;
       DRETURN(3);
    }
 
-   str_str = string_list(s, ",", NULL);
-   if (str_str == NULL || *str_str == NULL) {
-      *lpp = NULL;
+   str_str = string_list(s, ",", nullptr);
+   if (str_str == nullptr || *str_str == nullptr) {
+      *lpp = nullptr;
       sge_free(&s);
       DRETURN(2);
    }

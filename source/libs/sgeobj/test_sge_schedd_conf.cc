@@ -67,7 +67,7 @@ typedef struct {
  */
 static schedd_conf_t conf_tests[] = {
    {SC_halflife_decay_list, lStringT,"test the halflife_decay_list settings"},
-   {0,0,NULL}
+   {0,0,nullptr}
 };
 
 static conf_settings_t tests[] = {
@@ -80,7 +80,7 @@ static conf_settings_t tests[] = {
    {0, "cpu=1:io=0:", true},
    {0, "cpu=1:io=-1:mem=0", true},
    {0, "cpu=1:io=-1:mem=0:help=-1", true},
-   {-1, NULL, false}
+   {-1, nullptr, false}
 };
 
 static int
@@ -88,10 +88,10 @@ test(conf_settings_t *setting, schedd_conf_t *test, int test_counter)
 {
    lListElem *schedd_conf = sconf_create_default();
    lList *schedd_list = lCreateList("schedd_conf", SC_Type);
-   lList *answer_list = NULL;
+   lList *answer_list = nullptr;
    int ret = 0;
 
-   if (schedd_conf != NULL && schedd_list != NULL) {
+   if (schedd_conf != nullptr && schedd_list != nullptr) {
       lAppendElem(schedd_list, schedd_conf); 
 
       switch (test->type) {

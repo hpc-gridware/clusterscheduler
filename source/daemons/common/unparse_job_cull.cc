@@ -72,7 +72,7 @@ lList *cull_unparse_job_parameter(sge_gdi_ctx_class_t *ctx, lList **pcmdline, lL
 {
    const char *cp;
    u_long32 ul;
-   lList *answer = NULL;
+   lList *answer = nullptr;
    char str[MAX_STRING_SIZE];
    const lList *lp;
    int ret;
@@ -115,7 +115,7 @@ lList *cull_unparse_job_parameter(sge_gdi_ctx_class_t *ctx, lList **pcmdline, lL
    ** -cwd
    */
    if (lGetString(job, JB_cwd)) {
-      ep_opt = sge_add_noarg(pcmdline, cwd_OPT, "-cwd", NULL);
+      ep_opt = sge_add_noarg(pcmdline, cwd_OPT, "-cwd", nullptr);
    }
 
    /*
@@ -148,7 +148,7 @@ lList *cull_unparse_job_parameter(sge_gdi_ctx_class_t *ctx, lList **pcmdline, lL
    ** -h, here only user hold supported at the moment
    */
    if  ((ul = lGetUlong(lFirst(lGetList(job, JB_ja_tasks)), JAT_hold))) {
-      ep_opt = sge_add_noarg(pcmdline, h_OPT, "-h", NULL);
+      ep_opt = sge_add_noarg(pcmdline, h_OPT, "-h", nullptr);
    }
 
    /*
@@ -156,9 +156,9 @@ lList *cull_unparse_job_parameter(sge_gdi_ctx_class_t *ctx, lList **pcmdline, lL
    */
    if ((lp = lGetList(job, JB_jid_request_list))) {
       int fields[] = { JRE_job_name, 0 };
-      const char *delis[] = {NULL, ",", NULL};
+      const char *delis[] = {nullptr, ",", nullptr};
 
-      ret = uni_print_list(NULL, str, sizeof(str) - 1, lp, fields, delis, 0);
+      ret = uni_print_list(nullptr, str, sizeof(str) - 1, lp, fields, delis, 0);
       if (ret) {
          DPRINTF(("Error %d formatting jid_request_list as -hold_jid\n", ret));
          answer_list_add_sprintf(&answer, STATUS_ESYNTAX, ANSWER_QUALITY_ERROR,
@@ -174,9 +174,9 @@ lList *cull_unparse_job_parameter(sge_gdi_ctx_class_t *ctx, lList **pcmdline, lL
    */
    if ((lp = lGetList(job, JB_ja_ad_request_list))) {
       int fields[] = { JRE_job_name, 0 };
-      const char *delis[] = {NULL, ",", NULL};
+      const char *delis[] = {nullptr, ",", nullptr};
 
-      ret = uni_print_list(NULL, str, sizeof(str) - 1, lp, fields, delis, 0);
+      ret = uni_print_list(nullptr, str, sizeof(str) - 1, lp, fields, delis, 0);
       if (ret) {
          DPRINTF(("Error %d formatting ja_ad_request_list as -hold_jid_ad\n", ret));
          answer_list_add_sprintf(&answer, STATUS_ESYNTAX, ANSWER_QUALITY_ERROR,
@@ -208,9 +208,9 @@ lList *cull_unparse_job_parameter(sge_gdi_ctx_class_t *ctx, lList **pcmdline, lL
    */
    if ((lp = lGetList(job, JB_job_identifier_list))) {
       int fields[] = { JRE_job_number, 0};
-      const char *delis[] = {"", ",", NULL};
+      const char *delis[] = {"", ",", nullptr};
 
-      ret = uni_print_list(NULL, str, sizeof(str) - 1, lp, fields, delis, 
+      ret = uni_print_list(nullptr, str, sizeof(str) - 1, lp, fields, delis,
          0);
       if (ret) {
          DPRINTF(("Error %d formatting job_identifier_list as -jid\n", ret));
@@ -273,9 +273,9 @@ lList *cull_unparse_job_parameter(sge_gdi_ctx_class_t *ctx, lList **pcmdline, lL
    ** does it make sense as a default, after all?
    */
    if ((lp = lGetList(job, JB_mail_list))) {
-      lList *lp_new = NULL;
-      lListElem *ep_new = NULL;
-      const lListElem *ep = NULL;
+      lList *lp_new = nullptr;
+      lListElem *ep_new = nullptr;
+      const lListElem *ep = nullptr;
       const char *host;
       const char *user;
 
@@ -294,9 +294,9 @@ lList *cull_unparse_job_parameter(sge_gdi_ctx_class_t *ctx, lList **pcmdline, lL
       }
       if (lp_new) {
          int fields[] = { MR_user, MR_host, 0 };
-         const char *delis[] = {"@", ",", NULL};
+         const char *delis[] = {"@", ",", nullptr};
 
-         ret = uni_print_list(NULL, str, sizeof(str) - 1, lp_new, fields, delis, FLG_NO_DELIS_STRINGS);
+         ret = uni_print_list(nullptr, str, sizeof(str) - 1, lp_new, fields, delis, FLG_NO_DELIS_STRINGS);
          if (ret) {
             DPRINTF(("Error %d formatting mail list as -M\n", ret));
             answer_list_add_sprintf(&answer, STATUS_ESYNTAX, ANSWER_QUALITY_ERROR,
@@ -324,7 +324,7 @@ lList *cull_unparse_job_parameter(sge_gdi_ctx_class_t *ctx, lList **pcmdline, lL
    ** -notify
    */
    if  ((ul = lGetBool(job, JB_notify))) {
-      ep_opt = sge_add_noarg(pcmdline, notify_OPT, "-notify", NULL);
+      ep_opt = sge_add_noarg(pcmdline, notify_OPT, "-notify", nullptr);
    }
 
    /*
@@ -373,10 +373,10 @@ lList *cull_unparse_job_parameter(sge_gdi_ctx_class_t *ctx, lList **pcmdline, lL
    */
    if ((lp = lGetList(job, JB_hard_queue_list))) {
       int fields[] = { QR_name, 0 };
-      const char *delis[] = {"@", ",", NULL};
+      const char *delis[] = {"@", ",", nullptr};
 
-      ep_opt = sge_add_noarg(pcmdline, hard_OPT, "-hard", NULL);
-      ret = uni_print_list(NULL, str, sizeof(str) - 1, lp, fields, delis, 
+      ep_opt = sge_add_noarg(pcmdline, hard_OPT, "-hard", nullptr);
+      ret = uni_print_list(nullptr, str, sizeof(str) - 1, lp, fields, delis,
          FLG_NO_DELIS_STRINGS);
       if (ret) {
          DPRINTF(("Error %d formatting hard_queue_list as -q\n", ret));
@@ -390,10 +390,10 @@ lList *cull_unparse_job_parameter(sge_gdi_ctx_class_t *ctx, lList **pcmdline, lL
    }
    if ((lp = lGetList(job, JB_soft_queue_list))) {
       int fields[] = { QR_name, 0 };
-      const char *delis[] = {"@", ",", NULL};
+      const char *delis[] = {"@", ",", nullptr};
 
-      ep_opt = sge_add_noarg(pcmdline, soft_OPT, "-soft", NULL);
-      ret = uni_print_list(NULL, str, sizeof(str) - 1, lp, fields, delis, 
+      ep_opt = sge_add_noarg(pcmdline, soft_OPT, "-soft", nullptr);
+      ret = uni_print_list(nullptr, str, sizeof(str) - 1, lp, fields, delis,
          FLG_NO_DELIS_STRINGS);
       if (ret) {
          DPRINTF(("Error %d formatting soft_queue_list as -q\n", ret));
@@ -437,9 +437,9 @@ lList *cull_unparse_job_parameter(sge_gdi_ctx_class_t *ctx, lList **pcmdline, lL
 #else
    if ((lp = lGetList(job, JB_shell_list))) {
       int fields[] = { PN_host, PN_file_host, PN_path, PN_file_staging, 0 };
-      const char *delis[] = {":", ",", NULL};
+      const char *delis[] = {":", ",", nullptr};
 
-      ret = uni_print_list(NULL, str, sizeof(str) - 1, lp, fields, delis, FLG_NO_DELIS_STRINGS);
+      ret = uni_print_list(nullptr, str, sizeof(str) - 1, lp, fields, delis, FLG_NO_DELIS_STRINGS);
       if (ret) {
          DPRINTF(("Error %d formatting shell_list\n", ret));
          answer_list_add_sprintf(&answer, STATUS_ESYNTAX, ANSWER_QUALITY_ERROR,
@@ -458,9 +458,9 @@ lList *cull_unparse_job_parameter(sge_gdi_ctx_class_t *ctx, lList **pcmdline, lL
    */
    if ((lp = lGetList(job, JB_env_list))) {
       int fields[] = { VA_variable, VA_value, 0};
-      const char *delis[] = {"=", ",", NULL};
+      const char *delis[] = {"=", ",", nullptr};
 
-      ret = uni_print_list(NULL, str, sizeof(str) - 1, lp, fields, delis, 
+      ret = uni_print_list(nullptr, str, sizeof(str) - 1, lp, fields, delis,
          FLG_NO_DELIS_STRINGS);
       if (ret) {
          DPRINTF(("Error %d formatting environment list as -v\n", ret));
@@ -497,9 +497,9 @@ lList *cull_unparse_job_parameter(sge_gdi_ctx_class_t *ctx, lList **pcmdline, lL
    if ((flags & FLG_FULL_CMDLINE) &&
       (lp = lGetList(job, JB_job_args))) {
       int fields[] = { ST_name, 0};
-      const char *delis[] = {NULL, " ", NULL};
+      const char *delis[] = {nullptr, " ", nullptr};
 
-      ret = uni_print_list(NULL, str, sizeof(str) - 1, lp, fields, delis, 
+      ret = uni_print_list(nullptr, str, sizeof(str) - 1, lp, fields, delis,
          FLG_NO_DELIS_STRINGS);
       if (ret) {
          DPRINTF(("Error %d formatting job arguments\n", ret));
@@ -564,7 +564,7 @@ u_long32 mail_opt
    }
    
    if  (!*mail_str) {
-      DRETURN(NULL);
+      DRETURN(nullptr);
    }
 
    DRETURN((mail_str));
@@ -594,7 +594,7 @@ lList **alpp
 /*-------------------------------------------------------------------------*/
 static int sge_unparse_checkpoint_option(lListElem *job, lList **pcmdline, lList **alpp)
 {
-   lListElem *ep_opt = NULL;
+   lListElem *ep_opt = nullptr;
    char *cp;
    int i;
    u_long32 ul;
@@ -632,7 +632,7 @@ char *option,
 lList **pcmdline,
 lList **alpp 
 ) {
-   lListElem *ep_opt = NULL;
+   lListElem *ep_opt = nullptr;
    const char *cp;
 
    DENTER(TOP_LAYER);
@@ -659,10 +659,10 @@ static int sge_unparse_resource_list(lListElem *job, int nm, lList **pcmdline, l
       int hard = (nm == JB_hard_resource_list);
 
       if (hard) {
-         ep_opt = sge_add_noarg(pcmdline, hard_OPT, "-hard", NULL);
+         ep_opt = sge_add_noarg(pcmdline, hard_OPT, "-hard", nullptr);
       }
       else {
-         ep_opt = sge_add_noarg(pcmdline, soft_OPT, "-soft", NULL);
+         ep_opt = sge_add_noarg(pcmdline, soft_OPT, "-soft", nullptr);
       }
 
       ret = centry_list_append_to_string(lp, str, sizeof(str) - 1);
@@ -697,7 +697,7 @@ lList **pcmdline,
 lList **alpp 
 ) {
    const char *cp;
-   const lList *lp = NULL;
+   const lList *lp = nullptr;
    lListElem *ep_opt;
    dstring string_buffer = DSTRING_INIT;
    int ret = 0;
@@ -740,7 +740,7 @@ lList **alpp
 /*-------------------------------------------------------------------------*/
 static int sge_unparse_path_list(lListElem *job, int nm, char *option, lList **pcmdline, lList **alpp)
 {
-   const lList *lp = NULL;
+   const lList *lp = nullptr;
    int ret = 0;
    char str[MAX_STRING_SIZE];
    lListElem *ep_opt;
@@ -749,9 +749,9 @@ static int sge_unparse_path_list(lListElem *job, int nm, char *option, lList **p
 
    if ((lp = lGetList(job, nm))) {
       int fields[] = { PN_host, PN_path, 0 };
-      const char *delis[] = {":", ",", NULL};
+      const char *delis[] = {":", ",", nullptr};
 
-      ret = uni_print_list(NULL, str, sizeof(str) - 1, lp, fields, delis, FLG_NO_DELIS_STRINGS);
+      ret = uni_print_list(nullptr, str, sizeof(str) - 1, lp, fields, delis, FLG_NO_DELIS_STRINGS);
       if (ret) {
          DPRINTF(("Error %d formatting path_list\n", ret));
          answer_list_add_sprintf(alpp, STATUS_ESYNTAX, ANSWER_QUALITY_ERROR,

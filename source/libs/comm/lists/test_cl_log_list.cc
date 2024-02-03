@@ -41,7 +41,7 @@
 
 #include "comm/lists/cl_lists.h"
 
-cl_raw_list_t *thread_list = NULL;
+cl_raw_list_t *thread_list = nullptr;
 
 void *my_test_thread(void *t_conf);
 
@@ -54,10 +54,10 @@ void *my_log_thread(void *t_conf);
 
 int my_log_flush_list(cl_raw_list_t *list_p) {
    int ret_val;
-   cl_log_list_elem_t *elem = NULL;
+   cl_log_list_elem_t *elem = nullptr;
 
 
-   if (list_p == NULL) {
+   if (list_p == nullptr) {
       return CL_RETVAL_LOG_NO_LOGLIST;
    }
 
@@ -65,9 +65,9 @@ int my_log_flush_list(cl_raw_list_t *list_p) {
       return ret_val;
    }
 
-   while ((elem = cl_log_list_get_first_elem(list_p)) != NULL) {
+   while ((elem = cl_log_list_get_first_elem(list_p)) != nullptr) {
       char *param;
-      if (elem->log_parameter == NULL) {
+      if (elem->log_parameter == nullptr) {
          param = "";
       } else {
          param = elem->log_parameter;
@@ -89,10 +89,10 @@ int my_log_flush_list(cl_raw_list_t *list_p) {
 #define __CL_FUNCTION__ "main()"
 
 extern int main(int argc, char **argv) {
-   cl_raw_list_t *log_list = NULL;
-   cl_thread_settings_t *thread_p = NULL;
-   cl_thread_settings_t *log_thread = NULL;
-   cl_thread_settings_t *dummy_thread_p = NULL;
+   cl_raw_list_t *log_list = nullptr;
+   cl_thread_settings_t *thread_p = nullptr;
+   cl_thread_settings_t *log_thread = nullptr;
+   cl_thread_settings_t *dummy_thread_p = nullptr;
    int count = 2;
 
 
@@ -104,25 +104,25 @@ extern int main(int argc, char **argv) {
 
    /* setup log list */
    if (atoi(argv[1]) == 0) {
-      cl_log_list_setup(&log_list, "application", 0, CL_LOG_IMMEDIATE, NULL);
+      cl_log_list_setup(&log_list, "application", 0, CL_LOG_IMMEDIATE, nullptr);
    } else {
       cl_log_list_setup(&log_list, "application", 0, CL_LOG_IMMEDIATE, my_log_flush_list);
    }
 
    /* setup log thread */
    log_thread = (cl_thread_settings_t *) sge_malloc(sizeof(cl_thread_settings_t));
-   cl_thread_setup(log_thread, log_list, "log thread", 1, my_log_thread, NULL, NULL, CL_TT_USER1);
+   cl_thread_setup(log_thread, log_list, "log thread", 1, my_log_thread, nullptr, nullptr, CL_TT_USER1);
    cl_log_list_set_log_level(log_list, CL_LOG_DEBUG);
 
    /* setup thread list */
    cl_thread_list_setup(&thread_list, "thread list");
 
    /* setup first thread */
-   cl_thread_list_create_thread(thread_list, &dummy_thread_p, log_list, "1st thread", 1, my_test_thread, NULL, NULL,
+   cl_thread_list_create_thread(thread_list, &dummy_thread_p, log_list, "1st thread", 1, my_test_thread, nullptr, nullptr,
                                 CL_TT_USER1);
 
    /* setup second thread */
-   cl_thread_list_create_thread(thread_list, &dummy_thread_p, log_list, "2nd thread", 2, my_test_thread, NULL, NULL,
+   cl_thread_list_create_thread(thread_list, &dummy_thread_p, log_list, "2nd thread", 2, my_test_thread, nullptr, nullptr,
                                 CL_TT_USER1);
 
 
@@ -150,15 +150,15 @@ extern int main(int argc, char **argv) {
 
       sprintf(new_thread_name, "thread nr %d", count);
       CL_LOG(CL_LOG_INFO, "adding thread ...");
-      cl_thread_list_create_thread(thread_list, &dummy_thread_p, log_list, new_thread_name, id, my_test_thread, NULL,
-                                   NULL, CL_TT_USER1);
+      cl_thread_list_create_thread(thread_list, &dummy_thread_p, log_list, new_thread_name, id, my_test_thread, nullptr,
+                                   nullptr, CL_TT_USER1);
       CL_LOG(CL_LOG_INFO, "adding thread done");
 
    }
 
 
    /* remove all threads from thread list */
-   while ((thread_p = cl_thread_list_get_first_thread(thread_list)) != NULL) {
+   while ((thread_p = cl_thread_list_get_first_thread(thread_list)) != nullptr) {
       int id = thread_p->thread_id;
       CL_LOG_INT(CL_LOG_INFO, "delete thread: ", id);
       CL_LOG_INT(CL_LOG_INFO, "event calls: ", (int) thread_p->thread_event_count);
@@ -245,7 +245,7 @@ void *my_log_thread(void *t_conf) {
 
    /* at least set exit state */
    cl_thread_func_cleanup(thread_config);
-   return (NULL);
+   return (nullptr);
 }
 
 #ifdef __CL_FUNCTION__
@@ -254,7 +254,7 @@ void *my_log_thread(void *t_conf) {
 #define __CL_FUNCTION__ "my_test_thread()"
 
 void *my_test_thread(void *t_conf) {
-   cl_thread_settings_t *thread_p = NULL;
+   cl_thread_settings_t *thread_p = nullptr;
    int counter = 0;
    int do_exit = 0;
    /* get pointer to cl_thread_settings_t struct */
@@ -329,7 +329,7 @@ void *my_test_thread(void *t_conf) {
 
    /* at least set exit state */
    cl_thread_func_cleanup(thread_config);
-   return (NULL);
+   return (nullptr);
 }
 
 

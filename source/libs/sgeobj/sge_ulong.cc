@@ -61,7 +61,7 @@ bool double_print_infinity_to_dstring(double value, dstring *string)
    bool ret = true;
 
    DENTER(ULONG_LAYER);
-   if (string != NULL) {
+   if (string != nullptr) {
       if (value == DBL_MAX) {
          sge_dstring_append(string, "infinity");
       } else {
@@ -80,7 +80,7 @@ bool double_print_time_to_dstring(double value, dstring *string)
    bool ret = true;
 
    DENTER(ULONG_LAYER);
-   if (string != NULL) {
+   if (string != nullptr) {
       if (!double_print_infinity_to_dstring(value, string)) {
          const u_long32 minute_in_seconds = 60;
          const u_long32 hour_in_seconds = minute_in_seconds * 60;
@@ -116,7 +116,7 @@ bool double_print_memory_to_dstring(double value, dstring *string)
    bool ret = true;
 
    DENTER(ULONG_LAYER);
-   if (string != NULL) {
+   if (string != nullptr) {
       if (!double_print_infinity_to_dstring(value, string)) {
          const double kilo_byte = 1024;
          const double mega_byte = kilo_byte * 1024;
@@ -172,7 +172,7 @@ bool double_print_int_to_dstring(double value, dstring *string)
 
    DENTER(ULONG_LAYER);
    
-   if (string != NULL) {
+   if (string != nullptr) {
       if (!double_print_infinity_to_dstring(value, string)) {
          const double min_as_dbl = INT_MIN;
          const double max_as_dbl = INT_MAX;
@@ -215,7 +215,7 @@ bool double_print_to_dstring(double value, dstring *string)
    bool ret = true;
 
    DENTER(ULONG_LAYER);
-   if (string != NULL) {
+   if (string != nullptr) {
       if (!double_print_infinity_to_dstring(value, string)) {
          sge_dstring_sprintf_append(string, "%f", value);
       } 
@@ -259,7 +259,7 @@ ulong_parse_date_time_from_string(u_long32 *this_ulong,
    time_t gmt_secs;
    struct tm res;
    struct tm *tmp_timeptr,timeptr;
-   struct saved_vars_s *context = NULL;
+   struct saved_vars_s *context = nullptr;
 
    DENTER(TOP_LAYER);
 
@@ -291,7 +291,7 @@ ulong_parse_date_time_from_string(u_long32 *this_ulong,
 
    strcpy(inp_date_str, string);
    non_seconds=sge_strtok_r(inp_date_str, ".", &context);
-   seconds=sge_strtok_r(NULL, ".", &context);
+   seconds=sge_strtok_r(nullptr, ".", &context);
 
    if (seconds) {
       i=strlen(seconds);
@@ -523,8 +523,8 @@ ulong_parse_from_string(u_long32 *this_ulong,
    bool ret = true;
       
    DENTER(TOP_LAYER);
-   if (this_ulong != NULL && string != NULL) {
-      if (!parse_ulong_val(NULL, this_ulong, TYPE_INT, string, NULL, 0)) {
+   if (this_ulong != nullptr && string != nullptr) {
+      if (!parse_ulong_val(nullptr, this_ulong, TYPE_INT, string, nullptr, 0)) {
          answer_list_add(answer_list, MSG_PARSE_INVALID_ID_MUSTBEUINT,
                          STATUS_ESEMANTIC, ANSWER_QUALITY_ERROR);
          ret = false;
@@ -541,12 +541,12 @@ ulong_list_parse_from_string(lList **this_list, lList **answer_list,
    bool ret = true;
                                 
    DENTER(TOP_LAYER);
-   if (this_list != NULL && string != NULL && delimitor != NULL) {
-      struct saved_vars_s *context = NULL;
+   if (this_list != nullptr && string != nullptr && delimitor != nullptr) {
+      struct saved_vars_s *context = nullptr;
       const char *token;
             
       token = sge_strtok_r(string, delimitor, &context);
-      while (token != NULL) {   
+      while (token != nullptr) {
          u_long32 value;
 
          ret = ulong_parse_from_string(&value, answer_list, token);
@@ -555,7 +555,7 @@ ulong_list_parse_from_string(lList **this_list, lList **answer_list,
          } else {
             break;
          }
-         token = sge_strtok_r(NULL, delimitor, &context);
+         token = sge_strtok_r(nullptr, delimitor, &context);
       }
       sge_free_saved_vars(context);
    }        

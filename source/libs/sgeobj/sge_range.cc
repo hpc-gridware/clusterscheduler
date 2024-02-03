@@ -78,7 +78,7 @@ static void expand_range_list(lListElem *r, lList **rl)
       while (ep) {
 
          if (rstep != lGetUlong(ep, RN_step) || rstep > 1 || lGetUlong(ep, RN_step) > 1) {
-            lInsertElem(*rl, NULL, r);
+            lInsertElem(*rl, nullptr, r);
             break;
          } else if (rmin > lGetUlong(ep, RN_max)) {
 
@@ -86,7 +86,7 @@ static void expand_range_list(lListElem *r, lList **rl)
              ** r and ep are non-overlapping and r is to be
              ** sorted ahead of ep.
              */
-            lInsertElem(*rl, NULL, r);
+            lInsertElem(*rl, nullptr, r);
             break;
 
          } else if (rmax < lGetUlong(ep, RN_min)) {
@@ -200,7 +200,7 @@ static void expand_range_list(lListElem *r, lList **rl)
 void range_correct_end(lListElem *this_range)
 {
    DENTER(RANGE_LAYER);
-   if (this_range != NULL) {
+   if (this_range != nullptr) {
       u_long32 start, end, step;
 
       range_get_all_ids(this_range, &start, &end, &step);
@@ -256,7 +256,7 @@ static bool range_is_overlapping(const lListElem *this_elem,
    bool ret = false;
 
    DENTER(RANGE_LAYER);
-   if (this_elem != NULL && range != NULL) {
+   if (this_elem != nullptr && range != nullptr) {
       u_long32 start1, end1, step1;
       u_long32 start2, end2, step2;
 
@@ -283,7 +283,7 @@ static bool range_is_overlapping(const lListElem *this_elem,
 *
 *  INPUTS
 *     lList **this_list  - Pointer to a RN_Type-list 
-*     lList **answer_list - Pointer to a AN_Type-list or NULL
+*     lList **answer_list - Pointer to a AN_Type-list or nullptr
 *
 *  RESULT
 *     *this_list will be an empty RN_Type list
@@ -295,8 +295,8 @@ static bool range_is_overlapping(const lListElem *this_elem,
 void range_list_initialize(lList **this_list, lList **answer_list)
 {
    DENTER(RANGE_LAYER);
-   if (this_list != NULL) {
-      if (*this_list != NULL) {
+   if (this_list != nullptr) {
+      if (*this_list != nullptr) {
          lListElem *range;
          lListElem *next_range;
 
@@ -312,7 +312,7 @@ void range_list_initialize(lList **this_list, lList **answer_list)
          }
       } else {
          *this_list = lCreateList("", RN_Type);
-         if (*this_list == NULL) {
+         if (*this_list == nullptr) {
             answer_list_add(answer_list, "unable to create range list",
                             STATUS_ERROR1, ANSWER_QUALITY_ERROR);
          }
@@ -330,7 +330,7 @@ void range_list_initialize(lList **this_list, lList **answer_list)
 *
 *  FUNCTION
 *     This function determines the number of ids contained 
-*     in 'this_list'. If 'this_list' is NULL then 0 will be returned.
+*     in 'this_list'. If 'this_list' is nullptr then 0 will be returned.
 *
 *  INPUTS
 *     const lList *this_list - RN_Type list 
@@ -403,7 +403,7 @@ u_long32 range_get_number_of_ids(const lListElem *this_elem)
 *
 *  FUNCTION
 *     Print all ranges given in 'this_list' into the dynamic 'string'.
-*     If 'this_list' is NULL then the word "UNDEFINED" will be added
+*     If 'this_list' is nullptr then the word "UNDEFINED" will be added
 *     to 'string'. If 'ignore_step' is 'true' then the stepsize of all
 *     ranges will be suppressed.
 *
@@ -426,8 +426,8 @@ range_list_print_to_string(const lList *this_list,
                            bool comma_as_separator, bool print_always_as_range)
 {
    DENTER(RANGE_LAYER);
-   if (string != NULL) {
-      if (this_list != NULL) {
+   if (string != nullptr) {
+      if (this_list != nullptr) {
          const lListElem *range;
 
          for_each_ep(range, this_list) {
@@ -454,7 +454,7 @@ range_list_print_to_string(const lList *this_list,
 *
 *  FUNCTION
 *     The first id of the first range element of the list will 
-*     be returned. If 'range_list' is NULL or empty 0 will be
+*     be returned. If 'range_list' is nullptr or empty 0 will be
 *     returned and 'answer_list' will be filled with an error 
 *     message.
 *
@@ -476,7 +476,7 @@ range_list_print_to_string(const lList *this_list,
 u_long32 range_list_get_first_id(const lList *range_list, lList **answer_list)
 {
    u_long32 start = 0;
-   const lListElem *range = NULL;
+   const lListElem *range = nullptr;
 
    DENTER(RANGE_LAYER);
    range = lFirst(range_list);
@@ -501,7 +501,7 @@ u_long32 range_list_get_first_id(const lList *range_list, lList **answer_list)
 *
 *  FUNCTION
 *     The last id of the last range element of the list will be 
-*     returned. If 'range_list' is NULL or empty 0 will be
+*     returned. If 'range_list' is nullptr or empty 0 will be
 *     returned and 'answer_list' will be filled with an error
 *     message. 
 *
@@ -519,7 +519,7 @@ u_long32 range_list_get_first_id(const lList *range_list, lList **answer_list)
 u_long32 range_list_get_last_id(const lList *range_list, lList **answer_list)
 {
    u_long32 end = 0;
-   const lListElem *range = NULL;
+   const lListElem *range = nullptr;
 
    DENTER(RANGE_LAYER);
    range = lLast(range_list);
@@ -700,9 +700,9 @@ void range_list_sort_uniq_compress(lList *range_list, lList **answer_list, bool 
 void range_list_compress(lList *range_list)
 {
    DENTER(RANGE_LAYER);
-   if (range_list != NULL) {
-      lListElem *range1 = NULL;
-      lListElem *range2 = NULL;
+   if (range_list != nullptr) {
+      lListElem *range1 = nullptr;
+      lListElem *range2 = nullptr;
       lListElem *next_range1 = lFirstRW(range_list);
       lListElem *next_range2 = lNextRW(next_range1);
 
@@ -717,20 +717,20 @@ void range_list_compress(lList *range_list)
             step1 = step2;
             range_set_all_ids(range1, start1, end1, step1);
             lRemoveElem(range_list, &range2);
-            range2 = NULL;
+            range2 = nullptr;
             next_range1 = range1;
          } else if (start1 == end1 && step1 == 1 && end1 == start2 - step2) {
             end1 = end2;
             step1 = step2;
             range_set_all_ids(range1, start1, end1, step1);
             lRemoveElem(range_list, &range2);
-            range2 = NULL;
+            range2 = nullptr;
             next_range1 = range1;
          } else if (start2 == end2 && step2 == 1 && end1 + step1 == end2) {
             end1 = end2;
             range_set_all_ids(range1, start1, end1, step1);
             lRemoveElem(range_list, &range2);
-            range2 = NULL;
+            range2 = nullptr;
             next_range1 = range1;
          } else if (start1 == end1 && start2 == end2 && step1 == step2 &&
                     step1 == 1) {
@@ -738,7 +738,7 @@ void range_list_compress(lList *range_list)
             step1 = end1 - start1;
             range_set_all_ids(range1, start1, end1, step1);
             lRemoveElem(range_list, &range2);
-            range2 = NULL;
+            range2 = nullptr;
             next_range1 = range1;
          } else {
             next_range1 = lNextRW(range1);
@@ -776,7 +776,7 @@ void range_list_compress(lList *range_list)
 *******************************************************************************/
 bool range_list_is_id_within(const lList *range_list, u_long32 id)
 {
-   const lListElem *range = NULL;
+   const lListElem *range = nullptr;
    bool ret = false;
 
    DENTER(RANGE_LAYER);
@@ -809,7 +809,7 @@ bool range_list_is_id_within(const lList *range_list, u_long32 id)
 *******************************************************************************/
 bool range_list_containes_id_less_than(const lList *range_list, u_long32 id)
 {
-   const lListElem *range = NULL;
+   const lListElem *range = nullptr;
    bool ret = false;
 
    DENTER(RANGE_LAYER);
@@ -945,13 +945,13 @@ bool range_is_id_within(const lListElem *range, u_long32 id)
 ******************************************************************************/
 void range_list_remove_id(lList **range_list, lList **answer_list, u_long32 id)
 {
-   lListElem *range = NULL;
+   lListElem *range = nullptr;
 
    DENTER(RANGE_LAYER);
-   if (range_list != NULL && *range_list != NULL) {
+   if (range_list != nullptr && *range_list != nullptr) {
       lListElem *next_range = lFirstRW(*range_list);
 
-      while ((range = next_range) != NULL) {
+      while ((range = next_range) != nullptr) {
          u_long32 start, end, step;
 
          next_range = lNextRW(range);
@@ -971,7 +971,7 @@ void range_list_remove_id(lList **range_list, lList **answer_list, u_long32 id)
             } else {
                lListElem *new_range = lCreateElem(RN_Type);
 
-               if (new_range != NULL) {
+               if (new_range != nullptr) {
                   range_set_all_ids(range, start, id - step, step);
                   range_set_all_ids(new_range, id + step, end, step);
                   lInsertElem(*range_list, range, new_range);
@@ -1021,7 +1021,7 @@ void range_list_move_first_n_ids(lList **range_list, lList **answer_list,
 {
    DENTER(RANGE_LAYER);
    if (range_list && *range_list && range_list2) {
-      const lListElem *range = NULL;
+      const lListElem *range = nullptr;
       u_long32 id;
 
       for_each_ep(range, *range_list) {
@@ -1088,10 +1088,10 @@ void range_list_insert_id(lList **range_list, lList **answer_list, u_long32 id)
 
    lPSortList(*range_list, "%I+", RN_min);
 
-   range = NULL;
-   if (*range_list == NULL) {
+   range = nullptr;
+   if (*range_list == nullptr) {
       *range_list = lCreateList("task_id_range", RN_Type);
-      if (*range_list == NULL) {
+      if (*range_list == nullptr) {
          answer_list_add(answer_list, "unable to insert id into range",
                          STATUS_ERROR1, ANSWER_QUALITY_ERROR);
       }
@@ -1112,7 +1112,7 @@ void range_list_insert_id(lList **range_list, lList **answer_list, u_long32 id)
          } else {
             next_range = range;
             range = prev_range;
-            prev_range = NULL;
+            prev_range = nullptr;
          }
       }
 
@@ -1193,7 +1193,7 @@ void range_list_insert_id(lList **range_list, lList **answer_list, u_long32 id)
 *
 *  FUNCTION
 *     Reads 'min' (start), 'max' (end) and 'step' from a range element.
-*     If 'range' is NULL then 'min', 'max' and 'step' will be set to 0.
+*     If 'range' is nullptr then 'min', 'max' and 'step' will be set to 0.
 *
 *  INPUTS
 *     const lListElem *range - range element of type RN_Type 
@@ -1211,8 +1211,8 @@ void range_get_all_ids(const lListElem *range, u_long32 *min, u_long32 *max,
                        u_long32 *step)
 {
    DENTER(RANGE_LAYER);
-   if (min != NULL && max != NULL && step != NULL) {
-      if (range != NULL) {
+   if (min != nullptr && max != nullptr && step != nullptr) {
+      if (range != nullptr) {
          *min = lGetUlong(range, RN_min);
          *max = lGetUlong(range, RN_max);
          *step = lGetUlong(range, RN_step);
@@ -1253,7 +1253,7 @@ void range_set_all_ids(lListElem *range, u_long32 min, u_long32 max,
                        u_long32 step)
 {
    DENTER(RANGE_LAYER);
-   if (range != NULL) {
+   if (range != nullptr) {
       lSetUlong(range, RN_min, min);
       lSetUlong(range, RN_max, max);
       if (min != max) {
@@ -1298,15 +1298,15 @@ void range_list_calculate_union_set(lList **range_list,
                                     const lList *range_list2)
 {
    DENTER(RANGE_LAYER);
-   if (range_list != NULL && (range_list1 != NULL || range_list2 != NULL)) {
+   if (range_list != nullptr && (range_list1 != nullptr || range_list2 != nullptr)) {
       lFreeList(range_list);
 
-      if (range_list1 != NULL) {
+      if (range_list1 != nullptr) {
          *range_list = lCopyList("", range_list1);
       } else {
          *range_list = lCopyList("", range_list2);
       }
-      if (*range_list == NULL) {
+      if (*range_list == nullptr) {
          DTRACE;
          goto error;
       }
@@ -1317,8 +1317,8 @@ void range_list_calculate_union_set(lList **range_list,
          goto error;
       }
 
-      if (range_list1 != NULL && range_list2 != NULL) {
-         const lListElem *range2 = NULL;
+      if (range_list1 != nullptr && range_list2 != nullptr) {
+         const lListElem *range2 = nullptr;
 
          for_each_ep(range2, range_list2) {
             u_long32 start2, end2, step2;
@@ -1369,10 +1369,10 @@ void range_list_calculate_difference_set(lList **range_list,
                                          const lList *range_list2)
 {
    DENTER(RANGE_LAYER);
-   if (range_list != NULL && range_list1 != NULL) {
+   if (range_list != nullptr && range_list1 != nullptr) {
       lFreeList(range_list);
       *range_list = lCopyList("difference_set range list", range_list1);
-      if (*range_list == NULL) {
+      if (*range_list == nullptr) {
          goto error;
       }
 
@@ -1381,8 +1381,8 @@ void range_list_calculate_difference_set(lList **range_list,
          goto error;
       }
 
-      if (range_list2 != NULL) {
-         const lListElem *range2 = NULL;
+      if (range_list2 != nullptr) {
+         const lListElem *range2 = nullptr;
 
          for_each_ep(range2, range_list2) {
             u_long32 start2, end2, step2;
@@ -1448,14 +1448,14 @@ void range_list_calculate_intersection_set(lList **range_list,
             if (range_list_is_id_within(range_list2, start)) {
                lListElem *new_range;
 
-               if (*range_list == NULL) {
+               if (*range_list == nullptr) {
                   *range_list = lCreateList("", RN_Type);
-                  if (*range_list == NULL) {
+                  if (*range_list == nullptr) {
                      goto error;
                   }
                }
                new_range = lCreateElem(RN_Type);
-               if (new_range == NULL) {
+               if (new_range == nullptr) {
                   goto error;
                }
                range_set_all_ids(new_range, start, start, 1);
@@ -1548,7 +1548,7 @@ void range_parse_from_string(lListElem **range,
    old_str = rstr;
 
    if (!strcasecmp(rstr, "UNDEFINED")) {
-      *range = NULL;
+      *range = nullptr;
       DRETURN_VOID;
    }
    r = lCreateElem(RN_Type);
@@ -1566,7 +1566,7 @@ void range_parse_from_string(lListElem **range,
             *range = r;
             DRETURN_VOID;
          } else {
-            *range = NULL;
+            *range = nullptr;
             DRETURN_VOID;
          }
       }
@@ -1578,7 +1578,7 @@ void range_parse_from_string(lListElem **range,
       sprintf(msg, MSG_GDI_INITIALPORTIONSTRINGNODECIMAL_S, rstr);
       answer_list_add(answer_list, msg, STATUS_ESYNTAX, ANSWER_QUALITY_ERROR);
       lFreeElem(&r);
-      *range = NULL;
+      *range = nullptr;
       DRETURN_VOID;
    }
 
@@ -1591,7 +1591,7 @@ void range_parse_from_string(lListElem **range,
                  old_str, rstr);
          answer_list_add(answer_list, msg, STATUS_ESYNTAX, ANSWER_QUALITY_ERROR);
          lFreeElem(&r);
-         *range = NULL;
+         *range = nullptr;
          DRETURN_VOID;
       }
       /* <n> is the max-value */
@@ -1616,7 +1616,7 @@ void range_parse_from_string(lListElem **range,
                     old_str, dptr);
             answer_list_add(answer_list, msg, STATUS_ESYNTAX, ANSWER_QUALITY_ERROR);
             lFreeElem(&r);
-            *range = NULL;
+            *range = nullptr;
             DRETURN_VOID;
          } else {
             /* it is. set min to ldummy. now, what's after the - */
@@ -1627,7 +1627,7 @@ void range_parse_from_string(lListElem **range,
                if (inf_allowed) {
                   rmax = RANGE_INFINITY;
                } else {
-                  *range = NULL;
+                  *range = nullptr;
                   DRETURN_VOID;
                }
             } else {
@@ -1638,7 +1638,7 @@ void range_parse_from_string(lListElem **range,
                   answer_list_add(answer_list, msg, STATUS_ESYNTAX,
                                   ANSWER_QUALITY_ERROR);
                   lFreeElem(&r);
-                  *range = NULL;
+                  *range = nullptr;
                   DRETURN_VOID;
                }
 
@@ -1648,7 +1648,7 @@ void range_parse_from_string(lListElem **range,
                   answer_list_add(answer_list, msg, STATUS_ESYNTAX,
                                   ANSWER_QUALITY_ERROR);
                   lFreeElem(&r);
-                  *range = NULL;
+                  *range = nullptr;
                   DRETURN_VOID;
                }
                /* finally, we got the max-value in ldummy */
@@ -1670,7 +1670,7 @@ void range_parse_from_string(lListElem **range,
                         answer_list_add(answer_list, msg, STATUS_ESYNTAX,
                                         ANSWER_QUALITY_ERROR);
                         lFreeElem(&r);
-                        *range = NULL;
+                        *range = nullptr;
                         DRETURN_VOID;
                      }
                   }
@@ -1680,7 +1680,7 @@ void range_parse_from_string(lListElem **range,
                      answer_list_add(answer_list, msg, STATUS_ESYNTAX,
                                      ANSWER_QUALITY_ERROR);
                      lFreeElem(&r);
-                     *range = NULL;
+                     *range = nullptr;
                      DRETURN_VOID;
                   }
                   else {
@@ -1688,7 +1688,7 @@ void range_parse_from_string(lListElem **range,
                      answer_list_add(answer_list, msg, STATUS_ESYNTAX,
                                      ANSWER_QUALITY_ERROR);
                      lFreeElem(&r);
-                     *range = NULL;
+                     *range = nullptr;
                      DRETURN_VOID;
                   }
                    
@@ -1698,7 +1698,7 @@ void range_parse_from_string(lListElem **range,
                      answer_list_add(answer_list, msg, STATUS_ESYNTAX,
                                      ANSWER_QUALITY_ERROR);
                      lFreeElem(&r);
-                     *range = NULL;
+                     *range = nullptr;
                      DRETURN_VOID;
                   }
                   /* finally, we got the max-value in ldummy */
@@ -1731,10 +1731,10 @@ void range_parse_from_string(lListElem **range,
 
    converts a range string into a range cull list
 
-   an undefined range return NULL
+   an undefined range return nullptr
 
    if answer_list is delivered no exit occurs instead the function fills the 
-   answer list and returns NULL, *answer_list must be NULL !
+   answer list and returns nullptr, *answer_list must be nullptr !
 
    MT-NOTE: range_list_parse_from_string() is MT safe
 */
@@ -1744,10 +1744,10 @@ range_list_parse_from_string(lList **this_list, lList **answer_list,
                              bool step_allowed, bool inf_allowed)
 {
    const char *s;
-   lListElem *range = NULL;
-   lList *range_list = NULL;
+   lListElem *range = nullptr;
+   lList *range_list = nullptr;
    bool undefined = false, first = true;
-   struct saved_vars_s *context = NULL;
+   struct saved_vars_s *context = nullptr;
 
    DENTER(TOP_LAYER);
 
@@ -1756,21 +1756,21 @@ range_list_parse_from_string(lList **this_list, lList **answer_list,
    }
 
    for (s = sge_strtok_r(string, RANGE_SEPARATOR_CHARS, &context);
-        s; s = sge_strtok_r(NULL, RANGE_SEPARATOR_CHARS, &context)) {
+        s; s = sge_strtok_r(nullptr, RANGE_SEPARATOR_CHARS, &context)) {
       if (!first && undefined) {
          /* first was undefined - no more ranges allowed */
          ERROR((SGE_EVENT, SFNMAX, MSG_GDI_UNEXPECTEDRANGEFOLLOWINGUNDEFINED));
          sge_free_saved_vars(context);
          answer_list_add(answer_list, SGE_EVENT, STATUS_ESYNTAX,
                          ANSWER_QUALITY_ERROR);
-         *this_list = NULL;
+         *this_list = nullptr;
          DRETURN(false);
       }
 
       range_parse_from_string(&range, answer_list, s, 
                               step_allowed, inf_allowed);
 
-      if (range == NULL) {
+      if (range == nullptr) {
          if (first) {
             undefined = true;
          } else {
@@ -1779,7 +1779,7 @@ range_list_parse_from_string(lList **this_list, lList **answer_list,
             sge_free_saved_vars(context);
             answer_list_add(answer_list, SGE_EVENT, STATUS_ESYNTAX,
                             ANSWER_QUALITY_ERROR);
-            *this_list = NULL;
+            *this_list = nullptr;
             DRETURN(false);
          }
       } else {

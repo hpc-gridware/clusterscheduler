@@ -55,7 +55,7 @@ qrstat_print(lList **answer_list, qrstat_report_handler_t *handler, qrstat_env_t
    DENTER(TOP_LAYER);
 
    {
-      const lListElem *ar = NULL;
+      const lListElem *ar = nullptr;
 
       handler->report_start(handler, answer_list);
       if (qrstat_env->is_summary == false &&
@@ -86,7 +86,7 @@ qrstat_print(lList **answer_list, qrstat_report_handler_t *handler, qrstat_env_t
             if (qrstat_env->is_explain || handler->show_summary == false) {
                const lListElem *qinstance;
                for_each_ep(qinstance, lGetList(ar, AR_reserved_queues)) {
-                  const lListElem *qim = NULL;
+                  const lListElem *qim = nullptr;
                   for_each_ep(qim, lGetList(qinstance, QU_message_list)) {
                      const char *message = lGetString(qim, QIM_message);
                      handler->report_ar_node_string(handler, answer_list, "message", message);
@@ -99,8 +99,8 @@ qrstat_print(lList **answer_list, qrstat_report_handler_t *handler, qrstat_env_t
                handler->report_ar_node_string(handler, answer_list, "group", lGetString(ar, AR_group));
                handler->report_ar_node_string(handler, answer_list, "account", lGetString(ar, AR_account));
 
-               if (lGetList(ar, AR_resource_list) != NULL) {
-                  const lListElem *resource = NULL;
+               if (lGetList(ar, AR_resource_list) != nullptr) {
+                  const lListElem *resource = nullptr;
 
                   handler->report_start_resource_list(handler, answer_list);            
                   for_each_ep(resource, lGetList(ar, AR_resource_list)) {
@@ -124,8 +124,8 @@ qrstat_print(lList **answer_list, qrstat_report_handler_t *handler, qrstat_env_t
                   handler->report_ar_node_boolean(handler, answer_list, "error_handling", true);
                }
                
-               if (lGetList(ar, AR_granted_slots) != NULL) {
-                  const lListElem *resource = NULL;
+               if (lGetList(ar, AR_granted_slots) != nullptr) {
+                  const lListElem *resource = nullptr;
 
                   handler->report_start_granted_slots_list(handler, answer_list);
                   for_each_ep(resource, lGetList(ar, AR_granted_slots)) {
@@ -135,7 +135,7 @@ qrstat_print(lList **answer_list, qrstat_report_handler_t *handler, qrstat_env_t
                   }
                   handler->report_finish_granted_slots_list(handler, answer_list);
                }
-               if (lGetString(ar, AR_pe) != NULL) {
+               if (lGetString(ar, AR_pe) != nullptr) {
                   dstring pe_range_string = DSTRING_INIT;
 
                   range_list_print_to_string(lGetList(ar, AR_pe_range), &pe_range_string, true, false, false);
@@ -146,16 +146,16 @@ qrstat_print(lList **answer_list, qrstat_report_handler_t *handler, qrstat_env_t
                   handler->report_finish_granted_parallel_environment(handler, answer_list);
                   sge_dstring_free(&pe_range_string);
                }
-               if (lGetList(ar, AR_master_queue_list) != NULL) {
+               if (lGetList(ar, AR_master_queue_list) != nullptr) {
                   char tmp_buffer[MAX_STRING_SIZE];
                   int fields[] = {QR_name, 0 };
                   const char *delis[] = {" ", ",", ""};
-                  uni_print_list(NULL, tmp_buffer, sizeof(tmp_buffer), lGetList(ar, AR_master_queue_list), 
+                  uni_print_list(nullptr, tmp_buffer, sizeof(tmp_buffer), lGetList(ar, AR_master_queue_list),
                                  fields, delis, FLG_NO_DELIS_STRINGS);
                   handler->report_ar_node_string(handler, answer_list, "master hard queue_list", tmp_buffer);
                }
 
-               if (lGetString(ar, AR_checkpoint_name) != NULL) {
+               if (lGetString(ar, AR_checkpoint_name) != nullptr) {
                   handler->report_ar_node_string(handler, answer_list, "checkpoint_name",
                                                  lGetString(ar, AR_checkpoint_name));
                }
@@ -170,12 +170,12 @@ qrstat_print(lList **answer_list, qrstat_report_handler_t *handler, qrstat_env_t
                   sge_dstring_free(&mailopt);
                }
 
-               if (lGetList(ar, AR_mail_list) != NULL) {
-                  const lListElem *mail = NULL;
+               if (lGetList(ar, AR_mail_list) != nullptr) {
+                  const lListElem *mail = nullptr;
 
                   handler->report_start_mail_list(handler, answer_list);
                   for_each_ep(mail, lGetList(ar, AR_mail_list)) {
-                     const char *host=NULL;
+                     const char *host=nullptr;
                      host=lGetHost(mail, MR_host);
                      handler->report_mail_list_node(handler, answer_list,
                                                     lGetString(mail, MR_user),
@@ -183,8 +183,8 @@ qrstat_print(lList **answer_list, qrstat_report_handler_t *handler, qrstat_env_t
                   }
                   handler->report_finish_mail_list(handler, answer_list);
                }
-               if (lGetList(ar, AR_acl_list) != NULL) {
-                  const lListElem *acl = NULL;
+               if (lGetList(ar, AR_acl_list) != nullptr) {
+                  const lListElem *acl = nullptr;
 
                   handler->report_start_acl_list(handler, answer_list);
                   for_each_ep(acl, lGetList(ar, AR_acl_list)) {
@@ -193,8 +193,8 @@ qrstat_print(lList **answer_list, qrstat_report_handler_t *handler, qrstat_env_t
                   }
                   handler->report_finish_acl_list(handler, answer_list);
                }
-               if (lGetList(ar, AR_xacl_list) != NULL) {
-                  const lListElem *xacl = NULL;
+               if (lGetList(ar, AR_xacl_list) != nullptr) {
+                  const lListElem *xacl = nullptr;
 
                   handler->report_start_xacl_list(handler, answer_list);
                   for_each_ep(xacl, lGetList(ar, AR_xacl_list)) {

@@ -165,7 +165,7 @@ int sge_loadmem(sge_mem_info_t *mem_info)
    sz =  sizeof(long) + cnt * sizeof(struct swapent);
    swt = (struct swaptable *) calloc(1, sz);
 
-   if (swt == NULL) {
+   if (swt == nullptr) {
       total = 0;
       fr = 0;
       DRETURN(-1);
@@ -294,7 +294,7 @@ int sge_loadmem(sge_mem_info_t *mem_info)
     vm_statistics_data_t vm_info;
     mach_msg_type_number_t info_count = HOST_VM_INFO_COUNT;
 
-    sysctlbyname("hw.memsize", &mem_total, &len, NULL, 0);
+    sysctlbyname("hw.memsize", &mem_total, &len, nullptr, 0);
     mem_info->mem_total = mem_total / (1024*1024);
 
     host_statistics(mach_host_self (), HOST_VM_INFO, (host_info_t)&vm_info, &info_count);
@@ -324,11 +324,11 @@ int sge_loadmem(sge_mem_info_t *mem_info)
 
    tmpsize = sizeof(page_size);
    if (sysctlbyname("vm.stats.vm.v_page_size", &page_size, &tmpsize,
-      NULL, 0) == -1)
+      nullptr, 0) == -1)
       return -1;
    tmpsize = sizeof(page_count);
    if (sysctlbyname("vm.stats.vm.v_page_count", &page_count, &tmpsize,
-      NULL, 0) == -1)
+      nullptr, 0) == -1)
       return -1;
    mem_info->mem_total = (page_count * page_size) / (1024.0*1024.0);
 
@@ -339,15 +339,15 @@ int sge_loadmem(sge_mem_info_t *mem_info)
     */
    tmpsize = sizeof(free_count);
    if (sysctlbyname("vm.stats.vm.v_free_count", &free_count, &tmpsize,
-      NULL, 0) == -1)
+      nullptr, 0) == -1)
       return -1;
    tmpsize = sizeof(cache_count);
    if (sysctlbyname("vm.stats.vm.v_cache_count", &cache_count, &tmpsize,
-      NULL, 0) == -1)
+      nullptr, 0) == -1)
       return -1;
    tmpsize = sizeof(inactive_count);
    if (sysctlbyname("vm.stats.vm.v_inactive_count", &inactive_count, &tmpsize,
-      NULL, 0) == -1)
+      nullptr, 0) == -1)
       return -1;
    mem_info->mem_free =
       ((free_count + cache_count + inactive_count) * page_size) /
@@ -364,7 +364,7 @@ int sge_loadmem(sge_mem_info_t *mem_info)
     */
    swap_count = 0;
    usedswap_count = 0;
-   if ((kd = kvm_open(NULL, NULL, NULL, O_RDONLY, "sge_loadmem")) != NULL) {
+   if ((kd = kvm_open(nullptr, nullptr, nullptr, O_RDONLY, "sge_loadmem")) != nullptr) {
       n = kvm_getswapinfo(kd, kswap, sizeof(kswap)/sizeof(kswap[0]), 0);
       kvm_close(kd);
       if (n == -1)
@@ -398,7 +398,7 @@ int sge_loadmem(sge_mem_info_t *mem_info)
   mib[1] = VM_UVMEXP2;
   size   = sizeof(uvmexp);
 
-  sysctl(mib, sizeof(mib)/sizeof(int), &uvmexp, &size, NULL, 0);
+  sysctl(mib, sizeof(mib)/sizeof(int), &uvmexp, &size, nullptr, 0);
 
   /* Memory */
   mem_info->mem_total = (uvmexp.npages * uvmexp.pagesize) / (1024 * 1024);

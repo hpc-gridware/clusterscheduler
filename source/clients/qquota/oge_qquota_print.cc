@@ -122,15 +122,15 @@ bool qquota_output(sge_gdi_ctx_class_t *ctx, lList *host_list, lList *resource_m
                  lList *pe_list, lList *project_list, lList *cqueue_list, lList **alpp,
                  report_handler_t* report_handler) 
 {
-   lList *rqs_list = NULL;
-   lList *centry_list = NULL;
-   lList *userset_list = NULL;
-   lList *hgroup_list = NULL;
-   lList *exechost_list = NULL;
+   lList *rqs_list = nullptr;
+   lList *centry_list = nullptr;
+   lList *userset_list = nullptr;
+   lList *hgroup_list = nullptr;
+   lList *exechost_list = nullptr;
 
-   lListElem* global_host = NULL;
-   lListElem* exec_host = NULL;
-   lList* printed_rules = NULL;  /* Hash list of already printed resource quota rules (possible with -u user1,user2,user3...) */
+   lListElem* global_host = nullptr;
+   lListElem* exec_host = nullptr;
+   lList* printed_rules = nullptr;  /* Hash list of already printed resource quota rules (possible with -u user1,user2,user3...) */
 
    bool ret = true;
    int xml_ret = 0;
@@ -151,11 +151,11 @@ bool qquota_output(sge_gdi_ctx_class_t *ctx, lList *host_list, lList *resource_m
    ret = get_all_lists(ctx, &rqs_list, &centry_list, &userset_list, &hgroup_list, &exechost_list, host_list, alpp);
 
    if (ret == true) {
-      const lListElem *rqs = NULL;
+      const lListElem *rqs = nullptr;
       printed_rules = lCreateList("rule_hash", ST_Type); 
       global_host = host_list_locate(exechost_list, SGE_GLOBAL_NAME);
 
-      if (report_handler != NULL) {
+      if (report_handler != nullptr) {
          xml_ret = report_handler->report_started(report_handler, alpp);
          if (xml_ret != 0) {
             ret = false;
@@ -164,7 +164,7 @@ bool qquota_output(sge_gdi_ctx_class_t *ctx, lList *host_list, lList *resource_m
       }
 
       for_each_ep(rqs, rqs_list) {
-         lListElem *rule = NULL;
+         lListElem *rule = nullptr;
          int rule_count = 1;
 
          if (lGetBool(rqs, RQS_enabled) == false) {
@@ -178,46 +178,46 @@ bool qquota_output(sge_gdi_ctx_class_t *ctx, lList *host_list, lList *resource_m
             const lListElem *queue_ep = lFirst(cqueue_list);
             const lListElem *host_ep = lFirst(host_list);
             do {
-               if (user_ep != NULL) {
+               if (user_ep != nullptr) {
                   qquota_filter.user = lGetString(user_ep, ST_name);
                }
                do {
-                  if (project_ep != NULL) {
+                  if (project_ep != nullptr) {
                      qquota_filter.project = lGetString(project_ep, ST_name);
                   }
                   do {
-                     if (pe_ep != NULL) {
+                     if (pe_ep != nullptr) {
                         qquota_filter.pe = lGetString(pe_ep, ST_name);
                      }
                      do {
-                        if (queue_ep != NULL) {
+                        if (queue_ep != nullptr) {
                            qquota_filter.queue = lGetString(queue_ep, ST_name);
                         }
                         do {
-                           if (host_ep != NULL) {
+                           if (host_ep != nullptr) {
                               qquota_filter.host = lGetString(host_ep, ST_name);
                            }
                          
-                           if (rqs_is_matching_rule(rule, qquota_filter.user, NULL, qquota_filter.project,
+                           if (rqs_is_matching_rule(rule, qquota_filter.user, nullptr, qquota_filter.project,
                                                      qquota_filter.pe, qquota_filter.host,
                                                      qquota_filter.queue, userset_list, hgroup_list)) {
-                              const lListElem *limit = NULL;
+                              const lListElem *limit = nullptr;
 
                               for_each_ep(limit, lGetList(rule, RQR_limit)) {
                                  const char *limit_name = lGetString(limit, RQRL_name);
                                  const lList *rue_list = lGetList(limit, RQRL_usage);
                                  lListElem *raw_centry = centry_list_locate(centry_list, limit_name);
-                                 const lListElem *rue_elem = NULL;
+                                 const lListElem *rue_elem = nullptr;
 
-                                 if (raw_centry == NULL) {
+                                 if (raw_centry == nullptr) {
                                     /* undefined centries can be ignored */
                                     DPRINTF(("centry %s not defined -> IGNORING\n", limit_name));
                                     continue;
                                  }
 
-                                 if ((resource_match_list != NULL) && 
-                                     ((centry_list_locate(resource_match_list, limit_name) == NULL) &&
-                                     (centry_list_locate(resource_match_list, lGetString(raw_centry, CE_shortcut)) == NULL))) {
+                                 if ((resource_match_list != nullptr) &&
+                                     ((centry_list_locate(resource_match_list, limit_name) == nullptr) &&
+                                     (centry_list_locate(resource_match_list, lGetString(raw_centry, CE_shortcut)) == nullptr))) {
                                     DPRINTF(("centry %s was not requested on CLI -> IGNORING\n", limit_name));
                                     continue;
                                  }
@@ -234,20 +234,20 @@ bool qquota_output(sge_gdi_ctx_class_t *ctx, lList *host_list, lList *resource_m
                                     for_each_ep(rue_elem, rue_list) {
                                        u_long32 dominant = 0;
                                        const char *rue_name = lGetString(rue_elem, RUE_name);
-                                       char *cp = NULL;
+                                       char *cp = nullptr;
                                        stringT user, project, pe, queue, host;
                                        dstring limit_str = DSTRING_INIT; 
                                        dstring value_str = DSTRING_INIT;
-                                       qquota_filter_t qf = { NULL, NULL, NULL, NULL, NULL };
+                                       qquota_filter_t qf = { nullptr, nullptr, nullptr, nullptr, nullptr };
 
                                        /* check user name */
                                        cp = qquota_get_next_filter(user, rue_name);
                                        /* usergroups have the same beginning character @ as host groups */
                                        if (is_hgroup_name(qquota_filter.user)) {
-                                          lListElem *ugroup = NULL;
+                                          lListElem *ugroup = nullptr;
 
-                                          if ((ugroup = userset_list_locate(userset_list, &qquota_filter.user[1])) != NULL) {
-                                             if (sge_contained_in_access_list(user, NULL, ugroup, NULL) == 0) {
+                                          if ((ugroup = userset_list_locate(userset_list, &qquota_filter.user[1])) != nullptr) {
+                                             if (sge_contained_in_access_list(user, nullptr, ugroup, nullptr) == 0) {
                                                 continue;
                                              }
                                           }
@@ -279,12 +279,12 @@ bool qquota_output(sge_gdi_ctx_class_t *ctx, lList *host_list, lList *resource_m
                                        /* check host name */
                                        cp = qquota_get_next_filter(host, cp);
                                        if (is_hgroup_name(qquota_filter.host)) {
-                                          lListElem *hgroup = NULL;
+                                          lListElem *hgroup = nullptr;
 
-                                          if ((hgroup = hgroup_list_locate(hgroup_list, qquota_filter.host)) != NULL) {
-                                             lList *host_list = NULL;
-                                             hgroup_find_all_references(hgroup, NULL, hgroup_list, &host_list, NULL);
-                                             if (host_list == NULL && lGetElemHost(host_list, HR_name, host) == NULL) {
+                                          if ((hgroup = hgroup_list_locate(hgroup_list, qquota_filter.host)) != nullptr) {
+                                             lList *host_list = nullptr;
+                                             hgroup_find_all_references(hgroup, nullptr, hgroup_list, &host_list, nullptr);
+                                             if (host_list == nullptr && lGetElemHost(host_list, HR_name, host) == nullptr) {
                                                 lFreeList(&host_list);
                                                 continue;
                                              }
@@ -323,11 +323,11 @@ bool qquota_output(sge_gdi_ctx_class_t *ctx, lList *host_list, lList *resource_m
                                     }
                                  } else {
                                     /* static values */
-                                    qquota_filter_t qf = { NULL, NULL, NULL, NULL, NULL };
+                                    qquota_filter_t qf = { nullptr, nullptr, nullptr, nullptr, nullptr };
 
                                     DPRINTF(("found centry %s - static value\n", limit_name));
                                     ret = qquota_print_out_rule(rule, rule_name, limit_name, 
-                                                                NULL, lGetString(limit, RQRL_value),
+                                                                nullptr, lGetString(limit, RQRL_value),
                                                                 qf, raw_centry, report_handler, printed_rules, alpp);
 
                                  }
@@ -342,7 +342,7 @@ bool qquota_output(sge_gdi_ctx_class_t *ctx, lList *host_list, lList *resource_m
          }
       }
 
-      if (report_handler != NULL) {
+      if (report_handler != nullptr) {
          report_handler->report_finished(report_handler, alpp);
       }
    }
@@ -395,10 +395,10 @@ static bool
 get_all_lists(sge_gdi_ctx_class_t *ctx, lList **rqs_l, lList **centry_l, lList **userset_l,
               lList **hgroup_l, lList **exechost_l, lList *hostref_l, lList **alpp)
 {
-   const lListElem *ep = NULL;
-   lEnumeration *what = NULL;
-   lCondition *where = NULL, *nw = NULL;
-   lList *mal = NULL;
+   const lListElem *ep = nullptr;
+   lEnumeration *what = nullptr;
+   lCondition *where = nullptr, *nw = nullptr;
+   lList *mal = nullptr;
    int rqs_id, ce_id, userset_id, hgroup_id, eh_id;
    state_gdi_multi state = STATE_GDI_MULTI_INIT;
    
@@ -410,7 +410,7 @@ get_all_lists(sge_gdi_ctx_class_t *ctx, lList **rqs_l, lList **centry_l, lList *
    what = lWhat("%T(ALL)", RQS_Type);
    rqs_id = ctx->gdi_multi(ctx, 
                           alpp, SGE_GDI_RECORD, SGE_RQS_LIST, SGE_GDI_GET, 
-                          NULL, NULL, what, &state, true);
+                          nullptr, nullptr, what, &state, true);
    lFreeWhat(&what);
 
    if (answer_list_has_error(alpp)) {
@@ -423,7 +423,7 @@ get_all_lists(sge_gdi_ctx_class_t *ctx, lList **rqs_l, lList **centry_l, lList *
    what = lWhat("%T(ALL)", CE_Type);
    ce_id = ctx->gdi_multi(ctx, 
                           alpp, SGE_GDI_RECORD, SGE_CE_LIST, SGE_GDI_GET, 
-                          NULL, NULL, what, &state, true);
+                          nullptr, nullptr, what, &state, true);
    lFreeWhat(&what);
 
    if (answer_list_has_error(alpp)) {
@@ -435,7 +435,7 @@ get_all_lists(sge_gdi_ctx_class_t *ctx, lList **rqs_l, lList **centry_l, lList *
    what = lWhat("%T(ALL)", US_Type);
    userset_id = ctx->gdi_multi(ctx, 
                           alpp, SGE_GDI_RECORD, SGE_US_LIST, SGE_GDI_GET, 
-                          NULL, NULL, what, &state, true);
+                          nullptr, nullptr, what, &state, true);
    lFreeWhat(&what);
 
    if (answer_list_has_error(alpp)) {
@@ -447,7 +447,7 @@ get_all_lists(sge_gdi_ctx_class_t *ctx, lList **rqs_l, lList **centry_l, lList *
    what = lWhat("%T(ALL)", HGRP_Type);
    hgroup_id = ctx->gdi_multi(ctx, 
                           alpp, SGE_GDI_RECORD, SGE_HGRP_LIST, SGE_GDI_GET, 
-                          NULL, NULL, what, &state, true);
+                          nullptr, nullptr, what, &state, true);
    lFreeWhat(&what);
    /*
    ** exec hosts
@@ -460,7 +460,7 @@ get_all_lists(sge_gdi_ctx_class_t *ctx, lList **rqs_l, lList **centry_l, lList *
          where = lOrWhere(where, nw);
    }
    /* the global host has to be retrieved as well */
-   if (where != NULL) {
+   if (where != nullptr) {
       nw = lWhere("%T(%I == %s)", EH_Type, EH_name, SGE_GLOBAL_NAME);
       where = lOrWhere(where, nw);
    }
@@ -473,7 +473,7 @@ get_all_lists(sge_gdi_ctx_class_t *ctx, lList **rqs_l, lList **centry_l, lList *
 
    what = lWhat("%T(%I %I %I %I)", EH_Type, EH_name, EH_load_list, EH_consumable_config_list, EH_resource_utilization);
    eh_id = ctx->gdi_multi(ctx, alpp, SGE_GDI_SEND, SGE_EH_LIST, SGE_GDI_GET, 
-                          NULL, where, what, &state, true);
+                          nullptr, where, what, &state, true);
    ctx->gdi_wait(ctx, alpp, &mal, &state);
    lFreeWhat(&what);
    lFreeWhere(&where);
@@ -553,7 +553,7 @@ get_all_lists(sge_gdi_ctx_class_t *ctx, lList **rqs_l, lList **centry_l, lList *
 *******************************************************************************/
 static char *qquota_get_next_filter(stringT filter, const char *cp)
 {
-   char *ret = NULL;
+   char *ret = nullptr;
 
    ret = (char *)strchr(cp, '/');
    ret++;
@@ -615,7 +615,7 @@ static bool qquota_print_out_rule(lListElem *rule, dstring rule_name, const char
                                                              qfilter.queue? qfilter.queue: "",
                                                              qfilter.host? qfilter.host: "");
 
-   if (lGetElemStr(printed_rules, ST_name, sge_dstring_get_string(&token)) != NULL) {
+   if (lGetElemStr(printed_rules, ST_name, sge_dstring_get_string(&token)) != nullptr) {
       sge_dstring_free(&token);
       sge_dstring_free(&filter_str);
       sge_dstring_free(&limitation);
@@ -624,7 +624,7 @@ static bool qquota_print_out_rule(lListElem *rule, dstring rule_name, const char
 
    lAddElemStr(&printed_rules, ST_name, sge_dstring_get_string(&token), ST_Type);
 
-   if (report_handler != NULL) {
+   if (report_handler != nullptr) {
       report_handler->report_limit_rule_begin(report_handler, sge_dstring_get_string(&rule_name), alpp);
    } else {
       if (printheader == true) {
@@ -640,14 +640,14 @@ static bool qquota_print_out_rule(lListElem *rule, dstring rule_name, const char
    qquota_print_out_filter(lGetObject(rule, RQR_filter_queues), "queues", qfilter.queue, &filter_str, report_handler, alpp);
    qquota_print_out_filter(lGetObject(rule, RQR_filter_hosts), "hosts", qfilter.host, &filter_str, report_handler, alpp);
 
-   if (report_handler != NULL) {
+   if (report_handler != nullptr) {
       report_handler->report_resource_value(report_handler, limit_name,
                                             limit_value,
                                             usage_value,
                                             alpp);
       report_handler->report_limit_rule_finished(report_handler, sge_dstring_get_string(&rule_name), alpp);
    } else {
-      if (usage_value == NULL) {
+      if (usage_value == nullptr) {
          sge_dstring_sprintf(&limitation, "%s=%s", limit_name, limit_value);
       } else {
          sge_dstring_sprintf(&limitation, "%s=%s/%s", limit_name, usage_value, limit_value);
@@ -699,9 +699,9 @@ qquota_print_out_filter(lListElem *filter, const char *name, const char *value,
    bool ret = true;
    const lListElem *scope;
    
-   if (filter != NULL) {
-      if (!lGetBool(filter, RQRF_expand) || value == NULL) {
-         if (report_handler != NULL) {
+   if (filter != nullptr) {
+      if (!lGetBool(filter, RQRF_expand) || value == nullptr) {
+         if (report_handler != nullptr) {
             for_each_ep(scope, lGetList(filter, RQRF_scope)) {
                report_handler->report_limit_string_value(report_handler, name, lGetString(scope, ST_name), false, alpp);
             }
@@ -717,7 +717,7 @@ qquota_print_out_filter(lListElem *filter, const char *name, const char *value,
             rqs_append_filter_to_dstring(filter, buffer, alpp);
          }
       } else {
-        if (report_handler != NULL) {
+        if (report_handler != nullptr) {
           report_handler->report_limit_string_value(report_handler, name, value, false, alpp);
         } else {
             if (sge_dstring_strlen(buffer) != 0) {

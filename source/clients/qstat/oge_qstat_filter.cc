@@ -115,7 +115,7 @@ void qstat_env_destroy(qstat_env_t* qstat_env) {
    lFreeWhat(&qstat_env->what_JAT_Type_list);
    lFreeWhat(&qstat_env->what_JAT_Type_template);
    /* Do not free the context - it's a reference */
-   qstat_env->ctx = NULL;
+   qstat_env->ctx = nullptr;
 }
 
 static int handle_queue(lListElem *q, qstat_env_t *qstat_env, qstat_handler_t *handler, lList **alpp);
@@ -150,8 +150,8 @@ static int job_handle_resources(const lList* cel, lList* centry_list, int slots,
 static void print_qstat_env_to(qstat_env_t *qstat_env, FILE* file);
 
 int qselect(qstat_env_t* qstat_env, qselect_handler_t* handler, lList **alpp) {
-   const lListElem *cqueue = NULL;
-   const lListElem *qep = NULL;
+   const lListElem *cqueue = nullptr;
+   const lListElem *qep = nullptr;
    
    DENTER(TOP_LAYER);
    
@@ -162,12 +162,12 @@ int qselect(qstat_env_t* qstat_env, qselect_handler_t* handler, lList **alpp) {
       DRETURN(1);
    }
    
-   if (qstat_env_filter_queues(qstat_env, NULL, alpp) <= 0) {
+   if (qstat_env_filter_queues(qstat_env, nullptr, alpp) <= 0) {
       DRETURN(1);
    }
 
    /* Do output */
-   if (handler->report_started != NULL) {
+   if (handler->report_started != nullptr) {
       handler->report_started(handler, alpp);
    }
    for_each_ep(cqueue, qstat_env->queue_list) {
@@ -175,13 +175,13 @@ int qselect(qstat_env_t* qstat_env, qselect_handler_t* handler, lList **alpp) {
 
       for_each_ep(qep, qinstance_list) {
          if ((lGetUlong(qep, QU_tag) & TAG_SHOW_IT)!=0) {
-            if (handler->report_queue != NULL) {
+            if (handler->report_queue != nullptr) {
                handler->report_queue(handler, lGetString(qep, QU_full_name), alpp);
             }   
          }
       }
    }
-   if (handler->report_finished != NULL) {
+   if (handler->report_finished != nullptr) {
       handler->report_finished(handler, alpp);
    }
    
@@ -191,7 +191,7 @@ int qselect(qstat_env_t* qstat_env, qselect_handler_t* handler, lList **alpp) {
 int qstat_cqueue_summary(qstat_env_t *qstat_env, cqueue_summary_handler_t *handler, lList **alpp) {
  
    int ret = 0;
-   const lListElem *cqueue = NULL;
+   const lListElem *cqueue = nullptr;
    
    DENTER(TOP_LAYER);
    
@@ -200,7 +200,7 @@ int qstat_cqueue_summary(qstat_env_t *qstat_env, cqueue_summary_handler_t *handl
       DRETURN(ret);
    }
    
-   if ((ret = qstat_env_filter_queues(qstat_env, NULL, alpp)) < 0) {
+   if ((ret = qstat_env_filter_queues(qstat_env, nullptr, alpp)) < 0) {
       DPRINTF(("qstat_env_filter_queues failed\n"));
       DRETURN(ret);
    }
@@ -216,7 +216,7 @@ int qstat_cqueue_summary(qstat_env_t *qstat_env, cqueue_summary_handler_t *handl
    
    handler->qstat_env = qstat_env;
    
-   if (handler->report_started != NULL) {
+   if (handler->report_started != nullptr) {
       ret = handler->report_started(handler, alpp);
       if (ret) {
          DRETURN(ret);
@@ -253,19 +253,19 @@ int qstat_cqueue_summary(qstat_env_t *qstat_env, cqueue_summary_handler_t *handl
                                   &(summary.temp_disabled),
                                   &(summary.manual_intervention));
                                   
-         if (handler->report_cqueue != NULL && (ret = handler->report_cqueue(handler, lGetString(cqueue, CQ_name), &summary, alpp))) {
+         if (handler->report_cqueue != nullptr && (ret = handler->report_cqueue(handler, lGetString(cqueue, CQ_name), &summary, alpp))) {
             DRETURN(ret);
          }
       }
    }
    
-   if (handler->report_finished != NULL) {
+   if (handler->report_finished != nullptr) {
       ret = handler->report_finished(handler, alpp); 
       if (ret) {
          DRETURN(ret);
       }
    }
-   handler->qstat_env = NULL;
+   handler->qstat_env = nullptr;
    
    DRETURN(0);
 }
@@ -276,7 +276,7 @@ int qstat_no_group(qstat_env_t* qstat_env, qstat_handler_t* handler, lList **alp
 
    DENTER(TOP_LAYER);
 
-   if (getenv("SGE_QSTAT_ENV_DEBUG") != NULL) {
+   if (getenv("SGE_QSTAT_ENV_DEBUG") != nullptr) {
       print_qstat_env_to(qstat_env, stdout);
       qstat_env->global_showjobs = 1;
       qstat_env->global_showqueues = 1;
@@ -286,7 +286,7 @@ int qstat_no_group(qstat_env_t* qstat_env, qstat_handler_t* handler, lList **alp
       DRETURN(ret);
    }
 
-   if ((ret = qstat_env_filter_queues(qstat_env, NULL, alpp)) < 0 ) {
+   if ((ret = qstat_env_filter_queues(qstat_env, nullptr, alpp)) < 0 ) {
       DRETURN(ret);
    }
 
@@ -369,8 +369,8 @@ int qstat_no_group(qstat_env_t* qstat_env, qstat_handler_t* handler, lList **alp
          DPRINTF(("report_finished failed\n"));
          DRETURN(ret);
    }
-   handler->qstat_env = NULL;
-   handler->job_handler.qstat_env = NULL;
+   handler->qstat_env = nullptr;
+   handler->job_handler.qstat_env = nullptr;
    
    DRETURN(0);
 }
@@ -379,7 +379,7 @@ int qstat_no_group(qstat_env_t* qstat_env, qstat_handler_t* handler, lList **alp
 static void calc_longest_queue_length(qstat_env_t *qstat_env) {
    u_long32 name;
    char *env;
-   const lListElem *qep = NULL;
+   const lListElem *qep = nullptr;
    
    if ((qstat_env->group_opt & GROUP_CQ_SUMMARY) == 0) { 
       name = QU_full_name;
@@ -387,7 +387,7 @@ static void calc_longest_queue_length(qstat_env_t *qstat_env) {
    else {
       name = CQ_name;
    }
-   if ((env = getenv("SGE_LONG_QNAMES")) != NULL){
+   if ((env = getenv("SGE_LONG_QNAMES")) != nullptr){
       qstat_env->longest_queue_length = atoi(env);
       if (qstat_env->longest_queue_length == -1) {
          for_each_ep(qep, qstat_env->queue_list) {
@@ -451,7 +451,7 @@ static int qstat_env_prepare(qstat_env_t* qstat_env, bool need_job_list, lList *
 static void remove_tagged_jobs(lList *job_list) {
    
    lListElem *jep = lFirstRW(job_list);
-   lListElem *tmp = NULL;
+   lListElem *tmp = nullptr;
    
    while (jep) {
       lList *task_list;
@@ -474,14 +474,14 @@ static void remove_tagged_jobs(lList *job_list) {
 
 static int qstat_handle_running_jobs(qstat_env_t *qstat_env, qstat_handler_t *handler, lList **alpp) 
 {
-   lListElem *qep = NULL;
+   lListElem *qep = nullptr;
    int ret = 0;
    
    DENTER(TOP_LAYER);
 
    /* no need to iterate through queues if queues are not printed */
    if (!qstat_env->need_queues) {
-      if ((ret = handle_jobs_queue(NULL, qstat_env, 1, handler, alpp))) {
+      if ((ret = handle_jobs_queue(nullptr, qstat_env, 1, handler, alpp))) {
          DPRINTF(("handle_jobs_queue failed\n"));
       }
       DRETURN(ret);
@@ -511,7 +511,7 @@ static int qstat_handle_running_jobs(qstat_env_t *qstat_env, qstat_handler_t *ha
             break;
          }
 
-         if (qstat_env->shut_me_down != NULL && qstat_env->shut_me_down()) {
+         if (qstat_env->shut_me_down != nullptr && qstat_env->shut_me_down()) {
             DPRINTF(("shut_me_down\n"));
             ret = 1;
             break;
@@ -536,11 +536,11 @@ static int handle_jobs_queue(lListElem *qep, qstat_env_t* qstat_env, int print_j
                              qstat_handler_t *handler, lList **alpp) {
    lListElem *jlep;
    lListElem *jatep;
-   lListElem *gdilep, *old_gdilep = NULL;
+   lListElem *gdilep, *old_gdilep = nullptr;
    u_long32 job_tag;
    u_long32 jid = 0, old_jid;
    u_long32 jataskid = 0, old_jataskid;
-   const char *qnm = qep?lGetString(qep, QU_full_name):NULL;
+   const char *qnm = qep?lGetString(qep, QU_full_name):nullptr;
    int ret = 0;
    dstring dyn_task_str = DSTRING_INIT;
 
@@ -703,9 +703,9 @@ error:
 
 static int filter_jobs(qstat_env_t *qstat_env, lList **alpp) {
    
-   lListElem *jep = NULL;
-   lListElem *jatep = NULL;
-   const lListElem *up = NULL;
+   lListElem *jep = nullptr;
+   lListElem *jatep = nullptr;
+   const lListElem *up = nullptr;
    
    DENTER(TOP_LAYER);
 
@@ -743,8 +743,8 @@ static int filter_jobs(qstat_env_t *qstat_env, lList **alpp) {
    if (lGetNumberOfElem(qstat_env->peref_list) || lGetNumberOfElem(qstat_env->queueref_list) || 
        lGetNumberOfElem(qstat_env->resource_list) || lGetNumberOfElem(qstat_env->queue_user_list)) {
           
-      const lListElem *cqueue = NULL;
-      lListElem *qep = NULL;
+      const lListElem *cqueue = nullptr;
+      lListElem *qep = nullptr;
       /*
       ** unselect all pending jobs that fit in none of the selected queues
       ** that way the pending jobs are really pending jobs for the queues 
@@ -761,7 +761,7 @@ static int filter_jobs(qstat_env_t *qstat_env, lList **alpp) {
             const lList *qinstance_list = lGetList(cqueue, CQ_qinstances);
 
             for_each_rw(qep, qinstance_list) {
-               lListElem *host = NULL;
+               lListElem *host = nullptr;
 
                if (!(lGetUlong(qep, QU_tag) & TAG_SHOW_IT)) {
                   continue;
@@ -769,7 +769,7 @@ static int filter_jobs(qstat_env_t *qstat_env, lList **alpp) {
                
                host = host_list_locate(qstat_env->exechost_list, lGetHost(qep, QU_qhostname));
                
-               if (host != NULL) {
+               if (host != nullptr) {
                   ret = sge_select_queue(lGetListRW(jep, JB_hard_resource_list), qep, 
                                          host, qstat_env->exechost_list, qstat_env->centry_list, 
                                          true, 1, qstat_env->queue_user_list, qstat_env->acl_list, jep);
@@ -793,10 +793,10 @@ static int filter_jobs(qstat_env_t *qstat_env, lList **alpp) {
             }
          }
          if (!show_job) {
-            lSetList(jep, JB_ja_n_h_ids, NULL);
-            lSetList(jep, JB_ja_u_h_ids, NULL);
-            lSetList(jep, JB_ja_o_h_ids, NULL);
-            lSetList(jep, JB_ja_s_h_ids, NULL);
+            lSetList(jep, JB_ja_n_h_ids, nullptr);
+            lSetList(jep, JB_ja_u_h_ids, nullptr);
+            lSetList(jep, JB_ja_o_h_ids, nullptr);
+            lSetList(jep, JB_ja_s_h_ids, nullptr);
          }
       }
       sconf_set_qs_state(QS_STATE_FULL);
@@ -808,13 +808,13 @@ static int filter_jobs(qstat_env_t *qstat_env, lList **alpp) {
    if ((qstat_env->group_opt & GROUP_CQ_SUMMARY) != 0) {
       lPSortList(qstat_env->queue_list, "%I+ ", CQ_name);
    } else {
-      lList *tmp_queue_list = NULL;
-      lListElem *cqueue = NULL;
+      lList *tmp_queue_list = nullptr;
+      lListElem *cqueue = nullptr;
 
       tmp_queue_list = lCreateList("", QU_Type);
 
       for_each_rw(cqueue, qstat_env->queue_list) {
-         lList *qinstances = NULL;
+         lList *qinstances = nullptr;
 
          lXchgList(cqueue, CQ_qinstances, &qinstances);
          lAddList(tmp_queue_list, &qinstances);
@@ -822,7 +822,7 @@ static int filter_jobs(qstat_env_t *qstat_env, lList **alpp) {
       
       lFreeList(&(qstat_env->queue_list));
       qstat_env->queue_list = tmp_queue_list;
-      tmp_queue_list = NULL;
+      tmp_queue_list = nullptr;
 
       lPSortList(qstat_env->queue_list, "%I+ %I+ %I+", QU_seq_no, QU_qname, QU_qhostname);
    }
@@ -837,7 +837,7 @@ int qstat_env_filter_queues( qstat_env_t *qstat_env, lList** filtered_queue_list
 
    DENTER(TOP_LAYER);
 
-   ret = filter_queues(NULL,
+   ret = filter_queues(nullptr,
                         qstat_env->queue_list,
                         qstat_env->centry_list,
                         qstat_env->hgrp_list,
@@ -891,8 +891,8 @@ int filter_queues(lList **filtered_queue_list,
       if (nqueues==0) {
          answer_list_add_sprintf(alpp, STATUS_EUNKNOWN, ANSWER_QUALITY_ERROR,
                                  MSG_QSTAT_NOQUEUESREMAININGAFTERXQUEUESELECTION_S, "-q");
-         if (filtered_queue_list != NULL) {
-            *filtered_queue_list = NULL;
+         if (filtered_queue_list != nullptr) {
+            *filtered_queue_list = nullptr;
          }
          DRETURN(0);
       }
@@ -911,8 +911,8 @@ int filter_queues(lList **filtered_queue_list,
       if (nqueues==0) {
          answer_list_add_sprintf(alpp, STATUS_EUNKNOWN, ANSWER_QUALITY_ERROR,
                                  MSG_QSTAT_NOQUEUESREMAININGAFTERXQUEUESELECTION_S, "-U");
-         if (filtered_queue_list != NULL) {
-            *filtered_queue_list = NULL;
+         if (filtered_queue_list != nullptr) {
+            *filtered_queue_list = nullptr;
          }
          DRETURN(0);
       }
@@ -927,8 +927,8 @@ int filter_queues(lList **filtered_queue_list,
       if (nqueues==0) {
          answer_list_add_sprintf(alpp, STATUS_EUNKNOWN, ANSWER_QUALITY_ERROR,
                                  MSG_QSTAT_NOQUEUESREMAININGAFTERXQUEUESELECTION_S, "-pe");
-         if (filtered_queue_list != NULL) {
-            *filtered_queue_list = NULL;
+         if (filtered_queue_list != nullptr) {
+            *filtered_queue_list = nullptr;
          }
          DRETURN(0);
       }
@@ -959,15 +959,15 @@ int filter_queues(lList **filtered_queue_list,
 
 
    if (!is_cqueue_selected(queue_list)) {
-      if (filtered_queue_list != NULL) {
-         *filtered_queue_list = NULL;
+      if (filtered_queue_list != nullptr) {
+         *filtered_queue_list = nullptr;
       }
       DRETURN(0);
    } 
 
-   if (filtered_queue_list != NULL) {
-      static lCondition *tagged_queues = NULL;
-      static lEnumeration *all_fields = NULL;
+   if (filtered_queue_list != nullptr) {
+      static lCondition *tagged_queues = nullptr;
+      static lEnumeration *all_fields = nullptr;
       if (!tagged_queues) {
          tagged_queues = lWhere("%T(%I == %u)", CQ_Type, CQ_tag, TAG_SHOW_IT);
          all_fields = lWhat("%T(ALL)", CQ_Type);
@@ -980,8 +980,8 @@ int filter_queues(lList **filtered_queue_list,
 
 static int qstat_env_get_all_lists(qstat_env_t* qstat_env, bool need_job_list, lList** alpp) 
 {
-   lList **queue_l = qstat_env->need_queues ? &(qstat_env->queue_list) : NULL;
-   lList **job_l = need_job_list ? &(qstat_env->job_list) : NULL;
+   lList **queue_l = qstat_env->need_queues ? &(qstat_env->queue_list) : nullptr;
+   lList **job_l = need_job_list ? &(qstat_env->job_list) : nullptr;
    lList **centry_l = &(qstat_env->centry_list);
    lList **exechost_l = &(qstat_env->exechost_list);
    lList **sc_l = &(qstat_env->schedd_config);
@@ -996,13 +996,13 @@ static int qstat_env_get_all_lists(qstat_env_t* qstat_env, bool need_job_list, l
    lList **project_l = &(qstat_env->project_list);
    u_long32 show = qstat_env->full_listing;
    
-   lCondition *where= NULL, *nw = NULL; 
-   lCondition *zw = NULL, *gc_where = NULL;
+   lCondition *where= nullptr, *nw = nullptr;
+   lCondition *zw = nullptr, *gc_where = nullptr;
    lEnumeration *q_all, *pe_all, *ckpt_all, *acl_all, *ce_all, *up_all;
    lEnumeration *eh_all, *sc_what, *gc_what, *hgrp_what;
-   const lListElem *ep = NULL;
-   lList *conf_l = NULL;
-   lList *mal = NULL;
+   const lListElem *ep = nullptr;
+   lList *conf_l = nullptr;
+   lList *mal = nullptr;
    int q_id = 0, j_id = 0, pe_id = 0, ckpt_id = 0, acl_id = 0, z_id = 0, up_id = 0;
    int ce_id, eh_id, sc_id, gc_id, hgrp_id = 0;
    int show_zombies = (show & QSTAT_DISPLAY_ZOMBIES) ? 1 : 0;
@@ -1017,7 +1017,7 @@ static int qstat_env_get_all_lists(qstat_env_t* qstat_env, bool need_job_list, l
       q_all = lWhat("%T(ALL)", CQ_Type);
       
       q_id = qstat_env->ctx->gdi_multi(qstat_env->ctx, alpp, SGE_GDI_RECORD, 
-                                       SGE_CQ_LIST, SGE_GDI_GET, NULL, NULL, 
+                                       SGE_CQ_LIST, SGE_GDI_GET, nullptr, nullptr,
                                        q_all, &state, true);
       lFreeWhat(&q_all);
     
@@ -1036,7 +1036,7 @@ static int qstat_env_get_all_lists(qstat_env_t* qstat_env, bool need_job_list, l
       lEnumeration *what = qstat_get_JB_Type_filter(qstat_env);
 
       j_id = qstat_env->ctx->gdi_multi(qstat_env->ctx, alpp, SGE_GDI_RECORD, 
-                                       SGE_JB_LIST, SGE_GDI_GET, NULL, where, 
+                                       SGE_JB_LIST, SGE_GDI_GET, nullptr, where,
                                        what, &state, true);
       lFreeWhere(&where);
 
@@ -1058,7 +1058,7 @@ static int qstat_env_get_all_lists(qstat_env_t* qstat_env, bool need_job_list, l
       }
 
       z_id = qstat_env->ctx->gdi_multi(qstat_env->ctx, alpp, SGE_GDI_RECORD, 
-                                       SGE_ZOMBIE_LIST, SGE_GDI_GET, NULL, zw, 
+                                       SGE_ZOMBIE_LIST, SGE_GDI_GET, nullptr, zw,
                                        qstat_get_JB_Type_filter(qstat_env),  
                                        &state, true);
       lFreeWhere(&zw);
@@ -1073,7 +1073,7 @@ static int qstat_env_get_all_lists(qstat_env_t* qstat_env, bool need_job_list, l
    */
    ce_all = lWhat("%T(ALL)", CE_Type);
    ce_id = qstat_env->ctx->gdi_multi(qstat_env->ctx, alpp, SGE_GDI_RECORD, 
-                                     SGE_CE_LIST, SGE_GDI_GET, NULL, NULL, 
+                                     SGE_CE_LIST, SGE_GDI_GET, nullptr, nullptr,
                                      ce_all, &state, true); 
    lFreeWhat(&ce_all);
 
@@ -1088,7 +1088,7 @@ static int qstat_env_get_all_lists(qstat_env_t* qstat_env, bool need_job_list, l
    eh_all = lWhat("%T(ALL)", EH_Type);
    eh_id = qstat_env->ctx->gdi_multi(qstat_env->ctx, alpp, SGE_GDI_RECORD, 
                                      SGE_EH_LIST, SGE_GDI_GET,
-                                     NULL, where, eh_all, &state, true);
+                                     nullptr, where, eh_all, &state, true);
    lFreeWhat(&eh_all);
    lFreeWhere(&where);
 
@@ -1102,7 +1102,7 @@ static int qstat_env_get_all_lists(qstat_env_t* qstat_env, bool need_job_list, l
    if (pe_l) {   
       pe_all = lWhat("%T(%I%I%I%I%I)", PE_Type, PE_name, PE_slots, PE_job_is_first_task, PE_control_slaves, PE_urgency_slots);
       pe_id = qstat_env->ctx->gdi_multi(qstat_env->ctx, alpp, SGE_GDI_RECORD, 
-                                        SGE_PE_LIST, SGE_GDI_GET, NULL, NULL, pe_all, 
+                                        SGE_PE_LIST, SGE_GDI_GET, nullptr, nullptr, pe_all,
                                         &state, true);
       lFreeWhat(&pe_all);
 
@@ -1117,7 +1117,7 @@ static int qstat_env_get_all_lists(qstat_env_t* qstat_env, bool need_job_list, l
    if (ckpt_l) {
       ckpt_all = lWhat("%T(%I)", CK_Type, CK_name);
       ckpt_id = qstat_env->ctx->gdi_multi(qstat_env->ctx, alpp, SGE_GDI_RECORD, 
-                                          SGE_CK_LIST, SGE_GDI_GET, NULL, NULL, 
+                                          SGE_CK_LIST, SGE_GDI_GET, nullptr, nullptr,
                                           ckpt_all, &state, true);
       lFreeWhat(&ckpt_all);
 
@@ -1133,7 +1133,7 @@ static int qstat_env_get_all_lists(qstat_env_t* qstat_env, bool need_job_list, l
       acl_all = lWhat("%T(ALL)", US_Type);
       acl_id = qstat_env->ctx->gdi_multi(qstat_env->ctx, alpp, SGE_GDI_RECORD, 
                                          SGE_US_LIST, SGE_GDI_GET, 
-                                         NULL, NULL, acl_all, &state, true);
+                                         nullptr, nullptr, acl_all, &state, true);
       lFreeWhat(&acl_all);
 
       if (answer_list_has_error(alpp)) {
@@ -1148,7 +1148,7 @@ static int qstat_env_get_all_lists(qstat_env_t* qstat_env, bool need_job_list, l
       up_all = lWhat("%T(ALL)", PR_Type);
       up_id = qstat_env->ctx->gdi_multi(qstat_env->ctx, alpp, SGE_GDI_RECORD, 
                                         SGE_PR_LIST, SGE_GDI_GET, 
-                                        NULL, NULL, up_all, &state, true);
+                                        nullptr, nullptr, up_all, &state, true);
       lFreeWhat(&up_all);
 
       if (answer_list_has_error(alpp)) {
@@ -1165,7 +1165,7 @@ static int qstat_env_get_all_lists(qstat_env_t* qstat_env, bool need_job_list, l
    sc_what = lWhat("%T(ALL)", SC_Type);
 
    sc_id = qstat_env->ctx->gdi_multi(qstat_env->ctx, alpp, SGE_GDI_RECORD, 
-                                     SGE_SC_LIST, SGE_GDI_GET, NULL, NULL, 
+                                     SGE_SC_LIST, SGE_GDI_GET, nullptr, nullptr,
                                      sc_what, &state, true);
    lFreeWhat(&sc_what);
 
@@ -1178,7 +1178,7 @@ static int qstat_env_get_all_lists(qstat_env_t* qstat_env, bool need_job_list, l
    */
    hgrp_what = lWhat("%T(ALL)", HGRP_Type);
    hgrp_id = qstat_env->ctx->gdi_multi(qstat_env->ctx, alpp, SGE_GDI_RECORD, 
-                                       SGE_HGRP_LIST, SGE_GDI_GET, NULL, NULL, 
+                                       SGE_HGRP_LIST, SGE_GDI_GET, nullptr, nullptr,
                                        hgrp_what, &state, true);
    lFreeWhat(&hgrp_what);
 
@@ -1193,7 +1193,7 @@ static int qstat_env_get_all_lists(qstat_env_t* qstat_env, bool need_job_list, l
    gc_what = lWhat("%T(ALL)", CONF_Type);
    gc_id = qstat_env->ctx->gdi_multi(qstat_env->ctx, alpp, SGE_GDI_SEND, 
                                      SGE_CONF_LIST, SGE_GDI_GET,
-                                     NULL, gc_where, gc_what, &state, true);
+                                     nullptr, gc_where, gc_what, &state, true);
    qstat_env->ctx->gdi_wait(qstat_env->ctx, alpp, &mal, &state);
    lFreeWhat(&gc_what);
    lFreeWhere(&gc_where);
@@ -1223,7 +1223,7 @@ static int qstat_env_get_all_lists(qstat_env_t* qstat_env, bool need_job_list, l
 
 #if 0 /* EB: debug */
       {
-         lListElem *elem = NULL;
+         lListElem *elem = nullptr;
 
          for_each_ep(elem, *job_l) {
             lListElem *task = lFirst(lGetList(elem, JB_ja_tasks));
@@ -1248,7 +1248,7 @@ static int qstat_env_get_all_lists(qstat_env_t* qstat_env, bool need_job_list, l
       /*
        * debug output to perform testsuite tests
        */
-      if (sge_getenv("_SGE_TEST_QSTAT_JOB_STATES") != NULL) {
+      if (sge_getenv("_SGE_TEST_QSTAT_JOB_STATES") != nullptr) {
          fprintf(stderr, "_SGE_TEST_QSTAT_JOB_STATES: jobs_received="sge_uu32"\n", 
                  lGetNumberOfElem(*job_l));
       }
@@ -1344,8 +1344,8 @@ static int qstat_env_get_all_lists(qstat_env_t* qstat_env, bool need_job_list, l
    }
 
    if (lFirst(conf_l)) {
-      lListElem *local = NULL;
-      merge_configuration(NULL, progid, cell_root, lFirstRW(conf_l), local, NULL);
+      lListElem *local = nullptr;
+      merge_configuration(nullptr, progid, cell_root, lFirstRW(conf_l), local, nullptr);
    }
    lFreeList(&conf_l);
    lFreeList(&mal);
@@ -1361,7 +1361,7 @@ static int handle_queue(lListElem *q, qstat_env_t *qstat_env, qstat_handler_t *h
    char *load_avg_str;
    char load_alarm_reason[MAX_STRING_SIZE];
    char suspend_alarm_reason[MAX_STRING_SIZE];
-   const char *queue_name = NULL;
+   const char *queue_name = nullptr;
    u_long32 interval;
    
    queue_summary_t summary;
@@ -1394,18 +1394,18 @@ static int handle_queue(lListElem *q, qstat_env_t *qstat_env, qstat_handler_t *h
                                                  qstat_env->exechost_list, qstat_env->centry_list, 
                                                  &(summary.has_load_value_from_object)) ? true : false;
 
-   if (sge_load_alarm(NULL, q, lGetList(q, QU_load_thresholds), qstat_env->exechost_list, qstat_env->centry_list, NULL, true)) {
+   if (sge_load_alarm(nullptr, q, lGetList(q, QU_load_thresholds), qstat_env->exechost_list, qstat_env->centry_list, nullptr, true)) {
       qinstance_state_set_alarm(q, true);
       sge_load_alarm_reason(q, lGetListRW(q, QU_load_thresholds), qstat_env->exechost_list, 
                             qstat_env->centry_list, load_alarm_reason, 
                             MAX_STRING_SIZE - 1, "load");
    }
    
-   parse_ulong_val(NULL, &interval, TYPE_TIM,
-                   lGetString(q, QU_suspend_interval), NULL, 0);
+   parse_ulong_val(nullptr, &interval, TYPE_TIM,
+                   lGetString(q, QU_suspend_interval), nullptr, 0);
    if (lGetUlong(q, QU_nsuspend) != 0 &&
        interval != 0 &&
-       sge_load_alarm(NULL, q, lGetList(q, QU_suspend_thresholds), qstat_env->exechost_list, qstat_env->centry_list, NULL, false)) {
+       sge_load_alarm(nullptr, q, lGetList(q, QU_suspend_thresholds), qstat_env->exechost_list, qstat_env->centry_list, nullptr, false)) {
       qinstance_state_set_suspend_alarm(q, true);
       sge_load_alarm_reason(q, lGetListRW(q, QU_suspend_thresholds), 
                             qstat_env->exechost_list, qstat_env->centry_list, suspend_alarm_reason, 
@@ -1424,7 +1424,7 @@ static int handle_queue(lListElem *q, qstat_env_t *qstat_env, qstat_handler_t *h
        q, qstat_env->exechost_list, qstat_env->centry_list)) {
       summary.arch = arch_string;
    } else {
-      summary.arch = NULL;
+      summary.arch = nullptr;
    }
    qinstance_state_append_to_dstring(q, &state_string);
    summary.state = sge_dstring_get_string(&state_string);
@@ -1476,7 +1476,7 @@ static int handle_queue(lListElem *q, qstat_env_t *qstat_env, qstat_handler_t *h
    }
    if (qstat_env->explain_bits != QI_DEFAULT && handler->report_queue_message) {
       const lList *qim_list = lGetList(q, QU_message_list);
-      const lListElem *qim = NULL;
+      const lListElem *qim = nullptr;
 
       for_each_ep(qim, qim_list) {
          u_long32 type = lGetUlong(qim, QIM_type);
@@ -1503,7 +1503,7 @@ static int handle_queue(lListElem *q, qstat_env_t *qstat_env, qstat_handler_t *h
       u_long32 dominant = 0;
       const char *s;
 
-      rlp = NULL;
+      rlp = nullptr;
 
       queue_complexes2scheduler(&rlp, q, qstat_env->exechost_list, qstat_env->centry_list);
 
@@ -1515,13 +1515,13 @@ static int handle_queue(lListElem *q, qstat_env_t *qstat_env, qstat_handler_t *h
 
             qres = lGetElemStr(qstat_env->qresource_list, CE_name, 
                                lGetString(rep, CE_name));
-            if (qres == NULL) {
+            if (qres == nullptr) {
                qres = lGetElemStr(qstat_env->qresource_list, CE_name,
                                lGetString(rep, CE_shortcut));
             }
 
             /* if this complex variable wasn't requested with -F, skip it */
-            if (qres == NULL) {
+            if (qres == nullptr) {
                continue ;
             }
          }
@@ -1552,7 +1552,7 @@ error:
 static int handle_pending_jobs(qstat_env_t *qstat_env, qstat_handler_t *handler, lList **alpp) {
    
    lListElem *nxt, *jep, *jatep, *nxt_jatep;
-   lList* ja_task_list = NULL;
+   lList* ja_task_list = nullptr;
    int FoundTasks;
    int ret = 0;
    int count = 0;
@@ -1611,7 +1611,7 @@ static int handle_pending_jobs(qstat_env_t *qstat_env, qstat_handler_t *handler,
                      DPRINTF(("report_pending_jobs_started failed\n"));
                      goto error;
                   }
-                  ret = sge_handle_job(jep, jatep, NULL, NULL, true, NULL, &dyn_task_str,
+                  ret = sge_handle_job(jep, jatep, nullptr, nullptr, true, nullptr, &dyn_task_str,
                                        0, 0, 0,
                                        qstat_env, &(handler->job_handler), alpp);
 
@@ -1634,7 +1634,7 @@ static int handle_pending_jobs(qstat_env_t *qstat_env, qstat_handler_t *handler,
           (qstat_env->group_opt & GROUP_NO_TASK_GROUPS) == 0 && 
           FoundTasks && 
           ja_task_list) {
-         lList *task_group = NULL;
+         lList *task_group = nullptr;
 
          while ((task_group = ja_task_list_split_group(&ja_task_list))) {
             sge_dstring_clear(&dyn_task_str);
@@ -1644,7 +1644,7 @@ static int handle_pending_jobs(qstat_env_t *qstat_env, qstat_handler_t *handler,
                DPRINTF(("report_pending_jobs_started failed\n"));
                goto error;
             }
-            ret = sge_handle_job(jep, lFirstRW(task_group), NULL, NULL, true, NULL, &dyn_task_str,
+            ret = sge_handle_job(jep, lFirstRW(task_group), nullptr, nullptr, true, nullptr, &dyn_task_str,
                                  0, 0, 0,
                                  qstat_env, &(handler->job_handler), alpp);
             
@@ -1658,7 +1658,7 @@ static int handle_pending_jobs(qstat_env_t *qstat_env, qstat_handler_t *handler,
          }
       }
       if (jep != nxt && (qstat_env->full_listing & QSTAT_DISPLAY_PENDING)) {
-         ret = handle_jobs_not_enrolled(jep, true, NULL,
+         ret = handle_jobs_not_enrolled(jep, true, nullptr,
                                         0, 0, &count, qstat_env, handler, alpp);
       }
    }
@@ -1709,7 +1709,7 @@ static int handle_finished_jobs(qstat_env_t *qstat_env, qstat_handler_t *handler
                sge_dstring_sprintf(&dyn_task_str, sge_u32, 
                                  lGetUlong(jatep, JAT_task_number));
                                  
-               ret = sge_handle_job(jep, jatep, NULL, NULL, true, NULL, &dyn_task_str, 
+               ret = sge_handle_job(jep, jatep, nullptr, nullptr, true, nullptr, &dyn_task_str,
                                     0, 0, 0,
                                     qstat_env, &(handler->job_handler), alpp);
 
@@ -1757,7 +1757,7 @@ static int handle_error_jobs(qstat_env_t *qstat_env, qstat_handler_t* handler, l
                       goto error;
                    }
                }
-               ret = sge_handle_job(jep, jatep, NULL, NULL, true, NULL, &dyn_task_str,
+               ret = sge_handle_job(jep, jatep, nullptr, nullptr, true, nullptr, &dyn_task_str,
                                     0, 0, 0,
                                     qstat_env, &(handler->job_handler), alpp);
 
@@ -1796,9 +1796,9 @@ static int handle_zombie_jobs(qstat_env_t *qstat_env, qstat_handler_t *handler, 
 
    for_each_rw (jep, qstat_env->zombie_list) {
       const lList *z_ids = lGetList(jep, JB_ja_z_ids);
-      if (z_ids != NULL) {
-         lListElem *ja_task = NULL;
-         u_long32 first_task_id = range_list_get_first_id(z_ids, NULL);
+      if (z_ids != nullptr) {
+         lListElem *ja_task = nullptr;
+         u_long32 first_task_id = range_list_get_first_id(z_ids, nullptr);
 
          sge_dstring_clear(&dyn_task_str);
 
@@ -1809,7 +1809,7 @@ static int handle_zombie_jobs(qstat_env_t *qstat_env, qstat_handler_t *handler, 
             DPRINTF(("report_zombie_jobs_started failed\n"));
             break;
          }
-         ret = sge_handle_job(jep, ja_task, NULL, NULL, true, NULL, &dyn_task_str,
+         ret = sge_handle_job(jep, ja_task, nullptr, nullptr, true, nullptr, &dyn_task_str,
                               0,0, 0,
                               qstat_env, &(handler->job_handler), alpp);
          if (ret) {
@@ -1842,7 +1842,7 @@ static int handle_jobs_not_enrolled(lListElem *job, bool print_jobid, char *mast
 
    job_create_hold_id_lists(job, range_list, hold_state); 
    for (i = 0; i <= 15; i++) {
-      lList *answer_list = NULL;
+      lList *answer_list = nullptr;
       u_long32 first_id;
       int show = 0;
 
@@ -1856,7 +1856,7 @@ static int handle_jobs_not_enrolled(lListElem *job, bool print_jobid, char *mast
          ) {
          show = 1;
       }
-      if (range_list[i] != NULL && show) { 
+      if (range_list[i] != nullptr && show) {
          if ((qstat_env->group_opt & GROUP_NO_TASK_GROUPS) == 0) {
             sge_dstring_clear(&ja_task_id_string);
             range_list_print_to_string(range_list[i], &ja_task_id_string, false, false, false);
@@ -1864,11 +1864,11 @@ static int handle_jobs_not_enrolled(lListElem *job, bool print_jobid, char *mast
             if (answer_list_has_error(&answer_list) != 1) {
                lListElem *ja_task = job_get_ja_task_template_hold(job, 
                                                       first_id, hold_state[i]);
-               lList *n_h_ids = NULL;
-               lList *u_h_ids = NULL;
-               lList *o_h_ids = NULL;
-               lList *s_h_ids = NULL;
-               lList *a_h_ids = NULL;
+               lList *n_h_ids = nullptr;
+               lList *u_h_ids = nullptr;
+               lList *o_h_ids = nullptr;
+               lList *s_h_ids = nullptr;
+               lList *a_h_ids = nullptr;
 
                lXchgList(job, JB_ja_n_h_ids, &n_h_ids);
                lXchgList(job, JB_ja_u_h_ids, &u_h_ids);
@@ -1881,7 +1881,7 @@ static int handle_jobs_not_enrolled(lListElem *job, bool print_jobid, char *mast
                   ret = 1;
                   break;
                }
-               ret = sge_handle_job(job, ja_task, NULL, NULL, print_jobid, master, &ja_task_id_string,
+               ret = sge_handle_job(job, ja_task, nullptr, nullptr, print_jobid, master, &ja_task_id_string,
                                     slots, slot, 0,
                                     qstat_env, &(handler->job_handler), alpp);
                if (ret) {
@@ -1911,7 +1911,7 @@ static int handle_jobs_not_enrolled(lListElem *job, bool print_jobid, char *mast
                      ret = 1;
                      break;
                   }
-                  ret = sge_handle_job(job, ja_task, NULL, NULL, print_jobid, NULL, &ja_task_id_string,
+                  ret = sge_handle_job(job, ja_task, nullptr, nullptr, print_jobid, nullptr, &ja_task_id_string,
                                        slots, slot, 0,
                                        qstat_env, &(handler->job_handler), alpp);
                   if (ret) {
@@ -1938,7 +1938,7 @@ static int sge_handle_job(lListElem *job, lListElem *jatep, lListElem *qep, lLis
 {
    u_long32 jstate;
    int sge_ext, tsk_ext, sge_urg, sge_pri, sge_time;
-   const lList *ql = NULL;
+   const lList *ql = nullptr;
    const lListElem *qrep;
    
    job_summary_t summary;
@@ -2025,11 +2025,11 @@ static int sge_handle_job(lListElem *job, lListElem *jatep, lListElem *qep, lLis
       const char *pe_name;
       bool sum_pe_tasks = false;
       
-      if (master == NULL || strcmp(master, "MASTER") == 0) {
+      if (master == nullptr || strcmp(master, "MASTER") == 0) {
          if (!(qstat_env->group_opt & GROUP_NO_PETASK_GROUPS)) {
             sum_pe_tasks = true;
          }
-         job_usage_list = lCopyList(NULL, lGetList(jatep, JAT_scaled_usage_list));
+         job_usage_list = lCopyList(nullptr, lGetList(jatep, JAT_scaled_usage_list));
       } else {
          job_usage_list = lCreateList("", UA_Type);
       }
@@ -2089,7 +2089,7 @@ static int sge_handle_job(lListElem *job, lListElem *jatep, lListElem *qep, lLis
       if (sge_ext) {
          summary.is_queue_assigned = false;
       } else {
-         if (lGetList(jatep, JAT_granted_destin_identifier_list) != NULL) {
+         if (lGetList(jatep, JAT_granted_destin_identifier_list) != nullptr) {
             summary.is_queue_assigned = true;
          } else {
             summary.is_queue_assigned = false;
@@ -2139,7 +2139,7 @@ static int sge_handle_job(lListElem *job, lListElem *jatep, lListElem *qep, lLis
    if (summary.is_array) {
       summary.task_id = sge_dstring_get_string(dyn_task_str); 
    } else {
-      summary.task_id = NULL;
+      summary.task_id = nullptr;
    }
    
    if ((ret = handler->report_job(handler, lGetUlong(job, JB_job_number), &summary, alpp))) {
@@ -2167,7 +2167,7 @@ static int sge_handle_job(lListElem *job, lListElem *jatep, lListElem *qep, lLis
           ((qname=lGetString(ep, JG_qname))) &&
           !strcmp(qname, summary.queue)) {
              
-          if ((ret=job_handle_subtask(job, jatep, NULL, handler, alpp))) {
+          if ((ret=job_handle_subtask(job, jatep, nullptr, handler, alpp))) {
              DPRINTF(("sge_handle_subtask failed\n"));
              goto error;
           }      
@@ -2260,7 +2260,7 @@ static int sge_handle_job(lListElem *job, lListElem *jatep, lListElem *qep, lLis
 
       /* display default requests if necessary */
       if (handler->report_request) {
-         lList *attributes = NULL;
+         lList *attributes = nullptr;
          const lListElem *ce;
          const char *name;
          lListElem *hep;
@@ -2275,7 +2275,7 @@ static int sge_handle_job(lListElem *job, lListElem *jatep, lListElem *qep, lLis
                continue;
             }
 
-            parse_ulong_val(&dval, NULL, lGetUlong(ce, CE_valtype), lGetString(ce, CE_defaultval), NULL, 0); 
+            parse_ulong_val(&dval, nullptr, lGetUlong(ce, CE_valtype), lGetString(ce, CE_defaultval), nullptr, 0);
             if (dval == 0.0) {
                continue;
             }
@@ -2467,7 +2467,7 @@ static int sge_handle_job(lListElem *job, lListElem *jatep, lListElem *qep, lLis
       if (handler->report_binding && (qstat_env->full_listing & QSTAT_DISPLAY_BINDING) != 0) {
          const lList *binding_list = lGetList(job, JB_binding);
 
-         if (binding_list != NULL) {
+         if (binding_list != nullptr) {
             const lListElem *binding_elem = lFirst(binding_list);
             dstring binding_param = DSTRING_INIT;
 
@@ -2558,7 +2558,7 @@ static int job_handle_subtask(lListElem *job, lListElem *ja_task, lListElem *pe_
    DENTER(TOP_LAYER);
 
    /* is sub-task logically running */
-   if (pe_task == NULL) {
+   if (pe_task == nullptr) {
       tstatus = lGetUlong(ja_task, JAT_status);
       usage_list = lGetList(ja_task, JAT_usage_list);
       scaled_usage_list = lGetList(ja_task, JAT_scaled_usage_list);
@@ -2568,7 +2568,7 @@ static int job_handle_subtask(lListElem *job, lListElem *ja_task, lListElem *pe_
       scaled_usage_list = lGetList(pe_task, PET_scaled_usage);
    }
 
-   if (pe_task == NULL) {
+   if (pe_task == nullptr) {
       summary.task_id = "";
    } else {
       summary.task_id = lGetString(pe_task, PET_id);
@@ -2648,8 +2648,8 @@ static int job_handle_subtask(lListElem *job, lListElem *ja_task, lListElem *pe_
 /* ----------- functions from qstat_filter ---------------------------------- */
 lCondition *qstat_get_JB_Type_selection(lList *user_list, u_long32 show)
 {
-   lCondition *jw = NULL;
-   lCondition *nw = NULL;
+   lCondition *jw = nullptr;
+   lCondition *nw = nullptr;
 
    DENTER(TOP_LAYER);
 
@@ -2657,12 +2657,12 @@ lCondition *qstat_get_JB_Type_selection(lList *user_list, u_long32 show)
     * Retrieve jobs only for those users specified via -u switch
     */
    {
-      const lListElem *ep = NULL;
-      lCondition *tmp_nw = NULL;
+      const lListElem *ep = nullptr;
+      lCondition *tmp_nw = nullptr;
 
       for_each_ep(ep, user_list) {
          tmp_nw = lWhere("%T(%I p= %s)", JB_Type, JB_owner, lGetString(ep, ST_name));
-         if (jw == NULL) {
+         if (jw == nullptr) {
             jw = tmp_nw;
          } else {
             jw = lOrWhere(jw, tmp_nw);
@@ -2674,7 +2674,7 @@ lCondition *qstat_get_JB_Type_selection(lList *user_list, u_long32 show)
     * Select jobs according to current state
     */
    {
-      lCondition *tmp_nw = NULL;
+      lCondition *tmp_nw = nullptr;
 
       /*
        * Pending jobs (all that are not running) 
@@ -2694,7 +2694,7 @@ lCondition *qstat_get_JB_Type_selection(lList *user_list, u_long32 show)
              */
             tmp_nw = lWhere("%T(!(%I -> %T((%I m= %u))))", JB_Type, JB_ja_tasks,
                         JAT_Type, JAT_status, JRUNNING);
-            if (nw == NULL) {
+            if (nw == nullptr) {
                nw = tmp_nw;
             } else {
                nw = lOrWhere(nw, tmp_nw);
@@ -2704,28 +2704,28 @@ lCondition *qstat_get_JB_Type_selection(lList *user_list, u_long32 show)
              */
             tmp_nw = lWhere("%T(%I -> %T((%I > %u)))", JB_Type, JB_ja_n_h_ids, 
                         RN_Type, RN_min, 0);
-            if (nw == NULL) {
+            if (nw == nullptr) {
                nw = tmp_nw;
             } else {
                nw = lOrWhere(nw, tmp_nw);
             } 
             tmp_nw = lWhere("%T(%I -> %T((%I > %u)))", JB_Type, JB_ja_u_h_ids, 
                         RN_Type, RN_min, 0);
-            if (nw == NULL) {
+            if (nw == nullptr) {
                nw = tmp_nw;
             } else {
                nw = lOrWhere(nw, tmp_nw);
             } 
             tmp_nw = lWhere("%T(%I -> %T((%I > %u)))", JB_Type, JB_ja_s_h_ids, 
                         RN_Type, RN_min, 0);
-            if (nw == NULL) {
+            if (nw == nullptr) {
                nw = tmp_nw;
             } else {
                nw = lOrWhere(nw, tmp_nw);
             } 
             tmp_nw = lWhere("%T(%I -> %T((%I > %u)))", JB_Type, JB_ja_o_h_ids, 
                         RN_Type, RN_min, 0);
-            if (nw == NULL) {
+            if (nw == nullptr) {
                nw = tmp_nw;
             } else {
                nw = lOrWhere(nw, tmp_nw);
@@ -2738,7 +2738,7 @@ lCondition *qstat_get_JB_Type_selection(lList *user_list, u_long32 show)
                /* unenrolled jobs in user hold state ... */
                tmp_nw = lWhere("%T(%I -> %T((%I > %u)))", JB_Type, JB_ja_u_h_ids, 
                            RN_Type, RN_min, 0);
-               if (nw == NULL) {
+               if (nw == nullptr) {
                   nw = tmp_nw;
                } else {
                   nw = lOrWhere(nw, tmp_nw);
@@ -2746,7 +2746,7 @@ lCondition *qstat_get_JB_Type_selection(lList *user_list, u_long32 show)
                /* ... or enrolled jobs with an user  hold */
                tmp_nw = lWhere("%T((%I -> %T(%I m= %u)))", JB_Type,
                                JB_ja_tasks, JAT_Type, JAT_hold, MINUS_H_TGT_USER);
-               if (nw == NULL) {
+               if (nw == nullptr) {
                   nw = tmp_nw;
                } else {
                   nw = lOrWhere(nw, tmp_nw);
@@ -2758,14 +2758,14 @@ lCondition *qstat_get_JB_Type_selection(lList *user_list, u_long32 show)
             if ((show & QSTAT_DISPLAY_OPERATORHOLD) == QSTAT_DISPLAY_OPERATORHOLD) {
                tmp_nw = lWhere("%T(%I -> %T((%I > %u)))", JB_Type, JB_ja_o_h_ids, 
                            RN_Type, RN_min, 0);
-               if (nw == NULL) {
+               if (nw == nullptr) {
                   nw = tmp_nw;
                } else {
                   nw = lOrWhere(nw, tmp_nw);
                } 
                tmp_nw = lWhere("%T((%I -> %T(%I m= %u)))", JB_Type,
                                JB_ja_tasks, JAT_Type, JAT_hold, MINUS_H_TGT_OPERATOR);
-               if (nw == NULL) {
+               if (nw == nullptr) {
                   nw = tmp_nw;
                } else {
                   nw = lOrWhere(nw, tmp_nw);
@@ -2777,14 +2777,14 @@ lCondition *qstat_get_JB_Type_selection(lList *user_list, u_long32 show)
             if ((show & QSTAT_DISPLAY_SYSTEMHOLD) == QSTAT_DISPLAY_SYSTEMHOLD) {
                tmp_nw = lWhere("%T(%I -> %T((%I > %u)))", JB_Type, JB_ja_s_h_ids, 
                            RN_Type, RN_min, 0);
-               if (nw == NULL) {
+               if (nw == nullptr) {
                   nw = tmp_nw;
                } else {
                   nw = lOrWhere(nw, tmp_nw);
                } 
                tmp_nw = lWhere("%T((%I -> %T(%I m= %u)))", JB_Type,
                                JB_ja_tasks, JAT_Type, JAT_hold, MINUS_H_TGT_SYSTEM);
-               if (nw == NULL) {
+               if (nw == nullptr) {
                   nw = tmp_nw;
                } else {
                   nw = lOrWhere(nw, tmp_nw);
@@ -2796,14 +2796,14 @@ lCondition *qstat_get_JB_Type_selection(lList *user_list, u_long32 show)
             if ((show & QSTAT_DISPLAY_JOBARRAYHOLD) == QSTAT_DISPLAY_JOBARRAYHOLD) {
                tmp_nw = lWhere("%T(%I -> %T((%I > %u)))", JB_Type, JB_ja_a_h_ids, 
                            RN_Type, RN_min, 0);
-               if (nw == NULL) {
+               if (nw == nullptr) {
                   nw = tmp_nw;
                } else {
                   nw = lOrWhere(nw, tmp_nw);
                } 
                tmp_nw = lWhere("%T((%I -> %T(%I m= %u)))", JB_Type,
                                JB_ja_tasks, JAT_Type, JAT_hold, MINUS_H_TGT_JA_AD);
-               if (nw == NULL) {
+               if (nw == nullptr) {
                   nw = tmp_nw;
                } else {
                   nw = lOrWhere(nw, tmp_nw);
@@ -2814,7 +2814,7 @@ lCondition *qstat_get_JB_Type_selection(lList *user_list, u_long32 show)
              */
             if ((show & QSTAT_DISPLAY_STARTTIMEHOLD) == QSTAT_DISPLAY_STARTTIMEHOLD) {
                tmp_nw = lWhere("%T(%I > %u)", JB_Type, JB_execution_time, 0);
-               if (nw == NULL) {
+               if (nw == nullptr) {
                   nw = tmp_nw;
                } else {
                   nw = lOrWhere(nw, tmp_nw);
@@ -2825,7 +2825,7 @@ lCondition *qstat_get_JB_Type_selection(lList *user_list, u_long32 show)
              */
             if ((show & QSTAT_DISPLAY_JOBHOLD) == QSTAT_DISPLAY_JOBHOLD) {
                tmp_nw = lWhere("%T(%I -> %T((%I > %u)))", JB_Type, JB_jid_predecessor_list, JRE_Type, JRE_job_number, 0);
-               if (nw == NULL) {
+               if (nw == nullptr) {
                   nw = tmp_nw;
                } else {
                   nw = lOrWhere(nw, tmp_nw);
@@ -2838,21 +2838,21 @@ lCondition *qstat_get_JB_Type_selection(lList *user_list, u_long32 show)
             if ((show & QSTAT_DISPLAY_PEND_REMAIN) == QSTAT_DISPLAY_PEND_REMAIN) {
                tmp_nw = lWhere("%T(%I -> %T((%I != %u)))", JB_Type, JB_ja_tasks, 
                            JAT_Type, JAT_job_restarted, 0);
-               if (nw == NULL) {
+               if (nw == nullptr) {
                   nw = tmp_nw;
                } else {
                   nw = lOrWhere(nw, tmp_nw);
                } 
                tmp_nw = lWhere("%T(%I -> %T((%I m= %u)))", JB_Type, JB_ja_tasks, 
                            JAT_Type, JAT_state, JERROR);
-               if (nw == NULL) {
+               if (nw == nullptr) {
                   nw = tmp_nw;
                } else {
                   nw = lOrWhere(nw, tmp_nw);
                } 
                tmp_nw = lWhere("%T(%I -> %T((%I > %u)))", JB_Type, JB_ja_n_h_ids, 
                            RN_Type, RN_min, 0);
-               if (nw == NULL) {
+               if (nw == nullptr) {
                   nw = tmp_nw;
                } else {
                   nw = lOrWhere(nw, tmp_nw);
@@ -2880,7 +2880,7 @@ lCondition *qstat_get_JB_Type_selection(lList *user_list, u_long32 show)
                          JB_ja_tasks, JAT_Type, JAT_status, JRUNNING,
                          JB_ja_tasks, JAT_Type, JAT_status, JTRANSFERING,
                          JB_ja_tasks, JAT_Type, JAT_state, JSUSPENDED);
-         if (nw == NULL) {
+         if (nw == nullptr) {
             nw = tmp_nw;
          } else {
             nw = lOrWhere(nw, tmp_nw);
@@ -2898,7 +2898,7 @@ lCondition *qstat_get_JB_Type_selection(lList *user_list, u_long32 show)
                          JB_ja_tasks, JAT_Type, JAT_status, JRUNNING,
                          JB_ja_tasks, JAT_Type, JAT_status, JTRANSFERING,
                          JB_ja_tasks, JAT_Type, JAT_state, JSUSPENDED);
-         if (nw == NULL) {
+         if (nw == nullptr) {
             nw = tmp_nw;
          } else {
             nw = lOrWhere(nw, tmp_nw);
@@ -2906,8 +2906,8 @@ lCondition *qstat_get_JB_Type_selection(lList *user_list, u_long32 show)
       }
    }
 
-   if (nw != NULL) {
-      if (jw == NULL) {
+   if (nw != nullptr) {
+      if (jw == nullptr) {
          jw = nw;
       } else {
          jw = lAndWhere(jw, nw);
@@ -2921,10 +2921,10 @@ lEnumeration *qstat_get_JB_Type_filter(qstat_env_t* qstat_env)
 {
    DENTER(TOP_LAYER);
 
-   if (qstat_env->what_JAT_Type_template != NULL) {
+   if (qstat_env->what_JAT_Type_template != nullptr) {
       lWhatSetSubWhat(qstat_env->what_JB_Type, JB_ja_template, &(qstat_env->what_JAT_Type_template));
    }
-   if (qstat_env->what_JAT_Type_list != NULL) {
+   if (qstat_env->what_JAT_Type_list != nullptr) {
       lWhatSetSubWhat(qstat_env->what_JB_Type, JB_ja_tasks, &(qstat_env->what_JAT_Type_list));
    }
 
@@ -2934,7 +2934,7 @@ lEnumeration *qstat_get_JB_Type_filter(qstat_env_t* qstat_env)
 
 void qstat_filter_add_core_attributes(qstat_env_t *qstat_env) 
 {
-   lEnumeration *tmp_what = NULL;
+   lEnumeration *tmp_what = nullptr;
    const int nm_JB_Type[] = {
       JB_job_number,
       JB_owner,
@@ -2995,7 +2995,7 @@ void qstat_filter_add_core_attributes(qstat_env_t *qstat_env)
 
 void qstat_filter_add_ext_attributes(qstat_env_t *qstat_env) 
 {
-   lEnumeration *tmp_what = NULL;
+   lEnumeration *tmp_what = nullptr;
    const int nm_JB_Type[] = {
       JB_department,
       JB_override_tickets,
@@ -3036,7 +3036,7 @@ void qstat_filter_add_ext_attributes(qstat_env_t *qstat_env)
 
 void qstat_filter_add_pri_attributes(qstat_env_t *qstat_env) 
 {
-   lEnumeration *tmp_what = NULL;
+   lEnumeration *tmp_what = nullptr;
    const int nm_JB_Type[] = {
       JB_nppri,
       JB_nurg,
@@ -3062,7 +3062,7 @@ void qstat_filter_add_pri_attributes(qstat_env_t *qstat_env)
 
 void qstat_filter_add_urg_attributes(qstat_env_t *qstat_env) 
 {
-   lEnumeration *tmp_what = NULL;
+   lEnumeration *tmp_what = nullptr;
    const int nm_JB_Type[] = {
       JB_deadline,
       JB_nurg,
@@ -3079,7 +3079,7 @@ void qstat_filter_add_urg_attributes(qstat_env_t *qstat_env)
 
 void qstat_filter_add_l_attributes(qstat_env_t *qstat_env) 
 {
-   lEnumeration *tmp_what = NULL;
+   lEnumeration *tmp_what = nullptr;
    const int nm_JB_Type[] = {
       JB_checkpoint_name,
       JB_hard_resource_list,
@@ -3093,7 +3093,7 @@ void qstat_filter_add_l_attributes(qstat_env_t *qstat_env)
 
 void qstat_filter_add_pe_attributes(qstat_env_t *qstat_env) 
 {
-   lEnumeration *tmp_what = NULL;
+   lEnumeration *tmp_what = nullptr;
    const int nm_JB_Type[] = {
       JB_checkpoint_name,
       JB_hard_resource_list,
@@ -3108,7 +3108,7 @@ void qstat_filter_add_pe_attributes(qstat_env_t *qstat_env)
 
 void qstat_filter_add_q_attributes(qstat_env_t *qstat_env) 
 {
-   lEnumeration *tmp_what = NULL;
+   lEnumeration *tmp_what = nullptr;
    const int nm_JB_Type[] = {
       JB_checkpoint_name,
       JB_hard_resource_list,
@@ -3120,7 +3120,7 @@ void qstat_filter_add_q_attributes(qstat_env_t *qstat_env)
 }
 
 void qstat_filter_add_r_attributes(qstat_env_t *qstat_env) {
-   lEnumeration *tmp_what = NULL;
+   lEnumeration *tmp_what = nullptr;
    const int nm_JB_Type[] = {
       JB_checkpoint_name,
       JB_hard_resource_list,
@@ -3147,7 +3147,7 @@ void qstat_filter_add_r_attributes(qstat_env_t *qstat_env) {
 
 void qstat_filter_add_xml_attributes(qstat_env_t *qstat_env) 
 {
-   lEnumeration *tmp_what = NULL;
+   lEnumeration *tmp_what = nullptr;
    const int nm_JB_Type[] = {
       JB_jobshare,
       NoName
@@ -3159,7 +3159,7 @@ void qstat_filter_add_xml_attributes(qstat_env_t *qstat_env)
 
 void qstat_filter_add_U_attributes(qstat_env_t *qstat_env) 
 {
-   lEnumeration *tmp_what = NULL;
+   lEnumeration *tmp_what = nullptr;
 
    const int nm_JB_Type[] = {
       JB_checkpoint_name,
@@ -3173,7 +3173,7 @@ void qstat_filter_add_U_attributes(qstat_env_t *qstat_env)
 
 void qstat_filter_add_t_attributes(qstat_env_t *qstat_env) 
 {
-   lEnumeration *tmp_what = NULL;
+   lEnumeration *tmp_what = nullptr;
    
    const int nm_JAT_Type_list[] = {
       JAT_task_list,
@@ -3218,14 +3218,14 @@ int build_job_state_filter(qstat_env_t *qstat_env, const char* job_state, lList 
    
    DENTER(TOP_LAYER);
 
-   if (job_state != NULL) {
+   if (job_state != nullptr) {
       /* 
        * list of options for the -s switch
        * when you add options, make sure that single byte options (e.g. "h")
        * come after multi byte options starting with the same character (e.g. "hs")!
        */
       static char* flags[] = {
-         "hu", "hs", "ho", "hd", "hj", "ha", "h", "p", "r", "s", "z", "a", NULL
+         "hu", "hs", "ho", "hd", "hj", "ha", "h", "p", "r", "s", "z", "a", nullptr
       };
       static u_long32 bits[] = {
          (QSTAT_DISPLAY_USERHOLD|QSTAT_DISPLAY_PENDING), 
@@ -3260,7 +3260,7 @@ int build_job_state_filter(qstat_env_t *qstat_env, const char* job_state, lList 
       s = job_state;
       while (*s != '\0') {
          bool matched = false;
-         for (i = 0; flags[i] != NULL; i++) {
+         for (i = 0; flags[i] != nullptr; i++) {
             if (strncmp(s, flags[i], strlen(flags[i])) == 0) {
                qstat_env->full_listing |= bits[i];
                s += strlen(flags[i]);
@@ -3287,52 +3287,52 @@ static void print_qstat_env_to(qstat_env_t *qstat_env, FILE* file) {
    fprintf(file, "QSTAT_ENV\n");
    fprintf(file, "------------------------------------------------------\n");
    fprintf(file, "resource_list:\n");
-   if (qstat_env->resource_list != NULL) {
+   if (qstat_env->resource_list != nullptr) {
       lWriteListTo(qstat_env->resource_list, stdout);
    } else {
-      fprintf(file, "NULL\n");
+      fprintf(file, "nullptr\n");
    }
    fprintf(file, "------------------------------------------------------\n");
    fprintf(file, "qresource_list:\n");
-   if (qstat_env->resource_list != NULL) {
+   if (qstat_env->resource_list != nullptr) {
       lWriteListTo(qstat_env->resource_list, stdout);
    } else {
-      fprintf(file, "NULL\n");
+      fprintf(file, "nullptr\n");
    }
    fprintf(file, "------------------------------------------------------\n");
    fprintf(file, "queueref_list:\n");
-   if (qstat_env->resource_list != NULL) {
+   if (qstat_env->resource_list != nullptr) {
       lWriteListTo(qstat_env->resource_list, stdout);
    } else {
-      fprintf(file, "NULL\n");
+      fprintf(file, "nullptr\n");
    }
    fprintf(file, "------------------------------------------------------\n");
    fprintf(file, "user_list:\n");
-   if (qstat_env->resource_list != NULL) {
+   if (qstat_env->resource_list != nullptr) {
       lWriteListTo(qstat_env->resource_list, stdout);
    } else {
-      fprintf(file, "NULL\n");
+      fprintf(file, "nullptr\n");
    }
    fprintf(file, "------------------------------------------------------\n");
    fprintf(file, "what_JB_Type:\n");
-   if (qstat_env->what_JB_Type != NULL) {
+   if (qstat_env->what_JB_Type != nullptr) {
       lWriteWhatTo(qstat_env->what_JB_Type, stdout);
    } else {
-      fprintf(file, "NULL\n");
+      fprintf(file, "nullptr\n");
    }
    fprintf(file, "------------------------------------------------------\n");
    fprintf(file, "what_JAT_Type_template:\n");
-   if (qstat_env->what_JAT_Type_template != NULL) {
+   if (qstat_env->what_JAT_Type_template != nullptr) {
       lWriteWhatTo(qstat_env->what_JAT_Type_template, stdout);
    } else {
-      fprintf(file, "NULL\n");
+      fprintf(file, "nullptr\n");
    }
    fprintf(file, "------------------------------------------------------\n");
    fprintf(file, "what_JAT_Type_list:\n");
-   if (qstat_env->what_JAT_Type_list != NULL) {
+   if (qstat_env->what_JAT_Type_list != nullptr) {
       lWriteWhatTo(qstat_env->what_JAT_Type_list, stdout);
    } else {
-      fprintf(file, "NULL\n");
+      fprintf(file, "nullptr\n");
    }
    fprintf(file, "------------------------------------------------------\n");
    fprintf(file, "Params:\n");
@@ -3382,11 +3382,11 @@ static void print_qstat_env_to(qstat_env_t *qstat_env, FILE* file) {
          "QSTAT_DISPLAY_URGENCY",
          "QSTAT_DISPLAY_PRIORITY",
          "QSTAT_DISPLAY_PEND_REMAIN",
-         NULL
+         nullptr
       };
       int i=0;
       
-      while (text[i] != NULL) {
+      while (text[i] != nullptr) {
          if (qstat_env->full_listing & masks[i]) {
             fprintf(file,"              =  %s\n", text[i]);
          }

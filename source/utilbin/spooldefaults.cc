@@ -97,8 +97,8 @@ static int init_framework(sge_gdi_ctx_class_t *ctx)
 {
    int ret = EXIT_FAILURE;
 
-   lList *answer_list = NULL;
-   lListElem *spooling_context = NULL;
+   lList *answer_list = nullptr;
+   lListElem *spooling_context = nullptr;
    const char *spooling_method = bootstrap_get_spooling_method();
    const char *spooling_lib = bootstrap_get_spooling_lib();
    const char *spooling_params = bootstrap_get_spooling_params();
@@ -111,7 +111,7 @@ static int init_framework(sge_gdi_ctx_class_t *ctx)
                                                    spooling_lib, 
                                                    spooling_params);
    answer_list_output(&answer_list);
-   if (spooling_context == NULL) {
+   if (spooling_context == nullptr) {
       CRITICAL((SGE_EVENT, SFNMAX, MSG_SPOOLDEFAULTS_CANNOTCREATECONTEXT));
    } else {
       spool_set_default_context(spooling_context);
@@ -132,14 +132,14 @@ static int spool_manops(sge_object_type type, int argc, char *argv[])
 {
    int ret = EXIT_SUCCESS;
    int i;
-   lList *answer_list = NULL;
+   lList *answer_list = nullptr;
    lList **lpp = object_type_get_master_list_rw(type);
    int key = object_type_get_key_nm(type);
    const lDescr *descr = object_type_get_descr(type);
 
    DENTER(TOP_LAYER);
 
-   if (*lpp == NULL) {
+   if (*lpp == nullptr) {
       *lpp = lCreateList("master list", descr);
    }
 
@@ -161,17 +161,17 @@ static int spool_manops(sge_object_type type, int argc, char *argv[])
 static int spool_configuration(int argc, char *argv[])
 {
    int ret = EXIT_SUCCESS;
-   lListElem *conf = NULL;
-   lList *answer_list = NULL;
+   lListElem *conf = nullptr;
+   lList *answer_list = nullptr;
    spooling_field *fields = sge_build_CONF_field_list(true);
 
    DENTER(TOP_LAYER);
 
-   conf = spool_flatfile_read_object(&answer_list, CONF_Type, NULL,
-                                   fields, NULL, false, &qconf_sfi,
-                                   SP_FORM_ASCII, NULL, argv[2]);
+   conf = spool_flatfile_read_object(&answer_list, CONF_Type, nullptr,
+                                   fields, nullptr, false, &qconf_sfi,
+                                   SP_FORM_ASCII, nullptr, argv[2]);
    sge_free(&fields);
-   if (conf == NULL) {
+   if (conf == nullptr) {
       ERROR((SGE_EVENT, MSG_SPOOLDEFAULTS_CANTREADGLOBALCONF_S, argv[2]));
       ret = EXIT_FAILURE;
    } else {
@@ -199,22 +199,22 @@ static int spool_local_conf(int argc, char *argv[])
       usage(argv[0]);
       ret = EXIT_FAILURE;
    } else {
-      lList *answer_list = NULL;
+      lList *answer_list = nullptr;
       spooling_field *fields = sge_build_CONF_field_list(true);
-      lListElem *conf = NULL;
+      lListElem *conf = nullptr;
 
-      conf = spool_flatfile_read_object(&answer_list, CONF_Type, NULL,
-                                   fields, NULL, false, &qconf_sfi,
-                                   SP_FORM_ASCII, NULL, argv[2]);
+      conf = spool_flatfile_read_object(&answer_list, CONF_Type, nullptr,
+                                   fields, nullptr, false, &qconf_sfi,
+                                   SP_FORM_ASCII, nullptr, argv[2]);
       sge_free(&fields);
 
-      if (conf == NULL) {
+      if (conf == nullptr) {
          ERROR((SGE_EVENT, MSG_SPOOLDEFAULTS_CANTREADLOCALCONF_S, argv[2]));
          ret = EXIT_FAILURE;
       } else {
          /* check if a config is already there */
-         lListElem *le = spool_read_object(NULL, spool_get_default_context(), SGE_TYPE_CONFIG, argv[3]); 
-         if (le == NULL) { 
+         lListElem *le = spool_read_object(nullptr, spool_get_default_context(), SGE_TYPE_CONFIG, argv[3]);
+         if (le == nullptr) {
             /* put config into a list - we can't spool free objects */
             lSetHost(conf, CONF_name, argv[3]);
             if (!spool_write_object(&answer_list, spool_get_default_context(), 
@@ -266,7 +266,7 @@ static int spool_ckpts(int argc, char *argv[])
 
 static int spool_cqueues(int argc, char *argv[])
 {
-   lList *answer_list = NULL;
+   lList *answer_list = nullptr;
    spool_read_list(&answer_list, spool_get_default_context(), 
                    object_type_get_master_list_rw(SGE_TYPE_CENTRY), SGE_TYPE_CENTRY);
    spool_read_list(&answer_list, spool_get_default_context(), 
@@ -278,7 +278,7 @@ static int spool_cqueues(int argc, char *argv[])
 
 static int spool_exechosts(int argc, char *argv[])
 {
-   lList *answer_list = NULL;
+   lList *answer_list = nullptr;
    const spooling_field *fields = sge_build_EH_field_list(true, false, false);
    int ret; 
 
@@ -334,7 +334,7 @@ static int spool_object_list(const char *directory,
                              sge_object_type obj_type)
 {
    int ret = EXIT_SUCCESS;
-   lList *answer_list = NULL;
+   lList *answer_list = nullptr;
    lListElem *ep;
    lList *direntries;
    const lListElem *direntry;
@@ -348,11 +348,11 @@ static int spool_object_list(const char *directory,
       name = lGetString(direntry, ST_name);
       if (name[0] != '.') {
          sge_dstring_sprintf(&file, "%s/%s", directory, name);
-         ep = spool_flatfile_read_object(&answer_list, descr, NULL,
-                                         fields, NULL, true, instr,
-                                         SP_FORM_ASCII, NULL, sge_dstring_get_string(&file));
+         ep = spool_flatfile_read_object(&answer_list, descr, nullptr,
+                                         fields, nullptr, true, instr,
+                                         SP_FORM_ASCII, nullptr, sge_dstring_get_string(&file));
          
-         if (ep != NULL && !spool_write_object(&answer_list, spool_get_default_context(), ep, 
+         if (ep != nullptr && !spool_write_object(&answer_list, spool_get_default_context(), ep,
                                  name, obj_type, true)) {
             /* error output has been done in spooling function */
             ret = EXIT_FAILURE;
@@ -373,8 +373,8 @@ static int spool_object_list(const char *directory,
 int main(int argc, char *argv[])
 {
    int ret = EXIT_SUCCESS;
-   lList *answer_list = NULL;
-   sge_gdi_ctx_class_t *ctx = NULL;
+   lList *answer_list = nullptr;
+   sge_gdi_ctx_class_t *ctx = nullptr;
 
    DENTER_MAIN(TOP_LAYER, "spooldefaults");
 
@@ -442,7 +442,7 @@ int main(int argc, char *argv[])
       }
    }
 
-   if ((ret != EXIT_FAILURE) && (spool_get_default_context() != NULL)) {
+   if ((ret != EXIT_FAILURE) && (spool_get_default_context() != nullptr)) {
       time_t next_trigger = 0;
 
       if (!spool_trigger_context(&answer_list, spool_get_default_context(), 

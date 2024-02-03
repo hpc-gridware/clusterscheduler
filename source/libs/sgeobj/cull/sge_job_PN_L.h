@@ -52,7 +52,7 @@ extern "C" {
 *
 *    SGE_HOST(PN_host) - Host Name
 *    Name of the host where this specification is valid.
-*    If it is left empty (NULL), then the path is valid on all hosts (default).
+*    If it is left empty (nullptr), then the path is valid on all hosts (default).
 *
 *    SGE_HOST(PN_file_host) - File Host
 *    @todo for file staging, the host where the file is available?

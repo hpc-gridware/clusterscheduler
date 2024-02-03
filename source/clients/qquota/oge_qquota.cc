@@ -89,16 +89,16 @@ static int xml_report_finished(report_handler_t* handler, lList **alpp) {
 static report_handler_t* create_xml_report_handler(lList **alpp) {
    
    report_handler_t* ret = (report_handler_t*)sge_malloc(sizeof(report_handler_t));
-   if (ret == NULL ) {
+   if (ret == nullptr ) {
       answer_list_add(alpp, "malloc of report_handler_t failed",
                             STATUS_EMALLOC, ANSWER_QUALITY_ERROR);
-      return NULL;
+      return nullptr;
    }
    ret->ctx = sge_malloc(sizeof(dstring));
-   if (ret->ctx == NULL ) {
+   if (ret->ctx == nullptr ) {
       answer_list_add(alpp, "malloc of dstring buffer failed",
                             STATUS_EMALLOC, ANSWER_QUALITY_ERROR);
-      return NULL;
+      return nullptr;
    }
    memset(ret->ctx, 0, sizeof(dstring));
    
@@ -114,11 +114,11 @@ static report_handler_t* create_xml_report_handler(lList **alpp) {
 }
 
 static int destroy_xml_report_handler(report_handler_t** handler, lList **alpp) {
-   if (*handler != NULL ) {
+   if (*handler != nullptr ) {
       sge_dstring_free((dstring*)(*handler)->ctx);
       sge_free(&((*handler)->ctx));
       sge_free(handler);
-      *handler = NULL;
+      *handler = nullptr;
    }
    return 0;
 }
@@ -169,7 +169,7 @@ static int xml_report_resource_value(report_handler_t* handler, const char* reso
    escape_string(limit, (dstring*)handler->ctx);   
    printf("limit='%s'", sge_dstring_get_string((dstring*)handler->ctx));
 
-   if (value != NULL) {
+   if (value != nullptr) {
       sge_dstring_clear((dstring*)handler->ctx);
       escape_string(value, (dstring*)handler->ctx);   
       printf(" value='%s'", sge_dstring_get_string((dstring*)handler->ctx));
@@ -192,17 +192,17 @@ extern char **environ;
 /************************************************************************/
 int main(int argc, char **argv)
 {
-   lList *pcmdline = NULL;
-   lList *host_list = NULL;
-   lList *resource_match_list = NULL;
-   lList *user_list = NULL;
-   lList *pe_list = NULL;
-   lList *project_list = NULL;
-   lList *cqueue_list = NULL;
-   lList *alp = NULL;
-   report_handler_t *report_handler = NULL;
+   lList *pcmdline = nullptr;
+   lList *host_list = nullptr;
+   lList *resource_match_list = nullptr;
+   lList *user_list = nullptr;
+   lList *pe_list = nullptr;
+   lList *project_list = nullptr;
+   lList *cqueue_list = nullptr;
+   lList *alp = nullptr;
+   report_handler_t *report_handler = nullptr;
    bool qquota_result = true;
-   sge_gdi_ctx_class_t *ctx = NULL;
+   sge_gdi_ctx_class_t *ctx = nullptr;
 
    DENTER_MAIN(TOP_LAYER, "qquota");
 
@@ -271,7 +271,7 @@ int main(int argc, char **argv)
 
    qquota_result = qquota_output(ctx, host_list, resource_match_list, user_list, pe_list, project_list, cqueue_list, &alp, report_handler);
 
-   if (report_handler != NULL ) {
+   if (report_handler != nullptr ) {
       report_handler->destroy(&report_handler, &alp);
    }
    
@@ -317,7 +317,7 @@ qquota_usage(FILE *fp)
 
    DENTER(TOP_LAYER);
 
-   if (fp == NULL) {
+   if (fp == nullptr) {
       DRETURN(false);
    }
 
@@ -380,7 +380,7 @@ sge_parse_from_file_qquota(const char *file, lList **ppcmdline, lList **alpp)
    bool ret = true;
 
    DENTER(TOP_LAYER);
-   if (ppcmdline == NULL) {
+   if (ppcmdline == nullptr) {
       ret = false;
    } else {
       if (!sge_is_file(file)) {
@@ -390,17 +390,17 @@ sge_parse_from_file_qquota(const char *file, lList **ppcmdline, lList **alpp)
          DPRINTF(("file "SFQ" does not exist\n", file));
          ret = true;
       } else {
-         char *file_as_string = NULL;
+         char *file_as_string = nullptr;
          int file_as_string_length;
 
          file_as_string = sge_file2string(file, &file_as_string_length);
-         if (file_as_string == NULL) {
+         if (file_as_string == nullptr) {
             answer_list_add_sprintf(alpp, STATUS_EUNKNOWN, 
                                     ANSWER_QUALITY_ERROR,
                                     MSG_ANSWER_ERRORREADINGFROMFILEX_S, file);
             ret = false;
          } else {
-            char **token = NULL;
+            char **token = nullptr;
 
             token = stra_from_str(file_as_string, " \n\t");
             ret = sge_parse_cmdline_qquota(token, ppcmdline, alpp);
@@ -441,7 +441,7 @@ static bool sge_parse_cmdline_qquota(char **argv, lList **ppcmdline, lList **alp
    char **rp;
    DENTER(TOP_LAYER);
 
-   if (argv == NULL) {
+   if (argv == nullptr) {
       answer_list_add_sprintf(alpp, STATUS_ESEMANTIC, ANSWER_QUALITY_ERROR, SFNMAX, MSG_NULLPOINTER);
       DRETURN(false);
    }
@@ -449,35 +449,35 @@ static bool sge_parse_cmdline_qquota(char **argv, lList **ppcmdline, lList **alp
    rp = ++argv;
    while(*(sp=rp)) {
       /* -help */
-      if ((rp = parse_noopt(sp, "-help", NULL, ppcmdline, alpp)) != sp)
+      if ((rp = parse_noopt(sp, "-help", nullptr, ppcmdline, alpp)) != sp)
          continue;
  
       /* -h option */
-      if ((rp = parse_until_next_opt2(sp, "-h", NULL, ppcmdline, alpp)) != sp)
+      if ((rp = parse_until_next_opt2(sp, "-h", nullptr, ppcmdline, alpp)) != sp)
          continue;
 
       /* -l option */
-      if ((rp = parse_until_next_opt2(sp, "-l", NULL, ppcmdline, alpp)) != sp)
+      if ((rp = parse_until_next_opt2(sp, "-l", nullptr, ppcmdline, alpp)) != sp)
          continue;
 
       /* -u option */
-      if ((rp = parse_until_next_opt2(sp, "-u", NULL, ppcmdline, alpp)) != sp)
+      if ((rp = parse_until_next_opt2(sp, "-u", nullptr, ppcmdline, alpp)) != sp)
          continue;
 
       /* -pe option */
-      if ((rp = parse_until_next_opt2(sp, "-pe", NULL, ppcmdline, alpp)) != sp)
+      if ((rp = parse_until_next_opt2(sp, "-pe", nullptr, ppcmdline, alpp)) != sp)
          continue;
 
       /* -P option */
-      if ((rp = parse_until_next_opt2(sp, "-P", NULL, ppcmdline, alpp)) != sp)
+      if ((rp = parse_until_next_opt2(sp, "-P", nullptr, ppcmdline, alpp)) != sp)
          continue;
 
       /* -q */
-      if ((rp = parse_until_next_opt2(sp, "-q", NULL, ppcmdline, alpp)) != sp)
+      if ((rp = parse_until_next_opt2(sp, "-q", nullptr, ppcmdline, alpp)) != sp)
          continue;
 
       /* -xml */
-      if ((rp = parse_noopt(sp, "-xml", NULL, ppcmdline, alpp)) != sp)
+      if ((rp = parse_noopt(sp, "-xml", nullptr, ppcmdline, alpp)) != sp)
          continue;
       
       /* oops */
@@ -526,7 +526,7 @@ sge_parse_qquota(lList **ppcmdline, lList **host_list, lList **resource_list,
                  lList **cqueue_list, report_handler_t **report_handler, lList **alpp)
 {
    u_long32 helpflag = 0;
-   char *argstr = NULL;
+   char *argstr = nullptr;
    bool ret = true;
  
    DENTER(TOP_LAYER);
@@ -537,7 +537,7 @@ sge_parse_qquota(lList **ppcmdline, lList **host_list, lList **resource_list,
    while (lGetNumberOfElem(*ppcmdline)) {
       if (parse_flag(ppcmdline, "-help",  alpp, &helpflag)) {
          qquota_usage(stdout);
-         SGE_EXIT(NULL, 0);
+         SGE_EXIT(nullptr, 0);
          break;
       }
 
@@ -545,7 +545,7 @@ sge_parse_qquota(lList **ppcmdline, lList **host_list, lList **resource_list,
          /* 
          ** resolve hostnames and replace them in list
          */
-         lListElem *ep = NULL;
+         lListElem *ep = nullptr;
          for_each_rw (ep, *host_list) {
             sge_resolve_host(ep, ST_name);
          }

@@ -48,7 +48,7 @@ void sighandler_issue_tests(int sig);
 
 static int do_shutdown = 0;
 static long issue_list[] = {2728, 0};
-static char *issue_desc[] = {"Commlib does not compare hosts with strcasecmp", NULL};
+static char *issue_desc[] = {"Commlib does not compare hosts with strcasecmp", nullptr};
 
 void sighandler_issue_tests(int sig) {
    if (sig == SIGPIPE) {
@@ -161,12 +161,12 @@ extern int main(int argc, char **argv) {
    memset(&sa, 0, sizeof(sa));
    sa.sa_handler = sighandler_issue_tests;  /* one handler for all signals */
    sigemptyset(&sa.sa_mask);
-   sigaction(SIGINT, &sa, NULL);
-   sigaction(SIGTERM, &sa, NULL);
-   sigaction(SIGHUP, &sa, NULL);
-   sigaction(SIGPIPE, &sa, NULL);
+   sigaction(SIGINT, &sa, nullptr);
+   sigaction(SIGTERM, &sa, nullptr);
+   sigaction(SIGHUP, &sa, nullptr);
+   sigaction(SIGPIPE, &sa, nullptr);
    printf("commlib setup ...\n");
-   cl_com_setup_commlib(CL_RW_THREAD, CL_LOG_OFF, NULL);
+   cl_com_setup_commlib(CL_RW_THREAD, CL_LOG_OFF, nullptr);
 
    if (do_all == false) {
       test_result = run_test(i);

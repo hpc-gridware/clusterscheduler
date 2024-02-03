@@ -51,7 +51,7 @@ int main(int argc, char *argv[])
 {
    int i = 10;
    struct passwd *pw;
-   pw = NULL;
+   pw = nullptr;
  
    if (argc != 3)
       usage();

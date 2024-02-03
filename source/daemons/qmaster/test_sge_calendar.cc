@@ -157,7 +157,7 @@ static cal_entry_t calendars[] = {
 /* issue 1787 */                   {"NONE","mon=0:0:0-21:0:0", "queue is off every monday from 0 to 21 hours"},
 
 
-/* end of definition */            {NULL, NULL}
+/* end of definition */            {nullptr, nullptr}
                                 };
 /**
  *
@@ -457,7 +457,7 @@ static void printDateError(time_t *when, struct tm *time)
 *     cal_entry_t *calendar - calendar definition
 *
 *  RESULT
-*     static lListElem* - calendar object or NULL
+*     static lListElem* - calendar object or nullptr
 *
 *  NOTES
 *     MT-NOTE: createCalObject() is MT safe 
@@ -466,9 +466,9 @@ static void printDateError(time_t *when, struct tm *time)
 static lListElem *createCalObject(sge_gdi_ctx_class_t *context, cal_entry_t *calendar) 
 {
    monitoring_t monitor;
-   lListElem *sourceCal = NULL;
-   lListElem *destCal = NULL;
-   lList *answerList = NULL;
+   lListElem *sourceCal = nullptr;
+   lListElem *destCal = nullptr;
+   lList *answerList = nullptr;
    
    sge_monitor_init(&monitor, "cal_test", NONE_EXT, NO_WARNING, NO_ERROR);
    
@@ -480,7 +480,7 @@ static lListElem *createCalObject(sge_gdi_ctx_class_t *context, cal_entry_t *cal
 
    destCal = lCreateElem(CAL_Type);
    
-   if (0 != calendar_mod(context, &answerList, destCal, sourceCal, 1, "", "", NULL, 0, &monitor)) {
+   if (0 != calendar_mod(context, &answerList, destCal, sourceCal, 1, "", "", nullptr, 0, &monitor)) {
       lWriteListTo(answerList, stdout);
       lFreeElem(&destCal);
       lFreeList(&answerList);
@@ -518,7 +518,7 @@ static lListElem *createCalObject(sge_gdi_ctx_class_t *context, cal_entry_t *cal
 *******************************************************************************/
 static int test(sge_gdi_ctx_class_t *context, date_entry_t *test, cal_entry_t *calendar, int test_nr) 
 {
-   lListElem *destCal = NULL;
+   lListElem *destCal = nullptr;
    int ret = 1;
 
    /* test output*/
@@ -539,11 +539,11 @@ static int test(sge_gdi_ctx_class_t *context, date_entry_t *test, cal_entry_t *c
    printf("==> year cal: \"%s\" week cal: \"%s\"\n", calendar->year_cal, calendar->week_cal);  
 
    /* start test */
-   if ((destCal = createCalObject(context, calendar)) != NULL) {
+   if ((destCal = createCalObject(context, calendar)) != nullptr) {
       u_long32 current_state;
       time_t when = 0;
       time_t now  = mktime(&test->now);
-      lList *state_changes_list = NULL;
+      lList *state_changes_list = nullptr;
 
       if (test->state1 == (int)(current_state = calender_state_changes(destCal, &state_changes_list, &when, &now))) {
          if (when == mktime(&test->result1)) {
@@ -589,7 +589,7 @@ int main(int argc, char* argv[])
    int test_counter = 0;
    int i = 0;
    int failed = 0;
-   sge_gdi_ctx_class_t *context = NULL;
+   sge_gdi_ctx_class_t *context = nullptr;
    int cal_index = 0;
 
    lInit(nmv);
@@ -632,7 +632,7 @@ int main(int argc, char* argv[])
 static int test_time_frame(sge_gdi_ctx_class_t *context, time_frame_entry_t *test, cal_entry_t *calendar, int test_nr)
 {
    int ret = 0;
-   lListElem *destCal = NULL;
+   lListElem *destCal = nullptr;
    struct tm *end_tm;
    struct tm res;
    u_long32 start_time = (u_long32)mktime(&test->start_time);
@@ -669,7 +669,7 @@ static int test_time_frame(sge_gdi_ctx_class_t *context, time_frame_entry_t *tes
       (end_tm->tm_isdst?"true":"false"));
    printf("==> year cal: \"%s\" week cal: \"%s\"\n", calendar->year_cal, calendar->week_cal);  
 
-   if ((destCal = createCalObject(context, calendar)) != NULL) {
+   if ((destCal = createCalObject(context, calendar)) != nullptr) {
       bool result = calendar_open_in_time_frame(destCal, start_time, test->duration);
       if (test->open != result) {
          printf("wrong state for time frame: expected %d, got %d\n", test->open, result);

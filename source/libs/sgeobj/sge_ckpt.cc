@@ -84,7 +84,7 @@ bool ckpt_is_referenced(const lListElem *ckpt, lList **answer_list,
    bool ret = false;
 
    {
-      const lListElem *job = NULL;
+      const lListElem *job = nullptr;
 
       for_each_ep(job, master_job_list) {
          if (job_is_ckpt_referenced(job, ckpt)) {
@@ -100,7 +100,7 @@ bool ckpt_is_referenced(const lListElem *ckpt, lList **answer_list,
       } 
    }
    if (!ret) {
-      const lListElem *queue = NULL, *ckl = NULL;
+      const lListElem *queue = nullptr, *ckl = nullptr;
  
       /* fix for bug 6422335
        * check the cq configuration for ckpt references instead of qinstances
@@ -139,8 +139,8 @@ bool ckpt_is_referenced(const lListElem *ckpt, lList **answer_list,
 *     const char *ckpt_name - name of the ckpt object. 
 *
 *  RESULT
-*     NULL - ckpt object with name "ckpt_name" does not exist
-*     !NULL - pointer to the cull element (CK_Type) 
+*     nullptr - ckpt object with name "ckpt_name" does not exist
+*     !nullptr - pointer to the cull element (CK_Type)
 ******************************************************************************/
 lListElem *ckpt_list_locate(const lList *ckpt_list, const char *ckpt_name)
 {
@@ -162,7 +162,7 @@ lListElem *ckpt_list_locate(const lList *ckpt_list, const char *ckpt_name)
 *
 *  RESULT
 *     int - bitmask of checkpoint specifers
-*           0 if attr_str == NULL or nothing set or value 
+*           0 if attr_str == nullptr or nothing set or value
 *           may be a time value 
 *
 *  NOTES
@@ -172,7 +172,7 @@ int sge_parse_checkpoint_attr(const char *attr_str)
 {
    int opr;
 
-   if (attr_str == NULL) {
+   if (attr_str == nullptr) {
       return 0;
    }
 
@@ -244,7 +244,7 @@ int ckpt_validate(const lListElem *this_elem, lList **alpp)
       { CK_migr_command, "migr_command" },
       { CK_rest_command, "restart_command"},
       { CK_clean_command, "clean_command"},
-      { NoName,           NULL} };
+      { NoName,           nullptr} };
 
    size_t i;
    int found = 0;
@@ -271,8 +271,8 @@ int ckpt_validate(const lListElem *this_elem, lList **alpp)
     */
    interface = lGetString(this_elem, CK_interface);
    found = 0;
-   /* handle NULL pointer for interface name */
-   if (interface == NULL) {
+   /* handle nullptr pointer for interface name */
+   if (interface == nullptr) {
       interface = "<null>";
    } else {
 
@@ -293,7 +293,7 @@ int ckpt_validate(const lListElem *this_elem, lList **alpp)
 
    for (i = 0; ckpt_commands[i].nm != NoName; i++) {
       if (replace_params(lGetString(this_elem, ckpt_commands[i].nm),
-               NULL, 0, ckpt_variables)) {
+               nullptr, 0, ckpt_variables)) {
          ERROR((SGE_EVENT, MSG_OBJ_CKPTENV_SSS,
                ckpt_commands[i].text, lGetString(this_elem, CK_name), err_msg));
          answer_list_add(alpp, SGE_EVENT, STATUS_EEXIST, ANSWER_QUALITY_ERROR);
@@ -340,13 +340,13 @@ ckpt_list_do_all_exist(const lList *ckpt_list, lList **answer_list,
                        const lList *ckpt_ref_list)
 {
    bool ret = true;
-   const lListElem *ckpt_ref_elem = NULL;
+   const lListElem *ckpt_ref_elem = nullptr;
 
    DENTER(TOP_LAYER);
    for_each_ep(ckpt_ref_elem, ckpt_ref_list) {
       const char *ckpt_ref_string = lGetString(ckpt_ref_elem, ST_name);
 
-      if (ckpt_list_locate(ckpt_list, ckpt_ref_string) == NULL) {
+      if (ckpt_list_locate(ckpt_list, ckpt_ref_string) == nullptr) {
          answer_list_add_sprintf(answer_list, STATUS_EEXIST,
                                  ANSWER_QUALITY_ERROR,
                                  MSG_CKPTREFDOESNOTEXIST_S, ckpt_ref_string);
@@ -373,11 +373,11 @@ ckpt_list_do_all_exist(const lList *ckpt_list, lList **answer_list,
 *
 *  INPUTS
 *     ckpt_name - name used for the CK_name attribute of the generic
-*               pe object. If NULL then "template" is the default name.
+*               pe object. If nullptr then "template" is the default name.
 *
 *  RESULT
-*     !NULL - Pointer to a new CULL object of type CK_Type
-*     NULL - Error
+*     !nullptr - Pointer to a new CULL object of type CK_Type
+*     nullptr - Error
 *
 *  EXAMPLE
 *

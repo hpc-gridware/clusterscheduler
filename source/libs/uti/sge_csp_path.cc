@@ -144,7 +144,7 @@ static bool ssl_cert_verify_func(cl_ssl_verify_mode_t mode, bool service_mode, c
 
 static bool is_daemon(void) {
    const char *progname = uti_state_get_sge_formal_prog_name();
-   if (progname != NULL) {
+   if (progname != nullptr) {
       if (!strcmp(prognames[QMASTER], progname) || !strcmp(prognames[EXECD], progname) ||
           !strcmp(prognames[SCHEDD], progname)) {
          return true;
@@ -160,7 +160,7 @@ static bool ssl_cert_verify_func(cl_ssl_verify_mode_t mode, bool service_mode, c
     *
     * - This callback function can be used to make additonal security checks 
     * 
-    * - this callback is not called from commlib with a value == NULL 
+    * - this callback is not called from commlib with a value == nullptr
     * 
     * - NOTE: This callback is called from the commlib. If the commlib is initalized with
     *   thread support (see cl_com_setup_commlib() ) this may be a problem because the thread has
@@ -171,7 +171,7 @@ static bool ssl_cert_verify_func(cl_ssl_verify_mode_t mode, bool service_mode, c
 
    DPRINTF(("ssl_cert_verify_func()\n"));
 
-   if (value == NULL) {
+   if (value == nullptr) {
       /* This should never happen */
       CRITICAL((SGE_EVENT, SFNMAX, MSG_SEC_CERT_VERIFY_FUNC_NO_VAL));
       DRETURN(false);
@@ -227,14 +227,14 @@ static bool ssl_cert_verify_func(cl_ssl_verify_mode_t mode, bool service_mode, c
 sge_csp_path_class_t *
 sge_csp_path_class_create(sge_error_class_t *eh)
 {
-   sge_csp_path_class_t *ret = NULL;
+   sge_csp_path_class_t *ret = nullptr;
 
    DENTER(TOP_LAYER);
 
    ret = (sge_csp_path_class_t *) sge_malloc(sizeof(sge_csp_path_class_t));
    if (!ret) {
       eh->error(eh, STATUS_EMALLOC, ANSWER_QUALITY_ERROR, MSG_MEMORY_MALLOCFAILED);
-      DRETURN(NULL);
+      DRETURN(nullptr);
    }
 
    ret->dprintf = sge_csp_path_dprintf;
@@ -264,16 +264,16 @@ sge_csp_path_class_create(sge_error_class_t *eh)
    ret->set_verify_func = set_verify_func;
 
    ret->sge_csp_path_handle = (sge_csp_path_t *) sge_malloc(sizeof(sge_csp_path_t));
-   if (ret->sge_csp_path_handle == NULL) {
+   if (ret->sge_csp_path_handle == nullptr) {
       eh->error(eh, STATUS_EMALLOC, ANSWER_QUALITY_ERROR, MSG_MEMORY_MALLOCFAILED);
       sge_csp_path_class_destroy(&ret);
-      DRETURN(NULL);
+      DRETURN(nullptr);
    }
    memset(ret->sge_csp_path_handle, 0, sizeof(sge_csp_path_t));
 
    if (!sge_csp_path_setup(ret, eh)) {
       sge_csp_path_class_destroy(&ret);
-      DRETURN(NULL);
+      DRETURN(nullptr);
    }
 
    DRETURN(ret);
@@ -295,14 +295,14 @@ sge_csp_path_setup(sge_csp_path_class_t *thiz, sge_error_class_t *eh)
 {
    char buffer[2*1024];
    dstring bw;
-   const char *sge_root = NULL;
-   const char *sge_cell = NULL;
-   const char *user_dir = NULL;
-   const char *user_local_dir = NULL;
-   const char *username = NULL;
-   const char *sge_cakeyfile = NULL;
-   const char *sge_certfile = NULL;
-   const char *sge_keyfile = NULL;
+   const char *sge_root = nullptr;
+   const char *sge_cell = nullptr;
+   const char *user_dir = nullptr;
+   const char *user_local_dir = nullptr;
+   const char *username = nullptr;
+   const char *sge_cakeyfile = nullptr;
+   const char *sge_certfile = nullptr;
+   const char *sge_keyfile = nullptr;
    int sge_qmaster_port = 0;
    bool is_from_services = false;
    SGE_STRUCT_STAT sbuf;
@@ -439,7 +439,7 @@ sge_csp_path_setup(sge_csp_path_class_t *thiz, sge_error_class_t *eh)
    sge_dstring_sprintf(&bw, "%s/%s", get_ca_root(thiz), CrlFile);
    thiz->set_crl_file(thiz, sge_dstring_get_string(&bw));
 
-   thiz->set_password(thiz, NULL);
+   thiz->set_password(thiz, nullptr);
    thiz->set_refresh_time(thiz, 60 * VALID_MINUTES);
 
    thiz->set_verify_func(thiz, ssl_cert_verify_func);

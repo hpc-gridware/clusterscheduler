@@ -162,9 +162,9 @@ int main(int argc, char **argv)
    static char tmp_err_file_name[SGE_PATH_MAX];
    time_t next_prof_output = 0;
    int execd_exit_state = 0;
-   lList **master_job_list = NULL;
-   sge_gdi_ctx_class_t *ctx = NULL;
-   lList *alp = NULL;
+   lList **master_job_list = nullptr;
+   sge_gdi_ctx_class_t *ctx = nullptr;
+   lList *alp = nullptr;
 
    DENTER_MAIN(TOP_LAYER, "execd");
 
@@ -178,8 +178,8 @@ int main(int argc, char **argv)
 
    set_thread_name(pthread_self(),"Execd Thread");
 
-   prof_set_level_name(SGE_PROF_CUSTOM1, "Execd Thread", NULL); 
-   prof_set_level_name(SGE_PROF_CUSTOM2, "Execd Dispatch", NULL); 
+   prof_set_level_name(SGE_PROF_CUSTOM1, "Execd Thread", nullptr);
+   prof_set_level_name(SGE_PROF_CUSTOM2, "Execd Dispatch", nullptr);
 
 #ifdef __SGE_COMPILE_WITH_GETTEXT__  
    /* init language output for gettext() , it will use the right language */
@@ -187,7 +187,7 @@ int main(int argc, char **argv)
                          (setlocale_func_type)      setlocale,
                          (bindtextdomain_func_type) bindtextdomain,
                          (textdomain_func_type)     textdomain);
-   sge_init_language(NULL,NULL);   
+   sge_init_language(nullptr,nullptr);
 #endif /* __SGE_COMPILE_WITH_GETTEXT__  */
 
    /* This needs a better solution */
@@ -226,7 +226,7 @@ int main(int argc, char **argv)
    }
 
    /* unset XAUTHORITY if set */
-   if (getenv("XAUTHORITY") != NULL) {
+   if (getenv("XAUTHORITY") != nullptr) {
       sge_unsetenv("XAUTHORITY");
    }
 
@@ -234,7 +234,7 @@ int main(int argc, char **argv)
    
    /* exit if we can't get communication handle (bind port) */
    max_enroll_tries = 30;
-   while (cl_com_get_handle(prognames[EXECD],1) == NULL) {
+   while (cl_com_get_handle(prognames[EXECD],1) == nullptr) {
       ctx->prepare_enroll(ctx);
       max_enroll_tries--;
 
@@ -246,7 +246,7 @@ int main(int argc, char **argv)
          CRITICAL((SGE_EVENT, SFNMAX, MSG_COM_ERROR));
          SGE_EXIT((void**)&ctx, 1);
       }
-      if (cl_com_get_handle(prognames[EXECD],1) == NULL) {
+      if (cl_com_get_handle(prognames[EXECD],1) == nullptr) {
         /* sleep when prepare_enroll() failed */
         sleep(1);
         if (max_enroll_tries < 27) {
@@ -273,7 +273,7 @@ int main(int argc, char **argv)
 
    /* test connection */
    {
-      cl_com_SIRM_t* status = NULL;
+      cl_com_SIRM_t* status = nullptr;
       ret_val = cl_commlib_get_endpoint_status(ctx->get_com_handle(ctx),
                                                (char *)ctx->get_master(ctx, true),
                                                (char*)prognames[QMASTER], 1, &status);
@@ -368,13 +368,13 @@ int main(int argc, char **argv)
    sge_sig_handler_in_main_loop = 1;
 
    if (thread_prof_active_by_id(pthread_self())) {
-      prof_start(SGE_PROF_CUSTOM1, NULL);
-      prof_start(SGE_PROF_CUSTOM2, NULL);
-      prof_start(SGE_PROF_GDI_REQUEST, NULL);
+      prof_start(SGE_PROF_CUSTOM1, nullptr);
+      prof_start(SGE_PROF_CUSTOM2, nullptr);
+      prof_start(SGE_PROF_GDI_REQUEST, nullptr);
    } else {
-      prof_stop(SGE_PROF_CUSTOM1, NULL);
-      prof_stop(SGE_PROF_CUSTOM2, NULL);
-      prof_stop(SGE_PROF_GDI_REQUEST, NULL);
+      prof_stop(SGE_PROF_CUSTOM1, nullptr);
+      prof_stop(SGE_PROF_CUSTOM2, nullptr);
+      prof_stop(SGE_PROF_GDI_REQUEST, nullptr);
    }
 
    PROF_START_MEASUREMENT(SGE_PROF_CUSTOM1);
@@ -404,7 +404,7 @@ int main(int argc, char **argv)
 
       if (now > next_prof_output) {
          prof_output_info(SGE_PROF_ALL, false, "profiling summary:\n");
-         prof_reset(SGE_PROF_ALL,NULL);
+         prof_reset(SGE_PROF_ALL,nullptr);
          next_prof_output = now + 60;
       }
    }
@@ -468,7 +468,7 @@ static void execd_exit_func(void **ctx_ref, int i)
 int sge_execd_register_at_qmaster(sge_gdi_ctx_class_t *ctx, bool is_restart) {
    int return_value = 0;
    static int sge_last_register_error_flag = 0;
-   lList *alp = NULL;
+   lList *alp = nullptr;
 
    /* 
     * If it is a reconnect (is_restart == true) the act_qmaster file must be
@@ -482,7 +482,7 @@ int sge_execd_register_at_qmaster(sge_gdi_ctx_class_t *ctx, bool is_restart) {
     * gdi will return with timeout after one minute. If qmaster is not alive
     * we will not try a gdi request!
     */
-   if (master_host != NULL && ctx->is_alive(ctx) == CL_RETVAL_OK) {
+   if (master_host != nullptr && ctx->is_alive(ctx) == CL_RETVAL_OK) {
       lList *hlp = lCreateList("exechost starting", EH_Type);
       lListElem *hep = lCreateElem(EH_Type);
       lSetUlong(hep, EH_featureset_id, feature_get_active_featureset_id());
@@ -494,21 +494,21 @@ int sge_execd_register_at_qmaster(sge_gdi_ctx_class_t *ctx, bool is_restart) {
          /*
           * This is a regular startup.
           */
-         alp = ctx->gdi(ctx, SGE_EH_LIST, SGE_GDI_ADD, &hlp, NULL, NULL);
+         alp = ctx->gdi(ctx, SGE_EH_LIST, SGE_GDI_ADD, &hlp, nullptr, nullptr);
       } else {
          /*
           * Indicate this is a restart to qmaster.
           * This is used for the initial_state of queue_configuration implementation.
           */
          alp = ctx->gdi(ctx, SGE_EH_LIST, SGE_GDI_ADD | SGE_GDI_EXECD_RESTART,
-                        &hlp, NULL, NULL);
+                        &hlp, nullptr, nullptr);
       }
       lFreeList(&hlp);
    } else {
       DPRINTF(("*****  Register at qmaster - qmaster not alive!  *****\n"));
    }
 
-   if (alp == NULL) {
+   if (alp == nullptr) {
       if (sge_last_register_error_flag == 0) {
          WARNING((SGE_EVENT, MSG_COM_CANTREGISTER_SS, master_host?master_host:"", MSG_COM_ERROR));
          sge_last_register_error_flag = 1;
@@ -540,7 +540,7 @@ int sge_execd_register_at_qmaster(sge_gdi_ctx_class_t *ctx, bool is_restart) {
  *---------------------------------------------------------------------*/
 static void parse_cmdline_execd(char **argv)
 {
-   lList *ref_list = NULL, *alp = NULL, *pcmdline = NULL;
+   lList *ref_list = nullptr, *alp = nullptr, *pcmdline = nullptr;
    const lListElem *aep;
    u_long32 help = 0;
 
@@ -557,7 +557,7 @@ static void parse_cmdline_execd(char **argv)
       lFreeList(&alp);
       lFreeList(&pcmdline);
       /* TODO: replace with alpp and DRETURN */
-      SGE_EXIT(NULL, 1);
+      SGE_EXIT(nullptr, 1);
    }
 
    alp = sge_parse_execd(&pcmdline, &ref_list, &help);
@@ -573,7 +573,7 @@ static void parse_cmdline_execd(char **argv)
       }
       lFreeList(&alp);
       /* TODO: replace with alpp and DRETURN */
-      SGE_EXIT(NULL, 1);
+      SGE_EXIT(nullptr, 1);
    }
    lFreeList(&alp);
 
@@ -582,7 +582,7 @@ static void parse_cmdline_execd(char **argv)
       ** user wanted only help. we can exit!
       */
       /* TODO: replace with alpp and DRETURN */
-      SGE_EXIT(NULL, 0);
+      SGE_EXIT(nullptr, 0);
    }
    DRETURN_VOID;
 }
@@ -597,22 +597,22 @@ static lList *sge_parse_cmdline_execd(char **argv, lList **ppcmdline)
 char **sp;
 char **rp;
 stringT str;
-lList *alp = NULL;
+lList *alp = nullptr;
 
    DENTER(TOP_LAYER);
 
    rp = argv;
    while(*(sp=rp)) {
       /* -help */
-      if ((rp = parse_noopt(sp, "-help", NULL, ppcmdline, &alp)) != sp)
+      if ((rp = parse_noopt(sp, "-help", nullptr, ppcmdline, &alp)) != sp)
          continue;
 
       /* -nostart-commd */
-      if ((rp = parse_noopt(sp, "-nostart-commd", NULL, ppcmdline, &alp)) != sp)
+      if ((rp = parse_noopt(sp, "-nostart-commd", nullptr, ppcmdline, &alp)) != sp)
          continue;
 
       /* -lj */
-      if ((rp = parse_until_next_opt(sp, "-lj", NULL, ppcmdline, &alp)) != sp)
+      if ((rp = parse_until_next_opt(sp, "-lj", nullptr, ppcmdline, &alp)) != sp)
          continue;
 
       /* oops */
@@ -632,7 +632,7 @@ lList *alp = NULL;
 static lList *sge_parse_execd(lList **ppcmdline, lList **ppreflist, 
                               u_long32 *help) 
 {
-   lList *alp = NULL;
+   lList *alp = nullptr;
    int usageshowed = 0;
 
    DENTER(TOP_LAYER);
@@ -677,8 +677,8 @@ static lList *sge_parse_execd(lList **ppcmdline, lList **ppreflist,
 *  INPUTS
 *     u_long32 job_id     - job id
 *     u_long32 ja_task_id - ja_task id
-*     lListElem **job     - returns job or NULL if not found
-*     lListElem **ja_task - returns ja_task or NULL if not found
+*     lListElem **job     - returns job or nullptr if not found
+*     lListElem **ja_task - returns ja_task or nullptr if not found
 *
 *  RESULT
 *     bool - true if both job and ja_task are found, else false
@@ -688,14 +688,14 @@ static lList *sge_parse_execd(lList **ppcmdline, lList **ppreflist,
 *******************************************************************************/
 bool execd_get_job_ja_task(u_long32 job_id, u_long32 ja_task_id, lListElem **job, lListElem **ja_task)
 {
-   const void *iterator = NULL;
+   const void *iterator = nullptr;
 
    DENTER(TOP_LAYER);
 
    *job = lGetElemUlongFirstRW(*object_type_get_master_list_rw(SGE_TYPE_JOB), JB_job_number, job_id, &iterator);
-   while (*job != NULL) {
-      *ja_task = job_search_task(*job, NULL, ja_task_id);
-      if (*ja_task != NULL) {
+   while (*job != nullptr) {
+      *ja_task = job_search_task(*job, nullptr, ja_task_id);
+      if (*ja_task != nullptr) {
          DRETURN(true);
       }
 
@@ -705,13 +705,13 @@ bool execd_get_job_ja_task(u_long32 job_id, u_long32 ja_task_id, lListElem **job
       *job = lGetElemUlongNextRW(*object_type_get_master_list(SGE_TYPE_JOB), JB_job_number, job_id, &iterator);
    }
    
-   if (*job == NULL) {
+   if (*job == nullptr) {
       ERROR((SGE_EVENT, MSG_JOB_TASKWITHOUTJOB_U, sge_u32c(job_id))); 
-   } else if (*ja_task == NULL) { 
+   } else if (*ja_task == nullptr) {
       ERROR((SGE_EVENT, MSG_JOB_TASKNOTASKINJOB_UU, sge_u32c(job_id), sge_u32c(ja_task_id)));
    }
 
-   *job = NULL;
-   *ja_task = NULL;
+   *job = nullptr;
+   *ja_task = nullptr;
    DRETURN(false);
 }

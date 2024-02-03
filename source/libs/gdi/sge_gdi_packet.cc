@@ -201,7 +201,7 @@ sge_gdi_task_debug_print(sge_gdi_task_class_t * task)
     bool ret = true;
     
     DENTER(TOP_LAYER);
-    if (task != NULL) {
+    if (task != nullptr) {
         DPRINTF(("task->id = " sge_U32CFormat "\n", sge_u32c(task->id)));
         DPRINTF(("task->command = " sge_U32CFormat "\n",
                 sge_u32c(task->command)));
@@ -212,7 +212,7 @@ sge_gdi_task_debug_print(sge_gdi_task_class_t * task)
         DPRINTF(("task->enumeration = %p\n", task->enumeration));
         DPRINTF(("task->next = %p\n", task->next));
     } else {
-        DPRINTF(("task is NULL\n"));
+        DPRINTF(("task is nullptr\n"));
     }
     DRETURN(ret);
 }
@@ -225,7 +225,7 @@ sge_gdi_task_verify(sge_gdi_task_class_t * task, lList **answer_list)
    bool ret = true;
 #if 0
    int operation = 0;
-   lList *list = NULL;
+   lList *list = nullptr;
    u_long32 target = 0;
 #endif
 
@@ -255,56 +255,56 @@ sge_gdi_task_create(sge_gdi_packet_class_t * packet, lList **answer_list,
                     lList **a_list, lCondition **condition,
                     lEnumeration **enumeration, bool do_copy, bool do_verify)
 {
-   sge_gdi_task_class_t *task = NULL;
+   sge_gdi_task_class_t *task = nullptr;
 
    DENTER(TOP_LAYER);
 
    task = (sge_gdi_task_class_t *) sge_malloc(sizeof(sge_gdi_task_class_t));
-   if (task != NULL) {
+   if (task != nullptr) {
       task->id =
-         ((packet->last_task != NULL) ? (packet->last_task->id + 1) : 1);
+         ((packet->last_task != nullptr) ? (packet->last_task->id + 1) : 1);
       task->command = command;
       task->target = target;
-      task->next = NULL;
+      task->next = nullptr;
       task->do_select_pack_simultaneous = false;
       if (do_copy) {
-         if (enumeration != NULL && *enumeration != NULL) {
-            task->data_list = (((lp != NULL) && (*lp != NULL)) ?
-                               lSelect("", *lp, NULL, *enumeration) : NULL);
+         if (enumeration != nullptr && *enumeration != nullptr) {
+            task->data_list = (((lp != nullptr) && (*lp != nullptr)) ?
+                               lSelect("", *lp, nullptr, *enumeration) : nullptr);
          } else {
-            task->data_list = (((lp != NULL) && (*lp != NULL)) ?
-                               lCopyList("", *lp) : NULL);
+            task->data_list = (((lp != nullptr) && (*lp != nullptr)) ?
+                               lCopyList("", *lp) : nullptr);
          }
-         task->answer_list = (((a_list != NULL) && (*a_list != NULL)) ?
-                              lCopyList("", *a_list) : NULL);
-         task->condition = (((condition != NULL) && (*condition != NULL)) ?
-                            lCopyWhere(*condition) : NULL);
-         task->enumeration = (((enumeration != NULL) && (*enumeration != NULL)) ?
-                              lCopyWhat(*enumeration) : NULL);
+         task->answer_list = (((a_list != nullptr) && (*a_list != nullptr)) ?
+                              lCopyList("", *a_list) : nullptr);
+         task->condition = (((condition != nullptr) && (*condition != nullptr)) ?
+                            lCopyWhere(*condition) : nullptr);
+         task->enumeration = (((enumeration != nullptr) && (*enumeration != nullptr)) ?
+                              lCopyWhat(*enumeration) : nullptr);
       } else {
-         if ((lp != NULL) && (*lp != NULL)) {
+         if ((lp != nullptr) && (*lp != nullptr)) {
             task->data_list = *lp;
-            *lp = NULL;
+            *lp = nullptr;
          } else {
-            task->data_list = NULL;
+            task->data_list = nullptr;
          }
-         if ((a_list != NULL) && (*a_list != NULL)) {
+         if ((a_list != nullptr) && (*a_list != nullptr)) {
             task->answer_list = *a_list;
-            *a_list = NULL;
+            *a_list = nullptr;
          } else {
-            task->answer_list = NULL;
+            task->answer_list = nullptr;
          }
-         if ((condition != NULL) && (*condition != NULL)) {
+         if ((condition != nullptr) && (*condition != nullptr)) {
             task->condition = *condition;
-            *condition = NULL;
+            *condition = nullptr;
          } else {
-            task->condition = NULL;
+            task->condition = nullptr;
          }
-         if ((enumeration != NULL) && (*enumeration != NULL)) {
+         if ((enumeration != nullptr) && (*enumeration != nullptr)) {
             task->enumeration = *enumeration;
-            *enumeration = NULL;
+            *enumeration = nullptr;
          } else {
-            task->enumeration = NULL;
+            task->enumeration = nullptr;
          }
       }
       if (do_verify && !sge_gdi_task_verify(task, answer_list)) {
@@ -314,10 +314,10 @@ sge_gdi_task_create(sge_gdi_packet_class_t * packet, lList **answer_list,
             lFreeWhere(&(task->condition));
             lFreeWhat(&(task->enumeration));
          } else {
-            task->data_list = NULL;
-            task->answer_list = NULL;
-            task->condition = NULL;
-            task->enumeration = NULL;
+            task->data_list = nullptr;
+            task->answer_list = nullptr;
+            task->condition = nullptr;
+            task->enumeration = nullptr;
          }
          sge_gdi_task_free(&task);
       }
@@ -360,7 +360,7 @@ sge_gdi_task_free(sge_gdi_task_class_t ** task)
    bool ret = true;
 
    DENTER(TOP_LAYER);
-   if (task != NULL && *task != NULL) {
+   if (task != nullptr && *task != nullptr) {
       lFreeList(&((*task)->data_list));
       lFreeList(&((*task)->answer_list));
       lFreeWhat(&((*task)->enumeration));
@@ -378,7 +378,7 @@ sge_gdi_packet_debug_print(sge_gdi_packet_class_t * packet)
 
    DENTER(TOP_LAYER);
 
-   if (packet != NULL) {
+   if (packet != nullptr) {
       sge_gdi_task_class_t *task;
 
       DPRINTF(("packet->id = " sge_U32CFormat "\n", sge_u32c(packet->id)));
@@ -391,12 +391,12 @@ sge_gdi_packet_debug_print(sge_gdi_packet_class_t * packet)
       DPRINTF(("packet->last_task = %p\n", packet->last_task));
 
       task = packet->first_task;
-      while (task != NULL) {
+      while (task != nullptr) {
          sge_gdi_task_debug_print(task);
          task = task->next;
       }
    } else {
-      DPRINTF(("packet is NULL\n"));;
+      DPRINTF(("packet is nullptr\n"));;
    }
    DRETURN(ret);
 }
@@ -436,30 +436,30 @@ sge_gdi_packet_debug_print(sge_gdi_packet_class_t * packet)
 sge_gdi_packet_class_t *
 sge_gdi_packet_create_base(lList **answer_list)
 {
-   sge_gdi_packet_class_t *ret = NULL;
+   sge_gdi_packet_class_t *ret = nullptr;
 
    DENTER(TOP_LAYER);
    ret = (sge_gdi_packet_class_t *) sge_malloc(sizeof(sge_gdi_packet_class_t));
-   if (ret != NULL) {
+   if (ret != nullptr) {
       int local_ret1;
       int local_ret2;
 
-      local_ret1 = pthread_mutex_init(&(ret->mutex), NULL);
-      local_ret2 = pthread_cond_init(&(ret->cond), NULL);
+      local_ret1 = pthread_mutex_init(&(ret->mutex), nullptr);
+      local_ret2 = pthread_cond_init(&(ret->cond), nullptr);
       if (local_ret1 == 0 && local_ret2 == 0) {
          ret->is_intern_request = false;
          ret->is_gdi_request = true;
          ret->is_handled = false;
          ret->id = 0;
-         ret->host = NULL;
-         ret->commproc = NULL;
+         ret->host = nullptr;
+         ret->commproc = nullptr;
          ret->commproc_id = 0;
 
          ret->version = GRM_GDI_VERSION;
-         ret->first_task = NULL;
-         ret->last_task = NULL;
-         ret->auth_info = NULL;
-         ret->next = NULL;
+         ret->first_task = nullptr;
+         ret->last_task = nullptr;
+         ret->auth_info = nullptr;
+         ret->next = nullptr;
          memset(&(ret->pb), 0, sizeof(sge_pack_buffer));
       } else {
          answer_list_add_sprintf(answer_list, STATUS_EMALLOC,
@@ -490,7 +490,7 @@ sge_gdi_packet_create_base(lList **answer_list)
 *     lList **answer_list      - answer list
 *
 *  RESULT
-*     sge_gdi_packet_class_t * - new packet element or NULL in case of errors
+*     sge_gdi_packet_class_t * - new packet element or nullptr in case of errors
 *
 *  NOTES
 *     MT-NOTE: sge_gdi_packet_create() is MT safe
@@ -502,11 +502,11 @@ sge_gdi_packet_create_base(lList **answer_list)
 sge_gdi_packet_class_t *
 sge_gdi_packet_create(sge_gdi_ctx_class_t * ctx, lList **answer_list)
 {
-   sge_gdi_packet_class_t *ret = NULL;
+   sge_gdi_packet_class_t *ret = nullptr;
 
    DENTER(TOP_LAYER);
    ret = sge_gdi_packet_create_base(answer_list);
-   if (ret != NULL) {
+   if (ret != nullptr) {
       sge_gdi_packet_initialize_auth_info(ctx, ret);
    }
    DRETURN(ret);
@@ -532,7 +532,7 @@ sge_gdi_packet_create(sge_gdi_ctx_class_t * ctx, lList **answer_list)
 *     with the values given by "target" and "command". Pointer
 *     parameters like "lp", "a_list", "condition", and "enumeration"
 *     will either be copied ("do_copy" == true) or they will just be
-*     used as they are. In that case they will direct to NULL after
+*     used as they are. In that case they will direct to nullptr after
 *     the function returns. The memory allocated by the provided
 *     pointer parameters will be released when the task is destroyed
 *     they are part of. "do_verify" defines if the input parameters
@@ -577,7 +577,7 @@ sge_gdi_packet_append_task(sge_gdi_packet_class_t * packet,
                            bool do_copy, bool do_verify)
 {
    bool ret = true;
-   sge_gdi_task_class_t *task = NULL;
+   sge_gdi_task_class_t *task = nullptr;
 
    DENTER(TOP_LAYER);
 
@@ -585,14 +585,14 @@ sge_gdi_packet_append_task(sge_gdi_packet_class_t * packet,
       sge_gdi_task_create(packet, answer_list, target, command, lp, a_list,
                           condition, enumeration, do_copy, true);
 
-   if (packet->last_task != NULL) {
+   if (packet->last_task != nullptr) {
       packet->last_task->next = task;
       packet->last_task = task;
    } else {
       packet->first_task = task;
       packet->last_task = task;
    }
-   task = NULL;
+   task = nullptr;
 
    DRETURN(ret);
 }
@@ -622,7 +622,7 @@ sge_gdi_packet_append_task(sge_gdi_packet_class_t * packet,
 const char *
 sge_gdi_task_get_operation_name(sge_gdi_task_class_t *task)
 {
-   const char *ret = NULL;
+   const char *ret = nullptr;
    int operation = SGE_GDI_GET_OPERATION(task->command);
 
    switch (operation) {
@@ -691,7 +691,7 @@ sge_gdi_packet_get_last_task_id(sge_gdi_packet_class_t * packet)
 
    DENTER(TOP_LAYER);
 
-   if (packet->last_task != NULL) {
+   if (packet->last_task != nullptr) {
       ret = packet->last_task->id;
    }
    DRETURN(ret);
@@ -733,14 +733,14 @@ sge_gdi_packet_free(sge_gdi_packet_class_t ** packet)
    bool ret = true;
 
    DENTER(TOP_LAYER);
-   if (packet != NULL && *packet != NULL) {
-      sge_gdi_task_class_t *task = NULL;
-      sge_gdi_task_class_t *next_task = NULL;
+   if (packet != nullptr && *packet != nullptr) {
+      sge_gdi_task_class_t *task = nullptr;
+      sge_gdi_task_class_t *next_task = nullptr;
       int local_ret1;
       int local_ret2;
 
       next_task = (*packet)->first_task;
-      while ((task = next_task) != NULL) {
+      while ((task = next_task) != nullptr) {
          next_task = task->next;
          sge_gdi_task_free(&task);
       }
@@ -795,7 +795,7 @@ bool
 sge_gdi_packet_verify_version(sge_gdi_packet_class_t * packet, lList **alpp)
 {
    bool ret = true;
-   char *client_version = NULL;
+   char *client_version = nullptr;
    dstring ds;
    char buffer[256];
    const vdict_t *vp;

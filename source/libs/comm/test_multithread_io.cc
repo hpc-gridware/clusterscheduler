@@ -47,10 +47,10 @@ void sighandler_client(int sig);
 
 static int do_shutdown = 0;
 
-static cl_com_handle_t *handle = NULL;
+static cl_com_handle_t *handle = nullptr;
 
 
-cl_raw_list_t *thread_list = NULL;
+cl_raw_list_t *thread_list = nullptr;
 
 void *my_multi_thread(void *t_conf);
 
@@ -79,8 +79,8 @@ void sighandler_client(
 #define __CL_FUNCTION__ "main()"
 
 extern int main(void) {
-   cl_thread_settings_t *thread_p = NULL;
-   cl_thread_settings_t *dummy_thread_p = NULL;
+   cl_thread_settings_t *thread_p = nullptr;
+   cl_thread_settings_t *dummy_thread_p = nullptr;
    struct sigaction sa;
 
 
@@ -88,18 +88,18 @@ extern int main(void) {
    memset(&sa, 0, sizeof(sa));
    sa.sa_handler = sighandler_client;  /* one handler for all signals */
    sigemptyset(&sa.sa_mask);
-   sigaction(SIGINT, &sa, NULL);
-   sigaction(SIGTERM, &sa, NULL);
-   sigaction(SIGHUP, &sa, NULL);
-   sigaction(SIGPIPE, &sa, NULL);
+   sigaction(SIGINT, &sa, nullptr);
+   sigaction(SIGTERM, &sa, nullptr);
+   sigaction(SIGHUP, &sa, nullptr);
+   sigaction(SIGPIPE, &sa, nullptr);
 
    /* This module test is defect */
    printf("This test does not work!\n");
    exit(1);
 
-   cl_com_setup_commlib(CL_RW_THREAD, CL_LOG_WARNING, NULL);
-   handle = cl_com_create_handle(NULL, CL_CT_TCP, CL_CM_CT_MESSAGE, false, 5000, CL_TCP_DEFAULT, "client", 0, 1, 0);
-   if (handle == NULL) {
+   cl_com_setup_commlib(CL_RW_THREAD, CL_LOG_WARNING, nullptr);
+   handle = cl_com_create_handle(nullptr, CL_CT_TCP, CL_CM_CT_MESSAGE, false, 5000, CL_TCP_DEFAULT, "client", 0, 1, 0);
+   if (handle == nullptr) {
       printf("could not get handle\n");
       exit(1);
    }
@@ -109,25 +109,25 @@ extern int main(void) {
 
    /* setup first thread */
    cl_thread_list_create_thread(thread_list, &dummy_thread_p, cl_com_get_log_list(), "1st thread", 1, my_multi_thread,
-                                NULL, NULL, CL_TT_USER1);
+                                nullptr, nullptr, CL_TT_USER1);
 
 #if 1
    /* setup second thread */
    cl_thread_list_create_thread(thread_list, &dummy_thread_p, cl_com_get_log_list(), "2nd thread", 2, my_multi_thread,
-                                NULL, NULL, CL_TT_USER1);
+                                nullptr, nullptr, CL_TT_USER1);
 
    /* setup third thread */
    cl_thread_list_create_thread(thread_list, &dummy_thread_p, cl_com_get_log_list(), "3nd thread", 3,
-                                my_multi_read_thread, NULL, NULL, CL_TT_USER1);
+                                my_multi_read_thread, nullptr, nullptr, CL_TT_USER1);
 #endif
 
    while (do_shutdown == 0) {
-      cl_com_message_t *message = NULL;
-      cl_com_endpoint_t *sender = NULL;
+      cl_com_message_t *message = nullptr;
+      cl_com_endpoint_t *sender = nullptr;
       int retval;
 
       /* synchron message receive */
-      retval = cl_commlib_receive_message(handle, NULL, NULL, 0, true, 0, &message, &sender);
+      retval = cl_commlib_receive_message(handle, nullptr, nullptr, 0, true, 0, &message, &sender);
       if (retval != CL_RETVAL_OK) {
          CL_LOG_STR(CL_LOG_ERROR, "cl_commlib_receive_message:", cl_get_error_text(retval));
          retval = cl_commlib_open_connection(handle, "es-ergb01-01", "server", 1);
@@ -136,7 +136,7 @@ extern int main(void) {
          }
 
       } else {
-         if (message != NULL) {
+         if (message != nullptr) {
             CL_LOG_STR(CL_LOG_INFO, "received message:", (char *) message->message);
             printf("received message from \"%s\": \"%s\"\n", sender->comp_host, message->message);
          }
@@ -146,7 +146,7 @@ extern int main(void) {
    }
 
    /* delete all threads */
-   while ((thread_p = cl_thread_list_get_first_thread(thread_list)) != NULL) {
+   while ((thread_p = cl_thread_list_get_first_thread(thread_list)) != nullptr) {
       int id = thread_p->thread_id;
       printf("-----------> delete thread %d ...\n", id);
 
@@ -157,13 +157,13 @@ extern int main(void) {
 
    cl_thread_list_cleanup(&thread_list);
    while (cl_commlib_shutdown_handle(handle, true) == CL_RETVAL_MESSAGE_IN_BUFFER) {
-      cl_com_message_t *message = NULL;
-      cl_com_endpoint_t *sender = NULL;
+      cl_com_message_t *message = nullptr;
+      cl_com_endpoint_t *sender = nullptr;
 
       printf("got message\n");
 
-      cl_commlib_receive_message(handle, NULL, NULL, 0, false, 0, &message, &sender);
-      if (message != NULL) {
+      cl_commlib_receive_message(handle, nullptr, nullptr, 0, false, 0, &message, &sender);
+      if (message != nullptr) {
          cl_com_free_endpoint(&sender);
          cl_com_free_message(&message);
       }
@@ -222,7 +222,7 @@ void *my_multi_thread(void *t_conf) {
    CL_LOG(CL_LOG_INFO, "exiting ...");
    /* at least set exit state */
    cl_thread_func_cleanup(thread_config);
-   return (NULL);
+   return (nullptr);
 }
 
 
@@ -251,8 +251,8 @@ void *my_multi_read_thread(void *t_conf) {
 
    /* ok, thread main */
    while (do_exit == 0) {
-      cl_com_message_t *message = NULL;
-      cl_com_endpoint_t *sender = NULL;
+      cl_com_message_t *message = nullptr;
+      cl_com_endpoint_t *sender = nullptr;
       int retval;
 
       CL_LOG(CL_LOG_INFO, "test cancel ...");
@@ -268,7 +268,7 @@ void *my_multi_read_thread(void *t_conf) {
         The implemented thread handling will always do a broadcast when a new message arives. The application
         should only use one thread for cl_commlib_receive_message() calls for a better performance. 
 */
-      retval = cl_commlib_receive_message(handle, NULL, NULL, 0, true, 0, &message, &sender);
+      retval = cl_commlib_receive_message(handle, nullptr, nullptr, 0, true, 0, &message, &sender);
       if (retval != CL_RETVAL_OK) {
          CL_LOG_STR(CL_LOG_ERROR, "cl_commlib_receive_message:", cl_get_error_text(retval));
          retval = cl_commlib_open_connection(handle, "es-ergb01-01", "server", 1);
@@ -277,7 +277,7 @@ void *my_multi_read_thread(void *t_conf) {
          }
 
       } else {
-         if (message != NULL) {
+         if (message != nullptr) {
             CL_LOG_STR(CL_LOG_INFO, "received message:", (char *) message->message);
 /*
            printf("received message from \"%s\": \"%s\"\n", sender->comp_host,message->message);
@@ -305,7 +305,7 @@ void *my_multi_read_thread(void *t_conf) {
    CL_LOG(CL_LOG_INFO, "exiting ...");
    /* at least set exit state */
    cl_thread_func_cleanup(thread_config);
-   return (NULL);
+   return (nullptr);
 }
 
 

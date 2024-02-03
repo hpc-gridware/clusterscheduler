@@ -59,7 +59,7 @@ extern int main(void) {
    for (i = 0; i < THREAD_COUNT; i++) {
       char name[20];
       sprintf(name, "thread_%d_", i);
-      if ((retval = cl_thread_setup(&thread_list[i], NULL, name, i, timeout_thread_main, NULL, NULL, CL_TT_USER1)) !=
+      if ((retval = cl_thread_setup(&thread_list[i], nullptr, name, i, timeout_thread_main, nullptr, nullptr, CL_TT_USER1)) !=
           CL_RETVAL_OK) {
          printf("error: cl_thread_setup() - %d\n", retval);
       }
@@ -158,7 +158,7 @@ void *timeout_thread_main(void *t_conf) {
          }
       }
    pthread_cleanup_pop(pthread_cleanup_pop_execute);
-   return (NULL);
+   return (nullptr);
 }
 
 

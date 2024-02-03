@@ -63,8 +63,8 @@ enum {
 };
 
 typedef struct {
-   char snd_host[CL_MAXHOSTLEN]; /* sender hostname; NULL -> all              */
-   char snd_name[CL_MAXHOSTLEN]; /* sender name (aka 'commproc'); NULL -> all */
+   char snd_host[CL_MAXHOSTLEN]; /* sender hostname; nullptr -> all              */
+   char snd_name[CL_MAXHOSTLEN]; /* sender name (aka 'commproc'); nullptr -> all */
    u_short snd_id;            /* sender identifier; 0 -> all               */
    int tag;                   /* message tag; TAG_NONE -> all              */
    u_long32 request_mid;      /* message id of request                     */

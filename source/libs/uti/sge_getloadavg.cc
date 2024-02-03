@@ -151,7 +151,7 @@ long *address
    DENTER(TOP_LAYER);
 
    kernel_nlist[0].n_name = name;
-   kernel_nlist[1].n_name = NULL;
+   kernel_nlist[1].n_name = nullptr;
    if (kernel_initialized && (kvm_nlist(kernel_fd, kernel_nlist) >= 0))
    {
       *address = kernel_nlist[0].n_value;
@@ -173,8 +173,8 @@ kernel_fd_type *fd
    DENTER(TOP_LAYER);
 
    if (!kernel_initialized) {
-      kernel_fd = kvm_open(NULL, NULL, NULL, O_RDONLY, prefix);
-      if (kernel_fd != NULL) 
+      kernel_fd = kvm_open(nullptr, nullptr, nullptr, O_RDONLY, prefix);
+      if (kernel_fd != nullptr)
       {
          kernel_initialized = 1;
       } else {
@@ -235,7 +235,7 @@ long *freememp
    kstat_named_t *knp;
    kc = kstat_open();  
    ksp = kstat_lookup(kc, "unix", 0, "system_pages");
-   if (kstat_read(kc, ksp, NULL) == -1) {
+   if (kstat_read(kc, ksp, nullptr) == -1) {
       kstat_close(kc);
       return -1;
    } 
@@ -251,9 +251,9 @@ long *freememp
 
 #if defined(SOLARIS)
 
-static kstat_ctl_t *kc = NULL;
-static kstat_t **cpu_ks = NULL;
-static cpu_stat_t *cpu_stat = NULL;
+static kstat_ctl_t *kc = nullptr;
+static kstat_t **cpu_ks = nullptr;
+static cpu_stat_t *cpu_stat = nullptr;
 
 #define UPDKCID(nk,ok) \
 if (nk == -1) { \
@@ -348,7 +348,7 @@ int kupdate(int avenrun[3])
 
       for (ks = kc->kc_chain; ks; ks = ks->ks_next) {
          if (strncmp(ks->ks_name, "cpu_stat", 8) == 0) {
-            nkcid = kstat_read(kc, ks, NULL);
+            nkcid = kstat_read(kc, ks, nullptr);
             /* if kcid changed, pointer might be invalid */
             UPDKCID(nkcid, kcid);
 
@@ -554,7 +554,7 @@ double get_cpu_load()
 
   size = sizeof(cpu_time);
 
-  sysctl(mib, sizeof(mib)/sizeof(int), &cpu_time, &size, NULL, 0);
+  sysctl(mib, sizeof(mib)/sizeof(int), &cpu_time, &size, nullptr, 0);
   percentages(CPUSTATES, cpu_states, cpu_time, cpu_old, cpu_diff);
   cpu_load = cpu_states[0] + cpu_states[1] + cpu_states[2];
 

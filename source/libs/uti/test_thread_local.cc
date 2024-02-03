@@ -43,7 +43,7 @@ static pthread_key_t thread_local_key;
 
 void init_local_storage(int thread) {
    char *data = (char *)pthread_getspecific(thread_local_key);
-   if (data == NULL) {
+   if (data == nullptr) {
       data = sge_malloc(100);
       snprintf(data, 100, "Thread %d", thread);
       pthread_setspecific(thread_local_key, data);
@@ -59,7 +59,7 @@ void thread_work(void) {
 
    for (i = 0; i < 2; i++) {
       char *data = (char *)pthread_getspecific(thread_local_key);
-      if (data == NULL) {
+      if (data == nullptr) {
          printf("no thread local data\n");
       } else {
          printf("%s\n", data);
@@ -72,14 +72,14 @@ void *t1_main(void *args) {
    init_local_storage(1);
    thread_work();
 
-   return NULL;
+   return nullptr;
 }
 
 void *t2_main(void *args) {
    init_local_storage(2);
    thread_work();
 
-   return NULL;
+   return nullptr;
 }
 
 
@@ -91,11 +91,11 @@ int main(int argc, const char *argv[]) {
 
    pthread_key_create(&thread_local_key, free_local_storage);
 
-   pthread_create(&t1, NULL, t1_main, (void *) &ret1);
-   pthread_create(&t2, NULL, t2_main, (void *) &ret2);
+   pthread_create(&t1, nullptr, t1_main, (void *) &ret1);
+   pthread_create(&t2, nullptr, t2_main, (void *) &ret2);
 
-   pthread_join(t1, NULL);
-   pthread_join(t2, NULL);
+   pthread_join(t1, nullptr);
+   pthread_join(t2, nullptr);
 
    return 0;
 }

@@ -36,7 +36,7 @@
 *     DSTRING_INIT -- Define to initialize dstring variables 
 *
 *  SYNOPSIS
-*     #define DSTRING_INIT {NULL, 0, 0}
+*     #define DSTRING_INIT {nullptr, 0, 0}
 *
 *  FUNCTION
 *     Define to preinitialize dstring variables 
@@ -56,7 +56,7 @@
 
 #include "sge_stdlib.h"
 
-#define DSTRING_INIT {NULL, 0, 0, false}
+#define DSTRING_INIT {nullptr, 0, 0, false}
 #define DSTRING_STATIC(n, s) char _buffer_for_##n[s] = "\0"; \
                                     dstring n = {_buffer_for_##n, 0, s, true}
 

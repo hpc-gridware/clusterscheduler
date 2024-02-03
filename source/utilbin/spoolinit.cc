@@ -72,8 +72,8 @@ static int init_framework(const char *method, const char *shlib,
 {
    int ret = EXIT_FAILURE;
 
-   lListElem *spooling_context = NULL;
-   lList *answer_list = NULL;
+   lListElem *spooling_context = nullptr;
+   lList *answer_list = nullptr;
 
    DENTER(TOP_LAYER);
 
@@ -82,7 +82,7 @@ static int init_framework(const char *method, const char *shlib,
    spooling_context = spool_create_dynamic_context(&answer_list, method, shlib, 
                                                    libargs);
    answer_list_output(&answer_list);
-   if (spooling_context == NULL) {
+   if (spooling_context == nullptr) {
       CRITICAL((SGE_EVENT, SFNMAX, MSG_SPOOLDEFAULTS_CANNOTCREATECONTEXT));
    } else {
       spool_set_default_context(spooling_context);
@@ -103,7 +103,7 @@ static int init_framework(const char *method, const char *shlib,
 int main(int argc, char *argv[])
 {
    int ret = EXIT_SUCCESS;
-   lList *answer_list = NULL;
+   lList *answer_list = nullptr;
 
    DENTER_MAIN(TOP_LAYER, "spoolinit");
 
@@ -128,7 +128,7 @@ int main(int argc, char *argv[])
          const char *shlib   = argv[2];
          const char *libargs = argv[3];
          const char *command = argv[4];
-         const char *args    = NULL;
+         const char *args    = nullptr;
 
          if (strcmp(command, "init") == 0) {
             cmd = SPM_init;
@@ -183,7 +183,7 @@ int main(int argc, char *argv[])
       }
    }
 
-   if (spool_get_default_context() != NULL) {
+   if (spool_get_default_context() != nullptr) {
       time_t next_trigger = 0;
 
       if (!spool_trigger_context(&answer_list, spool_get_default_context(), 

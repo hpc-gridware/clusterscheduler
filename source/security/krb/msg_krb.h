@@ -100,7 +100,7 @@
 #define MSG_KRB_FAILEDDECRYPTINGMSGFORWXYZ_SSIS             _MESSAGE(53065, _("failed decrypting msg for <"SFN","SFN",%d> - "SFN))
 #define MSG_KRB_FAILEDSENDINGAUTH_FAILUREMESSAGE_S       _MESSAGE(53066, _("failed sending AUTH_FAILURE message - "SFN))
 #define MSG_KRB_KRB5AUTHCONGETAUTHENTICATORFAILEDFORWXYZ_SSIS  _MESSAGE(53067, _("krb5_auth_con_getauthenticator failed for <"SFN","SFN",%d> - "SFN))
-#define MSG_KRB_TGTCREDSHOSTORCOMPROCISNULL              _MESSAGE(53068, _("tgt_creds, host, or comproc is NULL"))
+#define MSG_KRB_TGTCREDSHOSTORCOMPROCISNULL              _MESSAGE(53068, _("tgt_creds, host, or comproc is nullptr"))
 #define MSG_KRB_NOCLIENTENTRYFORXYZ_SSI                  _MESSAGE(53069, _("No client entry for <"SFN","SFN",%d>"))
 #define MSG_KRB_NOTGTFOUNDFORWXYWITHIDZ_SSID            _MESSAGE(53070, _("No TGT found for <"SFN","SFN",%d> with ID %ld"))
 #define MSG_KRB_NOTCLIENTENTRYFORXYZUNABLETOSTORETGT_SSI _MESSAGE(53071, _("No client entry for <"SFN","SFN",%d> - unable to store TGT"))

@@ -103,11 +103,11 @@ int extended_parse_ulong_val(double *dvalp, u_long32 *uvalp, u_long32 type,
    char dummy[10];
    u_long32 dummy_uval;
 
-   if (s == NULL) {
+   if (s == nullptr) {
       return 0;
    }
 
-   if (only_positive && (strchr(s, '-') != NULL)) {
+   if (only_positive && (strchr(s, '-') != nullptr)) {
       if (error_str) {
          sge_strlcpy(error_str, MSG_GDI_NUMERICALVALUENOTPOSITIVE, error_len);
       }
@@ -121,7 +121,7 @@ int extended_parse_ulong_val(double *dvalp, u_long32 *uvalp, u_long32 type,
       return 0;
    }
 
-   if (uvalp == NULL) {
+   if (uvalp == nullptr) {
       uvalp = &dummy_uval;
    }
 
@@ -134,7 +134,7 @@ int extended_parse_ulong_val(double *dvalp, u_long32 *uvalp, u_long32 type,
       case TYPE_LOG:
          retval = sge_parse_loglevel_val(uvalp, s);
          if (retval != 1) {
-            if (error_str != NULL) {
+            if (error_str != nullptr) {
                sge_strlcpy(error_str, "loglevel value", error_len);
             }
          }
@@ -146,8 +146,8 @@ int extended_parse_ulong_val(double *dvalp, u_long32 *uvalp, u_long32 type,
       case TYPE_BOO:
       case TYPE_DOUBLE:
          /* dirty but isolated .. */
-         if (error_str != NULL) {
-            *uvalp = sge_parse_num_val(NULL, dvalp, s, s, error_str, error_len);
+         if (error_str != nullptr) {
+            *uvalp = sge_parse_num_val(nullptr, dvalp, s, s, error_str, error_len);
             if (!error_str[0]) /* err msg written ? */
                retval = 1; /* no error */
             else {
@@ -164,7 +164,7 @@ int extended_parse_ulong_val(double *dvalp, u_long32 *uvalp, u_long32 type,
             }
          } else {
             dummy[0] = '\0';
-            *uvalp = sge_parse_num_val(NULL, dvalp, s, s, dummy, sizeof(dummy));
+            *uvalp = sge_parse_num_val(nullptr, dvalp, s, s, dummy, sizeof(dummy));
             if (!dummy[0]) { /* err msg written ? */
                retval = 1; /* no error */
             }
@@ -182,7 +182,7 @@ int extended_parse_ulong_val(double *dvalp, u_long32 *uvalp, u_long32 type,
 bool sge_parse_loglevel_val(u_long32 *uval, const char *s) {
    bool ret = true;
 
-   if (s == NULL) {
+   if (s == nullptr) {
       ret = false;
    } else {
       if (!strcasecmp("log_crit", s)) {

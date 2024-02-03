@@ -174,7 +174,7 @@ int main(int argc, char *argv[]) {
       fprintf(stdout, "For evaluation a single expression try: test_eval_expression <expr> <value> \n");
       fprintf(stdout, "Complex set of tests result is: %s \n", RESULT(ret));
    } else {
-      ret=sge_eval_expression(TYPE_RESTR, argv[1], argv[2], NULL);
+      ret=sge_eval_expression(TYPE_RESTR, argv[1], argv[2], nullptr);
       fprintf(stdout, "eval_expr(%s,%s) => %s\n", argv[1], argv[2], RESULT(ret) );
    }
    
@@ -183,7 +183,7 @@ int main(int argc, char *argv[]) {
 
 static int test_match(u_long32 type, const char *expression, const char *value, int expected) {
    int match;
-   match = sge_eval_expression(type, expression, value, NULL);
+   match = sge_eval_expression(type, expression, value, nullptr);
    if(match!=expected) {
       fprintf(stderr, "!!!UNEXPECTED RESULT!!!: %s => eval_expr(%s,%s), expected: %s \n",
       RESULT(match) , expression, value, RESULT(expected) );

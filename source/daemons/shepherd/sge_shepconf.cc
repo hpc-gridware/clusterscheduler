@@ -66,7 +66,7 @@ int shepconf_has_userdef_method(const char *method_name, dstring *method)
    char *conf_val = search_nonone_conf_val(method_name);
    int ret = 0;
 
-   if (conf_val != NULL && conf_val[0] == '/') {
+   if (conf_val != nullptr && conf_val[0] == '/') {
       sge_dstring_copy_string(method, conf_val);
       ret = 1;
    }
@@ -98,7 +98,7 @@ int shepconf_has_userdef_signal(const char *method_name, int *signal)
    char *conf_val = search_nonone_conf_val(method_name);
    int ret = 0;
 
-   if (conf_val != NULL && conf_val[0] != '/') {
+   if (conf_val != nullptr && conf_val[0] != '/') {
       *signal = shepherd_sys_str2signal(conf_val);
       ret = 1;
    }
@@ -128,13 +128,13 @@ int shepconf_has_userdef_signal(const char *method_name, int *signal)
 int shepconf_has_notify_signal(const char *notify_name, int *signal)
 {
    const char *notify_array[] = {
-      "notify_susp", "notify_kill", NULL
+      "notify_susp", "notify_kill", nullptr
    };
    int signal_array[] = {
       SIGUSR1, SIGUSR2, 0
    };
    dstring param_name = DSTRING_INIT;
-   char *conf_type = NULL;
+   char *conf_type = nullptr;
    int conf_id;
    int ret = 0;
 
@@ -147,7 +147,7 @@ int shepconf_has_notify_signal(const char *notify_name, int *signal)
    sge_dstring_sprintf(&param_name, "%s%s", notify_name, "_type");
    conf_type = search_conf_val(sge_dstring_get_string(&param_name));
    sge_dstring_free(&param_name);
-   if (conf_type != NULL) {
+   if (conf_type != nullptr) {
       conf_id = atol(conf_type);
    } else {
       conf_id = 1;   /* Default signal should be used */
@@ -156,14 +156,14 @@ int shepconf_has_notify_signal(const char *notify_name, int *signal)
    if (conf_id == 0) {
       char *conf_signal = search_conf_val(notify_name);
 
-      if (conf_signal != NULL) {
+      if (conf_signal != nullptr) {
          *signal = sge_sys_str2signal(conf_signal);
          ret = 1;
       }
    } else if (conf_id == 1) {
       int i;
 
-      for (i = 0; notify_array[i] != NULL; i++) {
+      for (i = 0; notify_array[i] != nullptr; i++) {
          if (!strcmp(notify_array[i], notify_name)) {
             break;
          }

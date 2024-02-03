@@ -52,7 +52,7 @@ NAMEEND
 
 lNameSpace nmv[] = {
         {1, TEST_Size, TEST_Name},
-        {0, 0, NULL}
+        {0, 0, nullptr}
 };
 
 int main(int argc, char *argv[]) {
@@ -165,7 +165,7 @@ int main(int argc, char *argv[]) {
       return EXIT_FAILURE;
    }
 
-   if ((pack_ret = cull_pack_elem_partial(&pb, ep, NULL, CULL_SPOOL)) != PACK_SUCCESS) {
+   if ((pack_ret = cull_pack_elem_partial(&pb, ep, nullptr, CULL_SPOOL)) != PACK_SUCCESS) {
       printf("partially packing element failed: %s\n", cull_pack_strerror(pack_ret));
       return EXIT_FAILURE;
    }
@@ -196,12 +196,12 @@ int main(int argc, char *argv[]) {
       return EXIT_FAILURE;
    }
 
-   if ((fd = fopen(filename, "r")) == NULL) {
+   if ((fd = fopen(filename, "r")) == nullptr) {
       printf("error opening dump file test_cull_pack.txt\n");
       return EXIT_FAILURE;
    }
 
-   if ((copy = lUndumpElemFp(fd, TEST_Type)) == NULL) {
+   if ((copy = lUndumpElemFp(fd, TEST_Type)) == nullptr) {
       FCLOSE(fd);
       unlink(filename);
       printf("error undumping element\n");

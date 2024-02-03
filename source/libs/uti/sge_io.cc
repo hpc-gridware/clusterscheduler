@@ -245,7 +245,7 @@ int sge_copy_append(char *src, const char *dst, sge_mode_t mode) {
 
    DENTER(TOP_LAYER);
 
-   if (src == NULL || dst == NULL || strlen(src) == 0 || strlen(dst) == 0 ||
+   if (src == nullptr || dst == nullptr || strlen(src) == 0 || strlen(dst) == 0 ||
        !(mode == SGE_MODE_APPEND || mode == SGE_MODE_COPY)) {
       DRETURN(-1);
    }
@@ -340,7 +340,7 @@ char *sge_bin2string(FILE *fp, int size) {
    error;
 
    if ((fd = fileno(fp)) == -1)
-      return NULL;
+      return nullptr;
 
    chunksize = 20480;
 
@@ -374,7 +374,7 @@ char *sge_bin2string(FILE *fp, int size) {
          len = outp - outbuf;
 
          if (lastpos + len > dstbuflen) {
-            if ((dstbuf = (char *)sge_realloc(dstbuf, lastpos + len + chunksize, 0)) == NULL) {
+            if ((dstbuf = (char *)sge_realloc(dstbuf, lastpos + len + chunksize, 0)) == nullptr) {
                error = true;
                break;
             }
@@ -397,10 +397,10 @@ char *sge_bin2string(FILE *fp, int size) {
 
    if (error) {
       sge_free(&dstbuf);
-      return NULL;
+      return nullptr;
    } else {
-      if ((dstbuf = (char *)sge_realloc(dstbuf, lastpos + 1, 0)) == NULL) {
-         return NULL;
+      if ((dstbuf = (char *)sge_realloc(dstbuf, lastpos + 1, 0)) == nullptr) {
+         return nullptr;
       }
       dstbuf[lastpos] = '\0';
       return dstbuf;
@@ -473,7 +473,7 @@ int sge_string2bin(FILE *fp, const char *buf) {
 *     Load file into string. Returns a pointer to a string buffer containing
 *     the file contents and the size of the buffer (= number of bytes read)
 *     in the variable len.
-*     If the file cannot be read (doesn't exist, permissions etc.), NULL is
+*     If the file cannot be read (doesn't exist, permissions etc.), nullptr is
 *     returned as buffer and len is set to 0.
 *
 *  INPUTS
@@ -502,25 +502,25 @@ char *sge_file2string(const char *fname, int *len) {
     * JG: TODO: it would be better to return -1. Check if calling
     * functions would handle this situation.
     */
-   if (len != NULL) {
+   if (len != nullptr) {
       *len = 0;
    }
 
    /* try file access, read file info */
    if (SGE_STAT(fname, &statbuf)) {
-      DRETURN(NULL);
+      DRETURN(nullptr);
    }
 
    size = statbuf.st_size;
 
-   if ((fp = fopen(fname, "r")) == NULL) {
+   if ((fp = fopen(fname, "r")) == nullptr) {
       ERROR((SGE_EVENT, MSG_FILE_FOPENFAILED_SS, fname, strerror(errno)));
-      DRETURN(NULL);
+      DRETURN(nullptr);
    }
 
-   if ((str = sge_malloc(size + 1)) == NULL) {
+   if ((str = sge_malloc(size + 1)) == nullptr) {
       FCLOSE(fp);
-      DRETURN(NULL);
+      DRETURN(nullptr);
    }
 
    str[0] = '\0';
@@ -541,10 +541,10 @@ char *sge_file2string(const char *fname, int *len) {
          ERROR((SGE_EVENT, MSG_FILE_FREADFAILED_SS, fname, strerror(errno)));
          sge_free(&str);
          FCLOSE(fp);
-         DRETURN(NULL);
+         DRETURN(nullptr);
       }
       str[size] = '\0';    /* delimit this string */
-      if (len != NULL) {
+      if (len != nullptr) {
          *len = size;
       }
    }
@@ -553,7 +553,7 @@ char *sge_file2string(const char *fname, int *len) {
 
    DRETURN(str);
    FCLOSE_ERROR:
-DRETURN(NULL);
+DRETURN(nullptr);
 }
 
 /****** uti/io/sge_stream2string() ********************************************
@@ -588,7 +588,7 @@ char *sge_stream2string(FILE *fp, int *len) {
    DENTER(TOP_LAYER);
 
    if (!(str = sge_malloc(FILE_CHUNK))) {
-      DRETURN(NULL);
+      DRETURN(nullptr);
    }
    malloced_len = FILE_CHUNK;
 
@@ -597,8 +597,8 @@ char *sge_stream2string(FILE *fp, int *len) {
       filled += i;
       if (malloced_len == filled + 1) {
          str = (char *)sge_realloc(str, malloced_len + FILE_CHUNK, 0);
-         if (str == NULL) {
-            DRETURN(NULL);
+         if (str == nullptr) {
+            DRETURN(nullptr);
          }
          malloced_len += FILE_CHUNK;
       }
@@ -608,7 +608,7 @@ char *sge_stream2string(FILE *fp, int *len) {
          break;
       }
    }
-   str[filled] = '\0';  /* NULL termination */
+   str[filled] = '\0';  /* nullptr termination */
    *len = filled;
 
    DRETURN(str);

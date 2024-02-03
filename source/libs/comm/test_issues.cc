@@ -66,18 +66,18 @@ void sighandler_issue_tests(int sig) {
 extern int main(int argc, char **argv) {
    struct sigaction sa;
 
-   cl_com_handle_t *handle = NULL;
-   cl_com_handle_t *handle1 = NULL;
-   cl_com_handle_t *handle2 = NULL;
+   cl_com_handle_t *handle = nullptr;
+   cl_com_handle_t *handle1 = nullptr;
+   cl_com_handle_t *handle2 = nullptr;
 
-   cl_com_message_t *message = NULL;
-   cl_com_endpoint_t *sender = NULL;
+   cl_com_message_t *message = nullptr;
+   cl_com_endpoint_t *sender = nullptr;
    int i;
    cl_log_t log_level;
    cl_framework_t framework = CL_CT_TCP;
    bool server_mode = false;
    int com_port = 0;
-   char *com_host = NULL;
+   char *com_host = nullptr;
    int main_return = 0;
    struct rlimit test_issues_limits;
 
@@ -122,10 +122,10 @@ extern int main(int argc, char **argv) {
    memset(&sa, 0, sizeof(sa));
    sa.sa_handler = sighandler_issue_tests;  /* one handler for all signals */
    sigemptyset(&sa.sa_mask);
-   sigaction(SIGINT, &sa, NULL);
-   sigaction(SIGTERM, &sa, NULL);
-   sigaction(SIGHUP, &sa, NULL);
-   sigaction(SIGPIPE, &sa, NULL);
+   sigaction(SIGINT, &sa, nullptr);
+   sigaction(SIGTERM, &sa, nullptr);
+   sigaction(SIGHUP, &sa, nullptr);
+   sigaction(SIGPIPE, &sa, nullptr);
 
 #if defined(RLIMIT_VMEM)
    getrlimit(RLIMIT_VMEM, &test_issues_limits);
@@ -207,19 +207,19 @@ extern int main(int argc, char **argv) {
          log_level = CL_LOG_OFF;
          break;
    }
-   cl_com_setup_commlib(CL_RW_THREAD, log_level, NULL);
+   cl_com_setup_commlib(CL_RW_THREAD, log_level, nullptr);
 
    if (server_mode == true) {
-      handle = cl_com_create_handle(NULL, framework, CL_CM_CT_MESSAGE, true, com_port, CL_TCP_DEFAULT, "server", 1, 1,
+      handle = cl_com_create_handle(nullptr, framework, CL_CM_CT_MESSAGE, true, com_port, CL_TCP_DEFAULT, "server", 1, 1,
                                     0);
       cl_com_set_max_connection_close_mode(handle, CL_ON_MAX_COUNT_DISABLE_ACCEPT);
    } else {
-      handle = cl_com_create_handle(NULL, framework, CL_CM_CT_MESSAGE, false, com_port, CL_TCP_DEFAULT, "client", 0, 1,
+      handle = cl_com_create_handle(nullptr, framework, CL_CM_CT_MESSAGE, false, com_port, CL_TCP_DEFAULT, "client", 0, 1,
                                     0);
    }
 
 #define TEST_ISSUES_READ_WRITE_TIMEOUT 3
-   if (handle == NULL) {
+   if (handle == nullptr) {
       printf("could not get handle\n");
       sge_prof_cleanup();
       exit(101);
@@ -257,8 +257,8 @@ extern int main(int argc, char **argv) {
 
          cl_commlib_trigger(handle, 1);
 
-         ret_val = cl_commlib_receive_message(handle, NULL, NULL, 0, false, 0, &message, &sender);
-         if (message != NULL) {
+         ret_val = cl_commlib_receive_message(handle, nullptr, nullptr, 0, false, 0, &message, &sender);
+         if (message != nullptr) {
             int do_reply = 1;
             CL_LOG_STR(CL_LOG_INFO, "received message from", sender->comp_host);
             if (strstr((char *) message->message, "#1400i") && actual_issue != 1400) {
@@ -288,7 +288,7 @@ extern int main(int argc, char **argv) {
                                                  sender->comp_id, CL_MIH_MAT_NAK,
                                                  &message->message,
                                                  message->message_length,
-                                                 NULL, 0, 0,
+                                                 nullptr, 0, 0,
                                                  false, false);
                if (ret_val != CL_RETVAL_OK) {
                   CL_LOG_STR(CL_LOG_ERROR, "cl_commlib_send_message() returned:", cl_get_error_text(ret_val));
@@ -300,7 +300,7 @@ extern int main(int argc, char **argv) {
       }
    } else {
       int ret_val;
-      char *data = NULL;
+      char *data = nullptr;
       unsigned long data_size = 1024 * 1024;
       struct timeval now;
       struct timeval start;
@@ -323,7 +323,7 @@ extern int main(int argc, char **argv) {
          }
          data = sge_malloc(data_size * sizeof(char));
          memset(data, 0, data_size * sizeof(char));
-         if (data == NULL) {
+         if (data == nullptr) {
             printf("malloc() error: can't malloc(%ld)\n", data_size * sizeof(char));
             printf("issue #1389 failed\n");
             main_return = 1;
@@ -336,27 +336,27 @@ extern int main(int argc, char **argv) {
          cl_commlib_send_message(handle, com_host, "server", 1,
                                  CL_MIH_MAT_NAK,
                                  (cl_byte_t **) &data, data_size * sizeof(char),
-                                 NULL, 0, 0, false, false);
+                                 nullptr, 0, 0, false, false);
 
          printf("starting measurement...\n");
-         gettimeofday(&start, NULL);
+         gettimeofday(&start, nullptr);
          while (do_shutdown == 0) {
             cl_commlib_trigger(handle, 1);
-            ret_val = cl_commlib_receive_message(handle, NULL, NULL, 0, false, 0, &message, &sender);
+            ret_val = cl_commlib_receive_message(handle, nullptr, nullptr, 0, false, 0, &message, &sender);
             if (ret_val != CL_RETVAL_OK && ret_val != CL_RETVAL_NO_MESSAGE) {
                printf("cl_commlib_receive_message returned: %s\n", cl_get_error_text(ret_val));
                printf("issue #1389 failed\n");
                main_return = 1;
                break;
             }
-            if (message != NULL) {
+            if (message != nullptr) {
                printf("received response message from %s with size %lu\n", sender->comp_host, message->message_length);
                cl_com_free_message(&message);
                cl_com_free_endpoint(&sender);
                break;
             }
          }
-         gettimeofday(&now, NULL);
+         gettimeofday(&now, nullptr);
          runtime = now.tv_sec - start.tv_sec;
          printf("send/receive took %d seconds\n", runtime);
          /* adding 2 seconds to be on the save side */
@@ -378,7 +378,7 @@ extern int main(int argc, char **argv) {
          cl_commlib_send_message(handle, com_host, "server", 1,
                                  CL_MIH_MAT_ACK,
                                  &iz1400_pointer, 7,
-                                 NULL, 0, 0, true, true);
+                                 nullptr, 0, 0, true, true);
       }
 
 
@@ -388,28 +388,28 @@ extern int main(int argc, char **argv) {
 
       printf("creating new connections ...\n");
 
-      handle1 = cl_com_create_handle(NULL, framework, CL_CM_CT_MESSAGE, false, com_port, CL_TCP_DEFAULT, "client1", 0,
+      handle1 = cl_com_create_handle(nullptr, framework, CL_CM_CT_MESSAGE, false, com_port, CL_TCP_DEFAULT, "client1", 0,
                                      1, 0);
-      handle2 = cl_com_create_handle(NULL, framework, CL_CM_CT_MESSAGE, false, com_port, CL_TCP_DEFAULT, "client2", 0,
+      handle2 = cl_com_create_handle(nullptr, framework, CL_CM_CT_MESSAGE, false, com_port, CL_TCP_DEFAULT, "client2", 0,
                                      1, 0);
 
       printf("sending via connection 1 ...\n");
       cl_commlib_send_message(handle, com_host, "server", 1,
                               CL_MIH_MAT_ACK,
                               &test_pointer, 5,
-                              NULL, 0, 0, true, true);
+                              nullptr, 0, 0, true, true);
 
       printf("sending via connection 2 ...\n");
       cl_commlib_send_message(handle1, com_host, "server", 1,
                               CL_MIH_MAT_ACK,
                               &test_pointer, 5,
-                              NULL, 0, 0, true, true);
+                              nullptr, 0, 0, true, true);
 
       printf("sending via connection 3 ...\n");
       ret_val = cl_commlib_send_message(handle2, com_host, "server", 1,
                                         CL_MIH_MAT_ACK,
                                         &test_pointer, 5,
-                                        NULL, 0, 0, true, true);
+                                        nullptr, 0, 0, true, true);
 
       if (ret_val == CL_RETVAL_OK) {
          printf("issue #1400 failed\n");
@@ -424,7 +424,7 @@ extern int main(int argc, char **argv) {
       cl_commlib_send_message(handle, com_host, "server", 1,
                               CL_MIH_MAT_ACK,
                               &iz1400_pointer, 7,
-                              NULL, 0, 0, true, true);
+                              nullptr, 0, 0, true, true);
    }
 
    printf("shutting down ...\n");

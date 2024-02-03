@@ -88,7 +88,7 @@ const char *sge_get_arch(void) {
 *     This directory is defined by the SGE_ROOT environment variable 
 *     of the calling process. 
 *     If the environment variable does not exist or is not set then
-*     this function will handle this as error and return NULL 
+*     this function will handle this as error and return nullptr
 *     (do_exit = 0). If 'do_exit' is 1 and an error occures, the 
 *     function will terminate the  calling application.
 *
@@ -137,7 +137,7 @@ const char *sge_get_root_dir(int do_exit, char *buffer, size_t size, int do_erro
 
    error:
    if (do_error_log) {
-      if (buffer != NULL) {
+      if (buffer != nullptr) {
          sge_strlcpy(buffer, MSG_SGEROOTNOTSET, size);
       } else {
          CRITICAL((SGE_EVENT, SFNMAX, MSG_SGEROOTNOTSET));
@@ -145,9 +145,9 @@ const char *sge_get_root_dir(int do_exit, char *buffer, size_t size, int do_erro
    }
 
    if (do_exit) {
-      SGE_EXIT(NULL, 1);
+      SGE_EXIT(nullptr, 1);
    }
-   return NULL;
+   return nullptr;
 }
 
 /****** uti/prog/sge_get_lib_dir() ********************************************
@@ -169,16 +169,16 @@ const char *sge_get_root_dir(int do_exit, char *buffer, size_t size, int do_erro
 *  RESULT
 *     int - Return code
 *       0 - Success
-*      -1 - Given buffer is NULL
+*      -1 - Given buffer is nullptr
 *      -2 - SGE_ROOT cannot be obtained
 *      -3 - given buffer is to small
 ******************************************************************************/
 int sge_get_lib_dir(char *buffer, size_t size) {
 
-   const char *sge_root = NULL;
-   const char *sge_arch = NULL;
+   const char *sge_root = nullptr;
+   const char *sge_arch = nullptr;
 
-   if (buffer == NULL) {
+   if (buffer == nullptr) {
       return -1;
    }
 
@@ -187,8 +187,8 @@ int sge_get_lib_dir(char *buffer, size_t size) {
    /* obtain SGE_ROOT
     * error-logging ist done by sge_get_root_dir()
     */
-   sge_root = sge_get_root_dir(0, NULL, 0, 1);
-   if (sge_root == NULL) {
+   sge_root = sge_get_root_dir(0, nullptr, 0, 1);
+   if (sge_root == nullptr) {
       return -2;
    }
 
@@ -246,7 +246,7 @@ const char *sge_get_default_cell(void) {
    if (sge_cell) {
       s = sge_cell;
    } else {
-      s = NULL;
+      s = nullptr;
    }
 
    /*
@@ -287,18 +287,18 @@ const char *sge_get_alias_path(void) {
 
    DENTER_(TOP_LAYER);
 
-   sge_root = sge_get_root_dir(1, NULL, 0, 1);
+   sge_root = sge_get_root_dir(1, nullptr, 0, 1);
    sge_cell = sge_get_default_cell();
 
    if (SGE_STAT(sge_root, &sbuf)) {
       CRITICAL((SGE_EVENT, MSG_SGETEXT_SGEROOTNOTFOUND_S, sge_root));
-      SGE_EXIT(NULL, 1);
+      SGE_EXIT(nullptr, 1);
    }
 
    len = strlen(sge_root) + strlen(sge_cell) + strlen(COMMON_DIR) + strlen(ALIAS_FILE) + 5;
    if (!(cp = sge_malloc(len))) {
       CRITICAL((SGE_EVENT, SFNMAX, MSG_MEMORY_MALLOCFAILEDFORPATHTOHOSTALIASFILE));
-      SGE_EXIT(NULL, 1);
+      SGE_EXIT(nullptr, 1);
    }
 
    sprintf(cp, "%s/%s/%s/%s", sge_root, sge_cell, COMMON_DIR, ALIAS_FILE);

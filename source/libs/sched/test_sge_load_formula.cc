@@ -49,7 +49,7 @@ int main(int argc, char *argv[])
    int pos_tests_failed = 0;
    int neg_tests_failed = 0;
    int i = 0;
-   lList *answer_list = NULL;
+   lList *answer_list = nullptr;
 
 
    filter_test_t positiv_test[] = {
@@ -62,14 +62,14 @@ int main(int argc, char *argv[])
       {"$num_proc-2", 2}, 
       {"$num_proc+0.1", 4.1}, 
       {"1+$num_proc+0.1", 5.1}, 
-      {NULL, 0}
+      {nullptr, 0}
    };
 
    filter_test_t negativ_test[] = {
       {"2*num_proc", 0}, 
       {"2,0+num_proc", 0}, 
       {"none", 0}, 
-      {NULL, 0}
+      {nullptr, 0}
    };
 
    lList *centry_list;
@@ -97,7 +97,7 @@ int main(int argc, char *argv[])
 
    for (i=0; ; i++){
       double val;
-      if (positiv_test[i].formula == NULL) {
+      if (positiv_test[i].formula == nullptr) {
          break;
       }
       if (!validate_load_formula(positiv_test[i].formula, &answer_list, centry_list, "load_formula")) {
@@ -105,7 +105,7 @@ int main(int argc, char *argv[])
          pos_tests_failed++;
       }
 
-      val = scaled_mixed_load(positiv_test[i].formula, NULL, host, centry_list);
+      val = scaled_mixed_load(positiv_test[i].formula, nullptr, host, centry_list);
       if (val != positiv_test[i].value) {
          printf("got %f, but expected %f(%g,%g)\n", val, positiv_test[i].value, val, positiv_test[i].value);
          pos_tests_failed++;
@@ -113,7 +113,7 @@ int main(int argc, char *argv[])
    }
    
    for (i=0; ; i++){
-     if (negativ_test[i].formula == NULL) {
+     if (negativ_test[i].formula == nullptr) {
          break;
       }
       if (validate_load_formula(negativ_test[i].formula, &answer_list, centry_list, "load_formula") == true) {

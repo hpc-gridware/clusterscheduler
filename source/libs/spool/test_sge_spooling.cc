@@ -60,14 +60,14 @@
 
 static lListElem* sge_get_configuration_for_host(const char* aName)
 {
-   lListElem *conf = NULL;
+   lListElem *conf = nullptr;
    char unique_name[CL_MAXHOSTLEN];
    int ret = -1;
    const lList *cluster_config = *object_type_get_master_list(SGE_TYPE_CONFIG);
 
    DENTER(TOP_LAYER);
 
-   SGE_ASSERT((NULL != aName));
+   SGE_ASSERT((nullptr != aName));
 
    /*
     * Due to CR 6319231 IZ 1760:
@@ -89,8 +89,8 @@ static lListElem* sge_get_configuration_for_host(const char* aName)
 
 static int sge_read_configuration(sge_gdi_ctx_class_t *ctx, const lListElem *aSpoolContext, lList *anAnswer)
 {
-   lListElem *local = NULL;
-   lListElem *global = NULL;
+   lListElem *local = nullptr;
+   lListElem *global = nullptr;
    int ret = -1;
    const char *cell_root = bootstrap_get_cell_root();
    const char *qualified_hostname = uti_state_get_qualified_hostname();
@@ -106,11 +106,11 @@ static int sge_read_configuration(sge_gdi_ctx_class_t *ctx, const lListElem *aSp
    DPRINTF(("qualified_hostname: '%s'\n", qualified_hostname));
    local = sge_get_configuration_for_host(qualified_hostname);
          
-   if ((global = sge_get_configuration_for_host(SGE_GLOBAL_NAME)) == NULL) {
+   if ((global = sge_get_configuration_for_host(SGE_GLOBAL_NAME)) == nullptr) {
       DRETURN(-1);
    }
 
-   ret = merge_configuration(&anAnswer, progid, cell_root, global, local, NULL);
+   ret = merge_configuration(&anAnswer, progid, cell_root, global, local, nullptr);
    answer_list_output(&anAnswer);
 
    lFreeElem(&local);
@@ -147,9 +147,9 @@ static int sge_read_configuration(sge_gdi_ctx_class_t *ctx, const lListElem *aSp
  */
 static bool read_spooled_data(sge_gdi_ctx_class_t *ctx)
 {  
-   lList *answer_list = NULL;
+   lList *answer_list = nullptr;
    const lListElem *context;
-   lList *master_list = NULL;
+   lList *master_list = nullptr;
    lList **cluster_configuration = object_type_get_master_list_rw(SGE_TYPE_CONFIG);
 
    DENTER(TOP_LAYER);
@@ -163,7 +163,7 @@ static bool read_spooled_data(sge_gdi_ctx_class_t *ctx)
 
    /* cluster configuration */
    {
-      lList *schedd_config = NULL;
+      lList *schedd_config = nullptr;
       spool_read_list(&answer_list, context, &schedd_config, SGE_TYPE_SCHEDD_CONF);
       if (schedd_config)
          if (sconf_set_config(&schedd_config, &answer_list))
@@ -271,7 +271,7 @@ static bool read_spooled_data(sge_gdi_ctx_class_t *ctx)
 
 sge_callback_result spool_event_before(sge_evc_class_t *evc, sge_object_type type, sge_event_action action, lListElem *event, void *clientdata)
 {
-   lList *answer_list = NULL;
+   lList *answer_list = nullptr;
    const lListElem *context, *ep;
    const lList **master_list;
    const lList *new_list;
@@ -296,7 +296,7 @@ sge_callback_result spool_event_before(sge_evc_class_t *evc, sge_object_type typ
             for_each_ep(ep, *master_list) {
                const lListElem *new_ep = lGetElemHost(new_list, key_nm, lGetHost(ep, key_nm));
 
-               if (new_ep == NULL) {
+               if (new_ep == nullptr) {
                   /* object not contained in new list, delete it */
                   spool_delete_object(&answer_list, context, type, lGetHost(ep, key_nm), false);
                   answer_list_output(&answer_list);
@@ -310,7 +310,7 @@ sge_callback_result spool_event_before(sge_evc_class_t *evc, sge_object_type typ
                /* check if spooling relevant attributes have changed,
                 * if yes, spool the object.
                 */
-               if (old_ep == NULL || 
+               if (old_ep == nullptr ||
                   spool_compare_objects(&answer_list, context, type, ep, old_ep) != 0)  {
                   spool_write_object(&answer_list, context, ep, key, type, false);
                   answer_list_output(&answer_list);
@@ -328,7 +328,7 @@ sge_callback_result spool_event_before(sge_evc_class_t *evc, sge_object_type typ
          case SGE_TYPE_USERSET:
             for_each_ep(ep, *master_list) {
                const lListElem *new_ep = lGetElemStr(new_list, key_nm, lGetString(ep, key_nm));
-               if (new_ep == NULL) {
+               if (new_ep == nullptr) {
                   /* object not contained in new list, delete it */
                   spool_delete_object(&answer_list, context, type, lGetString(ep, key_nm), false);
                   answer_list_output(&answer_list);
@@ -342,7 +342,7 @@ sge_callback_result spool_event_before(sge_evc_class_t *evc, sge_object_type typ
                /* check if spooling relevant attributes have changed,
                 * if yes, spool the object.
                 */
-               if(old_ep == NULL || 
+               if(old_ep == nullptr ||
                   spool_compare_objects(&answer_list, context, type, ep, old_ep))  {
                   spool_write_object(&answer_list, context, ep, key, type, false);
                   answer_list_output(&answer_list);
@@ -353,9 +353,9 @@ sge_callback_result spool_event_before(sge_evc_class_t *evc, sge_object_type typ
          case SGE_TYPE_JOB:
             for_each_ep(ep, *master_list) {
                const lListElem *new_ep = lGetElemUlong(new_list, key_nm, lGetUlong(ep, key_nm));
-               if (new_ep == NULL) {
+               if (new_ep == nullptr) {
                   const char *job_key;
-                  job_key = job_get_key(lGetUlong(ep, key_nm), 0, NULL, &buffer);
+                  job_key = job_get_key(lGetUlong(ep, key_nm), 0, nullptr, &buffer);
                   /* object not contained in new list, delete it */
                   spool_delete_object(&answer_list, context, type, job_key, false);
                   answer_list_output(&answer_list);
@@ -369,10 +369,10 @@ sge_callback_result spool_event_before(sge_evc_class_t *evc, sge_object_type typ
                /* check if spooling relevant attributes have changed,
                 * if yes, spool the object.
                 */
-               if(old_ep == NULL || 
+               if(old_ep == nullptr ||
                   spool_compare_objects(&answer_list, context, type, ep, old_ep))  {
                   const char *job_key;
-                  job_key = job_get_key(lGetUlong(ep, key_nm), 0, NULL, &buffer);
+                  job_key = job_get_key(lGetUlong(ep, key_nm), 0, nullptr, &buffer);
                   spool_write_object(&answer_list, context, ep, job_key, type, false);
                   answer_list_output(&answer_list);
                }
@@ -387,7 +387,7 @@ sge_callback_result spool_event_before(sge_evc_class_t *evc, sge_object_type typ
              *           sharetree no longer exists or has changed
              */
             ep = lFirst(*master_list);
-            if(ep != NULL) {
+            if(ep != nullptr) {
                /* delete sharetree */
                spool_delete_object(&answer_list, context, type, SHARETREE_FILE, false);
                answer_list_output(&answer_list);
@@ -423,7 +423,7 @@ sge_callback_result spool_event_before(sge_evc_class_t *evc, sge_object_type typ
 
                   job_id = lGetUlong(event, ET_intkey);
 
-                  job_key = job_get_key(job_id, 0, NULL, &buffer);
+                  job_key = job_get_key(job_id, 0, nullptr, &buffer);
                   spool_delete_object(&answer_list, context, type, job_key, false);
                   answer_list_output(&answer_list);
                }
@@ -442,7 +442,7 @@ sge_callback_result spool_event_after(sge_evc_class_t *evc, sge_object_type type
                       lListElem *event, void *clientdata)
 {
    sge_callback_result ret = SGE_EMA_OK;
-   lList *answer_list = NULL;
+   lList *answer_list = nullptr;
    const lListElem *context, *ep;
    const lList **master_list;
    const lList *master_job_list;
@@ -470,15 +470,15 @@ sge_callback_result spool_event_after(sge_evc_class_t *evc, sge_object_type type
                 */
                if(strcmp(lGetString(context, SPC_name), "classic spooling") == 0) {
                   ep = lFirst(*master_list);
-                  if(ep != NULL) {
-                     spool_write_object(&answer_list, context, ep, NULL, type, false);
+                  if(ep != nullptr) {
+                     spool_write_object(&answer_list, context, ep, nullptr, type, false);
                      answer_list_output(&answer_list);
                   }
                }   
                break;
             case SGE_TYPE_SHARETREE:
                ep = lFirst(*master_list);
-               if(ep != NULL) {
+               if(ep != nullptr) {
                   /* spool sharetree */
                   spool_write_object(&answer_list, context, ep, SHARETREE_FILE, type, false);
                   answer_list_output(&answer_list);
@@ -523,7 +523,7 @@ sge_callback_result spool_event_after(sge_evc_class_t *evc, sge_object_type type
             case SGE_TYPE_CONFIG:
                key = lGetString(event, ET_strkey);
                ep = lGetElemHost(*master_list, key_nm, lGetString(event, ET_strkey));
-               if(ep == NULL) {
+               if(ep == nullptr) {
                   ERROR((SGE_EVENT, "%s element with id "SFQ" not found\n",
                          object_type_get_name(type), key));
                   ret = SGE_EMA_FAILURE;
@@ -546,7 +546,7 @@ sge_callback_result spool_event_after(sge_evc_class_t *evc, sge_object_type type
             case SGE_TYPE_HGROUP:
                key = lGetString(event, ET_strkey);
                ep = lGetElemStr(*master_list, key_nm, lGetString(event, ET_strkey));
-               if(ep == NULL) {
+               if(ep == nullptr) {
                   ERROR((SGE_EVENT, "%s element with id "SFQ" not found\n",
                          object_type_get_name(type), key));
                   ret = SGE_EMA_FAILURE;
@@ -560,7 +560,7 @@ sge_callback_result spool_event_after(sge_evc_class_t *evc, sge_object_type type
 
             case SGE_TYPE_SCHEDD_CONF:
                ep = lFirst(*master_list);
-               if(ep == NULL) {
+               if(ep == nullptr) {
                   ERROR((SGE_EVENT, "%s element not found\n",
                          object_type_get_name(type)));
                   ret = SGE_EMA_FAILURE;
@@ -607,9 +607,9 @@ int main(int argc, char *argv[])
 {
    lListElem *spooling_context;
    time_t next_prof_output = 0;
-   lList *answer_list = NULL;
-   sge_gdi_ctx_class_t *ctx = NULL;
-   sge_evc_class_t *evc = NULL;
+   lList *answer_list = nullptr;
+   sge_gdi_ctx_class_t *ctx = nullptr;
+   sge_evc_class_t *evc = nullptr;
 
    DENTER_MAIN(TOP_LAYER, "test_sge_spooling");
 
@@ -630,7 +630,7 @@ int main(int argc, char *argv[])
       SGE_EXIT((void**)&ctx, 1);
    }
 
-   if (false == sge_gdi2_evc_setup(&evc, ctx, EV_ID_SCHEDD, &answer_list, NULL)) {
+   if (false == sge_gdi2_evc_setup(&evc, ctx, EV_ID_SCHEDD, &answer_list, nullptr)) {
       answer_list_output(&answer_list);
       SGE_EXIT((void**)&ctx, 1);
    }
@@ -640,7 +640,7 @@ int main(int argc, char *argv[])
    /* initialize spooling */
    spooling_context = spool_create_dynamic_context(&answer_list, argv[1], argv[2], argv[3]); 
    answer_list_output(&answer_list);
-   if(spooling_context == NULL) {
+   if(spooling_context == nullptr) {
       SGE_EXIT((void**)&ctx, EXIT_FAILURE);
    }
 
@@ -656,9 +656,9 @@ int main(int argc, char *argv[])
    read_spooled_data(ctx);
    
    /* initialize mirroring */
-   sge_mirror_initialize(evc, EV_ID_ANY, "test_sge_mirror", true, NULL, NULL, NULL, NULL, NULL);
-   sge_mirror_subscribe(evc, SGE_TYPE_ALL, spool_event_before, spool_event_after, NULL, NULL, NULL);
-   prof_start(SGE_PROF_ALL, NULL);
+   sge_mirror_initialize(evc, EV_ID_ANY, "test_sge_mirror", true, nullptr, nullptr, nullptr, nullptr, nullptr);
+   sge_mirror_subscribe(evc, SGE_TYPE_ALL, spool_event_before, spool_event_after, nullptr, nullptr, nullptr);
+   prof_start(SGE_PROF_ALL, nullptr);
 
    while(!shut_me_down) {
       time_t now;
@@ -668,7 +668,7 @@ int main(int argc, char *argv[])
       now = time(0);
       if (now > next_prof_output) {
          prof_output_info(SGE_PROF_ALL, false, "test_sge_info:\n");
-/*          INFO((SGE_EVENT, "\n%s", prof_get_info_string(SGE_PROF_ALL, false, NULL))); */
+/*          INFO((SGE_EVENT, "\n%s", prof_get_info_string(SGE_PROF_ALL, false, nullptr))); */
          next_prof_output = now + 60;
       }
    }

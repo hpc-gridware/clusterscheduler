@@ -170,7 +170,7 @@ print_jatask_event(sge_evc_class_t *evc, sge_object_type type,
          u_long task_id = lGetUlong(event, ET_intkey2);
          const lListElem *ep = lFirst(jat);
          const char* job_project = lGetString(ep, JB_project);
-         if (job_project == NULL) {
+         if (job_project == nullptr) {
             job_project = "NONE";
          }
          fprintf(stdout,"JOB_ADD (%ld.%ld:ECL_TIME="sge_U32CFormat":project=%s)\n", job_id, task_id, sge_u32c(timestamp),job_project);
@@ -309,7 +309,7 @@ static void qevent_start_trigger_script(int qevent_event, const char* script_fil
    } else {
       const char *basename = sge_basename( script_file, '/' );
       /*      SETPGRP;  */
-      /*      sge_close_all_fds(NULL); */
+      /*      sge_close_all_fds(nullptr); */
       sprintf(buffer  ,sge_U32CFormat,sge_u32c(jobid));
       sprintf(buffer2 ,sge_U32CFormat,sge_u32c(taskid)); 
       execlp(script_file, basename, event_name, buffer, buffer2, (char *)0);
@@ -447,9 +447,9 @@ int main(int argc, char *argv[])
    qevent_options enabled_options;
    dstring errors = DSTRING_INIT;
    int i, gdi_setup;
-   lList *alp = NULL;
-   sge_gdi_ctx_class_t *ctx = NULL; 
-   sge_evc_class_t *evc = NULL;
+   lList *alp = nullptr;
+   sge_gdi_ctx_class_t *ctx = nullptr;
+   sge_evc_class_t *evc = nullptr;
 
    DENTER_MAIN(TOP_LAYER, "qevent");
 
@@ -492,7 +492,7 @@ int main(int argc, char *argv[])
       SGE_EXIT((void**)&ctx, 1);
    }
    /* TODO: how is the memory we allocate here released ???, SGE_EXIT doesn't */
-   if (false == sge_gdi2_evc_setup(&evc, ctx, EV_ID_ANY, &alp, NULL)) {
+   if (false == sge_gdi2_evc_setup(&evc, ctx, EV_ID_ANY, &alp, nullptr)) {
       answer_list_output(&alp);
       sge_dstring_free(enabled_options.error_message);
       SGE_EXIT((void**)&ctx, 1);
@@ -517,11 +517,11 @@ int main(int argc, char *argv[])
    }
 
    if (enabled_options.trigger_option_count > 0) {
-      lCondition *where =NULL;
-      lEnumeration *what = NULL;
+      lCondition *where =nullptr;
+      lEnumeration *what = nullptr;
 
       sge_mirror_initialize(evc, EV_ID_ANY, "sge_mirror -trigger", true, 
-                            NULL, NULL, NULL, NULL, NULL);
+                            nullptr, nullptr, nullptr, nullptr, nullptr);
       evc->ec_set_busy_handling(evc, EV_BUSY_UNTIL_ACK);
 
       /* put out information about -trigger option */
@@ -533,13 +533,13 @@ int main(int argc, char *argv[])
             case QEVENT_JB_END:
                   
                   /* build mask for the job structure to contain only the needed elements */
-                  where = NULL; 
+                  where = nullptr;
                   what = lWhat("%T(%I %I %I %I %I %I %I %I)", JB_Type, JB_job_number, JB_ja_tasks, 
                                                               JB_ja_structure, JB_ja_n_h_ids, JB_ja_u_h_ids, 
                                                               JB_ja_s_h_ids,JB_ja_o_h_ids, JB_ja_template);
                   
                   /* register for job events */ 
-                  sge_mirror_subscribe(evc, SGE_TYPE_JOB, analyze_jatask_event, NULL, NULL, where, what);
+                  sge_mirror_subscribe(evc, SGE_TYPE_JOB, analyze_jatask_event, nullptr, nullptr, where, what);
                   evc->ec_set_flush(evc, sgeE_JOB_DEL,true, 1);
 
                   /* the mirror interface registers more events, than we need,
@@ -558,10 +558,10 @@ int main(int argc, char *argv[])
             case QEVENT_JB_TASK_END:
             
                   /* build mask for the job structure to contain only the needed elements */
-                  where = NULL; 
+                  where = nullptr;
                   what = lWhat("%T(%I)", JAT_Type, JAT_status);
                   /* register for JAT events */ 
-                  sge_mirror_subscribe(evc, SGE_TYPE_JATASK, analyze_jatask_event, NULL, NULL, where, what);
+                  sge_mirror_subscribe(evc, SGE_TYPE_JATASK, analyze_jatask_event, nullptr, nullptr, where, what);
                   evc->ec_set_flush(evc, sgeE_JATASK_DEL,true, 1);
                   
                   /* the mirror interface registers more events, than we need,
@@ -617,8 +617,8 @@ static void qevent_testsuite_mode(sge_evc_class_t *evc)
 {
 #ifndef QEVENT_SHOW_ALL
    u_long32 timestamp;
-   lCondition *where =NULL;
-   lEnumeration *what = NULL;
+   lCondition *where =nullptr;
+   lEnumeration *what = nullptr;
  
    const int job_nm[] = {       
          JB_job_number,
@@ -645,20 +645,20 @@ static void qevent_testsuite_mode(sge_evc_class_t *evc)
    DENTER(TOP_LAYER);
 
    sge_mirror_initialize(evc, EV_ID_ANY, "qevent", true,
-                         NULL, NULL, NULL, NULL, NULL);
+                         nullptr, nullptr, nullptr, nullptr, nullptr);
 
 #ifdef QEVENT_SHOW_ALL
-   sge_mirror_subscribe(evc, SGE_TYPE_ALL, print_event, NULL, NULL, NULL, NULL);
+   sge_mirror_subscribe(evc, SGE_TYPE_ALL, print_event, nullptr, nullptr, nullptr, nullptr);
 #else /* QEVENT_SHOW_ALL */
-   where = NULL; 
+   where = nullptr;
    what =  lIntVector2What(JB_Type, job_nm); 
-   sge_mirror_subscribe(evc, SGE_TYPE_JOB, print_jatask_event, NULL, NULL, where, what);
+   sge_mirror_subscribe(evc, SGE_TYPE_JOB, print_jatask_event, nullptr, nullptr, where, what);
    lFreeWhere(&where);
    lFreeWhat(&what);
    
-   where = NULL; 
+   where = nullptr;
    what = lIntVector2What(JAT_Type, jat_nm); 
-   sge_mirror_subscribe(evc, SGE_TYPE_JATASK, print_jatask_event, NULL, NULL, where, what);
+   sge_mirror_subscribe(evc, SGE_TYPE_JATASK, print_jatask_event, nullptr, nullptr, where, what);
    lFreeWhere(&where);
    lFreeWhat(&what);
  
@@ -727,17 +727,17 @@ static void qevent_subscribe_mode(sge_evc_class_t *evc)
    DENTER(TOP_LAYER);
 
    sge_mirror_initialize(evc, EV_ID_ANY, "qevent", true,
-                         NULL, NULL, NULL, NULL, NULL);
-   sge_mirror_subscribe(evc, SGE_TYPE_SHUTDOWN, print_event, NULL, NULL, NULL, NULL);
-   sge_mirror_subscribe(evc, SGE_TYPE_ADMINHOST, print_event, NULL, NULL, NULL, NULL);
+                         nullptr, nullptr, nullptr, nullptr, nullptr);
+   sge_mirror_subscribe(evc, SGE_TYPE_SHUTDOWN, print_event, nullptr, nullptr, nullptr, nullptr);
+   sge_mirror_subscribe(evc, SGE_TYPE_ADMINHOST, print_event, nullptr, nullptr, nullptr, nullptr);
 
    while(!shut_me_down) {
       sge_mirror_error error = sge_mirror_process_events(evc);
-      if (evc != NULL) {
+      if (evc != nullptr) {
          if (event_type < SGE_TYPE_NONE) {
             event_type++;
             printf("Subscribe event_type: %d\n", event_type);
-            error = sge_mirror_subscribe(evc, (sge_object_type)event_type, print_event, NULL, NULL, NULL, NULL);
+            error = sge_mirror_subscribe(evc, (sge_object_type)event_type, print_event, nullptr, nullptr, nullptr, nullptr);
          } else {   
             event_type = SGE_TYPE_ADMINHOST;
             printf("Unsubscribe all event_types\n");

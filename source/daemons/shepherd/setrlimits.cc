@@ -106,7 +106,7 @@ RETURN
 static int sge_parse_limit(sge_rlim_t *rlvalp, char *s, char *error_str,
                     int error_len)
 {
-   sge_parse_num_val(rlvalp, NULL, s, s, error_str, error_len);
+   sge_parse_num_val(rlvalp, nullptr, s, s, error_str, error_len);
 
    return 1;
 }
@@ -443,7 +443,7 @@ const struct resource_table_entry resource_table[] = {
 #elif defined(RLIMIT_AS)
    {RLIMIT_AS,        "RLIMIT_VMEM/RLIMIT_AS",   {RES_PROC, RES_PROC}},
 #endif
-   {0,                NULL,                      {0, 0}}
+   {0,                nullptr,                      {0, 0}}
 };
 const char *unknown_string = "unknown";
 /* *INDENT-ON* */

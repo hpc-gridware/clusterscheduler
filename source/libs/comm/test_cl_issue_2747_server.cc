@@ -84,9 +84,9 @@ extern int main(int argc, char **argv) {
    cl_thread_mode_t thread_mode = CL_RW_THREAD;
 
    int handle_port = 0;
-   cl_com_handle_t *handle = NULL;
-   cl_com_message_t *message = NULL;
-   cl_com_endpoint_t *sender = NULL;
+   cl_com_handle_t *handle = nullptr;
+   cl_com_message_t *message = nullptr;
+   cl_com_endpoint_t *sender = nullptr;
    int i;
 
    if (getenv("CL_PORT")) {
@@ -108,10 +108,10 @@ extern int main(int argc, char **argv) {
    memset(&sa, 0, sizeof(sa));
    sa.sa_handler = sighandler_server;  /* one handler for all signals */
    sigemptyset(&sa.sa_mask);
-   sigaction(SIGINT, &sa, NULL);
-   sigaction(SIGTERM, &sa, NULL);
-   sigaction(SIGHUP, &sa, NULL);
-   sigaction(SIGPIPE, &sa, NULL);
+   sigaction(SIGINT, &sa, nullptr);
+   sigaction(SIGTERM, &sa, nullptr);
+   sigaction(SIGHUP, &sa, nullptr);
+   sigaction(SIGPIPE, &sa, nullptr);
 
 
    printf("commlib setup ...\n");
@@ -122,7 +122,7 @@ extern int main(int argc, char **argv) {
       printf("hup\n");
    };
 
-   if (getenv("CL_THREADS") != NULL) {
+   if (getenv("CL_THREADS") != nullptr) {
       if (strcasecmp(getenv("CL_THREADS"), "false") == 0) {
          thread_mode = CL_NO_THREAD;
       }
@@ -134,12 +134,12 @@ extern int main(int argc, char **argv) {
       printf("INFO: commlib threads are enabled\n");
    }
 
-   cl_com_setup_commlib(thread_mode, CL_LOG_OFF, NULL);
+   cl_com_setup_commlib(thread_mode, CL_LOG_OFF, nullptr);
 
 
-   handle = cl_com_create_handle(NULL, CL_CT_TCP, CL_CM_CT_MESSAGE, true, handle_port, CL_TCP_DEFAULT, "server", 1, 1,
+   handle = cl_com_create_handle(nullptr, CL_CT_TCP, CL_CM_CT_MESSAGE, true, handle_port, CL_TCP_DEFAULT, "server", 1, 1,
                                  0);
-   if (handle == NULL) {
+   if (handle == nullptr) {
       printf("could not get handle\n");
       cl_com_cleanup_commlib();
       exit(-1);
@@ -152,18 +152,18 @@ extern int main(int argc, char **argv) {
                   handle->local->comp_name,
                   handle->local->comp_id);
 
-   if (getenv("CL_RUNS") != NULL) {
+   if (getenv("CL_RUNS") != nullptr) {
       runs = atoi(getenv("CL_RUNS"));
    }
 
-   gettimeofday(&now, NULL);
+   gettimeofday(&now, nullptr);
    shutdown_time = now.tv_sec + 90;
    while (do_shutdown != 1) {
       int ret_val;
       CL_LOG(CL_LOG_INFO, "main()");
       cl_commlib_trigger(handle, 1);
 
-      gettimeofday(&now, NULL);
+      gettimeofday(&now, nullptr);
       if (now.tv_sec >= shutdown_time) {
          do_shutdown = 1;
          timeout_error = 1;
@@ -171,13 +171,13 @@ extern int main(int argc, char **argv) {
 
       if (message_counter > 10) {
          int test_client_connected = 0;
-         cl_connection_list_elem_t *elem = NULL;
+         cl_connection_list_elem_t *elem = nullptr;
          pthread_mutex_lock(handle->connection_list_mutex);
          cl_raw_list_lock(handle->connection_list);
          elem = cl_connection_list_get_first_elem(handle->connection_list);
          while (elem) {
-            if (elem->connection->remote != NULL &&
-                elem->connection->remote->comp_name != NULL) {
+            if (elem->connection->remote != nullptr &&
+                elem->connection->remote->comp_name != nullptr) {
                if (strcmp(elem->connection->remote->comp_name, "client") == 0) {
                   test_client_connected = 1;
                   break;
@@ -196,9 +196,9 @@ extern int main(int argc, char **argv) {
          do_shutdown = 1;
       }
 
-      ret_val = cl_commlib_receive_message(handle, NULL, NULL, 0, false, 0, &message, &sender);
+      ret_val = cl_commlib_receive_message(handle, nullptr, nullptr, 0, false, 0, &message, &sender);
       CL_LOG_STR(CL_LOG_INFO, "cl_commlib_receive_message() returned", cl_get_error_text(ret_val));
-      if (message != NULL) {
+      if (message != nullptr) {
          message_counter++;
          if (getenv("CL_RUNS")) {
             printf("runs: %d\n", runs);
@@ -210,7 +210,7 @@ extern int main(int argc, char **argv) {
                                            sender->comp_host, sender->comp_name, sender->comp_id,
                                            CL_MIH_MAT_NAK,
                                            &message->message, message->message_length,
-                                           NULL, message->message_id, 0,
+                                           nullptr, message->message_id, 0,
                                            false, false);
          if (ret_val != CL_RETVAL_OK) {
             CL_LOG_INT(CL_LOG_ERROR, "sent message response for message id", (int) message->message_id);
@@ -220,28 +220,28 @@ extern int main(int argc, char **argv) {
          }
          cl_com_free_message(&message);
          cl_com_free_endpoint(&sender);
-         message = NULL;
+         message = nullptr;
       }
    }
 
    /* add a flush time for the qping client */
-   gettimeofday(&now, NULL);
+   gettimeofday(&now, nullptr);
    shutdown_time = now.tv_sec + 5;
    while (now.tv_sec < shutdown_time) {
       cl_commlib_trigger(handle, 1);
-      gettimeofday(&now, NULL);
+      gettimeofday(&now, nullptr);
    }
 
    printf("shutting down server ...\n");
    while (cl_commlib_shutdown_handle(handle, true) == CL_RETVAL_MESSAGE_IN_BUFFER) {
-      message = NULL;
-      cl_commlib_receive_message(handle, NULL, NULL, 0, false, 0, &message, &sender);
+      message = nullptr;
+      cl_commlib_receive_message(handle, nullptr, nullptr, 0, false, 0, &message, &sender);
 
-      if (message != NULL) {
+      if (message != nullptr) {
          printf("ignoring message from \"%s\"\n", sender->comp_host);
          cl_com_free_message(&message);
          cl_com_free_endpoint(&sender);
-         message = NULL;
+         message = nullptr;
       }
    }
 

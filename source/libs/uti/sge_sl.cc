@@ -59,7 +59,7 @@
 *     in it and returns the element pointer in 'elem'.
 *
 *     On error false is returned by this function and 'elem' contains a
-*     NULL pointer. 
+*     nullptr pointer.
 *
 *     sge_sl_elem_destroy() can be used to destroy elements that were
 *     created with this function.
@@ -85,19 +85,19 @@ sge_sl_elem_create(sge_sl_elem_t **elem, void *data) {
    bool ret = true;
 
    DENTER(SL_LAYER);
-   if (elem != NULL) {
+   if (elem != nullptr) {
       const size_t size = sizeof(sge_sl_elem_t);
       sge_sl_elem_t *new_elem;
 
       new_elem = (sge_sl_elem_t *) sge_malloc(size);
-      if (new_elem != NULL) {
-         new_elem->prev = NULL;
-         new_elem->next = NULL;
+      if (new_elem != nullptr) {
+         new_elem->prev = nullptr;
+         new_elem->next = nullptr;
          new_elem->data = data;
          *elem = new_elem;
       } else {
          sge_err_set(SGE_ERR_MEMORY, MSG_UNABLETOALLOCATEBYTES_DS, size, __func__);
-         *elem = NULL;
+         *elem = nullptr;
          ret = false;
       }
    }
@@ -121,7 +121,7 @@ sge_sl_elem_create(sge_sl_elem_t **elem, void *data) {
 *     If 'elem' is part of a list it has to be unchained before this
 *     function can be called. Otherwise the list would be corrupted.
 *
-*     On success elem will be set to NULL and the function returns true.
+*     On success elem will be set to nullptr and the function returns true.
 *
 *  INPUTS
 *     sge_sl_elem_t **elem     - pointer to a sl element pointer
@@ -154,8 +154,8 @@ sge_sl_elem_destroy(sge_sl_elem_t **elem, sge_sl_destroy_f destroy) {
    bool ret = true;
 
    DENTER(SL_LAYER);
-   if (elem != NULL && *elem != NULL) {
-      if (destroy != NULL) {
+   if (elem != nullptr && *elem != nullptr) {
+      if (destroy != nullptr) {
          destroy(&(*elem)->data);
       }
       sge_free(elem);
@@ -188,10 +188,10 @@ sge_sl_elem_destroy(sge_sl_elem_t **elem, sge_sl_destroy_f destroy) {
 *******************************************************************************/
 void *
 sge_sl_elem_data(sge_sl_elem_t *elem) {
-   void *ret = NULL;
+   void *ret = nullptr;
 
    DENTER(SL_LAYER);
-   if (elem != NULL) {
+   if (elem != nullptr) {
       ret = elem->data;
    }
    DRETURN(ret);
@@ -234,7 +234,7 @@ sge_sl_dechain(sge_sl_list_t *list, sge_sl_elem_t *elem) {
    bool ret = true;
 
    DENTER(SL_LAYER);
-   if (list != NULL && elem != NULL) {
+   if (list != nullptr && elem != nullptr) {
       sge_mutex_lock(SL_MUTEX_NAME, __func__, __LINE__, &list->mutex);
       if (elem->prev) {
          elem->prev->next = elem->next;
@@ -247,8 +247,8 @@ sge_sl_dechain(sge_sl_list_t *list, sge_sl_elem_t *elem) {
          list->last = elem->prev;
       }
 
-      elem->next = NULL;
-      elem->prev = NULL;
+      elem->next = nullptr;
+      elem->prev = nullptr;
 
       list->elements--;
       sge_mutex_unlock(SL_MUTEX_NAME, __func__, __LINE__, &list->mutex);
@@ -296,12 +296,12 @@ sge_sl_insert_before(sge_sl_list_t *list, sge_sl_elem_t *new_elem, sge_sl_elem_t
    bool ret = true;
 
    DENTER(SL_LAYER);
-   if (list != NULL && new_elem != NULL && elem != NULL) {
+   if (list != nullptr && new_elem != nullptr && elem != nullptr) {
       sge_sl_elem_t *last;
 
       sge_mutex_lock(SL_MUTEX_NAME, __func__, __LINE__, &list->mutex);
       last = elem->prev;
-      if (last == NULL) {
+      if (last == nullptr) {
          elem->prev = new_elem;
          new_elem->next = elem;
          list->first = new_elem;
@@ -356,12 +356,12 @@ sge_sl_append_after(sge_sl_list_t *list, sge_sl_elem_t *new_elem, sge_sl_elem_t 
    bool ret = true;
 
    DENTER(SL_LAYER);
-   if (list != NULL && new_elem != NULL && elem != NULL) {
+   if (list != nullptr && new_elem != nullptr && elem != nullptr) {
       sge_sl_elem_t *current;
 
       sge_mutex_lock(SL_MUTEX_NAME, __func__, __LINE__, &list->mutex);
       current = elem->next;
-      if (current == NULL) {
+      if (current == nullptr) {
          elem->next = new_elem;
          new_elem->prev = elem;
          list->last = new_elem;
@@ -389,19 +389,19 @@ sge_sl_append_after(sge_sl_list_t *list, sge_sl_elem_t *new_elem, sge_sl_elem_t 
 *  FUNCTION
 *     This function provides the possibility to iterate over all elements
 *     in 'list'. 'elem' will contain a pointer to an element when the
-*     function returns or the value NULL.  'elem' is also an input
+*     function returns or the value nullptr.  'elem' is also an input
 *     parameter and it defines what element of 'list' is returned.
 *   
-*     If *elem is NULL and direction is SGE_SL_FORWARD them *elem will
+*     If *elem is nullptr and direction is SGE_SL_FORWARD them *elem will
 *     contain the first element in 'list'. If direction is SGE_SL_BACKWARD
 *     then it will contain the last.
 *
-*     If *elem is not NULL then the next element in the list sequence is
+*     If *elem is not nullptr then the next element in the list sequence is
 *     returned if direction is SGE_SL_FORWARD or the previous one if
 *     direction is SGE_SL_BACKWARD.
 *
 *     If the list is empty or if there is no previous/next element then
-*     NULL will be retuned in 'elem'.
+*     nullptr will be retuned in 'elem'.
 *
 *  INPUTS
 *     sge_sl_list_t *list          - sl list 
@@ -424,9 +424,9 @@ sge_sl_append_after(sge_sl_list_t *list, sge_sl_elem_t *new_elem, sge_sl_elem_t 
 *
 *        // assume that elements are added to the list here
 *
-*        next = NULL;
+*        next = nullptr;
 *        sge_sl_elem_next(list, &next, SGE_SL_FORWARD);
-*        while ((current = next) != NULL) {
+*        while ((current = next) != nullptr) {
 *           sge_sl_elem_next(list, &next, SGE_SL_FORWARD);
 *
 *           // so something with 'current' here
@@ -445,9 +445,9 @@ sge_sl_elem_next(sge_sl_list_t *list,
    bool ret = true;
 
    DENTER(BASIS_LAYER);
-   if (list != NULL && elem != NULL) {
+   if (list != nullptr && elem != nullptr) {
       sge_mutex_lock(SL_MUTEX_NAME, __func__, __LINE__, &list->mutex);
-      if (*elem != NULL) {
+      if (*elem != nullptr) {
          if (direction == SGE_SL_FORWARD) {
             *elem = (*elem)->next;
          } else {
@@ -478,20 +478,20 @@ sge_sl_elem_next(sge_sl_list_t *list,
 *  FUNCTION
 *     This function provides the possibility to iterate over certain
 *     elements in 'list'. 'elem' will contain a pointer to an element when
-*     the function returns or the value NULL.  'elem' is also an input
+*     the function returns or the value nullptr.  'elem' is also an input
 *     parameter and it defines what element of 'list' is returned.
 *   
-*     If *elem is NULL and direction is SGE_SL_FORWARD then *elem will
+*     If *elem is nullptr and direction is SGE_SL_FORWARD then *elem will
 *     contain the first element in 'list' that is equivalent with the
 *     provided 'key'.  If direction is SGE_SL_BACKWARD then it will contain
 *     the last element that matches.
 *
-*     If *elem is not NULL then the next element in the list sequence is
+*     If *elem is not nullptr then the next element in the list sequence is
 *     returned if direction is SGE_SL_FORWARD or the previous one if
 *     direction is SGE_SL_BACKWARD.
 *
 *     If the list is empty or if there is no previous/next element then
-*     NULL will be retuned in 'elem'.
+*     nullptr will be retuned in 'elem'.
 *
 *     The provided 'compare' function is used to compare the provided 'key'
 *     with the data that is contained in the element. 'key' is passed as
@@ -517,7 +517,7 @@ sge_sl_elem_next(sge_sl_list_t *list,
 *     fnmatch_compare(const void *key_pattern, const void *data) {
 *        int ret = 0;
 *
-*        if (key_pattern != NULL && data != NULL) {
+*        if (key_pattern != nullptr && data != nullptr) {
 *           ret = fnmatch(*(char**)key_pattern, *(char**)data, 0);
 *        }
 *        return ret;
@@ -535,12 +535,12 @@ sge_sl_elem_search(sge_sl_list_t *list, sge_sl_elem_t **elem, void *key,
    bool ret = true;
 
    DENTER(SL_LAYER);
-   if (list != NULL && elem != NULL && compare != NULL) {
-      sge_sl_elem_t *next = NULL;
-      sge_sl_elem_t *current = NULL;
+   if (list != nullptr && elem != nullptr && compare != nullptr) {
+      sge_sl_elem_t *next = nullptr;
+      sge_sl_elem_t *current = nullptr;
 
       sge_mutex_lock(SL_MUTEX_NAME, __func__, __LINE__, &list->mutex);
-      if (*elem != NULL) {
+      if (*elem != nullptr) {
          if (direction == SGE_SL_FORWARD) {
             next = (*elem)->next;
          } else {
@@ -553,7 +553,7 @@ sge_sl_elem_search(sge_sl_list_t *list, sge_sl_elem_t **elem, void *key,
             next = list->last;
          }
       }
-      while ((current = next) != NULL && current != NULL &&
+      while ((current = next) != nullptr && current != nullptr &&
              compare((const void *) &key, (const void *) &current->data) != 0) {
          if (direction == SGE_SL_FORWARD) {
             next = current->next;
@@ -576,7 +576,7 @@ sge_sl_elem_search(sge_sl_list_t *list, sge_sl_elem_t **elem, void *key,
 *
 *  FUNCTION
 *     This function creates a new simple list and returns the list in the
-*     'list' parameter. In case of an error NULL will be returned. 
+*     'list' parameter. In case of an error nullptr will be returned.
 *
 *  INPUTS
 *     sge_sl_list_t **list - new simple list 
@@ -597,12 +597,12 @@ sge_sl_create(sge_sl_list_t **list) {
    bool ret = true;
 
    DENTER(SL_LAYER);
-   if (list != NULL) {
+   if (list != nullptr) {
       const size_t size = sizeof(sge_sl_list_t);
       sge_sl_list_t *new_list;
 
       new_list = (sge_sl_list_t *) sge_malloc(size);
-      if (new_list != NULL) {
+      if (new_list != nullptr) {
          pthread_mutexattr_t mutex_attr;
 
          /* initialize the mutex */
@@ -612,15 +612,15 @@ sge_sl_create(sge_sl_list_t **list) {
          pthread_mutexattr_destroy(&mutex_attr);
 
          /* other members */
-         new_list->first = NULL;
-         new_list->last = NULL;
+         new_list->first = nullptr;
+         new_list->last = nullptr;
          new_list->elements = 0;
 
          *list = new_list;
       } else {
          sge_err_set(SGE_ERR_MEMORY, MSG_UNABLETOALLOCATEBYTES_DS, size, __func__);
          ret = false;
-         *list = NULL;
+         *list = nullptr;
       }
    }
    DRETURN(ret);
@@ -634,7 +634,7 @@ sge_sl_create(sge_sl_list_t **list) {
 *     bool sge_sl_destroy(sge_sl_list_t **list, sge_sl_destroy_f destroy) 
 *
 *  FUNCTION
-*     This function destroys 'list' and sets the pointer to NULL.
+*     This function destroys 'list' and sets the pointer to nullptr.
 *     If a 'destroy' function is provided then it will be used
 *     to destroy all data elements that are referenced by the list
 *     elements. 
@@ -671,14 +671,14 @@ sge_sl_destroy(sge_sl_list_t **list, sge_sl_destroy_f destroy) {
    bool ret = true;
 
    DENTER(SL_LAYER);
-   if (list != NULL && *list != NULL) {
+   if (list != nullptr && *list != nullptr) {
       sge_sl_elem_t *next;
       sge_sl_elem_t *current;
 
       /* destroy content */
       sge_mutex_lock(SL_MUTEX_NAME, __func__, __LINE__, &(*list)->mutex);
       next = (*list)->first;
-      while ((current = next) != NULL) {
+      while ((current = next) != nullptr) {
          next = current->next;
 
          ret &= sge_sl_elem_destroy(&current, destroy);
@@ -723,7 +723,7 @@ sge_sl_lock(sge_sl_list_t *list) {
    bool ret = true;
 
    DENTER(SL_LAYER);
-   if (list != NULL) {
+   if (list != nullptr) {
       sge_mutex_lock(SL_MUTEX_NAME, __func__, __LINE__, &list->mutex);
    }
    DRETURN(ret);
@@ -759,7 +759,7 @@ sge_sl_unlock(sge_sl_list_t *list) {
    bool ret = true;
 
    DENTER(SL_LAYER);
-   if (list != NULL) {
+   if (list != nullptr) {
       sge_mutex_unlock(SL_MUTEX_NAME, __func__, __LINE__, &list->mutex);
    }
    DRETURN(ret);
@@ -801,28 +801,28 @@ sge_sl_insert(sge_sl_list_t *list, void *data, sge_sl_direction_t direction) {
    bool ret = true;
 
    DENTER(SL_LAYER);
-   if (list != NULL) {
+   if (list != nullptr) {
       sge_sl_elem_t *new_elem;
 
       ret = sge_sl_elem_create(&new_elem, data);
       if (ret) {
          sge_mutex_lock(SL_MUTEX_NAME, __func__, __LINE__, &list->mutex);
          if (direction == SGE_SL_FORWARD) {
-            if (list->first != NULL) {
+            if (list->first != nullptr) {
                list->first->prev = new_elem;
             }
             new_elem->next = list->first;
             list->first = new_elem;
-            if (list->last == NULL) {
+            if (list->last == nullptr) {
                list->last = new_elem;
             }
          } else {
-            if (list->last != NULL) {
+            if (list->last != nullptr) {
                list->last->next = new_elem;
             }
             new_elem->prev = list->last;
             list->last = new_elem;
-            if (list->first == NULL) {
+            if (list->first == nullptr) {
                list->first = new_elem;
             }
          }
@@ -863,7 +863,7 @@ sge_sl_insert(sge_sl_list_t *list, void *data, sge_sl_direction_t direction) {
 *     compare(const void *data1, const void *data2) {
 *        int ret = 0;
 *
-*        if (data1 != NULL && data2 != NULL) {
+*        if (data1 != nullptr && data2 != nullptr) {
 *           ret = strcmp(*(char**)data1, *(char**)data2);
 *        }
 *        return ret;
@@ -881,30 +881,30 @@ sge_sl_insert_search(sge_sl_list_t *list, void *data, sge_sl_compare_f compare) 
    bool ret = true;
 
    DENTER(SL_LAYER);
-   if (list != NULL && compare != NULL) {
+   if (list != nullptr && compare != nullptr) {
       sge_sl_elem_t *new_elem;
 
       ret = sge_sl_elem_create(&new_elem, data);
       if (ret) {
-         sge_sl_elem_t *last = NULL;
-         sge_sl_elem_t *current = NULL;
+         sge_sl_elem_t *last = nullptr;
+         sge_sl_elem_t *current = nullptr;
 
          sge_mutex_lock(SL_MUTEX_NAME, __func__, __LINE__, &list->mutex);
          current = list->first;
-         while (current != NULL &&
+         while (current != nullptr &&
                 compare((const void *) &data, (const void *) &current->data) > 0) {
             last = current;
             current = current->next;
          }
 
-         if (last == NULL && current == NULL) {
+         if (last == nullptr && current == nullptr) {
             list->first = new_elem;
             list->last = new_elem;
-         } else if (last == NULL) {
+         } else if (last == nullptr) {
             current->prev = new_elem;
             new_elem->next = current;
             list->first = new_elem;
-         } else if (current == NULL) {
+         } else if (current == nullptr) {
             last->next = new_elem;
             new_elem->prev = last;
             list->last = new_elem;
@@ -952,14 +952,14 @@ sge_sl_data(sge_sl_list_t *list, void **data, sge_sl_direction_t direction) {
    bool ret = true;
 
    DENTER(SL_LAYER);
-   if (list != NULL && data != NULL) {
+   if (list != nullptr && data != nullptr) {
       sge_mutex_lock(SL_MUTEX_NAME, __func__, __LINE__, &list->mutex);
-      if (direction == SGE_SL_FORWARD && list->first != NULL) {
+      if (direction == SGE_SL_FORWARD && list->first != nullptr) {
          *data = list->first->data;
-      } else if (direction == SGE_SL_BACKWARD && list->last != NULL) {
+      } else if (direction == SGE_SL_BACKWARD && list->last != nullptr) {
          *data = list->last->data;
       } else {
-         *data = NULL;
+         *data = nullptr;
       }
       sge_mutex_unlock(SL_MUTEX_NAME, __func__, __LINE__, &list->mutex);
    }
@@ -1003,15 +1003,15 @@ sge_sl_data_search(sge_sl_list_t *list, void *key, void **data,
    bool ret = true;
 
    DENTER(SL_LAYER);
-   if (list != NULL && data != NULL && compare != NULL) {
-      sge_sl_elem_t *elem = NULL;
+   if (list != nullptr && data != nullptr && compare != nullptr) {
+      sge_sl_elem_t *elem = nullptr;
 
       sge_mutex_lock(SL_MUTEX_NAME, __func__, __LINE__, &list->mutex);
       ret &= sge_sl_elem_search(list, &elem, key, compare, direction);
-      if (ret && elem != NULL) {
+      if (ret && elem != nullptr) {
          *data = elem->data;
       } else {
-         *data = NULL;
+         *data = nullptr;
       }
       sge_mutex_unlock(SL_MUTEX_NAME, __func__, __LINE__, &list->mutex);
    }
@@ -1029,7 +1029,7 @@ sge_sl_data_search(sge_sl_list_t *list, void *key, void **data,
 *
 *  FUNCTION
 *     This function deletes the first/last element of 'list' depending
-*     on the provided 'direction'. If 'destroy' is not NULL then
+*     on the provided 'direction'. If 'destroy' is not nullptr then
 *     this function will be used to destroy the element data. 
 *
 *  INPUTS
@@ -1051,7 +1051,7 @@ sge_sl_delete(sge_sl_list_t *list,
    bool ret = true;
 
    DENTER(SL_LAYER);
-   if (list != NULL) {
+   if (list != nullptr) {
       sge_sl_elem_t *elem;
 
       sge_mutex_lock(SL_MUTEX_NAME, __func__, __LINE__, &list->mutex);
@@ -1109,8 +1109,8 @@ sge_sl_delete_search(sge_sl_list_t *list, void *key, sge_sl_destroy_f destroy,
    bool ret = true;
 
    DENTER(SL_LAYER);
-   if (list != NULL && key != NULL && compare != NULL) {
-      sge_sl_elem_t *elem = NULL;
+   if (list != nullptr && key != nullptr && compare != nullptr) {
+      sge_sl_elem_t *elem = nullptr;
 
       sge_mutex_lock(SL_MUTEX_NAME, __func__, __LINE__, &list->mutex);
       ret &= sge_sl_elem_search(list, &elem, key, compare, direction);
@@ -1149,7 +1149,7 @@ sge_sl_get_elem_count(sge_sl_list_t *list) {
    u_long32 elems = 0;
 
    DENTER(SL_LAYER);
-   if (list != NULL) {
+   if (list != nullptr) {
       sge_mutex_lock(SL_MUTEX_NAME, __func__, __LINE__, &list->mutex);
       elems = list->elements;
       sge_mutex_unlock(SL_MUTEX_NAME, __func__, __LINE__, &list->mutex);
@@ -1188,15 +1188,15 @@ sge_sl_sort(sge_sl_list_t *list, sge_sl_compare_f compare) {
    bool ret = true;
 
    DENTER(SL_LAYER);
-   if (list != NULL && compare != NULL) {
+   if (list != nullptr && compare != nullptr) {
       void **pointer_array;
       size_t size;
 
       sge_mutex_lock(SL_MUTEX_NAME, __func__, __LINE__, &list->mutex);
       size = sizeof(void *) * list->elements;
       pointer_array = (void **) sge_malloc(size);
-      if (pointer_array != NULL) {
-         sge_sl_elem_t *elem = NULL;
+      if (pointer_array != nullptr) {
+         sge_sl_elem_t *elem = nullptr;
          int i;
 
          /* fill the pointer array with the data pointers */
@@ -1246,10 +1246,10 @@ sge_sl_sort(sge_sl_list_t *list, sge_sl_compare_f compare) {
 *******************************************************************************/
 pthread_mutex_t *
 sge_sl_get_mutex(sge_sl_list_t *list) {
-   pthread_mutex_t *mutex = NULL;
+   pthread_mutex_t *mutex = nullptr;
 
    DENTER(SL_LAYER);
-   if (list != NULL) {
+   if (list != nullptr) {
       mutex = &list->mutex;
    }
    DRETURN(mutex);

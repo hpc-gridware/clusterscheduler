@@ -96,9 +96,9 @@ int sge_has_access_(const char *user, const char *group, const lList *q_acl,
 /* sge_contained_in_access_list_() returns 
    1  yes it is contained in the acl
    0  no 
-   -1 got NULL for user/group 
+   -1 got nullptr for user/group
 
-   user, group: may be NULL
+   user, group: may be nullptr
 */
 int sge_contained_in_access_list_(const char *user, const char *group,
                                          const lList *acl, const lList *acl_list) 
@@ -110,7 +110,7 @@ int sge_contained_in_access_list_(const char *user, const char *group,
    for_each_ep(acl_search, acl) {
       if ((acl_found=lGetElemStr(acl_list, US_name, lGetString(acl_search, US_name)))) {
          /* ok - there is such an access list */
-         if (sge_contained_in_access_list(user, group, acl_found, NULL)) {
+         if (sge_contained_in_access_list(user, group, acl_found, nullptr)) {
             DRETURN(1);
          } 
       } else {
@@ -151,7 +151,7 @@ bool sge_ar_have_users_access(lList **alpp, lListElem *ar, const char *name, con
 {
    bool ret = true;
    const lListElem *acl_entry;
-   const char *user= NULL;
+   const char *user= nullptr;
 
    DENTER(TOP_LAYER);
 
@@ -173,13 +173,13 @@ bool sge_ar_have_users_access(lList **alpp, lListElem *ar, const char *name, con
          DPRINTF(("acl :%s", acl_name));
 
          /* at first xacl */
-         if (xacl_list && lGetElemStr(xacl_list, US_name, acl_name) != NULL) {
+         if (xacl_list && lGetElemStr(xacl_list, US_name, acl_name) != nullptr) {
             ret = false;
             break;
          }
 
          /* at second acl */
-         if (acl_list && (lGetElemStr(acl_list, US_name, acl_name) == NULL)) {
+         if (acl_list && (lGetElemStr(acl_list, US_name, acl_name) == nullptr)) {
             answer_list_add_sprintf(alpp, STATUS_OK, ANSWER_QUALITY_INFO, MSG_AR_QUEUEDNOPERMISSIONS, name); 
             ret = false;
             break;

@@ -95,8 +95,8 @@ int main(int argc, char *argv[])
    const char *ret_string;
    const void *ret_pointer;
    
-   lListElem *queue = NULL;
-   lList *pe_list = NULL;
+   lListElem *queue = nullptr;
+   lList *pe_list = nullptr;
 
    dstring buffer = DSTRING_INIT;
 
@@ -111,30 +111,30 @@ int main(int argc, char *argv[])
    ret_bool = object_has_type(queue, JB_Type);
    check_result_bool(ret_bool, false, "object_has_type");
 
-   ret_bool = object_has_type(NULL, JB_Type);
+   ret_bool = object_has_type(nullptr, JB_Type);
    check_result_bool(ret_bool, false, "object_has_type");
-   ret_bool = object_has_type(queue, NULL);
+   ret_bool = object_has_type(queue, nullptr);
    check_result_bool(ret_bool, false, "object_has_type");
 
    /* object_get_type */
    ret_pointer = object_get_type(queue);
    check_result_pointer(ret_pointer, QU_Type, "object_get_type");
-   ret_pointer = object_get_type(NULL);
-   check_result_pointer(ret_pointer, NULL, "object_get_type");
+   ret_pointer = object_get_type(nullptr);
+   check_result_pointer(ret_pointer, nullptr, "object_get_type");
 
    /* object_get_subtype */
    ret_pointer = object_get_subtype(QU_acl);
    check_result_pointer(ret_pointer, US_Type, "object_get_subtype");
    ret_pointer = object_get_subtype(QU_qname);
-   check_result_pointer(ret_pointer, NULL, "object_get_subtype");
+   check_result_pointer(ret_pointer, nullptr, "object_get_subtype");
    ret_pointer = object_get_subtype(NoName);
-   check_result_pointer(ret_pointer, NULL, "object_get_subtype");
+   check_result_pointer(ret_pointer, nullptr, "object_get_subtype");
 
    /* object_get_primary_key */
    ret_int = object_get_primary_key(JB_Type);
    check_result_int(ret_int, JB_job_number, "object_get_primary_key");
 
-   ret_int = object_get_primary_key(NULL);
+   ret_int = object_get_primary_key(nullptr);
    check_result_int(ret_int, NoName, "object_get_primary_key");
 
    /* object_get_name_prefix */
@@ -143,24 +143,24 @@ int main(int argc, char *argv[])
    ret_string = object_get_name_prefix(JB_Type, &buffer);
    check_result_string(ret_string, "JB_", "object_get_name_prefix");
 
-   ret_string = object_get_name_prefix(NULL, &buffer);
-   check_result_string(ret_string, NULL, "object_get_name_prefix");
-   ret_string = object_get_name_prefix(JB_Type, NULL);
-   check_result_string(ret_string, NULL, "object_get_name_prefix");
+   ret_string = object_get_name_prefix(nullptr, &buffer);
+   check_result_string(ret_string, nullptr, "object_get_name_prefix");
+   ret_string = object_get_name_prefix(JB_Type, nullptr);
+   check_result_string(ret_string, nullptr, "object_get_name_prefix");
 
    sge_dstring_free(&buffer);
 
    /* object_[gs]et_field_contents is tested in test_sge_spooling_utilities */
 
    /* test object verification */
-   /* NULL pointer actions */
-   ret_bool = object_verify_cull(NULL, NULL);
+   /* nullptr pointer actions */
+   ret_bool = object_verify_cull(nullptr, nullptr);
    check_result_bool(ret_bool, false, "object_verify_cull");
-   ret_bool = object_list_verify_cull(NULL, NULL);
+   ret_bool = object_list_verify_cull(nullptr, nullptr);
    check_result_bool(ret_bool, false, "object_list_verify_cull");
  
    /* object type verification */
-   ret_bool = object_verify_cull(queue, NULL);
+   ret_bool = object_verify_cull(queue, nullptr);
    check_result_bool(ret_bool, true, "object_verify_cull");
    ret_bool = object_verify_cull(queue, QU_Type);
    check_result_bool(ret_bool, true, "object_verify_cull");
@@ -168,7 +168,7 @@ int main(int argc, char *argv[])
    check_result_bool(ret_bool, false, "object_verify_cull");
 
    /* list verification */
-   ret_bool = object_list_verify_cull(pe_list, NULL);
+   ret_bool = object_list_verify_cull(pe_list, nullptr);
    check_result_bool(ret_bool, true, "object_verify_cull");
    ret_bool = object_list_verify_cull(pe_list, ST_Type);
    check_result_bool(ret_bool, true, "object_verify_cull");

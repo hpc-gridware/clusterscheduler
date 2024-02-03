@@ -176,9 +176,9 @@ sge_gdi_packet_get_pb_size(sge_gdi_packet_class_t *packet)
    u_long32 ret = 0;
 
    DENTER(TOP_LAYER);
-   if (packet != NULL) {
+   if (packet != nullptr) {
       bool local_ret;
-      lList *local_answer_list = NULL;
+      lList *local_answer_list = nullptr;
       sge_pack_buffer pb;
 
       init_packbuffer(&pb, 0, 1);
@@ -234,18 +234,18 @@ sge_gdi_packet_unpack(sge_gdi_packet_class_t **packet, lList **answer_list,
 
    DENTER(TOP_LAYER);
    *packet = sge_gdi_packet_create_base(answer_list);
-   if (*packet != NULL) {
+   if (*packet != nullptr) {
       bool first = true;
 
       do {
          u_long32 target = 0;
          u_long32 command = 0;
-         lList *data_list = NULL;
+         lList *data_list = nullptr;
          u_long32 version = 0;
-         lList *a_list = NULL;
-         lCondition *condition = NULL;
-         lEnumeration *enumeration = NULL;
-         char *auth_info = NULL;
+         lList *a_list = nullptr;
+         lCondition *condition = nullptr;
+         lEnumeration *enumeration = nullptr;
+         char *auth_info = nullptr;
          u_long32 task_id = 0;
          u_long32 packet_id = 0;
          u_long32 has_next_int = 0;
@@ -297,7 +297,7 @@ sge_gdi_packet_unpack(sge_gdi_packet_class_t **packet, lList **answer_list,
             (*packet)->id = packet_id;
             (*packet)->version = version;
             (*packet)->auth_info = auth_info;
-            auth_info = NULL;
+            auth_info = nullptr;
             first = false;
          } else {
             sge_free(&auth_info);
@@ -367,12 +367,12 @@ sge_gdi_packet_pack(sge_gdi_packet_class_t *packet, lList **answer_list,
                     sge_pack_buffer *pb)
 {
    bool ret = true;
-   sge_gdi_task_class_t *task = NULL;
+   sge_gdi_task_class_t *task = nullptr;
 
    DENTER(TOP_LAYER);
 
    task = packet->first_task;
-   while (ret && task != NULL) {
+   while (ret && task != nullptr) {
       ret |= sge_gdi_packet_pack_task(packet, task, answer_list, pb);
       task = task->next;
    }
@@ -434,7 +434,7 @@ sge_gdi_packet_pack_task(sge_gdi_packet_class_t *packet,
 
    DENTER(TOP_LAYER);
 
-   if ((task != NULL) && (packet != NULL)
+   if ((task != nullptr) && (packet != nullptr)
        && (packet->is_intern_request == false)) {
       sge_pack_gdi_info(task->command);
 
@@ -463,7 +463,7 @@ sge_gdi_packet_pack_task(sge_gdi_packet_class_t *packet,
                          task->enumeration, false, pb);
          lFreeWhat(&(task->enumeration));
          lFreeWhere(&(task->condition));
-         task->data_list = NULL;
+         task->data_list = nullptr;
 
          /* DIRTY HACK: The "ok" message should be removed from the answer list
           * 05/21/2007 qualitiy was ANSWER_QUALITY_INFO but this results in "ok"
@@ -503,7 +503,7 @@ sge_gdi_packet_pack_task(sge_gdi_packet_class_t *packet,
       if (pack_ret != PACK_SUCCESS) {
          goto error_with_mapping;
       }
-      pack_ret = packint(pb, (task->next != NULL) ? 1 : 0);
+      pack_ret = packint(pb, (task->next != nullptr) ? 1 : 0);
       if (pack_ret != PACK_SUCCESS) {
          goto error_with_mapping;
       }

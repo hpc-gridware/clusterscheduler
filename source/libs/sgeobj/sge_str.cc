@@ -57,7 +57,7 @@
 *     Append the strings contained in "this_list" to the dstring 
 *     "string". Separate them by the character contained in 
 *     "delimiter". 
-*     If "this_list" is NULL or conaines no elements, "NONE" will
+*     If "this_list" is nullptr or conaines no elements, "NONE" will
 *     be added to the dstring.
 *
 *  INPUTS
@@ -75,16 +75,16 @@ const char *
 str_list_append_to_dstring(const lList *this_list, dstring *string,
                            const char delimiter)
 {
-   const char *ret = NULL;
+   const char *ret = nullptr;
 
    DENTER(STR_LAYER);
-   if (string != NULL) {
-      const lListElem *elem = NULL;
+   if (string != nullptr) {
+      const lListElem *elem = nullptr;
       bool printed = false;
 
       for_each_ep(elem, this_list) {
          sge_dstring_append(string, lGetString(elem, ST_name));
-         if (lNext(elem) != NULL) {
+         if (lNext(elem) != nullptr) {
             sge_dstring_sprintf_append(string, "%c", delimiter);
          }
          printed = true;
@@ -135,14 +135,14 @@ str_list_parse_from_string(lList **this_list,
    bool ret = true;
 
    DENTER(STR_LAYER);
-   if (this_list != NULL && string != NULL && delimitor != NULL) {
-      struct saved_vars_s *context = NULL;
+   if (this_list != nullptr && string != nullptr && delimitor != nullptr) {
+      struct saved_vars_s *context = nullptr;
       const char *token;
 
       token = sge_strtok_r(string, delimitor, &context);
-      while (token != NULL) {
+      while (token != nullptr) {
          lAddElemStr(this_list, ST_name, token, ST_Type);
-         token = sge_strtok_r(NULL, delimitor, &context);
+         token = sge_strtok_r(nullptr, delimitor, &context);
       }
       sge_free_saved_vars(context);
    }
@@ -158,7 +158,7 @@ str_list_parse_from_string(lList **this_list,
 *     str_list_is_valid(const lList *this_list, lList **answer_list) 
 *
 *  FUNCTION
-*     Does each element in "this_list" contain a valid string (!= NULL). 
+*     Does each element in "this_list" contain a valid string (!= nullptr).
 *
 *  INPUTS
 *     const lList *this_list - ST_Type list 
@@ -166,8 +166,8 @@ str_list_parse_from_string(lList **this_list,
 *
 *  RESULT
 *     bool - result
-*        true  - all strings are != NULL
-*        false - at least one entry is NULL 
+*        true  - all strings are != nullptr
+*        false - at least one entry is nullptr
 *******************************************************************************/
 bool
 str_list_is_valid(const lList *this_list, lList **answer_list)
@@ -175,11 +175,11 @@ str_list_is_valid(const lList *this_list, lList **answer_list)
    bool ret = true;
 
    DENTER(STR_LAYER);
-   if (this_list != NULL) {
+   if (this_list != nullptr) {
       const lListElem *elem;
 
       for_each_ep(elem, this_list) {
-         if (lGetString(elem, ST_name) == NULL) {
+         if (lGetString(elem, ST_name) == nullptr) {
             answer_list_add(answer_list, MSG_STR_INVALIDSTR, 
                             STATUS_ENOKEY, ANSWER_QUALITY_ERROR);
             break;
@@ -195,13 +195,13 @@ str_list_transform_user_list(lList **this_list, lList **answer_list, const char 
    bool ret = true;
 
    DENTER(STR_LAYER);
-   if (this_list != NULL && *this_list != NULL) {
+   if (this_list != nullptr && *this_list != nullptr) {
       lListElem *elem;
 
       for_each_rw (elem, *this_list) {
          const char *string = lGetString(elem, ST_name);
 
-         if (string != NULL) {
+         if (string != nullptr) {
             /*
              * '$user' will be replaced by the current unix username
              * '*'     empty the remove the list 

@@ -297,7 +297,7 @@ int sge_job_slot_request(const lListElem *job, const lList *pe_list)
    /* parallel job with fixed slot request */
    range_list = lGetList(job, JB_pe_range);
    if (range_list_get_number_of_ids(range_list)==1) { 
-      DRETURN(range_list_get_first_id(range_list, NULL));
+      DRETURN(range_list_get_first_id(range_list, nullptr));
    } 
 
    /* parallel job with slot range request */

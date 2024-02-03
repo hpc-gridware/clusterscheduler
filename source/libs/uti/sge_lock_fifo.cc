@@ -73,24 +73,24 @@ sge_fifo_lock_init(sge_fifo_rw_lock_t *lock) {
    bool ret = true;
    int lret = 0;
 
-   lret = pthread_mutex_init(&(lock->mutex), NULL);
+   lret = pthread_mutex_init(&(lock->mutex), nullptr);
    if (lret == 0) {
       lock->array = (sge_fifo_elem_t *) sge_malloc(sizeof(sge_fifo_elem_t) * FIFO_LOCK_QUEUE_LENGTH);
 
-      if (lock->array != NULL) {
+      if (lock->array != nullptr) {
          int i;
 
          for (i = 0; i < FIFO_LOCK_QUEUE_LENGTH; i++) {
             lock->array[i].is_reader = false;
             lock->array[i].is_signaled = false;
-            lret = pthread_cond_init(&(lock->array[i].cond), NULL);
+            lret = pthread_cond_init(&(lock->array[i].cond), nullptr);
             if (lret != 0) {
                ret = false;
                break;
             }
          }
          if (lret == 0) {
-            lret = pthread_cond_init(&(lock->cond), NULL);
+            lret = pthread_cond_init(&(lock->cond), nullptr);
             if (lret == 0) {
                lock->head = 0;
                lock->tail = 0;

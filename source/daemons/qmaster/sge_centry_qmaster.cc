@@ -206,7 +206,7 @@ centry_mod(sge_gdi_ctx_class_t *ctx, lList **answer_list, lListElem *centry, lLi
          const char *urgency_weight = lGetPosString(reduced_elem, pos);
          DPRINTF(("Got CE_defaultval: "SFQ"\n", urgency_weight ? urgency_weight : "-NA-"));
 
-         /* Check first that the entry is not NULL */
+         /* Check first that the entry is not nullptr */
          if (!pos) {
             ERROR((SGE_EVENT, MSG_SGETEXT_MISSINGCULLFIELD_SS,
                     lNm2Str(CE_urgency_weight), "urgency_weight"));
@@ -217,7 +217,7 @@ centry_mod(sge_gdi_ctx_class_t *ctx, lList **answer_list, lListElem *centry, lLi
 
          attrname = lGetString(reduced_elem, CE_name);
          temp = lGetString(reduced_elem, CE_urgency_weight);
-         if (!parse_ulong_val(&dval, NULL, TYPE_DOUBLE, temp, error_msg, 199)) {
+         if (!parse_ulong_val(&dval, nullptr, TYPE_DOUBLE, temp, error_msg, 199)) {
             answer_list_add_sprintf(answer_list, STATUS_EUNKNOWN, ANSWER_QUALITY_ERROR,
                                     MSG_INVALID_CENTRY_PARSE_URGENCY_SS, attrname, error_msg);
             ret = false;
@@ -228,7 +228,7 @@ centry_mod(sge_gdi_ctx_class_t *ctx, lList **answer_list, lListElem *centry, lLi
    }
 
    if (ret) {
-      ret = centry_elem_validate(centry, NULL, answer_list);
+      ret = centry_elem_validate(centry, nullptr, answer_list);
    }
 
    if (ret) {
@@ -242,7 +242,7 @@ centry_mod(sge_gdi_ctx_class_t *ctx, lList **answer_list, lListElem *centry, lLi
 
 int
 centry_spool(sge_gdi_ctx_class_t *ctx, lList **alpp, lListElem *cep, gdi_object_t *object) {
-   lList *answer_list = NULL;
+   lList *answer_list = nullptr;
    bool dbret;
    bool job_spooling = bootstrap_get_job_spooling();
 
@@ -327,10 +327,10 @@ centry_success(sge_gdi_ctx_class_t *ctx, lListElem *ep, lListElem *old_ep, gdi_o
    DENTER(TOP_LAYER);
 
    sge_add_event(0, old_ep ? sgeE_CENTRY_MOD : sgeE_CENTRY_ADD, 0, 0,
-                 lGetString(ep, CE_name), NULL, NULL, ep);
+                 lGetString(ep, CE_name), nullptr, nullptr, ep);
    lListElem_clear_changed_info(ep);
 
-   if (old_ep != NULL) {
+   if (old_ep != nullptr) {
       /* 
        * If a complex has become a consumable, or
        * is no longer a consumable, or
@@ -367,28 +367,28 @@ sge_del_centry(sge_gdi_ctx_class_t *ctx, lListElem *centry, lList **answer_list,
 
    DENTER(TOP_LAYER);
 
-   if (centry != NULL || remote_user != NULL || remote_host != NULL) {
+   if (centry != nullptr || remote_user != nullptr || remote_host != nullptr) {
       const char *name = lGetString(centry, CE_name);
 
-      if (name != NULL) {
-         lList *local_answer_list = NULL;
+      if (name != nullptr) {
+         lList *local_answer_list = nullptr;
          lListElem *tmp_centry = centry_list_locate(master_centry_list, name);
 
          /* check if its a build in value */
-         if (get_rsrc(name, true, NULL, NULL, NULL, NULL) == 0 ||
-             get_rsrc(name, false, NULL, NULL, NULL, NULL) == 0) {
+         if (get_rsrc(name, true, nullptr, nullptr, nullptr, nullptr) == 0 ||
+             get_rsrc(name, false, nullptr, nullptr, nullptr, nullptr) == 0) {
             answer_list_add_sprintf(answer_list, STATUS_EUNKNOWN, ANSWER_QUALITY_ERROR,
                                     MSG_INVALID_CENTRY_DEL_S, name);
             ret = false;
          }
 
          if (ret) {
-            if (tmp_centry != NULL) {
+            if (tmp_centry != nullptr) {
                if (!centry_is_referenced(tmp_centry, &local_answer_list, master_cqueue_list, master_ehost_list,
                                          master_rqs_list)) {
                   if (sge_event_spool(ctx, answer_list, 0, sgeE_CENTRY_DEL,
-                                      0, 0, name, NULL, NULL,
-                                      NULL, NULL, NULL, true, true)) {
+                                      0, 0, name, nullptr, nullptr,
+                                      nullptr, nullptr, nullptr, true, true)) {
 
                      lRemoveElem(master_centry_list, &tmp_centry);
                      INFO((SGE_EVENT, MSG_SGETEXT_REMOVEDFROMLIST_SSSS,
@@ -441,7 +441,7 @@ static void
 sge_change_queue_version_centry(sge_gdi_ctx_class_t *ctx) {
    lListElem *ep;
    const lListElem *cqueue;
-   lList *answer_list = NULL;
+   lList *answer_list = nullptr;
    const lList *master_ehost_list = *object_type_get_master_list(SGE_TYPE_EXECHOST);
    const lList *master_cqueue_list = *object_type_get_master_list(SGE_TYPE_CQUEUE);
 
@@ -449,21 +449,21 @@ sge_change_queue_version_centry(sge_gdi_ctx_class_t *ctx) {
 
    for_each_ep(cqueue, master_cqueue_list) {
       const lList *qinstance_list = lGetList(cqueue, CQ_qinstances);
-      lListElem *qinstance = NULL;
+      lListElem *qinstance = nullptr;
 
       for_each_rw(qinstance, qinstance_list) {
          qinstance_increase_qversion(qinstance);
 
          sge_event_spool(ctx, &answer_list, 0, sgeE_QINSTANCE_MOD,
                          0, 0, lGetString(qinstance, QU_qname),
-                         lGetHost(qinstance, QU_qhostname), NULL,
-                         qinstance, NULL, NULL, true, false);
+                         lGetHost(qinstance, QU_qhostname), nullptr,
+                         qinstance, nullptr, nullptr, true, false);
       }
    }
    for_each_rw(ep, master_ehost_list) {
       sge_event_spool(ctx, &answer_list, 0, sgeE_EXECHOST_MOD,
-                      0, 0, lGetHost(ep, EH_name), NULL, NULL,
-                      ep, NULL, NULL, true, false);
+                      0, 0, lGetHost(ep, EH_name), nullptr, nullptr,
+                      ep, nullptr, nullptr, true, false);
    }
    answer_list_output(&answer_list);
 
@@ -498,9 +498,9 @@ sge_change_queue_version_centry(sge_gdi_ctx_class_t *ctx) {
 *     decisions trashed due to a changed queue version number.
 *******************************************************************************/
 void centry_redebit_consumables(sge_gdi_ctx_class_t *ctx, const lList *centries) {
-   const lListElem *cqueue = NULL;
-   lListElem *hep = NULL;
-   lListElem *jep = NULL;
+   const lListElem *cqueue = nullptr;
+   lListElem *hep = nullptr;
+   lListElem *jep = nullptr;
    const lList *master_centry_list = *object_type_get_master_list(SGE_TYPE_CENTRY);
    const lList *master_cqueue_list = *object_type_get_master_list(SGE_TYPE_CQUEUE);
    const lList *master_ehost_list = *object_type_get_master_list(SGE_TYPE_EXECHOST);
@@ -509,16 +509,16 @@ void centry_redebit_consumables(sge_gdi_ctx_class_t *ctx, const lList *centries)
    /* throw away all old actual values lists and rebuild them from scratch */
    for_each_ep(cqueue, master_cqueue_list) {
       const lList *qinstance_list = lGetList(cqueue, CQ_qinstances);
-      lListElem *qinstance = NULL;
+      lListElem *qinstance = nullptr;
 
       for_each_rw(qinstance, qinstance_list) {
-         lSetList(qinstance, QU_resource_utilization, NULL);
-         qinstance_debit_consumable(qinstance, NULL, master_centry_list, 0, true, NULL);
+         lSetList(qinstance, QU_resource_utilization, nullptr);
+         qinstance_debit_consumable(qinstance, nullptr, master_centry_list, 0, true, nullptr);
       }
    }
    for_each_rw (hep, master_ehost_list) {
-      lSetList(hep, EH_resource_utilization, NULL);
-      debit_host_consumable(NULL, hep, master_centry_list, 0, true, NULL);
+      lSetList(hep, EH_resource_utilization, nullptr);
+      debit_host_consumable(nullptr, hep, master_centry_list, 0, true, nullptr);
    }
 
    /* 
@@ -532,7 +532,7 @@ void centry_redebit_consumables(sge_gdi_ctx_class_t *ctx, const lList *centries)
       for_each_rw (jatep, lGetList(jep, JB_ja_tasks)) {
          bool master_task = true;
          const lListElem *gdil;
-         lListElem *qep = NULL;
+         lListElem *qep = nullptr;
          int slots = 0;
          for_each_ep(gdil, lGetList(jatep, JAT_granted_destin_identifier_list)) {
             int qslots;
@@ -546,13 +546,13 @@ void centry_redebit_consumables(sge_gdi_ctx_class_t *ctx, const lList *centries)
             qslots = lGetUlong(gdil, JG_slots);
             debit_host_consumable(jep, host_list_locate(master_ehost_list,
                                                         lGetHost(qep, QU_qhostname)), master_centry_list, qslots,
-                                  master_task, NULL);
-            qinstance_debit_consumable(qep, jep, master_centry_list, qslots, master_task, NULL);
+                                  master_task, nullptr);
+            qinstance_debit_consumable(qep, jep, master_centry_list, qslots, master_task, nullptr);
             slots += qslots;
             master_task = false;
          }
          debit_host_consumable(jep, host_list_locate(master_ehost_list,
-                                                     "global"), master_centry_list, slots, true, NULL);
+                                                     "global"), master_centry_list, slots, true, nullptr);
       }
    }
 
@@ -562,24 +562,24 @@ void centry_redebit_consumables(sge_gdi_ctx_class_t *ctx, const lList *centries)
     * dump queue and host consumables to reporting file.
     */
    {
-      lList *answer_list = NULL;
+      lList *answer_list = nullptr;
       u_long32 now = sge_get_gmt();
 
       /* dump all queue consumables */
       for_each_ep(cqueue, master_cqueue_list) {
          const lList *qinstance_list = lGetList(cqueue, CQ_qinstances);
-         const lListElem *qinstance = NULL;
+         const lListElem *qinstance = nullptr;
 
          for_each_ep(qinstance, qinstance_list) {
             const char *hostname = lGetHost(qinstance, QU_qhostname);
             const lListElem *host = lGetElemHost(master_ehost_list, EH_name, hostname);
-            reporting_create_queue_consumable_record(&answer_list, host, qinstance, NULL, now);
+            reporting_create_queue_consumable_record(&answer_list, host, qinstance, nullptr, now);
          }
       }
       answer_list_output(&answer_list);
       /* dump all host consumables */
       for_each_rw (hep, master_ehost_list) {
-         reporting_create_host_consumable_record(&answer_list, hep, NULL, now);
+         reporting_create_host_consumable_record(&answer_list, hep, nullptr, now);
       }
       answer_list_output(&answer_list);
    }

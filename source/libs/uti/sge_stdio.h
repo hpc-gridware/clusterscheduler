@@ -43,7 +43,7 @@
 #undef FOPEN
 
 #define FOPEN(var, fname, fmode) \
-   if((var = fopen(fname,fmode)) == NULL) { \
+   if((var = fopen(fname,fmode)) == nullptr) { \
       goto FOPEN_ERROR; \
    }
 
@@ -124,7 +124,7 @@
 *     Don't forget to define the 'FCLOSE_ERROR'-label
 ******************************************************************************/
 #define FCLOSE(x) \
-   if (x != NULL) { \
+   if (x != nullptr) { \
       if (fclose(x) != 0) { \
          goto FCLOSE_ERROR; \
       } \

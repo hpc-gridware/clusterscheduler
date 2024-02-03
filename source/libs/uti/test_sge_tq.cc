@@ -60,7 +60,7 @@ typedef struct _test_sl_thread_cp_t test_sl_thread_cp_t;
 
 void *
 test_thread_consumer_template(void *arg, sge_tq_type_t type, const char *type_string) {
-   void *ret = NULL;
+   void *ret = nullptr;
    test_sl_thread_cp_t *global = (test_sl_thread_cp_t *) arg;
 
    DENTER(TOP_LAYER);
@@ -70,14 +70,14 @@ test_thread_consumer_template(void *arg, sge_tq_type_t type, const char *type_st
       /* consume: first element */
       sge_tq_wait_for_task(global->queue, 1, type, (void **) &string);
 
-      if (string != NULL) {
+      if (string != nullptr) {
          if (fnmatch(type_string, string, 0) != 0) {
             fprintf(stderr, "got %s from queue and not %s\n", string, type_string);
             break;
          }
       } else {
          if (sge_thread_has_shutdown_started() == false) {
-            fprintf(stderr, "got NULL from queue although thread was not terminated\n");
+            fprintf(stderr, "got nullptr from queue although thread was not terminated\n");
             break;
          }
       }
@@ -91,7 +91,7 @@ test_thread_consumer_template(void *arg, sge_tq_type_t type, const char *type_st
 
 void *
 test_thread_producer_template(void *arg, sge_tq_type_t type, const char *type_string) {
-   void *ret = NULL;
+   void *ret = nullptr;
    test_sl_thread_cp_t *global = (test_sl_thread_cp_t *) arg;
 
    DENTER(TOP_LAYER);
@@ -163,7 +163,7 @@ test_mt_consumer_producer(void) {
    memset(&global, 0, sizeof(test_sl_thread_cp_t));
    global.do_terminate = false;
    global.counter = 0;
-   pthread_mutex_init(&global.mutex, NULL);
+   pthread_mutex_init(&global.mutex, nullptr);
    ret = sge_tq_create(&global.queue);
 
    /* spawn threads */
@@ -173,26 +173,26 @@ test_mt_consumer_producer(void) {
 
       for (size_t i = 0; i < TEST_SL_MAX_CONSUMER; i++) {
          if (i < TEST_SL_MAX_CONSUMER / 3) {
-            pthread_create(&(consumer[i]), NULL, test_thread_consumer_type1, &global);
+            pthread_create(&(consumer[i]), nullptr, test_thread_consumer_type1, &global);
          } else if (i < TEST_SL_MAX_CONSUMER * 2 / 3) {
-            pthread_create(&(consumer[i]), NULL, test_thread_consumer_type2, &global);
+            pthread_create(&(consumer[i]), nullptr, test_thread_consumer_type2, &global);
          } else {
-            pthread_create(&(consumer[i]), NULL, test_thread_consumer_unknown, &global);
+            pthread_create(&(consumer[i]), nullptr, test_thread_consumer_unknown, &global);
          }
       }
       for (size_t i = 0; i < TEST_SL_MAX_PRODUCER; i++) {
          if (i < TEST_SL_MAX_PRODUCER / 2) {
-            pthread_create(&(producer[i]), NULL, test_thread_producer_type1, &global);
+            pthread_create(&(producer[i]), nullptr, test_thread_producer_type1, &global);
          } else {
-            pthread_create(&(producer[i]), NULL, test_thread_producer_type2, &global);
+            pthread_create(&(producer[i]), nullptr, test_thread_producer_type2, &global);
          }
       }
 
       for (size_t i = 0; i < TEST_SL_MAX_CONSUMER; i++) {
-         pthread_join(consumer[i], NULL);
+         pthread_join(consumer[i], nullptr);
       }
       for (size_t i = 0; i < TEST_SL_MAX_PRODUCER; i++) {
-         pthread_join(producer[i], NULL);
+         pthread_join(producer[i], nullptr);
       }
    }
 

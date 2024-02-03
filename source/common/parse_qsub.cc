@@ -77,7 +77,7 @@ static int set_yn_option (lList **opts, u_long32 opt, char *arg, char *value,
 **   arg_list            - argument string list, e.g. argv,
 **                         knows qsub, qalter and qsh options
 **   envp                - pointer to environment
-**   pcmdline            - NULL or pointer to list, SPA_Type
+**   pcmdline            - nullptr or pointer to list, SPA_Type
 **                         set to contain the parsed options
 **   flags               - FLG_USE_PSEUDOS: apply the following syntax:
 **                         the first non-switch token is the job script, what
@@ -91,8 +91,8 @@ static int set_yn_option (lList **opts, u_long32 opt, char *arg, char *value,
 **                         parsing of -h
 **
 ** RETURN
-**   answer list, AN_Type or NULL if everything ok, the following stati can occur:
-**   STATUS_EUNKNOWN   - bad internal error like NULL pointer received or no memory
+**   answer list, AN_Type or nullptr if everything ok, the following stati can occur:
+**   STATUS_EUNKNOWN   - bad internal error like nullptr pointer received or no memory
 **   STATUS_EEXIST     - option has been specified more than once, should be treated
 **                       as a warning
 **   STATUS_ESEMANTIC  - option that should have an argument had none
@@ -110,7 +110,7 @@ lList **pcmdline,
 u_long32 flags 
 ) {
    char **sp;
-   lList *answer = NULL;
+   lList *answer = nullptr;
    char str[MAX_STRING_SIZE];
    lListElem *ep_opt;
    int i_ret;
@@ -152,7 +152,7 @@ u_long32 flags
             DRETURN(answer);
          }
 
-         if (!ulong_parse_date_time_from_string(&timeval, NULL, *sp)) {
+         if (!ulong_parse_date_time_from_string(&timeval, nullptr, *sp)) {
             answer_list_add_sprintf(&answer, STATUS_ESYNTAX, ANSWER_QUALITY_ERROR,
                                     MSG_ANSWER_WRONGTIMEFORMATEXSPECIFIEDTOAOPTION_S, *sp);
             DRETURN(answer);
@@ -202,7 +202,7 @@ u_long32 flags
          /* "-ar  advance_reservation */
 
          if (!strcmp("-ar", *sp)) {
-            lList *ar_id_list = NULL;
+            lList *ar_id_list = nullptr;
 
             sp++;
             if (!*sp) {
@@ -239,7 +239,7 @@ u_long32 flags
                DRETURN(answer);
             }
 
-            if (!parse_ulong_val(&ar_id_d, NULL, TYPE_INT, *sp, NULL, 0)) {
+            if (!parse_ulong_val(&ar_id_d, nullptr, TYPE_INT, *sp, nullptr, 0)) {
                answer_list_add(&answer, MSG_PARSE_INVALID_AR_MUSTBEUINT,
                                 STATUS_ESEMANTIC, ANSWER_QUALITY_ERROR);
                DRETURN(answer);
@@ -264,8 +264,8 @@ u_long32 flags
 /*----------------------------------------------------------------------------*/
       /* "-ac context_list */
       if (!strcmp("-ac", *sp)) {
-         lList *variable_list = NULL;
-         lListElem* lep = NULL;
+         lList *variable_list = nullptr;
+         lListElem* lep = nullptr;
 
          /* next field is context_list */
          sp++;
@@ -285,7 +285,7 @@ u_long32 flags
          ep_opt = sge_add_arg(pcmdline, ac_OPT, lListT, *(sp - 1), *sp);
          lep = lCreateElem(VA_Type);
          lSetString(lep, VA_variable, "+");
-         lInsertElem(variable_list, NULL, lep);
+         lInsertElem(variable_list, nullptr, lep);
          lSetList(ep_opt, SPA_argval_lListT, variable_list);
 
          sp++;
@@ -329,11 +329,11 @@ u_long32 flags
          lListElem *binding_elem = lCreateElem(BN_Type);
          dstring argument_string = DSTRING_INIT;
          const char *switch_name = "-binding";
-         const char *switch_argument = NULL;
+         const char *switch_argument = nullptr;
 
          /* next field is [set|env|pe] "linear" or "striding" or "explicit" */
          sp++;
-         if (*sp == NULL) {
+         if (*sp == nullptr) {
             answer_list_add_sprintf(&answer, STATUS_ESEMANTIC, ANSWER_QUALITY_ERROR,
                                      MSG_PARSE_XOPTIONMUSTHAVEARGUMENT_S,"-binding");
             DRETURN(answer);
@@ -343,7 +343,7 @@ u_long32 flags
             sge_dstring_append(&argument_string, *sp);
             sge_dstring_append_char(&argument_string, ' ');
             sp++;
-            if (*sp == NULL) {
+            if (*sp == nullptr) {
                answer_list_add_sprintf(&answer, STATUS_ESEMANTIC, ANSWER_QUALITY_ERROR,
                                         MSG_PARSE_XOPTIONMUSTHAVEARGUMENT_S,"-binding");
                sge_dstring_free(&argument_string);
@@ -446,7 +446,7 @@ u_long32 flags
       if (!strcmp("-clear", *sp)) {
 
          DPRINTF(("\"%s\"\n", *sp));
-         ep_opt = sge_add_noarg(pcmdline, clear_OPT, *sp, NULL);
+         ep_opt = sge_add_noarg(pcmdline, clear_OPT, *sp, nullptr);
 
          sp++;
          continue;
@@ -458,7 +458,7 @@ u_long32 flags
       if (!strcmp("-explain", *sp)) {
 
          DPRINTF(("\"%s\"\n", *sp));
-         ep_opt = sge_add_noarg(pcmdline, explain_OPT, *sp, NULL);
+         ep_opt = sge_add_noarg(pcmdline, explain_OPT, *sp, nullptr);
 
          sp++;
          continue;
@@ -470,17 +470,17 @@ u_long32 flags
       if (!strcmp("-xml", *sp)) {
 
          DPRINTF(("\"%s\"\n", *sp));
-         ep_opt = sge_add_noarg(pcmdline, xml_OPT, *sp, NULL);
+         ep_opt = sge_add_noarg(pcmdline, xml_OPT, *sp, nullptr);
 
          sp++;
          continue;
       }
 
 /*-----------------------------------------------------------------------------*/
-      /* "-cwd" is mapped as -wd with NULL path, this case is handled in the second parsing stage*/
+      /* "-cwd" is mapped as -wd with nullptr path, this case is handled in the second parsing stage*/
 
       if (!strcmp("-cwd", *sp)) {
-         ep_opt = sge_add_noarg(pcmdline, wd_OPT, "-wd", NULL);
+         ep_opt = sge_add_noarg(pcmdline, wd_OPT, "-wd", nullptr);
          DPRINTF(("\"%s\"\n", *sp));
          
          sp++;
@@ -537,7 +537,7 @@ u_long32 flags
 
          DPRINTF(("\"-d %s\"\n", *sp));
 
-         if (!parse_ulong_val(&timeval, NULL, TYPE_TIM, *sp, tmp, sizeof(tmp)-1)) {
+         if (!parse_ulong_val(&timeval, nullptr, TYPE_TIM, *sp, tmp, sizeof(tmp)-1)) {
             answer_list_add_sprintf(&answer, STATUS_ESYNTAX, ANSWER_QUALITY_ERROR,
                                     MSG_ANSWER_WRONGTIMEFORMATEXSPECIFIEDTODOPTION_S, *sp);
             DRETURN(answer);
@@ -554,8 +554,8 @@ u_long32 flags
 /*----------------------------------------------------------------------------*/
       /* "-dc simple_context_list */
       if (!strcmp("-dc", *sp)) {
-         lList *variable_list = NULL;
-         lListElem* lep = NULL;
+         lList *variable_list = nullptr;
+         lListElem* lep = nullptr;
 
          /* next field is simple_context_list */
          sp++;
@@ -575,7 +575,7 @@ u_long32 flags
          ep_opt = sge_add_arg(pcmdline, dc_OPT, lListT, *(sp - 1), *sp);
          lep = lCreateElem(VA_Type);
          lSetString(lep, VA_variable, "-");
-         lInsertElem(variable_list, NULL, lep);
+         lInsertElem(variable_list, nullptr, lep);
          lSetList(ep_opt, SPA_argval_lListT, variable_list);
 
          sp++;
@@ -630,7 +630,7 @@ u_long32 flags
             DRETURN(answer);
          }
 
-         if (!ulong_parse_date_time_from_string(&timeval, NULL, *sp)) {
+         if (!ulong_parse_date_time_from_string(&timeval, nullptr, *sp)) {
             answer_list_add_sprintf(&answer, STATUS_ESYNTAX, ANSWER_QUALITY_ERROR,
                                     MSG_PARSE_WRONGTIMEFORMATXSPECTODLOPTION_S, *sp);
             DRETURN(answer);
@@ -648,7 +648,7 @@ u_long32 flags
       /* "-e path_name" */
 
       if (!strcmp("-e", *sp)) {
-         lList *path_list = NULL;
+         lList *path_list = nullptr;
 
          if (prog_number == QRSUB) {
             if (lGetElemStr(*pcmdline, SPA_switch_val, *sp)) {
@@ -668,7 +668,7 @@ u_long32 flags
 
          if (prog_number == QRSUB) {
             u_long32 timeval;
-            if (!ulong_parse_date_time_from_string(&timeval, NULL, *sp)) {
+            if (!ulong_parse_date_time_from_string(&timeval, nullptr, *sp)) {
                answer_list_add_sprintf(&answer, STATUS_ESYNTAX, ANSWER_QUALITY_ERROR,
                                        MSG_ANSWER_WRONGTIMEFORMATEXSPECIFIEDTOAOPTION_S, *sp);
                DRETURN(answer);
@@ -696,7 +696,7 @@ u_long32 flags
       /* "-i path_name" */
 
       if (!strcmp("-i", *sp)) {
-         lList *path_list = NULL;
+         lList *path_list = nullptr;
 
          /* next field is path_name */
          sp++;
@@ -772,7 +772,7 @@ u_long32 flags
          DPRINTF(("\"%s\"\n", *sp));
 
          hard_soft_flag = 1;
-         ep_opt = sge_add_noarg(pcmdline, hard_OPT, *sp, NULL);
+         ep_opt = sge_add_noarg(pcmdline, hard_OPT, *sp, nullptr);
 
          sp++;
          continue;
@@ -809,7 +809,7 @@ u_long32 flags
       if (!strcmp("-help", *sp)) {
          DPRINTF(("\"%s\"\n", *sp));
 
-         ep_opt = sge_add_noarg(pcmdline, help_OPT, *sp, NULL);
+         ep_opt = sge_add_noarg(pcmdline, help_OPT, *sp, nullptr);
 
          sp++;
          continue;
@@ -820,7 +820,7 @@ u_long32 flags
       /* "-hold_jid jid[,jid,...]" */
 
       if (!strcmp("-hold_jid", *sp)) {
-         lList *jid_hold_list = NULL;
+         lList *jid_hold_list = nullptr;
 
          /* next field is hold_list */
          sp++;
@@ -848,7 +848,7 @@ u_long32 flags
       /* "-hold_jid_ad jid[,jid,...]" */
 
       if (!strcmp("-hold_jid_ad", *sp)) {
-         lList *jid_ad_hold_list = NULL;
+         lList *jid_ad_hold_list = nullptr;
 
          /* next field is hold_list */
          sp++;
@@ -914,7 +914,7 @@ u_long32 flags
             DRETURN(answer);
          }
 
-         if (!parse_ulong_val(&jobshare_d, NULL, TYPE_INT, *sp, NULL, 0)) {
+         if (!parse_ulong_val(&jobshare_d, nullptr, TYPE_INT, *sp, nullptr, 0)) {
             answer_list_add(&answer, MSG_PARSE_INVALIDJOBSHAREMUSTBEUINT,
                              STATUS_ESEMANTIC, ANSWER_QUALITY_ERROR);
             DRETURN(answer);
@@ -944,7 +944,7 @@ u_long32 flags
          dstring type = DSTRING_INIT;
          dstring user = DSTRING_INIT;
          dstring path = DSTRING_INIT;
-         lList *path_list = NULL;
+         lList *path_list = nullptr;
          bool success;
 
          /* next field is path_name */
@@ -966,7 +966,7 @@ u_long32 flags
          if (success) {
             lListElem *elem = lAddElemStr(&path_list, PN_path, *sp, PN_Type);
 
-            if (elem != NULL) {
+            if (elem != nullptr) {
                ep_opt = sge_add_arg(pcmdline, jsv_OPT, lListT, *(sp - 1), *sp);
                lSetList(ep_opt, SPA_argval_lListT, path_list);
             } else {
@@ -987,7 +987,7 @@ u_long32 flags
       /* "-l resource_list" */
 
       if (!strcmp("-l", *sp)) {
-         lList *resource_list = NULL;
+         lList *resource_list = nullptr;
 
          /* next field is resource_list */
          sp++;
@@ -999,7 +999,7 @@ u_long32 flags
 
          DPRINTF(("\"-l %s\"\n", *sp));
 
-         resource_list = centry_list_parse_from_string(NULL, *sp, false);
+         resource_list = centry_list_parse_from_string(nullptr, *sp, false);
          if (!resource_list) {
              answer_list_add_sprintf(&answer, STATUS_ESYNTAX, ANSWER_QUALITY_ERROR,
                      MSG_PARSE_WRONGRESOURCELISTFORMATXSPECTOLOPTION_S, *sp);
@@ -1048,7 +1048,7 @@ u_long32 flags
       /* "-masterq destination_identifier_list" */
 
       if (!strcmp("-masterq", *sp)) {
-         lList *id_list = NULL;
+         lList *id_list = nullptr;
 
          /* next field is destination_identifier */
          sp++;
@@ -1077,7 +1077,7 @@ u_long32 flags
       /* "-M mail_list" */
 
       if (!strcmp("-M", *sp)) {
-         lList *mail_list = NULL;
+         lList *mail_list = nullptr;
 
          /* next field is mail_list */
          sp++;
@@ -1146,7 +1146,7 @@ u_long32 flags
 
          DPRINTF(("\"-notify\"\n"));
 
-         ep_opt = sge_add_noarg(pcmdline, notify_OPT, *sp, NULL);
+         ep_opt = sge_add_noarg(pcmdline, notify_OPT, *sp, nullptr);
 
          sp++;
          continue;
@@ -1182,7 +1182,7 @@ u_long32 flags
       /* "-o path_name" */
 
       if (!strcmp("-o", *sp)) {
-         lList *stdout_path_list = NULL;
+         lList *stdout_path_list = nullptr;
 
          /* next field is path_name */
          sp++;
@@ -1221,7 +1221,7 @@ u_long32 flags
              DRETURN(answer);
          }
 
-         if (!parse_ulong_val(&otickets_d, NULL, TYPE_INT, *sp, NULL, 0)) {
+         if (!parse_ulong_val(&otickets_d, nullptr, TYPE_INT, *sp, nullptr, 0)) {
             answer_list_add(&answer, MSG_PARSE_INVALIDOTICKETSMUSTBEUINT,
                              STATUS_ESEMANTIC, ANSWER_QUALITY_ERROR);
             DRETURN(answer);
@@ -1296,7 +1296,7 @@ u_long32 flags
 
 /*----------------------------------------------------------------------------*/
       if (!strcmp("-pe", *sp)) {
-         lList *pe_range = NULL;
+         lList *pe_range = nullptr;
          dstring d_arg = DSTRING_INIT;
 
          if (lGetElemStr(*pcmdline, SPA_switch_val, *sp)) {
@@ -1346,7 +1346,7 @@ DTRACE;
       /* "-q destination_identifier_list" */
 
       if (!strcmp("-q", *sp)) {
-         lList *id_list = NULL;
+         lList *id_list = nullptr;
 
          /* next field is destination_identifier */
          sp++;
@@ -1442,8 +1442,8 @@ DTRACE;
       /* set context */
 
       if (!strcmp("-sc", *sp)) {
-         lList *variable_list = NULL;
-         lListElem* lep = NULL;
+         lList *variable_list = nullptr;
+         lListElem* lep = nullptr;
 
          /* next field is context_list  [ == variable_list ] */
          sp++;
@@ -1463,7 +1463,7 @@ DTRACE;
          ep_opt = sge_add_arg(pcmdline, sc_OPT, lListT, *(sp - 1), *sp);
          lep = lCreateElem(VA_Type);
          lSetString(lep, VA_variable, "=");
-         lInsertElem(variable_list, NULL, lep);
+         lInsertElem(variable_list, nullptr, lep);
          lSetList(ep_opt, SPA_argval_lListT, variable_list);
 
          sp++;
@@ -1477,7 +1477,7 @@ DTRACE;
 
          DPRINTF(("\"%s\"\n", *sp));
          hard_soft_flag = 2;
-         ep_opt = sge_add_noarg(pcmdline, soft_OPT, *sp, NULL);
+         ep_opt = sge_add_noarg(pcmdline, soft_OPT, *sp, nullptr);
 
          sp++;
          continue;
@@ -1541,7 +1541,7 @@ DTRACE;
       /* "-S path_name" */
 
       if (!strcmp("-S", *sp)) {
-         lList *shell_list = NULL;
+         lList *shell_list = nullptr;
 
          /* next field is path_name */
          sp++;
@@ -1570,7 +1570,7 @@ DTRACE;
        */
 
       if (!strcmp("-t", *sp)) {
-         lList *task_id_range_list = NULL;
+         lList *task_id_range_list = nullptr;
 
          /* next field is path_name */
          sp++;
@@ -1630,7 +1630,7 @@ DTRACE;
       /* "-terse" */
 
       if(!strcmp("-terse", *sp)) {
-         ep_opt = sge_add_noarg(pcmdline, terse_OPT, *sp, NULL);
+         ep_opt = sge_add_noarg(pcmdline, terse_OPT, *sp, nullptr);
          sp++;
          continue;
       }
@@ -1638,7 +1638,7 @@ DTRACE;
 /*-----------------------------------------------------------------------------*/
       /* "-u" */
       if (!strcmp("-u", *sp)) {
-         lList *user_list = NULL;
+         lList *user_list = nullptr;
 
          /* next field is user_list */
          sp++;
@@ -1652,11 +1652,11 @@ DTRACE;
 
          if (prog_number == QRSUB) {
             int rule[] = {ARA_name, 0};
-            char **dest = NULL;
+            char **dest = nullptr;
             char *tmp;
 
-            tmp = sge_strdup(NULL, *sp);
-            dest = string_list(tmp, ",", NULL);
+            tmp = sge_strdup(nullptr, *sp);
+            dest = string_list(tmp, ",", nullptr);
             cull_parse_string_list(dest, "user_list", ARA_Type, rule, &user_list);
             sge_free(&tmp);
             sge_free(&dest);
@@ -1674,7 +1674,7 @@ DTRACE;
 /*-----------------------------------------------------------------------------*/
       /* "-uall " */
       if (!strcmp("-uall", *sp)) {
-         ep_opt = sge_add_noarg(pcmdline, u_OPT, *sp, NULL);
+         ep_opt = sge_add_noarg(pcmdline, u_OPT, *sp, nullptr);
 
          DPRINTF(("\"-uall \"\n"));
          sp++;
@@ -1686,7 +1686,7 @@ DTRACE;
       /* "-v variable_list" */
 
       if (!strcmp("-v", *sp)) {
-         lList *variable_list = NULL;
+         lList *variable_list = nullptr;
 
          /* next field is variable_list */
          sp++;
@@ -1716,7 +1716,7 @@ DTRACE;
       if (!strcmp("-verify", *sp)) {
 
          DPRINTF(("\"%s\"\n", *sp));
-         ep_opt = sge_add_noarg(pcmdline, verify_OPT, *sp, NULL);
+         ep_opt = sge_add_noarg(pcmdline, verify_OPT, *sp, nullptr);
 
          sp++;
          continue;
@@ -1726,7 +1726,7 @@ DTRACE;
       /* "-V" */
 
       if (!strcmp("-V", *sp)) {
-         lList *env_list = NULL;
+         lList *env_list = nullptr;
 
          DPRINTF(("\"%s\"\n", *sp));
          i_ret = var_list_parse_from_environment(&env_list, envp);
@@ -1836,7 +1836,7 @@ DTRACE;
       /* "-verbose" - accept, but do nothing, must be handled by caller */
 
       if(!strcmp("-verbose", *sp)) {
-         ep_opt = sge_add_noarg(pcmdline, verbose_OPT, *sp, NULL);
+         ep_opt = sge_add_noarg(pcmdline, verbose_OPT, *sp, nullptr);
          sp++;
          continue;
       }
@@ -1844,7 +1844,7 @@ DTRACE;
       /* "-inherit" - accept, but do nothing, must be handled by caller */
 
       if(!strcmp("-inherit", *sp)) {
-         ep_opt = sge_add_noarg(pcmdline, inherit_OPT, *sp, NULL);
+         ep_opt = sge_add_noarg(pcmdline, inherit_OPT, *sp, nullptr);
          sp++;
          continue;
       }
@@ -1898,7 +1898,7 @@ DTRACE;
       /* "-nostdin" - accept, but do nothing, must be handled by caller */
 
       if(!strcmp("-nostdin", *sp)) {
-         ep_opt = sge_add_noarg(pcmdline, nostdin_OPT, *sp, NULL);
+         ep_opt = sge_add_noarg(pcmdline, nostdin_OPT, *sp, nullptr);
          sp++;
          continue;
       }
@@ -1906,7 +1906,7 @@ DTRACE;
       /* "-noshell" - accept, but do nothing, must be handled by caller */
 
       if(!strcmp("-noshell", *sp)) {
-         ep_opt = sge_add_noarg(pcmdline, noshell_OPT, *sp, NULL);
+         ep_opt = sge_add_noarg(pcmdline, noshell_OPT, *sp, nullptr);
          sp++;
          continue;
       }
@@ -1927,10 +1927,10 @@ DTRACE;
 
          if ((flags & FLG_USE_PSEUDOS)) {
             if (!is_qalter) {
-               ep_opt = sge_add_arg(pcmdline, 0, lStringT, STR_PSEUDO_SCRIPT, NULL);
+               ep_opt = sge_add_arg(pcmdline, 0, lStringT, STR_PSEUDO_SCRIPT, nullptr);
                lSetString(ep_opt, SPA_argval_lStringT, *sp);
                for (sp++; *sp; sp++) {
-                  ep_opt = sge_add_arg(pcmdline, 0, lStringT, STR_PSEUDO_JOBARG, NULL);
+                  ep_opt = sge_add_arg(pcmdline, 0, lStringT, STR_PSEUDO_JOBARG, nullptr);
                   lSetString(ep_opt, SPA_argval_lStringT, *sp);
                }
             } else {
@@ -1941,7 +1941,7 @@ DTRACE;
             continue;
          }
          else {
-            ep_opt = sge_add_noarg(pcmdline, 0, *sp, NULL);
+            ep_opt = sge_add_noarg(pcmdline, 0, *sp, nullptr);
          }
 
          sp++;
@@ -1961,13 +1961,13 @@ DTRACE;
                DRETURN(answer);
             }
             for (; *sp; sp++) {
-               ep_opt = sge_add_arg(pcmdline, 0, lStringT, STR_PSEUDO_JOBARG, NULL);
+               ep_opt = sge_add_arg(pcmdline, 0, lStringT, STR_PSEUDO_JOBARG, nullptr);
                lSetString(ep_opt, SPA_argval_lStringT, *sp);
             }
             continue;
          }
          else {
-            ep_opt = sge_add_noarg(pcmdline, 0, *sp, NULL);
+            ep_opt = sge_add_noarg(pcmdline, 0, *sp, nullptr);
          }
 
          sp++;
@@ -1985,17 +1985,17 @@ DTRACE;
       */
       if ((flags & FLG_USE_PSEUDOS)) {
          if (!is_qalter) {
-            ep_opt = sge_add_arg(pcmdline, 0, lStringT, STR_PSEUDO_SCRIPT, NULL);
+            ep_opt = sge_add_arg(pcmdline, 0, lStringT, STR_PSEUDO_SCRIPT, nullptr);
             lSetString(ep_opt, SPA_argval_lStringT, *sp);
             for (sp++; *sp; sp++) {
-               ep_opt = sge_add_arg(pcmdline, 0, lStringT, STR_PSEUDO_JOBARG, NULL);
+               ep_opt = sge_add_arg(pcmdline, 0, lStringT, STR_PSEUDO_JOBARG, nullptr);
                lSetString(ep_opt, SPA_argval_lStringT, *sp);
             }
          } else {
-            lList *jid_list = NULL;
+            lList *jid_list = nullptr;
 
             if (!strcmp(*sp, "--")) {
-               ep_opt = sge_add_noarg(pcmdline, 0, *sp, NULL);
+               ep_opt = sge_add_noarg(pcmdline, 0, *sp, nullptr);
                break;
             }
             i_ret = cull_parse_jid_hold_list(&jid_list, *sp);
@@ -2011,7 +2011,7 @@ DTRACE;
          }
          continue;
       } else {
-         ep_opt = sge_add_arg(pcmdline, 0, lStringT, "", NULL);
+         ep_opt = sge_add_arg(pcmdline, 0, lStringT, "", nullptr);
          lSetString(ep_opt, SPA_argval_lStringT, *sp);
       }
 
@@ -2041,7 +2041,7 @@ char *time_str
    DENTER(TOP_LAYER);
 
    DPRINTF(("--------time_string: %s\n", time_str));
-   if (!parse_ulong_val(NULL, &seconds, TYPE_TIM, time_str, NULL, 0))
+   if (!parse_ulong_val(nullptr, &seconds, TYPE_TIM, time_str, nullptr, 0))
       seconds = 0;
 
      DPRINTF(("-------- seconds: %d\n", (int) seconds));
@@ -2092,12 +2092,12 @@ static int var_list_parse_from_environment(lList **lpp, char **envp)
       char *env_description;
       char *env_entry;
       lListElem *ep;
-      struct saved_vars_s *context = NULL;
+      struct saved_vars_s *context = nullptr;
 
       ep = lCreateElem(VA_Type);
       lAppendElem(*lpp, ep);
 
-      env_entry = sge_strdup(NULL, *envp);
+      env_entry = sge_strdup(nullptr, *envp);
       SGE_ASSERT((env_entry));
 
       env_name = sge_strtok_r(env_entry, "=", &context);
@@ -2142,7 +2142,7 @@ static int var_list_parse_from_environment(lList **lpp, char **envp)
 static int set_yn_option (lList **opts, u_long32 opt, char *arg, char *value,
                           lList **alpp)
 {
-   lListElem *ep_opt = NULL;
+   lListElem *ep_opt = nullptr;
    
    if ((strcasecmp("y", value) == 0) || (strcasecmp("yes", value) == 0)) {
       ep_opt = sge_add_arg(opts, opt, lIntT, arg, value);
@@ -2167,7 +2167,7 @@ static int set_yn_option (lList **opts, u_long32 opt, char *arg, char *value,
 /* This method is not thread safe.  Fortunately, it is only used by the
  * -cwd switch which can be forbidden in DRMAA. */
 char *reroot_path(lListElem* pjob, const char *path, lList **alpp) {
-   const char *home = NULL;
+   const char *home = nullptr;
    char tmp_str[SGE_PATH_MAX + 1];
    char tmp_str2[SGE_PATH_MAX + 1];
    char tmp_str3[SGE_PATH_MAX + 1];
@@ -2179,11 +2179,11 @@ char *reroot_path(lListElem* pjob, const char *path, lList **alpp) {
 
    if (chdir(home) == 0) {
       /* If chdir() succeeds... */
-      if (getcwd(tmp_str2, sizeof(tmp_str2)) == NULL) {
+      if (getcwd(tmp_str2, sizeof(tmp_str2)) == nullptr) {
          /* If getcwd() fails... */
          answer_list_add(alpp, MSG_ANSWER_GETCWDFAILED,
                          STATUS_EDISK, ANSWER_QUALITY_ERROR);
-         DRETURN(NULL);
+         DRETURN(nullptr);
       }
 
       if (chdir(tmp_str) == 0) {

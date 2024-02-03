@@ -84,7 +84,7 @@ update_license_data(sge_gdi_ctx_class_t *ctx, lListElem *hep, lList *lp_lic);
 ******************************************************************************/
 void
 sge_c_report(sge_gdi_ctx_class_t *ctx, char *rhost, char *commproc, int id, lList *report_list, monitoring_t *monitor) {
-   lListElem *hep = NULL;
+   lListElem *hep = nullptr;
    u_long32 rep_type;
    lListElem *report;
    int ret = 0;
@@ -98,7 +98,7 @@ sge_c_report(sge_gdi_ctx_class_t *ctx, char *rhost, char *commproc, int id, lLis
 
    if (lGetNumberOfElem(report_list) == 0) {
       DPRINTF(("received empty report\n"));
-      if (rhost != NULL) {
+      if (rhost != nullptr) {
          WARNING((SGE_EVENT, MSG_QMASTER_RECEIVED_EMPTY_LOAD_REPORT_S, rhost));
       } else {
          WARNING((SGE_EVENT, MSG_QMASTER_RECEIVED_EMPTY_LOAD_REPORT_S, "unknown"));
@@ -144,7 +144,7 @@ sge_c_report(sge_gdi_ctx_class_t *ctx, char *rhost, char *commproc, int id, lLis
 
    /* do not process load reports from old execution daemons */
    rversion = lGetUlong(lFirst(report_list), REP_version);
-   if (verify_request_version(NULL, rversion, rhost, commproc, id)) {
+   if (verify_request_version(nullptr, rversion, rhost, commproc, id)) {
       DRETURN_VOID;
    }
 
@@ -201,15 +201,15 @@ sge_c_report(sge_gdi_ctx_class_t *ctx, char *rhost, char *commproc, int id, lLis
                if (mconf_get_simulate_execds()) {
                   const lList *master_exechost_list = *object_type_get_master_list(SGE_TYPE_EXECHOST);
                   const lListElem *shep;
-                  lListElem *simhostElem = NULL;
+                  lListElem *simhostElem = nullptr;
 
                   for_each_ep(shep, master_exechost_list) {
                      simhostElem = lGetSubStr(shep, CE_name, "load_report_host", EH_consumable_config_list);
-                     if (simhostElem != NULL) {
+                     if (simhostElem != nullptr) {
                         const char *real_host = lGetString(simhostElem, CE_stringval);
-                        if (real_host != NULL && sge_hostcmp(real_host, rhost) == 0) {
+                        if (real_host != nullptr && sge_hostcmp(real_host, rhost) == 0) {
                            const char *sim_host = lGetHost(shep, EH_name);
-                           lListElem *clp = NULL;
+                           lListElem *clp = nullptr;
 
                            DPRINTF(("Copy load values of %s to simulated host %s\n",
                                    rhost, sim_host));
@@ -225,7 +225,7 @@ sge_c_report(sge_gdi_ctx_class_t *ctx, char *rhost, char *commproc, int id, lLis
                   }
                }
 
-               pack_ack(&pb, ACK_LOAD_REPORT, this_seqno, 0, NULL);
+               pack_ack(&pb, ACK_LOAD_REPORT, this_seqno, 0, nullptr);
             }
             break;
          case NUM_REP_REPORT_CONF:
@@ -267,9 +267,9 @@ sge_c_report(sge_gdi_ctx_class_t *ctx, char *rhost, char *commproc, int id, lLis
 
    if (is_pb_used) {
       if (pb_filled(&pb)) {
-         lList *alp = NULL;
+         lList *alp = nullptr;
          /* send all stuff packed during processing to execd */
-         sge_gdi2_send_any_request(ctx, 0, NULL, rhost, commproc, id, &pb, TAG_ACK_REQUEST, 0, &alp);
+         sge_gdi2_send_any_request(ctx, 0, nullptr, rhost, commproc, id, &pb, TAG_ACK_REQUEST, 0, &alp);
          MONITOR_MESSAGES_OUT(monitor);
          answer_list_output(&alp);
       }
@@ -294,8 +294,8 @@ sge_c_report(sge_gdi_ctx_class_t *ctx, char *rhost, char *commproc, int id, lLis
 **
 ** RETURN
 **    0                  - ok
-**   -1                  - NULL pointer received for hep
-**   -2                  - NULL pointer received for lp_lic
+**   -1                  - nullptr pointer received for hep
+**   -2                  - nullptr pointer received for lp_lic
 ** EXTERNAL
 **   none
 ** DESCRIPTION
@@ -328,7 +328,7 @@ update_license_data(sge_gdi_ctx_class_t *ctx, lListElem *hep, lList *lp_lic) {
    ** we spool, cf. cod_update_load_values()
    */
    if (processors != lGetUlong(hep, EH_processors)) {
-      lList *answer_list = NULL;
+      lList *answer_list = nullptr;
 
       lSetUlong(hep, EH_processors, processors);
 
@@ -336,8 +336,8 @@ update_license_data(sge_gdi_ctx_class_t *ctx, lListElem *hep, lList *lp_lic) {
               lGetHost(hep, EH_name), processors));
       sge_event_spool(ctx,
                       &answer_list, 0, sgeE_EXECHOST_MOD,
-                      0, 0, lGetHost(hep, EH_name), NULL, NULL,
-                      hep, NULL, NULL, true, true);
+                      0, 0, lGetHost(hep, EH_name), nullptr, nullptr,
+                      hep, nullptr, nullptr, true, true);
       answer_list_output(&answer_list);
    }
 

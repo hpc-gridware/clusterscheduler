@@ -75,25 +75,25 @@ sge_callback_result
 schedd_conf_update_master_list(sge_evc_class_t *evc, sge_object_type type, 
                                sge_event_action action, lListElem *event, void *clientdata)
 {
-   lList *list = NULL;
-   lList *answer_list = NULL;
+   lList *list = nullptr;
+   lList *answer_list = nullptr;
    lDescr *list_descr;
 
    lList *data_list;
-   lListElem *ep = NULL;
+   lListElem *ep = nullptr;
 
    DENTER(TOP_LAYER);
 
    list_descr = SC_Type;
 
-   if ((data_list = lGetListRW(event, ET_new_version)) != NULL) {
-      if ((ep = lFirstRW(data_list)) != NULL) {
+   if ((data_list = lGetListRW(event, ET_new_version)) != nullptr) {
+      if ((ep = lFirstRW(data_list)) != nullptr) {
          ep = lDechainElem(data_list, ep);
       }
    }
 
    /* if neccessary, create list and copy schedd info */
-   if (ep != NULL) {
+   if (ep != nullptr) {
       list = lCreateList("schedd config", list_descr);
       lAppendElem(list, ep);
    }

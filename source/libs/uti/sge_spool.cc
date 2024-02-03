@@ -57,7 +57,7 @@ static const char *spoolmsg_message[] = {
         "",
         "DO NOT MODIFY THIS FILE MANUALLY!",
         "",
-        NULL
+        nullptr
 };
 
 static void get_spool_dir_range(u_long32 ja_task_id, u_long32 *start,
@@ -101,7 +101,7 @@ u_long32 sge_get_ja_tasks_per_directory(void) {
 
       env_string = getenv("SGE_MAX_TASKS_PER_DIRECTORY");
       if (env_string) {
-         tasks_per_directory = (u_long32) strtol(env_string, NULL, 10);
+         tasks_per_directory = (u_long32) strtol(env_string, nullptr, 10);
       }
    }
    if (!tasks_per_directory) {
@@ -134,7 +134,7 @@ u_long32 sge_get_ja_tasks_per_file(void) {
 
       env_string = getenv("SGE_MAX_TASKS_PER_FILE");
       if (env_string) {
-         tasks_per_file = (u_long32) strtol(env_string, NULL, 10);
+         tasks_per_file = (u_long32) strtol(env_string, nullptr, 10);
       }
    }
    if (!tasks_per_file) {
@@ -443,7 +443,7 @@ pid_t sge_readpid(const char *fname) {
 
    pid = 0;
    while (fgets(buf, sizeof(buf), fp)) {
-      char *pos = NULL;
+      char *pos = nullptr;
 
       /*
        * set chrptr to the first non blank character
@@ -492,7 +492,7 @@ void sge_write_pid(const char *pid_log_file) {
    DENTER(TOP_LAYER);
 
    close(creat(pid_log_file, 0644));
-   if ((fp = fopen(pid_log_file, "w")) != NULL) {
+   if ((fp = fopen(pid_log_file, "w")) != nullptr) {
       pid = getpid();
       FPRINTF((fp, "%d\n", pid));
       FCLOSE(fp);
@@ -535,8 +535,8 @@ char *sge_get_confval(const char *conf_val, const char *fname) {
 
    namev[0].name = conf_val;
    namev[0].is_required = true;
-   if (sge_get_confval_array(fname, 1, 1, namev, valuev, NULL)) {
-      return NULL;
+   if (sge_get_confval_array(fname, 1, 1, namev, valuev, nullptr)) {
+      return nullptr;
    } else {
       return valuev[0];
    }
@@ -569,12 +569,12 @@ int sge_get_confval_array(const char *fname, int n, int nmissing, bootstrap_entr
    FILE *fp;
    char buf[1024], *cp;
    int i;
-   bool *is_found = NULL;
+   bool *is_found = nullptr;
 
    DENTER(TOP_LAYER);
 
    if (!(fp = fopen(fname, "r"))) {
-      if (error_dstring == NULL) {
+      if (error_dstring == nullptr) {
          CRITICAL((SGE_EVENT, MSG_FILE_FOPENFAILED_SS, fname, strerror(errno)));
       } else {
          sge_dstring_sprintf(error_dstring, MSG_FILE_FOPENFAILED_SS,
@@ -586,7 +586,7 @@ int sge_get_confval_array(const char *fname, int n, int nmissing, bootstrap_entr
    memset(is_found, false, n * sizeof(bool));
 
    while (fgets(buf, sizeof(buf), fp)) {
-      char *pos = NULL;
+      char *pos = nullptr;
 
       /* set chrptr to the first non blank character
        * If line is empty continue with next line
@@ -603,7 +603,7 @@ int sge_get_confval_array(const char *fname, int n, int nmissing, bootstrap_entr
       /* search for all requested configuration values */
       for (i = 0; i < n; i++) {
          if ((strcasecmp(name[i].name, cp) == 0) &&
-             ((cp = strtok_r(NULL, " \t\n", &pos)) != NULL)) {
+             ((cp = strtok_r(nullptr, " \t\n", &pos)) != nullptr)) {
             strncpy(value[i], cp, 512);
             cp = value[i];
             is_found[i] = true;
@@ -617,7 +617,7 @@ int sge_get_confval_array(const char *fname, int n, int nmissing, bootstrap_entr
    if (nmissing != 0) {
       for (i = 0; i < n; i++) {
          if (!is_found[i] && name[i].is_required) {
-            if (error_dstring == NULL) {
+            if (error_dstring == nullptr) {
                CRITICAL((SGE_EVENT, MSG_UTI_CANNOTLOCATEATTRIBUTE_SS, name[i].name, fname));
             } else {
                sge_dstring_sprintf(error_dstring, MSG_UTI_CANNOTLOCATEATTRIBUTE_SS,
@@ -679,7 +679,7 @@ void sge_status_set_type(washing_machine_t type) {
 void sge_status_next_turn(void) {
    static int cnt = 0;
    static const char s[] = "-\\/";
-   static const char *sp = NULL;
+   static const char *sp = nullptr;
 
    cnt++;
    if ((cnt % 100) != 1) {
@@ -816,12 +816,12 @@ int sge_get_management_entry(const char *fname, int n, int nmissing, bootstrap_e
    FILE *fp;
    char buf[SGE_PATH_MAX], *cp;
    int i;
-   bool *is_found = NULL;
+   bool *is_found = nullptr;
 
    DENTER(TOP_LAYER);
 
    if (!(fp = fopen(fname, "r"))) {
-      if (error_dstring == NULL) {
+      if (error_dstring == nullptr) {
          CRITICAL((SGE_EVENT, MSG_FILE_FOPENFAILED_SS, fname, strerror(errno)));
       } else {
          sge_dstring_sprintf(error_dstring, MSG_FILE_FOPENFAILED_SS,
@@ -833,7 +833,7 @@ int sge_get_management_entry(const char *fname, int n, int nmissing, bootstrap_e
    memset(is_found, false, n * sizeof(bool));
 
    while (fgets(buf, sizeof(buf), fp)) {
-      char *pos = NULL;
+      char *pos = nullptr;
 
       /* set chrptr to the first non blank character
        * If line is empty continue with next line
@@ -850,10 +850,10 @@ int sge_get_management_entry(const char *fname, int n, int nmissing, bootstrap_e
       /* search for all requested configuration values */
       for (i = 0; i < n; i++) {
          char *nam = strtok_r(cp, "=", &pos);
-         char *val = strtok_r(NULL, "\n", &pos);
-         if (nam != NULL && strcasecmp(name[i].name, nam) == 0) {
+         char *val = strtok_r(nullptr, "\n", &pos);
+         if (nam != nullptr && strcasecmp(name[i].name, nam) == 0) {
             DPRINTF(("nam = %s\n", nam));
-            if (val != NULL) {
+            if (val != nullptr) {
                DPRINTF(("val = %s\n", val));
                sge_strlcpy(value[i], val, SGE_PATH_MAX);
             } else {
@@ -870,7 +870,7 @@ int sge_get_management_entry(const char *fname, int n, int nmissing, bootstrap_e
    if (nmissing != 0) {
       for (i = 0; i < n; i++) {
          if (!is_found[i] && name[i].is_required) {
-            if (error_dstring == NULL) {
+            if (error_dstring == nullptr) {
                CRITICAL((SGE_EVENT, MSG_UTI_CANNOTLOCATEATTRIBUTEMAN_SS, name[i].name, fname));
             } else {
                sge_dstring_sprintf(error_dstring, MSG_UTI_CANNOTLOCATEATTRIBUTEMAN_SS,
@@ -913,7 +913,7 @@ DRETURN(0);
 *     const char *filename   - optional file name
 *
 *  RESULT
-*     const char* - pointer to the string buffer on success, else NULL
+*     const char* - pointer to the string buffer on success, else nullptr
 *
 *  EXAMPLE
 *     To create the relative path to a jobs/tasks environment file, the 
@@ -937,18 +937,18 @@ const char *sge_get_active_job_file_path(dstring *buffer, u_long32 job_id,
                                          u_long32 ja_task_id, const char *pe_task_id, const char *filename) {
    DENTER(TOP_LAYER);
 
-   if (buffer == NULL) {
-      DRETURN(NULL);
+   if (buffer == nullptr) {
+      DRETURN(nullptr);
    }
 
    sge_dstring_sprintf(buffer, "%s/"sge_u32"."sge_u32, ACTIVE_DIR, job_id, ja_task_id);
 
-   if (pe_task_id != NULL) {
+   if (pe_task_id != nullptr) {
       sge_dstring_append_char(buffer, '/');
       sge_dstring_append(buffer, pe_task_id);
    }
 
-   if (filename != NULL) {
+   if (filename != nullptr) {
       sge_dstring_append_char(buffer, '/');
       sge_dstring_append(buffer, filename);
    }

@@ -40,15 +40,15 @@ typedef enum sge_thread_state_transitions_t_ {
 } sge_thread_state_transitions_t;
 
 #define SGE_CHECK_POINTER_NULL(pointer, answer_list)                 \
-   if ((pointer) == NULL) {                                          \
+   if ((pointer) == nullptr) {                                          \
       answer_list_add_sprintf(answer_list, STATUS_EUNKNOWN,          \
                               ANSWER_QUALITY_ERROR,                  \
                               MSG_NULLELEMENTPASSEDTO_S, __func__);  \
-      DRETURN(NULL);                                                 \
+      DRETURN(nullptr);                                                 \
    }
 
 #define SGE_CHECK_POINTER_FALSE(pointer, answer_list)                \
-   if ((pointer) == NULL) {                                          \
+   if ((pointer) == nullptr) {                                          \
       answer_list_add_sprintf(answer_list, STATUS_EUNKNOWN,          \
                               ANSWER_QUALITY_ERROR,                  \
                               MSG_NULLELEMENTPASSEDTO_S, __func__);  \

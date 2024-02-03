@@ -44,7 +44,7 @@
 
 void setosjobid(pid_t sid, gid_t *add_grp_id_ptr, struct passwd *pw)
 {
-   FILE *fp=NULL;
+   FILE *fp=nullptr;
 
    shepherd_trace("setosjobid: uid = "pid_t_fmt", euid = "pid_t_fmt, getuid(), geteuid());
 
@@ -57,7 +57,7 @@ void setosjobid(pid_t sid, gid_t *add_grp_id_ptr, struct passwd *pw)
          else
             *add_grp_id_ptr = 0;
       }
-      if ((fp = fopen("addgrpid", "w")) == NULL) {
+      if ((fp = fopen("addgrpid", "w")) == nullptr) {
          shepherd_error(1, "can't open \"addgrpid\" file");   
       }
       fprintf(fp, gid_t_fmt"\n", *add_grp_id_ptr);
@@ -65,7 +65,7 @@ void setosjobid(pid_t sid, gid_t *add_grp_id_ptr, struct passwd *pw)
 #  else
    {
       char osjobid[100];
-      if ((fp = fopen("osjobid", "w")) == NULL) {
+      if ((fp = fopen("osjobid", "w")) == nullptr) {
          shepherd_error(1, "can't open \"osjobid\" file");
       }
 

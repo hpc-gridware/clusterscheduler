@@ -88,7 +88,7 @@ setup_lists(lList **jobs, lList **hosts, lList **config, lList **centry)
     */
 
    what = lWhat("%T(ALL)", JB_Type);
-   alp=sge_gdi(SGE_JB_LIST, SGE_GDI_GET, jobs, NULL, what);
+   alp=sge_gdi(SGE_JB_LIST, SGE_GDI_GET, jobs, nullptr, what);
    lFreeWhat(what);
 
    aep = lFirst(alp);
@@ -99,7 +99,7 @@ setup_lists(lList **jobs, lList **hosts, lList **config, lList **centry)
    }
    lFreeList(alp);
 #ifdef notdef
-   if (!*jobs || (root = lFirst(*sharetree)) == NULL) {
+   if (!*jobs || (root = lFirst(*sharetree)) == nullptr) {
       fprintf(stderr, MSG_JOB_NOJOBLIST );
       exit(2);
    }
@@ -109,7 +109,7 @@ setup_lists(lList **jobs, lList **hosts, lList **config, lList **centry)
     */
 
    what = lWhat("%T(ALL)", EH_Type);
-   alp=sge_gdi(SGE_EH_LIST, SGE_GDI_GET, hosts, NULL, what);
+   alp=sge_gdi(SGE_EH_LIST, SGE_GDI_GET, hosts, nullptr, what);
    lFreeWhat(what);
 
    aep = lFirst(alp);
@@ -125,7 +125,7 @@ setup_lists(lList **jobs, lList **hosts, lList **config, lList **centry)
     */
 
    what = lWhat("%T(ALL)", CE_Type);
-   alp=sge_gdi(SGE_CE_LIST, SGE_GDI_GET, centry, NULL, what);
+   alp=sge_gdi(SGE_CE_LIST, SGE_GDI_GET, centry, nullptr, what);
    lFreeWhat(what);
 
    aep = lFirst(alp);
@@ -142,7 +142,7 @@ setup_lists(lList **jobs, lList **hosts, lList **config, lList **centry)
     */
 
    what = lWhat("%T(ALL)", SC_Type);
-   alp=sge_gdi(SGE_SC_LIST, SGE_GDI_GET, config, NULL, what);
+   alp=sge_gdi(SGE_SC_LIST, SGE_GDI_GET, config, nullptr, what);
    lFreeWhat(what);
 
    aep = lFirst(alp);
@@ -152,7 +152,7 @@ setup_lists(lList **jobs, lList **hosts, lList **config, lList **centry)
       exit(1);
    }
    lFreeList(alp);
-   alp = NULL;
+   alp = nullptr;
       if (!sconf_validate_config(&alp, config))
         fprintf(stderr, "%s\n", lGetString(lFirst(alp), AN_text));
 
@@ -166,7 +166,7 @@ setup_lists(lList **jobs, lList **hosts, lList **config, lList **centry)
  *--------------------------------------------------------------------*/
 static lList *build_usage_list( char *name, lList *old_usage_list )
 {
-   lList *usage_list = NULL;
+   lList *usage_list = nullptr;
    lListElem *usage;
 
    if (old_usage_list) {
@@ -223,14 +223,14 @@ free_lists(lList *jobs, lList *hosts, lList *config)
 
 int calculate_host_usage(lList **jobs, lList *hosts)
 {
-lList *running_jobs = NULL;    /* JB_Type */
-lList *finished_jobs = NULL;   /* JB_Type */
+lList *running_jobs = nullptr;    /* JB_Type */
+lList *finished_jobs = nullptr;   /* JB_Type */
 char *host_name;
 double host_cpu_usage, host_io_usage, host_mem_usage;
 double host_cpu_usage_pct, host_io_usage_pct, host_mem_usage_pct;
 double total_host_cpu_usage=0.0, total_host_io_usage=0.0, total_host_mem_usage=0.0;
 lListElem *hep, *running_job_elem, *rjq, *job_usage_elem, *host_usage_elem, *host_usage_pct_elem, *finished_job_elem, *fjq;
-lList *job_usage_list = NULL;
+lList *job_usage_list = nullptr;
 
 /* 'ulong' is not known on some architectures */
 #ifndef ulong 
@@ -306,7 +306,7 @@ FILE *fpdchu;
 #ifdef TEST_CALC_HOST_USAGE
           fprintf(fpdchu, "Job %u is on host %s\n", lGetUlong(running_job_elem, JB_job_number), lGetHost(rjq, JG_qhostname));
 #endif
-          job_usage_list = NULL;
+          job_usage_list = nullptr;
           if (sge_hostcmp(lGetHost(rjq, JG_qhostname), host_name) == 0) {
 
 #ifdef TEST_CALC_HOST_USAGE
@@ -361,7 +361,7 @@ was added here because it was a convenient place to gather the information */
 #ifdef TEST_CALC_HOST_USAGE
           fprintf(fpdchu, "Job %u is on host %s\n", lGetUlong(finished_job_elem, JB_job_number), lGetHost(fjq, JG_qhostname));
 #endif
-          job_usage_list = NULL;
+          job_usage_list = nullptr;
           if (sge_hostcmp(lGetHost(fjq, JG_qhostname), host_name) == 0) {
 #ifdef TEST_CALC_HOST_USAGE
             fprintf(fpdchu, "found finished job on host %s \n", host_name);
@@ -397,7 +397,7 @@ was added here because it was a convenient place to gather the information */
 
 /* build the EH_scaled_usage_list */
 
-   lSetList(hep, EH_scaled_usage_list, build_usage_list("hostusagelist", NULL));
+   lSetList(hep, EH_scaled_usage_list, build_usage_list("hostusagelist", nullptr));
 
    for_each_ep(host_usage_elem, lGetList(hep, EH_scaled_usage_list))  {
       if (strcmp(lGetString(host_usage_elem, UA_name), "cpu") == 0)  {
@@ -428,9 +428,9 @@ was added here because it was a convenient place to gather the information */
    for_each_ep(hep, hosts)  {
       host_name = lGetHost(hep, EH_name);
       if (strcmp(host_name,"global")) { /* don't treat global */
-         lList *hep_EH_scaled_usage_list = NULL;
+         lList *hep_EH_scaled_usage_list = nullptr;
 
-         lSetList(hep, EH_scaled_usage_pct_list, build_usage_list("hostusagelist", NULL));
+         lSetList(hep, EH_scaled_usage_pct_list, build_usage_list("hostusagelist", nullptr));
 
          hep_EH_scaled_usage_list = lGetList(hep, EH_scaled_usage_list);        
  
@@ -742,7 +742,7 @@ print_host_hdr(FILE *out, format_t *format)
                break;
             }
          }
-         field = strtok(NULL, ",");
+         field = strtok(nullptr, ",");
       }
       sge_free(&fields);
    } else {
@@ -823,7 +823,7 @@ print_host(FILE *out, lListElem *host, char **names, format_t *format)
                break;
             }
          }
-         field = strtok(NULL, ",");
+         field = strtok(nullptr, ",");
       }
       sge_free(&fields);
    } else {
@@ -880,8 +880,8 @@ int main(int argc, char **argv)
    int count=-1;
    int header=0;
    format_t format;
-   char *ofile=NULL;
-   char **names=NULL;
+   char *ofile=nullptr;
+   char **names=nullptr;
    int name_count=0;
    int decay_usage=0;
    int group_nodes=1;
@@ -899,7 +899,7 @@ int main(int argc, char **argv)
    format.line_delim="\n";
    format.rec_delim="\n";
    format.str_format="%s";
-   format.field_names=NULL;
+   format.field_names=nullptr;
    format.format_times=0;
 
 
@@ -909,7 +909,7 @@ int main(int argc, char **argv)
                          (setlocale_func_type)      setlocale,
                          (bindtextdomain_func_type) bindtextdomain,
                          (textdomain_func_type)     textdomain);
-   sge_init_language(NULL,NULL);   
+   sge_init_language(nullptr,nullptr);
 #endif /* __SGE_COMPILE_WITH_GETTEXT__  */
 
 
@@ -976,7 +976,7 @@ int main(int argc, char **argv)
    }
 
    if (ofile) {
-      if ((outfile = fopen(ofile, output_mode)) == NULL) {
+      if ((outfile = fopen(ofile, output_mode)) == nullptr) {
          fprintf(stderr, MSG_FILE_COULDNOTOPENXFORY_SS , ofile, output_mode);
          fprintf(stderr, "\n");
          exit(1);
@@ -986,7 +986,7 @@ int main(int argc, char **argv)
    if ((name_count = argc - optind) > 0)
        names = &argv[optind];
 
-   sge_gdi_setup("sge_host_mon", NULL);
+   sge_gdi_setup("sge_host_mon", nullptr);
 
    if (header)
       print_host_hdr(outfile, &format);
@@ -1027,9 +1027,9 @@ int main(int argc, char **argv)
          curr_time = sge_get_gmt();
 
       _sge_calc_share_tree_proportions(sharetree,
-        	lGetUlong(root, STN_type)==STT_PROJECT?NULL:users, 
-        	lGetUlong(root, STN_type)==STT_PROJECT?users:NULL, 
-        	config, NULL, curr_time);
+        	lGetUlong(root, STN_type)==STT_PROJECT?nullptr:users,
+        	lGetUlong(root, STN_type)==STT_PROJECT?users:nullptr,
+        	config, nullptr, curr_time);
 #endif
       print_hosts(outfile, hosts, names, &format);
 

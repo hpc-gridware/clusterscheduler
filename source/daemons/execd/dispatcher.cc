@@ -98,7 +98,7 @@ int sge_execd_process_messages(sge_gdi_ctx_class_t *ctx)
    while (!terminate) {
       u_long32 now = sge_get_gmt();
       struct_msg_t msg;
-      char* buffer     = NULL;
+      char* buffer     = nullptr;
       u_long32 buflen  = 0;
       sge_monitor_output(&monitor);
 
@@ -173,7 +173,7 @@ int sge_execd_process_messages(sge_gdi_ctx_class_t *ctx)
          if (is_apb_used) {
             if (pb_filled(&apb)) {
                gdi2_send_message_pb(ctx, 0, msg.snd_name, msg.snd_id, msg.snd_host, 
-                                atag, &apb, NULL);
+                                atag, &apb, nullptr);
             }
             clear_packbuffer(&apb);
          }
@@ -201,7 +201,7 @@ int sge_execd_process_messages(sge_gdi_ctx_class_t *ctx)
          /*
           * we are not connected, reconnect and register at qmaster ... 
           */
-         if (cl_com_get_handle(prognames[EXECD], 1) == NULL) {
+         if (cl_com_get_handle(prognames[EXECD], 1) == nullptr) {
             terminate = true; /* if we don't have a handle, we must leave
                                * because execd_register will create a new one.
                                * This error would be realy strange, because
@@ -291,7 +291,7 @@ int sge_execd_process_messages(sge_gdi_ctx_class_t *ctx)
                   int ret_val = CL_RETVAL_OK;
                   const char* master_host = ctx->get_master(ctx, false);
                   cl_com_handle_t* handle = cl_com_get_handle(prognames[EXECD],1);
-                  cl_com_SIRM_t* ep_status = NULL;
+                  cl_com_SIRM_t* ep_status = nullptr;
 
                   /* 
                    * qmaster file has not changed, check the endpoint status

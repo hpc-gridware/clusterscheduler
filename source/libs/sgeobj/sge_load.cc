@@ -44,7 +44,7 @@ sge_is_static_load_value(const char *name)
 
    DENTER(BASIS_LAYER);
 
-   if (name != NULL) {
+   if (name != nullptr) {
       if (strcmp(name, LOAD_ATTR_ARCH) == 0 || 
           strcmp(name, LOAD_ATTR_NUM_PROC) == 0 ||
           strcmp(name, LOAD_ATTR_MEM_TOTAL) == 0 ||

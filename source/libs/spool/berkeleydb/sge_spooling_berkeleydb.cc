@@ -104,7 +104,7 @@ spool_berkeleydb_option_func(lList **answer_list, lListElem *rule,
 *     const char *args    - arguments to the spooling method, see above.
 *
 *  RESULT
-*     lListElem* - on success, the new spooling context, else NULL
+*     lListElem* - on success, the new spooling context, else nullptr
 *
 *  SEE ALSO
 *     spool/--Spooling
@@ -113,15 +113,15 @@ spool_berkeleydb_option_func(lList **answer_list, lListElem *rule,
 lListElem *
 spool_berkeleydb_create_context(lList **answer_list, const char *args)
 {
-   lListElem *context = NULL;
+   lListElem *context = nullptr;
 
    DENTER(BDB_LAYER);
 
    /* check input parameter */
-   if (args != NULL) {
+   if (args != nullptr) {
       lListElem *rule, *type;
       bdb_info info;
-      char *path   = NULL;
+      char *path   = nullptr;
       
       /* create spooling context */
       context = spool_create_context(answer_list, "berkeleydb spooling");
@@ -255,7 +255,7 @@ spool_berkeleydb_default_shutdown_func(lList **answer_list,
 
    info = (bdb_info)lGetRef(rule, SPR_clientdata);
 
-   if (info == NULL) {
+   if (info == nullptr) {
       answer_list_add_sprintf(answer_list, STATUS_EUNKNOWN, 
                               ANSWER_QUALITY_ERROR, 
                               MSG_BERKELEY_NOCONNECTIONOPEN_S,
@@ -376,7 +376,7 @@ spool_berkeleydb_trigger_func(lList **answer_list, const lListElem *rule,
    DENTER(BDB_LAYER);
 
    info = (bdb_info)lGetRef(rule, SPR_clientdata);
-   if (info == NULL) {
+   if (info == nullptr) {
       answer_list_add_sprintf(answer_list, STATUS_EUNKNOWN, 
                               ANSWER_QUALITY_WARNING, 
                               MSG_BERKELEY_NOCONNECTIONOPEN_S,
@@ -437,7 +437,7 @@ spool_berkeleydb_transaction_func(lList **answer_list, const lListElem *rule,
    DENTER(BDB_LAYER);
 
    info = (bdb_info)lGetRef(rule, SPR_clientdata);
-   if (info == NULL) {
+   if (info == nullptr) {
       answer_list_add_sprintf(answer_list, STATUS_EUNKNOWN, 
                               ANSWER_QUALITY_ERROR, 
                               MSG_BERKELEY_NOCONNECTIONOPEN_S,
@@ -531,7 +531,7 @@ spool_berkeleydb_default_list_func(lList **answer_list,
    descr = object_type_get_descr(object_type);
    table_name = object_type_get_name(object_type);
 
-   if (info == NULL) {
+   if (info == nullptr) {
       answer_list_add_sprintf(answer_list, STATUS_EUNKNOWN, 
                               ANSWER_QUALITY_WARNING, 
                               MSG_BERKELEY_NOCONNECTIONOPEN_S,
@@ -539,8 +539,8 @@ spool_berkeleydb_default_list_func(lList **answer_list,
       ret = false;
    }
    
-   if (descr == NULL || list == NULL ||
-              table_name == NULL) {
+   if (descr == nullptr || list == nullptr ||
+              table_name == nullptr) {
       answer_list_add_sprintf(answer_list, STATUS_EUNKNOWN, 
                               ANSWER_QUALITY_WARNING, 
                               MSG_SPOOL_SPOOLINGOFXNOTSUPPORTED_S, 
@@ -558,7 +558,7 @@ spool_berkeleydb_default_list_func(lList **answer_list,
    /* JG: TODO: why does reading within a transaction give me the error:
     *           Not enough space
     */
-      if (db->txn == NULL) {
+      if (db->txn == nullptr) {
          ret = spool_berkeleydb_start_transaction(answer_list, info);
          if (ret) {
             local_transaction = true;
@@ -588,7 +588,7 @@ spool_berkeleydb_default_list_func(lList **answer_list,
                   /* for all cluster queues: read queue instances */
                   qinstance_table = object_type_get_name(SGE_TYPE_QINSTANCE);
                   for_each_rw(queue, *list) {
-                     lList *qinstance_list = NULL;
+                     lList *qinstance_list = nullptr;
                      const char *qname = lGetString(queue, CQ_name);
 
                      key = sge_dstring_sprintf(&key_dstring, "%s:%s/",
@@ -598,7 +598,7 @@ spool_berkeleydb_default_list_func(lList **answer_list,
                                                       BDB_CONFIG_DB,
                                                       &qinstance_list, QU_Type,
                                                       key);
-                     if (ret && qinstance_list != NULL) {
+                     if (ret && qinstance_list != nullptr) {
                         lSetList(queue, CQ_qinstances, qinstance_list);
                      }
                   }
@@ -616,7 +616,7 @@ spool_berkeleydb_default_list_func(lList **answer_list,
                   /* for all jobs: read ja_tasks */
                   ja_task_table = object_type_get_name(SGE_TYPE_JATASK);
                   for_each_rw(job, *list) {
-                     lList *task_list = NULL;
+                     lList *task_list = nullptr;
                      u_long32 job_id = lGetUlong(job, JB_job_number);
 
                      key = sge_dstring_sprintf(&key_dstring, "%s:%8d.", ja_task_table, job_id);
@@ -624,7 +624,7 @@ spool_berkeleydb_default_list_func(lList **answer_list,
                      /* reading ja_tasks succeeded */
                      if (ret) {
                         /* we actually found ja_tasks for this job */
-                        if (task_list != NULL) {
+                        if (task_list != nullptr) {
                            lListElem *ja_task;
                            const char *pe_task_table;
 
@@ -632,13 +632,13 @@ spool_berkeleydb_default_list_func(lList **answer_list,
                            pe_task_table = object_type_get_name(SGE_TYPE_PETASK);
 
                            for_each_rw(ja_task, task_list) {
-                              lList *pe_task_list = NULL;
+                              lList *pe_task_list = nullptr;
                               u_long32 ja_task_id = lGetUlong(ja_task, JAT_task_number);
                               key = sge_dstring_sprintf(&key_dstring, "%s:%8d.%8d.", pe_task_table, job_id, ja_task_id);
                               
                               ret = spool_berkeleydb_read_list(answer_list, info, BDB_JOB_DB, &pe_task_list, PET_Type, key);
                               if (ret) {
-                                 if (pe_task_list != NULL) {
+                                 if (pe_task_list != nullptr) {
                                     lSetList(ja_task, JAT_task_list, pe_task_list);
                                  }
                               } else {
@@ -720,7 +720,7 @@ spool_berkeleydb_default_list_func(lList **answer_list,
 *     const sge_object_type object_type - object type
 *
 *  RESULT
-*     lListElem* - the object, if it could be read, else NULL
+*     lListElem* - the object, if it could be read, else nullptr
 *
 *  NOTES
 *     This function should not be called directly, it is called by the
@@ -739,14 +739,14 @@ spool_berkeleydb_default_read_func(lList **answer_list,
                                  const sge_object_type object_type)
 {
    bool ret = true;
-   lListElem *ep = NULL;
+   lListElem *ep = nullptr;
 
    bdb_info info;
 
    DENTER(BDB_LAYER);
 
    info = (bdb_info)lGetRef(rule, SPR_clientdata);
-   if (info == NULL) {
+   if (info == nullptr) {
       answer_list_add_sprintf(answer_list, STATUS_EUNKNOWN, 
                               ANSWER_QUALITY_WARNING, 
                               MSG_BERKELEY_NOCONNECTIONOPEN_S,
@@ -771,7 +771,7 @@ spool_berkeleydb_default_read_func(lList **answer_list,
                str = spool_berkeleydb_read_string(answer_list, info, BDB_JOB_DB,
                                                   db_key);              
 
-               if (str != NULL) {
+               if (str != nullptr) {
                   ep = lCreateElem(STU_Type);
                   lXchgString(ep, STU_name, &str);
                } else {
@@ -793,7 +793,7 @@ spool_berkeleydb_default_read_func(lList **answer_list,
  * for validating a qinstance the complex list is required
  */
 #if 0
-            if (ep != NULL) {
+            if (ep != nullptr) {
 #pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Wpedantic"
                spooling_validate_func validate = 
@@ -826,7 +826,7 @@ spool_berkeleydb_default_read_keys_func(lList **answer_list,
 
    info = (bdb_info)lGetRef(rule, SPR_clientdata);
 
-   if (info == NULL) {
+   if (info == nullptr) {
       answer_list_add_sprintf(answer_list, STATUS_EUNKNOWN,
                               ANSWER_QUALITY_WARNING,
                               MSG_BERKELEY_NOCONNECTIONOPEN_S,
@@ -839,7 +839,7 @@ spool_berkeleydb_default_read_keys_func(lList **answer_list,
    }
 
    if (ret) {
-      if (key == NULL || strlen(key) == 0) {
+      if (key == nullptr || strlen(key) == 0) {
          /* return all keys
           * - we first fetch all keys from the config db
           * - then append the all keys from the job db
@@ -922,10 +922,10 @@ spool_berkeleydb_default_write_func(lList **answer_list,
    DENTER(BDB_LAYER);
 
    DPRINTF(("spool_berkeleydb_default_write_func called for %s with key %s\n",
-            object_type_get_name(object_type), key != NULL ? key : "<null>"));
+            object_type_get_name(object_type), key != nullptr ? key : "<null>"));
 
    info = (bdb_info)lGetRef(rule, SPR_clientdata);
-   if (info == NULL) {
+   if (info == nullptr) {
       answer_list_add_sprintf(answer_list, STATUS_EUNKNOWN, 
                               ANSWER_QUALITY_WARNING, 
                               MSG_BERKELEY_NOCONNECTIONOPEN_S,
@@ -933,7 +933,7 @@ spool_berkeleydb_default_write_func(lList **answer_list,
       ret = false;
    }
    
-   if (key == NULL) {
+   if (key == nullptr) {
       answer_list_add_sprintf(answer_list, STATUS_EUNKNOWN, 
                               ANSWER_QUALITY_WARNING, 
                               MSG_BERKELEY_NULLVALUEASKEY,
@@ -948,7 +948,7 @@ spool_berkeleydb_default_write_func(lList **answer_list,
    if (ret) {
       /* if no transaction was opened from outside, open a new one */
       DB_TXN *txn = bdb_get_txn(info);
-      if (txn == NULL) {
+      if (txn == nullptr) {
          ret = spool_berkeleydb_start_transaction(answer_list, info);
          if (ret) {
             local_transaction = true;
@@ -1086,7 +1086,7 @@ spool_berkeleydb_default_delete_func(lList **answer_list,
 
    sge_dstring_init(&dbkey_dstring, dbkey_buffer, sizeof(dbkey_buffer));
    info = (bdb_info)lGetRef(rule, SPR_clientdata);
-   if (info == NULL) {
+   if (info == nullptr) {
       answer_list_add_sprintf(answer_list, STATUS_EUNKNOWN, 
                               ANSWER_QUALITY_WARNING, 
                               MSG_BERKELEY_NOCONNECTIONOPEN_S,
@@ -1101,7 +1101,7 @@ spool_berkeleydb_default_delete_func(lList **answer_list,
    if (ret) {
       DB_TXN *txn = bdb_get_txn(info);
       /* if no transaction was opened from outside, open a new one */
-      if (txn == NULL) {
+      if (txn == nullptr) {
          ret = spool_berkeleydb_start_transaction(answer_list, info);
          if (ret) {
             local_transaction = true;
@@ -1124,7 +1124,7 @@ spool_berkeleydb_default_delete_func(lList **answer_list,
 
                   job_parse_key(dup, &job_id, &ja_task_id, &pe_task_id, &only_job);
 
-                  if (pe_task_id != NULL) {
+                  if (pe_task_id != nullptr) {
                      dbkey = sge_dstring_sprintf(&dbkey_dstring, "%8d.%8d %s",
                                                  job_id, ja_task_id, pe_task_id);
                      ret = spool_berkeleydb_delete_pe_task(answer_list, info, 
@@ -1189,13 +1189,13 @@ spool_berkeleydb_option_func(lList **answer_list, lListElem *rule,
 
    info = (bdb_info)lGetRef(rule, SPR_clientdata);
 
-   if (info != NULL && option != NULL && strlen(option) != 0) {
-      struct saved_vars_s *context = NULL;
+   if (info != nullptr && option != nullptr && strlen(option) != 0) {
+      struct saved_vars_s *context = nullptr;
       const char *token;
       bool recover = false;
 
-      for (token = sge_strtok_r(option, delimiter, &context); token != NULL; 
-           token = sge_strtok_r(NULL, delimiter, &context)) {
+      for (token = sge_strtok_r(option, delimiter, &context); token != nullptr;
+           token = sge_strtok_r(nullptr, delimiter, &context)) {
          if (parse_bool_param(token, "RECOVER", &recover)) {
             bdb_set_recover(info, recover);
             answer_list_add_sprintf(answer_list, STATUS_EUNKNOWN, 

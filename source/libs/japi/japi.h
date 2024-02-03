@@ -93,7 +93,7 @@ typedef void (*error_handler_t)(const char *);
  * is an implementation dependent string which may be used to specify
  * which DRM system to use. This routine must be called before any
  * other DRMAA calls, except for japi_version().
- * If 'contact' is NULL, the default DRM system will be used.
+ * If 'contact' is nullptr, the default DRM system will be used.
  */ 
 int japi_init(const char *contact, const char *session_key_in, 
               dstring *session_key_out, int prog_number, bool enable_wait,
@@ -129,7 +129,7 @@ int japi_was_init_called(dstring* diag);
 
 /*
  * Submit a job with attributes defined in the job template 'jt'.
- * The job identifier 'job_id' is a printable, NULL terminated string,
+ * The job identifier 'job_id' is a printable, nullptr terminated string,
  * identical to that returned by the underlying DRM system.
  */
 int japi_run_job(dstring *jobid, lListElem **sge_job_template, dstring *diag);
@@ -138,7 +138,7 @@ int japi_run_job(dstring *jobid, lListElem **sge_job_template, dstring *diag);
  * Submit a set of parametric jobs, dependent on the implied loop index, each
  * with attributes defined in the job template 'jt'.
  * The job identifiers 'job_ids' are all printable,
- * NULL terminated strings, identical to those returned by the underlying
+ * nullptr terminated strings, identical to those returned by the underlying
  * DRM system. Nonnegative loop bounds are mandated to avoid file names
  * that start with minus sign like command line options.
  * The special index placeholder is a DRMAA defined string

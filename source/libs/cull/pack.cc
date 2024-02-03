@@ -146,7 +146,7 @@ int
 init_packbuffer(sge_pack_buffer *pb, int initial_size, int just_count) {
    DENTER(PACK_LAYER);
 
-   if (pb == NULL) {
+   if (pb == nullptr) {
       ERROR((SGE_EVENT, MSG_CULL_ERRORININITPACKBUFFER_S, MSG_CULL_PACK_FORMAT));
       DRETURN(PACK_FORMAT);
    }
@@ -161,7 +161,7 @@ init_packbuffer(sge_pack_buffer *pb, int initial_size, int just_count) {
       memset(pb, 0, sizeof(sge_pack_buffer));
 
       pb->head_ptr = sge_malloc(initial_size);
-      if (pb->head_ptr == NULL) {
+      if (pb->head_ptr == nullptr) {
          ERROR((SGE_EVENT, MSG_CULL_NOTENOUGHMEMORY_D, initial_size));
          DRETURN(PACK_ENOMEM);
       }
@@ -177,7 +177,7 @@ init_packbuffer(sge_pack_buffer *pb, int initial_size, int just_count) {
       packint(pb, 0);              /* pad 0 byte -> error handing in former versions */
       packint(pb, pb->version);    /* version information is included in buffer      */
    } else {
-      pb->head_ptr = pb->cur_ptr = NULL;
+      pb->head_ptr = pb->cur_ptr = nullptr;
       pb->mem_size = 0;
       pb->bytes_used = 0;
       pb->just_count = 1;
@@ -237,7 +237,7 @@ init_packbuffer_from_buffer(sge_pack_buffer *pb, char *buf, u_long32 buflen) {
 /**************************************************************/
 /* MT-NOTE: clear_packbuffer() is MT safe */
 void clear_packbuffer(sge_pack_buffer *pb) {
-   if (pb != NULL) {
+   if (pb != nullptr) {
       sge_free(&(pb->head_ptr));
    }
    return;
@@ -413,7 +413,7 @@ int packstr(sge_pack_buffer *pb, const char *str) {
    DENTER(PACK_LAYER);
 
    /* determine string length */
-   if (str == NULL) {
+   if (str == nullptr) {
       if (!pb->just_count) {
          /* is realloc necessary */
          if ((pb->bytes_used + 1) > pb->mem_size) {
@@ -676,7 +676,7 @@ int unpackstr(sge_pack_buffer *pb, char **str) {
    /* determine string length */
    if (!pb->cur_ptr[0]) {
 
-      *str = NULL;
+      *str = nullptr;
 
       /* update cur_ptr & bytes_unpacked */
       pb->cur_ptr = &(pb->cur_ptr[1]);
@@ -769,7 +769,7 @@ int unpackbuf(sge_pack_buffer *pb, char **buf_ptr, int buf_size) {
 int unpackbitfield(sge_pack_buffer *pb, bitfield *bitfield, int descr_size) {
    int ret;
    u_long32 size, char_size;
-   char *buffer = NULL;
+   char *buffer = nullptr;
 
    DENTER(PACK_LAYER);
 
@@ -844,7 +844,7 @@ bool
 pb_are_equivalent(sge_pack_buffer *pb1, sge_pack_buffer *pb2) {
    bool ret = true;
 
-   if (pb1 != NULL && pb2 != NULL) {
+   if (pb1 != nullptr && pb2 != nullptr) {
       ret &= (pb1->bytes_used == pb2->bytes_used);
       ret &= (memcmp(pb1->head_ptr, pb2->head_ptr, pb1->bytes_used) == 0);
    }

@@ -71,7 +71,7 @@ sge_event_master_cleanup_report_list(lList **list)
 void 
 sge_event_master_initialize(sge_gdi_ctx_class_t *ctx)
 {
-   cl_thread_settings_t* dummy_thread_p = NULL;
+   cl_thread_settings_t* dummy_thread_p = nullptr;
    dstring thread_name = DSTRING_INIT;
 
    DENTER(TOP_LAYER);
@@ -82,7 +82,7 @@ sge_event_master_initialize(sge_gdi_ctx_class_t *ctx)
    cl_thread_list_setup(&(Main_Control.event_master_thread_pool), "event master thread pool");
    cl_thread_list_create_thread(Main_Control.event_master_thread_pool, &dummy_thread_p,
                                 cl_com_get_log_list(), sge_dstring_get_string(&thread_name), 0, 
-                                sge_event_master_main, NULL, NULL, CL_TT_DELIVERER);
+                                sge_event_master_main, nullptr, nullptr, CL_TT_DELIVERER);
    sge_dstring_free(&thread_name);
    DRETURN_VOID;
 }
@@ -90,12 +90,12 @@ sge_event_master_initialize(sge_gdi_ctx_class_t *ctx)
 void
 sge_event_master_terminate(void)
 {
-   cl_thread_settings_t* thread = NULL;
+   cl_thread_settings_t* thread = nullptr;
 
    DENTER(TOP_LAYER);
 
    thread = cl_thread_list_get_first_thread(Main_Control.event_master_thread_pool);
-   while (thread != NULL) {
+   while (thread != nullptr) {
       DPRINTF((SFN" gets canceled\n", thread->thread_name));
       cl_thread_list_delete_thread(Main_Control.event_master_thread_pool, thread);
       thread = cl_thread_list_get_first_thread(Main_Control.event_master_thread_pool);
@@ -110,12 +110,12 @@ sge_event_master_main(void *arg)
 {
    bool do_endlessly = true;
    cl_thread_settings_t *thread_config = (cl_thread_settings_t*)arg;
-   sge_gdi_ctx_class_t *ctx = NULL;
+   sge_gdi_ctx_class_t *ctx = nullptr;
    monitoring_t monitor;
    monitoring_t *p_monitor = &monitor;
 
-   lListElem *report = NULL;
-   lList *report_list = NULL;
+   lListElem *report = nullptr;
+   lList *report_list = nullptr;
    time_t next_prof_output = 0;
 
    DENTER(TOP_LAYER);
@@ -174,6 +174,6 @@ sge_event_master_main(void *arg)
     * and after the call of cl_thread_func_testcancel()
     */
 
-   DRETURN(NULL);
+   DRETURN(nullptr);
 }
 

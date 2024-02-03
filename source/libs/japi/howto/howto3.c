@@ -35,9 +35,9 @@
 int main (int argc, char **argv) {
    char error[DRMAA_ERROR_STRING_BUFFER];
    int errnum = 0;
-   drmaa_job_template_t *jt = NULL;
+   drmaa_job_template_t *jt = nullptr;
 
-   errnum = drmaa_init (NULL, error, DRMAA_ERROR_STRING_BUFFER);
+   errnum = drmaa_init (nullptr, error, DRMAA_ERROR_STRING_BUFFER);
 
    if (errnum != DRMAA_ERRNO_SUCCESS) {
       fprintf (stderr, "Could not initialize the DRMAA library: %s\n", error);
@@ -58,7 +58,7 @@ int main (int argc, char **argv) {
                   DRMAA_REMOTE_COMMAND, error);
       }
       else {
-         const char *args[2] = {"5", NULL};
+         const char *args[2] = {"5", nullptr};
          
          errnum = drmaa_set_vector_attribute (jt, DRMAA_V_ARGV, args, error,
                                               DRMAA_ERROR_STRING_BUFFER);
@@ -72,7 +72,7 @@ int main (int argc, char **argv) {
          char jobid[DRMAA_JOBNAME_BUFFER];
          char jobid_out[DRMAA_JOBNAME_BUFFER];
          int status = 0;
-         drmaa_attr_values_t *rusage = NULL;
+         drmaa_attr_values_t *rusage = nullptr;
 
          errnum = drmaa_run_job (jobid, DRMAA_JOBNAME_BUFFER, jt, error,
                                  DRMAA_ERROR_STRING_BUFFER);
@@ -94,7 +94,7 @@ int main (int argc, char **argv) {
                char usage[DRMAA_ERROR_STRING_BUFFER];
                int aborted = 0;
 
-               drmaa_wifaborted(&aborted, status, NULL, 0);
+               drmaa_wifaborted(&aborted, status, nullptr, 0);
 
                if (aborted == 1) {
                   printf("Job %s never ran\n", jobid);
@@ -102,23 +102,23 @@ int main (int argc, char **argv) {
                else {
                   int exited = 0;
 
-                  drmaa_wifexited(&exited, status, NULL, 0);
+                  drmaa_wifexited(&exited, status, nullptr, 0);
 
                   if (exited == 1) {
                      int exit_status = 0;
 
-                     drmaa_wexitstatus(&exit_status, status, NULL, 0);
+                     drmaa_wexitstatus(&exit_status, status, nullptr, 0);
                      printf("Job %s finished regularly with exit status %d\n", jobid, exit_status);
                   }
                   else {
                      int signaled = 0;
 
-                     drmaa_wifsignaled(&signaled, status, NULL, 0);
+                     drmaa_wifsignaled(&signaled, status, nullptr, 0);
 
                      if (signaled == 1) {
                         char termsig[DRMAA_SIGNAL_BUFFER+1];
 
-                        drmaa_wtermsig(termsig, DRMAA_SIGNAL_BUFFER, status, NULL, 0);
+                        drmaa_wtermsig(termsig, DRMAA_SIGNAL_BUFFER, status, nullptr, 0);
                         printf("Job %s finished due to signal %s\n", jobid, termsig);
                      }
                      else {

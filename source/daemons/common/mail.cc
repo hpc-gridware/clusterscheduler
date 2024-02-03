@@ -177,7 +177,7 @@ const char *buf
    DPRINTF(("CHILD CONTINUES\n"));
    SETPGRP;
 
-   sge_close_all_fds(NULL, 0);
+   sge_close_all_fds(nullptr, 0);
 
    /* 
       may never call SGE_EXIT() here because
@@ -208,11 +208,11 @@ const char *buf
 
       if (mailer_has_subj_line) {
          DPRINTF(("%s mail -s %s %s", mailer, subj, user_str));  
-         execl(mailer, "mail", "-s", subj, user_str, NULL);
+         execl(mailer, "mail", "-s", subj, user_str, nullptr);
       }
       else {
          DPRINTF(("%s mail %s", mailer, user_str));  
-         execl(mailer, "mail", user_str, NULL);
+         execl(mailer, "mail", user_str, nullptr);
       }
       CRITICAL((SGE_EVENT, MSG_MAIL_NOEXEC_SS, mailer, strerror(errno)));
       exit(1);

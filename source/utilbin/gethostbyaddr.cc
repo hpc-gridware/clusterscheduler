@@ -60,10 +60,10 @@ static int error_reported = 0;
 
 static void gethostbyaddr_communication_error(const cl_application_error_list_elem_t* commlib_error)
 {
-   if (commlib_error != NULL) {
+   if (commlib_error != nullptr) {
       switch (commlib_error->cl_err_type) {
          case CL_LOG_ERROR: {
-            if (commlib_error->cl_info != NULL) {
+            if (commlib_error->cl_info != nullptr) {
                fprintf(stderr, "%s: %s\n", cl_get_error_text(commlib_error->cl_error), commlib_error->cl_info);
             } else {
                fprintf(stderr, "%s\n", cl_get_error_text(commlib_error->cl_error));
@@ -81,12 +81,12 @@ static void gethostbyaddr_communication_error(const cl_application_error_list_el
 
 int main(int argc, char *argv[])
 {
-  struct hostent *he = NULL;
-  char* resolved_name = NULL;
+  struct hostent *he = nullptr;
+  char* resolved_name = nullptr;
   int retval = CL_RETVAL_OK;
-  char* ip_string = NULL;
-  char** tp = NULL;
-  char** tp2 = NULL;
+  char* ip_string = nullptr;
+  char** tp = nullptr;
+  char** tp2 = nullptr;
   int name_only = 0;
   int sge_aliasing = 0;
   int all_option = 0;
@@ -128,7 +128,7 @@ int main(int argc, char *argv[])
   }
 
   
-  retval = cl_com_setup_commlib(CL_NO_THREAD ,CL_LOG_OFF, NULL);
+  retval = cl_com_setup_commlib(CL_NO_THREAD ,CL_LOG_OFF, nullptr);
   if (retval != CL_RETVAL_OK) {
      fprintf(stderr,"%s\n",cl_get_error_text(retval));
      exit(1);
@@ -152,14 +152,14 @@ int main(int argc, char *argv[])
      if (error_reported == 0) {
         char* err_text = cl_com_get_h_error_string(system_error);
 
-        if (err_text == NULL) {
+        if (err_text == nullptr) {
            err_text = strdup(strerror(system_error));
-           if (err_text == NULL) {
+           if (err_text == nullptr) {
               err_text = strdup("unexpected error");
            }
         }
-        if ( ip_string == NULL) {
-            ip_string = "NULL";
+        if ( ip_string == nullptr) {
+            ip_string = "nullptr";
         }
 
         fprintf(stderr,"error resolving ip "SFQ": %s (%s)\n",ip_string, cl_get_error_text(retval), err_text); 
@@ -169,20 +169,20 @@ int main(int argc, char *argv[])
      exit(1);
   }
 
-  if (he == NULL) {
+  if (he == nullptr) {
      fprintf(stderr,"%s\n","could not get hostent struct");
   }
 
   if (name_only) {
      if (sge_aliasing) {
-        if (resolved_name != NULL) {
+        if (resolved_name != nullptr) {
            printf("%s\n",resolved_name);
         } else {
            fprintf(stderr,"%s\n","unexpected error");
            exit(1);
         }
      } else {
-        if (he != NULL) {
+        if (he != nullptr) {
            printf("%s\n",he->h_name);
         } else {
            fprintf(stderr,"%s\n","could not get hostent struct");
@@ -190,17 +190,17 @@ int main(int argc, char *argv[])
         }
      }
   } else {
-     if (he != NULL) {
+     if (he != nullptr) {
         printf(MSG_SYSTEM_HOSTNAMEIS_S,he->h_name);
         printf("\n");
      }
    
-     if (resolved_name != NULL && all_option) {
+     if (resolved_name != nullptr && all_option) {
         printf("SGE name: %s\n",resolved_name);
         sge_free(&resolved_name);
      } 
    
-     if (he != NULL) {
+     if (he != nullptr) {
         printf("%s", MSG_SYSTEM_ALIASES);
    
         for (tp = he->h_aliases; *tp; tp++)
@@ -215,7 +215,7 @@ int main(int argc, char *argv[])
      }
   }
   sge_free_hostent(&he);
-  if (resolved_name != NULL) {
+  if (resolved_name != nullptr) {
      sge_free(&resolved_name);
   }
   retval = cl_com_cleanup_commlib();

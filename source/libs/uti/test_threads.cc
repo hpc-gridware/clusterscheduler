@@ -51,7 +51,7 @@ void *t1_errno(void *args) {
       sleep(1);
    }
 
-   return NULL;
+   return nullptr;
 }
 
 void *t2_errno(void *args) {
@@ -63,7 +63,7 @@ void *t2_errno(void *args) {
 
    errno = 0;
    fd = fopen("/tmp/blablablanotexisting", "r");
-   if (fd != NULL) {
+   if (fd != nullptr) {
       fprintf(stderr, "file /tmp/blablablanotexisting does exist, please remove it!\n");
       *ret = 1;
    } else {
@@ -77,7 +77,7 @@ void *t2_errno(void *args) {
       }
    }
 
-   return NULL;
+   return nullptr;
 }
 
 
@@ -87,11 +87,11 @@ int main(int argc, const char *argv[]) {
 
    printf("testing access to errno from two threads\n");
 
-   pthread_create(&t1, NULL, t1_errno, (void *) &ret1);
-   pthread_create(&t2, NULL, t2_errno, (void *) &ret2);
+   pthread_create(&t1, nullptr, t1_errno, (void *) &ret1);
+   pthread_create(&t2, nullptr, t2_errno, (void *) &ret2);
 
-   pthread_join(t1, NULL);
-   pthread_join(t2, NULL);
+   pthread_join(t1, nullptr);
+   pthread_join(t2, nullptr);
 
    if (ret1 != 0 || ret2 != 0) {
       return 1;

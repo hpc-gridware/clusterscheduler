@@ -151,12 +151,12 @@ sge_add_qeti_resource_container(lList **qeti_to_add, const lList* rue_list,
    const lListElem *actual;
    const lListElem *tep;
    const char *name;
-   const lListElem *centry_config = NULL;
+   const lListElem *centry_config = nullptr;
 
    DENTER(TOP_LAYER);
 
    /* implicit slot request */
-   if ( ((tep = lGetElemStr(total_list, CE_name, SGE_ATTR_SLOTS)) != NULL) && force_slots) {
+   if ( ((tep = lGetElemStr(total_list, CE_name, SGE_ATTR_SLOTS)) != nullptr) && force_slots) {
       DRETURN(-1);
    }
 
@@ -167,7 +167,7 @@ sge_add_qeti_resource_container(lList **qeti_to_add, const lList* rue_list,
 
    /* default request */
    actual = lGetElemStr(rue_list, RUE_name, SGE_ATTR_SLOTS);
-   if (actual != NULL) {
+   if (actual != nullptr) {
       name = lGetString(actual, RUE_name);
       centry_config = lGetElemStr(centry_list, CE_name, name);
 
@@ -200,7 +200,7 @@ sge_qeti_t *sge_qeti_allocate2(lList *cr_list)
    sge_qeti_t *iter;
 
    if (!(iter = (sge_qeti_t *)calloc(1, sizeof(sge_qeti_t)))) {
-      return NULL;
+      return nullptr;
    }
 
    sge_qeti_list_add(&iter->cr_refs_pe, SGE_ATTR_SLOTS, cr_list, 10, true);
@@ -210,7 +210,7 @@ sge_qeti_t *sge_qeti_allocate2(lList *cr_list)
 sge_qeti_t *sge_qeti_allocate(sge_assignment_t *a)
 {
    int ar_id = lGetUlong(a->job, JB_ar);
-   sge_qeti_t *iter = NULL;
+   sge_qeti_t *iter = nullptr;
    lListElem *next_queue, *qep;
    const lListElem *hep;
    const lList *requests = lGetList(a->job, JB_hard_resource_list);
@@ -218,7 +218,7 @@ sge_qeti_t *sge_qeti_allocate(sge_assignment_t *a)
    DENTER(TOP_LAYER);
 
    if (!(iter = (sge_qeti_t *)calloc(1, sizeof(sge_qeti_t)))) {
-      DRETURN(NULL);
+      DRETURN(nullptr);
    }
 
    if (ar_id == 0) {
@@ -226,7 +226,7 @@ sge_qeti_t *sge_qeti_allocate(sge_assignment_t *a)
       if (sge_qeti_list_add(&iter->cr_refs_pe, SGE_ATTR_SLOTS, 
                      lGetList(a->pe, PE_resource_utilization), lGetUlong(a->pe, PE_slots), true)) {
          sge_qeti_release(&iter);
-         DRETURN(NULL);
+         DRETURN(nullptr);
       }
 
       /* add references to global resource utilization entries 
@@ -236,7 +236,7 @@ sge_qeti_t *sge_qeti_allocate(sge_assignment_t *a)
                   lGetList(hep, EH_resource_utilization), lGetList(hep, EH_consumable_config_list), 
                   a->centry_list, requests, false)!=0) {
             sge_qeti_release(&iter);
-            DRETURN(NULL);
+            DRETURN(nullptr);
          }
       }
    }
@@ -246,7 +246,7 @@ sge_qeti_t *sge_qeti_allocate(sge_assignment_t *a)
    for_each_ep(hep, a->host_list) {
       const char *eh_name;
       int is_relevant;
-      const void *queue_iterator = NULL;
+      const void *queue_iterator = nullptr;
 
       if (!strcmp((eh_name=lGetHost(hep, EH_name)), SGE_GLOBAL_NAME)) {
          continue;
@@ -278,7 +278,7 @@ sge_qeti_t *sge_qeti_allocate(sge_assignment_t *a)
                      lGetList(qep, QU_resource_utilization), lGetList(qep, QU_consumable_config_list), 
                            a->centry_list, requests, false)!=0) {
                sge_qeti_release(&iter);
-               DRETURN(NULL);
+               DRETURN(nullptr);
             }
          } else {
             const char *qname = lGetString(qep, QU_full_name);
@@ -291,7 +291,7 @@ sge_qeti_t *sge_qeti_allocate(sge_assignment_t *a)
                      lGetList(ar_queue, QU_consumable_config_list), 
                      a->centry_list, requests, false)!=0) {
                sge_qeti_release(&iter);
-               DRETURN(NULL);
+               DRETURN(nullptr);
             }
          }
          
@@ -304,7 +304,7 @@ sge_qeti_t *sge_qeti_allocate(sge_assignment_t *a)
                   lGetList(hep, EH_resource_utilization), lGetList(hep, EH_consumable_config_list), 
                         a->centry_list, requests, false)!=0) {
             sge_qeti_release(&iter);
-            DRETURN(NULL);
+            DRETURN(nullptr);
          }
       }
    }
@@ -331,7 +331,7 @@ static void sge_qeti_init_refs(lList *cref_lp)
       rue_ep = (const lListElem *)lGetRef(cr_ep, QETI_resource_instance);
       utilization_diagram = lGetList((lListElem *)lGetRef(cr_ep, QETI_resource_instance), RUE_utilized);
       DPRINTF(("   QETI INIT: %s %p\n", lGetString(rue_ep, RUE_name), utilization_diagram));
-      /* lLast() correctly returns a NULL reference 
+      /* lLast() correctly returns a nullptr reference
          in case of an empty resource utilization diagram */
       lSetRef(cr_ep, QETI_queue_end_next, lLastRW(utilization_diagram));
    }
@@ -540,7 +540,7 @@ u_long32 sge_qeti_next(sge_qeti_t *qeti)
 *******************************************************************************/
 void sge_qeti_release(sge_qeti_t **qeti)
 {
-   if (qeti == NULL || *qeti == NULL) {
+   if (qeti == nullptr || *qeti == nullptr) {
       return;
    }   
 

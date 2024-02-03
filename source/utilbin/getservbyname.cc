@@ -55,7 +55,7 @@ int main(int argc, char *argv[])
  int retry = 5;
  int number_only = 0;
  int check_port = 0;
- struct servent *se = NULL; 
+ struct servent *se = nullptr;
 
 
  if (argc < 2 || argc > 3)

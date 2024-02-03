@@ -60,14 +60,14 @@
 **    of type 'delimitor' putting the name of the configuraion
 **    attribute into the 'nm1'-field and the value into 'nm2'.
 **    'delimitor' is used to separate the name and value.
-**    It may be NULL as it gets passed to sge_strtok().
+**    It may be nullptr as it gets passed to sge_strtok().
 **    If 'flag' has set the RCL_NO_VALUE bitmask then
 **    also lines are accepted having only a name but no value.
 **    
 **
 **
 ** RETURN
-**    A NULL pointer as answer list signals success.
+**    A nullptr pointer as answer list signals success.
 */
 int read_config_list(FILE *fp, lList **lpp, lList **alpp, lDescr *dp, int nm1,
                      int nm2, int nm3, char *delimitor, int flag, char *buffer,
@@ -78,7 +78,7 @@ int read_config_list(FILE *fp, lList **lpp, lList **alpp, lDescr *dp, int nm1,
    char *value;
    char *tmp;
    char *s;
-   struct saved_vars_s *last = NULL;
+   struct saved_vars_s *last = nullptr;
    int force_value;
   
    DENTER(TOP_LAYER);
@@ -88,7 +88,7 @@ int read_config_list(FILE *fp, lList **lpp, lList **alpp, lDescr *dp, int nm1,
    while (fgets(buffer, buffer_size, fp)) {
       if (last) {
          sge_free_saved_vars(last);
-         last = NULL;
+         last = nullptr;
       }
       /*
       ** skip empty and comment lines
@@ -107,7 +107,7 @@ int read_config_list(FILE *fp, lList **lpp, lList **alpp, lDescr *dp, int nm1,
          if (!(name = sge_strtok_r(buffer, delimitor, &last)))
             break;
       }
-      value = sge_strtok_r(NULL, "\n", &last);
+      value = sge_strtok_r(nullptr, "\n", &last);
 
       /* handle end of sub-list */
       if (nm3 && strcmp(name, "}") == 0 && !value) {
@@ -120,7 +120,7 @@ int read_config_list(FILE *fp, lList **lpp, lList **alpp, lDescr *dp, int nm1,
       /* skip leading delimitors */
       if (value) {
          while (*value && (delimitor? 
-            (NULL != strchr(delimitor, *value)):
+            (nullptr != strchr(delimitor, *value)):
             isspace((int) *value)))
             value++;
       }
@@ -131,13 +131,13 @@ int read_config_list(FILE *fp, lList **lpp, lList **alpp, lDescr *dp, int nm1,
             answer_list_add(alpp, SGE_EVENT, STATUS_ESYNTAX, ANSWER_QUALITY_ERROR);
             goto Error;
          }
-         value = NULL;
+         value = nullptr;
       } else {
          /* skip trailing delimitors */
          tmp = &value[strlen(value)-1];
 
          while (tmp>value && (delimitor?
-            (NULL != strchr(delimitor, *tmp)):
+            (nullptr != strchr(delimitor, *tmp)):
             isspace((int) *tmp))) {
             *tmp = '\0';
             tmp--;
@@ -146,7 +146,7 @@ int read_config_list(FILE *fp, lList **lpp, lList **alpp, lDescr *dp, int nm1,
 
       /* handle sub-list */
       if (nm3 && value && strcmp(value, "{") == 0) {
-         lList *slpp = NULL;
+         lList *slpp = nullptr;
          if (read_config_list(fp, &slpp, alpp, dp, nm1, nm2, nm3, delimitor, flag, buffer, buffer_size)<0) {
             goto Error;
          }
@@ -192,7 +192,7 @@ Error:
 **    gets added in case of error.
 **
 ** RETURN
-**    Returns sub-list value or NULL if such a list
+**    Returns sub-list value or nullptr if such a list
 **    does not exist.
 */
 lList *get_conf_sublist(lList **alpp, lList *lp, int name_nm, int value_nm,
@@ -203,13 +203,13 @@ lList *get_conf_sublist(lList **alpp, lList *lp, int name_nm, int value_nm,
    DENTER(CULL_LAYER);
    
    const lListElem *ep = lGetElemStr(lp, name_nm, key);
-   if (ep == NULL) {
+   if (ep == nullptr) {
       if (alpp) {
          char error[1000];
          sprintf(error, MSG_GDI_CONFIGMISSINGARGUMENT_S , key);
          answer_list_add(alpp, error, STATUS_ESEMANTIC, ANSWER_QUALITY_ERROR);
       }
-      DRETURN(NULL);
+      DRETURN(nullptr);
    }
 
    value = lGetListRW(ep, value_nm);
@@ -229,7 +229,7 @@ lList *get_conf_sublist(lList **alpp, lList *lp, int name_nm, int value_nm,
 **    gets added in case of error.
 **
 ** RETURN
-**    Returns string value or NULL if such a value
+**    Returns string value or nullptr if such a value
 **    does not exist.
 */
 char *get_conf_value(lList **alpp, lList *lp, int name_nm, int value_nm,
@@ -239,13 +239,13 @@ char *get_conf_value(lList **alpp, lList *lp, int name_nm, int value_nm,
    DENTER(CULL_LAYER);
    
    const lListElem *ep = lGetElemStr(lp, name_nm, key);
-   if (ep == NULL) {
+   if (ep == nullptr) {
       if (alpp) {
          char error[1000];
          sprintf(error, MSG_GDI_CONFIGMISSINGARGUMENT_S , key);
          answer_list_add(alpp, error, STATUS_ESEMANTIC, ANSWER_QUALITY_ERROR);
       }
-      DRETURN(NULL);
+      DRETURN(nullptr);
    }
 
    /* FIX_CONST */
@@ -282,7 +282,7 @@ int name_nm
 
    DENTER(TOP_LAYER);
 
-   if(!(str=get_conf_value(fields?NULL:alpp, *clpp, CF_name, CF_value, key))) {
+   if(!(str=get_conf_value(fields?nullptr:alpp, *clpp, CF_name, CF_value, key))) {
       DRETURN(fields?true:false);
    }
 
@@ -334,10 +334,10 @@ int name_nm
 
    DENTER(CULL_LAYER);
 
-   if(!(str=get_conf_value(fields?NULL:alpp, *clpp, CF_name, CF_value, key))) {
+   if(!(str=get_conf_value(fields?nullptr:alpp, *clpp, CF_name, CF_value, key))) {
       DRETURN(fields?true:false);
    }
-   if (!object_parse_bool_from_string(ep, NULL, name_nm, str)) {
+   if (!object_parse_bool_from_string(ep, nullptr, name_nm, str)) {
       DRETURN(false);
    }
       
@@ -360,7 +360,7 @@ int name_nm
 
    DENTER(CULL_LAYER);
 
-   if(!(str=get_conf_value(fields?NULL:alpp, *clpp, CF_name, CF_value, key))) {
+   if(!(str=get_conf_value(fields?nullptr:alpp, *clpp, CF_name, CF_value, key))) {
       DRETURN(fields?true:false);
    }
    if (!ulong_parse_centry_type_from_string(&type, alpp, str)) {
@@ -388,7 +388,7 @@ int name_nm
 
    DENTER(CULL_LAYER);
 
-   if(!(str=get_conf_value(fields?NULL:alpp, *clpp, CF_name, CF_value, key))) {
+   if(!(str=get_conf_value(fields?nullptr:alpp, *clpp, CF_name, CF_value, key))) {
       DRETURN(fields?true:false);
    }
    if (!ulong_parse_centry_relop_from_string(&type, alpp, str)) {
@@ -416,7 +416,7 @@ int name_nm
 
    DENTER(CULL_LAYER);
 
-   if(!(str=get_conf_value(fields?NULL:alpp, *clpp, CF_name, CF_value, key))) {
+   if(!(str=get_conf_value(fields?nullptr:alpp, *clpp, CF_name, CF_value, key))) {
       DRETURN(fields?true:false);
    }
    if (!strcasecmp(str, "y") || !strcasecmp(str, "yes")) {
@@ -463,7 +463,7 @@ int name_nm
 
    DENTER(CULL_LAYER);
 
-   if(!(str=get_conf_value(fields?NULL:alpp, *clpp, CF_name, CF_value, key))) {
+   if(!(str=get_conf_value(fields?nullptr:alpp, *clpp, CF_name, CF_value, key))) {
       DRETURN(fields?true:false);
    }
    if (!object_parse_ulong32_from_string(ep, alpp, name_nm, str)) {
@@ -504,7 +504,7 @@ int operation_nm
 
    DENTER(CULL_LAYER); 
 
-   if(!(str=get_conf_value(fields?NULL:alpp, *clpp, CF_name, CF_value, key))) {
+   if(!(str=get_conf_value(fields?nullptr:alpp, *clpp, CF_name, CF_value, key))) {
       DRETURN(fields?true:false);
    }
    /*
@@ -571,13 +571,13 @@ lDescr *descr,
 int *interpretation_rule 
 
 ) {
-   lList *tmplp = NULL;
+   lList *tmplp = nullptr;
    char *str;
 
    DENTER(CULL_LAYER);
 
 
-   if(!(str=get_conf_value(fields?NULL:alpp, *clpp, CF_name, CF_value, key))) {
+   if(!(str=get_conf_value(fields?nullptr:alpp, *clpp, CF_name, CF_value, key))) {
       DRETURN((fields?true:false));
    }
 
@@ -618,14 +618,14 @@ int name_nm
 
    DENTER(CULL_LAYER);
 
-   if (key == NULL) {
+   if (key == nullptr) {
       DRETURN(false);
    }
 
-   if(!(str=get_conf_value(fields?NULL:alpp, *clpp, CF_name, CF_value, key))) {
+   if(!(str=get_conf_value(fields?nullptr:alpp, *clpp, CF_name, CF_value, key))) {
       DRETURN(fields?true:false);
    }
-   if(!parse_ulong_val(NULL, NULL, TYPE_TIM, str, NULL, 0)) {
+   if(!parse_ulong_val(nullptr, nullptr, TYPE_TIM, str, nullptr, 0)) {
       SGE_ADD_MSG_ID(sprintf(SGE_EVENT, MSG_GDI_CONFIGARGUMENTNOTTIME_SS , key, str));
       answer_list_add(alpp, SGE_EVENT, STATUS_ESYNTAX, ANSWER_QUALITY_ERROR);
       DRETURN(false);
@@ -663,10 +663,10 @@ int name_nm
 
    DENTER(CULL_LAYER);
 
-   if(!(str=get_conf_value(fields?NULL:alpp, *clpp, CF_name, CF_value, key))) {
+   if(!(str=get_conf_value(fields?nullptr:alpp, *clpp, CF_name, CF_value, key))) {
       DRETURN(fields?true:false);
    }
-   if(!parse_ulong_val(NULL, NULL, TYPE_MEM, str, NULL, 0)) {
+   if(!parse_ulong_val(nullptr, nullptr, TYPE_MEM, str, nullptr, 0)) {
       SGE_ADD_MSG_ID(sprintf(SGE_EVENT, MSG_GDI_CONFIGARGUMENTNOMEMORY_SS , key, str));
       answer_list_add(alpp, SGE_EVENT, STATUS_ESYNTAX, ANSWER_QUALITY_ERROR);
       DRETURN(false);
@@ -700,7 +700,7 @@ bool set_conf_enum(lList **alpp, lList **clpp, int fields[], const char *key,
 
    DENTER(CULL_LAYER);
 
-   if(!(str=get_conf_value(fields?NULL:alpp, *clpp, CF_name, CF_value, key))) {
+   if(!(str=get_conf_value(fields?nullptr:alpp, *clpp, CF_name, CF_value, key))) {
       DRETURN(fields?true:false);
    }
    if(!sge_parse_bitfield_str(str, enum_strings, &uval, key, alpp, false)) {
@@ -729,7 +729,7 @@ bool set_conf_enum_none(lList **alpp, lList **clpp, int fields[], const char *ke
 
    DENTER(TOP_LAYER);
 
-   if(!(str=get_conf_value(fields?NULL:alpp, *clpp, CF_name, CF_value, key))) {
+   if(!(str=get_conf_value(fields?nullptr:alpp, *clpp, CF_name, CF_value, key))) {
       DRETURN(fields?true:false);
    }
    if(!sge_parse_bitfield_str(str, enum_strings, &uval, key, alpp, true)) {
@@ -762,14 +762,14 @@ bool set_conf_enum_none(lList **alpp, lList **clpp, int fields[], const char *ke
 bool set_conf_list(lList **alpp, lList **clpp, int fields[], const char *key, 
                   lListElem *ep, int name_nm, lDescr *descr, int sub_name_nm) 
 {
-   lList *tmplp = NULL;
+   lList *tmplp = nullptr;
    const char *str;
-   const char *tmp_str = NULL;
+   const char *tmp_str = nullptr;
    char delims[] = "\t \v\r,"; 
 
    DENTER(TOP_LAYER);
 
-   if(!(str=get_conf_value(fields?NULL:alpp, *clpp, CF_name, CF_value, key))) {
+   if(!(str=get_conf_value(fields?nullptr:alpp, *clpp, CF_name, CF_value, key))) {
       DRETURN(fields?true:false);
    }
    lString2List(str, &tmplp, descr, sub_name_nm, delims); 
@@ -779,7 +779,7 @@ bool set_conf_list(lList **alpp, lList **clpp, int fields[], const char *key,
 
    
 
-   if (tmplp != NULL) {
+   if (tmplp != nullptr) {
       int pos, dataType;
       const lListElem *lep = lFirst(tmplp);
 
@@ -814,13 +814,13 @@ bool set_conf_str_attr_list(lList **alpp, lList **clpp, int fields[],
                             lDescr *descr, int sub_name_nm, const lList *master_hgroup_list) 
 {
    bool ret;
-   lList *tmplp = NULL;
+   lList *tmplp = nullptr;
    const char *str;
-   lList *lanswer_list = NULL;
+   lList *lanswer_list = nullptr;
 
    DENTER(TOP_LAYER);
 
-   if(!(str=get_conf_value(fields?NULL:alpp, *clpp, CF_name, CF_value, key))) {
+   if(!(str=get_conf_value(fields?nullptr:alpp, *clpp, CF_name, CF_value, key))) {
       DRETURN(fields?true:false);
    }
    ret = str_attr_list_parse_from_string(&tmplp, &lanswer_list, str,
@@ -835,7 +835,7 @@ bool set_conf_str_attr_list(lList **alpp, lList **clpp, int fields[],
    lDelElemStr(clpp, CF_name, key);
    add_nm_to_set(fields, name_nm);
 
-   if (tmplp != NULL) {
+   if (tmplp != nullptr) {
       lSetList(ep, name_nm, tmplp);
       DRETURN(true);
    }
@@ -848,13 +848,13 @@ bool set_conf_strlist_attr_list(lList **alpp, lList **clpp, int fields[],
                                 lDescr *descr, int sub_name_nm, const lList *master_hgroup_list) 
 {
    bool ret;
-   lList *tmplp = NULL;
+   lList *tmplp = nullptr;
    const char *str;
-   lList *lanswer_list = NULL;
+   lList *lanswer_list = nullptr;
 
    DENTER(TOP_LAYER);
 
-   if(!(str=get_conf_value(fields?NULL:alpp, *clpp, CF_name, CF_value, key))) {
+   if(!(str=get_conf_value(fields?nullptr:alpp, *clpp, CF_name, CF_value, key))) {
       DRETURN(fields?true:false);
    }
 
@@ -870,7 +870,7 @@ bool set_conf_strlist_attr_list(lList **alpp, lList **clpp, int fields[],
    lDelElemStr(clpp, CF_name, key);
    add_nm_to_set(fields, name_nm);
 
-   if (tmplp != NULL) {
+   if (tmplp != nullptr) {
       lSetList(ep, name_nm, tmplp);
       DRETURN(true);
    }
@@ -883,13 +883,13 @@ bool set_conf_usrlist_attr_list(lList **alpp, lList **clpp, int fields[],
                                 lDescr *descr, int sub_name_nm, const lList *master_hgroup_list) 
 {
    bool ret;
-   lList *tmplp = NULL;
+   lList *tmplp = nullptr;
    const char *str;
-   lList *lanswer_list = NULL;
+   lList *lanswer_list = nullptr;
 
    DENTER(TOP_LAYER);
 
-   if(!(str=get_conf_value(fields?NULL:alpp, *clpp, CF_name, CF_value, key))) {
+   if(!(str=get_conf_value(fields?nullptr:alpp, *clpp, CF_name, CF_value, key))) {
       DRETURN(fields?true:false);
    }
 
@@ -905,7 +905,7 @@ bool set_conf_usrlist_attr_list(lList **alpp, lList **clpp, int fields[],
    lDelElemStr(clpp, CF_name, key);
    add_nm_to_set(fields, name_nm);
 
-   if (tmplp != NULL) {
+   if (tmplp != nullptr) {
       lSetList(ep, name_nm, tmplp);
       DRETURN(true);
    }
@@ -918,13 +918,13 @@ bool set_conf_prjlist_attr_list(lList **alpp, lList **clpp, int fields[],
                                 lDescr *descr, int sub_name_nm, const lList *master_hgroup_list) 
 {
    bool ret;
-   lList *tmplp = NULL;
+   lList *tmplp = nullptr;
    const char *str;
-   lList *lanswer_list = NULL;
+   lList *lanswer_list = nullptr;
 
    DENTER(TOP_LAYER);
 
-   if(!(str=get_conf_value(fields?NULL:alpp, *clpp, CF_name, CF_value, key))) {
+   if(!(str=get_conf_value(fields?nullptr:alpp, *clpp, CF_name, CF_value, key))) {
       DRETURN(fields?true:false);
    }
 
@@ -940,7 +940,7 @@ bool set_conf_prjlist_attr_list(lList **alpp, lList **clpp, int fields[],
    lDelElemStr(clpp, CF_name, key);
    add_nm_to_set(fields, name_nm);
 
-   if (tmplp != NULL) {
+   if (tmplp != nullptr) {
       lSetList(ep, name_nm, tmplp);
       DRETURN(true);
    }
@@ -953,13 +953,13 @@ bool set_conf_celist_attr_list(lList **alpp, lList **clpp, int fields[],
                                lDescr *descr, int sub_name_nm, const lList *master_hgroup_list) 
 {
    bool ret;
-   lList *tmplp = NULL;
+   lList *tmplp = nullptr;
    const char *str;
-   lList *lanswer_list = NULL;
+   lList *lanswer_list = nullptr;
 
    DENTER(TOP_LAYER);
 
-   if(!(str=get_conf_value(fields?NULL:alpp, *clpp, CF_name, CF_value, key))) {
+   if(!(str=get_conf_value(fields?nullptr:alpp, *clpp, CF_name, CF_value, key))) {
       DRETURN(fields?true:false);
    }
 
@@ -975,7 +975,7 @@ bool set_conf_celist_attr_list(lList **alpp, lList **clpp, int fields[],
    lDelElemStr(clpp, CF_name, key);
    add_nm_to_set(fields, name_nm);
 
-   if (tmplp != NULL) {
+   if (tmplp != nullptr) {
       lSetList(ep, name_nm, tmplp);
       DRETURN(true);
    }
@@ -988,13 +988,13 @@ bool set_conf_solist_attr_list(lList **alpp, lList **clpp, int fields[],
                                lDescr *descr, int sub_name_nm, const lList *master_hgroup_list) 
 {
    bool ret;
-   lList *tmplp = NULL;
+   lList *tmplp = nullptr;
    const char *str;
-   lList *lanswer_list = NULL;
+   lList *lanswer_list = nullptr;
 
    DENTER(TOP_LAYER);
 
-   if(!(str=get_conf_value(fields?NULL:alpp, *clpp, CF_name, CF_value, key))) {
+   if(!(str=get_conf_value(fields?nullptr:alpp, *clpp, CF_name, CF_value, key))) {
       DRETURN(fields?true:false);
    }
 
@@ -1010,7 +1010,7 @@ bool set_conf_solist_attr_list(lList **alpp, lList **clpp, int fields[],
    lDelElemStr(clpp, CF_name, key);
    add_nm_to_set(fields, name_nm);
 
-   if (tmplp != NULL) {
+   if (tmplp != nullptr) {
       lSetList(ep, name_nm, tmplp);
       DRETURN(true);
    }
@@ -1023,13 +1023,13 @@ bool set_conf_qtlist_attr_list(lList **alpp, lList **clpp, int fields[],
                                lDescr *descr, int sub_name_nm, const lList *master_hgroup_list) 
 {
    bool ret;
-   lList *tmplp = NULL;
+   lList *tmplp = nullptr;
    const char *str;
-   lList *lanswer_list = NULL;
+   lList *lanswer_list = nullptr;
 
    DENTER(TOP_LAYER);
 
-   if(!(str=get_conf_value(fields?NULL:alpp, *clpp, CF_name, CF_value, key))) {
+   if(!(str=get_conf_value(fields?nullptr:alpp, *clpp, CF_name, CF_value, key))) {
       DRETURN(fields?true:false);
    }
 
@@ -1045,7 +1045,7 @@ bool set_conf_qtlist_attr_list(lList **alpp, lList **clpp, int fields[],
    lDelElemStr(clpp, CF_name, key);
    add_nm_to_set(fields, name_nm);
 
-   if (tmplp != NULL) {
+   if (tmplp != nullptr) {
       lSetList(ep, name_nm, tmplp);
       DRETURN(true);
    }
@@ -1058,13 +1058,13 @@ bool set_conf_ulng_attr_list(lList **alpp, lList **clpp, int fields[],
                              lDescr *descr, int sub_name_nm, const lList *master_hgroup_list) 
 {
    bool ret;
-   lList *tmplp = NULL;
+   lList *tmplp = nullptr;
    const char *str;
-   lList *lanswer_list = NULL;
+   lList *lanswer_list = nullptr;
 
    DENTER(TOP_LAYER);
 
-   if(!(str=get_conf_value(fields?NULL:alpp, *clpp, CF_name, CF_value, key))) {
+   if(!(str=get_conf_value(fields?nullptr:alpp, *clpp, CF_name, CF_value, key))) {
       DRETURN(fields?true:false);
    }
    ret = ulng_attr_list_parse_from_string(&tmplp, &lanswer_list, str,
@@ -1079,7 +1079,7 @@ bool set_conf_ulng_attr_list(lList **alpp, lList **clpp, int fields[],
    lDelElemStr(clpp, CF_name, key);
    add_nm_to_set(fields, name_nm);
 
-   if (tmplp != NULL) {
+   if (tmplp != nullptr) {
       lSetList(ep, name_nm, tmplp);
       DRETURN(true);
    }
@@ -1092,13 +1092,13 @@ bool set_conf_bool_attr_list(lList **alpp, lList **clpp, int fields[],
                              lDescr *descr, int sub_name_nm, const lList *master_hgroup_list) 
 {
    bool ret;
-   lList *tmplp = NULL;
+   lList *tmplp = nullptr;
    const char *str;
-   lList *lanswer_list = NULL;
+   lList *lanswer_list = nullptr;
 
    DENTER(TOP_LAYER);
 
-   if(!(str=get_conf_value(fields?NULL:alpp, *clpp, CF_name, CF_value, key))) {
+   if(!(str=get_conf_value(fields?nullptr:alpp, *clpp, CF_name, CF_value, key))) {
       DRETURN(fields?true:false);
    }
    ret = bool_attr_list_parse_from_string(&tmplp, &lanswer_list, str,
@@ -1113,7 +1113,7 @@ bool set_conf_bool_attr_list(lList **alpp, lList **clpp, int fields[],
    lDelElemStr(clpp, CF_name, key);
    add_nm_to_set(fields, name_nm);
 
-   if (tmplp != NULL) {
+   if (tmplp != nullptr) {
       lSetList(ep, name_nm, tmplp);
       DRETURN(true);
    }
@@ -1126,13 +1126,13 @@ bool set_conf_time_attr_list(lList **alpp, lList **clpp, int fields[],
                              lDescr *descr, int sub_name_nm, const lList *master_hgroup_list) 
 {
    bool ret;
-   lList *tmplp = NULL;
+   lList *tmplp = nullptr;
    const char *str;
-   lList *lanswer_list = NULL;
+   lList *lanswer_list = nullptr;
 
    DENTER(TOP_LAYER);
 
-   if(!(str=get_conf_value(fields?NULL:alpp, *clpp, CF_name, CF_value, key))) {
+   if(!(str=get_conf_value(fields?nullptr:alpp, *clpp, CF_name, CF_value, key))) {
       DRETURN(fields?true:false);
    }
    ret = time_attr_list_parse_from_string(&tmplp, &lanswer_list, str,
@@ -1147,7 +1147,7 @@ bool set_conf_time_attr_list(lList **alpp, lList **clpp, int fields[],
    lDelElemStr(clpp, CF_name, key);
    add_nm_to_set(fields, name_nm);
 
-   if (tmplp != NULL) {
+   if (tmplp != nullptr) {
       lSetList(ep, name_nm, tmplp);
       DRETURN(true);
    }
@@ -1160,13 +1160,13 @@ bool set_conf_mem_attr_list(lList **alpp, lList **clpp, int fields[],
                              lDescr *descr, int sub_name_nm, const lList *master_hgroup_list) 
 {
    bool ret;
-   lList *tmplp = NULL;
+   lList *tmplp = nullptr;
    const char *str;
-   lList *lanswer_list = NULL;
+   lList *lanswer_list = nullptr;
 
    DENTER(TOP_LAYER);
 
-   if(!(str=get_conf_value(fields?NULL:alpp, *clpp, CF_name, CF_value, key))) {
+   if(!(str=get_conf_value(fields?nullptr:alpp, *clpp, CF_name, CF_value, key))) {
       DRETURN(fields?true:false);
    }
    ret = mem_attr_list_parse_from_string(&tmplp, &lanswer_list, str,
@@ -1181,7 +1181,7 @@ bool set_conf_mem_attr_list(lList **alpp, lList **clpp, int fields[],
    lDelElemStr(clpp, CF_name, key);
    add_nm_to_set(fields, name_nm);
 
-   if (tmplp != NULL) {
+   if (tmplp != nullptr) {
       lSetList(ep, name_nm, tmplp);
       DRETURN(true);
    }
@@ -1194,13 +1194,13 @@ bool set_conf_inter_attr_list(lList **alpp, lList **clpp, int fields[],
                               lDescr *descr, int sub_name_nm, const lList *master_hgroup_list) 
 {
    bool ret;
-   lList *tmplp = NULL;
+   lList *tmplp = nullptr;
    const char *str;
-   lList *lanswer_list = NULL;
+   lList *lanswer_list = nullptr;
 
    DENTER(TOP_LAYER);
 
-   if(!(str=get_conf_value(fields?NULL:alpp, *clpp, CF_name, CF_value, key))) {
+   if(!(str=get_conf_value(fields?nullptr:alpp, *clpp, CF_name, CF_value, key))) {
       DRETURN(fields?true:false);
    }
    ret = inter_attr_list_parse_from_string(&tmplp, &lanswer_list, str,
@@ -1216,7 +1216,7 @@ bool set_conf_inter_attr_list(lList **alpp, lList **clpp, int fields[],
    lDelElemStr(clpp, CF_name, key);
    add_nm_to_set(fields, name_nm);
 
-   if (tmplp != NULL) {
+   if (tmplp != nullptr) {
       lSetList(ep, name_nm, tmplp);
       DRETURN(true);
    }
@@ -1255,7 +1255,7 @@ lDescr *descr,
 int subname_nm,
 int subval_nm 
 ) {
-   lList *tmplp = NULL;
+   lList *tmplp = nullptr;
    lListElem *tmpep;
    const char *str;
    const char *s;
@@ -1263,14 +1263,14 @@ int subval_nm
 
    DENTER(CULL_LAYER);
 
-   if(!(str=get_conf_value(fields?NULL:alpp, *clpp, CF_name, CF_value, key))) {
+   if(!(str=get_conf_value(fields?nullptr:alpp, *clpp, CF_name, CF_value, key))) {
       DRETURN(fields?true:false);
    }
    lString2List(str, &tmplp, descr, subname_nm, ", \t");
    for_each_rw(tmpep, tmplp) {
       s = sge_strtok(lGetString(tmpep, subname_nm), ":=");
       lSetString(tmpep, subname_nm, s);
-      if (!(s=sge_strtok(NULL, ":=")))
+      if (!(s=sge_strtok(nullptr, ":=")))
          continue;
       lSetUlong(tmpep, subval_nm, strtol(s, &endptr, 10));
       if (*endptr) {

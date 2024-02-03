@@ -59,10 +59,10 @@ NAMEEND
 
 lNameSpace nmv[] = {
    {1, TEST_Size, TEST_Name},
-   {0, 0, NULL}
+   {0, 0, nullptr}
 };
    
-static lList *master_list0 = NULL;
+static lList *master_list0 = nullptr;
 
 static bool test_check_info(const char *scenario, long exp_elements, const char *exp_observ) {
    bool ret = true;
@@ -93,7 +93,7 @@ bool test_scenario1(void) {
 
    // 1.1 create a master list with 10 elements 
    lObserveStart();
-   master_list0 = lCreateList(NULL, TEST_Type);
+   master_list0 = lCreateList(nullptr, TEST_Type);
    lObserveChangeListType(master_list0, true, "MASTER0");
    for (int i = 0; i < 10; i++) {
       lAppendElem(master_list0, lCreateElem(TEST_Type));
@@ -116,7 +116,7 @@ bool test_scenario2(void) {
 
    // 2.1 
    lObserveStart();
-   master_list0 = lCreateList(NULL, TEST_Type);
+   master_list0 = lCreateList(nullptr, TEST_Type);
    lObserveChangeListType(master_list0, true, "MASTER0");
 
    lListElem *ep0 = lCreateElem(TEST_Type);
@@ -126,9 +126,9 @@ bool test_scenario2(void) {
    lAppendElem(master_list0, ep1);
    lAppendElem(master_list0, ep2);
 
-   lList *ep0_lp = lCreateList(NULL, TEST_Type);
-   lList *ep1_lp = lCreateList(NULL, TEST_Type);
-   lList *ep2_lp = lCreateList(NULL, TEST_Type);
+   lList *ep0_lp = lCreateList(nullptr, TEST_Type);
+   lList *ep1_lp = lCreateList(nullptr, TEST_Type);
+   lList *ep2_lp = lCreateList(nullptr, TEST_Type);
    lSetList(ep0, TEST_list, ep0_lp);
    lSetList(ep1, TEST_list, ep1_lp);
    lSetList(ep2, TEST_list, ep2_lp);
@@ -201,7 +201,7 @@ bool test_scenario3(void) {
 
    // 3.1 
    lObserveStart();
-   master_list0 = lCreateList(NULL, TEST_Type);
+   master_list0 = lCreateList(nullptr, TEST_Type);
    lObserveChangeListType(master_list0, true, "MASTER0");
    for (u_long32 u = 0; u < 3; u++) {
       lListElem *ep = lAddElemUlong(&master_list0, TEST_ulong, u, TEST_Type);

@@ -77,7 +77,7 @@ sge_worker_cleanup_monitor(monitoring_t *monitor) {
 void
 sge_worker_initialize(sge_gdi_ctx_class_t *ctx) {
    const u_long32 max_initial_worker_threads = bootstrap_get_worker_thread_count();
-   cl_thread_settings_t *dummy_thread_p = NULL;
+   cl_thread_settings_t *dummy_thread_p = nullptr;
    u_long32 i;
 
    DENTER(TOP_LAYER);
@@ -91,7 +91,7 @@ sge_worker_initialize(sge_gdi_ctx_class_t *ctx) {
    sge_init_ar_id();
    DPRINTF(("job/ar counter have been initialized\n"));
 
-   reporting_initialize(NULL);
+   reporting_initialize(nullptr);
    DPRINTF(("accounting and reporting modlue has been initialized\n"));
 
    INFO((SGE_EVENT, MSG_QMASTER_THREADCOUNT_US, sge_u32c(max_initial_worker_threads), threadnames[WORKER_THREAD]));
@@ -101,7 +101,7 @@ sge_worker_initialize(sge_gdi_ctx_class_t *ctx) {
 
       sge_dstring_sprintf(&thread_name, "%s%03d", threadnames[WORKER_THREAD], i);
       cl_thread_list_create_thread(Main_Control.worker_thread_pool, &dummy_thread_p, cl_com_get_log_list(),
-                                   sge_dstring_get_string(&thread_name), i, sge_worker_main, NULL, NULL, CL_TT_WORKER);
+                                   sge_dstring_get_string(&thread_name), i, sge_worker_main, nullptr, nullptr, CL_TT_WORKER);
       sge_dstring_free(&thread_name);
    }
    DRETURN_VOID;
@@ -120,11 +120,11 @@ sge_worker_terminate(sge_gdi_ctx_class_t *ctx) {
     * shutdown process will be faster
     */
    {
-      cl_thread_list_elem_t *thr = NULL;
-      cl_thread_list_elem_t *thr_nxt = NULL;
+      cl_thread_list_elem_t *thr = nullptr;
+      cl_thread_list_elem_t *thr_nxt = nullptr;
 
       thr_nxt = cl_thread_list_get_first_elem(Main_Control.worker_thread_pool);
-      while ((thr = thr_nxt) != NULL) {
+      while ((thr = thr_nxt) != nullptr) {
          thr_nxt = cl_thread_list_get_next_elem(thr);
 
          cl_thread_shutdown(thr->thread_config);
@@ -135,10 +135,10 @@ sge_worker_terminate(sge_gdi_ctx_class_t *ctx) {
     * Shutdown/delete the threads and wait for termination
     */
    {
-      cl_thread_settings_t *thread = NULL;
+      cl_thread_settings_t *thread = nullptr;
 
       thread = cl_thread_list_get_first_thread(Main_Control.worker_thread_pool);
-      while (thread != NULL) {
+      while (thread != nullptr) {
          DPRINTF(("gets canceled\n"));
          cl_thread_list_delete_thread(Main_Control.worker_thread_pool, thread);
 
@@ -152,7 +152,7 @@ sge_worker_terminate(sge_gdi_ctx_class_t *ctx) {
    /* shutdown and remove JSV instances */
    jsv_list_remove_all();
 
-   reporting_shutdown(ctx, NULL, do_final_spooling);
+   reporting_shutdown(ctx, nullptr, do_final_spooling);
    DPRINTF(("accounting and reporting module has been shutdown\n"));
 
    /*
@@ -164,15 +164,15 @@ sge_worker_terminate(sge_gdi_ctx_class_t *ctx) {
     * changed in the second instance of the master
     */
    if (do_final_spooling == true) {
-      sge_store_job_number(ctx, NULL, NULL);
-      sge_store_ar_id(ctx, NULL, NULL);
+      sge_store_job_number(ctx, nullptr, nullptr);
+      sge_store_ar_id(ctx, nullptr, nullptr);
       DPRINTF(("job/ar counter were made persistant\n"));
       sge_job_spool(ctx);     /* store qmaster jobs to database */
       sge_userprj_spool(ctx); /* spool the latest usage */
       DPRINTF(("final job and user/project spooling has been triggered\n"));
    }
 
-   sge_shutdown_persistence(NULL);
+   sge_shutdown_persistence(nullptr);
    DPRINTF(("persistance module has been shutdown\n"));
 
    DRETURN_VOID;
@@ -182,7 +182,7 @@ void *
 sge_worker_main(void *arg) {
    bool do_endlessly = true;
    cl_thread_settings_t *thread_config = (cl_thread_settings_t *) arg;
-   sge_gdi_ctx_class_t *ctx = NULL;
+   sge_gdi_ctx_class_t *ctx = nullptr;
    monitoring_t monitor;
    monitoring_t *p_monitor = &monitor;
    time_t next_prof_output = 0;
@@ -199,7 +199,7 @@ sge_worker_main(void *arg) {
    conf_update_thread_profiling("Worker Thread");
 
    while (do_endlessly) {
-      sge_gdi_packet_class_t *packet = NULL;
+      sge_gdi_packet_class_t *packet = nullptr;
 
       /*
        * Wait for packets. As long as packets are available cancellation
@@ -212,7 +212,7 @@ sge_worker_main(void *arg) {
 
       MONITOR_SET_QLEN(p_monitor, sge_tq_get_task_count(Master_Task_Queue));
 
-      if (packet != NULL) {
+      if (packet != nullptr) {
          sge_gdi_task_class_t *task = packet->first_task;
          bool is_only_read_request = true;
 
@@ -232,7 +232,7 @@ sge_worker_main(void *arg) {
              * test if a write lock is necessary
              */
             task = packet->first_task;
-            while (task != NULL) {
+            while (task != nullptr) {
                u_long32 command = SGE_GDI_GET_OPERATION(task->command);
 
                if (command != SGE_GDI_GET) {
@@ -264,7 +264,7 @@ sge_worker_main(void *arg) {
              * do the GDI request
              */
             task = packet->first_task;
-            while (task != NULL) {
+            while (task != nullptr) {
                sge_c_gdi(ctx, packet, task, &(task->answer_list), p_monitor);
 
                task = task->next;
@@ -279,11 +279,11 @@ sge_worker_main(void *arg) {
          dstring observ = DSTRING_INIT;
          lObserveGetInfoString(&observ);
          {
-            struct saved_vars_s *context = NULL;
+            struct saved_vars_s *context = nullptr;
             const char *line = sge_strtok_r(sge_dstring_get_string(&observ), "\n", &context);
             while (line) {
                INFO((SGE_EVENT, "%s", line));
-               line = sge_strtok_r(NULL, "\n", &context);
+               line = sge_strtok_r(nullptr, "\n", &context);
             }
             sge_free_saved_vars(context);
          }
@@ -306,8 +306,8 @@ sge_worker_main(void *arg) {
              */
             if (packet->is_intern_request == false) {
                MONITOR_MESSAGES_OUT(p_monitor);
-               sge_gdi2_send_any_request(ctx, 0, NULL, packet->host, packet->commproc, packet->commproc_id,
-                                         &(packet->pb), TAG_GDI_REQUEST, packet->response_id, NULL);
+               sge_gdi2_send_any_request(ctx, 0, nullptr, packet->host, packet->commproc, packet->commproc_id,
+                                         &(packet->pb), TAG_GDI_REQUEST, packet->response_id, nullptr);
                clear_packbuffer(&(packet->pb));
                sge_gdi_packet_free(&packet);
                /*
@@ -330,7 +330,7 @@ sge_worker_main(void *arg) {
                 * where the caller waits for the answer
                 * make sure it is no longer accessed here
                 */
-               packet = NULL;
+               packet = nullptr;
             }
          } else {
             sge_gdi_packet_free(&packet);
@@ -357,6 +357,6 @@ sge_worker_main(void *arg) {
     * and after the call of cl_thread_func_testcancel()
     */
 
-   DRETURN(NULL);
+   DRETURN(nullptr);
 }
 

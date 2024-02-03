@@ -247,8 +247,8 @@ const char *event_text(const lListElem *event, dstring *buffer)
    /* -------------------- */
    case sgeE_NEW_SHARETREE:
       sge_dstring_sprintf(buffer, MSG_EVENT_SHARETREEXNODESYLEAFS_UII, sge_u32c(number), 
-         lGetNumberOfNodes(NULL, lp, STN_children),
-         lGetNumberOfLeafs(NULL, lp, STN_children));
+         lGetNumberOfNodes(nullptr, lp, STN_children),
+         lGetNumberOfLeafs(nullptr, lp, STN_children));
       break;
 
    /* -------------------- */
@@ -524,7 +524,7 @@ event_client_verify(const lListElem *event_client, lList **answer_list, bool add
   
    DENTER(TOP_LAYER);
 
-   if (event_client == NULL) {
+   if (event_client == nullptr) {
       answer_list_add_sprintf(answer_list, STATUS_ESYNTAX, ANSWER_QUALITY_ERROR,
                               MSG_NULLELEMENTPASSEDTO_S, __func__);
       DTRACE;
@@ -551,7 +551,7 @@ event_client_verify(const lListElem *event_client, lList **answer_list, bool add
        * TODO: Is verify_str_key too restrictive? Does drmaa allow to set the name?
        */
       str = lGetString(event_client, EV_name);
-      if (str == NULL ||
+      if (str == nullptr ||
          verify_str_key(
             answer_list, str, MAX_VERIFY_STRING,
             lNm2Str(EV_name), KEY_TABLE) != STATUS_OK) {
@@ -646,7 +646,7 @@ if (ret == false) {
    /* verify session key. TODO: verify_str_key too restrictive? */
    if (ret) {
       const char *session = lGetString(event_client, EV_session);
-      if (session != NULL) {
+      if (session != nullptr) {
          if (verify_str_key(
          answer_list, session, MAX_VERIFY_STRING,
          "session key", KEY_TABLE) != STATUS_OK) {
@@ -660,7 +660,7 @@ if (ret == false) {
 
    /* disallow an EV_update_function from event_client request */
    if (ret) {
-      if (lGetRef(event_client, EV_update_function) != NULL) {
+      if (lGetRef(event_client, EV_update_function) != nullptr) {
          answer_list_add_sprintf(answer_list, STATUS_ESYNTAX, ANSWER_QUALITY_ERROR, 
                                  MSG_EVENT_INVALIDUPDATEFUNCTION);
          ret = false;

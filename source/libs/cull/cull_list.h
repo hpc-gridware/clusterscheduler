@@ -106,42 +106,42 @@ enum _enum_lMultiType {
 #ifdef __SGE_GDI_LIBRARY_HOME_OBJECT_FILE__
 
 #define LISTDEF( name ) lDescr name[] = {
-#define LISTEND {NoName, lEndT, NULL}};
+#define LISTEND {NoName, lEndT, nullptr}};
 
-#define SGE_INT(name,flags)         { name, lIntT    | flags, NULL }, /* don't use it, not implemented on gdi level */
-#define SGE_HOST(name,flags)        { name, lHostT   | flags, NULL },
-#define SGE_STRING(name,flags)      { name, lStringT | flags, NULL },
-#define SGE_FLOAT(name,flags)       { name, lFloatT  | flags, NULL },
-#define SGE_DOUBLE(name,flags)      { name, lDoubleT | flags, NULL },
-#define SGE_CHAR(name,flags)        { name, lCharT   | flags, NULL },
-#define SGE_LONG(name,flags)        { name, lLongT   | flags, NULL },
-#define SGE_ULONG(name,flags)       { name, lUlongT  | flags, NULL },
-#define SGE_ULONG64(name,flags)     { name, lUlong64T  | flags, NULL },
-#define SGE_BOOL(name,flags)        { name, lBoolT   | flags, NULL },
-#define SGE_LIST(name,type,flags)   { name, lListT   | flags, NULL },
-#define SGE_MAP(name,type,flags)   { name, lListT   | flags, NULL },
-#define SGE_MAPLIST(name,type,flags)   { name, lListT   | flags, NULL },
-#define SGE_OBJECT(name,type,flags) { name, lObjectT | flags, NULL },
-#define SGE_REF(name,type,flags)    { name, lRefT    | flags, NULL },
+#define SGE_INT(name,flags)         { name, lIntT    | flags, nullptr }, /* don't use it, not implemented on gdi level */
+#define SGE_HOST(name,flags)        { name, lHostT   | flags, nullptr },
+#define SGE_STRING(name,flags)      { name, lStringT | flags, nullptr },
+#define SGE_FLOAT(name,flags)       { name, lFloatT  | flags, nullptr },
+#define SGE_DOUBLE(name,flags)      { name, lDoubleT | flags, nullptr },
+#define SGE_CHAR(name,flags)        { name, lCharT   | flags, nullptr },
+#define SGE_LONG(name,flags)        { name, lLongT   | flags, nullptr },
+#define SGE_ULONG(name,flags)       { name, lUlongT  | flags, nullptr },
+#define SGE_ULONG64(name,flags)     { name, lUlong64T  | flags, nullptr },
+#define SGE_BOOL(name,flags)        { name, lBoolT   | flags, nullptr },
+#define SGE_LIST(name,type,flags)   { name, lListT   | flags, nullptr },
+#define SGE_MAP(name,type,flags)   { name, lListT   | flags, nullptr },
+#define SGE_MAPLIST(name,type,flags)   { name, lListT   | flags, nullptr },
+#define SGE_OBJECT(name,type,flags) { name, lObjectT | flags, nullptr },
+#define SGE_REF(name,type,flags)    { name, lRefT    | flags, nullptr },
 
 #define DERIVED_LISTDEF(name,parent) lDescr *name = parent
 #define DERIVED_LISTEND ; 
 
-#define SGE_INT_D(name,flags,def)         { name, lIntT    | flags, NULL },
-#define SGE_HOST_D(name,flags,def)        { name, lHostT   | flags, NULL },
-#define SGE_STRING_D(name,flags,def)      { name, lStringT | flags, NULL },
-#define SGE_FLOAT_D(name,flags,def)       { name, lFloatT  | flags, NULL },
-#define SGE_DOUBLE_D(name,flags,def)      { name, lDoubleT | flags, NULL },
-#define SGE_CHAR_D(name,flags,def)        { name, lCharT   | flags, NULL },
-#define SGE_LONG_D(name,flags,def)        { name, lLongT   | flags, NULL },
-#define SGE_ULONG_D(name,flags,def)       { name, lUlongT  | flags, NULL },
-#define SGE_ULONG64_D(name,flags,def)     { name, lUlong64T  | flags, NULL },
-#define SGE_BOOL_D(name,flags,def)        { name, lBoolT   | flags, NULL },
-#define SGE_LIST_D(name,type,flags,def)   { name, lListT   | flags, NULL },
-#define SGE_MAP_D(name,type,flags,defkey,keyvalue,jgdi_keyname,jgdi_valuename)   { name, lListT   | flags, NULL},
-#define SGE_MAPLIST_D(name,type,flags,defkey,defvalue,jgdi_keyname,jgdi_valuename)   { name, lListT   | flags, NULL},
-#define SGE_OBJECT_D(name,type,flags,def) { name, lObjectT | flags, NULL },
-#define SGE_REF_D(name,type,flags,def)    { name, lRefT    | flags, NULL },
+#define SGE_INT_D(name,flags,def)         { name, lIntT    | flags, nullptr },
+#define SGE_HOST_D(name,flags,def)        { name, lHostT   | flags, nullptr },
+#define SGE_STRING_D(name,flags,def)      { name, lStringT | flags, nullptr },
+#define SGE_FLOAT_D(name,flags,def)       { name, lFloatT  | flags, nullptr },
+#define SGE_DOUBLE_D(name,flags,def)      { name, lDoubleT | flags, nullptr },
+#define SGE_CHAR_D(name,flags,def)        { name, lCharT   | flags, nullptr },
+#define SGE_LONG_D(name,flags,def)        { name, lLongT   | flags, nullptr },
+#define SGE_ULONG_D(name,flags,def)       { name, lUlongT  | flags, nullptr },
+#define SGE_ULONG64_D(name,flags,def)     { name, lUlong64T  | flags, nullptr },
+#define SGE_BOOL_D(name,flags,def)        { name, lBoolT   | flags, nullptr },
+#define SGE_LIST_D(name,type,flags,def)   { name, lListT   | flags, nullptr },
+#define SGE_MAP_D(name,type,flags,defkey,keyvalue,jgdi_keyname,jgdi_valuename)   { name, lListT   | flags, nullptr},
+#define SGE_MAPLIST_D(name,type,flags,defkey,defvalue,jgdi_keyname,jgdi_valuename)   { name, lListT   | flags, nullptr},
+#define SGE_OBJECT_D(name,type,flags,def) { name, lObjectT | flags, nullptr },
+#define SGE_REF_D(name,type,flags,def)    { name, lRefT    | flags, nullptr },
 
 /* 
  * For lists, objects and references the type of the subordinate object(s) 

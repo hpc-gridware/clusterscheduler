@@ -60,9 +60,9 @@ sge_dstring_vsprintf_copy_append(dstring *sb,
                                  sge_dstring_copy_append_f function,
                                  const char *format,
                                  va_list ap) {
-   const char *ret = NULL;
+   const char *ret = nullptr;
 
-   if (sb != NULL && format != NULL && function != NULL) {
+   if (sb != nullptr && format != nullptr && function != nullptr) {
       char static_buffer[BUFSIZ];
       int vsnprintf_ret;
       va_list ap_copy;
@@ -88,7 +88,7 @@ sge_dstring_vsprintf_copy_append(dstring *sb,
          size_t dyn_size = 2 * BUFSIZ;
          char *dyn_buffer = sge_malloc(dyn_size);
 
-         while (vsnprintf_ret == -1 && dyn_buffer != NULL) {
+         while (vsnprintf_ret == -1 && dyn_buffer != nullptr) {
             va_copy(ap_copy, ap);
             vsnprintf_ret = vsnprintf(dyn_buffer, dyn_size, format, ap_copy);
             va_end(ap_copy);
@@ -98,18 +98,18 @@ sge_dstring_vsprintf_copy_append(dstring *sb,
                dyn_buffer = (char *)sge_realloc(dyn_buffer, dyn_size, 0);
             }
          }
-         if (dyn_buffer != NULL) {
+         if (dyn_buffer != nullptr) {
             ret = function(sb, dyn_buffer);
             sge_free(&dyn_buffer);
          } else {
             /* error: no memory */
-            ret = NULL;
+            ret = nullptr;
          }
       } else if (vsnprintf_ret > BUFSIZ) {
-         char *dyn_buffer = NULL;
+         char *dyn_buffer = nullptr;
 
          dyn_buffer = sge_malloc((vsnprintf_ret + 1) * sizeof(char));
-         if (dyn_buffer != NULL) {
+         if (dyn_buffer != nullptr) {
             va_copy(ap_copy, ap);
             vsnprintf(dyn_buffer, vsnprintf_ret + 1, format, ap_copy);
             va_end(ap_copy);
@@ -118,7 +118,7 @@ sge_dstring_vsprintf_copy_append(dstring *sb,
             sge_free(&dyn_buffer);
          } else {
             /* error: no memory */
-            ret = NULL;
+            ret = nullptr;
          }
       } else {
          ret = function(sb, static_buffer);
@@ -138,7 +138,7 @@ sge_dstring_allocate(dstring *sb, size_t request) {
    sb->size += request;
 
    /* allocate memory */
-   if (sb->s != NULL) {
+   if (sb->s != nullptr) {
       sb->s = (char *)sge_realloc(sb->s, sb->size * sizeof(char), 1);
    } else {
       sb->s = sge_malloc(sb->size * sizeof(char));
@@ -148,11 +148,11 @@ sge_dstring_allocate(dstring *sb, size_t request) {
 
 dstring *sge_dstring_init_dynamic(dstring *sb, size_t size) {
    memset(sb, 0, sizeof(dstring));
-   if (sb != NULL && size > 0) {
+   if (sb != nullptr && size > 0) {
       sge_dstring_allocate(sb, size);
       return sb;
    }
-   return NULL;
+   return nullptr;
 }
 
 
@@ -181,8 +181,8 @@ const char *sge_dstring_append(dstring *sb, const char *a) {
 
    DENTER(DSTRING_LAYER);
 
-   if (sb == NULL || a == NULL) {
-      DRETURN(NULL);
+   if (sb == nullptr || a == nullptr) {
+      DRETURN(nullptr);
    }
 
    len = strlen(a);
@@ -199,7 +199,7 @@ const char *sge_dstring_append(dstring *sb, const char *a) {
 
       /* only allow to append a string with length 0
          for memory allocation */
-      if (len == 0 && sb->s != NULL) {
+      if (len == 0 && sb->s != nullptr) {
          DRETURN(sb->s);
       }
 
@@ -228,7 +228,7 @@ const char *sge_dstring_append(dstring *sb, const char *a) {
 const char *sge_dstring_nappend(dstring *sb, const char *a, size_t n) {
    DENTER(DSTRING_LAYER);
 
-   if (sb == NULL || a == NULL) {
+   if (sb == nullptr || a == nullptr) {
       DRETURN(0);
    }
 
@@ -242,7 +242,7 @@ const char *sge_dstring_nappend(dstring *sb, const char *a, size_t n) {
       size_t required;
 
       /* only allow to append a string with length 0 for memory allocation */
-      if (n == 0 && sb->s != NULL) {
+      if (n == 0 && sb->s != nullptr) {
          DRETURN(sb->s);
       }
 
@@ -262,12 +262,12 @@ const char *sge_dstring_nappend(dstring *sb, const char *a, size_t n) {
 const char *sge_dstring_append_char(dstring *sb, const char a) {
    DENTER(DSTRING_LAYER);
 
-   if (sb == NULL) {
-      DRETURN(NULL);
+   if (sb == nullptr) {
+      DRETURN(nullptr);
    }
 
    if (a == '\0') {
-      DRETURN(NULL);
+      DRETURN(nullptr);
    }
 
    if (sb->is_static) {
@@ -386,10 +386,10 @@ const char *sge_dstring_append_dstring(dstring *sb, const dstring *a) {
 *     MT-NOTE: sge_dstring_sprintf() is MT safe
 ******************************************************************************/
 const char *sge_dstring_sprintf(dstring *sb, const char *format, ...) {
-   const char *ret = NULL;
+   const char *ret = nullptr;
 
-   if (sb != NULL) {
-      if (format != NULL) {
+   if (sb != nullptr) {
+      if (format != nullptr) {
          va_list ap;
 
          va_start(ap, format);
@@ -425,10 +425,10 @@ const char *sge_dstring_sprintf(dstring *sb, const char *format, ...) {
 *     MT-NOTE: sge_dstring_vsprintf() is MT safe
 ******************************************************************************/
 const char *sge_dstring_vsprintf(dstring *sb, const char *format, va_list ap) {
-   const char *ret = NULL;
+   const char *ret = nullptr;
 
-   if (sb != NULL) {
-      if (format != NULL) {
+   if (sb != nullptr) {
+      if (format != nullptr) {
          ret = sge_dstring_vsprintf_copy_append(sb, sge_dstring_copy_string,
                                                 format, ap);
       } else {
@@ -463,10 +463,10 @@ const char *sge_dstring_vsprintf(dstring *sb, const char *format, va_list ap) {
 *     MT-NOTE: sge_dstring_sprintf_append() is MT safe
 ******************************************************************************/
 const char *sge_dstring_sprintf_append(dstring *sb, const char *format, ...) {
-   const char *ret = NULL;
+   const char *ret = nullptr;
 
-   if (sb != NULL) {
-      if (format != NULL) {
+   if (sb != nullptr) {
+      if (format != nullptr) {
          va_list ap;
 
          va_start(ap, format);
@@ -500,11 +500,11 @@ const char *sge_dstring_sprintf_append(dstring *sb, const char *format, ...) {
 *     const char* - result string 
 *******************************************************************************/
 const char *sge_dstring_copy_string(dstring *sb, const char *str) {
-   const char *ret = NULL;
+   const char *ret = nullptr;
 
    DENTER(DSTRING_LAYER);
 
-   if (sb != NULL) {
+   if (sb != nullptr) {
       sge_dstring_clear(sb);
       ret = sge_dstring_append(sb, str);
    }
@@ -534,11 +534,11 @@ const char *sge_dstring_copy_string(dstring *sb, const char *str) {
 *     const char* - result string buffer 
 *******************************************************************************/
 const char *sge_dstring_copy_dstring(dstring *sb1, const dstring *sb2) {
-   const char *ret = NULL;
+   const char *ret = nullptr;
 
    DENTER(DSTRING_LAYER);
 
-   if (sb1 != NULL) {
+   if (sb1 != nullptr) {
       sge_dstring_clear(sb1);
       ret = sge_dstring_append(sb1, sge_dstring_get_string(sb2));
    }
@@ -563,7 +563,7 @@ const char *sge_dstring_copy_dstring(dstring *sb1, const dstring *sb2) {
 *     dstring *sb - dynamic string 
 ******************************************************************************/
 void sge_dstring_free(dstring *sb) {
-   if (sb != NULL && !sb->is_static && sb->s != NULL) {
+   if (sb != nullptr && !sb->is_static && sb->s != nullptr) {
       sge_free(&(sb->s));
       sb->size = 0;
       sb->length = 0;
@@ -587,10 +587,10 @@ void sge_dstring_free(dstring *sb) {
 *     dstring *sb - dynamic string 
 ******************************************************************************/
 void sge_dstring_clear(dstring *sb) {
-   if (sb == NULL)
+   if (sb == nullptr)
       return;
 
-   if (sb->s != NULL) {
+   if (sb->s != nullptr) {
       sb->s[0] = '\0';
    }
 
@@ -619,7 +619,7 @@ void sge_dstring_clear(dstring *sb) {
 *     const char* - pointer to string buffer
 *******************************************************************************/
 const char *sge_dstring_get_string(const dstring *sb) {
-   return (sb != NULL) ? sb->s : NULL;
+   return (sb != nullptr) ? sb->s : nullptr;
 }
 
 
@@ -645,7 +645,7 @@ const char *sge_dstring_get_string(const dstring *sb) {
 size_t sge_dstring_strlen(const dstring *sb) {
    size_t ret = 0;
 
-   if (sb != NULL) {
+   if (sb != nullptr) {
       ret = sb->length;
    }
 
@@ -674,7 +674,7 @@ size_t sge_dstring_strlen(const dstring *sb) {
 size_t sge_dstring_remaining(const dstring *sb) {
    size_t ret = 0;
 
-   if (sb != NULL) {
+   if (sb != nullptr) {
       if (sb->is_static) {
          ret = sb->size - sb->length;
       } else {
@@ -705,7 +705,7 @@ size_t sge_dstring_remaining(const dstring *sb) {
 *     size_t - remaining chars
 *******************************************************************************/
 void sge_dstring_init(dstring *sb, char *s, size_t size) {
-   if (sb != NULL && s != NULL) {
+   if (sb != nullptr && s != nullptr) {
       sb->is_static = true;
       sb->length = 0;
       sb->size = size - 1;   /* leave space for trailing 0 */
@@ -780,11 +780,11 @@ sge_dstring_split(dstring *string, char character, dstring *before, dstring *aft
    bool ret = true;
 
    DENTER(DSTRING_LAYER);
-   if (string != NULL && before != NULL && after != NULL) {
+   if (string != nullptr && before != nullptr && after != nullptr) {
       const char *s = sge_dstring_get_string(string);
       const char *end = strchr(s, character);
 
-      while (end != NULL && s != end) {
+      while (end != nullptr && s != end) {
          sge_dstring_append_char(before, *(s++));
       }
       if (*s == character) {
@@ -810,10 +810,10 @@ sge_dstring_split(dstring *string, char character, dstring *before, dstring *aft
 *******************************************************************************/
 void sge_dstring_strip_white_space_at_eol(dstring *string) {
    DENTER(DSTRING_LAYER);
-   if (string != NULL) {
-      char *s = (string != NULL) ? string->s : NULL;
+   if (string != nullptr) {
+      char *s = (string != nullptr) ? string->s : nullptr;
 
-      if (s != NULL) {
+      if (s != nullptr) {
          sge_strip_white_space_at_eol(s);
       }
    }

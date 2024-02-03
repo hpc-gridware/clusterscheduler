@@ -56,8 +56,8 @@ static int snd_messages = 0;
 static int evc_count = 0;
 static int events_sent = 0;
 
-static cl_com_handle_t *handle = NULL;
-cl_raw_list_t *thread_list = NULL;
+static cl_com_handle_t *handle = nullptr;
+cl_raw_list_t *thread_list = nullptr;
 
 #define MAX_EVENT_CLIENTS 1000
 cl_com_endpoint_t *event_client_array[MAX_EVENT_CLIENTS];
@@ -74,7 +74,7 @@ void *my_event_thread(void *t_conf);
 
 
 unsigned long my_application_status(char **info_message) {
-   if (info_message != NULL) {
+   if (info_message != nullptr) {
       *info_message = strdup("not specified (state 1)");
    }
    return (unsigned long) 1;
@@ -102,8 +102,8 @@ void sighandler_client(
 #define __CL_FUNCTION__ "main()"
 
 extern int main(int argc, char **argv) {
-   cl_thread_settings_t *thread_p = NULL;
-   cl_thread_settings_t *dummy_thread_p = NULL;
+   cl_thread_settings_t *thread_p = nullptr;
+   cl_thread_settings_t *dummy_thread_p = nullptr;
    struct sigaction sa;
    struct timeval now;
    struct timeval last;
@@ -125,19 +125,19 @@ extern int main(int argc, char **argv) {
    memset(&sa, 0, sizeof(sa));
    sa.sa_handler = sighandler_client;  /* one handler for all signals */
    sigemptyset(&sa.sa_mask);
-   sigaction(SIGINT, &sa, NULL);
-   sigaction(SIGTERM, &sa, NULL);
-   sigaction(SIGHUP, &sa, NULL);
-   sigaction(SIGPIPE, &sa, NULL);
+   sigaction(SIGINT, &sa, nullptr);
+   sigaction(SIGTERM, &sa, nullptr);
+   sigaction(SIGHUP, &sa, nullptr);
+   sigaction(SIGPIPE, &sa, nullptr);
 
    printf("startup commlib ...\n");
-   cl_com_setup_commlib(CL_RW_THREAD /* CL_THREAD_POOL */ , (cl_log_t) atoi(argv[1]), NULL);
+   cl_com_setup_commlib(CL_RW_THREAD /* CL_THREAD_POOL */ , (cl_log_t) atoi(argv[1]), nullptr);
    cl_com_set_status_func(my_application_status);
 
    printf("setting up service on port %d\n", atoi(argv[2]));
-   handle = cl_com_create_handle(NULL, CL_CT_TCP, CL_CM_CT_MESSAGE, true, atoi(argv[2]), CL_TCP_DEFAULT,
+   handle = cl_com_create_handle(nullptr, CL_CT_TCP, CL_CM_CT_MESSAGE, true, atoi(argv[2]), CL_TCP_DEFAULT,
                                  "virtual_master", 1, 1, 0);
-   if (handle == NULL) {
+   if (handle == nullptr) {
       printf("could not get handle\n");
       exit(1);
    }
@@ -152,15 +152,15 @@ extern int main(int argc, char **argv) {
    printf("create application threads ...\n");
    cl_thread_list_setup(&thread_list, "thread list");
    cl_thread_list_create_thread(thread_list, &dummy_thread_p, cl_com_get_log_list(), "message_thread_1", 100,
-                                my_message_thread, NULL, NULL, CL_TT_USER1);
+                                my_message_thread, nullptr, nullptr, CL_TT_USER1);
 #if 1
    cl_thread_list_create_thread(thread_list, &dummy_thread_p, cl_com_get_log_list(), "message_thread_2", 101,
-                                my_message_thread, NULL, NULL, CL_TT_USER1);
+                                my_message_thread, nullptr, nullptr, CL_TT_USER1);
 #endif
    cl_thread_list_create_thread(thread_list, &dummy_thread_p, cl_com_get_log_list(), "event_thread", 3, my_event_thread,
-                                NULL, NULL, CL_TT_USER1);
+                                nullptr, nullptr, CL_TT_USER1);
 
-   gettimeofday(&last, NULL);
+   gettimeofday(&last, nullptr);
    usec_last = (last.tv_sec * 1000000.0) + last.tv_usec;
 
    while (do_shutdown == 0) {
@@ -170,12 +170,12 @@ extern int main(int argc, char **argv) {
       double snd_m_sec = 0.0;
       double nr_evc_sec = 0.0;
       double snd_ev_sec = 0.0;
-      cl_com_handle_statistic_t *statistic_data = NULL;
+      cl_com_handle_statistic_t *statistic_data = nullptr;
       int unread_msg = 0;
       int unsend_msg = 0;
       int nr_of_connections = 0;
 
-      gettimeofday(&now, NULL);
+      gettimeofday(&now, nullptr);
       usec_now = (now.tv_sec * 1000000.0) + now.tv_usec;
 
       interval = usec_now - usec_last;
@@ -189,7 +189,7 @@ extern int main(int argc, char **argv) {
       }
 
       cl_com_get_actual_statistic_data(handle, &statistic_data);
-      if (statistic_data != NULL) {
+      if (statistic_data != nullptr) {
          unread_msg = (int) statistic_data->unread_message_count;
          unsend_msg = (int) statistic_data->unsend_message_count;
          nr_of_connections = (int) statistic_data->nr_of_connections;
@@ -213,12 +213,12 @@ extern int main(int argc, char **argv) {
    }
    printf("shutdown threads ...\n");
    /* delete all threads */
-   while ((thread_p = cl_thread_list_get_first_thread(thread_list)) != NULL) {
-      gettimeofday(&now, NULL);
+   while ((thread_p = cl_thread_list_get_first_thread(thread_list)) != nullptr) {
+      gettimeofday(&now, nullptr);
       printf("shutting down thread %s (%ld)...", thread_p->thread_name, (unsigned long) now.tv_sec);
       fflush(stdout);
       cl_thread_list_delete_thread(thread_list, thread_p);
-      gettimeofday(&now, NULL);
+      gettimeofday(&now, nullptr);
       printf(" done (%ld)\n", (unsigned long) now.tv_sec);
    }
    cl_thread_list_cleanup(&thread_list);
@@ -265,13 +265,13 @@ void *my_message_thread(void *t_conf) {
    /* ok, thread main */
    while (do_exit == 0) {
       int ret_val = 0;
-      cl_com_message_t *message = NULL;
-      cl_com_endpoint_t *sender = NULL;
+      cl_com_message_t *message = nullptr;
+      cl_com_endpoint_t *sender = nullptr;
 
       cl_thread_func_testcancel(thread_config);
 
       cl_commlib_trigger(handle, 1);
-      ret_val = cl_commlib_receive_message(handle, NULL, NULL, 0,      /* handle, comp_host, comp_name , comp_id, */
+      ret_val = cl_commlib_receive_message(handle, nullptr, nullptr, 0,      /* handle, comp_host, comp_name , comp_id, */
                                            false, 0,                       /* syncron, response_mid */
                                            &message, &sender);
       if (ret_val == CL_RETVAL_OK) {
@@ -283,7 +283,7 @@ void *my_message_thread(void *t_conf) {
             cl_com_free_message(&message);
             help = 0;
             for (i = 0; i < MAX_EVENT_CLIENTS; i++) {
-               if (event_client_array[i] == NULL) {
+               if (event_client_array[i] == nullptr) {
                   event_client_array[i] = sender;
                   evc_count++;
                   help = 1;
@@ -299,7 +299,7 @@ void *my_message_thread(void *t_conf) {
             ret_val = cl_commlib_send_message(handle, sender->comp_host, sender->comp_name, sender->comp_id,
                                               CL_MIH_MAT_NAK,
                                               &(message->message), message->message_length,
-                                              NULL, 0, 0, false, false);
+                                              nullptr, 0, 0, false, false);
             if (ret_val == CL_RETVAL_OK) {
                snd_messages++;
             }
@@ -311,7 +311,7 @@ void *my_message_thread(void *t_conf) {
 
    /* at least set exit state */
    cl_thread_func_cleanup(thread_config);
-   return (NULL);
+   return (nullptr);
 }
 
 
@@ -324,7 +324,7 @@ void *my_event_thread(void *t_conf) {
    int do_exit = 0;
    /* get pointer to cl_thread_settings_t struct */
    cl_thread_settings_t *thread_config = (cl_thread_settings_t *) t_conf;
-   cl_byte_t *reference = NULL;
+   cl_byte_t *reference = nullptr;
 
    /* set thread config data */
    if (cl_thread_set_thread_config(thread_config) != CL_RETVAL_OK) {
@@ -354,7 +354,7 @@ void *my_event_thread(void *t_conf) {
          first = 0;
          for (i = 0; i < MAX_EVENT_CLIENTS; i++) {
             cl_com_endpoint_t *client = event_client_array[i];
-            if (client != NULL) {
+            if (client != nullptr) {
                char help[DATA_SIZE];
                memset(help, 0, DATA_SIZE);
 
@@ -370,7 +370,7 @@ void *my_event_thread(void *t_conf) {
                reference = (cl_byte_t *) help;
                ret_val = cl_commlib_send_message(handle, client->comp_host, client->comp_name, client->comp_id,
                                                  CL_MIH_MAT_NAK, &reference, DATA_SIZE,
-                                                 NULL, 0, 0, true, false);
+                                                 nullptr, 0, 0, true, false);
 
                if (ret_val != CL_RETVAL_OK) {
                   cl_com_free_endpoint(&(event_client_array[i])); /* should be locked at this point */
@@ -397,7 +397,7 @@ void *my_event_thread(void *t_conf) {
    CL_LOG(CL_LOG_INFO, "exiting ...");
    /* at least set exit state */
    cl_thread_func_cleanup(thread_config);
-   return (NULL);
+   return (nullptr);
 }
 
 

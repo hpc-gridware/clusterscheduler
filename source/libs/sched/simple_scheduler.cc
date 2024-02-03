@@ -93,8 +93,8 @@ static sge_callback_result remove_finished_job(sge_evc_class_t *evc,
     * we have to send a job delete order to qmaster
     */
    if(lGetUlong(event, ET_type) == sgeE_JOB_FINAL_USAGE) {
-      if(lGetString(event, ET_strkey) == NULL) {
-         lList *order_list = NULL;
+      if(lGetString(event, ET_strkey) == nullptr) {
+         lList *order_list = nullptr;
          lListElem *job, *ja_task;
          u_long32 job_id, ja_task_id;
          dstring id_dstring = DSTRING_INIT;
@@ -103,13 +103,13 @@ static sge_callback_result remove_finished_job(sge_evc_class_t *evc,
          ja_task_id = lGetUlong(event, ET_intkey2);
 
          DPRINTF(("got final usage for job %s\n", 
-                  job_get_id_string(job_id, ja_task_id, NULL, &id_dstring)));
+                  job_get_id_string(job_id, ja_task_id, nullptr, &id_dstring)));
          sge_dstring_free(&id_dstring);
 
          job = lGetElemUlong(*object_type_get_master_list(SGE_TYPE_JOB), JB_job_number, job_id);
-         ja_task = job_search_task(job, NULL, ja_task_id);
+         ja_task = job_search_task(job, nullptr, ja_task_id);
 
-         order_list = sge_create_orders(order_list, ORT_remove_job, job, ja_task, NULL, false);
+         order_list = sge_create_orders(order_list, ORT_remove_job, job, ja_task, nullptr, false);
          sge_send_orders2master(evc_context, &order_list);
       }
    }
@@ -120,7 +120,7 @@ static sge_callback_result remove_finished_job(sge_evc_class_t *evc,
 static void print_load_value(lListElem *host, const char *name, const char *format)
 {
    const char *value = host_get_load_value(host, name);
-   if(value == NULL) {
+   if(value == nullptr) {
       value = "-";
    }
 
@@ -188,7 +188,7 @@ static void get_workload_info()
 #if 0      
       /* TODO: this doesnt work anymore */
       ep     = queue_or_job_get_states(job, "h_rt");
-      if(ep != NULL) {
+      if(ep != nullptr) {
          wclock = lGetDouble(ep, CE_doubleval);
       }
 #endif      
@@ -211,9 +211,9 @@ static void get_workload_info()
          ja_task_id = lGetUlong(ja_task, JAT_task_number);
          start_time = lGetUlong(ja_task, JAT_start_time);
          if(lGetUlong(ja_task, JAT_status) != JFINISHED) {
-            printf(dformat, job_get_id_string(job_id, ja_task_id, NULL, &id_dstring), 
+            printf(dformat, job_get_id_string(job_id, ja_task_id, nullptr, &id_dstring),
                    user, group, 
-                   (pe == NULL ? "-" : pe), procs, wclock,
+                   (pe == nullptr ? "-" : pe), procs, wclock,
                    start_time > 0 ? ctime(&start_time) : "-\n");
          }
       }
@@ -230,9 +230,9 @@ static void get_workload_info()
          range_get_all_ids(range, &range_min, &range_max, &range_step);
          
          for(ja_task_id = range_min; ja_task_id <= range_max; ja_task_id += range_step) {
-            printf(dformat, job_get_id_string(job_id, ja_task_id, NULL, &id_dstring), 
+            printf(dformat, job_get_id_string(job_id, ja_task_id, nullptr, &id_dstring),
                    user, group, 
-                   (pe == NULL ? "-" : pe), procs, wclock,
+                   (pe == nullptr ? "-" : pe), procs, wclock,
                    start_time > 0 ? ctime(&start_time) : "-\n");
          }
       }
@@ -243,9 +243,9 @@ static void get_workload_info()
          range_get_all_ids(range, &range_min, &range_max, &range_step);
          
          for(ja_task_id = range_min; ja_task_id <= range_max; ja_task_id += range_step) {
-            printf(dformat, job_get_id_string(job_id, ja_task_id, NULL, &id_dstring), 
+            printf(dformat, job_get_id_string(job_id, ja_task_id, nullptr, &id_dstring),
                    user, group, 
-                   (pe == NULL ? "-" : pe), procs, wclock,
+                   (pe == nullptr ? "-" : pe), procs, wclock,
                    start_time > 0 ? ctime(&start_time) : "-\n");
          }
       }
@@ -256,9 +256,9 @@ static void get_workload_info()
          range_get_all_ids(range, &range_min, &range_max, &range_step);
          
          for(ja_task_id = range_min; ja_task_id <= range_max; ja_task_id += range_step) {
-            printf(dformat, job_get_id_string(job_id, ja_task_id, NULL, &id_dstring), 
+            printf(dformat, job_get_id_string(job_id, ja_task_id, nullptr, &id_dstring),
                    user, group, 
-                   (pe == NULL ? "-" : pe), procs, wclock,
+                   (pe == nullptr ? "-" : pe), procs, wclock,
                    start_time > 0 ? ctime(&start_time) : "-\n");
          }
       }
@@ -269,9 +269,9 @@ static void get_workload_info()
          range_get_all_ids(range, &range_min, &range_max, &range_step);
          
          for(ja_task_id = range_min; ja_task_id <= range_max; ja_task_id += range_step) {
-            printf(dformat, job_get_id_string(job_id, ja_task_id, NULL, &id_dstring), 
+            printf(dformat, job_get_id_string(job_id, ja_task_id, nullptr, &id_dstring),
                    user, group, 
-                   (pe == NULL ? "-" : pe), procs, wclock,
+                   (pe == nullptr ? "-" : pe), procs, wclock,
                    start_time > 0 ? ctime(&start_time) : "-\n");
          }
       }
@@ -282,9 +282,9 @@ static void get_workload_info()
          range_get_all_ids(range, &range_min, &range_max, &range_step);
          
          for(ja_task_id = range_min; ja_task_id <= range_max; ja_task_id += range_step) {
-            printf(dformat, job_get_id_string(job_id, ja_task_id, NULL, &id_dstring), 
+            printf(dformat, job_get_id_string(job_id, ja_task_id, nullptr, &id_dstring),
                    user, group, 
-                   (pe == NULL ? "-" : pe), procs, wclock,
+                   (pe == nullptr ? "-" : pe), procs, wclock,
                    start_time > 0 ? ctime(&start_time) : "-\n");
          }
       }
@@ -309,7 +309,7 @@ static void get_policy_info()
       lListElem *queue_ref;
       dstring hosts = DSTRING_INIT;
       const char *host_string;
-      lList *host_list = NULL;
+      lList *host_list = nullptr;
       lListElem *host;
 
       /* general information */
@@ -331,13 +331,13 @@ static void get_policy_info()
             /* TODO: CQ_Type not QU_Type */
             for_each_ep(queue, *(object_type_get_master_list(SGE_TYPE_CQUEUE))) {
                const char *host_name = lGetHost(queue, QU_qhostname);
-               if(lGetElemStr(host_list, STR, host_name) == NULL) {
+               if(lGetElemStr(host_list, STR, host_name) == nullptr) {
                   lAddElemStr(&host_list, STR, host_name, ST_Type);
                }
             }
          } else {
             const char *host_name = lGetHost(lGetElemStr(*(object_type_get_master_list(SGE_TYPE_CQUEUE)), QU_full_name, qname), QU_qhostname);
-            if(lGetElemStr(host_list, STR, host_name) == NULL) {  
+            if(lGetElemStr(host_list, STR, host_name) == nullptr) {
                lAddElemStr(&host_list, STR, host_name, ST_Type);
             }
          }
@@ -350,7 +350,7 @@ static void get_policy_info()
 
       /* output info */
       host_string = sge_dstring_get_string(&hosts);
-      printf("%-15s %7d %-15s %s\n", name, procs, allocation_rule, host_string == NULL ? "-" : host_string);
+      printf("%-15s %7d %-15s %s\n", name, procs, allocation_rule, host_string == nullptr ? "-" : host_string);
 
       /* free allocated memory */
       sge_dstring_free(&hosts);
@@ -375,10 +375,10 @@ static bool find_pending_ja_task(lListElem **job, lListElem **ja_task) {
          range_get_all_ids(range, &range_min, &range_max, &range_step);
          
          for(ja_task_id = range_min; ja_task_id <= range_max; ja_task_id += range_step) {
-            if(lGetElemUlong(lGetList(sjob, JB_ja_tasks), JAT_task_number, ja_task_id) == NULL) {
+            if(lGetElemUlong(lGetList(sjob, JB_ja_tasks), JAT_task_number, ja_task_id) == nullptr) {
                *job = sjob;
                *ja_task = job_get_ja_task_template_pending(sjob, ja_task_id); 
-               object_delete_range_id(sjob, NULL, JB_ja_n_h_ids, ja_task_id);
+               object_delete_range_id(sjob, nullptr, JB_ja_n_h_ids, ja_task_id);
                return true;
             }
          }
@@ -447,9 +447,9 @@ static void simple_scheduler(sge_evc_class_t *evc)
 {
    lListElem *job, *ja_task;
    const char *pe_name;
-   lListElem *pe = NULL;
+   lListElem *pe = nullptr;
    u_long32 procs = 1;
-   lList *allocated_queues = NULL; /* JG_Type */
+   lList *allocated_queues = nullptr; /* JG_Type */
   
    DENTER(TOP_LAYER);
 
@@ -462,7 +462,7 @@ static void simple_scheduler(sge_evc_class_t *evc)
     * SGE supports (multiple) ranges, build maximum
     */
    pe_name = lGetString(job, JB_pe);
-   if(pe_name != NULL) {
+   if(pe_name != nullptr) {
       lListElem *range;
       pe = lGetElemStr(*object_type_get_master_list(SGE_TYPE_PE), PE_name, pe_name);
       for_each_ep(range, lGetList(job, JB_pe_range)) {
@@ -472,7 +472,7 @@ static void simple_scheduler(sge_evc_class_t *evc)
    
    DPRINTF(("jobs requests %d slots in parallel environment %s\n",
             procs,
-            pe_name != NULL ? pe_name : "-"));
+            pe_name != nullptr ? pe_name : "-"));
 
 #if 0 /* TODO: PE <-> Queue relation is stored in Queue object */
    /* allocate free slots
@@ -480,7 +480,7 @@ static void simple_scheduler(sge_evc_class_t *evc)
     * in the queue list, consider all queues.
     * If a pe is given and it contains a queue list, consider only these queues.
     */
-   if(pe == NULL || 
+   if(pe == nullptr ||
       strcmp("all", lGetString(lFirst(lGetList(pe, PE_queue_list)), QR_name)) == 0) {
       /* find suited queue(s) */
       for_each_ep(queue, *(object_type_get_master_list(SGE_TYPE_CQUEUE))) {
@@ -493,7 +493,7 @@ static void simple_scheduler(sge_evc_class_t *evc)
       lListElem *queue_ref;
       for_each_ep(queue_ref, lGetList(pe, PE_queue_list)) {
          lListElem *queue = lGetElemStr(*(object_type_get_master_list(SGE_TYPE_CQUEUE)), QU_full_name, lGetString(queue_ref, QR_name));
-         if(queue != NULL) {
+         if(queue != nullptr) {
             allocate_queue_slots(&allocated_queues, queue, &procs);
             if(procs <= 0) {
                break;
@@ -513,7 +513,7 @@ static void simple_scheduler(sge_evc_class_t *evc)
    /* schedule job:
     * create a task_map and call sge_ssi_job_start
     */
-   if(allocated_queues != NULL) {
+   if(allocated_queues != nullptr) {
       int num_allocated_queues = lGetNumberOfElem(allocated_queues);
       if(num_allocated_queues > 0) {
          task_map *map;
@@ -530,7 +530,7 @@ static void simple_scheduler(sge_evc_class_t *evc)
          }   
 
          map[num_allocated_queues].procs = 0;
-         map[num_allocated_queues].host_name = NULL;
+         map[num_allocated_queues].host_name = nullptr;
 
          sprintf(id, sge_U32CFormat"."sge_U32CFormat, sge_u32c(lGetUlong(job, JB_job_number)), sge_u32c(lGetUlong(ja_task, JAT_task_number)));
 
@@ -572,20 +572,20 @@ static void register_scheduler(sge_evc_class_t *evc)
 
    /* initialize mirroring interface */
    sge_mirror_initialize(evc, EV_ID_SCHEDD, "simple_scheduler", true);
-   sge_mirror_subscribe(evc, SGE_TYPE_ALL, NULL, NULL, NULL, NULL, NULL); 
+   sge_mirror_subscribe(evc, SGE_TYPE_ALL, nullptr, nullptr, nullptr, nullptr, nullptr);
 
    /* in an sgeee system we have to explicitly remove finished jobs 
     * from qmaster 
     */
-   sge_mirror_subscribe(evc, SGE_TYPE_JOB, remove_finished_job, NULL, NULL, NULL, NULL);
+   sge_mirror_subscribe(evc, SGE_TYPE_JOB, remove_finished_job, nullptr, nullptr, nullptr, nullptr);
 
    DRETURN_VOID;
 }
 
 int main(int argc, char *argv[])
 {
-   sge_gdi_ctx_class_t *ctx = NULL;
-   sge_evc_class_t *evc = NULL;
+   sge_gdi_ctx_class_t *ctx = nullptr;
+   sge_evc_class_t *evc = nullptr;
 
    DENTER_MAIN(TOP_LAYER, "simple_scheduler");
 
@@ -599,7 +599,7 @@ int main(int argc, char *argv[])
 
    evc = sge_evc_class_create(ctx, EV_ID_SCHEDD, &alp, false);
 
-   if (evc == NULL) {
+   if (evc == nullptr) {
       answer_list_output(&alp);
       SGE_EXIT(&ctx, 1);
    }

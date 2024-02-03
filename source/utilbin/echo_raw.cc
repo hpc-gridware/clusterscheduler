@@ -54,7 +54,7 @@ int main(int argc, char *argv[])
    int first = 1;
    int mode = 0;
    dstring output_buffer = DSTRING_INIT;
-   const char *output = NULL;
+   const char *output = nullptr;
    
    if (argc >= 2 && strcmp(argv[1], "-e") == 0) {
       /* skip this argument and change the mode */
@@ -88,7 +88,7 @@ int main(int argc, char *argv[])
       if (mode == 0) { 
          fprintf(stdout, "%s", argv[i++]);
       } else {
-         if (argv[i] != NULL) {
+         if (argv[i] != nullptr) {
             size_t length = strlen(argv[i]);
             size_t j = 0;
 
@@ -149,7 +149,7 @@ int main(int argc, char *argv[])
       sge_dstring_append_char(&output_buffer, '\n');
    }
    output = sge_dstring_get_string(&output_buffer);
-   if (output != NULL) {
+   if (output != nullptr) {
       printf("%s", output);
    }
    return 0;   

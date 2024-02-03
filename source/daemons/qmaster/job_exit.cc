@@ -76,12 +76,12 @@
 void
 sge_job_exit(sge_gdi_ctx_class_t *ctx, lListElem *jr, lListElem *jep, lListElem *jatep, monitoring_t *monitor)
 {
-   lListElem *queueep = NULL;
-   const char *err_str = NULL;
-   const char *qname = NULL;  
+   lListElem *queueep = nullptr;
+   const char *err_str = nullptr;
+   const char *qname = nullptr;
    const char *hostname = MSG_OBJ_UNKNOWNHOST;
    u_long32 jobid, jataskid;
-   const lListElem *hep = NULL;
+   const lListElem *hep = nullptr;
    u_long32 timestamp;
    u_long32 failed, general_failure;
    lList *saved_gdil;
@@ -96,12 +96,12 @@ sge_job_exit(sge_gdi_ctx_class_t *ctx, lListElem *jr, lListElem *jep, lListElem 
    timestamp = sge_get_gmt();
                      
    qname = lGetString(jr, JR_queue_name);
-   if (qname == NULL) {
+   if (qname == nullptr) {
       qname = (char *)MSG_OBJ_UNKNOWNQ;
    }
 
    err_str = lGetString(jr, JR_err_str);
-   if (err_str == NULL) {
+   if (err_str == nullptr) {
       err_str = MSG_UNKNOWNREASON;
    }
 
@@ -121,14 +121,14 @@ sge_job_exit(sge_gdi_ctx_class_t *ctx, lListElem *jr, lListElem *jep, lListElem 
       jobid, jataskid, qname, (int) lGetUlong(jatep, JAT_pvm_ckpt_pid)));
 
    queueep = cqueue_list_locate_qinstance(master_cqueue_list, qname);
-   if (queueep == NULL) {
+   if (queueep == nullptr) {
       ERROR((SGE_EVENT, MSG_JOB_WRITEJFINISH_S, qname));
    }
 
    sge_job_remove_enforce_limit_trigger(jobid, jataskid);
 
    /* retrieve hostname for later use */
-   if (queueep != NULL) {
+   if (queueep != nullptr) {
       hostname = lGetHost(queueep, QU_qhostname);
    }
 
@@ -161,9 +161,9 @@ sge_job_exit(sge_gdi_ctx_class_t *ctx, lListElem *jr, lListElem *jep, lListElem 
     */
    if (((lGetUlong(jatep, JAT_state) & JDELETED) == JDELETED) || (failed && !lGetString(jep, JB_exec_file)) ||
          (failed && general_failure==GFSTATE_JOB && JOB_TYPE_IS_NO_ERROR(lGetUlong(jep, JB_type)))) {
-      reporting_create_acct_record(ctx, NULL, jr, jep, jatep, false);
+      reporting_create_acct_record(ctx, nullptr, jr, jep, jatep, false);
       /* JG: TODO: we need more information in the log message */
-      reporting_create_job_log(NULL, timestamp, JL_DELETED, MSG_EXECD, hostname, jr, jep, jatep, NULL, MSG_LOG_JREMOVED);
+      reporting_create_job_log(nullptr, timestamp, JL_DELETED, MSG_EXECD, hostname, jr, jep, jatep, nullptr, MSG_LOG_JREMOVED);
 
       sge_commit_job(ctx, jep, jatep, jr, COMMIT_ST_FINISHED_FAILED_EE, COMMIT_DEFAULT | COMMIT_NEVER_RAN, monitor);
 
@@ -171,7 +171,7 @@ sge_job_exit(sge_gdi_ctx_class_t *ctx, lListElem *jr, lListElem *jep, lListElem 
          /* get AR and remove it if no other jobs are debited */
          lListElem *ar = ar_list_locate(master_ar_list, lGetUlong(jep, JB_ar));
 
-         if (ar != NULL && lGetUlong(ar, AR_state) == AR_DELETED) {
+         if (ar != nullptr && lGetUlong(ar, AR_state) == AR_DELETED) {
             const lListElem *ar_queue;
             u_long32 ar_id = lGetUlong(ar, AR_id);
 
@@ -180,7 +180,7 @@ sge_job_exit(sge_gdi_ctx_class_t *ctx, lListElem *jr, lListElem *jep, lListElem 
                   break;
                }
             }
-            if (ar_queue == NULL) {
+            if (ar_queue == nullptr) {
                /* no jobs registered in advance reservation */
                dstring buffer = DSTRING_INIT;
 
@@ -188,14 +188,14 @@ sge_job_exit(sge_gdi_ctx_class_t *ctx, lListElem *jr, lListElem *jep, lListElem 
 
                ar_do_reservation(ar, false);
 
-               reporting_create_ar_log_record(NULL, ar, ARL_DELETED, "AR deleted", timestamp);
-               reporting_create_ar_acct_records(NULL, ar, timestamp); 
+               reporting_create_ar_log_record(nullptr, ar, ARL_DELETED, "AR deleted", timestamp);
+               reporting_create_ar_acct_records(nullptr, ar, timestamp);
 
                lRemoveElem(master_ar_list, &ar);
 
-               sge_event_spool(ctx, NULL, 0, sgeE_AR_DEL, 
-                      ar_id, 0, sge_dstring_get_string(&buffer), NULL, NULL,
-                      NULL, NULL, NULL, true, true);
+               sge_event_spool(ctx, nullptr, 0, sgeE_AR_DEL,
+                      ar_id, 0, sge_dstring_get_string(&buffer), nullptr, nullptr,
+                      nullptr, nullptr, nullptr, true, true);
                sge_dstring_free(&buffer);
             }
          }
@@ -211,9 +211,9 @@ sge_job_exit(sge_gdi_ctx_class_t *ctx, lListElem *jr, lListElem *jep, lListElem 
    else if ((failed && general_failure==GFSTATE_JOB)) {
       DPRINTF(("set job "sge_u32"."sge_u32" in ERROR state\n", 
                lGetUlong(jep, JB_job_number), jataskid));
-      reporting_create_acct_record(ctx, NULL, jr, jep, jatep, false);
+      reporting_create_acct_record(ctx, nullptr, jr, jep, jatep, false);
       /* JG: TODO: we need more information in the log message */
-      reporting_create_job_log(NULL, timestamp, JL_ERROR, MSG_EXECD, hostname, jr, jep, jatep, NULL, MSG_LOG_JERRORSET);
+      reporting_create_job_log(nullptr, timestamp, JL_ERROR, MSG_EXECD, hostname, jr, jep, jatep, nullptr, MSG_LOG_JERRORSET);
       lSetUlong(jatep, JAT_start_time, 0);
       ja_task_message_add(jatep, 1, err_str);
       sge_commit_job(ctx, jep, jatep, jr, COMMIT_ST_FAILED_AND_ERROR, COMMIT_DEFAULT, monitor);
@@ -225,10 +225,10 @@ sge_job_exit(sge_gdi_ctx_class_t *ctx, lListElem *jr, lListElem *jep, lListElem 
    else if (((failed && (failed <= SSTATE_BEFORE_JOB)) || 
         general_failure)) {
       /* JG: TODO: we need more information in the log message */
-      reporting_create_job_log(NULL, timestamp, JL_RESTART, MSG_EXECD, hostname, jr, jep, jatep, NULL, MSG_LOG_JNOSTARTRESCHEDULE);
+      reporting_create_job_log(nullptr, timestamp, JL_RESTART, MSG_EXECD, hostname, jr, jep, jatep, nullptr, MSG_LOG_JNOSTARTRESCHEDULE);
       ja_task_message_add(jatep, 1, err_str);
       sge_commit_job(ctx, jep, jatep, jr, COMMIT_ST_RESCHEDULED, COMMIT_DEFAULT, monitor);
-      reporting_create_acct_record(ctx, NULL, jr, jep, jatep, false);
+      reporting_create_acct_record(ctx, nullptr, jr, jep, jatep, false);
       lSetUlong(jatep, JAT_start_time, 0);
    }
       /*
@@ -236,12 +236,12 @@ sge_job_exit(sge_gdi_ctx_class_t *ctx, lListElem *jr, lListElem *jep, lListElem 
        */
    else if (((failed == ESSTATE_NO_EXITSTATUS) || failed == ESSTATE_DIED_THRU_SIGNAL) &&
             ((lGetUlong(jep, JB_restart) == 1 || (lGetUlong(jep, JB_checkpoint_attr) & ~NO_CHECKPOINT)) ||
-             (!lGetUlong(jep, JB_restart) && (queueep != NULL && lGetBool(queueep, QU_rerun))))) {
+             (!lGetUlong(jep, JB_restart) && (queueep != nullptr && lGetBool(queueep, QU_rerun))))) {
       lSetUlong(jatep, JAT_job_restarted, MAX(lGetUlong(jatep, JAT_job_restarted), lGetUlong(jr, JR_ckpt_arena)));
       lSetString(jatep, JAT_osjobid, lGetString(jr, JR_osjobid));
-      reporting_create_acct_record(ctx, NULL, jr, jep, jatep, false);
+      reporting_create_acct_record(ctx, nullptr, jr, jep, jatep, false);
       /* JG: TODO: we need more information in the log message */
-      reporting_create_job_log(NULL, timestamp, JL_RESTART, MSG_EXECD, hostname, jr, jep, jatep, NULL, MSG_LOG_JRERUNRESCHEDULE);
+      reporting_create_job_log(nullptr, timestamp, JL_RESTART, MSG_EXECD, hostname, jr, jep, jatep, nullptr, MSG_LOG_JRERUNRESCHEDULE);
       lSetUlong(jatep, JAT_start_time, 0);
       sge_commit_job(ctx, jep, jatep, jr, COMMIT_ST_RESCHEDULED, COMMIT_DEFAULT, monitor);
    }
@@ -253,8 +253,8 @@ sge_job_exit(sge_gdi_ctx_class_t *ctx, lListElem *jr, lListElem *jep, lListElem 
       /* job_restarted == 2 means a checkpoint in the ckpt arena */
       lSetUlong(jatep, JAT_job_restarted, MAX(lGetUlong(jatep, JAT_job_restarted), lGetUlong(jr, JR_ckpt_arena)));
       lSetString(jatep, JAT_osjobid, lGetString(jr, JR_osjobid));
-      reporting_create_acct_record(ctx, NULL, jr, jep, jatep, false);
-      reporting_create_job_log(NULL, timestamp, JL_MIGRATE, MSG_EXECD, hostname, jr, jep, jatep, NULL, MSG_LOG_JCKPTRESCHEDULE);
+      reporting_create_acct_record(ctx, nullptr, jr, jep, jatep, false);
+      reporting_create_job_log(nullptr, timestamp, JL_MIGRATE, MSG_EXECD, hostname, jr, jep, jatep, nullptr, MSG_LOG_JCKPTRESCHEDULE);
       lSetUlong(jatep, JAT_start_time, 0);
       sge_commit_job(ctx, jep, jatep, jr, COMMIT_ST_RESCHEDULED, COMMIT_DEFAULT, monitor);
    }
@@ -265,8 +265,8 @@ sge_job_exit(sge_gdi_ctx_class_t *ctx, lListElem *jr, lListElem *jep, lListElem 
    else if (failed == SSTATE_AGAIN) {
       lSetUlong(jatep, JAT_job_restarted, MAX(lGetUlong(jatep, JAT_job_restarted), lGetUlong(jr, JR_ckpt_arena)));
       lSetString(jatep, JAT_osjobid, lGetString(jr, JR_osjobid));
-      reporting_create_acct_record(ctx, NULL, jr, jep, jatep, false);
-      reporting_create_job_log(NULL, timestamp, JL_RESTART, MSG_EXECD, hostname, jr, jep, jatep, NULL, MSG_LOG_JNORESRESCHEDULE);
+      reporting_create_acct_record(ctx, nullptr, jr, jep, jatep, false);
+      reporting_create_job_log(nullptr, timestamp, JL_RESTART, MSG_EXECD, hostname, jr, jep, jatep, nullptr, MSG_LOG_JNORESRESCHEDULE);
       lSetUlong(jatep, JAT_start_time, 0);
       sge_commit_job(ctx, jep, jatep, jr, COMMIT_ST_USER_RESCHEDULED, COMMIT_DEFAULT, monitor);
    }
@@ -274,21 +274,21 @@ sge_job_exit(sge_gdi_ctx_class_t *ctx, lListElem *jr, lListElem *jep, lListElem 
        * case 7: job finished 
        */
    else {
-      reporting_create_acct_record(ctx, NULL, jr, jep, jatep, false);
-      reporting_create_job_log(NULL, timestamp, JL_FINISHED, MSG_EXECD, hostname, jr, jep, jatep, NULL, MSG_LOG_EXITED);
+      reporting_create_acct_record(ctx, nullptr, jr, jep, jatep, false);
+      reporting_create_job_log(nullptr, timestamp, JL_FINISHED, MSG_EXECD, hostname, jr, jep, jatep, nullptr, MSG_LOG_EXITED);
       sge_commit_job(ctx, jep, jatep, jr, COMMIT_ST_FINISHED_FAILED_EE, COMMIT_DEFAULT, monitor);
    }
 
-   if (queueep != NULL) {
+   if (queueep != nullptr) {
       bool found_host = false;
-      lList *answer_list = NULL;
+      lList *answer_list = nullptr;
       /*
       ** in this case we have to halt all queues on this host
       */
       if (general_failure && general_failure == GFSTATE_HOST) {
          hep = host_list_locate(master_ehost_list, lGetHost(queueep, QU_qhostname));
-         if (hep != NULL) {
-            const lListElem *cqueue = NULL;
+         if (hep != nullptr) {
+            const lListElem *cqueue = nullptr;
             const char *host = lGetHost(hep, EH_name);
             dstring error = DSTRING_INIT;
 
@@ -298,7 +298,7 @@ sge_job_exit(sge_gdi_ctx_class_t *ctx, lListElem *jr, lListElem *jep, lListElem 
                const lList *qinstance_list = lGetList(cqueue, CQ_qinstances);
                lListElem *qinstance = lGetElemHostRW(qinstance_list, QU_qhostname, host);
 
-               if (qinstance != NULL) {
+               if (qinstance != nullptr) {
 
                   sge_qmaster_qinstance_state_set_error(qinstance, true);
 
@@ -306,7 +306,7 @@ sge_job_exit(sge_gdi_ctx_class_t *ctx, lListElem *jr, lListElem *jep, lListElem 
                   qinstance_message_add(qinstance, QI_ERROR, sge_dstring_get_string(&error)); 
                   ERROR((SGE_EVENT, SFNMAX, sge_dstring_get_string(&error)));
                   sge_event_spool(ctx, &answer_list, 0, sgeE_QINSTANCE_MOD, 0, 0, lGetString(qinstance, QU_qname), 
-                                  lGetHost(qinstance, QU_qhostname), NULL, qinstance, NULL, NULL, true, true);
+                                  lGetHost(qinstance, QU_qhostname), nullptr, qinstance, nullptr, nullptr, true, true);
                }
             }
             sge_dstring_free(&error);
@@ -327,7 +327,7 @@ sge_job_exit(sge_gdi_ctx_class_t *ctx, lListElem *jr, lListElem *jep, lListElem 
          qinstance_message_add(queueep, QI_ERROR, sge_dstring_get_string(&error));
          ERROR((SGE_EVENT, SFNMAX, sge_dstring_get_string(&error)));
          sge_event_spool(ctx, &answer_list, 0, sgeE_QINSTANCE_MOD, 0, 0, lGetString(queueep, QU_qname), 
-                         lGetHost(queueep, QU_qhostname), NULL, queueep, NULL, NULL, true, true);
+                         lGetHost(queueep, QU_qhostname), nullptr, queueep, nullptr, nullptr, true, true);
          sge_dstring_free(&error);
       }
 

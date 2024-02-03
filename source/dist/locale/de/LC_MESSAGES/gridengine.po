@@ -19,7 +19,7 @@ msgid "Error parsing mail list >%s<\n"
 msgstr "Fehler beim Einlesen der Mail-Liste: %s\n"
 
 #: ../src/admin_mail.c:174 ../src/execd.c:131
-msgid "(NULL)"
+msgid "(nullptr)"
 msgstr "(LEER)"
 
 #: ../src/admin_mail.c:180
@@ -179,7 +179,7 @@ msgstr ""
 
 #: ../src/cod_c_api.c:165
 #, c-format
-msgid "denied: got NULL in %s/%s of api request from host \"%s\"\n"
+msgid "denied: got nullptr in %s/%s of api request from host \"%s\"\n"
 msgstr ""
 "Verboten: Nullzeiger in %s/%s der API Anforderung des Rechners \"%s\"\n"
 
@@ -654,8 +654,8 @@ msgstr "unbekannter Rechnername '%s'\n"
 
 #: ../src/cod_groups.c:146 ../src/cod_user_mapping.c:1815
 #: ../src/get_conf.c:108
-msgid "NULL pointer received"
-msgstr "NULL Zeiger empfangen"
+msgid "nullptr pointer received"
+msgstr "nullptr Zeiger empfangen"
 
 #
 #: ../src/cod_groups.c:297
@@ -1249,12 +1249,12 @@ msgstr ""
 "job"
 
 #: ../src/cod_job.c:2587
-msgid "jlpp == NULL in cod_add_job()\n"
-msgstr "jlpp == NULL in cod_add_job()\n"
+msgid "jlpp == nullptr in cod_add_job()\n"
+msgstr "jlpp == nullptr in cod_add_job()\n"
 
 #: ../src/cod_job.c:2592
-msgid "jep == NULL in cod_add_job()\n"
-msgstr "jep == NULL in cod_add_job()\n"
+msgid "jep == nullptr in cod_add_job()\n"
+msgstr "jep == nullptr in cod_add_job()\n"
 
 #: ../src/cod_job.c:2602
 #, c-format
@@ -1916,7 +1916,7 @@ msgid "can't write history for queue \"%-.100s\"\n"
 msgstr "can't write history for queue \"%-.100s\"\n"
 
 #: ../src/cod_queue_qmaster.c:1019
-msgid "NULL ptr passed to cod_del_queue()\n"
+msgid "nullptr ptr passed to cod_del_queue()\n"
 msgstr ""
 
 #: ../src/cod_queue_qmaster.c:1026
@@ -1925,8 +1925,8 @@ msgid "can't locate queue %s\n"
 msgstr ""
 
 #: ../src/cod_queue_qmaster.c:1053
-msgid "NULL ptr passed to cod_add_queue()\n"
-msgstr "NULL ptr passed to cod_add_queue()\n"
+msgid "nullptr ptr passed to cod_add_queue()\n"
+msgstr "nullptr ptr passed to cod_add_queue()\n"
 
 #: ../src/cod_resource.c:75
 msgid "unable to alloc space for requested resources\n"
@@ -2426,13 +2426,13 @@ msgstr ""
 
 #: ../src/configuration_qmaster.c:355
 #, c-format
-msgid "name == NULL in configuration list of \"%-.100s\"\n"
+msgid "name == nullptr in configuration list of \"%-.100s\"\n"
 msgstr ""
 
 #: ../src/configuration_qmaster.c:363
 #, c-format
 msgid ""
-"value == NULL for attribute \"%-.100s\" in configuration list of "
+"value == nullptr for attribute \"%-.100s\" in configuration list of "
 "\"%-.100s\"\n"
 msgstr ""
 
@@ -3210,8 +3210,8 @@ msgstr "Fehler! %s ist kein gueltiger Auftragsvorgangsidentifikator\n"
 
 #: ../src/parse_job_cull.c:95 ../src/parse_job_qsh.c:69
 #: ../src/parse_qlist.c:58 ../src/parse_qsub.c:89 ../src/qalter.c:230
-msgid "NULL pointer received\n"
-msgstr "NULL pointer received\n"
+msgid "nullptr pointer received\n"
+msgstr "nullptr pointer received\n"
 
 #: ../src/parse_job_cull.c:103 ../src/parse_job_qsh.c:77 ../src/qalter.c:244
 #: ../src/qalter.c:753
@@ -3235,8 +3235,8 @@ msgid "Unknown option %s"
 msgstr "Unknown option %s"
 
 #: ../src/parse_job_cull.c:639
-msgid "can't process NULL list"
-msgstr "can't process NULL list"
+msgid "can't process nullptr list"
+msgstr "can't process nullptr list"
 
 #: ../src/parse_job_cull.c:649
 #, c-format
@@ -5061,8 +5061,8 @@ msgid "# MAPPING_USER      MAPPINGHOST-/GROUPLIST\n"
 msgstr "# ABBILDUNGS_NAME   ABBILDUNGSRECHNER-/GRUPPENLISTE\n"
 
 #: ../src/read_write_userprj.c:86
-msgid "ep == NULL - no user or project element"
-msgstr "ep == NULL - no user or project element"
+msgid "ep == nullptr - no user or project element"
+msgstr "ep == nullptr - no user or project element"
 
 #: ../src/read_write_userprj.c:297
 #, c-format
@@ -5415,8 +5415,8 @@ msgid "conf_version not found on reading spool file\n"
 msgstr "conf_version not found on reading spool file\n"
 
 #: ../src/sched_conf.c:97
-msgid "alpp == NULL - no scheduler configuration"
-msgstr "alpp == NULL - no scheduler configuration"
+msgid "alpp == nullptr - no scheduler configuration"
+msgstr "alpp == nullptr - no scheduler configuration"
 
 #: ../src/sched_conf.c:101
 msgid "no scheduler configuration"
@@ -5895,7 +5895,7 @@ msgid "commd is down: %s"
 msgstr ""
 
 #: ../apilib/cod_any_request.c:211
-msgid "parameter rhost = NULL for cod_send_any_request()"
+msgid "parameter rhost = nullptr for cod_send_any_request()"
 msgstr ""
 
 #: ../apilib/cod_any_request.c:259
@@ -5904,7 +5904,7 @@ msgid "can't send %ssynchronous message to commproc (%s:%d) on host \"%s\": %s"
 msgstr ""
 
 #: ../apilib/cod_any_request.c:303
-msgid "parameter rhost = NULL for cod_get_any_request()"
+msgid "parameter rhost = nullptr for cod_get_any_request()"
 msgstr ""
 
 #: ../apilib/cod_any_request.c:342
@@ -5913,7 +5913,7 @@ msgid "can't receive message from commproc (%s:%d) on host \"%s\": %s"
 msgstr ""
 
 #: ../apilib/cod_api_request.c:134
-msgid "NULL pointer passed to cod_api_multi()"
+msgid "nullptr pointer passed to cod_api_multi()"
 msgstr ""
 
 #: ../apilib/cod_api_request.c:139
@@ -5948,11 +5948,11 @@ msgid "general error (%d) sending and receiving api request\n"
 msgstr ""
 
 #: ../apilib/cod_api_request.c:425
-msgid "NULL list passed to cod_send_receive_api_request()"
+msgid "nullptr list passed to cod_send_receive_api_request()"
 msgstr ""
 
 #: ../apilib/cod_api_request.c:431
-msgid "NULL rhost passed to cod_send_receive_api_request()"
+msgid "nullptr rhost passed to cod_send_receive_api_request()"
 msgstr ""
 
 #: ../apilib/cod_api_request.c:525
@@ -6215,7 +6215,7 @@ msgid "can't read \"%s\" - product mode not set."
 msgstr ""
 
 #: ../apilib/qm_name.c:38
-msgid "NULL pointer passed to \"master_host\" or \"master_file\""
+msgid "nullptr pointer passed to \"master_host\" or \"master_file\""
 msgstr ""
 
 #: ../apilib/qm_name.c:44
@@ -6960,7 +6960,7 @@ msgid "realloc() failure\n"
 msgstr ""
 
 #: ../apilib/utility.c:574
-msgid "suffix == NULL in cod_unlink()\n"
+msgid "suffix == nullptr in cod_unlink()\n"
 msgstr ""
 
 #: ../apilib/utility.c:614
@@ -7025,7 +7025,7 @@ msgid "2nd fork() failed while daemonizing: %s\n"
 msgstr ""
 
 #: ../utilib/cod_dir.c:52
-msgid "NULL parameter"
+msgid "nullptr parameter"
 msgstr ""
 
 #: ../utilib/cod_dir.c:57
@@ -7071,11 +7071,11 @@ msgid "zero length"
 msgstr ""
 
 #: ../utilib/cod_log.c:98
-msgid "NULL"
+msgid "nullptr"
 msgstr ""
 
 #: ../utilib/cod_mkdir.c:37 ../utilib/cod_mkdir.c:42
-msgid "path == NULL in cod_mkdir()"
+msgid "path == nullptr in cod_mkdir()"
 msgstr ""
 
 #: ../utilib/cod_mkdir.c:92 ../utilib/cod_mkdir.c:96
@@ -7196,7 +7196,7 @@ msgid "cant write %d bytes into file \"%-.100s\"\n"
 msgstr ""
 
 #: ../utilib/cod_string.c:212 ../utilib/cod_string.c:227
-msgid "Invalid cod_strtok_r call, last is not NULL\n"
+msgid "Invalid cod_strtok_r call, last is not nullptr\n"
 msgstr ""
 
 #: ../utilib/cod_switch_user.c:66
@@ -7211,8 +7211,8 @@ msgstr ""
 # 
 #: ../utilib/cod_text.c:17
 #, c-format
-msgid "NULL ptr passed to %-.100s()\n"
-msgstr "%-.100s() durchlief NULL-Zeiger\n"
+msgid "nullptr ptr passed to %-.100s()\n"
+msgstr "%-.100s() durchlief nullptr-Zeiger\n"
 
 #: ../utilib/cod_text.c:20
 #, c-format
@@ -8566,7 +8566,7 @@ msgstr ""
 
 #
 #: ../cull/src/cull_lerrno.c:40
-msgid "element is NULL"
+msgid "element is nullptr"
 msgstr ""
 
 #
@@ -8581,7 +8581,7 @@ msgstr ""
 
 #
 #: ../cull/src/cull_lerrno.c:46
-msgid "descriptor is NULL, empty describtor"
+msgid "descriptor is nullptr, empty describtor"
 msgstr ""
 
 #
@@ -8596,7 +8596,7 @@ msgstr ""
 
 #
 #: ../cull/src/cull_lerrno.c:52
-msgid "file pointer is NULL"
+msgid "file pointer is nullptr"
 msgstr ""
 
 #
@@ -8621,7 +8621,7 @@ msgstr ""
 
 #
 #: ../cull/src/cull_lerrno.c:62
-msgid "list is NULL"
+msgid "list is nullptr"
 msgstr ""
 
 #
@@ -8691,12 +8691,12 @@ msgstr ""
 
 #
 #: ../cull/src/cull_lerrno.c:90
-msgid "lEnumeration is NULL"
+msgid "lEnumeration is nullptr"
 msgstr ""
 
 #
 #: ../cull/src/cull_lerrno.c:92
-msgid "lCondition is NULL"
+msgid "lCondition is nullptr"
 msgstr ""
 
 #
@@ -8736,7 +8736,7 @@ msgstr ""
 
 #
 #: ../cull/src/cull_lerrno.c:108
-msgid "lSortOrder is NULL"
+msgid "lSortOrder is nullptr"
 msgstr ""
 
 #
@@ -8756,7 +8756,7 @@ msgstr ""
 
 #
 #: ../cull/src/cull_lerrno.c:116
-msgid "function argument is NULL"
+msgid "function argument is nullptr"
 msgstr ""
 
 #
@@ -8806,7 +8806,7 @@ msgstr ""
 
 #
 #: ../cull/src/cull_lerrno.c:136
-msgid "string NULL not allowed"
+msgid "string nullptr not allowed"
 msgstr ""
 
 #
@@ -8833,7 +8833,7 @@ msgstr ""
 
 #: ../cull/src/cull_multitype.c:395
 #, c-format
-msgid "!!!!!!!!!! lGetListRef(): got NULL element for %s !!!!!!!!!!\n"
+msgid "!!!!!!!!!! lGetListRef(): got nullptr element for %s !!!!!!!!!!\n"
 msgstr ""
 
 #: ../cull/src/cull_multitype.c:405
@@ -8852,7 +8852,7 @@ msgstr ""
 
 #: ../cull/src/cull_multitype.c:520
 #, c-format
-msgid "!!!!!!!!!! lGetUlong(): got NULL element for %s !!!!!!!!!!\n"
+msgid "!!!!!!!!!! lGetUlong(): got nullptr element for %s !!!!!!!!!!\n"
 msgstr ""
 
 #: ../cull/src/cull_multitype.c:530
@@ -8867,7 +8867,7 @@ msgstr ""
 
 #: ../cull/src/cull_multitype.c:602
 #, c-format
-msgid "!!!!!!!!!! lGetString(): got NULL element for %s !!!!!!!!!!\n"
+msgid "!!!!!!!!!! lGetString(): got nullptr element for %s !!!!!!!!!!\n"
 msgstr ""
 
 #: ../cull/src/cull_multitype.c:612
@@ -8886,7 +8886,7 @@ msgstr ""
 
 #: ../cull/src/cull_multitype.c:671
 #, c-format
-msgid "!!!!!!!!!! lGetList(): got NULL element for %s !!!!!!!!!!\n"
+msgid "!!!!!!!!!! lGetList(): got nullptr element for %s !!!!!!!!!!\n"
 msgstr ""
 
 #: ../cull/src/cull_multitype.c:681
@@ -9235,7 +9235,7 @@ msgstr ""
 
 #: ../schedd/cod_complex_schedd.c:225
 #, c-format
-msgid "\"as_str\" is NULL for attrib \"%s\"\n"
+msgid "\"as_str\" is nullptr for attrib \"%s\"\n"
 msgstr ""
 
 #: ../schedd/cod_complex_schedd.c:330
@@ -10992,7 +10992,7 @@ msgid "pt_dispatch_proc_to_job: malloc failed\n"
 msgstr ""
 
 #: ../history/complex_history.c:83
-msgid "dirname or pplist == NULL in init_history_subdirs()\n"
+msgid "dirname or pplist == nullptr in init_history_subdirs()\n"
 msgstr ""
 
 #: ../history/complex_history.c:91 ../history/complex_history.c:191
@@ -11001,7 +11001,7 @@ msgid "can't open directory \"%s\"\n"
 msgstr ""
 
 #: ../history/complex_history.c:151
-msgid "ldir or lsubdir or pplist == NULL in init_history_files()"
+msgid "ldir or lsubdir or pplist == nullptr in init_history_files()"
 msgstr ""
 
 #: ../history/complex_history.c:166
@@ -11024,7 +11024,7 @@ msgid "can't open file \"%s\"\n"
 msgstr ""
 
 #: ../history/complex_history.c:267 ../history/complex_history.c:559
-msgid "ldir or version_subdir or ppelem == NULL in find_complex_version()"
+msgid "ldir or version_subdir or ppelem == nullptr in find_complex_version()"
 msgstr ""
 
 #: ../history/complex_history.c:273
@@ -11056,7 +11056,7 @@ msgid "cull_read_in_host returned no host"
 msgstr ""
 
 #: ../history/complex_history.c:821
-msgid "ldir or version_subdir or ppelem == NULL in find_queue_version()"
+msgid "ldir or version_subdir or ppelem == nullptr in find_queue_version()"
 msgstr ""
 
 #: ../history/complex_history.c:827
@@ -11072,7 +11072,7 @@ msgid "find_queue_version: error finding queue version\n"
 msgstr ""
 
 #: ../history/complex_history.c:1056
-msgid "pplist == NULL in make_complex_list()"
+msgid "pplist == nullptr in make_complex_list()"
 msgstr ""
 
 #: ../history/complex_history.c:1068
@@ -11085,7 +11085,7 @@ msgid "no complexes found"
 msgstr ""
 
 #: ../history/complex_history.c:1176
-msgid "queue_name == NULL in find_queue_version_by_name()"
+msgid "queue_name == nullptr in find_queue_version_by_name()"
 msgstr ""
 
 #: ../history/complex_history.c:1181
@@ -11104,7 +11104,7 @@ msgid "can't find queue version for queue \"%s\" referring to \"%s\": %d"
 msgstr ""
 
 #: ../history/complex_history.c:1270
-msgid "complex_name == NULL in find_complex_version_by_name()"
+msgid "complex_name == nullptr in find_complex_version_by_name()"
 msgstr ""
 
 #: ../history/complex_history.c:1275
@@ -11118,7 +11118,7 @@ msgid ""
 msgstr ""
 
 #: ../history/complex_history.c:1360
-msgid "host_name == NULL in find_host_version_by_name()"
+msgid "host_name == nullptr in find_host_version_by_name()"
 msgstr ""
 
 #: ../history/complex_history.c:1365
@@ -11131,7 +11131,7 @@ msgid "find_host_version_by_name: error %d retrieving host version for %s\n"
 msgstr ""
 
 #: ../history/complex_history.c:1494
-msgid "create_version_subdir: NULL pointer received\n"
+msgid "create_version_subdir: nullptr pointer received\n"
 msgstr ""
 
 #: ../history/complex_history.c:1500 ../history/complex_history.c:1507
@@ -11148,7 +11148,7 @@ msgid "create_version_subdir: error %d creating directory\n"
 msgstr ""
 
 #: ../history/complex_history.c:1596
-msgid "find_version_subdir_by_name: NULL pointer received\n"
+msgid "find_version_subdir_by_name: nullptr pointer received\n"
 msgstr ""
 
 #: ../history/complex_history.c:1602
@@ -11168,7 +11168,7 @@ msgid "find_version_subdir_by_name: memory allocation failed\n"
 msgstr ""
 
 #: ../history/complex_history.c:1690
-msgid "write_complex_host_version: NULL pointer received\n"
+msgid "write_complex_host_version: nullptr pointer received\n"
 msgstr ""
 
 #: ../history/complex_history.c:1697
@@ -11186,7 +11186,7 @@ msgid "write_complex_host_version: error %d writing complex\n"
 msgstr ""
 
 #: ../history/complex_history.c:1795
-msgid "write_queue_version: NULL pointer received\n"
+msgid "write_queue_version: nullptr pointer received\n"
 msgstr ""
 
 #: ../history/complex_history.c:1802
@@ -11204,7 +11204,7 @@ msgid "write_queue_version: error %d writing queue\n"
 msgstr ""
 
 #: ../history/complex_history.c:1871
-msgid "cod_write_queue_version: NULL pointer received\n"
+msgid "cod_write_queue_version: nullptr pointer received\n"
 msgstr ""
 
 #: ../history/complex_history.c:1878
@@ -11257,7 +11257,7 @@ msgid ""
 msgstr ""
 
 #: ../history/complex_history.c:2116
-msgid "prepare_version_subdir: NULL pointer received\n"
+msgid "prepare_version_subdir: nullptr pointer received\n"
 msgstr ""
 
 #: ../history/complex_history.c:2126
@@ -11279,7 +11279,7 @@ msgid "prepare_version_subdir: error %d finding version subdir for object %s\n"
 msgstr ""
 
 #: ../history/complex_history.c:2230
-msgid "is_object_in_history: NULL pointer received\n"
+msgid "is_object_in_history: nullptr pointer received\n"
 msgstr ""
 
 #: ../history/complex_history.c:2236

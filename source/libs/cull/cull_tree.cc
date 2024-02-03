@@ -49,8 +49,8 @@
 *
 *  FUNCTION
 *     Returns the number of elements and subelements in the sublist 'nm' 
-*     of the element 'ep' (lp = NULL) or returns the sum of all elements
-*     and subelements within the list 'lp' (ep = NULL)
+*     of the element 'ep' (lp = nullptr) or returns the sum of all elements
+*     and subelements within the list 'lp' (ep = nullptr)
 *
 *  INPUTS
 *     const lListElem *ep - element 
@@ -72,12 +72,12 @@ int lGetNumberOfNodes(const lListElem *ep, const lList *lp, int nm) {
 
       if ((pos = lGetPosViaElem(ep, nm, SGE_NO_ABORT)) >= 0 && mt_get_type(ep->descr[pos].mt) == lListT) {
          if ((lp = lGetPosList(ep, pos)))
-            n += lGetNumberOfNodes(NULL, lp, nm);
+            n += lGetNumberOfNodes(nullptr, lp, nm);
       }
       DRETURN(n);
    } else {
       for_each_ep(ep, lp) {
-         n += lGetNumberOfNodes(ep, NULL, nm);
+         n += lGetNumberOfNodes(ep, nullptr, nm);
       }
       DRETURN(n);
    }
@@ -113,12 +113,12 @@ int lGetNumberOfLeafs(const lListElem *ep, const lList *lp, int nm) {
          if (!(lp = lGetPosList(ep, pos)))
             n = 1;
          else
-            n = lGetNumberOfLeafs(NULL, lp, nm);
+            n = lGetNumberOfLeafs(nullptr, lp, nm);
       }
       DRETURN(n);
    } else {
       for_each_ep(ep, lp) {
-         n += lGetNumberOfLeafs(ep, NULL, nm);
+         n += lGetNumberOfLeafs(ep, nullptr, nm);
       }
       DRETURN(n);
    }

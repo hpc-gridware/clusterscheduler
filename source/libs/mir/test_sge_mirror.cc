@@ -80,9 +80,9 @@ print_event(sge_evc_class_t *evc, sge_object_type type,
 int main(int argc, char *argv[])
 {
    int cl_err = 0;
-   lList *alp = NULL;
-   sge_gdi_ctx_class_t *ctx = NULL; 
-   sge_evc_class_t *evc = NULL;
+   lList *alp = nullptr;
+   sge_gdi_ctx_class_t *ctx = nullptr;
+   sge_evc_class_t *evc = nullptr;
 
    DENTER_MAIN(TOP_LAYER, "test_sge_mirror");
 
@@ -95,14 +95,14 @@ int main(int argc, char *argv[])
       SGE_EXIT((void**)&ctx, 1);
    }
 
-   if (false == sge_gdi2_evc_setup(&evc, ctx, EV_ID_ANY, &alp, NULL)) {
+   if (false == sge_gdi2_evc_setup(&evc, ctx, EV_ID_ANY, &alp, nullptr)) {
       answer_list_output(&alp);
       SGE_EXIT((void**)&ctx, 1);
    }
 
    sge_mirror_initialize(evc, EV_ID_ANY, "test_sge_mirror", true, 
-                         NULL, NULL, NULL, NULL, NULL);
-   sge_mirror_subscribe(evc, SGE_TYPE_ALL, print_event, NULL, NULL, NULL, NULL);
+                         nullptr, nullptr, nullptr, nullptr, nullptr);
+   sge_mirror_subscribe(evc, SGE_TYPE_ALL, print_event, nullptr, nullptr, nullptr, nullptr);
    
    while(!shut_me_down) {
       events=events_size=0;

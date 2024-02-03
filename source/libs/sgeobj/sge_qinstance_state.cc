@@ -338,12 +338,12 @@ qinstance_state_as_string(u_long32 bit)
 
       0 
    };
-   static const char *names[23] = { NULL }; 
-   const char *ret = NULL;
+   static const char *names[23] = { nullptr };
+   const char *ret = nullptr;
    int i = 0;
 
    DENTER(TOP_LAYER);
-   if (names[0] == NULL) {
+   if (names[0] == nullptr) {
       names[0] = MSG_QINSTANCE_ALARM;
       names[1] = MSG_QINSTANCE_SUSPALARM;
       names[2] = MSG_QINSTANCE_DISABLED;
@@ -366,7 +366,7 @@ qinstance_state_as_string(u_long32 bit)
       names[19] = MSG_QINSTANCE_NCALSUSP;
       names[20] = MSG_QINSTANCE_NCONFAMB;
       names[21] = MSG_QINSTANCE_NORPHANED;
-      names[22] = NULL;
+      names[22] = nullptr;
    }
 
    while (states[i] != 0) {

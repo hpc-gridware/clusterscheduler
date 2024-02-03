@@ -74,7 +74,7 @@ static bool is_digit(const char *position, const char stopchar);
 *     int* stepsize           - step size between cores (or -1)
 *     int* firstsocket        - first socket to use (or -1)
 *     int* firstcore          - first core to use (on "first socket") (or -1)
-*     dstring* socketcorelist - list of socket,core pairs with prefix explicit or NULL
+*     dstring* socketcorelist - list of socket,core pairs with prefix explicit or nullptr
 *     dstring* error          - error as string in case of return false
 *
 *  RESULT
@@ -89,21 +89,21 @@ bool parse_binding_parameter_string(const char *parameter, binding_type_t *type,
                                     int *firstcore, dstring *socketcorelist, dstring *error) {
    bool retval = true;
 
-   if (parameter == NULL) {
-      sge_dstring_sprintf(error, "input parameter was NULL");
+   if (parameter == nullptr) {
+      sge_dstring_sprintf(error, "input parameter was nullptr");
       return false;
    }
 
    /* check the type [pe|env|set] (set is default) */
-   if (strstr(parameter, "pe ") != NULL) {
+   if (strstr(parameter, "pe ") != nullptr) {
       *type = BINDING_TYPE_PE;
-   } else if (strstr(parameter, "env ") != NULL) {
+   } else if (strstr(parameter, "env ") != nullptr) {
       *type = BINDING_TYPE_ENV;
    } else {
       *type = BINDING_TYPE_SET;
    }
 
-   if (strstr(parameter, "linear") != NULL) {
+   if (strstr(parameter, "linear") != nullptr) {
 
       *amount = binding_linear_parse_amount(parameter);
 
@@ -147,7 +147,7 @@ bool parse_binding_parameter_string(const char *parameter, binding_type_t *type,
       /* set step size to dummy */
       *stepsize = -1;
 
-   } else if (strstr(parameter, "striding") != NULL) {
+   } else if (strstr(parameter, "striding") != nullptr) {
 
       *amount = binding_striding_parse_amount(parameter);
 
@@ -197,19 +197,19 @@ bool parse_binding_parameter_string(const char *parameter, binding_type_t *type,
          sge_dstring_sprintf(strategy, "striding");
       }
 
-   } else if (strstr(parameter, "explicit") != NULL) {
+   } else if (strstr(parameter, "explicit") != nullptr) {
 
       if (binding_explicit_has_correct_syntax(parameter, error) == false) {
          retval = false;
       } else {
-         if (socketcorelist == NULL) {
+         if (socketcorelist == nullptr) {
             sge_dstring_sprintf(error, MSG_SYNTAX_DSTRINGBUG);
             retval = false;
          } else {
             char *pos = strstr((char *)parameter, "explicit");
             sge_dstring_copy_string(socketcorelist, pos);
             sge_dstring_sprintf(strategy, "explicit");
-            pos = NULL;
+            pos = nullptr;
          }
       }
 
@@ -256,16 +256,16 @@ int binding_linear_parse_amount(const char *parameter) {
    /* expect string "linear" or "linear:<amount>" or linear 
       "linear:<amount>:<firstsocket>,<firstcore>" */
 
-   if (parameter != NULL && strstr(parameter, "linear") != NULL) {
+   if (parameter != nullptr && strstr(parameter, "linear") != nullptr) {
       /* get number after linear: and before \0 or : */
-      if (sge_strtok(parameter, ":") != NULL) {
-         char *n = sge_strtok(NULL, ":");
+      if (sge_strtok(parameter, ":") != nullptr) {
+         char *n = sge_strtok(nullptr, ":");
          /* check if amount is given and it is a digit */
          if (is_digit(n, ':')) {
             /* check when something follows after an additional ":" 
                if it is also a digit (the socket number) */
-            char *socket = sge_strtok(NULL, ":");
-            if (socket == NULL || is_digit(socket, ',')) {
+            char *socket = sge_strtok(nullptr, ":");
+            if (socket == nullptr || is_digit(socket, ',')) {
                return atoi(n);
             }
          }
@@ -300,13 +300,13 @@ int binding_linear_parse_amount(const char *parameter) {
 *******************************************************************************/
 int binding_linear_parse_socket_offset(const char *parameter) {
    /* offset is like "linear:<N>:<socket>,<core>) */
-   if (parameter != NULL && strstr(parameter, "linear") != NULL) {
+   if (parameter != nullptr && strstr(parameter, "linear") != nullptr) {
       /* fetch linear */
-      if (sge_strtok(parameter, ":") != NULL) {
+      if (sge_strtok(parameter, ":") != nullptr) {
          /* fetch first number (if any) */
-         if (sge_strtok(NULL, ":") != NULL) {
-            char *offset = sge_strtok(NULL, ",");
-            if (offset != NULL) {
+         if (sge_strtok(nullptr, ":") != nullptr) {
+            char *offset = sge_strtok(nullptr, ",");
+            if (offset != nullptr) {
                if (is_digit(offset, ',')) {
                   /* offset points to <socket> */
                   return atoi(offset);
@@ -347,14 +347,14 @@ int binding_linear_parse_socket_offset(const char *parameter) {
 *******************************************************************************/
 int binding_linear_parse_core_offset(const char *parameter) {
    /* offset is like "linear:<N>:<socket>,<core> (optional ":") */
-   if (parameter != NULL && strstr(parameter, "linear") != NULL) {
+   if (parameter != nullptr && strstr(parameter, "linear") != nullptr) {
       /* fetch linear */
-      if (sge_strtok(parameter, ":") != NULL) {
+      if (sge_strtok(parameter, ":") != nullptr) {
          /* fetch first number (if any) */
-         if (sge_strtok(NULL, ":") != NULL) {
-            char *offset = sge_strtok(NULL, ",");
-            if (offset != NULL &&
-                (offset = sge_strtok(NULL, ":")) != NULL) {
+         if (sge_strtok(nullptr, ":") != nullptr) {
+            char *offset = sge_strtok(nullptr, ",");
+            if (offset != nullptr &&
+                (offset = sge_strtok(nullptr, ":")) != nullptr) {
                /* check if something follows, what is not a number */
                if (!is_digit(offset, ' ')) {
                   /* core offset contains junk */
@@ -399,9 +399,9 @@ int binding_linear_parse_core_offset(const char *parameter) {
 binding_type_t binding_parse_type(const char *parameter) {
    binding_type_t type = BINDING_TYPE_SET;
 
-   if (strstr(parameter, "env_") != NULL) {
+   if (strstr(parameter, "env_") != nullptr) {
       type = BINDING_TYPE_ENV;
-   } else if (strstr(parameter, "pe_") != NULL) {
+   } else if (strstr(parameter, "pe_") != nullptr) {
       type = BINDING_TYPE_PE;
    }
 
@@ -439,17 +439,17 @@ bool binding_explicit_has_correct_syntax(const char *parameter, dstring *error) 
    int amount;
 
    /* check if the head is correct */
-   if (strstr(parameter, "explicit:") == NULL) {
+   if (strstr(parameter, "explicit:") == nullptr) {
       sge_dstring_sprintf(error, MSG_SYN_EXPLICIT_NOTFOUND);
       return false;
    }
 
-   if (sge_strtok(parameter, ":") != NULL) {
-      char *socket = NULL;
-      char *core = NULL;
+   if (sge_strtok(parameter, ":") != nullptr) {
+      char *socket = nullptr;
+      char *core = nullptr;
 
       /* first socket,core is mandatory */
-      if ((socket = sge_strtok(NULL, ",")) == NULL) {
+      if ((socket = sge_strtok(nullptr, ",")) == nullptr) {
          /* we have no first socket number */
          sge_dstring_sprintf(error, MSG_SYN_EXPLICIT_NOPAIR);
          return false;
@@ -461,7 +461,7 @@ bool binding_explicit_has_correct_syntax(const char *parameter, dstring *error) 
       }
 
       /* check for core */
-      if ((core = sge_strtok(NULL, ":")) == NULL) {
+      if ((core = sge_strtok(nullptr, ":")) == nullptr) {
          /* we have no first core number */
          sge_dstring_sprintf(error, MSG_SYN_EXPLICIT_MISSINGFIRSTCORE);
          return false;
@@ -474,7 +474,7 @@ bool binding_explicit_has_correct_syntax(const char *parameter, dstring *error) 
 
       do {
          /* get socket number */
-         if ((socket = sge_strtok(NULL, ",")) != NULL) {
+         if ((socket = sge_strtok(nullptr, ",")) != nullptr) {
             /* check if <socket> begins with a digit */
             if (!is_digit(socket, ',')) {
                sge_dstring_sprintf(error, MSG_SYN_EXPLICIT_SOCKNONUMBER);
@@ -482,7 +482,7 @@ bool binding_explicit_has_correct_syntax(const char *parameter, dstring *error) 
             }
 
             /* we have a socket therefore we need a core number */
-            if ((core = sge_strtok(NULL, ":")) == NULL) {
+            if ((core = sge_strtok(nullptr, ":")) == nullptr) {
                /* no core found */
                sge_dstring_sprintf(error, MSG_SYN_EXPLICIT_NOCOREFORSOCKET);
                return false;
@@ -495,7 +495,7 @@ bool binding_explicit_has_correct_syntax(const char *parameter, dstring *error) 
             }
 
          } /* end if <socket> */
-      } while (socket != NULL);  /* we try to continue with the next socket if possible */
+      } while (socket != nullptr);  /* we try to continue with the next socket if possible */
 
    } else {
       /* this should not be reachable because of the pre-check */
@@ -539,19 +539,19 @@ bool binding_explicit_has_correct_syntax(const char *parameter, dstring *error) 
 *******************************************************************************/
 int binding_striding_parse_first_core(const char *parameter) {
    /* "striding:<amount>:<stepsize>:<socket>,<core>" */
-   if (parameter != NULL && strstr(parameter, "striding") != NULL) {
+   if (parameter != nullptr && strstr(parameter, "striding") != nullptr) {
       /* fetch "striding" */
-      if (sge_strtok(parameter, ":") != NULL) {
+      if (sge_strtok(parameter, ":") != nullptr) {
          /* fetch <amount> */
-         if (sge_strtok(NULL, ":") != NULL) {
+         if (sge_strtok(nullptr, ":") != nullptr) {
             /* fetch <stepsize> */
-            if (sge_strtok(NULL, ":") != NULL) {
+            if (sge_strtok(nullptr, ":") != nullptr) {
                /* fetch first <socket> */
-               if (sge_strtok(NULL, ",") != NULL) {
+               if (sge_strtok(nullptr, ",") != nullptr) {
                   /* fetch first <core> */
-                  char *first_core = NULL;
+                  char *first_core = nullptr;
                   /* end usually with line end (":" in case of config file) */
-                  if ((first_core = sge_strtok(NULL, ":")) != NULL
+                  if ((first_core = sge_strtok(nullptr, ":")) != nullptr
                       && is_digit(first_core, ' ')) {
                      return atoi(first_core);
                   }
@@ -591,16 +591,16 @@ int binding_striding_parse_first_core(const char *parameter) {
 *******************************************************************************/
 int binding_striding_parse_first_socket(const char *parameter) {
    /* "striding:<amount>:<stepsize>:<socket>,<core>" */
-   if (parameter != NULL && strstr(parameter, "striding") != NULL) {
+   if (parameter != nullptr && strstr(parameter, "striding") != nullptr) {
       /* fetch "striding" */
-      if (sge_strtok(parameter, ":") != NULL) {
+      if (sge_strtok(parameter, ":") != nullptr) {
          /* fetch amount*/
-         if (sge_strtok(NULL, ":") != NULL) {
+         if (sge_strtok(nullptr, ":") != nullptr) {
             /* fetch stepsize */
-            if (sge_strtok(NULL, ":") != NULL) {
+            if (sge_strtok(nullptr, ":") != nullptr) {
                /* fetch first socket */
-               char *first_socket = NULL;
-               if ((first_socket = sge_strtok(NULL, ",")) != NULL) {
+               char *first_socket = nullptr;
+               if ((first_socket = sge_strtok(nullptr, ",")) != nullptr) {
                   if (is_digit(first_socket, ',')) {
                      return atoi(first_socket);
                   } else {
@@ -644,16 +644,16 @@ int binding_striding_parse_first_socket(const char *parameter) {
 int binding_striding_parse_amount(const char *parameter) {
    /* striding:<amount>:<step-size>:[starting-socket,starting-core] */
 
-   if (parameter != NULL && strstr(parameter, "striding") != NULL) {
+   if (parameter != nullptr && strstr(parameter, "striding") != nullptr) {
 
       /* fetch "striding:" */
-      if (sge_strtok(parameter, ":") != NULL) {
-         char *amount = NULL;
+      if (sge_strtok(parameter, ":") != nullptr) {
+         char *amount = nullptr;
 
-         if ((amount = sge_strtok(NULL, ":")) != NULL
+         if ((amount = sge_strtok(nullptr, ":")) != nullptr
              && is_digit(amount, ':')) {
             /* check if step size if given */
-            char *stepsize = sge_strtok(NULL, ":");
+            char *stepsize = sge_strtok(nullptr, ":");
             if (is_digit(stepsize, ':')) {
                /* get the number from amount */
                return atoi(amount);
@@ -693,13 +693,13 @@ int binding_striding_parse_amount(const char *parameter) {
 *******************************************************************************/
 int binding_striding_parse_step_size(const char *parameter) {
    /* striding:<amount>:<step-size>:  */
-   if (parameter != NULL && strstr(parameter, "striding") != NULL) {
+   if (parameter != nullptr && strstr(parameter, "striding") != nullptr) {
       /* fetch "striding:" */
-      if (sge_strtok(parameter, ":") != NULL) {
-         if (sge_strtok(NULL, ":") != NULL) {
+      if (sge_strtok(parameter, ":") != nullptr) {
+         if (sge_strtok(nullptr, ":") != nullptr) {
             /* fetch step size */
-            char *stepsize = NULL;
-            if ((stepsize = sge_strtok(NULL, ":")) != NULL
+            char *stepsize = nullptr;
+            if ((stepsize = sge_strtok(nullptr, ":")) != nullptr
                 && is_digit(stepsize, ':')) {
                /* the step size must be followed by " " or ":" or "\0"
                   in order to avoid garbage like "striding:2:0,0" */
@@ -742,14 +742,14 @@ int binding_striding_parse_step_size(const char *parameter) {
 *******************************************************************************/
 const char *
 binding_get_topology_for_job(const char *binding_result) {
-   const char *topology_result = NULL;
+   const char *topology_result = nullptr;
 
-   if (binding_result != NULL) {
+   if (binding_result != nullptr) {
       /* find test after last colon character including this character */
       topology_result = strrchr(binding_result, ':');
 
       /* skip colon character */
-      if (topology_result != NULL) {
+      if (topology_result != nullptr) {
          topology_result++;
       }
    }
@@ -793,7 +793,7 @@ topology_string_to_socket_core_lists(const char *topology, int **sockets,
 
    *amount = 0;
 
-   if (topology == NULL || *sockets != NULL || *cores != NULL) {
+   if (topology == nullptr || *sockets != nullptr || *cores != nullptr) {
       /* we expect to have clean input */
       retval = false;
    } else {
@@ -851,16 +851,16 @@ int
 get_explicit_amount(const char *expl, const bool with_explicit_prefix) {
 
    int amount = 0;
-   char *pair = NULL;
-   struct saved_vars_s *context = NULL;
+   char *pair = nullptr;
+   struct saved_vars_s *context = nullptr;
 
-   if (expl == NULL) {
+   if (expl == nullptr) {
       return amount;
    }
 
    pair = sge_strtok_r(expl, ":", &context);
 
-   if (pair == NULL) {
+   if (pair == nullptr) {
       sge_free_saved_vars(context);
       return amount;
    }
@@ -870,7 +870,7 @@ get_explicit_amount(const char *expl, const bool with_explicit_prefix) {
       amount++;
    }
 
-   while (sge_strtok_r(NULL, ":", &context) != NULL) {
+   while (sge_strtok_r(nullptr, ":", &context) != nullptr) {
       amount++;
    }
 
@@ -908,21 +908,21 @@ bool
 check_explicit_binding_string(const char *expl, const int amount,
                               const bool with_explicit_prefix) {
    bool success = true;
-   struct saved_vars_s *context = NULL;
+   struct saved_vars_s *context = nullptr;
 
    /* pointer to the first position of all <socket,core> pairs */
    int pair_number = 0;
    char **pairs = (char **)sge_malloc(sizeof(char *) * amount);
-   char *pair = NULL;
+   char *pair = nullptr;
 
-   if (expl == NULL || amount == 0) {
+   if (expl == nullptr || amount == 0) {
       return false;
    }
 
    /* skip "explicit:" */
    if (with_explicit_prefix == true) {
       pair = sge_strtok_r(expl, ":", &context);
-      if (pair == NULL) {
+      if (pair == nullptr) {
          success = false;
       }
    }
@@ -930,11 +930,11 @@ check_explicit_binding_string(const char *expl, const int amount,
    /* get pointer to first pair */
    if (success == true) {
       if (with_explicit_prefix == true) {
-         pair = sge_strtok_r(NULL, ":", &context);
+         pair = sge_strtok_r(nullptr, ":", &context);
       } else {
          pair = sge_strtok_r(expl, ":", &context);
       }
-      if (pair == NULL) {
+      if (pair == nullptr) {
          success = false;
       }
    }
@@ -946,7 +946,7 @@ check_explicit_binding_string(const char *expl, const int amount,
    }
 
    /* split string in <socket,core> pairs and store them */
-   while ((success == true) && (pair = sge_strtok_r(NULL, ":", &context)) != NULL) {
+   while ((success == true) && (pair = sge_strtok_r(nullptr, ":", &context)) != nullptr) {
       if (pair_number > amount) {
          /* found more pairs than expected */
          success = false;
@@ -1008,13 +1008,13 @@ check_explicit_binding_string(const char *expl, const int amount,
 *******************************************************************************/
 static bool is_digit(const char *position, const char stopchar) {
 
-   if (position == NULL || *position == '\0' || !isdigit(*position)) {
+   if (position == nullptr || *position == '\0' || !isdigit(*position)) {
       return false;
    }
 
    position++;
 
-   while (position != NULL && *position != '\0' && *position != stopchar) {
+   while (position != nullptr && *position != '\0' && *position != stopchar) {
       if (!isdigit(*position)) {
          return false;
       }

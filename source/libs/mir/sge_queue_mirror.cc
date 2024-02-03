@@ -49,11 +49,11 @@ cqueue_update_master_list(sge_evc_class_t *evc, sge_object_type type,
                           sge_event_action action, lListElem *event, void *clientdata)
 {
    sge_callback_result ret = SGE_EMA_OK;
-   const char *name = NULL;
-   lList *qinstance_list = NULL;
-   lListElem *cqueue = NULL;
-   lList **list = NULL;
-   const lDescr *list_descr = NULL;
+   const char *name = nullptr;
+   lList *qinstance_list = nullptr;
+   lListElem *cqueue = nullptr;
+   lList **list = nullptr;
+   const lDescr *list_descr = nullptr;
 
    DENTER(TOP_LAYER);
    name = lGetString(event, ET_strkey);
@@ -62,7 +62,7 @@ cqueue_update_master_list(sge_evc_class_t *evc, sge_object_type type,
    cqueue = cqueue_list_locate(*list, name);
 
    if ((action == SGE_EMA_MOD || action == SGE_EMA_ADD) 
-       && cqueue != NULL) {
+       && cqueue != nullptr) {
       /*
        * modify events for CQ_Type objects; we may not update
        * - CQ_qinstances - it is maintained by QINSTANCE events
@@ -79,7 +79,7 @@ cqueue_update_master_list(sge_evc_class_t *evc, sge_object_type type,
    cqueue = cqueue_list_locate(*list, name);
 
    if ((action == SGE_EMA_MOD || action == SGE_EMA_ADD)
-       && cqueue != NULL) {
+       && cqueue != nullptr) {
       /*
        * Replace CQ_qinstances list
        */         
@@ -95,9 +95,9 @@ qinstance_update_cqueue_list(sge_evc_class_t *evc, sge_object_type type,
                              sge_event_action action, lListElem *event, void *clientdata)
 {
    sge_callback_result ret = SGE_EMA_OK;
-   const char *name = NULL;
-   const char *hostname = NULL;
-   lListElem *cqueue = NULL;
+   const char *name = nullptr;
+   const char *hostname = nullptr;
+   lListElem *cqueue = nullptr;
 
    DENTER(TOP_LAYER);
    name = lGetString(event, ET_strkey);
@@ -105,14 +105,14 @@ qinstance_update_cqueue_list(sge_evc_class_t *evc, sge_object_type type,
 
    cqueue = cqueue_list_locate(*object_type_get_master_list_rw(SGE_TYPE_CQUEUE), name);
                         
-   if (cqueue != NULL) {
+   if (cqueue != nullptr) {
       dstring key_buffer = DSTRING_INIT;
       lList *list = lGetListRW(cqueue, CQ_qinstances);
       const lDescr *list_descr = lGetListDescr(lGetList(event, ET_new_version));
       
-      lListElem *qinstance = qinstance_list_locate(list, hostname, NULL);
-      const char *key = NULL;
-      bool is_list = list != NULL ? true : false;
+      lListElem *qinstance = qinstance_list_locate(list, hostname, nullptr);
+      const char *key = nullptr;
+      bool is_list = list != nullptr ? true : false;
       
       sge_dstring_sprintf(&key_buffer, SFN"@"SFN, name, hostname);
       key = sge_dstring_get_string(&key_buffer);
@@ -122,7 +122,7 @@ qinstance_update_cqueue_list(sge_evc_class_t *evc, sge_object_type type,
 
          if (type == sgeE_QINSTANCE_SOS || 
              type == sgeE_QINSTANCE_USOS) {
-            if (qinstance != NULL) {
+            if (qinstance != nullptr) {
                if (type == sgeE_QINSTANCE_SOS) {
                   qinstance_state_set_susp_on_sub(qinstance, true);
                } else {

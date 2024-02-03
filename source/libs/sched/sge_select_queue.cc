@@ -252,7 +252,7 @@ load_np_value_adjustment(const char* name, lListElem *hep, double *load_correcti
 
 void assignment_init(sge_assignment_t *a, lListElem *job, lListElem *ja_task, bool is_load_adj)
 {
-   if (job != NULL) {
+   if (job != nullptr) {
       a->job         = job;
       a->user        = lGetString(job, JB_owner);
       a->group       = lGetString(job, JB_group);
@@ -265,7 +265,7 @@ void assignment_init(sge_assignment_t *a, lListElem *job, lListElem *ja_task, bo
       a->load_adjustments = sconf_get_job_load_adjustments();
    }
 
-   if (ja_task != NULL) {
+   if (ja_task != nullptr) {
       a->ja_task     = ja_task;
       a->ja_task_id  = lGetUlong(ja_task, JAT_task_number);
    }
@@ -273,11 +273,11 @@ void assignment_init(sge_assignment_t *a, lListElem *job, lListElem *ja_task, bo
 
 void assignment_copy(sge_assignment_t *dst, sge_assignment_t *src, bool move_gdil)
 {
-   if (dst == NULL || src == NULL) {
+   if (dst == nullptr || src == nullptr) {
       return;
    }
 
-   if (dst->load_adjustments != NULL) {
+   if (dst->load_adjustments != nullptr) {
       lFreeList(&dst->load_adjustments);
    }
 
@@ -290,14 +290,14 @@ void assignment_copy(sge_assignment_t *dst, sge_assignment_t *src, bool move_gdi
 
    memcpy(dst, src, sizeof(sge_assignment_t));
 
-   if (src->load_adjustments != NULL) {
+   if (src->load_adjustments != nullptr) {
       dst->load_adjustments = lCopyList("cpy_load_adj", src->load_adjustments);
    }
 
    if (!move_gdil)
-      dst->gdil = dst->limit_list = dst->skip_cqueue_list = dst->skip_host_list = NULL;
+      dst->gdil = dst->limit_list = dst->skip_cqueue_list = dst->skip_host_list = nullptr;
    else
-      src->gdil = src->limit_list = src->skip_cqueue_list = src->skip_host_list = NULL;
+      src->gdil = src->limit_list = src->skip_cqueue_list = src->skip_host_list = nullptr;
 }
 
 void assignment_release(sge_assignment_t *a)
@@ -439,7 +439,7 @@ sge_select_parallel_environment(sge_assignment_t *best, const lList *pe_list)
          matched_pe_count++;
 
          pe_name = lGetString(pe, PE_name);
-         if (best->gdil == NULL) { /* first pe run */
+         if (best->gdil == nullptr) { /* first pe run */
             best->pe = pe;
             best->pe_name = pe_name;
 
@@ -497,7 +497,7 @@ sge_select_parallel_environment(sge_assignment_t *best, const lList *pe_list)
          const lListElem *ar = lGetElemUlong(best->ar_list, AR_id, ar_id);
          pe = lGetElemStrRW(pe_list, PE_name, lGetString(ar, AR_granted_pe));
 
-         if (pe == NULL) {
+         if (pe == nullptr) {
             DPRINTF(("Critical Error, ar references non existing PE\n"));
          } else {
             int available_slots = 0;
@@ -525,7 +525,7 @@ sge_select_parallel_environment(sge_assignment_t *best, const lList *pe_list)
             pe_name = lGetString(pe, PE_name);
             matched_pe_count++;
 
-            if (best->gdil == NULL) {
+            if (best->gdil == nullptr) {
                int available_slots = 0;
                best->pe = pe;
                best->pe_name = pe_name;
@@ -683,7 +683,7 @@ parallel_reservation_max_time_slots(sge_assignment_t *best, int *available_slots
    u_long32 pe_time, first_time;
    sge_assignment_t tmp_assignment = SGE_ASSIGNMENT_INIT;
    dispatch_t result = DISPATCH_NEVER_CAT;
-   sge_qeti_t *qeti = NULL;
+   sge_qeti_t *qeti = nullptr;
    bool is_first = true;
    int old_logging = 0;
    category_use_t use_category;
@@ -694,7 +694,7 @@ parallel_reservation_max_time_slots(sge_assignment_t *best, int *available_slots
    fill_category_use_t(best, &use_category, best->pe_name);
 
    qeti = sge_qeti_allocate(best);
-   if (qeti == NULL) {
+   if (qeti == nullptr) {
       ERROR((SGE_EVENT, "could not allocate qeti object needed reservation "
             "scheduling of parallel job "sge_U32CFormat, sge_u32c(best->job_id)));
       DRETURN(DISPATCH_NEVER_CAT);
@@ -702,7 +702,7 @@ parallel_reservation_max_time_slots(sge_assignment_t *best, int *available_slots
 
    assignment_copy(&tmp_assignment, best, false);
    if (best->slots == 0) {
-      tmp_assignment.slots = range_list_get_first_id(lGetList(best->job, JB_pe_range), NULL);
+      tmp_assignment.slots = range_list_get_first_id(lGetList(best->job, JB_pe_range), nullptr);
    }
 
    if (best->start == DISPATCH_TIME_QUEUE_END) {
@@ -861,17 +861,17 @@ parallel_maximize_slots_pe(sge_assignment_t *best, int *available_slots)
 
    DENTER(TOP_LAYER);
 
-   if (best == NULL ||
-       (pe_range=lGetListRW(best->job, JB_pe_range)) == NULL ||
-       (pe=best->pe) == NULL) {
+   if (best == nullptr ||
+       (pe_range=lGetListRW(best->job, JB_pe_range)) == nullptr ||
+       (pe=best->pe) == nullptr) {
       DRETURN(DISPATCH_NEVER_CAT);
    }
 
    /* assemble job category information */
    fill_category_use_t(best, &use_category, pe_name);
 
-   first = range_list_get_first_id(pe_range, NULL);
-   last  = range_list_get_last_id(pe_range, NULL);
+   first = range_list_get_first_id(pe_range, nullptr);
+   last  = range_list_get_last_id(pe_range, nullptr);
    max_pe_slots = lGetUlong(pe, PE_slots);
 
    if (best->slots) {
@@ -1100,11 +1100,11 @@ sge_select_queue(lList *requested_attr, lListElem *queue, lListElem *host,
                  int slots, lList *queue_user_list, lList *acl_list, lListElem *job)
 {
    dispatch_t ret;
-   const lList *load_attr = NULL;
-   const lList *config_attr = NULL;
-   const lList *actual_attr = NULL;
-   lListElem *global = NULL;
-   const lListElem *qu = NULL;
+   const lList *load_attr = nullptr;
+   const lList *config_attr = nullptr;
+   const lList *actual_attr = nullptr;
+   lListElem *global = nullptr;
+   const lListElem *qu = nullptr;
    int q_access=1;
    const lList *projects;
    const char *project;
@@ -1119,19 +1119,19 @@ sge_select_queue(lList *requested_attr, lListElem *queue, lListElem *host,
 
    clear_resource_tags(requested_attr, MAX_TAG);
 
-   assignment_init(&a, NULL, NULL, false);
+   assignment_init(&a, nullptr, nullptr, false);
    a.centry_list      = centry_list;
    a.host_list        = exechost_list;
 
-   if (acl_list != NULL) {
+   if (acl_list != nullptr) {
       /* check if job owner has access rights to the queue */
       DPRINTF(("testing queue access lists\n"));
       for_each_ep(qu, queue_user_list) {
          const char *name = lGetString(qu, ST_name);
          DPRINTF(("-----> checking queue user: %s\n", name ));
          q_access |= (name[0]=='@')?
-                     sge_has_access(NULL, &name[1], queue, acl_list):
-                     sge_has_access(name, NULL, queue, acl_list);
+                     sge_has_access(nullptr, &name[1], queue, acl_list):
+                     sge_has_access(name, nullptr, queue, acl_list);
       }
       if (q_access == 0) {
          DPRINTF(("no access\n"));
@@ -1142,7 +1142,7 @@ sge_select_queue(lList *requested_attr, lListElem *queue, lListElem *host,
       }
    }
 
-   if (job != NULL) {
+   if (job != nullptr) {
       /* check if job can run in queue based on project */
       DPRINTF(("testing job projects lists\n"));
       if ( (project = lGetString(job, JB_project)) ) {
@@ -1177,13 +1177,13 @@ sge_select_queue(lList *requested_attr, lListElem *queue, lListElem *host,
       DPRINTF(("queue contained in jobs hard queue list?\n"));
       if (lGetList(job, JB_hard_queue_list)) {
          const lList *qref_list = lGetList(job, JB_hard_queue_list);
-         const char *qname = NULL;
-         const char *qinstance_name = NULL;
+         const char *qname = nullptr;
+         const char *qinstance_name = nullptr;
 
          qname = lGetString(queue, QU_qname);
          qinstance_name = lGetString(queue, QU_full_name);
-         if ((lGetElemStr(qref_list, QR_name, qname) != NULL) ||
-             (lGetElemStr(qref_list, QR_name, qinstance_name) != NULL)) {
+         if ((lGetElemStr(qref_list, QR_name, qname) != nullptr) ||
+             (lGetElemStr(qref_list, QR_name, qinstance_name) != nullptr)) {
             DPRINTF(("ok"));
          } else {
             DPRINTF(("denied because queue \"%s\" is not contained in the hard "
@@ -1208,12 +1208,12 @@ sge_select_queue(lList *requested_attr, lListElem *queue, lListElem *host,
    }
 
    ret = rc_time_by_slots(&a, requested_attr, load_attr, config_attr, actual_attr,
-            NULL, allow_non_requestable, NULL, slots, DOMINANT_LAYER_HOST, lc_factor, GLOBAL_TAG,
+            nullptr, allow_non_requestable, nullptr, slots, DOMINANT_LAYER_HOST, lc_factor, GLOBAL_TAG,
             &start_time, SGE_GLOBAL_NAME);
 
 /* host */
    if(ret == DISPATCH_OK || ret == DISPATCH_MISSING_ATTR){
-      if(host == NULL) {
+      if(host == nullptr) {
          host = host_list_locate(exechost_list, lGetHost(queue, QU_qhostname));
       }
       load_attr = lGetList(host, EH_load_list);
@@ -1226,7 +1226,7 @@ sge_select_queue(lList *requested_attr, lListElem *queue, lListElem *host,
       }
 
       ret = rc_time_by_slots(&a, requested_attr, load_attr, config_attr,
-                             actual_attr, NULL, allow_non_requestable, NULL,
+                             actual_attr, nullptr, allow_non_requestable, nullptr,
                              slots, DOMINANT_LAYER_HOST, lc_factor, HOST_TAG,
                              &start_time, lGetHost(host, EH_name));
 
@@ -1235,8 +1235,8 @@ sge_select_queue(lList *requested_attr, lListElem *queue, lListElem *host,
          config_attr = lGetList(queue, QU_consumable_config_list);
          actual_attr = lGetList(queue, QU_resource_utilization);
 
-         ret = rc_time_by_slots(&a, requested_attr, NULL, config_attr, actual_attr,
-               queue, allow_non_requestable, NULL, slots, DOMINANT_LAYER_QUEUE, 0, QUEUE_TAG,
+         ret = rc_time_by_slots(&a, requested_attr, nullptr, config_attr, actual_attr,
+               queue, allow_non_requestable, nullptr, slots, DOMINANT_LAYER_QUEUE, 0, QUEUE_TAG,
                &start_time,  lGetString(queue, QU_full_name));
       }
    }
@@ -1272,7 +1272,7 @@ sge_select_queue(lList *requested_attr, lListElem *queue, lListElem *host,
 *     lList *config_attr        - list of user defined attributes
 *     lList *actual_attr        - usage of all consumables (RUE_Type)
 *     lList *centry_list        - system wide attribute config. list (CE_Type)
-*     lListElem *queue          - current queue or NULL on global/host level
+*     lListElem *queue          - current queue or nullptr on global/host level
 *     bool allow_non_requestable - allow none requestabales?
 *     char *reason              - error message
 *     int reason_size           - max error message size
@@ -1299,7 +1299,7 @@ rc_time_by_slots(const sge_assignment_t *a, lList *requested, const lList *load_
                  dstring *reason, int slots, u_long32 layer, double lc_factor, u_long32 tag,
                  u_long32 *start_time, const char *object_name)
 {
-   static lListElem *implicit_slots_request = NULL;
+   static lListElem *implicit_slots_request = nullptr;
    lListElem *attr;
    u_long32 latest_time = DISPATCH_TIME_NOW;
    u_long32 tmp_start;
@@ -1357,10 +1357,10 @@ rc_time_by_slots(const sge_assignment_t *a, lList *requested, const lList *load_
                lListElem *default_request = lGetElemStrRW(a->centry_list, CE_name, name);
                const char *def_req = lGetString(default_request, CE_defaultval);
                valtype = lGetUlong(default_request, CE_valtype);
-               parse_ulong_val(&dval, NULL, valtype, def_req, NULL, 0);
+               parse_ulong_val(&dval, nullptr, valtype, def_req, nullptr, 0);
 
                /* ignore default request if the value is 0 */
-               if ((def_req != NULL && dval != 0.0) || lGetUlong(default_request, CE_relop) == CMPLXEXCL_OP) {
+               if ((def_req != nullptr && dval != 0.0) || lGetUlong(default_request, CE_relop) == CMPLXEXCL_OP) {
                   dstring tmp_reason;
                   char tmp_reason_buf[2048];
 
@@ -1496,7 +1496,7 @@ match_static_resource(int slots, lListElem *req_cplx, lListElem *src_cplx, dstri
 *******************************************************************************/
 static void clear_resource_tags(lList *resources, u_long32 max_tag) {
 
-   lListElem *attr=NULL;
+   lListElem *attr=nullptr;
 
    for_each_rw (attr, resources){
       if(lGetUlong(attr, CE_tagged) <= max_tag)
@@ -1550,10 +1550,10 @@ dispatch_t sge_queue_match_static(const sge_assignment_t *a, lListElem *queue)
    ar_id = lGetUlong(a->job, JB_ar);
    ar_ep = lGetElemUlongRW(a->ar_list, AR_id, ar_id);
 
-   if (ar_ep != NULL) {
+   if (ar_ep != nullptr) {
       DPRINTF(("searching for queue %s\n", qinstance_name));
 
-      if (lGetSubStr(ar_ep, QU_full_name, qinstance_name, AR_reserved_queues) == NULL) {
+      if (lGetSubStr(ar_ep, QU_full_name, qinstance_name, AR_reserved_queues) == nullptr) {
          schedd_mes_add_global(a->monitor_alpp, a->monitor_next_run,
                                SCHEDD_INFO_QNOTARRESERVED_SI, qinstance_name, ar_id);
          DRETURN(DISPATCH_NEVER_CAT);
@@ -1736,7 +1736,7 @@ job_is_forced_centry_missing(const sge_assignment_t *a, const lListElem *queue_o
    const lListElem *centry;
 
    DENTER(TOP_LAYER);
-   if (a->job != NULL && a->centry_list != NULL && queue_or_host != NULL) {
+   if (a->job != nullptr && a->centry_list != nullptr && queue_or_host != nullptr) {
       const lList *res_list = lGetList(a->job, JB_hard_resource_list);
       bool is_qinstance = object_has_type(queue_or_host, QU_Type);
 
@@ -1808,11 +1808,11 @@ compute_soft_violations(const sge_assignment_t *a, lListElem *queue, int violati
                         const lList *actual_attr, u_long32 layer, double lc_factor, u_long32 tag)
 {
    u_long32 job_id;
-   const char *queue_name = NULL;
+   const char *queue_name = nullptr;
    dstring reason;
    char reason_buf[1024 + 1];
    unsigned int soft_violation = violation;
-   lList *soft_requests = NULL;
+   lList *soft_requests = nullptr;
    lListElem *attr;
    u_long32 start_time = DISPATCH_TIME_NOW;
 
@@ -1861,7 +1861,7 @@ compute_soft_violations(const sge_assignment_t *a, lListElem *queue, int violati
       if (lGetList(a->job, JB_soft_queue_list)) {
          const lList *qref_list = lGetList(a->job, JB_soft_queue_list);
          const lListElem *qr;
-         const char *qinstance_name = NULL;
+         const char *qinstance_name = nullptr;
 
          qinstance_name = lGetString(queue, QU_full_name);
 
@@ -2032,12 +2032,12 @@ static int load_check_alarm(char *reason, const char *name, const char *load_val
       case TYPE_MEM:
       case TYPE_BOO:
       case TYPE_DOUBLE:
-         if (!parse_ulong_val(&load, NULL, type, load_value, NULL, 0)) {
+         if (!parse_ulong_val(&load, nullptr, type, load_value, nullptr, 0)) {
             if (reason)
                sprintf(reason, MSG_SCHEDD_WHYEXCEEDINVALIDLOAD_SS, load_value, name);
             DRETURN(1);
          }
-         if (!parse_ulong_val(&limit, NULL, type, limit_value, NULL, 0)) {
+         if (!parse_ulong_val(&limit, nullptr, type, limit_value, nullptr, 0)) {
             if (reason)
                sprintf(reason, MSG_SCHEDD_WHYEXCEEDINVALIDTHRESHOLD_SS, name, limit_value);
             DRETURN(1);
@@ -2050,7 +2050,7 @@ static int load_check_alarm(char *reason, const char *name, const char *load_val
             double load_correction;
 
             load_correction_str = lGetString(job_load, CE_stringval);
-            if (!parse_ulong_val(&load_correction, NULL, type, load_correction_str, NULL, 0)) {
+            if (!parse_ulong_val(&load_correction, nullptr, type, load_correction_str, nullptr, 0)) {
                if (reason)
                   sprintf(reason, MSG_SCHEDD_WHYEXCEEDINVALIDLOADADJUST_SS, name, load_correction_str);
                DRETURN(1);
@@ -2233,8 +2233,8 @@ sge_load_alarm(char *reason, const lListElem *qep, const lList *threshold,
    lListElem *hep, *global_hep;
    const lListElem *tep;
    u_long32 ulc_factor;
-   const char *load_value = NULL;
-   const char *limit_value = NULL;
+   const char *load_value = nullptr;
+   const char *limit_value = nullptr;
    double lc_host = 0, lc_global = 0;
    int load_is_value = 0;
 
@@ -2259,14 +2259,14 @@ sge_load_alarm(char *reason, const lListElem *qep, const lList *threshold,
       lc_host = ((double)ulc_factor)/100;
    }
 
-   if ((global_hep = host_list_locate(exechost_list, SGE_GLOBAL_NAME)) != NULL) {
+   if ((global_hep = host_list_locate(exechost_list, SGE_GLOBAL_NAME)) != nullptr) {
       if ((lGetPosViaElem(global_hep, EH_load_correction_factor, SGE_NO_ABORT) >= 0)
           && (ulc_factor=lGetUlong(global_hep, EH_load_correction_factor)))
          lc_global = ((double)ulc_factor)/100;
    }
 
    for_each_ep(tep, threshold) {
-      lListElem *hlep = NULL, *glep = NULL, *queue_ep = NULL, *cep  = NULL;
+      lListElem *hlep = nullptr, *glep = nullptr, *queue_ep = nullptr, *cep  = nullptr;
       bool need_free_cep = false;
       const char *name;
       u_long32 relop, type;
@@ -2283,21 +2283,21 @@ sge_load_alarm(char *reason, const lListElem *qep, const lList *threshold,
          continue;
       }
 
-      if (hep != NULL) {
+      if (hep != nullptr) {
          hlep = lGetSubStr(hep, HL_name, name, EH_load_list);
       }
 
       if (lGetUlong(cep, CE_consumable) == CONSUMABLE_NO) {
-         if (hlep != NULL) {
+         if (hlep != nullptr) {
             load_value = lGetString(hlep, HL_value);
             load_is_value = 0;
-         } else if ((global_hep != NULL) &&
-                  ((glep = lGetSubStr(global_hep, HL_name, name, EH_load_list)) != NULL)) {
+         } else if ((global_hep != nullptr) &&
+                  ((glep = lGetSubStr(global_hep, HL_name, name, EH_load_list)) != nullptr)) {
                load_value = lGetString(glep, HL_value);
                load_is_value = 0;
          } else {
             queue_ep = lGetSubStr(qep, CE_name, name, QU_consumable_config_list);
-            if (queue_ep != NULL) {
+            if (queue_ep != nullptr) {
                load_value = lGetString(queue_ep, CE_stringval);
                load_is_value = 1;
             } else {
@@ -2309,7 +2309,7 @@ sge_load_alarm(char *reason, const lListElem *qep, const lList *threshold,
          }
       } else {
          /* load thesholds... */
-         if ((cep = get_attribute_by_name(global_hep, hep, qep, name, centry_list, DISPATCH_TIME_NOW, 0)) == NULL ) {
+         if ((cep = get_attribute_by_name(global_hep, hep, qep, name, centry_list, DISPATCH_TIME_NOW, 0)) == nullptr ) {
             if (reason)
                sprintf(reason, MSG_SCHEDD_WHYEXCEEDNOCOMPLEX_S, name);
             DRETURN(1);
@@ -2361,8 +2361,8 @@ char *sge_load_alarm_reason(lListElem *qep, lList *threshold,
    *reason = 0;
 
    /* no threshold -> no alarm */
-   if (threshold != NULL) {
-      lList *rlp = NULL;
+   if (threshold != nullptr) {
+      lList *rlp = nullptr;
       const lListElem *tep;
       bool first = true;
 
@@ -2388,7 +2388,7 @@ char *sge_load_alarm_reason(lListElem *qep, lList *threshold,
          }
 
          /* find actual complex attribute */
-         if ((cep = lGetElemStr(rlp, CE_name, name)) == NULL) {
+         if ((cep = lGetElemStr(rlp, CE_name, name)) == nullptr) {
             /* no complex attribute for threshold -> ERROR */
             if (qinstance_state_is_unknown(qep)) {
                snprintf(buffer, MAX_STRING_SIZE, MSG_QINSTANCE_VALUEMISSINGMASTERDOWN_S, name);
@@ -2491,22 +2491,22 @@ u_long32 ttype
                if (ttype==QU_suspend_thresholds) {
                   DPRINTF(("queue %s tagged to be in suspend alarm: %s\n",
                         lGetString(qep, QU_full_name), reason));
-                  schedd_mes_add_global(NULL, monitor_next_run,
+                  schedd_mes_add_global(nullptr, monitor_next_run,
                                         SCHEDD_INFO_QUEUEINALARM_SS,
                                         lGetString(qep, QU_full_name), reason);
                } else {
                   DPRINTF(("queue %s tagged to be overloaded: %s\n",
                         lGetString(qep, QU_full_name), reason));
-                  schedd_mes_add_global(NULL, monitor_next_run,
+                  schedd_mes_add_global(nullptr, monitor_next_run,
                                         SCHEDD_INFO_QUEUEOVERLOADED_SS,
                                         lGetString(qep, QU_full_name), reason);
                }
             }
          }
          if (remove_queue) {
-            if (overloaded != NULL) {
+            if (overloaded != nullptr) {
                lDechainElem(*unloaded, qep);
-               if (*overloaded == NULL) {
+               if (*overloaded == nullptr) {
                   *overloaded = lCreateListHash("", lGetListDescr(*unloaded), false);
                }
                lAppendElem(*overloaded, qep);
@@ -2536,7 +2536,7 @@ u_long32 ttype
 *
 *  INPUTS
 *     lList **free - Input queue instance list and return free slots.
-*     lList **full - If non-NULL the full queue instances get returned here.
+*     lList **full - If non-nullptr the full queue instances get returned here.
 *
 *  RESULT
 *     int - 0 success
@@ -2544,13 +2544,13 @@ u_long32 ttype
 *******************************************************************************/
 int sge_split_queue_slots_free(bool monitor_next_run, lList **free, lList **full)
 {
-   lList *full_queues = NULL;
-   lListElem *thiz = NULL;
-   lListElem *next = NULL;
+   lList *full_queues = nullptr;
+   lListElem *thiz = nullptr;
+   lListElem *next = nullptr;
 
    DENTER(TOP_LAYER);
 
-   if (free == NULL) {
+   if (free == nullptr) {
       DRETURN(-1);
    }
 
@@ -2560,17 +2560,17 @@ int sge_split_queue_slots_free(bool monitor_next_run, lList **free, lList **full
          thiz = lDechainElem(*free, thiz);
 
          if (!qinstance_state_is_full(thiz)) {
-            schedd_mes_add_global(NULL, monitor_next_run,
+            schedd_mes_add_global(nullptr, monitor_next_run,
                                   SCHEDD_INFO_QUEUEFULL_,
                                   lGetString(thiz, QU_full_name));
             qinstance_state_set_full(thiz, true);
 
-            if (full_queues == NULL) {
+            if (full_queues == nullptr) {
                full_queues = lCreateListHash("full one", lGetListDescr(*free), false);
             }
             lAppendElem(full_queues, thiz);
-         } else if (full != NULL) {
-            if (*full == NULL) {
+         } else if (full != nullptr) {
+            if (*full == nullptr) {
                *full = lCreateList("full one", lGetListDescr(*free));
             }
             lAppendElem(*full, thiz);
@@ -2582,11 +2582,11 @@ int sge_split_queue_slots_free(bool monitor_next_run, lList **free, lList **full
 
    /* dump out the -tsm log and add the new queues to the disabled queue list */
    if (full_queues) {
-      schedd_log_list(NULL, monitor_next_run,
+      schedd_log_list(nullptr, monitor_next_run,
                       MSG_SCHEDD_LOGLIST_QUEUESFULLANDDROPPED,
                       full_queues, QU_full_name);
-      if (full != NULL) {
-         if (*full == NULL) {
+      if (full != nullptr) {
+         if (*full == nullptr) {
             *full = full_queues;
          } else {
             lAddList(*full, &full_queues);
@@ -2619,7 +2619,7 @@ lList **suspended         /* QU_Type */
 ) {
    lCondition *where;
    int ret;
-   lList *lp = NULL;
+   lList *lp = nullptr;
 
    DENTER(TOP_LAYER);
 
@@ -2638,23 +2638,23 @@ lList **suspended         /* QU_Type */
    ret = lSplit(queue_list, &lp, "full queues", where);
    lFreeWhere(&where);
 
-   if (lp != NULL) {
+   if (lp != nullptr) {
       lListElem* mes_queue;
 
       for_each_rw (mes_queue, lp) {
          if (!qinstance_state_is_manual_suspended(mes_queue)) {
             qinstance_state_set_manual_suspended(mes_queue, true);
-            schedd_mes_add_global(NULL, monitor_next_run,
+            schedd_mes_add_global(nullptr, monitor_next_run,
                                   SCHEDD_INFO_QUEUESUSP_,
                                   lGetString(mes_queue, QU_full_name));
          }
       }
 
-      schedd_log_list(NULL, monitor_next_run,
+      schedd_log_list(nullptr, monitor_next_run,
                       MSG_SCHEDD_LOGLIST_QUEUESSUSPENDEDANDDROPPED,
                       lp, QU_full_name);
 
-      if (*suspended == NULL) {
+      if (*suspended == nullptr) {
          *suspended = lp;
       } else {
          lAddList(*suspended, &lp);
@@ -2684,7 +2684,7 @@ sge_split_cal_disabled(bool monitor_next_run, lList **queue_list, lList **disabl
 {
    lCondition *where;
    int ret;
-   lList *lp = NULL;
+   lList *lp = nullptr;
 
    DENTER(TOP_LAYER);
 
@@ -2698,20 +2698,20 @@ sge_split_cal_disabled(bool monitor_next_run, lList **queue_list, lList **disabl
    ret = lSplit(queue_list, &lp, "full queues", where);
    lFreeWhere(&where);
 
-   if (lp != NULL) {
+   if (lp != nullptr) {
       lListElem* mes_queue;
 
       for_each_rw (mes_queue, lp) {
-         schedd_mes_add_global(NULL, monitor_next_run,
+         schedd_mes_add_global(nullptr, monitor_next_run,
                                SCHEDD_INFO_QUEUEDISABLED_,
                                lGetString(mes_queue, QU_full_name));
       }
 
-      schedd_log_list(NULL, monitor_next_run,
+      schedd_log_list(nullptr, monitor_next_run,
                       MSG_SCHEDD_LOGLIST_QUEUESDISABLEDANDDROPPED,
                       lp, QU_full_name);
 
-      if (*disabled == NULL) {
+      if (*disabled == nullptr) {
          *disabled = lp;
       } else {
          lAddList(*disabled, &lp);
@@ -2741,7 +2741,7 @@ sge_split_disabled(bool monitor_next_run, lList **queue_list, lList **disabled)
 {
    lCondition *where;
    int ret;
-   lList *lp = NULL;
+   lList *lp = nullptr;
 
    DENTER(TOP_LAYER);
 
@@ -2755,20 +2755,20 @@ sge_split_disabled(bool monitor_next_run, lList **queue_list, lList **disabled)
    ret = lSplit(queue_list, &lp, "full queues", where);
    lFreeWhere(&where);
 
-   if (lp != NULL) {
+   if (lp != nullptr) {
       lListElem* mes_queue;
 
       for_each_rw (mes_queue, lp) {
-         schedd_mes_add_global(NULL, monitor_next_run,
+         schedd_mes_add_global(nullptr, monitor_next_run,
                                SCHEDD_INFO_QUEUEDISABLED_,
                                lGetString(mes_queue, QU_full_name));
       }
 
-      schedd_log_list(NULL, monitor_next_run,
+      schedd_log_list(nullptr, monitor_next_run,
                       MSG_SCHEDD_LOGLIST_QUEUESDISABLEDANDDROPPED,
                       lp, QU_full_name);
 
-      if (*disabled == NULL) {
+      if (*disabled == nullptr) {
          *disabled = lp;
       } else {
          lAddList(*disabled, &lp);
@@ -2833,7 +2833,7 @@ static bool pe_cq_rejected(const char *pe_name, const lListElem *cq)
 *     True is returned if the project has no access.
 *
 *  INPUTS
-*     const char *project - the project of a job or NULL
+*     const char *project - the project of a job or nullptr
 *     const lListElem *cq - cluster queue (CQ_Type)
 *
 *  RESULT
@@ -3017,9 +3017,9 @@ dispatch_t cqueue_match_static(const char *cqname, sge_assignment_t *a)
 
 
    /* detect if entire cluster queue ruled out due to -q */
-   if (qref_list_cq_rejected(lGetList(a->job, JB_hard_queue_list), cqname, NULL, NULL) &&
+   if (qref_list_cq_rejected(lGetList(a->job, JB_hard_queue_list), cqname, nullptr, nullptr) &&
          (!a->pe_name || !(master_hard_queue_list = lGetList(a->job, JB_master_hard_queue_list))
-         || qref_list_cq_rejected(master_hard_queue_list, cqname, NULL, NULL))) {
+         || qref_list_cq_rejected(master_hard_queue_list, cqname, nullptr, nullptr))) {
       DPRINTF(("Cluster Queue \"%s\" is not contained in the hard queue list (-q) that "
             "was requested by job %d\n", cqname, (int)a->job_id));
       schedd_mes_add(a->monitor_alpp, a->monitor_next_run, a->job_id,
@@ -3032,8 +3032,8 @@ dispatch_t cqueue_match_static(const char *cqname, sge_assignment_t *a)
    if (ar_id != 0) {
       const lListElem *ar_ep = lGetElemUlong(a->ar_list, AR_id, ar_id);
 
-      if (ar_ep != NULL) {
-         const lListElem *gep = NULL;
+      if (ar_ep != nullptr) {
+         const lListElem *gep = nullptr;
 
          for_each_ep(gep, lGetList(ar_ep, AR_granted_slots)) {
             char *ar_cqueue = cqueue_get_name_from_qinstance(lGetString(gep, JG_qname));
@@ -3046,7 +3046,7 @@ dispatch_t cqueue_match_static(const char *cqname, sge_assignment_t *a)
             sge_free(&ar_cqueue);
          }
 
-         if (gep == NULL) {
+         if (gep == nullptr) {
 
             DPRINTF(("Cluster Queue \"%s\" was not reserved by advance reservation %d\n", cqname, ar_id));
             schedd_mes_add(a->monitor_alpp, a->monitor_next_run, a->job_id,
@@ -3164,11 +3164,11 @@ dispatch_t cqueue_match_static(const char *cqname, sge_assignment_t *a)
 static dispatch_t
 sequential_tag_queues_suitable4job(sge_assignment_t *a)
 {
-   lList *skip_host_list = NULL;
-   lList *skip_queue_list = NULL;
+   lList *skip_host_list = nullptr;
+   lList *skip_queue_list = nullptr;
 
-   lList *unclear_cqueue_list = NULL;
-   lList *unclear_host_list = NULL;
+   lList *unclear_cqueue_list = nullptr;
+   lList *unclear_host_list = nullptr;
    dstring rule_name = DSTRING_INIT;
    dstring rue_string = DSTRING_INIT;
    dstring limit_name = DSTRING_INIT;
@@ -3186,7 +3186,7 @@ sequential_tag_queues_suitable4job(sge_assignment_t *a)
    int global_violations = 0;
    int queue_violations = 0;
    lListElem *qep;
-   lListElem *best_qep = NULL;
+   lListElem *best_qep = nullptr;
    u_long32 best_qep_violations = U_LONG32_MAX;
    u_long32 best_qep_tt = U_LONG32_MAX;
 
@@ -3202,7 +3202,7 @@ sequential_tag_queues_suitable4job(sge_assignment_t *a)
       skip_queue_list = lGetListRW(use_category.cache, CCT_ignore_queues);
    }
 
-   if (ar_ep != NULL) {
+   if (ar_ep != nullptr) {
       result = match_static_advance_reservation(a);
       if (result != DISPATCH_OK) {
          DRETURN(result);
@@ -3288,7 +3288,7 @@ sequential_tag_queues_suitable4job(sge_assignment_t *a)
       /* static host matching */
       if (!(hep = lGetElemHost(a->host_list, EH_name, eh_name))) {
          ERROR((SGE_EVENT, MSG_SCHEDD_UNKNOWN_HOST_SS, qname, eh_name));
-         if (skip_queue_list != NULL) {
+         if (skip_queue_list != nullptr) {
             lAddElemStr(&skip_queue_list, CTI_name, qname, CTI_Type);
          }
          continue;
@@ -3336,7 +3336,7 @@ sequential_tag_queues_suitable4job(sge_assignment_t *a)
       }
 
       /* ar matching */
-      if (ar_ep != NULL) {
+      if (ar_ep != nullptr) {
          lListElem *ar_queue;
          lListElem *rep;
          dstring reason = DSTRING_INIT;
@@ -3356,7 +3356,7 @@ sequential_tag_queues_suitable4job(sge_assignment_t *a)
             }
             sge_dstring_clear(&reason);
             cplx_el = get_attribute_by_name(a->gep, hep, qep, attrname, a->centry_list, a->start, a->duration);
-            if (cplx_el == NULL) {
+            if (cplx_el == nullptr) {
                result = DISPATCH_MISSING_ATTR;
                sge_dstring_sprintf(&reason, MSG_ATTRIB_MISSINGATTRIBUTEXINCOMPLEXES_S, attrname);
                break;
@@ -3450,7 +3450,7 @@ sequential_tag_queues_suitable4job(sge_assignment_t *a)
          if (!a->is_reservation) {
             if (!a->is_soft || this_violations == 0) {
                /* we found our queue */
-               if (best_qep != NULL) {
+               if (best_qep != nullptr) {
                   lSetUlong(best_qep, QU_tag, 0);
                }
                break;
@@ -3458,9 +3458,9 @@ sequential_tag_queues_suitable4job(sge_assignment_t *a)
          } else {
             /* further search is pointless, if reservation depends from a global consumble */
             /* earlier start time has higher preference than lower soft violations */
-            if (ar_ep == NULL && (tt_global >= MAX(MAX(tt_queue, tt_host), tt_rqs)) && !a->is_soft) {
+            if (ar_ep == nullptr && (tt_global >= MAX(MAX(tt_queue, tt_host), tt_rqs)) && !a->is_soft) {
                /* we found our queue */
-               if (best_qep != NULL) {
+               if (best_qep != nullptr) {
                   lSetUlong(best_qep, QU_tag, 0);
                }
                break;
@@ -3511,7 +3511,7 @@ sequential_tag_queues_suitable4job(sge_assignment_t *a)
    if (use_category.use_category) {
       lList *temp = schedd_mes_get_tmp_list();
       if (temp){
-         lSetList(use_category.cache, CCT_job_messages, lCopyList(NULL, temp));
+         lSetList(use_category.cache, CCT_job_messages, lCopyList(nullptr, temp));
       }
    }
 
@@ -3539,12 +3539,12 @@ sequential_tag_queues_suitable4job(sge_assignment_t *a)
 *     for further jobs.
 *
 *  INPUTS
-*     category_use_t *use_category - category caching structure, must not be NULL
+*     category_use_t *use_category - category caching structure, must not be nullptr
 *     u_long32 *max_slotsp         - number of different slot settings
-*     lListElem *pe                - pe, must not be NULL
+*     lListElem *pe                - pe, must not be nullptr
 *     int min_slots                - min slot setting (pe range)
 *     int max_slots                - max slot setting (pe range)
-*     lList *pe_range              - pe range, must not be NULL
+*     lList *pe_range              - pe range, must not be nullptr
 *
 *  RESULT
 *     static bool - true, if successfull
@@ -3557,12 +3557,12 @@ static bool
 add_pe_slots_to_category(category_use_t *use_category, u_long32 *max_slotsp, lListElem *pe,
                          int min_slots, int max_slots, lList *pe_range)
 {
-   if (use_category->cache != NULL) {
+   if (use_category->cache != nullptr) {
       use_category->posible_pe_slots = (u_long32 *)lGetRef(use_category->cache, CCT_pe_job_slots);
    }
 
    /* --- prepare the posible slots for the binary search */
-   if (use_category->posible_pe_slots == NULL) {
+   if (use_category->posible_pe_slots == nullptr) {
       int slots;
 
       *max_slotsp = 0;
@@ -3578,9 +3578,9 @@ add_pe_slots_to_category(category_use_t *use_category, u_long32 *max_slotsp, lLi
             continue;
          }
 
-         if (use_category->posible_pe_slots == NULL) {
+         if (use_category->posible_pe_slots == nullptr) {
             use_category->posible_pe_slots = (u_long32 *)sge_malloc((max_slots - min_slots + 1) * sizeof(u_long32));
-            if (use_category->posible_pe_slots == NULL) {
+            if (use_category->posible_pe_slots == nullptr) {
                return false;
             }
          }
@@ -3588,7 +3588,7 @@ add_pe_slots_to_category(category_use_t *use_category, u_long32 *max_slotsp, lLi
          (*max_slotsp)++;
       }
 
-      if (use_category->cache != NULL) {
+      if (use_category->cache != nullptr) {
          lSetRef(use_category->cache, CCT_pe_job_slots, use_category->posible_pe_slots);
          lSetUlong(use_category->cache, CCT_pe_job_slot_count, *max_slotsp);
          use_category->is_pe_slots_rev = true;
@@ -3631,9 +3631,9 @@ static void fill_category_use_t(const sge_assignment_t *a, category_use_t *use_c
    DENTER(TOP_LAYER);
 
    use_category->category = (lListElem *)lGetRef(job, JB_category);
-   if (use_category->category != NULL) {
+   if (use_category->category != nullptr) {
       use_category->cache = lGetElemStrRW(lGetList(use_category->category, CT_cache), CCT_pe_name, pe_name);
-      if (use_category->cache == NULL) {
+      if (use_category->cache == nullptr) {
          use_category->cache = lCreateElem(CCT_Type);
 
          lSetString(use_category->cache, CCT_pe_name, pe_name);
@@ -3641,7 +3641,7 @@ static void fill_category_use_t(const sge_assignment_t *a, category_use_t *use_c
          lSetList(use_category->cache, CCT_ignore_hosts, lCreateList("", CTI_Type));
          lSetList(use_category->cache, CCT_job_messages, lCreateList("", MES_Type));
 
-         if (lGetList(use_category->category, CT_cache) == NULL) {
+         if (lGetList(use_category->category, CT_cache) == nullptr) {
             lSetList(use_category->category, CT_cache, lCreateList("pe_cache", CCT_Type));
          }
          lAppendElem(lGetListRW(use_category->category, CT_cache), use_category->cache);
@@ -3653,11 +3653,11 @@ static void fill_category_use_t(const sge_assignment_t *a, category_use_t *use_c
                                   lGetUlong(use_category->category, CT_refcount) > MIN_JOBS_IN_CATEGORY) ? true : false;
    }
    else {
-      use_category->cache = NULL;
+      use_category->cache = nullptr;
       use_category->mod_category = false;
       use_category->use_category = false;
    }
-   use_category->posible_pe_slots = NULL;
+   use_category->posible_pe_slots = nullptr;
    use_category->is_pe_slots_rev = false;
 
    DRETURN_VOID;
@@ -3667,20 +3667,20 @@ static int get_soft_violations(sge_assignment_t *a, lListElem *hep, lListElem *q
 {
    int violations;
 
-   violations = compute_soft_violations(a, NULL, 0,
+   violations = compute_soft_violations(a, nullptr, 0,
          lGetList(a->gep, EH_load_list),
          lGetList(a->gep, EH_consumable_config_list),
          lGetList(a->gep, EH_resource_utilization),
          DOMINANT_LAYER_GLOBAL, 0, GLOBAL_TAG);
 
-   violations = compute_soft_violations(a, NULL, violations,
+   violations = compute_soft_violations(a, nullptr, violations,
          lGetList(hep, EH_load_list),
          lGetList(hep, EH_consumable_config_list),
          lGetList(hep, EH_resource_utilization),
          DOMINANT_LAYER_HOST, 0, HOST_TAG);
 
    violations = compute_soft_violations(a, qep, violations,
-         NULL,
+         nullptr,
          lGetList(qep, QU_consumable_config_list),
          lGetList(qep, QU_resource_utilization),
          DOMINANT_LAYER_QUEUE, 0, QUEUE_TAG);
@@ -3730,8 +3730,8 @@ static dispatch_t
 parallel_tag_queues_suitable4job(sge_assignment_t *a, category_use_t *use_category, int *available_slots)
 {
    lListElem *job = a->job;
-   bool have_masterq_request = (lGetList(job, JB_master_hard_queue_list) != NULL) ? true : false;
-   bool have_hard_queue_request = (lGetList(job, JB_hard_queue_list) != NULL) ? true : false;
+   bool have_masterq_request = (lGetList(job, JB_master_hard_queue_list) != nullptr) ? true : false;
+   bool have_hard_queue_request = (lGetList(job, JB_hard_queue_list) != nullptr) ? true : false;
 
    int accu_host_slots, accu_host_slots_qend;
    bool have_master_host, have_master_host_qend, suited_as_master_host;
@@ -3771,8 +3771,8 @@ parallel_tag_queues_suitable4job(sge_assignment_t *a, category_use_t *use_catego
             gslots, gslots_qend));
       }
    } else {
-      lList *skip_host_list = NULL;
-      lList *unclear_cqueue_list = NULL;
+      lList *skip_host_list = nullptr;
+      lList *unclear_cqueue_list = nullptr;
       bool done;
       int last_accu_host_slots, last_accu_host_slots_qend;
 
@@ -3894,7 +3894,7 @@ parallel_tag_queues_suitable4job(sge_assignment_t *a, category_use_t *use_catego
              */
 
             if (lGetElemHost(a->queue_list, QU_qhostname, eh_name)) {
-               const void *iter = NULL;
+               const void *iter = nullptr;
 
                parallel_tag_hosts_queues(a, hep, &hslots, &hslots_qend,
                    &suited_as_master_host, use_category, &unclear_cqueue_list);
@@ -3975,7 +3975,7 @@ parallel_tag_queues_suitable4job(sge_assignment_t *a, category_use_t *use_catego
                            /* master queue must be at first position */
                            if (!have_master_host && lGetUlong(qep, QU_tagged4schedule) == 2) {
                               lDechainElem(a->gdil, gdil_ep);
-                              lInsertElem(a->gdil, NULL, gdil_ep);
+                              lInsertElem(a->gdil, nullptr, gdil_ep);
                               got_master_queue = true;
                            }
                         } else {
@@ -4208,7 +4208,7 @@ parallel_tag_queues_suitable4job(sge_assignment_t *a, category_use_t *use_catego
    if (use_category->use_category) {
       lList *temp = schedd_mes_get_tmp_list();
       if (temp){
-         lSetList(use_category->cache, CCT_job_messages, lCopyList(NULL, temp));
+         lSetList(use_category->cache, CCT_job_messages, lCopyList(nullptr, temp));
        }
    }
 
@@ -4273,11 +4273,11 @@ parallel_host_slots(sge_assignment_t *a, int *slots, int *slots_qend,
          a->pi->par_hdyn++;
 
       result = parallel_rc_slots_by_time(a, hard_requests, &hslots, &hslots_qend,
-            config_attr, actual_attr, load_list, false, NULL,
+            config_attr, actual_attr, load_list, false, nullptr,
                DOMINANT_LAYER_HOST, lc_factor, HOST_TAG, false, eh_name, false);
 
       if (result == DISPATCH_NOT_AT_TIME) {
-         const void *queue_iterator = NULL;
+         const void *queue_iterator = nullptr;
          lListElem *next_queue, *qep;
 
          for (next_queue = lGetElemHostFirstRW(a->queue_list, QU_qhostname, eh_name, &queue_iterator);
@@ -4289,7 +4289,7 @@ parallel_host_slots(sge_assignment_t *a, int *slots, int *slots_qend,
       }
 
       if (hslots > 0) {
-         const void *iterator = NULL;
+         const void *iterator = nullptr;
          const lListElem *gdil;
          int t_max = parallel_max_host_slots(a, hep);
          if (t_max<hslots) {
@@ -4299,7 +4299,7 @@ parallel_host_slots(sge_assignment_t *a, int *slots, int *slots_qend,
          }
 
          for (gdil = lGetElemHostFirst(a->gdil, JG_qhostname, eh_name, &iterator);
-              gdil != NULL;
+              gdil != nullptr;
               gdil = lGetElemHostNext(a->gdil, JG_qhostname, eh_name, &iterator)) {
             hslots -= lGetUlong(gdil, JG_slots);
          }
@@ -4387,7 +4387,7 @@ parallel_tag_hosts_queues(sge_assignment_t *a, lListElem *hep, int *slots, int *
    const char *cqname, *qname, *eh_name = lGetHost(hep, EH_name);
    lListElem *qep, *next_queue;
    dispatch_t result = DISPATCH_OK;
-   const void *queue_iterator = NULL;
+   const void *queue_iterator = nullptr;
    int allocation_rule;
 
    DENTER(TOP_LAYER);
@@ -4418,9 +4418,9 @@ parallel_tag_hosts_queues(sge_assignment_t *a, lListElem *hep, int *slots, int *
             continue;
          }
          sge_dstring_clear(&reason);
-         cplx_el = get_attribute(attrname, config_attr, actual_attr, load_attr, a->centry_list, NULL,
+         cplx_el = get_attribute(attrname, config_attr, actual_attr, load_attr, a->centry_list, nullptr,
                   DOMINANT_LAYER_HOST, 0, &reason, false, DISPATCH_TIME_NOW, 0);
-         if (cplx_el != NULL) {
+         if (cplx_el != nullptr) {
             if (match_static_resource(1, rep, cplx_el, &reason, false) == DISPATCH_OK) {
                lSetUlong(rep, CE_tagged, HOST_TAG);
             }
@@ -4431,12 +4431,12 @@ parallel_tag_hosts_queues(sge_assignment_t *a, lListElem *hep, int *slots, int *
 
       {
          const lListElem *gdil_ep;
-         const void *iterator = NULL;
+         const void *iterator = nullptr;
          const lListElem *ar = ar_list_locate(a->ar_list, lGetUlong(a->job, JB_ar));
          const lList *granted_list = lGetList(ar, AR_granted_slots);
 
          for (gdil_ep = lGetElemHostFirst(granted_list, JG_qhostname, eh_name, &iterator);
-              gdil_ep != NULL;
+              gdil_ep != nullptr;
               gdil_ep = lGetElemHostNext(granted_list, JG_qhostname, eh_name, &iterator)) {
               hslots += lGetUlong(gdil_ep, JG_slots);
          }
@@ -4453,7 +4453,7 @@ parallel_tag_hosts_queues(sge_assignment_t *a, lListElem *hep, int *slots, int *
 
 
    if (hslots >= min_host_slots || hslots_qend >= min_host_slots) {
-      lList *skip_queue_list = NULL;
+      lList *skip_queue_list = nullptr;
       if (use_category->use_category) {
          skip_queue_list = lGetListRW(use_category->cache, CCT_ignore_queues);
       }
@@ -4543,12 +4543,12 @@ static int
 parallel_max_host_slots(sge_assignment_t *a, lListElem *host) {
    int avail_h = 0, avail_q;
    int avail;
-   lListElem *next_queue, *qep, *centry = NULL;
+   lListElem *next_queue, *qep, *centry = nullptr;
    lListElem *lv;
    const lListElem *lc;
    const lListElem *tr, *fv, *cep;
    const char *eh_name = lGetHost(host, EH_name);
-   const void *queue_iterator = NULL;
+   const void *queue_iterator = nullptr;
    const char *load_value, *limit_value, *adj_value;
    u_long32 type;
    bool is_np_adjustment = false;
@@ -4565,17 +4565,17 @@ parallel_max_host_slots(sge_assignment_t *a, lListElem *host) {
       for_each_ep(tr, load_thresholds) {
          double load, threshold, adjustment;
          const char *name = lGetString(tr, CE_name);
-         if ((cep = centry_list_locate(a->centry_list, name)) == NULL) {
+         if ((cep = centry_list_locate(a->centry_list, name)) == nullptr) {
             continue;
          }
 
          if (lGetUlong(cep, CE_consumable) == CONSUMABLE_NO) { /* work on the load values */
-            if ((lc = lGetElemStr(a->load_adjustments, CE_name, name)) == NULL) {
+            if ((lc = lGetElemStr(a->load_adjustments, CE_name, name)) == nullptr) {
                continue;
             }
-            if ((lv=lGetSubStr(host, HL_name, name, EH_load_list)) != NULL) {
+            if ((lv=lGetSubStr(host, HL_name, name, EH_load_list)) != nullptr) {
                load_value = lGetString(lv, HL_value);
-            } else if ((lv = lGetSubStr(a->gep, HL_name, name, EH_load_list)) != NULL) {
+            } else if ((lv = lGetSubStr(a->gep, HL_name, name, EH_load_list)) != nullptr) {
                load_value = lGetString(lv, HL_value);
             } else {
                fv = lGetSubStr(qep, CE_name, name, QU_consumable_config_list);
@@ -4587,13 +4587,13 @@ parallel_max_host_slots(sge_assignment_t *a, lListElem *host) {
 
          } else { /* work on a consumable */
 
-            if ((lc = lGetElemStr(requests, CE_name, name)) != NULL) {
+            if ((lc = lGetElemStr(requests, CE_name, name)) != nullptr) {
                adj_value = lGetString(lc, CE_stringval);
             } else { /* is default value */
                adj_value = lGetString(cep, CE_defaultval);
             }
 
-            if ((centry = get_attribute_by_name(a->gep, host, qep, name, a->centry_list, a->start, a->duration)) == NULL) {
+            if ((centry = get_attribute_by_name(a->gep, host, qep, name, a->centry_list, a->start, a->duration)) == nullptr) {
                 /* no load value, no assigned consumable to queue, host, or global */
                 DPRINTF(("the consumable "SFN" used in queue "SFN" as load threshold has no instance at queue, host or global level\n",
                          name, lGetString(qep, QU_full_name)));
@@ -4614,9 +4614,9 @@ parallel_max_host_slots(sge_assignment_t *a, lListElem *host) {
             case TYPE_BOO:
             case TYPE_DOUBLE:
 
-               if (!parse_ulong_val(&load, NULL, type, load_value, NULL, 0) ||
-                   !parse_ulong_val(&threshold, NULL, type, limit_value, NULL, 0) ||
-                   !parse_ulong_val(&adjustment, NULL, type, adj_value, NULL, 0)) {
+               if (!parse_ulong_val(&load, nullptr, type, load_value, nullptr, 0) ||
+                   !parse_ulong_val(&threshold, nullptr, type, limit_value, nullptr, 0) ||
+                   !parse_ulong_val(&adjustment, nullptr, type, adj_value, nullptr, 0)) {
                    lFreeElem(&centry);
                   continue;
                }
@@ -4630,7 +4630,7 @@ parallel_max_host_slots(sge_assignment_t *a, lListElem *host) {
          /* the string in load_value is not needed anymore, we can free the element */
          lFreeElem(&centry);
 
-         /* a adjustment of NULL is ignored here. We can dispatch unlimited jobs based
+         /* a adjustment of nullptr is ignored here. We can dispatch unlimited jobs based
             on the load value */
          if (adjustment == 0) {
             continue;
@@ -4709,7 +4709,7 @@ dispatch_t sge_sequential_assignment(sge_assignment_t *a)
 
    DENTER(TOP_LAYER);
 
-   if (a == NULL) {
+   if (a == nullptr) {
       DRETURN(DISPATCH_NEVER_CAT);
    }
 
@@ -4760,7 +4760,7 @@ dispatch_t sge_sequential_assignment(sge_assignment_t *a)
       const lListElem *qep;
       u_long32 job_start_time = U_LONG32_MAX;
       u_long32 min_soft_violations = U_LONG32_MAX;
-      const lListElem *best_queue = NULL;
+      const lListElem *best_queue = nullptr;
 
       if (a->is_reservation) {
          for_each_ep(qep, a->queue_list) {
@@ -4804,7 +4804,7 @@ dispatch_t sge_sequential_assignment(sge_assignment_t *a)
       }
       {
          lListElem *gdil_ep;
-         lList *gdil = NULL;
+         lList *gdil = nullptr;
          const char *qname = lGetString(best_queue, QU_full_name);
          const char *eh_name = lGetHost(best_queue, QU_qhostname);
 
@@ -4875,7 +4875,7 @@ static int sequential_update_host_order(lList *host_list, lList *queues)
    int previous_load_inited = 0;
    u_long32 host_seqno = 0;
    const char *eh_name;
-   const void *iterator = NULL;
+   const void *iterator = nullptr;
    bool host_order_changed = false;
 
    DENTER(TOP_LAYER);
@@ -4904,7 +4904,7 @@ static int sequential_update_host_order(lList *host_list, lList *queues)
       eh_name = lGetHost(hep, EH_name);
 
       qep = lGetElemHostFirstRW(queues, QU_qhostname, eh_name, &iterator);
-      while (qep != NULL) {
+      while (qep != nullptr) {
           lSetUlong(qep, QU_host_seq_no, host_seqno);
           qep = lGetElemHostNextRW(queues, QU_qhostname, eh_name, &iterator);
       }
@@ -4960,7 +4960,7 @@ parallel_assignment(sge_assignment_t *a, category_use_t *use_category, int *avai
 
    DENTER(TOP_LAYER);
 
-   if (a == NULL) {
+   if (a == nullptr) {
       DRETURN(DISPATCH_NEVER_CAT);
    }
 
@@ -4997,7 +4997,7 @@ parallel_assignment(sge_assignment_t *a, category_use_t *use_category, int *avai
 
 #ifdef SGE_PQS_API
    /* if dynamic qsort function was supplied, call it */
-   if ((qsort_args=lGetString(a->pe, PE_qsort_args)) != NULL) {
+   if ((qsort_args=lGetString(a->pe, PE_qsort_args)) != nullptr) {
 
       ret = sge_call_pe_qsort(a, qsort_args);
       if (ret!=0) {
@@ -5066,9 +5066,9 @@ parallel_queue_slots(sge_assignment_t *a, lListElem *qep, int *slots, int *slots
                continue;
             }
             sge_dstring_clear(&reason);
-            cplx_el = get_attribute(attrname, ar_queue_config_attr, ar_queue_actual_attr, NULL, a->centry_list, NULL,
+            cplx_el = get_attribute(attrname, ar_queue_config_attr, ar_queue_actual_attr, nullptr, a->centry_list, nullptr,
                      DOMINANT_LAYER_QUEUE, 0, &reason, false, DISPATCH_TIME_NOW, 0);
-            if (cplx_el != NULL) {
+            if (cplx_el != nullptr) {
                if (match_static_resource(1, rep, cplx_el, &reason, false) == DISPATCH_OK) {
                   lSetUlong(rep, CE_tagged, PE_TAG);
                }
@@ -5084,7 +5084,7 @@ parallel_queue_slots(sge_assignment_t *a, lListElem *qep, int *slots, int *slots
          DPRINTF(("verifing AR queue\n"));
          lSetUlong(ar_queue, QU_tagged4schedule, lGetUlong(qep, QU_tagged4schedule));
          result = parallel_rc_slots_by_time(a, hard_requests, &qslots, &qslots_qend,
-               ar_queue_config_attr, ar_queue_actual_attr, NULL, true, ar_queue,
+               ar_queue_config_attr, ar_queue_actual_attr, nullptr, true, ar_queue,
                DOMINANT_LAYER_QUEUE, 0, QUEUE_TAG, false, lGetString(ar_queue, QU_full_name), false);
          lSetUlong(qep, QU_tagged4schedule, lGetUlong(ar_queue, QU_tagged4schedule));
       } else {
@@ -5096,7 +5096,7 @@ parallel_queue_slots(sge_assignment_t *a, lListElem *qep, int *slots, int *slots
                a->pi->par_qdyn++;
 
             result = parallel_rc_slots_by_time(a, hard_requests, &qslots, &qslots_qend,
-                  config_attr, actual_attr, NULL, true, qep,
+                  config_attr, actual_attr, nullptr, true, qep,
                   DOMINANT_LAYER_QUEUE, 0, QUEUE_TAG, false, lGetString(qep, QU_full_name), false);
          }
       }
@@ -5147,13 +5147,13 @@ sequential_queue_time(u_long32 *start, const sge_assignment_t *a,
    sge_dstring_init(&reason, reason_buf, sizeof(reason_buf));
 
    /* match the resources */
-   result = rc_time_by_slots(a, hard_requests, NULL, config_attr, actual_attr,
+   result = rc_time_by_slots(a, hard_requests, nullptr, config_attr, actual_attr,
                             qep, false, &reason, 1, DOMINANT_LAYER_QUEUE,
                             0, QUEUE_TAG, &tmp_time, qname);
 
    if (result == DISPATCH_OK) {
-      if (violations != NULL) {
-         *violations = compute_soft_violations(a, qep, *violations, NULL, config_attr, actual_attr,
+      if (violations != nullptr) {
+         *violations = compute_soft_violations(a, qep, *violations, nullptr, config_attr, actual_attr,
                                            DOMINANT_LAYER_QUEUE, 0, QUEUE_TAG);
       }
    } else {
@@ -5252,13 +5252,13 @@ sequential_host_time(u_long32 *start, const sge_assignment_t *a, int *violations
    }
 
    result = rc_time_by_slots(a, hard_requests, load_attr,
-         config_attr, actual_attr, NULL, false,
+         config_attr, actual_attr, nullptr, false,
          &reason, 1, DOMINANT_LAYER_HOST,
          lc_factor, HOST_TAG, &tmp_time, eh_name);
 
    if (result == DISPATCH_OK || result == DISPATCH_MISSING_ATTR) {
-      if (violations != NULL) {
-         *violations = compute_soft_violations(a, NULL, *violations, load_attr, config_attr,
+      if (violations != nullptr) {
+         *violations = compute_soft_violations(a, nullptr, *violations, load_attr, config_attr,
                                            actual_attr, DOMINANT_LAYER_HOST, 0, HOST_TAG);
       }
    } else {
@@ -5322,12 +5322,12 @@ sequential_global_time(u_long32 *start, const sge_assignment_t *a, int *violatio
          lc_factor = ((double)ulc_factor)/100;
    }
 
-   result = rc_time_by_slots(a, hard_request, load_attr, config_attr, actual_attr, NULL, false, &reason,
+   result = rc_time_by_slots(a, hard_request, load_attr, config_attr, actual_attr, nullptr, false, &reason,
                              1, DOMINANT_LAYER_GLOBAL, lc_factor, GLOBAL_TAG, &tmp_time, SGE_GLOBAL_NAME);
 
    if ((result == DISPATCH_OK) || (result == DISPATCH_MISSING_ATTR)) {
-      if (violations != NULL) {
-         *violations = compute_soft_violations(a, NULL, *violations, load_attr, config_attr,
+      if (violations != nullptr) {
+         *violations = compute_soft_violations(a, nullptr, *violations, load_attr, config_attr,
                                            actual_attr, DOMINANT_LAYER_GLOBAL, 0, GLOBAL_TAG);
       }
    } else {
@@ -5392,7 +5392,7 @@ parallel_global_slots(const sge_assignment_t *a, int *slots, int *slots_qend)
 
       result = parallel_rc_slots_by_time(a, hard_request, &gslots,
                                 &gslots_qend, config_attr, actual_attr, load_attr,
-                                false, NULL, DOMINANT_LAYER_GLOBAL, lc_factor, GLOBAL_TAG, false, SGE_GLOBAL_NAME, false);
+                                false, nullptr, DOMINANT_LAYER_GLOBAL, lc_factor, GLOBAL_TAG, false, SGE_GLOBAL_NAME, false);
    }
 
    *slots      = gslots;
@@ -5433,9 +5433,9 @@ parallel_available_slots(const sge_assignment_t *a, int *slots, int *slots_qend)
    char reason_buf[1024];
    dispatch_t result;
    int total = lGetUlong(a->pe, PE_slots);
-   static lListElem *implicit_slots_request = NULL;
-   static lList *implicit_total_list = NULL;
-   lListElem *tep = NULL;
+   static lListElem *implicit_slots_request = nullptr;
+   static lList *implicit_total_list = nullptr;
+   lListElem *tep = nullptr;
    char strbuf[100];
    dstring slots_as_str;
 
@@ -5471,7 +5471,7 @@ parallel_available_slots(const sge_assignment_t *a, int *slots, int *slots_qend)
 
    if (ri_slots_by_time(a, slots, slots_qend,
          lGetList(a->pe, PE_resource_utilization), implicit_slots_request,
-         NULL, implicit_total_list, NULL, 0, 0, &reason, true, true, a->pe_name)) {
+         nullptr, implicit_total_list, nullptr, 0, 0, &reason, true, true, a->pe_name)) {
       DRETURN(DISPATCH_NEVER_CAT);
    }
 
@@ -5504,8 +5504,8 @@ sge_get_double_qattr(double *dvalp, char *attrname, const lListElem *q,
    u_long32 type;
    double tmp_dval;
    char dom_str[4];
-   lListElem *global = NULL;
-   lListElem *host = NULL;
+   lListElem *global = nullptr;
+   lListElem *host = nullptr;
 
    DENTER(TOP_LAYER);
 
@@ -5519,11 +5519,11 @@ sge_get_double_qattr(double *dvalp, char *attrname, const lListElem *q,
          (type != TYPE_CSTR) && (type != TYPE_RESTR) && (type != TYPE_HOST) ) {
 
          if ((lGetUlong(ep, CE_pj_dominant)&DOMINANT_TYPE_MASK)!=DOMINANT_TYPE_VALUE ) {
-            parse_ulong_val(&tmp_dval, NULL, type, lGetString(ep, CE_pj_stringval), NULL, 0);
+            parse_ulong_val(&tmp_dval, nullptr, type, lGetString(ep, CE_pj_stringval), nullptr, 0);
             monitor_dominance(dom_str, lGetUlong(ep, CE_pj_dominant));
             *has_value_from_object = true;
          } else {
-            parse_ulong_val(&tmp_dval, NULL, type, lGetString(ep, CE_stringval), NULL, 0);
+            parse_ulong_val(&tmp_dval, nullptr, type, lGetString(ep, CE_stringval), nullptr, 0);
             monitor_dominance(dom_str, lGetUlong(ep, CE_dominant));
             *has_value_from_object = ((lGetUlong(ep, CE_dominant) & DOMINANT_TYPE_MASK) == DOMINANT_TYPE_VALUE) ? false : true;
          }
@@ -5559,8 +5559,8 @@ const lList *exechost_list,
 const lList *centry_list
 ) {
    lListElem *ep;
-   lListElem *global = NULL;
-   lListElem *host = NULL;
+   lListElem *global = nullptr;
+   lListElem *host = nullptr;
    int ret = -1;
 
    DENTER(TOP_LAYER);
@@ -5626,7 +5626,7 @@ ri_time_by_slots(const sge_assignment_t *a, lListElem *rep, const lList *load_at
                  lListElem *queue, dstring *reason, bool allow_non_requestable,
                  int slots, u_long32 layer, double lc_factor, u_long32 *start_time, const char *object_name)
 {
-   lListElem *cplx_el=NULL;
+   lListElem *cplx_el=nullptr;
    const char *attrname;
    dispatch_t ret = DISPATCH_OK;
    const lListElem *actual_el;
@@ -5658,7 +5658,7 @@ ri_time_by_slots(const sge_assignment_t *a, lListElem *rep, const lList *load_at
          attrname, map_consumable2str(lGetUlong(cplx_el, CE_consumable))));
 
    ret = match_static_resource(slots, rep, cplx_el, reason, allow_non_requestable);
-   if (actual_el != NULL) {
+   if (actual_el != nullptr) {
       utilized = lGetNumberOfElem(lGetList(actual_el, RUE_utilized));
    }
 
@@ -5687,8 +5687,8 @@ ri_time_by_slots(const sge_assignment_t *a, lListElem *rep, const lList *load_at
    /* determine 'total' and 'request' values */
    total = lGetDouble(capacitiy_el, CE_doubleval);
 
-   if (!parse_ulong_val(&request, NULL, lGetUlong(cplx_el, CE_valtype),
-      lGetString(rep, CE_stringval), NULL, 0)) {
+   if (!parse_ulong_val(&request, nullptr, lGetUlong(cplx_el, CE_valtype),
+      lGetString(rep, CE_stringval), nullptr, 0)) {
       sge_dstring_append(reason, "wrong type");
       lFreeElem(&cplx_el);
       DRETURN(DISPATCH_NEVER_CAT);
@@ -5860,7 +5860,7 @@ ri_slots_by_time(const sge_assignment_t *a, int *slots, int *slots_qend,
    bool allow_non_requestable, bool no_centry, const char *object_name)
 {
    const char *name;
-   const lListElem *uep, *tep = NULL;
+   const lListElem *uep, *tep = nullptr;
    u_long32 start = a->start;
    bool schedule_based = (a->is_advance_reservation || a->is_schedule_based) ? true : false;
    int utilized = 0;
@@ -5954,7 +5954,7 @@ ri_slots_by_time(const sge_assignment_t *a, int *slots, int *slots_qend,
    } else {
       total = lGetDouble(tep, CE_doubleval);
 
-      if (uep != NULL) {
+      if (uep != nullptr) {
          utilized = lGetNumberOfElem(lGetList(uep, RUE_utilized));
       }
 
@@ -6072,7 +6072,7 @@ parallel_rc_slots_by_time(const sge_assignment_t *a, lList *requests,  int *slot
    }
 
    if (tep) {
-      static lListElem *implicit_slots_request = NULL;
+      static lListElem *implicit_slots_request = nullptr;
       if (!implicit_slots_request) {
          implicit_slots_request = lCreateElem(CE_Type);
          lSetString(implicit_slots_request, CE_name, SGE_ATTR_SLOTS);
@@ -6112,7 +6112,7 @@ parallel_rc_slots_by_time(const sge_assignment_t *a, lList *requests,  int *slot
          double request;
          const char *def_req = lGetString(cep, CE_defaultval);
          if (def_req) {
-            parse_ulong_val(&request, NULL, lGetUlong(cep, CE_valtype), def_req, NULL, 0);
+            parse_ulong_val(&request, nullptr, lGetUlong(cep, CE_valtype), def_req, nullptr, 0);
 
             if (request != 0 || lGetUlong(cep, CE_relop) == CMPLXEXCL_OP) {
 
@@ -6250,7 +6250,7 @@ parallel_rc_slots_by_time(const sge_assignment_t *a, lList *requests,  int *slot
 *     scanes all queues for consumables as load thresholds. It builds a
 *     consumable category for each queue which is using consumables as a load
 *     threshold.
-*     If no consumables are used, the *load_list is set to NULL.
+*     If no consumables are used, the *load_list is set to nullptr.
 *
 *  INPUTS
 *     const lList *queue_list  - a list of queue instances
@@ -6282,16 +6282,16 @@ void sge_create_load_list(const lList *queue_list, const lList *host_list,
 
    DENTER(TOP_LAYER);
 
-   if (load_list == NULL){
+   if (load_list == nullptr){
       CRITICAL((SGE_EVENT, "no load_list specified\n"));
       abort();
    }
 
-   if (*load_list != NULL){
+   if (*load_list != nullptr){
       sge_free_load_list(load_list);
    }
 
-   if ((global = host_list_locate(host_list, SGE_GLOBAL_NAME)) == NULL) {
+   if ((global = host_list_locate(host_list, SGE_GLOBAL_NAME)) == nullptr) {
       ERROR((SGE_EVENT, "no global host in sge_create_load_list"));
       DRETURN_VOID;
    }
@@ -6301,22 +6301,22 @@ void sge_create_load_list(const lList *queue_list, const lList *host_list,
       for_each_rw(load_threshold, load_threshold_list) {
          load_threshold_name = lGetString(load_threshold, CE_name);
          limit_value = lGetString(load_threshold, CE_stringval);
-         if ((centry = centry_list_locate(centry_list, load_threshold_name)) == NULL) {
+         if ((centry = centry_list_locate(centry_list, load_threshold_name)) == nullptr) {
             ERROR((SGE_EVENT, MSG_SCHEDD_WHYEXCEEDNOCOMPLEX_S, load_threshold_name));
             goto error;
          }
 
          if (lGetUlong(centry, CE_consumable) != CONSUMABLE_NO) {
-            lListElem *global_consumable = NULL;
-            lListElem *host_consumable = NULL;
-            lListElem *queue_consumable = NULL;
+            lListElem *global_consumable = nullptr;
+            lListElem *host_consumable = nullptr;
+            lListElem *queue_consumable = nullptr;
 
-            lListElem *load_elem = NULL;
-            lListElem *queue_ref_elem = NULL;
-            lList *queue_ref_list = NULL;
+            lListElem *load_elem = nullptr;
+            lListElem *queue_ref_elem = nullptr;
+            lList *queue_ref_list = nullptr;
 
 
-            if ((host = host_list_locate(host_list, lGetHost(queue, QU_qhostname))) == NULL){
+            if ((host = host_list_locate(host_list, lGetHost(queue, QU_qhostname))) == nullptr){
                ERROR((SGE_EVENT, MSG_SGETEXT_INVALIDHOSTINQUEUE_SS,
                       lGetHost(queue, QU_qhostname), lGetString(queue, QU_full_name)));
                goto error;
@@ -6329,9 +6329,9 @@ void sge_create_load_list(const lList *queue_list, const lList *host_list,
             queue_consumable = lGetSubStr(queue, RUE_name, load_threshold_name,
                                           QU_resource_utilization);
 
-            if (*load_list == NULL) {
+            if (*load_list == nullptr) {
                *load_list = lCreateList("load_ref_list", LDR_Type);
-               if (*load_list == NULL) {
+               if (*load_list == nullptr) {
                   goto error;
                }
             } else {
@@ -6339,9 +6339,9 @@ void sge_create_load_list(const lList *queue_list, const lList *host_list,
                                             host_consumable, queue_consumable,
                                             limit_value);
             }
-            if (load_elem == NULL) {
+            if (load_elem == nullptr) {
                load_elem = lCreateElem(LDR_Type);
-               if (load_elem == NULL) {
+               if (load_elem == nullptr) {
                   goto error;
                }
                lSetPosRef(load_elem, LDR_global_pos, global_consumable);
@@ -6352,29 +6352,29 @@ void sge_create_load_list(const lList *queue_list, const lList *host_list,
             }
 
             queue_ref_list = lGetPosList(load_elem, LDR_queue_ref_list_pos);
-            if (queue_ref_list == NULL) {
+            if (queue_ref_list == nullptr) {
                queue_ref_list = lCreateList("", QRL_Type);
-               if (queue_ref_list == NULL) {
+               if (queue_ref_list == nullptr) {
                   goto error;
                }
                lSetPosList(load_elem, LDR_queue_ref_list_pos, queue_ref_list);
             }
 
             queue_ref_elem = lCreateElem(QRL_Type);
-            if (queue_ref_elem == NULL) {
+            if (queue_ref_elem == nullptr) {
                goto error;
             }
             lSetRef(queue_ref_elem, QRL_queue, queue);
             lAppendElem(queue_ref_list, queue_ref_elem);
 
             /* reset the changed bit in the consumables */
-            if (global_consumable != NULL){
+            if (global_consumable != nullptr){
                sge_bitfield_reset(&(global_consumable->changed));
             }
-            if (host_consumable != NULL){
+            if (host_consumable != nullptr){
                sge_bitfield_reset(&(host_consumable->changed));
             }
-            if (queue_consumable != NULL){
+            if (queue_consumable != nullptr){
                sge_bitfield_reset(&(queue_consumable->changed));
             }
 
@@ -6408,7 +6408,7 @@ error:
 *     lListElem *queue_consumable  - a ref to the qeue consumable
 *
 *  RESULT
-*     static lListElem* - NULL, or the category element from the load list
+*     static lListElem* - nullptr, or the category element from the load list
 *
 *  NOTES
 *     MT-NOTE: load_locate_elem() is MT safe
@@ -6424,8 +6424,8 @@ error:
 static lListElem *load_locate_elem(lList *load_list, lListElem *global_consumable,
                             lListElem *host_consumable, lListElem *queue_consumable,
                             const char *limit) {
-   lListElem *load_elem = NULL;
-   lListElem *load = NULL;
+   lListElem *load_elem = nullptr;
+   lListElem *load = nullptr;
 
    for_each_rw(load, load_list) {
       if ((lGetPosRef(load, LDR_global_pos) == global_consumable) &&
@@ -6484,7 +6484,7 @@ bool sge_load_list_alarm(bool monitor_next_run, lList *load_list, const lList *h
 
    DENTER(TOP_LAYER);
 
-   if (load_list == NULL) {
+   if (load_list == nullptr) {
       DRETURN(is_alarm);
    }
 
@@ -6493,7 +6493,7 @@ bool sge_load_list_alarm(bool monitor_next_run, lList *load_list, const lList *h
       lListElem *elem;
 
       elem = (lListElem *)lGetPosRef(load, LDR_global_pos);
-      if (elem != NULL) {
+      if (elem != nullptr) {
          if ( sge_bitfield_changed(&(elem->changed))) {
             is_recalc = true;
             sge_bitfield_reset(&(elem->changed));
@@ -6501,7 +6501,7 @@ bool sge_load_list_alarm(bool monitor_next_run, lList *load_list, const lList *h
       }
 
       elem = (lListElem *)lGetPosRef(load, LDR_host_pos);
-      if (elem != NULL) {
+      if (elem != nullptr) {
          if ( sge_bitfield_changed(&(elem->changed))) {
             is_recalc = true;
             sge_bitfield_reset(&(elem->changed));
@@ -6509,7 +6509,7 @@ bool sge_load_list_alarm(bool monitor_next_run, lList *load_list, const lList *h
       }
 
       elem = (lListElem *)lGetPosRef(load, LDR_queue_pos);
-      if (elem != NULL) {
+      if (elem != nullptr) {
          if ( sge_bitfield_changed(&(elem->changed))) {
             is_recalc = true;
             sge_bitfield_reset(&(elem->changed));
@@ -6524,11 +6524,11 @@ bool sge_load_list_alarm(bool monitor_next_run, lList *load_list, const lList *h
             if (is_category_alarm) {
                lSetUlong(queue, QU_tagged4schedule, 1);
             } else if (sge_load_alarm(reason, queue, lGetList(queue, QU_load_thresholds), host_list,
-                               centry_list, NULL, true)) {
+                               centry_list, nullptr, true)) {
 
                DPRINTF(("queue %s tagged to be overloaded: %s\n",
                                      lGetString(queue, QU_full_name), reason));
-               schedd_mes_add_global(NULL, monitor_next_run, SCHEDD_INFO_QUEUEOVERLOADED_SS,
+               schedd_mes_add_global(nullptr, monitor_next_run, SCHEDD_INFO_QUEUEOVERLOADED_SS,
                                      lGetString(queue, QU_full_name), reason);
                lSetUlong(queue, QU_tagged4schedule, 1);
                is_alarm = true;
@@ -6568,24 +6568,24 @@ bool sge_load_list_alarm(bool monitor_next_run, lList *load_list, const lList *h
 *
 *******************************************************************************/
 void sge_remove_queue_from_load_list(lList **load_list, const lList *queue_list){
-   const lListElem* queue = NULL;
-   lListElem *load = NULL;
+   const lListElem* queue = nullptr;
+   lListElem *load = nullptr;
 
    DENTER(TOP_LAYER);
 
-   if (load_list == NULL){
+   if (load_list == nullptr){
       CRITICAL((SGE_EVENT, "no load_list specified\n"));
       abort();
    }
 
-   if (*load_list == NULL) {
+   if (*load_list == nullptr) {
       DRETURN_VOID;
    }
 
    for_each_ep(queue, queue_list) {
       bool is_found = false;
-      lList *queue_ref_list = NULL;
-      lListElem *queue_ref = NULL;
+      lList *queue_ref_list = nullptr;
+      lListElem *queue_ref = nullptr;
 
       for_each_rw(load, *load_list) {
          queue_ref_list = lGetPosList(load, LDR_queue_ref_list_pos);
@@ -6617,7 +6617,7 @@ void sge_remove_queue_from_load_list(lList **load_list, const lList *queue_list)
 
 /****** sge_select_queue/sge_free_load_list() **********************************
 *  NAME
-*     sge_free_load_list() -- frees the load list and sets it to NULL
+*     sge_free_load_list() -- frees the load list and sets it to nullptr
 *
 *  SYNOPSIS
 *     void sge_free_load_list(lList **load_list)
@@ -6668,7 +6668,7 @@ typedef struct lib_cache_s {
 *     const char *key - unique key for identifying function
 *     const char *lib_name - dynamic library name
 *     const char *fn_nam - function name
-*     lib_cache_t **lib_cache_list - cache list (if NULL, we use a global cache)
+*     lib_cache_t **lib_cache_list - cache list (if nullptr, we use a global cache)
 *
 *  RETURNS
 *     void * - the address of the function
@@ -6683,15 +6683,15 @@ void *
 sge_dlib(const char *key, const char *lib_name, const char *fn_name,
          lib_cache_t **lib_cache_list)
 {
-   static lib_cache_t *static_lib_cache_list = NULL;
-   lib_cache_t **cache_list = NULL;
-   lib_cache_t *cache = NULL;
-   lib_cache_t *prev = NULL;
-   lib_cache_t *new_cache = NULL;
+   static lib_cache_t *static_lib_cache_list = nullptr;
+   lib_cache_t **cache_list = nullptr;
+   lib_cache_t *cache = nullptr;
+   lib_cache_t *prev = nullptr;
+   lib_cache_t *new_cache = nullptr;
    int replace = 0;
-   void *new_lib_handle = NULL;
-   void *new_fn_handle = NULL;
-   const char *error = NULL;
+   void *new_lib_handle = nullptr;
+   void *new_fn_handle = nullptr;
+   const char *error = nullptr;
 
    DENTER(TOP_LAYER);
 
@@ -6724,16 +6724,16 @@ sge_dlib(const char *key, const char *lib_name, const char *fn_name,
       error = dlerror();
       ERROR((SGE_EVENT, "Unable to open library %s for %s - %s\n",
              lib_name, key, error));
-      DRETURN(NULL);
+      DRETURN(nullptr);
    }
 
    /* search library for the function name */
    new_fn_handle = dlsym(new_lib_handle, fn_name);
-   if (((error = dlerror()) != NULL) || !new_fn_handle) {
+   if (((error = dlerror()) != nullptr) || !new_fn_handle) {
       dlclose(new_lib_handle);
       ERROR((SGE_EVENT, "Unable to locate function %s in library %s for %s - %s\n",
              fn_name, lib_name, key, error));
-      DRETURN(NULL);
+      DRETURN(nullptr);
    }
 
    /* If we're replacing the old function, just delete it */
@@ -6742,7 +6742,7 @@ sge_dlib(const char *key, const char *lib_name, const char *fn_name,
       sge_free(&(cache->key));
       sge_free(&(cache->lib_name));
       sge_free(&(cache->fn_name));
-      if (prev == NULL) {
+      if (prev == nullptr) {
          *cache_list = cache->next;
       }
       else {
@@ -6752,12 +6752,12 @@ sge_dlib(const char *key, const char *lib_name, const char *fn_name,
    }
 
    /* cache the new function address */
-   if ((new_cache = (lib_cache_t *)sge_malloc(sizeof(lib_cache_t))) == NULL ||
-       (new_cache->key = strdup(key)) == NULL ||
-       (new_cache->lib_name = strdup(lib_name)) == NULL ||
-       (new_cache->fn_name = strdup(fn_name)) == NULL) {
+   if ((new_cache = (lib_cache_t *)sge_malloc(sizeof(lib_cache_t))) == nullptr ||
+       (new_cache->key = strdup(key)) == nullptr ||
+       (new_cache->lib_name = strdup(lib_name)) == nullptr ||
+       (new_cache->fn_name = strdup(fn_name)) == nullptr) {
       ERROR((SGE_EVENT, "Memory allocation problem in sge_dl\n"));
-      DRETURN(NULL);
+      DRETURN(nullptr);
    }
    new_cache->lib_handle = new_lib_handle;
    new_cache->fn_handle = new_fn_handle;
@@ -6771,12 +6771,12 @@ sge_dlib(const char *key, const char *lib_name, const char *fn_name,
 static void
 strcpy_replace(char *dp, const char *sp, lList *rlist)
 {
-   char *name = NULL;
+   char *name = nullptr;
    int done = 0;
    int curly = 0;
-   const char *es = NULL;
+   const char *es = nullptr;
 
-   if (rlist == NULL) {
+   if (rlist == nullptr) {
       strcpy(dp, sp);
       return;
    }
@@ -6813,10 +6813,10 @@ strcpy_replace(char *dp, const char *sp, lList *rlist)
          dp = name;
          while (*s && s != es)
             *dp++ = *s++;
-         name = NULL;
+         name = nullptr;
          *dp = 0;
          curly = 0;
-         es = NULL;
+         es = nullptr;
       } else if (*sp == '$') {
          sp++;
          name = dp;
@@ -6850,7 +6850,7 @@ static int
 sge_call_pe_qsort(sge_assignment_t *a, const char *qsort_args)
 {
    int ret = 0;
-   struct saved_vars_s *cntx = NULL;
+   struct saved_vars_s *cntx = nullptr;
    char *tok;
    int argc = 0;
    pqs_qsort_t pqs_qsort;
@@ -6875,8 +6875,8 @@ sge_call_pe_qsort(sge_assignment_t *a, const char *qsort_args)
    strcpy_replace(qsort_args_buf, qsort_args, lGetList(a->job, JB_hard_resource_list));
 
    if ((lib_name = sge_strtok_r(qsort_args_buf, " ", &cntx)) &&
-       (fn_name = sge_strtok_r(NULL, " ", &cntx)) &&
-       (pqs_qsort = sge_dlib(pe_name, lib_name, fn_name, NULL))) {
+       (fn_name = sge_strtok_r(nullptr, " ", &cntx)) &&
+       (pqs_qsort = sge_dlib(pe_name, lib_name, fn_name, nullptr))) {
 
       pqs_params_t pqs_params;
       pqs_queue_t *qp;
@@ -6911,7 +6911,7 @@ sge_call_pe_qsort(sge_assignment_t *a, const char *qsort_args)
        */
       qsort_argv[argc++] = lib_name;
       qsort_argv[argc++] = fn_name;
-      while ((tok = sge_strtok_r(NULL, " ", &cntx)) &&
+      while ((tok = sge_strtok_r(nullptr, " ", &cntx)) &&
              argc<(sizeof(qsort_argv)/sizeof(char *)-1)) {
          qsort_argv[argc++] = tok;
       }
@@ -6986,7 +6986,7 @@ static dispatch_t match_static_advance_reservation(const sge_assignment_t *a)
 
 
    if (ar_id != 0) {
-      if ((ar = lGetElemUlong(a->ar_list, AR_id, ar_id)) != NULL) {
+      if ((ar = lGetElemUlong(a->ar_list, AR_id, ar_id)) != nullptr) {
          const lList *acl_list;
 
          if (!(a->is_job_verify)) {
@@ -7020,12 +7020,12 @@ static dispatch_t match_static_advance_reservation(const sge_assignment_t *a)
                   const char *acl_name = ++user;
                   const lListElem *userset_list = lGetElemStr(a->acl_list, US_name, acl_name);
 
-                  if (sge_contained_in_access_list(a->user, a->group, userset_list, NULL) == 1) {
+                  if (sge_contained_in_access_list(a->user, a->group, userset_list, nullptr) == 1) {
                      break;
                   }
                }
             }
-            if (acl_ep != NULL){
+            if (acl_ep != nullptr){
                dstring buffer = DSTRING_INIT;
                sge_dstring_sprintf(&buffer, sge_U32CFormat, sge_u32c(ar_id));
                schedd_mes_add(a->monitor_alpp, a->monitor_next_run, a->job_id,
@@ -7050,12 +7050,12 @@ static dispatch_t match_static_advance_reservation(const sge_assignment_t *a)
                   const char *acl_name = ++user;
                   const lListElem *userset_list = lGetElemStr(a->acl_list, US_name, acl_name);
 
-                  if (sge_contained_in_access_list(a->user, a->group, userset_list, NULL) == 1) {
+                  if (sge_contained_in_access_list(a->user, a->group, userset_list, nullptr) == 1) {
                      break;
                   }
                }
             }
-            if (acl_ep == NULL){
+            if (acl_ep == nullptr){
                dstring buffer = DSTRING_INIT;
                sge_dstring_sprintf(&buffer, sge_U32CFormat, sge_u32c(ar_id));
                schedd_mes_add(a->monitor_alpp, a->monitor_next_run, a->job_id,

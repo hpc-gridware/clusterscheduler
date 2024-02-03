@@ -185,20 +185,20 @@ int main(
 int argc,
 char **argv 
 ) {
-   lList *alp = NULL;
-   lList *pcmdline = NULL;
-   lList *pfile = NULL;
-   lList *jid_list = NULL;
-   lList *ref_list = NULL;
-   const lListElem *aep = NULL;
-   const lListElem *ep_1 = NULL;
-   lListElem *ep_2 = NULL;
-   char *hostname = NULL;
-   const char *username = NULL;
-   const char *cell_root = NULL;
+   lList *alp = nullptr;
+   lList *pcmdline = nullptr;
+   lList *pfile = nullptr;
+   lList *jid_list = nullptr;
+   lList *ref_list = nullptr;
+   const lListElem *aep = nullptr;
+   const lListElem *ep_1 = nullptr;
+   lListElem *ep_2 = nullptr;
+   char *hostname = nullptr;
+   const char *username = nullptr;
+   const char *cell_root = nullptr;
    qstat_env_t qstat_env;
    u_long32 isXML = 0;
-   sge_gdi_ctx_class_t *ctx = NULL;
+   sge_gdi_ctx_class_t *ctx = nullptr;
    bool more = true;
 
    DENTER_MAIN(TOP_LAYER, "qstat");
@@ -350,7 +350,7 @@ char **argv
    }
 
    {
-      lList *answer_list = NULL;
+      lList *answer_list = nullptr;
       int ret = 0;
 
       str_list_transform_user_list(&(qstat_env.user_list), &answer_list, username);
@@ -371,7 +371,7 @@ char **argv
             qselect_stdout_init(&handler, &answer_list);
          }
          ret = qselect(&qstat_env, &handler, &answer_list);
-         if (handler.destroy != NULL) {
+         if (handler.destroy != nullptr) {
             handler.destroy(&handler, &answer_list);
          }
       } else if (qstat_env.group_opt & GROUP_CQ_SUMMARY) {
@@ -384,7 +384,7 @@ char **argv
          if (ret == 0) {
             ret = qstat_cqueue_summary(&qstat_env, &handler, &answer_list);
          }
-         if (handler.destroy != NULL) {
+         if (handler.destroy != nullptr) {
             handler.destroy(&handler);
          }
       } else {
@@ -400,7 +400,7 @@ char **argv
             ret = qstat_no_group(&qstat_env, &handler, &answer_list);
          }
          
-         if (handler.destroy != NULL ) {
+         if (handler.destroy != nullptr ) {
             DPRINTF(("Destroy handler\n"));
             handler.destroy(&handler);
          }
@@ -431,12 +431,12 @@ sge_parse_qstat(sge_gdi_ctx_class_t *ctx, lList **ppcmdline, qstat_env_t *qstat_
                 char **hostname, lList **ppljid, u_long32 *isXML)
 {
    stringT str;
-   lList *alp = NULL;
+   lList *alp = nullptr;
    u_long32 helpflag;
    int usageshowed = 0;
    char *argstr;
    u_long32 full = 0;
-   lList *plstringopt = NULL; 
+   lList *plstringopt = nullptr;
 
 
    DENTER(TOP_LAYER);
@@ -454,7 +454,7 @@ sge_parse_qstat(sge_gdi_ctx_class_t *ctx, lList **ppcmdline, qstat_env_t *qstat_
 
    while (lGetNumberOfElem(*ppcmdline)) {
       if (parse_flag(ppcmdline, "-help",  &alp, &helpflag)) {
-         usageshowed = qstat_usage(qstat_env->qselect_mode, stdout, NULL);
+         usageshowed = qstat_usage(qstat_env->qselect_mode, stdout, nullptr);
          SGE_EXIT((void**)&ctx, 0);
          break;
       }
@@ -515,10 +515,10 @@ sge_parse_qstat(sge_gdi_ctx_class_t *ctx, lList **ppcmdline, qstat_env_t *qstat_
 
       while (parse_string(ppcmdline, "-s", &alp, &argstr)) {
          
-         if (argstr != NULL) {
+         if (argstr != nullptr) {
             if (build_job_state_filter(qstat_env, argstr, &alp)) {
                if (!usageshowed) {
-                  qstat_usage(qstat_env->qselect_mode, stderr, NULL);
+                  qstat_usage(qstat_env->qselect_mode, stderr, nullptr);
                }
                sge_free(&argstr);
                DRETURN(alp);
@@ -650,7 +650,7 @@ sge_parse_qstat(sge_gdi_ctx_class_t *ctx, lList **ppcmdline, qstat_env_t *qstat_
    if (lGetNumberOfElem(*ppcmdline)) {
      sprintf(str, "%s\n", MSG_PARSE_TOOMANYOPTIONS);
      if (!usageshowed)
-        qstat_usage(qstat_env->qselect_mode, stderr, NULL);
+        qstat_usage(qstat_env->qselect_mode, stderr, nullptr);
      answer_list_add(&alp, str, STATUS_ESEMANTIC, ANSWER_QUALITY_ERROR);
      DRETURN(alp);
    }
@@ -668,7 +668,7 @@ static int qstat_stdout_init(qstat_handler_t *handler, lList **alpp)
    
    DENTER(TOP_LAYER);
    
-   if (ctx == NULL) {
+   if (ctx == nullptr) {
       answer_list_add(alpp, "malloc of qstat_stdout_ctx failed",
                             STATUS_EMALLOC, ANSWER_QUALITY_ERROR);
       ret = -1;
@@ -706,7 +706,7 @@ static int qstat_stdout_init(qstat_handler_t *handler, lList **alpp)
 
 error:
    if (ret != 0 ) {
-      if(ctx != NULL) {
+      if(ctx != nullptr) {
          sge_free(&ctx);
       }
    }
@@ -730,7 +730,7 @@ static int job_stdout_init(job_handler_t *handler, lList** alpp)
 {
    DENTER(TOP_LAYER);
 
-   if (handler == NULL) {
+   if (handler == nullptr) {
       DRETURN(-1);
    }
 
@@ -834,7 +834,7 @@ static int job_stdout_job(job_handler_t* handler, u_long32 jid, job_summary_t *s
 #if 0
    if (ctx->last_job_id != jid) {
      print_job_id = true;
-   } else if ( summary->queue != NULL &&
+   } else if ( summary->queue != nullptr &&
                strcmp(sge_dstring_get_string(&(ctx->last_queue_name)), summary->queue) != 0 ) {
      print_job_id = true;
    } else {
@@ -845,7 +845,7 @@ static int job_stdout_job(job_handler_t* handler, u_long32 jid, job_summary_t *s
 #endif
    
    ctx->last_job_id = jid;
-   if (summary->queue == NULL) {
+   if (summary->queue == nullptr) {
       sge_dstring_clear(&(ctx->last_queue_name));
    } else {
       sge_dstring_copy_string(&(ctx->last_queue_name), summary->queue); 
@@ -1137,7 +1137,7 @@ static int job_stdout_sub_task(job_handler_t* handler, task_summary_t *summary, 
    bool indent = false;
    DENTER(TOP_LAYER);
    
-   printf("   %s%-12s ", indent ? QSTAT_INDENT2: "", (summary->task_id == NULL)? "" : summary->task_id );
+   printf("   %s%-12s ", indent ? QSTAT_INDENT2: "", (summary->task_id == nullptr)? "" : summary->task_id );
    printf("%-5.5s ", summary->state); 
    
    if (summary->has_cpu_usage) {
@@ -1214,7 +1214,7 @@ static int job_stdout_additional_info(job_handler_t* handler, job_additional_inf
       const char* name_str = sge_dstring_get_string(&ds);
       int len = MAX(1,17 - strlen(name_str));
       printf("%s%s:%*s%s\n", QSTAT_INDENT, name_str, len, " ",
-             value == NULL ? "" : value);
+             value == nullptr ? "" : value);
    }
    sge_dstring_free(&ds);
    DRETURN(0);
@@ -1352,7 +1352,7 @@ static int job_stdout_hard_resource(job_handler_t *handler, const char* name, co
    if(ctx->hard_resource_count > 0 ) {
       printf("                         ");
    }
-   printf("%s=%s (%f)\n", name, value == NULL ? "" : value, uc);
+   printf("%s=%s (%f)\n", name, value == nullptr ? "" : value, uc);
    ctx->hard_resource_count++;
 
    DRETURN(0);
@@ -1392,7 +1392,7 @@ static int job_stdout_soft_resource(job_handler_t *handler, const char* name, co
    if (ctx->soft_resource_count > 0 ) {
       printf("                         ");
    }
-   printf("%s=%s\n", name, value == NULL ? "" : value);
+   printf("%s=%s\n", name, value == nullptr ? "" : value);
    ctx->soft_resource_count++;
 
    DRETURN(0);
@@ -1638,7 +1638,7 @@ static int qstat_stdout_queue_summary(qstat_handler_t* handler, const char* qnam
    printf("%-8.8s ", to_print);   
 
    /* arch */
-   if (summary->arch != NULL) {
+   if (summary->arch != nullptr) {
       sprintf(to_print, "%s ", summary->arch);
    } else {
       sprintf(to_print, "-NA- ");
@@ -1654,21 +1654,21 @@ static int qstat_stdout_queue_summary(qstat_handler_t* handler, const char* qnam
 static int qstat_stdout_queue_load_alarm(qstat_handler_t* handler, const char* qname, const char* reason, lList **alpp) 
 {
    DENTER(TOP_LAYER);
-   printf("\t%s\n", reason != NULL ? reason : "no alarm reason given");
+   printf("\t%s\n", reason != nullptr ? reason : "no alarm reason given");
    DRETURN(0);
 }
 
 static int qstat_stdout_queue_suspend_alarm(qstat_handler_t* handler, const char* qname, const char* reason, lList **alpp) 
 {
    DENTER(TOP_LAYER);
-   printf("\t%s\n", reason != NULL ? reason : "no alarm reason given");
+   printf("\t%s\n", reason != nullptr ? reason : "no alarm reason given");
    DRETURN(0);
 }
 
 static int qstat_stdout_queue_message(qstat_handler_t* handler, const char* qname, const char *message, lList **alpp) 
 {
    DENTER(TOP_LAYER);
-   printf("\t%s\n", message != NULL ? message : "no queue message given");
+   printf("\t%s\n", message != nullptr ? message : "no queue message given");
    DRETURN(0);
 }
 
@@ -1868,12 +1868,12 @@ static int qselect_stdout_report_queue(qselect_handler_t* handler, const char* q
 static int 
 qstat_show_job(sge_gdi_ctx_class_t *ctx, lList *jid_list, u_long32 isXML, qstat_env_t *qstat_env) {
    const lListElem *j_elem = 0;
-   lList* jlp = NULL;
-   lList* ilp = NULL;
-   const lListElem* aep = NULL;
-   lCondition *where = NULL, *newcp = NULL;
-   lEnumeration* what = NULL;
-   lList* alp = NULL;
+   lList* jlp = nullptr;
+   lList* ilp = nullptr;
+   const lListElem* aep = nullptr;
+   lCondition *where = nullptr, *newcp = nullptr;
+   lEnumeration* what = nullptr;
+   lList* alp = nullptr;
    bool schedd_info = true;
    bool jobs_exist = true;
    const lListElem* mes;
@@ -1883,7 +1883,7 @@ qstat_show_job(sge_gdi_ctx_class_t *ctx, lList *jid_list, u_long32 isXML, qstat_
 
    /* get job scheduling information */
    what = lWhat("%T(ALL)", SME_Type);
-   alp = ctx->gdi(ctx, SGE_SME_LIST, SGE_GDI_GET, &ilp, NULL, what);
+   alp = ctx->gdi(ctx, SGE_SME_LIST, SGE_GDI_GET, &ilp, nullptr, what);
    lFreeWhat(&what);
 
    if (!isXML){
@@ -1897,7 +1897,7 @@ qstat_show_job(sge_gdi_ctx_class_t *ctx, lList *jid_list, u_long32 isXML, qstat_
    lFreeList(&alp);
 
    /* build 'where' for all jobs */
-   where = NULL;
+   where = nullptr;
    for_each_ep(j_elem, jid_list) {
       const char *job_name = lGetString(j_elem, ST_name);
 
@@ -1959,15 +1959,15 @@ qstat_show_job(sge_gdi_ctx_class_t *ctx, lList *jid_list, u_long32 isXML, qstat_
          message) from the message_list that have no jobs in them. 
       */
       for_each_ep(tmpElem, ilp) {
-         lList *msgList = NULL;
-         lListElem *msgElem = NULL;
-         lListElem *tmp_msgElem = NULL;
+         lList *msgList = nullptr;
+         lListElem *msgElem = nullptr;
+         lListElem *tmp_msgElem = nullptr;
          msgList = lGetListRW(tmpElem, SME_message_list);
          msgElem = lFirstRW(msgList);
          while (msgElem) {            
-            lList *jbList = NULL;
-            lListElem *jbElem = NULL;
-            lListElem *tmp_jbElem = NULL;
+            lList *jbList = nullptr;
+            lListElem *jbElem = nullptr;
+            lListElem *tmp_jbElem = nullptr;
             
             tmp_msgElem = lNextRW(msgElem);
             jbList = lGetListRW(msgElem, MES_job_number_list);
@@ -1975,7 +1975,7 @@ qstat_show_job(sge_gdi_ctx_class_t *ctx, lList *jid_list, u_long32 isXML, qstat_
             
             while (jbElem) {
                tmp_jbElem = lNextRW(jbElem);
-               if (lGetElemUlong(jlp, JB_job_number, lGetUlong(jbElem, ULNG_value)) == NULL) {
+               if (lGetElemUlong(jlp, JB_job_number, lGetUlong(jbElem, ULNG_value)) == nullptr) {
                   lRemoveElem(jbList, &jbElem);
                }
                jbElem = tmp_jbElem;
@@ -2086,11 +2086,11 @@ qstat_show_job(sge_gdi_ctx_class_t *ctx, lList *jid_list, u_long32 isXML, qstat_
 
 static int qstat_show_job_info(sge_gdi_ctx_class_t *ctx, u_long32 isXML, qstat_env_t *qstat_env)
 {
-   lList *ilp = NULL;
-   lList *mlp = NULL;
-   const lListElem* aep = NULL;
-   lEnumeration* what = NULL;
-   lList* alp = NULL;
+   lList *ilp = nullptr;
+   lList *mlp = nullptr;
+   const lListElem* aep = nullptr;
+   lEnumeration* what = nullptr;
+   lList* alp = nullptr;
    bool schedd_info = true;
    const lListElem* mes;
    int initialized = 0;
@@ -2101,13 +2101,13 @@ static int qstat_show_job_info(sge_gdi_ctx_class_t *ctx, u_long32 isXML, qstat_e
    int first_run = 1;
    int first_row = 1;
    lListElem *sme;
-   const lListElem *jid_ulng = NULL;
+   const lListElem *jid_ulng = nullptr;
 
    DENTER(TOP_LAYER);
 
    /* get job scheduling information */
    what = lWhat("%T(ALL)", SME_Type);
-   alp = ctx->gdi(ctx, SGE_SME_LIST, SGE_GDI_GET, &ilp, NULL, what);
+   alp = ctx->gdi(ctx, SGE_SME_LIST, SGE_GDI_GET, &ilp, nullptr, what);
    lFreeWhat(&what);
    if (isXML){
       xml_qstat_show_job_info(&ilp, &alp, qstat_env);

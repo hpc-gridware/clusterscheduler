@@ -66,7 +66,7 @@
 #define STREESPOOLTIMEDEF 240
 
 /* This list is *ONLY* used by the execd and should be moved eventually */
-lList *Execd_Config_List = NULL; 
+lList *Execd_Config_List = nullptr;
 
 struct confel {                       /* cluster configuration parameters */
     char        *execd_spool_dir;     /* sge_spool directory base path */
@@ -124,11 +124,11 @@ struct confel {                       /* cluster configuration parameters */
 
 typedef struct confel sge_conf_type;
 
-static sge_conf_type Master_Config = { NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL,
-                                       0, 0, 0, 0, 0, NULL, NULL, NULL, 0, 0, 0, 0, NULL,
-                                       NULL, 0, NULL, NULL, NULL, NULL, NULL, 0, NULL,
-                                       NULL, NULL, NULL, NULL, NULL, NULL, NULL, 0, 0, 0, 0, 0, 0, 0,
-                                       0, 0, NULL, 0, NULL, NULL, NULL };
+static sge_conf_type Master_Config = { nullptr, nullptr, nullptr, nullptr, nullptr, nullptr, nullptr, nullptr,
+                                       0, 0, 0, 0, 0, nullptr, nullptr, nullptr, 0, 0, 0, 0, nullptr,
+                                       nullptr, 0, nullptr, nullptr, nullptr, nullptr, nullptr, 0, nullptr,
+                                       nullptr, nullptr, nullptr, nullptr, nullptr, nullptr, nullptr, 0, 0, 0, 0, 0, 0, 0,
+                                       0, 0, nullptr, 0, nullptr, nullptr, nullptr };
 static bool is_new_config = false;
 static bool forbid_reschedule = false;
 static bool forbid_apperror = false;
@@ -248,12 +248,12 @@ static bool enable_submit_lib_path = false;
  *       2  -> do not send a signal
  *
  * notify_kill and notify_susp:
- *       !NULL -> Name of the signale (later used in sys_string2signal)
+ *       !nullptr -> Name of the signale (later used in sys_string2signal)
  */
 static int   notify_susp_type = 1;
-static char* notify_susp = NULL;
+static char* notify_susp = nullptr;
 static int   notify_kill_type = 1;
-static char* notify_kill = NULL; 
+static char* notify_kill = nullptr;
 
 typedef struct {
   char *name;              /* name of parameter */                              
@@ -301,58 +301,58 @@ static int jsv_threshold = 5000;
 #define REPORTING_PARAMS          "accounting=true reporting=false flush_time=00:00:15 joblog=false sharelog=00:00:00"
 
 static tConfEntry conf_entries[] = {
- { "execd_spool_dir",   1, NULL,                1, NULL },
- { "mailer",            1, MAILER,              1, NULL },
- { "xterm",             1, "/usr/bin/X11/xterm",1, NULL },
- { "load_sensor",       1, "none",              1, NULL },
- { "prolog",            1, PROLOG,              1, NULL },
- { "epilog",            1, EPILOG,              1, NULL },
- { "shell_start_mode",  1, SHELL_START_MODE,    1, NULL },
- { "login_shells",      1, LOGIN_SHELLS,        1, NULL },
- { "min_uid",           0, MIN_UID,             1, NULL },
- { "min_gid",           0, MIN_GID,             1, NULL },
- { "user_lists",        0, "none",              1, NULL },
- { "xuser_lists",       0, "none",              1, NULL },
- { "projects",          0, "none",              1, NULL },
- { "xprojects",         0, "none",              1, NULL },
- { "load_report_time",  1, LOAD_LOG_TIME,       1, NULL },
- { "max_unheard",       0, MAX_UNHEARD,         1, NULL },
- { "loglevel",          0, LOGLEVEL,            1, NULL },
- { "enforce_project",   0, "false",             1, NULL },
- { "enforce_user",      0, "false",             1, NULL },
- { "administrator_mail",0, "none",              1, NULL },
- { "set_token_cmd",     1, "none",              1, NULL },
- { "pag_cmd",           1, "none",              1, NULL },
- { "token_extend_time", 1, "24:0:0",            1, NULL },
- { "shepherd_cmd",      1, "none",              1, NULL },
- { "qmaster_params",    0, "none",              1, NULL }, 
- { "execd_params",      1, "none",              1, NULL }, 
- { "reporting_params",  1, REPORTING_PARAMS,    1, NULL },
- { "gid_range",         1, "none",              1, NULL },
- { "finished_jobs",     0, FINISHED_JOBS,       1, NULL },
- { "qlogin_daemon",     1, "none",              1, NULL },
- { "qlogin_command",    1, "none",              1, NULL },
- { "rsh_daemon",        1, "none",              1, NULL },
- { "rsh_command",       1, "none",              1, NULL },
- { "jsv_url",           0, "none",              1, NULL },
- { "jsv_allowed_mod",   0, "none",              1, NULL },
- { "rlogin_daemon",     1, "none",              1, NULL },
- { "rlogin_command",    1, "none",              1, NULL },
- { "reschedule_unknown",1, RESCHEDULE_UNKNOWN,  1, NULL },
- { "max_aj_instances",  0, MAX_AJ_INSTANCES,    1, NULL },
- { "max_aj_tasks",      0, MAX_AJ_TASKS,        1, NULL },
- { "max_u_jobs",        0, MAX_U_JOBS,          1, NULL },
- { "max_jobs",          0, MAX_JOBS,            1, NULL },
- { "max_advance_reservations", 0, MAX_ADVANCE_RESERVATIONS, 1, NULL },
- { REPRIORITIZE,        0, "1",                 1, NULL },
- { "auto_user_oticket", 0, "0",                 1, NULL },
- { "auto_user_fshare",  0, "0",                 1, NULL },
- { "auto_user_default_project", 0, "none",      1, NULL },
- { "auto_user_delete_time",     0, "0",         1, NULL },
- { "delegated_file_staging",    0, "false",     1, NULL },
- { "libjvm_path",       1, "",                  1, NULL },
- { "additional_jvm_args", 1, "",                1, NULL },
- { NULL,                0, NULL,                0, 0,   }
+ { "execd_spool_dir",   1, nullptr,                1, nullptr },
+ { "mailer",            1, MAILER,              1, nullptr },
+ { "xterm",             1, "/usr/bin/X11/xterm",1, nullptr },
+ { "load_sensor",       1, "none",              1, nullptr },
+ { "prolog",            1, PROLOG,              1, nullptr },
+ { "epilog",            1, EPILOG,              1, nullptr },
+ { "shell_start_mode",  1, SHELL_START_MODE,    1, nullptr },
+ { "login_shells",      1, LOGIN_SHELLS,        1, nullptr },
+ { "min_uid",           0, MIN_UID,             1, nullptr },
+ { "min_gid",           0, MIN_GID,             1, nullptr },
+ { "user_lists",        0, "none",              1, nullptr },
+ { "xuser_lists",       0, "none",              1, nullptr },
+ { "projects",          0, "none",              1, nullptr },
+ { "xprojects",         0, "none",              1, nullptr },
+ { "load_report_time",  1, LOAD_LOG_TIME,       1, nullptr },
+ { "max_unheard",       0, MAX_UNHEARD,         1, nullptr },
+ { "loglevel",          0, LOGLEVEL,            1, nullptr },
+ { "enforce_project",   0, "false",             1, nullptr },
+ { "enforce_user",      0, "false",             1, nullptr },
+ { "administrator_mail",0, "none",              1, nullptr },
+ { "set_token_cmd",     1, "none",              1, nullptr },
+ { "pag_cmd",           1, "none",              1, nullptr },
+ { "token_extend_time", 1, "24:0:0",            1, nullptr },
+ { "shepherd_cmd",      1, "none",              1, nullptr },
+ { "qmaster_params",    0, "none",              1, nullptr },
+ { "execd_params",      1, "none",              1, nullptr },
+ { "reporting_params",  1, REPORTING_PARAMS,    1, nullptr },
+ { "gid_range",         1, "none",              1, nullptr },
+ { "finished_jobs",     0, FINISHED_JOBS,       1, nullptr },
+ { "qlogin_daemon",     1, "none",              1, nullptr },
+ { "qlogin_command",    1, "none",              1, nullptr },
+ { "rsh_daemon",        1, "none",              1, nullptr },
+ { "rsh_command",       1, "none",              1, nullptr },
+ { "jsv_url",           0, "none",              1, nullptr },
+ { "jsv_allowed_mod",   0, "none",              1, nullptr },
+ { "rlogin_daemon",     1, "none",              1, nullptr },
+ { "rlogin_command",    1, "none",              1, nullptr },
+ { "reschedule_unknown",1, RESCHEDULE_UNKNOWN,  1, nullptr },
+ { "max_aj_instances",  0, MAX_AJ_INSTANCES,    1, nullptr },
+ { "max_aj_tasks",      0, MAX_AJ_TASKS,        1, nullptr },
+ { "max_u_jobs",        0, MAX_U_JOBS,          1, nullptr },
+ { "max_jobs",          0, MAX_JOBS,            1, nullptr },
+ { "max_advance_reservations", 0, MAX_ADVANCE_RESERVATIONS, 1, nullptr },
+ { REPRIORITIZE,        0, "1",                 1, nullptr },
+ { "auto_user_oticket", 0, "0",                 1, nullptr },
+ { "auto_user_fshare",  0, "0",                 1, nullptr },
+ { "auto_user_default_project", 0, "none",      1, nullptr },
+ { "auto_user_delete_time",     0, "0",         1, nullptr },
+ { "delegated_file_staging",    0, "false",     1, nullptr },
+ { "libjvm_path",       1, "",                  1, nullptr },
+ { "additional_jvm_args", 1, "",                1, nullptr },
+ { nullptr,                0, nullptr,                0, 0,   }
 };
 
 /*-------------------------------------------------------
@@ -363,13 +363,13 @@ static tConfEntry conf_entries[] = {
 static void sge_set_defined_defaults(const char *cell_root, lList **lpCfg)
 {
    int i = 0; 
-   lListElem *ep = NULL;
-   tConfEntry *pConf = NULL;
+   lListElem *ep = nullptr;
+   tConfEntry *pConf = nullptr;
 
    DENTER(BASIS_LAYER);
 
    pConf = getConfEntry("execd_spool_dir", conf_entries);
-   if ( pConf->value == NULL ) {
+   if ( pConf->value == nullptr ) {
       int size = strlen(cell_root) + strlen(SPOOL_DIR) + 2;
       
       pConf->value = sge_malloc(size * sizeof(char));
@@ -422,7 +422,7 @@ int type
       if (cpp)
          *cpp = sge_strdup(*cpp, s);
       else
-         parse_ulong_val(NULL, val, type, s, NULL, 0);    
+         parse_ulong_val(nullptr, val, type, s, nullptr, 0);
    }
 }
 
@@ -452,23 +452,23 @@ lList *lpCfg
    DENTER(BASIS_LAYER);
 
    /* get following logging entries logged if log_info is selected */
-   chg_conf_val(lpCfg, "loglevel", NULL, &Master_Config.loglevel, TYPE_LOG);
+   chg_conf_val(lpCfg, "loglevel", nullptr, &Master_Config.loglevel, TYPE_LOG);
    log_state_set_log_level(Master_Config.loglevel);
    
-   chg_conf_val(lpCfg, "execd_spool_dir", &Master_Config.execd_spool_dir, NULL, 0);
-   chg_conf_val(lpCfg, "mailer", &Master_Config.mailer, NULL, 0);
-   chg_conf_val(lpCfg, "xterm", &Master_Config.xterm, NULL, 0);
-   chg_conf_val(lpCfg, "load_sensor", &Master_Config.load_sensor, NULL, 0);
-   chg_conf_val(lpCfg, "prolog", &Master_Config.prolog, NULL, 0);
-   chg_conf_val(lpCfg, "epilog", &Master_Config.epilog, NULL, 0);
-   chg_conf_val(lpCfg, "shell_start_mode", &Master_Config.shell_start_mode, NULL, 0);
-   chg_conf_val(lpCfg, "login_shells", &Master_Config.login_shells, NULL, 0);
-   chg_conf_val(lpCfg, "min_uid", NULL, &Master_Config.min_uid, TYPE_INT);
-   chg_conf_val(lpCfg, "min_gid", NULL, &Master_Config.min_gid, TYPE_INT);
-   chg_conf_val(lpCfg, "gid_range", &Master_Config.gid_range, NULL, 0);
+   chg_conf_val(lpCfg, "execd_spool_dir", &Master_Config.execd_spool_dir, nullptr, 0);
+   chg_conf_val(lpCfg, "mailer", &Master_Config.mailer, nullptr, 0);
+   chg_conf_val(lpCfg, "xterm", &Master_Config.xterm, nullptr, 0);
+   chg_conf_val(lpCfg, "load_sensor", &Master_Config.load_sensor, nullptr, 0);
+   chg_conf_val(lpCfg, "prolog", &Master_Config.prolog, nullptr, 0);
+   chg_conf_val(lpCfg, "epilog", &Master_Config.epilog, nullptr, 0);
+   chg_conf_val(lpCfg, "shell_start_mode", &Master_Config.shell_start_mode, nullptr, 0);
+   chg_conf_val(lpCfg, "login_shells", &Master_Config.login_shells, nullptr, 0);
+   chg_conf_val(lpCfg, "min_uid", nullptr, &Master_Config.min_uid, TYPE_INT);
+   chg_conf_val(lpCfg, "min_gid", nullptr, &Master_Config.min_gid, TYPE_INT);
+   chg_conf_val(lpCfg, "gid_range", &Master_Config.gid_range, nullptr, 0);
 
    if ((ep = lGetElemStr(lpCfg, CF_name, "user_lists"))) {
-      lList *lp = NULL;
+      lList *lp = nullptr;
       if (!lString2ListNone(lGetString(ep, CF_value), &lp, US_Type, US_name, " \t,")) {
          lFreeList(&(Master_Config.user_lists));
          Master_Config.user_lists = lp;
@@ -476,7 +476,7 @@ lList *lpCfg
    }
 
    if ((ep = lGetElemStr(lpCfg, CF_name, "xuser_lists"))) {
-      lList *lp = NULL;
+      lList *lp = nullptr;
       if (!lString2ListNone(lGetString(ep, CF_value), &lp, US_Type, US_name, " \t,")) {
          lFreeList(&(Master_Config.xuser_lists));
          Master_Config.xuser_lists = lp;
@@ -484,7 +484,7 @@ lList *lpCfg
    }
    
    if ((ep = lGetElemStr(lpCfg, CF_name, "projects"))) {
-      lList *lp = NULL;
+      lList *lp = nullptr;
       if (!lString2ListNone(lGetString(ep, CF_value), &lp, PR_Type, PR_name, " \t,")) {
          lFreeList(&(Master_Config.projects));
          Master_Config.projects = lp;
@@ -492,51 +492,51 @@ lList *lpCfg
    }
 
    if ((ep = lGetElemStr(lpCfg, CF_name, "xprojects"))) {
-      lList *lp = NULL;
+      lList *lp = nullptr;
       if (!lString2ListNone(lGetString(ep, CF_value), &lp, PR_Type, PR_name, " \t,")) {
          lFreeList(&(Master_Config.xprojects));
          Master_Config.xprojects = lp;
       }   
    }
    
-   chg_conf_val(lpCfg, "load_report_time", NULL, &Master_Config.load_report_time, TYPE_TIM);
-   chg_conf_val(lpCfg, "enforce_project", &Master_Config.enforce_project, NULL, 0);
-   chg_conf_val(lpCfg, "enforce_user", &Master_Config.enforce_user, NULL, 0);
-   chg_conf_val(lpCfg, "max_unheard", NULL, &Master_Config.max_unheard, TYPE_TIM);
-   chg_conf_val(lpCfg, "loglevel", NULL, &Master_Config.loglevel, TYPE_LOG);
-   chg_conf_val(lpCfg, "administrator_mail", &Master_Config.administrator_mail, NULL, 0);
-   chg_conf_val(lpCfg, "set_token_cmd", &Master_Config.set_token_cmd, NULL, 0);
-   chg_conf_val(lpCfg, "pag_cmd", &Master_Config.pag_cmd, NULL, 0);
-   chg_conf_val(lpCfg, "token_extend_time", NULL, &Master_Config.token_extend_time, TYPE_TIM);
-   chg_conf_val(lpCfg, "shepherd_cmd", &Master_Config.shepherd_cmd, NULL, 0);
-   chg_conf_val(lpCfg, "qmaster_params", &Master_Config.qmaster_params, NULL, 0);
-   chg_conf_val(lpCfg, "execd_params",  &Master_Config.execd_params, NULL, 0);
-   chg_conf_val(lpCfg, "reporting_params",  &Master_Config.reporting_params, NULL, 0);
-   chg_conf_val(lpCfg, "finished_jobs", NULL, &Master_Config.zombie_jobs, TYPE_INT);
-   chg_conf_val(lpCfg, "qlogin_daemon", &Master_Config.qlogin_daemon, NULL, 0);
-   chg_conf_val(lpCfg, "qlogin_command", &Master_Config.qlogin_command, NULL, 0);
-   chg_conf_val(lpCfg, "rsh_daemon", &Master_Config.rsh_daemon, NULL, 0);
-   chg_conf_val(lpCfg, "rsh_command", &Master_Config.rsh_command, NULL, 0);
-   chg_conf_val(lpCfg, "jsv_url", &Master_Config.jsv_url, NULL, 0);
-   chg_conf_val(lpCfg, "jsv_allowed_mod", &Master_Config.jsv_allowed_mod, NULL, 0);
-   chg_conf_val(lpCfg, "rlogin_daemon", &Master_Config.rlogin_daemon, NULL, 0);
-   chg_conf_val(lpCfg, "rlogin_command", &Master_Config.rlogin_command, NULL, 0);
+   chg_conf_val(lpCfg, "load_report_time", nullptr, &Master_Config.load_report_time, TYPE_TIM);
+   chg_conf_val(lpCfg, "enforce_project", &Master_Config.enforce_project, nullptr, 0);
+   chg_conf_val(lpCfg, "enforce_user", &Master_Config.enforce_user, nullptr, 0);
+   chg_conf_val(lpCfg, "max_unheard", nullptr, &Master_Config.max_unheard, TYPE_TIM);
+   chg_conf_val(lpCfg, "loglevel", nullptr, &Master_Config.loglevel, TYPE_LOG);
+   chg_conf_val(lpCfg, "administrator_mail", &Master_Config.administrator_mail, nullptr, 0);
+   chg_conf_val(lpCfg, "set_token_cmd", &Master_Config.set_token_cmd, nullptr, 0);
+   chg_conf_val(lpCfg, "pag_cmd", &Master_Config.pag_cmd, nullptr, 0);
+   chg_conf_val(lpCfg, "token_extend_time", nullptr, &Master_Config.token_extend_time, TYPE_TIM);
+   chg_conf_val(lpCfg, "shepherd_cmd", &Master_Config.shepherd_cmd, nullptr, 0);
+   chg_conf_val(lpCfg, "qmaster_params", &Master_Config.qmaster_params, nullptr, 0);
+   chg_conf_val(lpCfg, "execd_params",  &Master_Config.execd_params, nullptr, 0);
+   chg_conf_val(lpCfg, "reporting_params",  &Master_Config.reporting_params, nullptr, 0);
+   chg_conf_val(lpCfg, "finished_jobs", nullptr, &Master_Config.zombie_jobs, TYPE_INT);
+   chg_conf_val(lpCfg, "qlogin_daemon", &Master_Config.qlogin_daemon, nullptr, 0);
+   chg_conf_val(lpCfg, "qlogin_command", &Master_Config.qlogin_command, nullptr, 0);
+   chg_conf_val(lpCfg, "rsh_daemon", &Master_Config.rsh_daemon, nullptr, 0);
+   chg_conf_val(lpCfg, "rsh_command", &Master_Config.rsh_command, nullptr, 0);
+   chg_conf_val(lpCfg, "jsv_url", &Master_Config.jsv_url, nullptr, 0);
+   chg_conf_val(lpCfg, "jsv_allowed_mod", &Master_Config.jsv_allowed_mod, nullptr, 0);
+   chg_conf_val(lpCfg, "rlogin_daemon", &Master_Config.rlogin_daemon, nullptr, 0);
+   chg_conf_val(lpCfg, "rlogin_command", &Master_Config.rlogin_command, nullptr, 0);
 
-   chg_conf_val(lpCfg, "reschedule_unknown", NULL, &Master_Config.reschedule_unknown, TYPE_TIM);
+   chg_conf_val(lpCfg, "reschedule_unknown", nullptr, &Master_Config.reschedule_unknown, TYPE_TIM);
 
-   chg_conf_val(lpCfg, "max_aj_instances", NULL, &Master_Config.max_aj_instances, TYPE_INT);
-   chg_conf_val(lpCfg, "max_aj_tasks", NULL, &Master_Config.max_aj_tasks, TYPE_INT);
-   chg_conf_val(lpCfg, "max_u_jobs", NULL, &Master_Config.max_u_jobs, TYPE_INT);
-   chg_conf_val(lpCfg, "max_jobs", NULL, &Master_Config.max_jobs, TYPE_INT);
-   chg_conf_val(lpCfg, "max_advance_reservations", NULL, &Master_Config.max_advance_reservations, TYPE_INT);
-   chg_conf_val(lpCfg, REPRIORITIZE, NULL, &Master_Config.reprioritize, TYPE_BOO );
-   chg_conf_val(lpCfg, "auto_user_oticket", NULL, &Master_Config.auto_user_oticket, TYPE_INT);
-   chg_conf_val(lpCfg, "auto_user_fshare", NULL, &Master_Config.auto_user_fshare, TYPE_INT);
-   chg_conf_val(lpCfg, "auto_user_default_project", &Master_Config.auto_user_default_project, NULL, 0);
-   chg_conf_val(lpCfg, "auto_user_delete_time", NULL, &Master_Config.auto_user_delete_time, TYPE_TIM);
-   chg_conf_val(lpCfg, "delegated_file_staging", &Master_Config.delegated_file_staging, NULL, 0);
-   chg_conf_val(lpCfg, "libjvm_path", &Master_Config.libjvm_path, NULL, 0);
-   chg_conf_val(lpCfg, "additional_jvm_args", &Master_Config.additional_jvm_args, NULL, 0);
+   chg_conf_val(lpCfg, "max_aj_instances", nullptr, &Master_Config.max_aj_instances, TYPE_INT);
+   chg_conf_val(lpCfg, "max_aj_tasks", nullptr, &Master_Config.max_aj_tasks, TYPE_INT);
+   chg_conf_val(lpCfg, "max_u_jobs", nullptr, &Master_Config.max_u_jobs, TYPE_INT);
+   chg_conf_val(lpCfg, "max_jobs", nullptr, &Master_Config.max_jobs, TYPE_INT);
+   chg_conf_val(lpCfg, "max_advance_reservations", nullptr, &Master_Config.max_advance_reservations, TYPE_INT);
+   chg_conf_val(lpCfg, REPRIORITIZE, nullptr, &Master_Config.reprioritize, TYPE_BOO );
+   chg_conf_val(lpCfg, "auto_user_oticket", nullptr, &Master_Config.auto_user_oticket, TYPE_INT);
+   chg_conf_val(lpCfg, "auto_user_fshare", nullptr, &Master_Config.auto_user_fshare, TYPE_INT);
+   chg_conf_val(lpCfg, "auto_user_default_project", &Master_Config.auto_user_default_project, nullptr, 0);
+   chg_conf_val(lpCfg, "auto_user_delete_time", nullptr, &Master_Config.auto_user_delete_time, TYPE_TIM);
+   chg_conf_val(lpCfg, "delegated_file_staging", &Master_Config.delegated_file_staging, nullptr, 0);
+   chg_conf_val(lpCfg, "libjvm_path", &Master_Config.libjvm_path, nullptr, 0);
+   chg_conf_val(lpCfg, "additional_jvm_args", &Master_Config.additional_jvm_args, nullptr, 0);
    DRETURN_VOID;
 }
 
@@ -558,7 +558,7 @@ tConfEntry conf[]
     }
  }   
      
- DRETURN(NULL);
+ DRETURN(nullptr);
 }
 
 /****** sge_conf/merge_configuration() *****************************************
@@ -589,17 +589,17 @@ int merge_configuration(lList **answer_list, u_long32 progid, const char *cell_r
    const lList *cl;
    const lListElem *elem;
    lListElem *ep2;
-   lList *mlist = NULL;
+   lList *mlist = nullptr;
    
    DENTER(BASIS_LAYER);
-   if (lpp == NULL) {
+   if (lpp == nullptr) {
       lpp = &mlist;
    }
    sge_set_defined_defaults(cell_root, lpp);
 
    /* Merge global configuration */
    /*
-   ** the error global == NULL is not ignored
+   ** the error global == nullptr is not ignored
    ** handled later
    */
    if (global) {
@@ -632,7 +632,7 @@ int merge_configuration(lList **answer_list, u_long32 progid, const char *cell_r
    /* put contents of qmaster_params and execd_params  
       into some convenient global variables */
    {
-      struct saved_vars_s *conf_context = NULL;
+      struct saved_vars_s *conf_context = nullptr;
       const char *s;
       char* qmaster_params = mconf_get_qmaster_params();
       char* execd_params = mconf_get_execd_params();
@@ -676,7 +676,7 @@ int merge_configuration(lList **answer_list, u_long32 progid, const char *cell_r
       jsv_timeout= 10;
       enable_submit_lib_path = false;
 
-      for (s=sge_strtok_r(qmaster_params, ",; ", &conf_context); s; s=sge_strtok_r(NULL, ",; ", &conf_context)) {
+      for (s=sge_strtok_r(qmaster_params, ",; ", &conf_context); s; s=sge_strtok_r(nullptr, ",; ", &conf_context)) {
          if (parse_bool_param(s, "FORBID_RESCHEDULE", &forbid_reschedule)) {
             continue;
          }
@@ -804,7 +804,7 @@ int merge_configuration(lList **answer_list, u_long32 progid, const char *cell_r
       }
       SGE_UNLOCK(LOCK_MASTER_CONF, LOCK_WRITE);
       sge_free_saved_vars(conf_context);
-      conf_context = NULL;
+      conf_context = nullptr;
      
 #ifdef LINUX
       /* enable/disable GNU malloc library facility for recording of all 
@@ -821,7 +821,7 @@ int merge_configuration(lList **answer_list, u_long32 progid, const char *cell_r
       }
 #endif
 
-      conf_update_thread_profiling(NULL);
+      conf_update_thread_profiling(nullptr);
 
       /* always initialize to defaults before we check execd_params */
       SGE_LOCK(LOCK_MASTER_CONF, LOCK_WRITE);
@@ -864,7 +864,7 @@ int merge_configuration(lList **answer_list, u_long32 progid, const char *cell_r
       strcpy(s_locks, "UNDEFINED");
       strcpy(h_locks, "UNDEFINED");
 
-      for (s=sge_strtok_r(execd_params, ",; ", &conf_context); s; s=sge_strtok_r(NULL, ",; ", &conf_context)) {
+      for (s=sge_strtok_r(execd_params, ",; ", &conf_context); s; s=sge_strtok_r(nullptr, ",; ", &conf_context)) {
          if (parse_bool_param(s, "USE_QIDLE", &use_qidle)) {
             continue;
          }
@@ -914,7 +914,7 @@ int merge_configuration(lList **answer_list, u_long32 progid, const char *cell_r
                if (notify_kill) {
                   sge_free(&notify_kill);
                }
-               notify_kill = sge_strdup(NULL, &(s[sizeof("NOTIFY_KILL")]));
+               notify_kill = sge_strdup(nullptr, &(s[sizeof("NOTIFY_KILL")]));
             }
             continue;
          } 
@@ -928,7 +928,7 @@ int merge_configuration(lList **answer_list, u_long32 progid, const char *cell_r
                if (notify_susp) {
                   sge_free(&notify_susp);
                }
-               notify_susp = sge_strdup(NULL, &(s[sizeof("NOTIFY_SUSP")]));
+               notify_susp = sge_strdup(nullptr, &(s[sizeof("NOTIFY_SUSP")]));
             }
             continue;
          } 
@@ -1001,7 +1001,7 @@ int merge_configuration(lList **answer_list, u_long32 progid, const char *cell_r
       }
       SGE_UNLOCK(LOCK_MASTER_CONF, LOCK_WRITE);
       sge_free_saved_vars(conf_context);
-      conf_context = NULL;
+      conf_context = nullptr;
 
       /* If profiling configuration has changed, 
          set_thread_prof_status_by_name has to be called for each thread
@@ -1010,7 +1010,7 @@ int merge_configuration(lList **answer_list, u_long32 progid, const char *cell_r
 
       SGE_LOCK(LOCK_MASTER_CONF, LOCK_WRITE);
       /* parse reporting parameters */
-      for (s=sge_strtok_r(reporting_params, ",; ", &conf_context); s; s=sge_strtok_r(NULL, ",; ", &conf_context)) {
+      for (s=sge_strtok_r(reporting_params, ",; ", &conf_context); s; s=sge_strtok_r(nullptr, ",; ", &conf_context)) {
          if (parse_bool_param(s, "accounting", &do_accounting)) {
             continue;
          }
@@ -1048,7 +1048,7 @@ int merge_configuration(lList **answer_list, u_long32 progid, const char *cell_r
       }
       SGE_UNLOCK(LOCK_MASTER_CONF, LOCK_WRITE);
       sge_free_saved_vars(conf_context);
-      conf_context=NULL;
+      conf_context=nullptr;
 
       sge_free(&qmaster_params);
       sge_free(&execd_params);
@@ -1224,12 +1224,12 @@ static void clean_conf(void) {
 *     Enables or disables profiling for thread(s) according to the actual
 *     global config, qmaster_params.
 *
-*     If no thread name (NULL pointer) is given, profiling information of all
+*     If no thread name (nullptr pointer) is given, profiling information of all
 *     threads is updated.
 *     If a name is given, all threads with that name are updated.
 *
 *  INPUTS
-*     const char *thread_name - thread name, NULL for all threads
+*     const char *thread_name - thread name, nullptr for all threads
 *
 *  NOTES
 *     MT-NOTE: conf_update_thread_profiling() is MT safe 
@@ -1238,7 +1238,7 @@ void conf_update_thread_profiling(const char *thread_name)
 {
    DENTER(BASIS_LAYER);
    SGE_LOCK(LOCK_MASTER_CONF, LOCK_READ);
-   if (thread_name == NULL) {
+   if (thread_name == nullptr) {
       set_thread_prof_status_by_name("Signal Thread", prof_signal_thrd);
       set_thread_prof_status_by_name("Scheduler Thread", prof_scheduler_thrd);
       set_thread_prof_status_by_name("Listener Thread", prof_listener_thrd);
@@ -1266,7 +1266,7 @@ void conf_update_thread_profiling(const char *thread_name)
 
 /* returned pointer needs to be freed */
 char* mconf_get_execd_spool_dir(void) {
-   char* execd_spool_dir = NULL;
+   char* execd_spool_dir = nullptr;
 
    DENTER(BASIS_LAYER);
    SGE_LOCK(LOCK_MASTER_CONF, LOCK_READ);
@@ -1279,7 +1279,7 @@ char* mconf_get_execd_spool_dir(void) {
 
 /* returned pointer needs to be freed */
 char* mconf_get_mailer(void) {
-   char* mailer = NULL;
+   char* mailer = nullptr;
 
    DENTER(BASIS_LAYER);
    SGE_LOCK(LOCK_MASTER_CONF, LOCK_READ);
@@ -1292,7 +1292,7 @@ char* mconf_get_mailer(void) {
 
 /* returned pointer needs to be freed */
 char* mconf_get_xterm(void) {
-   char* xterm = NULL;
+   char* xterm = nullptr;
 
    DENTER(BASIS_LAYER);
    SGE_LOCK(LOCK_MASTER_CONF, LOCK_READ);
@@ -1306,7 +1306,7 @@ char* mconf_get_xterm(void) {
 
 /* returned pointer needs to be freed */
 char* mconf_get_load_sensor(void) {
-   char* load_sensor = NULL;
+   char* load_sensor = nullptr;
 
    DENTER(BASIS_LAYER);
    SGE_LOCK(LOCK_MASTER_CONF, LOCK_READ);
@@ -1319,7 +1319,7 @@ char* mconf_get_load_sensor(void) {
 
 /* returned pointer needs to be freed */
 char* mconf_get_prolog(void) {
-   char* prolog = NULL;
+   char* prolog = nullptr;
 
    DENTER(BASIS_LAYER);
    SGE_LOCK(LOCK_MASTER_CONF, LOCK_READ);
@@ -1332,7 +1332,7 @@ char* mconf_get_prolog(void) {
 
 /* returned pointer needs to be freed */
 char* mconf_get_epilog(void) {
-   char* epilog = NULL;
+   char* epilog = nullptr;
 
    DENTER(BASIS_LAYER);
    SGE_LOCK(LOCK_MASTER_CONF, LOCK_READ);
@@ -1345,7 +1345,7 @@ char* mconf_get_epilog(void) {
 
 /* returned pointer needs to be freed */
 char* mconf_get_shell_start_mode(void) {
-   char* shell_start_mode = NULL;
+   char* shell_start_mode = nullptr;
 
    DENTER(BASIS_LAYER);
    SGE_LOCK(LOCK_MASTER_CONF, LOCK_READ);
@@ -1358,7 +1358,7 @@ char* mconf_get_shell_start_mode(void) {
 
 /* returned pointer needs to be freed */
 char* mconf_get_login_shells(void) {
-   char* login_shells = NULL;
+   char* login_shells = nullptr;
 
    DENTER(BASIS_LAYER);
    SGE_LOCK(LOCK_MASTER_CONF, LOCK_READ);
@@ -1431,7 +1431,7 @@ u_long32 mconf_get_loglevel(void) {
 
 /* returned pointer needs to be freed */
 char* mconf_get_enforce_project(void) {
-   char* enforce_project = NULL;
+   char* enforce_project = nullptr;
 
    DENTER(BASIS_LAYER);
    SGE_LOCK(LOCK_MASTER_CONF, LOCK_READ);
@@ -1444,7 +1444,7 @@ char* mconf_get_enforce_project(void) {
 
 /* returned pointer needs to be freed */
 char* mconf_get_enforce_user(void) {
-   char* enforce_user = NULL;
+   char* enforce_user = nullptr;
 
    DENTER(BASIS_LAYER);
    SGE_LOCK(LOCK_MASTER_CONF, LOCK_READ);
@@ -1458,7 +1458,7 @@ char* mconf_get_enforce_user(void) {
 
 /* returned pointer needs to be freed */
 char* mconf_get_administrator_mail(void) {
-   char* administrator_mail = NULL;
+   char* administrator_mail = nullptr;
 
    DENTER(BASIS_LAYER);
    SGE_LOCK(LOCK_MASTER_CONF, LOCK_READ);
@@ -1471,7 +1471,7 @@ char* mconf_get_administrator_mail(void) {
 
 /* returned pointer needs to be freed */
 lList* mconf_get_user_lists(void) {
-   lList* user_lists = NULL;
+   lList* user_lists = nullptr;
 
    DENTER(BASIS_LAYER);
    SGE_LOCK(LOCK_MASTER_CONF, LOCK_READ);
@@ -1484,7 +1484,7 @@ lList* mconf_get_user_lists(void) {
 
 /* returned pointer needs to be freed */
 lList* mconf_get_xuser_lists(void) {
-   lList* xuser_lists = NULL;
+   lList* xuser_lists = nullptr;
 
    DENTER(BASIS_LAYER);
    SGE_LOCK(LOCK_MASTER_CONF, LOCK_READ);
@@ -1497,7 +1497,7 @@ lList* mconf_get_xuser_lists(void) {
 
 /* returned pointer needs to be freed */
 lList* mconf_get_projects(void) {
-   lList* projects = NULL;
+   lList* projects = nullptr;
 
    DENTER(BASIS_LAYER);
    SGE_LOCK(LOCK_MASTER_CONF, LOCK_READ);
@@ -1510,7 +1510,7 @@ lList* mconf_get_projects(void) {
 
 /* returned pointer needs to be freed */
 lList* mconf_get_xprojects(void) {
-   lList* xprojects = NULL;
+   lList* xprojects = nullptr;
 
    DENTER(BASIS_LAYER);
    SGE_LOCK(LOCK_MASTER_CONF, LOCK_READ);
@@ -1523,7 +1523,7 @@ lList* mconf_get_xprojects(void) {
 
 /* returned pointer needs to be freed */
 char* mconf_get_set_token_cmd(void) {
-   char* set_token_cmd = NULL;
+   char* set_token_cmd = nullptr;
 
    DENTER(BASIS_LAYER);
    SGE_LOCK(LOCK_MASTER_CONF, LOCK_READ);
@@ -1536,7 +1536,7 @@ char* mconf_get_set_token_cmd(void) {
 
 /* returned pointer needs to be freed */
 char* mconf_get_pag_cmd(void) {
-   char* pag_cmd = NULL;
+   char* pag_cmd = nullptr;
 
    DENTER(BASIS_LAYER);
    SGE_LOCK(LOCK_MASTER_CONF, LOCK_READ);
@@ -1561,7 +1561,7 @@ u_long32 mconf_get_token_extend_time(void) {
 
 /* returned pointer needs to be freed */
 char* mconf_get_shepherd_cmd(void) {
-   char* shepherd_cmd = NULL;
+   char* shepherd_cmd = nullptr;
 
    DENTER(BASIS_LAYER);
    SGE_LOCK(LOCK_MASTER_CONF, LOCK_READ);
@@ -1574,7 +1574,7 @@ char* mconf_get_shepherd_cmd(void) {
 
 /* returned pointer needs to be freed */
 char* mconf_get_qmaster_params(void) {
-   char* qmaster_params = NULL;
+   char* qmaster_params = nullptr;
 
    DENTER(BASIS_LAYER);
    SGE_LOCK(LOCK_MASTER_CONF, LOCK_READ);
@@ -1587,7 +1587,7 @@ char* mconf_get_qmaster_params(void) {
 
 /* returned pointer needs to be freed */
 char* mconf_get_execd_params(void) {
-   char* execd_params = NULL;
+   char* execd_params = nullptr;
 
    DENTER(BASIS_LAYER);
    SGE_LOCK(LOCK_MASTER_CONF, LOCK_READ);
@@ -1600,7 +1600,7 @@ char* mconf_get_execd_params(void) {
 
 /* returned pointer needs to be freed */
 char* mconf_get_reporting_params(void) {
-   char* reporting_params = NULL;
+   char* reporting_params = nullptr;
 
    DENTER(BASIS_LAYER);
    SGE_LOCK(LOCK_MASTER_CONF, LOCK_READ);
@@ -1613,7 +1613,7 @@ char* mconf_get_reporting_params(void) {
 
 /* returned pointer needs to be freed */
 char* mconf_get_gid_range(void) {
-   char* gid_range = NULL;
+   char* gid_range = nullptr;
 
    DENTER(BASIS_LAYER);
    SGE_LOCK(LOCK_MASTER_CONF, LOCK_READ);
@@ -1638,7 +1638,7 @@ u_long32 mconf_get_zombie_jobs(void) {
 
 /* returned pointer needs to be freed */
 char* mconf_get_qlogin_daemon(void) {
-   char* qlogin_daemon = NULL;
+   char* qlogin_daemon = nullptr;
 
    DENTER(BASIS_LAYER);
    SGE_LOCK(LOCK_MASTER_CONF, LOCK_READ);
@@ -1651,7 +1651,7 @@ char* mconf_get_qlogin_daemon(void) {
 
 /* returned pointer needs to be freed */
 char* mconf_get_qlogin_command(void) {
-   char* qlogin_command = NULL;
+   char* qlogin_command = nullptr;
 
    DENTER(BASIS_LAYER);
    SGE_LOCK(LOCK_MASTER_CONF, LOCK_READ);
@@ -1664,7 +1664,7 @@ char* mconf_get_qlogin_command(void) {
 
 /* returned pointer needs to be freed */
 char* mconf_get_rsh_daemon(void) {
-   char* rsh_daemon = NULL;
+   char* rsh_daemon = nullptr;
 
    DENTER(BASIS_LAYER);
    SGE_LOCK(LOCK_MASTER_CONF, LOCK_READ);
@@ -1701,7 +1701,7 @@ bool mconf_is_new_config(void) {
 
 /* returned pointer needs to be freed */
 char* mconf_get_rsh_command(void) {
-   char* rsh_command = NULL;
+   char* rsh_command = nullptr;
 
    DENTER(BASIS_LAYER);
    SGE_LOCK(LOCK_MASTER_CONF, LOCK_READ);
@@ -1714,7 +1714,7 @@ char* mconf_get_rsh_command(void) {
 
 /* returned pointer needs to be freed */
 char* mconf_get_jsv_url(void) {
-   char* jsv_url = NULL;
+   char* jsv_url = nullptr;
 
    DENTER(BASIS_LAYER);
    SGE_LOCK(LOCK_MASTER_CONF, LOCK_READ);
@@ -1728,7 +1728,7 @@ char* mconf_get_jsv_url(void) {
 
 /* returned pointer needs to be freed */
 char* mconf_get_jsv_allowed_mod(void) {
-   char* jsv_allowed_mod = NULL;
+   char* jsv_allowed_mod = nullptr;
 
    DENTER(BASIS_LAYER);
    SGE_LOCK(LOCK_MASTER_CONF, LOCK_READ);
@@ -1742,7 +1742,7 @@ char* mconf_get_jsv_allowed_mod(void) {
 
 /* returned pointer needs to be freed */
 char* mconf_get_rlogin_daemon(void) {
-   char* rlogin_daemon = NULL;
+   char* rlogin_daemon = nullptr;
 
    DENTER(BASIS_LAYER);
    SGE_LOCK(LOCK_MASTER_CONF, LOCK_READ);
@@ -1755,7 +1755,7 @@ char* mconf_get_rlogin_daemon(void) {
 
 /* returned pointer needs to be freed */
 char* mconf_get_rlogin_command(void) {
-   char* rlogin_command = NULL;
+   char* rlogin_command = nullptr;
 
    DENTER(BASIS_LAYER);
    SGE_LOCK(LOCK_MASTER_CONF, LOCK_READ);
@@ -1876,7 +1876,7 @@ u_long32 mconf_get_auto_user_oticket(void) {
 
 /* returned pointer needs to be freed */
 char* mconf_get_auto_user_default_project(void) {
-   char* auto_user_default_project = NULL;
+   char* auto_user_default_project = nullptr;
 
    DENTER(BASIS_LAYER);
    SGE_LOCK(LOCK_MASTER_CONF, LOCK_READ);
@@ -1901,7 +1901,7 @@ u_long32 mconf_get_auto_user_delete_time(void) {
 
 /* returned pointer needs to be freed */
 char* mconf_get_delegated_file_staging(void) {
-   char* delegated_file_staging = NULL;
+   char* delegated_file_staging = nullptr;
 
    DENTER(BASIS_LAYER);
    SGE_LOCK(LOCK_MASTER_CONF, LOCK_READ);
@@ -2174,7 +2174,7 @@ int mconf_get_notify_susp_type(void) {
 
 /* returned pointer needs to be freed */
 char* mconf_get_notify_susp(void) {
-   char* ret = NULL;
+   char* ret = nullptr;
 
    DENTER(BASIS_LAYER);
    SGE_LOCK(LOCK_MASTER_CONF, LOCK_READ);
@@ -2199,7 +2199,7 @@ int mconf_get_notify_kill_type(void) {
 
 /* returned pointer needs to be freed */
 char* mconf_get_notify_kill(void) {
-   char* ret = NULL;
+   char* ret = nullptr;
 
    DENTER(BASIS_LAYER);
    SGE_LOCK(LOCK_MASTER_CONF, LOCK_READ);

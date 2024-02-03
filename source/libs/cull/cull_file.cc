@@ -171,7 +171,7 @@ int lWriteElemToDisk(const lListElem *ep, const char *prefix, const char *name,
 *  FUNCTION
 *     Reads a lListElem of the specified 'type' from the file
 *     'prefix'/'name'. Either 'prefix' or 'name' can be null.
-*     Returns a pointer to the read element or NULL in case
+*     Returns a pointer to the read element or nullptr in case
 *     of an error 
 *
 *  INPUTS
@@ -197,7 +197,7 @@ lListElem *lReadElemFromDisk(const char *prefix, const char *name,
 
    if (!prefix && !name) {
       ERROR((SGE_EVENT, SFNMAX, MSG_CULL_NOPREFIXANDNOFILENAMEINREADELEMFROMDISK));
-      DRETURN(NULL);
+      DRETURN(nullptr);
    }
 
    /* create full file name */
@@ -211,12 +211,12 @@ lListElem *lReadElemFromDisk(const char *prefix, const char *name,
    /* get file size */
    if (SGE_STAT(filename, &statbuf) == -1) {
       CRITICAL((SGE_EVENT, MSG_CULL_CANTGETFILESTATFORXFILEY_SS, obj_name, filename));
-      DRETURN(NULL);
+      DRETURN(nullptr);
    }
 
    if (!statbuf.st_size) {
       CRITICAL((SGE_EVENT, MSG_CULL_XFILEYHASZEROSIYE_SS, obj_name, filename));
-      DRETURN(NULL);
+      DRETURN(nullptr);
    }
 
    /* init packing buffer */
@@ -225,21 +225,21 @@ lListElem *lReadElemFromDisk(const char *prefix, const char *name,
        || !(buf = sge_malloc(statbuf.st_size))) {
       CRITICAL((SGE_EVENT, SFNMAX, MSG_CULL_LEMALLOC));
       clear_packbuffer(&pb);
-      DRETURN(NULL);
+      DRETURN(nullptr);
    }
 
    /* open file */
    if ((fd = SGE_OPEN2(filename, O_RDONLY)) < 0) {
       CRITICAL((SGE_EVENT, MSG_CULL_CANTREADXFROMFILEY_SS, obj_name, filename));
       clear_packbuffer(&pb);    /* this one frees buf */
-      DRETURN(NULL);
+      DRETURN(nullptr);
    }
 
    /* read packing buffer */
    if (sge_readnbytes(fd, buf, statbuf.st_size) != statbuf.st_size) {
       CRITICAL((SGE_EVENT, MSG_CULL_ERRORREADINGXINFILEY_SS, obj_name, filename));
       close(fd);
-      DRETURN(NULL);
+      DRETURN(nullptr);
    }
 
    if ((ret = init_packbuffer_from_buffer(&pb, buf, statbuf.st_size)) != PACK_SUCCESS) {
@@ -256,22 +256,22 @@ lListElem *lReadElemFromDisk(const char *prefix, const char *name,
       case PACK_ENOMEM:
          ERROR((SGE_EVENT, MSG_CULL_NOTENOUGHMEMORYFORUNPACKINGXY_SS,
                  obj_name, filename));
-         DRETURN(NULL);
+         DRETURN(nullptr);
 
       case PACK_FORMAT:
          ERROR((SGE_EVENT, MSG_CULL_FORMATERRORWHILEUNPACKINGXY_SS,
                  obj_name, filename));
-         DRETURN(NULL);
+         DRETURN(nullptr);
 
       case PACK_BADARG:
          ERROR((SGE_EVENT, MSG_CULL_BADARGUMENTWHILEUNPACKINGXY_SS,
                  obj_name, filename));
-         DRETURN(NULL);
+         DRETURN(nullptr);
 
       default:
          ERROR((SGE_EVENT, MSG_CULL_UNEXPECTEDERRORWHILEUNPACKINGXY_SS,
                  obj_name, filename));
-         DRETURN(NULL);
+         DRETURN(nullptr);
    }
 
    DRETURN(ep);

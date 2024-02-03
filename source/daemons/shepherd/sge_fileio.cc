@@ -47,10 +47,10 @@
 bool shepherd_write_pid_file(pid_t pid, dstring *errmsg)
 {
    bool ret = true;
-   FILE *fp = NULL;
+   FILE *fp = nullptr;
 
    fp = fopen("pid", "w");
-   if (fp != NULL) {
+   if (fp != nullptr) {
       if (fprintf(fp, pid_t_fmt"\n", pid) < 0) {
          sge_dstring_sprintf(errmsg, MSG_FILE_CANNOT_WRITE_SS, "pid", strerror(errno));
          ret = false;
@@ -76,10 +76,10 @@ shepherd_read_qrsh_pid_file(const char *filename, pid_t *qrsh_pid,
                             int *replace_qrsh_pid)
 {
    bool ret = true;
-   FILE *fp = NULL;
+   FILE *fp = nullptr;
 
    fp = fopen(filename, "r");
-   if (fp != NULL) {
+   if (fp != nullptr) {
       int arguments = fscanf(fp, pid_t_fmt, qrsh_pid);
 
       if (arguments == 1) {
@@ -120,12 +120,12 @@ shepherd_write_usage_file(u_long32 wait_status, int exit_status,
 {
    bool ret = true;
    const char *const filename = "usage";
-   FILE *fp = NULL;
+   FILE *fp = nullptr;
 
    shepherd_trace("writing usage file to \"usage\"");
 
    fp = fopen(filename, "w");
-   if (fp != NULL) {
+   if (fp != nullptr) {
       /*
        * the wait status is returned by japi_wait()
        * see sge_reportL.h for bitmask and makro definition
@@ -175,10 +175,10 @@ shepherd_write_job_pid_file(const char *job_pid)
 {
    bool ret = true;
    const char *const filename = "job_pid";
-   FILE *fp = NULL;
+   FILE *fp = nullptr;
 
    fp = fopen(filename, "w");
-   if (fp != NULL) {
+   if (fp != nullptr) {
       FPRINTF((fp, "%s\n", job_pid));
       FCLOSE(fp);
    } else {
@@ -197,10 +197,10 @@ shepherd_write_sig_info_file(const char *filename, const char *task_id,
                              u_long32 exit_status)
 {
    bool ret = true;
-   FILE *fp = NULL;
+   FILE *fp = nullptr;
 
    fp = fopen(filename, "a");
-   if (fp != NULL) {
+   if (fp != nullptr) {
       FPRINTF((fp, "%s "sge_u32"\n", task_id, exit_status));
       FCLOSE(fp);
    } else {
@@ -219,10 +219,10 @@ bool shepherd_write_osjobid_file(const char *osjobid)
 {
    bool ret = true;
    const char *const filename = "osjobid";
-   FILE *fp = NULL;
+   FILE *fp = nullptr;
 
    fp = fopen(filename, "w");
-   if (fp != NULL) {
+   if (fp != nullptr) {
       FPRINTF((fp, "%s\n", osjobid));
       FCLOSE(fp);
    } else {
@@ -241,10 +241,10 @@ shepherd_write_processor_set_number_file(int proc_set)
 {
    bool ret = true;
    const char *const filename = "processor_set_number";
-   FILE *fp = NULL;
+   FILE *fp = nullptr;
 
    fp = fopen(filename, "w");
-   if (fp != NULL) {
+   if (fp != nullptr) {
       FPRINTF((fp, "%d\n", proc_set));
       FCLOSE(fp);
    } else {
@@ -263,10 +263,10 @@ shepherd_write_shepherd_about_to_exit_file(void)
 {
    bool ret = true;
    const char *const filename = "shepherd_about_to_exit";
-   FILE *fd = NULL;
+   FILE *fd = nullptr;
 
    fd = fopen(filename, "w");
-   if (fd != NULL) {
+   if (fd != nullptr) {
       FCLOSE(fd);
    } else {
       shepherd_error(1, MSG_FILE_NOOPEN_SS, filename, strerror(errno));
@@ -282,11 +282,11 @@ bool
 shepherd_read_exit_status_file(int *return_code)
 {
    bool ret = true;
-   FILE *fp = NULL;
+   FILE *fp = nullptr;
    const char *const filename = "exit_status";
 
    fp = fopen(filename, "r");
-   if (fp != NULL) {
+   if (fp != nullptr) {
       int arguments = fscanf(fp, "%d\n", return_code);
       /* retrieve first exit status from exit status file */
 
@@ -310,10 +310,10 @@ bool
 shepherd_read_qrsh_file(const char* pid_file_name, pid_t *qrsh_pid)
 {
    bool ret = true;
-   FILE *fp = NULL;
+   FILE *fp = nullptr;
 
    fp = fopen(pid_file_name, "r");
-   if (fp != NULL) {
+   if (fp != nullptr) {
       int arguments = fscanf(fp, pid_t_fmt, qrsh_pid);
 
       /* retrieve first exit status from exit status file */
@@ -345,11 +345,11 @@ bool
 shepherd_read_processor_set_number_file(int *proc_set)
 {
    bool ret = true;
-   FILE *fp = NULL;
+   FILE *fp = nullptr;
    const char *const filename = "processor_set_number";
 
    fp = fopen(filename, "r");
-   if (fp != NULL) {
+   if (fp != nullptr) {
       int arguments = fscanf(fp, "%d", proc_set);
 
       if (arguments != 1) {
@@ -372,10 +372,10 @@ void
 create_checkpointed_file(int ckpt_is_in_arena)
 {
    const char *const filename = "checkpointed";
-   FILE *fp = NULL;
+   FILE *fp = nullptr;
 
    fp = fopen(filename, "w");
-   if (fp != NULL) {
+   if (fp != nullptr) {
       if (ckpt_is_in_arena) {
          FPRINTF((fp, "1\n"));
       }

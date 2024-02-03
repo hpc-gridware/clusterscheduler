@@ -58,7 +58,7 @@
 #include "msg_execd.h"
 #include "load_avg.h"
 
-lList *jr_list = NULL;
+lList *jr_list = nullptr;
 static bool flush_jr = false;
 static int check_queue_limits = 0;
 
@@ -73,7 +73,7 @@ bool sge_get_flush_jr_flag(void) {
 void 
 flush_job_report(lListElem *jr)
 {
-   if (jr != NULL) {
+   if (jr != nullptr) {
       lSetBool(jr, JR_flush, true);
       sge_set_flush_jr_flag(true);
    }
@@ -102,32 +102,32 @@ void trace_jr()
 
 lListElem *add_job_report(u_long32 jobid, u_long32 jataskid, const char *petaskid, const lListElem *jep)
 {
-   lListElem *jr, *jatep = NULL;
+   lListElem *jr, *jatep = nullptr;
  
    DENTER(TOP_LAYER);
 
-   if (jr_list == NULL) 
+   if (jr_list == nullptr)
       jr_list = lCreateList("job report list", JR_Type);
   
-   if (jr_list == NULL || (jr=lCreateElem(JR_Type)) == NULL) {
+   if (jr_list == nullptr || (jr=lCreateElem(JR_Type)) == nullptr) {
       ERROR((SGE_EVENT, SFNMAX, MSG_JOB_TYPEMALLOC));
-      DRETURN(NULL);
+      DRETURN(nullptr);
    }
 
    lSetUlong(jr, JR_job_number, jobid);
    lSetUlong(jr, JR_ja_task_number, jataskid);
-   if (petaskid != NULL) {
+   if (petaskid != nullptr) {
       lSetString(jr, JR_pe_task_id_str, petaskid);
    }
 
    lAppendElem(jr_list, jr);
    DPRINTF(("adding job report for "sge_U32CFormat"."sge_U32CFormat"\n", sge_u32c(jobid), sge_u32c(jataskid)));
 
-   if (jep != NULL) {
-      jatep = job_search_task(jep, NULL, jataskid);
-      if (jatep != NULL) { 
-         lListElem *petep = NULL;
-         if (petaskid != NULL) {
+   if (jep != nullptr) {
+      jatep = job_search_task(jep, nullptr, jataskid);
+      if (jatep != nullptr) {
+         lListElem *petep = nullptr;
+         if (petaskid != nullptr) {
             petep = ja_task_search_pe_task(jatep, petaskid);
          }   
          job_report_init_from_job(jr, jep, jatep, petep);
@@ -141,14 +141,14 @@ lListElem *
 get_job_report(u_long32 job_id, u_long32 ja_task_id, const char *pe_task_id) 
 {
    lListElem *jr;
-   const void *iterator = NULL;
+   const void *iterator = nullptr;
 
    DENTER(TOP_LAYER);
 
    jr = lGetElemUlongFirstRW(jr_list, JR_job_number, job_id, &iterator);
-   while (jr != NULL) {
+   while (jr != nullptr) {
       if (lGetUlong(jr, JR_ja_task_number) == ja_task_id) {
-         if (pe_task_id == NULL) {
+         if (pe_task_id == nullptr) {
             break;
          } else {
             if (sge_strnullcmp(pe_task_id, lGetString(jr, JR_pe_task_id_str)) 
@@ -171,7 +171,7 @@ void del_job_report(lListElem *jr)
 void cleanup_job_report(u_long32 jobid, u_long32 jataskid)
 {
    lListElem *jr, *jr_next;
-   const void *iterator = NULL;
+   const void *iterator = nullptr;
 
    DENTER(TOP_LAYER);
 
@@ -279,7 +279,7 @@ int do_ack(sge_gdi_ctx_class_t *ctx, struct_msg_t *aMsg)
    /* we get a bunch of ack's */
    while (pb_unused(&(aMsg->buf)) > 0) {
 
-      if (cull_unpack_elem(&(aMsg->buf), &ack, NULL)) {
+      if (cull_unpack_elem(&(aMsg->buf), &ack, nullptr)) {
          ERROR((SGE_EVENT, SFNMAX, MSG_COM_UNPACKJOB));
          DRETURN(0);
       }
@@ -350,9 +350,9 @@ int do_ack(sge_gdi_ctx_class_t *ctx, struct_msg_t *aMsg)
 
                if (signal_job(jobid, jataskid, signo)) {
                   lListElem *jr;
-                  jr = get_job_report(jobid, jataskid, NULL);
-                  remove_acked_job_exit(ctx, jobid, jataskid, NULL, jr);
-                  job_unknown(jobid, jataskid, NULL);
+                  jr = get_job_report(jobid, jataskid, nullptr);
+                  remove_acked_job_exit(ctx, jobid, jataskid, nullptr, jr);
+                  job_unknown(jobid, jataskid, nullptr);
                }
             }
             break;
@@ -411,7 +411,7 @@ void modify_queue_limits_flag_for_job(const char *qualified_hostname, lListElem 
             continue;
          }
 
-         parse_ulong_val(&lim, NULL, TYPE_TIM, lGetString(q, QU_s_cpu), NULL, 0);
+         parse_ulong_val(&lim, nullptr, TYPE_TIM, lGetString(q, QU_s_cpu), nullptr, 0);
          if (lim != DBL_MAX) {
             if (increase) {
                check_queue_limits++;
@@ -420,7 +420,7 @@ void modify_queue_limits_flag_for_job(const char *qualified_hostname, lListElem 
             }
             break;
          }
-         parse_ulong_val(&lim, NULL, TYPE_TIM, lGetString(q, QU_h_cpu), NULL, 0);
+         parse_ulong_val(&lim, nullptr, TYPE_TIM, lGetString(q, QU_h_cpu), nullptr, 0);
          if (lim != DBL_MAX) {
             if (increase) {
                check_queue_limits++;
@@ -429,7 +429,7 @@ void modify_queue_limits_flag_for_job(const char *qualified_hostname, lListElem 
             }
             break;
          }
-         parse_ulong_val(&lim, NULL, TYPE_TIM, lGetString(q, QU_s_vmem), NULL, 0);
+         parse_ulong_val(&lim, nullptr, TYPE_TIM, lGetString(q, QU_s_vmem), nullptr, 0);
          if (lim != DBL_MAX) {
             if (increase) {
                check_queue_limits++;
@@ -438,7 +438,7 @@ void modify_queue_limits_flag_for_job(const char *qualified_hostname, lListElem 
             }
             break;
          }
-         parse_ulong_val(&lim, NULL, TYPE_TIM, lGetString(q, QU_h_vmem), NULL, 0);
+         parse_ulong_val(&lim, nullptr, TYPE_TIM, lGetString(q, QU_h_vmem), nullptr, 0);
          if (lim != DBL_MAX) {
             if (increase) {
                check_queue_limits++;

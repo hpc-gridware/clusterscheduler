@@ -74,7 +74,7 @@ static void cull_state_init(cull_state_t *theState);
 *
 ******************************************************************************/
 int cull_state_get_lerrno(void) {
-   cull_state_t *cull_state = NULL;
+   cull_state_t *cull_state = nullptr;
 
    pthread_once(&cull_once, cull_once_init);
 
@@ -84,7 +84,7 @@ int cull_state_get_lerrno(void) {
 }
 
 const char *cull_state_get_noinit(void) {
-   cull_state_t *cull_state = NULL;
+   cull_state_t *cull_state = nullptr;
 
    pthread_once(&cull_once, cull_once_init);
 
@@ -94,7 +94,7 @@ const char *cull_state_get_noinit(void) {
 }
 
 const lSortOrder *cull_state_get_global_sort_order(void) {
-   cull_state_t *cull_state = NULL;
+   cull_state_t *cull_state = nullptr;
 
    pthread_once(&cull_once, cull_once_init);
 
@@ -104,7 +104,7 @@ const lSortOrder *cull_state_get_global_sort_order(void) {
 }
 
 const lNameSpace *cull_state_get_name_space(void) {
-   cull_state_t *cull_state = NULL;
+   cull_state_t *cull_state = nullptr;
 
    pthread_once(&cull_once, cull_once_init);
 
@@ -122,7 +122,7 @@ const lNameSpace *cull_state_get_name_space(void) {
 *
 ******************************************************************************/
 void cull_state_set_lerrno(int i) {
-   cull_state_t *cull_state = NULL;
+   cull_state_t *cull_state = nullptr;
 
    pthread_once(&cull_once, cull_once_init);
 
@@ -134,7 +134,7 @@ void cull_state_set_lerrno(int i) {
 }
 
 void cull_state_set_noinit(char *s) {
-   cull_state_t *cull_state = NULL;
+   cull_state_t *cull_state = nullptr;
 
    pthread_once(&cull_once, cull_once_init);
 
@@ -146,7 +146,7 @@ void cull_state_set_noinit(char *s) {
 }
 
 void cull_state_set_global_sort_order(const lSortOrder *so) {
-   cull_state_t *cull_state = NULL;
+   cull_state_t *cull_state = nullptr;
 
    pthread_once(&cull_once, cull_once_init);
 
@@ -158,7 +158,7 @@ void cull_state_set_global_sort_order(const lSortOrder *so) {
 }
 
 void cull_state_set_name_space(const lNameSpace *ns) {
-   cull_state_t *cull_state = NULL;
+   cull_state_t *cull_state = nullptr;
 
    pthread_once(&cull_once, cull_once_init);
 
@@ -172,7 +172,7 @@ void cull_state_set_name_space(const lNameSpace *ns) {
 #ifdef OBSERVE
 void cull_state_set_observe_started(bool started)
 {
-   cull_state_t *cull_state = NULL;
+   cull_state_t *cull_state = nullptr;
 
    pthread_once(&cull_once, cull_once_init);
  
@@ -185,7 +185,7 @@ void cull_state_set_observe_started(bool started)
 
 dstring *cull_state_get_observe_dstring(void)
 {
-   cull_state_t *cull_state = NULL;
+   cull_state_t *cull_state = nullptr;
 
    pthread_once(&cull_once, cull_once_init);
 
@@ -196,7 +196,7 @@ dstring *cull_state_get_observe_dstring(void)
 
 bool cull_state_get_observe_started(void)
 {
-   cull_state_t *cull_state = NULL;
+   cull_state_t *cull_state = nullptr;
 
    pthread_once(&cull_once, cull_once_init);
 
@@ -284,7 +284,7 @@ static void cull_state_destroy(void *theState) {
 static cull_state_t *cull_state_getspecific(pthread_key_t aKey) {
    cull_state_t *cull_state = (cull_state_t *) pthread_getspecific(aKey);
 
-   if (cull_state == NULL) {
+   if (cull_state == nullptr) {
       int res = EINVAL;
 
       cull_state = (cull_state_t *) sge_malloc(sizeof(cull_state_t));
@@ -323,8 +323,8 @@ static cull_state_t *cull_state_getspecific(pthread_key_t aKey) {
 static void cull_state_init(cull_state_t *theState) {
    theState->lerrno = 0;
    theState->noinit[0] = '\0';
-   theState->global_sort_order = NULL;
-   theState->name_space = NULL;
+   theState->global_sort_order = nullptr;
+   theState->name_space = nullptr;
 #ifdef OBSERVE
    sge_dstring_init_dynamic(&theState->observe_dstring, 10000);
    theState->observe_started = false;

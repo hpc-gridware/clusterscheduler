@@ -56,7 +56,7 @@ static const featureset_names_t featureset_list[] = {
    {FEATURE_DCE_SECURITY,           "dce"},
    {FEATURE_KERBEROS_SECURITY,      "kerberos"},
    {FEATURE_CSP_SECURITY,           "csp"},
-   {FEATURE_UNINITIALIZED,          NULL}
+   {FEATURE_UNINITIALIZED,          nullptr}
 };
 /* *INDENT-ON* */
 
@@ -257,7 +257,7 @@ void feature_activate(feature_id_t id)
    /* get fature list, if it hasn't been initialized yet, do so */
    feature_list_pp = feature_get_master_featureset_list();
    feature_list = *feature_list_pp;
-   if (feature_list == NULL) {
+   if (feature_list == nullptr) {
       feature_initialize();
       feature_list_pp = feature_get_master_featureset_list();
       feature_list = *feature_list_pp;
@@ -306,12 +306,12 @@ feature_id_t feature_get_active_featureset_id(void)
 {
    const lListElem *feature;
    feature_id_t ret = FEATURE_UNINITIALIZED;
-   lList **featurelist_pp = NULL;
+   lList **featurelist_pp = nullptr;
 
    DENTER(TOP_LAYER);
 
    featurelist_pp = feature_get_master_featureset_list();
-   if (featurelist_pp != NULL) {
+   if (featurelist_pp != nullptr) {
       for_each_ep(feature, *featurelist_pp) {
          if (lGetUlong(feature, FES_active)) {
             ret = (feature_id_t)lGetUlong(feature, FES_id);
@@ -465,7 +465,7 @@ const char *feature_get_product_name(featureset_product_name_id_t style, dstring
    const char *long_name  = "";
    const char *short_name = "";
    const char *version    = "";
-   const char *ret = NULL;
+   const char *ret = nullptr;
    DENTER(TOP_LAYER);
 
    if (feature_get_active_featureset_id() != FEATURE_UNINITIALIZED ) {

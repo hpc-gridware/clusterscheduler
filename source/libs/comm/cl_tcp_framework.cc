@@ -82,12 +82,12 @@ static int cl_com_tcp_connection_request_handler_setup_finalize(cl_com_connectio
 #define __CL_FUNCTION__ "cl_com_tcp_get_fd()"
 
 int cl_com_tcp_get_fd(cl_com_connection_t *connection, int *fd) {
-   cl_com_tcp_private_t *private_com = NULL;
-   if (connection == NULL || fd == NULL) {
+   cl_com_tcp_private_t *private_com = nullptr;
+   if (connection == nullptr || fd == nullptr) {
       return CL_RETVAL_PARAMS;
    }
 
-   if ((private_com = cl_com_tcp_get_private(connection)) != NULL) {
+   if ((private_com = cl_com_tcp_get_private(connection)) != nullptr) {
       if (private_com->sockfd < 0) {
          CL_LOG_INT(CL_LOG_INFO, "return pre_sockfd: ", private_com->pre_sockfd);
          *fd = private_com->pre_sockfd;
@@ -107,12 +107,12 @@ int cl_com_tcp_get_fd(cl_com_connection_t *connection, int *fd) {
 #define __CL_FUNCTION__ "cl_com_tcp_get_service_port()"
 
 int cl_com_tcp_get_service_port(cl_com_connection_t *connection, int *port) {
-   cl_com_tcp_private_t *private_com = NULL;
-   if (connection == NULL || port == NULL) {
+   cl_com_tcp_private_t *private_com = nullptr;
+   if (connection == nullptr || port == nullptr) {
       return CL_RETVAL_PARAMS;
    }
 
-   if ((private_com = cl_com_tcp_get_private(connection)) != NULL) {
+   if ((private_com = cl_com_tcp_get_private(connection)) != nullptr) {
       *port = private_com->server_port;
       return CL_RETVAL_OK;
    }
@@ -125,12 +125,12 @@ int cl_com_tcp_get_service_port(cl_com_connection_t *connection, int *port) {
 #define __CL_FUNCTION__ "cl_com_tcp_get_client_socket_in_port()"
 
 int cl_com_tcp_get_client_socket_in_port(cl_com_connection_t *connection, int *port) {
-   cl_com_tcp_private_t *private_com = NULL;
-   if (connection == NULL || port == NULL) {
+   cl_com_tcp_private_t *private_com = nullptr;
+   if (connection == nullptr || port == nullptr) {
       return CL_RETVAL_PARAMS;
    }
 
-   if ((private_com = cl_com_tcp_get_private(connection)) != NULL) {
+   if ((private_com = cl_com_tcp_get_private(connection)) != nullptr) {
       *port = private_com->connect_in_port;
       return CL_RETVAL_OK;
    }
@@ -144,12 +144,12 @@ int cl_com_tcp_get_client_socket_in_port(cl_com_connection_t *connection, int *p
 #define __CL_FUNCTION__ "cl_com_tcp_get_connect_port()"
 
 int cl_com_tcp_get_connect_port(cl_com_connection_t *connection, int *port) {
-   cl_com_tcp_private_t *private_com = NULL;
-   if (connection == NULL || port == NULL) {
+   cl_com_tcp_private_t *private_com = nullptr;
+   if (connection == nullptr || port == nullptr) {
       return CL_RETVAL_PARAMS;
    }
 
-   if ((private_com = cl_com_tcp_get_private(connection)) != NULL) {
+   if ((private_com = cl_com_tcp_get_private(connection)) != nullptr) {
       *port = private_com->connect_port;
       return CL_RETVAL_OK;
    }
@@ -162,12 +162,12 @@ int cl_com_tcp_get_connect_port(cl_com_connection_t *connection, int *port) {
 #define __CL_FUNCTION__ "cl_com_tcp_set_connect_port()"
 
 int cl_com_tcp_set_connect_port(cl_com_connection_t *connection, int port) {
-   cl_com_tcp_private_t *private_com = NULL;
-   if (connection == NULL) {
+   cl_com_tcp_private_t *private_com = nullptr;
+   if (connection == nullptr) {
       return CL_RETVAL_PARAMS;
    }
 
-   if ((private_com = cl_com_tcp_get_private(connection)) != NULL) {
+   if ((private_com = cl_com_tcp_get_private(connection)) != nullptr) {
       private_com->connect_port = port;
       return CL_RETVAL_OK;
    }
@@ -181,11 +181,11 @@ int cl_com_tcp_set_connect_port(cl_com_connection_t *connection, int port) {
 #endif
 #define __CL_FUNCTION__ "cl_dump_tcp_private()"
 static void cl_dump_tcp_private(cl_com_connection_t* connection) {
-   cl_com_tcp_private_t* private_com = NULL;
-   if (connection == NULL) {
-      CL_LOG(CL_LOG_DEBUG, "connection is NULL");
+   cl_com_tcp_private_t* private_com = nullptr;
+   if (connection == nullptr) {
+      CL_LOG(CL_LOG_DEBUG, "connection is nullptr");
    } else {
-      if ( (private_com=cl_com_tcp_get_private(connection)) != NULL) {
+      if ( (private_com=cl_com_tcp_get_private(connection)) != nullptr) {
          CL_LOG_INT(CL_LOG_DEBUG,"server port:",private_com->server_port);
          CL_LOG_INT(CL_LOG_DEBUG,"connect_port:",private_com->connect_port);
          CL_LOG_INT(CL_LOG_DEBUG,"socked fd:",private_com->sockfd);
@@ -231,16 +231,16 @@ static void cl_dump_tcp_private(cl_com_connection_t* connection) {
 #define __CL_FUNCTION__ "cl_com_tcp_open_connection()"
 
 int cl_com_tcp_open_connection(cl_com_connection_t *connection, int timeout) {
-   cl_com_tcp_private_t *private_com = NULL;
+   cl_com_tcp_private_t *private_com = nullptr;
 
    int tmp_error = CL_RETVAL_OK;
 
-   if (connection == NULL || connection->remote == NULL || connection->local == NULL) {
+   if (connection == nullptr || connection->remote == nullptr || connection->local == nullptr) {
       return CL_RETVAL_PARAMS;
    }
 
    private_com = cl_com_tcp_get_private(connection);
-   if (private_com == NULL) {
+   if (private_com == nullptr) {
       return CL_RETVAL_NO_FRAMEWORK_INIT;
    }
 
@@ -257,7 +257,7 @@ int cl_com_tcp_open_connection(cl_com_connection_t *connection, int timeout) {
    if (connection->connection_sub_state == CL_COM_OPEN_INIT) {
       int ret;
       int on = 1;
-      char *unique_host = NULL;
+      char *unique_host = nullptr;
       struct timeval now;
       int res_port = IPPORT_RESERVED - 1;
 
@@ -325,7 +325,7 @@ int cl_com_tcp_open_connection(cl_com_connection_t *connection, int timeout) {
       private_com->client_addr.sin_port = htons(private_com->connect_port);
       private_com->client_addr.sin_family = AF_INET;
       if ((tmp_error = cl_com_cached_gethostbyname(connection->remote->comp_host, &unique_host,
-                                                   &(private_com->client_addr.sin_addr), NULL, NULL)) != CL_RETVAL_OK) {
+                                                   &(private_com->client_addr.sin_addr), nullptr, nullptr)) != CL_RETVAL_OK) {
          char tmp_buffer[256];
 
          shutdown(private_com->sockfd, 2);
@@ -334,7 +334,7 @@ int cl_com_tcp_open_connection(cl_com_connection_t *connection, int timeout) {
          CL_LOG(CL_LOG_ERROR, "could not get hostname");
          private_com->sockfd = -1;
 
-         if (connection != NULL && connection->remote != NULL && connection->remote->comp_host != NULL) {
+         if (connection != nullptr && connection->remote != nullptr && connection->remote->comp_host != nullptr) {
             snprintf(tmp_buffer, 256, MSG_CL_TCP_FW_CANT_RESOLVE_HOST_S, connection->remote->comp_host);
          } else {
             snprintf(tmp_buffer, 256, "%s", cl_get_error_text(tmp_error));
@@ -345,7 +345,7 @@ int cl_com_tcp_open_connection(cl_com_connection_t *connection, int timeout) {
       sge_free(&unique_host);
 
       /* connect */
-      gettimeofday(&now, NULL);
+      gettimeofday(&now, nullptr);
       connection->write_buffer_timeout_time = now.tv_sec + timeout;
       connection->connection_sub_state = CL_COM_OPEN_CONNECT;
    }
@@ -429,7 +429,7 @@ int cl_com_tcp_open_connection(cl_com_connection_t *connection, int timeout) {
             return CL_RETVAL_CONNECT_ERROR;
          }
 
-         gettimeofday(&now, NULL);
+         gettimeofday(&now, nullptr);
          if (connection->write_buffer_timeout_time <= now.tv_sec ||
              cl_com_get_ignore_timeouts_flag() == true) {
 
@@ -516,9 +516,9 @@ int cl_com_tcp_setup_connection(cl_com_connection_t **connection,
                                 cl_framework_t framework_type,
                                 cl_xml_data_format_t data_format_type,
                                 cl_tcp_connect_t tcp_connect_mode) {
-   cl_com_tcp_private_t *com_private = NULL;
+   cl_com_tcp_private_t *com_private = nullptr;
    int ret_val;
-   if (connection == NULL || *connection != NULL) {
+   if (connection == nullptr || *connection != nullptr) {
       return CL_RETVAL_PARAMS;
    }
 
@@ -545,7 +545,7 @@ int cl_com_tcp_setup_connection(cl_com_connection_t **connection,
 
    /* create private data structure */
    com_private = (cl_com_tcp_private_t *) sge_malloc(sizeof(cl_com_tcp_private_t));
-   if (com_private == NULL) {
+   if (com_private == nullptr) {
       cl_com_close_connection(connection);
       return CL_RETVAL_MALLOC;
    }
@@ -596,17 +596,17 @@ int cl_com_tcp_setup_connection(cl_com_connection_t **connection,
 
 static int cl_com_tcp_free_com_private(cl_com_connection_t *connection) {
 
-   if (connection == NULL) {
+   if (connection == nullptr) {
       return CL_RETVAL_PARAMS;
    }
 
-   if (connection->com_private == NULL) {
+   if (connection->com_private == nullptr) {
       return CL_RETVAL_NO_FRAMEWORK_INIT;
    }
 
    /* free struct cl_com_tcp_private_t */
    sge_free(&(connection->com_private));
-   connection->com_private = NULL;
+   connection->com_private = nullptr;
    return CL_RETVAL_OK;
 }
 
@@ -637,18 +637,18 @@ static int cl_com_tcp_free_com_private(cl_com_connection_t *connection) {
 #define __CL_FUNCTION__ "cl_com_tcp_close_connection()"
 
 int cl_com_tcp_close_connection(cl_com_connection_t **connection) {
-   cl_com_tcp_private_t *private_com = NULL;
+   cl_com_tcp_private_t *private_com = nullptr;
 
-   if (connection == NULL) {
+   if (connection == nullptr) {
       return CL_RETVAL_PARAMS;
    }
-   if (*connection == NULL) {
+   if (*connection == nullptr) {
       return CL_RETVAL_PARAMS;
    }
 
    private_com = cl_com_tcp_get_private(*connection);
 
-   if (private_com == NULL) {
+   if (private_com == nullptr) {
       return CL_RETVAL_NO_FRAMEWORK_INIT;
    }
 
@@ -672,27 +672,27 @@ int cl_com_tcp_close_connection(cl_com_connection_t **connection) {
 
 int cl_com_tcp_write(cl_com_connection_t *connection, cl_byte_t *message, ssize_t size,
                      unsigned long *only_one_write) {
-   cl_com_tcp_private_t *private_com = NULL;
+   cl_com_tcp_private_t *private_com = nullptr;
    ssize_t data_written = 0;
    int my_errno;
 
-   if (message == NULL) {
+   if (message == nullptr) {
       CL_LOG(CL_LOG_ERROR, "no message to write");
       return CL_RETVAL_PARAMS;
    }
 
-   if (only_one_write == NULL) {
-      CL_LOG(CL_LOG_ERROR, "only_one_write is NULL");
+   if (only_one_write == nullptr) {
+      CL_LOG(CL_LOG_ERROR, "only_one_write is nullptr");
       return CL_RETVAL_PARAMS;
    }
 
-   if (connection == NULL) {
+   if (connection == nullptr) {
       CL_LOG(CL_LOG_ERROR, "no connection object");
       return CL_RETVAL_PARAMS;
    }
 
    private_com = cl_com_tcp_get_private(connection);
-   if (private_com == NULL) {
+   if (private_com == nullptr) {
       return CL_RETVAL_NO_FRAMEWORK_INIT;
    }
 
@@ -708,7 +708,7 @@ int cl_com_tcp_write(cl_com_connection_t *connection, cl_byte_t *message, ssize_
 
    if (size > CL_DEFINE_MAX_MESSAGE_LENGTH) {
       CL_LOG_INT(CL_LOG_ERROR, "data to write is > max message length =", CL_DEFINE_MAX_MESSAGE_LENGTH);
-      cl_commlib_push_application_error(CL_LOG_ERROR, CL_RETVAL_MAX_READ_SIZE, NULL);
+      cl_commlib_push_application_error(CL_LOG_ERROR, CL_RETVAL_MAX_READ_SIZE, nullptr);
       return CL_RETVAL_MAX_READ_SIZE;
    }
 
@@ -733,7 +733,7 @@ int cl_com_tcp_write(cl_com_connection_t *connection, cl_byte_t *message, ssize_
    if (data_written != size) {
       struct timeval now;
 
-      gettimeofday(&now, NULL);
+      gettimeofday(&now, nullptr);
       if (now.tv_sec >= connection->write_buffer_timeout_time) {
          CL_LOG(CL_LOG_ERROR, "send timeout error");
          return CL_RETVAL_SEND_TIMEOUT;
@@ -750,27 +750,27 @@ int cl_com_tcp_write(cl_com_connection_t *connection, cl_byte_t *message, ssize_
 
 int
 cl_com_tcp_read(cl_com_connection_t *connection, cl_byte_t *message, ssize_t size, unsigned long *only_one_read) {
-   cl_com_tcp_private_t *private_com = NULL;
+   cl_com_tcp_private_t *private_com = nullptr;
    ssize_t data_read = 0;
    int my_errno;
 
-   if (message == NULL) {
+   if (message == nullptr) {
       CL_LOG(CL_LOG_ERROR, "no message buffer");
       return CL_RETVAL_PARAMS;
    }
 
-   if (only_one_read == NULL) {
-      CL_LOG(CL_LOG_ERROR, "only_one_read is NULL");
+   if (only_one_read == nullptr) {
+      CL_LOG(CL_LOG_ERROR, "only_one_read is nullptr");
       return CL_RETVAL_PARAMS;
    }
 
-   if (connection == NULL) {
+   if (connection == nullptr) {
       CL_LOG(CL_LOG_ERROR, "no connection object");
       return CL_RETVAL_PARAMS;
    }
 
    private_com = cl_com_tcp_get_private(connection);
-   if (private_com == NULL) {
+   if (private_com == nullptr) {
       return CL_RETVAL_NO_FRAMEWORK_INIT;
    }
 
@@ -787,7 +787,7 @@ cl_com_tcp_read(cl_com_connection_t *connection, cl_byte_t *message, ssize_t siz
 
    if (size > CL_DEFINE_MAX_MESSAGE_LENGTH) {
       CL_LOG_INT(CL_LOG_ERROR, "data to read is > max message length =", CL_DEFINE_MAX_MESSAGE_LENGTH);
-      cl_commlib_push_application_error(CL_LOG_ERROR, CL_RETVAL_MAX_READ_SIZE, NULL);
+      cl_commlib_push_application_error(CL_LOG_ERROR, CL_RETVAL_MAX_READ_SIZE, nullptr);
       return CL_RETVAL_MAX_READ_SIZE;
    }
 
@@ -797,10 +797,10 @@ cl_com_tcp_read(cl_com_connection_t *connection, cl_byte_t *message, ssize_t siz
    if (data_read <= 0) {
       if (my_errno != EWOULDBLOCK && my_errno != EAGAIN && my_errno != EINTR && my_errno != 0) {
          if (my_errno == EPIPE) {
-            CL_LOG_INT(CL_LOG_ERROR, "pipe error (only_one_read != NULL) errno:", my_errno);
+            CL_LOG_INT(CL_LOG_ERROR, "pipe error (only_one_read != nullptr) errno:", my_errno);
             return CL_RETVAL_PIPE_ERROR;
          }
-         CL_LOG_INT(CL_LOG_ERROR, "receive error (only_one_read != NULL) errno:", my_errno);
+         CL_LOG_INT(CL_LOG_ERROR, "receive error (only_one_read != nullptr) errno:", my_errno);
          return CL_RETVAL_READ_ERROR;
       } else {
          if (data_read == 0) {
@@ -816,7 +816,7 @@ cl_com_tcp_read(cl_com_connection_t *connection, cl_byte_t *message, ssize_t siz
    *only_one_read = data_read;
    if (data_read != size) {
       struct timeval now;
-      gettimeofday(&now, NULL);
+      gettimeofday(&now, nullptr);
       if (now.tv_sec >= connection->read_buffer_timeout_time) {
          return CL_RETVAL_READ_TIMEOUT;
       }
@@ -835,7 +835,7 @@ int cl_com_tcp_read_GMSH(cl_com_connection_t *connection, unsigned long *only_on
    unsigned long data_read = 0;
    unsigned long processed_data = 0;
 
-   if (connection == NULL || only_one_read == NULL) {
+   if (connection == nullptr || only_one_read == nullptr) {
       CL_LOG(CL_LOG_ERROR, "parameters not initalized");
       return CL_RETVAL_PARAMS;
    }
@@ -903,7 +903,7 @@ int cl_com_tcp_read_GMSH(cl_com_connection_t *connection, unsigned long *only_on
    }
    if (connection->read_gmsh_header->dl > CL_DEFINE_MAX_MESSAGE_LENGTH) {
       CL_LOG(CL_LOG_ERROR, "gmsh header dl entry is larger than CL_DEFINE_MAX_MESSAGE_LENGTH");
-      cl_commlib_push_application_error(CL_LOG_ERROR, CL_RETVAL_MAX_MESSAGE_LENGTH_ERROR, NULL);
+      cl_commlib_push_application_error(CL_LOG_ERROR, CL_RETVAL_MAX_MESSAGE_LENGTH_ERROR, nullptr);
       return CL_RETVAL_MAX_MESSAGE_LENGTH_ERROR;
    }
    return retval;
@@ -916,15 +916,15 @@ int cl_com_tcp_read_GMSH(cl_com_connection_t *connection, unsigned long *only_on
 #define __CL_FUNCTION__ "cl_com_tcp_connection_request_handler_setup_finalize()"
 
 static int cl_com_tcp_connection_request_handler_setup_finalize(cl_com_connection_t *connection) {
-   cl_com_tcp_private_t *private_com = NULL;
+   cl_com_tcp_private_t *private_com = nullptr;
    int sockfd = 0;
 
-   if (connection == NULL) {
+   if (connection == nullptr) {
       CL_LOG(CL_LOG_ERROR, "no connection");
       return CL_RETVAL_PARAMS;
    }
    private_com = cl_com_tcp_get_private(connection);
-   if (private_com == NULL) {
+   if (private_com == nullptr) {
       CL_LOG(CL_LOG_ERROR, "framework not initalized");
       return CL_RETVAL_PARAMS;
    }
@@ -990,19 +990,19 @@ static int cl_com_tcp_connection_request_handler_setup_finalize(cl_com_connectio
 int cl_com_tcp_connection_request_handler_setup(cl_com_connection_t *connection, bool only_prepare_service) {
    int sockfd = 0;
    struct sockaddr_in serv_addr;
-   cl_com_tcp_private_t *private_com = NULL;
+   cl_com_tcp_private_t *private_com = nullptr;
    int on = 1;
    int ret;
 
    CL_LOG(CL_LOG_INFO, "setting up TCP request handler ...");
 
-   if (connection == NULL) {
+   if (connection == nullptr) {
       CL_LOG(CL_LOG_ERROR, "no connection");
       return CL_RETVAL_PARAMS;
    }
 
    private_com = cl_com_tcp_get_private(connection);
-   if (private_com == NULL) {
+   if (private_com == nullptr) {
       CL_LOG(CL_LOG_ERROR, "framework not initalized");
       return CL_RETVAL_NO_FRAMEWORK_INIT;
    }
@@ -1108,15 +1108,15 @@ int cl_com_tcp_connection_request_handler_setup(cl_com_connection_t *connection,
 
 int cl_com_tcp_connection_request_handler_cleanup(cl_com_connection_t *connection) {
 
-   cl_com_tcp_private_t *private_com = NULL;
+   cl_com_tcp_private_t *private_com = nullptr;
 
    CL_LOG(CL_LOG_INFO, "cleanup of request handler ...");
-   if (connection == NULL) {
+   if (connection == nullptr) {
       return CL_RETVAL_PARAMS;
    }
 
    private_com = cl_com_tcp_get_private(connection);
-   if (private_com == NULL) {
+   if (private_com == nullptr) {
       return CL_RETVAL_NO_FRAMEWORK_INIT;
    }
 
@@ -1154,7 +1154,7 @@ int cl_com_tcp_connection_request_handler_cleanup(cl_com_connection_t *connectio
 *
 *  INPUTS
 *     cl_com_connection_t* connection      - pointer to service connection
-*     cl_com_connection_t** new_connection - NULL
+*     cl_com_connection_t** new_connection - nullptr
 *     int timeout_val_sec                  - timeout value in sec (for select)
 *     int timeout_val_usec                 - timeout value in usec (for select)
 *
@@ -1172,26 +1172,26 @@ int cl_com_tcp_connection_request_handler_cleanup(cl_com_connection_t *connectio
 #define __CL_FUNCTION__ "cl_com_tcp_connection_request_handler()"
 
 int cl_com_tcp_connection_request_handler(cl_com_connection_t *connection, cl_com_connection_t **new_connection) {
-   cl_com_connection_t *tmp_connection = NULL;
+   cl_com_connection_t *tmp_connection = nullptr;
    struct sockaddr_in cli_addr;
    int new_sfd = 0;
    int sso;
    socklen_t fromlen = 0;
    int retval;
-   cl_com_tcp_private_t *private_com = NULL;
+   cl_com_tcp_private_t *private_com = nullptr;
 
-   if (connection == NULL || new_connection == NULL) {
+   if (connection == nullptr || new_connection == nullptr) {
       CL_LOG(CL_LOG_ERROR, "no connection or no accept connection");
       return CL_RETVAL_PARAMS;
    }
 
-   if (*new_connection != NULL) {
+   if (*new_connection != nullptr) {
       CL_LOG(CL_LOG_ERROR, "accept connection is not free");
       return CL_RETVAL_PARAMS;
    }
 
    private_com = cl_com_tcp_get_private(connection);
-   if (private_com == NULL) {
+   if (private_com == nullptr) {
       CL_LOG(CL_LOG_ERROR, "framework is not initalized");
       return CL_RETVAL_NO_FRAMEWORK_INIT;
    }
@@ -1206,8 +1206,8 @@ int cl_com_tcp_connection_request_handler(cl_com_connection_t *connection, cl_co
    memset((char *) &cli_addr, 0, sizeof(cli_addr));
    new_sfd = accept(private_com->sockfd, (struct sockaddr *) &cli_addr, &fromlen);
    if (new_sfd > -1) {
-      char *resolved_host_name = NULL;
-      cl_com_tcp_private_t *tmp_private = NULL;
+      char *resolved_host_name = nullptr;
+      cl_com_tcp_private_t *tmp_private = nullptr;
 
       if (new_sfd < 3) {
          CL_LOG_INT(CL_LOG_WARNING, "The file descriptor is < 3. Will dup fd to be >= 3! fd value: ", new_sfd);
@@ -1224,8 +1224,8 @@ int cl_com_tcp_connection_request_handler(cl_com_connection_t *connection, cl_co
          CL_LOG_INT(CL_LOG_INFO, "fd value after dup: ", new_sfd);
       }
 
-      cl_com_cached_gethostbyaddr(&(cli_addr.sin_addr), &resolved_host_name, NULL, NULL);
-      if (resolved_host_name != NULL) {
+      cl_com_cached_gethostbyaddr(&(cli_addr.sin_addr), &resolved_host_name, nullptr, nullptr);
+      if (resolved_host_name != nullptr) {
          CL_LOG_STR(CL_LOG_INFO, "new connection from host", resolved_host_name);
       } else {
          CL_LOG(CL_LOG_WARNING, "could not resolve incoming hostname");
@@ -1244,7 +1244,7 @@ int cl_com_tcp_connection_request_handler(cl_com_connection_t *connection, cl_co
       /* here we can investigate more information about the client */
       /* ntohs(cli_addr.sin_port) ... */
 
-      tmp_connection = NULL;
+      tmp_connection = nullptr;
       /* setup a tcp connection where autoclose is still undefined */
       if ((retval = cl_com_tcp_setup_connection(&tmp_connection,
                                                 private_com->server_port,
@@ -1255,7 +1255,7 @@ int cl_com_tcp_connection_request_handler(cl_com_connection_t *connection, cl_co
                                                 connection->data_format_type,
                                                 connection->tcp_connect_mode)) != CL_RETVAL_OK) {
          cl_com_tcp_close_connection(&tmp_connection);
-         if (resolved_host_name != NULL) {
+         if (resolved_host_name != nullptr) {
             sge_free(&resolved_host_name);
          }
          shutdown(new_sfd, 2);
@@ -1264,7 +1264,7 @@ int cl_com_tcp_connection_request_handler(cl_com_connection_t *connection, cl_co
       }
 
       /*
-       * set resolved hostname of client (NULL is valid because checks are done when
+       * set resolved hostname of client (nullptr is valid because checks are done when
        * connection state is set to connection->connection_state = CL_CONNECTING; and
        * new connection is added to connection list)
        */
@@ -1272,7 +1272,7 @@ int cl_com_tcp_connection_request_handler(cl_com_connection_t *connection, cl_co
 
       /* setup cl_com_tcp_private_t */
       tmp_private = cl_com_tcp_get_private(tmp_connection);
-      if (tmp_private != NULL) {
+      if (tmp_private != nullptr) {
          tmp_private->sockfd = new_sfd;   /* fd from accept() call */
          tmp_private->connect_in_port = ntohs(cli_addr.sin_port);
       }
@@ -1317,10 +1317,10 @@ int cl_com_tcp_connection_request_handler(cl_com_connection_t *connection, cl_co
 #define __CL_FUNCTION__ "cl_com_tcp_get_private()"
 
 static cl_com_tcp_private_t *cl_com_tcp_get_private(cl_com_connection_t *connection) {  /* CR check */
-   if (connection != NULL) {
+   if (connection != nullptr) {
       return (cl_com_tcp_private_t *)connection->com_private;
    }
-   return NULL;
+   return nullptr;
 }
 
 
@@ -1364,9 +1364,9 @@ int cl_com_tcp_open_connection_request_handler(cl_com_poll_t *poll_handle, cl_co
                                                cl_select_method_t select_mode)
 {
    int select_back;
-   cl_connection_list_elem_t *con_elem = NULL;
-   cl_com_connection_t *connection = NULL;
-   cl_com_tcp_private_t *con_private = NULL;
+   cl_connection_list_elem_t *con_elem = nullptr;
+   cl_com_connection_t *connection = nullptr;
+   cl_com_tcp_private_t *con_private = nullptr;
 
    int max_fd = -1;
    int server_fd = -1;
@@ -1375,29 +1375,29 @@ int cl_com_tcp_open_connection_request_handler(cl_com_poll_t *poll_handle, cl_co
    int do_write_select = 0;
    int my_errno = 0;
    int nr_of_descriptors = 0;
-   cl_connection_list_data_t *ldata = NULL;
+   cl_connection_list_data_t *ldata = nullptr;
    int socket_error = 0;
    int get_sock_opt_error = 0;
    socklen_t socklen = sizeof(socket_error);
 
-   struct pollfd *ufds = NULL;
-   cl_com_connection_t **ufds_con = NULL;
+   struct pollfd *ufds = nullptr;
+   cl_com_connection_t **ufds_con = nullptr;
    unsigned long ufds_index = 0;
    unsigned long fd_index = 0;
    int fd_offset = 2;
    struct timeval timeout;
 
-   if (poll_handle == NULL) {
-      CL_LOG(CL_LOG_ERROR, "poll_handle == NULL");
+   if (poll_handle == nullptr) {
+      CL_LOG(CL_LOG_ERROR, "poll_handle == nullptr");
       return CL_RETVAL_PARAMS;
    }
 
-   if (handle == NULL) {
-      CL_LOG(CL_LOG_ERROR, "handle == NULL");
+   if (handle == nullptr) {
+      CL_LOG(CL_LOG_ERROR, "handle == nullptr");
       return CL_RETVAL_PARAMS;
    }
 
-   if (connection_list == NULL) {
+   if (connection_list == nullptr) {
       CL_LOG(CL_LOG_ERROR, "no connection list");
       return CL_RETVAL_PARAMS;
    }
@@ -1426,7 +1426,7 @@ int cl_com_tcp_open_connection_request_handler(cl_com_poll_t *poll_handle, cl_co
       return CL_RETVAL_LOCK_ERROR;
    }
 
-   if (connection_list->list_data == NULL) {
+   if (connection_list->list_data == nullptr) {
       cl_raw_list_unlock(connection_list);
       return CL_RETVAL_NO_FRAMEWORK_INIT;
    } else {
@@ -1460,15 +1460,15 @@ int cl_com_tcp_open_connection_request_handler(cl_com_poll_t *poll_handle, cl_co
    ufds_con = poll_handle->poll_con;
 
    /* cleanup first arrays */
-   ufds_con[ufds_index] = NULL;
+   ufds_con[ufds_index] = nullptr;
    memset(&(ufds[ufds_index]), 0, sizeof(struct pollfd));
 
-   if (service_connection != NULL && do_read_select != 0) {
-      cl_com_tcp_private_t *private_com = NULL;
+   if (service_connection != nullptr && do_read_select != 0) {
+      cl_com_tcp_private_t *private_com = nullptr;
       int tmp_retval = CL_RETVAL_OK;
 
       /* this is to come out of select when for new connections */
-      if (cl_com_tcp_get_private(service_connection) == NULL) {
+      if (cl_com_tcp_get_private(service_connection) == nullptr) {
          CL_LOG(CL_LOG_ERROR, "service framework is not initalized");
          cl_raw_list_unlock(connection_list);
          return CL_RETVAL_NO_FRAMEWORK_INIT;
@@ -1500,7 +1500,7 @@ int cl_com_tcp_open_connection_request_handler(cl_com_poll_t *poll_handle, cl_co
       ufds[ufds_index].fd = server_fd;
       ufds[ufds_index].events = POLLIN | POLLPRI;
       ufds_index++;
-      ufds_con[ufds_index] = NULL;
+      ufds_con[ufds_index] = nullptr;
       memset(&(ufds[ufds_index]), 0, sizeof(struct pollfd));
       service_connection->is_read_selected = true;
       nr_of_descriptors++;
@@ -1512,7 +1512,7 @@ int cl_com_tcp_open_connection_request_handler(cl_com_poll_t *poll_handle, cl_co
    while (con_elem) {
       connection = con_elem->connection;
 
-      if ((con_private = cl_com_tcp_get_private(connection)) == NULL) {
+      if ((con_private = cl_com_tcp_get_private(connection)) == nullptr) {
          cl_raw_list_unlock(connection_list);
          CL_LOG(CL_LOG_ERROR, "no private data pointer");
          return CL_RETVAL_NO_FRAMEWORK_INIT;
@@ -1551,7 +1551,7 @@ int cl_com_tcp_open_connection_request_handler(cl_com_poll_t *poll_handle, cl_co
 
                         if (ufds[ufds_index].events) {
                            ufds_index++;
-                           ufds_con[ufds_index] = NULL;
+                           ufds_con[ufds_index] = nullptr;
                            memset(&(ufds[ufds_index]), 0, sizeof(struct pollfd));
                         }
                      }
@@ -1579,7 +1579,7 @@ int cl_com_tcp_open_connection_request_handler(cl_com_poll_t *poll_handle, cl_co
 
                         if (ufds[ufds_index].events) {
                            ufds_index++;
-                           ufds_con[ufds_index] = NULL;
+                           ufds_con[ufds_index] = nullptr;
                            memset(&(ufds[ufds_index]), 0, sizeof(struct pollfd));
                         }
                      }
@@ -1606,7 +1606,7 @@ int cl_com_tcp_open_connection_request_handler(cl_com_poll_t *poll_handle, cl_co
 
                      if (ufds[ufds_index].events) {
                         ufds_index++;
-                        ufds_con[ufds_index] = NULL;
+                        ufds_con[ufds_index] = nullptr;
                         memset(&(ufds[ufds_index]), 0, sizeof(struct pollfd));
                      }
                      break;
@@ -1642,7 +1642,7 @@ int cl_com_tcp_open_connection_request_handler(cl_com_poll_t *poll_handle, cl_co
                            }
                            if (ufds[ufds_index].events) {
                               ufds_index++;
-                              ufds_con[ufds_index] = NULL;
+                              ufds_con[ufds_index] = nullptr;
                               memset(&(ufds[ufds_index]), 0, sizeof(struct pollfd));
                            }
                            break;
@@ -1668,8 +1668,8 @@ int cl_com_tcp_open_connection_request_handler(cl_com_poll_t *poll_handle, cl_co
    }
 
    /* add the external file descriptors to the FD_SETS */
-   if (handle->file_descriptor_list != NULL) {
-      cl_fd_list_elem_t *elem = NULL;
+   if (handle->file_descriptor_list != nullptr) {
+      cl_fd_list_elem_t *elem = nullptr;
       cl_raw_list_lock(handle->file_descriptor_list);
       elem = cl_fd_list_get_first_elem(handle->file_descriptor_list);
       /* TODO(SH): Use memsetting like in the sceanrio above */
@@ -1686,7 +1686,7 @@ int cl_com_tcp_open_connection_request_handler(cl_com_poll_t *poll_handle, cl_co
             }
             max_fd = MAX(max_fd, elem->data->fd);
             ufds_index++;
-            ufds_con[ufds_index] = NULL;
+            ufds_con[ufds_index] = nullptr;
             memset(&(ufds[ufds_index]), 0, sizeof(struct pollfd));
             nr_of_descriptors++;
          }
@@ -1744,7 +1744,7 @@ int cl_com_tcp_open_connection_request_handler(cl_com_poll_t *poll_handle, cl_co
    */
 
    if ((nr_of_descriptors != ldata->last_nr_of_descriptors) &&
-       (nr_of_descriptors == 1 && service_connection != NULL && do_read_select != 0)) {
+       (nr_of_descriptors == 1 && service_connection != nullptr && do_read_select != 0)) {
       /* This is to return as fast as possible if this connection has a service and
           a client was disconnected */
 
@@ -1808,9 +1808,9 @@ int cl_com_tcp_open_connection_request_handler(cl_com_poll_t *poll_handle, cl_co
                      CL_LOG_STR(CL_LOG_ERROR, "select() or poll() - socket error is: ", strerror(socket_error));
                      cl_commlib_push_application_error(CL_LOG_ERROR, CL_RETVAL_SELECT_ERROR, strerror(socket_error));
 
-                     if (connection->remote != NULL &&
-                         connection->remote->comp_host != NULL &&
-                         connection->remote->comp_name != NULL) {
+                     if (connection->remote != nullptr &&
+                         connection->remote->comp_host != nullptr &&
+                         connection->remote->comp_name != nullptr) {
                         char tmp_string[1024];
                         snprintf(tmp_string, 1024, MSG_CL_COMMLIB_CLOSING_SSU,
                                  connection->remote->comp_host,
@@ -1824,11 +1824,11 @@ int cl_com_tcp_open_connection_request_handler(cl_com_poll_t *poll_handle, cl_co
                } /* while */
                cl_raw_list_unlock(connection_list);
                /* look for a broken external file descriptor call its callback function and remove it afterwards */
-               if (handle->file_descriptor_list != NULL) {
-                  cl_fd_list_elem_t *elem = NULL;
+               if (handle->file_descriptor_list != nullptr) {
+                  cl_fd_list_elem_t *elem = nullptr;
                   cl_raw_list_lock(handle->file_descriptor_list);
                   for (fd_index = 0; fd_index < ufds_index; fd_index++) {
-                     if (ufds_con[fd_index] != NULL) {
+                     if (ufds_con[fd_index] != nullptr) {
                         continue;
                      }
                      if (ufds[fd_index].revents & (POLLHUP | POLLERR | POLLNVAL)) {
@@ -1864,7 +1864,7 @@ int cl_com_tcp_open_connection_request_handler(cl_com_poll_t *poll_handle, cl_co
             /* now set the read flags for connections, where data is available */
             for (fd_index = 0; fd_index < ufds_index; fd_index++) {
                connection = ufds_con[fd_index];
-               if (connection != NULL) {
+               if (connection != nullptr) {
                   if (do_read_select != 0) {
                      if (ufds[fd_index].revents & (POLLIN | POLLPRI)) {
                         connection->data_read_flag = CL_COM_DATA_READY;
@@ -1906,9 +1906,9 @@ int cl_com_tcp_open_connection_request_handler(cl_com_poll_t *poll_handle, cl_co
                         connection->connection_sub_state = CL_COM_DO_SHUTDOWN;
                         CL_LOG_STR(CL_LOG_ERROR, "socket error: ", strerror(socket_error));
                         cl_commlib_push_application_error(CL_LOG_ERROR, CL_RETVAL_SELECT_ERROR, strerror(socket_error));
-                        if (connection->remote != NULL &&
-                            connection->remote->comp_host != NULL &&
-                            connection->remote->comp_name != NULL) {
+                        if (connection->remote != nullptr &&
+                            connection->remote->comp_host != nullptr &&
+                            connection->remote->comp_name != nullptr) {
                            char tmp_string[1024];
                            snprintf(tmp_string, 1024, MSG_CL_COMMLIB_CLOSING_SSU,
                                     connection->remote->comp_host,
@@ -1921,8 +1921,8 @@ int cl_com_tcp_open_connection_request_handler(cl_com_poll_t *poll_handle, cl_co
                   }
                }
                /* look for external file descriptors and set its ready flags */
-               if (handle->file_descriptor_list != NULL) {
-                  cl_fd_list_elem_t *elem = NULL;
+               if (handle->file_descriptor_list != nullptr) {
+                  cl_fd_list_elem_t *elem = nullptr;
                   cl_raw_list_lock(handle->file_descriptor_list);
                   elem = cl_fd_list_get_first_elem(handle->file_descriptor_list);
                   while (elem) {
@@ -1958,7 +1958,7 @@ int cl_com_tcp_open_connection_request_handler(cl_com_poll_t *poll_handle, cl_co
    cl_raw_list_lock(connection_list);
    for (fd_index = 0; fd_index < ufds_index; fd_index++) {
       connection = ufds_con[fd_index];
-      if (connection != NULL) {
+      if (connection != nullptr) {
          if (do_read_select != 0) {
             connection->is_read_selected = false;
          }

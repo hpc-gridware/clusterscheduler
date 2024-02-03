@@ -57,8 +57,8 @@ event_control_t Event_Control = {
         PTHREAD_COND_INITIALIZER,
         false,
         false,
-        NULL,
-        NULL,
+        nullptr,
+        nullptr,
         0,
         0,
         0
@@ -68,7 +68,7 @@ handler_tbl_t Handler_Tbl = {
         PTHREAD_MUTEX_INITIALIZER,
         0,
         0,
-        NULL
+        nullptr
 };
 
 /****** qmaster/sge_qmaster_timed_event/te_delete_all_or_one_time_event() *************
@@ -113,7 +113,7 @@ handler_tbl_t Handler_Tbl = {
 static int
 te_delete_all_or_one_time_event(te_type_t aType, u_long32 aKey1, u_long32 aKey2, const char *strKey, bool ignore_keys) {
    int res, n = 0;
-   lCondition *cond = NULL;
+   lCondition *cond = nullptr;
 
    DENTER(EVENT_LAYER);
 
@@ -124,7 +124,7 @@ te_delete_all_or_one_time_event(te_type_t aType, u_long32 aKey1, u_long32 aKey2,
    if (ignore_keys) {
       cond = lWhere("%T(%I != %u || %I != %u)", TE_Type, TE_type, aType, TE_mode, ONE_TIME_EVENT);
    } else {
-      if (strKey != NULL) {
+      if (strKey != nullptr) {
          cond = lWhere("%T(%I != %u || %I != %u || %I != %u || %I != %u || %I != %s)", TE_Type,
                        TE_type, aType, TE_mode, ONE_TIME_EVENT, TE_uval0, aKey1, TE_uval1, aKey2, TE_sval, strKey);
       } else {
@@ -148,9 +148,9 @@ te_delete_all_or_one_time_event(te_type_t aType, u_long32 aKey1, u_long32 aKey2,
       DRETURN(0);
    }
 
-   lSplit(&Event_Control.list, NULL, NULL, cond);
+   lSplit(&Event_Control.list, nullptr, nullptr, cond);
 
-   if (NULL == Event_Control.list) {
+   if (nullptr == Event_Control.list) {
       DPRINTF(("%s: event list has been freed --> recreate \n", __func__));
 
       Event_Control.list = lCreateList("timed event list", TE_Type);
@@ -268,7 +268,7 @@ void te_wait_next(te_event_t te, time_t now) {
 void te_register_event_handler(te_handler_t aHandler, te_type_t aType) {
    DENTER(EVENT_LAYER);
 
-   SGE_ASSERT(aHandler != NULL);
+   SGE_ASSERT(aHandler != nullptr);
 
    sge_mutex_lock("handler_table_mutex", __func__, __LINE__, &Handler_Tbl.mutex);
 
@@ -313,7 +313,7 @@ void te_register_event_handler(te_handler_t aHandler, te_type_t aType) {
 *     'RECURRING_EVENT', 'aTime' does determine the timed event INTERVAL in
 *     seconds.
 *
-*     If 'aStrKey' is not 'NULL', the new timed event will contain a copy.
+*     If 'aStrKey' is not 'nullptr', the new timed event will contain a copy.
 *
 *  INPUTS
 *     time_t aTime        - event due time or interval 
@@ -321,7 +321,7 @@ void te_register_event_handler(te_handler_t aHandler, te_type_t aType) {
 *     te_mode_t aMode     - event mode 
 *     u_long32 aKey1      - first numeric key, '0' if not used 
 *     u_long32 aKey2      - second numeric key, '0' if not used 
-*     const char* aStrKey - alphanumeric key, 'NULL' if not used 
+*     const char* aStrKey - alphanumeric key, 'nullptr' if not used
 *
 *  RESULT
 *     te_event_t - new timed event
@@ -332,7 +332,7 @@ void te_register_event_handler(te_handler_t aHandler, te_type_t aType) {
 *******************************************************************************/
 te_event_t
 te_new_event(time_t aTime, te_type_t aType, te_mode_t aMode, u_long32 aKey1, u_long32 aKey2, const char *aStrKey) {
-   te_event_t ev = NULL;
+   te_event_t ev = nullptr;
 
    DENTER(EVENT_LAYER);
 
@@ -350,7 +350,7 @@ te_new_event(time_t aTime, te_type_t aType, te_mode_t aMode, u_long32 aKey1, u_l
    ev->mode = aMode;
    ev->ulong_key_1 = aKey1;
    ev->ulong_key_2 = aKey2;
-   ev->str_key = (aStrKey != NULL) ? strdup(aStrKey) : NULL;
+   ev->str_key = (aStrKey != nullptr) ? strdup(aStrKey) : nullptr;
    ev->seq_no = 0;
 
    DRETURN(ev);
@@ -364,13 +364,13 @@ te_new_event(time_t aTime, te_type_t aType, te_mode_t aMode, u_long32 aKey1, u_l
 *     void te_free_event(te_event_t anEvent) 
 *
 *  FUNCTION
-*     Free timed event 'anEvent'. Upon return, 'anEvent' will be 'NULL'.
+*     Free timed event 'anEvent'. Upon return, 'anEvent' will be 'nullptr'.
 *
 *  INPUTS
-*     te_event_t anEvent - timed event, must NOT be 'NULL'. 
+*     te_event_t anEvent - timed event, must NOT be 'nullptr'.
 *
 *  RESULT
-*     void - none, 'anEvent' will be 'NULL'.
+*     void - none, 'anEvent' will be 'nullptr'.
 *
 *  NOTES
 *     MT-NOTE: te_free_event() is MT safe. 
@@ -381,7 +381,7 @@ te_free_event(te_event_t *anEvent) {
 
    DENTER(EVENT_LAYER);
 
-   SGE_ASSERT((anEvent != NULL));
+   SGE_ASSERT((anEvent != nullptr));
 
    sge_free(&((*anEvent)->str_key));
    sge_free(anEvent);
@@ -436,9 +436,9 @@ te_add_event(te_event_t anEvent) {
 
    DENTER(EVENT_LAYER);
 
-   SGE_ASSERT((anEvent != NULL));
+   SGE_ASSERT((anEvent != nullptr));
 
-   when = (ONE_TIME_EVENT == anEvent->mode) ? anEvent->when : (time(NULL) + anEvent->interval);
+   when = (ONE_TIME_EVENT == anEvent->mode) ? anEvent->when : (time(nullptr) + anEvent->interval);
 
    le = lCreateElem(TE_Type);
    lSetUlong(le, TE_when, when);
@@ -548,7 +548,7 @@ int te_delete_all_one_time_events(te_type_t aType) {
    int ret;
 
    DENTER(EVENT_LAYER);
-   ret = te_delete_all_or_one_time_event(aType, 0, 0, NULL, true);
+   ret = te_delete_all_or_one_time_event(aType, 0, 0, nullptr, true);
    DRETURN(ret);
 }
 
@@ -578,7 +578,7 @@ time_t te_get_when(te_event_t anEvent) {
 
    DENTER(EVENT_LAYER);
 
-   SGE_ASSERT(NULL != anEvent);
+   SGE_ASSERT(nullptr != anEvent);
 
    res = (time_t) anEvent->when;
 
@@ -610,7 +610,7 @@ te_type_t te_get_type(te_event_t anEvent) {
 
    DENTER(EVENT_LAYER);
 
-   SGE_ASSERT(NULL != anEvent);
+   SGE_ASSERT(nullptr != anEvent);
 
    res = anEvent->type;
 
@@ -642,7 +642,7 @@ u_long32 te_get_first_numeric_key(te_event_t anEvent) {
 
    DENTER(EVENT_LAYER);
 
-   SGE_ASSERT(NULL != anEvent);
+   SGE_ASSERT(nullptr != anEvent);
 
    res = anEvent->ulong_key_1;
 
@@ -674,7 +674,7 @@ u_long32 te_get_second_numeric_key(te_event_t anEvent) {
 
    DENTER(EVENT_LAYER);
 
-   SGE_ASSERT(NULL != anEvent);
+   SGE_ASSERT(nullptr != anEvent);
 
    res = anEvent->ulong_key_2;
 
@@ -704,13 +704,13 @@ u_long32 te_get_second_numeric_key(te_event_t anEvent) {
 *
 *******************************************************************************/
 char *te_get_alphanumeric_key(te_event_t anEvent) {
-   char *res = NULL;
+   char *res = nullptr;
 
    DENTER(EVENT_LAYER);
 
-   SGE_ASSERT(NULL != anEvent);
+   SGE_ASSERT(nullptr != anEvent);
 
-   res = (anEvent->str_key != NULL) ? strdup(anEvent->str_key) : NULL;
+   res = (anEvent->str_key != nullptr) ? strdup(anEvent->str_key) : nullptr;
 
    DRETURN(res);
 }
@@ -856,8 +856,8 @@ void te_check_time(time_t aTime) {
 *
 *******************************************************************************/
 te_event_t te_event_from_list_elem(const lListElem *aListElem) {
-   te_event_t ev = NULL;
-   const char *str = NULL;
+   te_event_t ev = nullptr;
+   const char *str = nullptr;
 
    DENTER(EVENT_LAYER);
 
@@ -872,7 +872,7 @@ te_event_t te_event_from_list_elem(const lListElem *aListElem) {
    ev->seq_no = lGetUlong(aListElem, TE_seqno);
 
    str = lGetString(aListElem, TE_sval);
-   ev->str_key = ((str != NULL) ? strdup(str) : NULL);
+   ev->str_key = ((str != nullptr) ? strdup(str) : nullptr);
 
    DRETURN(ev);
 } /* te_event_from_list_elem() */
@@ -904,7 +904,7 @@ te_event_t te_event_from_list_elem(const lListElem *aListElem) {
 *******************************************************************************/
 void te_scan_table_and_deliver(sge_gdi_ctx_class_t *ctx, te_event_t anEvent, monitoring_t *monitor) {
    int i = 0;
-   te_handler_t handler = NULL;
+   te_handler_t handler = nullptr;
 
    DENTER(EVENT_LAYER);
 
@@ -923,14 +923,14 @@ void te_scan_table_and_deliver(sge_gdi_ctx_class_t *ctx, te_event_t anEvent, mon
 
    sge_mutex_unlock("handler_table_mutex", __func__, __LINE__, &Handler_Tbl.mutex);
 
-   if (handler != NULL) {
+   if (handler != nullptr) {
       handler(ctx, anEvent, monitor);
    } else {
       WARNING((SGE_EVENT, MSG_SYSTEM_RECEIVEDUNKNOWNEVENT_I, anEvent->type));
    }
 
    if (RECURRING_EVENT == anEvent->mode) {
-      anEvent->when = time(NULL) + anEvent->interval;
+      anEvent->when = time(nullptr) + anEvent->interval;
 
       DPRINTF(("%s: reccuring event (t:"sge_u32" w:"sge_u32" m:"sge_u32" s:%s)\n", EVENT_FRMT(anEvent)));
 

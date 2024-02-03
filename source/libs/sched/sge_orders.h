@@ -47,7 +47,7 @@ typedef struct {
    u_long32 numberSendPackages; /* number sends inbetween */
 }order_t;
 
-#define ORDER_INIT {NULL, NULL, NULL, NULL, 0, 0}
+#define ORDER_INIT {nullptr, nullptr, nullptr, nullptr, 0, 0}
 
 lList *sge_add_schedd_info(lList *or_list, int *global_mes_count, int *job_mes_count);
 

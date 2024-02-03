@@ -57,7 +57,7 @@
 #include "ijs/sge_ijs_lib.h"
 
 /* module variables */
-static char *g_hostname  = NULL;
+static char *g_hostname  = nullptr;
 static int  g_exit_status = 0; /* set by worker thread, read by main thread */
 static int  g_nostdin     = 0; /* set by main thread, read by worker thread */
 static int  g_noshell     = 0; /* set by main thread, read by worker thread */
@@ -65,7 +65,7 @@ static int  g_is_rsh      = 0; /* set by main thread, read by worker thread */
 static unsigned int g_pid = 0; /* set by main thread, read by worker thread */
 static int  g_raw_mode_state = 0; /* set by main thread, read by worker thread */
 static int  g_suspend_remote = 0; /* set by main thread, read by worker thread */
-static COMM_HANDLE *g_comm_handle = NULL;
+static COMM_HANDLE *g_comm_handle = nullptr;
 
 /*
  * static volatile sig_atomic_t received_window_change_signal = 1;
@@ -194,55 +194,55 @@ void set_signal_handlers(void)
     *  caught, any subsequent  read  returns  with  an  end-of-file
     *  indication until the terminal is closed."
     */
-   sigaction(SIGHUP, NULL, &old_handler);
+   sigaction(SIGHUP, nullptr, &old_handler);
    if (old_handler.sa_handler != SIG_IGN) {
       new_handler.sa_handler = signal_handler;
       sigaddset(&new_handler.sa_mask, SIGHUP);
       new_handler.sa_flags = SA_RESTART;
-      sigaction(SIGHUP, &new_handler, NULL);
+      sigaction(SIGHUP, &new_handler, nullptr);
    }
 
-   sigaction(SIGINT, NULL, &old_handler);
+   sigaction(SIGINT, nullptr, &old_handler);
    if (old_handler.sa_handler != SIG_IGN) {
       new_handler.sa_handler = signal_handler;
       sigaddset(&new_handler.sa_mask, SIGINT);
       new_handler.sa_flags = SA_RESTART;
-      sigaction(SIGINT, &new_handler, NULL);
+      sigaction(SIGINT, &new_handler, nullptr);
    }
 
-   sigaction(SIGCONT, NULL, &old_handler);
+   sigaction(SIGCONT, nullptr, &old_handler);
    if (old_handler.sa_handler != SIG_IGN) {
       new_handler.sa_handler = signal_handler;
       sigaddset(&new_handler.sa_mask, SIGCONT);
       new_handler.sa_flags = SA_RESTART;
-      sigaction(SIGCONT, &new_handler, NULL);
+      sigaction(SIGCONT, &new_handler, nullptr);
    }
 
-   sigaction(SIGQUIT, NULL, &old_handler);
+   sigaction(SIGQUIT, nullptr, &old_handler);
    if (old_handler.sa_handler != SIG_IGN) {
       new_handler.sa_handler = signal_handler;
       sigaddset(&new_handler.sa_mask, SIGQUIT);
       new_handler.sa_flags = SA_RESTART;
-      sigaction(SIGQUIT, &new_handler, NULL);
+      sigaction(SIGQUIT, &new_handler, nullptr);
    }
 
-   sigaction(SIGTERM, NULL, &old_handler);
+   sigaction(SIGTERM, nullptr, &old_handler);
    if (old_handler.sa_handler != SIG_IGN) {
       new_handler.sa_handler = signal_handler;
       sigaddset(&new_handler.sa_mask, SIGTERM);
       new_handler.sa_flags = SA_RESTART;
-      sigaction(SIGTERM, &new_handler, NULL);
+      sigaction(SIGTERM, &new_handler, nullptr);
    }
 
    new_handler.sa_handler = window_change_handler;
    sigaddset(&new_handler.sa_mask, SIGWINCH);
    new_handler.sa_flags = SA_RESTART;
-   sigaction(SIGWINCH, &new_handler, NULL);
+   sigaction(SIGWINCH, &new_handler, nullptr);
 
    new_handler.sa_handler = broken_pipe_handler;
    sigaddset(&new_handler.sa_mask, SIGPIPE);
    new_handler.sa_flags = SA_RESTART;
-   sigaction(SIGPIPE, &new_handler, NULL);
+   sigaction(SIGPIPE, &new_handler, nullptr);
 }
 
 /****** client_check_window_change() *******************************************
@@ -324,7 +324,7 @@ static void client_check_window_change(COMM_HANDLE *handle)
 *     void *t_conf - pointer to cl_thread_settings_t struct of the thread
 *
 *  RESULT
-*     void* - always NULL
+*     void* - always nullptr
 *
 *  NOTES
 *     MT-NOTE: tty_to_commlib is MT-safe ?
@@ -348,7 +348,7 @@ void* tty_to_commlib(void *t_conf)
     * allocate working buffer
     */
    pbuf = sge_malloc(BUFSIZE);
-   if (pbuf == NULL) {
+   if (pbuf == nullptr) {
       DPRINTF(("tty_to_commlib can't allocate working buffer: %s (%d)\n",
          strerror(errno), errno));
       do_exit = 1;
@@ -380,7 +380,7 @@ void* tty_to_commlib(void *t_conf)
 			}
       
       DPRINTF(("tty_to_commlib: Waiting in select() for data\n"));
-      ret = select(STDIN_FILENO+1, &read_fds, NULL, NULL, &timeout);
+      ret = select(STDIN_FILENO+1, &read_fds, nullptr, nullptr, &timeout);
 
       thread_testcancel(t_conf);
       client_check_window_change(g_comm_handle);
@@ -452,7 +452,7 @@ void* tty_to_commlib(void *t_conf)
    
    sge_dstring_free(&err_msg);
    DPRINTF(("tty_to_commlib: exiting tty_to_commlib thread!\n"));
-   DRETURN(NULL);
+   DRETURN(nullptr);
 }
 
 /****** commlib_to_tty() *******************************************************
@@ -470,7 +470,7 @@ void* tty_to_commlib(void *t_conf)
 *     void *t_conf - pointer to cl_thread_settings_t struct of the thread
 *
 *  RESULT
-*     void* - always NULL
+*     void* - always nullptr
 *
 *  NOTES
 *     MT-NOTE: commlib_to_tty is MT-safe ?
@@ -490,8 +490,8 @@ void* commlib_to_tty(void *t_conf)
       /*
        * wait blocking for a message from commlib
        */
-      recv_mess.cl_message = NULL;
-      recv_mess.data = NULL;
+      recv_mess.cl_message = nullptr;
+      recv_mess.data = nullptr;
 
       DPRINTF(("commlib_to_tty: recv_message()\n"));
       ret = comm_recv_message(g_comm_handle, true, &recv_mess, &err_msg);
@@ -528,7 +528,7 @@ void* commlib_to_tty(void *t_conf)
        * A 1 byte prefix tells us what kind of message it is.
        * See sge_ijs_comm.h for message types.
        */
-      if (recv_mess.cl_message != NULL) {
+      if (recv_mess.cl_message != nullptr) {
          char buf[100];
          switch (recv_mess.type) {
             case STDOUT_DATA_MSG:
@@ -606,7 +606,7 @@ void* commlib_to_tty(void *t_conf)
                do_exit = 1;
 #if 0
                cl_log_list_set_log_level(cl_com_get_log_list(), CL_LOG_OFF);
-               cl_com_set_error_func(NULL);
+               cl_com_set_error_func(nullptr);
 #endif
                break;
          }
@@ -617,7 +617,7 @@ void* commlib_to_tty(void *t_conf)
    thread_func_cleanup(t_conf);
    DPRINTF(("commlib_to_tty: exiting commlib_to_tty thread!\n"));
    sge_dstring_free(&err_msg);
-   DRETURN(NULL);
+   DRETURN(nullptr);
 }
 
 /****** run_ijs_server() *******************************************************
@@ -670,21 +670,21 @@ int run_ijs_server(COMM_HANDLE *handle, const char *remote_host,
                    int *p_exit_status, dstring *p_err_msg)
 {
    int               ret = 0, ret_val = 0;
-   THREAD_HANDLE     *pthread_tty_to_commlib = NULL;
-   THREAD_HANDLE     *pthread_commlib_to_tty = NULL;
-   THREAD_LIB_HANDLE *thread_lib_handle = NULL;
-   cl_raw_list_t     *cl_com_log_list = NULL;
+   THREAD_HANDLE     *pthread_tty_to_commlib = nullptr;
+   THREAD_HANDLE     *pthread_commlib_to_tty = nullptr;
+   THREAD_LIB_HANDLE *thread_lib_handle = nullptr;
+   cl_raw_list_t     *cl_com_log_list = nullptr;
 
    DENTER(TOP_LAYER);
 
-   if (handle == NULL || p_err_msg == NULL || p_exit_status == NULL || remote_host == NULL) {
+   if (handle == nullptr || p_err_msg == nullptr || p_exit_status == nullptr || remote_host == nullptr) {
       return 1;
    }
    g_comm_handle = handle;
    g_hostname    = strdup(remote_host);
 
    cl_com_log_list = cl_com_get_log_list();
-   if (cl_com_log_list == NULL) {
+   if (cl_com_log_list == nullptr) {
       return 2;
    }
 
@@ -843,8 +843,8 @@ int start_ijs_server(bool csp_mode, const char* username,
     */
    DPRINTF(("starting commlib server\n"));
    ret = comm_open_connection(true, csp_mode, COMM_SERVER, 0, COMM_CLIENT,
-                              NULL, username, phandle, p_err_msg);
-   if (ret != 0 || *phandle == NULL) {
+                              nullptr, username, phandle, p_err_msg);
+   if (ret != 0 || *phandle == nullptr) {
       ret_val = 1;
    } else {
       ret = comm_set_connection_param(*phandle, HEARD_FROM_TIMEOUT,
@@ -872,12 +872,12 @@ int start_ijs_server(bool csp_mode, const char* username,
 *
 *  INPUTS
 *     COMM_HANDLE **phandle - Pointer to the COMM server handle. Gets set to
-*                             NULL in this function.
+*                             nullptr in this function.
 *     dstring *p_err_msg    - Contains the error reason in case of error.
 *
 *  RESULT
 *     int - 0: OK
-*           1: Invalid Parameter: phandle = NULL
+*           1: Invalid Parameter: phandle = nullptr
 *           2: General error shutting down the COMM server,
 *              see p_err_msg for details
 *
@@ -895,10 +895,10 @@ int stop_ijs_server(COMM_HANDLE **phandle, dstring *p_err_msg)
 
    DENTER(TOP_LAYER);
 
-   if (phandle == NULL) {
+   if (phandle == nullptr) {
       ret = 1;
-   } else if (*phandle != NULL) {
-      cl_com_set_error_func(NULL);
+   } else if (*phandle != nullptr) {
+      cl_com_set_error_func(nullptr);
 #if 0
       cl_log_list_set_log_level(cl_com_get_log_list(), CL_LOG_OFF);
 #endif
@@ -910,7 +910,7 @@ int stop_ijs_server(COMM_HANDLE **phandle, dstring *p_err_msg)
             cl_get_error_text(ret));
          ret = 2;
       }
-      *phandle = NULL;
+      *phandle = nullptr;
    }
    DRETURN(ret);
 }
@@ -930,13 +930,13 @@ int stop_ijs_server(COMM_HANDLE **phandle, dstring *p_err_msg)
 *
 *  INPUTS
 *     COMM_HANDLE **phandle      - Handle of the COMM connection, gets set to
-*                                  NULL in this function.
+*                                  nullptr in this function.
 *     const char *this_component - Name of this component.
 *     dstring *p_err_msg         - Contains the error reason in case of error.
 *
 *  RESULT
 *     int - 0: OK
-*           1: Invalid parameter: phandle == NULL or *phandle == NULL
+*           1: Invalid parameter: phandle == nullptr or *phandle == nullptr
 *           2: Can't shut down connection, see p_err_msg for details
 *
 *  NOTES
@@ -955,7 +955,7 @@ int force_ijs_server_shutdown(COMM_HANDLE **phandle,
 
    DENTER(TOP_LAYER);
 
-   if (phandle == NULL || *phandle == NULL) {
+   if (phandle == nullptr || *phandle == nullptr) {
       sge_dstring_sprintf(p_err_msg, "invalid connection handle");
       DPRINTF(("invalid connection handle - nothing to shut down\n"));
       DRETURN(1);
@@ -973,7 +973,7 @@ int force_ijs_server_shutdown(COMM_HANDLE **phandle,
    } else {
       DPRINTF(("successfully shut down the connection\n"));
    }
-   *phandle = NULL;
+   *phandle = nullptr;
 
    DRETURN(ret);
 }

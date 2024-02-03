@@ -74,7 +74,7 @@ typedef lList **(*getMasterList)(void);
 typedef int (*on_success_func_t)(
         sge_gdi_ctx_class_t *ctx,
         lListElem *ep,       /* new modified and already spooled element */
-        lListElem *old_ep,   /* old element is NULL in add case */
+        lListElem *old_ep,   /* old element is nullptr in add case */
         gdi_object_t *thiz,  /* some kind of "this" */
         lList **ppList,       /* a list to pass back information for post processing */
         monitoring_t *monitor  /* monitoring structure */

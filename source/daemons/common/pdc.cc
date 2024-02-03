@@ -49,7 +49,7 @@ int main(int argc,char *argv[])
                          (setlocale_func_type)      setlocale,
                          (bindtextdomain_func_type) bindtextdomain,
                          (textdomain_func_type)     textdomain);
-   sge_init_language(NULL,NULL);  
+   sge_init_language(nullptr,nullptr);
 #endif /* __SGE_COMPILE_WITH_GETTEXT__  */
    printf("sorry - no pdc for this architecture yet\n");
    return 0;
@@ -99,7 +99,7 @@ int main(int argc,char *argv[])
 #endif
 
 #  if DEBUG
-      static FILE *df = NULL;
+      static FILE *df = nullptr;
 #  endif
 
 #ifdef SOLARIS
@@ -174,8 +174,8 @@ void pdc_kill_addgrpid(gid_t add_grp_id, int sig,
    struct kinfo_proc *procs;
    char kerrbuf[_POSIX2_LINE_MAX];
 
-   kd = kvm_openfiles(NULL, NULL, NULL, O_RDONLY, kerrbuf);
-   if (kd == NULL) {
+   kd = kvm_openfiles(nullptr, nullptr, nullptr, O_RDONLY, kerrbuf);
+   if (kd == nullptr) {
 #if DEBUG
       fprintf(stderr, "kvm_openfiles: error %s\n", kerrbuf);
 #endif
@@ -183,7 +183,7 @@ void pdc_kill_addgrpid(gid_t add_grp_id, int sig,
    }
 
    procs = kvm_getprocs(kd, KERN_PROC_ALL, 0, &nprocs);
-   if (procs == NULL) {
+   if (procs == nullptr) {
 #if DEBUG
       fprintf(stderr, "kvm_getprocs: error %s\n", kvm_geterr(kd));
 #endif
@@ -218,13 +218,13 @@ void pdc_kill_addgrpid(gid_t add_grp_id, int sig,
    int mib[4] = { CTL_KERN, KERN_PROC, KERN_PROC_ALL, 0 };
    size_t bufSize = 0;
 
-   if (sysctl(mib, 4, NULL, &bufSize, NULL, 0) < 0) {
+   if (sysctl(mib, 4, nullptr, &bufSize, nullptr, 0) < 0) {
       return;
    }
-   if ((procs = (struct kinfo_proc *)sge_malloc(bufSize)) == NULL) {
+   if ((procs = (struct kinfo_proc *)sge_malloc(bufSize)) == nullptr) {
       return;
    }
-   if (sysctl(mib, 4, procs, &bufSize, NULL, 0) < 0) {
+   if (sysctl(mib, 4, procs, &bufSize, nullptr, 0) < 0) {
       sge_free(&procs);
       return;
    }
@@ -263,7 +263,7 @@ lnk_link_t * find_job(JobID_t jid) {
       if (jid == LNK_DATA(curr, job_elem_t, link)->job.jd_jid)
          return curr;
    }
-   return NULL;
+   return nullptr;
 }
 
 static int
@@ -272,7 +272,7 @@ get_gmt(void)
    struct timeval now;
 
 #ifdef SOLARIS
-   gettimeofday(&now, NULL);
+   gettimeofday(&now, nullptr);
 #else
    struct timezone tzp;
    gettimeofday(&now, &tzp);
@@ -368,14 +368,14 @@ static int psRetrieveOSJobData(void) {
       double old_time = 0.0;
       uint64 old_vmem = 0;
 
-      kd = kvm_openfiles(NULL, NULL, NULL, O_RDONLY, kerrbuf);
-      if (kd == NULL) {
+      kd = kvm_openfiles(nullptr, nullptr, nullptr, O_RDONLY, kerrbuf);
+      if (kd == nullptr) {
          DPRINTF(("kvm_openfiles: error %s\n", kerrbuf));
          DRETURN(-1);
       }
 
       procs = kvm_getprocs(kd, KERN_PROC_ALL, 0, &nprocs);
-      if (procs == NULL) {
+      if (procs == nullptr) {
          DPRINTF(("kvm_getprocs: error %s\n", kvm_geterr(kd)));
          kvm_close(kd);
          DRETURN(-1);
@@ -402,7 +402,7 @@ static int psRetrieveOSJobData(void) {
                   }
                   if (newprocess) {
                      proc_elem = (proc_elem_t *)sge_malloc(sizeof(proc_elem_t));
-                     if (proc_elem == NULL) {
+                     if (proc_elem == nullptr) {
                         kvm_close(kd);
                         DRETURN(0);
                      }
@@ -448,15 +448,15 @@ static int psRetrieveOSJobData(void) {
       int mib[4] = { CTL_KERN, KERN_PROC, KERN_PROC_ALL, 0 };
       size_t bufSize = 0;
 
-      if (sysctl(mib, 4, NULL, &bufSize, NULL, 0) < 0) {
+      if (sysctl(mib, 4, nullptr, &bufSize, nullptr, 0) < 0) {
          DPRINTF(("sysctl() failed(1)\n"));
          DRETURN(-1);
       }
-      if ((procs = (struct kinfo_proc *)sge_malloc(bufSize)) == NULL) {
+      if ((procs = (struct kinfo_proc *)sge_malloc(bufSize)) == nullptr) {
          DPRINTF(("malloc() failed\n"));
          DRETURN(-1);
       }
-      if (sysctl(mib, 4, procs, &bufSize, NULL, 0) < 0) {
+      if (sysctl(mib, 4, procs, &bufSize, nullptr, 0) < 0) {
          DPRINTF(("sysctl() failed(2)\n"));
          sge_free(&procs);
          DRETURN(-1);
@@ -486,7 +486,7 @@ static int psRetrieveOSJobData(void) {
                   }
                   if (newprocess) {
                      proc_elem = (proc_elem_t *)sge_malloc(sizeof(proc_elem_t));
-                     if (proc_elem == NULL) {
+                     if (proc_elem == nullptr) {
                         sge_free(&procs_begin);
                         DRETURN(0);
                      }
@@ -699,7 +699,7 @@ int psWatchJob(JobID_t JobID)
 
 #  if DEBUG
 
-      if (df == NULL)
+      if (df == nullptr)
          df = fopen("/tmp/pacct.out", "w");
       fprintf(df, "%d watching "F64"\n", get_gmt(), JobID);
       fflush(df);
@@ -746,8 +746,8 @@ struct psStat_s *psStatus(void)
    static time_t last_time_stamp;
    time_t time_stamp = get_gmt();
 
-   if ((pstat = (psStat_t *)sge_malloc(sizeof(psStat_t)))==NULL) {
-      return NULL;
+   if ((pstat = (psStat_t *)sge_malloc(sizeof(psStat_t)))==nullptr) {
+      return nullptr;
    }
 
    /* Length of struct (set@run-time) */
@@ -793,12 +793,12 @@ struct psJob_s *psGetOneJob(JobID_t JobID)
 {
    psJob_t *job;
    lnk_link_t *curr;
-   job_elem_t *job_elem = NULL;
+   job_elem_t *job_elem = nullptr;
    int found = 0;
    struct rjob_s {
       psJob_t job;
       psProc_t proc[1];
-   } *rjob = NULL;
+   } *rjob = nullptr;
 
    /* retrieve job data */
    psRetrieveOSJobData();
@@ -864,7 +864,7 @@ struct psJob_s *psGetAllJobs(void)
    }
 
    /* allocate space for return data */
-   if ((rjob = (psJob_t *)sge_malloc(rsize)) == NULL)
+   if ((rjob = (psJob_t *)sge_malloc(rsize)) == nullptr)
       return rjob;
   
    /* allign adress */
@@ -914,8 +914,8 @@ struct psSys_s *psGetSysdata(void)
    /* go get system data */
    psRetrieveSystemData();
 
-   if ((sd = (psSys_t *)sge_malloc(sizeof(psSys_t))) == NULL) {
-      return NULL;
+   if ((sd = (psSys_t *)sge_malloc(sizeof(psSys_t))) == nullptr) {
+      return nullptr;
    }
    memcpy(sd, &sysdata, sizeof(psSys_t));
    return sd;
@@ -1071,7 +1071,7 @@ main(int argc, char **argv)
    int c;
    int sysi=-1, jobi=-1, prci=-1;
    int numjobs = 0;
-   double *curr_cpu=NULL, *prev_cpu=NULL, *diff_cpu=NULL;
+   double *curr_cpu=nullptr, *prev_cpu=nullptr, *diff_cpu=nullptr;
    int jobid_count = 0;
    char *jobids[256];
    int stop = 1;
@@ -1090,7 +1090,7 @@ main(int argc, char **argv)
                          (setlocale_func_type)      setlocale,
                          (bindtextdomain_func_type) bindtextdomain,
                          (textdomain_func_type)     textdomain);
-   sge_init_language(NULL,NULL);  
+   sge_init_language(nullptr,nullptr);
 #endif /* __SGE_COMPILE_WITH_GETTEXT__  */
    
    psStartCollector();
@@ -1225,15 +1225,15 @@ main(int argc, char **argv)
    while(stop == 1) {
       psJob_t *jobs, *ojob;
       psProc_t *procs;
-      psStat_t *stat = NULL;
-      psSys_t *sys = NULL;
+      psStat_t *stat = nullptr;
+      psSys_t *sys = nullptr;
       int jobcount, proccount, i, j, activeprocs;
 
       activeprocs = 0;
       jobcount = 0;
-      ojob = NULL;
-      stat = NULL;
-      sys = NULL;
+      ojob = nullptr;
+      stat = nullptr;
+      sys = nullptr;
 
       if (!sgeview && system) {
 

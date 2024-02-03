@@ -52,7 +52,7 @@ main(int argc, char **argv) {
    int arg = 0;
    struct in_addr addr;
    struct in_addr addr2;
-   char *rhost = NULL;
+   char *rhost = nullptr;
    int loops = INT_MAX;
 
 
@@ -62,7 +62,7 @@ main(int argc, char **argv) {
    }
 
    printf("commlib setup ...\n");
-   retval = cl_com_setup_commlib(CL_NO_THREAD, (cl_log_t) atoi(argv[1]), NULL);
+   retval = cl_com_setup_commlib(CL_NO_THREAD, (cl_log_t) atoi(argv[1]), nullptr);
    printf("%s\n\n", cl_get_error_text(retval));
 
    printf("reslovling host addr 129.157.141.10 ...\n");
@@ -76,38 +76,38 @@ main(int argc, char **argv) {
    while ((loops--) != 0) {
       arg = 2;
       printf("loop\n\n\n");
-      while (argv[arg] != NULL) {
+      while (argv[arg] != nullptr) {
          printf("resolving host \"%s\" ...\n", argv[arg]);
-         retval = cl_com_cached_gethostbyname(argv[arg], &rhost, NULL, NULL, NULL);
+         retval = cl_com_cached_gethostbyname(argv[arg], &rhost, nullptr, nullptr, nullptr);
          printf("%s\n", cl_get_error_text(retval));
 
-         if (rhost != NULL) {
+         if (rhost != nullptr) {
             printf(" -> host resolved as \"%s\"\n", rhost);
             sge_free(&rhost);
          }
 
          printf("cl_com_gethostbyaddr ... %s\n", inet_ntoa(addr)); /* inet_ntoa() is not MT save */
 
-         retval = cl_com_cached_gethostbyaddr(&addr, &rhost, NULL, NULL);
+         retval = cl_com_cached_gethostbyaddr(&addr, &rhost, nullptr, nullptr);
          printf("%s\n", cl_get_error_text(retval));
 
          if (retval == CL_RETVAL_OK) {
             printf(" -> host name is \"%s\"\n", rhost);
          }
          sge_free(&rhost);
-         rhost = NULL;
+         rhost = nullptr;
 
          printf("cl_com_gethostbyaddr ... %s\n", inet_ntoa(addr2)); /* inet_ntoa() is not MT save */
 
 
-         retval = cl_com_cached_gethostbyaddr(&addr2, &rhost, NULL, NULL);
+         retval = cl_com_cached_gethostbyaddr(&addr2, &rhost, nullptr, nullptr);
          printf("%s\n", cl_get_error_text(retval));
 
          if (retval == CL_RETVAL_OK) {
             printf(" -> host name is \"%s\"\n", rhost);
          }
          sge_free(&rhost);
-         rhost = NULL;
+         rhost = nullptr;
 
          printf("***********************************************************\n");
          arg++;
