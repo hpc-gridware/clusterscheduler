@@ -40,15 +40,15 @@ extern "C" {
 #endif
 
 /**
-* @brief @todo add summary
+* @brief Usage Value
 *
-* @todo add description
+* Usage values hold the job usage information retrieved by sge_execd per job / array task / pe task.
 *
-*    SGE_STRING(UA_name) - @todo add summary
-*    @todo add description
+*    SGE_STRING(UA_name) - Name
+*    Name of the usage value, e.g. cpu, mem, vmem, maxvmem, ...
 *
-*    SGE_DOUBLE(UA_value) - @todo add summary
-*    @todo add description
+*    SGE_DOUBLE(UA_value) - Value
+*    Usage value as a double.
 *
 */
 
