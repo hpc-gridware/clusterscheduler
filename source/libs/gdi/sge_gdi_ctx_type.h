@@ -47,8 +47,6 @@
 typedef struct sge_gdi_ctx_class_str sge_gdi_ctx_class_t; 
 
 struct sge_gdi_ctx_class_str {
-   void *sge_gdi_ctx_handle;
-
    bool (*sge_gdi_packet_execute)        (sge_gdi_ctx_class_t* ctx, lList **answer_list,
                                           sge_gdi_packet_class_t *packet);
    bool (*sge_gdi_packet_wait_for_result)(sge_gdi_ctx_class_t* ctx, lList **answer_list,

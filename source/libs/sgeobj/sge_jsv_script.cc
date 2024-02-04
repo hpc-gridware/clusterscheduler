@@ -2533,11 +2533,11 @@ jsv_do_communication(sge_gdi_ctx_class_t *ctx, lListElem *jsv, lList **answer_li
       if (strcmp(lGetString(jsv, JSV_context), JSV_CONTEXT_CLIENT) == 0 && getenv("SGE_JSV_TIMEOUT") != nullptr) {
          if (atoi(getenv("SGE_JSV_TIMEOUT")) > 0) {
             jsv_timeout = atoi(getenv("SGE_JSV_TIMEOUT")); 
-            DPRINTF(("JSV_TIMEOUT value of %d s being used from environment variable\n", jsv_timeout))
+            DPRINTF(("JSV_TIMEOUT value of %d s being used from environment variable\n", jsv_timeout));
          }         
       } else {
          jsv_timeout = mconf_get_jsv_timeout();
-         DPRINTF(("JSV_TIMEOUT value of %d s being used from qmaster parameter\n", jsv_timeout))
+         DPRINTF(("JSV_TIMEOUT value of %d s being used from qmaster parameter\n", jsv_timeout));
       }
 
       lSetBool(jsv, JSV_done, false);

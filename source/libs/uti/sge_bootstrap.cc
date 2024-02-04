@@ -307,14 +307,14 @@ static void
 log_parameter(sge_bootstrap_tl_t *tl) {
    DENTER(TOP_LAYER);
 
-   DPRINTF(("ENVIRONMENT ===\n"))
+   DPRINTF(("ENVIRONMENT ===\n"));
    DPRINTF(("   sge_root            >%s<\n", tl->sge_root ? tl->sge_root : "NA"));
    DPRINTF(("   sge_cell            >%s<\n", tl->sge_cell ? tl->sge_cell : "NA"));
    DPRINTF(("   sge_qmaster_port    >%d<\n", tl->sge_qmaster_port));
    DPRINTF(("   sge_execd_port      >%d<\n", tl->sge_execd_port));
    DPRINTF(("   from_services       >%s<\n", tl->from_services ? "true" : "false"));
 
-   DPRINTF(("COMPONENT ===\n"))
+   DPRINTF(("COMPONENT ===\n"));
    DPRINTF(("   component_id        >%d<\n", tl->component_id));
    DPRINTF(("   component_name      >%s<\n", tl->component_name ? tl->component_name : "NA"));
    DPRINTF(("   thread_name         >%s<\n", tl->thread_name ? tl->thread_name : "NA"));
@@ -324,7 +324,7 @@ log_parameter(sge_bootstrap_tl_t *tl) {
    DPRINTF(("   groupname           >%s<\n", tl->groupname ? tl->groupname : "NA"));
    DPRINTF(("   qmaster_internal    >%s<\n", tl->qmaster_internal ? "true" : "false"));
 
-   DPRINTF(("BOOTSTRAP FILE ===\n"))
+   DPRINTF(("BOOTSTRAP FILE ===\n"));
    DPRINTF(("   admin_user          >%s<\n", tl->admin_user));
    DPRINTF(("   default_domain      >%s<\n", tl->default_domain));
    DPRINTF(("   ignore_fqdn         >%s<\n", tl->ignore_fqdn ? "true" : "false"));
@@ -339,7 +339,7 @@ log_parameter(sge_bootstrap_tl_t *tl) {
    DPRINTF(("   worker_threads      >%d<\n", tl->worker_thread_count));
    DPRINTF(("   scheduler_threads   >%d<\n", tl->scheduler_thread_count));
 
-   DPRINTF(("FILES AND PATHS ===\n"))
+   DPRINTF(("FILES AND PATHS ===\n"));
    DPRINTF(("   cell_root           >%s<\n", tl->cell_root));
    DPRINTF(("   conf_file           >%s<\n", tl->bootstrap_file));
    DPRINTF(("   bootstrap_file      >%s<\n", tl->conf_file));
@@ -412,7 +412,7 @@ bootstrap_init_from_file(sge_bootstrap_tl_t *tl) {
    // early exist if we don't know where the bootstrap file is
    const char *bootstrap_file = tl->bootstrap_file;
    if (bootstrap_file != nullptr) {
-      DPRINTF(("bootstrap file is %s", bootstrap_file))
+      DPRINTF(("bootstrap file is %s", bootstrap_file));
    } else {
       CRITICAL((SGE_EVENT, SFNMAX, MSG_UTI_CANNOTRESOLVEBOOTSTRAPFILE));
       DRETURN_VOID;
@@ -544,7 +544,7 @@ static void
 bootstrap_tl_init(sge_bootstrap_tl_t *tl) {
    static bool already_shown = false;
 
-   DENTER(TOP_LAYER)
+   DENTER(TOP_LAYER);
    memset(tl, 0, sizeof(sge_bootstrap_tl_t));
 
    // 1) do environment setup first because file based init depends on that

@@ -41,6 +41,7 @@
 #include "sgeobj/sge_schedd_conf.h"
 
 #include "gdi/sge_gdi_ctx.h"
+#include "gdi/sge_gdi3.h"
 
 /****** common/sge_mt_init/sge_mt_init() ***************************************
 *  NAME
@@ -84,4 +85,5 @@ void sge_mt_init(void)
 
    sc_mt_init();
    gdi_mt_init();
+   gdi3_mt_init();
 } /* sge_mt_init */

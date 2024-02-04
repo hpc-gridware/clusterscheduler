@@ -54,6 +54,7 @@
 #include "gdi/sge_gdi_ctx.h"
 #include "gdi/sge_gdi_packet.h"
 #include "gdi/sge_gdi_packet_pb_cull.h"
+#include "gdi/sge_gdi3.h"
 
 #include "comm/cl_commlib.h"
 #include "comm/lists/cl_util.h"
@@ -1005,6 +1006,7 @@ int main(int argc, char *argv[]) {
    prof_mt_init();
    feature_mt_init();
    gdi_mt_init();
+   gdi3_mt_init();
 
    sge_getme(QPING);
 

@@ -183,7 +183,8 @@ typedef char stringT[MAX_STRING_SIZE];
          fprintf(stderr, "pthread_setspecific(%s) failed: %s\n", __func__, strerror(ret)); \
          abort(); \
       } \
-   }
+   } \
+   void()
 
 #define HAS_GETPWNAM_R
 #define HAS_GETGRNAM_R

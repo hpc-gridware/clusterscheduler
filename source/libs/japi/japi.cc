@@ -4025,6 +4025,7 @@ static void *japi_implementation_thread(void * a_user_data_pointer)
                                  qmaster. */
    sge_gdi_ctx_class_t *evc_ctx = nullptr;
    static sge_evc_class_t *evc = nullptr;
+   int gdi_errno = AE_OK;
 
    DENTER(TOP_LAYER);
 
@@ -4041,9 +4042,10 @@ static void *japi_implementation_thread(void * a_user_data_pointer)
    
    sge_dstring_init(&buffer_wrapper, buffer, sizeof(buffer));
 
-   if (sge_gdi2_setup(&evc_ctx, prog_number, MAIN_THREAD, &alp) != AE_OK) {
+   gdi_errno = sge_gdi2_setup(&evc_ctx, prog_number, MAIN_THREAD, &alp);
+   if ((gdi_errno != AE_OK) && (gdi_errno != AE_ALREADY_SETUP)) {
       const lListElem *aep = lFirst(alp);
-      DPRINTF(("error: sge_gdi2_setup() failed for event client thread\n"));
+      DPRINTF(("error: sge_gdi2_setup() failed with gdi_error %d for event client thread\n", gdi_errno));
       if (aep) {
          JAPI_LOCK_EC_ALP(japi_ec_alp_struct);
          answer_list_add(&(japi_ec_alp_struct.japi_ec_alp), lGetString(aep, AN_text), 

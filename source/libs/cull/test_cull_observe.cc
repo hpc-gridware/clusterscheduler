@@ -249,7 +249,7 @@ bool test_scenario3(void) {
 
 int main(int argc, char *argv[]) {
    bool ret = true;
-   DENTER_MAIN(TOP_LAYER, "main")
+   DENTER_MAIN(TOP_LAYER, "main");
 
 #ifdef OBSERVE
       lInit(nmv);

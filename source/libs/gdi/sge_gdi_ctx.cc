@@ -72,6 +72,7 @@
 #include "sgeobj/sge_utility.h"
 
 #include "gdi/qm_name.h"
+#include "gdi/sge_gdi3.h"
 #include "gdi/msg_gdilib.h"
 
 #include "sgeobj/sge_feature.h"
@@ -99,21 +100,6 @@ void sc_mt_init(void);
 #include "gdi/sge_gdi_ctx.h"
 #include "gdi/sge_gdi2.h"
 #include "gdi/sge_gdi_packet_internal.h"
-
-typedef struct {
-   sge_csp_path_class_t* sge_csp_path_obj;
-
-   char* master;
-
-   char *ssl_private_key;
-   char *ssl_certificate;
-
-   int last_commlib_error;
-   sge_error_class_t *eh;
-
-   bool is_setup;
-   u_long32 last_qmaster_file_read;
-} sge_gdi_ctx_t;
 
 static pthread_key_t  gdi_state_key;
 static pthread_once_t gdi_once_control = PTHREAD_ONCE_INIT;
@@ -229,8 +215,6 @@ static bool
 sge_gdi_ctx_setup(sge_gdi_ctx_class_t *thiz, int prog_number, const char* component_name,
                   const char *thread_name, const char* username, const char *groupname,  bool qmaster_internal_client);
 
-static void sge_gdi_ctx_destroy(void *theState);
-
 static void sge_gdi_ctx_set_is_setup(sge_gdi_ctx_class_t *thiz, bool is_setup);
 static bool sge_gdi_ctx_is_setup(sge_gdi_ctx_class_t *thiz);
 static void sge_gdi_ctx_class_get_errors(sge_gdi_ctx_class_t *thiz, lList **alpp, bool clear_errors);
@@ -261,7 +245,6 @@ sge_gdi_ctx_class_create(int prog_number, const char *component_name,
                          lList **alpp)
 {
    sge_gdi_ctx_class_t *ret = (sge_gdi_ctx_class_t *)sge_malloc(sizeof(sge_gdi_ctx_class_t));
-   sge_gdi_ctx_t *gdi_ctx = nullptr;
 
    DENTER(TOP_LAYER);
 
@@ -295,26 +278,6 @@ sge_gdi_ctx_class_create(int prog_number, const char *component_name,
    ret->get_private_key = get_private_key;
    ret->get_certificate = get_certificate;
 
-   ret->sge_gdi_ctx_handle = (sge_gdi_ctx_t*)sge_malloc(sizeof(sge_gdi_ctx_t));
-   memset(ret->sge_gdi_ctx_handle, 0, sizeof(sge_gdi_ctx_t));
-
-   if (!ret->sge_gdi_ctx_handle) {
-      answer_list_add_sprintf(alpp, STATUS_EMALLOC, ANSWER_QUALITY_ERROR, MSG_MEMORY_MALLOCFAILED);
-      sge_gdi_ctx_class_destroy(&ret);
-      DRETURN(nullptr);
-   }
-
-   /*
-   ** create error handler of context
-   */
-   gdi_ctx = (sge_gdi_ctx_t*)ret->sge_gdi_ctx_handle;
-   gdi_ctx->eh = sge_error_class_create();
-   if (!gdi_ctx->eh) {
-      answer_list_add_sprintf(alpp, STATUS_EMALLOC, ANSWER_QUALITY_ERROR, MSG_MEMORY_MALLOCFAILED);
-      DRETURN(nullptr);
-   }
-
-
    if (!sge_gdi_ctx_setup(ret, prog_number, component_name, thread_name, username, groupname, is_qmaster_internal_client)) {
       sge_gdi_ctx_class_get_errors(ret, alpp, true);
       sge_gdi_ctx_class_destroy(&ret);
@@ -338,7 +301,6 @@ void sge_gdi_ctx_class_destroy(sge_gdi_ctx_class_t **pst)
    }
 
    /* free internal context structure */
-   sge_gdi_ctx_destroy((*pst)->sge_gdi_ctx_handle);
    sge_free(pst);
 
    DRETURN_VOID;
@@ -346,35 +308,22 @@ void sge_gdi_ctx_class_destroy(sge_gdi_ctx_class_t **pst)
 
 static void sge_gdi_ctx_class_get_errors(sge_gdi_ctx_class_t *thiz, lList **alpp, bool clear_errors)
 {
-   sge_gdi_ctx_t *gdi_ctx = nullptr;
-
    DENTER(TOP_LAYER);
-
-   if (!thiz || !thiz->sge_gdi_ctx_handle) {
-      DRETURN_VOID;
-   }
-
-   gdi_ctx = (sge_gdi_ctx_t*)thiz->sge_gdi_ctx_handle;
-
-   answer_list_from_sge_error(gdi_ctx->eh, alpp, clear_errors);
-
+   answer_list_from_sge_error(gdi3_get_error_handle(), alpp, clear_errors);
    DRETURN_VOID;
 }
 
 static void sge_gdi_ctx_class_error(sge_gdi_ctx_class_t *thiz, int error_type, int error_quality, const char* fmt, ...)
 {
-   sge_gdi_ctx_t *gdi_ctx = nullptr;
-
    DENTER(TOP_LAYER);
 
-   if (thiz != nullptr && thiz->sge_gdi_ctx_handle != nullptr) {
-      gdi_ctx = (sge_gdi_ctx_t*)thiz->sge_gdi_ctx_handle;
-
-      if (gdi_ctx->eh && fmt != nullptr) {
+   if (thiz != nullptr) {
+      if (gdi3_get_error_handle() && fmt != nullptr) {
          va_list arg_list;
 
          va_start(arg_list, fmt);
-         gdi_ctx->eh->verror(gdi_ctx->eh, error_type, error_quality, fmt, arg_list);
+         sge_error_class_t *error_handle = gdi3_get_error_handle();
+         error_handle->verror(error_handle, error_type, error_quality, fmt, arg_list);
          va_end(arg_list);
       }
    }
@@ -383,35 +332,16 @@ static void sge_gdi_ctx_class_error(sge_gdi_ctx_class_t *thiz, int error_type, i
 
 static void sge_gdi_ctx_set_is_setup(sge_gdi_ctx_class_t *thiz, bool is_setup)
 {
-   sge_gdi_ctx_t *gdi_ctx = nullptr;
-
    DENTER(TOP_LAYER);
-
-   if (!thiz || !thiz->sge_gdi_ctx_handle) {
-      DRETURN_VOID;
-   }
-
-   gdi_ctx = (sge_gdi_ctx_t*)thiz->sge_gdi_ctx_handle;
-
-   gdi_ctx->is_setup = is_setup;
-
+   gdi3_set_setup(is_setup);
    DRETURN_VOID;
 }
 
 
 static bool sge_gdi_ctx_is_setup(sge_gdi_ctx_class_t *thiz)
 {
-   sge_gdi_ctx_t *gdi_ctx = nullptr;
-
    DENTER(TOP_LAYER);
-
-   if (!thiz || !thiz->sge_gdi_ctx_handle) {
-      DRETURN(false);
-   }
-
-   gdi_ctx = (sge_gdi_ctx_t*)thiz->sge_gdi_ctx_handle;
-
-   DRETURN(gdi_ctx->is_setup);
+   DRETURN(gdi3_is_setup());
 }
 
 
@@ -420,9 +350,6 @@ sge_gdi_ctx_setup(sge_gdi_ctx_class_t *thiz, int prog_number, const char* compon
                   const char *thread_name, const char* username,
                   const char *groupname,  bool qmaster_internal_client)
 {
-   sge_gdi_ctx_t *es = (sge_gdi_ctx_t *)thiz->sge_gdi_ctx_handle;
-   sge_error_class_t *eh = es->eh;
-
    DENTER(TOP_LAYER);
 
    /*
@@ -433,6 +360,7 @@ sge_gdi_ctx_setup(sge_gdi_ctx_class_t *thiz, int prog_number, const char* compon
    prof_mt_init();
    feature_mt_init();
    gdi_mt_init();
+   gdi3_mt_init();
    sc_mt_init();
    obj_mt_init();
    bootstrap_mt_init();
@@ -455,30 +383,14 @@ sge_gdi_ctx_setup(sge_gdi_ctx_class_t *thiz, int prog_number, const char* compon
    }
 
 #if 1
-   es->sge_csp_path_obj = sge_csp_path_class_create(eh);
-   if (!es->sge_csp_path_obj) {
+   gdi3_set_csp_path_obj(sge_csp_path_class_create(gdi3_get_error_handle()));
+   if (!gdi3_get_csp_path_obj()) {
       CRITICAL((SGE_EVENT, "sge_csp_path_class_create() failed"));
       DRETURN(false);
    }
 #endif
 
    DRETURN(true);
-}
-
-static void sge_gdi_ctx_destroy(void *theState)
-{
-   sge_gdi_ctx_t *s = (sge_gdi_ctx_t *)theState;
-
-   DENTER(TOP_LAYER);
-
-   sge_csp_path_class_destroy(&(s->sge_csp_path_obj));
-   sge_free(&(s->master));
-   sge_free(&(s->ssl_certificate));
-   sge_free(&(s->ssl_private_key));
-   sge_error_class_destroy(&(s->eh));
-   sge_free(&s);
-
-   DRETURN_VOID;
 }
 
 static int sge_gdi_ctx_class_connect(sge_gdi_ctx_class_t *thiz)
@@ -950,31 +862,29 @@ static cl_com_handle_t* get_com_handle(sge_gdi_ctx_class_t *thiz)
 
 static sge_csp_path_class_t* get_sge_csp_path(sge_gdi_ctx_class_t *thiz)
 {
-   sge_gdi_ctx_t *es = (sge_gdi_ctx_t *) thiz->sge_gdi_ctx_handle;
-   return es->sge_csp_path_obj;
+   return gdi3_get_csp_path_obj();
 }
 
 static const char* get_master(sge_gdi_ctx_class_t *thiz, bool reread) {
-   sge_gdi_ctx_t *es = (sge_gdi_ctx_t *) thiz->sge_gdi_ctx_handle;
-   sge_error_class_t *eh = es ? es->eh : nullptr;
+   sge_error_class_t *eh = gdi3_get_error_handle();
    static bool error_already_logged = false;
 
    DENTER(BASIS_LAYER);
 
-   if (es->master == nullptr || reread) {
+   if (gdi3_get_master_host()  == nullptr || reread) {
       char err_str[SGE_PATH_MAX+128];
       char master_name[CL_MAXHOSTLEN];
       u_long32 now = sge_get_gmt();
 
       /* fix system clock moved back situation */
-      if (es->last_qmaster_file_read > now) {
-         es->last_qmaster_file_read = 0;
+      if (gdi3_get_timestamp_qmaster_file() > now) {
+         gdi3_set_timestamp_qmaster_file(0);
       }
 
-      if (es->master == nullptr || now - es->last_qmaster_file_read >= 30) {
+      if (gdi3_get_master_host()  == nullptr || now - gdi3_get_timestamp_qmaster_file() >= 30) {
          /* re-read act qmaster file (max. every 30 seconds) */
          DPRINTF(("re-read actual qmaster file\n"));
-         es->last_qmaster_file_read = now;
+         gdi3_set_timestamp_qmaster_file(now);
 
          if (get_qm_name(master_name, bootstrap_get_act_qmaster_file(), err_str) == -1) {
             if (eh != nullptr && !error_already_logged) {
@@ -988,38 +898,28 @@ static const char* get_master(sge_gdi_ctx_class_t *thiz, bool reread) {
          /*
          ** TODO: thread locking needed here ?
          */
-         es->master = sge_strdup(es->master,master_name);
+         gdi3_set_master_host(master_name);
       }
    }
-   DRETURN(es->master);
+   DRETURN(gdi3_get_master_host());
 }
 
 static const char* get_private_key(sge_gdi_ctx_class_t *thiz) {
-   sge_gdi_ctx_t *es = (sge_gdi_ctx_t *) thiz->sge_gdi_ctx_handle;
-   const char *pkey = nullptr;
-
    DENTER(BASIS_LAYER);
-   pkey = es->ssl_private_key;
-   DRETURN(pkey);
+   DRETURN(gdi3_get_ssl_private_key());
 }
 
 static const char* get_certificate(sge_gdi_ctx_class_t *thiz) {
-   sge_gdi_ctx_t *es = (sge_gdi_ctx_t *) thiz->sge_gdi_ctx_handle;
-   const char *cert = nullptr;
-
    DENTER(BASIS_LAYER);
-   cert = es->ssl_certificate;
-   DRETURN(cert);
+   DRETURN(gdi3_get_ssl_certificate());
 }
 
 static int ctx_get_last_commlib_error(sge_gdi_ctx_class_t *thiz) {
-   sge_gdi_ctx_t *es = (sge_gdi_ctx_t *) thiz->sge_gdi_ctx_handle;
-   return es->last_commlib_error;
+   return gdi3_get_last_commlib_error();
 }
 
 static void ctx_set_last_commlib_error(sge_gdi_ctx_class_t *thiz, int cl_error) {
-   sge_gdi_ctx_t *es = (sge_gdi_ctx_t *) thiz->sge_gdi_ctx_handle;
-   es->last_commlib_error = cl_error;
+   gdi3_set_last_commlib_error(cl_error);
 }
 
 static int sge_gdi_ctx_log_flush_func(cl_raw_list_t* list_p)
@@ -1106,6 +1006,9 @@ sge_setup2(sge_gdi_ctx_class_t **context, u_long32 progid, u_long32 thread_id,
    }
 
    sge_getme(progid);
+   bootstrap_mt_init();
+   bootstrap_set_component_id(progid);
+   gdi3_mt_init();
 
    /*
    ** TODO:

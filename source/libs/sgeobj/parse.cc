@@ -278,7 +278,7 @@ lList **alpp
 char **rp;
 lListElem *ep = nullptr; /* SPA_Type */
 
-   DENTER(TOP_LAYER)
+   DENTER(TOP_LAYER);
 
    rp = sp;
    while( (*rp) && (**rp != '-') ) {
