@@ -85,7 +85,7 @@
 
 #define MSG_QMASTER_FOUNDRUNNINGQMASTERONHOSTXNOTSTARTING_S    _MESSAGE(27038, _("found running qmaster on host "SFQ"- not starting"))
 
-#define MSG_SMF_MAIL_FORK_FAILED_S           _MESSAGE(27101, _("sge_smf_contract_fork() for mail failed: "SFQ))
+#define MSG_SMF_MAIL_FORK_FAILED_S           _MESSAGE(27041, _("sge_smf_contract_fork() for mail failed: "SFQ))
 #define MSG_MAIL_EMPTYUSERHOST               _MESSAGE(27042, _("sending mail is not possible since user and host are empty"))
 #define MSG_MAIL_MAILUSER_SSSS               _MESSAGE(27043, _("sending "SFN" mail to user "SFQ"|mailer "SFQ"|"SFQ))
 #define MSG_MAIL_MAILUSERHOST_SSSSS          _MESSAGE(27044, _("sending "SFN" mail to user \""SFN"@"SFN"\"|mailer "SFQ"|"SFQ))
