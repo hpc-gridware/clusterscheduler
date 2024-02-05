@@ -36,54 +36,54 @@
 #include "sgeobj/cull/sge_boundaries.h"
 
 /**
-* @brief @todo add summary
+* @brief Project
 *
-* @todo add description
+* An object of this type holds project configuration data as well as usage accumulators.
 *
-*    SGE_STRING(PR_name) - @todo add summary
-*    @todo add description
+*    SGE_STRING(PR_name) - Project Name
+*    A unique name of the project.
 *
-*    SGE_ULONG(PR_oticket) - @todo add summary
-*    @todo add description
+*    SGE_ULONG(PR_oticket) - Override Tickets
+*    Configured override tickets.
 *
-*    SGE_ULONG(PR_fshare) - @todo add summary
-*    @todo add description
+*    SGE_ULONG(PR_fshare) - Functional Shares
+*    Configured functional shares.
 *
-*    SGE_ULONG(PR_job_cnt) - @todo add summary
-*    @todo add description
+*    SGE_ULONG(PR_job_cnt) - Job Count
+*    Job counter, used in scheduler thread only.
 *
-*    SGE_ULONG(PR_pending_job_cnt) - @todo add summary
-*    @todo add description
+*    SGE_ULONG(PR_pending_job_cnt) - Pending Job Count
+*    Pending job counter, used in scheduler thread only.
 *
-*    SGE_LIST(PR_usage) - @todo add summary
-*    @todo add description
+*    SGE_LIST(PR_usage) - Usage
+*    List of UA_Type objects storing accumulated and decayed usage of jobs belonging to this project.
 *
-*    SGE_ULONG(PR_usage_time_stamp) - @todo add summary
-*    @todo add description
+*    SGE_ULONG(PR_usage_time_stamp) - Usage Time Stamp
+*    Time stamp of last decay. Set when usage changes.
 *
-*    SGE_ULONG(PR_usage_seqno) - @todo add summary
-*    @todo add description
+*    SGE_ULONG(PR_usage_seqno) - Usage Sequence Number
+*    Usage sequence number used in scheduler thread only.
 *
-*    SGE_LIST(PR_long_term_usage) - @todo add summary
-*    @todo add description
+*    SGE_LIST(PR_long_term_usage) - Long Term Usage
+*    List of UA_Type objects holding long term accumulated non-decayed usage.
 *
-*    SGE_LIST(PR_project) - @todo add summary
-*    @todo add description
+*    SGE_LIST(PR_project) - Project Usage
+*    Usage on a project basis (?).
 *
-*    SGE_LIST(PR_acl) - @todo add summary
-*    @todo add description
+*    SGE_LIST(PR_acl) - Access List
+*    US_Type but only names are filled configured excluded user access list used.
 *
-*    SGE_LIST(PR_xacl) - @todo add summary
-*    @todo add description
+*    SGE_LIST(PR_xacl) - No Access List
+*    US_Type but only names are filled configured excluded user access list used.
 *
-*    SGE_LIST(PR_debited_job_usage) - @todo add summary
-*    @todo add description
+*    SGE_LIST(PR_debited_job_usage) - Debited Job Usage
+*    List of UPU_Type, still debited usage per job.
 *
-*    SGE_ULONG(PR_version) - @todo add summary
-*    @todo add description
+*    SGE_ULONG(PR_version) - Project Version
+*    project version, increments when usage is updated
 *
-*    SGE_BOOL(PR_consider_with_categories) - @todo add summary
-*    @todo add description
+*    SGE_BOOL(PR_consider_with_categories) - Consider With Categories
+*    True, if project plays role with categories.
 *
 */
 
