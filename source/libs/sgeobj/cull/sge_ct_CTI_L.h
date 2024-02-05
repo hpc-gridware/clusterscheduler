@@ -35,10 +35,6 @@
 #include "cull/cull.h"
 #include "sgeobj/cull/sge_boundaries.h"
 
-#ifdef __cplusplus
-extern "C" {
-#endif
-
 /**
 * @brief @todo add summary
 *
@@ -63,8 +59,5 @@ NAMEEND
 
 #define CTI_SIZE sizeof(CTIN)/sizeof(char *)
 
-#ifdef __cplusplus
-}
-#endif
 
 #endif

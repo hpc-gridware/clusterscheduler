@@ -35,10 +35,6 @@
 #include "cull/cull.h"
 #include "sgeobj/cull/sge_boundaries.h"
 
-#ifdef __cplusplus
-extern "C" {
-#endif
-
 /**
 * @brief Range Element
 *
@@ -118,8 +114,5 @@ NAMEEND
 
 #define RN_SIZE sizeof(RNN)/sizeof(char *)
 
-#ifdef __cplusplus
-}
-#endif
 
 #endif

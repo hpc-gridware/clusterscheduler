@@ -50,10 +50,6 @@
  *--------------------------------------------------
  */
 
-#ifdef __cplusplus
-extern "C" {
-#endif
-
 /* BASIC_UNIT and MAX_DESCR_SIZE is defined in cull/cull_list.h */
 
 enum NameSpaceBoundaries {
@@ -446,9 +442,5 @@ enum NameSpaceBoundaries {
    PACK_UPPERBOUND = PACK_LOWERBOUND + 2*BASIC_UNIT - 1,
 
 };
-
-#ifdef __cplusplus
-}
-#endif
 
 #endif /* __SGE_BOUNDARIES_H */

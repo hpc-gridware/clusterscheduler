@@ -35,10 +35,6 @@
 #include "cull/cull.h"
 #include "sgeobj/cull/sge_boundaries.h"
 
-#ifdef __cplusplus
-extern "C" {
-#endif
-
 /**
 * @brief Host Configuration
 *
@@ -77,8 +73,5 @@ NAMEEND
 
 #define CONF_SIZE sizeof(CONFN)/sizeof(char *)
 
-#ifdef __cplusplus
-}
-#endif
 
 #endif

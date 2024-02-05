@@ -35,10 +35,6 @@
 #include "cull/cull.h"
 #include "sgeobj/cull/sge_boundaries.h"
 
-#ifdef __cplusplus
-extern "C" {
-#endif
-
 /**
 * @brief @todo add summary
 *
@@ -189,8 +185,5 @@ NAMEEND
 
 #define JL_SIZE sizeof(JLN)/sizeof(char *)
 
-#ifdef __cplusplus
-}
-#endif
 
 #endif

@@ -35,10 +35,6 @@
 #include "cull/cull.h"
 #include "sgeobj/cull/sge_boundaries.h"
 
-#ifdef __cplusplus
-extern "C" {
-#endif
-
 /**
 * @brief job type
 *
@@ -659,8 +655,5 @@ NAMEEND
 
 #define JB_SIZE sizeof(JBN)/sizeof(char *)
 
-#ifdef __cplusplus
-}
-#endif
 
 #endif

@@ -35,10 +35,6 @@
 #include "cull/cull.h"
 #include "sgeobj/cull/sge_boundaries.h"
 
-#ifdef __cplusplus
-extern "C" {
-#endif
-
 /**
 * @brief @todo add summary
 *
@@ -75,8 +71,5 @@ NAMEEND
 
 #define XMLS_SIZE sizeof(XMLSN)/sizeof(char *)
 
-#ifdef __cplusplus
-}
-#endif
 
 #endif

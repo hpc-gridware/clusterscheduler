@@ -35,10 +35,6 @@
 #include "cull/cull.h"
 #include "sgeobj/cull/sge_boundaries.h"
 
-#ifdef __cplusplus
-extern "C" {
-#endif
-
 /**
 * @brief Queue Info in an Order
 *
@@ -101,8 +97,5 @@ NAMEEND
 
 #define OQ_SIZE sizeof(OQN)/sizeof(char *)
 
-#ifdef __cplusplus
-}
-#endif
 
 #endif

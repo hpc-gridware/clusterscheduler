@@ -35,10 +35,6 @@
 #include "cull/cull.h"
 #include "sgeobj/cull/sge_boundaries.h"
 
-#ifdef __cplusplus
-extern "C" {
-#endif
-
 /**
 * @brief Mail Receiver
 *
@@ -72,8 +68,5 @@ NAMEEND
 
 #define MR_SIZE sizeof(MRN)/sizeof(char *)
 
-#ifdef __cplusplus
-}
-#endif
 
 #endif

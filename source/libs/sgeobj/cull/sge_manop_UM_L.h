@@ -35,10 +35,6 @@
 #include "cull/cull.h"
 #include "sgeobj/cull/sge_boundaries.h"
 
-#ifdef __cplusplus
-extern "C" {
-#endif
-
 /**
 * @brief Manager
 *
@@ -66,8 +62,5 @@ NAMEEND
 
 #define UM_SIZE sizeof(UMN)/sizeof(char *)
 
-#ifdef __cplusplus
-}
-#endif
 
 #endif

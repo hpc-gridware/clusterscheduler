@@ -35,10 +35,6 @@
 #include "cull/cull.h"
 #include "sgeobj/cull/sge_boundaries.h"
 
-#ifdef __cplusplus
-extern "C" {
-#endif
-
 /**
 * @brief Submission Host
 *
@@ -63,8 +59,5 @@ NAMEEND
 
 #define SH_SIZE sizeof(SHN)/sizeof(char *)
 
-#ifdef __cplusplus
-}
-#endif
 
 #endif

@@ -35,10 +35,6 @@
 #include "cull/cull.h"
 #include "sgeobj/cull/sge_boundaries.h"
 
-#ifdef __cplusplus
-extern "C" {
-#endif
-
 /**
 * @brief Unique String
 *
@@ -63,8 +59,5 @@ NAMEEND
 
 #define STU_SIZE sizeof(STUN)/sizeof(char *)
 
-#ifdef __cplusplus
-}
-#endif
 
 #endif

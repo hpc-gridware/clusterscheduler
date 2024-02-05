@@ -35,10 +35,6 @@
 #include "cull/cull.h"
 #include "sgeobj/cull/sge_boundaries.h"
 
-#ifdef __cplusplus
-extern "C" {
-#endif
-
 /**
 * @brief Job Granted Destination Identifier
 *
@@ -141,8 +137,5 @@ NAMEEND
 
 #define JG_SIZE sizeof(JGN)/sizeof(char *)
 
-#ifdef __cplusplus
-}
-#endif
 
 #endif

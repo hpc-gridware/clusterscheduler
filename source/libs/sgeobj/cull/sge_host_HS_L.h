@@ -35,10 +35,6 @@
 #include "cull/cull.h"
 #include "sgeobj/cull/sge_boundaries.h"
 
-#ifdef __cplusplus
-extern "C" {
-#endif
-
 /**
 * @brief scaling of host load values
 *
@@ -70,8 +66,5 @@ NAMEEND
 
 #define HS_SIZE sizeof(HSN)/sizeof(char *)
 
-#ifdef __cplusplus
-}
-#endif
 
 #endif

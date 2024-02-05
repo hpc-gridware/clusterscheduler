@@ -35,10 +35,6 @@
 #include "cull/cull.h"
 #include "sgeobj/cull/sge_boundaries.h"
 
-#ifdef __cplusplus
-extern "C" {
-#endif
-
 /**
 * @brief @todo add summary
 *
@@ -111,8 +107,5 @@ NAMEEND
 
 #define FCAT_SIZE sizeof(FCATN)/sizeof(char *)
 
-#ifdef __cplusplus
-}
-#endif
 
 #endif

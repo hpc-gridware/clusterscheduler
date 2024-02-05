@@ -35,10 +35,6 @@
 #include "cull/cull.h"
 #include "sgeobj/cull/sge_boundaries.h"
 
-#ifdef __cplusplus
-extern "C" {
-#endif
-
 /**
 * @brief @todo add summary
 *
@@ -63,8 +59,5 @@ NAMEEND
 
 #define REF_SIZE sizeof(REFN)/sizeof(char *)
 
-#ifdef __cplusplus
-}
-#endif
 
 #endif

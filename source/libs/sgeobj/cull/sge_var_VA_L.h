@@ -35,10 +35,6 @@
 #include "cull/cull.h"
 #include "sgeobj/cull/sge_boundaries.h"
 
-#ifdef __cplusplus
-extern "C" {
-#endif
-
 /**
 * @brief Variable Object
 *
@@ -70,8 +66,5 @@ NAMEEND
 
 #define VA_SIZE sizeof(VAN)/sizeof(char *)
 
-#ifdef __cplusplus
-}
-#endif
 
 #endif

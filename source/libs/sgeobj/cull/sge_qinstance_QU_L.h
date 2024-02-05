@@ -35,10 +35,6 @@
 #include "cull/cull.h"
 #include "sgeobj/cull/sge_boundaries.h"
 
-#ifdef __cplusplus
-extern "C" {
-#endif
-
 /**
 * @brief Queue Instance
 *
@@ -475,8 +471,5 @@ NAMEEND
 
 #define QU_SIZE sizeof(QUN)/sizeof(char *)
 
-#ifdef __cplusplus
-}
-#endif
 
 #endif

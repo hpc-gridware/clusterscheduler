@@ -35,10 +35,6 @@
 #include "cull/cull.h"
 #include "sgeobj/cull/sge_boundaries.h"
 
-#ifdef __cplusplus
-extern "C" {
-#endif
-
 /**
 * @brief @todo add summary
 *
@@ -267,8 +263,5 @@ NAMEEND
 
 #define JAT_SIZE sizeof(JATN)/sizeof(char *)
 
-#ifdef __cplusplus
-}
-#endif
 
 #endif

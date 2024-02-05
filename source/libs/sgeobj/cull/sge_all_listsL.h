@@ -168,10 +168,6 @@
 #include "sgeobj/cull/sge_pack_PACK_L.h"
 #if defined(__SGE_GDI_LIBRARY_HOME_OBJECT_FILE__)
 
-#ifdef __cplusplus
-extern "C" {
-#endif
-
 lNameSpace nmv[] = {
 
 /*
@@ -313,20 +309,9 @@ lNameSpace nmv[] = {
    {0, 0, nullptr, nullptr}
 };
 
-#ifdef __cplusplus
-}
-#endif
-
 #else
-#ifdef __cplusplus
-extern "C" {
-#endif
 
 extern lNameSpace nmv[];
-
-#ifdef __cplusplus
-}
-#endif
 
 #endif /* __SGE_GDI_LIBRARY_HOME_OBJECT_FILE__ */
 

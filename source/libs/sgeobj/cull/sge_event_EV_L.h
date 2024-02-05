@@ -35,10 +35,6 @@
 #include "cull/cull.h"
 #include "sgeobj/cull/sge_boundaries.h"
 
-#ifdef __cplusplus
-extern "C" {
-#endif
-
 /**
 * @brief Event Client
 *
@@ -187,8 +183,5 @@ NAMEEND
 
 #define EV_SIZE sizeof(EVN)/sizeof(char *)
 
-#ifdef __cplusplus
-}
-#endif
 
 #endif
