@@ -217,7 +217,7 @@ int main(int argc, char **argv)
 
    /* prepare daemonize */
    if (!getenv("SGE_ND")) {
-      sge_daemonize_prepare(ctx);
+      sge_daemonize_prepare();
    }
 
    if ((ret=sge_occupy_first_three())>=0) {
@@ -235,7 +235,7 @@ int main(int argc, char **argv)
    /* exit if we can't get communication handle (bind port) */
    max_enroll_tries = 30;
    while (cl_com_get_handle(prognames[EXECD],1) == nullptr) {
-      ctx->prepare_enroll(ctx);
+      sge_gdi_ctx_class_prepare_enroll(ctx);
       max_enroll_tries--;
 
       if (max_enroll_tries <= 0 || shut_me_down) {
@@ -274,8 +274,8 @@ int main(int argc, char **argv)
    /* test connection */
    {
       cl_com_SIRM_t* status = nullptr;
-      ret_val = cl_commlib_get_endpoint_status(ctx->get_com_handle(ctx),
-                                               (char *)ctx->get_master(ctx, true),
+      ret_val = cl_commlib_get_endpoint_status(cl_com_get_handle(bootstrap_get_component_name(), 0),
+                                               (char *)gdi3_get_act_master_host(true),
                                                (char*)prognames[QMASTER], 1, &status);
       if (ret_val != CL_RETVAL_OK) {
          ERROR((SGE_EVENT, SFNMAX, cl_get_error_text(ret_val)));
@@ -286,7 +286,7 @@ int main(int argc, char **argv)
    
    /* finalize daeamonize */
    if (!getenv("SGE_ND")) {
-      sge_daemonize_finalize(ctx);
+      sge_daemonize_finalize();
    }
 
    /* daemonizes if qmaster is unreachable */   
@@ -474,7 +474,7 @@ int sge_execd_register_at_qmaster(sge_gdi_ctx_class_t *ctx, bool is_restart) {
     * If it is a reconnect (is_restart == true) the act_qmaster file must be
     * re-read in order to update ctx qmaster cache when master migrates. 
     */
-   const char *master_host = ctx->get_master(ctx, is_restart);
+   const char *master_host = gdi3_get_act_master_host(is_restart);
 
    DENTER(TOP_LAYER);
 
@@ -482,7 +482,7 @@ int sge_execd_register_at_qmaster(sge_gdi_ctx_class_t *ctx, bool is_restart) {
     * gdi will return with timeout after one minute. If qmaster is not alive
     * we will not try a gdi request!
     */
-   if (master_host != nullptr && ctx->is_alive(ctx) == CL_RETVAL_OK) {
+   if (master_host != nullptr && sge_gdi_ctx_class_is_alive() == CL_RETVAL_OK) {
       lList *hlp = lCreateList("exechost starting", EH_Type);
       lListElem *hep = lCreateElem(EH_Type);
       lSetUlong(hep, EH_featureset_id, feature_get_active_featureset_id());
@@ -494,13 +494,13 @@ int sge_execd_register_at_qmaster(sge_gdi_ctx_class_t *ctx, bool is_restart) {
          /*
           * This is a regular startup.
           */
-         alp = ctx->gdi(ctx, SGE_EH_LIST, SGE_GDI_ADD, &hlp, nullptr, nullptr);
+         alp = sge_gdi2(ctx, SGE_EH_LIST, SGE_GDI_ADD, &hlp, nullptr, nullptr);
       } else {
          /*
           * Indicate this is a restart to qmaster.
           * This is used for the initial_state of queue_configuration implementation.
           */
-         alp = ctx->gdi(ctx, SGE_EH_LIST, SGE_GDI_ADD | SGE_GDI_EXECD_RESTART,
+         alp = sge_gdi2(ctx, SGE_EH_LIST, SGE_GDI_ADD | SGE_GDI_EXECD_RESTART,
                         &hlp, nullptr, nullptr);
       }
       lFreeList(&hlp);

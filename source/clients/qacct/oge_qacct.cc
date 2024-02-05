@@ -67,6 +67,7 @@
 
 #include "gdi/qm_name.h"
 #include "gdi/sge_gdi.h"
+#include "gdi/sge_gdi2.h"
 #include "gdi/sge_gdi_ctx.h"
 
 #include "sched/sge_select_queue.h"
@@ -285,7 +286,7 @@ int main(int argc, char **argv)
                options.hostflag = 1;
             } else {
                char unique[CL_MAXHOSTLEN];
-               ctx->prepare_enroll(ctx);
+               sge_gdi_ctx_class_prepare_enroll(ctx);
                if (getuniquehostname(argv[++ii], unique, 0) != CL_RETVAL_OK) {
                    /*
                     * we can't resolve the hostname, but that's no drama for qacct.
@@ -623,9 +624,9 @@ int main(int argc, char **argv)
          }
          /* lDumpList(stdout, complex_options, 0); */
          if (!is_path_setup) {
-            ctx->prepare_enroll(ctx);
-            ctx->get_master(ctx, true);
-            if (ctx->is_alive(ctx) != CL_RETVAL_OK) {
+            sge_gdi_ctx_class_prepare_enroll(ctx);
+            gdi3_get_act_master_host(true);
+            if (sge_gdi_ctx_class_is_alive() != CL_RETVAL_OK) {
                ERROR((SGE_EVENT, "qmaster is not alive"));
                goto QACCT_EXIT;
             }
@@ -1482,7 +1483,7 @@ lList **hgrp_l
    */
    if (ppcentries) {
       what = lWhat("%T(ALL)", CE_Type);
-      ce_id = ctx->gdi_multi(ctx, alpp, SGE_GDI_RECORD, SGE_CE_LIST, SGE_GDI_GET,
+      ce_id = sge_gdi2_multi(ctx, alpp, SGE_GDI_RECORD, SGE_CE_LIST, SGE_GDI_GET,
                              nullptr, nullptr, what, &state, true);
       lFreeWhat(&what);
 
@@ -1496,7 +1497,7 @@ lList **hgrp_l
    if (ppexechosts) {
       where = lWhere("%T(%I!=%s)", EH_Type, EH_name, SGE_TEMPLATE_NAME);
       what = lWhat("%T(ALL)", EH_Type);
-      eh_id = ctx->gdi_multi(ctx, alpp, SGE_GDI_RECORD, SGE_EH_LIST, SGE_GDI_GET,
+      eh_id = sge_gdi2_multi(ctx, alpp, SGE_GDI_RECORD, SGE_EH_LIST, SGE_GDI_GET,
                               nullptr, where, what, &state, true);
       lFreeWhat(&what);
       lFreeWhere(&where);
@@ -1511,7 +1512,7 @@ lList **hgrp_l
    */
    if (hgrp_l) {
       what = lWhat("%T(ALL)", HGRP_Type);
-      hgrp_id = ctx->gdi_multi(ctx, alpp, SGE_GDI_RECORD, SGE_HGRP_LIST, SGE_GDI_GET, 
+      hgrp_id = sge_gdi2_multi(ctx, alpp, SGE_GDI_RECORD, SGE_HGRP_LIST, SGE_GDI_GET,
                            nullptr, nullptr, what, &state, true);
       lFreeWhat(&what);
 
@@ -1523,9 +1524,9 @@ lList **hgrp_l
    ** GET SGE_QUEUE_LIST 
    */
    what = lWhat("%T(ALL)", QU_Type);
-   q_id = ctx->gdi_multi(ctx, alpp, SGE_GDI_SEND, SGE_CQ_LIST, SGE_GDI_GET,
+   q_id = sge_gdi2_multi(ctx, alpp, SGE_GDI_SEND, SGE_CQ_LIST, SGE_GDI_GET,
                            nullptr, nullptr, what, &state, true);
-   ctx->gdi_wait(ctx, alpp, &mal, &state);
+   sge_gdi2_wait(ctx, alpp, &mal, &state);
    lFreeWhat(&what);
 
    if (answer_list_has_error(alpp)) {

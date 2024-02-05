@@ -46,6 +46,7 @@
 #include "sgeobj/sge_qinstance_state.h"
 
 #include "gdi/sge_gdi_ctx.h"
+#include "gdi/sge_gdi2.h"
 
 #include "sge_options.h"
 #include "sig_handlers.h"
@@ -126,7 +127,7 @@ char **argv
    }
 
    if (ref_list) {
-      alp = ctx->gdi(ctx, SGE_CQ_LIST, SGE_GDI_TRIGGER, &ref_list, nullptr, nullptr);
+      alp = sge_gdi2(ctx, SGE_CQ_LIST, SGE_GDI_TRIGGER, &ref_list, nullptr, nullptr);
    }
 
    answ_list_has_err = answer_list_has_exit_code_error(&alp); 

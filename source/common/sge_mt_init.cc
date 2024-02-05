@@ -84,6 +84,5 @@ void sge_mt_init(void)
    feature_mt_init();
 
    sc_mt_init();
-   gdi_mt_init();
    gdi3_mt_init();
 } /* sge_mt_init */

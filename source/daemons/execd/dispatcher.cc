@@ -190,7 +190,7 @@ int sge_execd_process_messages(sge_gdi_ctx_class_t *ctx)
                do_reconnect = true;
                break;
          }  
-         cl_commlib_trigger(ctx->get_com_handle(ctx), 1);
+         cl_commlib_trigger(cl_com_get_handle(bootstrap_get_component_name(), 0), 1);
       }
 
       if (sge_get_com_error_flag(EXECD, SGE_COM_WAS_COMMUNICATION_ERROR, false)) {
@@ -289,7 +289,7 @@ int sge_execd_process_messages(sge_gdi_ctx_class_t *ctx)
                 */
                if (now - last_heard > alive_check_interval) {
                   int ret_val = CL_RETVAL_OK;
-                  const char* master_host = ctx->get_master(ctx, false);
+                  const char* master_host = gdi3_get_act_master_host(false);
                   cl_com_handle_t* handle = cl_com_get_handle(prognames[EXECD],1);
                   cl_com_SIRM_t* ep_status = nullptr;
 

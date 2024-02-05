@@ -142,8 +142,8 @@ target_link_libraries(
       #spoolc
       ${SPOOLING_LIBS}
       sched
-      gdi
       sgeobj
+      gdi
       cull
       comm
       uti

@@ -93,3 +93,6 @@ gdi3_get_csp_path_obj();
 void
 gdi3_set_csp_path_obj(sge_csp_path_class_t *csp_path_obj);
 
+u_long32
+gdi3_get_next_request_id();
+

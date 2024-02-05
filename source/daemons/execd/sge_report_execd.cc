@@ -74,8 +74,8 @@ int sge_send_all_reports(sge_gdi_ctx_class_t *ctx, u_long32 now, int which,
     * Don't reset stored communication errors. 
     */
 
-   cl_commlib_get_connect_time(ctx->get_com_handle(ctx),
-                               (char *)ctx->get_master(ctx, true), (char*)prognames[QMASTER], 1,
+   cl_commlib_get_connect_time(cl_com_get_handle(bootstrap_get_component_name(), 0),
+                               (char *)gdi3_get_act_master_host(true), (char*)prognames[QMASTER], 1,
                                &connect_time);
 
    if (get_last_qmaster_register_time() >= connect_time && connect_time != 0) {
@@ -84,7 +84,7 @@ int sge_send_all_reports(sge_gdi_ctx_class_t *ctx, u_long32 now, int which,
          lList *report_list = nullptr;
          int i = 0;
 
-         master_host = ctx->get_master(ctx, false);
+         master_host = gdi3_get_act_master_host(false);
          DPRINTF(("SENDING LOAD AND REPORTS\n"));
          report_list = lCreateList("report list", REP_Type);
          for (i = 0; report_sources[i].type; i++) {

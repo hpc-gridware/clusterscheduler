@@ -61,7 +61,7 @@ int sge_send_ack_to_qmaster(sge_gdi_ctx_class_t *ctx, u_long32 type, u_long32 ul
    int ret;
    sge_pack_buffer pb;
    const char* commproc = prognames[QMASTER];
-   const char* rhost = ctx->get_master(ctx, false);
+   const char* rhost = gdi3_get_act_master_host(false);
    int         id   = 1;
    
    DENTER(TOP_LAYER);

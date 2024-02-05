@@ -60,7 +60,11 @@
 #include "sgeobj/sge_conf.h"
 #include "sgeobj/cull/sge_permission_PERM_L.h"
 
+#include "gdi/qm_name.h"
 #include "gdi/sge_gdi2.h"
+#include "gdi/sge_gdi3.h"
+#include "gdi/sge_gdi3.h"
+#include "gdi/sge_gdi_ctx.h"
 #include "gdi/sge_security.h"
 #include "gdi/sge_gdi.h"
 #include "gdi/sge_gdi_packet.h"
@@ -178,6 +182,92 @@ static const char *target2string(u_long32 target)
          ret = "unknown list";
    }
    return ret;
+}
+
+const char *
+gdi3_get_act_master_host(bool reread) {
+   sge_error_class_t *eh = gdi3_get_error_handle();
+   static bool error_already_logged = false;
+
+   DENTER(BASIS_LAYER);
+
+   if (gdi3_get_master_host()  == nullptr || reread) {
+      char err_str[SGE_PATH_MAX+128];
+      char master_name[CL_MAXHOSTLEN];
+      u_long32 now = sge_get_gmt();
+
+      /* fix system clock moved back situation */
+      if (gdi3_get_timestamp_qmaster_file() > now) {
+         gdi3_set_timestamp_qmaster_file(0);
+      }
+
+      if (gdi3_get_master_host()  == nullptr || now - gdi3_get_timestamp_qmaster_file() >= 30) {
+         /* re-read act qmaster file (max. every 30 seconds) */
+         DPRINTF(("re-read actual qmaster file\n"));
+         gdi3_set_timestamp_qmaster_file(now);
+
+         if (get_qm_name(master_name, bootstrap_get_act_qmaster_file(), err_str) == -1) {
+            if (eh != nullptr && !error_already_logged) {
+               eh->error(eh, STATUS_EUNKNOWN, ANSWER_QUALITY_ERROR, MSG_GDI_READMASTERNAMEFAILED_S, err_str);
+               error_already_logged = true;
+            }
+            DRETURN(nullptr);
+         }
+         error_already_logged = false;
+         DPRINTF(("(re-)reading act_qmaster file. Got master host \"%s\"\n", master_name));
+         /*
+         ** TODO: thread locking needed here ?
+         */
+         gdi3_set_master_host(master_name);
+      }
+   }
+   DRETURN(gdi3_get_master_host());
+}
+
+int
+sge_gdi_ctx_class_is_alive()
+{
+   cl_com_SIRM_t* status = nullptr;
+   int cl_ret = CL_RETVAL_OK;
+   cl_com_handle_t *handle = cl_com_get_handle(bootstrap_get_component_name(), 0);
+
+   /* TODO */
+   const char* comp_name = prognames[QMASTER];
+   const char* comp_host = gdi3_get_act_master_host(false);
+   int         comp_id   = 1;
+   int         comp_port = bootstrap_get_sge_qmaster_port();
+
+   DENTER(TOP_LAYER);
+
+   if (handle == nullptr) {
+      sge_gdi_ctx_class_error(STATUS_EUNKNOWN, ANSWER_QUALITY_ERROR,
+                              "handle not found %s:0", bootstrap_get_component_name());
+      DRETURN(CL_RETVAL_PARAMS);
+   }
+
+   /*
+    * update endpoint information of qmaster in commlib
+    * qmaster could have changed due to migration
+    */
+   cl_com_append_known_endpoint_from_name((char*)comp_host, (char*)comp_name, comp_id,
+                                          comp_port, CL_CM_AC_DISABLED, true);
+
+   DPRINTF(("to->comp_host, to->comp_name, to->comp_id: %s/%s/%d\n", comp_host?comp_host:"", comp_name?comp_name:"", comp_id));
+   cl_ret = cl_commlib_get_endpoint_status(handle, (char*)comp_host, (char*)comp_name, comp_id, &status);
+   if (cl_ret != CL_RETVAL_OK) {
+      sge_gdi_ctx_class_error(STATUS_EUNKNOWN, ANSWER_QUALITY_ERROR,
+                              "cl_commlib_get_endpoint_status failed: "SFQ, cl_get_error_text(cl_ret));
+   } else {
+      DEBUG((SGE_EVENT, SFNMAX, MSG_GDI_QMASTER_STILL_RUNNING));
+   }
+
+   if (status != nullptr) {
+      DEBUG((SGE_EVENT,MSG_GDI_ENDPOINT_UPTIME_UU, sge_u32c(status->runtime) ,
+              sge_u32c(status->application_status)));
+      cl_com_free_sirm_message(&status);
+   }
+
+   DRETURN(cl_ret);
 }
 
 /****** gdi/request/sge_gdi_extract_answer() **********************************
@@ -403,10 +493,10 @@ int sge_gdi2_multi(sge_gdi_ctx_class_t* ctx, lList **alpp,
 *        int cqueue_request_id;
 *        int job_request_id;
 *
-*        cqueue_request_id = ctx->gdi_multi(ctx, &local_answer_list, SGE_GDI_RECORD,
+*        cqueue_request_id = sge_gdi2_multi(ctx, &local_answer_list, SGE_GDI_RECORD,
 *                                          SGE_CQ_LIST, SGE_GDI_GET, nullptr,
 *                                          where_cqueue, what_cqueue, &state, true);
-*        job_request_id = ctx->gdi_multi(ctx, &local_answer_list, SGE_GDI_SEND,
+*        job_request_id = sge_gdi2_multi(ctx, &local_answer_list, SGE_GDI_SEND,
 *                                        SGE_JB_LIST, SGE_GDI_GET, nullptr,
 *                                        where_job, what_job, &state, true);
 *        if (cqueue_request_id != -1 && job_request_id != -1 &&
@@ -418,7 +508,7 @@ int sge_gdi2_multi(sge_gdi_ctx_class_t* ctx, lList **alpp,
 *           lList *answer_job = nullptr;
 *           bool local_ret;
 *
-*           local_ret = ctx->gdi_wait(ctx, &local_answer_list, &multi_answer_list, &state);
+*           local_ret = sge_gdi2_wait(ctx, &local_answer_list, &multi_answer_list, &state);
 *           sge_gdi_extract_answer(&answer_cqueue, SGE_GDI_GET, SGE_CQ_LIST,
 *                                  cqueue_request_id, multi_answer_list, &list_cqueue);
 *           sge_gdi_extract_answer(&answer_job, SGE_GDI_GET, SGE_CQ_LIST,
@@ -553,7 +643,7 @@ sge_gdi2_send_any_request(sge_gdi_ctx_class_t *ctx, int synchron, u_long32 *mid,
 {
    int i;
    cl_xml_ack_type_t ack_type = CL_MIH_MAT_NAK;
-   cl_com_handle_t* handle = ctx->get_com_handle(ctx);
+   cl_com_handle_t* handle = cl_com_get_handle(bootstrap_get_component_name(), 0);
    unsigned long dummy_mid = 0;
    unsigned long* mid_pointer = nullptr;
 
@@ -650,7 +740,7 @@ sge_gdi2_get_any_request(sge_gdi_ctx_class_t *ctx, char *rhost,
       DRETURN(-1);
    }
    
-   handle = ctx->get_com_handle(ctx);
+   handle = cl_com_get_handle(bootstrap_get_component_name(), 0);
 
    /* TODO: do trigger or not? depends on syncrhron
     * TODO: Remove synchron flag from this function, it is only used for get_event_list call in event client.
@@ -811,16 +901,12 @@ static void dump_send_info(const char* comp_host, const char* comp_name, int com
 ** NOTES
 **    MT-NOTE: gdi_tsm() is MT safe (assumptions)
 */
-lList *gdi2_tsm(
-sge_gdi_ctx_class_t *thiz,
-const char *schedd_name,
-const char *cell 
-) {
+lList *gdi2_tsm(sge_gdi_ctx_class_t *thiz) {
    lList *alp = nullptr;
 
    DENTER(GDI_LAYER);
 
-   alp = thiz->gdi(thiz, SGE_SC_LIST, SGE_GDI_TRIGGER, nullptr, nullptr, nullptr);
+   alp = sge_gdi2(thiz, SGE_SC_LIST, SGE_GDI_TRIGGER, nullptr, nullptr, nullptr);
 
    DRETURN(alp);
 }
@@ -854,7 +940,7 @@ lList *gdi2_kill(sge_gdi_ctx_class_t *thiz, lList *id_list, const char *cell,
    alp = lCreateList("answer", AN_Type);
 
    if (action_flag & MASTER_KILL) {
-      tmpalp = thiz->gdi(thiz, SGE_MASTER_EVENT, SGE_GDI_TRIGGER, nullptr, nullptr, nullptr);
+      tmpalp = sge_gdi2(thiz, SGE_MASTER_EVENT, SGE_GDI_TRIGGER, nullptr, nullptr, nullptr);
       lAddList(alp, &tmpalp);
    }
 
@@ -865,12 +951,12 @@ lList *gdi2_kill(sge_gdi_ctx_class_t *thiz, lList *id_list, const char *cell,
       id_list = lCreateList("kill scheduler", ID_Type);
       id_list_created = true;
       lAddElemStr(&id_list, ID_str, buffer, ID_Type);
-      tmpalp = thiz->gdi(thiz, SGE_EV_LIST, SGE_GDI_TRIGGER, &id_list, nullptr, nullptr);
+      tmpalp = sge_gdi2(thiz, SGE_EV_LIST, SGE_GDI_TRIGGER, &id_list, nullptr, nullptr);
       lAddList(alp, &tmpalp);  
    }
 
    if (action_flag & THREAD_START) {
-      tmpalp = thiz->gdi(thiz, SGE_DUMMY_LIST, SGE_GDI_TRIGGER, &id_list, nullptr, nullptr);
+      tmpalp = sge_gdi2(thiz, SGE_DUMMY_LIST, SGE_GDI_TRIGGER, &id_list, nullptr, nullptr);
       lAddList(alp, &tmpalp);  
    }
 
@@ -882,7 +968,7 @@ lList *gdi2_kill(sge_gdi_ctx_class_t *thiz, lList *id_list, const char *cell,
          id_list_created = true;
          lAddElemStr(&id_list, ID_str, buffer, ID_Type);
       }
-      tmpalp = thiz->gdi(thiz, SGE_EV_LIST, SGE_GDI_TRIGGER, &id_list, nullptr, nullptr);
+      tmpalp = sge_gdi2(thiz, SGE_EV_LIST, SGE_GDI_TRIGGER, &id_list, nullptr, nullptr);
       lAddList(alp, &tmpalp);  
    }
 
@@ -906,7 +992,7 @@ lList *gdi2_kill(sge_gdi_ctx_class_t *thiz, lList *id_list, const char *cell,
          lSetUlong(hlep, ID_force, (action_flag & JOB_KILL)?1:0);
          lAppendElem(hlp, hlep);
       }
-      tmpalp = thiz->gdi(thiz, SGE_EH_LIST, SGE_GDI_TRIGGER, &hlp, nullptr, nullptr);
+      tmpalp = sge_gdi2(thiz, SGE_EH_LIST, SGE_GDI_TRIGGER, &hlp, nullptr, nullptr);
       lAddList(alp, &tmpalp);
       lFreeList(&hlp);
    }
@@ -962,7 +1048,7 @@ bool sge_gdi2_get_mapping_name(sge_gdi_ctx_class_t *ctx, const char *requestedHo
    lAppendElem(permList,ep);
    lSetHost(ep, PERM_req_host, requestedHost); 
 
-   alp = ctx->gdi(ctx, SGE_DUMMY_LIST, SGE_GDI_PERMCHECK ,  &permList , nullptr,nullptr );
+   alp = sge_gdi2(ctx, SGE_DUMMY_LIST, SGE_GDI_PERMCHECK ,  &permList , nullptr,nullptr );
 
    
    if (permList != nullptr) {
@@ -1029,7 +1115,7 @@ bool sge_gdi2_check_permission(sge_gdi_ctx_class_t *ctx, lList **alpp, int optio
   DENTER(GDI_LAYER);
 
   permList = nullptr;
-  alp = ctx->gdi(ctx, SGE_DUMMY_LIST, SGE_GDI_PERMCHECK, &permList, nullptr, nullptr);
+  alp = sge_gdi2(ctx, SGE_DUMMY_LIST, SGE_GDI_PERMCHECK, &permList, nullptr, nullptr);
 
   if (permList == nullptr) {
      DPRINTF(("Permlist is nullptr\n"));
@@ -1171,7 +1257,7 @@ gdi2_send_message(sge_gdi_ctx_class_t *sge_ctx, int synchron, const char *tocomp
    if (use_execd_handle == 0) {
       /* normal gdi send to qmaster */
       DEBUG((SGE_EVENT,"standard gdi request to qmaster\n"));
-      handle = sge_ctx->get_com_handle(sge_ctx);
+      handle = cl_com_get_handle(bootstrap_get_component_name(), 0);
    } else {
       /* we have to send a message to another component than qmaster */
       DEBUG((SGE_EVENT,"search handle to \"%s\"\n", tocomproc));
@@ -1268,7 +1354,7 @@ gdi2_receive_message(sge_gdi_ctx_class_t *sge_ctx, char *fromcommproc, u_short *
    if (use_execd_handle == 0) {
       /* normal gdi send to qmaster */
       DEBUG((SGE_EVENT,"standard gdi receive message\n"));
-      handle = sge_ctx->get_com_handle(sge_ctx);
+      handle = cl_com_get_handle(bootstrap_get_component_name(), 0);
    } else {
       /* we have to send a message to another component than qmaster */
       DEBUG((SGE_EVENT,"search handle to \"%s\"\n", fromcommproc));
@@ -1446,7 +1532,7 @@ int gdi2_get_configuration(sge_gdi_ctx_class_t *ctx, const char *config_name,
       DPRINTF(("requesting global and %s\n", lGetHost(hep, EH_name)));
    }
    what = lWhat("%T(ALL)", CONF_Type);
-   alp = ctx->gdi(ctx, SGE_CONF_LIST, SGE_GDI_GET, &lp, where, what);
+   alp = sge_gdi2(ctx, SGE_CONF_LIST, SGE_GDI_GET, &lp, where, what);
 
    lFreeWhat(&what);
    lFreeWhere(&where);
@@ -1536,7 +1622,7 @@ int gdi2_wait_for_conf(sge_gdi_ctx_class_t *ctx, lList **conf_list) {
       }
 
       DTRACE;
-      handle = ctx->get_com_handle(ctx);
+      handle = cl_com_get_handle(bootstrap_get_component_name(), 0);
       ret_val = cl_commlib_trigger(handle, 1);
       switch(ret_val) {
          case CL_RETVAL_SELECT_TIMEOUT:
@@ -1552,7 +1638,7 @@ int gdi2_wait_for_conf(sge_gdi_ctx_class_t *ctx, lList **conf_list) {
       now = sge_get_gmt();
 
       if (now - last_qmaster_file_read >= 30) {
-         ctx->get_master(ctx, true);
+         gdi3_get_act_master_host(true);
          DPRINTF(("re-read actual qmaster file\n"));
          last_qmaster_file_read = now;
       }

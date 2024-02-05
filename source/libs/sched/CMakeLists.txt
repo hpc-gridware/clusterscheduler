@@ -32,11 +32,11 @@ target_include_directories(${LIBRARY_NAME} PUBLIC ${SGE_INCLUDES}
 
 add_executable(test_eval_performance test_eval_performance.cc)
 target_include_directories(test_eval_performance PRIVATE "./")
-target_link_libraries(test_eval_performance PRIVATE sched sgeobj gdi cull comm uti commlists ${SGE_LIBS})
+target_link_libraries(test_eval_performance PRIVATE sched gdi sgeobj gdi cull comm uti commlists ${SGE_LIBS})
 
 add_executable(test_resource_utilization test_resource_utilization.cc ../../common/sge_mt_init.cc)
 target_include_directories(test_resource_utilization PRIVATE "./")
-target_link_libraries(test_resource_utilization PRIVATE sched gdi sgeobj cull comm uti commlists ${SGE_LIBS})
+target_link_libraries(test_resource_utilization PRIVATE sched sgeobj gdi cull comm uti commlists ${SGE_LIBS})
 
 add_executable(test_sge_load_formula test_sge_load_formula.cc)
 target_include_directories(test_sge_load_formula PRIVATE "./")

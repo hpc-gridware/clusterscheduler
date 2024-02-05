@@ -99,7 +99,7 @@ void sge_setup_sge_execd(sge_gdi_ctx_class_t *ctx, const char* tmp_err_file_name
          SGE_EXIT(nullptr, 1);
       }
       sleep(1);
-      ctx->get_master(ctx, true);
+      gdi3_get_act_master_host(true);
    }
    sge_show_conf();         
 

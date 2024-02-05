@@ -70,6 +70,7 @@
 
 #include "gdi/sge_gdi_ctx.h"
 #include "gdi/sge_gdi.h"
+#include "gdi/sge_gdi2.h"
 
 #include "sched/load_correction.h"
 #include "sched/sge_complex_schedd.h"
@@ -911,7 +912,7 @@ u_long32 show
       where = nw;
    eh_all = lWhat("%T(ALL)", EH_Type);
    
-   eh_id = ctx->gdi_multi(ctx,
+   eh_id = sge_gdi2_multi(ctx,
                           answer_list, SGE_GDI_RECORD, SGE_EH_LIST, SGE_GDI_GET, 
                           nullptr, where, eh_all, &state, true);
    lFreeWhat(&eh_all);
@@ -924,7 +925,7 @@ u_long32 show
    if (show & QHOST_DISPLAY_JOBS || show & QHOST_DISPLAY_QUEUES) {
       q_all = lWhat("%T(ALL)", QU_Type);
       
-      q_id = ctx->gdi_multi(ctx, 
+      q_id = sge_gdi2_multi(ctx,
                             answer_list, SGE_GDI_RECORD, SGE_CQ_LIST, SGE_GDI_GET, 
                             nullptr, nullptr, q_all, &state, true);
       lFreeWhat(&q_all);
@@ -994,7 +995,7 @@ u_long32 show
 /* printf("======================================\n"); */
 /* lWriteWhereTo(jw, stdout); */
 
-      j_id = ctx->gdi_multi(ctx, 
+      j_id = sge_gdi2_multi(ctx,
                          answer_list, SGE_GDI_RECORD, SGE_JB_LIST, SGE_GDI_GET, 
                          nullptr, jw, j_all, &state, true);
       lFreeWhat(&j_all);
@@ -1009,7 +1010,7 @@ u_long32 show
    ** complexes
    */
    ce_all = lWhat("%T(ALL)", CE_Type);
-   ce_id = ctx->gdi_multi(ctx, 
+   ce_id = sge_gdi2_multi(ctx,
                           answer_list, SGE_GDI_RECORD, SGE_CE_LIST, SGE_GDI_GET, 
                           nullptr, nullptr, ce_all, &state, true);
    lFreeWhat(&ce_all);
@@ -1023,7 +1024,7 @@ u_long32 show
    */
    pe_all = lWhat("%T(ALL)", PE_Type);
    
-   pe_id = ctx->gdi_multi(ctx, 
+   pe_id = sge_gdi2_multi(ctx,
                           answer_list, SGE_GDI_RECORD, SGE_PE_LIST, SGE_GDI_GET, 
                           nullptr, nullptr, pe_all, &state, true);
    lFreeWhat(&pe_all);
@@ -1038,10 +1039,10 @@ u_long32 show
    gc_where = lWhere("%T(%I c= %s)", CONF_Type, CONF_name, SGE_GLOBAL_NAME);
    gc_what = lWhat("%T(ALL)", CONF_Type);
    
-   gc_id = ctx->gdi_multi(ctx, 
+   gc_id = sge_gdi2_multi(ctx,
                           answer_list, SGE_GDI_SEND, SGE_CONF_LIST, SGE_GDI_GET,
                           nullptr, gc_where, gc_what, &state, true);
-   ctx->gdi_wait(ctx, answer_list, &mal, &state);
+   sge_gdi2_wait(ctx, answer_list, &mal, &state);
    lFreeWhat(&gc_what);
    lFreeWhere(&gc_where);
 

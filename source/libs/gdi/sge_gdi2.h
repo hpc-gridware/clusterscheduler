@@ -96,7 +96,7 @@ int sge_gdi2_send_any_request(sge_gdi_ctx_class_t *ctx, int synchron, u_long32 *
                               int tag, u_long32  response_id, lList **alpp);
 
 lList *gdi2_kill(sge_gdi_ctx_class_t *thiz, lList *id_list, const char *cell, u_long32 option_flags, u_long32 action_flag);
-lList *gdi2_tsm( sge_gdi_ctx_class_t *thiz, const char *schedd_name, const char *cell);
+lList *gdi2_tsm( sge_gdi_ctx_class_t *thiz);
 
 bool sge_gdi2_check_permission(sge_gdi_ctx_class_t *ctx, lList **alpp, int option);
 bool sge_gdi2_get_mapping_name(sge_gdi_ctx_class_t *ctx, const char *requestedHost, 
@@ -159,4 +159,10 @@ sge_gdi_extract_answer(lList **alpp, u_long32 cmd, u_long32 target, int id,
                        lList *mal, lList **olpp);
 
 
-void gdi2_default_exit_func(void **ref_ctx, int i); 
+void gdi2_default_exit_func(void **ref_ctx, int i);
+
+const char *
+gdi3_get_act_master_host(bool reread);
+
+int
+sge_gdi_ctx_class_is_alive();

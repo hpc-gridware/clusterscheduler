@@ -1416,7 +1416,7 @@ int main(int argc, char **argv)
    cell_root = bootstrap_get_cell_root();
    myuid = bootstrap_get_uid();
    username = bootstrap_get_username();
-   mastername = ctx->get_master(ctx, false);
+   mastername = gdi3_get_act_master_host(false);
 
    if (strcasecmp(bootstrap_get_security_mode(), "csp") == 0) {
       csp_mode = true;
@@ -1915,7 +1915,7 @@ int main(int argc, char **argv)
       DPRINTF(("=====================================================\n"));
 
       /* submit the job to the QMaster */
-      alp = ctx->gdi(ctx, SGE_JB_LIST, SGE_GDI_ADD | SGE_GDI_RETURN_NEW_VERSION, 
+      alp = sge_gdi2(ctx, SGE_JB_LIST, SGE_GDI_ADD | SGE_GDI_RETURN_NEW_VERSION,
                      &lp_jobs, nullptr, nullptr);
 
       /* reinitialize 'job' with pointer to new version from qmaster */
@@ -2141,7 +2141,7 @@ int main(int argc, char **argv)
          /* get job from qmaster: to handle qsh and to detect deleted qrsh job */
          what = lWhat("%T(%I)", JB_Type, JB_ja_tasks); 
          where = lWhere("%T(%I==%u)", JB_Type, JB_job_number, job_id); 
-         alp = ctx->gdi(ctx, SGE_JB_LIST, SGE_GDI_GET, &lp_poll, where, what);
+         alp = sge_gdi2(ctx, SGE_JB_LIST, SGE_GDI_GET, &lp_poll, where, what);
 
          do_exit = parse_result_list(alp, &alp_error);
    
@@ -2281,7 +2281,7 @@ static void delete_job(sge_gdi_ctx_class_t *ctx, u_long32 job_id, lList *jlp)
    sprintf(job_str, sge_u32, job_id);
    lAddElemStr(&idlp, ID_str, job_str, ID_Type);
 
-   alp = ctx->gdi(ctx, SGE_JB_LIST, SGE_GDI_DEL, &idlp, nullptr, nullptr);
+   alp = sge_gdi2(ctx, SGE_JB_LIST, SGE_GDI_DEL, &idlp, nullptr, nullptr);
 
    /* no error handling here, we try to delete the job if we can */
    lFreeList(&idlp);

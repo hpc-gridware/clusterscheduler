@@ -50,6 +50,7 @@
 
 #include "gdi/sge_security.h"
 #include "gdi/sge_gdi_ctx.h"
+#include "gdi/sge_gdi2.h"
 
 #include "sig_handlers.h"
 #include "basis_types.h"
@@ -135,7 +136,7 @@ main(int argc, char **argv)
    username = bootstrap_get_username();
    qualified_hostname = uti_state_get_qualified_hostname();
    unqualified_hostname = uti_state_get_unqualified_hostname();
-   mastername = ctx->get_master(ctx, false);
+   mastername = gdi3_get_act_master_host(false);
 
    /*
     * read switches from the various defaults files

@@ -49,6 +49,7 @@
 #include "sgeobj/sge_centry.h"
 
 #include "gdi/sge_gdi.h"
+#include "gdi/sge_gdi2.h"
 #include "gdi/sge_gdi_ctx.h"
 
 #include "comm/commlib.h"
@@ -191,7 +192,7 @@ int main(int argc, char **argv) {
    if (all_users)
       gdi_cmd |= SGE_GDI_ALL_USERS;
 
-   alp = ctx->gdi(ctx, SGE_JB_LIST, gdi_cmd, &request_list, nullptr, nullptr);
+   alp = sge_gdi2(ctx, SGE_JB_LIST, gdi_cmd, &request_list, nullptr, nullptr);
    for_each_ep(aep, alp) {
       printf("%s\n", lGetString(aep, AN_text));
       if (ret == STATUS_OK) {

@@ -62,9 +62,19 @@ void sge_gdi_ctx_class_destroy(sge_gdi_ctx_class_t **pst);
 
 void sge_gdi_set_thread_local_ctx(sge_gdi_ctx_class_t* ctx);
 
-void gdi_mt_init(void);
-
-bool sge_daemonize_prepare(sge_gdi_ctx_class_t *context);
-bool sge_daemonize_finalize(sge_gdi_ctx_class_t *context);
+bool sge_daemonize_prepare();
+bool sge_daemonize_finalize();
 
 int sge_daemonize(int *keep_open, unsigned long nr_of_fds, sge_gdi_ctx_class_t *context);
+
+void
+sge_gdi_ctx_class_error(int error_type, int error_quality, const char* fmt, ...);
+
+int sge_gdi_ctx_class_prepare_enroll(sge_gdi_ctx_class_t *thiz);
+
+int sge_gdi_ctx_class_connect(sge_gdi_ctx_class_t *thiz);
+
+lList* sge_gdi_ctx_class_gdi_tsm(sge_gdi_ctx_class_t *thiz);
+
+lList* sge_gdi_ctx_class_gdi_kill(sge_gdi_ctx_class_t *thiz, lList *id_list, const char *cell,
+                                  u_long32 option_flags, u_long32 action_flag);

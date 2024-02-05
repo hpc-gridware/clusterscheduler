@@ -59,6 +59,7 @@
 #include "sgeobj/cull/sge_all_listsL.h"
 
 #include "gdi/sge_gdi.h"
+#include "gdi/sge_gdi2.h"
 #include "gdi/sge_gdi_ctx.h"
 
 #include "basis_types.h"
@@ -408,7 +409,7 @@ get_all_lists(sge_gdi_ctx_class_t *ctx, lList **rqs_l, lList **centry_l, lList *
    ** resource quota sets
    */
    what = lWhat("%T(ALL)", RQS_Type);
-   rqs_id = ctx->gdi_multi(ctx, 
+   rqs_id = sge_gdi2_multi(ctx,
                           alpp, SGE_GDI_RECORD, SGE_RQS_LIST, SGE_GDI_GET, 
                           nullptr, nullptr, what, &state, true);
    lFreeWhat(&what);
@@ -421,7 +422,7 @@ get_all_lists(sge_gdi_ctx_class_t *ctx, lList **rqs_l, lList **centry_l, lList *
    ** complexes
    */
    what = lWhat("%T(ALL)", CE_Type);
-   ce_id = ctx->gdi_multi(ctx, 
+   ce_id = sge_gdi2_multi(ctx,
                           alpp, SGE_GDI_RECORD, SGE_CE_LIST, SGE_GDI_GET, 
                           nullptr, nullptr, what, &state, true);
    lFreeWhat(&what);
@@ -433,7 +434,7 @@ get_all_lists(sge_gdi_ctx_class_t *ctx, lList **rqs_l, lList **centry_l, lList *
    ** usersets 
    */
    what = lWhat("%T(ALL)", US_Type);
-   userset_id = ctx->gdi_multi(ctx, 
+   userset_id = sge_gdi2_multi(ctx,
                           alpp, SGE_GDI_RECORD, SGE_US_LIST, SGE_GDI_GET, 
                           nullptr, nullptr, what, &state, true);
    lFreeWhat(&what);
@@ -445,7 +446,7 @@ get_all_lists(sge_gdi_ctx_class_t *ctx, lList **rqs_l, lList **centry_l, lList *
    ** host groups 
    */
    what = lWhat("%T(ALL)", HGRP_Type);
-   hgroup_id = ctx->gdi_multi(ctx, 
+   hgroup_id = sge_gdi2_multi(ctx,
                           alpp, SGE_GDI_RECORD, SGE_HGRP_LIST, SGE_GDI_GET, 
                           nullptr, nullptr, what, &state, true);
    lFreeWhat(&what);
@@ -472,9 +473,9 @@ get_all_lists(sge_gdi_ctx_class_t *ctx, lList **rqs_l, lList **centry_l, lList *
       where = nw;
 
    what = lWhat("%T(%I %I %I %I)", EH_Type, EH_name, EH_load_list, EH_consumable_config_list, EH_resource_utilization);
-   eh_id = ctx->gdi_multi(ctx, alpp, SGE_GDI_SEND, SGE_EH_LIST, SGE_GDI_GET, 
+   eh_id = sge_gdi2_multi(ctx, alpp, SGE_GDI_SEND, SGE_EH_LIST, SGE_GDI_GET,
                           nullptr, where, what, &state, true);
-   ctx->gdi_wait(ctx, alpp, &mal, &state);
+   sge_gdi2_wait(ctx, alpp, &mal, &state);
    lFreeWhat(&what);
    lFreeWhere(&where);
 

@@ -240,8 +240,9 @@ gdi3_set_csp_path_obj(sge_csp_path_class_t *csp_path_obj) {
 }
 
 u_long32
-gdi3_get_request_id() {
+gdi3_get_next_request_id() {
    GET_SPECIFIC(sge_gdi_tl_t, tl, gdi3_tl_init, gdi3_tl_key);
+   tl->request_id++;
    return tl->request_id;
 }
 

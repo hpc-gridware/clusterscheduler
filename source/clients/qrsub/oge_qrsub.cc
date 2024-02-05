@@ -127,7 +127,7 @@ int main(int argc, char **argv) {
    ar_lp = lCreateList(nullptr, AR_Type);
    lAppendElem(ar_lp, ar);
 
-   alp = ctx->gdi(ctx, SGE_AR_LIST, SGE_GDI_ADD | SGE_GDI_RETURN_NEW_VERSION, &ar_lp, nullptr, nullptr);
+   alp = sge_gdi2(ctx, SGE_AR_LIST, SGE_GDI_ADD | SGE_GDI_RETURN_NEW_VERSION, &ar_lp, nullptr, nullptr);
    lFreeList(&ar_lp);
    answer_list_on_error_print_or_exit(&alp, stdout);
    if (answer_list_has_error(&alp)) {

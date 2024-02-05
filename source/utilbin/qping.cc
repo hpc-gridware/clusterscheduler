@@ -1005,7 +1005,6 @@ int main(int argc, char *argv[]) {
    bootstrap_mt_init();
    prof_mt_init();
    feature_mt_init();
-   gdi_mt_init();
    gdi3_mt_init();
 
    sge_getme(QPING);

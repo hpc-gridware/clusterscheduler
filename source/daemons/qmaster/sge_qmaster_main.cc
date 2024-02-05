@@ -196,7 +196,7 @@ int main(int argc, char *argv[]) {
    /* this must be done as root user to be able to bind ports < 1024 */
    max_enroll_tries = 30;
    while (cl_com_get_handle(prognames[QMASTER], 1) == nullptr) {
-      ctx->prepare_enroll(ctx);
+      sge_gdi_ctx_class_prepare_enroll(ctx);
       max_enroll_tries--;
       if (max_enroll_tries <= 0) {
          /* exit after 30 seconds */

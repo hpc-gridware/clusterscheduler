@@ -127,7 +127,7 @@ bool sge_ssi_job_cancel(sge_evc_class_t *evc, const char *job_identifier, bool r
    lSetUlong(ref_ep, RN_step, 1);
 
    /* send delete request */
-   alp = ctx->gdi(ctx, SGE_JB_LIST, SGE_GDI_DEL, &ref_list, nullptr, nullptr);
+   alp = sge_gdi2(ctx, SGE_JB_LIST, SGE_GDI_DEL, &ref_list, nullptr, nullptr);
 
    answer_list_on_error_print_or_exit(&alp, stderr);
 

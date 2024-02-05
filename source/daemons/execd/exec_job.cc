@@ -322,7 +322,7 @@ int sge_exec_job(sge_gdi_ctx_class_t *ctx, lListElem *jep, lListElem *jatep,
    const char *default_cell = uti_state_get_default_cell();
    const char *binary_path = bootstrap_get_binary_path();
    const char *admin_user = bootstrap_get_admin_user();
-   const char *masterhost = ctx->get_master(ctx, false);
+   const char *masterhost = gdi3_get_act_master_host(false);
    bool csp_mode = false;
    sigset_t sigset, sigset_oset;
    struct passwd pw_struct;

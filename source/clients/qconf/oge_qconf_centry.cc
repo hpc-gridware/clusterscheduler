@@ -45,6 +45,7 @@
 #include "uti/sge_unistd.h"
 
 #include "gdi/sge_gdi.h"
+#include "gdi/sge_gdi2.h"
 
 #include "spool/flatfile/sge_flatfile.h"
 #include "spool/flatfile/sge_flatfile_obj.h"
@@ -67,7 +68,7 @@ bool centry_add_del_mod_via_gdi(sge_gdi_ctx_class_t *ctx, lListElem *this_elem, 
 
       centry_list = lCreateList("", CE_Type);
       lAppendElem(centry_list, this_elem);
-      gdi_answer_list = ctx->gdi(ctx, SGE_CE_LIST, gdi_command, &centry_list, nullptr, nullptr);
+      gdi_answer_list = sge_gdi2(ctx, SGE_CE_LIST, gdi_command, &centry_list, nullptr, nullptr);
       answer_list_replace(answer_list, &gdi_answer_list);
    }
 
@@ -86,7 +87,7 @@ lListElem *centry_get_via_gdi(sge_gdi_ctx_class_t *ctx, lList **answer_list, con
 
       what = lWhat("%T(ALL)", CE_Type);
       where = lWhere("%T(%I==%s)", CE_Type, CE_name, name);
-      gdi_answer_list = ctx->gdi(ctx, SGE_CE_LIST, SGE_GDI_GET, &centry_list, where, what);
+      gdi_answer_list = sge_gdi2(ctx, SGE_CE_LIST, SGE_GDI_GET, &centry_list, where, what);
       lFreeWhat(&what);
       lFreeWhere(&where);
 
@@ -360,7 +361,7 @@ lList *centry_list_get_via_gdi(sge_gdi_ctx_class_t *ctx, lList **answer_list) {
 
    DENTER(TOP_LAYER);
    what = lWhat("%T(ALL)", CE_Type);
-   gdi_answer_list = ctx->gdi(ctx, SGE_CE_LIST, SGE_GDI_GET, &ret, nullptr, what);
+   gdi_answer_list = sge_gdi2(ctx, SGE_CE_LIST, SGE_GDI_GET, &ret, nullptr, what);
    lFreeWhat(&what);
 
    if (answer_list_has_error(&gdi_answer_list)) {
@@ -540,10 +541,10 @@ bool centry_list_add_del_mod_via_gdi(sge_gdi_ctx_class_t *ctx, lList **this_list
           */
          if (ret && do_del) {
             int mode = (--number_req > 0) ? SGE_GDI_RECORD : SGE_GDI_SEND;
-            del_id = ctx->gdi_multi(ctx, &gdi_answer_list, mode, SGE_CE_LIST, SGE_GDI_DEL, old_list, nullptr, nullptr, &state,
+            del_id = sge_gdi2_multi(ctx, &gdi_answer_list, mode, SGE_CE_LIST, SGE_GDI_DEL, old_list, nullptr, nullptr, &state,
                                     false);
             if (mode == SGE_GDI_SEND) {
-               ctx->gdi_wait(ctx, &gdi_answer_list, &mal_answer_list, &state);
+               sge_gdi2_wait(ctx, &gdi_answer_list, &mal_answer_list, &state);
             }
             if (answer_list_has_error(&gdi_answer_list)) {
                answer_list_append_list(answer_list, &gdi_answer_list);
@@ -554,10 +555,10 @@ bool centry_list_add_del_mod_via_gdi(sge_gdi_ctx_class_t *ctx, lList **this_list
          }
          if (ret && do_mod) {
             int mode = (--number_req > 0) ? SGE_GDI_RECORD : SGE_GDI_SEND;
-            mod_id = ctx->gdi_multi(ctx, &gdi_answer_list, mode, SGE_CE_LIST, SGE_GDI_MOD, &modify_list, nullptr, nullptr,
+            mod_id = sge_gdi2_multi(ctx, &gdi_answer_list, mode, SGE_CE_LIST, SGE_GDI_MOD, &modify_list, nullptr, nullptr,
                                     &state, false);
             if (mode == SGE_GDI_SEND) {
-               ctx->gdi_wait(ctx, &gdi_answer_list, &mal_answer_list, &state);
+               sge_gdi2_wait(ctx, &gdi_answer_list, &mal_answer_list, &state);
             }
             if (answer_list_has_error(&gdi_answer_list)) {
                answer_list_append_list(answer_list, &gdi_answer_list);
@@ -568,10 +569,10 @@ bool centry_list_add_del_mod_via_gdi(sge_gdi_ctx_class_t *ctx, lList **this_list
          }
          if (ret && do_add) {
             int mode = (--number_req > 0) ? SGE_GDI_RECORD : SGE_GDI_SEND;
-            add_id = ctx->gdi_multi(ctx, &gdi_answer_list, mode, SGE_CE_LIST, SGE_GDI_ADD, &add_list, nullptr, nullptr,
+            add_id = sge_gdi2_multi(ctx, &gdi_answer_list, mode, SGE_CE_LIST, SGE_GDI_ADD, &add_list, nullptr, nullptr,
                                     &state, false);
             if (mode == SGE_GDI_SEND) {
-               ctx->gdi_wait(ctx, &gdi_answer_list, &mal_answer_list, &state);
+               sge_gdi2_wait(ctx, &gdi_answer_list, &mal_answer_list, &state);
             }
             if (answer_list_has_error(&gdi_answer_list)) {
                answer_list_append_list(answer_list, &gdi_answer_list);

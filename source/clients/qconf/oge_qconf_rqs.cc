@@ -36,6 +36,7 @@
 #include "uti/sge_edit.h"
 
 #include "gdi/sge_gdi.h"
+#include "gdi/sge_gdi2.h"
 
 #include "sgeobj/sge_resource_quota.h"
 #include "sgeobj/sge_answer.h"
@@ -158,7 +159,7 @@ bool rqs_get_via_gdi(sge_gdi_ctx_class_t *ctx, lList **answer_list, const lList 
             where = lOrWhere(where, add_where);
          }
       }
-      *answer_list = ctx->gdi(ctx, SGE_RQS_LIST, SGE_GDI_GET, rqs_list, where, what);
+      *answer_list = sge_gdi2(ctx, SGE_RQS_LIST, SGE_GDI_GET, rqs_list, where, what);
       if (!answer_list_has_error(answer_list)) {
          ret = true;
       }
@@ -199,7 +200,7 @@ bool rqs_get_all_via_gdi(sge_gdi_ctx_class_t *ctx, lList **answer_list, lList **
 
    DENTER(TOP_LAYER);
 
-   *answer_list = ctx->gdi(ctx, SGE_RQS_LIST, SGE_GDI_GET, rqs_list, nullptr, what);
+   *answer_list = sge_gdi2(ctx, SGE_RQS_LIST, SGE_GDI_GET, rqs_list, nullptr, what);
    if (!answer_list_has_error(answer_list)) {
       ret = true;
    }
@@ -498,7 +499,7 @@ bool rqs_add_del_mod_via_gdi(sge_gdi_ctx_class_t *ctx, lList *rqs_list, lList **
          ret = rqs_list_verify_attributes(rqs_list, answer_list, false, master_centry_list);
       }
       if (ret) {
-         lList *my_answer_list = ctx->gdi(ctx, SGE_RQS_LIST, gdi_command, &rqs_list, nullptr, nullptr);
+         lList *my_answer_list = sge_gdi2(ctx, SGE_RQS_LIST, gdi_command, &rqs_list, nullptr, nullptr);
          if (my_answer_list != nullptr) {
             answer_list_append_list(answer_list, &my_answer_list);
          }

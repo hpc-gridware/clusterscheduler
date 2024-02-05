@@ -990,12 +990,11 @@ static void ec2_mark4registration(sge_evc_class_t *thiz)
 {
    cl_com_handle_t* handle = nullptr;
    sge_evc_t *sge_evc = (sge_evc_t*)thiz->sge_evc_handle;
-   sge_gdi_ctx_class_t *sge_gdi_ctx = thiz->get_gdi_ctx(thiz);
-   const char *mastername = sge_gdi_ctx->get_master(sge_gdi_ctx, true);
+   const char *mastername = gdi3_get_act_master_host(true);
 
    DENTER(EVC_LAYER);
 
-   handle = sge_gdi_ctx->get_com_handle(sge_gdi_ctx);
+   handle = cl_com_get_handle(bootstrap_get_component_name(), 0);
    if (handle != nullptr) {
       cl_commlib_close_connection(handle, (char*)mastername, (char*)prognames[QMASTER], 1, false);
       DPRINTF(("closed old connection to qmaster\n"));
@@ -1403,7 +1402,7 @@ ec2_register_local(sge_evc_class_t *thiz, bool exit_on_qmaster_down, lList** alp
          sge_gdi_ctx_class_t *gdi_ctx = thiz->get_gdi_ctx(thiz); 
          if (gdi_ctx != nullptr) {
             ruser = bootstrap_get_admin_user();
-            rhost = gdi_ctx->get_master(gdi_ctx, false);
+            rhost = gdi3_get_act_master_host(false);
          }
          /*
          ** set busy handling, sets EV_changed to true if it is really changed
@@ -1537,7 +1536,7 @@ static bool ec2_register(sge_evc_class_t *thiz, bool exit_on_qmaster_down, lList
        *  to add may also means to modify
        *  - if this event client is already enrolled at qmaster
        */
-      alp = sge_gdi_ctx->gdi(sge_gdi_ctx, SGE_EV_LIST, SGE_GDI_ADD | SGE_GDI_RETURN_NEW_VERSION, &lp, nullptr, nullptr);
+      alp = sge_gdi2(sge_gdi_ctx, SGE_EV_LIST, SGE_GDI_ADD | SGE_GDI_RETURN_NEW_VERSION, &lp, nullptr, nullptr);
     
       aep = lFirst(alp);
     
@@ -1579,7 +1578,7 @@ static bool ec2_register(sge_evc_class_t *thiz, bool exit_on_qmaster_down, lList
                 * in an endless while loop.
                 */
                cl_com_handle_t* com_handle = nullptr;
-               com_handle = sge_gdi_ctx->get_com_handle(sge_gdi_ctx);
+               com_handle = cl_com_get_handle(bootstrap_get_component_name(), 0);
                if (com_handle != nullptr) {
                   cl_commlib_trigger(com_handle, 1);
                } else {
@@ -1644,7 +1643,7 @@ static bool ec2_deregister(sge_evc_class_t *thiz)
          lList *alp = nullptr;
          /* TODO: to master only !!!!! */
          const char* commproc = prognames[QMASTER];
-         const char* rhost = sge_gdi_ctx->get_master(sge_gdi_ctx, false);
+         const char* rhost = gdi3_get_act_master_host(false);
          int         commid   = 1;
 
 
@@ -2507,7 +2506,7 @@ static bool ec2_commit_local(sge_evc_class_t *thiz, lList **alpp)
       sge_gdi_ctx_class_t *gdi_ctx = thiz->get_gdi_ctx(thiz); 
       if (gdi_ctx != nullptr) {
          ruser = bootstrap_get_admin_user();
-         rhost = gdi_ctx->get_master(gdi_ctx, false);
+         rhost = gdi3_get_act_master_host(false);
       }
       lSetRef(sge_evc->ec, EV_update_function, (void *)evc_local->update_func);
 
@@ -2606,7 +2605,7 @@ static bool ec2_commit(sge_evc_class_t *thiz, lList **alpp)
        *  to add may also means to modify
        *  - if this event client is already enrolled at qmaster
        */
-      alp = sge_gdi_ctx->gdi(sge_gdi_ctx, SGE_EV_LIST, SGE_GDI_MOD, &lp, nullptr, nullptr);
+      alp = sge_gdi2(sge_gdi_ctx, SGE_EV_LIST, SGE_GDI_MOD, &lp, nullptr, nullptr);
       lFreeList(&lp); 
 
       if (lGetUlong(lFirst(alp), AN_status) == STATUS_OK) {

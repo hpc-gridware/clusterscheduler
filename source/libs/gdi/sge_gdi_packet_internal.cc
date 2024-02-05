@@ -47,6 +47,7 @@
 #include "uti/sge_tq.h"
 
 #include "gdi/sge_gdi2.h"
+#include "gdi/sge_gdi3.h"
 #include "gdi/sge_gdi_packet_pb_cull.h"
 #include "gdi/sge_security.h"
 #include "gdi/sge_gdi_packet.h"
@@ -437,7 +438,7 @@ sge_gdi_packet_execute_external(sge_gdi_ctx_class_t* ctx, lList **answer_list,
    DENTER(TOP_LAYER);
 
    /* here the packet gets a unique request id */
-   packet->id = gdi_state_get_next_request_id();
+   packet->id = gdi3_get_next_request_id();
 
 #ifdef KERBEROS
    /* request that the Kerberos library forward the TGT */
@@ -507,17 +508,17 @@ sge_gdi_packet_execute_external(sge_gdi_ctx_class_t* ctx, lList **answer_list,
     */
    if (ret) {
       const char *commproc = prognames[QMASTER];
-      const char *host = ctx->get_master(ctx, false);
+      const char *host = gdi3_get_act_master_host(false);
       int id = 1;
       int response_id = 0;
       commlib_error = sge_gdi2_send_any_request(ctx, 0, &message_id, host, commproc, id, &pb,
                                                 TAG_GDI_REQUEST, response_id, nullptr);
       if (commlib_error != CL_RETVAL_OK) {
          ret = false;
-         commlib_error = ctx->is_alive(ctx);
+         commlib_error = sge_gdi_ctx_class_is_alive();
          if (commlib_error != CL_RETVAL_OK) {
             u_long32 sge_qmaster_port = bootstrap_get_sge_qmaster_port();
-            const char *mastername = ctx->get_master(ctx, true);
+            const char *mastername = gdi3_get_act_master_host(true);
 
             if (commlib_error == CL_RETVAL_CONNECT_ERROR ||
                 commlib_error == CL_RETVAL_CONNECTION_NOT_FOUND ) {
@@ -552,7 +553,7 @@ sge_gdi_packet_execute_external(sge_gdi_ctx_class_t* ctx, lList **answer_list,
     */
    if (ret) {
       const char *commproc = prognames[QMASTER];
-      const char *host = ctx->get_master(ctx, false);
+      const char *host = gdi3_get_act_master_host(false);
       char rcv_host[CL_MAXHOSTLEN+1];
       char rcv_commproc[CL_MAXHOSTLEN+1];
       int tag = TAG_GDI_REQUEST;
@@ -585,7 +586,7 @@ sge_gdi_packet_execute_external(sge_gdi_ctx_class_t* ctx, lList **answer_list,
                cl_com_handle_t* handle = nullptr;
                DPRINTF(("TEST_2372_OUTPUT: CL_RETVAL_SYNC_RECEIVE_TIMEOUT: RUNS="sge_U32CFormat"\n", sge_u32c(runs)));
 
-               handle = ctx->get_com_handle(ctx);
+               handle = cl_com_get_handle(bootstrap_get_component_name(), 0);
                if (handle != nullptr) {
                   DPRINTF(("TEST_2372_OUTPUT: GDI_TIMEOUT="sge_U32CFormat"\n", sge_u32c(handle->synchron_receive_timeout)));
                }
@@ -614,10 +615,10 @@ sge_gdi_packet_execute_external(sge_gdi_ctx_class_t* ctx, lList **answer_list,
       } while (retries == -1 || runs++ < retries);
       
       if (ret == false) {
-         commlib_error = ctx->is_alive(ctx);
+         commlib_error = sge_gdi_ctx_class_is_alive();
          if (commlib_error != CL_RETVAL_OK) {
             u_long32 sge_qmaster_port = bootstrap_get_sge_qmaster_port();
-            const char *mastername = ctx->get_master(ctx, true);
+            const char *mastername = gdi3_get_act_master_host(true);
 
             if (commlib_error == CL_RETVAL_CONNECT_ERROR ||
                 commlib_error == CL_RETVAL_CONNECTION_NOT_FOUND ) {
@@ -764,9 +765,9 @@ sge_gdi_packet_execute_internal(sge_gdi_ctx_class_t* ctx, lList **answer_list,
     * here the packet gets a unique request id and source for host
     * user and group is initialized
     */
-   packet->id = gdi_state_get_next_request_id();
+   packet->id = gdi3_get_next_request_id();
    packet->commproc = strdup(prognames[QMASTER]);      
-   packet->host = strdup(ctx->get_master(ctx, false));
+   packet->host = strdup(gdi3_get_act_master_host(false));
    packet->is_intern_request = true;
 
    ret = sge_gdi_packet_parse_auth_info(packet, &(packet->first_task->answer_list),

@@ -33,6 +33,3 @@
 
 #include "cull/cull.h"
 #include "gdi/sge_gdi.h"
-
-u_long32 
-gdi_state_get_next_request_id(void);

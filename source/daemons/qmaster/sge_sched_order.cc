@@ -108,7 +108,7 @@ sge_schedd_add_gdi_order_request(sge_gdi_ctx_class_t *ctx, order_t *orders, lLis
       /*
        * order_list will be nullptr after the call of gdi_multi. This saves a copy operation.
        */
-      order_id = ctx->gdi_multi(ctx, answer_list, SGE_GDI_SEND, SGE_ORDER_LIST, SGE_GDI_ADD,
+      order_id = sge_gdi2_multi(ctx, answer_list, SGE_GDI_SEND, SGE_ORDER_LIST, SGE_GDI_ADD,
                                 order_list, nullptr, nullptr, state, false);
 
       if (order_id != -1) {
@@ -155,7 +155,7 @@ sge_schedd_block_until_orders_processed(sge_gdi_ctx_class_t *ctx,
        * wait for answer. this call might block if the request
        * has not been handled by any worker until now
        */
-      ctx->gdi_wait(ctx, answer_list, &multi_answer_list, current_state);
+      sge_gdi2_wait(ctx, answer_list, &multi_answer_list, current_state);
 
       /*
        * now we have an answer. is it positive? 
