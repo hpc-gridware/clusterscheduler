@@ -1660,7 +1660,7 @@ bool generate_chipID_coreID_matrix(int*** matrix, int* length)
       }   
 
       /* get the chip_id which reflects the socket */
-      kdata = kstat_data_lookup(cpu_info, "chip_id");
+      kdata = (kstat_named_t *)kstat_data_lookup(cpu_info, "chip_id");
       if (kdata == nullptr) {
          /* couldn't get data */ 
          continue;
@@ -1669,7 +1669,7 @@ bool generate_chipID_coreID_matrix(int*** matrix, int* length)
 
       /* get the core_id which reflects the core and threads 
          when multiple same core ids are on one chip_id */
-      kdata = kstat_data_lookup(cpu_info, "core_id");
+      kdata = (kstat_named_t *)kstat_data_lookup(cpu_info, "core_id");
       if (kdata == nullptr) {
          /* couldn't get data */ 
          continue;

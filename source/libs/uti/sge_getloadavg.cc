@@ -239,7 +239,7 @@ long *freememp
       kstat_close(kc);
       return -1;
    } 
-   knp = kstat_data_lookup(ksp, "freemem");
+   knp = (kstat_named_t *)kstat_data_lookup(ksp, "freemem");
    *freememp = (long)knp -> value.ul;
    kstat_close(kc);
    return 0;
@@ -339,7 +339,7 @@ int kupdate(int avenrun[3])
 
       ncpu = 0;
 
-      kn = kstat_data_lookup(ks, "ncpus");
+      kn = (kstat_named_t *)kstat_data_lookup(ks, "ncpus");
       if (kn && kn->value.ui32 > ncpus) {
          ncpus = kn->value.ui32;
          cpu_ks = (kstat_t **)sge_realloc(cpu_ks, ncpus * sizeof(kstat_t *), 1);
@@ -387,7 +387,7 @@ double get_cpu_load(void) {
    double cpu_states[CPUSTATES];
    int avenrun[3];
 
-   DENTER(CULL_LAYER, "get_cpu_load.solaris");
+   DENTER(CULL_LAYER);
 
    /* use kstat to update all processor information */
    if ((cpus_found = kupdate(avenrun)) < 0 ) {

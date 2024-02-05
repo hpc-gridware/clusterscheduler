@@ -41,8 +41,8 @@
 #include "sig_handlers.h"
 
 #if defined(SOLARIS)
-#   include "sge_smf.h"
-#   include "sge_string.h"
+#   include "uti/sge_smf.h"
+#   include "uti/sge_string.h"
 #endif
 
 static void sge_terminate(int);

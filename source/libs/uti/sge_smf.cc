@@ -48,18 +48,6 @@
 #include "uti/sge_uidgid.h"
 #include "uti/msg_utilib.h"
 
-#if defined(__SunOS_5_7) || defined(__SunOS_5_8) || defined(__SunOS_5_9) || defined(__GNUC__)
-/* Redefinitions from S10+ sys/types.h */
-typedef id_t    ctid_t;
-/* Missing in SunOS < 10 */
-static int unsetenv(const char *var) {
-   /* dummy */
-   return 0;
-}
-#else
-#include <stdlib.h>
-#endif
-
 /* Redefinitions from libcontract.h */
 typedef void *ct_stathdl_t;
 
@@ -967,7 +955,7 @@ return pid;
 *******************************************************************************/
 void sge_smf_temporary_disable_instance(void)
 {
- uid_t old_euid = nullptr;
+ uid_t old_euid = 0;
  int change_user = 1;
  DENTER(TOP_LAYER);
  if (once_libscf_init() != 0) {

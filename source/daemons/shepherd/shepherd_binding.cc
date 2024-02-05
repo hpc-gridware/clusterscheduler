@@ -76,7 +76,7 @@ namespace oge {
    static bool bind_shepherd_to_pset(int pset_id);
 #endif
 
-#if defined(OGE_HWLOC)
+#if defined(OGE_HWLOC) && !defined(SOLARIS)
 
 /****** shepherd_binding/do_core_binding() *************************************
 *  NAME

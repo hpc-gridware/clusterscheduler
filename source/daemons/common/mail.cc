@@ -55,7 +55,7 @@
 #include "msg_daemons_common.h"
 
 #if defined(SOLARIS)
-#   include "sge_smf.h"
+#   include "uti/sge_smf.h"
 #endif
 
 #if defined(SOLARIS)

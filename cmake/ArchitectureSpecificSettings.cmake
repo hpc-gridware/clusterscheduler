@@ -123,7 +123,15 @@ function(architecture_specific_settings)
       # Solaris
       message(STATUS "We are on Solaris: ${SGE_ARCH}")
       add_compile_definitions(SOLARIS GETHOSTBYNAME_R5 GETHOSTBYADDR_R7 SPOOLING_dynamic __SGE_COMPILE_WITH_GETTEXT__)
-
+      # Need to supress the following warnings.
+      # Apparently they are not enabled on Linux - these are general (minor) issues:
+      # warning: invalid suffix on literal; C++11 requires a space between literal and string macro [-Wliteral-suffix]
+      # e.g. for SFQ" failed to unlock "SFQ" - error: "SFQ
+      # and
+      # warning: ISO C++ forbids converting a string constant to 'char*' [-Wwrite-strings]
+      # when assigning a (constant) string literal to a char *
+      add_compile_options(-Wno-literal-suffix -Wno-write-strings)
+      add_compile_options(-fPIC)
       set(WITH_JEMALLOC OFF PARENT_SCOPE)
    elseif (SGE_ARCH MATCHES "darwin-arm64")
       # Darwin M1/M2/M2Max/M2Pro (arm64) platform

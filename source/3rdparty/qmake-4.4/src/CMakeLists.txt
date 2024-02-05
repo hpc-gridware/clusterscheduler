@@ -2,12 +2,15 @@
 
 if(SGE_ARCH MATCHES "darwin-arm64")
   add_custom_command(OUTPUT glob.h COMMAND cp ${CMAKE_CURRENT_SOURCE_DIR}/../lib/glob.h.${SGE_ARCH} glob.h)
-
   set(ADD_QMAKE_SOURCES glob.h ../lib/concat-filename.c ../lib/findprog-in.c ../lib/fnmatch.c)
 elseif(SGE_ARCH MATCHES "fbsd-amd64")
   add_custom_command(OUTPUT glob.h COMMAND cp ${CMAKE_CURRENT_SOURCE_DIR}/../lib/glob.h.${SGE_ARCH} glob.h)
-
   set(ADD_QMAKE_SOURCES glob.h ../lib/concat-filename.c ../lib/findprog-in.c)
+elseif(SGE_ARCH MATCHES "sol-amd64")
+  add_custom_command(OUTPUT glob.h COMMAND cp ${CMAKE_CURRENT_SOURCE_DIR}/../lib/glob.h.${SGE_ARCH} glob.h)
+  set(ADD_QMAKE_SOURCES glob.h ../lib/glob.c ../lib/concat-filename.c ../lib/findprog-in.c)
+  add_compile_options(-Wno-builtin-declaration-mismatch)
+  add_compile_definitions(HAVE_CONFIG_H)
 else()
   set(ADD_QMAKE_SOURCES "")
 endif()

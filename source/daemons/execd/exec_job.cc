@@ -135,16 +135,16 @@ static bool create_binding_strategy_string_solaris(dstring* result,
    char** rankfileinput);
 
 /* do linear (automatic) binding on solaris */
-static bool linear_automatic_solaris(dstring* result, lListElem* binding_elem, 
+static bool linear_automatic_solaris(dstring* result, const lListElem* binding_elem,
                char** env);
 
 /* do striding binding on solaris */   
-static bool striding_solaris(dstring* result, lListElem* binding_elem, 
+static bool striding_solaris(dstring* result, const lListElem* binding_elem,
    const bool automatic, const bool do_linear, char* err_str, int err_length, 
    char** env);
 
 /* do explicit binding on solaris */   
-static bool explicit_solaris(dstring* result, lListElem* binding_elem, 
+static bool explicit_solaris(dstring* result, const lListElem* binding_elem,
                               char* err_str, int err_length, char** env);
 #endif 
 
@@ -2477,8 +2477,8 @@ static bool create_binding_strategy_string_solaris(dstring* result,
    /* 1. check cull list and check which binding strategy was requested */
    bool retval;
    /* binding strategy */
-   lList *binding = lGetList(jep, JB_binding);
-   lListElem *binding_elem = nullptr;
+   const lList *binding = lGetList(jep, JB_binding);
+   const lListElem *binding_elem = nullptr;
 
    DENTER(TOP_LAYER);
 
@@ -2565,7 +2565,7 @@ static bool create_binding_strategy_string_solaris(dstring* result,
 *     static bool - true in case of success otherwise false 
 *
 *******************************************************************************/
-static bool linear_automatic_solaris(dstring* result, lListElem* binding_elem, 
+static bool linear_automatic_solaris(dstring* result, const lListElem* binding_elem,
                                        char** env)
 {
    int amount;  /* amount of cores to bind to       */
@@ -2673,7 +2673,7 @@ static bool linear_automatic_solaris(dstring* result, lListElem* binding_elem,
 *     MT-NOTE: striding_solaris() is not MT safe 
 *
 *******************************************************************************/
-static bool striding_solaris(dstring* result, lListElem* binding_elem, const bool automatic, 
+static bool striding_solaris(dstring* result, const lListElem* binding_elem, const bool automatic,
    const bool do_linear, char* err_str, int err_length, char** env)
 {
    /* 2. check if a starting point exist */ 
@@ -2696,7 +2696,7 @@ static bool striding_solaris(dstring* result, lListElem* binding_elem, const boo
 
    /* get mandatory parameters of -binding striding */
    amount = (int) lGetUlong(binding_elem, BN_parameter_n);
-   type   = (int) lGetUlong(binding_elem, BN_type);
+   type   = (binding_type_t) lGetUlong(binding_elem, BN_type);
 
    if (do_linear == false) {
       step_size = (int) lGetUlong(binding_elem, BN_parameter_striding_step_size);
@@ -2812,7 +2812,7 @@ static bool striding_solaris(dstring* result, lListElem* binding_elem, const boo
 *     MT-NOTE: explicit_solaris() is not MT safe 
 *
 *******************************************************************************/
-static bool explicit_solaris(dstring* result, lListElem* binding_elem, char* err_str, 
+static bool explicit_solaris(dstring* result, const lListElem* binding_elem, char* err_str,
                                        int err_length, char** env)
 {
    /* pointer to string which contains the <socket>,<core> pairs */

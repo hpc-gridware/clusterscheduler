@@ -152,7 +152,7 @@ int sge_loadmem(sge_mem_info_t *mem_info)
 
    long freemem;
 
-   DENTER(TOP_LAYER, "Solaris-loadmem");
+   DENTER(TOP_LAYER);
 
    init_pageshift();
    
