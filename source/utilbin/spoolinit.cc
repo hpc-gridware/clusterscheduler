@@ -38,7 +38,7 @@
 #include "uti/sge_log.h"
 #include "uti/sge_bootstrap.h"
 #include "uti/sge_dstring.h"
-#include "uti/sge_prog.h"
+#include "uti/sge_bootstrap.h"
 #include "uti/sge_profiling.h"
 
 #include "sgeobj/sge_feature.h"

@@ -46,47 +46,58 @@
 #  define MAX_NIS_RETRIES 10
 #endif
 
-bool sge_is_start_user_superuser(void);
+bool
+sge_is_start_user_superuser(void);
 
-int sge_set_admin_username(const char *username, char *err_str);
+int
+sge_set_admin_username(const char *username, char *err_str);
 
-bool sge_is_admin_user(const char *username);
+const char *
+get_admin_user_name(void);
 
-const char *get_admin_user_name(void);
+int
+sge_switch2admin_user(void);
 
-int sge_switch2admin_user(void);
+int
+sge_switch2start_user(void);
 
-int sge_switch2start_user(void);
+bool
+sge_has_admin_user(void);
 
-bool sge_has_admin_user(void);
+int
+sge_user2uid(const char *user, uid_t *puid, gid_t *pgid, int retries);
 
-int sge_run_as_user(void);
+int
+sge_group2gid(const char *gname, gid_t *gidp, int retries);
 
-int sge_user2uid(const char *user, uid_t *puid, gid_t *pgid, int retries);
+int
+sge_uid2user(uid_t uid, char *dst, size_t sz, int retries);
 
-int sge_group2gid(const char *gname, gid_t *gidp, int retries);
+int
+sge_gid2group(gid_t gid, char *dst, size_t sz, int retries);
 
-int sge_uid2user(uid_t uid, char *dst, size_t sz, int retries);
+int
+sge_gid2group(gid_t gid, gid_t *last_gid, char **grpnamep, int retries);
 
-int sge_gid2group(gid_t gid, char *dst, size_t sz, int retries);
+int
+sge_add_group(gid_t newgid, char *err_str, bool skip_silently);
 
-int _sge_gid2group(gid_t gid, gid_t *last_gid, char **grpnamep, int retries);
+int
+sge_set_uid_gid_addgrp(const char *user, const char *intermediate_user, int min_gid, int min_uid, int add_grp,
+                       char *err_str, int use_qsub_gid, gid_t qsub_gid, bool skip_silently);
 
-int sge_add_group(gid_t newgid, char *err_str, bool skip_silently);
+struct passwd *
+sge_getpwnam_r(const char *name, struct passwd *pw, char *buffer, size_t bufsize);
 
-int sge_set_uid_gid_addgrp(const char *user, const char *intermediate_user,
-                           int min_gid, int min_uid, int add_grp,
-                           char *err_str, int use_qsub_gid, gid_t qsub_gid, bool skip_silently);
+struct group *
+sge_getgrgid_r(gid_t gid, struct group *pg, char *buffer, size_t bufffer_size, int retries);
 
-struct passwd *sge_getpwnam_r(const char *name, struct passwd *pw,
-                              char *buffer, size_t bufsize);
-
-struct group *sge_getgrgid_r(gid_t gid, struct group *pg,
-                             char *buffer, size_t bufsize, int retries);
-
-bool sge_is_user_superuser(const char *name);
+bool
+sge_is_user_superuser(const char *name);
 
 /* getting buffer sizes for getpwnam_r etc. */
-int get_group_buffer_size(void);
+int
+get_group_buffer_size(void);
 
-int get_pw_buffer_size(void);
+int
+get_pw_buffer_size(void);

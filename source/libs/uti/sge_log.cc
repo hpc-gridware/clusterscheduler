@@ -507,10 +507,10 @@ int sge_log(u_long32 log_level, const char *mesg, const char *file__, const char
    ctx = log_state_get_log_context();
 
    if (ctx != nullptr) {
-      me = uti_state_get_mewho();
+      me = bootstrap_get_component_id();
       threadname = bootstrap_get_thread_name();
-      unqualified_hostname = uti_state_get_unqualified_hostname();
-      is_daemonized = uti_state_get_daemonized();
+      unqualified_hostname = bootstrap_get_unqualified_hostname();
+      is_daemonized = bootstrap_is_daemonized();
    } else {
       DPRINTF(("sge_log: ctx is nullptr\n"));
    }

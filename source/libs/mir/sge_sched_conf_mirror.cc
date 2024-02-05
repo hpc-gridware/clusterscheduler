@@ -35,7 +35,6 @@
 #include "sgeobj/sge_schedd_conf.h"
 #include "sgeobj/sge_answer.h"
 
-#include "mir/msg_mirlib.h"
 #include "mir/sge_mirror.h"
 #include "mir/sge_sched_conf_mirror.h"
 

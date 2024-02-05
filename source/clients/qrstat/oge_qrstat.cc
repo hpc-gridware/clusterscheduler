@@ -74,7 +74,7 @@ sge_parse_qrstat(sge_gdi_ctx_class_t *ctx, lList **answer_list,
       /* -help */
       if (opt_list_has_X(*cmdline, "-help")) {
          sge_usage(QRSTAT, stdout);
-         SGE_EXIT((void**)&ctx, 0);
+         sge_exit(0);
       }
 
       /* -u */
@@ -177,7 +177,7 @@ int main(int argc, char **argv) {
          answer_list_output(&answer_list);
          lFreeList(&pcmdline);
          sge_prof_cleanup();
-         SGE_EXIT((void**)&ctx, 1);
+         sge_exit(1);
       }
    }
 
@@ -231,14 +231,14 @@ int main(int argc, char **argv) {
       }
    }
 
-   sge_gdi2_shutdown((void**)&ctx);
+   sge_gdi2_shutdown();
    sge_prof_cleanup();
    DRETURN(ret);
 
 error_exit:
-   sge_gdi2_shutdown((void**)&ctx);
+   sge_gdi2_shutdown();
    sge_prof_cleanup();
-   SGE_EXIT((void**)&ctx, 1);
+   sge_exit(1);
    DRETURN(1);
 }
 

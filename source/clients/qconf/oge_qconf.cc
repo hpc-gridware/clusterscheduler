@@ -60,13 +60,13 @@ int main(int argc, char **argv)
    
    if (sge_gdi2_setup(&ctx, QCONF, MAIN_THREAD, &alp) != AE_OK) {
       answer_list_output(&alp);
-      SGE_EXIT((void**)&ctx, 1);
+      sge_exit(1);
    }
 
    if (sge_parse_qconf(ctx, ++argv)) {
-      SGE_EXIT((void**)&ctx, 1);
+      sge_exit(1);
    } else {
-      SGE_EXIT((void**)&ctx, 0);
+      sge_exit(0);
    }
    DRETURN(0);
 }

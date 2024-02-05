@@ -30,28 +30,17 @@
  ************************************************************************/
 /*___INFO__MARK_END__*/
 
-#include <fnmatch.h>
 #include <string.h>
 
 #include "uti/sge_rmon.h"
-#include "uti/sge_string.h"
-#include "uti/sge_log.h"
 #include "uti/sge_dstring.h"
-#include "uti/sge_signal.h"
-#include "uti/sge_sl.h"
 
 #include "cull/cull_list.h"
 
-#include "sgeobj/cull/sge_all_listsL.h"
-#include "sgeobj/sge_answer.h"
 #include "sgeobj/sge_object.h"
 #include "sgeobj/sge_cqueue.h"
-#include "sgeobj/sge_event.h"
 #include "sgeobj/sge_qinstance.h"
-#include "sgeobj/sge_qinstance_state.h"
-#include "sgeobj/sge_qref.h"
 #include "sgeobj/sge_subordinate.h"
-#include "sgeobj/sge_job.h"
 #include "sgeobj/msg_sgeobjlib.h"
 
 #include "sge.h"

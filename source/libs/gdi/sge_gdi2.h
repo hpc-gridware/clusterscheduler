@@ -87,28 +87,24 @@ bool
 sge_gdi2_wait(sge_gdi_ctx_class_t* ctx, lList **alpp, lList **malpp, 
               state_gdi_multi *state);
 
-int sge_gdi2_get_any_request(sge_gdi_ctx_class_t *ctx, char *rhost, char *commproc, u_short *id, sge_pack_buffer *pb, 
+int sge_gdi2_get_any_request(char *rhost, char *commproc, u_short *id, sge_pack_buffer *pb,
                     int *tag, int synchron, u_long32 for_request_mid, u_long32* mid);
 
-int sge_gdi2_send_any_request(sge_gdi_ctx_class_t *ctx, int synchron, u_long32 *mid,
+int sge_gdi2_send_any_request(int synchron, u_long32 *mid,
                               const char *rhost, const char *commproc, int id,
                               sge_pack_buffer *pb, 
                               int tag, u_long32  response_id, lList **alpp);
 
-lList *gdi2_kill(sge_gdi_ctx_class_t *thiz, lList *id_list, const char *cell, u_long32 option_flags, u_long32 action_flag);
+lList *gdi2_kill(sge_gdi_ctx_class_t *thiz, lList *id_list, u_long32 action_flag);
 lList *gdi2_tsm( sge_gdi_ctx_class_t *thiz);
 
 bool sge_gdi2_check_permission(sge_gdi_ctx_class_t *ctx, lList **alpp, int option);
-bool sge_gdi2_get_mapping_name(sge_gdi_ctx_class_t *ctx, const char *requestedHost, 
-                                 char *buf, size_t buflen);
 
-int gdi2_send_message_pb(sge_gdi_ctx_class_t *ctx, 
-                         int synchron, const char *tocomproc, int toid, 
+int gdi2_send_message_pb(int synchron, const char *tocomproc, int toid,
                          const char *tohost, int tag, sge_pack_buffer *pb, 
                          u_long32 *mid);
 
-int gdi2_receive_message(sge_gdi_ctx_class_t *ctx, 
-                         char *fromcommproc, u_short *fromid, char *fromhost, 
+int gdi2_receive_message(char *fromcommproc, u_short *fromid, char *fromhost,
                          int *tag, char **buffer, u_long32 *buflen, int synchron);
 
 int gdi2_get_configuration(sge_gdi_ctx_class_t *ctx, const char *config_name, 
@@ -119,12 +115,11 @@ int gdi2_get_merged_configuration(sge_gdi_ctx_class_t *ctx,
 
 int gdi2_wait_for_conf(sge_gdi_ctx_class_t *ctx, lList **conf_list);
                                 
-int report_list_send(sge_gdi_ctx_class_t *ctx,
-                     const lList *rlp, const char *rhost,
+int report_list_send(const lList *rlp, const char *rhost,
                      const char *commproc, int id,
                      int synchron);
 
-int sge_gdi2_shutdown(void **context);
+int sge_gdi2_shutdown();
 
 /* 
 ** commlib handler functions 
@@ -159,7 +154,7 @@ sge_gdi_extract_answer(lList **alpp, u_long32 cmd, u_long32 target, int id,
                        lList *mal, lList **olpp);
 
 
-void gdi2_default_exit_func(void **ref_ctx, int i);
+void gdi2_default_exit_func(int i);
 
 const char *
 gdi3_get_act_master_host(bool reread);

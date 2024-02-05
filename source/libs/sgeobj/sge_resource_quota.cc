@@ -56,7 +56,6 @@
 #include "sgeobj/msg_sgeobjlib.h"
 
 #include "sge.h"
-#include "msg_common.h"
 
 static bool 
 rqs_match_user_host_scope(const lList *scope, int filter_type, const char *value, const lList *master_userset_list, const lList *master_hgroup_list, const char *group, bool is_xscope);

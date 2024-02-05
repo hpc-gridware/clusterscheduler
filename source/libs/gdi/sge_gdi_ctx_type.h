@@ -31,7 +31,7 @@
  ************************************************************************/
 /*___INFO__MARK_END__*/
 
-#include "uti/sge_prog.h"
+#include "uti/sge_bootstrap.h"
 #include "uti/sge_bootstrap.h"
 #include "uti/sge_error_class.h"
 #include "uti/sge_profiling.h"

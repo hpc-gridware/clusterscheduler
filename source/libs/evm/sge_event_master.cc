@@ -44,7 +44,7 @@
 #include "uti/sge_spool.h"
 #include "uti/sge_thread_ctrl.h"
 #include "uti/sge_log.h"
-#include "uti/sge_prog.h"
+#include "uti/sge_bootstrap.h"
 #include "uti/sge_hostname.h"
 #include "uti/sge_mtutil.h"
 #include "uti/sge_lock.h"
@@ -2194,7 +2194,7 @@ void sge_event_master_send_events(sge_gdi_ctx_class_t *ctx, lListElem *report, l
                update_func(ec_id, nullptr, report_list);
                ret = CL_RETVAL_OK;
             } else {
-               ret = report_list_send(ctx, report_list, host, commproc, commid, 0);
+               ret = report_list_send(report_list, host, commproc, commid, 0);
                MONITOR_MESSAGES_OUT(monitor);
             }
 

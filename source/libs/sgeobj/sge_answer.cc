@@ -207,7 +207,7 @@ void answer_exit_if_not_recoverable(const lListElem *answer)
    if (!answer_is_recoverable(answer)) {
       fprintf(stderr, "%s: %s\n", answer_get_quality_text(answer),
               lGetString(answer, AN_text));
-      SGE_EXIT(nullptr, 1);
+      sge_exit(1);
    }
    DRETURN_VOID;
 }

@@ -49,11 +49,12 @@
 #include "uti/sge_uidgid.h"
 #include "uti/sge_io.h"
 #include "uti/sge_stdio.h"
-#include "uti/sge_prog.h"
+#include "uti/sge_bootstrap.h"
 #include "uti/sge_time.h"
 #include "uti/sge_bootstrap.h"
 #include "uti/sge_string.h"
 #include "uti/sge_hostname.h"
+#include "uti/sge_arch.h"
 
 #include "sgeobj/sge_feature.h"
 #include "sgeobj/sge_var.h"

@@ -40,7 +40,7 @@
 #include "uti/sge_log.h"
 #include "uti/sge_unistd.h"
 #include "uti/sge_dstring.h"
-#include "uti/sge_prog.h"
+#include "uti/sge_bootstrap.h"
 
 #include "sgeobj/sge_feature.h"
 #include "sgeobj/sge_answer.h"
@@ -384,7 +384,7 @@ int main(int argc, char *argv[])
    if (sge_setup2(&ctx, SPOOLDEFAULTS, MAIN_THREAD, &answer_list, false) != AE_OK) {
       show_answer(answer_list);
       lFreeList(&answer_list);
-      SGE_EXIT((void **)&ctx, EXIT_FAILURE);
+      sge_exit(EXIT_FAILURE);
    }
 
    /* parse commandline */
@@ -458,7 +458,7 @@ int main(int argc, char *argv[])
 
    sge_prof_cleanup();
 
-   SGE_EXIT((void **)&ctx, ret);
+   sge_exit(ret);
 
    DRETURN(ret);
 }

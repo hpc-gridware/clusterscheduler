@@ -49,7 +49,7 @@ typedef struct {
 
 // data shared between threads
 typedef struct {
-   // still unused but should be used when other attributes are accessed
+   // still unused but should be used when attributes are accessed
    pthread_mutex_t mutex;
 
    char *master_host;
@@ -147,11 +147,6 @@ gdi3_mt_done() {
 const char *
 gdi3_get_master_host() {
    return ts.master_host;
-}
-
-bool
-gdi3_has_master_host() {
-   return ts.master_host != nullptr && strlen(ts.master_host) > 0;
 }
 
 void

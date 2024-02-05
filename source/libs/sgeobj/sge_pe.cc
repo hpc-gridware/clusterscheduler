@@ -33,7 +33,6 @@
 #include <fnmatch.h>
 #include <strings.h>
 #include <ctype.h>
-#include <string.h>
 #ifdef SGE_PQS_API
 #include <dlfcn.h>
 #endif

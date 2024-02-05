@@ -1318,7 +1318,7 @@ jsv_handle_started_command(sge_gdi_ctx_class_t *ctx, lListElem *jsv, lList **ans
     * read-only
     */
    {
-      u_long32 progid = uti_state_get_mewho();
+      u_long32 progid = bootstrap_get_component_id();
 
       sge_dstring_clear(&buffer);
       sge_dstring_sprintf(&buffer, "%s CLIENT %s", prefix, prognames[progid]);
@@ -2283,7 +2283,7 @@ jsv_handle_started_command(sge_gdi_ctx_class_t *ctx, lListElem *jsv, lList **ans
       display = lGetElemStr(env_list, VA_variable, "DISPLAY"); 
       if (display != nullptr) {
          const char *value = lGetString(display, VA_value);
-         u_long32 progid = uti_state_get_mewho();
+         u_long32 progid = bootstrap_get_component_id();
 
          if (value != nullptr &&
              (strcmp(prognames[progid], "qsh") == 0 || strcmp(prognames[progid], "qrsh") == 0)) {

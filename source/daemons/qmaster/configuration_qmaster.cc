@@ -44,7 +44,7 @@
 #include "uti/sge_string.h"
 #include "uti/sge_unistd.h"
 #include "uti/sge_hostname.h"
-#include "uti/sge_prog.h"
+#include "uti/sge_bootstrap.h"
 #include "uti/sge_uidgid.h"
 #include "uti/sge_spool.h"
 #include "uti/sge_lock.h"
@@ -121,8 +121,8 @@ sge_read_configuration(sge_gdi_ctx_class_t *ctx, const lListElem *aSpoolContext,
    lListElem *global = nullptr;
    int ret = -1;
    const char *cell_root = bootstrap_get_cell_root();
-   const char *qualified_hostname = uti_state_get_qualified_hostname();
-   u_long32 progid = uti_state_get_mewho();
+   const char *qualified_hostname = bootstrap_get_qualified_hostname();
+   u_long32 progid = bootstrap_get_component_id();
 
    DENTER(TOP_LAYER);
 
@@ -318,8 +318,8 @@ sge_mod_configuration(sge_gdi_ctx_class_t *ctx, lListElem *aConf, lList **anAnsw
    char unique_name[CL_MAXHOSTLEN];
    int ret = -1;
    const char *cell_root = bootstrap_get_cell_root();
-   const char *qualified_hostname = uti_state_get_qualified_hostname();
-   u_long32 progid = uti_state_get_mewho();
+   const char *qualified_hostname = bootstrap_get_qualified_hostname();
+   u_long32 progid = bootstrap_get_component_id();
 
    DENTER(TOP_LAYER);
 

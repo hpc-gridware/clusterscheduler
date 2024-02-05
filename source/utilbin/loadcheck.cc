@@ -41,9 +41,10 @@
 #include "uti/sge_rmon.h"
 #include "uti/sge_os.h"
 #include "uti/sge_language.h"
-#include "uti/sge_prog.h"
+#include "uti/sge_bootstrap.h"
 #include "uti/sge_binding_hlp.h"
 #include "uti/oge_topology.h"
+#include "uti/sge_arch.h"
 
 #include "sgeobj/sge_host.h"
 #include "sgeobj/sge_binding.h"

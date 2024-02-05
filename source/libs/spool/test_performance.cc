@@ -249,7 +249,6 @@ void clear_caches(void)
 
 int main(int argc, char *argv[])
 {
-   sge_gdi_ctx_class_t *ctx = nullptr;
    lListElem *spooling_context;
    lList *answer_list = nullptr;
 
@@ -273,7 +272,7 @@ int main(int argc, char *argv[])
    /* parse commandline parameters */
    if(argc != 4) {
       ERROR((SGE_EVENT, "usage: test_sge_spooling <method> <shared lib> <arguments>\n"));
-      SGE_EXIT((void**)&ctx, 1);
+      sge_exit(1);
    }
 
    *object_type_get_master_list_rw(SGE_TYPE_JOB) = lCreateList("job list", JB_Type);
@@ -284,14 +283,14 @@ int main(int argc, char *argv[])
    spooling_context = spool_create_dynamic_context(&answer_list, argv[1], argv[2], argv[3]);
    answer_list_output(&answer_list);
    if (spooling_context == nullptr) {
-      SGE_EXIT((void**)&ctx, EXIT_FAILURE);
+      sge_exit(EXIT_FAILURE);
    }
 
    spool_set_default_context(spooling_context);
 
    if (!spool_startup_context(&answer_list, spooling_context, true)) {
       answer_list_output(&answer_list);
-      SGE_EXIT((void**)&ctx, EXIT_FAILURE);
+      sge_exit(EXIT_FAILURE);
    }
    answer_list_output(&answer_list);
 

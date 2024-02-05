@@ -444,7 +444,7 @@ void
 sge_automatic_user_cleanup_handler(sge_gdi_ctx_class_t *ctx, te_event_t anEvent, monitoring_t *monitor) {
    u_long32 auto_user_delete_time = mconf_get_auto_user_delete_time();
    const char *admin = bootstrap_get_admin_user();
-   const char *qmaster_host = uti_state_get_qualified_hostname();
+   const char *qmaster_host = bootstrap_get_qualified_hostname();
 
    DENTER(TOP_LAYER);
 
@@ -578,7 +578,7 @@ static int do_add_auto_user(sge_gdi_ctx_class_t *ctx, lListElem *anUser, lList *
    lList *tmpAnswer = nullptr;
    lList *ppList = nullptr;
    const char *admin_user = bootstrap_get_admin_user();
-   const char *qualified_hostname = uti_state_get_qualified_hostname();
+   const char *qualified_hostname = bootstrap_get_qualified_hostname();
 
    DENTER(TOP_LAYER);
 

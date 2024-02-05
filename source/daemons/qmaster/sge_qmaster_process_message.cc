@@ -40,7 +40,7 @@
 #include "uti/sge_time.h"
 #include "uti/sge_log.h"
 #include "uti/sge_string.h"
-#include "uti/sge_prog.h"
+#include "uti/sge_bootstrap.h"
 
 #include "sgeobj/sge_conf.h"
 #include "sgeobj/sge_ja_task.h"
@@ -136,7 +136,7 @@ sge_qmaster_process_message(sge_gdi_ctx_class_t *ctx, monitoring_t *monitor) {
 
    MONITOR_IDLE_TIME((
 
-                             res = sge_gdi2_get_any_request(ctx, msg.snd_host, msg.snd_name,
+                             res = sge_gdi2_get_any_request(msg.snd_host, msg.snd_name,
                                                             &msg.snd_id, &msg.buf, &msg.tag, 1, 0, &msg.request_mid)
 
                      ), monitor, mconf_get_monitor_time(), mconf_is_monitor_message());
@@ -205,7 +205,7 @@ do_gdi_packet(sge_gdi_ctx_class_t *ctx, lList **answer_list, struct_msg_t *aMsg,
    }
    if (local_ret) {
       const char *admin_user = bootstrap_get_admin_user();
-      const char *progname = uti_state_get_sge_formal_prog_name();
+      const char *progname = bootstrap_get_component_name();
 
       if (!sge_security_verify_user(packet->host, packet->commproc,
                                     packet->commproc_id, admin_user, packet->user, progname)) {
@@ -255,7 +255,7 @@ static void
 do_report_request(sge_gdi_ctx_class_t *ctx, struct_msg_t *aMsg, monitoring_t *monitor) {
    lList *rep = nullptr;
    const char *admin_user = bootstrap_get_admin_user();
-   const char *myprogname = uti_state_get_sge_formal_prog_name();
+   const char *myprogname = bootstrap_get_component_name();
    sge_gdi_packet_class_t *packet = nullptr;
 
    DENTER(TOP_LAYER);
@@ -341,7 +341,7 @@ do_event_client_exit(sge_gdi_ctx_class_t *ctx, struct_msg_t *aMsg, monitoring_t 
    */
    if (client_id == 1) {
       const char *admin_user = bootstrap_get_admin_user();
-      const char *myprogname = uti_state_get_sge_formal_prog_name();
+      const char *myprogname = bootstrap_get_component_name();
       if (false == sge_security_verify_unique_identifier(true, admin_user, myprogname, 0,
                                                          aMsg->snd_host, aMsg->snd_name, aMsg->snd_id)) {
          DRETURN_VOID;
@@ -371,7 +371,7 @@ static void
 do_c_ack(sge_gdi_ctx_class_t *ctx, struct_msg_t *aMsg, monitoring_t *monitor) {
    u_long32 ack_tag, ack_ulong, ack_ulong2;
    const char *admin_user = bootstrap_get_admin_user();
-   const char *myprogname = uti_state_get_sge_formal_prog_name();
+   const char *myprogname = bootstrap_get_component_name();
    lListElem *ack = nullptr;
 
    DENTER(TOP_LAYER);

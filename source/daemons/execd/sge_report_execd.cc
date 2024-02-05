@@ -32,7 +32,7 @@
 #include <string.h>
 
 #include "uti/sge_rmon.h"
-#include "uti/sge_prog.h"
+#include "uti/sge_bootstrap.h"
 #include "uti/sge_log.h"
 
 #include "sgeobj/sge_usage.h"
@@ -100,7 +100,7 @@ int sge_send_all_reports(sge_gdi_ctx_class_t *ctx, u_long32 now, int which,
             if (++sge_execd_report_seqno == 10000) {
                sge_execd_report_seqno = 0;
             }
-            report_list_send(ctx, report_list, master_host, prognames[QMASTER], 1, 0);
+            report_list_send(report_list, master_host, prognames[QMASTER], 1, 0);
          }
          lFreeList(&report_list);
       }

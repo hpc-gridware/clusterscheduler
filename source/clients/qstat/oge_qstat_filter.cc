@@ -36,7 +36,7 @@
 
 #include "uti/sge_rmon.h"
 #include "uti/sge_dstring.h"
-#include "uti/sge_prog.h"
+#include "uti/sge_bootstrap.h"
 #include "uti/sge_parse_num_par.h"
 #include "uti/sge_time.h"
 #include "uti/sge_stdlib.h"
@@ -1009,7 +1009,7 @@ static int qstat_env_get_all_lists(qstat_env_t* qstat_env, bool need_job_list, l
    int show_zombies = (show & QSTAT_DISPLAY_ZOMBIES) ? 1 : 0;
    state_gdi_multi state = STATE_GDI_MULTI_INIT;
    const char *cell_root = bootstrap_get_cell_root();
-   u_long32 progid = uti_state_get_mewho();
+   u_long32 progid = bootstrap_get_component_id();
 
    DENTER(TOP_LAYER);
 

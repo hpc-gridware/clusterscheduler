@@ -186,7 +186,6 @@
 
 #define DCLOSE
 
-#define SGE_EXIT(x, y) sge_exit((x), (y))
 
 #else /* NO_SGE_COMPILE_DEBUG */
 
@@ -202,6 +201,5 @@
 #define DCLOSE
 #define TRACEON
 #define ISTRACE
-#define SGE_EXIT(x, y)     sge_exit((x), (y))
 
 #endif /* NO_SGE_COMPILE_DEBUG */

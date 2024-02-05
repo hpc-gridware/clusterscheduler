@@ -211,7 +211,7 @@ int main(int argc, char **argv)
    if (sge_gdi2_setup(&ctx, QQUOTA, MAIN_THREAD, &alp) != AE_OK) {
       answer_list_output(&alp);
       sge_prof_cleanup();
-      SGE_EXIT((void**)&ctx, 1);
+      sge_exit(1);
    }
 
    sge_setup_sig_handlers(QQUOTA);
@@ -238,14 +238,14 @@ int main(int argc, char **argv)
          answer_list_output(&alp);
          lFreeList(&pcmdline);
          sge_prof_cleanup();
-         SGE_EXIT((void**)&ctx, 1);
+         sge_exit(1);
       }
    }
    if (sge_parse_cmdline_qquota(argv, &pcmdline, &alp) == false) {
       answer_list_output(&alp);
       lFreeList(&pcmdline);
       sge_prof_cleanup();
-      SGE_EXIT((void**)&ctx, 1);
+      sge_exit(1);
    }
 
    /*
@@ -266,7 +266,7 @@ int main(int argc, char **argv)
       answer_list_output(&alp);
       lFreeList(&pcmdline);
       sge_prof_cleanup();
-      SGE_EXIT((void**)&ctx, 1);
+      sge_exit(1);
    }
 
    qquota_result = qquota_output(ctx, host_list, resource_match_list, user_list, pe_list, project_list, cqueue_list, &alp, report_handler);
@@ -278,11 +278,11 @@ int main(int argc, char **argv)
    if (qquota_result == false) {
       answer_list_output(&alp);
       sge_prof_cleanup();
-      SGE_EXIT((void**)&ctx, 1);
+      sge_exit(1);
    }
 
    sge_prof_cleanup();
-   SGE_EXIT((void**)&ctx, 0); /* 0 means ok - others are errors */
+   sge_exit(0); /* 0 means ok - others are errors */
    DRETURN(0);
 }
 
@@ -537,7 +537,7 @@ sge_parse_qquota(lList **ppcmdline, lList **host_list, lList **resource_list,
    while (lGetNumberOfElem(*ppcmdline)) {
       if (parse_flag(ppcmdline, "-help",  alpp, &helpflag)) {
          qquota_usage(stdout);
-         SGE_EXIT(nullptr, 0);
+         sge_exit(0);
          break;
       }
 

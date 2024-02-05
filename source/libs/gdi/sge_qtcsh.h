@@ -32,4 +32,4 @@
 /*___INFO__MARK_END__*/
 
 typedef void (*print_func_t)(char *fmt, ...);
-char** sge_get_qtask_args(void *context, char *taskname, lList **answer_list);
+char** sge_get_qtask_args(char *taskname, lList **answer_list);

@@ -50,6 +50,54 @@
 
 #include "sge.h"
 
+/* Must match Qxxx defines in sge_bootstrap.h */
+const char *prognames[] = {
+        "unknown",
+        "qalter",        /* 1  */
+        "qconf",         /* 2  */
+        "qdel",          /* 3  */
+        "qhold",         /* 4  */
+        "qmaster",       /* 5  */
+        "qmod",          /* 6  */
+        "qresub",        /* 7  */
+        "qrls",          /* 8  */
+        "qselect",       /* 9  */
+        "qsh",           /* 10 */
+        "qrsh",          /* 11 */
+        "qlogin",        /* 12 */
+        "qstat",         /* 13 */
+        "qsub",          /* 14 */
+        "execd",         /* 15 */
+        "qevent",        /* 16 */
+        "qrsub",         /* 17 */
+        "qrdel",         /* 18 */
+        "qrstat",        /* 19 */
+        "unknown",       /* 20 */
+        "unknown",       /* 21 */
+        "qmon",          /* 22 */
+        "schedd",        /* 23 */
+        "qacct",         /* 24 */
+        "shadowd",       /* 25 */
+        "qhost",         /* 26 */
+        "spoolinit",     /* 27 */
+        "japi",          /* 28 */
+        "drmaa",         /* 29 */
+        "qping",         /* 30 */
+        "qquota",        /* 31 */
+        "sge_share_mon"  /* 32 */
+};
+
+const char *threadnames[] = {
+        "main",          /* 1 */
+        "listener",      /* 2 */
+        "event_master",  /* 3 */
+        "timer",         /* 4 */
+        "worker",        /* 5 */
+        "signaler",      /* 6 */
+        "scheduler",     /* 7 */
+        "tester"         /* 8 */
+};
+
 typedef struct {
    // bootstrap file
    char *admin_user;
@@ -82,6 +130,10 @@ typedef struct {
    char *username;
    char *groupname;
    bool qmaster_internal;
+   bool daemonized;
+   char *qualified_hostname;
+   char *unqualified_hostname;
+   sge_exit_func_t exit_func;
 
    // files and paths
    char *cell_root;
@@ -219,6 +271,11 @@ set_qmaster_internal(sge_bootstrap_tl_t *tl, bool qmaster_internal) {
 }
 
 static void
+set_daemonized(sge_bootstrap_tl_t *tl, bool daemonized) {
+   tl->daemonized = daemonized;
+}
+
+static void
 set_component_id(sge_bootstrap_tl_t *tl, u_long32 component_id) {
    tl->component_id = component_id;
 }
@@ -246,6 +303,21 @@ set_thread_name(sge_bootstrap_tl_t *tl, const char *thread_name) {
 static void
 set_username(sge_bootstrap_tl_t *tl, const char *username) {
    tl->username = sge_strdup(tl->username, username);
+}
+
+static void
+set_qualified_hostname(sge_bootstrap_tl_t *tl, const char *qualified_hostname) {
+   tl->qualified_hostname = sge_strdup(tl->qualified_hostname, qualified_hostname);
+}
+
+static void
+set_unqualified_hostname(sge_bootstrap_tl_t *tl, const char *unqualified_hostname) {
+   tl->unqualified_hostname = sge_strdup(tl->unqualified_hostname, unqualified_hostname);
+}
+
+static void
+set_exit_func(sge_bootstrap_tl_t *tl, sge_exit_func_t exit_func) {
+   tl->exit_func = exit_func;
 }
 
 static void
@@ -308,47 +380,51 @@ log_parameter(sge_bootstrap_tl_t *tl) {
    DENTER(TOP_LAYER);
 
    DPRINTF(("ENVIRONMENT ===\n"));
-   DPRINTF(("   sge_root            >%s<\n", tl->sge_root ? tl->sge_root : "NA"));
-   DPRINTF(("   sge_cell            >%s<\n", tl->sge_cell ? tl->sge_cell : "NA"));
-   DPRINTF(("   sge_qmaster_port    >%d<\n", tl->sge_qmaster_port));
-   DPRINTF(("   sge_execd_port      >%d<\n", tl->sge_execd_port));
-   DPRINTF(("   from_services       >%s<\n", tl->from_services ? "true" : "false"));
+   DPRINTF(("   sge_root             >%s<\n", tl->sge_root ? tl->sge_root : "NA"));
+   DPRINTF(("   sge_cell             >%s<\n", tl->sge_cell ? tl->sge_cell : "NA"));
+   DPRINTF(("   sge_qmaster_port     >%d<\n", tl->sge_qmaster_port));
+   DPRINTF(("   sge_execd_port       >%d<\n", tl->sge_execd_port));
+   DPRINTF(("   from_services        >%s<\n", tl->from_services ? "true" : "false"));
 
    DPRINTF(("COMPONENT ===\n"));
-   DPRINTF(("   component_id        >%d<\n", tl->component_id));
-   DPRINTF(("   component_name      >%s<\n", tl->component_name ? tl->component_name : "NA"));
-   DPRINTF(("   thread_name         >%s<\n", tl->thread_name ? tl->thread_name : "NA"));
-   DPRINTF(("   uid                 >%d<\n", tl->uid));
-   DPRINTF(("   gid                 >%d<\n", tl->gid));
-   DPRINTF(("   username            >%s<\n", tl->username ? tl->username : "NA"));
-   DPRINTF(("   groupname           >%s<\n", tl->groupname ? tl->groupname : "NA"));
-   DPRINTF(("   qmaster_internal    >%s<\n", tl->qmaster_internal ? "true" : "false"));
+   DPRINTF(("   component_id         >%d<\n", tl->component_id));
+   DPRINTF(("   component_name       >%s<\n", tl->component_name ? tl->component_name : "NA"));
+   DPRINTF(("   thread_name          >%s<\n", tl->thread_name ? tl->thread_name : "NA"));
+   DPRINTF(("   uid                  >%d<\n", tl->uid));
+   DPRINTF(("   gid                  >%d<\n", tl->gid));
+   DPRINTF(("   username             >%s<\n", tl->username ? tl->username : "NA"));
+   DPRINTF(("   groupname            >%s<\n", tl->groupname ? tl->groupname : "NA"));
+   DPRINTF(("   qmaster_internal     >%s<\n", tl->qmaster_internal ? "true" : "false"));
+   DPRINTF(("   daemonized           >%s<\n", tl->daemonized ? "true" : "false"));
+   DPRINTF(("   qualified_hostname   >%s<\n", tl->qualified_hostname ? tl->qualified_hostname : "NA"));
+   DPRINTF(("   unqualified_hostname >%s<\n", tl->unqualified_hostname ? tl->unqualified_hostname : "NA"));
+   DPRINTF(("   exit_func            >%p<\n", tl->exit_func));
 
    DPRINTF(("BOOTSTRAP FILE ===\n"));
-   DPRINTF(("   admin_user          >%s<\n", tl->admin_user));
-   DPRINTF(("   default_domain      >%s<\n", tl->default_domain));
-   DPRINTF(("   ignore_fqdn         >%s<\n", tl->ignore_fqdn ? "true" : "false"));
-   DPRINTF(("   spooling_method     >%s<\n", tl->spooling_method));
-   DPRINTF(("   spooling_lib        >%s<\n", tl->spooling_lib));
-   DPRINTF(("   spooling_params     >%s<\n", tl->spooling_params));
-   DPRINTF(("   binary_path         >%s<\n", tl->binary_path));
-   DPRINTF(("   qmaster_spool_dir   >%s<\n", tl->qmaster_spool_dir));
-   DPRINTF(("   security_mode       >%s<\n", tl->security_mode));
-   DPRINTF(("   job_spooling        >%s<\n", tl->job_spooling ? "true" : "false"));
-   DPRINTF(("   listener_threads    >%d<\n", tl->listener_thread_count));
-   DPRINTF(("   worker_threads      >%d<\n", tl->worker_thread_count));
-   DPRINTF(("   scheduler_threads   >%d<\n", tl->scheduler_thread_count));
+   DPRINTF(("   admin_user           >%s<\n", tl->admin_user));
+   DPRINTF(("   default_domain       >%s<\n", tl->default_domain));
+   DPRINTF(("   ignore_fqdn          >%s<\n", tl->ignore_fqdn ? "true" : "false"));
+   DPRINTF(("   spooling_method      >%s<\n", tl->spooling_method));
+   DPRINTF(("   spooling_lib         >%s<\n", tl->spooling_lib));
+   DPRINTF(("   spooling_params      >%s<\n", tl->spooling_params));
+   DPRINTF(("   binary_path          >%s<\n", tl->binary_path));
+   DPRINTF(("   qmaster_spool_dir    >%s<\n", tl->qmaster_spool_dir));
+   DPRINTF(("   security_mode        >%s<\n", tl->security_mode));
+   DPRINTF(("   job_spooling         >%s<\n", tl->job_spooling ? "true" : "false"));
+   DPRINTF(("   listener_threads     >%d<\n", tl->listener_thread_count));
+   DPRINTF(("   worker_threads       >%d<\n", tl->worker_thread_count));
+   DPRINTF(("   scheduler_threads    >%d<\n", tl->scheduler_thread_count));
 
    DPRINTF(("FILES AND PATHS ===\n"));
-   DPRINTF(("   cell_root           >%s<\n", tl->cell_root));
-   DPRINTF(("   conf_file           >%s<\n", tl->bootstrap_file));
-   DPRINTF(("   bootstrap_file      >%s<\n", tl->conf_file));
-   DPRINTF(("   act_qmaster_file    >%s<\n", tl->act_qmaster_file));
-   DPRINTF(("   acct_file           >%s<\n", tl->acct_file));
-   DPRINTF(("   reporting_file      >%s<\n", tl->reporting_file));
-   DPRINTF(("   local_conf_dir      >%s<\n", tl->local_conf_dir));
-   DPRINTF(("   shadow_masters_file >%s<\n", tl->shadow_masters_file));
-   DPRINTF(("   alias_file          >%s<\n", tl->alias_file));
+   DPRINTF(("   cell_root            >%s<\n", tl->cell_root));
+   DPRINTF(("   conf_file            >%s<\n", tl->bootstrap_file));
+   DPRINTF(("   bootstrap_file       >%s<\n", tl->conf_file));
+   DPRINTF(("   act_qmaster_file     >%s<\n", tl->act_qmaster_file));
+   DPRINTF(("   acct_file            >%s<\n", tl->acct_file));
+   DPRINTF(("   reporting_file       >%s<\n", tl->reporting_file));
+   DPRINTF(("   local_conf_dir       >%s<\n", tl->local_conf_dir));
+   DPRINTF(("   shadow_masters_file  >%s<\n", tl->shadow_masters_file));
+   DPRINTF(("   alias_file           >%s<\n", tl->alias_file));
 
    DRETURN_VOID;
 }
@@ -442,11 +518,11 @@ bootstrap_init_from_file(sge_bootstrap_tl_t *tl) {
          set_job_spooling(tl, true);
       }
       parse_ulong_val(nullptr, &val, TYPE_INT, value[10], nullptr, 0);
-      set_listener_thread_count(tl, (int)val);
+      set_listener_thread_count(tl, (int) val);
       parse_ulong_val(nullptr, &val, TYPE_INT, value[11], nullptr, 0);
-      set_worker_thread_count(tl, (int)val);
+      set_worker_thread_count(tl, (int) val);
       parse_ulong_val(nullptr, &val, TYPE_INT, value[12], nullptr, 0);
-      set_scheduler_thread_count(tl, (int)val);
+      set_scheduler_thread_count(tl, (int) val);
    }
 
    DRETURN_VOID;
@@ -454,26 +530,48 @@ bootstrap_init_from_file(sge_bootstrap_tl_t *tl) {
 
 static void
 bootstrap_init_from_component(sge_bootstrap_tl_t *tl) {
+   // setup uid/gid and corresponding names
    char user[256];
    char group[256];
    uid_t uid = geteuid();
    gid_t gid = getegid();
-
    set_uid(tl, uid);
    set_gid(tl, gid);
    SGE_ASSERT(sge_uid2user(uid, user, sizeof(user), MAX_NIS_RETRIES) == 0)
    SGE_ASSERT(sge_gid2group(gid, group, sizeof(group), MAX_NIS_RETRIES) == 0)
    set_username(tl, user);
    set_groupname(tl, group);
+
+   // setup short and long hostnames
+   char *s = nullptr;
+   stringT tmp_str;
+   struct hostent *hent = nullptr;
+   /* Fetch hostnames */
+   SGE_ASSERT((gethostname(tmp_str, sizeof(tmp_str)) == 0));
+   SGE_ASSERT(((hent = sge_gethostbyname(tmp_str, nullptr)) != nullptr));
+   set_qualified_hostname(tl, hent->h_name);
+   s = sge_dirname(hent->h_name, '.');
+   set_unqualified_hostname(tl, s);
+   sge_free(&s);
+   /* Bad resolving in some networks leads to short qualified host names */
+   if (!strcmp(tl->qualified_hostname, tl->unqualified_hostname)) {
+      char tmp_addr[8];
+      struct hostent *hent2 = nullptr;
+      memcpy(tmp_addr, hent->h_addr, hent->h_length);
+      SGE_ASSERT(((hent2 = sge_gethostbyaddr((const struct in_addr *) tmp_addr, nullptr)) != nullptr));
+
+      set_qualified_hostname(tl, hent2->h_name);
+      s = sge_dirname(hent2->h_name, '.');
+      set_unqualified_hostname(tl, s);
+      sge_free(&s);
+      sge_free_hostent(&hent2);
+   }
+   sge_free_hostent(&hent);
 }
 
 static void
 bootstrap_init_paths(sge_bootstrap_tl_t *tl) {
-   const char *cell_root = nullptr;
-   SGE_STRUCT_STAT sbuf{};
-
    DENTER(TOP_LAYER);
-
    const char *sge_root = tl->sge_root;
    const char *sge_cell = tl->sge_cell;
    char buffer[2 * 1024];
@@ -481,7 +579,7 @@ bootstrap_init_paths(sge_bootstrap_tl_t *tl) {
 
    sge_dstring_init(&bw, buffer, sizeof(buffer));
 
-
+   SGE_STRUCT_STAT sbuf{};
    if (SGE_STAT(sge_root, &sbuf)) {
       CRITICAL((SGE_EVENT, MSG_SGETEXT_SGEROOTNOTFOUND_S, sge_root));
       DRETURN_VOID;
@@ -501,7 +599,7 @@ bootstrap_init_paths(sge_bootstrap_tl_t *tl) {
    }
 
    set_cell_root(tl, sge_dstring_get_string(&bw));
-   cell_root = tl->cell_root;
+   const char *cell_root = tl->cell_root;
 
    /* common dir */
    sge_dstring_sprintf(&bw, "%s"PATH_SEPARATOR"%s", cell_root, COMMON_DIR);
@@ -575,6 +673,8 @@ bootstrap_thread_local_destroy(void *tl) {
    sge_free(&(_tl->thread_name));
    sge_free(&(_tl->username));
    sge_free(&(_tl->groupname));
+   sge_free(&(_tl->qualified_hostname));
+   sge_free(&(_tl->unqualified_hostname));
 
    // environment parameters
    sge_free(&(_tl->sge_root));
@@ -838,6 +938,18 @@ bootstrap_set_qmaster_internal(bool qmaster_internal) {
    set_qmaster_internal(tl, qmaster_internal);
 }
 
+bool
+bootstrap_is_daemonized() {
+   GET_SPECIFIC(sge_bootstrap_tl_t, tl, bootstrap_tl_init, sge_bootstrap_tl_key);
+   return tl->daemonized;
+}
+
+void
+bootstrap_set_daemonized(bool daemonized) {
+   GET_SPECIFIC(sge_bootstrap_tl_t, tl, bootstrap_tl_init, sge_bootstrap_tl_key);
+   set_daemonized(tl, daemonized);
+}
+
 u_long32
 bootstrap_get_component_id() {
    GET_SPECIFIC(sge_bootstrap_tl_t, tl, bootstrap_tl_init, sge_bootstrap_tl_key);
@@ -848,18 +960,13 @@ void
 bootstrap_set_component_id(u_long32 component_id) {
    GET_SPECIFIC(sge_bootstrap_tl_t, tl, bootstrap_tl_init, sge_bootstrap_tl_key);
    set_component_id(tl, component_id);
+   set_component_name(tl, prognames[component_id]);
 }
 
 const char *
 bootstrap_get_component_name() {
    GET_SPECIFIC(sge_bootstrap_tl_t, tl, bootstrap_tl_init, sge_bootstrap_tl_key);
    return tl->component_name;
-}
-
-void
-bootstrap_set_component_name(const char *component_name) {
-   GET_SPECIFIC(sge_bootstrap_tl_t, tl, bootstrap_tl_init, sge_bootstrap_tl_key);
-   set_component_name(tl, component_name);
 }
 
 const char *
@@ -908,6 +1015,42 @@ void
 bootstrap_set_username(const char *username) {
    GET_SPECIFIC(sge_bootstrap_tl_t, tl, bootstrap_tl_init, sge_bootstrap_tl_key);
    set_username(tl, username);
+}
+
+const char *
+bootstrap_get_qualified_hostname() {
+   GET_SPECIFIC(sge_bootstrap_tl_t, tl, bootstrap_tl_init, sge_bootstrap_tl_key);
+   return tl->qualified_hostname;
+}
+
+void
+bootstrap_set_qualified_hostname(const char *qualified_hostname) {
+   GET_SPECIFIC(sge_bootstrap_tl_t, tl, bootstrap_tl_init, sge_bootstrap_tl_key);
+   set_qualified_hostname(tl, qualified_hostname);
+}
+
+const char *
+bootstrap_get_unqualified_hostname() {
+   GET_SPECIFIC(sge_bootstrap_tl_t, tl, bootstrap_tl_init, sge_bootstrap_tl_key);
+   return tl->unqualified_hostname;
+}
+
+void
+bootstrap_set_unqualified_hostname(const char *unqualified_hostname) {
+   GET_SPECIFIC(sge_bootstrap_tl_t, tl, bootstrap_tl_init, sge_bootstrap_tl_key);
+   set_unqualified_hostname(tl, unqualified_hostname);
+}
+
+sge_exit_func_t
+bootstrap_get_exit_func() {
+   GET_SPECIFIC(sge_bootstrap_tl_t, tl, bootstrap_tl_init, sge_bootstrap_tl_key);
+   return tl->exit_func;
+}
+
+void
+bootstrap_set_exit_func(sge_exit_func_t exit_func) {
+   GET_SPECIFIC(sge_bootstrap_tl_t, tl, bootstrap_tl_init, sge_bootstrap_tl_key);
+   set_exit_func(tl, exit_func);
 }
 
 const char *

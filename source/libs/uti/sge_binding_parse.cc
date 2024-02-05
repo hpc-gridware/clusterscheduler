@@ -32,11 +32,9 @@
 
 /* this code is used by shepherd */
 #include <ctype.h>
-#include <pthread.h>
 
 #include "uti/sge_rmon.h"
 #include "uti/sge_string.h"
-#include "uti/sge_log.h"
 #include "uti/sge_binding_parse.h"
 
 binding_type_t binding_type_to_enum(const char *parameter) {

@@ -31,7 +31,6 @@
 /*___INFO__MARK_END__*/
 
 #include "uti/sge_rmon.h"
-#include "uti/sge_log.h"
 
 #include "sgeobj/sge_hgroup.h"
 

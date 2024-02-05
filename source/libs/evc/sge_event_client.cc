@@ -35,13 +35,12 @@
 
 #include "uti/sge_rmon.h"
 #include "uti/sge_unistd.h"
-#include "uti/sge_prog.h"
+#include "uti/sge_bootstrap.h"
 #include "uti/sge_profiling.h"
 #include "uti/sge_log.h"
 #include "uti/sge_time.h"
 #include "uti/sge_error_class.h"
 #include "uti/sge_mtutil.h"
-#include "uti/sge_bootstrap.h"
 
 #include "comm/commlib.h"
 
@@ -859,7 +858,7 @@ static bool sge_evc_setup(sge_evc_class_t *thiz,
    if (ec_name != nullptr) {
       name = ec_name;
    } else {
-      name = uti_state_get_sge_formal_prog_name();
+      name = bootstrap_get_component_name();
    }
 
    if (id >= EV_ID_FIRST_DYNAMIC || name == nullptr || *name == 0) {
@@ -1570,7 +1569,7 @@ static bool ec2_register(sge_evc_class_t *thiz, bool exit_on_qmaster_down, lList
                      better return values */
             if (exit_on_qmaster_down) {
                DPRINTF(("exiting in ec2_register()\n"));
-               SGE_EXIT((void**)&sge_gdi_ctx, 1);
+               sge_exit(1);
             } else {
                /*
                 * Trigger commlib in case of errors. This is to prevent 100% CPU usage
@@ -1627,7 +1626,6 @@ static bool ec2_deregister(sge_evc_class_t *thiz)
 {
    bool ret = false;
    sge_evc_t *sge_evc = (sge_evc_t *) thiz->sge_evc_handle;
-   sge_gdi_ctx_class_t *sge_gdi_ctx = thiz->get_gdi_ctx(thiz);
 
    DENTER(EVC_LAYER);
 
@@ -1649,7 +1647,7 @@ static bool ec2_deregister(sge_evc_class_t *thiz)
 
          packint(&pb, lGetUlong(sge_evc->ec, EV_id));
 
-         send_ret = sge_gdi2_send_any_request(sge_gdi_ctx, 0, nullptr, rhost, commproc, commid, &pb, TAG_EVENT_CLIENT_EXIT, 0, &alp);
+         send_ret = sge_gdi2_send_any_request(0, nullptr, rhost, commproc, commid, &pb, TAG_EVENT_CLIENT_EXIT, 0, &alp);
          
          clear_packbuffer(&pb);
          answer_list_output (&alp);
@@ -3110,7 +3108,6 @@ static bool get_event_list(sge_evc_class_t *thiz, int sync, lList **report_list,
    bool ret = true;
    sge_pack_buffer pb;
    int help;
-   sge_gdi_ctx_class_t * sge_gdi_ctx = thiz->get_gdi_ctx(thiz);
    char rhost[CL_MAXHOSTLEN+1] = "";
    char commproc[CL_MAXHOSTLEN+1] = "";
    u_short id = 0;
@@ -3125,7 +3122,7 @@ static bool get_event_list(sge_evc_class_t *thiz, int sync, lList **report_list,
    id = 1;
 
    DPRINTF(("try to get request from %s, id %d\n",(char*)prognames[QMASTER], id ));
-   if ( (help=sge_gdi2_get_any_request(sge_gdi_ctx, rhost, commproc, &id, &pb, &tag, sync,0,nullptr)) != CL_RETVAL_OK) {
+   if ( (help=sge_gdi2_get_any_request(rhost, commproc, &id, &pb, &tag, sync,0,nullptr)) != CL_RETVAL_OK) {
       if (help == CL_RETVAL_NO_MESSAGE || help == CL_RETVAL_SYNC_RECEIVE_TIMEOUT) {
          DEBUG((SGE_EVENT, "commlib returns %s\n", cl_get_error_text(help)));
       } else {

@@ -35,8 +35,4 @@
 #   include <sys/resource.h>
 #endif
 
-#ifdef __convex__
-#   define SETPRIORITY(niceval) setpriority(PRIO_PROCESS,getpgrp(),niceval)
-#else
-#  define SETPRIORITY(niceval) setpriority(PRIO_PROCESS, 0, niceval)
-#endif
+#define SETPRIORITY(niceval) setpriority(PRIO_PROCESS, 0, niceval)

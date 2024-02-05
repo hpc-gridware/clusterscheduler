@@ -41,7 +41,7 @@
 #include "cull/cull.h"
 
 #include "uti/sge_rmon.h"
-#include "uti/sge_prog.h"
+#include "uti/sge_bootstrap.h"
 #include "uti/sge_uidgid.h"
 #include "uti/sge_time.h"
 
@@ -62,7 +62,7 @@ static char lasterror[4096];
 
 #define LOCATE_RTASK(tid) lGetElemStrRW(remote_task_list, RT_tid, tid)
 
-static int rcv_from_execd(sge_gdi_ctx_class_t *ctx, int options, int tag); 
+static int rcv_from_execd(int options, int tag);
 
 const char *qexec_last_err(void)
 {
@@ -100,8 +100,7 @@ const char *qexec_last_err(void)
 *  NOTES
 *     MT-NOTE: sge_qexecve() is not MT safe
 ******************************************************************************/
-sge_tid_t sge_qexecve(sge_gdi_ctx_class_t *ctx,
-                      const char *hostname, const char *queuename,
+sge_tid_t sge_qexecve(const char *hostname, const char *queuename,
                       const char *cwd, const lList *environment,
                       const lList *path_aliases)
 {
@@ -187,7 +186,7 @@ sge_tid_t sge_qexecve(sge_gdi_ctx_class_t *ctx,
 
    pack_job_delivery(&pb, petrep);
 
-   ret = gdi2_send_message_pb(ctx, 1, prognames[EXECD], 1, hostname,
+   ret = gdi2_send_message_pb(1, prognames[EXECD], 1, hostname,
                               TAG_JOB_EXECUTION, &pb, &dummymid);
 
    clear_packbuffer(&pb);
@@ -204,7 +203,7 @@ sge_tid_t sge_qexecve(sge_gdi_ctx_class_t *ctx,
    lSetHost(rt, RT_hostname, hostname);
    lSetUlong(rt, RT_state, RT_STATE_WAIT4ACK);
 
-   rcv_from_execd(ctx, OPT_SYNCHRON, TAG_JOB_EXECUTION);
+   rcv_from_execd(OPT_SYNCHRON, TAG_JOB_EXECUTION);
 
    tid = (sge_tid_t) lGetString(rt, RT_tid);
 
@@ -247,7 +246,7 @@ int sge_qwaittid(sge_gdi_ctx_class_t *ctx, sge_tid_t tid, int *status, int optio
             !lGetElemUlong(remote_task_list, RT_state, RT_STATE_EXITED) && /* none exited */
             lGetElemUlong(remote_task_list, RT_state, RT_STATE_WAIT4ACK))) /* but one is waiting for ack */ {
       /* wait for incoming messeges about exited tasks */
-      if ((ret=rcv_from_execd(ctx, rcv_opt, TAG_TASK_EXIT))) {
+      if ((ret=rcv_from_execd(rcv_opt, TAG_TASK_EXIT))) {
          DRETURN((ret<0)?-1:0);
       }
    }
@@ -268,7 +267,7 @@ int sge_qwaittid(sge_gdi_ctx_class_t *ctx, sge_tid_t tid, int *status, int optio
        MT-NOTE: rcv_from_execd() is not MT safe
 
 */
-static int rcv_from_execd(sge_gdi_ctx_class_t *ctx, int options, int tag)
+static int rcv_from_execd(int options, int tag)
 {
    int ret;
    char *msg = nullptr;
@@ -287,7 +286,7 @@ static int rcv_from_execd(sge_gdi_ctx_class_t *ctx, int options, int tag)
    from_id = 1;
    do {
       /* FIX_CONST */
-      ret = gdi2_receive_message(ctx, (char*)prognames[EXECD], &from_id, host, &tag, 
+      ret = gdi2_receive_message((char*)prognames[EXECD], &from_id, host, &tag,
                                  &msg, &msg_len, (options & OPT_SYNCHRON) ? 1:0);
       
       if (ret != CL_RETVAL_OK && ret != CL_RETVAL_SYNC_RECEIVE_TIMEOUT) {

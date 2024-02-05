@@ -31,7 +31,6 @@
 /*___INFO__MARK_END__*/
 #include <stdio.h>
 #include <string.h>
-#include <time.h>
 
 #include "uti/sge_rmon.h"
 #include "uti/sge_time.h"

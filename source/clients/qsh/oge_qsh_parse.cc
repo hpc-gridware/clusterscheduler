@@ -39,7 +39,7 @@
 #include "uti/sge_string.h"
 #include "uti/sge_time.h"
 #include "uti/sge_stdlib.h"
-#include "uti/sge_prog.h"
+#include "uti/sge_bootstrap.h"
 
 #include "sgeobj/cull_parse_util.h"
 #include "sgeobj/sge_host.h"

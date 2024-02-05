@@ -36,7 +36,7 @@
 
 #include "uti/sge_rmon.h"
 #include "uti/sge_signal.h"
-#include "uti/sge_prog.h"
+#include "uti/sge_bootstrap.h"
 #include "uti/sge_log.h"
 #include "uti/sge_time.h"
 #include "uti/sge_hostname.h"
@@ -1122,7 +1122,7 @@ sge_signal_queue(sge_gdi_ctx_class_t *ctx, int how, lListElem *qep, lListElem *j
          } else {
             if (pb_filled(&pb)) {
                u_long32 dummy = 0;
-               i = gdi2_send_message_pb(ctx, 0, pnm, 1, hnm, jep ? TAG_SIGJOB : TAG_SIGQUEUE,
+               i = gdi2_send_message_pb(0, pnm, 1, hnm, jep ? TAG_SIGJOB : TAG_SIGQUEUE,
                                         &pb, &dummy);
             }
          }

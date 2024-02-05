@@ -42,7 +42,7 @@
 #include "uti/sge_uidgid.h"
 #include "uti/sge_signal.h"
 #include "uti/sge_bootstrap.h"
-#include "uti/sge_prog.h"
+#include "uti/sge_bootstrap.h"
 #include "uti/sge_string.h"
 
 #include "sgeobj/sge_feature.h"
@@ -1003,11 +1003,10 @@ int main(int argc, char *argv[]) {
    sigaction(SIGPIPE, &sa, nullptr);
 
    bootstrap_mt_init();
+   bootstrap_set_component_id(QPING);
    prof_mt_init();
    feature_mt_init();
    gdi3_mt_init();
-
-   sge_getme(QPING);
 
    lInit(nmv);
 
@@ -1230,7 +1229,7 @@ int main(int argc, char *argv[]) {
       if (got_no_framework == 1) {
          /* we got no framework and we have a bootstrap file */
          sge_getme(QPING);
-         sge_ssl_setup_security_path("qping", uti_state_get_user_name());
+         sge_ssl_setup_security_path("qping", bootstrap_get_username());
       } else {
          if (getenv("SSL_CA_CERT_FILE") == nullptr) {
             fprintf(stderr,"You have not set the SGE default environment or you specified the -ssl option.\n");

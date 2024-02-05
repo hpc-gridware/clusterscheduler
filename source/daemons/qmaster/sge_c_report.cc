@@ -35,7 +35,7 @@
 #include <string.h>
 
 #include "uti/sge_rmon.h"
-#include "uti/sge_prog.h"
+#include "uti/sge_bootstrap.h"
 #include "uti/sge_log.h"
 
 #include "sgeobj/sge_ack.h"
@@ -269,7 +269,7 @@ sge_c_report(sge_gdi_ctx_class_t *ctx, char *rhost, char *commproc, int id, lLis
       if (pb_filled(&pb)) {
          lList *alp = nullptr;
          /* send all stuff packed during processing to execd */
-         sge_gdi2_send_any_request(ctx, 0, nullptr, rhost, commproc, id, &pb, TAG_ACK_REQUEST, 0, &alp);
+         sge_gdi2_send_any_request(0, nullptr, rhost, commproc, id, &pb, TAG_ACK_REQUEST, 0, &alp);
          MONITOR_MESSAGES_OUT(monitor);
          answer_list_output(&alp);
       }

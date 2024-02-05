@@ -347,7 +347,7 @@ main(int argc, char **argv)
    if (err) {
       usage();
       sge_prof_cleanup();
-      SGE_EXIT((void **)&ctx, 1);
+      sge_exit(1);
    }
 
    if ((argc - optind) > 0) {
@@ -356,7 +356,7 @@ main(int argc, char **argv)
 
    if (sge_gdi2_setup(&ctx, SGE_SHARE_MON, MAIN_THREAD, &alp) != AE_OK) {
       answer_list_output(&alp);
-      SGE_EXIT((void**)&ctx, 1);
+      sge_exit(1);
    }
 
    if (header) {
@@ -387,7 +387,7 @@ main(int argc, char **argv)
       }
    }
 
-   sge_gdi2_shutdown((void**)&ctx);
+   sge_gdi2_shutdown();
 
    sge_prof_cleanup();
    sge_dstring_free(&output_dstring);

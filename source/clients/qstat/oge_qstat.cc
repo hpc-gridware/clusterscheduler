@@ -220,7 +220,7 @@ char **argv
 
    if (sge_gdi2_setup(&ctx, QSTAT, MAIN_THREAD, &alp) != AE_OK) {
       answer_list_output(&alp);
-      SGE_EXIT((void**)&ctx, 1);
+      sge_exit(1);
    }
 
    username = bootstrap_get_username();
@@ -314,7 +314,7 @@ char **argv
       lFreeList(&alp);
       lFreeList(&pcmdline);
       qstat_env_destroy(&qstat_env);
-      SGE_EXIT((void**)&ctx, 1);
+      sge_exit(1);
    }
 
    alp = sge_parse_qstat(ctx, &pcmdline, &qstat_env, &hostname,   
@@ -332,7 +332,7 @@ char **argv
       lFreeList(&ref_list);
       lFreeList(&jid_list);
       qstat_env_destroy(&qstat_env);
-      SGE_EXIT((void**)&ctx, 1);
+      sge_exit(1);
    }
 
    /* if -j, then only print job info and leave */
@@ -347,7 +347,7 @@ char **argv
          ret = qstat_show_job_info(ctx, isXML, &qstat_env);
       }
       qstat_env_destroy(&qstat_env);
-      SGE_EXIT((void**)&ctx, ret);
+      sge_exit(ret);
    }
 
    {
@@ -365,7 +365,7 @@ char **argv
                }
                lFreeList(&answer_list);
                qstat_env_destroy(&qstat_env);
-               SGE_EXIT((void**)&ctx, 1);
+               sge_exit(1);
                return 1;
             }
          } else {
@@ -411,11 +411,11 @@ char **argv
 
       if (ret != 0) {
          qstat_env_destroy(&qstat_env);
-         SGE_EXIT((void**)&ctx, 1);
+         sge_exit(1);
          return 1;
       }
    }
-   SGE_EXIT((void**)&ctx, 0);
+   sge_exit(0);
    return 0;
 }
 
@@ -456,7 +456,7 @@ sge_parse_qstat(sge_gdi_ctx_class_t *ctx, lList **ppcmdline, qstat_env_t *qstat_
    while (lGetNumberOfElem(*ppcmdline)) {
       if (parse_flag(ppcmdline, "-help",  &alp, &helpflag)) {
          usageshowed = qstat_usage(qstat_env->qselect_mode, stdout, nullptr);
-         SGE_EXIT((void**)&ctx, 0);
+         sge_exit(0);
          break;
       }
 
@@ -2032,7 +2032,7 @@ qstat_show_job(sge_gdi_ctx_class_t *ctx, lList *jid_list, u_long32 isXML, qstat_
          fprintf(stderr, "%s", lGetString(elem1, ST_name));
       }
       fprintf(stderr, "\n");
-      SGE_EXIT((void**)&ctx, 1);
+      sge_exit(1);
    }
 
    /* print scheduler job information and global scheduler info */

@@ -110,14 +110,14 @@ int main(int argc, char **argv) {
    }
    answer_list_on_error_print_or_exit(&alp, stdout);
 
-   sge_gdi2_shutdown((void**)&ctx);
+   sge_gdi2_shutdown();
    sge_prof_cleanup();
    DRETURN(0);
 
 error_exit:
-   sge_gdi2_shutdown((void**)&ctx);
+   sge_gdi2_shutdown();
    sge_prof_cleanup();
-   SGE_EXIT((void**)&ctx, 1);
+   sge_exit(1);
    DRETURN(1);
 }
 
@@ -183,7 +183,7 @@ static bool sge_parse_qrdel(lList **ppcmdline, lList **ppid_list, lList **alpp)
       
       if (parse_flag(ppcmdline, "-help",  alpp, &helpflag)) {
          sge_usage(QRDEL, stdout);
-         SGE_EXIT(nullptr, 0);
+         sge_exit(0);
          break;
       }
       if (parse_flag(ppcmdline, "-f", alpp, &pforce)) 

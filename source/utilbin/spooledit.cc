@@ -44,7 +44,7 @@
 #include "uti/sge_dstring.h"
 #include "uti/sge_spool.h"
 #include "uti/sge_uidgid.h"
-#include "uti/sge_prog.h"
+#include "uti/sge_bootstrap.h"
 
 #include "sgeobj/cull/sge_all_listsL.h"
 #include "sgeobj/sge_feature.h"
@@ -393,7 +393,7 @@ main(int argc, char *argv[])
 
    if (sge_setup2(&ctx, SPOOLDEFAULTS, MAIN_THREAD, &answer_list, false) != AE_OK) {
       answer_list_output(&answer_list);
-      SGE_EXIT((void**)&ctx, 1);
+      sge_exit(1);
    }
 
    if (ret == EXIT_SUCCESS) {
@@ -451,7 +451,7 @@ main(int argc, char *argv[])
 
    answer_list_output(&answer_list);
 
-   SGE_EXIT((void**)&ctx, ret);
+   sge_exit(ret);
 
    DRETURN(ret);
 }

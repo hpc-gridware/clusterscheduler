@@ -46,10 +46,11 @@
 #include "uti/sge_parse_num_par.h"
 #include "uti/sge_log.h"
 #include "uti/sge_string.h"
-#include "uti/sge_prog.h"
+#include "uti/sge_bootstrap.h"
 #include "uti/sge_profiling.h"
 #include "uti/config_file.h"
 #include "uti/sge_lock.h"
+#include "uti/sge_bootstrap.h"
 
 #include "comm/commlib.h"
 

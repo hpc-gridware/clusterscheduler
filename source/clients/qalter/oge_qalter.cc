@@ -38,7 +38,7 @@
 #include "uti/sge_string.h"
 #include "uti/sge_unistd.h"
 #include "uti/sge_profiling.h"
-#include "uti/sge_prog.h"
+#include "uti/sge_bootstrap.h"
 
 #include "sgeobj/cull/sge_all_listsL.h"
 #include "sgeobj/parse.h"
@@ -118,7 +118,7 @@ int main(int argc, char **argv) {
 
    if (sge_gdi2_setup(&ctx, me_who, MAIN_THREAD, &alp) != AE_OK) {
       answer_list_output(&alp);
-      SGE_EXIT((void**)&ctx, 1);
+      sge_exit(1);
    }
 
    /*
@@ -128,7 +128,7 @@ int main(int argc, char **argv) {
    tmp_ret = answer_list_print_err_warn(&alp, MSG_QALTER, MSG_QALTER, MSG_QALTERWARNING);
    
    if (tmp_ret > 0) {
-      SGE_EXIT((void**)&ctx, tmp_ret);
+      sge_exit(tmp_ret);
    }
    
    /* handling the case that no command line parameter was specified */
@@ -136,16 +136,16 @@ int main(int argc, char **argv) {
       /* -h option is set implicitly for QHOLD and QRLS */
       sge_usage(me_who, stderr);
       fprintf(stderr, "%s\n", MSG_PARSE_NOOPTIONARGUMENT);
-      SGE_EXIT((void**)&ctx, 1);
+      sge_exit(1);
    } else if ((me_who == QRESUB || me_who == QALTER) && lGetNumberOfElem(cmdline) == 0) {
       /* qresub and qalter have nothing set */ 
       sge_usage(me_who, stderr);
       fprintf(stderr, "%s\n", MSG_PARSE_NOOPTIONARGUMENT);
-      SGE_EXIT((void**)&ctx, 1);
+      sge_exit(1);
    } else if (opt_list_has_X(cmdline, "-help")) {
       /* -help was specified */
       sge_usage(me_who, stdout);
-      SGE_EXIT((void**)&ctx, 0);
+      sge_exit(0);
    }
    
    alp = qalter_parse_job_parameter(me_who, cmdline, &request_list, &all_jobs, 
@@ -165,12 +165,12 @@ int main(int argc, char **argv) {
       */
       cull_show_job(lFirst(request_list), FLG_QALTER, false);
       sge_prof_cleanup();
-      SGE_EXIT((void**)&ctx, 0);
+      sge_exit(0);
    }
 
    tmp_ret = answer_list_print_err_warn(&alp, nullptr, nullptr, MSG_WARNING);
    if (tmp_ret > 0) {
-      SGE_EXIT((void**)&ctx, tmp_ret);
+      sge_exit(tmp_ret);
    }
 
    if ((me_who == QALTER) ||
@@ -184,7 +184,7 @@ int main(int argc, char **argv) {
       gdi_cmd = SGE_GDI_COPY;
    } else {
       printf("unknown binary name.\n");
-      SGE_EXIT((void**)&ctx, 1);
+      sge_exit(1);
    }
 
    if (all_jobs)
@@ -212,7 +212,7 @@ int main(int argc, char **argv) {
    }
 
    sge_prof_cleanup();
-   SGE_EXIT((void**)&ctx, ret);
+   sge_exit(ret);
 
    DRETURN(0);
 }

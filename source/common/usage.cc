@@ -35,7 +35,7 @@
 
 #include "uti/sge_rmon.h"
 #include "uti/sge_stdio.h"
-#include "uti/sge_prog.h"
+#include "uti/sge_bootstrap.h"
 
 #include "sgeobj/sge_feature.h"
 

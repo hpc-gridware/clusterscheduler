@@ -40,7 +40,7 @@
 #include "uti/sge_time.h"
 #include "uti/sge_log.h"
 #include "uti/sge_stdlib.h"
-#include "uti/sge_prog.h"
+#include "uti/sge_bootstrap.h"
 #include "uti/sge_parse_num_par.h"
 #include "uti/sge_hostname.h"
 #include "uti/sge_profiling.h"
@@ -450,7 +450,7 @@ send_slave_jobs_wc(sge_gdi_ctx_class_t *ctx, lListElem *jep, monitoring_t *monit
 
          pack_job_delivery(&send_pb, jep);
          if (!simulate_execd) {
-            failed = gdi2_send_message_pb(ctx, 0, prognames[EXECD], 1, hostname, TAG_SLAVE_ALLOW, &send_pb, &dummymid);
+            failed = gdi2_send_message_pb(0, prognames[EXECD], 1, hostname, TAG_SLAVE_ALLOW, &send_pb, &dummymid);
          } else {
             failed = CL_RETVAL_OK;
          }
@@ -490,7 +490,7 @@ send_job(sge_gdi_ctx_class_t *ctx, const char *rhost, lListElem *jep, lListElem 
    lListElem *gdil_ep;
    unsigned long last_heard_from;
    const char *sge_root = bootstrap_get_sge_root();
-   const char *myprogname = uti_state_get_sge_formal_prog_name();
+   const char *myprogname = bootstrap_get_component_name();
    bool job_spooling = bootstrap_get_job_spooling();
    bool simulate_execd = mconf_get_simulate_execds();
    lDescr *rdp = nullptr;
@@ -620,7 +620,7 @@ send_job(sge_gdi_ctx_class_t *ctx, const char *rhost, lListElem *jep, lListElem 
       failed = CL_RETVAL_OK;
    } else {
       u_long32 dummymid = 0;
-      failed = gdi2_send_message_pb(ctx, 0, prognames[EXECD], 1, rhost, master ? TAG_JOB_EXECUTION : TAG_SLAVE_ALLOW,
+      failed = gdi2_send_message_pb(0, prognames[EXECD], 1, rhost, master ? TAG_JOB_EXECUTION : TAG_SLAVE_ALLOW,
                                     &pb, &dummymid);
    }
 
@@ -919,7 +919,7 @@ sge_commit_job(sge_gdi_ctx_class_t *ctx, lListElem *jep, lListElem *jatep, lList
    const lList *master_rqs_list = *object_type_get_master_list(SGE_TYPE_RQS);
 
    /* need hostname for job_log */
-   const char *qualified_hostname = uti_state_get_qualified_hostname();
+   const char *qualified_hostname = bootstrap_get_qualified_hostname();
    const char *sge_root = bootstrap_get_sge_root();
    bool job_spooling = bootstrap_get_job_spooling();
    u_long32 task_wallclock = U_LONG32_MAX;

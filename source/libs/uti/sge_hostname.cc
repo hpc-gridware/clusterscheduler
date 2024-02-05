@@ -33,13 +33,10 @@
 #include <stdlib.h>
 #include <unistd.h>
 #include <string.h>
-#include <errno.h>
 #include <pthread.h>
 #include <fnmatch.h>
-#include <sys/types.h>
 #include <sys/socket.h>
 #include <netinet/in.h>
-#include <arpa/inet.h>
 #include <netdb.h>
 
 
@@ -189,7 +186,7 @@ int sge_get_qmaster_port(bool *from_services) {
          int_port = cached_port;
       } else {
          sge_mutex_unlock("get_qmaster_port_mutex", __func__, __LINE__, &get_qmaster_port_mutex);
-         SGE_EXIT(nullptr, 1);
+         sge_exit(1);
       }
    } else {
       DPRINTF(("returning port value: "sge_U32CFormat"\n", sge_u32c(int_port)));
@@ -255,7 +252,7 @@ int sge_get_execd_port(void) {
          int_port = cached_port;
       } else {
          sge_mutex_unlock("get_execd_port_mutex", __func__, __LINE__, &get_execd_port_mutex);
-         SGE_EXIT(nullptr, 1);
+         sge_exit(1);
       }
    } else {
       DPRINTF(("returning port value: "sge_U32CFormat"\n", sge_u32c(int_port)));

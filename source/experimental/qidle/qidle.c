@@ -50,7 +50,7 @@
 #include "cull/cull.h"
 #include "sge_load_sensor.h"
 #include "sge_rmon.h"
-#include "sge_prog.h"
+#include "sge_bootstrap.h"
 #include "sge_bootstrap.h"
 #include "sge_reportL.h"
 
@@ -105,7 +105,7 @@ char ** argv;
    host = getenv("HOST");
    dpy_name = sge_malloc(strlen(host)+3);
    strcpy(dpy_name, host);
-   uti_state_set_qualified_hostname(host);
+   bootstrap_set_qualified_hostname(host);
    strcat(dpy_name, ":0");
 
    for (i=1; i<argc; i++) {
@@ -160,7 +160,7 @@ char ** argv;
             tt = getidletime(dpy);
             printf("%s:idle:%d:%02d:%02d\n", host, tt.std, tt.min, tt.sek); fflush(nullptr);
             if (script != nullptr)
-               getextloadsensor(uti_state_get_qualified_hostname(), bootstrap_get_binary_path(), script);
+               getextloadsensor(bootstrap_get_qualified_hostname(), bootstrap_get_binary_path(), script);
             printf("end\n"); fflush(nullptr);
          }
          else 

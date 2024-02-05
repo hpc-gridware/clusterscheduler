@@ -63,8 +63,6 @@
 
 #define CQUEUE_VERIFY_LAYER TOP_LAYER
 
-/* EB: ADOC: add commets */
-
 bool
 cqueue_verify_calendar(lListElem *cqueue, lList **answer_list, lListElem *attr_elem, const lList *master_calendar_list)
 {

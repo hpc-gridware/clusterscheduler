@@ -84,7 +84,7 @@ char **argv
 
    if (sge_gdi2_setup(&ctx, QMOD, MAIN_THREAD, &alp) != AE_OK) {
       answer_list_output(&alp);
-      SGE_EXIT((void**)&ctx, 1);
+      sge_exit(1);
    }
 
    /*
@@ -101,7 +101,7 @@ char **argv
       }
       lFreeList(&alp);
       lFreeList(&pcmdline);
-      SGE_EXIT((void**)&ctx, 1);
+      sge_exit(1);
    }
 
    alp = sge_parse_qmod(&pcmdline, &ref_list, &force);
@@ -116,7 +116,7 @@ char **argv
       lFreeList(&alp);
       lFreeList(&pcmdline);
       lFreeList(&ref_list);
-      SGE_EXIT((void**)&ctx, 1);
+      sge_exit(1);
    }
 
    {
@@ -146,10 +146,10 @@ char **argv
    sge_prof_cleanup();
 
    if(answ_list_has_err) {
-      SGE_EXIT((void**)&ctx, 1);
+      sge_exit(1);
    }
    else {
-      SGE_EXIT((void**)&ctx, 0);
+      sge_exit(0);
    }
    DRETURN(0);
 }

@@ -51,12 +51,8 @@
 #include "uti/sge_stdio.h"
 #include "uti/sge_unistd.h"
 #include "uti/sge_log.h"
-#include "uti/sge_arch.h"
 #include "uti/sge_string.h"
 #include "uti/msg_utilib.h"
-#include "uti/sge_string.h"
-#include "uti/sge_stdio.h"
-#include "uti/sge_bootstrap.h"
 
 #include "basis_types.h"
 
@@ -113,17 +109,12 @@ static int get_admin_user(uid_t *, gid_t *);
 *     uti/uidgid/sge_switch2start_user()
 *     uti/uidgid/sge_run_as_user()
 ******************************************************************************/
-bool sge_is_start_user_superuser(void) {
-   bool is_root = false;
-   uid_t start_uid;
-
+bool
+sge_is_start_user_superuser() {
    DENTER(UIDGID_LAYER);
-
-   start_uid = getuid();
-   is_root = (start_uid == SGE_SUPERUSER_UID) ? true : false;
-
+   bool is_root = (getuid() == SGE_SUPERUSER_UID);
    DRETURN(is_root);
-} /* sge_is_start_user_superuser() */
+}
 
 /****** uti/uidgid/sge_set_admin_username() ***********************************
 *  NAME
@@ -155,17 +146,13 @@ bool sge_is_start_user_superuser(void) {
 *     uti/uidgid/sge_switch2start_user()
 *     uti/uidgid/sge_run_as_user()
 ******************************************************************************/
-int sge_set_admin_username(const char *user, char *err_str) {
-   struct passwd *admin;
-   int ret;
-   uid_t uid;
-   gid_t gid;
-
+int
+sge_set_admin_username(const char *user, char *err_str) {
    DENTER(UIDGID_LAYER);
 
-   /*
-    * Do only if admin user is not already set!
-    */
+   // Do only if admin user is not already set!
+   uid_t uid;
+   gid_t gid;
    if (get_admin_user(&uid, &gid) != ESRCH) {
       DRETURN(-2);
    }
@@ -176,15 +163,15 @@ int sge_set_admin_username(const char *user, char *err_str) {
       DRETURN(-1);
    }
 
-   ret = 0;
+   int ret = 0;
    if (!strcasecmp(user, "none")) {
       set_admin_user("root", getuid(), getgid());
    } else {
-      struct passwd pw_struct;
       int size = get_pw_buffer_size();
       char *buffer = sge_malloc(size);
 
-      admin = sge_getpwnam_r(user, &pw_struct, buffer, size);
+      struct passwd pw_struct;
+      struct passwd *admin = sge_getpwnam_r(user, &pw_struct, buffer, size);
       if (admin) {
          set_admin_user(user, admin->pw_uid, admin->pw_gid);
       } else {
@@ -196,40 +183,6 @@ int sge_set_admin_username(const char *user, char *err_str) {
    }
    DRETURN(ret);
 } /* sge_set_admin_username() */
-
-/****** uti/uidgid/sge_is_admin_user() ****************************************
-*  NAME
-*     sge_is_admin_user() -- Check if user is SGE admin user
-*
-*  SYNOPSIS
-*     bool sge_is_admin_user(const char *username)
-*
-*  FUNCTION
-*     Checks if the given user is the SGE admin user.
-*
-*  INPUTS
-*     const char *username - given user name
-*
-*  RESULT
-*     bool - true if the given user is the SGE admin user
-*            false if not.
-*
-*  NOTES
-*     MT-NOTE: sge_is_admin_user() is MT safe.
-* 
-*  SEE ALSO
-******************************************************************************/
-bool sge_is_admin_user(const char *username) {
-   bool ret = false;
-   const char *admin_user;
-
-   admin_user = bootstrap_get_admin_user();
-   if (admin_user != nullptr && username != nullptr) {
-      ret = strcmp(username, admin_user) == 0 ? true : false;
-   }
-
-   return ret;
-} /* sge_is_admin_user() */
 
 /****** uti/uidgid/sge_switch2admin_user() ************************************
 *  NAME
@@ -258,7 +211,8 @@ bool sge_is_admin_user(const char *username) {
 *     uti/uidgid/sge_switch2start_user()
 *     uti/uidgid/sge_run_as_user()
 ******************************************************************************/
-int sge_switch2admin_user(void) {
+int
+sge_switch2admin_user() {
    uid_t uid;
    gid_t gid;
    int ret = 0;
@@ -301,10 +255,8 @@ int sge_switch2admin_user(void) {
    }
 
    exit:
-   DPRINTF(("uid=%ld; gid=%ld; euid=%ld; egid=%ld auid=%ld; agid=%ld\n",
-           (long) getuid(), (long) getgid(),
-           (long) geteuid(), (long) getegid(),
-           (long) uid, (long) gid));
+DPRINTF(("uid=%ld; gid=%ld; euid=%ld; egid=%ld auid=%ld; agid=%ld\n", (long) getuid(), (long) getgid(),
+        (long) geteuid(), (long) getegid(), (long) uid, (long) gid));
    DRETURN(ret);
 } /* sge_switch_2admin_user() */
 
@@ -336,7 +288,8 @@ int sge_switch2admin_user(void) {
 *     uti/uidgid/sge_switch2start_user()
 *     uti/uidgid/sge_run_as_user()
 ******************************************************************************/
-int sge_switch2start_user(void) {
+int
+sge_switch2start_user() {
    uid_t uid, start_uid;
    gid_t gid, start_gid;
    int ret = 0;
@@ -382,50 +335,10 @@ int sge_switch2start_user(void) {
    }
 
    exit:
-   DPRINTF(("uid=%ld; gid=%ld; euid=%ld; egid=%ld auid=%ld; agid=%ld\n",
-           (long) getuid(), (long) getgid(),
-           (long) geteuid(), (long) getegid(),
-           (long) uid, (long) gid));
+DPRINTF(("uid=%ld; gid=%ld; euid=%ld; egid=%ld auid=%ld; agid=%ld\n", (long) getuid(), (long) getgid(),
+        (long) geteuid(), (long) getegid(), (long) uid, (long) gid));
    DRETURN(ret);
 } /* sge_switch2start_user() */
-
-/****** uti/uidgid/sge_run_as_user() ******************************************
-*  NAME
-*     sge_run_as_user() -- Set euid to uid
-*
-*  SYNOPSIS
-*     int sge_run_as_user(void)
-*
-*  FUNCTION
-*     Set euid to uid
-*
-*  RESULT
-*     int - error state
-*         0 - OK
-*        -1 - setegid()/seteuid() failed
-*
-*  NOTES
-*     MT-NOTE: sge_run_as_user() is MT safe
-*
-*  SEE ALSO
-*     uti/uidgid/sge_switch2admin_user()
-*     uti/uidgid/sge_set_admin_username()
-*     uti/uidgid/sge_switch2start_user()
-*     uti/uidgid/sge_run_as_user()
-******************************************************************************/
-int sge_run_as_user(void) {
-   int ret = 0;
-
-   DENTER(UIDGID_LAYER);
-
-   if (geteuid() != getuid()) {
-      if (seteuid(getuid())) {
-         ret = -1;
-      }
-   }
-
-   DRETURN(ret);
-} /* sge_run_as_user() */
 
 /****** uti/uidgid/sge_user2uid() *********************************************
 *  NAME
@@ -454,7 +367,8 @@ int sge_run_as_user(void) {
 *         0 - OK
 *         1 - Error
 ******************************************************************************/
-int sge_user2uid(const char *user, uid_t *puid, uid_t *pgid, int retries) {
+int
+sge_user2uid(const char *user, uid_t *puid, uid_t *pgid, int retries) {
    struct passwd *pw;
    struct passwd pwentry;
    char *buffer;
@@ -513,7 +427,8 @@ int sge_user2uid(const char *user, uid_t *puid, uid_t *pgid, int retries) {
 *         0 - OK
 *         1 - Error
 ******************************************************************************/
-int sge_group2gid(const char *gname, gid_t *gidp, int retries) {
+int
+sge_group2gid(const char *gname, gid_t *gidp, int retries) {
    struct group *gr;
    struct group grentry;
    char *buffer;
@@ -533,7 +448,7 @@ int sge_group2gid(const char *gname, gid_t *gidp, int retries) {
          if (errno == ERANGE) {
             retries++;
             size += 1024;
-            buffer = (char *)sge_realloc(buffer, size, 1);
+            buffer = (char *) sge_realloc(buffer, size, 1);
          }
          gr = nullptr;
       }
@@ -572,7 +487,8 @@ int sge_group2gid(const char *gname, gid_t *gidp, int retries) {
 *         0 - OK
 *         1 - Error
 ******************************************************************************/
-int sge_uid2user(uid_t uid, char *dst, size_t sz, int retries) {
+int
+sge_uid2user(uid_t uid, char *dst, size_t sz, int retries) {
    struct passwd *pw;
    struct passwd pwentry;
    int size;
@@ -625,7 +541,8 @@ int sge_uid2user(uid_t uid, char *dst, size_t sz, int retries) {
 *         0 - OK
 *         1 - Error
 ******************************************************************************/
-int sge_gid2group(gid_t gid, char *dst, size_t sz, int retries) {
+int
+sge_gid2group(gid_t gid, char *dst, size_t sz, int retries) {
    struct group *gr;
    struct group grentry;
    char *buf = nullptr;
@@ -654,7 +571,8 @@ int sge_gid2group(gid_t gid, char *dst, size_t sz, int retries) {
 
 
 
-int _sge_gid2group(gid_t gid, gid_t *last_gid, char **groupnamep, int retries) {
+int
+sge_gid2group(gid_t gid, gid_t *last_gid, char **groupnamep, int retries) {
    struct group *gr;
    struct group grentry;
 
@@ -720,7 +638,8 @@ int _sge_gid2group(gid_t gid, gid_t *last_gid, char **groupnamep, int retries) {
 *  SEE ALSO
 *     uti/uidgid/get_group_buffer_size()
 *******************************************************************************/
-int get_pw_buffer_size(void) {
+int
+get_pw_buffer_size() {
    enum {
       buf_size = 20480
    };  /* default is 20 KB */
@@ -759,7 +678,8 @@ int get_pw_buffer_size(void) {
 *  SEE ALSO
 *     uti/uidgid/get_pw_buffer_size()
 *******************************************************************************/
-int get_group_buffer_size(void) {
+int
+get_group_buffer_size() {
    enum {
       buf_size = 20480
    };  /* default is 20 KB */
@@ -820,33 +740,9 @@ int get_group_buffer_size(void) {
 *         1 - we can't switch to user or we can't set add_grp
 *         4 - switch to user failed, likely wrong password for this user
 ******************************************************************************/
-static int _sge_set_uid_gid_addgrp(const char *user, const char *intermediate_user,
-                                   gid_t min_gid, uid_t min_uid, gid_t add_grp, char *err_str,
-                                   int use_qsub_gid, gid_t qsub_gid,
-                                   char *buffer, int size, bool skip_silently);
-
-int sge_set_uid_gid_addgrp(const char *user, const char *intermediate_user,
-                           int min_gid, int min_uid, int add_grp, char *err_str,
-                           int use_qsub_gid, gid_t qsub_gid, bool skip_silently) {
-   int ret;
-   char *buffer;
-   int size;
-
-   size = get_pw_buffer_size();
-   buffer = sge_malloc(size);
-
-   ret = _sge_set_uid_gid_addgrp(user, intermediate_user, min_gid, min_uid, add_grp,
-                                 err_str, use_qsub_gid, qsub_gid,
-                                 buffer, size, skip_silently);
-
-   sge_free(&buffer);
-   return ret;
-}
-
-static int _sge_set_uid_gid_addgrp(const char *user, const char *intermediate_user,
-                                   gid_t min_gid, uid_t min_uid, gid_t add_grp, char *err_str,
-                                   int use_qsub_gid, gid_t qsub_gid,
-                                   char *buffer, int size, bool skip_silently) {
+static int
+_sge_set_uid_gid_addgrp(const char *user, const char *intermediate_user, gid_t min_gid, uid_t min_uid, gid_t add_grp,
+                        char *err_str, int use_qsub_gid, gid_t qsub_gid, char *buffer, int size, bool skip_silently) {
    int status;
    struct passwd *pw;
    struct passwd pw_struct;
@@ -965,6 +861,18 @@ static int _sge_set_uid_gid_addgrp(const char *user, const char *intermediate_us
    return 0;
 } /* _sge_set_uid_gid_addgrp() */
 
+int sge_set_uid_gid_addgrp(const char *user, const char *intermediate_user,
+                           int min_gid, int min_uid, int add_grp, char *err_str,
+                           int use_qsub_gid, gid_t qsub_gid, bool skip_silently) {
+   int size = get_pw_buffer_size();
+   char *buffer = sge_malloc(size);
+   int ret = _sge_set_uid_gid_addgrp(user, intermediate_user, min_gid, min_uid, add_grp, err_str, use_qsub_gid,
+                                     qsub_gid, buffer, size, skip_silently);
+   sge_free(&buffer);
+   return ret;
+}
+
+
 /****** uti/uidgid/sge_add_group() ********************************************
 *  NAME
 *     sge_add_group() -- Add a gid to the list of additional group ids
@@ -994,7 +902,8 @@ static int _sge_set_uid_gid_addgrp(const char *user, const char *intermediate_us
 *         0 - Success
 *        -1 - Error
 ******************************************************************************/
-int sge_add_group(gid_t add_grp_id, char *err_str, bool skip_silently) {
+int
+sge_add_group(gid_t add_grp_id, char *err_str, bool skip_silently) {
    u_long32 max_groups;
    gid_t *list;
    int groups;
@@ -1023,7 +932,7 @@ int sge_add_group(gid_t add_grp_id, char *err_str, bool skip_silently) {
 #if defined(LINUX)
    list = (gid_t *) sge_malloc(2 * max_groups * sizeof(gid_t));
 #else
-   list = (gid_t*) sge_malloc(max_groups*sizeof(gid_t));
+   list = (gid_t *) sge_malloc(max_groups * sizeof(gid_t));
 #endif
    if (list == nullptr) {
       if (err_str != nullptr) {
@@ -1038,30 +947,30 @@ int sge_add_group(gid_t add_grp_id, char *err_str, bool skip_silently) {
    if (groups == -1) {
       if (err_str != nullptr) {
          int error = errno;
-         sprintf(err_str, MSG_SYSTEM_ADDGROUPIDFORSGEFAILED_UUS, sge_u32c(getuid()),
-                 sge_u32c(geteuid()), strerror(error));
+         sprintf(err_str, MSG_SYSTEM_ADDGROUPIDFORSGEFAILED_UUS, sge_u32c(getuid()), sge_u32c(geteuid()),
+                 strerror(error));
       }
       sge_free(&list);
       return -1;
    }
 
-   if (groups < (int)max_groups) {
+   if (groups < (int) max_groups) {
       list[groups] = add_grp_id;
       groups++;
       groups = setgroups(groups, list);
       if (groups == -1) {
          if (err_str != nullptr) {
             int error = errno;
-            sprintf(err_str, MSG_SYSTEM_ADDGROUPIDFORSGEFAILED_UUS, sge_u32c(getuid()),
-                    sge_u32c(geteuid()), strerror(error));
+            sprintf(err_str, MSG_SYSTEM_ADDGROUPIDFORSGEFAILED_UUS, sge_u32c(getuid()), sge_u32c(geteuid()),
+                    strerror(error));
          }
          sge_free(&list);
          return -1;
       }
    } else if (skip_silently == false) {
       if (err_str != nullptr) {
-         sprintf(err_str, MSG_SYSTEM_ADDGROUPIDFORSGEFAILED_UUS, sge_u32c(getuid()),
-                 sge_u32c(geteuid()), MSG_SYSTEM_USER_HAS_TOO_MANY_GIDS);
+         sprintf(err_str, MSG_SYSTEM_ADDGROUPIDFORSGEFAILED_UUS, sge_u32c(getuid()), sge_u32c(geteuid()),
+                 MSG_SYSTEM_USER_HAS_TOO_MANY_GIDS);
       }
       sge_free(&list);
       return -1;
@@ -1099,8 +1008,8 @@ int sge_add_group(gid_t add_grp_id, char *err_str, bool skip_silently) {
 *     MT-NOTE: sge_getpwnam_r() is MT safe. 
 *
 *******************************************************************************/
-struct passwd *sge_getpwnam_r(const char *name, struct passwd *pw,
-                              char *buffer, size_t bufsize) {
+struct passwd *
+sge_getpwnam_r(const char *name, struct passwd *pw, char *buffer, size_t bufsize) {
    struct passwd *res = nullptr;
    int i = MAX_NIS_RETRIES;
 
@@ -1149,18 +1058,18 @@ struct passwd *sge_getpwnam_r(const char *name, struct passwd *pw,
 *     MT-NOTE: sge_getpwnam_r() is MT safe. 
 *
 *******************************************************************************/
-struct group *sge_getgrgid_r(gid_t gid, struct group *pg,
-                             char *buffer, size_t bufsize, int retries) {
+struct group *
+sge_getgrgid_r(gid_t gid, struct group *pg, char *buffer, size_t buffer_size, int retries) {
    struct group *res = nullptr;
 
    DENTER(UIDGID_LAYER);
 
    while (retries-- && !res) {
-      if (getgrgid_r(gid, pg, buffer, bufsize, &res) != 0) {
+      if (getgrgid_r(gid, pg, buffer, buffer_size, &res) != 0) {
          if (errno == ERANGE) {
             retries++;
-            bufsize += 1024;
-            buffer = (char *)sge_realloc(buffer, bufsize, 1);
+            buffer_size += 1024;
+            buffer = (char *) sge_realloc(buffer, buffer_size, 1);
          }
          res = nullptr;
       }
@@ -1195,12 +1104,9 @@ struct group *sge_getgrgid_r(gid_t gid, struct group *pg,
 *     MT-NOTE: sge_is_user_superuser() is MT safe. 
 *
 *******************************************************************************/
-bool sge_is_user_superuser(const char *name) {
-   bool ret = false;
-
-   ret = (strcmp(name, "root") == 0) ? true : false;
-
-   return ret;
+bool
+sge_is_user_superuser(const char *name) {
+   return (strcmp(name, "root") == 0);
 }
 
 /****** uti/uidgid/set_admin_user() ********************************************
@@ -1224,20 +1130,18 @@ bool sge_is_user_superuser(const char *name) {
 *     MT-NOTE: set_admin_user() is MT safe. 
 *
 *******************************************************************************/
-static void set_admin_user(const char *user_name, uid_t theUID, gid_t theGID) {
-   uid_t uid = theUID;
-   gid_t gid = theGID;
-
+static void
+set_admin_user(const char *user_name, uid_t theUID, gid_t theGID) {
    DENTER(UIDGID_LAYER);
 
    sge_mutex_lock("admin_user_mutex", __func__, __LINE__, &admin_user.mutex);
    admin_user.user_name = user_name;
-   admin_user.uid = uid;
-   admin_user.gid = gid;
+   admin_user.uid = theUID;
+   admin_user.gid = theGID;
    admin_user.initialized = true;
    sge_mutex_unlock("admin_user_mutex", __func__, __LINE__, &admin_user.mutex);
 
-   DPRINTF(("auid=%ld; agid=%ld\n", (long) uid, (long) gid));
+   DPRINTF(("auid=%ld; agid=%ld\n", (long) theUID, (long) theGID));
 
    DRETURN_VOID;
 } /* set_admin_user() */
@@ -1279,21 +1183,18 @@ static void set_admin_user(const char *user_name, uid_t theUID, gid_t theGID) {
 *     MT-NOTE: get_admin_user() is MT safe.
 *
 *******************************************************************************/
-static int get_admin_user(uid_t *theUID, gid_t *theGID) {
-   uid_t uid;
-   gid_t gid;
-   bool init = false;
-   int res = ESRCH;
-
+static int
+get_admin_user(uid_t *theUID, gid_t *theGID) {
    DENTER(UIDGID_LAYER);
 
    sge_mutex_lock("admin_user_mutex", __func__, __LINE__, &admin_user.mutex);
-   uid = admin_user.uid;
-   gid = admin_user.gid;
-   init = admin_user.initialized;
+   uid_t uid = admin_user.uid;
+   gid_t gid = admin_user.gid;
+   bool init = admin_user.initialized;
    sge_mutex_unlock("admin_user_mutex", __func__, __LINE__, &admin_user.mutex);
 
-   if (init == true) {
+   int res = ESRCH;
+   if (init) {
       *theUID = uid;
       *theGID = gid;
       res = 0;
@@ -1321,7 +1222,8 @@ static int get_admin_user(uid_t *theUID, gid_t *theGID) {
 *  NOTES
 *     MT-NOTE: get_admin_user_name() is MT safe 
 *******************************************************************************/
-const char *get_admin_user_name(void) {
+const char *
+get_admin_user_name(void) {
    return admin_user.user_name;
 }
 
@@ -1347,11 +1249,8 @@ const char *get_admin_user_name(void) {
 *******************************************************************************/
 bool
 sge_has_admin_user(void) {
-   bool ret = true;
+   DENTER(TOP_LAYER);
    uid_t uid;
    gid_t gid;
-
-   DENTER(TOP_LAYER);
-   ret = (get_admin_user(&uid, &gid) == ESRCH) ? false : true;
-   DRETURN(ret);
+   DRETURN(!(get_admin_user(&uid, &gid) == ESRCH));
 }

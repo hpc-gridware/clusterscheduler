@@ -83,14 +83,14 @@ int main(int argc, char **argv)
 
    if (sge_gdi2_setup(&ctx, QSTAT, MAIN_THREAD, &alp) != AE_OK) {
       answer_list_output(&alp);
-      SGE_EXIT((void **) &ctx, 1);
+      sge_exit(1);
    }
 
    switch_list_showq_parse_from_cmdline_tacc(&pcmdline, &alp, argv+1);
    if (alp) {
       answer_list_output(&alp); 
       lFreeList(&pcmdline);
-      SGE_EXIT((void **) &ctx, 1);
+      sge_exit(1);
    }
 
    if (!sge_parse_showq_tacc(&alp, &pcmdline, &user_list, bootstrap_get_username(),
@@ -99,11 +99,11 @@ int main(int argc, char **argv)
       lFreeList(&pcmdline);
       lFreeList(&ref_list);
       lFreeList(&user_list);
-      SGE_EXIT((void **) &ctx, 1);
+      sge_exit(1);
    }
    ret = showq_show_job_tacc(ctx, user_list, full, binding, sfa_list, sfw_list);
 
-   SGE_EXIT((void **) &ctx, ret);
+   sge_exit(ret);
    DRETURN(ret);
 }
 

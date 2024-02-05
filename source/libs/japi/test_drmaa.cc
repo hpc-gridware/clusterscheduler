@@ -672,7 +672,7 @@ int main(int argc, char *argv[])
    if ((gdi_errno != AE_OK) && (gdi_errno != AE_ALREADY_SETUP)) {
       DPRINTF(("gdi_errno = %d", gdi_errno));
       answer_list_output(&alp);
-      SGE_EXIT((void**)&ctx, 1);
+      sge_exit(1);
    }
 
    while (argc > 1) {
@@ -745,7 +745,7 @@ int main(int argc, char *argv[])
       }
    } 
    drmaa_exit(nullptr, 0);
-   sge_gdi2_shutdown((void**)&ctx);
+   sge_gdi2_shutdown();
    sge_gdi_ctx_class_destroy(&ctx);
 
    sge_prof_cleanup();

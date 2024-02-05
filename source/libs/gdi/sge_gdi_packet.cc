@@ -54,7 +54,6 @@
 #include "sgeobj/sge_answer.h"
 #include "sgeobj/sge_feature.h"
 
-#include "gdi/sge_gdi2.h"
 #include "gdi/sge_gdiP.h"
 #include "gdi/sge_gdi_packet.h"
 #include "gdi/sge_gdi_packet_pb_cull.h"

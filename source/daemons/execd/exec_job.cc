@@ -44,7 +44,7 @@
 #include "uti/sge_log.h"
 #include "uti/sge_time.h"
 #include "uti/sge_afsutil.h"
-#include "uti/sge_prog.h"
+#include "uti/sge_bootstrap.h"
 #include "uti/sge_string.h"
 #include "uti/sge_stdlib.h"
 #include "uti/sge_unistd.h"
@@ -57,6 +57,7 @@
 #include "uti/sge_binding_parse.h"
 #include "uti/sge_stdio.h"
 #include "uti/sge_parse_num_par.h"
+#include "uti/sge_arch.h"
 
 #include "gdi/qm_name.h"
 
@@ -318,8 +319,8 @@ int sge_exec_job(sge_gdi_ctx_class_t *ctx, lListElem *jep, lListElem *jatep,
    lList *environmentList = nullptr;
    const char *arch = sge_get_arch();
    const char *sge_root = bootstrap_get_sge_root();
-   const char *qualified_hostname = uti_state_get_qualified_hostname();
-   const char *default_cell = uti_state_get_default_cell();
+   const char *qualified_hostname = bootstrap_get_qualified_hostname();
+   const char *default_cell = bootstrap_get_sge_cell();
    const char *binary_path = bootstrap_get_binary_path();
    const char *admin_user = bootstrap_get_admin_user();
    const char *masterhost = gdi3_get_act_master_host(false);
@@ -1801,7 +1802,7 @@ int sge_exec_job(sge_gdi_ctx_class_t *ctx, lListElem *jep, lListElem *jatep,
        i = sge_smf_contract_fork(err_str, err_length);
        if (i == -4) {
            /* Could not load libcontract or libscf */
-           SGE_EXIT((void**)&ctx, 1);
+           sge_exit((void**)&ctx, 1);
        } else if (i < -1) {
            i = -2; /* Disable queue */
        }

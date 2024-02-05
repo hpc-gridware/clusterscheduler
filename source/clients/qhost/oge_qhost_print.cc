@@ -40,7 +40,7 @@
 
 #include "uti/sge_rmon.h"
 #include "uti/sge_bootstrap.h"
-#include "uti/sge_prog.h"
+#include "uti/sge_bootstrap.h"
 #include "uti/sge_unistd.h"
 #include "uti/sge_stdlib.h"
 #include "uti/sge_string.h"
@@ -883,7 +883,7 @@ u_long32 show
    int q_id = 0, j_id = 0, ce_id, eh_id, pe_id, gc_id;
    state_gdi_multi state = STATE_GDI_MULTI_INIT;
    const char *cell_root = bootstrap_get_cell_root();
-   u_long32 progid = uti_state_get_mewho();
+   u_long32 progid = bootstrap_get_component_id();
 
    DENTER(TOP_LAYER);
    

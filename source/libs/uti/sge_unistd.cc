@@ -107,7 +107,7 @@ static int sge_domkdir(const char *path_, int fmode, bool exit_on_error, bool ma
       if (exit_on_error) {
          CRITICAL((SGE_EVENT, MSG_FILE_CREATEDIRFAILED_SS, path_,
                  strerror(errno)));
-         SGE_EXIT(nullptr, 1);
+         sge_exit(1);
       } else {
          ERROR((SGE_EVENT, MSG_FILE_CREATEDIRFAILED_SS, path_,
                  strerror(errno)));
@@ -218,7 +218,7 @@ int sge_chdir_exit(const char *path, int exit_on_error) {
    if (chdir(path)) {
       if (exit_on_error) {
          CRITICAL((SGE_EVENT, MSG_FILE_NOCDTODIRECTORY_S, path));
-         SGE_EXIT(nullptr, 1);
+         sge_exit(1);
       } else {
          ERROR((SGE_EVENT, MSG_FILE_NOCDTODIRECTORY_S, path));
          return -1;
@@ -285,14 +285,10 @@ int sge_chdir(const char *dir) {
 *  SEE ALSO
 *     uti/unistd/sge_install_exit_func()
 ******************************************************************************/
-void sge_exit(void **ref_ctx, int i) {
-   sge_exit_func_t exit_func = nullptr;
-
-   if (ref_ctx && *ref_ctx) {
-      exit_func = uti_state_get_exit_func();
-   }
+void sge_exit(int i) {
+   sge_exit_func_t exit_func = bootstrap_get_exit_func();
    if (exit_func) {
-      exit_func(ref_ctx, i);
+      exit_func(i);
    }
    exit(i);
 }
@@ -329,7 +325,7 @@ int sge_mkdir(const char *path, int fmode, bool exit_on_error, bool may_not_exis
       if (exit_on_error) {
          CRITICAL((SGE_EVENT, SFNMAX, MSG_VAR_PATHISNULLINSGEMKDIR));
          DCLOSE;
-         SGE_EXIT(nullptr, 1);
+         sge_exit(1);
       } else {
          ERROR((SGE_EVENT, SFNMAX, MSG_VAR_PATHISNULLINSGEMKDIR));
          DRETURN(-1);
@@ -369,7 +365,7 @@ int sge_mkdir2(const char *base_dir, const char *name, int fmode, bool exit_on_e
       if (exit_on_error) {
          CRITICAL((SGE_EVENT, SFNMAX, MSG_VAR_PATHISNULLINSGEMKDIR));
          DCLOSE;
-         SGE_EXIT(nullptr, 1);
+         sge_exit(1);
       } else {
          ERROR((SGE_EVENT, SFNMAX, MSG_VAR_PATHISNULLINSGEMKDIR));
          DRETURN(-1);

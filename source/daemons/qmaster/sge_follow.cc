@@ -38,7 +38,7 @@
 #include "uti/sge_time.h"
 #include "uti/sge_log.h"
 #include "uti/sge_signal.h"
-#include "uti/sge_prog.h"
+#include "uti/sge_bootstrap.h"
 #include "uti/sge_hostname.h"
 #include "uti/sge_mtutil.h"
 
@@ -1576,7 +1576,7 @@ int distribute_ticket_orders(sge_gdi_ctx_class_t *ctx, lList *ticket_orders, mon
                packint(&pb, lGetUlong(ep2, OR_ja_task_number));
                packdouble(&pb, lGetDouble(ep2, OR_ticket));
             }
-            cl_err = gdi2_send_message_pb(ctx, 0, prognames[EXECD], 1, host_name,
+            cl_err = gdi2_send_message_pb(0, prognames[EXECD], 1, host_name,
                                           TAG_CHANGE_TICKET, &pb, &dummyid);
             MONITOR_MESSAGES_OUT(monitor);
             clear_packbuffer(&pb);

@@ -47,7 +47,7 @@
 #include "uti/sge_time.h"
 #include "uti/sge_hostname.h"
 #include "uti/sge_stdlib.h"
-#include "uti/sge_prog.h"
+#include "uti/sge_bootstrap.h"
 
 #include "sgeobj/cull/sge_all_listsL.h"
 
@@ -172,7 +172,7 @@ int krb_init(const char *progname)
    int rc;
    char keytab[256];
    struct hostent *he;
-   u_long32 prog_number = uti_state_get_mewho();
+   u_long32 prog_number = bootstrap_get_component_id();
    
 
    DENTER(TOP_LAYER);
@@ -589,7 +589,7 @@ krb_send_message(int synchron, const char *tocomproc, int toid,
    krb5_rcache rcache;
    char *cp;
 #endif /* KRB_DO_REPLAY_STUFF */
-   const char *progname = uti_state_get_sge_formal_prog_name();
+   const char *progname = bootstrap_get_component_name();
 
    DENTER(TOP_LAYER);
 

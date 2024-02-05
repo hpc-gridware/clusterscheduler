@@ -37,7 +37,7 @@
 
 #include "uti/sge_rmon.h"
 #include "uti/sge_hostname.h"
-#include "uti/sge_prog.h"
+#include "uti/sge_bootstrap.h"
 #include "uti/sge_bootstrap.h"
 
 #include "sched/sort_hosts.h"

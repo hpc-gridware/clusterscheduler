@@ -32,28 +32,21 @@
 
 #include <string.h>
 #include <strings.h>
-#include <stdlib.h>
-#include <ctype.h>
 
 #include "uti/sge_rmon.h"
 #include "uti/sge_string.h"
 #include "uti/sge_log.h"
 #include "uti/sge_parse_num_par.h"
 
-#include "sgeobj/sge_pe.h"
 #include "sgeobj/sge_str.h"
 #include "sgeobj/parse.h"
 #include "sgeobj/sge_id.h"
 #include "sgeobj/sge_answer.h"
-#include "sgeobj/sge_range.h"
-#include "sgeobj/sge_job.h"
 #include "sgeobj/sge_ja_task.h"
-#include "sgeobj/sge_job.h"
 #include "sgeobj/msg_sgeobjlib.h"
 
 #include "sge_options.h"
 #include "parse_qsub.h"
-#include "usage.h"
 #include "msg_common.h"
 
 /*-------------------------------------------------------------------------*/

@@ -68,7 +68,7 @@ bool sge_parse_qrsub(sge_gdi_ctx_class_t *ctx, lList *pcmdline, lList **alpp, lL
    if ((ep = lGetElemStrRW(pcmdline, SPA_switch_val, "-help"))) {
       lRemoveElem(pcmdline, &ep);
       sge_usage(QRSUB, stdout);
-      SGE_EXIT((void **)&ctx, 0);
+      sge_exit(0);
    }
 
    /*  -a date_time 	 start time in [[CC]YY]MMDDhhmm[.SS] SGE_ULONG */

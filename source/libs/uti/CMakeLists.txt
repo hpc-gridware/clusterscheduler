@@ -30,7 +30,6 @@ set(LIBRARY_SOURCES
         sge_parse_args.cc
         sge_parse_num_par.cc
         sge_profiling.cc
-        sge_prog.cc
         sge_pty.cc
         sge_rmon_macros.cc
         sge_rmon_monitoring_level.cc

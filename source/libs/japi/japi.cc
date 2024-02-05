@@ -42,7 +42,7 @@
 
 #include "uti/sge_rmon.h"
 #include "uti/sge_profiling.h"
-#include "uti/sge_prog.h"
+#include "uti/sge_bootstrap.h"
 #include "uti/sge_time.h"
 #include "uti/sge_log.h"
 #include "uti/sge_signal.h"
@@ -530,7 +530,7 @@ int japi_init(const char *contact, const char *session_key_in,
       int commlib_error = CL_RETVAL_OK;
       handle = cl_com_get_handle(bootstrap_get_component_name(), 0);
       if (handle == nullptr) {
-         commlib_error = sge_gdi_ctx_class_connect(ctx);
+         commlib_error = sge_gdi_ctx_class_connect();
          handle = cl_com_get_handle(bootstrap_get_component_name(), 0);
       }
       if (handle == nullptr) {
@@ -545,7 +545,7 @@ int japi_init(const char *contact, const char *session_key_in,
    
    if (enable_wait) {
       const char *username = bootstrap_get_username();
-      const char *unqualified_hostname = uti_state_get_unqualified_hostname();
+      const char *unqualified_hostname = bootstrap_get_unqualified_hostname();
 
       /* spawn implementation thread japi_implementation_thread() */
       ret = japi_enable_job_wait(username, unqualified_hostname, session_key_in, session_key_out, handler,
@@ -891,7 +891,7 @@ int japi_exit(int flag, dstring *diag)
    JAPI_UNLOCK_SESSION();
 
    /* be sure that the context exists, therefore after test for active session */
-   default_cell = uti_state_get_default_cell();
+   default_cell = bootstrap_get_sge_cell();
 
    /* do not destroy session state until last japi call 
       depending on it is finished */
@@ -4960,7 +4960,7 @@ static int japi_stop_event_client (const char *default_cell)
    DPRINTF (("Requesting that GDI kill our event client.\n"));
    snprintf(id_string, sizeof(id_string)-1, sge_u32, japi_ec_id);
    lAddElemStr(&id_list, ID_str, id_string, ID_Type);
-   alp = sge_gdi_ctx_class_gdi_kill(ctx, id_list, default_cell, 0, EVENTCLIENT_KILL);
+   alp = sge_gdi_ctx_class_gdi_kill(ctx, id_list, EVENTCLIENT_KILL);
    lFreeList(&id_list);
    lFreeList(&alp);
    

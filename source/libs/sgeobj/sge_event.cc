@@ -29,7 +29,6 @@
  * 
  ************************************************************************/
 /*___INFO__MARK_END__*/
-#include <stdio.h>
 
 #include "uti/sge_rmon.h"
 #include "uti/sge_string.h"
@@ -578,20 +577,6 @@ event_client_verify(const lListElem *event_client, lList **answer_list, bool add
          DTRACE;
          ret = false;
          DPRINTF(("EV_id false: "sge_u32"\n", id));
-#if 0
-      /* 
-       * useless check - EV_uid is set by client 
-       * is checked by CSP for special clients
-       */
-      } else if (id != EV_ID_ANY) {
-         u_long32 uid = lGetUlong(event_client, EV_uid);
-         u_long32 my_uid = uti_state_get_uid();
-         if (uid != my_uid && uid != 0) {
-            answer_list_add_sprintf(answer_list, STATUS_ESYNTAX, ANSWER_QUALITY_ERROR, 
-                                    MSG_EVENT_ONLYADMINMAYSTARTSPECIALEVC);
-            ret = false;
-         }
-#endif
       }
 #endif
    }

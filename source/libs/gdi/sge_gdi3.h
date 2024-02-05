@@ -45,9 +45,6 @@ gdi3_mt_done();
 const char *
 gdi3_get_master_host();
 
-bool
-gdi3_has_master_host();
-
 void
 gdi3_set_master_host(const char *master_host);
 

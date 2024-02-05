@@ -31,6 +31,8 @@
  ************************************************************************/
 /*___INFO__MARK_END__*/
 
+#include "cull/cull.h"
+
 #define ERROR_LOAD_VAL  9999
 
 int sort_host_list(lList *host_list, const lList *complex_list);

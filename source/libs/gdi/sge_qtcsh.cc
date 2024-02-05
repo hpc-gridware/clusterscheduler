@@ -57,7 +57,7 @@ static pthread_mutex_t qtask_mutex = PTHREAD_MUTEX_INITIALIZER;
 static lList *task_config = nullptr;
 static int mode_verbose = 0;
 
-static int init_qtask_config(sge_gdi_ctx_class_t *ctx, lList **alpp, print_func_t ostream) {
+static int init_qtask_config(lList **alpp, print_func_t ostream) {
    struct passwd *pwd;
    char fname[SGE_PATH_MAX + 1];
    char buffer[10000];
@@ -229,14 +229,13 @@ Error:
 *              task_config global variable.
 *
 *******************************************************************************/
-char **sge_get_qtask_args(void *context, char *taskname, lList **answer_list)
+char **sge_get_qtask_args(char *taskname, lList **answer_list)
 {
    const char *value = nullptr;
    int num_args = 0;
    const lListElem *task = nullptr;
    char** args = nullptr;
-   sge_gdi_ctx_class_t *ctx = (sge_gdi_ctx_class_t *)context;
-   
+
    DENTER(TOP_LAYER);
    
    if (mode_verbose) {
@@ -254,7 +253,7 @@ char **sge_get_qtask_args(void *context, char *taskname, lList **answer_list)
    if (task_config == nullptr) {
       /* Just using printf here since we don't really have an exciting function
        * like xprintf to pass in.  This was really meant for use with qtsch. */
-      if (init_qtask_config(ctx, answer_list, (print_func_t)printf) != 0) {
+      if (init_qtask_config(answer_list, (print_func_t)printf) != 0) {
          sge_mutex_unlock("qtask_mutex", __func__, __LINE__, &qtask_mutex);
          DRETURN(args);
       }

@@ -42,7 +42,7 @@
 
 #include "uti/sge_rmon.h"
 #include "uti/sge_log.h"
-#include "uti/sge_prog.h"
+#include "uti/sge_bootstrap.h"
 #include "uti/sge_unistd.h"
 #include "uti/sge_uidgid.h"
 #include "uti/sge_os.h"
@@ -137,7 +137,7 @@ static bool
 is_qmaster_already_running(const char *qmaster_spool_dir);
 
 static void
-qmaster_lock_and_shutdown(void **ctx_ref, int);
+qmaster_lock_and_shutdown(int i);
 
 static int
 setup_qmaster(sge_gdi_ctx_class_t *ctx);
@@ -191,7 +191,7 @@ init_categories(void);
 int
 sge_setup_qmaster(sge_gdi_ctx_class_t *ctx, char *anArgv[]) {
    char err_str[1024];
-   const char *qualified_hostname = uti_state_get_qualified_hostname();
+   const char *qualified_hostname = bootstrap_get_qualified_hostname();
    const char *act_qmaster_file = bootstrap_get_act_qmaster_file();
 
    DENTER(TOP_LAYER);
@@ -206,7 +206,7 @@ sge_setup_qmaster(sge_gdi_ctx_class_t *ctx, char *anArgv[]) {
 
    if (write_qm_name(qualified_hostname, act_qmaster_file, err_str)) {
       ERROR((SGE_EVENT, "%s\n", err_str));
-      SGE_EXIT(nullptr, 1);
+      sge_exit(1);
    }
 
    qmaster_init(ctx, anArgv);
@@ -252,22 +252,22 @@ sge_qmaster_thread_init(sge_gdi_ctx_class_t **ctx_ref, u_long32 prog_id, u_long3
 
    if (sge_setup2(ctx_ref, prog_id, thread_id, &alp, true) != AE_OK) {
       answer_list_output(&alp);
-      SGE_EXIT((void **) ctx_ref, 1);
+      sge_exit(1);
    }
    reresolve_qualified_hostname();
-   DEBUG((SGE_EVENT, "%s: qualified hostname \"%s\"\n", __func__, uti_state_get_qualified_hostname()));
+   DEBUG((SGE_EVENT, "%s: qualified hostname \"%s\"\n", __func__, bootstrap_get_qualified_hostname()));
    admin_user = bootstrap_get_admin_user();
 
    if (switch_to_admin_user == true) {
       char str[MAX_STRING_SIZE];
       if (sge_set_admin_username(admin_user, str) == -1) {
          CRITICAL((SGE_EVENT, SFNMAX, str));
-         SGE_EXIT((void **) ctx_ref, 1);
+         sge_exit(1);
       }
 
       if (sge_switch2admin_user()) {
          CRITICAL((SGE_EVENT, SFNMAX, MSG_ERROR_CANTSWITCHTOADMINUSER));
-         SGE_EXIT((void **) ctx_ref, 1);
+         sge_exit(1);
       }
    }
 
@@ -405,7 +405,7 @@ process_cmdline(char **anArgv) {
       }
       lFreeList(&alp);
       lFreeList(&pcmdline);
-      SGE_EXIT(nullptr, 1);
+      sge_exit(1);
    }
 
    alp = parse_qmaster(&pcmdline, &help);
@@ -418,13 +418,13 @@ process_cmdline(char **anArgv) {
       }
       lFreeList(&alp);
       lFreeList(&pcmdline);
-      SGE_EXIT(nullptr, 1);
+      sge_exit(1);
    }
 
    if (help) {
       /* user wanted to see help. we can exit */
       lFreeList(&pcmdline);
-      SGE_EXIT(nullptr, 0);
+      sge_exit(0);
    }
 
    DRETURN_VOID;
@@ -555,10 +555,10 @@ qmaster_init(sge_gdi_ctx_class_t *ctx, char **anArgv) {
 
    if (setup_qmaster(ctx)) {
       CRITICAL((SGE_EVENT, SFNMAX, MSG_STARTUP_SETUPFAILED));
-      SGE_EXIT(nullptr, 1);
+      sge_exit(1);
    }
 
-   uti_state_set_exit_func(qmaster_lock_and_shutdown);
+   bootstrap_set_exit_func(qmaster_lock_and_shutdown);
 
    communication_setup(ctx);
 
@@ -600,7 +600,7 @@ communication_setup(sge_gdi_ctx_class_t *ctx) {
    char *qmaster_params = nullptr;
    struct rlimit qmaster_rlimits;
 
-   const char *qualified_hostname = uti_state_get_qualified_hostname();
+   const char *qualified_hostname = bootstrap_get_qualified_hostname();
    u_long32 qmaster_port = bootstrap_get_sge_qmaster_port();
    const char *qmaster_spool_dir = bootstrap_get_qmaster_spool_dir();
 
@@ -627,7 +627,7 @@ communication_setup(sge_gdi_ctx_class_t *ctx) {
          }
       }
 
-      SGE_EXIT(nullptr, 1);
+      sge_exit(1);
    }
 
    if (com_handle) {
@@ -793,7 +793,7 @@ sge_propagate_queue_suspension(lListElem *jep, dstring *cqueue_name, dstring *ho
 *
 *******************************************************************************/
 static void
-qmaster_lock_and_shutdown(void **ctx_ref, int anExitValue) {
+qmaster_lock_and_shutdown(int anExitValue) {
    DENTER(TOP_LAYER);
 
    if (anExitValue == 0) {
@@ -801,7 +801,7 @@ qmaster_lock_and_shutdown(void **ctx_ref, int anExitValue) {
          CRITICAL((SGE_EVENT, SFNMAX, MSG_QMASTER_LOCKFILE_ALREADY_EXISTS));
       }
    }
-   sge_gdi2_shutdown(ctx_ref);
+   sge_gdi2_shutdown();
 
    DRETURN_VOID;
 } /* qmaster_lock_and_shutdown() */
@@ -867,8 +867,8 @@ setup_qmaster(sge_gdi_ctx_class_t *ctx) {
 
    /* get aliased hostname from commd */
    reresolve_qualified_hostname();
-   qualified_hostname = uti_state_get_qualified_hostname();
-   DEBUG((SGE_EVENT, "uti_state_get_qualified_hostname() returned \"%s\"\n", qualified_hostname));
+   qualified_hostname = bootstrap_get_qualified_hostname();
+   DEBUG((SGE_EVENT, "bootstrap_get_qualified_hostname() returned \"%s\"\n", qualified_hostname));
 
    /*
    ** read in all objects and check for correctness

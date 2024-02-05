@@ -50,8 +50,9 @@
 
 #include "uti/sge_stdio.h"
 #include "uti/sge_uidgid.h"
-#include "uti/sge_prog.h"
+#include "uti/sge_bootstrap.h"
 #include "uti/config_file.h"
+#include "uti/sge_arch.h"
 
 #include "err_trace.h"
 #include "qlogin_starter.h"

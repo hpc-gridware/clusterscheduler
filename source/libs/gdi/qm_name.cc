@@ -29,9 +29,9 @@
  * 
  ************************************************************************/
 /*___INFO__MARK_END__*/
-#include <stdio.h>
-#include <string.h>
-#include <errno.h>
+#include <cstdio>
+#include <cstring>
+#include <cerrno>
 
 #include "comm/commd.h"
 
@@ -56,71 +56,67 @@
  * NOTES
  *    MT-NOTE: get_qm_name() is MT safe
  *-----------------------------------------------------------------------*/
-int get_qm_name(
-char *master_host,
-const char *master_file,
-char *err_str 
-) {
+int
+get_qm_name(char *master_host, const char *master_file, char *err_str) {
    FILE *fp;
-   char buf[CL_MAXHOSTLEN*3+1], *cp, *first;
-   int len;
+   char buf[CL_MAXHOSTLEN * 3 + 1], *cp, *first;
+   size_t len;
 
    DENTER(TOP_LAYER);
-   
+
    if (!master_host || !master_file) {
       if (err_str) {
          if (master_host) {
-            sprintf(err_str, SFNMAX, MSG_GDI_NULLPOINTERPASSED );
+            sprintf(err_str, SFNMAX, MSG_GDI_NULLPOINTERPASSED);
          }
-      }   
+      }
       DRETURN(-1);
    }
 
-   if (!(fp=fopen(master_file,"r"))) {
+   if (!(fp = fopen(master_file, "r"))) {
       ERROR((SGE_EVENT, MSG_GDI_FOPEN_FAILED, master_file, strerror(errno)));
       if (err_str) {
-         sprintf(err_str, MSG_GDI_OPENMASTERFILEFAILED_S , master_file);
-      }   
+         sprintf(err_str, MSG_GDI_OPENMASTERFILEFAILED_S, master_file);
+      }
       DRETURN(-1);
-   }    
+   }
 
    /* read file in one sweep and append O Byte to the end */
-   if (!(len = fread(buf, 1, CL_MAXHOSTLEN*3, fp))) {
+   if (!(len = fread(buf, 1, CL_MAXHOSTLEN * 3, fp))) {
       if (err_str) {
-         sprintf(err_str, MSG_GDI_READMASTERHOSTNAMEFAILED_S , master_file);
-      }   
+         sprintf(err_str, MSG_GDI_READMASTERHOSTNAMEFAILED_S, master_file);
+      }
    }
    buf[len] = '\0';
-   
+
    /* Skip white space including newlines */
    cp = buf;
    while (*cp && (*cp == ' ' || *cp == '\t' || *cp == '\n'))
       cp++;
-   
+
    first = cp;
 
-   /* read all non white space characters */
+   /* read all non-white space characters */
    while (*cp && !(*cp == ' ' || *cp == '\t' || *cp == '\n')) {
       cp++;
-   }   
-      
+   }
+
    *cp = '\0';
    len = cp - first;
 
    if (len == 0) {
       if (err_str) {
-         sprintf(err_str, MSG_GDI_MASTERHOSTNAMEHASZEROLENGTH_S , master_file);
-      }   
+         sprintf(err_str, MSG_GDI_MASTERHOSTNAMEHASZEROLENGTH_S, master_file);
+      }
       FCLOSE(fp);
       DRETURN(-1);
-   }   
-       
+   }
+
    if (len > CL_MAXHOSTLEN - 1) {
       if (err_str) {
-         sprintf(err_str, MSG_GDI_MASTERHOSTNAMEEXCEEDSCHARS_SI , 
-                 master_file, (int) CL_MAXHOSTLEN);
+         sprintf(err_str, MSG_GDI_MASTERHOSTNAMEEXCEEDSCHARS_SI, master_file, (int) CL_MAXHOSTLEN);
          sprintf(err_str, "\n");
-      }   
+      }
       FCLOSE(fp);
       DRETURN(-1);
    }
@@ -141,27 +137,22 @@ FCLOSE_ERROR:
    NOTES
       MT-NOTE: write_qm_name() is MT safe
  *********************************************************************/
-int write_qm_name(
-const char *master_host,
-const char *master_file,
-char *err_str 
-) {
+int
+write_qm_name(const char *master_host, const char *master_file, char *err_str) {
    FILE *fp;
 
    if (!(fp = fopen(master_file, "w"))) {
       if (err_str)
-         sprintf(err_str, MSG_GDI_OPENWRITEMASTERHOSTNAMEFAILED_SS, 
-                 master_file, strerror(errno));
+         sprintf(err_str, MSG_GDI_OPENWRITEMASTERHOSTNAMEFAILED_SS, master_file, strerror(errno));
       return -1;
    }
 
    if (fprintf(fp, "%s\n", master_host) == EOF) {
       if (err_str)
-         sprintf(err_str, MSG_GDI_WRITEMASTERHOSTNAMEFAILED_S , 
-                 master_file);
+         sprintf(err_str, MSG_GDI_WRITEMASTERHOSTNAMEFAILED_S, master_file);
       FCLOSE(fp);
       return -1;
-   } 
+   }
 
    FCLOSE(fp);
    return 0;

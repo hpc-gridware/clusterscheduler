@@ -48,7 +48,7 @@
 #include "uti/sge_string.h"
 #include "uti/sge_unistd.h"
 #include "uti/sge_uidgid.h"
-#include "uti/sge_prog.h"
+#include "uti/sge_bootstrap.h"
 #include "uti/sge_csp_path.h"
 #include "uti/sge_bootstrap.h"
 
@@ -143,7 +143,7 @@ static void set_verify_func(sge_csp_path_class_t *thiz, cl_ssl_verify_func_t fun
 static bool ssl_cert_verify_func(cl_ssl_verify_mode_t mode, bool service_mode, const char *value);
 
 static bool is_daemon(void) {
-   const char *progname = uti_state_get_sge_formal_prog_name();
+   const char *progname = bootstrap_get_component_name();
    if (progname != nullptr) {
       if (!strcmp(prognames[QMASTER], progname) || !strcmp(prognames[EXECD], progname) ||
           !strcmp(prognames[SCHEDD], progname)) {
@@ -316,7 +316,7 @@ sge_csp_path_setup(sge_csp_path_class_t *thiz, sge_error_class_t *eh)
    sge_cell = bootstrap_get_sge_cell();
    sge_qmaster_port = bootstrap_get_sge_qmaster_port();
    is_from_services = bootstrap_is_from_services();
-   username = uti_state_get_user_name();
+   username = bootstrap_get_username();
 
    DTRACE;
 

@@ -36,7 +36,6 @@
 #include <sys/resource.h>
 #include <sys/wait.h>
 #include <pwd.h>
-#include <grp.h>
 #include <signal.h>
 #include <fcntl.h>
 
@@ -58,7 +57,7 @@
 
 #ifdef NO_SGE_COMPILE_DEBUG
 #   undef SGE_EXIT
-#   define SGE_EXIT(x)     exit(x)
+#   define sge_exit(x)     exit(x)
 #endif
 
 static void addenv(char *, char *);
@@ -142,14 +141,14 @@ pid_t sge_peopen(const char *shell, int login_shell, const char *command,
             if (write(2, err_str, strlen(err_str)) != (ssize_t)strlen(err_str)) {
                /* nothing we can do here - we are anyway about to exit */
             }
-            SGE_EXIT(nullptr, 1);
+            sge_exit(1);
          }
 
          /* set stderr to /dev/null */
          close(2);
          if (dup(fd) == -1) {
             /* we have a serious problem here - nothing we can do but exit */
-            SGE_EXIT(nullptr, 1);
+            sge_exit(1);
          }
 
          /* we don't need the stderr the pipe - close it */
@@ -159,7 +158,7 @@ pid_t sge_peopen(const char *shell, int login_shell, const char *command,
          close(2);
          if (dup(pipefds[2][1]) == -1) {
             /* we have a serious problem here - nothing we can do but exit */
-            SGE_EXIT(nullptr, 1);
+            sge_exit(1);
          }
       }
 
@@ -169,7 +168,7 @@ pid_t sge_peopen(const char *shell, int login_shell, const char *command,
       if (dup(pipefds[0][0]) == -1 ||
           dup(pipefds[1][1]) == -1) {
          /* we have a serious problem here - nothing we can do but exit */
-         SGE_EXIT(nullptr, 1);
+         sge_exit(1);
       }
 
       if (user) {
@@ -187,7 +186,7 @@ pid_t sge_peopen(const char *shell, int login_shell, const char *command,
                /* nothing we can do here - we are anyway about to exit */
             }
             sge_free(&buffer);
-            SGE_EXIT(nullptr, 1);
+            sge_exit(1);
          }
 
          myuid = geteuid();
@@ -198,7 +197,7 @@ pid_t sge_peopen(const char *shell, int login_shell, const char *command,
                   /* nothing we can do here - we are anyway about to exit */
                }
                sge_free(&buffer);
-               SGE_EXIT(nullptr, 1);
+               sge_exit(1);
             }
             sprintf(err_str, "%s %d\n", pw->pw_name, (int) pw->pw_gid);
             if (write(2, err_str, strlen(err_str)) != (ssize_t)strlen(err_str)) {
@@ -213,7 +212,7 @@ pid_t sge_peopen(const char *shell, int login_shell, const char *command,
                   /* nothing we can do here - we are anyway about to exit */
                }
                sge_free(&buffer);
-               SGE_EXIT(nullptr, 1);
+               sge_exit(1);
             }
 
             if (setuid(pw->pw_uid)) {
@@ -224,7 +223,7 @@ pid_t sge_peopen(const char *shell, int login_shell, const char *command,
                   /* nothing we can do here - we are anyway about to exit */
                }
                sge_free(&buffer);
-               SGE_EXIT(nullptr, 1);
+               sge_exit(1);
             }
          }
 
@@ -255,7 +254,7 @@ pid_t sge_peopen(const char *shell, int login_shell, const char *command,
       if (write(2, could_not, sizeof(could_not)) != sizeof(could_not)) {
          /* nothing we can do here - we are anyway about to exit */
       }
-      SGE_EXIT(nullptr, 1);
+      sge_exit(1);
    } /* end child */
 
    if (pid < 0) {
@@ -451,7 +450,7 @@ pid_t sge_peopen_r(const char *shell, int login_shell, const char *command,
          if (res) {
             ERROR((SGE_EVENT, MSG_SYSTEM_INITGROUPSFORUSERFAILED_ISS, res, user, strerror(errno)));
             sge_free(&buffer);
-            SGE_EXIT(nullptr, 1);
+            sge_exit(1);
          }
 
          DPRINTF(("Initgroups was successful\n"));
@@ -504,16 +503,16 @@ pid_t sge_peopen_r(const char *shell, int login_shell, const char *command,
          if (fd != -1) {
             close(2);
             if (dup(fd) == -1) {
-               SGE_EXIT(nullptr, 1);
+               sge_exit(1);
             }
             close(pipefds[2][1]);
          } else {
-            SGE_EXIT(nullptr, 1);
+            sge_exit(1);
          }
       } else {
          close(2);
          if (dup(pipefds[2][1]) == -1) {
-            SGE_EXIT(nullptr, 1);
+            sge_exit(1);
          }
       }
 
@@ -524,13 +523,13 @@ pid_t sge_peopen_r(const char *shell, int login_shell, const char *command,
       close(1);
       if (dup(pipefds[0][0]) == -1 ||
           dup(pipefds[1][1]) == -1) {
-         SGE_EXIT(nullptr, 1);
+         sge_exit(1);
       }
 
       if (pw != nullptr) {
          int lret = setuid(tuid);
          if (lret) {
-            SGE_EXIT(nullptr, 1);
+            sge_exit(1);
          }
       }
 

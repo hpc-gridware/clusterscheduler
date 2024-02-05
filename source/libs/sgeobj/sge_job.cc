@@ -39,9 +39,8 @@
 
 #include "uti/sge_rmon.h"
 #include "uti/sge_log.h"
-#include "uti/sge_htable.h"
 #include "uti/sge_stdlib.h"
-#include "uti/sge_prog.h"
+#include "uti/sge_bootstrap.h"
 #include "uti/sge_parse_num_par.h"
 
 #include "comm/commlib.h"

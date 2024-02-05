@@ -35,7 +35,7 @@
 #include <errno.h>
 
 #include "uti/sge_rmon.h"
-#include "uti/sge_prog.h"
+#include "uti/sge_bootstrap.h"
 #include "uti/sge_log.h"
 #include "uti/sge_unistd.h"
 #include "uti/sge_uidgid.h"
@@ -203,7 +203,7 @@ sge_daemonize_qmaster() {
    failed_fd = sge_occupy_first_three();
    if (failed_fd != -1) {
       CRITICAL((SGE_EVENT, MSG_CANNOT_REDIRECT_STDINOUTERR_I, failed_fd));
-      SGE_EXIT(nullptr, 0);
+      sge_exit(0);
    }
 
    DRETURN(true);
@@ -240,12 +240,12 @@ sge_become_admin_user(const char *admin_user) {
 
    if (sge_set_admin_username(admin_user, str) == -1) {
       CRITICAL((SGE_EVENT, SFNMAX, str));
-      SGE_EXIT(nullptr, 1);
+      sge_exit(1);
    }
 
    if (sge_switch2admin_user()) {
       CRITICAL((SGE_EVENT, SFNMAX, MSG_ERROR_CANTSWITCHTOADMINUSER));
-      SGE_EXIT(nullptr, 1);
+      sge_exit(1);
    }
 
    DRETURN_VOID;
@@ -277,10 +277,10 @@ sge_become_admin_user(const char *admin_user) {
 *
 *******************************************************************************/
 void
-sge_exit_func(void **ctx_ref, int anExitValue) {
+sge_exit_func(int anExitValue) {
    DENTER(TOP_LAYER);
-   sge_gdi2_shutdown(ctx_ref);
+   sge_gdi2_shutdown();
 
    DRETURN_VOID;
-} /* sge_exit_func */
+}
 

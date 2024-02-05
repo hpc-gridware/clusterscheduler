@@ -35,7 +35,7 @@
 
 #include "uti/sge_rmon.h"
 #include "uti/sge_lock.h"
-#include "uti/sge_prog.h"
+#include "uti/sge_bootstrap.h"
 #include "uti/sge_log.h"
 #include "uti/sge_unistd.h"
 #include "uti/sge_profiling.h"
@@ -306,7 +306,7 @@ sge_worker_main(void *arg) {
              */
             if (packet->is_intern_request == false) {
                MONITOR_MESSAGES_OUT(p_monitor);
-               sge_gdi2_send_any_request(ctx, 0, nullptr, packet->host, packet->commproc, packet->commproc_id,
+               sge_gdi2_send_any_request(0, nullptr, packet->host, packet->commproc, packet->commproc_id,
                                          &(packet->pb), TAG_GDI_REQUEST, packet->response_id, nullptr);
                clear_packbuffer(&(packet->pb));
                sge_gdi_packet_free(&packet);

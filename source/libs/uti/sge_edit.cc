@@ -114,7 +114,7 @@ int sge_edit(const char *fname, uid_t myuid, gid_t mygid) {
 
       execlp(cp, cp, fname, (char *) 0);
       ERROR((SGE_EVENT, MSG_QCONF_CANTSTARTEDITORX_S, cp));
-      SGE_EXIT(nullptr, 1);
+      sge_exit(1);
    }
 
    DRETURN(-1);

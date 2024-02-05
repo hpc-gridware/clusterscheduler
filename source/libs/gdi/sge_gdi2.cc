@@ -43,7 +43,7 @@
 
 #include "uti/sge_mtutil.h"
 #include "uti/sge_rmon.h"
-#include "uti/sge_prog.h"
+#include "uti/sge_bootstrap.h"
 #include "uti/sge_log.h"
 #include "uti/sge_parse_num_par.h"
 #include "uti/sge_profiling.h"
@@ -62,7 +62,6 @@
 
 #include "gdi/qm_name.h"
 #include "gdi/sge_gdi2.h"
-#include "gdi/sge_gdi3.h"
 #include "gdi/sge_gdi3.h"
 #include "gdi/sge_gdi_ctx.h"
 #include "gdi/sge_security.h"
@@ -89,8 +88,7 @@ dump_receive_info(cl_com_message_t** message, cl_com_endpoint_t** sender);
 static const 
 char *target2string(u_long32 target);
 
-static int gdi2_send_message(sge_gdi_ctx_class_t * ctx, 
-                             int synchron, const char *tocomproc, int toid, 
+static int gdi2_send_message(int synchron, const char *tocomproc, int toid,
                              const char *tohost, int tag, char **buffer, 
                              int buflen, u_long32 *mid);
 
@@ -571,59 +569,6 @@ sge_gdi2_wait(sge_gdi_ctx_class_t* ctx, lList **alpp, lList **malpp,
    DRETURN(ret); 
 }
 
-
-/****** gdi/request/sge_gdi2_is_done() *****************************************
-*  NAME
-*     sge_gdi2_is_done() -- check if  GDI request is finished 
-*
-*  SYNOPSIS
-*     bool 
-*     sge_gdi2_is_done(sge_gdi_ctx_class_t* ctx, lList **alpp, state_gdi_multi *state) 
-*
-*  FUNCTION
-*     This function returns true if the GDI request which was previously been created
-*     via sge_gdi2_multi() is finished or if it is will waiting to be executed.
-*     A return value of "true" means that a call of sge_gdi2_wait() will return 
-*     immediatly because the request has been handled and an answer is available.
-*     "false" means that a call of sge_gdi2_wait() would block because the
-*     GDI request is not done till now. 
-*
-*     Input parameters for this function are the GDI context "ctx" 
-*     and the "state" structure which has to be initialized by calling 
-*     sge_gdi2_multi(... mode=SGE_GDI_RECORED...) zero or multiple times
-*     and sge_gdi2_multi(... mode=SGE_GDI_SEND...) once.
-*
-*  INPUTS
-*     sge_gdi_ctx_class_t* ctx - context object 
-*     lList **alpp             - answer list for this function 
-*     state_gdi_multi *state   - gdi state variable 
-*
-*  RESULT
-*     bool - is request already done? 
-*        true  - yes 
-*        false - no 
-*
-*  NOTES
-*     MT-NOTE: sge_gdi2_is_done() is MT safe 
-*
-*  SEE ALSO
-*     gdi/request/sge_gdi2() 
-*     gdi/request/sge_gdi2_multi() 
-*     gdi/request/sge_gdi_extract_answer() 
-*     gdi/request/sge_gdi2_wait()
-*******************************************************************************/
-bool
-sge_gdi2_is_done(sge_gdi_ctx_class_t* ctx, lList **alpp, state_gdi_multi *state) 
-{
-   bool ret = true;     
-                    
-   DENTER(GDI_LAYER);  
-   if (state->packet != nullptr) {
-      ret = sge_gdi_packet_is_handled(state->packet);
-   }                             
-   DRETURN(ret);          
-}
-
 /*---------------------------------------------------------
  *  sge_send_any_request
  *  returns 0 if ok
@@ -636,7 +581,7 @@ sge_gdi2_is_done(sge_gdi_ctx_class_t* ctx, lList **alpp, state_gdi_multi *state)
  *     The function does *not* wait until the message is actually sent!
  *---------------------------------------------------------*/
 int 
-sge_gdi2_send_any_request(sge_gdi_ctx_class_t *ctx, int synchron, u_long32 *mid,
+sge_gdi2_send_any_request(int synchron, u_long32 *mid,
                           const char *rhost, const char *commproc, int id,
                           sge_pack_buffer *pb, int tag, u_long32  response_id, 
                           lList **alpp)
@@ -714,7 +659,7 @@ sge_gdi2_send_any_request(sge_gdi_ctx_class_t *ctx, int synchron, u_long32 *mid,
  *    MT-NOTE: sge_get_any_request() is MT safe (assumptions)
  *----------------------------------------------------------*/
 int 
-sge_gdi2_get_any_request(sge_gdi_ctx_class_t *ctx, char *rhost, 
+sge_gdi2_get_any_request(char *rhost,
                          char *commproc, u_short *id, sge_pack_buffer *pb, 
                          int *tag, int synchron, u_long32 for_request_mid, 
                          u_long32* mid) 
@@ -929,8 +874,7 @@ lList *gdi2_tsm(sge_gdi_ctx_class_t *thiz) {
 ** NOTES
 **    MT-NOTE: gdi_kill() is MT safe (assumptions)
 */
-lList *gdi2_kill(sge_gdi_ctx_class_t *thiz, lList *id_list, const char *cell, 
-                 u_long32 option_flags, u_long32 action_flag ) 
+lList *gdi2_kill(sge_gdi_ctx_class_t *thiz, lList *id_list, u_long32 action_flag )
 {
    lList *alp = nullptr, *tmpalp;
    bool id_list_created = false;
@@ -1002,81 +946,6 @@ lList *gdi2_kill(sge_gdi_ctx_class_t *thiz, lList *id_list, const char *cell,
    }
 
    DRETURN(alp);
-}
-
-/****** gdi/sge/sge_gdi_get_mapping_name() ************************************
-*  NAME
-*     sge_gdi_get_mapping_name() -- get username for host 
-*
-*  SYNOPSIS
-*     int sge_gdi_get_mapping_name(char* requestedHost, char* buf, 
-*                                  int buflen)
-*
-*  FUNCTION
-*     This function sends a PERM_Type list to the qmaster. The 
-*     requestedHost is stored in the PERM_req_host list entry. The 
-*     qmaster will fill up the PERM_Type list. The mapped user name 
-*     is stored in the PERM_req_username field. The function will strcpy 
-*     the name into the "buf" char array if the name is shorter than 
-*     the given "buflen". On success the function returns true. 
-* 
-*  INPUTS
-*     char* requestedHost - pointer to char array; this is the name of 
-*                           the host were the caller wants to get his 
-*                           username.
-*     char* buf           - char array buffer to store the username
-*     int   buflen        - length (sizeof) buf
-*
-*  RESULT
-*     int true on success, false if not
-******************************************************************************/
-bool sge_gdi2_get_mapping_name(sge_gdi_ctx_class_t *ctx, const char *requestedHost, char *buf, size_t buflen) 
-{  
-   lList* alp = nullptr;
-   lList* permList = nullptr;
-   lListElem *ep = nullptr;
-   const char* mapName = nullptr;
-   
-   DENTER(GDI_LAYER);
-
-   if (requestedHost == nullptr) {
-      DRETURN(false);
-   }
-   
-   permList = lCreateList("permissions", PERM_Type);
-   ep = lCreateElem(PERM_Type);
-   lAppendElem(permList,ep);
-   lSetHost(ep, PERM_req_host, requestedHost); 
-
-   alp = sge_gdi2(ctx, SGE_DUMMY_LIST, SGE_GDI_PERMCHECK ,  &permList , nullptr,nullptr );
-
-   
-   if (permList != nullptr) {
-      ep = permList->first;
-      if (ep != nullptr) {
-         mapName = lGetString(ep, PERM_req_username ); 
-      } 
-   }
-  
-   if (mapName != nullptr) {
-      if ((strlen(mapName) + 1) <= buflen) {
-         strcpy(buf,mapName);
-         DPRINTF(("Mapping name is: '%s'\n", buf));
-   
-         lFreeList(&permList);
-         lFreeList(&alp);
-  
-         DRETURN(true);
-      }
-   } 
-
-   DPRINTF(("No mapname found!\n"));
-   strcpy(buf,"");
-   
-   lFreeList(&permList);
-   lFreeList(&alp);
-   
-   DRETURN(false);
 }
 
 /****** gdi/sge/sge_gdi_check_permission() **********************************
@@ -1181,8 +1050,7 @@ bool sge_gdi2_check_permission(sge_gdi_ctx_class_t *ctx, lList **alpp, int optio
     NOTES
        MT-NOTE: gdi_send_message_pb() is MT safe (assumptions)
 **********************************************************************/
-int gdi2_send_message_pb(sge_gdi_ctx_class_t *ctx, 
-                         int synchron, const char *tocomproc, int toid, 
+int gdi2_send_message_pb(int synchron, const char *tocomproc, int toid,
                          const char *tohost, int tag, sge_pack_buffer *pb, 
                          u_long32 *mid) 
 {
@@ -1192,11 +1060,11 @@ int gdi2_send_message_pb(sge_gdi_ctx_class_t *ctx,
 
    if (!pb) {
        DPRINTF(("no pointer for sge_pack_buffer\n"));
-       ret = gdi2_send_message(ctx, synchron, tocomproc, toid, tohost, tag, nullptr, 0, mid);
+       ret = gdi2_send_message(synchron, tocomproc, toid, tohost, tag, nullptr, 0, mid);
        DRETURN(ret);
    }
 
-   ret = gdi2_send_message(ctx, synchron, tocomproc, toid, tohost, tag, &pb->head_ptr, pb->bytes_used, mid);
+   ret = gdi2_send_message(synchron, tocomproc, toid, tohost, tag, &pb->head_ptr, pb->bytes_used, mid);
 
    DRETURN(ret);
 }
@@ -1213,7 +1081,7 @@ int gdi2_send_message_pb(sge_gdi_ctx_class_t *ctx,
       MT-NOTE: gdi_send_message() is MT safe (assumptions)
 *************************************************************/
 static int 
-gdi2_send_message(sge_gdi_ctx_class_t *sge_ctx, int synchron, const char *tocomproc, int toid, 
+gdi2_send_message(int synchron, const char *tocomproc, int toid,
                  const char *tohost, int tag, char **buffer, 
                  int buflen, u_long32 *mid) 
 {
@@ -1223,7 +1091,7 @@ gdi2_send_message(sge_gdi_ctx_class_t *sge_ctx, int synchron, const char *tocomp
    unsigned long dummy_mid;
    unsigned long* mid_pointer = nullptr;
    int use_execd_handle = 0;
-   u_long32 progid = uti_state_get_mewho();
+   u_long32 progid = bootstrap_get_component_id();
    
    DENTER(GDI_LAYER);
 
@@ -1307,7 +1175,7 @@ gdi2_send_message(sge_gdi_ctx_class_t *sge_ctx, int synchron, const char *tocomp
  *
  */
 int 
-gdi2_receive_message(sge_gdi_ctx_class_t *sge_ctx, char *fromcommproc, u_short *fromid, char *fromhost, 
+gdi2_receive_message(char *fromcommproc, u_short *fromid, char *fromhost,
                     int *tag, char **buffer, u_long32 *buflen, int synchron) 
 {
    
@@ -1317,7 +1185,7 @@ gdi2_receive_message(sge_gdi_ctx_class_t *sge_ctx, char *fromcommproc, u_short *
    cl_com_endpoint_t* sender = nullptr;
    int use_execd_handle = 0;
 
-   u_long32 progid = uti_state_get_mewho();
+   u_long32 progid = bootstrap_get_component_id();
    u_long32 sge_execd_port = bootstrap_get_sge_execd_port();
 
    DENTER(GDI_LAYER);
@@ -1470,7 +1338,7 @@ int gdi2_get_configuration(sge_gdi_ctx_class_t *ctx, const char *config_name,
    int success;
    static int already_logged = 0;
    u_long32 status;
-   u_long32 me = uti_state_get_mewho();
+   u_long32 me = bootstrap_get_component_id();
 
    DENTER(GDI_LAYER);
 
@@ -1597,9 +1465,9 @@ int gdi2_wait_for_conf(sge_gdi_ctx_class_t *ctx, lList **conf_list) {
    int ret;
    static u_long32 last_qmaster_file_read = 0;
    u_long32 now = sge_get_gmt();
-   const char *qualified_hostname = uti_state_get_qualified_hostname();
+   const char *qualified_hostname = bootstrap_get_qualified_hostname();
    const char *cell_root = bootstrap_get_cell_root();
-   u_long32 progid = uti_state_get_mewho();
+   u_long32 progid = bootstrap_get_component_id();
    
    /* TODO: move this function to execd */
    DENTER(GDI_LAYER);
@@ -1677,9 +1545,9 @@ lList **conf_list
 ) {
    lListElem *global = nullptr;
    lListElem *local = nullptr;
-   const char *qualified_hostname = uti_state_get_qualified_hostname();
+   const char *qualified_hostname = bootstrap_get_qualified_hostname();
    const char *cell_root = bootstrap_get_cell_root();
-   u_long32 progid = uti_state_get_mewho();
+   u_long32 progid = bootstrap_get_component_id();
    int ret;
 
    DENTER(GDI_LAYER);
@@ -1716,7 +1584,7 @@ lList **conf_list
 }
 
 
-void gdi2_default_exit_func(void **ref_ctx, int i) 
+void gdi2_default_exit_func(int i)
 {
    sge_security_exit(i); 
    cl_com_cleanup_commlib();
@@ -1736,13 +1604,13 @@ void gdi2_default_exit_func(void **ref_ctx, int i)
 *  NOTES
 *     MT-NOTES: sge_gdi_setup() is MT safe
 ******************************************************************************/  
-int sge_gdi2_shutdown(void **context)
+int sge_gdi2_shutdown()
 {
    DENTER(GDI_LAYER);
 
    /* initialize libraries */
 /*    pthread_once(&gdi_once_control, gdi_once_init); */
-   gdi2_default_exit_func(context, 0);
+   gdi2_default_exit_func(0);
 
    DRETURN(0);
 }
@@ -1777,11 +1645,7 @@ int sge_gdi2_shutdown(void **context)
 *  NOTES
 *     MT-NOTE: report_list_send() is not MT safe (assumptions)
 *******************************************************************************/
-int report_list_send(sge_gdi_ctx_class_t *ctx, 
-                     const lList *rlp, 
-                     const char *rhost, const char *commproc, int id,
-                     int synchron)
-{
+int report_list_send(const lList *rlp, const char *rhost, const char *commproc, int id, int synchron) {
    sge_pack_buffer pb;
    int ret; 
    lList *alp = nullptr;
@@ -1813,7 +1677,7 @@ int report_list_send(sge_gdi_ctx_class_t *ctx,
       DRETURN(-1);
    }
 
-   ret = sge_gdi2_send_any_request(ctx, synchron, nullptr, rhost, commproc, id, &pb, TAG_REPORT_REQUEST, 0, &alp);
+   ret = sge_gdi2_send_any_request(synchron, nullptr, rhost, commproc, id, &pb, TAG_REPORT_REQUEST, 0, &alp);
 
    clear_packbuffer(&pb);
    answer_list_output (&alp);
@@ -1915,70 +1779,6 @@ const char* sge_dump_message_tag(unsigned long tag) {
    }
    return "TAG_NOT_DEFINED";
 }
-
-
-int gdi_log_flush_func(cl_raw_list_t* list_p) {
-   int ret_val;
-   cl_log_list_elem_t* elem = nullptr;
-   DENTER(COMMD_LAYER);
-
-   if (list_p == nullptr) {
-      DRETURN(CL_RETVAL_LOG_NO_LOGLIST);
-   }
-
-   if (  ( ret_val = cl_raw_list_lock(list_p)) != CL_RETVAL_OK) {
-      DRETURN(ret_val);
-   }
-
-   while ( (elem = cl_log_list_get_first_elem(list_p) ) != nullptr) {
-      char* param;
-      if (elem->log_parameter == nullptr) {
-         param = "";
-      } else {
-         param = elem->log_parameter;
-      }
-
-      switch(elem->log_type) {
-         case CL_LOG_ERROR: 
-            if ( log_state_get_log_level() >= LOG_ERR) {
-               ERROR((SGE_EVENT,  "%s %-20s=> %s %s", elem->log_module_name, elem->log_thread_name, elem->log_message, param ));
-            } else {
-               printf("%s %-20s=> %s %s\n", elem->log_module_name, elem->log_thread_name, elem->log_message, param);
-            }
-            break;
-         case CL_LOG_WARNING:
-            if ( log_state_get_log_level() >= LOG_WARNING) {
-               WARNING((SGE_EVENT,"%s %-20s=> %s %s", elem->log_module_name, elem->log_thread_name, elem->log_message, param ));
-            } else {
-               printf("%s %-20s=> %s %s\n", elem->log_module_name, elem->log_thread_name, elem->log_message, param);
-            }
-            break;
-         case CL_LOG_INFO:
-            if ( log_state_get_log_level() >= LOG_INFO) {
-               INFO((SGE_EVENT,   "%s %-20s=> %s %s", elem->log_module_name, elem->log_thread_name, elem->log_message, param ));
-            } else {
-               printf("%s %-20s=> %s %s\n", elem->log_module_name, elem->log_thread_name, elem->log_message, param);
-            }
-            break;
-         case CL_LOG_DEBUG:
-            if ( log_state_get_log_level() >= LOG_DEBUG) { 
-               DEBUG((SGE_EVENT,  "%s %-20s=> %s %s", elem->log_module_name, elem->log_thread_name, elem->log_message, param ));
-            } else {
-               printf("%s %-20s=> %s %s\n", elem->log_module_name, elem->log_thread_name, elem->log_message, param);
-            }
-            break;
-         case CL_LOG_OFF:
-            break;
-      }
-      cl_log_list_del_log(list_p);
-   }
-   
-   if (  ( ret_val = cl_raw_list_unlock(list_p)) != CL_RETVAL_OK) {
-      DRETURN(ret_val);
-   } 
-   DRETURN(CL_RETVAL_OK);
-}
-
 
 #ifdef DEBUG_CLIENT_SUPPORT
 void gdi_rmon_print_callback_function(const char *progname, const char *message, unsigned long traceid, unsigned long pid, unsigned long thread_id) {
@@ -2200,7 +2000,7 @@ bool sge_get_com_error_flag(u_long32 progid, sge_gdi_stored_com_error_t error_ty
     * for un-"cased" values 
     */
 
-   /* TODO: remove uti_state_get_mewho()/progid cases for QMASTER and EXECD after
+   /* TODO: remove bootstrap_get_component_id()/progid cases for QMASTER and EXECD after
             BT: 6350264, IZ: 1893 is fixed */
    switch (error_type) {
       case SGE_COM_ACCESS_DENIED: {

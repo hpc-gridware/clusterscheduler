@@ -70,7 +70,7 @@ void sge_setup_sge_execd(sge_gdi_ctx_class_t *ctx, const char* tmp_err_file_name
    char err_str[MAX_STRING_SIZE];
    int allowed_get_conf_errors     = 5;
    char* spool_dir = nullptr;
-   const char *unqualified_hostname = uti_state_get_unqualified_hostname();
+   const char *unqualified_hostname = bootstrap_get_unqualified_hostname();
    const char *admin_user = bootstrap_get_admin_user();
 
    DENTER(TOP_LAYER);
@@ -83,20 +83,20 @@ void sge_setup_sge_execd(sge_gdi_ctx_class_t *ctx, const char* tmp_err_file_name
    if (sge_set_admin_username(admin_user, err_str)) {
       CRITICAL((SGE_EVENT, SFNMAX, err_str));
       /* TODO: remove */
-      SGE_EXIT(nullptr, 1);
+      sge_exit(1);
    }
 
    if (sge_switch2admin_user()) {
       CRITICAL((SGE_EVENT, SFNMAX, MSG_ERROR_CANTSWITCHTOADMINUSER));
       /* TODO: remove */
-      SGE_EXIT(nullptr, 1);
+      sge_exit(1);
    }
 
    while (gdi2_wait_for_conf(ctx, &Execd_Config_List)) {
       if (allowed_get_conf_errors-- <= 0) {
          CRITICAL((SGE_EVENT, SFNMAX, MSG_EXECD_CANT_GET_CONFIGURATION_EXIT));
          /* TODO: remove */
-         SGE_EXIT(nullptr, 1);
+         sge_exit(1);
       }
       sleep(1);
       gdi3_get_act_master_host(true);

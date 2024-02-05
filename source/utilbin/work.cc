@@ -291,7 +291,7 @@ int main(int argc, char *argv[])
       keep_open[1] = 4;
       keep_open[2] = 5;
 
-      sge_daemonize(keep_open, 3, nullptr);
+      sge_daemonize(keep_open, 3);
       dup2(3, 0);
       dup2(4, 1);
       dup2(5, 2);

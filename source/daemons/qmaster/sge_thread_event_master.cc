@@ -34,7 +34,7 @@
 #include <string.h>
 
 #include "uti/sge_rmon.h"
-#include "uti/sge_prog.h"
+#include "uti/sge_bootstrap.h"
 #include "uti/sge_thread_ctrl.h"
 #include "uti/sge_profiling.h"
 
@@ -132,7 +132,7 @@ sge_event_master_main(void *arg)
    report_list = lCreateListHash("report list", REP_Type, false);
    report = lCreateElem(REP_Type);
    lSetUlong(report, REP_type, NUM_REP_REPORT_EVENTS);
-   lSetHost(report, REP_host, uti_state_get_qualified_hostname());
+   lSetHost(report, REP_host, bootstrap_get_qualified_hostname());
    lAppendElem(report_list, report);
  
    while (do_endlessly) {

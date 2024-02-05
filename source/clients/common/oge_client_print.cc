@@ -35,7 +35,7 @@
 
 #include "uti/sge_dstring.h"
 #include "uti/sge_parse_num_par.h"
-#include "uti/sge_prog.h"
+#include "uti/sge_bootstrap.h"
 #include "uti/sge_rmon.h"
 #include "uti/sge_time.h"
 #include "uti/sge_unistd.h"

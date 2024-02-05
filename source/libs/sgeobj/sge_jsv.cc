@@ -30,15 +30,12 @@
  ************************************************************************/
 /*___INFO__MARK_END__*/                                   
 
-#include <errno.h>
 #include <fcntl.h>
 #include <pthread.h>
 #include <string.h>
 #include <time.h>
 #include <unistd.h>
 #include <sys/poll.h>
-
-#include "sge.h"
 
 #include "uti/sge_mtutil.h"
 #include "uti/sge_lock.h"

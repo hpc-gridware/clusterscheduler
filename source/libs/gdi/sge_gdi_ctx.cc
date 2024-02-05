@@ -33,7 +33,6 @@
 #include <stdlib.h>
 #include <stdio.h>
 #include <string.h>
-#include <pwd.h>
 #include <errno.h>
 #include <fcntl.h>
 #include <pthread.h>
@@ -59,7 +58,7 @@
 #include "uti/sge_stdlib.h"
 #include "uti/sge_string.h"
 #include "uti/sge_unistd.h"
-#include "uti/sge_prog.h"
+#include "uti/sge_bootstrap.h"
 #include "uti/sge_bootstrap.h"
 #include "uti/sge_uidgid.h"
 #include "uti/sge_profiling.h"
@@ -145,16 +144,15 @@ void sge_gdi_set_thread_local_ctx(sge_gdi_ctx_class_t* ctx) {
 }
 
 static bool
-sge_gdi_ctx_setup(int prog_number, const char* component_name, const char *thread_name, bool qmaster_internal_client);
+sge_gdi_ctx_setup(int prog_number, const char *thread_name, bool qmaster_internal_client);
 
-static void sge_gdi_ctx_class_get_errors(lList **alpp, bool clear_errors);
 static sge_csp_path_class_t* get_sge_csp_path();
 static int ctx_get_last_commlib_error();
 static void ctx_set_last_commlib_error(int cl_error);
 static int sge_gdi_ctx_log_flush_func(cl_raw_list_t* list_p);
 
-sge_gdi_ctx_class_t *
-sge_gdi_ctx_class_create(int prog_number, const char *component_name, const char *thread_name, bool is_qmaster_internal_client, lList **alpp)
+static sge_gdi_ctx_class_t *
+sge_gdi_ctx_class_create(int prog_number, const char *thread_name, bool is_qmaster_internal_client, lList **alpp)
 {
    sge_gdi_ctx_class_t *ret = (sge_gdi_ctx_class_t *)sge_malloc(sizeof(sge_gdi_ctx_class_t));
 
@@ -173,8 +171,8 @@ sge_gdi_ctx_class_create(int prog_number, const char *component_name, const char
       ret->sge_gdi_packet_wait_for_result = sge_gdi_packet_wait_for_result_external;
    }
 
-   if (!sge_gdi_ctx_setup(prog_number, component_name, thread_name, is_qmaster_internal_client)) {
-      sge_gdi_ctx_class_get_errors(alpp, true);
+   if (!sge_gdi_ctx_setup(prog_number, thread_name, is_qmaster_internal_client)) {
+      answer_list_from_sge_error(gdi3_get_error_handle(), alpp, true);
       sge_gdi_ctx_class_destroy(&ret);
       DRETURN(nullptr);
    }
@@ -182,7 +180,7 @@ sge_gdi_ctx_class_create(int prog_number, const char *component_name, const char
    /*
    ** set default exit func, maybe overwritten
    */
-   uti_state_set_exit_func(gdi2_default_exit_func);
+   bootstrap_set_exit_func(gdi2_default_exit_func);
 
    DRETURN(ret);
 }
@@ -201,13 +199,6 @@ void sge_gdi_ctx_class_destroy(sge_gdi_ctx_class_t **pst)
    DRETURN_VOID;
 }
 
-static void sge_gdi_ctx_class_get_errors(lList **alpp, bool clear_errors)
-{
-   DENTER(TOP_LAYER);
-   answer_list_from_sge_error(gdi3_get_error_handle(), alpp, clear_errors);
-   DRETURN_VOID;
-}
-
 void
 sge_gdi_ctx_class_error(int error_type, int error_quality, const char* fmt, ...) {
    DENTER(TOP_LAYER);
@@ -222,23 +213,8 @@ sge_gdi_ctx_class_error(int error_type, int error_quality, const char* fmt, ...)
    DRETURN_VOID;
 }
 
-static void sge_gdi_ctx_set_is_setup(bool is_setup)
-{
-   DENTER(TOP_LAYER);
-   gdi3_set_setup(is_setup);
-   DRETURN_VOID;
-}
-
-
-static bool sge_gdi_ctx_is_setup()
-{
-   DENTER(TOP_LAYER);
-   DRETURN(gdi3_is_setup());
-}
-
-
 static bool
-sge_gdi_ctx_setup(int prog_number, const char* component_name, const char *thread_name, bool qmaster_internal_client)
+sge_gdi_ctx_setup(int prog_number, const char *thread_name, bool qmaster_internal_client)
 {
    DENTER(TOP_LAYER);
 
@@ -249,10 +225,10 @@ sge_gdi_ctx_setup(int prog_number, const char* component_name, const char *threa
     */
    prof_mt_init();
    feature_mt_init();
+   bootstrap_mt_init();
    gdi3_mt_init();
    sc_mt_init();
    obj_mt_init();
-   bootstrap_mt_init();
    sc_mt_init();
    fgl_mt_init();
 
@@ -262,7 +238,6 @@ sge_gdi_ctx_setup(int prog_number, const char* component_name, const char *threa
 
    bootstrap_set_qmaster_internal(qmaster_internal_client);
    bootstrap_set_component_id(prog_number);
-   bootstrap_set_component_name(component_name ? component_name : prognames[prog_number]);
    bootstrap_set_thread_name(thread_name ? thread_name : prognames[prog_number]);
    bootstrap_log_parameter();
 
@@ -282,19 +257,19 @@ sge_gdi_ctx_setup(int prog_number, const char* component_name, const char *threa
    DRETURN(true);
 }
 
-int sge_gdi_ctx_class_connect(sge_gdi_ctx_class_t *thiz)
+int sge_gdi_ctx_class_connect()
 {
    DENTER(TOP_LAYER);
 
    /* check if master is alive */
-   int ret = sge_gdi_ctx_class_prepare_enroll(thiz);
+   int ret = sge_gdi_ctx_class_prepare_enroll();
    if (ret == CL_RETVAL_OK) {
       ret = sge_gdi_ctx_class_is_alive();
    }
    DRETURN(ret);
 }
 
-int sge_gdi_ctx_class_prepare_enroll(sge_gdi_ctx_class_t *thiz) {
+int sge_gdi_ctx_class_prepare_enroll() {
 
    cl_host_resolve_method_t resolve_method = CL_SHORT;
    cl_framework_t  communication_framework = CL_CT_TCP;
@@ -313,7 +288,7 @@ int sge_gdi_ctx_class_prepare_enroll(sge_gdi_ctx_class_t *thiz) {
 
    if (cl_com_setup_commlib_complete() == false) {
       char* env_sge_commlib_debug = getenv("SGE_DEBUG_LEVEL");
-      switch (uti_state_get_mewho()) {
+      switch (bootstrap_get_component_id()) {
          case QMASTER:
          case DRMAA:
          case SCHEDD:
@@ -416,10 +391,10 @@ int sge_gdi_ctx_class_prepare_enroll(sge_gdi_ctx_class_t *thiz) {
    if (handle == nullptr) {
       /* handle does not exist, create one */
 
-      int me_who = uti_state_get_mewho();
-      const char *progname = uti_state_get_sge_formal_prog_name();
+      int me_who = bootstrap_get_component_id();
+      const char *progname = bootstrap_get_component_name();
       const char *master = gdi3_get_act_master_host(true);
-      const char *qualified_hostname = uti_state_get_qualified_hostname();
+      const char *qualified_hostname = bootstrap_get_qualified_hostname();
       u_long32 sge_qmaster_port = bootstrap_get_sge_qmaster_port();
       u_long32 sge_execd_port = bootstrap_get_sge_execd_port();
       int my_component_id = 0; /* 1 for daemons, 0=automatical for clients */
@@ -587,7 +562,7 @@ int sge_gdi_ctx_class_prepare_enroll(sge_gdi_ctx_class_t *thiz) {
                      if (alive_back == CL_RETVAL_OK && getenv("SGE_TEST_HEARTBEAT_TIMEOUT") == nullptr ) {
                         CRITICAL((SGE_EVENT, MSG_GDI_MASTER_ON_HOST_X_RUNINNG_TERMINATE_S, master));
                         /* TODO: remove !!! */
-                        SGE_EXIT(nullptr, 1);
+                        sge_exit(1);
                      } else {
                         DPRINTF(("qmaster on host "SFQ" is down\n", master));
                      }
@@ -617,7 +592,7 @@ int sge_gdi_ctx_class_prepare_enroll(sge_gdi_ctx_class_t *thiz) {
 /*             if (cl_ret != CL_RETVAL_OK && cl_ret != ctx_get_last_commlib_error(thiz)) { */
                   sge_gdi_ctx_class_error(STATUS_EUNKNOWN, ANSWER_QUALITY_ERROR,
                                      MSG_GDI_CANT_CONNECT_HANDLE_SSUUS,
-                                     uti_state_get_qualified_hostname(),
+                                     bootstrap_get_qualified_hostname(),
                                      bootstrap_get_component_name(),
                                      sge_u32c(my_component_id),
                                      sge_u32c(sge_qmaster_port),
@@ -634,7 +609,7 @@ int sge_gdi_ctx_class_prepare_enroll(sge_gdi_ctx_class_t *thiz) {
    rmon_set_print_callback(gdi_rmon_print_callback_function);
 #endif
 
-   if ((uti_state_get_mewho() == QMASTER) && (getenv("SGE_TEST_SOCKET_BIND") != nullptr)) {
+   if ((bootstrap_get_component_id() == QMASTER) && (getenv("SGE_TEST_SOCKET_BIND") != nullptr)) {
       /* this is for testsuite socket bind test (issue 1096 ) */
          struct timeval now;
          gettimeofday(&now,nullptr);
@@ -652,27 +627,13 @@ int sge_gdi_ctx_class_prepare_enroll(sge_gdi_ctx_class_t *thiz) {
    DRETURN(cl_ret);
 }
 
-
-lList* sge_gdi_ctx_class_gdi_tsm(sge_gdi_ctx_class_t *thiz)
+lList* sge_gdi_ctx_class_gdi_kill(sge_gdi_ctx_class_t *thiz, lList *id_list, u_long32 action_flag)
 {
    lList *alp = nullptr;
 
    DENTER(TOP_LAYER);
 
-   alp = gdi2_tsm(thiz);
-
-   DRETURN(alp);
-
-}
-
-lList* sge_gdi_ctx_class_gdi_kill(sge_gdi_ctx_class_t *thiz, lList *id_list, const char *cell,
-                                          u_long32 option_flags, u_long32 action_flag)
-{
-   lList *alp = nullptr;
-
-   DENTER(TOP_LAYER);
-
-   alp = gdi2_kill(thiz, id_list, cell, option_flags, action_flag);
+   alp = gdi2_kill(thiz, id_list, action_flag);
 
    DRETURN(alp);
 
@@ -774,7 +735,6 @@ sge_setup2(sge_gdi_ctx_class_t **context, u_long32 progid, u_long32 thread_id, l
       DRETURN(AE_ERROR);
    }
 
-   sge_getme(progid);
    bootstrap_mt_init();
    bootstrap_set_component_id(progid);
    gdi3_mt_init();
@@ -800,7 +760,7 @@ sge_setup2(sge_gdi_ctx_class_t **context, u_long32 progid, u_long32 thread_id, l
    }
 
    /* a dynamic eh handler is created */
-   *context = sge_gdi_ctx_class_create(progid, prognames[progid], threadnames[thread_id], is_qmaster_intern_client, alpp);
+   *context = sge_gdi_ctx_class_create(progid, threadnames[thread_id], is_qmaster_intern_client, alpp);
 
    if (*context == nullptr) {
       DRETURN(AE_ERROR);
@@ -833,7 +793,10 @@ int sge_gdi2_setup(sge_gdi_ctx_class_t **context_ref, u_long32 progid, u_long32 
 
    DENTER(TOP_LAYER);
 
-   if (context_ref && sge_gdi_ctx_is_setup()) {
+   bootstrap_mt_init();
+   gdi3_mt_init();
+
+   if (context_ref && gdi3_is_setup()) {
       if (alpp_was_null) {
          SGE_ADD_MSG_ID(sprintf(SGE_EVENT, SFNMAX, MSG_GDI_GDI_ALREADY_SETUP));
       } else {
@@ -847,12 +810,12 @@ int sge_gdi2_setup(sge_gdi_ctx_class_t **context_ref, u_long32 progid, u_long32 
       DRETURN(ret);
    }
 
-   if (sge_gdi_ctx_class_prepare_enroll(*context_ref) != CL_RETVAL_OK) {
-      sge_gdi_ctx_class_get_errors(alpp, true);
+   if (sge_gdi_ctx_class_prepare_enroll() != CL_RETVAL_OK) {
+      answer_list_from_sge_error(gdi3_get_error_handle(), alpp, true);
       DRETURN(AE_QMASTER_DOWN);
    }
 
-   sge_gdi_ctx_set_is_setup(true);
+   gdi3_set_setup(true);
 
    DRETURN(AE_OK);
 }
@@ -900,7 +863,7 @@ bool sge_daemonize_prepare() {
    pid_t pid;
    int fd;
 
-   int is_daemonized = uti_state_get_daemonized();
+   int is_daemonized = bootstrap_is_daemonized();
 
    DENTER(TOP_LAYER);
 
@@ -1056,7 +1019,7 @@ bool sge_daemonize_finalize()
 {
    int failed_fd;
    char tmp_buffer[4];
-   int is_daemonized = uti_state_get_daemonized();
+   int is_daemonized = bootstrap_is_daemonized();
 
    DENTER(TOP_LAYER);
 
@@ -1088,14 +1051,14 @@ bool sge_daemonize_finalize()
    failed_fd = sge_occupy_first_three();
    if (failed_fd  != -1) {
       CRITICAL((SGE_EVENT, MSG_CANNOT_REDIRECT_STDINOUTERR_I, failed_fd));
-      SGE_EXIT(nullptr, 0);
+      sge_exit(0);
    }
 #endif
 
    SETPGRP;
 
    /* now have finished daemonizing */
-   uti_state_set_daemonized(true);
+   bootstrap_set_daemonized(true);
 
    DRETURN(true);
 }
@@ -1124,7 +1087,7 @@ bool sge_daemonize_finalize()
 *  NOTES
 *     MT-NOTES: sge_daemonize() is not MT safe
 ******************************************************************************/
-int sge_daemonize(int *keep_open, unsigned long nr_of_fds, sge_gdi_ctx_class_t *ctx)
+int sge_daemonize(int *keep_open, unsigned long nr_of_fds)
 {
 
    int fd;
@@ -1139,7 +1102,7 @@ int sge_daemonize(int *keep_open, unsigned long nr_of_fds, sge_gdi_ctx_class_t *
    }
 #endif
 
-   if (uti_state_get_daemonized()) {
+   if (bootstrap_is_daemonized()) {
       DRETURN(1);
    }
 
@@ -1172,12 +1135,12 @@ int sge_daemonize(int *keep_open, unsigned long nr_of_fds, sge_gdi_ctx_class_t *
    failed_fd = sge_occupy_first_three();
    if (failed_fd  != -1) {
       CRITICAL((SGE_EVENT, MSG_CANNOT_REDIRECT_STDINOUTERR_I, failed_fd));
-      SGE_EXIT(nullptr, 0);
+      sge_exit(0);
    }
 
    SETPGRP;
 
-   uti_state_set_daemonized(true);
+   bootstrap_set_daemonized(true);
 
    DRETURN(1);
 }

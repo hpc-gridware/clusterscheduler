@@ -131,7 +131,7 @@ int main(int argc, char **argv) {
    lFreeList(&ar_lp);
    answer_list_on_error_print_or_exit(&alp, stdout);
    if (answer_list_has_error(&alp)) {
-      sge_gdi2_shutdown((void**)&ctx);
+      sge_gdi2_shutdown();
       sge_prof_cleanup();
       if (answer_list_has_status(&alp, STATUS_NOTOK_DOAGAIN)) {
          DRETURN(25);
@@ -140,14 +140,14 @@ int main(int argc, char **argv) {
       }
    }
 
-   sge_gdi2_shutdown((void**)&ctx);
+   sge_gdi2_shutdown();
    sge_prof_cleanup();
    DRETURN(0);
 
 error_exit:
-   sge_gdi2_shutdown((void**)&ctx);
+   sge_gdi2_shutdown();
    sge_prof_cleanup();
-   SGE_EXIT((void**)&ctx, 1);
+   sge_exit(1);
    DRETURN(1);
 }
 

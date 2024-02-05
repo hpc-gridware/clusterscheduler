@@ -93,8 +93,8 @@ static int sge_read_configuration(sge_gdi_ctx_class_t *ctx, const lListElem *aSp
    lListElem *global = nullptr;
    int ret = -1;
    const char *cell_root = bootstrap_get_cell_root();
-   const char *qualified_hostname = uti_state_get_qualified_hostname();
-   u_long32 progid = uti_state_get_mewho();
+   const char *qualified_hostname = bootstrap_get_qualified_hostname();
+   u_long32 progid = bootstrap_get_component_id();
    lList *cluster_config = *object_type_get_master_list_rw(SGE_TYPE_CONFIG);
 
    DENTER(TOP_LAYER);
@@ -616,23 +616,23 @@ int main(int argc, char *argv[])
    /* parse commandline parameters */
    if(argc != 4) {
       ERROR((SGE_EVENT, "usage: test_sge_spooling <method> <shared lib> <arguments>\n"));
-      SGE_EXIT((void**)&ctx, 1);
+      sge_exit(1);
    }
 
    if (sge_gdi2_setup(&ctx, QEVENT, MAIN_THREAD, &answer_list) != AE_OK) {
       answer_list_output(&answer_list);
-      SGE_EXIT((void**)&ctx, 1);
+      sge_exit(1);
    }
    
    sge_setup_sig_handlers(QEVENT);
 
    if (reresolve_qualified_hostname() != CL_RETVAL_OK) {
-      SGE_EXIT((void**)&ctx, 1);
+      sge_exit(1);
    }
 
    if (false == sge_gdi2_evc_setup(&evc, ctx, EV_ID_SCHEDD, &answer_list, nullptr)) {
       answer_list_output(&answer_list);
-      SGE_EXIT((void**)&ctx, 1);
+      sge_exit(1);
    }
 
 #define defstring(str) #str
@@ -641,14 +641,14 @@ int main(int argc, char *argv[])
    spooling_context = spool_create_dynamic_context(&answer_list, argv[1], argv[2], argv[3]); 
    answer_list_output(&answer_list);
    if(spooling_context == nullptr) {
-      SGE_EXIT((void**)&ctx, EXIT_FAILURE);
+      sge_exit(EXIT_FAILURE);
    }
 
    spool_set_default_context(spooling_context);
 
    if(!spool_startup_context(&answer_list, spooling_context, true)) {
       answer_list_output(&answer_list);
-      SGE_EXIT((void**)&ctx, EXIT_FAILURE);
+      sge_exit(EXIT_FAILURE);
    }
    answer_list_output(&answer_list);
    

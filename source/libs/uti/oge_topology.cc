@@ -1,10 +1,10 @@
 /*___INFO__MARK_BEGIN_NEW__*/
 /*___INFO__MARK_END_NEW__*/
 
+#if defined(OGE_HWLOC)
 #include <string>
 #include "oge_topology.h"
 
-#if defined(OGE_HWLOC)
 namespace oge {
 
    // we do lazy initialization of the hwloc library

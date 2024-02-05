@@ -35,7 +35,7 @@
 
 #include "uti/sge_rmon.h"
 #include "uti/sge_string.h"
-#include "uti/sge_prog.h"
+#include "uti/sge_bootstrap.h"
 #include "uti/sge_time.h"
 #include "uti/sge_log.h"
 #include "uti/sge_parse_num_par.h"
@@ -192,7 +192,7 @@ sge_add_host_of_type(sge_gdi_ctx_class_t *ctx, const char *hostname, u_long32 ta
    gdi_object_t *object;
    lList *ppList = nullptr;
    const char *username = bootstrap_get_username();
-   const char *qualified_hostname = uti_state_get_qualified_hostname();
+   const char *qualified_hostname = bootstrap_get_qualified_hostname();
 
    DENTER(TOP_LAYER);
 
@@ -260,7 +260,7 @@ int sge_del_host(sge_gdi_ctx_class_t *ctx, lListElem *hep, lList **alpp, char *r
    int nm = 0;
    char *name = nullptr;
    int ret;
-   const char *qualified_hostname = uti_state_get_qualified_hostname();
+   const char *qualified_hostname = bootstrap_get_qualified_hostname();
    lList **master_ehost_list = object_type_get_master_list_rw(SGE_TYPE_EXECHOST);
    lList **master_ahost_list = object_type_get_master_list_rw(SGE_TYPE_ADMINHOST);
    lList **master_shost_list = object_type_get_master_list_rw(SGE_TYPE_SUBMITHOST);

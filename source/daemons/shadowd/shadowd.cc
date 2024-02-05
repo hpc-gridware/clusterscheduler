@@ -40,7 +40,7 @@
 #include "uti/sge_rmon.h"
 #include "uti/sge_stdio.h"
 #include "uti/sge_unistd.h"
-#include "uti/sge_prog.h"
+#include "uti/sge_bootstrap.h"
 #include "uti/sge_os.h"
 #include "uti/sge_uidgid.h"
 #include "uti/sge_string.h"
@@ -88,7 +88,7 @@
 int main(int argc, char **argv);
 
 static void
-shadowd_exit_func(void **ctx_ref, int i);
+shadowd_exit_func(int i);
 
 static int
 check_if_valid_shadow(char *binpath, char *oldqmaster, const char *act_qmaster_file, const char *shadow_master_file,
@@ -224,17 +224,17 @@ main(int argc, char **argv) {
 
    if (sge_setup2(&ctx, SHADOWD, MAIN_THREAD, &alp, false) != AE_OK) {
       answer_list_output(&alp);
-      SGE_EXIT((void **) &ctx, 1);
+      sge_exit(1);
    }
 
    /* AA: TODO: change this */
-   uti_state_set_exit_func(shadowd_exit_func);
+   bootstrap_set_exit_func(shadowd_exit_func);
    sge_setup_sig_handlers(SHADOWD);
 
 #if defined(SOLARIS)
    /* Init shared SMF libs if necessary */
    if (sge_smf_used() == 1 && sge_smf_init_libs() != 0) {
-       SGE_EXIT((void**)&ctx, 1);
+       sge_exit((void**)&ctx, 1);
    }
 #endif
 
@@ -242,59 +242,59 @@ main(int argc, char **argv) {
       char *shadowd_name = SGE_SHADOWD;
 
       /* is there a running shadowd on this host (with unqualified name) */
-      sprintf(shadowd_pidfile, "%s/"SHADOWD_PID_FILE, bootstrap_get_qmaster_spool_dir(), uti_state_get_unqualified_hostname());
+      sprintf(shadowd_pidfile, "%s/"SHADOWD_PID_FILE, bootstrap_get_qmaster_spool_dir(), bootstrap_get_unqualified_hostname());
 
       DPRINTF(("pidfilename: %s\n", shadowd_pidfile));
       if ((shadowd_pid = sge_readpid(shadowd_pidfile))) {
          DPRINTF(("shadowd_pid: "sge_U32CFormat"\n", sge_u32c(shadowd_pid)));
          if (!sge_checkprog(shadowd_pid, shadowd_name, PSCMD)) {
             CRITICAL((SGE_EVENT, MSG_SHADOWD_FOUNDRUNNINGSHADOWDWITHPIDXNOTSTARTING_I, (int) shadowd_pid));
-            SGE_EXIT((void **) &ctx, 1);
+            sge_exit(1);
          }
       }
 
-      sge_gdi_ctx_class_prepare_enroll(ctx);
+      sge_gdi_ctx_class_prepare_enroll();
 
       /* is there a running shadowd on this host (with aliased name) */
-      sprintf(shadowd_pidfile, "%s/"SHADOWD_PID_FILE, bootstrap_get_qmaster_spool_dir(), uti_state_get_qualified_hostname());
+      sprintf(shadowd_pidfile, "%s/"SHADOWD_PID_FILE, bootstrap_get_qmaster_spool_dir(), bootstrap_get_qualified_hostname());
       DPRINTF(("pidfilename: %s\n", shadowd_pidfile));
       if ((shadowd_pid = sge_readpid(shadowd_pidfile))) {
          DPRINTF(("shadowd_pid: "sge_U32CFormat"\n", sge_u32c(shadowd_pid)));
          if (!sge_checkprog(shadowd_pid, shadowd_name, PSCMD)) {
             CRITICAL((SGE_EVENT, MSG_SHADOWD_FOUNDRUNNINGSHADOWDWITHPIDXNOTSTARTING_I, (int) shadowd_pid));
-            SGE_EXIT((void **) &ctx, 1);
+            sge_exit(1);
          }
       }
    } else {
-      sge_gdi_ctx_class_prepare_enroll(ctx);
+      sge_gdi_ctx_class_prepare_enroll();
    }
 
    if (parse_cmdline_shadowd(argc, argv) == 1) {
-      SGE_EXIT((void **) &ctx, 0);
+      sge_exit(0);
    }
 
    if (bootstrap_get_qmaster_spool_dir() == nullptr) {
       CRITICAL((SGE_EVENT, MSG_SHADOWD_CANTREADQMASTERSPOOLDIRFROMX_S, bootstrap_get_bootstrap_file()));
-      SGE_EXIT((void **) &ctx, 1);
+      sge_exit(1);
    }
 
    if (chdir(bootstrap_get_qmaster_spool_dir())) {
       CRITICAL((SGE_EVENT, MSG_SHADOWD_CANTCHANGETOQMASTERSPOOLDIRX_S, bootstrap_get_qmaster_spool_dir()));
-      SGE_EXIT((void **) &ctx, 1);
+      sge_exit(1);
    }
 
    if (sge_set_admin_username(bootstrap_get_admin_user(), err_str)) {
       CRITICAL((SGE_EVENT, SFNMAX, err_str));
-      SGE_EXIT((void **) &ctx, 1);
+      sge_exit(1);
    }
 
    if (sge_switch2admin_user()) {
       CRITICAL((SGE_EVENT, SFNMAX, MSG_SHADOWD_CANTSWITCHTOADMIN_USER));
-      SGE_EXIT((void **) &ctx, 1);
+      sge_exit(1);
    }
 
-   sprintf(shadow_err_file, "messages_shadowd.%s", uti_state_get_unqualified_hostname());
-   sprintf(qmaster_out_file, "messages_qmaster.%s", uti_state_get_unqualified_hostname());
+   sprintf(shadow_err_file, "messages_shadowd.%s", bootstrap_get_unqualified_hostname());
+   sprintf(qmaster_out_file, "messages_qmaster.%s", bootstrap_get_unqualified_hostname());
    sge_copy_append(TMP_ERR_FILE_SHADOWD, shadow_err_file, SGE_MODE_APPEND);
    unlink(TMP_ERR_FILE_SHADOWD);
    log_state_set_log_as_admin_user(1);
@@ -306,12 +306,12 @@ main(int argc, char **argv) {
 
       if (cl_com_set_handle_fds(cl_com_get_handle(prognames[SHADOWD], 0), &tmp_fd_array, &tmp_fd_count) ==
           CL_RETVAL_OK) {
-         sge_daemonize(tmp_fd_array, tmp_fd_count, ctx);
+         sge_daemonize(tmp_fd_array, tmp_fd_count);
          if (tmp_fd_array != nullptr) {
             sge_free(&tmp_fd_array);
          }
       } else {
-         sge_daemonize(nullptr, 0, ctx);
+         sge_daemonize(nullptr, 0);
       }
    }
 
@@ -359,7 +359,7 @@ main(int argc, char **argv) {
                ret = check_if_valid_shadow(binpath, oldqmaster,
                                            bootstrap_get_act_qmaster_file(),
                                            bootstrap_get_shadow_masters_file(),
-                                           uti_state_get_qualified_hostname(),
+                                           bootstrap_get_qualified_hostname(),
                                            bootstrap_get_binary_path());
 
                if (ret == 0) {
@@ -441,7 +441,7 @@ main(int argc, char **argv) {
  * function installed to be called just before exit() is called.
  *-----------------------------------------------------------------*/
 static void
-shadowd_exit_func(void **ctx_ref, int i) {
+shadowd_exit_func(int i) {
 #if defined(SOLARIS)
    if (sge_smf_used() == 1) {
       /* We don't do disable on svcadm restart */

@@ -47,6 +47,68 @@
 #define PATH_SEPARATOR "/"
 #define PATH_SEPARATOR_CHAR '/'
 
+
+// TODO: move the defines to a different location where other program names are defines
+#define SGE_PREFIX      "sge_"
+#define SGE_SHEPHERD    "sge_shepherd"
+#define SGE_COSHEPHERD  "sge_coshepherd"
+#define SGE_SHADOWD     "sge_shadowd"
+#define PE_HOSTFILE     "pe_hostfile"
+
+enum {
+   QALTER = 1,    // 1
+   QCONF,         // 2
+   QDEL,          // 3
+   QHOLD,         // 4
+   QMASTER,       // 5
+   QMOD,          // 6
+   QRESUB,        // 7
+   QRLS,          // 8
+   QSELECT,       // 9
+   QSH,           // 10
+   QRSH,          // 11
+   QLOGIN,        // 12
+   QSTAT,         // 13
+   QSUB,          // 14
+   EXECD,         // 15
+   QEVENT,        // 16
+   QRSUB,         // 17
+   QRDEL,         // 18
+   QRSTAT,        // 19
+   QUSERDEFINED,  // 20
+   ALL_OPT,       // 21
+
+   /* programs with numbers > ALL_OPT do not use the old parsing */
+
+   UNUSED,        // 22
+   SCHEDD,        // 23
+   QACCT,         // 24
+   SHADOWD,       // 25
+   QHOST,         // 26
+   SPOOLDEFAULTS, // 27
+   JAPI,          // 28
+   DRMAA,         // 29
+   QPING,         // 30
+   QQUOTA,        // 31
+   SGE_SHARE_MON  // 32
+};
+
+enum {
+   MAIN_THREAD,      // 1
+   LISTENER_THREAD,  // 2
+   DELIVERER_THREAD, // 3
+   TIMER_THREAD,     // 4
+   WORKER_THREAD,    // 5
+   SIGNALER_THREAD,  // 6
+   SCHEDD_THREAD,    // 7
+   TESTER_THREAD     // 8
+};
+
+extern const char *prognames[];
+extern const char *threadnames[];
+
+typedef void (*sge_exit_func_t)(int);
+
 void
 bootstrap_mt_init();
 
@@ -169,11 +231,14 @@ bootstrap_get_component_id();
 void
 bootstrap_set_component_id(u_long32 component_id);
 
-const char *
-bootstrap_get_component_name();
+bool
+bootstrap_is_daemonized();
 
 void
-bootstrap_set_component_name(const char *component_name);
+bootstrap_set_daemonized(bool daemonized);
+
+const char *
+bootstrap_get_component_name();
 
 const char *
 bootstrap_get_thread_name();
@@ -207,6 +272,24 @@ bootstrap_get_groupname();
 
 void
 bootstrap_set_groupname(const char *groupname);
+
+const char *
+bootstrap_get_qualified_hostname();
+
+void
+bootstrap_set_qualified_hostname(const char *qualified_hostname);
+
+const char *
+bootstrap_get_unqualified_hostname();
+
+void
+bootstrap_set_unqualified_hostname(const char *unqualified_hostname);
+
+sge_exit_func_t
+bootstrap_get_exit_func();
+
+void
+bootstrap_set_exit_func(sge_exit_func_t exit_func);
 
 const char *
 path_state_get_sge_root();

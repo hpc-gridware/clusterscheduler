@@ -29,7 +29,6 @@
  * 
  ************************************************************************/
 /*___INFO__MARK_END__*/
-#include <string.h>
 
 /* do not compile in monitoring code */
 #ifndef NO_SGE_COMPILE_DEBUG

@@ -105,7 +105,7 @@ sge_tq_queue_t *Master_Task_Queue = nullptr;
 *     sge_gdi_packet_is_handled()
 *******************************************************************************/
 static bool
-sge_gdi_packet_create_multi_answer(sge_gdi_ctx_class_t* ctx, lList **answer_list,
+sge_gdi_packet_create_multi_answer(lList **answer_list,
                                    sge_gdi_packet_class_t **packet, lList **malpp)
 {
    sge_gdi_task_class_t *task = nullptr;
@@ -511,7 +511,7 @@ sge_gdi_packet_execute_external(sge_gdi_ctx_class_t* ctx, lList **answer_list,
       const char *host = gdi3_get_act_master_host(false);
       int id = 1;
       int response_id = 0;
-      commlib_error = sge_gdi2_send_any_request(ctx, 0, &message_id, host, commproc, id, &pb,
+      commlib_error = sge_gdi2_send_any_request(0, &message_id, host, commproc, id, &pb,
                                                 TAG_GDI_REQUEST, response_id, nullptr);
       if (commlib_error != CL_RETVAL_OK) {
          ret = false;
@@ -568,7 +568,7 @@ sge_gdi_packet_execute_external(sge_gdi_ctx_class_t* ctx, lList **answer_list,
 
       /*running this loop as long as configured in gdi_retries, doing a break after getting a gdi_request*/
       do {
-         gdi_error = sge_gdi2_get_any_request(ctx, rcv_host, rcv_commproc, &id, &rpb, &tag, 
+         gdi_error = sge_gdi2_get_any_request(rcv_host, rcv_commproc, &id, &rpb, &tag,
                                               true, message_id, nullptr);
 
          do_ping = get_cl_ping_value();
@@ -831,7 +831,7 @@ sge_gdi_packet_wait_for_result_external(sge_gdi_ctx_class_t* ctx, lList **answer
     * The packet itself has already be executed in sge_gdi_packet_execute_external() 
     * so it is only necessary to create the muti answer and do cleanup
     */
-   ret = sge_gdi_packet_create_multi_answer(ctx, answer_list, packet, malpp);
+   ret = sge_gdi_packet_create_multi_answer(answer_list, packet, malpp);
 
    DRETURN(ret);
 }
@@ -891,7 +891,7 @@ sge_gdi_packet_wait_for_result_internal(sge_gdi_ctx_class_t* ctx, lList **answer
    /*
     * create the multi answer and destroy the packet
     */
-   ret = sge_gdi_packet_create_multi_answer(ctx, answer_list, packet, malpp);
+   ret = sge_gdi_packet_create_multi_answer(answer_list, packet, malpp);
 
    DRETURN(ret);
 }

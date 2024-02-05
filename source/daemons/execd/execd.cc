@@ -98,7 +98,7 @@ volatile int waiting4osjid = 1;
  */
 char execd_spool_dir[SGE_PATH_MAX];
 
-static void execd_exit_func(void **ctx, int i);
+static void execd_exit_func(int i);
 static void parse_cmdline_execd(char **argv);
 static lList *sge_parse_cmdline_execd(char **argv, lList **ppcmdline);
 static lList *sge_parse_execd(lList **ppcmdline, lList **ppreflist, u_long32 *help);
@@ -198,20 +198,20 @@ int main(int argc, char **argv)
    sprintf(tmp_err_file_name,"%s."sge_U32CFormat"", TMP_ERR_FILE_EXECD, sge_u32c(my_pid));
    log_state_set_log_file(tmp_err_file_name);
 
-   /* exit func for SGE_EXIT() */
+   /* exit func for sge_exit() */
    sge_sig_handler_in_main_loop = 0;
    sge_setup_sig_handlers(EXECD);
 
    if (sge_setup2(&ctx, EXECD, MAIN_THREAD, &alp, false) != AE_OK) {
       answer_list_output(&alp);
-      SGE_EXIT((void**)&ctx, 1);
+      sge_exit(1);
    }
-   uti_state_set_exit_func(execd_exit_func);
+   bootstrap_set_exit_func(execd_exit_func);
    
 #if defined(SOLARIS)
    /* Init shared SMF libs if necessary */
    if (sge_smf_used() == 1 && sge_smf_init_libs() != 0) {
-       SGE_EXIT((void**)&ctx, 1);
+       sge_exit((void**)&ctx, 1);
    }
 #endif
 
@@ -222,7 +222,7 @@ int main(int argc, char **argv)
 
    if ((ret=sge_occupy_first_three())>=0) {
       CRITICAL((SGE_EVENT, MSG_FILE_REDIRECTFD_I, ret));
-      SGE_EXIT((void**)&ctx, 1);
+      sge_exit(1);
    }
 
    /* unset XAUTHORITY if set */
@@ -235,7 +235,7 @@ int main(int argc, char **argv)
    /* exit if we can't get communication handle (bind port) */
    max_enroll_tries = 30;
    while (cl_com_get_handle(prognames[EXECD],1) == nullptr) {
-      sge_gdi_ctx_class_prepare_enroll(ctx);
+      sge_gdi_ctx_class_prepare_enroll();
       max_enroll_tries--;
 
       if (max_enroll_tries <= 0 || shut_me_down) {
@@ -244,7 +244,7 @@ int main(int argc, char **argv)
             printf("\n");
          }
          CRITICAL((SGE_EVENT, SFNMAX, MSG_COM_ERROR));
-         SGE_EXIT((void**)&ctx, 1);
+         sge_exit(1);
       }
       if (cl_com_get_handle(prognames[EXECD],1) == nullptr) {
         /* sleep when prepare_enroll() failed */
@@ -300,7 +300,7 @@ int main(int argc, char **argv)
 
    /* test load sensor (internal or external) */
    {
-      lList *report_list = sge_build_load_report(uti_state_get_qualified_hostname(), bootstrap_get_binary_path());
+      lList *report_list = sge_build_load_report(bootstrap_get_qualified_hostname(), bootstrap_get_binary_path());
       lFreeList(&report_list);
    }
    
@@ -351,7 +351,7 @@ int main(int argc, char **argv)
 #ifdef COMPILE_DC
    if (ptf_init()) {
       CRITICAL((SGE_EVENT, SFNMAX, MSG_EXECD_NOSTARTPTF));
-      SGE_EXIT((void**)&ctx, 1);
+      sge_exit(1);
    }
    INFO((SGE_EVENT, SFNMAX, MSG_EXECD_STARTPDCANDPTF));
 #endif
@@ -419,11 +419,11 @@ int main(int argc, char **argv)
  * Function installed to be called just before exit() is called.
  * clean up
  *-------------------------------------------------------------*/
-static void execd_exit_func(void **ctx_ref, int i)
+static void execd_exit_func(int i)
 {
    DENTER(TOP_LAYER);
 
-   sge_gdi2_shutdown(ctx_ref);
+   sge_gdi2_shutdown();
 
    /* trigger load sensors shutdown */
    sge_ls_stop(0);
@@ -557,7 +557,7 @@ static void parse_cmdline_execd(char **argv)
       lFreeList(&alp);
       lFreeList(&pcmdline);
       /* TODO: replace with alpp and DRETURN */
-      SGE_EXIT(nullptr, 1);
+      sge_exit(1);
    }
 
    alp = sge_parse_execd(&pcmdline, &ref_list, &help);
@@ -573,7 +573,7 @@ static void parse_cmdline_execd(char **argv)
       }
       lFreeList(&alp);
       /* TODO: replace with alpp and DRETURN */
-      SGE_EXIT(nullptr, 1);
+      sge_exit(1);
    }
    lFreeList(&alp);
 
@@ -582,7 +582,7 @@ static void parse_cmdline_execd(char **argv)
       ** user wanted only help. we can exit!
       */
       /* TODO: replace with alpp and DRETURN */
-      SGE_EXIT(nullptr, 0);
+      sge_exit(0);
    }
    DRETURN_VOID;
 }

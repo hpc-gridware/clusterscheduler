@@ -32,7 +32,6 @@
 
 #include "uti/sge_rmon.h"
 #include "uti/sge_profiling.h"
-#include "uti/sge_bootstrap.h"
 
 #include "sgeobj/sge_answer.h"
 

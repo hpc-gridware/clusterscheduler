@@ -31,7 +31,7 @@
  ************************************************************************/
 /*___INFO__MARK_END__*/
 
-#include "uti/sge_prog.h"
+#include "uti/sge_bootstrap.h"
 #include "uti/sge_bootstrap.h"
 #include "uti/sge_error_class.h"
 #include "uti/sge_profiling.h"
@@ -51,13 +51,6 @@ int
 sge_setup2(sge_gdi_ctx_class_t **context, u_long32 progid, u_long32 thread_id,
            lList **alpp, bool is_qmaster_intern_client);
 
-sge_gdi_ctx_class_t *
-sge_gdi_ctx_class_create(int prog_number, const char *component_name,
-                         const char *thread_name,
-                         const char* username, const char* groupname, 
-                         bool is_qmaster_intern_client,
-                         lList **alpp);
-
 void sge_gdi_ctx_class_destroy(sge_gdi_ctx_class_t **pst);
 
 void sge_gdi_set_thread_local_ctx(sge_gdi_ctx_class_t* ctx);
@@ -65,16 +58,13 @@ void sge_gdi_set_thread_local_ctx(sge_gdi_ctx_class_t* ctx);
 bool sge_daemonize_prepare();
 bool sge_daemonize_finalize();
 
-int sge_daemonize(int *keep_open, unsigned long nr_of_fds, sge_gdi_ctx_class_t *context);
+int sge_daemonize(int *keep_open, unsigned long nr_of_fds);
 
 void
 sge_gdi_ctx_class_error(int error_type, int error_quality, const char* fmt, ...);
 
-int sge_gdi_ctx_class_prepare_enroll(sge_gdi_ctx_class_t *thiz);
+int sge_gdi_ctx_class_prepare_enroll();
 
-int sge_gdi_ctx_class_connect(sge_gdi_ctx_class_t *thiz);
+int sge_gdi_ctx_class_connect();
 
-lList* sge_gdi_ctx_class_gdi_tsm(sge_gdi_ctx_class_t *thiz);
-
-lList* sge_gdi_ctx_class_gdi_kill(sge_gdi_ctx_class_t *thiz, lList *id_list, const char *cell,
-                                  u_long32 option_flags, u_long32 action_flag);
+lList* sge_gdi_ctx_class_gdi_kill(sge_gdi_ctx_class_t *thiz, lList *id_list, u_long32 action_flag);

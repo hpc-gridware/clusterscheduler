@@ -35,7 +35,7 @@
 
 #include "uti/sge_rmon.h"
 #include "uti/sge_unistd.h"
-#include "uti/sge_prog.h"
+#include "uti/sge_bootstrap.h"
 
 #include "sgeobj/sge_event.h"
 #include "sgeobj/sge_answer.h"
@@ -92,12 +92,12 @@ int main(int argc, char *argv[])
    cl_err = sge_gdi2_setup(&ctx, QEVENT, MAIN_THREAD, &alp);
    if (cl_err != AE_OK) {
       answer_list_output(&alp);
-      SGE_EXIT((void**)&ctx, 1);
+      sge_exit(1);
    }
 
    if (false == sge_gdi2_evc_setup(&evc, ctx, EV_ID_ANY, &alp, nullptr)) {
       answer_list_output(&alp);
-      SGE_EXIT((void**)&ctx, 1);
+      sge_exit(1);
    }
 
    sge_mirror_initialize(evc, EV_ID_ANY, "test_sge_mirror", true, 

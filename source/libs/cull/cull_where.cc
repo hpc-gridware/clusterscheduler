@@ -35,7 +35,6 @@
 #include <stdarg.h>
 #include <stdlib.h>
 #include <string.h>
-#include <ctype.h>
 #include <fnmatch.h>
 
 /* do not compile in monitoring code */

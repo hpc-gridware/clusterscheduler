@@ -35,7 +35,7 @@
 
 #include "uti/sge_rmon.h"
 #include "uti/sge_log.h"
-#include "uti/sge_prog.h"
+#include "uti/sge_bootstrap.h"
 #include "uti/sge_unistd.h"
 #include "uti/sge_profiling.h"
 
@@ -262,18 +262,18 @@ int main(int argc, char **argv) {
    lFreeList(&alp);
    lFreeList(&jlp);
    lFreeList(&ref_list);
-   sge_gdi2_shutdown((void**)&ctx);
+   sge_gdi2_shutdown();
    sge_prof_cleanup();
-   SGE_EXIT((void**)&ctx, ret);
+   sge_exit(ret);
    return ret;
 
 error_exit:
    lFreeList(&alp);
    lFreeList(&jlp);
    lFreeList(&ref_list);
-   sge_gdi2_shutdown((void**)&ctx);
+   sge_gdi2_shutdown();
    sge_prof_cleanup();
-   SGE_EXIT((void**)&ctx, 1);
+   sge_exit(1);
    DRETURN(1);
 }
 
@@ -416,7 +416,7 @@ lList **alpp
    {
       if(parse_flag(ppcmdline, "-help",  alpp, &helpflag)) {
          sge_usage(QDEL, stdout);
-         SGE_EXIT(nullptr, 0);
+         sge_exit(0);
          break;
       }
       if(parse_flag(ppcmdline, "-f", alpp, pforce)) 

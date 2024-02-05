@@ -37,7 +37,7 @@
 #include "uti/sge_rmon.h"
 #include "uti/sge_time.h"
 #include "uti/sge_unistd.h"
-#include "uti/sge_prog.h"
+#include "uti/sge_bootstrap.h"
 #include "uti/sge_log.h"
 #include "uti/sge_dstring.h"
 
@@ -594,14 +594,14 @@ int main(int argc, char *argv[])
 
    if (sge_gdi2_setup(&ctx, SCHEDD, &alp) != AE_OK) {
       answer_list_output(&alp);
-      SGE_EXIT(&ctx, 1);
+      sge_exit(&ctx, 1);
    }
 
    evc = sge_evc_class_create(ctx, EV_ID_SCHEDD, &alp, false);
 
    if (evc == nullptr) {
       answer_list_output(&alp);
-      SGE_EXIT(&ctx, 1);
+      sge_exit(&ctx, 1);
    }
 
    register_scheduler(evc);

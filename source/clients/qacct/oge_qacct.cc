@@ -47,7 +47,7 @@
 #include "uti/sge_uidgid.h"
 #include "uti/sge_profiling.h"
 #include "uti/sge_log.h"
-#include "uti/sge_prog.h"
+#include "uti/sge_bootstrap.h"
 #include "uti/sge_time.h"
 #include "uti/sge_parse_num_par.h"
 #include "uti/sge_hostname.h"
@@ -286,7 +286,7 @@ int main(int argc, char **argv)
                options.hostflag = 1;
             } else {
                char unique[CL_MAXHOSTLEN];
-               sge_gdi_ctx_class_prepare_enroll(ctx);
+               sge_gdi_ctx_class_prepare_enroll();
                if (getuniquehostname(argv[++ii], unique, 0) != CL_RETVAL_OK) {
                    /*
                     * we can't resolve the hostname, but that's no drama for qacct.
@@ -624,7 +624,7 @@ int main(int argc, char **argv)
          }
          /* lDumpList(stdout, complex_options, 0); */
          if (!is_path_setup) {
-            sge_gdi_ctx_class_prepare_enroll(ctx);
+            sge_gdi_ctx_class_prepare_enroll();
             gdi3_get_act_master_host(true);
             if (sge_gdi_ctx_class_is_alive() != CL_RETVAL_OK) {
                ERROR((SGE_EVENT, "qmaster is not alive"));
@@ -889,13 +889,13 @@ int main(int argc, char **argv)
          goto QACCT_EXIT;
       } else {
          free_qacct_lists(&centry_list, &queue_list, &exechost_list, &hgrp_list);
-         SGE_EXIT((void**)&ctx, 0);
+         sge_exit(0);
       }
    } else if (options.taskstart && options.taskend && options.taskstep) {
       ERROR((SGE_EVENT, SFNMAX, MSG_HISTORY_TOPTIONREQUIRESJOPTION));
       qacct_usage(&ctx, stderr);
       free_qacct_lists(&centry_list, &queue_list, &exechost_list, &hgrp_list);
-      SGE_EXIT((void**)&ctx, 0); 
+      sge_exit(0);
    }
 
    /*
@@ -1109,7 +1109,7 @@ int main(int argc, char **argv)
    sge_free(&(options.group));
    sge_free(&(options.host));
    free_qacct_lists(&centry_list, &queue_list, &exechost_list, &hgrp_list);
-   SGE_EXIT((void**)&ctx, 0);
+   sge_exit(0);
    DRETURN(0);
 
 FCLOSE_ERROR:
@@ -1121,7 +1121,7 @@ QACCT_EXIT:
    sge_free(&(options.group));
    sge_free(&(options.host));
    free_qacct_lists(&centry_list, &queue_list, &exechost_list, &hgrp_list);
-   SGE_EXIT((void**)&ctx, 1);
+   sge_exit(1);
    DRETURN(1);
 }
 
@@ -1333,9 +1333,9 @@ static void qacct_usage(sge_gdi_ctx_class_t **ctx, FILE *fp)
    fprintf(fp, " begin_time, end_time              %s\n", MSG_HISTORY_beginend_OPT_USAGE );
    fprintf(fp, " queue                             [cluster_queue|queue_instance|queue_domain|pattern]\n");
    if (fp==stderr) {
-      SGE_EXIT((void**)ctx, 1);
+      sge_exit(1);
    } else {
-      SGE_EXIT((void**)ctx, 0);   
+      sge_exit(0);
    }
 
    DRETURN_VOID;

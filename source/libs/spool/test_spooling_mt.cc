@@ -211,7 +211,7 @@ int main(int argc, char *argv[])
       ERROR((SGE_EVENT, "       <url>     = path or host:database\n"));
       ERROR((SGE_EVENT, "       <threads> = number of threads\n"));
       ERROR((SGE_EVENT, "       <delay>   = delay after writing [ms]\n"));
-      SGE_EXIT(nullptr, 1);
+      sge_exit(1);
    }
 
    url = argv[1];
@@ -231,14 +231,14 @@ int main(int argc, char *argv[])
    spooling_context = spool_create_dynamic_context(&answer_list, nullptr, url, nullptr);
    answer_list_output(&answer_list);
    if (spooling_context == nullptr) {
-      SGE_EXIT(nullptr, EXIT_FAILURE);
+      sge_exit(EXIT_FAILURE);
    }
 
    spool_set_default_context(spooling_context);
 
    if (!spool_startup_context(&answer_list, spooling_context, true)) {
       answer_list_output(&answer_list);
-      SGE_EXIT(nullptr, EXIT_FAILURE);
+      sge_exit(EXIT_FAILURE);
    }
    answer_list_output(&answer_list);
 

@@ -32,8 +32,6 @@
  ************************************************************************/
 /*___INFO__MARK_END__*/
 
-#include <stdio.h>
-
 #include "gdi/version.h"
 
 const char GDI_VERSION[] = "9.0.0prealpha";

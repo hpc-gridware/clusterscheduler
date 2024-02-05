@@ -119,7 +119,7 @@ int main(int argc, char** argv)
 
       while (test_array[i] != nullptr) {
          if (test_array[i]() != 0) {
-            SGE_EXIT(nullptr, 1);
+            sge_exit(1);
          }
          i++;
       }
@@ -649,7 +649,7 @@ static int diff(const char *file1, const char *file2)
 
    if(file1 == nullptr || file2 == nullptr) {
       printf("file pointer is <nullptr>\n");
-      SGE_EXIT(nullptr, 1);
+      sge_exit(1);
    }
    
    if(!fork()) {

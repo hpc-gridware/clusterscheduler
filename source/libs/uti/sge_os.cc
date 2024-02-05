@@ -32,13 +32,11 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include <time.h>
 #include <errno.h>
 #include <signal.h>
 #include <ctype.h>
 #include <fcntl.h>
 #include <sys/stat.h>
-#include <sys/ioctl.h>
 
 #ifdef SIGTSTP
 
@@ -55,7 +53,7 @@
 #include "uti/sge_string.h"
 #include "uti/sge_stdio.h"
 #include "uti/sge_os.h"
-#include "uti/sge_prog.h"
+#include "uti/sge_bootstrap.h"
 #include "uti/sge_log.h"
 #include "uti/msg_utilib.h"
 

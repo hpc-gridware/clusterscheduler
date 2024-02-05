@@ -145,7 +145,7 @@ const char *sge_get_root_dir(int do_exit, char *buffer, size_t size, int do_erro
    }
 
    if (do_exit) {
-      SGE_EXIT(nullptr, 1);
+      sge_exit(1);
    }
    return nullptr;
 }
@@ -292,13 +292,13 @@ const char *sge_get_alias_path(void) {
 
    if (SGE_STAT(sge_root, &sbuf)) {
       CRITICAL((SGE_EVENT, MSG_SGETEXT_SGEROOTNOTFOUND_S, sge_root));
-      SGE_EXIT(nullptr, 1);
+      sge_exit(1);
    }
 
    len = strlen(sge_root) + strlen(sge_cell) + strlen(COMMON_DIR) + strlen(ALIAS_FILE) + 5;
    if (!(cp = sge_malloc(len))) {
       CRITICAL((SGE_EVENT, SFNMAX, MSG_MEMORY_MALLOCFAILEDFORPATHTOHOSTALIASFILE));
-      SGE_EXIT(nullptr, 1);
+      sge_exit(1);
    }
 
    sprintf(cp, "%s/%s/%s/%s", sge_root, sge_cell, COMMON_DIR, ALIAS_FILE);

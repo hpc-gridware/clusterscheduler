@@ -34,7 +34,7 @@
 #include <stdlib.h>
 
 #include "uti/sge_rmon.h"
-#include "uti/sge_prog.h"
+#include "uti/sge_bootstrap.h"
 
 #include "comm/commlib.h"
 

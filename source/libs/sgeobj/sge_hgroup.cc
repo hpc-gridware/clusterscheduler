@@ -34,8 +34,6 @@
  */
 
 #include <stdio.h>
-#include <ctype.h>
-#include <string.h>
 
 #include "uti/sge_rmon.h" 
 #include "uti/sge_log.h"

@@ -41,7 +41,7 @@
 #include "uti/sge_rmon.h"
 #include "uti/sge_log.h"
 #include "uti/sge_unistd.h"
-#include "uti/sge_prog.h"
+#include "uti/sge_bootstrap.h"
 #include "uti/sge_os.h"
 #include "uti/sge_stdio.h"
 
@@ -180,7 +180,7 @@ const char *buf
    sge_close_all_fds(nullptr, 0);
 
    /* 
-      may never call SGE_EXIT() here because
+      may never call sge_exit() here because
       leave_commd() gets called by a the mailer child
       and leave_commd() unregisters the commproc
    */

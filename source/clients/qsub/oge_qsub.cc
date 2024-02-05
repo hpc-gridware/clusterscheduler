@@ -36,7 +36,7 @@
 #include "uti/sge_rmon.h"
 #include "uti/sge_unistd.h"
 #include "uti/sge_profiling.h"
-#include "uti/sge_prog.h"
+#include "uti/sge_bootstrap.h"
 #include "uti/sge_mtutil.h"
 
 #include "sgeobj/cull/sge_all_listsL.h"
@@ -126,16 +126,16 @@ main(int argc, char **argv)
       fprintf(stderr, MSG_QSUB_COULDNOTINITIALIZEENV_S,
               sge_dstring_get_string(&diag));
       fprintf(stderr, "\n");
-      SGE_EXIT((void**)&ctx, 1);
+      sge_exit(1);
    }
 
-   prog_number = uti_state_get_mewho();
+   prog_number = bootstrap_get_component_id();
    myuid = bootstrap_get_uid();
    sge_root = bootstrap_get_sge_root();
    cell_root = bootstrap_get_cell_root();
    username = bootstrap_get_username();
-   qualified_hostname = uti_state_get_qualified_hostname();
-   unqualified_hostname = uti_state_get_unqualified_hostname();
+   qualified_hostname = bootstrap_get_qualified_hostname();
+   unqualified_hostname = bootstrap_get_unqualified_hostname();
    mastername = gdi3_get_act_master_host(false);
 
    /*
@@ -144,7 +144,7 @@ main(int argc, char **argv)
    opt_list_append_opts_from_default_files(prog_number, cell_root, username, &opts_defaults, &alp, environ);
    tmp_ret = answer_list_print_err_warn(&alp, nullptr, nullptr, MSG_WARNING);
    if (tmp_ret > 0) {
-      SGE_EXIT((void**)&ctx, tmp_ret);
+      sge_exit(tmp_ret);
    }
 
    /*
@@ -154,7 +154,7 @@ main(int argc, char **argv)
                                           argv + 1, environ);
    tmp_ret = answer_list_print_err_warn(&alp, nullptr, "qsub: ", MSG_QSUB_WARNING_S);
    if (tmp_ret > 0) {
-      SGE_EXIT((void**)&ctx, tmp_ret);
+      sge_exit(tmp_ret);
    }
 
    /*
@@ -162,7 +162,7 @@ main(int argc, char **argv)
     */
    if (opt_list_has_X(opts_cmdline, "-help")) {
       sge_usage(QSUB, stdout);
-      SGE_EXIT((void**)&ctx, 0);
+      sge_exit(0);
    }
 
    /*
@@ -187,7 +187,7 @@ main(int argc, char **argv)
       tmp_ret = answer_list_print_err_warn(&alp, nullptr, MSG_QSUB_COULDNOTREADSCRIPT_S,
                                            MSG_WARNING);
       if (tmp_ret > 0) {
-         SGE_EXIT((void**)&ctx, tmp_ret);
+         sge_exit(tmp_ret);
       }
    }
 
@@ -217,12 +217,12 @@ main(int argc, char **argv)
 
    tmp_ret = answer_list_print_err_warn(&alp, nullptr, "qsub: ", MSG_WARNING);
    if (tmp_ret > 0) {
-      SGE_EXIT((void**)&ctx, tmp_ret);
+      sge_exit(tmp_ret);
    }
 
    if (set_sec_cred(sge_root, mastername, job, &alp) != 0) {
       answer_list_output(&alp);
-      SGE_EXIT((void**)&ctx, 1);
+      sge_exit(1);
    }
 
    /* Check if job is immediate */
@@ -233,7 +233,7 @@ main(int argc, char **argv)
 
    if (lGetUlong(job, JB_verify)) {
       cull_show_job(job, 0, false);
-      SGE_EXIT((void**)&ctx, 0);
+      sge_exit(0);
    }
 
    if (is_immediate || wait_for_job) {
@@ -478,8 +478,8 @@ Error:
 
    sge_prof_cleanup();
 
-   /* This is an exit() instead of an SGE_EXIT() because when the qmaster is
-    * supended, SGE_EXIT() hangs. */
+   /* This is an exit() instead of an sge_exit() because when the qmaster is
+    * supended, sge_exit() hangs. */
    exit(exit_status);
    DRETURN(exit_status);
 }

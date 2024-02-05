@@ -30,7 +30,6 @@
  ************************************************************************/
 /*___INFO__MARK_END__*/
 
-#include <stdlib.h>
 #include <string.h>
 #include <stdio.h>
 #include <time.h>
@@ -40,7 +39,6 @@
 #define NO_SGE_COMPILE_DEBUG
 #endif
 
-#include "sge.h"
 #include "uti/sge_rmon.h"
 #include "uti/sge_string.h"
 #include "uti/sge_dstring.h"

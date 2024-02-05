@@ -31,10 +31,8 @@
 /*___INFO__MARK_END__*/
 
 #include <pthread.h>
-#include <string.h>
 
 #include "uti/sge_lock_fifo.h"
-#include "uti/msg_utilib.h"
 #include "uti/sge_rmon.h"
 
 #define FIFO_LOCK_QUEUE_LENGTH 128

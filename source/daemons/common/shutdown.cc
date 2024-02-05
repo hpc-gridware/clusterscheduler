@@ -102,5 +102,5 @@ void sge_shutdown(void **context, int i)
    sge_dstring_free(&ds2);
    log_state_set_log_level(old_ll);
 
-   SGE_EXIT(context, i); /* call sge_exit() */
+   sge_exit(i);
 }

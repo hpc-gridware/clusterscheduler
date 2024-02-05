@@ -32,7 +32,6 @@
 
 #include "uti/sge_rmon.h"
 
-#include "mir/msg_mirlib.h"
 #include "mir/sge_mirror.h"
 #include "mir/sge_sharetree_mirror.h"
 

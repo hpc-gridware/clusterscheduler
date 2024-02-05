@@ -43,9 +43,9 @@
 
 #include "uti/sge_rmon.h"
 #include "uti/sge_log.h"
-#include "uti/sge_prog.h"
 #include "uti/sge_stdlib.h"
 #include "uti/sge_string.h"
+#include "uti/sge_arch.h"
 
 #include "cull/cull.h"
 
@@ -53,9 +53,6 @@
 #include "sgeobj/sge_answer.h"
 #include "sgeobj/sge_conf.h"
 #include "sgeobj/msg_sgeobjlib.h"
-
-#include "symbols.h"
-#include "sge.h"
 
 /****** sgeobj/var/-VariableList **********************************************
 *  NAME

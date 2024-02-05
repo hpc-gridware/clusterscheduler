@@ -33,7 +33,7 @@
 
 #include "uti/sge_rmon.h"
 #include "uti/sge_log.h"
-#include "uti/sge_prog.h"
+#include "uti/sge_bootstrap.h"
 
 #include "sgeobj/cull/sge_all_listsL.h"
 
@@ -116,7 +116,7 @@ host_notify_about_X(sge_gdi_ctx_class_t *ctx, lListElem *host, u_long32 x, int t
       u_long32 dummy = 0;
 
       packint(&pb, x);
-      if (gdi2_send_message_pb(ctx, 0, prognames[progname_id], 1, hostname,
+      if (gdi2_send_message_pb(0, prognames[progname_id], 1, hostname,
                                tag, &pb, &dummy) == CL_RETVAL_OK) {
          ret = 0;
       }

@@ -87,7 +87,7 @@
 
 #define GETPGRP getpgrp()
 
-void sge_exit(void **ctx_ref, int i);
+void sge_exit(int i);
 
 int sge_chdir_exit(const char *path, int exit_on_error);
 

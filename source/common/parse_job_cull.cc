@@ -42,7 +42,7 @@
 #include "uti/sge_language.h"
 #include "uti/sge_stdlib.h"
 #include "uti/sge_io.h"
-#include "uti/sge_prog.h"
+#include "uti/sge_bootstrap.h"
 #include "uti/sge_log.h"
 
 #include "sgeobj/cull_parse_util.h"

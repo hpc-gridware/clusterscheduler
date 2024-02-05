@@ -47,4 +47,4 @@ void sge_gdi_kill_master(sge_gdi_packet_class_t *packet, sge_gdi_task_class_t *t
 /* misc functions */
 bool sge_daemonize_qmaster(void);
 void sge_become_admin_user(const char *admin_user);
-void sge_exit_func(void **ctx_ref, int);
+void sge_exit_func(int);

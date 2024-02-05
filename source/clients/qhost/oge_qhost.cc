@@ -384,7 +384,7 @@ int main(int argc, char **argv)
    if (sge_gdi2_setup(&ctx, QHOST, MAIN_THREAD, &alp) != AE_OK) {
       answer_list_output(&alp);
       sge_prof_cleanup();
-      SGE_EXIT((void**)&ctx, 1);
+      sge_exit(1);
    }
 
    /*
@@ -397,7 +397,7 @@ int main(int argc, char **argv)
       answer_list_output(&alp);
       lFreeList(&pcmdline);
       sge_prof_cleanup();
-      SGE_EXIT((void **)&ctx, 1);
+      sge_exit(1);
    }
 
    /*
@@ -418,12 +418,12 @@ int main(int argc, char **argv)
       */
       answer_list_output(&alp);
       sge_prof_cleanup();
-      SGE_EXIT(nullptr, 1);
+      sge_exit(1);
    } else if (is_ok == 2) {
       /* -help output generated, exit normally */ 
       answer_list_output(&alp);
       sge_prof_cleanup();
-      SGE_EXIT(nullptr, 0);
+      sge_exit(0);
    }
 
    qhost_result = do_qhost(ctx, host_list, ul, resource_match_list, resource_list, 
@@ -436,11 +436,11 @@ int main(int argc, char **argv)
    if (qhost_result != QHOST_SUCCESS) {
       answer_list_output(&alp);
       sge_prof_cleanup();
-      SGE_EXIT((void**)&ctx, 1);
+      sge_exit(1);
    }
 
    sge_prof_cleanup();
-   SGE_EXIT((void**)&ctx, 0); /* 0 means ok - others are errors */
+   sge_exit(0); /* 0 means ok - others are errors */
    DRETURN(0);
 }
 

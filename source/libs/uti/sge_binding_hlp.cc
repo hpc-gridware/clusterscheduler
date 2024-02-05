@@ -36,7 +36,6 @@
 
 /* this code is used by shepherd */
 #include <ctype.h>
-#include <pthread.h>
 
 #include "uti/sge_rmon.h"
 #include "uti/sge_string.h"

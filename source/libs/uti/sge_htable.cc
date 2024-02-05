@@ -36,8 +36,6 @@
 
 #include <stdlib.h>
 #include <string.h>
-#include <time.h>
-#include <sys/times.h>
 
 #include "uti/sge_rmon.h"
 #include "uti/sge_htable.h"

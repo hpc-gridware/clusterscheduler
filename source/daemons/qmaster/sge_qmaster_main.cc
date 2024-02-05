@@ -34,13 +34,14 @@
 #include <fcntl.h>
 
 #include "uti/sge_rmon.h"
-#include "uti/sge_prog.h"
+#include "uti/sge_bootstrap.h"
 #include "uti/sge_log.h"
 #include "uti/sge_unistd.h"
 #include "uti/sge_profiling.h"
 #include "uti/sge_time.h"
 #include "uti/sge_monitor.h"
 #include "uti/sge_thread_ctrl.h"
+#include "uti/sge_arch.h"
 
 #include "sgeobj/sge_conf.h"
 
@@ -175,7 +176,7 @@ int main(int argc, char *argv[]) {
       pthread_sigmask(SIG_SETMASK, &sig_set, nullptr);
       sge_qmaster_thread_init(&ctx, QMASTER, MAIN_THREAD, true);
       sge_process_qmaster_cmdline(argv);
-      SGE_EXIT((void **) &ctx, 1);
+      sge_exit(1);
    }
 
    /*
@@ -191,17 +192,17 @@ int main(int argc, char *argv[]) {
    /* init qmaster threads without becomming admin user */
    sge_qmaster_thread_init(&ctx, QMASTER, MAIN_THREAD, false);
 
-   uti_state_set_daemonized(has_daemonized);
+   bootstrap_set_daemonized(has_daemonized);
 
    /* this must be done as root user to be able to bind ports < 1024 */
    max_enroll_tries = 30;
    while (cl_com_get_handle(prognames[QMASTER], 1) == nullptr) {
-      sge_gdi_ctx_class_prepare_enroll(ctx);
+      sge_gdi_ctx_class_prepare_enroll();
       max_enroll_tries--;
       if (max_enroll_tries <= 0) {
          /* exit after 30 seconds */
          CRITICAL((SGE_EVENT, SFNMAX, MSG_QMASTER_COMMUNICATION_ERRORS));
-         SGE_EXIT((void **) &ctx, 1);
+         sge_exit(1);
       }
       if (cl_com_get_handle(prognames[QMASTER], 1) == nullptr) {
          /* sleep when prepare_enroll() failed */
@@ -226,12 +227,12 @@ int main(int argc, char *argv[]) {
    sge_become_admin_user(bootstrap_get_admin_user());
    sge_chdir_exit(bootstrap_get_qmaster_spool_dir(), 1);
    log_state_set_log_file(ERR_FILE);
-   uti_state_set_exit_func(sge_exit_func);
+   bootstrap_set_exit_func(sge_exit_func);
 
 #if defined(SOLARIS)
    /* Init shared SMF libs if necessary */
    if (sge_smf_used() == 1 && sge_smf_init_libs() != 0) {
-       SGE_EXIT((void**)&ctx, 1);
+       sge_exit((void**)&ctx, 1);
    }
 #endif
 

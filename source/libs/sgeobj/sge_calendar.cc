@@ -49,7 +49,6 @@
 #include "sgeobj/sge_calendar.h"
 #include "sgeobj/msg_sgeobjlib.h"
 
-#include "msg_common.h"
 #include "msg_qmaster.h"
 
 

@@ -30,8 +30,6 @@
  ************************************************************************/
 /*___INFO__MARK_END__*/
 
-#include <string.h>
-
 #include "uti/sge_rmon.h"
 
 #include "cull/cull_list.h"

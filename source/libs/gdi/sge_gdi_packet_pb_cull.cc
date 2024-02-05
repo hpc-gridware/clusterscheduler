@@ -35,8 +35,6 @@
 
 #include <string.h>
 
-#include <pwd.h>
-
 #ifdef KERBEROS
 #  include "krb_lib.h"
 #endif

@@ -32,7 +32,7 @@
 /* Portions of this code are Copyright 2011 Univa Inc. */
 /*___INFO__MARK_END__*/
 
-#include "uti/sge_prog.h" 
+#include "uti/sge_bootstrap.h"
 
 enum {
    NO_OPT = 0,

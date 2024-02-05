@@ -38,7 +38,7 @@
 #include "uti/sge_time.h"
 #include "uti/sge_monitor.h"
 #include "uti/sge_bootstrap.h"
-#include "uti/sge_prog.h"
+#include "uti/sge_bootstrap.h"
 
 #include "gdi/sge_gdi2.h"
 
@@ -104,7 +104,7 @@ int sge_execd_process_messages(sge_gdi_ctx_class_t *ctx)
 
       memset((void*)&msg, 0, sizeof(struct_msg_t));
 
-      ret = gdi2_receive_message(ctx, msg.snd_name, &msg.snd_id, msg.snd_host, 
+      ret = gdi2_receive_message(msg.snd_name, &msg.snd_id, msg.snd_host,
                               &msg.tag, &buffer, &buflen, 0);
       init_packbuffer_from_buffer(&msg.buf, buffer, buflen);
 
@@ -172,7 +172,7 @@ int sge_execd_process_messages(sge_gdi_ctx_class_t *ctx)
          clear_packbuffer(&(msg.buf));
          if (is_apb_used) {
             if (pb_filled(&apb)) {
-               gdi2_send_message_pb(ctx, 0, msg.snd_name, msg.snd_id, msg.snd_host, 
+               gdi2_send_message_pb(0, msg.snd_name, msg.snd_id, msg.snd_host,
                                 atag, &apb, nullptr);
             }
             clear_packbuffer(&apb);

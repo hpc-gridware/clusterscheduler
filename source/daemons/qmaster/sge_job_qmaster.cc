@@ -41,7 +41,7 @@
 #include "uti/sge_stdio.h"
 #include "uti/sge_time.h"
 #include "uti/sge_log.h"
-#include "uti/sge_prog.h"
+#include "uti/sge_bootstrap.h"
 #include "uti/sge_signal.h"
 #include "uti/sge_string.h"
 #include "uti/sge_profiling.h"
@@ -696,7 +696,7 @@ ack_all_slaves(sge_gdi_ctx_class_t *ctx, u_long32 job_id, u_long32 ja_task_id, c
           * down, we don't want to see tons of error messages in the messages
           * file. The caller of this functions has to handle this situation.
           */
-         gdi2_send_message_pb(ctx, 0, prognames[EXECD], 1, host, TAG_ACK_REQUEST, &pb, &dummymid);
+         gdi2_send_message_pb(0, prognames[EXECD], 1, host, TAG_ACK_REQUEST, &pb, &dummymid);
          clear_packbuffer(&pb);
       }
    }
@@ -1031,7 +1031,7 @@ void get_rid_of_job_due_to_qdel(sge_gdi_ctx_class_t *ctx,
    } else {
       if (force) {
          u_long32 now = sge_get_gmt();
-         const char *qualified_hostname = uti_state_get_qualified_hostname();
+         const char *qualified_hostname = bootstrap_get_qualified_hostname();
          lListElem *dummy_jr = lCreateElem(JR_Type);
 
          if (job_is_array(j)) {
