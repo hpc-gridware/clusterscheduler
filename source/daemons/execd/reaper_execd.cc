@@ -31,10 +31,10 @@
  *
  ************************************************************************/
 /*___INFO__MARK_END__*/
-#include <stdlib.h>
-#include <string.h>
+#include <cstdlib>
+#include <cstring>
 #include <sys/types.h>
-#include <errno.h>
+#include <cerrno>
 #include <float.h>
 
 #include <pwd.h>

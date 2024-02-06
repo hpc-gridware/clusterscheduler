@@ -30,7 +30,7 @@
  ************************************************************************/
 /*___INFO__MARK_END__*/
 #include <pwd.h>
-#include <string.h>
+#include <cstring>
 #include <unistd.h>
 
 #include "uti/sge_io.h"

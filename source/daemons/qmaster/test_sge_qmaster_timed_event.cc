@@ -30,7 +30,7 @@
  ************************************************************************/
 /*___INFO__MARK_END__*/
 
-#include <stdio.h>
+#include <cstdio>
 #include <unistd.h>
 
 #include "sge_qmaster_timed_event.h"

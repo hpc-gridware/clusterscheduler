@@ -33,10 +33,10 @@
 
 /*___INFO__MARK_END__*/
 
-#include <stdio.h>
-#include <stdlib.h>
-#include <string.h>
-#include <ctype.h>
+#include <cstdio>
+#include <cstdlib>
+#include <cstring>
+#include <cctype>
 
 #include "uti/sge_rmon.h"
 #include "uti/sge_log.h"

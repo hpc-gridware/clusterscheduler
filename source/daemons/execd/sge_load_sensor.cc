@@ -31,8 +31,8 @@
  ************************************************************************/
 /*___INFO__MARK_END__*/
 #include <fcntl.h>
-#include <errno.h>
-#include <string.h>
+#include <cerrno>
+#include <cstring>
 
 #include "uti/sge_rmon.h"
 #include "uti/sge_unistd.h"

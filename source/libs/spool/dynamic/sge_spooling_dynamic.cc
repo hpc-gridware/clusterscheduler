@@ -35,7 +35,7 @@
 #endif
 
 #include <dlfcn.h>
-#include <string.h>
+#include <cstring>
 
 #ifdef LINUX
 #undef __USE_GNU

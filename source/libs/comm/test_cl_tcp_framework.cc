@@ -33,10 +33,10 @@
 
 
 #include <unistd.h>
-#include <stdio.h>
-#include <string.h>
+#include <cstdio>
+#include <cstring>
 #include <signal.h>
-#include <stdlib.h>
+#include <cstdlib>
 #include <sys/time.h>
 
 #include "comm/lists/cl_lists.h"

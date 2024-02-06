@@ -29,15 +29,15 @@
  * 
  ************************************************************************/
 /*___INFO__MARK_END__*/
-#include <stdio.h>
-#include <string.h>
-#include <errno.h>
+#include <cstdio>
+#include <cstring>
+#include <cerrno>
 #include <unistd.h>
 #include <fcntl.h>
 #include <signal.h>
-#include <ctype.h>
-#include <stdlib.h>
-#include <string.h>
+#include <cctype>
+#include <cstdlib>
+#include <cstring>
 #include <signal.h>
 #include <sys/time.h>
 #include <sys/resource.h>

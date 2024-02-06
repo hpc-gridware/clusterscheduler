@@ -1,7 +1,7 @@
 // Copyright Ernst Bablick
 
-#include <stdlib.h>
-#include <stdio.h>
+#include <cstdlib>
+#include <cstdio>
 #include <pthread.h>
 
 #include "uti/sge_rmon.h"

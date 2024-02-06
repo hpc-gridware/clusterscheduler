@@ -32,11 +32,11 @@
 
 #if defined(SOLARIS)
 
-#include <string.h>
-#include <stdlib.h>
-#include <stdio.h>
+#include <cstring>
+#include <cstdlib>
+#include <cstdio>
 #include <fcntl.h>
-#include <errno.h>
+#include <cerrno>
 #include <limits.h>
 #include <dlfcn.h>
 #include <pthread.h>

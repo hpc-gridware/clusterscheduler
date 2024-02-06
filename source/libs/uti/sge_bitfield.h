@@ -31,7 +31,7 @@
  ************************************************************************/
 /*___INFO__MARK_END__*/
 
-#include <stdio.h>
+#include <cstdio>
 
 #include "basis_types.h"
 

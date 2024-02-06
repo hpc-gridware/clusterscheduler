@@ -30,12 +30,12 @@
  ************************************************************************/
 /*___INFO__MARK_END__*/
 
-#include <stdio.h>
-#include <stdlib.h>
+#include <cstdio>
+#include <cstdlib>
 #include <math.h>
 #include <unistd.h>
 #include <pthread.h>
-#include <string.h>
+#include <cstring>
 
 #include "uti/sge_profiling.h"
 

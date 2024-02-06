@@ -29,10 +29,10 @@
  * 
  ************************************************************************/
 /*___INFO__MARK_END__*/
-#include <stdio.h>
-#include <stdlib.h>
+#include <cstdio>
+#include <cstdlib>
 #include <unistd.h>
-#include <string.h>
+#include <cstring>
 #include <pthread.h>
 #include <fnmatch.h>
 #include <sys/socket.h>

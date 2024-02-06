@@ -29,7 +29,7 @@
  *
  ************************************************************************/
 
-#include <string.h>
+#include <cstring>
 
 #include "uti/sge_parse_num_par.h"
 #include "uti/sge_rmon.h"

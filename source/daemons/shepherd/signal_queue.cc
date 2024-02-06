@@ -30,9 +30,9 @@
  ************************************************************************/
 /*___INFO__MARK_END__*/
 
-#include <stdio.h>
+#include <cstdio>
 
-#include <ctype.h>
+#include <cctype>
 
 #include "uti/sge_signal.h"
 

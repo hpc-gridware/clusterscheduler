@@ -33,7 +33,7 @@
 
 #ifndef NO_SGE_COMPILE_DEBUG
 
-#include <string.h>
+#include <cstring>
 
 #include "uti/rmon.h"
 

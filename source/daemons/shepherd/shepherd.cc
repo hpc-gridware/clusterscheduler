@@ -32,15 +32,15 @@
  ************************************************************************/
 /* Portions of this software are Copyright (c) 2011 Univa Corporation. */
 /*___INFO__MARK_END__*/
-#include <stdio.h>
-#include <stdlib.h>
-#include <string.h>
-#include <ctype.h>
+#include <cstdio>
+#include <cstdlib>
+#include <cstring>
+#include <cctype>
 #include <signal.h>
 #include <fcntl.h>
 #include <pwd.h>
 #include <limits.h>
-#include <errno.h>
+#include <cerrno>
 #include <poll.h>
 #include <sys/types.h>
 #include <sys/time.h>

@@ -31,8 +31,8 @@
  ************************************************************************/
 /*___INFO__MARK_END__*/
 
-#include <stdio.h>
-#include <stdlib.h>
+#include <cstdio>
+#include <cstdlib>
 
 #include "comm/dummy.h"
 #include "comm/lists/cl_lists.h"

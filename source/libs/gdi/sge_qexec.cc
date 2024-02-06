@@ -29,12 +29,12 @@
  * 
  ************************************************************************/
 /*___INFO__MARK_END__*/
-#include <stdio.h>
+#include <cstdio>
 #include <unistd.h>
-#include <string.h>
-#include <stdlib.h>
+#include <cstring>
+#include <cstdlib>
 #include <sys/wait.h>
-#include <errno.h>
+#include <cerrno>
 
 #include "comm/commlib.h"
 
@@ -64,8 +64,7 @@ static char lasterror[4096];
 
 static int rcv_from_execd(int options, int tag);
 
-const char *qexec_last_err(void)
-{
+const char *qexec_last_err(void) {
    return lasterror;
 }
 
@@ -100,10 +99,9 @@ const char *qexec_last_err(void)
 *  NOTES
 *     MT-NOTE: sge_qexecve() is not MT safe
 ******************************************************************************/
-sge_tid_t sge_qexecve(const char *hostname, const char *queuename,
-                      const char *cwd, const lList *environment,
-                      const lList *path_aliases)
-{
+sge_tid_t
+sge_qexecve(const char *hostname, const char *queuename, const char *cwd, const lList *environment,
+            const lList *path_aliases) {
    char myname[256];
    const char *s;
    int ret, uid;
@@ -123,13 +121,12 @@ sge_tid_t sge_qexecve(const char *hostname, const char *queuename,
    }
 
    /* resolve user */
-   if (sge_uid2user((uid=getuid()), myname, sizeof(myname)-1, MAX_NIS_RETRIES)) {
-      sprintf(lasterror, MSG_GDI_RESOLVINGUIDTOUSERNAMEFAILED_IS , 
-              uid, strerror(errno));
+   if (sge_uid2user((uid = getuid()), myname, sizeof(myname) - 1, MAX_NIS_RETRIES)) {
+      sprintf(lasterror, MSG_GDI_RESOLVINGUIDTOUSERNAMEFAILED_IS, uid, strerror(errno));
       DRETURN(nullptr);
    }
-   
-   if ((s=getenv("JOB_ID")) == nullptr) {
+
+   if ((s = getenv("JOB_ID")) == nullptr) {
       sprintf(lasterror, MSG_GDI_MISSINGINENVIRONMENT_S, "JOB_ID");
       DRETURN(nullptr);
    }
@@ -139,7 +136,7 @@ sge_tid_t sge_qexecve(const char *hostname, const char *queuename,
       DRETURN(nullptr);
    }
 
-   if ((s=getenv(env_var_name)) != nullptr) {
+   if ((s = getenv(env_var_name)) != nullptr) {
       if (strcmp(s, "undefined") == 0) {
          jataskid = 1;
       } else {
@@ -197,7 +194,7 @@ sge_tid_t sge_qexecve(const char *hostname, const char *queuename,
       sprintf(lasterror, MSG_GDI_SENDTASKTOEXECDFAILED_SS, hostname, cl_get_error_text(ret));
       DRETURN(nullptr);
    }
-  
+
    /* add list into our remote task list */
    rt = lAddElemStr(&remote_task_list, RT_tid, "none", RT_Type);
    lSetHost(rt, RT_hostname, hostname);
@@ -224,30 +221,29 @@ sge_tid_t sge_qexecve(const char *hostname, const char *queuename,
  *     MT-NOTE: sge_qwaittid() is not MT safe
  *
  */
-int sge_qwaittid(sge_tid_t tid, int *status, int options)
-{
+int sge_qwaittid(sge_tid_t tid, int *status, int options) {
    lListElem *rt = nullptr;
    int ret, rcv_opt = 0;
 
    DENTER(TOP_LAYER);
 
-   if (!(options&WNOHANG))
+   if (!(options & WNOHANG))
       rcv_opt |= OPT_SYNCHRON;
 
-   if (tid != nullptr && !(rt=LOCATE_RTASK(tid))) {
-      sprintf(lasterror, MSG_GDI_TASKNOTEXIST_S , tid);
+   if (tid != nullptr && !(rt = LOCATE_RTASK(tid))) {
+      sprintf(lasterror, MSG_GDI_TASKNOTEXIST_S, tid);
       DRETURN(-1);
    }
 
    while ((rt && /* definite one searched */
-            lGetUlong(rt, RT_state)!=RT_STATE_EXITED && /* not exited */
-            lGetUlong(rt, RT_state)==RT_STATE_WAIT4ACK) /* waiting for ack */
-        || (!rt && /* anybody searched */
-            !lGetElemUlong(remote_task_list, RT_state, RT_STATE_EXITED) && /* none exited */
-            lGetElemUlong(remote_task_list, RT_state, RT_STATE_WAIT4ACK))) /* but one is waiting for ack */ {
+           lGetUlong(rt, RT_state) != RT_STATE_EXITED && /* not exited */
+           lGetUlong(rt, RT_state) == RT_STATE_WAIT4ACK) /* waiting for ack */
+          || (!rt && /* anybody searched */
+              !lGetElemUlong(remote_task_list, RT_state, RT_STATE_EXITED) && /* none exited */
+              lGetElemUlong(remote_task_list, RT_state, RT_STATE_WAIT4ACK))) /* but one is waiting for ack */ {
       /* wait for incoming messeges about exited tasks */
-      if ((ret=rcv_from_execd(rcv_opt, TAG_TASK_EXIT))) {
-         DRETURN((ret<0)?-1:0);
+      if ((ret = rcv_from_execd(rcv_opt, TAG_TASK_EXIT))) {
+         DRETURN((ret < 0) ? -1 : 0);
       }
    }
 
@@ -267,8 +263,7 @@ int sge_qwaittid(sge_tid_t tid, int *status, int options)
        MT-NOTE: rcv_from_execd() is not MT safe
 
 */
-static int rcv_from_execd(int options, int tag)
-{
+static int rcv_from_execd(int options, int tag) {
    int ret;
    char *msg = nullptr;
    u_long32 msg_len = 0;
@@ -277,7 +272,7 @@ static int rcv_from_execd(int options, int tag)
    char host[1024];
 
    lListElem *rt_rcv;
-   u_long32 exit_status=0;
+   u_long32 exit_status = 0;
    sge_tid_t tid = nullptr;
 
    DENTER(TOP_LAYER);
@@ -286,63 +281,63 @@ static int rcv_from_execd(int options, int tag)
    from_id = 1;
    do {
       /* FIX_CONST */
-      ret = gdi2_receive_message((char*)prognames[EXECD], &from_id, host, &tag,
-                                 &msg, &msg_len, (options & OPT_SYNCHRON) ? 1:0);
-      
+      ret = gdi2_receive_message((char *) prognames[EXECD], &from_id, host, &tag, &msg, &msg_len,
+                                 (options & OPT_SYNCHRON) ? 1 : 0);
+
       if (ret != CL_RETVAL_OK && ret != CL_RETVAL_SYNC_RECEIVE_TIMEOUT) {
-         sprintf(lasterror, MSG_GDI_MESSAGERECEIVEFAILED_SI , cl_get_error_text(ret), ret);
+         sprintf(lasterror, MSG_GDI_MESSAGERECEIVEFAILED_SI, cl_get_error_text(ret), ret);
          DRETURN(-1);
       }
-   } while (options&OPT_SYNCHRON && ret == CL_RETVAL_SYNC_RECEIVE_TIMEOUT);
+   } while (options & OPT_SYNCHRON && ret == CL_RETVAL_SYNC_RECEIVE_TIMEOUT);
 
-   if (ret==CL_RETVAL_SYNC_RECEIVE_TIMEOUT) {
+   if (ret == CL_RETVAL_SYNC_RECEIVE_TIMEOUT) {
       DRETURN(1);
    }
 
-   ret = init_packbuffer_from_buffer(&pb, msg, msg_len);     
-   if(ret != PACK_SUCCESS) {
-      sprintf(lasterror,  MSG_GDI_ERRORUNPACKINGGDIREQUEST_S, cull_pack_strerror(ret));
+   ret = init_packbuffer_from_buffer(&pb, msg, msg_len);
+   if (ret != PACK_SUCCESS) {
+      sprintf(lasterror, MSG_GDI_ERRORUNPACKINGGDIREQUEST_S, cull_pack_strerror(ret));
       DRETURN(-1);
    }
 
    switch (tag) {
-   case TAG_TASK_EXIT:
-      unpackstr(&pb, &tid);
-      unpackint(&pb, &exit_status);
-      break;
-   case TAG_JOB_EXECUTION:
-      unpackstr(&pb, &tid);
-      break;
-   default:
-      break;
+      case TAG_TASK_EXIT:
+         unpackstr(&pb, &tid);
+         unpackint(&pb, &exit_status);
+         break;
+      case TAG_JOB_EXECUTION:
+         unpackstr(&pb, &tid);
+         break;
+      default:
+         break;
    }
 
    clear_packbuffer(&pb);
 
    switch (tag) {
-   case TAG_TASK_EXIT:
-      /* change state in exited task */
-      if (!(rt_rcv = lGetElemStrRW(remote_task_list, RT_tid, tid))) {
-         sprintf(lasterror, MSG_GDI_TASKNOTFOUND_S, tid);
-         sge_free(&tid);
-         DRETURN(-1);
-      }
+      case TAG_TASK_EXIT:
+         /* change state in exited task */
+         if (!(rt_rcv = lGetElemStrRW(remote_task_list, RT_tid, tid))) {
+            sprintf(lasterror, MSG_GDI_TASKNOTFOUND_S, tid);
+            sge_free(&tid);
+            DRETURN(-1);
+         }
 
-      lSetUlong(rt_rcv, RT_status, exit_status);
-      lSetUlong(rt_rcv, RT_state, RT_STATE_EXITED);
-      break;
+         lSetUlong(rt_rcv, RT_status, exit_status);
+         lSetUlong(rt_rcv, RT_state, RT_STATE_EXITED);
+         break;
 
-   case TAG_JOB_EXECUTION:
-      /* search task without taskid */
-      if (!(rt_rcv = lGetElemStrRW(remote_task_list, RT_tid, "none"))) {
-         sprintf(lasterror, MSG_GDI_TASKNOTFOUNDNOIDGIVEN_S , tid);
-         DRETURN(-1);
-      }
-      lSetString(rt_rcv, RT_tid, tid);
-      break;
+      case TAG_JOB_EXECUTION:
+         /* search task without taskid */
+         if (!(rt_rcv = lGetElemStrRW(remote_task_list, RT_tid, "none"))) {
+            sprintf(lasterror, MSG_GDI_TASKNOTFOUNDNOIDGIVEN_S, tid);
+            DRETURN(-1);
+         }
+         lSetString(rt_rcv, RT_tid, tid);
+         break;
 
-   default:
-      break;
+      default:
+         break;
    }
 
    sge_free(&tid);

@@ -32,7 +32,7 @@
 
 #include "sge_c_report.h"
 
-#include <string.h>
+#include <cstring>
 
 #include "uti/sge_rmon.h"
 #include "uti/sge_bootstrap.h"

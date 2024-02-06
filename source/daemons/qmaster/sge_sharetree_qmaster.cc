@@ -34,8 +34,8 @@
    We save the sharetree to <spool>/qmaster/sharetree
  */
 
-#include <stdio.h>
-#include <string.h>
+#include <cstdio>
+#include <cstring>
 
 #include "uti/sge_rmon.h"
 #include "uti/sge_log.h"

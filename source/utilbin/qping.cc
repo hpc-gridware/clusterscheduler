@@ -30,11 +30,11 @@
  ************************************************************************/
 /*___INFO__MARK_END__*/
 
-#include <stdlib.h>
-#include <stdio.h>
+#include <cstdlib>
+#include <cstdio>
 #include <signal.h>
-#include <string.h>
-#include <ctype.h>
+#include <cstring>
+#include <cctype>
 
 #include "uti/sge_time.h"
 #include "uti/sge_arch.h"

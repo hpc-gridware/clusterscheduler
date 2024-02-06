@@ -31,12 +31,12 @@
  *
  ************************************************************************/
 /*___INFO__MARK_END__*/
-#include <errno.h>
+#include <cerrno>
 #include <pwd.h>
 #include <fcntl.h>
 #include <unistd.h>
-#include <stdlib.h>
-#include <string.h>
+#include <cstdlib>
+#include <cstring>
 
 #include "uti/sge_rmon.h"
 #include "uti/sge_unistd.h"

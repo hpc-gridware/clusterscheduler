@@ -30,8 +30,8 @@
  ************************************************************************/
 /*___INFO__MARK_END__*/
 
-#include <stdlib.h>
-#include <string.h>
+#include <cstdlib>
+#include <cstring>
 
 #ifdef KERBEROS
 #  include "krb_lib.h"
@@ -103,8 +103,7 @@ sge_tq_queue_t *Master_Task_Queue = nullptr;
 *     sge_gdi_packet_is_handled()
 *******************************************************************************/
 static bool
-sge_gdi_packet_create_multi_answer(lList **answer_list,
-                                   sge_gdi_packet_class_t **packet, lList **malpp)
+sge_gdi_packet_create_multi_answer(lList **answer_list, sge_gdi_packet_class_t **packet, lList **malpp)
 {
    sge_gdi_task_class_t *task = nullptr;
    bool ret = true;
@@ -563,8 +562,7 @@ sge_gdi_packet_execute_external(lList **answer_list, sge_gdi_packet_class_t *pac
 
       /*running this loop as long as configured in gdi_retries, doing a break after getting a gdi_request*/
       do {
-         gdi_error = sge_gdi2_get_any_request(rcv_host, rcv_commproc, &id, &rpb, &tag,
-                                              true, message_id, nullptr);
+         gdi_error = sge_gdi2_get_any_request(rcv_host, rcv_commproc, &id, &rpb, &tag, true, message_id, nullptr);
 
          do_ping = get_cl_ping_value();
          retries = get_gdi_retries_value();

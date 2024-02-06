@@ -30,8 +30,8 @@
  ************************************************************************/
 /*___INFO__MARK_END__*/
 
-#include <string.h>
-#include <stdio.h>
+#include <cstring>
+#include <cstdio>
 
 #include "uti/sge_rmon.h"
 #include "uti/sge_error_class.h"

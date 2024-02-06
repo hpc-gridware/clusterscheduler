@@ -29,12 +29,12 @@
  * 
  ************************************************************************/
 /*___INFO__MARK_END__*/
-#include <stdio.h>
+#include <cstdio>
 #include <sys/types.h>
 #include <unistd.h>
-#include <string.h>
-#include <stdlib.h>
-#include <string.h>
+#include <cstring>
+#include <cstdlib>
+#include <cstring>
 #include <pwd.h>
 #include "msg_utilbin.h"
 #include "basis_types.h"

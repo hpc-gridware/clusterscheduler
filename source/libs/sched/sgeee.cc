@@ -32,9 +32,9 @@
 
 #define SGE_INCLUDE_QUEUED_JOBS
 
-#include <stdio.h>
-#include <stdlib.h>
-#include <string.h>
+#include <cstdio>
+#include <cstdlib>
+#include <cstring>
 #include <signal.h>
 #include <sys/types.h>
 #include <unistd.h>

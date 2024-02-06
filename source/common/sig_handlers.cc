@@ -29,9 +29,9 @@
  * 
  ************************************************************************/
 /*___INFO__MARK_END__*/
-#include <stdio.h>
+#include <cstdio>
 #include <signal.h>
-#include <stdlib.h>
+#include <cstdlib>
 
 #include "uti/sge_rmon.h"
 #include "uti/sge_bootstrap.h"

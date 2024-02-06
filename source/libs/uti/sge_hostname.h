@@ -31,9 +31,9 @@
  ************************************************************************/
 /*___INFO__MARK_END__*/
 
-#include <stdio.h>
-#include <stdlib.h>
-#include <ctype.h>
+#include <cstdio>
+#include <cstdlib>
+#include <cctype>
 
 #include <netdb.h>
 #include <sys/socket.h>

@@ -49,16 +49,23 @@ sge_gdi2_setup(u_long32 progid, u_long32 thread_id, lList **alpp);
 int 
 sge_setup2(u_long32 progid, u_long32 thread_id, lList **alpp, bool is_qmaster_intern_client);
 
-bool sge_daemonize_prepare();
-bool sge_daemonize_finalize();
+bool
+sge_daemonize_prepare();
 
-int sge_daemonize(int *keep_open, unsigned long nr_of_fds);
+bool
+sge_daemonize_finalize();
+
+int
+sge_daemonize(int *keep_open, unsigned long nr_of_fds);
 
 void
 sge_gdi_ctx_class_error(int error_type, int error_quality, const char* fmt, ...);
 
-int sge_gdi_ctx_class_prepare_enroll();
+int
+sge_gdi_ctx_class_prepare_enroll();
 
-int sge_gdi_ctx_class_connect();
+int
+sge_gdi_ctx_class_connect();
 
-lList* sge_gdi_ctx_class_gdi_kill(lList *id_list, u_long32 action_flag);
+lList *
+sge_gdi_ctx_class_gdi_kill(lList *id_list, u_long32 action_flag);

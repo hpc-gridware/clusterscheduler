@@ -31,10 +31,10 @@
 /*___INFO__MARK_END__*/
 
 #include <sys/time.h>
-#include <stdio.h>
+#include <cstdio>
 #include <pthread.h>
-#include <stdlib.h>
-#include <string.h>
+#include <cstdlib>
+#include <cstring>
 
 #include "uti/test_sge_lock_main.h"
 #include "uti/sge_lock.h"

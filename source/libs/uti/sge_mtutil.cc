@@ -30,9 +30,9 @@
  ************************************************************************/
 /*___INFO__MARK_END__*/
 
-#include <stdlib.h>
+#include <cstdlib>
 #include <pthread.h>
-#include <string.h>
+#include <cstring>
 #include <sys/time.h>
 
 /* do not compile in monitoring code */

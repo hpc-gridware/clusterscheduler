@@ -31,8 +31,8 @@
 /*___INFO__MARK_END__*/                                   
 
 /* system */
-#include <errno.h>
-#include <string.h>
+#include <cerrno>
+#include <cstring>
 
 #include "uti/sge_rmon.h"
 #include "uti/sge_log.h"

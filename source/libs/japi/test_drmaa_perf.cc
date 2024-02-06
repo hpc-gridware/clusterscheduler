@@ -29,11 +29,11 @@
  * 
  ************************************************************************/
 /*___INFO__MARK_END__*/
-#include <stdio.h>
+#include <cstdio>
 #include <unistd.h>
-#include <string.h>
-#include <stdlib.h>
-#include <errno.h>
+#include <cstring>
+#include <cstdlib>
+#include <cerrno>
 #include <pthread.h>
 
 #include <time.h>

@@ -31,7 +31,7 @@
 /*___INFO__MARK_END__*/
 
 #include <sys/times.h>
-#include <string.h>
+#include <cstring>
 #include <unistd.h>
 #include <pthread.h>
 

@@ -29,9 +29,9 @@
  * 
  ************************************************************************/
 /*___INFO__MARK_END__*/
-#include <stdio.h>
+#include <cstdio>
 #include <time.h>
-#include <stdlib.h>
+#include <cstdlib>
 #include <sys/types.h>
 #include <sys/time.h>
 

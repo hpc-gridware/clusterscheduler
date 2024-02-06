@@ -31,7 +31,7 @@
 /*___INFO__MARK_END__*/
 
 #include <unistd.h>
-#include <stdio.h>
+#include <cstdio>
 
 #include "uti/sge_lock.h"
 #include "uti/test_sge_lock_main.h"

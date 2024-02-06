@@ -29,8 +29,8 @@
  * 
  ************************************************************************/
 /*___INFO__MARK_END__*/
-#include <stdio.h>
-#include <stdlib.h>
+#include <cstdio>
+#include <cstdlib>
 #include "msg_utilbin.h"
 #include "uti/sge_language.h"
 

@@ -32,13 +32,13 @@
 /*___INFO__MARK_END__*/
 
 #ifdef SECURE
-#include <stdio.h>
-#include <stdlib.h>
-#include <errno.h>
+#include <cstdio>
+#include <cstdlib>
+#include <cerrno>
 #include <unistd.h>
 #include <fcntl.h>
 #include <netdb.h>
-#include <string.h>
+#include <cstring>
 #include <netinet/tcp.h> 
 #include <sys/types.h>
 #include <sys/socket.h>
@@ -4871,13 +4871,13 @@ static int cl_com_ssl_fill_private_from_peer_cert(cl_com_ssl_private_t *com_priv
 }
 #else
 
-#include <stdio.h>
-#include <stdlib.h>
-#include <errno.h>
+#include <cstdio>
+#include <cstdlib>
+#include <cerrno>
 #include <unistd.h>
 #include <fcntl.h>
 #include <netdb.h>
-#include <string.h>
+#include <cstring>
 #include <netinet/tcp.h>
 #include <sys/types.h>
 #include <sys/socket.h>

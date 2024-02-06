@@ -29,14 +29,14 @@
  * 
  ************************************************************************/
 /*___INFO__MARK_END__*/
-#include <errno.h>
+#include <cerrno>
 #include <fcntl.h>
-#include <stdio.h>
+#include <cstdio>
 #include <sys/stat.h>
 #include <sys/types.h>
 #include <unistd.h>
-#include <stdlib.h>
-#include <string.h>
+#include <cstdlib>
+#include <cstring>
 
 #include "uti/sge_rmon.h"
 #include "uti/sge_log.h"
@@ -52,7 +52,7 @@
 #  include <sys/loadavg.h> 
 #elif defined(LINUX)
 
-#  include <ctype.h>
+#  include <cctype>
 
 #elif defined(DARWIN)
 # include <mach/host_info.h>

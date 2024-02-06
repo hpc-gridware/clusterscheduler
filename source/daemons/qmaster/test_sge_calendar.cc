@@ -30,8 +30,8 @@
  ************************************************************************/
 /*___INFO__MARK_END__*/
 
-#include <stdio.h>
-#include <ctype.h>
+#include <cstdio>
+#include <cctype>
 #include <time.h>
 
 #include "uti/sge_time.h"

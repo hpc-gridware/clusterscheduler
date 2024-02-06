@@ -29,12 +29,12 @@
  * 
  ************************************************************************/
 /*___INFO__MARK_END__*/
-#include <stdio.h>
-#include <stdlib.h>
+#include <cstdio>
+#include <cstdlib>
 #include <unistd.h>
-#include <string.h>
+#include <cstring>
 #include <fcntl.h>
-#include <ctype.h>
+#include <cctype>
 #include <X11/Xlib.h>
 #include <X11/Xutil.h>
 #include <X11/keysymdef.h>
@@ -45,7 +45,7 @@
 #include <sys/wait.h>
 #include <time.h>
 #include <setjmp.h>
-#include <stdlib.h>
+#include <cstdlib>
 
 #include "cull/cull.h"
 #include "sge_load_sensor.h"

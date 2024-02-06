@@ -33,8 +33,8 @@
 
 /* system */
 #include <pthread.h>
-#include <stdio.h>
-#include <stdlib.h>
+#include <cstdio>
+#include <cstdlib>
 
 #include "uti/sge_rmon.h"
 #include "uti/sge_log.h"

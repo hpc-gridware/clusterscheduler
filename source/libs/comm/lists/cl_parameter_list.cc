@@ -30,9 +30,9 @@
  ************************************************************************/
 /*___INFO__MARK_END__*/
 
-#include <stdio.h>
-#include <string.h>
-#include <stdlib.h>
+#include <cstdio>
+#include <cstring>
+#include <cstdlib>
 #include "comm/lists/cl_parameter_list.h"
 
 #include "uti/sge_string.h"

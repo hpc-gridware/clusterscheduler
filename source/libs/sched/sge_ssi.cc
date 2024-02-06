@@ -30,8 +30,8 @@
  ************************************************************************/
 /*___INFO__MARK_END__*/
 
-#include <stdlib.h>
-#include <string.h>
+#include <cstdlib>
+#include <cstring>
 
 #include "uti/sge_rmon.h"
 #include "uti/sge_log.h"

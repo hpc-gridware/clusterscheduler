@@ -34,7 +34,7 @@
 
 #define NO_SGE_COMPILE_DEBUG
 
-#include <string.h>
+#include <cstring>
 
 #include "sge.h"
 

@@ -29,9 +29,9 @@
  *
  ************************************************************************/
 /*___INFO__MARK_END__*/
-#include <stdio.h>
-#include <string.h>
-#include <stdlib.h>
+#include <cstdio>
+#include <cstring>
+#include <cstdlib>
 #include <float.h>
 #include <limits.h>
 #ifdef SGE_PQS_API

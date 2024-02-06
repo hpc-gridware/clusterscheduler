@@ -81,13 +81,13 @@
  * Modified DEE 11/19/96 
  */
 
-#include <stdio.h>
-#include <stdlib.h>
+#include <cstdio>
+#include <cstdlib>
 #include <locale.h>
 #include <pwd.h>
-#include <string.h>
+#include <cstring>
 
-#include <errno.h>
+#include <cerrno>
 #include "k5dce.h"
 
 #include <dce/sec_login.h>

@@ -32,11 +32,11 @@
 
 #include "uti/sge_tmpnam.h"
 
-#include <stdlib.h>
-#include <stdio.h>
+#include <cstdlib>
+#include <cstdio>
 #include <unistd.h>
-#include <string.h>
-#include <errno.h>
+#include <cstring>
+#include <cerrno>
 
 #include "uti/sge_rmon.h"
 #include "uti/sge_dstring.h"
@@ -73,7 +73,7 @@ static int spawn_file(dstring *aBuffer, dstring *error_message);
 *     If the environment variable TMPDIR is defined, it's value will be used
 *     as the path prefix for the file. If TMPDIR is not set or it does not
 *     refer to a valid directory, the value of P_tmpdir will be used.
-*     P_tmpdir shall be defined in <stdio.h>. If P_tmpdir is not defined or
+*     P_tmpdir shall be defined in <cstdio>. If P_tmpdir is not defined or
 *     it does not refer to a valid directory, /tmp will be used.
 *
 *     NOTE: Since the file already exists, the O_EXCL flag must not be used if

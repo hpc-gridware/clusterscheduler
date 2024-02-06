@@ -29,8 +29,8 @@
  * 
  ************************************************************************/
 /*___INFO__MARK_END__*/
-#include <stdio.h>
-#include <stdlib.h>
+#include <cstdio>
+#include <cstdlib>
 #include <pwd.h>
 
 /* for service provider info (SPI) entries and projects */

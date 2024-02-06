@@ -32,7 +32,7 @@
  ************************************************************************/
 /*___INFO__MARK_END__*/                                   
 
-#include <string.h>
+#include <cstring>
 #include <unistd.h>
 
 #include "sge.h"

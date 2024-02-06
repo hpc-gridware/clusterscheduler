@@ -32,7 +32,7 @@
 
 #include "sge_qmaster_process_message.h"
 
-#include <string.h>
+#include <cstring>
 #include <unistd.h>
 
 #include "uti/sge_lock.h"

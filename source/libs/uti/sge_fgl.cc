@@ -1,9 +1,9 @@
 // Copyright Ernst Bablick
 
 #include <pthread.h>
-#include <stdio.h>
-#include <string.h>
-#include <ctype.h>
+#include <cstdio>
+#include <cstring>
+#include <cctype>
 
 #include "basis_types.h"
 #include "uti/sge_stdlib.h"

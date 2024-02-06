@@ -31,9 +31,9 @@
 /*___INFO__MARK_END__*/
 
 #include <sys/resource.h>
-#include <stdio.h>
-#include <string.h>
-#include <errno.h>
+#include <cstdio>
+#include <cstring>
+#include <cerrno>
 
 #include "uti/config_file.h"
 #include "uti/sge_stdio.h"

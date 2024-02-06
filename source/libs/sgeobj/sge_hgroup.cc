@@ -33,7 +33,7 @@
   This module is used for group building
  */
 
-#include <stdio.h>
+#include <cstdio>
 
 #include "uti/sge_rmon.h" 
 #include "uti/sge_log.h"

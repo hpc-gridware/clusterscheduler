@@ -33,7 +33,7 @@
 #include <math.h>
 #include <float.h>
 #include <time.h>
-#include <string.h>
+#include <cstring>
 #include <limits.h>
 
 #include "uti/sge_rmon.h"

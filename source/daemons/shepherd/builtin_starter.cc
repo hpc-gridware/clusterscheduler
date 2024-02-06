@@ -32,11 +32,11 @@
  ************************************************************************/
 /*___INFO__MARK_END__*/
 
-#include <stdio.h>
-#include <string.h>
+#include <cstdio>
+#include <cstring>
 #include <fcntl.h>
 #include <pwd.h>
-#include <errno.h>
+#include <cerrno>
 
 #include "uti/sge_string.h"
 #include "uti/sge_stdio.h"

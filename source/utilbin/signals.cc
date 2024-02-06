@@ -29,7 +29,7 @@
  * 
  ************************************************************************/
 /*___INFO__MARK_END__*/
-#include <stdio.h>
+#include <cstdio>
 #include <signal.h>
 #include <unistd.h>
 

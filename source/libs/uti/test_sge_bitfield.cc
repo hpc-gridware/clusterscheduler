@@ -32,7 +32,7 @@
 
 #define XMALLINFO
 
-#include <stdio.h>
+#include <cstdio>
 #include <unistd.h>
 #include <time.h>
 #include <sys/times.h>

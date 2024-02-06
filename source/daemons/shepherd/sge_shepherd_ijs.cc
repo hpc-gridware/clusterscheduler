@@ -31,10 +31,10 @@
  ************************************************************************/
 /*___INFO__MARK_END__*/
 
-#include <stdio.h>
-#include <errno.h>
+#include <cstdio>
+#include <cerrno>
 #include <signal.h>
-#include <string.h>
+#include <cstring>
 #include <unistd.h>
 
 #include <sys/time.h>

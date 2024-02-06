@@ -29,8 +29,8 @@
  * 
  ************************************************************************/
 /*___INFO__MARK_END__*/
-#include <string.h>
-#include <stdlib.h>
+#include <cstring>
+#include <cstdlib>
 
 #if !defined(DARWIN) && !defined(FREEBSD)
 #   include <malloc.h>

@@ -29,7 +29,7 @@
  *
  ************************************************************************/
 /*___INFO__MARK_END__*/
-#include <string.h>
+#include <cstring>
 #include <time.h>
 
 #include "uti/sge_dstring.h"

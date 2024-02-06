@@ -30,7 +30,7 @@
  ************************************************************************/
 /*___INFO__MARK_END__*/
 
-#include <errno.h>
+#include <cerrno>
 
 #include "uti/sge_rmon.h"
 #include "uti/sge_log.h"

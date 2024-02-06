@@ -31,7 +31,7 @@
 /* Portions of this code are Copyright (c) 2011 Univa Corporation. */
 /*___INFO__MARK_END__*/
 
-#include <stdio.h>
+#include <cstdio>
 
 /* do not compile in monitoring code */
 #ifndef NO_SGE_COMPILE_DEBUG

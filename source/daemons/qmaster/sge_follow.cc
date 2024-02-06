@@ -31,7 +31,7 @@
  *
  ************************************************************************/
 /*___INFO__MARK_END__*/
-#include <string.h>
+#include <cstring>
 #include <pthread.h>
 
 #include "uti/sge_rmon.h"

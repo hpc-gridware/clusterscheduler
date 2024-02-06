@@ -30,10 +30,10 @@
  ************************************************************************/
 /*___INFO__MARK_END__*/
 #include <pwd.h>
-#include <stdio.h>
+#include <cstdio>
 #include <unistd.h>
-#include <stdlib.h>
-#include <string.h>
+#include <cstdlib>
+#include <cstring>
 #include <time.h>
 #include <sys/types.h>
 #include <sys/stat.h>

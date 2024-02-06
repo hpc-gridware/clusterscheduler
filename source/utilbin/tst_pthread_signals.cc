@@ -32,8 +32,8 @@
 
 #include <signal.h>
 #include <pthread.h>
-#include <stdio.h>
-#include <stdlib.h>
+#include <cstdio>
+#include <cstdlib>
 #include <unistd.h>
 
 #include "basis_types.h"

@@ -37,14 +37,14 @@
 #define FLATFILE_LAYER BASIS_LAYER
 
 /* system */
-#include <stdio.h>
+#include <cstdio>
 #include <fcntl.h>
 
 /* #define USE_FOPEN */
 
-#include <errno.h>
-#include <string.h>
-#include <ctype.h>
+#include <cerrno>
+#include <cstring>
+#include <cctype>
 #include <unistd.h>
 
 #include "uti/sge_rmon.h"

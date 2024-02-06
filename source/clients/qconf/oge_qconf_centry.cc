@@ -30,7 +30,7 @@
  ************************************************************************/
 /*___INFO__MARK_END__*/
 
-#include <string.h>
+#include <cstring>
 
 #include "sgeobj/msg_sgeobjlib.h"
 #include "sgeobj/sge_answer.h"

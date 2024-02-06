@@ -30,9 +30,9 @@
  ************************************************************************/
 /*___INFO__MARK_END__*/
 
-#include <stdlib.h>
+#include <cstdlib>
 #include <pthread.h>
-#include <string.h>
+#include <cstring>
 
 #include "uti/sge_rmon.h"
 #include "uti/sge_lock.h"

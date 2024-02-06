@@ -54,7 +54,7 @@
 #endif
 
 #ifdef NPROCS_TEST
-#   include <stdio.h>
+#   include <cstdio>
 #   include <unistd.h>
 void main(int, char**);
 #endif

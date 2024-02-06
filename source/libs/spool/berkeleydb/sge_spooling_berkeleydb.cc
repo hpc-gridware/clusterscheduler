@@ -36,8 +36,8 @@
 
 #define BDB_LAYER BASIS_LAYER
 
-#include <errno.h>
-#include <string.h>
+#include <cerrno>
+#include <cstring>
 #include <time.h>
 
 #include "uti/sge_rmon.h"

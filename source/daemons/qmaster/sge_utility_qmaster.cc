@@ -29,8 +29,8 @@
  *
  ************************************************************************/
 /*___INFO__MARK_END__*/
-#include <string.h>
-#include <ctype.h>
+#include <cstring>
+#include <cctype>
 
 #include "uti/sge_rmon.h"
 #include "uti/sge_log.h"

@@ -54,7 +54,7 @@
 *  SEE ALSO
 *     uti/io/sge_copy_append();
 ******************************************************************************/
-#include <stdio.h>
+#include <cstdio>
 
 typedef enum {
    SGE_MODE_APPEND = 1,

@@ -33,10 +33,10 @@
 /*___INFO__MARK_END__*/
 
 #include <sys/types.h>
-#include <stdio.h>
-#include <stdlib.h>
-#include <string.h>
-#include <errno.h>
+#include <cstdio>
+#include <cstdlib>
+#include <cstring>
+#include <cerrno>
 
 #include "basis_types.h"
 #include "uti/config_file.h"

@@ -36,10 +36,10 @@ int verydummyprocfs;
 
 #else
 
-#include <stdio.h>
+#include <cstdio>
 #include <fcntl.h>
 #include <time.h>
-#include <errno.h>
+#include <cerrno>
 #include <sys/ioctl.h>
 #include <sys/types.h>
 #include <sys/signal.h>
@@ -54,8 +54,8 @@ int verydummyprocfs;
 #endif
 #include <sys/resource.h>
 #include <dirent.h>
-#include <stdlib.h>
-#include <string.h>
+#include <cstdlib>
+#include <cstring>
 #include <signal.h>
 
 #if defined(SOLARIS)

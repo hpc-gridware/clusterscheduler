@@ -33,7 +33,7 @@
 
 /*___INFO__MARK_END__*/
 
-#include <string.h>
+#include <cstring>
 
 #ifdef KERBEROS
 #  include "krb_lib.h"
@@ -223,8 +223,7 @@ sge_gdi_packet_get_pb_size(sge_gdi_packet_class_t *packet)
 *     gdi/request_internal/sge_gdi_packet_pack()
 *******************************************************************************/
 bool
-sge_gdi_packet_unpack(sge_gdi_packet_class_t **packet, lList **answer_list,
-                      sge_pack_buffer *pb)
+sge_gdi_packet_unpack(sge_gdi_packet_class_t **packet, lList **answer_list, sge_pack_buffer *pb)
 {
    bool aret = true;
    bool has_next;
@@ -361,8 +360,7 @@ sge_gdi_packet_unpack(sge_gdi_packet_class_t **packet, lList **answer_list,
 *     gdi/request_internal/sge_gdi_packet_unpack()
 *******************************************************************************/
 bool
-sge_gdi_packet_pack(sge_gdi_packet_class_t *packet, lList **answer_list,
-                    sge_pack_buffer *pb)
+sge_gdi_packet_pack(sge_gdi_packet_class_t *packet, lList **answer_list, sge_pack_buffer *pb)
 {
    bool ret = true;
    sge_gdi_task_class_t *task = nullptr;
@@ -423,8 +421,7 @@ sge_gdi_packet_pack(sge_gdi_packet_class_t *packet, lList **answer_list,
 *     gdi/request_internal/sge_gdi_packet_pack() 
 *******************************************************************************/
 bool
-sge_gdi_packet_pack_task(sge_gdi_packet_class_t *packet,
-                         sge_gdi_task_class_t *task, lList **answer_list,
+sge_gdi_packet_pack_task(sge_gdi_packet_class_t *packet, sge_gdi_task_class_t *task, lList **answer_list,
                          sge_pack_buffer *pb)
 {
    bool ret = true;
@@ -457,8 +454,7 @@ sge_gdi_packet_pack_task(sge_gdi_packet_class_t *packet,
        * (which will be packed below). 
        */
       if (task->do_select_pack_simultaneous) {
-         lSelectHashPack("", task->data_list, task->condition,
-                         task->enumeration, false, pb);
+         lSelectHashPack("", task->data_list, task->condition, task->enumeration, false, pb);
          lFreeWhat(&(task->enumeration));
          lFreeWhere(&(task->condition));
          task->data_list = nullptr;
@@ -466,8 +462,7 @@ sge_gdi_packet_pack_task(sge_gdi_packet_class_t *packet,
          /* DIRTY HACK: The "ok" message should be removed from the answer list
           * 05/21/2007 qualitiy was ANSWER_QUALITY_INFO but this results in "ok"
           * messages on qconf side */
-         answer_list_add(&(task->answer_list), MSG_GDI_OKNL, STATUS_OK,
-                         ANSWER_QUALITY_END);
+         answer_list_add(&(task->answer_list), MSG_GDI_OKNL, STATUS_OK, ANSWER_QUALITY_END);
       } else {
          /* ===> pack the list */
          pack_ret = cull_pack_list(pb, task->data_list);

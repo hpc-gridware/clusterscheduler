@@ -32,7 +32,7 @@
 /*___INFO__MARK_END__*/
 
 #include <sys/types.h>
-#include <stdio.h>
+#include <cstdio>
 
 typedef enum {
    SPFT_INT = 1,

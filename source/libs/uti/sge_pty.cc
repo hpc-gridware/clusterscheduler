@@ -32,9 +32,9 @@
 
 #include <unistd.h>
 #include <sys/stat.h>
-#include <errno.h>
+#include <cerrno>
 #include <fcntl.h>
-#include <string.h>
+#include <cstring>
 
 #if defined(DARWIN)
 #  include <termios.h>

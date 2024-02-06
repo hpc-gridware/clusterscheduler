@@ -34,8 +34,8 @@
  * Based on David Flanagan's Xmt libary's Hash.c
  */
 
-#include <stdlib.h>
-#include <string.h>
+#include <cstdlib>
+#include <cstring>
 
 #include "uti/sge_rmon.h"
 #include "uti/sge_htable.h"

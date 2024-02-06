@@ -41,10 +41,10 @@
 
 %{
 /* need this for the system calls below */
-#include <stdlib.h>
-#include <string.h>
+#include <cstdlib>
+#include <cstring>
 #include <math.h>
-#include <ctype.h>
+#include <cctype>
 #include <unistd.h>
 
 #include "spool/flatfile/sge_spooling_flatfile_scanner.h"

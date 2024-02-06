@@ -31,7 +31,7 @@
 /*___INFO__MARK_END__*/
 
 #include <pthread.h>
-#include <string.h>
+#include <cstring>
 
 #include "uti/sge_rmon.h"
 #include "uti/sge_lock.h"

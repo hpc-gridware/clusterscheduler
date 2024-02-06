@@ -30,11 +30,11 @@
  ************************************************************************/
 /*___INFO__MARK_END__*/
 
-#include <string.h>
+#include <cstring>
 
 #ifdef TEST
 #include <unistd.h>
-#include <errno.h>
+#include <cerrno>
 #endif
 
 #include "uti/sge_rmon.h"
@@ -132,7 +132,7 @@ char *argv[]
 
 /*--------------------------------------------------------------------------*/
 #if defined(SOLARIS)
-#include <stdlib.h>
+#include <cstdlib>
 #include <unistd.h>
 #include <sys/stat.h>
 #include <sys/swap.h>
@@ -228,8 +228,8 @@ int sge_loadmem(sge_mem_info_t *mem_info)
 /*--------------------------------------------------------------------------*/
 #if defined(LINUX)
 
-#include <stdio.h>
-#include <string.h>
+#include <cstdio>
+#include <cstring>
 
 #define PROC_MEMINFO "/proc/meminfo"
 

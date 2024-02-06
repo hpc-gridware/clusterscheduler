@@ -29,12 +29,12 @@
  * 
  ************************************************************************/
 /*___INFO__MARK_END__*/
-#include <stdio.h>
+#include <cstdio>
 #include <sys/types.h>
 #include <netdb.h>
-#include <string.h>
+#include <cstring>
 #include <netinet/in.h>
-#include <stdlib.h>
+#include <cstdlib>
 
 #include "msg_utilbin.h"
 #include "basis_types.h"

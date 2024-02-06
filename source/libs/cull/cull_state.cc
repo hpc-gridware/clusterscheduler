@@ -32,8 +32,8 @@
 
 #include "cull_state.h"
 
-#include <string.h>
-#include <errno.h>
+#include <cstring>
+#include <cerrno>
 #include <pthread.h>
 
 #include "uti/sge_stdlib.h"

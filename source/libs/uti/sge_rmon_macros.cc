@@ -30,12 +30,12 @@
  ************************************************************************/
 /*___INFO__MARK_END__*/
 
-#include <stdio.h>
+#include <cstdio>
 #include <unistd.h>
-#include <stdlib.h>
-#include <string.h>
+#include <cstdlib>
+#include <cstring>
 #include <pthread.h>
-#include <errno.h>
+#include <cerrno>
 
 #include "uti/rmon.h"
 #include "uti/msg_utilib.h"

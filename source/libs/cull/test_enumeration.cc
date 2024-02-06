@@ -1,9 +1,9 @@
-#include <stdio.h>
-#include <stdlib.h>
+#include <cstdio>
+#include <cstdlib>
 
 #define __SGE_GDI_LIBRARY_HOME_OBJECT_FILE__
 
-#include <string.h>
+#include <cstring>
 
 #include "uti/sge_profiling.h"
 

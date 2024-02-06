@@ -30,16 +30,17 @@
  ************************************************************************/
 /*___INFO__MARK_END__*/
 
-#include <stdlib.h>
-#include <stdio.h>
-#include <string.h>
-#include <errno.h>
+#include <cstdlib>
+#include <cstdio>
+#include <cstring>
+#include <cerrno>
 #include <fcntl.h>
-#include <pthread.h>
 #include <sys/ioctl.h>
 
 #if defined(DARWIN)
+
 #  include <grp.h>
+
 #elif defined(SOLARIS64) || defined(SOLARIS86) || defined(SOLARISAMD64)
 #  include <stropts.h>
 #  include <termio.h>
@@ -91,8 +92,10 @@ extern lNameSpace nmv[];
 static int fd_pipe[2];
 
 #if  1
+
 /* TODO: throw this out asap */
 void sc_mt_init(void);
+
 #endif
 
 #include "gdi/sge_gdi_ctx.h"
@@ -102,31 +105,31 @@ void sc_mt_init(void);
 static bool
 sge_gdi_ctx_setup(int prog_number, const char *thread_name, bool qmaster_internal_client);
 
-static sge_csp_path_class_t* get_sge_csp_path();
-static int ctx_get_last_commlib_error();
-static void ctx_set_last_commlib_error(int cl_error);
-static int sge_gdi_ctx_log_flush_func(cl_raw_list_t* list_p);
+static
+sge_csp_path_class_t *get_sge_csp_path();
+
+static int
+ctx_get_last_commlib_error();
+
+static void
+ctx_set_last_commlib_error(int cl_error);
+
+static int
+sge_gdi_ctx_log_flush_func(cl_raw_list_t *list_p);
 
 void
-sge_gdi_ctx_class_create(int prog_number, const char *thread_name, bool is_qmaster_internal_client, lList **alpp)
-{
+sge_gdi_ctx_class_create(int prog_number, const char *thread_name, bool is_qmaster_internal_client, lList **alpp) {
    DENTER(TOP_LAYER);
-
    if (!sge_gdi_ctx_setup(prog_number, thread_name, is_qmaster_internal_client)) {
       answer_list_from_sge_error(gdi3_get_error_handle(), alpp, true);
       DRETURN_VOID;
    }
-
-   /*
-   ** set default exit func, maybe overwritten
-   */
    bootstrap_set_exit_func(gdi2_default_exit_func);
-
    DRETURN_VOID;
 }
 
 void
-sge_gdi_ctx_class_error(int error_type, int error_quality, const char* fmt, ...) {
+sge_gdi_ctx_class_error(int error_type, int error_quality, const char *fmt, ...) {
    DENTER(TOP_LAYER);
    if (gdi3_get_error_handle() && fmt != nullptr) {
       va_list arg_list;
@@ -140,8 +143,7 @@ sge_gdi_ctx_class_error(int error_type, int error_quality, const char* fmt, ...)
 }
 
 static bool
-sge_gdi_ctx_setup(int prog_number, const char *thread_name, bool qmaster_internal_client)
-{
+sge_gdi_ctx_setup(int prog_number, const char *thread_name, bool qmaster_internal_client) {
    DENTER(TOP_LAYER);
 
    /*
@@ -183,8 +185,7 @@ sge_gdi_ctx_setup(int prog_number, const char *thread_name, bool qmaster_interna
    DRETURN(true);
 }
 
-int sge_gdi_ctx_class_connect()
-{
+int sge_gdi_ctx_class_connect() {
    DENTER(TOP_LAYER);
 
    /* check if master is alive */
@@ -196,10 +197,9 @@ int sge_gdi_ctx_class_connect()
 }
 
 int sge_gdi_ctx_class_prepare_enroll() {
-
    cl_host_resolve_method_t resolve_method = CL_SHORT;
-   cl_framework_t  communication_framework = CL_CT_TCP;
-   cl_com_handle_t* handle = nullptr;
+   cl_framework_t communication_framework = CL_CT_TCP;
+   cl_com_handle_t *handle = nullptr;
    const char *help = nullptr;
    const char *default_domain = nullptr;
    int cl_ret = CL_RETVAL_OK;
@@ -213,41 +213,38 @@ int sge_gdi_ctx_class_prepare_enroll() {
    */
 
    if (cl_com_setup_commlib_complete() == false) {
-      char* env_sge_commlib_debug = getenv("SGE_DEBUG_LEVEL");
+      char *env_sge_commlib_debug = getenv("SGE_DEBUG_LEVEL");
       switch (bootstrap_get_component_id()) {
          case QMASTER:
          case DRMAA:
          case SCHEDD:
          case EXECD:
-            {
-               INFO((SGE_EVENT, SFNMAX, MSG_GDI_MULTI_THREADED_STARTUP));
-               /* if SGE_DEBUG_LEVEL environment is set we use gdi log flush function */
-               /* you can set commlib debug level with env SGE_COMMLIB_DEBUG */
-               if (env_sge_commlib_debug != nullptr) {
-                  cl_ret = cl_com_setup_commlib(CL_RW_THREAD, CL_LOG_OFF, sge_gdi_ctx_log_flush_func);
-               } else {
-                  /* here we use default commlib flush function */
-                  cl_ret = cl_com_setup_commlib(CL_RW_THREAD, CL_LOG_OFF, nullptr);
-               }
+            INFO((SGE_EVENT, SFNMAX, MSG_GDI_MULTI_THREADED_STARTUP));
+            /* if SGE_DEBUG_LEVEL environment is set we use gdi log flush function */
+            /* you can set commlib debug level with env SGE_COMMLIB_DEBUG */
+            if (env_sge_commlib_debug != nullptr) {
+               cl_ret = cl_com_setup_commlib(CL_RW_THREAD, CL_LOG_OFF, sge_gdi_ctx_log_flush_func);
+            } else {
+               /* here we use default commlib flush function */
+               cl_ret = cl_com_setup_commlib(CL_RW_THREAD, CL_LOG_OFF, nullptr);
             }
             break;
          default:
-            {
-               INFO((SGE_EVENT, SFNMAX, MSG_GDI_SINGLE_THREADED_STARTUP));
-               if (env_sge_commlib_debug != nullptr) {
-                  cl_ret = cl_com_setup_commlib(CL_NO_THREAD, CL_LOG_OFF, sge_gdi_ctx_log_flush_func);
-               } else {
-                  cl_ret = cl_com_setup_commlib(CL_NO_THREAD, CL_LOG_OFF, nullptr);
-               }
-               /*
-               ** verbose logging is switched on by default
-               */
-               log_state_set_log_verbose(1);
+            INFO((SGE_EVENT, SFNMAX, MSG_GDI_SINGLE_THREADED_STARTUP));
+            if (env_sge_commlib_debug != nullptr) {
+               cl_ret = cl_com_setup_commlib(CL_NO_THREAD, CL_LOG_OFF, sge_gdi_ctx_log_flush_func);
+            } else {
+               cl_ret = cl_com_setup_commlib(CL_NO_THREAD, CL_LOG_OFF, nullptr);
             }
+            /*
+            ** verbose logging is switched on by default
+            */
+            log_state_set_log_verbose(1);
       }
 
       if (cl_ret != CL_RETVAL_OK) {
-         sge_gdi_ctx_class_error(STATUS_EUNKNOWN, ANSWER_QUALITY_ERROR, "cl_com_setup_commlib failed: %s", cl_get_error_text(cl_ret));
+         sge_gdi_ctx_class_error(STATUS_EUNKNOWN, ANSWER_QUALITY_ERROR, "cl_com_setup_commlib failed: %s",
+                                 cl_get_error_text(cl_ret));
          DRETURN(cl_ret);
       }
    }
@@ -255,7 +252,8 @@ int sge_gdi_ctx_class_prepare_enroll() {
    /* set the alias file */
    cl_ret = cl_com_set_alias_file(bootstrap_get_alias_file());
    if (cl_ret != CL_RETVAL_OK && cl_ret != ctx_get_last_commlib_error()) {
-      sge_gdi_ctx_class_error(STATUS_EUNKNOWN, ANSWER_QUALITY_ERROR, "cl_com_set_alias_file failed: %s", cl_get_error_text(cl_ret));
+      sge_gdi_ctx_class_error(STATUS_EUNKNOWN, ANSWER_QUALITY_ERROR, "cl_com_set_alias_file failed: %s",
+                              cl_get_error_text(cl_ret));
       DRETURN(cl_ret);
    }
 
@@ -270,9 +268,10 @@ int sge_gdi_ctx_class_prepare_enroll() {
       }
    }
 
-   cl_ret = cl_com_set_resolve_method(resolve_method, (char*)default_domain);
+   cl_ret = cl_com_set_resolve_method(resolve_method, (char *) default_domain);
    if (cl_ret != CL_RETVAL_OK && cl_ret != ctx_get_last_commlib_error()) {
-      sge_gdi_ctx_class_error(STATUS_EUNKNOWN, ANSWER_QUALITY_ERROR, "cl_com_set_resolve_method failed: %s", cl_get_error_text(cl_ret));
+      sge_gdi_ctx_class_error(STATUS_EUNKNOWN, ANSWER_QUALITY_ERROR, "cl_com_set_resolve_method failed: %s",
+                              cl_get_error_text(cl_ret));
       DRETURN(cl_ret);
    }
 
@@ -282,7 +281,8 @@ int sge_gdi_ctx_class_prepare_enroll() {
    */
    cl_ret = reresolve_qualified_hostname();
    if (cl_ret != CL_RETVAL_OK && cl_ret != ctx_get_last_commlib_error()) {
-      sge_gdi_ctx_class_error(STATUS_EUNKNOWN, ANSWER_QUALITY_WARNING, "reresolve hostname failed: %s", cl_get_error_text(cl_ret));
+      sge_gdi_ctx_class_error(STATUS_EUNKNOWN, ANSWER_QUALITY_WARNING, "reresolve hostname failed: %s",
+                              cl_get_error_text(cl_ret));
       DRETURN(cl_ret);
    }
 
@@ -292,14 +292,16 @@ int sge_gdi_ctx_class_prepare_enroll() {
    */
    cl_ret = cl_com_set_error_func(general_communication_error);
    if (cl_ret != CL_RETVAL_OK && cl_ret != ctx_get_last_commlib_error()) {
-      sge_gdi_ctx_class_error(STATUS_EUNKNOWN, ANSWER_QUALITY_ERROR, "cl_com_set_error_func failed: %s", cl_get_error_text(cl_ret));
+      sge_gdi_ctx_class_error(STATUS_EUNKNOWN, ANSWER_QUALITY_ERROR, "cl_com_set_error_func failed: %s",
+                              cl_get_error_text(cl_ret));
       DRETURN(cl_ret);
    }
 
    /* TODO set tag name function */
    cl_ret = cl_com_set_tag_name_func(sge_dump_message_tag);
    if (cl_ret != CL_RETVAL_OK && cl_ret != ctx_get_last_commlib_error()) {
-      sge_gdi_ctx_class_error(STATUS_EUNKNOWN, ANSWER_QUALITY_ERROR, "cl_com_set_tag_name_func failed: %s", cl_get_error_text(cl_ret));
+      sge_gdi_ctx_class_error(STATUS_EUNKNOWN, ANSWER_QUALITY_ERROR, "cl_com_set_tag_name_func failed: %s",
+                              cl_get_error_text(cl_ret));
       DRETURN(cl_ret);
    }
 
@@ -346,22 +348,23 @@ int sge_gdi_ctx_class_prepare_enroll() {
 
          communication_framework = CL_CT_SSL;
          cl_ret = cl_com_create_ssl_setup(&sec_ssl_setup_config,
-                                       ssl_cert_mode,
-                                       CL_SSL_v23,                                   /* ssl_method           */
-                                       (char*)sge_csp->get_CA_cert_file(sge_csp),    /* ssl_CA_cert_pem_file */
-                                       (char*)sge_csp->get_CA_key_file(sge_csp),     /* ssl_CA_key_pem_file  */
-                                       (char*)sge_csp->get_cert_file(sge_csp),       /* ssl_cert_pem_file    */
-                                       (char*)sge_csp->get_key_file(sge_csp),        /* ssl_key_pem_file     */
-                                       (char*)sge_csp->get_rand_file(sge_csp),       /* ssl_rand_file        */
-                                       (char*)sge_csp->get_reconnect_file(sge_csp),  /* ssl_reconnect_file   */
-                                       (char*)sge_csp->get_crl_file(sge_csp),        /* ssl_crl_file         */
-                                       sge_csp->get_refresh_time(sge_csp),           /* ssl_refresh_time     */
-                                       (char*)sge_csp->get_password(sge_csp),        /* ssl_password         */
-                                       sge_csp->get_verify_func(sge_csp));           /* ssl_verify_func (cl_ssl_verify_func_t)  */
+                                          ssl_cert_mode,
+                                          CL_SSL_v23,                                   /* ssl_method           */
+                                          (char *) sge_csp->get_CA_cert_file(sge_csp),    /* ssl_CA_cert_pem_file */
+                                          (char *) sge_csp->get_CA_key_file(sge_csp),     /* ssl_CA_key_pem_file  */
+                                          (char *) sge_csp->get_cert_file(sge_csp),       /* ssl_cert_pem_file    */
+                                          (char *) sge_csp->get_key_file(sge_csp),        /* ssl_key_pem_file     */
+                                          (char *) sge_csp->get_rand_file(sge_csp),       /* ssl_rand_file        */
+                                          (char *) sge_csp->get_reconnect_file(sge_csp),  /* ssl_reconnect_file   */
+                                          (char *) sge_csp->get_crl_file(sge_csp),        /* ssl_crl_file         */
+                                          sge_csp->get_refresh_time(sge_csp),           /* ssl_refresh_time     */
+                                          (char *) sge_csp->get_password(sge_csp),        /* ssl_password         */
+                                          sge_csp->get_verify_func(
+                                                  sge_csp));           /* ssl_verify_func (cl_ssl_verify_func_t)  */
          if (cl_ret != CL_RETVAL_OK && cl_ret != ctx_get_last_commlib_error()) {
             DPRINTF(("return value of cl_com_create_ssl_setup(): %s\n", cl_get_error_text(cl_ret)));
             sge_gdi_ctx_class_error(STATUS_EUNKNOWN, ANSWER_QUALITY_ERROR, MSG_GDI_CANT_CONNECT_HANDLE_SSUUS,
-                               qualified_hostname, progname, 0, sge_qmaster_port, cl_get_error_text(cl_ret));
+                                    qualified_hostname, progname, 0, sge_qmaster_port, cl_get_error_text(cl_ret));
             DRETURN(cl_ret);
          }
 
@@ -372,27 +375,23 @@ int sge_gdi_ctx_class_prepare_enroll() {
          if (cl_ret != CL_RETVAL_OK && cl_ret != ctx_get_last_commlib_error()) {
             DPRINTF(("return value of cl_com_specify_ssl_configuration(): %s\n", cl_get_error_text(cl_ret)));
             sge_gdi_ctx_class_error(STATUS_EUNKNOWN, ANSWER_QUALITY_ERROR, MSG_GDI_CANT_CONNECT_HANDLE_SSUUS,
-                               bootstrap_get_component_name(), 0, sge_qmaster_port, cl_get_error_text(cl_ret));
+                                    bootstrap_get_component_name(), 0, sge_qmaster_port, cl_get_error_text(cl_ret));
             cl_com_free_ssl_setup(&sec_ssl_setup_config);
             DRETURN(cl_ret);
          }
          cl_com_free_ssl_setup(&sec_ssl_setup_config);
       }
 
-      if ( me_who == QMASTER ||
-           me_who == EXECD   ||
-           me_who == SCHEDD  ||
-           me_who == SHADOWD ) {
+      if (me_who == QMASTER || me_who == EXECD || me_who == SCHEDD || me_who == SHADOWD) {
          my_component_id = 1;
       }
 
       switch (me_who) {
-
          case EXECD:
             /* add qmaster as known endpoint */
             DPRINTF(("re-read actual qmaster file (prepare_enroll)\n"));
-            cl_com_append_known_endpoint_from_name((char*)master,
-                                                   (char*)prognames[QMASTER],
+            cl_com_append_known_endpoint_from_name((char *) master,
+                                                   (char *) prognames[QMASTER],
                                                    1,
                                                    sge_qmaster_port,
                                                    CL_CM_AC_DISABLED,
@@ -403,7 +402,7 @@ int sge_gdi_ctx_class_prepare_enroll() {
                                           true,
                                           sge_execd_port,
                                           CL_TCP_DEFAULT,
-                                          (char*)bootstrap_get_component_name(),
+                                          (char *) bootstrap_get_component_name(),
                                           my_component_id,
                                           1,
                                           0);
@@ -414,22 +413,22 @@ int sge_gdi_ctx_class_prepare_enroll() {
                   ** TODO: eh error handler does no logging
                   */
                   ERROR((SGE_EVENT, MSG_GDI_CANT_GET_COM_HANDLE_SSUUS,
-                                    qualified_hostname,
-                                    bootstrap_get_component_name(),
-                                    sge_u32c(my_component_id),
-                                    sge_u32c(sge_execd_port),
-                                    cl_get_error_text(cl_ret)));
+                          qualified_hostname,
+                          bootstrap_get_component_name(),
+                          sge_u32c(my_component_id),
+                          sge_u32c(sge_execd_port),
+                          cl_get_error_text(cl_ret)));
                }
             }
             break;
 
          case QMASTER:
             DPRINTF(("creating QMASTER handle\n"));
-            cl_com_append_known_endpoint_from_name((char*)master,
-                                                   (char*) prognames[QMASTER],
+            cl_com_append_known_endpoint_from_name((char *) master,
+                                                   (char *) prognames[QMASTER],
                                                    1,
                                                    sge_qmaster_port,
-                                                   CL_CM_AC_DISABLED ,
+                                                   CL_CM_AC_DISABLED,
                                                    true);
 
             /* do a later qmaster commlib listen before creating qmaster handle */
@@ -444,7 +443,7 @@ int sge_gdi_ctx_class_prepare_enroll() {
                                           true,
                                           sge_qmaster_port, /* create service on qmaster port */
                                           CL_TCP_DEFAULT,   /* use standard connect mode */
-                                          (char*)bootstrap_get_component_name(),
+                                          (char *) bootstrap_get_component_name(),
                                           my_component_id,  /* this endpoint is called "qmaster" 
                                                                and has id 1 */
                                           1,
@@ -454,12 +453,9 @@ int sge_gdi_ctx_class_prepare_enroll() {
                   /*
                   ** TODO: eh error handler does no logging
                   */
-                  ERROR((SGE_EVENT, MSG_GDI_CANT_GET_COM_HANDLE_SSUUS,
-                                       qualified_hostname,
-                                       bootstrap_get_component_name(),
-                                       sge_u32c(my_component_id),
-                                       sge_u32c(sge_qmaster_port),
-                                       cl_get_error_text(cl_ret)));
+                  ERROR((SGE_EVENT, MSG_GDI_CANT_GET_COM_HANDLE_SSUUS, qualified_hostname,
+                         bootstrap_get_component_name(), sge_u32c(my_component_id), sge_u32c(sge_qmaster_port),
+                         cl_get_error_text(cl_ret)));
                }
             } else {
                /* TODO: remove reresolving here */
@@ -473,9 +469,9 @@ int sge_gdi_ctx_class_prepare_enroll() {
                   /* TODO: sge_hostcmp uses implicitly bootstrap state info */
                   /* check a running qmaster on different host */
                   if (getuniquehostname(master, act_resolved_qmaster_name, 0) == CL_RETVAL_OK &&
-                        sge_hostcmp(act_resolved_qmaster_name, qualified_hostname) != 0) {
+                      sge_hostcmp(act_resolved_qmaster_name, qualified_hostname) != 0) {
                      DPRINTF(("act_qmaster file contains host "SFQ" which doesn't match local host name "SFQ"\n",
-                              master, qualified_hostname));
+                             master, qualified_hostname));
 
                      cl_com_set_error_func(nullptr);
 
@@ -485,7 +481,7 @@ int sge_gdi_ctx_class_prepare_enroll() {
                         ERROR((SGE_EVENT, SFNMAX, cl_get_error_text(cl_ret)));
                      }
 
-                     if (alive_back == CL_RETVAL_OK && getenv("SGE_TEST_HEARTBEAT_TIMEOUT") == nullptr ) {
+                     if (alive_back == CL_RETVAL_OK && getenv("SGE_TEST_HEARTBEAT_TIMEOUT") == nullptr) {
                         CRITICAL((SGE_EVENT, MSG_GDI_MASTER_ON_HOST_X_RUNINNG_TERMINATE_S, master));
                         /* TODO: remove !!! */
                         sge_exit(1);
@@ -503,26 +499,15 @@ int sge_gdi_ctx_class_prepare_enroll() {
 
          default:
             /* this is for "normal" gdi clients of qmaster */
-            DPRINTF(("creating %s GDI handle\n", bootstrap_get_component_name()));
-            handle = cl_com_create_handle(&cl_ret,
-                                          communication_framework,
-                                          CL_CM_CT_MESSAGE,
-                                          false,
-                                          sge_qmaster_port,
-                                          CL_TCP_DEFAULT,
-                                          (char*)bootstrap_get_component_name(),
-                                          my_component_id,
-                                          1,
-                                          0);
+         DPRINTF(("creating %s GDI handle\n", bootstrap_get_component_name()));
+            handle = cl_com_create_handle(&cl_ret, communication_framework, CL_CM_CT_MESSAGE, false, sge_qmaster_port,
+                                          CL_TCP_DEFAULT, (char *) bootstrap_get_component_name(), my_component_id,
+                                          1, 0);
             if (handle == nullptr) {
 /*             if (cl_ret != CL_RETVAL_OK && cl_ret != ctx_get_last_commlib_error(thiz)) { */
-                  sge_gdi_ctx_class_error(STATUS_EUNKNOWN, ANSWER_QUALITY_ERROR,
-                                     MSG_GDI_CANT_CONNECT_HANDLE_SSUUS,
-                                     bootstrap_get_qualified_hostname(),
-                                     bootstrap_get_component_name(),
-                                     sge_u32c(my_component_id),
-                                     sge_u32c(sge_qmaster_port),
-                                     cl_get_error_text(cl_ret));
+               sge_gdi_ctx_class_error(STATUS_EUNKNOWN, ANSWER_QUALITY_ERROR, MSG_GDI_CANT_CONNECT_HANDLE_SSUUS,
+                                       bootstrap_get_qualified_hostname(), bootstrap_get_component_name(),
+                                       sge_u32c(my_component_id), sge_u32c(sge_qmaster_port), cl_get_error_text(cl_ret));
 /*             }        */
             }
             break;
@@ -537,37 +522,31 @@ int sge_gdi_ctx_class_prepare_enroll() {
 
    if ((bootstrap_get_component_id() == QMASTER) && (getenv("SGE_TEST_SOCKET_BIND") != nullptr)) {
       /* this is for testsuite socket bind test (issue 1096 ) */
-         struct timeval now;
-         gettimeofday(&now,nullptr);
+      struct timeval now;
+      gettimeofday(&now, nullptr);
 
-         /* if this environment variable is set, we wait 15 seconds after
-            communication lib setup */
-         DPRINTF(("waiting for 60 seconds, because environment SGE_TEST_SOCKET_BIND is set\n"));
-         while ( handle != nullptr && now.tv_sec - handle->start_time.tv_sec  <= 60 ) {
-            DPRINTF(("timeout: "sge_U32CFormat"\n",sge_u32c(now.tv_sec - handle->start_time.tv_sec)));
-            cl_commlib_trigger(handle, 1);
-            gettimeofday(&now,nullptr);
-         }
-         DPRINTF(("continue with setup\n"));
+      /* if this environment variable is set, we wait 15 seconds after
+         communication lib setup */
+      DPRINTF(("waiting for 60 seconds, because environment SGE_TEST_SOCKET_BIND is set\n"));
+      while (handle != nullptr && now.tv_sec - handle->start_time.tv_sec <= 60) {
+         DPRINTF(("timeout: "sge_U32CFormat"\n", sge_u32c(now.tv_sec - handle->start_time.tv_sec)));
+         cl_commlib_trigger(handle, 1);
+         gettimeofday(&now, nullptr);
+      }
+      DPRINTF(("continue with setup\n"));
    }
    DRETURN(cl_ret);
 }
 
-lList* sge_gdi_ctx_class_gdi_kill(lList *id_list, u_long32 action_flag)
-{
-   lList *alp = nullptr;
-
+lList *sge_gdi_ctx_class_gdi_kill(lList *id_list, u_long32 action_flag) {
    DENTER(TOP_LAYER);
-
-   alp = gdi2_kill(id_list, action_flag);
-
+   lList *alp = gdi2_kill(id_list, action_flag);
    DRETURN(alp);
 
 }
 
 /** --------- getter/setter ------------------------------------------------- */
-static sge_csp_path_class_t* get_sge_csp_path()
-{
+static sge_csp_path_class_t *get_sge_csp_path() {
    return gdi3_get_csp_path_obj();
 }
 
@@ -579,10 +558,9 @@ static void ctx_set_last_commlib_error(int cl_error) {
    gdi3_set_last_commlib_error(cl_error);
 }
 
-static int sge_gdi_ctx_log_flush_func(cl_raw_list_t* list_p)
-{
+static int sge_gdi_ctx_log_flush_func(cl_raw_list_t *list_p) {
    int ret_val;
-   cl_log_list_elem_t* elem = nullptr;
+   cl_log_list_elem_t *elem = nullptr;
 
    DENTER(COMMD_LAYER);
 
@@ -594,39 +572,39 @@ static int sge_gdi_ctx_log_flush_func(cl_raw_list_t* list_p)
       DRETURN(ret_val);
    }
 
-   while ((elem = cl_log_list_get_first_elem(list_p) ) != nullptr) {
-      char* param;
+   while ((elem = cl_log_list_get_first_elem(list_p)) != nullptr) {
+      char *param;
       if (elem->log_parameter == nullptr) {
          param = "";
       } else {
          param = elem->log_parameter;
       }
 
-      switch(elem->log_type) {
+      switch (elem->log_type) {
          case CL_LOG_ERROR:
             if (log_state_get_log_level() >= LOG_ERR) {
-               ERROR((SGE_EVENT,  "%-15s=> %s %s (%s)", elem->log_thread_name, elem->log_message, param, elem->log_module_name));
+               ERROR((SGE_EVENT, "%-15s=> %s %s (%s)", elem->log_thread_name, elem->log_message, param, elem->log_module_name));
             } else {
                printf("%-15s=> %s %s (%s)\n", elem->log_thread_name, elem->log_message, param, elem->log_module_name);
             }
             break;
          case CL_LOG_WARNING:
             if (log_state_get_log_level() >= LOG_WARNING) {
-               WARNING((SGE_EVENT,"%-15s=> %s %s (%s)", elem->log_thread_name, elem->log_message, param, elem->log_module_name));
+               WARNING((SGE_EVENT, "%-15s=> %s %s (%s)", elem->log_thread_name, elem->log_message, param, elem->log_module_name));
             } else {
                printf("%-15s=> %s %s (%s)\n", elem->log_thread_name, elem->log_message, param, elem->log_module_name);
             }
             break;
          case CL_LOG_INFO:
             if (log_state_get_log_level() >= LOG_INFO) {
-               INFO((SGE_EVENT,   "%-15s=> %s %s (%s)", elem->log_thread_name, elem->log_message, param, elem->log_module_name));
+               INFO((SGE_EVENT, "%-15s=> %s %s (%s)", elem->log_thread_name, elem->log_message, param, elem->log_module_name));
             } else {
                printf("%-15s=> %s %s (%s)\n", elem->log_thread_name, elem->log_message, param, elem->log_module_name);
             }
             break;
          case CL_LOG_DEBUG:
             if (log_state_get_log_level() >= LOG_DEBUG) {
-               DEBUG((SGE_EVENT,  "%-15s=> %s %s (%s)", elem->log_thread_name, elem->log_message, param, elem->log_module_name));
+               DEBUG((SGE_EVENT, "%-15s=> %s %s (%s)", elem->log_thread_name, elem->log_message, param, elem->log_module_name));
             } else {
                printf("%-15s=> %s %s (%s)\n", elem->log_thread_name, elem->log_message, param, elem->log_module_name);
             }
@@ -648,10 +626,9 @@ static int sge_gdi_ctx_log_flush_func(cl_raw_list_t* list_p)
 ** only helper function to do the setup for clients similar to sge_setup()
 */
 int
-sge_setup2(u_long32 progid, u_long32 thread_id, lList **alpp, bool is_qmaster_intern_client)
-{
-   char  user[128] = "";
-   char  group[128] = "";
+sge_setup2(u_long32 progid, u_long32 thread_id, lList **alpp, bool is_qmaster_intern_client) {
+   char user[128] = "";
+   char group[128] = "";
    const char *sge_root = nullptr;
 
    DENTER(TOP_LAYER);
@@ -691,8 +668,7 @@ sge_setup2(u_long32 progid, u_long32 thread_id, lList **alpp, bool is_qmaster_in
 ** TODO: 
 ** only helper function to do the setup for clients similar to sge_gdi_setup()
 */
-int sge_gdi2_setup(u_long32 progid, u_long32 thread_id, lList **alpp)
-{
+int sge_gdi2_setup(u_long32 progid, u_long32 thread_id, lList **alpp) {
    int ret = AE_OK;
    bool alpp_was_null = true;
 
@@ -783,12 +759,12 @@ bool sge_daemonize_prepare() {
    }
 
    /* create pipe */
-   if ( pipe(fd_pipe) < 0) {
+   if (pipe(fd_pipe) < 0) {
       CRITICAL((SGE_EVENT, SFNMAX, MSG_UTI_DAEMONIZE_CANT_PIPE));
       DRETURN(false);
    }
 
-   if ( fcntl(fd_pipe[0], F_SETFL, O_NONBLOCK) != 0) {
+   if (fcntl(fd_pipe[0], F_SETFL, O_NONBLOCK) != 0) {
       CRITICAL((SGE_EVENT, SFNMAX, MSG_UTI_DAEMONIZE_CANT_FCNTL_PIPE));
       DRETURN(false);
    }
@@ -805,9 +781,9 @@ bool sge_daemonize_prepare() {
    }
 
    /* first fork */
-   pid=fork();
-   if (pid <0) {
-      CRITICAL((SGE_EVENT, MSG_PROC_FIRSTFORKFAILED_S , strerror(errno)));
+   pid = fork();
+   if (pid < 0) {
+      CRITICAL((SGE_EVENT, MSG_PROC_FIRSTFORKFAILED_S, strerror(errno)));
       exit(1);
    }
 
@@ -831,12 +807,12 @@ bool sge_daemonize_prepare() {
             line_p++;
          } else {
             if (back != -1) {
-               if (errno_value != EAGAIN ) {
-                  retries=0;
+               if (errno_value != EAGAIN) {
+                  retries = 0;
                   exit_status = SGE_DAEMONIZE_DEAD_CHILD;
                }
             }
-            DPRINTF(("back=%d errno=%d\n",back,errno_value));
+            DPRINTF(("back=%d errno=%d\n", back, errno_value));
             sleep(1);
          }
       }
@@ -847,7 +823,7 @@ bool sge_daemonize_prepare() {
          DPRINTF(("received: \"%d\"\n", exit_status));
       }
 
-      switch(exit_status) {
+      switch (exit_status) {
          case SGE_DEAMONIZE_OK:
             INFO((SGE_EVENT, SFNMAX, MSG_UTI_DAEMONIZE_OK));
             break;
@@ -874,12 +850,12 @@ bool sge_daemonize_prepare() {
 
 
    /* second fork */
-   pid=fork();
+   pid = fork();
    if (pid < 0) {
-      CRITICAL((SGE_EVENT, MSG_PROC_SECONDFORKFAILED_S , strerror(errno)));
+      CRITICAL((SGE_EVENT, MSG_PROC_SECONDFORKFAILED_S, strerror(errno)));
       exit(1);
    }
-   if ( pid > 0) {
+   if (pid > 0) {
       /* close read and write pipe for second child and exit */
       close(fd_pipe[0]);
       close(fd_pipe[1]);
@@ -920,8 +896,7 @@ bool sge_daemonize_prepare() {
 *  SEE ALSO
 *     uti/os/sge_daemonize_prepare()
 *******************************************************************************/
-bool sge_daemonize_finalize()
-{
+bool sge_daemonize_finalize() {
    int failed_fd;
    char tmp_buffer[4];
    int is_daemonized = bootstrap_is_daemonized();
@@ -934,7 +909,7 @@ bool sge_daemonize_finalize()
    }
 
    /* The response id has 4 byte, send it to father process */
-   snprintf(tmp_buffer, 4, "%3d", SGE_DEAMONIZE_OK );
+   snprintf(tmp_buffer, 4, "%3d", SGE_DEAMONIZE_OK);
    if (write(fd_pipe[1], tmp_buffer, 4) != 4) {
       dstring ds = DSTRING_INIT;
       CRITICAL((SGE_EVENT, MSG_FILE_CANNOT_WRITE_SS, "fd_pipe[1]", sge_strerror(errno, &ds)));
@@ -954,7 +929,7 @@ bool sge_daemonize_finalize()
 
    /* new descriptors acquired for stdin, stdout, stderr should be 0,1,2 */
    failed_fd = sge_occupy_first_three();
-   if (failed_fd  != -1) {
+   if (failed_fd != -1) {
       CRITICAL((SGE_EVENT, MSG_CANNOT_REDIRECT_STDINOUTERR_I, failed_fd));
       sge_exit(0);
    }
@@ -992,8 +967,7 @@ bool sge_daemonize_finalize()
 *  NOTES
 *     MT-NOTES: sge_daemonize() is not MT safe
 ******************************************************************************/
-int sge_daemonize(int *keep_open, unsigned long nr_of_fds)
-{
+int sge_daemonize(int *keep_open, unsigned long nr_of_fds) {
 
    int fd;
    pid_t pid;
@@ -1011,9 +985,9 @@ int sge_daemonize(int *keep_open, unsigned long nr_of_fds)
       DRETURN(1);
    }
 
-   if ((pid=fork())!= 0) {             /* 1st child not pgrp leader */
-      if (pid<0) {
-         CRITICAL((SGE_EVENT, MSG_PROC_FIRSTFORKFAILED_S , strerror(errno)));
+   if ((pid = fork()) != 0) {             /* 1st child not pgrp leader */
+      if (pid < 0) {
+         CRITICAL((SGE_EVENT, MSG_PROC_FIRSTFORKFAILED_S, strerror(errno)));
       }
       exit(0);
    }
@@ -1026,9 +1000,9 @@ int sge_daemonize(int *keep_open, unsigned long nr_of_fds)
       close(fd);
    }
 
-   if ((pid=fork())!= 0) {
-      if (pid<0) {
-         CRITICAL((SGE_EVENT, MSG_PROC_SECONDFORKFAILED_S , strerror(errno)));
+   if ((pid = fork()) != 0) {
+      if (pid < 0) {
+         CRITICAL((SGE_EVENT, MSG_PROC_SECONDFORKFAILED_S, strerror(errno)));
       }
       exit(0);
    }
@@ -1038,7 +1012,7 @@ int sge_daemonize(int *keep_open, unsigned long nr_of_fds)
 
    /* new descriptors acquired for stdin, stdout, stderr should be 0,1,2 */
    failed_fd = sge_occupy_first_three();
-   if (failed_fd  != -1) {
+   if (failed_fd != -1) {
       CRITICAL((SGE_EVENT, MSG_CANNOT_REDIRECT_STDINOUTERR_I, failed_fd));
       sge_exit(0);
    }

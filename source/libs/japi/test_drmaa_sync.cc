@@ -6,7 +6,7 @@
  */
 
 #include <unistd.h>
-#include <string.h>
+#include <cstring>
 #include <pthread.h>
 #include "japi/drmaa.h"
 

@@ -35,9 +35,9 @@
                                     $PROJECT_DIR
  */
 
-#include <stdio.h>
-#include <ctype.h>
-#include <string.h>
+#include <cstdio>
+#include <cctype>
+#include <cstring>
 #include <unistd.h>
 
 #include "uti/sge_rmon.h"

@@ -31,11 +31,11 @@
 /* Portions of this code are Copyright 2011 Univa Inc. */
 /*___INFO__MARK_END__*/
 
-#include <stdlib.h>
-#include <stdio.h>
-#include <errno.h>
+#include <cstdlib>
+#include <cstdio>
+#include <cerrno>
 #include <signal.h>
-#include <string.h>
+#include <cstring>
 
 #if defined(DARWIN)
 #  include <sys/ttycom.h>

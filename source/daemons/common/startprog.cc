@@ -29,11 +29,11 @@
  * 
  ************************************************************************/
 /*___INFO__MARK_END__*/
-#include <stdio.h>
+#include <cstdio>
 #include <sys/wait.h>
-#include <string.h>
-#include <stdlib.h>
-#include <errno.h>
+#include <cstring>
+#include <cstdlib>
+#include <cerrno>
 
 #include "uti/sge_rmon.h"
 #include "uti/sge_unistd.h"

@@ -38,10 +38,10 @@
 
 #include "uti/sge_uidgid.h"
 
-#include <stdio.h>
-#include <stdlib.h>
-#include <errno.h>
-#include <string.h>
+#include <cstdio>
+#include <cstdlib>
+#include <cerrno>
+#include <cstring>
 #include <pwd.h>
 #include <grp.h>
 #include <pthread.h>

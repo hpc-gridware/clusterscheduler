@@ -30,12 +30,12 @@
  ************************************************************************/
 /*___INFO__MARK_END__*/
 
-#include <stdio.h>
-#include <stdlib.h>
-#include <errno.h>
-#include <stdlib.h>
+#include <cstdio>
+#include <cstdlib>
+#include <cerrno>
+#include <cstdlib>
 #include <unistd.h>
-#include <string.h>
+#include <cstring>
 #include <limits.h>
 #include <sys/types.h>
 #include <sys/socket.h>

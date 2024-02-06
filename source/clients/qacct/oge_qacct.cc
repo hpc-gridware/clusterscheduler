@@ -29,13 +29,13 @@
  * 
  ************************************************************************/
 /*___INFO__MARK_END__*/
-#include <stdlib.h>
-#include <string.h>
+#include <cstdlib>
+#include <cstring>
 #include <sys/types.h>
 #include <grp.h>
 #include <time.h>
 #include <fnmatch.h>
-#include <errno.h>
+#include <cerrno>
 
 #include "uti/sge_rmon.h"
 #include "uti/sge_dstring.h"

@@ -30,8 +30,8 @@
  ************************************************************************/
 /* Portions of this code are Copyright 2011 Univa Inc. */
 /*___INFO__MARK_END__*/
-#include <stdio.h>
-#include <string.h>
+#include <cstdio>
+#include <cstring>
 
 #include "uti/sge_rmon.h"
 #include "uti/sge_stdio.h"

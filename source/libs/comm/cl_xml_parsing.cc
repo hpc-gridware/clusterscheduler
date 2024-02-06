@@ -30,10 +30,10 @@
  ************************************************************************/
 /*___INFO__MARK_END__*/
 
-#include <stdio.h>
-#include <stdlib.h>
-#include <stdlib.h>
-#include <string.h>
+#include <cstdio>
+#include <cstdlib>
+#include <cstdlib>
+#include <cstring>
 
 #include "comm/cl_commlib.h"
 #include "comm/lists/cl_lists.h"

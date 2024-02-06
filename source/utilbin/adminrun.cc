@@ -29,13 +29,13 @@
  * 
  ************************************************************************/
 /*___INFO__MARK_END__*/
-#include <stdio.h>
+#include <cstdio>
 #include <signal.h>
 #include <unistd.h>
-#include <stdlib.h>
+#include <cstdlib>
 #include <sys/types.h>
 #include <pwd.h>
-#include <errno.h>
+#include <cerrno>
 
 #include "basis_types.h"
 #include "msg_utilbin.h"

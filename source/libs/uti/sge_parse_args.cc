@@ -30,7 +30,7 @@
  ************************************************************************/
 /*___INFO__MARK_END__*/
 
-#include <ctype.h>
+#include <cctype>
 
 #include "uti/sge_rmon.h"
 #include "uti/sge_string.h"

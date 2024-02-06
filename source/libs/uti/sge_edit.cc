@@ -30,10 +30,10 @@
  ************************************************************************/
 /*___INFO__MARK_END__*/
 
-#include <string.h>
-#include <stdio.h>
+#include <cstring>
+#include <cstdio>
 #include <sys/wait.h>
-#include <errno.h>
+#include <cerrno>
 
 #include "uti/sge_rmon.h"
 #include "uti/sge_log.h"

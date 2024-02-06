@@ -31,10 +31,10 @@
 /* Portions of this code are Copyright (c) 2011 Univa Corporation. */
 /*___INFO__MARK_END__*/
 
-#include <stdio.h>
+#include <cstdio>
 #include <stdarg.h>
-#include <stdlib.h>
-#include <string.h>
+#include <cstdlib>
+#include <cstring>
 #include <fnmatch.h>
 
 /* do not compile in monitoring code */

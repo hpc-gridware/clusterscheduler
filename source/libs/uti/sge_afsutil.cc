@@ -30,10 +30,10 @@
  ************************************************************************/
 /*___INFO__MARK_END__*/
 
-#include <stdio.h>
+#include <cstdio>
 #include <fcntl.h>
 #include <unistd.h>
-#include <string.h>
+#include <cstring>
 
 #include "basis_types.h"
 

@@ -31,11 +31,11 @@
 /*___INFO__MARK_END__*/
 
 #include <netdb.h>
-#include <stdlib.h>
-#include <stdio.h>
-#include <string.h>
+#include <cstdlib>
+#include <cstdio>
+#include <cstring>
 #include <pwd.h>
-#include <errno.h>
+#include <cerrno>
 #include <pthread.h>
 #include <sys/types.h>
 #include <sys/socket.h>

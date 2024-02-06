@@ -1,8 +1,8 @@
-#include <stdio.h>
-#include <string.h>
-#include <stdlib.h>
+#include <cstdio>
+#include <cstring>
+#include <cstdlib>
 #include <signal.h>
-#include <errno.h>
+#include <cerrno>
 #include <unistd.h>
 
 #include "drmaa.h"

@@ -31,7 +31,7 @@
 /*___INFO__MARK_END__*/
 
 #include <math.h>
-#include <string.h>
+#include <cstring>
 #include <sys/types.h>
 
 #include "uti/sge_rmon.h" 

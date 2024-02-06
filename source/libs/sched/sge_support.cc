@@ -30,7 +30,7 @@
  ************************************************************************/
 /*___INFO__MARK_END__*/
 
-#include <string.h>
+#include <cstring>
 #include <math.h>
 
 #ifndef NO_SGE_COMPILE_DEBUG   

@@ -29,10 +29,10 @@
  * 
  ************************************************************************/
 /*___INFO__MARK_END__*/
-#include <string.h>
+#include <cstring>
 #include <limits.h>
 #include <unistd.h>
-#include <stdlib.h>
+#include <cstdlib>
 
 #include "uti/sge_rmon.h"
 #include "uti/sge_log.h"

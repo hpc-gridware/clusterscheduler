@@ -29,9 +29,9 @@
  * 
  ************************************************************************/
 /*___INFO__MARK_END__*/
-#include <string.h>
+#include <cstring>
 #include <sys/stat.h>
-#include <errno.h>
+#include <cerrno>
 
 #include "uti/sge_rmon.h"
 #include "uti/sge_unistd.h"

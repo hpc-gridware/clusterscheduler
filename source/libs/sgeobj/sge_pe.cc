@@ -32,7 +32,7 @@
 
 #include <fnmatch.h>
 #include <strings.h>
-#include <ctype.h>
+#include <cctype>
 #ifdef SGE_PQS_API
 #include <dlfcn.h>
 #endif

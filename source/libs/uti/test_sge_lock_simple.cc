@@ -32,7 +32,7 @@
 
 
 #include <unistd.h>
-#include <stdio.h>
+#include <cstdio>
 
 #include "test_sge_lock_main.h"
 

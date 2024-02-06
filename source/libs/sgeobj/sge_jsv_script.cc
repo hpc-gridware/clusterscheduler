@@ -31,7 +31,7 @@
 /*___INFO__MARK_END__*/
 
 #include <time.h>
-#include <ctype.h>
+#include <cctype>
 
 #include "uti/sge_rmon.h"
 #include "uti/sge_dstring.h"

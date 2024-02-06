@@ -32,7 +32,7 @@
 /* Portions of this code are Copyright (c) 2011 Univa Corporation. */
 /*___INFO__MARK_END__*/
 
-#include <stdio.h>
+#include <cstdio>
 
 #include "basis_types.h"
 #include "cull/cull_hashP.h"

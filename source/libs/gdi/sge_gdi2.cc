@@ -32,7 +32,7 @@
  ************************************************************************/
 /*___INFO__MARK_END__*/
 
-#include <string.h>
+#include <cstring>
 #include <pthread.h>
 
 #include <pwd.h>
@@ -47,7 +47,6 @@
 #include "uti/sge_log.h"
 #include "uti/sge_parse_num_par.h"
 #include "uti/sge_profiling.h"
-#include "uti/sge_spool.h"
 #include "uti/sge_hostname.h"
 #include "uti/sge_time.h"
 

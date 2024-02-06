@@ -36,9 +36,9 @@
  *
  *--------------------------------------------------*/
 
-#include <string.h>
-#include <stdlib.h>    /* need prototype for malloc */
-#include <errno.h>
+#include <cstring>
+#include <cstdlib>    /* need prototype for malloc */
+#include <cerrno>
 #include <sys/types.h>
 #include <sys/socket.h>
 #include <sys/wait.h>

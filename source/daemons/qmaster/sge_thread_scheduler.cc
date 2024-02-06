@@ -31,8 +31,8 @@
 /*___INFO__MARK_END__*/
 
 #include <pthread.h>
-#include <string.h>
-#include <errno.h>
+#include <cstring>
+#include <cerrno>
 #include <fcntl.h>
 
 #include "comm/cl_commlib.h"

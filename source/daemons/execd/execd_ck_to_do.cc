@@ -30,9 +30,9 @@
  ************************************************************************/
 /*___INFO__MARK_END__*/
 #include <float.h>
-#include <string.h>
-#include <errno.h>
-#include <stdlib.h>
+#include <cstring>
+#include <cerrno>
+#include <cstdlib>
 
 #include "uti/sge_rmon.h"
 #include "uti/sge_unistd.h"

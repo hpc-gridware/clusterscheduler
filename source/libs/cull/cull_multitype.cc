@@ -31,9 +31,9 @@
 /* Portions of this code are Copyright (c) 2011 Univa Corporation. */
 /*___INFO__MARK_END__*/
 #include <stdarg.h>
-#include <stdio.h>
-#include <stdlib.h>
-#include <string.h>
+#include <cstdio>
+#include <cstdlib>
+#include <cstring>
 
 /* do not compile in monitoring code */
 #ifndef NO_SGE_COMPILE_DEBUG

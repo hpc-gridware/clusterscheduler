@@ -30,22 +30,22 @@
  ************************************************************************/
 /*___INFO__MARK_END__*/
 #include <unistd.h>
-#include <stdio.h>
+#include <cstdio>
 #include <sys/types.h>
 #include <sys/socket.h>
 #include <netinet/in.h>
 #include <arpa/inet.h>
 #include <fcntl.h>
 #include <netinet/tcp.h>
-#include <errno.h>
+#include <cerrno>
 #include <signal.h>
 #include <sys/types.h>
 #include <sys/time.h>
 #include <sys/resource.h>
 #include <sys/wait.h>
 #include <time.h>
-#include <stdlib.h>
-#include <string.h>
+#include <cstdlib>
+#include <cstring>
 #include <netdb.h>
 
 #include "uti/sge_stdio.h"

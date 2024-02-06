@@ -32,7 +32,7 @@
 
 #include <fcntl.h>
 #include <pthread.h>
-#include <string.h>
+#include <cstring>
 #include <time.h>
 #include <unistd.h>
 #include <sys/poll.h>

@@ -31,8 +31,8 @@
  *
  ************************************************************************/
 /*___INFO__MARK_END__*/
-#include <stdlib.h>
-#include <string.h>
+#include <cstdlib>
+#include <cstring>
 #include <sys/stat.h>
 #include <limits.h>
 #include <math.h>

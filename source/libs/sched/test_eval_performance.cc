@@ -41,8 +41,8 @@
  *                        -1 .. ERROR
  *
  *----------------------------------------------------*/
-#include <stdio.h>
-#include <string.h>
+#include <cstdio>
+#include <cstring>
 
 #include "uti/sge_rmon.h"
 #include "uti/sge_time.h"

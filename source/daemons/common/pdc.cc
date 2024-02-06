@@ -35,7 +35,7 @@
 int verydummypdc;
 
 #   if defined(MODULE_TEST) || defined(PDC_STANDALONE)
-#include <stdio.h>
+#include <cstdio>
 #include "basis_types.h"
 #include "uti/sge_language.h"
 #include "uti/sge_os.h"
@@ -59,10 +59,10 @@ int main(int argc,char *argv[])
 
 #define _KMEMUSER 1
 
-#include <stdio.h>
-#include <string.h>
+#include <cstdio>
+#include <cstring>
 #include <unistd.h>
-#include <stdlib.h>
+#include <cstdlib>
 #include <fcntl.h>
 #include <signal.h>
 #include <sys/types.h>
@@ -106,7 +106,7 @@ int main(int argc,char *argv[])
 int getpagesize(void);
 #endif
 
-#include <errno.h>
+#include <cerrno>
 
 #include "uti/sge_language.h"
 #include "uti/sge_rmon.h"

@@ -41,11 +41,11 @@
 #   define USE_DC
 #endif
 
-#include <stdio.h>
-#include <stdlib.h>
-#include <string.h>
+#include <cstdio>
+#include <cstdlib>
+#include <cstring>
 #include <signal.h>
-#include <errno.h>
+#include <cerrno>
 #include <sys/types.h>
 #include <unistd.h>
 #include <limits.h>

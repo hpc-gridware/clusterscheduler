@@ -30,9 +30,9 @@
  ************************************************************************/
 /*___INFO__MARK_END__*/
 
-#include <stdio.h>
-#include <errno.h>
-#include <stdlib.h>
+#include <cstdio>
+#include <cerrno>
+#include <cstdlib>
 
 #include "comm/cl_handle_list.h"
 

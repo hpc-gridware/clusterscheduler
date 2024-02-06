@@ -30,13 +30,13 @@
  ************************************************************************/
 /*___INFO__MARK_END__*/
 
-#include <stdio.h>
-#include <stdlib.h>
-#include <errno.h>
+#include <cstdio>
+#include <cstdlib>
+#include <cerrno>
 #include <unistd.h>
 #include <fcntl.h>
 #include <netdb.h>
-#include <string.h>
+#include <cstring>
 
 #include <netinet/tcp.h>
 #include <sys/types.h>
