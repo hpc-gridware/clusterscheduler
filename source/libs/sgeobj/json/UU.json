@@ -1,15 +1,15 @@
 {
 	"className":	"User",
-	"summary":	"@todo add summary",
+	"summary":	"User",
 	"description":	[{
-			"line":	"@todo add description"
+			"line":	"An object of this type holds user configuration data as well as usage accumulators."
 		}],
 	"cullPrefix":	"UU",
 	"attributes":	[{
 			"name":	"name",
-			"summary":	"@todo add summary",
+			"summary":	"User Name",
 			"description":	[{
-					"line":	"@todo add description"
+					"line":	"A unique name of the user."
 				}],
 			"type":	"lStringT",
 			"flags":	[{
@@ -27,9 +27,9 @@
 				}]
 		}, {
 			"name":	"oticket",
-			"summary":	"@todo add summary",
+			"summary":	"Override Tickets",
 			"description":	[{
-					"line":	"@todo add description"
+					"line":	"Configured override tickets."
 				}],
 			"type":	"lUlongT",
 			"flags":	[{
@@ -39,9 +39,9 @@
 				}]
 		}, {
 			"name":	"fshare",
-			"summary":	"@todo add summary",
+			"summary":	"Functional Shares",
 			"description":	[{
-					"line":	"@todo add description"
+					"line":	"Configured functional shares."
 				}],
 			"type":	"lUlongT",
 			"flags":	[{
@@ -51,9 +51,12 @@
 				}]
 		}, {
 			"name":	"delete_time",
-			"summary":	"@todo add summary",
+			"summary":	"Delete Time",
 			"description":	[{
-					"line":	"@todo add description"
+					"line":	"If an user submits a job for whom no user object exists, a user object is created."
+               }, { "line": "This user object will automatically be deleted at the delete time."
+               }, { "line": "Whenever a user submits a job the delete time is updated."
+               }, { "line": "When set to 0 (via qconf) the user object is kept forever."
 				}],
 			"type":	"lUlongT",
 			"flags":	[{
@@ -63,9 +66,9 @@
 				}]
 		}, {
 			"name":	"job_cnt",
-			"summary":	"@todo add summary",
+			"summary":	"Job Count",
 			"description":	[{
-					"line":	"@todo add description"
+					"line":	"Job counter, used in scheduler thread only."
 				}],
 			"type":	"lUlongT",
 			"flags":	[{
@@ -73,9 +76,9 @@
 				}]
 		}, {
 			"name":	"pending_job_cnt",
-			"summary":	"@todo add summary",
+			"summary":	"Pending Job Count",
 			"description":	[{
-					"line":	"@todo add description"
+					"line":	"Pending job counter, used in scheduler thread only."
 				}],
 			"type":	"lUlongT",
 			"flags":	[{
@@ -83,9 +86,9 @@
 				}]
 		}, {
 			"name":	"usage",
-			"summary":	"@todo add summary",
+			"summary":	"Usage",
 			"description":	[{
-					"line":	"@todo add description"
+					"line":	"List of UA_Type objects storing accumulated and decayed usage of jobs belonging to this user."
 				}],
 			"type":	"lListT",
 			"subClassName":	"UA",
@@ -97,9 +100,9 @@
 				}]
 		}, {
 			"name":	"usage_time_stamp",
-			"summary":	"@todo add summary",
+			"summary":	"Usage Time Stamp",
 			"description":	[{
-					"line":	"@todo add description"
+					"line":	"Time stamp of last decay. Set when usage changes."
 				}],
 			"type":	"lUlongT",
 			"flags":	[{
@@ -109,9 +112,9 @@
 				}]
 		}, {
 			"name":	"usage_seqno",
-			"summary":	"@todo add summary",
+			"summary":	"Usage Sequence Number",
 			"description":	[{
-					"line":	"@todo add description"
+					"line":	"Usage sequence number used in scheduler thread only."
 				}],
 			"type":	"lUlongT",
 			"flags":	[{
@@ -119,9 +122,9 @@
 				}]
 		}, {
 			"name":	"long_term_usage",
-			"summary":	"@todo add summary",
+			"summary":	"Long Term Usage",
 			"description":	[{
-					"line":	"@todo add description"
+					"line":	"List of UA_Type objects holding long term accumulated non-decayed usage."
 				}],
 			"type":	"lListT",
 			"subClassName":	"UA",
@@ -133,9 +136,9 @@
 				}]
 		}, {
 			"name":	"project",
-			"summary":	"@todo add summary",
+			"summary":	"Project",
 			"description":	[{
-					"line":	"@todo add description"
+					"line":	"UPP_Type list @todo add description."
 				}],
 			"type":	"lListT",
 			"subClassName":	"UPP",
@@ -147,9 +150,9 @@
 				}]
 		}, {
 			"name":	"debited_job_usage",
-			"summary":	"@todo add summary",
+			"summary":	"Debited Job Usage",
 			"description":	[{
-					"line":	"@todo add description"
+					"line":	"List of UPU_Type, still debited usage per job."
 				}],
 			"type":	"lListT",
 			"subClassName":	"UPU",
@@ -161,9 +164,10 @@
 				}]
 		}, {
 			"name":	"default_project",
-			"summary":	"@todo add summary",
+			"summary":	"Default Project",
 			"description":	[{
-					"line":	"@todo add description"
+					"line":	"The default project is the project to which jobs of the user are assigned"
+					}, { "line":	"if no project is specified at job submission time."
 				}],
 			"type":	"lStringT",
 			"flags":	[{
@@ -173,9 +177,9 @@
 				}]
 		}, {
 			"name":	"version",
-			"summary":	"@todo add summary",
+			"summary":	"User Version",
 			"description":	[{
-					"line":	"@todo add description"
+					"line":	"Version of the user object, increments when usage is updated"
 				}],
 			"type":	"lUlongT",
 			"flags":	[{
@@ -183,9 +187,9 @@
 				}]
 		}, {
 			"name":	"consider_with_categories",
-			"summary":	"@todo add summary",
+			"summary":	"Consider With Categories",
 			"description":	[{
-					"line":	"@todo add description"
+					"line":	"True, if user plays role with categories."
 				}],
 			"type":	"lBoolT",
 			"flags":	[{

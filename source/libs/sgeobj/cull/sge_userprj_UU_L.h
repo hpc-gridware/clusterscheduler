@@ -36,54 +36,58 @@
 #include "sgeobj/cull/sge_boundaries.h"
 
 /**
-* @brief @todo add summary
+* @brief User
 *
-* @todo add description
+* An object of this type holds user configuration data as well as usage accumulators.
 *
-*    SGE_STRING(UU_name) - @todo add summary
-*    @todo add description
+*    SGE_STRING(UU_name) - User Name
+*    A unique name of the user.
 *
-*    SGE_ULONG(UU_oticket) - @todo add summary
-*    @todo add description
+*    SGE_ULONG(UU_oticket) - Override Tickets
+*    Configured override tickets.
 *
-*    SGE_ULONG(UU_fshare) - @todo add summary
-*    @todo add description
+*    SGE_ULONG(UU_fshare) - Functional Shares
+*    Configured functional shares.
 *
-*    SGE_ULONG(UU_delete_time) - @todo add summary
-*    @todo add description
+*    SGE_ULONG(UU_delete_time) - Delete Time
+*    If an user submits a job for whom no user object exists, a user object is created.
+*    This user object will automatically be deleted at the delete time.
+*    Whenever a user submits a job the delete time is updated.
+*    When set to 0 (via qconf) the user object is kept forever.
 *
-*    SGE_ULONG(UU_job_cnt) - @todo add summary
-*    @todo add description
+*    SGE_ULONG(UU_job_cnt) - Job Count
+*    Job counter, used in scheduler thread only.
 *
-*    SGE_ULONG(UU_pending_job_cnt) - @todo add summary
-*    @todo add description
+*    SGE_ULONG(UU_pending_job_cnt) - Pending Job Count
+*    Pending job counter, used in scheduler thread only.
 *
-*    SGE_LIST(UU_usage) - @todo add summary
-*    @todo add description
+*    SGE_LIST(UU_usage) - Usage
+*    List of UA_Type objects storing accumulated and decayed usage of jobs belonging to this user.
 *
-*    SGE_ULONG(UU_usage_time_stamp) - @todo add summary
-*    @todo add description
+*    SGE_ULONG(UU_usage_time_stamp) - Usage Time Stamp
+*    Time stamp of last decay. Set when usage changes.
 *
-*    SGE_ULONG(UU_usage_seqno) - @todo add summary
-*    @todo add description
+*    SGE_ULONG(UU_usage_seqno) - Usage Sequence Number
+*    Usage sequence number used in scheduler thread only.
 *
-*    SGE_LIST(UU_long_term_usage) - @todo add summary
-*    @todo add description
+*    SGE_LIST(UU_long_term_usage) - Long Term Usage
+*    List of UA_Type objects holding long term accumulated non-decayed usage.
 *
-*    SGE_LIST(UU_project) - @todo add summary
-*    @todo add description
+*    SGE_LIST(UU_project) - Project
+*    UPP_Type list @todo add description.
 *
-*    SGE_LIST(UU_debited_job_usage) - @todo add summary
-*    @todo add description
+*    SGE_LIST(UU_debited_job_usage) - Debited Job Usage
+*    List of UPU_Type, still debited usage per job.
 *
-*    SGE_STRING(UU_default_project) - @todo add summary
-*    @todo add description
+*    SGE_STRING(UU_default_project) - Default Project
+*    The default project is the project to which jobs of the user are assigned
+*    if no project is specified at job submission time.
 *
-*    SGE_ULONG(UU_version) - @todo add summary
-*    @todo add description
+*    SGE_ULONG(UU_version) - User Version
+*    Version of the user object, increments when usage is updated
 *
-*    SGE_BOOL(UU_consider_with_categories) - @todo add summary
-*    @todo add description
+*    SGE_BOOL(UU_consider_with_categories) - Consider With Categories
+*    True, if user plays role with categories.
 *
 */
 
